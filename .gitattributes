@@ -607,6 +607,7 @@ doc/figs/psample-timings.ps -text
 doc/figs/pspec-comp-lin.eps -text
 doc/figs/pspec-comp.eps -text
 doc/figs/pspec_comp.eps -text
+doc/figs/pt_vs_tph_comp.eps -text
 doc/figs/ptimings.ps -text
 doc/figs/ptimings2.eps -text
 doc/figs/ptriolith-strong.ps -text

@@ -337,6 +337,10 @@
 \newcommand{\fig}[1]{\Fig{#1}}
 \newcommand{\nab}{\mbox{\boldmath $\nabla$} {}}
 \newcommand{\dd}{{\rm d} {}}
+\newcommand{\yr}{\,{\rm yr}}
+\newcommand{\Gyr}{\,{\rm Gyr}}
+\newcommand{\kms}{\,{\rm km\,s}^{-1}}
+\newcommand{\kpc}{\,{\rm kpc}}
 
 \newcommand{\Bhat}{\hat{B}}
 \newcommand{\BBhat}{\hat{\vec{B}}}
@@ -517,7 +521,7 @@ An up to date list of Pencil Code contributors can be found at
 
 \vfill
 
-Copyright \copyright{} 2001--2023 Wolfgang Dobler \& Axel Brandenburg
+Copyright \copyright{} 2001--2025 Wolfgang Dobler \& Axel Brandenburg
 \bigskip
 
 Permission is granted to make and distribute verbatim copies of
@@ -5397,7 +5401,7 @@ This part of the code can be invoked by setting \code{EOS=eos_ionization}
 (or \code{EOS=eos_temperature_ionization}) in the \file{Makefile.local} file.
 The equation of state described below works for variable ionization, and the
 entropy offset is different from that used in Eq.~(\ref{EOSsimple}), which
-is now no longer valid.  As a replacement, one can use
+is now no longer applicable.  As a replacement, one can use
 \code{EOS=eos_fixed_ionization}, where the degree of ionization can be given
 by hand.  Here the normalization of the entropy is the same as for
 \code{EOS=eos_ionization}.  This case is described in more detail
@@ -5468,8 +5472,13 @@ $x_{\rm He}$ gives the ratio of neutral helium to the total amount of hydrogen.
 The dependence of temperature on entropy is shown in Fig.~\ref{pTTss}
 for different values of the density.
 
+Note that for an ideal gas, $\ln T=s/c_\mathrm{v}+(\gamma-1)\ln\rho$, and that
+$c_\mathrm{v}$ is larger when $y=1$, and smaller when $y=0$.
+But this is a large effect when $\rho$ is small.
+
 For further details regarding the procedure of solving for the entropy
 see Sect.~\ref{S-Ioni} in the appendix.
+The full set of ionization equations is presented in \cite{BB16}.
 
 % ---------------------------------------------------------------------- %
 
@@ -6009,6 +6018,82 @@ The module \file{pointmasses.f90} is also an $N$-body solver.
 
 % ---------------------------------------------------------------------- %
 
+\subsection{Cosmological expansion and scale factor}
+\index{Cosmological expansion}
+\index{Scale factor}
+
+Superconformal coordinates are defined
+through $\dd t=\dd t_\mathrm{phys}/a^n$, where $n=3/2$ \cite{BJ04} or $n=2$
+\cite{MS98} and $t_\mathrm{phys}$ is the physical (or cosmic) time.
+To obtain $a(t)$, we assume a standard $\Lambda$CDM universe and integrate
+$\dd\ln a/\dd t_\mathrm{phys}=H(a)$, where
+\begin{equation}
+H(a)=H_0\sqrt{\Omega_\mathrm{rad}/a^4+\Omega_\mathrm{mat}/a^3+\Omega_\Lambda}
+\label{Ha}
+\end{equation}
+is the prescribed dependence of the Hubble parameter on $a(t)$.
+We work with conformal time $t$, use $\dd/\dd t_\mathrm{phys}
+=a^{-n}\dd/\dd t$, and integrate to obtain $t_\mathrm{phys}(t)$
+and $a(t)$, i.e.,
+\begin{equation}
+\frac{\dd t_\mathrm{phys}}{\dd t}=a^n \quad\mbox{and}\quad
+\frac{\dd\ln a}{\dd t}=a^n H(a).
+\label{dlna+tphys}
+\end{equation}
+To obtain the initial conditions for early times, we consider the limit
+$a\to0$, so \Eq{Ha} becomes $H(a)=H_0\Omega_\mathrm{rad}^{1/2}/a^2$.
+We then integrate $t_\mathrm{phys}=\int\dd a/(aH)$, which yields
+$t_\mathrm{phys}=a^2/(2H_0\Omega_\mathrm{rad}^{1/2})$,
+i.e., $a=(2H_0\Omega_\mathrm{rad}^{1/2}t_\mathrm{phys})^{1/2}$.
+This relation is independent of $n$, but assumes that we start at a
+redshift that is well in the radiation-dominated era.
+Here we consider the initial redshifts $z_\ast=4500$ and $z_\ast=10^6$.
+Thus, we solve \Eq{dlna+tphys} with the initial conditions
+\begin{equation}
+a=a_\ast\equiv1/(1+z_\ast),\quad
+t_\mathrm{phys}=t_\mathrm{phys}^\ast\equiv a_\ast^2/(2H_0\Omega_\mathrm{rad}^{1/2}).
+\end{equation}
+
+The sample \code{samples/2d-tests/dark-matter} uses the special module
+\code{SPECIAL=special/Lambda_CDM} with input
+\begin{verbatim}
+&special_init_pars
+  ascale_type='general'
+  redshift0=4500.
+  nconformal=2.
+/
+\end{verbatim}
+
+\begin{figure*}[t!]\begin{center}
+\includegraphics[width=\textwidth]{pt_vs_tph_comp}
+\end{center}\caption{
+$\Omega_\mathrm{rad}=10^{-4}$, $\Omega_\Lambda=0.73$,
+with $\Omega_\mathrm{rad}=10^{-4}$, $\Omega_\mathrm{mat}=0.31$,
+and $H_0=0.0692\Gyr^{-1}\approx0.71\kms\kpc^{-1}$.
+In the last panel, the dashed-dotted lines denote $z=1100$ at $t_\mathrm{phys}=370,000\yr$
+and $z=0$ at $t_\mathrm{phys}=13.8\Gyr$.
+}\label{pt-vs-tph-comp}\end{figure*}
+
+In Fig.~\ref{pt-vs-tph-comp}, we compare the dependence of $t_\mathrm{phys}(t)$ for
+$n=2$, 3/2, and 1 using $z_\ast=4500$ and $10^6$ and a constant time step.
+The range $10^3\geq a(t)\geq1$, corresponding to the time interval from
+recombination to the present time, is marked by dashed-dotted lines.
+We see that the dependence $t_\mathrm{phys}(t)$ is concave for $n=2$
+and convex for $n=1$, but approximately linear for $n=3/2$.
+This indicates that the exponent $n=3/2$ distributes the local change
+in $t_\mathrm{phys}(t)$ approximately uniformly over the interval from
+recombination to the present time.
+
+We recall that in all cases, our initial conformal time is always zero.
+However, when comparing $t_\mathrm{phys}(t)$ for different initial
+redshifts, we can make the curves overlap by adding a suitable offset
+$t_0$ to $t\to t+t_0$ for the runs with the smaller initial redshift.
+We see that the curves for $z_\ast=4500$ and $10^6$ overlap well,
+although there is a very small difference at the very beginning of the
+runs with $z_\ast=4500$ relative to those with $z_\ast=10^6$.
+
+% ---------------------------------------------------------------------- %
+
 \subsection{Test-field equations}
 \index{Testfield method}
 
@@ -6242,7 +6327,7 @@ easy to extract for each wavevector the increment of the stress,
 $\delta\tilde{T}_{+/\times}$, and to use it in an improved update
 of the GW field through
 \begin{eqnarray}
-\tilde{h}_{+/\times}\!\!&=&\!\!...+\delta\tilde{T}_{+/\times}\left(1-\sin\omega\delta t/\omega\delta t\right)\\
+\tilde{h}_{+/\times}\!\!&=&\!\!...+\delta\tilde{T}_{+/\times}\left(1-\sin\omega\delta t/\omega\delta t\right)/\omega^2\\
 \dot\tilde{h}_{+/\times}\!\!&=&\!\!...+\delta\tilde{T}_{+/\times}\left(1-\cos\omega\delta t\right)/\omega^2\delta t
 \end{eqnarray}
 This more accurate solver is invoked by setting \cmd{itorder_GW=2},
@@ -14914,9 +14999,18 @@ branch. \\
 {12}{A high-order public domain code for direct numerical simulations of turbulent combustion}
 (\arXiv{1005.5301})
 
+\bibitem{BJ04}
+Banerjee, R., \& Jedamzik, K.,
+  \emph{Phys. Rev. D} \textbf{70}, 123003 (2004)
+  ``Evolution of cosmic magnetic fields: From the very early Universe, to recombination, to the present''
+
 \bibitem{BB14} Barekat, A., \& Brandenburg, A.,
   \emph{Astron. Astrophys.} \textbf{571}, A68 (2014)
   ``Near-polytropic stellar simulations with a radiative surface''
+
+\bibitem{BB16} Bhat, P., \& Brandenburg, A.,
+  \emph{Astron. Astrophys.} \textbf{587}, A90 (2016)
+  ``Hydraulic effects in a radiative atmosphere with ionization''
 
 \bibitem{Ref-2} Brandenburg, A.,
   \emph{Astrophys. J.} \textbf{550}, 824--840 (2001)
@@ -15027,6 +15121,10 @@ Cambridge University Press (2008)
 \bibitem{Lele92}Lele, S. K.,
   \emph{J. Comp. Phys.} \textbf{103}, 16--42 (1992)
   ``Compact finite difference schemes with spectral-like resolution''
+
+\bibitem{MS98} Martel, H., \& Shapiro, P. R.
+  \emph{Month. Not. Roy. Soc.} \textbf{297}, 467--485 (1998)
+  ``A convenient set of comoving cosmological variables and their application''
 
 \bibitem{MTW} Misner, C. W., Thorne, K. S. \& Wheeler, J. A.
   \emph{Gravitation},
