@@ -141,6 +141,11 @@ ifeq ($(TRANSPILATION),on)
 		cp DSL/solve_two.ac DSL/local/; \
 	fi
 endif
+	#TP: if PC_nghost.h is found to be missing we turn to the default of Astaroth i.e. STENCIL_ORDER = 6
+	@if [ ! -f DSL/local/PC_nghost.h ]; then \
+		touch DSL/local/PC_nghost.h; \
+	fi
+
 	@ext_srcs="`ls -m $$PENCIL_HOME/src/astaroth/DSL/*/*.h \
                           $$PENCIL_HOME/src/astaroth/DSL/*.h \
 		          $$PENCIL_HOME/src/astaroth/submodule/acc-runtime/stdlib/*.h \
