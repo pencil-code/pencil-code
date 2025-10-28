@@ -1182,15 +1182,15 @@ extern "C" void torch_train_c_api(AcReal *loss_val) {
 /***********************************************************************************************/
 void scaling(){
 #if LTRAINING
-		auto calc_scale = acGetOptimizedDSLTaskGraph(calc_scaling);
-		acGridSynchronizeStream(STREAM_ALL);
-		acGridExecuteTaskGraph(calc_scale, 1);
-		acGridSynchronizeStream(STREAM_ALL);
+	auto calc_scale = acGetOptimizedDSLTaskGraph(calc_scaling);
+	acGridSynchronizeStream(STREAM_ALL);
+	acGridExecuteTaskGraph(calc_scale, 1);
+	acGridSynchronizeStream(STREAM_ALL);
 		
   	auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
-		acGridSynchronizeStream(STREAM_ALL);
-		acGridExecuteTaskGraph(bcs,1);
-		acGridSynchronizeStream(STREAM_ALL);
+	acGridSynchronizeStream(STREAM_ALL);
+	acGridExecuteTaskGraph(bcs,1);
+	acGridSynchronizeStream(STREAM_ALL);
 
 	calculated_coeff_scales = true;
 #endif
@@ -1820,10 +1820,10 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_)  /
   nt = nt_;
   comm_pencil = MPI_Comm_f2c(comm_fint);
   setupConfig(mesh.info);
+/**
 #if TRAINING
   #include "user_constants.h"
   //fprintf(stderr,"INDEX OF TAU.xx: %d\n",acGetTAU_Xx());
-/**
 	{
 		#include "user_constants.h"
 		if (itauxx-1 != TAU.xx)
@@ -1857,9 +1857,23 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_)  /
 			exit(EXIT_FAILURE);
 		}
 	}
-	**/
 #endif
-  //TP: done after setupConfig since we need maux_vtxbuf_index
+	**/
+
+  if (rank==0 && ldebug) printf("memusage after pointer assign= %f MBytes\n", acMemUsage()/1024.);
+#if AC_RUNTIME_COMPILATION
+#include "cmake_options.h"
+  generate_bcs();
+  MPI_Barrier(MPI_COMM_WORLD);
+  acCompile(cmake_options,mesh.info);
+  acLoadLibrary(rank == 0 ? stderr : NULL,mesh.info);
+  acCheckDeviceAvailability();
+  acLogFromRootProc(rank, "Done setupConfig && acCompile\n");
+#else
+  acLogFromRootProc(rank, "Done setupConfig\n");
+#endif
+  fflush(stdout);
+  //TP: done after setupConfig and acCompile since we need maux_vtxbuf_index and acGetNumFields
   //TP: this is an ugly way to do this but works for now
   {
     const size_t z_offset  = (dimensionality == 2 && nzgrid == 1) ? NGHOST*mx*my : 0;
@@ -1893,20 +1907,6 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_)  /
     	}
     }
   }
-
-  if (rank==0 && ldebug) printf("memusage after pointer assign= %f MBytes\n", acMemUsage()/1024.);
-#if AC_RUNTIME_COMPILATION
-#include "cmake_options.h"
-  generate_bcs();
-  MPI_Barrier(MPI_COMM_WORLD);
-  acCompile(cmake_options,mesh.info);
-  acLoadLibrary(rank == 0 ? stderr : NULL,mesh.info);
-  acCheckDeviceAvailability();
-  acLogFromRootProc(rank, "Done setupConfig && acCompile\n");
-#else
-  acLogFromRootProc(rank, "Done setupConfig\n");
-#endif
-  fflush(stdout);
   checkConfig(mesh.info);
   if (rank==0 && ldebug) printf("memusage grid_init= %f MBytes\n", acMemUsage()/1024.);
   acGridInit(mesh);
