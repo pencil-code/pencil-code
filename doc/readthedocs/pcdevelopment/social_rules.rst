@@ -1,4 +1,4 @@
-.. social_rules:
+.. _social_rules:
 
 ***********************
 Social rules 

@@ -24,7 +24,7 @@ Explore the sections below to get started, contribute, or run simulations with P
 
 .. toctree::
    :maxdepth: 1
-   :caption: General Information 
+   :caption: Community & Resources 
 
    Useful links <intro/links>
    Discussion groups <intro/discussion>
@@ -32,11 +32,12 @@ Explore the sections below to get started, contribute, or run simulations with P
 
 .. toctree::
    :maxdepth: 1
-   :caption: Modifying the Pencil Code: guidelines and tools
+   :caption: Developing Pencil Code
 
-   Dowload the code <pcdevelopment/download>
+   Download the code <pcdevelopment/download>
    Git guide <pcdevelopment/howtogit>
    General commit guideline <pcdevelopment/tutpencil>
+   <pcdevelopment/gpuimplementation>
    Coding style <pcdevelopment/pccodingstyle>
    pcdevelopment/social_rules  
 
