@@ -1,10 +1,12 @@
 #!/bin/bash
-
+#
+# This script extracts nproc[xyz] from cparam.local and writes them to nprocs.inc.
+#
 npxline=`grep '^[^!]*nprocx *=' cparam.local | sed -e's/!.*$//'`
 npyline=`grep '^[^!]*nprocy *=' cparam.local | sed -e's/!.*$//'`
 npzline=`grep '^[^!]*nprocz *=' cparam.local | sed -e's/!.*$//'`
 #
-# Extract nproc[xyz] defined by numerals and write to nprocs.inc.
+# Extracts nproc[xyz] defined by numerals and writes to nprocs.inc.
 #
 echo $npxline | sed -e's/.*nprocx *= *\([0-9][0-9]*\) *,.*$/nprocx:=\1/;t;d' > nprocs.inc
 echo $npyline | sed -e's/.*nprocy *= *\([0-9][0-9]*\) *,.*$/nprocy:=\1/;t;d' >> nprocs.inc

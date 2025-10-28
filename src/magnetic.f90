@@ -2265,9 +2265,6 @@ module Magnetic
         case ('gaussian-noise-zprof')
           !tmp=amplaa(1)*0.5*(tanh((z-z1)/0.05)-tanh((z-z2)/0.05))
           !15-10-25/axel: replaced input parameters, e.g., z1_aa=-.5, z2_aa=.5, widthaa=.1
-          !tmp=amplaa(1)*.5*(tanh((z(n1:n2)-z1_aa)/widthaa)-tanh((z(n1:n2)-z2_aa)/widthaa))
-          !TP: Line above was commited but it is illegal: was the one below meant? 
-          !    Axel please double check
           tmp=amplaa(1)*.5*(tanh((z(n1:n2)-z1_aa)/widthaa(1))-tanh((z(n1:n2)-z2_aa)/widthaa(1)))
           call gaunoise(tmp,f,iax,iaz)
         case ('gaussian-noise-zprof2')

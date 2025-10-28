@@ -68,8 +68,6 @@ module Magnetic
   ! run parameters
   real :: eta=0.,B2min=0,height_eta=0.,eta_out=0.
   real :: tau_aa_exterior=0.
-  real :: inertial_length=0.,linertial_2
-  logical :: lelectron_inertia=.false.
 
   namelist /magnetic_run_pars/ &
        eta,B_ext,B2min,k_aa, &

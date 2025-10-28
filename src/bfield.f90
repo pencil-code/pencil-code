@@ -167,9 +167,7 @@ module Magnetic
   real, dimension(3) :: b_ext_inv = 0.0
   logical, parameter :: lcalc_aamean = .false.
   logical, parameter :: lcalc_aameanz = .false.
-  logical, parameter :: lelectron_inertia = .false.
   integer, parameter :: idiag_axmz = 0, idiag_aymz = 0
-  real, parameter :: inertial_length = 0.0, linertial_2 = 0.0
 !
   contains
 !***********************************************************************
