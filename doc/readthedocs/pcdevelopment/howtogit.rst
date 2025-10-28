@@ -65,18 +65,27 @@ To cache your password for #### seconds, you can configure:
 
     git config --global credential.helper 'cache --timeout=####'
 
+Pencil Code Credentials
+------------------------
 
+For |PC|, there’s a small twist: the gate looks like GitHub’s, but the key is different.
+Even though the repository lives on |github|, you can’t use the usual GitHub credentials for write access.
+To obtain permission to push changes, follow the steps in :ref:`download-writeaccess`.
 
 Cloning a Repository
 ====================
+
+This section covers how to clone a generic repository — we’ll call it :file:`project`.
+If you want to clone the |PC| repository specifically, see :ref:`download`.
+
 
 If the repository is **public** (for example, a public project on GitHub), you can clone it without any credentials or access configuration:
 
 .. code:: bash
 
-    $ git clone https://github.com/project/project.git
+    $ git clone https://github.com/project/project.git 
 
-This gives you a local copy of the repository, but you **won’t be able to push any changes** unless you have the appropriate access (SSH keys, token, or username/password, depending on the service).
+This gives you your own local copy of the code universe, ready for exploration, but you **won’t be able to push any changes** unless you have the appropriate access (SSH keys, token, or username/password, depending on the service).
 
 
 .. note::
@@ -97,9 +106,6 @@ If using HTTPS instead of SSH:
 .. code:: bash
 
     $ git clone https://github.com/project/project.git
-
-
-The repository folder will appear in your current directory.
 
 
 The repository folder will now appear in your directory.
@@ -354,11 +360,7 @@ and voilà!
 
 .. admonition:: Don't panic!
 
-    If this doesn't work... don't panic... check possible solutions below
-
-
-
-
+    If this doesn't work... don't panic... check possible solutions in `Conflicts`_.
 
 Discarding / Restoring / Canceling Changes
 ==========================================

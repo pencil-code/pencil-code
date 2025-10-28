@@ -55,6 +55,8 @@ Modify locally if you like — but **pushing changes will be politely rejected**
    Think of this as **read-only Jedi training mode**. You may swing the lightsaber, but it won’t cut anything yet.
 
 
+.. _download-writeaccess:
+
 Write Access (a.k.a. “Let Me In, I Want to Contribute!”)
 ========================================================
 
