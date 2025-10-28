@@ -47,17 +47,17 @@ const int prof_nz = 150
 
 #define AC_NGHOST_VAL__mod__cparam NGHOST_VAL
 
-#define AC_mx AC_mlocal.x
-#define AC_my AC_mlocal.y
-#define AC_mz AC_mlocal.z
+#define AC_mx my 
+#define AC_my mx 
+#define AC_mz mz 
 
-#define AC_nx AC_nlocal.x
-#define AC_ny AC_nlocal.y
-#define AC_nz AC_nlocal.z
+#define AC_nx nx 
+#define AC_ny ny
+#define AC_nz nz 
 
-#define AC_nxgrid AC_ngrid.x
-#define AC_nygrid AC_ngrid.y
-#define AC_nzgrid AC_ngrid.z
+#define AC_nxgrid nxgrid 
+#define AC_nygrid nygrid 
+#define AC_nzgrid nzgrid 
 
 #define AC_dsx AC_ds.x
 #define AC_dsy AC_ds.y
