@@ -64,8 +64,7 @@ _sourceme_quiet=1; . $PENCIL_HOME/sourceme.sh; unset _sourceme_quiet
   of the month at 13:00 CET via zoom (641-599-5185).
   You may also want to inspect the activity of [Pencil Code Steering Committee][PCSC].
   Please contact them with your ideas.
-* The [Pencil Code User Meeting][meetings] will be held every year.
-  The 2023 meeting will be organized in Austria by Vartika Pandey and Johannes Tschernitz: [Pencil Code User Meeting 2023](http://pencil-code.nordita.org/UserMeetings/2023/).
+* The [Pencil Code User Meeting](http://pencil-code.nordita.org/meetings.php) will be held every year.
 * See the [Scientific Usage of the Pencil Code][citations] for papers using or discussing the code.
 
 ## List of Contributors
