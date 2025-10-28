@@ -2491,8 +2491,10 @@ samples/2d-tests/cylindrical_gdisk/src/Makefile.local -text
 samples/2d-tests/cylindrical_gdisk/src/cparam.local -text
 samples/2d-tests/cylindrical_gdisk/start.in -text
 samples/2d-tests/dark-matter/NEVERLOCK -text
+samples/2d-tests/dark-matter/README -text
 samples/2d-tests/dark-matter/idl/pvar.pro -text
 samples/2d-tests/dark-matter/print.in -text
+samples/2d-tests/dark-matter/reference.out -text
 samples/2d-tests/dark-matter/run.in -text
 samples/2d-tests/dark-matter/src/Makefile.local -text
 samples/2d-tests/dark-matter/src/cparam.local -text

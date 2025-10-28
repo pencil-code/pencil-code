@@ -4,9 +4,9 @@
 !
 &run_pars
   cvsid='$Id$',
-  nt=500, it1=5, cdt=0.4, cdtv=0.4, isave=50, itorder=3
-  dsnap=0.1, d2davg=0.1, dvid=0.05, ip=20
-  lpencil_check=F
+  nt=40, it1=5, isave=50, itorder=3
+  dsnap=100., d2davg=1., dvid=.5, ip=20
+  lpencil_check=T
 /
 &eos_run_pars
 /
