@@ -218,7 +218,7 @@ module Persist
           call warning('input_persist_general_by_label','no persistent value of deltay found')
       endif
 !
-      if (dt0==0 .or. .not. lcourant_dt) then
+      if (dt0==0) then
         if (read_persist ('TIME_STEP', dtmp)) then
           call warning('input_persist_general_by_label','no persistent value of dt found')
         else
