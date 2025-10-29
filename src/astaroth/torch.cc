@@ -8,10 +8,10 @@
 //TP: ugly but works
 #if AC_DOUBLE_PRECISION
 typedef double AcReal;
-#define TORCH_PRECISION TORCHFORT_DOUBLE;
+#define TORCH_PRECISION TORCHFORT_DOUBLE
 #else
 typedef float  AcReal;
-#define TORCH_PRECISION TORCHFORT_FLOAT;
+#define TORCH_PRECISION TORCHFORT_FLOAT
 #endif
 
 void torch_trainCAPI(int sub_dims[3], AcReal* input, AcReal* label, AcReal* loss_val){
@@ -34,7 +34,7 @@ void torch_trainCAPI(int sub_dims[3], AcReal* input, AcReal* label, AcReal* loss
  	}
 }
 
-void torch_inferCAPI(int sub_dims[3], AcReal* input, AcReal* label, bool dble=false){
+void torch_inferCAPI(int sub_dims[3], AcReal* input, AcReal* label){
 
 	torchfort_result_t result = torchfort_set_manual_seed(943442);
 

@@ -970,7 +970,7 @@ extern "C" void torch_infer_c_api(int itstub){
 
 	start = MPI_Wtime();
 
-	torch_inferCAPI((int[]){mx,my,mz}, uumean_ptr, tau_infer_ptr, AC_DOUBLE_PRECISION);
+	torch_inferCAPI((int[]){mx,my,mz}, uumean_ptr, tau_infer_ptr);
 
 	end = MPI_Wtime();
 
@@ -1069,7 +1069,7 @@ extern "C" void torch_train_c_api(AcReal *loss_val) {
   
   start = MPI_Wtime();
   
-  torch_trainCAPI((int[]){mx,my,mz}, uumean_ptr, TAU_ptr, loss_val, AC_DOUBLE_PRECISION);
+  torch_trainCAPI((int[]){mx,my,mz}, uumean_ptr, TAU_ptr, loss_val);
   /*
   for (int batch = 0; batch<5; batch++){
   	torch_train_CAPI((int[]){mx,my,mz}, uumean_ptr, TAU_ptr, loss_val, AC_DOUBLE_PRECISION);
