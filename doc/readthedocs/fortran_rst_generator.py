@@ -175,7 +175,7 @@ def create_fortran_modules_rst(path_to_src: str) -> list[str]:
 
 def process_diag(marker: str, in_file: str):
     files = [it.replace("../../src/", "") for it in glob.glob("../../src/**/*.f90", recursive=True)]
-    files = sorted(files, key=lambda x: (x.count("/"), x))
+    files = sorted(files, key=lambda x: (x.count("/") > 0, x.lower()))
     vars = {}
     total_vars = 0
     empty_vars = 0
@@ -277,7 +277,7 @@ def process_boundary_conditions():
         text=True
     ).splitlines()
     files = [it.replace("../../src/", "") for it in files]
-    files = sorted(files, key=lambda x: (x.count("/"), x))
+    files = sorted(files, key=lambda x: (x.count("/") > 0, x.lower()))
     vars = {}
     current_var = None
     current_comment = ""
@@ -367,6 +367,280 @@ def process_boundary_conditions():
                     table.append((f"*{k}*", vv))
                 d.table_list(["Variable", "Meaning"], data=table, widths=[25, 75])
 
+def strip_fortran_comment(line: str) -> str:
+    """
+    Remove Fortran comments while preserving literal '!' inside quotes.
+    Supports single and double-quoted strings.
+    """
+    result = []
+    in_single = False
+    in_double = False
+
+    for i, ch in enumerate(line):
+        if ch == "'" and not in_double:
+            in_single = not in_single
+        elif ch == '"' and not in_single:
+            in_double = not in_double
+        elif ch == "!" and not in_single and not in_double:
+            # True comment start → stop reading further
+            break
+        result.append(ch)
+
+    return "".join(result)
+
+def preprocess_fortran(lines):
+    cleaned = []
+    buffer = ""
+
+    for line in lines:
+        # Remove comments
+        line = strip_fortran_comment(line)
+
+        # Trim whitespace around continuation
+        stripped = line.rstrip()
+
+        # If this line continues the previous with a leading &
+        if stripped.lstrip().startswith('&'):
+            # Remove leading &, join to existing buffer
+            continuation = stripped.lstrip()[1:].strip()
+            buffer += continuation
+            continue
+
+        # If this line ends with &
+        if stripped.endswith('&'):
+            buffer += stripped[:-1].rstrip()
+            continue
+
+        # If previous line was a continuation
+        if buffer:
+            buffer += " " + stripped.lstrip()
+            cleaned.append(buffer)
+            buffer = ""
+        else:
+            if stripped.strip():
+                cleaned.append(stripped.strip())
+
+    # Append leftover if exists
+    if buffer:
+        cleaned.append(buffer)
+
+    return cleaned
+
+# identifier: starts with letter, followed by letters/digits/underscore
+IDENT_RE = r'[A-Za-z][A-Za-z0-9_]*'   # Fortran identifier (starts with letter)
+
+def extract_var_info(clean_lines, query_vars, filename, debug = True):
+    """
+    Scan cleaned Fortran declaration lines and return info for each variable in query_vars.
+
+    Returns a dict keyed by the original query name (preserving case), e.g.
+      { "FI_mixfrac_pdf2d": {"type": "...", "value": "...", "decl": "...", "parsed_name": "fi_mixfrac_pdf2d"} }
+
+    Behavior:
+    - Matching is case-insensitive.
+    - Tokens must start with a letter and can include letters, digits, underscore.
+    - Splits commas not inside parentheses.
+    """
+    # map lowercase -> original query name(s) (in case user asked same name twice with different case)
+    lc_to_query = {}
+    for q in query_vars:
+        lc = q.lower()
+        lc_to_query.setdefault(lc, []).append(q)
+
+    results = {}
+    need = set(lc_to_query.keys())  # lowercase names we still need
+
+    # patterns
+    decl_re = re.compile(r'^\s*(?P<type>[^:]+?)\s*::\s*(?P<vars>.+)$', flags=re.IGNORECASE)
+    tok_re  = re.compile(rf'^\s*(?P<name>{IDENT_RE})\s*(?P<vdims>\([^)]*\))?\s*(?:=\s*(?P<val>.+))?\s*$', flags=re.IGNORECASE)
+    split_commas_not_in_parens = re.compile(r',(?![^()]*\))')
+
+    for line in clean_lines:
+        if not need:
+            break  # all found
+
+        mdecl = decl_re.match(line)
+        if not mdecl:
+            continue
+
+        type_part = mdecl.group('type').strip()
+        varlist = mdecl.group('vars').strip()
+        # safe split
+        tokens = [t.strip() for t in split_commas_not_in_parens.split(varlist) if t.strip()]
+
+        for tok in tokens:
+            mt = tok_re.match(tok)
+            if not mt:
+                # token didn't parse; skip
+                if debug:
+                    print("  FAILED TOKEN PARSE:", repr(tok))
+                continue
+
+            parsed_name = mt.group('name')
+            lc_name = parsed_name.lower()
+            vdims = mt.group('vdims') or ""
+            val = mt.group('val').strip() if mt.group('val') is not None else None
+
+            if lc_name in need:
+                # for each original query spelling for this name, store result keyed by that original
+                for orig_query in lc_to_query[lc_name]:
+                    results[orig_query] = {
+                        "type": (type_part + vdims).strip(),
+                        "value": val.strip().replace(".", "\\.") if val is not None else "",
+                        "comment": "",
+                        #"decl": line,
+                        #"parsed_name": parsed_name
+                    }
+                # mark as satisfied
+                need.discard(lc_name)
+
+    # Optionally warn about queries not found
+    if debug and need:
+        for missing_lc in need:
+            #print("NOT FOUND:", missing_lc, "requested as", lc_to_query.get(missing_lc), " in file ", filename)
+            for orig_query in lc_to_query[missing_lc]:
+                results[orig_query] = {
+                    "type": "",
+                    "value": "",
+                    "comment": "(not found)"
+                }
+    return results
+
+def get_init_and_run_pars(filename):
+    """
+    Extract the init and run parameters from the corresponding namelists
+    in the given file.
+    """
+    with open(f"../../src/{filename}", "r") as f:
+        lines = [it.strip() for it in f.readlines()]
+    initparsname = ""
+    runparsname = ""
+    initpars = []
+    runpars = []
+    ininit = False
+    inrun = False
+    def _clean_line(line):
+        if "!" in line:
+            # If the line accidentally contains a comment (it happens!), remove it
+            line = line[:line.index("!")].rstrip()
+        # Remove the continuation character
+        return line.strip("&")
+    # Loop through all the lines in the file
+    for line in lines:
+        # If it's the start of a block, start appending lines
+        # and mark that we are inside that block
+        if matches := re.findall(r"namelist /(.*?_?init_pars)/", line):
+            initparsname = matches[0]
+            initpars.append(_clean_line(line))
+            ininit = True
+        elif matches := re.findall(r"namelist /(.*?_?run_pars)/", line):
+            runparsname = matches[0]
+            runpars.append(_clean_line(line))
+            inrun = True
+        # If we are inside a block, keep appending lines
+        elif ininit:
+            initpars.append(_clean_line(line))
+            # but as soon as we no longer encounter the continuation character, the block has ended
+            if not line.endswith("&"):
+                ininit = False
+        # same for run_pars
+        elif inrun:
+            runpars.append(_clean_line(line))
+            if not line.endswith("&"):
+                inrun = False
+        # If we are in neither block, but both lists have elements, it means we have passed both blocks.
+        # No need to continue going through the lines.
+        elif initpars and runpars:
+            break
+    # Now put all lines together, and clean them up
+    initstr = ''.join(initpars).replace(f"namelist /{initparsname}/", "")
+    runstr = ''.join(runpars).replace(f"namelist /{runparsname}/", "")
+    # Split the lines by comma, strip all blank spaces, and form the final list of parameters
+    init_pars = dict.fromkeys(sorted(list(filter(None, map(str.strip, initstr.split(",")))), key=str.lower))
+    run_pars = dict.fromkeys(sorted(list(filter(None, map(str.strip, runstr.split(",")))), key=str.lower))
+    # Extract type and default value
+    if filename == "param_io.f90":
+        with open("../../src/cdata.f90", "r") as f:
+            lines.extend([it.strip() for it in f.readlines()])
+    clean_lines = preprocess_fortran(lines)
+    init_info = extract_var_info(clean_lines, init_pars.keys(), filename)
+    for k, v in init_info.items():
+        assert k in init_pars
+        init_pars[k] = v
+    run_info = extract_var_info(clean_lines, run_pars.keys(), filename)
+    for k, v in run_info.items():
+        assert k in run_pars
+        run_pars[k] = v
+
+    return initparsname, init_pars, runparsname, run_pars
+
+def process_init_run_pars():
+    """
+    Extract the init and run parameters from the corresponding namelists
+    from all the files.
+    """
+    files = subprocess.check_output(
+        f'grep -rl -e "namelist /.*init_pars/" -e "namelist /.*run_pars/" ../../src/',
+        shell=True,
+        text=True
+    ).splitlines()
+    files = [it for it in files if it.endswith(".f90") and not it.endswith("/cdata.f90") and not it.endswith("/param_io.f90")]
+    files = sorted([it.replace("../../src/", "") for it in files], key=lambda x: (x.count("/") > 0, x.lower()))
+    files.insert(0, "param_io.f90")
+    init_pars = {}
+    run_pars = {}
+    for f in files:
+        print(f)
+        iname, ipars, rname, rpars = get_init_and_run_pars(f)
+        if iname and ipars:
+            init_pars[f] = (iname, ipars)
+        if rname and rpars:
+            run_pars[f] = (rname, rpars)
+
+    with open(f"code/tables/init.rst", "w") as f:
+        d = RstCloth(f, line_width=5000)
+        d.title(f"Startup parameters for ``start.in``")
+        d.content(f"This page lists {sum(len(val[1]) for val in init_pars.values())} variables distributed into {len(init_pars)} files.")
+        d.newline()
+        d.directive("raw", "html", content="<div>Filter: <input type='text' id='customvarsearch' /></div><br/>")
+        d.newline()
+        for f, vars in init_pars.items():
+            if f == "param_io.f90":
+                d.h3("Module *cdata.f90* / *param_io.f90*")
+            else:
+                d.h3(f"Module *{f}*")
+            d.content(f"The following variables are part of the *{vars[0]}* namelist:")
+            d.newline()
+            table = []
+            for k, v in vars[1].items():
+                if v:
+                    table.append((f"*{k}*", v['type'], v['value'], v['comment']))
+                else:
+                    table.append((f"*{k}*", "", "", ""))
+            d.table_list(["Variable", "Type", "Default", "Meaning"], data=table, widths=[20, 10, 10, 60])
+
+    with open(f"code/tables/run.rst", "w") as f:
+        d = RstCloth(f, line_width=5000)
+        d.title(f"Runtime parameters for ``run.in``")
+        d.content(f"This page lists {sum(len(val[1]) for val in run_pars.values())} variables distributed into {len(run_pars)} namelists.")
+        d.newline()
+        d.directive("raw", "html", content="<div>Filter: <input type='text' id='customvarsearch' /></div><br/>")
+        d.newline()
+        for f, vars in run_pars.items():
+            if f == "param_io.f90":
+                d.h3("Module *cdata.f90* / *param_io.f90*")
+            else:
+                d.h3(f"Module *{f}*")
+            d.content(f"The following variables are part of the *{vars[0]}* namelist:")
+            d.newline()
+            table = []
+            for k, v in vars[1].items():
+                if v:
+                    table.append((f"*{k}*", v['type'], v['value'], v['comment']))
+                else:
+                    table.append((f"*{k}*", "", "", ""))
+            d.table_list(["Variable", "Type", "Default", "Meaning"], data=table, widths=[20, 10, 10, 60])
+
 def process_all_pcparam():
     diag_list = [
         ("DIAG_DOC", "print.in"),
@@ -381,9 +655,11 @@ def process_all_pcparam():
     with open(f"code/tables/index.rst", "w") as f:
         d = RstCloth(f, line_width=5000)
         d.title(f"Startup and run-time parameters")
+        process_init_run_pars()
         for pars in diag_list:
             process_diag(*pars)
         process_boundary_conditions()
-        toclist = [pars[1] for pars in diag_list]
+        toclist = ["init", "run"]
+        toclist.extend([pars[1] for pars in diag_list])
         toclist.append("boundary")
         d.directive("toctree", fields=[("maxdepth", "1")], content=toclist)
