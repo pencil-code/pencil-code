@@ -279,7 +279,7 @@ my @gpu_tests = qw(
                          mdwarf
                          polymer/forced_3dturbulence
 			 #kin-dynamo 
-			 #2d-tests/shallow-water
+			 2d-tests/shallow-water
 			 #1d-tests/alphadisk
 			 #1d-tests/hyperdiffusion
 			 #2d-tests/chiral_dynamo
