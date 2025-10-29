@@ -90,7 +90,6 @@ _sourceme_quiet=1; . $PENCIL_HOME/sourceme.sh; unset _sourceme_quiet
   Please familiarize yourself with its details.
 
 ## License
-test
 
 * The Pencil Code is under the [GNU public license agreement][license].
 
