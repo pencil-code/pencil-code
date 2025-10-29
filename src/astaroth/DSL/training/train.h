@@ -1,6 +1,5 @@
 //#if LTRAINING
 
-communicated Field3 UUMEANBatch[6]
 
 communicated Field3 UUMEANinf
 
@@ -9,7 +8,12 @@ communicated Field3 UUMEANinf
 // use TAUinf default for inference calls
 communicated FieldSymmetricTensor tau
 communicated Field3 uumean
+
+//Not used at the moment since batching is done via gradient accumulation
+/**
+communicated Field3 UUMEANBatch[6]
 communicated FieldSymmetricTensor TAUBatch[6]
+**/
 
 
 communicated FieldSymmetricTensor TAUinf

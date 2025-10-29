@@ -11,6 +11,12 @@
 #include "../sld"
 #include "../entropy/after_boundary.h"
 
+//TP: the training code needs to be improved that it can be included always (requires conditionals when to do the calculations)
+#if LTRAINING
+#include "../training/train.h"
+#endif
+
+
 input real AC_dt
 input PC_SUB_STEP_NUMBER AC_step_num
 input bool AC_lrmv
