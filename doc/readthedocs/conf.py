@@ -31,7 +31,10 @@ sys.path.insert(0, os.path.abspath("./_ext"))
 #autopaths = ["../../python"]
 autoapi_dirs = ["../../python"]
 autoapi_root = "code/sourcePython"
-autoapi_ignore = ["*pencil_old*"]
+autoapi_ignore = [
+    "*pencil_old",
+    "*/tests",
+    ]
 
 #for item in autopaths:
 #    sys.path.insert(0, os.path.abspath(f"{item}"))
