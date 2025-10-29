@@ -559,7 +559,7 @@ How to merge your branch with the |PC| master
 
 
 Merging in the |PC| universe isn’t your regular “two lines diverged in a repo” situation.  
-Because |PC| exists in a peculiar hybrid space-time where both ``svn`` and ``git`` coexist (through the miracle—or curse—of SubGit), every interaction with the repository must go through the central server at `https://pencil-code.org`_.  
+Because |PC| exists in a peculiar hybrid space-time where both ``svn`` and ``git`` coexist (through the miracle—or curse—of SubGit), every interaction with the repository must go through the central server at `<https://pencil-code.org>`_.  
 
 This means that a normal merge won’t work. You need to follow the proper temporal protocols.
 
