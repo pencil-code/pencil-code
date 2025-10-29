@@ -81,18 +81,33 @@ $PENCIL_HOME/bin/pc_mkdatadir
 [ -e data/new_from.dir ] || touch data/new_from.dir
 (echo $olddir; /bin/date) >> data/new_from.dir
 #
-#  make src dir and go there
-#
+#  make src dir and copy .local files to the same dir as original
+# 
   mkdir src
-  cd src
 #
-#  use *.local files from previous src directory
-#  and run pc_setupsrc
-#
-  echo "old source directory: " $olddir/src
-  cp $olddir/src/*.local .
-  echo "Use *.local files from:" `pwd`; ls -l *.local
-  cd ..
+  for f in Makefile.local cparam.local; do
+      in_run=0
+      in_src=0
+
+      if [ -f "$olddir/$f" ] && [ ! -h "$olddir/$f" ]; then in_run=1; fi
+      if [ -f "$olddir/src/$f" ] && [ ! -h "$olddir/src/$f" ]; then in_src=1; fi
+
+      if [ $in_run -eq 1 ] && [ $in_src -eq 1 ]; then
+          echo "Error: $f exists in both run directory and src as regular files! Please remove one." >&2; exit 1
+      elif [ $in_run -eq 0 ] && [ $in_src -eq 0 ]; then
+          echo "Error: $f does not exist in either run directory or src. Please add those files." >&2; exit 1
+      elif [ $in_run -eq 1 ] && [ $in_src -eq 0 ]; then
+          echo "old run directory: " $olddir
+          cp $olddir/*.local .
+          echo "Use *.local files from:" `pwd`; ls -l $f
+      elif [ $in_run -eq 0 ] && [ $in_src -eq 1 ]; then
+          echo "old source directory: " $olddir/src
+          cd src
+          cp $olddir/src/*.local .
+          echo "Use *.local files from:" `pwd`; ls -l $f
+          cd ..
+      fi
+  done
 #
   if [ -d $olddir/initial_condition ]; then
      echo "copying existing initial condition directory"
@@ -107,7 +122,7 @@ $PENCIL_HOME/bin/pc_mkdatadir
 #
   [ -f $parentdir/bin/pc_setupsrc.local ] && $parentdir/bin/pc_setupsrc.local
 #
-#  continue with the usual setup procedure
+#  continue with the usual setup procedure: run pc_setupsrc
 #
   if [ $same_source ]; then
     $PENCIL_HOME/bin/pc_setupsrc --min

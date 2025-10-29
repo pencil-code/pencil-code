@@ -621,6 +621,23 @@ link_root_makefile
 make_src_dir
 if [ "$link_all" -eq 1 ]; then link_src_files; fi
 #
+# Adapting to new structure with cparam.local and Makefile.local in run dir OR src 
+for f in Makefile.local cparam.local; do
+    in_run=0
+    in_src=0
+    if [ -f "$f" ] && [ ! -h "$f" ]; then in_run=1; fi
+    if [ -f "src/$f" ] && [ ! -h "src/$f" ]; then in_src=1; fi
+    if [ $in_run -eq 1 ] && [ $in_src -eq 1 ]; then
+        echo "Error: $f exists in both run directory and src as regular files" >&2; exit 1
+    elif [ $in_run -eq 0 ] && [ $in_src -eq 0 ]; then
+        echo "Error: $f does not exist in either run directory or src/" >&2; exit 1
+    elif [ $in_run -eq 1 ] && [ $in_src -eq 0 ]; then
+        if [ -h "src/$f" ]; then rm -f "src/$f"; fi
+        ln -s "../$f" "src/$f"
+        # echo "Linked local file: $f"
+    fi
+done
+#
 make_pre_and_post_processing_dir
 if [ "$link_all" -eq 1 ]; then link_pre_and_post_processing_files; fi
 #

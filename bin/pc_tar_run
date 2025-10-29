@@ -10,7 +10,7 @@
 # Create the list of files that will go into the tar file.
 FILE_LIST=""
 FILE_LIST="$FILE_LIST $(find . -name '*.in')"
-FILE_LIST="$FILE_LIST $(find . -name '*.local')"
+FILE_LIST="$FILE_LIST $(find . -type f -name '*.local' ! -lname '*')"   # Avoid symlinks
 FILE_LIST="$FILE_LIST $(find . -name '*.pro')"
 FILE_LIST="$FILE_LIST $(find . -name '*.py')"
 FILE_LIST="$FILE_LIST $(find . -name '*.nml')"
