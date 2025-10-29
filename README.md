@@ -53,17 +53,14 @@ _sourceme_quiet=1; . $PENCIL_HOME/sourceme.sh; unset _sourceme_quiet
 
 ## Documentation
 
-* A new documentation webpage has been created with the goal of gather all the documentation together and create auto-documentation for the code:
-[Pencil Code documentation](https://pencil-code.readthedocs.io/en/latest/index.html).
-* The [manual][manual] is the main source of information.
+* All documentation is linked from our [documentation overview](https://pencil-code.org/doc.php).
+* The [manual][manual] is the main source of information around the code.
 * There is also a [quick start][quick_start] to help getting started.
+* An auto-generated code documentation is available at [ReadTheDocs](https://pencil-code.readthedocs.io/en/latest/index.html).
 * Information about [Python with the Pencil Code][PythonForPencil] and the
   [Python Coding Style][PythonCodingStyle] can be found on the [wiki][wiki].
 * Updates to the community are provided through the [newsletter][newsletter].
-* Talk to use during the Pencil Code Office Hours every second Friday
-  of the month at 13:00 CET via zoom (641-599-5185).
-  You may also want to inspect the activity of [Pencil Code Steering Committee][PCSC].
-  Please contact them with your ideas.
+* The [Pencil Code Office Hours](https://pencil-code.org/contact.php) is a regular online meeting.
 * The [Pencil Code User Meeting](http://pencil-code.nordita.org/meetings.php) will be held every year.
 * See the [Scientific Usage of the Pencil Code][citations] for papers using or discussing the code.
 
