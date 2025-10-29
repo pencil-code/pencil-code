@@ -50,35 +50,36 @@ Checking the status of the svn repository:
 
     $ svn status
 
-It will show:
+It will show a lot of files that are not under svn. To avoid this, just say
 
 .. code:: bash
 
     $ svn status | grep -vE "^\?"
 
-or simply
+* To update the code, say
 
 .. code:: bash
 
-    $ pc_svn status | grep -vE "^\?"
+    $ svn up
 
-* The branch you are working on
+You can either be directly under the pencil-code directory or under its src directory, for example.
 
-* Untracked files (in red if any): files not tracked by Git
-
-* Changes not staged for commit (in red if any): files modified but not added to the commit list
-
-* Changes to be committed (in green if any): files staged but not yet committed
-
-
-If you have a bunch of untracked files that you don’t want cluttering your status output,  
-you can ignore them by using:
-
+* If you have your own changes, those file will appear with an M in front.
+You can check them, or some of them, in like so
 
 .. code:: bash
 
-    git status -uno
+    $ svn ci src/magnetic.f90
 
+If you are already in the src directory, you should omit src.
+
+* To check the history of the file, say
+
+.. code:: bash
+
+    $ svn log src/magnetic.f90
+
+It might be good to pipe the result into :command:`more` or into a file.
 
 Checking Differences
 --------------------
@@ -87,13 +88,14 @@ Checking for differences with local repository:
 
 .. code:: bash
 
-    $ git diff
+    $ svn diff -r41894 magnetic.f90
 
-Check staged differences:
+You will then see all changes since revision r41894.
+If you want to see the difference between two subsequent changes, say
 
 .. code:: bash
 
-    $ git diff --staged
+    $ svn diff -r41618:41638 magnetic.f90
 
 .. note::
 
