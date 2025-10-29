@@ -148,7 +148,7 @@ module Special
       lrho_chi, scale_rho_chi_Heqn, amplee_BD_prefactor, deriv_prefactor_ee, &
       echarge_type, init_rho_chi, rho_chi_init, eta_phi, lphi_doublet, &
       lphi_weakcharge, lphi_hypercharge, lhiggs_friction, higgs_friction, &
-      lwaterfall, lambda_psi, coupl_phipsi, c_psi, amplpsi, ampldpsi
+      lwaterfall, lambda_psi, coupl_phipsi, c_psi, amplpsi, ampldpsi, psimass
 !
   namelist /special_run_pars/ &
       initspecial, phi0, dphi0, phimass, eps, ascale_ini, &
