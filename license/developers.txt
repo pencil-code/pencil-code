@@ -24,6 +24,7 @@ Piyali Chatterjee,    mppiyali/gmail.com,            mppiyali,             +91 8
 Fabio Del Sordo,      fabio/nordita.org,             fadiesis,             +46 8 5537 8277,   +46 700629700,            Institute of Space Science, Barcelona
 Boris Dintrans,       boris.dintrans/gmail.com,	     boris.dintrans,       +33 4 67141400,    ,                         CNRS/CINES
 Wolfgang Dobler,      wdobler/gmail.com,             wdobler,              +49 33201 43791,   +49 151 28123472,
+Kishore G.,           kishore96.work/gmail.com,      Kishore96in,          ,                  ,                         IIT Madras
 Thomas Gastine,       gastine/mps.mpg.de,            ,                     +49 5556 979 456,  ,                         Max-Planck-Institut für Sonnensystemforschung Göttingen
 Fred A. Gent,         frederick.gent/aalto.fi,       fred.gent.ncl,        +358 50 344 9122,  +44 7779 364 893 (mob),   Aalto University+Nordita
 Gustavo Guerrero,     tavo.buk/gmail.com,            ,                     +46 8 5537 8718,   +46 76 089 1432,          Universidade Federal de Minas Gerais
