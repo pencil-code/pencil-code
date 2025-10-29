@@ -2660,6 +2660,11 @@ module Density
               if (ladvection_density) density_rhs = density_rhs - cs20_corr*p%ugrho
               density_rhs=cs201*density_rhs
             endif
+            if (lrelativistic_eos .and. .not.lconservative) then
+              call fatal_error('lrelativistic_eos only implemented with lnrho evolution', &
+                               'dlnrho_dt in density.f90')
+              ! alberto: to be implemented
+            endif
 !
 !  Evolution of lnrho: set here density_rhs
 !
