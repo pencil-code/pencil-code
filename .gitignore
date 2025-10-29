@@ -473,6 +473,8 @@ src/astaroth/PC_*
 # Readthedocs
 doc/readthedocs/_build
 doc/readthedocs/code
+doc/readthedocs/pencil-docker/.env
+#
 !utils/cronjobs/.DS_Store
 !utils/cronjobs/*.directory
 !utils/cronjobs/*.pyc

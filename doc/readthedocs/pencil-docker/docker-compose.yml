@@ -19,7 +19,5 @@ services:
       - TERM=xterm-256color
     volumes:
       - ../../../../pencil-code:/app/pencil-code
-      - /etc/passwd:/etc/passwd:ro
-      - /etc/group:/etc/group:ro
     stdin_open: true # docker run -i
     tty: true        # docker run -t
