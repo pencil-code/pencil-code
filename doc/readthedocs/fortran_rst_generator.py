@@ -367,12 +367,11 @@ def process_boundary_conditions():
                     table.append((f"*{k}*", vv))
                 d.table_list(["Variable", "Meaning"], data=table, widths=[25, 75])
 
-def strip_fortran_comment(line: str) -> str:
+def separate_fortran_comment(line: str) -> str:
     """
     Remove Fortran comments while preserving literal '!' inside quotes.
     Supports single and double-quoted strings.
     """
-    result = []
     in_single = False
     in_double = False
 
@@ -383,46 +382,55 @@ def strip_fortran_comment(line: str) -> str:
             in_double = not in_double
         elif ch == "!" and not in_single and not in_double:
             # True comment start → stop reading further
-            break
-        result.append(ch)
+            return line[:i].rstrip(), line[i+1:].lstrip()
 
-    return "".join(result)
+    return line.rstrip(), ""
 
 def preprocess_fortran(lines):
     cleaned = []
+    original = []
+    comments = []
     buffer = ""
 
     for line in lines:
         # Remove comments
-        line = strip_fortran_comment(line)
+        line, comment = separate_fortran_comment(line)
 
         # Trim whitespace around continuation
-        stripped = line.rstrip()
+        lstripped = line.lstrip()
 
         # If this line continues the previous with a leading &
-        if stripped.lstrip().startswith('&'):
+        if lstripped.startswith('&'):
             # Remove leading &, join to existing buffer
-            continuation = stripped.lstrip()[1:].strip()
+            continuation = lstripped[1:].strip()
             buffer += continuation
+            original.append(line)
+            comments.append(line)
             continue
 
         # If this line ends with &
-        if stripped.endswith('&'):
-            buffer += stripped[:-1].rstrip()
+        if line.endswith('&'):
+            buffer += line[:-1].rstrip()
+            original.append(line)
+            comments.append(comment)
             continue
 
         # If previous line was a continuation
         if buffer:
-            buffer += " " + stripped.lstrip()
-            cleaned.append(buffer)
+            buffer += " " + lstripped
+            original.append(line)
+            comments.append(comment)
+            cleaned.append((buffer, original, comments))
             buffer = ""
+            original = []
+            comments = []
         else:
-            if stripped.strip():
-                cleaned.append(stripped.strip())
+            if lstripped:
+                cleaned.append((lstripped, [line], [comment]))
 
     # Append leftover if exists
     if buffer:
-        cleaned.append(buffer)
+        cleaned.append((buffer, original, comments))
 
     return cleaned
 
@@ -455,7 +463,7 @@ def extract_var_info(clean_lines, query_vars, filename, debug = True):
     tok_re  = re.compile(rf'^\s*(?P<name>{IDENT_RE})\s*(?P<vdims>\([^)]*\))?\s*(?:=\s*(?P<val>.+))?\s*$', flags=re.IGNORECASE)
     split_commas_not_in_parens = re.compile(r',(?![^()]*\))')
 
-    for line in clean_lines:
+    for line, original, comments in clean_lines:
         if not need:
             break  # all found
 
@@ -482,12 +490,18 @@ def extract_var_info(clean_lines, query_vars, filename, debug = True):
             val = mt.group('val').strip() if mt.group('val') is not None else None
 
             if lc_name in need:
+                comment = ""
+                # extract comment, if available
+                for i, origline in enumerate(original):
+                    if re.findall(rf"\b{lc_name}\b", origline, flags=re.IGNORECASE):
+                        comment = comments[i]
+                        break
                 # for each original query spelling for this name, store result keyed by that original
                 for orig_query in lc_to_query[lc_name]:
                     results[orig_query] = {
                         "type": (type_part + vdims).strip(),
                         "value": val.strip().replace(".", "\\.") if val is not None else "",
-                        "comment": "",
+                        "comment": comment,
                         #"decl": line,
                         #"parsed_name": parsed_name
                     }
@@ -597,10 +611,35 @@ def process_init_run_pars():
         if rname and rpars:
             run_pars[f] = (rname, rpars)
 
+    stats_commented = 0
+    stats_uncommented = 0
+    stats_not_found = 0
+    total = 0
+    for vars in init_pars.values():
+        for v in vars[1].values():
+            if not v['comment']:
+                stats_uncommented += 1
+            elif v['comment'] == '(not found)':
+                stats_not_found += 1
+            else:
+                stats_commented += 1
+            total += 1
+    frac_commented = round(stats_commented * 100 / total, 1)
+    if frac_commented == 0 and stats_commented > 0:
+        frac_commented = 0.1
+    frac_not_found = round(stats_not_found * 100 / total)
+    if frac_not_found == 0 and stats_not_found > 0:
+        frac_not_found = 0.1
+    frac_uncommented = 100 - frac_commented - frac_not_found
+
     with open(f"code/tables/init.rst", "w") as f:
         d = RstCloth(f, line_width=5000)
         d.title(f"Startup parameters for ``start.in``")
-        d.content(f"This page lists {sum(len(val[1]) for val in init_pars.values())} variables distributed into {len(init_pars)} files.")
+        d.content(f"This page lists {total} variables distributed into {len(init_pars)} files. Of these:")
+        d.newline()
+        d.li(f"{stats_commented} ({frac_commented:.1f}%) are documented;")
+        d.li(f"{stats_uncommented} ({frac_uncommented:.1f}%) are undocumented;")
+        d.li(f"{stats_not_found} ({frac_not_found:.1f}%) could not be found (they appear in the namelist, but the declaration could not be found).")
         d.newline()
         d.directive("raw", "html", content="<div>Filter: <input type='text' id='customvarsearch' /></div><br/>")
         d.newline()
@@ -619,10 +658,35 @@ def process_init_run_pars():
                     table.append((f"*{k}*", "", "", ""))
             d.table_list(["Variable", "Type", "Default", "Meaning"], data=table, widths=[20, 10, 10, 60])
 
+    stats_commented = 0
+    stats_uncommented = 0
+    stats_not_found = 0
+    total = 0
+    for vars in run_pars.values():
+        for v in vars[1].values():
+            if not v['comment']:
+                stats_uncommented += 1
+            elif v['comment'] == '(not found)':
+                stats_not_found += 1
+            else:
+                stats_commented += 1
+            total += 1
+    frac_commented = round(stats_commented * 100 / total, 1)
+    if frac_commented == 0 and stats_commented > 0:
+        frac_commented = 0.1
+    frac_not_found = round(stats_not_found * 100 / total)
+    if frac_not_found == 0 and stats_not_found > 0:
+        frac_not_found = 0.1
+    frac_uncommented = 100 - frac_commented - frac_not_found
+
     with open(f"code/tables/run.rst", "w") as f:
         d = RstCloth(f, line_width=5000)
         d.title(f"Runtime parameters for ``run.in``")
-        d.content(f"This page lists {sum(len(val[1]) for val in run_pars.values())} variables distributed into {len(run_pars)} namelists.")
+        d.content(f"This page lists {total} variables distributed into {len(run_pars)} files. Of these:")
+        d.newline()
+        d.li(f"{stats_commented} ({frac_commented:.1f}%) are documented;")
+        d.li(f"{stats_uncommented} ({frac_uncommented:.1f}%) are undocumented;")
+        d.li(f"{stats_not_found} ({frac_not_found:.1f}%) could not be found (they appear in the namelist, but the declaration could not be found).")
         d.newline()
         d.directive("raw", "html", content="<div>Filter: <input type='text' id='customvarsearch' /></div><br/>")
         d.newline()
