@@ -20,6 +20,7 @@ sys.path.append(os.getcwd())
 from fortran_rst_generator import create_fortran_modules_rst, process_all_pcparam, process_bin_files, process_papers
 
 # Import all git history
+#TODO: Kishore: this unexpectedly changes the state of the user's repository if they are trying to build locally. If shallow clones are causing problems in your CI, is it not better to configure your CI to always do a full clone?
 os.system("git pull --unshallow")
 print("Git history updated")
 
