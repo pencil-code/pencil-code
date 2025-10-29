@@ -36,6 +36,7 @@ Explore the sections below to get started, contribute, or run simulations with P
 
    Download the code <pcdevelopment/download>
    Git guide <pcdevelopment/howtogit>
+   svn guide <pcdevelopment/howtosvn>
    General commit guideline <pcdevelopment/tutpencil>
    <pcdevelopment/gpuimplementation>
    Coding style <pcdevelopment/pccodingstyle>
