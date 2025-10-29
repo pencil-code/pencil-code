@@ -145,8 +145,8 @@ static MPI_Comm comm_pencil = MPI_COMM_NULL;
 static AcMesh mesh = acInitMesh();
 //static AcMesh test_mesh;
 
-void torch_trainCAPI(int sub_dims[3], float* input, float* label, float* loss_val, bool dble=false);
-void torch_inferCAPI(int sub_dims[3], float* input, float* label, bool dble=false);
+void torch_trainCAPI(int sub_dims[3], AcReal* input, AcReal* label, AcReal* loss_val);
+void torch_inferCAPI(int sub_dims[3], AcReal* input, AcReal* label);
 void scaling();
 void print_debug();
 //void torch_createmodel(const char* name, const char* config_fname, MPI_Comm mpi_comm, int device);
