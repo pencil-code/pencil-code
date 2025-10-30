@@ -104,7 +104,7 @@ module Special
   real :: t_equality=3.789E11, t_acceleration=1.9215E13, t_0=1.3725E13
   real :: k1hel=0., k2hel=1., kgaussian_GW=0., ncutoff_GW=2., relhel_GW=0.
   real, pointer :: ddotam
-  logical, pointer :: lconservative
+  logical, pointer :: lconservative, lwaterfall, lflrw
   logical :: lno_transverse_part=.false., lgamma_factor=.false.
   logical :: lswitch_sign_e_X=.true., lswitch_symmetric=.false., ldebug_print=.false.
   logical :: lswitch_sign_e_X_boost=.false.
@@ -401,6 +401,18 @@ module Special
       else
         if (.not.associated(lconservative)) allocate(lconservative)
         lconservative=.false.
+      endif
+!
+!  Check if we are running the klein_gordon module
+!
+      if (lklein_gordon) then
+        call get_shared_variable('lwaterfall', lwaterfall, caller='register_special')
+        call get_shared_variable('lflrw', lflrw, caller='register_special')
+      else
+        if (.not.associated(lwaterfall)) allocate(lwaterfall)
+        lwaterfall=.false.
+        if (.not.associated(lflrw)) allocate(lflrw)
+        lflrw=.false.
       endif
 !
 !  get a"/a (here called ddotam)
@@ -917,6 +929,7 @@ module Special
       if (lscalar) then
         lpenc_requested(i_gphi)=.true.
 !        lpenc_requested(i_infl_a2)=.true.
+        if (lwaterfall) lpenc_requested(i_gpsi)=.true.
       endif
 !
     endsubroutine pencil_criteria_special
@@ -953,7 +966,7 @@ module Special
       intent(in) :: f
       intent(inout) :: p
       integer :: i, j, ij
-      real :: fact
+      real :: fact, a2=1.
 !
 !  The following is only needed during the first of 3 substeps.
 !  So the gravitational waves (and the necessary stress) are
@@ -994,8 +1007,15 @@ module Special
               if (luse_mag)  p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%bb(:,i)*p%bb(:,j)
               if (lelectmag) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%el(:,i)*p%el(:,j)
 !              if (lscalar_phi) p%stress_ij(:,ij)=p%stress_ij(:,ij)+p%infl_a2*p%gphi(:,i)*p%gphi(:,j)
-              if (lscalar_phi) p%stress_ij(:,ij)=p%stress_ij(:,ij) &
-                +exp(2*f_ode(ilna))*p%gphi(:,i)*p%gphi(:,j)
+              if (lscalar_phi) then
+                if (lflrw) a2=exp(2*f_ode(ilna))
+                p%stress_ij(:,ij)=p%stress_ij(:,ij) &
+                  +a2*p%gphi(:,i)*p%gphi(:,j)
+                if (lwaterfall) then
+                  p%stress_ij(:,ij)=p%stress_ij(:,ij) &
+                    +a2*p%gpsi(:,i)*p%gpsi(:,j)
+                endif
+              endif
             endif
 !
 !  Remove trace.
