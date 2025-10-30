@@ -18,7 +18,7 @@ export CUDACXX=/appl/spack/v018/install-tree/gcc-11.3.0/cuda-11.7.0-zucvj4/bin/n
 pc_build -f $PENCIL_HOME/config/compilers/separate/nvidia-fortran.conf TORCHFORT_PATH=/opt/torchfort HDF5_PATH=/opt/hdf5 FFLAGS+="-O0 -g -traceback"
 #cd src/astaroth && make
 #make
-#TP: to work with transpilation set TRANSPILATION=on in Makefile.local and then compile and run with the following
+#TP: to work with transpilation set TRANSPILATION=on in Makefile.local and then compile with the following and run
 #pc_build -f $PENCIL_HOME/config/compilers/separate/nvidia-fortran.conf TORCHFORT_PATH=/opt/torchfort HDF5_PATH=/opt/hdf5 FFLAGS+="-O0 -g -traceback" RUNTIME_COMPILATION=on
 
 #TP: then re-compile (no need to clean) with the following and you should have the correct code
