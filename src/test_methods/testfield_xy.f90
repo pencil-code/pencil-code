@@ -18,6 +18,12 @@
 ! CPARAM logical, parameter :: ltestfield_z = .false.
 ! CPARAM logical, parameter :: ltestfield_xz  = .false.
 !
+!** AUTOMATIC REFERENCE-LINK.TEX GENERATION ********************
+! Declare relevant citations from pencil-code/doc/citations/ref.bib for this module.
+! The entries are taken from pencil-code/doc/citations/notes.tex
+!
+! 2008A&A...482..739B,% Brandenburg, Rädler & Schrinner "Scale dependence of alpha effect and turbulent diffusivity" 
+!
 !***************************************************************
 !
 module Testfield

@@ -17,6 +17,13 @@
 ! PENCILS PROVIDED del2ud(3,ndustspec); del6ud(3,ndustspec)
 ! PENCILS PROVIDED graddivud(3,ndustspec); advec_uud
 !
+!** AUTOMATIC REFERENCE-LINK.TEX GENERATION ********************
+! Declare relevant citations from pencil-code/doc/citations/ref.bib for this module.
+! The entries are taken from pencil-code/doc/citations/notes.tex
+!
+! 2004A&A...417..361J,%Johansen, Andersen & Brandenburg "Simulations of dust-trapping vortices in protoplanetary discs" 
+! 2022JFM...934A..37H,%Haugen+ "Spectral characterisation of inertial particle clustering in turbulence"
+!
 !***************************************************************
 
 module Dustvelocity

@@ -10,6 +10,12 @@
 !
 ! CPARAM logical, parameter :: linitial_condition = .true.
 !
+!** AUTOMATIC REFERENCE-LINK.TEX GENERATION ********************
+! Declare relevant citations from pencil-code/doc/citations/ref.bib for this module.
+! The entries are taken from pencil-code/doc/citations/notes.tex
+!
+! 2006ApJ...638..336D,% Dobler, Stix & Brandenburg "Magnetic Field Generation in Fully Convective Rotating Spheres"
+!
 !***************************************************************
 !
 module InitialCondition

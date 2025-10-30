@@ -41,6 +41,13 @@
 ! MAUX CONTRIBUTION 0
 !
 !! PENCILS PROVIDED infl_phi; infl_dphi; gphi(3)
+!
+!** AUTOMATIC REFERENCE-LINK.TEX GENERATION ********************
+! Declare relevant citations from pencil-code/doc/citations/ref.bib for this module.
+! The entries are taken from pencil-code/doc/citations/notes.tex
+!
+! 2025ApJ...990..223B,%Brandenburg+Ntormousi "Magnetic Field Amplification during a Turbulent Collapse"
+!
 !***************************************************************
 !
 ! HOW TO USE THIS FILE
@@ -336,7 +343,7 @@ module Special
 !  Possibility to modify the f array after the boundaries are
 !  communicated.
 !
-!  06-jul-06/tony: coded
+!  16-apr-25/axel: coded
 !
 !     use Mpicomm, only: mpireduce_sum, mpiallreduce_sum, mpibcast_real
 !     use Sub, only: dot2_mn, grad, curl, dot_mn
@@ -345,11 +352,9 @@ module Special
 !
 !  Compute terms routinely used during this time substep.
 !
-      !lna=f_ode(iLCDM_lna)
       ascale=1./(1.+.25*(k_ascale_collapse*t)**2)
       lna=alog(ascale)
       sqrt_ascale=sqrt(ascale)
-!     Hubble=Hubble0*sqrt(Omega_mat/ascale**3+Omega_Lam+Omega_rad/ascale**4)
 !
     endsubroutine special_after_boundary
 !********************************************************************

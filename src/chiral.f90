@@ -13,6 +13,13 @@
 ! MVAR CONTRIBUTION 2
 ! MAUX CONTRIBUTION 0
 !
+!** AUTOMATIC REFERENCE-LINK.TEX GENERATION ********************
+! Declare relevant citations from pencil-code/doc/citations/ref.bib for this module.
+! The entries are taken from pencil-code/doc/citations/notes.tex
+!
+! 2025PhRvD.111d3541V,%Vachaspati+Brandenburg "Spectra of magnetic fields from electroweak symmetry breaking"
+! 2004IJAsB...3..209B,% Brandenburg & Multamaki "How long can left and right handed life forms coexist?"
+!
 !***************************************************************
 module Chiral
 !

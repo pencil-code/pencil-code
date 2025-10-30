@@ -41,10 +41,12 @@
 ! PENCILS PROVIDED stress_ij(6)
 ! PENCILS EXPECTED gphi(3)
 !
-!** AUTOMATIC REFERENCE-LINK.INC GENERATION ****************************
+!** AUTOMATIC REFERENCE-LINK.TEX GENERATION ********************
+! Declare relevant citations from pencil-code/doc/citations/ref.bib for this module.
+! The entries are taken from pencil-code/doc/citations/notes.tex
 !
 ! 2020GApFD.114..130R,%RoperPol+ "The timestep constraint in solving the gravitational wave equations sourced by hydromagnetic ..."
-! 2020PhRvD.102h3512R,%Roper Pol+ "Numerical simulations of gravitational waves from early-universe ..."
+! 2020PhRvD.102h3512R,%RoperPol+ "Numerical simulations of gravitational waves from early-universe ..."
 !
 !***************************************************************
 !
