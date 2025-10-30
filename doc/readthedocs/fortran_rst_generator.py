@@ -437,7 +437,7 @@ def preprocess_fortran(lines):
 # identifier: starts with letter, followed by letters/digits/underscore
 IDENT_RE = r'[A-Za-z][A-Za-z0-9_]*'   # Fortran identifier (starts with letter)
 
-def extract_var_info(clean_lines, query_vars, filename, debug = True):
+def extract_var_info(clean_lines, query_vars, filename, known_cparams = [], debug = True):
     """
     Scan cleaned Fortran declaration lines and return info for each variable in query_vars.
 
@@ -457,6 +457,7 @@ def extract_var_info(clean_lines, query_vars, filename, debug = True):
 
     results = {}
     need = set(lc_to_query.keys())  # lowercase names we still need
+    get_all = not known_cparams
 
     # patterns
     decl_re = re.compile(r'^\s*(?P<type>[^:]+?)\s*::\s*(?P<vars>.+)$', flags=re.IGNORECASE)
@@ -464,7 +465,7 @@ def extract_var_info(clean_lines, query_vars, filename, debug = True):
     split_commas_not_in_parens = re.compile(r',(?![^()]*\))')
 
     for line, original, comments in clean_lines:
-        if not need:
+        if not get_all and not need:
             break  # all found
 
         mdecl = decl_re.match(line)
@@ -489,7 +490,7 @@ def extract_var_info(clean_lines, query_vars, filename, debug = True):
             vdims = mt.group('vdims') or ""
             val = mt.group('val').strip() if mt.group('val') is not None else None
 
-            if lc_name in need:
+            if lc_name in need or get_all:
                 comment = ""
                 # extract comment, if available
                 for i, origline in enumerate(original):
@@ -497,13 +498,24 @@ def extract_var_info(clean_lines, query_vars, filename, debug = True):
                         comment = comments[i]
                         break
                 # for each original query spelling for this name, store result keyed by that original
-                for orig_query in lc_to_query[lc_name]:
-                    results[orig_query] = {
+                valref = val.strip().replace(".", "\\.") if val is not None else ""
+                if known_cparams and valref:
+                    pattern = r"\b(" + "|".join(map(re.escape, known_cparams)) + r")\b"
+                    valref = re.sub(pattern, rf"\ :f:var:`~cparam/\1`", valref)
+                if not get_all:
+                    for orig_query in lc_to_query[lc_name]:
+                        results[orig_query] = {
+                            "type": (type_part + vdims).strip(),
+                            "value": valref,
+                            "comment": comment,
+                            #"decl": line,
+                            #"parsed_name": parsed_name
+                        }
+                else:
+                    results[lc_name] = {
                         "type": (type_part + vdims).strip(),
-                        "value": val.strip().replace(".", "\\.") if val is not None else "",
-                        "comment": comment,
-                        #"decl": line,
-                        #"parsed_name": parsed_name
+                        "value": valref,
+                        "comment": comment
                     }
                 # mark as satisfied
                 need.discard(lc_name)
@@ -520,7 +532,7 @@ def extract_var_info(clean_lines, query_vars, filename, debug = True):
                 }
     return results
 
-def get_init_and_run_pars(filename):
+def get_init_and_run_pars(filename, known_cparams):
     """
     Extract the init and run parameters from the corresponding namelists
     in the given file.
@@ -577,11 +589,11 @@ def get_init_and_run_pars(filename):
         with open("../../src/cdata.f90", "r") as f:
             lines.extend([it.strip() for it in f.readlines()])
     clean_lines = preprocess_fortran(lines)
-    init_info = extract_var_info(clean_lines, init_pars.keys(), filename)
+    init_info = extract_var_info(clean_lines, init_pars.keys(), filename, known_cparams)
     for k, v in init_info.items():
         assert k in init_pars
         init_pars[k] = v
-    run_info = extract_var_info(clean_lines, run_pars.keys(), filename)
+    run_info = extract_var_info(clean_lines, run_pars.keys(), filename, known_cparams)
     for k, v in run_info.items():
         assert k in run_pars
         run_pars[k] = v
@@ -593,6 +605,14 @@ def process_init_run_pars():
     Extract the init and run parameters from the corresponding namelists
     from all the files.
     """
+
+    # Get all constants from cparam; we'll link them
+    with open("../../src/cparam.f90") as f:
+        cparamlines = f.readlines()
+    clean_cparam_lines = preprocess_fortran(cparamlines)
+    cparam_info = extract_var_info(clean_cparam_lines, [], "cparam.f90")
+    known_cparams = list(cparam_info.keys())
+
     files = subprocess.check_output(
         f'grep -rl -e "namelist /.*init_pars/" -e "namelist /.*run_pars/" ../../src/',
         shell=True,
@@ -605,7 +625,7 @@ def process_init_run_pars():
     run_pars = {}
     for f in files:
         print(f)
-        iname, ipars, rname, rpars = get_init_and_run_pars(f)
+        iname, ipars, rname, rpars = get_init_and_run_pars(f, known_cparams)
         if iname and ipars:
             init_pars[f] = (iname, ipars)
         if rname and rpars:
