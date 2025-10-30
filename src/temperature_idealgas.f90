@@ -37,7 +37,7 @@ module Energy
   include 'energy.h'
 !
   real :: radius_lnTT=0.1, widthlnTT=2*epsi
-  real, dimension (ninit) :: ampl_lnTT=0.0
+  real, dimension (ninit) :: ampl_lnTT=0.0, ampl_TT=0.0
   real :: lnTT_const=0.0, TT_const=1.0
   real :: Kgperp=0.0, Kgpara=0.0
   real :: chi=impossible, chi_jump=1., chi_z0=0.0, chi_zwidth=0.0, chi_r_reduce=0.0
@@ -97,7 +97,7 @@ module Energy
       center1_x, center1_y, center1_z, mpoly0, mpoly1, mpoly2, r_bcz, Fbot, &
       Tbump, Kmin, Kmax, hole_slope, hole_width, ltemperature_nolog, &
       linitial_log, hcond0, luminosity, wheat, coef_lnTT, kx_lnTT, ky_lnTT, kz_lnTT, &
-      temp_zaver_range
+      temp_zaver_range, ampl_TT
 !
 !  Run parameters.
 !
@@ -627,7 +627,8 @@ module Energy
       use InitialCondition, only: initial_condition_ss
       use EquationOfState, only: cs2bot, cs2top, cs20, lnrho0, rho0
       use Gravity, only: gravz
-      use Initcond, only: modes
+      !use Initcond, only: modes
+      use Initcond
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       real, dimension (mz) :: TTz
@@ -660,6 +661,13 @@ module Energy
             cs2bot=gamma_m1*TT_const
             cs2top=gamma_m1*TT_const
 !
+! NS: added option for gaussian noise
+          case ('gaussian-noise')
+                  if (ltemperature_nolog) then
+                          call gaunoise(ampl_TT(j),f,iTT,iTT)
+                  else
+                          call gaunoise(ampl_TT(j),f,ilnTT,ilnTT)
+                  endif
           case ('const_dTTdz')
             TTz=TT_const+z
             if (ltemperature_nolog) then
@@ -2053,6 +2061,7 @@ module Energy
 !  Check maximum diffusion from thermal diffusion.
 !
       if (lupdate_courant_dt) diffus_chi=diffus_chi+gamma*chi*dxyz_2
+      if (lfirst.and.ldt) diffus_chi=diffus_chi+gamma*chi*dxyz_2
 !
     endsubroutine calc_heatcond_constchi
 !***********************************************************************
