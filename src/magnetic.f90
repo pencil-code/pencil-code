@@ -7580,10 +7580,11 @@ print*,'AXEL2: should not be here (eta) ... '
       intent(inout) :: f
       intent(in) :: p
       integer :: ikx, nshear, iky
-      logical :: lreset_vart=.false.
+      logical :: lreset_vart
 !
 !  reset bbt etc. if lreset_vart=.true.
 !
+      lreset_vart = .false.
       if (ltime_integrals_always .or. nint(dtcor)<=0.) then
         if (it==1) lreset_vart=.true.
       else
@@ -7617,7 +7618,6 @@ print*,'AXEL2: should not be here (eta) ... '
           if (ijxt/=0 .and. ijx/=0) f(l1:l2,m,n,ijxt:ijzt) = f(l1:l2,m,n,ijx:ijz)
         endif
       endif
-      lreset_vart=.false.
 !
     endsubroutine time_integrals_magnetic
 !***********************************************************************
