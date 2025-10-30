@@ -5,6 +5,56 @@ import glob
 import shutil
 import subprocess
 from rstcloth import RstCloth
+import latexcodec
+import bibtexparser
+from bibtexparser import bibdatabase
+# Patch the months, since our bibtex has entries such as 'august', but bibtexparser expects e.g. 'aug'
+bibdatabase.COMMON_STRINGS.update({it.lower(): it.capitalize() for it in bibdatabase.COMMON_STRINGS.values()})
+
+class RstClothCustom(RstCloth):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def table_list_multi(self, headers, data, widths=None, width=None, indent=0):
+        """
+        Constructs list table.
+
+        :param headers: a list of header values (strings), to use for the table
+        :param data: a list of lists of row data (same length as the header
+            list each)
+        :param widths: list of relative column widths or the special
+            value "auto"
+        :param width: forces the width of the table to the specified
+            length or percentage of the line width
+        :param indent: number of spaces to indent this element
+        """
+        fields = []
+        rows = []
+        if headers:
+            fields.append(("header-rows", "1"))
+            rows.extend([headers])
+        if widths is not None:
+            if not isinstance(widths, str):
+                widths = " ".join(map(str, widths))
+            fields.append(("widths", widths))
+        if width is not None:
+            fields.append(("width", str(width)))
+
+        self.directive("list-table", fields=fields, indent=indent)
+        self.newline()
+
+        if data:
+            rows.extend(data)
+        for row in rows:
+            self.li(row[0], bullet="* -", indent=indent + 3)
+            for cell in row[1:]:
+                if isinstance(cell, list):
+                    self.li(cell[0], bullet="  -  *", indent=indent + 3)
+                    for item in cell[1:]:
+                        self.li(item, bullet="     *", indent=indent + 3)
+                else:
+                    self.li(cell, bullet="  -", indent=indent + 3)
+        self.newline()
 
 def process_file(file) -> tuple[str, str]:
     """
@@ -724,6 +774,89 @@ def process_init_run_pars():
                 else:
                     table.append((f"*{k}*", "", "", ""))
             d.table_list(["Variable", "Type", "Default", "Meaning"], data=table, widths=[20, 10, 10, 60])
+
+def process_papers():
+    def abbreviate_name(firsts):
+        fixed = []
+        for f in firsts:
+            # Handle LaTeX style ~ separator by removing it
+            f_clean = f.replace("~", "")
+            # Already a single letter followed by a period
+            if re.fullmatch(r"[A-Za-z]\.", f_clean):
+                fixed.append(f_clean)
+            # Contains dots (e.g. E.L. or N.E.L.) → split into initials
+            elif "." in f_clean:
+                # Extract first letters before dots
+                initials = [c + "." for c in re.findall(r"[A-Za-z](?=\.)", f_clean)]
+                fixed.extend(initials)
+            else:
+                # Normal full name → first initial
+                fixed.append(f_clean[0].upper() + ".")
+        return "".join(fixed)
+
+    def format_paper(e):
+        ret = ""
+        # Process author list
+        authors = e['author'].replace("\n", " ").split(' and ')
+        fixed = []
+        for author in authors:
+            assert author.count(",") == 1
+            last, first = map(str.strip, author.split(","))
+            last = last.lstrip("{").rstrip("}").encode().decode("latex")
+            last = re.sub(r"{(\w)}", r"\1", last)
+            fixed.append(f"{last}, {abbreviate_name(first.split())}")
+        if len(fixed) == 1:
+            authorlist = fixed
+        elif len(fixed) == 2:
+            authorlist = " & ".join(fixed)
+        else:
+            authorlist = ", ".join(fixed[:-1]) + f" & {fixed[-1]}"
+        title = e['title'].strip().lstrip("{").rstrip("}").strip()
+        return f"{authorlist} ({e['year']}). *{title}*, DOI: `{e['doi']} <https://dx.doi.org/{e['doi']}>`__, ADS: `{e['ID']} <https://ui.adsabs.harvard.edu/abs/{e['ID']}/abstract>`__"
+
+    MARKER = "AUTOMATIC REFERENCE-LINK.TEX GENERATION"
+    files = subprocess.check_output(
+        f'grep -rl "{MARKER}" ../../src/',
+        shell=True,
+        text=True
+    ).splitlines()
+    files = [it for it in files if it.endswith(".f90")]
+    files = sorted([it.replace("../../src/", "") for it in files], key=lambda x: (x.count("/") > 0, x.lower()))
+    refs = {}
+    for file in files:
+        papers = []
+        with open(f"../../src/{file}", "r") as f:
+            lines = f.readlines()
+        for i, line in enumerate(lines):
+            if MARKER not in line:
+                continue
+            # Skip the line and the next two lines (bla bla)
+            j = i+3
+            if lines[j].strip() in ["!", ""]:
+                j += 1
+            while lines[j].strip() not in ["!", ""] and not lines[j].startswith("!**"):
+                papers.append(lines[j].lstrip("!").strip().split(",")[0])
+                j += 1
+            break
+        if papers:
+            refs[file] = papers
+    # Now read the bib file
+    with open("../citations/ref.bib", "r") as f:
+        bb = bibtexparser.bparser.BibTexParser(common_strings=True).parse_file(f)
+    with open("code/tables/papers.rst", "w") as f:
+        d = RstClothCustom(f, line_width=5000)
+        d.title("Scientific references by module")
+        table = []
+        for file, papers in refs.items():
+            second = []
+            for paper in papers:
+                if paper in bb.entries_dict:
+                    e = bb.entries_dict[paper]
+                    second.append(format_paper(e))
+                else:
+                    second.append(f"{paper}: Not found")
+            table.append((file, second))
+        d.table_list_multi(["Module", "Scientific References"], data=table, widths=[25, 75])
 
 def process_all_pcparam():
     diag_list = [
