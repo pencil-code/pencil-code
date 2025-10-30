@@ -39,7 +39,7 @@
 ! MAUX CONTRIBUTION 18
 !
 ! PENCILS PROVIDED stress_ij(6)
-! PENCILS EXPECTED gphi(3)
+! PENCILS EXPECTED gphi(3), gpsi(3)
 !
 !** AUTOMATIC REFERENCE-LINK.TEX GENERATION ********************
 ! Declare relevant citations from pencil-code/doc/citations/ref.bib for this module.
