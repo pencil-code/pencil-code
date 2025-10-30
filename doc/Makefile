@@ -161,8 +161,10 @@ www/faq.tex: manual.tex
 	> www/faq.tex
 
 
-html: manual.tex
-	latex2html -mkdir -dir html -split 4 -show_section_numbers -local_icons manual.tex
+html: manual.tex manual.css
+	latex2html -mkdir -dir html -split 4 -show_section_numbers -local_icons -style manual.css manual.tex
+	
+	cp manual.css html/
 	
 # Clean up
 clean:

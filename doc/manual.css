@@ -1,0 +1,147 @@
+/* BEGIN from latex2html's default stylesheet */
+
+/* Century Schoolbook font is very similar to Computer Modern Math: cmmi */
+.MATH    { font-family: "Century Schoolbook", serif; }
+.MATH I  { font-family: "Century Schoolbook", serif; font-style: italic }
+.BOLDMATH { font-family: "Century Schoolbook", serif; font-weight: bold }
+SPAN.MATH { display:inline-block; }	/* don't stretch spaces inside eqn */
+
+DIV.author_info { text-align:center; } /* latex centers author */
+
+.LEFT    { text-align:left; }
+.FLOATLEFT    { float:left; }
+.CENTER  { text-align:center; }
+.CENTER > * { margin:auto; }
+.RIGHT   { text-align:right; }
+.FLOATRIGHT   { float:right; }
+.TOP     { vertical-align:top; }
+.MIDDLE  { vertical-align:middle; }
+.BOTTOM  { vertical-align:bottom; }
+
+IMG.LEFT    { float:left; }
+IMG.RIGHT   { float:right; }
+IMG.TOP     { vertical-align:top; }
+IMG.BOTTOM  { vertical-align:baseline; }
+
+/* captions for latex tables and figures appear at bottom */
+CAPTION { caption-side:bottom; }
+
+DL.COMPACT > dt { float:left; padding-right: 1em; }
+/*BODY { width:95%; max-width:50em; margin:auto; }*/
+
+/* implement both fixed-size and relative sizes */
+.XTINY		{ font-size : xx-small }
+.TINY		{ font-size : x-small  }
+.SCRIPTSIZE	{ font-size : smaller  }
+.FOOTNOTESIZE	{ font-size : small    }
+.SMALL		{ font-size : small    }
+.LARGE		{ font-size : large }
+.XLARGE		{ font-size : large    }
+.XXLARGE		{ font-size : x-large  }
+.HUGE		{ font-size : larger   }
+.XHUGE		{ font-size : xx-large }
+
+/* heading styles */
+H1		{  }
+H2		{  }
+H3		{  }
+H4		{  }
+H5		{  }
+
+/* mathematics styles */
+DIV.displaymath { text-align:center; margin-top:1em; margin-bottom:1em; }
+	/* math displays: margins for \abovedisplayskip \belowdisplayskip */
+TD.eqno		{ width:0; }	/* equation-number cells */
+TD.lfill	{ text-align:left;  width:50%; }
+TD.rfill	{ text-align:right; width:50%; }
+TABLE.PAD TD	{ padding:3px; }
+TABLE.BORDER TD	{ border:1px solid black; }
+TABLE.equation	{ width:100%; }	/* place eq nos at right/left edge */
+TABLE.equation > *	{ vertical-align:baseline; }
+TABLE.equation TD	{ white-space:nowrap; padding-bottom:5px; }
+TABLE		{ border-collapse: collapse; }
+
+/* document-specific styles come next */
+DIV.alltt		{   }
+DIV.center		{   }
+DIV.centerline		{   }
+TABLE.equation		{  }
+DIV.footnotesize		{   }
+SPAN.it		{   }
+DIV.navigation		{   }
+SPAN.normalfont		{   }
+PRE.preform		{   }
+DIV.quote		{   }
+SPAN.sc		{   }
+SPAN.sf		{   }
+DIV.small		{   }
+SPAN.tt		{   }
+SPAN.ttfamily		{   }
+SPAN.upshape		{   }
+SPAN.arabic		{   }
+SPAN.textbf		{ font-weight: bold  }
+SPAN.textit		{ font-style: italic  }
+SPAN.textsf		{ font-family: sans-serif  }
+SPAN.textsl		{ font-style: oblique  }
+SPAN.texttt		{ font-family: monospace  }
+#par37373		{   }
+#par42238		{   }
+#par42480		{   }
+#par43918		{   }
+#par50273		{   }
+#txt3048		{ text-decoration: underline;  }
+#txt3049		{ text-decoration: underline;  }
+#txt3050		{ text-decoration: underline;  }
+#txt3051		{ text-decoration: underline;  }
+
+/* END from latex2html's default stylesheet */
+
+/*TODO: maximum width for page (so that it doesn't become unreadable on too-wide screens*/
+
+/*title {
+	
+	
+}*/
+
+body {
+	width: min(95%, 35em);
+	margin: auto;
+}
+
+.navigation {
+	/*Top navigation panel*/
+	/*TODO: at the very least, put a box around it*/
+	/*TODO: there appear to be two navigation panels: one with icons, and the other with text*/
+}
+
+/*.ChildLinks {
+	/*List of subsections*/
+	/*TODO: may move to sidebar if screen is wide enough.*/
+	/*background-color coral;*/
+}*/
+
+h1 {
+/* 	color: #999999; */
+/* 	font-size: 100px; */
+/* 	font-weight: bold; */
+/* 	margin-top: 0px; */
+/* 	margin-bottom: 1px; */
+/* 	border-top 100% solid grey; */
+}
+
+h2 {
+	
+}
+
+h3 {
+	
+}
+
+h4 {
+	
+}
+
+pre {
+	/*Used for code blocks*/
+	/*TODO*/
+}
