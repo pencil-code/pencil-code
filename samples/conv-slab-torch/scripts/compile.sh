@@ -21,7 +21,7 @@ pc_build -f $PENCIL_HOME/config/compilers/separate/nvidia-fortran.conf TORCHFORT
 #TP: to work with transpilation set TRANSPILATION=on in Makefile.local and then compile and run with the following
 #pc_build -f $PENCIL_HOME/config/compilers/separate/nvidia-fortran.conf TORCHFORT_PATH=/opt/torchfort HDF5_PATH=/opt/hdf5 FFLAGS+="-O0 -g -traceback" RUNTIME_COMPILATION=on
 
-#TP: then re-compile with the following and you should have the correct code
+#TP: then re-compile (no need to clean) with the following and you should have the correct code
 #pc_build -f $PENCIL_HOME/config/compilers/separate/nvidia-fortran.conf TORCHFORT_PATH=/opt/torchfort HDF5_PATH=/opt/hdf5 FFLAGS+="-O0 -g -traceback" READ_OVERRIDES=on
 
 #pc_build -f $PENCIL_HOME/config/compilers/separate/nvidia-fortran.conf -t read_all_videofiles
