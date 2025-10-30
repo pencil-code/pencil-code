@@ -839,6 +839,57 @@ def process_papers():
             table.append((file, second))
         d.table_list_multi(["Module", "Scientific References"], data=table, widths=[25, 75])
 
+def process_bin_files():
+    filedesc = {}
+    for file in sorted(glob.glob("../../bin/*")):
+        if not os.path.isfile(file):
+            continue
+        with open(file, "r") as f:
+            line = f.readline()
+            if not line.startswith("#!"):
+                continue
+            lines = f.readlines()
+            desc = []
+            found = False
+            for i, line in enumerate(lines):
+                if line.startswith("# Description"):
+                    j = i+1
+                    while lines[j].lstrip("#").strip() and lines[j].strip() and re.match(r"^#  ", lines[j]):
+                        desc.append(lines[j].lstrip("#").strip())
+                        j += 1
+                    found = True
+                    filedesc[os.path.basename(file)] = (' '.join(desc)).replace("`", r"\`").replace("*", r"\*")
+                    break
+            if not found:
+                desc = []
+                # Try to just get the first paragraph
+                for i, line in enumerate(lines):
+                    if not line.strip():
+                        if desc:
+                            break
+                        continue
+                    comment = line.lstrip("#").strip()
+                    if not comment:
+                        if desc:
+                            break
+                        continue
+                    if "$Id" in comment or comment.startswith("-*-"):
+                        continue
+                    if not line.startswith("#"):
+                        break
+                    desc.append(comment)
+                if desc:
+                    found = True
+                    filedesc[os.path.basename(file)] = (' '.join(desc)).replace("`", r"\`").replace("*", r"\*")
+            if not found:
+                filedesc[os.path.basename(file)] = ""
+    with open("code/tables/bin.rst", "w") as f:
+        d = RstCloth(f, line_width=5000)
+        d.title("``bin`` scripts")
+        d.content("Brief description of the scripts included in ``pencil-code/bin``.")
+        d.newline()
+        d.table_list(["Script", "Purpose"], data=filedesc.items())
+
 def process_all_pcparam():
     diag_list = [
         ("DIAG_DOC", "print.in"),
