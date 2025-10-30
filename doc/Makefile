@@ -160,10 +160,17 @@ www/faq.tex: manual.tex
 	| tac \
 	> www/faq.tex
 
+
+html: manual.tex
+	latex2html -mkdir -dir html -split 4 -show_section_numbers -local_icons manual.tex
+	
 # Clean up
 clean:
 	rm -f manual.ps* body.ps* appendix.ps* manual.dvi *.aux *.toc *.log \
 	*.idx *.ind *.ilg *.out *.vidx *.vind *.fidx *.find manual.image.*
+	
+	rm -rf html
+
 # same, but including image directory and automatically generated inline
 # doc files
 cleanall: cleann
