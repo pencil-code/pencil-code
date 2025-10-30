@@ -323,6 +323,13 @@ Field AC_cp_full__mod__equationofstate
 
 field_order(AC_imu5__mod__chiral_mhd-1) Field F_MU5
 field_order(AC_imus__mod__chiral_mhd-1) Field F_MUS
+Field3 F_UXVEC
+Field3 F_UXSVEC
+Field3 F_OXVEC
+Field3 F_OXSVEC
+
+Field3 F_BXVEC
+Field3 F_JXVEC
 
 Field3 BETA_UU
 Field3 BETA_AA

@@ -151,6 +151,15 @@ real3 DF_AXTESTVEC = rk_intermediate_split_first(F_AXTESTVEC,step_num)
 
 real DF_MU5 = rk_intermediate_split_first(F_MU5,step_num)
 real DF_MUS = rk_intermediate_split_first(F_MUS,step_num)
+
+real3 DF_UXVEC = rk_intermediate_split_first(F_UXVEC,step_num)
+real3 DF_UXSVEC = rk_intermediate_split_first(F_UXSVEC,step_num)
+real3 DF_OXVEC = rk_intermediate_split_first(F_OXVEC,step_num)
+real3 DF_OXSVEC = rk_intermediate_split_first(F_OXSVEC,step_num)
+
+real3 DF_BXVEC = rk_intermediate_split_first(F_BXVEC,step_num)
+real3 DF_JXVEC = rk_intermediate_split_first(F_JXVEC,step_num)
+
 #define DF_AXTESVEC DF_AXTESTVEC
 
 real DF_IPOLY__MOD__CDATA[6]

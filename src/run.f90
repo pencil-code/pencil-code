@@ -1688,6 +1688,17 @@ endsubroutine helper_loop
     call copy_addr(iww3,p_par(1375)) ! int
     call copy_addr(dt_beta_ts,p_par(1376)) ! (5) dconst
     call copy_addr(lcumulative_df_on_gpu,p_par(1377)) ! bool
+    call copy_addr(iox,p_par(1384)) ! int
+    call copy_addr(iuut,p_par(1385)) ! int
+    call copy_addr(iuxt,p_par(1386)) ! int
+    call copy_addr(ioot,p_par(1387)) ! int
+    call copy_addr(ioxt,p_par(1388)) ! int
+    call copy_addr(iuust,p_par(1389)) ! int
+    call copy_addr(ioost,p_par(1390)) ! int
+    call copy_addr(ibbt,p_par(1391)) ! int
+    call copy_addr(ibxt,p_par(1392)) ! int
+    call copy_addr(ijjt,p_par(1393)) ! int
+    call copy_addr(ijxt,p_par(1394)) ! int
 
     
     endsubroutine pushpars2c
