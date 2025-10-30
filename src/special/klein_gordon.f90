@@ -255,6 +255,7 @@ module Special
       call put_shared_variable('lphi_weakcharge',lphi_weakcharge)
       call put_shared_variable('lphi_hypercharge',lphi_hypercharge)
       call put_shared_variable('lwaterfall',lwaterfall)
+      call put_shared_variable('lflrw',lflrw)
 !
     endsubroutine register_special
 !***********************************************************************
