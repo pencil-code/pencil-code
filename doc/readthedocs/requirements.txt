@@ -5,3 +5,5 @@ rstcloth
 sphinx-autoapi
 sphinx
 six
+bibtexparser 
+latexcodec
