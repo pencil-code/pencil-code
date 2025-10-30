@@ -776,24 +776,6 @@ def process_init_run_pars():
             d.table_list(["Variable", "Type", "Default", "Meaning"], data=table, widths=[20, 10, 10, 60])
 
 def process_papers():
-    def abbreviate_name(firsts):
-        fixed = []
-        for f in firsts:
-            # Handle LaTeX style ~ separator by removing it
-            f_clean = f.replace("~", "")
-            # Already a single letter followed by a period
-            if re.fullmatch(r"[A-Za-z]\.", f_clean):
-                fixed.append(f_clean)
-            # Contains dots (e.g. E.L. or N.E.L.) → split into initials
-            elif "." in f_clean:
-                # Extract first letters before dots
-                initials = [c + "." for c in re.findall(r"[A-Za-z](?=\.)", f_clean)]
-                fixed.extend(initials)
-            else:
-                # Normal full name → first initial
-                fixed.append(f_clean[0].upper() + ".")
-        return "".join(fixed)
-
     def format_paper(e):
         ret = ""
         # Process author list
@@ -801,10 +783,9 @@ def process_papers():
         fixed = []
         for author in authors:
             assert author.count(",") == 1
-            last, first = map(str.strip, author.split(","))
-            last = last.lstrip("{").rstrip("}").encode().decode("latex")
+            last = author.split(",")[0].strip().lstrip("{").rstrip("}").encode().decode("latex")
             last = re.sub(r"{(\w)}", r"\1", last)
-            fixed.append(f"{last}, {abbreviate_name(first.split())}")
+            fixed.append(last)
         if len(fixed) == 1:
             authorlist = fixed
         elif len(fixed) == 2:
