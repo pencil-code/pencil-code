@@ -110,8 +110,11 @@ body {
 
 .navigation {
 	/*Top navigation panel*/
-	/*TODO: at the very least, put a box around it*/
 	/*TODO: there appear to be two navigation panels: one with icons, and the other with text*/
+	background-color: #bee8f7;
+	border: 1px solid grey;
+	border-radius: 10px;
+	text-align: center;
 }
 
 /*.ChildLinks {
