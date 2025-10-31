@@ -3031,7 +3031,7 @@ endef
 	$(F77) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F77FLAGS) -o $*.o -c $*.f
 .f90.o:
 	$(FC) $(ALL_COMP_FLAGS) $(FSTD) -o $*.o -c $*.f90
-	sed -f links.sed $*.f90 >> reference_link.txt.tmp
+	@sed -f links.sed $*.f90 >> ../reference_link.txt.tmp
 
 special/%.o: special/%.f90
 ifeq ($(USE_SPECIAL_DISPATCHER),yes)
@@ -3039,6 +3039,7 @@ ifeq ($(USE_SPECIAL_DISPATCHER),yes)
 else
 	$(FC) $(ALL_COMP_FLAGS) $(FSTD) -o special/$*.o -c special/$*.f90
 endif
+	@sed -f links.sed special/$*.f90 >> ../reference_link.txt.tmp
 #
 .c.o:
 	$(CC) $(CFLAGS) $(CFLAGS_GENERAL) $(CPPFLAGS) $(CFLAGS_FOURIER) $(CSTD) -o $*.o -c $*.c
@@ -3560,7 +3561,7 @@ endif
 	fi
 	@echo "  <timestamp   type='end'>`date`</timestamp>\n</buildtime>" >> .buildtime
 	$${PENCIL_HOME}/utils/pc_identify_revision --write
-	@mv -f reference_link.txt.tmp reference_link.txt
+	@mv -f ../reference_link.txt.tmp ../reference_link.txt
 
 code: Makefile.inc Makefile-standard.inc cparam.inc | $(SPECIAL_DEPS)
 	$${PENCIL_HOME}/utils/pc_identify_revision --reset
@@ -3582,7 +3583,7 @@ ifneq ($(MODULE_CMD),)
 endif
 	@echo "  <timestamp   type='end'>`date`</timestamp>\n</buildtime>" >> .buildtime
 	$${PENCIL_HOME}/utils/pc_identify_revision --write
-	@mv -f reference_link.txt.tmp reference_link.txt
+	@mv -f ../reference_link.txt.tmp ../reference_link.txt
 #
 production:
 	$(eval PRODUCTION=ON)
