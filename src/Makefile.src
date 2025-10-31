@@ -3129,8 +3129,13 @@ else
 	  done
         endif
 endif
+#This is on comment until it works on CPU and GPU at the moment does not work on either!
+#It is important that the namelists are not modified if there is only a single special module
+#this does not seem to have been taken into account
+#special.so: $(CPARAM_OBJ) $(CDATA_OBJ) $(SPECIAL_OBJ) special_dummies.inc $(SPECIAL_MODULES:=.o)
+#$(LD) $(SPECIAL_MODULES:=.o) $(DLL_LDFLAGS) -o special.so; pc_mkspecial.sh "$(SPECIAL_MODULES:=.f90)"
 special.so: $(CPARAM_OBJ) $(CDATA_OBJ) $(SPECIAL_OBJ) special_dummies.inc $(SPECIAL_MODULES:=.o)
-	$(LD) $(SPECIAL_MODULES:=.o) $(DLL_LDFLAGS) -o special.so; pc_mkspecial.sh "$(SPECIAL_MODULES:=.f90)"
+	$(LD) $(SPECIAL_MODULES:=.o) $(DLL_LDFLAGS) -o special.so
 #
 #  comment out the 3 lines ifneq, @, endif below if one gets an error message
 #  about io_dist cannot copy.
