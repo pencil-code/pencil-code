@@ -157,7 +157,7 @@ ifeq ($(READ_OVERRIDES),on)
 endif
 	#TP: if PC_nghost.h is found to be missing we turn to the default of Astaroth i.e. STENCIL_ORDER = 6
 	@if [ ! -f DSL/local/PC_nghost.h ]; then \
-		touch DSL/local/PC_nghost.h; \
+		echo "hostdefine STENCIL_ORDER (6)" > DSL/local/PC_nghost.h; \
 	fi
 
 	@ext_srcs="`ls -m $$PENCIL_HOME/src/astaroth/DSL/*/*.h \
