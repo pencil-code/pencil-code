@@ -74,20 +74,20 @@ Kernel tau_uumean(int ranNum){
 		write(tau.xz, UUX*UUZ)
 
 
-		write(uumean.x, gaussian_smooth(UUX))
-		write(uumean.y, gaussian_smooth(UUY))
-		write(uumean.z, gaussian_smooth(UUZ))
+		write(uumean.x, gaussian_smooth_inplace(UUX))
+		write(uumean.y, gaussian_smooth_inplace(UUY))
+		write(uumean.z, gaussian_smooth_inplace(UUZ))
 
 }
 
 Kernel smooth_tau(int ranNum){
 
-	write(tau.xx, gaussian_smooth(tau.xx))
-	write(tau.xy, gaussian_smooth(tau.xy))
-	write(tau.xz, gaussian_smooth(tau.xz))
-	write(tau.yy, gaussian_smooth(tau.yy))
-	write(tau.yz, gaussian_smooth(tau.yz))
-	write(tau.zz, gaussian_smooth(tau.zz))
+	write(tau.xx, gaussian_smooth_inplace(tau.xx))
+	write(tau.xy, gaussian_smooth_inplace(tau.xy))
+	write(tau.xz, gaussian_smooth_inplace(tau.xz))
+	write(tau.yy, gaussian_smooth_inplace(tau.yy))
+	write(tau.yz, gaussian_smooth_inplace(tau.yz))
+	write(tau.zz, gaussian_smooth_inplace(tau.zz))
 
 }
 
