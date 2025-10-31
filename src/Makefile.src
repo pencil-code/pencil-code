@@ -3031,9 +3031,7 @@ endef
 	$(F77) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F77FLAGS) -o $*.o -c $*.f
 .f90.o:
 	$(FC) $(ALL_COMP_FLAGS) $(FSTD) -o $*.o -c $*.f90
-
-#%_omp.inc: %.f90
-#       python preprocessor.py
+	sed -f links.sed $*.f90 >> reference_link.txt.tmp
 
 special/%.o: special/%.f90
 ifeq ($(USE_SPECIAL_DISPATCHER),yes)
@@ -3562,6 +3560,7 @@ endif
 	fi
 	@echo "  <timestamp   type='end'>`date`</timestamp>\n</buildtime>" >> .buildtime
 	$${PENCIL_HOME}/utils/pc_identify_revision --write
+	@mv -f reference_link.txt.tmp reference_link.txt
 
 code: Makefile.inc Makefile-standard.inc cparam.inc | $(SPECIAL_DEPS)
 	$${PENCIL_HOME}/utils/pc_identify_revision --reset
@@ -3583,6 +3582,7 @@ ifneq ($(MODULE_CMD),)
 endif
 	@echo "  <timestamp   type='end'>`date`</timestamp>\n</buildtime>" >> .buildtime
 	$${PENCIL_HOME}/utils/pc_identify_revision --write
+	@mv -f reference_link.txt.tmp reference_link.txt
 #
 production:
 	$(eval PRODUCTION=ON)
