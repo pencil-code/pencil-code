@@ -46,9 +46,11 @@ GetOptions(\%opts,
            qw( -t   --test
                -b   --backup
                -d   --debug
+               -h   --help
                -v   --version
                )) or die ("Aborting.\n");
 if ($opts{'v'} || $opts{'version'}) { die ('$Id$'."\n"); }
+if ($opts{'h'} || $opts{'help'}) { die ('Usage: ...'."\n"); }
 my $debug = 0;
 if ($opts{'d'} || $opts{'debug'}) { $debug = 1; }
 my $test = 0;
@@ -58,7 +60,7 @@ if ($opts{'b'} || $opts{'backup'}) { $backup = 1; }
 
 # Test if code was compiled
 my $test_result = `$configtest 2>&1`;
-if ($test_result =~ /Please compile first/is) { die ("Please compile first!"); }
+if ($test_result =~ /Please compile first/is) { die ("Please compile 'pc_configtest' first!\n"); }
 
 # Find missing namelists
 my %missing = ();
