@@ -72,6 +72,7 @@ module Hydro
   logical :: lforcing_cont_uu=.false., lrandom_location=.false.
   logical :: lwrite_random_location=.false., lwrite_random_wavenumber=.false.
   logical :: lrandom_wavenumber=.false., lwrite_random_ampl=.false.
+  logical :: ldiffrot_from_expansion=.false.
   integer :: ll_sh=0, mm_sh=0, n_xprof=-1
 !
 !  init parameters
@@ -224,11 +225,11 @@ module Hydro
       use Slices_methods, only: alloc_slice_buffers
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: sph, sph_har_der
+      real :: sph, sph_har_der, LP1
       real, dimension (nx) :: vel_prof, tmp_mn
       real, dimension (nx,3) :: tmp_nx3
-      real, dimension (:,:), allocatable :: yz
-      integer :: iyz
+      real, dimension (:,:), allocatable :: yz,legendre_coeff
+      integer :: iyz,nr,ell_max,ell,ll,mm,ir
 !
 !  Compute preparatory functions needed to assemble
 !  different flow profiles later on in pencil_case.
@@ -266,6 +267,8 @@ module Hydro
       case ('solar-like')
         profx_kinflow1=+0.5*(1.+erfunc(((x(l1:l2)-uphi_rbot)/uphi_step_width)))
         profy_kinflow1=1.-diff_rot_a2*cos(y)**2-diff_rot_a4*cos(y)**4
+      case('diffrot_from_expansion')
+        ldiffrot_from_expansion=.true.
       case ('KS')
         call periodic_KS_setup(-5./3.) !Kolmogorov spec. periodic KS
         !call random_isotropic_KS_setup(-5./3.,1.,(nxgrid)/2.) !old form
@@ -322,8 +325,32 @@ module Hydro
             close(1)
             if (ampl_kinflow/=1.) f(l1:l2,m1:m2,n1:n2,iux:iuz)=ampl_kinflow*f(l1:l2,m1:m2,n1:n2,iux:iuz)
             if (lkinflow_as_comaux) call update_ghosts(f,iux,iuz)
+         
+        else if (ldiffrot_from_expansion) then
+          if (.not.lkinflow_as_aux) call fatal_error('initialize_hydro','diffrot_from_expansion requires lkinflow_as_aux=T') 
+          open(1,file='Omega_r_ell.dat')
+          read(1,*) nr,ell_max
+          if (nr/=nx) call fatal_error('initialize_hydro', 'for diffrot_from_expansion nr must be = nx')
+          allocate(legendre_coeff(nr,ell_max))
+          do ir=1,nr
+            read(1,*) (legendre_coeff(ir,ell),ell=1,ell_max) 
+          enddo
+          close(1)
+if (lroot) print*,legendre_coeff          
+          do mm=m1,m2 
+            do ell=1,ell_max
+              call legendre_pl(LP1,ell,y(mm))
+              do ll=l1,l2
+                f(ll,mm,n1:n2,iuz)=f(ll,mm,n1:n2,iuz)+legendre_coeff(ll,ell)*LP1
+              enddo            
+            enddo
+          enddo        
+          deallocate(legendre_coeff)
+          if (lkinflow_as_comaux) call update_ghosts(f,iux,iuz) 
+          
           endif
-        else
+          else
+
 ! set the initial velocity to zero
           if (kinematic_flow/='from-snap'.or.kinematic_flow/='from-foreign-snap') f(:,:,:,iux:iuz) = 0.
           if (lroot .and. (ip<14)) print*, 'initialize_hydro: iuu = ', iuu
@@ -2574,7 +2601,7 @@ module Hydro
 !
       case('from_aux')
         if (lpenc_loc(i_uu)) p%uu=ampl_kinflow*f(l1:l2,m,n,iux:iuz)
-      case('spher-harm-poloidal')
+      case('spher-harm-poloidal', 'diffrot_from_expansion')
         if (lpenc_loc(i_uu)) p%uu=f(l1:l2,m,n,iux:iuz)
       case('spher-harm-poloidal-per')
         if (lpenc_loc(i_uu)) p%uu=f(l1:l2,m,n,iux:iuz)*cos(omega_kinflow*t)
