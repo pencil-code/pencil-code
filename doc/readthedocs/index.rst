@@ -65,6 +65,7 @@ Explore the sections below to get started, contribute, or run simulations with P
    dochowto/usingrst
    dochowto/doccodetips
    dochowto/fortranautodochowto
+   dochowto/addcitations
 
 .. toctree::
    :maxdepth: 1
