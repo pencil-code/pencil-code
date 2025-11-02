@@ -698,11 +698,10 @@ class F90toRst(object):
             choice += 's'
         assert choice in ['types', 'variables', 'functions',
                           'subroutines'], "Wrong type of declaration"
-        module = module.lower()
         assert module in self.modules, "Wrong module name"
         baselist = list(getattr(self, choice).values())
         sellist = [v for v in baselist if 'module' in v and v['module']
-                   == module.lower()]
+                   == module]
         if sort:
             sellist.sort(key=itemgetter('name'))
         return sellist
@@ -1687,7 +1686,7 @@ class FortranAutoSrcfileDirective(Directive):
             objtype = objtype.split(' ,')
 
         # Get rst
-        srcfile = self.arguments[0].lower()
+        srcfile = self.arguments[0]
         raw_text = f90torst.format_srcfile(
             srcfile, search_mode=search_mode, objtype=objtype)
         if not raw_text:
