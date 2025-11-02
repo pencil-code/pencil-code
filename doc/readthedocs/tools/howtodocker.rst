@@ -9,11 +9,20 @@ anything. Consider this your **ultra-condensed Docker cheat sheet** — the most
 useful commands, tips, and gotchas that I’ve collected while wrangling
 containers. Think of it as the espresso shot before the full Docker latte.
 
+.. _docker-installation:
+
+Installation
+=============
+
+* Ubuntu users: ``Docker`` is part of the latest Ubuntu versions 
+
+* MacOs users: you can use the precompiled package directly from the `Docker webpage <https://www.docker.com/>`__.
+
 Documentation
 ==================
 
 For more details, the official source is always your friend:
-c
+
 
 * `Docker reference manual <https://docs.docker.com/>`_
 
@@ -25,6 +34,7 @@ Configuration
 At its core, a Docker container needs just two files to define its behavior:
 
 * :file:`docker-compose.yml` — orchestrates services, networks, and volumes.
+
 * :file:`Dockerfile` — describes how to build the container environment.
 
 

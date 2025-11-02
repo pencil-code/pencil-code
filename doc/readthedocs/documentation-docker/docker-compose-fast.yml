@@ -1,0 +1,11 @@
+version: "3"
+services:
+  pencil-sphinx:
+    container_name: pencil-sphinx
+    image: "irl/pencil-sphinx"
+    build:
+      dockerfile: Dockerfile
+    restart: no
+    command: make fast
+    volumes:
+      - ../../..:/app/pencil-code

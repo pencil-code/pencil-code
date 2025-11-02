@@ -140,6 +140,9 @@ def process_directory(path) -> list:
         table.append(process_file(file))
     return table
 
+BUILD_FORTRAN_AUTODOCS = False
+BUILD_FORTRAN_AUTODOCS = True
+
 FILES_THAT_DONT_WORK = [
 ]
 
@@ -176,7 +179,7 @@ def create_fortran_modules_rst(path_to_src: str) -> list[str]:
         for module, _ in table:
             # Modules that won't compile - skip them
             # Changed to only do this files for testing.
-            if f"{dirname}/{module}.f90" in FILES_THAT_DONT_WORK:
+            if f"{dirname}/{module}.f90" in FILES_THAT_DONT_WORK or not BUILD_FORTRAN_AUTODOCS:
                 continue
             with open(os.path.join(F90ROOT, dirname, f"{module}.rst"), "w") as f:
                 d = RstCloth(f)
