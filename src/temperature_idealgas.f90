@@ -2061,7 +2061,6 @@ module Energy
 !  Check maximum diffusion from thermal diffusion.
 !
       if (lupdate_courant_dt) diffus_chi=diffus_chi+gamma*chi*dxyz_2
-      if (lfirst.and.ldt) diffus_chi=diffus_chi+gamma*chi*dxyz_2
 !
     endsubroutine calc_heatcond_constchi
 !***********************************************************************
