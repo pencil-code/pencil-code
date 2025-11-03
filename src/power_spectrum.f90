@@ -3791,6 +3791,8 @@ outer:do ikz=1,nz
       elseif (variabl=='lnspecial') then
         pdf_var=alog(f(l1:l2,m,n,ispecial))
         logscale=.false.
+      else
+        call fatal_error('pdf', 'unknown variable '//trim(variabl))
       endif
 !
 !  put in the right pdf slot
