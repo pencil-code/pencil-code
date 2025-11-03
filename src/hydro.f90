@@ -6309,6 +6309,7 @@ module Hydro
 !  Prepare damping motions in some regions for some time spans if desired.
 !
       if (tdamp/=0.or.dampuext/=0.or.dampuint/=0) call update_fade_fact
+
     endsubroutine load_variables_to_gpu_hydro
 !***********************************************************************
     subroutine update_fade_fact

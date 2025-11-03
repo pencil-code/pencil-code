@@ -186,20 +186,24 @@ module Hydro
 !
 !  Identify version number (generated automatically by SVN).
 !
-      !if (lroot) call svn_id( &
-      !    "$Id$")
+      if (lroot) call svn_id( &
+          "$Id$")
 !
       call put_shared_variable('lpressuregradient_gas',lpressuregradient_gas,caller='register_hydro')
 !
+!  Register extra aux slots for uu if requested by lkinflow_as_aux or lkinflow_as_comaux
+!  (e.g. for writing uu to snapshots for later analysis). For this to work you
+!  must reserve enough auxiliary workspace by setting, for example,
+!     ! MAUX CONTRIBUTION 3
+!  in the beginning of your src/cparam.local file, *before* setting
+!  ncpus, nprocy, etc.
+!
       if (lkinflow_as_aux.or.lkinflow_as_comaux) then
-        if (lkinflow_as_comaux) then
-          call farray_register_auxiliary('uu',iuu,vector=3,communicated=.true.)
-        else
-          call farray_register_auxiliary('uu',iuu,vector=3)
-        endif
+        call farray_register_auxiliary('uu',iuu,vector=3,communicated=lkinflow_as_comaux)
         iux=iuu
         iuy=iuu+1
         iuz=iuu+2
+        if (lroot .and. (ip<14)) print*, 'initialize_hydro: iuu = ', iuu
       endif
 !
       kinflow=kinematic_flow
@@ -268,6 +272,10 @@ module Hydro
         profx_kinflow1=+0.5*(1.+erfunc(((x(l1:l2)-uphi_rbot)/uphi_step_width)))
         profy_kinflow1=1.-diff_rot_a2*cos(y)**2-diff_rot_a4*cos(y)**4
       case('diffrot_from_expansion')
+        if (.not.lkinflow_as_aux) call fatal_error('initialize_hydro', &
+            '"diffrot_from_expansion" requires lkinflow_as_aux=T') 
+        if (.not.lspherical_coords) call inevitably_fatal_error("initialize_hydro", &
+            '"diffrot_from_expansion" only meaningful for spherical coordinates')
         ldiffrot_from_expansion=.true.
       case ('KS')
         call periodic_KS_setup(-5./3.) !Kolmogorov spec. periodic KS
@@ -285,58 +293,56 @@ module Hydro
         if (nxgrid==1) kx_uukin=0.
         if (nygrid==1) ky_uukin=0.
         if (nzgrid==1) kz_uukin=0.
+      case ('spher-harm-poloidal','spher-harm-poloidal-per')
+        if (.not.lspherical_coords) call inevitably_fatal_error("init_uu", &
+            '"spher-harm-poloidal" only meaningful for spherical coordinates')
+        if (.not.lkinflow_as_aux) call inevitably_fatal_error("init_uu", &
+            '"spher-harm-poloidal" requires lkinflow_as_aux=T')
+      case ('from-snap','from-foreign-snap')
+        if (.not.lkinflow_as_aux) call inevitably_fatal_error("init_uu", &
+            '"from-*snap" requires lkinflow_as_aux=T')
       case default;
         if (lroot .and. (ip < 14)) call information('initialize_hydro','no preparatory profile needed')
       end select
 !
 ! kinflows end here
 !
-!  Register an extra aux slot for uu if requested (so uu is written
-!  to snapshots and can be easily analyzed later). For this to work you
-!  must reserve enough auxiliary workspace by setting, for example,
-!     ! MAUX CONTRIBUTION 3
-!  in the beginning of your src/cparam.local file, *before* setting
-!  ncpus, nprocy, etc.
+      if ((lkinflow_as_aux.or.lkinflow_as_comaux) .and. iuu/=0) then
 !
-!  After a reload, we need to rewrite index.pro, but the auxiliary
-!  arrays are already allocated and must not be allocated again.
+!  The kinematic flow can only be used as auxiliary if it has been registered.
+!  Later registering by setting lkinflow_as_aux or lkinflow_as_comaux to .true. at 
+!  RELOAD time is not possible. Setting to .false. does not "unregister" uu.
 !
-      if (lkinflow_as_aux.or.lkinflow_as_comaux) then
-   !    if (iuu==0) then
-        if (iuu/=0) then
-   !      if (lkinflow_as_comaux) then
-   !        call farray_register_auxiliary('uu',iuu,vector=3,communicated=.true.)
-   !      else
-   !        call farray_register_auxiliary('uu',iuu,vector=3)
-   !      endif
-   !      iux=iuu
-   !      iuy=iuu+1
-   !      iuz=iuu+2
+        if (lkinflow_as_uudat) then
 !
 !  Possibility to read uu.dat, but currently only for one processor.
 !  However, this can be useful when a periodic kinematic flow is to
-!  to be used in test-field analyses at subharmic wavenumbers,
+!  to be used in test-field analyses at subharmonic wavenumbers,
 !  because then each processor uses the same flow on each pressor.
-!  Note, however, that lkinflow_as_uudat=.false. by default.
 !
-          if (lkinflow_as_uudat) then
-            open(1,file='uu.dat',form='unformatted')
-            read(1) f(l1:l2,m1:m2,n1:n2,iux:iuz)
-            close(1)
-            if (ampl_kinflow/=1.) f(l1:l2,m1:m2,n1:n2,iux:iuz)=ampl_kinflow*f(l1:l2,m1:m2,n1:n2,iux:iuz)
-            if (lkinflow_as_comaux) call update_ghosts(f,iux,iuz)
+          open(1,file='uu.dat',form='unformatted')
+          read(1) f(l1:l2,m1:m2,n1:n2,iux:iuz)
+          close(1)
+          if (ampl_kinflow/=1.) f(l1:l2,m1:m2,n1:n2,iux:iuz)=ampl_kinflow*f(l1:l2,m1:m2,n1:n2,iux:iuz)
+          if (lkinflow_as_comaux) call update_ghosts(f,iux,iuz)
          
         else if (ldiffrot_from_expansion) then
-          if (.not.lkinflow_as_aux) call fatal_error('initialize_hydro','diffrot_from_expansion requires lkinflow_as_aux=T') 
-          open(1,file='Omega_r_ell.dat')
-          read(1,*) nr,ell_max
-          if (nr/=nx) call fatal_error('initialize_hydro', 'for diffrot_from_expansion nr must be = nx')
-          allocate(legendre_coeff(nr,ell_max))
-          do ir=1,nr
-            read(1,*) (legendre_coeff(ir,ell),ell=1,ell_max) 
-          enddo
-          close(1)
-if (lroot) print*,legendre_coeff          
+
+          if (lroot) then
+            open(1,file='Omega_r_ell.dat')
+            read(1,*) nr,ell_max
+            if (nr/=nx) call fatal_error('initialize_hydro', 'for diffrot_from_expansion nr must be = nx')
+            allocate(legendre_coeff(nr,ell_max))
+            do ir=1,nr
+              read(1,*) (legendre_coeff(ir,ell),ell=1,ell_max) 
+            enddo
+            close(1)
+          endif
+
+          call mpibcast(ell_max)
+          if (.not.lroot) allocate(legendre_coeff(nx,ell_max))
+          call mpibcast(legendre_coeff,(/nr,ell_max/))
+
           do mm=m1,m2 
             do ell=1,ell_max
               call legendre_pl(LP1,ell,y(mm))
@@ -348,20 +354,8 @@ if (lroot) print*,legendre_coeff
           deallocate(legendre_coeff)
           if (lkinflow_as_comaux) call update_ghosts(f,iux,iuz) 
           
-          endif
-          else
+        elseif (kinematic_flow=='spher-harm-poloidal'.or.kinematic_flow=='spher-harm-poloidal-per') then
 
-! set the initial velocity to zero
-          if (kinematic_flow/='from-snap'.or.kinematic_flow/='from-foreign-snap') f(:,:,:,iux:iuz) = 0.
-          if (lroot .and. (ip<14)) print*, 'initialize_hydro: iuu = ', iuu
-          call farray_index_append('iuu',iuu,3)
-        endif
-        
-        if (kinematic_flow=='spher-harm-poloidal'.or.kinematic_flow=='spher-harm-poloidal-per') then
-          if (.not.lspherical_coords) call inevitably_fatal_error("init_uu", &
-              '"spher-harm-poloidal" only meaningful for spherical coordinates')
-          if (.not.lkinflow_as_aux) call inevitably_fatal_error("init_uu", &
-              '"spher-harm-poloidal" requires lkinflow_as_aux=T')
           if (n_xprof==-1) then
             tmp_mn=(x(l1:l2)-xyz0(1))*(x(l1:l2)-xyz1(1))
             vel_prof=tmp_mn/x(l1:l2) + 2.*x(l1:l2)-(xyz0(1)+xyz1(1))     ! f/r + d f/dr 
@@ -401,13 +395,24 @@ if (lroot) print*,legendre_coeff
               enddo
             enddo
           endif
+        else
+!
+! set the initial velocity to zero
+!
+          if (kinematic_flow/='from-snap'.or.kinematic_flow/='from-foreign-snap') f(:,:,:,iux:iuz) = 0.
+          call farray_index_append('iuu',iuu,3)
+        
+        endif   !  if (kinematic_flow=='spher-harm-poloidal'.or.kinematic_flow=='spher-harm-poloidal-per')
+      else      !  if (lkinflow_as_aux.or.lkinflow_as_comaux)
+        if (iuu==0) then
+          call warning('initialize_hydro','no auxiliary registered for kinflow - lkinflow_as_*aux is ignored')
+          lkinflow_as_aux=.false.; lkinflow_as_comaux=.false.
+        else
+          if (lkinflow_as_uudat) call fatal_error('initialize_hydro', &
+              'kinflow_as_uudat requires lkinflow_as_aux=T or lkinflow_as_comaux=T')
         endif
       endif
 !
-      if (ivid_uu/=0) then
-        if (.not.lkinflow_as_aux) call alloc_slice_buffers(uu_xy,uu_xz,uu_yz,uu_xy2,uu_xy3,uu_xy4,uu_xz2)
-      endif
-
       if (kinematic_flow=='from-foreign-snap') then
         if (lforeign) then
           if (.not.lreloading) then
@@ -452,6 +457,11 @@ if (lroot) print*,legendre_coeff
           call fatal_error("initialize_hydro", "No foreign code available")
         endif
       endif
+!
+      if (ivid_uu/=0) then
+        if (.not.lkinflow_as_aux) call alloc_slice_buffers(uu_xy,uu_xz,uu_yz,uu_xy2,uu_xy3,uu_xy4,uu_xz2)
+      endif
+
       call calc_means_hydro(f)
 !
     endsubroutine initialize_hydro
