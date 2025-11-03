@@ -3761,10 +3761,8 @@ outer:do ikz=1,nz
 !
       if (variabl=='rhocc') then
         pdf_var=exp(f(l1:l2,m,n,ilnrho))*f(l1:l2,m,n,ilncc)-pdf_mean
-        logscale=.false.
       elseif (variabl=='cc') then
         pdf_var=f(l1:l2,m,n,ilncc)-pdf_mean
-        logscale=.false.
       elseif (variabl=='lncc') then
         pdf_var=abs(f(l1:l2,m,n,ilncc)-pdf_mean)
         logscale=.true.
@@ -3772,7 +3770,6 @@ outer:do ikz=1,nz
         call grad(f,ilncc,gcc)
         call dot2_mn(gcc,gcc2)
         pdf_var=sqrt(gcc2)
-        logscale=.false.
       elseif (variabl=='lngcc') then
         call grad(f,ilncc,gcc)
         call dot2_mn(gcc,gcc2)
@@ -3784,13 +3781,10 @@ outer:do ikz=1,nz
                  f(l1:l2,m,n,iez)*f(l1:l2,m,n,ibz))/sqrt( &
                 (f(l1:l2,m,n,iex)**2+f(l1:l2,m,n,iey)**2+f(l1:l2,m,n,iez)**2) &
                *(f(l1:l2,m,n,ibx)**2+f(l1:l2,m,n,iby)**2+f(l1:l2,m,n,ibz)**2))
-        logscale=.false.
       elseif (variabl=='special') then
         pdf_var=f(l1:l2,m,n,ispecial)
-        logscale=.false.
       elseif (variabl=='lnspecial') then
         pdf_var=alog(f(l1:l2,m,n,ispecial))
-        logscale=.false.
       else
         call fatal_error('pdf', 'unknown variable '//trim(variabl))
       endif
