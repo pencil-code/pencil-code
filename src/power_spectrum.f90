@@ -3816,6 +3816,10 @@ outer:do ikz=1,nz
 !
 !  Communicate and append from root processor.
 !
+!  03-Nov-2025/Kishore: the output file has no information on the value of logscale.
+!  03-Nov-2025/Kishore: I thus propose to also add the value of logscale in the
+!  03-Nov-2025/Kishore: write(1,10) statement below. Any objections?
+!
     call mpireduce_sum_int(pdf_yy,pdf_yy_sum,n_pdf)
     if (lroot) then
        pdf_file=trim(datadir)//'/pdf_'//trim(variabl)//'.dat'
