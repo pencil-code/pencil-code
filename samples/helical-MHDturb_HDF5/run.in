@@ -13,6 +13,9 @@
  !comment_char='%'     !(useful when using matlab for visualization)
   lequatorz=T          !(to indicate that north/south diagnostics in in z)
   dt=4e-2
+
+  lspec_at_tplusdt=T
+  lnrho_pdf=T
 /
 &eos_run_pars
 /
