@@ -3761,6 +3761,10 @@ outer:do ikz=1,nz
 !
 !  select the right variable
 !
+!  03-Nov-2025/Kishore: I think the setting of logscale is inverted here; we need
+!  03-Nov-2025/Kishore: to use logscale for variables which are non-negative.
+!  03-Nov-2025/Kishore: Linear bins (i.e. logscale=F) can be used for lncc and lngcc.
+!
       if (variabl=='rhocc') then
         pdf_var=exp(f(l1:l2,m,n,ilnrho))*f(l1:l2,m,n,ilncc)-pdf_mean
       elseif (variabl=='cc') then
