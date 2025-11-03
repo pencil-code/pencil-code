@@ -434,11 +434,9 @@ endif
 # Check number of cpus.
 #
 UNAME_S := $(shell uname -s)
-ifeq ($(UNAME_S),Darwin)
-	ncpus := $(shell (grep '^[^!]*ncpus *= *[1-9]' cparam.local | sed \'\' -e's/.*ncpus *= *\([1-9][0-9]*\).*$$/\1/'))
-else
-	ncpus := $(shell (grep '^[^!]*ncpus *= *[1-9]' cparam.local | sed -e's/.*ncpus *= *\([1-9][0-9]*\).*$$/\1/'))
-endif
+#ifeq ($(UNAME_S),Darwin)
+#  ncpus := $(shell (grep '^[^!]*ncpus *= *[1-9]' cparam.local | sed \'\' -e's/.*ncpus *= *\([1-9][0-9]*\).*$$/\1/'))
+ncpus := $(shell (grep '^[^!]*ncpus *= *[1-9]' cparam.local | sed -e's/.*ncpus *= *\([1-9][0-9]*\).*$$/\1/'))
 #
 ifeq ($(MPICOMM),$(filter $(MPICOMM), mpicomm))
 #
