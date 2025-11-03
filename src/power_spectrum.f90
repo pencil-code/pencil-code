@@ -3736,7 +3736,9 @@ outer:do ikz=1,nz
     character (len=*) :: variabl
     logical :: logscale=.false.
     integer, pointer :: ispecial
-
+!
+    intent(in) :: f, variabl, pdf_mean, pdf_rms
+!
     if (variabl=='special' .or. variabl=='lnspecial') &
       call get_shared_variable('ispecial', ispecial, caller='pdf')
 !
