@@ -688,6 +688,7 @@ module Cdata
   logical :: ab_phispec=.false.,ou_phispec=.false.
   logical :: rhocc_pdf=.false.,cc_pdf=.false.,lncc_pdf=.false.
   logical :: gcc_pdf=.false., lngcc_pdf=.false., lnspecial_pdf=.false., special_pdf=.false.
+  logical :: lnrho_pdf=.false.
   logical :: FI_mixfrac_pdf2d=.false.
   logical :: cosEB_pdf=.false.
   logical :: ang_jb_pdf1d=.false., ang_ub_pdf1d=.false., ang_ou_pdf1d=.false.

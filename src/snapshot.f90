@@ -835,6 +835,7 @@ module Snapshot
 
       use Particles_main, only: particles_powersnap
       use Power_spectrum
+      use EquationOfState, only: lnrho0
       use Pscalar, only: cc2m, gcc2m, rhoccm
       use Struct_func, only: structure
       use Sub, only: curli
@@ -1052,9 +1053,15 @@ module Snapshot
         if (lncc_pdf)      call pdf(f,'lncc' ,rhoccm,sqrt(cc2m))
         if (gcc_pdf)       call pdf(f,'gcc'  ,0.    ,sqrt(gcc2m))
         if (lngcc_pdf)     call pdf(f,'lngcc',0.    ,sqrt(gcc2m))
+!
+!  PDFs of other quantities
+!
         if (cosEB_pdf)     call pdf(f,'cosEB',0.    ,1.)
         if (lnspecial_pdf) call pdf(f,'lnspecial',0.,1.)
         if (special_pdf)   call pdf(f,'special',0.,1.)
+!       NOTE: the variance of lnrho should be of the order of Ma^2, but
+!       calculating that here just to scale the variable seems overkill.
+        if (lnrho_pdf)     call pdf(f,'lnrho',lnrho0,1.)
 !
 !  Do k-dependent pdf
 !

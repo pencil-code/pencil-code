@@ -3720,6 +3720,7 @@ outer:do ikz=1,nz
 !  same time when spectra are invoked (called in wsnaps).
 !
 !    2-dec-03/axel: coded
+!    03-Nov-2025/Kishore: added lnrho
 !
     use Sub, only: grad, dot2_mn
     use Mpicomm, only: mpireduce_sum_int
@@ -3791,6 +3792,12 @@ outer:do ikz=1,nz
         pdf_var=f(l1:l2,m,n,ispecial)
       elseif (variabl=='lnspecial') then
         pdf_var=alog(f(l1:l2,m,n,ispecial))
+      elseif (variabl=='lnrho') then
+        if (ldensity_nolog) then
+          pdf_var = log(f(l1:l2,m,n,irho)) - pdf_mean
+        else
+          pdf_var = f(l1:l2,m,n,ilnrho) - pdf_mean
+        endif
       else
         call fatal_error('pdf', 'unknown variable '//trim(variabl))
       endif
