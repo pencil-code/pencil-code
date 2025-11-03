@@ -4,12 +4,12 @@
 !
 module Syscalls
 !
-  use Cparam, only: ikind8
+  !!!use Cparam, only: ikind8
   use Geometrical_types, only: torus_rect
 
   implicit none
 !
-  !integer, parameter :: ikind8=selected_int_kind(14)  ! 8-byte integer kind
+  integer, parameter :: ikind8=selected_int_kind(14)  ! 8-byte integer kind
   integer, parameter :: rkind8=selected_real_kind(12) ! 8-byte real kind
 
   external directory_exists_c

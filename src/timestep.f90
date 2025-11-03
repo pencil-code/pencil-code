@@ -197,8 +197,11 @@ module Timestep
           call advance_shear(f, df, dtsub)
         endif
 !
-      if (.not. lgpu) call update_after_substep(f,df,dtsub,llast)
-      if (lgpu) call after_timestep_gpu
+        if (lgpu) then
+          call after_timestep_gpu
+        else
+          call update_after_substep(f,df,dtsub,llast)
+        endif
 !
         ! [PAB] according to MR this breaks the autotest.
         ! @Piyali: there must be a reason to add an additional global communication,

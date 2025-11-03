@@ -194,13 +194,13 @@ module FArrayManager
         endif
         maux_vtxbuf_index(ivar) = vtxbuf_index
         if (present(array)) then
-                do i = 1,array-1
-                        maux_vtxbuf_index(ivar+i) = vtxbuf_index+i
-                enddo
+          do i = 1,array-1
+            maux_vtxbuf_index(ivar+i) = vtxbuf_index+i
+          enddo
         else if (present(vector)) then
-                do i = 1,vector-1
-                        maux_vtxbuf_index(ivar+i) = vtxbuf_index+i
-                enddo
+          do i = 1,vector-1
+            maux_vtxbuf_index(ivar+i) = vtxbuf_index+i
+          enddo
         endif
 
       endif

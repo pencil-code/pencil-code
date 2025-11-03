@@ -733,11 +733,11 @@ module Radiation
 !
 !  Calculate source function and opacity.
 !
-          if(lgpu) then
-                  call source_function_and_opacity_gpu(inu)
+          if (lgpu) then
+            call source_function_and_opacity_gpu(inu)
           else
-                call source_function(f,inu)
-                call opacity(f,inu)
+            call source_function(f,inu)
+            call opacity(f,inu)
           endif
 !
 !  Do the rest only if we do not do diffusion approximation.
@@ -2715,8 +2715,8 @@ module Radiation
 ! Source function
 !
         case ('Srad'); 
-                if (lgpu) call fatal_error('get_slices_radiation','Can not get Srad slices with GPU yet!')
-                call assign_slices_f_scal(slices,Srad,1)
+          if (lgpu) call fatal_error('get_slices_radiation','Can not get Srad slices with GPU yet!')
+          call assign_slices_f_scal(slices,Srad,1)
 !
 !  Opacity
 !

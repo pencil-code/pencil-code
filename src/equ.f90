@@ -107,7 +107,7 @@ module Equ
 !  Get the adress of the f-array on the GPU's global memory for use
 !  in offloading, training etc.
 !
-      if (lgpu) call get_farray_ptr_gpu
+      if (lgpu) call get_farray_ptr_gpu   !Why here? should be static
       call load_variables_to_gpu 
 !
 !  Initialize counter for calculating and communicating print results.
@@ -438,6 +438,7 @@ module Equ
 !***********************************************************************
     subroutine load_variables_to_gpu
       use GPU, only: update_on_gpu
+
       use Special, only: load_variables_to_gpu_special
       use Hydro, only: load_variables_to_gpu_hydro
 
@@ -447,9 +448,9 @@ module Equ
       if (lhydro)   call load_variables_to_gpu_hydro
       !TP: need to load it on the first substep where it is wrong!
       !    and the correct one after dt is calculated to be in sync with the CPU
-      if (lgpu .and. (ldustvelocity .or. ldustdensity) .and. (itsub <= 2)) then
+      if (lgpu .and. (ldustvelocity .or. ldustdensity) .and. (itsub <= 2)) &
         call update_on_gpu(dt_beta_ts_index,'AC_dt_beta_ts__mod__cdata')
-      endif
+
     endsubroutine
 !***********************************************************************
    subroutine write_diagnostics(f)
@@ -1826,9 +1827,7 @@ module Equ
       beta_ts =(/ 1/3.0, 15/16.0,    8/15.0 , 0.0, 0.0 /)
       alpha_ts=(/   0.0, -5/9.0 , -153/128.0, 0.0, 0.0 /)
 
-      if (itorder /= 1 .and. itorder /= 3) then
-          call fatal_error('test_rhs_gpu','Need itorder to be 1 or 3!')
-      endif
+      if (itorder /= 1 .and. itorder /= 3) call fatal_error('test_rhs_gpu','need itorder to be 1 or 3')
       call copy_farray_from_GPU(f,.true.)
       f_copy = f
       ldiagnos = .false.
