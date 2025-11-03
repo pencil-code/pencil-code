@@ -19,13 +19,11 @@
 #include <fstream>
 #include <dlfcn.h>
 
-
 //TP: defined here since mpi.h can have its own definition of DOUBLE_PRECISION
 //    and we don't want to conflict it with it. This is at least true on my laptop
 #if AC_DOUBLE_PRECISION
 #define DOUBLE_PRECISION 1
 #endif
-
 
 #define CUDA_ERRCHK(X)
 int nt = 0;
@@ -153,7 +151,6 @@ void print_debug();
 
 extern "C" void copyFarray(AcReal* f);    // forward declaration
 extern "C" void loadFarray(); // forward declaration
-
 
 /***********************************************************************************************/
 AcReal cpu_pow(AcReal const val, AcReal exponent)
@@ -1196,8 +1193,7 @@ void scaling(){
 #endif
 }
 /***********************************************************************************************/
-void
-load_f_ode()
+void load_f_ode()
 {
         //TP: this is simply the initial implementation
         //TODO: benchmark what is the most efficient way of getting ode array to the GPU each substep
@@ -1213,10 +1209,10 @@ load_f_ode()
 /***********************************************************************************************/
 extern "C" void beforeBoundaryGPU(bool lrmv, int isubstep, double t)
 {
-// Load variable values of ODE variables to GPU since before boundary may use them
+// Load values of ODE variables to GPU since before boundary may use them
 	load_f_ode();
 
-// Load those dynamical parameters (those which depend on time) to GPU
+// Load those dynamical parameters which depend on time to GPU
 
  	acDeviceSetInput(acGridGetDevice(), AC_lrmv, lrmv);
  	acDeviceSetInput(acGridGetDevice(), AC_t, AcReal(t));
@@ -1406,14 +1402,11 @@ if (it % 5 !=0) return;
     }
 		*/
 
-
-		
-	
 	#endif
 	if(called_training) called_training = false;
 }
 /***********************************************************************************************/
-extern "C" void afterTimeStepGPU()
+extern "C" void afterSubStepGPU()
 {
 	if (acDeviceGetInput(acGridGetDevice(), AC_step_num) == PC_FIRST_SUB_STEP)
 	{

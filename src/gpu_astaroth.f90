@@ -29,7 +29,7 @@ module GPU
   external get_farray_ptr_gpu_c
   external rhs_gpu_c
   external before_boundary_gpu_c
-  external after_timestep_gpu_c 
+  external update_after_substep_gpu_c 
   external source_function_and_opacity_gpu_c
   external load_farray_c
   external reload_gpu_config_c
@@ -174,9 +174,9 @@ contains
 !
     endsubroutine before_boundary_gpu
 !**************************************************************************
-    subroutine after_timestep_gpu
-      call after_timestep_gpu_c
-    endsubroutine after_timestep_gpu
+    subroutine update_after_substep_gpu
+      call update_after_substep_gpu_c
+    endsubroutine update_after_substep_gpu
 !**************************************************************************
     subroutine gpu_set_dt
 !
