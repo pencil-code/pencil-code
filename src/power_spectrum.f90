@@ -3794,7 +3794,7 @@ outer:do ikz=1,nz
       if (logscale) then
         pdf_dx=(pdf_max_logscale-pdf_min_logscale)/n_pdf
         pdf_dx1=1./pdf_dx
-        do l=l1,l2
+        do l=1,nx
           i_pdf=1+int(pdf_dx1*log10(pdf_scl*pdf_var(l))-pdf_min_logscale)
           i_pdf=min(max(i_pdf,1),n_pdf)  !(make sure it's inside array boundaries)
           pdf_yy(i_pdf)=pdf_yy(i_pdf)+1
@@ -3802,7 +3802,7 @@ outer:do ikz=1,nz
       else
         pdf_dx=(pdf_max-pdf_min)/n_pdf
         pdf_dx1=1./pdf_dx
-        do l=l1,l2
+        do l=1,nx
           i_pdf=1+int(pdf_dx1*(pdf_scl*pdf_var(l)-pdf_min))
           i_pdf=min(max(i_pdf,1),n_pdf)  !(make sure it's inside array boundries)
           pdf_yy(i_pdf)=pdf_yy(i_pdf)+1
