@@ -3563,7 +3563,7 @@ endif
 	fi
 	@echo "  <timestamp   type='end'>`date`</timestamp>\n</buildtime>" >> .buildtime
 	$${PENCIL_HOME}/utils/pc_identify_revision --write
-	@mv -f ../reference_link.txt.tmp ../reference_link.txt
+	$(MAKE) move_reference_link
 
 code: Makefile.inc Makefile-standard.inc cparam.inc | $(SPECIAL_DEPS)
 	$${PENCIL_HOME}/utils/pc_identify_revision --reset
@@ -3585,7 +3585,13 @@ ifneq ($(MODULE_CMD),)
 endif
 	@echo "  <timestamp   type='end'>`date`</timestamp>\n</buildtime>" >> .buildtime
 	$${PENCIL_HOME}/utils/pc_identify_revision --write
+	$(MAKE) move_reference_link
+#
+move_reference_link:
+	#reference_link.tmp may not exist if pc_cleansrc is being run in an up-to-date directory, so we can't blindly call `mv -f`
+ifneq ("$(wildcard $(../reference_link.txt.tmp))","")
 	@mv -f ../reference_link.txt.tmp ../reference_link.txt
+endif
 #
 production:
 	$(eval PRODUCTION=ON)
