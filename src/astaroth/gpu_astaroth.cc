@@ -1914,7 +1914,7 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_)  /
 		
   //if (ltest_bcs) testBCs();
   //TP: for autotuning
-  afterTimeStepGPU();
+  afterSubStepGPU();
   autotune_all_integration_substeps();
   if (rank==0 && ldebug) printf("memusage before store config= %f MBytes\n", acMemUsage()/1024.);
   acStoreConfig(acDeviceGetLocalConfig(acGridGetDevice()), "PC-AC.conf");

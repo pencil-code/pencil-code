@@ -1784,7 +1784,7 @@ module Equ
       use Mpicomm
       use Boundcond
       use Gpu, only: before_boundary_gpu, rhs_gpu, copy_farray_from_GPU, get_farray_ptr_gpu,&
-                     after_timestep_gpu,test_gpu_bcs
+                     update_after_substep_gpu,test_gpu_bcs
       use Deriv, only: der
       use Special, only: special_after_timestep
 !$    use ISO_fortran_env, only: stdout => output_unit
@@ -1863,7 +1863,7 @@ module Equ
         !if (itsub == 5) f_copy(l1:l2,m1:m2,n1:n2,1:mvar) = f_beta(l1:l2,m1:m2,n1:n2,1:mvar)
       enddo
       if (lspecial) call special_after_timestep(f_copy, df_copy, dt, .true.)
-      call after_timestep_gpu
+      call update_after_substep_gpu
       call copy_farray_from_GPU(f,.true.)
 
       f_diff = abs((f_copy-f)/(f_copy+tini))
