@@ -164,7 +164,7 @@ Subsequent runs are fast and only rebuild modified files.
 
 .. note::
 
-   This command generates the html of all the rst files and  the automatic documentation for all Python and Fortran modules. It currently takes around 30 minutes. 
+   This command generates the html of all the rst files and  the automatic documentation for all Python and Fortran modules. It currently takes around 20 minutes. 
 
 How to run - fast
 ^^^^^^^^^^^^^^^^^^^

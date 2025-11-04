@@ -11,6 +11,10 @@ from bibtexparser import bibdatabase
 # Patch the months, since our bibtex has entries such as 'august', but bibtexparser expects e.g. 'aug'
 bibdatabase.COMMON_STRINGS.update({it.lower(): it.capitalize() for it in bibdatabase.COMMON_STRINGS.values()})
 
+# Read the bib file
+with open("../citations/ref.bib", "r") as f:
+    bb = bibtexparser.bparser.BibTexParser(common_strings=True).parse_file(f)
+
 class RstClothCustom(RstCloth):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -48,13 +52,34 @@ class RstClothCustom(RstCloth):
         for row in rows:
             self.li(row[0], bullet="* -", indent=indent + 3)
             for cell in row[1:]:
-                if isinstance(cell, list):
+                if not cell:
+                    self.li("", bullet="  -", indent=indent + 3)
+                elif isinstance(cell, list):
                     self.li(cell[0], bullet="  -  *", indent=indent + 3)
                     for item in cell[1:]:
                         self.li(item, bullet="     *", indent=indent + 3)
                 else:
                     self.li(cell, bullet="  -", indent=indent + 3)
         self.newline()
+
+def format_paper(e):
+        ret = ""
+        # Process author list
+        authors = e['author'].replace("\n", " ").split(' and ')
+        fixed = []
+        for author in authors:
+            assert author.count(",") == 1
+            last = author.split(",")[0].strip().lstrip("{").rstrip("}").encode().decode("latex")
+            last = re.sub(r"{(\w)}", r"\1", last)
+            fixed.append(last)
+        if len(fixed) == 1:
+            authorlist = fixed
+        elif len(fixed) == 2:
+            authorlist = " & ".join(fixed)
+        else:
+            authorlist = ", ".join(fixed[:-1]) + f" & {fixed[-1]}"
+        title = e['title'].strip().lstrip("{").rstrip("}").strip()
+        return f"{authorlist} ({e['year']}). *{title}*, DOI: `{e['doi']} <https://dx.doi.org/{e['doi']}>`__, ADS: `{e['ID']} <https://ui.adsabs.harvard.edu/abs/{e['ID']}/abstract>`__"
 
 def process_file(file) -> tuple[str, str]:
     """
@@ -76,56 +101,80 @@ def process_file(file) -> tuple[str, str]:
         and the module description string extracted from the file. If the file does not contain a 'module'
         declaration, the comment will be 'Not a module'.
     """
+    with open(file, "r") as f:
+        lines = f.readlines()
+
     module_comments = [] # Lines of module comments
     module_started = False # We encountered the "module NAME" declaration
     has_module_doc = False
     in_comments = True # We are still adding lines to the module_comments list
-    with open(file, "r") as fp:
-        for line_raw in fp:
-            line = line_raw.strip()
-            if line.lower().startswith("module "):
-                module_started = True
-                if not in_comments:
-                    break
-                continue
-            if not line:
-                if module_comments:
-                    in_comments = False
-                continue
-            if line.startswith("!!"):
-                continue
-            if line.startswith("!"):
-                if not in_comments:
-                    continue
-                comment_line = line[1:].replace('`', "'").strip()
-                if comment_line.startswith("$Id") or comment_line.startswith("--"):
-                    continue
-                if comment_line.startswith("MODULE_DOC:") or comment_line.startswith("MOUDLE_DOC"):
-                    has_module_doc = True
-                    comment_line = comment_line[11:].strip()
-                    module_comments.append(comment_line)
-                    continue
-                if has_module_doc:
-                    in_comments = False
-                    continue
-                if not comment_line:
-                    if not module_comments:
-                        continue
-                    else:
-                        in_comments = False
-                        continue
-                if comment_line.startswith("**") or comment_line.startswith("CPARAM"):
-                    in_comments = False
-                    continue
-                module_comments.append(comment_line)
-                continue
-            if in_comments:
+    for line_raw in lines:
+        line = line_raw.strip()
+        if line.lower().startswith("module "):
+            module_started = True
+            if not in_comments:
+                break
+            continue
+        if not line:
+            if module_comments:
                 in_comments = False
             continue
+        if line.startswith("!!"):
+            continue
+        if line.startswith("!"):
+            if not in_comments:
+                continue
+            comment_line = line[1:].replace('`', "'").strip()
+            if comment_line.startswith("$Id") or comment_line.startswith("--"):
+                continue
+            if comment_line.startswith("MODULE_DOC:") or comment_line.startswith("MOUDLE_DOC"):
+                has_module_doc = True
+                comment_line = comment_line[11:].strip()
+                module_comments.append(comment_line)
+                continue
+            if has_module_doc:
+                in_comments = False
+                continue
+            if not comment_line:
+                if not module_comments:
+                    continue
+                else:
+                    in_comments = False
+                    continue
+            if comment_line.startswith("**") or comment_line.startswith("CPARAM"):
+                in_comments = False
+                continue
+            module_comments.append(comment_line)
+            continue
+        if in_comments:
+            in_comments = False
+        continue
     if not module_started:
         module_comments = ["Not a module"]
 
-    return (os.path.basename(file).replace(".f90", ""), " ".join(module_comments).replace("_", r"\_"))
+    # Get scientific reference, if any
+    MARKER = "AUTOMATIC REFERENCE-LINK.TEX GENERATION"
+    papers = []
+    for i, line in enumerate(lines):
+        if MARKER not in line:
+            continue
+        # Skip the line and the next two lines (bla bla)
+        j = i+3
+        if lines[j].strip() in ["!", ""]:
+            j += 1
+        while lines[j].strip() not in ["!", ""] and not lines[j].startswith("!**"):
+            papers.append(lines[j].lstrip("!").strip().split(",")[0])
+            j += 1
+        break
+    refs= []
+    if papers:
+        for paper in papers:
+            if paper in bb.entries_dict:
+                e = bb.entries_dict[paper]
+                refs.append(format_paper(e))
+            else:
+                refs.append(f"{paper}: Not found")
+    return os.path.basename(file).replace(".f90", ""), " ".join(module_comments).replace("_", r"\_"), refs
 
 def process_directory(path) -> list:
     """
@@ -176,13 +225,13 @@ def create_fortran_modules_rst(path_to_src: str) -> list[str]:
     parsed_f90 = []
     for dirname, table in modules.items():
         os.makedirs(os.path.join(F90ROOT, dirname), exist_ok=True)
-        for module, _ in table:
+        for module, _, _ in table:
             # Modules that won't compile - skip them
             # Changed to only do this files for testing.
             if f"{dirname}/{module}.f90" in FILES_THAT_DONT_WORK or not BUILD_FORTRAN_AUTODOCS:
                 continue
             with open(os.path.join(F90ROOT, dirname, f"{module}.rst"), "w") as f:
-                d = RstCloth(f)
+                d = RstCloth(f, line_width=5000)
                 d.title(module)
                 d.newline()
                 d.directive("f:autosrcfile", arg=f"{module}.f90")
@@ -195,7 +244,7 @@ def create_fortran_modules_rst(path_to_src: str) -> list[str]:
                 parsed_f90.append(f"{dirname}/{module}")
     # Main index
     with open(os.path.join(F90ROOT, "index.rst"), "w") as f:
-        d = RstCloth(f)
+        d = RstClothCustom(f, line_width=5000)
         d.ref_target('fortran_modules')
         d.title("Fortran modules")
         d.content(f"Currently, the Pencil Code contains {total_modules} Fortran files.")
@@ -212,11 +261,11 @@ def create_fortran_modules_rst(path_to_src: str) -> list[str]:
             table_content = []
             for it in table:
                 if f"{dirname}/{it[0]}" in parsed_f90:
-                    table_content.append((f":doc:`{dirname}/{it[0]}`", it[1]))
+                    table_content.append((f":doc:`{dirname}/{it[0]}`", it[1], it[2]))
                 else:
                     table_content.append(it)
             d.newline()
-            d.table_list(headers=["File", "Description"], data=table_content, widths=[25,75])
+            d.table_list_multi(headers=["File", "Description", "Scientific References"], data=table_content, widths=[25,40,35])
             d.directive("toctree", fields=[("hidden", ""), ("maxdepth", "1")], content=[f"{dirname}/{it[0]}" for it in table])
             d.newline()
         d.newline()
@@ -777,70 +826,6 @@ def process_init_run_pars():
                 else:
                     table.append((f"*{k}*", "", "", ""))
             d.table_list(["Variable", "Type", "Default", "Meaning"], data=table, widths=[20, 10, 10, 60])
-
-def process_papers():
-    def format_paper(e):
-        ret = ""
-        # Process author list
-        authors = e['author'].replace("\n", " ").split(' and ')
-        fixed = []
-        for author in authors:
-            assert author.count(",") == 1
-            last = author.split(",")[0].strip().lstrip("{").rstrip("}").encode().decode("latex")
-            last = re.sub(r"{(\w)}", r"\1", last)
-            fixed.append(last)
-        if len(fixed) == 1:
-            authorlist = fixed
-        elif len(fixed) == 2:
-            authorlist = " & ".join(fixed)
-        else:
-            authorlist = ", ".join(fixed[:-1]) + f" & {fixed[-1]}"
-        title = e['title'].strip().lstrip("{").rstrip("}").strip()
-        return f"{authorlist} ({e['year']}). *{title}*, DOI: `{e['doi']} <https://dx.doi.org/{e['doi']}>`__, ADS: `{e['ID']} <https://ui.adsabs.harvard.edu/abs/{e['ID']}/abstract>`__"
-
-    MARKER = "AUTOMATIC REFERENCE-LINK.TEX GENERATION"
-    files = subprocess.check_output(
-        f'grep -rl "{MARKER}" ../../src/',
-        shell=True,
-        text=True
-    ).splitlines()
-    files = [it for it in files if it.endswith(".f90")]
-    files = sorted([it.replace("../../src/", "") for it in files], key=lambda x: (x.count("/") > 0, x.lower()))
-    refs = {}
-    for file in files:
-        papers = []
-        with open(f"../../src/{file}", "r") as f:
-            lines = f.readlines()
-        for i, line in enumerate(lines):
-            if MARKER not in line:
-                continue
-            # Skip the line and the next two lines (bla bla)
-            j = i+3
-            if lines[j].strip() in ["!", ""]:
-                j += 1
-            while lines[j].strip() not in ["!", ""] and not lines[j].startswith("!**"):
-                papers.append(lines[j].lstrip("!").strip().split(",")[0])
-                j += 1
-            break
-        if papers:
-            refs[file] = papers
-    # Now read the bib file
-    with open("../citations/ref.bib", "r") as f:
-        bb = bibtexparser.bparser.BibTexParser(common_strings=True).parse_file(f)
-    with open("code/tables/papers.rst", "w") as f:
-        d = RstClothCustom(f, line_width=5000)
-        d.title("Scientific references by module")
-        table = []
-        for file, papers in refs.items():
-            second = []
-            for paper in papers:
-                if paper in bb.entries_dict:
-                    e = bb.entries_dict[paper]
-                    second.append(format_paper(e))
-                else:
-                    second.append(f"{paper}: Not found")
-            table.append((file, second))
-        d.table_list_multi(["Module", "Scientific References"], data=table, widths=[25, 75])
 
 def process_bin_files():
     filedesc = {}

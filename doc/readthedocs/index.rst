@@ -75,4 +75,3 @@ Explore the sections below to get started, contribute, or run simulations with P
    code/sourceFortran/index
    code/tables/index
    code/tables/bin
-   code/tables/papers

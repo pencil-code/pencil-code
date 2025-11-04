@@ -10,8 +10,8 @@ first described or applied.
 
 To make these links automatic, we embed short BibTeX-style citations directly inside the
 Fortran source files. During the documentation build, these references are collected and
-used to generate a table that connects every module to its related scientific literature
-(:doc:`scientific references per module <code/tables/papers>`).
+used to generate the third column in the :doc:`Fortran modules </code/sourceFortran/index>` table that describes every module and connects them to its related scientific literature.
+
 
 
 How to add Scientic citations to the code
@@ -116,7 +116,11 @@ listed in the comment block, until it encounters another header line starting wi
 :file:`pencil-code/doc/citations/ref.bib`.
 
 The Python function that performs this operation is called
-:func:`process_papers`. Its logic can be summarized as follows:
+:func:`process_file`. Its logic can be summarized as follows:
+
+#. First process all Fortran files in the :file:`pencil-code/src` and extracts file names 
+
+#. Add the module description for the second column of the table 
 
 #. Use the UNIX command :command:`grep -rl "AUTOMATIC REFERENCE-LINK.TEX GENERATION"`
    to find all Fortran files that contain the citation marker.
@@ -139,5 +143,5 @@ The Python function that performs this operation is called
 
 Each entry in the table contains the name of the Fortran file (for example,
 :file:`special/gravitational_waves_hTXk.f90`) and its associated references. The result
-is then included automatically in the documentation as
-:doc:`code/tables/papers`.
+is then included automatically in the documentation as the third column in 
+:doc:`/code/sourceFortran/index`.
