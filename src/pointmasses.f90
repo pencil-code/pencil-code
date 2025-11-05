@@ -651,7 +651,7 @@ module PointMasses
         velocity_baricenter_secondaries=0.
         do ks=1,nqpar
           if (ks/=iprimary) then
-            kep_vel(ks)=sqrt(1./sma(ks)) !circular velocity
+            kep_vel(ks)=sqrt(GNewton/sma(ks)) !circular velocity
             velocity_baricenter_secondaries = velocity_baricenter_secondaries + kep_vel(ks)*pmass(ks)
           endif
         enddo
@@ -1213,15 +1213,15 @@ module PointMasses
 !
           if (lcallpointmass) then 
             dfq_cart(k,:) = dfq_cart(k,:) - Omega2_pm*evr_cart(1:3)
+            if (ladd_dragforce) call dragforce_pointmasses(k)
+!
+            if (lcoriolis_force) then
+              dfq(k,ivxq) = dfq(k,ivxq) + 2*Omega_Coriolis*fq(k,ivyq)
+              dfq(k,ivyq) = dfq(k,ivyq) - 2*Omega_Coriolis*fq(k,ivxq)
+            endif
+!
           else
             dfp_pt(ivpx_cart:ivpz_cart) = dfp_pt(ivpx_cart:ivpz_cart) - Omega2_pm*evr_cart(1:3)
-          endif
-!
-          if (ladd_dragforce) call dragforce_pointmasses(k)
-!
-          if (lcoriolis_force) then
-            dfq(k,ivxq) = dfq(k,ivxq) + 2*Omega_Coriolis*fq(k,ivyq)
-            dfq(k,ivyq) = dfq(k,ivyq) - 2*Omega_Coriolis*fq(k,ivxq)
           endif
 !
 !  Time-step constraint from N-body particles. We use both the criterion
