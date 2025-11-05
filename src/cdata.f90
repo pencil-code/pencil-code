@@ -559,7 +559,7 @@ module Cdata
 
   logical :: lout=.false.,headt=.false.,headtt=.true.,lrmv=.false.
   logical :: ldiagnos=.false.,lvideo=.false.,lwrite_prof=.true.,lout_sound=.false.
-  logical :: lrhs_diagnostic_output=.false.
+  logical :: ldiagnostic_output=.false.
   logical :: ltracers=.false.,lfixed_points=.false.
   logical :: l2davg=.false.,l2davgfirst=.false.
   logical :: l1davg=.false.,l1davgfirst=.false.,l1dphiavg=.false.

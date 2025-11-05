@@ -120,7 +120,7 @@ module Equ
 !  Derived diagnostics switches.
 !
       l1dphiavg=lcylinder_in_a_box.and.l1davgfirst
-      lrhs_diagnostic_output = ldiagnos.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst
+      ldiagnostic_output = ldiagnos.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst.or.lvideo
 !
 !  For chemistry with LSODE
 !
@@ -298,7 +298,7 @@ module Equ
       call timing('pde','after "after_boundary" calls')
 !
       if (lgpu) then
-        if (lrhs_diagnostic_output) then
+        if (ldiagnostic_output) then
           !wait in case the last diagnostic tasks are not finished
           call copy_farray_from_GPU(f)
           if (lode .and. lgpu) then
@@ -310,7 +310,7 @@ module Equ
         start_time = mpiwtime()
         call rhs_gpu(f,itsub)
 !TP: should be done after rhs_gpu since if doing testing against cpu want to get the right value of dt
-        if (lrhs_diagnostic_output) then
+        if (ldiagnostic_output) then
 !$        call save_diagnostic_controls
         endif
         end_time = mpiwtime()

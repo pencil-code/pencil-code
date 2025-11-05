@@ -797,7 +797,7 @@ module Snapshot
         !    it is not copied again for spectra. Instead we correct the timestamp to match with the data
         !    which comes before time advancement.
         !    When testing for agreement between CPU and GPU one can suppress all other output than spectra.
-        if(lrhs_diagnostic_output) then
+        if(ldiagnostic_output) then
                 tspec_save=t-dt
         else
                 tspec_save=t
