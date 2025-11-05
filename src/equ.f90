@@ -120,7 +120,7 @@ module Equ
 !  Derived diagnostics switches.
 !
       l1dphiavg=lcylinder_in_a_box.and.l1davgfirst
-      ldiagnostic_output = ldiagnos.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst.or.lvideo
+      ldiagnostic_output = ldiagnos.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst.or.(lvideo .and. lfirst)
 !
 !  For chemistry with LSODE
 !
