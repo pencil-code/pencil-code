@@ -617,7 +617,7 @@ ifneq ($(GPU),nogpu)
       #endif
     endif
     ifeq ($(wildcard astaroth/*),)
-      CATCH := $(shell export PENCIL_USER=GPU_AUTOTEST 2> /dev/null && cd .. 2>/dev/null && pc_setupsrc 2>/dev/null)
+      CATCH := $(shell export PENCIL_USER=GPU_AUTOTEST 2>/dev/null && cd .. 2>/dev/null && pc_setupsrc 2>/dev/null)
     endif
 
   else
@@ -3544,17 +3544,18 @@ PRODUCTION=OFF
 #
 LAST_OBJ=$(EXECUTABLES:.x=.o)
 legacy_code: Makefile.inc Makefile-standard.inc cparam.inc | $(SPECIAL_DEPS)
-	$${PENCIL_HOME}/utils/pc_identify_revision --reset
+	@$${PENCIL_HOME}/utils/pc_identify_revision --reset
 	@echo "<buildtime>\n  <timestamp type='start'>`date`</timestamp>" > .buildtime
 ifdef FC_HDF5_FULL
 	@echo HDF5 compiler and linker in $(FC_HDF5_FULL).
 endif
-	@# Realize error even when last command in pipe is FCCLEANER:
-	@echo "$(MAKE) $(MAKEOPTS) $(LAST_OBJ) $(EXECUTABLES)"
 ifneq ($(MODULE_CMD),)
 	@module -t list |& sed -e's/^ *[^ ]*idl[^ ]* *//' -e's/^ *[^ ]*cmake[^ ]* *//' -e's/^ *[^ ]*python[^ ]* *//' \
-                               -e'1 s/^/module load \\\n/' -e'$$ ! s/$$/ \\/g' -e'/Currently.*:/ d' > .moduleinfo
+	                       -e'1 s/^/module load \\\n/' -e'$$ ! s/$$/ \\/g' -e'/Currently.*:/ d' > .moduleinfo
 endif
+	@$(MAKE) move_reference_link
+	@# Realize error even when last command in pipe is FCCLEANER:
+	@echo "$(MAKE) $(MAKEOPTS) $(LAST_OBJ) $(EXECUTABLES)"
 	@if [ ! -z "$(FCCLEANER)" ]; then \
 	    ($(MAKE) $(MAKEOPTS) $(LAST_OBJ) $(EXECUTABLES) \
 	    || echo "PENCIL COMPILATION ERROR") $(FCCLEANER) ; \
@@ -3562,15 +3563,20 @@ endif
 	    $(MAKE) $(MAKEOPTS) $(LAST_OBJ) $(EXECUTABLES) ; \
 	fi
 	@echo "  <timestamp   type='end'>`date`</timestamp>\n</buildtime>" >> .buildtime
-	$${PENCIL_HOME}/utils/pc_identify_revision --write
-	$(MAKE) move_reference_link
+	@$${PENCIL_HOME}/utils/pc_identify_revision --write
 
+# Realize error even when last command in pipe is FCCLEANER
 code: Makefile.inc Makefile-standard.inc cparam.inc | $(SPECIAL_DEPS)
-	$${PENCIL_HOME}/utils/pc_identify_revision --reset
+	@$${PENCIL_HOME}/utils/pc_identify_revision --reset
 	@echo "<buildtime>\n  <timestamp type='start'>`date`</timestamp>" > .buildtime
 ifdef FC_HDF5_FULL
 	@echo HDF5 compiler and linker in $(FC_HDF5_FULL).
 endif
+ifneq ($(MODULE_CMD),)
+	@module -t list |& sed -e's/^ *[^ ]*idl[^ ]* *//' -e's/^ *[^ ]*cmake[^ ]* *//' -e's/^ *[^ ]*python[^ ]* *//' \
+	                       -e'1 s/^/module load \\\n/' -e'$$ ! s/$$/ \\/g' -e'/Currently.*:/ d' > .moduleinfo
+endif
+	@$(MAKE) move_reference_link
 	@# Realize error even when last command in pipe is FCCLEANER:
 	@echo "$(MAKE) -f Makefile.src $(MAKEOPTS) $(LAST_OBJ) $(EXECUTABLES)"
 	@if [ ! -z "$(FCCLEANER)" ]; then \
@@ -3579,16 +3585,11 @@ endif
 	else \
 	    $(MAKE) -f Makefile.src $(MAKEOPTS) $(LAST_OBJ) $(EXECUTABLES) ; \
 	fi
-ifneq ($(MODULE_CMD),)
-	@module -t list |& sed -e's/^ *[^ ]*idl[^ ]* *//' -e's/^ *[^ ]*cmake[^ ]* *//' -e's/^ *[^ ]*python[^ ]* *//' \
-                               -e'1 s/^/module load \\\n/' -e'$$ ! s/$$/ \\/g' -e'/Currently.*:/ d' > .moduleinfo
-endif
 	@echo "  <timestamp   type='end'>`date`</timestamp>\n</buildtime>" >> .buildtime
-	$${PENCIL_HOME}/utils/pc_identify_revision --write
-	$(MAKE) move_reference_link
+	@$${PENCIL_HOME}/utils/pc_identify_revision --write
 #
 move_reference_link:
-	#reference_link.tmp may not exist if pc_cleansrc is being run in an up-to-date directory, so we can't blindly call `mv -f`
+	@#reference_link.tmp may not exist if pc_cleansrc is being run in an up-to-date directory, so we can't blindly call `mv -f`
 ifneq ("$(wildcard $(../reference_link.txt.tmp))","")
 	@mv -f ../reference_link.txt.tmp ../reference_link.txt
 endif
@@ -3600,16 +3601,17 @@ production:
 FASTEXECS=code $(HELPER_EXECS_MIN)
 fast:
 	@echo "$(MAKE) $(MAKEOPTS) $(FASTEXECS)"
+ifneq ($(MODULE_CMD),)
+	@module -t list |& sed -e's/^ *[^ ]*idl[^ ]* *//' -e's/^ *[^ ]*cmake[^ ]* *//' -e's/^ *[^ ]*python[^ ]* *//' \
+	                       -e'1 s/^/module load \\\n/' -e'$$ ! s/$$/ \\/g' -e'/Currently.*:/ d' > .moduleinfo
+endif
+	@$(MAKE) move_reference_link
 	@if [ ! -z "$(FCCLEANER)" ]; then \
 	    ($(MAKE) $(MAKEOPTS) $(FASTEXECS) \
 	    || echo "PENCIL COMPILATION ERROR") $(FCCLEANER) ; \
 	else \
 	    $(MAKE) $(MAKEOPTS) $(FASTEXECS) ; \
 	fi
-ifneq ($(MODULE_CMD),)
-	@module -t list |& sed -e's/^ *[^ ]*idl[^ ]* *//' -e's/^ *[^ ]*cmake[^ ]* *//' -e's/^ *[^ ]*python[^ ]* *//' \
-                               -e'1 s/^/module load \\\n/' -e'$$ ! s/$$/ \\/g' -e'/Currently.*:/ d' > .moduleinfo
-endif
 #
 helper_min:
 	@echo "$(MAKE) $(MAKEOPTS) $(HELPER_EXECS_MIN)"
@@ -3622,16 +3624,17 @@ helper_min:
 #
 debug:
 	@echo "$(MAKE) $(MAKEOPTS) FFLAGS='$(FFLAGS) $(DEBUGFLAGS)' start.x run.x"
+ifneq ($(MODULE_CMD),)
+	@module -t list |& sed -e's/^ *[^ ]*idl[^ ]* *//' -e's/^ *[^ ]*cmake[^ ]* *//' -e's/^ *[^ ]*python[^ ]* *//' \
+                               -e'1 s/^/module load \\\n/' -e'$$ ! s/$$/ \\/g' -e'/Currently.*:/ d'> .moduleinfo
+endif
+	@$(MAKE) move_reference_link
 	@if [ ! -z "$(FCCLEANER)" ]; then \
 	    ($(MAKE) $(MAKEOPTS) FFLAGS='$(FFLAGS) $(DEBUGFLAGS)' start.x run.x \
 	    || echo "PENCIL COMPILATION ERROR") $(FCCLEANER) ; \
 	else \
 	    $(MAKE) $(MAKEOPTS) FFLAGS='$(FFLAGS) $(DEBUGFLAGS)' start.x run.x; \
 	fi
-ifneq ($(MODULE_CMD),)
-	@module -t list |& sed -e's/^ *[^ ]*idl[^ ]* *//' -e's/^ *[^ ]*cmake[^ ]* *//' -e's/^ *[^ ]*python[^ ]* *//' \
-                               -e'1 s/^/module load \\\n/' -e'$$ ! s/$$/ \\/g' -e'/Currently.*:/ d'> .moduleinfo
-endif
 #
 #  Handy for debugging; just compile by hand what is changed.
 #  When you use this you must be certain that everying is consistent.
