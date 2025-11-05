@@ -742,6 +742,7 @@ module Special
     endsubroutine calc_pencils_special
 !***********************************************************************
     subroutine calc_constrainteqn(p,tmp,constrainteqn)
+
       type(pencil_case) :: p
       real, dimension(nx),intent(IN) :: tmp
       real, dimension(nx), intent(OUT) :: constrainteqn
@@ -756,15 +757,20 @@ module Special
       else
         constrainteqn=(p%divE-tmp)/constrainteqn1
       endif
+
      endsubroutine calc_constrainteqn
 !***********************************************************************
-      real function get_mfpf()
-              get_mfpf = beta_inflation*Hp_target
-      end function get_mfpf
+     real function get_mfpf()
+
+       get_mfpf = beta_inflation*Hp_target
+
+     end function get_mfpf
 !***********************************************************************
-      real function get_fppf()
-              get_fppf=beta_inflation*((beta_inflation+1.)*Hp_target**2-appa_target)
-      end function get_fppf
+     real function get_fppf()
+
+       get_fppf=beta_inflation*((beta_inflation+1.)*Hp_target**2-appa_target)
+
+     end function get_fppf
 !***********************************************************************
       subroutine calc_axion_term(p,dst,gphi,alpff,lphihom)
 !
@@ -1112,7 +1118,7 @@ module Special
       call sum_mn_name(p%rhoe**2,idiag_rhoerms,lsqrt=.true.)
   !   endif
       if (idiag_divErms/=0) call sum_mn_name(p%divE**2,idiag_divErms,lsqrt=.true.)
-      if(idiag_constrainteqn > 0) then
+      if (idiag_constrainteqn > 0) then
         call calc_axion_term(p,tmp,p%gphi,alpf,lphi_hom)
         call calc_constrainteqn(p,tmp,constrainteqn)
         call sum_mn_name(constrainteqn,idiag_constrainteqn)
@@ -1334,60 +1340,54 @@ module Special
 !***********************************************************************
     subroutine pushpars2c(p_par)
 
-    use Syscalls, only: copy_addr
-    use General , only: string_to_enum
+      use Syscalls, only: copy_addr
 
-    integer, parameter :: n_pars=100
-    integer(KIND=ikind8), dimension(n_pars) :: p_par
+      integer, parameter :: n_pars=100
+      integer(KIND=ikind8), dimension(n_pars) :: p_par
 
-    call copy_addr(alpf,p_par(1))
-    call copy_addr(eta_ee,p_par(2))
-    call copy_addr(sige_prefactor,p_par(3))
-    call copy_addr(sigb_prefactor,p_par(4))
-    call copy_addr(mass_chi,p_par(5))
-    call copy_addr(igamma,p_par(6)) ! int
-    call copy_addr(ia0,p_par(7)) ! int
-    call copy_addr(idiva_name,p_par(8)) ! int
-    call copy_addr(llongitudinale,p_par(9)) ! bool
-    call copy_addr(llorenz_gauge_disp,p_par(10)) ! bool
-    call copy_addr(lphi_hom,p_par(11)) ! bool
-    call copy_addr(lnoncollinear_eb,p_par(12)) ! bool
-    call copy_addr(lnoncollinear_eb_aver,p_par(13)) ! bool
-    call copy_addr(lcollinear_eb,p_par(14)) ! bool
-    call copy_addr(lcollinear_eb_aver,p_par(15)) ! bool
-    call copy_addr(leedot_as_aux,p_par(16)) ! bool
-    call copy_addr(lcurlya,p_par(17)) ! bool
-    call copy_addr(lsolve_chargedensity,p_par(18)) ! bool
-    call copy_addr(ldive_as_aux,p_par(19)) ! bool
-    call copy_addr(lsige_as_aux,p_par(20)) ! bool
-    call copy_addr(lsigb_as_aux,p_par(21)) ! bool
-    call copy_addr(lallow_bprime_zero,p_par(22)) ! bool
-    call copy_addr(lswitch_off_divj,p_par(23)) ! bool
-    call copy_addr(lswitch_off_gamma,p_par(24)) ! bool
-    call copy_addr(lmass_suppression,p_par(25)) ! bool
-    call copy_addr(beta_inflation,p_par(26))
-    call copy_addr(c_light2,p_par(27))
-    call copy_addr(idiag_bcurlem,p_par(28)) ! int
-    call copy_addr(idiag_adphibm,p_par(29)) ! int
-    call copy_addr(idiag_johmrms,p_par(30)) ! int
-    call copy_addr(lapply_gamma_corr,p_par(31)) ! bool
-    call copy_addr(lphi_linear_regime,p_par(32)) ! bool
-    call copy_addr(weight_longitudinale,p_par(33))
-    call copy_addr(alpfpsi,p_par(34))
-    call copy_addr(coupl_gy,p_par(35))
-    call copy_addr(lpsi_hom,p_par(36)) ! bool
-    call copy_addr(iex,p_par(37)) ! int
-    call copy_addr(iey,p_par(38)) ! int
-    call copy_addr(iez,p_par(39)) ! int
-    call copy_addr(iedotx,p_par(40)) ! int
-    call copy_addr(iedoty,p_par(41)) ! int
-    call copy_addr(iedotz,p_par(42)) ! int
-    call copy_addr(idive,p_par(43)) ! int
-    call copy_addr(isige,p_par(44)) ! int
-    call copy_addr(isigb,p_par(45)) ! int
-    call copy_addr(irhoe,p_par(46)) ! int
-
-
+      call copy_addr(alpf,p_par(1))
+      call copy_addr(eta_ee,p_par(2))
+      call copy_addr(sige_prefactor,p_par(3))
+      call copy_addr(sigb_prefactor,p_par(4))
+      call copy_addr(mass_chi,p_par(5))
+      call copy_addr(igamma,p_par(6)) ! int
+      call copy_addr(ia0,p_par(7)) ! int
+      call copy_addr(idiva_name,p_par(8)) ! int
+      call copy_addr(llongitudinale,p_par(9)) ! bool
+      call copy_addr(llorenz_gauge_disp,p_par(10)) ! bool
+      call copy_addr(lphi_hom,p_par(11)) ! bool
+      call copy_addr(lnoncollinear_eb,p_par(12)) ! bool
+      call copy_addr(lnoncollinear_eb_aver,p_par(13)) ! bool
+      call copy_addr(lcollinear_eb,p_par(14)) ! bool
+      call copy_addr(lcollinear_eb_aver,p_par(15)) ! bool
+      call copy_addr(leedot_as_aux,p_par(16)) ! bool
+      call copy_addr(lcurlya,p_par(17)) ! bool
+      call copy_addr(lsolve_chargedensity,p_par(18)) ! bool
+      call copy_addr(ldive_as_aux,p_par(19)) ! bool
+      call copy_addr(lsige_as_aux,p_par(20)) ! bool
+      call copy_addr(lsigb_as_aux,p_par(21)) ! bool
+      call copy_addr(lallow_bprime_zero,p_par(22)) ! bool
+      call copy_addr(lswitch_off_divj,p_par(23)) ! bool
+      call copy_addr(lswitch_off_gamma,p_par(24)) ! bool
+      call copy_addr(lmass_suppression,p_par(25)) ! bool
+      call copy_addr(beta_inflation,p_par(26))
+      call copy_addr(c_light2,p_par(27))
+      call copy_addr(idiag_bcurlem,p_par(28)) ! int
+      call copy_addr(idiag_adphibm,p_par(29)) ! int
+      call copy_addr(idiag_johmrms,p_par(30)) ! int
+      call copy_addr(lapply_gamma_corr,p_par(31)) ! bool
+      call copy_addr(lphi_linear_regime,p_par(32)) ! bool
+      call copy_addr(weight_longitudinale,p_par(33))
+      call copy_addr(alpfpsi,p_par(34))
+      call copy_addr(coupl_gy,p_par(35))
+      call copy_addr(lpsi_hom,p_par(36)) ! bool
+      call copy_addr(iex,p_par(37)) ! int
+      call copy_addr(iey,p_par(38)) ! int
+      call copy_addr(iez,p_par(39)) ! int
+      call copy_addr(iedotx,p_par(40)) ! int
+      call copy_addr(iedoty,p_par(41)) ! int
+      call copy_addr(iedotz,p_par(42)) ! int
+      call copy_addr(irhoe,p_par(43)) ! int
 
     endsubroutine pushpars2c
 !***********************************************************************

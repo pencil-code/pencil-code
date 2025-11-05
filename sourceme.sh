@@ -8,6 +8,16 @@
 #    _sourceme_quiet=1; . $PENCIL_HOME/sourceme.sh; unset _sourceme_quiet
 #  into your .bashrc
 #
+if ( [ -e .git ] ); then
+	if [[ `grep '^\srebase *= *false' .git/config` != "" ]]; then
+	echo !!!WARNING - you have \"rebase = false\" settings in your .git/config!!!
+	echo !!!Pull strategy should always be \"--rebase\" on all branches!!!
+    fi
+#
+# Enforce basic pull policy to "rebase".
+#
+    git config pull.rebase true
+fi
 
 if [ -z $PENCIL_HOME ]; then
   unset _sourceme		# tabula rasa without PENCIL_HOME

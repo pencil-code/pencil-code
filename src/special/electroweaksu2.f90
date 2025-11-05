@@ -107,9 +107,11 @@ module Special
     lfixed_phase_WW, lskip_projection_WW, &
     lpower_profile_file, power_filename, ldivdotW_as_aux
 !
-  ! run parameters
+! run parameters
+!
   logical :: reinitialize_WW=.false., reinitialize_dWW=.false.
   real, dimension(3) :: rescale_WW=1.0, rescale_dWW=1.0
+
   namelist /special_run_pars/ &
     llongitudinalW, eta_WW, weight_longitudinalW, &
     lWddot_as_aux, ldivdotW_as_aux, reinitialize_WW, initWW, &
@@ -241,8 +243,8 @@ module Special
 !
 !  The following variables are also used in special/klein_gordon.f90
 !
-      call put_shared_variable('llongitudinalW',llongitudinalW)
       call put_shared_variable('coupl_gw',coupl_gw,caller='register_electroweaksu2')
+      call put_shared_variable('llongitudinalW',llongitudinalW)
 !
       if (lroot) call svn_id( &
            "$Id$")
@@ -330,8 +332,7 @@ module Special
 
       if (lklein_gordon) then
         call get_shared_variable('lphi_doublet',lphi_doublet, caller='initialize_electroweaksu2')
-        call get_shared_variable('lphi_weakcharge',lphi_weakcharge, &
-          caller='initialize_electroweaksu2')
+        call get_shared_variable('lphi_weakcharge',lphi_weakcharge)
       else
         if (.not.associated(lphi_doublet)) allocate(lphi_doublet,lphi_weakcharge)
         lphi_doublet=.false.
@@ -949,6 +950,7 @@ module Special
         constrainteqn(:,2)=(p%divdotW2 + tmp(:,2))/constrainteqn1(:,2)
         constrainteqn(:,3)=(p%divdotW3 + tmp(:,3))/constrainteqn1(:,3)
       endif
+
      endsubroutine calc_constrainteqn
 !***********************************************************************
     subroutine dspecial_dt(f,df,p)
@@ -1157,8 +1159,10 @@ module Special
     endsubroutine dspecial_dt
 !***********************************************************************
     subroutine calc_diagnostics_special(f,p)
+
       use Sub
       use Diagnostics
+
       real, dimension(mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
       real, dimension(nx,3) :: tmp, constrainteqn
@@ -1240,10 +1244,11 @@ module Special
       call sum_mn_name(p%rhoW3**2,idiag_rhoW3rms,lsqrt=.true.)
 
   !   endif
-      if(idiag_constrainteqnW > 0) then
+      if (idiag_constrainteqnW > 0) then
         call calc_constrainteqn(p,tmp,constrainteqn)
         call sum_mn_name(constrainteqn,idiag_constrainteqnW)
       endif
+
     endsubroutine calc_diagnostics_special
 !***********************************************************************
     subroutine read_special_init_pars(iostat)
@@ -1303,28 +1308,27 @@ module Special
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
-
 !
       if (lreset) then
-            idiag_W1rms=0; idiag_W2rms=0; idiag_W3rms=0;
-            idiag_W1max=0; idiag_W2max=0; idiag_W3max=0;
-            idiag_dW1rms=0; idiag_dW2rms=0; idiag_dW3rms=0;
-            idiag_dW1max=0; idiag_dW2max=0; idiag_dW3max=0;
-            idiag_W1ddotrms=0; idiag_W2ddotrms=0; idiag_W3ddotrms=0;
-            idiag_divW1rms=0; idiag_divW2rms=0; idiag_divW3rms=0;
-            idiag_divW1m=0; idiag_divW2m=0; idiag_divW3m=0;
-            idiag_divdotW1rms=0; idiag_divdotW2rms=0; idiag_divdotW3rms=0;
-            idiag_divdotW1m=0; idiag_divdotW2m=0; idiag_divdotW3m=0;
-            idiag_rhoW1rms=0; idiag_rhoW2rms=0; idiag_rhoW3rms=0;
-            idiag_rhoW1m=0; idiag_rhoW2m=0; idiag_rhoW3m=0;
-            idiag_constrainteqnW=0;
-            idiag_W1dotW1m=0; idiag_W2dotW2m=0; idiag_W3dotW3m=0;
-            idiag_W1xm=0; idiag_W1ym=0; idiag_W1zm=0;
-            idiag_W2xm=0; idiag_W2ym=0; idiag_W2zm=0;
-            idiag_W3xm=0; idiag_W3ym=0; idiag_W3zm=0;
-            idiag_dW1xm=0; idiag_dW1ym=0; idiag_dW1zm=0;
-            idiag_dW2xm=0; idiag_dW2ym=0; idiag_dW2zm=0;
-            idiag_dW3xm=0; idiag_dW3ym=0; idiag_dW3zm=0
+        idiag_W1rms=0; idiag_W2rms=0; idiag_W3rms=0;
+        idiag_W1max=0; idiag_W2max=0; idiag_W3max=0;
+        idiag_dW1rms=0; idiag_dW2rms=0; idiag_dW3rms=0;
+        idiag_dW1max=0; idiag_dW2max=0; idiag_dW3max=0;
+        idiag_W1ddotrms=0; idiag_W2ddotrms=0; idiag_W3ddotrms=0;
+        idiag_divW1rms=0; idiag_divW2rms=0; idiag_divW3rms=0;
+        idiag_divW1m=0; idiag_divW2m=0; idiag_divW3m=0;
+        idiag_divdotW1rms=0; idiag_divdotW2rms=0; idiag_divdotW3rms=0;
+        idiag_divdotW1m=0; idiag_divdotW2m=0; idiag_divdotW3m=0;
+        idiag_rhoW1rms=0; idiag_rhoW2rms=0; idiag_rhoW3rms=0;
+        idiag_rhoW1m=0; idiag_rhoW2m=0; idiag_rhoW3m=0;
+        idiag_constrainteqnW=0;
+        idiag_W1dotW1m=0; idiag_W2dotW2m=0; idiag_W3dotW3m=0;
+        idiag_W1xm=0; idiag_W1ym=0; idiag_W1zm=0;
+        idiag_W2xm=0; idiag_W2ym=0; idiag_W2zm=0;
+        idiag_W3xm=0; idiag_W3ym=0; idiag_W3zm=0;
+        idiag_dW1xm=0; idiag_dW1ym=0; idiag_dW1zm=0;
+        idiag_dW2xm=0; idiag_dW2ym=0; idiag_dW2zm=0;
+        idiag_dW3xm=0; idiag_dW3ym=0; idiag_dW3zm=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -1419,45 +1423,15 @@ module Special
     subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
-    use General , only: string_to_enum
 
-    integer, parameter :: n_pars=40
+    integer, parameter :: n_pars=10
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
-!     call copy_addr(alpf,p_par(1))
-!     call copy_addr(eta_ee,p_par(2))
-!     call copy_addr(sige_prefactor,p_par(3))
-!     call copy_addr(sigb_prefactor,p_par(4))
-!     call copy_addr(mass_chi,p_par(5))
-!     call copy_addr(igamma,p_par(6)) ! int
-!     call copy_addr(ia0,p_par(7)) ! int
-!     call copy_addr(idiva_name,p_par(8)) ! int
-!     call copy_addr(llongitudinale,p_par(9)) ! bool
-!     call copy_addr(llorenz_gauge_disp,p_par(10)) ! bool
-!     call copy_addr(lphi_hom,p_par(11)) ! bool
-!     call copy_addr(lnoncollinear_eb,p_par(12)) ! bool
-!     call copy_addr(lnoncollinear_eb_aver,p_par(13)) ! bool
-!     call copy_addr(lcollinear_eb,p_par(14)) ! bool
-!     call copy_addr(lcollinear_eb_aver,p_par(15)) ! bool
-!     call copy_addr(leedot_as_aux,p_par(16)) ! bool
-!     call copy_addr(lcurlya,p_par(17)) ! bool
-!     call copy_addr(lsolve_chargedensity,p_par(18)) ! bool
-!     call copy_addr(ldive_as_aux,p_par(19)) ! bool
-!     call copy_addr(lsige_as_aux,p_par(20)) ! bool
-!     call copy_addr(lsigb_as_aux,p_par(21)) ! bool
-!     call copy_addr(lallow_bprime_zero,p_par(22)) ! bool
-!     call copy_addr(lswitch_off_divj,p_par(23)) ! bool
-!     call copy_addr(lswitch_off_gamma,p_par(24)) ! bool
-!     call copy_addr(lmass_suppression,p_par(25)) ! bool
-!     call copy_addr(beta_inflation,p_par(26))
-!     call copy_addr(c_light2,p_par(27))
-!     call copy_addr(idiag_bcurlem,p_par(28)) ! int
-!     call copy_addr(idiag_adphibm,p_par(29)) ! int
-!     call copy_addr(idiag_johmrms,p_par(30)) ! int
-!     call copy_addr(lapply_gamma_corr,p_par(31)) ! bool
-!     call copy_addr(lphi_linear_regime,p_par(32)) ! bool
-!     call copy_addr(weight_longitudinale,p_par(33))
-
+      call copy_addr(llongitudinalW, p_par(1))    ! bool
+      call copy_addr(eta_WW, p_par(2))
+      call copy_addr(weight_longitudinalW, p_par(3))
+      call copy_addr(lWddot_as_aux, p_par(4))    ! bool
+      call copy_addr(ldivdotW_as_aux, p_par(5))  ! bool
 
     endsubroutine pushpars2c
 !***********************************************************************
