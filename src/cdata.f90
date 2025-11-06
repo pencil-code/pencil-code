@@ -667,6 +667,7 @@ module Cdata
   logical :: vel_phispec=.false.,mag_phispec=.false.,uxj_phispec=.false.,vec_phispec=.false.
   logical :: uxy_spec=.false., bxy_spec=.false., jxbxy_spec=.false.
   character (LEN=labellen*4) :: xy_spec=''
+  character (LEN=labellen*4) :: pdfs='' !used to calculate PDFs of any variables in the f-array. Example: pdfs='ux,uy,lnrho'
   character (LEN=labellen), dimension(n_xy_specs_max) :: xy_specs=''
   logical :: EP_spec=.false., hEP_spec=.false., nd_spec=.false., ud_spec=.false., abs_u_spec=.false.
   logical :: ro_spec=.false., TT_spec=.false., ss_spec=.false., cc_spec=.false., cr_spec=.false.

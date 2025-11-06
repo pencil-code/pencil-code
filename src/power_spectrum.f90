@@ -3721,12 +3721,14 @@ outer:do ikz=1,nz
 !
 !    2-dec-03/axel: coded
 !    03-Nov-2025/Kishore: added lnrho
+!    06-Nov-2025/Kishore: allow to take any variable from the f-array
 !
     use Sub, only: grad, dot2_mn
     use Mpicomm, only: mpireduce_sum_int
     use SharedVariables, only: get_shared_variable
+    use FArrayManager, only: farray_index_by_name
 !
-    integer :: l,i_pdf
+    integer :: l,i_pdf,ind
     integer, parameter :: n_pdf=3001
     real, dimension (mx,my,mz,mfarray) :: f
     real, dimension (nx,3) :: gcc
@@ -3799,7 +3801,16 @@ outer:do ikz=1,nz
           pdf_var = f(l1:l2,m,n,ilnrho) - pdf_mean
         endif
       else
-        call fatal_error('pdf', 'unknown variable '//trim(variabl))
+!
+!       This handles variables which are already in the f-array (so that we don't
+!       need to explicitly handle stuff like ux, bx, and so on).
+!
+        ind = farray_index_by_name(variabl)
+        if (ind==-1) then
+          call fatal_error('pdf', 'unknown variable '//trim(variabl))
+        else
+          pdf_var = f(l1:l2,m,n,ind) - pdf_mean
+        endif
       endif
 !
 !  put in the right pdf slot

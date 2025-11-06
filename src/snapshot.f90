@@ -840,15 +840,17 @@ module Snapshot
       use Struct_func, only: structure
       use Sub, only: curli
       use Chemistry, only: make_flame_index, make_mixture_fraction
+      use General, only: parser
 !$    use OMP_lib
 
       real, dimension (mx,my,mz,mfarray) :: f
 
       real, dimension (:,:,:), allocatable :: b_vec
-      integer :: ivec,stat,ipos,ispec,nloc,mloc
+      integer :: ivec,stat,ipos,ispec,nloc,mloc,n_pdfs
       real, dimension (2) :: sumspec=0.
       character (LEN=40) :: str,sp1,sp2
       logical :: lfirstcall, lfirstcall_powerhel, lsqrt
+      character (LEN=labellen), dimension(n_pdfs_max) :: pdfs_parsed=''
 
         lsqrt=.true.
         lfirstcall_powerhel=.true.
@@ -1062,6 +1064,11 @@ module Snapshot
 !       NOTE: the variance of lnrho should be of the order of Ma^2, but
 !       calculating that here just to scale the variable seems overkill.
         if (lnrho_pdf)     call pdf(f,'lnrho',lnrho0,1.)
+!
+        n_pdfs = parser(pdfs, pdfs_parsed, ',')
+        do n=1,n_pdfs
+          call pdf(f, pdfs_parsed(n), 0., 1.)
+        enddo
 !
 !  Do k-dependent pdf
 !
