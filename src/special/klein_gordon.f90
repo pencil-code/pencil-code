@@ -42,9 +42,10 @@
 !
 ! PENCILS PROVIDED phi; dphi; gphi(3); cov_der(4,4)
 ! PENCILS PROVIDED phi_doublet(3); dphi_doublet(3); phi_doublet_mod
+! PENCILS PROVIDED Vprime
 ! PENCILS EXPECTED GammaY, GammaW1, GammaW2, GammaW3
 ! PENCILS EXPECTED W1(3); W2(3); W3(3), aa(3)
-! PENCILS PROVIDED psi; dpsi; gpsi(3)
+! PENCILS PROVIDED psi; dpsi; gpsi(3); Vprimepsi
 !
 !***************************************************************
 !
@@ -174,6 +175,8 @@ module Special
   integer :: idiag_dpsirms=0    ! DIAG_DOC: $\left<(\psi')^2\right>^{1/2}$
   integer :: idiag_Hscriptm=0   ! DIAG_DOC: $\left<{\cal a*H}\right>$
   integer :: idiag_lnam=0       ! DIAG_DOC: $\left<\ln a\right>$
+  integer :: idiag_Vprimem=0    ! DIAG_DOC: $\left<V_{,\phi}\right>$
+  integer :: idiag_Vprimepsim=0 ! DIAG_DOC: $\left<V_{,\psi}\right>$
   integer :: idiag_ddotam=0     ! DIAG_DOC: $a''/a$
   integer :: idiag_a2rhopm=0    ! DIAG_DOC: $a^2 (rho+p)$
   integer :: idiag_a2rhom=0     ! DIAG_DOC: $a^2 rho$
@@ -529,9 +532,13 @@ module Special
         endif
       endif
 
+      ! Compute V_{,phi} as a pencil if requested for diagnostics
+      lpenc_requested(i_Vprime)=.true.
+
       if (lwaterfall) then
         lpenc_requested(i_psi)=.true.
         lpenc_requested(i_dpsi)=.true.
+        lpenc_requested(i_Vprimepsi)=.true.
       endif
 !
     endsubroutine pencil_criteria_special
@@ -697,6 +704,30 @@ module Special
         endif
         ! p%cov_der = cov_der
       endif
+
+! Vprime and Vprimepsi pencils
+!  Choice of different potentials.
+!  For the 1-cos profile, -Vprime (on the rhs) enters with -sin().
+!
+      select case (Vprime_choice)
+        case ('quadratic'); p%Vprime=phimass2*p%phi
+        case ('quartic'); p%Vprime=phimass2*p%phi+(lambda_phi/6.)*p%phi**3
+        case ('cos-profile'); p%Vprime=phimass2*lambda_phi*sin(lambda_phi*p%phi)
+        ! for doublet case, Vprime = (dV/d|Phi|)/|Phi|
+        case ('doublet')
+          if (.not.lphi_doublet) &
+              call fatal_error("dspecial_dt: lphi_doublet=.false. but Vprime_choice='doublet'", &
+                               trim(Vprime_choice))
+          p%Vprime=2*lambda_phi*(p%phi_doublet_mod**2 - eta_phi**2)*p%phi_doublet_mod
+        case ('waterfall')
+          if (.not.lwaterfall) &
+              call fatal_error("dspecial_dt: lwaterfall=.false. but Vprime_choice='waterfall'", &
+                               trim(Vprime_choice))
+          p%Vprime=phimass2*p%phi+coupl_phipsi**2*p%phi*p%psi**2
+          p%Vprimepsi=lambda_psi*p%psi**3-psimass2*p%psi+coupl_phipsi**2*p%psi*p%phi**2
+        case default
+          call fatal_error("dspecial_dt: No such Vprime_choice: ", trim(Vprime_choice))
+      endselect
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -747,7 +778,7 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: Vprime, Vprimepsi, Vprime_aux, total_fric
+      real, dimension (nx) :: Vprime_aux, total_fric
       real, dimension (nx, 4) :: del2phi_doublet=0.
       real, dimension (nx) :: tmp, del2phi, del2psi
       real :: pref_Vprime=1., pref_Hubble=2., pref_del2=1., pref_alpf
@@ -760,28 +791,6 @@ module Special
 !  Identify module and boundary conditions.
 !
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dspecial_dt'
-!  Choice of different potentials.
-!  For the 1-cos profile, -Vprime (on the rhs) enters with -sin().
-!
-      select case (Vprime_choice)
-        case ('quadratic'); Vprime=phimass2*p%phi
-        case ('quartic'); Vprime=phimass2*p%phi+(lambda_phi/6.)*p%phi**3
-        case ('cos-profile'); Vprime=phimass2*lambda_phi*sin(lambda_phi*p%phi)
-        ! for doublet case, Vprime = (dV/d|Phi|)/|Phi|
-        case ('doublet')
-          if (.not.lphi_doublet) &
-              call fatal_error("dspecial_dt: lphi_doublet=.false. but Vprime_choice='doublet'", &
-                               trim(Vprime_choice))
-          Vprime=2*lambda_phi*(p%phi_doublet_mod**2 - eta_phi**2)*p%phi_doublet_mod
-        case ('waterfall')
-          if (.not.lwaterfall) &
-              call fatal_error("dspecial_dt: lwaterfall=.false. but Vprime_choice='waterfall'", &
-                               trim(Vprime_choice))
-          Vprime=phimass2*p%phi+coupl_phipsi**2*p%phi*p%psi**2
-          Vprimepsi=lambda_psi*p%psi**3-psimass2*p%psi+coupl_phipsi**2*p%psi*p%phi**2
-        case default
-          call fatal_error("dspecial_dt: No such Vprime_choice: ", trim(Vprime_choice))
-      endselect
 !
 !  Update df.
 !  dphi/dt = psi
@@ -801,7 +810,6 @@ module Special
 !           in presence of U(1) and/or SU(2) gauge fields
 !
       if (lphi_doublet) then
-
         if (lhiggs_friction) then
           total_fric=p%phi*p%dphi
           do i=1,3
@@ -919,9 +927,9 @@ module Special
         do i=0,3
           Vprime_aux=0.
           if (Vprime_choice=='doublet') then
-            Vprime_aux=Vprime*f(l1:l2,m,n,iphi+i)
+            Vprime_aux=p%Vprime*f(l1:l2,m,n,iphi+i)
           else
-            if (i == 0) Vprime_aux=Vprime
+            if (i == 0) Vprime_aux=p%Vprime
           endif
           df(l1:l2,m,n,idphi+i)=df(l1:l2,m,n,idphi+i) - &
             pref_Hubble*Hscript*f(l1:l2,m,n,idphi+i) - &
@@ -936,7 +944,7 @@ module Special
         ! dphi/dt = dphi
         df(l1:l2,m,n,iphi)=df(l1:l2,m,n,iphi)+p%dphi
         df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi) - &
-              pref_Hubble*Hscript*p%dphi-pref_Vprime*Vprime
+              pref_Hubble*Hscript*p%dphi-pref_Vprime*p%Vprime
         if (c_phi/=0 .and. .not. lphi_hom) then
           call del2(f, iphi, del2phi)
           df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi) + c_phi**2*pref_del2*del2phi
@@ -945,7 +953,7 @@ module Special
         if (lwaterfall) then
           df(l1:l2,m,n,ipsi)=df(l1:l2,m,n,ipsi)+p%dpsi
           df(l1:l2,m,n,idpsi)=df(l1:l2,m,n,idpsi) - &
-                pref_Hubble*Hscript*p%dpsi-pref_Vprime*Vprimepsi
+                pref_Hubble*Hscript*p%dpsi-pref_Vprime*p%Vprimepsi
           if (c_psi/=0 .and. .not. lpsi_hom) then
             call del2(f, ipsi, del2psi)
             df(l1:l2,m,n,idpsi)=df(l1:l2,m,n,idpsi) + c_psi**2*pref_del2*del2psi
@@ -1112,6 +1120,7 @@ module Special
         call sum_mn_name(p%dphi,idiag_dphim)
         if (idiag_dphi2m/=0) call sum_mn_name(p%dphi**2,idiag_dphi2m)
         if (idiag_dphirms/=0) call sum_mn_name(p%dphi**2,idiag_dphirms,lsqrt=.true.)
+        if (idiag_Vprimem/=0) call sum_mn_name(p%Vprime,idiag_Vprimem)
         if (lwaterfall) then
           call sum_mn_name(p%psi,idiag_psim)
           if (idiag_psi2m/=0) call sum_mn_name(p%psi**2,idiag_psi2m)
@@ -1119,6 +1128,7 @@ module Special
           call sum_mn_name(p%dpsi,idiag_dpsim)
           if (idiag_dpsi2m/=0) call sum_mn_name(p%dpsi**2,idiag_dpsi2m)
           if (idiag_dpsirms/=0) call sum_mn_name(p%dpsi**2,idiag_dpsirms,lsqrt=.true.)
+          if (idiag_Vprimepsim/=0) call sum_mn_name(p%Vprimepsi,idiag_Vprimepsim)
         endif
       endif
 
@@ -1184,6 +1194,7 @@ module Special
         idiag_psim=0; idiag_psi2m=0; idiag_psirms=0
         idiag_dpsim=0; idiag_dpsi2m=0; idiag_dpsirms=0
         idiag_a2rhogpsim=0; idiag_a2rhopsim=0
+        idiag_Vprimem=0; idiag_Vprimepsim=0
       endif
 !
       do iname=1,nname
@@ -1212,6 +1223,8 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'dpsirms',idiag_dpsirms)
         call parse_name(iname,cname(iname),cform(iname),'a2rhopsim',idiag_a2rhopsim)
         call parse_name(iname,cname(iname),cform(iname),'a2rhogpsim',idiag_a2rhogpsim)
+        call parse_name(iname,cname(iname),cform(iname),'Vprimem',idiag_Vprimem)
+        call parse_name(iname,cname(iname),cform(iname),'Vprimepsim',idiag_Vprimepsim)
       enddo
 !
     endsubroutine rprint_special
