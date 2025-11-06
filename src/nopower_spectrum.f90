@@ -172,15 +172,16 @@ module power_spectrum
 !
     endsubroutine power_1d
 !***********************************************************************
-    subroutine pdf(f,variabl,pdf_mean,pdf_rms)
+    subroutine pdf(f,variabl_in,pdf_mean_in,pdf_rms_in)
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: pdf_mean,pdf_rms
-      character (len=*) :: variabl
+      real, optional :: pdf_mean_in,pdf_rms_in
+      character (len=*) :: variabl_in
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(pdf_mean,pdf_rms)
-      call keep_compiler_quiet(variabl)
+      if (present(pdf_mean_in)) call keep_compiler_quiet(pdf_mean_in)
+      if (present(pdf_rms_in)) call keep_compiler_quiet(pdf_rms_in)
+      call keep_compiler_quiet(variabl_in)
 !
     endsubroutine pdf
     !***********************************************************************
