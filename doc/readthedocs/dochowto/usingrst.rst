@@ -230,8 +230,17 @@ produces:
 
       something important that I don't rememeber anymore
 
-Internal and external links
+How to use cross-references
 ---------------------------
+
+:code:`RST` allows for different kind of cross-refences:
+
+* External links: referencing external webpages
+
+* Internal links: referencing other parts of the current documentation
+
+
+You can find useful documentation of how to use cross-references `here <https://docs.readthedocs.com/platform/stable/guides/cross-referencing-with-sphinx.html>`__.
 
 External links
 ^^^^^^^^^^^^^^
@@ -260,9 +269,15 @@ External links
 
    If you have an underscore, escape it with '\\'.
 
+Internal links
+^^^^^^^^^^^^^^^
+
+In principle you could use the raw URL that Sphinx generates for each page/section and just use the same method as for external links, but that has some disadvantages, like changing the name of the page, or the difficulty in referencing a specific figure or equation, so Sphinx offers some alternatives to referencing different elements of the document.
+
+
 
 Implicit links to titles
-^^^^^^^^^^^^^^^^^^^^^^^^
+"""""""""""""""""""""""""
 
 All titles are considered hyperlinks. You can link to any title by suing the same quotes and final underscore as above:
 
@@ -274,12 +289,16 @@ produces:
 
 `Internal and external links`_
 
-But only works if the title and the link are in the same ReST file. Otherwise, you need to use the `Explicit links`_ format.
+But only works if the title and the link are in the same :code:`RST`` file. Otherwise, you need to use the `Explicit links`_ format.
 
 Explicit links
-^^^^^^^^^^^^^^
+"""""""""""""""""
 
-You can create explicit links between reST files by creating a label, like:
+Explicit links have two components: references and targets. 
+
+Targets are labels that you can manually create in any part of the documentation, and allows you to reference them from other pages. 
+
+You can create a target by using: 
 
 .. code:: rst
 
@@ -287,9 +306,10 @@ You can create explicit links between reST files by creating a label, like:
 
 (This label was added at the beginning of this document).
 
-And then refer to the label using one of the following methods:
+References are pointers in your documentation to other parts of your documentation, and you can use different methods to add references:
 
-#. Method:
+
+#. Method: create an  explicit target:
 
    .. code:: rst
 
@@ -297,7 +317,7 @@ And then refer to the label using one of the following methods:
 
    produces: usingrst_
 
-#. Method: 
+#. Method: using the ``ref`` role:
 
    .. code:: rst
 
@@ -306,6 +326,37 @@ And then refer to the label using one of the following methods:
    uses the first title's name after the link, so here you will see: :ref:`usingrst`. 
 
    You can only use this method if the link is found in an external reST file. 
+
+
+The doc role
+""""""""""""
+
+The ``doc`` role allows us to link a page instead of just a section. 
+The target name can be:
+
+* relative to the page where you are using the role
+
+* relative to your documentation's root folder
+
+but always omit the extension.
+
+Example:
+
+.. code::
+
+   :doc:`usingrst`
+   :doc:`/dochowto/usingrst`
+   :doc:`Custom title </dochowto/usingrst>`
+
+
+Will be rendered as:
+
+* :doc:`usingrst`
+
+* :doc:`/dochowto/usingrst`
+
+* :doc:`Custom title </dochowto/usingrst>`
+
 
 
 Footnotes
