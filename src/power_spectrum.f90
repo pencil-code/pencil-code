@@ -3713,7 +3713,7 @@ outer:do ikz=1,nz
 !
   endsubroutine power_1d   ! checked
 !***********************************************************************
-  subroutine pdf(f,variabl,pdf_mean,pdf_rms)
+  subroutine pdf(f,variabl_in,pdf_mean_in,pdf_rms_in)
 !
 !  Calculated pdf of scalar field.
 !  This routine is in this module, because it is always called at the
@@ -3728,19 +3728,35 @@ outer:do ikz=1,nz
     use SharedVariables, only: get_shared_variable
     use FArrayManager, only: farray_index_by_name
 !
-    integer :: l,i_pdf,ind
+    real, dimension (mx,my,mz,mfarray), intent(in) :: f
+    character (len=*), intent(in) :: variabl_in
+    real, optional, intent(in) :: pdf_mean_in, pdf_rms_in
+!
+    integer :: l,i_pdf,ind,ivec,ncomp
     integer, parameter :: n_pdf=3001
-    real, dimension (mx,my,mz,mfarray) :: f
     real, dimension (nx,3) :: gcc
     real, dimension (nx) :: pdf_var,gcc2
     integer, dimension (n_pdf) :: pdf_yy, pdf_yy_sum
     real :: pdf_mean, pdf_rms, pdf_dx, pdf_dx1, pdf_scl
+    real :: pdf_mean_parsed, pdf_rms_parsed
     character (len=120) :: pdf_file=''
-    character (len=*) :: variabl
+    character (len=labellen) :: variabl
     logical :: logscale=.false.
     integer, pointer :: ispecial
 !
-    intent(in) :: f, variabl, pdf_mean, pdf_rms
+    call parse_pdf_string(variabl_in, variabl, ivec, pdf_mean_parsed, pdf_rms_parsed)
+!
+    if (present(pdf_mean_in)) then
+      pdf_mean = pdf_mean_in
+    else
+      pdf_mean = pdf_mean_parsed
+    endif
+!
+    if (present(pdf_rms_in)) then
+      pdf_rms = pdf_rms_in
+    else
+      pdf_rms = pdf_rms_parsed
+    endif
 !
     if (variabl=='special' .or. variabl=='lnspecial') &
       call get_shared_variable('ispecial', ispecial, caller='pdf')
@@ -3803,9 +3819,20 @@ outer:do ikz=1,nz
       else
 !
 !       This handles variables which are already in the f-array (so that we don't
-!       need to explicitly handle stuff like ux, bx, and so on).
+!       need to explicitly handle stuff like uu(1), bb(2), and so on).
 !
-        ind = farray_index_by_name(variabl)
+!       06-Nov-2025/Kishore: I suppose this makes 'special' and 'lnrho' above obsolete.
+!
+        ind = farray_index_by_name(variabl,ncomp)
+        if (ivec > 0) then
+          if (ivec > ncomp) then
+            call fatal_error('pdf', &
+              'requested component of '//trim(variabl)//' does not exist.')
+          else
+            ind = ind + ivec - 1
+          endif
+        endif
+!
         if (ind==-1) then
           call fatal_error('pdf', 'unknown variable '//trim(variabl))
         else
@@ -3843,22 +3870,92 @@ outer:do ikz=1,nz
 !  03-Nov-2025/Kishore: write(1,10) statement below. Any objections?
 !
     call mpireduce_sum_int(pdf_yy,pdf_yy_sum,n_pdf)
+!
     if (lroot) then
-       pdf_file=trim(datadir)//'/pdf_'//trim(variabl)//'.dat'
-       open(1,file=trim(pdf_file),position='append')
-       if (logscale) then
-         write(1,10) t, n_pdf, pdf_dx, pdf_max_logscale, pdf_min_logscale, pdf_mean, pdf_rms
-       else
-         write(1,10) t, n_pdf, pdf_dx, pdf_max, pdf_min, pdf_mean, pdf_rms
-       endif
-       write(1,11) pdf_yy_sum
-       close(1)
+      if (ivec>0) then
+        write (pdf_file, *) ivec
+        pdf_file=trim(datadir)//'/pdf_'//trim(variabl)//'_'//trim(adjustl(pdf_file))//'.dat'
+      else
+        pdf_file=trim(datadir)//'/pdf_'//trim(variabl)//'.dat'
+      endif
+!
+      open(1,file=trim(pdf_file),position='append')
+      if (logscale) then
+        write(1,10) t, n_pdf, pdf_dx, pdf_max_logscale, pdf_min_logscale, pdf_mean, pdf_rms
+      else
+        write(1,10) t, n_pdf, pdf_dx, pdf_max, pdf_min, pdf_mean, pdf_rms
+      endif
+      write(1,11) pdf_yy_sum
+      close(1)
     endif
 !
 10 format(1p,e12.5,0p,i6,1p,5e12.4)
 11 format(8i10)
 !
   endsubroutine pdf
+!***********************************************************************
+  subroutine parse_pdf_string(input, name, component, pdf_mean, pdf_scale)
+!
+!   Parse the string used to specify the PDFs of the variables to be computed.
+!
+!   Examples of the output for some inputs:
+!     'lnrho' -> name='lnrho',pdf_mean=0,pdf_scale=1
+!     'uu(1)' -> name='uu',component=1,pdf_mean=0,pdf_scale=1
+!     'uu(1)/3' -> name='uu',component=1,pdf_mean=3,pdf_scale=1
+!     'uu(2)/3/5.2' -> name='uu',component=2,pdf_mean=3,pdf_scale=5.2
+!
+!   06-Nov-2025/Kishore: coded
+!
+    use General, only: parser
+!
+    character(LEN=*), intent(in) :: input
+    character(LEN=*), intent(out) :: name
+    integer, intent(out) :: component
+    real, optional, intent(out) :: pdf_mean, pdf_scale
+!
+    integer :: n,l
+    character(LEN=labellen), dimension(3) :: parsed_input
+    character(LEN=labellen), dimension(2) :: parsed_name, tmp
+    real :: pdf_mean_input, pdf_scale_input
+!
+    n = parser(input, parsed_input, '/')
+    if (n == 3) then
+      name = parsed_input(1)
+      read (parsed_input(2), *) pdf_mean_input
+      read (parsed_input(3), *) pdf_scale_input
+    elseif (n == 2) then
+      name = parsed_input(1)
+      read (parsed_input(2), *) pdf_mean_input
+      pdf_scale_input = 1
+    elseif (n == 1) then
+      name = parsed_input(1)
+      pdf_mean_input = 0
+      pdf_scale_input = 1
+    else
+      call fatal_error('power_spectrum', 'could not parse '//trim(input))
+    endif
+!
+    n = parser(name, parsed_name, '(')
+    if (n==2) then
+!     assume the last character is ')' and skip it
+      l = len(name)
+      n = parser(parsed_name(2), tmp, ')')
+      if (n==1) then
+        name = parsed_name(1)
+        read (tmp(1), *) component
+      else
+        call fatal_error('power_spectrum', 'could not parse '//trim(name))
+      endif
+    elseif (n==1) then
+      component = 0
+    else
+      call fatal_error('power_spectrum', 'could not parse '//trim(name))
+    endif
+!
+    if (present(pdf_mean)) pdf_mean = pdf_mean_input
+    if (present(pdf_scale)) pdf_scale = pdf_scale_input
+!
+  endsubroutine parse_pdf_string
 !***********************************************************************
   subroutine pdf_2d(f,variabl,pdf_mean,pdf_rms)
 !

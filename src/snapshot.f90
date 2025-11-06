@@ -846,7 +846,7 @@ module Snapshot
       real, dimension (mx,my,mz,mfarray) :: f
 
       real, dimension (:,:,:), allocatable :: b_vec
-      integer :: ivec,stat,ipos,ispec,nloc,mloc,n_pdfs
+      integer :: ivec,stat,ipos,ispec,nloc,mloc,n_pdfs,i
       real, dimension (2) :: sumspec=0.
       character (LEN=40) :: str,sp1,sp2
       logical :: lfirstcall, lfirstcall_powerhel, lsqrt
@@ -1065,9 +1065,11 @@ module Snapshot
 !       calculating that here just to scale the variable seems overkill.
         if (lnrho_pdf)     call pdf(f,'lnrho',lnrho0,1.)
 !
+!  Allow user to request PDF of any variable in the f-array
+!
         n_pdfs = parser(pdfs, pdfs_parsed, ',')
-        do n=1,n_pdfs
-          call pdf(f, pdfs_parsed(n), 0., 1.)
+        do i=1,n_pdfs
+          call pdf(f, pdfs_parsed(i))
         enddo
 !
 !  Do k-dependent pdf
