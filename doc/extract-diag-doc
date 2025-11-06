@@ -53,8 +53,8 @@ eval 'use Pencil::Util';
 if ($@) {                       # Pencil::Util not found
     die "You need to run\n  (cd \$PENCIL_HOME; cvs up -dA lib)\n$@\n";
 }
-Pencil::Util::use_pencil_perl_modules('Pencil::DocExtractor')
-  or die;
+Pencil::Util::use_pencil_perl_modules('Pencil::Doc::Extractor') or die;
+Pencil::Util::use_pencil_perl_modules('Pencil::Doc::ModExtractor') or die;
 
 use Getopt::Long;
 # Allow for `-Plp' as equivalent to `-P lp' etc:
@@ -86,62 +86,62 @@ my $file    = ($opts{'o'} || $opts{'output'}   || '-');
 ## Construct file list
 my ($src_files_ref, $all_src) = get_src_files(@ARGV);
 
-my $diag_doc = Pencil::DocExtractor->new(
+my $diag_doc = Pencil::Doc::Extractor->new(
     marker  => qr/!\s*DIAG_DOC:/,
     prefix  => qr/integer\s*::\s*idiag_([a-zA-Z0-9_]+)/,
     verbose => $verbose,
     debug   => $debug
 );
 
-my $phiavg_doc = Pencil::DocExtractor->new(
+my $phiavg_doc = Pencil::Doc::Extractor->new(
     marker  => qr/!\s*PHIAVG_DOC:/,
     prefix  => qr/(?:integer\s*::\s*idiag_|For the manual:\s*)([a-zA-Z0-9_]+)/,
     verbose => $verbose,
     debug   => $debug
 );
 
-my $xyavg_doc = Pencil::DocExtractor->new(
+my $xyavg_doc = Pencil::Doc::Extractor->new(
     marker  => qr/!\s*XYAVG_DOC:/,
     prefix  => qr/(?:integer\s*::\s*idiag_|For the manual:\s*)([a-zA-Z0-9_]+)/,
     verbose => $verbose,
     debug   => $debug
 );
 
-my $xzavg_doc = Pencil::DocExtractor->new(
+my $xzavg_doc = Pencil::Doc::Extractor->new(
     marker  => qr/!\s*XZAVG_DOC:/,
     prefix  => qr/(?:integer\s*::\s*idiag_|For the manual:\s*)([a-zA-Z0-9_]+)/,
     verbose => $verbose,
     debug   => $debug
 );
 
-my $yzavg_doc = Pencil::DocExtractor->new(
+my $yzavg_doc = Pencil::Doc::Extractor->new(
     marker  => qr/!\s*YZAVG_DOC:/,
     prefix  => qr/(?:integer\s*::\s*idiag_|For the manual:\s*)([a-zA-Z0-9_]+)/,
     verbose => $verbose,
     debug   => $debug
 );
 
-my $yavg_doc = Pencil::DocExtractor->new(
+my $yavg_doc = Pencil::Doc::Extractor->new(
     marker  => qr/!\s*YAVG_DOC:/,
     prefix  => qr/(?:integer\s*::\s*idiag_|For the manual:\s*)([a-zA-Z0-9_]+)/,
     verbose => $verbose,
     debug   => $debug
 );
 
-my $zavg_doc = Pencil::DocExtractor->new(
+my $zavg_doc = Pencil::Doc::Extractor->new(
     marker  => qr/!\s*ZAVG_DOC:/,
     prefix  => qr/(?:integer\s*::\s*idiag_|For the manual:\s*)([a-zA-Z0-9_]+)/,
     verbose => $verbose,
     debug   => $debug
 );
 
-my $bc_doc   = Pencil::DocExtractor->new(
+my $bc_doc   = Pencil::Doc::Extractor->new(
     prefix  => qr/case\s*\(['"](.*)['"]\)/,
     verbose => $verbose,
     debug   => $debug
 );
 
-my $mod_doc = Pencil::DocExtractor->new(
+my $mod_doc = Pencil::Doc::ModExtractor->new(
     marker  => qr/!\s*MODULE_DOC:/,
     prefix  => qr/(?:)([a-zA-Z0-9_]+)/,
     verbose => $verbose,
@@ -210,10 +210,10 @@ $bcz_doc->write_to_file({ file          => 'inlinedoc-bcz.tex',
                           descr_width   => '0.8\textwidth',
                         });
 
-$mod_doc->write_mod_to_file({ file       => 'inlinedoc-modules.tex',
-                            sort_files   => 1,
-                            print_empty  => 0,
-                           });
+$mod_doc->write_to_file({ file       => 'inlinedoc-modules.tex',
+                          sort_files   => 1,
+                          print_empty  => 0,
+                        });
 # ---------------------------------------------------------------------- #
 sub get_src_files {
 # Construct list of .f90 source files

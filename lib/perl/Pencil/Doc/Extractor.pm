@@ -12,7 +12,7 @@
 # License version 3 or later; see $PENCIL_HOME/license/GNU_public_license.txt.
 #
 
-package Pencil::DocExtractor;
+package Pencil::Doc::Extractor;
 
 use warnings;
 use strict;
@@ -66,6 +66,10 @@ sub new {
             %args = @argv;
         }
     }
+    
+    #save args to be used by subclasses
+    $self->{ARGS} = \%args;
+    
     # Set object fields based on
     # 1. explicitly given parameters,
     # 2. existing fields (this could be an object constructor [as in
@@ -98,7 +102,7 @@ sub parse {
 
     carp("Cannot read file <$file>\n") unless (-r $file);
 
-    my @localdoc = get_docs_from_file($file,
+    my @localdoc = $self->get_docs_from_file($file,
                                       $self->{MARKER},
                                       $self->{PREFIX},
                                       $self->{DEBUG},
@@ -112,36 +116,6 @@ sub parse {
 
 # ---------------------------------------------------------------------- #
 
-sub write_mod_to_file {
-#
-#   $doc->write_mod_to_file(file)
-#   $doc->write_mod_to_file(file      => 'filename',
-#                           sort_files    => 1/0,
-#                           print_empty   => 0/1,
-#                           descr_width   => '0.7\textwidth',
-#                           selfcontained => 0/1)
-#
-# Write LaTeX {longtable} environment of docstrings to given file.
-# Just a convenience wrapper around longtable().
-#
-    my $self = shift();
-    my @args = @_;
-    my %args;
-    # Parse arguments (sort_files => <true/false>, etc.); may be hash or hashref
-    if (ref($args[0]) eq 'HASH') { # longtable($hashref)
-        %args = %{$args[0]};
-    } else {                    # longtable(%hash)
-        %args = @args;
-    }
-
-    my $file = $args{file} or croak "write_to_file() needs a <file> argument";
-    open(my $fh, "> $file") or croak "Cannot open $file for writing: $!";
-    print $fh $self->module_table(@args);
-    close $fh;
-}
-
-# ---------------------------------------------------------------------- #
-
 sub write_to_file {
 #
 #   $doc->write_to_file(file)
@@ -149,10 +123,11 @@ sub write_to_file {
 #                       sort_files    => 1/0,
 #                       print_empty   => 0/1,
 #                       descr_width   => '0.7\textwidth',
-#                       selfcontained => 0/1)
+#                       selfcontained => 0/1,
+#                       )
 #
 # Write LaTeX {longtable} environment of docstrings to given file.
-# Just a convenience wrapper around longtable().
+# Convenience wrapper to call the function specified by writer.
 #
     my $self = shift();
     my @args = @_;
@@ -166,6 +141,7 @@ sub write_to_file {
 
     my $file = $args{file} or croak "write_to_file() needs a <file> argument";
     open(my $fh, "> $file") or croak "Cannot open $file for writing: $!";
+    
     print $fh $self->longtable(@args);
     close $fh;
 }
@@ -203,10 +179,10 @@ sub longtable {
 
     # Sort file names in pre-defined order
     if ($sort) {
-        @files = sort { smart_compare($a, $b) } @files;
+        @files = sort { $self->smart_compare($a, $b) } @files;
     }
 
-    my $text  = header(\@files, $args{selfcontained}, $args{descr_width});
+    my $text  = $self->header(\@files, $args{selfcontained}, $args{descr_width});
 
     foreach my $module (@files) {
         # Header line for each section of table
@@ -219,7 +195,8 @@ sub longtable {
         my @file_docs = @{$docref->{$module}}; # (['var1', 'doc1'],
                                                #  ['var2', 'doc2'], ...)
         foreach my $vardocref (@file_docs) {
-            my ($var,$doc) = @$vardocref;
+            my $var = $vardocref->{var};
+            my $doc = $vardocref->{doc};
 
             next unless ($print_empty || $doc =~ /\S/);
 
@@ -231,86 +208,20 @@ sub longtable {
 
     }
 
-    $text .= footer($args{selfcontained});
+    $text .= $self->footer($args{selfcontained});
 
 }
 
-# ====================================================================== #
-sub module_table {
-#
-#   $doc->module_table()
-#   $doc->module_table(sort_files    => 1/0,
-#                   print_empty   => 0/1,
-#                   descr_width   => '0.7\textwidth',
-#                   selfcontained => 0/1)
-#
-# Output docstrings in a LaTeX {longtable} environment.
-#
-    my $self = shift;
-    my @args = @_;
-
-    my %args;
-    # Parse arguments (sort_files => <true/false>, etc.); may be hash or hashref
-    if (ref($args[0]) eq 'HASH') { # longtable($hashref)
-        %args = %{$args[0]};
-    } else {                    # longtable(%hash)
-        %args = @args;
-    }
-
-    my $docref = $self->{DOC};
-    my @files = keys %$docref;
-
-    my $sort = 1;
-    $sort = $args{sort_files} if defined $args{sort_files};
-
-    my $print_empty = $args{print_empty} || 0;
-
-    # Sort file names in pre-defined order
-    if ($sort) {
-        @files = sort { smart_compare($a, $b) } @files;
-    }
-
-    my $text  = mod_header(\@files, $args{selfcontained}, $args{descr_width});
-
-    foreach my $module (@files) {
-        # Header line for each section of table
-        $text .=
-            "\\midrule\n";
-#          . "  \\multicolumn{2}{c}{Module \\file{$module}} \\\\\n"
-#          . "\\midrule\n";
-
-        # Loop through variables
-        my @file_docs = @{$docref->{$module}}; # (['var1', 'doc1'],
-                                               #  ['var2', 'doc2'], ...)
-        foreach my $vardocref (@file_docs) {
-            my ($var,$doc) = @$vardocref;
-
-            next unless ($print_empty || $doc =~ /\S/);
-
-            # Indent continued lines, so LaTeX code is easier to read:
-            $doc =~ s{\n}{\n                  }g;
-
-            $text .= sprintf "  %-15s & %s \\\\\n", "\\var{$module}", $doc;
-            $module=''
-        }
-
-    }
-
-    $text .= footer($args{selfcontained});
-
-}
-
-# ====================================================================== #
-
-##
-## Private utility subroutines:
-##
+# ---------------------------------------------------------------------- #
+# Utility subroutines (internal use only)
+# ---------------------------------------------------------------------- #
 
 sub get_docs_from_file {
 #
-# Extract documentation lines from one file and return list of array refs
-# ( [var1, doc1], [var2, doc2], ... )
+# Extract documentation lines from one file and return list of hashes
+# ( (var => var1, doc => doc1), ... )
 #
+    my $self = shift;
     my $module = shift;
     my $marker = shift;
     my $prefix = shift;
@@ -338,7 +249,7 @@ sub get_docs_from_file {
         if ($line =~ /\s*($prefix)/) {
             $saved_prefix_line = $1;
             print STDERR "Saving prefix line #",
-              $., " = <", printable_substring($line), ">\n"
+              $., " = <", $self->printable_substring($line), ">\n"
                 if ($debug);
         }
         unless ($line =~ /$marker/) {
@@ -347,7 +258,7 @@ sub get_docs_from_file {
             next;
         }
 
-        print STDERR "\$line = <", printable_substring($line), ">\n"
+        print STDERR "\$line = <", $self->printable_substring($line), ">\n"
           if ($debug);
         my ($var,$misc,$docstring) = ('', '', '');
 
@@ -360,7 +271,7 @@ sub get_docs_from_file {
         # actual line:
         if ($decl eq '') {
             print STDERR "\$decl <-- <",
-              printable_substring($saved_prefix_line), ">\n"
+              $self->printable_substring($saved_prefix_line), ">\n"
                 if ($debug);
             $decl = $saved_prefix_line;
         }
@@ -371,33 +282,57 @@ sub get_docs_from_file {
             print STDERR "docstring at ${module}:$.\n" if ($debug);
 
             my ($var,$rest)
-              = ($decl =~ /$prefix\s*(.*?)\s*/);
+              = ($decl =~ /$prefix\s*(.*)\s*/);
             print STDERR "## \$var=<$var>, \$rest=<$rest>\n" if ($debug);
-            $misc
-              = ($rest =~ /^(.*?)(?:\s*=\s*[-+0-9]+\s*)/i);
-            print STDERR "\$var=<$var>, \$msc=<$misc>\n" if ($debug);
+
+            if (defined($rest)) {
+                $misc = ($rest =~ /^(.*?)(?:\s*=\s*[-+0-9]+\s*)/i);
+                print STDERR "\$var=<$var>, \$msc=<$misc>\n" if ($debug);
+            }
+
             if (defined($misc) && $misc =~ /idiag_/i) {
                 carp "In line $. of $file: "
                   . "multiple diagnostic variables in one line:\n";
                 carp "  $var, $misc\n";
                 next LINE;
             }
+
             unless (defined($var)) {
                 carp "In line $. of $file: "
                   . "variable name not found:\n";
                 next LINE;
             }
+
+            my %thisdoc = (
+                var => $var,
+                doc => $latex,
+            );
+
+            my $default_value = "";
+            if ($rest) {
+                $rest =~ /^=\s*(.*)/;
+                $default_value = $1;
+            }
+            if ($default_value) {
+                print STDERR "\$var=<$var>, \$default_value=<$default_value>\n" if ($debug);
+                $thisdoc{default_value} = $default_value;
+            }
+
             print STDERR "    $var -> $latex\n" if ($debug);
-            push @localdoc, [$var, $latex];
+
+            push @localdoc, \%thisdoc;
             $no_line_to_continue = 0;
             $count++;
         } else {
             #  no declaration part --> continuation line
             print STDERR "..continuation line at ${module}:$.\n" if ($debug);
             ## Append latex part to previous entry
-            my ($var1,$latex1) = @{ pop @localdoc || [] }
-                or next LINE; # nothing to append to
-            push @localdoc, [$var1, "$latex1\n  $latex"];
+            my $thisdoc = pop @localdoc || {};
+            unless (defined $thisdoc->{doc}) {
+                next LINE; # nothing to append to
+            }
+            $thisdoc->{doc} = $thisdoc->{doc} . "\n $latex";
+            push @localdoc, \%$thisdoc
         }
         $saved_prefix_line = '';
     }
@@ -417,6 +352,7 @@ sub get_docs_from_file {
 
 sub filter_doc {
 # Remove (or not) items with empty documentation lines
+    my $self = shift;
     my $docref  = shift;
     my $verbose = shift || 0;
 
@@ -452,6 +388,7 @@ sub header {
 #
 # Print LaTeX longtable header
 #
+    my $self = shift;
     my @files =  @{shift()};
     my $selfcontained = shift;
     my $descr_width = (shift || '0.7\textwidth');
@@ -499,63 +436,13 @@ sub header {
 }
 
 # ---------------------------------------------------------------------- #
-sub mod_header {
-#
-# Print LaTeX longtable header
-#
-    my @files =  @{shift()};
-    my $selfcontained = shift;
-    my $descr_width = (shift || '0.9\textwidth');
-
-    my $string =
-        '%% $Id$' . "\n"
-      . "%% This file was automatically generated by Pencil::DocExtractor,\n"
-      . "%% so think twice before you modify it.\n"
-      . "%%\n"
-      . "%% Source files:\n%%   "
-      . join("\n%%   ", @files) . "\n\n";
-
-    if ($selfcontained) {
-        $string .=
-            "\n\\documentclass[12pt]{article}\n"
-          . "\n"
-          . "\\usepackage{longtable,booktabs}\n"
-          . "\\usepackage{underscore}\n"
-          . "\\usepackage{amsmath,newcent,helvet}\n"
-          . "\\renewcommand{\\ttdefault}{cmtt} % Courier is too broad\n"
-          . "\n"
-          . "\\newcommand{\\file}[1]{`\\texttt{#1}'}\n"
-          . "\\newcommand{\\var}[1]{\\textsl{#1}}\n"
-          . "\n"
-          . "\\newcommand{\\vekt}[1] {\\mathbf{#1}}\n"
-          . "\n"
-          . "\\newcommand{\\Av}{\\vekt{A}}\n"
-          . "\\newcommand{\\Bv}{\\vekt{B}}\n"
-          . "\\newcommand{\\cs}{c_{\rm s}}\n"
-          . "\\newcommand{\\curl}{\\nabla\\times}\n"
-          . "\\newcommand{\\jv}{\\vekt{j}}\n"
-          . "\\newcommand{\\Strain}{\\boldsymbol{\\mathsf{S}}}\n"
-          . "\\newcommand{\\uv}{\\vekt{u}}\n"
-          . "\n"
-          . "\\begin{document}\n\n"
-    }
-
-    $string .=
-        "% ---------------------------------------------------------------- %\n"
-      . "\\begin{longtable}{lp{$descr_width}}\n"
-      . "\\toprule\n"
-      . "  \\multicolumn{1}{c}{\\emph{Module}} \& {\\emph{Description}} \\\\\n";
-
-    return $string;
-}
-
-# ---------------------------------------------------------------------- #
 
 sub footer {
 #
 # Return LaTeX longtable footer
 #
-my $selfcontained = shift;
+    my $self = shift;
+    my $selfcontained = shift;
     my $string =
         "%\n"
       . "\\bottomrule\n"
@@ -575,10 +462,11 @@ sub smart_compare {
 # Comparison function that puts interesting modules first and sorts
 # everybody else in alphabetic order.
 #
+    my $self = shift;
     my ($a, $b) = @_;
 
     return
-      compare_modulenames($a) <=> compare_modulenames($b)
+      $self->compare_modulenames($a) <=> $self->compare_modulenames($b)
         || $a cmp $b;
 }
 
@@ -589,6 +477,7 @@ sub compare_modulenames {
 # Score interesting modules (as defined by the author of this script)
 # higher than boring ones.
 #
+    my $self = shift;
     my $module = shift;
 
     (my $short = $module) =~ s/\.f90$//; # remove suffix
@@ -596,6 +485,8 @@ sub compare_modulenames {
     my %mapping =
       (
        'cdata'    => 1,
+       'general'  => 1.1,
+       'param_io' => 1.2,
        'hydro'    => 2,
        'density'  => 3,
        'entropy'  => 4,
@@ -612,6 +503,7 @@ sub compare_modulenames {
 
 sub printable_substring {
 # Extract substring and quote newlines for diagnostic printing
+    my $self = shift;
     my $string = shift;
     my $length = shift || 60;
 
