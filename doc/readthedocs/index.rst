@@ -28,6 +28,7 @@ Explore the sections below to get started, contribute, or run simulations with P
 
    Useful links <intro/links>
    Discussion groups <intro/discussion>
+   Python Postrocessing Meetings <python-meetings/python-index.rst>
 
 
 .. toctree::
