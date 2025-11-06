@@ -9,4 +9,4 @@
 ! MAUX CONTRIBUTION 0
 !
 integer, parameter :: ncpus=1,nprocx=1,nprocy=1,nprocz=ncpus/(nprocx*nprocy)
-integer, parameter :: nxgrid=128,nygrid=1,nzgrid=1
+integer, parameter :: nxgrid=1,nygrid=1,nzgrid=1

@@ -15,7 +15,7 @@ succeeds
 
 ## Recommended resolution:
 
-128x1x1
+1x1x1
 
 ## Comments:
 
