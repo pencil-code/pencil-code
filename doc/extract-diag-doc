@@ -148,6 +148,13 @@ my $mod_doc = Pencil::Doc::ModExtractor->new(
     debug   => $debug
 );
 
+my $param_doc = Pencil::Doc::Extractor->new(
+    marker  => qr/!\s*PAR_DOC:/,
+    prefix  => qr/.*::\s*([a-zA-Z0-9_]+)/,
+    verbose => $verbose,
+    debug   => $debug
+);
+
 my $bcx_doc = $bc_doc->new(marker  => qr/!\s*BCX_DOC:/);
 my $bcy_doc = $bc_doc->new(marker  => qr/!\s*BCY_DOC:/);
 my $bcz_doc = $bc_doc->new(marker  => qr/!\s*BCZ_DOC:/);
@@ -164,6 +171,7 @@ foreach my $file (@$src_files_ref) {
     $bcy_doc->parse($file);
     $bcz_doc->parse($file);
     $mod_doc->parse($file);
+    $param_doc->parse($file);
 }
 
 $diag_doc->write_to_file({ file          => 'inlinedoc-diag.tex',
@@ -209,6 +217,10 @@ $bcz_doc->write_to_file({ file          => 'inlinedoc-bcz.tex',
                           print_empty   => 0,
                           descr_width   => '0.8\textwidth',
                         });
+$param_doc->write_to_file({ file          => 'inlinedoc-param.tex',
+                            sort_files    => 1,
+                            print_empty   => 0,
+                          });
 
 $mod_doc->write_to_file({ file       => 'inlinedoc-modules.tex',
                           sort_files   => 1,
