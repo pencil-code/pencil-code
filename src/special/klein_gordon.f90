@@ -116,6 +116,8 @@ module Special
   real :: amplee_BD_prefactor=0., deriv_prefactor_ee=-1.
   real :: echarge=.0, echarge_const=.303
   real :: count_eb0_all=0., eta_phi=0.
+  real :: V0_usr=4e-10, v_usr=0.3286335, alpha_usr=1., beta_usr=1.4349 ! ultra-slow-roll potential parameters
+  ! these values are based on arXiv:2008.12202
   real, pointer :: coupl_gw, coupl_gy
   ! logical, pointer :: llongitudinalE, llongitudinalW
   real, target :: ddotam_all
@@ -149,7 +151,8 @@ module Special
       lrho_chi, scale_rho_chi_Heqn, amplee_BD_prefactor, deriv_prefactor_ee, &
       echarge_type, init_rho_chi, rho_chi_init, eta_phi, lphi_doublet, &
       lphi_weakcharge, lphi_hypercharge, lhiggs_friction, higgs_friction, &
-      lwaterfall, lambda_psi, coupl_phipsi, c_psi, amplpsi, ampldpsi, psimass
+      lwaterfall, lambda_psi, coupl_phipsi, c_psi, amplpsi, ampldpsi, psimass, &
+      V0_usr, v_usr, alpha_usr, beta_usr
 !
   namelist /special_run_pars/ &
       initspecial, phi0, dphi0, phimass, eps, ascale_ini, &
@@ -380,9 +383,24 @@ module Special
           case ('constant')
             f(:,:,:,iphi)=f(:,:,:,iphi)+amplphi
             f(:,:,:,idphi)=f(:,:,:,idphi)+ampldphi
+            Vpotential=0.5*phimass2*amplphi**2
             if (lwaterfall) then
               f(:,:,:,ipsi)=f(:,:,:,ipsi)+amplpsi
               f(:,:,:,idpsi)=f(:,:,:,idpsi)+ampldpsi
+              Vpotential=Vpotential+.25*lambda_psi*amplpsi**4
+              if (lambda_psi /= 0.) then
+                Vpotential=Vpotential+.25*psimass2**2/lambda_psi
+              endif
+              Vpotential=Vpotential-0.5*psimass2*amplpsi**2+.5*coupl_phipsi**2*amplphi**2*amplpsi**2
+            endif
+            if (lflrw) then              
+              Hubble_ini=sqrt(8.*pi/3.)*Vpotential*ascale_ini**2
+              lnascale=log(ascale_ini)
+              f_ode(ilna)=lnascale
+              a2=exp(f_ode(ilna))**2
+              Hscript=Hubble_ini/exp(lnascale)
+              tstart=-1/(ascale_ini*Hubble_ini)
+              t=tstart
             endif
           case ('phi=sinkx')
             f(:,:,:,iphi)=f(:,:,:,iphi) &
@@ -713,6 +731,10 @@ module Special
         case ('quadratic'); p%Vprime=phimass2*p%phi
         case ('quartic'); p%Vprime=phimass2*p%phi+(lambda_phi/6.)*p%phi**3
         case ('cos-profile'); p%Vprime=phimass2*lambda_phi*sin(lambda_phi*p%phi)
+        ! option for ultra-slow-roll (USR) potential based on arxiv:2008.12202
+        case ('ultra_slow_roll1')
+          p%Vprime=4*V0_usr*p%phi/v_usr*(3.-3.*p%phi/v_usr*alpha_usr+3*(p%phi/v_usr)**2*(beta_usr-1.) + &
+              alpha_usr*beta_usr*(p%phi/v_usr)**3)/(1.+(p%phi/v_usr)**2*beta_usr)**3/v_usr
         ! for doublet case, Vprime = (dV/d|Phi|)/|Phi|
         case ('doublet')
           if (.not.lphi_doublet) &
@@ -1504,6 +1526,9 @@ module Special
         case ('quadratic')  ; Vpotential=.5*phimass2*phi**2
         case ('quartic')    ; Vpotential=phimass2*phi+(lambda_phi/6.)*phi**3  !(to be corrected)
         case ('cos-profile'); Vpotential=phimass2*lambda_phi*sin(lambda_phi*phi)  !(to be corrected)
+        case ('ultra_slow_roll1')
+          Vpotential=V0_usr*(6*(phi/v_usr)**2 + 3.*(phi/v_usr)**4 - 4.*alpha_usr*(phi/v_usr)**3)
+          Vpotential=Vpotential/(1.+(phi/v_usr)**2*beta_usr**2)**2
         case ('waterfall')
           Vpotential=0.5*phimass2*phi**2 + .25*lambda_psi*psi**4
           if (lambda_psi /= 0.) then
