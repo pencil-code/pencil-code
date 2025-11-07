@@ -442,21 +442,15 @@ def write_h5_snapshot(
     # Check the shape of the xyz arrays if specified and overwrite grid values.
     if x is not None:
         if len(x) != settings["mx"]:
-            print("ERROR: x array is incompatible with the shape of snapshot.")
-            sys.stdout.flush()
-            return -1
+            raise ValueError("x array is incompatible with the shape of snapshot.")
         grid.x = data_type(x)
     if y is not None:
         if len(y) != settings["my"]:
-            print("ERROR: y array is incompatible with the shape of snapshot.")
-            sys.stdout.flush()
-            return -1
+            raise ValueError("y array is incompatible with the shape of snapshot.")
         grid.y = data_type(y)
     if z is not None:
         if len(z) != settings["mz"]:
-            print("ERROR: z array is incompatible with the shape of snapshot.")
-            sys.stdout.flush()
-            return -1
+            raise ValueError("z array is incompatible with the shape of snapshot.")
         grid.z = data_type(z)
 
     # Define a time.
