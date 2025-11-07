@@ -703,6 +703,13 @@ void setupConfig(AcMeshInfo& config)
 //  Overwrites Astaroth's default formula for AC_len in case it does not cover everything like non-equidistant grids
   PCLoad(config,AC_len,lxyz);
 
+  #if LTRAINING
+  AcRealSymmetricTensor tau_means{};
+  AcRealSymmetricTensor tau_stds{};
+  //Fill them up
+  PCLoad(config,AC_tau_means,tau_means);
+  PCLoad(config,AC_tau_stds,tau_stds);
+  #endif
   PCLoad(config,AC_sparse_autotuning,lac_sparse_autotuning);
 
 //  Enter physics related parameters in config.
@@ -1923,6 +1930,7 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_)  /
   if (rank==0 && ldebug) printf("memusage after store synchronize stream= %f MBytes\n", acMemUsage()/1024.);
   acLogFromRootProc(rank, "DONE initializeGPU\n");
   fflush(stdout);
+
 
   constexpr AcReal unit = 1.0;
   dt1_interface = unit/dt;

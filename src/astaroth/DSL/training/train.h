@@ -19,6 +19,9 @@ communicated FieldSymmetricTensor TAU_INFERRED
 
 global input int AC_ranNum
 
+run_const real_symmetric_tensor AC_tau_means
+run_const real_symmetric_tensor AC_tau_stds
+
 
 Stencil avgr1
 {
@@ -296,6 +299,16 @@ Kernel copyTauBatch(FieldSymmetricTensor TAU_out, Field3 UUMEAN_out, int ranNum)
 	write(UUMEAN_out.x, value(UUMEAN_in.x))
 	write(UUMEAN_out.x, value(UUMEAN_in.y))
 	write(UUMEAN_out.x, value(UUMEAN_in.z))
+}
+
+Kernel descale_inferred_taus_kernel()
+{
+	write(TAU_INFERRED, TAU_INFERRED*AC_tau_stds + AC_tau_means)
+}
+
+ComputeSteps descale_inferred_taus(boundconds)
+{
+	descale_inferred_taus()
 }
 
 
