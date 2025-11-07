@@ -276,10 +276,12 @@ class DataCube(object):
 
          range_[xyz] : 2-tuple of real
              coordinate range selection for subdomain (closed interval).
+             If trimall=F, ghost zones will be included on either side of the interval.
 
          irange_[xyz] : 2-tuple of integer
              index range selection for subdomain (closed interval).
              Note that this index is in the full array (including ghost zones).
+             If trimall=F, ghost zones will be included on either side of the interval.
 
         Returns
         -------
