@@ -494,39 +494,24 @@ def write_h5_snapshot(
                     continue
                 #create ghost zones if required
                 if not lghosts:
-                    tmp_arr = np.zeros(
-                        [
-                            snapshot.shape[1] + 2 * nghost,
-                            snapshot.shape[2] + 2 * nghost,
-                            snapshot.shape[3] + 2 * nghost,
-                        ]
-                    )
+                    tmp_arr = np.zeros([settings["mx"], settings["my"], settings["mz"]])
                     tmp_arr[
                         dim.n1 : dim.n2 + 1, dim.m1 : dim.m2 + 1, dim.l1 : dim.l2 + 1
-                    ] = np.array(snapshot[getattr(indx, key) - 1])
-                    dataset_h5(
-                        data_grp,
-                        key,
-                        status=state,
-                        data=tmp_arr,
-                        dtype=data_type,
-                        overwrite=overwrite,
-                        rank=rank,
-                        comm=comm,
-                        size=size,
-                    )
+                    ] = snapshot[getattr(indx, key) - 1]
                 else:
-                    dataset_h5(
-                        data_grp,
-                        key,
-                        status=state,
-                        data=np.array(snapshot[getattr(indx, key) - 1]),
-                        dtype=data_type,
-                        overwrite=overwrite,
-                        rank=rank,
-                        comm=comm,
-                        size=size,
-                    )
+                    tmp_arr = snapshot[getattr(indx, key) - 1]
+
+                dataset_h5(
+                    data_grp,
+                    key,
+                    status=state,
+                    data=tmp_arr,
+                    dtype=data_type,
+                    overwrite=overwrite,
+                    rank=rank,
+                    comm=comm,
+                    size=size,
+                )
         else:
             for key in indx.__dict__.keys():
                 if key in ["uu", "keys", "aa", "KR_Frad", "uun", "gg", "bb"]:
