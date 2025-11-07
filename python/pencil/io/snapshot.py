@@ -350,7 +350,7 @@ def write_h5_snapshot(
         "precision",
     ]
     
-    if settings == None:
+    if settings is None:
         settings = {}
         dim = read.dim(datadir=sim_datadir)
         for key in skeys:
@@ -376,7 +376,7 @@ def write_h5_snapshot(
         "dy_tilde",
         "dz_tilde",
     ]
-    if grid == None:
+    if grid is None:
         grid = read.grid(datadir=sim_datadir, quiet=True)
     else:
         gd_err = False
@@ -400,7 +400,7 @@ def write_h5_snapshot(
         "mass",
         "system",
     ]
-    if param == None:
+    if param is None:
         param = read.param(datadir=sim_datadir, quiet=True)
         param.__setattr__("unit_mass", param.unit_density * param.unit_length ** 3)
         param.__setattr__("unit_energy", param.unit_mass * param.unit_velocity ** 2)
@@ -463,19 +463,19 @@ def write_h5_snapshot(
         return -1
 
     # Check the shape of the xyz arrays if specified and overwrite grid values.
-    if x != None:
+    if x is not None:
         if len(x) != settings["mx"]:
             print("ERROR: x array is incompatible with the shape of snapshot.")
             sys.stdout.flush()
             return -1
         grid.x = data_type(x)
-    if y != None:
+    if y is not None:
         if len(y) != settings["my"]:
             print("ERROR: y array is incompatible with the shape of snapshot.")
             sys.stdout.flush()
             return -1
         grid.y = data_type(y)
-    if z != None:
+    if z is not None:
         if len(z) != settings["mz"]:
             print("ERROR: z array is incompatible with the shape of snapshot.")
             sys.stdout.flush()
