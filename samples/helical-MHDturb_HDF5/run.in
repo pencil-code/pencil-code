@@ -15,7 +15,9 @@
   dt=4e-2
 
   lspec_at_tplusdt=T
-  lnrho_pdf=T
+
+  !lnrho_pdf=T
+  pdfs='lnrho,uu(1)/0/0.5'
 /
 &eos_run_pars
 /
