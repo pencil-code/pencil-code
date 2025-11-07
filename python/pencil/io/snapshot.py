@@ -432,12 +432,10 @@ def write_h5_snapshot(
         or (settings["ny"] % settings["nprocy"] > 0)
         or (settings["nz"] % settings["nprocz"] > 0)
     ):
-        print(
+        raise ValueError(
             "ERROR: Shape of the input array is not compatible with the "
             + "cpu layout. Make sure that nproci devides ni."
         )
-        sys.stdout.flush()
-        return -1
 
     # Check the shape of the xyz arrays if specified and overwrite grid values.
     if x is not None:
