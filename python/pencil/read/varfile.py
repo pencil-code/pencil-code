@@ -275,10 +275,11 @@ class DataCube(object):
              Read the persistent variables if they exist
 
          range_[xyz] : 2-tuple of real
-             coordinate range selection for subdomain
+             coordinate range selection for subdomain (closed interval).
 
          irange_[xyz] : 2-tuple of integer
-             index range selection for subdomain
+             index range selection for subdomain (closed interval).
+             Note that this index is in the full array (including ghost zones).
 
         Returns
         -------
