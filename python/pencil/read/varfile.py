@@ -336,280 +336,50 @@ class DataCube(object):
         # Used later on to support the case where only some of the variables were written into the snapshots.
         index_max = dim.mvar + dim.maux
 
-        if param.lwrite_aux:
-            total_vars = dim.mvar + dim.maux
-        else:
-            total_vars = dim.mvar
-
         run2D = param.lwrite_2d
         if param.io_strategy == "HDF5":
-            #
-            #  Read HDF5 files.
-            #
-            import h5py
-
-            run2D = param.lwrite_2d
-
-            if not var_file:
-                if ivar < 0:
-                    var_file = "var.h5"
-                else:
-                    var_file = "VAR" + str(ivar) + ".h5"
-
-            file_name = os.path.join(datadir, "allprocs", var_file)
-
-            with h5py.File(file_name, "r") as tmp:
-                if range_x:
-                    x = (tmp["grid/x"][:]).astype(precision)
-                    irange_x = (np.where( (x>=range_x[0]) & (x<=range_x[1]) )[0][0],
-                                np.where( (x>=range_x[0]) & (x<=range_x[1]) )[0][-1]+1)
-                else:
-                    if not irange_x:
-                        irange_x = (0,tmp["settings/mx"][0])
-                    else:
-                        irange_x = (max(irange_x[0],0),min(irange_x[1]+1,tmp["settings/mx"][0]))
-                mx = irange_x[1]-irange_x[0]
-                x = (tmp["grid/x"][irange_x[0]:irange_x[1]]).astype(precision)
-                if range_y:
-                    y = (tmp["grid/y"][:]).astype(precision)
-                    irange_y = (np.where( (y>=range_y[1]) & (y<=range_y[2]) )[0][0],
-                                np.where( (y>=range_y[1]) & (y<=range_y[2]) )[0][-1]+1)
-                else:
-                    if not irange_y:
-                        irange_y = (0,tmp["settings/my"][0])
-                    else:
-                        irange_y = (max(irange_y[0],0),min(irange_y[1],tmp["settings/my"][0]))
-                my = irange_y[1]-irange_y[0]
-                y = (tmp["grid/y"][irange_y[0]:irange_y[1]]).astype(precision)
-
-                if range_z:
-                    z = (tmp["grid/z"][:]).astype(precision)
-                    irange_z = [np.where( (z>=range_z[1]) & (z<=range_z[2]) )[0][0],
-                                np.where( (z>=range_z[1]) & (z<=range_z[2]) )[0][-1]+1]
-                    irange_z = (irange_z[0][0], irange_z[0][-1]+1)
-                else:
-                    if not irange_z:
-                        irange_z = (0,tmp["settings/mz"][0])
-                    else:
-                        irange_z = (max(irange_z[0],0),min(irange_z[1],tmp["settings/mz"][0]))
-                mz = irange_z[1]-irange_z[0]
-                z = (tmp["grid/z"][irange_z[0]:irange_z[1]]).astype(precision)
-
-                if grid != None:
-                    grid.restrict(irange_x,irange_y,irange_z)
-
-                # Set up the global array.
-                if run2D:
-                    if dim.ny == 1:
-                        self.f = np.zeros((total_vars, mz, mx), dtype=dtype)
-                    elif dim.nz == 1:
-                        self.f = np.zeros((total_vars, my, mx), dtype=dtype)
-                    else:
-                        self.f = np.zeros((total_vars, mz, my), dtype=dtype)
-                else:
-                    self.f = np.zeros((total_vars, mz, my, mx), dtype=dtype)
-
-                for key in tmp["data"].keys():
-                    if key in index.__dict__.keys():
-                        self.f[index.__getattribute__(key) - 1, :, :, :] = dtype(
-                                tmp["data/" + key][irange_z[0]:irange_z[1],
-                                                   irange_y[0]:irange_y[1],
-                                                   irange_x[0]:irange_x[1]]
-                        )
-                t = (tmp["time"][()]).astype(precision)
-                dx = (tmp["grid/dx"][()]).astype(precision)
-                dy = (tmp["grid/dy"][()]).astype(precision)
-                dz = (tmp["grid/dz"][()]).astype(precision)
-                if param.lshear:
-                    deltay = (tmp["persist/shear_delta_y"][(0)]).astype(precision)
-                if lpersist:
-                    pers_obj = _Persist()
-                    nprocs = dim.nprocx * dim.nprocy * dim.nprocz
-                    for key in tmp["persist"].keys():
-                        val = tmp["persist"][key][()]
-                        #Note that persistent variables need not be scalars (e.g. forcing_location)
-                        val_local = np.split(val, nprocs)[0].astype(precision)
-                        if len(val_local) == 1:
-                            val_local = val_local[0]
-                        setattr(pers_obj, key, val_local)
-                    self.persist = pers_obj
-        elif param.io_strategy == "dist":
-            #
-            #  Read scattered Fortran binary files.
-            #
-            if dim.precision == "D":
-                read_precision = "d"
-            else:
-                read_precision = "f"
-
-            if not var_file:
-                if ivar < 0:
-                    var_file = "var.dat"
-                else:
-                    var_file = "VAR" + str(ivar)
-
-            if proc < 0:
-                proc_dirs = self.__natural_sort(
-                    filter(lambda s: s.startswith("proc"), os.listdir(datadir))
+            grid = self._read_hdf5(
+                grid=grid,
+                dim=dim,
+                param=param,
+                var_file=var_file,
+                datadir=datadir,
+                precision=precision,
+                quiet=quiet,
+                lpersist=lpersist,
+                ivar=ivar,
+                irange_x=irange_x,
+                irange_y=irange_y,
+                irange_z=irange_z,
+                range_x=range_x,
+                range_y=range_y,
+                range_z=range_z,
+                dtype=dtype,
+                index=index,
                 )
-                if proc_dirs.count("proc_bounds.dat") > 0:
-                    proc_dirs.remove("proc_bounds.dat")
-                if param.lcollective_io:
-                    # A collective IO strategy is being used
-                    proc_dirs = ["allprocs"]
-            #                else:
-            #                    proc_dirs = proc_dirs[::dim.nprocx*dim.nprocy]
-            else:
-                proc_dirs = ["proc" + str(proc)]
+        elif param.io_strategy == "dist":
+            if (
+                (range_x is not None) or
+                (range_y is not None) or
+                (range_z is not None) or
+                (irange_x is not None) or
+                (irange_y is not None) or
+                (irange_z is not None)
+                ):
+                raise NotImplementedError("subdomains when IO = io_dist")
 
-            # Set up the global array.
-            if not run2D:
-                self.f = np.zeros((total_vars, dim.mz, dim.my, dim.mx), dtype=precision)
-            else:
-                if dim.ny == 1:
-                    self.f = np.zeros((total_vars, dim.mz, dim.mx), dtype=precision)
-                else:
-                    self.f = np.zeros((total_vars, dim.my, dim.mx), dtype=precision)
-
-            x = np.zeros(dim.mx, dtype=precision)
-            y = np.zeros(dim.my, dtype=precision)
-            z = np.zeros(dim.mz, dtype=precision)
-
-            for directory in proc_dirs:
-                if not param.lcollective_io:
-                    proc = int(directory[4:])
-                    if var_file[0:2].lower() == "og":
-                        procdim = read.ogdim(datadir, proc)
-                    else:
-                        if var_file[0:4] == "VARd":
-                            procdim = read.dim(datadir, proc, down=True)
-                        else:
-                            procdim = read.dim(datadir, proc)
-                    if not quiet:
-                        print(  "Reading data from processor"
-                              + " {0} of {1} ...".format(proc, len(proc_dirs)))
-
-                else:
-                    # A collective IO strategy is being used
-                    procdim = dim
-                #                else:
-                #                    procdim.mx = dim.mx
-                #                    procdim.my = dim.my
-                #                    procdim.nx = dim.nx
-                #                    procdim.ny = dim.ny
-                #                    procdim.ipx = dim.ipx
-                #                    procdim.ipy = dim.ipy
-
-                mxloc = procdim.mx
-                myloc = procdim.my
-                mzloc = procdim.mz
-
-                # Read the data: f-array
-                file_name = os.path.join(datadir, directory, var_file)
-                infile = FortranFileExt(file_name,header_dtype=np.int32)
-                if not run2D:
-                    f_loc = (infile.read_record(dtype=read_precision)).astype(precision)
-                    f_loc = f_loc.reshape((-1, mzloc, myloc, mxloc))
-                #    print(proc,f_loc.shape,f_loc.dtype)
-                else:
-                    if dim.ny == 1:
-                        f_loc = (infile.read_record(dtype=read_precision)).astype(precision)
-                        f_loc = f_loc.reshape((-1, mzloc, mxloc))
-                    else:
-                        f_loc = (infile.read_record(dtype=read_precision)).astype(precision)
-                        f_loc = f_loc.reshape((-1, myloc, mxloc))
-
-                # Read the data: time, coordinates, etc.
-                raw_etc = (infile.read_record(dtype=read_precision)).astype(precision)
-
-                # Read the data: persistent variables
-                if lpersist and directory==proc_dirs[0]:
-                    self._get_persist_iodist(infile=infile, precision=read_precision, quiet=quiet)
-                infile.close()
-
-                t = raw_etc[0]
-                x_loc = raw_etc[1 : mxloc + 1]
-                y_loc = raw_etc[mxloc + 1 : mxloc + myloc + 1]
-                z_loc = raw_etc[mxloc + myloc + 1 : mxloc + myloc + mzloc + 1]
-                if param.lshear:
-                    shear_offset = 1
-                    deltay = raw_etc[-1]
-                else:
-                    shear_offset = 0
-
-                dx = raw_etc[-3 - shear_offset]
-                dy = raw_etc[-2 - shear_offset]
-                dz = raw_etc[-1 - shear_offset]
-
-                if len(proc_dirs) > 1:
-                    # Calculate where the local processor will go in
-                    # the global array.
-                    #
-                    # Don't overwrite ghost zones of processor to the
-                    # left (and accordingly in y and z direction -- makes
-                    # a difference on the diagonals)
-                    #
-                    # Recall that in NumPy, slicing is NON-INCLUSIVE on
-                    # the right end, ie, x[0:4] will slice all of a
-                    # 4-digit array, not produce an error like in idl.
-
-                    if procdim.ipx == 0:
-                        i0x = 0
-                        i1x = i0x + procdim.mx
-                        i0xloc = 0
-                        i1xloc = procdim.mx
-                    else:
-                        i0x = procdim.ipx * procdim.nx + procdim.nghostx
-                        i1x = i0x + procdim.mx - procdim.nghostx
-                        i0xloc = procdim.nghostx
-                        i1xloc = procdim.mx
-
-                    if procdim.ipy == 0:
-                        i0y = 0
-                        i1y = i0y + procdim.my
-                        i0yloc = 0
-                        i1yloc = procdim.my
-                    else:
-                        i0y = procdim.ipy * procdim.ny + procdim.nghosty
-                        i1y = i0y + procdim.my - procdim.nghosty
-                        i0yloc = procdim.nghosty
-                        i1yloc = procdim.my
-
-                    if procdim.ipz == 0:
-                        i0z = 0
-                        i1z = i0z + procdim.mz
-                        i0zloc = 0
-                        i1zloc = procdim.mz
-                    else:
-                        i0z = procdim.ipz * procdim.nz + procdim.nghostz
-                        i1z = i0z + procdim.mz - procdim.nghostz
-                        i0zloc = procdim.nghostz
-                        i1zloc = procdim.mz
-
-                    x[i0x:i1x] = x_loc[i0xloc:i1xloc]
-                    y[i0y:i1y] = y_loc[i0yloc:i1yloc]
-                    z[i0z:i1z] = z_loc[i0zloc:i1zloc]
-
-                    if not run2D:
-                        self.f[:, i0z:i1z, i0y:i1y, i0x:i1x] = f_loc[
-                            :, i0zloc:i1zloc, i0yloc:i1yloc, i0xloc:i1xloc
-                        ]
-                    else:
-                        if dim.ny == 1:
-                            self.f[:, i0z:i1z, i0x:i1x] = f_loc[
-                                :, i0zloc:i1zloc, i0xloc:i1xloc
-                            ]
-                        else:
-                            self.f[i0z:i1z, i0y:i1y, i0x:i1x] = f_loc[
-                                i0zloc:i1zloc, i0yloc:i1yloc, i0xloc:i1xloc
-                            ]
-                else:                    # reading from a single processor
-                    self.f = f_loc
-                    x = x_loc
-                    y = y_loc
-                    z = z_loc
-                    if grid != None:     # overwrite global grid by local grid to enable "magic" calculations
-                        grid = read.grid(datadir=datadir,proc=proc)
+            grid = self._read_io_dist(
+                grid=grid,
+                dim=dim,
+                param=param,
+                proc=proc,
+                ivar=ivar,
+                var_file=var_file,
+                datadir=datadir,
+                precision=precision,
+                quiet=quiet,
+                lpersist=lpersist,
+                )
         else:
             raise NotImplementedError(
                 "IO strategy {} not supported by the Python module.".format(
@@ -745,9 +515,9 @@ class DataCube(object):
 
         # Trim the ghost zones of the global f-array if asked.
         if trimall:
-            self.x = x[dim.l1 : dim.l2 + 1]
-            self.y = y[dim.m1 : dim.m2 + 1]
-            self.z = z[dim.n1 : dim.n2 + 1]
+            self.x = self.x[dim.l1 : dim.l2 + 1]
+            self.y = self.y[dim.m1 : dim.m2 + 1]
+            self.z = self.z[dim.n1 : dim.n2 + 1]
             if not run2D:
                 self.f = self.f[
                     :, dim.n1 : dim.n2 + 1, dim.m1 : dim.m2 + 1, dim.l1 : dim.l2 + 1
@@ -758,9 +528,6 @@ class DataCube(object):
                 else:
                     self.f = self.f[:, dim.m1 : dim.m2 + 1, dim.l1 : dim.l2 + 1]
         else:
-            self.x = x
-            self.y = y
-            self.z = z
             self.l1 = dim.l1
             self.l2 = dim.l2 + 1
             self.m1 = dim.m1
@@ -814,14 +581,6 @@ class DataCube(object):
                 key = uutest[j*3][:-1]
                 value = index.__dict__[uutest[j*3]]
                 setattr(self, key, self.f[value - 1 : value + 2, ...])
-
-
-        self.t = t
-        self.dx = dx
-        self.dy = dy
-        self.dz = dz
-        if param.lshear:
-            self.deltay = deltay
 
         # Do the rest of magic after the trimall (i.e. no additional curl.)
         self.magic = magic
@@ -969,6 +728,302 @@ class DataCube(object):
                         print(key, record_types[key][0], record_types[key][1], tmp_val)
 
         self.persist = pers_obj
+
+    def _read_hdf5(self, grid, dim, param, var_file, datadir, precision, quiet, lpersist, ivar, irange_x, irange_y, irange_z, range_x, range_y, range_z, dtype, index):
+        import h5py
+
+        if param.lwrite_aux:
+            total_vars = dim.mvar + dim.maux
+        else:
+            total_vars = dim.mvar
+
+        run2D = param.lwrite_2d
+
+        if not var_file:
+            if ivar < 0:
+                var_file = "var.h5"
+            else:
+                var_file = "VAR" + str(ivar) + ".h5"
+
+        file_name = os.path.join(datadir, "allprocs", var_file)
+
+        with h5py.File(file_name, "r") as tmp:
+            if range_x:
+                x = (tmp["grid/x"][:]).astype(precision)
+                irange_x = (np.where( (x>=range_x[0]) & (x<=range_x[1]) )[0][0],
+                            np.where( (x>=range_x[0]) & (x<=range_x[1]) )[0][-1]+1)
+            else:
+                if not irange_x:
+                    irange_x = (0,tmp["settings/mx"][0])
+                else:
+                    irange_x = (max(irange_x[0],0),min(irange_x[1]+1,tmp["settings/mx"][0]))
+            mx = irange_x[1]-irange_x[0]
+            x = (tmp["grid/x"][irange_x[0]:irange_x[1]]).astype(precision)
+            if range_y:
+                y = (tmp["grid/y"][:]).astype(precision)
+                irange_y = (np.where( (y>=range_y[1]) & (y<=range_y[2]) )[0][0],
+                            np.where( (y>=range_y[1]) & (y<=range_y[2]) )[0][-1]+1)
+            else:
+                if not irange_y:
+                    irange_y = (0,tmp["settings/my"][0])
+                else:
+                    irange_y = (max(irange_y[0],0),min(irange_y[1],tmp["settings/my"][0]))
+            my = irange_y[1]-irange_y[0]
+            y = (tmp["grid/y"][irange_y[0]:irange_y[1]]).astype(precision)
+
+            if range_z:
+                z = (tmp["grid/z"][:]).astype(precision)
+                irange_z = [np.where( (z>=range_z[1]) & (z<=range_z[2]) )[0][0],
+                            np.where( (z>=range_z[1]) & (z<=range_z[2]) )[0][-1]+1]
+                irange_z = (irange_z[0][0], irange_z[0][-1]+1)
+            else:
+                if not irange_z:
+                    irange_z = (0,tmp["settings/mz"][0])
+                else:
+                    irange_z = (max(irange_z[0],0),min(irange_z[1],tmp["settings/mz"][0]))
+            mz = irange_z[1]-irange_z[0]
+            z = (tmp["grid/z"][irange_z[0]:irange_z[1]]).astype(precision)
+
+            if grid != None:
+                grid.restrict(irange_x,irange_y,irange_z)
+
+            # Set up the global array.
+            if run2D:
+                if dim.ny == 1:
+                    self.f = np.zeros((total_vars, mz, mx), dtype=dtype)
+                elif dim.nz == 1:
+                    self.f = np.zeros((total_vars, my, mx), dtype=dtype)
+                else:
+                    self.f = np.zeros((total_vars, mz, my), dtype=dtype)
+            else:
+                self.f = np.zeros((total_vars, mz, my, mx), dtype=dtype)
+
+            for key in tmp["data"].keys():
+                if key in index.__dict__.keys():
+                    self.f[index.__getattribute__(key) - 1, :, :, :] = dtype(
+                            tmp["data/" + key][irange_z[0]:irange_z[1],
+                                                irange_y[0]:irange_y[1],
+                                                irange_x[0]:irange_x[1]]
+                    )
+            t = (tmp["time"][()]).astype(precision)
+            dx = (tmp["grid/dx"][()]).astype(precision)
+            dy = (tmp["grid/dy"][()]).astype(precision)
+            dz = (tmp["grid/dz"][()]).astype(precision)
+            if param.lshear:
+                deltay = (tmp["persist/shear_delta_y"][(0)]).astype(precision)
+            if lpersist:
+                pers_obj = _Persist()
+                nprocs = dim.nprocx * dim.nprocy * dim.nprocz
+                for key in tmp["persist"].keys():
+                    val = tmp["persist"][key][()]
+                    #Note that persistent variables need not be scalars (e.g. forcing_location)
+                    val_local = np.split(val, nprocs)[0].astype(precision)
+                    if len(val_local) == 1:
+                        val_local = val_local[0]
+                    setattr(pers_obj, key, val_local)
+                self.persist = pers_obj
+
+        self.x = x
+        self.y = y
+        self.z = z
+        self.t = t
+        self.dx = dx
+        self.dy = dy
+        self.dz = dz
+        if param.lshear:
+            self.deltay = deltay
+
+        return grid
+
+    def _read_io_dist(self, grid, dim, param, proc, ivar, var_file, datadir, precision, quiet, lpersist):
+        if param.lwrite_aux:
+            total_vars = dim.mvar + dim.maux
+        else:
+            total_vars = dim.mvar
+
+        run2D = param.lwrite_2d
+
+        if dim.precision == "D":
+            read_precision = "d"
+        else:
+            read_precision = "f"
+
+        if not var_file:
+            if ivar < 0:
+                var_file = "var.dat"
+            else:
+                var_file = "VAR" + str(ivar)
+
+        if proc < 0:
+            proc_dirs = self.__natural_sort(
+                filter(lambda s: s.startswith("proc"), os.listdir(datadir))
+            )
+            if proc_dirs.count("proc_bounds.dat") > 0:
+                proc_dirs.remove("proc_bounds.dat")
+            if param.lcollective_io:
+                # A collective IO strategy is being used
+                proc_dirs = ["allprocs"]
+        #                else:
+        #                    proc_dirs = proc_dirs[::dim.nprocx*dim.nprocy]
+        else:
+            proc_dirs = ["proc" + str(proc)]
+
+        # Set up the global array.
+        if not run2D:
+            self.f = np.zeros((total_vars, dim.mz, dim.my, dim.mx), dtype=precision)
+        else:
+            if dim.ny == 1:
+                self.f = np.zeros((total_vars, dim.mz, dim.mx), dtype=precision)
+            else:
+                self.f = np.zeros((total_vars, dim.my, dim.mx), dtype=precision)
+
+        x = np.zeros(dim.mx, dtype=precision)
+        y = np.zeros(dim.my, dtype=precision)
+        z = np.zeros(dim.mz, dtype=precision)
+
+        for directory in proc_dirs:
+            if not param.lcollective_io:
+                proc = int(directory[4:])
+                if var_file[0:2].lower() == "og":
+                    procdim = read.ogdim(datadir, proc)
+                else:
+                    if var_file[0:4] == "VARd":
+                        procdim = read.dim(datadir, proc, down=True)
+                    else:
+                        procdim = read.dim(datadir, proc)
+                if not quiet:
+                    print(  "Reading data from processor"
+                            + " {0} of {1} ...".format(proc, len(proc_dirs)))
+
+            else:
+                # A collective IO strategy is being used
+                procdim = dim
+            #                else:
+            #                    procdim.mx = dim.mx
+            #                    procdim.my = dim.my
+            #                    procdim.nx = dim.nx
+            #                    procdim.ny = dim.ny
+            #                    procdim.ipx = dim.ipx
+            #                    procdim.ipy = dim.ipy
+
+            mxloc = procdim.mx
+            myloc = procdim.my
+            mzloc = procdim.mz
+
+            # Read the data: f-array
+            file_name = os.path.join(datadir, directory, var_file)
+            infile = FortranFileExt(file_name,header_dtype=np.int32)
+            if not run2D:
+                f_loc = (infile.read_record(dtype=read_precision)).astype(precision)
+                f_loc = f_loc.reshape((-1, mzloc, myloc, mxloc))
+            #    print(proc,f_loc.shape,f_loc.dtype)
+            else:
+                if dim.ny == 1:
+                    f_loc = (infile.read_record(dtype=read_precision)).astype(precision)
+                    f_loc = f_loc.reshape((-1, mzloc, mxloc))
+                else:
+                    f_loc = (infile.read_record(dtype=read_precision)).astype(precision)
+                    f_loc = f_loc.reshape((-1, myloc, mxloc))
+
+            # Read the data: time, coordinates, etc.
+            raw_etc = (infile.read_record(dtype=read_precision)).astype(precision)
+
+            # Read the data: persistent variables
+            if lpersist and directory==proc_dirs[0]:
+                self._get_persist_iodist(infile=infile, precision=read_precision, quiet=quiet)
+            infile.close()
+
+            t = raw_etc[0]
+            x_loc = raw_etc[1 : mxloc + 1]
+            y_loc = raw_etc[mxloc + 1 : mxloc + myloc + 1]
+            z_loc = raw_etc[mxloc + myloc + 1 : mxloc + myloc + mzloc + 1]
+            if param.lshear:
+                shear_offset = 1
+                deltay = raw_etc[-1]
+            else:
+                shear_offset = 0
+
+            dx = raw_etc[-3 - shear_offset]
+            dy = raw_etc[-2 - shear_offset]
+            dz = raw_etc[-1 - shear_offset]
+
+            if len(proc_dirs) > 1:
+                # Calculate where the local processor will go in
+                # the global array.
+                #
+                # Don't overwrite ghost zones of processor to the
+                # left (and accordingly in y and z direction -- makes
+                # a difference on the diagonals)
+                #
+                # Recall that in NumPy, slicing is NON-INCLUSIVE on
+                # the right end, ie, x[0:4] will slice all of a
+                # 4-digit array, not produce an error like in idl.
+
+                if procdim.ipx == 0:
+                    i0x = 0
+                    i1x = i0x + procdim.mx
+                    i0xloc = 0
+                    i1xloc = procdim.mx
+                else:
+                    i0x = procdim.ipx * procdim.nx + procdim.nghostx
+                    i1x = i0x + procdim.mx - procdim.nghostx
+                    i0xloc = procdim.nghostx
+                    i1xloc = procdim.mx
+
+                if procdim.ipy == 0:
+                    i0y = 0
+                    i1y = i0y + procdim.my
+                    i0yloc = 0
+                    i1yloc = procdim.my
+                else:
+                    i0y = procdim.ipy * procdim.ny + procdim.nghosty
+                    i1y = i0y + procdim.my - procdim.nghosty
+                    i0yloc = procdim.nghosty
+                    i1yloc = procdim.my
+
+                if procdim.ipz == 0:
+                    i0z = 0
+                    i1z = i0z + procdim.mz
+                    i0zloc = 0
+                    i1zloc = procdim.mz
+                else:
+                    i0z = procdim.ipz * procdim.nz + procdim.nghostz
+                    i1z = i0z + procdim.mz - procdim.nghostz
+                    i0zloc = procdim.nghostz
+                    i1zloc = procdim.mz
+
+                x[i0x:i1x] = x_loc[i0xloc:i1xloc]
+                y[i0y:i1y] = y_loc[i0yloc:i1yloc]
+                z[i0z:i1z] = z_loc[i0zloc:i1zloc]
+
+                if not run2D:
+                    self.f[:, i0z:i1z, i0y:i1y, i0x:i1x] = f_loc[
+                        :, i0zloc:i1zloc, i0yloc:i1yloc, i0xloc:i1xloc
+                    ]
+                else:
+                    if dim.ny == 1:
+                        self.f[:, i0z:i1z, i0x:i1x] = f_loc[
+                            :, i0zloc:i1zloc, i0xloc:i1xloc
+                        ]
+                    else:
+                        self.f[i0z:i1z, i0y:i1y, i0x:i1x] = f_loc[
+                            i0zloc:i1zloc, i0yloc:i1yloc, i0xloc:i1xloc
+                        ]
+            else:                    # reading from a single processor
+                self.f = f_loc
+                x = x_loc
+                y = y_loc
+                z = z_loc
+
+        self.x = x
+        self.y = y
+        self.z = z
+        self.t = t
+        self.dx = dx
+        self.dy = dy
+        self.dz = dz
+        if param.lshear:
+            self.deltay = deltay
 
 class _Persist():
     """
