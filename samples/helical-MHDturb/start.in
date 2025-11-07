@@ -18,7 +18,7 @@
 &magnetic_init_pars
   !initaa='Beltrami-y', amplaa=-0.01  !(+ve amplaa means now positive helicity)
   initaa='gaussian-noise', amplaa=1e-4
-  lcoulomb=T
+  !lcoulomb=T
 /
 &pscalar_init_pars
   initlncc='wave-z', ampllncc=1e-0

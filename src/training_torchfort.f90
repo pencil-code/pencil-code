@@ -289,7 +289,7 @@
           !TODO: smoothing/scaling etc. for uu and tau
           !istat = torchfort_train(model, get_ptr_gpu_training(iux,iuz), &
           !                               get_ptr_gpu_training(itauxx,itauzz), train_loss)
-          call train_gpu(train_loss)
+          call train_gpu(train_loss, itsub)
         else
           call calc_tau(f)
 !

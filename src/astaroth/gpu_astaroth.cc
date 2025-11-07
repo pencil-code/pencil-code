@@ -874,10 +874,27 @@ std::vector<float>val_loss;
 std::vector<float>train_loss;
 std::vector<double>train_time;
 std::vector<double>val_time;
+
+bool loaded_stats = false;
+/***********************************************************************************************/
+void denormalize(std::string filename){
+	if(!loaded_stats){
+		std::ifstream f(filename, std::iso::binary);
+		if (!f.is_open()){
+			fprintf(stderr, "Could nemt open stats file");
+			fflush(stderr);
+		}
+	
+	}
+}
+
+
+
 /***********************************************************************************************/
 extern "C" void torch_infer_c_api(int itstub){	
 #if TRAINING
 	#include "user_constants.h"
+	if(itstub!=1) return;
 	if(!calling_infer){
 		fprintf(stderr,"Calling infer\n");
 		fflush(stderr);
@@ -897,16 +914,6 @@ extern "C" void torch_infer_c_api(int itstub){
 		acGridExecuteTaskGraph(bcs,1);
 		acGridSynchronizeStream(STREAM_ALL);
 
-
-		auto scale_uumean_tau = acGetOptimizedDSLTaskGraph(scale);
-		acGridSynchronizeStream(STREAM_ALL);
-		acGridExecuteTaskGraph(scale_uumean_tau, 1);
-		acGridSynchronizeStream(STREAM_ALL);
-
-  	bcs = acGetOptimizedDSLTaskGraph(boundconds);	
-		acGridSynchronizeStream(STREAM_ALL);
-		acGridExecuteTaskGraph(bcs,1);
-		acGridSynchronizeStream(STREAM_ALL);
 	}
 		
 
@@ -942,18 +949,21 @@ extern "C" void torch_infer_c_api(int itstub){
 	float vloss = MSE();
  	
 	if(itstub == 1){
-		fprintf(stderr, "Validation error is: %.50f\n", vloss);
-		fprintf(stderr, "Validation took %f seconnds\n", (end-start));
-		fflush(stderr);
+		//fprintf(stderr, "Validation error is: %.50f\n", vloss);
+		//fprintf(stderr, "Validation took %f seconnds\n", (end-start));
+		//fflush(stderr);
+  	val_time.push_back((end-start));
+  	val_loss.push_back(vloss);
 		print_debug();
 	}
 #endif
 }
 /***********************************************************************************************/
-extern "C" void torch_train_c_api(AcReal *loss_val) {
+extern "C" void torch_train_c_api(AcReal *loss_val, int itstub) {
 #if TRAINING
 	#include "user_constants.h"
 	#include <stdlib.h>
+	if(itstub != 1) return;
 
 	if(!calling_train){
 		fprintf(stderr,"Calling training\n");
@@ -1003,7 +1013,7 @@ extern "C" void torch_train_c_api(AcReal *loss_val) {
   
   start = MPI_Wtime();
   
-  torch_trainCAPI((int[]){mx,my,mz}, uumean_ptr, TAU_ptr, loss_val, AC_DOUBLE_PRECISION);
+  torch_trainCAPI((int[]){mx,my,mz}, uumean_ptr, TAU_ptr, loss_val);
 
   end = MPI_Wtime();
 
@@ -1195,8 +1205,8 @@ if (it % 5 !=0) return;
     #include "user_constants.h"
 		
 		
-		//std::ifstream infile("snapshots/snapshot_rank" + std::to_string(my_rank) + "_it" + std::to_string(it) + ".bin", std::ios::binary);
-		//if (infile.good()) return;
+		std::ifstream infile("snapshots/snapshot_rank_" + std::to_string(my_rank) + "_it_" + std::to_string(it) + ".bin", std::ios::binary);
+		if (infile.good()) return;
 		
 		counter = it;
 		
@@ -1274,7 +1284,7 @@ if (it % 5 !=0) return;
 	
 
 		std::ostringstream fname;
-    fname << "snapshots/snapshot_rank" << my_rank << "_it" << it << ".bin";
+    fname << "snapshots/snapshot_rank_" + std::to_string(my_rank) + "_it_" + std::to_string(it) + ".bin";
     std::ofstream out(fname.str(), std::ios::binary);
     out.write(reinterpret_cast<const char*>(buffer.data()), buffer.size() * sizeof(double));
     out.close();

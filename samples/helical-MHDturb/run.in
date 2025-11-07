@@ -4,8 +4,8 @@
 !
 &run_pars
   cvsid='$Id$',
-  !nt=20000, it1=50, cdt=0.4, cdtv=0.3, isave=200, itorder=3 !(longer run)
-  nt=10, it1=2, cdt=0.4, cdtv=0.3, isave=0, itorder=3        !(sample run)
+  nt=20000, it1=10, cdt=0.4, cdtv=0.3, isave=1000, itorder=3 !(longer run)
+  !nt=10, it1=2, cdt=0.4, cdtv=0.3, isave=0, itorder=3        !(sample run)
   dsnap=50, dvid=1.0,  !(for longer run)
   dsnap=50, dvid=0.1,  !(for sample run)
   dsnap=.1, dvid=0.1,  !(for sample run)
@@ -19,6 +19,11 @@
  !comment_char='%'     !(useful when using matlab for visualization)
   lequatorz=T          !(to indicate that north/south diagnostics in in z)
   dt=4e-2
+/
+&gpu_run_pars
+  ltest_bcs=F
+  lcpu_timestep_on_gpu=T
+  lcuda_aware_mpi=F
 /
 &eos_run_pars
 /
@@ -47,4 +52,15 @@
 /
 &power_spectrum_run_pars
   lzero_spec_zerok=T
+/
+&training_run_pars
+  lroute_via_cpu=F
+  it_train=10, it_train_chkpt=1000
+	!it_train_start=1200
+  luse_trained_tau=F
+  max_loss=1.e-100
+  model='stationary'
+  config_file='config_afno.yaml'
+  it_train_end=20000
+	run_epoch=T
 /

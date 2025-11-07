@@ -80,7 +80,7 @@ Stencil avgr1
 	[1][1][1] = 1/27,
 }
 
-Kernel tau_uumean(int ranNum){
+Kernel tau_uumean(){
 
 		write(tau.xx, UUX*UUX)	
 		write(tau.yy, UUY*UUY)	
@@ -96,7 +96,7 @@ Kernel tau_uumean(int ranNum){
 
 }
 
-Kernel smooth_tau(int ranNum){
+Kernel smooth_tau(){
 
 	write(tau.xx, gaussian_smooth_inplace(tau.xx))
 	write(tau.xy, gaussian_smooth_inplace(tau.xy))
@@ -108,7 +108,7 @@ Kernel smooth_tau(int ranNum){
 }
 
 
-Kernel final_tau(int ranNum){
+Kernel final_tau(){
 
 	UX = uumean.x
 	UY = uumean.y
@@ -130,7 +130,7 @@ global output real maxTAU
 global output real minUUMEAN
 global output real maxUUMEAN
 
-Kernel reduce_uumean_tau(int ranNum){
+Kernel reduce_uumean_tau(){
 
 
 	real minimumTAU = min(tau.xx, min(tau.yy, min(tau.zz, min(tau.xy, min(tau.yz, tau.xz)))))
@@ -247,7 +247,7 @@ component_wise_descale_uumean(Field3 f, real minx, real miny, real minz, real ma
 }
 
 global output real AC_l2_sum
-Kernel l2_sum(int ranNum){
+Kernel l2_sum(){
 
    res = 0.0
    res +=  (TAU_INFERRED.xx - tau.xx)*(TAU_INFERRED.xx - tau.xx)
@@ -267,7 +267,7 @@ Kernel scale_kernel(FieldSymmetricTensor TAU, Field3 UUMEAN){
 	write(UUMEAN, train_scale(UUMEAN, minUUMEAN, maxUUMEAN))
 }
 
-Kernel scale_kernel_new(int ranNum){
+Kernel scale_kernel_new(){
 	//write(TAU, component_wise_scale_tau(TAU, minTAUxx, minTAUyy, minTAUzz, minTAUxy, minTAUyz, minTAUxz, maxTAUxx, maxTAUyy, maxTAUzz, maxTAUxy, maxTAUyz, maxTAUxz))
 	//write(UUMEAN, component_wise_scale_uumean(UUMEAN, minUUMEANx, minUUMEANy, minUUMEANz, maxUUMEANx, maxUUMEANy, maxUUMEANz))
 
@@ -289,7 +289,7 @@ Kernel descale_kernel(FieldSymmetricTensor TAU, Field3 UUMEAN){
 }
 
 
-Kernel descale_kernel_new(int ranNum){
+Kernel descale_kernel_new(){
 	//write(TAU, component_wise_scale_tau(TAU, minTAUxx, minTAUyy, minTAUzz, minTAUxy, minTAUyz, minTAUxz, maxTAUxx, maxTAUyy, maxTAUzz, maxTAUxy, maxTAUyz, maxTAUxz))
 	//write(UUMEAN, component_wise_scale_uumean(UUMEAN, minUUMEANx, minUUMEANy, minUUMEANz, maxUUMEANx, maxUUMEANy, maxUUMEANz))
 
@@ -300,7 +300,7 @@ Kernel descale_kernel_new(int ranNum){
 	write(TAU_INFERRED, train_descale(TAU_INFERRED, minTAU, maxTAU))
 }
 
-Kernel copyTauBatch(FieldSymmetricTensor TAU_out, Field3 UUMEAN_out, int ranNum){
+Kernel copyTauBatch(FieldSymmetricTensor TAU_out, Field3 UUMEAN_out){
 
 	FieldSymmetricTensor TAU_in = tau	
 	Field3 UUMEAN_in = uumean
@@ -334,29 +334,29 @@ ComputeSteps descale_inferred_taus(boundconds)
 
 
 ComputeSteps calc_validation_loss(boundconds){
-	l2_sum(AC_ranNum)
+	l2_sum()
 }
 
 ComputeSteps calc_scaling(boundconds){
-	reduce_uumean_tau(AC_ranNum)
+	reduce_uumean_tau()
 	//component_wise_reduce()
 }
 
 
 ComputeSteps initialize_uumean_tau(boundconds){
-	tau_uumean(AC_ranNum)
-	smooth_tau(AC_ranNum)
-	final_tau(AC_ranNum)	
+	tau_uumean()
+	smooth_tau()
+	final_tau()	
 }
 
 
 ComputeSteps scale(boundconds){
-	scale_kernel_new(AC_ranNum)
+	scale_kernel_new()
 }
 
 
 ComputeSteps descale(boundconds){
-	descale_kernel_new(AC_ranNum)
+	descale_kernel_new()
 }
 
 #endif
