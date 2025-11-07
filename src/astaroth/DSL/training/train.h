@@ -15,12 +15,28 @@ communicated FieldSymmetricTensor TAUBatch[6]
 
 communicated FieldSymmetricTensor TAUinf
 
-communicated FieldSymmetricTensor TAU_INFERRED
+field_order(AC_itauxx__mod__training-1) communicated Field TAU_INFERRED_XX
+field_order(AC_itauyy__mod__training-1) communicated Field TAU_INFERRED_YY
+field_order(AC_itauzz__mod__training-1) communicated Field TAU_INFERRED_ZZ
+field_order(AC_itauxy__mod__training-1) communicated Field TAU_INFERRED_XY
+field_order(AC_itauxz__mod__training-1) communicated Field TAU_INFERRED_XZ
+field_order(AC_itauyz__mod__training-1) communicated Field TAU_INFERRED_YZ
+   
+const FieldSymmetricTensor TAU_INFERRED = 
+{  
+        TAU_INFERRED_XX,
+        TAU_INFERRED_YY,
+        TAU_INFERRED_ZZ,
+        TAU_INFERRED_XY,
+        TAU_INFERRED_XZ,
+        TAU_INFERRED_YZ
+}
 
 global input int AC_ranNum
 
 run_const real_symmetric_tensor AC_tau_means
 run_const real_symmetric_tensor AC_tau_stds
+
 
 
 Stencil avgr1
@@ -303,12 +319,17 @@ Kernel copyTauBatch(FieldSymmetricTensor TAU_out, Field3 UUMEAN_out, int ranNum)
 
 Kernel descale_inferred_taus_kernel()
 {
-	write(TAU_INFERRED, TAU_INFERRED*AC_tau_stds + AC_tau_means)
+	write(TAU_INFERRED.xx, TAU_INFERRED.xx*AC_tau_stds.xx + AC_tau_means.xx)
+	write(TAU_INFERRED.yy, TAU_INFERRED.yy*AC_tau_stds.yy + AC_tau_means.yy)
+	write(TAU_INFERRED.zz, TAU_INFERRED.zz*AC_tau_stds.zz + AC_tau_means.zz)
+	write(TAU_INFERRED.xy, TAU_INFERRED.xy*AC_tau_stds.xy + AC_tau_means.xy)
+	write(TAU_INFERRED.xz, TAU_INFERRED.xz*AC_tau_stds.xz + AC_tau_means.xz)
+	write(TAU_INFERRED.yz, TAU_INFERRED.yz*AC_tau_stds.yz + AC_tau_means.yz)
 }
 
 ComputeSteps descale_inferred_taus(boundconds)
 {
-	descale_inferred_taus()
+	descale_inferred_taus_kernel()
 }
 
 

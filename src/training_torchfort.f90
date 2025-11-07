@@ -122,7 +122,7 @@
         endif
       endif
 
-      luse_trained_tau = luse_trained_tau.and.ltrained
+      ltrained = ltrained .or. luse_trained_tau
 
       if (lrun .and. lfortran_launched) then
         allocate(input (mx, my, mz, 3, 1))
