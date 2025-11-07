@@ -1640,8 +1640,8 @@ module Special
     integer, parameter :: n_pars=100
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
-    call string_to_enum(enum_hscript_choice,hscript_choice)
-    call string_to_enum(enum_vprime_choice,vprime_choice)
+    call string_to_enum(enum_hscript_choice,Hscript_choice)
+    call string_to_enum(enum_vprime_choice,Vprime_choice)
     call copy_addr(enum_hscript_choice,p_par(1)) ! int
     call copy_addr(enum_vprime_choice,p_par(2)) ! int
     call copy_addr(iphi,p_par(3)) ! int
