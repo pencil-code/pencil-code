@@ -354,7 +354,7 @@ def write_h5_snapshot(
         settings = {}
         dim = read.dim(datadir=sim_datadir)
         for key in skeys:
-            settings[key] = dim.__getattribute__(key)
+            settings[key] = getattr(dim, key)
         settings["precision"] = precision.upper().encode() #Uppercase to be consistent with the convention used in snapshots written by io_hdf5.f90
         settings["nghost"] = nghost
         settings["version"] = np.int32(0)
@@ -402,10 +402,10 @@ def write_h5_snapshot(
     ]
     if param is None:
         param = read.param(datadir=sim_datadir, quiet=True)
-        param.__setattr__("unit_mass", param.unit_density * param.unit_length ** 3)
-        param.__setattr__("unit_energy", param.unit_mass * param.unit_velocity ** 2)
-        param.__setattr__("unit_time", param.unit_length / param.unit_velocity)
-        param.__setattr__("unit_flux", param.unit_mass / param.unit_time ** 3)
+        param.unit_mass = param.unit_density * param.unit_length ** 3
+        param.unit_energy = param.unit_mass * param.unit_velocity ** 2
+        param.unit_time = param.unit_length / param.unit_velocity
+        param.unit_flux = param.unit_mass / param.unit_time ** 3
         param.unit_system = param.unit_system.encode()
 
     # check whether the snapshot matches the simulation shape
@@ -526,7 +526,7 @@ def write_h5_snapshot(
                     )
                     tmp_arr[
                         dim.n1 : dim.n2 + 1, dim.m1 : dim.m2 + 1, dim.l1 : dim.l2 + 1
-                    ] = np.array(snapshot[indx.__getattribute__(key) - 1])
+                    ] = np.array(snapshot[getattr(indx, key) - 1])
                     dataset_h5(
                         data_grp,
                         key,
@@ -543,7 +543,7 @@ def write_h5_snapshot(
                         data_grp,
                         key,
                         status=state,
-                        data=np.array(snapshot[indx.__getattribute__(key) - 1]),
+                        data=np.array(snapshot[getattr(indx, key) - 1]),
                         dtype=data_type,
                         overwrite=overwrite,
                         rank=rank,
@@ -584,7 +584,7 @@ def write_h5_snapshot(
             for key in indx.__dict__.keys():
                 if key in ["uu", "keys", "aa", "KR_Frad", "uun", "gg", "bb"]:
                     continue
-                tmp_arr = np.array(snapshot[indx.__getattribute__(key) - 1])
+                tmp_arr = np.array(snapshot[getattr(indx, key) - 1])
                 data_grp[key][
                     n1 + ipz * nz : n2 + ipz * nz + 1,
                     m1 + ipy * ny : m2 + ipy * ny + 1,
@@ -642,7 +642,7 @@ def write_h5_snapshot(
                 grid_grp,
                 key,
                 status=state,
-                data=(grid.__getattribute__(key)),
+                data=(getattr(grid, key)),
                 dtype=data_type,
                 rank=rank,
                 comm=comm,
@@ -653,7 +653,7 @@ def write_h5_snapshot(
             grid_grp,
             "Ox",
             status=state,
-            data=(param.__getattribute__("xyz0")[0],),
+            data=(param.xyz0[0],),
             dtype=data_type,
             rank=rank,
             comm=comm,
@@ -664,7 +664,7 @@ def write_h5_snapshot(
             grid_grp,
             "Oy",
             status=state,
-            data=(param.__getattribute__("xyz0")[1],),
+            data=(param.xyz0[1],),
             dtype=data_type,
             rank=rank,
             comm=comm,
@@ -675,7 +675,7 @@ def write_h5_snapshot(
             grid_grp,
             "Oz",
             status=state,
-            data=(param.__getattribute__("xyz0")[2],),
+            data=(param.xyz0[2],),
             dtype=data_type,
             rank=rank,
             comm=comm,
@@ -698,7 +698,7 @@ def write_h5_snapshot(
                     unit_grp,
                     key,
                     status=state,
-                    data=(param.__getattribute__("unit_" + key),),
+                    data=(getattr(param, "unit_" + key),),
                     rank=rank,
                     comm=comm,
                     size=size,
@@ -709,7 +709,7 @@ def write_h5_snapshot(
                     unit_grp,
                     key,
                     status=state,
-                    data=param.__getattribute__("unit_" + key),
+                    data=getattr(param, "unit_" + key),
                     rank=rank,
                     comm=comm,
                     size=size,
