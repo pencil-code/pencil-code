@@ -1894,21 +1894,21 @@ module Boundcond
                 ! BCX: in cylindrical coordinates
                 !call bc_inlet_outlet_cyl(f,topbot,j,fbcx(j,topbot))
               case default
-                if (lspecial) then
-                  bc%bcname=bc_code
-                  bc%ivar=j
-                  bc%location=(((topbot-1)*2)-1)   ! -1/1 for x bot/top
-                  bc%value1=fbcx(j,topbot)
-                  bc%value2=fbcx(j,topbot)
-                  bc%done=.false.
+                !if (lspecial) then
+                !  bc%bcname=bc_code
+                !  bc%ivar=j
+                !  bc%location=(((topbot-1)*2)-1)   ! -1/1 for x bot/top
+                !  bc%value1=fbcx(j,topbot)
+                !  bc%value2=fbcx(j,topbot)
+                !  bc%done=.false.
 !
-                  call special_boundconds(f,bc)
+                !  call special_boundconds(f,bc)
 !
-                  if (.not.bc%done) then; errmsg=" not allowed for variable no. "//trim(cjvar); goto 10; endif
-                endif
+                !  if (.not.bc%done) then; errmsg=" not allowed for variable no. "//trim(cjvar); goto 10; endif
+                !endif
               endselect
             endif
-  10        if (errmsg/='') call fatal_error('check_bounconds_x',trim(bc_code)//trim(errmsg))
+  10        if (errmsg/='') call fatal_error('check_bounconds_x','"'//trim(bc_code)//'"'//trim(errmsg))
           enddo
         enddo
       endif
@@ -1993,20 +1993,20 @@ module Boundcond
 !joern: WARNING, this bc will NOT give a perfect-conductor boundary condition
             !call bc_set_pfc_y(f,topbot,j)
           case default
-            if (lspecial) then
-              bc%bcname=bc_code
-              bc%ivar=j
-              bc%value1=fbcy(j,topbot)
-              bc%value2=fbcy(j,topbot)
-              bc%location=(((topbot-1)*4)-2)   ! -2/2 for y bot/top
-              bc%done=.false.
+            !if (lspecial) then
+            !  bc%bcname=bc_code
+            !  bc%ivar=j
+            !  bc%value1=fbcy(j,topbot)
+            !  bc%value2=fbcy(j,topbot)
+            !  bc%location=(((topbot-1)*4)-2)   ! -2/2 for y bot/top
+            !  bc%done=.false.
 !
-              call special_boundconds(f,bc)
+            !  call special_boundconds(f,bc)
 !
-              if (.not.bc%done) then; errmsg=" not allowed for varaible no. "//trim(cjvar); goto 20; endif
-            endif
+            !  if (.not.bc%done) then; errmsg=" not allowed for varaible no. "//trim(cjvar); goto 20; endif
+            !endif
           endselect
-  20      if (errmsg/='') call fatal_error('check_bounconds_y',trim(bc_code)//trim(errmsg))
+  20      if (errmsg/='') call fatal_error('check_bounconds_y','"'//trim(bc_code)//'"'//trim(errmsg))
         enddo
       enddo
 !
@@ -2163,20 +2163,20 @@ module Boundcond
           case ('win')
             if (j/=ilnrho) then; errmsg=' not allowed for variable no. '//trim(cjvar); goto 30; endif
           case default
-            if (lspecial) then
-              bc%bcname=bc_code
-              bc%ivar=j
-              bc%location=(((topbot-1)*6)-3)   ! -3/3 for z bot/top
-              bc%value1=fbcz_1(j,topbot)
-              bc%value2=fbcz_2(j,topbot)
-              bc%done=.false.
+            !if (lspecial) then
+            !  bc%bcname=bc_code
+            !  bc%ivar=j
+            !  bc%location=(((topbot-1)*6)-3)   ! -3/3 for z bot/top
+            !  bc%value1=fbcz_1(j,topbot)
+            !  bc%value2=fbcz_2(j,topbot)
+            !  bc%done=.false.
 !
-              call special_boundconds(f,bc)
+            !  call special_boundconds(f,bc)
 !
-              if (.not.bc%done) then; errmsg=" not allowed for variable no. "//trim(cjvar); goto 30; endif
-            endif
+            !  if (.not.bc%done) then; errmsg=" not allowed for variable no. "//trim(cjvar); goto 30; endif
+            !endif
           endselect
-  30      if (errmsg/='') call fatal_error('check_bounconds_z',trim(bc_code)//trim(errmsg))
+  30      if (errmsg/='') call fatal_error('check_bounconds_z','"'//trim(bc_code)//'"'//trim(errmsg))
         enddo
       enddo
 !
