@@ -13,9 +13,22 @@
 Contains the read class for the VAR file reading,
 some simulation attributes and the data cube.
 """
+
+import os
+from os.path import join, exists
 import numpy as np
 import warnings
+import time
+import re
+import sys
+
+#from scipy.io import FortranFile
+from .fortran_file import FortranFileExt
+
 from pencil.math import natural_sort
+from pencil.math.derivatives import curl, curl2
+from pencil import read
+from pencil.sim import __Simulation__
 
 def var(*args, **kwargs):
     """
@@ -110,8 +123,6 @@ def var(*args, **kwargs):
     >>> print(var.bb.shape)
     """
 
-    from pencil.sim import __Simulation__
-
     started = None
 
     for a in args:
@@ -124,13 +135,9 @@ def var(*args, **kwargs):
 
         started = True
     elif "datadir" in kwargs.keys():
-        from os.path import join, exists
-
         if exists(join(kwargs["datadir"], "time_series.dat")):
             started = True
     else:
-        from os.path import join, exists
-
         if exists(join("data", "time_series.dat")):
             started = True
 
@@ -291,17 +298,9 @@ class DataCube(object):
         >>> print(var.bb.shape)
         """
 
-        import os
-        #from scipy.io import FortranFile
-        from .fortran_file import FortranFileExt
-
-        from pencil.math.derivatives import curl, curl2
-        from pencil import read
-
         if precision=="h":
             precision = "half"
         if timing:
-            import time
             start_time = time.time()
 
         def persist(self, infile=None, precision="d", quiet=quiet):
@@ -872,9 +871,6 @@ class DataCube(object):
         """
         Sort array in a more natural way, e.g. 9VAR < 10VAR
         """
-
-        import re
-
         convert = lambda text: int(text) if text.isdigit() else text.lower()
         alphanum_key = lambda key: [convert(c) for c in re.split("([0-9]+)", key)]
         return sorted(procs_list, key=alphanum_key)
@@ -883,9 +879,6 @@ class DataCube(object):
         """
         Compute some additional 'magic' quantities.
         """
-
-        import sys
-
         for field in self.magic:
             if field == "rho" and not hasattr(self, "rho"):
                 if hasattr(self, "lnrho"):
