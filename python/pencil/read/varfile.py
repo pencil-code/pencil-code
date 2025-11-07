@@ -303,43 +303,6 @@ class DataCube(object):
         if timing:
             start_time = time.time()
 
-        def persist(self, infile=None, precision="d", quiet=quiet):
-            """An open Fortran file potentially containing persistent variables appended
-            to the f array and grid data are read from the first proc data
-
-            Record types provide the labels and id record for the peristent
-            variables in the depricated fortran binary format
-            """
-            record_types = {}
-            for key in read.record_types.keys():
-                if read.record_types[key][1] == "d":
-                    record_types[key] = (read.record_types[key][0], precision)
-                else:
-                    record_types[key] = read.record_types[key]
-
-            try:
-                tmp_id = infile.read_record("h")
-            except:
-                return -1
-            block_id = 0
-            pers_obj = _Persist()
-            for i in range(2000):
-                i += 1
-                tmp_id = infile.read_record("h")
-                block_id = tmp_id[0]
-                if block_id == 2000:
-                    break
-                for key in record_types.keys():
-                    #Kishore: DANGER: there is a wrong assumption here that persistent variables must be scalars. A counter-example is forcing_location.
-                    if record_types[key][0] == block_id:
-                        tmp_val = infile.read_record(record_types[key][1])
-                        pers_obj.__setattr__(key, tmp_val[0])
-                        if not quiet:
-                            print(key, record_types[key][0], record_types[key][1], tmp_val)
-
-            self.__setattr__("persist", pers_obj)
-            return self
-
         if sim is None:
             datadir = os.path.expanduser(datadir)
             dim = read.dim(datadir, proc)
@@ -561,7 +524,7 @@ class DataCube(object):
 
                 # Read the data: persistent variables
                 if lpersist and directory==proc_dirs[0]:
-                    persist(self, infile=infile, precision=read_precision, quiet=quiet)
+                    self._get_persist_iodist(infile=infile, precision=read_precision, quiet=quiet)
                 infile.close()
 
                 t = raw_etc[0]
@@ -970,6 +933,43 @@ class DataCube(object):
                     setattr(self, "pp", (cp - cv) * self.TT * np.exp(lnrho))
                 else:
                     raise AttributeError("Problem in magic: missing ss or lntt or tt")
+
+    def _get_persist_iodist(self, infile, precision, quiet):
+        """An open Fortran file potentially containing persistent variables appended
+        to the f array and grid data are read from the first proc data
+
+        Record types provide the labels and id record for the peristent
+        variables in the depricated fortran binary format
+        """
+        record_types = {}
+        for key in read.record_types.keys():
+            if read.record_types[key][1] == "d":
+                record_types[key] = (read.record_types[key][0], precision)
+            else:
+                record_types[key] = read.record_types[key]
+
+        try:
+            tmp_id = infile.read_record("h")
+        except:
+            return -1
+        block_id = 0
+        pers_obj = _Persist()
+        for i in range(2000):
+            i += 1
+            tmp_id = infile.read_record("h")
+            block_id = tmp_id[0]
+            if block_id == 2000:
+                break
+            for key in record_types.keys():
+                #Kishore: DANGER: there is a wrong assumption here that persistent variables must be scalars. A counter-example is forcing_location.
+                if record_types[key][0] == block_id:
+                    tmp_val = infile.read_record(record_types[key][1])
+                    pers_obj.__setattr__(key, tmp_val[0])
+                    if not quiet:
+                        print(key, record_types[key][0], record_types[key][1], tmp_val)
+
+        self.persist = pers_obj
+
 class _Persist():
     """
     Used to store the persistent variables
