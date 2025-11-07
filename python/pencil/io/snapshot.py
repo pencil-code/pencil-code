@@ -458,6 +458,8 @@ def write_h5_snapshot(
         t = data_type(0.0)
 
     # making use of pc_hdf5 functionality:
+    #2025-Nov-07/Kishore: if we are not going to use the user-provided value of
+    #2025-Nov-07/Kishore: state, why is it an argument of this function?
     if not proc == None:
         state = "a"
     else:
