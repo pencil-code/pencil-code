@@ -410,29 +410,11 @@ def write_h5_snapshot(
 
     # check whether the snapshot matches the simulation shape
     if lghosts:
-        try:
-            snapshot.shape[0] == settings["mvar"]
-            snapshot.shape[1] == settings["mx"]
-            snapshot.shape[2] == settings["my"]
-            snapshot.shape[3] == settings["mz"]
-        except ValueError:
-            print(
-                "ERROR: snapshot shape {} ".format(snapshot.shape)
-                + "does not match simulation dimensions with ghosts."
-            )
-            sys.stdout.flush()
+        if snapshot.shape != (settings["mvar"], settings["mx"], settings["my"], settings["mz"]):
+            raise ValueError(f"snapshot shape {snapshot.shape} does not match simulation dimensions with ghosts.")
     else:
-        try:
-            snapshot.shape[0] == settings["mvar"]
-            snapshot.shape[1] == settings["nx"]
-            snapshot.shape[2] == settings["ny"]
-            snapshot.shape[3] == settings["nz"]
-        except ValueError:
-            print(
-                "ERROR: snapshot shape {} ".format(snapshot.shape)
-                + "does not match simulation dimensions without ghosts."
-            )
-            sys.stdout.flush()
+        if snapshot.shape != (settings["mvar"], settings["nx"], settings["ny"], settings["nz"]):
+            raise ValueError(f"snapshot shape {snapshot.shape} does not match simulation dimensions without ghosts.")
 
     # Determine the precision used and ensure snapshot has correct data_type.
     if precision == "f":
@@ -442,12 +424,7 @@ def write_h5_snapshot(
         data_type = np.float64
         snapshot = np.float64(snapshot)
     else:
-        print(
-            "ERROR: Precision {0} not understood.".format(precision)
-            + " Must be either 'f' or 'd'"
-        )
-        sys.stdout.flush()
-        return -1
+        raise ValueError(f"Precision {precision} not understood; must be either 'f' or 'd'")
 
     # Check that the shape does not conflict with the proc numbers.
     if (
