@@ -749,41 +749,20 @@ class DataCube(object):
         file_name = os.path.join(datadir, "allprocs", var_file)
 
         with h5py.File(file_name, "r") as tmp:
-            if range_x:
-                x = (tmp["grid/x"][:]).astype(precision)
-                irange_x = (np.where( (x>=range_x[0]) & (x<=range_x[1]) )[0][0],
-                            np.where( (x>=range_x[0]) & (x<=range_x[1]) )[0][-1]+1)
-            else:
-                if not irange_x:
-                    irange_x = (0,tmp["settings/mx"][0])
-                else:
-                    irange_x = (max(irange_x[0],0),min(irange_x[1]+1,tmp["settings/mx"][0]))
+            x = (tmp["grid/x"][:]).astype(precision)
+            irange_x = self._parse_range(range_x, irange_x, x)
             mx = irange_x[1]-irange_x[0]
-            x = (tmp["grid/x"][irange_x[0]:irange_x[1]]).astype(precision)
-            if range_y:
-                y = (tmp["grid/y"][:]).astype(precision)
-                irange_y = (np.where( (y>=range_y[1]) & (y<=range_y[2]) )[0][0],
-                            np.where( (y>=range_y[1]) & (y<=range_y[2]) )[0][-1]+1)
-            else:
-                if not irange_y:
-                    irange_y = (0,tmp["settings/my"][0])
-                else:
-                    irange_y = (max(irange_y[0],0),min(irange_y[1],tmp["settings/my"][0]))
-            my = irange_y[1]-irange_y[0]
-            y = (tmp["grid/y"][irange_y[0]:irange_y[1]]).astype(precision)
+            x = x[irange_x[0]:irange_x[1]]
 
-            if range_z:
-                z = (tmp["grid/z"][:]).astype(precision)
-                irange_z = [np.where( (z>=range_z[1]) & (z<=range_z[2]) )[0][0],
-                            np.where( (z>=range_z[1]) & (z<=range_z[2]) )[0][-1]+1]
-                irange_z = (irange_z[0][0], irange_z[0][-1]+1)
-            else:
-                if not irange_z:
-                    irange_z = (0,tmp["settings/mz"][0])
-                else:
-                    irange_z = (max(irange_z[0],0),min(irange_z[1],tmp["settings/mz"][0]))
+            y = (tmp["grid/y"][:]).astype(precision)
+            irange_y = self._parse_range(range_y, irange_y, y)
+            my = irange_y[1]-irange_y[0]
+            y = y[irange_y[0]:irange_y[1]]
+
+            z = (tmp["grid/z"][:]).astype(precision)
+            irange_z = self._parse_range(range_z, irange_z, z)
             mz = irange_z[1]-irange_z[0]
-            z = (tmp["grid/z"][irange_z[0]:irange_z[1]]).astype(precision)
+            z = z[irange_z[0]:irange_z[1]]
 
             if grid != None:
                 grid.restrict(irange_x,irange_y,irange_z)
@@ -1025,6 +1004,22 @@ class DataCube(object):
         self.dz = dz
         if param.lshear:
             self.deltay = deltay
+
+    def _parse_range(self, rang, irang, coords):
+        if (rang is not None) and (len(rang) != 2):
+            raise ValueError
+        if (irang is not None) and (len(irang) != 2):
+            raise ValueError
+
+        if rang is not None:
+            [inds] = np.nonzero( (coords>=rang[0]) & (coords<=rang[-1]) )
+            irang = (inds[0], inds[-1]+1)
+        elif irang is not None:
+            irang = (max(irang[0],0), min(irang[1]+1,len(coords)))
+        else:
+            irang = (0,len(coords))
+
+        return irang
 
 class _Persist():
     """
