@@ -28,6 +28,8 @@ Discussion Topics
 Ongoing or pending topics for future meetings.
 
 - Deprecate usage of non standard python modules like ``eqtools`` and try to use ``numpy`` instead when possible.
+- Changing behaviour of ``.keys()`` methods (of ``Averages``, ``Timeseries`` etc.). Currently it just prints the keys, but it would be more useful to return a list
+- Decide on a convention for extra debug output (controlled by the ``quiet`` keyword in functions like ``pc.read.var`` and ``pc.read.grid``). Currently, whether it defaults to ``False`` or ``True`` varies from function to function, which is confusing and annoying. Ideally we would control such output by a module-wide flag (such that something like ``pc.shut_up = True`` at the beginning of a script would have the effect of setting ``quiet=True`` in all the ``pc`` functions).
 
 
 Feel free to add more — this section is a living to-do list.
