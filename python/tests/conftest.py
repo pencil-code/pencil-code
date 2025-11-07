@@ -62,3 +62,20 @@ def datadir_conv_slab():
 
     return sim.datadir
 
+@pytest.fixture(scope='session')
+def datadir_helical_MHDTurb_HDF5():
+    rundir = get_rundir("samples/helical-MHDturb_HDF5")
+    sim = pc.sim.get(rundir, quiet=True)
+
+    if sim is False:
+        raise RuntimeError(f"Could not get simulation in {rundir}")
+
+    sim.compile(
+        bashrc=False,
+        cleanall=False,
+        autoclean=True,
+        raise_errors=True,
+        )
+    sim.run(bashrc=False, cleardata=True, raise_errors=True)
+
+    return sim.datadir
