@@ -17,7 +17,7 @@ import sys
 import glob
 import datetime
 sys.path.append(os.getcwd())
-from fortran_rst_generator import create_fortran_modules_rst, process_all_pcparam, process_bin_files
+from fortran_rst_generator import create_fortran_modules_rst, process_all_pcparam, process_bin_files, process_papers
 
 # Import all git history
 os.system("git pull --unshallow")
@@ -70,6 +70,7 @@ extensions = [
     "sphinx.ext.githubpages",
     "sphinx.ext.napoleon",
     "sphinxcontrib.images",
+    "sphinxcontrib.bibtex",
     "fortran_domain",
     "fortran_autodoc",
     "sphinx.ext.intersphinx",
@@ -78,6 +79,11 @@ extensions = [
 # Make sure the target of the autosection label is unique
 autosectionlabel_prefix_document = True
 
+# bibtex options
+bibtex_bibfiles = ["../citations/ref.bib"]
+import pencil_bibstyle
+bibtex_default_style = "pencilstyle"
+bibtex_reference_style = 'author_year_round'
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -101,7 +107,6 @@ intersphinx_mapping = {
     'scipy': ('https://docs.scipy.org/doc/scipy/', None),
     'matplotlib': ('https://matplotlib.org/stable/', None),
 }
-
 
 # Inline math rendering definitions. Following the definitions used in the manual.tex
 
@@ -377,3 +382,6 @@ process_all_pcparam()
 
 # Generate list of scripts
 process_bin_files()
+
+# Generate plot and rst pages with papers
+process_papers()

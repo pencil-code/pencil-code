@@ -473,6 +473,7 @@ src/astaroth/PC_*
 #
 # Readthedocs
 doc/readthedocs/_build
+doc/readthedocs/_images/papers_per_year.png 
 doc/readthedocs/code
 doc/readthedocs/pencil-docker/.env
 #

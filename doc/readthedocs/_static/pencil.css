@@ -82,3 +82,20 @@ td div.admonition {
     margin: 12px 0 6px 0 !important;
     line-height: 20px !important;
 }
+
+html.writer-html5 .rst-content div.citation {
+    display: block !important;
+}
+
+html.writer-html5 .rst-content div.citation span.label,
+html.writer-html5 .rst-content div.citation span.backrefs {
+    display: none !important;
+}
+
+html.writer-html5 .rst-content div.citation p {
+    margin-bottom: 4px !important;
+}
+
+html.writer-html5 .rst-content div.citation-list>div.citation {
+    color: #555 !important;
+}

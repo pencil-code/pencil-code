@@ -3,7 +3,9 @@ import os
 import re
 import glob
 import shutil
+import string
 import subprocess
+from datetime import datetime, timezone
 from rstcloth import RstCloth
 import latexcodec
 import bibtexparser
@@ -170,8 +172,7 @@ def process_file(file) -> tuple[str, str]:
     if papers:
         for paper in papers:
             if paper in bb.entries_dict:
-                e = bb.entries_dict[paper]
-                refs.append(format_paper(e))
+                refs.append(f":cite:t:`{paper}`")
             else:
                 refs.append(f"{paper}: Not found")
     return os.path.basename(file).replace(".f90", ""), " ".join(module_comments).replace("_", r"\_"), refs
@@ -265,7 +266,7 @@ def create_fortran_modules_rst(path_to_src: str) -> list[str]:
                 else:
                     table_content.append(it)
             d.newline()
-            d.table_list_multi(headers=["File", "Description", "Scientific References"], data=table_content, widths=[25,40,35])
+            d.table_list_multi(headers=["File", "Description", "Scientific References"], data=table_content, widths=[20,60,20])
             d.directive("toctree", fields=[("hidden", ""), ("maxdepth", "1")], content=[f"{dirname}/{it[0]}" for it in table])
             d.newline()
         d.newline()
@@ -900,3 +901,185 @@ def process_all_pcparam():
         toclist.extend([pars[1] for pars in diag_list])
         toclist.append("boundary")
         d.directive("toctree", fields=[("maxdepth", "1")], content=toclist)
+
+def plot_papers_per_year():
+    import matplotlib.pyplot as plt
+    import numpy as np
+    plt.rcParams.update({'font.size': 14})
+
+    byyear = {}
+    unknown_keys = []
+    code_keys = []
+    bytopic = {}
+
+    for key, item in bb.entries_dict.items():
+        year = item['year']
+        authors = item['author']
+        wobrandenburg = "Brandenburg" not in authors
+        if year not in byyear:
+            byyear[year] = {
+                "total": 0,
+                "wobrandenburg": 0,
+                "code": 0,
+                "unknown": 0,
+                "keys": []
+            }
+        pcsection = item.get('pcsection')
+        if pcsection is None:
+            byyear[year]["unknown"] += 1
+            unknown_keys.append((key, year))
+            sections = []
+        else:
+            if not (sections := re.findall(r"\{(.*?)\}", pcsection)):
+                sections = [pcsection]
+            for section in sections:
+                if section not in bytopic:
+                    bytopic[section] = []
+                bytopic[section].append((key, year))
+        if "Code comparison \\& reference" in sections:
+            byyear[year]["code"] += 1
+            code_keys.append((key, year))
+        else:
+            byyear[year]["total"] += 1
+            byyear[year]["keys"].append(key)
+            if wobrandenburg:
+                byyear[year]["wobrandenburg"] += 1
+
+    # Extract sorted data
+    years = np.array(sorted(byyear.keys(), key=int), dtype=int)
+    total = np.array([byyear[str(y)]['total'] for y in years])
+    wobr = np.array([byyear[str(y)]['wobrandenburg'] for y in years])
+    code = np.array([byyear[str(y)]['code'] for y in years])
+    unknown = np.array([byyear[str(y)]['unknown'] for y in years])
+    goodyear = 2011
+    good = np.where(years >= goodyear)
+    mean_total = np.mean(total[good])
+    mean_wobr = np.mean(wobr[good])
+    mean_code = np.mean(code[good])
+
+    # Plot setup
+    fig, ax = plt.subplots(figsize=(12, 6))
+
+    # Step plots centered on year
+    ax.step(years, total, where='mid', color='black')
+    ax.step(years, wobr, where='mid', color='blue', label='w/o Brandenburg')
+    ax.step(years, code, where='mid', color='green', label='comp & ref papers')
+    ax.step(years, unknown, where='mid', color='red', label='unclassified')
+
+    # Plot the means
+    ax.hlines(mean_total, goodyear-0.5, years.max(), colors='black', linestyles='dashed')
+    ax.hlines(mean_wobr, goodyear-0.5, years.max(), colors='blue', linestyles='dashed')
+    ax.hlines(mean_code, goodyear-0.5, years.max(), colors='red', linestyles='dashed')
+
+    # Limits to create half-step padding left/right
+    ax.set_xlim(years.min() - 0.2, years.max() + 0.2)
+    ax.set_ylim(-1, max(total) + 2)
+
+    # Tick settings
+    ax.set_xticks(np.arange(years.min() - years.min()%5 + 5, years.max()+1, 5))
+    ax.set_xticks(years, minor=True)
+    ax.set_yticks(np.arange(0, max(total)+1, 10))
+    ax.set_yticks(np.arange(0, max(total)+1, 1), minor=True)
+
+    # Ticks on all sides
+    ax.tick_params(axis='x', which='both', top=True)
+    ax.tick_params(axis='y', which='both', right=True)
+    ax.tick_params(top=True, bottom=True, left=True, right=True,
+                direction='in', which='both')
+    ax.tick_params(width=1.5)
+    ax.tick_params(length=8)  # major ticks
+    ax.tick_params(which='minor', length=4)  # optional: minor ticks shorter
+
+    # Grid only on major ticks, lightly
+    ax.grid(which='major', linestyle='--', linewidth=0.5, alpha=0.5)
+
+    # Labels
+    ax.set_xlabel('year')
+    ax.set_ylabel('number of papers')
+
+    # Legend
+    ax.legend(loc='upper left')
+
+    plt.tight_layout()
+    plt.savefig('_images/papers_per_year.png', dpi=300)
+
+    return np.sum(total), np.sum(wobr), np.sum(code), np.sum(unknown), byyear, bytopic, unknown_keys, code_keys
+
+def process_papers():
+    ntotal, nwobr, ncode, nunknown, byyear, bytopic, unknown_keys, code_keys = plot_papers_per_year()
+    dt = datetime.now(timezone.utc)
+
+    # Now create the rsts
+    with open("code/papers_by_year.rst", "w") as f:
+        d = RstCloth(f, line_width=5000)
+        d.title("Papers by year")
+        d.content(f"As of {dt.strftime('%B %Y')}, the Pencil Code has been used for a total of {ntotal} research papers; see :numref:`Fpapers`; "
+                  f"{nwobr} of those are papers ({int(100*nwobr/ntotal)}%) are not co-authored by Brandenburg (blue line), "
+                  f"while {nunknown} of them ({int(100*nunknown/ntotal)}%) are unclassified (red line). "
+                  f"In addition, {ncode} papers reference it for code comparison or other purposes (green line).")
+        d.newline()
+        for y in sorted(byyear.keys(), reverse=True):
+            item = byyear[y]
+            d.li(f"**{len(item['keys'])} times in {y}**: :cite:t:`{','.join(item['keys'])}`")
+
+    all_topics = {
+        "Interstellar and intercluster medium as well as early Universe": [
+            "Interstellar and intercluster medium",
+            "Small-scale dynamos and reconnection",
+            "Primordial magnetic fields and decaying turbulence",
+            "Relic gravitational waves \\& axions"
+        ],
+        "Planet formation and inertial particles": [
+            "Planet formation",
+            "Inertial, tracer particles, \\& passive scalars"
+        ],
+        "Accretion discs and shear flows": [
+            "Accretion discs and shear flows",
+            "Shear flows",
+
+        ],
+        "Solar physics": [
+            "Coronal heating and coronal mass ejections",
+            "Large-scale dynamos, helical turbulence, and catastrophic quenching",
+            "Helioseismology",
+            "Strongly stratified MHD turbulence and NEMPI",
+            "Convection in Cartesian domains",
+            "Global convection and dynamo simulations"
+        ],
+        "Miscellanea": [
+            "Turbulent transport and test-field method",
+            "Hydrodynamic and MHD instabilities",
+            "Chiral MHD",
+            "Hydrodynamic and MHD turbulence",
+            "Turbulent combustion, front propagation, radiation \\& ionization",
+            "Code development, GPU etc"
+        ]
+    }
+    with open("code/papers_by_topic.rst", "w") as f:
+        d = RstCloth(f, line_width=5000)
+        d.title("Papers by topic")
+        d.content("The Pencil Code has been used for the following research topics:")
+        d.newline()
+        for i, (main, topics) in enumerate(all_topics.items()):
+            d.li(f"**{main}**", bullet=f"{i+1}.")
+            d.newline()
+            for bullet, topic in zip(string.ascii_lowercase, topics):
+                sorted_topic = [f":cite:t:`{it[0]}`" for it in sorted(bytopic[topic], key=lambda x: x[1], reverse=True)]
+                d.li(f"*{topic}*: {', '.join(sorted_topic)}", bullet=f"({bullet})", indent=3)
+                d.newline()
+            d.newline()
+
+    with open("code/papers_code.rst", "w") as f:
+        d = RstCloth(f, line_width=5000)
+        d.title("Code comparison & reference")
+        sorted_code = [f":cite:t:`{it[0]}`" for it in sorted(code_keys, key=lambda x: x[1], reverse=True)]
+        d.content(f"The Pencil Code has been quoted in {len(code_keys)} other papers either for detailed code comparison, in connection with related work, or in comparison with other codes: "
+                  f"{', '.join(sorted_code)}.")
+
+    with open("code/papers_unclassified.rst", "w") as f:
+        d = RstCloth(f, line_width=5000)
+        d.title("Unclassified papers")
+        sorted_unknown = [f":cite:t:`{it[0]}`" for it in sorted(unknown_keys, key=lambda x: x[1], reverse=True)]
+        d.content(f"The following {len(unknown_keys)} papers could not be classified into any of the predefined categories: "
+                  f"{', '.join(sorted_unknown)}.")
+        d.newline()

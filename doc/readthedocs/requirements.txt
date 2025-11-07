@@ -1,5 +1,6 @@
 numpy>=1.17.4
 sphinxcontrib.images
+sphinxcontrib.bibtex
 sphinx-rtd-theme
 rstcloth
 sphinx-autoapi
@@ -7,3 +8,4 @@ sphinx
 six
 bibtexparser 
 latexcodec
+matplotlib
