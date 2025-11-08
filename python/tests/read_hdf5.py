@@ -78,31 +78,6 @@ def test_read_var(datadir_helical_MHDTurb_HDF5):
     assert np.isclose(var.persist.forcing_tsforce, 0.3999999999999999)
 
 @pytest.mark.integration
-def test_read_var_irangex_wrong_ghost_handling(datadir_helical_MHDTurb_HDF5):
-    """
-    Currently, irange_x directly selects the requested indices in the untrimmed
-    f-array. This causes two problems.
-    1. Since no ghost zones are included, magic variables calculated in
-       the subdomain may be wrong.
-    2. If trimall=True, the first and last 3 cells of the requested range are removed.
-    
-    What happens now: irange_x=[15,30] selects 15:31
-    What should happen: irange_x=[15,30] selects 12:34
-    
-    This test checks for the current behaviour of irange_x, while the next two
-    tests (currently marked xfail) test for the 'what should happen' case described
-    above.
-    """
-    var = pc.read.var(datadir=datadir_helical_MHDTurb_HDF5, trimall=False, irange_x=[15,30])
-
-    # assert len(var.x) == 22
-    assert len(var.x) == 16 #Matthias' version that doesn't include ghost zones
-    assert len(var.y) == 38
-    assert len(var.z) == 38
-    assert np.isclose(var.uz[8,13,15], -0.02635602018447831)
-
-@pytest.mark.xfail(reason="current implementation of irange_x does not account for ghost zones")
-@pytest.mark.integration
 def test_read_var_irangex(datadir_helical_MHDTurb_HDF5):
     var = pc.read.var(datadir=datadir_helical_MHDTurb_HDF5, trimall=False, irange_x=[15,30])
 
@@ -111,7 +86,6 @@ def test_read_var_irangex(datadir_helical_MHDTurb_HDF5):
     assert len(var.z) == 38
     assert np.isclose(var.uz[8,13,18], -0.02635602018447831)
 
-@pytest.mark.xfail(reason="current implementation of irange_x does not account for ghost zones")
 @pytest.mark.integration
 def test_read_var_irangex_trim(datadir_helical_MHDTurb_HDF5):
     var = pc.read.var(datadir=datadir_helical_MHDTurb_HDF5, trimall=True, irange_x=[15,30])
