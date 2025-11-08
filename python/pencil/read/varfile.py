@@ -750,13 +750,13 @@ class DataCube(object):
 
         with h5py.File(file_name, "r") as tmp:
             x = (tmp["grid/x"][:]).astype(precision)
-            irange_x, mx, x = self._handle_range(range_x, irange_x, x)
+            irange_x, mx, x = self._handle_range(range_x, irange_x, x, dim.nghostx)
 
             y = (tmp["grid/y"][:]).astype(precision)
-            irange_y, my, y = self._handle_range(range_y, irange_y, y)
+            irange_y, my, y = self._handle_range(range_y, irange_y, y, dim.nghosty)
 
             z = (tmp["grid/z"][:]).astype(precision)
-            irange_z, mz, z = self._handle_range(range_z, irange_z, z)
+            irange_z, mz, z = self._handle_range(range_z, irange_z, z, dim.nghostz)
 
             if grid != None:
                 grid.restrict(irange_x,irange_y,irange_z)
@@ -999,13 +999,12 @@ class DataCube(object):
         if param.lshear:
             self.deltay = deltay
 
-    def _parse_range(self, rang, irang, coords):
+    def _parse_range(self, rang, irang, coords, nghost):
         if (rang is not None) and (len(rang) != 2):
             raise ValueError
         if (irang is not None) and (len(irang) != 2):
             raise ValueError
 
-        nghost = 3
         ind_min = nghost
         ind_maxp1 = len(coords)-nghost
         if rang is not None:
@@ -1021,8 +1020,8 @@ class DataCube(object):
 
         return irang
 
-    def _handle_range(self, rang, irang, coords):
-        irang = self._parse_range(rang, irang, coords)
+    def _handle_range(self, rang, irang, coords, nghost):
+        irang = self._parse_range(rang, irang, coords, nghost)
         m = irang[1] - irang[0]
         coords = coords[irang[0]:irang[1]]
         return irang, m, coords
