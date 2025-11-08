@@ -452,7 +452,6 @@ module Boundcond
 !***********************************************************************
     subroutine get_slice_data(pos,iproc_slc,label,slcdat,nt)
 !
-      use General, only: itoa
       use File_io, only: file_exists
       use IO, only: input_slice
 
@@ -1012,6 +1011,9 @@ module Boundcond
                     bc%done=.false.
 !
                     call special_boundconds(f,bc)
+                    if (.not.bc%done) &
+                        call fatal_error('bounconds_x','illegal special BC "'//trim(bcx12(j,topbot)// &
+                                         '" for variable no. '//trim(itoa(j)))
                   endif
 !
                 endselect
@@ -1304,6 +1306,9 @@ module Boundcond
                   bc%done=.false.
 !
                   call special_boundconds(f,bc)
+                  if (.not.bc%done) &
+                      call fatal_error('bounconds_y','illegal special BC "'//trim(bcy12(j,topbot)// &
+                                       '" for variable no. '//trim(itoa(j)))
                 endif
 !
               endselect
@@ -1689,6 +1694,9 @@ module Boundcond
                   bc%done=.false.
 !
                   call special_boundconds(f,bc)
+                  if (.not.bc%done) &
+                      call fatal_error('bounconds_z','illegal special BC "'//trim(bcz12(j,topbot)// &
+                                       '" for variable no. '//trim(itoa(j)))
                 endif
 !
               endselect
@@ -1811,7 +1819,6 @@ module Boundcond
 !
 !  24-sep-25/MR: carved out from boundconds_x
 !
-      use General, only: itoa
       use Shear
       use Special, only: special_boundconds
 !
@@ -1894,18 +1901,6 @@ module Boundcond
                 ! BCX: in cylindrical coordinates
                 !call bc_inlet_outlet_cyl(f,topbot,j,fbcx(j,topbot))
               case default
-                !if (lspecial) then
-                !  bc%bcname=bc_code
-                !  bc%ivar=j
-                !  bc%location=(((topbot-1)*2)-1)   ! -1/1 for x bot/top
-                !  bc%value1=fbcx(j,topbot)
-                !  bc%value2=fbcx(j,topbot)
-                !  bc%done=.false.
-!
-                !  call special_boundconds(f,bc)
-!
-                !  if (.not.bc%done) then; errmsg=" not allowed for variable no. "//trim(cjvar); goto 10; endif
-                !endif
               endselect
             endif
   10        if (errmsg/='') call fatal_error('check_bounconds_x','"'//trim(bc_code)//'"'//trim(errmsg))
@@ -1921,7 +1916,6 @@ module Boundcond
 !
 !  24-sep-25/MR: carved out from boundconds_y
 !
-      use General, only: itoa
       use Special, only: special_boundconds
 !
       real, dimension (:,:,:,:) :: f
@@ -1993,18 +1987,6 @@ module Boundcond
 !joern: WARNING, this bc will NOT give a perfect-conductor boundary condition
             !call bc_set_pfc_y(f,topbot,j)
           case default
-            !if (lspecial) then
-            !  bc%bcname=bc_code
-            !  bc%ivar=j
-            !  bc%value1=fbcy(j,topbot)
-            !  bc%value2=fbcy(j,topbot)
-            !  bc%location=(((topbot-1)*4)-2)   ! -2/2 for y bot/top
-            !  bc%done=.false.
-!
-            !  call special_boundconds(f,bc)
-!
-            !  if (.not.bc%done) then; errmsg=" not allowed for varaible no. "//trim(cjvar); goto 20; endif
-            !endif
           endselect
   20      if (errmsg/='') call fatal_error('check_bounconds_y','"'//trim(bc_code)//'"'//trim(errmsg))
         enddo
@@ -2018,7 +2000,6 @@ module Boundcond
 !
 !  24-sep-25/MR: carved out from boundconds_z
 !
-      use General, only: itoa
       use Gravity, only: gravz_profile
       use Magnetic_meanfield, only: pc_aasb_const_alpha
       use Special, only: special_boundconds
@@ -2163,18 +2144,6 @@ module Boundcond
           case ('win')
             if (j/=ilnrho) then; errmsg=' not allowed for variable no. '//trim(cjvar); goto 30; endif
           case default
-            !if (lspecial) then
-            !  bc%bcname=bc_code
-            !  bc%ivar=j
-            !  bc%location=(((topbot-1)*6)-3)   ! -3/3 for z bot/top
-            !  bc%value1=fbcz_1(j,topbot)
-            !  bc%value2=fbcz_2(j,topbot)
-            !  bc%done=.false.
-!
-            !  call special_boundconds(f,bc)
-!
-            !  if (.not.bc%done) then; errmsg=" not allowed for variable no. "//trim(cjvar); goto 30; endif
-            !endif
           endselect
   30      if (errmsg/='') call fatal_error('check_bounconds_z','"'//trim(bc_code)//'"'//trim(errmsg))
         enddo
