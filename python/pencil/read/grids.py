@@ -268,19 +268,19 @@ class Grid(object):
         Restrict the grid arrays according to the index ranges irange_[xyz]
         """
         if irange_x != None:
-            self.x = self.x[irange_x[0]:irange_x[1]]
-            self.dx_1 = self.dx_1[irange_x[0]:irange_x[1]]
-            self.dx_tilde = self.dx_tilde[irange_x[0]:irange_x[1]]
+            self.x = self.x[irange_x]
+            self.dx_1 = self.dx_1[irange_x]
+            self.dx_tilde = self.dx_tilde[irange_x]
 
         if irange_y != None:
-            self.y = self.y[irange_y[0]:irange_y[1]]
-            self.dy_1 = self.dy_1[irange_y[0]:irange_y[1]]
-            self.dy_tilde = self.dy_tilde[irange_y[0]:irange_y[1]]
+            self.y = self.y[irange_y]
+            self.dy_1 = self.dy_1[irange_y]
+            self.dy_tilde = self.dy_tilde[irange_y]
 
         if irange_z != None:
-            self.z = self.z[irange_z[0]:irange_z[1]]
-            self.dz_1 = self.dz_1[irange_z[0]:irange_z[1]]
-            self.dz_tilde = self.dz_tilde[irange_z[0]:irange_z[1]]
+            self.z = self.z[irange_z]
+            self.dz_1 = self.dz_1[irange_z]
+            self.dz_tilde = self.dz_tilde[irange_z]
 
 
 @copy_docstring(Grid.read)
