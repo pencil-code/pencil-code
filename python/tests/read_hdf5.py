@@ -119,4 +119,4 @@ def test_read_var_irangex_trim(datadir_helical_MHDTurb_HDF5):
     assert len(var.x) == 16
     assert len(var.y) == 32
     assert len(var.z) == 32
-    assert np.isclose(var.uz[5,10,12], -0.02635602018447831)
+    assert np.isclose(var.uz[5,10,15], -0.02635602018447831)
