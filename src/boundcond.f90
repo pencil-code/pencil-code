@@ -1012,7 +1012,7 @@ module Boundcond
 !
                     call special_boundconds(f,bc)
                     if (.not.bc%done) &
-                        call fatal_error('bounconds_x','illegal special BC "'//trim(bcx12(j,topbot)// &
+                        call fatal_error('bounconds_x','illegal special BC "'//trim(bcx12(j,topbot))// &
                                          '" for variable no. '//trim(itoa(j)))
                   endif
 !
@@ -1307,7 +1307,7 @@ module Boundcond
 !
                   call special_boundconds(f,bc)
                   if (.not.bc%done) &
-                      call fatal_error('bounconds_y','illegal special BC "'//trim(bcy12(j,topbot)// &
+                      call fatal_error('bounconds_y','illegal special BC "'//trim(bcy12(j,topbot))// &
                                        '" for variable no. '//trim(itoa(j)))
                 endif
 !
@@ -1695,7 +1695,7 @@ module Boundcond
 !
                   call special_boundconds(f,bc)
                   if (.not.bc%done) &
-                      call fatal_error('bounconds_z','illegal special BC "'//trim(bcz12(j,topbot)// &
+                      call fatal_error('bounconds_z','illegal special BC "'//trim(bcz12(j,topbot))// &
                                        '" for variable no. '//trim(itoa(j)))
                 endif
 !
