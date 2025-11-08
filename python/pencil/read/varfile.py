@@ -414,9 +414,7 @@ class DataCube(object):
                         grid=grid,
                 )
                 if trimall:
-                    self.bb = self.bb[
-                        :, dim.n1 : dim.n2 + 1, dim.m1 : dim.m2 + 1, dim.l1 : dim.l2 + 1
-                    ]
+                    self.bb = self._trim(self.bb, dim, run2D)
             if "bbtest" in magic:
                 if param.io_strategy == "HDF5":
                     # Compute the magnetic field before doing trimall.
@@ -436,9 +434,11 @@ class DataCube(object):
                                 grid=grid,
                         )
                         if trimall:
-                            setattr(self,"bb"+key[2:],bb[
-                                :, dim.n1 : dim.n2 + 1, dim.m1 : dim.m2 + 1, dim.l1 : dim.l2 + 1
-                            ])
+                            setattr(
+                                self,
+                                "bb"+key[2:],
+                                self._trim(bb, dim, run2D),
+                                )
                         else:
                             setattr(self,"bb"+key[2:],bb)
                 else:
@@ -460,9 +460,11 @@ class DataCube(object):
                                     grid=grid,
                             )
                             if trimall:
-                                setattr(self,"bb"+key[2:],bb[
-                                    :, dim.n1 : dim.n2 + 1, dim.m1 : dim.m2 + 1, dim.l1 : dim.l2 + 1
-                                ])
+                                setattr(
+                                    self,
+                                    "bb"+key[2:],
+                                    self._trim(bb, dim, run2D),
+                                    )
                             else:
                                 setattr(self,"bb"+key[2:],bb)
             if "jj" in magic:
@@ -479,9 +481,7 @@ class DataCube(object):
                         grid=grid,
                 )
                 if trimall:
-                    self.jj = self.jj[
-                        :, dim.n1 : dim.n2 + 1, dim.m1 : dim.m2 + 1, dim.l1 : dim.l2 + 1
-                    ]
+                    self.jj = self._trim(self.jj, dim, run2D)
             if "vort" in magic:
                 # Compute the vorticity field before doing trimall.
                 uu = self.f[index.ux - 1 : index.uz, ...]
@@ -497,37 +497,14 @@ class DataCube(object):
                         grid=grid,
                 )
                 if trimall:
-                    if run2D:
-                        if dim.nz == 1:
-                            self.vort = self.vort[
-                                :, dim.m1 : dim.m2 + 1, dim.l1 : dim.l2 + 1
-                            ]
-                        else:
-                            self.vort = self.vort[
-                                :, dim.n1 : dim.n2 + 1, dim.l1 : dim.l2 + 1
-                            ]
-                    else:
-                        self.vort = self.vort[
-                            :,
-                            dim.n1 : dim.n2 + 1,
-                            dim.m1 : dim.m2 + 1,
-                            dim.l1 : dim.l2 + 1,
-                        ]
+                    self.vort = self._trim(self.vort, dim, run2D)
 
         # Trim the ghost zones of the global f-array if asked.
         if trimall:
-            self.x = self.x[dim.l1 : dim.l2 + 1]
-            self.y = self.y[dim.m1 : dim.m2 + 1]
-            self.z = self.z[dim.n1 : dim.n2 + 1]
-            if not run2D:
-                self.f = self.f[
-                    :, dim.n1 : dim.n2 + 1, dim.m1 : dim.m2 + 1, dim.l1 : dim.l2 + 1
-                ]
-            else:
-                if dim.ny == 1:
-                    self.f = self.f[:, dim.n1 : dim.n2 + 1, dim.l1 : dim.l2 + 1]
-                else:
-                    self.f = self.f[:, dim.m1 : dim.m2 + 1, dim.l1 : dim.l2 + 1]
+            self.x = self.x[dim.nghostx:-dim.nghostx]
+            self.y = self.y[dim.nghosty:-dim.nghosty]
+            self.z = self.z[dim.nghostz:-dim.nghostz]
+            self.f = self._trim(self.f, dim, run2D)
         else:
             self.l1 = dim.l1
             self.l2 = dim.l2 + 1
@@ -1025,6 +1002,22 @@ class DataCube(object):
         m = irang[1] - irang[0]
         coords = coords[irang[0]:irang[1]]
         return irang, m, coords
+
+    def _trim(self, arr, dim, run2D):
+        sl_tr_x = slice(dim.nghostx, -dim.nghostx)
+        sl_tr_y = slice(dim.nghosty, -dim.nghosty)
+        sl_tr_z = slice(dim.nghostz, -dim.nghostz)
+
+        if (arr.ndim == 3) or (arr.ndim == 4):
+            if run2D:
+                if dim.nz == 1:
+                    return arr[..., sl_tr_y, sl_tr_x]
+                else:
+                    return arr[..., sl_tr_z, sl_tr_x]
+            else:
+                return arr[..., sl_tr_z, sl_tr_y, sl_tr_x]
+        else:
+            raise NotImplementedError
 
 class _Persist():
     """
