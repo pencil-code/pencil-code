@@ -750,19 +750,13 @@ class DataCube(object):
 
         with h5py.File(file_name, "r") as tmp:
             x = (tmp["grid/x"][:]).astype(precision)
-            irange_x = self._parse_range(range_x, irange_x, x)
-            mx = irange_x[1]-irange_x[0]
-            x = x[irange_x[0]:irange_x[1]]
+            irange_x, mx, x = self._handle_range(range_x, irange_x, x)
 
             y = (tmp["grid/y"][:]).astype(precision)
-            irange_y = self._parse_range(range_y, irange_y, y)
-            my = irange_y[1]-irange_y[0]
-            y = y[irange_y[0]:irange_y[1]]
+            irange_y, my, y = self._handle_range(range_y, irange_y, y)
 
             z = (tmp["grid/z"][:]).astype(precision)
-            irange_z = self._parse_range(range_z, irange_z, z)
-            mz = irange_z[1]-irange_z[0]
-            z = z[irange_z[0]:irange_z[1]]
+            irange_z, mz, z = self._handle_range(range_z, irange_z, z)
 
             if grid != None:
                 grid.restrict(irange_x,irange_y,irange_z)
@@ -1020,6 +1014,12 @@ class DataCube(object):
             irang = (0,len(coords))
 
         return irang
+
+    def _handle_range(self, rang, irang, coords):
+        irang = self._parse_range(rang, irang, coords)
+        m = irang[1] - irang[0]
+        coords = coords[irang[0]:irang[1]]
+        return irang, m, coords
 
 class _Persist():
     """
