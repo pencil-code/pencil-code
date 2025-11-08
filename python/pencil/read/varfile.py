@@ -1009,7 +1009,7 @@ class DataCube(object):
         ind_maxp1 = len(coords)-nghost
         if rang is not None:
             [inds] = np.nonzero( (coords>=rang[0]) & (coords<=rang[-1]) )
-            irang = (inds[0], inds[-1]+1)
+            irang = (max(inds[0],ind_min), min(inds[-1]+1,ind_maxp1))
         elif irang is not None:
             irang = (max(irang[0],ind_min), min(irang[1]+1,ind_maxp1))
         else:
