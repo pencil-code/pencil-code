@@ -1005,13 +1005,19 @@ class DataCube(object):
         if (irang is not None) and (len(irang) != 2):
             raise ValueError
 
+        nghost = 3
+        ind_min = nghost
+        ind_maxp1 = len(coords)-nghost
         if rang is not None:
             [inds] = np.nonzero( (coords>=rang[0]) & (coords<=rang[-1]) )
             irang = (inds[0], inds[-1]+1)
         elif irang is not None:
-            irang = (max(irang[0],0), min(irang[1]+1,len(coords)))
+            irang = (max(irang[0],ind_min), min(irang[1]+1,ind_maxp1))
         else:
-            irang = (0,len(coords))
+            irang = (ind_min,ind_maxp1)
+
+        #Include ghost zones as well for proper computation of magic variables
+        irang = (irang[0]-nghost, irang[1]+nghost)
 
         return irang
 
