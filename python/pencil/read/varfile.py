@@ -278,7 +278,7 @@ class DataCube(object):
              coordinate range selection for subdomain (closed interval).
              If trimall=F, ghost zones will be included on either side of the interval.
 
-         irange_[xyz] : 2-tuple of integer
+         irange_[xyz] : either 2-tuple of integer or slice
              index range selection for subdomain (closed interval).
              Note that this index is in the full array (including ghost zones).
              If trimall=F, ghost zones will be included on either side of the interval.
@@ -754,9 +754,7 @@ class DataCube(object):
             for key in tmp["data"].keys():
                 if key in index.__dict__.keys():
                     self.f[index.__getattribute__(key) - 1, :, :, :] = dtype(
-                            tmp["data/" + key][irange_z[0]:irange_z[1],
-                                                irange_y[0]:irange_y[1],
-                                                irange_x[0]:irange_x[1]]
+                        tmp["data/" + key][irange_z, irange_y, irange_x]
                     )
             t = (tmp["time"][()]).astype(precision)
             dx = (tmp["grid/dx"][()]).astype(precision)
@@ -981,8 +979,17 @@ class DataCube(object):
     def _parse_range(self, rang, irang, coords, nghost):
         if (rang is not None) and (len(rang) != 2):
             raise ValueError
-        if (irang is not None) and (len(irang) != 2):
-            raise ValueError
+
+        if irang is not None:
+            if isinstance(irang, slice):
+                step = irang.step
+                irang = (irang.start, irang.stop)
+            elif len(irang) != 2:
+                raise ValueError
+            else:
+                step = 1
+        else:
+            step = 1
 
         ind_min = nghost
         ind_maxp1 = len(coords)-nghost
@@ -997,12 +1004,12 @@ class DataCube(object):
         #Include ghost zones as well for proper computation of magic variables
         irang = (irang[0]-nghost, irang[1]+nghost)
 
-        return irang
+        return slice(irang[0], irang[1], step)
 
     def _handle_range(self, rang, irang, coords, nghost):
         irang = self._parse_range(rang, irang, coords, nghost)
-        m = irang[1] - irang[0]
-        coords = coords[irang[0]:irang[1]]
+        coords = coords[irang]
+        m = len(coords)
         return irang, m, coords
 
     def _trim(self, arr, dim, run2D):
