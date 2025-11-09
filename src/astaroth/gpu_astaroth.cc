@@ -879,12 +879,57 @@ bool loaded_stats = false;
 /***********************************************************************************************/
 void denormalize(std::string filename){
 	if(!loaded_stats){
-		std::ifstream f(filename, std::iso::binary);
+		std::ifstream f(filename, std::ios::binary);
 		if (!f.is_open()){
 			fprintf(stderr, "Could nemt open stats file");
 			fflush(stderr);
 		}
-	
+
+		float acc_count;
+		float num_acc;
+		std::vector<float> acc_sum;
+		std::vector<float> acc_sum_squared;
+		
+		while(f.peek() != EOF){
+			uint32_t name_len;
+			f.read(reinterpret_cast<char*>(&name_len), sizeof(name_len));
+			if (f.eof()) break;
+			std::string name;
+			name.resize(name_len);
+			f.read(&name[0], name_len);
+
+			std::vector<int> shape;
+			std::vector<float> data;
+
+			uint32_t ndim = 1;
+			f.read(reinterpret_cast<char*>(&ndim), sizeof(ndim));
+			shape.resize(ndim);
+			f.read(reinterpret_cast<char*>(shape.data()), ndim * sizeof(unit32_t));
+
+			size_t num_elem = 1;
+			for (auto s : shape) num_elem *=s;
+			data.resize(num_elem);
+			f.read(reinterpret_cast<char*>(data.data()), num_elem * sizeof(float));
+
+			if (name == "acc_count"){
+				acc_count = data[0];
+			}
+			
+			if (name == "num_acc"){
+				num_acc = data[0];
+			}
+
+			if(name == "acc_sum"){
+				acc_sum == data;
+			}
+
+			if (name == "acc_sum_squared"){
+				acc_sum_squared = data;
+			}
+
+
+		}
+
 	}
 }
 
@@ -1308,74 +1353,6 @@ extern "C" void afterSubStepGPU()
 #endif
 	}
 	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_after_timestep),1);
-}
-/***********************************************************************************************/
-void
-load_f_ode()
-{
-        //TP: this is simply the initial implementation
-        //TODO: benchmark what is the most efficient way of getting ode array to the GPU each substep
-#if TRANSPILATION
-        if (n_odevars > 0)
-        {
-                acDeviceSynchronizeStream(acGridGetDevice(),STREAM_DEFAULT);
-                acDeviceLoad(acGridGetDevice(), STREAM_DEFAULT, mesh.info, AC_f_ode);
-                acDeviceSynchronizeStream(acGridGetDevice(),STREAM_DEFAULT);
-        }
-#endif
-}
-/***********************************************************************************************/
-extern "C" void beforeBoundaryGPU(bool lrmv, int isubstep, double t)
-{
-// Load variable values of ODE variables to GPU since before boundary may use them
-	load_f_ode();
-
-// Load those dynamical parameters (those which depend on time) to GPU
-
- 	acDeviceSetInput(acGridGetDevice(), AC_lrmv, lrmv);
- 	acDeviceSetInput(acGridGetDevice(), AC_t, AcReal(t));
-
-// Execute all "before-boundary-actions", which do not update the halos, by separate task graph
-
-	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_before_boundary_steps),1);
-
-//Some Fields are directly calculated on the halos like yH in ioncalc.
-//Could reformulate the kernels in a way that the bc is simply the same kernel as the normal calculation
-//But don't want to repeat calc too often so this is an somewhat easy to way to do it
-#if TRANSPILATION
-	const auto steps_updating_halos = acGetOptimizedDSLTaskGraph(AC_before_boundary_steps_including_halos,
-					          (Volume){0,0,0},acGetLocalMM(acGridGetLocalMeshInfo()));
-	if (!acGridTaskGraphIsEmpty(steps_updating_halos))
-	{
-		AcTaskGraph* bcs = acGetOptimizedDSLTaskGraph(boundconds);
-		acGridExecuteTaskGraph(bcs,1);                            // apply boundconds
-		acGridHaloExchange();                                     // halo communication
-		acGridExecuteTaskGraph(steps_updating_halos,1);           // f-array update
-	}
-#endif
-#if LSELFGRAVITY
-	if (t>=tstart_selfgrav)
-	{
-		acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_calc_selfgravity_rhs),1);
-		acDeviceFFTR2C(acGridGetDevice(),acGetRHS_POISSON(),RHS_POISSON_COMPLEX);                     // FFT of rhs of Poisson eq.
-    		AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
-  		acGridLaunchKernel(STREAM_DEFAULT, selfgravity_poisson_solve, dims.n0, dims.n1);
-		acGridSynchronizeStream(STREAM_ALL);
-		acDeviceFFTC2R(acGridGetDevice(),SELFGRAVITY_POTENTIAL_COMPLEX,acGetSELFGRAVITY_POTENTIAL()); // FFT backtransform. of solution
-		//TP: A placeholder for iterative solvers, in the future choose the number of solving steps based on the norm of the residual
-		/**
-		for (int i = 0; i < 100; ++i)
-		{
-			acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_sor_step),1);
-		}
-		**/
-		acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_calc_final_potential),1);
-	}
-
-#endif
-#if LNEWTON_COOLING
-	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_integrate_tau),1);
-#endif
 }
 /***********************************************************************************************/
 extern "C" void substepGPU(int isubstep, double t)
