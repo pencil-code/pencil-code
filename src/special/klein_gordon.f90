@@ -1692,8 +1692,6 @@ module Special
     call copy_addr(iw0,p_par(53)) ! int
     call copy_addr(alpha_usr,p_par(54))
     call copy_addr(beta_usr,p_par(55))
-    call copy_addr(v0_usr,p_par(56))
-    call copy_addr(v_usr,p_par(57))
 
     endsubroutine pushpars2c
 !********************************************************************
