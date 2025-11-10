@@ -364,17 +364,15 @@ module Particles_map
       type(pic), dimension(nx,ny,nz), intent(in) :: cell
 !
       integer :: ix, iy, iz, j, l, m, n
-      real :: dz1, dyz1, dv1, total_weight
+      real :: dv1, total_weight
 !
 !  Loop over each cell.
 !
       zscan: do n = n1, n2
         iz = n - nghost
-        dz1 = merge(dz_1(n), 1.0, nzgrid > 1)
 !
         yscan: do m = m1, m2
           iy = m - nghost
-          dyz1 = dz1 * merge(dy_1(m), 1.0, nygrid > 1)
 !
           xscan: do l = l1, l2
             ix = l - nghost
@@ -384,7 +382,7 @@ module Particles_map
 !
             rhop: if (irhop > 0) then
               if (total_weight > 0.0) then
-                dv1 = dyz1 * merge(dx_1(l), 1.0, nxgrid > 1)
+                dv1 = dVol1_x(l) * dVol1_y(m) * dVol1_z(n)
                 f(l,m,n,irhop) = dv1 * total_weight
               else
                 f(l,m,n,irhop) = 0.0
@@ -986,19 +984,17 @@ module Particles_map
       type(pic), dimension(nx,ny,nz), intent(inout) :: cell
 !
       integer :: ix, iy, iz, l, m, n
-      real :: dz1, dyz1, dv1
+      real :: dv1
 !
 !  Loop over each cell.
 !
       zscan: do n = n1, n2
         iz = n - nghost
-        dz1 = merge(dz_1(n), 1.0, nzgrid > 1)
         yscan: do m = m1, m2
           iy = m - nghost
-          dyz1 = dz1 * merge(dy_1(m), 1.0, nygrid > 1)
           xscan: do l = l1, l2
             ix = l - nghost
-            dv1 = dyz1 * merge(dx_1(l), 1.0, nxgrid > 1)
+            dv1 = dVol1_x(l) * dVol1_y(m) * dVol1_z(n)
             cell(ix,iy,iz)%p%eps = dv1 / cell(ix,iy,iz)%rho * cell(ix,iy,iz)%p%weight
           enddo xscan
         enddo yscan
@@ -1175,7 +1171,7 @@ module Particles_map
       integer, dimension(3) :: xi1, xi2
       real, dimension(3) :: dxi, xitmp
       integer :: ip, l, m, n
-      real :: w, dz1, dyz1, dv1
+      real :: w, dv1
 !
 !  Make the assignment.
 !
@@ -1185,14 +1181,12 @@ module Particles_map
         call block_of_influence(xitmp, xi1, xi2)
         zscan: do n = xi1(3), xi2(3)
           dxi(3) = xi(ip,3) - real(n)
-          dz1 = merge(dz_1(n), 1.0, nzgrid > 1)
           yscan: do m = xi1(2), xi2(2)
             dxi(2) = xi(ip,2) - real(m)
-            dyz1 = dz1 * merge(dy_1(m), 1.0, nygrid > 1)
             xscan: do l = xi1(1), xi2(1)
               dxi(1) = xi(ip,1) - real(l)
-              dv1 = dyz1 * merge(dx_1(l), 1.0, nxgrid > 1)
               w = weigh_particle(dxi(1), dxi(2), dxi(3))
+              dv1 = dVol1_x(l) * dVol1_y(m) * dVol1_z(n)
               fg(l,m,n) = fg(l,m,n) + dv1 * w * fp(ip)
             enddo xscan
           enddo yscan
