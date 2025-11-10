@@ -84,7 +84,8 @@ class DataCube(object):
         range_z=None,
         irange_x=None,
         irange_y=None,
-        irange_z=None
+        irange_z=None,
+        var_list=None,
     ):
         """
         read(var_file='', datadir='data', proc=-1, ivar=-1, quiet=True,
@@ -162,6 +163,13 @@ class DataCube(object):
              Note that this index is in the full array (including ghost zones).
              If trimall=F, ghost zones will be included on either side of the interval.
 
+         var_list : list of string
+             List of variables to read (must be a subset of the names in
+             data/index.pro). If not provided, all available variables will be
+             read. Note that if only a subset of variables is read, the indices
+             in the f-array of the DataCube object will not match the indices
+             in data/index.pro.
+
         Returns
         -------
         DataCube
@@ -215,6 +223,18 @@ class DataCube(object):
             )
             grid = None
 
+        if var_list is not None:
+            self._index = {k:v for k,v in index.__dict__.items() if k in var_list}
+
+            # Assign consecutive indices to the requested variables, preserving
+            # their relative order in the f-array (e.g., if {ux:0, uz:2, lnrho:3}
+            # were requested, the indices will be assigned as {ux:0, uz:1, lnrho:2}
+            inds = sorted([v for k, v in self._index.items()])
+            m = {v: i+1 for i,v in enumerate(inds)}
+            self._index = {k:m[v] for k,v in self._index.items()}
+            print(f"{self._index = }") #debug
+        else:
+            self._index = index.__dict__
 
         run2D = param.lwrite_2d
         if param.io_strategy == "HDF5":
@@ -238,7 +258,6 @@ class DataCube(object):
                 range_y=range_y,
                 range_z=range_z,
                 dtype=dtype,
-                index=index,
                 )
         elif param.io_strategy == "dist":
             if (
@@ -250,6 +269,9 @@ class DataCube(object):
                 (irange_z is not None)
                 ):
                 raise NotImplementedError("subdomains when IO = io_dist")
+
+            if var_list is not None:
+                raise NotImplementedError("var_list for IO = io_dist")
 
             grid = self._read_io_dist(
                 grid=grid,
@@ -272,7 +294,7 @@ class DataCube(object):
 
         aatest = []
         uutest = []
-        for key in index.__dict__.keys():
+        for key in self._index:
             if "aatest" in key:
                 aatest.append(key)
             if "uutest" in key:
@@ -283,7 +305,7 @@ class DataCube(object):
             """
             if "bb" in magic:
                 # Compute the magnetic field before doing trimall.
-                aa = self.f[index.ax - 1 : index.az, ...]
+                aa = self.f[self._index['ax'] - 1 : self._index['az'], ...]
                 self.bb = curl(
                         aa,
                         dx=self.dx,
@@ -302,7 +324,7 @@ class DataCube(object):
                     # Compute the magnetic field before doing trimall.
                     for j in range(int(len(aatest) / 3)):
                         key = aatest[j*3][:-1]
-                        value = index.__dict__[aatest[j*3]]
+                        value = self._index[aatest[j*3]]
                         aa = self.f[value - 1 : value + 2, ...]
                         bb = curl(
                                 aa,
@@ -324,11 +346,11 @@ class DataCube(object):
                         else:
                             setattr(self,"bb"+key[2:],bb)
                 else:
-                    if hasattr(index, "aatest1"):
+                    if "aatest1" in self._index:
                         naatest = int(len(aatest) / 3)
                         for j in range(0, naatest):
                             key = "aatest" + str(np.mod(j + 1, naatest))
-                            value = index.__dict__["aatest1"] + 3 * j
+                            value = self._index["aatest1"] + 3 * j
                             aa = self.f[value - 1 : value + 2, ...]
                             bb = curl(
                                     aa,
@@ -351,7 +373,7 @@ class DataCube(object):
                                 setattr(self,"bb"+key[2:],bb)
             if "jj" in magic:
                 # Compute the electric current field before doing trimall.
-                aa = self.f[index.ax - 1 : index.az, ...]
+                aa = self.f[self._index['ax'] - 1 : self._index['az'], ...]
                 self.jj = curl2(
                         aa,
                         dx=self.dx,
@@ -366,7 +388,7 @@ class DataCube(object):
                     self.jj = self._trim(self.jj, dim, run2D)
             if "vort" in magic:
                 # Compute the vorticity field before doing trimall.
-                uu = self.f[index.ux - 1 : index.uz, ...]
+                uu = self.f[self._index['ux'] - 1 : self._index['uz'], ...]
                 self.vort = curl(
                         uu,
                         dx=self.dx,
@@ -400,50 +422,49 @@ class DataCube(object):
         # It is possible that only a subset of the variables are present in the
         # snapshots (see the mvar_down option)
         index_max = self.f.shape[0]
-        
-        for key in index.__dict__.keys():
+
+        for key, value in self._index.items():
             if (
                 key != "global_gg"
                 and key != "keys"
                 and "aatest" not in key
                 and "uutest" not in key
             ):
-                value = index.__dict__[key]
                 if value <= index_max:
                     setattr(self, key, self.f[value - 1, ...])
         # Special treatment for vector quantities.
-        if hasattr(index, "ux") and index.uz <= index_max:
-            setattr(self, "uu", self.f[index.ux - 1 : index.uz, ...])
-        if hasattr(index, "ax") and index.az <= index_max:
-            setattr(self, "aa", self.f[index.ax - 1 : index.az, ...])
-        if hasattr(index, "uu_sph") and index.uu_sphz <= index_max:
-            self.uu_sph = self.f[index.uu_sphx - 1 : index.uu_sphz, ...]
-        if hasattr(index, "bb_sph") and index.bb_sphz <= index_max:
-            self.bb_sph = self.f[index.bb_sphx - 1 : index.bb_sphz, ...]
+        if ("ux" in self._index) and (self._index['uz'] <= index_max):
+            setattr(self, "uu", self.f[self._index['ux'] - 1 : self._index['uz'], ...])
+        if ("ax" in self._index) and (self._index['az'] <= index_max):
+            setattr(self, "aa", self.f[self._index['ax'] - 1 : self._index['az'], ...])
+        if ("uu_sph" in self._index) and (self._index['uu_sphz'] <= index_max):
+            self.uu_sph = self.f[self._index['uu_sphx'] - 1 : self._index['uu_sphz'], ...]
+        if ("bb_sph" in self._index) and (self._index['bb_sphz'] <= index_max):
+            self.bb_sph = self.f[self._index['bb_sphx'] - 1 : self._index['bb_sphz'], ...]
         # Special treatment for test method vector quantities.
         # Note index 1,2,3,...,0 last vector may be the zero field/flow
         if param.io_strategy != "HDF5":
-            if hasattr(index, "aatest1"):
+            if "aatest1" in self._index:
                 naatest = int(len(aatest) / 3)
                 for j in range(0, naatest):
                     key = "aatest" + str(np.mod(j + 1, naatest))
-                    value = index.__dict__["aatest1"] + 3 * j
+                    value = self._index["aatest1"] + 3 * j
                     setattr(self, key, self.f[value - 1 : value + 2, ...])
-            if hasattr(index, "uutest1"):
+            if "uutest1" in self._index:
                 nuutest = int(len(uutest) / 3)
                 for j in range(0, nuutest):
                     key = "uutest" + str(np.mod(j + 1, nuutest))
-                    value = index.__dict__["uutest"] + 3 * j
+                    value = self._index["uutest"] + 3 * j
                     setattr(self, key, self.f[value - 1 : value + 2, ...])
         else:
             #Dummy operation to be corrected
             for j in range(int(len(aatest) / 3)):
                 key = aatest[j*3][:-1]
-                value = index.__dict__[aatest[j*3]]
+                value = self._index[aatest[j*3]]
                 setattr(self, key, self.f[value - 1 : value + 2, ...])
             for j in range(int(len(uutest) / 3)):
                 key = uutest[j*3][:-1]
-                value = index.__dict__[uutest[j*3]]
+                value = self._index[uutest[j*3]]
                 setattr(self, key, self.f[value - 1 : value + 2, ...])
 
         # Do the rest of magic after the trimall (i.e. no additional curl.)
@@ -593,14 +614,29 @@ class DataCube(object):
 
         self.persist = pers_obj
 
-    def _read_hdf5(self, grid, dim, param, var_file, datadir, precision, quiet, lpersist, ivar, irange_x, irange_y, irange_z, range_x, range_y, range_z, dtype, index):
+    def _read_hdf5(
+        self,
+        grid,
+        dim,
+        param,
+        var_file,
+        datadir,
+        precision,
+        quiet,
+        lpersist,
+        ivar,
+        irange_x,
+        irange_y,
+        irange_z,
+        range_x,
+        range_y,
+        range_z,
+        dtype,
+        ):
+
         import h5py
 
-        if param.lwrite_aux:
-            total_vars = dim.mvar + dim.maux
-        else:
-            total_vars = dim.mvar
-
+        total_vars = max([v for k,v in self._index.items()])
         run2D = param.lwrite_2d
 
         if not var_file:
@@ -636,8 +672,8 @@ class DataCube(object):
                 self.f = np.zeros((total_vars, mz, my, mx), dtype=dtype)
 
             for key in tmp["data"].keys():
-                if key in index.__dict__.keys():
-                    self.f[index.__getattribute__(key) - 1, :, :, :] = dtype(
+                if key in self._index:
+                    self.f[self._index[key] - 1, :, :, :] = dtype(
                         tmp["data/" + key][irange_z, irange_y, irange_x]
                     )
             t = (tmp["time"][()]).astype(precision)
