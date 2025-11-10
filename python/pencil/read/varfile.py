@@ -215,8 +215,6 @@ class DataCube(object):
             )
             grid = None
 
-        # Used later on to support the case where only some of the variables were written into the snapshots.
-        index_max = dim.mvar + dim.maux
 
         run2D = param.lwrite_2d
         if param.io_strategy == "HDF5":
@@ -399,6 +397,10 @@ class DataCube(object):
 
         # Assign an attribute to self for each variable defined in
         # 'data/index.pro' so that e.g. self.ux is the x-velocity
+        # It is possible that only a subset of the variables are present in the
+        # snapshots (see the mvar_down option)
+        index_max = self.f.shape[0]
+        
         for key in index.__dict__.keys():
             if (
                 key != "global_gg"
