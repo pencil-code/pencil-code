@@ -458,7 +458,8 @@ def write_h5_snapshot(
     else:
         state = "w"
     filename = join(datadir, file_name)
-    print("write_h5_snapshot: filename =", filename)
+    if not quiet:
+        print("write_h5_snapshot: filename =", filename)
     with open_h5(
         filename,
         state,
