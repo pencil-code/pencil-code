@@ -379,15 +379,10 @@ def write_h5_snapshot(
     if grid is None:
         grid = read.grid(datadir=sim_datadir, quiet=True)
     else:
-        gd_err = False
         for key in gkeys:
             if not key in grid.__dict__.keys():
-                print("ERROR: key " + key + " missing from grid")
-                sys.stdout.flush()
-                gd_err = True
-        if gd_err:
-            print("ERROR: grid incomplete")
-            sys.stdout.flush()
+                raise RuntimeError(f"key {key} missing from grid")
+
     ukeys = [
         "length",
         "velocity",
