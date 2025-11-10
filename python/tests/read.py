@@ -169,7 +169,12 @@ def test_read_power() -> None:
 
 @pytest.mark.integration
 def test_read_var_2(datadir_helical_MHDTurb):
-    var = pc.read.var(datadir=datadir_helical_MHDTurb, trimall=False, lpersist=True)
+    var = pc.read.var(
+        datadir=datadir_helical_MHDTurb,
+        trimall=False,
+        lpersist=True,
+        magic=["bb"],
+        )
 
     assert len(var.x) == 38
     assert len(var.y) == 38

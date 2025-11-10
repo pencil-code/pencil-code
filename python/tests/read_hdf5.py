@@ -62,7 +62,12 @@ def test_read_grid_nogrid():
 
 @pytest.mark.integration
 def test_read_var(datadir_helical_MHDTurb_HDF5):
-    var = pc.read.var(datadir=datadir_helical_MHDTurb_HDF5, trimall=True, lpersist=True)
+    var = pc.read.var(
+        datadir=datadir_helical_MHDTurb_HDF5,
+        trimall=True,
+        lpersist=True,
+        magic=["bb"],
+        )
 
     assert len(var.x) == 32
     assert len(var.y) == 32
