@@ -78,6 +78,27 @@ def test_read_var(datadir_helical_MHDTurb_HDF5):
     assert np.isclose(var.persist.forcing_tsforce, 0.3999999999999999)
 
 @pytest.mark.integration
+def test_read_var_selective(datadir_helical_MHDTurb_HDF5):
+    var = pc.read.var(
+        datadir=datadir_helical_MHDTurb_HDF5,
+        trimall=True,
+        lpersist=True,
+        var_list=['uy', 'uz'],
+        )
+
+    assert len(var.x) == 32
+    assert len(var.y) == 32
+    assert len(var.z) == 32
+    assert np.isclose(var.uy[0,6,2], -0.05910974500656841)
+    assert np.isclose(var.uz[5,10,27], -0.02635602018447831)
+    assert np.isclose(var.persist.forcing_tsforce, 0.3999999999999999)
+
+    assert not hasattr(var, 'lnrho')
+    assert not hasattr(var, 'ss')
+    assert not hasattr(var, 'ux')
+    assert var.f.shape[0] == 2
+
+@pytest.mark.integration
 def test_read_var_irangex(datadir_helical_MHDTurb_HDF5):
     var = pc.read.var(datadir=datadir_helical_MHDTurb_HDF5, trimall=False, irange_x=[15,30])
 
