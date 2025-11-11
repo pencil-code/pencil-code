@@ -31,37 +31,6 @@ from pencil import read
 from pencil.sim import __Simulation__
 from pencil.util import copy_docstring
 
-@copy_docstring(DataCube.read)
-def var(*args, **kwargs):
-    started = None
-
-    for a in args:
-        if isinstance(a, __Simulation__):
-            started = a.started()
-            break
-
-    if "sim" in kwargs.keys():
-        # started = kwargs['sim'].started()
-
-        started = True
-    elif "datadir" in kwargs.keys():
-        if exists(join(kwargs["datadir"], "time_series.dat")):
-            started = True
-    else:
-        if exists(join("data", "time_series.dat")):
-            started = True
-
-    if not started:
-        if "ivar" in kwargs:
-            if kwargs["ivar"] != 0:
-                print("ERROR: Simulation has not yet started. There are no var files.")
-                return False
-
-    var_tmp = DataCube()
-    var_tmp.read(*args, **kwargs)
-    return var_tmp
-
-
 class DataCube(object):
     """
     DataCube -- holds Pencil Code VAR file data.
@@ -946,3 +915,33 @@ class _Persist():
         for i in self.__dict__.keys():
             if not i == "keys":
                print(i)
+
+@copy_docstring(DataCube.read)
+def var(*args, **kwargs):
+    started = None
+
+    for a in args:
+        if isinstance(a, __Simulation__):
+            started = a.started()
+            break
+
+    if "sim" in kwargs.keys():
+        # started = kwargs['sim'].started()
+
+        started = True
+    elif "datadir" in kwargs.keys():
+        if exists(join(kwargs["datadir"], "time_series.dat")):
+            started = True
+    else:
+        if exists(join("data", "time_series.dat")):
+            started = True
+
+    if not started:
+        if "ivar" in kwargs:
+            if kwargs["ivar"] != 0:
+                print("ERROR: Simulation has not yet started. There are no var files.")
+                return False
+
+    var_tmp = DataCube()
+    var_tmp.read(*args, **kwargs)
+    return var_tmp
