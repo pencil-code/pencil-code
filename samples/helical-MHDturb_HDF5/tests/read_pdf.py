@@ -30,3 +30,4 @@ def write(f, qty):
 with open(f'{__file__[:-3]}.out', 'w') as f:
     write(f, "p.t")
     write(f, "p.lnrho.counts[2,1495:1505]")
+    write(f, "p.uu_1.counts[2,1485:1495]")
