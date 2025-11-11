@@ -220,6 +220,9 @@ class DataCube(object):
 
         run2D = param.lwrite_2d
         if param.io_strategy == "HDF5":
+            if proc != -1:
+                raise NotImplementedError("per-processor reading with io_hdf5")
+
             grid = self._read_hdf5(
                 grid=grid,
                 dim=dim,
