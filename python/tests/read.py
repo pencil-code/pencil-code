@@ -199,3 +199,22 @@ def test_read_var_2_trim(datadir_helical_MHDTurb):
     assert np.isclose(var.uz[5,10,27], -0.02635602018447831)
 
     assert np.isclose(var.persist.forcing_tsforce, 0.3999999999999999)
+
+@pytest.mark.integration
+def test_read_var_3_local(datadir_conv_slab_cp_2):
+    kwargs = {
+        'datadir': datadir_conv_slab_cp_2,
+        'trimall': True,
+        'lpersist': True,
+        }
+
+    var_g = pc.read.var(**kwargs)
+    var_p0 = pc.read.var(**kwargs, proc=0)
+    var_p1 = pc.read.var(**kwargs, proc=1)
+
+    assert len(var_g.y) == 2*len(var_p0.y)
+    assert len(var_p0.y) == len(var_p1.y)
+    assert len(var_g.x) == len(var_p0.x)
+
+    assert var_g.uz[13,17,5] == var_p1.uz[13,1,5]
+    assert var_g.lnrho[13,11,5] == var_p0.lnrho[13,11,5]
