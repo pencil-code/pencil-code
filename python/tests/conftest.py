@@ -1,6 +1,9 @@
 import os
 import pathlib
 import pytest
+import shutil
+import tempfile
+
 import pencil as pc
 from test_utils import get_rundir
 
@@ -115,3 +118,9 @@ def datadir_helical_MHDTurb():
     sim.run(bashrc=False, cleardata=True, raise_errors=True)
 
     return sim.datadir
+
+@pytest.fixture
+def temp_datadir():
+    tmpdir = tempfile.mkdtemp("pc_test_write_h5_snap")
+    yield pathlib.Path(tmpdir)
+    shutil.rmtree(tmpdir)
