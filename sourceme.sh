@@ -9,6 +9,11 @@
 #  into your .bashrc
 #
 if ( [ -e .git ] ); then
+# 2025-Nov-11/Kishore: Matthias, I think it would be cleaner to check the config
+# value by running
+# `git config get pull.rebase` and checking that it does not return "false"
+# I think the above has the advantage of also checking the value inherited from
+# the global config, if any.
 	if [[ `grep '^\srebase *= *false' .git/config` != "" ]]; then
 	echo !!!WARNING - you have \"rebase = false\" settings in your .git/config!!!
 	echo !!!Pull strategy should always be \"--rebase\" on all branches!!!
