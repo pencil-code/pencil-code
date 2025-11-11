@@ -29,100 +29,10 @@ from pencil.math import natural_sort
 from pencil.math.derivatives import curl, curl2
 from pencil import read
 from pencil.sim import __Simulation__
+from pencil.util import copy_docstring
 
+@copy_docstring(DataCube.read)
 def var(*args, **kwargs):
-    """
-    var(var_file='', datadir='data', proc=-1, ivar=-1, quiet=True,
-        trimall=False, magic=None, sim=None, precision='f', flist=None,
-        timing=True, fbloc=True, lvec=True, lonlyvec=False, lpersist=False,
-        range_x=None, range_y=None, range_z=None,
-        irange_x=None, irange_y=None, irange_z=None)
-
-    Read VAR files from Pencil Code. If proc < 0, then load all data
-    and assemble, otherwise load VAR file from specified processor.
-
-    The file format written by output() (and used, e.g. in var.dat)
-    consists of the following Fortran records:
-    1. data(mx, my, mz, nvar)
-    2. t(1), x(mx), y(my), z(mz), dx(1), dy(1), dz(1), deltay(1)
-    Here nvar denotes the number of slots, i.e. 1 for one scalar field, 3
-    for one vector field, 8 for var.dat in the case of MHD with entropy.
-    but, deltay(1) is only there if lshear is on! need to know parameters.
-
-
-    Parameters
-    ----------
-     var_file : string
-         Name of the VAR file.
-         If not specified, use var.dat (which is the latest snapshot of the fields)
-
-     datadir : string
-         Directory where the data is stored.
-
-     proc : int
-         Processor to be read. If -1 read all and assemble to one array.
-
-     ivar : int
-       Index of the VAR file, if var_file is not specified.
-
-     quiet : bool
-         Flag for switching off output.
-
-     trimall : bool
-         Trim the data cube to exclude ghost zones.
-
-     magic : bool
-         If present list of derived values to be computed from the data, e.g. B = curl(A).
-
-     sim : pencil code simulation object
-         Contains information about the local simulation.
-
-     precision : string
-         Float 'f', double 'd' or half 'half'.
-
-     flist : list
-         If present list of exclusive basic farrays to include
-
-     timing : bool
-         Report the time taken to create the obbject
-
-     fbloc : bool
-         If memory is restricted omit duplicate farray copy
-
-     lvec : bool
-         Combine components to form a vector
-
-     lonlyvec : bool
-         If memory is restricted omit components and provide only the vector
-
-     lpersist : bool
-         Read the persistent variables if they exist
-
-     range_[xyz] : 2-tuple of real
-         coordinate range selection for subdomain
-
-     irange_[xyz] : 2-tuple of integer
-         index range selection for subdomain
-
-
-    Returns
-    -------
-    DataCube
-        Instance of the pencil.read.var.DataCube class.
-        All of the computed fields are imported as class members.
-
-    Examples
-    --------
-    Read the latest var.dat file and print the shape of the uu array:
-    >>> var = pc.read.var()
-    >>> print(var.uu.shape)
-
-    Read the VAR2 file, compute the magnetic field B = curl(A),
-    the vorticity omega = curl(u) and remove the ghost zones:
-    >>> var = pc.read.var(var_file='VAR2', magic=['bb', 'vort'], trimall=True)
-    >>> print(var.bb.shape)
-    """
-
     started = None
 
     for a in args:
