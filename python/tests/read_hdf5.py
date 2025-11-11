@@ -96,6 +96,15 @@ def test_read_var_irangex_trim(datadir_helical_MHDTurb_HDF5):
     assert np.isclose(var.uz[5,10,15], -0.02635602018447831)
 
 @pytest.mark.integration
+def test_read_var_rangex_trim(datadir_helical_MHDTurb_HDF5):
+    var = pc.read.var(datadir=datadir_helical_MHDTurb_HDF5, trimall=True, range_x=[-0.69,2.26])
+
+    assert len(var.x) == 16
+    assert len(var.y) == 32
+    assert len(var.z) == 32
+    assert np.isclose(var.uz[5,10,15], -0.02635602018447831)
+
+@pytest.mark.integration
 def test_read_var_irangexslice(datadir_helical_MHDTurb_HDF5):
     var = pc.read.var(datadir=datadir_helical_MHDTurb_HDF5, trimall=False, irange_x=slice(15,30))
 
