@@ -16,6 +16,7 @@ module Poisson
 !
   use Cdata
   use General, only: keep_compiler_quiet
+  use Messages, only: fatal_error
 !
   implicit none
 !
@@ -42,6 +43,9 @@ module Poisson
 !
       call keep_compiler_quiet(phi)
 !
+      call fatal_error('inverse_laplacian', &
+          'this sub is not available in nopoisson.f90!')
+!
     endsubroutine inverse_laplacian
 !***********************************************************************
     subroutine inverse_laplacian_fft_z(phi)
@@ -52,6 +56,9 @@ module Poisson
 !
       call keep_compiler_quiet(phi)
 !
+      call fatal_error('inverse_laplacian_fft_z', &
+          'this sub is not available in nopoisson.f90!')
+!
     endsubroutine inverse_laplacian_fft_z
 !***********************************************************************
     subroutine inverse_laplacian_z_2nd_neumann(f)
@@ -61,6 +68,9 @@ module Poisson
       real, dimension(:,:,:,:), intent(in) :: f
 !
       call keep_compiler_quiet(f)
+!
+      call fatal_error('inverse_laplacian_z_2nd_neumann', &
+          'this sub is not available in nopoisson.f90!')
 !
     endsubroutine inverse_laplacian_z_2nd_neumann
 !***********************************************************************
@@ -76,6 +86,9 @@ module Poisson
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(phi)
       call keep_compiler_quiet(f)
+!
+      call fatal_error('inverse_laplacian_semispectral', &
+          'this sub is not available in nopoisson.f90!')
 !
     endsubroutine inverse_laplacian_semispectral
 !***********************************************************************
