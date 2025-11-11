@@ -152,6 +152,9 @@ float MSE();
 
 extern "C" void copyFarray(AcReal* f);    // forward declaration
 extern "C" void loadFarray(); // forward declaration
+void denormalize(std::string filename, AcRealSymmetricTensor &tau_means, AcRealSymmetricTensor &tau_stds);
+AcRealSymmetricTensor tau_means{};
+AcRealSymmetricTensor tau_stds{};
 
 /***********************************************************************************************/
 AcReal cpu_pow(AcReal const val, AcReal exponent)
@@ -672,11 +675,16 @@ void setupConfig(AcMeshInfo& config)
   PCLoad(config,AC_len,lxyz);
 
   #if LTRAINING
-  AcRealSymmetricTensor tau_means{};
-  AcRealSymmetricTensor tau_stds{};
+  //AcRealSymmetricTensor tau_means{};
+  //AcRealSymmetricTensor tau_stds{};
   //Fill them up
-  PCLoad(config,AC_tau_means,tau_means);
-  PCLoad(config,AC_tau_stds,tau_stds);
+	
+	denormalize("normalizer.bin", tau_means, tau_stds);
+
+	
+
+  //PCLoad(config,AC_tau_means,tau_means);
+  //PCLoad(config,AC_tau_stds,tau_stds);
   #endif
   PCLoad(config,AC_sparse_autotuning,lac_sparse_autotuning);
 
@@ -877,11 +885,12 @@ std::vector<double>val_time;
 
 bool loaded_stats = false;
 /***********************************************************************************************/
-void denormalize(std::string filename){
+void denormalize(std::string filename, AcRealSymmetricTensor &tau_means, AcRealSymmetricTensor &tau_stds){
 	if(!loaded_stats){
+		loaded_stats = true;
 		std::ifstream f(filename, std::ios::binary);
 		if (!f.is_open()){
-			fprintf(stderr, "Could nemt open stats file");
+			fprintf(stderr, "Could not open stats file");
 			fflush(stderr);
 		}
 
@@ -904,7 +913,7 @@ void denormalize(std::string filename){
 			uint32_t ndim = 1;
 			f.read(reinterpret_cast<char*>(&ndim), sizeof(ndim));
 			shape.resize(ndim);
-			f.read(reinterpret_cast<char*>(shape.data()), ndim * sizeof(unit32_t));
+			f.read(reinterpret_cast<char*>(shape.data()), ndim * sizeof(uint32_t));
 
 			size_t num_elem = 1;
 			for (auto s : shape) num_elem *=s;
@@ -920,15 +929,60 @@ void denormalize(std::string filename){
 			}
 
 			if(name == "acc_sum"){
-				acc_sum == data;
+				acc_sum = data;
 			}
 
 			if (name == "acc_sum_squared"){
 				acc_sum_squared = data;
 			}
-
-
 		}
+	
+	float safe_count = std::max(acc_count, 1.0f);
+	std::vector<float> means(acc_sum.size());
+	for (int index = 0; index < acc_sum.size(); index++){
+		means[index] = acc_sum[index] / safe_count;
+	}
+	std::vector<float> stds(acc_sum_squared.size());
+	for (int index = 0; index < acc_sum.size(); index++){
+		float var = (acc_sum_squared[index]/ safe_count) - (means[index] * means[index]);
+		stds[index] = std::max(std::sqrt(var), 1e-8f);
+	}
+
+	tau_means.xx = means[0];
+	tau_means.yy = means[1];
+	tau_means.zz = means[2];
+	tau_means.xy = means[3];
+	tau_means.yz = means[4];
+	tau_means.xz = means[5];
+
+
+	tau_stds.xx = stds[0];
+	tau_stds.yy = stds[1];
+	tau_stds.zz = stds[2];
+	tau_stds.xy = stds[3];
+	tau_stds.yz = stds[4];
+	tau_stds.xz = stds[5];
+
+	/*
+	std::cout << "printing acc_count: " << acc_count <<  "\n" << std::flush;
+
+	std::cout << "printing num_acc: " << num_acc <<  "\n" << std::flush;
+
+	std::cout << "printing acc_sum:" << std::flush;
+	for (auto &i : acc_sum){
+		std::cout << i << "";
+	}
+	std::cout << "\n" << std::flush;
+
+
+	std::cout << "printing acc_sum_squared:" << std::flush;
+	for (auto &i : acc_sum_squared){
+		std::cout << i << "";
+	}
+	std::cout << "\n" << std::flush;
+	*/
+	
+
 
 	}
 }
@@ -942,9 +996,12 @@ extern "C" void torch_infer_c_api(int itstub){
 	if(itstub!=1) return;
 	if(!calling_infer){
 		fprintf(stderr,"Calling infer\n");
+		fprintf(stderr,"means xx: %f, yy: %f, zz: %f, xy: %f, yz: %f, xz: %f\n", tau_means.xx, tau_means.yy, tau_means.zz, tau_means.xy, tau_means.yz, tau_means.xz);
+		fprintf(stderr,"stds xx: %f, yy: %f, zz: %f, xy: %f, yz: %f, xz: %f\n", tau_stds.xx, tau_stds.yy, tau_stds.zz, tau_stds.xy, tau_stds.yz, tau_stds.xz);
 		fflush(stderr);
 	}
 	calling_infer = true;
+
 	if (!called_training){
 		randomNumber = 5;
 		acDeviceSetInput(acGridGetDevice(), AC_ranNum, randomNumber);
@@ -988,8 +1045,17 @@ extern "C" void torch_infer_c_api(int itstub){
 	start = MPI_Wtime();
 
 	torch_inferCAPI((int[]){mx,my,mz}, uumean_ptr, tau_infer_ptr);
-
+	
 	end = MPI_Wtime();
+	auto calc_uumean_tau = acGetOptimizedDSLTaskGraph(descale_inferred_taus);
+	acGridSynchronizeStream(STREAM_ALL);
+	acGridExecuteTaskGraph(calc_uumean_tau, 1);
+	acGridSynchronizeStream(STREAM_ALL);
+
+  auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+	acGridSynchronizeStream(STREAM_ALL);
+	acGridExecuteTaskGraph(bcs,1);
+	acGridSynchronizeStream(STREAM_ALL);
 
 	float vloss = MSE();
  	
@@ -1135,7 +1201,6 @@ extern "C" void torch_train_c_api(AcReal *loss_val, int itstub) {
 		myFile.close();
 
 
-
 		fileString = "val_loss_" + std::to_string(my_rank)  + ".csv";	
 
 		myFile.open(fileString);
@@ -1250,8 +1315,8 @@ if (it % 5 !=0) return;
     #include "user_constants.h"
 		
 		
-		std::ifstream infile("snapshots/snapshot_rank_" + std::to_string(my_rank) + "_it_" + std::to_string(it) + ".bin", std::ios::binary);
-		if (infile.good()) return;
+		std::ifstream infile("snapshots/snapshot_rank_" + std::to_string(my_rank) + "_it_" + std::to_string(it) + "_infered_" + ".bin", std::ios::binary);
+		//if (infile.good()) return;
 		
 		counter = it;
 		
@@ -1329,7 +1394,7 @@ if (it % 5 !=0) return;
 	
 
 		std::ostringstream fname;
-    fname << "snapshots/snapshot_rank_" + std::to_string(my_rank) + "_it_" + std::to_string(it) + ".bin";
+    fname << "snapshots/snapshot_rank_" + std::to_string(my_rank) + "_it_" + std::to_string(it) + "_infered_" + ".bin";
     std::ofstream out(fname.str(), std::ios::binary);
     out.write(reinterpret_cast<const char*>(buffer.data()), buffer.size() * sizeof(double));
     out.close();

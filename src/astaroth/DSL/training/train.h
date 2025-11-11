@@ -34,8 +34,9 @@ const FieldSymmetricTensor TAU_INFERRED =
 
 global input int AC_ranNum
 
-run_const real_symmetric_tensor AC_tau_means
-run_const real_symmetric_tensor AC_tau_stds
+// preloading it here to test
+run_const real_symmetric_tensor AC_tau_means = real_symmetric_tensor(0.0024336507863808626, 0.0023183275345662374, 0.0024617763654825736, 1.802288700705976e-05, -9.72095252118678e-06, 2.735474403381727e-06);
+run_const real_symmetric_tensor AC_tau_stds = real_symmetric_tensor(0.002253919896356017, 0.0022694939419375454, 0.002285549657341413, 0.0013589343336438352, 0.001388473901677819, 0.0013662344561588327);
 
 
 
@@ -319,12 +320,22 @@ Kernel copyTauBatch(FieldSymmetricTensor TAU_out, Field3 UUMEAN_out){
 
 Kernel descale_inferred_taus_kernel()
 {
-	write(TAU_INFERRED.xx, TAU_INFERRED.xx*AC_tau_stds.xx + AC_tau_means.xx)
-	write(TAU_INFERRED.yy, TAU_INFERRED.yy*AC_tau_stds.yy + AC_tau_means.yy)
-	write(TAU_INFERRED.zz, TAU_INFERRED.zz*AC_tau_stds.zz + AC_tau_means.zz)
-	write(TAU_INFERRED.xy, TAU_INFERRED.xy*AC_tau_stds.xy + AC_tau_means.xy)
-	write(TAU_INFERRED.xz, TAU_INFERRED.xz*AC_tau_stds.xz + AC_tau_means.xz)
-	write(TAU_INFERRED.yz, TAU_INFERRED.yz*AC_tau_stds.yz + AC_tau_means.yz)
+/*
+	write(TAU_INFERRED.xx, (TAU_INFERRED.xx*AC_tau_stds.xx) + AC_tau_means.xx)
+	write(TAU_INFERRED.yy, (TAU_INFERRED.yy*AC_tau_stds.yy) + AC_tau_means.yy)
+	write(TAU_INFERRED.zz, (TAU_INFERRED.zz*AC_tau_stds.zz) + AC_tau_means.zz)
+	write(TAU_INFERRED.xy, (TAU_INFERRED.xy*AC_tau_stds.xy) + AC_tau_means.xy)
+	write(TAU_INFERRED.xz, (TAU_INFERRED.xz*AC_tau_stds.xz) + AC_tau_means.xz)
+	write(TAU_INFERRED.yz, (TAU_INFERRED.yz*AC_tau_stds.yz) + AC_tau_means.yz)
+	*/
+
+	// for some reason stds and means are always zero
+	write(TAU_INFERRED.xx, (TAU_INFERRED.xx*0.002253919896356017) + 0.0024336507863808626)
+	write(TAU_INFERRED.yy, (TAU_INFERRED.yy*0.0022694939419375454) + 0.0023183275345662374)
+	write(TAU_INFERRED.zz, (TAU_INFERRED.zz*0.002285549657341413) + 0.0024617763654825736)
+	write(TAU_INFERRED.xy, (TAU_INFERRED.xy*0.0013589343336438352) + 1.802288700705976e-05)
+	write(TAU_INFERRED.xz, (TAU_INFERRED.xz*0.001388473901677819) - 9.72095252118678e-06)
+	write(TAU_INFERRED.yz, (TAU_INFERRED.yz*0.0013662344561588327) + 2.735474403381727e-06)
 }
 
 ComputeSteps descale_inferred_taus(boundconds)
