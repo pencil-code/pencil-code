@@ -452,6 +452,7 @@ sub _read_file_in_line_format {
     my @columns;                # in fact rows, but stick to names used above
 
     my $linenum = 0;
+    my $accuracy_specified = -1;
     while (defined(my $line = <$fh>)) {
         $linenum++;
         next if $line =~ /^\s*$/;  # empty line
@@ -489,8 +490,26 @@ sub _read_file_in_line_format {
 
             push @columns, \@vals;
 
+            my $mixed_accuracies = 0;
+            if (defined $acc) {
+                if ($accuracy_specified == 0) {
+                    $mixed_accuracies = 1;
+                }
+            } else {
+                if ($accuracy_specified == 1) {
+                    $mixed_accuracies = 1;
+                }
+            }
+
+            if ($mixed_accuracies) {
+                croak "Accuracies must either be specified for no variables, or for all variables (file: $file)\n";
+            }
+
             if (defined $acc) {
                 $accuracies{$var} = _parse_accuracy($acc);
+                $accuracy_specified = 1;
+            } else {
+                $accuracy_specified = 0;
             }
         } else {
             croak "File $file: Unexpected line $linenum in line format: <$line>\n";
