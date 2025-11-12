@@ -344,7 +344,12 @@ sub get_default_interpreters {
 sub compare_files {
     my ($reference, $actual) = @_;
 
-    my $comparator = Test::NumericFileComparator->new($reference);
+    my $comparator;
+    eval {$comparator = Test::NumericFileComparator->new($reference)};
+    if ($@) {
+        print "Error in parsing reference: $@";
+        return 0;
+    }
 
     # Compare file to reference data
     my @message = $comparator->compare($actual);
