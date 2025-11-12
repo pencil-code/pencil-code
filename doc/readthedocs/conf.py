@@ -49,6 +49,9 @@ autoapi_options =  [
     'imported-members',
     ]
 
+# keep intermediate files to allow incremental rebuilds
+autoapi_keep_files = True
+
 #for item in autopaths:
 #    sys.path.insert(0, os.path.abspath(f"{item}"))
 
