@@ -111,6 +111,15 @@ def copy_docstring(original):
     the users being shown outdated help text.
     
     Copied from https://softwareengineering.stackexchange.com/a/386758
+    
+    NOTE: since sphinx-autoapi (used to generated the readthedocs pages) does
+    not know about this decorator, it is best to manually add a minimal
+    docstring of the form
+    \"\"\"
+    Wrapper for :py:meth:`Averages.read`
+    \"\"\"
+    to the wrapper function; this will allow Sphinx to create a link to the
+    original function.
     """
     def wrapper(target):
         target.__doc__ = original.__doc__
