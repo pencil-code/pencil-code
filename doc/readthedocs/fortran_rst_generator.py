@@ -1001,7 +1001,7 @@ def plot_papers_per_year():
     ax.legend(loc='upper left')
 
     plt.tight_layout()
-    os.makedirs('_images')
+    os.makedirs('_images', exist_ok=True)
     plt.savefig('_images/papers_per_year.png', dpi=300)
 
     return np.sum(total), np.sum(wobr), np.sum(code), np.sum(unknown), byyear, bytopic, unknown_keys, code_keys
