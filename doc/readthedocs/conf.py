@@ -21,8 +21,12 @@ from fortran_rst_generator import create_fortran_modules_rst, process_all_pcpara
 
 # Import all git history
 #TODO: Kishore: this unexpectedly changes the state of the user's repository if they are trying to build locally. If shallow clones are causing problems in your CI, is it not better to configure your CI to always do a full clone?
-os.system("git pull --unshallow")
-print("Git history updated")
+# IR: This allows for git commit references in the ReadTheDocs files, which I find useful since they link to the corresponding github files directly and you can see the history of the file
+# IR: The changes in the state of the user's repository are probably due to uncommited/unstashed changes in the files. It should no happen if everything is up to date.
+# IR: This was necessary to show the git history of the files in ReadTheDocs, but since I changed from automodule to autopi the custom git extensions have not been updated, so this part is not working at the moment and I am commenting it for the time being.
+# IR: If this works again, you will probably have the same problem when building the documentation if your pencil directory is not up to date
+#os.system("git pull --unshallow")
+#print("Git history updated")
 
 # Path for custom-made extensions
 sys.path.insert(0, os.path.abspath("./_ext"))
