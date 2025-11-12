@@ -210,6 +210,9 @@ class Dim(object):
 
 @copy_docstring(Dim.read)
 def dim(*args, **kwargs):
+    """
+    Wrapper for :py:meth:`Dim.read`
+    """
     dim_tmp = Dim()
     dim_tmp.read(*args, **kwargs)
     return dim_tmp

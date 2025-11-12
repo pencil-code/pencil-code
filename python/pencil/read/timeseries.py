@@ -148,6 +148,9 @@ class TimeSeries(object):
 
 @copy_docstring(TimeSeries.read)
 def ts(*args, **kwargs):
+    """
+    Wrapper for :py:meth:`TimeSeries.read`
+    """
     ts_tmp = TimeSeries()
     ts_tmp.read(*args, **kwargs)
     return ts_tmp

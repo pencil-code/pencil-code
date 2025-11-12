@@ -160,5 +160,8 @@ class ParticleStalkData(object):
 
 @copy_docstring(ParticleStalkData.__init__)
 def pstalk(*args, **kwargs):
+    """
+    Wrapper for :py:class:`ParticleStalkData`
+    """
     var_tmp = ParticleStalkData(*args, **kwargs)
     return var_tmp

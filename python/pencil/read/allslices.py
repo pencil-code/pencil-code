@@ -478,6 +478,9 @@ class _Foo(object): pass
 
 @copy_docstring(SliceSeries.read)
 def slices(*args, **kwargs):
+    """
+    Wrapper for :py:meth:`SliceSeries.read`
+    """
     slices_tmp = SliceSeries()
     slices_tmp.read(*args, **kwargs)
     return slices_tmp

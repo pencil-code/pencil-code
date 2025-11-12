@@ -774,6 +774,9 @@ class Averages(object):
 
 @copy_docstring(Averages.read)
 def aver(*args, **kwargs):
+    """
+    Wrapper for :py:meth:`Averages.read`
+    """
     averages_tmp = Averages()
     averages_tmp.read(*args, **kwargs)
     return averages_tmp

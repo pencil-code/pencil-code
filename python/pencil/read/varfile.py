@@ -959,6 +959,9 @@ class _Persist():
 
 @copy_docstring(DataCube.read)
 def var(*args, **kwargs):
+    """
+    Wrapper for :py:meth:`DataCube.read`
+    """
     started = None
 
     for a in args:

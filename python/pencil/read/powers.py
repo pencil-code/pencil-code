@@ -441,6 +441,9 @@ class Power(object):
 
 @copy_docstring(Power.read)
 def power(*args, **kwargs):
+    """
+    Wrapper for :py:meth:`Power.read`
+    """
     power_tmp = Power()
     power_tmp.read(*args, **kwargs)
     return power_tmp

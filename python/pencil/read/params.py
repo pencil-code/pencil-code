@@ -424,6 +424,9 @@ class _Foo(object): pass
 
 @copy_docstring(Param.read)
 def param(*args, **kwargs):
+    """
+    Wrapper for :py:meth:`Param.read`
+    """
     param_tmp = Param()
     param_tmp.read(*args, **kwargs)
     return param_tmp

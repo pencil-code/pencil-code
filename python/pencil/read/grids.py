@@ -285,6 +285,9 @@ class Grid(object):
 
 @copy_docstring(Grid.read)
 def grid(*args, **kwargs):
+    """
+    Wrapper for :py:meth:`Grid.read`
+    """
     grid_tmp = Grid()
     grid_tmp.read(*args, **kwargs)
     return grid_tmp
