@@ -2282,7 +2282,7 @@ endif
 #  echo 'MODULE_[PRE|IN|SUF]FIX="'$MODULE_PREFIX'", "'$MODULE_INFIX'", "'$MODULE_SUFFIX'"'
 #endif
 
-setenv PC_MODULES_LIST `tac src/Makefile.local | grep -m 1 '^ *SPECIAL *=' | tr "[A-Z]" "[a-z]" | sed -e's/.*= *//' -e's/special\///g'` 
+setenv PC_MODULES_LIST `grep '^ *SPECIAL *=' src/Makefile.local | tail -n 1 | tr "[A-Z]" "[a-z]" | sed -e's/.*= *//' -e's/special\///g'` 
 
 # Determine data directory (defaults to `data')
 if (-r datadir.in) then
@@ -2330,7 +2330,7 @@ endif
 
 # Create subdirectories on local scratch disc (start.csh will also create
 # them under $datadir/)
-set HDF5=`tac src/Makefile.local | grep -m1 '^ *IO *=' | grep -Ec '^ *IO *= *io_hdf5'`
+set HDF5=`grep '^ *IO *=' src/Makefile.local | tail -n 1 | grep -Ec '^ *IO *= *io_hdf5'`
 if ($HDF5) then
   set procdirs = ()
   set subdirs = ("allprocs" "slices" "averages" "idl")
