@@ -1310,6 +1310,11 @@ sub call_sub_catch_output {
             $output .= $_;
         }
         close $comm || warn "child exited $?";
+
+        # If the parent does not close its copy of the write-end of the pipe,
+        # the pipe remains open even after all children have closed it.
+        close $write_retval_handle;
+
         while (<$read_retval_handle>) {
             chomp;
             last if $_ eq $end_marker;
