@@ -40,6 +40,15 @@ autoapi_ignore = [
 #for classes, also show the docstring of __init__
 autoapi_python_class_content = "both"
 
+#which objects to show documentation for
+autoapi_options =  [
+    'members',
+    'undoc-members',
+    'show-inheritance',
+    'show-module-summary',
+    'imported-members',
+    ]
+
 #for item in autopaths:
 #    sys.path.insert(0, os.path.abspath(f"{item}"))
 
