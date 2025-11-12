@@ -163,9 +163,9 @@
         specific_subroutine = trim(line)
         call safe_string_replace(specific_subroutine,trim(special_modules(1)),trim(special_modules(i)))
         call safe_string_replace(specific_subroutine,'calc_pencils_special',trim(special_subroutines(j)))
-!if (lroot) print*, 'specific_subroutine=',specific_subroutine
-
+        if (index(specific_subroutine,'___')==1) specific_subroutine=specific_subroutine(2:)    ! MR: a hack needed on MacOS
         sub_handle=dlsym_c(libhandle,trim(specific_subroutine)//char(0))
+!print*, 'sub_handle=', sub_handle
         if (sub_handle==0) &
           call fatal_error('initialize_mult_special','Error for symbol '// &
           trim(specific_subroutine)//' in module '//trim(special_modules(i))) 
