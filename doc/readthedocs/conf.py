@@ -37,6 +37,9 @@ autoapi_ignore = [
     "*/tutorials",
     ]
 
+#for classes, also show the docstring of __init__
+autoapi_python_class_content = "both"
+
 #for item in autopaths:
 #    sys.path.insert(0, os.path.abspath(f"{item}"))
 
