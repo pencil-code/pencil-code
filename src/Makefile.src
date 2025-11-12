@@ -193,16 +193,18 @@ ifeq ($(LDFLAGS),)
 else
   LDFLAGS += -ldl
 endif
-
+#
+# Default linker flags for shared libraries.
+#
 DLL_FFLAGS ?= -fPIC
 DLL_LDFLAGS ?= -shared
-
+#
 # useful shortcuts
+#
 define newline
 
 
 endef
-
 #
 # Overwrite settings that are local to each run directory.
 #
@@ -435,8 +437,9 @@ endif
 #
 UNAME_S := $(shell uname -s)
 #ifeq ($(UNAME_S),Darwin)
+#  This doesn't work for Sequioa 15.6.1, looks anyway very strange.
 #  ncpus := $(shell (grep '^[^!]*ncpus *= *[1-9]' cparam.local | sed \'\' -e's/.*ncpus *= *\([1-9][0-9]*\).*$$/\1/'))
-ncpus := $(shell (grep '^[^!]*ncpus *= *[1-9]' cparam.local | sed -e's/.*ncpus *= *\([1-9][0-9]*\).*$$/\1/'))
+  ncpus := $(shell (grep '^[^!]*ncpus *= *[1-9]' cparam.local | sed -e's/.*ncpus *= *\([1-9][0-9]*\).*$$/\1/'))
 #
 ifeq ($(MPICOMM),$(filter $(MPICOMM), mpicomm))
 #
@@ -500,7 +503,11 @@ ifneq ($(findstring gpu_astaroth, $(GPU)),)
 endif
 
 ifeq ($(USE_SPECIAL_DISPATCHER),yes)
-  LDFLAGS_MAIN += -dynamic -Wl,--export-dynamic
+  ifeq ($(UNAME_S),Darwin)
+    LDFLAGS_MAIN += -dynamic
+  else
+    LDFLAGS_MAIN += -dynamic -Wl,--export-dynamic
+  endif
   SPECIAL_DEPS += special.so
   SPECIAL = special
 endif
@@ -3128,14 +3135,11 @@ else
 endif
 
 ifeq ($(GPU),gpu_astaroth)
-
 special.so: $(CPARAM_OBJ) $(CDATA_OBJ) $(SPECIAL_OBJ) special_dummies.inc $(SPECIAL_MODULES:=.o)
 	$(LD) $(SPECIAL_MODULES:=.o) $(DLL_LDFLAGS) -o special.so
 else
-
 special.so: $(CPARAM_OBJ) $(CDATA_OBJ) $(SPECIAL_OBJ) special_dummies.inc $(SPECIAL_MODULES:=.o)
 	$(LD) $(SPECIAL_MODULES:=.o) $(DLL_LDFLAGS) -o special.so; pc_mkspecial.sh "$(SPECIAL_MODULES:=.f90)"
-
 endif
 #
 #  comment out the 3 lines ifneq, @, endif below if one gets an error message
