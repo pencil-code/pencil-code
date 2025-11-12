@@ -34,7 +34,7 @@ autoapi_root = "code/sourcePython"
 autoapi_ignore = [
     "*pencil_old",
     "*/tests",
-    "tutorials",
+    "*/tutorials",
     ]
 
 #for item in autopaths:
