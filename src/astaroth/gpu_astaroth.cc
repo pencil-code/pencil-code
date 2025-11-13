@@ -110,6 +110,7 @@ bool calculated_coeff_scales = false;
   #define sin1th   sin1th__mod__cdata
   #define cotth    cotth__mod__cdata
 
+  #define luse_trained_tau luse_trained_tau__mod__training
   #define lcpu_timestep_on_gpu   lcpu_timestep_on_gpu__mod__cdata
   #define lperi                  lperi__mod__cdata
   #define lxyz                   lxyz__mod__cdata
@@ -153,8 +154,6 @@ float MSE();
 extern "C" void copyFarray(AcReal* f);    // forward declaration
 extern "C" void loadFarray(); // forward declaration
 void denormalize(std::string filename, AcRealSymmetricTensor &tau_means, AcRealSymmetricTensor &tau_stds);
-AcRealSymmetricTensor tau_means{};
-AcRealSymmetricTensor tau_stds{};
 
 /***********************************************************************************************/
 AcReal cpu_pow(AcReal const val, AcReal exponent)
@@ -675,16 +674,16 @@ void setupConfig(AcMeshInfo& config)
   PCLoad(config,AC_len,lxyz);
 
   #if LTRAINING
-  //AcRealSymmetricTensor tau_means{};
-  //AcRealSymmetricTensor tau_stds{};
-  //Fill them up
+  AcRealSymmetricTensor tau_means{};
+  AcRealSymmetricTensor tau_stds{};
 	
-	denormalize("normalizer.bin", tau_means, tau_stds);
+  //The statistics for doing the inverse are only needed when using the trained tau
+  if(luse_trained_tau) denormalize("normalizer.bin", tau_means, tau_stds);
 
 	
 
-  //PCLoad(config,AC_tau_means,tau_means);
-  //PCLoad(config,AC_tau_stds,tau_stds);
+  PCLoad(config,AC_tau_means,tau_means);
+  PCLoad(config,AC_tau_stds,tau_stds);
   #endif
   PCLoad(config,AC_sparse_autotuning,lac_sparse_autotuning);
 
@@ -892,6 +891,7 @@ void denormalize(std::string filename, AcRealSymmetricTensor &tau_means, AcRealS
 		if (!f.is_open()){
 			fprintf(stderr, "Could not open stats file");
 			fflush(stderr);
+			exit(EXIT_FAILURE);
 		}
 
 		float acc_count;
@@ -993,8 +993,10 @@ void denormalize(std::string filename, AcRealSymmetricTensor &tau_means, AcRealS
 extern "C" void torch_infer_c_api(int itstub){	
 #if TRAINING
 	#include "user_constants.h"
-	if(itstub!=1) return;
+	if(!luse_trained_tau && itstub!=1) return;
 	if(!calling_infer){
+		AcRealSymmetricTensor tau_means = mesh.info[AC_tau_means];
+		AcRealSymmetricTensor tau_stds  = mesh.info[AC_tau_stds];
 		fprintf(stderr,"Calling infer\n");
 		fprintf(stderr,"means xx: %f, yy: %f, zz: %f, xy: %f, yz: %f, xz: %f\n", tau_means.xx, tau_means.yy, tau_means.zz, tau_means.xy, tau_means.yz, tau_means.xz);
 		fprintf(stderr,"stds xx: %f, yy: %f, zz: %f, xy: %f, yz: %f, xz: %f\n", tau_stds.xx, tau_stds.yy, tau_stds.zz, tau_stds.xy, tau_stds.yz, tau_stds.xz);
@@ -1853,7 +1855,10 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_)  /
   if (rank==0 && ldebug) printf("memusage after pointer assign= %f MBytes\n", acMemUsage()/1024.);
 #if AC_RUNTIME_COMPILATION
 #include "cmake_options.h"
-  generate_bcs();
+
+  //Not worth it to get this working inside the container
+  const bool inside_container = ltraining;
+  if(!inside_container) generate_bcs();
   MPI_Barrier(MPI_COMM_WORLD);
   acCompile(cmake_options,mesh.info);
   acLoadLibrary(rank == 0 ? stderr : NULL,mesh.info);
@@ -1920,6 +1925,7 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_)  /
   if (rank==0 && ldebug) printf("memusage after store synchronize stream= %f MBytes\n", acMemUsage()/1024.);
   acLogFromRootProc(rank, "DONE initializeGPU\n");
   fflush(stdout);
+
 
 
   constexpr AcReal unit = 1.0;

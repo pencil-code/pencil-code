@@ -3,6 +3,7 @@
 ! CPARAM logical, parameter :: ltraining = .true.
 !
 ! MAUX CONTRIBUTION 6
+! COMMUNICATED AUXILIARIES 6
 !
 !***************************************************************
 !
@@ -143,7 +144,7 @@
       if (lroot) call svn_id( &
            "$Id$")
 !
-      call farray_register_auxiliary('tau',itau,vector=6,on_gpu=lgpu)
+      call farray_register_auxiliary('tau',itau,vector=6,on_gpu=lgpu,communicated=.true.)
 !
 !  Indices to access tau.
 !
