@@ -58,7 +58,7 @@ for var in [
 def test_script_pcautotest(path):
     rundir = get_rundir(path)
     res = subprocess.run(
-        f"pc_auto-test --auto-clean --script-tests=python '{rundir}'",
+        f"pc_auto-test --no-lock --auto-clean --script-tests=python '{rundir}'",
         env=env,
         shell=True,
         universal_newlines=True,
