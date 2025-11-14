@@ -1090,7 +1090,7 @@ module HDF5_IO
           read(lun_input, *, iostat=ioerr) tmp
         endif
       enddo
-      if (time == t) num_rec = num_rec - 1
+      if (time >= t) num_rec = num_rec - 1
 !
       if ((time >= t) .and. (ioerr == 0)) then
         ! trim excess data at the end of the average file
