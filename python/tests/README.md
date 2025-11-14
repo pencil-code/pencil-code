@@ -39,6 +39,8 @@ this directory and run
 ```sh
 tox
 ```
+While you will have to install the Python executables by yourself, the required
+Python packages (`scipy`, `numpy`,...) will be automatically installed by `tox`.
 
 # Adding tests
 
