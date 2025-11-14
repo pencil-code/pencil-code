@@ -20,11 +20,21 @@ sys.path.append(os.getcwd())
 from fortran_rst_generator import create_fortran_modules_rst, process_all_pcparam, process_bin_files, process_papers
 
 # Import all git history
-#TODO: Kishore: this unexpectedly changes the state of the user's repository if they are trying to build locally. If shallow clones are causing problems in your CI, is it not better to configure your CI to always do a full clone?
+# Kishore: this unexpectedly changes the state of the user's repository if they are trying to build locally. If shallow clones are causing problems in your CI, is it not better to configure your CI to always do a full clone?
 # IR: This allows for git commit references in the ReadTheDocs files, which I find useful since they link to the corresponding github files directly and you can see the history of the file
 # IR: The changes in the state of the user's repository are probably due to uncommited/unstashed changes in the files. It should no happen if everything is up to date.
 # IR: This was necessary to show the git history of the files in ReadTheDocs, but since I changed from automodule to autopi the custom git extensions have not been updated, so this part is not working at the moment and I am commenting it for the time being.
 # IR: If this works again, you will probably have the same problem when building the documentation if your pencil directory is not up to date
+# Kishore: thanks. Nevertheless, I think this will cause problems while
+# Kishore: building on branches with no upstream configured (e.g. I never do my
+# Kishore: development on master). Moreover, I may intentionally want to build
+# Kishore: older versions of the docs locally to debug issues.
+# Kishore: If readthedocs is doing a shallow clone for the build and that is
+# Kishore: causing problems, you should change that in the configuration of
+# Kishore: readthedocs itself, rather than an unconditional
+# Kishore: `git pull --unshallow` here. In particular, you should use the
+# Kishore: `post_checkout` hook described at
+# Kishore: <https://docs.readthedocs.com/platform/latest/build-customization.html>
 #os.system("git pull --unshallow")
 #print("Git history updated")
 
