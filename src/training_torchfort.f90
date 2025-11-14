@@ -382,7 +382,7 @@
       real, dimension(nx,3) :: divrey
 
       if (luse_trained_tau) then 
-        call div(f,itauxx,divrey(:,1))
+        call div(f,0,divrey(:,1),inds=(/itauxx,itauxy,itauxz/))
         call div(f,0,divrey(:,2),inds=(/itauxy,itauyy,itauyz/))
         call div(f,0,divrey(:,3),inds=(/itauxz,itauyz,itauzz/))
 
