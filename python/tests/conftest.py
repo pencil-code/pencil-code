@@ -5,7 +5,10 @@ import shutil
 import tempfile
 
 import pencil as pc
-from test_utils import get_rundir
+from test_utils import (
+    get_rundir,
+    _require_sample_markers,
+    )
 
 pencil_home = pathlib.Path(__file__).parent.parent.parent
 os.environ["PENCIL_HOME"] = str(pencil_home)

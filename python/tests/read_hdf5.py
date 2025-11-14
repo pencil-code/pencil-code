@@ -3,6 +3,8 @@ import os
 import pencil as pc
 import pytest
 
+from test_utils import require_sample
+
 datadir_novar = os.path.realpath(
     os.path.join(
         __file__, os.path.pardir, os.path.pardir, os.path.pardir, "tests", "input", "hdf5-novar"
@@ -60,7 +62,7 @@ def test_read_grid_nogrid():
     assert grid.y[10] == -1.8541666
     assert grid.dz_tilde[30] == 0
 
-@pytest.mark.integration
+@require_sample("samples/helical-MHDturb_HDF5")
 def test_read_var(datadir_helical_MHDTurb_HDF5):
     var = pc.read.var(
         datadir=datadir_helical_MHDTurb_HDF5,
@@ -77,7 +79,7 @@ def test_read_var(datadir_helical_MHDTurb_HDF5):
     assert np.isclose(var.uz[5,10,27], -0.02635602018447831)
     assert np.isclose(var.persist.forcing_tsforce, 0.3999999999999999)
 
-@pytest.mark.integration
+@require_sample("samples/helical-MHDturb_HDF5")
 def test_read_var_selective(datadir_helical_MHDTurb_HDF5):
     var = pc.read.var(
         datadir=datadir_helical_MHDTurb_HDF5,
@@ -98,7 +100,7 @@ def test_read_var_selective(datadir_helical_MHDTurb_HDF5):
     assert not hasattr(var, 'ux')
     assert var.f.shape[0] == 2
 
-@pytest.mark.integration
+@require_sample("samples/helical-MHDturb_HDF5")
 def test_read_var_irangex(datadir_helical_MHDTurb_HDF5):
     var = pc.read.var(datadir=datadir_helical_MHDTurb_HDF5, trimall=False, irange_x=[15,30])
 
@@ -107,7 +109,7 @@ def test_read_var_irangex(datadir_helical_MHDTurb_HDF5):
     assert len(var.z) == 38
     assert np.isclose(var.uz[8,13,18], -0.02635602018447831)
 
-@pytest.mark.integration
+@require_sample("samples/helical-MHDturb_HDF5")
 def test_read_var_irangex_trim(datadir_helical_MHDTurb_HDF5):
     var = pc.read.var(datadir=datadir_helical_MHDTurb_HDF5, trimall=True, irange_x=[15,30])
 
@@ -116,7 +118,7 @@ def test_read_var_irangex_trim(datadir_helical_MHDTurb_HDF5):
     assert len(var.z) == 32
     assert np.isclose(var.uz[5,10,15], -0.02635602018447831)
 
-@pytest.mark.integration
+@require_sample("samples/helical-MHDturb_HDF5")
 def test_read_var_rangex_trim(datadir_helical_MHDTurb_HDF5):
     var = pc.read.var(datadir=datadir_helical_MHDTurb_HDF5, trimall=True, range_x=[-0.69,2.26])
 
@@ -125,7 +127,7 @@ def test_read_var_rangex_trim(datadir_helical_MHDTurb_HDF5):
     assert len(var.z) == 32
     assert np.isclose(var.uz[5,10,15], -0.02635602018447831)
 
-@pytest.mark.integration
+@require_sample("samples/helical-MHDturb_HDF5")
 def test_read_var_irangexslice(datadir_helical_MHDTurb_HDF5):
     var = pc.read.var(datadir=datadir_helical_MHDTurb_HDF5, trimall=False, irange_x=slice(15,30))
 

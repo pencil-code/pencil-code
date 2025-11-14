@@ -26,10 +26,11 @@ from test_utils import (
     read_and_check_type,
     standalone_test,
     cmp_extracted,
+    require_sample,
 )
 
 
-@pytest.mark.integration
+@require_sample("samples/conv-slab-noequi")
 def test_read_var(datadir_conv_slab_noequi) -> None:
     """Read var.dat (data cube) file."""
     var = pc.read.var(trimall=True, datadir=datadir_conv_slab_noequi)
@@ -70,7 +71,7 @@ def test_get_help_standalone() -> None:
     )
 
 
-@pytest.mark.integration
+@require_sample("samples/conv-slab-noequi")
 def test_read_ts_standalone(datadir_conv_slab_noequi) -> None:
     """Read time series in a separate Python process."""
     read_and_check_type(
@@ -86,7 +87,7 @@ def test_read_ts_standalone(datadir_conv_slab_noequi) -> None:
     )
 
 
-@pytest.mark.integration
+@require_sample("samples/conv-slab-noequi")
 def test_read_var_standalone(datadir_conv_slab_noequi) -> None:
     """Read data cube in a separate Python process."""
     read_and_check_type(
@@ -101,7 +102,7 @@ def test_read_var_standalone(datadir_conv_slab_noequi) -> None:
     )
 
 
-@pytest.mark.integration
+@require_sample("samples/conv-slab")
 def test_read_slices_standalone(datadir_conv_slab) -> None:
     """Read slices in a separate Python process."""
     read_and_check_type(

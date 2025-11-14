@@ -15,6 +15,7 @@ from test_utils import (
     _assert_close,
     _assert_equal_tuple,
     cmp_extracted,
+    require_sample,
 )
 
 import pencil as pc
@@ -167,7 +168,7 @@ def test_read_power() -> None:
             "power.{}: expected {}, got {}".format(key, expect, actual),
         )
 
-@pytest.mark.integration
+@require_sample("samples/helical-MHDturb")
 def test_read_var_2(datadir_helical_MHDTurb):
     var = pc.read.var(
         datadir=datadir_helical_MHDTurb,
@@ -186,7 +187,7 @@ def test_read_var_2(datadir_helical_MHDTurb):
 
     assert np.isclose(var.persist.forcing_tsforce, 0.3999999999999999)
 
-@pytest.mark.integration
+@require_sample("samples/helical-MHDturb")
 def test_read_var_2_trim(datadir_helical_MHDTurb):
     var = pc.read.var(datadir=datadir_helical_MHDTurb, trimall=True, lpersist=True)
 
@@ -200,7 +201,7 @@ def test_read_var_2_trim(datadir_helical_MHDTurb):
 
     assert np.isclose(var.persist.forcing_tsforce, 0.3999999999999999)
 
-@pytest.mark.integration
+@require_sample("samples/conv-slab_cp_2")
 def test_read_var_3_local(datadir_conv_slab_cp_2):
     kwargs = {
         'datadir': datadir_conv_slab_cp_2,

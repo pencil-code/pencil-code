@@ -9,6 +9,8 @@ import re
 import subprocess
 from typing import Any, Callable, List, Tuple
 import os
+import pytest
+from decorator import decorate
 
 from proboscis_dummy import (
     TestProgram,
@@ -145,3 +147,21 @@ def get_rundir(path):
     if not os.path.isdir(run_dir):
         raise Exception("Run directory {} does not exist".format(run_dir))
     return run_dir
+
+def _require_sample_markers(sample):
+    return [
+        pytest.mark.xdist_group(f"requires_datadir_{sample}"),
+        pytest.mark.integration,
+        ]
+
+def require_sample(sample):
+    def decorator(func):
+        def wrapper(func, *args, **kwargs):
+            return func(*args, **kwargs)
+        func = decorate(func, wrapper)
+
+        for d in _require_sample_markers(sample):
+            func = d(func)
+
+        return func
+    return decorator

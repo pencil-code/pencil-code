@@ -16,7 +16,12 @@ from pencil.io import (
     write_snapshot,
     )
 from pencil import read
-from test_utils import make_test, assert_equal, get_rundir
+from test_utils import (
+    make_test,
+    assert_equal,
+    get_rundir,
+    require_sample,
+    )
 
 
 def test_get_value_from_file() -> None:
@@ -38,7 +43,7 @@ def test_get_value_from_file() -> None:
     assert_equal(get_r("gravz_profile"), "const")
     assert_equal(get_r("lupw_lnrho"), True)
 
-@pytest.mark.integration
+@require_sample("samples/helical-MHDturb")
 def test_write_snapshot(datadir_helical_MHDTurb, temp_datadir):
     src_datadir = datadir_helical_MHDTurb
     dest_datadir = shutil.copytree(src_datadir, temp_datadir/"data")
@@ -69,7 +74,7 @@ def test_write_snapshot(datadir_helical_MHDTurb, temp_datadir):
     dest_var = read.var(datadir=dest_datadir, trimall=True)
     assert np.all(src_var.f == dest_var.f)
 
-@pytest.mark.integration
+@require_sample("samples/helical-MHDturb_HDF5")
 def test_write_h5_snapshot(datadir_helical_MHDTurb_HDF5, temp_datadir):
     src_datadir = datadir_helical_MHDTurb_HDF5
     dest_datadir = shutil.copytree(src_datadir, temp_datadir/"data")
