@@ -1,33 +1,57 @@
 $PENCIL_HOME/python/tests
 =========================
 
-# Introduction
+# Requirements
 
-Test Pencil Code Python modules, so we can feel better when refactoring the Python code.
+These tests depend on the [_Pytest_](https://pytest.org/) Python package.
+
+# Running
+
+## Minimal tests
 
 ```sh
 $PENCIL_HOME/python/tests/test-python-modules.py
 ```
 
-These tests depend on the [_Pytest_](https://pytest.org/) Python package.
+## Full tests
 
-# Adding tests
+While the above scipt only runs a minimal set of tests, the full set of tests
+(including the script tests which are run by `pc_auto-test` can be run after
+changing into this directory by simply calling
+```sh
+pytest
+```
+This requires `sourceme.sh` to have been sourced in the current shell.
 
-Pytest will search for tests in the files given in the `python_files` key of `pytest.ini`.
-Any function in these files whose name starts with `test` is treated as a test.
+## Parallelization
 
-# Testing with multiple Python versions
+To run tests in parallel, install the `pytest-xdist` plugin, change into this
+directory, and run
+```sh
+pytest -n 4 --dist loadgroup
+```
+where 4 is the number of tests to run at a time.
 
-A configuration file for [_Tox_](https://tox.wiki/) is provided. Change into this directory and run
+## Testing with multiple Python versions
 
+A configuration file for [_Tox_](https://tox.wiki/) is provided. Change into
+this directory and run
 ```sh
 tox
 ```
+
+# Adding tests
+
+Pytest will search for tests in the files given in the `python_files` key of
+`pytest.ini`. Any function in these files whose name starts with `test` is
+treated as a test.
 
 # Historical notes
 
 ## Why not Proboscis?
 
-As of 2024, [_Proboscis_](https://pythonhosted.org/proboscis/) has been unmaintained for over a decade, and is being dropped from even the most conservative Linux distros[^1].
+As of 2024, [_Proboscis_](https://pythonhosted.org/proboscis/) has been
+unmaintained for over a decade, and is being dropped from even the most
+conservative Linux distros[^1].
 
 - [^1] <https://tracker.debian.org/news/1575216/removed-1260-8-from-unstable/>
