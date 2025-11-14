@@ -46,7 +46,11 @@ def test_get_value_from_file() -> None:
 @require_sample("samples/helical-MHDturb")
 def test_write_snapshot(datadir_helical_MHDTurb, temp_datadir):
     src_datadir = datadir_helical_MHDTurb
-    dest_datadir = shutil.copytree(src_datadir, temp_datadir/"data")
+    dest_datadir = shutil.copytree(
+        src_datadir,
+        temp_datadir/"data",
+        symlinks=True,
+        )
 
     for f in dest_datadir.glob("proc*/var.dat"):
         f.unlink()
@@ -77,7 +81,11 @@ def test_write_snapshot(datadir_helical_MHDTurb, temp_datadir):
 @require_sample("samples/helical-MHDturb_HDF5")
 def test_write_h5_snapshot(datadir_helical_MHDTurb_HDF5, temp_datadir):
     src_datadir = datadir_helical_MHDTurb_HDF5
-    dest_datadir = shutil.copytree(src_datadir, temp_datadir/"data")
+    dest_datadir = shutil.copytree(
+        src_datadir,
+        temp_datadir/"data",
+        symlinks=True,
+        )
 
     dest_varfile = dest_datadir/"allprocs/var.h5"
     dest_varfile.unlink()
