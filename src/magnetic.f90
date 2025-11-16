@@ -189,6 +189,7 @@ module Magnetic
   integer, target :: va2power_jxb = 5
   integer :: nbvec, nbvecmax=nx*ny*nz/4, iua=0, iLam=0, idiva=0
   integer :: N_modes_aa=1, naareset
+  integer :: ibij=0
   logical, pointer :: lrelativistic_eos, lconservative, lrho_chi
   logical :: lpress_equil=.false., lpress_equil_via_ss=.false.
   logical :: lpress_equil_alt=.false., lset_AxAy_zero=.false.
@@ -242,7 +243,7 @@ module Magnetic
   logical :: lee_as_aux=.false., ladd_disp_current_from_aux=.false.
   logical :: lbb_as_aux=.false., ljj_as_aux=.false., ljxb_as_aux=.false.
   logical :: luxb_as_aux=.false., lugb_as_aux=.false., lbgu_as_aux=.false.
-  logical :: lbdivu_as_aux=.false.
+  logical :: lbdivu_as_aux=.false., lbij_as_aux=.false.
   logical :: lbbt_as_aux=.false., ljjt_as_aux=.false., lua_as_aux=.false.
   logical :: lbeta_as_aux=.false.
   logical :: letasmag_as_aux=.false.,ljj_as_comaux=.false.
@@ -279,7 +280,7 @@ module Magnetic
       lcheck_positive_va2, lskip_projection_aa, &
       ladd_disp_current_from_aux, compk_aa, &
       lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, lee_as_aux, &
-      ljxb_as_aux, ljj_as_aux, lbext_curvilinear, lbbt_as_aux, ljjt_as_aux, &
+      ljxb_as_aux, ljj_as_aux, lbij_as_aux, lbext_curvilinear, lbbt_as_aux, ljjt_as_aux, &
       luxb_as_aux, lugb_as_aux, lbgu_as_aux, lbeta_as_aux, lbdivu_as_aux, &
       lua_as_aux, lneutralion_heat, center1_x, center1_y, center1_z, &
       fluxtube_border_width, va2max_jxb, va2max_boris, cmin,va2power_jxb, eta_jump, &
@@ -416,7 +417,7 @@ module Magnetic
       eta_spitzer, borderaa, ljj_as_comaux, lsmooth_jj, &
       eta_aniso_hyper3, lelectron_inertia, inertial_length, &
       lbext_curvilinear, lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, ljj_as_aux, &
-      luxb_as_aux, lugb_as_aux, lbgu_as_aux, lbdivu_as_aux, &
+      lbij_as_aux, luxb_as_aux, lugb_as_aux, lbgu_as_aux, lbdivu_as_aux, &
       lkinematic, lbbt_as_aux, ljjt_as_aux, lua_as_aux, ljxb_as_aux, &
       lneutralion_heat, lreset_aa, daareset, eta_shock2, &
       lignore_Bext_in_b2, luse_Bext_in_b2, ampl_fcont_aa, &
@@ -1232,6 +1233,8 @@ module Magnetic
         call register_report_aux('bb', ibb, ibx, iby, ibz, communicated=lbb_as_comaux)
       if (ljj_as_aux .or. ljj_as_comaux) &
         call register_report_aux('jj', ijj, ijx, ijy, ijz, communicated=ljj_as_comaux)
+      if (lbij_as_aux) &
+        call farray_register_auxiliary('bij', ibij, vector=9)
 !
       if (lbbt_as_aux) then
         call register_report_aux('bbt',ibbt,ibxt,ibyt,ibzt)

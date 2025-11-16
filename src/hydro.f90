@@ -131,12 +131,12 @@ module Hydro
   real, dimension(nx) :: profile_SH=0.
 !
   real, dimension (5) :: om_rings=0.
-  integer :: N_modes_uu=0
+  integer :: N_modes_uu=0, iuij=0
   logical :: llinearized_hydro=.false.
   logical :: ladvection_velocity=.true.
   logical :: lprecession=.false.
   logical :: lshear_rateofstrain=.false.
-  logical :: loo_as_aux = .false., llorentz_as_aux = .false.
+  logical :: loo_as_aux=.false., luij_as_aux=.false., llorentz_as_aux=.false.
   logical :: luut_as_aux=.false., luust_as_aux=.false.
   logical :: loot_as_aux=.false., loost_as_aux=.false.
   logical :: luuk_as_aux=.false., look_as_aux=.false.
@@ -189,7 +189,7 @@ module Hydro
       N_modes_uu, lcoriolis_force, lcentrifugal_force, ladvection_velocity, &
       lprecession, omega_precession, alpha_precession, velocity_ceiling, &
       loo_as_aux, luut_as_aux, luust_as_aux, loot_as_aux, loost_as_aux, &
-      llorentz_as_aux, luuk_as_aux, look_as_aux, &
+      luij_as_aux, llorentz_as_aux, luuk_as_aux, look_as_aux, &
       mu_omega, nb_rings, om_rings, gap, lscale_tobox, lrandom_ampl_uu, &
       ampl_Omega, omega_ini, r_cyl, skin_depth, incl_alpha, &
       rot_rr, xsphere, ysphere, zsphere, neddy, amp_meri_circ, &
@@ -287,7 +287,7 @@ module Hydro
       lcalc_ruumeanz, lcalc_ruumeanxy, &
       lforcing_cont_uu, width_ff_uu, x1_ff_uu, x2_ff_uu, &
       loo_as_aux, luut_as_aux, luust_as_aux, loot_as_aux, loost_as_aux, &
-      llorentz_as_aux, loutest, ldiffrot_test, &
+      luij_as_aux, llorentz_as_aux, loutest, ldiffrot_test, &
       interior_bc_hydro_profile, lhydro_bc_interior, z1_interior_bc_hydro, &
       velocity_ceiling, ampl_Omega, lcoriolis_xdep, &
       ekman_friction, friction_tdep, friction_tdep_toffset, friction_tdep_tau0, &
@@ -981,6 +981,11 @@ module Hydro
 !
       !if (loo_as_aux) call register_report_aux('oo', ioo, iox, ioy, ioz, communicated=.true.)
       if (loo_as_aux) call register_report_aux('oo', ioo, iox, ioy, ioz)
+!
+!  uij as aux
+!
+      !if (luij_as_aux) call register_report_aux('uij', iuij, vector=9)
+      if (luij_as_aux) call farray_register_auxiliary('uij', iuij, vector=9)
 !!
 !!  Fourier transformed uu as aux
 !!
