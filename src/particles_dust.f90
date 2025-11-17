@@ -193,12 +193,14 @@ module Particles
   real :: nucleation_threshold
   logical :: ascalar_ngp=.false., ascalar_cic=.false.
   real :: diffusion_coefficient=0.0
+  real :: rpinit_int=-impossible, rpinit_ext=-impossible
 !
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
       ldragforce_gas_par, ldragforce_dust_par, bcpx, bcpy, bcpz, tausp, &
       beta_dPdr_dust, np_swarm, mp_swarm, mpmat, rhop_swarm, eps_dtog, &
-      nu_epicycle, rp_int, rp_ext, rp_ext_width, gravx_profile, gravz_profile, &
+      nu_epicycle, rp_int, rp_ext, rpinit_int, rpinit_ext, &
+      rp_ext_width, gravx_profile, gravz_profile, &
       gravr_profile, gravx, gravz, gravr, gravsmooth, kx_gg, kz_gg, Ri0, &
       eps1, lmigration_redo, ldragforce_equi_global_eps, coeff, kx_vvp, &
       ky_vvp, kz_vvp, amplvvp, kx_xxp, ky_xxp, kz_xxp, amplxxp, kx_vpx, &
@@ -1408,6 +1410,9 @@ module Particles
               call fatal_error("init_particles","unsupported coordinate system")
             endif
 !
+! WL: This if Cartesian loop is probably not needed anymore -- the nprocx==1 construction
+! is pre-parallelization in x, which is ancient at this point. 
+!
             if (lcartesian_coords) then
               if (nprocx==1) then
                 rpar_int=rp_int
@@ -1417,8 +1422,21 @@ module Particles
                                      "random-cyl for nprocx/=1 in Cartesian. Parallelize in y or z")
               endif
             else
-              rpar_int = xyz0_loc(1)
-              rpar_ext = xyz1_loc(1)
+!
+! Allow for initializing the particles at a different range (rpinit_[int/ext]) than
+! the migration/removal range (rp_[int/ext])
+!               
+              if (rpinit_int==-impossible) then
+                !default values
+                rpar_int = xyz0_loc(1)              
+              else
+                rpar_int = rpinit_int
+              endif
+              if (rpinit_ext==-impossible) then
+                rpar_ext = xyz1_loc(1)
+              else
+                rpar_ext = rpinit_ext                 
+              endif
             endif
             call random_number_wrapper(rad_scl)
             rad_scl = rpar_int**tmp + rad_scl*(rpar_ext**tmp-rpar_int**tmp)
