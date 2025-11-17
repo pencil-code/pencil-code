@@ -2641,6 +2641,16 @@ k_loop:   do while (.not. (k>npar_loc))
 !
     endsubroutine calc_draglaw_parameters
 !***********************************************************************
+    subroutine particles_diffusion(fp)
+!
+!  17-nov-25/wlyra: dummy
+!
+      real, dimension(mpar_loc,mparray), intent(inout) :: fp
+!
+      call keep_compiler_quiet(fp)
+!
+    endsubroutine particles_diffusion
+!***********************************************************************
     subroutine read_particles_init_pars(iostat)
 !
       use File_io, only: parallel_unit

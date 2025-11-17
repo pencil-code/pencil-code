@@ -291,6 +291,16 @@ module Particles
 !
     endsubroutine insert_nucleii
 !***********************************************************************
+    subroutine particles_diffusion(fp)
+!
+!  17-nov-25/wlyra: dummy
+!
+      real, dimension(mpar_loc,mparray), intent(inout) :: fp
+!
+      call keep_compiler_quiet(fp)
+!
+    endsubroutine particles_diffusion
+!***********************************************************************
     subroutine rprint_particles(lreset,lwrite)
 !
       logical, optional :: lwrite

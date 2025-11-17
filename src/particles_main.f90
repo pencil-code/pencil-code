@@ -537,6 +537,8 @@ module Particles_main
 !
       call particles_discrete_collisions
 !
+      call particles_diffusion(fp)
+!
 !  Adapt the number of particles in each grid cell to a desired number
 !
       if (lparticles_adaptation .and. llast) then

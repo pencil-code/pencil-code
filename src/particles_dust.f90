@@ -192,6 +192,7 @@ module Particles
   real, target :: G_condensation=0.0
   real :: nucleation_threshold
   logical :: ascalar_ngp=.false., ascalar_cic=.false.
+  real :: diffusion_coefficient=0.0
 !
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
@@ -298,7 +299,7 @@ module Particles
       lcondensation_rate, vapor_mixing_ratio_qvs, lfollow_gas, &
       ltauascalar, rhoa, G_condensation, lpartnucleation, nucleation_threshold, &
       redfrac, lset_df_insert_nucleii, it_insert_nuclei, nucl_thr_inc_pow, &
-      Ntau
+      Ntau,diffusion_coefficient
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0      ! DIAG_DOC: $x_{part}$
   integer :: idiag_xpmin=0, idiag_ypmin=0, idiag_zpmin=0      ! DIAG_DOC: $x_{part}$
@@ -6922,6 +6923,45 @@ endif
       enddo
 !
     endsubroutine calc_thermophoretic_force
+!***********************************************************************
+    subroutine particles_diffusion(fp)
+!
+!  Add a random walk drift due to turbulence
+!
+!  14-nov-25/wlyra: coded
+!
+      use General, only: random_number_wrapper
+
+      real, dimension(mpar_loc,mparray), intent(inout) :: fp
+!
+      real :: diffusion_displacement
+      real :: Rx,Ry,Rz
+      integer :: k
+!
+      if (diffusion_coefficient/=0.0) then
+!         
+        diffusion_displacement = sqrt(diffusion_coefficient*dt_beta_ts(itsub))
+!
+        do k=1,npar_loc
+          if (nxgrid/=1) then
+            call random_number_wrapper(Rx)
+            fp(k,ixp) = fp(k,ixp) + (2*Rx-1)*diffusion_displacement
+          endif
+!
+          if (nygrid/=1) then
+            call random_number_wrapper(Ry)
+            fp(k,iyp) = fp(k,iyp) + (2*Ry-1)*diffusion_displacement
+          endif
+!
+          if (nzgrid/=1) then
+            call random_number_wrapper(Rz)
+            fp(k,izp) = fp(k,izp) + (2*Rz-1)*diffusion_displacement
+          endif
+        enddo
+!
+      endif
+!      
+    endsubroutine particles_diffusion
 !***********************************************************************
     subroutine read_particles_init_pars(iostat)
 !
