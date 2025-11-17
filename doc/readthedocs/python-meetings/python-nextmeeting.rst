@@ -4,18 +4,29 @@
 Next Meeting
 =============
 
-**Tentative date:** TBD
-
-Please fill up your prefered dates `here <https://www.when2meet.com/?33402888-Q69GB>`__ before November 14, 2025. 
-
-If the dates and hours do not work for you, please add your constraints here.
+**Date:** Nov 26, 2025, from 14:30 to 16:00 CET.
 
 
 **Proposed agenda:**
 
 - Summary of previous meetings
 
-- Meeting format
+- Meeting format:
+
+   * Frequency
+
+   * Duration 
+
+   * Other
+
+- Any comments about :ref:`python-decisions`?
+
+- Deprecate usage of non standard python modules like ``eqtools`` and try to use ``numpy`` instead when possible.
+- Changing behaviour of ``.keys()`` methods (of ``Averages``, ``Timeseries`` etc.). Currently it just prints the keys, but it would be more useful to return a list
+- Decide on a convention for extra debug output (controlled by the ``quiet`` keyword in functions like ``pc.read.var`` and ``pc.read.grid``). Currently, whether it defaults to ``False`` or ``True`` varies from function to function, which is confusing and annoying. Ideally we would control such output by a module-wide flag (such that something like ``pc.shut_up = True`` at the beginning of a script would have the effect of setting ``quiet=True`` in all the ``pc`` functions).
+- Changing the behaviour of ``pc.read.aver`` for ``yaver`` and ``zaver``; see <https://groups.google.com/g/pencil-code-python/c/a6eu61yOMuk>
+- Changing the behaviour of ``pc.io.get_value_from_file``. Currently, whether it has been successful of not is indicated by a boolean return value (as if it is a C program). I think it makes more sense to explicitly raise an error message. I presume most users would want to know that the function is failing, rather than dealing with crytic errors later on.
+
 
 
 To propose topics or dates, please edit this file.
@@ -27,12 +38,7 @@ Discussion Topics
 
 Ongoing or pending topics for future meetings.
 
-- Deprecate usage of non standard python modules like ``eqtools`` and try to use ``numpy`` instead when possible.
-- Changing behaviour of ``.keys()`` methods (of ``Averages``, ``Timeseries`` etc.). Currently it just prints the keys, but it would be more useful to return a list
-- Decide on a convention for extra debug output (controlled by the ``quiet`` keyword in functions like ``pc.read.var`` and ``pc.read.grid``). Currently, whether it defaults to ``False`` or ``True`` varies from function to function, which is confusing and annoying. Ideally we would control such output by a module-wide flag (such that something like ``pc.shut_up = True`` at the beginning of a script would have the effect of setting ``quiet=True`` in all the ``pc`` functions).
-- Changing the behaviour of ``pc.read.aver`` for ``yaver`` and ``zaver``; see <https://groups.google.com/g/pencil-code-python/c/a6eu61yOMuk>
-- Changing the behaviour of ``pc.io.get_value_from_file``. Currently, whether it has been successful of not is indicated by a boolean return value (as if it is a C program). I think it makes more sense to explicitly raise an error message. I presume most users would want to know that the function is failing, rather than dealing with crytic errors later on.
-
+- All items in the :ref:`python-nextmeeting` section.
 
 Feel free to add more — this section is a living to-do list.
 If an item you want to discuss is already in the list, please add a ``+1`` to give the item priority according to the number of people interested.
