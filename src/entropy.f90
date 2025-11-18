@@ -1022,7 +1022,13 @@ module Energy
           if (cool/=0.) cs2cool=cs0**2
           mpoly=mpoly0  ! needed to compute Fbot when bc=c1 (L383)
 !
-      endselect
+        case ('isothermal')
+          ! this should be general
+          if (T0==0) then
+            call get_gamma_etc(gamma); gamma_m1=gamma-1.
+            T0=cs20/gamma_m1
+          endif
+       endselect
 !
 !  Turn off pressure gradient term and advection for 0-D runs.
 !
