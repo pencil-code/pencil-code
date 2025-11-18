@@ -703,7 +703,7 @@ outer:do ikz=1,nz
        do ikz=1,nz
        do iky=1,ny
        do ikx=1,nx
-         k=nint(sqrt(kx(ikx)**2+kz(ikz+ipz*nz)**2))
+         k=nint(sqrt(get_k2_old(ikx,0,ikz+ipz*nz)))
          if (k>=0 .and. k<=(nk-1)) spectrum(k+1)=spectrum(k+1)+a_re(ikx,iky,ikz)**2+a_im(ikx,iky,ikz)**2
 !         if (iky==16 .and. ikx==16) &
 !         print*, 'power_2d:', ikx,iky,ikz,k,nk,a_re(ikx,iky,ikz),a_im(ikx,iky,ikz),spectrum(k+1)
@@ -734,9 +734,6 @@ outer:do ikz=1,nz
 !
     if (lroot .AND. ip<10) call svn_id( &
          "$Id$")
-!
-! KG: See the function get_k2 for an example of how to calculate k2.
-!
     spectrum=0.
 !
 !  In fft, real and imaginary parts are handled separately.
@@ -1332,8 +1329,6 @@ outer:do ikz=1,nz
 !
     if (lroot .AND. ip<10) call svn_id("$Id$")
 !
-! KG: added warning about wrong computation of wavenumbers.
-! KG: See the function get_k2 for an example of how to calculate k2.
     if (headt .and. (minval(Lxyz) /= maxval(Lxyz))) &
       call warning("powerhel", "computation of wavevector wrong for non-cubical domains")
 !
@@ -1781,7 +1776,7 @@ outer:do ikz=1,nz
       do ikz=1,nz
         do iky=1,ny
           do ikx=1,nx
-            k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+            k2=get_k2_old(ikx+ipx*nx,iky+ipy*ny,ikz+ipz*nz)
             k=nint(sqrt(k2))
             if (k>=0 .and. k<=(nk-1)) then
 !
@@ -1816,7 +1811,8 @@ outer:do ikz=1,nz
         do ikz=1,nz
           do iky=1,ny
             do ikx=1,nx
-              k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2
+
+              k2=get_k2_old(ikx+ipx*nx,iky+ipy*ny,0)
               jkz=nint(kz(ikz+ipz*nz))+nzgrid/2+1
               k=nint(sqrt(k2))
               if (k>=0 .and. k<=(nk-1)) then
@@ -2003,8 +1999,6 @@ outer:do ikz=1,nz
     if (lroot .AND. ip<10) call svn_id( &
          "$Id$")
 !
-! KG: See the function get_k2 for an example of how to calculate k2.
-!
 !  Note, if lhydro=F, then f(:,:,:,1:3) does no longer contain
 !  velocity. In that case, we want the magnetic field instead.
 !
@@ -2099,7 +2093,7 @@ outer:do ikz=1,nz
       do ikz=1,nz
       do iky=1,ny
       do ikx=1,nx
-        k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+        k2=get_k2_old(ikx+ipx*nx,iky+ipy*ny,ikz+ipz*nz)
         k=nint(sqrt(k2))
         if (k>=0 .and. k<=(nk-1)) then
 !
@@ -2266,8 +2260,6 @@ outer:do ikz=1,nz
     if (lroot .AND. ip<10) call svn_id( &
          "$Id$")
 !
-! KG: See the function get_k2 for an example of how to calculate k2.
-!
 !  Note, if lhydro=F, then f(:,:,:,1:3) does no longer contain
 !  velocity. In that case, we want the magnetic field instead.
 !
@@ -2338,7 +2330,7 @@ outer:do ikz=1,nz
       do ikz=1,nz
         do iky=1,ny
           do ikx=1,nx
-            k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+            k2=get_k2_old(ikx+ipx*nx,iky+ipy*ny,ikz+ipz*nz)
             k=nint(sqrt(k2))
             if (k>=0 .and. k<=(nk-1)) then
 !
@@ -2468,8 +2460,6 @@ outer:do ikz=1,nz
 !
     if (lroot .AND. ip<10) call svn_id( &
          "$Id$")
-!
-! KG: See the function get_k2 for an example of how to calculate k2.
 
     !$omp parallel private(uu,aa,aij,bij,bb,jj,uxb,uxj) num_threads(num_helper_threads)
     !$ thread_id = omp_get_thread_num()+1
@@ -2543,7 +2533,7 @@ outer:do ikz=1,nz
       do ikz=1,nz
         do iky=1,ny
           do ikx=1,nx
-            k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+            k2=get_k2_old(ikx+ipx*nx,iky+ipy*ny,ikz+ipz*nz)
             k=nint(sqrt(k2))
             if (k>=0 .and. k<=(nk-1)) then
 !
@@ -2665,8 +2655,6 @@ outer:do ikz=1,nz
     if (lroot .AND. ip<10) call svn_id( &
          "$Id$")
 !
-! KG: See the function get_k2 for an example of how to calculate k2.
-!
     !$omp parallel private(uu,aa,uij,aij,bij,divu,bb,bbdivu,ugradb,bgradu) num_threads(num_helper_threads)
     !$ thread_id = omp_get_thread_num()+1
 !
@@ -2739,7 +2727,7 @@ outer:do ikz=1,nz
       do ikz=1,nz
         do iky=1,ny
           do ikx=1,nx
-            k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+            k2=get_k2_old(ikx+ipx*nx,iky+ipy*ny,ikz+ipz*nz)
             k=nint(sqrt(k2))
             if (k>=0 .and. k<=(nk-1)) then
 !
@@ -2863,8 +2851,6 @@ outer:do ikz=1,nz
 !
     if (lroot .AND. ip<10) call svn_id("$Id$")
 !
-! KG: added warning about wrong computation of wavenumbers.
-! KG: See the function get_k2 for an example of how to calculate k2.
     if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
       call warning("powerGWs", "computation of wavevector wrong for non-cubic domains")
 !
@@ -2962,16 +2948,16 @@ outer:do ikz=1,nz
       do iky=1,nz
         do ikx=1,ny
           do ikz=1,nx
-            k2=kx(ikx+ipy*ny)**2+ky(iky+ipz*nz)**2+kz(ikz+ipx*nx)**2
+            k2=get_k2_old(ikx+ipy*ny,iky+ipz*nz,ikz+ipx*nx)
             k=nint(sqrt(k2))
             if (k>=0 .and. k<=(nk-1)) then
 !
 !  Switch sign for the same k vectors for which we also
 !  switched the sign of e_X. Define (kk1,kk2,kk3) as short-hand
 !
-              kk1=kx(ikx+ipy*ny)
-              kk2=ky(iky+ipz*nz)
-              kk3=kz(ikz+ipx*nx)
+              kk1=get_kx(ikx+ipy*ny)
+              kk2=get_ky(iky+ipz*nz)
+              kk3=get_kz(ikz+ipx*nx)
 !
               !kk1=kx(ikx+ipx*nx)
               !kk2=ky(iky+ipy*ny)
@@ -3153,8 +3139,6 @@ outer:do ikz=1,nz
     if (lroot .AND. ip<10) call svn_id( &
          "$Id$")
 !
-! KG: added warning about wrong computation of wavenumbers.
-! KG: See the function get_k2 for an example of how to calculate k2.
     if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
       call warning("powerscl", "computation of wavevector wrong for non-cubic domains")
   
@@ -3377,7 +3361,7 @@ outer:do ikz=1,nz
       !
       !  integration over shells
       !
-      k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+      k2=get_k2_old(ikx+ipx*nx,iky+ipy*ny,ikz+ipz*nz)
       k=nint(sqrt(k2))
       if (sp=='ucp') then
         fact=k2  !  take gradient
@@ -3391,7 +3375,7 @@ outer:do ikz=1,nz
       !  integration over the vertical direction
       !
       if (lhorizontal_spectra) then
-        k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2
+        k2=get_k2_old(ikx+ipx*nx,iky+ipy*ny,0)
         k=nint(sqrt(k2))
         if (k>=0 .and. k<=(nk-1)) &
           hor_spectrum(k+1) = hor_spectrum(k+1) &
@@ -4560,8 +4544,6 @@ outer:do ikz=1,nz
     if (lroot .AND. ip<10) call svn_id( &
        "$Id$")
 !
-! KG: See the function get_k2 for an example of how to calculate k2.
-!
     spectrum=0.
 !
 !  In fft, real and imaginary parts are handled separately.
@@ -4603,7 +4585,7 @@ outer:do ikz=1,nz
       do ikz=1,nz
         do iky=1,ny
           do ikx=1,nx
-            k=nint(sqrt(kx(ikx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2))
+            k=nint(sqrt(get_k2_old(ikx,iky+ipy*ny,ikz+ipz*nz)))
             if (k>=0 .and. k<=(nk-1)) spectrum(k+1)=spectrum(k+1) &
                  +a1(ikx,iky,ikz,ivec)**2+b1(ikx,iky,ikz,ivec)**2
           enddo
@@ -4688,8 +4670,6 @@ outer:do ikz=1,nz
 !
     if (lroot .AND. ip<10) call svn_id("$Id$")
 !
-! KG: See the function get_k2 for an example of how to calculate k2.
-!
 ! mesh for polar representation
 !
     if (lread_gauss_quadrature) then  !  use gauss-legendre quadrature
@@ -4768,7 +4748,7 @@ outer:do ikz=1,nz
       do ikz=1,nz
       do iky=1,ny
       do ikx=1, nx
-        k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+        k2=get_k2_old(ikx+ipx*nx,iky+ipy*ny,ikz+ipz*nz)
         ikr=nint(sqrt(k2))
         mu=kz(ikz+ipz*nz)/sqrt(k2)
         if (ikr>=0. .and. ikr<=(nk-1)) then
@@ -5020,7 +5000,7 @@ outer:do ikz=1,nz
         do ikz=1,nz
         do iky=1,ny
         do ikx=1,nx
-          k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+          k2=get_k2_old(ikx+ipx*nx,iky+ipy*ny,ikz+ipz*nz)
           ikr=nint(sqrt(k2))
           mu=kz(ikz+ipz*nz)/sqrt(k2)
           if (ikr>=0. .and. ikr<=(nk-1)) then
@@ -5322,8 +5302,6 @@ outer:do ikz=1,nz
         allocate(cyl_spectrum(nk,nzgrid), cyl_spectrum_sum(nk,nzgrid), cyl_spectrumhel(nk,nzgrid), cyl_spectrumhel_sum(nk,nzgrid))
     endif
 !
-! KG: added warning about wrong computation of wavenumbers.
-! KG: See the function get_k2 for an example of how to calculate k2.
     if (headt.and.(minval(Lxyz) /= maxval(Lxyz))) &
       call warning("power_cor", "computation of wavevector wrong for non-cubical domains")
 !
@@ -5436,7 +5414,7 @@ outer:do ikz=1,nz
       do ikz=1,nz
       do iky=1,ny
       do ikx=1,nx
-        k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+        k2=get_k2_old(ikx+ipx*nx,iky+ipy*ny,ikz+ipz*nz)
         k=nint(sqrt(k2))
         if (k>=0 .and. k<=(nk-1)) then
 !
@@ -5471,7 +5449,7 @@ outer:do ikz=1,nz
         do ikz=1,nz
         do iky=1,ny
         do ikx=1,nx
-          k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2
+          k2=get_k2_old(ikx+ipx*nx,iky+ipy*ny,0)
           jkz=nint(kz(ikz+ipz*nz))+nzgrid/2+1
           k=nint(sqrt(k2))
           if (k>=0 .and. k<=(nk-1)) then
@@ -5657,8 +5635,6 @@ outer:do ikz=1,nz
       call get_shared_variable('t_cor',t_cor)
     endif
 !
-! KG: See the function get_k2 for an example of how to calculate k2.
-!
     select case (sp)
       case ('ouout')
 !
@@ -5810,7 +5786,7 @@ outer:do ikz=1,nz
 !
     !$omp do collapse(3)
     do ikz=1,nz; do iky=1,ny; do ikx=1,nx
-      k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+      k2=get_k2_old(ikx+ipx*nx,iky+ipy*ny,ikz+ipz*nz)
       k=nint(sqrt(k2))
       if (k>=0 .and. k<=(nk-1)) then
         spectrum(k+1)=spectrum(k+1)+b_re(ikx,iky,ikz)**2+b_im(ikx,iky,ikz)**2
@@ -5825,7 +5801,7 @@ outer:do ikz=1,nz
       if (ip<10) call information('power_cor_scl','fft done; now integrate over cylindrical shells')
       !$omp do collapse(3)
       do ikz=1,nz; do iky=1,ny; do ikx=1,nx
-        k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2
+        k2=get_k2_old(ikx+ipx*nx,iky+ipy*ny,0)
         jkz=nint(kz(ikz+ipz*nz))+nzgrid/2+1
         k=nint(sqrt(k2))
         if (k>=0 .and. k<=(nk-1)) then
@@ -5923,8 +5899,6 @@ outer:do ikz=1,nz
 !  identify version
 !
     if (lroot .AND. ip<10) call svn_id("$Id$")
-!
-! KG: See the function get_k2 for an example of how to calculate k2.
 !
     nv=1+nint(log(1.*nxgrid)/log(2.))
     nvmin=max(1,1+nint(log(nxgrid/256.)/log(2.)))
@@ -6099,9 +6073,9 @@ outer:do ikz=1,nz
       !$omp parallel private(kxx,kyy,kzz,k2,k,kint,j0x,j0y,j0z,j1,j0,w,icor) num_threads(num_helper_threads)
       !$omp do collapse(3) reduction(+:spectrum,correl)
       do ikx=1,nx; do iky=1,ny; do ikz=1,nz
-        kxx = kx(ikx+ipx*nx)       !  the true kx
-        kyy = ky(iky+ipy*ny)       !  the true ky
-        kzz = kz(ikz+ipz*nz)       !  the true kz
+        kxx = get_kx(ikx+ipx*nx)       !  the true kx
+        kyy = get_ky(iky+ipy*ny)       !  the true ky
+        kzz = get_kz(ikz+ipz*nz)       !  the true kz
         k2 = kxx**2+kyy**2+kzz**2  !  knorm^2
         k = sqrt(k2)               !  knorm
         kint = nint(k)             !  nint(knorm)
@@ -6317,7 +6291,7 @@ outer:do ikz=1,nz
                 if (sp2=='xkyz') then
                   jkx=ikx+ipx*nx-nxgrid/2+(kkoutx-1)/2+1
                 else
-                  jkx=nint(kx(ikx+ipx*nx))+(kkoutx-1)/2+1
+                  jkx=nint(get_kx(ikx+ipx*nx))+(kkoutx-1)/2+1
                 endif
                 if ( jkx>=1 .and. jkx<=kkoutx ) then
                   fft(1,jkx,jky,jkz) = fft(1,jkx,jky,jkz) + a_re(ikx,iky,ikz)
@@ -6376,8 +6350,6 @@ outer:do ikz=1,nz
     integer :: i,ikx,iky,ikz,k
     real :: k2
 !
-! KG: See the function get_k2 for an example of how to calculate k2.
-!
     !$omp workshare
     a_re=a
     a_im=0.
@@ -6388,7 +6360,7 @@ outer:do ikz=1,nz
     do ikx=1,nx
     do iky=1,ny
     do ikz=1,nz
-      k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2
+      k2=get_k2_old(ikx+ipx*nx,iky+ipy*ny,ikz+ipz*nz)
       k=nint(sqrt(k2))
       if (.not.(k>=p.and.k<(p+1))) then
         a_re(ikx,iky,ikz)=0.
@@ -6637,6 +6609,85 @@ outer:do ikz=1,nz
     k = sqrt(get_k2(ikx, iky, ikz))
 !
   endfunction get_k
+!***********************************************************************
+  function get_k2_old(ikx, iky, ikz) result(k2)
+!
+!   Exists so we can check is the domain cubical or not
+!   18-nov-2025/TP: coded
+!
+! Works only for cubical domains
+! KG: See the function get_k2 for an example of how to calculate k2.
+!
+    logical, save :: lfirst = .true.
+    integer, intent(IN) :: ikx,iky,ikz
+    real :: k2
+
+    if(lfirst) then
+      if (minval(Lxyz) /= maxval(Lxyz)) then
+        call warning("get_k2_old", "computation of wavevector wrong for non-cubical domains")
+      endif
+    endif
+    lfirst = .false.
+    k2 = 0.0
+    if(ikx > 0) k2 = k2 + kx(ikx)**2
+    if(iky > 0) k2 = k2 + ky(iky)**2
+    if(ikz > 0) k2 = k2 + kz(ikz)**2
+
+  endfunction get_k2_old
+!***********************************************************************
+  function get_kx(ikx) result(kx_scalar)
+!
+!   Exists so we can check is the domain cubical or not
+!   18-nov-2025/TP: coded
+!
+    integer, intent(IN) :: ikx
+    real :: kx_scalar
+    logical, save :: lfirst = .true.
+
+    if(lfirst) then
+      if (minval(Lxyz) /= maxval(Lxyz)) then
+        call warning("get_kx", "computation of wavevector wrong for non-cubical domains")
+      endif
+    endif
+    lfirst = .false.
+    kx_scalar = kx(ikx)
+  endfunction get_kx
+!***********************************************************************
+  function get_ky(iky) result(ky_scalar)
+!
+!   Exists so we can check is the domain cubical or not
+!   18-nov-2025/TP: coded
+!
+    integer, intent(IN) :: iky
+    real :: ky_scalar
+    logical, save :: lfirst = .true.
+
+    if(lfirst) then
+      if (minval(Lxyz) /= maxval(Lxyz)) then
+        call warning("get_ky", "computation of wavevector wrong for non-cubical domains")
+      endif
+    endif
+    lfirst = .false.
+    ky_scalar = ky(iky)
+  endfunction get_ky
+!***********************************************************************
+  function get_kz(ikz) result(kz_scalar)
+!
+!   Exists so we can check is the domain cubical or not
+!   18-nov-2025/TP: coded
+!
+    integer, intent(IN) :: ikz
+    real :: kz_scalar
+    logical, save :: lfirst = .true.
+
+    if(lfirst) then
+      if (minval(Lxyz) /= maxval(Lxyz)) then
+        call warning("get_kz", "computation of wavevector wrong for non-cubical domains")
+      endif
+    endif
+    lfirst = .false.
+    kz_scalar = kz(ikz)
+  endfunction get_kz
 !***********************************************************************
   function get_k2_xy(ikx, iky) result(k2)
 !
