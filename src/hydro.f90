@@ -8830,7 +8830,6 @@ module Hydro
         do n=n1,n2; do m=m1,m2
           call der(1,f(:,m,n,irho),tmp)
           f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + cs20/(2.*Omega*gamma) * 1./f(l1:l2,m,n,irho) * tmp(l1:l2)
-          print*,  tmp
         enddo; enddo
       else
         do n=n1,n2; do m=m1,m2
