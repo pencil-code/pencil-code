@@ -3,6 +3,7 @@
 
  public :: initialize_power_spectrum
  public :: power, powerhel, powerscl, power_1d, power_2d, power_xy, pdf
+ public :: crossspec
  public :: pdf1d_ang, pdf_2d
  public :: powerLor, powerEMF, powerTra, powerGWs
  public :: power_phi,powerhel_phi, power_vec
