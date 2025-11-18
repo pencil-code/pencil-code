@@ -28,7 +28,7 @@
 module Power_spectrum
 !
   use Cdata
-  use Messages,only: svn_id, warning, fatal_error, information
+  use Messages,only: svn_id, warning, fatal_error, information, not_implemented
   use Mpicomm, only: MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
                      MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE
 !$ use OMP_lib
@@ -648,6 +648,181 @@ outer:do ikz=1,nz
     endif
 !
   endsubroutine power
+!***********************************************************************
+  subroutine crossspec_parse_spec(f,sp,a_re,a_im,ivec)
+!
+!  2025-Nov-18/Kishore: coded
+!
+!
+    real, dimension (mx,my,mz,mfarray), intent(in) :: f
+    character (len=*), intent(in) :: sp
+    real, dimension(nx,ny,nz), intent(out) :: a_re, a_im
+    integer, intent(in) :: ivec
+!
+    if (trim(sp)=='u') then
+      if (iuu==0) call fatal_error('power','iuu=0')
+      !$omp workshare
+      a_re = f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
+      !$omp end workshare
+    elseif (trim(sp)=='ru') then
+      if (iuu==0) call fatal_error('power','iuu=0')
+      if (ilnrho==0) call fatal_error('power','ilnrho=0')
+      if (ldensity_nolog) then
+        !$omp workshare
+        a_re = f(l1:l2,m1:m2,n1:n2,irho) * f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
+        !$omp end workshare
+      else
+        !$omp workshare
+        a_re = exp(f(l1:l2,m1:m2,n1:n2,ilnrho)) * f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
+        !$omp end workshare
+      endif
+    else
+      call fatal_error('crossspec_parse_spec', 'no such sp: '//trim(sp))
+    endif
+    !$omp workshare
+    a_im = 0.
+    !$omp end workshare
+!
+  endsubroutine crossspec_parse_spec
+!***********************************************************************
+  subroutine crossspec_parallel_portion(f,sp1,sp2,spectrum,a_re,a_im,b_re,b_im,nk,lvec)
+!
+! Inner function to calculate the real part of the cross-spectrum of two variables
+! a and b
+!
+! 2025-Nov-18/Kishore: adapted from power_parallel_portion
+!
+    use Fourier, only: fft_xyz_parallel
+!
+    real, dimension (mx,my,mz,mfarray), intent(in) :: f
+    character (len=*), intent(in) :: sp1,sp2
+    real, dimension(:), intent(out) :: spectrum
+    real, dimension(nx,ny,nz), intent(out) :: a_re,a_im,b_re,b_im
+    integer, intent(in) :: nk
+    logical, intent(in) :: lvec
+!
+    integer :: ivec,ikx,iky,ikz,k,k2,ivec_max
+!
+    if (lvec) then
+      ivec_max = 3
+    else
+      ivec_max = 1
+    endif
+!
+    do ivec=1,ivec_max
+!
+      call crossspec_parse_spec(f,sp1,a_re,a_im,ivec)
+      call crossspec_parse_spec(f,sp2,b_re,b_im,ivec)
+!
+      call fft_xyz_parallel(a_re,a_im)
+      call fft_xyz_parallel(b_re,b_im)
+!
+      if (ip<10) call information('crossspec_parallel_portion', &
+        'fft done; now integrate over shells')
+      if (ltrue_binning) then
+!
+!  Sum spectral contributions into bins of k^2 - avoids rounding of k.
+!
+        !$omp do collapse(3)
+        do ikz=1,nz
+          do iky=1,ny
+            do ikx=1,nx
+              k2=get_k2(ikx+ipx*nx, iky+ipy*ny, ikz+ipz*nz)
+              where(int(k2)==k2s) spectrum = spectrum &
+                + a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
+                + a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
+            enddo
+          enddo
+        enddo
+      else
+        !$omp do collapse(3)
+        do ikz=1,nz
+          do iky=1,ny
+            do ikx=1,nx
+              k=nint(get_k(ikx+ipx*nx, iky+ipy*ny, ikz+ipz*nz))
+              if (k>=0 .and. k<=(nk-1)) spectrum(k+1)=spectrum(k+1) &
+                + a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
+                + a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
+            enddo
+          enddo
+        enddo
+      endif
+!
+    enddo !   do ivec=1,3
+!
+  endsubroutine crossspec_parallel_portion
+!***********************************************************************
+  subroutine crossspec(f,sp1,sp2,lvec)
+!
+!  Calculate cross-spectra (on spherical shells) of the variables
+!  specified by `sp1` and `sp2`.
+!  The cross-spectrum gives the spectral distribution of `sp1.sp2`.
+!  Since this routine is only used at the end of a time step,
+!  one could in principle reuse the df array for memory purposes.
+!
+!  2025-Nov-18/Kishore: adapted from power
+!
+    use Mpicomm, only: mpireduce_sum
+    use File_io, only: file_exists
+!
+    real, dimension (mx,my,mz,mfarray), intent(in) :: f
+    character (len=*), intent(in) :: sp1, sp2
+    logical, intent(in) :: lvec
+!
+    integer :: nk
+    real, dimension(nx,ny,nz) :: a_re,b_re,a_im,b_im
+    real :: k2
+!  save is needed to avoid repeated allocations every time this subroutine is called.
+    real, dimension(:), save, allocatable :: spectrum,spectrum_sum
+    character(LEN=fnlen) :: filename
+    logical :: lwrite_ks
+!
+!  identify version
+!
+    if (lroot .AND. ip<10) call svn_id( &
+         "$Id$")
+!
+    if (ltrue_binning) then
+      nk=nk_truebin
+    else
+      nk=nk_xyz
+    endif
+    if (.not. allocated(spectrum)) allocate(spectrum(nk),spectrum_sum(nk))
+  
+    spectrum=0.
+!
+    !$omp parallel num_threads(num_helper_threads) reduction(+:spectrum) &
+    !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+    !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+    !$ thread_id = omp_get_thread_num()+1
+    call crossspec_parallel_portion(f,sp1,sp2,spectrum,a_re,a_im,b_re,b_im,nk,lvec)
+    !$omp end parallel
+!
+!  Summing up the results from the different processors
+!  The result is available only on root
+!
+    call mpireduce_sum(spectrum,spectrum_sum,nk)
+!
+!  append to diagnostics file
+!
+    if (lroot) then
+!
+      filename=trim(datadir)//'/power_'//trim(sp1)//'_'//trim(sp2)//'.dat'
+!
+      lwrite_ks=ltrue_binning .and. .not.file_exists(filename)
+      open(1,file=filename,position='append')
+      if (ip<10) print*,'Writing power spectra of variable '//trim(sp1)//'and'//trim(sp2)//' to '//trim(filename)
+!
+      if (lwrite_ks) then
+        write(1,*) nk_truebin
+        write(1,*) real(k2s(:nk_truebin))
+      endif
+      write(1,*) tspec
+      write(1,power_format) spectrum_sum
+      close(1)
+    endif
+!
+  endsubroutine crossspec
 !***********************************************************************
   subroutine power_2d_parallel_portion(f,sp,spectrum)
 !
