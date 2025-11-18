@@ -846,11 +846,13 @@ module Snapshot
       real, dimension (mx,my,mz,mfarray) :: f
 
       real, dimension (:,:,:), allocatable :: b_vec
-      integer :: ivec,stat,ipos,ispec,nloc,mloc,n_pdfs,i
+      integer :: ivec,stat,ipos,ispec,nloc,mloc,n_pdfs,i,n_cs
       real, dimension (2) :: sumspec=0.
       character (LEN=40) :: str,sp1,sp2
       logical :: lfirstcall, lfirstcall_powerhel, lsqrt
       character (LEN=labellen), dimension(n_pdfs_max) :: pdfs_parsed=''
+      character (LEN=labellen), dimension(n_cspec_max) :: cspecs_parsed=''
+      character (LEN=labellen), dimension(2) :: cspec_parsed=''
 
         lsqrt=.true.
         lfirstcall_powerhel=.true.
@@ -1005,6 +1007,16 @@ module Snapshot
 !  Spectra of particle variables.
 !
         if (lparticles) call particles_powersnap(f)
+!
+!  Cross-spectra
+!
+        n_cs = parser(cross_spec, cspecs_parsed, ',')
+        do i=1,n_cs
+          nloc = parser(cspecs_parsed(i), cspec_parsed, '.')
+          if (nloc/=2) call fatal_error('perform_powersnap', &
+            'could not parse '//trim(cspecs_parsed(i)))
+          call crossspec(f,cspec_parsed(1),cspec_parsed(2),lvec=.true.)
+        enddo
 !
 !  Structure functions.
 !

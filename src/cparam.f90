@@ -273,7 +273,7 @@ module Cparam
   integer, parameter :: PERF_DIAGS=1, PERF_WSNAP=2, PERF_POWERSNAP=3, PERF_WSNAP_DOWN=4
   integer, parameter :: n_helperflags=4
   integer, parameter :: n_xy_specs_max=10,nk_max=10, nz_max=10
-  integer, parameter :: n_pdfs_max=10
+  integer, parameter :: n_pdfs_max=10, n_cspec_max=10
   integer, parameter :: mname=100
   integer, parameter :: mname_half=20
 
