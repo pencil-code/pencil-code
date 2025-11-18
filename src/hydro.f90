@@ -2041,6 +2041,7 @@ module Hydro
         case ('robertsflow'); call robertsflow(ampluu(j),f,iuu,relhel_uu)
         case ('hawley-et-al'); call hawley_etal99a(ampluu(j),f,iuy,Lxyz)
         case ('meri_circ'); call meri_circ(f)
+        case ('geostrophic'); call geostrophic(f)
         case ('sound-wave', '11')
 !
 !  sound wave (should be consistent with density module)
@@ -8808,6 +8809,37 @@ module Hydro
       enddo
 !
     endsubroutine  meri_circ
+!***********************************************************************
+    subroutine geostrophic(f)
+!
+! Geostrophic initial condition for isothermal shearing box.
+!
+! 18-nov-2025/wlyra: coded
+!
+      use EquationOfState, only: cs20,get_gamma_etc
+      use Deriv, only: der
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (mx) :: tmp
+      real :: gamma
+      integer :: m,n
+!
+      if (lroot) print*,'init_uu: geostrophic isothermal'
+      call get_gamma_etc(gamma)
+      if (ldensity_nolog) then
+        do n=n1,n2; do m=m1,m2
+          call der(1,f(:,m,n,irho),tmp)
+          f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + cs20/(2.*Omega*gamma) * 1./f(l1:l2,m,n,irho) * tmp(l1:l2)
+          print*,  tmp
+        enddo; enddo
+      else
+        do n=n1,n2; do m=m1,m2
+          call der(1,f(:,m,n,ilnrho),tmp)
+          f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + cs20/(2.*Omega*gamma) * tmp
+        enddo; enddo
+      endif
+!
+    endsubroutine geostrophic
 !***********************************************************************
     subroutine hydro_clean_up
 !
