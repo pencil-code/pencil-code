@@ -420,7 +420,7 @@ program start
 ! so this is just a caution : Please do not modify the sequence of
 ! calls to 'init' routines below.
 !
-    if (lanelastic) then
+    if (lanelastic .or. lswap_init_lnrho_uu) then
       call init_lnrho(f)
       call init_uu(f)
     else

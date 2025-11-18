@@ -138,7 +138,8 @@ module Param_IO
       lnoghost_strati, ichannel1, ichannel2, tag_foreign, &
       lpoint, mpoint, npoint, lpoint2, mpoint2, npoint2, &
       lfatal_num_vector_369, density_scale_factor, &
-      lsmooth_farray,farray_smooth_width, radius_diag, lread_oldsnap_nocoolprof
+      lsmooth_farray,farray_smooth_width, radius_diag, lread_oldsnap_nocoolprof,&
+      lswap_init_lnrho_uu
 !
   namelist /run_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lpole, ncoarse, &

@@ -876,6 +876,14 @@ module Cdata
 
   logical :: lrhs_test_at_work = .false.
 !
+! Swap order in which init_uu and init_lnrho are called in start.f90
+! The default is lnrho first, but for geostrophic initial condition
+! one needs to know the density before setting the velocity. It can 
+! also be done with an initial condition, but this is simpler since it
+! can use the control flow already in place for lanelastic.
+!
+  logical :: lswap_init_lnrho_uu = .false.
+!
 !  Variables for concurrency
 !
   logical :: lmultithread=.false.
