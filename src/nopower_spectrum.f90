@@ -60,6 +60,21 @@ module power_spectrum
 !
     endsubroutine power
 !***********************************************************************
+    subroutine crossspec(f,sp1,sp2,lvec)
+!
+      use General, only: ioptest
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      character (len=1) :: sp1,sp2
+      logical :: lvec
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(sp1)
+      call keep_compiler_quiet(sp2)
+      call keep_compiler_quiet(lvec)
+!
+    endsubroutine crossspec
+!***********************************************************************
     subroutine power_2d(f,sp)
 !
       real, dimension (mx,my,mz,mfarray) :: f
