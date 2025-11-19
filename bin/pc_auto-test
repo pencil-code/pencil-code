@@ -62,6 +62,7 @@ my %tests = (
                      )],
              1 => [qw(
                          backwards-compatible
+                         0d-tests/schur_triple_decomp
                          1d-tests/implicit_diffusion
                          2d-tests/chemistry_GrayScott
                          2d-tests/shearwave-dust-par

@@ -1,0 +1,21 @@
+!                                  -*-f90-*-
+! Initialisation parameters
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2025/11/18 02:06:41 brandenb Exp $',
+  lwrite_aux=T
+/
+&eos_init_pars
+  gamma=1.
+/
+&hydro_init_pars
+  luij_as_aux=T
+/
+&density_init_pars
+/
+&magnetic_init_pars
+  !initaa='gaussian-noise', amplaa=1e-2
+  lbij_as_aux=T
+/
+&special_init_pars
+/

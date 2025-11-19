@@ -1,0 +1,8 @@
+it(i8)
+t(f10.3)
+dt(e10.2)
+urms(e10.3)
+umax(e10.3)
+brms(e10.3)
+epsK(e10.2)
+epsM(e10.2)

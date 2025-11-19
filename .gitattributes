@@ -1842,6 +1842,15 @@ samples/0d-tests/reactive_particles/src/cparam.local -text
 samples/0d-tests/reactive_particles/start.in -text
 samples/0d-tests/reactive_particles/tran.dat -text
 samples/0d-tests/reactive_particles/video.in -text
+samples/0d-tests/schur_triple_decomp/NEVERLOCK -text
+samples/0d-tests/schur_triple_decomp/README.md -text
+samples/0d-tests/schur_triple_decomp/print.in -text
+samples/0d-tests/schur_triple_decomp/reference.out -text
+samples/0d-tests/schur_triple_decomp/run.in -text
+samples/0d-tests/schur_triple_decomp/src/Makefile.local -text
+samples/0d-tests/schur_triple_decomp/src/cparam.local -text
+samples/0d-tests/schur_triple_decomp/start.in -text
+samples/0d-tests/schur_triple_decomp/video.in -text
 samples/0d-tests/solar_system/NEVERLOCK -text
 samples/0d-tests/solar_system/README -text
 samples/0d-tests/solar_system/print.in -text
