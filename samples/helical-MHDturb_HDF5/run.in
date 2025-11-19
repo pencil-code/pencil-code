@@ -19,7 +19,7 @@
   !lnrho_pdf=T
   pdfs='lnrho,uu(1)/0/0.5'
 
-  cross_spec='u.ru'
+  cross_spec='u.ru,u.u'
 /
 &eos_run_pars
 /
