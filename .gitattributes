@@ -4949,6 +4949,7 @@ src/special/radial_dist_func.f90 -text
 src/special/reaction_0D.f90 -text
 src/special/rel_1d.f90 -text
 src/special/rtime_phiavg.f90 -text
+src/special/schur_triple_decomp.f90 -text
 src/special/set_gravity.f90 -text
 src/special/shallow_water.f90 -text
 src/special/shell.f90 -text

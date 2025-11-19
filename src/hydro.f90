@@ -109,6 +109,7 @@ module Hydro
   real, dimension(nx) :: prof_om
   real, dimension(2) :: hydro_xaver_range=(/-max_real,max_real/)
   real, dimension(2) :: hydro_zaver_range=(/-max_real,max_real/)
+  real, dimension(3,3) :: uij_0D_test=0.
   real :: u_out_kep=0.0, velocity_ceiling=.0, w_sldchar_hyd=1.0
   real :: mu_omega=0., gap=0., r_omega=0., w_omega=0.
   real :: z1_uu=0., z2_uu=0.
@@ -196,7 +197,7 @@ module Hydro
       rnoise_int, rnoise_ext, lreflecteddy, louinit, hydro_xaver_range, max_uu,&
       amp_factor,kx_uu_perturb,llinearized_hydro, hydro_zaver_range, index_rSH, &
       ll_sh, mm_sh, delta_u, n_xprof, luu_fluc_as_aux, luu_sph_as_aux, nfact_uu, &
-      lvv_as_aux, lvv_as_comaux, &
+      lvv_as_aux, lvv_as_comaux, uij_0D_test, &
       lfactors_uu, qirro_uu, lsqrt_qirro_uu, lset_uz_zero, &
       lno_noise_uu, lrho_nonuni_uu, lpower_profile_file_uu, &
       llorentz_limiter, lhiggsless, lhiggsless_old, vwall, alpha_hless, width_hless, &
@@ -297,7 +298,7 @@ module Hydro
       hydro_xaver_range, Ra, Pr, llinearized_hydro, lremove_mean_angmom, &
       lpropagate_borderuu, hydro_zaver_range, index_rSH, &
       uzjet, ydampint, ydampext, mean_momentum, lshear_in_coriolis, &
-      lcdt_tauf, cdt_tauf, ulev, &
+      lcdt_tauf, cdt_tauf, ulev, uij_0D_test, &
       w_sldchar_hyd, uphi_rbot, uphi_rtop, uphi_step_width, lOmega_cyl_xy, &
       lno_radial_advection, lfargoadvection_as_shift, lhelmholtz_decomp, &
       limpose_only_horizontal_uumz, luu_fluc_as_aux, Om_inner, luu_sph_as_aux, &
@@ -982,10 +983,18 @@ module Hydro
       !if (loo_as_aux) call register_report_aux('oo', ioo, iox, ioy, ioz, communicated=.true.)
       if (loo_as_aux) call register_report_aux('oo', ioo, iox, ioy, ioz)
 !
-!  uij as aux
+!  uij as aux, but now use guij instead, which already exists
 !
-      !if (luij_as_aux) call register_report_aux('uij', iuij, vector=9)
-      if (luij_as_aux) call farray_register_auxiliary('uij', iuij, vector=9)
+      !if (luij_as_aux) call farray_register_auxiliary('uij', iuij, vector=9)
+!
+!  Set indices for velocity gradient matrix at grid points
+!
+      if (luij_as_aux) then
+        call farray_register_auxiliary('guij',iguij,communicated=.true.,array=9)
+        igu11=iguij; igu12=iguij+1; igu13=iguij+2
+        igu21=iguij+3; igu22=iguij+4; igu23=iguij+5
+        igu31=iguij+6; igu32=iguij+7; igu33=iguij+8
+      endif
 !!
 !!  Fourier transformed uu as aux
 !!
@@ -3472,9 +3481,15 @@ module Hydro
           call gij(f,iuu,p%uij,1)
         endif
 !
+!  In 0-D, initialize to p%uij to uij_0D_test
+!
+        if (l1==l2 .and. m1==m2 .and. n1==n2) p%uij(1,:,:)=uij_0D_test
+!
 !  if gradu is to be stored as auxiliary then we store it now
 !
-        if (lgradu_as_aux .or. lparticles_lyapunov .or. lparticles_caustics .or. lparticles_tetrad) then
+        !if (lgradu_as_aux .or. lparticles_lyapunov .or. lparticles_caustics .or. lparticles_tetrad) then
+        if (lgradu_as_aux .or. lparticles_lyapunov .or. lparticles_caustics .or. lparticles_tetrad &
+          .or. luij_as_aux) then
           f(l1:l2,m,n,iguij+0) = p%uij(:,1,1)
           f(l1:l2,m,n,iguij+1) = p%uij(:,1,2)
           f(l1:l2,m,n,iguij+2) = p%uij(:,1,3)
@@ -3488,6 +3503,15 @@ module Hydro
           f(l1:l2,m,n,iguij+8) = p%uij(:,3,3)
         endif
       endif
+!
+!  Possibility of uij as auxiliary array (alternative method)
+!
+   !    if (luij_as_aux) then
+   !      f(l1:l2,m,n,iuij  :iuij+2)=p%uij(:,:,1)
+   !      f(l1:l2,m,n,iuij+3:iuij+5)=p%uij(:,:,2)
+   !      f(l1:l2,m,n,iuij+6:iuij+8)=p%uij(:,:,3)
+   !    endif
+!
 !      if (.not.lpenc_loc_check_at_work) then
 !        write(*,*) 'uurad,rad',p%uij(1:6,1,1)
 !      endif

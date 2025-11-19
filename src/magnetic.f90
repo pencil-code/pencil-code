@@ -114,6 +114,7 @@ module Magnetic
   real, dimension (ninit) :: phase_aa=0.0
   integer, dimension (ninit) :: ll_sh=0, mm_sh=0
   integer :: nzav=0,indzav=0,izav_start=1
+  integer :: icurlb=0, icurlbx=0, icurlby=0, icurlbz=0
   character (len=fnlen) :: source_zav=''
   character (len=labellen), dimension(ninit) :: initaa='nothing', robflow_aa='I'
   character (len=labellen), dimension(3) :: borderaa='nothing'
@@ -133,6 +134,7 @@ module Magnetic
   real, dimension(nx) :: xmask_mag, xmask1_mag
   real, dimension(ny) :: ymask_mag
   real, dimension(nz) :: zmask_mag
+  real, dimension(3,3) :: bij_0D_test=0.
   real :: B0_ext_z=0.0, B0_ext_z_H=0.0
   real :: sheet_position=1.,sheet_thickness=0.1,sheet_hyp=1.
   real :: t_bext = 0.0, t0_bext = 0.0
@@ -241,9 +243,9 @@ module Magnetic
   logical :: lforce_free_test=.false.
   logical :: lforcing_cont_aa_local=.false., lrandom_ampl_aa=.false.
   logical :: lee_as_aux=.false., ladd_disp_current_from_aux=.false.
-  logical :: lbb_as_aux=.false., ljj_as_aux=.false., ljxb_as_aux=.false.
+  logical :: lbb_as_aux=.false., ljj_as_aux=.false., ljxb_as_aux=.false., lcurlb_as_aux=.false.
   logical :: luxb_as_aux=.false., lugb_as_aux=.false., lbgu_as_aux=.false.
-  logical :: lbdivu_as_aux=.false., lbij_as_aux=.false.
+  logical :: lbdivu_as_aux=.false., lbij_as_aux=.false., lbij_schur=.false.
   logical :: lbbt_as_aux=.false., ljjt_as_aux=.false., lua_as_aux=.false.
   logical :: lbeta_as_aux=.false.
   logical :: letasmag_as_aux=.false.,ljj_as_comaux=.false.
@@ -280,7 +282,8 @@ module Magnetic
       lcheck_positive_va2, lskip_projection_aa, &
       ladd_disp_current_from_aux, compk_aa, &
       lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, lee_as_aux, &
-      ljxb_as_aux, ljj_as_aux, lbij_as_aux, lbext_curvilinear, lbbt_as_aux, ljjt_as_aux, &
+      ljxb_as_aux, ljj_as_aux, lbext_curvilinear, lbbt_as_aux, ljjt_as_aux, &
+      lcurlb_as_aux, lbij_as_aux, lbij_schur, &
       luxb_as_aux, lugb_as_aux, lbgu_as_aux, lbeta_as_aux, lbdivu_as_aux, &
       lua_as_aux, lneutralion_heat, center1_x, center1_y, center1_z, &
       fluxtube_border_width, va2max_jxb, va2max_boris, cmin,va2power_jxb, eta_jump, &
@@ -290,7 +293,7 @@ module Magnetic
       phase_ax, phase_ay, phase_az, magnetic_xaver_range, amp_relprof, k_relprof, &
       tau_relprof, znoise_int, znoise_ext, magnetic_yaver_range, magnetic_zaver_range, &
       lbx_ext_global,lby_ext_global,lbz_ext_global, dipole_moment, &
-      lax_ext_global,lay_ext_global,laz_ext_global, &
+      lax_ext_global,lay_ext_global,laz_ext_global, bij_0D_test, &
       sheet_position,sheet_thickness,sheet_hyp,ll_sh,mm_sh, &
       source_zav,nzav,indzav,izav_start, k1hel, k2hel, lbb_sph_as_aux, &
       r_inner, r_outer, lpower_profile_file, eta_jump0, eta_jump1, eta_jump2, &
@@ -417,8 +420,8 @@ module Magnetic
       eta_spitzer, borderaa, ljj_as_comaux, lsmooth_jj, &
       eta_aniso_hyper3, lelectron_inertia, inertial_length, &
       lbext_curvilinear, lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, ljj_as_aux, &
-      lbij_as_aux, luxb_as_aux, lugb_as_aux, lbgu_as_aux, lbdivu_as_aux, &
-      lkinematic, lbbt_as_aux, ljjt_as_aux, lua_as_aux, ljxb_as_aux, &
+      lbij_as_aux, lbij_schur, luxb_as_aux, lugb_as_aux, lbgu_as_aux, lbdivu_as_aux, &
+      lkinematic, lbbt_as_aux, ljjt_as_aux, lua_as_aux, ljxb_as_aux, lcurlb_as_aux, &
       lneutralion_heat, lreset_aa, daareset, eta_shock2, &
       lignore_Bext_in_b2, luse_Bext_in_b2, ampl_fcont_aa, &
       lhalox, vcrit_anom, eta_jump, eta_jump2, lrun_initaa, two_step_factor, &
@@ -432,7 +435,7 @@ module Magnetic
       eta_jump_shock, eta_zshock, tau_remove_meanaxy, &
       eta_width_shock, eta_xshock, ladd_global_field, eta_power_x, eta_power_z, &
       ladd_efield,ampl_efield, h_sld_magn,w_sldchar_mag, lsld_bb, eta_cspeed, &
-      ladd_disp_current_from_aux, &
+      ladd_disp_current_from_aux, bij_0D_test, &
       lboris_correction,lkeplerian_gauge,lremove_volume_average, &
       rhoref, lambipolar_strong_coupling,letasmag_as_aux,Pm_smag1, &
       ampl_eta_uz, lalfven_as_aux, lno_ohmic_heat_bound_z, &
@@ -1256,6 +1259,7 @@ module Magnetic
       if (luxb_as_aux) call register_report_aux('uxb',iuxb,iuxbx,iuxby,iuxbz)
       if (lugb_as_aux) call register_report_aux('ugb',iugb,iugbx,iugby,iugbz)
       if (lbgu_as_aux) call register_report_aux('bgu',ibgu,ibgux,ibguy,ibguz)
+      if (lcurlb_as_aux) call register_report_aux('curlb',icurlb,icurlbx,icurlby,icurlbz)
       if (lbdivu_as_aux) call register_report_aux('bdivu',ibdivu,ibdivux,ibdivuy,ibdivuz)
 !
 !PJK: moved back to initialize_magnetic at least temporarily
@@ -2602,6 +2606,24 @@ module Magnetic
             f(l1:l2,m,n,iaz) = amplaa(j)*x(l1:l2)*sin(y(m))
           enddo; enddo
 !
+! dipolar test case
+!
+        case ('dipolar-test-case')
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,iax) = 0!amplaa(j)/x(l1:l2)**2*sin(y(m))**2*(-1.5) !*(1.-relhel_aa)
+            f(l1:l2,m,n,iay) = amplaa(j)/x(l1:l2)**2*sin(y(m))*cos(y(m))*(-3.)*relhel_aa
+            f(l1:l2,m,n,iaz) = 0!amplaa(j)/x(l1:l2)**2*sin(y(m))
+          enddo; enddo
+!
+! quadrupolar test case
+!
+        case ('quadrupolar-test-case')
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,iax) = 0.
+            f(l1:l2,m,n,iay) = 0.
+            f(l1:l2,m,n,iaz) = amplaa(j)/x(l1:l2)**2*3*sin(y(m))*cos(y(m))
+          enddo; enddo
+!
         case ('relprof')
           do n=n1,n2
             f(l1:l2,m1:m2,n,iax)=A_relprof(n-nghost,1)
@@ -2810,7 +2832,7 @@ module Magnetic
 !
 !  We'd also need uxb when computing the displacement current, so:
 !
-      if (iex>0) lpenc_requested(i_uxb)=.true.
+      if (ldisp_current) lpenc_requested(i_uxb)=.true.
 !
 !  need uga always for advective gauge.
 !
@@ -4313,6 +4335,7 @@ module Magnetic
           if (lpenc_loc(i_curlb) .and. .not. ljj_as_comaux) &
               !call curl_mn(p%bij,p%jj,A=p%bb,LCOVARIANT_DERIVATIVE=lcovariant_magnetic)
               call curl_mn(p%bij,p%curlb,A=p%bb,LCOVARIANT_DERIVATIVE=lcovariant_magnetic)
+          if (lcurlb_as_aux) f(l1:l2,m,n,icurlbx:icurlbz)=p%curlb
         endif
       elseif (lpenc_loc(i_bij).and..not.lpenc_loc(i_del2a)) then
         if (lcartesian_coords) then
@@ -4339,6 +4362,18 @@ module Magnetic
         else
           call bij_tilde(f,p%bb,p%bijtilde)
         endif
+      endif
+!
+!  In 0-D, initialize to p%bij to bij_0D_test
+!
+        if (l1==l2 .and. m1==m2 .and. n1==n2) p%bij(1,:,:)=bij_0D_test
+!
+!  Possibility of bij as auxiliary array
+!
+      if (lbij_as_aux) then
+        f(l1:l2,m,n,ibij  :ibij+2)=p%bij(:,:,1)
+        f(l1:l2,m,n,ibij+3:ibij+5)=p%bij(:,:,2)
+        f(l1:l2,m,n,ibij+6:ibij+8)=p%bij(:,:,3)
       endif
 !
 !     Possibility that jj is already calculated as comaux
@@ -4391,7 +4426,7 @@ module Magnetic
 !  Note, however, that p%jj_ohm can also be computed in disp_current,
 !  so we must not overwrite it here.
 !
-        if (iex>0) then
+        if (ldisp_current) then
           if (lresi_eta_tdep) then
             if (lresi_eta_xtdep) call fatal_error('calc_pencils_magnetic_pencpar', &
                 'lresi_eta_tdep must be false if lresi_eta_xtdep is true')
@@ -4968,7 +5003,7 @@ module Magnetic
       endif
       if (lresi_eta_tdep .or. lresi_eta_xtdep .or. lresi_hyper2_tdep .or. lresi_hyper3_tdep) then
         call get_eta_t_and_xtdep(f,p)
-        if (iex>0) then
+        if (ldisp_current) then
           if (lresi_eta_tdep) eta_total = eta_tdep
         endif
       endif
@@ -5128,10 +5163,9 @@ module Magnetic
       endif
 !
 !  The following is only needed when the displacement current is not being solved for.
-!  To check this, we can check whether lspecial=T and iex/=0.
-!  We therefore continue only when iex>0.
+!  To check this, we check whether ldisp_current=T.
 !
-      if (iex==0.or.loverride_ee) then
+      if ((.not. ldisp_current) .or. loverride_ee) then
 !
 !  Restivivity term
 !
@@ -5980,13 +6014,13 @@ module Magnetic
 !
 !  limp_alpha=T, add artificial z dependent alpha dynamo.
 !
-        if(limp_alpha) then
-          if (abs(z(n))<=imp_halpha/2) then
-            dAdt = dAdt+imp_alpha0*sin(pi*z(n)/imp_halpha)*p%bb
-          else
-            dAdt = dAdt+sign(imp_alpha0,z(n))*exp(-((2*z(n)-sign(imp_halpha,z(n)))/imp_halpha)**2)*p%bb
-          endif
+      if(limp_alpha) then
+        if (abs(z(n))<=imp_halpha/2) then
+          dAdt = dAdt+imp_alpha0*sin(pi*z(n)/imp_halpha)*p%bb
+        else
+          dAdt = dAdt+sign(imp_alpha0,z(n))*exp(-((2*z(n)-sign(imp_halpha,z(n)))/imp_halpha)**2)*p%bb
         endif
+      endif
 !
 !  Add Hall term.
 !
@@ -6149,7 +6183,7 @@ module Magnetic
 !  But it might actually work correctly.
 !
       if (lee_as_aux) then
-        if (lroot) print*,'f(l1:l2,m,n,iex:iez)=-dAdt is set'
+        if (headtt) print*,'f(l1:l2,m,n,iex:iez)=-dAdt is set'
         f(l1:l2,m,n,iex:iez)=-dAdt
       endif
 !
@@ -6223,14 +6257,14 @@ module Magnetic
 !
       endif
 !
-!  This is the endif from (iex==0.or.loverride_ee)
+!  The following is the endif from "((.not. ldisp_current) .or. loverride_ee) then"
 !
       endif
 !
 !  If ldensity and ldensity_add_je_heating, then compute J.E and add it:
 !
       if (ldensity .and. ldensity_add_je_heating) then
-        if (iex>0) then
+        if (ldisp_current) then
           call dot(p%jj,p%el,tmp1)
           if (je_heating_factor/=1.) tmp1=tmp1*je_heating_factor
           df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+tmp1*p%rho1

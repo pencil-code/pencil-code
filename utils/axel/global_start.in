@@ -1,6 +1,8 @@
 &init_pars
   lwrite_ic=F
 / 
+&initial_condition_pars
+/
 &eos_init_pars
 /
 &hydro_init_pars

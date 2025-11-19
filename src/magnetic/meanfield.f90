@@ -920,7 +920,7 @@ module Magnetic_meanfield
 !
 !  In mean-field models with displacement current, we need meanfield_etat
 !
-      if (iex/=0) lpenc_requested(i_meanfield_etat)=.true.
+      if (ldisp_current) lpenc_requested(i_meanfield_etat)=.true.
 !
     endsubroutine pencil_criteria_magn_mf
 !***********************************************************************
@@ -1683,10 +1683,11 @@ module Magnetic_meanfield
 !
 !  The following steps would need to be modified if we include the displacement current.
 !
-        if (iex/=0) then
+        if (ldisp_current) then
           do j=1,3
             p%jj_ohm(:,j)=(p%jj_ohm(:,j)+p%mf_EMF(:,j)*mu01/eta)/(1.+meanfield_etat_tmp/eta)
           enddo
+!if (ip<10 .and. n==5) print*,'AXEL: t,p%jj_ohm(1,:)=',t,p%jj_ohm(1,1:2)
         else
 !
 !  Apply eta tensor, but subtract part from etat for stability reasons.
@@ -1950,7 +1951,8 @@ module Magnetic_meanfield
 !***********************************************************************
     subroutine daa_dt_meanfield(f,df,p)
 !
-!  add mean-field evolution to magnetic field.
+!  Add mean-field evolution to magnetic field.
+!  Note that this routine is not called when ldisp_current=T.
 !
 !  27-jul-10/axel: coded
 !
@@ -1994,12 +1996,6 @@ module Magnetic_meanfield
           print*, 'daa_dt_meanfield: max(diffus_eta)  =', maxval(diffus_eta)
         maxdiffus=max(maxdiffus,diffus_eta)
       endif
-!
-!  The following is not done if displacement current exists.
-!
-if (iex/=0) then
-!if (n==n1) print*,'AXEL2: p%mf_EMF=',p%mf_EMF(1,:)
-endif
 !
 !  Alpha effect.
 !  Additional terms if Mean Field Theory is included.

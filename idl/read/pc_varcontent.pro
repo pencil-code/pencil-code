@@ -136,6 +136,7 @@ indices = [ $
   { name:'iaakim', label:'Imaginary part of vector potential', dims:3 }, $
   { name:'ieek', label:'Real part of electric field', dims:3 }, $
   { name:'ieekim', label:'Imaginary part of electric field', dims:3 }, $
+  { name:'icurlb', label:'curl of magnetic field', dims:3 }, $
  ;
   { name:'ikappar', label:'kappar', dims:1 }, $
   { name:'itau', label:'tau', dims:1 }, $
@@ -308,11 +309,31 @@ indices_aux = [ $
   { name:'ispecaux', label:'Special auxiliary variable', dims:1 }, $
 ; { name:'iTij', label:'Tij', dims:6 }, $
   { name:'iTij_xx', label:'iTij_xx', dims:1 }, $
-  { name:'iTij_xy', label:'iTij_xx', dims:1 }, $
-  { name:'iTij_xz', label:'iTij_xx', dims:1 }, $
-  { name:'iTij_yy', label:'iTij_xx', dims:1 }, $
-  { name:'iTij_yz', label:'iTij_xx', dims:1 }, $
-  { name:'iTij_zz', label:'iTij_xx', dims:1 }, $
+  { name:'iTij_xy', label:'iTij_xy', dims:1 }, $
+  { name:'iTij_xz', label:'iTij_xz', dims:1 }, $
+  { name:'iTij_yy', label:'iTij_yy', dims:1 }, $
+  { name:'iTij_yz', label:'iTij_yz', dims:1 }, $
+  { name:'iTij_zz', label:'iTij_zz', dims:1 }, $
+; { name:'iuij', label:'uij', dims:9 }, $
+  { name:'iguij1', label:'iguij_xx', dims:1 }, $
+  { name:'iguij2', label:'iguij_xy', dims:1 }, $
+  { name:'iguij3', label:'iguij_xz', dims:1 }, $
+  { name:'iguij4', label:'iguij_yx', dims:1 }, $
+  { name:'iguij5', label:'iguij_yy', dims:1 }, $
+  { name:'iguij6', label:'iguij_yz', dims:1 }, $
+  { name:'iguij7', label:'iguij_zx', dims:1 }, $
+  { name:'iguij8', label:'iguij_zx', dims:1 }, $
+  { name:'iguij9', label:'iguij_zz', dims:1 }, $
+; { name:'ibij', label:'bij', dims:9 }, $
+  { name:'ibij_xx', label:'ibij_xx', dims:1 }, $
+  { name:'ibij_xy', label:'ibij_xy', dims:1 }, $
+  { name:'ibij_xz', label:'ibij_xz', dims:1 }, $
+  { name:'ibij_yx', label:'ibij_yx', dims:1 }, $
+  { name:'ibij_yy', label:'ibij_xy', dims:1 }, $
+  { name:'ibij_yz', label:'ibij_xz', dims:1 }, $
+  { name:'ibij_zx', label:'ibij_zx', dims:1 }, $
+  { name:'ibij_zy', label:'ibij_zy', dims:1 }, $
+  { name:'ibij_zz', label:'ibij_zz', dims:1 }, $
   { name:'iTij1', label:'Tij1', dims:1 }, $
   { name:'iTij2', label:'Tij2', dims:1 }, $
   { name:'iTij3', label:'Tij3', dims:1 }, $

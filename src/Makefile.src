@@ -1746,11 +1746,14 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #FFLAGS= -O3 #(nl6)
 #FFLAGS= -O0 -finit-real=sNaN -fbacktrace -g -fcheck=all -ffpe-trap=invalid,zero,overflow #(nl6)
 #FFLAGS= -O0 #(nl6)
+#FFLAGS= -O0 -llapack #(nl6)
+#FFLAGS= -O0 -finit-real=sNaN -fbacktrace -g -fcheck=all -ffpe-trap=invalid,zero,overflow -llapack #(nl6)
 #FFLAGS_DOUBLE=-fdefault-real-8  #(nl6)
 ##FFLAGS=-O0 -finit-real=NaN #(nl6)
 #CC=gcc #(nl6)
 #CFLAGS=-O3 -DFUNDERSC=1 #(nl6)
 #LD_MPI= #(nl6)
+#LD_MPI= -llapack #(nl6)
 ##
 ## Giuseppe on giuseppe-desktop (gfortran)
 ##
