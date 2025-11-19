@@ -42,11 +42,11 @@
 
     namelist /training_run_pars/ config_file, model, it_train, it_train_start, it_train_chkpt, &
                                  luse_trained_tau, lscale, lwrite_sample, max_loss, lroute_via_cpu,&
-                                 it_train_end, run_epoch
+                                 it_train_end, lrun_epoch
 !
     character(LEN=fnlen) :: model_output_dir, checkpoint_output_dir
     integer :: istat, train_step_ckpt, val_step_ckpt
-    logical :: ltrained=.false., lckpt_written=.false.,lmodel_saved=.false., run_epoch=.false.
+    logical :: ltrained=.false., lckpt_written=.false.,lmodel_saved=.false., lrun_epoch=.false.
     real, dimension (mx,my,mz,3) :: uumean
     real :: tauerror, input_min, input_max, output_min, output_max
     real, dimension(mx, my, mz, 6) :: tau_pred
@@ -102,7 +102,7 @@
       endif
 
 !need this to be false for now but should be ltrained
-      if (ltrained.and..not.run_epoch) then
+      if (ltrained.and..not.lrun_epoch) then
         istat = torchfort_load_model(trim(model), trim(modelfn))
         if (istat /= TORCHFORT_RESULT_SUCCESS) then
           call fatal_error("initialize_training","when loading model: istat="//trim(itoa(istat)))
@@ -123,7 +123,7 @@
         endif
       endif
 
-      ltrained = ltrained .or. luse_trained_tau
+      ltrained = (ltrained .or. luse_trained_tau) .and. .not. lrun_epoch
 
       if (lrun .and. lfortran_launched) then
         allocate(input (mx, my, mz, 3, 1))
@@ -181,7 +181,10 @@
       if (ltrained) then
 
         call infer(f)
-        if ((ldiagnos.or.lvideo).and.lfirst) then
+
+        ! added false since we dont need these
+        !if ((ldiagnos.or.lvideo).and.lfirst) then
+        if (.false.) then
           call calc_tau(f)
           if (lfortran_launched) then
 !
@@ -199,10 +202,12 @@
 !
 ! output for plotting
 !
-      if (lvideo .or. lwrite_sample .and. mod(it, 50)==0) then
-!
+      ! added false since there is another way for writing samples
+      !if (lvideo .or. lwrite_sample .and. mod(it, 50)==0) then
+      if (.false.) then
+!     
         call calc_tau(f)
-
+         
         call infer(f)
         tau_pred = output(:,:,:,:,1)                 ! device to host
         if (lscale) call descale(tau_pred, output_min, output_max)
@@ -239,7 +244,7 @@
       else
         !istat = torchfort_inference(model, get_ptr_gpu_training(iux,iuz), &
         !                                   get_ptr_gpu_training(itauxx,itauzz))
-        call infer_gpu(1)
+        call infer_gpu(itsub)
       endif
 
       if (istat /= TORCHFORT_RESULT_SUCCESS) &
@@ -286,7 +291,8 @@
 !
         if (.not. lfortran_launched) then
           !TP: this is to calculate validation loss
-          call infer_gpu(itsub)
+          !Turn this on / off for getting validation loss
+          !call infer_gpu(itsub)
           !TODO: smoothing/scaling etc. for uu and tau
           !istat = torchfort_train(model, get_ptr_gpu_training(iux,iuz), &
           !                               get_ptr_gpu_training(itauxx,itauzz), train_loss)

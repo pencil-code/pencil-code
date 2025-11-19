@@ -1009,14 +1009,10 @@ extern "C" void torch_infer_c_api(int itstub){
 		acDeviceSetInput(acGridGetDevice(), AC_ranNum, randomNumber);
 
 		auto calc_uumean_tau = acGetOptimizedDSLTaskGraph(initialize_uumean_tau);
-		acGridSynchronizeStream(STREAM_ALL);
 		acGridExecuteTaskGraph(calc_uumean_tau, 1);
-		acGridSynchronizeStream(STREAM_ALL);
 
   	auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
-		acGridSynchronizeStream(STREAM_ALL);
 		acGridExecuteTaskGraph(bcs,1);
-		acGridSynchronizeStream(STREAM_ALL);
 
 	}
 		
@@ -1049,15 +1045,11 @@ extern "C" void torch_infer_c_api(int itstub){
 	torch_inferCAPI((int[]){mx,my,mz}, uumean_ptr, tau_infer_ptr);
 	
 	end = MPI_Wtime();
-	auto calc_uumean_tau = acGetOptimizedDSLTaskGraph(descale_inferred_taus);
-	acGridSynchronizeStream(STREAM_ALL);
-	acGridExecuteTaskGraph(calc_uumean_tau, 1);
-	acGridSynchronizeStream(STREAM_ALL);
+	auto descale_inf = acGetOptimizedDSLTaskGraph(descale_inferred_taus);
+	acGridExecuteTaskGraph(descale_inf, 1);
 
   auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
-	acGridSynchronizeStream(STREAM_ALL);
 	acGridExecuteTaskGraph(bcs,1);
-	acGridSynchronizeStream(STREAM_ALL);
 
 	float vloss = MSE();
  	
@@ -1090,6 +1082,7 @@ extern "C" void torch_train_c_api(AcReal *loss_val, int itstub) {
 
 	calling_train = true;
 
+	/*
 	MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
 
 	if (my_rank == 0){
@@ -1099,16 +1092,13 @@ extern "C" void torch_train_c_api(AcReal *loss_val, int itstub) {
 		MPI_Barrier(MPI_COMM_WORLD);
 		acDeviceSetInput(acGridGetDevice(), AC_ranNum, randomNumber);
 	}
+	*/
 
 	auto calc_uumean_tau = acGetOptimizedDSLTaskGraph(initialize_uumean_tau);
-	acGridSynchronizeStream(STREAM_ALL);
 	acGridExecuteTaskGraph(calc_uumean_tau, 1);
-	acGridSynchronizeStream(STREAM_ALL);
 
   auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
-  acGridSynchronizeStream(STREAM_ALL);
   acGridExecuteTaskGraph(bcs,1);
-  acGridSynchronizeStream(STREAM_ALL);
   	
 
 	AcReal* out = NULL;
@@ -1158,6 +1148,9 @@ extern "C" void torch_train_c_api(AcReal *loss_val, int itstub) {
 
 		for(int i=0;i<train_loss.size();i++){
 			avg_train_loss += train_loss[i];
+		}
+
+		for(int i=0;i<val_loss.size();i++){
 			avg_val_loss += val_loss[i];
 		}
 
@@ -1168,9 +1161,11 @@ extern "C" void torch_train_c_api(AcReal *loss_val, int itstub) {
 	
 		for(int i=0;i<train_loss.size();i++){
 			train_variance += (train_loss[i] - avg_train_loss) * (train_loss[i] - avg_train_loss);
-			val_variance += (val_loss[i] - avg_val_loss) * (val_loss[i] - avg_val_loss);
 		}
 
+		for(int i=0;i<val_loss.size();i++){
+			val_variance += (val_loss[i] - avg_val_loss) * (val_loss[i] - avg_val_loss);
+		}
 			
 		train_variance = train_variance / train_loss.size();
 
@@ -1224,15 +1219,11 @@ float MSE(){
 #if TRAINING
 	#include "user_constants.h"
 
-	auto calc_infered_loss = acGetOptimizedDSLTaskGraph(calc_validation_loss);
-	acGridSynchronizeStream(STREAM_ALL);
-	acGridExecuteTaskGraph(calc_infered_loss, 1);
-	acGridSynchronizeStream(STREAM_ALL);
+	auto calc_validation = acGetOptimizedDSLTaskGraph(calc_validation_loss);
+	acGridExecuteTaskGraph(calc_validation, 1);
 
  	auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
-	acGridSynchronizeStream(STREAM_ALL);
 	acGridExecuteTaskGraph(bcs,1);
-	acGridSynchronizeStream(STREAM_ALL);
 
 	calculated_coeff_scales = true;
 	return (acDeviceGetOutput(acGridGetDevice(), AC_l2_sum))/(6*nxgrid*nygrid*nzgrid);
@@ -1310,32 +1301,37 @@ extern "C" void beforeBoundaryGPU(bool lrmv, int isubstep, double t)
 /***********************************************************************************************/
 bool idx_init = false;
 std::vector<size_t> idx_cache;
+std::vector<double> buffer;
+
 
 void print_debug() {
 if (it % 5 !=0) return;
 #if TRAINING
     #include "user_constants.h"
 		
-		
-		std::ifstream infile("snapshots/snapshot_rank_" + std::to_string(my_rank) + "_it_" + std::to_string(it) + "_infered_" + ".bin", std::ios::binary);
-		//if (infile.good()) return;
+		std::string fname = "snapshots/snapshot_rank_" + std::to_string(my_rank) + "_it_" + std::to_string(it) + ".bin";
+		std::ifstream infile(fname, std::ios::binary);
+		if (infile.good()) return;
 		
 		counter = it;
 		
+		/*
 		MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-
 		acDeviceSetInput(acGridGetDevice(), AC_ranNum, randomNumber);
+		*/
 
 	  acGridHaloExchange();
-
     copyFarray(NULL);
 
     AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
 
+		/*
   	const auto DEVICE_VTXBUF_IDX = [&](const int x, const int y, const int z)
   				{
 					return acVertexBufferIdx(x,y,z,mesh.info);
   				};
+		*/
+
 
 		int x_size = (dims.m1.x - dims.m0.x);
 		int y_size = (dims.m1.y - dims.m0.y);
@@ -1346,6 +1342,7 @@ if (it % 5 !=0) return;
 		
 		if(!idx_init){
 			idx_cache.reserve(n_points);
+			buffer.reserve(n_points * n_fields);
 
     	for (size_t i = dims.m0.x; i < dims.m1.x; i++) {
       	for (size_t j = dims.m0.y; j < dims.m1.y; j++) {
@@ -1356,48 +1353,77 @@ if (it % 5 !=0) return;
 			}
 			idx_init = true;
 		}
+		
+		buffer.clear();
 
-		std::vector<double> buffer;
-		buffer.reserve(n_points * n_fields);
+		const AcReal* tau_xx_buf = mesh.vertex_buffer[tau.xx];
+    const AcReal* tau_inferred_xx_buf = mesh.vertex_buffer[TAU_INFERRED.xx];
+    const AcReal* tau_yy_buf = mesh.vertex_buffer[tau.yy];
+    const AcReal* tau_inferred_yy_buf = mesh.vertex_buffer[TAU_INFERRED.yy];
+    const AcReal* tau_zz_buf = mesh.vertex_buffer[tau.zz];
+    const AcReal* tau_inferred_zz_buf = mesh.vertex_buffer[TAU_INFERRED.zz];
+    const AcReal* tau_xy_buf = mesh.vertex_buffer[tau.xy];
+    const AcReal* tau_inferred_xy_buf = mesh.vertex_buffer[TAU_INFERRED.xy];
+    const AcReal* tau_yz_buf = mesh.vertex_buffer[tau.yz];
+    const AcReal* tau_inferred_yz_buf = mesh.vertex_buffer[TAU_INFERRED.yz];
+    const AcReal* tau_xz_buf = mesh.vertex_buffer[tau.xz];
+    const AcReal* tau_inferred_xz_buf = mesh.vertex_buffer[TAU_INFERRED.xz];
+    const AcReal* uumean_x_buf = mesh.vertex_buffer[uumean.x];
+    const AcReal* uumean_y_buf = mesh.vertex_buffer[uumean.y];
+    const AcReal* uumean_z_buf = mesh.vertex_buffer[uumean.z];
+    const AcReal* uux_buf = mesh.vertex_buffer[UUX];
+    const AcReal* uuy_buf = mesh.vertex_buffer[UUY];
+    const AcReal* uuz_buf = mesh.vertex_buffer[UUZ];
+
+    const double it_double = static_cast<double>(it);
+    const int yz_size = y_size * z_size;
 
 		for(size_t idx_i=0; idx_i < idx_cache.size(); ++idx_i){
 			
 			const size_t idx = idx_cache[idx_i];
 
-			const int i = dims.m0.x + (idx_i / (y_size * z_size));
+			const int i = dims.m0.x + (idx_i / (yz_size));
 			const int j = dims.m0.y + ((idx_i / z_size) % y_size);
 			const int k = dims.m0.z + (idx_i % z_size);
 			
-			 buffer.push_back(static_cast<double>(it));
+			 buffer.push_back(it_double);
 
-        buffer.push_back(mesh.vertex_buffer[tau.xx][idx]);
-        buffer.push_back(mesh.vertex_buffer[TAU_INFERRED.xx][idx]);
-        buffer.push_back(mesh.vertex_buffer[tau.yy][idx]);
-        buffer.push_back(mesh.vertex_buffer[TAU_INFERRED.yy][idx]);
-        buffer.push_back(mesh.vertex_buffer[tau.zz][idx]);
-        buffer.push_back(mesh.vertex_buffer[TAU_INFERRED.zz][idx]);
-        buffer.push_back(mesh.vertex_buffer[tau.xy][idx]);
-        buffer.push_back(mesh.vertex_buffer[TAU_INFERRED.xy][idx]);
-        buffer.push_back(mesh.vertex_buffer[tau.yz][idx]);
-        buffer.push_back(mesh.vertex_buffer[TAU_INFERRED.yz][idx]);
-        buffer.push_back(mesh.vertex_buffer[tau.xz][idx]);
-        buffer.push_back(mesh.vertex_buffer[TAU_INFERRED.xz][idx]);
-        buffer.push_back(mesh.vertex_buffer[uumean.x][idx]);
-        buffer.push_back(mesh.vertex_buffer[uumean.y][idx]);
-        buffer.push_back(mesh.vertex_buffer[uumean.z][idx]);
-        buffer.push_back(mesh.vertex_buffer[UUX][idx]);
-        buffer.push_back(mesh.vertex_buffer[UUY][idx]);
-        buffer.push_back(mesh.vertex_buffer[UUZ][idx]);
+       buffer.push_back(tau_xx_buf[idx]);
+       buffer.push_back(tau_inferred_xx_buf[idx]);
 
-        buffer.push_back(static_cast<double>(i));
-        buffer.push_back(static_cast<double>(j));
-        buffer.push_back(static_cast<double>(k));
+       buffer.push_back(tau_yy_buf[idx]);
+       buffer.push_back(tau_inferred_yy_buf[idx]);
+
+       buffer.push_back(tau_zz_buf[idx]);
+       buffer.push_back(tau_inferred_zz_buf[idx]);
+
+       buffer.push_back(tau_xy_buf[idx]);
+       buffer.push_back(tau_inferred_xy_buf[idx]);
+
+       buffer.push_back(tau_yz_buf[idx]);
+       buffer.push_back(tau_inferred_yz_buf[idx]);
+
+       buffer.push_back(tau_xz_buf[idx]);
+       buffer.push_back(tau_inferred_xz_buf[idx]);
+
+
+       buffer.push_back(uumean_x_buf[idx]);
+       buffer.push_back(uumean_y_buf[idx]);
+       buffer.push_back(uumean_z_buf[idx]);
+
+       buffer.push_back(uux_buf[idx]);
+       buffer.push_back(uuy_buf[idx]);
+       buffer.push_back(uuz_buf[idx]);
+
+       buffer.push_back(static_cast<double>(i));
+       buffer.push_back(static_cast<double>(j));
+       buffer.push_back(static_cast<double>(k));
 		}
 	
 
-		std::ostringstream fname;
-    fname << "snapshots/snapshot_rank_" + std::to_string(my_rank) + "_it_" + std::to_string(it) + "_infered_" + ".bin";
-    std::ofstream out(fname.str(), std::ios::binary);
+		//std::ostringstream fname;
+    //fname << "snapshots/snapshot_rank_" + std::to_string(my_rank) + "_it_" + std::to_string(it) + ".bin";
+    std::ofstream out(fname, std::ios::binary);
     out.write(reinterpret_cast<const char*>(buffer.data()), buffer.size() * sizeof(double));
     out.close();
 
