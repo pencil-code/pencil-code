@@ -4366,7 +4366,9 @@ module Magnetic
 !
 !  In 0-D, initialize to p%bij to bij_0D_test
 !
-        if (l1==l2 .and. m1==m2 .and. n1==n2) p%bij(1,:,:)=bij_0D_test
+        if (dimensionality == 0) then
+          do i = 1,nx; p%bij(i,:,:)=bij_0D_test; enddo
+        endif
 !
 !  Possibility of bij as auxiliary array
 !
@@ -11890,6 +11892,9 @@ print*,'AXEL2: should not be here (eta) ... '
     call copy_addr(ltime_integrals_always,p_par(273)) ! bool
     call copy_addr(lvart_in_shear_frame,p_par(274)) ! bool
     call copy_addr(dtcor,p_par(275))
+    call copy_addr(lcurlb_as_aux,p_par(276)) ! bool
+    call copy_addr(lbij_as_aux,p_par(277)) ! bool
+    call copy_addr(bij_0d_test,p_par(278)) ! (3) (3)
 
 
     endsubroutine pushpars2c

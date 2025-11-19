@@ -3483,7 +3483,9 @@ module Hydro
 !
 !  In 0-D, initialize to p%uij to uij_0D_test
 !
-        if (l1==l2 .and. m1==m2 .and. n1==n2) p%uij(1,:,:)=uij_0D_test
+      if (dimensionality == 0) then
+        do i=1,nx; p%uij(i,:,:)=uij_0D_test; enddo
+      endif
 !
 !  if gradu is to be stored as auxiliary then we store it now
 !
@@ -9084,6 +9086,8 @@ module Hydro
     call copy_addr(lcorrect_penc_u,p_par(122)) ! bool
     call copy_addr(lcalc_uuavg,p_par(123)) ! bool
     call copy_addr(lremove_mean_angmom,p_par(124)) ! bool
+    call copy_addr(luij_as_aux,p_par(125)) ! bool
+    call copy_addr(uij_0d_test,p_par(126)) ! (3) (3)
 
     endsubroutine pushpars2c
 !***********************************************************************
