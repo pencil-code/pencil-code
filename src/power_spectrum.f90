@@ -653,16 +653,30 @@ outer:do ikz=1,nz
 !
 !  2025-Nov-18/Kishore: coded
 !
+    use Sub, only: curli
 !
     real, dimension (mx,my,mz,mfarray), intent(in) :: f
     character (len=*), intent(in) :: sp
     real, dimension(nx,ny,nz), intent(out) :: a_re, a_im
     integer, intent(in) :: ivec
 !
+    integer :: n_loc, m_loc
+!
     if (trim(sp)=='u') then
       if (iuu==0) call fatal_error('power','iuu=0')
       !$omp workshare
       a_re = f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
+      !$omp end workshare
+    elseif (trim(sp)=='b') then
+      if (iaa==0) call fatal_error('power','iaa=0')
+      !$omp workshare
+      !$omp do collapse(2)
+      do n_loc=n1,n2
+        do m_loc=m1,m2
+          m=m_loc;n=n_loc
+          call curli(f,iaa,a_re(:,m-nghost,n-nghost),ivec)
+        enddo
+      enddo
       !$omp end workshare
     elseif (trim(sp)=='ru') then
       if (iuu==0) call fatal_error('power','iuu=0')
