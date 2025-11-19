@@ -10,7 +10,6 @@ Contains the functions to generate a snapshot (VAR files).
 """
 import sys
 
-
 def write_snapshot(
     snapshot,
     file_name="VAR0",
@@ -20,6 +19,7 @@ def write_snapshot(
     nprocz=1,
     precision="d",
     nghost=3,
+    persist=None,
     t=None,
     x=None,
     y=None,
@@ -58,6 +58,9 @@ def write_snapshot(
     *nghost*:
       Number of ghost zones.
 
+    *persist*:
+      Structure of persistent values
+
     *t*:
       Time of the snapshot.
 
@@ -75,6 +78,7 @@ def write_snapshot(
     from os.path import join
     import numpy as np
     from scipy.io import FortranFile
+    from pencil import read
 
     # Determine the shape of the input snapshot.
     nx = snapshot.shape[3]
@@ -193,6 +197,14 @@ def write_snapshot(
                     meta_data_cpu = np.append(meta_data_cpu, lshear)
                 meta_data_cpu = meta_data_cpu.astype(data_type)
                 destination_file.write_record(meta_data_cpu)
+
+                if persist != None:
+                    for item in tuple(persist.__dict__.items()):
+                        for key in read.record_types.keys():
+                            if key == item[0]:
+                                destination_file.write_record(read.record_types[key][0],item[1])
+                    destination_file.write_record(2000)
+
                 destination_file.close()
                 iproc += 1
 

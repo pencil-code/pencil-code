@@ -583,12 +583,12 @@ class DataCube(object):
         to the f array and grid data are read from the first proc data
 
         Record types provide the labels and id record for the peristent
-        variables in the depricated fortran binary format
+        variables in the fortran binary format
         """
         record_types = {}
         for key in read.record_types.keys():
             if read.record_types[key][1] == "d":
-                record_types[key] = (read.record_types[key][0], precision)
+                record_types[key] = (read.record_types[key][0], precision, read.record_types[key][2])
             else:
                 record_types[key] = read.record_types[key]
 
@@ -605,10 +605,12 @@ class DataCube(object):
             if block_id == 2000:
                 break
             for key in record_types.keys():
-                #Kishore: DANGER: there is a wrong assumption here that persistent variables must be scalars. A counter-example is forcing_location.
                 if record_types[key][0] == block_id:
+                    #As persistent variables can be arrays (e.g. forcing_location) tmp_val is made an
+                    #array of length record_types[key][2] and type record_types[key][1].
+                    tmp_val = np.zeros((record_types[key][2],), dtype=record_types[key][1])
                     tmp_val = infile.read_record(record_types[key][1])
-                    pers_obj.__setattr__(key, tmp_val[0])
+                    pers_obj.__setattr__(key, tmp_val)
                     if not quiet:
                         print(key, record_types[key][0], record_types[key][1], tmp_val)
 
