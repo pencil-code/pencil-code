@@ -256,9 +256,9 @@ module BorderProfiles
               print*,"You have requested to read VAR0 to set the border profile."
               print*,"This action has modified the time stamp of the simulation."
               print*,"This is probably not what you want. Likely you are starting,"
-              print*,"from a previous snapshot with less physics, and set ireset_start=0 in start.in."
+              print*,"from a previous snapshot with less physics, and set ireset_tstart=0 in start.in."
               print*,"You probably want to reset it to the default value in run.in."
-              print*,"Do it by setting ireset_start=2 in run_pars."
+              print*,"Do it by setting ireset_tstart=2 in run_pars."
            endif
            call fatal_error("request_border_driving","")
         endif
