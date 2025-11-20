@@ -33,6 +33,7 @@ DEBUG_IO           =   debug_io_dist
 HDF5_IO            = nohdf5_io
 IO                 =   io_dist
 IO_IN              =
+LIBRARIES          =
 MPICOMM            = nompicomm
 NSCBC              = noNSCBC
 POWER              = nopower_spectrum
@@ -510,6 +511,11 @@ ifeq ($(USE_SPECIAL_DISPATCHER),yes)
   endif
   SPECIAL_DEPS += special.so
   SPECIAL = special
+endif
+#
+ifneq ($(LIBRARIES), )
+  LIBS := $(strip $(LIBRARIES))
+  override LDFLAGS += $(shell (echo $(LIBS) | sed -e's/  */ -l/g' -e's/\([a-zA-Z0-9]\)/-l\1/'))
 endif
 #
 CUDA_MAKEDIR=astaroth
