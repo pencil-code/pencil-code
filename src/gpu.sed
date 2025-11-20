@@ -31,6 +31,7 @@
 /RUNTIME_COMPILATION/ b end
 /TRANSPILATION/ b end
 /GENERATE_DSL_CODE/ b end
+/LIBRARIES/ b end
 /FARRAY/ b end
 /^ *[A-Z0-9_]* *= *no/ b end
 s/^ *REAL_PRECISION *= *double *$/PRECISION=DOUBLE/
