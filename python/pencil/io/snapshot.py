@@ -199,11 +199,19 @@ def write_snapshot(
                 destination_file.write_record(meta_data_cpu)
 
                 if persist != None:
+                    key0=list(read.record_types.keys())[0]
+                    destination_file.write_record(np.int32(read.record_types[key0][0]))
                     for item in tuple(persist.__dict__.items()):
                         for key in read.record_types.keys():
                             if key == item[0]:
-                                destination_file.write_record(read.record_types[key][0],item[1])
-                    destination_file.write_record(2000)
+                                destination_file.write_record(np.int32(read.record_types[key][0]))
+                                if read.record_types[key][1] == 'd':
+                                    destination_file.write_record(np.array(item[1], dtype=data_type))
+                                else:
+                                    if read.record_types[key][1] == 'i':
+                                        destination_file.write_record(np.int32(item[1]))
+
+                    destination_file.write_record(np.int32(read.record_types[key0][0]))
 
                 destination_file.close()
                 iproc += 1
