@@ -669,7 +669,6 @@ outer:do ikz=1,nz
       !$omp end workshare
     elseif (trim(sp)=='b') then
       if (iaa==0) call fatal_error('power','iaa=0')
-      !$omp workshare
       !$omp do collapse(2)
       do n_loc=n1,n2
         do m_loc=m1,m2
@@ -677,7 +676,6 @@ outer:do ikz=1,nz
           call curli(f,iaa,a_re(:,m-nghost,n-nghost),ivec)
         enddo
       enddo
-      !$omp end workshare
     elseif (trim(sp)=='ru') then
       if (iuu==0) call fatal_error('power','iuu=0')
       if (ilnrho==0) call fatal_error('power','ilnrho=0')
@@ -737,7 +735,7 @@ outer:do ikz=1,nz
 !
 !  Sum spectral contributions into bins of k^2 - avoids rounding of k.
 !
-        !$omp do collapse(3)
+        !$omp do collapse(3) private(k2)
         do ikz=1,nz
           do iky=1,ny
             do ikx=1,nx
@@ -749,7 +747,7 @@ outer:do ikz=1,nz
           enddo
         enddo
       else
-        !$omp do collapse(3)
+        !$omp do collapse(3) private(k)
         do ikz=1,nz
           do iky=1,ny
             do ikx=1,nx
