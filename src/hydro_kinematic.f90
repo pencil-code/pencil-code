@@ -344,10 +344,13 @@ module Hydro
           call mpibcast(legendre_coeff,(/nr,ell_max/))
 
           do mm=m1,m2 
+print*,'AXEL: ell_max=',ell_max
             do ell=1,ell_max
-              call legendre_pl(LP1,ell,y(mm))
+              !call legendre_pl(LP1,ell,cos(y(mm)))
+LP1=plegendre(2*(ell-1), 0, cos(y(mm)))
+print*,'AXEL: ell,y(mm)*180./pi,LP1=',ell,y(mm)*180./pi,LP1
               do ll=l1,l2
-                f(ll,mm,n1:n2,iuz)=f(ll,mm,n1:n2,iuz)+legendre_coeff(ll,ell)*LP1
+                f(ll,mm,n1:n2,iuz)=f(ll,mm,n1:n2,iuz)+legendre_coeff(ll,ell)*LP1*x(ll)*sin(y(mm))
               enddo            
             enddo
           enddo        
