@@ -16,3 +16,4 @@ IO=io_dist
 #POWER=power_spectrum
 SPECIAL=special/schur_triple_decomp
 REAL_PRECISION=double
+LIBRARIES = lapack blas
