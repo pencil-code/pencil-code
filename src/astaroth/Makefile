@@ -85,6 +85,7 @@ TRAINING                 ?= notraining
 CMAKE_TRAINING_VALUE     ?= off
 TRANSPILATION            ?= off
 GENERATE_DSL_CODE        ?= off
+MODIFY_SOURCE_CODE       ?= off
 INLINING                 ?= off
 READ_OVERRIDES           ?= off
 
@@ -194,7 +195,11 @@ ifeq ($(TRANSPILATION),on)
         ifeq ($(GENERATE_DSL_CODE),on)
 	  rm -f PC_modulesources_old.h
         endif
-	python3 transpile.py
+        ifeq ($(MODIFY_SOURCE_CODE),on)
+	  python3 transpile.py --modify_source_code
+        else
+	  python3 transpile.py
+        endif
 	cp PC_modulesources.h PC_modulesources_old.h
 else
 	@export DSL_MODULE_DIR=$(DSL_MODULE_DIR); \
