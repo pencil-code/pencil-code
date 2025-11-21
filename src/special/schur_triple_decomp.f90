@@ -96,14 +96,30 @@ module Special
   namelist /special_init_pars/ &
       dummy
 !
+  real, dimension (nx) :: uSH2, uRR2, uEL2
+  real, dimension (nx) :: bSH2, bRR2, bEL2
+!
   namelist /special_run_pars/ &
       luij_schur, lbij_schur
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
-  integer :: idiag_tph=0      ! DIAG_DOC: $t_\mathrm{phys}$
+  integer :: idiag_uSH2=0      ! DIAG_DOC: $u^\mathrm{SH}$
+  integer :: idiag_uRR2=0      ! DIAG_DOC: $u^\mathrm{RR}$
+  integer :: idiag_uEL2=0      ! DIAG_DOC: $u^\mathrm{EL}$
+  integer :: idiag_bSH2=0      ! DIAG_DOC: $b^\mathrm{SH}$
+  integer :: idiag_bRR2=0      ! DIAG_DOC: $b^\mathrm{RR}$
+  integer :: idiag_bEL2=0      ! DIAG_DOC: $b^\mathrm{EL}$
 !
   contains
+!================== External SELECT function for DGEES ==================
+logical function selct(WR, WI)
+  implicit none
+  real, intent(in) :: WR, WI
+  ! Return .TRUE. for eigenvalues to move to the TOP-LEFT block.
+  ! We choose REAL eigenvalues => complex pair (if any) goes bottom-right.
+  selct = (WI == 0.)
+end function selct
 !****************************************************************************
     subroutine register_special
 !
@@ -176,9 +192,7 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      !real, dimension (3,3) :: matA, matV, matQ
-      real, dimension (3,3) :: matA !, matQ
-      !real, allocatable :: A(:,:), T(:,:), VS(:,:), WR(:), WI(:), WORK(:)
+      real, dimension (3,3) :: matA, matV_SH, matV_RR, matV_EL
       real, allocatable :: matV(:,:), matQ(:,:)
       real :: matA2=0.
       integer :: nnn=3
@@ -189,47 +203,106 @@ module Special
 !  Possibility of applying triple decomposition of uij
 !
       if (luij_schur) then
-          !call schur_triple_decomp(p%uij,mat1,mat2)
         matA=p%uij(1,:,:)
-matA2=sum(matA**2)
-print*,'AXEL: matA2=',matA2
-!allocate(A(nnn,nnn), T(nnn,nnn), VS(nnn,nnn), WR(nnn), WI(nnn))
-allocate(matV(nnn,nnn), matQ(nnn,nnn))
-print*,'AXEL: matV=',matV
-print*,'AXEL: matQ=',matQ
-if (matA2/=0.) &
-          call schur_standardized(matA,matV,matQ)
-print*,'AXEL: matV=',matV
-print*,'AXEL: matQ=',matQ
-deallocate(matV, matQ)
+        matA2=sum(matA**2)
+        print*,'AXEL: matA2=',matA2
+        allocate(matV(nnn,nnn), matQ(nnn,nnn))
+        if (matA2/=0.) then
+          call schur_standardized(matA, matV, matQ)
+          call schur_decompose(matV, matV_SH, matV_RR, matV_EL)
+          uSH2=sum(matV_SH**2)
+          uRR2=sum(matV_RR**2)
+          uEL2=sum(matV_EL**2)
+!
+!  Print
+!
+          print*,'matV_SH'
+          call print_mat(matV_SH)
+          print*,'matV_RR'
+          call print_mat(matV_RR)
+          print*,'matV_EL'
+          call print_mat(matV_EL)
+        endif
+        deallocate(matV, matQ)
         endif
 !
 !  Possibility of applying triple decomposition of bij
 !
       if (lbij_schur) then
-          !call schur_triple_decomp(p%bij,mat1,mat2)
         matA=p%bij(1,:,:)
-matA2=sum(matA**2)
-print*,'AXEL: matA2=',matA2
-!allocate(A(nnn,nnn), T(nnn,nnn), VS(nnn,nnn), WR(nnn), WI(nnn))
-allocate(matV(nnn,nnn), matQ(nnn,nnn))
-print*,'AXEL: matV=',matV
-print*,'AXEL: matQ=',matQ
-if (matA2/=0.) &
-        call schur_standardized(matA,matV,matQ)
-print*,'AXEL: matV=',matV
-print*,'AXEL: matQ=',matQ
-deallocate(matV, matQ)
+        matA2=sum(matA**2)
+        allocate(matV(nnn,nnn), matQ(nnn,nnn))
+        if (matA2/=0.) then
+          call schur_standardized(matA,matV,matQ)
+          call schur_decompose(matV, matV_SH, matV_RR, matV_EL)
+          bSH2=sum(matV_SH**2)
+          bRR2=sum(matV_RR**2)
+          bEL2=sum(matV_EL**2)
+!
+!  Print
+!
+          print*,'matB_SH'
+          call print_mat(matV_SH)
+          print*,'matB_RR'
+          call print_mat(matV_RR)
+          print*,'matB_EL'
+          call print_mat(matV_EL)
+        endif
+        deallocate(matV, matQ)
       endif
-!     if (lpencil(i_infl_phi)) p%infl_phi=f(l1:l2,m,n,iinfl_phi)
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
-subroutine schur_standardized(A_input, T, VS)
+    subroutine schur_decompose(matV, matV_SH, matV_RR, matV_EL)
+      real, dimension (3,3) :: matV_SH, matV_RR, matV_EL, matV_rest, matV_rest_trans
+      real, allocatable :: matV(:,:)
+      integer :: i, j, nnn=3
+!
+!  Shear:
+!
+      matV_SH(1,1)=0.
+      matV_SH(1,2)=matV(1,2)
+      matV_SH(1,3)=matV(1,3)
+!
+      matV_SH(2,1)=0.
+      matV_SH(2,2)=0.
+      matV_SH(2,3)=0.
+!
+      matV_SH(3,1)=0.
+      matV_SH(3,2)=matV(3,2)+matV(2,3)
+      matV_SH(3,3)=0.
+!
+!  Rest:
+!
+      matV_rest=matV-matV_SH
+!
+!  Transposed matrix
+!
+      do j=1,3
+        do i=1,3
+          matV_rest_trans(i,j)=matV_rest(j,i)
+        enddo
+      enddo
+!
+!  Antisymmetric and symmetric parts
+!
+      matV_RR=.5*(matV_rest-matV_rest_trans)
+      matV_EL=.5*(matV_rest+matV_rest_trans)
+!
+    endsubroutine schur_decompose
+!***********************************************************************
+  subroutine print_mat(M)
+    real            , intent(in) :: M(:,:)
+    integer :: r, c
+    do r = 1, size(M,1)
+       write(*,'(100(1X,F12.6))') ( M(r,c), c=1,size(M,2) )
+    end do
+  end subroutine print_mat
+!***********************************************************************
+    subroutine schur_standardized(A_input, T, VS)
   implicit none
   integer, parameter :: dp = selected_real_kind(15, 307)
-  !integer            :: nnn, lda, ldvs, info=0, sdim=-2147483648, lwork
-  integer            :: nnn, lda, ldvs, info=29249, sdim=-214748364, lwork
+  integer            :: nnn, lda, ldvs, info, sdim, lwork
   integer            :: i, j
   real               :: tol
   real            :: A_input(3,3)!, A(3,3), T(3,3), VS(3,3)
@@ -242,8 +315,9 @@ subroutine schur_standardized(A_input, T, VS)
         real             :: R11, R12, R21, R22
         real            , allocatable :: TMP(:,:), TMP2(:,:)
 
-  external dgees, dlanv2, dgemm     ! BLAS/LAPACK externals
-  external selct                    ! our SELECT function for DGEES
+  !external dgees, dlanv2, dgemm     ! LAPACK externals
+  external dgees, dlanv2            ! LAPACK externals
+! external selct                    ! our SELECT function for DGEES
 
   ! ---- Example matrix (3x3). Replace with your data. ----
   nnn = 3
@@ -269,8 +343,8 @@ subroutine schur_standardized(A_input, T, VS)
   A = reshape(A_input, shape(A_input), order=(/2,1/) )
 
   T = A
-print*,'AXEL33: A=',A
-BWORK=(/ .true., .false., .true. /)
+!print*,'AXEL33: A=',A
+!BWORK=(/ .true., .false., .true. /)
 !VS=reshape( (/3.5102224073163848E+151,  9.1771665551093221E+170,  5.9781943146790832E-322, &
 !              3.0469028379029674E-320,  2.2271680410374069E-316,  5.0373775222878817E+175, &
 !              1.2827920428622125E-319,  2.8092572622533279E-320,  3.7477930586487266E-316 /), &
@@ -279,20 +353,7 @@ BWORK=(/ .true., .false., .true. /)
   ! ---- Workspace query for DGEES ----
   lwork = -1
   allocate(WORK(1))
-print*,'AXEL: nnn=', nnn
-print*,'AXEL: T=', T
-print*,'AXEL: lda=', lda
-print*,'AXEL: sdim=', sdim
-print*,'AXEL: WR=', WR
-print*,'AXEL: WI=', WI
-print*,'AXEL: VS=', VS
-print*,'AXEL: ldvs=', ldvs
-print*,'AXEL: WORK=', WORK
-print*,'AXEL: lwork=', lwork
-print*,'AXEL: BWORK=', BWORK
-print*,'AXEL: info=', info
   call dgees('V','S', selct, nnn, T, lda, sdim, WR, WI, VS, ldvs, WORK, lwork, BWORK, info)
-print*,'AXEL: after dgees'
   if (info .ne. 0) then
      print *, 'DGEES(work query) failed, INFO=', info
      stop 1
@@ -303,30 +364,16 @@ print*,'AXEL: after dgees'
 
   ! ---- Real Schur with sorting: real eigenvalues first (complex pair -> bottom-right) ----
   T = A
-print*,'AXEL: nnn=', nnn
-print*,'AXEL: T=', T
-print*,'AXEL: lda=', lda
-print*,'AXEL: sdim=', sdim
-print*,'AXEL: WR=', WR
-print*,'AXEL: WI=', WI
-print*,'AXEL: VS=', VS
-print*,'AXEL: ldvs=', ldvs
-print*,'AXEL: WORK=', WORK
-print*,'AXEL: lwork=', lwork
-print*,'AXEL: BWORK=', BWORK
-print*,'AXEL: info=', info
   call dgees('V','S', selct, nnn, T, lda, sdim, WR, WI, VS, ldvs, WORK, lwork, BWORK, info)
   if (info .ne. 0) then
-     print *, 'DGEES failed, INFO=', info
+     !print *, 'DGEES failed, INFO=', info
      stop 1
   end if
 
-stop
   ! ---- Standardize the lower-right 2x2 block if present ----
   if (nnn >= 2) then
      i = nnn-1
      j = nnn
-print*,'AXEL: j,i,abs(T(j,i))=', j,i,abs(T(j,i))
      if (abs(T(j,i)) > tol) then
         ! We have a 2x2 block at (i:i+1, i:i+1)
 
@@ -361,8 +408,6 @@ print*,'AXEL: j,i,abs(T(j,i))=', j,i,abs(T(j,i))
         VS(:,i) = TMP(:,1)
         VS(:,j) = TMP(:,2)
 
-print*,'AXEL: VS5'
-print*,'AXEL: VS5',VS
         deallocate(TMP, TMP2)
 
         ! Enforce upper-right >= 0 (beta >= 0) by a column/row sign flip if needed
@@ -384,30 +429,9 @@ print*,'AXEL: VS5',VS
   print *, 'T (standardized Schur form):'
   call print_mat(T)
   print *, 'Q (VS from DGEES):'
-print*,'AXEL: VS'
-print*,'AXEL: VS',VS
   call print_mat(VS)
 
-contains
-
-  subroutine print_mat(M)
-    real            , intent(in) :: M(:,:)
-    integer :: r, c
-    do r = 1, size(M,1)
-       write(*,'(100(1X,F12.6))') ( M(r,c), c=1,size(M,2) )
-    end do
-  end subroutine print_mat
-
-endsubroutine schur_standardized
-
-!================== External SELECT function for DGEES ==================
-logical function selct(WR, WI)
-  implicit none
-  real            , intent(in) :: WR, WI
-  ! Return .TRUE. for eigenvalues to move to the TOP-LEFT block.
-  ! We choose REAL eigenvalues => complex pair (if any) goes bottom-right.
-  selct = (WI .eq. 0.0d0)
-end function selct
+    endsubroutine schur_standardized
 !***********************************************************************
     subroutine dspecial_dt(f,df,p)
 !
@@ -425,8 +449,7 @@ end function selct
 !   6-oct-03/tony: coded
 !   2-nov-21/axel: first set of equations coded
 !
-!     use Diagnostics, only: sum_mn_name, max_mn_name, save_name
-!     use Sub, only: dot_mn, del2
+      use Diagnostics, only: sum_mn_name
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -439,17 +462,23 @@ end function selct
 !
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dspecial_dt'
 !
+!  Diagnostics
+!
+      if (ldiagnos) then
+        call sum_mn_name(uSH2,idiag_uSH2)
+        call sum_mn_name(uRR2,idiag_uRR2)
+        call sum_mn_name(uEL2,idiag_uEL2)
+        call sum_mn_name(bSH2,idiag_bSH2)
+        call sum_mn_name(bRR2,idiag_bRR2)
+        call sum_mn_name(bEL2,idiag_bEL2)
+      endif
+!
     endsubroutine dspecial_dt
 !***********************************************************************
     subroutine dspecial_dt_ode
 !
       use Diagnostics, only: save_name
       use SharedVariables, only: get_shared_variable
-!
-!  Diagnostics
-!
-      !if (ldiagnos) then
-      !endif
 !
     endsubroutine dspecial_dt_ode
 !***********************************************************************
@@ -504,11 +533,17 @@ end function selct
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_tph=0
+        idiag_uSH2=0; idiag_uRR2=0; idiag_uEL2=0
+        idiag_bSH2=0; idiag_bRR2=0; idiag_bEL2=0
       endif
 !
       do iname=1,nname
-        !call parse_name(iname,cname(iname),cform(iname),'redshift',idiag_redshift)
+        call parse_name(iname,cname(iname),cform(iname),'uSH2',idiag_uSH2)
+        call parse_name(iname,cname(iname),cform(iname),'uRR2',idiag_uRR2)
+        call parse_name(iname,cname(iname),cform(iname),'uEL2',idiag_uEL2)
+        call parse_name(iname,cname(iname),cform(iname),'bSH2',idiag_bSH2)
+        call parse_name(iname,cname(iname),cform(iname),'bRR2',idiag_bRR2)
+        call parse_name(iname,cname(iname),cform(iname),'bEL2',idiag_bEL2)
       enddo
 !
     endsubroutine rprint_special

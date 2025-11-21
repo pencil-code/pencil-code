@@ -608,11 +608,3 @@ program start
   if (lroot) print*
 !
 endprogram
-!================== External SELECT function for DGEES ==================
-logical function selct(WR, WI)
-  implicit none
-  double precision, intent(in) :: WR, WI
-  ! Return .TRUE. for eigenvalues to move to the TOP-LEFT block.
-  ! We choose REAL eigenvalues => complex pair (if any) goes bottom-right.
-  selct = (WI .eq. 0.0d0)
-end function selct
