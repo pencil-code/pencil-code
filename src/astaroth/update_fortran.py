@@ -13,6 +13,7 @@ def main():
     build_command = f"cd {PC_HOME}/samples/1d-tests/sine-Gordon_doublet && pc_build -f GNU-GCC_MPI+GNU-GCC_GPU+GNU-GCC_debug MODIFY_SOURCE_CODE=on"
     command = f"{source_command} && {submodule_command} && {build_command}"
     os.system(command)
+    os.system(f"cd {PC_HOME} && git diff")
 
 if __name__ == "__main__":
     main()
