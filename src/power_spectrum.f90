@@ -7045,9 +7045,6 @@ outer:do ikz=1,nz
 !
 !   Since this is a large array, we keep it allocatable.
 !
-    allocate(data_full(nxgrid,nygrid,nzgrid), stat=ierr)
-    if (ierr /= 0) call fatal_error ('gather_and_output_by_range', &
-      'Failed to allocate memory for data_full')
 !
     nkx = get_range_no(kxrange, nxgrid)
     nky = get_range_no(kyrange, nygrid)
@@ -7055,11 +7052,17 @@ outer:do ikz=1,nz
     ncomp = size(data,4)
 !
     if (lroot) then
+      allocate(data_full(nxgrid,nygrid,nzgrid), stat=ierr)
+      if (ierr /= 0) call fatal_error ('gather_and_output_by_range', &
+        'Failed to allocate memory for data_full')
+!
       allocate(data_sliced(nkx,nky,nkz,ncomp), stat=ierr)
       if (ierr /= 0) call fatal_error ('gather_and_output_by_range', &
         'Failed to allocate memory for data_sliced')
     else
-      allocate(data_sliced(1,1,1,1)) !dummy
+      !dummy
+      allocate(data_full(1,ny,nz)) !cannot be (1,1,1)
+      allocate(data_sliced(1,1,1,1))
     endif
 !
     comp: do icomp=1,ncomp
