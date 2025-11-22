@@ -234,14 +234,7 @@ sub get_src_files {
 
     if (! @src_files) {         # no explicit source files given
         # Process all src/*.f90 files
-        my $srcdir;
-        if (-d '../src') {
-            $srcdir = '../src';
-        } elsif (-d "$ENV{PENCIL_HOME}/src") {
-            $srcdir = "$ENV{PENCIL_HOME}/src";
-        } else {
-            die " Can't find suitable src/ dir\n";
-        }
+        my $srcdir = get_srcdir();
         print STDERR  "\$srcdir = <$srcdir>\n" if ($debug);
 
         @src_files = <$srcdir/*.f90 $srcdir/*/*.f90>;
@@ -254,6 +247,16 @@ sub get_src_files {
     }
 
     return (\@src_files, $all_src);
+}
+# ---------------------------------------------------------------------- #
+sub get_srcdir {
+    if (-d '../src') {
+        return '../src';
+    } elsif (-d "$ENV{PENCIL_HOME}/src") {
+        return "$ENV{PENCIL_HOME}/src";
+    } else {
+        die " Can't find suitable src/ dir\n";
+    }
 }
 # ---------------------------------------------------------------------- #
 sub printopts {
