@@ -25,7 +25,8 @@ p = pc.read.power(
 def run_and_write(s, f):
     f.write(f"{s} :")
     for a in eval(s):
-        f.write(f" {a:g}")
+        #NOTE: the numbers in poweruz_xy.dat have only 3 significant figures.
+        f.write(f" {a:.2e}")
     f.write('\n')
 
 with open(f'{__file__[:-3]}.out', 'w') as f:
