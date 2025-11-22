@@ -195,7 +195,7 @@ end function selct
       real, dimension (3,3) :: matA, matV_SH, matV_RR, matV_EL
       real, allocatable :: matV(:,:), matQ(:,:)
       real :: matA2=0.
-      integer :: nnn=3
+      integer :: l, nnn=3
 !
       intent(in) :: f
       intent(inout) :: p
@@ -203,53 +203,59 @@ end function selct
 !  Possibility of applying triple decomposition of uij
 !
       if (luij_schur) then
-        matA=p%uij(1,:,:)
-        matA2=sum(matA**2)
-        print*,'AXEL: matA2=',matA2
-        allocate(matV(nnn,nnn), matQ(nnn,nnn))
-        if (matA2/=0.) then
-          call schur_standardized(matA, matV, matQ)
-          call schur_decompose(matV, matV_SH, matV_RR, matV_EL)
-          uSH2=sum(matV_SH**2)
-          uRR2=sum(matV_RR**2)
-          uEL2=sum(matV_EL**2)
+        do l=1,nx
+          matA=p%uij(l,:,:)
+          matA2=sum(matA**2)
+          allocate(matV(nnn,nnn), matQ(nnn,nnn))
+          if (matA2/=0.) then
+            call schur_standardized(matA, matV, matQ)
+            call schur_decompose(matV, matV_SH, matV_RR, matV_EL)
+            uSH2(l)=sum(matV_SH**2)
+            uRR2(l)=sum(matV_RR**2)
+            uEL2(l)=sum(matV_EL**2)
 !
 !  Print
 !
-          print*,'matV_SH'
-          call print_mat(matV_SH)
-          print*,'matV_RR'
-          call print_mat(matV_RR)
-          print*,'matV_EL'
-          call print_mat(matV_EL)
-        endif
-        deallocate(matV, matQ)
-        endif
+            !print*,'matV_SH'
+            !call print_mat(matV_SH)
+            !print*,'matV_RR'
+            !call print_mat(matV_RR)
+            !print*,'matV_EL'
+            !call print_mat(matV_EL)
+          endif
+          deallocate(matV, matQ)
+        enddo
+      endif
 !
 !  Possibility of applying triple decomposition of bij
 !
       if (lbij_schur) then
-        matA=p%bij(1,:,:)
-        matA2=sum(matA**2)
-        allocate(matV(nnn,nnn), matQ(nnn,nnn))
-        if (matA2/=0.) then
-          call schur_standardized(matA,matV,matQ)
-          call schur_decompose(matV, matV_SH, matV_RR, matV_EL)
-          bSH2=sum(matV_SH**2)
-          bRR2=sum(matV_RR**2)
-          bEL2=sum(matV_EL**2)
+        do l=1,nx
+          matA=p%bij(l,:,:)
+          matA2=sum(matA**2)
+          allocate(matV(nnn,nnn), matQ(nnn,nnn))
+          if (matA2/=0.) then
+            call schur_standardized(matA,matV,matQ)
+            call schur_decompose(matV, matV_SH, matV_RR, matV_EL)
+            bSH2(l)=sum(matV_SH**2)
+            bRR2(l)=sum(matV_RR**2)
+            bEL2(l)=sum(matV_EL**2)
 !
 !  Print
 !
-          print*,'matB_SH'
-          call print_mat(matV_SH)
-          print*,'matB_RR'
-          call print_mat(matV_RR)
-          print*,'matB_EL'
-          call print_mat(matV_EL)
-        endif
-        deallocate(matV, matQ)
+            !print*,'matB_SH'
+            !call print_mat(matV_SH)
+            !print*,'matB_RR'
+            !call print_mat(matV_RR)
+            !print*,'matB_EL'
+            !call print_mat(matV_EL)
+          endif
+          deallocate(matV, matQ)
+        enddo
       endif
+if (m==m1 .and. n==n1) print*,'AXEL: uSH2=',uSH2
+if (m==m1 .and. n==n1) print*,'AXEL: uRR2=',uRR2
+if (m==m1 .and. n==n1) print*,'AXEL: uEL2=',uEL2
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -366,7 +372,7 @@ end function selct
   T = A
   call dgees('V','S', selct, nnn, T, lda, sdim, WR, WI, VS, ldvs, WORK, lwork, BWORK, info)
   if (info .ne. 0) then
-     !print *, 'DGEES failed, INFO=', info
+     print *, 'DGEES failed, INFO=', info
      stop 1
   end if
 
@@ -426,10 +432,10 @@ end function selct
   end if
 
   ! ---- Print results ----
-  print *, 'T (standardized Schur form):'
-  call print_mat(T)
-  print *, 'Q (VS from DGEES):'
-  call print_mat(VS)
+  !print *, 'T (standardized Schur form):'
+  !call print_mat(T)
+  !print *, 'Q (VS from DGEES):'
+  !call print_mat(VS)
 
     endsubroutine schur_standardized
 !***********************************************************************

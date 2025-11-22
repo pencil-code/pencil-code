@@ -137,7 +137,7 @@ module Hydro
   logical :: ladvection_velocity=.true.
   logical :: lprecession=.false.
   logical :: lshear_rateofstrain=.false.
-  logical :: loo_as_aux=.false., luij_as_aux=.false., llorentz_as_aux=.false.
+  logical :: loo_as_aux=.false., luij_as_aux=.false., luij_test=.false., llorentz_as_aux=.false.
   logical :: luut_as_aux=.false., luust_as_aux=.false.
   logical :: loot_as_aux=.false., loost_as_aux=.false.
   logical :: luuk_as_aux=.false., look_as_aux=.false.
@@ -190,7 +190,7 @@ module Hydro
       N_modes_uu, lcoriolis_force, lcentrifugal_force, ladvection_velocity, &
       lprecession, omega_precession, alpha_precession, velocity_ceiling, &
       loo_as_aux, luut_as_aux, luust_as_aux, loot_as_aux, loost_as_aux, &
-      luij_as_aux, llorentz_as_aux, luuk_as_aux, look_as_aux, &
+      luij_test, luij_as_aux, llorentz_as_aux, luuk_as_aux, look_as_aux, &
       mu_omega, nb_rings, om_rings, gap, lscale_tobox, lrandom_ampl_uu, &
       ampl_Omega, omega_ini, r_cyl, skin_depth, incl_alpha, &
       rot_rr, xsphere, ysphere, zsphere, neddy, amp_meri_circ, &
@@ -288,7 +288,7 @@ module Hydro
       lcalc_ruumeanz, lcalc_ruumeanxy, &
       lforcing_cont_uu, width_ff_uu, x1_ff_uu, x2_ff_uu, &
       loo_as_aux, luut_as_aux, luust_as_aux, loot_as_aux, loost_as_aux, &
-      luij_as_aux, llorentz_as_aux, loutest, ldiffrot_test, &
+      luij_test, luij_as_aux, llorentz_as_aux, loutest, ldiffrot_test, &
       interior_bc_hydro_profile, lhydro_bc_interior, z1_interior_bc_hydro, &
       velocity_ceiling, ampl_Omega, lcoriolis_xdep, &
       ekman_friction, friction_tdep, friction_tdep_toffset, friction_tdep_tau0, &
@@ -3483,7 +3483,7 @@ module Hydro
 !
 !  In 0-D, initialize to p%uij to uij_0D_test
 !
-      if (dimensionality == 0) then
+      if (dimensionality == 0 .or. luij_test) then
         do i=1,nx; p%uij(i,:,:)=uij_0D_test; enddo
       endif
 !

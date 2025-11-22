@@ -245,7 +245,7 @@ module Magnetic
   logical :: lee_as_aux=.false., ladd_disp_current_from_aux=.false.
   logical :: lbb_as_aux=.false., ljj_as_aux=.false., ljxb_as_aux=.false., lcurlb_as_aux=.false.
   logical :: luxb_as_aux=.false., lugb_as_aux=.false., lbgu_as_aux=.false.
-  logical :: lbdivu_as_aux=.false., lbij_as_aux=.false., lbij_schur=.false.
+  logical :: lbdivu_as_aux=.false., lbij_as_aux=.false., lbij_test=.false.
   logical :: lbbt_as_aux=.false., ljjt_as_aux=.false., lua_as_aux=.false.
   logical :: lbeta_as_aux=.false.
   logical :: letasmag_as_aux=.false.,ljj_as_comaux=.false.
@@ -283,7 +283,7 @@ module Magnetic
       ladd_disp_current_from_aux, compk_aa, &
       lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, lee_as_aux, &
       ljxb_as_aux, ljj_as_aux, lbext_curvilinear, lbbt_as_aux, ljjt_as_aux, &
-      lcurlb_as_aux, lbij_as_aux, lbij_schur, &
+      lcurlb_as_aux, lbij_as_aux, lbij_test, &
       luxb_as_aux, lugb_as_aux, lbgu_as_aux, lbeta_as_aux, lbdivu_as_aux, &
       lua_as_aux, lneutralion_heat, center1_x, center1_y, center1_z, &
       fluxtube_border_width, va2max_jxb, va2max_boris, cmin,va2power_jxb, eta_jump, &
@@ -420,7 +420,7 @@ module Magnetic
       eta_spitzer, borderaa, ljj_as_comaux, lsmooth_jj, &
       eta_aniso_hyper3, lelectron_inertia, inertial_length, &
       lbext_curvilinear, lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, ljj_as_aux, &
-      lbij_as_aux, lbij_schur, luxb_as_aux, lugb_as_aux, lbgu_as_aux, lbdivu_as_aux, &
+      lbij_as_aux, lbij_test, luxb_as_aux, lugb_as_aux, lbgu_as_aux, lbdivu_as_aux, &
       lkinematic, lbbt_as_aux, ljjt_as_aux, lua_as_aux, ljxb_as_aux, lcurlb_as_aux, &
       lneutralion_heat, lreset_aa, daareset, eta_shock2, &
       lignore_Bext_in_b2, luse_Bext_in_b2, ampl_fcont_aa, &
@@ -4366,7 +4366,7 @@ module Magnetic
 !
 !  In 0-D, initialize to p%bij to bij_0D_test
 !
-        if (dimensionality == 0) then
+        if (dimensionality == 0 .or. lbij_test) then
           do i = 1,nx; p%bij(i,:,:)=bij_0D_test; enddo
         endif
 !
