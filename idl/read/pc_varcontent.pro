@@ -334,6 +334,14 @@ indices_aux = [ $
   { name:'ibij_zx', label:'ibij_zx', dims:1 }, $
   { name:'ibij_zy', label:'ibij_zy', dims:1 }, $
   { name:'ibij_zz', label:'ibij_zz', dims:1 }, $
+;
+  { name:'iuschur2x', label:'iuschur2x', dims:1 }, $
+  { name:'iuschur2y', label:'iuschur2y', dims:1 }, $
+  { name:'iuschur2z', label:'iuschur2z', dims:1 }, $
+  { name:'ibschur2x', label:'ibschur2x', dims:1 }, $
+  { name:'ibschur2y', label:'ibschur2y', dims:1 }, $
+  { name:'ibschur2z', label:'ibschur2z', dims:1 }, $
+;
   { name:'iTij1', label:'Tij1', dims:1 }, $
   { name:'iTij2', label:'Tij2', dims:1 }, $
   { name:'iTij3', label:'Tij3', dims:1 }, $

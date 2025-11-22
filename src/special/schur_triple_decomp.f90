@@ -90,12 +90,14 @@ module Special
 !
 ! Declare index of new variables in f array (if any).
 !
-  real :: dummy
-  logical :: luij_schur=.false., lbij_schur=.false.
+  logical :: luschur2_as_aux=.false., lbschur2_as_aux=.false.
+  integer :: iuschur2, iuschur2_SH, iuschur2_RR, iuschur2_EL
+  integer :: ibschur2, ibschur2_SH, ibschur2_RR, ibschur2_EL
 !
   namelist /special_init_pars/ &
-      dummy
+      luschur2_as_aux, lbschur2_as_aux
 !
+  logical :: luij_schur=.false., lbij_schur=.false.
   real, dimension (nx) :: uSH2, uRR2, uEL2
   real, dimension (nx) :: bSH2, bRR2, bEL2
 !
@@ -128,13 +130,17 @@ end function selct
 !  6-oct-03/tony: coded
 !
       use FArrayManager
+      use Sub, only: register_report_aux
       use SharedVariables, only: put_shared_variable
 !
       if (lroot) call svn_id( &
            "$Id$")
 !
-  !   call farray_register_ode('LLCDM_lna',iLCDM_lna)
-  !   call farray_register_ode('iLCDM_tph',iLCDM_tph)
+      if (luschur2_as_aux) &
+        call register_report_aux('uschur2', iuschur2, iuschur2_SH, iuschur2_RR, iuschur2_EL)
+!
+      if (lbschur2_as_aux) &
+        call register_report_aux('bschur2', ibschur2, ibschur2_SH, ibschur2_RR, ibschur2_EL)
 !
     endsubroutine register_special
 !***********************************************************************
@@ -187,7 +193,7 @@ end function selct
       real :: matA2=0.
       integer :: l, nnn=3
 !
-      intent(in) :: f
+      intent(inout) :: f
       intent(inout) :: p
 !
 !  Possibility of applying triple decomposition of uij
@@ -203,7 +209,20 @@ end function selct
             uSH2(l)=sum(matV_SH**2)
             uRR2(l)=sum(matV_RR**2)
             uEL2(l)=sum(matV_EL**2)
+          else
+            uSH2(l)=0.
+            uRR2(l)=0.
+            uEL2(l)=0.
           endif
+!
+!  Possibility of bSH2, bRR2, and bEL2 as auxiliary arrays
+!
+          if (luschur2_as_aux) then
+            f(l1:l2,m,n,iuschur2_SH)=uSH2
+            f(l1:l2,m,n,iuschur2_RR)=uRR2
+            f(l1:l2,m,n,iuschur2_EL)=uEL2
+          endif
+!
           deallocate(matV, matQ)
         enddo
       endif
@@ -221,7 +240,20 @@ end function selct
             bSH2(l)=sum(matV_SH**2)
             bRR2(l)=sum(matV_RR**2)
             bEL2(l)=sum(matV_EL**2)
+          else
+            bSH2(l)=0.
+            bRR2(l)=0.
+            bEL2(l)=0.
           endif
+!
+!  Possibility of bSH2, bRR2, and bEL2 as auxiliary arrays
+!
+          if (lbschur2_as_aux) then
+            f(l1:l2,m,n,ibschur2_SH)=bSH2
+            f(l1:l2,m,n,ibschur2_RR)=bRR2
+            f(l1:l2,m,n,ibschur2_EL)=bEL2
+          endif
+!
           deallocate(matV, matQ)
         enddo
       endif

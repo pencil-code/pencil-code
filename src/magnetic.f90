@@ -781,6 +781,7 @@ module Magnetic
   integer :: idiag_WL2D=0       ! DIAG_DOC: $\left<J_i u_j A_{i,j} \right>$
   integer :: idiag_WL3D=0       ! DIAG_DOC: $-\left<J_i u_j A_{j,i} \right>$
   integer :: idiag_WL3D2=0      ! DIAG_DOC: $\left<J_i A_j u_{j,i} \right>$
+  integer :: idiag_gb2m=0       ! DIAG_DOC: $\left<|\hat{B}_{i,j}|^2\right>$
   integer :: idiag_bij2m=0      ! DIAG_DOC: $\left<|\hat{B}_{i,j}|^2\right>$
   integer :: idiag_sijbibjm=0   ! DIAG_DOC: $\left<S_{i,j} B_i B_j\right>$
   integer :: idiag_ubgbpm=0     ! DIAG_DOC: $\left<\uv\cdot(\Bv\cdot\nabla\Bv)\right>$
@@ -1253,6 +1254,10 @@ module Magnetic
         call register_report_aux('Lam', iLam,communicated=.true.)
         call register_report_aux('diva', idiva,communicated=.true.)
       endif
+!
+!  Need to check whether the underlying pencils need to be computed every time,
+!  or only when ldiagnos. If anything like this, it should probably rather be
+!  when an output file is written, i.e., when lsnap=T.
 !
       if (lua_as_aux ) call register_report_aux('ua',iua,communicated=.true.)
       if (ljxb_as_aux) call register_report_aux('jxb',ijxb,ijxbx,ijxby,ijxbz)
@@ -3311,6 +3316,7 @@ module Magnetic
         lpenc_diagnos(i_aa)=.true.
         lpenc_diagnos(i_uij)=.true.
       endif
+      if (idiag_gb2m/=0) lpenc_diagnos(i_bij)=.true.
       if (idiag_bij2m/=0) then
         lpenc_diagnos(i_bb)=.true.
         lpenc_diagnos(i_b2)=.true.
@@ -6976,6 +6982,12 @@ print*,'AXEL2: should not be here (eta) ... '
         call sum_mn_name(tmp,idiag_WL3D2)
       endif
 !
+!  <(nabla B)^2>
+!
+      call sum_mn_name(p%bij(:,1,1)**2+p%bij(:,1,2)**2+p%bij(:,1,3)**2 &
+                      +p%bij(:,2,1)**2+p%bij(:,2,2)**2+p%bij(:,2,3)**2 &
+                      +p%bij(:,3,1)**2+p%bij(:,3,2)**2+p%bij(:,3,3)**2,idiag_gb2m)
+
 !  Calculate bij2m = <|bhat_i,j|^2>, where bhat is the unit vector of B.
 !  Here, bhat_i,j = bij/|B| - Bi*nablaj(B^2/2)/|B|^3.
 !
@@ -10442,7 +10454,7 @@ print*,'AXEL2: should not be here (eta) ... '
         idiag_dexbmy=0; idiag_dexbmz=0; idiag_phibmx=0; idiag_phibmy=0
         idiag_phibmz=0; idiag_uxjm=0; idiag_jdel2am=0
         idiag_ujxbm=0; idiag_ugb22m=0; idiag_ubgbpm=0; idiag_b2divum=0
-        idiag_WL2D=0; idiag_WL3D=0; idiag_WL3D2=0; idiag_bij2m=0; idiag_sijbibjm=0
+        idiag_WL2D=0; idiag_WL3D=0; idiag_WL3D2=0; idiag_bij2m=0; idiag_gb2m=0; idiag_sijbibjm=0
         idiag_b3b21m=0; idiag_b3b12m=0; idiag_b1b32m=0; idiag_b1b23m=0
         idiag_b2b13m=0 ; idiag_b2b31m=0
         idiag_udotxbm=0; idiag_uxbdotm=0; idiag_brmphi=0; idiag_bpmphi=0
@@ -10710,6 +10722,7 @@ print*,'AXEL2: should not be here (eta) ... '
         call parse_name(iname,cname(iname),cform(iname),'WL2D',idiag_WL2D)
         call parse_name(iname,cname(iname),cform(iname),'WL3D',idiag_WL3D)
         call parse_name(iname,cname(iname),cform(iname),'WL3D2',idiag_WL3D2)
+        call parse_name(iname,cname(iname),cform(iname),'gb2m',idiag_gb2m)
         call parse_name(iname,cname(iname),cform(iname),'bij2m',idiag_bij2m)
         call parse_name(iname,cname(iname),cform(iname),'sijbibjm',idiag_sijbibjm)
         call parse_name(iname,cname(iname),cform(iname),'ubgbpm',idiag_ubgbpm)
