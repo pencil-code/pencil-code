@@ -54,6 +54,7 @@ if ($@) {                       # Pencil::Util not found
     die "You need to run\n  (cd \$PENCIL_HOME; cvs up -dA lib)\n$@\n";
 }
 Pencil::Util::use_pencil_perl_modules('Pencil::Doc::Extractor') or die;
+Pencil::Util::use_pencil_perl_modules('Pencil::Doc::ParamExtractor') or die;
 Pencil::Util::use_pencil_perl_modules('Pencil::Doc::ModExtractor') or die;
 
 use Getopt::Long;
@@ -148,11 +149,12 @@ my $mod_doc = Pencil::Doc::ModExtractor->new(
     debug   => $debug
 );
 
-my $param_doc = Pencil::Doc::Extractor->new(
+my $param_doc = Pencil::Doc::ParamExtractor->new(
     marker  => qr/!\s*PAR_DOC:/,
     prefix  => qr/.*::\s*([a-zA-Z0-9_]+)/,
     verbose => $verbose,
-    debug   => $debug
+    debug   => $debug,
+    src_dir => get_srcdir(),
 );
 
 my $bcx_doc = $bc_doc->new(marker  => qr/!\s*BCX_DOC:/);
