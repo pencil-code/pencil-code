@@ -7067,25 +7067,27 @@ outer:do ikz=1,nz
 !
       if (lroot) then
         ix = 1
-        iy = 1
-        iz = 1
         do irang=1,size(kxrange,2)
           call unpack_range(kxrange(:,irang),i1,i2,i3,lexit,lx)
           if (lexit) exit
+!
+          iy = 1
           do jrang=1,size(kyrange,2)
             call unpack_range(kyrange(:,jrang),j1,j2,j3,lexit,ly)
             if (lexit) exit
+!
+            iz = 1
             do krang=1,size(zrange,2)
               call unpack_range(zrange(:,krang),k1,k2,k3,lexit,lz)
               if (lexit) exit
 !
               data_sliced(ix:ix+lx-1, iy:iy+ly-1, iz:iz+lz-1, icomp) = data_full(i1:i2:i3, j1:j2:j3, k1:k2:k3)
-              ix = ix+lx
-              iy = iy+lz
-              iz = iz+lz
 !
+              iz = iz+lz
             enddo
+            iy = iy+ly
           enddo
+          ix = ix+lx
         enddo
       endif
     enddo comp
