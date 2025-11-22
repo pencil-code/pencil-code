@@ -166,17 +166,7 @@ end function selct
 !***********************************************************************
     subroutine pencil_criteria_special
 !
-!  All pencils that this special module depends on are specified here.
-!
-!  17-nov-25/axel: adapted
-!
-!  Magnetic field needed for Maxwell stress
-!
-!     if (lmagnetic) then
-!       lpenc_requested(i_bb)=.true.
-!       lpenc_requested(i_el)=.true.
-!       if (lrho_chi .or. lnoncollinear_EB .or. lnoncollinear_EB_aver) lpenc_requested(i_e2)=.true.
-!     endif
+!  Dummy
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -213,15 +203,6 @@ end function selct
             uSH2(l)=sum(matV_SH**2)
             uRR2(l)=sum(matV_RR**2)
             uEL2(l)=sum(matV_EL**2)
-!
-!  Print
-!
-            !print*,'matV_SH'
-            !call print_mat(matV_SH)
-            !print*,'matV_RR'
-            !call print_mat(matV_RR)
-            !print*,'matV_EL'
-            !call print_mat(matV_EL)
           endif
           deallocate(matV, matQ)
         enddo
@@ -240,22 +221,10 @@ end function selct
             bSH2(l)=sum(matV_SH**2)
             bRR2(l)=sum(matV_RR**2)
             bEL2(l)=sum(matV_EL**2)
-!
-!  Print
-!
-            !print*,'matB_SH'
-            !call print_mat(matV_SH)
-            !print*,'matB_RR'
-            !call print_mat(matV_RR)
-            !print*,'matB_EL'
-            !call print_mat(matV_EL)
           endif
           deallocate(matV, matQ)
         enddo
       endif
-if (m==m1 .and. n==n1) print*,'AXEL: uSH2=',uSH2
-if (m==m1 .and. n==n1) print*,'AXEL: uRR2=',uRR2
-if (m==m1 .and. n==n1) print*,'AXEL: uEL2=',uEL2
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -272,10 +241,10 @@ if (m==m1 .and. n==n1) print*,'AXEL: uEL2=',uEL2
 !
       matV_SH(2,1)=0.
       matV_SH(2,2)=0.
-      matV_SH(2,3)=0.
+      matV_SH(2,3)=sign(1.,matV(2,3))*max(abs(matV(2,3))-abs(matV(3,2)),0.)
 !
       matV_SH(3,1)=0.
-      matV_SH(3,2)=matV(3,2)+matV(2,3)
+      matV_SH(3,2)=sign(1.,matV(3,2))*max(abs(matV(3,2))-abs(matV(2,3)),0.)
       matV_SH(3,3)=0.
 !
 !  Rest:
@@ -311,8 +280,7 @@ if (m==m1 .and. n==n1) print*,'AXEL: uEL2=',uEL2
   integer            :: nnn, lda, ldvs, info, sdim, lwork
   integer            :: i, j
   real               :: tol
-  real            :: A_input(3,3)!, A(3,3), T(3,3), VS(3,3)
-  !real            , allocatable :: WR(:), WI(:), WORK(:)
+  real            :: A_input(3,3)
   real            , allocatable :: A(:,:), T(:,:), VS(:,:), WR(:), WI(:), WORK(:)
   logical,    allocatable :: BWORK(:)
 
@@ -321,9 +289,7 @@ if (m==m1 .and. n==n1) print*,'AXEL: uEL2=',uEL2
         real             :: R11, R12, R21, R22
         real            , allocatable :: TMP(:,:), TMP2(:,:)
 
-  !external dgees, dlanv2, dgemm     ! LAPACK externals
   external dgees, dlanv2            ! LAPACK externals
-! external selct                    ! our SELECT function for DGEES
 
   ! ---- Example matrix (3x3). Replace with your data. ----
   nnn = 3
@@ -332,29 +298,11 @@ if (m==m1 .and. n==n1) print*,'AXEL: uEL2=',uEL2
   tol = 1.0d-12
 
   allocate(A(nnn,nnn), WR(nnn), WI(nnn))
-  !allocate(A(nnn,nnn), T(nnn,nnn), VS(nnn,nnn), WR(nnn), WI(nnn))
-  !allocate(A(n,n), T(n,n), VS(n,n), WR(n), WI(n))
-  !allocate(WR(nnn), WI(nnn))
   allocate(BWORK(nnn))
 
-  !!A = reshape( (/ &
-  !  0.0d0,  2.0d0, -1.0d0,  &
-  ! -3.0d0, -1.0d0,  4.0d0,  &
-  !  1.0d0, -5.0d0,  2.0d0   /), shape(A), order=(/2,1/) )
-
-  !A = reshape( (/ &
-  !  1.0d0,  0.0d0,  0.0d0,  &
-  ! -0.0d0, -1.0d0, -0.5d0,  &
-  !  0.0d0,  1.0d0,  0.0d0   /), shape(A), order=(/2,1/) )
   A = reshape(A_input, shape(A_input), order=(/2,1/) )
 
   T = A
-!print*,'AXEL33: A=',A
-!BWORK=(/ .true., .false., .true. /)
-!VS=reshape( (/3.5102224073163848E+151,  9.1771665551093221E+170,  5.9781943146790832E-322, &
-!              3.0469028379029674E-320,  2.2271680410374069E-316,  5.0373775222878817E+175, &
-!              1.2827920428622125E-319,  2.8092572622533279E-320,  3.7477930586487266E-316 /), &
-!   shape(VS))
 
   ! ---- Workspace query for DGEES ----
   lwork = -1
