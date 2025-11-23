@@ -94,24 +94,33 @@ module Special
   integer :: iuschur2, iuschur2_SH, iuschur2_RR, iuschur2_EL
   integer :: ibschur2, ibschur2_SH, ibschur2_RR, ibschur2_EL
 !
+  logical :: luschur_as_aux=.false., lbschur_as_aux=.false.
+  integer :: iuschur_SH, iuschur_RR, iuschur_EL
+  integer :: ibschur_SH, ibschur_RR, ibschur_EL
+!
   namelist /special_init_pars/ &
-      luschur2_as_aux, lbschur2_as_aux
+      luschur2_as_aux, lbschur2_as_aux, &
+      luschur_as_aux, lbschur_as_aux
 !
   logical :: luij_schur=.false., lbij_schur=.false.
-  real, dimension (nx) :: uSH2, uRR2, uEL2
-  real, dimension (nx) :: bSH2, bRR2, bEL2
+  real, dimension (nx) :: uSH2, uRR2, uEL2, uRRm, uELm
+  real, dimension (nx) :: bSH2, bRR2, bEL2, bRRm, bELm
 !
   namelist /special_run_pars/ &
       luij_schur, lbij_schur
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
-  integer :: idiag_uSH2=0      ! DIAG_DOC: $u^\mathrm{SH}$
-  integer :: idiag_uRR2=0      ! DIAG_DOC: $u^\mathrm{RR}$
-  integer :: idiag_uEL2=0      ! DIAG_DOC: $u^\mathrm{EL}$
-  integer :: idiag_bSH2=0      ! DIAG_DOC: $b^\mathrm{SH}$
-  integer :: idiag_bRR2=0      ! DIAG_DOC: $b^\mathrm{RR}$
-  integer :: idiag_bEL2=0      ! DIAG_DOC: $b^\mathrm{EL}$
+  integer :: idiag_uSH2=0      ! DIAG_DOC: $\left<u^\mathrm{SH}^2\right>$
+  integer :: idiag_uRR2=0      ! DIAG_DOC: $\left<u^\mathrm{RR}^2\right>$
+  integer :: idiag_uEL2=0      ! DIAG_DOC: $\left<u^\mathrm{EL}^2\right>$
+  integer :: idiag_uRRm=0      ! DIAG_DOC: $\left<2u^\mathrm{SH}u^\mathrm{RR}\right>$
+  integer :: idiag_uELm=0      ! DIAG_DOC: $\left<2u^\mathrm{SH}u^\mathrm{EL}\right>$
+  integer :: idiag_bSH2=0      ! DIAG_DOC: $\left<b^\mathrm{SH}^2\right>$
+  integer :: idiag_bRR2=0      ! DIAG_DOC: $\left<b^\mathrm{RR}^2\right>$
+  integer :: idiag_bEL2=0      ! DIAG_DOC: $\left<b^\mathrm{EL}^2\right>$
+  integer :: idiag_bRRm=0      ! DIAG_DOC: $\left<2b^\mathrm{SH}b^\mathrm{RR}\right>$
+  integer :: idiag_bELm=0      ! DIAG_DOC: $\left<2b^\mathrm{SH}b^\mathrm{EL}\right>$
 !
   contains
 !================== External SELECT function for DGEES ==================
@@ -141,6 +150,18 @@ end function selct
 !
       if (lbschur2_as_aux) &
         call register_report_aux('bschur2', ibschur2, ibschur2_SH, ibschur2_RR, ibschur2_EL)
+!
+      if (luschur_as_aux) then
+        call farray_register_auxiliary('uschur_SH', iuschur_SH, vector=9)
+        call farray_register_auxiliary('uschur_RR', iuschur_RR, vector=9)
+        call farray_register_auxiliary('uschur_EL', iuschur_EL, vector=9)
+      endif
+!
+      if (lbschur_as_aux) then
+        call farray_register_auxiliary('bschur_SH', ibschur_SH, vector=9)
+        call farray_register_auxiliary('bschur_RR', ibschur_RR, vector=9)
+        call farray_register_auxiliary('bschur_EL', ibschur_EL, vector=9)
+      endif
 !
     endsubroutine register_special
 !***********************************************************************
@@ -188,17 +209,18 @@ end function selct
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      real, dimension (3,3) :: matA, matV_SH, matV_RR, matV_EL
+      real, dimension (3,3) :: matA, matV_SH, matV_RR, matV_EL, SH, RR, EL
       real, allocatable :: matV(:,:), matQ(:,:)
       real :: matA2=0.
-      integer :: l, nnn=3
+      integer :: i,j,kk,ll, ij, l, nnn=3
 !
       intent(inout) :: f
       intent(inout) :: p
 !
 !  Possibility of applying triple decomposition of uij
+!  Do only when output onto command line.
 !
-      if (luij_schur) then
+      if (luij_schur .and. lout .and. llast) then
         do l=1,nx
           matA=p%uij(l,:,:)
           matA2=sum(matA**2)
@@ -209,13 +231,17 @@ end function selct
             uSH2(l)=sum(matV_SH**2)
             uRR2(l)=sum(matV_RR**2)
             uEL2(l)=sum(matV_EL**2)
+            uRRm(l)=2.*sum(matV_SH*matV_RR)
+            uELm(l)=2.*sum(matV_SH*matV_EL)
           else
             uSH2(l)=0.
             uRR2(l)=0.
             uEL2(l)=0.
+            uRRm(l)=0.
+            uELm(l)=0.
           endif
 !
-!  Possibility of bSH2, bRR2, and bEL2 as auxiliary arrays
+!  Possibility of uSH2, uRR2, and uEL2 as auxiliary arrays
 !
           if (luschur2_as_aux) then
             f(l1:l2,m,n,iuschur2_SH)=uSH2
@@ -223,13 +249,37 @@ end function selct
             f(l1:l2,m,n,iuschur2_EL)=uEL2
           endif
 !
+!  Possibility of uSH, uRR, and uEL matrices as auxiliary arrays
+!
+          if (luschur_as_aux) then
+            SH=0.
+            RR=0.
+            EL=0.
+            do i=1,3
+            do j=1,3
+              do kk=1,3
+              do ll=1,3
+                SH(i,j)=SH(i,j)+matV_SH(kk,ll)*matQ(kk,i)*matQ(ll,j)
+                RR(i,j)=RR(i,j)+matV_RR(kk,ll)*matQ(kk,i)*matQ(ll,j)
+                EL(i,j)=EL(i,j)+matV_EL(kk,ll)*matQ(kk,i)*matQ(ll,j)
+              enddo
+              enddo
+              ij=3*(i-1)+(j-1)
+              f(l1:l2,m,n,iuschur_SH+ij)=SH(i,j)
+              f(l1:l2,m,n,iuschur_RR+ij)=RR(i,j)
+              f(l1:l2,m,n,iuschur_EL+ij)=EL(i,j)
+            enddo
+            enddo
+          endif
+!
           deallocate(matV, matQ)
         enddo
       endif
 !
 !  Possibility of applying triple decomposition of bij
+!  Do only when output onto command line.
 !
-      if (lbij_schur) then
+      if (lbij_schur .and. lout .and. llast) then
         do l=1,nx
           matA=p%bij(l,:,:)
           matA2=sum(matA**2)
@@ -240,22 +290,65 @@ end function selct
             bSH2(l)=sum(matV_SH**2)
             bRR2(l)=sum(matV_RR**2)
             bEL2(l)=sum(matV_EL**2)
+            bRRm(l)=2.*sum(matV_SH*matV_RR)
+            bELm(l)=2.*sum(matV_SH*matV_EL)
           else
             bSH2(l)=0.
             bRR2(l)=0.
             bEL2(l)=0.
+            bRRm(l)=0.
+            bELm(l)=0.
           endif
 !
 !  Possibility of bSH2, bRR2, and bEL2 as auxiliary arrays
+!  Use f(1,1,1,ibschur2_EL) to encode the correct update time.
 !
           if (lbschur2_as_aux) then
             f(l1:l2,m,n,ibschur2_SH)=bSH2
             f(l1:l2,m,n,ibschur2_RR)=bRR2
             f(l1:l2,m,n,ibschur2_EL)=bEL2
+            if (l==1 .and. m==m1 .and. n==n1 .and. ip<10) then
+              print*,'AXEL: iproc,t=',iproc,t
+              f(1,1,1,ibschur2_EL)=t
+            endif
+          endif
+!
+!  Possibility of bSH, bRR, and bEL matrices as auxiliary arrays
+!
+          if (lbschur_as_aux) then
+            SH=0.
+            RR=0.
+            EL=0.
+            do i=1,3
+            do j=1,3
+              do kk=1,3
+              do ll=1,3
+                SH(i,j)=SH(i,j)+matV_SH(kk,ll)*matQ(kk,i)*matQ(ll,j)
+                RR(i,j)=RR(i,j)+matV_RR(kk,ll)*matQ(kk,i)*matQ(ll,j)
+                EL(i,j)=EL(i,j)+matV_EL(kk,ll)*matQ(kk,i)*matQ(ll,j)
+              enddo
+              enddo
+              ij=3*(i-1)+(j-1)
+              f(l1:l2,m,n,ibschur_SH+ij)=SH(i,j)
+              f(l1:l2,m,n,ibschur_RR+ij)=RR(i,j)
+              f(l1:l2,m,n,ibschur_EL+ij)=EL(i,j)
+            enddo
+            enddo
           endif
 !
           deallocate(matV, matQ)
         enddo
+      else
+        uSH2=0.
+        uRR2=0.
+        uEL2=0.
+        uRRm=0.
+        uELm=0.
+        bSH2=0.
+        bRR2=0.
+        bEL2=0.
+        bRRm=0.
+        bELm=0.
       endif
 !
     endsubroutine calc_pencils_special
@@ -454,9 +547,13 @@ end function selct
         call sum_mn_name(uSH2,idiag_uSH2)
         call sum_mn_name(uRR2,idiag_uRR2)
         call sum_mn_name(uEL2,idiag_uEL2)
+        call sum_mn_name(uRRm,idiag_uRRm)
+        call sum_mn_name(uELm,idiag_uELm)
         call sum_mn_name(bSH2,idiag_bSH2)
         call sum_mn_name(bRR2,idiag_bRR2)
         call sum_mn_name(bEL2,idiag_bEL2)
+        call sum_mn_name(bRRm,idiag_bRRm)
+        call sum_mn_name(bELm,idiag_bELm)
       endif
 !
     endsubroutine dspecial_dt
@@ -519,17 +616,21 @@ end function selct
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_uSH2=0; idiag_uRR2=0; idiag_uEL2=0
-        idiag_bSH2=0; idiag_bRR2=0; idiag_bEL2=0
+        idiag_uSH2=0; idiag_uRR2=0; idiag_uEL2=0; idiag_uRRm=0; idiag_uELm=0
+        idiag_bSH2=0; idiag_bRR2=0; idiag_bEL2=0; idiag_bRRm=0; idiag_bELm=0
       endif
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'uSH2',idiag_uSH2)
         call parse_name(iname,cname(iname),cform(iname),'uRR2',idiag_uRR2)
         call parse_name(iname,cname(iname),cform(iname),'uEL2',idiag_uEL2)
+        call parse_name(iname,cname(iname),cform(iname),'uRRm',idiag_uRRm)
+        call parse_name(iname,cname(iname),cform(iname),'uELm',idiag_uELm)
         call parse_name(iname,cname(iname),cform(iname),'bSH2',idiag_bSH2)
         call parse_name(iname,cname(iname),cform(iname),'bRR2',idiag_bRR2)
         call parse_name(iname,cname(iname),cform(iname),'bEL2',idiag_bEL2)
+        call parse_name(iname,cname(iname),cform(iname),'bRRm',idiag_bRRm)
+        call parse_name(iname,cname(iname),cform(iname),'bELm',idiag_bELm)
       enddo
 !
     endsubroutine rprint_special

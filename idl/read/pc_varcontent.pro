@@ -342,6 +342,66 @@ indices_aux = [ $
   { name:'ibschur2y', label:'ibschur2y', dims:1 }, $
   { name:'ibschur2z', label:'ibschur2z', dims:1 }, $
 ;
+  { name:'iuschur_SH_xx', label:'iuschur_SH_xx', dims:1 }, $
+  { name:'iuschur_SH_xy', label:'iuschur_SH_xy', dims:1 }, $
+  { name:'iuschur_SH_xz', label:'iuschur_SH_xz', dims:1 }, $
+  { name:'iuschur_SH_yx', label:'iuschur_SH_yx', dims:1 }, $
+  { name:'iuschur_SH_yy', label:'iuschur_SH_yy', dims:1 }, $
+  { name:'iuschur_SH_yz', label:'iuschur_SH_yz', dims:1 }, $
+  { name:'iuschur_SH_zx', label:'iuschur_SH_zx', dims:1 }, $
+  { name:'iuschur_SH_zy', label:'iuschur_SH_zy', dims:1 }, $
+  { name:'iuschur_SH_zz', label:'iuschur_SH_zz', dims:1 }, $
+;
+  { name:'iuschur_RR_xx', label:'iuschur_RR_xx', dims:1 }, $
+  { name:'iuschur_RR_xy', label:'iuschur_RR_xy', dims:1 }, $
+  { name:'iuschur_RR_xz', label:'iuschur_RR_xz', dims:1 }, $
+  { name:'iuschur_RR_yx', label:'iuschur_RR_yx', dims:1 }, $
+  { name:'iuschur_RR_yy', label:'iuschur_RR_yy', dims:1 }, $
+  { name:'iuschur_RR_yz', label:'iuschur_RR_yz', dims:1 }, $
+  { name:'iuschur_RR_zx', label:'iuschur_RR_zx', dims:1 }, $
+  { name:'iuschur_RR_zy', label:'iuschur_RR_zy', dims:1 }, $
+  { name:'iuschur_RR_zz', label:'iuschur_RR_zz', dims:1 }, $
+;
+  { name:'iuschur_EL_xx', label:'iuschur_EL_xx', dims:1 }, $
+  { name:'iuschur_EL_xy', label:'iuschur_EL_xy', dims:1 }, $
+  { name:'iuschur_EL_xz', label:'iuschur_EL_xz', dims:1 }, $
+  { name:'iuschur_EL_yx', label:'iuschur_EL_yx', dims:1 }, $
+  { name:'iuschur_EL_yy', label:'iuschur_EL_yy', dims:1 }, $
+  { name:'iuschur_EL_yz', label:'iuschur_EL_yz', dims:1 }, $
+  { name:'iuschur_EL_zx', label:'iuschur_EL_zx', dims:1 }, $
+  { name:'iuschur_EL_zy', label:'iuschur_EL_zy', dims:1 }, $
+  { name:'iuschur_EL_zz', label:'iuschur_EL_zz', dims:1 }, $
+;
+  { name:'ibschur_SH_xx', label:'ibschur_SH_xx', dims:1 }, $
+  { name:'ibschur_SH_xy', label:'ibschur_SH_xy', dims:1 }, $
+  { name:'ibschur_SH_xz', label:'ibschur_SH_xz', dims:1 }, $
+  { name:'ibschur_SH_yx', label:'ibschur_SH_yx', dims:1 }, $
+  { name:'ibschur_SH_yy', label:'ibschur_SH_yy', dims:1 }, $
+  { name:'ibschur_SH_yz', label:'ibschur_SH_yz', dims:1 }, $
+  { name:'ibschur_SH_zx', label:'ibschur_SH_zx', dims:1 }, $
+  { name:'ibschur_SH_zy', label:'ibschur_SH_zy', dims:1 }, $
+  { name:'ibschur_SH_zz', label:'ibschur_SH_zz', dims:1 }, $
+;
+  { name:'ibschur_RR_xx', label:'ibschur_RR_xx', dims:1 }, $
+  { name:'ibschur_RR_xy', label:'ibschur_RR_xy', dims:1 }, $
+  { name:'ibschur_RR_xz', label:'ibschur_RR_xz', dims:1 }, $
+  { name:'ibschur_RR_yx', label:'ibschur_RR_yx', dims:1 }, $
+  { name:'ibschur_RR_yy', label:'ibschur_RR_yy', dims:1 }, $
+  { name:'ibschur_RR_yz', label:'ibschur_RR_yz', dims:1 }, $
+  { name:'ibschur_RR_zx', label:'ibschur_RR_zx', dims:1 }, $
+  { name:'ibschur_RR_zy', label:'ibschur_RR_zy', dims:1 }, $
+  { name:'ibschur_RR_zz', label:'ibschur_RR_zz', dims:1 }, $
+;
+  { name:'ibschur_EL_xx', label:'ibschur_EL_xx', dims:1 }, $
+  { name:'ibschur_EL_xy', label:'ibschur_EL_xy', dims:1 }, $
+  { name:'ibschur_EL_xz', label:'ibschur_EL_xz', dims:1 }, $
+  { name:'ibschur_EL_yx', label:'ibschur_EL_yx', dims:1 }, $
+  { name:'ibschur_EL_yy', label:'ibschur_EL_yy', dims:1 }, $
+  { name:'ibschur_EL_yz', label:'ibschur_EL_yz', dims:1 }, $
+  { name:'ibschur_EL_zx', label:'ibschur_EL_zx', dims:1 }, $
+  { name:'ibschur_EL_zy', label:'ibschur_EL_zy', dims:1 }, $
+  { name:'ibschur_EL_zz', label:'ibschur_EL_zz', dims:1 }, $
+;
   { name:'iTij1', label:'Tij1', dims:1 }, $
   { name:'iTij2', label:'Tij2', dims:1 }, $
   { name:'iTij3', label:'Tij3', dims:1 }, $
