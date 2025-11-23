@@ -274,6 +274,12 @@ end function selct
 !
           deallocate(matV, matQ)
         enddo
+!     else
+!       uSH2=0.
+!       uRR2=0.
+!       uEL2=0.
+!       uRRm=0.
+!       uELm=0.
       endif
 !
 !  Possibility of applying triple decomposition of bij
@@ -338,17 +344,12 @@ end function selct
 !
           deallocate(matV, matQ)
         enddo
-      else
-        uSH2=0.
-        uRR2=0.
-        uEL2=0.
-        uRRm=0.
-        uELm=0.
-        bSH2=0.
-        bRR2=0.
-        bEL2=0.
-        bRRm=0.
-        bELm=0.
+!     else
+!       bSH2=0.
+!       bRR2=0.
+!       bEL2=0.
+!       bRRm=0.
+!       bELm=0.
       endif
 !
     endsubroutine calc_pencils_special
