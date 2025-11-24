@@ -7102,6 +7102,119 @@ outer:do ikz=1,nz
 !
   endsubroutine gather_and_output_by_range
 !***********************************************************************
+  subroutine dist_output_by_range(data, kxrange, kyrange, zrange, label)
+!
+!   Alternative to gather_and_output_by_range that uses mpireduce_sum instead
+!   of mpigather.
+!   Rationale: mpigather is affected by integer overflows (leading to
+!   segmentation faults) for very large simulation setups.
+!   Pitfalls: avoid this subroutine if data_sliced is expected to have a size
+!   comparable to (nxgrid,nygrid,nzgrid,ncomp).
+!
+!   2025-Nov-24/Kishore: coded by modifying gather_and_output_by_range
+!
+    use General, only: get_range_no, write_by_ranges
+    use Hdf5_io, only: output_hdf5
+    use Mpicomm, only: mpireduce_sum
+!
+    integer, dimension(:,:), intent(in) :: kxrange, kyrange, zrange
+    real, dimension(:,:,:,:), intent(in) :: data
+    character (len=*), intent(in) :: label
+!
+!   We use the name nkz to avoid shadowing nz
+!
+    integer :: nkx, nky, nkz, ncomp, ierr
+    logical :: lexit, llocal
+    integer :: icomp, irang, i1, i2, i3
+    integer :: ix, iy, iz, l, i, j, ikx, iky, ikz
+    real, dimension(:,:,:,:), allocatable :: data_sliced
+    integer, dimension(:), allocatable :: ixs, iys, izs
+!
+    if (size(data,1) /= nx) call fatal_error('dist_output_by_range', &
+      'wrong size along x')
+    if (size(data,2) /= ny) call fatal_error('dist_output_by_range', &
+      'wrong size along y')
+    if (size(data,3) /= nz) call fatal_error('dist_output_by_range', &
+      'wrong size along z')
+!
+    nkx = get_range_no(kxrange, nxgrid)
+    nky = get_range_no(kyrange, nygrid)
+    nkz = get_range_no(zrange, nzgrid)
+    ncomp = size(data,4)
+!
+    allocate(data_sliced(nkx,nky,nkz,ncomp), stat=ierr)
+    if (ierr /= 0) call fatal_error ('dist_output_by_range', &
+      'Failed to allocate memory for data_sliced')
+    data_sliced = 0
+!
+    allocate(ixs(nkx), stat=ierr)
+    if (ierr /= 0) call fatal_error ('dist_output_by_range', &
+      'Failed to allocate memory for ixs')
+!
+    allocate(iys(nky), stat=ierr)
+    if (ierr /= 0) call fatal_error ('dist_output_by_range', &
+      'Failed to allocate memory for iys')
+!
+    allocate(izs(nkz), stat=ierr)
+    if (ierr /= 0) call fatal_error ('dist_output_by_range', &
+      'Failed to allocate memory for izs')
+!
+!   Find which indices are requested by {kx,ky,z}range
+!
+    ix = 1
+    do irang=1,size(kxrange,2)
+      call unpack_range(kxrange(:,irang),i1,i2,i3,lexit,l)
+      if (lexit) exit
+      ixs(ix:ix+l-1) = (/( i, i=i1,i2,i3 )/)
+      ix = ix+l
+    enddo
+!
+    iy = 1
+    do irang=1,size(kyrange,2)
+      call unpack_range(kyrange(:,irang),i1,i2,i3,lexit,l)
+      if (lexit) exit
+      iys(iy:iy+l-1) = (/( i, i=i1,i2,i3 )/)
+      iy = iy+l
+    enddo
+!
+    iz = 1
+    do irang=1,size(zrange,2)
+      call unpack_range(zrange(:,irang),i1,i2,i3,lexit,l)
+      if (lexit) exit
+      izs(iz:iz+l-1) = (/( i, i=i1,i2,i3 )/)
+      iz = iz+l
+    enddo
+!
+!   Convert to local indices
+!
+    ixs = ixs - ipx*nx
+    iys = iys - ipy*ny
+    izs = izs - ipz*nz
+!
+    do icomp=1,ncomp
+      do ikz=1,nkz
+        do iky=1,nky
+          do ikx=1,nkx
+            llocal =              (ixs(ikx) > 0) .and. (ixs(ikx) <= nx)
+            llocal = llocal .and. (iys(iky) > 0) .and. (iys(iky) <= ny)
+            llocal = llocal .and. (izs(ikz) > 0) .and. (izs(ikz) <= nz)
+            if (llocal) then
+              data_sliced(ikx,iky,ikz,icomp) = data(ixs(ikx),iys(iky),izs(ikz),icomp)
+            endif
+          enddo
+        enddo
+      enddo
+      call mpireduce_sum(data_sliced(:,:,:,icomp), data_sliced(:,:,:,icomp), &
+        (/nkx,nky,nkz/), inplace=.true.)
+    enddo
+!
+    if (lroot) call output_hdf5(trim(label), data_sliced, nkx, nky, nkz, ncomp)
+!
+    deallocate(data_sliced)
+    deallocate(ixs, iys, izs)
+!
+  endsubroutine dist_output_by_range
+!***********************************************************************
   subroutine unpack_range(rang, i1, i2, i3, lempty_range, n)
 !
 !   Unpack the array rang into i1,i2,i3 and optionally calculate the number of
