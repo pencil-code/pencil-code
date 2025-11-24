@@ -5154,17 +5154,19 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine mpireduce_sum_arr2
 !***********************************************************************
-    subroutine mpireduce_sum_arr3(fsum_tmp,fsum,nreduce,idir)
+    subroutine mpireduce_sum_arr3(fsum_tmp,fsum,nreduce,idir,inplace)
 !
 !  Calculate total sum for each array element and return to root.
 !
       integer, dimension(3) :: nreduce
       real, dimension(nreduce(1),nreduce(2),nreduce(3)) :: fsum_tmp,fsum
       integer, optional :: idir
+      logical, optional :: inplace
 !
       integer :: mpiprocs, num_elements
+      logical :: inplace_opt
 !
-      intent(in)  :: fsum_tmp,nreduce
+      intent(in)  :: fsum_tmp,nreduce,inplace
       intent(out) :: fsum
 !
       if (any(nreduce==0)) return
@@ -5177,9 +5179,19 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         else
           mpiprocs=MPI_COMM_GRID
         endif
+        if (present(inplace)) then
+          inplace_opt=inplace
+        else
+          inplace_opt=.false.
+        endif
         num_elements = product(nreduce)
-        call MPI_REDUCE(fsum_tmp, fsum, num_elements, mpi_precision, MPI_SUM, &
+        if (inplace_opt .and. lroot) then
+          call MPI_REDUCE(MPI_IN_PLACE, fsum, num_elements, mpi_precision, MPI_SUM, &
                         root, mpiprocs, mpierr)
+        else
+          call MPI_REDUCE(fsum_tmp, fsum, num_elements, mpi_precision, MPI_SUM, &
+                        root, mpiprocs, mpierr)
+        endif
       endif
 !
     endsubroutine mpireduce_sum_arr3
@@ -10063,6 +10075,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       do iz=1,nz
         do iy=1,ny
+          !TODO: on SNG, segfault below; invalid memory access. I suspect the issue is an integer overflow in shifts (which would explain why it doesn't show up in smaller runs), but not really sure how to get around this.
           call MPI_GATHERV(sendbuf(1,iy,iz), nx, mpi_precision, &
             recvbuf(1,iy,iz), counts, int(shifts), mpi_precision, &
             root, ioptest(comm,MPI_COMM_GRID), mpierr)
