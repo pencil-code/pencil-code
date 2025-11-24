@@ -1699,6 +1699,7 @@ endsubroutine helper_loop
     call copy_addr(ibxt,p_par(1392)) ! int
     call copy_addr(ijjt,p_par(1393)) ! int
     call copy_addr(ijxt,p_par(1394)) ! int
+    call copy_addr(read_vtxbuf_from_gpu,p_par(1395)) ! int (mfarray)
 
     
     endsubroutine pushpars2c

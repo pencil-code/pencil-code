@@ -303,23 +303,23 @@ module Special
 !  May want to do this only when Fourier transform is enabled.
 !
       if (lggTX_as_aux) then
-        call farray_register_auxiliary('ggT',iggT,on_gpu=lgpu)
-        call farray_register_auxiliary('ggX',iggX,on_gpu=lgpu)
-        call farray_register_auxiliary('ggTim',iggTim,on_gpu=lgpu)
-        call farray_register_auxiliary('ggXim',iggXim,on_gpu=lgpu)
+        call farray_register_auxiliary('ggT',iggT,on_gpu=lgpu,read_from_gpu=lgpu)
+        call farray_register_auxiliary('ggX',iggX,on_gpu=lgpu,read_from_gpu=lgpu)
+        call farray_register_auxiliary('ggTim',iggTim,on_gpu=lgpu,read_from_gpu=lgpu)
+        call farray_register_auxiliary('ggXim',iggXim,on_gpu=lgpu,read_from_gpu=lgpu)
       endif
 !
       if (lhhTX_as_aux) then
-        call farray_register_auxiliary('hhT',ihhT,on_gpu=lgpu)
-        call farray_register_auxiliary('hhX',ihhX,on_gpu=lgpu)
-        call farray_register_auxiliary('hhTim',ihhTim,on_gpu=lgpu)
-        call farray_register_auxiliary('hhXim',ihhXim,on_gpu=lgpu)
+        call farray_register_auxiliary('hhT',ihhT,on_gpu=lgpu,read_from_gpu=lgpu)
+        call farray_register_auxiliary('hhX',ihhX,on_gpu=lgpu,read_from_gpu=lgpu)
+        call farray_register_auxiliary('hhTim',ihhTim,on_gpu=lgpu,read_from_gpu=lgpu)
+        call farray_register_auxiliary('hhXim',ihhXim,on_gpu=lgpu,read_from_gpu=lgpu)
       endif
 !
       if (lStress_as_aux) then
         !TP: moved registration of Str first since the other ones are not 
         !    necessarily used on the GPU side and having it come first helps
-        call farray_register_auxiliary('Str',iStress_ij,array=6,on_gpu=lgpu)
+        call farray_register_auxiliary('Str',iStress_ij,array=6,on_gpu=lgpu,read_from_gpu=(idiag_nlin1/=0))
         call farray_register_auxiliary('StT',iStressT,on_gpu     = itorder_GW==2 .and. lgpu)
         call farray_register_auxiliary('StX',iStressX,on_gpu     = itorder_GW==2 .and. lgpu)
         call farray_register_auxiliary('StTim',iStressTim,on_gpu = itorder_GW==2 .and. lgpu)

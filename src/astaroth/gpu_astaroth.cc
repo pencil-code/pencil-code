@@ -71,6 +71,7 @@ bool calculated_coeff_scales = false;
   #define ltest_bcs     ltest_bcs__mod__cdata
   #define num_substeps  num_substeps__mod__cdata
   #define maux_vtxbuf_index maux_vtxbuf_index__mod__cdata
+  #define read_vtxbuf_from_gpu read_vtxbuf_from_gpu__mod__cdata 
   #define ldt ldt__mod__cdata
   #define dt dt__mod__cdata
   #define it it__mod__cdata
@@ -1533,6 +1534,7 @@ void copyFarray(AcReal* f)
   //TP: for now only copy the advanced fields back
   //TODO: should auxiliaries be needed on the GPU like e.g. Shock be copied? They can always be recomputed on the host if needed
   //If doing training we read all since we might want TAU components to calculate e.g. validation error
+  const int all_vtxbufs = acGetNumFields();
   const int end = ltraining ? acGetNumFields(): 
 	  	  lread_all_vars_from_device ? mfarray : mvar;
 
@@ -1543,12 +1545,16 @@ void copyFarray(AcReal* f)
   	acHostMeshCopy(mesh, &tmp);
 	dst = &tmp;
   }
-  for (int i = 0; i < end; ++i)
+  for (int i = 0; i < all_vtxbufs; ++i)
   {
 	  //Have to specialize for training for now since we are reading fields that do not exist in Fortran: TODO: allocate fields on the CPU in Fortran
 	  const int index = ltraining ? i : 
 		  	    i < mvar ? i : maux_vtxbuf_index[i];
-          if (!ltraining && index == -1) continue;
+	  bool read_var = (i < end);
+	  read_var &= (index != -1);
+	  read_var |= (read_vtxbuf_from_gpu[i]);
+	  read_var |= ltraining;
+          if (!read_var) continue;
 	  acDeviceStoreVertexBuffer(acGridGetDevice(),STREAM_DEFAULT,VertexBufferHandle(index),dst);
   }
   acGridSynchronizeStream(STREAM_ALL);

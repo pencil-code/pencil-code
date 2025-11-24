@@ -154,11 +154,11 @@ module FArrayManager
 !
     endsubroutine farray_register_global
 !***********************************************************************
-    subroutine farray_register_auxiliary(varname,ivar,communicated,on_gpu,vector,array,ierr)
+    subroutine farray_register_auxiliary(varname,ivar,communicated,on_gpu,read_from_gpu,vector,array,ierr)
 !
 !  Register an auxiliary variable in the f array.
 !
-      use Cdata,  only: maux_vtxbuf_index
+      use Cdata,  only: maux_vtxbuf_index, read_vtxbuf_from_gpu
       use Cparam, only: mfarray
       use General, only: loptest
 !
@@ -168,6 +168,7 @@ module FArrayManager
       integer, optional, intent(in) :: vector, array
       integer, optional, intent(out) :: ierr
       logical, optional, intent(in) :: on_gpu
+      logical, optional, intent(in) :: read_from_gpu
 !
       integer :: vartype
       integer :: vtxbuf_index,i
@@ -193,13 +194,16 @@ module FArrayManager
           vtxbuf_index = vtxbuf_index+1
         endif
         maux_vtxbuf_index(ivar) = vtxbuf_index
+        read_vtxbuf_from_gpu(ivar) = merge(1,0,loptest(read_from_gpu))
         if (present(array)) then
           do i = 1,array-1
             maux_vtxbuf_index(ivar+i) = vtxbuf_index+i
+            read_vtxbuf_from_gpu(ivar+i) = merge(1,0,loptest(read_from_gpu))
           enddo
         else if (present(vector)) then
           do i = 1,vector-1
             maux_vtxbuf_index(ivar+i) = vtxbuf_index+i
+            read_vtxbuf_from_gpu(ivar+i) = merge(1,0,loptest(read_from_gpu))
           enddo
         endif
 

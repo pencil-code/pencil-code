@@ -865,7 +865,8 @@ module Cdata
 !  The index corresponds to the vertex buffer index on Astaroth
 !  Size of mfarray to make sure we can store the handle (for 1 to mvar -1)
 !
-   integer, dimension(mfarray) :: maux_vtxbuf_index = -1
+   integer, dimension(mfarray) :: maux_vtxbuf_index     = -1
+   integer, dimension(mfarray) :: read_vtxbuf_from_gpu  =  0
    integer :: enum_unit_system = 0
 !
 !  Define and initialize lambda5, so that it can be used to tell whether
