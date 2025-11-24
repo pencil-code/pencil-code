@@ -5143,6 +5143,10 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           inplace_opt=.false.
         endif
         num_elements = product(nreduce)
+        ! 2025-Nov-24/Kishore: I think this should be
+        ! `if (inplace_opt .and. lroot) then`
+        ! since MPI_IN_PLACE is only supposed to be used for the root
+        ! process' sendbuf (https://www.open-mpi.org/doc/current/man3/MPI_Reduce.3.php)
         if (inplace_opt) then
           call MPI_REDUCE(MPI_IN_PLACE, fsum, num_elements, mpi_precision, &
                           MPI_SUM, root, mpiprocs, mpierr)
