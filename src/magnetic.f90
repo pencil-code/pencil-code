@@ -11908,6 +11908,7 @@ print*,'AXEL2: should not be here (eta) ... '
     call copy_addr(lcurlb_as_aux,p_par(276)) ! bool
     call copy_addr(lbij_as_aux,p_par(277)) ! bool
     call copy_addr(bij_0d_test,p_par(278)) ! (3) (3)
+    call copy_addr(lbij_test,p_par(279)) ! bool
 
 
     endsubroutine pushpars2c

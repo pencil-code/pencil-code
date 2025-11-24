@@ -9097,6 +9097,7 @@ module Hydro
     call copy_addr(lremove_mean_angmom,p_par(124)) ! bool
     call copy_addr(luij_as_aux,p_par(125)) ! bool
     call copy_addr(uij_0d_test,p_par(126)) ! (3) (3)
+    call copy_addr(luij_test,p_par(127)) ! bool
 
     endsubroutine pushpars2c
 !***********************************************************************
