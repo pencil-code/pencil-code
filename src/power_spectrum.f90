@@ -6969,8 +6969,18 @@ outer:do ikz=1,nz
       call output_hdf5('last', iter)
     endif
 !
-    call gather_and_output_by_range(real(data), kxrange, kyrange, zrange, trim(label)//'/data_re')
-    call gather_and_output_by_range(aimag(data), kxrange, kyrange, zrange, trim(label)//'/data_im')
+!   2025-Nov-24/Kishore: since gather_and_output_by_range has problems (integer
+!   overflows in mpigather) for large simulations, I have replaced it by
+!   dist_output_by_range. Nevertheless, even dist_output_by_range requires an
+!   array of size (nkx,nky,nkz) on every rank, which may still cause problems
+!   in large simulations where all the output is requested (i.e.
+!   (nkx,nky,nkz) == (nxgrid,nygrid,nzgrid)).
+!
+!     call gather_and_output_by_range(real(data), kxrange, kyrange, zrange, trim(label)//'/data_re')
+!     call gather_and_output_by_range(aimag(data), kxrange, kyrange, zrange, trim(label)//'/data_im')
+!
+    call dist_output_by_range(real(data), kxrange, kyrange, zrange, trim(label)//'/data_re')
+    call dist_output_by_range(aimag(data), kxrange, kyrange, zrange, trim(label)//'/data_im')
 !
     if (lroot) then
       call file_close_hdf5
