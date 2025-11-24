@@ -1018,7 +1018,7 @@ module Hydro
 !
 !  Define the Higgsless field
 !
-      if (lhiggsless) call farray_register_auxiliary('hless',ihless,communicated=.true.)
+      if (lhiggsless) call farray_register_auxiliary('hless',ihless,communicated=.true., on_gpu=lgpu)
 !
 !  To compute the added mass term for particle drag,
 !  the advective derivative is needed.
