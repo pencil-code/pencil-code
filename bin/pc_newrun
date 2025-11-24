@@ -163,6 +163,7 @@ cp *.in $targetdir
 [ -f tran.dat ] && cp tran.dat $targetdir
 [ -f nnu2.dat ] && cp nnu2.dat $targetdir
 [ -f air.dat ] && cp air.dat $targetdir
+[ -f Omega_r_ell.dat ] && cp Omega_r_ell.dat $targetdir
 [ -f alpha_in.dat ] && cp alpha_in.dat $targetdir
 [ -f chiral_list.dat ] && cp chiral_list.dat $targetdir
 [ -f a_vs_eta.dat ] && cp a_vs_eta.dat $targetdir
