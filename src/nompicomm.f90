@@ -1465,11 +1465,12 @@ module Mpicomm
 !
     endsubroutine mpireduce_sum_arr2
 !***********************************************************************
-    subroutine mpireduce_sum_arr3(fsum_tmp,fsum,nreduce,idir)
+    subroutine mpireduce_sum_arr3(fsum_tmp,fsum,nreduce,idir,inplace)
 !
       integer, dimension(3) :: nreduce
       real, dimension(nreduce(1),nreduce(2),nreduce(3)) :: fsum_tmp,fsum
       integer, optional :: idir
+      logical, optional :: inplace
 !
       fsum=fsum_tmp
       if (ALWAYS_FALSE) print*, present(idir)
