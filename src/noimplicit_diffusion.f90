@@ -18,6 +18,7 @@ module ImplicitDiffusion
   implicit none
 !
   include 'implicit_diffusion.h'
+  integer :: pushpars2c        ! should be procedure pointer (F2003)
 !
   contains
 !***********************************************************************

@@ -24,7 +24,6 @@
 /STREAMLINES/ b end
 /YINYANG/ b end
 /PARTICLES/ b end
-/IMPLICIT_DIFFUSION/ b end
 /MPICOMM/ b end
 /MULTITHREADING/ b end
 /GPU_VENDOR/ b end

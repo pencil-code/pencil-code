@@ -63,6 +63,8 @@ ComputeSteps AC_before_boundary_steps(boundconds)
 	hydro_before_boundary(AC_lrmv,AC_step_num)
 	magnetic_before_boundary_reductions(AC_lrmv)
 	magnetic_before_boundary(AC_lrmv)
+	bfield_get_j()
+	bfield_get_e()
 	hydro_after_boundary_conservative(AC_t)
 	calc_axion_integral(AC_t)
 	prep_ode_right()
@@ -210,3 +212,14 @@ BoundConds boundconds{
 //  bc_ism(BOUNDARY_Z_TOP, AC_top,RHO)
 //}
 
+//TP: Hacky way to make sure the buffers to hold the Fourier space values are allocated
+#if LIMPLICIT_DIFFUSION
+Kernel initialize_implicit_diffusion_buffers()
+{
+	if(AC_limplicit_diffusion_with_fft__mod__implicitdiffusion)
+	{
+		write(SPLIT_DIFFUSION_UPDATE_BUFFER_REAL,0.0)
+		write(SPLIT_DIFFUSION_UPDATE_BUFFER_IMAG,0.0)
+	}
+}
+#endif

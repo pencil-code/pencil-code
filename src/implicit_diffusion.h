@@ -3,4 +3,4 @@
 private
 
 public :: read_implicit_diff_run_pars, write_implicit_diff_run_pars
-public :: integrate_diffusion
+public :: integrate_diffusion, pushpars2c

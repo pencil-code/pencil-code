@@ -1381,9 +1381,6 @@ module Special
       call copy_addr(alpfpsi,p_par(34))
       call copy_addr(coupl_gy,p_par(35))
       call copy_addr(lpsi_hom,p_par(36)) ! bool
-      call copy_addr(iex,p_par(37)) ! int
-      call copy_addr(iey,p_par(38)) ! int
-      call copy_addr(iez,p_par(39)) ! int
       call copy_addr(iedotx,p_par(40)) ! int
       call copy_addr(iedoty,p_par(41)) ! int
       call copy_addr(iedotz,p_par(42)) ! int

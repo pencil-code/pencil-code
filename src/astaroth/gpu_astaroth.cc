@@ -35,6 +35,7 @@ bool calculated_coeff_scales = false;
 
 // Astaroth headers
 #include "astaroth.h"
+#include "submodule/stdlib/fft.h"
 
 #define real AcReal
 #include "math_utils.h"
@@ -50,6 +51,9 @@ bool calculated_coeff_scales = false;
 
 //TP: these are ugly but for the moment we live with these
 #if TRANSPILATION
+  #define limplicit_diffusion_with_fft limplicit_diffusion_with_fft__mod__implicitdiffusion
+  #define limplicit_resistivity limplicit_resistivity__mod__magnetic
+  #define limplicit_viscosity   limplicit_viscosity__mod__viscosity
   #define lcumulative_df_on_gpu lcumulative_df_on_gpu__mod__cdata
   #define lbidiagonal_derij lbidiagonal_derij__mod__cdata
   #define nu nu__mod__viscosity
@@ -844,6 +848,33 @@ extern "C" void sourceFunctionAndOpacity(int inu)
         const auto Qextrinsic_graph = acGetOptimizedDSLTaskGraph(Qextrinsic_steps);
 	acGridExecuteTaskGraph(bcs,1);
 	acGridExecuteTaskGraph(Qextrinsic_graph,1);
+#endif
+}
+/***********************************************************************************************/
+extern "C" void splitUpdate()
+{
+#if LIMPLICIT_DIFFUSION
+	if(!limplicit_diffusion_with_fft)
+	{
+		fprintf(stderr,"Only FFT method for implicit diffusion has been implemented!!\n");
+		exit(EXIT_FAILURE);
+	}
+#if LMAGNETIC
+	if(limplicit_resistivity && lbfield)
+	{
+		ac_fft_split_diffusion_update(acGetF_BX(),dt,eta,acGetSPLIT_DIFFUSION_UPDATE_BUFFER_REAL(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_IMAG(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_REAL(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_IMAG());
+		ac_fft_split_diffusion_update(acGetF_BY(),dt,eta,acGetSPLIT_DIFFUSION_UPDATE_BUFFER_REAL(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_IMAG(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_REAL(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_IMAG());
+		ac_fft_split_diffusion_update(acGetF_BZ(),dt,eta,acGetSPLIT_DIFFUSION_UPDATE_BUFFER_REAL(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_IMAG(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_REAL(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_IMAG());
+	}
+#endif
+#if LVISCOSITY
+	if(limplicit_viscosity)
+	{
+		ac_fft_split_diffusion_update(acGetUUX(),dt,nu,acGetSPLIT_DIFFUSION_UPDATE_BUFFER_REAL(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_IMAG(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_REAL(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_IMAG());
+		ac_fft_split_diffusion_update(acGetUUY(),dt,nu,acGetSPLIT_DIFFUSION_UPDATE_BUFFER_REAL(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_IMAG(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_REAL(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_IMAG());
+		ac_fft_split_diffusion_update(acGetUUZ(),dt,nu,acGetSPLIT_DIFFUSION_UPDATE_BUFFER_REAL(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_IMAG(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_REAL(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_IMAG());
+	}
+#endif
 #endif
 }
 /***********************************************************************************************/
@@ -1715,6 +1746,7 @@ void autotune_all_integration_substeps()
         beforeBoundaryGPU(false,i,0.0);
   }
   sourceFunctionAndOpacity(0);
+  splitUpdate();
 }
 /***********************************************************************************************/
 extern "C" void loadFarray()
@@ -2454,9 +2486,5 @@ extern "C" void getGPUReducedVars(AcReal* dst)
 	dst[7] = acDeviceGetOutput(acGridGetDevice(), AC_e2m_all__mod__klein_gordon);
 	dst[8] = acDeviceGetOutput(acGridGetDevice(), AC_b2m_all__mod__klein_gordon);
 #endif
-}
-/***********************************************************************************************/
-extern "C" void splitUpdate()
-{
 }
 /***********************************************************************************************/

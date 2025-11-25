@@ -23,6 +23,7 @@ module ImplicitDiffusion
 !  Run-time parameters
 !
   character(len=6) :: implicit_method = 'full'
+  logical :: limplicit_diffusion_with_fft = .false.
 !
   namelist /implicit_diffusion_run_pars/ implicit_method
 !
@@ -45,6 +46,7 @@ module ImplicitDiffusion
       integer, intent(out) :: iostat
 !
       read(parallel_unit, NML=implicit_diffusion_run_pars, iostat=iostat)
+      limplicit_diffusion_with_fft = implicit_method == 'fft'
 !
     endsubroutine read_implicit_diff_run_pars
 !***********************************************************************
@@ -715,5 +717,16 @@ module ImplicitDiffusion
       endif
 !
     endsubroutine implicit_pencil
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    use Syscalls, only: copy_addr
+    use General , only: string_to_enum
+
+    integer, parameter :: n_pars=1
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+    call copy_addr(limplicit_diffusion_with_fft,p_par(1)) ! bool
+
+    endsubroutine pushpars2c
 !***********************************************************************
 endmodule ImplicitDiffusion

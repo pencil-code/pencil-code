@@ -35,3 +35,22 @@ Kernel magnetic_before_boundary(bool lrmv)
 	 suppress_unused_warning(lrmv)
 }
 #endif
+#if Lbfield_MODULE
+Kernel bfield_get_j()
+{
+	jj = AC_mu01__mod__cdata*curl(F_BVEC)
+	write(F_JVEC, jj)
+}
+Kernel bfield_get_e()
+{
+	ee = -cross(UU,F_BVEC + AC_b_ext__mod__magnetic)
+	write(F_EVEC, ee)
+}
+#else
+Kernel bfield_get_j()
+{
+}
+Kernel bfield_get_e()
+{
+}
+#endif

@@ -67,7 +67,7 @@ fixed_boundary Kernel twopass_solve_final(PC_SUB_STEP_NUMBER step_num, real dt)
 	        write(F_SIGMA,rk_final(F_SIGMA,step_num,dt))
 #endif
 #if LDISP_CURRENT
-		if(AC_iex__mod__disp_current != 0) write(F_EVEC,rk_final(F_EVEC,step_num,dt))
+		if(AC_iex__mod__cdata != 0) write(F_EVEC,rk_final(F_EVEC,step_num,dt))
 		if(AC_igamma__mod__disp_current != 0) write(F_GAMMA,rk_final(F_GAMMA,step_num,dt))
 #endif
 #if LAXIONSU2BACK
