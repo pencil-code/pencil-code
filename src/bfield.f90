@@ -612,6 +612,14 @@ module Magnetic
       if (lpenc_loc(i_el).or.lpenc_loc(i_e2)) call not_implemented("calc_pencils_magnetic_pencpar", &
           "pencil e2 (electric field)")
 !
+!  Constrain the time step.
+!
+      timestep: if (lupdate_courant_dt) then
+        call set_advec_va2(p)
+        maxdiffus = max(maxdiffus,maxdiffus_eta)
+        maxdiffus3 = max(maxdiffus3,maxdiffus_eta3)
+      endif timestep
+!
     endsubroutine calc_pencils_magnetic_pencpar
 !***********************************************************************
     subroutine daa_dt(f, df, p)
@@ -655,14 +663,6 @@ module Magnetic
           endif
         endif eth
       endif ohmic
-!
-!  Constrain the time step.
-!
-      timestep: if (lupdate_courant_dt) then
-        call set_advec_va2(p)
-        maxdiffus = max(maxdiffus,maxdiffus_eta)
-        maxdiffus3 = max(maxdiffus3,maxdiffus_eta3)
-      endif timestep
 !
       call calc_diagnostics_magnetic(f,p)
 
