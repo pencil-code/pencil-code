@@ -342,6 +342,11 @@ indices_aux = [ $
   { name:'ibschur2y', label:'ibschur2y', dims:1 }, $
   { name:'ibschur2z', label:'ibschur2z', dims:1 }, $
 ;
+  { name:'iuschurm_RR', label:'iuschurm_RR', dims:1 }, $
+  { name:'iuschurm_EL', label:'iuschurm_EL', dims:1 }, $
+  { name:'ibschurm_RR', label:'ibschurm_RR', dims:1 }, $
+  { name:'ibschurm_EL', label:'ibschurm_EL', dims:1 }, $
+;
   { name:'iuschur_SH_xx', label:'iuschur_SH_xx', dims:1 }, $
   { name:'iuschur_SH_xy', label:'iuschur_SH_xy', dims:1 }, $
   { name:'iuschur_SH_xz', label:'iuschur_SH_xz', dims:1 }, $

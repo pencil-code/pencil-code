@@ -40,7 +40,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-!! PENCILS PROVIDED infl_phi; infl_dphi; gphi(3)
+! PENCILS PROVIDED uSH2; uRR2; uEL2; uRRm; uELm; bSH2; bRR2; bEL2; bRRm; bELm
 !
 !** AUTOMATIC REFERENCE-LINK.TEX GENERATION ********************
 ! Declare relevant citations from pencil-code/doc/citations/ref.bib for this module.
@@ -91,8 +91,9 @@ module Special
 ! Declare index of new variables in f array (if any).
 !
   logical :: luschur2_as_aux=.false., lbschur2_as_aux=.false.
-  integer :: iuschur2, iuschur2_SH, iuschur2_RR, iuschur2_EL
-  integer :: ibschur2, ibschur2_SH, ibschur2_RR, ibschur2_EL
+  logical :: luschurm_as_aux=.false., lbschurm_as_aux=.false.
+  integer :: iuschur2, iuschur2_SH, iuschur2_RR, iuschur2_EL, iuschurm_RR, iuschurm_EL
+  integer :: ibschur2, ibschur2_SH, ibschur2_RR, ibschur2_EL, ibschurm_RR, ibschurm_EL
 !
   logical :: luschur_as_aux=.false., lbschur_as_aux=.false.
   integer :: iuschur_SH, iuschur_RR, iuschur_EL
@@ -100,14 +101,15 @@ module Special
 !
   namelist /special_init_pars/ &
       luschur2_as_aux, lbschur2_as_aux, &
+      luschurm_as_aux, lbschurm_as_aux, &
       luschur_as_aux, lbschur_as_aux
 !
-  logical :: luij_schur=.false., lbij_schur=.false.
-  real, dimension (nx) :: uSH2, uRR2, uEL2, uRRm, uELm
-  real, dimension (nx) :: bSH2, bRR2, bEL2, bRRm, bELm
+  logical :: luij_schur=.false., lbij_schur=.false., ldiagnos_always=.false.
+! real, dimension (nx) :: uSH2, uRR2, uEL2, uRRm, uELm
+! real, dimension (nx) :: bSH2, bRR2, bEL2, bRRm, bELm
 !
   namelist /special_run_pars/ &
-      luij_schur, lbij_schur
+      luij_schur, lbij_schur, ldiagnos_always
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -150,6 +152,16 @@ end function selct
 !
       if (lbschur2_as_aux) &
         call register_report_aux('bschur2', ibschur2, ibschur2_SH, ibschur2_RR, ibschur2_EL)
+!
+      if (luschurm_as_aux) then
+        call register_report_aux('uschurm_RR', iuschurm_RR)
+        call register_report_aux('uschurm_EL', iuschurm_EL)
+      endif
+!
+      if (lbschurm_as_aux) then
+        call register_report_aux('bschurm_RR', ibschurm_RR)
+        call register_report_aux('bschurm_EL', ibschurm_EL)
+      endif
 !
       if (luschur_as_aux) then
         call farray_register_auxiliary('uschur_SH', iuschur_SH, vector=9)
@@ -220,7 +232,7 @@ end function selct
 !  Possibility of applying triple decomposition of uij
 !  Do only when output onto command line.
 !
-      if (luij_schur .and. lout .and. llast) then
+      if ((luij_schur .and. lout) .or. ldiagnos_always) then
         do l=1,nx
           matA=p%uij(l,:,:)
           matA2=sum(matA**2)
@@ -228,25 +240,31 @@ end function selct
           if (matA2/=0.) then
             call schur_standardized(matA, matV, matQ)
             call schur_decompose(matV, matV_SH, matV_RR, matV_EL)
-            uSH2(l)=sum(matV_SH**2)
-            uRR2(l)=sum(matV_RR**2)
-            uEL2(l)=sum(matV_EL**2)
-            uRRm(l)=2.*sum(matV_SH*matV_RR)
-            uELm(l)=2.*sum(matV_SH*matV_EL)
+            p%uSH2(l)=sum(matV_SH**2)
+            p%uRR2(l)=sum(matV_RR**2)
+            p%uEL2(l)=sum(matV_EL**2)
+            p%uRRm(l)=2.*sum(matV_SH*matV_RR)
+            p%uELm(l)=2.*sum(matV_SH*matV_EL)
           else
-            uSH2(l)=0.
-            uRR2(l)=0.
-            uEL2(l)=0.
-            uRRm(l)=0.
-            uELm(l)=0.
+            print*,'AXEL: warning for u, l=',l
+            !p%uSH2(l)=0.
+            !p%uRR2(l)=0.
+            !p%uEL2(l)=0.
+            !p%uRRm(l)=0.
+            !p%uELm(l)=0.
           endif
 !
 !  Possibility of uSH2, uRR2, and uEL2 as auxiliary arrays
 !
           if (luschur2_as_aux) then
-            f(l1:l2,m,n,iuschur2_SH)=uSH2
-            f(l1:l2,m,n,iuschur2_RR)=uRR2
-            f(l1:l2,m,n,iuschur2_EL)=uEL2
+            f(l1:l2,m,n,iuschur2_SH)=p%uSH2(l)
+            f(l1:l2,m,n,iuschur2_RR)=p%uRR2(l)
+            f(l1:l2,m,n,iuschur2_EL)=p%uEL2(l)
+          endif
+!
+          if (luschurm_as_aux) then
+            f(l1:l2,m,n,iuschurm_RR)=p%uRRm(l)
+            f(l1:l2,m,n,iuschurm_EL)=p%uELm(l)
           endif
 !
 !  Possibility of uSH, uRR, and uEL matrices as auxiliary arrays
@@ -281,11 +299,13 @@ end function selct
 !       uRRm=0.
 !       uELm=0.
       endif
+if (m==m1+128 .and. n==n1) print*,'AXEL1: uRR2=',p%uRR2
+if (m==m1+128 .and. n==n1) print*,'AXEL1: uEL2=',p%uEL2
 !
 !  Possibility of applying triple decomposition of bij
 !  Do only when output onto command line.
 !
-      if (lbij_schur .and. lout .and. llast) then
+      if ((lbij_schur .and. lout) .or. ldiagnos_always) then
         do l=1,nx
           matA=p%bij(l,:,:)
           matA2=sum(matA**2)
@@ -293,30 +313,36 @@ end function selct
           if (matA2/=0.) then
             call schur_standardized(matA,matV,matQ)
             call schur_decompose(matV, matV_SH, matV_RR, matV_EL)
-            bSH2(l)=sum(matV_SH**2)
-            bRR2(l)=sum(matV_RR**2)
-            bEL2(l)=sum(matV_EL**2)
-            bRRm(l)=2.*sum(matV_SH*matV_RR)
-            bELm(l)=2.*sum(matV_SH*matV_EL)
+            p%bSH2(l)=sum(matV_SH**2)
+            p%bRR2(l)=sum(matV_RR**2)
+            p%bEL2(l)=sum(matV_EL**2)
+            p%bRRm(l)=2.*sum(matV_SH*matV_RR)
+            p%bELm(l)=2.*sum(matV_SH*matV_EL)
           else
-            bSH2(l)=0.
-            bRR2(l)=0.
-            bEL2(l)=0.
-            bRRm(l)=0.
-            bELm(l)=0.
+            print*,'AXEL: warning for b, l=',l
+            !p%bSH2(l)=0.
+            !p%bRR2(l)=0.
+            !p%bEL2(l)=0.
+            !p%bRRm(l)=0.
+            !p%bELm(l)=0.
           endif
 !
 !  Possibility of bSH2, bRR2, and bEL2 as auxiliary arrays
 !  Use f(1,1,1,ibschur2_EL) to encode the correct update time.
 !
           if (lbschur2_as_aux) then
-            f(l1:l2,m,n,ibschur2_SH)=bSH2
-            f(l1:l2,m,n,ibschur2_RR)=bRR2
-            f(l1:l2,m,n,ibschur2_EL)=bEL2
+            f(l1:l2,m,n,ibschur2_SH)=p%bSH2(l)
+            f(l1:l2,m,n,ibschur2_RR)=p%bRR2(l)
+            f(l1:l2,m,n,ibschur2_EL)=p%bEL2(l)
             if (l==1 .and. m==m1 .and. n==n1 .and. ip<10) then
               print*,'AXEL: iproc,t=',iproc,t
               f(1,1,1,ibschur2_EL)=t
             endif
+          endif
+!
+          if (lbschurm_as_aux) then
+            f(l1:l2,m,n,ibschurm_RR)=p%bRRm(l)
+            f(l1:l2,m,n,ibschurm_EL)=p%bELm(l)
           endif
 !
 !  Possibility of bSH, bRR, and bEL matrices as auxiliary arrays
@@ -544,17 +570,21 @@ end function selct
 !
 !  Diagnostics
 !
-      if (ldiagnos) then
-        call sum_mn_name(uSH2,idiag_uSH2)
-        call sum_mn_name(uRR2,idiag_uRR2)
-        call sum_mn_name(uEL2,idiag_uEL2)
-        call sum_mn_name(uRRm,idiag_uRRm)
-        call sum_mn_name(uELm,idiag_uELm)
-        call sum_mn_name(bSH2,idiag_bSH2)
-        call sum_mn_name(bRR2,idiag_bRR2)
-        call sum_mn_name(bEL2,idiag_bEL2)
-        call sum_mn_name(bRRm,idiag_bRRm)
-        call sum_mn_name(bELm,idiag_bELm)
+!if (m==m1+128 .and. n==n1) print*,'AXEL2: uEL2=',uEL2
+!if (m==m1+128 .and. n==n1) print*,'AXEL2: uRR2=',uRR2
+!uRR2=1.
+!uEL2=1.
+      if (ldiagnos .or. ldiagnos_always) then
+        call sum_mn_name(p%uSH2,idiag_uSH2)
+        call sum_mn_name(p%uRR2,idiag_uRR2)
+        call sum_mn_name(p%uEL2,idiag_uEL2)
+        call sum_mn_name(p%uRRm,idiag_uRRm)
+        call sum_mn_name(p%uELm,idiag_uELm)
+        call sum_mn_name(p%bSH2,idiag_bSH2)
+        call sum_mn_name(p%bRR2,idiag_bRR2)
+        call sum_mn_name(p%bEL2,idiag_bEL2)
+        call sum_mn_name(p%bRRm,idiag_bRRm)
+        call sum_mn_name(p%bELm,idiag_bELm)
       endif
 !
     endsubroutine dspecial_dt

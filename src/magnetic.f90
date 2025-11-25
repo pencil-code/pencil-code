@@ -6186,15 +6186,6 @@ module Magnetic
         endif
       endif
 !
-!  Electric field E = -dA/dt, store the Electric field in f-array if asked for.
-!  This line must not be used when the displacement current is being solved for.
-!  But it might actually work correctly.
-!
-      if (lee_as_aux) then
-        if (headtt) print*,'f(l1:l2,m,n,iex:iez)=-dAdt is set'
-        f(l1:l2,m,n,iex:iez)=-dAdt
-      endif
-!
 !  Magnetic field in spherical coordinates from a Cartesian simulation
 !  for sphere-in-a-box setups
 !
@@ -6224,6 +6215,15 @@ module Magnetic
 !  Call right-hand side for mean-field stuff (do this just before ldiagnos)
 !
       if (lmagn_mf) call daa_dt_meanfield(f,df,p)
+!
+!  Electric field E = -dA/dt, store the Electric field in f-array if asked for.
+!  This line must not be used when the displacement current is being solved for.
+!  But it might actually work correctly.
+!
+      if (lee_as_aux .and. lfirst) then
+        if (headtt) print*,'f(l1:l2,m,n,iex:iez)=-dAdt is set'
+        f(l1:l2,m,n,iex:iez)=-df(l1:l2,m,n,iax:iaz)
+      endif
 !
 !  Multiply resistivity by Nyquist scale, for resistive time-step.
 !
