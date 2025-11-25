@@ -201,7 +201,7 @@ module Magnetic
 !
 !  Request auxiliary variable for the effective electric field.
 !
-      call farray_register_auxiliary('ee', iee, vector=3, communicated=.true., ierr=istat)
+      call farray_register_auxiliary('ee', iee, vector=3, on_gpu=lgpu, communicated=.true., ierr=istat)
       if (istat /= 0) call fatal_error('register_magnetic', 'cannot register the variable ee')
       iex = iee
       iey = iex + 1
@@ -209,7 +209,7 @@ module Magnetic
 !
 !  Request auxiliary variable for the current density.
 !
-      call farray_register_auxiliary('jj', ijj, vector=3, communicated=.true., ierr=istat)
+      call farray_register_auxiliary('jj', ijj, vector=3, on_gpu=lgpu, communicated=.true., ierr=istat)
       if (istat /= 0) call fatal_error('register_magnetic', 'cannot register the variable jj')
       ijx = ijj
       ijy = ijx + 1
