@@ -44,6 +44,7 @@ module GPU
   external calcq_gpu_c
   external get_gpu_reduced_vars_c
   external test_bcs_c
+  external split_update_gpu_c
 
   integer, external :: update_on_gpu_arr_by_name_c
   integer, external :: update_on_gpu_scal_by_name_c
@@ -335,5 +336,10 @@ contains
     subroutine test_gpu_bcs
             call test_bcs_c
     endsubroutine test_gpu_bcs
+!**************************************************************************
+    subroutine split_update_gpu(f)
+      real, dimension (mx,my,mz,mfarray), intent(INOUT) :: f
+      call split_update_gpu_c(f)
+    endsubroutine split_update_gpu
 !**************************************************************************
 endmodule GPU

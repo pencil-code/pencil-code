@@ -31,6 +31,7 @@ fixed_boundary Kernel twopass_solve_final(PC_SUB_STEP_NUMBER step_num, real dt)
 			write(F_RHO, updated_rho)
 		}
 		if(AC_iaa__mod__cdata != 0) write(F_AA, rk_final(F_AA,step_num,dt))
+		if(lbfield) write(F_BVEC, rk_final(F_BVEC,step_num,dt))
   		if (AC_itt__mod__cdata != 0 || AC_ilntt__mod__cdata != 0)  write( F_TT,  rk_final(F_TT, step_num,dt))
   		if (AC_iss__mod__cdata != 0)  write( F_SS,  rk_final(F_SS, step_num,dt))
                 if(AC_iuun__mod__cdata != 0) write(F_UUN, rk_final(F_UUN,step_num,dt))

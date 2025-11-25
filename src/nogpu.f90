@@ -187,4 +187,8 @@ contains
     subroutine test_gpu_bcs
     endsubroutine test_gpu_bcs
 !**************************************************************************
+    subroutine split_update_gpu(f)
+      real, dimension(:,:,:,:) :: f
+    endsubroutine split_update_gpu
+!**************************************************************************
 endmodule GPU

@@ -732,7 +732,7 @@ std::array<AcReal,3> visc_get_max_diffus()
 /***********************************************************************************************/
 std::array<AcReal,3> magnetic_get_max_diffus()
 {
-#if LMAGNETIC
+#if Lmagnetic_MODULE
 	return {eta,eta_hyper2,eta_hyper3};
 #else
 	return {0.0,0.0,0.0};
@@ -2454,5 +2454,9 @@ extern "C" void getGPUReducedVars(AcReal* dst)
 	dst[7] = acDeviceGetOutput(acGridGetDevice(), AC_e2m_all__mod__klein_gordon);
 	dst[8] = acDeviceGetOutput(acGridGetDevice(), AC_b2m_all__mod__klein_gordon);
 #endif
+}
+/***********************************************************************************************/
+extern "C" void splitUpdate()
+{
 }
 /***********************************************************************************************/

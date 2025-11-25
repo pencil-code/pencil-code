@@ -36,7 +36,6 @@ module Magnetic
   implicit none
 !
   include 'magnetic.h'
-  integer :: pushpars2c  ! should be procedure pointer (F2003)
 !
 !  Initialization parameters
 !
@@ -1494,5 +1493,31 @@ module Magnetic
       endif bext
 !
     endsubroutine get_bext
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    use Syscalls, only: copy_addr
+    use General , only: string_to_enum
+
+    integer, parameter :: n_pars=50
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+    call copy_addr(t_bext,p_par(1))
+    call copy_addr(t0_bext,p_par(2))
+    call copy_addr(lbext,p_par(3)) ! bool
+    call copy_addr(limplicit_resistivity,p_par(4)) ! bool
+    call copy_addr(lresis_const,p_par(5)) ! bool
+    call copy_addr(lresis_zdep,p_par(6)) ! bool
+    call copy_addr(lresis_shock,p_par(7)) ! bool
+    call copy_addr(lohmic_heat,p_par(8)) ! bool
+    call copy_addr(eta,p_par(9))
+    call copy_addr(eta_shock,p_par(10))
+    call copy_addr(lresistivity,p_par(11)) ! bool
+    call copy_addr(b_ext,p_par(12)) ! real3
+    call copy_addr(b0_ext,p_par(13)) ! real3
+    call copy_addr(maxdiffus_eta,p_par(14)) ! (nx)
+    call copy_addr(maxdiffus_eta3,p_par(15)) ! (nx)
+    call copy_addr(eta_zdep,p_par(16)) ! (mz)
+
+    endsubroutine pushpars2c
 !***********************************************************************
 endmodule Magnetic

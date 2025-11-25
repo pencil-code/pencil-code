@@ -152,7 +152,11 @@ Field F_GLOBAL_LNRHO0
 Field F_GLOBAL_SS0
 Field F_HYPVIS
 Field F_NUSMAG
-Field F_BX, F_BY, F_BZ
+
+field_order(AC_ibx__mod__cdata-1) Field F_BX
+field_order(AC_iby__mod__cdata-1) Field F_BY
+field_order(AC_ibz__mod__cdata-1) Field F_BZ
+
 Field F_GLOBAL_EXT_BX, F_GLOBAL_EXT_BY, F_GLOBAL_EXT_BZ
 Field F_GLOBAL_EXT_AX, F_GLOBAL_EXT_AY, F_GLOBAL_EXT_AZ
 

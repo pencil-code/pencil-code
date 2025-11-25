@@ -17,6 +17,7 @@
         if ((AC_ilnrhon__mod__cdata + AC_irhon__mod__cdata) != 0)  write(F_RHON, rk_intermediate(F_RHON, DF_RHON, step_num, AC_dt__mod__cdata) )
   	if (AC_iss__mod__cdata != 0)  write( F_SS,  rk_intermediate(F_SS, DF_SS,  step_num, AC_dt__mod__cdata) )
   	if (AC_iaa__mod__cdata != 0) write( F_AA,  rk_intermediate(F_AA , DF_AA,  step_num, AC_dt__mod__cdata) )
+	if(lbfield) write(F_BVEC, rk_intermediate(F_BVEC, DF_BVEC,step_num,AC_dt__mod__cdata))
 #if LGRAVITATIONAL_WAVES_HTXK
 	if (AC_lfirst__mod__cdata)
 	{

@@ -1,4 +1,4 @@
-#if LMAGNETIC
+#if Lmagnetic_MODULE
 Profile<XY> AX_mean_z
 Profile<XY> AY_mean_z
 Profile<XY> AZ_mean_z
