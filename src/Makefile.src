@@ -3131,7 +3131,6 @@ ifeq ($(USE_SPECIAL_DISPATCHER),no)
              -e "s/NML *= *[a-zA-Z0-9_]*_\([a-z][a-z]*_pars\)/NML=special_\1/"< $(SPECIAL_MODULES).f90 > special.tmp
 	@if ! cmp -s special.tmp $(SPECIAL_MODULES).f90; then mv -f special.tmp $(PENCIL_HOME)/src/$(SPECIAL_MODULES).f90; else rm -f special.tmp; fi
 else
-	@sed -e's/\(n_special_modules_max *= *\)[1-9][0-9]*/\1'$(SPECIAL_MULT)'/' < special.f90 > special_tmp.f90
 	@for file in $(SPECIAL_MODULES); do sed -e"/module  *procedure/ ! s/^\( *module  *\)[Ss]pecial/\1$${file#*/}/" \
 	                                        -e"s/^\( *endmodule  *\)[Ss]pecial/\1$${file#*/}/" \
 						-e"s/special_dummies\.inc/$${file#*/}_dummies.inc/" \
@@ -3142,6 +3141,9 @@ else
 	  done
         endif
 endif
+
+special_tmp.f90:
+	@sed -e's/\(n_special_modules_max *= *\)[1-9][0-9]*/\1'$(SPECIAL_MULT)'/' < special.f90 > special_tmp.f90
 
 ifeq ($(GPU),gpu_astaroth)
 special.so: $(CPARAM_OBJ) $(CDATA_OBJ) $(SPECIAL_OBJ) special_dummies.inc $(SPECIAL_MODULES:=.o)
