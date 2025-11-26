@@ -69,6 +69,7 @@ const int prof_nz = 150
 #define AC_m__mod__cdata m__mod__cdata
 
 #include "../stdlib/math"
+#include "../stdlib/cg.h"
 #include "../stdlib/general_derivs.h"
 //#include "../stdlib/pc_derivs.h"
 #include "../stdlib/general_operators.h"

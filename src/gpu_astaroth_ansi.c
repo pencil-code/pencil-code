@@ -42,7 +42,7 @@ void gpuSetDt(double t);
 void random_initial_condition(void);
 void getGPUReducedVars(REAL* dst);
 void testBCs(void);
-void splitUpdate(void);
+void splitUpdate(const REAL,const FINT);
 
 // for Gnu Compiler
 extern char *__cparam_MOD_coornames;
@@ -235,6 +235,6 @@ void FTNIZE(test_bcs_c)(void)
 /* ------------------------------------------------------------------- */
 void FTNIZE(split_update_gpu_c)(void)
 {
-	splitUpdate();
+	splitUpdate(1e-15,1000000);
 }
 /* ------------------------------------------------------------------- */

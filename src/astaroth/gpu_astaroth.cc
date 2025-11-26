@@ -52,6 +52,7 @@ bool calculated_coeff_scales = false;
 //TP: these are ugly but for the moment we live with these
 #if TRANSPILATION
   #define limplicit_diffusion_with_fft limplicit_diffusion_with_fft__mod__implicitdiffusion
+  #define limplicit_diffusion_with_cg  limplicit_diffusion_with_cg__mod__implicitdiffusion
   #define limplicit_resistivity limplicit_resistivity__mod__magnetic
   #define limplicit_viscosity   limplicit_viscosity__mod__viscosity
   #define lcumulative_df_on_gpu lcumulative_df_on_gpu__mod__cdata
@@ -851,30 +852,75 @@ extern "C" void sourceFunctionAndOpacity(int inu)
 #endif
 }
 /***********************************************************************************************/
-extern "C" void splitUpdate()
+extern "C" void splitUpdate(const AcReal error_tolerance, const int max_steps)
 {
 #if LIMPLICIT_DIFFUSION
-	if(!limplicit_diffusion_with_fft)
+	if(limplicit_diffusion_with_fft)
 	{
-		fprintf(stderr,"Only FFT method for implicit diffusion has been implemented!!\n");
-		exit(EXIT_FAILURE);
-	}
 #if LMAGNETIC
-	if(limplicit_resistivity && lbfield)
-	{
-		ac_fft_split_diffusion_update(acGetF_BX(),dt,eta,acGetSPLIT_DIFFUSION_UPDATE_BUFFER_REAL(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_IMAG(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_REAL(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_IMAG());
-		ac_fft_split_diffusion_update(acGetF_BY(),dt,eta,acGetSPLIT_DIFFUSION_UPDATE_BUFFER_REAL(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_IMAG(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_REAL(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_IMAG());
-		ac_fft_split_diffusion_update(acGetF_BZ(),dt,eta,acGetSPLIT_DIFFUSION_UPDATE_BUFFER_REAL(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_IMAG(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_REAL(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_IMAG());
-	}
+		if(limplicit_resistivity && lbfield)
+		{
+			ac_fft_split_diffusion_update(acGetF_BX(),dt,eta,acGetSPLIT_DIFFUSION_UPDATE_BUFFER_REAL(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_IMAG(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_REAL(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_IMAG());
+			ac_fft_split_diffusion_update(acGetF_BY(),dt,eta,acGetSPLIT_DIFFUSION_UPDATE_BUFFER_REAL(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_IMAG(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_REAL(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_IMAG());
+			ac_fft_split_diffusion_update(acGetF_BZ(),dt,eta,acGetSPLIT_DIFFUSION_UPDATE_BUFFER_REAL(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_IMAG(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_REAL(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_IMAG());
+		}
 #endif
 #if LVISCOSITY
-	if(limplicit_viscosity)
-	{
-		ac_fft_split_diffusion_update(acGetUUX(),dt,nu,acGetSPLIT_DIFFUSION_UPDATE_BUFFER_REAL(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_IMAG(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_REAL(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_IMAG());
-		ac_fft_split_diffusion_update(acGetUUY(),dt,nu,acGetSPLIT_DIFFUSION_UPDATE_BUFFER_REAL(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_IMAG(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_REAL(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_IMAG());
-		ac_fft_split_diffusion_update(acGetUUZ(),dt,nu,acGetSPLIT_DIFFUSION_UPDATE_BUFFER_REAL(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_IMAG(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_REAL(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_IMAG());
-	}
+		if(limplicit_viscosity)
+		{
+			ac_fft_split_diffusion_update(acGetUUX(),dt,nu,acGetSPLIT_DIFFUSION_UPDATE_BUFFER_REAL(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_IMAG(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_REAL(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_IMAG());
+			ac_fft_split_diffusion_update(acGetUUY(),dt,nu,acGetSPLIT_DIFFUSION_UPDATE_BUFFER_REAL(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_IMAG(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_REAL(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_IMAG());
+			ac_fft_split_diffusion_update(acGetUUZ(),dt,nu,acGetSPLIT_DIFFUSION_UPDATE_BUFFER_REAL(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_IMAG(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_REAL(),acGetSPLIT_DIFFUSION_UPDATE_BUFFER_IMAG());
+		}
 #endif
+	}
+	else if(limplicit_diffusion_with_cg)
+	{
+		acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(implicit_diffusion_init_cg),1);
+		acDeviceSetInput(acGridGetDevice(),AC_implicit_diffusion_coefficient,eta);
+		for(int field = 0; field < 3; ++field)
+		{
+			int step_num = 0;
+			acDeviceSetInput(acGridGetDevice(),AC_CG_FIELD,CG_FIELD(field));
+			AcReal residual = 1e100;
+			bool over_max_steps = false;
+			acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(implicit_diffusion_get_residual),1);
+			residual = sqrt(acDeviceGetOutput(acGridGetDevice(),AC_implicit_diffusion_residual));
+			while(residual > error_tolerance && !over_max_steps)
+			{
+				acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(implicit_diffusion_cg_step),1);
+				acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(implicit_diffusion_get_residual),1);
+				residual = sqrt(acDeviceGetOutput(acGridGetDevice(),AC_implicit_diffusion_residual));
+				++step_num;
+				over_max_steps |= (max_steps > 0 && step_num >= max_steps);
+			}
+		}
+		acDeviceSetInput(acGridGetDevice(),AC_implicit_diffusion_coefficient,nu);
+		for(int field = 3; field < 6; ++field)
+		{
+			acDeviceSetInput(acGridGetDevice(),AC_CG_FIELD,CG_FIELD(field));
+			AcReal residual = 1e100;
+			acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(implicit_diffusion_get_residual),1);
+			residual = sqrt(acDeviceGetOutput(acGridGetDevice(),AC_implicit_diffusion_residual));
+			bool over_max_steps = false;
+			int step_num = 0;
+			while(residual > error_tolerance && !over_max_steps)
+			{
+				acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(implicit_diffusion_cg_step),1);
+				acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(implicit_diffusion_get_residual),1);
+				residual = sqrt(acDeviceGetOutput(acGridGetDevice(),AC_implicit_diffusion_residual));
+				++step_num;
+				over_max_steps |= (max_steps > 0 && step_num >= max_steps);
+			}
+		}
+	}
+	else
+	{
+		fprintf(stderr,"Unknown method for implicit diffusion update on GPU!\n");
+		fflush(stderr);
+		exit(EXIT_FAILURE);
+	}
+
 #endif
 }
 /***********************************************************************************************/
@@ -1746,7 +1792,7 @@ void autotune_all_integration_substeps()
         beforeBoundaryGPU(false,i,0.0);
   }
   sourceFunctionAndOpacity(0);
-  splitUpdate();
+  splitUpdate(1e11,1);
 }
 /***********************************************************************************************/
 extern "C" void loadFarray()
@@ -1989,8 +2035,6 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_)  /
   if (rank==0 && ldebug) printf("memusage after store synchronize stream= %f MBytes\n", acMemUsage()/1024.);
   acLogFromRootProc(rank, "DONE initializeGPU\n");
   fflush(stdout);
-
-
 
   constexpr AcReal unit = 1.0;
   dt1_interface = unit/dt;

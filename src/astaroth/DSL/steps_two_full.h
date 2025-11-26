@@ -10,6 +10,7 @@
 #include "../polymer.h"
 #include "../sld"
 #include "../entropy/after_boundary.h"
+#include "../implicit_diffusion.h"
 
 //TP: the training code needs to be improved that it can be included always (requires conditionals when to do the calculations)
 #if LTRAINING
@@ -212,14 +213,3 @@ BoundConds boundconds{
 //  bc_ism(BOUNDARY_Z_TOP, AC_top,RHO)
 //}
 
-//TP: Hacky way to make sure the buffers to hold the Fourier space values are allocated
-#if LIMPLICIT_DIFFUSION
-Kernel initialize_implicit_diffusion_buffers()
-{
-	if(AC_limplicit_diffusion_with_fft__mod__implicitdiffusion)
-	{
-		write(SPLIT_DIFFUSION_UPDATE_BUFFER_REAL,0.0)
-		write(SPLIT_DIFFUSION_UPDATE_BUFFER_IMAG,0.0)
-	}
-}
-#endif

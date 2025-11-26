@@ -24,6 +24,7 @@ module ImplicitDiffusion
 !
   character(len=6) :: implicit_method = 'full'
   logical :: limplicit_diffusion_with_fft = .false.
+  logical :: limplicit_diffusion_with_cg  = .false.
 !
   namelist /implicit_diffusion_run_pars/ implicit_method
 !
@@ -47,6 +48,10 @@ module ImplicitDiffusion
 !
       read(parallel_unit, NML=implicit_diffusion_run_pars, iostat=iostat)
       limplicit_diffusion_with_fft = implicit_method == 'fft'
+      limplicit_diffusion_with_cg  = implicit_method == 'cg'
+      if(limplicit_diffusion_with_cg .and. .not. lgpu) then
+        call fatal_error('read_implicit_diff_run_pars','Conjugate Gradient solver is only implemented for the GPU!')
+      endif
 !
     endsubroutine read_implicit_diff_run_pars
 !***********************************************************************
@@ -723,9 +728,10 @@ module ImplicitDiffusion
     use Syscalls, only: copy_addr
     use General , only: string_to_enum
 
-    integer, parameter :: n_pars=1
+    integer, parameter :: n_pars=2
     integer(KIND=ikind8), dimension(n_pars) :: p_par
     call copy_addr(limplicit_diffusion_with_fft,p_par(1)) ! bool
+    call copy_addr(limplicit_diffusion_with_cg ,p_par(2)) ! bool
 
     endsubroutine pushpars2c
 !***********************************************************************
