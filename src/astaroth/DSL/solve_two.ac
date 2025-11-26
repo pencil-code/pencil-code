@@ -115,7 +115,7 @@ fixed_boundary Kernel twopass_solve_final(PC_SUB_STEP_NUMBER step_num, real dt)
 		if(AC_irhoe__mod__disp_current  != 0) write(F_RHOE ,rk_final(F_RHOE ,step_num,dt))
 		if(AC_idiva_name__mod__disp_current  != 0) write(F_DIVA_NAME ,rk_final(F_DIVA_NAME ,step_num,dt))
 		if(AC_ia0__mod__disp_current != 0)    write(F_A0   ,rk_final(F_A0   ,step_num,dt))
-		if(AC_iex__mod__disp_current != 0)    write(F_EVEC ,rk_final(F_EVEC ,step_num  ,dt)) 
+		if(AC_iex__mod__cdata != 0)    write(F_EVEC ,rk_final(F_EVEC ,step_num  ,dt)) 
 #endif
 #if LCHIRAL_MHD
                 if(AC_imu5__mod__chiral_mhd != 0) write(F_MU5, rk_final(F_MU5, step_num,dt))
