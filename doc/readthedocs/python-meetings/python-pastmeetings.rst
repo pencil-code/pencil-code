@@ -7,9 +7,56 @@ Meeting archive for the Python postprocessing development group.
 
 Each entry includes date, participants, and a summary of decisions.
 
+2025 Nov 26
+------------
+
+**Participants:** 
+Alberto Roper Pol, Carolina Ortiz, Oindrila Ghosh, Kishore, Reihaneh, Illa Losada, Simon Candelaresi, Alireza, Mgurgeni, Nordita Participants, Isak Stomberg. 
+
+**Minutes:**
+
+1. Meeting Format.
+
+a) Frequency of the Pencil Code Python Meetings should be every two months and should be kept up.
+b) Rotate organizers for the meeting. Next meeting organized by Alberto.
+c) Topics to be covered during the meetings: Tests, Tutorials, libraries with pip, formatting.
+
+2. Tests.
+
+We currently have a series of Python tests that can be run locally.
+- Task: Further development would include code coverage and format checking done automatically on a testing machine, maybe github: Kishore and Simon.
+
+3. Pip: issues with library installation in Ubuntu.
+
+- Task: Add to the documentation how to create your own Python environment. (Simon)
+- Task: Upload PC Python as separate pip package. (Alberto)
+
+4. Documentation.
+
+- Task: Update the tutorials. (Simon, Isak)
+- Task: Move the tutorials into Read The Docs. (Illa)
+
+5. Real life simulation purely in Jupyter with life visualization.
+
+- Task: Add it to read the docs. (Isak)
+- Task: Can we use simulation objects? (Simon)
+
+6. Tutorials.
+
+We currently have information dispersed.
+- Task: Coding style should be put last. (Illa)
+- Task: Link tutorials in the Pencil Code from Read The Docs. (Simon)
+
+7. Inconsistency in array format when reading with io_dist or hdf5.
+- Task: Make sure that the h5 file load follows same. (Kishore)
 
 
-.. rubric:: 2021 Sept 17
+
+
+
+
+2021 Sept 17
+------------
 
 **Participants:** 
 
@@ -42,8 +89,8 @@ Send an email to the PC Python discussion group. (WD)
 Email authors of the visu/pv_* routines. (SC)
 
 
-
-.. rubric:: 2021 Apr 14
+2021 Apr 14
+------------
 
 **Participants:** Illa, Fred, Simon, Wolfgang,
 
@@ -117,7 +164,8 @@ I suggested to follow the outline of 'python/pencil/read/power.py'
 13. He changed read.var
 
 
-.. rubric:: 2021 Feb 24
+2021 Feb 24
+------------
 
 **Participants:** 
 
@@ -142,7 +190,8 @@ We discussed where to post the documentation and agreed on using readthedocs.org
 
 
 
-.. rubric:: 2021 Jan 14
+2021 Jan 14
+------------
 
 **Participants:** 
 
@@ -163,7 +212,8 @@ Topics:
 
 
 
-.. rubric:: 2020 Nov 23
+2020 Nov 23
+------------
 
 **Participants:** Fred, Simon, Wladimir, Wolfgang, Alberto, Illa
 

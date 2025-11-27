@@ -15,7 +15,6 @@ this is your launchpad.
 
 
 .. toctree::
-    :numbered:
     :maxdepth: 2
     :caption: Contents
 

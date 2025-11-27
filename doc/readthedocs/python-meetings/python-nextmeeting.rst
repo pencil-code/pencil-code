@@ -4,24 +4,16 @@
 Next Meeting
 =============
 
-**Date:** Nov 26, 2025, from 14:30 to 16:00 CET.
+**Date:** TBA. January 2026. 
+Please fill out your prefered dates `here <https://www.when2meet.com/?33748149-PptLx>`_.
 
 
 **Proposed agenda:**
 
-- Summary of previous meetings
+- Tutorials
 
-- Meeting format:
+- Check :file:`pencil-code/python/pencil/TO_DO_LIST.txt`. The last update is from Jun 29, 2024, is there any further update?
 
-   * Frequency
-
-   * Duration 
-
-   * Other
-
-- Any comments about :ref:`python-decisions`?
-
-- Deprecate usage of non standard python modules like ``eqtools`` and try to use ``numpy`` instead when possible.
 - Changing behaviour of ``.keys()`` methods (of ``Averages``, ``Timeseries`` etc.). Currently it just prints the keys, but it would be more useful to return a list
 - Decide on a convention for extra debug output (controlled by the ``quiet`` keyword in functions like ``pc.read.var`` and ``pc.read.grid``). Currently, whether it defaults to ``False`` or ``True`` varies from function to function, which is confusing and annoying. Ideally we would control such output by a module-wide flag (such that something like ``pc.shut_up = True`` at the beginning of a script would have the effect of setting ``quiet=True`` in all the ``pc`` functions).
 - Changing the behaviour of ``pc.read.aver`` for ``yaver`` and ``zaver``; see <https://groups.google.com/g/pencil-code-python/c/a6eu61yOMuk>
@@ -38,7 +30,8 @@ Discussion Topics
 
 Ongoing or pending topics for future meetings.
 
-- All items in the :ref:`python-nextmeeting` section.
+
+
 
 Feel free to add more — this section is a living to-do list.
 If an item you want to discuss is already in the list, please add a ``+1`` to give the item priority according to the number of people interested.
