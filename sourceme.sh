@@ -8,21 +8,6 @@
 #    _sourceme_quiet=1; . $PENCIL_HOME/sourceme.sh; unset _sourceme_quiet
 #  into your .bashrc
 #
-if ( [ -e .git ] ); then
-# 2025-Nov-11/Kishore: Matthias, I think it would be cleaner to check the config
-# value by running
-# `git config get pull.rebase` and checking that it does not return "false"
-# I think the above has the advantage of also checking the value inherited from
-# the global config, if any.
-	if [[ `grep '^\srebase *= *false' .git/config` != "" ]]; then
-	echo !!!WARNING - you have \"rebase = false\" settings in your .git/config!!!
-	echo !!!Pull strategy should always be \"--rebase\" on all branches!!!
-    fi
-#
-# Enforce basic pull policy to "rebase".
-#
-    git config pull.rebase true
-fi
 
 if [ -z $PENCIL_HOME ]; then
   unset _sourceme		# tabula rasa without PENCIL_HOME
@@ -106,4 +91,21 @@ if [ -z $_sourceme ]; then	# called for the first time?
       echo "Not adding $PENCIL_HOME/bin to PATH: not a directory"
     fi
   fi
+fi
+
+if ( [ -e .git ] ); then
+# 2025-Nov-11/Kishore: Matthias, I think it would be cleaner to check the config
+# value by running
+# `git config get pull.rebase` and checking that it does not return "false"
+# I think the above has the advantage of also checking the value inherited from
+# the global config, if any.
+	if [[ `grep '^\srebase *= *false' .git/config` != "" ]]; then
+	echo !!!WARNING - you have \"rebase = false\" settings in your .git/config!!!
+	echo !!!Pull strategy should always be \"--rebase\" on all branches!!!
+    fi
+#
+# Enforce basic pull policy to "rebase".
+#
+# Added -C flag to change the directory of the git command to $PENCIL_HOME
+    git -C $PENCIL_HOME config pull.rebase true
 fi
