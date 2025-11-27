@@ -56,6 +56,7 @@ Explore the sections below to get started, contribute, or run simulations with P
 
    tutorials/python/tutpython
    tutorials/mathematica/tutmathematica
+   tutorials/python/devpcpython
 
 
 .. toctree::
