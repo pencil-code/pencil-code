@@ -15,8 +15,8 @@ $PENCIL_HOME/python/tests/test-python-modules.py
 
 ## Full tests
 
-While the above scipt only runs a minimal set of tests, the full set of tests
-(including the script tests which are run by `pc_auto-test` can be run after
+While the above script only runs a minimal set of tests, the full set of tests
+(including the script tests which are run by `pc_auto-test`) can be run after
 changing into this directory by simply calling
 ```sh
 pytest
