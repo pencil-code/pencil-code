@@ -164,10 +164,11 @@ def pstalk2(
         )
         return Struct()
 
-    # In the current IDL version, sink-particle stalking is effectively disabled:
-    # lstalk_sink_particles = 0 ; param.lstalk_sink_particles
-    # To match that behavior, we set it to 0 here as well.
-    lstalk_sink_particles = 0
+    if "lstalk_sink_particles" in param.__dict__:
+        lstalk_sink_particles = param.lstalk_sink_particles
+    else:
+        lstalk_sink_particles = 0
+
 
     # ------------------------------------------------------------------
     # Read tstalk.dat -> (tout, noutmaxfile)
