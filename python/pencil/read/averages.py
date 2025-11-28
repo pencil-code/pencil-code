@@ -306,15 +306,11 @@ class Averages(object):
             #Reading averages from hdf5 files
                 # Get the averaged quantities.
             dim = read.dim(datadir=datadir)
-            av_files = glob.glob(join(datadir,"averages","*"))
-            if len(av_files) > 0:
-                for av_file in av_files:
-                    if not ".h5" in av_file[-3:]:
-                        av_files.remove(av_file)
-                if len(av_files) == 0:
-                    raise RuntimeError(f"read.aver error: no averages files in {join(datadir,'averages')}")
-            else:
+
+            av_files = glob.glob(join(datadir,"averages","*.h5"))
+            if len(av_files) == 0:
                 raise RuntimeError(f"read.aver error: no averages files in {join(datadir,'averages')}")
+
             av_files_in = list()
             # Initialize the av_files_list of planes.
             if avfile_list:
