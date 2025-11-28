@@ -48,6 +48,15 @@ Pytest will search for tests in the files given in the `python_files` key of
 `pytest.ini`. Any function in these files whose name starts with `test` is
 treated as a test.
 
+# Code coverage
+
+After installing the `pytest-cov` Python package, simply run
+```sh
+pytest --cov=pencil --cov-report=html
+```
+to generate a HTML code coverage report. To view the report, open
+`./htmlcov/index.html` in your browser.
+
 # Historical notes
 
 ## Why not Proboscis?
