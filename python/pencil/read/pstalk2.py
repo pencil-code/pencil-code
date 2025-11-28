@@ -1,4 +1,3 @@
-A
 # pstalk2.py
 #
 # Read the stalker files.
@@ -40,6 +39,7 @@ def pstalk2(
     noutmax=None,
     single=False,
     nstalk=None,
+    ipar=None,  # <-- memory-efficient particle selection
 ):
     """
     Read Pencil Code particle stalker data (PSTALK) and return a Struct with
@@ -71,6 +71,9 @@ def pstalk2(
         Max number of stalked particles to keep. Defaults to pdim.npar_stalk.
         In non-sink mode, particles with index >= nstalk are ignored.
         In sink-particle mode, nstalk may be increased internally if needed.
+
+    ipar : int or list of int or None
+        If given, read only these particle indices (memory-efficient).
 
     Returns
     -------
@@ -136,6 +139,18 @@ def pstalk2(
                     fs[q][:, pos] = data.astype(out_dtype, copy=False)
 
                 fs.t[pos] = out_dtype(t_val)
+
+        # Apply ipar selection if requested
+        if ipar is not None:
+            if isinstance(ipar, int):
+                ipar = [ipar]
+            ipar_set = set(ipar)
+            mask = np.isin(fs.ipar, list(ipar_set))
+            for q in quantities:
+                if q.upper() == "ID":
+                    continue
+                fs[q] = fs[q][mask, :]
+            fs.ipar = fs.ipar[mask]
 
         return fs
 
@@ -394,5 +409,17 @@ def pstalk2(
     # reshape each field -> (nstalk, nout)
     for i, name in enumerate(fields):
         fs[name] = array[i, :, :]
+
+    # ------------------------------------------------------------------
+    # Memory-efficient particle selection
+    # ------------------------------------------------------------------
+    if ipar is not None:
+        if isinstance(ipar, int):
+            ipar = [ipar]
+        ipar_set = set(ipar)
+        mask = np.isin(fs.ipar, list(ipar_set))
+        for q in fields:
+            fs[q] = fs[q][mask, :]
+        fs.ipar = fs.ipar[mask]
 
     return fs
