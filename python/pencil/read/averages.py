@@ -377,13 +377,6 @@ class Averages(object):
                 self.t = t
                 setattr(self, plane, ext_object)
 
-    def __equal_newline(self, line):
-        """
-        Determine if string is equal new line.
-        """
-        #Kishore (2025-06-09): this no longer seems to be used (TODO)
-        return line == "\n"
-
     def _read_h5_aver(
         self,
         plane,
