@@ -516,6 +516,23 @@ class Averages(object):
         if not quiet:
             print("{} object reading time {:.0f} seconds".format(plane,end_time))
 
+        for k in ext_object.__dict__.keys():
+            if k != "t":
+                val = getattr(ext_object, k)
+                if val.ndim == 3:
+                    """
+                    To be consistent with what happens with io_dist.
+                    Axis ordering is now [t,x,z] for yaver, or [t,x,y] for zaver.
+                    """
+                    setattr(ext_object, k, val.swapaxes(1,2))
+
+                    # 2025-Nov-28/Kishore: I suppose we can remove this warning
+                    # after a year or so.
+                    warnings.warn(
+                        "Axis ordering for yaver and zaver has recently been changed;"
+                        "it is now [t,x,z] for yaver, or [t,x,y] for zaver."
+                        )
+
         return t, ext_object
 
     def _read_1d_aver(
