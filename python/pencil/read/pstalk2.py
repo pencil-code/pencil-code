@@ -17,7 +17,6 @@ import h5py
 
 from pencil import read
 
-
 class Struct(dict):
     """Simple dict-like container with attribute (dot) access."""
     def __getattr__(self, name):
@@ -29,7 +28,6 @@ class Struct(dict):
     def __setattr__(self, name, value):
         self[name] = value
 
-
 def pstalk2(
     datadir="data",
     it0=0,
@@ -39,7 +37,7 @@ def pstalk2(
     noutmax=None,
     single=False,
     nstalk=None,
-    ipar=None,  # <-- memory-efficient particle selection
+    ipar=None,
 ):
     """
     Read Pencil Code particle stalker data (PSTALK) and return a Struct with
@@ -93,6 +91,20 @@ def pstalk2(
 
     if nstalk is None:
         nstalk = pdim.npar_stalk
+
+    # -----------------------------
+    # Normalize ipar
+    # -----------------------------
+    if ipar is not None:
+        if isinstance(ipar, int):
+            ipar = [ipar]
+        ipar_set = set(ipar)
+        nkeep = len(ipar_set)
+        keep_map = {gidx: k for k, gidx in enumerate(sorted(ipar_set))}
+    else:
+        ipar_set = None
+        nkeep = nstalk
+        keep_map = None
 
     # ------------------------------------------------------------------
     # HDF5 branch: datadir/allprocs/PSTALK*.h5
@@ -205,13 +217,20 @@ def pstalk2(
     out_dtype = np.float32 if single else np.float64
 
     t = np.zeros(nout, dtype=out_dtype)                         # (nout,)
-    array = np.zeros((nfields, nstalk, nout), dtype=out_dtype)  # (nfields, nstalk, nout)
+
+    # --------------------------------------------------------------
+    # Allocate array ONLY for kept particles
+    # --------------------------------------------------------------
+    array = np.zeros((nfields, nkeep, nout), dtype=out_dtype)
 
     if lstalk_sink_particles:
-        ipar_stalk = np.full((nstalk, nout), -1, dtype=np.int64)
+        ipar_stalk = np.full((nkeep, nout), -1, dtype=np.int64)
         npar_stalk_read = np.zeros(nout, dtype=np.int64)
     else:
-        ipar_stalk = np.arange(nstalk, dtype=np.int64)
+        if ipar_set is not None:
+            ipar_stalk = np.array(sorted(ipar_set), dtype=np.int64)
+        else:
+            ipar_stalk = np.arange(nstalk, dtype=np.int64)
 
     # ------------------------------------------------------------------
     # Fortran unformatted record helpers (auto-detect float precision)
@@ -324,12 +343,20 @@ def pstalk2(
 
                     if npar_stalk_loc > 0:
                         if not lstalk_sink_particles:
-                            idx = ipar_loc - 1  # 1-based -> 0-based
+                            # Convert global stalk indices (1-based → 0-based)
+                            idx_global = ipar_loc - 1
 
-                            # Clamp to [0, nstalk) so user can restrict number of particles
-                            mask = (idx >= 0) & (idx < nstalk)
-                            if np.any(mask):
-                                array[:, idx[mask], out_it] = array_loc[:, mask]
+                            if keep_map is None:
+                                # --- FULL LOAD (no ipar filtering) ---
+                                mask = (idx_global >= 0) & (idx_global < nstalk)
+                                if np.any(mask):
+                                    array[:, idx_global[mask], out_it] = array_loc[:, mask]
+
+                            else:
+                                mask = np.isin(idx_global, list(ipar_set))
+                                if np.any(mask):
+                                    kompact = [keep_map[g] for g in idx_global[mask]]
+                                    array[:, kompact, out_it] = array_loc[:, mask]
                         else:
                             # Sink-particle mode (currently not used in IDL, but logic kept)
                             start = npar_stalk_read[out_it]
@@ -414,10 +441,7 @@ def pstalk2(
     # ------------------------------------------------------------------
     # Memory-efficient particle selection
     # ------------------------------------------------------------------
-    if ipar is not None:
-        if isinstance(ipar, int):
-            ipar = [ipar]
-        ipar_set = set(ipar)
+    if ipar_set is not None:
         mask = np.isin(fs.ipar, list(ipar_set))
         for q in fields:
             fs[q] = fs[q][mask, :]
