@@ -37,6 +37,7 @@ samples/**/KEEP_RELOADING
 samples/**/LAST_SUCCEEDED
 samples/**/pc
 samples/**/reference_link.txt
+samples/**/reference_link.txt.tmp
 samples/**/runtime
 samples/**/fort.*
 samples/**/data
