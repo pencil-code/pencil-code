@@ -19,6 +19,7 @@ from .averages import aver
 from .pvarfile import pvar
 from .phiaverages import phiaver
 from .varraw import varraw
+from .pstalk2 import pstalk2
 
 # idl workarounds
 from .pstalk import pstalk
