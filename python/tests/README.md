@@ -52,7 +52,7 @@ treated as a test.
 
 After installing the `pytest-cov` Python package, simply run
 ```sh
-pytest --cov=pencil --cov-report=html
+pytest --cov=pencil --cov-report=html --cov-context=test
 ```
 to generate a HTML code coverage report. To view the report, open
 `./htmlcov/index.html` in your browser.
