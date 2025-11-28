@@ -33,3 +33,6 @@ with open(f'{__file__[:-3]}.out', 'w') as f:
     run_and_write("p.t[:5]", f)
     run_and_write("np.real(p.uz_xy[0,16,1,:3])", f)
     run_and_write("np.real(p.uz_xy[3,7:15,1,1])", f)
+    run_and_write("np.real(p.uz_xy[3,16:20,1,1])", f)
+    run_and_write("np.abs(p.uz_xy[3,9,26:,1])", f)
+    run_and_write("np.imag(p.uz_xy[3,9,29,-5:])", f)
