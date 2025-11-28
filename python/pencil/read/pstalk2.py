@@ -275,7 +275,12 @@ def pstalk2(
                     if npar_stalk_loc > 0:
                         if not lstalk_sink_particles:
                             idx = ipar_loc - 1  # 1-based -> 0-based
-                            array[:, idx, it - it0] = array_loc
+
+                            # clamp to [0, nstalk)
+                            mask = (idx >= 0) & (idx < nstalk)
+                            if np.any(mask):
+                                array[:, idx[mask], it - it0] = array_loc[:, mask]
+                                # particles with index >= nstalk are ignored
                         else:
                             start = npar_stalk_read[it - it0]
                             stop = start + npar_stalk_loc
