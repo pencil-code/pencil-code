@@ -1,2 +1,5 @@
+[run]
+patch = subprocess
+
 [html]
 show_contexts = True
