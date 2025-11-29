@@ -32,7 +32,7 @@ pytest -n 4 --dist loadgroup
 ```
 where 4 is the number of tests to run at a time.
 
-## Testing with multiple Python versions
+## Testing with multiple Python versions, and code coverage
 
 A configuration file for [_Tox_](https://tox.wiki/) is provided. Change into
 this directory and run
@@ -42,20 +42,14 @@ tox
 While you will have to install the Python executables by yourself, the required
 Python packages (`scipy`, `numpy`,...) will be automatically installed by `tox`.
 
+Tox has also been configured to generate a code coverage report; to view it,
+open `./htmlcov/index.html` in your browser after running `tox`.
+
 # Adding tests
 
 Pytest will search for tests in the files given in the `python_files` key of
 `pytest.ini`. Any function in these files whose name starts with `test` is
 treated as a test.
-
-# Code coverage
-
-After installing the `pytest-cov` Python package, simply run
-```sh
-pytest --cov=pencil --cov-report=html --cov-context=test
-```
-to generate a HTML code coverage report. To view the report, open
-`./htmlcov/index.html` in your browser.
 
 # Historical notes
 
