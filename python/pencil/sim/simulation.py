@@ -1161,15 +1161,11 @@ class __Simulation__(object):
             )
             return False
 
-    def change_value_in_file(
-        self, filename, quantity, newValue, filepath=False, DEBUG=False
-    ):
+    def change_value_in_file(self, *args, **kwargs):
         """Same as pencil.io.change_value_in_file."""
         from pencil.io import change_value_in_file
 
-        return change_value_in_file(
-            filename, quantity, newValue, sim=self, filepath=filepath, DEBUG=DEBUG
-        )
+        return change_value_in_file(*args, sim=self, **kwargs)
 
     def run(self, verbose=False, hostfile=None, cleardata=False, **kwargs):
         """Runs the simulation.
