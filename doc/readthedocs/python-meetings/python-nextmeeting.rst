@@ -18,6 +18,7 @@ Please fill out your prefered dates `here <https://www.when2meet.com/?33748149-P
 - Decide on a convention for extra debug output (controlled by the ``quiet`` keyword in functions like ``pc.read.var`` and ``pc.read.grid``). Currently, whether it defaults to ``False`` or ``True`` varies from function to function, which is confusing and annoying. Ideally we would control such output by a module-wide flag (such that something like ``pc.shut_up = True`` at the beginning of a script would have the effect of setting ``quiet=True`` in all the ``pc`` functions).
 - Changing the behaviour of ``pc.io.get_value_from_file``. Currently, whether it has been successful of not is indicated by a boolean return value (as if it is a C program). I think it makes more sense to explicitly raise an error message. I presume most users would want to know that the function is failing, rather than dealing with crytic errors later on.
 
+- Supported Python versions: is it enough to go by the versions currently supported by upstream (<https://devguide.python.org/versions/>), or do we want to support Python versions older than 5 years?
 
 
 To propose topics or dates, please edit this file.
