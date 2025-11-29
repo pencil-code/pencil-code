@@ -144,6 +144,7 @@ my %tests = (
              # successfully
              3 => [qw(
                          0d-tests/heating_ionize_planck
+                         0d-tests/chemistry_aped
                          1d-tests/conduction/c1_readstrat
                          1d-tests/conduction/c1_readstrat_ghost
                          1d-tests/conduction/cT1
@@ -158,6 +159,8 @@ my %tests = (
                          2d-tests/2d_methane_flame
                          2d-tests/boussinesq_convection
                          2d-tests/chiral_dynamo
+                         2d-tests/radiation_doppler
+                         2d-tests/A3+chi11+Ra1e5
                          cartesian-convection-kramers-chimax
                          cartesian-convection-kramers-chimax_cp_2
                          continuous-forcing-from-file
@@ -214,7 +217,6 @@ my %tests = (
                          1d-tests/sod_1000s
                          1d-tests/sod_10sho
                          taylor-couette-cyl
-                         0d-tests/chemistry_aped
                          2d-tests/GMSW1976_cpne1
                          0d-tests/coag_kernel_lin
                          2d-tests/dynamical_alpha
@@ -237,13 +239,11 @@ my %tests = (
              8 => [qw(
                          interstellar_ion
                          turb-cylindrical-disk
-                         2d-tests/A3+chi11+Ra1e5
                      )],
              # Level 9 for now contains all non-canonical tests that don't
              # compile sucessfully
              9 => [qw(
                          multigrid
-                         2d-tests/radiation_doppler
                      )],
             );
 # ---------------------------------------------------------------------- #
