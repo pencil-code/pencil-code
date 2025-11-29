@@ -2050,7 +2050,7 @@ module Hydro
         case ('soundwave-z'); call soundwave(ampluu(j),f,iuz,kz=kz_uu(j))
        !case ('robertsflow'); call robertsflow(ampluu(j),f,iuu,relhel_uu) !(AB: the following changes result by factor 2, but is now consistent with magnetic)
         case ('robertsflow'); call robertsflow(ampluu(j),f,iuu,relhel_uu,KX=kx_uu(j),FLOW=robflow_uu(j))
-        case ('rotated-robertsflow'); call rotated_robertsflow(ampluu(j),f,iuu,relhel_uu,KX=kx_uu(j),FLOW=robflow_uu(j))
+        case ('rotated_robertsflow'); call rotated_robertsflow(ampluu(j),f,iuu,relhel_uu,KX=kx_uu(j),FLOW=robflow_uu(j))
         case ('hawley-et-al'); call hawley_etal99a(ampluu(j),f,iuy,Lxyz)
         case ('meri_circ'); call meri_circ(f)
         case ('geostrophic'); call geostrophic(f)

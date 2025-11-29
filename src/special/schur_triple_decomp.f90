@@ -105,11 +105,11 @@ module Special
       luschur_as_aux, lbschur_as_aux
 !
   logical :: luij_schur=.false., lbij_schur=.false., ldiagnos_always=.false.
-! real, dimension (nx) :: uSH2, uRR2, uEL2, uRRm, uELm
-! real, dimension (nx) :: bSH2, bRR2, bEL2, bRRm, bELm
+  logical :: luschur_unprojected=.false., lbschur_unprojected=.false.
 !
   namelist /special_run_pars/ &
-      luij_schur, lbij_schur, ldiagnos_always
+      luij_schur, lbij_schur, ldiagnos_always, &
+      luschur_unprojected, lbschur_unprojected
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -254,44 +254,56 @@ end function selct
             !p%uELm(l)=0.
           endif
 !
-!  Possibility of uSH2, uRR2, and uEL2 as auxiliary arrays
-!
-          if (luschur2_as_aux) then
-            f(l1:l2,m,n,iuschur2_SH)=p%uSH2(l)
-            f(l1:l2,m,n,iuschur2_RR)=p%uRR2(l)
-            f(l1:l2,m,n,iuschur2_EL)=p%uEL2(l)
-          endif
-!
-          if (luschurm_as_aux) then
-            f(l1:l2,m,n,iuschurm_RR)=p%uRRm(l)
-            f(l1:l2,m,n,iuschurm_EL)=p%uELm(l)
-          endif
-!
 !  Possibility of uSH, uRR, and uEL matrices as auxiliary arrays
 !
           if (luschur_as_aux) then
-            SH=0.
-            RR=0.
-            EL=0.
-            do i=1,3
-            do j=1,3
-              do kk=1,3
-              do ll=1,3
-                SH(i,j)=SH(i,j)+matV_SH(kk,ll)*matQ(kk,i)*matQ(ll,j)
-                RR(i,j)=RR(i,j)+matV_RR(kk,ll)*matQ(kk,i)*matQ(ll,j)
-                EL(i,j)=EL(i,j)+matV_EL(kk,ll)*matQ(kk,i)*matQ(ll,j)
+            if (luschur_unprojected) then
+              do i=1,3
+              do j=1,3
+                ij=3*(i-1)+(j-1)
+                f(l1+l-1,m,n,iuschur_SH+ij)=matV_SH(i,j)
+                f(l1+l-1,m,n,iuschur_RR+ij)=matV_RR(i,j)
+                f(l1+l-1,m,n,iuschur_EL+ij)=matV_EL(i,j)
               enddo
               enddo
-              ij=3*(i-1)+(j-1)
-              f(l1:l2,m,n,iuschur_SH+ij)=SH(i,j)
-              f(l1:l2,m,n,iuschur_RR+ij)=RR(i,j)
-              f(l1:l2,m,n,iuschur_EL+ij)=EL(i,j)
-            enddo
-            enddo
+            else
+              SH=0.
+              RR=0.
+              EL=0.
+              do i=1,3
+              do j=1,3
+                do kk=1,3
+                do ll=1,3
+                  SH(i,j)=SH(i,j)+matV_SH(kk,ll)*matQ(kk,i)*matQ(ll,j)
+                  RR(i,j)=RR(i,j)+matV_RR(kk,ll)*matQ(kk,i)*matQ(ll,j)
+                  EL(i,j)=EL(i,j)+matV_EL(kk,ll)*matQ(kk,i)*matQ(ll,j)
+                enddo
+                enddo
+                ij=3*(i-1)+(j-1)
+                f(l1+l-1,m,n,iuschur_SH+ij)=SH(i,j)
+                f(l1+l-1,m,n,iuschur_RR+ij)=RR(i,j)
+                f(l1+l-1,m,n,iuschur_EL+ij)=EL(i,j)
+              enddo
+              enddo
+            endif
           endif
 !
           deallocate(matV, matQ)
         enddo
+!
+!  Possibility of uSH2, uRR2, and uEL2 as auxiliary arrays
+!
+        if (luschur2_as_aux) then
+          f(l1:l2,m,n,iuschur2_SH)=p%uSH2
+          f(l1:l2,m,n,iuschur2_RR)=p%uRR2
+          f(l1:l2,m,n,iuschur2_EL)=p%uEL2
+        endif
+!
+        if (luschurm_as_aux) then
+          f(l1:l2,m,n,iuschurm_RR)=p%uRRm
+          f(l1:l2,m,n,iuschurm_EL)=p%uELm
+!print*,'AXEL m,p%uRRm(1:4)=',m,p%uRRm(1:4)
+        endif
 !     else
 !       uSH2=0.
 !       uRR2=0.
@@ -299,8 +311,6 @@ end function selct
 !       uRRm=0.
 !       uELm=0.
       endif
-if (m==m1+128 .and. n==n1) print*,'AXEL1: uRR2=',p%uRR2
-if (m==m1+128 .and. n==n1) print*,'AXEL1: uEL2=',p%uEL2
 !
 !  Possibility of applying triple decomposition of bij
 !  Do only when output onto command line.
@@ -327,49 +337,60 @@ if (m==m1+128 .and. n==n1) print*,'AXEL1: uEL2=',p%uEL2
             !p%bELm(l)=0.
           endif
 !
-!  Possibility of bSH2, bRR2, and bEL2 as auxiliary arrays
-!  Use f(1,1,1,ibschur2_EL) to encode the correct update time.
-!
-          if (lbschur2_as_aux) then
-            f(l1:l2,m,n,ibschur2_SH)=p%bSH2(l)
-            f(l1:l2,m,n,ibschur2_RR)=p%bRR2(l)
-            f(l1:l2,m,n,ibschur2_EL)=p%bEL2(l)
-            if (l==1 .and. m==m1 .and. n==n1 .and. ip<10) then
-              print*,'AXEL: iproc,t=',iproc,t
-              f(1,1,1,ibschur2_EL)=t
-            endif
-          endif
-!
-          if (lbschurm_as_aux) then
-            f(l1:l2,m,n,ibschurm_RR)=p%bRRm(l)
-            f(l1:l2,m,n,ibschurm_EL)=p%bELm(l)
-          endif
-!
 !  Possibility of bSH, bRR, and bEL matrices as auxiliary arrays
 !
           if (lbschur_as_aux) then
-            SH=0.
-            RR=0.
-            EL=0.
-            do i=1,3
-            do j=1,3
-              do kk=1,3
-              do ll=1,3
-                SH(i,j)=SH(i,j)+matV_SH(kk,ll)*matQ(kk,i)*matQ(ll,j)
-                RR(i,j)=RR(i,j)+matV_RR(kk,ll)*matQ(kk,i)*matQ(ll,j)
-                EL(i,j)=EL(i,j)+matV_EL(kk,ll)*matQ(kk,i)*matQ(ll,j)
+            if (lbschur_unprojected) then
+              do i=1,3
+              do j=1,3
+                ij=3*(i-1)+(j-1)
+                f(l1+l-1,m,n,ibschur_SH+ij)=matV_SH(i,j)
+                f(l1+l-1,m,n,ibschur_RR+ij)=matV_RR(i,j)
+                f(l1+l-1,m,n,ibschur_EL+ij)=matV_EL(i,j)
               enddo
               enddo
-              ij=3*(i-1)+(j-1)
-              f(l1:l2,m,n,ibschur_SH+ij)=SH(i,j)
-              f(l1:l2,m,n,ibschur_RR+ij)=RR(i,j)
-              f(l1:l2,m,n,ibschur_EL+ij)=EL(i,j)
-            enddo
-            enddo
+            else
+              SH=0.
+              RR=0.
+              EL=0.
+              do i=1,3
+              do j=1,3
+                do kk=1,3
+                do ll=1,3
+                  SH(i,j)=SH(i,j)+matV_SH(kk,ll)*matQ(kk,i)*matQ(ll,j)
+                  RR(i,j)=RR(i,j)+matV_RR(kk,ll)*matQ(kk,i)*matQ(ll,j)
+                  EL(i,j)=EL(i,j)+matV_EL(kk,ll)*matQ(kk,i)*matQ(ll,j)
+                enddo
+                enddo
+                ij=3*(i-1)+(j-1)
+                f(l1+l-1,m,n,ibschur_SH+ij)=SH(i,j)
+                f(l1+l-1,m,n,ibschur_RR+ij)=RR(i,j)
+                f(l1+l-1,m,n,ibschur_EL+ij)=EL(i,j)
+              enddo
+              enddo
+            endif
           endif
 !
           deallocate(matV, matQ)
         enddo
+!
+!  Possibility of bSH2, bRR2, and bEL2 as auxiliary arrays
+!  Use f(1,1,1,ibschur2_EL) to encode the correct update time.
+!
+        if (lbschur2_as_aux) then
+          f(l1:l2,m,n,ibschur2_SH)=p%bSH2
+          f(l1:l2,m,n,ibschur2_RR)=p%bRR2
+          f(l1:l2,m,n,ibschur2_EL)=p%bEL2
+          if (l==1 .and. m==m1 .and. n==n1 .and. ip<10) then
+            print*,'AXEL: iproc,t=',iproc,t
+            f(1,1,1,ibschur2_EL)=t
+          endif
+        endif
+!
+        if (lbschurm_as_aux) then
+          f(l1:l2,m,n,ibschurm_RR)=p%bRRm
+          f(l1:l2,m,n,ibschurm_EL)=p%bELm
+        endif
 !     else
 !       bSH2=0.
 !       bRR2=0.
@@ -426,7 +447,7 @@ if (m==m1+128 .and. n==n1) print*,'AXEL1: uEL2=',p%uEL2
     end do
   end subroutine print_mat
 !***********************************************************************
-    subroutine schur_standardized(A_input, T, VS)
+  subroutine schur_standardized(A_input, T, VS)
   implicit none
   integer, parameter :: dp = selected_real_kind(15, 307)
   integer            :: nnn, lda, ldvs, info, sdim, lwork
@@ -436,10 +457,10 @@ if (m==m1+128 .and. n==n1) print*,'AXEL1: uEL2=',p%uEL2
   real            , allocatable :: A(:,:), T(:,:), VS(:,:), WR(:), WI(:), WORK(:)
   logical,    allocatable :: BWORK(:)
 
-        real             :: a11, a12, a21, a22
-        real             :: rt1r, rt1i, rt2r, rt2i, cs, sn
-        real             :: R11, R12, R21, R22
-        real            , allocatable :: TMP(:,:), TMP2(:,:)
+  real             :: a11, a12, a21, a22
+  real             :: rt1r, rt1i, rt2r, rt2i, cs, sn
+  real             :: R11, R12, R21, R22
+  real            , allocatable :: TMP(:,:), TMP2(:,:)
 
   external dgees, dlanv2            ! LAPACK externals
 
@@ -570,10 +591,6 @@ if (m==m1+128 .and. n==n1) print*,'AXEL1: uEL2=',p%uEL2
 !
 !  Diagnostics
 !
-!if (m==m1+128 .and. n==n1) print*,'AXEL2: uEL2=',uEL2
-!if (m==m1+128 .and. n==n1) print*,'AXEL2: uRR2=',uRR2
-!uRR2=1.
-!uEL2=1.
       if (ldiagnos .or. ldiagnos_always) then
         call sum_mn_name(p%uSH2,idiag_uSH2)
         call sum_mn_name(p%uRR2,idiag_uRR2)
