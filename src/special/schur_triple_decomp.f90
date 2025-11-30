@@ -105,11 +105,11 @@ module Special
       luschur_as_aux, lbschur_as_aux
 !
   logical :: luij_schur=.false., lbij_schur=.false., ldiagnos_always=.false.
-  logical :: luschur_unprojected=.false., lbschur_unprojected=.false.
+  logical :: luschur_unprojected=.false., lbschur_unprojected=.false., lQ_schur_QT=.true.
 !
   namelist /special_run_pars/ &
       luij_schur, lbij_schur, ldiagnos_always, &
-      luschur_unprojected, lbschur_unprojected
+      luschur_unprojected, lbschur_unprojected, lQ_schur_QT
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -255,6 +255,10 @@ end function selct
           endif
 !
 !  Possibility of uSH, uRR, and uEL matrices as auxiliary arrays
+!  Decomposition in the form GradU = Q (SH+RR+EL) Q^T, so
+!  GradU_ij = Q_ik (SH+RR+EL)_kl QT_lj = Q_ik Q_jl (SH+RR+EL)_kl.
+!  Setting lQ_schur_QT=.true. applies to GradU = Q^T (SH+RR+EL) Q.
+!  Otherwise, we'd have GradU = Q^T (SH+RR+EL) Q.
 !
           if (luschur_as_aux) then
             if (luschur_unprojected) then
@@ -274,9 +278,15 @@ end function selct
               do j=1,3
                 do kk=1,3
                 do ll=1,3
-                  SH(i,j)=SH(i,j)+matV_SH(kk,ll)*matQ(kk,i)*matQ(ll,j)
-                  RR(i,j)=RR(i,j)+matV_RR(kk,ll)*matQ(kk,i)*matQ(ll,j)
-                  EL(i,j)=EL(i,j)+matV_EL(kk,ll)*matQ(kk,i)*matQ(ll,j)
+                  if (lQ_schur_QT) then
+                    SH(i,j)=SH(i,j)+matQ(i,kk)*matQ(j,ll)*matV_SH(kk,ll)
+                    RR(i,j)=RR(i,j)+matQ(i,kk)*matQ(j,ll)*matV_RR(kk,ll)
+                    EL(i,j)=EL(i,j)+matQ(i,kk)*matQ(j,ll)*matV_EL(kk,ll)
+                  else
+                    SH(i,j)=SH(i,j)+matV_SH(kk,ll)*matQ(kk,i)*matQ(ll,j)
+                    RR(i,j)=RR(i,j)+matV_RR(kk,ll)*matQ(kk,i)*matQ(ll,j)
+                    EL(i,j)=EL(i,j)+matV_EL(kk,ll)*matQ(kk,i)*matQ(ll,j)
+                  endif
                 enddo
                 enddo
                 ij=3*(i-1)+(j-1)
@@ -357,9 +367,15 @@ end function selct
               do j=1,3
                 do kk=1,3
                 do ll=1,3
-                  SH(i,j)=SH(i,j)+matV_SH(kk,ll)*matQ(kk,i)*matQ(ll,j)
-                  RR(i,j)=RR(i,j)+matV_RR(kk,ll)*matQ(kk,i)*matQ(ll,j)
-                  EL(i,j)=EL(i,j)+matV_EL(kk,ll)*matQ(kk,i)*matQ(ll,j)
+                  if (lQ_schur_QT) then
+                    SH(i,j)=SH(i,j)+matQ(i,kk)*matQ(j,ll)*matV_SH(kk,ll)
+                    RR(i,j)=RR(i,j)+matQ(i,kk)*matQ(j,ll)*matV_RR(kk,ll)
+                    EL(i,j)=EL(i,j)+matQ(i,kk)*matQ(j,ll)*matV_EL(kk,ll)
+                  else
+                    SH(i,j)=SH(i,j)+matV_SH(kk,ll)*matQ(kk,i)*matQ(ll,j)
+                    RR(i,j)=RR(i,j)+matV_RR(kk,ll)*matQ(kk,i)*matQ(ll,j)
+                    EL(i,j)=EL(i,j)+matV_EL(kk,ll)*matQ(kk,i)*matQ(ll,j)
+                  endif
                 enddo
                 enddo
                 ij=3*(i-1)+(j-1)
