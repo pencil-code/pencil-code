@@ -1,4 +1,4 @@
-# pstalk2.py
+# pstalk2.pyA
 #
 # Read the stalker files.
 # Returns fs.ipar, fs.xp, etc. with dot-access.
@@ -38,6 +38,7 @@ def pstalk2(
     single=False,
     nstalk=None,
     ipar=None,
+    read_last=False
 ):
     """
     Read Pencil Code particle stalker data (PSTALK) and return a Struct with
@@ -69,10 +70,11 @@ def pstalk2(
         Max number of stalked particles to keep. Defaults to pdim.npar_stalk.
         In non-sink mode, particles with index >= nstalk are ignored.
         In sink-particle mode, nstalk may be increased internally if needed.
-
     ipar : int or list of int or None
         If given, read only these particle indices (memory-efficient).
-
+    read_last : bool
+        If True, read only the last timestep (overrides it0)
+    
     Returns
     -------
     fs : Struct
@@ -180,8 +182,7 @@ def pstalk2(
         lstalk_sink_particles = param.lstalk_sink_particles
     else:
         lstalk_sink_particles = 0
-
-
+        
     # ------------------------------------------------------------------
     # Read tstalk.dat -> (tout, noutmaxfile)
     # ------------------------------------------------------------------
@@ -191,10 +192,37 @@ def pstalk2(
         tout = float(parts[0])
         noutmaxfile = int(parts[1])
 
-    if noutmax == -1 or noutmax > noutmaxfile:
-        nout = noutmaxfile
-    else:
-        nout = noutmax
+        # ------------------------------------------------------------------
+        # Handle read_last=True
+        # ------------------------------------------------------------------
+        if read_last:
+            ilast_index = noutmaxfile - 1
+
+            # Override it0 and noutmax so that only the last slice is read
+            it0 = ilast_index
+            noutmax = 1
+
+            if not quiet:
+                print(f"[pstalk2] Using only the last output: index={ilast_index}")
+
+        # --------------------------------------------------------------
+        # Compute nout considering it0 (first stored index)
+        # --------------------------------------------------------------
+
+        # Total available time slices in file:
+        ntotal = noutmaxfile
+
+        # If noutmax == -1 → user wants all time slices from it0 onward
+        if noutmax == -1:
+            nout = max(0, ntotal - it0)
+            # User wants at most noutmax slices
+        else:
+            nout = min(noutmax, max(0, ntotal - it0))
+
+        # Special case: if it0 points to the *last* time slice → nout=1
+        if it0 >= ntotal - 1:
+            nout = 1
+
 
     # ------------------------------------------------------------------
     # Read header to know which fields are stored
