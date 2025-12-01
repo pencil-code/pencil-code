@@ -30,9 +30,9 @@ class Grid(object):
         for i in self.__dict__.keys():
             print(i)
 
-    def read(self, datadir="data", proc=-1, quiet=False, precision="f", trim=False, param=None):
+    def read(self, datadir="data", proc=-1, quiet=True, precision="f", trim=False, param=None):
         """
-        read(datadir='data', proc=-1, quiet=False, trim=False)
+        read(datadir='data', proc=-1, quiet=True, trim=False)
 
         Read the grid data from the pencil code simulation.
         If proc < 0, then load all data and assemble.

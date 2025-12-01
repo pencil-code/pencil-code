@@ -20,6 +20,7 @@ def write_snapshot(
     precision="d",
     nghost=3,
     persist=None,
+    param=None,
     t=None,
     x=None,
     y=None,
@@ -35,7 +36,8 @@ def write_snapshot(
     call signature:
 
     write_snapshot(snapshot, file_name='VAR0', datadir='data',
-                   nprocx=1, nprocy=1, nprocz=1, precision='d', nghost=3)
+                   nprocx=1, nprocy=1, nprocz=1, precision='d', nghost=3, persist=None,
+                   param=None, t=None, x=None, y=None, z=None, lshear=False, dx=None, dy=None, dz=None)
 
     Keyword arguments:
 
@@ -60,6 +62,9 @@ def write_snapshot(
 
     *persist*:
       Structure of persistent values
+
+    *param*:
+      Optional Param object.
 
     *t*:
       Time of the snapshot.
@@ -124,6 +129,9 @@ def write_snapshot(
             sys.stdout.flush()
     else:
         z = np.arange(0, nz)
+
+    if (param is None) and lshear:
+        param = read.param(datadir=sim_datadir, quiet=True)
 
     # Add ghost zones to the xyz arrays.
     x_ghost = np.zeros(nx + 2 * nghost, dtype=data_type)
@@ -193,8 +201,10 @@ def write_snapshot(
                 meta_data_cpu = np.append(meta_data_cpu, y_cpu)
                 meta_data_cpu = np.append(meta_data_cpu, z_cpu)
                 meta_data_cpu = np.append(meta_data_cpu, [dx, dy, dz])
+
                 if lshear:
-                    meta_data_cpu = np.append(meta_data_cpu, lshear)
+                    meta_data_cpu = np.append(meta_data_cpu, param.deltay)
+
                 meta_data_cpu = meta_data_cpu.astype(data_type)
                 destination_file.write_record(meta_data_cpu)
 

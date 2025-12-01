@@ -69,6 +69,7 @@ class Param(object):
 
         param2 : bool
           Selects the set of parameters only from run.
+          If neither Param1 nor Param2 is set, both param.nml and param2.nml are read in.
 
         quiet : bool
           Flag for switching of output.
