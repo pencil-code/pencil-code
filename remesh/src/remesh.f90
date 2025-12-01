@@ -749,7 +749,7 @@ yinyang_loop: &
 !
 !  Smoothing data if any of the remesh_par* is unequal to 1.
 !
-      if (any((/remesh_parx,remesh_pary,remesh_parz/)/=1.)) then
+      if (any((/remesh_parx,remesh_pary,remesh_parz/)/=1)) then
         do j=1,mprocs
           do i=1,mvar
             call rmwig(ff(:,:,:,:,j),i,1.,.false.)
@@ -779,6 +779,7 @@ yinyang_loop: &
           call safe_character_assign(file_new,trim(datadir)//'/proc'//trim(ch)//'/var.dat')
           call safe_character_assign(file2,trim(destination)//'/'//trim(file_new))
           if (ip<8) print*,'Writing '//trim(file2)
+!print*,'Writing '//trim(file2)//' from proc ', iproc
 !print*, 'cpu, cpu_global, rrx=', cpu, cpu_global(i), rrx(:,i)
           open(91,file=file2,form='unformatted')
           write(91) ff(:,:,:,:,i)
