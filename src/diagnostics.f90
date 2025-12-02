@@ -3223,11 +3223,11 @@ module Diagnostics
 !
       integer :: stat
 !
-      allocate(fname(nnamel),stat=stat)
+      if(.not. allocated(fname)) allocate(fname(nnamel),stat=stat)
       if (stat>0) call fatal_error('allocate_fnames','Could not allocate fname')
       if (ldebug) print*, 'allocate_fnames    : allocated memory for '// &
                           'fname   with nname   =', nnamel
-      allocate(fname_keep(nnamel),stat=stat)
+      if(.not. allocated(fname_keep)) allocate(fname_keep(nnamel),stat=stat)
       if (stat>0) call fatal_error('allocate_fnames','Could not allocate fname_keep')
       fname=0.0
       fname_keep=0.0

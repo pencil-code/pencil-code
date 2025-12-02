@@ -59,7 +59,7 @@ subroutine helper_loop(f,p)
 !
   use Boundcond, only: update_ghosts
   use Equ, only: perform_diagnostics
-  use Diagnostics, only:  restore_diagnostic_controls
+  use Diagnostics, only:  restore_diagnostic_controls,allocate_fnames
 !$ use General, only: signal_wait, signal_send
   use Snapshot, only: perform_powersnap, perform_wsnap_ext, perform_wsnap_down
   use Mpicomm, only: mpiwtime
@@ -71,6 +71,7 @@ subroutine helper_loop(f,p)
   real :: start_time,end_time
 !
 ! 7-feb-24/TP: coded
+    call allocate_fnames(nname)
 !
 !$  do while(lhelper_run)
 !$    call signal_wait(lhelper_perf,lhelper_run)
