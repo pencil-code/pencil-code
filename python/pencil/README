@@ -21,6 +21,7 @@ This module requires the following Python packages:
 - f90nml
 - flatdict
 - h5py
+- lazy-loader
 - matplotlib
 - numpy
 - plotly
