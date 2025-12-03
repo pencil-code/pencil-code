@@ -3,7 +3,11 @@ The __init__ file is used not only to import the sub-modules, but also to
 set everything up properly.
 """
 
-from .util import pc_print
+
+from .util import (
+    pc_print,
+    is_sim_dir,
+    )
 
 try:
     import h5py
@@ -33,7 +37,6 @@ from . import export
 from . import backpack
 from . import ism_dyn
 from . import pipelines
-from pencil.util import is_sim_dir
 
 # Internal routines.
 def get_sim(path=".", quiet=True):
