@@ -3,6 +3,7 @@ The __init__ file is used not only to import the sub-modules, but also to
 set everything up properly.
 """
 
+import lazy_loader as lazy
 
 from .util import (
     pc_print,
@@ -23,20 +24,24 @@ try:
 except ImportError:
     #Kishore/2025-Jun-05: what kind of situation is this expected to fail in? `os` is part of the Python standard library.
     pc_print("os could not be imported -> HDF5 file locking still in effect.")
-    
-# Load sub-modules.
-from . import io
-from . import diag
-from . import visu
-from . import calc
-from . import math
-from . import sim
-from . import read
-from . import tool_kit
-from . import export
-from . import backpack
-from . import ism_dyn
-from . import pipelines
+
+#The following will only be imported when they are first accessed
+submodules = [
+    "io",
+    "diag",
+    "visu",
+    "calc",
+    "math",
+    "sim",
+    "read",
+    "tool_kit",
+    "export",
+    "backpack",
+    "ism_dyn",
+    "pipelines",
+    ]
+
+__getattr__, __dir__, _ = lazy.attach(__name__, submodules)
 
 # Internal routines.
 def get_sim(path=".", quiet=True):
