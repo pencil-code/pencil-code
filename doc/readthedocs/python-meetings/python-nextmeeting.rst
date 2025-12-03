@@ -20,6 +20,8 @@ Please fill out your prefered dates `here <https://www.when2meet.com/?33748149-P
 
 - Supported Python versions: is it enough to go by the versions currently supported by upstream (<https://devguide.python.org/versions/>), or do we want to support Python versions older than 5 years?
 
+- The item **Interactive vs. library mode** in :file:`pencil-code/doc/readthedocs/python-meetings/python-decisions.rst` is now obsolete due to the implementation of lazy loading.
+
 
 To propose topics or dates, please edit this file.
 
