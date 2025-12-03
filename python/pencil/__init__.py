@@ -70,7 +70,7 @@ def get_sims(path_root=".", depth=1, unhide_all=False, quiet=True):
 
 def check_dependencies():
     """
-    Check if dependencies are fullfilled for pencil.
+    Check if optional dependencies are fullfilled for pencil.
     """
 
     import importlib
