@@ -1514,12 +1514,7 @@ extern "C" void afterSubStepGPU()
 	if (acDeviceGetInput(acGridGetDevice(), AC_step_num) == PC_FIRST_SUB_STEP)
 	{
 #if LGRAVITATIONAL_WAVES_HTXK
-	    acDeviceFFTR2Planar(acGridGetDevice(), acGetF_STRESS_0(),acGetAC_tpq_re__mod__gravitational_waves_htxk_0(),acGetAC_tpq_im__mod__gravitational_waves_htxk_0());
-	    acDeviceFFTR2Planar(acGridGetDevice(), acGetF_STRESS_1(),acGetAC_tpq_re__mod__gravitational_waves_htxk_1(),acGetAC_tpq_im__mod__gravitational_waves_htxk_1());
-	    acDeviceFFTR2Planar(acGridGetDevice(), acGetF_STRESS_2(),acGetAC_tpq_re__mod__gravitational_waves_htxk_2(),acGetAC_tpq_im__mod__gravitational_waves_htxk_2());
-	    acDeviceFFTR2Planar(acGridGetDevice(), acGetF_STRESS_3(),acGetAC_tpq_re__mod__gravitational_waves_htxk_3(),acGetAC_tpq_im__mod__gravitational_waves_htxk_3());
-	    acDeviceFFTR2Planar(acGridGetDevice(), acGetF_STRESS_4(),acGetAC_tpq_re__mod__gravitational_waves_htxk_4(),acGetAC_tpq_im__mod__gravitational_waves_htxk_4());
-	    acDeviceFFTR2Planar(acGridGetDevice(), acGetF_STRESS_5(),acGetAC_tpq_re__mod__gravitational_waves_htxk_5(),acGetAC_tpq_im__mod__gravitational_waves_htxk_5());
+	    acDeviceFFTR2PlanarBatched(acGridGetDevice(), acGetF_STRESS_0(),acGetAC_tpq_re__mod__gravitational_waves_htxk_0(),acGetAC_tpq_im__mod__gravitational_waves_htxk_0(),6);
 	    acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_gravitational_waves_solve_and_stress),1);
 #endif
 	}
