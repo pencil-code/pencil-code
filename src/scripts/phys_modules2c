@@ -7,7 +7,7 @@ else
 fi
 orig_modname=$modname
 #Run_module is actually supposed to push cdata stuff so rename it here
-modname=$(echo "$modname" | sed -e's/run_module/cdata/')
+modname=$(echo "$modname" | sed -e's/global_pushpars/cdata/')
 #Remove whitespace
 modname=$(echo "$modname" | sed -e 's/[[:space:]]//g')
 #if [[ $modname =~ entropy.* ]] || [[ $modname =~ temperature_.* ]] || [[ $modname == thermal_energy ]]; then

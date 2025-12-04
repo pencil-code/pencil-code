@@ -6,7 +6,7 @@ else
   modname=$3
 fi
 orig_modname=$(echo "$modname")
-modname=$(echo "$modname" | sed -e's/run_module/cdata/')
+modname=$(echo "$modname" | sed -e's/global_pushpars/cdata/')
 #Remove whitespace
 modname=$(echo "$modname" | sed -e 's/[[:space:]]//g')
 
