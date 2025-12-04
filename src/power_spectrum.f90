@@ -81,9 +81,9 @@ module Power_spectrum
 !TP: work buffers for power funcs
 !TP: TODO allocate these at initialize func based on are they actually used
 !
-  real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im,c_re,c_im,d_re,d_im,h_re,h_im
-  real, dimension(nx,ny,nz,3) :: a_vec_re,a_vec_im, b_vec_re
-  real, dimension(nx,ny,nz) :: a2
+  real, allocatable, dimension(:,:,:) :: a_re,a_im,b_re,b_im,c_re,c_im,d_re,d_im,h_re,h_im
+  real, allocatable, dimension(:,:,:,:) :: a_vec_re,a_vec_im, b_vec_re
+  real, allocatable, dimension(:,:,:) :: a2
   real, dimension(:), allocatable :: kshell
 !
   namelist /power_spectrum_run_pars/ &
@@ -101,6 +101,27 @@ module Power_spectrum
 ! real, allocatable, dimension(:,:) :: spectrum_2d_sum, spectrumhel_2d_sum
 !
   contains
+!***********************************************************************
+  subroutine allocate_workbuffers
+!
+!  TP: these are dynamically allocated since makes the global variable section of the executables considerably smaller
+!
+    allocate(a_re(nx,ny,nz))
+    allocate(a_im(nx,ny,nz))
+    allocate(b_re(nx,ny,nz))
+    allocate(b_im(nx,ny,nz))
+    allocate(c_re(nx,ny,nz))
+    allocate(c_im(nx,ny,nz))
+    allocate(d_re(nx,ny,nz))
+    allocate(d_im(nx,ny,nz))
+    allocate(h_re(nx,ny,nz))
+    allocate(h_im(nx,ny,nz))
+    allocate(a_vec_re(nx,ny,nz,3))
+    allocate(a_vec_im(nx,ny,nz,3))
+    allocate(b_vec_re(nx,ny,nz,3))
+    allocate(a2(nx,ny,nz))
+
+  endsubroutine allocate_workbuffers
 !***********************************************************************
   subroutine initialize_power_spectrum
 !
@@ -291,6 +312,8 @@ outer:do ikz=1,nz
           'Your results are most likely garbage.')
       endif
     endif
+    
+    call allocate_workbuffers
 !
   endsubroutine initialize_power_spectrum
 !***********************************************************************
