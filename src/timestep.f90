@@ -85,10 +85,12 @@ module Timestep
       use Shear, only: advance_shear
       use Sub, only: set_dt, shift_dt
       use GPU, only: update_after_substep_gpu, split_update_gpu
+      use Mpicomm, only: mpiwtime
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mx,my,mz,mvar) :: df_tmp
+      real :: start_time
       type (pencil_case) :: p
       real :: ds, dtsub
 !
@@ -197,11 +199,13 @@ module Timestep
           call advance_shear(f, df, dtsub)
         endif
 !
+        start_time = mpiwtime()
         if (lgpu) then
           call update_after_substep_gpu
         else
           call update_after_substep(f,df,dtsub,llast)
         endif
+        after_substep_sum_time = after_substep_sum_time + mpiwtime()-start_time
 !
         ! [PAB] according to MR this breaks the autotest.
         ! @Piyali: there must be a reason to add an additional global communication,
