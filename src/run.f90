@@ -1209,7 +1209,7 @@ endsubroutine helper_loop
         write(*,'(A,1pG14.7)') ' Rhs wall clock time/timestep/local meshpoint [microsec] =', &
                                rhs_sum_time/icount/nw/1.0e-6
         if (lgpu) write(*,'(A,1pG14.7)') ' After substep wall clock time/timestep/local meshpoint [microsec] =', &
-                               rhs_sum_time/icount/nw/1.0e-6
+                               after_substep_sum_time/icount/nw/1.0e-6
         if (lgpu) write(*,'(A,1pG14.7)') ' Before boundary wall clock time/timestep/local meshpoint [microsec] =', &
                                before_boundary_sum_time/icount/nw/1.0e-6
         if (lgpu) write(*,'(A,1pG14.7)') ' Diagnostics wall clock time/timestep/local meshpoint [microsec] =', &
