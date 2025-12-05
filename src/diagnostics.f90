@@ -109,7 +109,7 @@ module Diagnostics
   private
 !
   real, pointer, dimension(:) :: p_phiavg_norm
-  real, dimension (nrcyl,nx) :: phiavg_profile=0.0
+  real, allocatable, dimension (:,:) :: phiavg_profile
   real :: dVol_rel1, dA_xy_rel1, dA_yz_rel1, dA_xz_rel1, dL_y_rel1
 
   character (len=intlen) :: ch1davg, ch2davg
@@ -139,6 +139,11 @@ module Diagnostics
       real :: dxeff,dyeff,dzeff
       real :: intdr_rel, intdtheta_rel, intdphi_rel, intdz_rel, intrdr_sph
       integer :: i
+
+      if(.not.allocated(phiavg_profile)) then
+        allocate(phiavg_profile(nrcyl,nx))
+        phiavg_profile = 0.0
+      endif
 !
 !  Since many of the averaging routines used for diagnostics don't account
 !  for nonequidistant coordinates, warn the user.

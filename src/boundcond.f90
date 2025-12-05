@@ -519,8 +519,9 @@ module Boundcond
 
       integer, save :: ilayer=-1
       real, save :: last_gettime, timediff
-      real, dimension(ny,nz,mvar), save :: ahead_data
+      real, allocatable, dimension(:,:,:), save :: ahead_data
 
+      if(.not. allocated(ahead_data)) allocate(ahead_data(ny,nz,mvar))
       if (lfirst) then
         if (ilayer==-1) then
           last_gettime=t
@@ -549,8 +550,9 @@ module Boundcond
 
       integer, save :: ilayer=-1
       real, save :: last_gettime, timediff
-      real, dimension(nx,nz,mvar), save :: ahead_data
+      real, allocatable, dimension(:,:,:), save :: ahead_data
 
+      if(.not. allocated(ahead_data)) allocate(ahead_data(ny,nz,mvar))
       if (lfirst) then
         if (ilayer==-1) then
           last_gettime=t
@@ -581,9 +583,10 @@ module Boundcond
       integer, dimension(max(1,mvar)), save :: ilayer=0
       real, dimension(mvar), save :: last_gettime
       real, save :: timediff
-      real, dimension(nx,ny,mvar), save :: ahead_data
+      real, allocatable, dimension(:,:,:), save :: ahead_data
       real :: w
 
+      if(.not. allocated(ahead_data)) allocate(ahead_data(ny,nz,mvar))
       lget=.false.
       if (itsub==0.or.lfirst) then
 !
@@ -6345,7 +6348,7 @@ module Boundcond
        real, dimension (:,:,:,:), intent (inout) :: f
        logical, optional :: quenching
 !
-       real, dimension (nx,ny), save :: uxl,uxr,uyl,uyr
+       real, allocatable, dimension(:,:), save :: uxl,uxr,uyl,uyr
        real, dimension (:,:), allocatable :: tmp
        real, dimension (nx,ny) :: uxd,uyd,quen,pp,betaq,fac,bbx,bby,bbz,bb2
 
@@ -6361,6 +6364,11 @@ module Boundcond
        integer, parameter :: unit=1
        integer(KIND=ikind8) :: rlen
 !
+       if(.not. allocated(uxl)) allocate(uxl(nx,ny))
+       if(.not. allocated(uxr)) allocate(uxr(nx,ny))
+       if(.not. allocated(uyl)) allocate(uyl(nx,ny))
+       if(.not. allocated(uyr)) allocate(uyr(nx,ny))
+
        if (ldownsampling) then
          call warning('uu_driver','Not available for downsampling')  !,lfirst_proc_xy)
          return
