@@ -1,7 +1,7 @@
 record_types = {
     "id_block_persistent": (2000, "i", 1),
     "random_seeds": (1, "i", 1),
-    "random_seeds": (2, "i", 1),
+    "random_seeds2": (2, "i", 1),
     "hydro_tphase": (280, "d", 1),
     "hydro_phase1": (281, "d", 1),
     "hydro_phase2": (282, "d", 1),
