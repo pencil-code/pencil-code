@@ -604,7 +604,7 @@ outer:do ikz=1,nz
     !integer, pointer :: inp,irhop,iapn(:)
     integer :: nk
     integer :: i,k,ikx,iky,ikz,im,in
-    real, save, dimension(nx,ny,nz) :: a1,b1
+    real, save, allocatable, dimension(:,:,:) :: a1,b1
     real :: k2
     real, dimension(:), save, allocatable :: spectrum,spectrum_sum
     character(LEN=fnlen) :: filename
@@ -612,6 +612,8 @@ outer:do ikz=1,nz
 !
 !  identify version
 !
+    if(.not.allocated(a1)) allocate(a1(nx,ny,nz))
+    if(.not.allocated(b1)) allocate(b1(nx,ny,nz))
     if (lroot .AND. ip<10) call svn_id( &
          "$Id$")
 !
@@ -1518,9 +1520,9 @@ outer:do ikz=1,nz
     real, dimension(nx,3) :: bb, bbEP, hhEP, jj, gtmp1, gtmp2
     real, dimension(nk) :: nks=0.,nks_sum=0.
     real, dimension(nk) :: k2m=0.,k2m_sum=0., krms, km1
-    real, save, dimension(nx,ny,nz,3) :: bEP, hEP
+    real, save, allocatable, dimension(:,:,:,:) :: bEP, hEP
     real, dimension(2), optional :: sumspec
-    complex, save, dimension(nx,ny,nz) :: phi
+    complex, save, allocatable, dimension(:,:,:) :: phi
     real, dimension(nk) :: spectrum,spectrum_sum
     real, dimension(nk) :: spectrumhel,spectrumhel_sum
     real, allocatable, dimension(:,:), save :: cyl_spectrum, cyl_spectrum_sum
@@ -1534,6 +1536,9 @@ outer:do ikz=1,nz
       if (.not. allocated(cyl_spectrum)) &
         allocate(cyl_spectrum(nk,nzgrid), cyl_spectrum_sum(nk,nzgrid), cyl_spectrumhel(nk,nzgrid), cyl_spectrumhel_sum(nk,nzgrid))
     endif
+    if(.not.allocated(bEP)) allocate(bEP(nx,ny,nz,3))
+    if(.not.allocated(hEP)) allocate(hEP(nx,ny,nz,3))
+    if(.not.allocated(phi)) allocate(phi(nx,ny,nz))
 !
 !  identify version
 !
@@ -2655,7 +2660,7 @@ outer:do ikz=1,nz
     integer :: i,k,ikx,iky,ikz,ivec
     real :: k2
     real, dimension (mx,my,mz,mfarray) :: f
-    real, save, dimension (mx,my,mz,3) :: EMF,JJJ,EMB,BBB
+    real, save, allocatable, dimension (:,:,:,:) :: EMF,JJJ,EMB,BBB
     real, dimension(nx,3) :: uu,aa,bb,jj,uxb,uxj
     real, dimension(nx,3,3) :: aij,bij
     real, dimension(nk) :: nks,nks_sum
@@ -2671,6 +2676,10 @@ outer:do ikz=1,nz
     if (lroot .AND. ip<10) call svn_id( &
          "$Id$")
 
+    if(.not. allocated(EMF)) allocate(EMF(mx,my,mz,3))
+    if(.not. allocated(JJJ)) allocate(JJJ(mx,my,mz,3))
+    if(.not. allocated(EMB)) allocate(EMB(mx,my,mz,3))
+    if(.not. allocated(BBB)) allocate(BBB(mx,my,mz,3))
     !$omp parallel private(uu,aa,aij,bij,bb,jj,uxb,uxj) num_threads(num_helper_threads)
     !$ thread_id = omp_get_thread_num()+1
 !
@@ -3661,7 +3670,7 @@ outer:do ikz=1,nz
     character (len=1) :: sp
     integer :: ivec
     integer, optional :: ivar
-    real, dimension(nx,ny,nz), save :: a2
+    real, save, allocatable, dimension(:,:,:) :: a2
 !
     integer, parameter :: nk=nx/2
     integer :: ix,iy,iz,im,in,ikx,iky,ikz,nc
@@ -3672,6 +3681,7 @@ outer:do ikz=1,nz
 !
 !  identify version
 !
+    if(.not. allocated(a2)) allocate(a2(nx,ny,nz))
     if (lroot .AND. ip<10) call svn_id( &
         "$Id$")
 !
@@ -4297,11 +4307,18 @@ outer:do ikz=1,nz
     integer :: i,ivec,ikx,iky,ikz,kr,ipdf
     integer, dimension(nk-1,npdf) :: pdf_ang,pdf_ang_sum
     real :: ang
-    real, dimension(nx,ny,nz), save :: ak,bk,aa,bb,ab
+    real, allocatable, dimension(:,:,:), save :: ak,bk,aa,bb,ab
     real, dimension(nx,3) :: bbi
 !
 !    identify version
 !
+
+    if(.not.allocated(ak)) allocate(ak(nx,ny,nz))
+    if(.not.allocated(bk)) allocate(bk(nx,ny,nz))
+    if(.not.allocated(aa)) allocate(aa(nx,ny,nz))
+    if(.not.allocated(bb)) allocate(bb(nx,ny,nz))
+    if(.not.allocated(ab)) allocate(ab(nx,ny,nz))
+
     if (lroot .AND. ip<10) call svn_id("$Id$")
 !
 !    Obtain vector fields
@@ -4431,7 +4448,7 @@ outer:do ikz=1,nz
 !
     integer :: j,l,im,in,ivec,ispec,ifirst_fft
     real, dimension (mx,my,mz,mfarray) :: f
-    real, dimension(nx,ny,nz), save :: a1
+    real, allocatable, dimension(:,:,:), save :: a1
     real, dimension(nygrid/2) :: spectrumy,spectrumy_sum
     real, dimension(nzgrid/2) :: spectrum,spectrum_sum
     real, dimension(nygrid) :: aatempy
@@ -4442,6 +4459,7 @@ outer:do ikz=1,nz
 !
 !  identify version
 !
+    if(.not.allocated(a1)) allocate(a1(nx,ny,nz))
     if (lroot .AND. ip<10) call svn_id( &
          "$Id$")
 !
@@ -4602,7 +4620,7 @@ outer:do ikz=1,nz
 !
     integer :: j,l,im,in,ivec,ispec,ifirst_fft
     real, dimension (mx,my,mz,mfarray) :: f
-    real, dimension(nx,ny,nz), save :: a1,b1
+    real, allocatable, dimension(:,:,:), save :: a1,b1
     real, dimension(nzgrid/2) :: spectrum,spectrum_sum
     real, dimension(nzgrid/2) :: spectrumhel,spectrumhel_sum
     real, dimension(nzgrid) :: aatemp,bbtemp
@@ -4612,6 +4630,8 @@ outer:do ikz=1,nz
 !
 !  identify version
 !
+    if(.not. allocated(a1)) allocate(a1(nx,ny,nz))
+    if(.not. allocated(b1)) allocate(b1(nx,ny,nz))
     if (lroot .AND. ip<10) call svn_id( &
          "$Id$")
 !
@@ -4744,13 +4764,15 @@ outer:do ikz=1,nz
     integer, parameter :: nk=nx/2
     integer :: i,k,ikx,iky,ikz,ivec
     real, dimension (mx,my,mz,mfarray) :: f
-    real, save, dimension(nx,ny,nz,3) :: a1,b1
+    real, save, allocatable, dimension(:,:,:,:) :: a1,b1
     real, dimension(nx,3) :: tmp_a1
     real, dimension(nk) :: spectrum,spectrum_sum
     character (len=*) :: sp
 !
 !  identify version
 !
+    if(.not.allocated(a1)) allocate(a1(nx,ny,nz,3))
+    if(.not.allocated(b1)) allocate(b1(nx,ny,nz,3))
     if (lroot .AND. ip<10) call svn_id( &
        "$Id$")
 !
@@ -4858,10 +4880,10 @@ outer:do ikz=1,nz
     real :: k2, mu, mu_offset, kmu2
     real, dimension (mx,my,mz,mfarray) :: f
 !
-    real, dimension(nx,ny,nz), save :: ux_re, ux_im
-    real, dimension(nx,ny,nz), save :: uy_re, uy_im
-    real, dimension(nx,ny,nz), save :: uz_re, uz_im
-    real, dimension(nx,ny,nz), save :: ht_re
+    real, allocatable, dimension(:,:,:), save :: ux_re, ux_im
+    real, allocatable, dimension(:,:,:), save :: uy_re, uy_im
+    real, allocatable, dimension(:,:,:), save :: uz_re, uz_im
+    real, allocatable, dimension(:,:,:), save :: ht_re
     real, allocatable, dimension(:,:) :: vxx, vxy, vzz
     real, allocatable, dimension(:,:) :: coeff_a, coeff_b, coeff_c
     real, dimension(legendre_lmax+1,nk) :: legendre_al_a, legendre_al_a_sum
@@ -4878,6 +4900,14 @@ outer:do ikz=1,nz
 !
 !  identify version
 !
+    if(.not.allocated(ux_re)) allocate(ux_re(nx,ny,nz))
+    if(.not.allocated(ux_im)) allocate(ux_im(nx,ny,nz))
+    if(.not.allocated(uy_re)) allocate(uy_re(nx,ny,nz))
+    if(.not.allocated(uy_im)) allocate(uy_im(nx,ny,nz))
+    if(.not.allocated(uz_re)) allocate(uz_re(nx,ny,nz))
+    if(.not.allocated(uz_im)) allocate(uz_im(nx,ny,nz))
+    if(.not.allocated(ht_re)) allocate(ht_re(nx,ny,nz))
+
     if (lroot .AND. ip<10) call svn_id("$Id$")
 !
 ! mesh for polar representation
@@ -5825,7 +5855,7 @@ outer:do ikz=1,nz
     integer :: i,ivec,ikx,iky,ikz,jkx,jkz,k
     real :: k2
     real, pointer :: t_cor
-    real, save, dimension(nx,ny,nz) :: ht_re,ht_im
+    real, save, allocatable, dimension(:,:,:) :: ht_re,ht_im
     real, dimension(nk) :: spectrum,spectrum_sum
     real, dimension(nk) :: spectrumhel,spectrumhel_sum
     real, dimension(nxgrid) :: correlation,correlation_sum
@@ -5834,6 +5864,8 @@ outer:do ikz=1,nz
     real, allocatable, dimension(:,:), save :: cyl_spectrumhel, cyl_spectrumhel_sum
     logical :: lconvol
 
+    if(.not. allocated(ht_re)) allocate(ht_re(nx,ny,nz))
+    if(.not. allocated(ht_im)) allocate(ht_im(nx,ny,nz))
     if (.not. allocated(cyl_spectrum)) then
       allocate(cyl_spectrum(nk,nzgrid), cyl_spectrum_sum(nk,nzgrid), cyl_spectrumhel(nk,nzgrid), cyl_spectrumhel_sum(nk,nzgrid))
     endif
@@ -6098,7 +6130,7 @@ outer:do ikz=1,nz
     real :: k2, rr, k, j0, j0x, j0y, j0z, j1, dx_2pi_box
     real, dimension(4) :: w
     real, dimension (mx,my,mz,mfarray) :: f
-    real, save, dimension(nx,ny,nz) :: gLam
+    real, save, allocatable, dimension(:,:,:) :: gLam
     real, dimension(nx,3) :: gLam_tmp
     real, dimension(4,nk) :: correl,correl_sum
     real, dimension(nk) :: spectrum,spectrum_sum
@@ -6108,6 +6140,7 @@ outer:do ikz=1,nz
 !
 !  identify version
 !
+    if(.not.allocated(gLam)) allocate(gLam(nx,ny,nz))
     if (lroot .AND. ip<10) call svn_id("$Id$")
 !
     nv=1+nint(log(1.*nxgrid)/log(2.))
@@ -6607,14 +6640,23 @@ outer:do ikz=1,nz
     real, dimension (mx,my,mz,mfarray) :: f
     real, dimension(nx,3) :: uu,aa,bb,uxb,jj,curljj
     real, dimension(nx,3,3) :: aij,bij
-    real, save, dimension(nx,ny,nz,3) :: uuu,bbb,jjj,curljjj
-    real, save, dimension(nx,ny,nz,3) :: tmp_p,u_tmp,b_tmp,emf_q
+    real, save, allocatable, dimension(:,:,:,:) :: uuu,bbb,jjj,curljjj
+    real, save, allocatable, dimension(:,:,:,:) :: tmp_p,u_tmp,b_tmp,emf_q
     real, allocatable, dimension(:,:) :: Tpq,Tpq_sum
     character (len=2) :: sp
     logical :: lTpq_anti_symmetric
 !
 !  identify version
 !
+    if(.not. allocated(uuu)) allocate(uuu(nx,ny,nz,3))
+    if(.not. allocated(bbb)) allocate(bbb(nx,ny,nz,3))
+    if(.not. allocated(jjj)) allocate(jjj(nx,ny,nz,3))
+    if(.not. allocated(curljjj)) allocate(curljjj(nx,ny,nz,3))
+    if(.not. allocated(tmp_p)) allocate(tmp_p(nx,ny,nz,3))
+    if(.not. allocated(u_tmp)) allocate(u_tmp(nx,ny,nz,3))
+    if(.not. allocated(b_tmp)) allocate(b_tmp(nx,ny,nz,3))
+    if(.not. allocated(emf_q)) allocate(emf_q(nx,ny,nz,3))
+
     if (lroot .AND. ip<10) call svn_id("$Id$")
 !
 !  2-D output ; allocate array.
