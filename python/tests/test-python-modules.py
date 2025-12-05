@@ -5,13 +5,12 @@
 
 
 import argparse
-import sys
-import pytest
 import pathlib
+import sys
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.parse_args()
+def call_pytest():
+    #Keep this import here so that call_tox works without pytest installed.
+    import pytest
 
     sys.exit(pytest.main([
         '-c',
@@ -19,3 +18,22 @@ if __name__ == "__main__":
         "-m",
         "not integration",
         ]))
+
+def call_tox():
+    raise NotImplementedError
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--full",
+        help = "If passed, run the full set of tests, generating HTML output and a code coverage report.",
+        default = False,
+        action = 'store_true',
+        )
+
+    args = parser.parse_args()
+
+    if args.full:
+        call_tox()
+    else:
+        call_pytest()
