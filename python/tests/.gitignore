@@ -2,3 +2,6 @@
 
 htmlcov
 .coverage
+
+report.html
+report.json
