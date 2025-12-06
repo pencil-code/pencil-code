@@ -39,6 +39,7 @@ def call_tox(output_dir):
         [
             "tox",
             "run",
+            "--conf", f"{pathlib.Path(__file__).parent}/tox.ini",
             "--result-json", json_filename,
             "--colored", "no",
             "--override", f"testenv:report.commands=coverage html --directory='{htmlcov_dir}'",
