@@ -30,12 +30,18 @@ def call_tox(output_dir):
         output_dir.mkdir()
 
     json_filename = output_dir/"report.json"
+
+    htmlcov_dir = output_dir/"htmlcov"
+    if not htmlcov_dir.exists():
+        htmlcov_dir.mkdir()
+
     r = subprocess.run(
         [
             "tox",
             "run",
             "--result-json", json_filename,
             "--colored", "no",
+            "--override", f"testenv:report.commands=coverage html --directory='{htmlcov_dir}'",
             "--override", "testenv.setenv=PYTEST_ADDOPTS='--color=no'",
             ],
         env = os.environ,
