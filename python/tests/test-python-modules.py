@@ -26,6 +26,9 @@ def call_tox(output_dir):
     """
     output_dir: pathlib.Path instance
     """
+    if not output_dir.exists():
+        output_dir.mkdir()
+
     json_filename = output_dir/"report.json"
     r = subprocess.run(
         [
