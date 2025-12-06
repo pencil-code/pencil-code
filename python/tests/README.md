@@ -1,29 +1,52 @@
 $PENCIL_HOME/python/tests
 =========================
 
-# Requirements
+# Running minimal tests
 
-These tests depend on the [_Pytest_](https://pytest.org/) Python package.
-
-# Running
-
-## Minimal tests
-
+Run
 ```sh
 $PENCIL_HOME/python/tests/test-python-modules.py
 ```
+This option requires the [_Pytest_](https://pytest.org/) Python package to be
+installed. Moreover, the Python packages that Pencil's Python module depends
+on should be installed.
 
-## Full tests
+# Running full tests
 
 While the above script only runs a minimal set of tests, the full set of tests
-(including the script tests which are run by `pc_auto-test`) can be run after
-changing into this directory by simply calling
+(including the script tests which are run by `pc_auto-test`) can be run in either
+of the ways described below.
+
+## Recommended
+
+```sh
+$PENCIL_HOME/python/tests/test-python-modules.py --full
+```
+
+### Requirements
+
+- A Python interpreter should be in `$PATH` (e.g. `/usr/bin/python3`).
+- [_Tox_](https://tox.wiki/) (Python package) should be installed.
+- `sourceme.sh` should have been sourced in the current shell.
+
+### Notes
+
+- You do not need to install any other Python packages (they will be automatically
+installed in an isolated environment).
+- If multiple Python versions are present on your system, the above command will
+run tests using all of them.
+- Tox has also been configured to generate a code coverage report (`./htmlcov/index.html`).
+
+
+## Alternative: directly calling pytest
+
+Change into this directory and run
 ```sh
 pytest
 ```
-This requires `sourceme.sh` to have been sourced in the current shell.
-
-## Parallelization
+This also requires `sourceme.sh` to have been sourced in the current shell.
+Moreover, the Python packages that Pencil's Python module depends
+on should be installed.
 
 To run tests in parallel, install the `pytest-xdist` plugin, change into this
 directory, and run
@@ -31,19 +54,6 @@ directory, and run
 pytest -n 4 --dist loadgroup
 ```
 where 4 is the number of tests to run at a time.
-
-## Testing with multiple Python versions, and code coverage
-
-A configuration file for [_Tox_](https://tox.wiki/) is provided. Change into
-this directory and run
-```sh
-tox
-```
-While you will have to install the Python executables by yourself, the required
-Python packages (`scipy`, `numpy`,...) will be automatically installed by `tox`.
-
-Tox has also been configured to generate a code coverage report; to view it,
-open `./htmlcov/index.html` in your browser after running `tox`.
 
 # Adding tests
 
