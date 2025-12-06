@@ -22,8 +22,11 @@ def call_pytest():
         "not integration",
         ]))
 
-def call_tox():
-    json_filename = "report.json"
+def call_tox(output_dir):
+    """
+    output_dir: pathlib.Path instance
+    """
+    json_filename = output_dir/"report.json"
     r = subprocess.run(
         [
             "tox",
@@ -34,7 +37,7 @@ def call_tox():
             ],
         env = os.environ,
         )
-    json_to_html(json_filename, "report.html")
+    json_to_html(json_filename, output_dir/"report.html")
     sys.exit(r.returncode)
 
 _ansi_escape = re.compile(r'''
@@ -228,10 +231,15 @@ if __name__ == "__main__":
         default = False,
         action = 'store_true',
         )
+    parser.add_argument(
+        "--outputdir",
+        help = "location to store HTML output in",
+        default = "."
+        )
 
     args = parser.parse_args()
 
     if args.full:
-        call_tox()
+        call_tox(output_dir = pathlib.Path(args.outputdir))
     else:
         call_pytest()
