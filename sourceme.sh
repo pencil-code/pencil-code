@@ -13,16 +13,20 @@ if [ -z $PENCIL_HOME ]; then
   unset _sourceme		# tabula rasa without PENCIL_HOME
   #
   # Try to identify position of the code's home directory:
+  # "$(dirname "${BASH_SOURCE[0]}")" should always work in bash. The other
+  # directories below are needed in case the user is using some other shell
+  # (zsh, ash, dash, ...).
   #
-  for _dir in   . .. ../.. ../../.. ../../../.. \
-                pencil pencil-code \
-		f90/pencil f90/pencil-code \
-		pencil_modular f90/pencil_modular ; do
+  for _dir in "$(dirname "${BASH_SOURCE[0]}")" \
+      . .. ../.. ../../.. ../../../.. \
+      pencil pencil-code \
+      f90/pencil f90/pencil-code \
+      pencil_modular f90/pencil_modular ; do
     if ( [ -e $_dir/sourceme.csh ] && \
          [ -d $_dir/bin ]          && \
-	 [ -d $_dir/doc ]          && \
-	 [ -d $_dir/src ]          && \
-	 [ -d $_dir/samples ]         \
+         [ -d $_dir/doc ]          && \
+         [ -d $_dir/src ]          && \
+         [ -d $_dir/samples ]         \
        ); then
       unset cd   # some people are crazy enough to overload cd
       PENCIL_HOME=`cd $_dir; echo $PWD`
