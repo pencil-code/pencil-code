@@ -107,6 +107,7 @@ contains
       if (nt>0) call load_farray_to_GPU(f)
 
   !print'(a,1x,Z0,1x,Z0)', 'pFarr_GPU_in,pFarr_GPU_out=', pFarr_GPU_in,pFarr_GPU_out
+      lverbose_performance_log = .true.
     endsubroutine initialize_GPU
 !**************************************************************************
     subroutine read_gpu_run_pars(iostat)
