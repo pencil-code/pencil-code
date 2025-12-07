@@ -27,7 +27,6 @@ $PENCIL_HOME/python/tests/test-python-modules.py --full
 
 - A Python interpreter should be in `$PATH` (e.g. `/usr/bin/python3`).
 - [_Tox_](https://tox.wiki/) (Python package) should be installed.
-- `sourceme.sh` should have been sourced in the current shell.
 
 ### Notes
 
@@ -44,7 +43,7 @@ Change into this directory and run
 ```sh
 pytest
 ```
-This also requires `sourceme.sh` to have been sourced in the current shell.
+This requires `sourceme.sh` to have been sourced in the current shell.
 Moreover, the Python packages that Pencil's Python module depends
 on should be installed.
 
