@@ -35,20 +35,21 @@ def call_tox(output_dir):
     if not htmlcov_dir.exists():
         htmlcov_dir.mkdir()
 
-    r = subprocess.run(
-        [
-            "tox",
-            "run",
-            "--conf", f"{pathlib.Path(__file__).parent}/tox.ini",
-            "--result-json", json_filename,
-            "--colored", "no",
-            "--override", f"testenv:report.commands=coverage html --directory='{htmlcov_dir}'",
-            "--override", "testenv.setenv=PYTEST_ADDOPTS='--color=no'",
-            ],
-        env = os.environ,
+    py_tests_dir = pathlib.Path(__file__).parent
+
+    p = subprocess.Popen("bash", stdin=subprocess.PIPE, text=True)
+    _, _ = p.communicate(
+        f"""
+        source {py_tests_dir/"../../sourceme.sh"}
+        tox run --conf "{py_tests_dir}/tox.ini" \
+            --result-json "{json_filename}" \
+            --colored no \
+            --override "testenv:report.commands=coverage html --directory='{htmlcov_dir}'" \
+            --override "testenv.setenv=PYTEST_ADDOPTS='--color=no'"
+        """
         )
     json_to_html(json_filename, output_dir/"report.html")
-    sys.exit(r.returncode)
+    sys.exit(p.returncode)
 
 _ansi_escape = re.compile(r'''
     \x1B  # ESC
