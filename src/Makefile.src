@@ -3713,6 +3713,7 @@ clean:  slender
 	rm -f *_c.h && ln -s $(PENCIL_HOME)/src/headers_c.h .
 #done so the interface make can clean after this, otherwise that clean has to come first
 	@if [ -d ./astaroth ]; then \
+		rm -f ../PC-AC.conf \
 		touch ./astaroth/PC_modulesources.h; \
 	        rm -rf ./astaroth/build; \
 		rm -rf ./astaroth/submodule/build; \
