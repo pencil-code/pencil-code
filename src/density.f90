@@ -4246,7 +4246,8 @@ module Density
     call copy_addr(h_sld_dens,p_par(73))
     call copy_addr(nlf_sld_dens,p_par(74))
     call copy_addr(lconserve_total_mass,p_par(75)) ! bool
-    call copy_addr(total_mass,p_par(76))
+    !TP: total mass is a dconst so won't recompile when continuing a simulation where the mass has slightly changed
+    call copy_addr(total_mass,p_par(76)) ! real dconst
     call copy_addr(lrelativistic_eos_corr,p_par(77)) ! bool
     call copy_addr(lgamma_is_1,p_par(78)) ! bool
     call copy_addr(reference_state_padded,p_par(79)) ! (mx) (9)
