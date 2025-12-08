@@ -1208,21 +1208,29 @@ endsubroutine helper_loop
                                wall_clock_time/icount/nw/1.0e-6
         write(*,'(A,1pG14.7)') ' Rhs wall clock time/timestep/local meshpoint [microsec] =', &
                                rhs_sum_time/icount/nw/1.0e-6
-        if (lverbose_performance_log) write(*,'(A,1pG14.7)') ' After substep wall clock time/timestep/local meshpoint [microsec] =', &
+        if (lverbose_performance_log) write(*,'(A,1pG14.7)') &
+          ' After substep wall clock time/timestep/local meshpoint [microsec] =', &
                                after_substep_sum_time/icount/nw/1.0e-6
-        if (lverbose_performance_log) write(*,'(A,1pG14.7)') ' Before boundary wall clock time/timestep/local meshpoint [microsec] =', &
+        if (lverbose_performance_log) write(*,'(A,1pG14.7)') &
+          ' Before boundary wall clock time/timestep/local meshpoint [microsec] =', &
                                before_boundary_sum_time/icount/nw/1.0e-6
-        if (lverbose_performance_log) write(*,'(A,1pG14.7)') ' Diagnostics wall clock time/timestep/local meshpoint [microsec] =', &
+        if (lverbose_performance_log) write(*,'(A,1pG14.7)') &
+          ' Diagnostics wall clock time/timestep/local meshpoint [microsec] =', &
                                time_doing_diagnostics/icount/nw/1.0e-6
-        if (lverbose_performance_log) write(*,'(A,1pG14.7)') ' Timestep wall clock time/timestep/local meshpoint [microsec] =', &
+        if (lverbose_performance_log) write(*,'(A,1pG14.7)') &
+          ' Timestep wall clock time/timestep/local meshpoint [microsec] =', &
                                time_in_timestep/icount/nw/1.0e-6
-        if (lverbose_performance_log) write(*,'(A,1pG14.7)') ' Timestep wall clock time/timestep/meshpoint [microsec] =', &
+        if (lverbose_performance_log) write(*,'(A,1pG14.7)') &
+          ' Timestep wall clock time/timestep/meshpoint [microsec] =', &
                                time_in_timestep/icount/nw/ncpus/1.0e-6
-        if (lverbose_performance_log) write(*,'(A,1pG14.7)') ' Diagnostics wall clock time/timestep/meshpoint [microsec] =', &
+        if (lverbose_performance_log) write(*,'(A,1pG14.7)') &
+          ' Diagnostics wall clock time/timestep/meshpoint [microsec] =', &
                                time_doing_diagnostics/icount/nw/ncpus/1.0e-6
-        if (lverbose_performance_log) write(*,'(A,1pG14.7)') ' Rhs wall clock time/timestep/meshpoint [microsec] =', &
+        if (lverbose_performance_log) write(*,'(A,1pG14.7)') &
+          ' Rhs wall clock time/timestep/meshpoint [microsec] =', &
                                rhs_sum_time/icount/nw/ncpus/1.0e-6
-        if (lverbose_performance_log) write(*,'(A,1pG14.7)') ' After substep wall clock time/timestep/meshpoint [microsec] =', &
+        if (lverbose_performance_log) write(*,'(A,1pG14.7)') &
+          ' After substep wall clock time/timestep/meshpoint [microsec] =', &
                                after_substep_sum_time/icount/nw/ncpus/1.0e-6
 
       endif
