@@ -1548,8 +1548,13 @@ extern "C" void substepGPU(int isubstep, double t)
   
   if (isubstep == 1) 
   {
-	  //TP: done to have the same timestep as PC when testing
-	  if (ldt && lcourant_dt && lcpu_timestep_on_gpu) dt1_interface = GpuCalcDt(AcReal(t));
+          static bool lfirst_timestep_calculated = false;
+	  //TP: lcpu_timestep_on_gpu enables the same timestep as PC when testing
+	  if (ldt && lcourant_dt && (!lfirst_timestep_calculated || lcpu_timestep_on_gpu)) 
+	  {
+		dt1_interface = GpuCalcDt(AcReal(t));
+	  	lfirst_timestep_calculated = true;
+	  }
 	  if (ldt) set_dt(dt1_interface);
 	  acDeviceSetInput(acGridGetDevice(), AC_dt,dt);
   }
