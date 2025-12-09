@@ -19,7 +19,7 @@
   	if (AC_iaa__mod__cdata != 0) write( F_AA,  rk_intermediate(F_AA , DF_AA,  step_num, AC_dt__mod__cdata) )
 	if(lbfield) write(F_BVEC, rk_intermediate(F_BVEC, DF_BVEC,step_num,AC_dt__mod__cdata))
 #if LGRAVITATIONAL_WAVES_HTXK
-	if (AC_lfirst__mod__cdata)
+	if (AC_lfirst__mod__cdata && !AC_lsplit_gw_rhs_from_rest_on_gpu__mod__gravitational_waves_htxk)
 	{
 		write(F_STRESS_0,DF_STRESS_0)
 		write(F_STRESS_1,DF_STRESS_1)

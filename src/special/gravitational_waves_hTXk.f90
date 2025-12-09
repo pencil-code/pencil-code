@@ -156,6 +156,7 @@ module Special
   real :: nonlinear_source_fact=0., k_in_stress=1.
   integer :: itorder_GW=1, idt_file_safety=12
   integer :: boost_method=2
+  logical :: lsplit_GW_rhs_from_rest_on_gpu = .true.
 !
 ! input parameters
   namelist /special_init_pars/ &
@@ -195,6 +196,7 @@ module Special
     lnophase_in_stress, llinphase_in_stress, slope_linphase_in_stress, &
     lread_scl_factor_file, t_ini, OmL0, OmM0, idt_file_safety, &
     lconstmod_in_stress, k_in_stress, itorder_GW, lLighthill, &
+    lsplit_GW_rhs_from_rest_on_gpu, &
     lread_pulsar !, nbin_angular
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
@@ -3528,6 +3530,8 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
     if (allocated(lgff3)) call copy_addr(lgff3,p_par(74)) ! (nt_file__mod__gravitational_waves_htxk) gmem
     call copy_addr(appa_om_init,p_par(75)) 
     call copy_addr(luse_mag,p_par(76)) ! bool
+    call copy_addr(lsplit_gw_rhs_from_rest_on_gpu,p_par(77)) ! bool
+
 
 
     endsubroutine pushpars2c

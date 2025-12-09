@@ -33,6 +33,11 @@ ComputeSteps AC_rhs(boundconds)
         twopass_solve_final(AC_step_num,AC_dt)
 }
 
+ComputeSteps AC_GW_rhs(boundconds)
+{
+	GW_rhs(AC_t,AC_dt)
+}
+
 ComputeSteps AC_calculate_timestep(boundconds)
 {
 	shock_1_divu(AC_step_num)

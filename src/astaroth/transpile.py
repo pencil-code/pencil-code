@@ -32,6 +32,7 @@ def main():
     if (rhs_already_exists): 
         return
     os.system("mv mhdsolver-rhs.inc DSL/local/mhdsolver.ac")
+    os.system("mv GW-rhs.ac DSL/local/GW-rhs.h")
     os.system("mv cparam.h DSL/local")
     os.system("mv static_var_declares.h DSL/local")
     os.system("cp DSL/solve_two.ac DSL/local")

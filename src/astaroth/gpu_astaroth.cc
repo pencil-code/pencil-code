@@ -51,6 +51,7 @@ bool calculated_coeff_scales = false;
 
 //TP: these are ugly but for the moment we live with these
 #if TRANSPILATION
+  #define lsplit_gw_rhs_from_rest_on_gpu lsplit_gw_rhs_from_rest_on_gpu__mod__gravitational_waves_htxk
   #define limplicit_diffusion_with_fft limplicit_diffusion_with_fft__mod__implicitdiffusion
   #define limplicit_diffusion_with_cg  limplicit_diffusion_with_cg__mod__implicitdiffusion
   #define limplicit_resistivity limplicit_resistivity__mod__magnetic
@@ -1546,6 +1547,7 @@ extern "C" void substepGPU(int isubstep, double t)
   //TP: done in this more complex manner to ensure the actually integrated time and the time reported by Pencil agree
   //if we call set_dt after the first timestep there would be slight shift in dt what Pencil sees and what is actually used for time integration
   
+  acDeviceSetInput(acGridGetDevice(), AC_t,(AcReal)t);
   if (isubstep == 1) 
   {
           static bool lfirst_timestep_calculated = false;
@@ -1557,8 +1559,11 @@ extern "C" void substepGPU(int isubstep, double t)
 	  }
 	  if (ldt) set_dt(dt1_interface);
 	  acDeviceSetInput(acGridGetDevice(), AC_dt,dt);
+	  if(lsplit_gw_rhs_from_rest_on_gpu)
+	  {
+  		acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_GW_rhs),1);
+	  }
   }
-  acDeviceSetInput(acGridGetDevice(), AC_t,(AcReal)t);
   //fprintf(stderr,"before acGridExecuteTaskGraph");
   AcTaskGraph *rhs =  acGetOptimizedDSLTaskGraph(AC_rhs);
   auto start = MPI_Wtime();
