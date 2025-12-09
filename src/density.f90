@@ -96,6 +96,7 @@ module Density
   real :: temp_coeff_out = 1.0
   real :: rss_coef1=1.0, rss_coef2=1.0
   real :: total_mass=-1.
+  logical :: lpositive_total_mass = .false.
   real :: rescale_rho=1.0
   real :: xjump_mid=0.0,yjump_mid=0.0,zjump_mid=0.0
   real :: kgaussian_lnrho=0., initpower_lnrho=2, kpeak_lnrho=1., cutoff_lnrho=0.
@@ -1040,7 +1041,8 @@ module Density
       !TP: used in boundary conditions on Astaroth side
       reference_state_padded = 0.
       reference_state_padded(l1:l2,:) = reference_state
-!
+      lpositive_total_mass = total_mass > 0.0
+
     endsubroutine initialize_density
 !***********************************************************************
     subroutine init_lnrho(f)
@@ -1802,7 +1804,7 @@ module Density
 !
 !  Force mass conservation if requested
 !
-        if (lconserve_total_mass .and. total_mass > 0.0) then
+        if (lconserve_total_mass .and. lpositive_total_mass) then
 !
           cur_mass=box_volume*mean_density(f)
 !
@@ -4256,6 +4258,7 @@ module Density
     call copy_addr(enum_density_floor_profile,p_par(81)) ! int
     call copy_addr(density_floor,p_par(82))
     call copy_addr(density_floor_log,p_par(83))
+    call copy_addr(lpositive_total_mass,p_par(84)) ! bool
 
     endsubroutine pushpars2c
 !***********************************************************************
