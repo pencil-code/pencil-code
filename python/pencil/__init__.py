@@ -53,7 +53,7 @@ def get_sim(path=".", quiet=True):
         path:   Base directory where to look for simulation from.
         quiet:  Switches out the output of the function. Default: False.
     """
-
+    from pencil import sim #needed because of the lazy loading above
     return sim.get(path, quiet=quiet)
 
 
@@ -70,7 +70,7 @@ def get_sims(path_root=".", depth=1, unhide_all=False, quiet=True):
                     hidden sim will stay hidden.
         quiet:      Switches out the output of the function. Default: True.
     """
-
+    from pencil import sim #needed because of the lazy loading above
     return sim.get_sims(
         path_root=path_root, depth=depth, unhide_all=unhide_all, quiet=quiet
     )
