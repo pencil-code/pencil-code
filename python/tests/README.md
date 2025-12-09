@@ -34,7 +34,9 @@ $PENCIL_HOME/python/tests/test-python-modules.py --full
 installed in an isolated environment).
 - If multiple Python versions are present on your system, the above command will
 run tests using all of them.
+- A HTML report, `report.html`, will be generated.
 - Tox has also been configured to generate a code coverage report (`./htmlcov/index.html`).
+- Use the `--outputdir` option to change the location of the reports.
 
 
 ## Alternative: directly calling pytest
