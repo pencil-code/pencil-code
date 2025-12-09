@@ -18,6 +18,10 @@
 #include <sys/resource.h>
 #include <fstream>
 #include <dlfcn.h>
+#include <thread>
+
+static std::thread GW_thread{};
+static int device_id = 0;
 
 //TP: defined here since mpi.h can have its own definition of DOUBLE_PRECISION
 //    and we don't want to conflict it with it. This is at least true on my laptop
@@ -36,6 +40,8 @@ bool calculated_coeff_scales = false;
 // Astaroth headers
 #include "astaroth.h"
 #include "submodule/stdlib/fft.h"
+
+AcTaskGraph* GW_timestep_graph  =  NULL;
 
 #define real AcReal
 #include "math_utils.h"
@@ -1509,15 +1515,34 @@ if (it % 5 !=0) return;
 	if(called_training) called_training = false;
 }
 /***********************************************************************************************/
+void
+GW_update()
+{
+#if LGRAVITATIONAL_WAVES_HTXK
+	//We set the device id here since another thread than the master might be executing this
+  	if(acSetDevice(device_id) != cudaSuccess)
+  	{
+  	        fprintf(stderr,"Was not able to set device id!\n");
+  	        exit(EXIT_FAILURE);
+  	}
+	acDeviceFFTR2PlanarBatched(acGridGetDevice(), acGetF_STRESS_0(),acGetAC_tpq_re__mod__gravitational_waves_htxk_0(),acGetAC_tpq_im__mod__gravitational_waves_htxk_0(),6);
+	//TP: do this if you want to test the performance of utilizing the conjugate symmetry
+	//acDeviceFFTR2HermitianPlanarBatched(acGridGetDevice(), acGetF_STRESS_0(),acGetAC_tpq_re__mod__gravitational_waves_htxk_0(),acGetAC_tpq_im__mod__gravitational_waves_htxk_0(),6,STREAM_10);
+        acDeviceSynchronizeStream(acGridGetDevice(),STREAM_10);
+	acGridExecuteTaskGraph(GW_timestep_graph,1);
+#endif
+}
+/***********************************************************************************************/
 extern "C" void afterSubStepGPU()
 {
+#if LGRAVITATIONAL_WAVES_HTXK
 	if (acDeviceGetInput(acGridGetDevice(), AC_step_num) == PC_FIRST_SUB_STEP)
 	{
-#if LGRAVITATIONAL_WAVES_HTXK
-	    acDeviceFFTR2PlanarBatched(acGridGetDevice(), acGetF_STRESS_0(),acGetAC_tpq_re__mod__gravitational_waves_htxk_0(),acGetAC_tpq_im__mod__gravitational_waves_htxk_0(),6);
-	    acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_gravitational_waves_solve_and_stress),1);
-#endif
+	   GW_update();
+	   //TP: do this if you want to test the performance of overlapping GW FFTs with the normal RHS
+	   //GW_thread = std::thread(GW_update);
 	}
+#endif
 	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_after_timestep),1);
 }
 /***********************************************************************************************/
@@ -1549,6 +1574,10 @@ extern "C" void substepGPU(int isubstep, double t)
   acDeviceSetInput(acGridGetDevice(), AC_t,(AcReal)t);
   if (isubstep == 1) 
   {
+	  if(GW_thread.joinable())
+	  {
+	          GW_thread.join();
+	  }
           static bool lfirst_timestep_calculated = false;
 	  //TP: lcpu_timestep_on_gpu enables the same timestep as PC when testing
 	  if (ldt && lcourant_dt && (!lfirst_timestep_calculated || lcpu_timestep_on_gpu)) 
@@ -2019,6 +2048,11 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_)  /
   checkConfig(mesh.info);
   if (rank==0 && ldebug) printf("memusage grid_init= %f MBytes\n", acMemUsage()/1024.);
   acGridInit(mesh);
+  if(acGetDevice(&device_id) != cudaSuccess)
+  {
+	  fprintf(stderr,"Was not able to get device id!\n");
+	  exit(EXIT_FAILURE);
+  }
   if (rank==0 && ldebug) printf("memusage after grid_init= %f MBytes\n", acMemUsage()/1024.);
 
   mesh.info = acGridDecomposeMeshInfo(mesh.info);
@@ -2027,6 +2061,7 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_)  /
   acDeviceSetInput(acGridGetDevice(), AC_dt,dt);
   acDeviceSetInput(acGridGetDevice(), AC_t,AcReal(t));
   acDeviceSetInput(acGridGetDevice(), AC_shear_delta_y,deltay);
+  GW_timestep_graph = acGetOptimizedDSLTaskGraph(AC_gravitational_waves_solve_and_stress);
 		
   //if (ltest_bcs) testBCs();
   //TP: for autotuning
@@ -2126,6 +2161,10 @@ extern "C" void finalizeGPU()
 {
   // Deallocate everything on the GPUs and reset
   AcResult res = acGridQuit();
+  if(GW_thread.joinable())
+  {
+          GW_thread.join();
+  }
 }
 /***********************************************************************************************/
 extern "C" void random_initial_condition()
