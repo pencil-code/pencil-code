@@ -47,20 +47,20 @@ def test_neat_short_tricks() -> None:
     assert_equal(sim.get_varlist(particle=True), [])
     assert_equal(sim.get_varlist(pos="last10"), [])
 
-# def test_neat_short_tricks_standalone() -> None:
-#     """
-#     Same as test_neat_short_tricks, but in a separate Python process
-#     """
-#     standalone_test([
-#         f"sim = pc.get_sim('{get_rundir("samples/2d-tests/2d_methane_flame/turbulent_field")}')",
-#         'assert sim.get_value("inituu") == "gaussian-noise"',
-#         'assert sim.get_value("ldensity_nolog") == True',
-#         'assert sim.get_value("iforce") == "helical"',
-#         'assert sim.get_value("nu") == 1.0',
-#         'assert sim.get_varlist() == []',
-#         'assert sim.get_varlist(particle=True) == []',
-#         'assert sim.get_varlist(pos="last10") == []',
-#         ])
+def test_neat_short_tricks_standalone() -> None:
+    """
+    Same as test_neat_short_tricks, but in a separate Python process
+    """
+    standalone_test([
+        f"""sim = pc.get_sim('{get_rundir("samples/2d-tests/2d_methane_flame/turbulent_field")}')""",
+        'assert sim.get_value("inituu") == "gaussian-noise"',
+        'assert sim.get_value("ldensity_nolog") == True',
+        'assert sim.get_value("iforce") == "helical"',
+        'assert sim.get_value("nu") == 1.0',
+        'assert sim.get_varlist() == []',
+        'assert sim.get_varlist(particle=True) == []',
+        'assert sim.get_varlist(pos="last10") == []',
+        ])
 
 def _assert_sim_parameter(
     sim: __Simulation__, parameter: str, expected: Any
