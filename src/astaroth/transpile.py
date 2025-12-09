@@ -22,7 +22,7 @@ def main():
         sources_are_different = True
     else:
         sources_are_different = os.system("diff PC_modulesources.h PC_modulesources_old.h")
-    skip_generation = os.path.exists("DSL/local/mhdsolver.ac") and not sources_are_different
+    skip_generation = os.path.exists("DSL/local/mhdsolver.ac") and os.path.exists("DSL/local/GW-rhs.h") and not sources_are_different
     if skip_generation:
         return
 
