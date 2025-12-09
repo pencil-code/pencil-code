@@ -1587,10 +1587,12 @@ extern "C" void substepGPU(int isubstep, double t)
 	  }
 	  if (ldt) set_dt(dt1_interface);
 	  acDeviceSetInput(acGridGetDevice(), AC_dt,dt);
+#if LGRAVITATIONAL_WAVES_HTXK
 	  if(lsplit_gw_rhs_from_rest_on_gpu)
 	  {
   		acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_GW_rhs),1);
 	  }
+#endif
   }
   //fprintf(stderr,"before acGridExecuteTaskGraph");
   AcTaskGraph *rhs =  acGetOptimizedDSLTaskGraph(AC_rhs);
