@@ -1241,17 +1241,24 @@ module Special
     endsubroutine dspecial_dt
 !***********************************************************************
     subroutine calc_diagnostics_special(f,p)
+
       use Diagnostics
       real,dimension(mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
       real :: sign_switch=0
+      real, dimension(nx) :: ggT,ggTim,ggX,ggXim
 
       if (lggTX_as_aux) then
-        if (idiag_EEGW/=0) call sum_mn_name((f(l1:l2,m,n,iggT)**2+f(l1:l2,m,n,iggTim)**2 &
-                                            +f(l1:l2,m,n,iggX)**2+f(l1:l2,m,n,iggXim)**2 &
+
+        ggT   = f(l1:l2,m,n,iggT)
+        ggTim = f(l1:l2,m,n,iggTim)
+        ggX   = f(l1:l2,m,n,iggX)
+        ggXim = f(l1:l2,m,n,iggXim)
+        if (idiag_EEGW/=0) call sum_mn_name((ggT**2+ggTim**2 &
+                                            +ggX**2+ggXim**2 &
                                             )*nwgrid*EGWpref,idiag_EEGW)
-        if (idiag_gg2m/=0) call sum_mn_name((f(l1:l2,m,n,iggT)**2+f(l1:l2,m,n,iggTim)**2 &
-                                            +f(l1:l2,m,n,iggX)**2+f(l1:l2,m,n,iggXim)**2 &
+        if (idiag_gg2m/=0) call sum_mn_name((ggT**2+ggTim**2 &
+                                            +ggX**2+ggXim**2 &
                                             )*nwgrid,idiag_gg2m)
         if (idiag_Stgm/=0) call sum_mn_name((f(l1:l2,m,n,iStressT  )*f(l1:l2,m,n,iggT  ) &
                                             +f(l1:l2,m,n,iStressTim)*f(l1:l2,m,n,iggTim) &
@@ -2395,6 +2402,54 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
          enddo
        enddo
     endsubroutine compute_hij
+!***********************************************************************
+    function has_negative_frequency(ik,ngrid) result(res)
+      integer :: ik,ngrid,nyquist_frequency
+      logical :: res
+      nyquist_frequency = (ngrid/2)+1
+      if(ik > nyquist_frequency) then
+              res = .true.
+      else
+              res = .false.
+      endif
+    endfunction has_negative_frequency
+!***********************************************************************
+    function below_nyquist_frequency(ik,ngrid) result(res)
+      integer :: ik,ngrid,nyquist_frequency
+      logical :: res
+      nyquist_frequency = (ngrid/2)+1
+      if(ik < nyquist_frequency) then
+              res = .true.
+      else
+              res = .false.
+      endif
+    endfunction below_nyquist_frequency
+!***********************************************************************
+    subroutine get_conjugate_pair_index(ik_src,ik_dst,ngrid)
+      integer :: ik_src,ik_dst,ngrid
+      integer :: offset_from_nyquist
+      integer :: nyquist_frequency 
+      nyquist_frequency = (ngrid/2)+1
+      if(ik_src == 1 .or. ik_src == nyquist_frequency) then
+        ik_dst = ik_src
+      else if(has_negative_frequency(ik_src,ngrid)) then
+        offset_from_nyquist = ik_src - nyquist_frequency
+        ik_dst = nyquist_frequency-offset_from_nyquist
+      else
+        offset_from_nyquist = nyquist_frequency - ik_src
+        ik_dst = nyquist_frequency+offset_from_nyquist
+      endif
+    endsubroutine get_conjugate_pair_index
+!***********************************************************************
+    subroutine get_conjugate_pair_indexes(ikx_src,iky_src,ikz_src,ikx_dst,iky_dst,ikz_dst)
+      integer :: ikx_src,iky_src,ikz_src
+      integer :: ikx_dst,iky_dst,ikz_dst
+
+      call get_conjugate_pair_index(ikx_src,ikx_dst,nxgrid)
+      call get_conjugate_pair_index(iky_src,iky_dst,nygrid)
+      call get_conjugate_pair_index(ikz_src,ikz_dst,nzgrid)
+
+    endsubroutine get_conjugate_pair_indexes
 !***********************************************************************
     subroutine solve_and_stress(f,S_T_re,S_T_im,S_X_re,S_X_im)
 !   TODO: The name is simply a placeholder since could not come up with a better name
