@@ -4,6 +4,7 @@
 #
 # 2025-Dec-09/Kishore: coded
 
-find "$PENCIL_HOME"/src -type f -name '*.f90' -execdir gcov {} \;
-lcov --capture --directory "$PENCIL_HOME"/src --output-file "$PENCIL_HOME"/pencil-codecov.info
+set -e
+
+lcov --capture --directory "$PENCIL_HOME"/samples --output-file "$PENCIL_HOME"/pencil-codecov.info
 genhtml --output-directory "$PENCIL_HOME"/lcov_html pencil-codecov.info
