@@ -560,7 +560,6 @@ torus_rect to_torus_rect(void* param, const char* name)
 #endif
 #endif
 /***********************************************************************************************/
-//#include "../cdata_c.h"
 #include "../sub_c.h"           // provides set_dt
 #include "../boundcond_c.h"     // provides boundconds[xyz] etc.
 #include "PC_module_parfuncs.h" // provides stuff from physics modules

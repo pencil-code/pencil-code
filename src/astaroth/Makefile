@@ -74,7 +74,7 @@ endif
 AC_HEADERS=submodule/include/astaroth.h submodule/acc-runtime/api/math_utils.h
 
 # C headers in pencil-code/src 
-CHEADERS = ../cparam_c.h ../cdata_c.h ../boundcond_c.h ../defines_cdata.h ../forcing_c.h ../sub_c.h #../mpicomm_c.h
+CHEADERS = ../cparam_c.h ../boundcond_c.h ../forcing_c.h ../sub_c.h #../mpicomm_c.h
 
 # Pencil Code related C headers in . (pencil-code/src/astaroth)
 PCHEADER_DIR = .
