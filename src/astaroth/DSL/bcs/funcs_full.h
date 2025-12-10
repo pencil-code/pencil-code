@@ -4136,9 +4136,12 @@ bc_sts(AcBoundary boundary,AC_TOP_BOT topbot,Field j)
 
 boundary_condition Kernel bc_aa_pot2_kernel(AcBoundary boundary, AC_TOP_BOT topbot)
 {
+    if(AC_luses_aa_pot2_top__mod__cdata || AC_luses_aa_pot2_bot__mod__cdata)
+    {
 	ac_potential_bc(boundary,AX_FOURIER_REAL,AX_FOURIER_IMAG)
 	ac_potential_bc(boundary,AY_FOURIER_REAL,AY_FOURIER_IMAG)
 	ac_potential_bc(boundary,AZ_FOURIER_REAL,AZ_FOURIER_IMAG)
+    }
 }
 
 //TP: this is a dummy implementation since we handle the potential bc out of the task system

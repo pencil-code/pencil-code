@@ -1547,13 +1547,23 @@ extern "C" void afterSubStepGPU()
 	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_after_timestep),1);
 }
 /***********************************************************************************************/
+//TP: not yet tested still work in progress
 void
 prep_bsc()
 {
 	if(luses_aa_pot2_top)
 	{
-		fprintf(stderr,"TODO implement me!\n");
-		exit(EXIT_FAILURE);
+		const size_t z_offset = (size_t)mesh.info[AC_nlocal_max].z-1;
+		acDeviceFFTR2PlanarXY(acGridGetDevice(), acGetAAX(), acGetAX_FOURIER_REAL(), acGetAX_FOURIER_IMAG(), z_offset);
+		acDeviceFFTR2PlanarXY(acGridGetDevice(), acGetAAY(), acGetAY_FOURIER_REAL(), acGetAY_FOURIER_IMAG(), z_offset);
+		acDeviceFFTR2PlanarXY(acGridGetDevice(), acGetAAZ(), acGetAZ_FOURIER_REAL(), acGetAZ_FOURIER_IMAG(), z_offset);
+		acDeviceLaunchKernel(acGridGetDevice(), STREAM_DEFAULT, bc_aa_pot2_kernel, (Volume){NGHOST,NGHOST,z_offset}, 
+				(Volume){(size_t)mesh.info[AC_nlocal_max].x,(size_t)mesh.info[AC_nlocal_max].y, z_offset+1}
+				);
+  		acDeviceSynchronizeStream(acGridGetDevice(),STREAM_ALL);
+		acDeviceFFTBackwardTransformPlanar2RXY(acGridGetDevice(),  acGetAX_FOURIER_REAL(), acGetAX_FOURIER_IMAG(), acGetAAX(), z_offset);
+		acDeviceFFTBackwardTransformPlanar2RXY(acGridGetDevice(),  acGetAY_FOURIER_REAL(), acGetAY_FOURIER_IMAG(), acGetAAY(), z_offset);
+		acDeviceFFTBackwardTransformPlanar2RXY(acGridGetDevice(),  acGetAZ_FOURIER_REAL(), acGetAZ_FOURIER_IMAG(), acGetAAZ(), z_offset);
 	}
 }
 /***********************************************************************************************/
