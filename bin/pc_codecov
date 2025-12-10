@@ -71,8 +71,8 @@ done
 # END option parsing
 
 #clean up old files
-find "$pencil_home"/samples -type f -name coverage.info -execdir rm {} \;
-find "$output_dir" -type f -execdir rm {} \;
+find "$pencil_home"/samples -type f -name coverage.info -exec rm {} \;
+find "$output_dir" -type f -exec rm {} \;
 
 geninfo "$pencil_home"/samples -b "$pencil_home"/src -o "$output_dir"/pencil-codecov.info --ignore-errors inconsistent,inconsistent --filter missing --parallel "$jobs"
 
