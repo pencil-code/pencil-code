@@ -3145,7 +3145,7 @@ else
         endif
 endif
 
-special_tmp.f90:
+special_tmp.f90: special.f90
 	@sed -e's/\(n_special_modules_max *= *\)[1-9][0-9]*/\1'$(SPECIAL_MULT)'/' < special.f90 > special_tmp.f90
 
 ifeq ($(GPU),gpu_astaroth)
