@@ -156,9 +156,9 @@ module Special
   real :: nonlinear_source_fact=0., k_in_stress=1.
   integer :: itorder_GW=1, idt_file_safety=12
   integer :: boost_method=2
-  logical :: lsplit_GW_rhs_from_rest_on_gpu = .true.
 !
 ! input parameters
+!
   namelist /special_init_pars/ &
     ctrace_factor, cstress_prefactor, fourthird_in_stress, lno_transverse_part, &
     initGW, amplGW, amplGW2, amplGWX, kpeak_GW, initpower_gw, initpower2_gw, cutoff_GW, &
@@ -3531,8 +3531,6 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
     call copy_addr(appa_om_init,p_par(75)) 
     call copy_addr(luse_mag,p_par(76)) ! bool
     call copy_addr(lsplit_gw_rhs_from_rest_on_gpu,p_par(77)) ! bool
-
-
 
     endsubroutine pushpars2c
 !***********************************************************************
