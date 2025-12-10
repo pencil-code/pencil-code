@@ -1,10 +1,5 @@
 #!/bin/bash
 #
-# Generate code coverage reports. Before running this script, pc_auto-test
-# should've been run with the --coverage flag. It is recommended to also use
-# the -C flag in case this is the first time you are generating code coverage
-# reports
-# 
 # Known issues:
 # - Information on which tests access a particular line is not displayed.
 #
@@ -12,15 +7,76 @@
 
 set -e
 
-njobs=4
+help='''
+Generate code coverage reports. Before running this script, pc_auto-test
+should have been run with the --coverage flag. It is recommended to also use
+the -C flag in case this is the first time you are generating code coverage
+reports.
+
+Example usage:
+    pc_codecov --output-dir ~/public_html/pc_test/ -j 4 
+
+Options:
+    -h,--help               Show this help
+    -H,--pencil-home        Location of the Pencil code (where pc_auto-test has
+                            been run).
+                            Default: $PENCIL_HOME
+    -o,--output-dir         location in which to write the HTML output.
+                            Default: ./lcov_html
+    -j,--jobs               Number of parallel workers to use.
+                            Default: 1
+'''
+
+# BEGIN option parsing
+#https://stackoverflow.com/questions/192249/how-do-i-parse-command-line-arguments-in-bash/29754866#29754866
+set -o errexit -o pipefail -o noclobber -o nounset
+
+LONGOPTS=output-dir:,jobs:,pencil-home:,help
+OPTIONS=o:j:H:h
+
+PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@") || exit 2
+eval set -- "$PARSED"
+
+jobs=1
+pencil_home="$PENCIL_HOME"
+output_dir="./lcov_html"
+while true; do
+    case "$1" in
+        -o|--output-dir)
+            output_dir=$2
+            shift 2
+            ;;
+        -j|--jobs)
+            jobs=$2
+            shift 2
+            ;;
+        -H|--pencil-home)
+            pencil_home=$2
+            shift 2
+            ;;
+        -h|--help)
+            echo "$help"
+            exit 0
+            ;;
+        --)
+            shift
+            break
+            ;;
+        *)
+            echo "Error in parsing options"
+            exit 3
+            ;;
+    esac
+done
+# END option parsing
 
 #clean up old files
-find "$PENCIL_HOME"/samples -type f -name coverage.info -execdir rm {} \;
-rm -f pencil-codecov.info
-rm -rf lcov_html
+find "$pencil_home"/samples -type f -name coverage.info -execdir rm {} \;
+rm -f "$pencil_home"/pencil-codecov.info
+find "$output_dir" -type f -execdir rm {} \;
 
-geninfo "$PENCIL_HOME"/samples -b "$PENCIL_HOME"/src -o pencil-codecov.info --ignore-errors inconsistent,inconsistent --filter missing --parallel "$njobs"
+geninfo "$pencil_home"/samples -b "$pencil_home"/src -o "$pencil_home"/pencil-codecov.info --ignore-errors inconsistent,inconsistent --filter missing --parallel "$jobs"
 
 #NOTE: when I use --show-details, it fails with
 # genhtml: ERROR: unexpected branch TLA UNC for count 0
-genhtml --show-proportion --hierarchical --show-navigation --parallel "$njobs" --output-directory "$PENCIL_HOME"/lcov_html pencil-codecov.info
+genhtml --show-proportion --hierarchical --show-navigation --parallel "$jobs" --output-directory "$output_dir" "$pencil_home"/pencil-codecov.info
