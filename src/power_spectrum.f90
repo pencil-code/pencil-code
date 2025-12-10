@@ -1367,6 +1367,9 @@ outer:do ikz=1,nz
 !
 !    We only want to write all this metadata the first time this file is created, not every time pencil is run.
 !    MR: Really? some metadata might change between restarts.
+!    KG: I suppose so, but I can't think of how to read the file, then. The
+!    KG: current Python reading routines assume that the metadata only occurs
+!    KG: at the beginning, but I am not sure what the IDL routines do.
 !
         write(1,'(a)') title
 !
