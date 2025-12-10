@@ -16,9 +16,8 @@ njobs=4
 
 #clean up old files
 find "$PENCIL_HOME"/samples -type f -name coverage.info -execdir rm {} \;
-if test -e lcov_html; then
-	rm -r lcov_html
-fi
+rm -f pencil-codecov.info
+rm -rf lcov_html
 
 geninfo "$PENCIL_HOME"/samples -b "$PENCIL_HOME"/src -o pencil-codecov.info --ignore-errors inconsistent,inconsistent --filter missing --parallel "$njobs"
 
