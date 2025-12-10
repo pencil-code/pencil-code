@@ -273,146 +273,18 @@ class DataCube(object):
             if var_list is not None:
                 raise NotImplementedError("var_list for IO = io_dist")
 
-            x = np.zeros(dim.mx, dtype=precision)
-            y = np.zeros(dim.my, dtype=precision)
-            z = np.zeros(dim.mz, dtype=precision)
-
-            for directory in proc_dirs:
-                if not param.lcollective_io:
-                    proc = int(directory[4:])
-                    if var_file[0:2].lower() == "og":
-                        procdim = read.ogdim(datadir, proc)
-                    else:
-                        if var_file[0:4] == "VARd":
-                            procdim = read.dim(datadir, proc, down=True)
-                        else:
-                            procdim = read.dim(datadir, proc)
-                    if not quiet:
-                        print(  "Reading data from processor"
-                              + " {0} of {1} ...".format(proc, len(proc_dirs)))
-
-                else:
-                    # A collective IO strategy is being used
-                    procdim = dim
-                #                else:
-                #                    procdim.mx = dim.mx
-                #                    procdim.my = dim.my
-                #                    procdim.nx = dim.nx
-                #                    procdim.ny = dim.ny
-                #                    procdim.ipx = dim.ipx
-                #                    procdim.ipy = dim.ipy
-
-                mxloc = procdim.mx
-                myloc = procdim.my
-                mzloc = procdim.mz
-
-                # Read the data: f-array
-                file_name = os.path.join(datadir, directory, var_file)
-                infile = FortranFileExt(file_name,header_dtype=np.int32)
-                if not run2D:
-                    f_loc = (infile.read_record(dtype=read_precision)).astype(precision)
-                    f_loc = f_loc.reshape((-1, mzloc, myloc, mxloc))
-                    if not quiet:
-                        print(proc,f_loc.shape,f_loc.dtype)
-                else:
-                    if dim.ny == 1:
-                        f_loc = (infile.read_record(dtype=read_precision)).astype(precision)
-                        f_loc = f_loc.reshape((-1, mzloc, mxloc))
-                    else:
-                        f_loc = (infile.read_record(dtype=read_precision)).astype(precision)
-                        f_loc = f_loc.reshape((-1, myloc, mxloc))
-
-                # Read the data: time, coordinates, etc.
-                raw_etc = (infile.read_record(dtype=read_precision)).astype(precision)
-
-                # Read the data: persistent variables
-                if lpersist and directory==proc_dirs[0]:
-                    persist(self, infile=infile, precision=read_precision, quiet=quiet)
-                infile.close()
-
-                t = raw_etc[0]
-                x_loc = raw_etc[1 : mxloc + 1]
-                y_loc = raw_etc[mxloc + 1 : mxloc + myloc + 1]
-                z_loc = raw_etc[mxloc + myloc + 1 : mxloc + myloc + mzloc + 1]
-                if param.lshear:
-                    shear_offset = 1
-                    deltay = raw_etc[-1]
-                else:
-                    shear_offset = 0
-
-                dx = raw_etc[-3 - shear_offset]
-                dy = raw_etc[-2 - shear_offset]
-                dz = raw_etc[-1 - shear_offset]
-
-                if len(proc_dirs) > 1:
-                    # Calculate where the local processor will go in
-                    # the global array.
-                    #
-                    # Don't overwrite ghost zones of processor to the
-                    # left (and accordingly in y and z direction -- makes
-                    # a difference on the diagonals)
-                    #
-                    # Recall that in NumPy, slicing is NON-INCLUSIVE on
-                    # the right end, ie, x[0:4] will slice all of a
-                    # 4-digit array, not produce an error like in idl.
-
-                    if procdim.ipx == 0:
-                        i0x = 0
-                        i1x = i0x + procdim.mx
-                        i0xloc = 0
-                        i1xloc = procdim.mx
-                    else:
-                        i0x = procdim.ipx * procdim.nx + procdim.nghostx
-                        i1x = i0x + procdim.mx - procdim.nghostx
-                        i0xloc = procdim.nghostx
-                        i1xloc = procdim.mx
-
-                    if procdim.ipy == 0:
-                        i0y = 0
-                        i1y = i0y + procdim.my
-                        i0yloc = 0
-                        i1yloc = procdim.my
-                    else:
-                        i0y = procdim.ipy * procdim.ny + procdim.nghosty
-                        i1y = i0y + procdim.my - procdim.nghosty
-                        i0yloc = procdim.nghosty
-                        i1yloc = procdim.my
-
-                    if procdim.ipz == 0:
-                        i0z = 0
-                        i1z = i0z + procdim.mz
-                        i0zloc = 0
-                        i1zloc = procdim.mz
-                    else:
-                        i0z = procdim.ipz * procdim.nz + procdim.nghostz
-                        i1z = i0z + procdim.mz - procdim.nghostz
-                        i0zloc = procdim.nghostz
-                        i1zloc = procdim.mz
-
-                    x[i0x:i1x] = x_loc[i0xloc:i1xloc]
-                    y[i0y:i1y] = y_loc[i0yloc:i1yloc]
-                    z[i0z:i1z] = z_loc[i0zloc:i1zloc]
-
-                    if not run2D:
-                        self.f[:, i0z:i1z, i0y:i1y, i0x:i1x] = f_loc[
-                            :, i0zloc:i1zloc, i0yloc:i1yloc, i0xloc:i1xloc
-                        ]
-                    else:
-                        if dim.ny == 1:
-                            self.f[:, i0z:i1z, i0x:i1x] = f_loc[
-                                :, i0zloc:i1zloc, i0xloc:i1xloc
-                            ]
-                        else:
-                            self.f[i0z:i1z, i0y:i1y, i0x:i1x] = f_loc[
-                                i0zloc:i1zloc, i0yloc:i1yloc, i0xloc:i1xloc
-                            ]
-                else:                    # reading from a single processor
-                    self.f = f_loc
-                    x = x_loc
-                    y = y_loc
-                    z = z_loc
-                    if grid != None:     # overwrite global grid by local grid to enable "magic" calculations
-                        grid = read.grid(datadir=datadir,proc=proc)
+            grid = self._read_io_dist(
+                grid=grid,
+                dim=dim,
+                param=param,
+                proc=proc,
+                ivar=ivar,
+                var_file=var_file,
+                datadir=datadir,
+                precision=precision,
+                quiet=quiet,
+                lpersist=lpersist,
+                )
         else:
             raise NotImplementedError(
                 "IO strategy {} not supported by the Python module.".format(
