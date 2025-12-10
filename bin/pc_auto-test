@@ -1381,6 +1381,8 @@ sub test_compile {
             push @makeopts, 'CFLAGS+=--coverage';
             push @makeopts, 'LFLAGS+=-lgcov';
             push @makeopts, 'LDFLAGS+=-lgcov';
+            #10-Dec-2025/Kishore: the following are needed for the compilation to proceed, but I don't understand what the issue is.
+            push @makeopts, 'FFLAGS+=-Wno-coverage-invalid-line-number';
         }
         print STDERR "\@makeopts = @makeopts\n" if ($debug);
         test_shell_cmd("@pc_build @makeopts", $dir, "compilation",
