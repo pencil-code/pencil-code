@@ -1044,7 +1044,7 @@ module Equ
       use Special, only: prep_rhs_special
 !
 !  Calculation of changing parameters that could happen, e.g. in after_boundary calls 
-!  that we want to happen both on the CPU and GPU should happen here
+!  that we want to happen both on the CPU and GPU should happen here.
 !
     if (lspecial) call prep_rhs_special
 
@@ -1129,6 +1129,9 @@ module Equ
       lfirstpoint=.true.
       lcommunicate=.not.early_finalize
 
+!
+!  This call is included in the GPU kernels by transpilation
+!
       call prep_rhs
 
       mn_loop: do imn=1,nyz
