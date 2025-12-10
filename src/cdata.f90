@@ -916,7 +916,6 @@ module Cdata
 !$omp threadprivate(t,tspec,tdiagnos,t1ddiagnos,t2davgfirst,tslice,tsound,itdiagnos,dtdiagnos,eps_rkf_diagnos)
 !$omp threadprivate(maxdiffus,maxadvec,advec2,advec_cs2)
 !
-  logical :: lsplit_gw_rhs_from_rest_on_gpu=.false.
 ! For use in offloaded code:
 !!$omp declare target(ldensity_nolog,l2,m2,n2)
 !
