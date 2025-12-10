@@ -1915,6 +1915,9 @@ outer:do ikz=1,nz
           b_im=0.
           !$omp end workshare
           !$omp single
+!         10-Dec-2025/Kishore: this looks strange; do we really not want any
+!                              output when ncpus>1, or is this supposed to check
+!                              lroot?
           if (ncpus==1) then
             open(1,file=trim(datadir)//'/hEP.dat',form='unformatted',position='append')
             write(1) hEP,t  !MR: only one thread writes data!!!
