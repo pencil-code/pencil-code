@@ -57,6 +57,7 @@ AcTaskGraph* GW_timestep_graph  =  NULL;
 
 //TP: these are ugly but for the moment we live with these
 #if TRANSPILATION
+  #define luses_aa_pot2_top luses_aa_pot2_top__mod__cdata 
   #define lsplit_gw_rhs_from_rest_on_gpu lsplit_gw_rhs_from_rest_on_gpu__mod__gravitational_waves_htxk
   #define limplicit_diffusion_with_fft limplicit_diffusion_with_fft__mod__implicitdiffusion
   #define limplicit_diffusion_with_cg  limplicit_diffusion_with_cg__mod__implicitdiffusion
@@ -1546,6 +1547,16 @@ extern "C" void afterSubStepGPU()
 	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_after_timestep),1);
 }
 /***********************************************************************************************/
+void
+prep_bsc()
+{
+	if(luses_aa_pot2_top)
+	{
+		fprintf(stderr,"TODO implement me!\n");
+		exit(EXIT_FAILURE);
+	}
+}
+/***********************************************************************************************/
 extern "C" void substepGPU(int isubstep, double t)
 //
 //  Do the 'isubstep'th integration step on all GPUs on the node and handle boundaries.
@@ -1560,6 +1571,7 @@ extern "C" void substepGPU(int isubstep, double t)
 	   fprintf(stderr,"Second forcing force not yet implemented on GPU!\n");
 	   exit(EXIT_FAILURE);
    }
+   prep_bcs();
    if (isubstep == num_substeps) forcing_params.Update();  // calculate on CPU and load into GPU
 #endif
   acDeviceSetInput(acGridGetDevice(), AC_step_num,(PC_SUB_STEP_NUMBER) (isubstep-1));

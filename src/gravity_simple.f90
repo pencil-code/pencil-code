@@ -1573,6 +1573,7 @@ module Gravity
     call copy_addr(nu_epicycle,p_par(28))
     call copy_addr(zref,p_par(29))
     call copy_addr(n_pot,p_par(30))
+    call copy_addr(reduced_top,p_par(31))
 
     endsubroutine pushpars2c
 !***********************************************************************

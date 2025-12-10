@@ -16,6 +16,8 @@ contains
     integer, save :: iglobal_gg,iglobal_glnTT,ierr
     integer, save, dimension(mcom,2) :: enum_bcx12,enum_bcy12,enum_bcz12
     logical, save :: lfreeze_var_all = .false.
+    logical, save :: luses_aa_pot2_top = .false.
+    integer :: j
 
     call copy_addr(ncoarse,p_par(1)) ! int
     call copy_addr(lcoarse,p_par(2)) ! bool
@@ -389,9 +391,10 @@ contains
     
     call copy_addr(lread_scl_factor_file,p_par(1315)) ! bool
     
-    call string_to_enum(enum_bcx12, bcx12)
-    call string_to_enum(enum_bcy12, bcy12)
-    call string_to_enum(enum_bcz12, bcz12)
+    !TP: not using these at the moment so no need for the warnings
+    !call string_to_enum(enum_bcx12, bcx12)
+    !call string_to_enum(enum_bcy12, bcy12)
+    !call string_to_enum(enum_bcz12, bcz12)
     call copy_addr(enum_bcx12,p_par(1318)) ! int (mcom) (2)
     call copy_addr(enum_bcy12,p_par(1319)) ! int (mcom) (2)
     call copy_addr(enum_bcz12,p_par(1320)) ! int (mcom) (2)
@@ -448,6 +451,10 @@ contains
     call copy_addr(read_vtxbuf_from_gpu,p_par(1395)) ! int (mfarray)
     call copy_addr(iby,p_par(1396)) ! int
     call copy_addr(ibb,p_par(1397)) ! int
+    do j = 1,mvar
+        if(bcz12(j,TOP) == 'pot') luses_aa_pot2_top = .true.
+    enddo
+    call copy_addr(luses_aa_pot2_top,p_par(1398)) ! bool
 
   endsubroutine pushpars2c
 !***********************************************************************

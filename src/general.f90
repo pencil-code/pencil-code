@@ -7899,6 +7899,8 @@ iloop:do i=1,size(list2)
         dst = enum_ct1_string
       case('ultra_slow_roll1')
         dst = enum_ultra_slow_roll1_string
+      case('reduced_top')
+        dst = enum_reduced_top_string
       case('waterfall')
         dst = enum_waterfall_string
       case default

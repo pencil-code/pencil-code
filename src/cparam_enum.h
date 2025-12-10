@@ -936,3 +936,4 @@ integer, parameter :: enum_1s_string = 930
 integer, parameter :: enum_ct1_string = 931
 integer, parameter :: enum_waterfall_string = 932
 integer, parameter :: enum_ultra_slow_roll1_string = 933
+integer, parameter :: enum_reduced_top_string = 934
