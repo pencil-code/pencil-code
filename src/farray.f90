@@ -11,9 +11,9 @@
 !
 module FArrayManager
 !
-  use Cparam, only: mvar,maux,mglobal,maux_com,mscratch,max_n_odevars
+  use Cparam, only: mvar,maux,mglobal,maux_com,mscratch,lgpu
   use Cdata, only: nvar,naux,nscratch,nglobal,naux_com,datadir,lroot,lwrite_aux,lreloading, &
-                   n_odevars,f_ode, df_ode, lode
+                   n_odevars,f_ode,df_ode,lode,f_ode_diagnostics
   use HDF5_IO
   use Messages
 !
@@ -425,22 +425,16 @@ module FArrayManager
         n_odevars = n_odevars+nvar_
 
       endif
+
     endsubroutine farray_register_ode
 !***********************************************************************
     subroutine farray_finalize_ode
 
-      !TP: We unfortunately seem have to know the dimension of f_ode
-      !    for the dispatching functionality of special.f90 to work for calc_ode_diagnostics_special
-      !    (if using (:) dimensions I get segfaults).
-      !    Lying to the compiler that f_ode has dimension of max_n_odevars in
-      !    the appropriate funcs could work but that seems like a more major sin
-      if (n_odevars > max_n_odevars) then
-          call fatal_error ("farray_finalize_ode", "can have only 100 ode variables at most!")
-      endif
       if (n_odevars>0) then
         lode=.true.
-        allocate(f_ode(max_n_odevars),df_ode(n_odevars))
+        allocate(f_ode(n_odevars),df_ode(n_odevars))
         f_ode=0.
+        if (lgpu) allocate(f_ode_diagnostics(n_odevars))  ! needed for concurrent calcul. of ODE-related diagnostics
       endif
 
     endsubroutine farray_finalize_ode

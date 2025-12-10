@@ -970,7 +970,7 @@ endsubroutine helper_loop
   call initialize_timestep
   call initialize_modules(f)
   call initialize_boundcond(f)
-
+!
 !TP: done here that at runtime_compilation we know which pencils are requested
 !
 !  Find out which pencils are needed and write information about required,
@@ -1108,7 +1108,7 @@ endsubroutine helper_loop
 !$    if (omp_get_thread_num() == i) call create_communicators
 !$  enddo
 !$omp barrier
-  call mpibarrier
+    call mpibarrier
 !$  if (omp_get_thread_num() == 0) then
 !
 !  Start timing for final timing statistics.

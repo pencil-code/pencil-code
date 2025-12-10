@@ -26,7 +26,6 @@ module Equ
   real, dimension(:,:,:)  , pointer :: p_fnamex, p_fnamey, p_fnamez, p_fnamexy, p_fnamexz
   real, dimension(:,:,:,:), pointer :: p_fnamerz
   integer, dimension(:,:) , pointer :: p_ncountsz
-  real, allocatable, dimension(:) :: f_ode_diagnostics
 !
   contains
 !***********************************************************************
@@ -301,10 +300,7 @@ module Equ
         if (ldiagnostic_output) then
           !wait in case the last diagnostic tasks are not finished
           call copy_farray_from_GPU(f)
-          if (lode .and. lgpu) then
-            if (.not. allocated(f_ode_diagnostics)) allocate(f_ode_diagnostics(max_n_odevars))
-            f_ode_diagnostics = f_ode
-          endif
+          if (lode) f_ode_diagnostics = f_ode
 !$        lmasterflags(PERF_DIAGS) = .true.
         endif
         start_time = mpiwtime()
@@ -709,17 +705,20 @@ module Equ
 !!$    enddo
 !$omp barrier
 
-
 !$omp end parallel   ! all helper threads
 
       endsubroutine calc_all_module_diagnostics
 !*****************************************************************************
       subroutine calc_all_before_boundary_diagnostics(f)
+
         use Density, only: density_before_boundary_diagnostics
+
         real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
+
         !$omp parallel if (.not. lsuppress_parallel_reductions) num_threads(num_helper_threads)
                 call density_before_boundary_diagnostics(f)
         !$omp end parallel
+
       endsubroutine calc_all_before_boundary_diagnostics
 !*****************************************************************************
       subroutine perform_diagnostics(f,p)
@@ -1775,7 +1774,7 @@ module Equ
 
     endsubroutine set_dt1_max
 !***********************************************************************
- subroutine test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,cpu_version)
+    subroutine test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,cpu_version)
 !
 !  Used to test the CPU rhs vs the DSL code
 !
@@ -1799,7 +1798,6 @@ module Equ
       real, dimension (:,:,:,:), allocatable :: f_copy,f_diff,df_tmp,df_copy,f_beta,f_abs_diff
       real, dimension(5) :: beta_ts,alpha_ts
 
-
       integer :: i
 
       interface
@@ -1822,8 +1820,9 @@ module Equ
         endsubroutine cpu_version
       endinterface
 
-      allocate(f_copy(mx,my,mz,mfarray),f_diff(mx,my,mz,mfarray),df_tmp(mx,my,mz,mvar)&
-               ,df_copy(mx,my,mz,mvar),f_beta(mx,my,mz,mfarray))
+      allocate(f_copy(mx,my,mz,mfarray),f_diff(mx,my,mz,mfarray),df_tmp(mx,my,mz,mvar), &
+               df_copy(mx,my,mz,mvar),f_beta(mx,my,mz,mfarray))
+
       beta_ts =(/ 1/3.0, 15/16.0,    8/15.0 , 0.0, 0.0 /)
       alpha_ts=(/   0.0, -5/9.0 , -153/128.0, 0.0, 0.0 /)
 
@@ -1835,7 +1834,7 @@ module Equ
       do itsub = 1,num_substeps
         !df_tmp = 0.0
         lfirst = (itsub == 1)
-        if(.not. lfirst) df_copy = alpha_ts(itsub)*df_copy
+        if (.not. lfirst) df_copy = alpha_ts(itsub)*df_copy
         call before_boundary_gpu(f,lrmv,itsub,t)
         call rhs_gpu(f,itsub)
 
@@ -1853,10 +1852,10 @@ module Equ
         call cpu_version(f_copy,df_copy,p,mass_per_proc,early_finalize)
         !df_copy = df_copy + df_tmp
         call freeze(df_copy,p)
-        if(itorder == 1) then
-                f_copy(l1:l2,m1:m2,n1:n2,1:mvar) = f_copy(l1:l2,m1:m2,n1:n2,1:mvar) + df_copy(l1:l2,m1:m2,n1:n2,:)*dt
+        if (itorder == 1) then
+          f_copy(l1:l2,m1:m2,n1:n2,1:mvar) = f_copy(l1:l2,m1:m2,n1:n2,1:mvar) + df_copy(l1:l2,m1:m2,n1:n2,:)*dt
         else
-                f_copy(l1:l2,m1:m2,n1:n2,1:mvar) = f_copy(l1:l2,m1:m2,n1:n2,1:mvar) + dt*beta_ts(itsub)*df_copy(l1:l2,m1:m2,n1:n2,:)
+          f_copy(l1:l2,m1:m2,n1:n2,1:mvar) = f_copy(l1:l2,m1:m2,n1:n2,1:mvar) + dt*beta_ts(itsub)*df_copy(l1:l2,m1:m2,n1:n2,:)
         endif
 
         call copy_farray_from_GPU(f,.true.)
@@ -1926,11 +1925,12 @@ module Equ
           print*,"Max comp loc  for ",i,": ",maxloc(f_diff(l1:l2,m1:m2,n1:n2,i))
         enddo
       endif
-      print*,"Max comp loc abs diff: ",maxloc(f_abs_diff(l1:l2,m1:m2,n1:n2,1:mvar)),maxval(f_abs_diff(l1:l2,m1:m2,n1:n2,1:mvar))
+      print*,"Max comp loc abs diff: ",maxloc(f_abs_diff(l1:l2,m1:m2,n1:n2,1:mvar)), &
+                                       maxval(f_abs_diff(l1:l2,m1:m2,n1:n2,1:mvar))
+
       call test_gpu_bcs
+      call die_gracefully
 
-    call die_gracefully
-
-  endsubroutine test_rhs_gpu
+    endsubroutine test_rhs_gpu
 !***********************************************************************
 endmodule Equ

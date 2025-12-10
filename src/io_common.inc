@@ -146,7 +146,7 @@
 !***********************************************************************
     subroutine input_ode(file)
 !
-!  Write ODE snapshot file with time.
+!  Read ODE snapshot file with time.
 !
 !  08-Sep-2023/MR: coded
 !

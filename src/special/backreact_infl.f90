@@ -605,9 +605,13 @@ module Special
     endsubroutine dspecial_dt
 !***********************************************************************
     subroutine read_sums_from_device
+
       use GPU, only: get_gpu_reduced_vars
+
       real, dimension(10) :: tmp
+
       call get_gpu_reduced_vars(tmp)
+
       a2rhom_all     = tmp(1)
       a2rhopm_all    = tmp(2)
       a2rhophim_all  = tmp(3)
@@ -636,11 +640,9 @@ module Special
 !
       use SharedVariables, only: get_shared_variable
 !
-      if(lgpu) call read_sums_from_device
+      if (lgpu) call read_sums_from_device
       call get_Hscript_and_a2(Hscript,a2rhom_all)
-      if (lflrw) then
-        df_ode(iinfl_lna)=df_ode(iinfl_lna)+Hscript
-      endif
+      if (lflrw) df_ode(iinfl_lna)=df_ode(iinfl_lna)+Hscript
 !
 !  Energy density of the charged particles.
 !  This is currently only done for <sigE>*<E^2>, and not for <sigE*E^2>.
@@ -663,9 +665,9 @@ module Special
 !  Diagnostics
 !
     if (.not. lmultithread) then
-            sigEm_all_diagnos = sigEm_all
-            sigBm_all_diagnos = sigBm_all
-            call calc_ode_diagnostics_special(f_ode)
+      sigEm_all_diagnos = sigEm_all
+      sigBm_all_diagnos = sigBm_all
+      call calc_ode_diagnostics_special(f_ode)
     endif
 !
     endsubroutine dspecial_dt_ode
@@ -674,7 +676,7 @@ module Special
 !
       use Diagnostics 
       
-      real, dimension(max_n_odevars), intent(in) :: f_ode
+      real, dimension(n_odevars), intent(in) :: f_ode
       real :: rho_chi, lnascale
       real :: Hscript_diagnos
 
@@ -686,7 +688,7 @@ module Special
 
       if (ldiagnos) then
         call get_Hscript_and_a2(Hscript_diagnos,a2rhom_all_diagnos)
-        if(lflrw) lnascale=f_ode(iinfl_lna)
+        if (lflrw) lnascale=f_ode(iinfl_lna)
         call save_name(Hscript_diagnos,idiag_Hscriptm)
         call save_name(lnascale,idiag_lnam)
         call save_name(ddotam_all_diagnos,idiag_ddotam)
@@ -706,6 +708,7 @@ module Special
     subroutine calc_diagnostics_special(f,p)
 !
       use Diagnostics
+
       real, dimension(mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
 ! alberto: changed to use the pencils p%infl_phi and p%infl_dphi
@@ -894,7 +897,8 @@ module Special
     subroutine get_a2
 !
       real :: lnascale
-      if(lflrw) then
+
+      if (lflrw) then
         lnascale=f_ode(iinfl_lna)
         ascale=exp(lnascale)
       endif
@@ -918,7 +922,6 @@ module Special
 !
 ! TP: to avoid code duplication could this function not be combined with the copy of it in
 !     klein_gordon.f90? We could make an appropriate module and call it from there
-!
 !
 !  If requested, calculate here <dphi**2+gphi**2+(4./3.)*(E^2+B^2)/a^2>.
 !  This needs to be done on all processors, because otherwise ascale
@@ -982,9 +985,7 @@ module Special
       a2rhogphim_all_diagnos = a2rhogphim_all
       ddotam_all_diagnos     = ddotam_all
 
-      if (lroot .and. lflrw) then
-              call get_Hscript_and_a2(Hscript,a2rhom_all)
-      endif
+      if (lroot .and. lflrw) call get_Hscript_and_a2(Hscript,a2rhom_all)
 !
 !  Broadcast to other processors, and each processor uses put_shared_variable
 !  to get the values to other subroutines.

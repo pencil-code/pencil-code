@@ -796,28 +796,38 @@
     endsubroutine special_particles_after_dtsub
 !***********************************************************************
     subroutine calc_diagnostics_special(f,p)
+
       real, dimension(mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
-      
       integer :: i
+
       do i=1,n_special_modules
         call caller2(special_sub_handles(i,I_CALC_DIAGNOSTICS_SPECIAL),f,p)
       enddo
+
     endsubroutine calc_diagnostics_special
 !***********************************************************************
     subroutine load_variables_to_gpu_special
+
       integer :: i
+
       do i=1,n_special_modules
         call caller0(special_sub_handles(i,I_LOAD_VARIABLES_TO_GPU_SPECIAL))
       enddo
+
     endsubroutine load_variables_to_gpu_special
 !***********************************************************************
     subroutine calc_ode_diagnostics_special(f_ode)
-      real, dimension(max_n_odevars), intent(IN) :: f_ode
+
+      use Cdata, only: n_odevars
+
+      real, dimension(n_odevars), intent(IN) :: f_ode
       integer :: i
+
       do i=1,n_special_modules
         call caller1(special_sub_handles(i,I_CALC_ODE_DIAGNOSTICS_SPECIAL),f_ode)
       enddo
+
     endsubroutine calc_ode_diagnostics_special
 !***********************************************************************
     subroutine pushpars2c(p_par)
@@ -832,10 +842,13 @@
     endsubroutine pushpars2c
 !*********************************************************************** 
     subroutine prep_rhs_special
+
       integer :: i
+
       do i=1,n_special_modules
         call caller0(special_sub_handles(i,I_PREP_RHS_SPECIAL))
       enddo
+
     endsubroutine prep_rhs_special
 !***********************************************************************
   endmodule Special

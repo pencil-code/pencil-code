@@ -1126,12 +1126,13 @@ module Special
 !
     endsubroutine dspecial_dt_ode
 !***********************************************************************
-    subroutine     calc_ode_diagnostics_special(f_ode)
+    subroutine calc_ode_diagnostics_special(f_ode)
 !
 !  29-jul-25/TP: carved from dspecial_dt_ode
 !
       use Diagnostics
-      real, dimension(max_n_odevars), intent(IN) :: f_ode
+
+      real, dimension(n_odevars), intent(IN) :: f_ode
       real :: Qddot,chiddot,phiddot
 
       call calc_ode_dt(f_ode,Qddot,chiddot,phiddot,grand_sum_diagnos,dgrant_sum_diagnos)
@@ -1148,7 +1149,8 @@ module Special
         call save_name(f_ode(iaxi_phidot),idiag_phidot)
         call save_name(H     ,idiag_H)
       endif
-    endsubroutine  calc_ode_diagnostics_special 
+
+    endsubroutine calc_ode_diagnostics_special 
 !***********************************************************************
     subroutine read_special_init_pars(iostat)
 !

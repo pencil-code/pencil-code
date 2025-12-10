@@ -392,7 +392,7 @@ module Cdata
 !  Type counters.
 !
   integer :: nvar,naux,naux_com,nscratch,nglobal,n_odevars=0
-  real, dimension(:), allocatable :: f_ode, df_ode
+  real, dimension(:), allocatable :: f_ode, df_ode, f_ode_diagnostics
   logical :: lode=.false.
 !
 !  Variable indices (default zero, set later by relevant physics modules).
@@ -916,6 +916,7 @@ module Cdata
 !$omp threadprivate(t,tspec,tdiagnos,t1ddiagnos,t2davgfirst,tslice,tsound,itdiagnos,dtdiagnos,eps_rkf_diagnos)
 !$omp threadprivate(maxdiffus,maxadvec,advec2,advec_cs2)
 !
+  logical :: lsplit_gw_rhs_from_rest_on_gpu=.false.
 ! For use in offloaded code:
 !!$omp declare target(ldensity_nolog,l2,m2,n2)
 !

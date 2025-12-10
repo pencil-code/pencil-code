@@ -1098,7 +1098,7 @@ module Special
   
       use Diagnostics 
       
-      real, dimension(max_n_odevars), intent(in) :: f_ode
+      real, dimension(n_odevars), intent(in) :: f_ode
       real :: rho_chi, lnascale
       real :: Hscript_diagnos
 

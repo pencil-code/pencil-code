@@ -690,14 +690,21 @@ module Special
     endfunction output_persistent_special
 !***********************************************************************
     subroutine calc_diagnostics_special(f,p)
+
       real, dimension(mx,my,mz,mvar) :: f
       type (pencil_case) :: p
+
+      call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
+
     endsubroutine calc_diagnostics_special
 !***********************************************************************
-    subroutine     calc_ode_diagnostics_special(f_ode)
+    subroutine calc_ode_diagnostics_special(f_ode)
+
       real, dimension(:) :: f_ode
+
       call keep_compiler_quiet(f_ode)
+
     endsubroutine     calc_ode_diagnostics_special 
 !***********************************************************************
     subroutine load_variables_to_gpu_special
