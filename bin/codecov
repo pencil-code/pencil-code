@@ -21,4 +21,6 @@ rm -rf lcov_html
 
 geninfo "$PENCIL_HOME"/samples -b "$PENCIL_HOME"/src -o pencil-codecov.info --ignore-errors inconsistent,inconsistent --filter missing --parallel "$njobs"
 
-genhtml --output-directory "$PENCIL_HOME"/lcov_html pencil-codecov.info
+#NOTE: when I use --show-details, it fails with
+# genhtml: ERROR: unexpected branch TLA UNC for count 0
+genhtml --show-proportion --hierarchical --show-navigation --parallel "$njobs" --output-directory "$PENCIL_HOME"/lcov_html pencil-codecov.info
