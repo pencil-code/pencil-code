@@ -72,11 +72,10 @@ done
 
 #clean up old files
 find "$pencil_home"/samples -type f -name coverage.info -execdir rm {} \;
-rm -f "$pencil_home"/pencil-codecov.info
 find "$output_dir" -type f -execdir rm {} \;
 
-geninfo "$pencil_home"/samples -b "$pencil_home"/src -o "$pencil_home"/pencil-codecov.info --ignore-errors inconsistent,inconsistent --filter missing --parallel "$jobs"
+geninfo "$pencil_home"/samples -b "$pencil_home"/src -o "$output_dir"/pencil-codecov.info --ignore-errors inconsistent,inconsistent --filter missing --parallel "$jobs"
 
 #NOTE: when I use --show-details, it fails with
 # genhtml: ERROR: unexpected branch TLA UNC for count 0
-genhtml --show-proportion --hierarchical --show-navigation --parallel "$jobs" --output-directory "$output_dir" "$pencil_home"/pencil-codecov.info
+genhtml --show-proportion --hierarchical --show-navigation --parallel "$jobs" --output-directory "$output_dir" "$output_dir"/pencil-codecov.info
