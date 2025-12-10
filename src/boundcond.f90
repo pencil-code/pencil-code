@@ -681,6 +681,17 @@ module Boundcond
 
     endsubroutine boundconds_x_c
 !***********************************************************************
+    subroutine bc_sts(f,topbot,j)
+      use EquationOfState, only: bc_stellar_surface
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer, intent(IN) ::  topbot,j
+      !Normal usage of StS assumes that StS is set for both ilnrho and ilnTT.
+      !But since bc_stellar_surface sets both of them need to call it only once
+      if(j == ilnrho) then
+        call bc_stellar_surface(f,topbot)
+      endif
+    endsubroutine bc_sts
+!***********************************************************************
     subroutine boundconds_x(f,ivar1_opt,ivar2_opt)
 !
 !  Boundary conditions in x, except for periodic part handled by communication.
@@ -1610,7 +1621,7 @@ module Boundcond
                 call bc_one_z(f,topbot,j)
               case ('StS')
                 ! BCZ_DOC: solar surface boundary conditions
-                call bc_stellar_surface(f,topbot)
+                call bc_sts(f,topbot,j)
               case ('set')
                 ! BCZ_DOC: set boundary value
                 call bc_sym_z(f,topbot,j,-1,REL=.true.,VAL=fbcz(j,topbot))
@@ -2139,7 +2150,7 @@ module Boundcond
             !call bc_frozen_in_bb(topbot,j)
             !call bc_sym_z(f,topbot,j,-1,REL=.true.) ! antisymm wrt boundary
           case ('StS')
-            if (j/=ilnrho) then; errmsg=' not allowed for variable no. '//trim(cjvar); goto 30; endif
+            if (j/=ilnrho .and. j /= ilnTT) then; errmsg=' not allowed for variable no. '//trim(cjvar); goto 30; endif
           case ('div')
             ! BCZ: set the divergence of $\uv$ to a given value
             ! BCZ: use bc = 'div' for iuz
