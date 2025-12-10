@@ -1,6 +1,12 @@
 #!/bin/bash
 #
-# Generate code coverage reports. Before running this script, pc_auto-test should've been run with the --coverage flag.
+# Generate code coverage reports. Before running this script, pc_auto-test
+# should've been run with the --coverage flag. It is recommended to also use
+# the -C flag in case this is the first time you are generating code coverage
+# reports
+# 
+# Known issues:
+# - Information on which tests access a particular line is not displayed.
 #
 # 2025-Dec-09/Kishore: coded
 
