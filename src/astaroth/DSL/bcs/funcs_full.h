@@ -4055,7 +4055,7 @@ bc_sts(AcBoundary boundary,AC_TOP_BOT topbot,Field j)
   real dlnttdz_2
   real fac_2
   int i_2
-  if(j == AC_ilnrho__mod__cdata) {
+  if(j == AC_ilnrho__mod__cdata-1) {
     if(topbot == AC_bot) {
       if (AC_ldensity_nolog__mod__cdata) {
         if (AC_lreference_state__mod__cdata) {
