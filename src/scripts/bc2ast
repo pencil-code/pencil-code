@@ -90,7 +90,7 @@ if [[ ${lperi[0]} == 'T' ]]; then
   echo 'periodic(BOUNDARY_X)'
 else
   boundcond_sed x
-  for (( i=0; i<$mcom-1; i++ )); do 
+  for (( i=0; i<$mcom; i++ )); do 
     make_ac_bound_cond ${bot[$i]} Field\(${i}\) X BOT
     make_ac_bound_cond ${top[$i]} Field\(${i}\) X TOP
   done
@@ -101,7 +101,7 @@ if [[ ${lperi[1]} == 'T' ]]; then
   echo 'periodic(BOUNDARY_Y)'
 else
   boundcond_sed y
-  for (( i=0; i<$mcom-1; i++ )); do 
+  for (( i=0; i<$mcom; i++ )); do 
     make_ac_bound_cond ${bot[$i]} Field\(${i}\) Y BOT
     make_ac_bound_cond ${top[$i]} Field\(${i}\) Y TOP
   done
@@ -112,7 +112,7 @@ if [[ ${lperi[2]} == 'T' ]]; then
   echo 'periodic(BOUNDARY_Z)'
 else
   boundcond_sed z
-  for (( i=0; i<$mcom-1; i++ )); do 
+  for (( i=0; i<$mcom; i++ )); do 
     make_ac_bound_cond ${bot[$i]} Field\(${i}\) Z BOT
     make_ac_bound_cond ${top[$i]} Field\(${i}\) Z TOP
   done
