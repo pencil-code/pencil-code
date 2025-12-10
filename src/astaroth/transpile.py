@@ -28,7 +28,7 @@ def main():
 
     os.system(command)
     os.system("rm res-inlined.txt")
-    rhs_already_exists = os.path.exists("DSL/local/GW-rhs.h") and os.path.exists("DSL/local/mhdsolver.ac") and not os.system("diff mhdsolver-rhs.inc DSL/local/mhdsolver.ac")
+    rhs_already_exists = os.path.exists("DSL/local/GW-rhs.h") and os.path.exists("DSL/local/mhdsolver.ac") and not os.system("diff mhdsolver-rhs.inc DSL/local/mhdsolver.ac") and not os.system("diff GW-rhs.ac DSL/local/GW-rhs.h")
     if (rhs_already_exists): 
         return
     os.system("mv mhdsolver-rhs.inc DSL/local/mhdsolver.ac")
