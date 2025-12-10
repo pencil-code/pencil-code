@@ -14,24 +14,6 @@ if test -e lcov_html; then
 	rm -r lcov_html
 fi
 
-#copying below from https://stackoverflow.com/questions/60544108/merge-lcov-results-in-one-report-and-keep-the-test-ids-testing-each-line , but as a comment says there, there does not seem to be any information on which test hits which line.
-find "$PENCIL_HOME"/samples -type d -name src -execdir \
-	geninfo --quiet {} --base-directory "$PENCIL_HOME"/src \
-		--output-filename coverage.info \
-		--ignore-errors inconsistent,inconsistent \
-		--ignore-errors empty,empty --filter missing \;
-
-readarray -d '' codecov_files < <(find "$PENCIL_HOME"/samples -type f -name coverage.info -print0)
-command_line=""
-for filename in "${codecov_files[@]}"; do
-	#DANGER: pray that $filename does not have spaces
-	command_line="$command_line -a $filename"
-done
-
-if test -z "$command_line"; then
-	echo "No coverage.info files were found"
-	exit 1
-fi
-lcov $command_line --output-file pencil-codecov.info --parallel "$njobs"
+geninfo "$PENCIL_HOME"/samples -b "$PENCIL_HOME"/src -o pencil-codecov.info --ignore-errors inconsistent,inconsistent --filter missing --parallel "$njobs"
 
 genhtml --output-directory "$PENCIL_HOME"/lcov_html pencil-codecov.info
