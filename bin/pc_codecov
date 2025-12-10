@@ -70,6 +70,10 @@ while true; do
 done
 # END option parsing
 
+if not test -e "$output_dir"; then
+    mkdir -p "$output_dir"
+fi
+
 #clean up old files
 find "$pencil_home"/samples -type f -name coverage.info -exec rm {} \;
 find "$output_dir" -type f -exec rm {} \;
