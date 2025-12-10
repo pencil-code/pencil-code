@@ -3677,7 +3677,6 @@ file_io_f95.o: file_io_f95.f90
 	$(FC) $(ALL_COMP_FLAGS) $(FSTD_95) -o file_io_f95.o -c file_io_f95.f90
 special.o: special_tmp.f90
 	$(FC) $(ALL_COMP_FLAGS) $(FSTD) $(ALLOW_ARG_MISMATCH) -o special.o -c special_tmp.f90
-	@rm -f special_tmp.f90
 #
 #  TAGS file for Emacs.
 #  $(TAG_SOURCE) requires nofftpack.f90 or fft.f90 to exist, so we
