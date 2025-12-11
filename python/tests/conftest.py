@@ -6,7 +6,7 @@ import tempfile
 
 import pencil as pc
 from test_utils import (
-    get_rundir,
+    compile_and_run_sample,
     _require_sample_markers,
     )
 
@@ -28,37 +28,12 @@ def pytest_addoption(parser):
 
 @pytest.fixture(scope='session')
 def datadir_conv_slab_noequi():
-    rundir = get_rundir("samples/conv-slab-noequi")
-    sim = pc.sim.get(rundir, quiet=True)
-
-    if sim is False:
-        raise RuntimeError(f"Could not get simulation in {rundir}")
-
-    sim.compile(
-        bashrc=False,
-        cleanall=False,
-        autoclean=True,
-        raise_errors=True,
-        )
-    sim.run(bashrc=False, cleardata=True, raise_errors=True)
-
+    sim = compile_and_run_sample("samples/conv-slab-noequi")
     return sim.datadir
 
 @pytest.fixture(scope='session')
 def datadir_conv_slab():
-    rundir = get_rundir("samples/conv-slab")
-    sim = pc.sim.get(rundir, quiet=True)
-
-    if sim is False:
-        raise RuntimeError(f"Could not get simulation in {rundir}")
-
-    sim.compile(
-        bashrc=False,
-        cleanall=False,
-        autoclean=True,
-        raise_errors=True,
-        )
-    sim.run(bashrc=False, cleardata=True, raise_errors=True)
+    sim = compile_and_run_sample("samples/conv-slab")
 
     sim.bash(
         "pc_build -t read_all_videofiles",
@@ -77,56 +52,17 @@ def datadir_conv_slab():
 
 @pytest.fixture(scope='session')
 def datadir_conv_slab_cp_2():
-    rundir = get_rundir("samples/conv-slab_cp_2")
-    sim = pc.sim.get(rundir, quiet=True)
-
-    if sim is False:
-        raise RuntimeError(f"Could not get simulation in {rundir}")
-
-    sim.compile(
-        bashrc=False,
-        cleanall=False,
-        autoclean=True,
-        raise_errors=True,
-        )
-    sim.run(bashrc=False, cleardata=True, raise_errors=True)
-
+    sim = compile_and_run_sample("samples/conv-slab_cp_2")
     return sim.datadir
 
 @pytest.fixture(scope='session')
 def datadir_helical_MHDTurb_HDF5():
-    rundir = get_rundir("samples/helical-MHDturb_HDF5")
-    sim = pc.sim.get(rundir, quiet=True)
-
-    if sim is False:
-        raise RuntimeError(f"Could not get simulation in {rundir}")
-
-    sim.compile(
-        bashrc=False,
-        cleanall=False,
-        autoclean=True,
-        raise_errors=True,
-        )
-    sim.run(bashrc=False, cleardata=True, raise_errors=True)
-
+    sim = compile_and_run_sample("samples/helical-MHDturb_HDF5")
     return sim.datadir
 
 @pytest.fixture(scope='session')
 def datadir_helical_MHDTurb():
-    rundir = get_rundir("samples/helical-MHDturb")
-    sim = pc.sim.get(rundir, quiet=True)
-
-    if sim is False:
-        raise RuntimeError(f"Could not get simulation in {rundir}")
-
-    sim.compile(
-        bashrc=False,
-        cleanall=False,
-        autoclean=True,
-        raise_errors=True,
-        )
-    sim.run(bashrc=False, cleardata=True, raise_errors=True)
-
+    sim = compile_and_run_sample("samples/helical-MHDturb")
     return sim.datadir
 
 @pytest.fixture
