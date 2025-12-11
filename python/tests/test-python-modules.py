@@ -294,8 +294,13 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.full:
-        if not coverage_pkg_present:
+        report_coverage = (not args.fast)
+        if report_coverage and not coverage_pkg_present:
             raise RuntimeError("`coverage` (Python package) must be installed to use the --full option.")
-        call_tox(output_dir = pathlib.Path(args.outputdir), fast=args.fast)
+        call_tox(
+            output_dir = pathlib.Path(args.outputdir),
+            fast=args.fast,
+            report_coverage=report_coverage,
+            )
     else:
         call_pytest(fast=args.fast)
