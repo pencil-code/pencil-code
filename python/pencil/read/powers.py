@@ -99,6 +99,11 @@ class Power(object):
                 self._read_power_krms(power_name, file_name, datadir)
             else:
                 self._read_power(power_name, file_name, datadir)
+
+        # 11-Dec-2025/Kishore: It is unclear what the point of time_range is;
+        # 11-Dec-2025/Kishore: the slicing only happens after everything has
+        # 11-Dec-2025/Kishore: been parsed and read into memory! Fred, do you
+        # 11-Dec-2025/Kishore: find this option useful?
         if time_range:
             if isinstance(time_range, list):
                 time_range = time_range
