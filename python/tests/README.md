@@ -26,8 +26,12 @@ $PENCIL_HOME/python/tests/test-python-modules.py --full
 ### Requirements
 
 - A Python interpreter should be in `$PATH` (e.g. `/usr/bin/python3`).
-- [_Tox_](https://tox.wiki/) (Python package) should be installed.
+- [_Tox_](https://tox.wiki/) (Python package) should be installed (at least version 4).
 - For the code coverage report, [_Coverage_](https://pypi.org/project/coverage/) (Python package) should also be installed.
+
+The required Python packages are available in the Ubuntu repositories as
+- `tox`
+- `python3-coverage`
 
 ### Notes
 
