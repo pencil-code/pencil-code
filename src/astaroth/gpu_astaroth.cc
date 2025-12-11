@@ -1553,11 +1553,15 @@ fourier_boundary_conditions()
 {
 	if(luses_aa_pot2_top)
 	{
+		acKernelInputParams params{};
+		params.bc_aa_pot2_kernel.boundary = BOUNDARY_Z_TOP;
+		params.bc_aa_pot2_kernel.topbot  = AC_top;
+		const AcKernel kernel = acGetOptimizedKernel(bc_aa_pot2_kernel,params);
 		const size_t z_offset = (size_t)mesh.info[AC_nlocal_max].z-1;
 		acDeviceFFTR2PlanarXY(acGridGetDevice(), acGetAAX(), acGetAX_FOURIER_REAL(), acGetAX_FOURIER_IMAG(), z_offset);
 		acDeviceFFTR2PlanarXY(acGridGetDevice(), acGetAAY(), acGetAY_FOURIER_REAL(), acGetAY_FOURIER_IMAG(), z_offset);
 		acDeviceFFTR2PlanarXY(acGridGetDevice(), acGetAAZ(), acGetAZ_FOURIER_REAL(), acGetAZ_FOURIER_IMAG(), z_offset);
-		acDeviceLaunchKernel(acGridGetDevice(), STREAM_DEFAULT, bc_aa_pot2_kernel, (Volume){NGHOST,NGHOST,z_offset}, 
+		acDeviceLaunchKernel(acGridGetDevice(), STREAM_DEFAULT, kernel, (Volume){NGHOST,NGHOST,z_offset}, 
 				(Volume){(size_t)mesh.info[AC_nlocal_max].x,(size_t)mesh.info[AC_nlocal_max].y, z_offset+1}
 				);
   		acDeviceSynchronizeStream(acGridGetDevice(),STREAM_DEFAULT);
@@ -2410,7 +2414,7 @@ void testBCs()
   acGridSynchronizeStream(STREAM_ALL);
   acGridExecuteTaskGraph(bcs,1);
   acGridSynchronizeStream(STREAM_ALL);
-
+  fourier_boundary_conditions();
   acGridSynchronizeStream(STREAM_ALL);
   acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh_to_copy);
   acGridSynchronizeStream(STREAM_ALL);
@@ -2428,7 +2432,7 @@ void testBCs()
   AcReal gpu_val_for_largest_diff{};
   AcReal true_val_for_largest_diff{};
   AcReal epsilon = (AcReal)pow(10.0,-12.0);
-  int3 largest_diff_point{};
+  int4 largest_diff_point{};
   //AcReal epsilon = 0.0;
 
   auto skip_x = nxgrid == 1 || acGridTaskGraphHasPeriodicBoundcondsX(rhs);
@@ -2490,7 +2494,7 @@ void testBCs()
                 max_abs_relative_difference=(abs_diff/true_val);
                 gpu_val_for_largest_diff = out_val;
                 true_val_for_largest_diff = true_val;
-		largest_diff_point = (int3){(int)i,(int)j,(int)k};
+		largest_diff_point = (int4){(int)i,(int)j,(int)k,(int)ivar};
               }
             }  
           }
@@ -2525,7 +2529,7 @@ void testBCs()
 	}
   	acLogFromRootProc(0,"max abs not passed val: %.7e\t%.7e\n",(double)max_abs_not_passed_val, (double)fabs(true_pair));
   	acLogFromRootProc(0,"max abs relative difference val: %.7e\n",(double)max_abs_relative_difference);
-  	acLogFromRootProc(0,"Point where biggest rel diff: %d,%d,%d\n",largest_diff_point.x,largest_diff_point.y,largest_diff_point.z);
+  	acLogFromRootProc(0,"Point where biggest rel diff: %d,%d,%d in Field: %s\n",largest_diff_point.x,largest_diff_point.y,largest_diff_point.z,acGetFieldName(Field(largest_diff_point.w)));
   	acLogFromRootProc(0,"largest difference: %.7e\t%.7e\n",(double)gpu_val_for_largest_diff, (double)true_val_for_largest_diff);
   	acLogFromRootProc(0,"abs range: %.7e-%7e\n",(double)min_abs_value,(double)max_abs_value);
     	acLogFromRootProc(0,"Did not pass BC test :(\n");
