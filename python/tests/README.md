@@ -27,6 +27,7 @@ $PENCIL_HOME/python/tests/test-python-modules.py --full
 
 - A Python interpreter should be in `$PATH` (e.g. `/usr/bin/python3`).
 - [_Tox_](https://tox.wiki/) (Python package) should be installed.
+- For the code coverage report, [_Coverage_](https://pypi.org/project/coverage/) (Python package) should also be installed.
 
 ### Notes
 
@@ -34,8 +35,7 @@ $PENCIL_HOME/python/tests/test-python-modules.py --full
 installed in an isolated environment).
 - If multiple Python versions are present on your system, the above command will
 run tests using all of them.
-- A HTML report, `report.html`, will be generated.
-- Tox has also been configured to generate a code coverage report (`./htmlcov/index.html`).
+- A HTML report, `report.html`, will be generated, with a link to the code coverage report.
 - Use the `--outputdir` option to change the location of the reports.
 
 
