@@ -1568,7 +1568,7 @@ fourier_boundary_conditions()
 }
 /***********************************************************************************************/
 void
-update_forcing()
+update_forcing(const int isubstep)
 {
 #if LFORCING
   //Update forcing params
@@ -1588,7 +1588,7 @@ extern "C" void substepGPU(int isubstep, double t)
 {
    //TP: logs performance metrics of Astaroth
   const bool log = false;
-  update_forcing();
+  update_forcing(isubstep);
   fourier_boundary_conditions();
   acDeviceSetInput(acGridGetDevice(), AC_step_num,(PC_SUB_STEP_NUMBER) (isubstep-1));
   if (lshear) 
