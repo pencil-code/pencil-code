@@ -17,15 +17,21 @@ try:
 except ImportError:
     coverage_pkg_present = False
 
-def call_pytest():
+def call_pytest(fast=False):
     #Keep this import here so that call_tox works without pytest installed.
     import pytest
+
+    if fast:
+        fast_flags = ["-x", "--failed-first"]
+    else:
+        fast_flags = []
 
     sys.exit(pytest.main([
         '-c',
         str(pathlib.Path(__file__).parent/"pytest.ini"),
         "-m",
         "not integration",
+        *fast_flags
         ]))
 
 def call_tox(output_dir, report_coverage=True):
