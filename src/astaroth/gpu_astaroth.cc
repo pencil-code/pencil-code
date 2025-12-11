@@ -1560,7 +1560,7 @@ prep_bsc()
 		acDeviceLaunchKernel(acGridGetDevice(), STREAM_DEFAULT, bc_aa_pot2_kernel, (Volume){NGHOST,NGHOST,z_offset}, 
 				(Volume){(size_t)mesh.info[AC_nlocal_max].x,(size_t)mesh.info[AC_nlocal_max].y, z_offset+1}
 				);
-  		acDeviceSynchronizeStream(acGridGetDevice(),STREAM_ALL);
+  		acDeviceSynchronizeStream(acGridGetDevice(),STREAM_DEFAULT);
 		acDeviceFFTBackwardTransformPlanar2RXY(acGridGetDevice(),  acGetAX_FOURIER_REAL(), acGetAX_FOURIER_IMAG(), acGetAAX(), z_offset);
 		acDeviceFFTBackwardTransformPlanar2RXY(acGridGetDevice(),  acGetAY_FOURIER_REAL(), acGetAY_FOURIER_IMAG(), acGetAAY(), z_offset);
 		acDeviceFFTBackwardTransformPlanar2RXY(acGridGetDevice(),  acGetAZ_FOURIER_REAL(), acGetAZ_FOURIER_IMAG(), acGetAAZ(), z_offset);
