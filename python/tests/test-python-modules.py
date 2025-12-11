@@ -11,6 +11,12 @@ import re
 import subprocess
 import sys
 
+try:
+    coverage_pkg_present = True
+    import coverage
+except ImportError:
+    coverage_pkg_present = False
+
 def call_pytest():
     #Keep this import here so that call_tox works without pytest installed.
     import pytest
@@ -22,7 +28,7 @@ def call_pytest():
         "not integration",
         ]))
 
-def call_tox(output_dir):
+def call_tox(output_dir, report_coverage=True):
     """
     output_dir: pathlib.Path instance
     """
@@ -37,6 +43,12 @@ def call_tox(output_dir):
 
     py_tests_dir = pathlib.Path(__file__).parent
 
+    if report_coverage:
+        subprocess.run(["coverage", "erase"], check=True)
+        coverage_flags = "--cov=pencil --cov-report= --cov-context=test --cov-append"
+    else:
+        coverage_flags = ""
+
     p = subprocess.Popen("bash", stdin=subprocess.PIPE, text=True)
     _, _ = p.communicate(
         f"""
@@ -45,9 +57,15 @@ def call_tox(output_dir):
             --result-json "{json_filename}" \
             --colored no \
             --override "testenv:report.commands=coverage html --directory='{htmlcov_dir}'" \
-            --override "testenv.setenv=PYTEST_ADDOPTS='--color=no'"
+            --override "testenv.setenv=PYTEST_ADDOPTS='--color=no'" \
+            -- \
+            {coverage_flags}
         """
         )
+
+    if report_coverage:
+        subprocess.run(["coverage", "html"], check=True)
+
     json_to_html(json_filename, output_dir/"report.html")
     sys.exit(p.returncode)
 
@@ -251,6 +269,8 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.full:
+        if not coverage_pkg_present:
+            raise RuntimeError("`coverage` (Python package) must be installed to use the --full option.")
         call_tox(output_dir = pathlib.Path(args.outputdir))
     else:
         call_pytest()
