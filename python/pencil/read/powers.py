@@ -6,6 +6,7 @@
 Contains the classes and methods to read the power spectra.
 """
 
+from collections.abc import Iterable
 import os
 import numpy as np
 from pencil import read
@@ -270,18 +271,10 @@ class Power(object):
                 power_re = np.empty([nt, *power_shape])
                 power_im = np.empty_like(power_re)
 
-                def get(key, it):
-                    try:
-                        val = f[f"{it+1}/{key}"][()]
-                    except KeyError as e:
-                        e.add_note(f"iteration = {it+1}")
-                        raise e
-                    return val
-
                 for it in range(nt):
-                    time[it] = get("time", it)
-                    power_re[it] = get("data_re", it)
-                    power_im[it] = get("data_im", it)
+                    time[it] = self._h5_get(f, "time", it)
+                    power_re[it] = self._h5_get(f, "data_re", it)
+                    power_im[it] = self._h5_get(f, "data_im", it)
 
         self.t = time
 
@@ -289,6 +282,66 @@ class Power(object):
         if power_array.shape[1] == 1:
             power_array = np.squeeze(power_array, axis=1)
         setattr(self, power_name, power_array)
+
+    def _read_power2d_hdf5_lazy(self, power_name, file_name, datadir):
+        """
+        Replacement for :py:meth:`Power._read_power2d_hdf5` that does not read
+        the entire data into memory (since it can be hundreds of GB). Rather,
+        the relevant part of the data is read into memory when the user indexes
+        `self.*_xy`.
+        Axis order of self.power_name will be [t,ivec,z,ky,kx] or [t,z,ky,kx].
+        """
+        import h5py
+
+        param = read.param(datadir=datadir)
+
+        with h5py.File(os.path.join(datadir, file_name)) as f:
+            if param.lintegrate_shell:
+                raise NotImplementedError
+            elif param.lintegrate_z:
+                raise NotImplementedError
+            else:
+                self.kx = f['metadata/kx'][()]
+                self.ky = f['metadata/ky'][()]
+                self.zpos = f['metadata/z'][()]
+                self.nzpos = len(self.zpos)
+
+                nt = int(np.squeeze(f['last'][()]))
+                time = np.empty([nt])
+                power_shape = f[f"{nt}"]['data_re'].shape
+
+                data_re_list = []
+                data_im_list = []
+                for it in range(nt):
+                    time[it] = self._h5_get(f, "time", it)
+
+                setattr(
+                    self,
+                    power_name,
+                    _LazyPowerArray(f, nt),
+                    )
+
+        self.t = time
+
+    def _h5_get(self, f, key, it, lazy=False):
+        """
+        The only purpose of this function is to mention the iteration number
+        in the error message.
+
+        Arguments:
+            f: h5py.File instance
+            key: str. Dataset name.
+            it: int. Iteration number (zero-based indexing).
+        """
+        try:
+            val = f[f"{it+1}/{key}"]
+
+            if not lazy:
+                val = val[()]
+        except KeyError as e:
+            e.add_note(f"iteration = {it+1}")
+            raise e
+        return val
 
     def _read_power_1d(self, power_name, file_name, datadir):
         """
@@ -444,6 +497,86 @@ class Power(object):
                 file_list.append(file_name)
 
         return power_list, file_list
+
+class _LazyPowerArray:
+    """
+    A container that reads the HDF5 power_xy data only when indexed.
+
+    Example:
+    >>> a = _LazyPowerArray(hdf5_file_handle, [hdf5_dset_1, hdf5_dset_2, ...], [hdf5_dset_1, hdf5_dset_2, ...]) #will not read anything into memory
+    >>> a[2,:,64,32] #will read only the requested values into memory
+    """
+
+    def __init__(self, h5file, nt):
+        import h5py
+
+        self._memfile = h5py.File.in_memory() #will hold virtual datasets
+
+        for key in ["data_re", "data_im"]:
+            shape = None
+            for it in range(nt):
+                try:
+                    dset = h5file[f"{it+1}/{key}"]
+                except KeyError as e:
+                    e.add_note(f"key = '{key}'; iteration = {it+1}")
+                    raise e
+
+                if shape is None:
+                    shape = (nt, *dset.shape)
+                    layout = h5py.VirtualLayout(shape=shape, dtype=dset.dtype)
+                else:
+                    assert dset.shape == shape[1:]
+
+                layout[it] = h5py.VirtualSource(dset)
+
+            self._memfile.create_virtual_dataset(key, layout, fillvalue=np.nan)
+
+        self._dset_re = self._memfile['data_re']
+        self._dset_im = self._memfile['data_im']
+
+        dset_shape = self._dset_re.shape
+        if self._dset_re.shape[1] == 1:
+            self.shape = (dset_shape[0], *dset_shape[2:])
+        else:
+            self.shape = dset_shape
+
+    def __getitem__(self, k):
+        if isinstance(k, (list, np.ndarray)):
+            raise NotImplementedError("fancy indexing")
+
+        if isinstance(k, Iterable):
+
+            k = list(k)
+
+            if self._dset_re.shape[1] == 1:
+                #scalar dataset
+                #this mirrors the removal of size-1 axes in _read_power2d
+                if len(k) == 0:
+                    k = [np.s_[:], 0]
+                else:
+                    k = [k[0], 0, *k[1:]]
+        else:
+            k = [k]
+
+        if Ellipsis in k:
+            raise NotImplementedError("use of `...`")
+
+        if len(k) < 5:
+            k = k + [np.s_[:]]*(5-len(k))
+        elif len(k) > 5:
+            raise ValueError("number of indices specified is more than the number of axes")
+
+        #convert back to tuple since we don't want fancy indexing
+        k = tuple(k)
+        return self._dset_re[k] + 1j*self._dset_im[k]
+
+    def __del__(self):
+        if self._memfile:
+            self._memfile.close()
+
+    @property
+    def ndim(self):
+        return len(self.shape)
 
 @copy_docstring(Power.read)
 def power(*args, **kwargs):
