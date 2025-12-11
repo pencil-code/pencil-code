@@ -256,7 +256,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--full",
-        help = "If passed, run the full set of tests, generating HTML output and a code coverage report.",
+        help = "run the full set of tests, generating HTML output and a code coverage report.",
         default = False,
         action = 'store_true',
         )
