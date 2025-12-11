@@ -58,7 +58,7 @@ def call_tox(output_dir, report_coverage=True, fast=False):
     py_tests_dir = pathlib.Path(__file__).parent
 
     if report_coverage:
-        subprocess.run(["coverage", "erase"], check=True)
+        subprocess.run(["coverage", "erase"], check=True, cwd=py_tests_dir)
         coverage_flags = " ".join(pytest_coverage_flags)
     else:
         coverage_flags = ""
@@ -83,7 +83,7 @@ def call_tox(output_dir, report_coverage=True, fast=False):
         )
 
     if report_coverage:
-        subprocess.run(["coverage", "html"], check=True)
+        subprocess.run(["coverage", "html"], check=True, cwd=py_tests_dir)
 
     json_to_html(json_filename, output_dir/"report.html")
     sys.exit(p.returncode)
