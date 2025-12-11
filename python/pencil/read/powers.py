@@ -262,7 +262,7 @@ class Power(object):
                 self.z = f['metadata/z'][()]
                 self.nzpos = len(self.z)
 
-                nt = int(f['last'][()])
+                nt = int(np.squeeze(f['last'][()]))
                 time = np.empty([nt])
                 power_shape = f[f"{nt}"]['data_re'].shape
                 power_re = np.empty([nt, *power_shape])
