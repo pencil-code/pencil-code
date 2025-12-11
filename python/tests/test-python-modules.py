@@ -276,12 +276,18 @@ if __name__ == "__main__":
         help = "location to store HTML output in",
         default = "."
         )
+    parser.add_argument(
+        "--fast",
+        help = "exit immediately on the first failure, rather than running all the tests regardless. Also, on repeated runs, run the previously failed tests first.",
+        default = False,
+        action = 'store_true',
+        )
 
     args = parser.parse_args()
 
     if args.full:
         if not coverage_pkg_present:
             raise RuntimeError("`coverage` (Python package) must be installed to use the --full option.")
-        call_tox(output_dir = pathlib.Path(args.outputdir))
+        call_tox(output_dir = pathlib.Path(args.outputdir), fast=args.fast)
     else:
-        call_pytest()
+        call_pytest(fast=args.fast)
