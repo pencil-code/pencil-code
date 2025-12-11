@@ -1549,7 +1549,7 @@ extern "C" void afterSubStepGPU()
 /***********************************************************************************************/
 //TP: not yet tested still work in progress
 void
-prep_bsc()
+fourier_boundary_conditions()
 {
 	if(luses_aa_pot2_top)
 	{
@@ -1567,13 +1567,9 @@ prep_bsc()
 	}
 }
 /***********************************************************************************************/
-extern "C" void substepGPU(int isubstep, double t)
-//
-//  Do the 'isubstep'th integration step on all GPUs on the node and handle boundaries.
-//
+void
+update_forcing()
 {
-   //TP: logs performance metrics of Astaroth
-   const bool log = false;
 #if LFORCING
   //Update forcing params
    if (lsecond_force) 
@@ -1581,9 +1577,19 @@ extern "C" void substepGPU(int isubstep, double t)
 	   fprintf(stderr,"Second forcing force not yet implemented on GPU!\n");
 	   exit(EXIT_FAILURE);
    }
-   prep_bcs();
    if (isubstep == num_substeps) forcing_params.Update();  // calculate on CPU and load into GPU
 #endif
+}
+/***********************************************************************************************/
+extern "C" void substepGPU(int isubstep, double t)
+//
+//  Do the 'isubstep'th integration step on all GPUs on the node and handle boundaries.
+//
+{
+   //TP: logs performance metrics of Astaroth
+  const bool log = false;
+  update_forcing();
+  fourier_boundary_conditions();
   acDeviceSetInput(acGridGetDevice(), AC_step_num,(PC_SUB_STEP_NUMBER) (isubstep-1));
   if (lshear) 
   {
