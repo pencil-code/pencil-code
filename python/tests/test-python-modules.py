@@ -34,7 +34,7 @@ def call_pytest(fast=False):
         *fast_flags
         ]))
 
-def call_tox(output_dir, report_coverage=True):
+def call_tox(output_dir, report_coverage=True, fast=False):
     """
     output_dir: pathlib.Path instance
     """
@@ -55,6 +55,11 @@ def call_tox(output_dir, report_coverage=True):
     else:
         coverage_flags = ""
 
+    if fast:
+        fast_flags = ["-x", "--failed-first"]
+    else:
+        fast_flags = []
+
     p = subprocess.Popen("bash", stdin=subprocess.PIPE, text=True)
     _, _ = p.communicate(
         f"""
@@ -65,7 +70,7 @@ def call_tox(output_dir, report_coverage=True):
             --override "testenv:report.commands=coverage html --directory='{htmlcov_dir}'" \
             --override "testenv.setenv=PYTEST_ADDOPTS='--color=no'" \
             -- \
-            {coverage_flags}
+            {coverage_flags} {fast_flags}
         """
         )
 
