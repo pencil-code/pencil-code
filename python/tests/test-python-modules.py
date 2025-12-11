@@ -17,12 +17,20 @@ try:
 except ImportError:
     coverage_pkg_present = False
 
+pytest_fast_flags = ["-x", "--failed-first"]
+pytest_coverage_flags = [
+    "--cov=pencil",
+    "--cov-report=",
+    "--cov-context=test",
+    "--cov-append",
+    ]
+
 def call_pytest(fast=False):
     #Keep this import here so that call_tox works without pytest installed.
     import pytest
 
     if fast:
-        fast_flags = ["-x", "--failed-first"]
+        fast_flags = pytest_fast_flags
     else:
         fast_flags = []
 
@@ -51,14 +59,14 @@ def call_tox(output_dir, report_coverage=True, fast=False):
 
     if report_coverage:
         subprocess.run(["coverage", "erase"], check=True)
-        coverage_flags = "--cov=pencil --cov-report= --cov-context=test --cov-append"
+        coverage_flags = " ".join(pytest_coverage_flags)
     else:
         coverage_flags = ""
 
     if fast:
-        fast_flags = ["-x", "--failed-first"]
+        fast_flags = " ".join(pytest_fast_flags)
     else:
-        fast_flags = []
+        fast_flags = ""
 
     p = subprocess.Popen("bash", stdin=subprocess.PIPE, text=True)
     _, _ = p.communicate(
