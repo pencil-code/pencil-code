@@ -32,7 +32,14 @@ class Power(object):
         for i in self.__dict__.keys():
             print(i)
 
-    def read(self, datadir="data", file_name=None, quiet=False, time_range=None):
+    def read(
+            self,
+            datadir="data",
+            file_name=None,
+            quiet=False,
+            time_range=None,
+            lazy=False,
+            ):
         """
         read(datadir='data', file_name='', quiet=False)
 
@@ -50,6 +57,12 @@ class Power(object):
 
         quiet : bool
             Flag for switching off output.
+
+        lazy: bool
+            If True, the HDF5 files will not be completely read into memory;
+            rather, just the relevant portions will be read into memory and
+            returned when the user applies indices.
+            Default: False
 
         Returns
         -------
@@ -89,7 +102,10 @@ class Power(object):
             if re.match("power.*_xy.dat", file_name):
                 self._read_power2d(power_name, file_name, datadir)
             elif re.match("power.*_xy.h5", file_name):
-                self._read_power2d_hdf5(power_name, file_name, datadir)
+                if lazy:
+                    self._read_power2d_hdf5_lazy(power_name, file_name, datadir)
+                else:
+                    self._read_power2d_hdf5(power_name, file_name, datadir)
             elif (
                 file_name == "poweruz_x.dat"
                 or file_name == "powerux_x.dat"
