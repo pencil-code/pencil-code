@@ -65,6 +65,11 @@ def datadir_helical_MHDTurb():
     sim = compile_and_run_sample("samples/helical-MHDturb")
     return sim.datadir
 
+@pytest.fixture(scope='session')
+def datadir_pxyhdf5_complex_npx_2():
+    sim = compile_and_run_sample("samples/power_xy/complex_lpowerxyhdf5/nprocx_2")
+    return sim.datadir
+
 @pytest.fixture
 def temp_datadir():
     tmpdir = tempfile.mkdtemp("pc_test_write_h5_snap")
