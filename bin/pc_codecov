@@ -38,7 +38,7 @@ PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@") 
 eval set -- "$PARSED"
 
 jobs=1
-pencil_home="$PENCIL_HOME"
+pencil_home="${PENCIL_HOME-}"
 output_dir="./lcov_html"
 while true; do
     case "$1" in
@@ -69,6 +69,11 @@ while true; do
     esac
 done
 # END option parsing
+
+if test -z "$pencil_home"; then
+    echo "Error: you need to either specify --pencil-home, or define the environment variable PENCIL_HOME"
+    exit 1
+fi
 
 if not test -e "$output_dir"; then
     mkdir -p "$output_dir"
