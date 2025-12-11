@@ -1098,6 +1098,28 @@ module Fourier
 !***********************************************************************
     subroutine fourier_transform_xy_xy(a_re,a_im,linv,lneed_im)
 !
+!  Wraps the actual xy-transform for correct multithreading logic
+!
+!$    use OMP_lib
+      real, dimension (:,:), intent(inout) :: a_re,a_im
+      logical, optional, intent(in) :: linv,lneed_im
+!
+      complex, dimension (size(a_re,1)) :: ax
+      real, dimension (size(a_re,2)) :: deltay_x
+      integer :: l,m,ibox,nyl
+      logical :: lforward,lcompute_im
+!
+!$    if(omp_get_level() == 1) then
+        !$omp parallel num_threads(num_helper_threads)
+!$      call fourier_transform_xy_xy_body(a_re,a_im,linv,lneed_im)
+        !$omp end parallel 
+!$    else
+        call fourier_transform_xy_xy_body(a_re,a_im,linv,lneed_im)
+!$    endif
+    endsubroutine fourier_transform_xy_xy
+!***********************************************************************
+    subroutine fourier_transform_xy_xy_body(a_re,a_im,linv,lneed_im)
+!
 !  Subroutine to do Fourier transform of a 2-D array under MPI.
 !  nxgrid is restricted to be an integer multiple of nygrid.
 !  If it's not, 'fft_xy_parallel' is called, which has fewer restrictions.
@@ -1242,7 +1264,7 @@ module Fourier
         !!$omp end parallel
       endif
 !
-    endsubroutine fourier_transform_xy_xy
+    endsubroutine fourier_transform_xy_xy_body
 !***********************************************************************
     subroutine fourier_transform_xy_xy_other(a_re,a_im,linv)
 !
@@ -3523,6 +3545,25 @@ module Fourier
 !***********************************************************************
     subroutine fft_xyz_parallel_3D(a_re,a_im,linv,lneed_im,shift_y,lignore_shear)
 !
+!  Wraps the transform for correct multithreading logic
+!
+!$    use OMP_lib
+      real, dimension (:,:,:), intent(inout) :: a_re, a_im
+      logical, optional, intent(in) :: linv, lneed_im, lignore_shear
+      
+      real, dimension (nxgrid), optional :: shift_y
+!
+!$    if(omp_get_level() == 1) then
+        !$omp parallel num_threads(num_helper_threads)
+!$      call fft_xyz_parallel_3D_body(a_re,a_im,linv,lneed_im,shift_y,lignore_shear)
+        !$omp end parallel 
+!$    else
+        call fft_xyz_parallel_3D_body(a_re,a_im,linv,lneed_im,shift_y,lignore_shear)
+!$    endif
+    endsubroutine fft_xyz_parallel_3D
+!***********************************************************************_
+    subroutine fft_xyz_parallel_3D_body(a_re,a_im,linv,lneed_im,shift_y,lignore_shear)
+!
 !  Subroutine to do FFT of distributed 3D data in the x-, y- and z-direction.
 !  For the x- and y-direction, the subroutine 'fft_xy_parallel' is used.
 !  For z-parallelization the transform in the z-direction will be done under
@@ -3670,8 +3711,8 @@ module Fourier
 !
       endif
 !
-    endsubroutine fft_xyz_parallel_3D
-!***********************************************************************
+    endsubroutine fft_xyz_parallel_3D_body
+!***********************************************************************_
     subroutine fft_xyz_parallel_4D(a_re,a_im,linv,lneed_im,shift_y,lignore_shear)
 !
 !  Subroutine to do FFT of distributed 4D data in the x- and y-direction.
