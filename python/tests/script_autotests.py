@@ -55,8 +55,8 @@ for var in [
 
 @pytest.mark.pcautotest
 @pytest.mark.parametrize("path", map(add_marks_to_sample, samples_with_scripttests))
-def test_script_pcautotest(path):
-    rundir = get_rundir(path)
+def test_script_pcautotest(path, pytestconfig):
+    rundir = pathlib.Path(get_rundir(path))
     res = subprocess.run(
         f"pc_auto-test --no-lock --auto-clean --script-tests=python '{rundir}'",
         env=env,
@@ -64,6 +64,15 @@ def test_script_pcautotest(path):
         universal_newlines=True,
         stderr=subprocess.PIPE,
         )
+
+    if pytestconfig.option.script_test_coverage:
+        for script in rundir.glob("tests/*.py"):
+            subprocess.run(
+                ["python", f"{script}"],
+                capture_output=True,
+                cwd=rundir/"tests",
+                )
+
     assert res.returncode == 0
     #Even if pc_auto-test fails, that is not reflected in its exit code
     assert res.stderr == ""

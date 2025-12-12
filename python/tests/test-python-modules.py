@@ -23,6 +23,7 @@ pytest_coverage_flags = [
     "--cov-report=",
     "--cov-context=test",
     "--cov-append",
+    "--script-test-coverage",
     ]
 
 def call_pytest(fast=False):

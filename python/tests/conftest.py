@@ -16,6 +16,13 @@ os.environ["PENCIL_HOME"] = str(pencil_home)
 #The following seems dirty, but is needed for subprocesses to be initialized with the correct Python path
 os.environ["PYTHONPATH"] = str(pencil_home/"python")
 
+def pytest_addoption(parser):
+    parser.addoption(
+        "--script-test-coverage",
+        action="store_true",
+        help="rerun the script autotests to capture code coverage data",
+        default=False,
+        )
 
 #To populate data directories that are needed for integration tests.
 
