@@ -247,6 +247,7 @@ class Power(object):
     def _read_power2d_hdf5(self, power_name, file_name, datadir):
         """
         Handles HDF5 output of power_xy subroutine.
+        Axis order of self.power_name will be [t,ivec,z,ky,kx] or [t,z,ky,kx].
         """
         import h5py
 
