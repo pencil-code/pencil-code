@@ -285,7 +285,6 @@ class Power(object):
         self.t = time
 
         power_array = power_re + 1j*power_im
-        np.transpose(power_array, axes=[0,1,4,3,2]) #make the axis order [t,vec,kx,ky,z]
         if power_array.shape[1] == 1:
             power_array = np.squeeze(power_array, axis=1)
         setattr(self, power_name, power_array)
