@@ -129,6 +129,7 @@ class Power(object):
     def _read_power2d(self, power_name, file_name, datadir):
         """
         Handles output of power_xy subroutine.
+        Axis order of self.power_name will be [t,ivec,z,ky,kx] or [t,z,ky,kx] or [t,z,k].
         """
         dim = read.dim(datadir=datadir)
         param = read.param(datadir=datadir)
