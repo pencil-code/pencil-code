@@ -3,7 +3,7 @@ import os
 import pencil as pc
 import pytest
 
-from test_utils import require_sample
+from test_utils import require_sample, standalone_test
 
 datadir_novar = os.path.realpath(
     os.path.join(
@@ -179,3 +179,20 @@ def test_read_power_lazy(datadir_pxyhdf5_complex_npx_2):
         np.imag(p.uz_xy[3,9,29,-5:]),
         [2.44e-06, -9.59e-06, -6.65e-06, -4.27e-05, 4.65e-04],
         )
+
+@require_sample("samples/power_xy/complex_lpowerxyhdf5/nprocx_2")
+def test_read_power_lazy_standalone(datadir_pxyhdf5_complex_npx_2):
+    """
+    Minimal version of test_read_power_lazy, that runs in a separate Python process.
+    Mainly to check if changing the working directory after reading creates any issues.
+    """
+    standalone_test([
+        "import numpy as np",
+        "import os",
+        f"p = pc.read.power(datadir='{datadir_pxyhdf5_complex_npx_2}', lazy=True)",
+        "os.chdir('..')",
+        'assert p.uz_xy.ndim == 4',
+        'assert p.uz_xy.shape == (5,32,32,32)',
+        'assert not np.any(np.isnan(p.uz_xy[()]))',
+        'assert np.all(np.isclose(np.real(p.uz_xy[0,16,1,0]), -1.2e-05, rtol=1.5e-2, atol=0))'
+        ])
