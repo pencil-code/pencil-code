@@ -159,7 +159,7 @@ Kernel source_function(int inu){
       srad__mod__radiation=b2_3
     }
   }
-  else if(AC_enum_source_function_type__mod__radiation == AC_enum_b2zw2_string) {
+  else if(AC_enum_source_function_type__mod__radiation == enum_b2zw2_string) {
     if (inu==1) {
       if (AC_iaa__mod__cdata==0) {
       }
@@ -183,9 +183,9 @@ Kernel source_function(int inu){
       }
     }
   }
-  else if(AC_enum_source_function_type__mod__radiation == AC_enum_read_file_string__mod__cparam) {
+  else if(AC_enum_source_function_type__mod__radiation == enum_read_file_string) {
   }
-  else if(AC_enum_source_function_type__mod__radiation == AC_enum_nothing_string__mod__cparam) {
+  else if(AC_enum_source_function_type__mod__radiation == enum_nothing_string) {
     srad__mod__radiation=0.0
   }
   else {

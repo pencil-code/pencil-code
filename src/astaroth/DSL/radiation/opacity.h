@@ -314,7 +314,7 @@ Kernel opacity(int inu){
   real tmp_12
   real tmpy_12
   real tmpy1_12
-  if(AC_enum_opacity_type__mod__radiation == AC_enum_hminus_string__mod__cparam) {
+  if(AC_enum_opacity_type__mod__radiation == enum_hminus_string) {
     if(mx == nx) {
       lnrho__0=value(Field(AC_ilnrho__mod__cdata-1))
       lntt__0=value(Field(AC_ilntt__mod__cdata-1))
@@ -348,7 +348,7 @@ Kernel opacity(int inu){
     }
     DF_KAPPARHO=AC_kapparho_floor__mod__radiation+tmp*AC_scalefactor_kappa__mod__radiation[inu-1]
   }
-  else if(AC_enum_opacity_type__mod__radiation == AC_enum_total_rosseland_mean_string__mod__cparam) {
+  else if(AC_enum_opacity_type__mod__radiation == enum_total_rosseland_mean_string) {
     if(mx == nx) {
       lnrho__1=value(Field(AC_ilnrho__mod__cdata-1))
       lntt__1=value(Field(AC_ilntt__mod__cdata-1))
@@ -415,7 +415,7 @@ Kernel opacity(int inu){
     kappa_tot = min(kappa_tot,AC_kappa_ceiling__mod__radiation)
     DF_KAPPARHO=exp(lnrho)*kappa_tot*AC_scalefactor_kappa__mod__radiation[inu-1]
   }
-  else if(AC_enum_opacity_type__mod__radiation == AC_enum_kappa_es_string__mod__cparam) {
+  else if(AC_enum_opacity_type__mod__radiation == enum_kappa_es_string) {
     if(mx == nx) {
       lnrho__3=value(Field(AC_ilnrho__mod__cdata-1))
       lntt__3=value(Field(AC_ilntt__mod__cdata-1))
@@ -445,7 +445,7 @@ Kernel opacity(int inu){
     }
     DF_KAPPARHO=AC_kapparho_floor__mod__radiation+AC_kappa_es__mod__cdata*exp(lnrho)
   }
-  else if(AC_enum_opacity_type__mod__radiation == AC_enum_kappa_cst_string__mod__cparam) {
+  else if(AC_enum_opacity_type__mod__radiation == enum_kappa_cst_string) {
     if(mx == nx) {
       lnrho__4=value(Field(AC_ilnrho__mod__cdata-1))
       lntt__4=value(Field(AC_ilntt__mod__cdata-1))
@@ -475,10 +475,10 @@ Kernel opacity(int inu){
     }
     DF_KAPPARHO=AC_kapparho_floor__mod__radiation+AC_kappa_cst__mod__radiation[inu-1]*exp(lnrho)
   }
-  else if(AC_enum_opacity_type__mod__radiation == AC_enum_kapparho_cst_string__mod__cparam) {
+  else if(AC_enum_opacity_type__mod__radiation == enum_kapparho_cst_string) {
     DF_KAPPARHO=AC_kapparho_floor__mod__radiation+AC_kapparho_cst__mod__radiation
   }
-  else if(AC_enum_opacity_type__mod__radiation == AC_enum_kappa_kconst_string__mod__cparam) {
+  else if(AC_enum_opacity_type__mod__radiation == enum_kappa_kconst_string) {
     kappa0=16./3.*AC_sigmasb__mod__cdata/AC_kappa_kconst__mod__radiation
     if(mx == nx) {
       lnrho__5=value(Field(AC_ilnrho__mod__cdata-1))
@@ -510,7 +510,7 @@ Kernel opacity(int inu){
     tt=exp(lntt)
     DF_KAPPARHO=AC_kapparho_floor__mod__radiation+kappa0*(tt*tt*tt)
   }
-  else if(AC_enum_opacity_type__mod__radiation == AC_enum_kappa_power_law_string__mod__cparam) {
+  else if(AC_enum_opacity_type__mod__radiation == enum_kappa_power_law_string) {
     if(mx == nx) {
       lnrho__6=value(Field(AC_ilnrho__mod__cdata-1))
       lntt__6=value(Field(AC_ilntt__mod__cdata-1))
@@ -560,7 +560,7 @@ Kernel opacity(int inu){
       DF_KAPPARHO=AC_kapparho_floor__mod__radiation+profile*rho*AC_kappa_cst__mod__radiation[inu-1]*pow(  (rho/AC_ref_rho_opa__mod__radiation),AC_expo_rho_opa__mod__radiation)*pow(  (tt/AC_ref_temp_opa__mod__radiation),AC_expo_temp_opa__mod__radiation) +  (1.0-profile)*rho*AC_kappa_cst__mod__radiation[inu-1]*pow(  (AC_knee_temp_opa__mod__radiation/AC_ref_temp_opa__mod__radiation),AC_expo_temp_opa__mod__radiation)*pow(  (tt/AC_knee_temp_opa__mod__radiation),AC_expo_temp_opa_buff__mod__radiation)
     }
   }
-  else if(AC_enum_opacity_type__mod__radiation == AC_enum_kappa_double_power_law_string__mod__cparam) {
+  else if(AC_enum_opacity_type__mod__radiation == enum_kappa_double_power_law_string) {
     if(mx == nx) {
       lnrho__8=value(Field(AC_ilnrho__mod__cdata-1))
       lntt__8=value(Field(AC_ilntt__mod__cdata-1))
@@ -597,7 +597,7 @@ Kernel opacity(int inu){
     kappa2=AC_kappa20_cst__mod__radiation[inu-1]+AC_kappa_cst__mod__radiation[inu-1]*pow((rho/AC_ref_rho_opa__mod__radiation),AC_expo2_rho_opa__mod__radiation)*pow(  (tt/AC_ref_temp_opa__mod__radiation),AC_expo2_temp_opa__mod__radiation)
     DF_KAPPARHO= AC_kapparho_floor__mod__radiation+rho/(1./kappa1+1./kappa2)  *(1.+AC_ampl_bump__mod__radiation*exp(-0.5*(((tt-AC_tt_bump__mod__radiation)/AC_sigma_bump__mod__radiation)*((tt-AC_tt_bump__mod__radiation)/AC_sigma_bump__mod__radiation))))
   }
-  else if(AC_enum_opacity_type__mod__radiation == AC_enum_tsquare_string__mod__cparam) {
+  else if(AC_enum_opacity_type__mod__radiation == enum_tsquare_string) {
     kappa0_cgs=2e-4
     kappa0=kappa0_cgs
     if(mx == nx) {
@@ -632,7 +632,7 @@ Kernel opacity(int inu){
     }
     DF_KAPPARHO=AC_kapparho_floor__mod__radiation+exp(lnrho)*kappa0*(((exp(lntt))*(exp(lntt))))
   }
-  else if(AC_enum_opacity_type__mod__radiation == AC_enum_kramers_string__mod__cparam) {
+  else if(AC_enum_opacity_type__mod__radiation == enum_kramers_string) {
     kappa0_cgs=6.6e22
     kappa0=kappa0_cgs
     if(mx == nx) {
@@ -667,7 +667,7 @@ Kernel opacity(int inu){
     }
     DF_KAPPARHO=AC_kapparho_floor__mod__radiation+kappa0*((exp(lnrho)*exp(lnrho)))*pow((exp(lntt)),(-3.5))
   }
-  else if(AC_enum_opacity_type__mod__radiation == AC_enum_dustzinfrared_string__mod__cparam) {
+  else if(AC_enum_opacity_type__mod__radiation == enum_dustzinfrared_string) {
     if(mx == nx) {
       lnrho__11=value(Field(AC_ilnrho__mod__cdata-1))
       lntt__11=value(Field(AC_ilntt__mod__cdata-1))
@@ -709,19 +709,19 @@ Kernel opacity(int inu){
     }
     DF_KAPPARHO=AC_kapparho_floor__mod__radiation+exp(lnrho)*tmp
   }
-  else if(AC_enum_opacity_type__mod__radiation == AC_enum_blob_string__mod__cparam) {
+  else if(AC_enum_opacity_type__mod__radiation == enum_blob_string) {
     if (lfirst) {
       DF_KAPPARHO=AC_kapparho_floor__mod__radiation+AC_kapparho_const__mod__radiation + AC_amplkapparho__mod__radiation  *exp(-((AC_x__mod__cdata[vertexIdx.x]/AC_radius_kapparho__mod__radiation)*(AC_x__mod__cdata[vertexIdx.x]/AC_radius_kapparho__mod__radiation)))  *exp(-((AC_y__mod__cdata[vertexIdx.y]/AC_radius_kapparho__mod__radiation)*(AC_y__mod__cdata[vertexIdx.y]/AC_radius_kapparho__mod__radiation)))  *exp(-((AC_z__mod__cdata[vertexIdx.z]/AC_radius_kapparho__mod__radiation)*(AC_z__mod__cdata[vertexIdx.z]/AC_radius_kapparho__mod__radiation)))
       lfirst=false
     }
   }
-  else if(AC_enum_opacity_type__mod__radiation == AC_enum_cos_string__mod__cparam) {
+  else if(AC_enum_opacity_type__mod__radiation == enum_cos_string) {
     if (lfirst) {
       DF_KAPPARHO=AC_kapparho_floor__mod__radiation+AC_kapparho_const__mod__radiation + AC_amplkapparho__mod__radiation  *cos(AC_kx_kapparho__mod__radiation*AC_x__mod__cdata[vertexIdx.x])  *cos(AC_ky_kapparho__mod__radiation*AC_y__mod__cdata[vertexIdx.y])  *cos(AC_kz_kapparho__mod__radiation*AC_z__mod__cdata[vertexIdx.z])
       lfirst=false
     }
   }
-  else if(AC_enum_opacity_type__mod__radiation == AC_enum_rad_ionization_string__mod__cparam) {
+  else if(AC_enum_opacity_type__mod__radiation == enum_rad_ionization_string) {
     if(mx == nx) {
       lnrho__12=value(Field(AC_ilnrho__mod__cdata-1))
       lntt__12=value(Field(AC_ilntt__mod__cdata-1))
@@ -754,15 +754,15 @@ Kernel opacity(int inu){
     }
     DF_KAPPARHO=AC_kapparho_floor__mod__radiation+ AC_sigmah___mod__cdata*(1 - yh)*exp(2*lnrho+log(AC_m_h__mod__cdata))
   }
-  else if(AC_enum_opacity_type__mod__radiation == AC_enum_b2_string__mod__cparam) {
+  else if(AC_enum_opacity_type__mod__radiation == enum_b2_string) {
     fatal_error_message(true,"calc_kapparho_b2")
   }
-  else if(AC_enum_opacity_type__mod__radiation == AC_enum_b2zw2_string__mod__cparam) {
+  else if(AC_enum_opacity_type__mod__radiation == enum_b2zw2_string) {
     fatal_error_message(true,"calc_kapparho_b2_w2")
   }
-  else if(AC_enum_opacity_type__mod__radiation == AC_enum_read_file_string__mod__cparam) {
+  else if(AC_enum_opacity_type__mod__radiation == enum_read_file_string) {
   }
-  else if(AC_enum_opacity_type__mod__radiation == AC_enum_nothing_string__mod__cparam) {
+  else if(AC_enum_opacity_type__mod__radiation == enum_nothing_string) {
     DF_KAPPARHO=0.0
   }
   else {
