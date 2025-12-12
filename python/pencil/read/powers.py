@@ -14,7 +14,7 @@ from pencil.util import ffloat, copy_docstring
 import re
 import warnings
 import functools
-
+import pathlib
 
 class Power(object):
     """
@@ -514,7 +514,7 @@ class Power(object):
 
         return power_list, file_list
 
-class _LazyPowerArray:
+class _LazyPowerArrayVD:
     """
     A container that reads the HDF5 power_xy data only when indexed.
 
@@ -593,6 +593,66 @@ class _LazyPowerArray:
     @property
     def ndim(self):
         return len(self.shape)
+
+class _LazyPowerArrayNoVD:
+    """
+    Variant of _LazyPowerArray that does not rely on virtual datasets.
+    """
+    def __init__(self, h5file, nt):
+        self._file_path = pathlib.Path(h5file.filename).absolute()
+        self._nt = nt
+
+        dset_shape = h5file[f"{nt}/data_re"].shape
+        if dset_shape[0] == 1:
+            self._is_vec = False
+            self.shape = (nt, *dset_shape[1:])
+        else:
+            self._is_vec = True
+            self.shape = (nt, *dset_shape)
+
+    def __getitem__(self, k):
+        import h5py
+
+        if isinstance(k, (list, np.ndarray)):
+            raise NotImplementedError("fancy indexing")
+
+        if isinstance(k, Iterable):
+
+            k = list(k)
+
+            if not self._is_vec:
+                #scalar dataset
+                #this mirrors the removal of size-1 axes in _read_power2d
+                if len(k) == 0:
+                    k = [np.s_[:], 0]
+                else:
+                    k = [k[0], 0, *k[1:]]
+        else:
+            k = [k]
+
+        if Ellipsis in k:
+            raise NotImplementedError("use of `...`")
+
+        if len(k) < 5:
+            k = k + [np.s_[:]]*(5-len(k))
+        elif len(k) > 5:
+            raise ValueError("number of indices specified is more than the number of axes")
+
+        #convert back to tuple since we don't want fancy indexing
+        k = tuple(k)
+        ret = []
+        t_sl = k[0]
+        inds = k[1:]
+        with h5py.File(self._file_path, mode='r') as f:
+            for it in np.atleast_1d(range(self._nt)[t_sl]):
+                ret.append(f[f"{it+1}/data_re"][inds] + 1j*f[f"{it+1}/data_im"][inds])
+        return np.array(ret, dtype=ret[0].dtype)
+
+    @property
+    def ndim(self):
+        return len(self.shape)
+
+_LazyPowerArray = _LazyPowerArrayNoVD
 
 @copy_docstring(Power.read)
 def power(*args, **kwargs):
