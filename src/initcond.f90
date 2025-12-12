@@ -91,7 +91,7 @@ module Initcond
     module procedure gaunoise_rprof_scal
   endinterface
 !
-  character(LEN=labellen) :: wave_fmt1='(1x,a,4f8.2)'
+  character(LEN=labellen) :: wave_fmt1='(1x,a,e9.2,3f8.2)'
 !
   contains
 !***********************************************************************

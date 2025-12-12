@@ -3727,7 +3727,7 @@ module Energy
       if (lheatc_chiconst) call calc_heatcond_constchi(f,df,p)
       if (lheatc_chi_cspeed) call calc_heatcond_cspeed_chi(df,p)
       if (lheatc_sqrtrhochiconst) call calc_heatcond_sqrtrhochi(df,p)
-      if (lheatc_shock.or.lheatc_shock2)    call calc_heatcond_shock(df,p)
+      if (lheatc_shock.or.lheatc_shock2) call calc_heatcond_shock(df,p)
       if (lheatc_shock_profr) call calc_heatcond_shock_profr(df,p)
       if (lheatc_hyper3ss)    call calc_heatcond_hyper3(df,p)
       if (lheatc_spitzer)     call calc_heatcond_spitzer(df,p)
