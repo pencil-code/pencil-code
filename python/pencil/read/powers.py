@@ -533,6 +533,11 @@ class _LazyPowerArrayVD(_m_LazyPowerArray):
     Example:
     >>> a = _LazyPowerArray(hdf5_file_handle, [hdf5_dset_1, hdf5_dset_2, ...], [hdf5_dset_1, hdf5_dset_2, ...]) #will not read anything into memory
     >>> a[2,:,64,32] #will read only the requested values into memory
+
+    2025-Dec-13/Kishore: while this works fine with the samples in the auto-test,
+    it does not with my large production runs (all the read data is np.nan even
+    though the correct values are in the HDF5 files). I have thus replaced it by
+    _LazyPowerArrayNoVD.
     """
 
     def __init__(self, h5file, nt):
