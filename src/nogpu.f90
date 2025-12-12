@@ -13,6 +13,7 @@ module GPU
 
   implicit none
 
+  logical :: ltest_bcs
   include 'gpu.h'
 
 contains
@@ -190,5 +191,10 @@ contains
     subroutine split_update_gpu(f)
       real, dimension(:,:,:,:) :: f
     endsubroutine split_update_gpu
+!**************************************************************************
+    subroutine pushpars2c(p_par)
+    integer, parameter :: n_pars=1
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+    endsubroutine pushpars2c
 !**************************************************************************
 endmodule GPU

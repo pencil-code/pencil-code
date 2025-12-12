@@ -58,7 +58,7 @@ module Param_IO
   use Timeavg
   use Training, only: read_training_run_pars, write_training_run_pars
   use Viscosity
-  use GPU, only: read_gpu_run_pars, write_gpu_run_pars
+  use GPU, only: read_gpu_run_pars, write_gpu_run_pars,ltest_bcs
 !
   implicit none
 !

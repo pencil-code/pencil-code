@@ -51,6 +51,31 @@ module GPU
 
   !integer(KIND=ikind8) :: pFarr_GPU_in, pFarr_GPU_out
   type(C_PTR) :: pFarr_GPU_in, pFarr_GPU_out
+  ! Since on the GPU calculation of df and update of f happen without synchronization
+  ! of the decomposed portions of the subdomains (or different processes) we can't compute
+  ! dt 'on the fly' but take it from the previous timestep (calculated at the moment on
+  ! the first substep but the last would make more sense). This means to calculate rhs an extra time
+  ! on the first substep to compute dt as is done normally on the CPUs
+  logical :: lcpu_timestep_on_gpu=.false.
+  ! Astaroth empirically finds the best kernel configuration parameters by running them with different 
+  ! options and picking the best one. Sparser autotuning means prune the parameter space more than 
+  ! usual by picking only the most likely ones (empirically gives for large grids the same as the 
+  ! larger search, but is considerably faster).
+  logical :: lac_sparse_autotuning=.true.
+  ! Whether df is 0 or the accumulated value at the start of the kernel.
+  ! For simplicity df is zero and then accumulated to the buffer, but sometimes you need to be careful like with
+  ! short stopping time approximation in dustvelocity (the only case we are aware at the moment where the difference matter
+  logical :: lcumulative_df_on_gpu=.false.
+  ! Placeholder
+  logical :: lskip_rtime_compilation=.false.
+  ! By default only pde variables and those aux variables that are registered to be always read are read from the device.
+  ! If this is true all variables are always read
+  logical :: lread_all_vars_from_device = .false.
+  ! Whether to use CUDA-aware MPI. If you have it you should always want to use it, but sometimes you do not have it or using
+  ! it is more unstable than routing the communication via the host yourself.
+  logical :: lcuda_aware_mpi=.true.
+  ! Whether to test the agreement of bcs on GPU and CPU
+  logical :: ltest_bcs =.false.
 
   namelist /gpu_run_pars/ &
      ltest_bcs,lac_sparse_autotuning,lcpu_timestep_on_gpu,lcumulative_df_on_gpu,lread_all_vars_from_device,lcuda_aware_mpi
@@ -343,4 +368,22 @@ contains
       call split_update_gpu_c(f)
     endsubroutine split_update_gpu
 !**************************************************************************
+    subroutine pushpars2c(p_par)
+
+    use Syscalls, only: copy_addr
+    use General , only: pos_in_array, string_to_enum
+
+    integer, parameter :: n_pars=50
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr(lcpu_timestep_on_gpu,p_par(1))  ! bool
+    call copy_addr(lac_sparse_autotuning,p_par(2)) ! bool
+    call copy_addr(lskip_rtime_compilation,p_par(3)) ! bool
+    call copy_addr(lcumulative_df_on_gpu,p_par(4)) ! bool
+    call copy_addr(lread_all_vars_from_device,p_par(5)) ! bool
+    call copy_addr(lcuda_aware_mpi,p_par(6)) ! bool
+    call copy_addr(ltest_bcs,p_par(7)) ! bool
+    endsubroutine pushpars2c
+!**************************************************************************
+
 endmodule GPU

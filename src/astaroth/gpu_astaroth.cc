@@ -64,7 +64,7 @@ AcTaskGraph* boundary_z_halo_exchange_graph =  NULL;
   #define limplicit_diffusion_with_cg  limplicit_diffusion_with_cg__mod__implicitdiffusion
   #define limplicit_resistivity limplicit_resistivity__mod__magnetic
   #define limplicit_viscosity   limplicit_viscosity__mod__viscosity
-  #define lcumulative_df_on_gpu lcumulative_df_on_gpu__mod__cdata
+  #define lcumulative_df_on_gpu lcumulative_df_on_gpu__mod__gpu
   #define lbidiagonal_derij lbidiagonal_derij__mod__cdata
   #define nu nu__mod__viscosity
   #define nu_hyper2 nu_hyper2__mod__viscosity
@@ -82,7 +82,7 @@ AcTaskGraph* boundary_z_halo_exchange_graph =  NULL;
   #define chi_hyper3 chi_hyper3__mod__energy
 
   #define lmorton_curve lmorton_curve__mod__cdata
-  #define ltest_bcs     ltest_bcs__mod__cdata
+  #define ltest_bcs     ltest_bcs__mod__gpu
   #define num_substeps  num_substeps__mod__cdata
   #define maux_vtxbuf_index maux_vtxbuf_index__mod__cdata
   #define read_vtxbuf_from_gpu read_vtxbuf_from_gpu__mod__cdata 
@@ -126,10 +126,10 @@ AcTaskGraph* boundary_z_halo_exchange_graph =  NULL;
   #define cotth    cotth__mod__cdata
 
   #define luse_trained_tau luse_trained_tau__mod__training
-  #define lcpu_timestep_on_gpu   lcpu_timestep_on_gpu__mod__cdata
+  #define lcpu_timestep_on_gpu   lcpu_timestep_on_gpu__mod__gpu
   #define lperi                  lperi__mod__cdata
   #define lxyz                   lxyz__mod__cdata
-  #define lac_sparse_autotuning  lac_sparse_autotuning__mod__cdata
+  #define lac_sparse_autotuning  lac_sparse_autotuning__mod__gpu
   #define ldebug ldebug__mod__cdata
   
   #define deltay  deltay__mod__cdata
@@ -141,8 +141,8 @@ AcTaskGraph* boundary_z_halo_exchange_graph =  NULL;
   #define itauyz itauyz__mod__training
   #define itauzz itauzz__mod__training
 
-  #define lread_all_vars_from_device lread_all_vars_from_device__mod__cdata
-  #define lcuda_aware_mpi            lcuda_aware_mpi__mod__cdata
+  #define lread_all_vars_from_device lread_all_vars_from_device__mod__gpu
+  #define lcuda_aware_mpi            lcuda_aware_mpi__mod__gpu
   #define lsecond_force lsecond_force__mod__forcing
   #define lforce_helical lforce_helical__mod__forcing
 
@@ -1562,6 +1562,8 @@ fourier_boundary_conditions()
 		acDeviceFFTR2PlanarXY(acGridGetDevice(), acGetAAX(), acGetAX_FOURIER_REAL(), acGetAX_FOURIER_IMAG(), boundary_z);
 		acDeviceFFTR2PlanarXY(acGridGetDevice(), acGetAAY(), acGetAY_FOURIER_REAL(), acGetAY_FOURIER_IMAG(), boundary_z);
 		acDeviceFFTR2PlanarXY(acGridGetDevice(), acGetAAZ(), acGetAZ_FOURIER_REAL(), acGetAZ_FOURIER_IMAG(), boundary_z);
+		fprintf(stderr,"Hi from fourier bc: %s!\n",kernel_names[kernel]);
+		fflush(stderr);
 		acDeviceLaunchKernel(acGridGetDevice(), STREAM_DEFAULT, kernel, (Volume){NGHOST,NGHOST,boundary_z}, 
 				(Volume){(size_t)mesh.info[AC_nlocal_max].x,(size_t)mesh.info[AC_nlocal_max].y, boundary_z+1}
 				);
@@ -2113,7 +2115,7 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_)  /
   }
 
 		
-  //if (ltest_bcs) testBCs();
+  if (ltest_bcs) testBCs();
   //TP: for autotuning
   afterSubStepGPU();
   autotune_all_integration_substeps();

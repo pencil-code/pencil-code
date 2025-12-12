@@ -3247,7 +3247,8 @@ ifeq ($(ENERGY),noentropy)
 endif
 	@grep '[a-zA-Z_]*eos.*f90' $(CUDA_MAKEDIR)/PC_modulesources.h > /dev/null || echo \#define L$(EOS)_MODULE 1 >> $(CUDA_MAKEDIR)/PC_moduleflags.h
 	@grep '[a-zA-Z_]*eos.*f90' $(CUDA_MAKEDIR)/PC_modulesources.h > /dev/null || echo $(CUDA_RELPATH)'/$(EOS).f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
-	@echo $(CUDA_RELPATH)'/global_pushpars.f90' >> $(CUDA_MAKEDIR)/PC_modulesources.h
+	@echo $(CUDA_RELPATH)'/global_pushpars.f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
+	@echo $(CUDA_RELPATH)'/gpu_astaroth.f90' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 	@echo ' ' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 	@sed -e'1 i TRANSPILATION='$(TRANSPILATION) -i $(CUDA_MAKEDIR)/PC_modulesources.h
 	@sed -e'1 i RUNTIME_COMPILATION='$(RUNTIME_COMPILATION) -i $(CUDA_MAKEDIR)/PC_modulesources.h

@@ -185,7 +185,6 @@ contains
     call copy_addr(z12,p_par(173))      !  (mz)
     
     call copy_addr(ldebug,p_par(300)) ! bool
-    call copy_addr(ltest_bcs,p_par(337)) ! bool
     call copy_addr(lmorton_curve,p_par(338)) ! bool
     call copy_addr(itorder,p_par(343)) ! int
     call copy_addr(dtinc,p_par(344))
@@ -263,10 +262,6 @@ contains
     call copy_addr(lroot,p_par(1175)) ! bool
     call copy_addr(lperi,p_par(1176)) ! bool3
 
-    call copy_addr(lcpu_timestep_on_gpu,p_par(1177)) ! bool
-    call copy_addr(lac_sparse_autotuning,p_par(1178)) ! bool
-    call copy_addr(lskip_rtime_compilation,p_par(1179)) ! bool
-    call copy_addr(lread_all_vars_from_device,p_par(1181)) ! bool
     
     call copy_addr_dble(sigma_thomson,p_par(1185))
     call copy_addr_dble(c_light,p_par(1188))
@@ -306,7 +301,6 @@ contains
     call copy_addr(ip,p_par(1223)) ! int
     call copy_addr_dble(m_h,p_par(1224))
     call copy_addr_dble(sigmah_,p_par(1225))
-    call copy_addr(lcuda_aware_mpi,p_par(1226)) ! bool
     call copy_addr(it,p_par(1227)) ! int
     call copy_addr(nconformal,p_par(1228))
     call copy_addr(ifcr,p_par(1233)) ! int
@@ -437,7 +431,6 @@ contains
     call copy_addr(iww2,p_par(1374)) ! int
     call copy_addr(iww3,p_par(1375)) ! int
     call copy_addr(dt_beta_ts,p_par(1376)) ! (5) dconst
-    call copy_addr(lcumulative_df_on_gpu,p_par(1377)) ! bool
     call copy_addr(iox,p_par(1384)) ! int
     call copy_addr(iuut,p_par(1385)) ! int
     call copy_addr(iuxt,p_par(1386)) ! int
