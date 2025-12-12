@@ -42,6 +42,7 @@ bool calculated_coeff_scales = false;
 #include "submodule/stdlib/fft.h"
 
 AcTaskGraph* GW_timestep_graph  =  NULL;
+AcTaskGraph* boundary_z_halo_exchange_graph =  NULL;
 
 #define real AcReal
 #include "math_utils.h"
@@ -1568,6 +1569,7 @@ fourier_boundary_conditions()
 		acDeviceFFTBackwardTransformPlanar2RXY(acGridGetDevice(),  acGetAX_FOURIER_REAL(), acGetAX_FOURIER_IMAG(), acGetAAX(), z_offset);
 		acDeviceFFTBackwardTransformPlanar2RXY(acGridGetDevice(),  acGetAY_FOURIER_REAL(), acGetAY_FOURIER_IMAG(), acGetAAY(), z_offset);
 		acDeviceFFTBackwardTransformPlanar2RXY(acGridGetDevice(),  acGetAZ_FOURIER_REAL(), acGetAZ_FOURIER_IMAG(), acGetAAZ(), z_offset);
+		acGridExecuteTaskGraph(boundary_z_halo_exchange_graph,1);
 	}
 }
 /***********************************************************************************************/
@@ -2096,6 +2098,17 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_)  /
   acDeviceSetInput(acGridGetDevice(), AC_t,AcReal(t));
   acDeviceSetInput(acGridGetDevice(), AC_shear_delta_y,deltay);
   GW_timestep_graph = acGetOptimizedDSLTaskGraph(AC_gravitational_waves_solve_and_stress);
+  if(luses_aa_pot2_top)
+  {
+	Field AA_fields[3];
+	AA_fields[0] = acGetAAX();
+	AA_fields[1] = acGetAAY();
+	AA_fields[2] = acGetAAZ();
+	boundary_z_halo_exchange_graph = acGridBuildTaskGraph({
+			acHaloExchangeBoundary(AA_fields,3,BOUNDARY_Z_TOP)
+			});
+  }
+
 		
   //if (ltest_bcs) testBCs();
   //TP: for autotuning
