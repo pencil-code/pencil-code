@@ -53,7 +53,7 @@ program remesh
   use Mpicomm
   use Syscalls, only: system_cmd
   use General, only: get_from_nml_str,get_from_nml_real,get_from_nml_log,convert_nml, &
-                     find_proc_general, find_proc_coords_general, itoa
+                     find_proc_general, find_proc_coords_general, itoa, notanumber
   use Messages, only: memory_usage
   use Posix
 !
@@ -85,9 +85,9 @@ program remesh
   real, dimension (mmx_grid) :: rx,rdx_1,rdx_tilde
   real, dimension (mmy_grid) :: ry,rdy_1,rdy_tilde
   real, dimension (mmz_grid) :: rz,rdz_1,rdz_tilde
-  real, dimension (mmx,mprocs) :: rrx
-  real, dimension (mmy,mprocs) :: rry
-  real, dimension (mmz,mprocs) :: rrz
+  real, dimension (mmx,mprocs) :: rrx,rrdx_1,rrdx_tilde
+  real, dimension (mmy,mprocs) :: rry,rrdy_1,rrdy_tilde
+  real, dimension (mmz,mprocs) :: rrz,rrdz_1,rrdz_tilde
   real :: tdummy, t_sp
   real :: facx, facy, facz, x0loc, y0loc, z0loc, w1, w2,dang,dang_old
   integer :: cpu_local,iyy,icpu,out_size,io_len
@@ -736,6 +736,12 @@ yinyang_loop: &
               rrx(:,cpu_local)=rx(xstart:xstop)
               rry(:,cpu_local)=ry(ystart:ystop)
               rrz(:,cpu_local)=rz(zstart:zstop)
+              rrdx_1(:,cpu_local)=rdx_1(xstart:xstop)
+              rrdy_1(:,cpu_local)=rdy_1(ystart:ystop)
+              rrdz_1(:,cpu_local)=rdz_1(zstart:zstop)
+              rrdx_tilde(:,cpu_local)=rdx_tilde(xstart:xstop)
+              rrdy_tilde(:,cpu_local)=rdy_tilde(ystart:ystop)
+              rrdz_tilde(:,cpu_local)=rdz_tilde(zstart:zstop)
 !--             endif
             enddo
           enddo
@@ -781,6 +787,7 @@ yinyang_loop: &
           if (ip<8) print*,'Writing '//trim(file2)
 !print*,'Writing '//trim(file2)//' from proc ', iproc
 !print*, 'cpu, cpu_global, rrx=', cpu, cpu_global(i), rrx(:,i)
+        if (notanumber(ff(:,:,:,:,i))) print*,'notanumber in ff: target proc', i
           open(91,file=file2,form='unformatted')
           write(91) ff(:,:,:,:,i)
           if (lshear) then
@@ -829,8 +836,8 @@ yinyang_loop: &
         write(1) t_sp,rrx(:,i),rry(:,i),rrz(:,i),dx,dy,dz
         write(1) dx,dy,dz
         write(1) Lx,Ly,Lz
-        write(1) rdx_1,rdy_1,rdz_1
-        write(1) rdx_tilde,rdy_tilde,rdz_tilde
+        write(1) rrdx_1(:,i),rrdy_1(:,i),rrdz_1(:,i)
+        write(1) rrdx_tilde(:,i),rrdy_tilde(:,i),rrdz_tilde(:,i)
         close(1)
       enddo
 !
