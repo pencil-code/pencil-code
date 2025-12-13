@@ -59,6 +59,7 @@ AcTaskGraph* boundary_z_halo_exchange_graph =  NULL;
 //TP: these are ugly but for the moment we live with these
 #if TRANSPILATION
   #define luses_aa_pot2_top luses_aa_pot2_top__mod__cdata 
+  #define luses_aa_pwd_top luses_aa_pwd_top__mod__cdata 
   #define lsplit_gw_rhs_from_rest_on_gpu lsplit_gw_rhs_from_rest_on_gpu__mod__gravitational_waves_htxk
   #define limplicit_diffusion_with_fft limplicit_diffusion_with_fft__mod__implicitdiffusion
   #define limplicit_diffusion_with_cg  limplicit_diffusion_with_cg__mod__implicitdiffusion
@@ -483,6 +484,7 @@ extern "C" void testRHS(AcReal *farray_in, AcReal *dfarray_truth)
   acLogFromRootProc(rank,"largest difference: %.7e\t%.7e\n",(double)gpu_val_for_largest_diff, (double)true_val_for_largest_diff);
   acLogFromRootProc(rank,"abs range: %.7e-%7e\n",(double)min_abs_value,(double)max_abs_value);
   fflush(stdout);
+  fflush(stderr);
 }
 /***********************************************************************************************/
 AcReal to_real(void* param, const char* name)
@@ -1552,20 +1554,43 @@ extern "C" void afterSubStepGPU()
 void
 fourier_boundary_conditions()
 {
+	if(luses_aa_pwd_top)
+	{
+		acKernelInputParams params{};
+		params.bc_aa_pwd_kernel.boundary = BOUNDARY_Z_TOP;
+		params.bc_aa_pwd_kernel.topbot  = AC_top;
+		const AcKernel kernel = acGetOptimizedKernel(bc_aa_pwd_kernel,params);
+		const size_t boundary_z = (size_t)mesh.info[AC_nlocal_max].z-1;
+		for(int ghost = 1; ghost <= NGHOST; ++ghost)
+		{
+			acDeviceFFTR2PlanarXY(acGridGetDevice(), acGetAAX(), acGetAX_FOURIER_REAL(), acGetAX_FOURIER_IMAG(), boundary_z-ghost);
+			acDeviceFFTR2PlanarXY(acGridGetDevice(), acGetAAY(), acGetAY_FOURIER_REAL(), acGetAY_FOURIER_IMAG(), boundary_z-ghost);
+			acDeviceFFTR2PlanarXY(acGridGetDevice(), acGetAAZ(), acGetAZ_FOURIER_REAL(), acGetAZ_FOURIER_IMAG(), boundary_z-ghost);
+		}
+		acDeviceLaunchKernel(acGridGetDevice(), STREAM_DEFAULT, kernel, (Volume){NGHOST,NGHOST,boundary_z+1}, 
+				(Volume){(size_t)mesh.info[AC_nlocal_max].x,(size_t)mesh.info[AC_nlocal_max].y, boundary_z+2}
+				);
+  		acDeviceSynchronizeStream(acGridGetDevice(),STREAM_DEFAULT);
+		for(int ghost = 1; ghost <= NGHOST; ++ghost)
+		{
+			acDeviceFFTBackwardTransformPlanar2RXY(acGridGetDevice(),  acGetAX_FOURIER_REAL(), acGetAX_FOURIER_IMAG(), acGetAAX(), boundary_z+ghost);
+			acDeviceFFTBackwardTransformPlanar2RXY(acGridGetDevice(),  acGetAY_FOURIER_REAL(), acGetAY_FOURIER_IMAG(), acGetAAY(), boundary_z+ghost);
+			acDeviceFFTBackwardTransformPlanar2RXY(acGridGetDevice(),  acGetAZ_FOURIER_REAL(), acGetAZ_FOURIER_IMAG(), acGetAAZ(), boundary_z+ghost);
+		}
+		acGridExecuteTaskGraph(boundary_z_halo_exchange_graph,1);
+	}
 	if(luses_aa_pot2_top)
 	{
 		acKernelInputParams params{};
-		params.bc_aa_pot2_kernel.boundary = BOUNDARY_Z_TOP;
-		params.bc_aa_pot2_kernel.topbot  = AC_top;
-		const AcKernel kernel = acGetOptimizedKernel(bc_aa_pot2_kernel,params);
+		params.bc_aa_pot_kernel.boundary = BOUNDARY_Z_TOP;
+		params.bc_aa_pot_kernel.topbot  = AC_top;
+		const AcKernel kernel = acGetOptimizedKernel(bc_aa_pot_kernel,params);
 		const size_t boundary_z = (size_t)mesh.info[AC_nlocal_max].z-1;
 		acDeviceFFTR2PlanarXY(acGridGetDevice(), acGetAAX(), acGetAX_FOURIER_REAL(), acGetAX_FOURIER_IMAG(), boundary_z);
 		acDeviceFFTR2PlanarXY(acGridGetDevice(), acGetAAY(), acGetAY_FOURIER_REAL(), acGetAY_FOURIER_IMAG(), boundary_z);
 		acDeviceFFTR2PlanarXY(acGridGetDevice(), acGetAAZ(), acGetAZ_FOURIER_REAL(), acGetAZ_FOURIER_IMAG(), boundary_z);
-		fprintf(stderr,"Hi from fourier bc: %s!\n",kernel_names[kernel]);
-		fflush(stderr);
-		acDeviceLaunchKernel(acGridGetDevice(), STREAM_DEFAULT, kernel, (Volume){NGHOST,NGHOST,boundary_z}, 
-				(Volume){(size_t)mesh.info[AC_nlocal_max].x,(size_t)mesh.info[AC_nlocal_max].y, boundary_z+1}
+		acDeviceLaunchKernel(acGridGetDevice(), STREAM_DEFAULT, kernel, (Volume){NGHOST,NGHOST,boundary_z+1}, 
+				(Volume){(size_t)mesh.info[AC_nlocal_max].x,(size_t)mesh.info[AC_nlocal_max].y, boundary_z+2}
 				);
   		acDeviceSynchronizeStream(acGridGetDevice(),STREAM_DEFAULT);
 		for(int ghost = 1; ghost <= NGHOST; ++ghost)
@@ -2103,7 +2128,7 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_)  /
   acDeviceSetInput(acGridGetDevice(), AC_t,AcReal(t));
   acDeviceSetInput(acGridGetDevice(), AC_shear_delta_y,deltay);
   GW_timestep_graph = acGetOptimizedDSLTaskGraph(AC_gravitational_waves_solve_and_stress);
-  if(luses_aa_pot2_top)
+  if(luses_aa_pwd_top || luses_aa_pot2_top)
   {
 	Field AA_fields[3];
 	AA_fields[0] = acGetAAX();
@@ -2429,10 +2454,10 @@ void testBCs()
   boundconds_y_c(mesh.vertex_buffer[0],&ivar1,&ivar2);
   boundconds_z_c(mesh.vertex_buffer[0],&ivar1,&ivar2);
 
+  fourier_boundary_conditions();
   acGridSynchronizeStream(STREAM_ALL);
   acGridExecuteTaskGraph(bcs,1);
   acGridSynchronizeStream(STREAM_ALL);
-  fourier_boundary_conditions();
   acGridSynchronizeStream(STREAM_ALL);
   acDeviceStoreMesh(acGridGetDevice(), STREAM_DEFAULT, &mesh_to_copy);
   acGridSynchronizeStream(STREAM_ALL);
@@ -2547,7 +2572,7 @@ void testBCs()
 	}
   	acLogFromRootProc(0,"max abs not passed val: %.7e\t%.7e\n",(double)max_abs_not_passed_val, (double)fabs(true_pair));
   	acLogFromRootProc(0,"max abs relative difference val: %.7e\n",(double)max_abs_relative_difference);
-  	acLogFromRootProc(0,"Point where biggest rel diff: %d,%d,%d in Field: %s\n",largest_diff_point.x,largest_diff_point.y,largest_diff_point.z,acGetFieldName(Field(largest_diff_point.w)));
+  	acLogFromRootProc(0,"Point where biggest rel diff: %d,%d,%d in Field: %s, diff: %.14e\n",largest_diff_point.x,largest_diff_point.y,largest_diff_point.z,acGetFieldName(Field(largest_diff_point.w)),max_abs_relative_difference);
   	acLogFromRootProc(0,"largest difference: %.7e\t%.7e\n",(double)gpu_val_for_largest_diff, (double)true_val_for_largest_diff);
   	acLogFromRootProc(0,"abs range: %.7e-%7e\n",(double)min_abs_value,(double)max_abs_value);
     	acLogFromRootProc(0,"Did not pass BC test :(\n");
@@ -2555,13 +2580,19 @@ void testBCs()
 
     	exit(EXIT_FAILURE);
   }
+  else
+  {
+	  fprintf(stderr,"Passed BC test :)\n");
+  }
   fflush(stdout);
+  fflush(stderr);
 
   acHostMeshDestroy(&mesh_to_copy);
   acHostMeshCopyVertexBuffers(tmp_mesh_to_store,mesh);
   acHostMeshDestroy(&tmp_mesh_to_store);
   acGridDestroyTaskGraph(bcs);
   acHostMeshDestroy(&tmp_mesh_to_store);
+  exit(EXIT_SUCCESS);
 }
 /***********************************************************************************************/
 extern "C" void gpuSetDt(double t)

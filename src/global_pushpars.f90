@@ -17,7 +17,9 @@ contains
     integer, save, dimension(mcom,2) :: enum_bcx12,enum_bcy12,enum_bcz12
     logical, save :: lfreeze_var_all = .false.
     logical, save :: luses_aa_pot2_top = .false.
+    logical, save :: luses_aa_pwd_top = .false.
     logical, save :: luses_aa_pot2_bot = .false.
+    logical, save :: luses_aa_pwd_bot = .false.
     integer :: j
 
     call copy_addr(ncoarse,p_par(1)) ! int
@@ -446,11 +448,15 @@ contains
     call copy_addr(iby,p_par(1396)) ! int
     call copy_addr(ibb,p_par(1397)) ! int
     do j = 1,mvar
-        if(bcz12(j,TOP) == 'pot' .or. bcz12(j,TOP) == 'pwd') luses_aa_pot2_top = .true.
-        if(bcz12(j,BOT) == 'pot' .or. bcz12(j,BOT) == 'pwd') luses_aa_pot2_bot = .true.
+        if(bcz12(j,TOP) == 'pot') luses_aa_pot2_top = .true.
+        if(bcz12(j,BOT) == 'pot') luses_aa_pot2_bot = .true.
+        if(bcz12(j,TOP) == 'pwd') luses_aa_pwd_top = .true.
+        if(bcz12(j,BOT) == 'pwd') luses_aa_pwd_bot = .true.
     enddo
     call copy_addr(luses_aa_pot2_top,p_par(1398)) ! bool
     call copy_addr(luses_aa_pot2_bot,p_par(1399)) ! bool
+    call copy_addr(luses_aa_pwd_top,p_par(1400)) ! bool
+    call copy_addr(luses_aa_pwd_bot,p_par(1401)) ! bool
 
   endsubroutine pushpars2c
 !***********************************************************************
