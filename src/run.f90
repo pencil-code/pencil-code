@@ -620,7 +620,8 @@ endsubroutine helper_loop
   use Boundcond,       only: update_ghosts, initialize_boundcond
   use Chemistry,       only: chemistry_clean_up
   use Diagnostics,     only: phiavg_norm, report_undefined_diagnostics, trim_averages,diagnostics_clean_up
-  use Equ,             only: initialize_pencils, debug_imn_arrays, rhs_sum_time, before_boundary_sum_time
+  use Equ,             only: initialize_pencils, debug_imn_arrays, rhs_sum_time, before_boundary_sum_time,&
+                             radtransfer_sum_time
   use FArrayManager,   only: farray_clean_up
   use Farray_alloc
   use General,         only: random_seed_wrapper, touch_file, itoa
@@ -1218,6 +1219,9 @@ endsubroutine helper_loop
           write(*,'(A,1pG14.7)') &
             ' Before boundary wall clock time/timestep/local meshpoint [microsec] =', &
             before_boundary_sum_time/icount/nw/1.0e-6
+          if(lradiation_ray) write(*,'(A,1pG14.7)') &
+            ' Radtransfer wall clock time/timestep/local meshpoint [microsec] =', &
+            radtransfer_sum_time/icount/nw/1.0e-6
           write(*,'(A,1pG14.7)') &
             ' Diagnostics wall clock time/timestep/local meshpoint [microsec] =', &
             time_doing_diagnostics/icount/nw/1.0e-6
@@ -1236,6 +1240,12 @@ endsubroutine helper_loop
           write(*,'(A,1pG14.7)') &
             ' After substep wall clock time/timestep/meshpoint [microsec] =', &
             after_substep_sum_time/icount/nw/ncpus/1.0e-6
+          write(*,'(A,1pG14.7)') &
+            ' Before boundary wall clock time/timestep/meshpoint [microsec] =', &
+            before_boundary_sum_time/icount/nw/ncpus/1.0e-6
+          if(lradiation_ray) write(*,'(A,1pG14.7)') &
+            ' Radtransfer wall clock time/timestep/meshpoint [microsec] =', &
+            radtransfer_sum_time/icount/nw/ncpus/1.0e-6
         endif
       endif
     endif

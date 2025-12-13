@@ -17,6 +17,7 @@ module Equ
   public :: perform_diagnostics
 !
   real, public    :: before_boundary_sum_time=0.
+  real, public    :: radtransfer_sum_time   =0.
   real, public    :: rhs_sum_time=0.
 
   private
@@ -274,7 +275,12 @@ module Equ
 !  (but this is decided in radtransfer itself)
 !
       if (leos_ionization.or.leos_temperature_ionization) call ioncalc(f)
-      if (lradiation_ray) call radtransfer(f)     ! -> after_boundary or before_boundary?
+      if (lradiation_ray) then
+        start_time = mpiwtime()
+        call radtransfer(f)     ! -> after_boundary or before_boundary?
+        end_time = mpiwtime()
+        radtransfer_sum_time = radtransfer_sum_time + end_time-start_time
+      endif
 !
 !  Calculate shock profile (simple).
 !
