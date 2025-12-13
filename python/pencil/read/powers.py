@@ -259,8 +259,8 @@ class Power(object):
             else:
                 self.kx = f['metadata/kx'][()]
                 self.ky = f['metadata/ky'][()]
-                self.z = f['metadata/z'][()]
-                self.nzpos = len(self.z)
+                self.zpos = f['metadata/z'][()]
+                self.nzpos = len(self.zpos)
 
                 nt = int(np.squeeze(f['last'][()]))
                 time = np.empty([nt])
