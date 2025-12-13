@@ -514,7 +514,19 @@ class Power(object):
 
         return power_list, file_list
 
-class _LazyPowerArrayVD:
+class _m_LazyPowerArray:
+    """
+    Mixin to populate properties of _LazyPowerArray
+    """
+    @property
+    def ndim(self):
+        return len(self.shape)
+
+    @property
+    def dtype(self):
+        return np.cdouble
+
+class _LazyPowerArrayVD(_m_LazyPowerArray):
     """
     A container that reads the HDF5 power_xy data only when indexed.
 
@@ -590,11 +602,7 @@ class _LazyPowerArrayVD:
         if self._memfile:
             self._memfile.close()
 
-    @property
-    def ndim(self):
-        return len(self.shape)
-
-class _LazyPowerArrayNoVD:
+class _LazyPowerArrayNoVD(_m_LazyPowerArray):
     """
     Variant of _LazyPowerArray that does not rely on virtual datasets.
     """
@@ -647,10 +655,6 @@ class _LazyPowerArrayNoVD:
             for it in np.atleast_1d(range(self._nt)[t_sl]):
                 ret.append(f[f"{it+1}/data_re"][inds] + 1j*f[f"{it+1}/data_im"][inds])
         return np.array(ret, dtype=ret[0].dtype)
-
-    @property
-    def ndim(self):
-        return len(self.shape)
 
 _LazyPowerArray = _LazyPowerArrayNoVD
 
