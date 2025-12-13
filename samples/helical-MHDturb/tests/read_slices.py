@@ -19,8 +19,17 @@ sim = pc.sim.get(path="..", quiet=True)
 
 if not os.path.exists(sim.datadir/"slice_position.dat"):
     #Collect the slice files from the individual processors
-    sim.bash("pc_build -t read_all_videofiles", bashrc=False, verbose=False)
-    sim.bash("src/read_all_videofiles.x", bashrc=False, verbose=False)
+    bash_opts = {
+        'bashrc': False,
+        'verbose': False,
+        'raise_errors': True,
+        }
+    sim.compile(
+        previous_flags=True,
+        additional_options="-t read_all_videofiles",
+        **bash_opts,
+        )
+    sim.bash("src/read_all_videofiles.x", **bash_opts)
 
 sl = pc.read.slices(
     field = ["bb3"],
