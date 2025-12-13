@@ -1350,7 +1350,7 @@ extern "C" void beforeBoundaryGPU(bool lrmv, int isubstep, double t)
 
 //Some Fields are directly calculated on the halos like yH in ioncalc.
 //Could reformulate the kernels in a way that the bc is simply the same kernel as the normal calculation
-//But don't want to repeat calc too often so this is an somewhat easy to way to do it
+//But don't want to repeat calc too often so this is a somewhat easy way to do it
 #if TRANSPILATION
 	const auto steps_updating_halos = acGetOptimizedDSLTaskGraph(AC_before_boundary_steps_including_halos,
 					          (Volume){0,0,0},acGetLocalMM(acGridGetLocalMeshInfo()));
