@@ -4134,18 +4134,35 @@ bc_sts(AcBoundary boundary,AC_TOP_BOT topbot,Field j)
 }
 #endif
 
-boundary_condition Kernel bc_aa_pot2_kernel(AcBoundary boundary, AC_TOP_BOT topbot)
+Kernel bc_aa_pwd_kernel(AcBoundary boundary, AC_TOP_BOT topbot)
 {
-    if(AC_luses_aa_pot2_top__mod__cdata || AC_luses_aa_pot2_bot__mod__cdata)
+    if(AC_luses_aa_pwd_top__mod__cdata || AC_luses_aa_pwd_bot__mod__cdata)
     {
-	ac_potential_bc(boundary,AX_FOURIER_REAL,AX_FOURIER_IMAG)
-	ac_potential_bc(boundary,AY_FOURIER_REAL,AY_FOURIER_IMAG)
-	ac_potential_bc(boundary,AZ_FOURIER_REAL,AZ_FOURIER_IMAG)
+	ac_potential_pwd_bc(boundary,AX_FOURIER_REAL,AX_FOURIER_IMAG)
+	ac_potential_pwd_bc(boundary,AY_FOURIER_REAL,AY_FOURIER_IMAG)
+	ac_potential_pwd_bc(boundary,AZ_FOURIER_REAL,AZ_FOURIER_IMAG)
     }
 }
 
-//TP: this is a dummy implementation since we handle the potential bc out of the task system
+Kernel bc_aa_pot_kernel(AcBoundary boundary, AC_TOP_BOT topbot)
+{
+    if(AC_luses_aa_pot2_top__mod__cdata || AC_luses_aa_pot2_bot__mod__cdata)
+    {
+	ac_potential_pot_bc(boundary,AX_FOURIER_REAL,AX_FOURIER_IMAG)
+	ac_potential_pot_bc(boundary,AY_FOURIER_REAL,AY_FOURIER_IMAG)
+	ac_potential_pot_bc(boundary,AZ_FOURIER_REAL,AZ_FOURIER_IMAG)
+    }
+}
+
+//TP: these are  dummy implementations since we handle the potential bcs out of the task system
 bc_aa_pot2(AcBoundary boundary, AC_TOP_BOT topbot)
+{
+	ac_fixed_bc(boundary,AAX)
+	ac_fixed_bc(boundary,AAY)
+	ac_fixed_bc(boundary,AAZ)
+}
+
+bc_aa_pwd(AcBoundary boundary, AC_TOP_BOT topbot)
 {
 	ac_fixed_bc(boundary,AAX)
 	ac_fixed_bc(boundary,AAY)
