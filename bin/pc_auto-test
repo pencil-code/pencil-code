@@ -399,7 +399,7 @@ Options:
        --local-lock        \tLet multiple auto-tests run in different working copies (default: off)
        --gpu               \tRun only GPU-capable tests
        --omp-threads=###   \tRun with ### OMP threads (default: 0)
-       --debug             \tPrint lots of debugging output
+       --debug             \tPrint lots of debugging output and don't clean up files once done.
        --fast              \tShortcut for the option FFLAGS+=-O0 of pc_build
        --log-dir=<dir>     \tDirectory to store the logfiles (default: .)
        --previous-dir=<dir>\tDirectory for logfiles of the previous run (default: off)
@@ -1780,17 +1780,19 @@ sub test_rundir {
 
     # Clean up if necessary
   cleanup:
-    if ($created_datadir) {
-        system("rm", "data");
-        system("rm", "-r", "$tmpdir");
+    unless ($debug) {
+        if ($created_datadir) {
+            system("rm", "data");
+            system("rm", "-r", "$tmpdir");
+        }
+        system("rm", "-f", "pc_commands.log");
+        system("rm", "-f", "src/.build-history");
+        system("rm", "-f", "src/.buildinfo");
+        system("rm", "-f", "src/.buildtime");
+        system("rm", "-f", "src/revision.txt");
+        system("rm", "-f", "src/pre_and_post_processing/*.x");
+        # system("rm", "-f", "src/*.x"); # we want to have the final binaries in the Travis cache to save the linking stage, if possible.
     }
-    system("rm", "-f", "pc_commands.log");
-    system("rm", "-f", "src/.build-history");
-    system("rm", "-f", "src/.buildinfo");
-    system("rm", "-f", "src/.buildtime");
-    system("rm", "-f", "src/revision.txt");
-    system("rm", "-f", "src/pre_and_post_processing/*.x");
-    # system("rm", "-f", "src/*.x"); # we want to have the final binaries in the Travis cache to save the linking stage, if possible.
 
     # Summarize timings in human-readable form
     my $t4 = get_time();
