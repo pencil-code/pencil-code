@@ -132,9 +132,7 @@ class Averages(object):
 
         Notes
         -----
-        Due to unfortunate historical decisions, the axis ordering of the 2D
-        averages (yaver and zaver) depends on the IO module used. For yaver
-        with io_dist the ordering is [t,x,z], while with io_hdf5 it is [t,z,x].
+        The axis ordering of the 2D averages (yaver and zaver) is [t,x,z] or [t,x,y]
         """
 
 
