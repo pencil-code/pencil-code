@@ -731,12 +731,15 @@ class __Simulation__(object):
             command.append(" --fast")
         if hostfile:
             command.append(" -f " + hostfile)
-        if verbose != False:
+
+        command = " ".join(command)
+        if verbose:
             print(f"! Compiling {self.path}")
+            print(f"Command: {command}")
 
         try:
             ret = self.bash(
-                command=" ".join(command),
+                command=command,
                 verbose=verbose,
                 logfile=join(self.pc_dir, "compilelog_" + timestamp),
                 **kwargs,
