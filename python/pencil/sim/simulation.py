@@ -825,10 +825,7 @@ class __Simulation__(object):
             If True, a nonzero return code for command will be raised as a Python error.
         """
 
-        import subprocess
         from pencil import io
-        from os.path import join
-        import os
 
         timestamp = io.timestamp()
         io.mkdir(self.pc_dir)
