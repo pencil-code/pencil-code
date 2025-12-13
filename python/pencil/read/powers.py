@@ -323,6 +323,12 @@ class Power(object):
             elif param.lintegrate_z:
                 raise NotImplementedError
             else:
+                try:
+                    version = f['metadata/output_version'][()]
+                except KeyError:
+                    #We don't know how to read this file
+                    return
+
                 self.kx = f['metadata/kx'][()]
                 self.ky = f['metadata/ky'][()]
                 self.zpos = f['metadata/z'][()]
