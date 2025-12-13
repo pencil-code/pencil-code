@@ -7,6 +7,7 @@ manipulate simulations.
 import os
 from os.path import join, exists, split, islink, realpath, abspath, basename
 import numpy as np
+import subprocess
 
 from pencil.util import PathWrapper, pc_print
 
@@ -694,6 +695,7 @@ class __Simulation__(object):
         verbose=False,
         hostfile=None,
         autoclean=True,
+        previous_flags=False,
         additional_options="",
         **kwargs,
         ):
@@ -715,6 +717,9 @@ class __Simulation__(object):
         autoclean : bool
             If compilation fails, automatically set cleanall=True and retry.
 
+        previous_flags : bool
+            If True, use the same flags as the last time pc_build was called.
+
         additional_options: str
             Addition options to be passed to pc_build.
 
@@ -726,8 +731,10 @@ class __Simulation__(object):
 
         timestamp = io.timestamp()
 
-        command = []
-        command.append("pc_build")
+        if previous_flags:
+            command = [self._get_last_build_cmd()]
+        else:
+            command = ["pc_build"]
 
         if cleanall:
             self.cleanall(verbose=verbose, hostfile=hostfile, **kwargs)
@@ -768,6 +775,21 @@ class __Simulation__(object):
                     )
             else:
                 return ret
+
+    def _get_last_build_cmd(self):
+        """
+        Figure out how pc_build was invoked (flags, options) last time it was run.
+        """
+        #TODO: may be better to do this in Python itself by iterating over the lines.
+        out = subprocess.run(
+            "grep -w pc_build pc_commands.log | tail -1",
+            cwd=self.path,
+            shell=True,
+            capture_output=True,
+            text=True,
+            check=True,
+            )
+        return out.stdout.strip()
 
     def build(self, **kwargs):
         """Same as compile()"""
