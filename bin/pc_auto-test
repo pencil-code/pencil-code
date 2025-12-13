@@ -400,7 +400,6 @@ Options:
        --gpu               \tRun only GPU-capable tests
        --omp-threads=###   \tRun with ### OMP threads (default: 0)
        --debug             \tPrint lots of debugging output
-       --debug             \tPrint lots of debugging output
        --fast              \tShortcut for the option FFLAGS+=-O0 of pc_build
        --log-dir=<dir>     \tDirectory to store the logfiles (default: .)
        --previous-dir=<dir>\tDirectory for logfiles of the previous run (default: off)
