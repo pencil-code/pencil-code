@@ -694,6 +694,7 @@ class __Simulation__(object):
         verbose=False,
         hostfile=None,
         autoclean=True,
+        additional_options="",
         **kwargs,
         ):
         """Compiles the simulation. Per default the linking is done before the
@@ -714,6 +715,9 @@ class __Simulation__(object):
         autoclean : bool
             If compilation fails, automatically set cleanall=True and retry.
 
+        additional_options: str
+            Addition options to be passed to pc_build.
+
         Accepts all other keywords accepted by self.bash
         """
 
@@ -731,6 +735,8 @@ class __Simulation__(object):
             command.append(" --fast")
         if hostfile:
             command.append(" -f " + hostfile)
+
+        command.append(additional_options)
 
         command = " ".join(command)
         if verbose:
