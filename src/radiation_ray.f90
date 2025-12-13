@@ -721,7 +721,7 @@ module Radiation
 !
 !  Initialize heating rate, radiative flux and radiative pressure.
 !
-        if (.not.(lrad_cool_diffus.or.lrad_pres_diffus)) then
+        if (.not. lgpu .and. .not.(lrad_cool_diffus.or.lrad_pres_diffus)) then
           f(:,:,:,iQrad)=0.0
           if (lradflux) f(:,:,:,iKR_Fradx:iKR_Fradz)=0.0
           if (lradpress) f(:,:,:,iKR_pressxx:iKR_presszx)=0.0
@@ -1706,6 +1706,7 @@ module Radiation
       real, dimension (nx) :: cgam, ell, chi, dtrad_thick, dtrad_thin
       real, dimension (nx) :: dt1rad_cgam
       real, dimension (nx) :: Qrad_diffus
+      real :: kapparho2
       integer :: l
 !
 !  Add radiative cooling, either from the intensity or in the diffusion
@@ -1750,19 +1751,18 @@ module Radiation
           kappa=f(l1:l2,m,n,ikapparho)*p%rho1
           if (lcdtrad_old) then
             do l=1,nx
-              if (f(l1-1+l,m,n,ikapparho)**2>dxyz_2(l)) then
-                dt1_rad(l)=4*kappa(l)*sigmaSB*p%TT(l)**3*p%cv1(l)* &
-                    dxyz_2(l)/f(l1-1+l,m,n,ikapparho)**2/cdtrad
-!                if (z_cutoff/=impossible .and. cool_wid/=impossible) &
-!                dt1_rad(l)=0.5*dt1_rad(l)*(1.-tanh((z(n)-z_cutoff)/cool_wid))
-                if (z_cutoff/=impossible .and. cool_wid/=impossible .and. z(n) .gt. z_cutoff) &
-                dt1_rad(l)=0.5*dt1_rad(l)*(1.-tanh((p%lnTT(l)-log(1.0e4))/log(2.0)))
-              else
-                dt1_rad(l)=4*kappa(l)*sigmaSB*p%TT(l)**3*p%cv1(l)/cdtrad
-!                if (z_cutoff/=impossible .and. cool_wid/=impossible) &
-!                dt1_rad(l)=0.5*dt1_rad(l)*(1.-tanh((z(n)-z_cutoff)/cool_wid))
-                if (z_cutoff/=impossible .and. cool_wid/=impossible .and. z(n) .gt. z_cutoff) &
-                dt1_rad(l)=0.5*dt1_rad(l)*(1.-tanh((p%lnTT(l)-log(1.0e4))/log(2.0)))
+              dt1_rad(l) = 4*kappa(l)*sigmaSB*p%TT(l)**3*p%cv1(l)
+              kapparho2 = f(l1-1+l,m,n,ikapparho)**2
+              if (kapparho2>dxyz_2(l)) then
+                dt1_rad(l)=dt1_rad(l)*dxyz_2(l)/kapparho2
+              endif
+              dt1_rad(l)=dt1_rad(l)/cdtrad
+!             if (z_cutoff/=impossible .and. cool_wid/=impossible) &
+!             dt1_rad(l)=0.5*dt1_rad(l)*(1.-tanh((z(n)-z_cutoff)/cool_wid))
+              if (z_cutoff/=impossible .and. cool_wid/=impossible) then
+                if(z(n) .gt. z_cutoff) then
+                  dt1_rad(l)=0.5*dt1_rad(l)*(1.-tanh((p%lnTT(l)-log(1.0e4))/log(2.0)))
+                endif
               endif
             enddo
           else

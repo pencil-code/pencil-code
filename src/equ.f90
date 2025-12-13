@@ -17,6 +17,7 @@ module Equ
   public :: perform_diagnostics
 !
   real, public    :: before_boundary_sum_time=0.
+  real, public    :: time_spent_copying_and_waiting=0.
   real, public    :: radtransfer_sum_time   =0.
   real, public    :: rhs_sum_time=0.
 
@@ -274,7 +275,7 @@ module Equ
 !  is only used for visualization and only needed when lvideo
 !  (but this is decided in radtransfer itself)
 !
-      if (leos_ionization.or.leos_temperature_ionization) call ioncalc(f)
+      if ((leos_ionization.or.leos_temperature_ionization) .and. .not. lgpu) call ioncalc(f)
       if (lradiation_ray) then
         start_time = mpiwtime()
         call radtransfer(f)     ! -> after_boundary or before_boundary?
@@ -305,7 +306,9 @@ module Equ
       if (lgpu) then
         if (ldiagnostic_output) then
           !wait in case the last diagnostic tasks are not finished
+          start_time = mpiwtime()
           call copy_farray_from_GPU(f)
+          time_spent_copying_and_waiting = time_spent_copying_and_waiting+mpiwtime()-start_time
           if (lode) f_ode_diagnostics = f_ode
 !$        lmasterflags(PERF_DIAGS) = .true.
         endif

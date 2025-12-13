@@ -621,7 +621,7 @@ endsubroutine helper_loop
   use Chemistry,       only: chemistry_clean_up
   use Diagnostics,     only: phiavg_norm, report_undefined_diagnostics, trim_averages,diagnostics_clean_up
   use Equ,             only: initialize_pencils, debug_imn_arrays, rhs_sum_time, before_boundary_sum_time,&
-                             radtransfer_sum_time
+                             radtransfer_sum_time,time_spent_copying_and_waiting
   use FArrayManager,   only: farray_clean_up
   use Farray_alloc
   use General,         only: random_seed_wrapper, touch_file, itoa
@@ -1229,8 +1229,14 @@ endsubroutine helper_loop
             ' Timestep wall clock time/timestep/local meshpoint [microsec] =', &
             time_in_timestep/icount/nw/1.0e-6
           write(*,'(A,1pG14.7)') &
+            ' Timestep (without waiting) wall clock time/timestep/local meshpoint [microsec] =', &
+            (time_in_timestep-time_spent_copying_and_waiting)/icount/nw/1.0e-6
+          write(*,'(A,1pG14.7)') &
             ' Timestep wall clock time/timestep/meshpoint [microsec] =', &
             time_in_timestep/icount/nw/ncpus/1.0e-6
+          write(*,'(A,1pG14.7)') &
+            ' Timestep (without waiting) wall clock time/timestep/meshpoint [microsec] =', &
+            (time_in_timestep-time_spent_copying_and_waiting)/icount/nw/ncpus/1.0e-6
           write(*,'(A,1pG14.7)') &
             ' Diagnostics wall clock time/timestep/meshpoint [microsec] =', &
             time_doing_diagnostics/icount/nw/ncpus/1.0e-6
@@ -1246,6 +1252,9 @@ endsubroutine helper_loop
           if(lradiation_ray) write(*,'(A,1pG14.7)') &
             ' Radtransfer wall clock time/timestep/meshpoint [microsec] =', &
             radtransfer_sum_time/icount/nw/ncpus/1.0e-6
+          if(lradiation_ray) write(*,'(A,1pG14.7)') &
+            ' Radtransfer+Rhs wall clock time/timestep/meshpoint [microsec] =', &
+            (rhs_sum_time+radtransfer_sum_time)/icount/nw/ncpus/1.0e-6
         endif
       endif
     endif
