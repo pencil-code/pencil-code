@@ -126,16 +126,8 @@ def json_to_html(json_filename, html_filename):
         raise NotImplementedError(f"for tox report version {report['reportversion']}")
 
     css = """
-        html {
-            // https://www.aleksandrhovhannisyan.com/blog/62-5-percent-font-size-trick/
-            // By default, 1rem = 16px; the below makes it 10px
-            font-size: 62.5%;
-            }
         h1 {
-            font-size: 2rem;
-            }
-        body {
-            font-size: 1.6rem;
+            font-size: 1.25rem;
             }
         pre {
             font-family: monospace;
