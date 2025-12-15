@@ -4859,7 +4859,7 @@ module Magnetic
 !  Consider advective timestep only when lhydro=T.
 !
       if (lupdate_courant_dt) then
-        if (lhydro.and.llorentzforce) then
+        if (lhydro.and.(.not.lkinematic).and.llorentzforce) then
           rho1_jxb=p%rho1
           if (rhomin_jxb>0) rho1_jxb=min(rho1_jxb,1/rhomin_jxb)
           if (va2max_jxb>0 .and. (.not. (betamin_jxb>0))) &
