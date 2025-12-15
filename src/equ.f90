@@ -734,10 +734,12 @@ module Equ
 
 !$    use General, only: signal_send
       use Special, only: calc_ode_diagnostics_special
+      use EquationofState, only: ioncalc
 
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
       type (pencil_case) :: p
 
+        if (lmultithread .and. (leos_ionization.or.leos_temperature_ionization)) call ioncalc(f)
         call calc_all_before_boundary_diagnostics(f)
         call calc_all_module_diagnostics(f,p)     ! by all helper threads
         if (lode) call calc_ode_diagnostics_special(f_ode_diagnostics)
