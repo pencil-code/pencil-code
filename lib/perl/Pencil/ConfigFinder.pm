@@ -280,7 +280,7 @@ sub get_host_id_system_info {
         || first_word_from_file('/etc/version')
       );
 
-    if (defined $linux_type && ($linux_type == '' ||  index($linux_type, "\\S") != -1)) {
+    if (defined $linux_type && ($linux_type eq '' ||  index($linux_type, "\\S") != -1)) {
         #On some systems (e.g. Arch Linux), /etc/issue contains strings like
         # \S{PRETTY_NAME}, which use variables defined in /etc/os-release.
         # If linux_type contains \S, it is likely we have run into such
