@@ -3152,13 +3152,13 @@ ifeq ($(GPU),gpu_astaroth)
 special.so: $(CPARAM_OBJ) $(CDATA_OBJ) $(SPECIAL_OBJ) special_dummies.inc $(SPECIAL_MODULES:=.o)
 	$(LD) $(SPECIAL_MODULES:=.o) $(DLL_LDFLAGS) -o special.so
 else
-.ONESHELL:
 special.so: $(CPARAM_OBJ) $(CDATA_OBJ) $(SPECIAL_OBJ) special_dummies.inc $(SPECIAL_MODULES:=.o)
 	# pc_mkspecial should run regardless of whether ld succeeds; if ld fails,
-	# we want make to fail AFTER running pc_mkspecial
-	$(LD) $(SPECIAL_MODULES:=.o) $(DLL_LDFLAGS) -o special.so
-	ld_status=$$?
-	pc_mkspecial.sh "$(SPECIAL_MODULES:=.f90)"
+	# we want make to fail AFTER running pc_mkspecial. The backslashes and
+	# semicolons below are essential for this.
+	$(LD) $(SPECIAL_MODULES:=.o) $(DLL_LDFLAGS) -o special.so ;\
+	ld_status=$$? ;\
+	pc_mkspecial.sh "$(SPECIAL_MODULES:=.f90)" ;\
 	exit $$ld_status
 endif
 #
