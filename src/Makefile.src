@@ -204,6 +204,11 @@ endif
 DLL_FFLAGS = -fPIC
 DLL_LDFLAGS = -shared
 #
+# Allow the user to specify extra linker flags as arguments to make.
+#
+LDFLAGS_EXTRA =
+LDFLAGS += $(LDFLAGS_EXTRA)
+DLL_LDFLAGS += $(LDFLAGS_EXTRA)
 #
 # useful shortcuts
 #
