@@ -189,6 +189,10 @@ CFLAGS_DOUBLE = -DDOUBLE_PRECISION
 #
 # Default linker flags.
 #
+# 10-Dec-2025/Kishore: += will define the variable if it is not already defined,
+# so the below check is not needed for GNU Make. Do other flavours (BSD/Mac) do
+# something different?
+# <https://www.gnu.org/software/make/manual/html_node/Appending.html>
 ifeq ($(LDFLAGS),)
   LDFLAGS = -ldl
 else
