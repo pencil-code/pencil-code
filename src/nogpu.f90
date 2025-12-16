@@ -181,7 +181,7 @@ contains
     endsubroutine
 !**************************************************************************
     subroutine get_gpu_reduced_vars(dst)
-      real, dimension(10) :: dst
+      real, dimension(12) :: dst
       call keep_compiler_quiet(dst)
     endsubroutine get_gpu_reduced_vars
 !**************************************************************************

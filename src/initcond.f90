@@ -66,7 +66,7 @@ module Initcond
   public :: strange,phi_siny_over_r2
   public :: ferriere_uniform_x, ferriere_uniform_y
   public :: rotblob, rotblob_yz, pre_stellar_cloud, dipole, dipole_tor, switchback
-  public :: dipoleA, dipoleB
+  public :: quadrupole, quadrupole2, quadrupole3, dipoleA, dipoleB
   public :: read_outside_scal_array, read_outside_vec_array
 !
   interface posnoise            ! Overload the `posnoise' function
@@ -7514,6 +7514,166 @@ module Initcond
       endif
 !
     endsubroutine dipole
+!***********************************************************************
+    subroutine quadrupole(f,ix,amp,r_inner_,r_outer_)
+!
+!  initial vector potential for a
+!  purely poloidal axisymmetric field \vec{B} \sim [f_r \cos\theta, f_\theta \sin\theta, 0]
+!
+!  30-nov-25/axel: adapted from dipole
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: ix
+      real :: amp, rpart, rr2, pom2, r_inner, r_outer
+      real, optional :: r_inner_, r_outer_
+      integer :: l,m,n
+!
+      if (present(r_inner_).and.present(r_outer_)) then
+        r_inner=r_inner_
+        r_outer=r_outer_
+      else
+        r_inner=xyz0(1)
+        r_outer=xyz1(1)
+      endif
+!
+!  Dipolar in the z direction in Cartesian coordinates
+!
+      if (lcartesian_coords) then
+        call fatal_error('quadrupole', 'not yet programmed')
+        do n=n1,n2
+        do m=m1,m2
+        do l=l1,l2
+          pom2=x(l)**2+y(m)**2
+          rr2=pom2+z(n)**2
+          if (rr2<=1.) then
+            f(l,m,n,ix+1)=amp*sqrt(pom2)
+          else
+            f(l,m,n,ix+1)=amp*sqrt(pom2/rr2**3)
+          endif
+        enddo
+        enddo
+        enddo
+!
+!  Quadrupole in spherical coordinantes.
+!  Want B_phi=P_1^1(costh)/r^2, so A_r=-P_1(costh)/r
+!
+      elseif (lspherical_coords) then
+        do m = 1,my
+          do l = 1,mx
+            rpart = amp/x(l)
+            f(l,m,:,ix) = rpart*cos(y(m))
+            f(l,m,:,ix+1:ix+2) = 0.
+          enddo
+        enddo
+      endif
+!
+    endsubroutine quadrupole
+!***********************************************************************
+    subroutine quadrupole2(f,ix,amp,r_inner_,r_outer_)
+!
+!  initial vector potential for a
+!  purely poloidal axisymmetric field \vec{B} \sim [f_r \cos\theta, f_\theta \sin\theta, 0]
+!
+!  30-nov-25/axel: adapted from dipole
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: ix
+      real :: amp, rpart, rr2, pom2, r_inner, r_outer
+      real, optional :: r_inner_, r_outer_
+      integer :: l,m,n
+!
+      if (present(r_inner_).and.present(r_outer_)) then
+        r_inner=r_inner_
+        r_outer=r_outer_
+      else
+        r_inner=xyz0(1)
+        r_outer=xyz1(1)
+      endif
+!
+!  Dipolar in the z direction in Cartesian coordinates
+!
+      if (lcartesian_coords) then
+        call fatal_error('quadrupole', 'not yet programmed')
+        do n=n1,n2
+        do m=m1,m2
+        do l=l1,l2
+          pom2=x(l)**2+y(m)**2
+          rr2=pom2+z(n)**2
+          if (rr2<=1.) then
+            f(l,m,n,ix+1)=amp*sqrt(pom2)
+          else
+            f(l,m,n,ix+1)=amp*sqrt(pom2/rr2**3)
+          endif
+        enddo
+        enddo
+        enddo
+!
+!  Quadrupole in spherical coordinantes.
+!  Want B_phi=P_1^1(costh)/r^2, so A_r=-P_1(costh)/r
+!
+      elseif (lspherical_coords) then
+        do m = 1,my
+          do l = 1,mx
+            rpart = amp/x(l)**2
+            f(l,m,:,ix+1) = f(l,m,:,ix+1)+rpart*3.*sin(y(m))*cos(y(m))
+          enddo
+        enddo
+      endif
+!
+    endsubroutine quadrupole2
+!***********************************************************************
+    subroutine quadrupole3(f,ix,amp,r_inner_,r_outer_)
+!
+!  initial vector potential for a
+!  purely poloidal axisymmetric field \vec{B} \sim [f_r \cos\theta, f_\theta \sin\theta, 0]
+!
+!  30-nov-25/axel: adapted from dipole
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: ix
+      real :: amp, rpart, rr2, pom2, r_inner, r_outer
+      real, optional :: r_inner_, r_outer_
+      integer :: l,m,n
+!
+      if (present(r_inner_).and.present(r_outer_)) then
+        r_inner=r_inner_
+        r_outer=r_outer_
+      else
+        r_inner=xyz0(1)
+        r_outer=xyz1(1)
+      endif
+!
+!  Dipolar in the z direction in Cartesian coordinates
+!
+      if (lcartesian_coords) then
+        call fatal_error('quadrupole', 'not yet programmed')
+        do n=n1,n2
+        do m=m1,m2
+        do l=l1,l2
+          pom2=x(l)**2+y(m)**2
+          rr2=pom2+z(n)**2
+          if (rr2<=1.) then
+            f(l,m,n,ix+1)=amp*sqrt(pom2)
+          else
+            f(l,m,n,ix+1)=amp*sqrt(pom2/rr2**3)
+          endif
+        enddo
+        enddo
+        enddo
+!
+!  Quadrupole in spherical coordinantes.
+!  Want B_phi=P_1^1(costh)/r^2, so A_r=-P_1(costh)/r
+!
+      elseif (lspherical_coords) then
+        do m = 1,my
+          do l = 1,mx
+            rpart = amp/x(l)**4
+            f(l,m,:,ix+2) = f(l,m,:,ix+1)+rpart*3.*sin(y(m))*cos(y(m))
+          enddo
+        enddo
+      endif
+!
+    endsubroutine quadrupole3
 !***********************************************************************
     subroutine dipoleA(f,ix,amp,r,angle)
 !

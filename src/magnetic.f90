@@ -2436,6 +2436,9 @@ module Magnetic
              f(l1:l2,m,n,iaz)=amplaa(j)*sin(y(m))*(xyz0(1)/x(l1:l2))**2.
           enddo; enddo
         case ('dipole_general'); call dipole(f,iax,amplaa(j),r_inner,r_outer)
+        case ('quadrupole'); call quadrupole(f,iax,amplaa(j),r_inner,r_outer)
+        case ('quadrupole2'); call quadrupole2(f,iax,amplaa(j),r_inner,r_outer)
+        case ('quadrupole3'); call quadrupole3(f,iax,amplaa(j),r_inner,r_outer)
         case ('dipoleA'); call dipoleA(f,iax,amplaa(j),r_dip,angle_dip)
         case ('dipoleB'); call dipoleB(f,iax,amplaa(j),epsi_dip,angle_dip)
         case ('switchback'); call switchback(f,iax,amplaa(j),amplaa2(j),r_inner,r_outer)

@@ -228,6 +228,8 @@ indices = [ $
   { name:'iaxi_impsiLdot', label:'axi_impsiLdot', dims:1 }, $
   { name:'iaxi_TR', label:'axi_TR', dims:1 }, $
   { name:'iaxi_TL', label:'axi_TL', dims:1 }, $
+  { name:'iaxi_uR', label:'axi_uR', dims:1 }, $
+  { name:'iaxi_uL', label:'axi_uL', dims:1 }, $
   { name:'iaxi_imTR', label:'axi_imTR', dims:1 }, $
   { name:'iaxi_imTL', label:'axi_imTL', dims:1 }, $
   { name:'iaxi_TRdot', label:'axi_imTRdot', dims:1 }, $

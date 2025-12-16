@@ -215,7 +215,8 @@ module Magnetic_meanfield
       if (lmagn_mf_demfdt) call register_magn_mf_demfdt()
 !
 !  if meanfield theory is invoked, we want to send meanfield_etat to
-!  other subroutines
+!  other subroutines. It seems, however, that no other module uses
+!  meanfield_etat at the moment.
 !
       if (lrun) then
         call put_shared_variable('meanfield_etat',meanfield_etat,caller='initialize_magn_mf')
@@ -814,6 +815,7 @@ module Magnetic_meanfield
       lpenc_requested(i_bb)=.true.
 !
 !  This is not needed when the displacement current is solved for.
+!  AB: is this still sufficient in spherical geometry?
 !
       if (meanfield_etat/=0.0.or.ietat/=0) &
           lpenc_requested(i_del2a)=.true.
@@ -1687,7 +1689,6 @@ module Magnetic_meanfield
           do j=1,3
             p%jj_ohm(:,j)=(p%jj_ohm(:,j)+p%mf_EMF(:,j)*mu01/eta)/(1.+meanfield_etat_tmp/eta)
           enddo
-!if (ip<10 .and. n==5) print*,'AXEL: t,p%jj_ohm(1,:)=',t,p%jj_ohm(1,1:2)
         else
 !
 !  Apply eta tensor, but subtract part from etat for stability reasons.
