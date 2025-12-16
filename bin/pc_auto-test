@@ -1378,8 +1378,7 @@ sub test_compile {
         if ($coverage) {
             push @makeopts, 'FFLAGS+=--coverage';
             push @makeopts, 'CFLAGS+=--coverage';
-            push @makeopts, 'LFLAGS+=-lgcov';
-            push @makeopts, 'LDFLAGS+=-lgcov';
+            push @makeopts, 'LDFLAGS_EXTRA+=-lgcov';
             #10-Dec-2025/Kishore: the following are needed for the compilation to proceed, but I don't understand what the issue is.
             push @makeopts, 'FFLAGS+=-Wno-coverage-invalid-line-number';
         }
