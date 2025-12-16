@@ -201,8 +201,9 @@ endif
 #
 # Default linker flags for shared libraries.
 #
-DLL_FFLAGS ?= -fPIC
-DLL_LDFLAGS ?= -shared
+# 10-Dec-2025/Kishore: changed from ?= to +=
+DLL_FFLAGS += -fPIC
+DLL_LDFLAGS += -shared
 #
 # useful shortcuts
 #
