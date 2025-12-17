@@ -1494,6 +1494,7 @@ module Io
 !  into array a. Uses dummy buffer omit of size (:,:,:,1:ivar_omit(2)-ivar_omit(1)+1).
 !
 !   31-mar-21/MR: coded
+!   17-Dec-2025/Kishore: fixed apparent indexing bug
 !
       integer, intent(IN) :: lun
       real(KIND=rkind8), dimension(:,:,:,:), intent(OUT) :: a, omit
@@ -1502,7 +1503,7 @@ module Io
       if (ivar_omit(1)==1) then
         read (lun,iostat=ios) omit,a
       elseif (ivar_omit(1)>1) then
-        read (lun,iostat=ios) a(:,:,:,:ivar_omit(1)-1),omit,a(:,:,:,ivar_omit(1):)
+        read (lun,iostat=ios) a(:,:,:,:ivar_omit(1)-1),omit,a(:,:,:,ivar_omit(2)+1:)
       else
         read (lun,iostat=ios) a
       endif
@@ -1515,6 +1516,7 @@ module Io
 !  into array a. Uses dummy buffer omit of size (:,:,:,1:ivar_omit(2)-ivar_omit(1)+1).
 !
 !   31-mar-21/MR: coded
+!   17-Dec-2025/Kishore: fixed apparent indexing bug
 !
       integer, intent(IN) :: lun
       real(KIND=rkind4), dimension(:,:,:,:), intent(OUT) :: a, omit
@@ -1523,7 +1525,7 @@ module Io
       if (ivar_omit(1)==1) then
         read (lun,iostat=ios) omit,a
       elseif (ivar_omit(1)>1) then
-        read (lun,iostat=ios) a(:,:,:,:ivar_omit(1)-1),omit,a(:,:,:,ivar_omit(1):)
+        read (lun,iostat=ios) a(:,:,:,:ivar_omit(1)-1),omit,a(:,:,:,ivar_omit(2)+1:)
       else
         read (lun,iostat=ios) a
       endif
