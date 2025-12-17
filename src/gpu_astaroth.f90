@@ -111,6 +111,8 @@ contains
 
       character(LEN=512) :: str
 !
+      if(ltest_rhs) lread_all_vars_from_device = .true.
+
       str=''
       if (lanelastic) str=trim(str)//', '//'anelastic'
       if (lboussinesq) str=trim(str)//', '//'boussinesq'
