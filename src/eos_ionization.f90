@@ -77,6 +77,10 @@ module EquationOfState
 !
       if (.not.ltemperature.or.ltemperature_nolog) &
         call farray_register_auxiliary('lnTT',ilnTT,communicated=.true.,on_gpu=lgpu)
+!
+!TP: until logics are improved it might matter are communicated auxs registered before non-communicated auxs.
+!    Of course this is desirable so will remove this comment once the situation has been improved
+!
       call farray_register_auxiliary('yH',iyH,on_gpu=lgpu,read_from_gpu=lgpu)
       !call farray_register_auxiliary('yH',iyH,communicated=.true.)
 !
