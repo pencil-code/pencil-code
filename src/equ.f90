@@ -57,7 +57,8 @@ module Equ
 ! To check ghost cell consistency, please uncomment the following line:
 !     use Ghost_check, only: check_ghosts_consistency
       use GhostFold, only: fold_df, fold_df_3points
-      use Gpu, only: before_boundary_gpu, rhs_gpu, copy_farray_from_GPU, get_farray_ptr_gpu
+      use Gpu, only: before_boundary_gpu, rhs_gpu, copy_farray_from_GPU, get_farray_ptr_gpu,&
+                     ltest_rhs,it_test_rhs
       use Gravity
       use Hydro
       use Magnetic
@@ -182,7 +183,9 @@ module Equ
 !  Call "before_boundary" hooks (for f array precalculation)
 !
       call before_boundary_shared(f)
-      !if (lgpu .and. it == 5) call test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,rhs_cpu)
+      if (lgpu .and. ltest_rhs .and. it == it_test_rhs) then
+        call test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,rhs_cpu)
+      endif
 
       if (lgpu) then
         start_time = mpiwtime()

@@ -75,9 +75,16 @@ module GPU
   logical :: lcuda_aware_mpi=.true.
   ! Whether to test the agreement of bcs on GPU and CPU
   logical :: ltest_bcs =.false.
+  ! Whether to test the agreement of RHS on GPU and CPU
+  ! Will run both versions and compare the differences
+  logical :: ltest_rhs =.false.
+  ! At which timestep to perform the comparison
+  ! It is useful to be able to vary this in case some samples need some
+  ! integration time for some of the fields to have meaningful values
+  integer :: it_test_rhs = 1
 
   namelist /gpu_run_pars/ &
-     ltest_bcs,lac_sparse_autotuning,lcpu_timestep_on_gpu,lcumulative_df_on_gpu,lread_all_vars_from_device,lcuda_aware_mpi
+     ltest_bcs,lac_sparse_autotuning,lcpu_timestep_on_gpu,lcumulative_df_on_gpu,lread_all_vars_from_device,lcuda_aware_mpi,ltest_rhs,it_test_rhs
 
 contains
 !***********************************************************************

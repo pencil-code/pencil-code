@@ -13,7 +13,8 @@ module GPU
 
   implicit none
 
-  logical :: ltest_bcs
+  logical :: ltest_bcs,ltest_rhs
+  integer :: it_test_rhs
   include 'gpu.h'
 
 contains

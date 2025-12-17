@@ -6,6 +6,6 @@
             update_after_substep_gpu, &
             gpu_set_dt, train_gpu, infer_gpu,radtransfer_gpu, &
             get_gpu_reduced_vars,test_gpu_bcs, split_update_gpu, &
-            pushpars2c,ltest_bcs
+            pushpars2c,ltest_bcs,ltest_rhs,it_test_rhs
 
   private
