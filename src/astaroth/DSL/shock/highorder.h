@@ -23,14 +23,13 @@ divu_shock()
     tmp = 0.
     if (AC_lconvergence_only__mod__shock) {
       tmp = max(0.,-divu)
-    } else {
-      if (AC_con_bias__mod__shock != 0.) {
+    } 
+    else if (AC_lconvergence_bias__mod__shock){
         tmp = max(0.,-divu) + max(0.,AC_con_bias__mod__shock*divu)
-      } else {
-        tmp = abs(divu)
-      }
     }
-
+    else {
+      tmp = abs(divu)
+    }
     if (AC_shock_div_pow__mod__shock != 1.) {tmp = AC_dt_div_pow__mod__shock * pow(tmp,AC_shock_div_pow__mod__shock)}
 
     return tmp
