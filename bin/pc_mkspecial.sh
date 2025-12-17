@@ -1,3 +1,8 @@
+#!/bin/bash
+
+# Undoes the changes that are automatically made to the source files when multiple special
+# modules are used. See target special_preps in Makefile.src.
+
 for file in $1; do
     sed -e '/module  *procedure/ ! s/^\( *module  *\)[a-zA-Z0-9_]* */\1Special/' \
         -e 's/^\( *endmodule  *\)[a-zA-Z0-9_]* *$/\1Special/' \
