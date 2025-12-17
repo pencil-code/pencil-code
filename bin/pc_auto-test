@@ -316,6 +316,11 @@ my ($current_revision, $current_hash);
 my $reference_out = 'reference.out'; # automatically changed to
                                      # reference.out.double below for
                                      # double precision runs
+				     #
+#Compare against reference.out.double if it exists
+if (-r 'print.in.double' && -r 'reference.out.double') {
+    $reference_out = 'reference.out.double';
+}
 my $user        = $ENV{USER} || $ENV{LOGNAME} || 'unknown';
 my $tmpdir      = "/tmp/pencil-tmp-$user-$$";
 my $lockdir     = '/tmp';     # put / check for lock file here
@@ -1367,7 +1372,6 @@ sub test_compile {
         # Compile in double precision if we have data for that
         if (-r 'print.in.double' && -r 'reference.out.double') {
             push @makeopts, 'REAL_PRECISION=double';
-            $reference_out = 'reference.out.double';
             printf "$indi_fmt ", '[double]';
         } else {
             $reference_out = 'reference.out';
