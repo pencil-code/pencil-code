@@ -394,6 +394,11 @@ sub mpi_run_cmd {
         push @mpiexec_cmd_line, split('\s+', $mpiexec_opts2);
         push @mpiexec_cmd_line, @cmd_line;
         push @mpiexec_cmd_line, @extra_opts;
+        # 17-Dec-2025/Kishore: DANGER
+        # even if the command before the pipe fails, the command below will
+        # return a 0 exit code as long as log_cmd exits successfully (same issue
+        # in the non-MPI case further down. This means that detection of failing
+        # steps by pc_auto-test is unreliable (since --log is specified there).
         if ($log) { push @mpiexec_cmd_line, '2>&1 | '.$log_cmd; }
         dump_parameters(
             $mpiexec, $mpiexec_opts, $mpiexec_opts2, $extra_opts,
