@@ -641,7 +641,6 @@ module Radiation
 !***********************************************************************
     subroutine calcQ(f)
 
-      use Gpu, only: calcQ_gpu, source_function_and_opacity_gpu
 
       real, dimension(mx,my,mz,mfarray) :: f
 !
@@ -704,24 +703,30 @@ module Radiation
 !  16-jun-03/axel+tobi: coded
 !   5-dec-13/axel: alterations to allow non-gray opacities
 !
-      use Gpu, only: calcQ_gpu, source_function_and_opacity_gpu
+      use Gpu, only: radtransfer_gpu
       real, dimension(mx,my,mz,mfarray) :: f
 !
       integer :: i,j,ij,k,inu
+      logical :: lno_rays
 !
 !  Identifier.
 !
       if (ldebug.and.headt) print*, 'radtransfer'
+      lno_rays = lrad_cool_diffus.or.lrad_pres_diffus
 !
 !  Continue only if we either have more than a single ray, or, if we do have a
 !  single ray, when also lvideo.and.lfirst are true so that the result is used
 !  for visualization.
 !
+      if (lgpu) then
+          if(.not. lno_rays) call radtransfer_gpu
+          return
+      endif
       if ((.not.lsingle_ray) .or. (lsingle_ray.and.lvideo.and.lfirst)) then
 !
 !  Initialize heating rate, radiative flux and radiative pressure.
 !
-        if (.not. lgpu .and. .not.(lrad_cool_diffus.or.lrad_pres_diffus)) then
+        if (.not. lno_rays) then
           f(:,:,:,iQrad)=0.0
           if (lradflux) f(:,:,:,iKR_Fradx:iKR_Fradz)=0.0
           if (lradpress) f(:,:,:,iKR_pressxx:iKR_presszx)=0.0
@@ -733,17 +738,13 @@ module Radiation
 !
 !  Calculate source function and opacity.
 !
-          if (lgpu) then
-            call source_function_and_opacity_gpu(inu)
-          else
-            call source_function(f,inu)
-            call opacity(f,inu)
-          endif
+          call source_function(f,inu)
+          call opacity(f,inu)
 !
 !  Do the rest only if we do not do diffusion approximation.
 !  If *either* lrad_cool_diffus *or* lrad_pres_diffus, no rays are computed.
 !
-          if (lrad_cool_diffus.or.lrad_pres_diffus) then
+          if (lno_rays) then
             if (headt) print*, 'radtransfer: do diffusion approximation, no rays'
           else
 !
@@ -757,11 +758,7 @@ module Radiation
 !  then communication (not compute intensive),
 !  and finally revision (again compute intensive).
 !
-              if (lgpu) then
-                !call calcQ_gpu(idir, dir(idir,:), (/llstop,mmstop,nnstop/), &
-                !               weight(idir), weightn(idir), unit_vec(idir,:), lperiodic_ray)
-              else
-                call calcQ(f)
+              call calcQ(f)
 !
 !  Store outgoing intensity in case of lower reflective boundary condition.
 !  We need to set Iup=Idown+I0 at the lower boundary. We must first integrate
@@ -783,13 +780,12 @@ module Radiation
                       (1.0-f(:,:,nnstop,ikapparho)/dz_1(nnstop))
                 endif
 !
-              endif
             enddo   !  idir loop
           endif     !  if (lrad_cool_diffus.or.lrad_pres_diffus)
 !
 !  Calculate slices of J=S+Q/(4pi).
 !
-          if (.not. lgpu .and. lvideo.and.lfirst.and.ivid_Jrad/=0) then
+          if (lvideo.and.lfirst.and.ivid_Jrad/=0) then
             if (lwrite_slice_yz) Jrad_yz(:,:,inu) =Qrad(ix_loc,m1:m2,n1:n2) +Srad(ix_loc,m1:m2,n1:n2)
             if (lwrite_slice_xz) Jrad_xz(:,:,inu) =Qrad(l1:l2,iy_loc,n1:n2) +Srad(l1:l2,iy_loc,n1:n2)
             if (lwrite_slice_xz2)Jrad_xz2(:,:,inu)=Qrad(l1:l2,iy2_loc,n1:n2)+Srad(l1:l2,iy2_loc,n1:n2)
@@ -804,7 +800,7 @@ module Radiation
 !
 ! Upper limit radiative heating by qrad_max
 !
-      if (.not. lgpu .and. lno_rad_heating .and. (qrad_max > 0)) &
+      if (lno_rad_heating .and. (qrad_max > 0)) &
          f(l1-radx:l2+radx,m,n,iQrad) = min(f(l1-radx:l2+radx,m,n,iQrad),qrad_max)
 
     endsubroutine radtransfer

@@ -832,33 +832,34 @@ AcReal GpuCalcDt(const AcReal t)
 	return calc_dt1_courant(t);
 }
 /***********************************************************************************************/
-extern "C" void sourceFunctionAndOpacity(int inu)
+extern "C" void radTransfer()
 {
 #if Lradiation_ray_MODULE
-  	acDeviceSetInput(acGridGetDevice(), AC_frequency_bin,inu);
+	for(int inu = 1; inu <= nnu__mod__radiation; ++inu)
+	{
+  		acDeviceSetInput(acGridGetDevice(), AC_frequency_bin,inu);
 
 //TP: need some fields (like TT) on the boundaries to calculate Srad and kappa_rho
-	acGridHaloExchange();
-  	auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
-	acGridExecuteTaskGraph(bcs,1);
+		acGridHaloExchange();
+  		auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+		acGridExecuteTaskGraph(bcs,1);
 
-	const auto info = acDeviceGetLocalConfig(acGridGetDevice());
-	const Volume offsets = (Volume)
-	{
-		(size_t)nxgrid == 1 ? 0 : 1,
-		(size_t)nygrid == 1 ? 0 : 1,
-		(size_t)nzgrid == 1 ? 0 : 1
-	};
-	const Volume start = acGetMinNN(info)-offsets;
-	const Volume end   = acGetMaxNN(info)+offsets;
-	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(get_source_function_and_opacity,start,end),1);
-//TP: should not do it here but for now for testing do everything together (works only if there is only one frequency)
-//    but this explicit call to calculate sources for radiation is anyways too granular: have just one call to interface to calculate Qrad
-        const auto Qintrinsic_graph = acGetOptimizedDSLTaskGraph(Qintrinsic_steps,true,Qintrinsic_bcs);
-	acGridExecuteTaskGraph(Qintrinsic_graph,1);
-        const auto Qextrinsic_graph = acGetOptimizedDSLTaskGraph(Qextrinsic_steps);
-	acGridExecuteTaskGraph(bcs,1);
-	acGridExecuteTaskGraph(Qextrinsic_graph,1);
+		const auto info = acDeviceGetLocalConfig(acGridGetDevice());
+		const Volume offsets = (Volume)
+		{
+			(size_t)nxgrid == 1 ? 0 : 1,
+			(size_t)nygrid == 1 ? 0 : 1,
+			(size_t)nzgrid == 1 ? 0 : 1
+		};
+		const Volume start = acGetMinNN(info)-offsets;
+		const Volume end   = acGetMaxNN(info)+offsets;
+		acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(get_source_function_and_opacity,start,end),1);
+        	const auto Qintrinsic_graph = acGetOptimizedDSLTaskGraph(Qintrinsic_steps,true,Qintrinsic_bcs);
+		acGridExecuteTaskGraph(Qintrinsic_graph,1);
+        	const auto Qextrinsic_graph = acGetOptimizedDSLTaskGraph(Qextrinsic_steps);
+		acGridExecuteTaskGraph(bcs,1);
+		acGridExecuteTaskGraph(Qextrinsic_graph,1);
+	}
 #endif
 }
 /***********************************************************************************************/
@@ -1890,7 +1891,7 @@ void autotune_all_integration_substeps()
  	beforeBoundaryGPU(true,i,0.0);
         beforeBoundaryGPU(false,i,0.0);
   }
-  sourceFunctionAndOpacity(0);
+  radTransfer();
   splitUpdate(1e11,1);
 }
 /***********************************************************************************************/

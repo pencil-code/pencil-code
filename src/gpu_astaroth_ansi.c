@@ -29,7 +29,7 @@ void getFArrayIn(REAL **);
 void substepGPU(int, double);
 void beforeBoundaryGPU(bool, int, double);
 void afterSubStepGPU();
-void sourceFunctionAndOpacity(int);
+void radTransfer();
 void copyFarray(REAL*);
 void loadFarray();
 void reloadConfig();
@@ -213,14 +213,8 @@ void FTNIZE(gpu_set_dt_c)(double* t)
   gpuSetDt(*t);
 }
 /* ---------------------------------------------------------------------- */
-void FTNIZE(calcq_gpu_c)(int *idir, int3 *dir, int3 *stop, real3 *unit_vec, int *lperiodic){
- // performs ray integration along direction dir for all possible starting points in subdomain,
- // communication and final correction of Q 
-
-}
-/* ---------------------------------------------------------------------- */
-void FTNIZE(source_function_and_opacity_gpu_c)(int *inu){
-	sourceFunctionAndOpacity(*inu);
+void FTNIZE(radtransfer_gpu_c)(){
+	radTransfer();
 }
 /* ---------------------------------------------------------------------- */
 void FTNIZE(get_gpu_reduced_vars_c)(REAL* dst)

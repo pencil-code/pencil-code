@@ -161,23 +161,7 @@ contains
 
     endsubroutine train_gpu
 !**************************************************************************
-    subroutine calcQ_gpu(idir, dir, stop, dlength, unit_vec, lperiodic)
-
-      integer :: idir
-      integer, dimension(3) :: dir, stop
-      real, dimension(mx) :: dlength
-      real, dimension(3) :: unit_vec
-      logical :: lperiodic
-
-      call keep_compiler_quiet(dir,stop)
-      call keep_compiler_quiet(dlength)
-      call keep_compiler_quiet(unit_vec)
-
-    endsubroutine calcQ_gpu
-!**************************************************************************
-    subroutine source_function_and_opacity_gpu(inu)
-      integer :: inu
-      call keep_compiler_quiet(inu)
+    subroutine radtransfer_gpu
     endsubroutine
 !**************************************************************************
     subroutine get_gpu_reduced_vars(dst)

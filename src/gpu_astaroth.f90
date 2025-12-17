@@ -30,7 +30,7 @@ module GPU
   external rhs_gpu_c
   external before_boundary_gpu_c
   external update_after_substep_gpu_c 
-  external source_function_and_opacity_gpu_c
+  external radtransfer_gpu_c
   external load_farray_c
   external reload_gpu_config_c
   external test_rhs_c
@@ -41,7 +41,6 @@ module GPU
   external gpu_set_dt_c
   external torchtrain_c 
   external torchinfer_c
-  external calcq_gpu_c
   external get_gpu_reduced_vars_c
   external test_bcs_c
   external split_update_gpu_c
@@ -338,20 +337,8 @@ contains
 
     endsubroutine update_on_gpu
 !**************************************************************************
-    subroutine calcQ_gpu(idir, dir, stop, unit_vec, lperiodic)
-
-      integer :: idir
-      integer, dimension(3) :: dir, stop
-      real, dimension(3) :: unit_vec
-      logical :: lperiodic
-
-      call calcQ_gpu_c(idir, dir, stop, unit_vec, lperiodic)
- 
-    endsubroutine calcQ_gpu
-!**************************************************************************
-    subroutine source_function_and_opacity_gpu(inu)
-      integer :: inu
-      call source_function_and_opacity_gpu_c(inu)
+    subroutine radtransfer_gpu
+      call radtransfer_gpu_c
     endsubroutine
 !**************************************************************************
     subroutine get_gpu_reduced_vars(dst)

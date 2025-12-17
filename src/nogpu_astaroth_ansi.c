@@ -34,10 +34,6 @@ void FTNIZE(after_timestep_gpu_c)()
 {
 }
 /* ---------------------------------------------------------------------- */
-void FTNIZE(source_function_and_opacity_gpu_c)(int *inu)
-{
-}
-/* ------------------------------------------------------------------- */
 void FTNIZE(copy_farray_c)(REAL* f)
 {
 }
@@ -84,7 +80,7 @@ void FTNIZE(torchtrain_c)(REAL *loss, FINT* itsub)
 {
 }
 /* ------------------------------------------------------------------- */
-void FTNIZE(calcq_gpu_c)(int *idir, int *dir, int *stop, int *unit_vec, int *lperiodic)
+void FTNIZE(radtransfer_gpu_c)()
 {
 }
 /* ------------------------------------------------------------------- */
