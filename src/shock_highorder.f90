@@ -869,6 +869,7 @@ module Shock
     call copy_addr(l121_smooth,p_par(11)) ! bool
     call copy_addr(low_order_divu,p_par(12)) ! bool
     call copy_addr(lshock_first,p_par(13)) ! bool
+    call copy_addr(lconvergence_bias,p_par(14)) ! bool
 
     endsubroutine pushpars2c
 !***********************************************************************
