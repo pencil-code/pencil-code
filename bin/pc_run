@@ -342,20 +342,7 @@ sub mpi_run_cmd {
 # This method is only called for start.x and run.x
     my @cmd_line = @_;
     my $log_file = $_[0];
-    my $log_cmd = "";
-    if ($log){
-        $log_file =~ s/\.x/.log/; $log_file =~ s/^.*\///;
-        if ($log_dir) {
-            make_path ($log_dir);
-            $log_file = $log_dir.'/'.$log_file;
-        }
-        unlink_if_exist($log_file);
-        if ($multiple_calls) {
-            $log_cmd = 'tee --append "'.$log_file.'"'
-        } else {
-            $log_cmd = 'tee "'.$log_file.'"'
-        }
-    }
+
     my $extra_opts = $runtime_params{'extra_opts'  } || '';
     my @extra_opts = split('\s+', $extra_opts);
 #
@@ -394,23 +381,18 @@ sub mpi_run_cmd {
         push @mpiexec_cmd_line, split('\s+', $mpiexec_opts2);
         push @mpiexec_cmd_line, @cmd_line;
         push @mpiexec_cmd_line, @extra_opts;
-        # 17-Dec-2025/Kishore: DANGER
-        # even if the command before the pipe fails, the command below will
-        # return a 0 exit code as long as log_cmd exits successfully (same issue
-        # in the non-MPI case further down. This means that detection of failing
-        # steps by pc_auto-test is unreliable (since --log is specified there).
-        if ($log) { push @mpiexec_cmd_line, '2>&1 | '.$log_cmd; }
+        push @mpiexec_cmd_line, '2>&1' if $log;
         dump_parameters(
             $mpiexec, $mpiexec_opts, $mpiexec_opts2, $extra_opts,
             $np_opts_ref, $mpi_x_opts_ref, $n_procs_per_node
         ) if $debug;
-        time_system_cmd(@mpiexec_cmd_line);
+        time_system_cmd(@mpiexec_cmd_line, $log_file);
     } else {
         $Ncpus = 1;
         $n_procs_per_node = 1;
-        if ($log) { push @cmd_line, '2>&1 | '.$log_cmd; }
         dump_parameters(undef, undef, 1, '') if $debug;
-        time_system_cmd(@cmd_line, @extra_opts);
+        push @cmd_line, '2>&1' if $log;
+        time_system_cmd(@cmd_line, @extra_opts, $log_file);
     }
 
     print "\n", (scalar localtime()), "\n";
@@ -663,22 +645,33 @@ sub get_files_to_copy_to_local_disc {
 sub time_system_cmd {
 # Run a system command through '/usr/bin/time -p'
     my @cmd_line = @_;
+    my $log_file = pop @cmd_line;
 
     my $timestamp = POSIX::strftime("%Y-%m-%d %H:%M:%S", localtime);
     append_to_file('pc_commands.log', "\n# ".$timestamp."\n@cmd_line");
 
     if (-X '/usr/bin/time') {
-        run_system_cmd(('/usr/bin/time', '-p'), @cmd_line);
+        run_system_cmd(('/usr/bin/time', '-p'), @cmd_line, $log_file);
     } elsif (`which time`) {
-        run_system_cmd('time', @cmd_line);
+        run_system_cmd('time', @cmd_line, $log_file);
     } else {
-        run_system_cmd(@cmd_line);
+        run_system_cmd(@cmd_line, $log_file);
     }
 }
 # ---------------------------------------------------------------------- #
 sub run_system_cmd {
-# Run the given system command and die if it exits with error status
+# Run the given system command and die if it exits with error status.
     my @cmd_line = @_;
+    my $log_file = pop @cmd_line;
+
+    if ($log){
+        $log_file =~ s/\.x/.log/; $log_file =~ s/^.*\///;
+        if ($log_dir) {
+            make_path ($log_dir);
+            $log_file = $log_dir.'/'.$log_file;
+        }
+        unlink_if_exist($log_file);
+    }
 
     $! = 0;
     clear_error();
@@ -694,10 +687,15 @@ sub run_system_cmd {
     }
 
     $| = 1;
+    open (LOGFILE, ">>", $log_file) if $log;
     open (CMD, "@cmd_line |");
     my $line;
-    while ($line = <CMD>) { print $line; }
+    while ($line = <CMD>) {
+        print $line;
+        print LOGFILE $line if $log;
+    }
     close (CMD);
+    close (LOGFILE) if $log;
     $| = 0;
 
     my $status = $?;
