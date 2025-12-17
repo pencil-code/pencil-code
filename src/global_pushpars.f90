@@ -120,8 +120,6 @@ contains
     call copy_addr(iglobal_by_ext,p_par(101)) ! int
     call copy_addr(iglobal_bz_ext,p_par(102)) ! int
     call copy_addr(iglobal_lnrho0,p_par(103)) ! int
-    call copy_addr(lpencil_check,p_par(104)) ! bool
-    call copy_addr(lpencil_check_at_work,p_par(105)) ! bool
     call copy_addr(headtt,p_par(106)) ! bool
     call copy_addr(ldiagnos,p_par(107)) ! bool
     call copy_addr(l2davgfirst,p_par(108)) ! bool

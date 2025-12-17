@@ -1410,9 +1410,9 @@ if (it % 5 !=0) return;
 		*/
 
 	  acGridHaloExchange();
-    copyFarray(NULL);
+          copyFarray(mesh.vertex_buffer[0]);
 
-    AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
+          AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
 
 		/*
   	const auto DEVICE_VTXBUF_IDX = [&](const int x, const int y, const int z)
@@ -1771,7 +1771,7 @@ void copyFarray(AcReal* f)
   }
   if (dimensionality == 0)
   {
-    	for (int i = 0; i < mfarray; ++i)
+    	for (int i = 0; i < end; ++i)
   	{
 		const int index = (i < mvar) ? i : maux_vtxbuf_index[i];
 		if (index == -1) continue;
@@ -1782,7 +1782,7 @@ void copyFarray(AcReal* f)
   }
   if (dimensionality == 2 && nygrid == 1)
   {
-    	for (int i = 0; i < mfarray; ++i)
+    	for (int i = 0; i < end; ++i)
   	{
 		const int index = (i < mvar) ? i : maux_vtxbuf_index[i];
 		if (index == -1) continue;

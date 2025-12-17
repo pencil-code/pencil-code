@@ -75,10 +75,10 @@ module EquationOfState
 !
 !  Set indices for auxiliary variables.
 !
-      !call farray_register_auxiliary('yH',iyH,communicated=.true.)
-      call farray_register_auxiliary('yH',iyH,on_gpu=lgpu)
       if (.not.ltemperature.or.ltemperature_nolog) &
         call farray_register_auxiliary('lnTT',ilnTT,communicated=.true.,on_gpu=lgpu)
+      call farray_register_auxiliary('yH',iyH,on_gpu=lgpu,read_from_gpu=lgpu)
+      !call farray_register_auxiliary('yH',iyH,communicated=.true.)
 !
 !  Identify version number (generated automatically by SVN).
 !
@@ -565,6 +565,7 @@ module EquationOfState
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx) :: lnrho,ss,yH,lnTT
 !
+      
       do n=1,mz
       do m=1,my
         if (ldensity_nolog) then

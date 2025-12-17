@@ -3,6 +3,8 @@
 #if LENTROPY
 #define LENERGY 1
 #endif
+const bool AC_lpencil_check__mod__cdata = false
+const bool AC_lpencil_check_at_work__mod__cdata = false
 
 #include "../typedefs.h"
 

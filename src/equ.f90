@@ -73,7 +73,6 @@ module Equ
       use Radiation
       use Selfgravity
       use Shear
-      use Shock, only: calc_shock_profile_simple
       use Solid_Cells, only: update_solid_cells, dsolid_dt_integrate
       use Sub
       use Testfield
@@ -118,6 +117,7 @@ module Equ
       ldiagnos   =lfirst.and.lout
       l1davgfirst=lfirst.and.l1davg
       l2davgfirst=lfirst.and.l2davg
+
 !
 !  Derived diagnostics switches.
 !
@@ -279,16 +279,6 @@ module Equ
 !  (but this is decided in radtransfer itself)
 !
       if ((leos_ionization.or.leos_temperature_ionization) .and. .not. lgpu) call ioncalc(f)
-      if (lradiation_ray) then
-        start_time = mpiwtime()
-        call radtransfer(f)     ! -> after_boundary or before_boundary?
-        end_time = mpiwtime()
-        radtransfer_sum_time = radtransfer_sum_time + end_time-start_time
-      endif
-!
-!  Calculate shock profile (simple).
-!
-      if (lshock) call calc_shock_profile_simple(f)
 !
 !  Call "after" hooks (for f array precalculation). This may imply
 !  calculating averages (some of which may only be required for certain
@@ -1000,10 +990,22 @@ module Equ
     subroutine after_boundary_shared(f)
 
       use Training, only: training_after_boundary
+      use Mpicomm, only: mpiwtime
 
       real, intent(INOUT), dimension(mx,my,mz,mfarray) :: f
+      real :: start_time,end_time
 
       if (ltraining) call training_after_boundary(f)
+!
+!Radiation rays have to come in after boundary since ioncalc has to be in after boundary
+!and radiation rays depend on them
+!
+      if (lradiation_ray) then
+        start_time = mpiwtime()
+        call radtransfer(f)
+        end_time = mpiwtime()
+        radtransfer_sum_time = radtransfer_sum_time + end_time-start_time
+      endif
 
     endsubroutine after_boundary_shared
 !***********************************************************************
@@ -1016,6 +1018,7 @@ module Equ
       use Energy, only: energy_after_boundary
       use Gravity, only: gravity_after_boundary
       use Forcing, only: forcing_after_boundary
+      use Shock, only: calc_shock_profile_simple
       use Polymer, only: calc_polymer_after_boundary
       use TestScalar, only: testscalar_after_boundary
       use TestField,  only: testfield_after_boundary
@@ -1028,6 +1031,11 @@ module Equ
 
       real, intent(INOUT), dimension(mx,my,mz,mfarray) :: f
       real, intent(INOUT), dimension(mx,my,mz,mvar)    :: df
+
+!
+!  Calculate shock profile (simple).
+!
+      if (lshock) call calc_shock_profile_simple(f)
 
       if (lhydro)          call hydro_after_boundary(f)
       if (lviscosity)      call viscosity_after_boundary(f)

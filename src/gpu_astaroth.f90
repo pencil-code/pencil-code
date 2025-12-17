@@ -84,7 +84,8 @@ module GPU
   integer :: it_test_rhs = 1
 
   namelist /gpu_run_pars/ &
-     ltest_bcs,lac_sparse_autotuning,lcpu_timestep_on_gpu,lcumulative_df_on_gpu,lread_all_vars_from_device,lcuda_aware_mpi,ltest_rhs,it_test_rhs
+     ltest_bcs,lac_sparse_autotuning,lcpu_timestep_on_gpu,lcumulative_df_on_gpu,&
+     lread_all_vars_from_device,lcuda_aware_mpi,ltest_rhs,it_test_rhs
 
 contains
 !***********************************************************************
