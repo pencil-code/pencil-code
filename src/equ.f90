@@ -1805,12 +1805,15 @@ module Equ
       use Special, only: special_after_timestep
 !$    use ISO_fortran_env, only: stdout => output_unit
 !$    use, intrinsic :: iso_c_binding
+      use FarrayManager, only: farray_get_name
 
+      character(len=30) :: name
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension(1), intent(inout) :: mass_per_proc
       logical ,intent(in) :: early_finalize
+      integer :: ncomponents
 
       real, dimension (:,:,:,:), allocatable :: f_copy,f_diff,df_tmp,df_copy,f_beta,f_abs_diff
       real, dimension(5) :: beta_ts,alpha_ts
@@ -1937,9 +1940,10 @@ module Equ
         print*,"Max comp diff loc: ",maxloc(f_diff(l1:l2,m1:m2,n1:n2,1:mvar))
 
         do i = 1,mfarray
-          print*,"Max comp diff for ",i,": ",maxval(f_diff(l1:l2,m1:m2,n1:n2,i))
-          print*,"Avg comp diff for ",i,": ",sum(f_diff(l1:l2,m1:m2,n1:n2,i))/(nx*ny*nz)
-          print*,"Max comp loc  for ",i,": ",maxloc(f_diff(l1:l2,m1:m2,n1:n2,i))
+          ncomponents = farray_get_name(i,name)
+          print*,"Max comp diff for ",name,i,": ",maxval(f_diff(l1:l2,m1:m2,n1:n2,i))
+          print*,"Avg comp diff for ",name,i,": ",sum(f_diff(l1:l2,m1:m2,n1:n2,i))/(nx*ny*nz)
+          print*,"Max comp loc  for ",name,i,": ",maxloc(f_diff(l1:l2,m1:m2,n1:n2,i))
         enddo
       endif
       print*,"Max comp loc abs diff: ",maxloc(f_abs_diff(l1:l2,m1:m2,n1:n2,1:mvar)), &
