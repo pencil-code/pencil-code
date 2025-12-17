@@ -1226,8 +1226,8 @@ bc_ss_flux_turb_x(AcBoundary boundary, AC_TOP_BOT topbot)
   }
 }
 #endif
-/**
 
+#if Leos_idealgas_MODULE && Lentropy_MODULE
 bc_ss_temp_x(AcBoundary boundary, AC_TOP_BOT topbot)
 {
   suppress_unused_warning(boundary)
@@ -1249,6 +1249,7 @@ bc_ss_temp_x(AcBoundary boundary, AC_TOP_BOT topbot)
   else {
   }
 }
+#endif
 
 bc_db_x(AcBoundary boundary, AC_TOP_BOT topbot,Field j)
 {
@@ -1297,6 +1298,7 @@ bc_db_z(AcBoundary boundary, AC_TOP_BOT topbot,Field j)
   }
 }
 
+#if Leos_idealgas_MODULE && Lentropy_MODULE
 bc_lnrho_temp_z(AcBoundary boundary, AC_TOP_BOT topbot)
 {
   suppress_unused_warning(boundary)
@@ -1355,6 +1357,10 @@ bc_lnrho_temp_z(AcBoundary boundary, AC_TOP_BOT topbot)
   else {
   }
 }
+#endif
+
+
+#if Leos_idealgas_MODULE && Lentropy_MODULE
 bc_ss_flux(AcBoundary boundary, AC_TOP_BOT topbot,bool lone_sided)
 {
   suppress_unused_warning(boundary)
@@ -1536,7 +1542,8 @@ bc_ss_flux(AcBoundary boundary, AC_TOP_BOT topbot,bool lone_sided)
   else {
   }
 }
-**/
+#endif
+
 #if Leos_idealgas_MODULE && Lgravity_simple_MODULE
 bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
 {

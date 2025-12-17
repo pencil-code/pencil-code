@@ -199,6 +199,10 @@ gmem real AC_reac_chem__mod__cdata[1]
 
 const real AC_ascale__mod__cdata = 0.0
 
+#define AC_ftopktop__mod__energy AC_FtopKtop__mod__energy
+#define AC_fbotkbot__mod__energy AC_FbotKbot__mod__energy
+#define AC_fbot__mod__energy AC_Fbot__mod__energy 
+#define AC_ftop__mod__energy AC_Ftop__mod__energy 
 #define FbotKbot AC_FbotKbot__mod__energy
 #define Fbot AC_Fbot__mod__energy
 #define fbot Fbot
