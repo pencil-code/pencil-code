@@ -1471,11 +1471,20 @@ sub test_run {
     }
 }
 # ---------------------------------------------------------------------- #
+sub is_double_precision {
+    open my $fh, '<', 'data/dim.dat' or die "Can't open 'data/dim.dat' $!";
+    while (<$fh>) {
+        return 1 if /D/;
+    }
+    return 0;
+}#
+# ---------------------------------------------------------------------- #
 sub test_results {
     my $reference_out = 'reference.out'; # automatically changed to
                                          # reference.out.double below for
                                          # double precision runs
-    if (-r 'print.in.double' && -r 'reference.out.double') {
+    
+    if (is_double_precision() && -r 'data/DOUBLE_PRECISION_RUN' && -r 'print.in.double' && -r 'reference.out.double') {
         $reference_out = 'reference.out.double';
     }
 # Analyze results from code
