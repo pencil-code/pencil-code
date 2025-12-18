@@ -8187,8 +8187,8 @@ nameloop: do
       select case (k)
         case(1)
           if (j==ilnrho .or. j==ilnTT) then
-            expf   = exp(f(l1-1,m,n,j))
-            expfp1 = exp(f(l1,m,n,j))
+            expf   = exp(f(l1-3,m,n,j))
+            expfp1 = exp(f(l1-2,m,n,j))
             do i=l1-2,l2+2
               expfm1=expf
               expf=expfp1
