@@ -991,6 +991,7 @@ module Equ
 
       use Training, only: training_after_boundary
       use Mpicomm, only: mpiwtime
+      use Radiation, only: radtransfer
 
       real, intent(INOUT), dimension(mx,my,mz,mfarray) :: f
       real :: start_time,end_time
