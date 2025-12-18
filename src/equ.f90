@@ -1863,6 +1863,8 @@ module Equ
       
 
       do itsub = 1,num_substeps
+        lfirst=(itsub==1)
+        llast=(itsub==itorder)
         !df_tmp = 0.0
         lfirst = (itsub == 1)
         if (.not. lfirst) df_copy = alpha_ts(itsub)*df_copy
@@ -1961,7 +1963,6 @@ module Equ
       endif
       print*,"Max comp loc abs diff: ",maxloc(f_abs_diff(l1:l2,m1:m2,n1:n2,1:mvar)), &
                                        maxval(f_abs_diff(l1:l2,m1:m2,n1:n2,1:mvar))
-
       call test_gpu_bcs
       call die_gracefully
 
