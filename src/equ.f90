@@ -1855,7 +1855,6 @@ module Equ
       beta_ts =(/ 1/3.0, 15/16.0,    8/15.0 , 0.0, 0.0 /)
       alpha_ts=(/   0.0, -5/9.0 , -153/128.0, 0.0, 0.0 /)
 
-      if (itorder /= 1 .and. itorder /= 3) call fatal_error('test_rhs_gpu','need itorder to be 1 or 3')
       call copy_farray_from_GPU(f,.true.)
       f_copy = f
       ldiagnos = .false.
