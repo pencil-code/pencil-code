@@ -1342,6 +1342,7 @@ extern "C" void beforeBoundaryGPU(bool lrmv, int isubstep, double t)
 
 // Load those dynamical parameters which depend on time to GPU
 
+        acDeviceSetInput(acGridGetDevice(), AC_step_num,(PC_SUB_STEP_NUMBER) (isubstep-1));
  	acDeviceSetInput(acGridGetDevice(), AC_lrmv, lrmv);
  	acDeviceSetInput(acGridGetDevice(), AC_t, AcReal(t));
 
