@@ -1882,7 +1882,7 @@ void autotune_all_integration_substeps()
 {
   for (int i = 1; i <= num_substeps; ++i)
   {
-  	acDeviceSetInput(acGridGetDevice(), AC_step_num,(PC_SUB_STEP_NUMBER)i-1);
+  	acDeviceSetInput(acGridGetDevice(), AC_step_num,(PC_SUB_STEP_NUMBER)(i-1));
         if (rank==0 && ldebug) printf("memusage before GetOptimizedDSLTaskGraph= %f MBytes\n", acMemUsage()/1024.);
   	acDeviceSetInput(acGridGetDevice(), AC_lrmv,false);
 	acGetOptimizedDSLTaskGraph(AC_rhs);
