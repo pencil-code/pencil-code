@@ -127,7 +127,6 @@ AcTaskGraph* boundary_z_halo_exchange_graph =  NULL;
   #define cotth    cotth__mod__cdata
 
   #define luse_trained_tau luse_trained_tau__mod__training
-  #define lcpu_timestep_on_gpu   lcpu_timestep_on_gpu__mod__gpu
   #define lperi                  lperi__mod__cdata
   #define lxyz                   lxyz__mod__cdata
   #define lac_sparse_autotuning  lac_sparse_autotuning__mod__gpu
@@ -152,6 +151,7 @@ AcTaskGraph* boundary_z_halo_exchange_graph =  NULL;
 #endif
 
 static bool lread_all_vars_from_device = false;
+static bool lcpu_timestep_on_gpu       = false;
 AcReal dt1_interface;
 static int rank;
 static MPI_Comm comm_pencil = MPI_COMM_NULL;
@@ -2018,9 +2018,11 @@ void generate_bcs()
 extern "C" void testBCs();     // forward declaration
 /***********************************************************************************************/
 extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_,
-				int lread_all_vars_from_device_)  // MPI_Fint comm_fint
+				int lread_all_vars_from_device_,
+				int lcpu_timestep_on_gpu_)  // MPI_Fint comm_fint
 {
   if(lread_all_vars_from_device_) lread_all_vars_from_device = true;
+  if(lcpu_timestep_on_gpu_) lcpu_timestep_on_gpu = true;
   //Setup configurations used for initializing and running the GPU code
   nt = nt_;
   comm_pencil = MPI_Comm_f2c(comm_fint);
