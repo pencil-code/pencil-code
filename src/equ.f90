@@ -1860,6 +1860,8 @@ module Equ
       f_copy = f
       ldiagnos = .false.
       df_copy = 0.0
+      
+
       do itsub = 1,num_substeps
         !df_tmp = 0.0
         lfirst = (itsub == 1)
@@ -1867,17 +1869,16 @@ module Equ
         call before_boundary_gpu(f,lrmv,itsub,t)
         call rhs_gpu(f,itsub)
 
-        call impose_floors_ceilings(f_copy) 
+        !    This is here since Astaroth is more careful in always applying bcs
+        !    that update the comp domain so to emulate the behaviour (which I think is generally better)
+        !    we call update_ghosts here
+        call update_ghosts(f_copy)
         call before_boundary_cpu(f_copy)
+        call update_ghosts(f_copy)
         call after_boundary_cpu(f_copy,df_copy)
         !if (itsub == 1) then
         !        f_beta = f_copy
         !endif
-        call boundconds_x(f_copy)
-        call initiate_isendrcv_bdry(f_copy)
-        call finalize_isendrcv_bdry(f_copy)
-        call boundconds_y(f_copy)
-        call boundconds_z(f_copy)
         call cpu_version(f_copy,df_copy,p,mass_per_proc,early_finalize)
         !df_copy = df_copy + df_tmp
         call freeze(df_copy,p)
@@ -1885,6 +1886,9 @@ module Equ
           f_copy(l1:l2,m1:m2,n1:n2,1:mvar) = f_copy(l1:l2,m1:m2,n1:n2,1:mvar) + df_copy(l1:l2,m1:m2,n1:n2,:)*dt
         else
           f_copy(l1:l2,m1:m2,n1:n2,1:mvar) = f_copy(l1:l2,m1:m2,n1:n2,1:mvar) + dt*beta_ts(itsub)*df_copy(l1:l2,m1:m2,n1:n2,:)
+        !    On the GPU we impose the floors and ceilings after integration which should be equivalent
+        !    but for testing have to be careful that we do the same ordering on the CPU
+          call impose_floors_ceilings(f_copy) 
         endif
 
         call copy_farray_from_GPU(f,.true.)
