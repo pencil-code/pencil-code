@@ -4316,7 +4316,7 @@ module Energy
 !    Slope limited diffusion: update characteristic speed
 !    Not staggered yet
 !
-      if (lslope_limit_diff .and. llast) then
+     if (lslope_limit_diff .and. llast) then
         call get_gamma_etc(gamma,cv=cv); gamma_m1=gamma-1.; cv1=1./cv
 !
        if (ldensity_nolog) then
@@ -7842,6 +7842,9 @@ module Energy
           endif
 
         else  ! covers also lgravr=T
+          if (.not. present(stored_prof)) then
+            call fatal_error('get_prof_pencil','tried to access stored prof but was not give as a parameter!')
+          endif
           prof=stored_prof
           dprof(:,1)=stored_dprof; dprof(:,2:3)=0.
         endif
