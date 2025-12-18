@@ -548,7 +548,6 @@ gmem real AC_lh1_rprof__mod__viscosity[1]
 bc_set_sfree_x(AcBoundary boundary, AC_TOP_BOT topbot,Field j)
 {
   suppress_unused_warning(boundary)
-  int k
   real fac
   real sth
   real lambda_exp
@@ -707,7 +706,6 @@ bc_set_sfree_x(AcBoundary boundary, AC_TOP_BOT topbot,Field j)
 bc_set_sfree_y(AcBoundary boundary,AC_TOP_BOT topbot,Field j)
 {
   suppress_unused_warning(boundary)
-  int k
   real cos2thm_k
   real cos2thmpk
   real somega
@@ -3916,7 +3914,6 @@ bc_ss_stemp_z(AcBoundary boundary,AC_TOP_BOT topbot)
 
 bc_set_nfr_y(AcBoundary boundary, AC_TOP_BOT topbot,Field j)
 {
-  int k
   suppress_unused_warning(boundary)
   if (topbot == AC_bot) {
     j[vertexIdx.x][m1-1-1][vertexIdx.z]= j[vertexIdx.x][1+m1-1][vertexIdx.z]*(AC_sinth__mod__cdata[1+m1-1]/sin(AC_y__mod__cdata[1+m1-1]-AC_dy2_bound__mod__cdata[-1+NGHOST+1-1]))
@@ -4014,7 +4011,6 @@ bc_ss_flux_condturb_x(AcBoundary boundary,AC_TOP_BOT topbot)
 bc_set_nfr_x(AcBoundary boundary, AC_TOP_BOT topbot,Field j)
 {
   suppress_unused_warning(boundary)
-  int k
   if (topbot == AC_bot) {
     j[l1-1-1][vertexIdx.y][vertexIdx.z]= j[1+l1-1][vertexIdx.y][vertexIdx.z]*(AC_x__mod__cdata[1+l1-1]/(AC_x__mod__cdata[1+l1-1]-AC_dx2_bound__mod__cdata[-1+NGHOST+1-1]))
     j[l1-2-1][vertexIdx.y][vertexIdx.z]= j[2+l1-1][vertexIdx.y][vertexIdx.z]*(AC_x__mod__cdata[2+l1-1]/(AC_x__mod__cdata[2+l1-1]-AC_dx2_bound__mod__cdata[-2+NGHOST+1-1]))
