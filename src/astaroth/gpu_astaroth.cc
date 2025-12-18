@@ -142,7 +142,6 @@ AcTaskGraph* boundary_z_halo_exchange_graph =  NULL;
   #define itauyz itauyz__mod__training
   #define itauzz itauzz__mod__training
 
-  #define lread_all_vars_from_device lread_all_vars_from_device__mod__gpu
   #define lcuda_aware_mpi            lcuda_aware_mpi__mod__gpu
   #define lsecond_force lsecond_force__mod__forcing
   #define lforce_helical lforce_helical__mod__forcing
@@ -152,6 +151,7 @@ AcTaskGraph* boundary_z_halo_exchange_graph =  NULL;
   #define tstart_selfgrav tstart_selfgrav__mod__selfgravity
 #endif
 
+static bool lread_all_vars_from_device = false;
 AcReal dt1_interface;
 static int rank;
 static MPI_Comm comm_pencil = MPI_COMM_NULL;
@@ -2017,8 +2017,10 @@ void generate_bcs()
 /***********************************************************************************************/
 extern "C" void testBCs();     // forward declaration
 /***********************************************************************************************/
-extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_)  // MPI_Fint comm_fint
+extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_,
+				int lread_all_vars_from_device_)  // MPI_Fint comm_fint
 {
+  if(lread_all_vars_from_device_) lread_all_vars_from_device = true;
   //Setup configurations used for initializing and running the GPU code
   nt = nt_;
   comm_pencil = MPI_Comm_f2c(comm_fint);

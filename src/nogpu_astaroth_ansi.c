@@ -6,7 +6,8 @@
 #include "headers_c.h"
 
 /* ------------------------------------------------------------------- */
-void FTNIZE(initialize_gpu_c)(REAL* f, FINT* comm_fint, double* t, int* nt)
+void FTNIZE(initialize_gpu_c)(REAL* f, FINT* comm_fint, double* t, int* nt, 
+				FINT* lreads_all_vars_from_device_)
 {
 }
 /* ------------------------------------------------------------------- */

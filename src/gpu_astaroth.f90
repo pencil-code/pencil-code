@@ -109,6 +109,7 @@ contains
       use Mpicomm, only: MPI_COMM_PENCIL
 
       real, dimension(:,:,:,:), intent(IN) :: f
+      integer :: lread_all_vars_from_device_int
 
       character(LEN=512) :: str
 !
@@ -134,7 +135,9 @@ contains
                                     trim(str(3:))//'"')
 !
       if (dt<=0.) dt = dtmin
-      call initialize_gpu_c(f,MPI_COMM_PENCIL,t,nt)
+
+      lread_all_vars_from_device_int = merge(1,0,lread_all_vars_from_device)
+      call initialize_gpu_c(f,MPI_COMM_PENCIL,t,nt,lread_all_vars_from_device_int)
 !
 ! Load farray to gpu
 !
@@ -377,7 +380,6 @@ contains
     call copy_addr(lac_sparse_autotuning,p_par(2)) ! bool
     call copy_addr(lskip_rtime_compilation,p_par(3)) ! bool
     call copy_addr(lcumulative_df_on_gpu,p_par(4)) ! bool
-    call copy_addr(lread_all_vars_from_device,p_par(5)) ! bool
     call copy_addr(lcuda_aware_mpi,p_par(6)) ! bool
     call copy_addr(ltest_bcs,p_par(7)) ! bool
     endsubroutine pushpars2c
