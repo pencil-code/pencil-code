@@ -50,7 +50,7 @@ module Special
   real :: m_inflaton=1.275e-7, m_phi=1.275e-7, inflaton_ini=16., phi_ini=16.
   real :: alpha=0.1, m_alpha=3.285e-11, n_alpha=1.5
   real :: mscal=0., sgn_g=-1.
-  real, dimension (nx) :: grand, grant, dgrant, rhoT
+  real, dimension (nx) :: grand, grant, dgrant, rhoT, JJ_R, JJ_L
   real, dimension (nx) :: xmask_axion
   real, dimension (2) :: axion_sum_range=(/0.,1./)
   integer, dimension (nx) :: kindex_array
@@ -1205,7 +1205,6 @@ module Special
         call read_sums_from_device
       endif
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dSPECIAL_dt'
-!print*,'AXEL: dspecial_dt_ode, bef.', Q, U, V, a, phi, phidot, H, Hdot
 !
 !  Set the all variable
 !
@@ -1438,7 +1437,7 @@ module Special
 !
 !  29-jul-25/TP: carved from special_after_boundary
 !
-      real, dimension(nx), intent(IN) :: grand,dgrant
+      real, dimension(nx), intent(IN) :: grand, dgrant
       integer, intent(IN) :: nswitch
       if (lwrite_backreact) then
         if ((llnk_spacing_adjustable.or.llnk_spacing) .and. lfirst) then
@@ -1446,6 +1445,11 @@ module Special
             open (1, file=trim(directory_snap)//'/backreact.dat', form='formatted', position='append')
             write(1,*) t, lnk, grand, dgrant
             close(1)
+            if (lSchwinger_scalar) then
+              open (1, file=trim(directory_snap)//'/schwinger.dat', form='formatted', position='append')
+              write(1,*) t, lnk, JJ_R, JJ_L, a
+              close(1)
+            endif
           endif
         elseif (lfirst) then
           if (nswitch>0) then
@@ -1485,8 +1489,8 @@ module Special
     subroutine calc_integrand(f,TRpsim,TRpsikm,TRpsidotm,TRdotpsim, &
                             TRdoteff2km,TRdoteff2m,TReff2km,TReff2m, &
                             TLdoteff2km,TLdoteff2m,TLeff2km,TLeff2m, &
-                            uReff2km,uReff2m,JJ_R, &
-                            uLeff2km,uLeff2m,JJ_L)
+                            uReff2km,uReff2m, &
+                            uLeff2km,uLeff2m)
 !
 !  29-jul-25/TP: carved from special_after_boundary
 !
@@ -1498,8 +1502,8 @@ module Special
 
       real, dimension (nx) :: TR, TRdot, imTR, imTRdot, TReff2, TRdoteff2
       real, dimension (nx) :: TL, TLdot, imTL, imTLdot, TLeff2, TLdoteff2
-      real, dimension (nx) :: uR, uRdot, imuR, imuRdot, uReff2, uReff2m, uReff2km, JJ_R
-      real, dimension (nx) :: uL, uLdot, imuL, imuLdot, uLeff2, uLeff2m, uLeff2km, JJ_L
+      real, dimension (nx) :: uR, uRdot, imuR, imuRdot, uReff2, uReff2m, uReff2km
+      real, dimension (nx) :: uL, uLdot, imuL, imuLdot, uLeff2, uLeff2m, uLeff2km
       real, dimension (nx) :: psi, psidot, impsi , impsidot
       real, dimension (nx) :: TRpsi , TRpsik , TRpsidot , TRdotpsi
       real, dimension (nx) :: TRdot_abs2, TLdot_abs2, TReff2k2m, TLeff2k2m
@@ -1643,7 +1647,6 @@ module Special
           grand=grand+(4.*pi*k**3*dlnk)*(xi*H+k/a)*TLeff2*(+   g/(3.*a**2))/twopi**3
           grant=grant+(4.*pi*k**3*dlnk)*(mQ*H+k/a)*TLeff2*(-lamf/(2.*a**2))/twopi**3
           rhoT=rhoT+(4.*pi*k**3*dlnk)*(TLdot_abs2+((k/a)**2+2.*mQ*H*k/a)*TLeff2)/(2.*a**2)
-!print*,'AXEL: dlnk,k=',dlnk,k(1:5)
         endif
 !
 !  Schwinger
@@ -1657,8 +1660,6 @@ module Special
           uLeff2m=(4.*pi*k**3*dlnk)*uLeff2
           JJ_R=(4.*pi*k**3*dlnk)*(.5*sgn_g*mQ*H-onethird*k/a)*uReff2*sgn_g*g/a**2
           JJ_L=(4.*pi*k**3*dlnk)*(.5*sgn_g*mQ*H+onethird*k/a)*uLeff2*sgn_g*g/a**2
-!print*,'AXEL1: JJ_R',JJ_R(1:4)
-!print*,'AXEL1: JJ_L',JJ_L(1:4)
         endif
 !
         if (lconf_time) then
@@ -1715,8 +1716,8 @@ module Special
       real, dimension(nx) :: TRpsim, TRpsikm, TRpsidotm, TRdotpsim
       real, dimension(nx) :: TRdoteff2km, TRdoteff2m, TReff2km, TReff2m
       real, dimension(nx) :: TLdoteff2km, TLdoteff2m, TLeff2km, TLeff2m
-      real, dimension(nx) :: uRdoteff2km, uRdoteff2m, uReff2km, uReff2m, JJ_R
-      real, dimension(nx) :: uLdoteff2km, uLdoteff2m, uLeff2km, uLeff2m, JJ_L
+      real, dimension(nx) :: uRdoteff2km, uRdoteff2m, uReff2km, uReff2m
+      real, dimension(nx) :: uLdoteff2km, uLdoteff2m, uLeff2km, uLeff2m
       real :: Q, Qdot, chi, chidot, phi, phidot
       real :: U, V, beta
       real :: lnt, lnH, lna, a, lnkmin, lnkmax
@@ -1849,10 +1850,8 @@ module Special
       call calc_integrand(f,TRpsim,TRpsikm,TRpsidotm,TRdotpsim, &
                             TRdoteff2km,TRdoteff2m,TReff2km,TReff2m, &
                             TLdoteff2km,TLdoteff2m,TLeff2km,TLeff2m, &
-                            uReff2km,uReff2m,JJ_R, &
-                            uLeff2km,uLeff2m,JJ_L)
-!print*,'AXEL2: JJ_R',JJ_R(1:4)
-!print*,'AXEL2: JJ_L',JJ_L(1:4)
+                            uReff2km,uReff2m, &
+                            uLeff2km,uLeff2m)
 !
 !  output of integrand
 !
