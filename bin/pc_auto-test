@@ -313,10 +313,6 @@ my $created_datadir = 0;
 my $remove_lock = 0;
 my $failure_message = '';
 my ($current_revision, $current_hash);
-my $reference_out = 'reference.out'; # automatically changed to
-                                     # reference.out.double below for
-                                     # double precision runs
-				     #
 #Compare against reference.out.double if it exists
 my $user        = $ENV{USER} || $ENV{LOGNAME} || 'unknown';
 my $tmpdir      = "/tmp/pencil-tmp-$user-$$";
@@ -1371,7 +1367,6 @@ sub test_compile {
             push @makeopts, 'REAL_PRECISION=double';
             printf "$indi_fmt ", '[double]';
         } else {
-            $reference_out = 'reference.out';
             printf "$indi_fmt ", '';
         }
         if ($fast) {
@@ -1477,6 +1472,9 @@ sub test_run {
 }
 # ---------------------------------------------------------------------- #
 sub test_results {
+    my $reference_out = 'reference.out'; # automatically changed to
+                                         # reference.out.double below for
+                                         # double precision runs
     if (-r 'print.in.double' && -r 'reference.out.double') {
         $reference_out = 'reference.out.double';
     }
