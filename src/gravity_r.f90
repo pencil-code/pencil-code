@@ -1397,6 +1397,7 @@ module Gravity
     call string_to_enum(enum_ipotential_secondary,ipotential_secondary)
     call copy_addr(enum_iramp_function,p_par(17)) ! int
     call copy_addr(enum_ipotential_secondary,p_par(18)) ! int
+    call copy_addr(gravz,p_par(19))
 
     endsubroutine pushpars2c
 !***********************************************************************
