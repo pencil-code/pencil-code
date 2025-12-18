@@ -49,20 +49,21 @@ module Special
   real :: Mpl2=1., Hdot=0., lamf, Hscript
   real :: m_inflaton=1.275e-7, m_phi=1.275e-7, inflaton_ini=16., phi_ini=16.
   real :: alpha=0.1, m_alpha=3.285e-11, n_alpha=1.5
-  real :: mscal=0.
-  real, dimension (nx) :: grand, grant, dgrant
+  real :: mscal=0., sgn_g=-1.
+  real, dimension (nx) :: grand, grant, dgrant, rhoT
   real, dimension (nx) :: xmask_axion
   real, dimension (2) :: axion_sum_range=(/0.,1./)
   integer, dimension (nx) :: kindex_array
-  real :: grand_sum, grant_sum, dgrant_sum
+  real :: grand_sum, grant_sum, dgrant_sum, rhoT_sum
   real :: TRdoteff2km_sum, TRdoteff2m_sum, TReff2km_sum, TReff2m_sum, uReff2km_sum, uReff2m_sum, JJ_R_sum
   real :: TLdoteff2km_sum, TLdoteff2m_sum, TLeff2km_sum, TLeff2m_sum, uLeff2km_sum, uLeff2m_sum, JJ_L_sum
   real :: TRpsim_sum, TRpsikm_sum, TRpsidotm_sum, TRdotpsim_sum, JJ_sum
 
   real :: grand_sum_diagnos,dgrant_sum_diagnos
-  real :: JJ_R_sum_diagnos, JJ_L_sum_diagnos
+  real :: JJ_R_sum_diagnos, JJ_L_sum_diagnos, JJ_sum_diagnos
+  real :: rhoT_sum_diagnos
 
-  real :: sbackreact_Q=1., sbackreact_chi=1., tback=1e6, dtback=1e6
+  real :: sbackreact_Q=1., sbackreact_chi=1., sbackreact_JJ=1., tback=1e6, dtback=1e6
   real :: lnkmin0, lnkmin0_dummy, lnkmax0, dlnk
   real :: nmin0=-1., nmax0=3., horizon_factor=0., sgn=1.
   real, dimension (nx) :: dt1_special, lnk
@@ -81,16 +82,16 @@ module Special
     llnk_spacing_adjustable, llnk_spacing, lim_psi_TR, lleft_psiL_TL, &
     nmin0, nmax0, ldo_adjust_krange, lswap_sign, sgn, m_inflaton, m_phi, &
     inflaton_ini, lhubble, V_choice, phi_ini, alpha, m_alpha, n_alpha, &
-    lSchwinger_scalar, mscal
+    lSchwinger_scalar, mscal, sgn_g
 !
   ! run parameters
   namelist /special_run_pars/ &
     k0, dk, fdecay, g, lam, mu, H, lwith_eps, lupdate_background, &
-    lbackreact, sbackreact_Q, sbackreact_chi, tback, dtback, lconf_time, &
+    lbackreact, sbackreact_Q, sbackreact_JJ, sbackreact_chi, tback, dtback, lconf_time, &
     Ndivt, lanalytic, lvariable_k, llnk_spacing_adjustable, llnk_spacing, &
     nmin0, nmax0, horizon_factor, axion_sum_range, lkeep_mQ_const, &
     ldo_adjust_krange, lswap_sign, lwrite_krange, lwrite_backreact, sgn, &
-    lhubble_var, lhubble, mscal
+    lhubble_var, lhubble, mscal, sgn_g
 !
   ! k array
   real, dimension (nx) :: k
@@ -139,6 +140,7 @@ module Special
   integer :: idiag_dgrant_up=0 ! DIAG_DOC: ${\cal T}^\chi$
   integer :: idiag_grand2=0 ! DIAG_DOC: ${\cal T}^Q$ (test)
   integer :: idiag_dgrant=0 ! DIAG_DOC: $\dot{\cal T}^\chi$
+  integer :: idiag_rhoT=0 ! DIAG_DOC: $\rho_T$
   integer :: idiag_JJ_R=0 ! DIAG_DOC: $J_R$
   integer :: idiag_JJ_L=0 ! DIAG_DOC: $J_L$
   integer :: idiag_JJ=0   ! DIAG_DOC: $J$
@@ -639,6 +641,15 @@ module Special
         uLdot  =f(l1:l2,m,n,iaxi_uLdot)
         imuL   =f(l1:l2,m,n,iaxi_imuL)
         imuLdot=f(l1:l2,m,n,iaxi_imuLdot)
+      else
+        uR     =0.
+        uRdot  =0.
+        imuR   =0.
+        imuRdot=0.
+        uL     =0.
+        uLdot  =0.
+        imuL   =0.
+        imuLdot=0.
       endif
 !
 !  make ODE variables available (should exist on all processors)
@@ -872,10 +883,10 @@ module Special
             if (lSchwinger_scalar) then
               adot=a*H
               addot=adot*H+Hdot*a
-              uRddot=-H*uRdot-(k**2/a**2-k*H*mQ/a+(.75*H**2*mQ**2+mscal**2-(addot+H*adot)/a))*uR
-              uLddot=-H*uLdot-(k**2/a**2+k*H*mQ/a+(.75*H**2*mQ**2+mscal**2-(addot+H*adot)/a))*uL
-              imuRddot=-H*imuRdot-(k**2/a**2-k*H*mQ/a+(.75*H**2*mQ**2+mscal**2-(addot+H*adot)/a))*imuR
-              imuLddot=-H*imuLdot-(k**2/a**2+k*H*mQ/a+(.75*H**2*mQ**2+mscal**2-(addot+H*adot)/a))*imuL
+              uRddot=-H*uRdot-(k**2/a**2-sgn_g*k*H*mQ/a+(.75*H**2*mQ**2+mscal**2-(addot+H*adot)/a))*uR
+              uLddot=-H*uLdot-(k**2/a**2+sgn_g*k*H*mQ/a+(.75*H**2*mQ**2+mscal**2-(addot+H*adot)/a))*uL
+              imuRddot=-H*imuRdot-(k**2/a**2-sgn_g*k*H*mQ/a+(.75*H**2*mQ**2+mscal**2-(addot+H*adot)/a))*imuR
+              imuLddot=-H*imuLdot-(k**2/a**2+sgn_g*k*H*mQ/a+(.75*H**2*mQ**2+mscal**2-(addot+H*adot)/a))*imuL
             endif
           else
 !
@@ -997,6 +1008,7 @@ module Special
         call save_name(TLdoteff2km_sum,idiag_TLdoteff2km)
         call save_name(grand_sum_diagnos,idiag_grand2)
         call save_name(dgrant_sum_diagnos,idiag_dgrant)
+        call save_name(rhoT_sum_diagnos,idiag_rhoT)
         call save_name(uReff2m_sum,idiag_uReff2m)
         call save_name(uReff2km_sum,idiag_uReff2km)
         call save_name(uLeff2m_sum,idiag_uLeff2m)
@@ -1035,7 +1047,8 @@ module Special
       endif
     endfunction get_mQ
 !***********************************************************************
-    subroutine calc_ode_dt(f_ode,Qddot,chiddot,phiddot,grant_sum,dgrant_sum)
+    subroutine calc_ode_dt(f_ode,Qddot,chiddot,phiddot,grant_sum,dgrant_sum, &
+      JJ_sum)
 !
 !  29-jul-25/TP: carved from dspecial_dt_ode
 !
@@ -1045,7 +1058,7 @@ module Special
 
       real, dimension(:), intent(IN) :: f_ode
       real, intent(OUT) :: Qddot,chiddot,phiddot
-      real, intent(IN) :: grant_sum,dgrant_sum
+      real, intent(IN) :: grant_sum, dgrant_sum, JJ_sum
       real :: Q, Qdot, chi, chidot, phi, phidot
       real :: Uprime, mQ, xi, Vprime, beta
       !real :: U, Uprime, mQ, xi, V, Vprime
@@ -1139,7 +1152,7 @@ module Special
           Qddot  =Qddot  -sbackreact_Q  *fact*a**2 *grand_sum
           chiddot=chiddot-sbackreact_chi*fact*a**2*dgrant_sum
         else
-          Qddot  =Qddot  -sbackreact_Q  *fact *grand_sum
+          Qddot  =Qddot  -sbackreact_Q  *fact *grand_sum-sbackreact_JJ*JJ_sum
           chiddot=chiddot-sbackreact_chi*fact*dgrant_sum
         endif
       endif
@@ -1197,7 +1210,7 @@ module Special
 !  Set the all variable
 !
       call get_Hubble
-      call calc_ode_dt(f_ode,Qddot,chiddot,phiddot,grand_sum,dgrant_sum)
+      call calc_ode_dt(f_ode,Qddot,chiddot,phiddot,grand_sum,dgrant_sum,JJ_sum)
 !
 !  Choice whether or not we want to update the background
 !
@@ -1235,7 +1248,7 @@ module Special
 !
 !  Call calc_ode_dt for dianostics at each step, but this happens even if there is no diagnostics.
 !
-      call calc_ode_dt(f_ode,Qddot,chiddot,phiddot,grand_sum_diagnos,dgrant_sum_diagnos)
+      call calc_ode_dt(f_ode,Qddot,chiddot,phiddot,grand_sum_diagnos,dgrant_sum_diagnos,JJ_sum_diagnos)
 
       call save_name(f_ode(iaxi_Q)      ,idiag_Q)
       call save_name(f_ode(iaxi_Qdot)   ,idiag_Qdot)
@@ -1489,6 +1502,7 @@ module Special
       real, dimension (nx) :: uL, uLdot, imuL, imuLdot, uLeff2, uLeff2m, uLeff2km, JJ_L
       real, dimension (nx) :: psi, psidot, impsi , impsidot
       real, dimension (nx) :: TRpsi , TRpsik , TRpsidot , TRdotpsi
+      real, dimension (nx) :: TRdot_abs2, TLdot_abs2, TReff2k2m, TLeff2k2m
       real :: xi,chidot,mQ,Qdot
       real :: a
 !
@@ -1528,6 +1542,7 @@ module Special
       TRpsi=TR*psi
       TRpsidot=TR*psidot
       TRdotpsi=TRdot*psi
+      TRdot_abs2=TRdot**2
       if (lim_psi_TR) then
         !TReff2=TR**2+imTR**2
         !TRdoteff2=TR*TRdot+imTR*imTRdot
@@ -1536,6 +1551,7 @@ module Special
         TRpsi=TRpsi+imTR*impsi
         TRpsidot=TRpsidot+imTR*impsidot
         TRdotpsi=TRdotpsi+imTRdot*impsi
+        TRdot_abs2=TRdot_abs2+imTRdot**2
       endif
 !
 !  Schwinger
@@ -1559,6 +1575,7 @@ module Special
           TRpsi=0.
           TRpsidot=0.
           TRdotpsi=0.
+          TRdot_abs2=0.
         endwhere
       elseif (horizon_factor>0.) then
         where (k>(a*H*horizon_factor))
@@ -1567,6 +1584,7 @@ module Special
           TRpsi=0.
           TRpsidot=0.
           TRdotpsi=0.
+          TRdot_abs2=0.
         endwhere
       endif
 !
@@ -1581,16 +1599,19 @@ module Special
         TLdoteff2=TL*TLdot
         TLeff2=TLeff2+imTL**2
         TLdoteff2=TLdoteff2+imTL*imTLdot
+        TLdot_abs2=TLdot**2+imTLdot**2
         if (horizon_factor==0.) then
           if (headt.and.lfirst) print*,'horizon_factor=',horizon_factor
           where (TLeff2<1./(2.*a*H))
             TLeff2=0.
             TLdoteff2=0.
+            TLdot_abs2=0.
           endwhere
         elseif (horizon_factor>0.) then
           where (k>(a*H*horizon_factor))
             TLeff2=0.
             TLdoteff2=0.
+            TLdot_abs2=0.
           endwhere
         endif
       endif
@@ -1605,19 +1626,23 @@ module Special
         TRdotpsim=(4.*pi*k**3*dlnk)*TRdotpsi
         TRdoteff2km=(4.*pi*k**3*dlnk)*TRdoteff2*(k/a)
         TRdoteff2m=(4.*pi*k**3*dlnk)*TRdoteff2
+        TReff2k2m=(4.*pi*k**3*dlnk)*TReff2*(k/a)**2
         TReff2km=(4.*pi*k**3*dlnk)*TReff2*(k/a)
         TReff2m=(4.*pi*k**3*dlnk)*TReff2
         grand=(4.*pi*k**3*dlnk)*(xi*H-k/a)*TReff2*(+   g/(3.*a**2))/twopi**3
         grant=(4.*pi*k**3*dlnk)*(mQ*H-k/a)*TReff2*(-lamf/(2.*a**2))/twopi**3
+        rhoT=(4.*pi*k**3*dlnk)*(TRdot_abs2+((k/a)**2-2.*mQ*H*k/a)*TReff2)/(2.*a**2)
         if (lleft_psiL_TL) then
           TLdoteff2km=(4.*pi*k**3*dlnk)*TLdoteff2*(k/a)
           TLdoteff2m=(4.*pi*k**3*dlnk)*TLdoteff2
+          TLeff2k2m=(4.*pi*k**3*dlnk)*TLeff2*(k/a)**2
           TLeff2km=(4.*pi*k**3*dlnk)*TLeff2*(k/a)
           TLeff2m=(4.*pi*k**3*dlnk)*TLeff2
           !grand=grand+(4.*pi*k**3*dlnk)*(xi*H-k/a)*TLeff2*(+   g/(3.*a**2))/twopi**3
 !AB: here, for TL, we use the opposite sign in front of the k/a terms.
           grand=grand+(4.*pi*k**3*dlnk)*(xi*H+k/a)*TLeff2*(+   g/(3.*a**2))/twopi**3
           grant=grant+(4.*pi*k**3*dlnk)*(mQ*H+k/a)*TLeff2*(-lamf/(2.*a**2))/twopi**3
+          rhoT=rhoT+(4.*pi*k**3*dlnk)*(TLdot_abs2+((k/a)**2+2.*mQ*H*k/a)*TLeff2)/(2.*a**2)
 !print*,'AXEL: dlnk,k=',dlnk,k(1:5)
         endif
 !
@@ -1630,8 +1655,8 @@ module Special
           uReff2m=(4.*pi*k**3*dlnk)*uReff2
           uLeff2km=(4.*pi*k**3*dlnk)*uLeff2*(k/a)
           uLeff2m=(4.*pi*k**3*dlnk)*uLeff2
-          JJ_R=(4.*pi*k**3*dlnk)*(.5*mQ*H-onethird*k/a)*uReff2*g/a**2
-          JJ_L=(4.*pi*k**3*dlnk)*(.5*mQ*H+onethird*k/a)*uLeff2*g/a**2
+          JJ_R=(4.*pi*k**3*dlnk)*(.5*sgn_g*mQ*H-onethird*k/a)*uReff2*sgn_g*g/a**2
+          JJ_L=(4.*pi*k**3*dlnk)*(.5*sgn_g*mQ*H+onethird*k/a)*uLeff2*sgn_g*g/a**2
 !print*,'AXEL1: JJ_R',JJ_R(1:4)
 !print*,'AXEL1: JJ_L',JJ_L(1:4)
         endif
@@ -1839,7 +1864,8 @@ module Special
       call mpireduce_sum(sum(grand),grand_sum,1)
       call mpireduce_sum(sum(grant),grant_sum,1)
       call mpireduce_sum(sum(dgrant),dgrant_sum,1)
-      if (lSchwinger_scalar) &
+      call mpireduce_sum(sum(rhoT),rhoT_sum,1)
+      if (lSchwinger_scalar) then
         call mpireduce_sum(sum(uReff2km),uReff2km_sum,1)
         call mpireduce_sum(sum(uReff2m),uReff2m_sum,1)
         call mpireduce_sum(sum(uLeff2km),uLeff2km_sum,1)
@@ -1847,9 +1873,15 @@ module Special
         call mpireduce_sum(sum(JJ_R),JJ_R_sum,1)
         call mpireduce_sum(sum(JJ_L),JJ_L_sum,1)
         call mpireduce_sum(sum(JJ_R+JJ_L),JJ_sum,1)
+     else
+       JJ_R_sum=0.
+       JJ_L_sum=0.
+       JJ_sum=0.
+     endif
      if(.not. lmultithread) then
         grand_sum_diagnos  = grand_sum
         dgrant_sum_diagnos = dgrant_sum
+        rhoT_sum_diagnos = rhoT_sum
       endif
 !
 !  These 8 lines are only needed for diagnostics and could be escaped.
@@ -1902,7 +1934,7 @@ module Special
         idiag_TReff2m=0; idiag_TReff2km=0; idiag_TRdoteff2m=0; idiag_TRdoteff2km=0
         idiag_TRpsim=0; idiag_TRpsikm=0; idiag_TRpsidotm=0; idiag_TRdotpsim=0
         idiag_TLeff2m=0; idiag_TLeff2km=0; idiag_TLdoteff2m=0; idiag_TLdoteff2km=0
-        idiag_grand2=0; idiag_dgrant=0; idiag_dgrant_up=0; idiag_fact=0
+        idiag_grand2=0; idiag_dgrant=0; idiag_rhoT=0; idiag_dgrant_up=0; idiag_fact=0
         idiag_grandxy=0; idiag_grantxy=0; idiag_k0=0; idiag_dk=0
         idiag_JJ_R=0; idiag_JJ_L=0; idiag_JJ=0
         idiag_uReff2m=0; idiag_uReff2km=0
@@ -1947,6 +1979,7 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'dgrant_up' ,idiag_dgrant_up)
         call parse_name(iname,cname(iname),cform(iname),'grand2' ,idiag_grand2)
         call parse_name(iname,cname(iname),cform(iname),'dgrant' ,idiag_dgrant)
+        call parse_name(iname,cname(iname),cform(iname),'rhoT' ,idiag_rhoT)
         call parse_name(iname,cname(iname),cform(iname),'uReff2m' ,idiag_uReff2m)
         call parse_name(iname,cname(iname),cform(iname),'uReff2km' ,idiag_uReff2km)
         call parse_name(iname,cname(iname),cform(iname),'uLeff2m' ,idiag_uLeff2m)
