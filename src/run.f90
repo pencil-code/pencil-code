@@ -630,6 +630,7 @@ endsubroutine helper_loop
                              construct_serial_arrays, coarsegrid_interp
   use Gpu,             only: load_farray_to_GPU, initialize_gpu
   use HDF5_IO,         only: init_hdf5, initialize_hdf5, wdim
+  use File_io,         only: file_exists,delete_file
   use IO,              only: rgrid, wgrid, directory_names, rproc_bounds, wproc_bounds, output_globals, input_globals
   use Messages
   use Mpicomm
@@ -647,7 +648,7 @@ endsubroutine helper_loop
   use Solid_Cells,     only: wsnap_ogrid
   use Special,         only: initialize_mult_special
   use Sub,             only: control_file_exists, get_nseed
-  use Syscalls,        only: memusage
+  use Syscalls,        only: memusage, sizeof_real
   use Timeavg,         only: wsnap_timeavgs
   use Timestep,        only: initialize_timestep,after_substep_sum_time
 !
@@ -774,6 +775,21 @@ endsubroutine helper_loop
     call construct_grid(x,y,z,dx,dy,dz)
     lprocbounds_exist = .false.    ! triggers wproc_bounds later
   endif
+!
+!  Store metadata was the run in double or single precision
+!  We do this instead of e.g. reading it from dim.dat since dim.dat won't exist
+!  if we use HDF5-IO
+!
+    if(lroot) then
+      if (file_exists('data/SINGLE_PRECISION_RUN')) call delete_file('data/SINGLE_PRECISION_RUN')
+      if (file_exists('data/DOUBLE_PRECISION_RUN')) call delete_file('data/DOUBLE_PRECISION_RUN')
+      if(sizeof_real() < 8) then
+        call touch_file('data/SINGLE_PRECISION_RUN')
+      else
+        call touch_file('data/DOUBLE_PRECISION_RUN')
+      endif
+    endif
+
 !
 !  Shorthands (global).
 !
