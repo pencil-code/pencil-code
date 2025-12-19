@@ -309,6 +309,7 @@ my $base_URL = 'https://github.com/pencil-code/pencil-code/'; # repository URL
 
 my $ntests      = 0;                 # total number of tests run
 my $failed      = 0;
+my $reached_end = 0;
 my $created_datadir = 0;
 my $remove_lock = 0;
 my $failure_message = '';
@@ -806,6 +807,10 @@ if ($nodelist) {
         test_rundir("$d", $makeopts);
     }
 }
+
+#This must be the last statement
+$reached_end = 1;
+
 # ---------------------------------------------------------------------- #
 sub check_timeout_found {
     # Check if the timeout command exists on the system.
@@ -2272,6 +2277,10 @@ sub get_maintainers {
 END {
 
     exit 0 if $skip_end_block;
+
+    # This makes sure that if there is a `die` statement before this, pc_auto-test
+    # actually exits with a nonzero exit code.
+    $failed++ unless $reached_end;
 
     unless ($help || $nosummary || $list_only) {
         print "\n" . "-" x 70 . "\n";
