@@ -113,14 +113,14 @@ module Special
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
-  integer :: idiag_uSH2=0      ! DIAG_DOC: $\left<u^\mathrm{SH}^2\right>$
-  integer :: idiag_uRR2=0      ! DIAG_DOC: $\left<u^\mathrm{RR}^2\right>$
-  integer :: idiag_uEL2=0      ! DIAG_DOC: $\left<u^\mathrm{EL}^2\right>$
+  integer :: idiag_uSH2=0      ! DIAG_DOC: $\left<{u^\mathrm{SH}}^2\right>$
+  integer :: idiag_uRR2=0      ! DIAG_DOC: $\left<{u^\mathrm{RR}}^2\right>$
+  integer :: idiag_uEL2=0      ! DIAG_DOC: $\left<{u^\mathrm{EL}}^2\right>$
   integer :: idiag_uRRm=0      ! DIAG_DOC: $\left<2u^\mathrm{SH}u^\mathrm{RR}\right>$
   integer :: idiag_uELm=0      ! DIAG_DOC: $\left<2u^\mathrm{SH}u^\mathrm{EL}\right>$
-  integer :: idiag_bSH2=0      ! DIAG_DOC: $\left<b^\mathrm{SH}^2\right>$
-  integer :: idiag_bRR2=0      ! DIAG_DOC: $\left<b^\mathrm{RR}^2\right>$
-  integer :: idiag_bEL2=0      ! DIAG_DOC: $\left<b^\mathrm{EL}^2\right>$
+  integer :: idiag_bSH2=0      ! DIAG_DOC: $\left<{b^\mathrm{SH}}^2\right>$
+  integer :: idiag_bRR2=0      ! DIAG_DOC: $\left<{b^\mathrm{RR}}^2\right>$
+  integer :: idiag_bEL2=0      ! DIAG_DOC: $\left<{b^\mathrm{EL}}^2\right>$
   integer :: idiag_bRRm=0      ! DIAG_DOC: $\left<2b^\mathrm{SH}b^\mathrm{RR}\right>$
   integer :: idiag_bELm=0      ! DIAG_DOC: $\left<2b^\mathrm{SH}b^\mathrm{EL}\right>$
 !
