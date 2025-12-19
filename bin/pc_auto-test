@@ -1480,17 +1480,18 @@ sub is_double_precision {
 }#
 # ---------------------------------------------------------------------- #
 sub test_results {
-    my $reference_out = 'reference.out'; # automatically changed to
-                                         # reference.out.double below for
-                                         # double precision runs
-    
-    if (is_double_precision() && -r 'data/DOUBLE_PRECISION_RUN' && -r 'print.in.double' && -r 'reference.out.double') {
-        $reference_out = 'reference.out.double';
-    }
 # Analyze results from code
     my $dir = shift;
 
     if ($t_res) {
+        my $reference_out = 'reference.out'; # automatically changed to
+                                            # reference.out.double below for
+                                            # double precision runs
+
+        if (is_double_precision() && -r 'data/DOUBLE_PRECISION_RUN' && -r 'print.in.double' && -r 'reference.out.double') {
+            $reference_out = 'reference.out.double';
+        }
+
         my ($rdmsg,$diagn);
         print "    Validating results..   ";
         printf "$indi_fmt ", '';
