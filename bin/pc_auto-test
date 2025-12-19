@@ -2295,6 +2295,9 @@ END {
         # Failed outside individual tests (e.g. other auto test is running)
         if ($failed) {
             print "$failure_message";
+            # If the pc_auto-test script itself failed, the test summaries below
+            # may not be reliable anyway.
+            exit;
         }
 
         # Failed during some of the individual tests
