@@ -2279,7 +2279,10 @@ END {
 
     exit 0 if $skip_end_block;
 
-    $failed++ unless $reached_end;
+    unless ($reached_end) {
+        $failed++;
+        $failure_message.="Premature death of pc_auto-test\n"
+    }
 
     unless ($help || $nosummary || $list_only) {
         print "\n" . "-" x 70 . "\n";
