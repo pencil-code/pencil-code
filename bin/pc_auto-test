@@ -808,7 +808,8 @@ if ($nodelist) {
     }
 }
 
-#This must be the last statement
+#This must be the last statement; it makes sure that if there is a `die`
+# statement before this, pc_auto-test actually exits with a nonzero exit code.
 $reached_end = 1;
 
 # ---------------------------------------------------------------------- #
@@ -2278,8 +2279,6 @@ END {
 
     exit 0 if $skip_end_block;
 
-    # This makes sure that if there is a `die` statement before this, pc_auto-test
-    # actually exits with a nonzero exit code.
     $failed++ unless $reached_end;
 
     unless ($help || $nosummary || $list_only) {
