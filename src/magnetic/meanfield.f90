@@ -1654,13 +1654,15 @@ module Magnetic_meanfield
 !  Note that here, p%mf_EMF is reinitialized again.
 !  It is unclear whether this is indeed intended.
 !  Apply therefore a warning.
+!  But alpha-Omega approximation means there is only the phi component of
+!  EMF (=alpha*Bphi).
 !
         if (lalpha_Omega_approx) then
-          call warning('calc_pencils_magn_mf','p%mf_EMF is reinitialized. Is this intended?')
+          !call warning('calc_pencils_magn_mf','p%mf_EMF is reinitialized. Is this intended?')
           if (lspherical_coords) then
             p%mf_EMF(:,1:2)=0.
-            call fatal_error("calc_pencils_magn_mf: ", &
-                "lalpha_Omega_approx not implemented for this case")
+            !call fatal_error("calc_pencils_magn_mf: ", &
+            !    "lalpha_Omega_approx not implemented for this case")
           else
             p%mf_EMF(:,1)=0.
             p%mf_EMF(:,3)=0.
