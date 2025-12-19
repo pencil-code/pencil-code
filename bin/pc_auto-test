@@ -1489,12 +1489,12 @@ sub test_results {
     my $dir = shift;
 
     if ($t_res) {
-        my $reference_out = 'reference.out'; # automatically changed to
-                                            # reference.out.double below for
-                                            # double precision runs
+        my $reference_out;
 
         if (is_double_precision() && -r 'data/DOUBLE_PRECISION_RUN' && -r 'print.in.double' && -r 'reference.out.double') {
             $reference_out = 'reference.out.double';
+        } else {
+            $reference_out = 'reference.out';
         }
 
         my ($rdmsg,$diagn);
