@@ -604,7 +604,7 @@ if ($time_limit && !Scalar::Util::looks_like_number($time_limit)) {
     my $parsed_time_limit = eval {Test::Parse::parse_time($time_limit)};
     if ($@) {
         $failed++;
-        $failure_message = "time limit: $@";
+        $failure_message = "time limit: $@\n";
         exit;
     } else {
         $time_limit = $parsed_time_limit
