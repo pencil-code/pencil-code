@@ -2281,7 +2281,7 @@ outer:do ikz=1,nz
 !
       if (sp=='Lor') then
         !$omp workshare
-        b_re(:,:,n)=Lor(l1:l2,m1:m2,n,ivec)
+        b_re=Lor(l1:l2,m1:m2,n1:n2,ivec)
         !$omp end workshare
         if (lhydro) then
           !$omp workshare
