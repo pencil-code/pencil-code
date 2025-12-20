@@ -7,14 +7,24 @@
   nt=10, it1=2, cdt=0.4, cdtv=0.3, isave=0, itorder=3        !(sample run)
   dsnap=.1, dvid=0.1,  !(for sample run)
   d2davg=0.1           !(for sample run)
-  dspec=.1, ou_spec=T, ab_spec=T, vel_spec=T, lr_spec=T !(for energy spectra)
   random_gen='nr_f90'  !(Use machine-indep numerical receipes random numbers)
   lpencil_check=F      !(checks for redundany of pencils)
  !comment_char='%'     !(useful when using matlab for visualization)
   lequatorz=T          !(to indicate that north/south diagnostics in in z)
   dt=4e-2
 
+  dspec=.1
   lspec_at_tplusdt=T
+  ou_spec=T
+  ab_spec=T
+  vel_spec=T
+  lr_spec=T
+  Tra_spec=T
+  Lor_spec=T
+  EMF_spec=T
+  ux_spec=T
+  uy_spec=T
+  uz_spec=T
 
   !lnrho_pdf=T
   pdfs='lnrho,uu(1)/0/0.5'
