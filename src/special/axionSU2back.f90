@@ -989,6 +989,9 @@ module Special
         call sum_mn_name(f(l1:l2,m,n,iaxi_psiL),idiag_psiL)
         call sum_mn_name(f(l1:l2,m,n,iaxi_psidot),idiag_psidot)
         call sum_mn_name(f(l1:l2,m,n,iaxi_TR),idiag_TR)
+        ! 2025-Dec-20/Kishore: the below is detected as out-of-bounds access for
+        ! me in samples/axionSU2back (Index '0' of dimension 4 of array 'f' outside
+        ! of expected range (1:16))
         call sum_mn_name(f(l1:l2,m,n,iaxi_TL),idiag_TL)
         call sum_mn_name(f(l1:l2,m,n,iaxi_uR),idiag_uR)
         call sum_mn_name(f(l1:l2,m,n,iaxi_uL),idiag_uL)
