@@ -1225,7 +1225,7 @@ def time_series(datadir='./data', unique=False):
     return ts
 #=======================================================================
 def var(allprocs=True, compact=True, datadir='./data', ivar=None, par=None,
-        trim=True, varfile='var.dat', verbose=True):
+        trim=True, unshear=False, varfile='var.dat', verbose=True):
     """Returns one snapshot.
 
     Keyword Arguments:
@@ -1243,6 +1243,8 @@ def var(allprocs=True, compact=True, datadir='./data', ivar=None, par=None,
             will be called.
         trim
             Whether or not to trim the ghost cells.
+        unshear
+            Whether or not to make x periodic
         varfile
             Name of the snapshot file.
         verbose
@@ -1356,6 +1358,9 @@ def var(allprocs=True, compact=True, datadir='./data', ivar=None, par=None,
         y = y[dim.nghost:-dim.nghost]
         z = z[dim.nghost:-dim.nghost]
 
+    if unshear:
+        f  = _unshear(f,dim,xax=x,param=par,t=t)
+
     # Define the returned dimensions.
     fdim.pop()
     if compact:
@@ -1454,3 +1459,57 @@ def _get_precision(dim):
         dtype = np.float32
     nb = calcsize(fmt)
     return fmt, dtype, nb
+#=======================================================================
+def _unshear(arr, dim, xax=None, x0=0.0, param=None, t=None, nowrap=False):
+    # Wladimir Lyra, 2025-12-21
+    from scipy.fft import fft, ifft
+    import numpy as np
+
+    if xax is None:
+        raise ValueError("_unshear: must provide 1-D array of x coordinates")
+    if param is None:
+        raise ValueError("param must be provided")
+    if t is None:
+        raise ValueError("_unshear: must provide t")
+
+    Lx = param.lxyz[0]
+    Ly = param.lxyz[1]  # assuming second dimension is y
+    deltay = -param.sshear * Lx * t
+
+    # Check dimensions
+    if arr.ndim != 4:
+        raise ValueError("_unshear only supports 4D arrays (nxgrid, nygrid, nzgrid, mvar)")
+
+    if len(xax) != dim.nxgrid:
+        raise ValueError(f"_unshear: length of xax ({len(xax)}) must match nx ({dim.nxgrid})")
+
+    # FFT wavenumbers along y
+    ky = 2 * np.pi / Ly * np.concatenate([np.arange(dim.nygrid // 2 + 1), -np.arange(1, dim.nygrid // 2)[::-1]])
+
+    arr_unsheared = np.empty_like(arr)
+
+    for ix in range(dim.nxgrid):
+        # Compute shift along y
+        if nowrap:
+            deltay_x = deltay * (xax[ix] - x0) / Lx
+        else:
+            deltay_x = (deltay % Ly) * (xax[ix] - x0) / Lx
+
+        # Extract plane at this x (shape: ny, nz, mvar)
+        plane = arr[ix, :, :, :]  # shape: (ny, nz, mvar)
+        
+        # FFT along y (axis=0 in row-major)
+        plane_ky = fft(plane, axis=0)
+
+        # Broadcast shift along all remaining axes
+        shape = [dim.nygrid, 1, 1]  # broadcast along nz and mvar
+        shift_array = np.exp(-1j * ky.reshape(shape) * deltay_x)
+
+        # Apply shift
+        plane_ky *= shift_array
+
+        # Inverse FFT
+        arr_unsheared[ix, :, :, :] = ifft(plane_ky, axis=0).real
+
+    return arr_unsheared
+#=======================================================================
