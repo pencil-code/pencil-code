@@ -22,6 +22,7 @@ import time
 import re
 import sys
 
+
 #from scipy.io import FortranFile
 from .fortran_file import FortranFileExt
 
@@ -86,6 +87,7 @@ class DataCube(object):
         irange_y=None,
         irange_z=None,
         var_list=None,
+        unshear=False,    
     ):
         """
         read(var_file='', datadir='data', proc=-1, ivar=-1, quiet=True,
@@ -93,7 +95,7 @@ class DataCube(object):
              lpersist=False, dtype=np.float64, flist=None,
              timing=True, fbloc=True, lvec=True, lonlyvec=False,
              range_x=None, range_y=None, range_z=None,
-             irange_x=None, irange_y=None, irange_z=None)
+             irange_x=None, irange_y=None, irange_z=None, unshear=False)
 
         Read VAR files from Pencil Code. If proc < 0, then load all data
         and assemble, otherwise load VAR file from specified processor.
@@ -319,6 +321,9 @@ class DataCube(object):
                 )
                 if trimall:
                     self.bb = self._trim(self.bb, dim, run2D)
+                if unshear:
+                    self.bb = self._unshear(self.bb,dim,xax=self.x[dim.nghostx:-dim.nghostx],param=param,t=self.t)
+
             if "bbtest" in magic:
                 if param.io_strategy == "HDF5":
                     # Compute the magnetic field before doing trimall.
@@ -386,6 +391,8 @@ class DataCube(object):
                 )
                 if trimall:
                     self.jj = self._trim(self.jj, dim, run2D)
+                if unshear:
+                    self.jj = self._unshear(self.jj,dim,xax=self.x[dim.nghostx:-dim.nghostx],param=param,t=self.t)
             if "vort" in magic:
                 # Compute the vorticity field before doing trimall.
                 uu = self.f[self._index['ux'] - 1 : self._index['uz'], ...]
@@ -402,7 +409,9 @@ class DataCube(object):
                 )
                 if trimall:
                     self.vort = self._trim(self.vort, dim, run2D)
-
+                if unshear:
+                    self.vort = self._unshear(self.vort,dim,xax=self.x[dim.nghostx:-dim.nghostx],param=param,t=self.t)
+                    
         # Trim the ghost zones of the global f-array if asked.
         if trimall:
             self.x = self.x[dim.nghostx:-dim.nghostx]
@@ -417,6 +426,10 @@ class DataCube(object):
             self.n1 = dim.n1
             self.n2 = dim.n2 + 1
 
+        # unshear so that the box in x is periodic instead of shear-periodic                                                   
+        if unshear:
+            self.f  = self._unshear(self.f,dim,xax=self.x,param=param,t=self.t)
+            
         # Assign an attribute to self for each variable defined in
         # 'data/index.pro' so that e.g. self.ux is the x-velocity
         # It is possible that only a subset of the variables are present in the
@@ -471,7 +484,7 @@ class DataCube(object):
         self.magic = magic
         if self.magic is not None:
             self.magic_attributes(param, dtype=dtype)
-        if timing and not quiet:
+        if timing:
             print("object completed in {:.2f} seconds.".format(time.time()-start_time))
 
     def __natural_sort(self, procs_list):
@@ -950,6 +963,86 @@ class DataCube(object):
         else:
             raise NotImplementedError
 
+    def _unshear(self, arr, dim, xax=None, x0=0.0, param=None, t=None, nowrap=False):
+        from scipy.fft import fft, ifft
+        """
+        Unshear a 4D array arr (mvar, nz, ny, nx) along the y-direction using Fourier interpolation.
+
+        Parameters
+        ----------
+        arr : ndarray
+            Array of shape (mvar, nz, ny, nx)
+        deltay : float, optional
+            Azimuthal shift. If not provided, computed from param.sshear*Lx*t
+        xax : ndarray
+            1D array of x coordinates (length nx)
+        x0 : float
+            Reference x-coordinate (default 0, but shouldn't be hardcoded)
+        Lx, Ly : float
+            Domain sizes in x and y
+        param : object
+            Must provide attributes sshear and lxyz if deltay not given
+        t : float
+            Snapshot time (needed if deltay not provided)
+        nowrap : bool
+            Whether to wrap shifts modulo Ly
+
+        Returns
+        -------
+        arr_unsheared : ndarray
+        Unsheared array, same shape as input
+        """
+
+        if xax is None:
+            raise ValueError("_unshear: must provide 1-D array of x coordinates")
+        if param is None:
+            raise ValueError("param must be provided")
+        if t is None:
+            raise ValueError("_unshear: must provide t")
+        Lx=param.lxyz[0]
+        Ly=param.lxyz[0]
+        deltay = -param.sshear * Lx * t
+
+        # Check dimensions
+        if arr.ndim != 4:
+            raise ValueError("_unshear only supports 4D arrays (mvar, nz, ny, nx)")
+
+        if len(xax) != dim.nx:
+            raise ValueError(f"_unshear: length of xax ({len(xax)}) must match nx ({nx})")
+
+        # FFT wavenumbers along y
+        ky = 2*np.pi/Ly * np.concatenate([np.arange(dim.ny//2+1), -np.arange(1, dim.ny//2)[::-1]])
+
+        arr_unsheared = np.empty_like(arr)
+
+        for ix in range(dim.nx):
+            # Compute shift along y
+            if nowrap:
+                deltay_x = deltay * (xax[ix] - x0) / Lx
+            else:
+                deltay_x = (deltay % Ly) * (xax[ix] - x0) / Lx
+
+            # Extract plane at this x (shape: mvar, nz, ny)
+            plane = arr[:, :, :, ix]
+
+            # FFT along y (axis=-1 for row-major)
+            plane_ky = fft(plane, axis=2)
+
+            # Broadcast shift along all remaining axes
+            shape = [1]*(plane_ky.ndim)
+            shape[2] = dim.ny  # y-axis
+            shift_array = np.exp(-1j * ky.reshape(shape) * deltay_x)
+
+            # Apply shift
+            plane_ky *= shift_array
+
+            # Inverse FFT
+            arr_unsheared[:, :, :, ix] = ifft(plane_ky, axis=2).real
+            
+        return arr_unsheared
+
+
+        
 class _Persist():
     """
     Used to store the persistent variables
