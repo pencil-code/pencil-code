@@ -964,6 +964,8 @@ class DataCube(object):
             raise NotImplementedError
 
     def _unshear(self, arr, dim, xax=None, x0=0.0, param=None, t=None, nowrap=False):
+        # Author: Wladimir Lyra
+        # Coded: 2025-12-21
         from scipy.fft import fft, ifft
         """
         Unshear a 4D array arr (mvar, nz, ny, nx) along the y-direction using Fourier interpolation.
@@ -972,16 +974,14 @@ class DataCube(object):
         ----------
         arr : ndarray
             Array of shape (mvar, nz, ny, nx)
-        deltay : float, optional
-            Azimuthal shift. If not provided, computed from param.sshear*Lx*t
+        dim : object
+            Dimension object carrying n[xyz]
         xax : ndarray
             1D array of x coordinates (length nx)
         x0 : float
             Reference x-coordinate (default 0, but shouldn't be hardcoded)
-        Lx, Ly : float
-            Domain sizes in x and y
         param : object
-            Must provide attributes sshear and lxyz if deltay not given
+            To calculate deltay from sshear and lxyz
         t : float
             Snapshot time (needed if deltay not provided)
         nowrap : bool
