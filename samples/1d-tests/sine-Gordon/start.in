@@ -14,5 +14,5 @@
 /
 &special_init_pars
   initspecial='phi=atan_exp_kx'
-  amplphi=1e-0, kx_phi=2., offset=0., phi_v=.9
+  amplphi=1e-0, kx_phi=2., offset=-5., phi_v=.9
 /
