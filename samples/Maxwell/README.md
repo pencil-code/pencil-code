@@ -24,7 +24,7 @@ http://norlx65.nordita.org/~brandenb/projects/InflationaryMagnetoGW/run_director
 Solves Maxwell and GW equations
 
 ## Links:
-* https://www.nordita.org/~brandenb/projects/InflationaryMagnetoGW/
+* https://norlx65.nordita.org/~brandenb/projects/InflationaryMagnetoGW/
 
 ## References:
 

@@ -29,7 +29,7 @@ a large scale magnetic field develops from an initially random
 magnetic field (if initaa=0 is set).
 
 ## Links:
-* https://www.nordita.org/~brandenb/projects/LShelicityspec/
+* https://old.nordita.org/~brandenb/projects/LShelicityspec/
 * http://pencil-code.nordita.org/samples/turbulence/helical-MHDturb32-4procs/
 
 ## References:

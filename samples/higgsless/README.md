@@ -24,7 +24,7 @@ Isak Stomberg <isak.stomberg/desy[dot]de>
 * none (yet)
 
 ## Links:
-* https://www.nordita.org/~brandenb/projects/
+* https://norlx65.nordita.org/~brandenb/projects/
 
 ## Reference:
 [1] Jinno et al, 2022

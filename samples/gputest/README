@@ -151,6 +151,7 @@ brandenb@login1:/cfs/klemming/home/b/brandenb/data/GPU/axel/decay/reconnection/k
 ml
 
 pc_build -f compilers/Cray_MPI FFLAGS+=" -g" LDFLAGS+='-Wl,--no-relax'
+pc_build -f Cray LDFLAGS+=-Wl,-no-relax
 
 brandenb@login1:/cfs/klemming/home/b/brandenb/data/GPU/axel/decay/reconnection/k600_nu5em7_k4_Pm5_128a> vi src/astaroth/DSL/local/equations.h 
 
