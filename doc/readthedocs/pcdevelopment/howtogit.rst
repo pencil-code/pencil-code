@@ -57,6 +57,108 @@ For a full explanation of each step —  and how to resolve temporal paradoxes �
 continue reading below.
 
 
+History Rewriting Hazard (Git + SVN Server)
+============================================
+
+.. warning::
+
+    **This server supports both Git and SVN.**
+    This is not a normal Git setup.
+    Certain Git commands that are usually harmless can **rewrite or erase repository history** here.
+
+    This has happened before. It is not theoretical.
+
+The Problem
+-----------
+
+In a pure Git server, Git is very good at protecting history.
+On our server, however, Git is backed by **SVN**, which has a **strictly linear and immutable history**.
+
+When the two models collide, **Git can silently rewrite history in ways that SVN cannot represent**.
+
+The most common failure pattern is:
+
+* ``git pull`` **without** ``--rebase``
+* followed by ``git merge``
+* on a branch that should not be merged at all
+
+The result is **history corruption**: commits disappear, timelines fork incorrectly,
+and parts of the repository history are effectively erased.
+
+Once this happens, recovery is painful and sometimes impossible.
+
+Why This Happens
+----------------
+
+Git and SVN treat history very differently.
+
+**Git:**
+
+* History is flexible and editable
+* Commits can be reordered, squashed, rebased, or rewritten
+* Multiple timelines are normal
+
+**SVN:**
+
+* History is linear and immutable
+* Commits cannot be changed once created
+* Merges collapse history into single points
+
+Our server acts as a **Git–SVN bridge**.
+Your local Git history must eventually be translated into SVN’s linear timeline.
+
+When Git history is rewritten locally, SVN cannot represent that rewrite safely.
+
+The bridge does not always fail loudly.
+Instead, it may accept the changes and **silently discard parts of history**.
+
+Forbidden Commands
+------------------
+
+On this server, the following actions are **dangerous**:
+
+* ``git pull`` **without** ``--rebase``
+* ``git merge`` on the main working branch
+* Any command that rewrites published history
+  (rebase, squash, fixup, or amend after pushing)
+
+These commands are not *bad Git*.
+They are simply **incompatible with this server**.
+
+The Only Safe Rule
+------------------
+
+.. important::
+
+    If you are not explicitly working on a separate feature branch:
+
+    **Never merge.**
+    **Always rebase.**
+
+In practice, this means:
+
+* Always use ``git pull --rebase``
+* Never use ``git pull`` by itself
+* Never use ``git merge`` on the main branch
+
+If in doubt:
+
+.. code:: bash
+
+    git status
+
+If you are confused:
+
+.. code:: bash
+
+    git status
+
+If something looks strange:
+
+.. code:: bash
+
+    git status
+
 
 Useful Documentation
 ====================
@@ -767,45 +869,6 @@ Some options:
     $ git log --pretty=format:"%h %ad | %s%d [%an]" --date=short
 
 
-Pro Tips
-========
-
-
-A few extra moves that make you feel like a Git Time Lord:
-
-* **.gitignore** – prevent unwanted files from sneaking into your timeline:
-
-.. code:: bash
-
-    # Example .gitignore
-    *.log
-    *.tmp
-    
-
-.. note::
-
-    Think of it as shielding Daleks and temporary logs from your timeline.
-
-* **Undo a commit** (`git reset`) – sometimes past-you made a mistake:
-
-.. code:: bash
-
-    $ git reset HEAD~1  # undo last commit but keep changes
-    $ git reset --hard HEAD~1  # undo last commit and discard changes
-
-.. note::
-
-    Like a mini TARDIS to erase recent misadventures.
-
-* **Check remotes** (`git remote -v`) – know which time portals your repo talks to:
-
-.. code:: bash
-
-    $ git remote -v
-
-.. note::
-
-    Useful before pushing to avoid accidentally sending code to a parallel universe.
 
 
 
@@ -971,3 +1034,179 @@ Resolving conflicts when merging branches
 
     Remember: conflicts may feel terrifying, but with careful time-travel hygiene, they are just minor bumps in the TARDIS ride of development.
 
+
+
+Advanced topics
+================
+
+Pro Tips
+-----------
+
+
+A few extra moves that make you feel like a Git Time Lord:
+
+* **.gitignore** – prevent unwanted files from sneaking into your timeline:
+
+.. code:: bash
+
+    # Example .gitignore
+    *.log
+    *.tmp
+    
+
+.. note::
+
+    Think of it as shielding Daleks and temporary logs from your timeline.
+
+* **Undo a commit** (`git reset`) – sometimes past-you made a mistake:
+
+.. code:: bash
+
+    $ git reset HEAD~1  # undo last commit but keep changes
+    $ git reset --hard HEAD~1  # undo last commit and discard changes
+
+.. note::
+
+    Like a mini TARDIS to erase recent misadventures.
+
+* **Check remotes** (`git remote -v`) – know which time portals your repo talks to:
+
+.. code:: bash
+
+    $ git remote -v
+
+.. note::
+
+    Useful before pushing to avoid accidentally sending code to a parallel universe.
+
+.. _git-svn-postmortem:
+
+
+Show git branch in the bash prompt
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+When working with Git, it is extremely useful to know **which branch you are on at all times**.
+Displaying the current branch directly in your shell prompt helps avoid accidental commits
+to the wrong timeline.
+
+The configuration below has been tested on **GNU/Linux** systems using Bash.
+
+To enable this feature, add the following lines to your :file:`.bashrc` file:
+
+
+
+.. code:: bash
+
+    #################
+    # Show git branch in the bash prompt when in git-controlled directory   
+    #
+    source /etc/bash_completion.d/git-prompt
+
+    # Colors
+    RED="\[\033[0;31m\]"
+    GREEN="\[\033[0;32m\]"
+    YELLOW="\[\033[0;33m\]"
+    BLUE="\[\033[0;34m\]"
+    RESET="\[\033[0m\]"
+
+    # Prompt with color and git branch
+    export PS1="\u@\h${RESET}:${YELLOW}\w${RESET}${RED}\$(__git_ps1 ' (%s)')${RESET}\$ "
+    ##########
+
+
+Git on an SVN-Backed Server: A Post-Mortem
+--------------------------------------------
+
+This section is for advanced users who want to understand **how Git history can be
+rewritten or lost on this server**, even without force-pushing or obvious errors.
+
+No commands shown here are *wrong Git*.
+They are simply incompatible with the Git–SVN bridge used by this repository.
+
+This is a post-mortem, not a how-to.
+
+What Actually Happened
+^^^^^^^^^^^^^^^^^^^^^^^
+
+In multiple incidents, parts of the repository history were lost or rewritten after
+apparently normal Git operations.
+
+The common pattern was:
+
+* A developer pulled remote changes using ``git pull`` (without ``--rebase``)
+* Git created a merge commit locally
+* That merge commit was later pushed to the server
+* The Git–SVN bridge attempted to linearize the resulting DAG
+* Commits that could not be represented in SVN were silently dropped
+
+No force-push was involved.
+No error was reported.
+From Git’s point of view, everything succeeded.
+
+From SVN’s point of view, history was rewritten.
+
+Why Git Could Not Protect You
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Git assumes that the remote endpoint understands Git’s commit graph.
+SVN does not.
+
+SVN cannot represent:
+
+* Multiple parents
+* Non-linear history
+* Rewritten commit ancestry
+
+When Git history containing merges is pushed through the bridge,
+the bridge must **choose a linearization strategy**.
+
+That strategy is not guaranteed to preserve all commits.
+
+In other words:
+
+Git did exactly what it was told to do.  
+SVN accepted what it could understand.  
+Everything else was discarded.
+
+Why This Is Worse Than a Force-Push
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+A force-push is loud.
+It rewrites references explicitly and is usually blocked or noticed.
+
+This failure mode is silent.
+
+* The push succeeds
+* No warnings are emitted
+* The repository appears healthy
+* Missing commits are only noticed much later
+
+By the time the problem is discovered, local clones may already have diverged.
+
+Lessons Learned
+^^^^^^^^^^^^^^^^^
+
+
+* Git’s safety guarantees stop at the Git boundary
+* A Git–SVN bridge is a translation layer, not a time machine
+* Merge commits are fundamentally incompatible with SVN history
+* Linear history is not a preference here — it is a requirement
+
+This is why the documentation insists on:
+
+* ``git pull --rebase``
+* No merges on the main branch
+* Frequent use of ``git status``
+
+These are not stylistic choices.
+They are **damage control**.
+
+Final Note
+^^^^^^^^^^^
+
+If you are accustomed to advanced Git workflows (feature branches, merge commits,
+interactive rebases), be aware that this server **cannot support them safely**.
+
+The Prime Timeline here is linear.
+
+Alternate timelines belong in local clones only.
