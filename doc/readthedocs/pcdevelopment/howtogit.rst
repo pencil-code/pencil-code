@@ -9,6 +9,55 @@ Git: The Time Machine for Your Code
 
 Git is like a time machine for your code. It remembers everything you’ve done, lets you undo your worst decisions, and even allows you to create alternate timelines without breaking reality (usually).
 
+.. _howtogit-quick:
+
+Super Quick workflow
+=====================
+
+
+
+If you are already familiar with Git and have everything configured for |PC|, this is the **minimal, paradox-resistant workflow** for committing and pushing changes.
+
+Rule number one: **the timeline lies unless you check it**.  
+Rule number two: check it with ``git status``.
+
+.. code:: bash
+
+    git status                          # Confirm branch, directory, and current state
+    git add fileA fileB                 # Stage the files you want to commit
+    git status                          # Did I stage what I meant to stage?
+    
+    git commit -m "Explanatory message" # Commit with a clear, descriptive message
+    git status                          # Sanity check: working tree clean?
+
+    git stash                           # Hide any remaining local changes (if any)
+    git status                          # Nothing suspicious left behind?
+
+    git pull --rebase                   # Sync with the main timeline (mandatory for |PC|)
+    git status                          # Still on the right branch? Good.
+
+    git push                            # Push your commits
+    git status                          # Victory lap: confirm success
+
+    git stash pop                       # Restore uncommitted local changes
+    git status                          # Did everything come back alive?
+
+
+.. note::
+
+    If ``git status`` shows a clean working tree before pulling,  the ``git stash`` / ``git stash pop`` steps can be safely skipped.
+
+.. note::
+
+    ``git status`` is cheap, fast, and harmless. Running it too often has **no known side effects**.
+
+
+
+For a full explanation of each step —  and how to resolve temporal paradoxes —
+continue reading below.
+
+
+
 Useful Documentation
 ====================
 
@@ -159,6 +208,12 @@ Check staged differences:
 .. note::
 
     Peek into the timeline before changing history
+
+Check differences between your local branch and the remote branch:
+
+.. code:: bash
+
+    $ git diff origin
 
 
 Pulling & Stashing
