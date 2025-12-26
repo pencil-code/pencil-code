@@ -1249,7 +1249,39 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'Vprimepsim',idiag_Vprimepsim)
       enddo
 !
+!  check for those quantities for which we want video slices
+!
+      if (lwrite_slices) then
+        where(cnamev=='phi'.or.cnamev=='dphi') cformv='DEFINED'
+      endif
+!
     endsubroutine rprint_special
+!***********************************************************************
+    subroutine get_slices_special(f,slices)
+!
+!  Write slices for animation of electric potential
+!
+!  26-feb-07/axel: adapted from gross_pitaevskii
+!
+      use Slices_methods, only: assign_slices_scal
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (slice_data) :: slices
+!
+      integer :: inamev
+!
+!  Loop over slices
+!
+      select case (trim(slices%name))
+!
+!  Scalar field.
+!
+      case ('phi');  call assign_slices_scal (slices,f,iphi)
+      case ('dphi'); call assign_slices_scal (slices,f,idphi)
+!
+      endselect
+!
+    endsubroutine get_slices_special
 !***********************************************************************
     subroutine get_echarge
 

@@ -509,3 +509,14 @@ doc/readthedocs/pencil-docker/.env
 !samples/0d-tests/schur_triple_decomp/.run_directories.log
 !samples/0d-tests/schur_triple_decomp/pc_build_tmp_*
 !samples/0d-tests/schur_triple_decomp/.pc_build_history
+!samples/1d-tests/sine-Gordon/idl/.DS_Store
+!samples/1d-tests/sine-Gordon/idl/*.directory
+!samples/1d-tests/sine-Gordon/idl/*.pyc
+!samples/1d-tests/sine-Gordon/idl/*~
+!samples/1d-tests/sine-Gordon/idl/.*.swp
+!samples/1d-tests/sine-Gordon/idl/host-ID
+!samples/1d-tests/sine-Gordon/idl/revision.txt
+!samples/1d-tests/sine-Gordon/idl/*-eps-converted-to.pdf
+!samples/1d-tests/sine-Gordon/idl/.run_directories.log
+!samples/1d-tests/sine-Gordon/idl/pc_build_tmp_*
+!samples/1d-tests/sine-Gordon/idl/.pc_build_history

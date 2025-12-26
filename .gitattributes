@@ -2117,6 +2117,7 @@ samples/1d-tests/sedimentation-noneq-blocks/src/cparam.local -text
 samples/1d-tests/sedimentation-noneq-blocks/start.in -text
 samples/1d-tests/sedimentation-noneq-blocks/video.in -text
 samples/1d-tests/sine-Gordon/README.md -text
+samples/1d-tests/sine-Gordon/idl/pvid.pro -text
 samples/1d-tests/sine-Gordon/print.in -text
 samples/1d-tests/sine-Gordon/reference.out -text
 samples/1d-tests/sine-Gordon/run.in -text
