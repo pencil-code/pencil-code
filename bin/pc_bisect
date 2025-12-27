@@ -186,7 +186,7 @@ sub set_revision {
 	$? = 0;
 	$! = 0;
 
-	my $result = `svn up --force --accept theirs-conflict -r $revision 2>&1`;
+	my $result = `svn up --force --accept=tf -r $revision 2>&1`;
 	if ($?) { die "Could not get SVN revision $revision:\n$!\n$result\n"; }
 }
 
