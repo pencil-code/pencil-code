@@ -14,15 +14,29 @@ check_master_is_ancestor () {
     fi
 }
 
-get_parent () {
-    #If there is more than one parent, will return a space-separated list of parents
-    rev="$1"
-    git log --pretty=%P -n 1 "$rev"
-}
-
 count_parents() {
     rev="$1"
-    git log --pretty=%P -n 1 "$rev" | wc -w
+    git rev-parse ${rev}^@ | wc -l
+}
+
+check_master_is_ancestor_all() {
+    #Check that master is the ancestor of all the commits being pushed
+    rev="$1"
+    if test "$rev" = "$oldrev"; then
+        return
+    fi
+
+    check_master_is_ancestor "$rev"
+
+    if test $(count_parents $rev) -gt 1; then
+        #Comment out this if block to allow multiple parents.
+        echo "Commit ($rev) has multiple parents."
+        exit 1
+    fi
+
+    for par in $(git rev-parse ${rev}^@); do
+        check_master_is_ancestor_all "$par"
+    done
 }
 
 # Only operate on master branch
@@ -30,14 +44,5 @@ if test "$refname" != "refs/heads/master"; then
     exit 0
 fi
 
-rev="$newrev"
-while test "$rev" != "$oldrev"; do
-    check_master_is_ancestor "$rev"
-
-    rev="$(get_parent $rev)"
-    if test $(echo $rev | wc -w) -gt 1; then
-        echo "Commit ($rev) has multiple parents."
-        exit 1
-    fi
-done
+check_master_is_ancestor_all "$newrev"
 
