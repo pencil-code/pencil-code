@@ -1,0 +1,43 @@
+#!/bin/bash
+
+# Prevent rewriting history
+
+refname="$1"
+oldrev="$2"
+newrev="$3"
+
+check_master_is_ancestor () {
+    rev="$1"
+    if ! git merge-base --is-ancestor "$oldrev" "$rev"; then
+        echo "Rewriting history is not allowed. The latest commit in the repository ($oldrev) is not an ancestor of the commit ($rev) you are trying to push."
+        exit 1
+    fi
+}
+
+get_parent () {
+    #If there is more than one parent, will return a space-separated list of parents
+    rev="$1"
+    git log --pretty=%P -n 1 "$rev"
+}
+
+count_parents() {
+    rev="$1"
+    git log --pretty=%P -n 1 "$rev" | wc -w
+}
+
+# Only operate on master branch
+if test "$refname" != "refs/heads/master"; then
+    exit 0
+fi
+
+rev="$newrev"
+while test "$rev" != "$oldrev"; do
+    check_master_is_ancestor "$rev"
+
+    rev="$(get_parent $rev)"
+    if test $(echo $rev | wc -w) -gt 1; then
+        echo "Commit ($rev) has multiple parents."
+        exit 1
+    fi
+done
+
