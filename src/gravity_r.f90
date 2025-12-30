@@ -219,6 +219,10 @@ module Gravity
             if (lroot) print*, 'initialize_gravity: M5 dwarf gravity potential'
             cpot(:,j) = (/ 2.3401, 0.44219, 2.5952, 1.5986, 0.20851 /)
 !
+          case ('PMS-2Msun-star') ! Two solar mass pre-main sequence star
+             if (lroot) print*, 'initialize_gravity: 2 solar mass PMS gravity potential'
+             cpot(:,j) = (/ 1.3896, -1.7048, 0.3128, 1.0999, 0.1114 /)
+!
 !  Experimental flattened potential for M5 star. Similar to M5-dwarf but
 !  includes 6th and 12th powers of r to obtain pot~const for r \gtrsim 1.2.
 !  Here a 15th order polynomial fit is used to construct the potential.
