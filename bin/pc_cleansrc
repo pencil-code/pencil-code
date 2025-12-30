@@ -7,6 +7,14 @@
 #   Removes all compiled executables and other build objects.
 #   Localized source files (see pc_localize) are maintained.
 #   Data and other files in the run directory are maintained.
+#
+# Examples:
+# pc_cleansrc #clean current directory
+# pc_cleansrc -R #clean all the simulation directories present in the current
+#                #directory or its children
+# pc_cleansrc path/to/simulation #clean the given simulation directory
+# pc_cleansrc -R path/with/many/simulations
+#
 
 delete_links()
 {
