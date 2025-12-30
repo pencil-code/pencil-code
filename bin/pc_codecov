@@ -83,7 +83,7 @@ fi
 find "$pencil_home"/samples -type f -name coverage.info -exec rm {} \;
 find "$output_dir" -type f -exec rm {} \;
 
-geninfo "$pencil_home"/samples -b "$pencil_home"/src -o "$output_dir"/pencil-codecov.info --ignore-errors inconsistent,inconsistent --filter blank --parallel "$jobs"
+geninfo "$pencil_home"/samples -b "$pencil_home"/src -o "$output_dir"/pencil-codecov.info --ignore-errors inconsistent,inconsistent --filter missing,blank --parallel "$jobs"
 
 #NOTE: when I use --show-details, it fails with
 # genhtml: ERROR: unexpected branch TLA UNC for count 0
