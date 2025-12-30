@@ -84,6 +84,31 @@ Once approved, use the appropriate access method:
 
     git clone https://USERNAME@pencil-code.org/git/ pencil-code
 
+.. tip::
+   To avoid re-entering your password every time, you can cache your Git
+   credentials locally.
+
+   Set a timeout (in seconds):
+
+   .. code:: bash
+
+      git config --global credential.helper 'cache --timeout=####'
+
+   Or disable the timeout entirely:
+
+   .. code:: bash
+
+      git config --global credential.helper 'cache --no-timeout'
+
+   .. warning::
+      Using ``--no-timeout`` means your credentials remain cached for the
+      duration of your session.
+
+      **Do not use this on shared or multi-user machines**, unless you enjoy
+      the idea of your colleagues committing code *as you* while you’re
+      getting coffee.
+
+
 .. warning::
    After write access is enabled, **use your powers wisely**.  
    SVN users will quietly carry on as before.  
@@ -91,6 +116,9 @@ Once approved, use the appropriate access method:
 
 
 You are now equipped to enter the Pencil multiverse — choose your timeline wisely.
+
+
+
 
 
 What Next?
