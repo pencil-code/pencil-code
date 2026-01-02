@@ -64,82 +64,152 @@ History Rewriting Hazard (Git + SVN Server)
 
     **This server supports both Git and SVN.**
     This is not a normal Git setup.
-    Certain Git commands that are usually harmless can **rewrite or erase repository history** here.
+    Certain Git workflows that are perfectly valid in pure Git
+    **do not translate safely into SVN**.
 
-    This has happened before. It is not theoretical.
+    Problems have occurred in the past due to this mismatch.
+    They are not theoretical.
 
 The Problem
 -----------
 
-In a pure Git server, Git is very good at protecting history.
-On our server, however, Git is backed by **SVN**, which has a **strictly linear and immutable history**.
+In a pure Git server, Git is very good at protecting history. Git history is represented as a **directed acyclic graph (DAG)**.
+Multiple branches and merges are first-class concepts, and Git preserves all
+ancestry information.
 
-When the two models collide, **Git can silently rewrite history in ways that SVN cannot represent**.
+On our server, however, Git history is mirrored into **SVN**, which has a **strictly linear and immutable history**.
 
-The most common failure pattern is:
+When these two models collide, **valid Git operations can be flattened into SVN
+in ways that lose structural information**, especially around merges.
 
-* ``git pull`` **without** ``--rebase``
-* followed by ``git merge``
-* on a branch that should not be merged at all
+The issue is not that Git rewrites history by itself, but that **SVN cannot
+represent Git’s merge topology**.
 
-The result is **history corruption**: commits disappear, timelines fork incorrectly,
-and parts of the repository history are effectively erased.
 
-Once this happens, recovery is painful and sometimes impossible.
+How Git Merges Actually Work
+----------------------------
 
-Why This Happens
-----------------
+A Git merge can occur explicitly (``git merge``) or implicitly
+(e.g. via ``git pull`` when local commits exist).
 
-Git and SVN treat history very differently.
+Consider the following situation:
 
-**Git:**
+* You start from commit ``A``
+* You commit ``B`` locally (no push yet)
+* While you work locally, someone pushes commit ``C`` to ``master``
+* You then pull and push
 
-* History is flexible and editable
-* Commits can be reordered, squashed, rebased, or rewritten
-* Multiple timelines are normal
+Before the merge, the server history is:
 
-**SVN:**
+.. code-block:: text
 
-* History is linear and immutable
-* Commits cannot be changed once created
-* Merges collapse history into single points
+    C
+    |
+    A
 
-Our server acts as a **Git–SVN bridge**.
-Your local Git history must eventually be translated into SVN’s linear timeline.
+Your local history is:
 
-When Git history is rewritten locally, SVN cannot represent that rewrite safely.
+.. code-block:: text
 
-The bridge does not always fail loudly.
-Instead, it may accept the changes and **silently discard parts of history**.
+    B
+    |
+    A
 
-Forbidden Commands
-------------------
+After a **Git merge**, the history becomes:
 
-On this server, the following actions are **dangerous**:
+.. code-block:: text
 
-* ``git pull`` **without** ``--rebase``
-* ``git merge`` on the main working branch
-* Any command that rewrites published history
-  (rebase, squash, fixup, or amend after pushing)
+          M   (merge commit)
+         / \
+        B   C
+        |
+        A
 
-These commands are not *bad Git*.
-They are simply **incompatible with this server**.
+Here, **nothing is rewritten**:
+all commits (``A``, ``B``, ``C``) remain intact, and the merge commit ``M``
+records both parent histories.
 
-The Only Safe Rule
-------------------
+This is correct and expected Git behavior.
+
+Why This Fails with SVN
+----------------------
+
+SVN does not store merge topology.
+It expects a **single immutable line of commits**.
+
+When the Git–SVN bridge linearizes the above history, it must choose one path.
+In doing so, **merge relationships are discarded**, and the resulting SVN history
+may appear reordered or incomplete.
+
+This is where confusion and apparent “history rewriting” arise —
+not in Git, but during **SVN linearization**.
+
+Rebase vs Merge in This Context
+-------------------------------
+
+A rebase produces a linear history by construction.
+
+Using the same example, rebasing ``B`` onto the updated ``master`` results in:
+
+.. code-block:: text
+
+    B
+    |
+    C
+    |
+    A
+
+This history is linear and can be represented safely in SVN.
+For this reason, **rebasing avoids Git–SVN translation issues**, even though it
+rewrites `local`` Git history (in this example, commit B is reapplied after C,
+even though it was originally created before it). 
+
+This reordering is explicit, predictable, and compatible with SVN’s linear
+model, whereas merge topology is not.
+
+Merges, while correct in Git, **preserve topology that SVN cannot encode**.
+
+
+What Is Actually Dangerous
+--------------------------
+
+On this server, the following actions are problematic **on the main working
+branch**:
+
+* ``git pull`` without ``--rebase`` when local commits exist
+* Merge commits on ``master`` that introduce multiple parents
+* Any operation that rewrites *already published* history
+  (force-push, amend, rebase after pushing)
+
+These are not *bad Git practices*.
+They are simply **incompatible with a Git repository that is mirrored into SVN**.
+
+When these situations occur, the result is **history corruption**:
+commits may disappear from the visible history, timelines can appear to fork
+incorrectly, and parts of the repository history may become effectively
+unreachable from SVN.
+
+Once this happens, recovery is painful and error-prone, and in some cases
+not possible without manual intervention or loss of information.
+
+
+Practical Rule
+--------------
 
 .. important::
 
-    If you are not explicitly working on a separate feature branch:
+    On ``master``:
+        **Avoid merge commits. Prefer rebasing.**
 
-    **Never merge.**
-    **Always rebase.**
+    On feature branches:
+        **Use normal Git workflows.**
 
-In practice, this means:
+In practice:
 
-* Always use ``git pull --rebase``
-* Never use ``git pull`` by itself
-* Never use ``git merge`` on the main branch
+* Use ``git pull --rebase`` on ``master``
+* Integrate branches carefully, being aware of SVN limitations
+* If unsure, inspect your history before pushing
+
 
 If in doubt:
 
@@ -158,6 +228,14 @@ If something looks strange:
 .. code:: bash
 
     git status
+
+You can also try: 
+
+.. code:: bash
+
+    git status
+    git log --graph --oneline --decorate
+
 
 
 Useful Documentation
