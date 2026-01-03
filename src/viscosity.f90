@@ -2334,10 +2334,14 @@ module Viscosity
       if (lupdate_courant_dt) then
 
         diffus_nu = p%diffus_total*dxyz_2
-        if (ldynamical_diffusion .and. lvisc_hyper3_mesh) then
-          diffus_nu3 = p%diffus_total3 * sum(abs(dline_1),2)
-        else
-          diffus_nu3 = p%diffus_total3*dxyz_6
+        !if (ldynamical_diffusion .and. lvisc_hyper3_mesh) then
+!2026-01-01/axel: put everthing under lvisc_hyper3_mesh, because otherwise diffus_nu3 would be set while lvisc_hyper3_mesh=F
+        if (lvisc_hyper3_mesh) then
+          if (ldynamical_diffusion) then
+            diffus_nu3 = p%diffus_total3 * sum(abs(dline_1),2)
+          else
+            diffus_nu3 = p%diffus_total3*dxyz_6
+          endif
         endif
         maxdiffus =max(maxdiffus ,diffus_nu)
         maxdiffus2=max(maxdiffus2,p%diffus_total2*dxyz_4)
