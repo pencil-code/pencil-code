@@ -2336,7 +2336,8 @@ module Viscosity
         diffus_nu = p%diffus_total*dxyz_2
         !if (ldynamical_diffusion .and. lvisc_hyper3_mesh) then
 !2026-01-01/axel: put everthing under lvisc_hyper3_mesh, because otherwise diffus_nu3 would be set while lvisc_hyper3_mesh=F
-        if (lvisc_hyper3_mesh) then
+!2026-01-03/axel: included also lvisc_hyper3_rho_nu_const_symm, but others may still be needed.
+        if (lvisc_hyper3_mesh .or. lvisc_hyper3_rho_nu_const_symm) then
           if (ldynamical_diffusion) then
             diffus_nu3 = p%diffus_total3 * sum(abs(dline_1),2)
           else
