@@ -312,8 +312,13 @@ outer:do ikz=1,nz
           'Your results are most likely garbage.')
       endif
     endif
-    
-    call allocate_workbuffers
+!
+!  allocate_workbuffers, but only when not already loaded (e.g., when reloading)
+!  Check here only on whether a_re is allocated. This could also be moved to allocate_workbuffers.
+!
+    if (.not.allocated(a_re)) then
+      call allocate_workbuffers
+    endif
 !
   endsubroutine initialize_power_spectrum
 !***********************************************************************
