@@ -135,7 +135,16 @@ module Special
 !  Adjust Omega_mat to conformally flat universe.
 !
       Omega_mat=1.-(Omega_Lam+Omega_rad)
-      ascale=exp(f_ode(iLCDM_lna))
+!
+!  During start, compute ascale Hubble and from redshift0.
+!  Otherwise, take it from f_ode(iLCDM_lna).
+!
+      if (lstart) then
+        ascale=1./(1.+redshift0)
+        Hubble=Hubble0*sqrt(Omega_mat/ascale**3+Omega_Lam+Omega_rad/ascale**4)
+      else
+        ascale=exp(f_ode(iLCDM_lna))
+      endif
 !
       call keep_compiler_quiet(f)
 !
@@ -155,12 +164,7 @@ module Special
 !
       intent(inout) :: f
 !
-!  energy density of the charged particles
-!
-      ascale=1./(1.+redshift0)
-      Hubble=Hubble0*sqrt(Omega_mat/ascale**3+Omega_Lam+Omega_rad/ascale**4)
-!
-!  initial condition for physical time.
+!  initial condition for lna and physical time.
 !
       tph_init=ascale**2/(2.*Hubble0*Omega_rad**.5)
 !

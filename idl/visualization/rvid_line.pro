@@ -39,7 +39,7 @@ default,nrepeat,0
 default,stride,0
 default,tmin,0.
 default,tmax,1e38
-default,wait,.03
+default,wait,.0003
 default,extension,'xy'
 default,xgrid, 0
 default,ygrid, 0

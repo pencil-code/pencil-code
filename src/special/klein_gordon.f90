@@ -143,7 +143,7 @@ module Special
   namelist /special_init_pars/ &
       initspecial, phi0, dphi0, phimass, eps, ascale_ini, &
       lcompute_dphi0, lem_backreact, &
-      c_phi, lambda_phi, amplphi, ampldphi, lno_noise_phi, lno_noise_dphi, &
+      c_phi, lambda_phi, Vprime_choice, amplphi, ampldphi, lno_noise_phi, lno_noise_dphi, &
       kx_phi, ky_phi, kz_phi, phase_phi, width_phi, offset, &
       initpower_phi, initpower2_phi, cutoff_phi, kgaussian_phi, kpeak_phi, &
       initpower_dphi, initpower2_dphi, cutoff_dphi, kpeak_dphi, &
@@ -402,13 +402,24 @@ module Special
               tstart=-1/(ascale_ini*Hubble_ini)
               t=tstart
             endif
+!
+!  The following 2 can be used sequentially:
+!
           case ('phi=sinkx')
             f(:,:,:,iphi)=f(:,:,:,iphi) &
               +spread(spread(amplphi*sin(kx_phi*x),2,my),3,mz)
+          case ('dphi=kcoskx')
+            f(:,:,:,idphi)=f(:,:,:,idphi) &
+              +spread(spread(-amplphi*sqrt(kx_phi**2+lambda_phi**2)*cos(kx_phi*x),2,my),3,mz)
+!
+!  Tanh profile, not a proper solution.
+!
           case ('phi=tanhkx')
             f(:,:,:,iphi)=f(:,:,:,iphi) &
               +spread(spread(.5*amplphi*(1.+tanh(kx_phi*(x-offset))),2,my),3,mz)
-          ! sine-Gordon solution
+!
+!  sine-Gordon solution:
+!
           case ('phi=atan_exp_kx')
             phi_gam=1./sqrt(1.-phi_v**2)
             f(:,:,:,iphi)=f(:,:,:,iphi) &
@@ -1296,7 +1307,7 @@ module Special
             echarge=echarge_const
           case ('erun')
             energy_scale=(.5*e2m_all+.5*b2m_all)**.25/ascale
-            echarge=1./sqrt(1./.35**2+41./(48.*pi**2)*alog(mass_zboson/energy_scale))
+            echarge=1./sqrt(1./.35**2+41./(48.*pi**2)*alog(real(mass_zboson/energy_scale)))
         endselect
       else
         echarge=echarge_const

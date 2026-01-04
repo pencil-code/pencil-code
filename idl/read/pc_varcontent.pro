@@ -202,7 +202,8 @@ indices = [ $
   { name:'ispec_3vec', label:'Special vector', dims:3 }, $
   { name:'ilorentz', label:'Lorentz factor', dims:1 }, $
   { name:'ihless', label:'Higgsless field', dims:1 }, $
-  { name:'iphi', label:'Electric potential', dims:1 }, $
+  { name:'iphi', label:'Electric or scalar potential', dims:1 }, $
+  { name:'idphi', label:'Derivative of scalar potential', dims:1 }, $
   { name:'iLam', label:'Gauge potential', dims:1 }, $
   { name:'idiva', label:'divA', dims:1 }, $
   { name:'iecr', label:'Cosmic ray energy density', dims:1 }, $

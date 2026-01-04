@@ -1574,6 +1574,8 @@ module Magnetic
         do j=1,ninit
           select case (initaa(j))
           case ('rescale'); f(:,:,:,iax:iaz)=rescale_aa*f(:,:,:,iax:iaz)
+          case ('remove_xyaver_from_Ax'); f(l1:l2,m1:m2,n1:n2,iax)=f(l1:l2,m1:m2,n1:n2,iax)- &
+            spread(spread(sum(sum(f(l1:l2,m1:m2,n1:n2,iax),dim=2)/ny,dim=1)/nx,1,nx),2,ny)
           case ('gaussian-noise'); call gaunoise(amplaa(j),f,iax,iaz)
           case ('hor-tube'); call htube(amplaa(j),f,iax,iaz,radius,epsilonaa,center1_x,center1_z)
           case ('cosxcosy'); call cosx_cosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),kz_aa(j))
@@ -3939,7 +3941,10 @@ module Magnetic
                rho1=1./rho0
             endif
             call dot2_mn(bb,b2)
-            tmp= b2*mu01*rho1
+!
+!  Compute Alfven speed. Take scale factor (=1 by default) into account.
+!
+            tmp=ascale*b2*mu01*rho1
             if (lcheck_positive_va2 .and. minval(tmp)<0.0) then
               print*, 'magnetic_before_boundary: Alfven speed is imaginary!'
               print*, 'magnetic_before_boundary: it, itsub, iproc=', it, itsub, iproc_world
@@ -4211,6 +4216,8 @@ module Magnetic
         p%bbb = p%bb
 !
 !  Add a uniform background field, optionally precessing.
+!  This lhubble_magnetic should not be applied unless we work
+!  with physical rather than scaled quantities.
 !
         if (.not. (lbb_as_comaux .and. lB_ext_in_comaux) .and. (.not. ladd_global_field)) then
           call get_bext(B_ext,j_ext)
@@ -4464,6 +4471,7 @@ module Magnetic
 !  AB: eta_total and the rest are pencils, but it complains about inconsistent ranks. So I put (1).
 !  When the eta:s below are not known. p%jj_ohm may already have been computed in disp_current.
 !  Whether it works with lohm_evolve needs to be checked.
+!  learly_set_el_pencil=T is needed in all cases with displacement current.
 !
             if (lresi_eta_tdep .or. lresi_eta_xtdep .or. eta/=0.) then
 !print*,'AXEL: should not be here (eta) ... '
@@ -4550,9 +4558,17 @@ module Magnetic
       if (lpenc_loc(i_j2)) call dot2_mn(p%jj,p%j2)
 ! jb
       if (lpenc_loc(i_jb)) call dot_mn(p%jj,p%bbb,p%jb)
-! va2
+!
+!  Compute Alfven speed. Take scale factor (=1 by default) into account.
+!  In general, the ascale factor is given by ascale**(2*nconformal-3).
+!  va2
+!
       if (lpenc_loc(i_va2)) then
-        p%va2=p%b2*mu01*p%rho1
+        if (ascale==1.) then
+          p%va2=p%b2*mu01*p%rho1
+        else
+          p%va2=ascale**(2.*nconformal-3.)*p%b2*mu01*p%rho1
+        endif
         if (lcheck_positive_va2 .and. minval(p%va2)<0.0) then   !MR: better some tiny value for 0?
           print*, 'calc_pencils_magnetic: Alfven speed is imaginary!'
           print*, 'calc_pencils_magnetic: it, itsub, iproc=', it, itsub, iproc_world
@@ -4622,8 +4638,8 @@ module Magnetic
 !
 !  Set rhomin_jxb>0 in order to limit the jxb term at very low densities.
 !  Set va2max_jxb>0 in order to limit the jxb term at very high Alfven speeds.
-!  Set va2power_jxb to an integer value in order to specify the power of the
-!  limiting term,
+!  Set va2power_jxb to an integer value in order to specify the power of the limiting term.
+!  To check whether scale factor is consistently applied at the end.
 !
         if (rhomin_jxb>0) rho1_jxb=min(rho1_jxb,1/rhomin_jxb)
         if (va2max_jxb>0 .and. (.not. (betamin_jxb>0))) &
@@ -4877,7 +4893,15 @@ module Magnetic
             if (va2max_boris>0) rho1_jxb = rho1_jxb * (1+(p%va2/va2max_boris)**2.)**(-0.5)
             if (cmin>0)         rho1_jxb = rho1_jxb * (1+(p%va2/p%clight2)**2.)**(-0.5)
           endif
-          p%advec_va2=sum((p%bb*dline_1)**2,2)*mu01*rho1_jxb
+!
+!  Compute Alfven timestep constraint. Take scale factor (=1 by default) into account.
+!  In general, the ascale factor is given by ascale**(2*nconformal-3).
+!
+          if (ascale==1.) then
+            p%advec_va2=sum((p%bb*dline_1)**2,2)*mu01*rho1_jxb
+          else
+            p%advec_va2=ascale**(2.*nconformal-3.)*sum((p%bb*dline_1)**2,2)*mu01*rho1_jxb
+          endif
         else
           p%advec_va2=0.
         endif
@@ -5550,7 +5574,7 @@ module Magnetic
         eta_total = eta_total + p%etava
       endif
 !
-!  Generalised Alfven speed dependent resistivity
+!  Generalized Alfven speed dependent resistivity
 !
       if (lresi_vAspeed) then
         if (lweyl_gauge) then
@@ -6199,6 +6223,7 @@ module Magnetic
       endif
 !
 !  Hubble parameter (doesn't look generic)
+!  It should usually not be applied.
 !
       if (lhubble_magnetic) then
         dAdt = dAdt - 2.*Hubble*ascale**1.5*p%AA
@@ -9079,23 +9104,35 @@ print*,'AXEL2: should not be here (eta) ... '
       integer :: iuu,iaa,ilnrho
       real :: ampl,kx,mu0
 
-      real :: ampl_lr,ampl_ux,ampl_uy
+      real :: ampl_lr, ampl_ux, ampl_uy, amplu
       real, dimension (nx) :: rho,ampl_Az
 !
 !  Amplitude factors
 !
       ampl_lr=+0.
       ampl_ux=+0.
+!
+!  Apply scale factor in initial condition (to do the same for the other directions).
+!  Assume that a^{n-3/2}*vA_phys = const, then amplu = ampl*ascale**(n-3/2).
+!
+      if (ascale_type=='general') then
+        amplu=ampl*ascale**(nconformal-1.5)
+      else
+        amplu=ampl
+      endif
+!
+!  Special scale if there are also sound waves.
+!
       if (ldensity) then
         if (lconservative) then
-          ampl_uy=+ampl*sqrt(4./3.+B_ext2)
+          ampl_uy=+amplu*sqrt(4./3.+B_ext2)
         elseif (lrelativistic_eos) then
-          ampl_uy=+ampl*sqrt(.75)
+          ampl_uy=+amplu*sqrt(.75)
         else
-          ampl_uy=+ampl
+          ampl_uy=+amplu
         endif
       endif
-      if (lroot) print*,'ampl_uy=',ampl_uy
+      if (lroot) print*,'ampl_uy,ascale=',ampl_uy,ascale
 !
 !  ux and Ay.
 !  Don't overwrite the density, just add to the log of it.
@@ -9138,14 +9175,23 @@ print*,'AXEL2: should not be here (eta) ... '
 !  06-dec-06/wolf: adapted from alfven_z
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: ampl,ky,mu0
+      real :: ampl, amplu, ky, mu0
       integer :: iuu,iaa
+!
+!  Apply scale factor in initial condition (to do the same for the other directions)
+!  Assume that a^{n-3/2}*vA_phys = const, then amplu = ampl*ascale**(n-3/2).
+!
+      if (ascale_type=='general') then
+        amplu=ampl*ascale**(nconformal-1.5)
+      else
+        amplu=ampl
+      endif
 !
 !  ux and Az
 !
       do n=n1,n2; do m=m1,m2
-        f(l1:l2,m,n,iuu+0) = +ampl*cos(ky*y(m))
-        f(l1:l2,m,n,iaa+2) = -ampl*sin(ky*y(m))*sqrt(mu0)/ky
+        f(l1:l2,m,n,iuu+0) = +amplu*cos(ky*y(m))
+        f(l1:l2,m,n,iaa+2) = -ampl *sin(ky*y(m))*sqrt(mu0)/ky
       enddo; enddo
 !
     endsubroutine alfven_y
@@ -9163,14 +9209,23 @@ print*,'AXEL2: should not be here (eta) ... '
 !  18-aug-02/axel: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: ampl,kz,mu0
+      real :: ampl, amplu, kz, mu0
       integer :: iuu,iaa
+!
+!  Apply scale factor in initial condition (to do the same for the other directions)
+!  Assume that a^{n-3/2}*vA_phys = const, then amplu = ampl*ascale**(n-3/2).
+!
+      if (ascale_type=='general') then
+        amplu=ampl*ascale**(nconformal-1.5)
+      else
+        amplu=ampl
+      endif
 !
 !  ux and Ay
 !
       do n=n1,n2; do m=m1,m2
-        f(l1:l2,m,n,iuu+0)=+ampl*cos(kz*z(n))
-        f(l1:l2,m,n,iaa+1)=+ampl*sin(kz*z(n))*sqrt(mu0)
+        f(l1:l2,m,n,iuu+0)=+amplu*cos(kz*z(n))
+        f(l1:l2,m,n,iaa+1)=+ampl *sin(kz*z(n))*sqrt(mu0)
       enddo; enddo
 !
     endsubroutine alfven_z

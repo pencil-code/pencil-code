@@ -54,7 +54,7 @@ module EquationOfState
   logical :: leos_isochoric=.false., leos_isobaric=.false.
   logical :: leos_localisothermal=.false.
   logical :: lanelastic_lin=.false., lcs_as_aux=.false., lcs_as_comaux=.false.
-  logical :: lcs2_tdep=.false.
+  logical :: lcs2_tdep=.false., lhubble_eos=.false.
 !
   character (len=labellen) :: meanfield_Beq_profile
   real, pointer :: meanfield_Beq, chit_quenching, uturb
@@ -85,7 +85,8 @@ module EquationOfState
       xHe, mu, cp, cs0, rho0, gamma, error_cp, &
       pres_corr, sigmaSBt, &
       lanelastic_lin, lcs_as_aux, lcs_as_comaux, &
-      lcs2_tdep, cs20_tdep_rate, tdep_cs2_type, cs2_tdep_ascale_power
+      lcs2_tdep, cs20_tdep_rate, tdep_cs2_type, &
+      cs2_tdep_ascale_power, lhubble_eos
 !
 !  Module variables
 !
@@ -958,7 +959,9 @@ module EquationOfState
         elseif (leos_isothermal) then
 !
 !  Allow here for the possibility of a time-dependent sound speed
-!  Note that we scale here cs^2, not cs. Therefore we use the name XX
+!  Note that we scale here cs^2, not cs. Therefore we use the name
+!  cs2_tdep_ascale_power. But an alternative implementation is to use
+!  lhubble_eos=T with ascale_type='general' below.
 !
           if (lpenc_loc(i_cs2)) then
             if (lcs2_tdep) then
@@ -1127,6 +1130,15 @@ module EquationOfState
       case default
         call fatal_error('calc_pencils_eos','unknown combination of eos vars')
       endselect
+!
+!  Scaling with scale factor. Note the alternative implementation above.
+!
+      if (lhubble_eos) then
+        select case (ascale_type)
+          case ('default'); call fatal_error('calc_pencils_eos_pencpar','unexpected combination')
+          case ('general'); p%cs2=p%cs2*ascale**(2.*(nconformal-1.))
+        endselect
+      endif
 !
 !  cs as optional auxiliary variables
 !
