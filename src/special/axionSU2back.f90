@@ -9,6 +9,7 @@
 !  the f-array.
 !
 !  16-apr-20/axel: adapted from nospecial.f90
+!   5-jan-26/axel: added lalways_backreact_output to produce output independent of nswitch>0
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of special_dummies.inc) the number of f array
@@ -74,6 +75,7 @@ module Special
   logical :: llnk_spacing_adjustable=.false., llnk_spacing=.false.
   logical :: lim_psi_TR=.false., lleft_psiL_TL=.false., lkeep_mQ_const=.false.
   logical :: lhubble_var=.false., lhubble=.false., lSchwinger_scalar=.false.
+  logical :: lalways_backreact_output=.false.
   character(len=50) :: init_axionSU2back='standard'
   character (len=labellen) :: V_choice='quadratic'
   namelist /special_init_pars/ &
@@ -91,7 +93,7 @@ module Special
     Ndivt, lanalytic, lvariable_k, llnk_spacing_adjustable, llnk_spacing, &
     nmin0, nmax0, horizon_factor, axion_sum_range, lkeep_mQ_const, &
     ldo_adjust_krange, lswap_sign, lwrite_krange, lwrite_backreact, sgn, &
-    lhubble_var, lhubble, mscal, sgn_g
+    lhubble_var, lhubble, mscal, sgn_g, lalways_backreact_output
 !
   ! k array
   real, dimension (nx) :: k
@@ -1444,7 +1446,7 @@ module Special
       integer, intent(IN) :: nswitch
       if (lwrite_backreact) then
         if ((llnk_spacing_adjustable.or.llnk_spacing) .and. lfirst) then
-          if (nswitch>0) then
+          if (nswitch>0 .or. (lalways_backreact_output .and. lout)) then
             open (1, file=trim(directory_snap)//'/backreact.dat', form='formatted', position='append')
             write(1,*) t, lnk, grand, dgrant
             close(1)
