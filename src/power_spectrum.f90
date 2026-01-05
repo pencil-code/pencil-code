@@ -120,6 +120,24 @@ module Power_spectrum
     allocate(a_vec_im(nx,ny,nz,3))
     allocate(b_vec_re(nx,ny,nz,3))
     allocate(a2(nx,ny,nz))
+!
+!  Check first whether each one of them is not already allocated.
+!  But for some reason, this doesn't work correctly.
+!
+!   if (.not.allocated(a_re)) allocate(a_re(nx,ny,nz))
+!   if (.not.allocated(a_im)) allocate(a_im(nx,ny,nz))
+!   if (.not.allocated(b_re)) allocate(b_re(nx,ny,nz))
+!   if (.not.allocated(b_im)) allocate(b_im(nx,ny,nz))
+!   if (.not.allocated(c_re)) allocate(c_re(nx,ny,nz))
+!   if (.not.allocated(c_im)) allocate(c_im(nx,ny,nz))
+!   if (.not.allocated(d_re)) allocate(d_re(nx,ny,nz))
+!   if (.not.allocated(d_im)) allocate(d_im(nx,ny,nz))
+!   if (.not.allocated(h_re)) allocate(h_re(nx,ny,nz))
+!   if (.not.allocated(h_im)) allocate(h_im(nx,ny,nz))
+!   if (.not.allocated(a_vec_re)) allocate(a_vec_re(nx,ny,nz,3))
+!   if (.not.allocated(a_vec_im)) allocate(a_vec_im(nx,ny,nz,3))
+!   if (.not.allocated(b_vec_re)) allocate(b_vec_re(nx,ny,nz,3))
+!   if (.not.allocated(a2)) allocate(a2(nx,ny,nz))
 
   endsubroutine allocate_workbuffers
 !***********************************************************************
@@ -314,11 +332,8 @@ outer:do ikz=1,nz
     endif
 !
 !  allocate_workbuffers, but only when not already loaded (e.g., when reloading)
-!  Check here only on whether a_re is allocated. This could also be moved to allocate_workbuffers.
 !
-    if (.not.allocated(a_re)) then
-      call allocate_workbuffers
-    endif
+    call allocate_workbuffers
 !
   endsubroutine initialize_power_spectrum
 !***********************************************************************
