@@ -305,10 +305,14 @@ module Mpicomm
       if (mod(nxgrid,nprocx)/=0.or. &
           mod(nygrid,nprocy)/=0.or. &
           mod(nzgrid,nprocz)/=0) then
-        if (lroot) &
+        if (lroot) then
+          print*,'nxgrid/nprocx=',real(nxgrid)/real(nprocx)
+          print*,'nygrid/nprocy=',real(nygrid)/real(nprocy)
+          print*,'nzgrid/nprocz=',real(nzgrid)/real(nprocz)
           print*, 'In each dimension the number of grid points has to be '// &
                   'divisible by the number of processors.'
-        call stop_it('mpicomm_init')
+          call stop_it('mpicomm_init')
+        endif
       endif
 !
 !  Avoid overlapping ghost zones.

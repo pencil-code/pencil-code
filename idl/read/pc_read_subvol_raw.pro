@@ -146,6 +146,9 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 		yge = ye
 		zge = ze
 	end
+	;
+	;  the letter g refers to ghost
+	;
 	xgs = xs
 	ygs = ys
 	zgs = zs
@@ -159,14 +162,17 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 	gy_delta = yge - ygs + 1
 	gz_delta = zge - zgs + 1
 
-	if (any ([xgs, xne-xns, ygs, yne-yns, zgs, zne-zns] lt 0) or any ([xge, yge, zge] ge [mxgrid, mygrid, mzgrid])) then $
-		message, 'pc_read_subvol_raw: sub-volume indices are invalid.'
-
 	; Get necessary parameters quietly.
 	pc_read_param, object=start_param, dim=dim, datadir=datadir, /quiet
 	pc_read_param, object=run_param, /param2, dim=dim, datadir=datadir, /quiet
 	if not is_defined(run_param) then print, 'Could not find '+datadir+'/param2.nml'
 
+ 	if (any ([xgs, xne-xns, ygs, yne-yns, zgs, zne-zns] lt 0) or any ([xge, yge, zge] ge [mxgrid, mygrid, mzgrid])) then $
+ 		message, 'pc_read_subvol_raw: sub-volume indices are invalid.'
+
+	;
+	print,'AXEL: ',zgs,zge
+	;
 	; Set the coordinate system.
 	coord_system = start_param.coord_system
 
@@ -374,6 +380,7 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 		end
 		ipz_start = zs / procdim.nz
 		ipz_end   = (ze - 2 * nghostz) / procdim.nz
+		print,'AXEL: ipz_start,ipz_end=',ipz_start,ipz_end
 	end
 
 	; Read meta data and set up variable/tag lists.
