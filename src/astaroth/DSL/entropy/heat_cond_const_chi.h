@@ -15,6 +15,7 @@ if (lheatc_chiconst) {
   {
       del2lnT = (gamma-1) * laplace(LNRHO) + cv1 * laplace(SS)
   }
-      rhs += cp * chi * ( dot(glnrho+glnT,glnT) + del2lnT )
+  rhs += cp * chi * ( dot(glnrho+glnT,glnT) + del2lnT )
   //    return cp * chi * ( dot(grad_lnrho+grad_lnT,grad_lnT) + del2_lnT )
+  chitot += cp*chi
 }

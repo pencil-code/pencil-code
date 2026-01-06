@@ -12,6 +12,8 @@ if (lheatc_shock){
   if (ldensity_nolog){
     del2lnrho = (del2lnrho-norm2(grho)/value(RHO))/value(RHO)
   }
+  chi = chi_shock * value(SHOCK) * cv1
   rhs += chi_shock * (value(SHOCK) * (cv1*laplace(SS) + gamma_m1*del2lnrho + dot(glnrho+glnTT,glnTT)) + dot(gradient(SHOCK),glnTT))
+  chitot += chi
 }
 #endif

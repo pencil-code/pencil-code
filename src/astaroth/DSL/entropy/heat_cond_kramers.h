@@ -17,15 +17,15 @@
         g2 = dot(glnrho+glnTT,gss)
         rhs += chi_t*(chit_prof_stored[vertexIdx.z-NGHOST]*(del2ss+g2) + gss.z*dchit_prof_stored[vertexIdx.z-NGHOST])
 
-        if (step_num == 0 && lcourant_dt)
+        if (step_num == 0 && ldt && lcourant_dt)
         {
        	   //reduce_max(Krho1/cv1+chi_t*chit_prof_stored[vertexIdx.z-NGHOST],maxchi)
-       	   maxchi=Krho1/cv1+chi_t*chit_prof_stored[vertexIdx.z-NGHOST]
+       	   chitot += Krho1/cv1+chi_t*chit_prof_stored[vertexIdx.z-NGHOST]
         }
       } else {
-        if (step_num == 0 && lcourant_dt)
+        if (step_num == 0 && ldt && lcourant_dt)
         {
-           maxchi=Krho1/cv1
+           chitot += Krho1/cv1
         }
       }
     }

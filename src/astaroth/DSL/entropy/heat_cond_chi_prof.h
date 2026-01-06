@@ -7,5 +7,7 @@
 
     ind_z = vertexIdx.z - NGHOST
     //return chi0 * ( prof[ind_z]*(laplace(SS)+g2) + dprof[ind_z]*grad_ss.z)
+    chi = chi0 * chit_prof_stored[ind_z]
     rhs += chi0 * ( chit_prof_stored[ind_z]*(laplace(SS)+g2) + dchit_prof_stored[ind_z]*grad_ss.z)
 
+    chitot += chi

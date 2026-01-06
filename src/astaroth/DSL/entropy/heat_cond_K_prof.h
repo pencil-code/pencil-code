@@ -7,9 +7,10 @@
 
     chi = exp(-value(LNRHO)) * hcond_prof[ind_z]
 
-    if(step_num == 0 && lcourant_dt)
+    rhs += chi * ( del2_lnTT + dot(grad_lnTT,glnThcond) )
+
+    chitot += chi
+    if (lupdate_courant_dt)
     {
     	reduce_max(step_num==0,chi,AC_maxchi)
     }
-
-    rhs += chi * ( del2_lnTT + dot(grad_lnTT,glnThcond) )

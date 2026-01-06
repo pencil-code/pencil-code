@@ -13,7 +13,13 @@ struct PC_rhs_update
 	real3 dt
 	real max_advec
 }
-
+struct PC_gridpars
+{
+ 	real3 dline_1
+       	real dxyz_2
+        real dxyz_4
+        real dxyz_6
+}
 enum PC_SUB_STEP_NUMBER
 {
 	PC_FIRST_SUB_STEP,
@@ -71,8 +77,9 @@ enum PC_SUB_STEP_NUMBER
 #include "../stdlib/utils/kernels.h"
 //#include "../stdlib/map.h"
 #include "PC_modulepardecs.h"
-#include "../stdlib/derivs.h"
-#include "../stdlib/operators.h"
+
+#include "../stdlib/general_derivs.h"
+#include "../stdlib/general_operators.h"
 #define AC_NGHOST NGHOST
 
 // declare here reduction results needed for the timestep
@@ -81,16 +88,19 @@ enum PC_SUB_STEP_NUMBER
   output real AC_maxadvec    // for all velocities - fluid and wave
 #endif
 #ifdef LENTROPY
-  output real AC_maxchi
-  #define LENERGY 1       // a hack for the moment
+  output real AC_maxdiffchi
+  #define LENERGY 1          // a hack for the moment
 #endif
 global output real AC_maximum_error
 #ifdef LVISCOSITY
-  output real AC_maxnu
+  output real AC_maxdiffnu
+#endif
+#ifdef LMAGNETIC
+  output real AC_maxdiffeta
 #endif
 
 output real AC_dt1_max
-global output  real AC_Arms
+global output real AC_Arms
 const int AC_xbot__mod__equationofstate=1
 const int AC_xtop__mod__equationofstate=nx
 
@@ -104,6 +114,6 @@ const int AC_xtop__mod__equationofstate=nx
   #include "../forcing/pcstyleforcing.h"
 #endif
 
-
-#include "../steps_two.h"
+#include "../get_grid_mn.h"
+#include "../steps_two_full.h"
 #include "equations.h"
