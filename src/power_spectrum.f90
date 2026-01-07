@@ -54,7 +54,9 @@ module Power_spectrum
   logical :: lpowerxy_hdf5=.false.
   integer :: n_glq=1
 !
-  character (LEN=linelen) :: ckxrange='', ckyrange='', czrange=''
+  character (LEN=linelen) :: ckxrange='' !PAR_DOC: Define the $k_x$ range for \code{power_xy}.
+  character (LEN=linelen) :: ckyrange=''
+  character (LEN=linelen) :: czrange=''
   character (LEN=linelen) :: power_format='(1p,8e10.2)'
   integer, dimension(3,nk_max) :: kxrange=0, kyrange=0
   integer, dimension(3,nz_max) :: zrange=0
