@@ -50,13 +50,32 @@ module Gravity
   real, dimension(mx) :: xdep=0.0
   real, dimension(mz) :: zdep=0.0
   real, parameter :: g_A_cgs=4.4e-9, g_C_cgs=1.7e-9, Rsol_cgs=2.6231e22
-  real :: gravx=0.0, gravy=0.0, gravz=0.0
+  real :: gravx=0.0, gravy=0.0
+  real :: gravz=0.0 !PAR_DOC: vertical gravity component $g_z$.
   real :: kx_gg=1.0, ky_gg=1.0, kz_gg=1.0, gravz_const=1.0, reduced_top=1.0
   real :: xgrav=impossible, ygrav=impossible, zgrav=impossible
   real :: xinfty=0.0, yinfty=0.0, zinfty=impossible, zclip=impossible
   real :: dgravx=0.0, pot_ratio=1.0
-  real :: z1=0.0, z2=1.0, xref=0.0, zref=impossible, sphere_rad=0.0, g_ref=0.0
-  real :: nu_epicycle=1.0, nu_epicycle2=1.0
+  real :: zref=impossible !PAR_DOC: \label{zref-init}%
+    !PAR_DOC: reference height where in the initial stratification
+    !PAR_DOC: $c_{\rm s}^2=c_{\rm s0}^2$ and $\ln\rho=\ln\rho_0$.
+    !PAR_DOC: Default = 0.
+  real :: z1=0.0 !PAR_DOC: specific to the solar convection case
+    !PAR_DOC: \code{initlnrho='piecew-poly'}.
+    !PAR_DOC: The stable layer is $z_0 < z < z_1$, the unstable layer
+    !PAR_DOC: $z_1 < z < z_2$, and the top (isothermal) layer is
+    !PAR_DOC: $z_2 < z < z_{\rm top}$.
+  real :: z2=1.0 !PAR_DOC: specific to the solar convection case
+    !PAR_DOC: \code{initlnrho='piecew-poly'}.
+    !PAR_DOC: The stable layer is $z_0 < z < z_1$, the unstable layer
+    !PAR_DOC: $z_1 < z < z_2$, and the top (isothermal) layer is
+    !PAR_DOC: $z_2 < z < z_{\rm top}$.
+  real :: xref=0.0, sphere_rad=0.0, g_ref=0.0
+  real :: nu_epicycle=1.0 !PAR_DOC: vertical epicyclic frequency; for accretion
+    !PAR_DOC: discs it should be equal to Omega, but not for
+    !PAR_DOC: galactic discs; see Eq.~(\ref{disc-gravz-init}) in
+    !PAR_DOC: Sect.~\ref{VerticalStratification}.
+  real :: nu_epicycle2=1.0
   real :: nux_epicycle=0.0, nux_epicycle2=0.0
   real :: g_A, g_C, g_A_factor=1.0, g_C_factor=1.0
   real :: g_E, g_F, Rgal=impossible, Rsol=impossible
@@ -65,8 +84,15 @@ module Gravity
   real :: accretor_grav=0., accretor_speed=0., accretor_rsoft=0., kaccretor, cdt_accretor=0.
   integer :: n_pot=10
   integer :: n_adjust_sphersym=0
-  character (len=labellen) :: gravx_profile='zero', gravy_profile='zero', &
-                              gravz_profile='zero', grav_type='default'
+  character (len=labellen) :: gravx_profile='zero'
+  character (len=labellen) :: gravy_profile='zero'
+  character (len=labellen) :: gravz_profile='zero' !PAR_DOC: constant gravity
+    !PAR_DOC: $g_z = \texttt{gravz}$
+    !PAR_DOC: (\code{gravz_profile='const'}) gravity
+    !PAR_DOC: or linear profile $g_z = \texttt{gravz}\cdot z$
+    !PAR_DOC: (\code{gravz_profile='linear'}, for accretion discs and
+    !PAR_DOC: similar).
+  character (len=labellen) :: grav_type='default'
 
   integer :: enum_gravx_profile = 0
   integer :: enum_gravy_profile = 0
@@ -85,7 +111,9 @@ module Gravity
   real :: g0=0.0
   real :: lnrho_bot=0.0, lnrho_top=0.0, ss_bot=0.0, ss_top=0.0
   real :: kappa_x1=0.0, kappa_x2=0.0, kappa_z1=0.0, kappa_z2=0.0
-  real :: grav_tilt=0.0, grav_amp=0.0
+  real :: grav_tilt=0.0 !PAR_DOC: specific to the tilted gravity case (angle wrt
+    !PAR_DOC: the vertical direction).
+  real :: grav_amp=0.0 !PAR_DOC: specific to the tilted gravity case (amplitude).
 !
   namelist /grav_init_pars/ &
       gravx_profile, gravy_profile, gravz_profile, gravx, gravy, gravz, &

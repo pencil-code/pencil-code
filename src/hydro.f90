@@ -87,9 +87,20 @@ module Hydro
 !
 !  Init parameters.
 !
-  real :: widthuu=.1, radiusuu=1., urand=0. !, kx_uu=1., ky_uu=1., kz_uu=1. (AB: now defined as array and consistent with magnetic)
+  real :: widthuu=.1 !PAR_DOC: width for some types of initial velocities.
+  real :: urand=0. !PAR_DOC: additional random perturbation of $\uv$. If
+    !PAR_DOC: \verb|urand>0|, the perturbation is additive,
+    !PAR_DOC: $u_i \mapsto u_i + u_{\rm rand}{\cal U}_{[0.5,0.5]}$;
+    !PAR_DOC: if \verb|urand<0|, it is multiplicative,
+    !PAR_DOC: $u_i \mapsto u_i \times u_{\rm rand}{\cal U}_{[0.5,0.5]}$;
+    !PAR_DOC: in both cases, ${\cal U}_{[0.5,0.5]}$ is a uniformly
+    !PAR_DOC: distributed random variable on the interval $[-0.5,0.5]$.
+  real :: radiusuu=1.
+  !real :: kx_uu=1., ky_uu=1., kz_uu=1. (AB: now defined as array and consistent with magnetic)
   real :: relhel_uu=1.,urandi=0.
-  real :: uu_left=0.,uu_right=0.,uu_lower=1.,uu_upper=1.
+  real :: uu_left=0. !PAR_DOC: needed for \code{inituu='shock-tube'}
+  real :: uu_right=0. !PAR_DOC: needed for \code{inituu='shock-tube'}
+  real :: uu_lower=1.,uu_upper=1.
   real :: uy_left=0.,uy_right=0.
   real :: initpower=1.,initpower2=-5./3.,cutoff=0.,ncutoff=1., kpeak=10.
   real :: xhalf, kgaussian_uu=0., nfact_uu=4.
@@ -99,8 +110,31 @@ module Hydro
   real, dimension (ninit) :: kz_ux=0.0, kz_uy=0.0, kz_uz=0.0
   real, dimension (ninit) :: phase_ux=0.0, phase_uy=0.0, phase_uz=0.0
   real :: omega_precession=0., alpha_precession=0.
-  real, dimension (ninit) :: ampluu=0.0, kx_uu=1.0, ky_uu=1.0, kz_uu=1.0, uu_xz_angle=0.0
-  character (len=labellen), dimension(ninit) :: inituu='nothing', robflow_uu='I'
+  real, dimension (ninit) :: ampluu=0.0 !PAR_DOC: amplitude for some types of
+    !PAR_DOC:initial velocities.
+  real, dimension (ninit) :: kx_uu=1.0, ky_uu=1.0, kz_uu=1.0, uu_xz_angle=0.0
+  character (len=labellen), dimension(ninit) :: inituu='nothing' !PAR_DOC:
+    !PAR_DOC: initialization of velocity. Some valid choices are
+    !PAR_DOC: \begin{description}
+    !PAR_DOC: \item[\code{`zero'}] ($\uv=0$ ),
+    !PAR_DOC: \item[\code{`gaussian-noise'}] (random,
+    !PAR_DOC:   normally-distributed $u_x$,$u_z$),
+    !PAR_DOC: \item[\code{`gaussian-noise-x'}] (random,
+    !PAR_DOC:   normally-distributed $u_x$),
+    !PAR_DOC: \item[\code{`sound-wave'}] (sound wave in $x$ direction),
+    !PAR_DOC: \item[\code{`shock-tube'}] (polytropic standing shock),
+    !PAR_DOC: \item[\code{`bullets'}] (blob-like velocity perturbations),
+    !PAR_DOC: \item[\code{`Alfven-circ-x'}] (circularly polarized
+    !PAR_DOC:   Alfven wave in x direction),
+    !PAR_DOC: \item[\code{`const-ux'}] (constant x-velocity),
+    !PAR_DOC: \item[\code{`const-uy'}] (constant y-velocity),
+    !PAR_DOC: \item[\code{`tang-discont-z'}] (tangential discontinuity:
+    !PAR_DOC:   velocity is directed along $x$, jump is at $z=0$),
+    !PAR_DOC: \item[\code{`Fourier-trunc'}] (truncated Fourier series),
+    !PAR_DOC: \item[\code{`up-down'}] (flow upward in one spot,
+    !PAR_DOC:   downward in another; not solenoidal).
+    !PAR_DOC: \end{description}
+  character (len=labellen), dimension(ninit) :: robflow_uu='I'
   character (len=labellen), dimension(3) :: borderuu='nothing'
   real, dimension (3) :: uu_const=(/0.,0.,0./), mean_momentum=(/0.,0.,0./)
   complex, dimension (3) :: coefuu=(/0.,0.,0./)

@@ -109,7 +109,8 @@ module Energy
   integer :: iglobal_hcond=0
   integer :: iglobal_glhc=0
   integer :: ippaux=0
-  integer, target :: isothtop=0
+  integer, target :: isothtop=0 !PAR_DOC: flag for isothermal top layer for
+    !PAR_DOC: \code{initss=piecew-poly}.
   integer :: cool_type=1
   integer, parameter :: ncool_patch_max=500
   integer :: ncool_patch=0

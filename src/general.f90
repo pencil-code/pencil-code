@@ -81,7 +81,17 @@ module General
 !  State and default generator of random numbers.
 !
   integer, save, dimension(mseed) :: rstate=0, rstate2=0
-  character (len=labellen) :: random_gen='min_std'
+  character (len=labellen) :: random_gen='min_std' !PAR_DOC: \label{random-gen-init}
+    !PAR_DOC: choose random number generator;
+    !PAR_DOC: currently valid choices are
+    !PAR_DOC: \begin{description}
+    !PAR_DOC: \item[\code{'system'}] (your compiler's generator),
+    !PAR_DOC: \item[\code{'min_std'}] (the `minimal standard' generator
+    !PAR_DOC:   \code{ran0()} from `Numerical Recipes'),
+    !PAR_DOC: \item[\code{'nr_f90'}] (the Parker-Miller-Marsaglia
+    !PAR_DOC:   generator \code{ran()} from `Numerical Recipes for
+    !PAR_DOC:   F90').
+    !PAR_DOC: \end{description}
 !
 !  Indicators for situations in which the interpolation stencil overlaps with
 !  the

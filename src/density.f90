@@ -33,8 +33,12 @@ module Density
 !
   include 'density.h'
 !
-  real, dimension (ninit) :: ampllnrho=0.0, widthlnrho=0.1
-  real, dimension (ninit) :: rho_left=1.0, rho_right=1.0
+  real, dimension (ninit) :: ampllnrho=0.0 !PAR_DOC: amplitude for some types of
+    !PAR_DOC: initial densities
+  real, dimension (ninit) :: widthlnrho=0.1 !PAR_DOC: width for some types of
+    !PAR_DOC: initial densities
+  real, dimension (ninit) :: rho_left=1.0 !PAR_DOC: needed for \code{initlnrho='shock-tube'}
+  real, dimension (ninit) :: rho_right=1.0 !PAR_DOC: needed for \code{initlnrho='shock-tube'}
   real, dimension (ninit) :: amplrho=0.0, phase_lnrho=0.0, radius_lnrho=0.5
   real, dimension (ninit) :: xblob=0.0, yblob=0.0, zblob=0.0
   real, dimension (ninit) :: kx_lnrho=1.0, ky_lnrho=1.0, kz_lnrho=1.0
@@ -135,7 +139,36 @@ module Density
   real :: density_ceiling=-1.
   logical :: lreinitialize_lnrho=.false., lreinitialize_rho=.false.
   logical :: lsubtract_init_stratification=.false., lwrite_stratification=.false.
-  character (len=labellen), dimension(ninit) :: initlnrho='nothing'
+  character (len=labellen), dimension(ninit) :: initlnrho='nothing' !PAR_DOC:
+    !PAR_DOC: initialization of density. Currently valid choices are
+    !PAR_DOC:  \begin{description}
+    !PAR_DOC:  \item[\code{`zero'}] ($\ln\rho=0$),
+    !PAR_DOC:  \item[\code{`isothermal'}] (isothermal stratification),
+    !PAR_DOC:  \item[\code{`polytropic\_simple'}] (polytropic stratification),
+    !PAR_DOC:  \item[\code{`hydrostatic-z-2'}] (hydrostatic vertical
+    !PAR_DOC:    stratification for isentropic atmosphere),
+    !PAR_DOC:  \item[\code{`xjump'}] (density jump in $x$ of width
+    !PAR_DOC:    \var{widthlnrho}),
+    !PAR_DOC:  \item[\code{`rho-jump-z'}] (density jump in $z$ of width
+    !PAR_DOC:    \var{widthlnrho}),
+    !PAR_DOC:  \item[\code{`piecew-poly'}] (piecewise polytropic vertical
+    !PAR_DOC:    stratification for solar convection),
+    !PAR_DOC:  \item[\code{`polytropic'}] (polytropic vertical
+    !PAR_DOC:    stratification),
+    !PAR_DOC:  \item[\code{`sound-wave'}] (sound wave),
+    !PAR_DOC:  \item[\code{`shock-tube'}] (polytropic standing shock),
+    !PAR_DOC:  \item[\code{`gaussian-noise'}] (Gaussian-distributed,
+    !PAR_DOC:    uncorrelated noise),
+    !PAR_DOC:  \item[\code{`gaussian-noise'}] (Gaussian-distributed,
+    !PAR_DOC:    uncorrelated noise in $x$, but uniform in $y$ and $z$),
+    !PAR_DOC:  \item[\code{`hydrostatic-r'}] (hydrostatic radial density
+    !PAR_DOC:    stratification for isentropic or isothermal sphere),
+    !PAR_DOC:  \item[\code{`sin-xy'}] (sine profile in $x$ and $y$),
+    !PAR_DOC:  \item[\code{`sin-xy-rho'}] (sine profile in $x$ and $y$, but
+    !PAR_DOC:    in $\rho$, not $\ln\rho$),
+    !PAR_DOC:  \item[\code{`linear'}] (linear profile in $\kv\cdot\xv$),
+    !PAR_DOC:  \item[\code{`planet'}] (planet solution; see \S\ref{S-planet}).
+    !PAR_DOC:  \end{description}
   character (len=labellen) :: strati_type='lnrho_ss'
   character (len=labellen), dimension(ndiff_max) :: idiff=''
   character (len=labellen) :: borderlnrho='nothing'

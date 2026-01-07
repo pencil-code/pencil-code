@@ -37,14 +37,21 @@ module EquationOfState
   real :: xHe=0.0
   real :: mu=1.0
   !real :: cs0=1.0, cs20=1.0, cs20t, rho0=1., lnrho0=0., rho01=1.0, pp0=1.0
-  real :: cs0=impossible, cs20=1.0, cs20t, rho0=1., lnrho0=0., rho01=1.0, pp0=1.0
-  real :: gamma=5.0/3.0
+  real :: cs0=impossible !PAR_DOC: can be used to set the dimension of velocity;
+    !PAR_DOC: larger values can be used to decrease stratification.
+    !PAR_DOC: Default = 1.
+  real :: rho0=1. !PAR_DOC: \label{cs0-rho0-init}%
+    !PAR_DOC: reference values of sound speed and density,
+    !PAR_DOC: i.\,e.~values at height \var{zref}.
+  real :: cs20=1.0, cs20t, lnrho0=0., rho01=1.0, pp0=1.0
+  real :: gamma=5.0/3.0 !PAR_DOC: adiabatic index $\gamma=c_p/c_v$.
   real :: Rgas_cgs=0.0, Rgas, error_cp=1.0e-6
   real :: gamma_m1    !(=gamma-1)
   real :: gamma1      !(=1/gamma)
   real :: cp=impossible, cp1=impossible, cv=impossible, cv1=impossible
   real :: pres_corr=0.1
-  real :: cs2bot=impossible, cs2top=impossible
+  real :: cs2bot=impossible !PAR_DOC: sound speed at bottom. Needed for some types of stratification.
+  real :: cs2top=impossible !PAR_DOC: sound speed at top. Needed for some types of stratification.
   real :: fac_cs=1.0, cs20_tdep_rate=1.0, cs2_tdep_ascale_power=0.
   real, pointer :: mpoly
   real :: sigmaSBt=1.0
