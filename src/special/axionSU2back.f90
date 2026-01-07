@@ -1448,11 +1448,11 @@ module Special
         if ((llnk_spacing_adjustable.or.llnk_spacing) .and. lfirst) then
           if (nswitch>0 .or. (lalways_backreact_output .and. lout)) then
             open (1, file=trim(directory_snap)//'/backreact.dat', form='formatted', position='append')
-            write(1,*) t, lnk, grand, dgrant
+            write(1,*) t, lnk, grand, dgrant, a, H
             close(1)
             if (lSchwinger_scalar) then
               open (1, file=trim(directory_snap)//'/schwinger.dat', form='formatted', position='append')
-              write(1,*) t, lnk, JJ_R, JJ_L, a
+              write(1,*) t, lnk, JJ_R, JJ_L, a, H
               close(1)
             endif
           endif
