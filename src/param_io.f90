@@ -148,7 +148,7 @@ module Param_IO
       lfractional_tstep_advance, lfractional_tstep_negative, leps_fixed, &
       cdtv, cdtv2, cdtv3, cdtsrc, cdts, cdtr, cdtf, &
       cdtc, isave, itorder, dsnap, dsnap_down, mvar_down, maux_down, &
-      d1davg, d2davg, dvid, dsound, dtmin, dspec, tmax, toutoff, &
+      d1davg, d2davg, dvid, dsound, dtmin, dspec, tmax, toutoff, trigger_vid, &
       lit1_logspacing, tmax_logspacing, &
       iwig, ldivu_perp, allproc_print, ssmask1, ssmask2, &
       dtracers, dfixed_points, unit_system, unit_length, &

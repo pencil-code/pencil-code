@@ -38,23 +38,40 @@ contains
 !
       logical, save :: lfirst_call=.true.
       character (len=fnlen) :: file
+      real :: tvid_write
+      real :: t_trigger
 !
 !  Output vid-data in 'dvid' time intervals
 !
       file = trim(datadir)//'/tvid.dat'
       if (lfirst_call) then
         call read_snaptime(file,tvid,nvid,dvid,t)
+        tvid_write=tvid
         lfirst_call=.false.
       endif
 !
 !  This routine sets lvideo=T whenever its time to write a slice
 !
-      call update_snaptime(file,tvid,nvid,dvid,t,lvideo)
+      select case (trigger_vid)
+        case ('ascale')
+          t_trigger=ascale
+        case ('code_time')
+          t_trigger=t
+        case default
+          call fatal_error('wvid_prepare','no such trigger_vid='//trim(trigger_vid))
+      end select
+      call update_snaptime(file,tvid,nvid,dvid,t_trigger,lvideo)
+!
+!  output quantity: time or something else (e.g., ascale)
+!
+      if (.not. lfirst_call) then
+        tvid_write=t_trigger
+      endif
 !
 !  Save current time so that the time that is written out in
 !  output_slice() is not from the next time step
 !
-      if (lvideo) tslice = t
+      if (lvideo) tslice = tvid_write
 !
     endsubroutine wvid_prepare
 !***********************************************************************

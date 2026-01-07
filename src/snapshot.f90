@@ -735,7 +735,7 @@ module Snapshot
       logical, save :: lfirst_call=.true.
       character (len=fnlen) :: file
       integer, save :: nspec
-      real, save :: tspec
+      real :: t_trigger
 !
 !  Output snapshot in 'tpower' time intervals.
 !  File keeps the information about time of last snapshot.
@@ -758,7 +758,15 @@ module Snapshot
       if (lspec_at_tplusdt) then
         call update_snaptime(file,tspec,nspec,dspec,t+dt,lspec)
       else
-        call update_snaptime(file,tspec,nspec,dspec,t,lspec)
+        select case (trigger_spec)
+          case ('ascale')
+            t_trigger=ascale
+          case ('code_time')
+            t_trigger=t
+          case default
+            call fatal_error('powersnap_prepare','no such trigger_spec='//trim(trigger_spec))
+        end select
+        call update_snaptime(file,tspec,nspec,dspec,t_trigger,lspec)
       endif
 !
     endsubroutine powersnap_prepare
@@ -790,7 +798,8 @@ module Snapshot
 
       !TP: unfortunately spectrum needs a different t than timeseries since they are in general different
       if(.not. lmultithread) then
-        tspec=t
+        !tspec=t
+!AB: outcommented for now XXX
       else 
 
         !TP: if farray was already copied from the gpu during this iteration for rhs diagnostic purposes

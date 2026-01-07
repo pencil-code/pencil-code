@@ -95,7 +95,7 @@ module Power_spectrum
       power_format, kout_max, tout_min, tout_max, specflux_dp, specflux_dq, &
       lhorizontal_spectra, lvertical_spectra, ltrue_binning, max_k2, &
       specflux_pmin, specflux_pmax, lzero_spec_zerok, lcorrect_integer_kcalc, &
-      lpdf_2d_variable_range, lpowerxy_hdf5
+      lpdf_2d_variable_range, lpowerxy_hdf5, trigger_spec
 !
 ! real, allocatable, dimension(:,:) :: spectrum_2d, spectrumhel_2d
 ! real, allocatable, dimension(:,:) :: spectrum_2d_sum, spectrumhel_2d_sum
