@@ -216,7 +216,7 @@ sub get_pars_namelist {
     my $processing_namelist = 0;
     my $namelist = '';
     while(defined(my $line = <NML_FILE>)) {
-        if ($line =~ /^\s*namelist \/[a-zA-Z]*_?${name}_pars\//) {
+        if ($line =~ /^\s*namelist \/[a-zA-Z_]*_?${name}_pars\//) {
            $processing_namelist = 1;
         }
         if ($processing_namelist) {
