@@ -60,7 +60,7 @@ contains
         case default
           call fatal_error('wvid_prepare','no such trigger_vid='//trim(trigger_vid))
       end select
-      call update_snaptime(file,tvid,nvid,dvid,t_trigger,lvideo)
+      call update_snaptime(file,tvid,nvid,dvid,dble(t_trigger),lvideo)
 !
 !  output quantity: time or something else (e.g., ascale)
 !

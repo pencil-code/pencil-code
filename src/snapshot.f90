@@ -766,7 +766,7 @@ module Snapshot
           case default
             call fatal_error('powersnap_prepare','no such trigger_spec='//trim(trigger_spec))
         end select
-        call update_snaptime(file,tspec,nspec,dspec,t_trigger,lspec)
+        call update_snaptime(file,tspec,nspec,dspec,dble(t_trigger),lspec)
       endif
 !
     endsubroutine powersnap_prepare
