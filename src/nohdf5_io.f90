@@ -703,7 +703,7 @@ module HDF5_IO
 !
       open (lun_output, file=trim(directory)//'/slice_'//trim(label)//'.'//trim(suffix), &
             form='unformatted', position='append')
-      write (lun_output) data, time, pos
+      write (lun_output) data, time, pos, real(t)
       close (lun_output)
 !
     endsubroutine hdf5_output_slice

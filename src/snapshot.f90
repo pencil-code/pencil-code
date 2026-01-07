@@ -735,6 +735,7 @@ module Snapshot
       logical, save :: lfirst_call=.true.
       character (len=fnlen) :: file
       integer, save :: nspec
+      real, save :: tspec_next
       real :: t_trigger
 !
 !  Output snapshot in 'tpower' time intervals.
@@ -746,7 +747,7 @@ module Snapshot
 !  tspec calculated in read_snaptime, but only available to root processor.
 !
       if (lfirst_call) then
-        call read_snaptime(file,tspec,nspec,dspec,t)
+        call read_snaptime(file,tspec_next,nspec,dspec,t)
         lfirst_call=.false.
       endif
 !
@@ -756,7 +757,7 @@ module Snapshot
 !  make this the default.
 !
       if (lspec_at_tplusdt) then
-        call update_snaptime(file,tspec,nspec,dspec,t+dt,lspec)
+        call update_snaptime(file,tspec_next,nspec,dspec,t+dt,lspec)
       else
         select case (trigger_spec)
           case ('ascale')
@@ -766,8 +767,9 @@ module Snapshot
           case default
             call fatal_error('powersnap_prepare','no such trigger_spec='//trim(trigger_spec))
         end select
-        call update_snaptime(file,tspec,nspec,dspec,dble(t_trigger),lspec)
+        call update_snaptime(file,tspec_next,nspec,dspec,dble(t_trigger),lspec)
       endif
+      if (lspec) tspec=t_trigger
 !
     endsubroutine powersnap_prepare
 !***********************************************************************
@@ -798,8 +800,10 @@ module Snapshot
 
       !TP: unfortunately spectrum needs a different t than timeseries since they are in general different
       if(.not. lmultithread) then
-        !tspec=t
-!AB: outcommented for now XXX
+!AB: tspec=t is what Touko did before, and it works for unclear reasons.
+!AB: But now, we also have the possibility of other triggers, and then t is not ok.
+!AB: We still don't understand why this tspec=t is even needed...
+        if (trigger_spec=='code_time') tspec=t
       else 
 
         !TP: if farray was already copied from the gpu during this iteration for rhs diagnostic purposes
