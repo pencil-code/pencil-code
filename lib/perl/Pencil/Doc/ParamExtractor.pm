@@ -107,6 +107,13 @@ sub populate_global_docs {
     
     my $path = $self->{SRCDIR};
     
+    # TODO: density_init_pars contains cs2top and cs2bot which are defined in the
+    # EOS modules. If both eos_idealgas.f90 and eos_idealgas_vapor.f90 document
+    # a parameter that appears in density_init_pars, which of them should be
+    # prioritized? Note that it is not correct to add eos_idealgas.f90 below,
+    # since that would result in the documentation strings from eos_idealgas.f90
+    # being indiscriminately applied to all the EOS modules.
+    
     my @gd;
     foreach my $file ("$path/cdata.f90", "$path/general.f90") {
         my @doc = $self->get_docs_from_file($file,
