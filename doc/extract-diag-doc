@@ -227,6 +227,7 @@ $param_doc->write_to_file({ file          => 'inlinedoc-param.tex',
 $mod_doc->write_to_file({ file       => 'inlinedoc-modules.tex',
                           sort_files   => 1,
                           print_empty  => 0,
+                          descr_width   => '0.6\textwidth',
                         });
 # ---------------------------------------------------------------------- #
 sub get_src_files {
