@@ -97,7 +97,7 @@ if [ -z $_sourceme ]; then	# called for the first time?
   fi
 fi
 
-if ( [ -e .git ] ); then
+if [ -d .git ]; then
 # 2025-Nov-11/Kishore: Matthias, I think it would be cleaner to check the config
 # value by running
 # `git config get pull.rebase` and checking that it does not return "false"
