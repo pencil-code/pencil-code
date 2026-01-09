@@ -1,0 +1,15 @@
+!                              -*-f90-*-     (for emacs)
+!
+! Initialisation parameters for MRI turbulence
+!
+&init_pars
+  cvsid="c2196e6f1"
+/
+&eos_init_pars
+  gamma=1.
+/
+&hydro_init_pars
+  inituu='TG', ampluu=1.,kx_uu=1.,ky_uu=1.,kz_uu=1.
+/
+&density_init_pars
+/

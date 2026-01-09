@@ -1,0 +1,76 @@
+
+!
+! Convection in vertically stratified atmosphere/solar convection zone
+! Run parameters
+!
+&run_pars
+  ip=7
+	!lnowrite=F
+  cvsid='$Id$',
+  ! use this to evolve the system a bit
+	!nt=1200, it1=10, isave=100, itorder=3, dt=1e-4
+
+  ! then switch to stationary case
+ 	nt=3000, it1=10, isave=1000, itorder=3, dt=1e-3
+
+  dsnap=20., dtmin=1e-16
+!! uncomment the following block to see the free evolution of the system:
+!  nt=4000, it1=50, isave=2000, itorder=3
+!  dsnap=0.2, dvid=0.2
+  !bcx = 'p','p','p', 'p',    'p'
+  !bcy = 'p','p','p', 'p',    'p'
+  !bcz = 's','s','a','a2','c1:cT'
+  cdtv=0.30 
+	!cdt=0.2
+  lpencil_check=T
+/
+&gpu_run_pars
+  ltest_bcs=F
+  lcpu_timestep_on_gpu=T
+  lcuda_aware_mpi=F
+/
+&eos_run_pars
+/
+&hydro_run_pars
+  Omega=0.1 ! angular velocity
+  theta=0.  ! direction of angular velocity vector (0 : vertical)
+!! uncomment the following block to start without artificial switch-on shocks:
+!  dampu = 0.05
+!  tdamp = 8.0
+!  ldamp_fade = T
+!  tfade_start = 2.0
+/
+&density_run_pars
+  cdiffrho=0.
+  lupw_lnrho=T ! use upwinding for lnrho to avoid wiggles
+/
+&grav_run_pars
+  gravz_profile='const',gravz=-1.
+/
+&entropy_run_pars
+  Luminosity=0., wheat=0.1, cool=15., wcool=0.2,
+  iheatcond='K-profile', hcond0=8.e-3
+  lupw_ss=T ! use upwinding for entropy to avoid wiggles
+/
+&viscosity_run_pars
+  ivisc='nu-const'
+  nu=4e-3
+/
+! Nomenclature for boundary conditions:
+!   Variables are (currently): ux,uy,uz,lam,ent,ax,ay,az
+!   p      : periodic
+!   s/a/a2 : symmetric/antisymmetric/antisymmetric w.r.t. boundary value
+!   s:a2   : bc `s' at lower (left) and `a2' at upper (right) boundary
+
+! tinit    -- initial time for smoothly switching on heating, etc
+&training_run_pars
+  lroute_via_cpu=F
+  it_train=1, it_train_chkpt=1000
+	!it_train_start=1200
+  luse_trained_tau=F
+  max_loss=1.e-100
+  model='stationary'
+  config_file='config_fno.yaml'
+  it_train_end=3000
+	run_epoch=T
+/
