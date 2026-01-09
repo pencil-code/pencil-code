@@ -231,7 +231,7 @@ class Power(object):
 
             for line_idx, line in enumerate(f):
                 if line_idx % block_size == 0:
-                    time.append(float(line.strip()))
+                    time.append(float(line.strip()[-1]))
 
                     power_array.resize([len(time), nzpos*nk])
                     ik = 0
@@ -384,7 +384,7 @@ class Power(object):
         with open(os.path.join(datadir, file_name), "r") as f:
             for line_idx, line in enumerate(f):
                 if line_idx % block_size == 0:
-                    time.append(float(line.strip()))
+                    time.append(float(line.strip()[-1]))
                 elif line.find(",") == -1:
                     # if the line does not contain ',', assume it represents a series of real numbers.
                     for value_string in line.strip().split():
@@ -436,7 +436,7 @@ class Power(object):
         with open(os.path.join(datadir, file_name), "r") as f:
             for line_idx, line in enumerate(f):
                 if line_idx % block_size == 0:
-                    time.append(float(line.strip()))
+                    time.append(float(line.strip()[-1]))
                 else:
                     for value_string in line.strip().split():
                         power_array.append(ffloat(value_string))
