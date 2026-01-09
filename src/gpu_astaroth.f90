@@ -386,5 +386,4 @@ contains
     call copy_addr(ltest_bcs,p_par(7)) ! bool
     endsubroutine pushpars2c
 !**************************************************************************
-
 endmodule GPU
