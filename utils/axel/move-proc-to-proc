@@ -1,0 +1,26 @@
+#!/bin/sh
+#$Id$
+#
+#  Example:
+#     move-proc-to-proc grid.dat ../hydro256e
+#     move-proc-to-proc seed.dat ../hydro256e
+#     move-proc-to-proc dim.dat ../hydro256e
+
+#  will move all var.dat files fron current directory to var.dat in
+#  another run directory.
+#  An optional 3rd argument ($fromdir) can be give as soure directory
+#  Used for restarting in a different directory.
+#  Target dir tree needs to exist already.
+
+if [ $# -eq 3 ]; then
+  fromdir=$3
+else
+  fromdir='.'
+fi
+
+procdirs=`\ls data | grep proc `
+for proc in $procdirs
+do
+  echo "mv data/$proc/$1 $2/data/$proc/"
+  mv $fromdir/data/$proc/$1 $2/data/$proc/
+done

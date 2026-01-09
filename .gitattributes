@@ -5057,6 +5057,7 @@ utils/axel/global_run.in -text
 utils/axel/global_start.in -text
 utils/axel/mkdatadir_scratch -text
 utils/axel/move-VAR-to-data1 -text
+utils/axel/move-proc-to-proc -text
 utils/axel/move_VAR_to_local_scratch.csh -text
 utils/axel/move_to_local_scratch.csh -text
 utils/axel/pc_copy_VAR_procN_shift -text
