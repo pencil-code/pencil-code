@@ -1172,8 +1172,8 @@ extern "C" void torch_infer_c_api(int itsub){
 			total_val_time += val_time[i];
 		}
 
-		fprintf(stderr,"The total time taken for inference [seconds]: %.7f\n", total_val_time);
-		fprintf(stderr,"The average time taken for inference [seconds]: %.7f\n", total_val_time/val_time.size());
+		fprintf(stderr,"\nThe total time taken for inference [seconds]: %.7f\n", total_val_time);
+		fprintf(stderr,"\nThe average time taken for inference [seconds]: %.7f\n", total_val_time/val_time.size());
 
 		fflush(stderr);
 	}
