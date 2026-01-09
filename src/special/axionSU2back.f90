@@ -991,14 +991,12 @@ module Special
         call sum_mn_name(f(l1:l2,m,n,iaxi_psiL),idiag_psiL)
         call sum_mn_name(f(l1:l2,m,n,iaxi_psidot),idiag_psidot)
         call sum_mn_name(f(l1:l2,m,n,iaxi_TR),idiag_TR)
-        ! 2025-Dec-20/Kishore: the below is detected as out-of-bounds access for
-        ! me in samples/axionSU2back (Index '0' of dimension 4 of array 'f' outside
-        ! of expected range (1:16))
-        call sum_mn_name(f(l1:l2,m,n,iaxi_TL),idiag_TL)
-        call sum_mn_name(f(l1:l2,m,n,iaxi_uR),idiag_uR)
-        call sum_mn_name(f(l1:l2,m,n,iaxi_uL),idiag_uL)
-        call sum_mn_name(f(l1:l2,m,n,iaxi_TRdot),idiag_TRdot)
-        call sum_mn_name(f(l1:l2,m,n,iaxi_imTR),idiag_imTR)
+        ! if statements below prevent out-of-bounds access in f-array.
+        if (idiag_TL/=0) call sum_mn_name(f(l1:l2,m,n,iaxi_TL),idiag_TL)
+        if (idiag_uR/=0) call sum_mn_name(f(l1:l2,m,n,iaxi_uR),idiag_uR)
+        if (idiag_uL/=0) call sum_mn_name(f(l1:l2,m,n,iaxi_uL),idiag_uL)
+        if (idiag_TRdot/=0) call sum_mn_name(f(l1:l2,m,n,iaxi_TRdot),idiag_TRdot)
+        if (idiag_imTR/=0) call sum_mn_name(f(l1:l2,m,n,iaxi_imTR),idiag_imTR)
         call save_name(TReff2m_sum,idiag_TReff2m)
         call save_name(TReff2km_sum,idiag_TReff2km)
         call save_name(TRdoteff2m_sum,idiag_TRdoteff2m)
