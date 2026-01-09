@@ -558,7 +558,7 @@
     call copy_addr(itauyz,p_par(5)) ! int
     call copy_addr(itauzz,p_par(6)) ! int
     call copy_addr(lscale,p_par(7)) ! bool
-    call copy_addr(luse_trained_tau,p_par(8)) ! bool
+    call copy_addr(ltrained,p_par(8)) ! bool
 
 
     endsubroutine pushpars2c

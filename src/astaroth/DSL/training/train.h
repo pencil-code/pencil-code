@@ -84,7 +84,7 @@ Stencil avgr1
 }
 
 Kernel tau_uumean(){
-
+	if(!AC_ltrained__mod__training){
 		write(tau.xx, UUX*UUX)	
 		write(tau.yy, UUY*UUY)	
 		write(tau.zz, UUZ*UUZ)	
@@ -96,22 +96,34 @@ Kernel tau_uumean(){
 		write(uumean.x, gaussian_smooth_inplace(UUX))
 		write(uumean.y, gaussian_smooth_inplace(UUY))
 		write(uumean.z, gaussian_smooth_inplace(UUZ))
+	}
 }
+
+Kernel smooth_uumean(){
+
+		write(uumean.x, gaussian_smooth_inplace(UUX))
+		write(uumean.y, gaussian_smooth_inplace(UUY))
+		write(uumean.z, gaussian_smooth_inplace(UUZ))
+}
+
 
 Kernel smooth_tau(){
 
+	if(!AC_ltrained__mod__training){
 	write(tau.xx, gaussian_smooth_inplace(tau.xx))
 	write(tau.xy, gaussian_smooth_inplace(tau.xy))
 	write(tau.xz, gaussian_smooth_inplace(tau.xz))
 	write(tau.yy, gaussian_smooth_inplace(tau.yy))
 	write(tau.yz, gaussian_smooth_inplace(tau.yz))
 	write(tau.zz, gaussian_smooth_inplace(tau.zz))
+	}
 
 }
 
 
 Kernel final_tau(){
 
+	if(!AC_ltrained__mod__training){
 	UX = uumean.x
 	UY = uumean.y
 	UZ = uumean.z
@@ -122,6 +134,7 @@ Kernel final_tau(){
 	write(tau.xy, -(UX*UY) + tau.xy)
 	write(tau.yz, -(UY*UZ) + tau.yz)
 	write(tau.xz, -(UX*UZ) + tau.xz)
+	}
 }
 
 
@@ -354,12 +367,16 @@ ComputeSteps calc_scaling(boundconds){
 	//component_wise_reduce()
 }
 
+ComputeSteps initialize_uumean(boundconds){
+	smooth_uumean()
+}
 
 ComputeSteps initialize_uumean_tau(boundconds){
 	tau_uumean()
 	smooth_tau()
 	final_tau()	
 }
+
 
 
 ComputeSteps scale(boundconds){

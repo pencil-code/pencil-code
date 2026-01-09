@@ -126,7 +126,8 @@ AcTaskGraph* boundary_z_halo_exchange_graph =  NULL;
   #define sin1th   sin1th__mod__cdata
   #define cotth    cotth__mod__cdata
 
-  #define luse_trained_tau luse_trained_tau__mod__training
+  #define ltrained ltrained__mod__training
+  #define lcpu_timestep_on_gpu   lcpu_timestep_on_gpu__mod__gpu
   #define lperi                  lperi__mod__cdata
   #define lxyz                   lxyz__mod__cdata
   #define lac_sparse_autotuning  lac_sparse_autotuning__mod__gpu
@@ -694,7 +695,7 @@ void setupConfig(AcMeshInfo& config)
   AcRealSymmetricTensor tau_stds{};
 	
   //The statistics for doing the inverse are only needed when using the trained tau
-  if(luse_trained_tau) denormalize("normalizer.bin", tau_means, tau_stds);
+  if(ltrained) denormalize("data/training/normalizer.bin", tau_means, tau_stds);
 
 	
 
@@ -1079,10 +1080,10 @@ void denormalize(std::string filename, AcRealSymmetricTensor &tau_means, AcRealS
 
 
 /***********************************************************************************************/
-extern "C" void torch_infer_c_api(int itstub){	
+extern "C" void torch_infer_c_api(int itsub){	
 #if TRAINING
 	#include "user_constants.h"
-	if(!luse_trained_tau && itstub!=1) return;
+	if(ltrained && itsub!=1) return;
 	if(!calling_infer){
 		AcRealSymmetricTensor tau_means = mesh.info[AC_tau_means];
 		AcRealSymmetricTensor tau_stds  = mesh.info[AC_tau_stds];
@@ -1093,6 +1094,8 @@ extern "C" void torch_infer_c_api(int itstub){
 	}
 	calling_infer = true;
 
+	//only used for doing inference while training, i.e. validation loss over the training set
+	/*
 	if (!called_training){
 		randomNumber = 5;
 		acDeviceSetInput(acGridGetDevice(), AC_ranNum, randomNumber);
@@ -1104,7 +1107,15 @@ extern "C" void torch_infer_c_api(int itstub){
 		acGridExecuteTaskGraph(bcs,1);
 
 	}
+	*/
 		
+
+	auto calc_uumean_tau = acGetOptimizedDSLTaskGraph(initialize_uumean);
+	acGridExecuteTaskGraph(calc_uumean_tau, 1);
+
+  auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+	acGridExecuteTaskGraph(bcs,1);
+
 
 	AcReal* out = NULL;
 
@@ -1120,6 +1131,9 @@ extern "C" void torch_infer_c_api(int itstub){
 	if (randomNumber == 5) acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEANBatch[5].x, &uumean_ptr, &out);
 	*/
 
+	//
+	//check if trained on same grid size and do not smooth the averaged out vals
+	//
 	acDeviceGetVertexBufferPtrs(acGridGetDevice(), uumean.x, &uumean_ptr, &out);
 
 	acDeviceGetVertexBufferPtrs(acGridGetDevice(), TAU_INFERRED.xx, &tau_infer_ptr, &out);
@@ -1137,12 +1151,12 @@ extern "C" void torch_infer_c_api(int itstub){
 	auto descale_inf = acGetOptimizedDSLTaskGraph(descale_inferred_taus);
 	acGridExecuteTaskGraph(descale_inf, 1);
 
-  auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+  bcs = acGetOptimizedDSLTaskGraph(boundconds);	
 	acGridExecuteTaskGraph(bcs,1);
 
 	float vloss = MSE();
  	
-	if(itstub == 1){
+	if(itsub == 1){
 		//fprintf(stderr, "Validation error is: %.50f\n", vloss);
 		//fprintf(stderr, "Validation took %f seconnds\n", (end-start));
 		//fflush(stderr);
@@ -1150,14 +1164,27 @@ extern "C" void torch_infer_c_api(int itstub){
   	val_loss.push_back(vloss);
 		print_debug();
 	}
+
+	if (it==nt){
+		double total_val_time = 0.0;
+
+		for (int i=0;i<val_time.size();i++){
+			total_val_time += val_time[i];
+		}
+
+		fprintf(stderr,"The total time taken for inference [seconds]: %.7f\n", total_val_time);
+		fprintf(stderr,"The average time taken for inference [seconds]: %.7f\n", total_val_time/val_time.size());
+
+		fflush(stderr);
+	}
 #endif
 }
 /***********************************************************************************************/
-extern "C" void torch_train_c_api(AcReal *loss_val, int itstub) {
+extern "C" void torch_train_c_api(AcReal *loss_val, int itsub) {
 #if TRAINING
 	#include "user_constants.h"
 	#include <stdlib.h>
-	if(itstub != 1) return;
+	if(itsub != 1) return;
 
 	if(!calling_train){
 		fprintf(stderr,"Calling training\n");
