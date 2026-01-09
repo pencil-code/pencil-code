@@ -1,0 +1,66 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  run parameters for forced helical MHD turbulence
+!
+&run_pars
+  cvsid='$Id$',
+  nt=20000, it1=50, cdt=0.4, cdtv=0.3, isave=1000, itorder=3 !(longer run)
+  !nt=10, it1=2, cdt=0.4, cdtv=0.3, isave=0, itorder=3        !(sample run)
+  dsnap=1e10, dvid=1e10,  !(for longer run)
+  !dsnap=50, dvid=0.1,  !(for sample run)
+  !dsnap=.1, dvid=0.1,  !(for sample run)
+  d2davg=1e10           !(for sample run)
+  !dspec=.1, lspec_start=T, ou_spec=T, ab_spec=T, vel_spec=T, lr_spec=T !(for energy spectra)
+  dspec=1e10, ou_spec=T, ab_spec=T, vel_spec=T, lr_spec=T !(for energy spectra)
+  random_gen='system'
+  random_gen='min_std'
+  random_gen='nr_f90'  !(Use machine-indep numerical receipes random numbers)
+  lpencil_check=F      !(checks for redundany of pencils)
+ !comment_char='%'     !(useful when using matlab for visualization)
+  lequatorz=T          !(to indicate that north/south diagnostics in in z)
+  dt=4e-2
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+/
+&forcing_run_pars
+  iforce='helical', force=0.07, relhel=1.
+/
+&magnetic_run_pars
+  eta=5e-3
+/
+&pscalar_run_pars
+  pscalar_diff=1e-3
+/
+&viscosity_run_pars
+  nu=5e-3
+/
+&particles_run_pars
+  lcheck_exact_frontier=T
+/
+&particles_stalker_run_pars
+/
+&poisson_run_pars
+/
+&power_spectrum_run_pars
+  lzero_spec_zerok=T
+/
+&training_run_pars
+  lroute_via_cpu=F
+  it_train=10, it_train_chkpt=5000
+	!it_train_start=1200
+  luse_trained_tau=T
+  max_loss=1.e-100
+  model='stationary'
+  config_file='config_unet_complex.yaml'
+  it_train_end=20000
+	lrun_epoch=T
+/
+&gpu_run_pars
+  ltest_bcs=F
+  lcpu_timestep_on_gpu=T
+  lcuda_aware_mpi=F
+/
