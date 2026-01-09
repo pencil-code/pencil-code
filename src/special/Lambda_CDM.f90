@@ -141,9 +141,11 @@ module Special
 !
       if (lstart) then
         ascale=1./(1.+redshift0)
+        tphys=ascale**2/(2.*Hubble0*Omega_rad**.5)
         Hubble=Hubble0*sqrt(Omega_mat/ascale**3+Omega_Lam+Omega_rad/ascale**4)
       else
         ascale=exp(f_ode(iLCDM_lna))
+        tphys=f_ode(iLCDM_tph)
       endif
 !
       call keep_compiler_quiet(f)
@@ -256,6 +258,7 @@ module Special
 !
       lna=f_ode(iLCDM_lna)
       tph=f_ode(iLCDM_tph)
+      tphys=tph
 !
 !  dlna/dtph=H, and since dt=dtph/a^nconformal, we have
 !  so dlna/dt=dlna/dtph*dtph/dt=H*dtph/dt=H*a^nconformal.

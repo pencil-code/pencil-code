@@ -407,7 +407,7 @@ module Cdata
   logical :: lread_scl_factor_file=.false., lread_scl_factor_file_new=.false.
   real :: scl_factor_target, Hp_target, appa_target, wweos_target
   !$omp threadprivate(scl_factor_target,Hp_target,appa_target)
-  real :: Hubble=0., ascale=1., sqrt_ascale=1., nconformal=1.5
+  real :: Hubble=0., ascale=1., sqrt_ascale=1., nconformal=1.5, tphys=0.
   character(LEN=fnlen) :: ascale_type='default'
   integer :: enum_ascale_type = 0
 !

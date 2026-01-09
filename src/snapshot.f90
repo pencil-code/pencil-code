@@ -762,6 +762,8 @@ module Snapshot
         select case (trigger_spec)
           case ('ascale')
             t_trigger=ascale
+          case ('tphys')
+            t_trigger=tphys
           case ('code_time')
             t_trigger=t
           case default
