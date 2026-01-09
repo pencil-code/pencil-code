@@ -109,7 +109,8 @@ module Special
 !
   namelist /special_run_pars/ &
       luij_schur, lbij_schur, ldiagnos_always, &
-      luschur_unprojected, lbschur_unprojected, lQ_schur_QT
+      luschur_unprojected, lbschur_unprojected, lQ_schur_QT, &
+      luschur_as_aux, lbschur_as_aux
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -246,7 +247,7 @@ end function selct
             p%uRRm(l)=2.*sum(matV_SH*matV_RR)
             p%uELm(l)=2.*sum(matV_SH*matV_EL)
           else
-            print*,'AXEL: warning for u, l=',l
+            if (ip<10) print*,'AXEL: warning for u, l=',l
             !p%uSH2(l)=0.
             !p%uRR2(l)=0.
             !p%uEL2(l)=0.
