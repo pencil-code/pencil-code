@@ -231,7 +231,7 @@ class Power(object):
 
             for line_idx, line in enumerate(f):
                 if line_idx % block_size == 0:
-                    time.append(float(line.strip()[-1]))
+                    time.append(self._parse_time_line(line))
 
                     power_array.resize([len(time), nzpos*nk])
                     ik = 0
@@ -384,7 +384,7 @@ class Power(object):
         with open(os.path.join(datadir, file_name), "r") as f:
             for line_idx, line in enumerate(f):
                 if line_idx % block_size == 0:
-                    time.append(float(line.strip()[-1]))
+                    time.append(self._parse_time_line(line))
                 elif line.find(",") == -1:
                     # if the line does not contain ',', assume it represents a series of real numbers.
                     for value_string in line.strip().split():
@@ -436,7 +436,7 @@ class Power(object):
         with open(os.path.join(datadir, file_name), "r") as f:
             for line_idx, line in enumerate(f):
                 if line_idx % block_size == 0:
-                    time.append(float(line.strip()[-1]))
+                    time.append(self._parse_time_line(line))
                 else:
                     for value_string in line.strip().split():
                         power_array.append(ffloat(value_string))
@@ -525,6 +525,18 @@ class Power(object):
                 file_list.append(file_name)
 
         return power_list, file_list
+
+    def _parse_time_line(self, line):
+        """
+        Since commit c9911621738739ac6847274ff59f3cd8bf9ac254, the 'time' line in
+        the power spectrum files contains two quantities: the first one is the
+        triggering quantity (which may be, e.g., the scale factor), and the second
+        is the time.
+
+        It is important to be able to read both the old format and the new format.
+        """
+        entries = [float(t) for t in line.strip().split()]
+        return entries[-1]
 
 class _m_LazyPowerArray:
     """
