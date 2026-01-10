@@ -5,16 +5,8 @@ import pytest
 
 from test_utils import require_sample, standalone_test
 
-datadir_novar = os.path.realpath(
-    os.path.join(
-        __file__, os.path.pardir, os.path.pardir, os.path.pardir, "tests", "input", "hdf5-novar"
-        )
-    ) #a directory without var.h5
-datadir_nogrid = os.path.realpath(
-    os.path.join(
-        __file__, os.path.pardir, os.path.pardir, os.path.pardir, "tests", "input", "hdf5-nogrid"
-        )
-    ) #a directory without grid.h5
+datadir_novar = pytest.static_data_location/"hdf5-novar" #a directory without var.h5
+datadir_nogrid = pytest.static_data_location/"hdf5-nogrid" #a directory without grid.h5
 
 def test_read_dim_novar():
     """

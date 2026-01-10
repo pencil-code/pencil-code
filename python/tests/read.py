@@ -26,24 +26,11 @@ from pencil.read.params import param
 from pencil.read.powers import power
 
 
-DATA_DIR = os.path.realpath(
-    os.path.join(
-        __file__, *[os.path.pardir] * 3, "tests", "input", "serial-1"
-    )  # ../../tests/input/serial-1
-)
-
-
-def data_file(file_name: str) -> str:
-    path = os.path.join(DATA_DIR, file_name)
-    if os.path.exists(path):
-        return path
-    else:
-        raise Exception("File {} not found.".format(path))
-
+DATA_DIR = pytest.static_data_location/"serial-1"
 
 def test_read_time_series() -> None:
     """Read time series."""
-    time_series = ts(data_file("time-series-1.dat"), quiet=True)
+    time_series = ts(datadir=DATA_DIR, quiet=True)
     expected = {
         "it": np.array([0, 50, 100, 150]),
         "t": np.array([0.000, 0.441, 0.939, 1.480]),

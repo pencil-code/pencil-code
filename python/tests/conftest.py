@@ -24,6 +24,9 @@ def pytest_addoption(parser):
         default=False,
         )
 
+def pytest_configure():
+    pytest.static_data_location = pathlib.Path(__file__).parent/"static_data"
+
 #To populate data directories that are needed for integration tests.
 
 @pytest.fixture(scope='session')
