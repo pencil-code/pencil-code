@@ -9129,6 +9129,9 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
 !  Calculate scale factor of the universe. Read file upon first entry.
 !  Incorporated most of the stuff from special/gravitational_waves_hTXk.f90
 !  but omitted everything that had to do with "Om*"
+!  The results of this are used in are used in src/special/disp_current.f90.
+!  This routine is independent of the routine src/special/Lambda_CDM.f90,
+!  which integrates ascale, Hubble, and tphys that are used in other routines.
 !
       use Cdata, only: lread_scl_factor_file_new, ip, lroot, t, tmax, &
         scl_factor_target, Hp_target, appa_target, wweos_target

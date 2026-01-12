@@ -378,7 +378,10 @@ endsubroutine helper_loop
       if (lreloading) call reload(f, lreload_file, lreload_always_file)
     endif
 !
-!  calculate scale factor of the universe
+!  Calculate scale factor of the universe.
+!  The results of this are used in are used in src/special/disp_current.f90.
+!  This routine is independent of the routine src/special/Lambda_CDM.f90,
+!  which integrates ascale, Hubble, and tphys that are used in other routines.
 !
     if (lread_scl_factor_file_new) call calc_scl_factor
 !

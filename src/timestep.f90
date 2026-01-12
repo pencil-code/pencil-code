@@ -61,11 +61,17 @@ module Timestep
       else
         call not_implemented('initialize_timestep','itorder= '//trim(itoa(itorder)))
       endif
-
+!
+!  Invoke automatic timestep calulation when dt=0 (initially).
+!
       ldt = (dt==0.)
-
+!
+!  If timestep is given, we reset dtmin to dt (which could be shorter than the default)
+!
+      if (dt/=0.) dtmin=dt
+!
       num_substeps = itorder
-
+!
     endsubroutine initialize_timestep
 !***********************************************************************
     subroutine time_step(f,df,p)

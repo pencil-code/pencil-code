@@ -1,6 +1,6 @@
 ! $Id$
 !
-!  Electric field, dE/dt = curlB, originally only for the special case
+!  Electric field, dE/dt = curlB-mu0*J, originally only for the special case
 !  of no fluid induction, but now fluid motions are also included.
 !
 !  25-feb-07/axel: adapted from nospecial.f90
@@ -96,6 +96,7 @@ module Special
   ! run parameters
   real :: beta_inflation=0., rescale_ee=1.
   logical :: reinitialize_ee=.false.
+  character (len=labellen) :: aderiv_scaling='table'
   namelist /special_run_pars/ &
     alpf, llongitudinalE, llorenz_gauge_disp, lphi_hom, lphi_linear_regime, &
     leedot_as_aux, ldivE_as_aux, lsigE_as_aux, lsigB_as_aux, &
@@ -105,7 +106,7 @@ module Special
     lcollinear_EB, lcollinear_EB_aver, sigE_prefactor, sigB_prefactor, &
     reinitialize_ee, initee, rescale_ee, lmass_suppression, mass_chi, &
     lallow_bprime_zero, lapply_Gamma_corr, coupl_gy, lpsi_hom, alpfpsi, &
-    loverride_c_light
+    loverride_c_light, aderiv_scaling
 !
 ! Declare any index variables necessary for main or
 !
@@ -289,6 +290,7 @@ module Special
             if (llongitudinalE) f(:,:,:,iGamma)=rescale_ee*f(:,:,:,iGamma)
           case ('gaussian-noise'); call gaunoise(amplee(j),f,iex,iez)
           case default
+            call fatal_error('initialize_special','no such init_ee: "'//trim(initee(j))//'"')
           endselect
         enddo
       endif
@@ -911,18 +913,41 @@ module Special
 !
         if (lsolve_chargedensity) df(l1:l2,m,n,irhoe)=df(l1:l2,m,n,irhoe)-p%divJ
 !
-!  Magneto-genesis from reheating. In the papers by Subramanian (2010) and Sharma+17,
-!  as well as BS21, the calliographic variable curly-A=f*A was introduced to get
-!  rid of the first derivative of A. But the disadvantage is that the generation
-!  term, (f"/f)*<A.E> is then gauge-dependent. Because of this and other reasons,
-!  it is better to work with the original 2(f'/f)*A' = -2(f'/f)*E term, which is
-!  gauge-independent.
+!  Magneto-genesis from reheating, following Subramanian (2010) and Sharma+17.
 !
         if (beta_inflation/=0.) then
+!
+!  We need Hp_target (=H=a'/a) and appa_target (=a''/a). We get it from
+!  subroutine calc_scl_factor, which is called from src/run.f90 when
+!  lread_scl_factor_file_new=T. It is independent of the routine src/special/Lambda_CDM.f90,
+!  which integrates ascale, Hubble, and tphys that are used in other routines.
+!
+          select case (aderiv_scaling)
+          case ('table')
+            if (.not.lread_scl_factor_file_new) &
+              call fatal_error('dspecial_dt','lread_scl_factor_file_new must be .true.')
+          case ('matter-dominated')
+            if (t==0.) call fatal_error('dspecial_dt','t cannot be zero initially')
+            Hp_target=2./t
+            appa_target=2./t**2
+          case default
+            call fatal_error('dspecial_dt','no such aderiv_scaling: "'//trim(aderiv_scaling)//'"')
+          endselect
+!
+!  Compute f'/f and f''/f=fppf
+!
           if (ip<14.and.lroot) print*,'scl_factor_target, Hp_target, appa_target, wweos_target=', &
                                        scl_factor_target, Hp_target, appa_target, wweos_target
           mfpf=beta_inflation*Hp_target
           fppf=beta_inflation*((beta_inflation+1.)*Hp_target**2-appa_target)
+!
+!  In the papers by Subramanian (2010) and Sharma+17, as well as BS21,
+!  the calliographic variable curly-A=f*A was introduced to get rid of the
+!  first derivative of A. But the disadvantage is that the generation
+!  term, (f"/f)*<A.E> is then gauge-dependent. Because of this and other
+!  reasons, it is better to work with the original 2(f'/f)*A' = -2(f'/f)*E
+!  term, which is gauge-independent.
+!
           if (lcurlyA) then
             inflation_factor=fppf
             df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-c_light2*inflation_factor*p%aa
@@ -930,7 +955,7 @@ module Special
             inflation_factor=-2.*mfpf
             df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-c_light2*inflation_factor*p%el
           endif
-          if (ip<15.and.lroot.and.lfirst) print*,'t, inflation_factor=',t, inflation_factor
+          if (ip<14.and.lroot.and.lfirst) print*,'t, inflation_factor=',t, inflation_factor
         endif
 !
 !  if particles, would add J=sum(qi*Vi*ni)

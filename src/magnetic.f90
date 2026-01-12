@@ -262,7 +262,7 @@ module Magnetic
   logical :: lskip_projection_aa=.false.
   logical :: lscale_tobox=.true., lsquash_aa=.false.
   logical :: lbraginsky=.false., l2d_aa=.false.
-  logical :: lcoulomb=.false., lcoulomb_apply=.false., learly_set_el_pencil=.false.
+  logical :: lcoulomb=.false., lcoulomb_apply=.false., learly_set_el_pencil=.true.
   logical :: lfactors_aa=.false., lvacuum=.false., ldensity_add_je_heating=.false.
   logical :: loverride_ee=.false., loverride_ee2=.false., loverride_ee_decide=.false.
   logical :: lignore_1rho_in_Lorentz=.false., lnorm_aa_kk=.false., lohm_evolve=.false.
@@ -4474,11 +4474,21 @@ module Magnetic
 !  learly_set_el_pencil=T is needed in all cases with displacement current.
 !
             if (lresi_eta_tdep .or. lresi_eta_xtdep .or. eta/=0.) then
-!print*,'AXEL: should not be here (eta) ... '
               if (lohm_evolve) then
                 p%jj_ohm=f(l1:l2,m,n,ijx:ijz)
               else
-                if (learly_set_el_pencil) p%el=f(l1:l2,m,n,iex:iez)
+!
+!  The default for learly_set_el_pencil is now changed to .true., but
+!  it will here immediately be changed to .false. if there is no
+!  displacement current.
+!
+                if (learly_set_el_pencil) then
+                  if (iex==0) then
+                    learly_set_el_pencil=.false.
+                  else
+                    p%el=f(l1:l2,m,n,iex:iez)
+                  endif
+                endif
                 do j=1,3
                   p%jj_ohm(:,j)=(p%el(:,j)+scl_uxb_in_ohm*p%uxb(:,j))*mu01/eta_total
                 enddo
