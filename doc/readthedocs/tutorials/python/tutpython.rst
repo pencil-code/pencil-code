@@ -41,6 +41,111 @@ add to your .bashrc:
    export PYTHONPATH=$PENCIL_HOME/python
 
 
+Setting Up a Local Python Environment (Recommended)
+----------------------------------------------------
+
+For development and to avoid conflicts with system packages, it is strongly
+recommended to use a virtual environment. This allows you to install packages
+locally without requiring root privileges and keeps your Pencil Code environment
+isolated from other Python projects.
+
+Using venv (Python 3.3+)
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Python 3 includes the ``venv`` module by default. To create and activate a
+virtual environment:
+
+.. code:: sh
+
+   # Create a virtual environment in a directory called 'venv'
+   python3 -m venv ~/pencil-venv
+
+   # Activate the virtual environment
+   source ~/pencil-venv/bin/activate
+
+   # Your prompt should now show (pencil-venv) indicating the environment is active
+
+Once activated, you can install required packages using pip:
+
+.. code:: sh
+
+   pip install numpy matplotlib h5py ipython
+
+To deactivate the virtual environment when you're done:
+
+.. code:: sh
+
+   deactivate
+
+To use this environment in the future, simply activate it again with:
+
+.. code:: sh
+
+   source ~/pencil-venv/bin/activate
+
+Using conda (Anaconda/Miniconda)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you're using Anaconda or Miniconda, you can create a conda environment:
+
+.. code:: sh
+
+   # Create a new conda environment named 'pencil'
+   conda create -n pencil python=3.10 numpy matplotlib h5py ipython
+
+   # Activate the environment
+   conda activate pencil
+
+   # Deactivate when done
+   conda deactivate
+
+Installing Additional Libraries
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Once your virtual environment is activated, you can install additional Python
+packages as needed:
+
+.. code:: sh
+
+   # Install individual packages
+   pip install scipy pandas
+
+   # Install from a requirements file (if provided)
+   pip install -r requirements.txt
+
+   # Upgrade a package
+   pip install --upgrade numpy
+
+For clusters without internet access, you can download packages on a machine
+with internet and transfer them:
+
+.. code:: sh
+
+   # On a machine with internet, download packages
+   pip download numpy matplotlib h5py -d ~/packages/
+
+   # Transfer the ~/packages/ directory to the cluster, then install
+   pip install --no-index --find-links ~/packages/ numpy matplotlib h5py
+
+Making the Virtual Environment Persistent
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To automatically activate your virtual environment when you start a new terminal
+session, you can add the activation command to your ``.bashrc`` or ``.bash_profile``:
+
+.. code:: sh
+
+   # Add to ~/.bashrc
+   source ~/pencil-venv/bin/activate
+   export PYTHONPATH=$PENCIL_HOME/python
+
+.. note::
+
+   If using a virtual environment, make sure to activate it **before** setting
+   the ``PYTHONPATH`` variable. This ensures that the Pencil Code Python modules
+   are found alongside your installed packages.
+
+
 `ipythonrc`
 -----------
 
