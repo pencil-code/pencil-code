@@ -395,6 +395,167 @@ Putting it all together our python routine would look something like this:
         pc.io.write_snapshot(var.aa, file_name='var.dat', nprocx=1, nprocy=1, nprocz=1)
 
 
+Working with Simulation Objects
+================================
+
+The Pencil Code Python interface provides a convenient way to work with simulations
+as Python objects. The ``pc.sim.simulation()`` function creates a simulation object
+that encapsulates all the information about a simulation directory, including its
+parameters, grid, dimensions, and data. This is particularly useful for managing
+multiple simulation runs, parameter scans, and automated analysis.
+
+Basic Simulation Object Usage
+------------------------------
+
+To create a simulation object for a simulation directory:
+
+.. code:: python
+
+        import pencil as pc
+
+        # Create a simulation object for the current directory
+        sim = pc.sim.simulation('.')
+
+        # Or specify a path to a simulation directory
+        sim = pc.sim.simulation('/path/to/simulation')
+
+The simulation object provides convenient access to simulation properties:
+
+.. code:: python
+
+        # Access simulation metadata
+        print(sim.name)      # Name of the simulation
+        print(sim.path)      # Path to simulation directory
+        print(sim.datadir)   # Path to data directory
+
+        # Access simulation data objects
+        param = sim.param    # Parameter object
+        grid = sim.grid      # Grid object
+        dim = sim.dim        # Dimension object
+        index = sim.index    # Index object
+
+        # Read time series data
+        ts = pc.read.ts(sim=sim)
+
+Example: Parameter Scan for Dynamo Growth Rates
+------------------------------------------------
+
+A common task in dynamo simulations is to determine how the growth rate depends
+on the magnetic diffusivity. Here we demonstrate how to use simulation objects
+to analyze the kinematic dynamo in ``samples/kin-dynamo`` and extract the
+exponential growth rate as a function of magnetic diffusivity.
+
+The Roberts flow dynamo has a critical magnetic Reynolds number above which the
+dynamo is active. We can measure the growth rate by fitting an exponential to the
+time evolution of the magnetic energy.
+
+.. code:: python
+
+        import pencil as pc
+        import numpy as np
+        import matplotlib.pyplot as plt
+
+        # Create simulation object
+        sim = pc.sim.simulation('samples/kin-dynamo')
+
+        # Read time series
+        ts = pc.read.ts(sim=sim)
+
+        # Read magnetic diffusivity from parameters
+        param = sim.param
+        eta = param.eta
+
+        # Calculate the magnetic Reynolds number
+        # For Roberts flow, the characteristic velocity is 1
+        Rm = 1.0 / eta
+
+        # Fit exponential growth to magnetic energy: E_mag = E_0 * exp(2*lambda*t)
+        # We use the logarithm: log(E_mag) = log(E_0) + 2*lambda*t
+        # Fit over the linear growth phase (before saturation)
+
+        # Select time range for fitting (adjust based on your simulation)
+        fit_start = 10
+        fit_end = 100
+        mask = (ts.t >= fit_start) & (ts.t <= fit_end)
+
+        # Perform linear fit to log(E_mag)
+        t_fit = ts.t[mask]
+        log_emag = np.log(ts.emag[mask])
+
+        # Fit: log_emag = a + b*t, where b = 2*lambda
+        coeffs = np.polyfit(t_fit, log_emag, 1)
+        growth_rate = coeffs[0] / 2.0  # lambda = b/2
+
+        print(f"Magnetic diffusivity eta = {eta}")
+        print(f"Magnetic Reynolds number Rm = {Rm:.2f}")
+        print(f"Dynamo growth rate lambda = {growth_rate:.6f}")
+
+        # Visualize the fit
+        plt.semilogy(ts.t, ts.emag, 'b-', label='Simulation')
+        plt.semilogy(t_fit, np.exp(np.polyval(coeffs, t_fit)), 'r--',
+                     label=f'Fit: λ = {growth_rate:.4f}')
+        plt.xlabel('Time')
+        plt.ylabel('Magnetic Energy')
+        plt.legend()
+        plt.title(f'Dynamo Growth (η = {eta}, Rm = {Rm:.1f})')
+        plt.grid(True)
+        plt.show()
+
+For a parameter scan, you would run multiple simulations with different values of
+``eta`` and collect the growth rates:
+
+.. code:: python
+
+        import pencil as pc
+        import numpy as np
+
+        # List of simulation directories (each with different eta)
+        sim_dirs = ['kin-dynamo-eta0.08', 'kin-dynamo-eta0.10',
+                    'kin-dynamo-eta0.12', 'kin-dynamo-eta0.15']
+
+        eta_values = []
+        growth_rates = []
+
+        for sim_dir in sim_dirs:
+            # Create simulation object
+            sim = pc.sim.simulation(sim_dir)
+
+            # Read parameters and time series
+            eta = sim.param.eta
+            ts = pc.read.ts(sim=sim)
+
+            # Fit growth rate (same procedure as above)
+            fit_start = 10
+            fit_end = 100
+            mask = (ts.t >= fit_start) & (ts.t <= fit_end)
+            t_fit = ts.t[mask]
+            log_emag = np.log(ts.emag[mask])
+            coeffs = np.polyfit(t_fit, log_emag, 1)
+            lambda_growth = coeffs[0] / 2.0
+
+            eta_values.append(eta)
+            growth_rates.append(lambda_growth)
+
+            print(f"eta = {eta:.3f}, lambda = {lambda_growth:.6f}")
+
+        # Plot growth rate vs magnetic Reynolds number
+        Rm_values = 1.0 / np.array(eta_values)
+        plt.plot(Rm_values, growth_rates, 'o-')
+        plt.axhline(y=0, color='k', linestyle='--', alpha=0.3)
+        plt.xlabel('Magnetic Reynolds number Rm')
+        plt.ylabel('Growth rate λ')
+        plt.title('Dynamo Growth Rate vs Rm')
+        plt.grid(True)
+        plt.show()
+
+.. note::
+
+        The critical magnetic Reynolds number for the Roberts flow dynamo is
+        approximately Rm_crit ≈ 5.52 (corresponding to η_crit ≈ 0.181 for 32³
+        resolution with 6th order derivatives). Below this value, the growth
+        rate becomes negative and the dynamo is suppressed.
+
+
 Examples
 ========
 
