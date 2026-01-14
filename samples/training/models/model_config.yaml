@@ -1,0 +1,16 @@
+afno:
+  inp_shape: [70, 70, 70]
+  in_channels: 3
+  out_channels: 6
+  patch_size: [1, 1, 1]
+  embed_dim: 64
+  depth: 4
+  num_blocks: 16
+
+fno:
+  modes1: 19
+  modes2: 19
+  modes3: 19
+  width: 64
+  in_channels: 3
+  out_channels: 6
