@@ -3725,6 +3725,25 @@ module Magnetic
 !  check for pencil_interdep_magn_mf
 !
       if (lmagn_mf) call pencil_interdep_magn_mf(lpencil_in)
+
+      if (lpencil_in(i_jj) .or. lpencil_in(i_jj_ohm)) then
+        if (ldisp_current) then
+          if (.not. lvacuum) then
+            if (lresi_eta_tdep .or. lresi_eta_xtdep .or. eta/=0.) then
+              if (.not. lohm_evolve) then
+!
+!  The default for learly_set_el_pencil is now changed to .true., but
+!  it will here immediately be changed to .false. if there is no
+!  displacement current.
+!
+                if (learly_set_el_pencil .and. iex==0) then
+                    learly_set_el_pencil=.false.
+                endif
+              endif
+            endif
+          endif
+        endif
+      endif
 !
     endsubroutine pencil_interdep_magnetic
 !***********************************************************************
@@ -4477,15 +4496,8 @@ module Magnetic
               if (lohm_evolve) then
                 p%jj_ohm=f(l1:l2,m,n,ijx:ijz)
               else
-!
-!  The default for learly_set_el_pencil is now changed to .true., but
-!  it will here immediately be changed to .false. if there is no
-!  displacement current.
-!
                 if (learly_set_el_pencil) then
-                  if (iex==0) then
-                    learly_set_el_pencil=.false.
-                  else
+                  if (iex /=0 ) then
                     p%el=f(l1:l2,m,n,iex:iez)
                   endif
                 endif
