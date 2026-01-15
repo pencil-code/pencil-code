@@ -15,10 +15,12 @@ def build_model(model_save_dir):
 
     do_all=False
     try:
-        with open("model_config.yaml", "r") as f:
+        with open(f"{os.environ['PENCIL_HOME']}/samples/training/models/model_config.yaml", "r") as f:
             config = yaml.safe_load(f)
     except Exception as e:
         print(f"Failed to load model configuration file : {e}")
+        sys.exit(1)
+        
     
     
     if len(sys.argv) > 2:
@@ -88,6 +90,7 @@ def build_loss(loss_save_dir):
         print(f"Loss module moved to {device}")
     except Exception as e:
         print(f"Error moving to device: {e}")
+        sys.exit(1)
 
     try:
         loss_jit = torch.jit.script(loss)
@@ -96,11 +99,12 @@ def build_loss(loss_save_dir):
         print(f"Successfully saved loss TorchScript to {save_path}")
     except Exception as e:
         print(f"Failed to script loss to dir {save_path}: {e}")
+        sys.exit(1)
 
 
 def build_torchfort_config(save_dir, model_name=None):
     if model_name is None:
-        print("Multiple models created. A specific model name must be provided to generate a torchfort config.")
+        print("Multiple models created. A specific model name must be provided to the generated a torchfort config file.")
         
     model_name="<model_name>"
     config_data = {
