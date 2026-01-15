@@ -2573,7 +2573,7 @@ module Initcond
 !  set x-dependent cos wave
 !
       if (present(kx)) then
-        k=kx; if (k==0) print*,'coswave: k must not be zero!'
+        k=kx; if (k==0) print*,'coswave: k must not be zero!'; fac=ampl
         if (ampl==0) then
           if (lroot) print*,'coswave: ampl=0; kx=',k
         else
