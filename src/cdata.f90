@@ -575,6 +575,8 @@ module Cdata
   integer :: iuu_fluc=0, iuu_flucx=0, iuu_flucy=0, iuu_flucz=0
   integer :: iuu_sph=0, iuu_sphr=0, iuu_spht=0, iuu_sphp=0
   integer :: ics=0, icool_prof=0
+  integer :: iglobal_hcond=0, iglobal_glhc=0
+  integer :: iglobal_glhcx=0, iglobal_glhcy=0, iglobal_glhcz=0
 !
 !  Variables to count the occurance of derivative calls per timestep
 !  for optimisation purposes.  To use uncomment the array and

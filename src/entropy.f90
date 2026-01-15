@@ -106,8 +106,6 @@ module Energy
   real :: wpatch=0.0, amp_patch=1.0, patch_fac=1.0, coolfac=0.0
   real :: pp_cool=0.0
   integer, parameter :: nheatc_max=4
-  integer :: iglobal_hcond=0
-  integer :: iglobal_glhc=0
   integer :: ippaux=0
   integer, target :: isothtop=0 !PAR_DOC: flag for isothermal top layer for
     !PAR_DOC: \code{initss=piecew-poly}.

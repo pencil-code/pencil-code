@@ -68,8 +68,8 @@ module Energy
   real, target :: hcond0_kramers=0.0, nkramers=0.0
   logical :: lviscosity_heat=.true.
   logical :: lcalc_TTmean=.false.
-  integer :: iglobal_hcond=0
-  integer :: iglobal_glhc=0
+!  integer :: iglobal_hcond=0
+!  integer :: iglobal_glhc=0
   logical :: lenergy_slope_limited=.false.
   logical :: linitial_log=.false.
   logical, pointer :: lreduced_sound_speed   !=>.false.
