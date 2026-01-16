@@ -8654,7 +8654,6 @@ module Energy
     call copy_addr(pr_smag1,p_par(110))
     call copy_addr(nheat_rho,p_par(111))
     call copy_addr(nheat_tt,p_par(112))
-    call copy_addr(iglobal_hcond,p_par(113)) ! int
     call copy_addr(ippaux,p_par(114)) ! int
     call copy_addr(cool_type,p_par(115)) ! int
     call copy_addr(lheatc_kprof,p_par(116)) ! bool

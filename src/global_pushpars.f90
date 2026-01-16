@@ -455,6 +455,8 @@ contains
     call copy_addr(luses_aa_pot2_bot,p_par(1399)) ! bool
     call copy_addr(luses_aa_pwd_top,p_par(1400)) ! bool
     call copy_addr(luses_aa_pwd_bot,p_par(1401)) ! bool
+    call copy_addr(iglobal_glhc,p_par(1402)) ! int
+    call copy_addr(iglobal_hcond,p_par(1403)) ! int
 
   endsubroutine pushpars2c
 !***********************************************************************

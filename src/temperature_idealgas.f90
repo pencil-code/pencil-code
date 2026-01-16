@@ -3183,8 +3183,6 @@ module Energy
     call copy_addr(hcond0_kramers,p_par(47))
     call copy_addr(nkramers,p_par(48))
     call copy_addr(lviscosity_heat,p_par(49)) ! bool
-    call copy_addr(iglobal_hcond,p_par(50)) ! int
-    call copy_addr(iglobal_glhc,p_par(51)) ! int
     call copy_addr(lenergy_slope_limited,p_par(52)) ! bool
     call copy_addr(ladi_mixed,p_par(53)) ! bool
     call copy_addr(gamma,p_par(54))
