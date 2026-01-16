@@ -335,9 +335,10 @@ class SliceSeries(object):
             try:
                 slicepos = open(slicepos_fn, 'r')
             except FileNotFoundError:
-                print("slice position file"+"'slicepos_fn'"+"not found")
-                if param.io_strategy == "collect":
-                    print("most likely because pc_read*videofiles was not run")
+                print("slice position file '"+slicepos_fn+"' not found")
+                if param.io_strategy == "dist":
+                    print("    most likely because pc_read_*videofiles was not run")
+                return
 
             if not "r" in extension_list:
                 for line in slicepos:
