@@ -565,7 +565,7 @@ For a parameter scan, you would run multiple simulations with different values o
 Examples
 ========
 
-Standard plots with any plotting library are not the prettiest ones. The same is true for matplotlib. Here are a few pretty examples of plots where the default style is changed. You can add your commands into a script e.g. ``plot_results.py`` and execute it from your terminal with ``python plot_results.py`` or in IPython with ``exec(open('plot_results.py').read())``.
+Standard plots with any plotting library are not the prettiest ones. The same is true for matplotlib. Here are a few pretty examples of plots where the default style is changed. You can add your commands into a script e.g. ``plot_results.py`` and execute it from your terminal with ``python plot_results.py`` or in IPython with ``%run plot_results.py``.
 
 The sample we use here is ``samples/interlocked-fluxrings``.
 
