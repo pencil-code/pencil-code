@@ -83,6 +83,12 @@ To use this environment in the future, simply activate it again with:
 
    source ~/pencil-venv/bin/activate
 
+..
+   comment/Kishore/2025-01-17: it may make sense to mention what to do in case
+   the system Python version has changed: <https://stackoverflow.com/a/42405607>.
+   I am not sure if this handles upgrades of other stuff like openmpi or hdf5,
+   though.
+
 Using conda (Anaconda/Miniconda)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
