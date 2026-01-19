@@ -25,17 +25,22 @@ module Particles_stalker
 !
   include 'particles_stalker.h'
 !
-  real :: dstalk=0.1, tstalk=0.0
+  real :: dstalk=0.1 !PAR_DOC: times between printout of stalker data
+  real :: tstalk=0.0
   integer :: iscratch=0, nout=0, nvar_stalk=0
   logical :: linterpolate_cic=.false., linterpolate_tsc=.true.
-  logical :: lstalk_xx=.true., lstalk_vv=.true.
-  logical :: lstalk_uu=.true., lstalk_guu=.false.
-  logical :: lstalk_rho=.true., lstalk_grho=.false.
-  logical :: lstalk_bb=.true., lstalk_ap=.true.
+  logical :: lstalk_xx=.true. !PAR_DOC: particles position
+  logical :: lstalk_vv=.true. !PAR_DOC: particles velocity
+  logical :: lstalk_uu=.true. !PAR_DOC: gas velocity at particles position
+  logical :: lstalk_guu=.false. !PAR_DOC: gas velocity gradient at particles position
+  logical :: lstalk_rho=.true. !PAR_DOC: gas density at particles position
+  logical :: lstalk_grho=.false. !PAR_DOC: gas density gradient at particles position
+  logical :: lstalk_bb=.true. !PAR_DOC: magnetic field at particles position
+  logical :: lstalk_ap=.true. !PAR_DOC: particles diameter
   logical :: lstalk_npswarm=.false., lstalk_rhopswarm=.true., lstalk_potself=.true.
   logical :: lstalk_aps=.true.
   logical :: lstalk_sink_particles=.false.
-  logical :: lstalk_relvel=.false.
+  logical :: lstalk_relvel=.false. !PAR_DOC: particles relative velocity to gas
   logical :: lstalk_gTT=.false.
 !
   real, dimension (:), allocatable :: xp, yp, zp, vpx, vpy, vpz, ux, uy, uz
