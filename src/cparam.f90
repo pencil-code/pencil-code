@@ -89,6 +89,10 @@ module Cparam
 !
   integer, parameter :: ninit=5
 !
+!  Maximum number of diagnostics in print.in
+!
+  integer, parameter :: max_diagnostics=100
+!
 !  Name:          Maximum string length of a:
 !  --------------------------------------------
 !  fnlen          file name

@@ -326,7 +326,7 @@ module Diagnostics
       use Sub, only: insert
       use Syscalls, only: system_cmd
 !
-      character (len=1000) :: fform,legend,line
+      character (len=max_diagnostics*max_col_width) :: fform,legend,line
       integer :: iname, nnamel
       real, dimension(2*nname) :: buffer
       integer, parameter :: lun=1
