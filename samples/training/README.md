@@ -28,9 +28,13 @@ This directory contains samples and scripts to compile/run and create deep learn
 
 ### Initial Setup
 Navigate to your chosen sample and create necessary symbolic links:
+
+**Prerequisites:** Both the `scripts directory` and the `container image` be symbolicly linked in the current working sample subdirectory.
+
 ```bash
 cd <sample name>/<training/inference>
 ln -s ../../scripts .
+ln -s <path to container> .
 ```
 
 
