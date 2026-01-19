@@ -102,7 +102,11 @@ module Magnetic
 !
   integer, parameter :: nresi_max=4
 !
-  real, dimension (ninit) :: amplaa=0.0, amplaa2=0.0, kx_aa=1.0, ky_aa=1.0, kz_aa=1.0
+  real, dimension (ninit) :: amplaa=0.0 !PAR_DOC: amplitude for some types of
+     !PAR_DOC: initial magnetic fields.
+  real, dimension (ninit) :: amplaa2=0.0 !PAR_DOC: amplitude for some types of
+     !PAR_DOC: magnetic field perturbation
+  real, dimension (ninit) :: kx_aa=1.0, ky_aa=1.0, kz_aa=1.0
   real, dimension (ninit) :: z0_gaussian=0.0, width_gaussian=0.0
   real, dimension (ninit) :: ampl_ax=0.0, ampl_ay=0.0, ampl_az=0.0
   real, dimension (ninit) :: kx_ax=0.0, kx_ay=0.0, kx_az=0.0
@@ -124,7 +128,8 @@ module Magnetic
 ! Input parameters
 !
   complex, dimension(3) :: coefaa=(/0.0,0.0,0.0/), coefbb=(/0.0,0.0,0.0/)
-  real, dimension(3) :: B_ext = 0.0, B0_ext = 0.0, ABCaa=1., widthaa=0.5
+  real, dimension(3) :: B_ext = 0.0, B0_ext = 0.0, ABCaa=1.
+  real, dimension(3) :: widthaa=0.5 !PAR_DOC: used by some initial fields
   real, dimension(3) :: B1_ext, B_ext_inv
   real, dimension(3) :: J_ext=(/0.0,0.0,0.0/)
   real, dimension(3) :: eta_aniso_hyper3=0.0
@@ -138,7 +143,10 @@ module Magnetic
   real :: B0_ext_z=0.0, B0_ext_z_H=0.0
   real :: sheet_position=1.,sheet_thickness=0.1,sheet_hyp=1.
   real :: t_bext = 0.0, t0_bext = 0.0
-  real :: radius=0.1, epsilonaa=0.01, x0aa=0.0, y0aa=0.0, z0aa=0.0
+  real :: radius=0.1 !PAR_DOC: used by some initial fields
+  real :: epsilonaa=0.01 !PAR_DOC: used by some initial fields
+  real :: x0aa=0.0, y0aa=0.0
+  real :: z0aa=0.0 !PAR_DOC: used by some initial fields
   real :: by_left=0.0, by_right=0.0, bz_left=0.0, bz_right=0.0
   real :: relhel_aa=1., nexp_aa=0.
   real :: bthresh=0.0, bthresh_per_brms=0.0, bthresh_scl=1.0
@@ -193,7 +201,9 @@ module Magnetic
   integer :: N_modes_aa=1, naareset
   integer :: ibij=0
   logical, pointer :: lrelativistic_eos, lconservative, lrho_chi
-  logical :: lpress_equil=.false., lpress_equil_via_ss=.false.
+  logical :: lpress_equil=.false. !PAR_DOC: flag for pressure equilibrium (can
+    !PAR_DOC: be used in connection with all initial fields)
+  logical :: lpress_equil_via_ss=.false.
   logical :: lpress_equil_alt=.false., lset_AxAy_zero=.false.
   logical :: llorentzforce=.true., llorentz_rhoref=.false., linduction=.true.
   logical :: ldiamagnetism=.false., lcovariant_magnetic=.false.
