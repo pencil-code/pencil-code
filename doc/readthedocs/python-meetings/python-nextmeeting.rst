@@ -4,8 +4,7 @@
 Next Meeting
 =============
 
-**Date:** TBA. January 2026. 
-Please fill out your prefered dates `here <https://www.when2meet.com/?33748149-PptLx>`_.
+**Date:**  January 29th 2026 at 3pm CET.
 
 
 **Proposed agenda:**
