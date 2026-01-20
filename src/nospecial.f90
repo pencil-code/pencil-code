@@ -260,7 +260,8 @@ module Special
 !
 !  calc_diagnostics_special must be explicitly called if necessary.
 !
-      call calc_diagnostics_special(f,p)
+!       2026-Jan-20/Kishore: it actually seems to be called in calc_all_module_diagnostics, despite what the docstring of that subroutine says. Unclear why I have to explicitly call it in my own special modules, though.
+!       call calc_diagnostics_special(f,p)
 !
     endsubroutine dspecial_dt
 !***********************************************************************
