@@ -256,8 +256,11 @@ module Special
 !!        endif
 !!      endif
 !
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
+      call keep_compiler_quiet(df)
+!
+!  calc_diagnostics_special must be explicitly called if necessary.
+!
+      call calc_diagnostics_special(f,p)
 !
     endsubroutine dspecial_dt
 !***********************************************************************
