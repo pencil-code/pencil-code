@@ -561,7 +561,8 @@ module Equ
 !***********************************************************************
     subroutine calc_all_module_diagnostics(f,p)
 !
-!  Calculates most module diagnostics (but not those in special modules).
+!  Calculates most module diagnostics.
+!  This subroutine is only used for GPU runs.
 !
 !  10-sep-2019/MR: coded
 !
