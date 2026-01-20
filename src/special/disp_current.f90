@@ -917,23 +917,6 @@ module Special
 !
         if (beta_inflation/=0.) then
 !
-!  We need Hp_target (=H=a'/a) and appa_target (=a''/a). We get it from
-!  subroutine calc_scl_factor, which is called from src/run.f90 when
-!  lread_scl_factor_file_new=T. It is independent of the routine src/special/Lambda_CDM.f90,
-!  which integrates ascale, Hubble, and tphys that are used in other routines.
-!
-          select case (aderiv_scaling)
-          case ('table')
-            if (.not.lread_scl_factor_file_new) &
-              call fatal_error('dspecial_dt','lread_scl_factor_file_new must be .true.')
-          case ('matter-dominated')
-            if (t==0.) call fatal_error('dspecial_dt','t cannot be zero initially')
-            Hp_target=2./t
-            appa_target=2./t**2
-          case default
-            call fatal_error('dspecial_dt','no such aderiv_scaling: "'//trim(aderiv_scaling)//'"')
-          endselect
-!
 !  Compute f'/f and f''/f=fppf
 !
           if (ip<14.and.lroot) print*,'scl_factor_target, Hp_target, appa_target, wweos_target=', &
@@ -1363,8 +1346,48 @@ module Special
 !
     endsubroutine get_slices_special
 !***********************************************************************
-    subroutine pushpars2c(p_par)
+    subroutine load_variables_to_gpu_special
+      use Gpu, only: update_on_gpu
 
+      real :: lgt1, lgt2, lgf1, lgf2, lgf, lgt_current
+      integer :: it_file
+      real, save :: Hp_old=0.,appa_old=0.
+      integer, save :: Hp_index_on_gpu=-1
+      integer, save :: appa_index_on_gpu=-1
+
+      if (beta_inflation/=0.) then
+!
+!  We need Hp_target (=H=a'/a) and appa_target (=a''/a). We get it from
+!  subroutine calc_scl_factor, which is called from src/run.f90 when
+!  lread_scl_factor_file_new=T. It is independent of the routine src/special/Lambda_CDM.f90,
+!  which integrates ascale, Hubble, and tphys that are used in other routines.
+!
+        select case (aderiv_scaling)
+          case ('table')
+            if (.not.lread_scl_factor_file_new) &
+              call fatal_error('load_variables_to_gpu','lread_scl_factor_file_new must be .true.')
+          case ('matter-dominated')
+            if (t==0.) call fatal_error('load_variables_to_gpu_special','t cannot be zero initially')
+            Hp_target=2./t
+            appa_target=2./t**2
+          case default
+            call fatal_error('load_variables_to_gpu','no such aderiv_scaling: "'//trim(aderiv_scaling)//'"')
+        endselect
+
+        if(lgpu .and. Hp_old /= Hp_target) then
+          call update_on_gpu(Hp_index_on_gpu,'AC_hp_target__mod__cdata',Hp_target)
+        endif
+
+        if(lgpu .and. appa_old /= appa_target) then
+          call update_on_gpu(appa_index_on_gpu,'AC_appa_target__mod__cdata',appa_target)
+        endif
+        Hp_old = Hp_target
+        appa_old = appa_target
+      endif
+
+    endsubroutine load_variables_to_gpu_special
+!***********************************************************************
+    subroutine pushpars2c(p_par)
       use Syscalls, only: copy_addr
 
       integer, parameter :: n_pars=100
