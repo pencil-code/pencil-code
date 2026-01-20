@@ -18,7 +18,6 @@
   lpencil_check=F      !(checks for redundany of pencils)
  !comment_char='%'     !(useful when using matlab for visualization)
   lequatorz=T          !(to indicate that north/south diagnostics in in z)
-  dt=4e-2
 /
 &eos_run_pars
 /
