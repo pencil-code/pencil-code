@@ -110,3 +110,39 @@ def test_write_h5_snapshot(datadir_helical_MHDTurb_HDF5, temp_datadir):
 
     dest_var = read.var(datadir=dest_datadir, trimall=True)
     assert np.all(src_var.f == dest_var.f)
+
+@require_sample("samples/cartesian-convection-kramers-chimax_HDF5")
+def test_write_h5_snapshot_nc(datadir_car_conv_kram_chimax_h5, temp_datadir):
+    """
+    Read snapshot from non-cubical grid (HDF5 case)
+    """
+    src_datadir = datadir_car_conv_kram_chimax_h5
+    dest_datadir = shutil.copytree(
+        src_datadir,
+        temp_datadir/"data",
+        symlinks=True,
+        )
+
+    dest_varfile = dest_datadir/"allprocs/var.h5"
+    dest_varfile.unlink()
+
+    src_var = read.var(datadir=src_datadir, trimall=True)
+    src_dim = read.dim(datadir=src_datadir)
+
+    if src_dim.precision == "D":
+        precision = "d"
+    else:
+        precision = "f"
+
+    write_h5_snapshot(
+        src_var.f,
+        file_name = "var.h5",
+        precision = precision,
+        nghost=3,
+        lghosts=False,
+        sim_datadir=dest_datadir,
+        datadir = dest_datadir/"allprocs",
+        )
+
+    dest_var = read.var(datadir=dest_datadir, trimall=True)
+    assert np.all(src_var.f == dest_var.f)
