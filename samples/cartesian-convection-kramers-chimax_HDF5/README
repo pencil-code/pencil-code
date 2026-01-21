@@ -1,0 +1,12 @@
+Directory:
+    ${PENCIL_HOME}/samples/cartesian-convection-kramers-chimax_HDF5
+SVN Id:
+    $Id$
+Maintainer:
+    Kishore G <kishore96/gmail[dot]com>
+Added:
+    21-Jan-2026
+Status
+    succeeds
+Comments
+    Identical to cartesian-convection-kramers-chimax, but uses HDF5. I've added this since I need a HDF5 test case with a non-cubical grid.
