@@ -435,10 +435,10 @@ def write_h5_snapshot(
 
     # check whether the snapshot matches the simulation shape
     if lghosts:
-        if snapshot.shape != (settings["mvar"], settings["mx"], settings["my"], settings["mz"]):
+        if snapshot.shape != (settings["mvar"], settings["mz"], settings["my"], settings["mx"]):
             raise ValueError(f"snapshot shape {snapshot.shape} does not match simulation dimensions with ghosts.")
     else:
-        if snapshot.shape != (settings["mvar"], settings["nx"], settings["ny"], settings["nz"]):
+        if snapshot.shape != (settings["mvar"], settings["nz"], settings["ny"], settings["nx"]):
             raise ValueError(f"snapshot shape {snapshot.shape} does not match simulation dimensions without ghosts.")
 
     # Determine the precision used and ensure snapshot has correct data_type.
