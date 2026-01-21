@@ -150,11 +150,14 @@ if write_t:
 else:
     t_new = None
 
+if lpersist:
+    persist_new.update(persist_old)
+    persist = persist_new
+else:
+    persist = None
+
 #Write out f_new into snapshots
 if io_strategy == 'dist':
-    if lpersist:
-        raise NotImplementedError("writing persistent variables into a snapshot is not implemented in pc.io.write_snapshot")
-    
     pc.io.write_snapshot(f_new,
         file_name=dest_var,
         datadir=dest_datadir,
@@ -171,14 +174,9 @@ if io_strategy == 'dist':
         dx=dx,
         dy=dy,
         dz=dz,
+        persist=persist,
         )
 elif io_strategy == 'HDF5':
-    if lpersist:
-        persist_new.update(persist_old)
-        persist = persist_new
-    else:
-        persist = None
-    
     pc.io.write_h5_snapshot(
         f_new,
         file_name=dest_var,
