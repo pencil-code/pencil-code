@@ -514,7 +514,7 @@ def write_h5_snapshot(
                     continue
                 #create ghost zones if required
                 if not lghosts:
-                    tmp_arr = np.zeros([settings["mx"], settings["my"], settings["mz"]])
+                    tmp_arr = np.zeros([settings["mz"], settings["my"], settings["mx"]])
                     tmp_arr[
                         dim.n1 : dim.n2 + 1, dim.m1 : dim.m2 + 1, dim.l1 : dim.l2 + 1
                     ] = snapshot[getattr(indx, key) - 1]
