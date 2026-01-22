@@ -50,6 +50,7 @@
     real, dimension (mx,my,mz,3) :: uumean
     real :: tauerror, input_min, input_max, output_min, output_max
     real, dimension(mx, my, mz, 6) :: tau_pred
+    real::  start_time, end_time
 
     contains
 !***************************************************************
@@ -225,6 +226,7 @@
     
       use Gpu, only: get_ptr_gpu_training, infer_gpu
       use Sub, only: smooth
+      use Mpicomm, only: mpiwtime
 
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (:,:,:,:), pointer :: ptr_uu, ptr_tau
@@ -244,7 +246,12 @@
       else
         !istat = torchfort_inference(model, get_ptr_gpu_training(iux,iuz), &
         !                                   get_ptr_gpu_training(itauxx,itauzz))
+
+        start_time = mpiwtime()
         call infer_gpu(itsub)
+        end_time = mpiwtime()
+        inference_time = inference_time + end_time-start_time
+
       endif
 
       if (istat /= TORCHFORT_RESULT_SUCCESS) &
@@ -282,6 +289,7 @@
     subroutine train(f)
    
       use Gpu, only: get_ptr_gpu_training, train_gpu, infer_gpu
+      use Mpicomm, only: mpiwtime
 
       real, dimension (mx,my,mz,mfarray) :: f
 
@@ -290,13 +298,12 @@
       if (mod(it,it_train)==0) then
 !
         if (.not. lfortran_launched) then
-          !TP: this is to calculate validation loss
-          !Turn this on / off for getting validation loss
-          !call infer_gpu(itsub)
-          !TODO: smoothing/scaling etc. for uu and tau
           !istat = torchfort_train(model, get_ptr_gpu_training(iux,iuz), &
           !                               get_ptr_gpu_training(itauxx,itauzz), train_loss)
+          start_time = mpiwtime()
           call train_gpu(train_loss, itsub)
+          end_time = mpiwtime()
+          training_time = training_time + end_time-start_time
         else
           call calc_tau(f)
 !
@@ -387,7 +394,7 @@
 
       real, dimension(nx,3) :: divrey
 
-      if (luse_trained_tau) then 
+      if (ltrained) then 
         call div(f,0,divrey(:,1),inds=(/itauxx,itauxy,itauxz/))
         call div(f,0,divrey(:,2),inds=(/itauxy,itauyy,itauyz/))
         call div(f,0,divrey(:,3),inds=(/itauxz,itauyz,itauzz/))
@@ -559,7 +566,6 @@
     call copy_addr(itauzz,p_par(6)) ! int
     call copy_addr(lscale,p_par(7)) ! bool
     call copy_addr(ltrained,p_par(8)) ! bool
-    call copy_addr(luse_trained_tau,p_par(9)) ! bool
 
 
     endsubroutine pushpars2c

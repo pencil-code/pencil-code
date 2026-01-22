@@ -12,5 +12,6 @@
     public :: div_reynolds_stress
     public :: get_slices_training
     public :: pushpars2c
-
+    real, public :: training_time = 0
+    real, public :: inference_time = 0
   private
