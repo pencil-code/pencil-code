@@ -1,4 +1,4 @@
-# pstalk2.pyA
+# pstalk2.py
 #
 # Read the stalker files.
 # Returns fs.ipar, fs.xp, etc. with dot-access.
