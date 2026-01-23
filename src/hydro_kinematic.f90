@@ -2621,10 +2621,13 @@ module Hydro
         if (lpenc_loc(i_uu)) p%uu=f(l1:l2,m,n,iux:iuz)*cos(omega_kinflow*t)
       case('sound3D')
         if (lpenc_loc(i_uu)) p%uu=f(l1:l2,m,n,iux:iuz)
+!
+!  For Lorentz-force, the uu array is set to jxb/rho earlier in hydro_before_boundary.
+!
       case('Lorentz-force')
         if (lpenc_loc(i_uu)) then
+          if (iux==0) call fatal_error('hydro_kinematic', 'must use luu_as_aux')
           if (lpenc_loc(i_uu)) p%uu=f(l1:l2,m,n,iux:iuz)
-          !if (alpha_damping/=0) p%uu=p%jxbr/alpha_damping
         endif
       case default
         call inevitably_fatal_error('hydro_kinematic', 'kinematic_flow not found')
@@ -2765,10 +2768,15 @@ module Hydro
         call sound3D(f)
 !
 !  Use the Lorentz force in the strong damping approximation.
+!  Ignore density when ldensity=F.
 !
       elseif (kinematic_flow=='Lorentz-force') then
         do j=1,3
-          f(:,:,:,iux-1+j)=f(:,:,:,ijxbx-1+j)*exp(-f(:,:,:,ilnrho))/alpha_damping
+          if (ldensity) then
+            f(:,:,:,iux-1+j)=f(:,:,:,ijxbx-1+j)*exp(-f(:,:,:,ilnrho))/alpha_damping
+          else
+            f(:,:,:,iux-1+j)=f(:,:,:,ijxbx-1+j)/alpha_damping
+          endif
         enddo
 !
       elseif (kinematic_flow=='Galloway-Proctor-RandomTemporalPhase'.or. &
