@@ -206,7 +206,7 @@ else
 endif
 	@touch .sentinel
 #
-DSL/local/mhdsolver.ac: sentinel
+DSL/local/mhdsolver.ac: .sentinel
 ifeq ($(TRANSPILATION),on)
         ifeq ($(GENERATE_DSL_CODE),on)
 	  rm -f PC_modulesources_old.h
