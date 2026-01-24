@@ -24,6 +24,7 @@ PARTICLES             =   particles_dust
 PARTICLES_SELFGRAVITY =   particles_selfgravity
 
 FOURIER      =   fourier_fftpack
+POWER        = power_spectrum
 
 # Use double precision
 REAL_PRECISION = double

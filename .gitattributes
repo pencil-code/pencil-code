@@ -2505,6 +2505,7 @@ samples/2d-tests/cylindrical_gdisk/src/cparam.local -text
 samples/2d-tests/cylindrical_gdisk/start.in -text
 samples/2d-tests/dark-matter/NEVERLOCK -text
 samples/2d-tests/dark-matter/README -text
+samples/2d-tests/dark-matter/idl/ppower_all.pro -text
 samples/2d-tests/dark-matter/idl/pvar.pro -text
 samples/2d-tests/dark-matter/print.in -text
 samples/2d-tests/dark-matter/reference.out -text

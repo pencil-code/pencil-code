@@ -6,6 +6,7 @@
   cvsid='$Id$',
   nt=40, it1=5, isave=50, itorder=3
   dsnap=100., d2davg=1., dvid=.5, ip=20
+  dspec=10., np_spec=T
   lpencil_check=T
 /
 &eos_run_pars
@@ -20,4 +21,6 @@
 &particles_selfgrav_run_pars
 /
 &special_run_pars
+/
+&power_spectrum_run_pars
 /
