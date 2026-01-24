@@ -4288,11 +4288,15 @@ module Hydro
             else
               call fatal_error("duu_dt","lmagnetic must be true")
             endif
-          case ('step')
+          case ('step', 'cs-step')
             if (t<=t1_ekman) then
               frict=0.
             elseif (t<=t2_ekman) then
-              frict=ekman_friction
+              if (friction_tdep=='cs-step') then
+                frict=ekman_friction*sqrt(p%cs2)
+              else
+                frict=ekman_friction
+              endif
             else
               frict=0.
             endif
