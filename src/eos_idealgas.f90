@@ -43,7 +43,7 @@ module EquationOfState
   real :: rho0=1. !PAR_DOC: \label{cs0-rho0-init}%
     !PAR_DOC: reference values of sound speed and density,
     !PAR_DOC: i.\,e.~values at height \var{zref}.
-  real :: cs20=1.0, cs20t, lnrho0=0., rho01=1.0, pp0=1.0
+  real :: cs20=1.0, cs_t=1.0, cs20t, lnrho0=0., rho01=1.0, pp0=1.0
   real :: gamma=5.0/3.0 !PAR_DOC: adiabatic index $\gamma=c_p/c_v$.
   real :: Rgas_cgs=0.0, Rgas, error_cp=1.0e-6
   real :: gamma_m1    !(=gamma-1)
@@ -125,6 +125,7 @@ module EquationOfState
 ! Shared variables
 !
       call put_shared_variable('cs20',cs20,caller='register_eos')
+      call put_shared_variable('cs_t',cs_t,caller='register_eos')
       call put_shared_variable('gamma',gamma)
       call put_shared_variable('cp',cp)
       call put_shared_variable('cv',cv)
@@ -977,6 +978,7 @@ module EquationOfState
                 p%cs2=cs20*exp(-cs20_tdep_rate*t)
               case ('ascale_power')
                 p%cs2=cs20*ascale**cs2_tdep_ascale_power
+                cs_t=cs0*ascale**(.5*cs2_tdep_ascale_power)
               case default
                 call fatal_error('calc_pencils_eos_pencpar','unknown value of tdep_cs2_type')
               endselect

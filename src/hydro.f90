@@ -4300,7 +4300,9 @@ module Hydro
             else
               frict=0.
             endif
+            maxsrc=maxsrc+maxval(frict)
           case default
+            call fatal_error('duu_dt','unknown value of friction_tdep')
         endselect
         call multsv_mn(frict,p%uu,tmpv)
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-tmpv

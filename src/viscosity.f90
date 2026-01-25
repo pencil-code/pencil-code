@@ -31,7 +31,7 @@ module Viscosity
   character (len=labellen) :: lambda_profile='uniform', tdep_nu_type='powerlaw'
   real :: nu=0.0, nu_cspeed=0.5
   real :: nu_tdep=0.0, nu_tdep_exponent=0.0, nu_tdep_t0=0.0, nu_tdep_toffset=0.0
-  real :: nu_r_reduce=0.0
+  real :: nu_tdep_t1=0.0, nu_tdep_t2=0.0, nu_tdep_kcs=0.0, nu_r_reduce=0.0
   real :: zeta=0.0, nu_mol=0.0, nu_hyper2=0.0, nu_hyper3=0.0
   real :: nu_hyper3_mesh=5.0, nu_shock=0.0,nu_spitzer=0.0, nu_spitzer_max=0.0
   real :: nu_jump=1.0, xnu=1.0, xnu2=1.0, znu=1.0, widthnu=0.1, widthnu2=0.1
@@ -48,6 +48,7 @@ module Viscosity
   real :: nu_infinity=0.,nu0=0.,non_newton_lambda=0.,carreau_exponent=0.
   real :: nu_smag_Ma2_power=0.0
   real :: nu_rcyl_min=impossible
+  real, pointer :: cs_t
   character (len=labellen) :: nnewton_type='none'
   character (len=labellen) :: div_sld_visc='2nd'
   real :: nnewton_tscale=0.0,nnewton_step_width=0.0
@@ -126,7 +127,7 @@ module Viscosity
 !
   namelist /viscosity_run_pars/ &
       limplicit_viscosity, nu, nu_tdep_exponent, &
-      lvisc_nu_tdep_t0_norm, nu_tdep_t0, nu_tdep_toffset, &
+      lvisc_nu_tdep_t0_norm, nu_tdep_t0, nu_tdep_t1, nu_tdep_t2, nu_tdep_kcs, nu_tdep_toffset, &
       zeta, nu_hyper2, nu_hyper3, ivisc, nu_mol, C_smag, gamma_smag, nu_shock, &
       nu_aniso_hyper3, lvisc_heat_as_aux,nu_jump,znu,xnu,xnu2,widthnu,widthnu2, &
       nu_hyper3_mesh, pnlaw,llambda_effect, &
@@ -437,6 +438,7 @@ module Viscosity
         case ('nu-tdep')
           if (lroot) print*,'time-dependent nu*(del2u+graddivu/3+2S.glnrho)'
           if (nu/=0.) lpenc_requested(i_sij)=.true.
+          call get_shared_variable('cs_t',cs_t,caller='initialize_viscosity')
           lvisc_nu_tdep=.true.
         case ('nu-prof')
           if (lroot) print*,'viscous force with a vertical profile for nu'
@@ -2424,6 +2426,12 @@ module Viscosity
           endif
         case ('ascale_power')
           nu_tdep=nu*ascale**nu_tdep_ascale_power
+        case ('ascale_power_cs-step')
+          if (t<=nu_tdep_t1 .or. t>nu_tdep_t2) then
+            nu_tdep=nu*ascale**nu_tdep_ascale_power
+          else
+            nu_tdep=cs_t/nu_tdep_kcs
+          endif
         case default
           call fatal_error('viscosity_after_boundary','unknown value of tdep_nu_type')
         endselect
