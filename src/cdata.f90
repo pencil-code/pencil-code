@@ -231,7 +231,8 @@ module Cdata
 !AB: 5 autotests failed after having decreased cdtv. I suggest to reassess
 !AB: this more carefully and discuss it first in the newsletter.
   real :: cdtv=0.25, cdtv2=0.03, cdtv3=0.01
-  real :: cdtsrc=0.2, cdtf=0.9
+  real :: cdtsrc=1.0  !PAR_DOC: empirical time step factor for source terms (1/time)
+  real :: cdtf=0.9
   real :: ddt=0.0, dtinc=0.5, dtdec=0.5
   real :: dtmin=1.0e-6, dtmax=1.0e37, dt_epsi=1e-7, dt_ratio=1e-5
   real :: nu_sts=0.1
