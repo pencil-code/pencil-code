@@ -139,7 +139,7 @@ module Density
   real :: density_ceiling=-1.
   logical :: lreinitialize_lnrho=.false., lreinitialize_rho=.false.
   logical :: lsubtract_init_stratification=.false., lwrite_stratification=.false.
-  real, dimension(my) :: rhobar
+  real, dimension(my) :: rhobar= impossible
   character (len=labellen), dimension(ninit) :: initlnrho='nothing' !PAR_DOC:
     !PAR_DOC: initialization of density. Currently valid choices are
     !PAR_DOC:  \begin{description}
@@ -1110,6 +1110,7 @@ module Density
       integer :: j,ix,iy
       logical :: lnothing
       real :: gamma, gamma_m1
+      real, pointer :: gravitational_const
 !
       intent(inout) :: f
 !
@@ -1641,6 +1642,11 @@ module Density
                  sin(kx_lnrho(j)*x(l1:l2)+phase_lnrho(j) + complex_phase(omega_jeans*ampllnrho(j)))
           enddo; enddo
         case ('rhobar')
+          if (rhobar(n1) == impossible) then
+                  if (lroot) print*,"No value of rhobar given; Defaulting to rhobar = sound speed^2/(2piG)"
+                  call get_shared_variable('gravitational_const',gravitational_const,caller='init_lnrho')
+                  rhobar = cs20/(2*pi*gravitational_const)
+          endif
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,ilnrho) = log(rhobar(n)*x(l1:l2)**(-2))
           enddo; enddo
