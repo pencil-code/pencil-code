@@ -938,3 +938,4 @@ integer, parameter :: enum_waterfall_string = 932
 integer, parameter :: enum_ultra_slow_roll1_string = 933
 integer, parameter :: enum_reduced_top_string = 934
 integer, parameter :: enum_imposedZcs2Zcore_string = 935
+integer, parameter :: enum_csZstep_string = 936
