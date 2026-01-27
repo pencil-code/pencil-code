@@ -1017,6 +1017,9 @@ module Boundcond
                   ! BCX_DOC: set x ghost zones from slice.
                   call set_from_slice_x(f,topbot,j)
                   call set_ghosts_for_onesided_ders(f,topbot,j,1,.true.)
+                case ('density_wind')
+                  ! BCX_DOC: 'wind' bc for lnrho
+                  call bc_wind_density_x(f,topbot)
                 case ('nil','','no')
                   ! BCX_DOC: do nothing; assume that everything is set
                 case default
@@ -1042,6 +1045,49 @@ module Boundcond
       endselect
 !
     endsubroutine boundconds_x
+!***********************************************************************
+    subroutine bc_wind_density_x(f,topbot)
+!
+!   Work in progress bc to be described more completely in the future.
+!   At the moment could be done with the frozen bcs but in the future
+!   we want time dependent density.
+!
+!  25-jan-2026/TP: adapted from 'bc_outflow_x'
+!
+      integer, intent(IN) :: topbot
+      real, dimension (:,:,:,:) :: f
+!
+      integer :: i, iy, iz
+      real :: theta
+!
+      select case (topbot)
+!
+!  Bottom boundary.
+!
+      case(BOT)
+        do iy=1,size(f,2); do iz=1,size(f,3)
+          theta =  y(iy)
+          theta = min(abs(theta),pi-abs(theta))
+          theta = max(thetamin,theta)
+          f(l1,iy,iz,ilnrho) = (sin(theta)**(-2))*fbcx(ilnrho,topbot)
+        enddo; enddo
+!
+!  Top boundary.
+!
+      case(TOP)
+        do iy=1,size(f,2); do iz=1,size(f,3)
+          theta =  y(iy)
+          theta = min(abs(theta),pi-abs(theta))
+          theta = max(thetamin,theta)
+          f(l2,iy,iz,ilnrho) = (sin(theta)**(-2))*fbcx(ilnrho,topbot)
+        enddo; enddo
+!
+!  Default.
+!
+      case default
+        call fatal_error("bc_wind_density_x: ","topbot should be BOT or TOP")
+      endselect
+    endsubroutine bc_wind_density_x
 !***********************************************************************
     subroutine bc_c1_x(f,topbot,j)
 

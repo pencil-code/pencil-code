@@ -139,7 +139,7 @@ module Param_IO
       lpoint, mpoint, npoint, lpoint2, mpoint2, npoint2, &
       lfatal_num_vector_369, density_scale_factor, &
       lsmooth_farray,farray_smooth_width, radius_diag, lread_oldsnap_nocoolprof,&
-      lswap_init_lnrho_uu
+      lswap_init_lnrho_uu,thetamin
 !
   namelist /run_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lpole, ncoarse, &
@@ -235,7 +235,7 @@ module Param_IO
       Em_specflux, Hm_specflux, Hc_specflux, density_scale_factor, radius_diag, &
       lmorton_curve, lsuppress_parallel_reductions, &
       lverbose_performance_log, &
-      shared_mem_name, lupdate_cvs, lread_oldsnap_nocoolprof
+      shared_mem_name, lupdate_cvs, lread_oldsnap_nocoolprof,thetamin
 !
   namelist /IO_pars/ &
       lcollective_IO, IO_strategy

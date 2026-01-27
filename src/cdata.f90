@@ -417,6 +417,10 @@ module Cdata
   integer :: ip=14 !PAR_DOC: (anti-)verbosity level: \code{ip=1} produces lots of
                    !PAR_DOC: diagnostic output, \code{ip=14} virtually none.
 !
+! User-defined way to cap theta for specific computations
+!
+  real :: thetamin = 0.0 
+!
 !  Rotation and shear parameters.
 !
   real :: Omega=0.0, theta=0.0, phi=0.0, qshear=0.0, Sshear=0.0, deltay=0.0
