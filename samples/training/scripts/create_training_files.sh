@@ -19,3 +19,4 @@ sample_name=helical-MHDturb
 data_src="/scratch/project_2000403/$USER/data_$sample_name/data/training/"
 
 srun python3 $PENCIL_HOME/samples/training/models/build_training_files.py $data_src
+cp $PENCIL_HOME/samples/training/models/ptTobin.py $data_src
