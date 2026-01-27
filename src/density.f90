@@ -1640,7 +1640,7 @@ module Density
               f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) + abs(omega_jeans*ampllnrho(j)) * &
                  sin(kx_lnrho(j)*x(l1:l2)+phase_lnrho(j) + complex_phase(omega_jeans*ampllnrho(j)))
           enddo; enddo
-        case ('rho-bar')
+        case ('rhobar')
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,ilnrho) = log(rhobar(n)*x(l1:l2)**(-2))
           enddo; enddo
