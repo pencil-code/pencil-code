@@ -573,7 +573,9 @@ module Param_IO
         call read_namelist(read_hydro_init_pars          ,'hydro'          ,lhydro, loptional)
         call read_namelist(read_density_init_pars        ,'density'        ,ldensity, loptional)
         call read_namelist(read_gravity_init_pars        ,'grav'           ,lgrav, loptional)
-        call read_namelist(read_selfgravity_init_pars    ,'selfgrav'       ,lselfgravity, loptional)
+        !TP: We want to always set gravitational_constant via selfgravity namelist.
+        !    So it is always enabled but optional if using the no-implementation
+        call read_namelist(read_selfgravity_init_pars    ,'selfgrav'       ,.true., loptional .or. .not. lselfgravity)
         call read_namelist(read_poisson_init_pars        ,'poisson'        ,lpoisson, loptional)
         call read_namelist(read_energy_init_pars         ,'entropy'        ,lenergy, loptional)
         call read_namelist(read_magnetic_init_pars       ,'magnetic'       ,lmagnetic, loptional)
