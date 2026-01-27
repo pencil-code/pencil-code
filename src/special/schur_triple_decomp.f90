@@ -244,8 +244,13 @@ end function selct
             p%uSH2(l)=sum(matV_SH**2)
             p%uRR2(l)=sum(matV_RR**2)
             p%uEL2(l)=sum(matV_EL**2)
-            p%uRRm(l)=2.*sum(matV_SH*matV_RR)
-            p%uELm(l)=2.*sum(matV_SH*matV_EL)
+            !p%uRRm(l)=2.*sum(matV_SH*matV_RR)
+            !p%uELm(l)=2.*sum(matV_SH*matV_EL)
+!
+!  Redefine mixed term as the sum of mixed and original term.
+!
+            p%uRRm(l)=2.*sum(matV_SH*matV_RR)+p%uRR2(l)
+            p%uELm(l)=2.*sum(matV_SH*matV_EL)+p%uEL2(l)
           else
             if (ip<10) print*,'AXEL: warning for u, l=',l
             !p%uSH2(l)=0.
@@ -337,8 +342,13 @@ end function selct
             p%bSH2(l)=sum(matV_SH**2)
             p%bRR2(l)=sum(matV_RR**2)
             p%bEL2(l)=sum(matV_EL**2)
-            p%bRRm(l)=2.*sum(matV_SH*matV_RR)
-            p%bELm(l)=2.*sum(matV_SH*matV_EL)
+            !p%bRRm(l)=2.*sum(matV_SH*matV_RR)
+            !p%bELm(l)=2.*sum(matV_SH*matV_EL)
+!
+!  Redefine mixed term as the sum of mixed and original term.
+!
+            p%bRRm(l)=2.*sum(matV_SH*matV_RR)+p%bRR2(l)
+            p%bELm(l)=2.*sum(matV_SH*matV_EL)+p%bEL2(l)
           else
             print*,'AXEL: warning for b, l=',l
             !p%bSH2(l)=0.
@@ -677,6 +687,15 @@ end function selct
       integer :: iname
       logical :: lreset,lwrite
 !
+!  check for those quantities for which we want video slices
+!
+      if (lwrite_slices) then
+        where(cnamev=='uschur2_SH' .or. cnamev=='uschur2_RR' .or. cnamev=='uschur2_EL' .or. &
+              cnamev=='uschurm_RR' .or. cnamev=='uschurm_EL' .or. &
+              cnamev=='bschur2_SH' .or. cnamev=='bschur2_RR' .or. cnamev=='bschur2_EL' .or. &
+              cnamev=='bschurm_RR' .or. cnamev=='bschurm_EL' ) cformv='DEFINED'
+      endif
+!
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
 !
@@ -699,6 +718,34 @@ end function selct
       enddo
 !
     endsubroutine rprint_special
+!***********************************************************************
+    subroutine get_slices_special(f,slices)
+!
+!  Write slices for animation of Special variables.
+!
+!  27-jan-26/axel: adapted from src/special/chiral_mhd.f90
+!
+      use Slices_methods, only: assign_slices_scal
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (slice_data) :: slices
+!
+!  Loop over slices.
+!
+      select case (trim(slices%name))
+        case ('uschur2_SH'); call assign_slices_scal(slices,f,iuschur2_SH)
+        case ('uschur2_RR'); call assign_slices_scal(slices,f,iuschur2_RR)
+        case ('uschur2_EL'); call assign_slices_scal(slices,f,iuschur2_EL)
+        case ('uschurm_RR'); call assign_slices_scal(slices,f,iuschurm_RR)
+        case ('uschurm_EL'); call assign_slices_scal(slices,f,iuschurm_EL)
+        case ('bschur2_SH'); call assign_slices_scal(slices,f,ibschur2_SH)
+        case ('bschur2_RR'); call assign_slices_scal(slices,f,ibschur2_RR)
+        case ('bschur2_EL'); call assign_slices_scal(slices,f,ibschur2_EL)
+        case ('bschurm_RR'); call assign_slices_scal(slices,f,ibschurm_RR)
+        case ('bschurm_EL'); call assign_slices_scal(slices,f,ibschurm_EL)
+      endselect
+!
+    endsubroutine get_slices_special
 !***********************************************************************
     subroutine special_after_boundary(f)
 !
