@@ -925,6 +925,10 @@ module Boundcond
                   ! BCX_DOC: allow outflow, but no inflow
                   ! BCX_DOC: forces ghost cells and boundary to not point inwards
                   call bc_outflow_x(f,topbot,j,.true.)
+                case ('in')
+                  ! BCZ_DOC: allow inflow, but no outflow
+                  ! BCZ_DOC: forces ghost cells and boundary to not point outwards
+                  call bc_inflow_x(f,topbot,j,.true.)
                 case ('e1o')
                   ! BCX_DOC: allow outflow, but no inflow
                   ! BCX_DOC: uses the e1 extrapolation scheme
@@ -7572,6 +7576,72 @@ module Boundcond
       endselect
 !
     endsubroutine bc_outflow_x
+!***********************************************************************
+    subroutine bc_inflow_x(f,topbot,j,lforce_ghost)
+!
+!  Inflow boundary conditions.
+!
+!  If the velocity vector points out of the box, the velocity boundary
+!  condition is set to 's', otherwise it is set to 'a'.
+!  If 'lforce_ghost' is true, the boundary and ghost cell values are forced
+!  to not point outwards. Otherwise the boundary value is forced to be 0.
+!
+!  25-jan-2026/TP: adapted from 'bc_outflow_x'
+!
+      integer, intent(IN) :: topbot
+      real, dimension (:,:,:,:) :: f
+      integer :: j
+      logical, optional :: lforce_ghost
+!
+      integer :: i, iy, iz
+      logical :: lforce
+!
+      lforce = .false.
+      if (present (lforce_ghost)) lforce = lforce_ghost
+!
+      select case (topbot)
+!
+!  Bottom boundary.
+!
+      case(BOT)
+        do iy=1,size(f,2); do iz=1,size(f,3)
+          if (f(l1,iy,iz,j)>0.0) then  ! 's'
+            do i=1,nghost; f(l1-i,iy,iz,j)=+f(l1+i,iy,iz,j); enddo
+          else                         ! 'a'
+            do i=1,nghost; f(l1-i,iy,iz,j)=-f(l1+i,iy,iz,j); enddo
+            f(l1,iy,iz,j)=0.0
+          endif
+          if (lforce) then
+            do i = 0, nghost
+              if (f(l1-i,iy,iz,j) < 0.0) f(l1-i,iy,iz,j) = 0.0
+            enddo
+          endif
+        enddo; enddo
+!
+!  Top boundary.
+!
+      case(TOP)
+        do iy=1,size(f,2); do iz=1,size(f,3)
+          if (f(l2,iy,iz,j)<0.0) then  ! 's'
+            do i=1,nghost; f(l2+i,iy,iz,j)=+f(l2-i,iy,iz,j); enddo
+          else                         ! 'a'
+            do i=1,nghost; f(l2+i,iy,iz,j)=-f(l2-i,iy,iz,j); enddo
+            f(l2,iy,iz,j)=0.0
+          endif
+          if (lforce) then
+            do i = 0, nghost
+              if (f(l2+i,iy,iz,j) > 0.0) f(l2+i,iy,iz,j) = 0.0
+            enddo
+          endif
+        enddo; enddo
+!
+!  Default.
+!
+      case default
+        call fatal_error("bc_inflow_x: ","topbot should be BOT or TOP")
+      endselect
+!
+    endsubroutine bc_inflow_x
 !***********************************************************************
     subroutine bc_outflow_x_e1(f,topbot,j,lforce_ghost)
 !
