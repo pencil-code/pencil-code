@@ -22,7 +22,7 @@ module Selfgravity
   include 'selfgravity.h'
 !
   real :: rhs_poisson_const=0.
-  real :: gravitational_const=impossible
+  real :: gravitational_const=G_Newton_cgs
   namelist /selfgrav_init_pars/ &
       gravitational_const
 !
