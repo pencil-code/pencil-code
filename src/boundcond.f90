@@ -1070,6 +1070,9 @@ module Boundcond
           theta = min(abs(theta),pi-abs(theta))
           theta = max(thetamin,theta)
           f(l1,iy,iz,ilnrho) = (sin(theta)**(-2))*fbcx(ilnrho,topbot)
+          do i = 1, nghost
+            f(l1-i,iy,iz,ilnrho) = (sin(theta)**(-2))*fbcx(ilnrho,topbot)
+          enddo
         enddo; enddo
 !
 !  Top boundary.
@@ -1080,6 +1083,9 @@ module Boundcond
           theta = min(abs(theta),pi-abs(theta))
           theta = max(thetamin,theta)
           f(l2,iy,iz,ilnrho) = (sin(theta)**(-2))*fbcx(ilnrho,topbot)
+          do i = 1, nghost
+            f(l2+i,iy,iz,ilnrho) = (sin(theta)**(-2))*fbcx(ilnrho,topbot)
+          enddo
         enddo; enddo
 !
 !  Default.
