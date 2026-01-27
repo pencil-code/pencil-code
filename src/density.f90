@@ -139,6 +139,7 @@ module Density
   real :: density_ceiling=-1.
   logical :: lreinitialize_lnrho=.false., lreinitialize_rho=.false.
   logical :: lsubtract_init_stratification=.false., lwrite_stratification=.false.
+  real, dimension(my) :: rhobar
   character (len=labellen), dimension(ninit) :: initlnrho='nothing' !PAR_DOC:
     !PAR_DOC: initialization of density. Currently valid choices are
     !PAR_DOC:  \begin{description}
@@ -1638,6 +1639,10 @@ module Density
             if (abs(omega_jeans)/=0.0) &
               f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) + abs(omega_jeans*ampllnrho(j)) * &
                  sin(kx_lnrho(j)*x(l1:l2)+phase_lnrho(j) + complex_phase(omega_jeans*ampllnrho(j)))
+          enddo; enddo
+        case ('rho-bar')
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,ilnrho) = log(rhobar(n)*x(l1:l2)**(-2))
           enddo; enddo
         case ('jeans-wave-oblique')
 !
