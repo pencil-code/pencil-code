@@ -92,8 +92,11 @@ module Special
 !
   logical :: luschur2_as_aux=.false., lbschur2_as_aux=.false.
   logical :: luschurm_as_aux=.false., lbschurm_as_aux=.false.
+  logical :: luschurp2_as_aux=.false., lbschurp2_as_aux=.false.
   integer :: iuschur2, iuschur2_SH, iuschur2_RR, iuschur2_EL, iuschurm_RR, iuschurm_EL
   integer :: ibschur2, ibschur2_SH, ibschur2_RR, ibschur2_EL, ibschurm_RR, ibschurm_EL
+  integer :: iuschurp2, iuschurp2_SH, iuschurp2_RR, iuschurp2_EL
+  integer :: ibschurp2, ibschurp2_SH, ibschurp2_RR, ibschurp2_EL
 !
   logical :: luschur_as_aux=.false., lbschur_as_aux=.false.
   integer :: iuschur_SH, iuschur_RR, iuschur_EL
@@ -102,6 +105,7 @@ module Special
   namelist /special_init_pars/ &
       luschur2_as_aux, lbschur2_as_aux, &
       luschurm_as_aux, lbschurm_as_aux, &
+      luschurp2_as_aux, lbschurp2_as_aux, &
       luschur_as_aux, lbschur_as_aux
 !
   logical :: luij_schur=.false., lbij_schur=.false., ldiagnos_always=.false.
@@ -153,6 +157,12 @@ end function selct
 !
       if (lbschur2_as_aux) &
         call register_report_aux('bschur2', ibschur2, ibschur2_SH, ibschur2_RR, ibschur2_EL)
+!
+      if (luschurp2_as_aux) &
+        call register_report_aux('uschurp2', iuschurp2, iuschurp2_SH, iuschurp2_RR, iuschurp2_EL)
+!
+      if (lbschurp2_as_aux) &
+        call register_report_aux('bschurp2', ibschurp2, ibschurp2_SH, ibschurp2_RR, ibschurp2_EL)
 !
       if (luschurm_as_aux) then
         call register_report_aux('uschurm_RR', iuschurm_RR)
@@ -222,7 +232,8 @@ end function selct
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      real, dimension (3,3) :: matA, matV_SH, matV_RR, matV_EL, SH, RR, EL
+      real, dimension (nx,3,3) :: SH, RR, EL
+      real, dimension (3,3) :: matA, matV_SH, matV_RR, matV_EL
       real, allocatable :: matV(:,:), matQ(:,:)
       real :: matA2=0.
       integer :: i,j,kk,ll, ij, l, nnn=3
@@ -266,7 +277,7 @@ end function selct
 !  Setting lQ_schur_QT=.true. applies to GradU = Q^T (SH+RR+EL) Q.
 !  Otherwise, we'd have GradU = Q^T (SH+RR+EL) Q.
 !
-          if (luschur_as_aux) then
+          if (luschur_as_aux .or. luschurp2_as_aux) then
             if (luschur_unprojected) then
               do i=1,3
               do j=1,3
@@ -285,22 +296,32 @@ end function selct
                 do kk=1,3
                 do ll=1,3
                   if (lQ_schur_QT) then
-                    SH(i,j)=SH(i,j)+matQ(i,kk)*matQ(j,ll)*matV_SH(kk,ll)
-                    RR(i,j)=RR(i,j)+matQ(i,kk)*matQ(j,ll)*matV_RR(kk,ll)
-                    EL(i,j)=EL(i,j)+matQ(i,kk)*matQ(j,ll)*matV_EL(kk,ll)
+                    SH(l,i,j)=SH(l,i,j)+matQ(i,kk)*matQ(j,ll)*matV_SH(kk,ll)
+                    RR(l,i,j)=RR(l,i,j)+matQ(i,kk)*matQ(j,ll)*matV_RR(kk,ll)
+                    EL(l,i,j)=EL(l,i,j)+matQ(i,kk)*matQ(j,ll)*matV_EL(kk,ll)
                   else
-                    SH(i,j)=SH(i,j)+matV_SH(kk,ll)*matQ(kk,i)*matQ(ll,j)
-                    RR(i,j)=RR(i,j)+matV_RR(kk,ll)*matQ(kk,i)*matQ(ll,j)
-                    EL(i,j)=EL(i,j)+matV_EL(kk,ll)*matQ(kk,i)*matQ(ll,j)
+                    SH(l,i,j)=SH(l,i,j)+matV_SH(kk,ll)*matQ(kk,i)*matQ(ll,j)
+                    RR(l,i,j)=RR(l,i,j)+matV_RR(kk,ll)*matQ(kk,i)*matQ(ll,j)
+                    EL(l,i,j)=EL(l,i,j)+matV_EL(kk,ll)*matQ(kk,i)*matQ(ll,j)
                   endif
                 enddo
                 enddo
-                ij=3*(i-1)+(j-1)
-                f(l1+l-1,m,n,iuschur_SH+ij)=SH(i,j)
-                f(l1+l-1,m,n,iuschur_RR+ij)=RR(i,j)
-                f(l1+l-1,m,n,iuschur_EL+ij)=EL(i,j)
+                if (luschur_as_aux) then
+                  ij=3*(i-1)+(j-1)
+                  f(l1+l-1,m,n,iuschur_SH+ij)=SH(l,i,j)
+                  f(l1+l-1,m,n,iuschur_RR+ij)=RR(l,i,j)
+                  f(l1+l-1,m,n,iuschur_EL+ij)=EL(l,i,j)
+                endif
               enddo
               enddo
+!
+!  output norm of projected matrix 
+!
+              if (luschurp2_as_aux) then
+                f(l,m,n,iuschurp2_SH)=sum(SH(l,:,:)**2)
+                f(l,m,n,iuschurp2_RR)=sum(RR(l,:,:)**2)
+                f(l,m,n,iuschurp2_EL)=sum(EL(l,:,:)**2)
+              endif
             endif
           endif
 !
@@ -360,7 +381,7 @@ end function selct
 !
 !  Possibility of bSH, bRR, and bEL matrices as auxiliary arrays
 !
-          if (lbschur_as_aux) then
+          if (lbschur_as_aux .or. lbschurp2_as_aux) then
             if (lbschur_unprojected) then
               do i=1,3
               do j=1,3
@@ -379,22 +400,32 @@ end function selct
                 do kk=1,3
                 do ll=1,3
                   if (lQ_schur_QT) then
-                    SH(i,j)=SH(i,j)+matQ(i,kk)*matQ(j,ll)*matV_SH(kk,ll)
-                    RR(i,j)=RR(i,j)+matQ(i,kk)*matQ(j,ll)*matV_RR(kk,ll)
-                    EL(i,j)=EL(i,j)+matQ(i,kk)*matQ(j,ll)*matV_EL(kk,ll)
+                    SH(l,i,j)=SH(l,i,j)+matQ(i,kk)*matQ(j,ll)*matV_SH(kk,ll)
+                    RR(l,i,j)=RR(l,i,j)+matQ(i,kk)*matQ(j,ll)*matV_RR(kk,ll)
+                    EL(l,i,j)=EL(l,i,j)+matQ(i,kk)*matQ(j,ll)*matV_EL(kk,ll)
                   else
-                    SH(i,j)=SH(i,j)+matV_SH(kk,ll)*matQ(kk,i)*matQ(ll,j)
-                    RR(i,j)=RR(i,j)+matV_RR(kk,ll)*matQ(kk,i)*matQ(ll,j)
-                    EL(i,j)=EL(i,j)+matV_EL(kk,ll)*matQ(kk,i)*matQ(ll,j)
+                    SH(l,i,j)=SH(l,i,j)+matV_SH(kk,ll)*matQ(kk,i)*matQ(ll,j)
+                    RR(l,i,j)=RR(l,i,j)+matV_RR(kk,ll)*matQ(kk,i)*matQ(ll,j)
+                    EL(l,i,j)=EL(l,i,j)+matV_EL(kk,ll)*matQ(kk,i)*matQ(ll,j)
                   endif
                 enddo
                 enddo
-                ij=3*(i-1)+(j-1)
-                f(l1+l-1,m,n,ibschur_SH+ij)=SH(i,j)
-                f(l1+l-1,m,n,ibschur_RR+ij)=RR(i,j)
-                f(l1+l-1,m,n,ibschur_EL+ij)=EL(i,j)
+                if (lbschur_as_aux) then
+                  ij=3*(i-1)+(j-1)
+                  f(l1+l-1,m,n,ibschur_SH+ij)=SH(l,i,j)
+                  f(l1+l-1,m,n,ibschur_RR+ij)=RR(l,i,j)
+                  f(l1+l-1,m,n,ibschur_EL+ij)=EL(l,i,j)
+                endif
               enddo
               enddo
+!
+!  output norm of projected matrix 
+!
+              if (lbschurp2_as_aux) then
+                f(l,m,n,ibschurp2_SH)=sum(SH(l,:,:)**2)
+                f(l,m,n,ibschurp2_RR)=sum(RR(l,:,:)**2)
+                f(l,m,n,ibschurp2_EL)=sum(EL(l,:,:)**2)
+              endif
             endif
           endif
 !
@@ -693,7 +724,9 @@ end function selct
         where(cnamev=='uschur2_SH' .or. cnamev=='uschur2_RR' .or. cnamev=='uschur2_EL' .or. &
               cnamev=='uschurm_RR' .or. cnamev=='uschurm_EL' .or. &
               cnamev=='bschur2_SH' .or. cnamev=='bschur2_RR' .or. cnamev=='bschur2_EL' .or. &
-              cnamev=='bschurm_RR' .or. cnamev=='bschurm_EL' ) cformv='DEFINED'
+              cnamev=='bschurm_RR' .or. cnamev=='bschurm_EL' .or. &
+              cnamev=='uschurp2_SH' .or. cnamev=='uschurp2_RR' .or. cnamev=='uschurp2_EL' .or. &
+              cnamev=='bschurp2_SH' .or. cnamev=='bschurp2_RR' .or. cnamev=='bschurp2_EL' ) cformv='DEFINED'
       endif
 !
 !  reset everything in case of reset
@@ -743,6 +776,12 @@ end function selct
         case ('bschur2_EL'); call assign_slices_scal(slices,f,ibschur2_EL)
         case ('bschurm_RR'); call assign_slices_scal(slices,f,ibschurm_RR)
         case ('bschurm_EL'); call assign_slices_scal(slices,f,ibschurm_EL)
+        case ('uschurp2_SH'); call assign_slices_scal(slices,f,iuschurp2_SH)
+        case ('uschurp2_RR'); call assign_slices_scal(slices,f,iuschurp2_RR)
+        case ('uschurp2_EL'); call assign_slices_scal(slices,f,iuschurp2_EL)
+        case ('bschurp2_SH'); call assign_slices_scal(slices,f,ibschurp2_SH)
+        case ('bschurp2_RR'); call assign_slices_scal(slices,f,ibschurp2_RR)
+        case ('bschurp2_EL'); call assign_slices_scal(slices,f,ibschurp2_EL)
       endselect
 !
     endsubroutine get_slices_special
