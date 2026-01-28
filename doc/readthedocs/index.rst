@@ -54,6 +54,7 @@ Explore the sections below to get started, contribute, or run simulations with P
    :maxdepth: 1
    :caption: Postprocessing & Tutorials
 
+   tutorials/samples/samples-index.rst
    tutorials/python/tutpython
    tutorials/mathematica/tutmathematica
    tutorials/python/devpcpython
