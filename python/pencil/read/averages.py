@@ -412,8 +412,7 @@ class Averages(object):
 
             if iter_list is not None:
                 if len(iter_list) == 1:
-                    n_times = min(n_times-1, iter_list[0])
-                    itlist = range(n_times,n_times+1,iter_step)
+                    itlist = iter_list
                 elif len(iter_list) == 2:
                     if iter_list[0] >= iter_list[1]:
                         warnings.warn("read.aver: iter_list pair must be list of integer - reading full series instead")
