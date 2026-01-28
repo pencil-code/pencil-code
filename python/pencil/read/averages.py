@@ -98,8 +98,10 @@ class Averages(object):
 
         iter_list : list of int, or index range
             Iteration indices for which to sample the slices.
-            Single value only that index is sampled. Two indices indicate first and last index.
+            Single value only that index is sampled.
+            Two indices indicate first and last index (last value excluded).
             More than two indicies specifies the precise list of indices to be sampled.
+            Note that the indices specified here start from 0.
 
         niter : int
             if iter_list is not used for fortran format a default index list will be used of size niter.
