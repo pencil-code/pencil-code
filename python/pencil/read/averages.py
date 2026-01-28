@@ -420,7 +420,7 @@ class Averages(object):
                 else:
                     itlist = iter_list
                 for it in itlist:
-                    if not str(it) in tmp.keys():
+                    if str(it) not in tmp.keys():
                         itlist.remove(it)
                 if not len(itlist) > 0:
                     warnings.warn("read.aver: iter_list has no match in {} keys - reading only {} instead".format(av_file,tmp['last'][0]))
