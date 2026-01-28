@@ -4,8 +4,8 @@
 !
 &run_pars
   cvsid='$Id$',
-  nt=20000, it1=50, cdt=0.4, cdtv=0.3, isave=1000, itorder=3 !(longer run)
-  !nt=10, it1=2, cdt=0.4, cdtv=0.3, isave=0, itorder=3        !(sample run)
+  !nt=20000, it1=50, cdt=0.2, cdtv=0.3, isave=10000, itorder=3 !(longer run)
+  nt=50, it1=10, cdt=0.4, cdtv=0.3, isave=10000, itorder=3        !(sample run)
   dsnap=1e10, dvid=1e10,  !(for longer run)
   !dsnap=50, dvid=0.1,  !(for sample run)
   !dsnap=.1, dvid=0.1,  !(for sample run)
@@ -51,10 +51,10 @@
   lroute_via_cpu=F
   it_train=10, it_train_chkpt=5000
 	!it_train_start=1200
-  luse_trained_tau=T
+  luse_trained_tau=F
   max_loss=1.e-100
   model='stationary'
-  config_file='config_unet_complex.yaml'
+  config_file='config_torchfort.yaml'
   it_train_end=20000
 	lrun_epoch=T
 /

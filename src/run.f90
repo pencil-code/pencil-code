@@ -654,6 +654,7 @@ endsubroutine helper_loop
   use Syscalls,        only: memusage, sizeof_real
   use Timeavg,         only: wsnap_timeavgs
   use Timestep,        only: initialize_timestep,after_substep_sum_time
+  use Training,        only: training_time, inference_time
 !
 !$ use OMP_lib
 !$ use, intrinsic :: iso_c_binding
@@ -1274,6 +1275,16 @@ endsubroutine helper_loop
           if(lradiation_ray) write(*,'(A,1pG14.7)') &
             ' Radtransfer+Rhs wall clock time/timestep/meshpoint [microsec] =', &
             (rhs_sum_time+radtransfer_sum_time)/icount/nw/ncpus/1.0e-6
+
+          if(ltraining.and.training_time>0) write(*,'(A,1pG14.7)') &
+            ' Training wall clock time/timestep/meshpoint [microsec] =', &
+            (training_time)/icount/nw/1.0e-6
+
+          if(ltraining.and.inference_time>0) write(*,'(A,1pG14.7)') &
+            ' Inference wall clock time/timestep/meshpoint [microsec] =', &
+            (inference_time)/icount/nw/1.0e-6
+
+
         endif
       endif
     endif

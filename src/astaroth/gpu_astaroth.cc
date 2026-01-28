@@ -1134,49 +1134,34 @@ extern "C" void torch_infer_c_api(int itsub){
 	//
 	//check if trained on same grid size and do not smooth the averaged out vals
 	//
+	//
 	acDeviceGetVertexBufferPtrs(acGridGetDevice(), uumean.x, &uumean_ptr, &out);
 
 	acDeviceGetVertexBufferPtrs(acGridGetDevice(), TAU_INFERRED.xx, &tau_infer_ptr, &out);
 
 	acGridHaloExchange();
 
-	double start;
-	double end;
+	//double start;
+	//double end;
 
-	start = MPI_Wtime();
 
 	torch_inferCAPI((int[]){mx,my,mz}, uumean_ptr, tau_infer_ptr);
 	
-	end = MPI_Wtime();
 	auto descale_inf = acGetOptimizedDSLTaskGraph(descale_inferred_taus);
 	acGridExecuteTaskGraph(descale_inf, 1);
 
   bcs = acGetOptimizedDSLTaskGraph(boundconds);	
 	acGridExecuteTaskGraph(bcs,1);
 
-	float vloss = MSE();
  	
 	if(itsub == 1){
-		//fprintf(stderr, "Validation error is: %.50f\n", vloss);
-		//fprintf(stderr, "Validation took %f seconnds\n", (end-start));
-		//fflush(stderr);
-  	val_time.push_back((end-start));
-  	val_loss.push_back(vloss);
-		print_debug();
+  	//val_time.push_back((end-start));
+		//float vloss = MSE();
+  	//val_loss.push_back(vloss);
+
+		//print_debug();
 	}
 
-	if (it==nt){
-		double total_val_time = 0.0;
-
-		for (int i=0;i<val_time.size();i++){
-			total_val_time += val_time[i];
-		}
-
-		fprintf(stderr,"\nThe total time taken for inference [seconds]: %.7f\n", total_val_time);
-		fprintf(stderr,"\nThe average time taken for inference [seconds]: %.7f\n", total_val_time/val_time.size());
-
-		fflush(stderr);
-	}
 #endif
 }
 /***********************************************************************************************/
@@ -1191,8 +1176,6 @@ extern "C" void torch_train_c_api(AcReal *loss_val, int itsub) {
 		fflush(stderr);
 	}
 
-	//fprintf(stderr,"The value of it: %d", it);
-	//fflush(stderr);
 
 	called_training = true;
 
@@ -1228,78 +1211,18 @@ extern "C" void torch_train_c_api(AcReal *loss_val, int itsub) {
   
   acGridHaloExchange();
   
-  double start, end;
+ //double start, end;
   
-  start = MPI_Wtime();
+  //start = MPI_Wtime();
   
   torch_trainCAPI((int[]){mx,my,mz}, uumean_ptr, TAU_ptr, loss_val);
 
-  end = MPI_Wtime();
+  //end = MPI_Wtime();
 
-  //fprintf(stderr,"Time for one time step: %f\n", (end-start));
-  //fprintf(stderr,"Loss after training: %.7f\n", *loss_val);
-  //fflush(stderr);
-  train_time.push_back((end-start));
   train_loss.push_back(*loss_val);
   train_counter++;
 
 	if (it==nt){
-		double total_train_time = 0.0;
-		double total_val_time = 0.0;
-
-		double train_variance = 0.0;
-		double val_variance = 0.0;
-
-		for (int i=0;i<train_time.size();i++){
-			total_train_time += train_time[i];
-		}
-
-		for (int i=0;i<val_time.size();i++){
-			total_val_time += val_time[i];
-		}
-		
-		
-		float avg_train_loss = 0.0;
-		float avg_val_loss = 0.0;
-
-		for(int i=0;i<train_loss.size();i++){
-			avg_train_loss += train_loss[i];
-		}
-
-		for(int i=0;i<val_loss.size();i++){
-			avg_val_loss += val_loss[i];
-		}
-
-		avg_train_loss = avg_train_loss / train_loss.size();
-
-		avg_val_loss = avg_val_loss / val_loss.size();
-
-	
-		for(int i=0;i<train_loss.size();i++){
-			train_variance += (train_loss[i] - avg_train_loss) * (train_loss[i] - avg_train_loss);
-		}
-
-		for(int i=0;i<val_loss.size();i++){
-			val_variance += (val_loss[i] - avg_val_loss) * (val_loss[i] - avg_val_loss);
-		}
-			
-		train_variance = train_variance / train_loss.size();
-
-		val_variance = val_variance / val_loss.size();
-		
-	
-		fprintf(stderr,"The total time taken for training: %f.7\n", total_train_time);
-		fprintf(stderr,"The average time taken for training: %f.7\n", total_train_time/train_time.size());
-
-		fprintf(stderr,"The total time taken for validation: %f.7\n", total_val_time);
-		fprintf(stderr,"The average time taken for validation: %f.7\n", total_val_time/val_time.size());
-
-		
-		fprintf(stderr,"Training loss variance: %f.7\n", train_variance);
-		fprintf(stderr,"Validation loss variance: %f.7\n", val_variance);
-
-		fflush(stderr);
-
 		std::ofstream myFile;
 		std::string fileString = "train_loss_" + std::to_string(my_rank)  + ".csv";	
 
@@ -1311,20 +1234,6 @@ extern "C" void torch_train_c_api(AcReal *loss_val, int itsub) {
 			myFile << i << "," << train_loss[i] << "\n";
 		}
 		
-		myFile.close();
-
-
-		fileString = "val_loss_" + std::to_string(my_rank)  + ".csv";	
-
-		myFile.open(fileString);
-
-
-    myFile << "epoch,val_loss\n";
-
-		for (int i=0;i<val_loss.size();i++){
-			myFile << i << "," << val_loss[i] << "\n";
-		}
-
 		myFile.close();
 	}
 

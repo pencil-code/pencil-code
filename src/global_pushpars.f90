@@ -70,10 +70,10 @@ contains
     call copy_addr(lgravz_gas,p_par(51)) ! bool
     call copy_addr(lgravx_dust,p_par(52)) ! bool
     call copy_addr(lgravz_dust,p_par(53)) ! bool
-    call copy_addr(lfirst_proc_y,p_par(54)) ! bool
-    call copy_addr(lfirst_proc_z,p_par(55)) ! bool
-    call copy_addr(llast_proc_y,p_par(56)) ! bool
-    call copy_addr(llast_proc_z,p_par(57)) ! bool
+    call copy_addr(lfirst_proc_y,p_par(54)) ! bool dconst
+    call copy_addr(lfirst_proc_z,p_par(55)) ! bool dconst
+    call copy_addr(llast_proc_y,p_par(56)) ! bool dconst
+    call copy_addr(llast_proc_z,p_par(57)) ! bool dconst
     call copy_addr(lpscalar_nolog,p_par(58)) ! bool
     call copy_addr(ldustdensity_log,p_par(59)) ! bool
     call copy_addr(lmdvar,p_par(60)) ! bool
@@ -457,6 +457,11 @@ contains
     call copy_addr(luses_aa_pwd_bot,p_par(1401)) ! bool
     call copy_addr(iglobal_glhc,p_par(1402)) ! int
     call copy_addr(iglobal_hcond,p_par(1403)) ! int
+    call copy_addr(lfrozen_bcs_x,p_par(1404)) ! bool
+    call copy_addr(lfrozen_bot_var_x,p_par(1405)) ! bool (mcom)
+    call copy_addr(lfrozen_top_var_x,p_par(1406)) ! bool (mcom)
+    call copy_addr(lfirst_proc_x,p_par(1407)) ! bool dconst
+    call copy_addr(llast_proc_x,p_par(1408)) ! bool dconst
 
   endsubroutine pushpars2c
 !***********************************************************************

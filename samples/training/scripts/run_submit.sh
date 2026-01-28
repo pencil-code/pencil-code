@@ -31,3 +31,11 @@ apptainer exec --nv \
 		-B $data_src:$sample_src/data \
 		-B $snap_src:$sample_src/snapshots \
 		torchfort_latest_withdf5.sif bash /opt/scripts/run.sh
+
+if [ -f "stats_0.pt" ]; then
+	cp stats_0.pt $data_src/training
+
+	module load python-data
+	module load pytorch/2.4
+
+	srun python3 $data_src/training/ptTobin.py

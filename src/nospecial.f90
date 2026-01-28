@@ -260,7 +260,7 @@ module Special
 !
 !  calc_diagnostics_special must be explicitly called if necessary.
 !
-      call calc_diagnostics_special(f,p)
+!       call calc_diagnostics_special(f,p)
 !
     endsubroutine dspecial_dt
 !***********************************************************************

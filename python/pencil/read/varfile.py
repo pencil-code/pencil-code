@@ -699,14 +699,15 @@ class DataCube(object):
                 deltay = (tmp["persist/shear_delta_y"][(0)]).astype(precision)
             if lpersist:
                 pers_obj = _Persist()
-                nprocs = dim.nprocx * dim.nprocy * dim.nprocz
-                for key in tmp["persist"].keys():
-                    val = tmp["persist"][key][()]
-                    #Note that persistent variables need not be scalars (e.g. forcing_location)
-                    val_local = np.split(val, nprocs)[0].astype(precision)
-                    if len(val_local) == 1:
-                        val_local = val_local[0]
-                    setattr(pers_obj, key, val_local)
+                if "persist" in tmp:
+                    nprocs = dim.nprocx * dim.nprocy * dim.nprocz
+                    for key in tmp["persist"].keys():
+                        val = tmp["persist"][key][()]
+                        #Note that persistent variables need not be scalars (e.g. forcing_location)
+                        val_local = np.split(val, nprocs)[0].astype(precision)
+                        if len(val_local) == 1:
+                            val_local = val_local[0]
+                        setattr(pers_obj, key, val_local)
                 self.persist = pers_obj
 
         self.x = x

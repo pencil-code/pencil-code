@@ -38,6 +38,7 @@ module Energy
   real :: zcool=0.0, zcool1=0.0, zcool2=0.0
   real :: rcool=0.0, rcool1=0.0, rcool2=0.0, ppcool=1.
   real :: wcool=0.1, wcool1=0.1, wcool2=0.1, deltaT=0.0, cs2cool2=0.0
+  real :: rheat=0.0, heat_int=0.0
   real :: TT_int, TT_ext, cs2_int, cs2_ext
   real :: cool_int=0.0, cool_ext=0.0, ampl_TT=0.0
   real :: chi_jump_shock=1.0, xchi_shock=0.0,widthchi_shock=0.02
@@ -105,6 +106,7 @@ module Energy
   real :: xjump_mid=0.0,yjump_mid=0.0,zjump_mid=0.0
   real :: wpatch=0.0, amp_patch=1.0, patch_fac=1.0, coolfac=0.0
   real :: pp_cool=0.0
+  real, dimension(9) :: coef_cs2=0.0
   integer, parameter :: nheatc_max=4
   integer :: ippaux=0
   integer, target :: isothtop=0 !PAR_DOC: flag for isothermal top layer for
@@ -136,7 +138,8 @@ module Energy
   logical :: reinitialize_ss=.false.
   logical :: lviscosity_heat=.true.
   logical :: lfreeze_sint=.false.,lfreeze_sext=.false.
-  logical :: lhcond_global=.false.,lchit_aniso_simplified=.false.
+  logical :: lchit_aniso_simplified=.false.
+  logical, target :: lhcond_global=.false.
   logical :: lchit_total=.false., lchit_mean=.false., lchit_fluct=.false.
   logical :: lchiB_simplified=.false.
   logical :: lfpres_from_pressure=.false.
@@ -158,7 +161,7 @@ module Energy
   logical :: lchit_noT=.false.
   logical :: lss_running_aver_as_aux=.false.
   logical :: lss_running_aver_as_var=.false.
-  logical :: lss_running_aver=.false.
+  logical, target :: lss_running_aver=.false.
   logical :: lFenth_as_aux=.false.
   logical :: lcool_prof_as_var=.false.
   logical :: lss_flucz_as_aux=.false., lsld_char_wprofr=.false.
@@ -264,7 +267,7 @@ module Energy
       heattype, nheat_rho, nheat_TT, lrhs_max, &
       wpatch, amp_patch, ncool_patch, &
       patch_fac, coolfac, lnew_cooling_patches, lcool_prof_as_var, &
-      tau_cool_pp,pp_cool
+      tau_cool_pp,pp_cool, coef_cs2, rheat, heat_int
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -672,6 +675,8 @@ module Energy
       call put_shared_variable('mpoly0',mpoly0)
       call put_shared_variable('mpoly1',mpoly1)
       call put_shared_variable('mpoly2',mpoly2)
+      call put_shared_variable('lss_running_aver',lss_running_aver)
+      call put_shared_variable('lhcond_global',lhcond_global)
 !      call put_shared_variable('lheatc_chit',lheatc_chit)
 
       if (.not.ldensity.or.lboussinesq) &
@@ -1279,7 +1284,7 @@ module Energy
                          tau_cool_ss/=0.0 .or. tau_relax_ss/=0.0 .or. &
                          cool_uniform/=0.0 .or. cool_newton/=0.0 .or. &
                          (cool_ext/=0.0 .and. cool_int/=0.0) .or. lturbulent_heat .or. &
-                         (tau_cool2 /=0) .or. lheat_cool_gravz)
+                         (tau_cool2 /=0.0) .or. lheat_cool_gravz .or. heat_int/=0.0)
 !
 ! Set the constants
 !
@@ -2996,7 +3001,8 @@ module Energy
         lpenc_requested(i_rho1)=.true.
       endif
 !
-      if (cool/=0.0 .or. cool_ext/=0.0 .or. cool_int/=0.0 .or. luminosity/=0.0) then
+      if (cool/=0.0 .or. cool_ext/=0.0 .or. cool_int/=0.0 .or. luminosity/=0.0 .or. &
+          heat_int/=0.0) then
         if (cooltype=='Lambda-constant') then
           lpenc_requested(i_rho)=.true.
         elseif (cooltype=='corona') then
@@ -3017,6 +3023,8 @@ module Energy
         elseif (cooltype=='pressure'.or.cooling_profile=='surface_pp') then
           lpenc_requested(i_cs2)=.true.
           lpenc_requested(i_pp)=.true.
+        elseif (heattype=='imposed-cs2-core') then
+          lpenc_requested(i_cs2)=.true.
         else
           lpenc_requested(i_cs2)=.true.
         endif
@@ -4747,7 +4755,7 @@ module Energy
 !
 !  Check that chi is ok.
 !
-      if (headtt) print*,'calc_heatcond_constchi: chi=',chi
+      if (headtt) print*,'calc_heatcond_constchi_arr: chi=',chi
 !
 !
 !  Heat conduction
@@ -5100,7 +5108,7 @@ module Energy
 !
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
 !
-      if (headtt) print*,'calc_heatcond_hyper3: added thdiff'
+      if (headtt) print*,'calc_heatcond_hyper3_polar: added thdiff'
 !
       if (lupdate_courant_dt) diffus_chi3=diffus_chi3+chi_hyper3*pi4_1*dxmin_pencil**4
 !
@@ -5137,7 +5145,7 @@ module Energy
 !
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
 !
-      if (headtt) print*,'calc_heatcond_hyper3: added thdiff'
+      if (headtt) print*,'calc_heatcond_hyper3_mesh: added thdiff'
 !
       if (lupdate_courant_dt) then
         if (ldynamical_diffusion) then
@@ -5271,7 +5279,7 @@ module Energy
 !
 !  Check that chi is ok.
 !
-      if (headtt) print*,'calc_heatcond_shock: chi_shock,chi_jump_shock=',chi_shock,chi_jump_shock
+      if (headtt) print*,'calc_heatcond_shock_profr: chi_shock,chi_jump_shock=',chi_shock,chi_jump_shock
 !
       pchi_shock = chi_shock + chi_shock*(chi_jump_shock-1.)*step(p%r_mn,xchi_shock,widthchi_shock)
 !
@@ -5339,7 +5347,7 @@ module Energy
 !
 !  This particular version assumes a simple polytrope, so mpoly is known.
 !
-      if (headtt) print*,'calc_heatcond_constK: hcond=', maxval(hcond)
+      if (headtt) print*,'calc_heatcond_constK_arrays: hcond=', maxval(hcond)
 !
 !  Heat conduction
 !  Note: these routines require revision when ionization turned on
@@ -5685,7 +5693,7 @@ module Energy
 !
         if (notanumber(thdiff)) then
           if (lproc_print) then
-            print*, 'calc_heatcond_kramers: m,n,y(m),z(n)=', m, n, y(m), z(n)
+            print*,'calc_heatcond_kramers: m,n,y(m),z(n)=', m, n, y(m), z(n)
             if (.not.allproc_print) lproc_print=.false.
           endif
           call fatal_error_local('calc_heatcond_kramers','NaNs in thdiff')
@@ -5782,7 +5790,7 @@ module Energy
 !
         if (notanumber(thdiff)) then
           if (lproc_print) then
-            print*, 'calc_heatcond_smagorinsky: m,n,y(m),z(n)=', m, n, y(m), z(n)
+            print*,'calc_heatcond_smagorinsky: m,n,y(m),z(n)=', m, n, y(m), z(n)
             if (.not.allproc_print) lproc_print=.false.
           endif
           call fatal_error_local('calc_heatcond_smagorinsky','NaNs in thdiff')
@@ -5833,9 +5841,9 @@ module Energy
 !
       if (hcond0/=0..or.lread_hcond) then
         if (headtt) then
-          print*,'calc_heatcond: hcond0=',hcond0
-          print*,'calc_heatcond: lgravz=',lgravz
-          if (lgravz) print*,'calc_heatcond: Fbot,Ftop=',Fbot,Ftop
+          print*,'calc_heatcond_arrays: hcond0=',hcond0
+          print*,'calc_heatcond_arrays: lgravz=',lgravz
+          if (lgravz) print*,'calc_heatcond_arrays: Fbot,Ftop=',Fbot,Ftop
         endif
 
         call get_prof_pencil(hcond,glhc,lsphere_in_a_box.or.lcylinder_in_a_box, &
@@ -5880,7 +5888,7 @@ module Energy
 !  but this is not currently being checked.
 !
       if (chi_t/=0.) then
-        if (headtt) print*,'calc_headcond: "turbulent" entropy diffusion: chi_t=',chi_t
+        if (headtt) print*,'calc_headcond_arrays: "turbulent" entropy diffusion: chi_t=',chi_t
         call get_prof_pencil(chit_prof,gradchit_prof,lsphere_in_a_box,1.,chit_prof1,chit_prof2,xbot,xtop,p,f, &
                              stored_prof=chit_prof_stored,stored_dprof=dchit_prof_stored)
 !
@@ -5977,28 +5985,28 @@ module Energy
       if (hcond0/=0..or.lread_hcond.or.chi_t/=0.) then
         if (headt) then
 !
-          if (notanumber(p%rho1))    print*,'calc_heatcond: NaNs in rho1'
+          if (notanumber(p%rho1))    print*,'calc_heatcond_arrays: NaNs in rho1'
           if (chi_t/=0.) then
-            if (notanumber(p%del2ss))  print*,'calc_heatcond: NaNs in del2ss'
+            if (notanumber(p%del2ss))  print*,'calc_heatcond_arrays: NaNs in del2ss'
           endif
           if (hcond0/=0..or.lread_hcond) then
-            if (notanumber(hcond))     print*,'calc_heatcond: NaNs in hcond'
-            if (notanumber(1/hcond))   print*,'calc_heatcond: NaNs in 1/hcond'
-            if (notanumber(glhc))      print*,'calc_heatcond: NaNs in glhc'
-            if (notanumber(chix))      print*,'calc_heatcond: NaNs in chix'
-            if (notanumber(glnThcond)) print*,'calc_heatcond: NaNs in glnThcond'
+            if (notanumber(hcond))     print*,'calc_heatcond_arrays: NaNs in hcond'
+            if (notanumber(1/hcond))   print*,'calc_heatcond_arrays: NaNs in 1/hcond'
+            if (notanumber(glhc))      print*,'calc_heatcond_arrays: NaNs in glhc'
+            if (notanumber(chix))      print*,'calc_heatcond_arrays: NaNs in chix'
+            if (notanumber(glnThcond)) print*,'calc_heatcond_arrays: NaNs in glnThcond'
           endif
-          if (notanumber(g2))        print*,'calc_heatcond: NaNs in g2'
+          if (notanumber(g2))        print*,'calc_heatcond_arrays: NaNs in g2'
 !
 !  Most of these should trigger the following trap.
 !
           if (notanumber(thdiff)) then
             if (lproc_print) then
-              print*,'calc_heatcond: NaNs in thdiff'
-              print*, 'calc_heatcond: m,n,y(m),z(n)=', m, n, y(m), z(n)
+              print*,'calc_heatcond_arrays: NaNs in thdiff'
+              print*,'calc_heatcond_arrays: m,n,y(m),z(n)=', m, n, y(m), z(n)
               if (.not.allproc_print) lproc_print=.false.
             endif
-            call fatal_error_local('calc_heatcond','NaNs in thdiff')
+            call fatal_error_local('calc_heatcond_arrays','NaNs in thdiff')
           endif
         endif
         if ((hcond0/=0..or.lread_hcond).and.lwrite_prof .and. ip<=9) then
@@ -6008,8 +6016,6 @@ module Energy
         endif
 
         if (headt .and. lfirst .and. ip == 13) call output_pencil('heatcond.dat',thdiff,1)
-!
-        if (headtt) print*,'calc_heatcond: added thdiff'
 !
       endif
     endsubroutine calc_heatcond_arrays
@@ -6070,7 +6076,7 @@ module Energy
 !  "Turbulent" entropy diffusion (operates on entropy fluctuations only).
 !
       if (chi_t/=0.) then
-        if (headtt) print*,'calc_headcond: "turbulent" entropy diffusion: chi_t=',chi_t
+        if (headtt) print*,'calc_heatcond_sfluct: "turbulent" entropy diffusion: chi_t=',chi_t
 !
 !  ... + div(rho*T*chi*grads) = ... + chi*[del2s + (glnrho+glnTT+glnchi).grads]
 !  If lcalc_ssmean=T or lcalc_ssmeanxy=T, mean stratification is subtracted.
@@ -6094,7 +6100,7 @@ module Energy
 !
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
 !
-      if (headtt) print*,'calc_heatcond: added thdiff'
+      if (headtt) print*,'calc_heatcond_sfluct: added thdiff'
 !
 !  Check maximum diffusion from thermal diffusion.
 !
@@ -6266,7 +6272,7 @@ module Energy
 !
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
 !
-      if (headtt) print*,'calc_heatcond: added thdiff'
+      if (headtt) print*,'calc_heatcond_chit: added thdiff'
 !
 !  Check maximum diffusion from thermal diffusion.
 !
@@ -6323,7 +6329,8 @@ module Energy
 !
       if (lgravr .and. (.not.lspherical_coords) .and. &
            !several possible heating/cooling sources used
-           (luminosity/=0. .or. cool/=0. .or. cool_int/=0. .or. cool_ext/=0) ) &
+           (luminosity/=0. .or. cool/=0. .or. cool_int/=0. .or. cool_ext/=0. &
+                           .or. heat_int/=0.) ) &
            call get_heat_cool_gravr(heat,p)
 !
 !  (also see the comments inside the above subroutine to apply it to
@@ -6736,11 +6743,11 @@ module Energy
       use Diagnostics, only: phisum_mn_name_rz
 !
       type (pencil_case) :: p
-      real, dimension (nx) :: heat, prof, theta_profile, div_cool
+      real, dimension (nx) :: heat, prof, theta_profile, div_cool, cs2_prof
 !      real :: zbot,ztop
       intent(in) :: p
 !
-      if (luminosity /= 0.) then
+      if (luminosity /= 0. .or. heat_int /=0.) then
         select case (heattype)
         case ('gaussian', 'Gaussian') ! heating with a spatially fixed Gaussian profile
           if (nzgrid == 1) then
@@ -6748,12 +6755,21 @@ module Energy
           else
             prof = exp(-0.5*(p%r_mn/wheat)**2) * (2*pi*wheat**2)**(-1.5) ! 3-D one
           endif
+          heat = luminosity*prof
         case ('cs2-rho') ! heating depending on ambient density and temperature
           prof = (p%rho/rho0)**nheat_rho*(p%cs2/cs20)**nheat_TT
+          heat = luminosity*prof
+        case ('imposed-cs2-core') ! relax toward a fixed profile in the core below rheat
+          cs2_prof = &
+              coef_cs2(1)           + coef_cs2(2)*p%r_mn**2 + coef_cs2(3)*p%r_mn**4 + &
+              coef_cs2(4)*p%r_mn**6 + coef_cs2(5)*p%r_mn**8 + coef_cs2(6)*p%r_mn**10+ &
+              coef_cs2(7)*p%r_mn**12+ coef_cs2(8)*p%r_mn**14+ coef_cs2(9)*p%r_mn**16
+          prof = 1. - step(p%r_mn,rheat,wcool) ! inner heating/cooling step
+          heat =  heat        - heat_int*prof*(p%cs2-cs2_prof)/cs2_prof/p%rho1
+          div_cool = div_cool - heat_int*prof*(p%cs2-cs2_prof)/cs2_prof/p%rho1
         case default
           call fatal_error('get_heat_cool_gravr','no such heattype: '//trim(heattype))
         endselect
-        heat = luminosity*prof
       endif
 !
       if (headt .and. lfirst .and. ip<=9) call output_pencil('heat.dat',heat,1)
@@ -8771,6 +8787,9 @@ module Energy
     call copy_addr(lsld_char_rholimit,p_par(474)) ! bool
     call string_to_enum(enum_div_sld_ene,div_sld_ene)
     call copy_addr(enum_div_sld_ene,p_par(475)) ! int
+    call copy_addr(rheat,p_par(476)) 
+    call copy_addr(heat_int,p_par(477))
+    call copy_addr(coef_cs2,p_par(478)) ! (9)
 
     endsubroutine pushpars2c
 !***********************************************************************

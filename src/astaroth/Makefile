@@ -153,7 +153,7 @@ endif
 #
 # External sources are provided with absolute pathnames to avoid any trouble with symbolic links.
 #
-astaroth_libs: $(PC_HEADERS)
+astaroth_libs: $(PC_HEADERS) DSL/local/mhdsolver.ac
 ifeq ($(TRANSPILATION),on)
 	@if ! cmp -s DSL/solve_two.ac DSL/local/solve_two.ac; then \
 		cp DSL/solve_two.ac DSL/local/; \
@@ -198,6 +198,16 @@ ifeq ($(TRANSPILATION),on)
         for file in $(MODULESOURCES); do echo processing $$file ...; if [[ $$file =~ eos[_.] ]]; \
 	then ../scripts/phys_modules2c_transpilation par $$file equationofstate; \
         else ../scripts/phys_modules2c_transpilation par $$file; fi; done
+else
+	@export DSL_MODULE_DIR=$(DSL_MODULE_DIR); \
+        for file in $(MODULESOURCES); do echo processing $$file ...; if [[ $$file =~ eos[_.] ]]; \
+	then ../scripts/phys_modules2c par $$file equationofstate; \
+        else ../scripts/phys_modules2c par $$file; fi; done
+endif
+	@touch .sentinel
+#
+DSL/local/mhdsolver.ac: .sentinel
+ifeq ($(TRANSPILATION),on)
         ifeq ($(GENERATE_DSL_CODE),on)
 	  rm -f PC_modulesources_old.h
         endif
@@ -208,13 +218,9 @@ ifeq ($(TRANSPILATION),on)
         endif
 	cp PC_modulesources.h PC_modulesources_old.h
 else
-	@export DSL_MODULE_DIR=$(DSL_MODULE_DIR); \
-        for file in $(MODULESOURCES); do echo processing $$file ...; if [[ $$file =~ eos[_.] ]]; \
-	then ../scripts/phys_modules2c par $$file equationofstate; \
-        else ../scripts/phys_modules2c par $$file; fi; done
+	@touch DSL/local/mhdsolver.ac
 endif
-	@touch .sentinel
-#
+
 clean:
 	@rm -f $(OBJECTS)
 	@rm -f *.so .sentinel cmake_options.h

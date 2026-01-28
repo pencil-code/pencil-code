@@ -22,6 +22,9 @@ module Selfgravity
   include 'selfgravity.h'
 !
   real :: rhs_poisson_const=0.
+  real :: gravitational_const=G_Newton_cgs
+  namelist /selfgrav_init_pars/ &
+      gravitational_const
 !
   contains
 !***********************************************************************
@@ -34,6 +37,7 @@ module Selfgravity
       use SharedVariables, only: put_shared_variable
 
       call put_shared_variable('rhs_poisson_const',rhs_poisson_const, caller='register_selfgravity')
+      call put_shared_variable('gravitational_const',gravitational_const, caller='register_selfgravity')
 
     endsubroutine register_selfgravity
 !***********************************************************************
@@ -123,9 +127,13 @@ module Selfgravity
 !***********************************************************************
     subroutine read_selfgravity_init_pars(iostat)
 !
+      use File_io, only: parallel_unit
+!
       integer, intent(out) :: iostat
 !
-      iostat = 0
+      read(parallel_unit, NML=selfgrav_init_pars, IOSTAT=iostat)
+      !TP: Do something ugly since init pars for no module should always be optional
+      iostat=0
 !
     endsubroutine read_selfgravity_init_pars
 !***********************************************************************

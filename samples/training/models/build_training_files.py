@@ -129,10 +129,10 @@ def build_torchfort_config(save_dir, model_name=None):
                 "weight_decay": 0,
                 "eps": 1e-8,
                 "amsgrad": 0
+            },
+            "general": {
+                "grad_accumulation_steps": 5
             }
-        },
-        "general": {
-            "grad_accumulation_steps": 5
         },
         "lr_scheduler": {
             "type": "cosine_annealing",

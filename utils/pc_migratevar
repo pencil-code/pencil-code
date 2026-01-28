@@ -72,14 +72,15 @@ var = pc.read.var(
     var_file=src_var,
     datadir=src_datadir,
     trimall=True,
-    lpersist=True,
+    lpersist=lpersist,
     )
 f_old = var.f
 x_old = var.x
 y_old = var.y
 z_old = var.z
 t_old = var.t
-persist_old = var.persist.__dict__
+if lpersist:
+    persist_old = var.persist.__dict__
 i_src = pc.read.index(datadir=src_datadir)
 i_src = pythonify(i_src)
 
@@ -88,13 +89,14 @@ var = pc.read.var(
     var_file=dest_var,
     datadir=dest_datadir,
     trimall=True,
-    lpersist=True,
+    lpersist=lpersist,
     )
 f_new = var.f
 x_new = var.x
 y_new = var.y
 z_new = var.z
-persist_new = var.persist.__dict__
+if lpersist:
+    persist_new = var.persist.__dict__
 
 #Get indices for destination sim.
 i_dest = pc.read.index(datadir=dest_datadir)
@@ -148,11 +150,14 @@ if write_t:
 else:
     t_new = None
 
+if lpersist:
+    persist_new.update(persist_old)
+    persist = persist_new
+else:
+    persist = None
+
 #Write out f_new into snapshots
 if io_strategy == 'dist':
-    if lpersist:
-        raise NotImplementedError("writing persistent variables into a snapshot is not implemented in pc.io.write_snapshot")
-    
     pc.io.write_snapshot(f_new,
         file_name=dest_var,
         datadir=dest_datadir,
@@ -169,14 +174,9 @@ if io_strategy == 'dist':
         dx=dx,
         dy=dy,
         dz=dz,
+        persist=persist,
         )
 elif io_strategy == 'HDF5':
-    if lpersist:
-        persist_new.update(persist_old)
-        persist = persist_new
-    else:
-        persist = None
-    
     pc.io.write_h5_snapshot(
         f_new,
         file_name=dest_var,

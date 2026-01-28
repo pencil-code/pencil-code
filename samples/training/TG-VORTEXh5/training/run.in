@@ -4,7 +4,7 @@
 !
 &run_pars
   cvsid="c2196e6f1"
-  nt=3000, it1=100, isave=4000, itorder=3
+  nt=10000, it1=50, isave=4000, itorder=3
   !dvid=1e-4
   !slice_position='m'
   max_walltime= 41500 ! 12 h !
@@ -40,11 +40,13 @@ dtmin=1e-16
 /
 &training_run_pars
   lroute_via_cpu=F
-  it_train=1, it_train_chkpt=1000
+  !it_train=10, it_train_chkpt=5000
+	it_train_chkpt=5000
   luse_trained_tau=F
   max_loss=1.e-30
   model='stationary'
-	config_file='config_fno.yaml'
+	config_file='config_torchfort.yaml'
 	it_train_end=3000
 	lrun_epoch=T
+	dt_train=4.e-2
 /
