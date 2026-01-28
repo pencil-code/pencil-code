@@ -1111,6 +1111,7 @@ module Density
       logical :: lnothing
       real :: gamma, gamma_m1
       real, pointer :: gravitational_const
+      logical :: rhobar_exists
 !
       intent(inout) :: f
 !
@@ -1642,8 +1643,15 @@ module Density
                  sin(kx_lnrho(j)*x(l1:l2)+phase_lnrho(j) + complex_phase(omega_jeans*ampllnrho(j)))
           enddo; enddo
         case ('rhobar')
+          inquire(file='rhobar.dat',exist=rhobar_exists)
+          if(rhobar_exists) then
+                  if (lroot) print*,"Init lrho: reading rhobar from rhobar.dat"
+                  open(unit=10, file='rhobar.dat', status='old', action='read')
+                  read(10,*) rhobar
+                  close(10)
+          endif
           if (rhobar(n1) == impossible) then
-                  if (lroot) print*,"No value of rhobar given; Defaulting to rhobar = sound speed^2/(2piG)"
+                  if (lroot) print*,"Init lnrho: No value of rhobar given; Defaulting to rhobar = sound speed^2/(2piG)"
                   call get_shared_variable('gravitational_const',gravitational_const,caller='init_lnrho')
                   rhobar = cs20/(2*pi*gravitational_const)
           endif
