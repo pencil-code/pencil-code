@@ -139,7 +139,7 @@ module Density
   real :: density_ceiling=-1.
   logical :: lreinitialize_lnrho=.false., lreinitialize_rho=.false.
   logical :: lsubtract_init_stratification=.false., lwrite_stratification=.false.
-  real, dimension(my) :: rhobar= impossible
+  real, dimension(ny) :: rhobar= impossible
   character (len=labellen), dimension(ninit) :: initlnrho='nothing' !PAR_DOC:
     !PAR_DOC: initialization of density. Currently valid choices are
     !PAR_DOC:  \begin{description}
@@ -1649,6 +1649,15 @@ module Density
                   open(unit=10, file='rhobar.dat', status='old', action='read')
                   read(10,*) rhobar
                   close(10)
+          else
+            inquire(file='rhobar_r.dat',exist=rhobar_exists)
+            if(rhobar_exists) then
+                    if (lroot) print*,"Init lrho: reading R(theta) from rhobar_r.dat"
+                    if (lroot) print*,"Rhobar(theta) = R(theta)*(sound speed^2)/(2piG)"
+                    read(10,*) rhobar
+                    close(10)
+                    rhobar = rhobar*cs20/(2*pi*gravitational_const)
+            endif
           endif
           if (rhobar(n1) == impossible) then
                   if (lroot) print*,"Init lnrho: No value of rhobar given; Defaulting to rhobar = sound speed^2/(2piG)"
@@ -1656,7 +1665,7 @@ module Density
                   rhobar = cs20/(2*pi*gravitational_const)
           endif
           do n=n1,n2; do m=m1,m2
-            f(l1:l2,m,n,ilnrho) = log(rhobar(n)*x(l1:l2)**(-2))
+            f(l1:l2,m,n,ilnrho) = log(rhobar(n-nghost)*x(l1:l2)**(-2))
           enddo; enddo
         case ('jeans-wave-oblique')
 !
