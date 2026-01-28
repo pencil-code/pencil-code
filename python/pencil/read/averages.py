@@ -137,6 +137,7 @@ class Averages(object):
         The axis ordering of the 2D averages (yaver and zaver) is [t,x,z] or [t,x,y]
         """
 
+        from os.path import join, abspath
 
         #check iter_list type is integer(s) if present
         if iter_list is not None:
@@ -153,8 +154,6 @@ class Averages(object):
                 time_range = list(time_range)
             else:
                 time_range = [0, time_range]
-
-        from os.path import join, abspath
 
         simdir = abspath(simdir)
 
