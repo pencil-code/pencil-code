@@ -139,7 +139,7 @@ module Density
   real :: density_ceiling=-1.
   logical :: lreinitialize_lnrho=.false., lreinitialize_rho=.false.
   logical :: lsubtract_init_stratification=.false., lwrite_stratification=.false.
-  real, dimension(ny) :: rhobar= impossible
+  real, dimension(nygrid) :: rhobar= impossible
   character (len=labellen), dimension(ninit) :: initlnrho='nothing' !PAR_DOC:
     !PAR_DOC: initialization of density. Currently valid choices are
     !PAR_DOC:  \begin{description}
@@ -1664,8 +1664,8 @@ module Density
                   call get_shared_variable('gravitational_const',gravitational_const,caller='init_lnrho')
                   rhobar = cs20/(2*pi*gravitational_const)
           endif
-          do n=n1,n2; do m=m1,m2
-            f(l1:l2,m,n,ilnrho) = log(rhobar(n-nghost)*x(l1:l2)**(-2))
+          do n=1,ny; do m=m1,m2
+            f(l1:l2,m,n,ilnrho) = log(rhobar(n + ipy*ny)*x(l1:l2)**(-2))
           enddo; enddo
         case ('jeans-wave-oblique')
 !
