@@ -1,0 +1,1 @@
+.. include:: ../../../../samples/conv-slab/tutorial-conv-slab.rst
