@@ -56,6 +56,7 @@ Explore the sections below to get started, contribute, or run simulations with P
 
    tutorials/samples/samples-index.rst
    tutorials/python/tutpython
+   tutorials/python/IDL_to_Python_Translation_Guide
    tutorials/mathematica/tutmathematica
    tutorials/python/devpcpython
 
