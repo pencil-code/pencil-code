@@ -23,7 +23,7 @@ This comprehensive guide explains how to translate analysis scripts from IDL to 
 
 
 Architecture Comparison
-========================
+----------------------------
 
 +------------------------+----------------------------------+------------------------------------+
 | Feature                | IDL                              | Python                             |
@@ -44,10 +44,10 @@ Architecture Comparison
 +------------------------+----------------------------------+------------------------------------+
 
 Reading Simulation Data
-=======================
+--------------------------
 
 Option 1: Direct Functions (Original Approach)
------------------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Both languages offer direct function calls to read data:
 
@@ -86,7 +86,7 @@ Both languages offer direct function calls to read data:
 
 
 Option 2: Simulation Object (Python Recommended)
--------------------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Python's modern recommended approach:
 
@@ -120,10 +120,10 @@ Python's modern recommended approach:
 
 
 Core Data Access Functions
-==========================
+-----------------------------
 
 Parameters
-----------
+^^^^^^^^^^^^^^^
 
 **IDL**::
 
@@ -155,7 +155,7 @@ Parameters
 
 
 Dimensions and Grid
--------------------
+^^^^^^^^^^^^^^^^^^^^^^
 
 **IDL**::
 
@@ -190,7 +190,7 @@ Dimensions and Grid
 
 
 Time Series
------------
+^^^^^^^^^^^^^^
 
 **IDL**::
 
@@ -215,7 +215,7 @@ Time Series
 
 
 Variable Data (Full 3D)
------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **IDL**::
 
@@ -240,7 +240,7 @@ Variable Data (Full 3D)
 
 
 Averaged Data (XY-averaged, YZ-averaged, etc.)
------------------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **IDL**::
 
@@ -267,7 +267,7 @@ Averaged Data (XY-averaged, YZ-averaged, etc.)
 
 
 Slice Data (2D cross-sections)
--------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **IDL**::
 
@@ -292,7 +292,7 @@ Slice Data (2D cross-sections)
 
 
 Grid Information
-----------------
+^^^^^^^^^^^^^^^^^^^^^
 
 **IDL**::
 
@@ -315,10 +315,10 @@ Grid Information
 
 
 IDL to Python Array Operations
-===============================
+---------------------------------
 
 Basic Operations
-----------------
+^^^^^^^^^^^^^^^^^^^^^
 
 +----------------------------------+--------------------------------------+
 | IDL                              | Python                               |
@@ -341,7 +341,7 @@ Basic Operations
 +----------------------------------+--------------------------------------+
 
 Mathematical Functions
-----------------------
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 +----------------------------------+--------------------------------------+
 | IDL                              | Python                               |
@@ -384,7 +384,7 @@ Mathematical Functions
 +----------------------------------+--------------------------------------+
 
 Array Construction
-------------------
+^^^^^^^^^^^^^^^^^^^^^^
 
 +----------------------------------+--------------------------------------+
 | IDL                              | Python                               |
@@ -407,7 +407,7 @@ Array Construction
 +----------------------------------+--------------------------------------+
 
 Reduction Operations
---------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 +----------------------------------+--------------------------------------+
 | IDL                              | Python                               |
@@ -463,7 +463,7 @@ Integration
 
 
 Boolean Masking and Conditional Selection
-------------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **IDL**
 
@@ -495,10 +495,10 @@ Boolean Masking and Conditional Selection
 
 
 Working with Parameters in Depth
-=================================
+-----------------------------------
 
 Common Parameter Access Patterns
----------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Single parameter with default**
 
@@ -550,10 +550,10 @@ Common Parameter Access Patterns
 
 
 Advanced Data Access Techniques
-================================
+---------------------------------
 
 Reading Multiple Variable Snapshots
-------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **IDL**
 
@@ -583,7 +583,7 @@ Reading Multiple Variable Snapshots
 
 
 Time Series Analysis
----------------------
+^^^^^^^^^^^^^^^^^^^^^^^
 
 **IDL**
 
@@ -612,7 +612,7 @@ Time Series Analysis
 
 
 Vertical Profile Analysis
---------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **IDL**
 
@@ -638,10 +638,10 @@ Vertical Profile Analysis
 
 
 Plotting and Visualization
-===========================
+---------------------------------
 
 Basic Plot Function Pattern
-----------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **IDL**
 
@@ -696,7 +696,7 @@ Basic Plot Function Pattern
 
 
 Multi-Panel Plotting
---------------------
+^^^^^^^^^^^^^^^^^^^^^
 
 **Python**
 
@@ -736,7 +736,7 @@ Multi-Panel Plotting
 
 
 Time Evolution Plots
---------------------
+^^^^^^^^^^^^^^^^^^^^^
 
 **Python**
 
@@ -776,7 +776,7 @@ Time Evolution Plots
 
 
 Interactive Visualization
---------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Python with Pencil Code tools**
 
@@ -803,7 +803,7 @@ Interactive Visualization
 
 
 Contour and Heatmap Plots
--------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Python**
 
@@ -834,10 +834,10 @@ Contour and Heatmap Plots
 
 
 Data I/O Patterns
-=================
+------------------
 
 Reading Text Data
------------------
+^^^^^^^^^^^^^^^^^^
 
 **IDL**
 
@@ -863,7 +863,7 @@ Reading Text Data
 
 
 Saving Results
---------------
+^^^^^^^^^^^^^^
 
 **Python**
 
@@ -886,7 +886,7 @@ Saving Results
 
 
 Working with HDF5 Data
-----------------------
+^^^^^^^^^^^^^^^^^^^^^^^
 
 **Python**
 
@@ -908,10 +908,10 @@ Working with HDF5 Data
 
 
 Error Handling and Debugging
-=============================
+-----------------------------
 
 Common Issues and Solutions
-----------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Problem: Missing Parameter**
 
@@ -988,7 +988,7 @@ Common Issues and Solutions
 
 
 Inspecting Data Objects
-------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 **List all parameters**
 
@@ -1040,7 +1040,7 @@ Inspecting Data Objects
 
 
 Best Practices
-==============
+---------------
 
 1. **Use Python Simulation Object in New Scripts**
    
@@ -1147,7 +1147,7 @@ Best Practices
 
 
 Complete Example: From IDL to Python
-=====================================
+-------------------------------------
 
 **Original IDL Script**
 
@@ -1225,7 +1225,7 @@ Complete Example: From IDL to Python
 
 
 Summary of Key Differences
-==========================
+---------------------------
 
 +------------------------+-------------------------------------+-------------------------------------+
 | Aspect                 | IDL                                 | Python                              |
@@ -1256,7 +1256,7 @@ Summary of Key Differences
 
 
 Acknowledgments
-===============
+----------------
 
 This tutorial has been written with the aid of GitHub Copilot.
 
