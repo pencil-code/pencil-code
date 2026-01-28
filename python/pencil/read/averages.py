@@ -405,12 +405,12 @@ class Averages(object):
             v.strip() for v in variables if v[0] != "#" and not v.isspace()
         ]  # Ignore commented variables and blank lines in the .in file.
         with h5py.File(av_file, "r") as tmp:
-            n_times = len(tmp.keys()) - 1
-            n_times = min(n_times,tmp['last'][()].item() + 1)
-            start_time, end_time = 0, tmp[str(n_times-1)]['time'][()].item()
-            if time_range is not None:
-                start_time, end_time = time_range
-            if iter_list:
+            n_times = min(
+                len(tmp.keys()) - 1,
+                tmp['last'][()].item() + 1,
+                )
+
+            if iter_list is not None:
                 if len(iter_list) == 1:
                     n_times = min(n_times-1, iter_list[0])
                     itlist = range(n_times,n_times+1,iter_step)
@@ -429,16 +429,19 @@ class Averages(object):
             else:
                 itlist = natural_sort(tmp.keys())[:n_times]
 
-            if time_range:
+            if time_range is not None:
+                start_time, end_time = time_range
+
                 tmplist = list()
                 for t_idx in itlist:
-                    if tmp[str(t_idx) + "/time"][()].item() >= start_time:
-                        if tmp[str(t_idx) + "/time"][()].item() <= end_time:
-                            tmplist.append(t_idx)
+                    t = tmp[str(t_idx) + "/time"][()].item()
+                    if start_time <= t <= end_time:
+                        tmplist.append(t_idx)
                 if len(tmplist) == 0:
                     raise RuntimeError(f"read.aver error: no data in {av_file} within time range {time_range}.")
                 else:
                     itlist = tmplist
+
             # Determine the structure of the xy/xz/yz/y/z averages.
             if var_names is not None:
                 var_names = [v.strip() for v in var_names]
