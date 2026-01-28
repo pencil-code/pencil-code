@@ -9,7 +9,7 @@ if(AC_lfreeze_var_all__mod__cdata)
 		DF_SS   *= pfreeze
 	}
 }
-if(AC_lfrozen_bcs_x)
+if(AC_lfrozen_bcs_x__mod__cdata)
 {
 	if(AC_iux__mod__cdata != 0 && AC_lfrozen_bot_var_x__mod__cdata[AC_iux__mod__cdata-1])
 	{
