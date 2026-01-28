@@ -300,13 +300,10 @@
       if (it<it_train_start) return
 
 
-      if((t-t_last_train) > dt_train) then
-        t_last_train = t
-        ldo_train = .true.
-      endif
-
-
       if ((it_train /= -1).and.mod(it,it_train)==0) then
+        ldo_train = .true.
+      else if((t-t_last_train) > dt_train) then
+        t_last_train = t
         ldo_train = .true.
       endif
 
