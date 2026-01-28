@@ -35,3 +35,4 @@ GPU       =   gpu_astaroth
 GPU_VENDOR=   nvidia
 MULTITHREADING= openmp
 RUNTIME_COMPILATION=off
+TRANSPILATION =on

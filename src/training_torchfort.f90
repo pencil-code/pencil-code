@@ -35,14 +35,14 @@
     character(LEN=fnlen) :: model='model', config_file="config_mlp_native.yaml", model_file
 
     logical :: lroute_via_cpu=.false., lfortran_launched, luse_trained_tau, lwrite_sample=.false., lscale=.true.
-    real :: max_loss=1.e-4
+    real :: max_loss=1.e-4, dt_train=1.e-10
 
     integer :: idiag_loss=0            ! DIAG_DOC: torchfort training loss
     integer :: idiag_tauerror=0        ! DIAG_DOC: $\sqrt{\left<(\sum_{i,j} u_i*u_j - tau_{ij})^2\right>}$
 
     namelist /training_run_pars/ config_file, model, it_train, it_train_start, it_train_chkpt, &
                                  luse_trained_tau, lscale, lwrite_sample, max_loss, lroute_via_cpu,&
-                                 it_train_end, lrun_epoch
+                                 it_train_end, lrun_epoch, dt_train
 !
     character(LEN=fnlen) :: model_output_dir, checkpoint_output_dir
     integer :: istat, train_step_ckpt, val_step_ckpt
@@ -290,12 +290,27 @@
    
       use Gpu, only: get_ptr_gpu_training, train_gpu, infer_gpu
       use Mpicomm, only: mpiwtime
+      real, save :: t_last_train = 0.0
+  
 
       real, dimension (mx,my,mz,mfarray) :: f
+    
+      logical :: ldo_train = .false.
 
       if (it<it_train_start) return
 
-      if (mod(it,it_train)==0) then
+
+      if((t-t_last_train) > dt_train) then
+        t_last_train = t
+        ldo_train = .true.
+      endif
+
+
+      if ((it_train /= -1).and.mod(it,it_train)==0) then
+        ldo_train = .true.
+      endif
+
+      if(ldo_train) then
 !
         if (.not. lfortran_launched) then
           !istat = torchfort_train(model, get_ptr_gpu_training(iux,iuz), &
