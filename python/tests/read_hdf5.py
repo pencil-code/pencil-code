@@ -3,7 +3,7 @@ import os
 import pencil as pc
 import pytest
 
-from test_utils import require_sample, standalone_test
+from test_utils import require_sample, standalone_test, get_rundir
 
 datadir_novar = pytest.static_data_location/"hdf5-novar" #a directory without var.h5
 datadir_nogrid = pytest.static_data_location/"hdf5-nogrid" #a directory without grid.h5
@@ -188,3 +188,18 @@ def test_read_power_lazy_standalone(datadir_pxyhdf5_complex_npx_2):
         'assert not np.any(np.isnan(p.uz_xy[()]))',
         'assert np.all(np.isclose(np.real(p.uz_xy[0,16,1,0]), -1.2e-05, rtol=1.5e-2, atol=0))'
         ])
+
+@require_sample("samples/helical-MHDturb_HDF5")
+def test_read_av_timerange(datadir_helical_MHDTurb_HDF5):
+    av = pc.read.aver(
+            datadir = datadir_helical_MHDTurb_HDF5,
+            simdir = get_rundir("samples/helical-MHDturb_HDF5"),
+            plane_list=['xy'],
+            time_range=(0.1,0.3),
+            )
+
+    assert np.all(np.isclose(av.t, [0.16,0.24]))
+    assert np.all(np.isclose(
+        av.xy.bymz[1,:4],
+        [-8.36838e-06, 2.09012e-05, 9.59892e-06, -1.86036e-05],
+        ))
