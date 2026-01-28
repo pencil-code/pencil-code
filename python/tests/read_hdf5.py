@@ -203,3 +203,48 @@ def test_read_av_timerange(datadir_helical_MHDTurb_HDF5):
         av.xy.bymz[1,:4],
         [-8.36838e-06, 2.09012e-05, 9.59892e-06, -1.86036e-05],
         ))
+
+@require_sample("samples/helical-MHDturb_HDF5")
+def test_read_av_iterlist1(datadir_helical_MHDTurb_HDF5):
+    av = pc.read.aver(
+            datadir = datadir_helical_MHDTurb_HDF5,
+            simdir = get_rundir("samples/helical-MHDturb_HDF5"),
+            plane_list=['xy'],
+            iter_list=[3],
+            )
+
+    assert np.all(np.isclose(av.t, [0.24]))
+    assert np.all(np.isclose(
+        av.xy.bymz[0,:4],
+        [-8.36838e-06, 2.09012e-05, 9.59892e-06, -1.86036e-05],
+        ))
+
+@require_sample("samples/helical-MHDturb_HDF5")
+def test_read_av_iterlist2(datadir_helical_MHDTurb_HDF5):
+    av = pc.read.aver(
+            datadir = datadir_helical_MHDTurb_HDF5,
+            simdir = get_rundir("samples/helical-MHDturb_HDF5"),
+            plane_list=['xy'],
+            iter_list=[1,4],
+            )
+
+    assert np.all(np.isclose(av.t, [0.08, 0.16, 0.24]))
+    assert np.all(np.isclose(
+        av.xy.bymz[2,:4],
+        [-8.36838e-06, 2.09012e-05, 9.59892e-06, -1.86036e-05],
+        ))
+
+@require_sample("samples/helical-MHDturb_HDF5")
+def test_read_av_iterlist3(datadir_helical_MHDTurb_HDF5):
+    av = pc.read.aver(
+            datadir = datadir_helical_MHDTurb_HDF5,
+            simdir = get_rundir("samples/helical-MHDturb_HDF5"),
+            plane_list=['xy'],
+            iter_list=[1,2,3],
+            )
+
+    assert np.all(np.isclose(av.t, [0.08, 0.16, 0.24]))
+    assert np.all(np.isclose(
+        av.xy.bymz[2,:4],
+        [-8.36838e-06, 2.09012e-05, 9.59892e-06, -1.86036e-05],
+        ))
