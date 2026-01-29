@@ -3448,20 +3448,20 @@ module Initcond
 !
         where (r_ell>1.0) hh=-0.5*Omega**2*z(n)**2 + 0.5*Omega**2*ztop**2 + hh0
 !
-!  Calculate velocities (Kepler speed subtracted)
+!  Calculate velocities (Kepler speed subtracted if shear module is used)
 !
-        f(l1:l2,m,n,iux)=   eps2*sigma *Omega*y(m)*xi
-        f(l1:l2,m,n,iuy)=(qshear-sigma)*Omega*x(l1:l2)*xi
+        f(l1:l2,m,n,iux)=f(l1:l2,m,n,iux)+   eps2*sigma *Omega*y(m)*xi
+        f(l1:l2,m,n,iuy)=f(l1:l2,m,n,iuy)+(qshear-sigma)*Omega*x(l1:l2)*xi
 !
 !  calculate density, depending on what gamma is
 !
         if (lentropy) then
-          f(l1:l2,m,n,ilnrho)=(log(gamma_m1*hh/cs20)-gamma*f(l1:l2,m,n,iss))/gamma_m1
+          f(l1:l2,m,n,ilnrho)=f(l1:l2,m,n,ilnrho)+(log(gamma_m1*hh/cs20)-gamma*f(l1:l2,m,n,iss))/gamma_m1
         else
           if (gamma==1.) then
-            f(l1:l2,m,n,ilnrho) = hh/cs20
+            f(l1:l2,m,n,ilnrho) = f(l1:l2,m,n,ilnrho) + hh/cs20
           else
-            f(l1:l2,m,n,ilnrho) = log(gamma_m1*hh/cs20)/gamma_m1
+            f(l1:l2,m,n,ilnrho) = f(l1:l2,m,n,ilnrho) + log(gamma_m1*hh/cs20)/gamma_m1
           endif
         endif
       enddo; enddo

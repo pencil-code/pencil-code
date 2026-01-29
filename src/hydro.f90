@@ -236,7 +236,7 @@ module Hydro
       lno_noise_uu, lrho_nonuni_uu, lpower_profile_file_uu, &
       llorentz_limiter, lhiggsless, lhiggsless_old, vwall, alpha_hless, width_hless, &
       xjump_mid, yjump_mid, zjump_mid, qini, lnorm_vw_hless, &
-      lcorrect_penc_u
+      lcorrect_penc_u, qshear
 !
 !  Run parameters.
 !
@@ -338,7 +338,7 @@ module Hydro
       limpose_only_horizontal_uumz, luu_fluc_as_aux, Om_inner, luu_sph_as_aux, &
       ltime_integrals_always, dtcor, lvart_in_shear_frame, lSchur_3D3D1D_uu, &
       lSchur_2D2D3D_uu, lSchur_2D2D1D_uu, &
-      lhiggsless, vwall, alpha_hless, width_hless
+      lhiggsless, vwall, alpha_hless, width_hless, qshear
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -1960,6 +1960,7 @@ module Hydro
           ! Ensure really is zero, as may have used lread_oldsnap
           f(:,:,:,iux:iuz)=0.
         case ('const_uu','const-uu'); do i=1,3; f(:,:,:,iuu+i-1) = uu_const(i); enddo
+        case ('shear'); f(:,:,:,iuy) = -qshear*Omega*spread(spread(x,2,my),3,mz)
         case('smooth_step_ux')
           xhalf= 0.5*(xyz1(1)+xyz0(1))
           do iy=m1,m2;do iz=n1,n2
