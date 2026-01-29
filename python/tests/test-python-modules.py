@@ -47,6 +47,7 @@ def call_tox(output_dir, report_coverage=True, fast=False):
     """
     output_dir: pathlib.Path instance
     """
+    output_dir = output_dir.absolute()
     if not output_dir.exists():
         output_dir.mkdir()
 
@@ -76,7 +77,6 @@ def call_tox(output_dir, report_coverage=True, fast=False):
         tox run --conf "{py_tests_dir}/tox.ini" \
             --result-json "{json_filename}" \
             --colored no \
-            --override "testenv:report.commands=coverage html --directory='{htmlcov_dir}'" \
             --override "testenv.setenv=PYTEST_ADDOPTS='--color=no'" \
             -- \
             {coverage_flags} {fast_flags}
@@ -84,7 +84,7 @@ def call_tox(output_dir, report_coverage=True, fast=False):
         )
 
     if report_coverage:
-        subprocess.run(["coverage", "html"], check=True, cwd=py_tests_dir)
+        subprocess.run(["coverage", "html", f"--directory={htmlcov_dir}"], check=True, cwd=py_tests_dir)
 
     json_to_html(json_filename, output_dir/"index.html")
     sys.exit(p.returncode)
