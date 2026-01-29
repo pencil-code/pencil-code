@@ -1163,23 +1163,29 @@ class __Simulation__(object):
         print("! ERROR: Couldnt find " + quantity + "!")
         return None
 
-    def get_ts(self, unique_clean=True):
-        """Returns time series object.
-        Args:
-            unique_clean:  set True, np.unique is used to clean up the ts,
-                           e.g. remove errors at the end of crashed runs"""
+    def get_ts(self, **kwargs):
+        """
+        Returns time series object. All kwargs are passed to `pencil.read.ts`.
+        """
         from pencil.read import ts
+
+        if 'unique_clean' not in kwargs:
+            kwargs['unique_clean'] = True
+
+        td = self.tmp_dict
 
         # check if already loaded
         if (
-            "ts" in self.tmp_dict.keys()
-            and self.tmp_dict["ts"].t[-1] == self.get_T_last()
-        ):
-            return self.tmp_dict["ts"]
+            "ts" in td
+            and td["ts"].t[-1] == self.get_T_last()
+            and getattr(td, "_ts_kwargs", None) == kwargs
+            ):
+            return td["ts"]
 
         if self.started():
-            ts = ts(sim=self, quiet=True, unique_clean=unique_clean)
-            self.tmp_dict["ts"] = ts
+            ts = ts(sim=self, quiet=True, **kwargs)
+            td["ts"] = ts
+            td["_ts_kwargs"] = kwargs
             return ts
         else:
             print(
