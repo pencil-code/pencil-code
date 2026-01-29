@@ -1180,7 +1180,7 @@ class __Simulation__(object):
         if (
             "ts" in td
             and td["ts"].t[-1] == self.get_T_last()
-            and getattr(td, "_ts_kwargs", None) == kwargs
+            and td.get("_ts_kwargs", None) == kwargs
             ):
             return td["ts"]
 
