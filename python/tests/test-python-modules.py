@@ -86,7 +86,7 @@ def call_tox(output_dir, report_coverage=True, fast=False):
     if report_coverage:
         subprocess.run(["coverage", "html"], check=True, cwd=py_tests_dir)
 
-    json_to_html(json_filename, output_dir/"report.html")
+    json_to_html(json_filename, output_dir/"index.html")
     sys.exit(p.returncode)
 
 _ansi_escape = re.compile(r'''

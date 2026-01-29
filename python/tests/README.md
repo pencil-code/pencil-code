@@ -39,7 +39,7 @@ The required Python packages are available in the Ubuntu repositories as
 installed in an isolated environment).
 - If multiple Python versions are present on your system, the above command will
 run tests using all of them.
-- A HTML report, `report.html`, will be generated, with a link to the code coverage report.
+- A HTML report, `index.html`, will be generated, with a link to the code coverage report.
 - Use the `--outputdir` option to change the location of the reports.
 
 
