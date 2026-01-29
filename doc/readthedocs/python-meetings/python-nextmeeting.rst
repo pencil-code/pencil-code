@@ -26,6 +26,7 @@ Next Meeting
 - The item **Interactive vs. library mode** in :file:`pencil-code/doc/readthedocs/python-meetings/python-decisions.rst` is now obsolete due to the implementation of lazy loading.
 
 - Folders in `python/` (like `meetings` and `docs`) are detected as Python modules if `$PENCIL_HOME/python` is added to `$PYTHONPATH`. Options to avoid this:
+
   * move the Python modules to `python/src` and instead add this to `$PYTHONPATH`
   * ??
 
