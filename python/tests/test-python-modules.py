@@ -52,11 +52,6 @@ def call_tox(output_dir, report_coverage=True, fast=False):
         output_dir.mkdir()
 
     json_filename = output_dir/"report.json"
-
-    htmlcov_dir = output_dir/"htmlcov"
-    if not htmlcov_dir.exists():
-        htmlcov_dir.mkdir()
-
     py_tests_dir = pathlib.Path(__file__).parent
 
     if report_coverage:
@@ -84,6 +79,10 @@ def call_tox(output_dir, report_coverage=True, fast=False):
         )
 
     if report_coverage:
+        htmlcov_dir = output_dir/"htmlcov"
+        if not htmlcov_dir.exists():
+            htmlcov_dir.mkdir()
+
         subprocess.run(["coverage", "html", f"--directory={htmlcov_dir}"], check=True, cwd=py_tests_dir)
 
     json_to_html(json_filename, output_dir/"index.html")
