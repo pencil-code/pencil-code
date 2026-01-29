@@ -1006,7 +1006,8 @@ class __Simulation__(object):
         values = [i for i in last.split(" ") if not i == ""]
 
         if len(header) != len(values):
-            return self.get_ts().t[-1]
+            #NOTE: we cannot use self.get_ts here since that internally calls self.get_T_last.
+            raise RuntimeError(f"format of time_series.dat is invalid (expected {len(header)} columns, but found {len(values)} in last line)")
 
         return float(dict(zip(header, values))["t"])
 
