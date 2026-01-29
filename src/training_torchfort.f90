@@ -25,6 +25,7 @@
 
     integer :: model_device=0
     integer :: it_train=-1, it_train_chkpt=-1, it_train_start=1,it_train_end=-1
+    real :: t_train_start = 0.0
 
     !real(KIND=rkind4), dimension(:,:,:,:,:), allocatable, device :: input, label, output
     real, dimension(:,:,:,:,:), allocatable, device :: input, label, output
@@ -42,7 +43,7 @@
 
     namelist /training_run_pars/ config_file, model, it_train, it_train_start, it_train_chkpt, &
                                  luse_trained_tau, lscale, lwrite_sample, max_loss, lroute_via_cpu,&
-                                 it_train_end, lrun_epoch, dt_train
+                                 it_train_end, lrun_epoch, dt_train, t_train_start
 !
     character(LEN=fnlen) :: model_output_dir, checkpoint_output_dir
     integer :: istat, train_step_ckpt, val_step_ckpt
@@ -290,76 +291,71 @@
    
       use Gpu, only: get_ptr_gpu_training, train_gpu, infer_gpu
       use Mpicomm, only: mpiwtime
-      real, save :: t_last_train = 0.0
   
 
       real, dimension (mx,my,mz,mfarray) :: f
     
-      logical :: ldo_train = .false.
+      real, save :: t_last_train = 0.0
+      logical :: ldo_training_step
 
-      if (it<it_train_start) return
+      if (it<it_train_start .or. t<t_train_start) return
 
+      ldo_training_step = &
+              ((it_train /= -1) .and. mod(it,it_train)==0) .or. &
+              ((t-t_last_train) > dt_train)
+      if(.not. ldo_training_step) return
 
-      if ((it_train /= -1).and.mod(it,it_train)==0) then
-        ldo_train = .true.
-      else if((t-t_last_train) > dt_train) then
-        t_last_train = t
-        ldo_train = .true.
-      endif
-
-      if(ldo_train) then
+      t_last_train = t
+      if (.not. lfortran_launched) then
+        !istat = torchfort_train(model, get_ptr_gpu_training(iux,iuz), &
+        !                               get_ptr_gpu_training(itauxx,itauzz), train_loss)
+        start_time = mpiwtime()
+        call train_gpu(train_loss, itsub)
+        end_time = mpiwtime()
+        training_time = training_time + end_time-start_time
+      else
+        call calc_tau(f)
 !
-        if (.not. lfortran_launched) then
-          !istat = torchfort_train(model, get_ptr_gpu_training(iux,iuz), &
-          !                               get_ptr_gpu_training(itauxx,itauzz), train_loss)
-          start_time = mpiwtime()
-          call train_gpu(train_loss, itsub)
-          end_time = mpiwtime()
-          training_time = training_time + end_time-start_time
-        else
-          call calc_tau(f)
+!  inp scaling.
 !
-!  input scaling.
-!
-          if (lscale) then
-            if (it == it_train_start) then
-              input_min = minval(uumean)
-              input_max = maxval(uumean)
-            endif
-
-            call scale(uumean, input_min, input_max)
-!
-! output scaling.
-!
-            if (it == it_train_start) then
-              output_min = minval(f(:,:,:,itauxx:itauzz))
-              output_max = maxval(f(:,:,:,itauxx:itauzz))
-            endif
-            call scale(f(:,:,:,itauxx:itauzz), output_min, output_max)
+        if (lscale) then
+          if (it == it_train_start) then
+            input_min = minval(uumean)
+            input_max = maxval(uumean)
           endif
 
-          ! print*, output_min, output_max, input_min, input_max
-          input(:,:,:,:,1) = uumean                    ! host to device    !sngl(uumean)
-          label(:,:,:,:,1) = f(:,:,:,itauxx:itauzz)    ! host to device
-
-          istat = torchfort_train(model, input, label, train_loss)
-!print*, 'TRAIN', it, train_loss
-
+          call scale(uumean, input_min, input_max)
+!
+! outp scaling.
+!
+          if (it == it_train_start) then
+            output_min = minval(f(:,:,:,itauxx:itauzz))
+            output_max = maxval(f(:,:,:,itauxx:itauzz))
+          endif
+          call scale(f(:,:,:,itauxx:itauzz), output_min, output_max)
         endif
 
-        if (istat /= TORCHFORT_RESULT_SUCCESS) call fatal_error("train","istat="//trim(itoa(istat)))
+        ! print*, output_min, output_max, input_min, input_max
+        input(:,:,:,:,1) = uumean                    ! host to device    !sngl(uumean)
+        label(:,:,:,:,1) = f(:,:,:,itauxx:itauzz)    ! host to device
 
-        if (train_loss <= max_loss) ltrained=.true.
-        if ((it_train_end >= 0) .and. it >= it_train_end) ltrained=.true.
-        if(ltrained) then
-                call save_model
-        else if (lroot.and.lfirst.and.mod(it,it_train_chkpt)==0) then
-          istat = torchfort_save_checkpoint(trim(model), trim(checkpoint_output_dir))
-          if (istat /= TORCHFORT_RESULT_SUCCESS) &
-            call fatal_error("train","when saving checkpoint: istat="//trim(itoa(istat)))
-          lckpt_written = .true.
-          print*, 'it,it_train_chkpt=', it,it_train_chkpt, trim(model),istat, trim(checkpoint_output_dir), lckpt_written
-        endif
+        istat = torchfort_train(model, input, label, train_loss)
+!print 'TRAIN', it, train_loss
+
+      endif
+
+      if (istat /= TORCHFORT_RESULT_SUCCESS) call fatal_error("train","istat="//trim(itoa(istat)))
+
+      if (train_loss <= max_loss) ltrained=.true.
+      if ((it_train_end >= 0) .and. it >= it_train_end) ltrained=.true.
+      if(ltrained) then
+              call save_model
+      else if (lroot.and.lfirst.and.mod(it,it_train_chkpt)==0) then
+        istat = torchfort_save_checkpoint(trim(model), trim(checkpoint_output_dir))
+        if (istat /= TORCHFORT_RESULT_SUCCESS) &
+          call fatal_error("train","when saving checkpoint: istat="//trim(itoa(istat)))
+        lckpt_written = .true.
+        print*, 'it,it_train_chkpt=', it,it_train_chkpt, trim(model),istat, trim(checkpoint_output_dir), lckpt_written
       endif
 
     endsubroutine train
