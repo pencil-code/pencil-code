@@ -72,6 +72,7 @@ const int prof_nz = 150
 
 #include "../stdlib/math"
 #include "../stdlib/cg.h"
+#include "../stdlib/general_grid"
 #include "../stdlib/general_derivs.h"
 //#include "../stdlib/pc_derivs.h"
 #include "../stdlib/general_operators.h"
