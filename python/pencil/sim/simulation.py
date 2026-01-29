@@ -8,6 +8,7 @@ import os
 from os.path import join, exists, split, islink, realpath, abspath, basename
 import numpy as np
 import subprocess
+import warnings
 
 from pencil.util import PathWrapper, pc_print
 
@@ -1188,7 +1189,7 @@ class __Simulation__(object):
             td["_ts_kwargs"] = kwargs
             return ts
         else:
-            print(
+            warnings.warn(
                 "? WARNING: Simulation "
                 + self.name
                 + " has not yet been started. No timeseries available!"
