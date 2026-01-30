@@ -1,7 +1,7 @@
 !  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
 !
 &run_pars
-  nt=20400, it1=20, isave=1000, itorder=3
+  nt=20400, it1=200, isave=1000, itorder=3
   dsnap=-.1, dvid=100., d1davg=20., d2davg=20.
   lpencil_check_small=F
   dt=1e-2
