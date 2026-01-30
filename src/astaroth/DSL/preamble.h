@@ -171,7 +171,6 @@ const real ac_real_unused_scalar = 0.0
 
 global output real AC_Arms
 #include "../forcing"
-#include "../stdlib/grid/funcs.h"
 #define ikx (vertexIdx.x-NGHOST+1)
 #define iky (vertexIdx.y-NGHOST+1)
 #define ikz (vertexIdx.z-NGHOST+1)
