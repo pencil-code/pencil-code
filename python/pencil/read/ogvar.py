@@ -85,6 +85,7 @@ def ogvar(*args, **kwargs):
         return False
 
     if "var_file" in kwargs:
+        #2026-01-30/Kishore: unclear why it ever makes sense for var_file to be a Simulation object.
         if isinstance(kwargs["var_file"], __Simulation__):
             kwargs["var_file"] = "ogvar.dat"
     else:
