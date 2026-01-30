@@ -66,7 +66,7 @@ def ogvar(*args, **kwargs):
     started = None
 
     for a in args:
-        if type(a, __Simulation__):
+        if isinstance(a, __Simulation__):
             started = a.started()
             break
     else:
