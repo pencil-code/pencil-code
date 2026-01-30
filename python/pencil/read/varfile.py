@@ -29,7 +29,7 @@ from .fortran_file import FortranFileExt
 from pencil.math import natural_sort
 from pencil.math.derivatives import curl, curl2
 from pencil import read
-from pencil.sim import __Simulation__
+from pencil.sim import Simulation
 from pencil.util import copy_docstring
 
 class DataCube(object):
@@ -1061,7 +1061,7 @@ def var(*args, **kwargs):
     started = None
 
     for a in args:
-        if isinstance(a, __Simulation__):
+        if isinstance(a, Simulation):
             started = a.started()
             break
 

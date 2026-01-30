@@ -61,12 +61,12 @@ def ogvar(*args, **kwargs):
         Precision of the data. Either float 'f' or double 'd'.
     """
 
-    from pencil.sim import __Simulation__
+    from pencil.sim import Simulation
 
     started = None
 
     for a in args:
-        if isinstance(a, __Simulation__):
+        if isinstance(a, Simulation):
             started = a.started()
             break
     else:
@@ -86,7 +86,7 @@ def ogvar(*args, **kwargs):
 
     if "var_file" in kwargs:
         #2026-01-30/Kishore: unclear why it ever makes sense for var_file to be a Simulation object.
-        if isinstance(kwargs["var_file"], __Simulation__):
+        if isinstance(kwargs["var_file"], Simulation):
             kwargs["var_file"] = "ogvar.dat"
     else:
         if "varfile" in kwargs:

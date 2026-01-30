@@ -11,7 +11,7 @@ from typing import Any
 
 from test_utils import assert_equal, _pretty_print, get_rundir, standalone_test
 
-from pencil.sim.simulation import __Simulation__
+from pencil.sim.simulation import Simulation
 
 
 def test_neat_short_tricks() -> None:
@@ -63,7 +63,7 @@ def test_neat_short_tricks_standalone() -> None:
         ])
 
 def _assert_sim_parameter(
-    sim: __Simulation__, parameter: str, expected: Any
+    sim: Simulation, parameter: str, expected: Any
 ) -> None:
     """Compare a value from start.in/run.in with a reference value."""
     value = sim.get_value(parameter)

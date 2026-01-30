@@ -59,7 +59,7 @@ def simulation(*args, **kwargs):
     self.tmp_dict:         temporal dictionary of stuff, will not be saved
     """
 
-    return __Simulation__(*args, **kwargs)
+    return Simulation(*args, **kwargs)
 
 
 class Simulation(object):

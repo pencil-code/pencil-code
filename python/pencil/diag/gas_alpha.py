@@ -48,7 +48,7 @@ def gas_alpha(sim=False, t_range=[0, -1], OVERWRITE=False):
 
         return empirical_std_deviation(x) / np.sqrt(M)
 
-    if isinstance(sim, sim.__Simulation__):
+    if isinstance(sim, sim.Simulation):
         SIM = sim
     else:
         SIM = get_sim()

@@ -79,9 +79,9 @@ class TimeSeries(object):
         if precision == "h":
             precision = "half"
         if sim:
-            from pencil.sim import __Simulation__
+            from pencil.sim import Simulation
 
-            if isinstance(sim, __Simulation__):
+            if isinstance(sim, Simulation):
                 datadir = sim.datadir
 
         datadir = os.path.expanduser(datadir)

@@ -66,7 +66,7 @@ def group(simulations, groupby, sort=True, only_started=False, reverse=False):
             else:
                 sim_dict_grouped[q].append(sim)
 
-    # case the groupby-keyword can be found via __simulation__.get_value
+    # case the groupby-keyword can be found via Simulation.get_value
     elif sim_list[0].get_value(groupby) != None:
         for sim in sim_list:
             q = str(sim.get_value(groupby))

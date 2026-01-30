@@ -77,7 +77,7 @@ class __Simulations__(object):
         """
 
         from pencil.math import is_iterable
-        from pencil.sim.simulation import __Simulation__
+        from pencil.sim.simulation import Simulation
         from pencil.sim.simulation import simulation
         import numpy as np
         from pencil.io import debug_breakpoint
@@ -85,8 +85,8 @@ class __Simulations__(object):
 
         for arg in args:
 
-            if isinstance(arg, __Simulation__):
-                # print('\n self.add: __Simulation__')
+            if isinstance(arg, Simulation):
+                # print('\n self.add: Simulation')
                 # print(arg.path)
                 self.sims.append(arg)
                 return True
