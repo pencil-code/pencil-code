@@ -62,7 +62,7 @@ def simulation(*args, **kwargs):
     return __Simulation__(*args, **kwargs)
 
 
-class __Simulation__(object):
+class Simulation(object):
     """
     Simulation object.
     """
@@ -1254,3 +1254,12 @@ class __Simulation__(object):
             logfile=join(self.pc_dir, "runlog_" + timestamp),
             **kwargs,
             )
+
+class __Simulation__(Simulation):
+    """
+    Only exists to avoid breaking old code. New code must use Simulation.
+    Added: 2025-Jan-30 (Kishore)
+    """
+    def __init__(self, *args, **kwargs):
+        warnings.warn("The __Simulation__ class has now been renamed to Simulation (without underscores). Please modify your code accordingly")
+        super().__init__(*args, **kwargs)
