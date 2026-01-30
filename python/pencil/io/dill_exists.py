@@ -14,7 +14,7 @@ def dill_exists(name, folder=False, sim=False):
         name = name + ".dill"
 
     if folder == False:
-        if type(sim) == sim.__Simulation__:
+        if isinstance(sim, sim.__Simulation__):
             folder = sim.pc_datadir
         else:
             # if folder is not defined try to find file at typical places
