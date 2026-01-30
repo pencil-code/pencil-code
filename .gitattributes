@@ -1842,6 +1842,14 @@ samples/0d-tests/reactive_particles/src/cparam.local -text
 samples/0d-tests/reactive_particles/start.in -text
 samples/0d-tests/reactive_particles/tran.dat -text
 samples/0d-tests/reactive_particles/video.in -text
+samples/0d-tests/reionization-saha/parameters.pro -text
+samples/0d-tests/reionization-saha/print.in -text
+samples/0d-tests/reionization-saha/reference.out -text
+samples/0d-tests/reionization-saha/run.in -text
+samples/0d-tests/reionization-saha/src/Makefile.local -text
+samples/0d-tests/reionization-saha/src/cparam.local -text
+samples/0d-tests/reionization-saha/start.in -text
+samples/0d-tests/reionization-saha/video.in -text
 samples/0d-tests/schur_triple_decomp/NEVERLOCK -text
 samples/0d-tests/schur_triple_decomp/README.md -text
 samples/0d-tests/schur_triple_decomp/print.in -text

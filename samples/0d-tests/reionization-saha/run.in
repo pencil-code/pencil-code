@@ -1,0 +1,35 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+&run_pars
+  nt=20400, it1=20, isave=1000, itorder=3
+  dsnap=-.1, dvid=100., d1davg=20., d2davg=20.
+  lpencil_check_small=F
+  dt=1e-2
+/
+&eos_run_pars
+  lss_as_aux=T, lpp_as_aux=T, lcp_as_aux=T, lcs_as_aux=T, lgamma_as_aux=T
+  xHe=0.08, yMetals=0e-4
+/
+&hydro_run_pars
+  friction_tdep='Thomson', ekman_friction=1e0
+  lupw_uu=T
+/
+&density_run_pars
+  lhubble_density=T
+  lupw_lnrho=T
+/
+&entropy_run_pars
+  lhubble_energy=T, lheat_Thompson=T, linclude_radpress=T
+  heat_Thompson_fact=0e-4
+/
+&magnetic_run_pars
+  lhubble_magnetic=F
+  B_ext=.5e-9, .0, .0
+  eta=2.
+  lupw_aa=T
+/
+&special_run_pars
+/
+&viscosity_run_pars
+  nu=2.
+/

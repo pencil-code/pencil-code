@@ -1,0 +1,18 @@
+###                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+
+MPICOMM   =   mpicomm
+HYDRO     =   hydro
+DENSITY   =   density
+ENTROPY   =   temperature_ionization
+EOS       =   eos_temperature_ionization
+MAGNETIC  =   magnetic
+VISCOSITY =   viscosity
+#FOURIER   =   fourier_fftpack
+#POWER     =   power_spectrum
+#POISSON   =   poisson
+REAL_PRECISION = double
+SPECIAL    =   special/Lambda_CDM
+#SHOCK     =   shock

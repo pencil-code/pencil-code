@@ -6259,7 +6259,7 @@ module Magnetic
 !
       if (lhubble_magnetic) then
         dAdt = dAdt - 2.*Hubble*ascale**1.5*p%AA
-        call fatal_error('daa_dt','setting lhubble_hydro=T is not correct')
+        call fatal_error('daa_dt','setting lhubble_magnetic=T is not correct')
       endif
 !
 !  Now add all the contribution to dAdt so far into df.
