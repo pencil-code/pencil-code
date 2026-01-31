@@ -398,6 +398,7 @@ module Magnetic
   character (len=labellen) :: ambipolar_diffusion='constant'
   character (len=labellen) :: div_sld_magn='2nd'
   logical :: lbext_moving_layer=.false., lno_eta_tdep=.false.
+  logical :: luse_bgb_as_jxb=.false.  !PAR_DOC: replace JxB by B.gradB in auxiliary array, for test purposes.
   real :: zbot_moving_layer=0., ztop_moving_layer=0., speed_moving_layer=0., edge_moving_layer=.1
   real :: eta_tdep_ascale_power=0.
 !
@@ -456,7 +457,7 @@ module Magnetic
       je_heating_factor, &
       loverride_ee_decide, eta_tdep_loverride_ee, loverride_ee2, lignore_1rho_in_Lorentz, &
       lbext_moving_layer, zbot_moving_layer, ztop_moving_layer, speed_moving_layer, edge_moving_layer, &
-      lno_eta_tdep, luse_scale_factor_in_sigma, ell_jj, tau_jj, lhubble_magnetic, &
+      luse_bgb_as_jxb, lno_eta_tdep, luse_scale_factor_in_sigma, ell_jj, tau_jj, lhubble_magnetic, &
       scl_uxb_in_ohm, eta_tdep_ascale_power,r_dip, epsi_dip, angle_dip
 !
 ! Diagnostic variables (need to be consistent with reset list below)
@@ -3648,6 +3649,10 @@ module Magnetic
         lpencil_in(i_bgb)=.true.
       endif
 !
+!  Compute B.gradB, when used as JxB in kinematic flow routine, for example.
+!
+      if (luse_bgb_as_jxb) lpencil_in(i_bgb)=.true.
+!
 !AB   if (lpencil_in(i_oxu)) then
 !       lpencil_in(i_oo)=.true.
 !       lpencil_in(i_uu)=.true.
@@ -4768,12 +4773,15 @@ module Magnetic
       endif
 ! b.grad(u)
       if (lpenc_loc(i_bgu)) call multmv(p%uij,p%bb,p%bgu)
-! bgb
+!
+! bgb = B_{i,j} B_j = B.gradB
+!
       if (lpenc_loc(i_bgb)) then
         call multmv(p%bij,p%bb,p%bgb)
       endif
 !
 ! bgbp
+!
       if (lpenc_loc(i_bgbp)) then
         call dot_mn(p%bb,p%bgb,bbgb)
         call multsv(bbgb*p%b21,p%bb,p%bgbp)
@@ -4863,7 +4871,23 @@ module Magnetic
 !
       if (lbb_as_aux .and. .not. lbb_as_comaux) f(l1:l2,m,n,ibx:ibz) = p%bb
       if (ljj_as_aux .and. .not. ljj_as_comaux) f(l1:l2,m,n,ijx:ijz) = p%jj
-      if (ljxb_as_aux) f(l1:l2,m,n,ijxbx:ijxbz)=p%jxb
+!
+!  ljxb_as_aux is sometimes used to construct a "kinematic" velocity
+!  field, i.e., one that does not obey the Navier-Stokes equation.
+!  In that case it can be of interest to use just B.gradB instead, i.e.,
+!  omit -grad(B^2/2). This can be done by using luse_bgb_as_jxb=T.
+!  The default is luse_bgb_as_jxb=F.
+!
+      if (ljxb_as_aux) then
+        if (luse_bgb_as_jxb) then
+          f(l1:l2,m,n,ijxbx:ijxbz)=p%bgb
+        else
+          f(l1:l2,m,n,ijxbx:ijxbz)=p%jxb
+        endif
+      endif
+!
+!  Take p%bb_sph from auxiliary array, if it is defined.
+!
       if (lpenc_loc(i_bb_sph).and.lbb_sph_as_aux) p%bb_sph(:,1:3)=f(l1:l2,m,n,ibb_sphr:ibb_sphp)
 !
 !  Store uxb, ugb, or bgu in auxiliary variable if requested
