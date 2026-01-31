@@ -949,7 +949,7 @@ class Simulation(object):
         from os.path import join, exists
         from pencil.io import remove_files as remove
 
-        folder = join(self.path, "data")
+        folder = self.datadir
         keeps = []
 
         if not exists(folder):
