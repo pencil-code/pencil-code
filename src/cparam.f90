@@ -127,6 +127,7 @@ module Cparam
   real, parameter :: one_real=1.0
   real, parameter :: epsi=5*epsilon(one_real),tini=5*tiny(one_real)
   real, parameter :: huge1=0.2*huge_real
+  real, parameter :: min_ts=1e-99  !PAR_DOC: minimum number to be displayed in time series
 !
 !  A marker value that is highly unlikely ("impossible") to ever occur
 !  during a meaningful run: use a very large number.

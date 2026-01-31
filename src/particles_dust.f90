@@ -1057,7 +1057,7 @@ module Particles
       real :: rpar_int, rpar_ext, tausp_par
       integer :: npar_loc_x, npar_loc_y, npar_loc_z
       integer :: l, j, k, ix0, iy0, iz0
-      logical :: lequidistant=.false.
+      logical :: lequidistant=.false., exists
 !     
       call get_shared_variable('beta_glnrho_global',beta_glnrho_global,caller='init_particles')
       call get_shared_variable('beta_glnrho_scaled',beta_glnrho_scaled)
@@ -1825,9 +1825,18 @@ module Particles
             endif
           endif
           if (nzgrid /= 0) call warning('init_particles',"birthring only implemented for 2D(xy)")
-!
         case default
-          call fatal_error('init_particles','no such initxxp: "'//trim(initxxp(j))//'"')
+!
+!  Read from file, and do fatal_error if it doesn't exist.
+!
+          inquire(FILE=initxxp(j),EXIST=exists)
+          if (exists) then
+            open(1,file=initxxp(j),form='unformatted')
+            read(1) fp(:,ixp:izp)
+            close(1)
+          else
+            call fatal_error('init_particles','no such initxxp: "'//trim(initxxp(j))//'"')
+          endif
 !
         endselect
 !
@@ -2121,9 +2130,19 @@ module Particles
             fp(k,ivpy) = delta_vp0*fp(k,iyp)/rp_ext
             fp(k,ivpz) = delta_vp0*fp(k,izp)/rp_ext
           enddo
-!
         case default
-          call fatal_error('init_particles','no such initvvp: "'//trim(initvvp(j))//'"')
+!
+!  Read from file, and do fatal_error if it doesn't exist.
+!
+          inquire(FILE=initvvp(j),EXIST=exists)
+          if (exists) then
+            open(1,file=initvvp(j),form='unformatted')
+            read(1) fp(:,ivpx:ivpz)
+            close(1)
+          else
+            call fatal_error('init_particles','no such initvvp: "'//trim(initvvp(j))//'"')
+          endif
+!
         endselect
 !
       enddo ! do j=1,ninit

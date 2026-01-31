@@ -4876,7 +4876,10 @@ module Hydro
           endif
         endif
 
-        if (ekman_friction/=0) call sum_mn_name(max(frict,1e-99),idiag_frict)
+        if (ekman_friction/=0) then
+          where (frict>0. .and. frict<min_ts) frict=0.
+          call sum_mn_name(frict,idiag_frict)
+        endif
 
       endif  ! if (ldiagnos)
 

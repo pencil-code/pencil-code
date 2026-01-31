@@ -805,6 +805,7 @@ module Energy
       call calc_diagnostics_energy(f,p)
 !
       if (lheat_Thompson) then
+        where (heat_Thompson>0. .and. heat_Thompson<min_ts) heat_Thompson=0.
         call sum_mn_name(heat_Thompson,idiag_heatThm)
         call save_name(TTref,idiag_TTref)
       endif

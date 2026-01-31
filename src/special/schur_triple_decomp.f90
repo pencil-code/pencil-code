@@ -318,9 +318,9 @@ end function selct
 !  output norm of projected matrix 
 !
               if (luschurp2_as_aux) then
-                f(l,m,n,iuschurp2_SH)=sum(SH(l,:,:)**2)
-                f(l,m,n,iuschurp2_RR)=sum(RR(l,:,:)**2)
-                f(l,m,n,iuschurp2_EL)=sum(EL(l,:,:)**2)
+                f(l1+l-1,m,n,iuschurp2_SH)=sum(SH(l,:,:)**2)
+                f(l1+l-1,m,n,iuschurp2_RR)=sum(RR(l,:,:)**2)
+                f(l1+l-1,m,n,iuschurp2_EL)=sum(EL(l,:,:)**2)
               endif
             endif
           endif
@@ -422,9 +422,9 @@ end function selct
 !  output norm of projected matrix 
 !
               if (lbschurp2_as_aux) then
-                f(l,m,n,ibschurp2_SH)=sum(SH(l,:,:)**2)
-                f(l,m,n,ibschurp2_RR)=sum(RR(l,:,:)**2)
-                f(l,m,n,ibschurp2_EL)=sum(EL(l,:,:)**2)
+                f(l1+l-1,m,n,ibschurp2_SH)=sum(SH(l,:,:)**2)
+                f(l1+l-1,m,n,ibschurp2_RR)=sum(RR(l,:,:)**2)
+                f(l1+l-1,m,n,ibschurp2_EL)=sum(EL(l,:,:)**2)
               endif
             endif
           endif
