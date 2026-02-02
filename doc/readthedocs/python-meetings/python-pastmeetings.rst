@@ -148,15 +148,20 @@ Alberto Roper Pol, Illa R. Losada, Simo Candelaresi, Kishore, Reihaneh
     
     Support Python versions that are 5 years old or newer. Update tests accordingly.
 
-17. **Array Order Convention:**
+17. **Redundant meetings directory:**
+
+    We have moved the contents of :file:`python/meetings` to RTD. 
+    We have decided to remove this redundant folder now and keep the meetings in RTD.
+
+18. **Array Order Convention:**
 
     Current array order is [z, y, x]. Consider changing to [x, y, z] (standard convention), but this may break existing scripts.
 
-18. **eqtools**
+19. **eqtools**
     
     Move from ``eqtools`` to ``scipy``. [Simon]
 
-19. **Obsolete Documentation Item:**
+20. **Obsolete Documentation Item:**
 
     The **Interactive vs. library mode** item in :file:`pencil-code/doc/readthedocs/python-meetings/python-decisions.rst` is obsolete due to lazy loading implementation. 
     Currently, it has been marked as obsolete in :ref:`python-decisions`. Should it be better to remove entirely? [Illa]
