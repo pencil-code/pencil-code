@@ -30,6 +30,11 @@ This module requires the following Python packages:
 - scipy
 - tqdm
 
+We support all the Python versions that are supported by the
+[Python project](https://devguide.python.org/versions/) (i.e. Python versions
+that are less than 5 years old). While we will not explicitly disable the use of
+older Python versions, we cannot guarantee compatibility with them.
+
 #############################
 ## EASY START
 ##
