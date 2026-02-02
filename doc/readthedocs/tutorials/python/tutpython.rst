@@ -693,26 +693,6 @@ The result is this plot:
         :width: 400
         :alt: Simple 2d plot.
 
-IDL to Python guide
-===================
-
-A large array of idl scripts have been developed over the years, and many of them served their purpose at the time, but there are many others
-of general purpose. Below is a small selection of examples of idl call sequences along with their python counterparts.
-
-Here are the links to a few potentially useful sites:
-
-1. `IDL to Python bridge <https://www.l3harrisgeospatial.com/docs/IDLToPython.html>`_
-
-2. `IDL commands in numerical Python <http://mathesaurus.sourceforge.net/idl-python-xref.pdf>`_
-
-===============================   ======
-IDL                               Python
-===============================   ======
-pc_read_var,obj=var,/trimall      var = pc.read.var(var_file = 'var.dat', trimall = True, sim = SIM)    
-help,var                          help(var)       
-pc_read_param,obj=param           pc.read.param()
-===============================   ======
-
 
 Troubleshooting
 ================
