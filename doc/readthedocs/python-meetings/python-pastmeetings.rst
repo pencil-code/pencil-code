@@ -16,31 +16,150 @@ Alberto Roper Pol, Illa R. Losada, Simo Candelaresi, Kishore, Reihaneh
 
 **Minutes:**
 
-1. Points in the agenda:
+1. **Agenda Items:**
 
-* Development of Python tests on Pencil Code and exploring code coverage tools.
+    - Development of Python tests for Pencil Code and exploration of code coverage tools.
 
-* Presentation of tutorials for particular samples developed by each person on their favourite sample/exercise with Pencil Code.
+    - Presentation of tutorials for specific samples, with each participant developing content for their preferred Pencil Code sample or exercise.
 
-* Updates on the documentation (tutorials and updates on readthedocs)
+    - Updates on documentation (tutorials and Read the Docs improvements).
 
-* Inconsistencies in the array formatting with different I/O options.
+    - Inconsistencies in array formatting across different I/O options.
 
-* Check :file:`pencil-code/python/pencil/TO_DO_LIST.txt`. The last update is from Jun 29, 2024, is there any further update?
+    - Review of :file:`pencil-code/python/pencil/TO_DO_LIST.txt` (last updated June 29, 2024; check for newer updates).
 
-* Changing behaviour of .keys() methods (of Averages, Timeseries etc.). Currently it just prints the keys, but it would be more useful to return a list
+    - Modification of ``.keys()`` methods (for ``Averages``, ``Timeseries``, etc.) to return a list instead of just printing keys.
 
-* Decide on a convention for extra debug output (controlled by the ``quiet`` keyword in functions like ``pc.read.var`` and ``pc.read.grid``). Currently, whether it defaults to ``False`` or ``True`` varies from function to function, which is confusing and annoying. Ideally we would control such output by a module-wide flag (such that something like ``pc.shut_up = True`` at the beginning of a script would have the effect of setting ``quiet=True`` in all the ``pc`` functions).
+    - Establishment of a convention for debug output control (via the ``quiet`` keyword in functions like ``pc.read.var`` and ``pc.read.grid``). Currently, the default value varies between functions, which is confusing. Ideally, implement a module-wide flag (e.g., ``pc.shut_up = True``) to control output globally.
 
-- Changing the behaviour of ``pc.io.get_value_from_file``. Currently, whether it has been successful of not is indicated by a boolean return value (as if it is a C program). I think it makes more sense to explicitly raise an error message. I presume most users would want to know that the function is failing, rather than dealing with crytic errors later on.
-- Rename ``pc.sim.__Simulation__`` to ``pc.sim.Simulation``. Leading underscores usually signify that something is not meant to be publicly accessed; why do we not want users to directly use this class?
-- Supported Python versions: is it enough to go by the versions currently supported by upstream (<https://devguide.python.org/versions/>), or do we want to support Python versions older than 5 years?
-- The item **Interactive vs. library mode** in :file:`pencil-code/doc/readthedocs/python-meetings/python-decisions.rst` is now obsolete due to the implementation of lazy loading.
+    - Modification of ``pc.io.get_value_from_file`` behavior. Currently returns a boolean success indicator (like C programs); should explicitly raise error messages instead, as users typically want to know about failures rather than dealing with cryptic errors later.
 
-- Folders in `python/` (like `meetings` and `docs`) are detected as Python modules if `$PENCIL_HOME/python` is added to `$PYTHONPATH`. Options to avoid this:
+    - Rename ``pc.sim.__Simulation__`` to ``pc.sim.Simulation``. Leading underscores typically indicate private/internal classes; if this class is intended for public use, the underscores should be removed.
 
+    - Supported Python versions: Should we follow upstream Python support (<https://devguide.python.org/versions/>) or support versions older than 5 years?
 
+    - The item **Interactive vs. library mode** in :file:`pencil-code/doc/readthedocs/python-meetings/python-decisions.rst` is now obsolete due to lazy loading implementation.
 
+    - Folders in ``python/`` (like ``meetings`` and ``docs``) are detected as Python modules when ``$PENCIL_HOME/python`` is added to ``$PYTHONPATH``. Options to avoid this:
+
+      * Move Python modules to ``python/src`` and add this to ``$PYTHONPATH``
+
+      * Other solutions to be explored
+
+    - Issue with reading slices (pointed out by Axel)
+
+    - Make Pencil Code Python routines a Python package
+
+    - Integrate live execution of Python routines with Pencil Code (incorporating Isak's notebook with simulation objects)
+
+    - Default output format for var files (x, y, z coordinates)
+
+2. **Tutorial Placement:**
+
+    Current locations:
+
+        - Read the Docs in RST format
+
+        - Jupyter notebook tutorials in :file:`pencil-code/python/tutorials`
+    
+    Action items:
+
+        - Configure Sphinx to generate Read the Docs pages from Jupyter notebooks
+
+        - Check for duplication between samples and Python tutorials
+
+        - Link Pencil Code Python tutorials from the main Pencil Code homepage
+
+3. **Sample Tutorials:**
+
+    A new subsection ``The Pencil Code: samples`` has been created under ``Postprocessing and tutorials`` to host Pencil Code samples. These will include not only Python postprocessing scripts, but also scientific background and configuration explanations showing how simulations reflect the target physics.
+
+    Example: :ref:`conv_slab`
+
+4. **IDL vs. Python Usage:**
+
+    A new comparison document under ``Postprocessing and tutorials`` (:ref:`IDL_to_python`) provides guidance on postprocessing in both IDL and Python to help users choose the appropriate tool.
+
+5. **Discrepancy Between Reading Routines:**
+
+    Return values differ between direct reading functions and simulation object methods.
+
+    Example:
+
+    .. code:: python
+
+        aver = pc.read.aver(simdir=sdir, datadir=os.path.join(sdir,'data/'),param=param,quiet=False)
+
+    This works only when parameters are loaded via ``pc.read.param``. Using ``param=sim.param`` produces:
+
+    .. code:: python
+
+        AttributeError: param.io_strategy does not exist
+
+    Assigned to Simon.
+
+6. **TO_DO_LIST.txt Review:**
+
+    Simon will review :file:`python/pencil/TO_DO_LIST.txt` and bring up relevant points at the next meeting.
+
+7. **Python Package Development:**
+
+    Moving toward an official Python package installation. This would allow:
+
+    .. code:: bash
+
+        pip install pypencil
+
+    Alberto is leading this effort.
+
+8. **Contributor List:**
+
+    Create a list of contributors for Pencil Code Python routines.
+
+9. **Mailing List Integration:**
+
+    Merge Python mailing list into main Pencil Code mailing list. Ask users to join the main list and discontinue the Python-specific one. This increases visibility and accessibility for new users. [Alberto]
+
+10. **README Consolidation:**
+
+    Currently there are two README files: :file:`python/README` and :file:`python/pencil/README`. Merge them into a single file in :file:`python/pencil`.
+
+11. **Redundant keys() Functions:**
+
+    Some read functions have redundant ``keys()`` methods. Replace with direct dictionary key returns. [Kishore]
+
+12. **Debug Output Defaults:**
+
+    Reading routines currently have inconsistent ``quiet`` flag defaults (some ``True``, some ``False``). Standardize to ``quiet=False`` for consistency. [Kishore]
+
+13. **Error Handling Consistency:**
+
+    Some functions raise errors while others return 0 on failure. Standardize to always raise informative errors. [Kishore]
+
+14. **Next Meeting:**
+
+    Scheduled for end of March. Kishore will host and Alberto will set up the Zoom link.
+
+15. **Rename ``__Simulation__`` object.**
+
+    Rename ``__Simulation__`` to ``Simulation`` to make it publicly accessible. [Kishore]
+
+16. **Python Version Support:**
+    
+    Support Python versions that are 5 years old or newer. Update tests accordingly.
+
+17. **Array Order Convention:**
+
+    Current array order is [z, y, x]. Consider changing to [x, y, z] (standard convention), but this may break existing scripts.
+
+18. **eqtools**
+    
+    Move from ``eqtools`` to ``scipy``. [Simon]
+
+19. **Obsolete Documentation Item:**
+
+    The **Interactive vs. library mode** item in :file:`pencil-code/doc/readthedocs/python-meetings/python-decisions.rst` is obsolete due to lazy loading implementation. 
+    Currently, it has been marked as obsolete in :ref:`python-decisions`. Should it be better to remove entirely? [Illa]
 
 2025 Nov 26
 ------------
