@@ -57,17 +57,7 @@ If you have a concept or feature suggestion, add it here following this format:
    **Proposal:** How to implement it
    **Reference:** (optional links or related work)
 
-Example:
 
-
-Example: Postprocessing for shock detection
----------------------------------------------
-
-**Motivation:** Identify shocks automatically in 3D data
-
-**Proposal:** Implement gradient-based detection in `diagnostics.py`
-
-**Reference:** Smith et al. (2023), J. Comp. Phys. 492, 112334
 
 See also:
 ----------
