@@ -127,7 +127,12 @@ module Cparam
   real, parameter :: one_real=1.0
   real, parameter :: epsi=5*epsilon(one_real),tini=5*tiny(one_real)
   real, parameter :: huge1=0.2*huge_real
-  real, parameter :: min_ts=1e-99  !PAR_DOC: minimum number to be displayed in time series
+!
+!TP: Changed min_ts from 1e-99 to 1e-37 such that it is a representable number both in double and single-precision.
+!    If it is important that min_ts is truly this small number please change it back and let us do some other magics.
+!    But if 1e-37 is fine then the simplest to simply use it without any dependency to the representable range.
+!
+  real, parameter :: min_ts=1e-37 !PAR_DOC: minimum number to be displayed in time series
 !
 !  A marker value that is highly unlikely ("impossible") to ever occur
 !  during a meaningful run: use a very large number.
