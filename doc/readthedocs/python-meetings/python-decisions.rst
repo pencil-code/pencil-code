@@ -130,7 +130,7 @@ Imports and Package Structure
 
   *Related meeting:* :ref:`2021 Apr 14 <python-pastmeetings>`
 
-* **Interactive vs. library mode**
+* **Interactive vs. library mode** [Deprecated with the implementation of lazy loading]
 
   To improve import speed and interactivity, a distinction between “interactive”
   and “library” usage modes was proposed. Lighter imports should be possible
