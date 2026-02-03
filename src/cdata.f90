@@ -314,7 +314,15 @@ module Cdata
   character (len=labellen) :: trigger_spec='code_time'  !PAR_DOC: trigger quantity for spectral output
   character (len=labellen) :: trigger_vid='code_time'   !PAR_DOC: trigger quantity for video output
   logical :: lsnap=.false., lsnap_down=.false., lspec=.false., lspec_start=.false., lspec_at_tplusdt=.false.
-  real :: dsnap=100., dsnap_down=0., d1davg=impossible, d2davg=100., dvid=0., dspec=impossible, dit1=impossible
+  real :: dsnap=100. !PAR_DOC: save a snapshot (VAR file) every dsnap time units
+  real :: dsnap_down=0. !PAR_DOC: save a downsampled snapshot every dsnap time units
+  real :: d1davg=impossible !PAR_DOC: save 1D (xy, yz, ...) averages every d1davg
+    !PAR_DOC: time units (overrides it1d)
+  real :: d2davg=100. !PAR_DOC: save 2D (x, y, ...) averages every d2davg time
+    !PAR_DOC: units
+  real :: dvid=0. !PAR_DOC: save slice (video) files every dvid time units.
+  real :: dspec=impossible !PAR_DOC: save power spectra every dspec time units
+  real :: dit1=impossible
   real :: dtracers=0., dfixed_points=0.
   real :: crash_file_dtmin_factor=-1.0
   real :: km0EM=0., km1EM=0., tmax_logspacing=1.
