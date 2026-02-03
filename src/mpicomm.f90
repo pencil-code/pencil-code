@@ -230,7 +230,8 @@ module Mpicomm
 !
       call MPI_GET_PROCESSOR_NAME(ndname, ndnmlen, mpierr)
       ndname = ndname(1:ndnmlen)
-      call MPI_ALLGATHER(ndname,MPI_MAX_PROCESSOR_NAME,MPI_CHARACTER,nodenames,MPI_MAX_PROCESSOR_NAME,MPI_CHARACTER,MPI_COMM_WORLD,mpierr)
+      call MPI_ALLGATHER(ndname,MPI_MAX_PROCESSOR_NAME,MPI_CHARACTER,nodenames,MPI_MAX_PROCESSOR_NAME, &
+                         MPI_CHARACTER,MPI_COMM_WORLD,mpierr)
 !
 !if (lroot) print*, 'Pencil0: nprocs,MPI_COMM_WORLD', nprocs, MPI_COMM_WORLD
 !
