@@ -47,10 +47,12 @@ source getconf.csh
 #  Assume that if data/proc0/var.dat exists, we are not supposed
 #  to overwrite it, and should try to restart from the existing
 #  snapshot instead. In that case, if $local_disc was set in getconf.csh,
-#  we need to copy these data first to the locak scratch disc, and
+#  we need to copy these data first to the local scratch disc, and
 #  then restart, i.e. jump to rerun.
 #
-if (-e "$datadir"/proc0/var.dat) then
+if (-e "$datadir"/proc0/var.dat || \
+    -e "$datadir"/allprocs/var.dat || \
+    -e "$datadir"/allprocs/var.h5 ) then
 #
 #  If necessary, distribute var.dat from the server to the various nodes
 #  Don't indent these lines so that it is easier to vimdiff against run.csh
@@ -58,12 +60,14 @@ if (-e "$datadir"/proc0/var.dat) then
   if ($local_disc) then
     if ($one_local_disc) then     # one common local disc
       foreach node ($nodelist)
-        foreach d (`cd $datadir; ls -d proc* allprocs`)
+        foreach d (`cd $datadir; ls -d proc* allprocs; ls -d proc* averages`)
           if (-e $datadir/$d/var.dat) $SCP $datadir/$d/var.dat ${node}:$SCRATCH_DIR/$d/
+          if (-e $datadir/$d/var.h5) $SCP $datadir/$d/var.h5 ${node}:$SCRATCH_DIR/$d/
           if (-e $datadir/$d/global.dat) $SCP $datadir/$d/global.dat ${node}:$SCRATCH_DIR/$d/
           if ($lparticles) $SCP $datadir/$d/pvar.dat ${node}:$SCRATCH_DIR/$d/
           if ($lpointmasses) $SCP $datadir/$d/qvar.dat ${node}:$SCRATCH_DIR/$d/
-          $SCP $datadir/$d/timeavg.dat ${node}:$SCRATCH_DIR/$d/
+          if (-e $datadir/$d/timeavg.dat) $SCP $datadir/$d/timeavg.dat ${node}:$SCRATCH_DIR/$d/
+          if (-e $datadir/$d/timeavg.h5) $SCP $datadir/$d/timeavg.h5 ${node}:$SCRATCH_DIR/$d/
         end
         if (-e $datadir/allprocs/dxyz.dat) $SCP $datadir/allprocs/dxyz.dat ${node}:$SCRATCH_DIR/allprocs
       end
@@ -77,7 +81,9 @@ if (-e "$datadir"/proc0/var.dat) then
         while ($j != $nprocpernode)
           set k = `expr $nprocpernode \* $i + $j`
           if ($?notserial_procN) set k = `expr $i + $nnodes \* $j`
-          $SCP $datadir/proc$k/var.dat ${node}:$SCRATCH_DIR/proc$k/
+          if (-e $datadir/proc$k/var.dat) then
+            $SCP $datadir/proc$k/var.dat ${node}:$SCRATCH_DIR/proc$k/
+          endif
           if (-e $datadir/proc$k/global.dat) then
             $SCP $datadir/proc$k/global.dat ${node}:$SCRATCH_DIR/proc$k/
           endif
@@ -91,10 +97,19 @@ if (-e "$datadir"/proc0/var.dat) then
           if (-e $datadir/proc$k/timeavg.dat) then
             $SCP $datadir/proc$k/timeavg.dat ${node}:$SCRATCH_DIR/proc$k/
           endif
+          if (-e $datadir/averages/timeavg.h5) then
+            $SCP $datadir/averages/timeavg.h5 ${node}:$SCRATCH_DIR/averages
+          endif
           set j=`expr $j + 1`
         end
         if (-e $datadir/allprocs/dxyz.dat) then
           $SCP $datadir/allprocs/dxyz.dat ${node}:$SCRATCH_DIR/allprocs/
+        endif
+        if (-e $datadir/allprocs/var.dat) then
+          $SCP $datadir/allprocs/var.dat ${node}:$SCRATCH_DIR/allprocs/
+        endif
+        if (-e $datadir/allprocs/var.h5) then
+          $SCP $datadir/allprocs/var.h5 ${node}:$SCRATCH_DIR/allprocs/
         endif
       end
     endif

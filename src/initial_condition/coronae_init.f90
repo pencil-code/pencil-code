@@ -557,8 +557,7 @@ contains
     if (ipz==0) then
       do i=n1-1,1,-1
         int = 0.5 * (z(i)-z(i+1)) * (gravz*(1/TT(i+1)+1/TT(i)))
-        f(:,:,i,ilnrho)=f(:,:,i+1,ilnrho)-lnTT(i)+ &
-            lnTT(i+1)+konst*int
+        f(:,:,i,ilnrho)=f(:,:,i+1,ilnrho)-lnTT(i)+lnTT(i+1)+konst*int
       enddo
     endif
 !

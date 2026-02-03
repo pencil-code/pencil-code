@@ -74,6 +74,8 @@ module Mpicomm
   integer(kind=MPI_OFFSET_KIND) :: size_of_int = 0, size_of_real = 0, size_of_double = 0
   logical :: lcommunicate_y=.false.
 !
+  character(LEN=MPI_MAX_PROCESSOR_NAME), dimension(ncpus) :: nodenames
+!
 !  For f-array processor boundaries
 !
   real, dimension (:,:,:,:), allocatable :: lbufxi,ubufxi,lbufxo,ubufxo
@@ -207,8 +209,9 @@ module Mpicomm
 !
 !$    integer :: thread_support
       integer :: iapp=0         ! (KIND=ikind8) ?
-      integer :: flag
+      integer :: flag, ndnmlen, i
       integer :: nprocs_penc
+      character(LEN=MPI_MAX_PROCESSOR_NAME) :: ndname
 !
 !$    call MPI_INIT_THREAD(MPI_THREAD_MULTIPLE,thread_support,mpierr)
 !$    if (thread_support < MPI_THREAD_MULTIPLE) then
@@ -222,6 +225,13 @@ module Mpicomm
 !
       call MPI_COMM_SIZE(MPI_COMM_WORLD, nprocs, mpierr)
       call MPI_COMM_RANK(MPI_COMM_WORLD, iproc, mpierr)
+!
+! Let each process know on which node each process runs in array nodenames (can be exploited for signalling).
+!
+      call MPI_GET_PROCESSOR_NAME(ndname, ndnmlen, mpierr)
+      ndname = ndname(1:ndnmlen)
+      call MPI_ALLGATHER(ndname,MPI_MAX_PROCESSOR_NAME,MPI_CHARACTER,nodenames,MPI_MAX_PROCESSOR_NAME,MPI_CHARACTER,MPI_COMM_WORLD,mpierr)
+!
 !if (lroot) print*, 'Pencil0: nprocs,MPI_COMM_WORLD', nprocs, MPI_COMM_WORLD
 !
 ! If mpirun/mpiexec calls also other applications than Pencil:
