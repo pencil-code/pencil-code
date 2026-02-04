@@ -520,8 +520,6 @@
 !  Save trained model.
 !
       if (.not.lstart) then
-!print*, 'ltrained .or. .not. lckpt_written=', ltrained, lckpt_written
-        !TP: now redundant (since model is saved immediately after ltrained becomes true in train) but for now lets keep it for safety
         if (ltrained .and. .not.lmodel_saved) then
                 call save_model
         endif
