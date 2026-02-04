@@ -10,6 +10,7 @@
   xyz1=+0.048,+0.048,+0.048
   lshift_origin=T
   lperi=T,T,T
+  lshift_origin=F
   lwrite_aux=T
   lfix_unit_std=T
 /
