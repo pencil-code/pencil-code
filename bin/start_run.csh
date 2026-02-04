@@ -64,8 +64,15 @@ if (-e "$datadir"/proc0/var.dat || \
           if (-e $datadir/$d/var.dat) $SCP $datadir/$d/var.dat ${node}:$SCRATCH_DIR/$d/
           if (-e $datadir/$d/var.h5) $SCP $datadir/$d/var.h5 ${node}:$SCRATCH_DIR/$d/
           if (-e $datadir/$d/global.dat) $SCP $datadir/$d/global.dat ${node}:$SCRATCH_DIR/$d/
-          if ($lparticles) $SCP $datadir/$d/pvar.dat ${node}:$SCRATCH_DIR/$d/
-          if ($lpointmasses) $SCP $datadir/$d/qvar.dat ${node}:$SCRATCH_DIR/$d/
+          if (-e $datadir/$d/global.h5) $SCP $datadir/$d/global.h5 ${node}:$SCRATCH_DIR/$d/
+          if ($lparticles) then
+            if (-e $datadir/$d/pvar.dat) $SCP $datadir/$d/pvar.dat ${node}:$SCRATCH_DIR/$d/
+            if (-e $datadir/$d/pvar.h5) $SCP $datadir/$d/pvar.h5 ${node}:$SCRATCH_DIR/$d/
+          endif
+          if ($lpointmasses) then
+            if (-e $datadir/$d/qvar.dat) $SCP $datadir/$d/qvar.dat ${node}:$SCRATCH_DIR/$d/
+            if (-e $datadir/$d/qvar.h5) $SCP $datadir/$d/qvar.h5 ${node}:$SCRATCH_DIR/$d/
+          endif
           if (-e $datadir/$d/timeavg.dat) $SCP $datadir/$d/timeavg.dat ${node}:$SCRATCH_DIR/$d/
           if (-e $datadir/$d/timeavg.h5) $SCP $datadir/$d/timeavg.h5 ${node}:$SCRATCH_DIR/$d/
         end
@@ -88,20 +95,23 @@ if (-e "$datadir"/proc0/var.dat || \
             $SCP $datadir/proc$k/global.dat ${node}:$SCRATCH_DIR/proc$k/
           endif
           if ($lparticles) then
-            $SCP $datadir/proc$k/pvar.dat ${node}:$SCRATCH_DIR/proc$k/
+            if (-e $datadir/proc$k/pvar.dat) $SCP $datadir/proc$k/pvar.dat ${node}:$SCRATCH_DIR/proc$k/
           endif
           if ($lpointmasses) then
-            $SCP $datadir/proc$k/qvar.dat ${node}:$SCRATCH_DIR/proc$k/
+            if (-e $datadir/proc$k/qvar.dat) $SCP $datadir/proc$k/qvar.dat ${node}:$SCRATCH_DIR/proc$k/
           endif
           echo "$SCP $datadir/proc$k/var.dat ${node}:$SCRATCH_DIR/proc$k/"
           if (-e $datadir/proc$k/timeavg.dat) then
             $SCP $datadir/proc$k/timeavg.dat ${node}:$SCRATCH_DIR/proc$k/
           endif
-          if (-e $datadir/averages/timeavg.h5) then
-            $SCP $datadir/averages/timeavg.h5 ${node}:$SCRATCH_DIR/averages
-          endif
           set j=`expr $j + 1`
         end
+        if (-e $datadir/averages/timeavg.dat) then
+          $SCP $datadir/averages/timeavg.dat ${node}:$SCRATCH_DIR/averages
+        endif
+        if (-e $datadir/averages/timeavg.h5) then
+          $SCP $datadir/averages/timeavg.h5 ${node}:$SCRATCH_DIR/averages
+        endif
         if (-e $datadir/allprocs/dxyz.dat) then
           $SCP $datadir/allprocs/dxyz.dat ${node}:$SCRATCH_DIR/allprocs/
         endif
@@ -111,6 +121,12 @@ if (-e "$datadir"/proc0/var.dat || \
         if (-e $datadir/allprocs/var.h5) then
           $SCP $datadir/allprocs/var.h5 ${node}:$SCRATCH_DIR/allprocs/
         endif
+        if (-e $datadir/allprocs/global.dat) $SCP $datadir/allprocs/global.dat ${node}:$SCRATCH_DIR/allprocs
+        if (-e $datadir/allprocs/pvar.dat) $SCP $datadir/allprocs/pvar.dat ${node}:$SCRATCH_DIR/allprocs
+        if (-e $datadir/allprocs/qvar.dat) $SCP $datadir/allprocs/qvar.dat ${node}:$SCRATCH_DIR/allprocs
+        if (-e $datadir/allprocs/global.h5) $SCP $datadir/allprocs/global.h5 ${node}:$SCRATCH_DIR/allprocs
+        if (-e $datadir/allprocs/pvar.h5) $SCP $datadir/allprocs/pvar.h5 ${node}:$SCRATCH_DIR/allprocs
+        if (-e $datadir/allprocs/qvar.h5) $SCP $datadir/allprocs/qvar.h5 ${node}:$SCRATCH_DIR/allprocs
       end
     endif
   endif
