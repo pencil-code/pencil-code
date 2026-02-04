@@ -138,6 +138,7 @@ endif
 
 # Check for particles
 set lparticles=0
+# such grepping can be misleading: unneeded namelists are ignored
 if { ( grep particles_init_pars start.in >& /dev/null ) } set lparticles=1
 
 # Check for massive particles
