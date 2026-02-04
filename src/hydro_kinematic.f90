@@ -3174,7 +3174,7 @@ module Hydro
 !
       if (mod(max_box,4.)/=0) print*, 'warning will not be periodic'
 !
-      print*, 'calculating KS wavenumbers'
+      if (lroot) print*, 'calculating KS wavenumbers'
 !
       do i=1,10000
         call random_number_wrapper(angle)
