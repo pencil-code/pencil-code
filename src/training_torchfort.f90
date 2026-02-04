@@ -25,7 +25,7 @@
 
     integer :: model_device=0
     integer :: it_train=-1, it_train_chkpt=-1, it_train_start=1,it_train_end=-1
-    real :: t_train_start = 0.0
+    real :: t_train_start = 0.0, t_train_end = -1.0, t_train_chkpt=-1.0
 
     !real(KIND=rkind4), dimension(:,:,:,:,:), allocatable, device :: input, label, output
     real, dimension(:,:,:,:,:), allocatable, device :: input, label, output
@@ -43,7 +43,7 @@
 
     namelist /training_run_pars/ config_file, model, it_train, it_train_start, it_train_chkpt, &
                                  luse_trained_tau, lscale, lwrite_sample, max_loss, lroute_via_cpu,&
-                                 it_train_end, lrun_epoch, dt_train, t_train_start
+                                 it_train_end, lrun_epoch, dt_train, t_train_start, t_train_end, t_train_chkpt
 !
     character(LEN=fnlen) :: model_output_dir, checkpoint_output_dir
     integer :: istat, train_step_ckpt, val_step_ckpt
@@ -52,6 +52,7 @@
     real :: tauerror, input_min, input_max, output_min, output_max
     real, dimension(mx, my, mz, 6) :: tau_pred
     real::  start_time, end_time
+    real, save :: t_last_chkpt = 0.0
 
     contains
 !***************************************************************
@@ -280,12 +281,26 @@
 !***************************************************************
     subroutine save_model
       if (iproc == root) print*,"Saving model to ",trim(model_output_dir)//trim(model_file)
-       istat = torchfort_save_model(model, trim(model_output_dir)//trim(model_file))
+      !SG: safer to checkpoint the model so loading model is easier 
+       istat = torchfort_save_checkpoint(model, trim(model_output_dir)//trim(model_file))
        if (istat /= TORCHFORT_RESULT_SUCCESS) &
          call fatal_error("save_model","when saving model: istat="//trim(itoa(istat)))
        lmodel_saved = .true.
       if (iproc == root) print*,"Model saved to ",trim(model_output_dir)//trim(model_file)
     endsubroutine save_model
+!***************************************************************
+    subroutine save_chkpt
+       if (lroot.and.lfirst.and.((mod(it,it_train_chkpt)==0).or.((t-t_last_chkpt) >= t_train_chkpt))) then
+        istat = torchfort_save_checkpoint(trim(model), trim(model_output_dir)//trim(model_file))
+        t_last_chkpt=t
+        if (istat /= TORCHFORT_RESULT_SUCCESS) &
+          call fatal_error("train","when saving checkpoint: istat="//trim(itoa(istat)))
+        lckpt_written = .true.
+        print*, 'it, it_train_chkpt: , t:, t_train_chkpt: , t_last_chkpt: ', it,it_train_chkpt, t, t_train_chkpt, t_last_chkpt, trim(model),istat, trim(checkpoint_output_dir), lckpt_written
+      endif
+
+
+    endsubroutine save_chkpt
 !***************************************************************
     subroutine train(f)
    
@@ -302,15 +317,15 @@
 
       ldo_training_step = &
               ((it_train /= -1) .and. mod(it,it_train)==0) .or. &
-              ((t-t_last_train) > dt_train)
+              ((t-t_last_train) >= dt_train)
       if(.not. ldo_training_step) return
-
+      
       t_last_train = t
       if (.not. lfortran_launched) then
         !istat = torchfort_train(model, get_ptr_gpu_training(iux,iuz), &
         !                               get_ptr_gpu_training(itauxx,itauzz), train_loss)
         start_time = mpiwtime()
-        call train_gpu(train_loss, itsub)
+        call train_gpu(train_loss, itsub, t)
         end_time = mpiwtime()
         training_time = training_time + end_time-start_time
       else
@@ -348,14 +363,11 @@
 
       if (train_loss <= max_loss) ltrained=.true.
       if ((it_train_end >= 0) .and. it >= it_train_end) ltrained=.true.
+      if ((t_train_end >= 0) .and. t >= t_train_end) ltrained=.true.
       if(ltrained) then
-              call save_model
-      else if (lroot.and.lfirst.and.mod(it,it_train_chkpt)==0) then
-        istat = torchfort_save_checkpoint(trim(model), trim(checkpoint_output_dir))
-        if (istat /= TORCHFORT_RESULT_SUCCESS) &
-          call fatal_error("train","when saving checkpoint: istat="//trim(itoa(istat)))
-        lckpt_written = .true.
-        print*, 'it,it_train_chkpt=', it,it_train_chkpt, trim(model),istat, trim(checkpoint_output_dir), lckpt_written
+            call save_model
+      else
+            call save_chkpt
       endif
 
     endsubroutine train
@@ -522,6 +534,7 @@
       if (.not.lstart) then
         if (ltrained .and. .not.lmodel_saved) then
                 call save_model
+      
         endif
         if (lfortran_launched) deallocate(input,label,output)
       endif

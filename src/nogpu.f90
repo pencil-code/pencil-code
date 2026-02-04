@@ -154,10 +154,11 @@ contains
 
     endsubroutine infer_gpu
 !**************************************************************************
-    subroutine train_gpu(f, itsub)
+    subroutine train_gpu(f, itsub, t)
 
     real :: f
     real :: itsub
+
     call keep_compiler_quiet(f)
 
     endsubroutine train_gpu

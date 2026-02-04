@@ -89,11 +89,13 @@ module GPU
 
 contains
 !***********************************************************************
-  subroutine train_gpu(loss, itsub)
+  subroutine train_gpu(loss, itsub, t)
 
     real :: loss
     integer :: itsub 
-    call torchtrain_c(loss, itsub)
+    real(KIND=rkind8), intent(IN) :: t
+
+    call torchtrain_c(loss, itsub, t)
 
   endsubroutine train_gpu 
 !***********************************************************************

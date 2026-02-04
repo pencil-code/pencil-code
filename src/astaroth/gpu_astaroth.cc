@@ -973,6 +973,7 @@ std::vector<double>train_time;
 std::vector<double>val_time;
 
 bool loaded_stats = false;
+bool snap_print = false;
 /***********************************************************************************************/
 void denormalize(std::string filename, AcRealSymmetricTensor &tau_means, AcRealSymmetricTensor &tau_stds){
 	if(!loaded_stats){
@@ -1143,7 +1144,7 @@ extern "C" void torch_infer_c_api(int itsub){
 
 	//double start;
 	//double end;
-
+	
 
 	torch_inferCAPI((int[]){mx,my,mz}, uumean_ptr, tau_infer_ptr);
 	
@@ -1165,7 +1166,7 @@ extern "C" void torch_infer_c_api(int itsub){
 #endif
 }
 /***********************************************************************************************/
-extern "C" void torch_train_c_api(AcReal *loss_val, int itsub) {
+extern "C" void torch_train_c_api(AcReal *loss_val, int itsub, double t) {
 #if TRAINING
 	#include "user_constants.h"
 	#include <stdlib.h>
@@ -1221,6 +1222,8 @@ extern "C" void torch_train_c_api(AcReal *loss_val, int itsub) {
 
   train_loss.push_back(*loss_val);
   train_counter++;
+
+	print_debug();
 
 	if (it==nt){
 		std::ofstream myFile;
@@ -1331,7 +1334,7 @@ std::vector<double> buffer;
 
 
 void print_debug() {
-if (it % 5 !=0) return;
+if (it % 50 !=0) return;
 #if TRAINING
     #include "user_constants.h"
 		
@@ -2184,6 +2187,21 @@ extern "C" void finalizeGPU()
   {
           GW_thread.join();
   }
+	
+	// write the loss values to a file
+
+	std::ofstream myFile;
+	std::string fileString = "train_loss_" + std::to_string(my_rank)  + ".csv";	
+
+	myFile.open(fileString);
+
+  myFile << "epoch,train_loss\n";
+
+	for (int i=0;i<train_loss.size();i++){
+		myFile << i << "," << train_loss[i] << "\n";
+	}
+	
+	myFile.close();
 }
 /***********************************************************************************************/
 extern "C" void random_initial_condition()

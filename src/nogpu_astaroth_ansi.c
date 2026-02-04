@@ -79,7 +79,7 @@ void FTNIZE(torchinfer_c)(FINT* itsub)
 {
 }
 /* ------------------------------------------------------------------- */
-void FTNIZE(torchtrain_c)(REAL *loss, FINT* itsub)
+void FTNIZE(torchtrain_c)(REAL *loss, FINT* itsub, double *t)
 {
 }
 /* ------------------------------------------------------------------- */

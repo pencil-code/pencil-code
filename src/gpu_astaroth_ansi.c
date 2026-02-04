@@ -20,7 +20,7 @@
 
 #include "headers_c.h"
 
-void torch_train_c_api(REAL*, int); 
+void torch_train_c_api(REAL*, int, double); 
 void torch_infer_c_api(int);
 void registerGPU();
 void initializeGPU(REAL*, FINT, double, FINT, FINT, FINT);
@@ -58,9 +58,9 @@ typedef struct int3{
 } int3;
 
 /* ---------------------------------------------------------------------- */
-void FTNIZE(torchtrain_c)(REAL* loss_val, FINT* itsub)
+void FTNIZE(torchtrain_c)(REAL* loss_val, FINT* itsub, double* t)
 {
-	torch_train_c_api(loss_val, *itsub);
+	torch_train_c_api(loss_val, *itsub, *t);
 }
 /* ---------------------------------------------------------------------- */
 void FTNIZE(torchinfer_c)(FINT* itsub)
