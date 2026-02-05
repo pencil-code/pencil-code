@@ -162,7 +162,7 @@ contains
 
     call keep_compiler_quiet(f)
     call keep_compiler_quiet(itsub)
-    call keep_compiler_quiet(t)
+    call keep_compiler_quiet_dble(t)
 
     endsubroutine train_gpu
 !**************************************************************************
