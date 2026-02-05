@@ -106,7 +106,11 @@ def call_tox(output_dir, report_coverage=True, fast=False):
 
         subprocess.run(["coverage", "html", f"--directory={htmlcov_dir}"], check=True, cwd=py_tests_dir)
 
-    json_to_html(json_filename, output_dir/"index.html")
+    json_to_html(
+        json_filename,
+        output_dir/"index.html",
+        repo_info=get_repo_version(py_tests_dir),
+        )
     sys.exit(p.returncode)
 
 _ansi_escape = re.compile(r'''
