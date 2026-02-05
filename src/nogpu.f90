@@ -158,8 +158,11 @@ contains
 
     real :: f
     real :: itsub
+    real(KIND=rkind8), intent(IN) :: t
 
     call keep_compiler_quiet(f)
+    call keep_compiler_quiet(itsub)
+    call keep_compiler_quiet(t)
 
     endsubroutine train_gpu
 !**************************************************************************
@@ -167,20 +170,29 @@ contains
     endsubroutine
 !**************************************************************************
     subroutine get_gpu_reduced_vars(dst)
+
       real, dimension(:) :: dst
       call keep_compiler_quiet(dst)
+
     endsubroutine get_gpu_reduced_vars
 !**************************************************************************
     subroutine test_gpu_bcs
     endsubroutine test_gpu_bcs
 !**************************************************************************
     subroutine split_update_gpu(f)
-      real, dimension(:,:,:,:) :: f
+
+    real, dimension(:,:,:,:) :: f
+    call keep_compiler_quiet(f)
+
     endsubroutine split_update_gpu
 !**************************************************************************
     subroutine pushpars2c(p_par)
+
     integer, parameter :: n_pars=1
     integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call keep_compiler_quiet(p_par)
+
     endsubroutine pushpars2c
 !**************************************************************************
 endmodule GPU
