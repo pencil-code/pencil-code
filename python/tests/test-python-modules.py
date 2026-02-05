@@ -74,6 +74,7 @@ def call_tox(output_dir, report_coverage=True, fast=False):
         output_dir.mkdir()
 
     json_filename = output_dir/"report.json"
+    html_filename = output_dir/"index.html"
     py_tests_dir = pathlib.Path(__file__).parent
 
     if report_coverage:
@@ -109,9 +110,10 @@ def call_tox(output_dir, report_coverage=True, fast=False):
 
     json_to_html(
         json_filename,
-        output_dir/"index.html",
+        html_filename,
         repo_info=get_repo_version(py_tests_dir),
         )
+    print(f"Saved HTML test report in {html_filename}")
     sys.exit(p.returncode)
 
 _ansi_escape = re.compile(r'''
