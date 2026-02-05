@@ -1,0 +1,44 @@
+total(np)=nx*ny*nz
+
+mean(rhop)
+
+-----------------------------------------------------------------------------
+In insert_particles in src/particles_dust.f90, once particles are set (or read), it calls map_nearest_grid and map_xxp_grid (in src/particles_map.f90):
+
+      call map_nearest_grid(fp,ineargrid)
+      call map_xxp_grid(f,fp,ineargrid)
+
+They are located in: src/particles_map.f90. The first one uses real_to_index to set np.
+Next, map_xxp_grid computes neighbors using ix0=ineargrid, etc, and can use
+either the "Cloud In Cell" (CIC) scheme, the "Triangular Shaped Cloud" (TSC) scheme,
+or NGP (when lparticlemesh_cic and lparticlemesh_tsc are both false).
+This then sets rhop.
+
+-----------------------------------------------------------------------------
+In src/particles_dust.f90, rhopmat and also rhop_swarm are being read.
+In src/particles_cdata.f90, rhopmat is initialized to 1 and rhop_swarm=0.0.
+It also initializes: eps_dtog = 0.01, which can also be read.
+Since rhop_swarm=0., we do later:
+
+        if (rhop_swarm == 0.0) rhop_swarm = eps_dtog*rhom/(real(npar)/nwgrid)
+
+which yields 0.01, so we need to reset this.
+Critical density is: 9.47e-27 kg/m^3 = 9.47e-30 g/cm^3.
+Omega_DM=.25, Omega_baryon=.05
+At the moment, we use Omega_mat=.27.
+For the first experiment, ...
+0.25*9.47e-30 g/cm^3 = 2.3675e-30
+
+-----------------------------------------------------------------------------
+In calc_selfpotential_particles (in src/particles_selfgravity.f90), we now set rhs_poisson = f(l1:l2,m1:m2,n1:n2,irhop)/ascale.
+This routine is called in particles_calc_selfpotential (in src/particles_main.f90),
+which itself calls calc_selfpotential_particles, which itself is located in src/particles_selfgravity.f90, so it is circular.
+
+-----------------------------------------------------------------------------
+In selfgravity, gravitational_const=0.0 by default.
+But we would need to set it to another value (e.g. 1) to get
+
+        rhs_poisson_const=4*pi*G_Newton
+
+ParticleVelocities32.dat
+
