@@ -229,37 +229,16 @@ class Tracers(object):
                     self.y1[ix, iy, t_idx] = self.y0[ix, iy, t_idx].copy()
                     self.z1[ix, iy, t_idx] = grid.z[0]
 
-            # Prepare the splines for the tricubic interpolation.
+            # Prepare for the tricubic interpolation.
+            # For map_coordinates, we pass the field data directly (not interpolator objects)
             if self.params.interpolation == "tricubic":
                 try:
-                    import warnings
-
-                    with warnings.catch_warnings():
-                        warnings.filterwarnings("ignore", category=Warning)
-                        from scipy.interpolate import RegularGridInterpolator
-
-                    x = np.linspace(
-                        self.params.Ox, self.params.Ox + self.params.Lx, self.params.nx
-                    )
-                    y = np.linspace(
-                        self.params.Oy, self.params.Oy + self.params.Ly, self.params.ny
-                    )
-                    z = np.linspace(
-                        self.params.Oz, self.params.Oz + self.params.Lz, self.params.nz
-                    )
-                    field_x = RegularGridInterpolator(
-                        (z, y, x), field[0, ...], method="cubic", bounds_error=False, fill_value=0.0
-                    )
-                    field_y = RegularGridInterpolator(
-                        (z, y, x), field[1, ...], method="cubic", bounds_error=False, fill_value=0.0
-                    )
-                    field_z = RegularGridInterpolator(
-                        (z, y, x), field[2, ...], method="cubic", bounds_error=False, fill_value=0.0
-                    )
-                    self.splines = np.array([field_x, field_y, field_z])
+                    from scipy.ndimage import map_coordinates  # noqa: F401
+                    # For tricubic, splines stores the field data to be passed to Stream
+                    self.splines = field
                 except (ImportError, ModuleNotFoundError) as e:
                     print(
-                        f"Warning: Could not import scipy.interpolate.RegularGridInterpolator "
+                        f"Warning: Could not import scipy.ndimage.map_coordinates "
                         f"for tricubic interpolation: {e}"
                     )
                     print("Warning: Fall back to trilinear.")

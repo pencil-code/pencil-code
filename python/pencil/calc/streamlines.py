@@ -90,14 +90,10 @@ class Stream(object):
 
         if params.interpolation == "tricubic":
             try:
-                import warnings
-
-                with warnings.catch_warnings():
-                    warnings.filterwarnings("ignore", category=Warning)
-                    from scipy.interpolate import RegularGridInterpolator
+                from scipy.ndimage import map_coordinates
             except (ImportError, ModuleNotFoundError) as e:
                 print(
-                    f"Warning: Could not import scipy.interpolate.RegularGridInterpolator "
+                    f"Warning: Could not import scipy.ndimage.map_coordinates "
                     f"for tricubic interpolation: {e}\n"
                 )
                 print("Warning: Fall back to trilinear.")
@@ -116,29 +112,15 @@ class Stream(object):
                 xx, field, dxyz, oxyz, nxyz, params.interpolation
             )
         if params.interpolation == "tricubic":
-            x = np.linspace(params.Ox, params.Ox + params.Lx, params.nx)
-            y = np.linspace(params.Oy, params.Oy + params.Ly, params.ny)
-            z = np.linspace(params.Oz, params.Oz + params.Lz, params.nz)
+            # For map_coordinates, we pass field data directly (not interpolator objects)
             if splines is None:
-                field_x = RegularGridInterpolator(
-                    (z, y, x), field[0, ...], method="cubic", bounds_error=False, fill_value=0.0
-                )
-                field_y = RegularGridInterpolator(
-                    (z, y, x), field[1, ...], method="cubic", bounds_error=False, fill_value=0.0
-                )
-                field_z = RegularGridInterpolator(
-                    (z, y, x), field[2, ...], method="cubic", bounds_error=False, fill_value=0.0
-                )
+                field_data = field
             else:
-                field_x = splines[0]
-                field_y = splines[1]
-                field_z = splines[2]
+                # splines here would be the field data array
+                field_data = splines
             odeint_func = lambda t, xx: self.tricubic_func(
-                xx, field_x, field_y, field_z, params
+                xx, field_data, params, map_coordinates
             )
-            del x
-            del y
-            del z
         # Set up the ode solver.
         methods_ode = ["vode", "zvode", "lsoda", "dopri5", "dop853"]
         methods_ivp = ["RK45", "RK23", "Radau", "BDF", "LSODA"]
@@ -235,25 +217,28 @@ class Stream(object):
         self.section_dh = time[1:] - time[:-1]
         self.total_h = time[-1] - time[0]
 
-    def tricubic_func(self, xx, field_x, field_y, field_z, params):
+    def tricubic_func(self, xx, field_data, params, map_coordinates):
         """
-        Tricubic spline interpolation using scipy.interpolate.RegularGridInterpolator.
+        Tricubic spline interpolation using scipy.ndimage.map_coordinates.
         Returns 0 if the point lies outside the box.
 
         call signature:
 
-        tricubic_func(xx, field_x, field_y, field_z, params)
+        tricubic_func(xx, field_data, params, map_coordinates)
 
         Keyword arguments:
 
         *xx*:
           The xyz coordinates of the point to interpolate the data.
 
-        *field_xyz*:
-          The RegularGridInterpolator objects for the velocity fields.
+        *field_data*:
+          The vector field data array with shape [3, nz, ny, nx].
 
         *params*:
           Parameter object.
+
+        *map_coordinates*:
+          The scipy.ndimage.map_coordinates function.
         """
 
         import numpy as np
@@ -267,12 +252,17 @@ class Stream(object):
             + (xx[2] > params.Oz + params.Lz)
         ):
             return np.zeros(3)
-        # RegularGridInterpolator expects points as (z, y, x) to match grid order
-        point = (xx[2], xx[1], xx[0])
-        return np.array(
-            [
-                float(field_x(point)),
-                float(field_y(point)),
-                float(field_z(point)),
-            ]
-        )
+
+        # Convert physical coordinates to array indices
+        # Data is stored as [nz, ny, nx], so indices are [z_idx, y_idx, x_idx]
+        x_idx = (xx[0] - params.Ox) / params.dx
+        y_idx = (xx[1] - params.Oy) / params.dy
+        z_idx = (xx[2] - params.Oz) / params.dz
+
+        coords = np.array([[z_idx], [y_idx], [x_idx]])
+
+        return np.array([
+            map_coordinates(field_data[0], coords, order=3, mode='constant', cval=0.0)[0],
+            map_coordinates(field_data[1], coords, order=3, mode='constant', cval=0.0)[0],
+            map_coordinates(field_data[2], coords, order=3, mode='constant', cval=0.0)[0],
+        ])

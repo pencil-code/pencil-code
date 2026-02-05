@@ -34,8 +34,8 @@ def vec_int(xyz, field, dxyz, oxyz, nxyz, interpolation="trilinear", splines=Non
         If 'tricubic' interpolation is chosen, then the splines functions need
         to be specified.
 
-    splines : list of scipy.interpolate.RegularGridInterpolator
-        Interpolator functions for tricubic interpolation.
+    splines : ndarray, optional
+        Field data for tricubic interpolation (deprecated, uses field parameter instead).
 
     Returns
     -------
@@ -121,6 +121,18 @@ def vec_int(xyz, field, dxyz, oxyz, nxyz, interpolation="trilinear", splines=Non
         return np.sum(sub_field * weight, axis=(1, 2, 3)) / np.sum(weight)
 
     if interpolation == 'tricubic':
-        # RegularGridInterpolator expects points as (z, y, x) to match grid order
-        point = (xyz[2], xyz[1], xyz[0])
-        return np.array([float(splines[0](point)), float(splines[1](point)), float(splines[2](point))])
+        from scipy.ndimage import map_coordinates
+
+        # Convert physical coordinates to array indices
+        # Data is stored as [nz, ny, nx], so indices are [z_idx, y_idx, x_idx]
+        x_idx = (xyz[0] - oxyz[0]) / dxyz[0]
+        y_idx = (xyz[1] - oxyz[1]) / dxyz[1]
+        z_idx = (xyz[2] - oxyz[2]) / dxyz[2]
+
+        coords = np.array([[z_idx], [y_idx], [x_idx]])
+
+        return np.array([
+            map_coordinates(field[0], coords, order=3, mode='constant', cval=0.0)[0],
+            map_coordinates(field[1], coords, order=3, mode='constant', cval=0.0)[0],
+            map_coordinates(field[2], coords, order=3, mode='constant', cval=0.0)[0],
+        ])
