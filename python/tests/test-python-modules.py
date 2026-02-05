@@ -138,7 +138,11 @@ def strip_ansi(text):
     """
     return _ansi_escape.sub('', text)
 
-def json_to_html(json_filename, html_filename):
+def json_to_html(json_filename, html_filename, repo_info=None):
+    """
+    repo_info: get_repo_version instance
+    """
+
     with open(json_filename) as f:
         report = json.load(f)
 
@@ -207,6 +211,11 @@ def json_to_html(json_filename, html_filename):
     #These will be built in the loop that follows
     html_body = ""
     html_summary = ""
+
+    if repo_info is not None:
+        html_body += f"""
+    <p>Tested git commit: {repo_info.commit} (branch {repo_info.branch})</p>
+    """
 
     html_body += f"""
     <p><a href="htmlcov/index.html">click to view code coverage report</a></p>
