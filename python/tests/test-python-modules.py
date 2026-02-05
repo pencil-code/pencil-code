@@ -10,6 +10,7 @@ import pathlib
 import re
 import subprocess
 import sys
+import warnings
 
 try:
     coverage_pkg_present = True
@@ -42,6 +43,26 @@ def call_pytest(fast=False):
         "not integration",
         *fast_flags
         ]))
+
+class get_repo_version:
+    def __init__(self, repo_loc):
+        self.commit = "Unknown"
+        self.branch = "Unknown"
+
+        kwargs = {
+            'capture_output': True,
+            'text': True,
+            'check': True,
+            'cwd': repo_loc,
+            }
+        try:
+            p = subprocess.run(["git", "rev-parse", "HEAD"], **kwargs)
+            self.commit = p.stdout.strip()
+
+            p = subprocess.run(["git", "rev-parse", "--abbrev-ref", "HEAD"], **kwargs)
+            self.branch = p.stdout.strip()
+        except Exception as e:
+            warnings.warn(f"getting git repository details failed: {e}")
 
 def call_tox(output_dir, report_coverage=True, fast=False):
     """
