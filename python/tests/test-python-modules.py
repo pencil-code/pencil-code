@@ -13,10 +13,11 @@ import sys
 import warnings
 
 try:
-    coverage_pkg_present = True
     import coverage
 except ImportError:
     coverage_pkg_present = False
+else:
+    coverage_pkg_present = True
 
 pytest_fast_flags = ["-x", "--failed-first"]
 pytest_coverage_flags = [
