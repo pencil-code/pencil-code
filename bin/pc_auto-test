@@ -1435,7 +1435,7 @@ sub test_run {
         print "    Running..              ";
 
         # Handle KEEP_RELOADING file (our -r/--reload option)
-        my $reload_file = "$dir/KEEP_RELOADING";
+        my $reload_file = "$dir/RELOAD_ALWAYS";
         if (-e $reload_file) {
             warn "Found file $reload_file -- deleting\n";
             unlink $reload_file or die "Cannot unlink $reload_file!\n";
