@@ -107,39 +107,25 @@ module Power_spectrum
   subroutine allocate_workbuffers
 !
 !  TP: these are dynamically allocated since makes the global variable section of the executables considerably smaller
-!
-    allocate(a_re(nx,ny,nz))
-    allocate(a_im(nx,ny,nz))
-    allocate(b_re(nx,ny,nz))
-    allocate(b_im(nx,ny,nz))
-    allocate(c_re(nx,ny,nz))
-    allocate(c_im(nx,ny,nz))
-    allocate(d_re(nx,ny,nz))
-    allocate(d_im(nx,ny,nz))
-    allocate(h_re(nx,ny,nz))
-    allocate(h_im(nx,ny,nz))
-    allocate(a_vec_re(nx,ny,nz,3))
-    allocate(a_vec_im(nx,ny,nz,3))
-    allocate(b_vec_re(nx,ny,nz,3))
-    allocate(a2(nx,ny,nz))
-!
 !  Check first whether each one of them is not already allocated.
-!  But for some reason, this doesn't work correctly.
+!  Axel: But for some reason, this doesn't work correctly.
+!  2026-Feb-05/Kishore: restored the check that Axel removed, as reloading
+!  2026-Feb-05/Kishore: is currently broken in samples/helical-MHDturb
 !
-!   if (.not.allocated(a_re)) allocate(a_re(nx,ny,nz))
-!   if (.not.allocated(a_im)) allocate(a_im(nx,ny,nz))
-!   if (.not.allocated(b_re)) allocate(b_re(nx,ny,nz))
-!   if (.not.allocated(b_im)) allocate(b_im(nx,ny,nz))
-!   if (.not.allocated(c_re)) allocate(c_re(nx,ny,nz))
-!   if (.not.allocated(c_im)) allocate(c_im(nx,ny,nz))
-!   if (.not.allocated(d_re)) allocate(d_re(nx,ny,nz))
-!   if (.not.allocated(d_im)) allocate(d_im(nx,ny,nz))
-!   if (.not.allocated(h_re)) allocate(h_re(nx,ny,nz))
-!   if (.not.allocated(h_im)) allocate(h_im(nx,ny,nz))
-!   if (.not.allocated(a_vec_re)) allocate(a_vec_re(nx,ny,nz,3))
-!   if (.not.allocated(a_vec_im)) allocate(a_vec_im(nx,ny,nz,3))
-!   if (.not.allocated(b_vec_re)) allocate(b_vec_re(nx,ny,nz,3))
-!   if (.not.allocated(a2)) allocate(a2(nx,ny,nz))
+  if (.not.allocated(a_re)) allocate(a_re(nx,ny,nz))
+  if (.not.allocated(a_im)) allocate(a_im(nx,ny,nz))
+  if (.not.allocated(b_re)) allocate(b_re(nx,ny,nz))
+  if (.not.allocated(b_im)) allocate(b_im(nx,ny,nz))
+  if (.not.allocated(c_re)) allocate(c_re(nx,ny,nz))
+  if (.not.allocated(c_im)) allocate(c_im(nx,ny,nz))
+  if (.not.allocated(d_re)) allocate(d_re(nx,ny,nz))
+  if (.not.allocated(d_im)) allocate(d_im(nx,ny,nz))
+  if (.not.allocated(h_re)) allocate(h_re(nx,ny,nz))
+  if (.not.allocated(h_im)) allocate(h_im(nx,ny,nz))
+  if (.not.allocated(a_vec_re)) allocate(a_vec_re(nx,ny,nz,3))
+  if (.not.allocated(a_vec_im)) allocate(a_vec_im(nx,ny,nz,3))
+  if (.not.allocated(b_vec_re)) allocate(b_vec_re(nx,ny,nz,3))
+  if (.not.allocated(a2)) allocate(a2(nx,ny,nz))
 
   endsubroutine allocate_workbuffers
 !***********************************************************************
