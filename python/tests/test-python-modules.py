@@ -142,7 +142,12 @@ def strip_ansi(text):
     """
     return _ansi_escape.sub('', text)
 
-def json_to_html(json_filename, html_filename, repo_info=None):
+def json_to_html(
+    json_filename,
+    html_filename,
+    repo_info = None,
+    add_coverage_link = True,
+    ):
     """
     repo_info: get_repo_version instance
     """
@@ -221,9 +226,10 @@ def json_to_html(json_filename, html_filename, repo_info=None):
     <p>Tested git commit: {repo_info.commit} (branch {repo_info.branch})</p>
     """
 
-    html_body += f"""
-    <p><a href="htmlcov/index.html">click to view code coverage report</a></p>
-    """
+    if add_coverage_link:
+        html_body += f"""
+        <p><a href="htmlcov/index.html">click to view code coverage report</a></p>
+        """
 
     all_succeeded = True
     for name, testenv in report['testenvs'].items():
