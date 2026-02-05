@@ -36,6 +36,7 @@ module Selfgravity
 !
   logical :: lselfgravity_gas=.true., lselfgravity_dust=.false.
   logical :: lselfgravity_neutrals=.false.
+  logical :: luse_G_Newton=.false.
 !
   namelist /selfgrav_init_pars/ &
       rhs_poisson_const, lselfgravity_gas, lselfgravity_dust, &
@@ -127,7 +128,11 @@ module Selfgravity
       if (gravitational_const/=0.0) then
         rhs_poisson_const=4*pi*gravitational_const
       else
-        gravitational_const=rhs_poisson_const/(4*pi)
+        if (luse_G_Newton) then
+          rhs_poisson_const=4*pi*G_Newton
+        else
+          gravitational_const=rhs_poisson_const/(4*pi)
+        endif
       endif
 !
       if (.not.lpoisson) &
@@ -326,6 +331,7 @@ module Selfgravity
       if (t>=tstart_selfgrav) then
 !
 !  Consider self-gravity from gas and dust density or from either one.
+!  Set rhs_poisson based on the gas density. The particle contribution is added below.
 !
         if (ldensity.and.lselfgravity_gas) then
           if (lstratz) then
@@ -405,7 +411,9 @@ module Selfgravity
         else
           select case (ascale_type)
             case ('default'); f(l1:l2,m1:m2,n1:n2,ipotself) = rhs_poisson_const*rhs_poisson
-            case ('general'); f(l1:l2,m1:m2,n1:n2,ipotself) = rhs_poisson_const*rhs_poisson*ascale
+!AB: In Bryan+04 and ENZO, velocity is still physical, but density is not, so we must divide by ascale. Can make switchable.
+            !case ('general'); f(l1:l2,m1:m2,n1:n2,ipotself) = rhs_poisson_const*rhs_poisson*ascale
+            case ('general'); f(l1:l2,m1:m2,n1:n2,ipotself) = rhs_poisson_const*rhs_poisson/ascale
           endselect
 
         endif
