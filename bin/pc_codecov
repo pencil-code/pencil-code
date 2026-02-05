@@ -83,8 +83,18 @@ fi
 find "$pencil_home"/samples -type f -name coverage.info -exec rm {} \;
 find "$output_dir" -type f -exec rm {} \;
 
-geninfo "$pencil_home"/samples -b "$pencil_home"/src -o "$output_dir"/pencil-codecov.info --ignore-errors inconsistent,inconsistent --filter missing,blank --parallel "$jobs"
 
-#NOTE: when I use --show-details, it fails with
-# genhtml: ERROR: unexpected branch TLA UNC for count 0
-genhtml --show-proportion --hierarchical --show-navigation --parallel "$jobs" --output-directory "$output_dir" "$output_dir"/pencil-codecov.info
+# The flags needed to cleanly ignore errors in lcov seem to vary from version to version
+## lcov 2.4
+# geninfo "$pencil_home"/samples -b "$pencil_home"/src -o "$output_dir"/pencil-codecov.info --ignore-errors inconsistent,inconsistent --filter missing,blank --parallel "$jobs"
+# genhtml --show-proportion --hierarchical --show-navigation --parallel "$jobs" --output-directory "$output_dir" "$output_dir"/pencil-codecov.info
+## lcov 2.1
+# geninfo "$pencil_home"/samples -b "$pencil_home"/src -o "$output_dir"/pencil-codecov.info --ignore-errors inconsistent,source,range --filter blank --parallel "$jobs"
+# genhtml --show-proportion --hierarchical --show-navigation --synthesize-missing --ignore-errors missing,empty,source,range --parallel "$jobs" --output-directory "$output_dir" "$output_dir"/pencil-codecov.info
+## lcov 2.0
+# geninfo "$pencil_home"/samples -b "$pencil_home"/src -o "$output_dir"/pencil-codecov.info --ignore-errors inconsistent,source --filter blank --parallel "$jobs"
+# genhtml --show-proportion --hierarchical --show-navigation --synthesize-missing --ignore-errors empty,source,unmapped --parallel "$jobs" --output-directory "$output_dir" "$output_dir"/pencil-codecov.info
+
+set +e #ignore failures in commands that follow.
+geninfo "$pencil_home"/samples -b "$pencil_home"/src -o "$output_dir"/pencil-codecov.info --keep-going --filter blank --parallel "$jobs"
+genhtml --keep-going --show-proportion --hierarchical --show-navigation --parallel "$jobs" --output-directory "$output_dir" "$output_dir"/pencil-codecov.info
