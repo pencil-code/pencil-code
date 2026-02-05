@@ -97,8 +97,9 @@ module Particles_stalker
 !
 !  Need scratch slot in f array to interpolate derived variables.
 !
-      if (lstalk_guu .or. lstalk_grho .or. lstalk_bb) &
-          call farray_acquire_scratch_area('scratch',iscratch)
+      if (lstalk_guu .or. lstalk_grho .or. lstalk_bb) then
+        if (iscratch==0) call farray_acquire_scratch_area('scratch',iscratch)
+      endif
 !
 !  Count the number of variables to be stalked.
 !
