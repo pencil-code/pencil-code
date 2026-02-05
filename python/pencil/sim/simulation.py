@@ -759,9 +759,8 @@ class Simulation(object):
                 **kwargs,
                 )
         except CommandFailedError:
-            if autoclean:
-                ret = None
-            else:
+            ret = False
+            if not autoclean:
                 raise
         finally:
             if (ret is not True) and autoclean and (not cleanall):
