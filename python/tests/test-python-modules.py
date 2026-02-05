@@ -307,12 +307,6 @@ def json_to_html(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--full",
-        help = "run the full set of tests, generating HTML output and a code coverage report.",
-        default = False,
-        action = 'store_true',
-        )
-    parser.add_argument(
         "--outputdir",
         help = "location to store HTML output in (only has an effect with `--tox`)",
         default = "."
@@ -323,17 +317,29 @@ if __name__ == "__main__":
         default = False,
         action = 'store_true',
         )
+    parser.add_argument(
+        "--tox",
+        help = "Run the full set of tests by installing the required Python modules in an isolated environment. Also generates a HTML report of the test status",
+        default = False,
+        action = 'store_true',
+        )
+    parser.add_argument(
+        "--coverage",
+        help = "Generate the code coverage report (only has an effect with `--tox`).",
+        default = False,
+        action = 'store_true',
+        )
 
     args = parser.parse_args()
 
-    if args.full:
-        report_coverage = (not args.fast)
-        if report_coverage and not coverage_pkg_present:
-            raise RuntimeError("`coverage` (Python package) must be installed to use the --full option.")
+    if args.coverage and not coverage_pkg_present:
+        raise RuntimeError("`coverage` (Python package) must be installed to use the --coverage option.")
+
+    if args.tox:
         call_tox(
             output_dir = pathlib.Path(args.outputdir),
-            fast=args.fast,
-            report_coverage=report_coverage,
+            fast = args.fast,
+            report_coverage = args.coverage,
             )
     else:
         call_pytest(fast=args.fast)
