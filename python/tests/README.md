@@ -20,7 +20,7 @@ of the ways described below.
 ## Recommended
 
 ```sh
-$PENCIL_HOME/python/tests/test-python-modules.py --full
+$PENCIL_HOME/python/tests/test-python-modules.py --tox --coverage
 ```
 
 ### Requirements
