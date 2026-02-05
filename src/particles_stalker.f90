@@ -120,6 +120,8 @@ module Particles_stalker
       if (lstalk_gTT)       nvar_stalk=nvar_stalk+3
 !
 !  Reserve space for particle arrays.
+!  2026-Feb-05/Kishore: should not allocate if the variable is already allocated
+!  2026-Feb-05/Kishore: (e.g. during RELOAD)
 !
       if (lstalk_xx) allocate (xp(npar_stalk), yp(npar_stalk), zp(npar_stalk))
       if (lstalk_vv) allocate (vpx(npar_stalk), vpy(npar_stalk), vpz(npar_stalk))
