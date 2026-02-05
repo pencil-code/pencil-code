@@ -94,10 +94,11 @@ class Stream(object):
 
                 with warnings.catch_warnings():
                     warnings.filterwarnings("ignore", category=Warning)
-                    from eqtools.trispline import Spline
-            except ImportError:
+                    from scipy.interpolate import RegularGridInterpolator
+            except (ImportError, ModuleNotFoundError) as e:
                 print(
-                    "Warning: Could not import eqtools.trispline.Spline for tricubic interpolation.\n"
+                    f"Warning: Could not import scipy.interpolate.RegularGridInterpolator "
+                    f"for tricubic interpolation: {e}\n"
                 )
                 print("Warning: Fall back to trilinear.")
                 params.interpolation = "trilinear"
@@ -119,14 +120,20 @@ class Stream(object):
             y = np.linspace(params.Oy, params.Oy + params.Ly, params.ny)
             z = np.linspace(params.Oz, params.Oz + params.Lz, params.nz)
             if splines is None:
-                field_x = Spline(z, y, x, field[0, ...])
-                field_y = Spline(z, y, x, field[1, ...])
-                field_z = Spline(z, y, x, field[2, ...])
+                field_x = RegularGridInterpolator(
+                    (z, y, x), field[0, ...], method="cubic", bounds_error=False, fill_value=0.0
+                )
+                field_y = RegularGridInterpolator(
+                    (z, y, x), field[1, ...], method="cubic", bounds_error=False, fill_value=0.0
+                )
+                field_z = RegularGridInterpolator(
+                    (z, y, x), field[2, ...], method="cubic", bounds_error=False, fill_value=0.0
+                )
             else:
                 field_x = splines[0]
                 field_y = splines[1]
                 field_z = splines[2]
-            odeint_func = lambda t, xx: self.trilinear_func(
+            odeint_func = lambda t, xx: self.tricubic_func(
                 xx, field_x, field_y, field_z, params
             )
             del x
@@ -228,22 +235,22 @@ class Stream(object):
         self.section_dh = time[1:] - time[:-1]
         self.total_h = time[-1] - time[0]
 
-    def trilinear_func(self, xx, field_x, field_y, field_z, params):
+    def tricubic_func(self, xx, field_x, field_y, field_z, params):
         """
-        Trilinear spline interpolation like eqtools.trispline.Spline
-        but return 0 if the point lies outside the box.
+        Tricubic spline interpolation using scipy.interpolate.RegularGridInterpolator.
+        Returns 0 if the point lies outside the box.
 
         call signature:
 
-        trilinear_func(xx, field_x, field_y, field_z, params)
+        tricubic_func(xx, field_x, field_y, field_z, params)
 
         Keyword arguments:
 
         *xx*:
-          The zyx coordinates of the point to interpolate the data.
+          The xyz coordinates of the point to interpolate the data.
 
         *field_xyz*:
-          The Spline objects for the velocity fields.
+          The RegularGridInterpolator objects for the velocity fields.
 
         *params*:
           Parameter object.
@@ -260,10 +267,12 @@ class Stream(object):
             + (xx[2] > params.Oz + params.Lz)
         ):
             return np.zeros(3)
+        # RegularGridInterpolator expects points as (z, y, x) to match grid order
+        point = (xx[2], xx[1], xx[0])
         return np.array(
             [
-                field_x.ev(xx[2], xx[1], xx[0]),
-                field_y.ev(xx[2], xx[1], xx[0]),
-                field_z.ev(xx[2], xx[1], xx[0]),
+                float(field_x(point)),
+                float(field_y(point)),
+                float(field_z(point)),
             ]
-        )[:, 0]
+        )

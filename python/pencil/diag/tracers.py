@@ -229,10 +229,14 @@ class Tracers(object):
                     self.y1[ix, iy, t_idx] = self.y0[ix, iy, t_idx].copy()
                     self.z1[ix, iy, t_idx] = grid.z[0]
 
-            # Prepare the splines for the tricubis interpolation.
+            # Prepare the splines for the tricubic interpolation.
             if self.params.interpolation == "tricubic":
                 try:
-                    from eqtools.trispline import Spline
+                    import warnings
+
+                    with warnings.catch_warnings():
+                        warnings.filterwarnings("ignore", category=Warning)
+                        from scipy.interpolate import RegularGridInterpolator
 
                     x = np.linspace(
                         self.params.Ox, self.params.Ox + self.params.Lx, self.params.nx
@@ -243,11 +247,23 @@ class Tracers(object):
                     z = np.linspace(
                         self.params.Oz, self.params.Oz + self.params.Lz, self.params.nz
                     )
-                    field_x = Spline(z, y, x, field[0, ...])
-                    field_y = Spline(z, y, x, field[1, ...])
-                    field_z = Spline(z, y, x, field[2, ...])
+                    field_x = RegularGridInterpolator(
+                        (z, y, x), field[0, ...], method="cubic", bounds_error=False, fill_value=0.0
+                    )
+                    field_y = RegularGridInterpolator(
+                        (z, y, x), field[1, ...], method="cubic", bounds_error=False, fill_value=0.0
+                    )
+                    field_z = RegularGridInterpolator(
+                        (z, y, x), field[2, ...], method="cubic", bounds_error=False, fill_value=0.0
+                    )
                     self.splines = np.array([field_x, field_y, field_z])
-                except:
+                except (ImportError, ModuleNotFoundError) as e:
+                    print(
+                        f"Warning: Could not import scipy.interpolate.RegularGridInterpolator "
+                        f"for tricubic interpolation: {e}"
+                    )
+                    print("Warning: Fall back to trilinear.")
+                    self.params.interpolation = "trilinear"
                     self.splines = None
             else:
                 self.splines = None

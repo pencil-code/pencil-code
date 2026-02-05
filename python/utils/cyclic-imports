@@ -41,7 +41,6 @@ KNOWN_EXTERNAL_MODULES = [
     "dill",
     "distutils",
     "doctest",
-    "eqtools",
     "errno",
     "fileinput",
     "glob",
