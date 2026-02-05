@@ -313,7 +313,7 @@ if __name__ == "__main__":
         )
     parser.add_argument(
         "--outputdir",
-        help = "location to store HTML output in",
+        help = "location to store HTML output in (only has an effect with `--tox`)",
         default = "."
         )
     parser.add_argument(
