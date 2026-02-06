@@ -695,16 +695,16 @@ class NullPoint(object):
 
         gf = np.zeros((3, 3))
         gf[0, :] = (
-            vec_int(xyz + np.array([dd, 0, 0]), var, field)
-            - vec_int(xyz - np.array([dd, 0, 0]), var, field)
+            vec_int(xyz + np.array([dd, 0, 0]), field, [var.dx, var.dy, var.dz], [var.x[0], var.y[0], var.z[0]], [len(var.x), len(var.y), len(var.z)])
+            - vec_int(xyz - np.array([dd, 0, 0]), field, [var.dx, var.dy, var.dz], [var.x[0], var.y[0], var.z[0]], [len(var.x), len(var.y), len(var.z)])
         ) / (2 * dd)
         gf[1, :] = (
-            vec_int(xyz + np.array([0, dd, 0]), var, field)
-            - vec_int(xyz - np.array([0, dd, 0]), var, field)
+            vec_int(xyz + np.array([0, dd, 0]), field, [var.dx, var.dy, var.dz], [var.x[0], var.y[0], var.z[0]], [len(var.x), len(var.y), len(var.z)])
+            - vec_int(xyz - np.array([0, dd, 0]), field, [var.dx, var.dy, var.dz], [var.x[0], var.y[0], var.z[0]], [len(var.x), len(var.y), len(var.z)])
         ) / (2 * dd)
         gf[2, :] = (
-            vec_int(xyz + np.array([0, 0, dd]), var, field)
-            - vec_int(xyz - np.array([0, 0, dd]), var, field)
+            vec_int(xyz + np.array([0, 0, dd]), field, [var.dx, var.dy, var.dz], [var.x[0], var.y[0], var.z[0]], [len(var.x), len(var.y), len(var.z)])
+            - vec_int(xyz - np.array([0, 0, dd]), field, [var.dx, var.dy, var.dz], [var.x[0], var.y[0], var.z[0]], [len(var.x), len(var.y), len(var.z)])
         ) / (2 * dd)
 
         return np.matrix(gf)
@@ -853,7 +853,7 @@ class Separatrix(object):
                 # Trace field lines on ring.
                 point_idx = 0
                 for point in ring:
-                    field_norm = vec_int(point, var, field) * sign_trace
+                    field_norm = vec_int(point, field, [var.dx, var.dy, var.dz], [var.x[0], var.y[0], var.z[0]], [len(var.x), len(var.y), len(var.z)]) * sign_trace
                     field_norm = field_norm / np.sqrt(np.sum(field_norm ** 2))
                     point = point + field_norm * delta
                     ring[point_idx] = point
@@ -1141,7 +1141,7 @@ class Spine(object):
             iteration = 0
             while tracing and iteration < iter_max:
                 spine_up.append(point)
-                field_norm = vec_int(point, var, field_sgn)
+                field_norm = vec_int(point, field_sgn, [var.dx, var.dy, var.dz], [var.x[0], var.y[0], var.z[0]], [len(var.x), len(var.y), len(var.z)])
                 field_norm = field_norm / np.sqrt(np.sum(field_norm ** 2))
                 point = point + field_norm * delta
                 if not self.__inside_domain(point, var):
@@ -1156,7 +1156,7 @@ class Spine(object):
             iteration = 0
             while tracing and iteration < iter_max:
                 spine_down.append(point)
-                field_norm = vec_int(point, var, field_sgn)
+                field_norm = vec_int(point, field_sgn, [var.dx, var.dy, var.dz], [var.x[0], var.y[0], var.z[0]], [len(var.x), len(var.y), len(var.z)])
                 field_norm = field_norm / np.sqrt(np.sum(field_norm ** 2))
                 point = point + field_norm * delta
                 if not self.__inside_domain(point, var):
