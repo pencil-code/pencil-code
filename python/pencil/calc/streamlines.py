@@ -33,7 +33,7 @@ params.nz = len(z)
 params.Lx = x[-1] - x[0]
 params.Ly = y[-1] - y[0]
 params.Lz = z[-1] - z[0]
-params.interpolation = 'trilinear'
+params.interpolation = 'tricubic'
 time = np.linspace(0, 20, 100)
 stream = pc.calc.Stream(bb, params, xx=[0.5, 0.5, -1], time=time)
 """
@@ -112,15 +112,55 @@ class Stream(object):
                 xx, field, dxyz, oxyz, nxyz, params.interpolation
             )
         if params.interpolation == "tricubic":
+            from scipy.ndimage import spline_filter
+
             # For map_coordinates, we pass field data directly (not interpolator objects)
             if splines is None:
                 field_data = field
             else:
                 # splines here would be the field data array
                 field_data = splines
-            odeint_func = lambda t, xx: self.tricubic_func(
-                xx, field_data, params, map_coordinates
-            )
+
+            # Pre-compute spline coefficients once (this is the expensive part)
+            # With prefilter=False in map_coordinates, evaluation is much faster
+            filtered_data = np.array([
+                spline_filter(field_data[0], order=3),
+                spline_filter(field_data[1], order=3),
+                spline_filter(field_data[2], order=3),
+            ])
+
+            # Pre-compute values to avoid repeated lookups in the inner loop
+            Ox, Oy, Oz = params.Ox, params.Oy, params.Oz
+            Lx, Ly, Lz = params.Lx, params.Ly, params.Lz
+            inv_dx, inv_dy, inv_dz = 1.0 / params.dx, 1.0 / params.dy, 1.0 / params.dz
+
+            # Pre-allocate arrays to avoid repeated allocations
+            coords = np.zeros((3, 1))
+            result = np.zeros(3)
+            zeros = np.zeros(3)
+
+            def tricubic_odeint(t, xx):
+                # Boundary check
+                if (
+                    (xx[0] < Ox) or (xx[0] > Ox + Lx) or
+                    (xx[1] < Oy) or (xx[1] > Oy + Ly) or
+                    (xx[2] < Oz) or (xx[2] > Oz + Lz)
+                ):
+                    return zeros
+
+                # Convert physical coordinates to array indices (in-place)
+                coords[0, 0] = (xx[2] - Oz) * inv_dz  # z_idx
+                coords[1, 0] = (xx[1] - Oy) * inv_dy  # y_idx
+                coords[2, 0] = (xx[0] - Ox) * inv_dx  # x_idx
+
+                # Interpolate each component (prefilter=False since data is pre-filtered)
+                result[0] = map_coordinates(filtered_data[0], coords, order=3, mode='constant', cval=0.0, prefilter=False)[0]
+                result[1] = map_coordinates(filtered_data[1], coords, order=3, mode='constant', cval=0.0, prefilter=False)[0]
+                result[2] = map_coordinates(filtered_data[2], coords, order=3, mode='constant', cval=0.0, prefilter=False)[0]
+
+                return result
+
+            odeint_func = tricubic_odeint
         # Set up the ode solver.
         methods_ode = ["vode", "zvode", "lsoda", "dopri5", "dop853"]
         methods_ivp = ["RK45", "RK23", "Radau", "BDF", "LSODA"]

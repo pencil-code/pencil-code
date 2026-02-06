@@ -125,11 +125,11 @@ def vec_int(xyz, field, dxyz, oxyz, nxyz, interpolation="trilinear", splines=Non
 
         # Convert physical coordinates to array indices
         # Data is stored as [nz, ny, nx], so indices are [z_idx, y_idx, x_idx]
-        x_idx = (xyz[0] - oxyz[0]) / dxyz[0]
-        y_idx = (xyz[1] - oxyz[1]) / dxyz[1]
-        z_idx = (xyz[2] - oxyz[2]) / dxyz[2]
-
-        coords = np.array([[z_idx], [y_idx], [x_idx]])
+        coords = np.array([
+            [(xyz[2] - oxyz[2]) / dxyz[2]],  # z_idx
+            [(xyz[1] - oxyz[1]) / dxyz[1]],  # y_idx
+            [(xyz[0] - oxyz[0]) / dxyz[0]],  # x_idx
+        ])
 
         return np.array([
             map_coordinates(field[0], coords, order=3, mode='constant', cval=0.0)[0],
