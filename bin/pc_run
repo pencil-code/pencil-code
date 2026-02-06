@@ -701,7 +701,7 @@ sub run_system_cmd {
     my $status = $?;
     if ($status != 0) { warn "'@cmd_line' failed: $!\n"; }
     if (-e $errorfile) {
-        print "Found ERROR file from start.x\n";
+        print "Found ERROR file\n";
         $status |= 16;
         clear_error();
     }
