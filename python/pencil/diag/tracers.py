@@ -230,15 +230,20 @@ class Tracers(object):
                     self.z1[ix, iy, t_idx] = grid.z[0]
 
             # Prepare for the tricubic interpolation.
-            # For map_coordinates, we pass the field data directly (not interpolator objects)
+            # Pre-compute spline coefficients once for reuse across multiple streamlines
             if self.params.interpolation == "tricubic":
                 try:
-                    from scipy.ndimage import map_coordinates  # noqa: F401
-                    # For tricubic, splines stores the field data to be passed to Stream
-                    self.splines = field
+                    from scipy.ndimage import spline_filter
+
+                    # Pre-compute spline coefficients (expensive, but done only once)
+                    self.splines = np.array([
+                        spline_filter(field[0], order=3),
+                        spline_filter(field[1], order=3),
+                        spline_filter(field[2], order=3),
+                    ])
                 except (ImportError, ModuleNotFoundError) as e:
                     print(
-                        f"Warning: Could not import scipy.ndimage.map_coordinates "
+                        f"Warning: Could not import scipy.ndimage.spline_filter "
                         f"for tricubic interpolation: {e}"
                     )
                     print("Warning: Fall back to trilinear.")

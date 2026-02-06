@@ -77,10 +77,13 @@ class Stream(object):
             Use 'None' for Cartesian metric.
 
         *splines*:
-            Spline interpolation functions for the tricubic interpolation.
+            Pre-computed spline coefficients for tricubic interpolation.
             This can speed up the calculations greatly for repeated streamline
-            tracing on the same data.
-            Accepts a list of the spline functions for the three vector components.
+            tracing on the same data. Should be computed using scipy.ndimage.spline_filter
+            with order=3 for each vector component, i.e.:
+                splines = np.array([spline_filter(field[0], order=3),
+                                    spline_filter(field[1], order=3),
+                                    spline_filter(field[2], order=3)])
         """
 
         import numpy as np
@@ -114,20 +117,18 @@ class Stream(object):
         if params.interpolation == "tricubic":
             from scipy.ndimage import spline_filter
 
-            # For map_coordinates, we pass field data directly (not interpolator objects)
-            if splines is None:
-                field_data = field
-            else:
-                # splines here would be the field data array
-                field_data = splines
-
             # Pre-compute spline coefficients once (this is the expensive part)
             # With prefilter=False in map_coordinates, evaluation is much faster
-            filtered_data = np.array([
-                spline_filter(field_data[0], order=3),
-                spline_filter(field_data[1], order=3),
-                spline_filter(field_data[2], order=3),
-            ])
+            # If splines is provided, assume it's already pre-filtered coefficients
+            if splines is None:
+                filtered_data = np.array([
+                    spline_filter(field[0], order=3),
+                    spline_filter(field[1], order=3),
+                    spline_filter(field[2], order=3),
+                ])
+            else:
+                # User provided pre-filtered spline coefficients
+                filtered_data = splines
 
             # Pre-compute values to avoid repeated lookups in the inner loop
             Ox, Oy, Oz = params.Ox, params.Oy, params.Oz
@@ -256,53 +257,3 @@ class Stream(object):
         self.iterations = len(time)
         self.section_dh = time[1:] - time[:-1]
         self.total_h = time[-1] - time[0]
-
-    def tricubic_func(self, xx, field_data, params, map_coordinates):
-        """
-        Tricubic spline interpolation using scipy.ndimage.map_coordinates.
-        Returns 0 if the point lies outside the box.
-
-        call signature:
-
-        tricubic_func(xx, field_data, params, map_coordinates)
-
-        Keyword arguments:
-
-        *xx*:
-          The xyz coordinates of the point to interpolate the data.
-
-        *field_data*:
-          The vector field data array with shape [3, nz, ny, nx].
-
-        *params*:
-          Parameter object.
-
-        *map_coordinates*:
-          The scipy.ndimage.map_coordinates function.
-        """
-
-        import numpy as np
-
-        if (
-            (xx[0] < params.Ox)
-            + (xx[0] > params.Ox + params.Lx)
-            + (xx[1] < params.Oy)
-            + (xx[1] > params.Oy + params.Ly)
-            + (xx[2] < params.Oz)
-            + (xx[2] > params.Oz + params.Lz)
-        ):
-            return np.zeros(3)
-
-        # Convert physical coordinates to array indices
-        # Data is stored as [nz, ny, nx], so indices are [z_idx, y_idx, x_idx]
-        x_idx = (xx[0] - params.Ox) / params.dx
-        y_idx = (xx[1] - params.Oy) / params.dy
-        z_idx = (xx[2] - params.Oz) / params.dz
-
-        coords = np.array([[z_idx], [y_idx], [x_idx]])
-
-        return np.array([
-            map_coordinates(field_data[0], coords, order=3, mode='constant', cval=0.0)[0],
-            map_coordinates(field_data[1], coords, order=3, mode='constant', cval=0.0)[0],
-            map_coordinates(field_data[2], coords, order=3, mode='constant', cval=0.0)[0],
-        ])
