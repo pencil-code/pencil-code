@@ -47,8 +47,7 @@ class ZProfile(object):
         self.z = 0
 
     def keys(self):
-        for i in self.__dict__.keys():
-            print(i)
+        return list(self.__dict__.keys())
 
     def read(self, var_name, datadir="data", dim=None, nfield=1):
         """

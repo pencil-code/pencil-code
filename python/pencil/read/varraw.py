@@ -133,8 +133,7 @@ class Varraw(object):
         self.n2 = None
 
     def keys(self):
-        for i in self.__dict__.keys():
-            print(i)
+        return list(self.__dict__.keys())
 
     def read(self, var_file="", datadir="data", proc=-1, ivar=-1, var_list=None, quiet=False, precision="d", trimall=False, swap_endian=False):
         """

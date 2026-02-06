@@ -38,8 +38,7 @@ class Param(object):
         self.keys = []
 
     def keys(self):
-        for i in self.__dict__.keys():
-            print(i)
+        return list(self.__dict__.keys())
 
     def read(
         self,

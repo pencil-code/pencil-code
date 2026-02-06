@@ -128,8 +128,7 @@ class ogDataCube(DataCube):
         super(ogDataCube, self).__init__()
 
     def keys(self):
-        for i in self.__dict__.keys():
-            print(i)
+        return list(self.__dict__.keys())
 
     def transform(self, trim_all):
         """

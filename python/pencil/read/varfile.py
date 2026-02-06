@@ -59,8 +59,7 @@ class DataCube(object):
         self.magic = None
 
     def keys(self):
-        for i in self.__dict__.keys():
-            print(i)
+        return list(self.__dict__.keys())
 
     def read(
         self,
@@ -1049,9 +1048,10 @@ class _Persist():
     Used to store the persistent variables
     """
     def keys(self):
-        for i in self.__dict__.keys():
-            if not i == "keys":
-               print(i)
+        ks = list(self.__dict__.keys())
+        if "keys" in ks:
+            ks.remove("keys")
+        return ks
 
 @copy_docstring(DataCube.read)
 def var(*args, **kwargs):

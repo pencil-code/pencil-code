@@ -27,8 +27,7 @@ class Grid(object):
         self.Lx = self.Ly = self.Lz = 0
 
     def keys(self):
-        for i in self.__dict__.keys():
-            print(i)
+        return list(self.__dict__.keys())
 
     def read(self, datadir="data", proc=-1, quiet=True, precision="f", trim=False, param=None):
         """
