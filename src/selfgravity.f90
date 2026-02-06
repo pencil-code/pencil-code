@@ -36,11 +36,13 @@ module Selfgravity
 !
   logical :: lselfgravity_gas=.true., lselfgravity_dust=.false.
   logical :: lselfgravity_neutrals=.false.
-  logical :: luse_G_Newton=.false.
+  logical :: luse_G_Newton=.false.  !PAR_DOC: Use physical Newton constant (in the correct units)
+  logical :: lBryan_etal14=.false.  !PAR_DOC: Bryan_etal14 convention, where velocity is not comoving.
 !
   namelist /selfgrav_init_pars/ &
       rhs_poisson_const, lselfgravity_gas, lselfgravity_dust, &
-      lselfgravity_neutrals, tstart_selfgrav, gravitational_const, kappa
+      lselfgravity_neutrals, tstart_selfgrav, gravitational_const, kappa, &
+      lBryan_etal14
 !
 !  Run Parameters
 !
@@ -411,9 +413,15 @@ module Selfgravity
         else
           select case (ascale_type)
             case ('default'); f(l1:l2,m1:m2,n1:n2,ipotself) = rhs_poisson_const*rhs_poisson
-!AB: In Bryan+04 and ENZO, velocity is still physical, but density is not, so we must divide by ascale. Can make switchable.
-            !case ('general'); f(l1:l2,m1:m2,n1:n2,ipotself) = rhs_poisson_const*rhs_poisson*ascale
-            case ('general'); f(l1:l2,m1:m2,n1:n2,ipotself) = rhs_poisson_const*rhs_poisson/ascale
+!
+!  In Bryan+14 and ENZO, velocity is still physical, but density is not, so we must divide by ascale.
+!
+            case ('general')
+              if (lBryan_etal14) then
+                f(l1:l2,m1:m2,n1:n2,ipotself) = rhs_poisson_const*rhs_poisson/ascale
+              else
+                f(l1:l2,m1:m2,n1:n2,ipotself) = rhs_poisson_const*rhs_poisson*ascale
+              endif
           endselect
 
         endif
