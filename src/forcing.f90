@@ -1219,7 +1219,7 @@ module Forcing
           if (allocated(fcont_from_file)) deallocate(fcont_from_file)
           allocate(fcont_from_file(nx,ny,nz,3))
 !
-!         To create forcing_cont.dat, see function pc.util.write_forcing_cont
+!         To create forcing_cont.dat, see function pc.tool_kit.write_forcing_cont
 !         in the Python module.
 !
           if (lroot.and.ip<14) print*,'initialize_forcing: opening forcing_cont.dat'
