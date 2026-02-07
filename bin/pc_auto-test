@@ -165,6 +165,7 @@ my %tests = (
                          cartesian-convection-kramers-chimax
                          cartesian-convection-kramers-chimax_cp_2
                          continuous-forcing-from-file
+                         continuous-forcing-from_file_h5
                          conv-slab
                          conv-slab_cp_2
                          interlocked-fluxrings
