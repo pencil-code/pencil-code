@@ -108,8 +108,11 @@ find "$output_dir" -type f -exec rm {} \;
 # genhtml --show-proportion --hierarchical --show-navigation --synthesize-missing --ignore-errors empty,source,unmapped --parallel "$jobs" --output-directory "$output_dir" "$output_dir"/pencil-codecov.info
 
 set +e #ignore failures in commands that follow.
+echo "------------------------------geninfo------------------------------"
 geninfo "$pencil_home"/samples -b "$pencil_home"/src -o "$output_dir"/pencil-codecov.info --keep-going --filter blank --parallel "$jobs"
+echo "------------------------------genhtml------------------------------"
 genhtml --keep-going --show-proportion --hierarchical --show-navigation --synthesize-missing --parallel "$jobs" --output-directory "$output_dir" "$output_dir"/pencil-codecov.info
+echo "-------------------------------------------------------------------"
 set -e #resume being careful
 
 if test -n "$clean"; then
