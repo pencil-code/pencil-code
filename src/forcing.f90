@@ -272,6 +272,7 @@ module Forcing
       use SharedVariables, only: get_shared_variable
       use Sub, only: step,erfunc,stepdown,register_report_aux
       use EquationOfState, only: cs20
+      use Hdf5_io, only: file_close_hdf5, file_open_hdf5, input_hdf5
 !
       real :: zstar,rmin,rmax,a_ell,anum,adenom,jlm_ff,ylm_ff,alphar,Balpha,RYlm,IYlm,intv_rotang
       real :: ang_intv,sthphase,cthphase,costhprime,phprime
@@ -281,6 +282,7 @@ module Forcing
       logical :: lk_dot_dat_exists, llocal_x, llocal_y, llocal_z
       character (len=labellen) :: tmp
       real, dimension(3) :: fcont_from_file_read_input
+      character (len=fnlen) :: filename
 
       cs0=sqrt(cs20)
 !
@@ -1252,6 +1254,23 @@ module Forcing
             enddo
           enddo
           close(1)
+        elseif (iforcing_cont(i)=='from_file_h5') then
+!
+!         More HPC-friendly variant of from_file (each process no longer reads
+!         the entire file). Requires HDF5 IO.
+!
+          if (allocated(fcont_from_file)) deallocate(fcont_from_file)
+          allocate(fcont_from_file(nx,ny,nz,3))
+!
+          filename = 'forcing_cont.h5'
+          if (lroot.and.ip<14) print*,'initialize_forcing: opening '//trim(filename)
+          call file_open_hdf5(filename, read_only=.true.)
+!
+          call input_hdf5('forcing_cont/x', fcont_from_file(:,:,:,1), lghost=.false.)
+          call input_hdf5('forcing_cont/y', fcont_from_file(:,:,:,2), lghost=.false.)
+          call input_hdf5('forcing_cont/z', fcont_from_file(:,:,:,3), lghost=.false.)
+!
+          call file_close_hdf5
         endif
       enddo
       if (n_forcing_cont==0) call warning('forcing','no valid continuous iforcing_cont specified')
@@ -6326,7 +6345,7 @@ module Forcing
 !   Read forcing profile from file. Currently can be used only for one variable
 !   (e.g. either uu or aa).
 !
-      case('from_file')
+      case('from_file','from_file_h5')
         force(:,1) = fcont_from_file(:,m-nghost,n-nghost,1)
         force(:,2) = fcont_from_file(:,m-nghost,n-nghost,2)
         force(:,3) = fcont_from_file(:,m-nghost,n-nghost,3)
