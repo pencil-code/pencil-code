@@ -762,19 +762,19 @@ class Simulation(object):
             ret = False
             if not autoclean:
                 raise
-        finally:
-            if (ret is not True) and autoclean and (not cleanall):
-                #If cleanall was already passed, no point in cleaning again and retrying.
-                return self.compile(
-                    cleanall=True,
-                    autoclean=False, #prevent infinite recursion
-                    fast=fast,
-                    verbose=verbose,
-                    hostfile=hostfile,
-                    **kwargs,
-                    )
-            else:
-                return ret
+
+        if (ret is not True) and autoclean and (not cleanall):
+            #If cleanall was already passed, no point in cleaning again and retrying.
+            return self.compile(
+                cleanall=True,
+                autoclean=False, #prevent infinite recursion
+                fast=fast,
+                verbose=verbose,
+                hostfile=hostfile,
+                **kwargs,
+                )
+        else:
+            return ret
 
     def _get_last_build_cmd(self):
         """
