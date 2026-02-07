@@ -383,7 +383,7 @@ sub run_tests_on {
             $lcov_output_dir = $log_dir."/".$lcov_output_dir;
             $logfile = $log_dir."/".$logfile;
         }
-        system("env PENCIL_HOME=\"$pencil_home\" PATH=\"$ENV{PATH}\" pc_codecov --pencil-home \"$pencil_home\" --output-dir \"$lcov_output_dir\" &> $logfile");
+        system("env PENCIL_HOME=\"$pencil_home\" PATH=\"$ENV{PATH}\" pc_codecov --pencil-home \"$pencil_home\" --output-dir \"$lcov_output_dir\" --clean &> $logfile");
         unless ($? == 0) {
             print "ERROR: generation of code coverage report failed with exit code $?.\nCheck '$logfile' for details.\n";
         }
