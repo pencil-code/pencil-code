@@ -1,0 +1,12 @@
+Directory:
+    ${PENCIL_HOME}/samples/continuous-forcing-from-file
+SVN Id:
+    $Id$
+Maintainer:
+    Kishore G <kishore96.work/gmail[dot]com>
+Added:
+    16-Jun-2023
+Status:
+    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+Comments:
+    Tests iforcing_cont='from_file'
