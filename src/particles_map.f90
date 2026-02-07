@@ -1295,6 +1295,7 @@ module Particles_map
     subroutine map_xxp_grid(f,fp,ineargrid,lmapsink_opt)
 !
 !  Map the particles as a continuous density field on the grid.
+!  This is run both in start.90 and in run.f90.
 !
 !  27-nov-05/anders: coded
 !

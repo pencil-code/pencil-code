@@ -33,15 +33,12 @@ module Particles_selfgravity
   real, pointer :: tstart_selfgrav
   logical :: lselfgravity_particles=.true.
   logical :: lnopartingrav=.false.
-  logical :: linclude_ascale=.false.  !PAR_DOC: for backwards compatibility, allow linclude_ascale=.false. (currently by default)
 !
   namelist /particles_selfgrav_init_pars/ &
-      lselfgravity_particles,lnopartingrav, &
-      linclude_ascale
+      lselfgravity_particles,lnopartingrav
 !
   namelist /particles_selfgrav_run_pars/ &
-      lselfgravity_particles,lnopartingrav, &
-      linclude_ascale
+      lselfgravity_particles,lnopartingrav
 !
   integer :: idiag_gpotenp=0, idiag_potselfpm=0
 !
@@ -127,7 +124,6 @@ module Particles_selfgravity
 !  Calculate the gravitational potential of the dust particles.
 !
 !  13-jun-06/anders: coded
-!  27-jan-26/axel: added ascale_type with default (from cdata) being the default
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,ny,nz) :: rhs_poisson
@@ -142,14 +138,7 @@ module Particles_selfgravity
             if (lcontinued) then  ! Potential has already been zeroed by the gas.
               rhs_poisson = rhs_poisson + f(l1:l2,m1:m2,n1:n2,irhop)
             else                  ! Must zero potential from last time-step.
-              if (linclude_ascale) then
-                select case (ascale_type)
-                  case ('default'); rhs_poisson = f(l1:l2,m1:m2,n1:n2,irhop)
-                  case ('general'); rhs_poisson = f(l1:l2,m1:m2,n1:n2,irhop)*ascale
-                endselect
-              else
-                rhs_poisson = f(l1:l2,m1:m2,n1:n2,irhop)
-              endif
+              rhs_poisson = f(l1:l2,m1:m2,n1:n2,irhop)
             endif
           endif
         endif

@@ -10129,7 +10129,7 @@ print*,'AXEL2: should not be here (eta) ... '
 !
         case ('powerlaw-x','powerlaw_x')
 !
-!  eta proportional to chosen power of x...
+!  eta proportional to chosen power of x. Note that x0 is the left boundary.
 !
           eta_x = eta*(1.+(x-x0)/eta_x0)**eta_power_x
 !
@@ -10149,6 +10149,19 @@ print*,'AXEL2: should not be here (eta) ... '
 !  ... and its gradient.
 !
           geta_x = eta_power_x*eta_x/eta_x0
+!
+!  Powerlaw-x3: 
+!
+        case ('powerlaw-x3','powerlaw_x3')
+!
+!  eta proportional to chosen power of x.
+!  Similar to powerlaw-x2, but regularized for x < eta_x0.
+!
+          eta_x = eta*(1.+x/eta_x0)**eta_power_x
+!
+!  ... and its gradient; same as for powerlaw-x.
+!
+          geta_x = eta_power_x*eta_x/(eta_x0+x)
 !
       endselect
 !

@@ -42,7 +42,7 @@ module Selfgravity
   namelist /selfgrav_init_pars/ &
       rhs_poisson_const, lselfgravity_gas, lselfgravity_dust, &
       lselfgravity_neutrals, tstart_selfgrav, gravitational_const, kappa, &
-      lBryan_etal14
+      luse_G_Newton, lBryan_etal14
 !
 !  Run Parameters
 !
@@ -125,7 +125,9 @@ module Selfgravity
       f(:,:,:,ipotself)=0.0
 !
 !  If gravitational constant was set, re-define rhs_poisson_const.
-!  else define the gravitational constant via rhs_poisson_const
+!  else define the gravitational constant via rhs_poisson_const.
+!  However, if luse_G_Newton=T, we ignore rhs_poisson_const
+!  and compute rhs_poisson_const=4*pi*G_Newton form G_Newton.
 !
       if (gravitational_const/=0.0) then
         rhs_poisson_const=4*pi*gravitational_const
@@ -211,6 +213,14 @@ module Selfgravity
 !  Get the background density stratification, if any.
 !
       if (lstratz) call get_stratz(z, rho0z)
+!
+!  Write constants to disk.
+!
+     if (lroot) then
+        open (1,file=trim(datadir)//'/pc_constants.pro',position='append')
+        write (1,*) 'G_Newton=', G_Newton
+        close (1)
+     endif
 !
     endsubroutine initialize_selfgravity
 !***********************************************************************
@@ -347,7 +357,7 @@ module Selfgravity
           rhs_poisson = 0.
         endif
 !
-!  Contribution from dust.
+!  Contribution from dust. Note: this is not particles!
 !
         if (ldustdensity.and.lselfgravity_dust) then
           if (ldustdensity_log) then

@@ -2272,6 +2272,7 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
     subroutine real_to_index(n, x, xi)
 !
 !  Transforms coordinates in real space to those in index space.
+!  In the calling code, x corresponds to the fp array.
 !
 !  10-sep-15/ccyang: coded.
 !
