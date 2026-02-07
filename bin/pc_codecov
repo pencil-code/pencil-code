@@ -21,7 +21,9 @@ Options:
     -H,--pencil-home        Location of the Pencil code (where pc_auto-test has
                             been run).
                             Default: $PENCIL_HOME
-    -o,--output-dir         location in which to write the HTML output.
+    -o,--output-dir         location in which to write the HTML output. Note
+                            that all pre-existing files in this location will
+                            be deleted.
                             Default: ./lcov_html
     -j,--jobs               Number of parallel workers to use.
                             Default: 1
