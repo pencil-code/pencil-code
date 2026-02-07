@@ -1,0 +1,14 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Initialisation parameters
+!
+&init_pars
+  lwrite_aux=T
+/
+&eos_init_pars
+  gamma = 1
+/
+&hydro_init_pars
+/
+&density_init_pars
+/

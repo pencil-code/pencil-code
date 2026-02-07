@@ -1,0 +1,30 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Run parameters
+!
+&run_pars
+  nt=100
+/
+&eos_run_pars
+/
+&hydro_run_pars
+  lupw_uu=T
+  Omega=0
+  theta=0.
+  
+  lforcing_cont_uu=T
+/
+&density_run_pars
+  lupw_lnrho=T
+/
+&forcing_run_pars
+  lff_as_aux=T !Only needed for the Python test script
+  
+  lforcing_cont=T
+  iforcing_cont='from_file_h5'
+  ampl_ff=1
+/
+&viscosity_run_pars
+  ivisc='nu-const'
+  nu=1e-3
+/

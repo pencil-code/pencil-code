@@ -1,0 +1,12 @@
+Directory:
+    ${PENCIL_HOME}/samples/continuous-forcing-from_file_h5
+SVN Id:
+    $Id$
+Maintainer:
+    Kishore G <kishore96.work/gmail[dot]com>
+Added:
+    07-Feb-2026
+Status:
+    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+Comments:
+    Tests iforcing_cont='from_file_h5'
