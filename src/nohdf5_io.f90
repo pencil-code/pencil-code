@@ -206,10 +206,11 @@ module HDF5_IO
 !
     endsubroutine input_hdf5_profile_1D
 !***********************************************************************
-    subroutine input_hdf5_3D(name, data)
+    subroutine input_hdf5_3D(name, data, lghost)
 !
       character (len=*), intent(in) :: name
       real, dimension (mx,my,mz), intent(out) :: data
+      logical, optional, intent(in) :: lghost
 !
       call fatal_error ('input_hdf5_3D', 'You can not use HDF5 without setting an HDF5_IO module.')
       call keep_compiler_quiet(name)
