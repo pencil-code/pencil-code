@@ -939,3 +939,4 @@ integer, parameter :: enum_ultra_slow_roll1_string = 933
 integer, parameter :: enum_reduced_top_string = 934
 integer, parameter :: enum_imposedZcs2Zcore_string = 935
 integer, parameter :: enum_csZstep_string = 936
+integer, parameter :: enum_from_file_h5_string = 937

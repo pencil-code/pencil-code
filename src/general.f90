@@ -7917,6 +7917,8 @@ iloop:do i=1,size(list2)
         dst = enum_imposedZcs2Zcore_string
       case('cs-step')
         dst = enum_csZstep_string
+      case('from_file_h5')
+        dst = enum_from_file_h5_string
       case default
         dst = enum_unknown_string_string
         if (lroot) print*, 'No string enum for: ', src
