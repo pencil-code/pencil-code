@@ -770,23 +770,42 @@ module HDF5_IO
 !
     endsubroutine input_hdf5_2D
 !***********************************************************************
-    subroutine input_hdf5_3D(name, data, lerrcont)
+    subroutine input_hdf5_3D(name, data, lerrcont, lghost)
 !
 !  Read HDF5 dataset from a distributed 3D array.
+!  If lghost=.true. (default), ghost zones are included.
+!  Else, read the array without ghost zones (global array: nxgrid,nygrid,nzgrid
+!  -> local array: nx,ny,nz)
 !
 !  26-Oct-2016/PABourdin: coded
+!  09-Feb-2026/Kishore: added lghost flag.
 !
       use General, only: loptest
 !
       character(len=*), intent(in) :: name
       real, dimension(:,:,:), intent(out) :: data
       logical, optional, intent(inout) :: lerrcont
+      logical, optional, intent(in) :: lghost
 !
       integer(kind=8), dimension(n_dims) :: h5_stride, h5_count
       integer, parameter :: n = n_dims
+      integer(kind=8), dimension(n_dims+1) :: loc_size, loc_subsize, loc_start, glo_size, glo_start
+!
+      loc_subsize = local_subsize
+      loc_size = local_size
+      glo_start = global_start
+      loc_start = local_start
+      glo_size = global_size
+      if (.not. loptest(lghost, .true.)) then
+            loc_subsize(1:3) = (/nx, ny, nz/)
+            loc_size(1:3) = (/nx, ny, nz/)
+            glo_start(1:3) = (/ipx, ipy, ipz/)*loc_subsize(1:3)
+            loc_start(1:3) = 0
+            glo_size(1:3) = (/nxgrid, nygrid, nzgrid/)
+      endif
 !
       ! define 'memory-space' to indicate the local data portion in memory
-      call h5screate_simple_f (n, local_size(1:n), h5_mspace, h5_err)
+      call h5screate_simple_f (n, loc_size(1:n), h5_mspace, h5_err)
       call check_error (h5_err, 'create local memory space', name, caller='input_hdf5_3D')
 !
       ! open the dataset
@@ -799,11 +818,11 @@ module HDF5_IO
       h5_count(:) = 1
       call h5dget_space_f (h5_dset, h5_fspace, h5_err)
       call check_error (h5_err, 'get dataset for file space', name)
-      call h5sselect_hyperslab_f (h5_fspace, H5S_SELECT_SET_F, global_start(1:n), h5_count, h5_err, h5_stride, local_subsize(1:n))
+      call h5sselect_hyperslab_f (h5_fspace, H5S_SELECT_SET_F, glo_start(1:n), h5_count, h5_err, h5_stride, loc_subsize(1:n))
       call check_error (h5_err, 'select hyperslab within file', name)
 !
       ! define local 'hyper-slab' portion in memory
-      call h5sselect_hyperslab_f (h5_mspace, H5S_SELECT_SET_F, local_start(1:n), h5_count, h5_err, h5_stride, local_subsize(1:n))
+      call h5sselect_hyperslab_f (h5_mspace, H5S_SELECT_SET_F, loc_start(1:n), h5_count, h5_err, h5_stride, loc_subsize(1:n))
       call check_error (h5_err, 'select hyperslab within file', name)
 !
       ! prepare data transfer
@@ -813,7 +832,7 @@ module HDF5_IO
       call check_error (h5_err, 'select collective IO', name)
 !
       ! collectively read the data
-      call h5dread_f (h5_dset, h5_ntype, data, global_size, h5_err, h5_mspace, h5_fspace, h5_plist)
+      call h5dread_f (h5_dset, h5_ntype, data, glo_size, h5_err, h5_mspace, h5_fspace, h5_plist)
       call check_error (h5_err, 'read dataset', name)
 !
       ! close data spaces, dataset, and the property list
