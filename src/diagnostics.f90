@@ -861,8 +861,13 @@ module Diagnostics
               if (itype==ilabel_max_neg)        &
                   vname(iname)=-fmax(imax_count)
 !
-              if (itype==ilabel_max_reciprocal) &
+              if (itype==ilabel_max_reciprocal) then
+                if (fmax(imax_count)==0.) then
+                  vname(iname)=0.
+                else
                   vname(iname)=1./fmax(imax_count)
+                endif
+              endif
 !
             elseif (itype>0) then
 !
@@ -3875,7 +3880,7 @@ module Diagnostics
 
       sum_range(1) = 1
       sum_range(2) = 40
-      
+
 !  Have to do this ugly workaround since the pencil tests call this function
 !  and we want the first non-pencil-test call.
 !
@@ -3943,7 +3948,7 @@ module Diagnostics
       nnamexy = parallel_count_lines(zaver_in_file)
       nnamerz = parallel_count_lines(phiaver_in_file)
 
-    endsubroutine calc_nnames 
+    endsubroutine calc_nnames
 !***********************************************************************
     subroutine allocate_diagnostic_names()
 !

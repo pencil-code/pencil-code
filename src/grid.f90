@@ -1878,7 +1878,13 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
 !cylindrical distance (pomega)
         if (lpenc_loc(i_rcyl_mn))  p%rcyl_mn = sqrt(x(l1:l2)**2+y(m)**2)
 !azimuthal angle (phi)
-        if (lpenc_loc(i_phi_mn))   p%phi_mn  = atan2(y(m),x(l1:l2))
+        if (lpenc_loc(i_phi_mn)) then
+          if (y(m)==0) then
+            p%phi_mn  = 0.
+          else
+            p%phi_mn  = atan2(y(m),x(l1:l2))
+          endif
+        endif
 !inverse cylindrical distance 1/pomega
         if (lpenc_loc(i_rcyl_mn1)) p%rcyl_mn1=1./max(p%rcyl_mn,tini)
 !inverse spherical distance 1/r
@@ -2621,7 +2627,7 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
           dline_1(:,2) = rcyl_mn1 * dy_1(m)
           dline_1(:,3) = dz_1(n)
         else if (lcartesian_coords) then
-          if (lequidist(1)) then 
+          if (lequidist(1)) then
             dline_1(:,1) = dx1_scalar
           else
             dline_1(:,1) = dx_1(l1:l2)
