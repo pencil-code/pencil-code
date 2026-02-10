@@ -18,3 +18,7 @@ Comments:
     the corners of the expansion shock are now much sharper.
     Verify that the total energy is constant by saying (in idl)
     plot,tt,eth+ekin,yr=[0,7] & oplot,tt,eth & oplot,tt,ekin
+
+    Code for producing the analytical solution can be found in:
+    https://github.com/ibackus/sod-shocktube/blob/master/examples/exactRiemann.py
+
