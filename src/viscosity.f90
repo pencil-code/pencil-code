@@ -2767,6 +2767,10 @@ module Viscosity
 !
       real, dimension (nx)  :: Reshock, fvisc2, uus, tmp, qfvisc
       real, dimension (nx,3):: nuD2uxb, fluxv
+      logical :: ldiffus_total, ldiffus_total3
+!
+      ldiffus_total = lupdate_courant_dt .or. lpencil(i_diffus_total)
+      ldiffus_total3 = lupdate_courant_dt .or. lpencil(i_diffus_total3)
 !
 !  Diagnostic output
 !
@@ -2775,8 +2779,10 @@ module Viscosity
         if (idiag_nu_tdep/=0) call sum_mn_name(spread(nu_tdep,1,nx),idiag_nu_tdep)
 !        if (lvisc_smag_simplified) nu_smag=(C_smag*dxmax)**2.*sqrt(2*p%sij2)
 !        if (lvisc_smag_cross_simplified) nu_smag=(C_smag*dxmax)**2.*p%ss12
-        if (idiag_meshRemax/=0) call max_mn_name(sqrt(p%u2(:))*dxmax_pencil/p%diffus_total,idiag_meshRemax)
-        if (idiag_mesh3Remax/=0) call max_mn_name(sqrt(p%u2(:))*(dxmax_pencil/pi)**5/p%diffus_total3,idiag_mesh3Remax)
+        if (ldiffus_total.and.idiag_meshRemax/=0) &
+            call max_mn_name(sqrt(p%u2(:))*dxmax_pencil/p%diffus_total,idiag_meshRemax)
+        if (ldiffus_total3.and.idiag_mesh3Remax/=0) &
+            call max_mn_name(sqrt(p%u2(:))*(dxmax_pencil/pi)**5/p%diffus_total3,idiag_mesh3Remax)
         if (idiag_Reshock/=0) then
           where (abs(p%shock) > tini)
             Reshock = dxmax_pencil*sqrt(p%u2)/(nu_shock*p%shock)
@@ -2843,7 +2849,7 @@ module Viscosity
         call sum_mn_name(p%nu,idiag_num)
         call max_mn_name(p%nu,idiag_numax)
         call max_mn_name(-p%nu,idiag_numin,lneg=.true.)
-        
+
         if (idiag_qfviscm/=0) then
           call dot(p%curlo,p%fvisc,qfvisc)
           call sum_mn_name(qfvisc,idiag_qfviscm)
