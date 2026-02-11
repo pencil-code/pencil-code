@@ -3,8 +3,9 @@
 ### Included by `Makefile'
 ###
 
-MPICOMM      = nompicomm
-IO           =   io_dist
+MPICOMM      =   mpicomm
+IO           =   io_hdf5
+TIMESTEP     =   timestep_rkf_lowsto
 
 HYDRO        =   hydro
 SHOCK        =   shock_highorder

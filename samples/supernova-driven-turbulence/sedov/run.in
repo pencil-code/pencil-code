@@ -4,43 +4,47 @@
 !
 &run_pars
   cvsid='$Id$',
-!  nt=20000, it1=10, isave=1000, it1d=2500, itorder=3, tmax=0.004
-  nt=10, it1=1, isave=1000, it1d=2500, itorder=3, tmax=0.004
-  cdt=0.3, cdtv=0.3, dtmin=1e-10, cdts=0.25
-  dsnap=.000025!, dvid=.00000025, slice_position='m' 
+!  nt=20000, it1=10, isave=1000, itorder=3, tmax=0.004
+  nt=10, it1=1, isave=1000, itorder=4, tmax=0.004
+  dt_epsi=1e-5, dtdec=0.5, dtinc=0.5, dt_ratio=1e-3, dtmin=1e-11, dt0=1e-10
+  leps_fixed=T
+  eps_rkf0=0.001
+  timestep_scaling=5*"rel_err"
+  dsnap=.000025!, dvid=.00000025, slice_position='m'
   !dsnap=.0000025
-  ip=30
+  ip=1963
   lpencil_check=T
   lbidiagonal_derij=F  !(use the slightly more accurate formulation for derij)
 /
 &eos_run_pars
 /
 &hydro_run_pars
-  lcdt_tauf=T
-  cdt_tauf=1.0
-  ulev = 20.0
 /
 &viscosity_run_pars
-  ivisc='nu-shock', 'nu-const', 'hyper3-nu-const'
-  nu_shock=5.0
-  nu=4e-3
-  nu_hyper3=5e-12 !~dx^5
+  ivisc='nu-shock','hyper3-nu-const','nu-const'
+  nu_shock=1., nu_hyper3=7.5e-12, nu=4e-3
 /
 &density_run_pars
   diffrho_shock=1.0
   idiff='shock'
+  lmassdiff_fix=T
+  lgamma_is_1=F
 /
 &entropy_run_pars
   iheatcond='shock','hyper3'
-  chi_hyper3=5e-12
-  chi_shock=2.0
-  lthdiff_Hmax=T !time constraint on magnitude of RHS
+  chi_shock=1.
+  chi_hyper3=7.5e-12
 /
 &interstellar_run_pars
   lSNII=F, l_persist_overwrite_lSNII=T
-  lSNI=F, l_persist_overwrite_lSNI=T 
+  lSNI=F, l_persist_overwrite_lSNI=T
 /
 &shock_run_pars
-  ishock_max=2
+  ishock_max=1
+  lmax_shock=F
   lgaussian_smooth=T
+  lconvergence_only=T
+  shock_div_pow=1.
+  dtfactor=1. !2.5e-2
+  con_bias=0.05
 /

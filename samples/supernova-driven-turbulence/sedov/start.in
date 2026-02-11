@@ -6,8 +6,9 @@
   cvsid='$Id$'
   unit_length=3.08567758e21, unit_velocity=9.778122994895071e4
   unit_density=1.6728e-24
-  xyz0=-0.050,-0.050,-0.050
-  xyz1=+0.046,+0.046,+0.046
+  xyz0=-0.048,-0.048,-0.048
+  xyz1=+0.048,+0.048,+0.048
+  lshift_origin=T
   lperi=T,T,T
   lwrite_aux=T
   lfix_unit_std=T
@@ -23,19 +24,21 @@
 /
 &entropy_init_pars
   initss='isothermal'
-  T0=272.946762939 !10^4K
+  T0_cgs=1e4 !10^4K
 /
 &interstellar_init_pars
   initinterstellar='single'
   center_SN_x=0.0
   center_SN_y=0.0
   center_SN_z=0.0
-  lSN_scale_rad=T
-  N_mass=100.0
-  rfactor_SN=5.
+  lSN_scale_rad=F
+  ltrim_profile=T
+  width_SN=0.04
+  N_mass=75.0
+  rfactor_SN=1.
   frac_kin=0.0
   frac_ecr=0.0
   lSN_ecr=F
   cooling_select='off'
   heating_select='off'
-/ 
+/
