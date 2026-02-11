@@ -33,12 +33,10 @@ module Density
 !
   include 'density.h'
 !
-  real, dimension (ninit) :: ampllnrho=0.0 !PAR_DOC: amplitude for some types of
-    !PAR_DOC: initial densities
-  real, dimension (ninit) :: widthlnrho=0.1 !PAR_DOC: width for some types of
-    !PAR_DOC: initial densities
-  real, dimension (ninit) :: rho_left=1.0 !PAR_DOC: needed for \code{initlnrho='shock-tube'}
-  real, dimension (ninit) :: rho_right=1.0 !PAR_DOC: needed for \code{initlnrho='shock-tube'}
+  real, dimension (ninit) :: ampllnrho=0.0  !PAR_DOC: amplitude for some types of initial densities
+  real, dimension (ninit) :: widthlnrho=0.1 !PAR_DOC: width for some types of initial densities
+  real, dimension (ninit) :: rho_left=1.0   !PAR_DOC: needed for \code{initlnrho='shock-tube'}
+  real, dimension (ninit) :: rho_right=1.0  !PAR_DOC: needed for \code{initlnrho='shock-tube'}
   real, dimension (ninit) :: amplrho=0.0, phase_lnrho=0.0, radius_lnrho=0.5
   real, dimension (ninit) :: xblob=0.0, yblob=0.0, zblob=0.0
   real, dimension (ninit) :: kx_lnrho=1.0, ky_lnrho=1.0, kz_lnrho=1.0
@@ -139,7 +137,8 @@ module Density
   real :: density_ceiling=-1.
   logical :: lreinitialize_lnrho=.false., lreinitialize_rho=.false.
   logical :: lsubtract_init_stratification=.false., lwrite_stratification=.false.
-  real, dimension(nygrid) :: rhobar= impossible
+  real, dimension(:), allocatable :: rhobar
+  character (len=fnlen) :: rhobar_file
   character (len=labellen), dimension(ninit) :: initlnrho='nothing' !PAR_DOC:
     !PAR_DOC: initialization of density. Currently valid choices are
     !PAR_DOC:  \begin{description}
@@ -470,9 +469,11 @@ module Density
       real, dimension (mx,my,mz,mfarray) :: f
       real :: tmp
       real, dimension (nzgrid) :: tmpz
+      real, dimension (nghost) :: dummy
 !
       integer :: i,j,m,n, stat
-      logical :: lnothing, exist
+      logical :: lnothing, exist, opend
+      character(LEN=11) :: formtd
       real :: rho_bot,sref
       real, dimension(:), pointer :: gravx_xpencil
       real :: gamma, gamma_m1
@@ -561,19 +562,26 @@ module Density
             case ('zprofile')
               inquire(file='zprof.txt',exist=exist)
               if (exist) then
-                open(31,file='zprof.txt')
+                inquire(file='zprof.txt',formatted=formtd)
+                inquire(file='zprof.txt',opened=opend)
+                if (.not.opend) open(31,file='zprof.txt',form=formtd)
               else
                 inquire(file=trim(directory)//'/zprof.ascii',exist=exist)
                 if (exist) then
                   open(31,file=trim(directory)//'/zprof.ascii')
                 else
-                  call fatal_error('reinitialize_rho','error - no zprof.txt input file')
+                  call fatal_error('reinitialize_rho','error - no zprof.* input file')
                 endif
               endif
-              do n=1,nzgrid
-                read(31,*,iostat=stat) tmpz(n)
-                if (stat<0) exit
-              enddo
+              if (formtd=='FORMATTED') then
+                do n=1,nzgrid
+                  read(31,*,iostat=stat) tmpz(n)
+                  if (stat<0) exit
+                enddo
+              else
+                read(31,iostat=stat) dummy,tmpz
+              endif
+              close(31)
               do n=n1,n2
                 f(:,:,n,irho)=f(:,:,n,irho)*rescale_rho*tmpz(n-nghost+nz*ipz)
               enddo
@@ -584,19 +592,28 @@ module Density
             case ('zprofile')
               inquire(file='zprof.txt',exist=exist)
               if (exist) then
-                open(31,file='zprof.txt')
+                inquire(file='zprof.txt',formatted=formtd)
+                inquire(file='zprof.txt',opened=opend)
+                if (.not.opend) open(31,file='zprof.txt',form=formtd)
+                open(31,file='zprof.txt',form=formtd)
               else
                 inquire(file=trim(directory)//'/zprof.ascii',exist=exist)
                 if (exist) then
                   open(31,file=trim(directory)//'/zprof.ascii')
+                  formtd='FORMATTED'
                 else
-                  call fatal_error('reinitialize_rho','error - no zprof.txt file')
+                  call fatal_error('reinitialize_rho','error - no zprof.* file')
                 endif
               endif
-              do n=1,nzgrid
-                read(31,*,iostat=stat) tmpz(n)
-                if (stat<0) exit
-              enddo
+              if (formtd=='FORMATTED') then
+                do n=1,nzgrid
+                  read(31,*,iostat=stat) tmpz(n)
+                  if (stat<0) exit
+                enddo
+              else
+                read(31,iostat=stat) dummy,tmpz
+              endif
+
               do n=n1,n2
                 f(:,:,n,ilnrho)=f(:,:,n,ilnrho)+log(rescale_rho*tmpz(n-nghost+nz*ipz))
               enddo
@@ -1107,11 +1124,12 @@ module Density
       real, pointer :: gravx, rhs_poisson_const,fac_cs,cs2cool
       integer, pointer :: isothmid, isothtop
       complex :: omega_jeans
-      integer :: j,ix,iy
+      integer :: j,ix,iy,ntheta,ncol,ios,ii
       logical :: lnothing
-      real :: gamma, gamma_m1
+      real :: gamma, gamma_m1, dummy
       real, pointer :: gravitational_const
-      logical :: rhobar_exists
+      real, dimension(:), allocatable :: theta_rhobar,rhobar_,A_rhobar_
+      logical :: lrhobar_exists
 !
       intent(inout) :: f
 !
@@ -1643,30 +1661,53 @@ module Density
                  sin(kx_lnrho(j)*x(l1:l2)+phase_lnrho(j) + complex_phase(omega_jeans*ampllnrho(j)))
           enddo; enddo
         case ('rhobar')
-          inquire(file='rhobar.dat',exist=rhobar_exists)
-          if(rhobar_exists) then
-                  if (lroot) print*,"Init lrho: reading rhobar from rhobar.dat"
-                  open(unit=10, file='rhobar.dat', status='old', action='read')
-                  read(10,*) rhobar
-                  close(10)
-          else
-            inquire(file='rhobar_r.dat',exist=rhobar_exists)
-            if(rhobar_exists) then
-                    if (lroot) print*,"Init lrho: reading R(theta) from rhobar_r.dat"
-                    if (lroot) print*,"Rhobar(theta) = R(theta)*(sound speed^2)/(2piG)"
-                    read(10,*) rhobar
-                    close(10)
-                    rhobar = rhobar*cs20/(2*pi*gravitational_const)
+          if (lroot) then 
+            inquire(file=rhobar_file,exist=lrhobar_exists)
+            if (lrhobar_exists) then
+              print*,"Init lrho: reading rhobar from rhobar.dat"
+              open(unit=10, file='rhobar.dat', status='old', action='read')
+              read(10,*,iostat=ios) dummy, dummy, dummy, ntheta, ncol
+              if (ios/=0) then
+                backspace(1)
+                read(10,*) dummy, dummy, dummy, ntheta
+                ncol=3
+              endif
+              allocate(theta_rhobar(ntheta),rhobar_(ntheta),A_rhobar_(ntheta))
+              theta_rhobar(1)=0.; rhobar_(1)=0.; A_rhobar_(1)=0.
+              do ii=2,ntheta
+                read(10,*) theta_rhobar(ii),rhobar_(ii),A_rhobar_(ii)
+              enddo
+              close(10)
+            else
+              !inquire(file='rhobar_r.dat',exist=rhobar_exists)
+              !if (rhobar_exists) then
+              !  if (lroot) print*,"Init lrho: reading R(theta) from rhobar_r.dat"
+              !  if (lroot) print*,"Rhobar(theta) = R(theta)*(sound speed^2)/(2piG)"
+              !  read(10,*) rhobar
+              !  close(10)
+              !  rhobar = rhobar*cs20/(2*pi*gravitational_const)
+              !endif
             endif
           endif
-          if (rhobar(n1) == impossible) then
-                  if (lroot) print*,"Init lnrho: No value of rhobar given; Defaulting to rhobar = sound speed^2/(2piG)"
-                  call get_shared_variable('gravitational_const',gravitational_const,caller='init_lnrho')
-                  rhobar = cs20/(2*pi*gravitational_const)
+          allocate(rhobar(nygrid))
+          if (lroot) then
+            if (.not.lrhobar_exists) then
+              print*,"init_lnrho: No rhobar file found; defaulting to rhobar = sound speed^2/(2piG)"
+              call get_shared_variable('gravitational_const',gravitational_const,caller='init_lnrho')
+              rhobar = cs20/(2*pi*gravitational_const)
+            else
+            ! Interpolate rhobar here interp(theta_rhobar,rhobar_,rhobar)
+              deallocate(theta_rhobar,rhobar_,A_rhobar_)
+            endif
           endif
-          do n=1,ny; do m=m1,m2
-            f(l1:l2,m,n,ilnrho) = log(rhobar(n + ipy*ny)*x(l1:l2)**(-2))
-          enddo; enddo
+          call mpi_bcast(rhobar,ny)
+          if (lspherical_coords) then
+            do n=n1,n2; do m=m1,m2
+              f(l1:l2,m,n,ilnrho) = log(rhobar(m-nghost + ipy*ny)*x(l1:l2)**(-2))
+            enddo; enddo
+          else
+            call not_implemented("init_lnrho","rhobar for no-spherical coordinates")
+          endif
         case ('jeans-wave-oblique')
 !
 !  Soundwave + self gravity.
