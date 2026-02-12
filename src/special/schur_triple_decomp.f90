@@ -40,7 +40,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED uSH2; uRR2; uEL2; uRRm; uELm; bSH2; bRR2; bEL2; bRRm; bELm
+! PENCILS PROVIDED uSH2; uRR2; uEL2; uRRm; bSH2; bRR2; bEL2; bRRm
 !
 !** AUTOMATIC REFERENCE-LINK.TEX GENERATION ********************
 ! Declare relevant citations from pencil-code/doc/citations/ref.bib for this module.
@@ -93,8 +93,8 @@ module Special
   logical :: luschur2_as_aux=.false., lbschur2_as_aux=.false.
   logical :: luschurm_as_aux=.false., lbschurm_as_aux=.false.
   logical :: luschurp2_as_aux=.false., lbschurp2_as_aux=.false.
-  integer :: iuschur2, iuschur2_SH, iuschur2_RR, iuschur2_EL, iuschurm_RR, iuschurm_EL
-  integer :: ibschur2, ibschur2_SH, ibschur2_RR, ibschur2_EL, ibschurm_RR, ibschurm_EL
+  integer :: iuschur2, iuschur2_SH, iuschur2_RR, iuschur2_EL, iuschurm_RR
+  integer :: ibschur2, ibschur2_SH, ibschur2_RR, ibschur2_EL, ibschurm_RR
   integer :: iuschurp2, iuschurp2_SH, iuschurp2_RR, iuschurp2_EL
   integer :: ibschurp2, ibschurp2_SH, ibschurp2_RR, ibschurp2_EL
 !
@@ -122,12 +122,10 @@ module Special
   integer :: idiag_uRR2=0      ! DIAG_DOC: $\left<{u^\mathrm{RR}}^2\right>$
   integer :: idiag_uEL2=0      ! DIAG_DOC: $\left<{u^\mathrm{EL}}^2\right>$
   integer :: idiag_uRRm=0      ! DIAG_DOC: $\left<2u^\mathrm{SH}u^\mathrm{RR}\right>$
-  integer :: idiag_uELm=0      ! DIAG_DOC: $\left<2u^\mathrm{SH}u^\mathrm{EL}\right>$
   integer :: idiag_bSH2=0      ! DIAG_DOC: $\left<{b^\mathrm{SH}}^2\right>$
   integer :: idiag_bRR2=0      ! DIAG_DOC: $\left<{b^\mathrm{RR}}^2\right>$
   integer :: idiag_bEL2=0      ! DIAG_DOC: $\left<{b^\mathrm{EL}}^2\right>$
   integer :: idiag_bRRm=0      ! DIAG_DOC: $\left<2b^\mathrm{SH}b^\mathrm{RR}\right>$
-  integer :: idiag_bELm=0      ! DIAG_DOC: $\left<2b^\mathrm{SH}b^\mathrm{EL}\right>$
 !
   contains
 !================== External SELECT function for DGEES ==================
@@ -166,12 +164,10 @@ end function selct
 !
       if (luschurm_as_aux) then
         call register_report_aux('uschurm_RR', iuschurm_RR)
-        call register_report_aux('uschurm_EL', iuschurm_EL)
       endif
 !
       if (lbschurm_as_aux) then
         call register_report_aux('bschurm_RR', ibschurm_RR)
-        call register_report_aux('bschurm_EL', ibschurm_EL)
       endif
 !
       if (luschur_as_aux) then
@@ -255,20 +251,10 @@ end function selct
             p%uSH2(l)=sum(matV_SH**2)
             p%uRR2(l)=sum(matV_RR**2)
             p%uEL2(l)=sum(matV_EL**2)
-            !p%uRRm(l)=2.*sum(matV_SH*matV_RR)
-            !p%uELm(l)=2.*sum(matV_SH*matV_EL)
 !
 !  Redefine mixed term as the sum of mixed and original term.
 !
             p%uRRm(l)=2.*sum(matV_SH*matV_RR)+p%uRR2(l)
-            p%uELm(l)=2.*sum(matV_SH*matV_EL)+p%uEL2(l)
-          else
-            if (ip<10) print*,'AXEL: warning for u, l=',l
-            !p%uSH2(l)=0.
-            !p%uRR2(l)=0.
-            !p%uEL2(l)=0.
-            !p%uRRm(l)=0.
-            !p%uELm(l)=0.
           endif
 !
 !  Possibility of uSH, uRR, and uEL matrices as auxiliary arrays
@@ -338,15 +324,7 @@ end function selct
 !
         if (luschurm_as_aux) then
           f(l1:l2,m,n,iuschurm_RR)=p%uRRm
-          f(l1:l2,m,n,iuschurm_EL)=p%uELm
-!print*,'AXEL m,p%uRRm(1:4)=',m,p%uRRm(1:4)
         endif
-!     else
-!       uSH2=0.
-!       uRR2=0.
-!       uEL2=0.
-!       uRRm=0.
-!       uELm=0.
       endif
 !
 !  Possibility of applying triple decomposition of bij
@@ -363,20 +341,10 @@ end function selct
             p%bSH2(l)=sum(matV_SH**2)
             p%bRR2(l)=sum(matV_RR**2)
             p%bEL2(l)=sum(matV_EL**2)
-            !p%bRRm(l)=2.*sum(matV_SH*matV_RR)
-            !p%bELm(l)=2.*sum(matV_SH*matV_EL)
 !
 !  Redefine mixed term as the sum of mixed and original term.
 !
             p%bRRm(l)=2.*sum(matV_SH*matV_RR)+p%bRR2(l)
-            p%bELm(l)=2.*sum(matV_SH*matV_EL)+p%bEL2(l)
-          else
-            print*,'AXEL: warning for b, l=',l
-            !p%bSH2(l)=0.
-            !p%bRR2(l)=0.
-            !p%bEL2(l)=0.
-            !p%bRRm(l)=0.
-            !p%bELm(l)=0.
           endif
 !
 !  Possibility of bSH, bRR, and bEL matrices as auxiliary arrays
@@ -439,22 +407,11 @@ end function selct
           f(l1:l2,m,n,ibschur2_SH)=p%bSH2
           f(l1:l2,m,n,ibschur2_RR)=p%bRR2
           f(l1:l2,m,n,ibschur2_EL)=p%bEL2
-          if (l==1 .and. m==m1 .and. n==n1 .and. ip<10) then
-            print*,'AXEL: iproc,t=',iproc,t
-            f(1,1,1,ibschur2_EL)=t
-          endif
         endif
 !
         if (lbschurm_as_aux) then
           f(l1:l2,m,n,ibschurm_RR)=p%bRRm
-          f(l1:l2,m,n,ibschurm_EL)=p%bELm
         endif
-!     else
-!       bSH2=0.
-!       bRR2=0.
-!       bEL2=0.
-!       bRRm=0.
-!       bELm=0.
       endif
 !
     endsubroutine calc_pencils_special
@@ -654,12 +611,10 @@ end function selct
         call sum_mn_name(p%uRR2,idiag_uRR2)
         call sum_mn_name(p%uEL2,idiag_uEL2)
         call sum_mn_name(p%uRRm,idiag_uRRm)
-        call sum_mn_name(p%uELm,idiag_uELm)
         call sum_mn_name(p%bSH2,idiag_bSH2)
         call sum_mn_name(p%bRR2,idiag_bRR2)
         call sum_mn_name(p%bEL2,idiag_bEL2)
         call sum_mn_name(p%bRRm,idiag_bRRm)
-        call sum_mn_name(p%bELm,idiag_bELm)
       endif
 !
     endsubroutine dspecial_dt
@@ -722,9 +677,9 @@ end function selct
 !
       if (lwrite_slices) then
         where(cnamev=='uschur2_SH' .or. cnamev=='uschur2_RR' .or. cnamev=='uschur2_EL' .or. &
-              cnamev=='uschurm_RR' .or. cnamev=='uschurm_EL' .or. &
+              cnamev=='uschurm_RR' .or. &
               cnamev=='bschur2_SH' .or. cnamev=='bschur2_RR' .or. cnamev=='bschur2_EL' .or. &
-              cnamev=='bschurm_RR' .or. cnamev=='bschurm_EL' .or. &
+              cnamev=='bschurm_RR' .or. &
               cnamev=='uschurp2_SH' .or. cnamev=='uschurp2_RR' .or. cnamev=='uschurp2_EL' .or. &
               cnamev=='bschurp2_SH' .or. cnamev=='bschurp2_RR' .or. cnamev=='bschurp2_EL' ) cformv='DEFINED'
       endif
@@ -733,8 +688,8 @@ end function selct
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_uSH2=0; idiag_uRR2=0; idiag_uEL2=0; idiag_uRRm=0; idiag_uELm=0
-        idiag_bSH2=0; idiag_bRR2=0; idiag_bEL2=0; idiag_bRRm=0; idiag_bELm=0
+        idiag_uSH2=0; idiag_uRR2=0; idiag_uEL2=0; idiag_uRRm=0
+        idiag_bSH2=0; idiag_bRR2=0; idiag_bEL2=0; idiag_bRRm=0
       endif
 !
       do iname=1,nname
@@ -742,12 +697,10 @@ end function selct
         call parse_name(iname,cname(iname),cform(iname),'uRR2',idiag_uRR2)
         call parse_name(iname,cname(iname),cform(iname),'uEL2',idiag_uEL2)
         call parse_name(iname,cname(iname),cform(iname),'uRRm',idiag_uRRm)
-        call parse_name(iname,cname(iname),cform(iname),'uELm',idiag_uELm)
         call parse_name(iname,cname(iname),cform(iname),'bSH2',idiag_bSH2)
         call parse_name(iname,cname(iname),cform(iname),'bRR2',idiag_bRR2)
         call parse_name(iname,cname(iname),cform(iname),'bEL2',idiag_bEL2)
         call parse_name(iname,cname(iname),cform(iname),'bRRm',idiag_bRRm)
-        call parse_name(iname,cname(iname),cform(iname),'bELm',idiag_bELm)
       enddo
 !
     endsubroutine rprint_special
@@ -770,12 +723,10 @@ end function selct
         case ('uschur2_RR'); call assign_slices_scal(slices,f,iuschur2_RR)
         case ('uschur2_EL'); call assign_slices_scal(slices,f,iuschur2_EL)
         case ('uschurm_RR'); call assign_slices_scal(slices,f,iuschurm_RR)
-        case ('uschurm_EL'); call assign_slices_scal(slices,f,iuschurm_EL)
         case ('bschur2_SH'); call assign_slices_scal(slices,f,ibschur2_SH)
         case ('bschur2_RR'); call assign_slices_scal(slices,f,ibschur2_RR)
         case ('bschur2_EL'); call assign_slices_scal(slices,f,ibschur2_EL)
         case ('bschurm_RR'); call assign_slices_scal(slices,f,ibschurm_RR)
-        case ('bschurm_EL'); call assign_slices_scal(slices,f,ibschurm_EL)
         case ('uschurp2_SH'); call assign_slices_scal(slices,f,iuschurp2_SH)
         case ('uschurp2_RR'); call assign_slices_scal(slices,f,iuschurp2_RR)
         case ('uschurp2_EL'); call assign_slices_scal(slices,f,iuschurp2_EL)
