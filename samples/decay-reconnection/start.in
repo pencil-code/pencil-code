@@ -1,0 +1,20 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!
+&init_pars
+  lwrite_aux=T
+  wav1=.3
+/
+&eos_init_pars
+  gamma=1.
+/
+&hydro_init_pars
+/
+&density_init_pars
+/
+&magnetic_init_pars
+  initaa='power_randomphase_hel', amplaa=2e-1, relhel_aa=0.
+  initpower_aa=2., kpeak_aa=20.
+/
+&poisson_init_pars
+/

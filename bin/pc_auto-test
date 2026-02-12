@@ -254,6 +254,7 @@ my %tests = (
 	    # the test machine
 my @gpu_tests = qw(
                          1d-tests/sine-Gordon_doublet
+                         decay-reconnection
                          spherical-gdisk-planet-thermo
 			 interstellar
                          #chiral-diffusion

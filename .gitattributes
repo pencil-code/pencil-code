@@ -3187,6 +3187,15 @@ samples/debris-photoelectric-fluid/src/Makefile.local -text
 samples/debris-photoelectric-fluid/src/cparam.local -text
 samples/debris-photoelectric-fluid/start.in -text
 samples/debris-photoelectric-fluid/video.in -text
+samples/decay-reconnection/print.in -text
+samples/decay-reconnection/reference.out -text
+samples/decay-reconnection/run.in -text
+samples/decay-reconnection/src/.build-history -text
+samples/decay-reconnection/src/.current-precision -text
+samples/decay-reconnection/src/Makefile.local -text
+samples/decay-reconnection/src/cparam.local -text
+samples/decay-reconnection/start.in -text
+samples/decay-reconnection/video.in -text
 samples/dust-accretion/README.txt -text
 samples/dust-accretion/data/new_from.dir -text
 samples/dust-accretion/k.dat -text

@@ -34,6 +34,29 @@ In calc_selfpotential_particles (in src/particles_selfgravity.f90), we now set r
 This routine is called in particles_calc_selfpotential (in src/particles_main.f90),
 which itself calls calc_selfpotential_particles, which itself is located in src/particles_selfgravity.f90, so it is circular.
 
+There may be some confusion: particles_calc_selfpotential is first called in selfgravity.
+This routine is located in src/particles_main.f90.
+It then calls "calc_selfpotential_particles", which is located in src/particles_selfgravity.f90.
+It then contributes to the right-hand side if lcontinued=T.
+
+Questions: 
+does ascale in src/particles_selfgravity.f90 have an effect?
+
+Sphere experiment:
+Put particles in a sphere of 10 kpc,
+Coordinates of a selected point,
+xx=       4.4114921       3.9479312
+vv=   -0.0073040227   -0.0069901010
+G_Newton=  6.37267e+25
+mass  =   3.6992188e-26
+grav  =     0.067262857
+r=       5.9200864
+grav,t=     0.067262857      0.70000000
+grav*t=     0.047084000
+v=     0.010109909
+v/(grav*t)=      0.21472069
+
+
 -----------------------------------------------------------------------------
 In selfgravity, gravitational_const=0.0 by default.
 But we would need to set it to another value (e.g. 1) to get
@@ -42,3 +65,4 @@ But we would need to set it to another value (e.g. 1) to get
 
 ParticleVelocities32.dat
 
+particles_calc_selfpotential
