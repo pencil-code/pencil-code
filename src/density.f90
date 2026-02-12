@@ -1706,7 +1706,7 @@ module Density
               f(l1:l2,m,n,ilnrho) = log(rhobar(m-nghost + ipy*ny)*x(l1:l2)**(-2))
             enddo; enddo
           else
-            call not_implemented("init_lnrho","rhobar for no-spherical coordinates")
+            call not_implemented("init_lnrho","rhobar for non-spherical coordinates")
           endif
         case ('jeans-wave-oblique')
 !
