@@ -176,14 +176,14 @@ endif
 	echo "const char* cmake_options = \" -DDSL_EXT_SOURCES=\\\"$$ext_srcs\\\" -DDSL_MODULE_DIR=../$(DSL_MODULE_DIR) $(CMAKE_OPTIONS)\";" > cmake_options.h && \
 	mkdir -p submodule/build  && cd submodule/build && export LDFLAGS=""  &&  \
 	cmake  $(CMAKE_OPTIONS) -DDSL_MODULE_DIR=../acc-runtime/$(DSL_MODULE_DIR) -DRUNTIME_COMPILATION=$(RUNTIME_COMPILATION) -DREAD_OVERRIDES=$(READ_OVERRIDES) ..
-	cd submodule/build && make -j -I../../.. VERBOSE=0 # Build the core Astaroth library
+	cd submodule/build && sed -i -e's/SHELL *= *\/bin\/sh/SHELL = \/bin\/bash/' Makefile && make -j -I../../.. VERBOSE=0 # Build the core Astaroth library
 	@echo PRECISION=$(CMAKE_PREC)
 
 #        CMAKE_PREFIX_PATH="/opt/nvidia/hpc_sdk/Linux_x86_64/24.1/comm_libs/mpi/lib /opt/nvidia/hpc_sdk/Linux_x86_64/24.1/comm_libs/mpi/include" \
 update_astaroth_libs:
-	cd submodule/build && export LDFLAGS="" && \
-	make -I../../.. VERBOSE=0 # Build the core Astaroth library with existing Makefile.
-	@echo PRECISION=$(CMAKE_PREC)
+#	cd submodule/build && export LDFLAGS="" && \
+#	make -I../../.. VERBOSE=0 # Build the core Astaroth library with existing Makefile.
+#	@echo PRECISION=$(CMAKE_PREC)
 
 include Makefile.extern
 
