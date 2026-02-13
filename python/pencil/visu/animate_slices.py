@@ -44,15 +44,11 @@ def animate_slices(
     if proc < 0:
         filename = os.path.join(datadir, "slice_" + field + "." + extension)
     else:
-        filename = os.path.join(
-            datadir, "/proc" + str(proc), "/slice_" + field + "." + extension
-        )
+        filename = os.path.join(datadir, "proc" + str(proc), "slice_" + field + "." + extension)
 
     # global dim
-    # param = read_param(datadir)
     param = read.param(datadir)
 
-    # dim = read_dim(datadir,proc)
     dim = read.dim(datadir, proc)
     if dim.precision == "D":
         precision = "d"
