@@ -4484,17 +4484,19 @@ module Hydro
         call sum_mn_name(p%ugu(:,2),idiag_uguym)
         call sum_mn_name(p%ugu(:,3),idiag_uguzm)
         call sum_mn_name(p%uij(:,1,1),idiag_dudx)
-        call sum_mn_name(p%uij(:,1,1)**2+p%uij(:,1,2)**2+p%uij(:,1,3)**2 &
-                        +p%uij(:,2,1)**2+p%uij(:,2,2)**2+p%uij(:,2,3)**2 &
-                        +p%uij(:,3,1)**2+p%uij(:,3,2)**2+p%uij(:,3,3)**2,idiag_gu2m)
+        if (idiag_gu2m/=0) then
+          call sum_mn_name(p%uij(:,1,1)**2+p%uij(:,1,2)**2+p%uij(:,1,3)**2 &
+                          +p%uij(:,2,1)**2+p%uij(:,2,2)**2+p%uij(:,2,3)**2 &
+                          +p%uij(:,3,1)**2+p%uij(:,3,2)**2+p%uij(:,3,3)**2,idiag_gu2m)
+        endif
         call sum_mn_name(p%ugu2,idiag_ugu2m)
         if (idiag_ugurmsx/=0) call sum_mn_name(p%ugu2*xmask_hyd,idiag_ugurmsx,lsqrt=.true.)
         if (idiag_fkinzm/=0) call sum_mn_name(.5*p%rho*p%u2*p%uu(:,3),idiag_fkinzm)
         call max_mn_name(p%u2,idiag_um2)
         call sum_mn_name(p%u2,idiag_u2m)
-        call sum_mn_name(p%u2**2,idiag_u4m)
-        call sum_mn_name(p%u2**3,idiag_u6m)
-        call sum_mn_name(p%u2**4,idiag_u8m)
+        if (idiag_u4m/=0) call sum_mn_name(p%u2**2,idiag_u4m)
+        if (idiag_u6m/=0) call sum_mn_name(p%u2**3,idiag_u6m)
+        if (idiag_u8m/=0) call sum_mn_name(p%u2**4,idiag_u8m)
         if (idiag_u2sphm/=0 .or. idiag_o2sphm/=0) then
           where (p%r_mn <= radius_diag)
             rmask = 1.
