@@ -6634,12 +6634,12 @@ print*,'AXEL2: should not be here (eta) ... '
       call max_mn_name(p%bb(:,1),idiag_bxmax)
       call max_mn_name(p%bb(:,2),idiag_bymax)
       call max_mn_name(p%bb(:,3),idiag_bzmax)
-      call max_mn_name(abs(p%bbb(:,1)),idiag_bbxmax)
-      call max_mn_name(abs(p%bbb(:,2)),idiag_bbymax)
-      call max_mn_name(abs(p%bbb(:,3)),idiag_bbzmax)
-      call max_mn_name(abs(p%jj(:,1)),idiag_jxmax)
-      call max_mn_name(abs(p%jj(:,2)),idiag_jymax)
-      call max_mn_name(abs(p%jj(:,3)),idiag_jzmax)
+      if (idiag_bbxmax/=0) call max_mn_name(abs(p%bbb(:,1)),idiag_bbxmax)
+      if (idiag_bbymax/=0) call max_mn_name(abs(p%bbb(:,2)),idiag_bbymax)
+      if (idiag_bbzmax/=0) call max_mn_name(abs(p%bbb(:,3)),idiag_bbzmax)
+      if (idiag_jxmax/=0) call max_mn_name(abs(p%jj(:,1)),idiag_jxmax)
+      if (idiag_jymax/=0) call max_mn_name(abs(p%jj(:,2)),idiag_jymax)
+      if (idiag_jzmax/=0) call max_mn_name(abs(p%jj(:,3)),idiag_jzmax)
       if (idiag_aybym2/=0) call sum_mn_name(2.*p%aa(:,2)*p%bb(:,2),idiag_aybym2)
       call sum_mn_name(p%ab,idiag_abm)
       if (idiag_gLamam/=0) then
@@ -6840,8 +6840,10 @@ print*,'AXEL2: should not be here (eta) ... '
       call sum_mn_name(p%jxbr(:,1),idiag_jxbrxm)
       call sum_mn_name(p%jxbr(:,2),idiag_jxbrym)
       call sum_mn_name(p%jxbr(:,3),idiag_jxbrzm)
-      call dot(p%curlo,p%jxbr,jxbrq)
-      call sum_mn_name(jxbrq,idiag_jxbrqm)
+      if (idiag_jxbrqm/=0) then
+        call dot(p%curlo,p%jxbr,jxbrq)
+        call sum_mn_name(jxbrq,idiag_jxbrqm)
+      endif
       call sum_mn_name(p%jxbr2,idiag_jxbr2m)
       call max_mn_name(p%jxbr2,idiag_jxbrmax,lsqrt=.true.)
 !
@@ -7068,9 +7070,11 @@ print*,'AXEL2: should not be here (eta) ... '
 !
 !  <(nabla B)^2>
 !
-      call sum_mn_name(p%bij(:,1,1)**2+p%bij(:,1,2)**2+p%bij(:,1,3)**2 &
-                      +p%bij(:,2,1)**2+p%bij(:,2,2)**2+p%bij(:,2,3)**2 &
-                      +p%bij(:,3,1)**2+p%bij(:,3,2)**2+p%bij(:,3,3)**2,idiag_gb2m)
+      if (idiag_gb2m/=0) then
+        call sum_mn_name(p%bij(:,1,1)**2+p%bij(:,1,2)**2+p%bij(:,1,3)**2 &
+                        +p%bij(:,2,1)**2+p%bij(:,2,2)**2+p%bij(:,2,3)**2 &
+                        +p%bij(:,3,1)**2+p%bij(:,3,2)**2+p%bij(:,3,3)**2,idiag_gb2m)
+      endif
 
 !  Calculate bij2m = <|bhat_i,j|^2>, where bhat is the unit vector of B.
 !  Here, bhat_i,j = bij/|B| - Bi*nablaj(B^2/2)/|B|^3.
