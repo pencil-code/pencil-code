@@ -3869,7 +3869,7 @@ module Energy
         if (idiag_ssruzm/=0) call sum_mn_name(p%ss*p%rho*p%uu(:,3),idiag_ssruzm)
         if (idiag_ssuzm/=0) call sum_mn_name(p%ss*p%uu(:,3),idiag_ssuzm)
         call sum_mn_name(p%ss,idiag_ssm)
-        call sum_mn_name(p%ss*p%cp1,idiag_ssbycpm)
+        if (idiag_ssbycpm/=0) call sum_mn_name(p%ss*p%cp1,idiag_ssbycpm)
         if (idiag_ss2m/=0) call sum_mn_name(p%ss**2,idiag_ss2m)
         call sum_mn_name(p%ee,idiag_eem)
         call sum_mn_name(p%pp,idiag_ppm)
