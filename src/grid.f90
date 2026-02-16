@@ -436,11 +436,16 @@ module Grid
 !
        case ('band')
           a = 1.0
-          xi1star=find_star(a*xi1lo,a*xi1up,x00,x00+Lx,xyz_star(1),grid_func(1),param2=(/dxi_fact(1), trans_width(1), trans_delta(1)/))/a
-          call grid_profile(a*(xi1    -xi1star),grid_func(1),    g1,g1der1,g1der2,param2=(/dxi_fact(1), trans_width(1), trans_delta(1)/))
-          call grid_profile(a*(xi1lo  -xi1star),grid_func(1),  g1lo,              param2=(/dxi_fact(1), trans_width(1), trans_delta(1)/))
-          call grid_profile(a*(xi1up  -xi1star),grid_func(1),  g1up,              param2=(/dxi_fact(1), trans_width(1), trans_delta(1)/))
-          call grid_profile(a*(xi1proc-xi1star),grid_func(1),g1proc,              param2=(/dxi_fact(1), trans_width(1), trans_delta(1)/))
+          xi1star=find_star(a*xi1lo,a*xi1up,x00,x00+Lx,xyz_star(1),grid_func(1),&
+                  param2=(/dxi_fact(1), trans_width(1), trans_delta(1)/))/a
+          call grid_profile(a*(xi1    -xi1star),grid_func(1),    g1,g1der1,g1der2,&
+                  param2=(/dxi_fact(1), trans_width(1), trans_delta(1)/))
+          call grid_profile(a*(xi1lo  -xi1star),grid_func(1),  g1lo,&
+                  param2=(/dxi_fact(1), trans_width(1), trans_delta(1)/))
+          call grid_profile(a*(xi1up  -xi1star),grid_func(1),  g1up,&
+                  param2=(/dxi_fact(1), trans_width(1), trans_delta(1)/))
+          call grid_profile(a*(xi1proc-xi1star),grid_func(1),g1proc,&
+                  param2=(/dxi_fact(1), trans_width(1), trans_delta(1)/))
           x      = x00+Lx*(g1  -  g1lo)/(g1up-g1lo)
           xprim  =     Lx*(g1der1*a   )/(g1up-g1lo)
           xprim2 =     Lx*(g1der2*a**2)/(g1up-g1lo)
@@ -644,11 +649,16 @@ module Grid
 !
        case ('band')
           a = 1.0
-          xi2star=find_star(a*xi2lo,a*xi2up,y00,y00+Ly,xyz_star(2),grid_func(2),param2=(/dxi_fact(2), trans_width(2), trans_delta(2)/))/a
-          call grid_profile(a*(xi2    -xi2star),grid_func(2),    g2,g2der1,g2der2,param2=(/dxi_fact(2), trans_width(2), trans_delta(2)/))
-          call grid_profile(a*(xi2lo  -xi2star),grid_func(2),  g2lo,              param2=(/dxi_fact(2), trans_width(2), trans_delta(2)/))
-          call grid_profile(a*(xi2up  -xi2star),grid_func(2),  g2up,              param2=(/dxi_fact(2), trans_width(2), trans_delta(2)/))
-          call grid_profile(a*(xi2proc-xi2star),grid_func(2),g2proc,              param2=(/dxi_fact(2), trans_width(2), trans_delta(2)/))
+          xi2star=find_star(a*xi2lo,a*xi2up,y00,y00+Ly,xyz_star(2),grid_func(2),&
+                  param2=(/dxi_fact(2), trans_width(2), trans_delta(2)/))/a
+          call grid_profile(a*(xi2    -xi2star),grid_func(2),    g2,g2der1,g2der2,&
+                  param2=(/dxi_fact(2), trans_width(2), trans_delta(2)/))
+          call grid_profile(a*(xi2lo  -xi2star),grid_func(2),  g2lo,              &
+                  param2=(/dxi_fact(2), trans_width(2), trans_delta(2)/))
+          call grid_profile(a*(xi2up  -xi2star),grid_func(2),  g2up,              &
+                  param2=(/dxi_fact(2), trans_width(2), trans_delta(2)/))
+          call grid_profile(a*(xi2proc-xi2star),grid_func(2),g2proc,              &
+                  param2=(/dxi_fact(2), trans_width(2), trans_delta(2)/))
           y      = y00+Ly*(g2  -  g2lo)/(g2up-g2lo)
           yprim  =     Ly*(g2der1*a   )/(g2up-g2lo)
           yprim2 =     Ly*(g2der2*a**2)/(g2up-g2lo)
