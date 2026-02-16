@@ -434,7 +434,19 @@ module Grid
             enddo
           endif
 !
-        case default
+       case ('band')
+          a = 1.0
+          xi1star=find_star(a*xi1lo,a*xi1up,x00,x00+Lx,xyz_star(1),grid_func(1),param2=(/dxi_fact(1), trans_width(1), trans_delta(1)/))/a
+          call grid_profile(a*(xi1    -xi1star),grid_func(1),    g1,g1der1,g1der2,param2=(/dxi_fact(1), trans_width(1), trans_delta(1)/))
+          call grid_profile(a*(xi1lo  -xi1star),grid_func(1),  g1lo,              param2=(/dxi_fact(1), trans_width(1), trans_delta(1)/))
+          call grid_profile(a*(xi1up  -xi1star),grid_func(1),  g1up,              param2=(/dxi_fact(1), trans_width(1), trans_delta(1)/))
+          call grid_profile(a*(xi1proc-xi1star),grid_func(1),g1proc,              param2=(/dxi_fact(1), trans_width(1), trans_delta(1)/))
+          x      = x00+Lx*(g1  -  g1lo)/(g1up-g1lo)
+          xprim  =     Lx*(g1der1*a   )/(g1up-g1lo)
+          xprim2 =     Lx*(g1der2*a**2)/(g1up-g1lo)
+          g1proc = x00 + Lx * (g1proc - g1lo) / (g1up - g1lo)
+
+       case default
           call fatal_error('construct_grid', &
                            'No such x grid function: '//trim(grid_func(1)))
         endselect
@@ -630,7 +642,19 @@ module Grid
           yprim2=    Ly*g2der2/(g2up-g2lo)
           g2proc = y00 + Ly * (g2proc - g2lo) / (g2up - g2lo)
 !
-        case default
+       case ('band')
+          a = 1.0
+          xi2star=find_star(a*xi2lo,a*xi2up,y00,y00+Ly,xyz_star(2),grid_func(2),param2=(/dxi_fact(2), trans_width(2), trans_delta(2)/))/a
+          call grid_profile(a*(xi2    -xi2star),grid_func(2),    g2,g2der1,g2der2,param2=(/dxi_fact(2), trans_width(2), trans_delta(2)/))
+          call grid_profile(a*(xi2lo  -xi2star),grid_func(2),  g2lo,              param2=(/dxi_fact(2), trans_width(2), trans_delta(2)/))
+          call grid_profile(a*(xi2up  -xi2star),grid_func(2),  g2up,              param2=(/dxi_fact(2), trans_width(2), trans_delta(2)/))
+          call grid_profile(a*(xi2proc-xi2star),grid_func(2),g2proc,              param2=(/dxi_fact(2), trans_width(2), trans_delta(2)/))
+          y      = y00+Ly*(g2  -  g2lo)/(g2up-g2lo)
+          yprim  =     Ly*(g2der1*a   )/(g2up-g2lo)
+          yprim2 =     Ly*(g2der2*a**2)/(g2up-g2lo)
+          g2proc = y00 + Ly * (g2proc - g2lo) / (g2up - g2lo)
+
+       case default
           call fatal_error('construct_grid', &
                            'No such y grid function: '//trim(grid_func(2)))
 !
@@ -1965,7 +1989,7 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
 !
     endsubroutine calc_pencils_grid_pencpar
 !***********************************************************************
-    subroutine grid_profile_0D(xi,grid_func,g,gder1,gder2,param,dxyz,xistep,delta)
+    subroutine grid_profile_0D(xi,grid_func,g,gder1,gder2,param,dxyz,xistep,delta,param2)
 !
 !  Scalar wrapper for the "elemental" subroutine 'grid_profile_1D'.
 !
@@ -1978,13 +2002,14 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
       real, optional    :: param
       real, optional, dimension(3) :: dxyz
       real, optional, dimension(2) :: xistep, delta
+      real, optional, dimension(3) :: param2
 !
-      intent(in)  :: xi, grid_func, param, dxyz, xistep, delta
+      intent(in)  :: xi, grid_func, param, dxyz, xistep, delta, param2
       intent(out) :: g, gder1, gder2
 !
       real, dimension(1) :: tmp_g, tmp_gder1, tmp_gder2
 !
-      call grid_profile ((/xi/), grid_func, tmp_g, tmp_gder1, tmp_gder2, param, dxyz, xistep, delta)
+      call grid_profile ((/xi/), grid_func, tmp_g, tmp_gder1, tmp_gder2, param, dxyz, xistep, delta, param2)
 !
       g = tmp_g(1)
       if (present (gder1)) gder1 = tmp_gder1(1)
@@ -1992,7 +2017,7 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
 !
     endsubroutine grid_profile_0D
 !***********************************************************************
-    subroutine grid_profile_1D(xi,grid_func,g,gder1,gder2,param,dxyz,xistep,delta)
+    subroutine grid_profile_1D(xi,grid_func,g,gder1,gder2,param,dxyz,xistep,delta,param2)
 !
 !  Specify the functional form of the grid profile function g
 !  and calculate g,g',g''.
@@ -2007,9 +2032,13 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
       real, optional                        :: param
       real, optional, dimension(3) :: dxyz
       real, optional, dimension(2) :: xistep,delta
+      real, optional, dimension(3) :: param2
       real :: m
+      real :: ampl,width,deltai
+      real, dimension(size(xi,1))           :: arg1,arg2,band,dx_ratio
+      integer :: i
 !
-      intent(in)  :: xi,grid_func,param,dxyz,xistep,delta
+      intent(in)  :: xi,grid_func,param,dxyz,xistep,delta,param2
       intent(out) :: g,gder1,gder2
 !
       select case (grid_func)
@@ -2216,6 +2245,24 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
           endif
         endif
 !
+     case ('band')
+
+        ampl   = param2(1) ! refinement amplitude 
+        width  = param2(2) ! band width (in cells)
+        deltai = param2(3) ! edge smoothness (in cells)
+
+        arg1 = (xi + width*0.5) / deltai
+        arg2 = (xi - width*0.5) / deltai
+        
+        g = xi - (1./ampl - 1.) * 0.5 * deltai * ( log(cosh(arg2)) - log(cosh(arg1)) )
+        
+        if (present(gder1)) then
+           gder1 = 1. - (1./ampl-1.) * 0.5 * (tanh(arg2) - tanh(arg1))
+        endif
+        if (present(gder2)) then
+           gder2 = (1./ampl - 1.) * 0.5 * ((1./cosh(arg1))**2 / deltai - (1./cosh(arg2))**2 / deltai)
+        endif
+!  
       case default
         call not_implemented('grid_profile_1D',"grid function: '"//trim(grid_func)//"'")
 !
@@ -2223,7 +2270,7 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
 !
     endsubroutine grid_profile_1D
 !***********************************************************************
-    function find_star(xi_lo,xi_up,x_lo,x_up,x_star,grid_func) result (xi_star)
+    function find_star(xi_lo,xi_up,x_lo,x_up,x_star,grid_func,param2) result (xi_star)
 !
 !  Finds the xi that corresponds to the inflection point of the grid-function
 !  by means of a newton-raphson root-finding algorithm.
@@ -2240,6 +2287,7 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
       integer, parameter :: maxit=1000
       logical :: lreturn
       integer :: it
+      real, optional, dimension(3) :: param2
 !
       if (xi_lo>=xi_up) &
           call fatal_error('find_star','xi1 >= xi2 -- this should not happen')
@@ -2251,8 +2299,8 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
 !
       do it=1,maxit
 !
-        call grid_profile(xi_lo-xi_star,grid_func,g_lo,gder_lo)
-        call grid_profile(xi_up-xi_star,grid_func,g_up,gder_up)
+        call grid_profile(xi_lo-xi_star,grid_func,g_lo,gder_lo,param2=param2)
+        call grid_profile(xi_up-xi_star,grid_func,g_up,gder_up,param2=param2)
 !
         f   =-(x_up-x_star)*g_lo   +(x_lo-x_star)*g_up
         fder= (x_up-x_star)*gder_lo-(x_lo-x_star)*gder_up

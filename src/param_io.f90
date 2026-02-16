@@ -121,7 +121,7 @@ module Param_IO
       isaveglobal, lr_spec, r2u_spec, &
       np_spec, np_ap_spec, rhop_spec, FI_mixfrac_pdf2d, &
       r3u_spec, rhocc_pdf, cc_pdf, lncc_pdf, gcc_pdf, lngcc_pdf, cosEB_pdf, &
-      xyz_step, xi_step_frac, xi_step_width, dxi_fact, trans_width, &
+      xyz_step, xi_step_frac, xi_step_width, dxi_fact, trans_width, trans_delta, &
       lcylinder_in_a_box, lsphere_in_a_box, llocal_iso, init_loops, lwrite_2d, &
       lcylindrical_gravity, &
       border_frac_x, border_frac_y, border_frac_z, lborder_hyper_diff, border_frac_r, &
