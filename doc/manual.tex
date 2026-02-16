@@ -2406,6 +2406,14 @@ Additionally if you are using CUDA-aware MPI with MPICH (for example on the LUMI
 export MPICH_GPU_SUPPORT_ENABLED=1
 \end{verbatim}
 
+The normal usage of GPUs will imply that compilation will happen during the run of the simulation.
+Because of this for module environments it is imperative that the same modules are used for the run as for the initial compilation.
+To ensure this add the following to your sbatch script:
+\begin{verbatim}
+source src/.moduleinfo
+\end{verbatim}
+
+
 Note that not all of Pencil Code can run on GPUs. 
 This is most predominant when regarding the particles either in the Particle-in-Cell (PIC) method or with the N-body solver of Pencil Code, neither of which are GPU accelerated. Additionally more complicated computations outside of the rhss are not included like the Navier Stokes Characteristic Boundary Condition (NSCBC) and granulation calculations in the coronae module. To see which of the commited samples are known to run on the GPUs check the list gpu\_test in \file{bin/pc_autotest}. As a rule of thumb if the sample only requires the following features it can be run on GPUs:
 \begin{verbatim}
