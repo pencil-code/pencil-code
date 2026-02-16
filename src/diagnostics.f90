@@ -863,6 +863,9 @@ module Diagnostics
 !
               if (itype==ilabel_max_reciprocal) then
                 if (fmax(imax_count)==0.) then
+!                 2026-02-16/Kishore: Fred, this seems a strange thing to do;
+!                 2026-02-16/Kishore: we don't try to filter out negative values
+!                 2026-02-16/Kishore: for ilabel_max_sqrt, do we?
                   vname(iname)=0.
                 else
                   vname(iname)=1./fmax(imax_count)
