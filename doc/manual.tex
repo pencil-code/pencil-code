@@ -2357,6 +2357,64 @@ main variable (f) array, the main reason it that with static allocation
 the compiler can check whether we are out of bounds.
 
 % ---------------------------------------------------------------------- %
+\subsection{GPUs}
+
+Pencil Code can also be run on GPUs via automatic code translation to the Astaroth GPU library. 
+This requires you to have the following libraries: 
+\begin{verbatim}
+  cmake version >= 3.21,bison,flex,CUDA or HIP,python
+\end{verbatim}
+
+The Astaroth library and the code translator to it come together with Pencil Code as git submodules.
+To get them and/or update them to the latest versions run:
+\begin{verbatim}
+  git submodule update --init --remote
+\end{verbatim}
+
+In \file{src/Makefile.local} add the following options:
+\begin{verbatim}
+  GPU=gpu_astaroth
+  TRANSPILATION=on
+  RUNTIME_COMPILATION=on
+\end{verbatim}
+
+Then the compilation and running is done the same as for normal CPU setups.
+By default the code assumes communication is done with CUDA-aware MPI, which means the GPUs speak directly to each other.
+If you have to ask is your MPI CUDA-aware enabled then it most like is not.
+Thus trying to run the code in CUDA-aware mode will most likely cause a segmentation fault and the code to crash. 
+
+To turn off CUDA-aware MPI add the following options to \file{run.in}
+\begin{verbatim}
+&gpu_run_pars
+  lcuda_aware_mpi=F
+/
+\end{verbatim}
+
+The GPU-enabled version uses threads to compute the diagnostics alongside the time integration happening on the GPUs.
+Because of this you should have at least 2 threads executing per process.
+An example using 7 threads per process would be:
+\begin{verbatim}
+export OMP_NUM_THREADS=7
+export OMP_MAX_ACTIVE_LEVELS=2
+export OMP_PROC_BIND=close,spread
+export OMP_WAIT_POLICY=PASSIVE
+\end{verbatim}
+,where the other options are helpful to get maximal performance out of the multithreading.
+If you are using SLURM you would put these exports into your sbatch file. 
+Additionally if you are using CUDA-aware MPI with MPICH (for example on the LUMI supercomputer) but the following export before calling run.x but after calling start.x
+\begin{verbatim}
+export MPICH_GPU_SUPPORT_ENABLED=1
+\end{verbatim}
+
+Note that not all of Pencil Code can run on GPUs. 
+This is most predominant when regarding the particles either in the Particle-in-Cell (PIC) method or with the N-body solver of Pencil Code, neither of which are GPU accelerated. Additionally more complicated computations outside of the rhss are not included like the Navier Stokes Characteristic Boundary Condition (NSCBC) and granulation calculations in the coronae module. To see which of the commited samples are known to run on the GPUs check the list gpu\_test in \file{bin/pc_autotest}. As a rule of thumb if the sample only requires the following features it can be run on GPUs:
+\begin{verbatim}
+integration of PDEs and ODEs. 
+Boundary conditions that can be formulated as local operations. (For not yet covered boundary conditions requires explicit use of code tools to generate the GPU code)
+Calculations of averages or other reductions before time integration. (For not yet covered cases requires explicit use of code tools to generate the GPU code).
+Fourier transforms (Requires handwritten modifications to add new physics)
+\end{verbatim}
+% ---------------------------------------------------------------------- %
 \subsection{Using a non-equidistant grid}
 \index{mesh, nonuniform}\index{grid, nonuniform}\index{nonuniform grid}
 
