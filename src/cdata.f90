@@ -178,6 +178,7 @@ module Cdata
   logical, dimension(3) :: lperi=.true. !PAR_DOC: vector of the form ($x$,$y$,$z$);
                                         !PAR_DOC: determines whether the corresponding
                                         !PAR_DOC: direction is periodic
+  logical, dimension(3) :: lsymmgrid=.true.
   logical, dimension(3) :: lshift_origin=.false. !PAR_DOC: if set \code{T} for any or some of the three directions,
     !PAR_DOC: the mesh is shifted by 1/2 meshpoint in that or those
     !PAR_DOC: directions so that the mesh goes through the origin.

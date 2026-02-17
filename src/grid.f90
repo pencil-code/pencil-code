@@ -434,23 +434,28 @@ module Grid
             enddo
           endif
 !
-       case ('band')
+       case ('band','sus')
           a = 1.0
-          xi1star=find_star(a*xi1lo,a*xi1up,x00,x00+Lx,xyz_star(1),grid_func(1),&
-                  param2=(/dxi_fact(1), trans_width(1), trans_delta(1)/))/a
+          if (lsymmgrid(1)) then
+            xi1star=nxgrid/2
+          else
+            xi1star=find_star_bisection(a*xi1lo,a*xi1up,x00,x00+Lx,xyz_star(1),grid_func(1),&
+                 param2=(/dxi_fact(1), trans_width(1), trans_delta(1)/))/a
+          endif
           call grid_profile(a*(xi1    -xi1star),grid_func(1),    g1,g1der1,g1der2,&
-                  param2=(/dxi_fact(1), trans_width(1), trans_delta(1)/))
-          call grid_profile(a*(xi1lo  -xi1star),grid_func(1),  g1lo,&
-                  param2=(/dxi_fact(1), trans_width(1), trans_delta(1)/))
-          call grid_profile(a*(xi1up  -xi1star),grid_func(1),  g1up,&
-                  param2=(/dxi_fact(1), trans_width(1), trans_delta(1)/))
-          call grid_profile(a*(xi1proc-xi1star),grid_func(1),g1proc,&
-                  param2=(/dxi_fact(1), trans_width(1), trans_delta(1)/))
+               param2=(/dxi_fact(1), trans_width(1), trans_delta(1)/))
+          call grid_profile(a*(xi1lo  -xi1star),grid_func(1),  g1lo,              &
+               param2=(/dxi_fact(1), trans_width(1), trans_delta(1)/))
+          call grid_profile(a*(xi1up  -xi1star),grid_func(1),  g1up,              &
+               param2=(/dxi_fact(1), trans_width(1), trans_delta(1)/))
+          call grid_profile(a*(xi1proc-xi1star),grid_func(1),g1proc,              &
+               param2=(/dxi_fact(1), trans_width(1), trans_delta(1)/))
+!
           x      = x00+Lx*(g1  -  g1lo)/(g1up-g1lo)
           xprim  =     Lx*(g1der1*a   )/(g1up-g1lo)
           xprim2 =     Lx*(g1der2*a**2)/(g1up-g1lo)
           g1proc = x00 + Lx * (g1proc - g1lo) / (g1up - g1lo)
-
+          
        case default
           call fatal_error('construct_grid', &
                            'No such x grid function: '//trim(grid_func(1)))
@@ -647,18 +652,23 @@ module Grid
           yprim2=    Ly*g2der2/(g2up-g2lo)
           g2proc = y00 + Ly * (g2proc - g2lo) / (g2up - g2lo)
 !
-       case ('band')
+       case ('band','sus')
           a = 1.0
-          xi2star=find_star(a*xi2lo,a*xi2up,y00,y00+Ly,xyz_star(2),grid_func(2),&
+          if (lsymmgrid(2)) then 
+            xi2star=nygrid/2
+          else
+             xi2star=find_star_bisection(a*xi2lo,a*xi2up,y00,y00+Ly,xyz_star(2),grid_func(2),&
                   param2=(/dxi_fact(2), trans_width(2), trans_delta(2)/))/a
+          endif
           call grid_profile(a*(xi2    -xi2star),grid_func(2),    g2,g2der1,g2der2,&
-                  param2=(/dxi_fact(2), trans_width(2), trans_delta(2)/))
+               param2=(/dxi_fact(2), trans_width(2), trans_delta(2)/))
           call grid_profile(a*(xi2lo  -xi2star),grid_func(2),  g2lo,              &
-                  param2=(/dxi_fact(2), trans_width(2), trans_delta(2)/))
+               param2=(/dxi_fact(2), trans_width(2), trans_delta(2)/))
           call grid_profile(a*(xi2up  -xi2star),grid_func(2),  g2up,              &
-                  param2=(/dxi_fact(2), trans_width(2), trans_delta(2)/))
+               param2=(/dxi_fact(2), trans_width(2), trans_delta(2)/))
           call grid_profile(a*(xi2proc-xi2star),grid_func(2),g2proc,              &
-                  param2=(/dxi_fact(2), trans_width(2), trans_delta(2)/))
+               param2=(/dxi_fact(2), trans_width(2), trans_delta(2)/))
+!
           y      = y00+Ly*(g2  -  g2lo)/(g2up-g2lo)
           yprim  =     Ly*(g2der1*a   )/(g2up-g2lo)
           yprim2 =     Ly*(g2der2*a**2)/(g2up-g2lo)
@@ -1021,7 +1031,7 @@ module Grid
       dxmin=dxmin_x
 !
       if (dxmin == 0) &
-        call fatal_error ("initialize_grid", "check Lx,Ly,Lz: is one of them 0?", .true.)
+        call fatal_error ("initialize_grid", "dxmin==0; check Lx,Ly,Lz: is one of them 0?", .true.)
 !
       dxmax = maxval( (/dxmax_x, dxmax_y, dxmax_z, epsilon(dx)/), &
                 MASK=((/nxgrid, nygrid, nzgrid, 2/) > 1) )
@@ -2044,9 +2054,15 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
       real, optional, dimension(2) :: xistep,delta
       real, optional, dimension(3) :: param2
       real :: m
-      real :: ampl,width,deltai
+      real :: ampl,width,deltai,width_cells,delta_cells
       real, dimension(size(xi,1))           :: arg1,arg2,band,dx_ratio
       integer :: i
+!
+      real :: alpha, w
+      real :: xc        ! center of refined region (from find_star)
+      real :: xa         ! local shifted coordinate
+      real :: sa, sb, sc  ! SUS cubic transition variables
+      real :: g_mw, g_pw, g_wd ! mapping values at boundaries for continuity
 !
       intent(in)  :: xi,grid_func,param,dxyz,xistep,delta,param2
       intent(out) :: g,gder1,gder2
@@ -2272,13 +2288,231 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
         if (present(gder2)) then
            gder2 = (1./ampl - 1.) * 0.5 * ((1./cosh(arg1))**2 / deltai - (1./cosh(arg2))**2 / deltai)
         endif
-!  
+!
+     case ('sus')
+        if (size(xi)>1) then
+          call sus_map_1D(xi,param2,g,gder1,gder2)
+        else
+          call sus_map_0D(xi(1),param2,g(1),gder1(1),gder2(1))
+        endif
+!
       case default
         call not_implemented('grid_profile_1D',"grid function: '"//trim(grid_func)//"'")
 !
       endselect
 !
     endsubroutine grid_profile_1D
+!***********************************************************************
+    subroutine sus_map_1D(xi,param2,g,gder1,gder2)
+
+      real, dimension(:)                    :: xi
+      real, dimension(size(xi,1))           :: g
+      real, dimension(size(xi,1)), optional :: gder1,gder2
+      real, dimension(3) :: param2
+      
+      real :: ampl,width_cells,delta_cells
+      real, dimension(size(xi,1)) :: arg1,arg2
+      integer :: i
+!      
+      real :: alpha, w
+      real :: xa          ! local shifted coordinate      
+      real :: sa, sb, sc  ! SUS cubic transition variables 
+      real :: g_mw, g_pw, g_wd ! mapping values at boundaries for continuity
+!
+      intent(in)  :: xi,param2
+      intent(out) :: g,gder1,gder2
+      
+      ampl         = param2(1) ! refinement amplitude
+      width_cells  = param2(2) ! band width (in cells)  
+      delta_cells  = param2(3) ! edge smoothness (in cells)
+
+      w     = 0.5 * width_cells
+      alpha = 1.0 - 1.0 / ampl
+
+      ! initialize outputs
+
+      g = xi
+      if (present(gder1)) gder1 = 1.0
+      if (present(gder2)) gder2 = 0.0
+      
+      ! loop over xi      
+      do i = 1, size(xi)
+         xa = xi(i)
+
+         ! ---- LEFT OUTER ----
+           
+         if (xa < -w - delta_cells) then
+            g(i) = xa
+            if (present(gder1)) gder1(i) = 1.0
+            if (present(gder2)) gder2(i) = 0.0
+
+            ! ---- LEFT TRANSITION ----
+            
+         else if (xa < -w) then
+            sa = (xa + w + delta_cells)/delta_cells
+            g(i) = xa - alpha*delta_cells*(sa**3 - 0.5*sa**4)
+            if (present(gder1)) then
+               sb  = 3.0*sa**2 - 2.0*sa**3
+               gder1(i) = 1.0 - alpha*sb
+            endif
+            if (present(gder2)) then
+               sc = 6.0*sa - 6.0*sa**2
+               gder2(i) = -alpha*sc/delta_cells
+            endif
+
+            ! ---- CORE ----
+         else if (xa <= w) then
+            g_mw = (-w) - alpha*delta_cells*(1.0 - 0.5)
+            g(i) = g_mw + (1.0/ampl)*(xa + w)
+            if (present(gder1)) gder1(i) = 1.0/ampl
+            if (present(gder2)) gder2(i) = 0.0
+            
+            ! ---- RIGHT TRANSITION ----
+         else if (xa <= w + delta_cells) then
+            sa = (xa - w)/delta_cells
+            g_pw = g_mw + (1.0/ampl)*(2.0*w)
+            g(i) = g_pw + (1.0/ampl)*(xa - w) + alpha*delta_cells*(sa**3 - 0.5*sa**4)
+            if (present(gder1)) then
+               sb  = 3.0*sa**2 - 2.0*sa**3
+               gder1(i) = 1.0/ampl + alpha*sb
+            endif
+            if (present(gder2)) then
+               sc = 6.0*sa - 6.0*sa**2
+               gder2(i) = alpha*sc/delta_cells
+            endif
+            
+            ! ---- RIGHT OUTER ----
+         else
+            g_pw = g_mw + (1.0/ampl)*(2.0*w)
+            g_wd = g_pw + (1.0/ampl)*delta_cells + alpha*delta_cells*0.5
+            g(i)  = g_wd + (xa - (w + delta_cells))
+            if (present(gder1)) gder1(i) = 1.0
+            if (present(gder2)) gder2(i) = 0.0
+         end if
+      end do
+!
+    endsubroutine sus_map_1D
+!***********************************************************************
+    subroutine sus_map_0D(xi,param2,g,gder1,gder2)
+
+      real, intent(in)  :: xi
+      real  :: ampl,width_cells,delta_cells
+      real, intent(out) :: g
+      real, optional, intent(out) :: gder1,gder2
+      real, dimension(3) :: param2
+      real :: w, alpha
+      real :: xa, sa, sb, sc
+      real :: g_mw, g_pw, g_wd
+
+      ampl         = param2(1) ! refinement amplitude
+      width_cells  = param2(2) ! band width (in cells)      
+      delta_cells  = param2(3) ! edge smoothness (in cells)
+      
+      w     = 0.5*width_cells
+      alpha = 1.0 - 1.0/ampl
+      xa    = xi
+
+  ! ---- LEFT OUTER ----
+      if (xa < -w - delta_cells) then
+         g = xa
+         if (present(gder1)) gder1 = 1.0
+         if (present(gder2)) gder2 = 0.0
+  ! ---- LEFT TRANSITION ----
+      else if (xa < -w) then
+         sa = (xa + w + delta_cells)/delta_cells
+         g  = xa - alpha*delta_cells*(sa**3 - 0.5*sa**4)
+         if (present(gder1)) then
+            sb = 3.0*sa**2 - 2.0*sa**3
+            gder1 = 1.0 - alpha*sb
+         endif
+         if (present(gder2)) then
+            sc = 6.0*sa - 6.0*sa**2
+            gder2 = -alpha*sc/delta_cells
+         endif
+  ! ---- CORE ----
+      else if (xa <= w) then
+         g_mw = (-w) - alpha*delta_cells*(1.0 - 0.5)
+         g = g_mw + (1.0/ampl)*(xa + w)
+         if (present(gder1)) gder1 = 1.0/ampl
+         if (present(gder2)) gder2 = 0.0
+  ! ---- RIGHT TRANSITION ----
+      else if (xa <= w + delta_cells) then
+         sa = (xa - w)/delta_cells
+         g_mw = (-w) - alpha*delta_cells*(1.0 - 0.5)
+         g_pw = g_mw + (1.0/ampl)*(2.0*w)
+
+         g = g_pw + (1.0/ampl)*(xa - w) + alpha*delta_cells*(sa**3 - 0.5*sa**4)
+         if (present(gder1)) then
+            sb = 3.0*sa**2 - 2.0*sa**3
+            gder1 = 1.0/ampl + alpha*sb
+         endif
+         if (present(gder2)) then
+            sc = 6.0*sa - 6.0*sa**2
+            gder2 = alpha*sc/delta_cells
+         endif
+  ! ---- RIGHT OUTER ----
+      else
+         g_mw = (-w) - alpha*delta_cells*(1.0 - 0.5)
+         g_pw = g_mw + (1.0/ampl)*(2.0*w)
+         g_wd = g_pw + (1.0/ampl)*delta_cells + alpha*delta_cells*0.5
+         
+         g = g_wd + (xa - (w + delta_cells))
+         if (present(gder1)) gder1 = 1.0
+         if (present(gder2)) gder2 = 0.0
+      end if
+
+    end subroutine sus_map_0D
+!***********************************************************************
+    function find_star_bisection(xi_lo,xi_up,x_lo,x_up,x_star,grid_func,param2) result(xi_star)
+
+      real, intent(in) :: xi_lo, xi_up
+      real, intent(in) :: x_lo, x_up, x_star
+      character(len=*), intent(in) :: grid_func
+      real, optional, dimension(3) :: param2
+
+      real :: xi_star
+      real :: a, b, mid
+      real :: g_lo, g_up, g0
+      real :: f_a, f_mid
+      real :: tol
+      integer :: it
+      integer, parameter :: maxit=200
+
+      tol = max(epsi*(xi_up-xi_lo), epsi)
+
+      a = xi_lo
+      b = xi_up
+
+      ! ---- evaluate f(a)
+      call grid_profile(0.0, grid_func, g0, param2=param2)
+      call grid_profile(xi_lo-a, grid_func, g_lo, param2=param2)
+      call grid_profile(xi_up-a, grid_func, g_up, param2=param2)
+
+      f_a = x_lo + (x_up-x_lo)*(g0 - g_lo)/(g_up - g_lo) - x_star
+
+      do it = 1, maxit
+
+         mid = 0.5*(a + b)
+
+         call grid_profile(xi_lo-mid, grid_func, g_lo, param2=param2)
+         call grid_profile(xi_up-mid, grid_func, g_up, param2=param2)
+
+         f_mid = x_lo + (x_up-x_lo)*(g0 - g_lo)/(g_up - g_lo) - x_star
+
+         if (abs(b-a) < tol) exit
+
+         if (f_a*f_mid < 0.0) then
+            b = mid
+         else
+            a = mid
+            f_a = f_mid
+         endif
+
+      end do
+
+      xi_star = 0.5*(a + b)
+
+    end function find_star_bisection
 !***********************************************************************
     function find_star(xi_lo,xi_up,x_lo,x_up,x_star,grid_func,param2) result (xi_star)
 !
