@@ -2334,20 +2334,22 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
       g = xi
       if (present(gder1)) gder1 = 1.0
       if (present(gder2)) gder2 = 0.0
+
+      ! Precompute constants
+      g_mw = (-w) - alpha*delta_cells*(1.0 - 0.5)
+      g_pw = g_mw + (1.0/ampl)*(2.0*w)
+      g_wd = g_pw + (1.0/ampl)*delta_cells + alpha*delta_cells*0.5
       
-      ! loop over xi      
+      ! loop over xi
       do i = 1, size(xi)
          xa = xi(i)
-
          ! ---- LEFT OUTER ----
-           
          if (xa < -w - delta_cells) then
             g(i) = xa
             if (present(gder1)) gder1(i) = 1.0
             if (present(gder2)) gder2(i) = 0.0
 
-            ! ---- LEFT TRANSITION ----
-            
+         ! ---- LEFT TRANSITION ----
          else if (xa < -w) then
             sa = (xa + w + delta_cells)/delta_cells
             g(i) = xa - alpha*delta_cells*(sa**3 - 0.5*sa**4)
@@ -2360,17 +2362,15 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
                gder2(i) = -alpha*sc/delta_cells
             endif
 
-            ! ---- CORE ----
+         ! ---- CORE ----
          else if (xa <= w) then
-            g_mw = (-w) - alpha*delta_cells*(1.0 - 0.5)
             g(i) = g_mw + (1.0/ampl)*(xa + w)
             if (present(gder1)) gder1(i) = 1.0/ampl
             if (present(gder2)) gder2(i) = 0.0
             
-            ! ---- RIGHT TRANSITION ----
+         ! ---- RIGHT TRANSITION ----
          else if (xa <= w + delta_cells) then
             sa = (xa - w)/delta_cells
-            g_pw = g_mw + (1.0/ampl)*(2.0*w)
             g(i) = g_pw + (1.0/ampl)*(xa - w) + alpha*delta_cells*(sa**3 - 0.5*sa**4)
             if (present(gder1)) then
                sb  = 3.0*sa**2 - 2.0*sa**3
@@ -2380,11 +2380,9 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
                sc = 6.0*sa - 6.0*sa**2
                gder2(i) = alpha*sc/delta_cells
             endif
-            
-            ! ---- RIGHT OUTER ----
+
+         ! ---- RIGHT OUTER ----
          else
-            g_pw = g_mw + (1.0/ampl)*(2.0*w)
-            g_wd = g_pw + (1.0/ampl)*delta_cells + alpha*delta_cells*0.5
             g(i)  = g_wd + (xa - (w + delta_cells))
             if (present(gder1)) gder1(i) = 1.0
             if (present(gder2)) gder2(i) = 0.0
@@ -2412,12 +2410,17 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
       alpha = 1.0 - 1.0/ampl
       xa    = xi
 
-  ! ---- LEFT OUTER ----
+      g_mw = (-w) - alpha*delta_cells*(1.0 - 0.5)
+      g_pw = g_mw + (1.0/ampl)*(2.0*w)
+      g_wd = g_pw + (1.0/ampl)*delta_cells + alpha*delta_cells*0.5
+      
+      ! ---- LEFT OUTER ----
       if (xa < -w - delta_cells) then
          g = xa
          if (present(gder1)) gder1 = 1.0
          if (present(gder2)) gder2 = 0.0
-  ! ---- LEFT TRANSITION ----
+         
+      ! ---- LEFT TRANSITION ----
       else if (xa < -w) then
          sa = (xa + w + delta_cells)/delta_cells
          g  = xa - alpha*delta_cells*(sa**3 - 0.5*sa**4)
@@ -2429,17 +2432,16 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
             sc = 6.0*sa - 6.0*sa**2
             gder2 = -alpha*sc/delta_cells
          endif
-  ! ---- CORE ----
+         
+      ! ---- CORE ----
       else if (xa <= w) then
-         g_mw = (-w) - alpha*delta_cells*(1.0 - 0.5)
          g = g_mw + (1.0/ampl)*(xa + w)
          if (present(gder1)) gder1 = 1.0/ampl
          if (present(gder2)) gder2 = 0.0
-  ! ---- RIGHT TRANSITION ----
+
+      ! ---- RIGHT TRANSITION ----
       else if (xa <= w + delta_cells) then
          sa = (xa - w)/delta_cells
-         g_mw = (-w) - alpha*delta_cells*(1.0 - 0.5)
-         g_pw = g_mw + (1.0/ampl)*(2.0*w)
 
          g = g_pw + (1.0/ampl)*(xa - w) + alpha*delta_cells*(sa**3 - 0.5*sa**4)
          if (present(gder1)) then
@@ -2450,12 +2452,9 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
             sc = 6.0*sa - 6.0*sa**2
             gder2 = alpha*sc/delta_cells
          endif
-  ! ---- RIGHT OUTER ----
+
+      ! ---- RIGHT OUTER ----
       else
-         g_mw = (-w) - alpha*delta_cells*(1.0 - 0.5)
-         g_pw = g_mw + (1.0/ampl)*(2.0*w)
-         g_wd = g_pw + (1.0/ampl)*delta_cells + alpha*delta_cells*0.5
-         
          g = g_wd + (xa - (w + delta_cells))
          if (present(gder1)) gder1 = 1.0
          if (present(gder2)) gder2 = 0.0
