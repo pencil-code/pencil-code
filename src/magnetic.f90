@@ -40,6 +40,7 @@ module Magnetic
   use General, only: keep_compiler_quiet, loptest, itoa
   !TP: this is ugly but needed to not take pushpars2c from magnetic_meanfield
   !If someone knows a more elegant way to filter out a single equation from a module please make this cleaner!
+  !Kishore: one may do `use Magnetic_meanfield, disabled_subroutine => pushpars2c`
   use Magnetic_meanfield, only: register_magn_mf, initialize_magn_mf, init_aa_mf, pencil_criteria_magn_mf, &
                                 pencil_interdep_magn_mf, calc_diagnostics_meanfield,daa_dt_meanfield, &
                                 read_magn_mf_init_pars,write_magn_mf_init_pars, calc_pencils_magn_mf, &
