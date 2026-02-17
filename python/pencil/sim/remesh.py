@@ -344,7 +344,7 @@ def src2dst_remesh(
     kind="linear",
     check_grid=True,
     optionals=True,
-    nmin=32,
+    nmin=128,
     rename_submit_script=False,
     MBmin=64.0,
     ncpus=[1, 1, 1],
