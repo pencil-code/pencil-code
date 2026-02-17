@@ -1931,8 +1931,9 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
         if (lpenc_loc(i_rcyl_mn))  p%rcyl_mn = sqrt(x(l1:l2)**2+y(m)**2)
 !azimuthal angle (phi)
         if (lpenc_loc(i_phi_mn)) then
-          if (y(m)==0) then
+          if (y(m)==0.) then
             p%phi_mn  = 0.
+            where (x(l1:l2)/=0.) p%phi_mn  = atan2(y(m),x(l1:l2))
           else
             p%phi_mn  = atan2(y(m),x(l1:l2))
           endif
