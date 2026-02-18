@@ -45,7 +45,8 @@
 
     namelist /training_run_pars/ config_file, model, it_train, it_train_start, it_train_chkpt, &
                                  luse_trained_tau, lscale, lwrite_sample, max_loss, lroute_via_cpu,&
-                                 it_train_end, lrun_epoch, dt_train, t_train_start, t_train_end, t_train_chkpt
+                                 it_train_end, lrun_epoch, dt_train, t_train_start, t_train_end, t_train_chkpt,&
+                                 ltrain_mag,ltrain_dens
 !
     character(LEN=fnlen) :: model_output_dir, checkpoint_output_dir
     integer :: istat, train_step_ckpt, val_step_ckpt
@@ -55,8 +56,11 @@
     real, dimension(mx, my, mz, 6) :: tau_pred
     real::  start_time, end_time
     real, save :: t_last_chkpt = 0.0
-    integer :: input_channels = 3
+    integer :: input_channels  = 3
     integer :: output_channels = 6
+    !TP: these are by default false now
+    logical :: ltrain_mag  = .false.
+    logical :: ltrain_dens = .false.
 
     contains
 !***************************************************************
@@ -138,9 +142,16 @@
         allocate(label (mx, my, mz, 6, 1))
       endif
       f(:,:,:,itau_hydroxx:itau_hydroyz)   = 0.0
-      if (ldensity)  f(:,:,:,itau_densityx:itau_densityz) = 0.0
-      if (lmagnetic) f(:,:,:,itau_magxx:itau_magyz)       = 0.0
-
+      if (ltrain_dens) then 
+        f(:,:,:,itau_densityx:itau_densityz) = 0.0
+        input_channels  = input_channels  + 1
+        output_channels = output_channels + 3
+      endif
+      if (ltrain_mag) then
+        f(:,:,:,itau_magxx:itau_magyz)       = 0.0
+        input_channels  = input_channels  + 3
+        output_channels = output_channels + 6
+      endif
     endsubroutine initialize_training
 !***********************************************************************
     subroutine register_training
@@ -153,10 +164,13 @@
 !
       if (lroot) call svn_id( &
            "$Id$")
+
+      ltrain_mag  = ltrain_mag  .and. lmagnetic
+      ltrain_dens = ltrain_dens .and. ldensity
 !
       call farray_register_auxiliary('tau_hydro',itau_hydro,vector=6,on_gpu=lgpu,communicated=.true.)
-      if(lmagnetic) call farray_register_auxiliary('tau_mag',itau_mag,vector=6,on_gpu=lgpu,communicated=.true.)
-      if(ldensity)  call farray_register_auxiliary('tau_density',itau_density,vector=3,on_gpu=lgpu,communicated=.true.)
+      if(ltrain_mag) call farray_register_auxiliary('tau_mag',itau_mag,vector=6,on_gpu=lgpu,communicated=.true.)
+      if(ltrain_dens)  call farray_register_auxiliary('tau_density',itau_density,vector=3,on_gpu=lgpu,communicated=.true.)
 !
 !  Indices to access tau.
 !
@@ -427,12 +441,21 @@
 
       real, dimension(nx,3) :: div_hydro_sgs
       real, dimension(nx,3) :: div_mag_sgs
+      real, dimension(nx)   :: div_dens_sgs
 
       if (ltrained) then 
         call div_tensor(f,div_hydro_sgs,itau_hydro)
-        call div_tensor(f,div_mag_sgs,itau_mag)
         df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - div_hydro_sgs
-        df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) - div_mag_sgs
+
+        if(ltrain_mag) then
+          call div_tensor(f,div_mag_sgs,itau_mag)
+          df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) - div_mag_sgs
+        endif
+
+        if(ltrain_dens) then
+          call div(f,itau_hydro,div_dens_sgs)
+          df(l1:l2,m,n,ilnrho)  = df(l1:l2,m,n,ilnrho)  - div_dens_sgs
+        endif
       endif
 
     endsubroutine div_sgs_stresses
