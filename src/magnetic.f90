@@ -38,15 +38,7 @@ module Magnetic
 !
   use Cdata
   use General, only: keep_compiler_quiet, loptest, itoa
-  !TP: this is ugly but needed to not take pushpars2c from magnetic_meanfield
-  !If someone knows a more elegant way to filter out a single equation from a module please make this cleaner!
-  !Kishore: one may do `use Magnetic_meanfield, disabled_subroutine => pushpars2c`
-  use Magnetic_meanfield, only: register_magn_mf, initialize_magn_mf, init_aa_mf, pencil_criteria_magn_mf, &
-                                pencil_interdep_magn_mf, calc_diagnostics_meanfield,daa_dt_meanfield, &
-                                read_magn_mf_init_pars,write_magn_mf_init_pars, calc_pencils_magn_mf, &
-                                rprint_magn_mf, &
-                                read_magn_mf_run_pars,write_magn_mf_run_pars,pc_aasb_const_alpha,meanfield_after_boundary
-
+  use Magnetic_meanfield, pushpars2c_mf => pushpars2c
   use Messages, only: fatal_error,inevitably_fatal_error,warning,svn_id,timing,not_implemented,information
 !
   implicit none
@@ -1249,8 +1241,7 @@ module Magnetic
         call register_report_aux('bb', ibb, ibx, iby, ibz, communicated=lbb_as_comaux)
       if (ljj_as_aux .or. ljj_as_comaux) &
         call register_report_aux('jj', ijj, ijx, ijy, ijz, communicated=ljj_as_comaux)
-      if (lbij_as_aux) &
-        call farray_register_auxiliary('bij', ibij, vector=9)
+      if (lbij_as_aux) call farray_register_auxiliary('bij', ibij, vector=9)
 !
       if (lbbt_as_aux) then
         call register_report_aux('bbt',ibbt,ibxt,ibyt,ibzt)
@@ -4345,7 +4336,7 @@ module Magnetic
       if (lpenc_loc(i_ua)) call dot_mn(p%uu,p%aa,p%ua)
 ! uxb
       if (lpenc_loc(i_uxb)) then
-          call cross_mn(p%uu,p%bb,p%uxb)
+        call cross_mn(p%uu,p%bb,p%uxb)
 !  add external e-field.
         do j=1,3
           if (iglobal_eext(j)/=0) p%uxb(:,j)=p%uxb(:,j)+f(l1:l2,m,n,iglobal_eext(j))
@@ -4420,14 +4411,6 @@ module Magnetic
         if (dimensionality == 0 .or. lbij_test) then
           do i = 1,nx; p%bij(i,:,:)=bij_0D_test; enddo
         endif
-!
-!  Possibility of bij as auxiliary array
-!
-      if (lbij_as_aux) then
-        f(l1:l2,m,n,ibij  :ibij+2)=p%bij(:,:,1)
-        f(l1:l2,m,n,ibij+3:ibij+5)=p%bij(:,:,2)
-        f(l1:l2,m,n,ibij+6:ibij+8)=p%bij(:,:,3)
-      endif
 !
 !     Possibility that jj is already calculated as comaux
 !
@@ -6466,6 +6449,14 @@ print*,'AXEL2: should not be here (eta) ... '
 !  Note: ix_loc is the index with respect to array with ghost zones.
 !
       if (lvideo.and.lfirst) then
+!
+!  Possibility of bij as auxiliary array
+!
+        if (lbij_as_aux) then
+          f(l1:l2,m,n,ibij  :ibij+2)=p%bij(:,:,1)
+          f(l1:l2,m,n,ibij+3:ibij+5)=p%bij(:,:,2)
+          f(l1:l2,m,n,ibij+6:ibij+8)=p%bij(:,:,3)
+        endif
 !
         if (ivid_aps/=0) call store_slices(p%aps,aps_xy,aps_xz,aps_yz,xz2=aps_xz2)
         if (ivid_bb/=0) call store_slices(p%bb,bb_xy,bb_xz,bb_yz,bb_xy2,bb_xy3,bb_xy4,bb_xz2,bb_r)
