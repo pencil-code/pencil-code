@@ -6854,16 +6854,9 @@ outer:do ikz=1,nz
 ! Works only for cubical domains
 ! KG: See the function get_k2 for an example of how to calculate k2.
 !
-    logical, save :: lfirst = .true.
     integer, intent(IN) :: ikx,iky,ikz
     real :: k2
-
-    if(lfirst) then
-      if (minval(Lxyz) /= maxval(Lxyz)) then
-        call warning("get_k2_old", "computation of wavevector wrong for non-cubical domains")
-      endif
-    endif
-    lfirst = .false.
+!
     k2 = 0.0
     if(ikx > 0) k2 = k2 + kx(ikx)**2
     if(iky > 0) k2 = k2 + ky(iky)**2
