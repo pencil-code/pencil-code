@@ -15,12 +15,12 @@ communicated FieldSymmetricTensor TAUBatch[6]
 
 communicated FieldSymmetricTensor TAUinf
 
-field_order(AC_itauxx__mod__training-1) communicated Field TAU_INFERRED_XX
-field_order(AC_itauyy__mod__training-1) communicated Field TAU_INFERRED_YY
-field_order(AC_itauzz__mod__training-1) communicated Field TAU_INFERRED_ZZ
-field_order(AC_itauxy__mod__training-1) communicated Field TAU_INFERRED_XY
-field_order(AC_itauxz__mod__training-1) communicated Field TAU_INFERRED_XZ
-field_order(AC_itauyz__mod__training-1) communicated Field TAU_INFERRED_YZ
+field_order(AC_itau_hydroxx__mod__training-1) communicated Field TAU_INFERRED_XX
+field_order(AC_itau_hydroyy__mod__training-1) communicated Field TAU_INFERRED_YY
+field_order(AC_itau_hydrozz__mod__training-1) communicated Field TAU_INFERRED_ZZ
+field_order(AC_itau_hydroxy__mod__training-1) communicated Field TAU_INFERRED_XY
+field_order(AC_itau_hydroxz__mod__training-1) communicated Field TAU_INFERRED_XZ
+field_order(AC_itau_hydroyz__mod__training-1) communicated Field TAU_INFERRED_YZ
    
 const FieldSymmetricTensor TAU_INFERRED = 
 {  

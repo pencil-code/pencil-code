@@ -31,7 +31,7 @@
     real, dimension(:,:,:,:,:), allocatable, device :: input, label, output
     real :: train_loss   !(KIND=rkind4) :: train_loss
 
-    integer :: itau, itauxx, itauxy, itauxz, itauyy, itauyz, itauzz
+    integer :: itau_hydro, itau_hydroxx, itau_hydroxy, itau_hydroxz, itau_hydroyy, itau_hydroyz, itau_hydrozz
 
     character(LEN=fnlen) :: model='model', config_file="config_mlp_native.yaml", model_file
 
@@ -147,11 +147,11 @@
       if (lroot) call svn_id( &
            "$Id$")
 !
-      call farray_register_auxiliary('tau',itau,vector=6,on_gpu=lgpu,communicated=.true.)
+      call farray_register_auxiliary('tau',itau_hydro,vector=6,on_gpu=lgpu,communicated=.true.)
 !
 !  Indices to access tau.
 !
-      itauxx=itau; itauyy=itau+1; itauzz=itau+2; itauxy=itau+3; itauxz=itau+4; itauyz=itau+5
+      itau_hydroxx=itau_hydro; itau_hydroyy=itau_hydro+1; itau_hydrozz=itau_hydro+2; itau_hydroxy=itau_hydro+3; itau_hydroxz=itau_hydro+4; itau_hydroyz=itau_hydro+5
 
     endsubroutine register_training
 !***********************************************************************
@@ -193,11 +193,11 @@
 !
 ! Copy data from device to host.
 !
-            f(:,:,:,itauxx:itauzz) = f(:,:,:,itauxx:itauzz) - output(:,:,:,:,1)
+            f(:,:,:,itau_hydroxx:itau_hydrozz) = f(:,:,:,itau_hydroxx:itau_hydrozz) - output(:,:,:,:,1)
           endif
-          tauerror = sum(f(l1:l2,m1:m2,n1:n2,itauxx:itauzz)**2)/nx
+          tauerror = sum(f(l1:l2,m1:m2,n1:n2,itau_hydroxx:itau_hydrozz)**2)/nx
         else
-          f(:,:,:,itauxx:itauzz) = output(:,:,:,:,1)
+          f(:,:,:,itau_hydroxx:itau_hydrozz) = output(:,:,:,:,1)
         endif
       else
         if (lfirst) call train(f)
@@ -216,7 +216,7 @@
         if (lscale) call descale(tau_pred, output_min, output_max)
 
         if (lwrite_sample .and. mod(it, 50)==0) then
-          call write_sample(f(:,:,:,itauxx), mx, my, mz, "target_"//trim(itoa(iproc))//".hdf5")
+          call write_sample(f(:,:,:,itau_hydroxx), mx, my, mz, "target_"//trim(itoa(iproc))//".hdf5")
           call write_sample(tau_pred(:,:,:,1), mx, my, mz, "pred_"//trim(itoa(iproc))//".hdf5")
         endif
 
@@ -247,7 +247,7 @@
         istat = torchfort_inference(model, input, output)
       else
         !istat = torchfort_inference(model, get_ptr_gpu_training(iux,iuz), &
-        !                                   get_ptr_gpu_training(itauxx,itauzz))
+        !                                   get_ptr_gpu_training(itau_hydroxx,itau_hydrozz))
 
         start_time = mpiwtime()
         call infer_gpu(itsub)
@@ -323,7 +323,7 @@
       t_last_train = t
       if (.not. lfortran_launched) then
         !istat = torchfort_train(model, get_ptr_gpu_training(iux,iuz), &
-        !                               get_ptr_gpu_training(itauxx,itauzz), train_loss)
+        !                               get_ptr_gpu_training(itau_hydroxx,itau_hydrozz), train_loss)
         start_time = mpiwtime()
         call train_gpu(train_loss, itsub, t)
         end_time = mpiwtime()
@@ -344,15 +344,15 @@
 ! outp scaling.
 !
           if (it == it_train_start) then
-            output_min = minval(f(:,:,:,itauxx:itauzz))
-            output_max = maxval(f(:,:,:,itauxx:itauzz))
+            output_min = minval(f(:,:,:,itau_hydroxx:itau_hydrozz))
+            output_max = maxval(f(:,:,:,itau_hydroxx:itau_hydrozz))
           endif
-          call scale(f(:,:,:,itauxx:itauzz), output_min, output_max)
+          call scale(f(:,:,:,itau_hydroxx:itau_hydrozz), output_min, output_max)
         endif
 
         ! print*, output_min, output_max, input_min, input_max
         input(:,:,:,:,1) = uumean                    ! host to device    !sngl(uumean)
-        label(:,:,:,:,1) = f(:,:,:,itauxx:itauzz)    ! host to device
+        label(:,:,:,:,1) = f(:,:,:,itau_hydroxx:itau_hydrozz)    ! host to device
 
         istat = torchfort_train(model, input, label, train_loss)
 !print 'TRAIN', it, train_loss
@@ -385,23 +385,23 @@
 !
 !  Calculate and smooth stress tensor.
 !
-      f(:,:,:,itauxx) = f(:,:,:,iux)**2
-      f(:,:,:,itauyy) = f(:,:,:,iuy)**2
-      f(:,:,:,itauzz) = f(:,:,:,iuz)**2
-      f(:,:,:,itauxy) = f(:,:,:,iux)*f(:,:,:,iuy)
-      f(:,:,:,itauyz) = f(:,:,:,iuy)*f(:,:,:,iuz)
-      f(:,:,:,itauxz) = f(:,:,:,iux)*f(:,:,:,iuz)
+      f(:,:,:,itau_hydroxx) = f(:,:,:,iux)**2
+      f(:,:,:,itau_hydroyy) = f(:,:,:,iuy)**2
+      f(:,:,:,itau_hydrozz) = f(:,:,:,iuz)**2
+      f(:,:,:,itau_hydroxy) = f(:,:,:,iux)*f(:,:,:,iuy)
+      f(:,:,:,itau_hydroyz) = f(:,:,:,iuy)*f(:,:,:,iuz)
+      f(:,:,:,itau_hydroxz) = f(:,:,:,iux)*f(:,:,:,iuz)
 
-      call smooth(f,itauxx,itauzz, lgauss=.true.)
+      call smooth(f,itau_hydroxx,itau_hydrozz, lgauss=.true.)
 !
 !  Substract stresses from mean velocity.
 !
-      f(:,:,:,itauxx) = -uumean(:,:,:,1)**2 + f(:,:,:,itauxx)
-      f(:,:,:,itauyy) = -uumean(:,:,:,2)**2 + f(:,:,:,itauyy)
-      f(:,:,:,itauzz) = -uumean(:,:,:,3)**2 + f(:,:,:,itauzz)
-      f(:,:,:,itauxy) = -uumean(:,:,:,1)*uumean(:,:,:,2) + f(:,:,:,itauxy)
-      f(:,:,:,itauyz) = -uumean(:,:,:,2)*uumean(:,:,:,3) + f(:,:,:,itauyz)
-      f(:,:,:,itauxz) = -uumean(:,:,:,1)*uumean(:,:,:,3) + f(:,:,:,itauxz)
+      f(:,:,:,itau_hydroxx) = -uumean(:,:,:,1)**2 + f(:,:,:,itau_hydroxx)
+      f(:,:,:,itau_hydroyy) = -uumean(:,:,:,2)**2 + f(:,:,:,itau_hydroyy)
+      f(:,:,:,itau_hydrozz) = -uumean(:,:,:,3)**2 + f(:,:,:,itau_hydrozz)
+      f(:,:,:,itau_hydroxy) = -uumean(:,:,:,1)*uumean(:,:,:,2) + f(:,:,:,itau_hydroxy)
+      f(:,:,:,itau_hydroyz) = -uumean(:,:,:,2)*uumean(:,:,:,3) + f(:,:,:,itau_hydroyz)
+      f(:,:,:,itau_hydroxz) = -uumean(:,:,:,1)*uumean(:,:,:,3) + f(:,:,:,itau_hydroxz)
 
     endsubroutine calc_tau
 !***************************************************************
@@ -415,7 +415,7 @@
       real, dimension(nx,3) :: div_hydro_sgs
 
       if (ltrained) then 
-        call div_tensor(f,div_hydro_sgs,itau)
+        call div_tensor(f,div_hydro_sgs,itau_hydro)
         df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - div_hydro_sgs
       endif
 
@@ -454,12 +454,12 @@
 !
 !  Original tau field.
 !
-        case ('tauxx'); call assign_slices_scal(slices,f,itauxx)
-        case ('tauxy'); call assign_slices_scal(slices,f,itauxy)
-        case ('tauxz'); call assign_slices_scal(slices,f,itauxz)
-        case ('tauyy'); call assign_slices_scal(slices,f,itauyy)
-        case ('tauyz'); call assign_slices_scal(slices,f,itauyz)
-        case ('tauzz'); call assign_slices_scal(slices,f,itauzz)
+        case ('tauxx'); call assign_slices_scal(slices,f,itau_hydroxx)
+        case ('tauxy'); call assign_slices_scal(slices,f,itau_hydroxy)
+        case ('tauxz'); call assign_slices_scal(slices,f,itau_hydroxz)
+        case ('tauyy'); call assign_slices_scal(slices,f,itau_hydroyy)
+        case ('tauyz'); call assign_slices_scal(slices,f,itau_hydroyz)
+        case ('tauzz'); call assign_slices_scal(slices,f,itau_hydrozz)
 !
 !  Predicted tau field.
 !
@@ -574,12 +574,12 @@
     integer, parameter :: n_pars=50
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
-    call copy_addr(itauxx,p_par(1)) ! int
-    call copy_addr(itauxy,p_par(2)) ! int
-    call copy_addr(itauxz,p_par(3)) ! int
-    call copy_addr(itauyy,p_par(4)) ! int
-    call copy_addr(itauyz,p_par(5)) ! int
-    call copy_addr(itauzz,p_par(6)) ! int
+    call copy_addr(itau_hydroxx,p_par(1)) ! int
+    call copy_addr(itau_hydroxy,p_par(2)) ! int
+    call copy_addr(itau_hydroxz,p_par(3)) ! int
+    call copy_addr(itau_hydroyy,p_par(4)) ! int
+    call copy_addr(itau_hydroyz,p_par(5)) ! int
+    call copy_addr(itau_hydrozz,p_par(6)) ! int
     call copy_addr(lscale,p_par(7)) ! bool
     call copy_addr(ltrained,p_par(8)) ! bool
 
