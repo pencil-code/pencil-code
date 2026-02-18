@@ -1100,22 +1100,6 @@ extern "C" void torch_infer_c_api(int itsub){
 	}
 	calling_infer = true;
 
-	//only used for doing inference while training, i.e. validation loss over the training set
-	/*
-	if (!called_training){
-		randomNumber = 5;
-		acDeviceSetInput(acGridGetDevice(), AC_ranNum, randomNumber);
-
-		auto calc_uumean_tau = acGetOptimizedDSLTaskGraph(initialize_uumean_tau);
-		acGridExecuteTaskGraph(calc_uumean_tau, 1);
-
-  	auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
-		acGridExecuteTaskGraph(bcs,1);
-
-	}
-	*/
-		
-
 	auto calc_uumean_tau = acGetOptimizedDSLTaskGraph(initialize_uumean);
 	acGridExecuteTaskGraph(calc_uumean_tau, 1);
 
@@ -1173,8 +1157,7 @@ extern "C" void torch_train_c_api(AcReal *loss_val, int itsub, double t) {
   calling_train = true;
 
 
-  auto calc_uumean_tau = acGetOptimizedDSLTaskGraph(initialize_uumean_tau);
-  acGridExecuteTaskGraph(calc_uumean_tau, 1);
+  acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(get_taus,1));
 
   auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
   acGridExecuteTaskGraph(bcs,1);
