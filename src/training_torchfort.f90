@@ -33,7 +33,7 @@
 
     integer :: itau_density, itau_densityx, itau_densityy, itau_densityz
     integer :: itau_hydro, itau_hydroxx, itau_hydroxy, itau_hydroxz, itau_hydroyy, itau_hydroyz, itau_hydrozz
-    integer :: itau_mag, itau_magxx, itau_magxy, itau_magxz, itau_magyy, itau_magyz, itau_magzz
+    integer :: isgs_emf, isgs_emfx, isgs_emfy, isgs_emfz
 
     character(LEN=fnlen) :: model='model', config_file="config_mlp_native.yaml", model_file
 
@@ -148,9 +148,9 @@
         output_channels = output_channels + 3
       endif
       if (ltrain_mag) then
-        f(:,:,:,itau_magxx:itau_magyz)       = 0.0
+        f(:,:,:,isgs_emfx:isgs_emfz)       = 0.0
         input_channels  = input_channels  + 3
-        output_channels = output_channels + 6
+        output_channels = output_channels + 3
       endif
     endsubroutine initialize_training
 !***********************************************************************
@@ -169,14 +169,14 @@
       ltrain_dens = ltrain_dens .and. ldensity
 !
       call farray_register_auxiliary('tau_hydro',itau_hydro,vector=6,on_gpu=lgpu,communicated=.true.)
-      if(ltrain_mag) call farray_register_auxiliary('tau_mag',itau_mag,vector=6,on_gpu=lgpu,communicated=.true.)
+      if(ltrain_mag) call farray_register_auxiliary('sgs_emf',isgs_emf,vector=3,on_gpu=lgpu,communicated=.true.)
       if(ltrain_dens)  call farray_register_auxiliary('tau_density',itau_density,vector=3,on_gpu=lgpu,communicated=.true.)
 !
 !  Indices to access tau.
 !
       itau_hydroxx=itau_hydro; itau_hydroyy=itau_hydro+1; itau_hydrozz=itau_hydro+2; itau_hydroxy=itau_hydro+3; itau_hydroxz=itau_hydro+4; itau_hydroyz=itau_hydro+5
 
-      itau_magxx=itau_mag; itau_magyy=itau_mag+1; itau_magzz=itau_mag+2; itau_magxy=itau_mag+3; itau_magxz=itau_mag+4; itau_magyz=itau_mag+5
+      isgs_emfx=isgs_emf; isgs_emfy=isgs_emf+1; isgs_emfz=isgs_emf+2;
 
       itau_densityx=itau_density; itau_densityy=itau_density+1; itau_densityz=itau_density+2;
 
@@ -440,7 +440,6 @@
       real, dimension (mx,my,mz,mvar) :: df
 
       real, dimension(nx,3) :: div_hydro_sgs
-      real, dimension(nx,3) :: div_mag_sgs
       real, dimension(nx)   :: div_dens_sgs
 
       if (ltrained) then 
@@ -448,8 +447,7 @@
         df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - div_hydro_sgs
 
         if(ltrain_mag) then
-          call div_tensor(f,div_mag_sgs,itau_mag)
-          df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) - div_mag_sgs
+          df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + f(l1:l2,m,n,isgs_emf)
         endif
 
         if(ltrain_dens) then

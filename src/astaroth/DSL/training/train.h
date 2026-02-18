@@ -7,11 +7,12 @@ communicated Field3 UUMEANinf
 
 // use TAUinf default for inference calls
 communicated FieldSymmetricTensor tau_hydro
+communicated FieldSymmetricTensor bb_tensor_product
 communicated Field3 uumean
 communicated Field3 bbmean
 
-communicated FieldSymmetricTensor tau_mag
-communicated Field3               tau_density
+communicated Field3  sgs_emf
+communicated Field3  tau_density
 
 communicated Field3 UUMEANBatch[6]
 communicated FieldSymmetricTensor TAUBatch[6]
@@ -143,14 +144,15 @@ Kernel get_bfield(){
 	}
 }
 
-Kernel fluctutation_products_and_means(){
+Kernel fluctutation_terms_and_means(){
 	if(!AC_ltrained__mod__training){
 		write_tensor_product(tau_hydro,UU)
 		write(uumean,gaussian_smooth_inplace(UU))
 		//When entering this function bbmean holds the magnetic field
 		if(AC_ltrain_mag__mod__training)
 		{
-			write_tensor_product(tau_mag,bbmean)
+			write(sgs_emf,cross(UU,bbmean))
+			write(bb_tensor_product,tensor_product(bbmean))
 			write(bbmean,gaussian_smooth_inplace(bbmean))
 		}
 	}
@@ -161,9 +163,11 @@ Kernel smooth_uumean(){
 }
 
 
-Kernel smooth_fluctuation_products(){
+Kernel smooth_fluctuation_terms(){
 	if(!AC_ltrained__mod__training){
 	  write(tau_hydro,gaussian_smooth_inplace(tau_hydro))
+          write(sgs_emf,gaussian_smooth_inplace(sgs_emf))
+	  write(bb_tensor_product,gaussian_smooth_inplace(bb_tensor_product))
 	}
 
 }
@@ -172,11 +176,13 @@ Kernel smooth_fluctuation_products(){
 Kernel compute_taus(){
 
 	if(!AC_ltrained__mod__training){
-	  real_symmetric_tensor hydro_res = tau_hydro - tensor_product(uumean)
+	  real_symmetric_tensor tau_hydro_res = tau_hydro - tensor_product(uumean)
 	  if(AC_ltrain_mag__mod__training)
 	  {
-		hydro_res -= (tau_mag - tensor_product(bbmean))
+		tau_hydro_res -= (bb_tensor_product - tensor_product(bbmean))
+		write(sgs_emf,sgs_emf - curl(uumean,bbmean))
 	  }
+	  write(tau_hydro,tau_hydro_res)
 	}
 }
 
@@ -407,8 +413,8 @@ ComputeSteps initialize_uumean(boundconds){
 
 ComputeSteps get_taus(boundconds){
 	get_bfield()
-	fluctutation_products_and_means()
-	smooth_fluctutation_products()
+	fluctutation_terms_and_means()
+	smooth_fluctutation_terms()
 	compute_taus()	
 }
 
