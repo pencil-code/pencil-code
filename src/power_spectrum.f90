@@ -3352,7 +3352,6 @@ outer:do ikz=1,nz
     elseif (sp=='rp') then
       call get_shared_variable('irhop', irhop, caller='powerscl')
     endif
-    if (nzgrid==1) kz=0. !(needed for 2-D runs)
   
     !$omp parallel private(ia0,k,k2,bbi,fact,gLam) num_threads(num_helper_threads) &
     !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
