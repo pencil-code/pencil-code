@@ -1319,6 +1319,8 @@ module Equ
 !
         if (lpointmasses) call pointmasses_pde_pencil(f,df,p)
 
+        if(ltraining) call div_sgs_stresses(f,df)
+
         if (ltraining) call calc_diagnostics_training(f)
 !
 !  Call diagnostics that involves the full right hand side

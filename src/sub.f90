@@ -38,6 +38,7 @@ module Sub
   public :: get_where
 !
   public :: grad, grad5, div, div_mn, curl, curli, curl_mn, curl_other
+  public :: div_tensor
   public :: curl_horizontal
   public :: div_other
   public :: gij, g2ij, gij_etc
@@ -1687,6 +1688,30 @@ module Sub
       endif
 !
     endsubroutine div
+!***********************************************************************
+    subroutine div_tensor(f,divergence,itensor)
+      !Calculates the divergence of a symmetric tensor
+      !Assumes the tensor is symmetric and that indices are in the following increasing order:
+      !itensor=xx,yy,zz,xy,xz,yz
+
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(nx,3), intent(out) :: divergence
+      integer, intent(in) :: itensor
+      integer :: itensor_xx,itensor_yy,itensor_zz
+      integer :: itensor_xy,itensor_xz,itensor_yz
+
+      itensor_xx = itensor
+      itensor_yy = itensor+1
+      itensor_zz = itensor+2
+      itensor_xy = itensor+3
+      itensor_xz = itensor+4
+      itensor_yz = itensor+5
+
+      call div(f,0,divergence(:,1),inds=(/itensor_xx,itensor_xy,itensor_xz/))
+      call div(f,0,divergence(:,2),inds=(/itensor_xy,itensor_yy,itensor_yz/))
+      call div(f,0,divergence(:,3),inds=(/itensor_xz,itensor_yz,itensor_zz/))
+
+    endsubroutine div_tensor
 !***********************************************************************
     subroutine der_2nd(f,k,df,j)
 

@@ -405,24 +405,21 @@
 
     endsubroutine calc_tau
 !***************************************************************
-    subroutine div_reynolds_stress(f,df)
+    subroutine div_sgs_stresses(f,df)
 
-      use Sub, only: div
+      use Sub, only: div_tensor
 
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
 
-      real, dimension(nx,3) :: divrey
+      real, dimension(nx,3) :: div_hydro_sgs
 
       if (ltrained) then 
-        call div(f,0,divrey(:,1),inds=(/itauxx,itauxy,itauxz/))
-        call div(f,0,divrey(:,2),inds=(/itauxy,itauyy,itauyz/))
-        call div(f,0,divrey(:,3),inds=(/itauxz,itauyz,itauzz/))
-
-        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - divrey
+        call div_tensor(f,div_hydro_sgs,itau)
+        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - div_hydro_sgs
       endif
 
-    endsubroutine div_reynolds_stress
+    endsubroutine div_sgs_stresses
 !***************************************************************
     subroutine calc_diagnostics_training(f)
 

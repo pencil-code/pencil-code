@@ -9,7 +9,7 @@
     public :: read_training_run_pars
     public :: write_training_run_pars
     public :: calc_diagnostics_training, rprint_training
-    public :: div_reynolds_stress
+    public :: div_sgs_stresses
     public :: get_slices_training
     public :: pushpars2c
     real, public :: training_time = 0

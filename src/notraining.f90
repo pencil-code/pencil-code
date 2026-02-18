@@ -62,7 +62,7 @@
 
     endsubroutine rprint_training
 !***************************************************************
-    subroutine div_reynolds_stress(f,df)
+    subroutine div_sgs_stresses(f,df)
 
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -70,7 +70,7 @@
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
 
-    endsubroutine div_reynolds_stress
+    endsubroutine div_sgs_stresses
 !***************************************************************
     subroutine finalize_training
 
