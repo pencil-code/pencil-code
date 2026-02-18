@@ -73,13 +73,6 @@ module Power_spectrum
   real :: L_min, L_min_xy
   integer :: nk_xyz, nk_xy, n_loc, m_loc
 !
-!  These values of kx, ky, kz are integers, in units of the box wavenumber.
-!  This is in contrast to kx_fft, ky_fft, kz_fft, which are normalized.
-!
-  real, dimension(nxgrid) :: kx
-  real, dimension(nygrid) :: ky
-  real, dimension(nzgrid) :: kz
-!
 !TP: work buffers for power funcs
 !TP: TODO allocate these at initialize func based on are they actually used
 !
@@ -136,15 +129,9 @@ module Power_spectrum
     use Mpicomm, only: mpiallreduce_merge,mpimerge_1d
     use Fourier, only: kx_fft, ky_fft, kz_fft
 
-    integer :: ikr, ikmu, ind, ikx, iky, ikz, i, len, k
+    integer :: ikr, ikmu, ind, ikx, iky, ikz, len, k
     real :: k2
     integer, dimension(:), allocatable :: order
-
-    !!! the following warnings should become fatal errors
-    if (((dx /= dy) .and. ((nxgrid-1)*(nxgrid-1) /= 0)) .or. &
-        ((dx /= dz) .and. ((nxgrid-1)*(nzgrid-1) /= 0))) &
-        call warning ('power_spectrum', &
-        "Shell-integration will be wrong; set dx=dy=dz to fix this.")
 !
 !   Choose the length scale used to make wavenumbers into integers (for
 !   binning). When the domain is non-cubical, the spacing between
@@ -254,23 +241,6 @@ outer:do ikz=1,nz
       allocate(order(nk_truebin))
       call quick_sort(k2s(:nk_truebin),order)
 
-    endif
-!
-!  Define wave vectors, defined here for the *full* mesh.
-!  Each processor will see only part of it.
-!  Ignore *2*pi/Lx factor, because later we want k to be integers.
-!
-    if (minval(Lxyz) /= maxval(Lxyz)) &
-      call warning("initialize_power_spectrum", "computation of wavevector wrong for non-cubical domains")
-
-    if (lcorrect_integer_kcalc) then
-      kx=cshift((/(i-nxgrid/2,i=0,nxgrid-1)/),nxgrid/2) !*2*pi/Lx
-      ky=cshift((/(i-nygrid/2,i=0,nygrid-1)/),nygrid/2) !*2*pi/Ly
-      kz=cshift((/(i-nzgrid/2,i=0,nzgrid-1)/),nzgrid/2) !*2*pi/Lz
-    else
-      kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
-      ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
-      kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
     endif
 
     !if (.not.allocated(spectrum_2d)) then
@@ -6901,59 +6871,127 @@ outer:do ikz=1,nz
 
   endfunction get_k2_old
 !***********************************************************************
-  function get_kx(ikx) result(kx_scalar)
+  subroutine warn_non_cubical
 !
-!   Exists so we can check is the domain cubical or not
+    logical, save :: lfirst = .true.
+!
+    if (lfirst) then
+      if (minval(Lxyz) /= maxval(Lxyz)) then
+        call warning("power_spectrum", "computation of wavevector wrong for non-cubical domains")
+      endif
+!
+      if (((dx /= dy) .and. ((nxgrid-1)*(nygrid-1) /= 0)) .or. &
+          ((dx /= dz) .and. ((nxgrid-1)*(nzgrid-1) /= 0))) then
+        call warning ('power_spectrum', &
+          "Shell-integration will be wrong; set dx=dy=dz to fix this.")
+      endif
+!
+      lfirst = .false.
+    endif
+!
+  endsubroutine warn_non_cubical
+!***********************************************************************
+  function kx(ikx)
+!
+!   x-component of the wave vector, defined here for the *full* mesh.
+!   Each processor will see only part of it.
+!   Ignore *2*pi/Lx factor, because later we want k to be integers.
+!   The implementation here is correct only for cubical domains (in new code,
+!   try to use get_k2 or get_k2_xy instead).
+!
 !   18-nov-2025/TP: coded
+!   18-Feb-2026/Kishore: moved definition of kx array into this function
 !
     integer, intent(IN) :: ikx
-    real :: kx_scalar
+    real :: kx
     logical, save :: lfirst = .true.
+    real, dimension(nxgrid), save :: kx_arr
+    integer :: i
 
     if(lfirst) then
-      if (minval(Lxyz) /= maxval(Lxyz)) then
-        call warning("get_kx", "computation of wavevector wrong for non-cubical domains")
-      endif
-    endif
-    lfirst = .false.
-    kx_scalar = kx(ikx)
-  endfunction get_kx
-!***********************************************************************
-  function get_ky(iky) result(ky_scalar)
+      call warn_non_cubical
 !
-!   Exists so we can check is the domain cubical or not
+      if (lcorrect_integer_kcalc) then
+        kx_arr=cshift((/(i-nxgrid/2,i=0,nxgrid-1)/),nxgrid/2) !*2*pi/Lx
+      else
+        kx_arr=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
+      endif
+!
+      if (nxgrid==1) kx_arr=0
+!
+      lfirst = .false.
+    endif
+!
+    kx = kx_arr(ikx)
+  endfunction kx
+!***********************************************************************
+  function ky(iky)
+!
+!   y-component of the wave vector, defined here for the *full* mesh.
+!   Each processor will see only part of it.
+!   Ignore *2*pi/Lx factor, because later we want k to be integers.
+!   The implementation here is correct only for cubical domains (in new code,
+!   try to use get_k2 or get_k2_xy instead).
+!
 !   18-nov-2025/TP: coded
+!   18-Feb-2026/Kishore: moved definition of ky array into this function
 !
     integer, intent(IN) :: iky
-    real :: ky_scalar
+    real :: ky
     logical, save :: lfirst = .true.
+    real, dimension(nygrid), save :: ky_arr
+    integer :: i
 
     if(lfirst) then
-      if (minval(Lxyz) /= maxval(Lxyz)) then
-        call warning("get_ky", "computation of wavevector wrong for non-cubical domains")
-      endif
-    endif
-    lfirst = .false.
-    ky_scalar = ky(iky)
-  endfunction get_ky
-!***********************************************************************
-  function get_kz(ikz) result(kz_scalar)
+      call warn_non_cubical
 !
-!   Exists so we can check is the domain cubical or not
+      if (lcorrect_integer_kcalc) then
+        ky_arr=cshift((/(i-nygrid/2,i=0,nygrid-1)/),nygrid/2) !*2*pi/Ly
+      else
+        ky_arr=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
+      endif
+!
+      if (nygrid==1) ky_arr=0
+!
+      lfirst = .false.
+    endif
+!
+    ky = ky_arr(iky)
+  endfunction ky
+!***********************************************************************
+  function kz(ikz)
+!
+!   z-component of the wave vector, defined here for the *full* mesh.
+!   Each processor will see only part of it.
+!   Ignore *2*pi/Lx factor, because later we want k to be integers.
+!   The implementation here is correct only for cubical domains (in new code,
+!   try to use get_k2 or get_k2_xy instead).
+!
 !   18-nov-2025/TP: coded
+!   18-Feb-2026/Kishore: moved definition of kz array into this function
 !
     integer, intent(IN) :: ikz
-    real :: kz_scalar
+    real :: kz
     logical, save :: lfirst = .true.
+    real, dimension(nzgrid), save :: kz_arr
+    integer :: i
 
     if(lfirst) then
-      if (minval(Lxyz) /= maxval(Lxyz)) then
-        call warning("get_kz", "computation of wavevector wrong for non-cubical domains")
+      call warn_non_cubical
+!
+      if (lcorrect_integer_kcalc) then
+        kz_arr=cshift((/(i-nzgrid/2,i=0,nzgrid-1)/),nzgrid/2) !*2*pi/Lz
+      else
+        kz_arr=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
       endif
+!
+      if (nzgrid==1) kz_arr=0
+!
+      lfirst = .false.
     endif
-    lfirst = .false.
-    kz_scalar = kz(ikz)
-  endfunction get_kz
+!
+    kz = kz_arr(ikz)
+  endfunction kz
 !***********************************************************************
   function get_k2_xy(ikx, iky) result(k2)
 !
