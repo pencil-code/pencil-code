@@ -801,7 +801,7 @@ AcReal max_diffus(AcReal maxnu_dyn, AcReal maxchi_dyn)
 AcReal calc_dt1_courant(const AcReal t)
 {
 #if TRANSPILATION
-      const AcReal gpu_max_dt1 = acDeviceGetOutput(acGridGetDevice(),AC_dt1_max);
+      const AcReal gpu_max_dt1 = (AcReal)acDeviceGetOutput(acGridGetDevice(),AC_dt1_max);
       if (lfractional_tstep_advance__mod__cdata)
       {
 	      return std::max((double)gpu_max_dt1,1./(dt_incr__mod__cdata*t));

@@ -128,7 +128,7 @@ minval(real x) {return x}
 
 #define notanumber(x) (false)
 
-output real AC_dt1_max
+output float AC_dt1_max
 output real AC_dt1_advec
 output real AC_dt1_diffus
 
