@@ -693,16 +693,16 @@ void setupConfig(AcMeshInfo& config)
   PCLoad(config,AC_len,lxyz);
 
   #if LTRAINING
-  AcRealSymmetricTensor tau_means{};
-  AcRealSymmetricTensor tau_stds{};
+  AcRealSymmetricTensor tau_hydro_means{};
+  AcRealSymmetricTensor tau_hydro_stds{};
 	
   //The statistics for doing the inverse are only needed when using the trained tau
-  if(ltrained) denormalize("data/training/normalizer.bin", tau_means, tau_stds);
+  if(ltrained) denormalize("data/training/normalizer.bin", tau_hydro_means, tau_hydro_stds);
 
 	
 
-  PCLoad(config,AC_tau_means,tau_means);
-  PCLoad(config,AC_tau_stds,tau_stds);
+  PCLoad(config,AC_tau_hydro_means,tau_means);
+  PCLoad(config,AC_tau_hydro_stds ,tau_stds);
   #endif
   PCLoad(config,AC_sparse_autotuning,lac_sparse_autotuning);
 
@@ -1088,8 +1088,8 @@ extern "C" void torch_infer_c_api(int itsub){
 	#include "user_constants.h"
 	if(ltrained && itsub!=1) return;
 	if(!calling_infer){
-		AcRealSymmetricTensor tau_means = mesh.info[AC_tau_means];
-		AcRealSymmetricTensor tau_stds  = mesh.info[AC_tau_stds];
+		AcRealSymmetricTensor tau_means = mesh.info[AC_tau_hydro_means];
+		AcRealSymmetricTensor tau_stds  = mesh.info[AC_tau_hydro_stds];
 		fprintf(stderr,"Calling infer\n");
 		fprintf(stderr,"means xx: %f, yy: %f, zz: %f, xy: %f, yz: %f, xz: %f\n", tau_means.xx, tau_means.yy, tau_means.zz, tau_means.xy, tau_means.yz, tau_means.xz);
 		fprintf(stderr,"stds xx: %f, yy: %f, zz: %f, xy: %f, yz: %f, xz: %f\n", tau_stds.xx, tau_stds.yy, tau_stds.zz, tau_stds.xy, tau_stds.yz, tau_stds.xz);
@@ -1139,7 +1139,7 @@ extern "C" void torch_infer_c_api(int itsub){
 	//
 	//
 	acDeviceGetVertexBufferPtrs(acGridGetDevice(), uumean.x, &uumean_ptr, &out);
-	acDeviceGetVertexBufferPtrs(acGridGetDevice(), TAU_INFERRED.xx, &tau_infer_ptr, &out);
+	acDeviceGetVertexBufferPtrs(acGridGetDevice(), TAU_HYDRO_INFERRED.xx, &tau_infer_ptr, &out);
 
 	acGridHaloExchange();
 
@@ -1152,17 +1152,8 @@ extern "C" void torch_infer_c_api(int itsub){
 	auto descale_inf = acGetOptimizedDSLTaskGraph(descale_inferred_taus);
 	acGridExecuteTaskGraph(descale_inf, 1);
 
-  bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+        bcs = acGetOptimizedDSLTaskGraph(boundconds);	
 	acGridExecuteTaskGraph(bcs,1);
-
- 	
-	if(itsub == 1){
-  	//val_time.push_back((end-start));
-		//float vloss = MSE();
-  	//val_loss.push_back(vloss);
-
-		//print_debug();
-	}
 
 #endif
 }
@@ -1195,7 +1186,7 @@ extern "C" void torch_train_c_api(AcReal *loss_val, int itsub, double t) {
   AcReal* TAU_ptr = NULL;
   *loss_val = 0.1;
   
-  acDeviceGetVertexBufferPtrs(acGridGetDevice(), tau.xx, &TAU_ptr, &out);
+  acDeviceGetVertexBufferPtrs(acGridGetDevice(), tau_hydro.xx, &TAU_ptr, &out);
   acDeviceGetVertexBufferPtrs(acGridGetDevice(), uumean.x, &uumean_ptr, &out);
   
   acGridHaloExchange();
@@ -1359,18 +1350,18 @@ if (it % 50 !=0) return;
 		
 		buffer.clear();
 
-		const AcReal* tau_xx_buf = mesh.vertex_buffer[tau.xx];
-    const AcReal* tau_inferred_xx_buf = mesh.vertex_buffer[TAU_INFERRED.xx];
-    const AcReal* tau_yy_buf = mesh.vertex_buffer[tau.yy];
-    const AcReal* tau_inferred_yy_buf = mesh.vertex_buffer[TAU_INFERRED.yy];
-    const AcReal* tau_zz_buf = mesh.vertex_buffer[tau.zz];
-    const AcReal* tau_inferred_zz_buf = mesh.vertex_buffer[TAU_INFERRED.zz];
-    const AcReal* tau_xy_buf = mesh.vertex_buffer[tau.xy];
-    const AcReal* tau_inferred_xy_buf = mesh.vertex_buffer[TAU_INFERRED.xy];
-    const AcReal* tau_yz_buf = mesh.vertex_buffer[tau.yz];
-    const AcReal* tau_inferred_yz_buf = mesh.vertex_buffer[TAU_INFERRED.yz];
-    const AcReal* tau_xz_buf = mesh.vertex_buffer[tau.xz];
-    const AcReal* tau_inferred_xz_buf = mesh.vertex_buffer[TAU_INFERRED.xz];
+    const AcReal* tau_xx_buf = mesh.vertex_buffer[tau_hydro.xx];
+    const AcReal* tau_inferred_xx_buf = mesh.vertex_buffer[TAU_HYDRO_INFERRED.xx];
+    const AcReal* tau_yy_buf = mesh.vertex_buffer[tau_hydro.yy];
+    const AcReal* tau_inferred_yy_buf = mesh.vertex_buffer[TAU_HYDRO_INFERRED.yy];
+    const AcReal* tau_zz_buf = mesh.vertex_buffer[tau_hydro.zz];
+    const AcReal* tau_inferred_zz_buf = mesh.vertex_buffer[TAU_HYDRO_INFERRED.zz];
+    const AcReal* tau_xy_buf = mesh.vertex_buffer[tau_hydro.xy];
+    const AcReal* tau_inferred_xy_buf = mesh.vertex_buffer[TAU_HYDRO_INFERRED.xy];
+    const AcReal* tau_yz_buf = mesh.vertex_buffer[tau_hydro.yz];
+    const AcReal* tau_inferred_yz_buf = mesh.vertex_buffer[TAU_HYDRO_INFERRED.yz];
+    const AcReal* tau_xz_buf = mesh.vertex_buffer[tau_hydro.xz];
+    const AcReal* tau_inferred_xz_buf = mesh.vertex_buffer[TAU_HYDRO_INFERRED.xz];
     const AcReal* uumean_x_buf = mesh.vertex_buffer[uumean.x];
     const AcReal* uumean_y_buf = mesh.vertex_buffer[uumean.y];
     const AcReal* uumean_z_buf = mesh.vertex_buffer[uumean.z];

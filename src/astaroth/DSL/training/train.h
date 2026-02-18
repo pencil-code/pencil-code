@@ -6,7 +6,7 @@ communicated Field3 UUMEANinf
 
 
 // use TAUinf default for inference calls
-communicated FieldSymmetricTensor tau
+communicated FieldSymmetricTensor tau_hydro
 communicated Field3 uumean
 
 communicated Field3 UUMEANBatch[6]
@@ -15,30 +15,30 @@ communicated FieldSymmetricTensor TAUBatch[6]
 
 communicated FieldSymmetricTensor TAUinf
 
-field_order(AC_itau_hydroxx__mod__training-1) communicated Field TAU_INFERRED_XX
-field_order(AC_itau_hydroyy__mod__training-1) communicated Field TAU_INFERRED_YY
-field_order(AC_itau_hydrozz__mod__training-1) communicated Field TAU_INFERRED_ZZ
-field_order(AC_itau_hydroxy__mod__training-1) communicated Field TAU_INFERRED_XY
-field_order(AC_itau_hydroxz__mod__training-1) communicated Field TAU_INFERRED_XZ
-field_order(AC_itau_hydroyz__mod__training-1) communicated Field TAU_INFERRED_YZ
+field_order(AC_itau_hydroxx__mod__training-1) communicated Field TAU_HYDRO_INFERRED_XX
+field_order(AC_itau_hydroyy__mod__training-1) communicated Field TAU_HYDRO_INFERRED_YY
+field_order(AC_itau_hydrozz__mod__training-1) communicated Field TAU_HYDRO_INFERRED_ZZ
+field_order(AC_itau_hydroxy__mod__training-1) communicated Field TAU_HYDRO_INFERRED_XY
+field_order(AC_itau_hydroxz__mod__training-1) communicated Field TAU_HYDRO_INFERRED_XZ
+field_order(AC_itau_hydroyz__mod__training-1) communicated Field TAU_HYDRO_INFERRED_YZ
    
-const FieldSymmetricTensor TAU_INFERRED = 
+const FieldSymmetricTensor TAU_HYDRO_INFERRED = 
 {  
-        TAU_INFERRED_XX,
-        TAU_INFERRED_YY,
-        TAU_INFERRED_ZZ,
-        TAU_INFERRED_XY,
-        TAU_INFERRED_XZ,
-        TAU_INFERRED_YZ
+        TAU_HYDRO_INFERRED_XX,
+        TAU_HYDRO_INFERRED_YY,
+        TAU_HYDRO_INFERRED_ZZ,
+        TAU_HYDRO_INFERRED_XY,
+        TAU_HYDRO_INFERRED_XZ,
+        TAU_HYDRO_INFERRED_YZ
 }
 
 global input int AC_ranNum
 
 // preloading it here to test
-//run_const real_symmetric_tensor AC_tau_means = real_symmetric_tensor(0.0024336507863808626, 0.0023183275345662374, 0.0024617763654825736, 1.802288700705976e-05, -9.72095252118678e-06, 2.735474403381727e-06);
-//run_const real_symmetric_tensor AC_tau_stds = real_symmetric_tensor(0.002253919896356017, 0.0022694939419375454, 0.002285549657341413, 0.0013589343336438352, 0.001388473901677819, 0.0013662344561588327);
-run_const real_symmetric_tensor AC_tau_means
-run_const real_symmetric_tensor AC_tau_stds
+//run_const real_symmetric_tensor AC_tau_hydro_means = real_symmetric_tensor(0.0024336507863808626, 0.0023183275345662374, 0.0024617763654825736, 1.802288700705976e-05, -9.72095252118678e-06, 2.735474403381727e-06);
+//run_const real_symmetric_tensor AC_tau_hydro_stds = real_symmetric_tensor(0.002253919896356017, 0.0022694939419375454, 0.002285549657341413, 0.0013589343336438352, 0.001388473901677819, 0.0013662344561588327);
+run_const real_symmetric_tensor AC_tau_hydro_means
+run_const real_symmetric_tensor AC_tau_hydro_stds
 
 
 
@@ -85,12 +85,12 @@ Stencil avgr1
 
 Kernel tau_uumean(){
 	if(!AC_ltrained__mod__training){
-		write(tau.xx, UUX*UUX)	
-		write(tau.yy, UUY*UUY)	
-		write(tau.zz, UUZ*UUZ)	
-		write(tau.xy, UUX*UUY)	
-		write(tau.yz, UUY*UUZ)	
-		write(tau.xz, UUX*UUZ)
+		write(tau_hydro.xx, UUX*UUX)	
+		write(tau_hydro.yy, UUY*UUY)	
+		write(tau_hydro.zz, UUZ*UUZ)	
+		write(tau_hydro.xy, UUX*UUY)	
+		write(tau_hydro.yz, UUY*UUZ)	
+		write(tau_hydro.xz, UUX*UUZ)
 
 
 		write(uumean.x, gaussian_smooth_inplace(UUX))
@@ -110,12 +110,12 @@ Kernel smooth_uumean(){
 Kernel smooth_tau(){
 
 	if(!AC_ltrained__mod__training){
-	write(tau.xx, gaussian_smooth_inplace(tau.xx))
-	write(tau.xy, gaussian_smooth_inplace(tau.xy))
-	write(tau.xz, gaussian_smooth_inplace(tau.xz))
-	write(tau.yy, gaussian_smooth_inplace(tau.yy))
-	write(tau.yz, gaussian_smooth_inplace(tau.yz))
-	write(tau.zz, gaussian_smooth_inplace(tau.zz))
+	write(tau_hydro.xx, gaussian_smooth_inplace(tau_hydro.xx))
+	write(tau_hydro.xy, gaussian_smooth_inplace(tau_hydro.xy))
+	write(tau_hydro.xz, gaussian_smooth_inplace(tau_hydro.xz))
+	write(tau_hydro.yy, gaussian_smooth_inplace(tau_hydro.yy))
+	write(tau_hydro.yz, gaussian_smooth_inplace(tau_hydro.yz))
+	write(tau_hydro.zz, gaussian_smooth_inplace(tau_hydro.zz))
 	}
 
 }
@@ -128,12 +128,12 @@ Kernel final_tau(){
 	UY = uumean.y
 	UZ = uumean.z
 
-	write(tau.xx, -(UX*UX) + tau.xx)
-	write(tau.yy, -(UY*UY) + tau.yy)
-	write(tau.zz, -(UZ*UZ) + tau.zz)
-	write(tau.xy, -(UX*UY) + tau.xy)
-	write(tau.yz, -(UY*UZ) + tau.yz)
-	write(tau.xz, -(UX*UZ) + tau.xz)
+	write(tau_hydro.xx, -(UX*UX) + tau_hydro.xx)
+	write(tau_hydro.yy, -(UY*UY) + tau_hydro.yy)
+	write(tau_hydro.zz, -(UZ*UZ) + tau_hydro.zz)
+	write(tau_hydro.xy, -(UX*UY) + tau_hydro.xy)
+	write(tau_hydro.yz, -(UY*UZ) + tau_hydro.yz)
+	write(tau_hydro.xz, -(UX*UZ) + tau_hydro.xz)
 	}
 }
 
@@ -148,10 +148,10 @@ global output real maxUUMEAN
 Kernel reduce_uumean_tau(){
 
 
-	real minimumTAU = min(tau.xx, min(tau.yy, min(tau.zz, min(tau.xy, min(tau.yz, tau.xz)))))
+	real minimumTAU = min(tau_hydro.xx, min(tau_hydro.yy, min(tau_hydro.zz, min(tau_hydro.xy, min(tau_hydro.yz, tau_hydro.xz)))))
 	reduce_min(minimumTAU, minTAU)
 
-	real maximumTAU = max(tau.xx, max(tau.yy, max(tau.zz, max(tau.xy, max(tau.yz, tau.xz)))))
+	real maximumTAU = max(tau_hydro.xx, max(tau_hydro.yy, max(tau_hydro.zz, max(tau_hydro.xy, max(tau_hydro.yz, tau_hydro.xz)))))
 	reduce_max(maximumTAU, maxTAU)
 
 	real minimumUUMEAN = min(uumean.x, min(uumean.y, uumean.z))
@@ -265,12 +265,12 @@ global output real AC_l2_sum
 Kernel l2_sum(){
 
    res = 0.0
-   res +=  (TAU_INFERRED.xx - tau.xx)*(TAU_INFERRED.xx - tau.xx)
-   res +=  (TAU_INFERRED.yy - tau.yy)*(TAU_INFERRED.yy - tau.yy)
-   res +=  (TAU_INFERRED.zz - tau.zz)*(TAU_INFERRED.zz - tau.zz)
-   res +=  (TAU_INFERRED.xy - tau.xy)*(TAU_INFERRED.xy - tau.xy)
-   res +=  (TAU_INFERRED.yz - tau.yz)*(TAU_INFERRED.yz - tau.yz)
-   res +=  (TAU_INFERRED.xz - tau.xz)*(TAU_INFERRED.xz - tau.xz)
+   res +=  (TAU_HYDRO_INFERRED.xx - tau_hydro.xx)*(TAU_HYDRO_INFERRED.xx - tau_hydro.xx)
+   res +=  (TAU_HYDRO_INFERRED.yy - tau_hydro.yy)*(TAU_HYDRO_INFERRED.yy - tau_hydro.yy)
+   res +=  (TAU_HYDRO_INFERRED.zz - tau_hydro.zz)*(TAU_HYDRO_INFERRED.zz - tau_hydro.zz)
+   res +=  (TAU_HYDRO_INFERRED.xy - tau_hydro.xy)*(TAU_HYDRO_INFERRED.xy - tau_hydro.xy)
+   res +=  (TAU_HYDRO_INFERRED.yz - tau_hydro.yz)*(TAU_HYDRO_INFERRED.yz - tau_hydro.yz)
+   res +=  (TAU_HYDRO_INFERRED.xz - tau_hydro.xz)*(TAU_HYDRO_INFERRED.xz - tau_hydro.xz)
    reduce_sum(res,AC_l2_sum)
 }
 
@@ -288,7 +288,7 @@ Kernel scale_kernel_new(){
 
 
 
-	write(tau, train_scale(tau, minTAU, maxTAU))
+	write(tau_hydro, train_scale(tau_hydro, minTAU, maxTAU))
 	write(uumean, train_scale(uumean, minUUMEAN, maxUUMEAN))
 }
 
@@ -296,10 +296,10 @@ Kernel scale_kernel_new(){
 Kernel descale_kernel(FieldSymmetricTensor TAU, Field3 UUMEAN){
 	//write(UUMEAN, component_wise_descale_uumean(UUMEAN, minUUMEANx, minUUMEANy, minUUMEANz, maxUUMEANx, maxUUMEANy, maxUUMEANz))
 	//write(TAU, component_wise_descale_tau(TAU, minTAUxx, minTAUyy, minTAUzz, minTAUxy, minTAUyz, minTAUxz, maxTAUxx, maxTAUyy, maxTAUzz, maxTAUxy, maxTAUyz, maxTAUxz))
-	//write(TAU_INFERRED, component_wise_descale_tau(TAU_INFERRED, minTAUxx, minTAUyy, minTAUzz, minTAUxy, minTAUyz, minTAUxz, maxTAUxx, maxTAUyy, maxTAUzz, maxTAUxy, maxTAUyz, maxTAUxz))
+	//write(TAU_HYDRO_INFERRED, component_wise_descale_tau(TAU_HYDRO_INFERRED, minTAUxx, minTAUyy, minTAUzz, minTAUxy, minTAUyz, minTAUxz, maxTAUxx, maxTAUyy, maxTAUzz, maxTAUxy, maxTAUyz, maxTAUxz))
 	
 	write(TAU, train_descale(TAU, minTAU, maxTAU))
-	write(TAU_INFERRED, train_descale(TAU_INFERRED, minTAU, maxTAU))
+	write(TAU_HYDRO_INFERRED, train_descale(TAU_HYDRO_INFERRED, minTAU, maxTAU))
 	write(UUMEAN, train_descale(UUMEAN, minUUMEAN, maxUUMEAN))
 }
 
@@ -309,15 +309,15 @@ Kernel descale_kernel_new(){
 	//write(UUMEAN, component_wise_scale_uumean(UUMEAN, minUUMEANx, minUUMEANy, minUUMEANz, maxUUMEANx, maxUUMEANy, maxUUMEANz))
 
 
-	write(tau, train_descale(tau, minTAU, maxTAU))
+	write(tau_hydro, train_descale(tau_hydro, minTAU, maxTAU))
 	write(uumean, train_descale(uumean, minUUMEAN, maxUUMEAN))
 
-	write(TAU_INFERRED, train_descale(TAU_INFERRED, minTAU, maxTAU))
+	write(TAU_HYDRO_INFERRED, train_descale(TAU_HYDRO_INFERRED, minTAU, maxTAU))
 }
 
 Kernel copyTauBatch(FieldSymmetricTensor TAU_out, Field3 UUMEAN_out){
 
-	FieldSymmetricTensor TAU_in = tau	
+	FieldSymmetricTensor TAU_in = tau_hydro	
 	Field3 UUMEAN_in = uumean
 
 	write(TAU_out.xx, value(TAU_in.xx))
@@ -334,21 +334,21 @@ Kernel copyTauBatch(FieldSymmetricTensor TAU_out, Field3 UUMEAN_out){
 
 Kernel descale_inferred_taus_kernel()
 {
-	write(TAU_INFERRED.xx, (TAU_INFERRED.xx*AC_tau_stds.xx) + AC_tau_means.xx)
-	write(TAU_INFERRED.yy, (TAU_INFERRED.yy*AC_tau_stds.yy) + AC_tau_means.yy)
-	write(TAU_INFERRED.zz, (TAU_INFERRED.zz*AC_tau_stds.zz) + AC_tau_means.zz)
-	write(TAU_INFERRED.xy, (TAU_INFERRED.xy*AC_tau_stds.xy) + AC_tau_means.xy)
-	write(TAU_INFERRED.xz, (TAU_INFERRED.xz*AC_tau_stds.xz) + AC_tau_means.xz)
-	write(TAU_INFERRED.yz, (TAU_INFERRED.yz*AC_tau_stds.yz) + AC_tau_means.yz)
+	write(TAU_HYDRO_INFERRED.xx, (TAU_HYDRO_INFERRED.xx*AC_tau_hydro_stds.xx) + AC_tau_hydro_means.xx)
+	write(TAU_HYDRO_INFERRED.yy, (TAU_HYDRO_INFERRED.yy*AC_tau_hydro_stds.yy) + AC_tau_hydro_means.yy)
+	write(TAU_HYDRO_INFERRED.zz, (TAU_HYDRO_INFERRED.zz*AC_tau_hydro_stds.zz) + AC_tau_hydro_means.zz)
+	write(TAU_HYDRO_INFERRED.xy, (TAU_HYDRO_INFERRED.xy*AC_tau_hydro_stds.xy) + AC_tau_hydro_means.xy)
+	write(TAU_HYDRO_INFERRED.xz, (TAU_HYDRO_INFERRED.xz*AC_tau_hydro_stds.xz) + AC_tau_hydro_means.xz)
+	write(TAU_HYDRO_INFERRED.yz, (TAU_HYDRO_INFERRED.yz*AC_tau_hydro_stds.yz) + AC_tau_hydro_means.yz)
 
 
-	//Use this if tau stds and means are still zeroes
-       	//write(TAU_INFERRED.xx, (TAU_INFERRED.xx*0.002253919896356017) + 0.0024336507863808626)
-       	//write(TAU_INFERRED.yy, (TAU_INFERRED.yy*0.0022694939419375454) + 0.0023183275345662374)
-       	//write(TAU_INFERRED.zz, (TAU_INFERRED.zz*0.002285549657341413) + 0.0024617763654825736)
-       	//write(TAU_INFERRED.xy, (TAU_INFERRED.xy*0.0013589343336438352) + 1.802288700705976e-05)
-       	//write(TAU_INFERRED.xz, (TAU_INFERRED.xz*0.001388473901677819) - 9.72095252118678e-06)
-       	//write(TAU_INFERRED.yz, (TAU_INFERRED.yz*0.0013662344561588327) + 2.735474403381727e-06)
+	//Use this if tau_hydro stds and means are still zeroes
+       	//write(TAU_HYDRO_INFERRED.xx, (TAU_HYDRO_INFERRED.xx*0.002253919896356017) + 0.0024336507863808626)
+       	//write(TAU_HYDRO_INFERRED.yy, (TAU_HYDRO_INFERRED.yy*0.0022694939419375454) + 0.0023183275345662374)
+       	//write(TAU_HYDRO_INFERRED.zz, (TAU_HYDRO_INFERRED.zz*0.002285549657341413) + 0.0024617763654825736)
+       	//write(TAU_HYDRO_INFERRED.xy, (TAU_HYDRO_INFERRED.xy*0.0013589343336438352) + 1.802288700705976e-05)
+       	//write(TAU_HYDRO_INFERRED.xz, (TAU_HYDRO_INFERRED.xz*0.001388473901677819) - 9.72095252118678e-06)
+       	//write(TAU_HYDRO_INFERRED.yz, (TAU_HYDRO_INFERRED.yz*0.0013662344561588327) + 2.735474403381727e-06)
 
 }
 
