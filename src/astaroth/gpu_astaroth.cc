@@ -161,8 +161,10 @@ static MPI_Comm comm_pencil = MPI_COMM_NULL;
 static AcMesh mesh = acInitMesh();
 //static AcMesh test_mesh;
 
-void torch_trainCAPI(int sub_dims[3], AcReal* input, AcReal* label, AcReal* loss_val);
-void torch_inferCAPI(int sub_dims[3], AcReal* input, AcReal* label);
+void torch_trainCAPI(int sub_dims[3], AcReal* input, AcReal* label, AcReal* loss_val,
+		     const int input_fields, const int output_fields, const char* model_name);
+void torch_inferCAPI(int sub_dims[3], AcReal* input, AcReal* label, 
+		     const int input_fields, const int output_fields, const char* model_name);
 void scaling();
 void print_debug();
 float MSE();
@@ -1114,7 +1116,7 @@ extern "C" void torch_infer_c_api(int itsub){
 	auto calc_uumean_tau = acGetOptimizedDSLTaskGraph(initialize_uumean);
 	acGridExecuteTaskGraph(calc_uumean_tau, 1);
 
-  auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+        auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
 	acGridExecuteTaskGraph(bcs,1);
 
 
@@ -1137,7 +1139,6 @@ extern "C" void torch_infer_c_api(int itsub){
 	//
 	//
 	acDeviceGetVertexBufferPtrs(acGridGetDevice(), uumean.x, &uumean_ptr, &out);
-
 	acDeviceGetVertexBufferPtrs(acGridGetDevice(), TAU_INFERRED.xx, &tau_infer_ptr, &out);
 
 	acGridHaloExchange();
@@ -1146,7 +1147,7 @@ extern "C" void torch_infer_c_api(int itsub){
 	//double end;
 	
 
-	torch_inferCAPI((int[]){mx,my,mz}, uumean_ptr, tau_infer_ptr);
+	torch_inferCAPI((int[]){mx,my,mz}, uumean_ptr, tau_infer_ptr,3,6,"stationary");
 	
 	auto descale_inf = acGetOptimizedDSLTaskGraph(descale_inferred_taus);
 	acGridExecuteTaskGraph(descale_inf, 1);
@@ -1168,41 +1169,28 @@ extern "C" void torch_infer_c_api(int itsub){
 /***********************************************************************************************/
 extern "C" void torch_train_c_api(AcReal *loss_val, int itsub, double t) {
 #if TRAINING
-	#include "user_constants.h"
-	#include <stdlib.h>
-	if(itsub != 1) return;
+  #include "user_constants.h"
+  #include <stdlib.h>
+  if(itsub != 1) return;
+  
+  if(!calling_train){
+  	fprintf(stderr,"Calling training\n");
+  	fflush(stderr);
+  }
 
-	if(!calling_train){
-		fprintf(stderr,"Calling training\n");
-		fflush(stderr);
-	}
+
+  called_training = true;
+  calling_train = true;
 
 
-	called_training = true;
-
-	calling_train = true;
-
-	/*
-	MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
-
-	if (my_rank == 0){
-		//fprintf(stderr, "The iteration number on c++ is: %d, ranNum is %d\n", it, randomNumber);	
-		//fflush(stderr);
-		MPI_Bcast(&randomNumber, 1, MPI_INT, 0, MPI_COMM_WORLD);
-		MPI_Barrier(MPI_COMM_WORLD);
-		acDeviceSetInput(acGridGetDevice(), AC_ranNum, randomNumber);
-	}
-	*/
-
-	auto calc_uumean_tau = acGetOptimizedDSLTaskGraph(initialize_uumean_tau);
-	acGridExecuteTaskGraph(calc_uumean_tau, 1);
+  auto calc_uumean_tau = acGetOptimizedDSLTaskGraph(initialize_uumean_tau);
+  acGridExecuteTaskGraph(calc_uumean_tau, 1);
 
   auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
   acGridExecuteTaskGraph(bcs,1);
   	
 
-	AcReal* out = NULL;
-  
+  AcReal* out = NULL;
   AcReal* uumean_ptr = NULL;
   AcReal* TAU_ptr = NULL;
   *loss_val = 0.1;
@@ -1211,34 +1199,20 @@ extern "C" void torch_train_c_api(AcReal *loss_val, int itsub, double t) {
   acDeviceGetVertexBufferPtrs(acGridGetDevice(), uumean.x, &uumean_ptr, &out);
   
   acGridHaloExchange();
-  
- //double start, end;
-  
-  //start = MPI_Wtime();
-  
-  torch_trainCAPI((int[]){mx,my,mz}, uumean_ptr, TAU_ptr, loss_val);
-
-  //end = MPI_Wtime();
-
+  torch_trainCAPI((int[]){mx,my,mz}, uumean_ptr, TAU_ptr, loss_val,3,6,"stationary");
   train_loss.push_back(*loss_val);
   train_counter++;
-
-	print_debug();
-
-	if (it==nt){
-		std::ofstream myFile;
-		std::string fileString = "train_loss_" + std::to_string(my_rank)  + ".csv";	
-
-		myFile.open(fileString);
-
-    myFile << "epoch,train_loss\n";
-
-		for (int i=0;i<train_loss.size();i++){
-			myFile << i << "," << train_loss[i] << "\n";
-		}
-		
-		myFile.close();
-	}
+  print_debug();
+  if (it==nt){
+  	std::ofstream myFile;
+  	std::string fileString = "train_loss_" + std::to_string(my_rank)  + ".csv";	
+  	myFile.open(fileString);
+  	le << "epoch,train_loss\n";
+  	for (int i=0;i<train_loss.size();i++){
+  		myFile << i << "," << train_loss[i] << "\n";
+  	}
+  	myFile.close();
+  }
 
 #endif
 }
