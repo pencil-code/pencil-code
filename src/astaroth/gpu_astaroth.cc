@@ -1931,45 +1931,6 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_,
   nt = nt_;
   comm_pencil = MPI_Comm_f2c(comm_fint);
   setupConfig(mesh.info);
-/**
-#if TRAINING
-  #include "user_constants.h"
-  //fprintf(stderr,"INDEX OF TAU.xx: %d\n",acGetTAU_Xx());
-	{
-		#include "user_constants.h"
-		if (itauxx-1 != TAU.xx)
-		{
-			fprintf(stderr,"Mismatch of indeces for tauxx : %d,%d!!\n",itauxx,TAU.xx);
-			exit(EXIT_FAILURE);
-		}
-		if (itauxy-1 != TAU.xy)
-		{
-			fprintf(stderr,"Mismatch of indeces for tauxy !!\n");
-			exit(EXIT_FAILURE);
-		}
-		if (itauxz-1 != TAU.xz)
-		{
-			fprintf(stderr,"Mismatch of indeces for tauxz !!\n");
-			exit(EXIT_FAILURE);
-		}
-		if (itauyy-1 != TAU.yy)
-		{
-			fprintf(stderr,"Mismatch of indeces for tauyy!!\n");
-			exit(EXIT_FAILURE);
-		}
-		if (itauyz-1 != TAU.yz)
-		{
-			fprintf(stderr,"Mismatch of indeces for tauyz !!\n");
-			exit(EXIT_FAILURE);
-		}
-		if (itauzz-1 != TAU.zz)
-		{
-			fprintf(stderr,"Mismatch of indeces for tauzz !!\n");
-			exit(EXIT_FAILURE);
-		}
-	}
-#endif
-	**/
 
   if (rank==0 && ldebug) printf("memusage after pointer assign= %f MBytes\n", acMemUsage()/1024.);
 #if AC_RUNTIME_COMPILATION
