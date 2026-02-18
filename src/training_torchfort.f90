@@ -31,7 +31,9 @@
     real, dimension(:,:,:,:,:), allocatable, device :: input, label, output
     real :: train_loss   !(KIND=rkind4) :: train_loss
 
+    integer :: itau_density, itau_densityx, itau_densityy, itau_densityz
     integer :: itau_hydro, itau_hydroxx, itau_hydroxy, itau_hydroxz, itau_hydroyy, itau_hydroyz, itau_hydrozz
+    integer :: itau_mag, itau_magxx, itau_magxy, itau_magxz, itau_magyy, itau_magyz, itau_magzz
 
     character(LEN=fnlen) :: model='model', config_file="config_mlp_native.yaml", model_file
 
@@ -133,6 +135,9 @@
         allocate(output(mx, my, mz, 6, 1))
         allocate(label (mx, my, mz, 6, 1))
       endif
+      f(:,:,:,itau_hydroxx:itau_hydroyz)   = 0.0
+      if (ldensity)  f(:,:,:,itau_densityx:itau_densityz) = 0.0
+      if (lmagnetic) f(:,:,:,itau_magxx:itau_magyz)       = 0.0
 
     endsubroutine initialize_training
 !***********************************************************************
@@ -147,11 +152,17 @@
       if (lroot) call svn_id( &
            "$Id$")
 !
-      call farray_register_auxiliary('tau',itau_hydro,vector=6,on_gpu=lgpu,communicated=.true.)
+      call farray_register_auxiliary('tau_hydro',itau_hydro,vector=6,on_gpu=lgpu,communicated=.true.)
+      if(lmagnetic) call farray_register_auxiliary('tau_mag',itau_mag,vector=6,on_gpu=lgpu,communicated=.true.)
+      if(ldensity)  call farray_register_auxiliary('tau_density',itau_density,vector=3,on_gpu=lgpu,communicated=.true.)
 !
 !  Indices to access tau.
 !
       itau_hydroxx=itau_hydro; itau_hydroyy=itau_hydro+1; itau_hydrozz=itau_hydro+2; itau_hydroxy=itau_hydro+3; itau_hydroxz=itau_hydro+4; itau_hydroyz=itau_hydro+5
+
+      itau_magxx=itau_mag; itau_magyy=itau_mag+1; itau_magzz=itau_mag+2; itau_magxy=itau_mag+3; itau_magxz=itau_mag+4; itau_magyz=itau_mag+5
+
+      itau_densityx=itau_density; itau_densityy=itau_density+1; itau_densityz=itau_density+2;
 
     endsubroutine register_training
 !***********************************************************************
@@ -413,10 +424,13 @@
       real, dimension (mx,my,mz,mvar) :: df
 
       real, dimension(nx,3) :: div_hydro_sgs
+      real, dimension(nx,3) :: div_mag_sgs
 
       if (ltrained) then 
         call div_tensor(f,div_hydro_sgs,itau_hydro)
+        call div_tensor(f,div_mag_sgs,itau_mag)
         df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - div_hydro_sgs
+        df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) - div_mag_sgs
       endif
 
     endsubroutine div_sgs_stresses
@@ -582,6 +596,15 @@
     call copy_addr(itau_hydrozz,p_par(6)) ! int
     call copy_addr(lscale,p_par(7)) ! bool
     call copy_addr(ltrained,p_par(8)) ! bool
+    call copy_addr(itau_magxx,p_par(9)) ! int
+    call copy_addr(itau_magxy,p_par(10)) ! int
+    call copy_addr(itau_magxz,p_par(11)) ! int
+    call copy_addr(itau_magyy,p_par(12)) ! int
+    call copy_addr(itau_magyz,p_par(13)) ! int
+    call copy_addr(itau_magzz,p_par(14)) ! int
+    call copy_addr(itau_densityx,p_par(15)) ! int
+    call copy_addr(itau_densityy,p_par(16)) ! int
+    call copy_addr(itau_densityz,p_par(17)) ! int
 
 
     endsubroutine pushpars2c
