@@ -141,6 +141,9 @@ AcTaskGraph* boundary_z_halo_exchange_graph =  NULL;
   #define itauyy itauyy__mod__training
   #define itauyz itauyz__mod__training
   #define itauzz itauzz__mod__training
+  
+  #define input_channels  input_channels__mod__training
+  #define output_channels output_channels__mod__training
 
   #define lcuda_aware_mpi            lcuda_aware_mpi__mod__gpu
   #define lsecond_force lsecond_force__mod__forcing
@@ -1143,11 +1146,7 @@ extern "C" void torch_infer_c_api(int itsub){
 
 	acGridHaloExchange();
 
-	//double start;
-	//double end;
-	
-
-	torch_inferCAPI((int[]){mx,my,mz}, uumean_ptr, tau_infer_ptr,3,6,"stationary");
+	torch_inferCAPI((int[]){mx,my,mz}, uumean_ptr, tau_infer_ptr,input_channels,output_channels,"stationary");
 	
 	auto descale_inf = acGetOptimizedDSLTaskGraph(descale_inferred_taus);
 	acGridExecuteTaskGraph(descale_inf, 1);
@@ -1190,7 +1189,7 @@ extern "C" void torch_train_c_api(AcReal *loss_val, int itsub, double t) {
   acDeviceGetVertexBufferPtrs(acGridGetDevice(), uumean.x, &uumean_ptr, &out);
   
   acGridHaloExchange();
-  torch_trainCAPI((int[]){mx,my,mz}, uumean_ptr, TAU_ptr, loss_val,3,6,"stationary");
+  torch_trainCAPI((int[]){mx,my,mz}, uumean_ptr, TAU_ptr, loss_val,input_channels,output_channels,"stationary");
   train_loss.push_back(*loss_val);
   train_counter++;
   print_debug();

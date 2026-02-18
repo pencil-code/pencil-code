@@ -55,6 +55,8 @@
     real, dimension(mx, my, mz, 6) :: tau_pred
     real::  start_time, end_time
     real, save :: t_last_chkpt = 0.0
+    integer :: input_channels = 3
+    integer :: output_channels = 6
 
     contains
 !***************************************************************
@@ -605,7 +607,8 @@
     call copy_addr(itau_densityx,p_par(15)) ! int
     call copy_addr(itau_densityy,p_par(16)) ! int
     call copy_addr(itau_densityz,p_par(17)) ! int
-
+    call copy_addr(input_channels,p_par(18)) ! int
+    call copy_addr(output_channels,p_par(19)) ! int
 
     endsubroutine pushpars2c
 !***********************************************************************
