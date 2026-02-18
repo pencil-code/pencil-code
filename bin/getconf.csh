@@ -843,7 +843,7 @@ else if (($hn =~ r*[cg]*.bullx)) then
   set remote_top     = 0
   set local_binary = 0
 #--------------------------------------------------
-else if (($hn =~ c*.mahti.csc.fi)) then
+else if (($hn =~ *.mahti.csc.fi)) then
   echo "Mahti - CSC, Kajaani, Finland"
   if ($?SLURM_JOB_ID) then
     echo "Running job: $SLURM_JOB_ID"
