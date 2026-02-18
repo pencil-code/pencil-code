@@ -1561,7 +1561,7 @@ extern "C" void substepGPU(int isubstep, double t)
     AcReal dt1_;
     if (!lcourant_dt)
     {
-      const AcReal maximum_error = acDeviceGetOutput(acGridGetDevice(), AC_maximum_error)/eps_rkf;
+      const AcReal maximum_error = ((AcReal)acDeviceGetOutput(acGridGetDevice(), AC_maximum_error))/eps_rkf;
       AcReal dt_;
       const AcReal dt_increase=-unit/(itorder+dtinc);
       const AcReal dt_decrease=-unit/(itorder-dtdec);
