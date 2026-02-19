@@ -6330,9 +6330,9 @@ outer:do ikz=1,nz
       !$omp parallel private(kxx,kyy,kzz,k2,k,kint,j0x,j0y,j0z,j1,j0,w,icor) num_threads(num_helper_threads)
       !$omp do collapse(3) reduction(+:spectrum,correl)
       do ikx=1,nx; do iky=1,ny; do ikz=1,nz
-        kxx = get_kx(ikx+ipx*nx)       !  the true kx
-        kyy = get_ky(iky+ipy*ny)       !  the true ky
-        kzz = get_kz(ikz+ipz*nz)       !  the true kz
+        kxx = kx(ikx+ipx*nx)       !  the true kx
+        kyy = ky(iky+ipy*ny)       !  the true ky
+        kzz = kz(ikz+ipz*nz)       !  the true kz
         k2 = kxx**2+kyy**2+kzz**2  !  knorm^2
         k = sqrt(k2)               !  knorm
         kint = nint(k)             !  nint(knorm)
