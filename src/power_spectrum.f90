@@ -6548,7 +6548,7 @@ outer:do ikz=1,nz
                 if (sp2=='xkyz') then
                   jkx=ikx+ipx*nx-nxgrid/2+(kkoutx-1)/2+1
                 else
-                  jkx=nint(get_kx(ikx+ipx*nx))+(kkoutx-1)/2+1
+                  jkx=nint(kx(ikx+ipx*nx))+(kkoutx-1)/2+1
                 endif
                 if ( jkx>=1 .and. jkx<=kkoutx ) then
                   fft(1,jkx,jky,jkz) = fft(1,jkx,jky,jkz) + a_re(ikx,iky,ikz)
