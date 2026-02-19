@@ -128,6 +128,7 @@ AcTaskGraph* boundary_z_halo_exchange_graph =  NULL;
 
   #define ltrained ltrained__mod__training
   #define lcpu_timestep_on_gpu   lcpu_timestep_on_gpu__mod__gpu
+  #define lsingle_precision_timestep lsingle_precision_timestep__mod__gpu
   #define lperi                  lperi__mod__cdata
   #define lxyz                   lxyz__mod__cdata
   #define lac_sparse_autotuning  lac_sparse_autotuning__mod__gpu
@@ -801,7 +802,9 @@ AcReal max_diffus(AcReal maxnu_dyn, AcReal maxchi_dyn)
 AcReal calc_dt1_courant(const AcReal t)
 {
 #if TRANSPILATION
-      const AcReal gpu_max_dt1 = (AcReal)acDeviceGetOutput(acGridGetDevice(),AC_dt1_max);
+      const AcReal gpu_max_dt1 = lsingle_precision_timestep 
+	      				? (AcReal)acDeviceGetOutput(acGridGetDevice(),AC_dt1_max_single_precision)
+					: acDeviceGetOutput(acGridGetDevice(),AC_dt1_max);
       if (lfractional_tstep_advance__mod__cdata)
       {
 	      return std::max((double)gpu_max_dt1,1./(dt_incr__mod__cdata*t));
@@ -1561,7 +1564,9 @@ extern "C" void substepGPU(int isubstep, double t)
     AcReal dt1_;
     if (!lcourant_dt)
     {
-      const AcReal maximum_error = ((AcReal)acDeviceGetOutput(acGridGetDevice(), AC_maximum_error))/eps_rkf;
+      const AcReal maximum_error = lsingle_precision_timestep 
+	      				? ((AcReal)acDeviceGetOutput(acGridGetDevice(), AC_maximum_error_single_precision))/eps_rkf
+	      				: ((AcReal)acDeviceGetOutput(acGridGetDevice(), AC_maximum_error))/eps_rkf;
       AcReal dt_;
       const AcReal dt_increase=-unit/(itorder+dtinc);
       const AcReal dt_decrease=-unit/(itorder-dtdec);

@@ -32,7 +32,14 @@
 
 	if (AC_lfirst__mod__cdata)
 	{
-		reduce_max((float)dt1_max__mod__cdata,AC_dt1_max)
+	    if(AC_lsingle_precision_timestep__mod__gpu)
+	    {
+		reduce_max((float)dt1_max__mod__cdata,AC_dt1_max_single_precision)
+	    }
+	    else
+	    {
+		reduce_max(dt1_max__mod__cdata,AC_dt1_max)
+	    }
 	}
 #if LCHIRAL
   	if (AC_ixx_chiral__mod__chiral != 0) write(F_XX_CHIRAL,rk_intermediate(F_XX_CHIRAL, DF_XX_CHIRAL,  step_num, AC_dt__mod__cdata) )
@@ -129,11 +136,26 @@
  }
  else
  {
+	Field3 error_uu  = AC_lsingle_precision_timestep__mod__gpu ? SG_ERROR_UU  : ERROR_UU
+	Field3 error_aa  = AC_lsingle_precision_timestep__mod__gpu ? SG_ERROR_AA  : ERROR_AA
+	Field  error_rho = AC_lsingle_precision_timestep__mod__gpu ? SG_ERROR_RHO : ERROR_RHO
+	Field  error_ss  = AC_lsingle_precision_timestep__mod__gpu ? SG_ERROR_SS  : ERROR_SS
  	maximum_error = 0.0 
- 	if (AC_iuu__mod__cdata != 0) maximum_error = rkf4_update(DF_UU,step_num,AC_dt__mod__cdata,ERROR_UU,BETA_UU,F_UU,uux_initial_max,uuy_initial_max,uuz_initial_max,maximum_error,AC_dt_ratio__mod__cdata,AC_dt_epsi__mod__cdata)
- 	if (AC_iaa__mod__cdata != 0) maximum_error = rkf4_update(DF_AA,step_num,AC_dt__mod__cdata,ERROR_AA,BETA_AA,F_AA,aax_initial_max,aay_initial_max,aaz_initial_max,maximum_error,AC_dt_ratio__mod__cdata,AC_dt_epsi__mod__cdata)
- 	if ((AC_ilnrho__mod__cdata + AC_irho__mod__cdata) != 0) maximum_error = rkf4_update(DF_RHO,step_num,AC_dt__mod__cdata,ERROR_RHO,BETA_RHO,F_RHO,rho_initial_max,maximum_error,AC_dt_ratio__mod__cdata,AC_dt_epsi__mod__cdata)
- 	if (AC_iss__mod__cdata != 0) maximum_error = rkf4_update(DF_SS,step_num,AC_dt__mod__cdata,ERROR_SS,BETA_SS,F_SS,ss_initial_max,maximum_error,AC_dt_ratio__mod__cdata,AC_dt_epsi__mod__cdata)
- 	if(step_num == 4) reduce_max(maximum_error,AC_maximum_error)
+ 	if (AC_iuu__mod__cdata != 0) maximum_error = rkf4_update(DF_UU,step_num,AC_dt__mod__cdata,error_uu,BETA_UU,F_UU,uux_initial_max,uuy_initial_max,uuz_initial_max,maximum_error,AC_dt_ratio__mod__cdata,AC_dt_epsi__mod__cdata)
+ 	if (AC_iaa__mod__cdata != 0) maximum_error = rkf4_update(DF_AA,step_num,AC_dt__mod__cdata,error_aa,BETA_AA,F_AA,aax_initial_max,aay_initial_max,aaz_initial_max,maximum_error,AC_dt_ratio__mod__cdata,AC_dt_epsi__mod__cdata)
+ 	if ((AC_ilnrho__mod__cdata + AC_irho__mod__cdata) != 0) maximum_error = rkf4_update(DF_RHO,step_num,AC_dt__mod__cdata,error_rho,BETA_RHO,F_RHO,rho_initial_max,maximum_error,AC_dt_ratio__mod__cdata,AC_dt_epsi__mod__cdata)
+ 	if (AC_iss__mod__cdata != 0) maximum_error = rkf4_update(DF_SS,step_num,AC_dt__mod__cdata,error_ss,BETA_SS,F_SS,ss_initial_max,maximum_error,AC_dt_ratio__mod__cdata,AC_dt_epsi__mod__cdata)
+ 	if(step_num == 4) 
+	{
+		if(AC_lsingle_precision_timestep__mod__gpu)
+		{
+			reduce_max((float)maximum_error,AC_maximum_error_single_precision)
+		}
+		else
+		{
+			reduce_max(maximum_error,AC_maximum_error)
+		}
+
+	}
  }
 

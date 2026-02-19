@@ -304,7 +304,8 @@ tini_sqrt_div_separate(real numerator, real a, real b)
 output real AC_df_rho_sum
 Field TEST_1, TEST_2,TEST_3,TEST_4
 output real AC_maxadvec
-global output real AC_maximum_error
+global output real  AC_maximum_error
+global output float AC_maximum_error_single_precision
 const real tini = AC_REAL_MIN*5
 
 Field AC_cp_full__mod__chemistry
@@ -346,6 +347,11 @@ Field3 ERROR_UU
 Field3 ERROR_AA
 Field  ERROR_RHO
 Field  ERROR_SS
+
+single_precision Field3 SG_ERROR_UU
+single_precision Field3 SG_ERROR_AA
+single_precision Field  SG_ERROR_RHO
+single_precision Field  SG_ERROR_SS
 
 Field SPLIT_DIFFUSION_UPDATE_BUFFER_REAL
 Field SPLIT_DIFFUSION_UPDATE_BUFFER_IMAG

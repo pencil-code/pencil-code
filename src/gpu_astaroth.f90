@@ -56,6 +56,12 @@ module GPU
   ! the first substep but the last would make more sense). This means to calculate rhs an extra time
   ! on the first substep to compute dt as is done normally on the CPUs
   logical :: lcpu_timestep_on_gpu=.false.
+  ! Whether we compute the timestep in single precision regardless of the precision of real or not.
+  ! We are a bit brave and do it by default in single since the exact value of the timestep
+  ! Should never be that important: your safety factors and other controls are surely more important
+  ! Then the neglibeble amount of round-off.
+  ! Anyways one is supposed to be able to turn it off for testing
+  logical :: lsingle_precision_timestep =.true.
   ! Astaroth empirically finds the best kernel configuration parameters by running them with different 
   ! options and picking the best one. Sparser autotuning means prune the parameter space more than 
   ! usual by picking only the most likely ones (empirically gives for large grids the same as the 
@@ -84,7 +90,7 @@ module GPU
   integer :: it_test_rhs = 1
 
   namelist /gpu_run_pars/ &
-     ltest_bcs,lac_sparse_autotuning,lcpu_timestep_on_gpu,lcumulative_df_on_gpu,&
+     ltest_bcs,lac_sparse_autotuning,lcpu_timestep_on_gpu,lsingle_precision_timestep,lcumulative_df_on_gpu,&
      lread_all_vars_from_device,lcuda_aware_mpi,ltest_rhs,it_test_rhs
 
 contains
@@ -386,6 +392,7 @@ contains
     call copy_addr(lcumulative_df_on_gpu,p_par(4)) ! bool
     call copy_addr(lcuda_aware_mpi,p_par(6)) ! bool
     call copy_addr(ltest_bcs,p_par(7)) ! bool
+    call copy_addr(lsingle_precision_timestep,p_par(8)) ! bool
     endsubroutine pushpars2c
 !**************************************************************************
 endmodule GPU
