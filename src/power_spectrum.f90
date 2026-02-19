@@ -3188,9 +3188,9 @@ outer:do ikz=1,nz
 !  Switch sign for the same k vectors for which we also
 !  switched the sign of e_X. Define (kk1,kk2,kk3) as short-hand
 !
-              kk1=get_kx(ikx+ipy*ny)
-              kk2=get_ky(iky+ipz*nz)
-              kk3=get_kz(ikz+ipx*nx)
+              kk1=kx(ikx+ipy*ny)
+              kk2=ky(iky+ipz*nz)
+              kk3=kz(ikz+ipx*nx)
 !
               !kk1=kx(ikx+ipx*nx)
               !kk2=ky(iky+ipy*ny)
