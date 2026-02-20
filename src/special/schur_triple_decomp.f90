@@ -99,6 +99,7 @@ module Special
   integer :: ibschurp2, ibschurp2_SH, ibschurp2_RR, ibschurp2_EL
 !
   logical :: luschur_as_aux=.false., lbschur_as_aux=.false.
+  logical :: luse_complex_schur=.false.
   integer :: iuschur_SH, iuschur_RR, iuschur_EL
   integer :: ibschur_SH, ibschur_RR, ibschur_EL
 !
@@ -114,7 +115,7 @@ module Special
   namelist /special_run_pars/ &
       luij_schur, lbij_schur, ldiagnos_always, &
       luschur_unprojected, lbschur_unprojected, lQ_schur_QT, &
-      luschur_as_aux, lbschur_as_aux
+      luschur_as_aux, lbschur_as_aux, luse_complex_schur
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -130,12 +131,17 @@ module Special
   contains
 !================== External SELECT function for DGEES ==================
 logical function selct(WR, WI)
-  implicit none
   real, intent(in) :: WR, WI
   ! Return .TRUE. for eigenvalues to move to the TOP-LEFT block.
   ! We choose REAL eigenvalues => complex pair (if any) goes bottom-right.
   selct = (WI == 0.)
 end function selct
+!================== External SELECT function for ZGEES ==================
+  ! Dummy SELECT function (not used because SORT = 'N')
+  logical function select_dummy(w)
+    complex, intent(in) :: w
+    select_dummy = .false.
+  end function select_dummy
 !****************************************************************************
     subroutine register_special
 !
@@ -231,6 +237,8 @@ end function selct
       real, dimension (nx,3,3) :: SH, RR, EL
       real, dimension (3,3) :: matA, matV_SH, matV_RR, matV_EL
       real, allocatable :: matV(:,:), matQ(:,:)
+      complex, allocatable :: matV_cmplx(:,:)
+      complex :: matQ_cmplx(3,3)
       real :: matA2=0.
       integer :: i,j,kk,ll, ij, l, nnn=3
 !
@@ -239,22 +247,25 @@ end function selct
 !
 !  Possibility of applying triple decomposition of uij
 !  Do only when output onto command line.
+!  Redefine mixed term as the sum of mixed and original term.
+!  Complex Schur decomposition works only for %uSH2(l), p%uRR2(l), p%uEL2(l).
 !
       if ((luij_schur .and. lout) .or. ldiagnos_always) then
         do l=1,nx
           matA=p%uij(l,:,:)
           matA2=sum(matA**2)
-          allocate(matV(nnn,nnn), matQ(nnn,nnn))
           if (matA2/=0.) then
-            call schur_standardized(matA, matV, matQ)
-            call schur_decompose(matV, matV_SH, matV_RR, matV_EL)
-            p%uSH2(l)=sum(matV_SH**2)
-            p%uRR2(l)=sum(matV_RR**2)
-            p%uEL2(l)=sum(matV_EL**2)
-!
-!  Redefine mixed term as the sum of mixed and original term.
-!
-            p%uRRm(l)=2.*sum(matV_SH*matV_RR)+p%uRR2(l)
+            allocate(matV(nnn,nnn), matQ(nnn,nnn))
+            if (luse_complex_schur) then
+              call schur_standardized_complex(matA, matV_cmplx, matQ_cmplx, p%uSH2(l), p%uRR2(l), p%uEL2(l))
+            else
+              call schur_standardized(matA, matV, matQ)
+              call schur_decompose(matV, matV_SH, matV_RR, matV_EL)
+              p%uSH2(l)=sum(matV_SH**2)
+              p%uRR2(l)=sum(matV_RR**2)
+              p%uEL2(l)=sum(matV_EL**2)
+              p%uRRm(l)=2.*sum(matV_SH*matV_RR)+p%uRR2(l)
+            endif
           endif
 !
 !  Possibility of uSH, uRR, and uEL matrices as auxiliary arrays
@@ -322,29 +333,37 @@ end function selct
           f(l1:l2,m,n,iuschur2_EL)=p%uEL2
         endif
 !
+!  Mixed term, but note that there is no p%uRRm with luse_complex_schur=T
+!
         if (luschurm_as_aux) then
-          f(l1:l2,m,n,iuschurm_RR)=p%uRRm
+          if (luse_complex_schur) then
+            call fatal_error('calc_pencils_special','no p%uRRm with luse_complex_schur=T')
+          else
+            f(l1:l2,m,n,iuschurm_RR)=p%uRRm
+          endif
         endif
       endif
 !
 !  Possibility of applying triple decomposition of bij
 !  Do only when output onto command line.
+!  Redefine mixed term as the sum of mixed and original term.
 !
       if ((lbij_schur .and. lout) .or. ldiagnos_always) then
         do l=1,nx
           matA=p%bij(l,:,:)
           matA2=sum(matA**2)
-          allocate(matV(nnn,nnn), matQ(nnn,nnn))
           if (matA2/=0.) then
-            call schur_standardized(matA,matV,matQ)
-            call schur_decompose(matV, matV_SH, matV_RR, matV_EL)
-            p%bSH2(l)=sum(matV_SH**2)
-            p%bRR2(l)=sum(matV_RR**2)
-            p%bEL2(l)=sum(matV_EL**2)
-!
-!  Redefine mixed term as the sum of mixed and original term.
-!
-            p%bRRm(l)=2.*sum(matV_SH*matV_RR)+p%bRR2(l)
+            allocate(matV(nnn,nnn), matQ(nnn,nnn))
+            if (luse_complex_schur) then
+              call schur_standardized_complex(matA, matV_cmplx, matQ_cmplx, p%bSH2(l), p%bRR2(l), p%bEL2(l))
+            else
+              call schur_standardized(matA,matV,matQ)
+              call schur_decompose(matV, matV_SH, matV_RR, matV_EL)
+              p%bSH2(l)=sum(matV_SH**2)
+              p%bRR2(l)=sum(matV_RR**2)
+              p%bEL2(l)=sum(matV_EL**2)
+              p%bRRm(l)=2.*sum(matV_SH*matV_RR)+p%bRR2(l)
+            endif
           endif
 !
 !  Possibility of bSH, bRR, and bEL matrices as auxiliary arrays
@@ -409,8 +428,14 @@ end function selct
           f(l1:l2,m,n,ibschur2_EL)=p%bEL2
         endif
 !
+!  Mixed term, but note that there is no p%uRRm with luse_complex_schur=T
+!
         if (lbschurm_as_aux) then
-          f(l1:l2,m,n,ibschurm_RR)=p%bRRm
+          if (luse_complex_schur) then
+            call fatal_error('calc_pencils_special','no p%bRRm with luse_complex_schur=T')
+          else
+            f(l1:l2,m,n,ibschurm_RR)=p%bRRm
+          endif
         endif
       endif
 !
@@ -463,8 +488,6 @@ end function selct
   end subroutine print_mat
 !***********************************************************************
   subroutine schur_standardized(A_input, T, VS)
-  implicit none
-  integer, parameter :: dp = selected_real_kind(15, 307)
   integer            :: nnn, lda, ldvs, info, sdim, lwork
   integer            :: i, j
   real               :: tol
@@ -574,6 +597,42 @@ end function selct
   !call print_mat(VS)
 
     endsubroutine schur_standardized
+!***********************************************************************
+  subroutine schur_standardized_complex(A_input, T, VS, SH2, RR2, EL2)
+  integer              :: nnn, lda, ldvs, info, sdim, lwork, i, j
+  real                 :: A_input(3,3), rwork(3), SH2, RR2, EL2
+  real, allocatable    :: A(:,:), WI(:), WORK(:)
+  complex, allocatable :: T(:,:)
+  complex              :: W(3), VS(3,3)
+  logical              :: BWORK(1)   ! SORT='N', so dummy size is sufficient
+  external                zgees      ! LAPACK externals
+
+  ! ---- Example matrix (3x3). Replace with your data. ----
+  nnn = 3
+  lda = nnn
+  ldvs = nnn
+
+  allocate(A(nnn,nnn), WI(nnn))
+
+  A = reshape(A_input, shape(A_input), order=(/2,1/) )
+  T = cmplx(A)
+  lwork = 12
+  allocate(WORK(lwork))
+
+  ! ---- Real Schur with sorting: real eigenvalues first (complex pair -> bottom-right) ----
+  T = cmplx(A)
+  call zgees('V','S', select_dummy, nnn, T, lda, sdim, W, VS, 3, WORK, lwork, rwork, BWORK, info)
+  deallocate(WORK)
+  !
+  SH2= abs(T(1,2))**2+ abs(T(1,3))**2+ abs(T(2,3))**2
+  RR2=imag(T(1,1))**2+imag(T(2,2))**2+imag(T(3,3))**2
+  EL2=real(T(1,1))**2+real(T(2,2))**2+real(T(3,3))**2
+  if (info .ne. 0) then
+     print *, 'ZGEES failed, INFO=', info
+     stop 1
+  end if
+
+    endsubroutine schur_standardized_complex
 !***********************************************************************
     subroutine dspecial_dt(f,df,p)
 !
