@@ -4209,7 +4209,9 @@ module Magnetic
       if (lpenc_loc(i_diva)) then
 !     ccyang: Note that the following two methods do not give exactly
 !             the same results.
-        if (lpenc_loc(i_aij) .and. .not. lpencil_check_at_work) then
+!     2026-Feb-20/Kishore: removed the pencil-check workaround as per my comment
+!                          below on i_bb
+        if (lpenc_loc(i_aij)) then
           call div_mn(p%aij,p%diva,p%aa)
         else
           call div_other(f(:,:,:,iax:iaz),p%diva)
@@ -4229,7 +4231,10 @@ module Magnetic
           p%bb = f(l1:l2,m,n,ibx:ibz)
 !     ccyang: Note that the following two methods do not give exactly
 !             the same results.
-        elseif (lpenc_loc(i_aij) .and. .not. lpencil_check_at_work) then
+!     2026-Feb-20/Kishore: I have now checked that curl_other, curl_mn, curl,
+!                          and curl_i give the same results, and so have removed
+!                          the pencil-check workaround.
+        elseif (lpenc_loc(i_aij)) then
           call curl_mn(p%aij,p%bb,A=p%aa)
         else
           call curl_other(f(:,:,:,iax:iaz),p%bb)
