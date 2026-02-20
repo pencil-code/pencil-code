@@ -211,6 +211,57 @@ Alternatively, for multi-processor runs (still using the default \name{GNU-GCC} 
   pc_build -f GNU-GCC_MPI
 \end{verbatim}
 
+\subsection{GPUs}
+
+Pencil Code can also be run on GPUs via automatic code translation to the Astaroth GPU library. 
+This requires you to have the following libraries: 
+\begin{verbatim}
+  cmake version >= 3.21,bison,flex,CUDA or HIP,python
+\end{verbatim}
+
+The Astaroth library and the code translator to it come together with Pencil Code as git submodules.
+To get them and/or update them to the latest versions run:
+\begin{verbatim}
+  git submodule update --init --remote
+\end{verbatim}
+
+In \file{src/Makefile.local} add the following options:
+\begin{verbatim}
+  GPU=gpu_astaroth
+\end{verbatim}
+
+Then the compilation and running is done the same as for normal CPU setups.
+By default the code assumes communication is done with CUDA-aware MPI, which means the GPUs speak directly to each other.
+If you have to ask is your MPI CUDA-aware enabled then it most like is not.
+Thus trying to run the code in CUDA-aware mode will most likely cause a segmentation fault and the code to crash. 
+
+To turn off CUDA-aware MPI add the following options to \file{run.in}
+\begin{verbatim}
+&gpu_run_pars
+  lcuda_aware_mpi=F
+/
+\end{verbatim}
+
+The GPU-enabled version uses threads to compute the diagnostics alongside the time integration happening on the GPUs.
+Because of this you should have at least 2 threads executing per process.
+An example using 7 threads per process would be:
+\begin{verbatim}
+export OMP_NUM_THREADS=7
+export OMP_MAX_ACTIVE_LEVELS=2
+export OMP_PROC_BIND=close,spread
+export OMP_WAIT_POLICY=PASSIVE
+\end{verbatim}
+,where the other options are helpful to get maximal performance out of the multithreading.
+If you are using SLURM you would put these exports into your sbatch file. 
+Additionally if you are using CUDA-aware MPI with MPICH (for example on the LUMI supercomputer) but the following export before calling run.x but after calling start.x
+\begin{verbatim}
+export MPICH_GPU_SUPPORT_ENABLED=1
+\end{verbatim}
+
+The normal usage of GPUs will imply that compilation will happen during the run of the simulation.
+Because of this for module environments it is imperative that the same modules are used for the run as for the initial compilation.
+To ensure this add the following to your sbatch script:
+
 \subsubsection{Debugging and testing options}
 
 During code development and testing phase, there is a common set of debug options that one should use for compiling.
