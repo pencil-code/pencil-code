@@ -2405,20 +2405,30 @@ export MPICH_GPU_SUPPORT_ENABLED=1
 \end{verbatim}
 
 The normal usage of GPUs will imply that compilation will happen during the run of the simulation.
-Because of this for module environments it is imperative that the same modules are used for the run as for the initial compilation.
-To ensure this add the following to your sbatch script:
+%Because of this for module environments it is imperative that the same modules are used for the run as for the initial compilation.
+%AB: swapped. OK?
+Because of this, it is imperative for module environment that the same modules are used for the run as for the initial compilation.
+To ensure this, add the following to your sbatch script:
 \begin{verbatim}
 source src/.moduleinfo
 \end{verbatim}
 
-
 Note that not all of Pencil Code can run on GPUs. 
-This is most predominant when regarding the particles either in the Particle-in-Cell (PIC) method or with the N-body solver of Pencil Code, neither of which are GPU accelerated. Additionally more complicated computations outside of the rhss are not included like the Navier Stokes Characteristic Boundary Condition (NSCBC) and granulation calculations in the coronae module. To see which of the commited samples are known to run on the GPUs check the list gpu\_test in \file{bin/pc_autotest}. As a rule of thumb if the sample only requires the following features it can be run on GPUs:
+%This is most predominant when regarding the particles either in the Particle-in-Cell (PIC) method or with the N-body solver of Pencil Code, neither of which are GPU accelerated.
+%AB: modified
+This is particularly obvious in view of the particle modules either in the Particle-in-Cell (PIC) or the $N$-body solvers of Pencil Code, neither of which are GPU accelerated.
+Additionally, more complicated computations outside of the RHSs are not included like the Navier-Stokes Characteristic Boundary Condition (NSCBC) and granulation calculations in the corona modules.
+To see which of the commited samples are known to run on GPUs, check the list gpu\_test in \file{bin/pc_autotest}.
+As a rule of thumb, if the sample only requires the following features it can be run on GPUs:
+%AB: I have wrapped these verbatim lines, and sometimes modified. Is this text also in some code? And if so, where?
 \begin{verbatim}
-integration of PDEs and ODEs. 
-Boundary conditions that can be formulated as local operations. (For not yet covered boundary conditions requires explicit use of code tools to generate the GPU code)
-Calculations of averages or other reductions before time integration. (For not yet covered cases requires explicit use of code tools to generate the GPU code).
-Fourier transforms (Requires handwritten modifications to add new physics)
+Integration of PDEs and ODEs. Boundary conditions that can be formulated
+as local operations. (For not yet covered boundary conditions requires
+explicit use of code tools to generate the GPU code.) Calculations
+of averages or other reductions before time integration. (For not
+yet covered cases requires explicit use of code tools to generate the
+GPU code.) Fourier transforms (requires handwritten modifications to
+add new physics).
 \end{verbatim}
 % ---------------------------------------------------------------------- %
 \subsection{Using a non-equidistant grid}
@@ -12291,7 +12301,6 @@ Reynolds number at the viscous scale is then another 2--3 orders
 of magnitude larger and does therefore not impose a constraint
 in view of the physical viscosity that is applied in such calculations.
 
-%XX
 \subsection{Ionization}
 \index{Ionization}
 \label{S-Ioni}
