@@ -266,6 +266,7 @@ end function selct
               p%uEL2(l)=sum(matV_EL**2)
               p%uRRm(l)=2.*sum(matV_SH*matV_RR)+p%uRR2(l)
             endif
+            deallocate(matV, matQ)
           endif
 !
 !  Possibility of uSH, uRR, and uEL matrices as auxiliary arrays
@@ -321,8 +322,6 @@ end function selct
               endif
             endif
           endif
-!
-          deallocate(matV, matQ)
         enddo
 !
 !  Possibility of uSH2, uRR2, and uEL2 as auxiliary arrays
@@ -364,6 +363,7 @@ end function selct
               p%bEL2(l)=sum(matV_EL**2)
               p%bRRm(l)=2.*sum(matV_SH*matV_RR)+p%bRR2(l)
             endif
+            deallocate(matV, matQ)
           endif
 !
 !  Possibility of bSH, bRR, and bEL matrices as auxiliary arrays
@@ -415,8 +415,6 @@ end function selct
               endif
             endif
           endif
-!
-          deallocate(matV, matQ)
         enddo
 !
 !  Possibility of bSH2, bRR2, and bEL2 as auxiliary arrays
