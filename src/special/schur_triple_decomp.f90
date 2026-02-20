@@ -624,9 +624,9 @@ end function selct
   call zgees('V','S', select_dummy, nnn, T, lda, sdim, W, VS, 3, WORK, lwork, rwork, BWORK, info)
   deallocate(WORK)
   !
-  SH2= abs(T(1,2))**2+ abs(T(1,3))**2+ abs(T(2,3))**2
-  RR2=imag(T(1,1))**2+imag(T(2,2))**2+imag(T(3,3))**2
-  EL2=real(T(1,1))**2+real(T(2,2))**2+real(T(3,3))**2
+  SH2=  abs(T(1,2))**2+  abs(T(1,3))**2+  abs(T(2,3))**2
+  RR2=aimag(T(1,1))**2+aimag(T(2,2))**2+aimag(T(3,3))**2
+  EL2= real(T(1,1))**2+ real(T(2,2))**2+ real(T(3,3))**2
   if (info .ne. 0) then
      print *, 'ZGEES failed, INFO=', info
      stop 1
