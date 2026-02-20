@@ -55,6 +55,8 @@ contains
       select case (trigger_vid)
         case ('ascale')
           t_trigger=ascale
+        case ('redshift')
+          t_trigger=1./ascale-1.
         case ('tphys')
           t_trigger=tphys
         case ('code_time')

@@ -313,6 +313,7 @@ module Cdata
   character (len=fnlen) :: directory_snap='',directory_dist='',directory_collect=''
   character (len=fnlen) :: modify_filename='modify.dat'
   character (len=fmtlen) :: fmt_avgs='e14.5e3'
+  character (len=labellen) :: trigger_snap='code_time'  !PAR_DOC: trigger quantity for snapshot output
   character (len=labellen) :: trigger_spec='code_time'  !PAR_DOC: trigger quantity for spectral output
   character (len=labellen) :: trigger_vid='code_time'   !PAR_DOC: trigger quantity for video output
   logical :: lsnap=.false., lsnap_down=.false., lspec=.false., lspec_start=.false., lspec_at_tplusdt=.false.

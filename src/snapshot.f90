@@ -288,6 +288,7 @@ module Snapshot
       logical, intent(in), optional :: enum, noghost
       integer, intent(in), optional :: nv1
 !
+      real :: t_trigger
       real, save :: tsnap
       integer, save :: nsnap
       logical, save :: lfirst_call=.true.
@@ -325,10 +326,23 @@ module Snapshot
           nv1_capitalvar=1
         endif
 !
+!  This routine sets lvideo=T whenever its time to write a slice
 !  Check whether we want to output snapshot. If so, then
 !  update ghost zones for var.dat (cheap, since done infrequently).
 !
-        call update_snaptime(file,tsnap,nsnap,dsnap,t,lsnap,ch)
+        select case (trigger_snap)
+          case ('ascale')
+            t_trigger=ascale
+          case ('redshift')
+            t_trigger=1./ascale-1.
+          case ('tphys')
+            t_trigger=tphys
+          case ('code_time')
+            t_trigger=t
+          case default
+            call fatal_error('wsnap','no such trigger_snap='//trim(trigger_snap))
+        end select
+        call update_snaptime(file,tsnap,nsnap,dsnap,dble(t_trigger),lsnap,ch)
 !
 !        if (itsnap/=impossible_int) then
 !          call update_snaptime(file,tsnap,nsnap,dsnap,t,lsnap,ch,itout=itsnap)
@@ -762,6 +776,8 @@ module Snapshot
         select case (trigger_spec)
           case ('ascale')
             t_trigger=ascale
+          case ('redshift')
+            t_trigger=1./ascale-1.
           case ('tphys')
             t_trigger=tphys
           case ('code_time')

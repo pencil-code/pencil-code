@@ -215,7 +215,7 @@ module Cparam
   real(KIND=rkind8), parameter :: sigmaH_cgs=4.d-17         ! [cm^2]
   real(KIND=rkind8), parameter :: kappa_es_cgs=3.4d-1       ! [cm^2/g]
   real(KIND=rkind8), parameter :: c_light_cgs=2.99792458d10 ! [cm/s]
-  real(KIND=rkind8), parameter :: G_Newton_cgs=6.6742d-8    ! [cm3/g/s2]
+  real(KIND=rkind8), parameter :: G_Newton_cgs=6.67428d-8   ! [cm3/g/s2]
   real(KIND=rkind8), parameter :: density_scale_cgs=1.2435d21 ![cm] 403pc Reynolds 91, etc
   real(KIND=rkind8), parameter :: N_avogadro_cgs=6.022d23 ![1/mol]
   real(KIND=rkind8), parameter :: alpha_fine=7.2973525643d-3
