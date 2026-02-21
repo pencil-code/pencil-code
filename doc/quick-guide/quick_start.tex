@@ -58,7 +58,6 @@
 
 \newpage
 
-
 \section{Required software}
 
 \subsection{\name{Linux}}
@@ -93,7 +92,7 @@ the following line to the \file{.cshrc}-file in your \directory{/home} folder:
 \begin{verbatim}
   setenv PATH /usr/local/bin:\$PATH
 \end{verbatim} 
-For the \name{python} users, moreover, new versions of the operating system often give conflicts with \name{anaconda} when compiling, so it might be necessary to use the terminal command 
+For \name{python} users, moreover, new versions of the operating system often give conflicts with \name{anaconda} when compiling, so it might be necessary to use the terminal command 
 \begin{verbatim}
   conda deactivate
 \end{verbatim}
@@ -104,6 +103,7 @@ If one needs to reactivate \name{anaconda}, it is done using
 \end{verbatim}
 
 \section{Download the Pencil Code}
+\label{sec:download}
 The Pencil Code is an open source code written mainly in \name{Fortran} and available under GPL.
 General information can be found at our official homepage:
 
@@ -135,7 +135,7 @@ The downloaded \directory{pencil-code} directory contains several sub-directorie
 
 \section{Configure the shell environment}
 
-You need to load some environment variables into your shell.
+You need to export some environment variables into your shell.
 Please change to the freshly downloaded directory:
 \begin{verbatim}
   cd pencil-code
@@ -197,7 +197,7 @@ Change the \code{ncpus} setting in \file{src/cparam.local}.
 Think about how you want to distribute the volume on the processors --- usually, you should have 128 grid points in the x-direction to take advantage of the SIMD processor unit.
 For compilation, you have to use a configuration file that includes the \file{\_MPI} suffix, see below.
 
-\subsection{Compiling...}
+\subsection{Compiling}
 
 In order to compile the code, you can use a pre-defined configuration file corresponding to your compiler package.
 E.g. the default compilers are \command{gfortran} together with \command{gcc} and the code is being built with default options (not using \name{MPI}) by issuing the command:
@@ -211,56 +211,6 @@ Alternatively, for multi-processor runs (still using the default \name{GNU-GCC} 
   pc_build -f GNU-GCC_MPI
 \end{verbatim}
 
-\subsection{GPUs}
-
-Pencil Code can also be run on GPUs via automatic code translation to the Astaroth GPU library. 
-This requires you to have the following libraries: 
-\begin{verbatim}
-  cmake version >= 3.21,bison,flex,CUDA or HIP,python
-\end{verbatim}
-
-The Astaroth library and the code translator to it come together with Pencil Code as git submodules.
-To get them and/or update them to the latest versions run:
-\begin{verbatim}
-  git submodule update --init --remote
-\end{verbatim}
-
-In \file{src/Makefile.local} add the following options:
-\begin{verbatim}
-  GPU=gpu_astaroth
-\end{verbatim}
-
-Then the compilation and running is done the same as for normal CPU setups.
-By default the code assumes communication is done with CUDA-aware MPI, which means the GPUs speak directly to each other.
-If you have to ask is your MPI CUDA-aware enabled then it most like is not.
-Thus trying to run the code in CUDA-aware mode will most likely cause a segmentation fault and the code to crash. 
-
-To turn off CUDA-aware MPI add the following options to \file{run.in}
-\begin{verbatim}
-&gpu_run_pars
-  lcuda_aware_mpi=F
-/
-\end{verbatim}
-
-The GPU-enabled version uses threads to compute the diagnostics alongside the time integration happening on the GPUs.
-Because of this you should have at least 2 threads executing per process.
-An example using 7 threads per process would be:
-\begin{verbatim}
-export OMP_NUM_THREADS=7
-export OMP_MAX_ACTIVE_LEVELS=2
-export OMP_PROC_BIND=close,spread
-export OMP_WAIT_POLICY=PASSIVE
-\end{verbatim}
-,where the other options are helpful to get maximal performance out of the multithreading.
-If you are using SLURM you would put these exports into your sbatch file. 
-Additionally if you are using CUDA-aware MPI with MPICH (for example on the LUMI supercomputer) but the following export before calling run.x but after calling start.x
-\begin{verbatim}
-export MPICH_GPU_SUPPORT_ENABLED=1
-\end{verbatim}
-
-The normal usage of GPUs will imply that compilation will happen during the run of the simulation.
-Because of this for module environments it is imperative that the same modules are used for the run as for the initial compilation.
-To ensure this add the following to your sbatch script:
 
 \subsubsection{Debugging and testing options}
 
@@ -298,7 +248,7 @@ By default, \command{pc\_build} looks for a config file that is based on your \c
 You may add your modified configuration with the filename \file{host-ID.conf}, where you can change compiler options according to the Pencil Code manual.
 A good host configuration example, that you may clone and adapt according to your needs, is \file{pencil-code/config/hosts/IWF/host-andromeda-GNU\_Linux-Linux.conf}.
 
-\subsection{Running...}
+\subsection{Running}
 
 The initial conditions are set in \file{start.in} and the parameters for the main simulation run can be found in \file{run.in}.
 In \file{print.in} you can choose which quantities are written to the file \file{data/time\_series.dat}.
@@ -344,7 +294,7 @@ by checking against reference data, delivered with each sample:
 
 Welcome to the world of Pencil Code!
 
-\subsection{Troubleshooting...}
+\subsection{Troubleshooting}
 
 If compiling fails, please try the following --- with or without the optional \command{\_MPI} for \name{MPI} runs:
 \begin{verbatim}
@@ -496,6 +446,127 @@ Some examples of postprocessing with \name{Python} can be found in the
 % One might better implement this as an "highlight" on the website:
 % \section{Another example: helically forced turbulence}
 % \input{example2}
+\section{GPU acceleration}
+Significant parts of the code can be accelerated by running them on GPUs, employing the framework Astaroth (\url{https://bitbucket.org/jpekkila/astaroth/}).
+This requires to install or load additional libraries/modules as well as to download additional repositories.
+\subsection{Prerequisites}
+Of course, your hardware must provide at least one GPU. For NVIDIA devices, you would have to install/load the CUDA toolbox, for AMD devices a corresponding  HIP package.
+Additionally, \code{flex}, \code{bison}, \code{python}, and \code{cmake} (version 3.21 or newer), are needed.
+\subsection{Downloading}
+For a fresh checkout of all needed repositories, instead of the \name{git} cloning described in Sec.~\ref{sec:download}, do
+\begin{verbatim}
+git clone -b master --recurse-submodules https://github.com/pencil-code/pencil-code.git 
+\end{verbatim}
 
+\vspace{-2mm}
+\begin{verbatim}
+    pencil-code
+\end{verbatim}
+or
+\begin{verbatim}
+git clone -b master --recurse-submodules https://pencil-code.org/git/ pencil-code
+\end{verbatim}
+of course with additional username specification as shown in Sec.~\ref{sec:download} for write access to the latter repo.
+Installation by SVN is not supported.
+
+The new directory
+\code{pencil-code/src/astaroth} contains the GPU-related software.
+To add this part to an already existing installation of Pencil Code, do
+\begin{verbatim}
+git submodule update --init --remote
+cd src/astaroth/submodule
+git checkout develop
+\end{verbatim}
+in the Pencil Code installation directory.
+
+\subsection{Compiling}
+In Makefile.local,  an additional setting is needed:
+\begin{verbatim}
+GPU = gpu_astaroth
+\end{verbatim}
+%TRANSPILATION = on
+%RUNTIME_COMPILATION = on
+
+Then, execute \command{pc\_build} as usual.
+If you have activated GPU acceleration for an already existing setup, repeat \command{pc\_setupsrc} before the build.
+
+\subsection{Running}
+Important: the parameter \command{ncpus} in \command{cparam.local} has now to be understood as ``number of MPI ranks = number of UNIX processes = number of GPUs". The number of CPUs employed is always larger  as
+the accelerated code makes use of CPU multithreading. Hence, setting in the environment (\code{bash}: by \command{export})
+\begin{verbatim}
+ OMP_NUM_THREADS=<ncores>
+\end{verbatim}
+with \command{ncores}$ >=2$ before running is mandatory. 
+Choose \command{ncores} as large as sensible in view of the hardware; on clusters consult the node specification.
+The additional settings
+\begin{verbatim}
+ OMP_MAX_ACTIVE_LEVELS=2
+ OMP_PROC_BIND=close,spread
+ OMP_WAIT_POLICY=PASSIVE
+\end{verbatim}
+are recommended. Note, that when running in a job system like SLURM, the number of CPUs assigned to an MPI process (\command{srun} option: \command{--cpus-per-task}) must agree with \command{ncores} and all exports to the environment need to be included in the \code{sbatch} script.
+
+If you are using MPICH, add the following in your job script before calling \command{pc\_run} but after \command{pc\_start}.
+\begin{verbatim}
+export MPICH_GPU_SUPPORT_ENABLED=1
+\end{verbatim}
+
+The normal usage of GPUs will imply runtime compilation, 
+because of which for module environments it is imperative that the same modules are used for the run as for the build.
+To ensure this, add at the beginning of your \code{sbatch} script
+\begin{verbatim}
+source src/.moduleinfo
+\end{verbatim}
+Then, you run the code as usual with \command{pc\_start}/\command{pc\_run}. 
+
+Example SLURM batch script (CRAY machines):
+\begin{verbatim}
+#SBATCH --account=...
+#SBATCH --partition=...
+#SBATCH --nodes=1
+#SBATCH --ntasks-per-node=8
+#SBATCH --gpus-per-node=8        # allocate one gpu per MPI rank 
+#SBATCH --cpus-per-task=7        # for multithreading
+
+source src/.moduleinfo
+
+export LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:$LD_LIBRARY_PATH
+export OMP_NUM_THREADS= =${SLURM_CPUS_PER_TASK}
+export OMP_MAX_ACTIVE_LEVELS=2
+export OMP_PROC_BIND=close,spread
+export OMP_WAIT_POLICY=PASSIVE
+
+pc_start
+export MPICH_GPU_SUPPORT_ENABLED=1   # MPICH only
+pc_run
+
+\end{verbatim}
+
+Running with GPU acceleration for the first time in a work directory will take significant time ($\lesssim$ 10 minutes) for several preliminary steps before the simulation proper starts. At later (re)starts, this time reduces strongly as long as no input parameters or \command{*.local} settings are changed.
+
+The GPU module has a few parameters in the \code{gpu\_run\_pars} namelist, most relevant:
+\command{lac\_sparse\_autotuning} set to ``T" will accelerate the preliminaries noticeably.
+
+\subsection{Limitations}
+\begin{itemize}
+\item For yet unaccelerated modules, see the exclusion list in \command{gpu\_astaroth.f90, subroutine initialize\_GPU}.\\
+         You may derive an (incomplete) {\it inclusion} list from the auto-tested samples (see \url{https://norlx51.nordita.org/tests/GPU/} )
+\item The \command{*before|after\_boundary} subroutines are incompletely accelerated - always test a setup against the CPU version!
+\item Diagnostics, which are implemented in a non-standard way in Pencil Code, will not be computed and appear in the output as zeros.
+\end{itemize}
+
+\subsection{Troubleshooting}
+The Astaroth-related part of the build process is logged separately into \code{src/astaroth/ac\_build.log}, while runtime-compilation is logged into \code{ac\_runtime\_compilation.log}.
+Due to the inclusion of Astaroth, the process is somewhat more fragile. 
+Most trouble is caused by an inappropriate combination of libraries/modules.
+Administrators should be able to help here.
+
+As Astaroth by default assumes that communication is done with CUDA-aware MPI (direct data transfer between GPUs),
+employing an MPI library/module, lacking such support, will cause the code to crash (segmentation fault). 
+In this case, try to turn off CUDA-aware MPI by
+\begin{verbatim}
+  lcuda_aware_mpi=F
+\end{verbatim}
+in \code{gpu\_run\_pars}.
 
 \end{document}
