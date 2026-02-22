@@ -523,10 +523,12 @@ Example SLURM batch script (CRAY machines):
 \begin{verbatim}
 #SBATCH --account=...
 #SBATCH --partition=...
-#SBATCH --nodes=1
+#SBATCH --nodes=...
 #SBATCH --ntasks-per-node=8
-#SBATCH --gpus-per-node=8        # allocate one gpu per MPI rank 
-#SBATCH --cpus-per-task=7        # for multithreading
+#SBATCH --gpus-per-node=8        # allocates one gpu per MPI rank 
+#SBATCH --cpus-per-task=7        # seven cpus per task for multithreading
+#SBATCH --exclusive              # avoids other jobs to run on the node(s)
+#SBATCH --mem=0                  # requests all available node memory
 
 source src/.moduleinfo
 
