@@ -15,6 +15,12 @@ class Normalizer(torch.nn.Module):
         self.register_buffer('acc_sum', torch.zeros(size, dtype=torch.float32))
         self.register_buffer('acc_sum_squared', torch.zeros(size, dtype=torch.float32))
 
+    def load_stats(self, path: str):
+        checkpoint = torch.load(path, map_location='cpu', weights_only=False)
+        self.acc_count.copy_(checkpoint['acc_count'])
+        self.num_acc.copy_(checkpoint['num_acc'])
+        self.acc_sum.copy_(checkpoint['acc_sum'])
+        self.acc_sum_squared.copy_(checkpoint['acc_sum_squared'])
         
     def forward(self, batched_data: torch.Tensor, accumulate: bool) -> torch.Tensor:
         """Normalizes input data and accumulates statistics."""
@@ -126,6 +132,7 @@ class FNO(nn.Module):
         self.width = width
         self.in_channels = in_channels
         self.out_channels = out_channels
+        self.counter = 0
         self.padding = 6 # pad the domain if input is non-periodic
 
         self.normalizer = Normalizer(size=[1, in_channels, 1, 1, 1], name="input")
@@ -187,4 +194,12 @@ class FNO(nn.Module):
         x = x[..., :-self.padding]
         x = self.q(x)
         x = x.permute(0, 1, 2, 3, 4) # pad the domain if input is non-periodic
+
+        if self.counter % 50 == 0:
+            torch.save(
+                {"acc_count": self.normalizer.acc_count, "num_acc": self.normalizer.num_acc,
+                "acc_sum": self.normalizer.acc_sum, "acc_sum_squared": self.normalizer.acc_sum_squared},
+                f"stats_current_input.pt"
+            )
+        self.counter += 1
         return x.double()

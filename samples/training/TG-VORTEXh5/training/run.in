@@ -4,11 +4,11 @@
 !
 &run_pars
   cvsid="c2196e6f1"
-  nt=1300, it1=50, isave=4000, itorder=3
+  nt=8100, it1=50, isave=4000, itorder=3
   !dvid=1e-4
   !slice_position='m'
   max_walltime= 41500 ! 12 h !
-  cdt=0.25
+  cdt=0.05
 	#dt=1e-4
 dtmin=1e-16
  tmax=700.
@@ -26,7 +26,7 @@ dtmin=1e-16
 /
 &density_run_pars
   lupw_lnrho=T
-  !lconserve_total_mass=F
+  lconserve_total_mass=T
   !total_mass=248.050213
 /
 !&forcing_run_pars
@@ -47,7 +47,8 @@ dtmin=1e-16
   model='stationary'
 	config_file='config_torchfort.yaml'
 	lrun_epoch=T
-	dt_train=5.6e-3
-	t_train_end=100
-	t_train_chkpt=2.e-1
+	dt_train= 3.78e-02
+	t_train_start=3.3
+	t_train_end=11
+	t_train_chkpt=2.851
 /

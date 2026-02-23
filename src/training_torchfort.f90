@@ -308,8 +308,8 @@
 !***************************************************************
     subroutine save_model
       if (iproc == root) print*,"Saving model to ",trim(model_output_dir)//trim(model_file)
-      !SG: safer to checkpoint the model so loading model is easier 
-       istat = torchfort_save_checkpoint(model, trim(model_output_dir)//trim(model_file))
+      !SG: should save the model instead of checkpoint in the end
+       istat = torchfort_save_model(model, trim(model_output_dir)//trim(model_file))
        if (istat /= TORCHFORT_RESULT_SUCCESS) &
          call fatal_error("save_model","when saving model: istat="//trim(itoa(istat)))
        lmodel_saved = .true.
@@ -318,12 +318,13 @@
 !***************************************************************
     subroutine save_chkpt
        if (lroot.and.lfirst.and.((mod(it,it_train_chkpt)==0).or.((t-t_last_chkpt) >= t_train_chkpt))) then
-        istat = torchfort_save_checkpoint(trim(model), trim(model_output_dir)//trim(model_file))
+       print*, 'model: ', trim(model)
+        istat = torchfort_save_checkpoint(trim(model), trim(checkpoint_output_dir))
         t_last_chkpt=t
         if (istat /= TORCHFORT_RESULT_SUCCESS) &
           call fatal_error("train","when saving checkpoint: istat="//trim(itoa(istat)))
         lckpt_written = .true.
-        print*, 'it, it_train_chkpt: , t:, t_train_chkpt: , t_last_chkpt: ', it,it_train_chkpt, t, t_train_chkpt, t_last_chkpt, trim(model),istat, trim(checkpoint_output_dir), lckpt_written
+        !print*, 'it, it_train_chkpt: , t:, t_train_chkpt: , t_last_chkpt: ', it, it_train_chkpt, t, t_train_chkpt, t_last_chkpt, trim(model), istat, trim(checkpoint_output_dir), lckpt_written
       endif
 
 
@@ -566,7 +567,7 @@
 !  Save trained model.
 !
       if (.not.lstart) then
-        if (ltrained .and. .not.lmodel_saved) then
+        if (ltrained .or. .not.lmodel_saved) then
                 call save_model
       
         endif

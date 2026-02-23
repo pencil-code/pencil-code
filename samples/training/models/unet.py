@@ -14,6 +14,12 @@ class Normalizer(torch.nn.Module):
         self.register_buffer('acc_sum', torch.zeros(size, dtype=torch.float32))
         self.register_buffer('acc_sum_squared', torch.zeros(size, dtype=torch.float32))
 
+    def load_stats(self, path: str):
+        checkpoint = torch.load(path, map_location='cpu', weights_only=False)
+        self.acc_count.copy_(checkpoint['acc_count'])
+        self.num_acc.copy_(checkpoint['num_acc'])
+        self.acc_sum.copy_(checkpoint['acc_sum'])
+        self.acc_sum_squared.copy_(checkpoint['acc_sum_squared'])
         
     def forward(self, batched_data: torch.Tensor, accumulate: bool) -> torch.Tensor:
         """Normalizes input data and accumulates statistics."""
@@ -69,6 +75,8 @@ class UNet3D(nn.Module):
 
         self.conv = nn.Conv3d(features, out_channels, kernel_size=1)
 
+        self.counter = 0
+
     def forward(self, x):
         x = self.normalizer(x, accumulate=True).float()
         enc1 = self.encoder1(x)
@@ -87,6 +95,14 @@ class UNet3D(nn.Module):
         dec1 = F.interpolate(dec1, size=enc1.shape[2:], mode='trilinear', align_corners=True)
         dec1 = torch.cat((dec1, enc1), dim=1)
         dec1 = self.decoder1(dec1)
+
+        if self.counter % 50 == 0:
+            torch.save(
+                {"acc_count": self.normalizer.acc_count, "num_acc": self.normalizer.num_acc,
+                "acc_sum": self.normalizer.acc_sum, "acc_sum_squared": self.normalizer.acc_sum_squared},
+                f"stats_current_input.pt"
+            )
+        self.counter += 1
 
         return self.conv(dec1).double()
 
