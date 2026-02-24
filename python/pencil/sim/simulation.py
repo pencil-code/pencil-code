@@ -19,7 +19,7 @@ from pencil.util import (
 class CommandFailedError(RuntimeError):
     pass
 
-class Simulation(object):
+class Simulation:
     """
     Simulation objects are containers for simulations. Pencil can work with
     several of them at once if stored in a simulations object.
