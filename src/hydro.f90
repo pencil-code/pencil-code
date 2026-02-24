@@ -272,6 +272,7 @@ module Hydro
   logical :: lcalc_uumeanx=.false.,lcalc_uumeany=.false.,lcalc_uumeanxz=.false.
   logical :: lcalc_ruumeanz=.false.,lcalc_ruumeanxy=.false.
   logical :: lforcing_cont_uu=.false.
+  integer :: iforcing_cont_uu=0
   logical :: lcoriolis_xdep=.false.
   logical :: lno_meridional_flow=.false.
   logical :: lrotation_xaxis=.false.
@@ -1173,6 +1174,7 @@ module Hydro
 !   7-jun.16/MR: modifications for calculation of z average on Yin-Yang grid, not yet operational
 !
       use BorderProfiles, only: request_border_driving
+      use Forcing, only: n_forcing_cont
       use Initcond
       use Mpicomm, only: mpibcast
       use SharedVariables, only: put_shared_variable, get_shared_variable
@@ -1194,6 +1196,11 @@ module Hydro
 !  Block use of uninitalised p%fcont
 !
       if (.not.lforcing_cont) lforcing_cont_uu=.false.
+      if (lforcing_cont_uu) then
+        iforcing_cont_uu=min(n_forcing_cont,1)
+        if (iforcing_cont_uu==0) &
+          call fatal_error('initialize_hydro','no valid continuous forcing available')
+      endif
 !
 !  Calculate cosz*sinz, cos^2, and sinz^2, to take moments with
 !  of ux2, uxuy, etc.
@@ -4336,7 +4343,9 @@ module Hydro
 !
 !  Add possibility of forcing that is not delta-correlated in time.
 !
-      if (lforcing_cont_uu) df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz) + ampl_fcont_uu*p%fcont(:,:,1)
+      if (lforcing_cont_uu) then
+        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz) + ampl_fcont_uu*p%fcont(:,:,iforcing_cont_uu)
+      endif
 !
 !  Damp motions in some regions for some time spans if desired.
 !  For geodynamo: addition of dampuint evaluation.
@@ -4688,14 +4697,14 @@ module Hydro
 !  Mean dot product of forcing and velocity field, <f.u>.
 !
         if (idiag_fum/=0) then
-          call dot(p%fcont(:,:,1),p%uu,fu)
+          call dot(p%fcont(:,:,iforcing_cont_uu),p%uu,fu)
           call sum_mn_name(ampl_fcont_uu*fu,idiag_fum)
         endif
 !
 !  Mean dot product of forcing and velocity field, <f.u>.
 !
   !     if (idiag_rufm/=0) then
-  !       call dot(p%fcont(:,:,1),p%uu,fu)
+  !       call dot(p%fcont(:,:,iforcing_cont_uu),p%uu,fu)
   !       call sum_mn_name(ampl_fcont_uu*fu,idiag_rufm)
   !     endif
 !
