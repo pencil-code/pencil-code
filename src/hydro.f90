@@ -749,6 +749,8 @@ module Hydro
   integer :: idiag_ruxuy2mz=0   ! XYAVG_DOC: $\langle\left(\rho u_x u_y\right)^2\rangle_{xy}$
   integer :: idiag_ruxuz2mz=0   ! XYAVG_DOC: $\langle\left(\rho u_x u_z\right)^2\rangle_{xy}$
   integer :: idiag_ruyuz2mz=0   ! XYAVG_DOC: $\langle\left(\rho u_y u_z\right)^2\rangle_{xy}$
+  integer :: idiag_rufmz=0      ! XYAVG_DOC: $\left< \varrho \uv \cdot \vec{F} \right>_{xy}$,
+                                ! XYAVG_DOC: where $\vec{F}$ is the continuous forcing (lforcing_cont_uu=T)
   integer :: idiag_oxuxxmz=0    ! XYAVG_DOC: $\left<\omega_x u_{x,x}\right>_{xy}$
   integer :: idiag_oyuxymz=0    ! XYAVG_DOC: $\left<\omega_y u_{x,y}\right>_{xy}$
   integer :: idiag_oxuyxmz=0    ! XYAVG_DOC: $\left<\omega_x u_{y,x}\right>_{xy}$
@@ -3151,6 +3153,11 @@ module Hydro
           idiag_ruyuzmxy/=0 .or. idiag_ffdownmxy/=0) then
         lpenc_diagnos2d(i_uu)=.true.
       endif
+      if (idiag_rufmz/=0) then
+        lpenc_diagnos(i_rho)=.true.
+        lpenc_diagnos(i_uu)=.true.
+        lpenc_diagnos(i_fcont)=.true.
+      endif
 !
 ! alberto: Diagnostic pencils for X-velocity, T00, T0i and Tij moments
       if (idiag_velxx2m/=0 .or. idiag_velxy2m/=0 .or. idiag_velxz2m/=0 .or. &
@@ -4902,7 +4909,7 @@ module Hydro
       type(pencil_case) :: p
 
       real, dimension (nx,3) :: curlru
-      real, dimension (nx) :: uus, curlru2, Remz, uzmask
+      real, dimension (nx) :: uus, curlru2, Remz, uzmask, tmp1
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1.
 !
@@ -5128,6 +5135,10 @@ module Hydro
         if (idiag_ruz2ph1mz/=0) call xysum_mn_name_z(p%rho*p%uu(:,3)**2,idiag_ruz2ph1mz,MASK=(p%ss <=ssmask1))
         if (idiag_ruz2ph2mz/=0) call xysum_mn_name_z(p%rho*p%uu(:,3)**2,idiag_ruz2ph2mz,MASK=(p%ss > ssmask1 .and. p%ss <= ssmask2))
         if (idiag_ruz2ph3mz/=0) call xysum_mn_name_z(p%rho*p%uu(:,3)**2,idiag_ruz2ph3mz,MASK=(p%ss > ssmask2))
+        if (lforcing_cont_uu .and. idiag_rufmz/=0) then
+          call dot(p%uu,p%fcont(:,:,iforcing_cont_uu),tmp1)
+          call xysum_mn_name_z(ampl_fcont_uu*p%rho*tmp1, idiag_rufmz)
+        endif
         if (idiag_oxph1mz/=0) call xysum_mn_name_z(p%oo(:,1),idiag_oxph1mz,MASK=(p%ss <=ssmask1))
         if (idiag_oxph2mz/=0) call xysum_mn_name_z(p%oo(:,1),idiag_oxph2mz,MASK=(p%ss > ssmask1 .and. p%ss <= ssmask2))
         if (idiag_oxph3mz/=0) call xysum_mn_name_z(p%oo(:,1),idiag_oxph3mz,MASK=(p%ss > ssmask2))
@@ -6764,6 +6775,7 @@ module Hydro
         idiag_ruxuymx = 0
         idiag_ruxuzmx = 0
         idiag_ruyuzmx = 0
+        idiag_rufmz=0
         idiag_u2mz=0
         idiag_o2mz=0
         idiag_ruxmz=0
@@ -7567,6 +7579,7 @@ module Hydro
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ruxuy2mz',idiag_ruxuy2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ruxuz2mz',idiag_ruxuz2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ruyuz2mz',idiag_ruyuz2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'rufmz',idiag_rufmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'oxuxxmz',idiag_oxuxxmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'oyuxymz',idiag_oyuxymz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'oxuyxmz',idiag_oxuyxmz)
