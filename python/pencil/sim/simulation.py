@@ -10,17 +10,18 @@ import numpy as np
 import subprocess
 import warnings
 
-from pencil.util import PathWrapper, pc_print
+from pencil.util import (
+    PathWrapper,
+    pc_print,
+    copy_docstring,
+    )
 
 class CommandFailedError(RuntimeError):
     pass
 
-def simulation(*args, **kwargs):
+class Simulation(object):
     """
-    simulation(*args, **kwargs)
-
-    Generate simulation object from parameters.
-    Simulation objects are containers for simulations. pencil can work with
+    Simulation objects are containers for simulations. Pencil can work with
     several of them at once if stored in a simulations object.
 
     Parameters
@@ -57,14 +58,6 @@ def simulation(*args, **kwargs):
     self.index             index object
     self.dim:              dim object
     self.tmp_dict:         temporal dictionary of stuff, will not be saved
-    """
-
-    return Simulation(*args, **kwargs)
-
-
-class Simulation(object):
-    """
-    Simulation object.
     """
 
     def __init__(self, path=".", hidden=False, hard=False, quiet=False):
@@ -1262,3 +1255,10 @@ class __Simulation__(Simulation):
     def __init__(self, *args, **kwargs):
         warnings.warn("The __Simulation__ class has now been renamed to Simulation (without underscores). Please modify your code accordingly")
         super().__init__(*args, **kwargs)
+
+@copy_docstring(Simulation)
+def simulation(*args, **kwargs):
+    """
+    Wrapper for :py:class:`Simulation`
+    """
+    return Simulation(*args, **kwargs)
