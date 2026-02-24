@@ -1,8 +1,8 @@
 #!/bin/bash
 #SBATCH --job-name=test_torchfort
-#SBATCH --account=project_2000403
-#SBATCH --partition=gputest
-#SBATCH --time=00:15:00
+#SBATCH --account=project_2016901
+#SBATCH --partition=gpu
+#SBATCH --time=24:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=7
@@ -32,10 +32,3 @@ apptainer exec --nv \
 		-B $snap_src:$sample_src/snapshots \
 		torchfort_latest_withdf5.sif bash /opt/scripts/run.sh
 
-if [ -f "stats_0.pt" ]; then
-	cp stats_0.pt $data_src/training
-
-	module load python-data
-	module load pytorch/2.4
-
-	srun python3 $data_src/training/ptTobin.py
