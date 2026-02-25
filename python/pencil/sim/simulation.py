@@ -19,6 +19,31 @@ from pencil.util import (
 class CommandFailedError(RuntimeError):
     pass
 
+
+class _DotDict(dict):
+    """A dict subclass that also supports attribute-style access.
+
+    This allows sim.param to be used both as a dict (sim.param['key'])
+    and with attribute access (sim.param.key), so that it is compatible
+    with the Param objects returned by pc.read.param() and accepted by
+    all reading routines.
+    """
+
+    def __getattr__(self, key):
+        try:
+            return self[key]
+        except KeyError:
+            raise AttributeError("param.{} does not exist".format(key))
+
+    def __setattr__(self, key, value):
+        self[key] = value
+
+    def __delattr__(self, key):
+        try:
+            del self[key]
+        except KeyError:
+            raise AttributeError(key)
+
 class Simulation:
     """
     Simulation objects are containers for simulations. Pencil can work with
@@ -550,7 +575,7 @@ class Simulation:
                 if exists(join(self.datadir, "param.nml")):
                     if not quiet: print("~ Reading param.nml.. ")
                     param = param(quiet=quiet, datadir=self.datadir)
-                    self.param = {}
+                    self.param = _DotDict()
                     # read params into Simulation object
                     for key in dir(param):
                         if key.startswith("_") or key == "read":
@@ -560,7 +585,7 @@ class Simulation:
                         else:
                             try:
                                 # allow for nested param objects
-                                self.param[key] = {}
+                                self.param[key] = _DotDict()
                                 for subkey in dir(getattr(param, key)):
                                     if subkey.startswith("_") or subkey == "read":
                                         continue
@@ -1126,7 +1151,7 @@ class Simulation:
 
         if DEBUG:
             print("~ DEBUG: Searching through simulation.params and dim ...")
-        if type(self.param) == type({"dictionary": "with_values"}):
+        if isinstance(self.param, dict):
             if quantity in self.param.keys():
                 if DEBUG:
                     print("~ DEBUG: " + quantity + " found in simulation.params ...")
