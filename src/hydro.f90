@@ -9162,6 +9162,7 @@ module Hydro
     call copy_addr(luij_as_aux,p_par(125)) ! bool
     call copy_addr(uij_0d_test,p_par(126)) ! (3) (3)
     call copy_addr(luij_test,p_par(127)) ! bool
+    call copy_addr(iforcing_cont_uu,p_par(128)) ! int
 
     endsubroutine pushpars2c
 !***********************************************************************
