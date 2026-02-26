@@ -4963,7 +4963,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !***********************************************************************
     subroutine mpireduce_min_arr(fmin_tmp,fmin,nreduce,comm)
 !
-!  Calculate total maximum for each array element and return to root.
+!  Calculate total minimum for each array element and return to root.
 !
       integer :: nreduce
       real, dimension(nreduce) :: fmin_tmp,fmin
