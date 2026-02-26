@@ -3921,8 +3921,8 @@ module Energy
 !
 !  Radiative heat flux at the bottom (assume here that hcond=hcond0=const).
 !
-        if (idiag_fradbot/=0.and.lfirst_proc_z) then
-          if (n==n1) then
+        if (idiag_fradbot/=0) then
+          if (n==n1 .and. lfirst_proc_z) then
             if (hcond0==0.) then
               Ktmp=chi*p%rho*p%cp
             else
@@ -3930,7 +3930,7 @@ module Energy
             endif
             fradz=sum(-Ktmp*p%TT*p%glnTT(:,3)*dsurfxy)
           endif
-          call surf_mn_name(fradz,idiag_fradbot,n1)
+          call surf_mn_name(fradz,idiag_fradbot,n1,lfirst_proc_z)
         endif
 !
 !  Radiative heat flux at the top (assume here that hcond=hcond0=const).
@@ -3949,9 +3949,9 @@ module Energy
 !
 !  Mean temperature at the top.
 !
-        if (idiag_TTtop/=0.and.llast_proc_z) then
-          if (n==n2) TTtop=sum(p%TT*dsurfxy)
-          call surf_mn_name(TTtop,idiag_TTtop,n2)
+        if (idiag_TTtop/=0) then
+          if (n==n2 .and. llast_proc_z) TTtop=sum(p%TT*dsurfxy)
+          call surf_mn_name(TTtop,idiag_TTtop,n2,llast_proc_z)
         endif
 !
 !  Calculate integrated temperature in limited radial range.
