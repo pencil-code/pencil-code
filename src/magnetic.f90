@@ -5352,7 +5352,7 @@ module Magnetic
         if (eta1_aniso_r==0.) then
           prof=eta1_aniso
         else
-          prof=eta1_aniso*(1.-step(x(l1:l2),eta1_aniso_r,eta1_aniso_d))
+          prof=eta1_aniso*(1.-step_vector(x(l1:l2),eta1_aniso_r,eta1_aniso_d))
         endif
         if (lquench_eta_aniso) prof=prof/(1.+quench_aniso*Arms)
         fres(:,1)=fres(:,1)-prof*cosalp*(cosalp*p%jj(:,1)+sinalp*p%jj(:,2))

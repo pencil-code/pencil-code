@@ -19,7 +19,7 @@ module Sub
 !
   private
 !
-  public :: step,stepdown,der_stepdown
+  public :: step,step_vector,stepdown,der_stepdown
   public :: ylm, ylm_other
   public :: kronecker_delta, levi_civita
 !
@@ -9373,7 +9373,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
       has_nan_local = merge(1,0,any(f > huge_real .or. f /= f))
       !call mpireduce_max_int(has_nan_local,has_nan_global)
 
-      !TP: might as well checkly only locally and then call mpiabort to exit globally
+      !TP: might as well check only locally and then call mpiabort to exit globally
       !    saves some communication and is maybe a bit simpler
       if (has_nan_local == 1) then
 
@@ -9384,9 +9384,8 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
         endif
 
         do i=1,mfarray
-          if(any(f(:,:,:,i) > huge_real .or. f(:,:,:,i) /= f(:,:,:,i))) then
+          if (any(f(:,:,:,i) > huge_real .or. f(:,:,:,i) /= f(:,:,:,i))) &
               print*,"check_for_nans_globally: nan in Field: ",i
-          endif
         enddo
         call mpiabort
       endif
