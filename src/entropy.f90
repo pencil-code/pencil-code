@@ -3935,8 +3935,8 @@ module Energy
 !
 !  Radiative heat flux at the top (assume here that hcond=hcond0=const).
 !
-        if (idiag_fradtop/=0.and.llast_proc_z) then
-          if (n==n2) then
+        if (idiag_fradtop/=0) then
+          if (n==n2 .and. llast_proc_z) then
             if (hcond0==0.) then
               Ktmp=chi*p%rho*p%cp
             else
@@ -3944,7 +3944,7 @@ module Energy
             endif
             fradz=sum(-Ktmp*p%TT*p%glnTT(:,3)*dsurfxy)
           endif
-          call surf_mn_name(fradz,idiag_fradtop,n2)
+          call surf_mn_name(fradz,idiag_fradtop,n2,llast_proc_z)
         endif
 !
 !  Mean temperature at the top.
