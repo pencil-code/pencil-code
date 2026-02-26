@@ -7317,10 +7317,6 @@ module Energy
         call parse_name(iname,cname(iname),cform(iname),'TT2m',idiag_TT2m)
       enddo
 !
-      if (idiag_fradbot/=0) call set_type(idiag_fradbot,lsurf=.true.)
-      if (idiag_fradtop/=0) call set_type(idiag_fradtop,lsurf=.true.)
-      if (idiag_TTtop/=0) call set_type(idiag_TTtop,lsurf=.true.)
-!
 !  Check for those quantities for which we want yz-averages.
 !
       do inamex=1,nnamex
