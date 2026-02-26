@@ -2241,23 +2241,31 @@ module Diagnostics
 !
     endsubroutine sum_lim_mn_name
 !*********************************************************
-    subroutine surf_mn_name(a,iname,ncontrib)
+    subroutine surf_mn_name(a,iname,ncontrib,lcontrib)
 !
 !  Successively calculate surface integral. This routine assumes
 !  that "a" contains the partial result for each pencil, so here
 !  we just need to add up the contributions from all processors.
 !  Start from zero if lfirstpoint=.true.
+!  lcontrib: logical that denotes whether the current processor
+!  should contribute
 !
 !  14-aug-03/axel: adapted from sum_mn_name
 !  15-feb-13/MR: test of iname incorporated
+!  26-Feb-2026/Kishore: added lcontrib
 !
       real, intent(in) :: a
       integer, intent(in) :: iname,ncontrib
+      logical, intent(in), optional :: lcontrib
+!
+      logical :: thisproc
 !
       if (iname>0) then
 !
+        thisproc = loptest(lcontrib, .true.)
+!
         if (lfirstpoint) fname(iname)=0.
-        if (n==ncontrib) fname(iname)=fname(iname)+a
+        if (thisproc .and. n==ncontrib) fname(iname)=fname(iname)+a
 !
 !  Set corresponding entry in itype_name.
 !
