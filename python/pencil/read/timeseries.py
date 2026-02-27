@@ -67,7 +67,7 @@ class TimeSeries(object):
         time_range : bool
           List of length 2, start and end time, of float with end time.
 
-        precision : float
+        precision : str
           "f" (single,default) or "d" (double) or "h" (half).
         """
 
