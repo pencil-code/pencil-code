@@ -101,7 +101,7 @@ class TimeSeries(object):
                     self.keys = keys_new
             else:
                 try:
-                    row = np.array(list(re.split(" +", line.strip(" \n"))), dtype=precision)
+                    row = np.array(re.split(" +", line.strip(" \n")), dtype=precision)
                     data[nlines, :] = row
                     nlines += 1
                 except ValueError:
