@@ -114,7 +114,8 @@ module Special
   logical :: lscale_tobox=.true., ldt_backreact_infl=.true., lconf_time=.true.
   logical :: lskip_projection_phi=.false., lvectorpotential=.false., lflrw=.false.
   logical :: lrho_chi=.false., lno_noise_phi=.false., lno_noise_dphi=.false.
-  logical :: lrho_chi_corrected=.false.
+  logical :: lrho_chi_corrected=.true.   !PAR_DOC: when false, we use the wrong scale factor in the rho_chi equation
+  logical :: lrho_chi_inhom=.true.       !PAR_DOC: inhomogeneous heating
   logical, pointer :: lphi_hom, lphi_linear_regime, lnoncollinear_EB, lnoncollinear_EB_aver
   logical, pointer :: lcollinear_EB, lcollinear_EB_aver, lmass_suppression
   logical, pointer :: lallow_bprime_zero
@@ -131,14 +132,14 @@ module Special
       initpower_dphi, initpower2_dphi, cutoff_dphi, kpeak_dphi, &
       ncutoff_phi, lscale_tobox, Hscript0, Hscript_choice, infl_v, lflrw, &
       lrho_chi, scale_rho_chi_Heqn, amplee_BD_prefactor, deriv_prefactor_ee, &
-      echarge_type, init_rho_chi, rho_chi_init
+      echarge_type, init_rho_chi, rho_chi_init, lrho_chi_inhom
 !
   namelist /special_run_pars/ &
       initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
       lbackreact_infl, lem_backreact, c_light_axion, lambda_axion, Vprime_choice, &
       lzeroHubble, ldt_backreact_infl, Ndiv, Hscript0, Hscript_choice, infl_v, &
       lflrw, lrho_chi, scale_rho_chi_Heqn, echarge_type, cdt_rho_chi, &
-      lrho_chi_corrected
+      lrho_chi_corrected, lrho_chi_inhom
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -1040,8 +1041,24 @@ module Special
         call dot2_mn(el,e2)
         a2rhop=a2rhop+(.5*fourthird)*(e2+b2)*a21
         if (.not. lphi_linear_regime) a2rho=a2rho+.5*(e2+b2)*a21
+!
+!  option to take the inhomogeneous rho instead
+!  Here, in the expression a2rho, rho is not comoving, but the rho from f(l1:l2,m,n,ilnrho) is comoving.
+!
         if (lrho_chi) then
-          a2rho=a2rho+scale_rho_chi_Heqn*a2*f_ode(iinfl_rho_chi)
+          if (lrho_chi_inhom) then
+            if (ldensity) then
+              if (ldensity_nolog) then
+                a2rho=a2rho+scale_rho_chi_Heqn/a2*f(l1:l2,m,n,irho)
+              else
+                a2rho=a2rho+scale_rho_chi_Heqn/a2*exp(f(l1:l2,m,n,ilnrho))
+              endif
+            else
+              call fatal_error("special_after_boundary: No such Vprime_choice: ","density must be true")
+            endif
+          else
+            a2rho=a2rho+scale_rho_chi_Heqn*a2*f_ode(iinfl_rho_chi)
+          endif
         endif
       endif
 !
