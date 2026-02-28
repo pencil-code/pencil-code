@@ -62,8 +62,6 @@ def dill_load(name, folder=False, sim=False, quiet=True):
                 data = u.load()
                 print("? Success!")
                 return data
-        except:
-            print(
-                "!! ERROR: Something went wrong while importing dill-file: " + filepath
-            )
+        except Exception as e:
+            print(f"? Error in pickle ({e}) while importing {filepath}")
             return False
