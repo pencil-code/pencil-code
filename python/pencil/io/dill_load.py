@@ -52,16 +52,5 @@ def dill_load(name, folder=False, sim=False, quiet=True):
         return obj
 
     except Exception as e:
-        print(f"? Error in dill importer ({e}), trying pickle")
-        try:
-            import pickle
-
-            with open(filepath, "rb") as f:
-                u = pickle._Unpickler(f)
-                u.encoding = "latin1"
-                data = u.load()
-                print("? Success!")
-                return data
-        except Exception as e:
-            print(f"? Error in pickle ({e}) while importing {filepath}")
-            return False
+        print(f"? Error in dill importer ({e})")
+        return False
