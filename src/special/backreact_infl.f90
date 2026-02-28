@@ -115,7 +115,7 @@ module Special
   logical :: lskip_projection_phi=.false., lvectorpotential=.false., lflrw=.false.
   logical :: lrho_chi=.false., lno_noise_phi=.false., lno_noise_dphi=.false.
   logical :: lrho_chi_corrected=.true.   !PAR_DOC: when false, we use the wrong scale factor in the rho_chi equation
-  logical :: lrho_chi_inhom=.true.       !PAR_DOC: inhomogeneous heating
+  logical :: lrho_chi_inhom=.false.      !PAR_DOC: inhomogeneous heating
   logical, pointer :: lphi_hom, lphi_linear_regime, lnoncollinear_EB, lnoncollinear_EB_aver
   logical, pointer :: lcollinear_EB, lcollinear_EB_aver, lmass_suppression
   logical, pointer :: lallow_bprime_zero
@@ -1054,7 +1054,7 @@ module Special
                 a2rho=a2rho+scale_rho_chi_Heqn/a2*exp(f(l1:l2,m,n,ilnrho))
               endif
             else
-              call fatal_error("special_after_boundary: No such Vprime_choice: ","density must be true")
+              call fatal_error("backreact_infl special_after_boundary: No such Vprime_choice: ","density must be true")
             endif
           else
             a2rho=a2rho+scale_rho_chi_Heqn*a2*f_ode(iinfl_rho_chi)

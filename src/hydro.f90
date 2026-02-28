@@ -27,6 +27,11 @@
 ! PENCILS PROVIDED der6u_res(3,3)
 ! PENCILS PROVIDED lorentz; hless; advec_uu
 ! PENCILS PROVIDED T00; T0i(3); Tij(6); velx(3)
+!
+!** AUTOMATIC REFERENCE-LINK.TEX GENERATION ********************
+! Declare relevant citations from pencil-code/doc/citations/ref.bib for this module.
+! The entries are taken from pencil-code/doc/citations/notes.tex
+!
 !***************************************************************
 !
 module Hydro

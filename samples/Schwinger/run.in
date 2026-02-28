@@ -18,6 +18,7 @@
 /
 &backreact_infl_run_pars
   lbackreact_infl=T, ldt_backreact_infl=T
+  lrho_chi_corrected=F
 /
 &disp_current_run_pars
   lapply_Gamma_corr=T, lswitch_off_Gamma=T
