@@ -57,8 +57,8 @@ def dill_load(name, folder=False, sim=False, quiet=True):
         # obj = dill.load(f)
         # return obj
 
-    except:  # if anything goes wrong, try dry importing, i.e. if python2 and python3 usage was mixed
-        print("? Something went wrong with the dill importer, trying backup solution..")
+    except Exception as e:
+        print(f"? Error in dill importer ({e}), trying pickle")
         try:
             import pickle
 
