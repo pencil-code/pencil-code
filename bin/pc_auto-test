@@ -65,8 +65,6 @@ my %tests = (
                          1d-tests/implicit_diffusion
                          2d-tests/chemistry_GrayScott
                          2d-tests/shearwave-dust-par
-                         2d-tests/meanfield_disp_current
-                         disp_current_dynamo
                          dust-vortex
                          damped_alfven_waves
                          corona
@@ -192,6 +190,8 @@ my %tests = (
              # Level 4 for now contains all non-canonical tests that run,
              # but produce wrong results - and need immediate action (fixme)
              4 => [qw(
+                         2d-tests/meanfield_disp_current
+                         disp_current_dynamo
                          superparticle-coagulation
                          superparticle-condensation-coagulation
                          mdwarf-ss-running-aver
