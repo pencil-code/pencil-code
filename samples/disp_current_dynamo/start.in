@@ -1,0 +1,27 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  Initialisation parameters
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2025/04/01 08:28:04 brandenb Exp $',
+  unit_system='set', c_light_set=1.
+  xyz_units='pi','pi','pi'
+  xyz0=-1.,-1.,-1.
+  xyz1=+1.,+1.,+1.
+  lwrite_aux=T
+  lwrite_ic=F
+/
+&eos_init_pars
+  gamma=1.
+/
+&hydro_init_pars
+/
+&density_init_pars
+/
+&magnetic_init_pars
+  learly_set_el_pencil=T
+/
+&special_init_pars
+  initee='power_randomphase_hel', amplee=1e-9, kpeak_ee=4.
+  !lswitch_off_Gamma=T, lsolve_chargedensity=T, llongitudinalE=F
+/

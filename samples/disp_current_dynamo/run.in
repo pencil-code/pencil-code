@@ -1,0 +1,40 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  Run parameters
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2025/04/01 08:28:04 brandenb Exp $',
+  nt=100, it1=20, dsnap=1e9, dvid=10., isave=1000, ialive=100
+  lpencil_check_small=F
+  lread_aux=F
+  dt=5e-3
+/
+&eos_run_pars
+/
+&hydro_run_pars
+  lupw_uu=T
+/
+&density_run_pars
+  lupw_lnrho=T
+/
+&forcing_run_pars
+  iforce='helical', force=0.07, relhel=1.
+/
+&magnetic_run_pars
+  !reinitialize_aa=T, initaa='rescale', rescale_aa=1e-80
+  lupw_aa=F
+  eta=2e-2, scl_uxb_in_ohm=.5
+  eta=4e-2, scl_uxb_in_ohm=1.
+  eta=8e-2, scl_uxb_in_ohm=2.
+  eta=8.6e-2, scl_uxb_in_ohm=2.
+  eta=8.4e-2, scl_uxb_in_ohm=2.
+/
+&viscosity_run_pars
+  nu=5e-3
+/
+&power_spectrum_run_pars
+/
+&special_run_pars
+  !reinitialize_ee=T, initee='rescale', rescale_ee=1e-80
+  ldivE_as_aux=T
+/
