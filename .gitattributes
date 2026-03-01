@@ -2604,6 +2604,7 @@ samples/2d-tests/meanfield_NEMPI/video.in -text
 samples/2d-tests/meanfield_disp_current/README.md -text
 samples/2d-tests/meanfield_disp_current/parameters.pro -text
 samples/2d-tests/meanfield_disp_current/print.in -text
+samples/2d-tests/meanfield_disp_current/reference.out -text
 samples/2d-tests/meanfield_disp_current/run.in -text
 samples/2d-tests/meanfield_disp_current/src/Makefile.local -text
 samples/2d-tests/meanfield_disp_current/src/cparam.local -text
