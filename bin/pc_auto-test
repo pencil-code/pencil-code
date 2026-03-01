@@ -101,6 +101,8 @@ my %tests = (
                          2d-tests/cylindrical_gdisk
                          2d-tests/planet-disk-fargo
                          2d-tests/dark-matter
+                         2d-tests/meanfield_disp_current
+                         disp_current_dynamo
                          spherical-globaldisk
                          spherical-globaldisk-mhd
                          spherical-gdisk-planet-thermo
@@ -190,8 +192,6 @@ my %tests = (
              # Level 4 for now contains all non-canonical tests that run,
              # but produce wrong results - and need immediate action (fixme)
              4 => [qw(
-                         2d-tests/meanfield_disp_current
-                         disp_current_dynamo
                          superparticle-coagulation
                          superparticle-condensation-coagulation
                          mdwarf-ss-running-aver
