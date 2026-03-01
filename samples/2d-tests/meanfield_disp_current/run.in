@@ -1,0 +1,24 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  Run parameters
+!
+&run_pars
+  cvsid="$Id: run.in,v 1.1 2025/12/04 17:42:37 brandenb Exp $"
+  nt=3000, it1=300, dsnap=2, dvid=2., isave=50000, ialive=100
+  d1davg=2., d2davg=2., dtmin=1e-9
+  lpencil_check_small=F
+  dt=5e-3
+/
+&magnetic_run_pars
+  iresistivity='eta-const'
+  lupw_aa=T
+  eta=2e-19
+/
+&magn_mf_run_pars
+  alpha_effect=50e-2, meanfield_etat=2e-2
+  alpha_profile='ellipsoid-z', alpha_rmax=1., alpha_height=1., alpha_width=.05
+  alpha_quenching=1.
+/
+&special_run_pars
+  lapply_Gamma_corr=F, lswitch_off_Gamma=T
+/

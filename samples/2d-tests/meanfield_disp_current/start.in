@@ -1,0 +1,28 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  Initialisation parameters
+!
+&init_pars
+  cvsid="$Id: start.in,v 1.1 2025/12/04 17:42:37 brandenb Exp $"
+  coord_system='spherical'
+  xyz_units='','pi','pi'
+  unit_system='set', c_light_set=.02
+  xyz0=0.2,.0,-8.
+  xyz1=1e2,.5,+8.
+  lperi=F, F, T
+  lwrite_ic=F
+  bcx='s','a','a', 's','a','a','a2'
+  bcy='s:a','a:s','a:a', 's:a','a:s','a:a','a2' ![pole:quadrupolar; see Eq.(6) Jabbari+15]
+  bcy='s','a','s', 's','a','s','a2' ![both poles or dipolar, see Jabbari+13 and Eq.(7) Jabbari+15]
+/
+&magnetic_init_pars
+  learly_set_el_pencil=T
+  initaa='gaussian-noise'
+  amplaa=1e-5
+/
+&magn_mf_init_pars
+/
+&special_init_pars
+  lswitch_off_Gamma=T, lsolve_chargedensity=T, llongitudinalE=F
+  loverride_c_light=T
+/
