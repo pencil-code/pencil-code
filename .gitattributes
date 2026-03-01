@@ -3211,7 +3211,6 @@ samples/decay-reconnection/video.in -text
 samples/disp_current_dynamo/NEVERLOCK -text
 samples/disp_current_dynamo/k.dat -text
 samples/disp_current_dynamo/parameters.pro -text
-samples/disp_current_dynamo/pc_commands.log -text
 samples/disp_current_dynamo/print.in -text
 samples/disp_current_dynamo/reference.out -text
 samples/disp_current_dynamo/run.in -text
