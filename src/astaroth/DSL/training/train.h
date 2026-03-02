@@ -20,12 +20,6 @@ field_order(AC_itau_hydroxy__mod__training-1) communicated Field TAU_HYDRO_INFER
 field_order(AC_itau_hydroxz__mod__training-1) communicated Field TAU_HYDRO_INFERRED_XZ
 field_order(AC_itau_hydroyz__mod__training-1) communicated Field TAU_HYDRO_INFERRED_YZ
 
-field_order(AC_itau_magxx__mod__training-1) communicated Field TAU_MAG_INFERRED_XX
-field_order(AC_itau_magyy__mod__training-1) communicated Field TAU_MAG_INFERRED_YY
-field_order(AC_itau_magzz__mod__training-1) communicated Field TAU_MAG_INFERRED_ZZ
-field_order(AC_itau_magxy__mod__training-1) communicated Field TAU_MAG_INFERRED_XY
-field_order(AC_itau_magxz__mod__training-1) communicated Field TAU_MAG_INFERRED_XZ
-field_order(AC_itau_magyz__mod__training-1) communicated Field TAU_MAG_INFERRED_YZ
 
 field_order(AC_itau_densityx__mod__training-1) communicated Field TAU_DENSITY_INFERRED_X
 field_order(AC_itau_densityy__mod__training-1) communicated Field TAU_DENSITY_INFERRED_Y
@@ -39,16 +33,6 @@ const FieldSymmetricTensor TAU_HYDRO_INFERRED =
         TAU_HYDRO_INFERRED_XY,
         TAU_HYDRO_INFERRED_XZ,
         TAU_HYDRO_INFERRED_YZ
-}
-
-const FieldSymmetricTensor TAU_MAG_INFERRED = 
-{  
-        TAU_MAG_INFERRED_XX,
-        TAU_MAG_INFERRED_YY,
-        TAU_MAG_INFERRED_ZZ,
-        TAU_MAG_INFERRED_XY,
-        TAU_MAG_INFERRED_XZ,
-        TAU_MAG_INFERRED_YZ
 }
 
 const Field3 TAU_DENSITY_INFERRED =
