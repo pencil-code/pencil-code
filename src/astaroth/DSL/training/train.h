@@ -165,7 +165,7 @@ Kernel smooth_fluctuation_terms(){
           	write(sgs_emf,gaussian_smooth_inplace(sgs_emf))
 	  	write(bb_tensor_product,gaussian_smooth_inplace(bb_tensor_product))
 	  }
-	  if(AC_ltrain_dens)
+	  if(AC_ltrain_dens__mod__training)
 	  {
 	  	write(tau_density,gaussian_smooth_inplace(tau_density))
 	  }
