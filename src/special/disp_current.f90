@@ -52,6 +52,7 @@ module Special
   real :: sigE_prefactor=1., sigB_prefactor=1.
   real :: weight_longitudinalE=2.0, mass_chi=0.
   real :: coupl_gy=.345 ! electroweak SU(2) x U(1) coupling of Higgs to U(1)
+  real :: je_heating_factor=1.
   logical :: luse_scale_factor_in_sigma=.false., lapply_Gamma_corr=.true.
   logical, pointer :: lohm_evolve, lphi_doublet, lphi_hypercharge
   logical, pointer :: lwaterfall
@@ -69,7 +70,7 @@ module Special
   logical :: ldivE_as_aux=.false., lsigE_as_aux=.false., lsigB_as_aux=.false.
   logical :: lrandom_ampl_ee=.false., lfixed_phase_ee=.false., lallow_bprime_zero=.true.
   logical :: lswitch_off_divJ=.false., lswitch_off_Gamma=.false., lmass_suppression=.false.
-  logical :: loverride_c_light=.false.
+  logical :: loverride_c_light=.false., ldensity_add_je_heating=.false., llorentzforce_ee=.false.
   character(len=labellen) :: inita0='zero'
   character (len=labellen), dimension(ninit) :: initee='nothing'
   character (len=labellen) :: power_filename='power_profile.dat'
@@ -91,7 +92,8 @@ module Special
     lsolve_chargedensity, weight_longitudinalE, lswitch_off_Gamma, &
     lrandom_ampl_ee, lfixed_phase_ee, lskip_projection_ee, &
     luse_scale_factor_in_sigma, lpower_profile_file, power_filename, &
-    coupl_gy, alpfpsi, lpsi_hom, loverride_c_light
+    coupl_gy, alpfpsi, lpsi_hom, loverride_c_light, &
+    ldensity_add_je_heating, llorentzforce_ee
 !
   ! run parameters
   real :: beta_inflation=0., rescale_ee=1.
@@ -106,7 +108,8 @@ module Special
     lcollinear_EB, lcollinear_EB_aver, sigE_prefactor, sigB_prefactor, &
     reinitialize_ee, initee, rescale_ee, lmass_suppression, mass_chi, &
     lallow_bprime_zero, lapply_Gamma_corr, coupl_gy, lpsi_hom, alpfpsi, &
-    loverride_c_light, aderiv_scaling
+    loverride_c_light, ldensity_add_je_heating, je_heating_factor, &
+    llorentzforce_ee, aderiv_scaling
 !
 ! Declare any index variables necessary for main or
 !
@@ -452,6 +455,12 @@ module Special
    !  endif
       lpenc_requested(i_eb)=.true.
 !
+      if (ldensity .and. ldensity_add_je_heating) then
+        lpenc_requested(i_jj)=.true.
+        lpenc_requested(i_el)=.true.
+        lpenc_requested(i_rho1)=.true.
+      endif
+!
       !if (llorenz_gauge_disp) then
       !  lpenc_requested(i_diva)=.true.
       !endif
@@ -530,7 +539,7 @@ module Special
 !
 !   24-nov-04/tony: coded
 !
-      use Sub, only: grad, div, curl, del2v, dot2_mn, dot, levi_civita, del2v_etc
+      use Sub, only: grad, div, curl, del2v, dot2_mn, dot, levi_civita, del2v_etc, cross_mn, multsv_mn
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -661,19 +670,38 @@ module Special
         endif
 !
 !  Now compute current, using any of the 4 expressions above.
+!  This also sets the auxiliary array (l1:l2,m,n,ijx:ijz), if needed.
 !
         if (lohm_evolve) then
           p%jj_ohm=f(l1:l2,m,n,ijx:ijz)
         else
           do j=1,3
-            p%jj_ohm(:,j)=p%sigE*p%el(:,j)+p%sigB*p%bb(:,j)
+            if (lhydro) then
+              !p%jj_ohm(:,j)=p%jj_ohm(:,j)+p%sigE*(p%el(:,j)+p%uxb(:,j))+p%sigB*p%bb(:,j)
+              p%jj_ohm(:,j)=p%sigE*(p%el(:,j)+p%uxb(:,j))+p%sigB*p%bb(:,j)
+            else
+              !p%jj_ohm(:,j)=p%jj_ohm(:,j)+p%sigE*p%el(:,j)+p%sigB*p%bb(:,j)
+              p%jj_ohm(:,j)=p%sigE*p%el(:,j)+p%sigB*p%bb(:,j)
+            endif
+
           enddo
+!
+!  This would overwrite f(l1:l2,m,n,ijx:ijz)
+!
           if (ijx/=0) f(l1:l2,m,n,ijx:ijz) = p%jj_ohm
         endif
 !
+!XXX  CALL HERE ...
+      endif
+!
+p%jj=p%jj_ohm
+      if (llorentzforce_ee) then
+        call cross_mn(p%jj,p%bb,p%jxb)
+        call multsv_mn(p%rho1,p%jxb,p%jxbr)
       endif
 !
 ! edot2
+! XX AB: to be deleted
 !
       if (leedot_as_aux) then
         call dot2_mn(f(l1:l2,m,n,iedotx:iedotz),p%edot2)
@@ -898,14 +926,12 @@ module Special
           -(1.-weight_longitudinalE)*p%divE-weight_longitudinalE*tmp
       endif
 !
-!  solve: dE/dt = curlB - ...
-!  Calculate curlB as -del2a, because curlB leads to instability.
 !  Solve dA/dt = -E.
 !
       if (lmagnetic) then
         df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-p%el
 !
-!  Maxwell equation otherwise the same in both gauges.
+!  Solve: dE/dt = curlB - ...
 !
         df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)+c_light2*(p%curlb-mu0*p%jj_ohm)
 !
@@ -960,8 +986,6 @@ module Special
 !
         if (alpf/=0.) then
           call calc_helical_term(p,gtmp,p%dphi,p%gphi,lphi_hom)
-!          print*,"p%infl_phi",p%infl_phi
-!          print*,"p%infl_dphi",p%infl_dphi
           df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-alpf*gtmp
           if (llorenz_gauge_disp) then
             ! if (lphi_hom) then
@@ -1024,6 +1048,7 @@ module Special
       endif
 !
 !  Compute eedot_as_aux; currently ignore alpf/=0.
+!  28-feb-26/axel: this should be removed; it is not used.
 !
       if (leedot_as_aux) f(l1:l2,m,n,iedotx:iedotz)=c_light2*(p%curlb-mu0*p%jj_ohm)
 !
@@ -1057,6 +1082,22 @@ module Special
           enddo
           df(l1:l2,m,n,ijx:ijz)=df(l1:l2,m,n,ijx:ijz)+dJdt
         endif
+      endif
+!
+!  If ldensity and ldensity_add_je_heating, then compute J.E and add it:
+!
+      if (ldensity .and. ldensity_add_je_heating) then
+        if (ldisp_current) then
+          call dot(p%jj,p%el,tmp)
+          if (je_heating_factor/=1.) tmp=tmp*je_heating_factor
+          df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+tmp*p%rho1
+        else
+          call fatal_error('daa_dt','J.E heating not programmed yet')
+        endif
+      endif
+!XXX
+      if (llorentzforce_ee) then
+        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxbr
       endif
 !
 !  If requested, put sigE and sigB into f array as auxiliaries.

@@ -446,8 +446,8 @@ module Magnetic
       no_ohmic_heat_z0, no_ohmic_heat_zwidth, alev, lrhs_max, &
       lnoinduction, lA_relprof_global, nlf_sld_magn, fac_sld_magn, div_sld_magn, &
       lbb_sph_as_aux, ltime_integrals_always, dtcor, lvart_in_shear_frame, &
-      lbraginsky, eta_jump0, eta_jump1, lcoulomb, lcoulomb_apply, lvacuum, ldensity_add_je_heating, &
-      je_heating_factor, &
+      lbraginsky, eta_jump0, eta_jump1, lcoulomb, lcoulomb_apply, lvacuum, &
+      ldensity_add_je_heating, je_heating_factor, &
       loverride_ee_decide, eta_tdep_loverride_ee, loverride_ee2, lignore_1rho_in_Lorentz, &
       lbext_moving_layer, zbot_moving_layer, ztop_moving_layer, speed_moving_layer, edge_moving_layer, &
       luse_bgb_as_jxb, lno_eta_tdep, luse_scale_factor_in_sigma, ell_jj, tau_jj, lhubble_magnetic, &
@@ -3152,6 +3152,12 @@ module Magnetic
         endif
       endif
 !
+      if (ldensity .and. ldensity_add_je_heating .and. ldisp_current) then
+        lpenc_requested(i_jj)=.true.
+        lpenc_requested(i_el)=.true.
+        lpenc_requested(i_rho1)=.true.
+      endif
+!
 !  Request unit vectors for transformation of magnetic field from
 !  Cartesian to spherical coordinates.
 !
@@ -3732,25 +3738,11 @@ module Magnetic
 !  check for pencil_interdep_magn_mf
 !
       if (lmagn_mf) call pencil_interdep_magn_mf(lpencil_in)
-
-      if (lpencil_in(i_jj) .or. lpencil_in(i_jj_ohm)) then
-        if (ldisp_current) then
-          if (.not. lvacuum) then
-            if (lresi_eta_tdep .or. lresi_eta_xtdep .or. eta/=0.) then
-              if (.not. lohm_evolve) then
 !
 !  The default for learly_set_el_pencil is now changed to .true., but
-!  it will here immediately be changed to .false. if there is no
-!  displacement current.
+!  it is now changed to .false. if there is no displacement current.
 !
-                if (learly_set_el_pencil .and. iex==0) then
-                    learly_set_el_pencil=.false.
-                endif
-              endif
-            endif
-          endif
-        endif
-      endif
+      if (.not. ldisp_current) learly_set_el_pencil=.false.
 !
     endsubroutine pencil_interdep_magnetic
 !***********************************************************************
@@ -3920,7 +3912,7 @@ module Magnetic
           call curl_mn(aij, bb, A=f(:,m,n,iax:iaz))
 !
 !  calculate jj if requested
-!  (but this is not needed when displacement current is invoked)
+!  But this is not needed or correct when displacement current is invoked.
 !
           if (ljj_as_comaux) then
             if (irhoe/=0.and.ibb/=0) then
@@ -4152,7 +4144,7 @@ module Magnetic
           if (iex>0) then
             Eabs=sqrt(f(l1:l2,m,n,iex)**2+f(l1:l2,m,n,iey)**2+f(l1:l2,m,n,iez)**2)
           else
-            call fatal_error('calc_pencils_magnetic_pencpar','electric field must be computed')
+            call fatal_error('get_eta_t_and_xtdep','electric field must be computed')
           endif
           Babs=sqrt(p%b2)
 !
@@ -4182,6 +4174,7 @@ module Magnetic
 !  19-nov-04/anders: coded
 !  18-jun-13/axel: b2 now includes B_ext by default (luse_Bext_in_b2=T is kept)
 !  20-jun-16/fred: added derivative tensor option and streamlined gij_etc
+!   1-mar-26/axel: terms involving J are now calculated in disp_current.f90 if iex>0.
 !
       use EquationOfState, only: rho0
       use General, only: notanumber
@@ -4264,7 +4257,8 @@ module Magnetic
           endif
           ! The following does not happen if (lbb_as_comaux .and. lB_ext_in_comaux) !
 !AB: the following comes too early and is later done anyway
-          do j = 1,3;  p%jj(:,j) = p%jj(:,j) + j_ext(j); enddo;
+!AB: comment out now
+!         do j = 1,3;  p%jj(:,j) = p%jj(:,j) + j_ext(j); enddo;
         endif
 !
 !  Add a precessing dipole not in the Bext field
@@ -4544,7 +4538,7 @@ module Magnetic
         else
 !
 !  Go here in standard MHD if no displacement current exists.
-!  In that case, no ohmic current is needed or used.
+!  In that case, no ohmic current is needed or used and p%jj is set to mu01*p%curlb.
 !
           p%jj=mu01*p%curlb
           p%jj_ohm=0.
@@ -5027,6 +5021,8 @@ module Magnetic
     subroutine diamagnetism(p)
 !
 !  Compute diamagnetism
+!
+!  23-feb-12/axel: added diamagnetism
 !
       use Sub
 !
