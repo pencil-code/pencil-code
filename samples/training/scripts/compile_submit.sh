@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=test_torchfort
-#SBATCH --account=project_2000403
+#SBATCH --account=project_2016901
 #SBATCH --partition=test
 #SBATCH --time=00:15:00
 #SBATCH --nodes=1
@@ -13,10 +13,10 @@
 
 
 # current sample name
-sample_name=helical-MHDturb
+sample_name=conv-slab
 
 # training or inference
-mode=inference
+mode=training
 
 sample_src="$PENCIL_HOME/samples/training/$sample_name/$mode"
 

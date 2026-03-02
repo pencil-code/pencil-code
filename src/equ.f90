@@ -1139,7 +1139,7 @@ module Equ
       use Testfield
       use Testflow
       use Testscalar
-      use Training, only: calc_diagnostics_training
+      use Training, only: calc_diagnostics_training, div_sgs_stresses
 
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
       real, dimension (mx,my,mz,mvar)   ,intent(OUT  ) :: df

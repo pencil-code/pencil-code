@@ -64,11 +64,13 @@
 
     contains
 !***************************************************************
-    subroutine initialize_training
+    subroutine initialize_training(f)
 
       use File_IO, only: file_exists
       use Mpicomm, only: mpibcast, MPI_COMM_PENCIL
       use Syscalls, only: system_cmd
+
+      real, dimension (mx,my,mz,mfarray) :: f
 
       character(LEN=fnlen) :: modelfn
       integer :: ndevs
@@ -174,11 +176,17 @@
 !
 !  Indices to access tau.
 !
-      itau_hydroxx=itau_hydro; itau_hydroyy=itau_hydro+1; itau_hydrozz=itau_hydro+2; itau_hydroxy=itau_hydro+3; itau_hydroxz=itau_hydro+4; itau_hydroyz=itau_hydro+5
+      if(lhydro) then
+        itau_hydroxx=itau_hydro; itau_hydroyy=itau_hydro+1; itau_hydrozz=itau_hydro+2; itau_hydroxy=itau_hydro+3; itau_hydroxz=itau_hydro+4; itau_hydroyz=itau_hydro+5
+      endif
 
-      isgs_emfx=isgs_emf; isgs_emfy=isgs_emf+1; isgs_emfz=isgs_emf+2;
+      if(ltrain_mag) then
+        isgs_emfx=isgs_emf; isgs_emfy=isgs_emf+1; isgs_emfz=isgs_emf+2;
+      endif
 
-      itau_densityx=itau_density; itau_densityy=itau_density+1; itau_densityz=itau_density+2;
+      if(ltrain_dens) then
+        itau_densityx=itau_density; itau_densityy=itau_density+1; itau_densityz=itau_density+2;
+      endif
 
     endsubroutine register_training
 !***********************************************************************
@@ -446,15 +454,16 @@
       if (ltrained) then 
         call div_tensor(f,div_hydro_sgs,itau_hydro)
         df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - div_hydro_sgs
+        
+        
+       !if(ltrain_mag) then
+       !  df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + f(l1:l2,m,n,isgs_emfx:isgs_emfz)
+       !endif
 
-        if(ltrain_mag) then
-          df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + f(l1:l2,m,n,isgs_emf)
-        endif
-
-        if(ltrain_dens) then
-          call div(f,itau_hydro,div_dens_sgs)
-          df(l1:l2,m,n,ilnrho)  = df(l1:l2,m,n,ilnrho)  - div_dens_sgs
-        endif
+       ! if(ltrain_dens) then
+       !   call div_tensor(f,itau_hydro,div_dens_sgs)
+       !   df(l1:l2,m,n,ilnrho)  = df(l1:l2,m,n,ilnrho)  - div_dens_sgs
+       ! endif
       endif
 
     endsubroutine div_sgs_stresses
@@ -612,20 +621,20 @@
     integer, parameter :: n_pars=50
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
-    call copy_addr(itau_hydroxx,p_par(1)) ! int
-    call copy_addr(itau_hydroxy,p_par(2)) ! int
-    call copy_addr(itau_hydroxz,p_par(3)) ! int
-    call copy_addr(itau_hydroyy,p_par(4)) ! int
-    call copy_addr(itau_hydroyz,p_par(5)) ! int
-    call copy_addr(itau_hydrozz,p_par(6)) ! int
-    call copy_addr(lscale,p_par(7)) ! bool
-    call copy_addr(ltrained,p_par(8)) ! bool
-    call copy_addr(itau_magxx,p_par(9)) ! int
-    call copy_addr(itau_magxy,p_par(10)) ! int
-    call copy_addr(itau_magxz,p_par(11)) ! int
-    call copy_addr(itau_magyy,p_par(12)) ! int
-    call copy_addr(itau_magyz,p_par(13)) ! int
-    call copy_addr(itau_magzz,p_par(14)) ! int
+    call copy_addr(itau_hydro,p_par(1)) ! int
+    call copy_addr(itau_hydroxx,p_par(2)) ! int
+    call copy_addr(itau_hydroxy,p_par(3)) ! int
+    call copy_addr(itau_hydroxz,p_par(4)) ! int
+    call copy_addr(itau_hydroyy,p_par(5)) ! int
+    call copy_addr(itau_hydroyz,p_par(6)) ! int
+    call copy_addr(itau_hydrozz,p_par(7)) ! int
+    call copy_addr(lscale,p_par(8)) ! bool
+    call copy_addr(ltrained,p_par(9)) ! bool
+    call copy_addr(ltrain_mag,p_par(10)) ! bool
+    call copy_addr(ltrain_dens,p_par(11)) ! bool
+    call copy_addr(isgs_emfx,p_par(12)) ! int
+    call copy_addr(isgs_emfy,p_par(13)) ! int
+    call copy_addr(isgs_emfz,p_par(14)) ! int
     call copy_addr(itau_densityx,p_par(15)) ! int
     call copy_addr(itau_densityy,p_par(16)) ! int
     call copy_addr(itau_densityz,p_par(17)) ! int

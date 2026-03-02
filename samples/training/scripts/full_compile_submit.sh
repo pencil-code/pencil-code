@@ -16,14 +16,36 @@
 # current sample name
 #sample_name=helical-MHDturb
 
-sample_name=cartesian-convection-kramers
+sample_name=conv-slab
 
 # training or inference
 mode=training
 
+ml_model=UNET
+
 data_src="/scratch/project_2000403/$USER/data_$sample_name/data"
 snap_src="/scratch/project_2000403/$USER/snapshots_$sample_name/snapshots"
 sample_src="$PENCIL_HOME/samples/training/$sample_name/$mode"
+
+run_dir="$sample_src/run.in"
+dt_train_min=0.056
+dt_train_max=0.056
+
+
+module load python-data
+module load pytorch/2.4
+
+export PYTHONPATH=$PYTHONPATH:$PENCIL_HOME/samples/training/models
+
+
+
+srun python3 -c "from build_files import build_model; build_model('$data_src/training', '$data_src/training', '$ml_model')"
+
+srun python3 -c "from build_files import build_loss; build_loss('$data_src/training', '$data_src/training')"
+
+srun python3 -c "from build_files import rand_dt_train; rand_dt_train('$run_dir', $dt_train_min, $dt_train_max)"
+
+srun python3 -c "from build_files import build_torchfort_config; build_torchfort_config('$data_src/training', '$ml_model')"
 
 #TP: have to bind /appl to get the right CUDA compiler for PC-A
 #    the one in the container is not the correct one

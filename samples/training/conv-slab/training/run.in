@@ -65,12 +65,18 @@
 ! tinit    -- initial time for smoothly switching on heating, etc
 &training_run_pars
   lroute_via_cpu=F
-  it_train=1, it_train_chkpt=1000
+  it_train=10, it_train_chkpt=1000
 	!it_train_start=1200
   luse_trained_tau=F
   max_loss=1.e-100
   model='stationary'
-  config_file='config_fno.yaml'
+  config_file='config_torchfort.yaml'
   it_train_end=3000
-	run_epoch=T
+	lrun_epoch=T
+	ltrain_mag=F
+	ltrain_dens=F
+	dt_train= 5.60e-02
+	t_train_start=3.3
+	t_train_end=11
+	t_train_chkpt=2.851
 /

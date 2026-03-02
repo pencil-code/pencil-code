@@ -705,8 +705,8 @@ void setupConfig(AcMeshInfo& config)
 
 	
 
-  PCLoad(config,AC_tau_hydro_means,tau_means);
-  PCLoad(config,AC_tau_hydro_stds ,tau_stds);
+  PCLoad(config,AC_tau_hydro_means,tau_hydro_means);
+  PCLoad(config,AC_tau_hydro_stds ,tau_hydro_stds);
   #endif
   PCLoad(config,AC_sparse_autotuning,lac_sparse_autotuning);
 
@@ -979,6 +979,7 @@ std::vector<float>val_loss;
 std::vector<float>train_loss;
 std::vector<double>train_time;
 std::vector<double>val_time;
+std::vector<int>train_nts;
 
 bool loaded_stats = false;
 bool snap_print = false;
@@ -1160,7 +1161,7 @@ extern "C" void torch_train_c_api(AcReal *loss_val, int itsub, double t) {
   calling_train = true;
 
 
-  acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(get_taus,1));
+  acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(get_taus),1);
 
   auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
   acGridExecuteTaskGraph(bcs,1);
@@ -1177,13 +1178,14 @@ extern "C" void torch_train_c_api(AcReal *loss_val, int itsub, double t) {
   acGridHaloExchange();
   torch_trainCAPI((int[]){mx,my,mz}, uumean_ptr, TAU_ptr, loss_val,input_channels,output_channels,"stationary");
   train_loss.push_back(*loss_val);
+	train_nts.push_back(nt);
   train_counter++;
   print_debug();
   if (it==nt){
   	std::ofstream myFile;
   	std::string fileString = "train_loss_" + std::to_string(my_rank)  + ".csv";	
   	myFile.open(fileString);
-  	le << "epoch,train_loss\n";
+  	myFile << "epoch,train_loss\n";
   	for (int i=0;i<train_loss.size();i++){
   		myFile << i << "," << train_loss[i] << "\n";
   	}

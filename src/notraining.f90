@@ -14,8 +14,12 @@
 
     contains
 !***************************************************************
-    subroutine initialize_training
+    subroutine initialize_training(f)
  
+     real, dimension (mx,my,mz,mfarray) :: f
+
+      call keep_compiler_quiet(f)
+
     endsubroutine initialize_training
 !***********************************************************************
     subroutine register_training

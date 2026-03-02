@@ -433,7 +433,7 @@ module Register
       call initialize_implicit_physics(f)
       call initialize_heatflux(f)
       call initialize_pointmasses(f)
-      if (lrun) call initialize_training
+      if (lrun) call initialize_training(f)
 !
 !  Check if MAUX is consistent with what is required.
 !
