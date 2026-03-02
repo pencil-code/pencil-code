@@ -1,10 +1,6 @@
 #if LTRAINING
-communicated Field3 UUMEANinf
-
-
-// use TAUinf default for inference calls
 communicated FieldSymmetricTensor tau_hydro
-communicated FieldSymmetricTensor bb_tensor_product
+FieldSymmetricTensor bb_tensor_product
 communicated Field3 uumean
 communicated Field3 bbmean
 communicated Field3 grad_lnrho_mean
@@ -13,10 +9,8 @@ communicated Field3 gradupwd_lnrho_mean
 communicated Field3  sgs_emf
 communicated Field   tau_density
 
-communicated Field3 UUMEANBatch[6]
-communicated FieldSymmetricTensor TAUBatch[6]
-
-
+//communicated Field3 UUMEANBatch[6]
+//communicated FieldSymmetricTensor TAUBatch[6]
 communicated FieldSymmetricTensor TAUinf
 
 field_order(AC_itau_hydroxx__mod__training-1) communicated Field TAU_HYDRO_INFERRED_XX
@@ -182,9 +176,15 @@ Kernel fluctutation_terms_and_means(){
 Kernel smooth_fluctuation_terms(){
 	if(!AC_ltrained__mod__training){
 	  write(tau_hydro,gaussian_smooth_inplace(tau_hydro))
-          write(sgs_emf,gaussian_smooth_inplace(sgs_emf))
-	  write(bb_tensor_product,gaussian_smooth_inplace(bb_tensor_product))
-	  write(tau_density,gaussian_smooth_inplace(tau_density))
+	  if(AC_ltrain_mag__mod__training)
+	  {
+          	write(sgs_emf,gaussian_smooth_inplace(sgs_emf))
+	  	write(bb_tensor_product,gaussian_smooth_inplace(bb_tensor_product))
+	  }
+	  if(AC_ltrain_dens)
+	  {
+	  	write(tau_density,gaussian_smooth_inplace(tau_density))
+	  }
 	}
 
 }
