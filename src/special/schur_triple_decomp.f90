@@ -228,6 +228,7 @@ end function selct
 !  Most basic pencils should come first, as others may depend on them.
 !
 !  24-nov-04/tony: coded
+!  27-jan-26/axel: Since -r42600, redefined mixed term as the sum of mixed and original term
 !
       use Sub, only: grad
 !
@@ -251,11 +252,17 @@ end function selct
 !  Complex Schur decomposition works only for %uSH2(l), p%uRR2(l), p%uEL2(l).
 !
       if ((luij_schur .and. lout) .or. ldiagnos_always) then
+        if (luse_complex_schur) then
+          allocate(matV_cmplx(nnn,nnn))
+    !   else
+    !     allocate(matV(nnn,nnn), matQ(nnn,nnn))
+        endif
+!
         do l=1,nx
           matA=p%uij(l,:,:)
           matA2=sum(matA**2)
           if (matA2/=0.) then
-            allocate(matV(nnn,nnn), matQ(nnn,nnn))
+             allocate(matV(nnn,nnn), matQ(nnn,nnn))
             if (luse_complex_schur) then
               call schur_standardized_complex(matA, matV_cmplx, matQ_cmplx, p%uSH2(l), p%uRR2(l), p%uEL2(l))
             else
@@ -266,7 +273,7 @@ end function selct
               p%uEL2(l)=sum(matV_EL**2)
               p%uRRm(l)=2.*sum(matV_SH*matV_RR)+p%uRR2(l)
             endif
-            deallocate(matV, matQ)
+             deallocate(matV, matQ)
           endif
 !
 !  Possibility of uSH, uRR, and uEL matrices as auxiliary arrays
@@ -280,9 +287,15 @@ end function selct
               do i=1,3
               do j=1,3
                 ij=3*(i-1)+(j-1)
-                f(l1+l-1,m,n,iuschur_SH+ij)=matV_SH(i,j)
-                f(l1+l-1,m,n,iuschur_RR+ij)=matV_RR(i,j)
-                f(l1+l-1,m,n,iuschur_EL+ij)=matV_EL(i,j)
+                if (luse_complex_schur) then
+                  f(l1+l-1,m,n,iuschur_SH+ij)=  abs(matV_cmplx(i,j))
+                  f(l1+l-1,m,n,iuschur_RR+ij)= real(matV_cmplx(i,j))
+                  f(l1+l-1,m,n,iuschur_EL+ij)=aimag(matV_cmplx(i,j))
+                else
+                  f(l1+l-1,m,n,iuschur_SH+ij)=matV_SH(i,j)
+                  f(l1+l-1,m,n,iuschur_RR+ij)=matV_RR(i,j)
+                  f(l1+l-1,m,n,iuschur_EL+ij)=matV_EL(i,j)
+                endif
               enddo
               enddo
             else
@@ -323,6 +336,11 @@ end function selct
             endif
           endif
         enddo
+        if (luse_complex_schur) then
+          deallocate(matV_cmplx)
+    !   else
+    !     deallocate(matV, matQ)
+        endif
 !
 !  Possibility of uSH2, uRR2, and uEL2 as auxiliary arrays
 !
@@ -348,11 +366,16 @@ end function selct
 !  Redefine mixed term as the sum of mixed and original term.
 !
       if ((lbij_schur .and. lout) .or. ldiagnos_always) then
+        if (luse_complex_schur) then
+          allocate(matV_cmplx(nnn,nnn))
+    !   else
+    !     allocate(matV(nnn,nnn), matQ(nnn,nnn))
+        endif
         do l=1,nx
           matA=p%bij(l,:,:)
           matA2=sum(matA**2)
           if (matA2/=0.) then
-            allocate(matV(nnn,nnn), matQ(nnn,nnn))
+             allocate(matV(nnn,nnn), matQ(nnn,nnn))
             if (luse_complex_schur) then
               call schur_standardized_complex(matA, matV_cmplx, matQ_cmplx, p%bSH2(l), p%bRR2(l), p%bEL2(l))
             else
@@ -363,7 +386,7 @@ end function selct
               p%bEL2(l)=sum(matV_EL**2)
               p%bRRm(l)=2.*sum(matV_SH*matV_RR)+p%bRR2(l)
             endif
-            deallocate(matV, matQ)
+             deallocate(matV, matQ)
           endif
 !
 !  Possibility of bSH, bRR, and bEL matrices as auxiliary arrays
@@ -373,9 +396,15 @@ end function selct
               do i=1,3
               do j=1,3
                 ij=3*(i-1)+(j-1)
-                f(l1+l-1,m,n,ibschur_SH+ij)=matV_SH(i,j)
-                f(l1+l-1,m,n,ibschur_RR+ij)=matV_RR(i,j)
-                f(l1+l-1,m,n,ibschur_EL+ij)=matV_EL(i,j)
+                if (luse_complex_schur) then
+                  f(l1+l-1,m,n,ibschur_SH+ij)=  abs(matV_cmplx(i,j))
+                  f(l1+l-1,m,n,ibschur_RR+ij)= real(matV_cmplx(i,j))
+                  f(l1+l-1,m,n,ibschur_EL+ij)=aimag(matV_cmplx(i,j))
+                else
+                  f(l1+l-1,m,n,ibschur_SH+ij)=matV_SH(i,j)
+                  f(l1+l-1,m,n,ibschur_RR+ij)=matV_RR(i,j)
+                  f(l1+l-1,m,n,ibschur_EL+ij)=matV_EL(i,j)
+                endif
               enddo
               enddo
             else
@@ -416,6 +445,11 @@ end function selct
             endif
           endif
         enddo
+        if (luse_complex_schur) then
+          deallocate(matV_cmplx)
+   !    else
+   !      deallocate(matV, matQ)
+        endif
 !
 !  Possibility of bSH2, bRR2, and bEL2 as auxiliary arrays
 !  Use f(1,1,1,ibschur2_EL) to encode the correct update time.
@@ -625,6 +659,7 @@ end function selct
   SH2=  abs(T(1,2))**2+  abs(T(1,3))**2+  abs(T(2,3))**2
   RR2=aimag(T(1,1))**2+aimag(T(2,2))**2+aimag(T(3,3))**2
   EL2= real(T(1,1))**2+ real(T(2,2))**2+ real(T(3,3))**2
+!
   if (info .ne. 0) then
      print *, 'ZGEES failed, INFO=', info
      stop 1

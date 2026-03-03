@@ -694,8 +694,10 @@ module Special
 !XXX  CALL HERE ...
       endif
 !
-p%jj=p%jj_ohm
+!  The line "p%jj=p%jj_ohm", if outside llorentzforce_ee, breaks the samples/Schwinger sample.
+!
       if (llorentzforce_ee) then
+p%jj=p%jj_ohm
         call cross_mn(p%jj,p%bb,p%jxb)
         call multsv_mn(p%rho1,p%jxb,p%jxbr)
       endif
@@ -1095,7 +1097,9 @@ p%jj=p%jj_ohm
           call fatal_error('daa_dt','J.E heating not programmed yet')
         endif
       endif
-!XXX
+!
+!  Add Lorentz force in displacement current module
+!
       if (llorentzforce_ee) then
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxbr
       endif

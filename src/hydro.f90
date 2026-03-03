@@ -200,6 +200,7 @@ module Hydro
   logical :: lhiggsless=.false., lhiggsless_old=.false.
   logical :: lsqrt_qirro_uu=.false., lset_uz_zero=.false.
   logical :: lnorm_vw_hless=.false., lcorrect_penc_u=.true.
+  logical :: lampluu_adjust_ascale=.false.   !PAR_DOC: automatically adjust initial u-amplitude
   real, pointer :: profx_ffree(:),profy_ffree(:),profz_ffree(:)
   real, pointer :: B_ext2
   real :: incl_alpha = 0.0, rot_rr = 0.0
@@ -241,7 +242,7 @@ module Hydro
       lno_noise_uu, lrho_nonuni_uu, lpower_profile_file_uu, &
       llorentz_limiter, lhiggsless, lhiggsless_old, vwall, alpha_hless, width_hless, &
       xjump_mid, yjump_mid, zjump_mid, qini, lnorm_vw_hless, &
-      lcorrect_penc_u, qshear
+      lcorrect_penc_u, qshear, lampluu_adjust_ascale
 !
 !  Run parameters.
 !
@@ -1954,7 +1955,7 @@ module Hydro
       real :: kabs,crit,eta_sigma,tmp0,phi0
       real :: a2, rr2, wall_smoothing
       real :: dis, xold,yold,uprof, factx, factz, sph, sph_har_der, der
-      real :: dely, delz
+      real :: dely, delz, ampluu_fact
       integer :: j,i,l,ixy,ix,iy,iz,iz0,iyz,iter,niter=100,jhless
       logical :: lvectorpotential=.false.
 !
@@ -1963,6 +1964,15 @@ module Hydro
 !  inituu corresponds to different initializations of uu (called from start).
 !
       call get_shared_variable('beta_glnrho_scaled',beta_glnrho_scaled,caller='init_uu')
+!
+!  If lampluu_adjust_ascale=T, we rescale ampluu by a factor ampluu_fact such
+!  that the effective amplitude becomes independent of the initial redshift.
+!
+      if (lampluu_adjust_ascale) then
+        ampluu_fact=ascale**(nconformal-1.5)
+        ampluu=ampluu*ampluu_fact
+        if (lroot) print*,'REVISED value of ampluu: ',ampluu
+      endif
 
       do j=1,ninit
 !

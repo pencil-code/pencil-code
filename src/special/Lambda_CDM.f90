@@ -148,6 +148,16 @@ module Special
         tphys=f_ode(iLCDM_tph)
       endif
 !
+!  write relevant constants to file; to be read by idl
+!
+      if (lroot) then
+        open (1,file=trim(datadir)//'/pc_constants.pro',position="append")
+        write (1,*) 'Omega_rad=',Omega_rad
+        write (1,*) 'Omega_mat=',Omega_mat
+        write (1,*) 'Omega_Lam=',Omega_Lam
+        close (1)
+      endif
+!
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_special

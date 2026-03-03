@@ -404,10 +404,14 @@ module Gravity
         potx_xpencil=(tanh((x+pi/3.)/0.1)+tanh(-(x-pi/3.)/0.1))/2.*&
                      gravx*(.5*cos(2*(x-pi/2.))-0.5) + potx_const
 !
+!  Keplerian gravity; use sphere_rad as a smoothing radius
+!
       case ('kepler')
-        if (lroot) print*,'initialize_gravity: kepler x-grav, gravx=',gravx
-        gravx_xpencil=-gravx/x**2
-        potx_xpencil=-gravx/x + potx_const
+        if (lroot) print*,'initialize_gravity: kepler x-grav, gravx, sphere_rad=',gravx, sphere_rad
+        !gravx_xpencil=-gravx/x**2
+        !potx_xpencil=-gravx/x + potx_const
+        gravx_xpencil=-gravx/(x+sphere_rad)**2
+        potx_xpencil=-gravx/(x+sphere_rad)**2 + potx_const
         g0=gravx
 !
       case ('kepler_2d')
