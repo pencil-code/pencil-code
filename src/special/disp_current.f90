@@ -212,8 +212,7 @@ module Special
 !  For llongitudinalE=T, we replace graddiv in curlb by the gradient of Gamma.
 !  According to later work, this does not seem advantageous, however.
 !
-      if (llongitudinalE) &
-        call farray_register_pde('Gamma',iGamma)
+      if (llongitudinalE) call farray_register_pde('Gamma',iGamma)
 !
 !  The following variables are also used in special/backreact_infl.f90
 !
@@ -261,14 +260,14 @@ module Special
       c_light2=c_light**2
 !
       if (lmagnetic .and. .not.lswitch_off_divJ) &
-        call get_shared_variable('eta',eta, caller='initialize_magnetic')
+        call get_shared_variable('eta',eta,caller='initialize_special')
 !
 !  The following are only obtained when luse_scale_factor_in_sigma=T
 !  (luse_scale_factor_in_sigma=F by default, because they are defined
 !  in special/backreact_infl.f90, which may not be always be used).
 !
       if (luse_scale_factor_in_sigma) then
-        call get_shared_variable('Hscript', Hscript)
+        call get_shared_variable('Hscript', Hscript ,caller='initialize_special')
         call get_shared_variable('echarge', echarge)
         call get_shared_variable('sigEm_all', sigEm_all)
         call get_shared_variable('sigBm_all', sigBm_all)
@@ -301,9 +300,8 @@ module Special
 
       if (lklein_gordon) then
         call get_shared_variable('lphi_doublet',lphi_doublet, caller='initialize_disp_current')
-        call get_shared_variable('lphi_hypercharge',lphi_hypercharge, &
-          caller='initialize_disp_current')
-        call get_shared_variable('lwaterfall',lwaterfall, caller='initialize_disp_current')
+        call get_shared_variable('lphi_hypercharge',lphi_hypercharge)
+        call get_shared_variable('lwaterfall',lwaterfall)
       else
         if (.not.associated(lphi_doublet)) allocate(lphi_doublet,lphi_hypercharge,lwaterfall)
         lphi_doublet=.false.
@@ -608,9 +606,9 @@ module Special
 !  Any change to the code must be the same both here and there.
 !  Location 1 for conductivity.
 !
-      if (lnoncollinear_EB .or. lnoncollinear_EB_aver &
-        .or. lcollinear_EB .or. lcollinear_EB_aver) then
+      if (lnoncollinear_EB .or. lnoncollinear_EB_aver .or. lcollinear_EB .or. lcollinear_EB_aver) then
         if (lnoncollinear_EB) then
+
           p%boost=sqrt((p%e2-p%b2)**2+4.*p%eb**2)
           p%gam_EB=sqrt21*sqrt(1.+(p%e2+p%b2)/p%boost)
           p%eprime=sqrt21*sqrt(p%e2-p%b2+p%boost)
@@ -791,21 +789,21 @@ p%jj=p%jj_ohm
         constrainteqn=(p%divE-tmp)/constrainteqn1
       endif
 
-     endsubroutine calc_constrainteqn
+    endsubroutine calc_constrainteqn
 !***********************************************************************
-     real function get_mfpf()
+    real function get_mfpf()
 
-       get_mfpf = beta_inflation*Hp_target
+      get_mfpf = beta_inflation*Hp_target
 
-     end function get_mfpf
+    end function get_mfpf
 !***********************************************************************
-     real function get_fppf()
+    real function get_fppf()
 
-       get_fppf=beta_inflation*((beta_inflation+1.)*Hp_target**2-appa_target)
+      get_fppf=beta_inflation*((beta_inflation+1.)*Hp_target**2-appa_target)
 
-     end function get_fppf
+    end function get_fppf
 !***********************************************************************
-      subroutine calc_axion_term(p,dst,gphi,alpff,lphihom)
+    subroutine calc_axion_term(p,dst,gphi,alpff,lphihom)
 !
 !  Compute -(alpha/f)*B.gradphi axion term (when alpha/f/=0).
 !
@@ -836,34 +834,36 @@ p%jj=p%jj_ohm
       !   dst=dst-alpfpsi*dst2
       ! endif
 
-      endsubroutine calc_axion_term
+    endsubroutine calc_axion_term
 !***********************************************************************
-      subroutine calc_helical_term(p,gtmp,dphi,gphi,lphihom)
-          use Sub
-          type(pencil_case), intent(IN) :: p
-          real, dimension(nx,3), intent(out) :: gtmp
-          logical, intent(in) :: lphihom
-          real, dimension(nx), intent(in) :: dphi
-          real, dimension(nx,3), intent(in) :: gphi
+    subroutine calc_helical_term(p,gtmp,dphi,gphi,lphihom)
+
+      use Sub
+
+      type(pencil_case), intent(IN) :: p
+      real, dimension(nx,3), intent(out) :: gtmp
+      logical, intent(in) :: lphihom
+      real, dimension(nx), intent(in) :: dphi
+      real, dimension(nx,3), intent(in) :: gphi
 !
-          if (lphihom) then
-            call multsv(dphi,p%bb,gtmp)
-          else
-            call cross(gphi,p%el,gtmp)
-            call multsv_add(gtmp,dphi,p%bb,gtmp)
-          endif
+      if (lphihom) then
+        call multsv(dphi,p%bb,gtmp)
+      else
+        call cross(gphi,p%el,gtmp)
+        call multsv_add(gtmp,dphi,p%bb,gtmp)
+      endif
 
-          ! if (alpfpsi/=0. .and. lwaterfall) then
-          !   if (lpsi_hom) then
-          !     call multsv(p%dpsi,p%bb,gtmp2)
-          !   else
-          !     call cross(p%gpsi,p%el,gtmp2)
-          !     call multsv_add(gtmp2,p%dpsi,p%bb,gtmp2)
-          !   endif
-          !   gtmp=gtmp+gtmp2*alpfpsi
-          ! endif
+      ! if (alpfpsi/=0. .and. lwaterfall) then
+      !   if (lpsi_hom) then
+      !     call multsv(p%dpsi,p%bb,gtmp2)
+      !   else
+      !     call cross(p%gpsi,p%el,gtmp2)
+      !     call multsv_add(gtmp2,p%dpsi,p%bb,gtmp2)
+      !   endif
+      !   gtmp=gtmp+gtmp2*alpfpsi
+      ! endif
 
-      endsubroutine
+    endsubroutine
 !***********************************************************************
     subroutine dspecial_dt(f,df,p)
 !
@@ -920,9 +920,9 @@ p%jj=p%jj_ohm
         ! add charge from Higgs field to Gauss constraint
         if (lphi_doublet .and. lphi_hypercharge .and. coupl_gy /= 0) then
           p%rhoe_higgsY=-coupl_gy*(p%phi*p%cov_der(:,1,2) - &
-                  p%phi_doublet(:,1)*p%cov_der(:,1,1) + &
-                  p%phi_doublet(:,2)*p%cov_der(:,1,4) - &
-                  p%phi_doublet(:,3)*p%cov_der(:,1,3))
+                                   p%phi_doublet(:,1)*p%cov_der(:,1,1) + &
+                                   p%phi_doublet(:,2)*p%cov_der(:,1,4) - &
+                                   p%phi_doublet(:,3)*p%cov_der(:,1,3))
           tmp = tmp + p%rhoe_higgsY
         endif
         if (.not.lswitch_off_Gamma) df(l1:l2,m,n,iGamma)=df(l1:l2,m,n,iGamma) &
@@ -932,6 +932,7 @@ p%jj=p%jj_ohm
 !  Solve dA/dt = -E.
 !
       if (lmagnetic) then
+
         df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-p%el
 !
 !  Solve: dE/dt = curlB - ...
@@ -1101,8 +1102,7 @@ p%jj=p%jj_ohm
 !
 !  Add Lorentz force in displacement current module
 !
-      if (llorentzforce_ee) &
-        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxbr
+      if (llorentzforce_ee) df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxbr
 !
 !  If requested, put sigE and sigB into f array as auxiliaries.
 !
@@ -1143,8 +1143,8 @@ p%jj=p%jj_ohm
       call sum_mn_name(p%eb,idiag_ebm)
       if (idiag_sigErms/=0) call sum_mn_name(p%sigE**2,idiag_sigErms,lsqrt=.true.)
       if (idiag_sigBrms/=0) call sum_mn_name(p%sigB**2,idiag_sigBrms,lsqrt=.true.)
-      call sum_mn_name(p%sigE*p%e2,idiag_sigEE2m)
-      call sum_mn_name(p%sigB*p%eb,idiag_sigBBEm)
+      if (idiag_sigEE2m/=0) call sum_mn_name(p%sigE*p%e2,idiag_sigEE2m)
+      if (idiag_sigBBEm/=0) call sum_mn_name(p%sigB*p%eb,idiag_sigBBEm)
       if (idiag_adphiBm/=0) then
         if (alpf/=0.) call calc_helical_term(p,gtmp,p%dphi,p%gphi,lphi_hom)
         call dot(alpf*gtmp,p%el,tmp)
@@ -1158,17 +1158,17 @@ p%jj=p%jj_ohm
       call sum_mn_name(p%e2,idiag_erms,lsqrt=.true.)
       call sum_mn_name(p%edot2,idiag_edotrms,lsqrt=.true.)
       call max_mn_name(p%e2,idiag_emax,lsqrt=.true.)
-      call sum_mn_name(p%eprime**2,idiag_eprimerms,lsqrt=.true.)
-      call sum_mn_name(p%bprime**2,idiag_bprimerms,lsqrt=.true.)
-      call sum_mn_name(p%jprime**2,idiag_jprimerms,lsqrt=.true.)
-      call sum_mn_name(p%gam_EB**2,idiag_gam_EBrms,lsqrt=.true.)
-      call sum_mn_name(p%boost**2 ,idiag_boostprms,lsqrt=.true.)
+      if (idiag_eprimerms/=0) call sum_mn_name(p%eprime**2,idiag_eprimerms,lsqrt=.true.)
+      if (idiag_bprimerms/=0) call sum_mn_name(p%bprime**2,idiag_bprimerms,lsqrt=.true.)
+      if (idiag_jprimerms/=0) call sum_mn_name(p%jprime**2,idiag_jprimerms,lsqrt=.true.)
+      if (idiag_gam_EBrms/=0) call sum_mn_name(p%gam_EB**2,idiag_gam_EBrms,lsqrt=.true.)
+      if (idiag_boostprms/=0) call sum_mn_name(p%boost**2 ,idiag_boostprms,lsqrt=.true.)
       if (idiag_a0rms/=0) call sum_mn_name(p%a0**2,idiag_a0rms,lsqrt=.true.)
       call sum_mn_name(p%BcurlE,idiag_BcurlEm)
   !   if (lsolve_chargedensity) then
       call sum_mn_name(p%rhoe,idiag_rhoem)
       call sum_mn_name(p%count_eb0,idiag_count_eb0)
-      call sum_mn_name(p%rhoe**2,idiag_rhoerms,lsqrt=.true.)
+      if (idiag_rhoerms/=0) call sum_mn_name(p%rhoe**2,idiag_rhoerms,lsqrt=.true.)
   !   endif
       if (idiag_divErms/=0) call sum_mn_name(p%divE**2,idiag_divErms,lsqrt=.true.)
       if (idiag_constrainteqn > 0) then
@@ -1433,6 +1433,7 @@ p%jj=p%jj_ohm
     endsubroutine load_variables_to_gpu_special
 !***********************************************************************
     subroutine pushpars2c(p_par)
+
       use Syscalls, only: copy_addr
 
       integer, parameter :: n_pars=100
