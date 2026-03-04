@@ -99,6 +99,7 @@ module Special
   real :: beta_inflation=0., rescale_ee=1.
   logical :: reinitialize_ee=.false.
   character (len=labellen) :: aderiv_scaling='table'
+!
   namelist /special_run_pars/ &
     alpf, llongitudinalE, llorenz_gauge_disp, lphi_hom, lphi_linear_regime, &
     leedot_as_aux, ldivE_as_aux, lsigE_as_aux, lsigB_as_aux, &
@@ -1100,9 +1101,8 @@ p%jj=p%jj_ohm
 !
 !  Add Lorentz force in displacement current module
 !
-      if (llorentzforce_ee) then
+      if (llorentzforce_ee) &
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxbr
-      endif
 !
 !  If requested, put sigE and sigB into f array as auxiliaries.
 !
@@ -1116,15 +1116,15 @@ p%jj=p%jj_ohm
 !
 !  diagnostics
 !
-      if (ldiagnos) then
-        call calc_diagnostics_special(f,p)
-      endif
+      if (ldiagnos) call calc_diagnostics_special(f,p)
 !
     endsubroutine dspecial_dt
 !***********************************************************************
     subroutine calc_diagnostics_special(f,p)
+!
       use Sub
       use Diagnostics
+!
       real, dimension(mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
       real, dimension(nx) :: tmp,constrainteqn
@@ -1478,6 +1478,7 @@ p%jj=p%jj_ohm
       call copy_addr(iedoty,p_par(41)) ! int
       call copy_addr(iedotz,p_par(42)) ! int
       call copy_addr(irhoe,p_par(43)) ! int
+      call copy_addr(llorentzforce_ee,p_par(44)) ! bool
 
     endsubroutine pushpars2c
 !***********************************************************************
