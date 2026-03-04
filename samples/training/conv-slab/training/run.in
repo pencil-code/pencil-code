@@ -4,25 +4,26 @@
 ! Run parameters
 !
 &run_pars
-  ip=7
+  !ip=7
 	!lnowrite=F
   cvsid='$Id$',
   ! use this to evolve the system a bit
 	!nt=1200, it1=10, isave=100, itorder=3, dt=1e-4
 
   ! then switch to stationary case
- 	nt=3000, it1=10, isave=1000, itorder=3, dt=1e-3
+ 	nt=6650, it1=50, isave=1000, itorder=3
 
-  dsnap=20., dtmin=1e-16
+  !dsnap=20., 
 !! uncomment the following block to see the free evolution of the system:
 !  nt=4000, it1=50, isave=2000, itorder=3
 !  dsnap=0.2, dvid=0.2
   !bcx = 'p','p','p', 'p',    'p'
   !bcy = 'p','p','p', 'p',    'p'
   !bcz = 's','s','a','a2','c1:cT'
-  cdtv=0.30 
+  cdtv=0.8
 	!cdt=0.2
-  lpencil_check=T
+  !lpencil_check=T
+	dtmin=1e-16
 /
 &gpu_run_pars
   ltest_bcs=F
@@ -71,12 +72,12 @@
   max_loss=1.e-100
   model='stationary'
   config_file='config_torchfort.yaml'
-  it_train_end=3000
+  it_train_end=6650
 	lrun_epoch=T
 	ltrain_mag=F
 	ltrain_dens=F
-	dt_train= 5.60e-02
-	t_train_start=3.3
-	t_train_end=11
-	t_train_chkpt=2.851
+	dt_train= 2.6544556700e-04
+	t_train_start=6.8e-3
+	t_train_end=1.001e-1
+	t_train_chkpt=5.0e-2
 /

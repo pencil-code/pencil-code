@@ -1190,6 +1190,15 @@ extern "C" void torch_train_c_api(AcReal *loss_val, int itsub, double t) {
   		myFile << i << "," << train_loss[i] << "\n";
   	}
   	myFile.close();
+		
+		std::string train_sample = "train_sample_" + std::to_string(my_rank) + ".csv";
+  	myFile.open(train_sample);
+  	myFile << "train_sample_nts\n";
+  	for (int i=0;i<train_nts.size();i++){
+  		myFile << train_nts[i] << "\n";
+  	}
+  	myFile.close();
+
   }
 
 #endif

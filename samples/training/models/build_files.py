@@ -27,7 +27,7 @@ def build_model(model_save_dir, stats_dir, model_name):
     
     models = {}
     # Initialize model
-    if(model_name == 'AFNO' ):
+    if(model_name == 'afno' ):
     
         afno_params = config['afno']
     
@@ -35,7 +35,7 @@ def build_model(model_save_dir, stats_dir, model_name):
         
         models['afno'] = model_afno
     
-    if(model_name == 'FNO' ):
+    if(model_name == 'fno' ):
         
         fno_params = config['fno']
         model_fno = FNO(**fno_params).to(device)
@@ -44,7 +44,7 @@ def build_model(model_save_dir, stats_dir, model_name):
     
     
     
-    if(model_name == 'UNET' ):
+    if(model_name == 'unet' ):
     
         model_unet = UNet3D().to(device)
     
@@ -52,7 +52,7 @@ def build_model(model_save_dir, stats_dir, model_name):
         
     
     
-    if(model_name == 'CNN' ):
+    if(model_name == 'cnn' ):
     
         model_cnn = CNN3D().to(device)
     
@@ -155,7 +155,7 @@ def build_torchfort_config(save_dir, model_name=None):
         print(f"Failed to create TorchFort config: {e}")
 
 def rand_dt_train(run_dir, min, max):
-    new_dt = f"{random.uniform(min, max):.2e}"
+    new_dt = f"{random.uniform(min, max):.10e}"
 
     lines = []
     with open(run_dir, 'r') as f:

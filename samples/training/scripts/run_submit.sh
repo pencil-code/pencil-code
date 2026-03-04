@@ -2,7 +2,7 @@
 #SBATCH --job-name=test_torchfort
 #SBATCH --account=project_2016901
 #SBATCH --partition=gpu
-#SBATCH --time=24:00:00
+#SBATCH --time=05:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=7
@@ -14,10 +14,10 @@
 
 
 # current sample name
-sample_name=helical-MHDturb
+sample_name=conv-slab
 
 # training or inference
-mode=inference
+mode=training
 
 data_src="/scratch/project_2000403/$USER/data_$sample_name/data"
 snap_src="/scratch/project_2000403/$USER/snapshots_$sample_name/snapshots"

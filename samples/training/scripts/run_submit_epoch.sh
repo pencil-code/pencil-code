@@ -2,7 +2,7 @@
 #SBATCH --job-name=test_torchfort
 #SBATCH --account=project_2016901
 #SBATCH --partition=gpu
-#SBATCH --time=24:00:00
+#SBATCH --time=48:00:00
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=7
@@ -14,16 +14,16 @@
 
 
 # current sample name
-sample_name=helical-MHDturb
+sample_name=conv-slab
 
 # training or inference
 mode=training
 
-# UNET or FNO
-ml_model=FNO
+# unet or fno
+ml_model=unet
 
-dt_train_min=0.0046
-dt_train_max=0.056
+dt_train_min=0.000233
+dt_train_max=0.000311
 
 
 data_src="/scratch/project_2000403/$USER/data_$sample_name/data"
@@ -38,7 +38,7 @@ module load pytorch/2.4
 
 export PYTHONPATH=$PYTHONPATH:$PENCIL_HOME/samples/training/models
 
-EPOCHS=100
+EPOCHS=5
 
 for ((i=1; i<=EPOCHS; i++)); do
     echo "=== Starting Epoch $i / $EPOCHS ==="
@@ -74,32 +74,37 @@ for ((i=1; i<=EPOCHS; i++)); do
 		
 		if [ $i -ne 1 ]; then
     	# Copy model checkpoints and logs for this epoch
-    	cp $data_src/training/stationary.pt \
-      	 $data_src/training/fno/fno_epoch_256_${i}.pt
+    	cp "${data_src}/training/stationary.pt" \
+      	 "${data_src}/training/${ml_model}/${ml_model}_epoch_256_${i}.pt"
 
     	cp train_loss_0.csv \
-      	 $data_src/training/fno/train_loss_rank_0_epoch_${i}.csv
+      	 "${data_src}/training/${ml_model}/train_loss_rank_0_epoch_${i}.csv"
 
     	cp val_loss_0.csv \
-      	 $data_src/training/fno/val_loss_rank_0_epoch_${i}.csv
+      	 "${data_src}/training/$ml_model/val_loss_rank_0_epoch_${i}.csv"
 		fi
 		
 		# discard the first model because it has already tried to optimize for largest values
 		if [ $i -eq 1 ]; then
-			rm -f $data_src/training/stationary.pt
+			rm -f "${data_src}/training/stationary.pt"
 		fi
 		
 		cp stats_current_output.pt \
-			$data_src/training/stats_current_output.pt
+			"${data_src}/training/stats_current_output.pt"
 
 		cp stats_current_input.pt \
-			$data_src/training/stats_current_input.pt
+			"${data_src}/training/stats_current_input.pt"
 			
 done
 
 cp train.out \
-	$data_src/training/fno/train_epoch_${EPOCHS}.out
+	"${data_src}/training/${ml_model}/train_epoch_${EPOCHS}.out"
 
 
 
+cp stats_current_output.pt \
+"${data_src}/training/${ml_model}/stats_current_output.pt"
+
+cp stats_current_input.pt \
+	"${data_src}/training/${ml_model}/stats_current_input.pt"
 
