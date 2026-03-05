@@ -87,7 +87,6 @@ module Special
 !
   include '../special.h'
 !
-!
 ! Declare index of new variables in f array (if any).
 !
   logical :: luschur2_as_aux=.false., lbschur2_as_aux=.false.
@@ -131,16 +130,20 @@ module Special
   contains
 !================== External SELECT function for DGEES ==================
 logical function selct(WR, WI)
+!
   real, intent(in) :: WR, WI
   ! Return .TRUE. for eigenvalues to move to the TOP-LEFT block.
   ! We choose REAL eigenvalues => complex pair (if any) goes bottom-right.
   selct = (WI == 0.)
+!
 end function selct
 !================== External SELECT function for ZGEES ==================
   ! Dummy SELECT function (not used because SORT = 'N')
   logical function select_dummy(w)
+!
     complex, intent(in) :: w
     select_dummy = .false.
+!
   end function select_dummy
 !****************************************************************************
     subroutine register_special
@@ -168,13 +171,11 @@ end function selct
       if (lbschurp2_as_aux) &
         call register_report_aux('bschurp2', ibschurp2, ibschurp2_SH, ibschurp2_RR, ibschurp2_EL)
 !
-      if (luschurm_as_aux) then
+      if (luschurm_as_aux) &
         call register_report_aux('uschurm_RR', iuschurm_RR)
-      endif
 !
-      if (lbschurm_as_aux) then
+      if (lbschurm_as_aux) &
         call register_report_aux('bschurm_RR', ibschurm_RR)
-      endif
 !
       if (luschur_as_aux) then
         call farray_register_auxiliary('uschur_SH', iuschur_SH, vector=9)
@@ -214,11 +215,11 @@ end function selct
 !
       intent(inout) :: f
 !
+      call keep_compiler_quiet(f)
+!
     endsubroutine init_special
 !***********************************************************************
     subroutine pencil_criteria_special
-!
-!  Dummy
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -262,7 +263,7 @@ end function selct
           matA=p%uij(l,:,:)
           matA2=sum(matA**2)
           if (matA2/=0.) then
-             allocate(matV(nnn,nnn), matQ(nnn,nnn))
+            allocate(matV(nnn,nnn), matQ(nnn,nnn))
             if (luse_complex_schur) then
               call schur_standardized_complex(matA, matV_cmplx, matQ_cmplx, p%uSH2(l), p%uRR2(l), p%uEL2(l))
             else
@@ -273,7 +274,7 @@ end function selct
               p%uEL2(l)=sum(matV_EL**2)
               p%uRRm(l)=2.*sum(matV_SH*matV_RR)+p%uRR2(l)
             endif
-             deallocate(matV, matQ)
+            deallocate(matV, matQ)
           endif
 !
 !  Possibility of uSH, uRR, and uEL matrices as auxiliary arrays
@@ -375,7 +376,7 @@ end function selct
           matA=p%bij(l,:,:)
           matA2=sum(matA**2)
           if (matA2/=0.) then
-             allocate(matV(nnn,nnn), matQ(nnn,nnn))
+            allocate(matV(nnn,nnn), matQ(nnn,nnn))
             if (luse_complex_schur) then
               call schur_standardized_complex(matA, matV_cmplx, matQ_cmplx, p%bSH2(l), p%bRR2(l), p%bEL2(l))
             else
@@ -386,7 +387,7 @@ end function selct
               p%bEL2(l)=sum(matV_EL**2)
               p%bRRm(l)=2.*sum(matV_SH*matV_RR)+p%bRR2(l)
             endif
-             deallocate(matV, matQ)
+            deallocate(matV, matQ)
           endif
 !
 !  Possibility of bSH, bRR, and bEL matrices as auxiliary arrays
@@ -474,6 +475,7 @@ end function selct
     endsubroutine calc_pencils_special
 !***********************************************************************
     subroutine schur_decompose(matV, matV_SH, matV_RR, matV_EL)
+!
       real, dimension (3,3) :: matV_SH, matV_RR, matV_EL, matV_rest, matV_rest_trans
       real, allocatable :: matV(:,:)
       integer :: i, j, nnn=3
@@ -512,24 +514,28 @@ end function selct
     endsubroutine schur_decompose
 !***********************************************************************
   subroutine print_mat(M)
-    real            , intent(in) :: M(:,:)
+
+    real    , intent(in) :: M(:,:)
     integer :: r, c
+
     do r = 1, size(M,1)
        write(*,'(100(1X,F12.6))') ( M(r,c), c=1,size(M,2) )
-    end do
+    enddo
+
   end subroutine print_mat
 !***********************************************************************
   subroutine schur_standardized(A_input, T, VS)
-  integer            :: nnn, lda, ldvs, info, sdim, lwork
-  integer            :: i, j
-  real               :: tol
+
+  integer         :: nnn, lda, ldvs, info, sdim, lwork
+  integer         :: i, j
+  real            :: tol
   real            :: A_input(3,3)
   real            , allocatable :: A(:,:), T(:,:), VS(:,:), WR(:), WI(:), WORK(:)
-  logical,    allocatable :: BWORK(:)
+  logical         , allocatable :: BWORK(:)
 
-  real             :: a11, a12, a21, a22
-  real             :: rt1r, rt1i, rt2r, rt2i, cs, sn
-  real             :: R11, R12, R21, R22
+  real            :: a11, a12, a21, a22
+  real            :: rt1r, rt1i, rt2r, rt2i, cs, sn
+  real            :: R11, R12, R21, R22
   real            , allocatable :: TMP(:,:), TMP2(:,:)
 
   external dgees, dlanv2            ! LAPACK externals
@@ -630,40 +636,41 @@ end function selct
 
     endsubroutine schur_standardized
 !***********************************************************************
-  subroutine schur_standardized_complex(A_input, T, VS, SH2, RR2, EL2)
-  integer              :: nnn, lda, ldvs, info, sdim, lwork, i, j
-  real                 :: A_input(3,3), rwork(3), SH2, RR2, EL2
-  real, allocatable    :: A(:,:), WI(:), WORK(:)
-  complex, allocatable :: T(:,:)
-  complex              :: W(3), VS(3,3)
-  logical              :: BWORK(1)   ! SORT='N', so dummy size is sufficient
-  external                zgees      ! LAPACK externals
+    subroutine schur_standardized_complex(A_input, T, VS, SH2, RR2, EL2)
 
-  ! ---- Example matrix (3x3). Replace with your data. ----
-  nnn = 3
-  lda = nnn
-  ldvs = nnn
+    integer              :: nnn, lda, ldvs, info, sdim, lwork, i, j
+    real                 :: A_input(3,3), rwork(3), SH2, RR2, EL2
+    real, allocatable    :: A(:,:), WI(:), WORK(:)
+    complex, allocatable :: T(:,:)
+    complex              :: W(3), VS(3,3)
+    logical              :: BWORK(1)   ! SORT='N', so dummy size is sufficient
+    external                zgees      ! LAPACK externals
 
-  allocate(A(nnn,nnn), WI(nnn))
+    ! ---- Example matrix (3x3). Replace with your data. ----
+    nnn = 3
+    lda = nnn
+    ldvs = nnn
 
-  A = reshape(A_input, shape(A_input), order=(/2,1/) )
-  T = cmplx(A)
-  lwork = 12
-  allocate(WORK(lwork))
+    allocate(A(nnn,nnn), WI(nnn))
 
-  ! ---- Real Schur with sorting: real eigenvalues first (complex pair -> bottom-right) ----
-  T = cmplx(A)
-  call zgees('V','S', select_dummy, nnn, T, lda, sdim, W, VS, 3, WORK, lwork, rwork, BWORK, info)
-  deallocate(WORK)
-  !
-  SH2=  abs(T(1,2))**2+  abs(T(1,3))**2+  abs(T(2,3))**2
-  RR2=aimag(T(1,1))**2+aimag(T(2,2))**2+aimag(T(3,3))**2
-  EL2= real(T(1,1))**2+ real(T(2,2))**2+ real(T(3,3))**2
+    A = reshape(A_input, shape(A_input), order=(/2,1/) )
+    T = cmplx(A)
+    lwork = 12
+    allocate(WORK(lwork))
+
+    ! ---- Real Schur with sorting: real eigenvalues first (complex pair -> bottom-right) ----
+    T = cmplx(A)
+    call zgees('V','S', select_dummy, nnn, T, lda, sdim, W, VS, 3, WORK, lwork, rwork, BWORK, info)
+    deallocate(WORK)
+    !
+    SH2=  abs(T(1,2))**2+  abs(T(1,3))**2+  abs(T(2,3))**2
+    RR2=aimag(T(1,1))**2+aimag(T(2,2))**2+aimag(T(3,3))**2
+    EL2= real(T(1,1))**2+ real(T(2,2))**2+ real(T(3,3))**2
 !
-  if (info .ne. 0) then
-     print *, 'ZGEES failed, INFO=', info
-     stop 1
-  end if
+    if (info .ne. 0) then
+      print *, 'ZGEES failed, INFO=', info
+      stop 1
+    end if
 
     endsubroutine schur_standardized_complex
 !***********************************************************************
@@ -712,9 +719,6 @@ end function selct
     endsubroutine dspecial_dt
 !***********************************************************************
     subroutine dspecial_dt_ode
-!
-      use Diagnostics, only: save_name
-      use SharedVariables, only: get_shared_variable
 !
     endsubroutine dspecial_dt_ode
 !***********************************************************************
@@ -772,8 +776,8 @@ end function selct
               cnamev=='uschurm_RR' .or. &
               cnamev=='bschur2_SH' .or. cnamev=='bschur2_RR' .or. cnamev=='bschur2_EL' .or. &
               cnamev=='bschurm_RR' .or. &
-              cnamev=='uschurp2_SH' .or. cnamev=='uschurp2_RR' .or. cnamev=='uschurp2_EL' .or. &
-              cnamev=='bschurp2_SH' .or. cnamev=='bschurp2_RR' .or. cnamev=='bschurp2_EL' ) cformv='DEFINED'
+              cnamev=='uschurp2_SH'.or. cnamev=='uschurp2_RR'.or. cnamev=='uschurp2_EL'.or. &
+              cnamev=='bschurp2_SH'.or. cnamev=='bschurp2_RR'.or. cnamev=='bschurp2_EL' ) cformv='DEFINED'
       endif
 !
 !  reset everything in case of reset
