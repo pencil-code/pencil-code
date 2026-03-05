@@ -50,7 +50,7 @@ sub new {
         $class = ref($proto);
         # If this is a call of the form $object->new(), extract properties
         # of original object and use them as default values.
-        if ($proto->isa('Pencil::DocExtractor')) {
+        if ($proto->isa('Pencil::Doc::Extractor')) {
             $parent = $proto;
         }
     } else {
