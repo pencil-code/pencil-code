@@ -156,6 +156,8 @@ module HDF5_IO
         maux_out = 0
       endif
 !
+      call h5eset_auto_f(1,h5_err)   ! enable error stack printing
+
     endsubroutine initialize_hdf5
 !***********************************************************************
     subroutine init_hdf5
@@ -198,6 +200,9 @@ module HDF5_IO
 !
       ! check for an HDF5 error
       if (code /= 0) then
+
+        call h5eprint_f(h5_err)   ! print error stack if existent
+
         if (loptest(lerrcont)) then
           if (present (dataset)) then
             call warning (scaller, message//' '//"'"//trim (dataset)//"'"//' in "'//trim (current)//'"')
@@ -255,7 +260,11 @@ module HDF5_IO
         ! setup file access property list
         call h5pcreate_f (H5P_FILE_ACCESS_F, h5_plist, h5_err)
         call check_error (h5_err, 'create global file access property list', caller='file_open_hdf5')
-        call h5pset_fapl_mpio_f (h5_plist, ioptest(comm,MPI_COMM_PENCIL), MPI_INFO_NULL, h5_err)
+        if (lmpicomm) then
+          call h5pset_fapl_mpio_f (h5_plist, ioptest(comm,MPI_COMM_PENCIL), MPI_INFO_NULL, h5_err)
+        else
+          h5_plist=H5P_DEFAULT_F
+        endif
         call check_error (h5_err, 'modify global file access property list')
 !
         if (ltrunc) then
@@ -466,7 +475,7 @@ module HDF5_IO
       ! prepare data transfer
       call h5pcreate_f (H5P_DATASET_XFER_F, h5_plist, h5_err)
       call check_error (h5_err, 'set data transfer properties', name)
-      call h5pset_dxpl_mpio_f (h5_plist, H5FD_MPIO_COLLECTIVE_F, h5_err)
+      call h5pset_dxpl_mpio_f_wrapper (h5_plist, H5FD_MPIO_COLLECTIVE_F, h5_err)
       call check_error (h5_err, 'select collective IO', name)
 !
       ! collectively read the data
@@ -597,7 +606,7 @@ module HDF5_IO
       ! prepare data transfer
       call h5pcreate_f (H5P_DATASET_XFER_F, h5_plist, h5_err)
       call check_error (h5_err, 'set data transfer properties', name)
-      call h5pset_dxpl_mpio_f (h5_plist, H5FD_MPIO_COLLECTIVE_F, h5_err)
+      call h5pset_dxpl_mpio_f_wrapper (h5_plist, H5FD_MPIO_COLLECTIVE_F, h5_err)
       call check_error (h5_err, 'select collective IO', name)
 !
       ! collectively read the data
@@ -691,7 +700,7 @@ module HDF5_IO
       ! prepare data transfer
       call h5pcreate_f (H5P_DATASET_XFER_F, h5_plist, h5_err)
       call check_error (h5_err, 'set data transfer properties', name)
-      call h5pset_dxpl_mpio_f (h5_plist, H5FD_MPIO_COLLECTIVE_F, h5_err)
+      call h5pset_dxpl_mpio_f_wrapper (h5_plist, H5FD_MPIO_COLLECTIVE_F, h5_err)
       call check_error (h5_err, 'select collective IO', name)
 !
       ! collectively read the data
@@ -750,7 +759,7 @@ module HDF5_IO
       ! prepare data transfer
       call h5pcreate_f (H5P_DATASET_XFER_F, h5_plist, h5_err)
       call check_error (h5_err, 'set data transfer properties', name)
-      call h5pset_dxpl_mpio_f (h5_plist, H5FD_MPIO_COLLECTIVE_F, h5_err)
+      call h5pset_dxpl_mpio_f_wrapper (h5_plist, H5FD_MPIO_COLLECTIVE_F, h5_err)
       call check_error (h5_err, 'select collective IO', name)
 !
       ! collectively read the data
@@ -828,7 +837,7 @@ module HDF5_IO
       ! prepare data transfer
       call h5pcreate_f (H5P_DATASET_XFER_F, h5_plist, h5_err)
       call check_error (h5_err, 'set data transfer properties', name)
-      call h5pset_dxpl_mpio_f (h5_plist, H5FD_MPIO_COLLECTIVE_F, h5_err)
+      call h5pset_dxpl_mpio_f_wrapper (h5_plist, H5FD_MPIO_COLLECTIVE_F, h5_err)
       call check_error (h5_err, 'select collective IO', name)
 !
       ! collectively read the data
@@ -891,7 +900,7 @@ module HDF5_IO
       ! prepare data transfer
       call h5pcreate_f (H5P_DATASET_XFER_F, h5_plist, h5_err)
       call check_error (h5_err, 'set data transfer properties', name)
-      call h5pset_dxpl_mpio_f (h5_plist, H5FD_MPIO_COLLECTIVE_F, h5_err)
+      call h5pset_dxpl_mpio_f_wrapper (h5_plist, H5FD_MPIO_COLLECTIVE_F, h5_err)
       call check_error (h5_err, 'select collective IO', name)
 !
       ! collectively read the data
@@ -1086,7 +1095,7 @@ module HDF5_IO
       ! prepare data transfer
       call h5pcreate_f (H5P_DATASET_XFER_F, h5_plist, h5_err)
       call check_error (h5_err, 'set data transfer properties', name)
-      call h5pset_dxpl_mpio_f (h5_plist, H5FD_MPIO_COLLECTIVE_F, h5_err)
+      call h5pset_dxpl_mpio_f_wrapper (h5_plist, H5FD_MPIO_COLLECTIVE_F, h5_err)
       call check_error (h5_err, 'select collective IO', name)
 !
       ! collectively write the data
@@ -1241,7 +1250,7 @@ module HDF5_IO
       ! prepare data transfer
       call h5pcreate_f (H5P_DATASET_XFER_F, h5_plist, h5_err)
       call check_error (h5_err, 'set data transfer properties', name)
-      call h5pset_dxpl_mpio_f (h5_plist, H5FD_MPIO_COLLECTIVE_F, h5_err)
+      call h5pset_dxpl_mpio_f_wrapper (h5_plist, H5FD_MPIO_COLLECTIVE_F, h5_err)
       call check_error (h5_err, 'select collective IO', name)
 !
       ! collectively write the data
@@ -1316,7 +1325,7 @@ module HDF5_IO
       ! prepare data transfer
       call h5pcreate_f (H5P_DATASET_XFER_F, h5_plist, h5_err)
       call check_error (h5_err, 'set data transfer properties', name)
-      call h5pset_dxpl_mpio_f (h5_plist, H5FD_MPIO_COLLECTIVE_F, h5_err)
+      call h5pset_dxpl_mpio_f_wrapper (h5_plist, H5FD_MPIO_COLLECTIVE_F, h5_err)
       call check_error (h5_err, 'select collective IO', name)
 !
       ! collectively write the data
@@ -1430,7 +1439,7 @@ module HDF5_IO
       ! prepare data transfer
       call h5pcreate_f (H5P_DATASET_XFER_F, h5_plist, h5_err)
       call check_error (h5_err, 'set data transfer properties', name)
-      call h5pset_dxpl_mpio_f (h5_plist, H5FD_MPIO_COLLECTIVE_F, h5_err)
+      call h5pset_dxpl_mpio_f_wrapper (h5_plist, H5FD_MPIO_COLLECTIVE_F, h5_err)
       call check_error (h5_err, 'select collective IO', name)
 !
       ! collectively write the data
@@ -1564,7 +1573,7 @@ module HDF5_IO
       ! prepare data transfer
       call h5pcreate_f (H5P_DATASET_XFER_F, h5_plist, h5_err)
       call check_error (h5_err, 'set data transfer properties', name)
-      call h5pset_dxpl_mpio_f (h5_plist, H5FD_MPIO_COLLECTIVE_F, h5_err)
+      call h5pset_dxpl_mpio_f_wrapper (h5_plist, H5FD_MPIO_COLLECTIVE_F, h5_err)
       call check_error (h5_err, 'select collective IO', name)
 !
       ! collectively write the data
@@ -1679,7 +1688,7 @@ module HDF5_IO
       ! prepare data transfer
       call h5pcreate_f (H5P_DATASET_XFER_F, h5_plist, h5_err)
       call check_error (h5_err, 'set data transfer properties', name)
-      call h5pset_dxpl_mpio_f (h5_plist, H5FD_MPIO_COLLECTIVE_F, h5_err)
+      call h5pset_dxpl_mpio_f_wrapper (h5_plist, H5FD_MPIO_COLLECTIVE_F, h5_err)
       call check_error (h5_err, 'select collective IO', name)
 !
       ! collectively write the data
@@ -1795,7 +1804,7 @@ module HDF5_IO
       ! prepare data transfer
       call h5pcreate_f (H5P_DATASET_XFER_F, h5_plist, h5_err)
       call check_error (h5_err, 'set data transfer properties', name)
-      call h5pset_dxpl_mpio_f (h5_plist, H5FD_MPIO_COLLECTIVE_F, h5_err)
+      call h5pset_dxpl_mpio_f_wrapper (h5_plist, H5FD_MPIO_COLLECTIVE_F, h5_err)
       call check_error (h5_err, 'select collective IO', name)
 !
       ! collectively write the data
@@ -2561,7 +2570,6 @@ module HDF5_IO
 !  07-Nov-2018/PABourdin: coded
 !
       use General, only: loptest
-      use Mpicomm, only: mpibcast_real, MPI_COMM_PENCIL
 !
       character(len=*), intent(in) :: name
       character, intent(in) :: type
@@ -2946,5 +2954,18 @@ module HDF5_IO
       endif
 !
     endsubroutine output_settings
+!***********************************************************************
+    subroutine h5pset_dxpl_mpio_f_wrapper(h5_plist, data_xfer_mode, h5_err)
+
+      integer(HID_T) :: h5_plist
+      integer :: h5_err, data_xfer_mode
+
+      if (lmpicomm) then
+        call h5pset_dxpl_mpio_f (h5_plist, H5FD_MPIO_COLLECTIVE_F, h5_err)
+      else
+        h5_plist=H5P_DEFAULT_F
+      endif
+
+    endsubroutine h5pset_dxpl_mpio_f_wrapper
 !***********************************************************************
 endmodule HDF5_IO
