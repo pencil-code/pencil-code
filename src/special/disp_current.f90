@@ -1481,6 +1481,7 @@ p%jj=p%jj_ohm
       call copy_addr(irhoe,p_par(43)) ! int
       call copy_addr(llorentzforce_ee,p_par(44)) ! bool
       call copy_addr(ldensity_add_je_heating,p_par(45)) ! bool
+      call copy_addr(je_heating_factor,p_par(46))
 
     endsubroutine pushpars2c
 !***********************************************************************
