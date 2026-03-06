@@ -225,20 +225,36 @@ module Special
       axionmass2=axionmass**2
 !
       if (lmagnetic .and. lem_backreact) then
-        call get_shared_variable('alpf',alpf,caller='initialize_backreact_infl')
-        call get_shared_variable('lphi_hom',lphi_hom)
-        call get_shared_variable('lphi_linear_regime',lphi_linear_regime)
-        call get_shared_variable('sigE_prefactor',sigE_prefactor)
-        call get_shared_variable('sigB_prefactor',sigB_prefactor)
-        call get_shared_variable('lcollinear_EB',lcollinear_EB)
-        call get_shared_variable('lcollinear_EB_aver',lcollinear_EB_aver)
-        call get_shared_variable('lnoncollinear_EB',lnoncollinear_EB)
-        call get_shared_variable('lnoncollinear_EB_aver',lnoncollinear_EB_aver)
-        call get_shared_variable('lmass_suppression',lmass_suppression)
-        call get_shared_variable('lallow_bprime_zero',lallow_bprime_zero)
-        call get_shared_variable('mass_chi',mass_chi)
+!
+!  The following variables are defined in disp_current, but in principle,
+!  the backreaction module can also run without it. In that case, these
+!  variables need to be defined here.
+!
+        if (iex>0) then
+          call get_shared_variable('alpf',alpf,caller='initialize_backreact_infl')
+          call get_shared_variable('lphi_hom',lphi_hom)
+          call get_shared_variable('lphi_linear_regime',lphi_linear_regime)
+          call get_shared_variable('sigE_prefactor',sigE_prefactor)
+          call get_shared_variable('sigB_prefactor',sigB_prefactor)
+          call get_shared_variable('lcollinear_EB',lcollinear_EB)
+          call get_shared_variable('lcollinear_EB_aver',lcollinear_EB_aver)
+          call get_shared_variable('lnoncollinear_EB',lnoncollinear_EB)
+          call get_shared_variable('lnoncollinear_EB_aver',lnoncollinear_EB_aver)
+          call get_shared_variable('lmass_suppression',lmass_suppression)
+          call get_shared_variable('lallow_bprime_zero',lallow_bprime_zero)
+          call get_shared_variable('mass_chi',mass_chi)
+        else
+          if (.not.associated(lphi_hom)) allocate(lphi_hom, lphi_linear_regime, &
+            lcollinear_EB, lnoncollinear_EB, lcollinear_EB_aver, lnoncollinear_EB_aver)
+          lphi_hom=.true.
+          lphi_linear_regime=.true.
+          lcollinear_EB=.false.
+          lnoncollinear_EB=.false.
+          lcollinear_EB_aver=.false.
+          lnoncollinear_EB_aver=.false.
+        endif
       else
-        if (.not.associated(alpf)) allocate(alpf,lphi_hom,lphi_linear_regime, &
+        if (.not.associated(alpf)) allocate(alpf, lphi_hom, lphi_linear_regime, &
           sigE_prefactor, sigB_prefactor, lcollinear_EB, lcollinear_EB_aver, &
           lnoncollinear_EB, lnoncollinear_EB_aver, lmass_suppression, &
           lallow_bprime_zero, mass_chi)
@@ -459,6 +475,7 @@ module Special
         a21=1./a2
         Hscript=0.
       endif
+!
     endsubroutine get_Hscript_and_a2
 !***********************************************************************
     subroutine dspecial_dt(f,df,p)
@@ -576,7 +593,7 @@ module Special
 !  If Ndiv=0 is set, we compute instead an advective timestep based on the Alfven speed.
 !  vA=B/sqrt(rho_chi), so dt=C_M*dx/vA. In practice, C_M (=cdt_rho_chi) can be 20.
 !
-      if (lfirst.and.ldt.and.ldt_backreact_infl) then
+      if (lfirst .and. ldt .and. ldt_backreact_infl) then
         if (Ndiv==0.) then
           if (lrho_chi) then
             advec2=advec2+(b2m_all/f_ode(iinfl_rho_chi))*dxyz_2/cdt_rho_chi**2

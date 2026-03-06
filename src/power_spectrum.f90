@@ -2067,7 +2067,7 @@ outer:do ikz=1,nz
         spectrumhel_sum(1)=0.
       endif
 !
-!  Normalize
+!  Normalize because of the 1/2 factor in the energy density.
 !
       spectrum_sum=.5*spectrum_sum
 !
@@ -2240,7 +2240,15 @@ outer:do ikz=1,nz
       call cross_mn(jj,bb,jxb)
       Lor(l1:l2,m,n,:)=jxb
       if (.not.lhydro) then
-        tmpv(l1:l2,m,n,:)=bb
+!
+!  If kinematic velocity field is defined as auxiliary array, we use that for a.
+!  Otherwise, as before, we use B.
+!
+        if (iux>0) then
+          tmpv(l1:l2,m,n,:)=f(l1:l2,m,n,iux:iuz)
+        else
+          tmpv(l1:l2,m,n,:)=bb
+        endif
         scrv(l1:l2,m,n,:)=jj
       endif
     enddo
@@ -2299,7 +2307,7 @@ outer:do ikz=1,nz
 !  sum energy and helicity spectra
 !  Remember: a=B, b=Lor, c=J, so for nonhydro, we want a.b and c.b
 !
-          if (lhydro) then
+          if (lhydro .or. (lhydro_kinematic.and.iux/=0)) then
             spectrum(k+1)=spectrum(k+1) &
                +b_re(ikx,iky,ikz)**2 &
                +b_im(ikx,iky,ikz)**2
@@ -2360,7 +2368,7 @@ outer:do ikz=1,nz
       if (ip<10) print*,'Writing power spectrum ',sp &
            ,' to ',trim(datadir)//'/power_'//trim(sp)//'.dat'
 !
-!  normal 2 spectra
+!  normal 2 spectra, so \int E_Lor(k) dk = <(JxB)^2>/2.
 !
       spectrum_sum=.5*spectrum_sum
       open(1,file=trim(datadir)//'/power_'//trim(sp)//'.dat',position='append')
