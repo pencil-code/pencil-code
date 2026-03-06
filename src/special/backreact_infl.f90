@@ -1016,11 +1016,11 @@ module Special
 !***********************************************************************
     subroutine prep_ode_right(f,sigE1m,sigB1m)
 !
-      use Sub, only: dot2_mn, grad, curl, dot_mn
+      use Sub, only: dot2_mn, grad, curl, dot_mn, cross_mn
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, intent(inout) :: sigE1m,sigB1m
-      real, dimension (nx,3) :: el, bb, gphi
+      real, dimension (nx,3) :: el, bb, gphi, uxb, uu
       real, dimension (nx) :: e2, b2, gphi2, dphi, a2rhop, a2rho
       real, dimension (nx) :: ddota, phi, Vpotential, edotb, sigE1, sigB1
       real, dimension (nx) :: boost, gam_EB, eprime, bprime, jprime1
@@ -1051,10 +1051,19 @@ module Special
 !  Note the .5*fourthird factor in front of (e2+b2)*a21, but that is
 !  just for rhop, which is output quantity.
 !
-      if (iex/=0 .and. lem_backreact) then
-        el=f(l1:l2,m,n,iex:iez)
-        call curl(f,iaa,bb)          !MR: the ghost zones are not necessarily updated!!!
+      if (lem_backreact) then
+        call curl(f,iaa,bb)          !MR: the ghost zones are not necessarily updated!!! AB: Yes, but should be ok within the domain)
         call dot2_mn(bb,b2)
+!
+!  In MHD, when we don't have the electric field, we can use -uxB for now.
+!
+        if (iex/=0) then
+          el=f(l1:l2,m,n,iex:iez)
+        else
+          uu=f(l1:l2,m,n,iux:iuz)
+          call cross_mn(uu,bb,uxb)
+          el=-uxb
+        endif
         call dot2_mn(el,e2)
         a2rhop=a2rhop+(.5*fourthird)*(e2+b2)*a21
         if (.not. lphi_linear_regime) a2rho=a2rho+.5*(e2+b2)*a21
