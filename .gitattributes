@@ -2996,9 +2996,6 @@ samples/advective_gauge/src/Makefile.local -text
 samples/advective_gauge/src/cparam.local -text
 samples/advective_gauge/start.in -text
 samples/advective_gauge/video.in -text
-samples/advective_gauge/xyaver.in -text
-samples/advective_gauge/yaver.in -text
-samples/advective_gauge/zaver.in -text
 samples/ascalar/.log -text
 samples/ascalar/.pc_build_history -text
 samples/ascalar/k.dat -text
