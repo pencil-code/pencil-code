@@ -116,6 +116,8 @@ indices = [ $
   { name:'irhs', label:'RHS', dims:3 }, $
   { name:'iss_b', label:'Base Entropy', dims:1 }, $
   { name:'iaa', label:'Magnetic vector potential', dims:3 }, $
+  { name:'iacou', label:'Magnetic vector potential in Coulomb gauge', dims:3 }, $
+  { name:'iaadv', label:'Magnetic vector potential in advective gauge', dims:3 }, $
   { name:'ia0', label:'Electric potential for Lorenz gauge', dims:1 }, $
   { name:'iinfl_phi', label:'Inflaton phi', dims:1 }, $
   { name:'iinfl_dphi', label:'Inflaton time derivative dphi', dims:1 }, $
@@ -131,6 +133,7 @@ indices = [ $
   { name:'ijj', label:'Current density', dims:3 }, $
   { name:'iee', label:'Electric field', dims:3 }, $
   { name:'ie', label:'Electric field', dims:3 }, $
+  { name:'ijxb', label:'Lorentz force', dims:3 }, $
   { name:'iemf', label:'Electromotive force', dims:3 }, $
   { name:'iaak', label:'Real part of vector potential', dims:3 }, $
   { name:'iaakim', label:'Imaginary part of vector potential', dims:3 }, $

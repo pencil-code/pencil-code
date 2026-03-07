@@ -106,7 +106,7 @@ module Special
   real :: echarge=.0, echarge_const=.303
   real :: count_eb0_all=0.
   real, target :: ddotam_all
-  real, pointer :: alpf
+  real, pointer :: alpf, eta
   real, pointer :: sigE_prefactor, sigB_prefactor, mass_chi
   real, dimension (nx) :: dt1_special
   logical :: lcompute_dphi0=.true.
@@ -252,6 +252,7 @@ module Special
           lnoncollinear_EB=.false.
           lcollinear_EB_aver=.false.
           lnoncollinear_EB_aver=.false.
+          call get_shared_variable('eta',eta)
         endif
       else
         if (.not.associated(alpf)) allocate(alpf, lphi_hom, lphi_linear_regime, &
@@ -566,9 +567,18 @@ module Special
         if (lphi_hom .and. .not. lphi_linear_regime) then
           df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+pref_alpf*alpf*edotbm_all
         endif
+!
+!  Compute E.B only when displacement current is included.
+!  Note that alpf does not (currently) exist in MHD.
+!
         if (.not. lphi_hom) then
+          if (iex>0) then
             call dot_mn(p%el,p%bb,tmp)
-            df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+pref_alpf*alpf*tmp
+          else
+            call dot_mn(p%jj,p%bb,tmp)
+            tmp=eta*tmp
+          endif
+          df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+pref_alpf*alpf*tmp
         endif
         ! if (lconf_time) then
         !   if (lphi_hom) then
@@ -1060,9 +1070,10 @@ module Special
         if (iex/=0) then
           el=f(l1:l2,m,n,iex:iez)
         else
-          uu=f(l1:l2,m,n,iux:iuz)
-          call cross_mn(uu,bb,uxb)
-          el=-uxb
+   !      uu=f(l1:l2,m,n,iux:iuz)
+   !      call cross_mn(uu,bb,uxb)
+   !      el=-uxb
+          el=0.
         endif
         call dot2_mn(el,e2)
         a2rhop=a2rhop+(.5*fourthird)*(e2+b2)*a21

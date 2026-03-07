@@ -1,7 +1,7 @@
 ! $Id$
 !
-!  Advecto-resistive gauge, dLam/dt = -u.gradLambda - U.A_resistive + eta*del2A_resistive
-!  A_advecto-resistive=A_resistive+grad Lambda
+!  Advecto-resistive gauge, dLamRA/dt = -u.gradLamRA - U.A_resistive + eta*del2A_resistive
+!  A_advecto-resistive=A_resistive+grad(LamRA)
 !
 !  25-feb-07/axel: adapted from nospecial.f90
 !
@@ -14,6 +14,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
+! PENCILS PROVIDED gLamRA(3)
 !***************************************************************
 !
 module Special
@@ -30,40 +31,44 @@ module Special
 !
   real, pointer :: eta
   logical, pointer :: lweyl_gauge
+  integer :: iaadv=0, iaadvx=0, iaadvy=0, iaadvz=0
 !
   ! input parameters
   real :: ampl=1e-3,kx=1.,ky=0.,kz=0.
   logical :: ladvecto_resistive=.true.
+  logical :: laa_adv_as_aux=.false.
   character(len=50) :: init='zero'
   namelist /special_init_pars/ &
-    ladvecto_resistive,init,ampl,kx,ky,kz
+    ladvecto_resistive,init,ampl,kx,ky,kz, &
+    laa_adv_as_aux
 !
   ! run parameters
   namelist /special_run_pars/ &
-    ladvecto_resistive
+    ladvecto_resistive, &
+    laa_adv_as_aux
 !
 ! Declare any index variables necessary for main or
 !
-   integer :: iLam=0
+  integer :: iLamRA=0
 !
 ! other variables (needs to be consistent with reset list below)
 !
-  integer :: idiag_Lamm=0       ! DIAG_DOC: $\left<\Lambda\right>$
-  integer :: idiag_Lampt=0      ! DIAG_DOC: $\Lambda(x1,y1,z1)$
-  integer :: idiag_Lamp2=0      ! DIAG_DOC: $\Lambda(x2,y2,z2)$
-  integer :: idiag_Lamrms=0     ! DIAG_DOC: $\left<\Lambda^2\right>^{1/2}$
-  integer :: idiag_Lambzm=0     ! DIAG_DOC: $\left<\Lambda B_z\right>$
-  integer :: idiag_Lambzmz=0    ! DIAG_DOC: $\left<\Lambda B_z\right>_{xy}$
-  integer :: idiag_gLambm=0     ! DIAG_DOC: $\left<\Lambda\Bv\right>$
+  integer :: idiag_LamRAm=0     ! DIAG_DOC: $\left<\Lambda_{r\to a}\right>$
+  integer :: idiag_LamRApt=0    ! DIAG_DOC: $\Lambda_{r\to a}(x1,y1,z1)$
+  integer :: idiag_LamRAp2=0    ! DIAG_DOC: $\Lambda_{r\to a}(x2,y2,z2)$
+  integer :: idiag_LamRArms=0   ! DIAG_DOC: $\left<\Lambda_{r\to a}^2\right>^{1/2}$
+  integer :: idiag_LamRAbzm=0   ! DIAG_DOC: $\left<\Lambda_{r\to a} B_z\right>$
+  integer :: idiag_LamRAbzmz=0  ! DIAG_DOC: $\left<\Lambda_{r\to a} B_z\right>_{xy}$
+  integer :: idiag_gLamRAbm=0     ! DIAG_DOC: $\left<\Lambda_{r\to a}\Bv\right>$
   integer :: idiag_apbrms=0     ! DIAG_DOC: $\left<(\Av'\Bv)^2\right>^{1/2}$
   integer :: idiag_jxarms=0     ! DIAG_DOC: $\left<(\Jv\times\Av)^2\right>^{1/2}$
   integer :: idiag_jxaprms=0    ! DIAG_DOC: $\left<(\Jv\times\Av')^2\right>^{1/2}$
-  integer :: idiag_jxgLamrms=0  ! DIAG_DOC: $\left<(\Jv\times\nabla\Lambda)^2\right>^{1/2}$
-  integer :: idiag_gLamrms=0    ! DIAG_DOC: $\left<(\nabla\Lambda)^2\right>^{1/2}$
+  integer :: idiag_jxgLamRArms=0  ! DIAG_DOC: $\left<(\Jv\times\nabla\Lambda_{r\to a})^2\right>^{1/2}$
+  integer :: idiag_gLamRArms=0    ! DIAG_DOC: $\left<(\nabla\Lambda_{r\to a})^2\right>^{1/2}$
   integer :: idiag_divabrms=0   ! DIAG_DOC: $\left<[(\nabla\cdot\Av)\Bv]^2\right>^{1/2}$
   integer :: idiag_divapbrms=0  ! DIAG_DOC: $\left<[(\nabla\cdot\Av')\Bv]^2\right>^{1/2}$
-  integer :: idiag_d2Lambrms=0  ! DIAG_DOC: $\left<[(\nabla^2\Lambda)\Bv]^2\right>^{1/2}$
-  integer :: idiag_d2Lamrms=0   ! DIAG_DOC: $\left<[\nabla^2\Lambda]^2\right>^{1/2}$
+  integer :: idiag_d2LamRAbrms=0  ! DIAG_DOC: $\left<[(\nabla^2\Lambda_{r\to a})\Bv]^2\right>^{1/2}$
+  integer :: idiag_d2LamRArms=0   ! DIAG_DOC: $\left<[\nabla^2\Lambda_{r\to a}]^2\right>^{1/2}$
 !
   contains
 !
@@ -76,9 +81,14 @@ module Special
 !  6-oct-03/tony: coded
 !
       use FArrayManager
+      use Sub, only: register_report_aux
 !
-      call farray_register_pde('Lam',iLam)
-      ispecialvar=iLam
+      call farray_register_pde('LamRA',iLamRA)
+      ispecialvar=iLamRA
+!
+!  Compute vector potential in advective gauge as auxiliary array.
+!
+      if (laa_adv_as_aux) call register_report_aux('aadv',iaadv,iaadvx,iaadvy,iaadvz)
 !
       if (lroot) call svn_id( &
            "$Id$")
@@ -131,10 +141,10 @@ module Special
 !
       select case (init)
         case ('nothing'); if (lroot) print*,'init_special: nothing'
-        case ('zero'); f(:,:,:,iLam)=0.
-        case ('sinwave-x'); call sinwave(ampl,f,iLam,kx=kx)
-        case ('sinwave-y'); call sinwave(ampl,f,iLam,ky=ky)
-        case ('sinwave-z'); call sinwave(ampl,f,iLam,kz=kz)
+        case ('zero'); f(:,:,:,iLamRA)=0.
+        case ('sinwave-x'); call sinwave(ampl,f,iLamRA,kx=kx)
+        case ('sinwave-y'); call sinwave(ampl,f,iLamRA,ky=ky)
+        case ('sinwave-z'); call sinwave(ampl,f,iLamRA,kz=kz)
 !
         case default
           !
@@ -159,10 +169,14 @@ module Special
       endif
       lpenc_requested(i_aa)=.true.
       lpenc_requested(i_uu)=.true.
+      lpenc_requested(i_gLamRA)=.true.
+!
+!  Diagnostic pencils
+!
       if (idiag_apbrms/=0) lpenc_diagnos(i_ab)=.true.
-      if (idiag_gLambm/=0) lpenc_diagnos(i_bb)=.true.
-      if (idiag_jxarms/=0 .or. idiag_jxaprms/=0 .or. idiag_jxgLamrms/=0) lpenc_diagnos(i_jj)=.true.
-      if (idiag_divabrms/=0 .or. idiag_divapbrms/=0 .or. idiag_d2Lambrms/=0) then
+      if (idiag_gLamRAbm/=0) lpenc_diagnos(i_bb)=.true.
+      if (idiag_jxarms/=0 .or. idiag_jxaprms/=0 .or. idiag_jxgLamRArms/=0) lpenc_diagnos(i_jj)=.true.
+      if (idiag_divabrms/=0 .or. idiag_divapbrms/=0 .or. idiag_d2LamRAbrms/=0) then
         lpenc_diagnos(i_bb)=.true.
         lpenc_diagnos(i_diva)=.true.
       endif
@@ -183,10 +197,13 @@ module Special
 !***********************************************************************
     subroutine calc_pencils_special(f,p)
 !
-!  Calculate Hydro pencils.
+!  Calculate pencils for advective gauge.
 !  Most basic pencils should come first, as others may depend on them.
 !
-!   24-nov-04/tony: coded
+!  24-nov-04/tony: coded
+!   7-mar-26/axel: made p%gLamRA a pencil
+!
+      use Sub, only: grad
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -194,8 +211,7 @@ module Special
       intent(in) :: f
       intent(inout) :: p
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(p)
+      call grad(f,iLamRA,p%gLamRA)
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -221,23 +237,22 @@ module Special
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx,3) :: gLam,jxa,divab
-      real, dimension (nx) :: Lam,del2Lam,ua,ugLam,gLamb,jxa2,divab2
+      real, dimension (nx,3) :: jxa, divab
+      real, dimension (nx) :: LamRA, del2LamRA, ua, ugLamRA, gLamRAb, jxa2, divab2
 !
-      intent(in) :: f,p
-      intent(inout) :: df
+      intent(in) :: p
+      intent(inout) :: f,df
 !
 !  identify module and boundary conditions
 !
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dSPECIAL_dt'
 !
-      if (headtt) call identify_bcs('Lam',iLam)
+      if (headtt) call identify_bcs('LamRA',iLamRA)
 !
 !  solve gauge condition
 !
       if (lhydro.or.lhydro_kinematic) then
-        call grad(f,iLam,gLam)
-        call dot(p%uu,gLam,ugLam)
+        call dot(p%uu,p%gLamRA,ugLamRA)
 !
 !  U.A term
 !
@@ -250,26 +265,32 @@ module Special
 ! based on resistive gauge
 !
         if (ladvecto_resistive) then
-          call del2(f,iLam,del2Lam)
-          df(l1:l2,m,n,iLam)=df(l1:l2,m,n,iLam)-ugLam-ua+eta*del2Lam
+          call del2(f,iLamRA,del2LamRA)
+          df(l1:l2,m,n,iLamRA)=df(l1:l2,m,n,iLamRA)-ugLamRA-ua+eta*del2LamRA
         else
-          df(l1:l2,m,n,iLam)=df(l1:l2,m,n,iLam)-ugLam-ua-eta*p%diva
+          df(l1:l2,m,n,iLamRA)=df(l1:l2,m,n,iLamRA)-ugLamRA-ua-eta*p%diva
         endif
       else
-        call fatal_error('dspecial_dt','no advective if no hydro')
+        call fatal_error('dspecial_dt','need hydro or hydro_kinematic for advective gauge')
       endif
+!
+!  Possibility of vector potential in advective gauge as auxiliary output.
+!  Compute Aadv=AWeyl+gLamRA, where gLam is evolved in time.
+!  By contrast to the Coulomb gauge, there is here a plus sign.
+!
+      if (laa_adv_as_aux) f(l1:l2,m,n,iaadvx:iaadvz)=p%aa+p%gLamRA
 !
 !  diagnostics
 !
       if (ldiagnos) then
-        Lam=f(l1:l2,m,n,iLam)
-        if (idiag_Lamm/=0) call sum_mn_name(Lam,idiag_Lamm)
-        if (idiag_Lamrms/=0) call sum_mn_name(Lam**2,idiag_Lamrms,lsqrt=.true.)
-        if (idiag_Lambzm/=0) call sum_mn_name(Lam*p%bb(:,3),idiag_Lambzm)
-        if (idiag_gLambm/=0.or.idiag_apbrms/=0) then
-          call dot(gLam,p%bb,gLamb)
-          if (idiag_gLambm/=0) call sum_mn_name(gLamb,idiag_gLambm)
-          if (idiag_apbrms/=0) call sum_mn_name((p%ab+gLamb)**2,idiag_apbrms,lsqrt=.true.)
+        LamRA=f(l1:l2,m,n,iLamRA)
+        if (idiag_LamRAm/=0) call sum_mn_name(LamRA,idiag_LamRAm)
+        if (idiag_LamRArms/=0) call sum_mn_name(LamRA**2,idiag_LamRArms,lsqrt=.true.)
+        if (idiag_LamRAbzm/=0) call sum_mn_name(LamRA*p%bb(:,3),idiag_LamRAbzm)
+        if (idiag_gLamRAbm/=0.or.idiag_apbrms/=0) then
+          call dot(p%gLamRA,p%bb,gLamRAb)
+          if (idiag_gLamRAbm/=0) call sum_mn_name(gLamRAb,idiag_gLamRAbm)
+          if (idiag_apbrms/=0) call sum_mn_name((p%ab+gLamRAb)**2,idiag_apbrms,lsqrt=.true.)
         endif
 !
 !  (JxA^r)_rms
@@ -283,24 +304,24 @@ module Special
 !  (JxA^ar)_rms
 !
         if (idiag_jxarms/=0) then
-          call cross(p%jj,p%aa+gLam,jxa)
+          call cross(p%jj,p%aa+p%gLamRA,jxa)
           call dot2(jxa,jxa2)
           if (idiag_jxaprms/=0) call sum_mn_name(jxa2,idiag_jxaprms,lsqrt=.true.)
         endif
 !
-!  (JxgLam)_rms
+!  (JxgLamRA)_rms
 !
-        if (idiag_jxgLamrms/=0) then
-          call cross(p%jj,gLam,jxa)
+        if (idiag_jxgLamRArms/=0) then
+          call cross(p%jj,p%gLamRA,jxa)
           call dot2(jxa,jxa2)
-          if (idiag_jxgLamrms/=0) call sum_mn_name(jxa2,idiag_jxgLamrms,lsqrt=.true.)
+          if (idiag_jxgLamRArms/=0) call sum_mn_name(jxa2,idiag_jxgLamRArms,lsqrt=.true.)
         endif
 !
-!  (gLam)_rms
+!  (gLamRA)_rms
 !
-        if (idiag_jxgLamrms/=0) then
-          call dot2(gLam,jxa2)
-          if (idiag_gLamrms/=0) call sum_mn_name(jxa2,idiag_gLamrms,lsqrt=.true.)
+        if (idiag_jxgLamRArms/=0) then
+          call dot2(p%gLamRA,jxa2)
+          if (idiag_gLamRArms/=0) call sum_mn_name(jxa2,idiag_gLamRArms,lsqrt=.true.)
         endif
 !
 !  [(divA^r)*B]_rms
@@ -314,41 +335,41 @@ module Special
 !  [(divA^ar)*B]_rms
 !
         if (idiag_divapbrms/=0) then
-          call multsv(p%diva+del2Lam,p%bb,divab)
+          call multsv(p%diva+del2LamRA,p%bb,divab)
           call dot2(divab,divab2)
           if (idiag_divapbrms/=0) call sum_mn_name(divab2,idiag_divapbrms,lsqrt=.true.)
         endif
 !
-!  (del2Lambda*B)_rms
+!  (del2LamRA*B)_rms
 !
-        if (idiag_d2Lambrms/=0) then
-          call multsv(del2Lam,p%bb,divab)
+        if (idiag_d2LamRAbrms/=0) then
+          call multsv(del2LamRA,p%bb,divab)
           call dot2(divab,divab2)
-          if (idiag_d2Lambrms/=0) call sum_mn_name(divab2,idiag_d2Lambrms,lsqrt=.true.)
+          if (idiag_d2LamRAbrms/=0) call sum_mn_name(divab2,idiag_d2LamRAbrms,lsqrt=.true.)
         endif
 !
-!  (del2Lambda)_rms
+!  (del2LamRA)_rms
 !
-        if (idiag_d2Lamrms/=0) then
-          if (idiag_d2Lamrms/=0) call sum_mn_name(del2Lam**2,idiag_d2Lamrms,lsqrt=.true.)
+        if (idiag_d2LamRArms/=0) then
+          if (idiag_d2LamRArms/=0) call sum_mn_name(del2LamRA**2,idiag_d2LamRArms,lsqrt=.true.)
         endif
 !
 !  check for point 1
 !
         if (lroot.and.m==mpoint.and.n==npoint) then
-          if (idiag_Lampt/=0) call save_name(Lam(lpoint-nghost),idiag_Lampt)
+          if (idiag_LamRApt/=0) call save_name(LamRA(lpoint-nghost),idiag_LamRApt)
         endif
 !
 !  check for point 2
 !
         if (lroot.and.m==mpoint2.and.n==npoint2) then
-          if (idiag_Lamp2/=0) call save_name(Lam(lpoint2-nghost),idiag_Lamp2)
+          if (idiag_LamRAp2/=0) call save_name(LamRA(lpoint2-nghost),idiag_LamRAp2)
         endif
 !
       endif
 !
       if (l1davgfirst .or. (ldiagnos .and. ldiagnos_need_zaverages)) then
-        if (idiag_Lambzmz/=0)   call xysum_mn_name_z(p%bb(:,3),idiag_Lambzmz)
+        if (idiag_LamRAbzmz/=0)   call xysum_mn_name_z(p%bb(:,3),idiag_LamRAbzmz)
       endif
 !
     endsubroutine dspecial_dt
@@ -412,58 +433,58 @@ module Special
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_Lamm=0; idiag_Lampt=0; idiag_Lamp2=0; idiag_Lamrms=0
-        idiag_gLambm=0; idiag_apbrms=0
-        idiag_Lambzm=0; idiag_Lambzmz=0
+        idiag_LamRAm=0; idiag_LamRApt=0; idiag_LamRAp2=0; idiag_LamRArms=0
+        idiag_gLamRAbm=0; idiag_apbrms=0
+        idiag_LamRAbzm=0; idiag_LamRAbzmz=0
         idiag_jxarms=0; idiag_divabrms=0
         idiag_jxaprms=0; idiag_divapbrms=0
-        idiag_jxgLamrms=0; idiag_d2Lambrms=0
-        idiag_gLamrms=0; idiag_d2Lamrms=0
+        idiag_jxgLamRArms=0; idiag_d2LamRAbrms=0
+        idiag_gLamRArms=0; idiag_d2LamRArms=0
         cformv=''
       endif
 !
 !  check for those quantities that we want to evaluate online
 !
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'Lamm',idiag_Lamm)
-        call parse_name(iname,cname(iname),cform(iname),'Lamrms',idiag_Lamrms)
-        call parse_name(iname,cname(iname),cform(iname),'Lambzm',idiag_Lambzm)
-        call parse_name(iname,cname(iname),cform(iname),'Lampt',idiag_Lampt)
-        call parse_name(iname,cname(iname),cform(iname),'Lamp2',idiag_Lamp2)
-        call parse_name(iname,cname(iname),cform(iname),'gLambm',idiag_gLambm)
+        call parse_name(iname,cname(iname),cform(iname),'LamRAm',idiag_LamRAm)
+        call parse_name(iname,cname(iname),cform(iname),'LamRArms',idiag_LamRArms)
+        call parse_name(iname,cname(iname),cform(iname),'LamRAbzm',idiag_LamRAbzm)
+        call parse_name(iname,cname(iname),cform(iname),'LamRApt',idiag_LamRApt)
+        call parse_name(iname,cname(iname),cform(iname),'LamRAp2',idiag_LamRAp2)
+        call parse_name(iname,cname(iname),cform(iname),'gLamRAbm',idiag_gLamRAbm)
         call parse_name(iname,cname(iname),cform(iname),'apbrms',idiag_apbrms)
         call parse_name(iname,cname(iname),cform(iname),'jxarms',idiag_jxarms)
         call parse_name(iname,cname(iname),cform(iname),'jxaprms',idiag_jxaprms)
-        call parse_name(iname,cname(iname),cform(iname),'jxgLamrms',idiag_jxgLamrms)
-        call parse_name(iname,cname(iname),cform(iname),'gLamrms',idiag_gLamrms)
+        call parse_name(iname,cname(iname),cform(iname),'jxgLamRArms',idiag_jxgLamRArms)
+        call parse_name(iname,cname(iname),cform(iname),'gLamRArms',idiag_gLamRArms)
         call parse_name(iname,cname(iname),cform(iname),'divabrms',idiag_divabrms)
         call parse_name(iname,cname(iname),cform(iname),'divapbrms',idiag_divapbrms)
-        call parse_name(iname,cname(iname),cform(iname),'d2Lambrms',idiag_d2Lambrms)
-        call parse_name(iname,cname(iname),cform(iname),'d2Lamrms',idiag_d2Lamrms)
+        call parse_name(iname,cname(iname),cform(iname),'d2LamRAbrms',idiag_d2LamRAbrms)
+        call parse_name(iname,cname(iname),cform(iname),'d2LamRArms',idiag_d2LamRArms)
       enddo
 !
       do inamez=1,nnamez
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Lambzmz',idiag_Lambzmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'LamRAbzmz',idiag_LamRAbzmz)
       enddo
 !
 !  check for those quantities for which we want video slices
 !
       if (lwrite_slices) then
-        where(cnamev=='Lam') cformv='DEFINED'
+        where(cnamev=='LamRA') cformv='DEFINED'
       endif
 !
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
-        call farray_index_append('i_Lamm',idiag_Lamm)
-        call farray_index_append('i_Lamrms',idiag_Lamrms)
-        call farray_index_append('i_Lambzm',idiag_Lambzm)
-        call farray_index_append('i_Lambzmz',idiag_Lambzmz)
-        call farray_index_append('i_Lampt',idiag_Lampt)
-        call farray_index_append('i_Lamp2',idiag_Lamp2)
-        call farray_index_append('i_gLambm',idiag_gLambm)
+        call farray_index_append('i_LamRAm',idiag_LamRAm)
+        call farray_index_append('i_LamRArms',idiag_LamRArms)
+        call farray_index_append('i_LamRAbzm',idiag_LamRAbzm)
+        call farray_index_append('i_LamRAbzmz',idiag_LamRAbzmz)
+        call farray_index_append('i_LamRApt',idiag_LamRApt)
+        call farray_index_append('i_LamRAp2',idiag_LamRAp2)
+        call farray_index_append('i_gLamRAbm',idiag_gLamRAbm)
         call farray_index_append('i_apbrms',idiag_apbrms)
-        call farray_index_append('iLam',iLam)
+        call farray_index_append('iLamRA',iLamRA)
       endif
 !
     endsubroutine rprint_special
@@ -485,9 +506,9 @@ module Special
 !
       select case (trim(slices%name))
 !
-!  Lam
+!  LamRA
 !
-        case ('Lam'); call assign_slices_scal(slices,f,iLam)
+        case ('LamRA'); call assign_slices_scal(slices,f,iLamRA)
 !
       endselect
 !

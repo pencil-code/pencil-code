@@ -112,6 +112,7 @@ module Magnetic
   integer, dimension (ninit) :: ll_sh=0, mm_sh=0
   integer :: nzav=0,indzav=0,izav_start=1
   integer :: icurlb=0, icurlbx=0, icurlby=0, icurlbz=0
+  integer :: iacou=0, iacoux=0, iacouy=0, iacouz=0
   character (len=fnlen) :: source_zav=''
   character (len=labellen), dimension(ninit) :: initaa='nothing', robflow_aa='I'
   character (len=labellen), dimension(3) :: borderaa='nothing'
@@ -254,6 +255,7 @@ module Magnetic
   logical :: letasmag_as_aux=.false.,ljj_as_comaux=.false.
   logical :: lbb_as_comaux=.false., lB_ext_in_comaux=.true.
   logical :: lbb_sph_as_aux=.false.
+  logical :: laa_cou_as_aux=.false.
   logical :: lbext_curvilinear=.true., lcheck_positive_va2=.false.
   logical :: lreset_aa=.false., lsmooth_jj=.false., lno_noise_aa=.false.
   logical :: lbx_ext_global=.false.,lby_ext_global=.false.,&
@@ -286,7 +288,7 @@ module Magnetic
       ladd_disp_current_from_aux, compk_aa, &
       lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, lee_as_aux, &
       ljxb_as_aux, ljj_as_aux, lbext_curvilinear, lbbt_as_aux, ljjt_as_aux, &
-      lcurlb_as_aux, lbij_as_aux, lbij_test, &
+      laa_cou_as_aux, lcurlb_as_aux, lbij_as_aux, lbij_test, &
       luxb_as_aux, lugb_as_aux, lbgu_as_aux, lbeta_as_aux, lbdivu_as_aux, &
       lua_as_aux, lneutralion_heat, center1_x, center1_y, center1_z, &
       fluxtube_border_width, va2max_jxb, va2max_boris, cmin,va2power_jxb, eta_jump, &
@@ -424,7 +426,7 @@ module Magnetic
       eta_spitzer, borderaa, ljj_as_comaux, lsmooth_jj, &
       eta_aniso_hyper3, lelectron_inertia, inertial_length, &
       lbext_curvilinear, lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, ljj_as_aux, &
-      lbij_as_aux, lbij_test, luxb_as_aux, lugb_as_aux, lbgu_as_aux, lbdivu_as_aux, &
+      laa_cou_as_aux, lbij_as_aux, lbij_test, luxb_as_aux, lugb_as_aux, lbgu_as_aux, lbdivu_as_aux, &
       lkinematic, lbbt_as_aux, ljjt_as_aux, lua_as_aux, ljxb_as_aux, lcurlb_as_aux, &
       lneutralion_heat, lreset_aa, daareset, eta_shock2, &
       lignore_Bext_in_b2, luse_Bext_in_b2, ampl_fcont_aa, &
@@ -1256,6 +1258,14 @@ module Magnetic
       if (lcoulomb) then
         call register_report_aux('Lam', iLam,communicated=.true.)
         call register_report_aux('diva', idiva,communicated=.true.)
+      endif
+!
+      if (laa_cou_as_aux) then
+        if (lcoulomb) then
+          call register_report_aux('acou',iacou,iacoux,iacouy,iacouz)
+        else
+          call fatal_error('register_magnetic','lcoulomb must be true')
+        endif
       endif
 !
 !  Need to check whether the underlying pencils need to be computed every time,
@@ -3001,10 +3011,12 @@ module Magnetic
 !
 !  for Coulomb gauge
 !
-      if (lcoulomb) then
-        lpenc_requested(i_diva)=.true.
-        if (idiag_gLamam/=0 .or. idiag_gLambm/=0 &
-          .or. lcoulomb_apply) lpenc_requested(i_gLam)=.true.
+      if (laa_cou_as_aux .or. lcoulomb_apply) then
+        if (lcoulomb) then
+          lpenc_requested(i_gLam)=.true.
+        else
+          call fatal_error('pencil_criteria_magnetic', 'Set lcoulomb=T, etc')
+        endif
       endif
 !
 !  Pencils requested for diamagnetism
@@ -3434,6 +3446,18 @@ module Magnetic
           idiag_abph1mz/=0 .or. idiag_abph2mz/=0 .or. idiag_abph3mz/=0) lpenc_diagnos(i_ss)=.true.
       if (idiag_bcurlfmz/=0) lpenc_diagnos(i_curlfcont)=.true.
 !
+!  For Coulomb gauge. The diagnostics results depend on whether or
+!  not also laa_cou_as_aux or lcoulomb_apply are true.
+!  Those results may still be correct, but for another time step.
+!
+      if (idiag_gLamam/=0 .or. idiag_gLambm/=0) then
+        if (lcoulomb) then
+          lpenc_diagnos(i_gLam)=.true.
+        else
+          call fatal_error('pencil_criteria_magnetic', 'Set lcoulomb=T, etc')
+        endif
+      endif
+!
 !  Check whether right variables are set for half-box calculations.
 !
       if (idiag_brmsn/=0 .or. idiag_abmn/=0 .or. idiag_ambmzn/=0 .or. idiag_jbmn/= 0 ) then
@@ -3731,6 +3755,10 @@ module Magnetic
 !
 ! The dependence of diva or bb on aa relies on if aij is requested above.
 !
+      if (lpencil_in(i_gLam)) lpencil_in(i_diva)=.true.
+!
+! The dependence of diva or bb on aa relies on if aij is requested above.
+!
       if ((lpencil_in(i_diva) .or. (lpencil_in(i_bb) .and. .not. lbb_as_comaux)) .and. &
           (.not. lcartesian_coords .and. lpencil_in(i_aij))) &
           lpencil_in(i_aa) = .true.
@@ -3980,7 +4008,7 @@ module Magnetic
 !
 !  Possibility of calculating the magnetic helicity correction for the Coulomb gauge.
 !  Here, no minus sign has been included, so A_Coulomb = A_Weyl - gLambda, and
-!  <A.B>_C = <A.B>_W - gLambm, <A.A>_C = <A.A>_W - gLamam.
+!  <A.B>_C = <A.B>_W - gLambm, and <A.A>_C = <A.A>_W - gLamam.
 !
       if (lcoulomb.and.lfirst) then
         if (.not.allocated(rhs_poisson)) allocate(rhs_poisson(nx,ny,nz))
@@ -4209,11 +4237,14 @@ module Magnetic
         else
           call div_other(f(:,:,:,iax:iaz),p%diva)
         endif
+!
+!  Possibility of vector potential in Coulomb gauge as auxiliary output.
+!  Compute Acou=AWeyl-gLam, where div(Acou)=0=div(AWeyl)-del2(gLam).
+!  Recall that no minus sign has been included in the calculation of gLam.
+!
         if (lcoulomb) then
           f(l1:l2,m,n,idiva)=p%diva
-          if (lpenc_loc(i_gLam)) then
-            call grad(f,iLam,p%gLam)
-          endif
+          if (lpenc_loc(i_gLam)) call grad(f,iLam,p%gLam)
         endif
       endif
 ! aps
@@ -6373,6 +6404,12 @@ print*,'AXEL2: should not be here (eta) ... '
         endif
       endif
       endif
+!
+!  Possibility of vector potential in Coulomb gauge as auxiliary output.
+!  Compute Acou=AWeyl-gLam, where div(Acou)=0=div(AWeyl)-del2(gLam).
+!  Recall that no minus sign has been included in the calculation of gLam.
+!
+      if (laa_cou_as_aux) f(l1:l2,m,n,iacoux:iacouz)=p%aa-p%gLam
 !
 !  Do diagnostics, which includes also slices.
 !

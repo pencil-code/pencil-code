@@ -62,7 +62,8 @@ module Special
   logical :: llongitudinalE=.true., llorenz_gauge_disp=.false., lskip_projection_ee=.false.
   logical :: lscale_tobox=.true., lskip_projection_a0=.false.
   logical :: lpower_profile_file=.false.
-  logical :: lvectorpotential=.false., lphi_hom=.false., lphi_linear_regime=.false.
+  logical :: lvectorpotential=.false.
+  logical :: lphi_hom=.false., lphi_linear_regime=.false.   !AB: these variables should have been defined in backreaction.
   logical :: lpsi_hom=.false.
   logical :: lno_noise_ee=.false., lnoncollinear_EB=.false., lnoncollinear_EB_aver=.false.
   logical :: lcollinear_EB=.false., lcollinear_EB_aver=.false.
