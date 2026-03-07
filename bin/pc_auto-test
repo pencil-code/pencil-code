@@ -170,6 +170,7 @@ my %tests = (
                          continuous-forcing-from_file_h5
                          conv-slab
                          conv-slab_cp_2
+                         advective_gauge
                          interlocked-fluxrings
                          conv-slab-flat
                          coronae_heatflux_boris
