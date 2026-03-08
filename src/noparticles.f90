@@ -303,7 +303,7 @@ module Particles
 !***********************************************************************
     subroutine rprint_particles(lreset,lwrite)
 !
-      logical, optional :: lwrite
+      logical, optional :: lreset, lwrite
 !
       call keep_compiler_quiet(lreset)
       call keep_compiler_quiet(lwrite)
@@ -313,5 +313,19 @@ module Particles
     subroutine particles_cleanup
 !
     endsubroutine particles_cleanup
+!***********************************************************************
+    subroutine insert_lost_particles(f,fp,ineargrid)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mpar_loc,mparray) :: fp
+      integer, dimension (mpar_loc,3) :: ineargrid
+!
+      intent (inout) :: fp,ineargrid
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(ineargrid)
+!
+    endsubroutine insert_lost_particles
 !***********************************************************************
   endmodule Particles
