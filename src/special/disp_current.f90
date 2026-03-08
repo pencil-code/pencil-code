@@ -97,7 +97,7 @@ module Special
     ldensity_add_je_heating, llorentzforce_ee
 !
   ! run parameters
-  real :: beta_inflation=0., rescale_ee=1.
+  real :: beta_inflation=0., rescale_ee=1., vA_limit=0.
   logical :: reinitialize_ee=.false.
   character (len=labellen) :: aderiv_scaling='table'
 !
@@ -111,7 +111,7 @@ module Special
     reinitialize_ee, initee, rescale_ee, lmass_suppression, mass_chi, &
     lallow_bprime_zero, lapply_Gamma_corr, coupl_gy, lpsi_hom, alpfpsi, &
     loverride_c_light, ldensity_add_je_heating, je_heating_factor, &
-    llorentzforce_ee, aderiv_scaling
+    llorentzforce_ee, aderiv_scaling, vA_limit
 !
 ! Declare any index variables necessary for main or
 !
@@ -697,7 +697,7 @@ module Special
 !  The line "p%jj=p%jj_ohm", if outside llorentzforce_ee, breaks the samples/Schwinger sample.
 !
       if (llorentzforce_ee) then
-p%jj=p%jj_ohm
+        p%jj=p%jj_ohm
         call cross_mn(p%jj,p%bb,p%jxb)
         call multsv_mn(p%rho1,p%jxb,p%jxbr)
       endif
@@ -988,10 +988,16 @@ p%jj=p%jj_ohm
 !  helical term:
 !  dEE/dt = ... -alp/f (dphi*BB + gradphi x E)
 !  Use the combined routine multsv_add if both terms are included.
+!  Added possibility of limiter on generating term (dphi*B + gphi x E).
 !
         if (alpf/=0.) then
           call calc_helical_term(p,gtmp,p%dphi,p%gphi,lphi_hom)
+          if (ldensity .and. vA_limit>0) then
+            tmp=1./(1.+p%b2*p%rho1/vA_limit**2)
+            call multsv_mn(tmp,gtmp,gtmp)
+          endif
           df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-alpf*gtmp
+!
           if (llorenz_gauge_disp) then
             ! if (lphi_hom) then
             !   df(l1:l2,m,n,idiva_name)=df(l1:l2,m,n,idiva_name)+del2a0
@@ -1105,7 +1111,7 @@ p%jj=p%jj_ohm
 !
       if (llorentzforce_ee) df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxbr
 !
-!  If requested, put sigE and sigB into f array as auxiliaries.
+!  If requested, put divE, sigE, or sigB into f array as auxiliaries.
 !
       if (ldivE_as_aux) f(l1:l2,m,n,idivE)=p%divE
       if (lsigE_as_aux) f(l1:l2,m,n,isigE)=p%sigE
