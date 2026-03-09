@@ -27,6 +27,8 @@ class Simulations:
                             is used to generate simulation object from path or
                             name
 
+    Any keyword arguments are passed on to pc.get_sim.
+
     Properties:
         self.sims:          direct access on simulations list
 
@@ -75,17 +77,14 @@ class Simulations:
                 self.sims.append(arg)
 
             elif isinstance(arg, (str, pathlib.Path)):
-                self.sims.append(get_sim(arg))
+                self.sims.append(get_sim(arg, **kwargs))
 
             elif is_iterable(arg):
                 for ar in arg:
-                    self.add(ar)
+                    self.add(ar, **kwargs)
 
             else:
                 raise ValueError(f"couldnt add to simulations object: {repr(args)}")
-
-        if len(kwargs) > 0:
-            raise NotImplementedError("kwargs handling")
 
     def __iter__(self):
         return self.sims.__iter__()
