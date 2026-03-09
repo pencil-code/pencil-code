@@ -75,9 +75,7 @@ class Simulations(object):
 
         from pencil.math import is_iterable
         from pencil.sim.simulation import Simulation
-        from pencil.sim.simulation import simulation
         import numpy as np
-        from pencil.io import debug_breakpoint
         from pencil import get_sim
 
         for arg in args:
