@@ -482,6 +482,7 @@ END_XMLHEAD
 
 <p>$date</p>
 <pre>$commandline</pre>
+<p><a href="#summary">click to jump to summary</a></p>
 END_HEAD
         if ($coverage) {
             print "<a href=\"$lcov_output_dir_name\">click to view coverage report</a>\n";
