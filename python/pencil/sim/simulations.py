@@ -70,25 +70,19 @@ class Simulations:
 
             if isinstance(arg, Simulation):
                 self.sims.append(arg)
-                return True
 
             elif isinstance(arg, str):
                 self.sims.append(get_sim(arg))
-                return True
 
             elif is_iterable(arg):
                 for ar in arg:
                     self.add(ar)
-                return True
 
             else:
-                print("!! ERROR: Couldnt add to simulations object: " + str(args))
+                raise ValueError(f"couldnt add to simulations object: {repr(args)}")
 
-        for kw in kwargs:
-            print("!! ERROR: Not prepared for kwargs yet!!")
-            print(kw + ": " + str(arg))
-
-        return False
+        if len(kwargs) > 0:
+            raise NotImplementedError("kwargs handling")
 
 @copy_docstring(Simulations)
 def simulations(*args, **kwargs):
