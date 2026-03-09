@@ -13,7 +13,7 @@ multiple simulations at once.
 
 from pencil.util import copy_docstring
 
-class Simulations(object):
+class Simulations:
     """
     A container for multiple `Simulation` objects.
 
