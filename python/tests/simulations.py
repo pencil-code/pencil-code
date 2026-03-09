@@ -4,7 +4,10 @@ Tests for the `Simulations` object
 
 import pathlib
 import pytest
-from pencil.sim import Simulations
+from pencil.sim import (
+    Simulations,
+    get_sims,
+    )
 from test_utils import get_rundir
 
 samples = [
@@ -59,3 +62,14 @@ def test_Sims_sort():
     sims = Simulations(*simdirs)
     sims.sort()
     #TODO: would be good to actually check the results once this is implemented
+
+def test_get_sims():
+    loc = pathlib.Path(get_rundir("samples/1d-tests/conduction"))
+    sims = get_sims(str(loc))
+    assert len(sims) == len(list(loc.glob("*")))
+
+@pytest.mark.xfail(reason="pathlib.Path not supported yet")
+def test_get_sims_pathlib():
+    loc = pathlib.Path(get_rundir("samples/1d-tests/conduction"))
+    sims = get_sims(loc)
+    assert len(sims) == len(list(loc.glob("*")))
