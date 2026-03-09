@@ -38,6 +38,7 @@ class Power(object):
             quiet=False,
             time_range=None,
             lazy=False,
+            sim=None,
             ):
         """
         read(datadir='data', file_name='', quiet=False)
@@ -63,6 +64,9 @@ class Power(object):
             returned when the user applies indices.
             Default: False
 
+        sim: Simulation object
+            If passed, get datadir from this.
+
         Returns
         -------
         Class containing the different power spectrum as attributes.
@@ -80,6 +84,8 @@ class Power(object):
         krms
         hel_kin
         """
+        if sim is not None:
+            datadir = sim.datadir
 
         if file_name is not None:
             if not quiet:
