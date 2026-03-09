@@ -2,6 +2,7 @@
 Tests for the `Simulations` object
 """
 
+import pathlib
 import pytest
 from pencil.sim import Simulations
 from test_utils import get_rundir
@@ -38,6 +39,19 @@ def test_Sims_is_iterable():
 def test_Sims_kwarg():
     sims = Simulations(*simdirs, quiet=True)
     assert len(sims.sims) == len(simdirs)
+
+def test_Sims_filter():
+    sims = Simulations(*simdirs)
+    name = pathlib.Path(simdirs[0]).name
+
+    for sim in sims:
+        if sim.name == name:
+            #Later, we check if this property is preserved
+            sim.custom_property = Ellipsis
+
+    sims_f = sims.filter(lambda sim: sim.name == name)
+    assert len(sims_f) == 1
+    assert sims_f[0].custom_property is Ellipsis
 
 @pytest.mark.xfail(reason="documented, but not implemented")
 def test_Sims_sort():
