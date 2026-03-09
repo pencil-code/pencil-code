@@ -492,6 +492,7 @@ module Magnetic
   integer :: idiag_j2m=0        ! DIAG_DOC: $\left<\jv^2\right>$
   integer :: idiag_jm2=0        ! DIAG_DOC: $\max(\jv^2)$
   integer :: idiag_abm=0        ! DIAG_DOC: $\left<\Av\cdot\Bv\right>$
+  integer :: idiag_acbm=0       ! DIAG_DOC: $\left<\Av_\mathrm{Cou}\cdot\Bv\right>$
   integer :: idiag_gLamam=0     ! DIAG_DOC: $\left<\nabla\Lambda\cdot\Av\right>$
   integer :: idiag_gLambm=0     ! DIAG_DOC: $\left<\nabla\Lambda\cdot\Bv\right>$
   integer :: idiag_abumx=0      ! DIAG_DOC: $\left<u_x\Av\cdot\Bv\right>$
@@ -1262,7 +1263,9 @@ module Magnetic
 !
       if (laa_cou_as_aux) then
         if (lcoulomb) then
-          call register_report_aux('acou',iacou,iacoux,iacouy,iacouz)
+          !call register_report_aux('acou',iacou,iacoux,iacouy,iacouz)
+          call farray_register_auxiliary('acou',iacou,vector=3)
+          iacoux=iacou; iacouy=iacou+1; iacouz=iacou+2
         else
           call fatal_error('register_magnetic','lcoulomb must be true')
         endif
@@ -6410,6 +6413,8 @@ print*,'AXEL2: should not be here (eta) ... '
 !  Recall that no minus sign has been included in the calculation of gLam.
 !
       if (laa_cou_as_aux) f(l1:l2,m,n,iacoux:iacouz)=p%aa-p%gLam
+!test
+      !if (laa_cou_as_aux) f(l1:l2,m,n,iacoux:iacouz)=p%aa+p%gLam
 !
 !  Do diagnostics, which includes also slices.
 !
@@ -6672,6 +6677,10 @@ print*,'AXEL2: should not be here (eta) ... '
       if (idiag_jzmax/=0) call max_mn_name(abs(p%jj(:,3)),idiag_jzmax)
       if (idiag_aybym2/=0) call sum_mn_name(2.*p%aa(:,2)*p%bb(:,2),idiag_aybym2)
       call sum_mn_name(p%ab,idiag_abm)
+      if (idiag_acbm/=0) then
+        call dot(f(l1:l2,m,n,iacoux:iacouz),p%bb,tmp)
+        call sum_mn_name(tmp,idiag_acbm)
+      endif
       if (idiag_gLamam/=0) then
         call dot(p%gLam,p%aa,gLama)
         call sum_mn_name(gLama,idiag_gLamam)
@@ -10501,6 +10510,7 @@ print*,'AXEL2: should not be here (eta) ... '
         idiag_EEM2=0; idiag_EEM3=0; idiag_EEM4=0
         idiag_bm2=0; idiag_j2m=0; idiag_jm2=0
         idiag_abm=0; idiag_abrms=0; idiag_jbrms=0; idiag_jxbrms=0; idiag_abmh=0
+        idiag_acbm=0
         idiag_gLamam=0; idiag_gLambm=0; idiag_a2b2m=0; idiag_j2b2m=0
         idiag_abumx=0; idiag_abumy=0; idiag_abumz=0
         idiag_abmn=0; idiag_abms=0; idiag_jbmh=0; idiag_jbmn=0; idiag_jbms=0
@@ -10684,6 +10694,7 @@ print*,'AXEL2: should not be here (eta) ... '
         call parse_name(iname,cname(iname),cform(iname),'ubtm',idiag_ubtm)
         call parse_name(iname,cname(iname),cform(iname),'butm',idiag_butm)
         call parse_name(iname,cname(iname),cform(iname),'abm',idiag_abm)
+        call parse_name(iname,cname(iname),cform(iname),'acbm',idiag_acbm)
         call parse_name(iname,cname(iname),cform(iname),'gLamam',idiag_gLamam)
         call parse_name(iname,cname(iname),cform(iname),'gLambm',idiag_gLambm)
         call parse_name(iname,cname(iname),cform(iname),'a2b2m',idiag_a2b2m)
