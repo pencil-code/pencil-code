@@ -11,6 +11,7 @@ Contains the simulations class which can be used to store and perform actions on
 multiple simulations at once.
 """
 
+import re
 import pathlib
 import copy
 
@@ -54,12 +55,7 @@ class Simulations:
         if type(self.sims) == type(False) and self.sims == False:
             return False
 
-        # sort self.sims list by name
-        import re
-
-        convert = lambda text: int(text) if text.isdigit() else text.lower()
-        alphanum_key = lambda key: [convert(c) for c in re.split("([0-9]+)", key.name)]
-        self.sims = sorted(self.sims, key=alphanum_key)
+        self.sort()
 
     def add(self, *args):
         """Add simulation(s) to simulations object.
@@ -116,6 +112,15 @@ class Simulations:
         new = copy.copy(self)
         new.sims = good
         return new
+
+    def sort(self, key=None):
+        """
+        Default: sort by name
+        """
+        if key is None:
+            convert = lambda text: int(text) if text.isdigit() else text.lower()
+            key = lambda sim: [convert(c) for c in re.split("([0-9]+)", sim.name)]
+        self.sims = sorted(self.sims, key=key)
 
     def sim_from_simdir(self, simdir):
         from pencil import get_sim
