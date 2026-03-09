@@ -15,7 +15,10 @@ from pencil.io import (
     walklevel,
     )
 from pencil.util import is_sim_dir
-from pencil.sim import simulation
+from pencil.sim import (
+    simulation,
+    Simulations,
+    )
 
 def get(path=".", quiet=False):
     """
@@ -149,7 +152,7 @@ def get_sims(path_root=".", depth=0, unhide_all=True, quiet=False):
     # is sim_list empty?
     if sim_list == [] and not quiet:
         print("? WARNING: no simulations found!")
-    return sim_list
+    return Simulations(sim_list)
 
 def get_cparam(filepath):
     """
