@@ -48,7 +48,7 @@ class Simulations(object):
 
         for arg in args:
             # print('\n __init__ : '+ str(arg))
-            self.add(args)
+            self.add(arg)
 
         for kw, arg in kwargs:
             print("!! ERROR: Not prepared for kwargs yet!!")
