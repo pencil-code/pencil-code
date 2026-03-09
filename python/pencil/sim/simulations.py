@@ -11,12 +11,13 @@ Contains the simulations class which can be used to store and perform actions on
 multiple simulations at once.
 """
 
+from pencil.util import copy_docstring
 
-def simulations(*args, **kwargs):
+class Simulations(object):
     """
-    Generate simulations object, which is a container for simulation objects.
+    A container for multiple `Simulation` objects.
 
-    Ways to use the Constructor:
+    Ways to use the constructor:
         - no args:          create empty object, simulation objects can be added
                             with add()
         - list, tuple:      provide a list of simulation objects or paths or names
@@ -32,14 +33,6 @@ def simulations(*args, **kwargs):
                             or name or path (pc.get_sim() is then used)
         self.sort           sort self.sims list by, default by name, but also
                             different sorting algorithm are provided
-    """
-    #2026-03-09/Kishore: TODO: this seems a redundant wrapper; why not just ask the user to call Simulations(*args, **kwargs)?
-    return Simulations(*args, **kwargs)
-
-
-class Simulations(object):
-    """
-    Simulations object.
     """
 
     def __init__(self, *args, **kwargs):
@@ -101,3 +94,11 @@ class Simulations(object):
             print(kw + ": " + str(arg))
 
         return False
+
+@copy_docstring(Simulations)
+def simulations(*args, **kwargs):
+    """
+    Wrapper for :py:class:`Simulations`
+    """
+    #2026-03-09/Kishore: TODO: this seems a redundant wrapper; why not just ask the user to call Simulations(*args, **kwargs)?
+    return Simulations(*args, **kwargs)
