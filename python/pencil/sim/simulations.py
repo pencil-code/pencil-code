@@ -39,8 +39,7 @@ class Simulations:
 
         self.sims = []  # list of all simulation stored
 
-        for arg in args:
-            self.add(arg)
+        self.add(args)
 
         for kw, arg in kwargs:
             print("!! ERROR: Not prepared for kwargs yet!!")
