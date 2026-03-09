@@ -13,7 +13,6 @@ samples = [
 
 simdirs = [get_rundir(sample) for sample in samples]
 
-@pytest.mark.xfail
 def test_Sims_from_tuple():
 	sims = Simulations(*simdirs)
 	assert len(sims.sims) == len(simdirs)
