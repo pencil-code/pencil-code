@@ -84,6 +84,15 @@ class Simulations:
         if len(kwargs) > 0:
             raise NotImplementedError("kwargs handling")
 
+    def __iter__(self):
+        return self.sims.__iter__()
+
+    def __getitem__(self, i):
+        return self.sims[i]
+
+    def __len__(self):
+        return len(self.sims)
+
 @copy_docstring(Simulations)
 def simulations(*args, **kwargs):
     """
