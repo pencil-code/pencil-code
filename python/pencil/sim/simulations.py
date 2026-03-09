@@ -51,7 +51,7 @@ class Simulations:
         alphanum_key = lambda key: [convert(c) for c in re.split("([0-9]+)", key.name)]
         self.sims = sorted(self.sims, key=alphanum_key)
 
-    def add(self, *args):
+    def add(self, *args, **kwargs):
         """Add simulation(s) to simulations object.
 
         Args:
@@ -84,7 +84,7 @@ class Simulations:
             else:
                 print("!! ERROR: Couldnt add to simulations object: " + str(args))
 
-        for kw, arg in kwargs:
+        for kw in kwargs:
             print("!! ERROR: Not prepared for kwargs yet!!")
             print(kw + ": " + str(arg))
 
