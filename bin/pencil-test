@@ -485,7 +485,7 @@ END_XMLHEAD
 <p><a href="#summary">click to jump to summary</a></p>
 END_HEAD
         if ($coverage) {
-            print "<a href=\"$lcov_output_dir_name\">click to view coverage report</a>\n";
+            print "<p><a href=\"$lcov_output_dir_name\">click to view coverage report</a></p>\n";
         }
     } else {
         print "$date\n\n";
