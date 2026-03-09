@@ -312,10 +312,10 @@ sub run_tests_on {
         if ($html) {
             # Mark beginning of a test in HTML
             if ($empty && ($line =~ /^\s*(?:[^:\/]+\/)*\/*samples(?:\/([^:\/\s][^:\s]*))+: \(\d+\/\d+\)\s*$/is)) {
-                print "</pre>\n".'<a name="'.$1.'"></a>'."\n<pre>";
+                print "</pre>\n".'<a id="'.$1.'"></a>'."\n<pre>";
             }
             if ($empty && ($line =~ /^\s*(?:All .*? tests? succeeded\.|\#*\s*auto-test failed\s*\#*)\s*$/is)) {
-                print "</pre>\n".'<a name="summary"></a>'."\n<pre>";
+                print "</pre>\n".'<a id="summary"></a>'."\n<pre>";
             }
             $empty = 0;
             if ($line =~ /^[\s\-]*$/s) { $empty = 1; }
