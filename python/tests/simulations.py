@@ -57,11 +57,10 @@ def test_Sims_filter():
     assert len(sims_f) == 1
     assert sims_f[0].custom_property is Ellipsis
 
-@pytest.mark.xfail(reason="documented, but not implemented")
 def test_Sims_sort():
     sims = Simulations(*simdirs)
     sims.sort()
-    #TODO: would be good to actually check the results once this is implemented
+    #TODO: would be good to actually check the results
 
 def test_get_sims():
     loc = pathlib.Path(get_rundir("samples/1d-tests/conduction"))
