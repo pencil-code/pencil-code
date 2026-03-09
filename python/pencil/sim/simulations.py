@@ -12,6 +12,7 @@ multiple simulations at once.
 """
 
 import pathlib
+import copy
 
 from pencil.util import copy_docstring
 
@@ -94,6 +95,23 @@ class Simulations:
 
     def __len__(self):
         return len(self.sims)
+
+    def filter(self, function):
+        """
+        Return a copy of self that contains only those simulations for which function(sim) is True.
+
+        E.g.
+        >>> sims_magnetic = sims.filter(lambda sim: sim.param['lmagnetic'])
+        >>> sims_hydro = sims.filter(lambda sim: not sim.param['lmagnetic'])
+        """
+        good = []
+        for sim in self:
+            if function(sim):
+                good.append(sim)
+
+        new = copy.copy(self)
+        new.sims = good
+        return new
 
 @copy_docstring(Simulations)
 def simulations(*args, **kwargs):
