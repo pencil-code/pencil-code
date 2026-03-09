@@ -75,7 +75,6 @@ class Simulations:
         from pencil.math import is_iterable
         from pencil.sim.simulation import Simulation
         import numpy as np
-        from pencil import get_sim
 
         for arg in args:
 
@@ -119,6 +118,8 @@ class Simulations:
         return new
 
     def sim_from_simdir(self, simdir):
+        from pencil import get_sim
+
         sim = get_sim(simdir)
         if sim is False:
             raise RuntimeError(f"sim not found in {simdir}")
