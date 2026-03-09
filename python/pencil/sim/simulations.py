@@ -34,10 +34,10 @@ def simulations(*args, **kwargs):
                             different sorting algorithm are provided
     """
 
-    return __Simulations__(*args, **kwargs)
+    return Simulations(*args, **kwargs)
 
 
-class __Simulations__(object):
+class Simulations(object):
     """
     Simulations object.
     """
