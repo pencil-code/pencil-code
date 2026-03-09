@@ -37,8 +37,9 @@ def test_Sims_is_iterable():
         pass
 
 def test_Sims_kwarg():
-    sims = Simulations(*simdirs, quiet=True)
+    sims = Simulations(*simdirs, custom_property="something")
     assert len(sims.sims) == len(simdirs)
+    assert sims.custom_property is "something"
 
 def test_Sims_filter():
     sims = Simulations(*simdirs)

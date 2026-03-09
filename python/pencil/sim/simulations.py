@@ -28,7 +28,9 @@ class Simulations:
                             is used to generate simulation object from path or
                             name
 
-    Any keyword arguments are passed on to pc.get_sim.
+    Any keyword arguments are used to populate attributes the resulting object.
+    E.g. `sims = Simulations(path1, path2, my_property="something")` will result
+    in `sims.my_property == "something"`.
 
     Properties:
         self.sims:          direct access on simulations list
@@ -43,6 +45,9 @@ class Simulations:
     def __init__(self, *args, **kwargs):
 
         self.sims = []  # list of all simulation stored
+
+        for k,v in kwargs.items():
+            setattr(self, k, v)
 
         self.add(*args)
 
