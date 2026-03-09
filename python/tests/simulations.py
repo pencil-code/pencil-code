@@ -38,3 +38,9 @@ def test_Sims_is_iterable():
 def test_Sims_kwarg():
     sims = Simulations(*simdirs, quiet=True)
     assert len(sims.sims) == len(simdirs)
+
+@pytest.mark.xfail(reason="documented, but not implemented")
+def test_Sims_sort():
+    sims = Simulations(*simdirs)
+    sims.sort()
+    #TODO: would be good to actually check the results once this is implemented
