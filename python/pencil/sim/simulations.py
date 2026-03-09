@@ -51,10 +51,6 @@ class Simulations:
             setattr(self, k, v)
 
         self.add(*args)
-
-        if type(self.sims) == type(False) and self.sims == False:
-            return False
-
         self.sort()
 
     def add(self, *args):
