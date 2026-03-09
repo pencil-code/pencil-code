@@ -39,11 +39,7 @@ class Simulations:
 
         self.sims = []  # list of all simulation stored
 
-        self.add(args)
-
-        for kw, arg in kwargs:
-            print("!! ERROR: Not prepared for kwargs yet!!")
-            print(kw + ": " + str(arg))
+        self.add(*args, **kwargs)
 
         if type(self.sims) == type(False) and self.sims == False:
             return False
