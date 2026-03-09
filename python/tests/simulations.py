@@ -35,7 +35,6 @@ def test_Sims_is_iterable():
     for simdir in sims:
         pass
 
-@pytest.mark.xfail
 def test_Sims_kwarg():
     sims = Simulations(*simdirs, quiet=True)
     assert len(sims.sims) == len(simdirs)
