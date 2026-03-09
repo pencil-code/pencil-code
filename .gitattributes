@@ -111,6 +111,7 @@ bin/reload -text
 bin/remote-top -text
 bin/restart-new-dir -text
 bin/restart-new-dir-VAR -text
+bin/restart-new-dir-axel -text
 bin/run.csh -text
 bin/scp-proc-to-proc -text
 bin/scpdatadir -text

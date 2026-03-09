@@ -1,0 +1,37 @@
+#!/bin/csh
+#
+#  Example:
+#     restart-new-dir ../hydro256e
+#
+#  copies all files necessary for restarting into the
+#  existing directory tree underneath $1
+#
+#  save name of old directory
+#
+set olddir=`pwd`
+set newdir=$1
+#
+#  goto new directory and prepare data/allprocs
+#
+cd $newdir/data
+mkdir allprocs
+(echo "restart-new-dir: from " $olddir; /bin/date) >> new_from.dir
+cd $olddir
+(echo "restart-new-dir: to " $newdir; /bin/date) >> data/new_to.dir
+#
+#  copy from old to new run directory
+#
+cp data/param* $newdir/data
+#
+# is not necessary as proc_bounds.dat is recreated when missing; when yet done, grid/proc layout agreement must be checked
+cp data/proc_bounds.dat $newdir/data
+#
+set io_scheme = `grep '^ *IO *=' $newdir/src/Makefile.local | tail -n 1 | sed -e's/^.*= *\(\w*\) *.*$/\1/'`
+if ( $io_scheme == 'io_hdf5' ) then
+  cp data/grid.h5 $newdir/data
+  ln -s $olddir/data/allprocs/var.h5 $newdir/data/allprocs/var.h5
+else
+  cp data/allprocs/grid.dat $newdir/data/allprocs
+  pc_copyvar v v $newdir -s -e
+  copy-proc-to-proc grid.dat $newdir
+endif
