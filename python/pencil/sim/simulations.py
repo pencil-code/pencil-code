@@ -44,7 +44,7 @@ class Simulations:
 
         self.sims = []  # list of all simulation stored
 
-        self.add(*args, **kwargs)
+        self.add(*args)
 
         if type(self.sims) == type(False) and self.sims == False:
             return False
@@ -56,7 +56,7 @@ class Simulations:
         alphanum_key = lambda key: [convert(c) for c in re.split("([0-9]+)", key.name)]
         self.sims = sorted(self.sims, key=alphanum_key)
 
-    def add(self, *args, **kwargs):
+    def add(self, *args):
         """Add simulation(s) to simulations object.
 
         Valid arguments can be any of the following:
@@ -78,11 +78,11 @@ class Simulations:
                 self.sims.append(arg)
 
             elif isinstance(arg, (str, pathlib.Path)):
-                self.sims.append(get_sim(arg, **kwargs))
+                self.sims.append(get_sim(arg))
 
             elif is_iterable(arg):
                 for ar in arg:
-                    self.add(ar, **kwargs)
+                    self.add(ar)
 
             else:
                 raise ValueError(f"couldnt add to simulations object: {repr(args)}")
