@@ -62,7 +62,8 @@ class Averages(object):
         proc=-1,
         precision="f",
         comp_time=False,
-        quiet=True
+        quiet=True,
+        sim=None,
     ):
         """
         read(plane_list=None, datadir='data', proc=-1, var_index=-1, proc=-1):
@@ -123,6 +124,9 @@ class Averages(object):
             Whether to suppress diagnostic output.
             Default: True
 
+        sim : Simulation obejct.
+            If specified, get simdir and datadir from this.
+
         Returns
         -------
         Class containing the averages.
@@ -156,7 +160,12 @@ class Averages(object):
             else:
                 time_range = [0, time_range]
 
-        simdir = abspath(simdir)
+        if sim is None:
+            simdir = abspath(simdir)
+        else:
+            simdir = sim.path
+            datadir = sim.datadir
+            param = sim.param
 
         if param is None:
             param = read.param(datadir=datadir, quiet=True)
