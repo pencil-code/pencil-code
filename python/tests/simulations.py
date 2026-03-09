@@ -22,6 +22,13 @@ def test_Sims_from_list():
     assert len(sims.sims) == len(simdirs)
 
 @pytest.mark.xfail
+def test_Sims_add_Sims():
+    sims = Simulations(simdirs)
+    sims_2 = Simulations(simdirs[0])
+    sims.add(sims_2)
+    assert len(sims.sims) == len(simdirs) + 1
+
+@pytest.mark.xfail
 def test_Sims_is_iterable():
     sims = Simulations(*simdirs)
     
