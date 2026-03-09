@@ -11,6 +11,8 @@ Contains the simulations class which can be used to store and perform actions on
 multiple simulations at once.
 """
 
+import pathlib
+
 from pencil.util import copy_docstring
 
 class Simulations:
@@ -55,6 +57,7 @@ class Simulations:
         """Add simulation(s) to simulations object.
 
         Valid arguments can be any of the following:
+            - path to a simulation (pathlib.Path or str)
             - simulation object
             - list of simulation objects
             - iterable of simulation objects
@@ -71,7 +74,7 @@ class Simulations:
             if isinstance(arg, Simulation):
                 self.sims.append(arg)
 
-            elif isinstance(arg, str):
+            elif isinstance(arg, (str, pathlib.Path)):
                 self.sims.append(get_sim(arg))
 
             elif is_iterable(arg):
