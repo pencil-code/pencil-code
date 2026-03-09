@@ -54,7 +54,7 @@ class Simulations:
     def add(self, *args, **kwargs):
         """Add simulation(s) to simulations object.
 
-        Args:
+        Valid arguments can be any of the following:
             - simulation object
             - list of simulation objects
             - iterable of simulation objects
