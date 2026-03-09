@@ -1267,7 +1267,7 @@ module Magnetic
           call farray_register_auxiliary('acou',iacou,vector=3)
           iacoux=iacou; iacouy=iacou+1; iacouz=iacou+2
         else
-          call fatal_error('register_magnetic','lcoulomb must be true')
+          call fatal_error('register_magnetic','lcoulomb must be true for laa_cou_as_aux=T')
         endif
       endif
 !
@@ -6408,14 +6408,6 @@ print*,'AXEL2: should not be here (eta) ... '
       endif
       endif
 !
-!  Possibility of vector potential in Coulomb gauge as auxiliary output.
-!  Compute Acou=AWeyl-gLam, where div(Acou)=0=div(AWeyl)-del2(gLam).
-!  Recall that no minus sign has been included in the calculation of gLam.
-!
-      if (laa_cou_as_aux) f(l1:l2,m,n,iacoux:iacouz)=p%aa-p%gLam
-!test
-      !if (laa_cou_as_aux) f(l1:l2,m,n,iacoux:iacouz)=p%aa+p%gLam
-!
 !  Do diagnostics, which includes also slices.
 !
       call calc_diagnostics_magnetic(f,p)
@@ -6484,12 +6476,17 @@ print*,'AXEL2: should not be here (eta) ... '
         enddo
       endif
 !
+!  Possibility of vector potential in Coulomb gauge as auxiliary output.
+!  Compute Acou=AWeyl-gLam, where div(Acou)=0=div(AWeyl)-del2(gLam).
+!  Recall that no minus sign has been included in the calculation of gLam.
+!
+      if (laa_cou_as_aux) f(l1:l2,m,n,iacoux:iacouz)=p%aa-p%gLam
+!test
+      !if (laa_cou_as_aux) f(l1:l2,m,n,iacoux:iacouz)=p%aa+p%gLam
+!
       call calc_2d_diagnostics_magnetic(p)
       call calc_1d_diagnostics_magnetic(p)
       if (ldiagnos) call calc_0d_diagnostics_magnetic(f,p)
-!
-!  Write B-slices for output in wvid in run.f90.
-!  Note: ix_loc is the index with respect to array with ghost zones.
 !
       if (lvideo.and.lfirst) then
 !
@@ -6500,6 +6497,8 @@ print*,'AXEL2: should not be here (eta) ... '
           f(l1:l2,m,n,ibij+3:ibij+5)=p%bij(:,:,2)
           f(l1:l2,m,n,ibij+6:ibij+8)=p%bij(:,:,3)
         endif
+!
+!  Write slices for output in wvid in run.f90.
 !
         if (ivid_aps/=0) call store_slices(p%aps,aps_xy,aps_xz,aps_yz,xz2=aps_xz2)
         if (ivid_bb/=0) call store_slices(p%bb,bb_xy,bb_xz,bb_yz,bb_xy2,bb_xy3,bb_xy4,bb_xz2,bb_r)
@@ -12082,8 +12081,6 @@ print*,'AXEL2: should not be here (eta) ... '
     call copy_addr(bij_0d_test,p_par(278)) ! (3) (3)
     call copy_addr(lbij_test,p_par(279)) ! bool
     call copy_addr(luse_bgb_as_jxb,p_par(280)) ! bool
-
-
 
     endsubroutine pushpars2c
 !***********************************************************************
