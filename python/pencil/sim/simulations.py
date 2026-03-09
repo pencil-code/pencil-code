@@ -83,20 +83,15 @@ class Simulations(object):
         for arg in args:
 
             if isinstance(arg, Simulation):
-                # print('\n self.add: Simulation')
-                # print(arg.path)
                 self.sims.append(arg)
                 return True
 
             elif isinstance(arg, str):
-                # print('\n self.add: string')
                 self.sims.append(get_sim(arg))
                 return True
 
             elif is_iterable(arg):
-                # print('\n self.add: iterable: '+str(args))
                 for ar in arg:
-                    # print('n self.add: iterable add: '+str(a))
                     self.add(ar)
                 return True
 
