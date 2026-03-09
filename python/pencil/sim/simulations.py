@@ -47,7 +47,6 @@ class Simulations(object):
         self.sims = []  # list of all simulation stored
 
         for arg in args:
-            # print('\n __init__ : '+ str(arg))
             self.add(arg)
 
         for kw, arg in kwargs:
@@ -63,8 +62,6 @@ class Simulations(object):
         convert = lambda text: int(text) if text.isdigit() else text.lower()
         alphanum_key = lambda key: [convert(c) for c in re.split("([0-9]+)", key.name)]
         self.sims = sorted(self.sims, key=alphanum_key)
-
-        # Done
 
     def add(self, *args):
         """Add simulation(s) to simulations object.
