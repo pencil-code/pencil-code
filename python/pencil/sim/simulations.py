@@ -83,7 +83,7 @@ class Simulations:
                 self.sims.append(arg)
 
             elif isinstance(arg, (str, pathlib.Path)):
-                self.sims.append(get_sim(arg))
+                self.sims.append(self.sim_from_simdir(arg))
 
             elif is_iterable(arg):
                 for ar in arg:
@@ -117,6 +117,12 @@ class Simulations:
         new = copy.copy(self)
         new.sims = good
         return new
+
+    def sim_from_simdir(self, simdir):
+        sim = get_sim(simdir)
+        if sim is False:
+            raise RuntimeError(f"sim not found in {simdir}")
+        return sim
 
 @copy_docstring(Simulations)
 def simulations(*args, **kwargs):
