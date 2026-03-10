@@ -778,6 +778,7 @@ module Special
       type(pencil_case) :: p
       real, dimension(nx),intent(IN) :: tmp
       real, dimension(nx), intent(OUT) :: constrainteqn
+
       real, dimension(nx) :: constrainteqn1
       !constrainteqn1=sqrt(p%divE**2+tmp**2)
 !
@@ -826,7 +827,7 @@ module Special
           call dot(p%bb,gphi,dst)
           dst=-alpff*dst
         else
-         dst=0.
+          dst=0.
         endif
       endif
 
@@ -1358,10 +1359,6 @@ module Special
 !  Possibility to modify the f array after the boundaries are
 !  communicated.
 !
-!     use Poisson
-!, only: inverse_laplacian
-!     use Sub, only: div
-!
 !  06-jul-06/tony: coded
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -1399,6 +1396,7 @@ module Special
     endsubroutine get_slices_special
 !***********************************************************************
     subroutine load_variables_to_gpu_special
+
       use Gpu, only: update_on_gpu
 
       real :: lgt1, lgt2, lgf1, lgf2, lgf, lgt_current
@@ -1426,12 +1424,9 @@ module Special
             call fatal_error('load_variables_to_gpu','no such aderiv_scaling: "'//trim(aderiv_scaling)//'"')
         endselect
 
-        if(lgpu .and. Hp_old /= Hp_target) then
-          call update_on_gpu(Hp_index_on_gpu,'AC_hp_target__mod__cdata',Hp_target)
-        endif
-
-        if(lgpu .and. appa_old /= appa_target) then
-          call update_on_gpu(appa_index_on_gpu,'AC_appa_target__mod__cdata',appa_target)
+        if (lgpu) then
+          if (Hp_old /= Hp_target) call update_on_gpu(Hp_index_on_gpu,'AC_hp_target__mod__cdata',Hp_target)
+          if (appa_old /= appa_target) call update_on_gpu(appa_index_on_gpu,'AC_appa_target__mod__cdata',appa_target)
         endif
         Hp_old = Hp_target
         appa_old = appa_target
@@ -1489,6 +1484,7 @@ module Special
       call copy_addr(llorentzforce_ee,p_par(44)) ! bool
       call copy_addr(ldensity_add_je_heating,p_par(45)) ! bool
       call copy_addr(je_heating_factor,p_par(46))
+      call copy_addr(va_limit,p_par(47))
 
     endsubroutine pushpars2c
 !***********************************************************************
