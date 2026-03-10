@@ -449,6 +449,10 @@ class DataCube(object):
             setattr(self, "uu", self.f[self._index['ux'] - 1 : self._index['uz'], ...])
         if ("ax" in self._index) and (self._index['az'] <= index_max):
             setattr(self, "aa", self.f[self._index['ax'] - 1 : self._index['az'], ...])
+        if ("acoux" in self._index) and (self._index['acouz'] <= index_max):
+            setattr(self, "acou", self.f[self._index['acoux'] - 1 : self._index['acouz'], ...])
+        if ("aadvx" in self._index) and (self._index['aadvz'] <= index_max):
+            setattr(self, "aadv", self.f[self._index['aadvx'] - 1 : self._index['aadvz'], ...])
         if ("uu_sph" in self._index) and (self._index['uu_sphz'] <= index_max):
             self.uu_sph = self.f[self._index['uu_sphx'] - 1 : self._index['uu_sphz'], ...]
         if ("bb_sph" in self._index) and (self._index['bb_sphz'] <= index_max):
