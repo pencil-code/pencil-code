@@ -2035,13 +2035,27 @@ extern "C" void reloadConfig()
   const AcResult closed_res = acCloseLibrary();
   if (closed_res != AC_SUCCESS)
   {
-	  if (rank == 0) fprintf(stderr,"Was not successful in closing Astaroth lib!\n");
+	  if (rank == 0) 
+	  {
+		  fprintf(stderr,"Was not successful in closing Astaroth lib!\n");
+		  system("touch ERROR");
+	  }
+  	  MPI_Barrier(MPI_COMM_WORLD);
 	  exit(EXIT_FAILURE);
   }
 #include "cmake_options.h"
   generate_bcs();
   MPI_Barrier(MPI_COMM_WORLD);
-  acCompile(cmake_options,mesh.info);
+  if(acCompile(cmake_options,mesh.info) != AC_SUCCESS)
+  {
+	  if(rank == 0) 
+	  {
+		  fprintf(stderr,"Was not able to compile Astaroth!\n");
+		  system("touch ERROR");
+	  }
+  	  MPI_Barrier(MPI_COMM_WORLD);
+	  exit(EXIT_FAILURE);
+  }
   acLoadLibrary(rank == 0 ? stderr : NULL,mesh.info);
   acGridInit(mesh);
   acLogFromRootProc(rank, "Done setupConfig && acCompile\n");
