@@ -12,6 +12,7 @@ HYDRO=hydro
 EOS=eos_idealgas
 DENSITY=density
 PSCALAR=pscalar_nolog
+POISSON=poisson
 SPECIAL=special/advective_gauge
 FOURIER=fourier_fftpack
 POWER=power_spectrum

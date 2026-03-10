@@ -4,9 +4,12 @@
 !
 &init_pars
   cvsid='$Id: start.in,v 1.1 2010/10/09 19:44:40 brandenb Exp $',
+  lwrite_aux=T
 /
 &eos_init_pars
   gamma=1.
+/
+&poisson_init_pars
 /
 &hydro_init_pars
 /
@@ -14,9 +17,12 @@
 /
 &magnetic_init_pars
   initaa='gaussian-noise', amplaa=1e-4
+  !initaa='power_randomphase_hel', amplaa=3e-2, relhel_aa=1.
+  !initpower_aa=2., kpeak_aa=4., lscale_tobox=F
+  laa_cou_as_aux=T, lcoulomb=T
 /
 &special_init_pars
-  init='zero'
+  laa_adv_as_aux=T, init='zero'
 /
 &pscalar_init_pars
 /
