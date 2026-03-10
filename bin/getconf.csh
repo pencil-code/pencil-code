@@ -881,6 +881,23 @@ else if (($hn =~ atlas*) && ($USER =~ monteiro)) then
   set local_binary = 0
 #--------------------------------------------------
 #else if (($hn =~ uan* && $masterhost == lumi)) then
+else if (($hostname =~ frontier*)) then
+  echo "Frontier - Oak Ridge, USA"
+  if ($?SLURM_JOB_ID) then
+    echo "Running job: $SLURM_JOB_ID"
+    if (!($?SLURM_SUBMIT_DIR)) then
+      setenv SLURM_SUBMIT_DIR `pwd`
+    endif
+    touch $SLURM_SUBMIT_DIR/data/jobid.dat
+    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
+  endif
+  set mpirun = 'srun'
+  set npops = "-n $ncpus"
+  set local_disc = 0
+  set one_local_disc = 0
+  set remote_top     = 0
+  set local_binary = 0
+#--------------------------------------------------
 else if (($hn =~ nid* && $masterhost == lumi)) then
   echo "Lumi - CSC, Kajaani, Finland"
   if ($?SLURM_JOB_ID) then
