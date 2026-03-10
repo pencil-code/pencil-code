@@ -3212,6 +3212,7 @@ module Viscosity
     call copy_addr(lambda_v1t,p_par(114))
     call copy_addr(nu_y,p_par(115))        ! (my)
     call copy_addr(gnu_y,p_par(116))       ! (my)
+    call copy_addr(lvisc_nu_const_bulk,p_par(117)) ! bool
 
     endsubroutine pushpars2c
 !***********************************************************************
