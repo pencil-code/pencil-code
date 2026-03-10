@@ -69,6 +69,7 @@ module Viscosity
   logical :: lvisc_nu_cspeed=.false.
   logical :: lvisc_mu_cspeed=.false.
   logical :: lvisc_nu_const=.false.
+  logical :: lvisc_nu_const_bulk=.false.
   logical :: lvisc_nu_tdep=.false.
   logical :: lvisc_nu_tdep_t0_norm=.false.
   logical :: lvisc_nu_prof=.false.
@@ -356,6 +357,7 @@ module Viscosity
       lvisc_nu_cspeed=.false.
       lvisc_mu_cspeed=.false.
       lvisc_nu_const=.false.
+      lvisc_nu_const_bulk=.false.
       lvisc_nu_tdep=.false.
       lvisc_nu_prof=.false.
       lvisc_nu_profx=.false.
@@ -435,6 +437,9 @@ module Viscosity
 !          if (meanfield_nuB/=0.) lpenc_requested(i_b2)=.true.
           lpenc_requested(i_glnrho)=.true.
           lvisc_nu_const=.true.
+        case ('nu-const-bulk')
+          if (lroot) print*,'viscous force: zeta*(graddivu + divu*glnrho)'
+          lvisc_nu_const_bulk=.true.
         case ('nu-tdep')
           if (lroot) print*,'time-dependent nu*(del2u+graddivu/3+2S.glnrho)'
           if (nu/=0.) lpenc_requested(i_sij)=.true.
@@ -595,7 +600,7 @@ module Viscosity
              lvisc_mu_cspeed).and.nu==0.0) &
             call warning('initialize_viscosity','Viscosity coefficient nu is zero')
 
-        if ((lvisc_rho_nu_const_bulk).and.zeta==0.0) &
+        if ((lvisc_rho_nu_const_bulk.or.lvisc_nu_const_bulk).and.zeta==0.0) &
             call fatal_error('initialize_viscosity','Viscosity coefficient zeta is zero')
 
         if (lvisc_hyper2_simplified.and.nu_hyper2==0.0) &
@@ -988,8 +993,8 @@ module Viscosity
 !
       if ((lentropy.or.ltemperature) .and. &
           (lvisc_rho_nu_const .or. lvisc_rho_nu_const_bulk .or. &
-           lvisc_sqrtrho_nu_const .or. lvisc_nu_cspeed .or. &
-           lvisc_nu_const .or. lvisc_nu_tdep .or. lvisc_nu_shock .or. &
+           lvisc_sqrtrho_nu_const .or. lvisc_nu_cspeed .or. lvisc_nu_const .or. &
+           lvisc_nu_const_bulk .or. lvisc_nu_tdep .or. lvisc_nu_shock .or. &
            lvisc_nu_prof .or. lvisc_nu_profx .or. lvisc_spitzer .or. &
            lvisc_nu_profr .or. lvisc_nu_profr_powerlaw .or. lvisc_nu_profy_bound .or. &
            lvisc_nu_profr_twosteps .or. lvisc_nu_shock_profz .or. &
@@ -1252,6 +1257,12 @@ module Viscosity
         lpenc_requested(i_graddivu)=.true.
       endif
 !
+      if (lvisc_nu_const_bulk) then
+        lpenc_requested(i_graddivu)=.true.
+        lpenc_requested(i_divu)=.true.
+        lpenc_requested(i_glnrho)=.true.
+      endif
+!
 !  fviscmax has been revised to show absolute maximum rather than component
 !  maximum and largest component negative no longer computed. Sign of the
 !  maximum force is arbitrary.
@@ -1510,6 +1521,17 @@ module Viscosity
         if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*nu*p%sij2
         if (ldiffus_total) p%diffus_total=p%diffus_total+nu
       endif
+!
+!   Viscous force zeta*(graddivu + divu*glnrho)
+!   corresponding to constant bulk kinematic viscosity.
+!
+    if (lvisc_nu_const_bulk) then
+      do j=1,3
+        p%fvisc(:,j) = p%fvisc(:,j) + zeta*(p%graddivu(:,j) + p%divu*p%glnrho(:,j))
+        if (lpencil(i_visc_heat)) p%visc_heat = p%visc_heat + zeta*p%divu**2
+        if (ldiffus_total) p%diffus_total = p%diffus_total + zeta
+      enddo
+    endif
 !
 !  Viscous force: nu(t)*(del2u+graddivu/3+2S.glnrho) [correct for nu=const].
 !
