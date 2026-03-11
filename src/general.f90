@@ -31,6 +31,7 @@ module General
   public :: arcsinh
   public :: besselj_nu_int, calc_complete_ellints
   public :: bessj, cyclic
+  public :: eigvec3
   public :: plegendre
   public :: spline_derivative_double, spline_integral, linear_interpolate
   public :: itoa, rtoa, atoi, log2str, count_bits, parser, write_full_columns
@@ -2373,7 +2374,7 @@ print*, 'rank,ipx,ipy,ipz, find_proc=',rank, ipx,ipy,ipz, find_proc_node_localty
       character(len=*), intent(out), optional :: msg
       logical, intent(out), optional :: err
 !
-      real, parameter :: onethird = 1.0 / 3.0
+!     real, parameter :: onethird = 1.0 / 3.0  !AB: not needed, already defined
       real, dimension(size(y)) :: p, q, r
       character(len=linelen) :: msg1
       logical :: err1
@@ -2433,7 +2434,7 @@ print*, 'rank,ipx,ipy,ipz, find_proc=',rank, ipx,ipy,ipz, find_proc_node_localty
       real, dimension(:), intent(in) :: y
       real, dimension(size(y)), intent(out) :: b, c, d
 !
-      real, parameter :: onethird = 1.0 / 3.0
+!     real, parameter :: onethird = 1.0 / 3.0  !AB: not needed, already defined
       real, dimension(size(y)) :: r
       integer :: n
 !
@@ -3118,6 +3119,161 @@ endfunction
       return
 !
     endsubroutine cyclic
+!***********************************************************************
+   subroutine eigvec3(mm, vv, lambdas)
+!
+!  Calculate coefficients of characteristic equation x^3+a*x^2+b^x+c=0
+!  from the determinant of a 3x3 matrix.
+!
+!  08-mar-26/axel: adapted from my ~/idl/pro/eigval3_arr.pro routine.
+!
+      real, dimension(3,3) :: m, mm, vv
+      real, dimension(3) :: xx, lambdas
+      real :: a0, a1, norm, x1, x2, x3
+      integer :: i, k
+!
+!  Symmetric part
+!
+      call sympart3(mm,m)
+!
+!  Eigenvalues
+!
+      call eigval3(m,lambdas)
+!
+!  calculate eigenvectors for each eigenvalue i
+!
+      do i=1,3
+        mm=m
+        do k=1,3
+          mm(k,k)=mm(k,k)-lambdas(i)
+        enddo
+!
+!  m00*x0 + m01*x1 + m02*x2 = 0
+!  m10*x0 + m11*x1 + m12*x2 = 0
+!
+!  eliminate 1st row
+!
+! (m01*m10 - m11*m00) * x1 + (m02*m10 - m12*m00) * x2 = 0
+!  choose x1=1.
+!------------------------------------------------------------------------
+!
+!  eliminate 3rd row
+!
+!  (m00*m12 - m10*m02) * x0 + (m01*m12 - m11*m02) * x1 = 0
+!  choose x1=1.
+!
+          x1=1.
+          a0=(mm(1,1)*mm(2,3)-mm(2,1)*mm(1,3))
+          a1=(mm(1,2)*mm(2,3)-mm(2,2)*mm(1,3))
+          x2=-a0*x1/(a1+epsi)
+          x3=-(mm(1,1)*x1+mm(1,2)*x2)/(mm(1,3)+epsi)
+!
+          xx(1)=x1
+          xx(2)=x2
+          xx(3)=x3
+          norm=sqrt(xx(1)**2+xx(2)**2+xx(3)**2)
+          xx=xx/norm
+          vv(:,i)=xx
+        enddo
+!
+    endsubroutine eigvec3
+!***********************************************************************
+   subroutine eigval3(m,lambdas)
+!
+!  Calculate eigenvalues of a symmetric 3x3 matrix.
+!
+!  08-mar-26/axel: adapted from my ~/idl/pro/eigval3_arr.pro routine.
+!
+      real, dimension(3,3) :: m
+      real, dimension(3) :: lambdas
+      real :: a, b, c, disc
+      real :: lam1, lam2, lam3
+!
+!  Characteristic equation
+!
+      a=-m(1,1)-m(2,2)-m(3,3)
+      b= m(1,1)*m(2,2)+m(2,2)*m(3,3)+m(3,3)*m(1,1)- &
+         m(2,1)*m(1,2)-m(3,2)*m(2,3)-m(1,3)*m(3,1)
+      c= m(2,1)*m(1,2)*m(3,3)+m(3,2)*m(2,3)*m(1,1)+m(1,3)*m(3,1)*m(2,2)- &
+         m(1,1)*m(2,2)*m(3,3)-m(1,2)*m(2,3)*m(3,1)-m(1,3)*m(2,1)*m(3,2)
+!
+      call cubic_roots(a,b,c,disc,lam1,lam2,lam3)
+!
+      lambdas(1)=lam1
+      lambdas(2)=lam2
+      lambdas(3)=lam3
+!
+    endsubroutine eigval3
+!***********************************************************************
+   subroutine sympart3(mm,m)
+!
+!  Symmetric part of a 3x3 matrix.
+!
+!  08-mar-26/axel: adapted from my ~/idl/pro/eigval3_arr.pro routine.
+!
+      real, dimension(3,3) :: m, mm
+!
+!  Symmetric part
+!
+      m(1,1)=mm(1,1)
+      m(2,2)=mm(2,2)
+      m(3,3)=mm(3,3)
+!
+      m(1,2)=.5*(mm(1,2)+mm(2,1))
+      m(2,3)=.5*(mm(2,3)+mm(3,2))
+      m(3,1)=.5*(mm(3,1)+mm(1,3))
+!
+      m(2,1)=m(1,2)
+      m(3,2)=m(2,3)
+      m(1,3)=m(3,1)
+!
+    endsubroutine sympart3
+!***********************************************************************
+   subroutine cubic_roots(a,b,c,disc,lam1,lam2,lam3)
+!
+!  Solve cubic equation.
+!  Bring first to reduced form y^3+p*y+q=0.
+!  a,b,c,disc,lam1,lam2,lam3 are ...
+!
+!  08-mar-26/axel: Adapted from my ~/idl/pro/eigval3_arr.pro routine.
+!                  Could perhaps also use SUBROUTINE CubicRoots(a, z)
+!
+      real :: a, b, c, disc
+      real :: lam1, lam2, lam3
+      real :: p, q, q2, p3, p33, a3, a32, p32, D2, u, v, sqrt32, phi3
+!
+      p=b-a**2*onethird
+      a3=a*onethird
+      a32=a3**2
+      p=     (b-3.*a32)
+      q=c-a3*(b-2.*a32)
+!
+      q2=.5*q
+      p3=p*onethird
+      p33=p3**3
+      disc=q2**2+p33
+!
+      if (disc >= 0.) then
+        D2=sqrt(disc)
+        u=sign(abs(-q2+D2),-q2+D2)**onethird
+        v=sign(abs(-q2-D2),-q2-D2)**onethird
+        sqrt32=.5*sqrt(3.)
+        lam1=u+v
+        lam2=-.5*lam1
+        lam3=-.5*lam1
+      else
+        phi3=acos(-q2/sqrt(abs(p33)))*onethird
+        p32=2.*sqrt(abs(p3))
+        lam1=+p32*cos(phi3)
+        lam2=-p32*cos(phi3+pi*onethird)
+        lam3=-p32*cos(phi3-pi*onethird)
+      endif
+!
+      lam1=lam1-a3
+      lam2=lam2-a3
+      lam3=lam3-a3
+!
+    endsubroutine cubic_roots
 !***********************************************************************
    subroutine linear_interpolate_1d(f,xx,xxp,res,lcheck)
 !

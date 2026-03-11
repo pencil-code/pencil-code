@@ -104,7 +104,8 @@ module Special
   real :: Hscript0=0., scale_rho_chi_Heqn=1., rho_chi_init=0., cdt_rho_chi=1.
   real :: amplee_BD_prefactor=0., deriv_prefactor_ee=-1.
   real :: echarge=.0, echarge_const=.303
-  real :: count_eb0_all=0.
+  real :: count_eb0_all=0., rad_heating=0., ascale_heat=0., ascale_heat_off=0., heating
+!
   real, target :: ddotam_all
   real, pointer :: alpf, eta
   real, pointer :: sigE_prefactor, sigB_prefactor, mass_chi
@@ -139,7 +140,7 @@ module Special
       lbackreact_infl, lem_backreact, c_light_axion, lambda_axion, Vprime_choice, &
       lzeroHubble, ldt_backreact_infl, Ndiv, Hscript0, Hscript_choice, infl_v, &
       lflrw, lrho_chi, scale_rho_chi_Heqn, echarge_type, cdt_rho_chi, &
-      lrho_chi_corrected, lrho_chi_inhom
+      lrho_chi_corrected, lrho_chi_inhom, rad_heating, ascale_heat, ascale_heat_off
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -160,6 +161,7 @@ module Special
   integer :: idiag_sigEma=0     ! DIAG_DOC: $\rho_\chi$
   integer :: idiag_sigBma=0     ! DIAG_DOC: $\rho_\chi$
   integer :: idiag_count_eb0a=0 ! DIAG_DOC: $f_\mathrm{EB0}$
+  integer :: idiag_heating=0    ! DIAG_DOC: $\theta_\mathrm{heat}$
 !
   integer :: enum_hscript_choice = 0
   integer :: enum_vprime_choice = 0
@@ -367,8 +369,12 @@ module Special
             call bunch_davies(f,iinfl_phi,iinfl_phi,iinfl_dphi,iinfl_dphi, &
                               amplphi_BD,kpeak_phi,deriv_prefactor)
             if (amplee_BD_prefactor/=0.) then
-              deriv_prefactor=deriv_prefactor_ee
               amplee_BD=amplee_BD_prefactor*Hubble_ini
+              if (iex>0) then
+                deriv_prefactor=deriv_prefactor_ee
+              else
+                deriv_prefactor=0.
+              endif
               call bunch_davies(f,iax,iaz,iex,iez,amplee_BD,kpeak_phi,deriv_prefactor)
             endif
           case default
@@ -667,6 +673,7 @@ module Special
     subroutine dspecial_dt_ode
 !
       use SharedVariables, only: get_shared_variable
+      use Diagnostics , only: 
 !
       if (lgpu) call read_sums_from_device
       call get_Hscript_and_a2(Hscript,a2rhom_all)
@@ -685,6 +692,17 @@ module Special
             df_ode(iinfl_rho_chi)=df_ode(iinfl_rho_chi)-4.*Hscript*f_ode(iinfl_rho_chi) &
               +(sigEm_all*e2m_all+sigBm_all*edotbm_all)/ascale**3
           endif
+!
+!  In a test example, assume that a certain level of heating, rad_heating,
+!  is turned on after ascale has exceeded a critical level, ascale_heat.
+!
+        elseif (ascale_heat>0) then
+          if (ascale_heat_off>0) then
+            heating=rad_heating*.25*(1.+tanh(ascale-ascale_heat))*(1.-tanh(ascale-ascale_heat_off))
+          else
+            heating=rad_heating*.5*(1.+tanh(ascale-ascale_heat))
+          endif
+          df_ode(iinfl_rho_chi)=df_ode(iinfl_rho_chi)-4.*Hscript*f_ode(iinfl_rho_chi)+heating/ascale**4
         else
           df_ode(iinfl_rho_chi)=df_ode(iinfl_rho_chi)-4.*Hscript*f_ode(iinfl_rho_chi)
         endif
@@ -729,6 +747,8 @@ module Special
         call save_name(sigBm_all_diagnos,idiag_sigBma)
         if (lnoncollinear_EB_aver .or. lcollinear_EB_aver) &
           call save_name(count_eb0_all,idiag_count_eb0a)
+        call save_name(heating,idiag_heating)
+!
       endif
 !
     endsubroutine calc_ode_diagnostics_special
@@ -807,7 +827,7 @@ module Special
         idiag_Hscriptm=0; idiag_lnam=0; idiag_ddotam=0
         idiag_a2rhopm=0; idiag_a2rhom=0; idiag_a2rhophim=0
         idiag_a2rhogphim=0; idiag_rho_chi=0; idiag_sigEma=0
-        idiag_sigBma=0; idiag_count_eb0a=0
+        idiag_sigBma=0; idiag_count_eb0a=0; idiag_heating=0
       endif
 !
       do iname=1,nname
@@ -828,6 +848,7 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'sigEma',idiag_sigEma)
         call parse_name(iname,cname(iname),cform(iname),'sigBma',idiag_sigBma)
         call parse_name(iname,cname(iname),cform(iname),'count_eb0a',idiag_count_eb0a)
+        call parse_name(iname,cname(iname),cform(iname),'heating',idiag_heating)
       enddo
 !
     endsubroutine rprint_special

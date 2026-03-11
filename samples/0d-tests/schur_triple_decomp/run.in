@@ -24,6 +24,8 @@
 /
 &special_run_pars
   luij_schur=T, lbij_schur=T
+  luse_complex_schur=F
+  leigvec=T
 /
 &viscosity_run_pars
   nu=1e-1

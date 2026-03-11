@@ -59,16 +59,17 @@ module Special
   integer :: idiag_LamRArms=0   ! DIAG_DOC: $\left<\Lambda_{r\to a}^2\right>^{1/2}$
   integer :: idiag_LamRAbzm=0   ! DIAG_DOC: $\left<\Lambda_{r\to a} B_z\right>$
   integer :: idiag_LamRAbzmz=0  ! DIAG_DOC: $\left<\Lambda_{r\to a} B_z\right>_{xy}$
-  integer :: idiag_gLamRAbm=0     ! DIAG_DOC: $\left<\Lambda_{r\to a}\Bv\right>$
+  integer :: idiag_gLamRAbm=0   ! DIAG_DOC: $\left<\Lambda_{r\to a}\Bv\right>$
   integer :: idiag_apbrms=0     ! DIAG_DOC: $\left<(\Av'\Bv)^2\right>^{1/2}$
   integer :: idiag_jxarms=0     ! DIAG_DOC: $\left<(\Jv\times\Av)^2\right>^{1/2}$
   integer :: idiag_jxaprms=0    ! DIAG_DOC: $\left<(\Jv\times\Av')^2\right>^{1/2}$
-  integer :: idiag_jxgLamRArms=0  ! DIAG_DOC: $\left<(\Jv\times\nabla\Lambda_{r\to a})^2\right>^{1/2}$
-  integer :: idiag_gLamRArms=0    ! DIAG_DOC: $\left<(\nabla\Lambda_{r\to a})^2\right>^{1/2}$
+  integer :: idiag_jxgLamRArms=0 ! DIAG_DOC: $\left<(\Jv\times\nabla\Lambda_{r\to a})^2\right>^{1/2}$
+  integer :: idiag_gLamRArms=0  ! DIAG_DOC: $\left<(\nabla\Lambda_{r\to a})^2\right>^{1/2}$
   integer :: idiag_divabrms=0   ! DIAG_DOC: $\left<[(\nabla\cdot\Av)\Bv]^2\right>^{1/2}$
   integer :: idiag_divapbrms=0  ! DIAG_DOC: $\left<[(\nabla\cdot\Av')\Bv]^2\right>^{1/2}$
-  integer :: idiag_d2LamRAbrms=0  ! DIAG_DOC: $\left<[(\nabla^2\Lambda_{r\to a})\Bv]^2\right>^{1/2}$
-  integer :: idiag_d2LamRArms=0   ! DIAG_DOC: $\left<[\nabla^2\Lambda_{r\to a}]^2\right>^{1/2}$
+  integer :: idiag_d2LamRAbrms=0 ! DIAG_DOC: $\left<[(\nabla^2\Lambda_{r\to a})\Bv]^2\right>^{1/2}$
+  integer :: idiag_d2LamRArms=0 ! DIAG_DOC: $\left<[\nabla^2\Lambda_{r\to a}]^2\right>^{1/2}$
+  integer :: idiag_aabm=0       ! DIAG_DOC: $\left<\Av_\mathrm{Adv}\cdot\Bv\right>$
 !
   contains
 !
@@ -238,7 +239,7 @@ module Special
       type (pencil_case) :: p
 !
       real, dimension (nx,3) :: jxa, divab
-      real, dimension (nx) :: LamRA, del2LamRA, ua, ugLamRA, gLamRAb, jxa2, divab2
+      real, dimension (nx) :: LamRA, del2LamRA, ua, ugLamRA, gLamRAb, jxa2, divab2, tmp
 !
       intent(in) :: p
       intent(inout) :: f,df
@@ -279,6 +280,8 @@ module Special
 !  By contrast to the Coulomb gauge, there is here a plus sign.
 !
       if (laa_adv_as_aux) f(l1:l2,m,n,iaadvx:iaadvz)=p%aa+p%gLamRA
+!test
+      !if (laa_adv_as_aux) f(l1:l2,m,n,iaadvx:iaadvz)=p%aa-p%gLamRA
 !
 !  diagnostics
 !
@@ -291,6 +294,10 @@ module Special
           call dot(p%gLamRA,p%bb,gLamRAb)
           if (idiag_gLamRAbm/=0) call sum_mn_name(gLamRAb,idiag_gLamRAbm)
           if (idiag_apbrms/=0) call sum_mn_name((p%ab+gLamRAb)**2,idiag_apbrms,lsqrt=.true.)
+        endif
+        if (idiag_aabm/=0) then
+          call dot(f(l1:l2,m,n,iaadvx:iaadvz),p%bb,tmp)
+          call sum_mn_name(tmp,idiag_aabm)
         endif
 !
 !  (JxA^r)_rms
@@ -440,6 +447,7 @@ module Special
         idiag_jxaprms=0; idiag_divapbrms=0
         idiag_jxgLamRArms=0; idiag_d2LamRAbrms=0
         idiag_gLamRArms=0; idiag_d2LamRArms=0
+        idiag_aabm=0
         cformv=''
       endif
 !
@@ -461,6 +469,7 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'divapbrms',idiag_divapbrms)
         call parse_name(iname,cname(iname),cform(iname),'d2LamRAbrms',idiag_d2LamRAbrms)
         call parse_name(iname,cname(iname),cform(iname),'d2LamRArms',idiag_d2LamRArms)
+        call parse_name(iname,cname(iname),cform(iname),'aabm',idiag_aabm)
       enddo
 !
       do inamez=1,nnamez

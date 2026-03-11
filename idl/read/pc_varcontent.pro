@@ -118,6 +118,15 @@ indices = [ $
   { name:'iaa', label:'Magnetic vector potential', dims:3 }, $
   { name:'iacou', label:'Magnetic vector potential in Coulomb gauge', dims:3 }, $
   { name:'iaadv', label:'Magnetic vector potential in advective gauge', dims:3 }, $
+  ;{ name:'iacoux', label:'acoux', dims:1 }, $
+  ;{ name:'iacouy', label:'acouy', dims:1 }, $
+  ;{ name:'iacouz', label:'acouz', dims:1 }, $
+  ;{ name:'iaadvx', label:'aadvx', dims:1 }, $
+  ;{ name:'iaadvy', label:'aadvy', dims:1 }, $
+  ;{ name:'iaadvz', label:'aadvz', dims:1 }, $
+  { name:'ioeex', label:'oeex', dims:1 }, $
+  { name:'ioeey', label:'oeey', dims:1 }, $
+  { name:'ioeez', label:'oeez', dims:1 }, $
   { name:'ia0', label:'Electric potential for Lorenz gauge', dims:1 }, $
   { name:'iinfl_phi', label:'Inflaton phi', dims:1 }, $
   { name:'iinfl_dphi', label:'Inflaton time derivative dphi', dims:1 }, $
