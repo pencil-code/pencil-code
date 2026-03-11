@@ -21,6 +21,7 @@
 &backreact_infl_run_pars
   !lbackreact_infl=T, !Vprime_choice='cos-profile'
   lbackreact_infl=T, ldt_backreact_infl=T, Ndiv=2000
+  ldefine_a2rhophi_with_Vpotential=F
 /
 &disp_current_run_pars
   alpf=90.

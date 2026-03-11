@@ -18,6 +18,7 @@
 /
 &backreact_infl_run_pars
   lbackreact_infl=T, ldt_backreact_infl=T
+  ldefine_a2rhophi_with_Vpotential=F
   lrho_chi_corrected=F
 /
 &disp_current_run_pars

@@ -87,7 +87,7 @@ module Special
 !
 !  integer :: iinfl_phi=0, iinfl_dphi=0, iinfl_hubble=0, iinfl_lna=0, Ndiv=100
   integer :: iinfl_phi=0, iinfl_dphi=0, iinfl_lna=0, Ndiv=100
-  integer :: iinfl_rho_chi=0
+  integer :: iinfl_rho_chi=0, iinfl_rho_rad=0
   real :: ncutoff_phi=1., infl_v=.1
   real :: axionmass=1.06e-6, axionmass2, ascale_ini=1.
   real :: phi0=.44, dphi0=-1.69e-7, c_light_axion=1., lambda_axion=0., eps=.01
@@ -101,10 +101,12 @@ module Special
   real :: sigE1m_all_nonaver, sigB1m_all_nonaver,sigEm_all,sigBm_all,sigEm_all_diagnos,sigBm_all_diagnos
   real :: a2rhogphim, a2rhogphim_all
   real :: a2, a21, Hscript
-  real :: Hscript0=0., scale_rho_chi_Heqn=1., rho_chi_init=0., cdt_rho_chi=1.
+  real :: Hscript0=0., scale_rho_chi_Heqn=1., scale_rho_rad_Heqn=1., rho_chi_init=0., cdt_rho_chi=1.
   real :: amplee_BD_prefactor=0., deriv_prefactor_ee=-1.
   real :: echarge=.0, echarge_const=.303
   real :: count_eb0_all=0., rad_heating=0., ascale_heat=0., ascale_heat_off=0., heating
+  real :: aphimax=0., aphimax2=0.  !PAR_DOC: maximum a value above which the phi potential is quenched.
+  real :: Gamma_phi0=0., Gamma_phi !PAR_DOC: damping factor for phi above aphimax
 !
   real, target :: ddotam_all
   real, pointer :: alpf, eta
@@ -115,14 +117,16 @@ module Special
   logical :: lscale_tobox=.true., ldt_backreact_infl=.true., lconf_time=.true.
   logical :: lskip_projection_phi=.false., lvectorpotential=.false., lflrw=.false.
   logical :: lrho_chi=.false., lno_noise_phi=.false., lno_noise_dphi=.false.
+  logical :: lrho_rad=.false.            !PAR_DOC: radiation from inflaton decay
   logical :: lrho_chi_corrected=.true.   !PAR_DOC: when false, we use the wrong scale factor in the rho_chi equation
   logical :: lrho_chi_inhom=.false.      !PAR_DOC: inhomogeneous heating
+  logical :: ldefine_a2rhophi_with_Vpotential=.true.  !PAR_DOC: define a2rhophi with Vpotential
   logical, pointer :: lphi_hom, lphi_linear_regime, lnoncollinear_EB, lnoncollinear_EB_aver
   logical, pointer :: lcollinear_EB, lcollinear_EB_aver, lmass_suppression
   logical, pointer :: lallow_bprime_zero
   character (len=labellen) :: Vprime_choice='quadratic', Hscript_choice='default'
   character (len=labellen), dimension(ninit) :: initspecial='nothing'
-  character (len=50) :: echarge_type='const', init_rho_chi='zero'
+  character (len=50) :: echarge_type='const', init_rho_chi='zero', init_rho_rad='zero'
 !
   namelist /special_init_pars/ &
       initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
@@ -132,15 +136,17 @@ module Special
       initpower_phi, initpower2_phi, cutoff_phi, kgaussian_phi, kpeak_phi, &
       initpower_dphi, initpower2_dphi, cutoff_dphi, kpeak_dphi, &
       ncutoff_phi, lscale_tobox, Hscript0, Hscript_choice, infl_v, lflrw, &
-      lrho_chi, scale_rho_chi_Heqn, amplee_BD_prefactor, deriv_prefactor_ee, &
+      lrho_chi, scale_rho_chi_Heqn, scale_rho_rad_Heqn, amplee_BD_prefactor, deriv_prefactor_ee, &
+      lrho_rad, init_rho_rad, &
       echarge_type, init_rho_chi, rho_chi_init, lrho_chi_inhom
 !
   namelist /special_run_pars/ &
       initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
       lbackreact_infl, lem_backreact, c_light_axion, lambda_axion, Vprime_choice, &
       lzeroHubble, ldt_backreact_infl, Ndiv, Hscript0, Hscript_choice, infl_v, &
-      lflrw, lrho_chi, scale_rho_chi_Heqn, echarge_type, cdt_rho_chi, &
-      lrho_chi_corrected, lrho_chi_inhom, rad_heating, ascale_heat, ascale_heat_off
+      lflrw, lrho_chi, scale_rho_chi_Heqn, scale_rho_rad_Heqn, echarge_type, cdt_rho_chi, &
+      lrho_rad, lrho_chi_corrected, lrho_chi_inhom, ldefine_a2rhophi_with_Vpotential, &
+      rad_heating, ascale_heat, ascale_heat_off, aphimax, Gamma_phi0
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -153,10 +159,10 @@ module Special
   integer :: idiag_Hscriptm=0   ! DIAG_DOC: $\left<{\cal a*H}\right>$
   integer :: idiag_lnam=0       ! DIAG_DOC: $\left<\ln a\right>$
   integer :: idiag_ddotam=0     ! DIAG_DOC: $a''/a$
-  integer :: idiag_a2rhopm=0    ! DIAG_DOC: $a^2 (rho+p)$
-  integer :: idiag_a2rhom=0     ! DIAG_DOC: $a^2 rho$
-  integer :: idiag_a2rhophim=0  ! DIAG_DOC: $a^2 rho$
-  integer :: idiag_a2rhogphim=0 ! DIAG_DOC: $0.5 <grad phi^2>$
+  integer :: idiag_a2rhopm=0    ! DIAG_DOC: $a^2 (\rho+p)$
+  integer :: idiag_a2rhom=0     ! DIAG_DOC: $a^2 \rho$
+  integer :: idiag_a2rhophim=0  ! DIAG_DOC: $a^2 \rho_\phi$
+  integer :: idiag_a2rhogphim=0 ! DIAG_DOC: $0.5 <grad \phi^2>$
   integer :: idiag_rho_chi=0    ! DIAG_DOC: $\rho_\chi$
   integer :: idiag_sigEma=0     ! DIAG_DOC: $\rho_\chi$
   integer :: idiag_sigBma=0     ! DIAG_DOC: $\rho_\chi$
@@ -188,6 +194,7 @@ module Special
 !
      if (lflrw) call farray_register_ode('infl_lna',iinfl_lna)
      if (lrho_chi) call farray_register_ode('infl_rho_chi',iinfl_rho_chi)
+     if (lrho_rad) call farray_register_ode('infl_rho_rad',iinfl_rho_rad)
 !
 !  for power spectra, it is convenient to use ispecialvar and
 !
@@ -225,6 +232,7 @@ module Special
 !  set axionmass**2
 !
       axionmass2=axionmass**2
+      aphimax2=aphimax**2
 !
       if (lmagnetic .and. lem_backreact) then
 !
@@ -393,6 +401,22 @@ module Special
         endselect
       endif
 !
+!  initial condition for energy density of radiation
+!
+      if (lroot .and. lrho_rad) then
+        select case (init_rho_rad)
+          case ('zero'); f_ode(iinfl_rho_rad)=0.
+          !case ('given'); f_ode(iinfl_rho_rad)=rho_rad_init
+          case default
+            call fatal_error("init_special: No such init_rho_rad: ", trim(init_rho_rad))
+        endselect
+      endif
+!
+!  Better default value based on alpf and axionmass
+!
+      if (Gamma_phi0==0) &
+        Gamma_phi0=alpf**2*axionmass**3/(64.*pi)
+!
       call mpibcast_real(a2)
       call mpibcast_real(Hscript)
 !
@@ -534,10 +558,19 @@ module Special
 !  dphi/dt = psi
 !  dpsi/dt = - ...
 !
-! alberto: determine prefactors for the different terms beforehand
+!  alberto: determine prefactors for the different terms beforehand
+!  Allowed for quenching factor on pref_Vprime to limit excessive oscillations
+!  (not yet done for conformal time).
 !
       if (lconf_time) then
-        pref_Vprime=a2; pref_alpf=a21
+        pref_alpf=a21
+        if (aphimax>0.) then
+          pref_Vprime=a2/(1.+a2/aphimax2)**2
+          Gamma_phi=Gamma_phi0*.5*(1.+tanh(a2-aphimax2))
+        else
+          pref_Vprime=a2
+          Gamma_phi=0.
+        endif
       ! alberto: for cosmic time, coefficient of Hscript should be 3
       else
         pref_Hubble=3.; pref_Vprime=1.; pref_del2=a21
@@ -545,14 +578,13 @@ module Special
       endif
         ! dphi/dt = dphi
         df(l1:l2,m,n,iinfl_phi)=df(l1:l2,m,n,iinfl_phi)+p%infl_dphi
-        df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi) - &
-              pref_Hubble*Hscript*p%infl_dphi-pref_Vprime*Vprime
-        ! df(l1:l2,m,n,iinfl_phi)=df(l1:l2,m,n,iinfl_phi)+f(l1:l2,m,n,iinfl_dphi)
-        ! if (lconf_time) then
-        !   df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)-2.*Hscript*dphi-a2*Vprime
-        ! else
-        !   df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)-2.*Hscript*dphi-Vprime
-        ! endif
+        if (lrho_rad) then
+          df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi) - &
+              (pref_Hubble*Hscript+Gamma_phi)*p%infl_dphi-pref_Vprime*Vprime
+        else
+          df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi) - &
+              (pref_Hubble*Hscript)*p%infl_dphi-pref_Vprime*Vprime
+        endif
 !
 !  speed of light term
 !
@@ -696,16 +728,23 @@ module Special
 !  In a test example, assume that a certain level of heating, rad_heating,
 !  is turned on after ascale has exceeded a critical level, ascale_heat.
 !
-        elseif (ascale_heat>0) then
-          if (ascale_heat_off>0) then
-            heating=rad_heating*.25*(1.+tanh(ascale-ascale_heat))*(1.-tanh(ascale-ascale_heat_off))
-          else
-            heating=rad_heating*.5*(1.+tanh(ascale-ascale_heat))
-          endif
-          df_ode(iinfl_rho_chi)=df_ode(iinfl_rho_chi)-4.*Hscript*f_ode(iinfl_rho_chi)+heating/ascale**4
+     !  elseif (ascale_heat>0) then
+     !    if (ascale_heat_off>0) then
+     !      heating=rad_heating*.25*(1.+tanh(ascale-ascale_heat))*(1.-tanh(ascale-ascale_heat_off))
+     !    else
+     !      heating=rad_heating*.5*(1.+tanh(ascale-ascale_heat))
+     !    endif
+     !    df_ode(iinfl_rho_chi)=df_ode(iinfl_rho_chi)-4.*Hscript*f_ode(iinfl_rho_chi)+heating/ascale**4
         else
           df_ode(iinfl_rho_chi)=df_ode(iinfl_rho_chi)-4.*Hscript*f_ode(iinfl_rho_chi)
         endif
+      endif
+!
+!  Energy density of radiation from decaying inflaton field.
+!
+      if (lrho_rad) then
+        heating=Gamma_phi*a2rhophim_all/ascale**6
+        df_ode(iinfl_rho_rad)=df_ode(iinfl_rho_rad)-4.*Hscript*f_ode(iinfl_rho_chi)+heating
       endif
 !
 !  Diagnostics
@@ -1033,7 +1072,9 @@ module Special
       a2rhophim_all_diagnos  = a2rhophim_all
       a2rhogphim_all_diagnos = a2rhogphim_all
       ddotam_all_diagnos     = ddotam_all
-
+!
+!  Get Hscript and a2rhom_all.
+!
       if (lroot .and. lflrw) call get_Hscript_and_a2(Hscript,a2rhom_all)
 !
 !  Broadcast to other processors, and each processor uses put_shared_variable
@@ -1049,10 +1090,12 @@ module Special
 !
       use Sub, only: dot2_mn, grad, curl, dot_mn, cross_mn
 !
+!  11-mar-26/axel: added accumulation of a2rho_phi (V added here a bit later)
+!
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, intent(inout) :: sigE1m,sigB1m
       real, dimension (nx,3) :: el, bb, gphi, uxb, uu
-      real, dimension (nx) :: e2, b2, gphi2, dphi, a2rhop, a2rho
+      real, dimension (nx) :: e2, b2, gphi2, dphi, a2rhop, a2rho, a2rhophi
       real, dimension (nx) :: ddota, phi, Vpotential, edotb, sigE1, sigB1
       real, dimension (nx) :: boost, gam_EB, eprime, bprime, jprime1
 !
@@ -1077,7 +1120,10 @@ module Special
         a2rhop=a2rhop+onethird*gphi2
         a2rho=a2rho+0.5*gphi2
       endif
-      a2rhophim=a2rhophim+sum(a2rho)
+!
+!  Set a2rhophim for later accummulation
+!
+      a2rhophi=a2rho
 !
 !  Note the .5*fourthird factor in front of (e2+b2)*a21, but that is
 !  just for rhop, which is output quantity.
@@ -1099,26 +1145,31 @@ module Special
         call dot2_mn(el,e2)
         a2rhop=a2rhop+(.5*fourthird)*(e2+b2)*a21
         if (.not. lphi_linear_regime) a2rho=a2rho+.5*(e2+b2)*a21
+      endif
 !
 !  option to take the inhomogeneous rho instead
 !  Here, in the expression a2rho, rho is not comoving, but the rho from f(l1:l2,m,n,ilnrho) is comoving.
 !
-        if (lrho_chi) then
-          if (lrho_chi_inhom) then
-            if (ldensity) then
-              if (ldensity_nolog) then
-                a2rho=a2rho+scale_rho_chi_Heqn/a2*f(l1:l2,m,n,irho)
-              else
-                a2rho=a2rho+scale_rho_chi_Heqn/a2*exp(f(l1:l2,m,n,ilnrho))
-              endif
+      if (lrho_chi) then
+        if (lrho_chi_inhom) then
+          if (ldensity) then
+            if (ldensity_nolog) then
+              a2rho=a2rho+scale_rho_chi_Heqn/a2*f(l1:l2,m,n,irho)
             else
-              call fatal_error("backreact_infl special_after_boundary: No such Vprime_choice: ","density must be true")
+              a2rho=a2rho+scale_rho_chi_Heqn/a2*exp(f(l1:l2,m,n,ilnrho))
             endif
           else
-            a2rho=a2rho+scale_rho_chi_Heqn*a2*f_ode(iinfl_rho_chi)
+            call fatal_error("backreact_infl special_after_boundary: No such Vprime_choice: ","density must be true")
           endif
+        else
+          a2rho=a2rho+scale_rho_chi_Heqn*a2*f_ode(iinfl_rho_chi)
         endif
       endif
+!
+!  Do the same for rho_rad
+!
+      if (lrho_rad) &
+        a2rho=a2rho+scale_rho_rad_Heqn*a2*f_ode(iinfl_rho_rad)
 !
       a2rhopm=a2rhopm+sum(a2rhop)
 !
@@ -1143,7 +1194,16 @@ module Special
       ! endif
       ddotam=ddotam+sum(ddota)
       a2rho=a2rho+a2*Vpotential
+      if (ldefine_a2rhophi_with_Vpotential) &
+        a2rhophi=a2rhophi+a2*Vpotential
+!
+!  Compute volume average of both a2rho and a2rho_phi
+!
       a2rhom=a2rhom+sum(a2rho)
+      a2rhophim=a2rhophim+sum(a2rhophi)
+!
+!  Compute electromagnetic averages.
+!
       if (lmagnetic .and. lem_backreact) then
         if (lphi_hom .or. lrho_chi .or. lnoncollinear_EB .or. lnoncollinear_EB_aver &
                                    .or. lcollinear_EB .or. lcollinear_EB_aver) then
