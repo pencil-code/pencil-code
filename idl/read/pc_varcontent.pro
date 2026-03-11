@@ -217,6 +217,7 @@ indices = [ $
   { name:'iphi', label:'Electric or scalar potential', dims:1 }, $
   { name:'idphi', label:'Derivative of scalar potential', dims:1 }, $
   { name:'iLam', label:'Gauge potential', dims:1 }, $
+  { name:'iLamRA', label:'Gauge potential', dims:1 }, $
   { name:'idiva', label:'divA', dims:1 }, $
   { name:'iecr', label:'Cosmic ray energy density', dims:1 }, $
   { name:'ifcr', label:'Cosmic ray energy flux', dims:3 }, $
