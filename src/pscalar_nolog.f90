@@ -108,6 +108,7 @@ module Pscalar
   real, dimension(:,:), allocatable :: spharm 
   real, dimension(:,:,:,:), allocatable :: bunit,hhh
   real, dimension (nx) :: bump
+  integer :: icc2
 
   contains
 !***********************************************************************
@@ -213,6 +214,8 @@ module Pscalar
         endif
  
       endif
+
+      icc2=icc+npscalar-1
 !
     endsubroutine initialize_pscalar
 !***********************************************************************
@@ -587,7 +590,6 @@ module Pscalar
 !  without changing file size and recompiling everything.
 !
       evolve: if (.not. nopscalar) then ! i.e. if (pscalar)
-        icc2=icc+npscalar-1
 !
 !  Passive scalar equation.
 !
