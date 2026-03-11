@@ -108,7 +108,7 @@ module Pscalar
   real, dimension(:,:), allocatable :: spharm 
   real, dimension(:,:,:,:), allocatable :: bunit,hhh
   real, dimension (nx) :: bump
-  integer :: icc2
+  integer :: icc_end
 
   contains
 !***********************************************************************
@@ -215,7 +215,7 @@ module Pscalar
  
       endif
 
-      icc2=icc+npscalar-1
+      icc_end=icc+npscalar-1
 !
     endsubroutine initialize_pscalar
 !***********************************************************************
@@ -565,7 +565,6 @@ module Pscalar
       intent(out) :: df
 !
       character(len=2) :: id
-      integer :: icc2
       real, dimension(nx,3) :: tmp
 !
 !  Identify module and boundary conditions.
@@ -593,16 +592,16 @@ module Pscalar
 !
 !  Passive scalar equation.
 !
-        df(l1:l2,m,n,icc:icc2)=df(l1:l2,m,n,icc:icc2)-p%ugcc
+        df(l1:l2,m,n,icc:icc_end)=df(l1:l2,m,n,icc:icc_end)-p%ugcc
 !
 !  lpscalar_per_unitvolume
 !
         if (lpscalar_per_unitvolume) &
-          df(l1:l2,m,n,icc:icc2)=df(l1:l2,m,n,icc:icc2)-p%cc*spread(p%divu,2,npscalar)
+          df(l1:l2,m,n,icc:icc_end)=df(l1:l2,m,n,icc:icc_end)-p%cc*spread(p%divu,2,npscalar)
 !
 !  Reaction term. Simple Fisher term for now.
 !
-        if (lreactions) df(l1:l2,m,n,icc:icc2)=df(l1:l2,m,n,icc:icc2)+lambda_cc*p%cc*(1.0-p%cc)
+        if (lreactions) df(l1:l2,m,n,icc:icc_end)=df(l1:l2,m,n,icc:icc_end)+lambda_cc*p%cc*(1.0-p%cc)
 !
 !  Passive scalar sink.
 !
@@ -616,7 +615,7 @@ module Pscalar
           else
             bump=pscalar_sink*exp(-0.5*(x(l1:l2)**2+y(m)**2+z(n)**2)/Rpscalar_sink**2)
           endif
-          df(l1:l2,m,n,icc:icc2)=df(l1:l2,m,n,icc:icc2)-spread(bump,2,npscalar)*p%cc
+          df(l1:l2,m,n,icc:icc_end)=df(l1:l2,m,n,icc:icc_end)-spread(bump,2,npscalar)*p%cc
         endif
 !
 !  Diffusion operator. If lpscalar_per_unitvolume is chosen, use
@@ -661,7 +660,7 @@ module Pscalar
 !
         if (pscalar_diff_hyper3/=0.) then
           if (headtt) print*,'dlncc_dt: pscalar_diff_hyper3=', pscalar_diff_hyper3
-          df(l1:l2,m,n,icc:icc2)=df(l1:l2,m,n,icc:icc2)+pscalar_diff_hyper3*(p%del6cc+p%g5ccglnrho)
+          df(l1:l2,m,n,icc:icc_end)=df(l1:l2,m,n,icc:icc_end)+pscalar_diff_hyper3*(p%del6cc+p%g5ccglnrho)
         endif
 !
 !  Soret diffusion.
@@ -692,7 +691,7 @@ module Pscalar
 !  This makes sense really only for periodic boundary conditions.
 !
         do j=1,3
-          if (gradC0(j)/=0.) df(l1:l2,m,n,icc:icc2)=df(l1:l2,m,n,icc:icc2) &
+          if (gradC0(j)/=0.) df(l1:l2,m,n,icc:icc_end)=df(l1:l2,m,n,icc:icc_end) &
                              -spread(gradC0(j)*p%uu(:,j)*gradC_fact,2,npscalar)
         enddo
 !
@@ -707,7 +706,7 @@ module Pscalar
 !  results are then comparable with the results of the test-field method.
 !
         if (lmean_friction_cc) then
-          do k = icc, icc2
+          do k = icc, icc_end
             cc_xyaver=sum(f(l1:l2,m1:m2,n,k))/nxygrid   !only for nprocxy=1 - tb improved: calc cc_xyaver in before_boundary
             df(l1:l2,m,n,k)=df(l1:l2,m,n,k)-LLambda_cc*cc_xyaver
           enddo
