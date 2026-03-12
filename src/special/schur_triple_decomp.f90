@@ -92,12 +92,13 @@ module Special
   logical :: luschur2_as_aux=.false., lbschur2_as_aux=.false.
   logical :: luschurm_as_aux=.false., lbschurm_as_aux=.false.
   logical :: luschurp2_as_aux=.false., lbschurp2_as_aux=.false.
-  logical :: loee_as_aux=.false.
+  logical :: loee_as_aux=.false., leig_as_aux=.false.
+  logical :: lovSH_as_aux=.false., lovRR_as_aux=.false.
   integer :: iuschur2, iuschur2_SH, iuschur2_RR, iuschur2_EL, iuschurm_RR
   integer :: ibschur2, ibschur2_SH, ibschur2_RR, ibschur2_EL, ibschurm_RR
   integer :: iuschurp2, iuschurp2_SH, iuschurp2_RR, iuschurp2_EL
   integer :: ibschurp2, ibschurp2_SH, ibschurp2_RR, ibschurp2_EL
-  integer :: ioee
+  integer :: ioee, ieig, iovSH, iovRR
 !
   logical :: luschur_as_aux=.false., lbschur_as_aux=.false.
   logical :: luse_complex_schur=.false.
@@ -109,7 +110,8 @@ module Special
       luschurm_as_aux, lbschurm_as_aux, &
       luschurp2_as_aux, lbschurp2_as_aux, &
       luschur_as_aux, lbschur_as_aux, &
-      loee_as_aux
+      loee_as_aux, leig_as_aux, &
+      lovSH_as_aux, lovRR_as_aux
 !
   logical :: luij_schur=.false., lbij_schur=.false., ldiagnos_always=.false.
   logical :: luschur_unprojected=.false., lbschur_unprojected=.false., lQ_schur_QT=.true.
@@ -119,7 +121,8 @@ module Special
       luij_schur, lbij_schur, ldiagnos_always, &
       luschur_unprojected, lbschur_unprojected, lQ_schur_QT, &
       luschur_as_aux, lbschur_as_aux, luse_complex_schur, leigvec, &
-      loee_as_aux
+      loee_as_aux, leig_as_aux, &
+      lovSH_as_aux, lovRR_as_aux
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -194,9 +197,17 @@ end function selct
         call farray_register_auxiliary('bschur_EL', ibschur_EL, vector=9)
       endif
 !
-      if (loee_as_aux) then
+      if (loee_as_aux) &
         call farray_register_auxiliary('oee', ioee, vector=3)
-      endif
+!
+      if (leig_as_aux) &
+        call farray_register_auxiliary('eig', ieig, vector=3)
+!
+      if (lovSH_as_aux) &
+        call farray_register_auxiliary('ovSH', iovSH, vector=1)
+!
+      if (lovRR_as_aux) &
+        call farray_register_auxiliary('ovRR', iovRR, vector=1)
 !
     endsubroutine register_special
 !***********************************************************************
@@ -250,11 +261,11 @@ end function selct
 !
       real, dimension (nx,3,3) :: SH, RR, EL
       real, dimension (3,3) :: matA, matV_SH, matV_RR, matV_EL, vv
-      real, dimension (3) :: lambdas
+      real, dimension (3) :: lambdas, vSH, vRR
       real, allocatable :: matV(:,:), matQ(:,:)
       complex, allocatable :: matV_cmplx(:,:)
       complex :: matQ_cmplx(3,3)
-      real :: matA2=0., o2, oe, e2
+      real :: matA2=0., o2, oe, e2, vSH2, ovSH, vRR2, ovRR
       integer :: i,j,kk,ll, ij, l, nnn=3, ieigvec
 !
       intent(inout) :: f
@@ -268,15 +279,14 @@ end function selct
       if ((luij_schur .and. lout) .or. ldiagnos_always) then
         if (luse_complex_schur) then
           allocate(matV_cmplx(nnn,nnn))
-    !   else
-    !     allocate(matV(nnn,nnn), matQ(nnn,nnn))
+        else
+          allocate(matV(nnn,nnn), matQ(nnn,nnn))
         endif
 !
         do l=1,nx
           matA=p%uij(l,:,:)
           matA2=sum(matA**2)
           if (matA2/=0.) then
-            allocate(matV(nnn,nnn), matQ(nnn,nnn))
             if (luse_complex_schur) then
               call schur_standardized_complex(matA, matV_cmplx, matQ_cmplx, p%uSH2(l), p%uRR2(l), p%uEL2(l))
             else
@@ -287,21 +297,31 @@ end function selct
               p%uEL2(l)=sum(matV_EL**2)
               p%uRRm(l)=2.*sum(matV_SH*matV_RR)+p%uRR2(l)
             endif
-            deallocate(matV, matQ)
+!
+!  Compute o2 in several cases
+!
+              if (loee_as_aux .or. &
+                  lovSH_as_aux .or. &
+                  lovRR_as_aux) o2=p%oo(l,1)**2+p%oo(l,2)**2+p%oo(l,3)**2
 !
 !  Possibility of computing the three eigenvectors of the symmetric part of A
 !  and their alignment with the vorticity vector.
 !
             if (leigvec) then
               call eigvec3(matA, vv, lambdas)
-!print*,'AXEL: l,m,lambdas',l,m,lambdas(1) > lambdas(2) .and. lambdas(2) > lambdas(3),lambdas
-!print*,'AXEL: l,m,vv(:,2)=',l,m, vv(:,2)
               if (loee_as_aux) then
-                o2=p%oo(l,1)**2+p%oo(l,2)**2+p%oo(l,3)**2
                 do ieigvec=1,3
                   e2=vv(1,ieigvec)**2+vv(2,ieigvec)**2+vv(3,ieigvec)**2
                   oe=p%oo(l,1)*vv(1,ieigvec)+p%oo(l,2)*vv(2,ieigvec)+p%oo(l,3)*vv(3,ieigvec)
-                  f(l1+l-1,m,n,ioee+ieigvec-1)=oe/sqrt(o2*e2)
+                  f(l1+l-1,m,n,ioee+ieigvec-1)=oe/(tini+sqrt(o2*e2))
+                enddo
+              endif
+!
+!  Output of eigenvalues.
+!
+              if (leig_as_aux) then
+                do ieigvec=1,3
+                  f(l1+l-1,m,n,ieig+ieigvec-1)=lambdas(ieigvec)
                 enddo
               endif
             endif
@@ -348,6 +368,9 @@ end function selct
                   endif
                 enddo
                 enddo
+!
+!  Option of auxiliary out.
+!
                 if (luschur_as_aux) then
                   ij=3*(i-1)+(j-1)
                   f(l1+l-1,m,n,iuschur_SH+ij)=SH(l,i,j)
@@ -357,20 +380,41 @@ end function selct
               enddo
               enddo
 !
-!  output norm of projected matrix 
+!  Output norm of projected matrix.
 !
               if (luschurp2_as_aux) then
                 f(l1+l-1,m,n,iuschurp2_SH)=sum(SH(l,:,:)**2)
                 f(l1+l-1,m,n,iuschurp2_RR)=sum(RR(l,:,:)**2)
                 f(l1+l-1,m,n,iuschurp2_EL)=sum(EL(l,:,:)**2)
               endif
+!
+!  Vectors related to the antisymmetric matrices SH and RR.
+!
+              if (lovSH_as_aux) then
+                vSH(1)=-.5*(SH(l,2,3)-SH(l,3,2))
+                vSH(2)=-.5*(SH(l,3,1)-SH(l,1,3))
+                vSH(3)=-.5*(SH(l,1,2)-SH(l,2,1))
+                vSH2=vSH(1)**2+vSH(2)**2+vSH(3)**2
+                ovSH=p%oo(l,1)*vSH(1)+p%oo(l,2)*vSH(2)+p%oo(l,3)*vSH(3)
+                f(l1+l-1,m,n,iovSH)=ovSH/(tini+sqrt(o2*vSH2))
+              endif
+!
+              if (lovSH_as_aux) then
+                vRR(1)=-.5*(RR(l,2,3)-RR(l,3,2))
+                vRR(2)=-.5*(RR(l,3,1)-RR(l,1,3))
+                vRR(3)=-.5*(RR(l,1,2)-RR(l,2,1))
+                vRR2=vRR(1)**2+vRR(2)**2+vRR(3)**2
+                ovRR=p%oo(l,1)*vRR(1)+p%oo(l,2)*vRR(2)+p%oo(l,3)*vRR(3)
+                f(l1+l-1,m,n,iovRR)=ovRR/(tini+sqrt(o2*vRR2))
+              endif
+!
             endif
           endif
         enddo
         if (luse_complex_schur) then
           deallocate(matV_cmplx)
-    !   else
-    !     deallocate(matV, matQ)
+        else
+          deallocate(matV, matQ)
         endif
 !
 !  Possibility of uSH2, uRR2, and uEL2 as auxiliary arrays

@@ -127,6 +127,9 @@ indices = [ $
   { name:'ioeex', label:'oeex', dims:1 }, $
   { name:'ioeey', label:'oeey', dims:1 }, $
   { name:'ioeez', label:'oeez', dims:1 }, $
+  { name:'ieig', label:'eig', dims:3 }, $
+  { name:'iovSH', label:'ovSH', dims:1 }, $
+  { name:'iovRR', label:'ovRR', dims:1 }, $
   { name:'ia0', label:'Electric potential for Lorenz gauge', dims:1 }, $
   { name:'iinfl_phi', label:'Inflaton phi', dims:1 }, $
   { name:'iinfl_dphi', label:'Inflaton time derivative dphi', dims:1 }, $
@@ -331,6 +334,7 @@ indices_aux = [ $
   { name:'iTij_yz', label:'iTij_yz', dims:1 }, $
   { name:'iTij_zz', label:'iTij_zz', dims:1 }, $
 ; { name:'iuij', label:'uij', dims:9 }, $
+; { name:'iguij', label:'uij', dims:9 }, $
   { name:'iguij1', label:'iguij_xx', dims:1 }, $
   { name:'iguij2', label:'iguij_xy', dims:1 }, $
   { name:'iguij3', label:'iguij_xz', dims:1 }, $
