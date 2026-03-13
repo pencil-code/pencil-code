@@ -175,6 +175,7 @@ module Special
 
   real :: a2rhom_all_diagnos, a2rhopm_all_diagnos, a2rhophim_all_diagnos
   real :: a2rhogphim_all_diagnos, ddotam_all_diagnos
+
   contains
 !****************************************************************************
     subroutine register_special
@@ -302,8 +303,6 @@ module Special
 !
       intent(inout) :: f
 !
-!  SAMPLE IMPLEMENTATION
-!
       do j=1,ninit
         select case (initspecial(j))
           case ('nothing'); if (lroot) print*,'init_special: nothing'
@@ -386,7 +385,7 @@ module Special
               call bunch_davies(f,iax,iaz,iex,iez,amplee_BD,kpeak_phi,deriv_prefactor)
             endif
           case default
-            call fatal_error("init_special: No such initspecial: ", trim(initspecial(j)))
+            call fatal_error("init_special","no such initspecial: "//trim(initspecial(j)))
         endselect
       enddo
 !
@@ -397,7 +396,7 @@ module Special
           case ('zero'); f_ode(iinfl_rho_chi)=0.
           case ('given'); f_ode(iinfl_rho_chi)=rho_chi_init
           case default
-            call fatal_error("init_special: No such init_rho_chi: ", trim(init_rho_chi))
+            call fatal_error("init_special","no such init_rho_chi: "//trim(init_rho_chi))
         endselect
       endif
 !
@@ -475,6 +474,7 @@ module Special
     endsubroutine calc_pencils_special
 !***********************************************************************
     subroutine get_Hscript_and_a2(Hscript,a2rhom_all)
+!
       real, intent(out) :: Hscript
       real, intent(in), optional :: a2rhom_all
 !
@@ -495,7 +495,7 @@ module Special
           Hscript=sqrt((8.*pi/3.)*a2rhom_all)
           if (lgpu) call get_a2
         case default
-          call fatal_error("dspecial_dt: No such Hscript_choice: ", trim(Hscript_choice))
+          call fatal_error("get_Hscript_and_a2","no such Hscript_choice: "//trim(Hscript_choice))
       endselect
 
 !  Possibility of turning off evolution of scale factor and Hubble parameter
@@ -551,7 +551,7 @@ module Special
         case ('quartic'); Vprime=axionmass2*p%infl_phi+(lambda_axion/6.)*p%infl_phi**3
         case ('cos-profile'); Vprime=axionmass2*lambda_axion*sin(lambda_axion*p%infl_phi)
         case default
-          call fatal_error("dspecial_dt: No such Vprime_choice: ", trim(Vprime_choice))
+          call fatal_error("dspecial_dt","no such Vprime_choice: "//trim(Vprime_choice))
       endselect
 !
 !  Update df.
@@ -749,11 +749,11 @@ module Special
 !
 !  Diagnostics
 !
-    if (.not. lmultithread) then
-      sigEm_all_diagnos = sigEm_all
-      sigBm_all_diagnos = sigBm_all
-      call calc_ode_diagnostics_special(f_ode)
-    endif
+      if (.not. lmultithread) then
+        sigEm_all_diagnos = sigEm_all
+        sigBm_all_diagnos = sigBm_all
+        call calc_ode_diagnostics_special(f_ode)
+      endif
 !
     endsubroutine dspecial_dt_ode
 !***********************************************************************
@@ -798,6 +798,7 @@ module Special
 
       real, dimension(mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
+
 ! alberto: changed to use the pencils p%infl_phi and p%infl_dphi
       if (ldiagnos) then
         call sum_mn_name(p%infl_phi,idiag_phim)
@@ -893,6 +894,7 @@ module Special
     endsubroutine rprint_special
 !***********************************************************************
     subroutine get_echarge
+!
       real :: energy_scale
 !
 !  Choice of echarge prescription.
@@ -1286,7 +1288,7 @@ module Special
     use Syscalls, only: copy_addr
     use General , only: string_to_enum
 
-    integer, parameter :: n_pars=100
+    integer, parameter :: n_pars=50
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call string_to_enum(enum_hscript_choice,hscript_choice)
@@ -1317,6 +1319,7 @@ module Special
     call copy_addr(lflrw,p_par(23)) ! bool
     call copy_addr(iinfl_lna,p_par(24)) ! int
     call copy_addr(scale_rho_chi_heqn,p_par(25))
+    call copy_addr(aphimax,p_par(26))
 
     endsubroutine pushpars2c
 !********************************************************************
