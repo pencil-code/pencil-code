@@ -564,7 +564,7 @@ module Special
 !
       if (lconf_time) then
         pref_alpf=a21
-        if (aphimax>0.) then
+        if (aphimax2>0.) then
           pref_Vprime=a2/(1.+a2/aphimax2)**2
           Gamma_phi=Gamma_phi0*.5*(1.+tanh(a2-aphimax2))
         else
@@ -1319,7 +1319,7 @@ module Special
     call copy_addr(lflrw,p_par(23)) ! bool
     call copy_addr(iinfl_lna,p_par(24)) ! int
     call copy_addr(scale_rho_chi_heqn,p_par(25))
-    call copy_addr(aphimax,p_par(26))
+    call copy_addr(aphimax2,p_par(26))
 
     endsubroutine pushpars2c
 !********************************************************************
