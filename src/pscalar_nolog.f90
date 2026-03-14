@@ -109,6 +109,7 @@ module Pscalar
   real, dimension(:,:,:,:), allocatable :: bunit,hhh
   real, dimension (nx) :: bump
   integer :: icc_end
+  real,dimension(mz,npscalar) :: cc_xyaver
 
   contains
 !***********************************************************************
@@ -557,7 +558,6 @@ module Pscalar
       type (pencil_case) :: p
 !
       real, dimension (nx) :: diff_op,diff_op2,diffus_pscalar,diffus_pscalar3
-      real :: cc_xyaver
       real :: lam_gradC_fact=1., om_gradC_fact=1., gradC_fact=1.
       integer :: j, k
 !
@@ -706,10 +706,7 @@ module Pscalar
 !  results are then comparable with the results of the test-field method.
 !
         if (lmean_friction_cc) then
-          do k = icc, icc_end
-            cc_xyaver=sum(f(l1:l2,m1:m2,n,k))/nxygrid   !only for nprocxy=1 - tb improved: calc cc_xyaver in before_boundary
-            df(l1:l2,m,n,k)=df(l1:l2,m,n,k)-LLambda_cc*cc_xyaver
-          enddo
+          df(l1:l2,m,n,icc:icc_end)=df(l1:l2,m,n,icc:icc_end)-LLambda_cc*spread(cc_xyaver(n,:),1,nx)
         endif
         !
         ! Add source term due to nucleation of chemical species into nucleii (droplets).
@@ -1055,8 +1052,17 @@ module Pscalar
       use Sub, only: remove_mean
 
       real, dimension (mx,my,mz,mfarray), intent(INOUT) :: f
+      integer :: k,n
 
       if (lremove_mean.and.lrmv) call remove_mean(f,icc,icc+npscalar-1)
+
+      if (lmean_friction_cc) then
+        do k = icc, icc_end
+          do n=n1,n2
+            cc_xyaver(n,k)=sum(f(l1:l2,m1:m2,n,k))/nxygrid   !only for nprocxy=1 - tb improved: calc cc_xyaver correctly across processes
+          enddo
+        enddo
+      endif
 
     endsubroutine pscalar_before_boundary
 !***********************************************************************
@@ -1131,10 +1137,38 @@ module Pscalar
 
     use Syscalls, only: copy_addr
 
-    integer, parameter :: n_pars=1
+    integer, parameter :: n_pars=100
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(pscalar_diff,p_par(1))
+    call copy_addr(zoverh,p_par(2))
+    call copy_addr(hoverr,p_par(3))
+    call copy_addr(powerlr,p_par(4))
+    call copy_addr(nopscalar,p_par(5)) ! bool
+    call copy_addr(ll_sh,p_par(6)) ! int
+    call copy_addr(mm_sh,p_par(7)) ! int
+    call copy_addr(tensor_pscalar_diff,p_par(8))
+    call copy_addr(soret_diff,p_par(9))
+    call copy_addr(diffcc_shock,p_par(10))
+    call copy_addr(pscalar_diff_hyper3,p_par(11))
+    call copy_addr(pscalar_sink,p_par(12))
+    call copy_addr(rpscalar_sink,p_par(13))
+    call copy_addr(lam_gradc,p_par(14))
+    call copy_addr(om_gradc,p_par(15))
+    call copy_addr(lambda_cc,p_par(16))
+    call copy_addr(scalaracc,p_par(17))
+    call copy_addr(llambda_cc,p_par(18))
+    call copy_addr(lpscalar_sink,p_par(19)) ! bool
+    call copy_addr(lgradc_profile,p_par(20)) ! bool
+    call copy_addr(lpscalar_diff_simple,p_par(21)) ! bool
+    call copy_addr(lpscalar_per_unitvolume,p_par(22)) ! bool
+    call copy_addr(lpscalar_per_unitvolume_diff,p_par(23)) ! bool
+    call copy_addr(lnotpassive,p_par(24)) ! bool
+    call copy_addr(lupw_cc,p_par(25)) ! bool
+    call copy_addr(lmean_friction_cc,p_par(26)) ! bool
+    call copy_addr(idiag_gcguzm,p_par(27)) ! int
+    call copy_addr(gradc0,p_par(28)) ! real3
+    call copy_addr(cc_xyaver,p_par(29)) ! (mz) (npscalar)
 
     endsubroutine pushpars2c
 !***********************************************************************

@@ -106,7 +106,7 @@ module EquationOfState
 !
 !  Set indices for auxiliary variables.
 !
-      call farray_register_auxiliary('yH',iyH,on_gpu=lgpu)
+      call farray_register_auxiliary('yH',iyH,rhs=.true.)
 !
 !  Writing files for use with IDL
 !

@@ -85,7 +85,7 @@ module Selfgravity
 !
 !  Set indices for auxiliary variables
 !
-      call farray_register_auxiliary('potself',ipotself,communicated=.true.,on_gpu=lgpu)
+      call farray_register_auxiliary('potself',ipotself,communicated=.true.,rhs=.true.)
 !
 !  Identify version number (generated automatically by SVN).
 !

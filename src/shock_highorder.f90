@@ -87,7 +87,7 @@ module Shock
       use FArrayManager
       use Messages, only: svn_id
 !
-      call farray_register_auxiliary('shock',ishock,communicated=.true.,on_gpu=lgpu)
+      call farray_register_auxiliary('shock',ishock,communicated=.true.,rhs=.true.)
 !
 !  Identify version number.
 !

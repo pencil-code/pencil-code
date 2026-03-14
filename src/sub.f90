@@ -7213,7 +7213,7 @@ nameloop: do
 !
     endsubroutine fourier_single_mode
 !***********************************************************************
-    subroutine register_report_aux(name, index, ind_aux1, ind_aux2, ind_aux3, communicated, on_gpu)
+    subroutine register_report_aux(name, index, ind_aux1, ind_aux2, ind_aux3, communicated, rhs)
 !
 !  Registers aux variable named 'name' if not already registered
 !  (i.e. if index==0). Variable is scalar if ind_aux1,ind_aux2,
@@ -7232,7 +7232,7 @@ nameloop: do
       integer,           intent(inout) :: index
       integer, optional, intent(inout) :: ind_aux1,ind_aux2,ind_aux3
       character (LEN=*), intent(in)    :: name
-      logical, intent(in), optional :: communicated, on_gpu
+      logical, intent(in), optional :: communicated, rhs 
 !
       integer   :: vec
 !
@@ -7243,11 +7243,11 @@ nameloop: do
 !
       if (index == 0) then
         if (vec == 3) then
-          call farray_register_auxiliary (trim(name), index, vector=3, communicated=communicated, on_gpu=on_gpu)
+          call farray_register_auxiliary (trim(name), index, vector=3, communicated=communicated, rhs=rhs)
         elseif (vec == 2) then
-          call farray_register_auxiliary (trim(name), index, array=2, communicated=communicated, on_gpu=on_gpu)
+          call farray_register_auxiliary (trim(name), index, array=2, communicated=communicated, rhs=rhs)
         else
-          call farray_register_auxiliary (trim(name), index, communicated=communicated, on_gpu=on_gpu)
+          call farray_register_auxiliary (trim(name), index, communicated=communicated, rhs=rhs)
         endif
         if (vec >= 1) ind_aux1 = index
         if (vec >= 2) ind_aux2 = index + 1

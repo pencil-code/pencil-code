@@ -141,8 +141,8 @@ module Special
 !  Register variables needed for alpha disk.
 !
       call farray_register_pde('sigma',isigma)
-      call farray_register_auxiliary('mdot',imdot,communicated=.true.,on_gpu=lgpu)
-      call farray_register_auxiliary('tmid',itmid,on_gpu=lgpu)
+      call farray_register_auxiliary('mdot',imdot,communicated=.true.,rhs=.true.)
+      call farray_register_auxiliary('tmid',itmid,rhs=.true.)
 !
 ! Write to read special variables with pc_varcontent
 !

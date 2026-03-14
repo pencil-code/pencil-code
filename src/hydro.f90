@@ -1048,8 +1048,8 @@ module Hydro
 !  Tij and possibly relativistic Lorentz factor as aux
 !
       if (lconservative) then
-        call farray_register_auxiliary('Tij',iTij,vector=6,communicated=.true.,on_gpu=lgpu)
-        if (llorentz_as_aux) call register_report_aux('lorentz', ilorentz,communicated=.true.,on_gpu=lgpu)
+        call farray_register_auxiliary('Tij',iTij,vector=6,communicated=.true.,rhs=.true.)
+        if (llorentz_as_aux) call register_report_aux('lorentz', ilorentz,communicated=.true.,rhs=.true.)
       ! else
       !   if (lrelativistic) then
       !     call fatal_error('register_hydro','no lrelativistic without lconservative')
@@ -1061,7 +1061,7 @@ module Hydro
 !
 !  Define the Higgsless field
 !
-      if (lhiggsless) call farray_register_auxiliary('hless',ihless,communicated=.true., on_gpu=lgpu)
+      if (lhiggsless) call farray_register_auxiliary('hless',ihless,communicated=.true., rhs=.true.)
 !
 !  To compute the added mass term for particle drag,
 !  the advective derivative is needed.

@@ -170,9 +170,9 @@
       ltrain_mag  = ltrain_mag  .and. lmagnetic
       ltrain_dens = ltrain_dens .and. ldensity
 !
-      call farray_register_auxiliary('tau_hydro',itau_hydro,vector=6,on_gpu=lgpu,communicated=.true.)
-      if(ltrain_mag) call farray_register_auxiliary('sgs_emf',isgs_emf,vector=3,on_gpu=lgpu,communicated=.true.)
-      if(ltrain_dens)  call farray_register_auxiliary('tau_density',itau_density,vector=3,on_gpu=lgpu,communicated=.true.)
+      call farray_register_auxiliary('tau_hydro',itau_hydro,vector=6,rhs=.true.,communicated=.true.)
+      if(ltrain_mag) call farray_register_auxiliary('sgs_emf',isgs_emf,vector=3,rhs=.true.,communicated=.true.)
+      if(ltrain_dens)  call farray_register_auxiliary('tau_density',itau_density,vector=3,rhs=.true.,communicated=.true.)
 !
 !  Indices to access tau.
 !

@@ -154,7 +154,7 @@ module FArrayManager
 !
     endsubroutine farray_register_global
 !***********************************************************************
-    subroutine farray_register_auxiliary(varname,ivar,communicated,on_gpu,read_from_gpu,vector,array,ierr)
+    subroutine farray_register_auxiliary(varname,ivar,communicated,rhs,read_from_gpu,vector,array,ierr)
 !
 !  Register an auxiliary variable in the f array.
 !
@@ -167,7 +167,7 @@ module FArrayManager
       logical, optional, intent(in) :: communicated
       integer, optional, intent(in) :: vector, array
       integer, optional, intent(out) :: ierr
-      logical, optional, intent(in) :: on_gpu
+      logical, optional, intent(in) ::  rhs
       logical, optional, intent(in) :: read_from_gpu
 !
       integer :: vartype
@@ -181,7 +181,7 @@ module FArrayManager
 !
       call farray_register_variable(varname,ivar,vartype,vector=vector,array=array,ierr=ierr)
 
-      if (loptest(on_gpu)) then
+      if (loptest(rhs) .and. lgpu) then
 
         !TP: first we get the largest non zero index in the index array
         vtxbuf_index = maxval(maux_vtxbuf_index)
