@@ -2172,6 +2172,7 @@ outer:do ikz=1,nz
 !
 !   3-oct-10/axel: added compution of krms (for realisability condition)
 !  22-jan-13/axel: corrected for x parallelization
+!   6-mar-26/axel: since r42876, compute Lorentz spectrum also for lhydro_kinematic.and.iux/=0
 !
     use Fourier, only: fft_xyz_parallel
     use Mpicomm, only: mpireduce_sum
@@ -2226,24 +2227,29 @@ outer:do ikz=1,nz
     spectrum2hel=0.
     !$omp end workshare
 !
-!  compute Lorentz force
+!  Compute Lorentz force, unless ijxb>0.
+!  Why do we need m=m_loc;n=n_loc?
 !
     !$omp do collapse(2)
     do m_loc=m1,m2
     do n_loc=n1,n2
       m=m_loc;n=n_loc
-      aa=f(l1:l2,m,n,iax:iaz)
-      call gij(f,iaa,aij,1)
-      call gij_etc(f,iaa,aa,aij,bij)
-      call curl_mn(aij,bb,aa)
-      call curl_mn(bij,jj,bb)
-      call cross_mn(jj,bb,jxb)
-      Lor(l1:l2,m,n,:)=jxb
-      if (.not.lhydro) then
+      if (ijxb>0) then
+        Lor(l1:l2,m,n,:)=f(l1:l2,m,n,ijxbx:ijxbz)
+      else
+        aa=f(l1:l2,m,n,iax:iaz)
+        call gij(f,iaa,aij,1)
+        call gij_etc(f,iaa,aa,aij,bij)
+        call curl_mn(aij,bb,aa)
+        call curl_mn(bij,jj,bb)
+        call cross_mn(jj,bb,jxb)
+        Lor(l1:l2,m,n,:)=jxb
+      endif
 !
 !  If kinematic velocity field is defined as auxiliary array, we use that for a.
 !  Otherwise, as before, we use B.
 !
+      if (.not.lhydro) then
         if (iux>0) then
           tmpv(l1:l2,m,n,:)=f(l1:l2,m,n,iux:iuz)
         else
@@ -2306,6 +2312,9 @@ outer:do ikz=1,nz
 !
 !  sum energy and helicity spectra
 !  Remember: a=B, b=Lor, c=J, so for nonhydro, we want a.b and c.b
+!  But for lhydro_kinematic.and.iux/=0, c is ignored.
+!  Furthermore, spectrumhel is u_k^*.(JxB)_k.
+!  If u is unknown, we also compute spectrum2=Sp(J) and spectrum2hel=Sp(J,B).
 !
           if (lhydro .or. (lhydro_kinematic.and.iux/=0)) then
             spectrum(k+1)=spectrum(k+1) &
