@@ -4254,27 +4254,30 @@ module Energy
 
       real, dimension (mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
+
       real, dimension(nx) :: thdiff
       real, dimension(nx) :: g2,Krho1
       real, dimension(nx,3) :: dummy
+!
+! Done here since with GPU, RHS is not evaluated and thus not diffus_chi.
+!
+      if (lmultithread .and. lupdate_courant_dt) then
 
-      !Done since with multithreading RHS is not evaluated
-      if(lmultithread .and. lupdate_courant_dt) then
         if (idiag_dtdiffus/=0 .or. idiag_dtchi/=0) diffus_chi = 0.0
         if (lheatc_Kprof)    call calc_heatcond_arrays(f,p,thdiff)
         if (lheatc_chiconst) call calc_heatcond_constchi_arr(f,p,thdiff)
         if (lheatc_Kconst)   call calc_heatcond_constK_arrays(p,thdiff)
         if (lheatc_kramers) then
-          call kramers_get_g2(p,g2)
           call kramers_get_K(p,g2,Krho1)
           diffus_chi=diffus_chi+(p%cv1*Krho1+chi_t)*dxyz_2
         endif
         !TP: a bit ugly that we have this so explicitly here but works for now
         if (chi_t1/=0..and.lchit_fluct) then
-                call get_chit_prof_fluct(dummy)
-                diffus_chi=diffus_chi+chit_prof_fluct*dxyz_2
+          call get_chit_prof_fluct(dummy)
+          diffus_chi=diffus_chi+chit_prof_fluct*dxyz_2
         endif
       endif
+
       call calc_2d_diagnostics_energy(p)
       call calc_1d_diagnostics_energy(f,p)
       call calc_0d_diagnostics_energy(p)
@@ -4739,6 +4742,7 @@ module Energy
     endsubroutine set_border_entropy
 !***********************************************************************
     subroutine calc_heatcond_constchi_arr(f,p,thdiff)
+!
       use Diagnostics!, only: max_mn_name
       use EquationOfState, only: get_gamma_etc
       use Sub, only: dot, multmv_transp, multsv_mn
@@ -4746,8 +4750,6 @@ module Energy
       real, dimension (nx), intent(out) :: thdiff
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-
-!
 !
       real, dimension(nx) :: g2
       real, dimension(nx,3) :: gradchit_prof
@@ -4756,7 +4758,6 @@ module Energy
 !  Check that chi is ok.
 !
       if (headtt) print*,'calc_heatcond_constchi_arr: chi=',chi
-!
 !
 !  Heat conduction
 !  Note: these routines require revision when ionization turned on
@@ -4801,6 +4802,7 @@ module Energy
         endif
         if (chi_t/=0.) diffus_chi = diffus_chi+chi_t*chit_prof*dxyz_2
       endif
+!
     endsubroutine calc_heatcond_constchi_arr
 !***********************************************************************
     subroutine calc_heatcond_constchi(f,df,p)
@@ -5570,35 +5572,25 @@ module Energy
 !
     endsubroutine calc_heatcond_hubeny
 !***********************************************************************
-    subroutine kramers_get_g2(p,g2)
-!
-!  23-oct-2025/TP: carver from calc_heatcond_kramers
-!
-      use Sub, only: dot
-      
-      type(pencil_case),   intent(IN)   :: p
-      real, dimension(nx), intent(OUT)  :: g2
-!
-      call dot(-2.*nkramers*p%glnrho+(6.5*nkramers+1)*p%glnTT,p%glnTT,g2)
-    endsubroutine kramers_get_g2
-!***********************************************************************
     subroutine kramers_get_K(p,g2,Krho1)
 !
-!  23-oct-2025/TP: carver from calc_heatcond_kramers
+!  23-oct-2025/TP: carved from calc_heatcond_kramers
 !
       use Sub, only: dot
 
-      type(pencil_case),   intent(IN)     :: p
-      real, dimension(nx), intent(INOUT)  :: g2
-      real, dimension(nx), intent(OUT)    :: Krho1
+      type(pencil_case),   intent(IN)  :: p
+      real, dimension(nx), intent(OUT) :: g2
+      real, dimension(nx), intent(OUT) :: Krho1
 
       real, dimension(nx) :: g2_chi
 !
-
-      call dot(p%glnrho+p%glnTT, p%glnTT, g2_chi)
       K_kramers = hcond0_kramers*p%rho1**(2.*nkramers)*p%TT**(6.5*nkramers)
       Krho1 = K_kramers*p%rho1   ! = K/rho
+      call dot(-2.*nkramers*p%glnrho+(6.5*nkramers+1)*p%glnTT,p%glnTT,g2)
 !
+      if (chimax_kramers>0. .or. chimin_kramers>0.) &
+        call dot(p%glnrho+p%glnTT, p%glnTT, g2_chi)
+
       if (chimax_kramers>0.) then
         where (Krho1 > chimax_kramers/p%cp1)
           Krho1 = chimax_kramers/p%cp1
@@ -5613,6 +5605,7 @@ module Energy
           g2 = g2_chi
         endwhere
       endif
+
     endsubroutine kramers_get_K
 !***********************************************************************
     subroutine calc_heatcond_kramers(f,df,p)
@@ -5623,7 +5616,6 @@ module Energy
 !  24-aug-15/MR: bounds for chi introduced
 !  20-jun-2024/KG: fix implementation of the chi bounds
 !
-      use Diagnostics
       use Sub, only: dot
       use General, only: notanumber
 !
@@ -5645,11 +5637,8 @@ module Energy
 !      K = K_0*(T**6.5/rho**2)**n.
 !  In reality n=1, but we may need to use n\=1 for numerical reasons.
 !
-
-!
 !  g2 is grad(ln(K) + ln(T)).grad(ln(T))
 !
-      call kramers_get_g2(p,g2)
       call kramers_get_K(p,g2,Krho1)
 !
       thdiff = Krho1*(p%del2lnTT+g2)
@@ -5819,7 +5808,6 @@ module Energy
 !
 !  14-sep-25/TP: carved from calc_heatcond
 !
-
       use Diagnostics
       use Debug_IO, only: output_pencil
       use Sub, only: dot, g2ij
@@ -6018,6 +6006,7 @@ module Energy
         if (headt .and. lfirst .and. ip == 13) call output_pencil('heatcond.dat',thdiff,1)
 !
       endif
+
     endsubroutine calc_heatcond_arrays
 !***********************************************************************
     subroutine calc_heatcond(f,df,p)
@@ -6029,7 +6018,6 @@ module Energy
 !  14-jul-05/axel: corrected expression for chi_t diffusion.
 !  30-mar-06/ngrs: simplified calculations using p%glnTT and p%del2lnTT
 !  14-sep-25/TP:   separated calculation of thdiff and diffus_chi from update of df
-!
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -6110,15 +6098,17 @@ module Energy
 !***********************************************************************
     subroutine get_chit_prof_fluct(gradchit_prof_fluct)
 
-        real, dimension(nx,3) :: gradchit_prof_fluct
-        if (lcalc_ssmean .or. lcalc_ssmeanxy .or. lss_running_aver) then
-          if ((lgravr.or.lgravx.or.lgravz).and..not.(lsphere_in_a_box.or.lchi_t1_noprof)) then
-            call get_prof_pencil(chit_prof_fluct,gradchit_prof_fluct,.false., &  ! no 2D/3D profiles of chit_fluct implemented
-                                 stored_prof=chit_prof_fluct_stored,stored_dprof=dchit_prof_fluct_stored)
-          else
-            chit_prof_fluct=chi_t1; gradchit_prof_fluct=0.
-          endif
+      real, dimension(nx,3) :: gradchit_prof_fluct
+
+      if (lcalc_ssmean .or. lcalc_ssmeanxy .or. lss_running_aver) then
+        if ((lgravr.or.lgravx.or.lgravz).and..not.(lsphere_in_a_box.or.lchi_t1_noprof)) then
+          call get_prof_pencil(chit_prof_fluct,gradchit_prof_fluct,.false., &  ! no 2D/3D profiles of chit_fluct implemented
+                               stored_prof=chit_prof_fluct_stored,stored_dprof=dchit_prof_fluct_stored)
+        else
+          chit_prof_fluct=chi_t1; gradchit_prof_fluct=0.
         endif
+      endif
+!
     endsubroutine get_chit_prof_fluct
 !***********************************************************************
     subroutine calc_heatcond_chit(f,df,p)
