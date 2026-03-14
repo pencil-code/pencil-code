@@ -1,6 +1,7 @@
 #include "../freeze_df.h"
  if(lcourant_dt)
  {
+
   	if (AC_iuu__mod__cdata != 0)    
 	{
 		if(AC_lkinflow_as_aux__mod__cdata)
@@ -131,6 +132,17 @@
 		for i in 0:6
 		{
 			write(F_POLY[i],rk_intermediate(F_POLY[i],DF_IPOLY__MOD__CDATA[i],step_num,AC_dt__mod__cdata))
+		}
+	}
+#if LADVECTIVE_GAUGE
+	if(AC_ilamra__mod__advective_gauge != 0) write(F_LAMRA,rk_intermediate(F_LAMRA, DF_LAMRA, step_num,AC_dt__mod__cdata))
+#endif
+
+	if(lpscalar)
+	{
+		for i in 0:npscalar
+		{
+			write(F_CVEC[i],rk_intermediate(F_CVEC[i],DF_ICC__MOD__CDATA[i],step_num,AC_dt__mod__cdata))
 		}
 	}
  }

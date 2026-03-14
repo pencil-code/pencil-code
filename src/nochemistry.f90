@@ -377,10 +377,11 @@ module Chemistry
 
       use Syscalls, only: copy_addr
 
-      integer, parameter :: n_pars=1
+      integer, parameter :: n_pars=100
       integer(KIND=ikind8), dimension(n_pars) :: p_par
 
       call copy_addr(rgas,p_par(1))
+      call copy_addr(lreactions,p_par(2)) ! bool
 
     endsubroutine pushpars2c
 !***********************************************************************

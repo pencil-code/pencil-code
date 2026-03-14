@@ -1526,7 +1526,6 @@ extern "C" void substepGPU(int isubstep, double t)
 {
    //TP: logs performance metrics of Astaroth
   const bool log = false;
-  update_forcing(isubstep);
   fourier_boundary_conditions();
   acDeviceSetInput(acGridGetDevice(), AC_step_num,(PC_SUB_STEP_NUMBER) (isubstep-1));
   if (lshear) 
@@ -1560,6 +1559,9 @@ extern "C" void substepGPU(int isubstep, double t)
 	  }
 #endif
   }
+  //TP: Important that the update of forcing comes after setting dt since it depends on it!
+  update_forcing(isubstep);
+
   //fprintf(stderr,"before acGridExecuteTaskGraph");
   AcTaskGraph *rhs =  acGetOptimizedDSLTaskGraph(AC_rhs);
   auto start = MPI_Wtime();

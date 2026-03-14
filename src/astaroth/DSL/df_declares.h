@@ -32,11 +32,21 @@ real3 DF_DUST_VELOCITY[ndustspec]
 real  DF_DUST_DENSITY[ndustspec]
 real  DF_DUST_MASS[ndustspec]
 real  DF_DUST_ICE_MASS[ndustspec]
+
+real DF_LAMRA = rk_intermediate_split_first(F_LAMRA,step_num)
 if(ldustvelocity)
 {
 	for dustspec in 0:ndustspec
 	{
 		DF_DUST_VELOCITY[dustspec] = rk_intermediate_split_first(F_DUST_VELOCITY[dustspec],step_num)
+	}
+}
+real DF_ICC__MOD__CDATA[npscalar]
+if(lpscalar)
+{
+	for pscalar in 0:npscalar
+	{
+		DF_ICC__MOD__CDATA[pscalar] = rk_intermediate_split_first(F_CVEC[pscalar],step_num)
 	}
 }
 if(ldustdensity)

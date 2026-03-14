@@ -4016,7 +4016,9 @@ module Magnetic
       if (lcoulomb.and.lfirst) then
         if (.not.allocated(rhs_poisson)) allocate(rhs_poisson(nx,ny,nz))
         rhs_poisson=f(l1:l2,m1:m2,n1:n2,idiva)
+        !$omp parallel num_threads(1)
         call inverse_laplacian(rhs_poisson)
+        !$omp end parallel
         f(l1:l2,m1:m2,n1:n2,iLam)=rhs_poisson
       endif
 !
@@ -5114,8 +5116,15 @@ module Magnetic
       if (lresi_eta_tdep .or. lresi_eta_xtdep .or. lresi_hyper2_tdep .or. lresi_hyper3_tdep) then
         call get_eta_t_and_xtdep(f,p)
         if (ldisp_current) then
-          if (lresi_eta_tdep) eta_total = eta_tdep
+          if (lresi_eta_tdep) then
+            eta_total = eta_tdep
+          elseif (lresi_eta_xtdep) then
+            eta_total=eta_xtdep
+          endif
         endif
+      endif
+      if (lresi_eta_const) then
+        eta_total = eta_total + eta
       endif
     endsubroutine calc_eta_total
 !***********************************************************************

@@ -3,6 +3,12 @@ const int chemistry_field_sizes = nchemspec
 #else
 const int chemistry_field_sizes =  0
 #endif
+#if LPSCALAR
+const int pscalar_field_sizes = npscalar
+#else
+const int pscalar_field_sizes = 0
+#endif
+Field F_CVEC[pscalar_field_sizes]
 Field F_CHEMISTRY_SPECIES[chemistry_field_sizes]
 Field F_CHEMISTRY_REACTIONS[chemistry_field_sizes]
 Field AC_cv_r_spec_full__mod__chemistry[chemistry_field_sizes]
@@ -44,6 +50,8 @@ field_order(AC_itij__mod__hydro != 0 ? AC_itij__mod__hydro+4-1 : -1) Field F_TIJ
 field_order(AC_itij__mod__hydro != 0 ? AC_itij__mod__hydro+5-1 : -1) Field F_TIJ_5
 #endif
 
+field_order(AC_ilamra__mod__advective_gauge-1) Field F_LAMRA
+
 field_order(AC_iunx__mod__cdata-1) Field UUNX
 field_order(AC_iuny__mod__cdata-1) Field UUNY
 field_order(AC_iunz__mod__cdata-1) Field UUNZ
@@ -56,6 +64,8 @@ field_order(AC_iglobal_gg__mod__cdata != 0 ? AC_iglobal_gg__mod__cdata-1+1 : -1)
 field_order(AC_iglobal_gg__mod__cdata != 0 ? AC_iglobal_gg__mod__cdata-1+2 : -1) Field F_GLOBAL_GZ
 
 const Field3 F_GLOBAL_GVEC = {F_GLOBAL_GX,F_GLOBAL_GY,F_GLOBAL_GZ}
+
+
 
 field_order(AC_ilnrho__mod__cdata-1) Field RHO
 #define LNRHO RHO

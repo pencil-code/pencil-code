@@ -9,8 +9,9 @@ fixed_boundary Kernel twopass_solve_final(PC_SUB_STEP_NUMBER step_num, real dt)
 		{
 		  if(!AC_lkinflow_as_aux__mod__cdata)
 		  {
+			uu_updated = rk_final(F_UU,step_num,dt)
 			const real3 force = get_deltacorr_force(step_num)
-			write(F_UU, rk_final(F_UU,step_num,dt) + force)
+			write(F_UU,  uu_updated + force)
 		  }
 		}
 		if(AC_irho__mod__cdata != 0 || AC_ilnrho__mod__cdata != 0) 
@@ -129,6 +130,16 @@ fixed_boundary Kernel twopass_solve_final(PC_SUB_STEP_NUMBER step_num, real dt)
 				write(F_POLY[i],rk_final(F_POLY[i],step_num,dt))
 			}
 		}
+#if LADVECTIVE_GAUGE
+		if(AC_ilamra__mod__advective_gauge != 0) write(F_LAMRA,rk_final(F_LAMRA, step_num,dt))
+#endif
+	        if(lpscalar)
+	        {
+	        	for i in 0:npscalar
+	        	{
+	        		write(F_CVEC[i],rk_final(F_CVEC[i],step_num,dt))
+	        	}
+	        }
 	}
 }
 #include "../steps_two_full.h"

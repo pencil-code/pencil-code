@@ -70,6 +70,8 @@ module Special
   integer :: idiag_d2LamRAbrms=0 ! DIAG_DOC: $\left<[(\nabla^2\Lambda_{r\to a})\Bv]^2\right>^{1/2}$
   integer :: idiag_d2LamRArms=0 ! DIAG_DOC: $\left<[\nabla^2\Lambda_{r\to a}]^2\right>^{1/2}$
   integer :: idiag_aabm=0       ! DIAG_DOC: $\left<\Av_\mathrm{Adv}\cdot\Bv\right>$
+
+  real, dimension (nx) :: del2LamRA
 !
   contains
 !
@@ -204,7 +206,7 @@ module Special
 !  24-nov-04/tony: coded
 !   7-mar-26/axel: made p%gLamRA a pencil
 !
-      use Sub, only: grad
+      use Sub, only: grad, del2
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -213,78 +215,29 @@ module Special
       intent(inout) :: p
 !
       call grad(f,iLamRA,p%gLamRA)
+      if (lhydro.or.lhydro_kinematic) then
+        if (ladvecto_resistive) then
+          call del2(f,iLamRA,del2LamRA)
+        endif
+      else
+        call fatal_error('calc_pencils_special','need hydro or hydro_kinematic for advective gauge')
+      endif
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
-    subroutine dspecial_dt(f,df,p)
+    subroutine calc_diagnostics_special(f,p)
 !
-!  calculate right hand side of ONE OR MORE extra coupled PDEs
-!  along the 'current' Pencil, i.e. f(l1:l2,m,n) where
-!  m,n are global variables looped over in equ.f90
+!   11-mar-26/TP: carved from dspecial_dt
 !
-!  Due to the multi-step Runge Kutta timestepping used one MUST always
-!  add to the present contents of the df array.  NEVER reset it to zero.
-!
-!  several precalculated Pencils of information are passed if for
-!  efficiency.
-!
-!   06-oct-03/tony: coded
-!
+
       use Diagnostics
-      use Mpicomm
       use Sub
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
-!
+
+      real, dimension(mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: jxa, divab
-      real, dimension (nx) :: LamRA, del2LamRA, ua, ugLamRA, gLamRAb, jxa2, divab2, tmp
-!
-      intent(in) :: p
-      intent(inout) :: f,df
-!
-!  identify module and boundary conditions
-!
-      if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dSPECIAL_dt'
-!
-      if (headtt) call identify_bcs('LamRA',iLamRA)
-!
-!  solve gauge condition
-!
-      if (lhydro.or.lhydro_kinematic) then
-        call dot(p%uu,p%gLamRA,ugLamRA)
-!
-!  U.A term
-!
-        if (lmagnetic) then
-          call dot(p%uu,p%aa,ua)
-        else
-          ua=0.
-        endif
-!
-! based on resistive gauge
-!
-        if (ladvecto_resistive) then
-          call del2(f,iLamRA,del2LamRA)
-          df(l1:l2,m,n,iLamRA)=df(l1:l2,m,n,iLamRA)-ugLamRA-ua+eta*del2LamRA
-        else
-          df(l1:l2,m,n,iLamRA)=df(l1:l2,m,n,iLamRA)-ugLamRA-ua-eta*p%diva
-        endif
-      else
-        call fatal_error('dspecial_dt','need hydro or hydro_kinematic for advective gauge')
-      endif
-!
-!  Possibility of vector potential in advective gauge as auxiliary output.
-!  Compute Aadv=AWeyl+gLamRA, where gLam is evolved in time.
-!  By contrast to the Coulomb gauge, there is here a plus sign.
-!
-      if (laa_adv_as_aux) f(l1:l2,m,n,iaadvx:iaadvz)=p%aa+p%gLamRA
-!test
-      !if (laa_adv_as_aux) f(l1:l2,m,n,iaadvx:iaadvz)=p%aa-p%gLamRA
-!
-!  diagnostics
-!
+      real, dimension (nx) :: LamRA, tmp, jxa2, del2b, divab2, gLamRAb
+      type(pencil_case) :: p
+
       if (ldiagnos) then
         LamRA=f(l1:l2,m,n,iLamRA)
         if (idiag_LamRAm/=0) call sum_mn_name(LamRA,idiag_LamRAm)
@@ -378,6 +331,74 @@ module Special
       if (l1davgfirst .or. (ldiagnos .and. ldiagnos_need_zaverages)) then
         if (idiag_LamRAbzmz/=0)   call xysum_mn_name_z(p%bb(:,3),idiag_LamRAbzmz)
       endif
+
+    endsubroutine calc_diagnostics_special
+!***********************************************************************
+    subroutine dspecial_dt(f,df,p)
+!
+!  calculate right hand side of ONE OR MORE extra coupled PDEs
+!  along the 'current' Pencil, i.e. f(l1:l2,m,n) where
+!  m,n are global variables looped over in equ.f90
+!
+!  Due to the multi-step Runge Kutta timestepping used one MUST always
+!  add to the present contents of the df array.  NEVER reset it to zero.
+!
+!  several precalculated Pencils of information are passed if for
+!  efficiency.
+!
+!   06-oct-03/tony: coded
+!
+      use Mpicomm
+      use Sub
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+!
+      real, dimension (nx) :: ua, ugLamRA
+!
+      intent(in) :: p
+      intent(inout) :: f,df
+!
+!  identify module and boundary conditions
+!
+      if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dSPECIAL_dt'
+!
+      if (headtt) call identify_bcs('LamRA',iLamRA)
+!
+!  solve gauge condition
+!
+      if (lhydro.or.lhydro_kinematic) then
+        call dot(p%uu,p%gLamRA,ugLamRA)
+!
+!  U.A term
+!
+        if (lmagnetic) then
+          call dot(p%uu,p%aa,ua)
+        else
+          ua=0.
+        endif
+!
+! based on resistive gauge
+!
+        if (ladvecto_resistive) then
+          call del2(f,iLamRA,del2LamRA)
+          df(l1:l2,m,n,iLamRA)=df(l1:l2,m,n,iLamRA)-ugLamRA-ua+eta*del2LamRA
+        else
+          df(l1:l2,m,n,iLamRA)=df(l1:l2,m,n,iLamRA)-ugLamRA-ua-eta*p%diva
+        endif
+      else
+        call fatal_error('dspecial_dt','need hydro or hydro_kinematic for advective gauge')
+      endif
+!
+!  Possibility of vector potential in advective gauge as auxiliary output.
+!  Compute Aadv=AWeyl+gLamRA, where gLam is evolved in time.
+!  By contrast to the Coulomb gauge, there is here a plus sign.
+!
+      if (laa_adv_as_aux) f(l1:l2,m,n,iaadvx:iaadvz)=p%aa+p%gLamRA
+!test
+      !if (laa_adv_as_aux) f(l1:l2,m,n,iaadvx:iaadvz)=p%aa-p%gLamRA
+      call calc_diagnostics_special(f,p)
 !
     endsubroutine dspecial_dt
 !***********************************************************************
@@ -522,6 +543,30 @@ module Special
       endselect
 !
     endsubroutine get_slices_special
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+
+
+    use Syscalls, only: copy_addr
+    use General , only: string_to_enum
+
+    integer, parameter :: n_pars=100
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr(ladvecto_resistive,p_par(1)) ! bool
+    call copy_addr(laa_adv_as_aux,p_par(2)) ! bool
+    call copy_addr(ilamra,p_par(3)) ! int
+    call copy_addr(idiag_glamrabm,p_par(4)) ! int
+    call copy_addr(idiag_apbrms,p_par(5)) ! int
+    call copy_addr(idiag_jxarms,p_par(6)) ! int
+    call copy_addr(idiag_jxglamrarms,p_par(7)) ! int
+    call copy_addr(idiag_divabrms,p_par(8)) ! int
+    call copy_addr(idiag_divapbrms,p_par(9)) ! int
+    call copy_addr(idiag_d2lamrabrms,p_par(10)) ! int
+    call copy_addr(idiag_aabm,p_par(11)) ! int
+    call copy_addr(iaadv,p_par(12)) ! int
+
+    endsubroutine pushpars2c
 !***********************************************************************
 !
 !********************************************************************

@@ -482,7 +482,6 @@ module Pscalar
       intent(in) :: f
       intent(inout) :: p
 !
-      real, dimension(nx) :: dot2_tmp
       integer :: i
 ! cc
       if (lpencil(i_cc)) p%cc=f(l1:l2,m,n,icc:icc+npscalar-1)
@@ -503,12 +502,15 @@ module Pscalar
 ! gcc2
       if (lpencil(i_gcc2)) then
         do i = 1, npscalar
-          call dot2_mn(p%gcc(:,:,i),dot2_tmp)
-          p%gcc2(:,i)=dot2_tmp
+          call dot2_mn(p%gcc(:,:,i),p%gcc2(:,i))
         enddo
       endif
 ! gcc1
-      if (lpencil(i_gcc1)) p%gcc1=sqrt(p%gcc2)
+      if (lpencil(i_gcc1)) then
+        do i = 1, npscalar
+          p%gcc1(:,i)=sqrt(p%gcc2(:,i))
+        enddo
+      endif
 ! del2cc
       if (lpencil(i_del2cc)) then
         do i = 1, npscalar
@@ -541,6 +543,11 @@ module Pscalar
       endif
 !
     endsubroutine calc_pencils_pscalar
+!***********************************************************************
+    subroutine mean_friction_cc(df)
+      real, dimension(mx,my,mz,mvar) :: df
+      df(l1:l2,m,n,icc:icc_end)=df(l1:l2,m,n,icc:icc_end)-LLambda_cc*spread(cc_xyaver(n,:),1,nx)
+    endsubroutine mean_friction_cc
 !***********************************************************************
     subroutine dlncc_dt(f,df,p)
 !
@@ -705,8 +712,11 @@ module Pscalar
 !  the turbulent diffusivity under stationary conditions. Only those
 !  results are then comparable with the results of the test-field method.
 !
+       
         if (lmean_friction_cc) then
-          df(l1:l2,m,n,icc:icc_end)=df(l1:l2,m,n,icc:icc_end)-LLambda_cc*spread(cc_xyaver(n,:),1,nx)
+!TP: stopgap solution of not having to consider arrays of "Profiles" on the GPU
+!    by leaving mean_friction out of the translation
+          call mean_friction_cc(df)
         endif
         !
         ! Add source term due to nucleation of chemical species into nucleii (droplets).
@@ -718,7 +728,7 @@ module Pscalar
         ! and the amount of pscalar is set back to zero for that grid cell. Should note that the
         ! particles are considered as generated as soon as they have been transferred to the
         ! pscalar - not when a new lagrangian particle has been generated. This means that
-        ! there are corresponding source terms also in the equatinos for continuity and
+        ! there are corresponding source terms also in the equations for continuity and
         ! chemical species
         !
         if (lchemistry .and. lparticles) then
@@ -1106,23 +1116,21 @@ module Pscalar
       real :: tensor_pscalar_diff
 !
       real, dimension (nx) :: tmp,scr
-      integer :: iy,iz,i,j,k
+      integer :: i,j,k
 !
 !  tmp = (Bunit.G)^2 + H.G + Bi*Bj*Gij
 !  for details, see tex/mhd/thcond/tensor_der.tex
 !
-      iy=m-m1+1
-      iz=n-n1+1
       do k = 1, npscalar
-        call dot_mn(bunit(:,iy,iz,:),p%gcc(:,:,k),scr)
-        call dot_mn(hhh(:,iy,iz,:),p%gcc(:,:,k),tmp)
+        call dot_mn(bunit(:,m-nghost,n-nghost,:),p%gcc(:,:,k),scr)
+        call dot_mn(hhh(:,m-nghost,n-nghost,:),p%gcc(:,:,k),tmp)
         tmp=tmp+scr**2
 !
 !  dot with bi*bj
 !
         do j=1,3
         do i=1,3
-          tmp=tmp+bunit(:,iy,iz,i)*bunit(:,iy,iz,j)*p%hcc(:,i,j,k)
+          tmp=tmp+bunit(:,m-nghost,n-nghost,i)*bunit(:,m-nghost,n-nghost,j)*p%hcc(:,i,j,k)
         enddo
         enddo
 !
@@ -1168,7 +1176,10 @@ module Pscalar
     call copy_addr(lmean_friction_cc,p_par(26)) ! bool
     call copy_addr(idiag_gcguzm,p_par(27)) ! int
     call copy_addr(gradc0,p_par(28)) ! real3
-    call copy_addr(cc_xyaver,p_par(29)) ! (mz) (npscalar)
+    call copy_addr(spharm,p_par(29)) ! (ny) (nz)
+    call copy_addr(bunit,p_par(30)) ! (nx) (ny) (nz) (3)
+    call copy_addr(hhh,p_par(31)) ! (nx) (ny) (nz) (3)
+    call copy_addr(cc_xyaver,p_par(32)) ! (mz) (npscalar)
 
     endsubroutine pushpars2c
 !***********************************************************************
