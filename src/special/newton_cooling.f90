@@ -97,7 +97,7 @@ module Special
       if (lroot) call svn_id( &
            "$Id: newton_cooling.f90,v 1.2 2015/12/11 02:56:37 wlyra Exp $")
 !
-      call farray_register_auxiliary('tau',itau,on_gpu=lgpu)
+      call farray_register_auxiliary('tau',itau,rhs=.true.)
       call farray_register_auxiliary('kappar',ikappar)
 !
       if (lroot) then
