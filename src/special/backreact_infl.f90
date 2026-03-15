@@ -1320,6 +1320,7 @@ module Special
     call copy_addr(iinfl_lna,p_par(24)) ! int
     call copy_addr(scale_rho_chi_heqn,p_par(25))
     call copy_addr(aphimax2,p_par(26))
+    call copy_addr(gamma_phi0,p_par(27)) 
 
     endsubroutine pushpars2c
 !********************************************************************
