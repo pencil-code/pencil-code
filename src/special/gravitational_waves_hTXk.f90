@@ -322,7 +322,7 @@ module Special
       if (lStress_as_aux) then
         !TP: moved registration of Str first since the other ones are not 
         !    necessarily used on the GPU side and having it come first helps
-        call farray_register_auxiliary('Str',iStress_ij,array=6,on_gpu=lgpu,read_from_gpu=(idiag_nlin1/=0))
+        call farray_register_auxiliary('Str',iStress_ij,array=6,rhs=.true.,read_from_gpu=(idiag_nlin1/=0))
         call farray_register_auxiliary('StT',iStressT,rhs = itorder_GW==2)
         call farray_register_auxiliary('StX',iStressX,rhs = itorder_GW==2)
         call farray_register_auxiliary('StTim',iStressTim,rhs = itorder_GW==2)
