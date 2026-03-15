@@ -15,6 +15,7 @@ module Equ
   public :: impose_floors_ceilings, finalize_diagnostics
   public :: write_diagnostics
   public :: perform_diagnostics
+  public :: calc_all_module_diagnostic_auxiliaries
 !
   real, public    :: before_boundary_sum_time=0.
   real, public    :: time_spent_copying_and_waiting=0.
@@ -559,6 +560,60 @@ module Equ
 
     endsubroutine diagnostics_reductions
 !***********************************************************************
+    subroutine calc_all_module_diagnostic_auxiliaries(f,p)
+!
+!
+!  Candidate implementation for the new concern of auxiliaries in snapshots.
+!  Subject to change.
+!
+!  Calculates those auxiliaries that are needed only for diagnostic purposes
+!  This subroutine exists because we need to compute the auxiliaries for the snapshot
+!  The intent is that the normal calc_diagnostics_<module> also computes the diagnostic auxiliaries
+!  But by splitting their computation to different subroutines we can recompute then when needed
+!  (as in the case of snapshots)
+!  This subroutine is only used for GPU runs.
+!
+!  15-mar-2026/TP: coded
+!
+      use Magnetic,only: calc_diagnostic_auxiliaries_magnetic
+      use Diagnostics
+!$    use OMP_lib
+!$    use General, only: get_cpu, set_cpu
+
+      real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
+      type (pencil_case) :: p
+
+      integer :: imn
+!
+!  Parallelization across all helper threads.
+!
+!$omp parallel if (.not. lsuppress_parallel_reductions) private(p) num_threads(num_helper_threads) &
+!$omp copyin(t,dxmax_pencil,fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
+!$    call restore_diagnostic_controls
+
+      !$omp do
+      do imn=1,nyz
+        n=nn(imn)
+        m=mm(imn)
+!
+!TP: for the moment calc_all_diagnostic_auxilaries does not support coarse grid
+!
+!  Skip points not belonging to coarse grid.
+!
+        ! lcoarse_mn=lcoarse.and.mexts(1)<=m.and.m<=mexts(2)
+        ! if (lcoarse_mn) then
+        !   lcoarse_mn=lcoarse_mn.and.ninds(0,m,n)>0
+        !   if (ninds(0,m,n)<=0) cycle
+        ! endif
+
+        call calc_all_pencils(f,p)
+        call calc_diagnostic_auxiliaries_magnetic(f,p)
+        lfirstpoint=.false.
+      enddo
+!$omp end parallel   ! all helper threads
+
+      endsubroutine calc_all_module_diagnostic_auxiliaries
+!*****************************************************************************
     subroutine calc_all_module_diagnostics(f,p)
 !
 !  Calculates most module diagnostics.

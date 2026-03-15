@@ -86,6 +86,7 @@ subroutine helper_loop(f,p)
 !$      lhelperflags(PERF_DIAGS) = .false.
 !$    endif
 !$    if (lhelper_run .and. lhelperflags(PERF_WSNAP)) then
+!£      call calc_all_module_diagnostic_auxiliaries(f,p)
         call perform_wsnap_ext(f)
 !$    else
 !$      lhelperflags(PERF_WSNAP) = .false.

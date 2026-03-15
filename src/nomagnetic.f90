@@ -180,6 +180,20 @@ module Magnetic
 !
     endsubroutine daa_dt
 !***********************************************************************
+    subroutine calc_diagnostic_auxilaries_magnetic(f,p)
+!
+!  Dummy routine
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+!
+      intent(in) :: f, p
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
+!
+    endsubroutine calc_diagnostic_auxilaries_magnetic
+!***********************************************************************
     subroutine calc_diagnostics_magnetic(f,p)
 !
 !  Dummy routine

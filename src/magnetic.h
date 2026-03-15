@@ -27,6 +27,7 @@
   public :: magnetic_after_timestep, magnetic_after_mn
   public :: pushpars2c
   public :: calc_diagnostics_magnetic
+  public :: calc_diagnostic_auxiliaries_magnetic
   public :: magnetic_calc_spectra
   public :: beltrami_phase
   !public :: braginsky

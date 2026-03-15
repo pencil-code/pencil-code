@@ -6439,6 +6439,23 @@ print*,'AXEL2: should not be here (eta) ... '
 !
     endsubroutine daa_dt
 !******************************************************************************
+    subroutine calc_diagnostic_auxiliaries_magnetic(f,p)
+ !
+ !  Insert the calculation of diagnostic auxiliaries here to ensure they end correctly
+ !  in the snapshot with GPU-accelerated runs.
+ !  Will be called from calc_diagnostics_magnetic and when snapshots are to be written.
+ !
+
+      real, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
+!
+!  Possibility of vector potential in Coulomb gauge as auxiliary output.
+!  Compute Acou=AWeyl-gLam, where div(Acou)=0=div(AWeyl)-del2(gLam).
+!  Recall that no minus sign has been included in the calculation of gLam.
+!
+      if (laa_cou_as_aux) f(l1:l2,m,n,iacoux:iacouz)=p%aa-p%gLam
+    endsubroutine calc_diagnostic_auxiliaries_magnetic
+!******************************************************************************
     subroutine calc_diagnostics_magnetic(f,p)
 
       use Diagnostics, only: save_name_sound
@@ -6450,6 +6467,8 @@ print*,'AXEL2: should not be here (eta) ... '
 
       integer :: isound,lspoint,mspoint,nspoint,j
       real, dimension (nx,3) :: uxbxb,poynting
+
+      call calc_diagnostic_auxiliaries_magnetic(f,p)
 !
 ! Magnetic field components at the list of points written out in sound.dat
 ! lwrite_sound is false if either no sound output is required, or if none of
@@ -6484,12 +6503,6 @@ print*,'AXEL2: should not be here (eta) ... '
           endif
         enddo
       endif
-!
-!  Possibility of vector potential in Coulomb gauge as auxiliary output.
-!  Compute Acou=AWeyl-gLam, where div(Acou)=0=div(AWeyl)-del2(gLam).
-!  Recall that no minus sign has been included in the calculation of gLam.
-!
-      if (laa_cou_as_aux) f(l1:l2,m,n,iacoux:iacouz)=p%aa-p%gLam
 !test
       !if (laa_cou_as_aux) f(l1:l2,m,n,iacoux:iacouz)=p%aa+p%gLam
 !
