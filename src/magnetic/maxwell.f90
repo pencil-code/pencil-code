@@ -538,7 +538,7 @@ module Magnetic
 
     endsubroutine daa_dt
 !***********************************************************************
-    subroutine calc_diagnostic_auxilaries_magnetic(f,p)
+    subroutine calc_diagnostic_auxiliaries_magnetic(f,p)
 !
 !  Dummy routine
 !
@@ -550,7 +550,7 @@ module Magnetic
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
 !
-    endsubroutine calc_diagnostic_auxilaries_magnetic
+    endsubroutine calc_diagnostic_auxiliaries_magnetic
 !***********************************************************************
     subroutine calc_diagnostics_magnetic(f,p)
 !
