@@ -182,7 +182,7 @@ module Cdata
   logical, dimension(3) :: lshift_origin=.false. !PAR_DOC: if set \code{T} for any or some of the three directions,
     !PAR_DOC: the mesh is shifted by 1/2 meshpoint in that or those
     !PAR_DOC: directions so that the mesh goes through the origin.
-  logical, dimension(3) :: lshift_origin_lower=.false. ! don't shift origin
+  logical, dimension(3) :: lshift_origin_lower=.false. !PAR_DOC: same as above, but downward.
   logical, dimension(3) :: lpole=.false. ! in spherical coords: pole excluded
   logical, dimension(3) :: lequidist=.true. ! grid equidistant in every direction
   logical :: lignore_nonequi=.false., lcart_equi=.true.
