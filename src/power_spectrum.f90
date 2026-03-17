@@ -6240,7 +6240,11 @@ outer:do ikz=1,nz
           !$omp end workshare
         else
           !$omp workshare
-          h_re=h_re+a_re*b_re  !  magnetic helicity density
+          if (ijbt>0) then
+            h_re=h_re+a_re*b_re+f(l1:l2,m1:m2,n1:n2,ijbt)
+          else
+            h_re=h_re+a_re*b_re  !  magnetic helicity density
+          endif
           !$omp end workshare
         endif
         !$omp workshare

@@ -251,6 +251,7 @@ module Magnetic
   logical :: luxb_as_aux=.false., lugb_as_aux=.false., lbgu_as_aux=.false.
   logical :: lbdivu_as_aux=.false., lbij_as_aux=.false., lbij_test=.false.
   logical :: lbbt_as_aux=.false., ljjt_as_aux=.false., lua_as_aux=.false.
+  logical :: ljbt_as_aux=.false.
   logical :: lbeta_as_aux=.false.
   logical :: letasmag_as_aux=.false.,ljj_as_comaux=.false.
   logical :: lbb_as_comaux=.false., lB_ext_in_comaux=.true.
@@ -290,7 +291,7 @@ module Magnetic
       ljxb_as_aux, ljj_as_aux, lbext_curvilinear, lbbt_as_aux, ljjt_as_aux, &
       laa_cou_as_aux, lcurlb_as_aux, lbij_as_aux, lbij_test, &
       luxb_as_aux, lugb_as_aux, lbgu_as_aux, lbeta_as_aux, lbdivu_as_aux, &
-      lua_as_aux, lneutralion_heat, center1_x, center1_y, center1_z, &
+      lua_as_aux, ljbt_as_aux, lneutralion_heat, center1_x, center1_y, center1_z, &
       fluxtube_border_width, va2max_jxb, va2max_boris, cmin,va2power_jxb, eta_jump, &
       lpress_equil_alt, rnoise_int, rnoise_ext, mix_factor, damp, &
       two_step_factor, th_spot, non_ffree_factor, etaB, ampl_ax, ampl_ay, &
@@ -394,6 +395,7 @@ module Magnetic
   character (len=labellen) :: div_sld_magn='2nd'
   logical :: lbext_moving_layer=.false., lno_eta_tdep=.false.
   logical :: luse_bgb_as_jxb=.false.  !PAR_DOC: replace JxB by B.gradB in auxiliary array, for test purposes.
+  logical :: lreset_vart_only_at_start=.false.  !PAR_DOC: reset vart only at start
   real :: zbot_moving_layer=0., ztop_moving_layer=0., speed_moving_layer=0., edge_moving_layer=.1
   real :: eta_tdep_ascale_power=0.
 !
@@ -427,7 +429,7 @@ module Magnetic
       eta_aniso_hyper3, lelectron_inertia, inertial_length, &
       lbext_curvilinear, lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, ljj_as_aux, &
       laa_cou_as_aux, lbij_as_aux, lbij_test, luxb_as_aux, lugb_as_aux, lbgu_as_aux, lbdivu_as_aux, &
-      lkinematic, lbbt_as_aux, ljjt_as_aux, lua_as_aux, ljxb_as_aux, lcurlb_as_aux, &
+      lkinematic, lbbt_as_aux, ljjt_as_aux, lua_as_aux, ljbt_as_aux, ljxb_as_aux, lcurlb_as_aux, &
       lneutralion_heat, lreset_aa, daareset, eta_shock2, &
       lignore_Bext_in_b2, luse_Bext_in_b2, ampl_fcont_aa, &
       lhalox, vcrit_anom, eta_jump, eta_jump2, lrun_initaa, two_step_factor, &
@@ -453,7 +455,7 @@ module Magnetic
       loverride_ee_decide, eta_tdep_loverride_ee, loverride_ee2, lignore_1rho_in_Lorentz, &
       lbext_moving_layer, zbot_moving_layer, ztop_moving_layer, speed_moving_layer, edge_moving_layer, &
       luse_bgb_as_jxb, lno_eta_tdep, luse_scale_factor_in_sigma, ell_jj, tau_jj, lhubble_magnetic, &
-      scl_uxb_in_ohm, eta_tdep_ascale_power,r_dip, epsi_dip, angle_dip
+      scl_uxb_in_ohm, eta_tdep_ascale_power,r_dip, epsi_dip, angle_dip, lreset_vart_only_at_start
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -1253,6 +1255,11 @@ module Magnetic
 !
       if (ljjt_as_aux) then
         call register_report_aux('jjt',ijjt,ijxt,ijyt,ijzt)
+        ltime_integrals=.true.
+      endif
+!
+      if (ljbt_as_aux) then
+        call register_report_aux('jbt',ijbt)
         ltime_integrals=.true.
       endif
 !
@@ -2891,6 +2898,8 @@ module Magnetic
         lpenc_requested(i_b2)=.true.
         lpenc_requested(i_jxb)=.true.
       endif
+!
+      if (ljbt_as_aux) lpenc_requested(i_jb)=.true.
 !
       if (lwrite_slices) then
         if (ivid_aps/=0) then
@@ -6604,7 +6613,7 @@ print*,'AXEL2: should not be here (eta) ... '
         call sum_mn_name(b2t,idiag_b2tm)
       endif
 !
-!  Integrate velocity in time, to calculate correlation time later.
+!  Integrate magnetic field in time, dotted with current density, to calculate correlation time later.
 !
       if (idiag_jbtm/=0) then
         call dot(p%jj,f(l1:l2,m,n,ibxt:ibzt),jbt)
@@ -7782,23 +7791,38 @@ print*,'AXEL2: should not be here (eta) ... '
       logical :: lreset_vart
 !
 !  reset bbt etc. if lreset_vart=.true.
+!  To avoid resetting the time integration for each run, we must set
+!  ltime_integrals_always=T. But because tstart is being reset for each
+!  run (which is weird), we initialize the variables to zero when t>dt.
+!  This would not be correct if the initial tstart was different from 0,
+!  or if dt is negative (i.e., for backward in time integration).
 !
       lreset_vart = .false.
       if (ltime_integrals_always .or. nint(dtcor)<=0.) then
-        if (it==1) lreset_vart=.true.
+        if (lreset_vart_only_at_start) then
+          if (t<dt) then
+            lreset_vart=.true.
+          else
+            lreset_vart=.false.
+          endif
+        else
+          if (it==1) lreset_vart=.true.
+        endif
       else
         if (mod(nint(t),nint(dtcor))==1) lreset_vart=.true.
       endif
 !
-!  assign values to bbt etc.
+!  assign values to bbt etc. The following does not seem very useful when ltime_integrals_always=T.
 !
       if (ltime_integrals_always) then
         if (lreset_vart) then
           if (ibbt/=0)  f(l1:l2,m,n,ibxt:ibzt) = 0.
           if (ijjt/=0)  f(l1:l2,m,n,ijxt:ijzt) = 0.
+          if (ijbt/=0)  f(l1:l2,m,n,ijbt) = 0.
         else
           if (ibbt/=0)  f(l1:l2,m,n,ibxt:ibzt) = f(l1:l2,m,n,ibxt:ibzt)  +dt*p%bb
           if (ijjt/=0)  f(l1:l2,m,n,ijxt:ijzt) = f(l1:l2,m,n,ijxt:ijzt)  +dt*p%jj
+          if (ijbt/=0)  f(l1:l2,m,n,ijbt) = f(l1:l2,m,n,ijbt)  +dt*2.*eta*p%jb
         endif
       elseif (lreset_vart) then
         if (lvart_in_shear_frame) then
