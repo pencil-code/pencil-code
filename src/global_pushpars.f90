@@ -462,6 +462,7 @@ contains
     call copy_addr(lfrozen_top_var_x,p_par(1406)) ! bool (mcom)
     call copy_addr(lfirst_proc_x,p_par(1407)) ! bool dconst
     call copy_addr(llast_proc_x,p_par(1408)) ! bool dconst
+    call copy_addr(ijbt,p_par(1409)) ! int
 
   endsubroutine pushpars2c
 !***********************************************************************
