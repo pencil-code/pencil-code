@@ -118,6 +118,8 @@ indices = [ $
   { name:'iaa', label:'Magnetic vector potential', dims:3 }, $
   { name:'iacou', label:'Magnetic vector potential in Coulomb gauge', dims:3 }, $
   { name:'iaadv', label:'Magnetic vector potential in advective gauge', dims:3 }, $
+  { name:'ijbt', label:'time-integrated current helicity density', dims:1 }, $
+  { name:'ij2t', label:'time-integrated magnetic energy density', dims:1 }, $
   ;{ name:'iacoux', label:'acoux', dims:1 }, $
   ;{ name:'iacouy', label:'acouy', dims:1 }, $
   ;{ name:'iacouz', label:'acouz', dims:1 }, $

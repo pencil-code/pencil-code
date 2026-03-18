@@ -551,7 +551,7 @@ module Cdata
   integer :: iam=0,iamx=0,iamy=0,iamz=0
   integer :: ivisc_heat=0,ibb=0,ibx=0,iby=0,ibz=0,ijj=0,ijx=0,ijy=0,ijz=0
   integer :: ieta_planet=0
-  integer :: ijbt=0
+  integer :: ijbt=0, ij2t=0
   integer :: ibb_sph=0, ibb_sphr=0, ibb_spht=0, ibb_sphp=0
   integer :: inusmag=0, ietasmag=0
   integer :: iaak, iaakim, ieek, ieekim
@@ -821,6 +821,7 @@ module Cdata
   logical :: out_spec=.false., uot_spec=.false.
   logical :: saffman_ub=.false., saffman_mag=.false., saffman_mag_c=.false.
   logical :: saffman_aa=.false., saffman_aa_c=.false., saffman_bb=.false.
+  logical :: saffman_EEM=.false.
   logical :: uu_fft3d=.false., oo_fft3d=.false., bb_fft3d=.false., jj_fft3d=.false.
   logical :: uu_xkyz=.false., oo_xkyz=.false., bb_xkyz=.false., jj_xkyz=.false.
   logical :: uu_kx0z=.false., oo_kx0z=.false., bb_kx0z=.false., jj_kx0z=.false.

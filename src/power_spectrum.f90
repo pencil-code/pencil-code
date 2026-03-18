@@ -6217,6 +6217,9 @@ outer:do ikz=1,nz
         h_re=h_re+b_re**2  !  magnetic energy density
         h_im=0.
         !$omp end workshare
+!
+!  Compute the Hosking integral, which was originally called magnetic Saffman integral.
+!
       elseif (sp=='saffman_mag') then
         if (iaa==0) call fatal_error('quadratic_invariants','iaa=0')
         !$omp do collapse(2)
@@ -6232,7 +6235,7 @@ outer:do ikz=1,nz
 !  add the chiral chemical potential. Since it is a scalar, it is being
 !  added only when ivec=1. This is only done if lambda5/=0.
 !
-        if (lambda5/=0. .and. ivec==1) then
+        if ((lambda5/=0. .or. ijbt>0) .and. ivec==1) then
           if (ip<14) call information('quadratic_invariants','lambda5='//rtoa(lambda5))
           if (ispecialvar==0) call fatal_error('quadratic_invariants','ispecialvar=0')
           !$omp workshare
@@ -6240,16 +6243,39 @@ outer:do ikz=1,nz
           !$omp end workshare
         else
           !$omp workshare
-          if (ijbt>0) then
-            h_re=h_re+a_re*b_re+f(l1:l2,m1:m2,n1:n2,ijbt)
-          else
-            h_re=h_re+a_re*b_re  !  magnetic helicity density
-          endif
+          h_re=h_re+a_re*b_re  !  magnetic helicity density
           !$omp end workshare
         endif
         !$omp workshare
         h_im=0.
         !$omp end workshare
+!
+!  Compute the Saffman-like magnetic energy integral.
+!
+      elseif (sp=='saffman_EEM') then
+        if (iaa==0) call fatal_error('quadratic_invariants','iaa=0')
+        do n_loc=n1,n2; do m_loc=m1,m2
+          m=m_loc;n=n_loc
+          call curli(f,iaa,b_re(:,m-nghost,n-nghost),ivec)    !  magnetic field
+        enddo; enddo
+!
+!  For the Hosking integral with chiral chemical potential, we want to
+!  add the chiral chemical potential. Since it is a scalar, it is being
+!  added only when ivec=1. This is only done if lambda5/=0.
+!
+        if (ij2t>0 .and. ivec==1) then
+          !$omp workshare
+          h_re=h_re+b_re**2+f(l1:l2,m1:m2,n1:n2,ij2t)
+          !$omp end workshare
+        else
+          !$omp workshare
+          h_re=h_re+b_re**2  !  magnetic energy density
+          !$omp end workshare
+        endif
+        !$omp workshare
+        h_im=0.
+        !$omp end workshare
+!
       elseif (sp=='saffman_mag_c') then
         if (iaa==0) call fatal_error('quadratic_invariants','iaa=0')
         if (.not. lcoulomb) call fatal_error('quadratic_invariants','need lcoulomb=T')

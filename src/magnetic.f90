@@ -19,7 +19,7 @@
 ! PENCILS PROVIDED b2; b21; bf2; bij(3,3); del2a(3); graddiva(3); jj(3); jj_ohm(3); (3)
 ! PENCILS PROVIDED curlb(3); e3xa(3)
 ! PENCILS PROVIDED el(3); e2; bijtilde(3,3),bij_cov_corr(3,3)
-! PENCILS PROVIDED j2; jb; va2; jxb(3); jxbr(3); jxbr2; ub; uj; ob; uxb(3); uxbb(3); uxb2
+! PENCILS PROVIDED j2; jb; ujxb; va2; jxb(3); jxbr(3); jxbr2; ub; uj; ob; uxb(3); uxbb(3); uxb2
 ! PENCILS PROVIDED uxj(3); chibp; beta; beta1; uga(3); uuadvec_gaa(3); djuidjbi; jo
 ! PENCILS PROVIDED StokesI; StokesQ; StokesU; StokesQ1; StokesU1
 ! PENCILS PROVIDED ujxb; oxuxb(3); jxbxb(3); jxbrxb(3)
@@ -251,7 +251,7 @@ module Magnetic
   logical :: luxb_as_aux=.false., lugb_as_aux=.false., lbgu_as_aux=.false.
   logical :: lbdivu_as_aux=.false., lbij_as_aux=.false., lbij_test=.false.
   logical :: lbbt_as_aux=.false., ljjt_as_aux=.false., lua_as_aux=.false.
-  logical :: ljbt_as_aux=.false.
+  logical :: ljbt_as_aux=.false., lj2t_as_aux=.false.
   logical :: lbeta_as_aux=.false.
   logical :: letasmag_as_aux=.false.,ljj_as_comaux=.false.
   logical :: lbb_as_comaux=.false., lB_ext_in_comaux=.true.
@@ -291,7 +291,7 @@ module Magnetic
       ljxb_as_aux, ljj_as_aux, lbext_curvilinear, lbbt_as_aux, ljjt_as_aux, &
       laa_cou_as_aux, lcurlb_as_aux, lbij_as_aux, lbij_test, &
       luxb_as_aux, lugb_as_aux, lbgu_as_aux, lbeta_as_aux, lbdivu_as_aux, &
-      lua_as_aux, ljbt_as_aux, lneutralion_heat, center1_x, center1_y, center1_z, &
+      lua_as_aux, ljbt_as_aux, lj2t_as_aux, lneutralion_heat, center1_x, center1_y, center1_z, &
       fluxtube_border_width, va2max_jxb, va2max_boris, cmin,va2power_jxb, eta_jump, &
       lpress_equil_alt, rnoise_int, rnoise_ext, mix_factor, damp, &
       two_step_factor, th_spot, non_ffree_factor, etaB, ampl_ax, ampl_ay, &
@@ -429,7 +429,7 @@ module Magnetic
       eta_aniso_hyper3, lelectron_inertia, inertial_length, &
       lbext_curvilinear, lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, ljj_as_aux, &
       laa_cou_as_aux, lbij_as_aux, lbij_test, luxb_as_aux, lugb_as_aux, lbgu_as_aux, lbdivu_as_aux, &
-      lkinematic, lbbt_as_aux, ljjt_as_aux, lua_as_aux, ljbt_as_aux, ljxb_as_aux, lcurlb_as_aux, &
+      lkinematic, lbbt_as_aux, ljjt_as_aux, lua_as_aux, ljbt_as_aux, lj2t_as_aux, ljxb_as_aux, lcurlb_as_aux, &
       lneutralion_heat, lreset_aa, daareset, eta_shock2, &
       lignore_Bext_in_b2, luse_Bext_in_b2, ampl_fcont_aa, &
       lhalox, vcrit_anom, eta_jump, eta_jump2, lrun_initaa, two_step_factor, &
@@ -1260,6 +1260,11 @@ module Magnetic
 !
       if (ljbt_as_aux) then
         call register_report_aux('jbt',ijbt)
+        ltime_integrals=.true.
+      endif
+!
+      if (lj2t_as_aux) then
+        call register_report_aux('j2t',ij2t)
         ltime_integrals=.true.
       endif
 !
@@ -2901,6 +2906,11 @@ module Magnetic
 !
       if (ljbt_as_aux) lpenc_requested(i_jb)=.true.
 !
+      if (lj2t_as_aux) then
+        lpenc_requested(i_j2)=.true.
+        lpenc_requested(i_ujxb)=.true.
+      endif
+!
       if (lwrite_slices) then
         if (ivid_aps/=0) then
           lpenc_video(i_aps)=.true.
@@ -3593,6 +3603,11 @@ module Magnetic
       if (lpencil_in(i_jxb)) then
         lpencil_in(i_jj)=.true.
         lpencil_in(i_bb)=.true.
+      endif
+!
+      if (lpencil_in(i_ujxb)) then
+        lpencil_in(i_jxb)=.true.
+        lpencil_in(i_uu)=.true.
       endif
 !
       if (lpencil_in(i_uxb2)) lpencil_in(i_uxb)=.true.
@@ -7819,10 +7834,12 @@ print*,'AXEL2: should not be here (eta) ... '
           if (ibbt/=0)  f(l1:l2,m,n,ibxt:ibzt) = 0.
           if (ijjt/=0)  f(l1:l2,m,n,ijxt:ijzt) = 0.
           if (ijbt/=0)  f(l1:l2,m,n,ijbt) = 0.
+          if (ij2t/=0)  f(l1:l2,m,n,ij2t) = 0.
         else
           if (ibbt/=0)  f(l1:l2,m,n,ibxt:ibzt) = f(l1:l2,m,n,ibxt:ibzt)+dt*p%bb
           if (ijjt/=0)  f(l1:l2,m,n,ijxt:ijzt) = f(l1:l2,m,n,ijxt:ijzt)+dt*p%jj
           if (ijbt/=0)  f(l1:l2,m,n,ijbt) = f(l1:l2,m,n,ijbt)+dt*2.*eta*p%jb
+          if (ij2t/=0)  f(l1:l2,m,n,ij2t) = f(l1:l2,m,n,ij2t)+dt*2.*(eta*p%j2+p%ujxb)
         endif
       elseif (lreset_vart) then
         if (lvart_in_shear_frame) then
