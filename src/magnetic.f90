@@ -7820,9 +7820,9 @@ print*,'AXEL2: should not be here (eta) ... '
           if (ijjt/=0)  f(l1:l2,m,n,ijxt:ijzt) = 0.
           if (ijbt/=0)  f(l1:l2,m,n,ijbt) = 0.
         else
-          if (ibbt/=0)  f(l1:l2,m,n,ibxt:ibzt) = f(l1:l2,m,n,ibxt:ibzt)  +dt*p%bb
-          if (ijjt/=0)  f(l1:l2,m,n,ijxt:ijzt) = f(l1:l2,m,n,ijxt:ijzt)  +dt*p%jj
-          if (ijbt/=0)  f(l1:l2,m,n,ijbt) = f(l1:l2,m,n,ijbt)  +dt*2.*eta*p%jb
+          if (ibbt/=0)  f(l1:l2,m,n,ibxt:ibzt) = f(l1:l2,m,n,ibxt:ibzt)+dt*p%bb
+          if (ijjt/=0)  f(l1:l2,m,n,ijxt:ijzt) = f(l1:l2,m,n,ijxt:ijzt)+dt*p%jj
+          if (ijbt/=0)  f(l1:l2,m,n,ijbt) = f(l1:l2,m,n,ijbt)+dt*2.*eta*p%jb
         endif
       elseif (lreset_vart) then
         if (lvart_in_shear_frame) then
@@ -11838,7 +11838,7 @@ print*,'AXEL2: should not be here (eta) ... '
     use Syscalls, only: copy_addr
     use General , only: string_to_enum
 
-    integer, parameter :: n_pars=1000
+    integer, parameter :: n_pars=500
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(eta,p_par(1))
@@ -12127,6 +12127,7 @@ print*,'AXEL2: should not be here (eta) ... '
     call copy_addr(bij_0d_test,p_par(278)) ! (3) (3)
     call copy_addr(lbij_test,p_par(279)) ! bool
     call copy_addr(luse_bgb_as_jxb,p_par(280)) ! bool
+    call copy_addr(lreset_vart_only_at_start,p_par(281)) ! bool
 
     endsubroutine pushpars2c
 !***********************************************************************
