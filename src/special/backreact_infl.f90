@@ -263,7 +263,7 @@ module Special
           lnoncollinear_EB=.false.
           lcollinear_EB_aver=.false.
           lnoncollinear_EB_aver=.false.
-          call get_shared_variable('eta',eta)
+          call get_shared_variable('eta',eta,caller='initialize_backreact_infl')
         endif
       else
         if (.not.associated(alpf)) allocate(alpf, lphi_hom, lphi_linear_regime, &
