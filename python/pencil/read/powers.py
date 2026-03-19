@@ -526,7 +526,8 @@ class Power(object):
                 powerux_xy.dat -> ux_xy
                 """
                 fname_no_ext = file_name.removesuffix(f".{fileext}")
-                power_name = fname_no_ext.removeprefix("power").removeprefix("_")
+                power_name = fname_no_ext.replace(".", "") #dots not allowed in attribute names
+                power_name = power_name.removeprefix("power").removeprefix("_")
 
                 if not quiet:
                     print("appending", power_name)
