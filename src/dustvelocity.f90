@@ -1079,26 +1079,29 @@ module Dustvelocity
       integer :: j
       if (lgrav) then
         AA_sfta=p%gg
-      else
-        AA_sfta=0.
-      endif
-      if (ldensity) then
-        do j=1,3; AA_sfta(:,j)=AA_sfta(:,j)+p%cs2(:)*p%glnrho(:,j); enddo
-      endif
-      if (lgrav) then
+
         if (lgravx_gas .neqv. lgravx_dust) then
           if (lgravx_gas) AA_sfta(:,1)=AA_sfta(:,1)-p%gg(:,1)
           if (lgravx_dust) AA_sfta(:,1)=AA_sfta(:,1)+p%gg(:,1)
         endif
+
         if (lgravz_gas .neqv. lgravz_dust) then
           if (lgravz_gas) AA_sfta(:,3)=AA_sfta(:,3)-p%gg(:,3)
           if (lgravz_dust) AA_sfta(:,3)=AA_sfta(:,3)+p%gg(:,3)
         endif
+
+      else
+        AA_sfta=0.
       endif
+
+      if (ldensity) then
+        do j=1,3; AA_sfta(:,j)=AA_sfta(:,j)+p%cs2(:)*p%glnrho(:,j); enddo
+      endif
+
       if (lmagnetic) AA_sfta=AA_sfta-p%JxBr
-      do j=1,3; BB_sfta(:,j)=-tausd1(:,k); enddo
+
       df(l1:l2,m,n,iudx(k):iudz(k)) = 1/dt_beta_ts(itsub)*( &
-          f(l1:l2,m,n,iux:iuz)-f(l1:l2,m,n,iudx(k):iudz(k))-AA_sfta/BB_sfta)
+          f(l1:l2,m,n,iux:iuz)-f(l1:l2,m,n,iudx(k):iudz(k))-AA_sfta/spread(tausd1(:,k),2,3))
     endsubroutine short_stopping_time_approximation
 !***********************************************************************
     subroutine add_pseudo_coriolis_force(df,p)
