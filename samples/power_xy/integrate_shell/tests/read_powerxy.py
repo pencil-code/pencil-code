@@ -18,7 +18,6 @@ sim = pc.sim.get(path="..", quiet=True)
 
 p = pc.read.power(
     datadir=sim.datadir,
-    file_name="poweruz_xy.dat",
     quiet=True,
     )
 
@@ -32,3 +31,4 @@ with open(f'{__file__[:-3]}.out', 'w') as f:
     run_and_write("p.t[:5]", f)
     run_and_write("p.uz_xy[0,10,:5]", f)
     run_and_write("p.uz_xy[3,7:15,1]", f)
+    run_and_write("p.ou_xy[3,10:15,1]", f)

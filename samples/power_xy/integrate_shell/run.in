@@ -21,7 +21,7 @@
   
   !spectra
   dspec=0.05
-  xy_spec='uz'
+  xy_spec='uz,o.u'
   lspec_at_tplusdt=T
 /
 &eos_run_pars
