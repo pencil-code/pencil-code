@@ -6220,7 +6220,7 @@ outer:do ikz=1,nz
 !
 !  Compute the Hosking integral, which was originally called magnetic Saffman integral.
 !
-      elseif (sp=='saffman_mag') then
+      elseif (sp=='saffman_mag' .or. sp=='saffman_mag_uc') then
         if (iaa==0) call fatal_error('quadratic_invariants','iaa=0')
         !$omp do collapse(2)
         do n_loc=n1,n2; do m_loc=m1,m2
@@ -6231,47 +6231,61 @@ outer:do ikz=1,nz
         a_re=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1)  !  vector potential
         !$omp end workshare
 !
-!  For the Hosking integral with chiral chemical potential, we want to
-!  add the chiral chemical potential. Since it is a scalar, it is being
-!  added only when ivec=1. This is only done if lambda5/=0.
+!  Add A.B for each of the 3 component, and later add something if ivec=1
+!  and then possibly something else, if true (see below).
 !
-        if ((lambda5/=0. .or. ijbt>0) .and. ivec==1) then
+        !$omp workshare
+        h_re=h_re+a_re*b_re  !  magnetic helicity density
+        !$omp end workshare
+!
+!  If lambda5/=0., we add contribution from chiral chemical potential,
+!  but only when ivec=1 and sp=='saffman_mag', i.e., not "uncompensated".
+!
+        if (lambda5/=0. .and. ivec==1 .and. sp=='saffman_mag') then
           if (ip<14) call information('quadratic_invariants','lambda5='//rtoa(lambda5))
-          if (ispecialvar==0) call fatal_error('quadratic_invariants','ispecialvar=0')
           !$omp workshare
-          h_re=h_re+a_re*b_re+f(l1:l2,m1:m2,n1:n2,ispecialvar)*2./lambda5
-          !$omp end workshare
-        else
-          !$omp workshare
-          h_re=h_re+a_re*b_re  !  magnetic helicity density
+          h_re=h_re+f(l1:l2,m1:m2,n1:n2,ispecialvar)*2./lambda5
           !$omp end workshare
         endif
+!
+!  If ijbt>0, we add contribution from the time-integrated current helicity dissipation,
+!  but only when ivec=1 and sp=='saffman_mag', i.e., not "uncompensated".
+!
+        if (ijbt>0 .and. ivec==1 .and. sp=='saffman_mag') then
+          !$omp workshare
+          h_re=h_re+f(l1:l2,m1:m2,n1:n2,ijbt)
+          !$omp end workshare
+        endif
+!
         !$omp workshare
         h_im=0.
         !$omp end workshare
 !
 !  Compute the Saffman-like magnetic energy integral.
 !
-      elseif (sp=='saffman_EEM') then
+      elseif (sp=='saffman_EEM' .or. sp=='saffman_EEM_uc') then
         if (iaa==0) call fatal_error('quadratic_invariants','iaa=0')
         do n_loc=n1,n2; do m_loc=m1,m2
           m=m_loc;n=n_loc
           call curli(f,iaa,b_re(:,m-nghost,n-nghost),ivec)    !  magnetic field
         enddo; enddo
 !
-!  For the Hosking integral with chiral chemical potential, we want to
-!  add the chiral chemical potential. Since it is a scalar, it is being
-!  added only when ivec=1. This is only done if lambda5/=0.
+!  Add B^2 for each of the 3 component, and later add something if ivec=1
+!  and then possibly something else, if true (see below).
 !
-        if (ij2t>0 .and. ivec==1) then
+        !$omp workshare
+        h_re=h_re+b_re**2  !  magnetic energy density
+        !$omp end workshare
+!
+!  If ij2t>0, we add contribution from the time-integrated magnetic energy dissipation,
+!  but only when ivec=1 and sp=='saffman_EEM', i.e., not "uncompensated".
+!
+        if (ij2t>0 .and. ivec==1 .and. sp=='saffman_EEM') then
           !$omp workshare
-          h_re=h_re+b_re**2+f(l1:l2,m1:m2,n1:n2,ij2t)
-          !$omp end workshare
-        else
-          !$omp workshare
-          h_re=h_re+b_re**2  !  magnetic energy density
+          h_re=h_re+f(l1:l2,m1:m2,n1:n2,ij2t)
           !$omp end workshare
         endif
+!
         !$omp workshare
         h_im=0.
         !$omp end workshare
