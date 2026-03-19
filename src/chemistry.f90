@@ -734,6 +734,8 @@ module Chemistry
     if(allocated(high_coeff)) high_coeff_abs_max = maxval(abs(high_coeff),1)
     if(allocated(troe_coeff)) troe_coeff_abs_max = maxval(abs(troe_coeff),1)
     if(.not. lmultithread) call chemistry_allocate_rhs_arrays
+    if (lgpu .and. (l1step_test .or. reac_rate_method=='1step_test')) &
+          call warning('initialize_chemistry','1step test will not be correct on the GPU')
 
     endsubroutine initialize_chemistry
 !***********************************************************************
@@ -1102,15 +1104,6 @@ module Chemistry
 !
     endsubroutine pencil_interdep_chemistry
 !***********************************************************************
-    subroutine get_cs2_cheminp(p)
-      type(pencil_case) :: p
-      !TP: any calls across pencil cannot be faithfully transpiled to the GPU
-      if (any(p%cv == 0.0)) then
-      else
-        p%cs2 = p%cp*p%cv1*p%mu1*p%TT*Rgas
-      endif
-    endsubroutine get_cs2_cheminp
-!***********************************************************************
     subroutine calc_pencils_chemistry(f,p)
 !
 !  Calculate chemistry pencils.
@@ -1463,7 +1456,7 @@ module Chemistry
       endif
 !
       if (lpencil(i_cs2) .and. lcheminp) then
-        call get_cs2_cheminp(p)
+        where(p%cv /= 0.0)  p%cs2 = p%cp*p%cv1*p%mu1*p%TT*Rgas
       endif
 !
       if (lpencil(i_ppwater) .and. .not. lchemonly) then
