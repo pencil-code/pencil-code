@@ -1115,20 +1115,21 @@ module Dustvelocity
           f(i+nghost,m,n,iux:iuz)-f(i+nghost,m,n,iudx(k):iudz(k))-AA_sfta/spread(tausd1(i,k),1,3))
     endsubroutine short_stopping_time_approximation
 !***********************************************************************
-    subroutine add_pseudo_coriolis_force(df,p)
+    subroutine add_pseudo_coriolis_force(df,p,xi)
       real, dimension(mx,my,mz,mvar) :: df
       type(pencil_case) :: p
+      integer, intent(IN) :: xi
 
       if (Omega_pseudo/=0.0) then
-        df(l1:l2,m,n,iux)  = df(l1:l2,m,n,iux)  - Omega_pseudo*(p%uu(:,1)-u0_gas_pseudo)
-        df(l1:l2,m,n,iudx) = df(l1:l2,m,n,iudx) - Omega_pseudo*p%uud(:,1,:)
+        df(xi+nghost,m,n,iux)  = df(xi+nghost,m,n,iux)  - Omega_pseudo*(p%uu(xi,1)-u0_gas_pseudo)
+        df(xi+nghost,m,n,iudx) = df(xi+nghost,m,n,iudx) - Omega_pseudo*p%uud(xi,1,:)
         !TP: seems weird that during the loop over species we loop over them again in the expression above
         !    would assume it would look like the following?:
         !    df(l1:l2,m,n,iudx(k)) = df(l1:l2,m,n,iudx(k)) - Omega_pseudo*p%uud(:,1,k)
       endif
     endsubroutine add_pseudo_coriolis_force
 !***********************************************************************
-    subroutine direct_integration_of_motion(f,df,p,k)
+    subroutine direct_integration_of_motion(f,df,p,k,xi)
 !
 !  Direct integration of the equations of dust motion.
 !
@@ -1139,15 +1140,15 @@ module Dustvelocity
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      integer, intent(IN) :: k
+      integer, intent(IN) :: k,xi
 
-      real, dimension (nx,3) :: fviscd, tmp, tmp2
-      real, dimension (nx) :: tausg1, mudrhod1, tmp3
+      real, dimension (3) :: fviscd, tmp, tmp2
+      real :: tausg1, mudrhod1, tmp3
       real :: c2, s2
       integer :: i, j, ju
 
-      if (ladvection_dust) df(l1:l2,m,n,iudx(k):iudz(k)) = &
-                           df(l1:l2,m,n,iudx(k):iudz(k)) - p%udgud(:,:,k)
+      if (ladvection_dust) df(xi+nghost,m,n,iudx(k):iudz(k)) = &
+                           df(xi+nghost,m,n,iudx(k):iudz(k)) - p%udgud(xi,:,k)
 !
 !  Coriolis force, -2*Omega x ud
 !  Omega=(-sin_theta, 0, cos_theta)
@@ -1157,15 +1158,15 @@ module Dustvelocity
         if (theta==0) then
           if (headtt .and. k == 1) print*,'duud_dt: add Coriolis force; Omega=',Omega
           c2=2*Omega
-          df(l1:l2,m,n,iudx(k)) = df(l1:l2,m,n,iudx(k)) + c2*p%uud(:,2,k)
-          df(l1:l2,m,n,iudy(k)) = df(l1:l2,m,n,iudy(k)) - c2*p%uud(:,1,k)
+          df(xi+nghost,m,n,iudx(k)) = df(xi+nghost,m,n,iudx(k)) + c2*p%uud(xi,2,k)
+          df(xi+nghost,m,n,iudy(k)) = df(xi+nghost,m,n,iudy(k)) - c2*p%uud(xi,1,k)
         else
           if (headtt .and. k == 1) print*, 'duud_dt: Coriolis force; Omega,theta=',Omega,theta
           c2=2*Omega*cos(theta*pi/180.)
           s2=2*Omega*sin(theta*pi/180.)
-          df(l1:l2,m,n,iudx(k)) = df(l1:l2,m,n,iudx(k)) + c2*p%uud(:,2,k)
-          df(l1:l2,m,n,iudy(k)) = df(l1:l2,m,n,iudy(k)) - c2*p%uud(:,1,k) + s2*p%uud(:,3,k)
-          df(l1:l2,m,n,iudz(k)) = df(l1:l2,m,n,iudz(k))                   + s2*p%uud(:,2,k)
+          df(xi+nghost,m,n,iudx(k)) = df(xi+nghost,m,n,iudx(k)) + c2*p%uud(xi,2,k)
+          df(xi+nghost,m,n,iudy(k)) = df(xi+nghost,m,n,iudy(k)) - c2*p%uud(xi,1,k) + s2*p%uud(xi,3,k)
+          df(xi+nghost,m,n,iudz(k)) = df(xi+nghost,m,n,iudz(k))                    + s2*p%uud(xi,2,k)
         endif
       endif
 !
@@ -1173,26 +1174,26 @@ module Dustvelocity
 !
       if (ldragforce_dust) then
         do i=1,3
-          df(l1:l2,m,n,iudx(k)-1+i)=df(l1:l2,m,n,iudx(k)-1+i) - tausd1(:,k)*(p%uud(:,i,k)-p%uu(:,i))
+          df(xi+nghost,m,n,iudx(k)-1+i)=df(xi+nghost,m,n,iudx(k)-1+i) - tausd1(xi,k)*(p%uud(xi,i,k)-p%uu(xi,i))
         enddo
 !
 !  Add drag force on gas (back-reaction from dust)
 !
         if (ldragforce_gas) then
-          tausg1 = p%rhod(:,k)*tausd1(:,k)*p%rho1
-          if (tausgmin/=0.0) where (tausg1>=tausg1max) tausg1=tausg1max
+          tausg1 = p%rhod(xi,k)*tausd1(xi,k)*p%rho1(xi)
+          if (tausgmin/=0.0 .and. tausg1 >= tausg1max) tausg1=tausg1max
           do i=1,3
-            df(l1:l2,m,n,iux-1+i) = df(l1:l2,m,n,iux-1+i) - tausg1*(p%uu(:,i)-p%uud(:,i,k))
+            df(xi+nghost,m,n,iux-1+i) = df(xi+nghost,m,n,iux-1+i) - tausg1*(p%uu(xi,i)-p%uud(xi,i,k))
           enddo
-          if (lupdate_courant_dt) dt1_max=max(dt1_max,(tausg1+tausd1(:,k))/cdtd)
+          if (lupdate_courant_dt) dt1_max(xi)=max(dt1_max(xi),(tausg1+tausd1(xi,k))/cdtd)
         else
-          if (lupdate_courant_dt) dt1_max=max(dt1_max,tausd1(:,k)/cdtd)
+          if (lupdate_courant_dt) dt1_max(xi)=max(dt1_max(xi),tausd1(xi,k)/cdtd)
         endif
       endif
 !
 ! Gravity force on dust in x direction
 !
-      if (gravx_dust/=0.0) df(l1:l2,m,n,iudx(k)) = df(l1:l2,m,n,iudx(k)) + gravx_dust
+      if (gravx_dust/=0.0) df(xi+nghost,m,n,iudx(k)) = df(xi+nghost,m,n,iudx(k)) + gravx_dust
 !
 !  Add constant background pressure gradient beta=alpha*H0/r0, where alpha
 !  comes from a global pressure gradient P = P0*(r/r0)^alpha.
@@ -1200,21 +1201,21 @@ module Dustvelocity
 !  velocities relative to the shear flow modified by the global pressure grad.)
 !
       if (beta_dPdr_dust/=0.0) df(l1:l2,m,n,iudx(k)) = &
-         df(l1:l2,m,n,iudx(k)) + p%cs2*beta_dPdr_dust_scaled
+         df(xi+nghost,m,n,iudx(k)) + p%cs2(xi)*beta_dPdr_dust_scaled
 !
 !  Artificial pressure force
 !
       if (ldust_pressure) then
         do i=1,3
-          df(l1:l2,m,n,iudx(k)-1+i) = df(l1:l2,m,n,iudx(k)-1+i) - &
-                                      dust_pressure_factor*p%cs2*p%glnrho(:,i)
+          df(xi+nghost,m,n,iudx(k)-1+i) = df(xi+nghost,m,n,iudx(k)-1+i) - &
+                                      dust_pressure_factor*p%cs2(xi)*p%glnrho(xi,i)
               !dust_pressure_factor*p%cs2*p%glnnd(:,i,k)
         enddo
       endif
 !
 !  Add pseudo Coriolis force (to drive velocity difference between dust and gas)
 !
-      call add_pseudo_coriolis_force(df,p)
+      call add_pseudo_coriolis_force(df,p,xi)
 !
 !  Add viscosity on dust
 !
@@ -1226,7 +1227,7 @@ module Dustvelocity
 !     -- not physically correct (no momentum conservation)
 !
       if (lviscd_simplified) then
-        fviscd = fviscd + nud(k)*p%del2ud(:,:,k)
+        fviscd = fviscd + nud(k)*p%del2ud(xi,:,k)
         if (lupdate_courant_dt) diffus_nud=diffus_nud+nud(k)*dxyz_2
       endif
 !
@@ -1235,10 +1236,10 @@ module Dustvelocity
 !
       if (lviscd_nud_const) then
         if (ldustdensity) then
-          fviscd = fviscd + 2*nud(k)*p%sdglnnd(:,:,k) + &
-                   nud(k)*(p%del2ud(:,:,k)+1/3.0*p%graddivud(:,:,k))
+          fviscd = fviscd + 2*nud(k)*p%sdglnnd(xi,:,k) + &
+                   nud(k)*(p%del2ud(xi,:,k)+1/3.0*p%graddivud(xi,:,k))
         else
-          fviscd = fviscd + nud(k)*(p%del2ud(:,:,k)+1/3.*p%graddivud(:,:,k))
+          fviscd = fviscd + nud(k)*(p%del2ud(xi,:,k)+1/3.*p%graddivud(xi,:,k))
         endif
         if (lupdate_courant_dt) diffus_nud=diffus_nud+nud(k)*dxyz_2
       endif
@@ -1247,13 +1248,13 @@ module Dustvelocity
 !
       if (lviscd_shock) then
         if (ldustdensity) then
-          call multsv(p%divud(:,k),p%glnrhod(:,:,k),tmp2)
-          tmp = tmp2 + p%graddivud(:,:,k)
+          tmp2 = p%divud(xi,k)*p%glnrhod(xi,:,k)
+          tmp = tmp2 + p%graddivud(xi,:,k)
         else
-          tmp = p%graddivud(:,:,k)
+          tmp = p%graddivud(xi,:,k)
         endif
-        call multsv(nud_shock(k)*p%shock,tmp,tmp2)
-        call multsv_add(tmp2,nud_shock(k)*p%divud(:,k),p%gshock,tmp)
+        tmp2 = nud_shock(k)*p%shock(xi)*tmp
+        tmp  = tmp2 + nud_shock(k)*p%divud(xi,k)*p%gshock(xi,:)
         fviscd = fviscd + tmp
         if (lupdate_courant_dt) diffus_nud=diffus_nud+nud_shock(k)*p%shock*dxyz_2
       endif
@@ -1261,9 +1262,9 @@ module Dustvelocity
 !  Viscous force: nud_shock simplified (not momentum conserving)
 !
       if (lviscd_shock_simplified) then
-        tmp = p%graddivud(:,:,k)
-        call multsv(nud_shock(k)*p%shock,tmp,tmp2)
-        call multsv_add(tmp2,nud_shock(k)*p%divud(:,k),p%gshock,tmp)
+        tmp = p%graddivud(xi,:,k)
+        tmp2 = nud_shock(k)*p%shock(xi)*tmp
+        tmp  = tmp2 + nud_shock(k)*p%divud(xi,k)*p%gshock(xi,:)
         fviscd = fviscd + tmp
         if (lupdate_courant_dt) diffus_nud=diffus_nud+nud_shock(k)*p%shock*dxyz_2
       endif
@@ -1271,7 +1272,7 @@ module Dustvelocity
 !  Viscous force: nud*del6ud (not momentum-conserving)
 !
       if (lviscd_hyper3_simplified) then
-        fviscd = fviscd + nud_hyper3(k)*p%del6ud(:,:,k)
+        fviscd = fviscd + nud_hyper3(k)*p%del6ud(xi,:,k)
         if (lupdate_courant_dt) diffus_nud3=diffus_nud3+nud_hyper3(k)*dxyz_6
       endif
 !
@@ -1280,7 +1281,7 @@ module Dustvelocity
       if (lviscd_hyper3_polar) then
         do j=1,3
           do i=1,3
-            fviscd(:,j) = fviscd(:,j) + nud_hyper3(k)*pi4_1*grad6_uud(:,i,j)*dline_1(:,i)**2
+            fviscd(j) = fviscd(j) + nud_hyper3(k)*pi4_1*grad6_uud(xi,i,j)*dline_1(xi,i)**2
           enddo
           if (lupdate_courant_dt) diffus_nud3=diffus_nud3+nud_hyper3(k)*pi4_1*dxmin_pencil**4
         enddo
@@ -1291,7 +1292,7 @@ module Dustvelocity
       if (lviscd_hyper3_mesh) then
         do j=1,3
           do i=1,3
-            fviscd(:,j) = fviscd(:,j) + nud_hyper3_mesh(k)*pi5_1/60.*grad6_uud(:,i,j)*dline_1(:,i)
+            fviscd(j) = fviscd(j) + nud_hyper3_mesh(k)*pi5_1/60.*grad6_uud(xi,i,j)*dline_1(xi,i)
           enddo
         enddo
         if (lupdate_courant_dt) then
@@ -1303,9 +1304,9 @@ module Dustvelocity
 !  Viscous force: mud/rhod*del6ud
 !
       if (lviscd_hyper3_rhod_nud_const) then
-        mudrhod1=(nud_hyper3(k)*nd0*md0)/p%rhod(:,k)   ! = mud/rhod
+        mudrhod1=(nud_hyper3(k)*nd0*md0)/p%rhod(xi,k)   ! = mud/rhod
         do i=1,3
-          fviscd(:,i) = fviscd(:,i) + mudrhod1*p%del6ud(:,i,k)
+          fviscd(i) = fviscd(i) + mudrhod1*p%del6ud(xi,i,k)
         enddo
         if (lupdate_courant_dt) diffus_nud3=diffus_nud3+nud_hyper3(k)*dxyz_6
       endif
@@ -1317,13 +1318,13 @@ module Dustvelocity
 !  Viscous force: nud*(del6ud+S.glnnd), where S_ij=d^5 ud_i/dx_j^5
 !
       if (lviscd_hyper3_nud_const) then
-        fviscd = fviscd + nud_hyper3(k)*(p%del6ud(:,:,k)+p%sdglnnd(:,:,k))
+        fviscd = fviscd + nud_hyper3(k)*(p%del6ud(xi,:,k)+p%sdglnnd(xi,:,k))
         if (lupdate_courant_dt) diffus_nud3=diffus_nud3+nud_hyper3(k)*dxyz_6
       endif
 !
 !  Add viscous force to dust equation of motion.
 !
-      df(l1:l2,m,n,iudx(k):iudz(k)) = df(l1:l2,m,n,iudx(k):iudz(k)) + fviscd
+      df(xi+nghost,m,n,iudx(k):iudz(k)) = df(xi+nghost,m,n,iudx(k):iudz(k)) + fviscd
 !
       if (lupdate_courant_dt) then
         if ((headtt.or.ldebug) .and. (ip<6)) print*,'duud_dt: max(diffus_nud) =',maxval(diffus_nud)
@@ -1377,7 +1378,9 @@ module Dustvelocity
             call short_stopping_time_approximation(f,df,p,k,i)
           enddo
         else
-          call direct_integration_of_motion(f,df,p,k)
+          do i=1,nx
+            call direct_integration_of_motion(f,df,p,k,i)
+          enddo
         endif
 !
 !  Advective timestep contribution (condition could be narrower as even with dustdensity,
