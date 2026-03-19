@@ -1081,24 +1081,24 @@ module Dustvelocity
 !
     endsubroutine calc_pencils_dustvelocity
 !***********************************************************************
-    subroutine short_stopping_time_approximation(f,df,p,k)
-      real, dimension (nx,3) :: AA_sfta, BB_sfta
+    subroutine short_stopping_time_approximation(f,df,p,k,i)
+      real, dimension (3) :: AA_sfta, BB_sfta
       real, dimension(mx,my,mz,mfarray), intent(IN) :: f
       real, dimension(mx,my,mz,mvar)  :: df
       type (pencil_case), intent(IN) :: p
       integer, intent(IN) :: k
-      integer :: j
+      integer :: j,i
       if (lgrav) then
-        AA_sfta=p%gg
+        AA_sfta=p%gg(i,:)
 
         if (lgravx_gas .neqv. lgravx_dust) then
-          if (lgravx_gas) AA_sfta(:,1)=AA_sfta(:,1)-p%gg(:,1)
-          if (lgravx_dust) AA_sfta(:,1)=AA_sfta(:,1)+p%gg(:,1)
+          if (lgravx_gas)  AA_sfta(1)=AA_sfta(1)-p%gg(i,1)
+          if (lgravx_dust) AA_sfta(1)=AA_sfta(1)+p%gg(i,1)
         endif
 
         if (lgravz_gas .neqv. lgravz_dust) then
-          if (lgravz_gas) AA_sfta(:,3)=AA_sfta(:,3)-p%gg(:,3)
-          if (lgravz_dust) AA_sfta(:,3)=AA_sfta(:,3)+p%gg(:,3)
+          if (lgravz_gas)  AA_sfta(3) = AA_sfta(3)-p%gg(i,3)
+          if (lgravz_dust) AA_sfta(3) = AA_sfta(3)+p%gg(i,3)
         endif
 
       else
@@ -1106,13 +1106,13 @@ module Dustvelocity
       endif
 
       if (ldensity) then
-        do j=1,3; AA_sfta(:,j)=AA_sfta(:,j)+p%cs2(:)*p%glnrho(:,j); enddo
+        do j=1,3; AA_sfta(j)=AA_sfta(j)+p%cs2(i)*p%glnrho(i,j); enddo
       endif
 
-      if (lmagnetic) AA_sfta=AA_sfta-p%JxBr
+      if (lmagnetic) AA_sfta=AA_sfta-p%JxBr(i,:)
 
-      df(l1:l2,m,n,iudx(k):iudz(k)) = 1/dt_beta_ts(itsub)*( &
-          f(l1:l2,m,n,iux:iuz)-f(l1:l2,m,n,iudx(k):iudz(k))-AA_sfta/spread(tausd1(:,k),2,3))
+      df(i+nghost,m,n,iudx(k):iudz(k)) = 1/dt_beta_ts(itsub)*( &
+          f(i+nghost,m,n,iux:iuz)-f(i+nghost,m,n,iudx(k):iudz(k))-AA_sfta/spread(tausd1(i,k),1,3))
     endsubroutine short_stopping_time_approximation
 !***********************************************************************
     subroutine add_pseudo_coriolis_force(df,p)
@@ -1346,7 +1346,7 @@ module Dustvelocity
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      integer :: k
+      integer :: k,i
 !
       intent(in) :: f, p
       intent(out) :: df
@@ -1373,7 +1373,9 @@ module Dustvelocity
 !
         !TP: any across pencil cannot be translated to the GPU
         if (ldustvelocity_shorttausd .and. any(tausd1(:,k)>=shorttaus1limit)) then
-          call short_stopping_time_approximation(f,df,p,k)
+          do i=1,nx
+            call short_stopping_time_approximation(f,df,p,k,i)
+          enddo
         else
           call direct_integration_of_motion(f,df,p,k)
         endif
