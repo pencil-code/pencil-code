@@ -772,7 +772,7 @@ if (@ARGV) {
         find_test_dirs("$topdir/samples"); # populates @testdirs
     } elsif ($here) {
         # Scan the current directory for autotests
-        find_test_dirs(".");
+        find_test_dirs("$cwd");
     } else {
         # Use predefined directories
         my @sampdirs;
