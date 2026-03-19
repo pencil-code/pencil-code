@@ -518,10 +518,15 @@ class Power(object):
         for file_name in file_list_in:
             fileext = file_name.split('.')[-1]
             if file_name[:5] == "power" and fileext in ["dat", "h5"]:
-                if file_name[:6] == "power_":
-                    power_name = file_name.split(".")[0][6:]
-                else:
-                    power_name = file_name.split(".")[0][5:]
+                """
+                Examples for power_name:
+                powero.dat -> o
+                powero.u_xy.dat -> ou_xy
+                power_krms.dat -> krms
+                powerux_xy.dat -> ux_xy
+                """
+                fname_no_ext = file_name.removesuffix(f".{fileext}")
+                power_name = fname_no_ext.removeprefix("power").removeprefix("_")
 
                 if not quiet:
                     print("appending", power_name)
