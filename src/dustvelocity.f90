@@ -133,6 +133,7 @@ module Dustvelocity
 ! Auxiliary variables:
 !
   real, dimension (nx) :: diffus_nud,diffus_nud3,advec_hypermesh_uud
+  real, dimension (nx,3,3) :: grad6_uud
 
 !
 ! For strings to enums
@@ -992,12 +993,13 @@ module Dustvelocity
 !  13-nov-04/anders: coded
 !
       use Sub
+      use Deriv, only: der6
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
       real, dimension (nx,3,3) :: tmp_pencil_3x3
-      integer :: i,j,k
+      integer :: i,j,k,ju
 !
       intent(in) :: f
       intent(inout) :: p
@@ -1067,6 +1069,15 @@ module Dustvelocity
         endif
 
       enddo
+
+      if (lviscd_hyper3_polar .or. lviscd_hyper3_mesh) then
+        do j=1,3
+          ju=j+iuud(k)-1
+          do i=1,3
+            call der6(f,ju,grad6_uud(:,i,j),i,IGNOREDX=.true.)
+          enddo
+        enddo
+      endif
 !
     endsubroutine calc_pencils_dustvelocity
 !***********************************************************************
@@ -1124,7 +1135,6 @@ module Dustvelocity
 !  19-mar-26/TP: carved from duud_dt
 !
       use Sub
-      use Deriv, only: der6
 
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -1269,10 +1279,8 @@ module Dustvelocity
 !
       if (lviscd_hyper3_polar) then
         do j=1,3
-          ju=j+iuud(k)-1
           do i=1,3
-            call der6(f,ju,tmp3,i,IGNOREDX=.true.)
-            fviscd(:,j) = fviscd(:,j) + nud_hyper3(k)*pi4_1*tmp3*dline_1(:,i)**2
+            fviscd(:,j) = fviscd(:,j) + nud_hyper3(k)*pi4_1*grad6_uud(:,i,j)*dline_1(:,i)**2
           enddo
           if (lupdate_courant_dt) diffus_nud3=diffus_nud3+nud_hyper3(k)*pi4_1*dxmin_pencil**4
         enddo
@@ -1282,10 +1290,8 @@ module Dustvelocity
 !
       if (lviscd_hyper3_mesh) then
         do j=1,3
-          ju=j+iuud(k)-1
           do i=1,3
-            call der6(f,ju,tmp3,i,IGNOREDX=.true.)
-            fviscd(:,j) = fviscd(:,j) + nud_hyper3_mesh(k)*pi5_1/60.*tmp3*dline_1(:,i)
+            fviscd(:,j) = fviscd(:,j) + nud_hyper3_mesh(k)*pi5_1/60.*grad6_uud(:,i,j)*dline_1(:,i)
           enddo
         enddo
         if (lupdate_courant_dt) then
