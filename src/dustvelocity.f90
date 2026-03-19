@@ -337,7 +337,7 @@ module Dustvelocity
         llin_radiusbins=.false.
 
       case default
-        call fatal_error('register_dustvelocity','no such dust_binning: '//trim(dust_binning))
+        call fatal_error('initialize_dustvelocity','no such dust_binning: '//trim(dust_binning))
       endselect
       if (lroot .and. ip<14) print*,'initialize_dustvelocity: ad=',ad
       if (lroot) print*,'initialize_dustvelocity: minmax(ad)=',minval(ad),maxval(ad)
@@ -508,7 +508,8 @@ module Dustvelocity
         call fatal_error('initialize_dustvelocity','no such borderuud: '//trim(borderuud))
       endselect
 !
-      call keep_compiler_quiet(f)
+      if (Omega_pseudo/=0. .and. .not.lshear) &
+        call warning('initialize_dustvelocity','pseudo-Coriolis force has only a meaning with background shear')
 !
     endsubroutine initialize_dustvelocity
 !***********************************************************************
@@ -1082,12 +1083,15 @@ module Dustvelocity
     endsubroutine calc_pencils_dustvelocity
 !***********************************************************************
     subroutine short_stopping_time_approximation(f,df,p,k,i)
-      real, dimension (3) :: AA_sfta, BB_sfta
+!
       real, dimension(mx,my,mz,mfarray), intent(IN) :: f
       real, dimension(mx,my,mz,mvar)  :: df
       type (pencil_case), intent(IN) :: p
-      integer, intent(IN) :: k
-      integer :: j,i
+      integer, intent(IN) :: k,i
+
+      real, dimension (3) :: AA_sfta
+      integer :: j
+!
       if (lgrav) then
         AA_sfta=p%gg(i,:)
 
@@ -1111,22 +1115,25 @@ module Dustvelocity
 
       if (lmagnetic) AA_sfta=AA_sfta-p%JxBr(i,:)
 
-      df(i+nghost,m,n,iudx(k):iudz(k)) = 1/dt_beta_ts(itsub)*( &
-          f(i+nghost,m,n,iux:iuz)-f(i+nghost,m,n,iudx(k):iudz(k))-AA_sfta/spread(tausd1(i,k),1,3))
+      df(i+nghost,m,n,iudx(k):iudz(k)) = 1/dt_beta_ts(itsub)*(f(i+nghost,m,n,iux:iuz)-p%uud(i,:,k)+AA_sfta/tausd1(i,k))
+
     endsubroutine short_stopping_time_approximation
 !***********************************************************************
-    subroutine add_pseudo_coriolis_force(df,p,xi)
-      real, dimension(mx,my,mz,mvar) :: df
-      type(pencil_case) :: p
-      integer, intent(IN) :: xi
+    subroutine add_pseudo_coriolis_force(df,p,k,xi)
+!
+!  19-Mar-2026/MR: corrected df(l1:l2,m,n,iudx): it missed the index k and actually has to be 
+!                            df(l1:l2,m,n,iudy) for Omega in z direction.
+!
+      real, dimension(mx,my,mz,mvar), intent(INOUT) :: df
+      type(pencil_case), intent(IN) :: p
+      integer, intent(IN) :: k,xi
 
       if (Omega_pseudo/=0.0) then
         df(xi+nghost,m,n,iux)  = df(xi+nghost,m,n,iux)  - Omega_pseudo*(p%uu(xi,1)-u0_gas_pseudo)
-        df(xi+nghost,m,n,iudx) = df(xi+nghost,m,n,iudx) - Omega_pseudo*p%uud(xi,1,:)
-        !TP: seems weird that during the loop over species we loop over them again in the expression above
-        !    would assume it would look like the following?:
-        !    df(l1:l2,m,n,iudx(k)) = df(l1:l2,m,n,iudx(k)) - Omega_pseudo*p%uud(:,1,k)
+        !df(l1:l2,m,n,iudx) = df(l1:l2,m,n,iudx) - Omega_pseudo*p%uud(:,1,:)
+        df(xi+nghost,m,n,iudy(k)) = df(xi+nghost,m,n,iudy(k)) - Omega_pseudo*p%uud(xi,1,k)
       endif
+!
     endsubroutine add_pseudo_coriolis_force
 !***********************************************************************
     subroutine direct_integration_of_motion(f,df,p,k,xi)
@@ -1215,7 +1222,7 @@ module Dustvelocity
 !
 !  Add pseudo Coriolis force (to drive velocity difference between dust and gas)
 !
-      call add_pseudo_coriolis_force(df,p,xi)
+      call add_pseudo_coriolis_force(df,p,k,xi)
 !
 !  Add viscosity on dust
 !
@@ -1372,7 +1379,7 @@ module Dustvelocity
 !  Short stopping time approximation.
 !  Calculated from master equation d(wx-ux)/dt = A + B*(wx-ux) = 0.
 !
-        !TP: any across pencil cannot be translated to the GPU
+        !TP: any operation across a pencil cannot be translated to the GPU
         if (ldustvelocity_shorttausd .and. any(tausd1(:,k)>=shorttaus1limit)) then
           do i=1,nx
             call short_stopping_time_approximation(f,df,p,k,i)
@@ -1504,7 +1511,6 @@ module Dustvelocity
 !
       case ('nothing')
       endselect
-!
 !
     endsubroutine set_border_dustvelocity
 !***********************************************************************
@@ -1651,9 +1657,10 @@ module Dustvelocity
       use Sub, only: dot2
 
       !real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx,3) :: uu
-      real, dimension (nx,3) :: uud
-      real, dimension (nx) :: rho,rhod,csrho,cs2,deltaud2, Rep
+      real, dimension (nx,3), intent(IN) :: uu, uud
+      real, dimension (nx),   intent(IN) :: rho,rhod,cs2
+
+      real, dimension (nx) :: deltaud2, Rep, csrho
       real :: pifactor1, pifactor2
       integer :: k
 !
