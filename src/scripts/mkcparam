@@ -31,13 +31,18 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 #     ! MGLOBAL CONTRIBUTION 1
 #     ! MSCRATCH CONTRIBUTION 1
 #     ! COMMUNICATED AUXILIARIES 1
-#     ! NDUSTSPEC CONTRIBUTION 17
+#     ! NDUSTSPEC CONTRIBUTION 17*4
 #     ! NDUSTRAD  CONTRIBUTION 10
 #     ! NPARTDISP  CONTRIBUTION 30
-#     ! NCHEMSPEC CONTRIBUTION 3
+#     ! NCHEMSPEC CONTRIBUTION 3*1
 #     ! NPSCALAR CONTRIBUTION 3
 #   and accumulates the numbers mvar, maux, maux_com, mglobal, mscratch,
 #   ndustspecs, etc. from these.
+#
+#   Note, that for NDUSTSPEC CONTRIBUTION and NCHEMSPEC CONTRIBUTION the specification
+#   *has to be* of the form <number of species>*<number of degrees of freedom per species>.
+#   In the case of dust, the number of degrees of freedom per species is typically 4 (velocity and density),
+#   while in the case of chemistry, it is ignored, and the code assumes 1.
 #
 #   Lines of the form
 #     ! PENCILS [PROVIDED|EXPECTED]   uu(3), u2, uij(3,3), gmi(3,ndustspec)
