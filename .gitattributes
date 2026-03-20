@@ -68,6 +68,7 @@ bin/pc_llsub -text
 bin/pc_localize -text
 bin/pc_mkdatadir -text
 bin/pc_mkproctree -text
+bin/pc_mkproctree_par -text
 bin/pc_newrun -text
 bin/pc_news -text
 bin/pc_nowarn_to_kcq -text

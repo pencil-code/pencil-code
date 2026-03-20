@@ -1,0 +1,24 @@
+#!/bin/csh
+
+set histchars=
+
+if ($#argv < 2) then
+  echo "Usage: $0 <n_dirs> <n_procs>"
+  exit
+endif
+
+set wd = `pwd`
+if ($wd:t != data) then
+  echo "Call from data dir!!!"
+  exit
+endif
+
+set n = $1
+
+set p = 1
+if ($#argv >= 2) then
+  set p = $2
+endif
+
+# seq 0 `expr $n - 1` | xargs -P $p -n 1 sh -c 'mkdir -p proc$0'
+seq 0 `expr $n - 1` | xargs -P $p -n 1 sh -c 'echo making proc$0; mkdir -p proc$0'
