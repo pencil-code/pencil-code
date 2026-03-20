@@ -1,4 +1,13 @@
 #!/bin/csh
+#$Id$
+#
+#  Makes a processor directory tree
+#
+#  Usage (need to be in data dir!):
+#    pc_mkproctree_par 128 8
+#  generates 128 proc directories using 8 processors. 
+#  Can be used for storing old slice data.
+#
 
 set histchars=
 
