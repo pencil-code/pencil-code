@@ -15,7 +15,7 @@
 ! PENCILS PROVIDED oud(ndustspec); ud2(ndustspec); udij(3,3,ndustspec)
 ! PENCILS PROVIDED sdij(3,3,ndustspec); udgud(3,ndustspec); uud(3,ndustspec)
 ! PENCILS PROVIDED del2ud(3,ndustspec); del6ud(3,ndustspec)
-! PENCILS PROVIDED graddivud(3,ndustspec); advec_uud
+! PENCILS PROVIDED graddivud(3,ndustspec); advec_uud(ndustspec)
 !
 !** AUTOMATIC REFERENCE-LINK.TEX GENERATION ********************
 ! Declare relevant citations from pencil-code/doc/citations/ref.bib for this module.
@@ -133,8 +133,7 @@ module Dustvelocity
 ! Auxiliary variables:
 !
   real, dimension (nx) :: diffus_nud,diffus_nud3,advec_hypermesh_uud
-  real, dimension (nx,3,3) :: grad6_uud
-
+  real, dimension (nx,3,3,ndustspec) :: grad6_uud
 !
 ! For strings to enums
 !
@@ -142,6 +141,7 @@ module Dustvelocity
    integer :: enum_borderuud = 0
    integer :: enum_dust_chemistry = 0
    integer :: enum_dust_binning = 0
+
   contains
 !***********************************************************************
     subroutine register_dustvelocity()
@@ -1064,33 +1064,32 @@ module Dustvelocity
 !  ``uud/dx'' for timestep
 !
         if (lupdate_courant_dt .and. (ldustdensity.or.ladvection_dust)) then
-          p%advec_uud=sum(abs(p%uud(:,:,k))*dline_1,2)
-          if ((headtt.or.ldebug) .and. (ip<6)) &
-            print*,'calc_pencils_dustvelocity: max(advec_uud) =',maxval(p%advec_uud)
+          p%advec_uud(:,k)=sum(abs(p%uud(:,:,k))*dline_1,2)
+          if ((headtt.or.ldebug) .and. ip<6) &
+            print*,'calc_pencils_dustvelocity: max(advec_uud(:,',k,') =',maxval(p%advec_uud(:,k))
         endif
 
-      enddo
-
-      if (lviscd_hyper3_polar .or. lviscd_hyper3_mesh) then
-        do j=1,3
-          ju=j+iuud(k)-1
-          do i=1,3
-            call der6(f,ju,grad6_uud(:,i,j),i,IGNOREDX=.true.)
+        if (lviscd_hyper3_polar .or. lviscd_hyper3_mesh) then
+          do j=1,3
+            ju=j+iuud(k)-1
+            do i=1,3
+              call der6(f,ju,grad6_uud(:,i,j,k),i,IGNOREDX=.true.)
+            enddo
           enddo
-        enddo
-      endif
+        endif
+
+      enddo   ! do k=1,ndustspec
 !
     endsubroutine calc_pencils_dustvelocity
 !***********************************************************************
     subroutine short_stopping_time_approximation(f,df,p,k,i)
 !
       real, dimension(mx,my,mz,mfarray), intent(IN) :: f
-      real, dimension(mx,my,mz,mvar)  :: df
+      real, dimension(mx,my,mz,mvar), intent(OUT) :: df
       type (pencil_case), intent(IN) :: p
       integer, intent(IN) :: k,i
 
       real, dimension (3) :: AA_sfta
-      integer :: j
 !
       if (lgrav) then
         AA_sfta=p%gg(i,:)
@@ -1109,34 +1108,31 @@ module Dustvelocity
         AA_sfta=0.
       endif
 
-      if (ldensity) then
-        do j=1,3; AA_sfta(j)=AA_sfta(j)+p%cs2(i)*p%glnrho(i,j); enddo
-      endif
-
+      if (ldensity) AA_sfta=AA_sfta+p%cs2(i)*p%glnrho(i,:)
       if (lmagnetic) AA_sfta=AA_sfta-p%JxBr(i,:)
 
       df(i+nghost,m,n,iudx(k):iudz(k)) = 1/dt_beta_ts(itsub)*(f(i+nghost,m,n,iux:iuz)-p%uud(i,:,k)+AA_sfta/tausd1(i,k))
 
     endsubroutine short_stopping_time_approximation
 !***********************************************************************
-    subroutine add_pseudo_coriolis_force(df,p,k,xi)
+    subroutine add_pseudo_coriolis_force(df,p,k,ix)
 !
 !  19-Mar-2026/MR: corrected df(l1:l2,m,n,iudx): it missed the index k and actually has to be 
 !                            df(l1:l2,m,n,iudy) for Omega in z direction.
 !
       real, dimension(mx,my,mz,mvar), intent(INOUT) :: df
       type(pencil_case), intent(IN) :: p
-      integer, intent(IN) :: k,xi
+      integer, intent(IN) :: k,ix
 
       if (Omega_pseudo/=0.0) then
-        df(xi+nghost,m,n,iux)  = df(xi+nghost,m,n,iux)  - Omega_pseudo*(p%uu(xi,1)-u0_gas_pseudo)
+        df(ix+nghost,m,n,iux)  = df(ix+nghost,m,n,iux)  - Omega_pseudo*(p%uu(ix,1)-u0_gas_pseudo)
         !df(l1:l2,m,n,iudx) = df(l1:l2,m,n,iudx) - Omega_pseudo*p%uud(:,1,:)
-        df(xi+nghost,m,n,iudy(k)) = df(xi+nghost,m,n,iudy(k)) - Omega_pseudo*p%uud(xi,1,k)
+        df(ix+nghost,m,n,iudy(k)) = df(ix+nghost,m,n,iudy(k)) - Omega_pseudo*p%uud(ix,1,k)
       endif
 !
     endsubroutine add_pseudo_coriolis_force
 !***********************************************************************
-    subroutine direct_integration_of_motion(f,df,p,k,xi)
+    subroutine direct_integration_of_motion(f,df,p,k,ix)
 !
 !  Direct integration of the equations of dust motion.
 !
@@ -1147,15 +1143,15 @@ module Dustvelocity
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      integer, intent(IN) :: k,xi
+      integer, intent(IN) :: k,ix
 
       real, dimension (3) :: fviscd, tmp, tmp2
       real :: tausg1, mudrhod1, tmp3
       real :: c2, s2
       integer :: i, j, ju
 
-      if (ladvection_dust) df(xi+nghost,m,n,iudx(k):iudz(k)) = &
-                           df(xi+nghost,m,n,iudx(k):iudz(k)) - p%udgud(xi,:,k)
+      if (ladvection_dust) df(ix+nghost,m,n,iudx(k):iudz(k)) = &
+                           df(ix+nghost,m,n,iudx(k):iudz(k)) - p%udgud(ix,:,k)
 !
 !  Coriolis force, -2*Omega x ud
 !  Omega=(-sin_theta, 0, cos_theta)
@@ -1165,42 +1161,38 @@ module Dustvelocity
         if (theta==0) then
           if (headtt .and. k == 1) print*,'duud_dt: add Coriolis force; Omega=',Omega
           c2=2*Omega
-          df(xi+nghost,m,n,iudx(k)) = df(xi+nghost,m,n,iudx(k)) + c2*p%uud(xi,2,k)
-          df(xi+nghost,m,n,iudy(k)) = df(xi+nghost,m,n,iudy(k)) - c2*p%uud(xi,1,k)
+          df(ix+nghost,m,n,iudx(k)) = df(ix+nghost,m,n,iudx(k)) + c2*p%uud(ix,2,k)
+          df(ix+nghost,m,n,iudy(k)) = df(ix+nghost,m,n,iudy(k)) - c2*p%uud(ix,1,k)
         else
           if (headtt .and. k == 1) print*, 'duud_dt: Coriolis force; Omega,theta=',Omega,theta
           c2=2*Omega*cos(theta*pi/180.)
           s2=2*Omega*sin(theta*pi/180.)
-          df(xi+nghost,m,n,iudx(k)) = df(xi+nghost,m,n,iudx(k)) + c2*p%uud(xi,2,k)
-          df(xi+nghost,m,n,iudy(k)) = df(xi+nghost,m,n,iudy(k)) - c2*p%uud(xi,1,k) + s2*p%uud(xi,3,k)
-          df(xi+nghost,m,n,iudz(k)) = df(xi+nghost,m,n,iudz(k))                    + s2*p%uud(xi,2,k)
+          df(ix+nghost,m,n,iudx(k)) = df(ix+nghost,m,n,iudx(k)) + c2*p%uud(ix,2,k)
+          df(ix+nghost,m,n,iudy(k)) = df(ix+nghost,m,n,iudy(k)) - c2*p%uud(ix,1,k) + s2*p%uud(ix,3,k)
+          df(ix+nghost,m,n,iudz(k)) = df(ix+nghost,m,n,iudz(k))                    + s2*p%uud(ix,2,k)
         endif
       endif
 !
 !  Add drag force on dust
 !
       if (ldragforce_dust) then
-        do i=1,3
-          df(xi+nghost,m,n,iudx(k)-1+i)=df(xi+nghost,m,n,iudx(k)-1+i) - tausd1(xi,k)*(p%uud(xi,i,k)-p%uu(xi,i))
-        enddo
+        df(ix+nghost,m,n,iudx(k):iudz(k))=df(ix+nghost,m,n,iudx(k):iudz(k)) - tausd1(ix,k)*(p%uud(ix,:,k)-p%uu(ix,:))
 !
 !  Add drag force on gas (back-reaction from dust)
 !
         if (ldragforce_gas) then
-          tausg1 = p%rhod(xi,k)*tausd1(xi,k)*p%rho1(xi)
+          tausg1 = p%rhod(ix,k)*tausd1(ix,k)*p%rho1(ix)
           if (tausgmin/=0.0 .and. tausg1 >= tausg1max) tausg1=tausg1max
-          do i=1,3
-            df(xi+nghost,m,n,iux-1+i) = df(xi+nghost,m,n,iux-1+i) - tausg1*(p%uu(xi,i)-p%uud(xi,i,k))
-          enddo
-          if (lupdate_courant_dt) dt1_max(xi)=max(dt1_max(xi),(tausg1+tausd1(xi,k))/cdtd)
+          df(ix+nghost,m,n,iux:iuz) = df(ix+nghost,m,n,iux:iuz) - tausg1*(p%uu(ix,:)-p%uud(ix,:,k))
+          if (lupdate_courant_dt) dt1_max(ix)=max(dt1_max(ix),(tausg1+tausd1(ix,k))/cdtd)
         else
-          if (lupdate_courant_dt) dt1_max(xi)=max(dt1_max(xi),tausd1(xi,k)/cdtd)
+          if (lupdate_courant_dt) dt1_max(ix)=max(dt1_max(ix),tausd1(ix,k)/cdtd)
         endif
       endif
 !
 ! Gravity force on dust in x direction
 !
-      if (gravx_dust/=0.0) df(xi+nghost,m,n,iudx(k)) = df(xi+nghost,m,n,iudx(k)) + gravx_dust
+      if (gravx_dust/=0.0) df(ix+nghost,m,n,iudx(k)) = df(ix+nghost,m,n,iudx(k)) + gravx_dust
 !
 !  Add constant background pressure gradient beta=alpha*H0/r0, where alpha
 !  comes from a global pressure gradient P = P0*(r/r0)^alpha.
@@ -1208,21 +1200,18 @@ module Dustvelocity
 !  velocities relative to the shear flow modified by the global pressure grad.)
 !
       if (beta_dPdr_dust/=0.0) df(l1:l2,m,n,iudx(k)) = &
-         df(xi+nghost,m,n,iudx(k)) + p%cs2(xi)*beta_dPdr_dust_scaled
+         df(ix+nghost,m,n,iudx(k)) + p%cs2(ix)*beta_dPdr_dust_scaled
 !
 !  Artificial pressure force
 !
-      if (ldust_pressure) then
-        do i=1,3
-          df(xi+nghost,m,n,iudx(k)-1+i) = df(xi+nghost,m,n,iudx(k)-1+i) - &
-                                      dust_pressure_factor*p%cs2(xi)*p%glnrho(xi,i)
-              !dust_pressure_factor*p%cs2*p%glnnd(:,i,k)
-        enddo
-      endif
+      if (ldust_pressure) &
+        df(ix+nghost,m,n,iudx(k):iudz(k)) = df(ix+nghost,m,n,iudx(k):iudz(k)) - &
+                                      dust_pressure_factor*p%cs2(ix)*p%glnrho(ix,:)
+                                     !dust_pressure_factor*p%cs2*p%glnnd(:,i,k)
 !
 !  Add pseudo Coriolis force (to drive velocity difference between dust and gas)
 !
-      call add_pseudo_coriolis_force(df,p,k,xi)
+      call add_pseudo_coriolis_force(df,p,k,ix)
 !
 !  Add viscosity on dust
 !
@@ -1234,7 +1223,7 @@ module Dustvelocity
 !     -- not physically correct (no momentum conservation)
 !
       if (lviscd_simplified) then
-        fviscd = fviscd + nud(k)*p%del2ud(xi,:,k)
+        fviscd = fviscd + nud(k)*p%del2ud(ix,:,k)
         if (lupdate_courant_dt) diffus_nud=diffus_nud+nud(k)*dxyz_2
       endif
 !
@@ -1243,10 +1232,10 @@ module Dustvelocity
 !
       if (lviscd_nud_const) then
         if (ldustdensity) then
-          fviscd = fviscd + 2*nud(k)*p%sdglnnd(xi,:,k) + &
-                   nud(k)*(p%del2ud(xi,:,k)+1/3.0*p%graddivud(xi,:,k))
+          fviscd = fviscd + 2*nud(k)*p%sdglnnd(ix,:,k) + &
+                   nud(k)*(p%del2ud(ix,:,k)+1/3.0*p%graddivud(ix,:,k))
         else
-          fviscd = fviscd + nud(k)*(p%del2ud(xi,:,k)+1/3.*p%graddivud(xi,:,k))
+          fviscd = fviscd + nud(k)*(p%del2ud(ix,:,k)+1/3.*p%graddivud(ix,:,k))
         endif
         if (lupdate_courant_dt) diffus_nud=diffus_nud+nud(k)*dxyz_2
       endif
@@ -1255,13 +1244,13 @@ module Dustvelocity
 !
       if (lviscd_shock) then
         if (ldustdensity) then
-          tmp2 = p%divud(xi,k)*p%glnrhod(xi,:,k)
-          tmp = tmp2 + p%graddivud(xi,:,k)
+          tmp2 = p%divud(ix,k)*p%glnrhod(ix,:,k)
+          tmp = tmp2 + p%graddivud(ix,:,k)
         else
-          tmp = p%graddivud(xi,:,k)
+          tmp = p%graddivud(ix,:,k)
         endif
-        tmp2 = nud_shock(k)*p%shock(xi)*tmp
-        tmp  = tmp2 + nud_shock(k)*p%divud(xi,k)*p%gshock(xi,:)
+        tmp2 = nud_shock(k)*p%shock(ix)*tmp
+        tmp  = tmp2 + nud_shock(k)*p%divud(ix,k)*p%gshock(ix,:)
         fviscd = fviscd + tmp
         if (lupdate_courant_dt) diffus_nud=diffus_nud+nud_shock(k)*p%shock*dxyz_2
       endif
@@ -1269,9 +1258,9 @@ module Dustvelocity
 !  Viscous force: nud_shock simplified (not momentum conserving)
 !
       if (lviscd_shock_simplified) then
-        tmp = p%graddivud(xi,:,k)
-        tmp2 = nud_shock(k)*p%shock(xi)*tmp
-        tmp  = tmp2 + nud_shock(k)*p%divud(xi,k)*p%gshock(xi,:)
+        tmp = p%graddivud(ix,:,k)
+        tmp2 = nud_shock(k)*p%shock(ix)*tmp
+        tmp  = tmp2 + nud_shock(k)*p%divud(ix,k)*p%gshock(ix,:)
         fviscd = fviscd + tmp
         if (lupdate_courant_dt) diffus_nud=diffus_nud+nud_shock(k)*p%shock*dxyz_2
       endif
@@ -1279,7 +1268,7 @@ module Dustvelocity
 !  Viscous force: nud*del6ud (not momentum-conserving)
 !
       if (lviscd_hyper3_simplified) then
-        fviscd = fviscd + nud_hyper3(k)*p%del6ud(xi,:,k)
+        fviscd = fviscd + nud_hyper3(k)*p%del6ud(ix,:,k)
         if (lupdate_courant_dt) diffus_nud3=diffus_nud3+nud_hyper3(k)*dxyz_6
       endif
 !
@@ -1287,55 +1276,48 @@ module Dustvelocity
 !
       if (lviscd_hyper3_polar) then
         do j=1,3
-          do i=1,3
-            fviscd(j) = fviscd(j) + nud_hyper3(k)*pi4_1*grad6_uud(xi,i,j)*dline_1(xi,i)**2
-          enddo
-          if (lupdate_courant_dt) diffus_nud3=diffus_nud3+nud_hyper3(k)*pi4_1*dxmin_pencil**4
+          fviscd(j) = fviscd(j) + nud_hyper3(k)*pi4_1*sum(grad6_uud(ix,:,j,k)*dline_1(ix,:)**2)
         enddo
+        if (lupdate_courant_dt) diffus_nud3=diffus_nud3+nud_hyper3(k)*pi4_1*dxmin_pencil**4
       endif
 !
 !  Viscous force: Axel's mesh formulation
 !
       if (lviscd_hyper3_mesh) then
         do j=1,3
-          do i=1,3
-            fviscd(j) = fviscd(j) + nud_hyper3_mesh(k)*pi5_1/60.*grad6_uud(xi,i,j)*dline_1(xi,i)
-          enddo
+          fviscd(j) = fviscd(j) + nud_hyper3_mesh(k)*pi5_1/60.*sum(grad6_uud(ix,:,j,k)*dline_1(ix,:))
         enddo
         if (lupdate_courant_dt) then
           advec_hypermesh_uud=nud_hyper3_mesh(k)*pi5_1*sqrt(dxyz_2)
-          advec2_hypermesh=advec2_hypermesh+advec_hypermesh_uud**2
+          advec2_hypermesh=advec2_hypermesh+advec_hypermesh_uud**2   !MR: sum over all species!!!
          endif
       endif
 !
 !  Viscous force: mud/rhod*del6ud
 !
       if (lviscd_hyper3_rhod_nud_const) then
-        mudrhod1=(nud_hyper3(k)*nd0*md0)/p%rhod(xi,k)   ! = mud/rhod
-        do i=1,3
-          fviscd(i) = fviscd(i) + mudrhod1*p%del6ud(xi,i,k)
-        enddo
+        mudrhod1=(nud_hyper3(k)*nd0*md0)/p%rhod(ix,k)   ! = mud/rhod
+        fviscd = fviscd + mudrhod1*p%del6ud(ix,:,k)
         if (lupdate_courant_dt) diffus_nud3=diffus_nud3+nud_hyper3(k)*dxyz_6
-      endif
-      if (lupdate_courant_dt) then
-        maxdiffus3=max(maxdiffus3,diffus_nud3)
-        maxdiffus=max(maxdiffus,diffus_nud)
       endif
 !
 !  Viscous force: nud*(del6ud+S.glnnd), where S_ij=d^5 ud_i/dx_j^5
 !
       if (lviscd_hyper3_nud_const) then
-        fviscd = fviscd + nud_hyper3(k)*(p%del6ud(xi,:,k)+p%sdglnnd(xi,:,k))
+        fviscd = fviscd + nud_hyper3(k)*(p%del6ud(ix,:,k)+p%sdglnnd(ix,:,k))
         if (lupdate_courant_dt) diffus_nud3=diffus_nud3+nud_hyper3(k)*dxyz_6
       endif
 !
 !  Add viscous force to dust equation of motion.
 !
-      df(xi+nghost,m,n,iudx(k):iudz(k)) = df(xi+nghost,m,n,iudx(k):iudz(k)) + fviscd
+      df(ix+nghost,m,n,iudx(k):iudz(k)) = df(ix+nghost,m,n,iudx(k):iudz(k)) + fviscd
 !
       if (lupdate_courant_dt) then
+        maxdiffus3=max(maxdiffus3,diffus_nud3)
+        maxdiffus=max(maxdiffus,diffus_nud)
         if ((headtt.or.ldebug) .and. (ip<6)) print*,'duud_dt: max(diffus_nud) =',maxval(diffus_nud)
       endif
+!
     endsubroutine direct_integration_of_motion
 !***********************************************************************
     subroutine duud_dt(f,df,p)
@@ -1356,7 +1338,8 @@ module Dustvelocity
 !
       integer :: k,i
 !
-      intent(in) :: f, p
+      intent(in) :: f
+      intent(inout) :: p
       intent(out) :: df
 !
 !  Identify module and boundary conditions.
@@ -1376,14 +1359,16 @@ module Dustvelocity
 !
         call get_stoppingtime(p%uud(:,:,k),p%uu,p%rho,p%cs2,p%rhod(:,k),k)
 !
+        !TP: any operation across a pencil cannot be translated to the GPU
+        if (ldustvelocity_shorttausd .and. any(tausd1(:,k)>=shorttaus1limit)) then
+!
 !  Short stopping time approximation.
 !  Calculated from master equation d(wx-ux)/dt = A + B*(wx-ux) = 0.
 !
-        !TP: any operation across a pencil cannot be translated to the GPU
-        if (ldustvelocity_shorttausd .and. any(tausd1(:,k)>=shorttaus1limit)) then
           do i=1,nx
             call short_stopping_time_approximation(f,df,p,k,i)
-          enddo
+            !p%advec_uud(i,k)=0.   !MR: this should be done, as there is no advection where this appr. is applied
+          enddo                    !    changes results, though
         else
           do i=1,nx
             call direct_integration_of_motion(f,df,p,k,i)
@@ -1393,7 +1378,7 @@ module Dustvelocity
 !  Advective timestep contribution (condition could be narrower as even with dustdensity,
 !                                   there is not always advection).
 !
-        if (lupdate_courant_dt.and.(ldustdensity.or.ladvection_dust)) maxadvec=maxadvec+p%advec_uud
+        if (lupdate_courant_dt.and.(ldustdensity.or.ladvection_dust)) maxadvec=maxadvec+p%advec_uud(:,k) !MR: problematic - why sum?
 !
 !  Apply border profile
 !
@@ -1656,7 +1641,6 @@ module Dustvelocity
 !
       use Sub, only: dot2
 
-      !real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3), intent(IN) :: uu, uud
       real, dimension (nx),   intent(IN) :: rho,rhod,cs2
 
@@ -1668,7 +1652,7 @@ module Dustvelocity
 
       case ('epstein_cst')
         ! Do nothing, initialized in initialize_dustvelocity
-        ! If on the gpu have to read it in since having variables sometimes computed
+        ! If on the GPU, have to read it in since having variables sometimes computed.
         ! and sometimes not is difficult
         if (lgpu) tausd1(:,k) = 1.0/tausd(k)
       case ('epstein_cst_b')
