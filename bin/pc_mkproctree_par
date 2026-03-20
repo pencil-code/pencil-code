@@ -1,5 +1,6 @@
 #!/bin/csh
 #$Id$
+
 #
 #  Makes a processor directory tree
 #
@@ -13,21 +14,71 @@ set histchars=
 
 if ($#argv < 2) then
   echo "Usage: $0 <n_dirs> <n_procs>"
-  exit
-endif
-
-set wd = `pwd`
-if ($wd:t != data) then
-  echo "Call from data dir!!!"
-  exit
+  exit 1
 endif
 
 set n = $1
+set p = $2
 
-set p = 1
-if ($#argv >= 2) then
-  set p = $2
+# Ensure we're in "data" directory
+set wd = `pwd`
+if ($wd:t != "data") then
+  echo "Call from data dir!!!"
+  exit 1
 endif
 
-# seq 0 `expr $n - 1` | xargs -P $p -n 1 sh -c 'mkdir -p proc$0'
-seq 0 `expr $n - 1` | xargs -P $p -n 1 sh -c 'echo making proc$0; mkdir -p proc$0'
+@ chunk = ( $n + $p - 1 ) / $p
+
+echo "Creating $n directories using $p workers..."
+
+# Create temporary worker script
+set worker_script = "/tmp/pc_worker_$$.sh"
+
+cat > $worker_script << EOF
+#!/bin/bash
+
+worker=\$1
+chunk=$chunk
+n=$n
+
+start=\$(( worker * chunk ))
+end=\$(( start + chunk - 1 ))
+
+if [ \$start -ge \$n ]; then
+  exit 0
+fi
+
+if [ \$end -ge \$n ]; then
+  end=\$(( n - 1 ))
+fi
+
+grp="grp\$worker"
+mkdir -p "\$grp"
+
+dirs=""
+for ((i=start; i<=end; i++)); do
+  dirs="\$dirs \$grp/proc\$i"
+done
+
+mkdir -p \$dirs
+EOF
+
+chmod +x $worker_script
+
+# Run in parallel
+seq 0 `expr $p - 1` | xargs -P $p -n 1 $worker_script
+
+# Remove temp script
+rm -f $worker_script
+
+echo "Flattening..."
+
+foreach d (grp*)
+  if (-d $d) then
+    mv $d/proc* .
+  endif
+end
+
+rmdir grp*
+
+echo "Done."
