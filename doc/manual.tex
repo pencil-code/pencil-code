@@ -5652,6 +5652,15 @@ The \path{chemistry_H2_ignition_rkf} directory, for example, has the file
 properties, and \file{chem.inp}, which contains the NASA polynomials;
 see Eq.~(18) of Ref.~\cite{BHB11}.
 
+To set the number of chemical species required add the following to your \file{src/cparam.local}
+where the first number is the number of species and the second one is the number of degrees of freedom per species:
+\begin{verbatim}
+  ! NCHEMSPEC CONTRIBUTION 16*1
+\end{verbatim}
+
+Importantly the code always assumes a single degree of freedom per chemical species and thus changing the second
+parameter won't have any effect.
+
 % ---------------------------------------------------------------------- %
 
 \subsection{Radiative transfer}
@@ -5782,6 +5791,12 @@ All dust species fulfill the continuity equation
 \begin{equation}
   {\partial\rho_{\rm d}\over\partial t}+\nab\cdot(\rho_{\rm d}\uv_{\rm d})=0.
 \end{equation}
+To set the number of dust species and their degrees of freedom add the following to your \file{src/cparam.local}
+where the first number is the number of species and the second one is the number of degrees of freedom per species:
+\begin{verbatim}
+  ! NDUSTSPEC CONTRIBUTION 3*4
+\end{verbatim}
+
 %\begin{equation}
 %\rho\left[{\partial\uv\over\partial t}+\uv\cdot\nab\uv-\fv(\uv)\right]
 %=-\nab p+\Fv-\beta(\uv-\uv_{\rm d}),
