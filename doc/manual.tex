@@ -2376,7 +2376,7 @@ In \file{src/Makefile.local} add the following options:
   GPU=gpu_astaroth
 \end{verbatim}
 
-Then the compilation and running is done the same as for normal CPU setups.
+Compilation and running are done in the same manner as for normal CPU setups.
 By default the code assumes communication is done with CUDA-aware MPI, which means the GPUs speak directly to each other.
 If you have to ask is your MPI CUDA-aware enabled then it most likely is not.
 Thus trying to run the code in CUDA-aware mode will most likely cause a segmentation fault and the code to crash. 
