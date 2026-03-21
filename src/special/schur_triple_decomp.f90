@@ -245,13 +245,15 @@ end function selct
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
-    subroutine calc_pencils_special(f,p)
+    subroutine calc_diagnostic_pencils(f,p)
 !
 !  Calculate Special pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
 !  24-nov-04/tony: coded
 !  27-jan-26/axel: Since -r42600, redefined mixed term as the sum of mixed and original term
+!  21-mar-26/TP:   Moved here since do not seem to be needed on the rhs and thus do not need to be translated
+!                  to the GPU
 !
       use Sub, only: grad
       use General, only: eigvec3
@@ -270,6 +272,9 @@ end function selct
 !
       intent(inout) :: f
       intent(inout) :: p
+!
+!
+
 !
 !  Possibility of applying triple decomposition of uij
 !  Do only when output onto command line.
@@ -546,6 +551,27 @@ end function selct
         endif
       endif
 !
+    endsubroutine
+!***********************************************************************
+    subroutine calc_pencils_special(f,p)
+!
+!  Calculate Special pencils.
+!  Most basic pencils should come first, as others may depend on them.
+!
+!  24-nov-04/tony: coded
+!  27-jan-26/axel: Since -r42600, redefined mixed term as the sum of mixed and original term
+!
+      use Sub, only: grad
+      use General, only: eigvec3
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+!
+      intent(inout) :: f
+      intent(inout) :: p
+      
+      call calc_diagnostic_pencils(f,p)
+
     endsubroutine calc_pencils_special
 !***********************************************************************
     subroutine schur_decompose(matV, matV_SH, matV_RR, matV_EL)
@@ -748,6 +774,24 @@ end function selct
 
     endsubroutine schur_standardized_complex
 !***********************************************************************
+    subroutine calc_diagnostics_special(f,p)
+      use Diagnostics, only: sum_mn_name
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+!
+      intent(in) :: f,p
+      if (ldiagnos .or. ldiagnos_always) then
+        call sum_mn_name(p%uSH2,idiag_uSH2)
+        call sum_mn_name(p%uRR2,idiag_uRR2)
+        call sum_mn_name(p%uEL2,idiag_uEL2)
+        call sum_mn_name(p%uRRm,idiag_uRRm)
+        call sum_mn_name(p%bSH2,idiag_bSH2)
+        call sum_mn_name(p%bRR2,idiag_bRR2)
+        call sum_mn_name(p%bEL2,idiag_bEL2)
+        call sum_mn_name(p%bRRm,idiag_bRRm)
+      endif
+    endsubroutine calc_diagnostics_special
+!***********************************************************************
     subroutine dspecial_dt(f,df,p)
 !
 !  The entire module could be renamed to Klein-Gordon or Scalar field equation.
@@ -764,7 +808,6 @@ end function selct
 !   6-oct-03/tony: coded
 !   2-nov-21/axel: first set of equations coded
 !
-      use Diagnostics, only: sum_mn_name
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -776,19 +819,7 @@ end function selct
 !  Identify module and boundary conditions.
 !
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dspecial_dt'
-!
-!  Diagnostics
-!
-      if (ldiagnos .or. ldiagnos_always) then
-        call sum_mn_name(p%uSH2,idiag_uSH2)
-        call sum_mn_name(p%uRR2,idiag_uRR2)
-        call sum_mn_name(p%uEL2,idiag_uEL2)
-        call sum_mn_name(p%uRRm,idiag_uRRm)
-        call sum_mn_name(p%bSH2,idiag_bSH2)
-        call sum_mn_name(p%bRR2,idiag_bRR2)
-        call sum_mn_name(p%bEL2,idiag_bEL2)
-        call sum_mn_name(p%bRRm,idiag_bRRm)
-      endif
+      call calc_diagnostics_special(f,p)
 !
     endsubroutine dspecial_dt
 !***********************************************************************
