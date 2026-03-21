@@ -524,9 +524,11 @@ ifeq ($(USE_SPECIAL_DISPATCHER),yes)
   SPECIAL = special
 endif
 #
+LIBFLAGS=
 ifneq ($(LIBRARIES), )
   LIBS := $(strip $(LIBRARIES))
-  override LDFLAGS += $(shell (echo $(LIBS) | sed -e's/  */ -l/g' -e's/\([a-zA-Z0-9]\)/-l\1/'))
+  override LDFLAGS  += $(shell (echo $(LIBS) | sed -e's/  */ -l/g' -e's/\([a-zA-Z0-9]\)/-l\1/'))
+  override LIBFLAGS += $(shell (echo $(LIBS) | sed -e's/  */ -l/g' -e's/\([a-zA-Z0-9]\)/-l\1/'))
 endif
 #
 CUDA_MAKEDIR=astaroth
@@ -3166,7 +3168,7 @@ special_tmp.f90: special.f90
 
 ifeq ($(GPU),gpu_astaroth)
 special.so: $(CPARAM_OBJ) $(CDATA_OBJ) $(SPECIAL_OBJ) special_dummies.inc $(SPECIAL_MODULES:=.o)
-	$(LD) $(SPECIAL_MODULES:=.o) $(DLL_LDFLAGS) -o special.so
+	$(LD) $(SPECIAL_MODULES:=.o) $(LIBFLAGS) $(DLL_LDFLAGS) -o special.so
 else
 special.so: $(CPARAM_OBJ) $(CDATA_OBJ) $(SPECIAL_OBJ) special_dummies.inc $(SPECIAL_MODULES:=.o)
 	# pc_mkspecial should run regardless of whether ld succeeds; if ld fails,
