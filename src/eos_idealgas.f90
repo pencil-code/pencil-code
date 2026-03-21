@@ -43,9 +43,9 @@ module EquationOfState
   real :: rho0=1. !PAR_DOC: \label{cs0-rho0-init}%
     !PAR_DOC: reference values of sound speed and density,
     !PAR_DOC: i.\,e.~values at height \var{zref}.
-  real :: cs20=1.0, cs_t=1.0, cs20t, lnrho0=0., rho01=1.0, pp0=1.0
+  real :: cs20=1.0, cs_t=1.0, lnrho0=0., rho01=1.0, pp0=1.0
   real :: gamma=5.0/3.0 !PAR_DOC: adiabatic index $\gamma=c_p/c_v$.
-  real :: Rgas_cgs=0.0, Rgas, error_cp=1.0e-6
+  real :: Rgas, error_cp=1.0e-6
   real :: gamma_m1    !(=gamma-1)
   real :: gamma1      !(=1/gamma)
   real :: cp=impossible, cp1=impossible, cv=impossible, cv1=impossible
@@ -63,7 +63,7 @@ module EquationOfState
   logical :: lanelastic_lin=.false., lcs_as_aux=.false., lcs_as_comaux=.false.
   logical :: lcs2_tdep=.false., lhubble_eos=.false.
 !
-  character (len=labellen) :: meanfield_Beq_profile
+  !character (len=labellen) :: meanfield_Beq_profile
   real, pointer :: meanfield_Beq, chit_quenching, uturb
   real, dimension(:), pointer :: B_ext
   logical, pointer :: lrelativistic_eos
@@ -499,6 +499,8 @@ module EquationOfState
       if (lwrite_slices) then
         where(cnamev=='gpx'.or.cnamev=='gpy') cformv='DEFINED'
       endif
+
+      call keep_compiler_quiet(lreset)
 !
     endsubroutine rprint_eos
 !***********************************************************************

@@ -38,7 +38,7 @@ module Power_spectrum
   include 'power_spectrum.h'
 !
   real :: pdf_max=30., pdf_min=-30., pdf_max_logscale=3.0, pdf_min_logscale=-3.
-  real :: pdfy_max=30., pdfy_min=-30., pdfy_max_logscale=3.0, pdfy_min_logscale=-3.
+  real :: pdfy_max=30., pdfy_min=-30., pdfy_max_logscale=3.0,pdfy_min_logscale=-3.
   real :: tout_min=0., tout_max=0.
   real :: specflux_dp=-2., specflux_dq=-2.
   real, allocatable, dimension(:,:) :: legendre_zeros,glq_weight
@@ -127,7 +127,6 @@ module Power_spectrum
     use Messages
     use General, only: binomial, pos_in_array, quick_sort, get_range_no
     use Mpicomm, only: mpiallreduce_merge,mpimerge_1d
-    use Fourier, only: kx_fft, ky_fft, kz_fft
 
     integer :: ikr, ikmu, ind, ikx, iky, ikz, len, k
     real :: k2
@@ -581,9 +580,7 @@ outer:do ikz=1,nz
   
     !integer, pointer :: inp,irhop,iapn(:)
     integer :: nk
-    integer :: i,k,ikx,iky,ikz,im,in
     real, save, allocatable, dimension(:,:,:) :: a1,b1
-    real :: k2
     real, dimension(:), save, allocatable :: spectrum,spectrum_sum
     character(LEN=fnlen) :: filename
     logical :: lwrite_ks
@@ -786,7 +783,6 @@ outer:do ikz=1,nz
 !
     integer :: nk
     real, dimension(nx,ny,nz) :: a_re,b_re,a_im,b_im
-    real :: k2
 !  save is needed to avoid repeated allocations every time this subroutine is called.
     real, dimension(:), save, allocatable :: spectrum,spectrum_sum
     character(LEN=fnlen) :: filename
@@ -850,8 +846,8 @@ outer:do ikz=1,nz
 
     real, dimension (mx,my,mz,mfarray) :: f
     character (len=1) :: sp
-    real, dimension(nk) :: spectrum,spectrum_sum
-    integer :: i,k,ikx,iky,ikz,im,in,ivec
+    real, dimension(nk) :: spectrum
+    integer :: k,ikx,iky,ikz,ivec
 
     do ivec=1,3
        !
@@ -1494,10 +1490,10 @@ outer:do ikz=1,nz
     use Sub, only: del2vi_etc, del2v_etc, cross, grad, curli, curl, dot2
 !
     integer, parameter :: nk=nxgrid/2
-    integer :: i, k, ikx, iky, ikz, jkz, im, in, ivec, ivec_jj
+    integer :: k, ikx, iky, ikz, jkz, im, in, ivec, ivec_jj
     real :: k2
     real, dimension (mx,my,mz,mfarray) :: f
-    real, dimension(nx) :: bbi, jji, b2, j2
+    real, dimension(nx) :: jji, b2, j2
     real, dimension(nx,3) :: bb, bbEP, hhEP, jj, gtmp1, gtmp2
     real, dimension(nk) :: nks=0.,nks_sum=0.
     real, dimension(nk) :: k2m=0.,k2m_sum=0., krms, km1
@@ -2179,7 +2175,7 @@ outer:do ikz=1,nz
     use Sub, only: gij, gij_etc, curl_mn, cross_mn
 !
     integer, parameter :: nk=nxgrid/2
-    integer :: i, k, ikx, iky, ikz, ivec, stat
+    integer :: k, ikx, iky, ikz, ivec, stat
     real :: k2
     real, dimension(mx,my,mz,mfarray) :: f
     real, dimension(mx,my,mz,3) :: Lor
@@ -2456,7 +2452,7 @@ outer:do ikz=1,nz
     use Sub, only: gij, gij_etc, curl_mn, cross_mn
 !
     integer, parameter :: nk=nxgrid/2
-    integer :: i,k,ikx,iky,ikz,ivec, stat
+    integer :: k,ikx,iky,ikz,ivec, stat
     real :: k2
     real, dimension(mx,my,mz,mfarray) :: f
     real, dimension(mx,my,mz,3) :: Lor
@@ -2658,7 +2654,7 @@ outer:do ikz=1,nz
     use Sub, only: gij, gij_etc, curl_mn, cross_mn
 !
     integer, parameter :: nk=nxgrid/2
-    integer :: i,k,ikx,iky,ikz,ivec
+    integer :: k,ikx,iky,ikz,ivec
     real :: k2
     real, dimension (mx,my,mz,mfarray) :: f
     real, save, allocatable, dimension (:,:,:,:) :: EMF,JJJ,EMB,BBB
@@ -2857,7 +2853,7 @@ outer:do ikz=1,nz
     use Sub, only: gij, gij_etc, curl_mn, cross_mn, div_mn, multsv_mn, h_dot_grad_vec
 !
     integer, parameter :: nk=nxgrid/2
-    integer :: i,k,ikx,iky,ikz,ivec
+    integer :: k,ikx,iky,ikz,ivec
     real :: k2
     real, dimension (mx,my,mz,mfarray) :: f
     real, dimension (mx,my,mz,3) :: Adv, Str, BBB
@@ -3056,7 +3052,7 @@ outer:do ikz=1,nz
   
     integer, parameter :: nk=nxgrid/2
   
-    integer :: i,k,ikx,iky,ikz
+    integer :: k,ikx,iky,ikz
     real :: k2
     real, dimension(nk) :: nks,nks_sum
     real, dimension(nk) :: k2m,k2m_sum,krms
@@ -3344,7 +3340,7 @@ outer:do ikz=1,nz
     integer, intent(in), optional :: iapn_index
     integer, pointer :: inp,irhop,iapn(:)
     integer, parameter :: nk=nxgrid/2
-    integer :: i,k,ikx,iky,ikz, ivec, im, in, ia0
+    integer :: k,ikx,iky,ikz, ivec, ia0
     real :: k2,fact
     real, dimension (mx,my,mz,mfarray) :: f
     real, dimension(nk) :: spectrum,spectrum_sum
@@ -3673,7 +3669,7 @@ outer:do ikz=1,nz
     real, save, allocatable, dimension(:,:,:) :: a2
 !
     integer, parameter :: nk=nx/2
-    integer :: ix,iy,iz,im,in,ikx,iky,ikz,nc
+    integer :: ix,iy,iz,ikx,iky,ikz,nc
     real, dimension(:,:), allocatable :: spectrumx,spectrumx_sum
     real, dimension(nk) :: spectrumy,spectrumy_sum
     real, dimension(nk) :: spectrumz,spectrumz_sum
@@ -4173,11 +4169,11 @@ outer:do ikz=1,nz
     use Mpicomm, only: mpireduce_sum_int, mpiallreduce_min, mpiallreduce_max
     use SharedVariables, only: get_shared_variable
 !
-    integer :: l, i_pdf, i_pdfy, ichem
+    integer :: l, i_pdf, i_pdfy
     integer :: n_pdf=100, n_pdfy=100
     integer, allocatable, dimension(:,:) :: pdf_yy, pdf_yy_sum
     real, dimension (mx,my,mz,mfarray) :: f
-    real, dimension (nx,3) :: grad1, grad2, gcc
+    real, dimension (nx,3) :: gcc
     real, dimension (nx) :: pdf_var,gcc2, pdfy_var
     integer, dimension (2) :: nreduce
     real :: pdf_mean, pdf_rms, pdf_dx, pdf_dx1, pdf_scl, pdfy_scl
@@ -4187,7 +4183,6 @@ outer:do ikz=1,nz
     character (len=120) :: pdf_file=''
     character (len=*) :: variabl
     logical :: logscale=.false.
-    integer, pointer :: ispecial
 !
     if (lpdf_2d_variable_range) then
       if (variabl=='FI_mixfrac') then
@@ -4304,7 +4299,7 @@ outer:do ikz=1,nz
     character (len=*) :: sp
 !
     integer, parameter :: nk=nxgrid/2, npdf=130
-    integer :: i,ivec,ikx,iky,ikz,kr,ipdf
+    integer :: ivec,ikx,iky,ikz,kr,ipdf
     integer, dimension(nk-1,npdf) :: pdf_ang,pdf_ang_sum
     real :: ang
     real, allocatable, dimension(:,:,:), save :: ak,bk,aa,bb,ab
@@ -4446,7 +4441,7 @@ outer:do ikz=1,nz
     use Mpicomm, only: y2x, z2x
     use Fourier, only: fourier_transform_real_1
 !
-    integer :: j,l,im,in,ivec,ispec,ifirst_fft
+    integer :: j,l,ivec,ispec,ifirst_fft
     real, dimension (mx,my,mz,mfarray) :: f
     real, allocatable, dimension(:,:,:), save :: a1
     real, dimension(nygrid/2) :: spectrumy,spectrumy_sum
@@ -4618,7 +4613,7 @@ outer:do ikz=1,nz
     use Mpicomm, only: z2x
     use Sub, only: curli
 !
-    integer :: j,l,im,in,ivec,ispec,ifirst_fft
+    integer :: j,l,ivec,ispec,ifirst_fft
     real, dimension (mx,my,mz,mfarray) :: f
     real, allocatable, dimension(:,:,:), save :: a1,b1
     real, dimension(nzgrid/2) :: spectrum,spectrum_sum
@@ -4762,7 +4757,7 @@ outer:do ikz=1,nz
     use Fourier, only: fourier_transform
 !
     integer, parameter :: nk=nx/2
-    integer :: i,k,ikx,iky,ikz,ivec
+    integer :: k,ikx,iky,ikz,ivec
     real, dimension (mx,my,mz,mfarray) :: f
     real, save, allocatable, dimension(:,:,:,:) :: a1,b1
     real, dimension(nx,3) :: tmp_a1
@@ -4873,7 +4868,7 @@ outer:do ikz=1,nz
     use Sub, only: curli, del2vi_etc
 !
     integer, parameter :: nk=nxgrid/2
-    integer :: i, ikx, iky, ikz, ivec, jvec, im, in
+    integer :: i, ikx, iky, ikz, ivec, jvec
     integer :: ikr, ikmu
     integer, dimension(nk) :: nmu
     real, allocatable, dimension(:,:) :: kmu, dmu
@@ -5356,10 +5351,9 @@ outer:do ikz=1,nz
     use Fourier, only: fft_xyz_parallel
     use Mpicomm, only: mpireduce_sum
     use Sub, only: del2vi_etc, del2v_etc, cross, grad, curli, curl, dot2
-    use Chiral, only: iXX_chiral, iYY_chiral, iXX2_chiral, iYY2_chiral
 !
     integer, parameter :: nk=nxgrid/2
-    integer :: i, ikx, iky, ikz, im, in, ivec
+    integer :: ikx, iky, ikz, ivec
     integer :: k3,k
     real, dimension (mx,my,mz,mfarray) :: f
     real, dimension(nk) :: spectrum,spectrum_sum
@@ -5512,12 +5506,11 @@ outer:do ikz=1,nz
     use Fourier, only: fft_xyz_parallel
     use Mpicomm, only: mpireduce_sum
     use Sub, only: del2v_etc, cross, grad, curli, curl, dot2
-    use Chiral, only: iXX_chiral, iYY_chiral
     use Shear, only: shear_frame_transform
     use SharedVariables, only: get_shared_variable
 !
     integer, parameter :: nk=nxgrid/2
-    integer :: i, k, ikx, iky, ikz, jkz, ivec
+    integer :: k, ikx, iky, ikz, jkz, ivec
     integer :: jkx
     real :: k2
     real, pointer :: t_cor
@@ -5852,7 +5845,7 @@ outer:do ikz=1,nz
 !
     integer, parameter :: nk=nxgrid/2
     integer :: ivar1,ivar2,ivar1t,ivar2t
-    integer :: i,ivec,ikx,iky,ikz,jkx,jkz,k
+    integer :: ivec,ikx,iky,ikz,jkx,jkz,k
     real :: k2
     real, pointer :: t_cor
     real, save, allocatable, dimension(:,:,:) :: ht_re,ht_im
@@ -6124,7 +6117,7 @@ outer:do ikz=1,nz
     use General, only: rtoa
 !
     integer, parameter :: nk=nxgrid/2
-    integer :: i, ikx, iky, ikz, im, in, ivec, ikr
+    integer :: ikx, iky, ikz, im, in, ivec, ikr
     integer :: nv,nvmin,nsum,nsub,icor
     integer :: kxx,kyy,kzz,kint
     real :: k2, rr, k, j0, j0x, j0y, j0z, j1, dx_2pi_box
@@ -6447,7 +6440,7 @@ outer:do ikz=1,nz
     character (len=*) :: sp
     character (len=4) :: sp2
 !
-    integer :: ncomp,i,ivec,ikx,iky,ikz,jkx,jky,jkz
+    integer :: ncomp,ivec,ikx,iky,ikz,jkx,jky,jkz
     integer :: kkout,kkoutx,kkouty,kkoutz
     real, allocatable, dimension(:,:,:,:) :: fft,fft_sum
     character (len=1) :: spxyz
@@ -6634,7 +6627,7 @@ outer:do ikz=1,nz
     integer, intent(in) :: p
 !
     integer, parameter :: nk=nxgrid/2
-    integer :: i,ikx,iky,ikz,k
+    integer :: ikx,iky,ikz,k
     real :: k2
 !
     !$omp workshare
@@ -7306,7 +7299,7 @@ outer:do ikz=1,nz
     integer :: nkx, nky, nkz, ncomp, ierr
     logical :: lexit, llocal
     integer :: icomp, irang, i1, i2, i3
-    integer :: ix, iy, iz, l, i, j, ikx, iky, ikz
+    integer :: ix, iy, iz, l, i, ikx, iky, ikz
     real, dimension(:,:,:,:), allocatable :: data_sliced
     integer, dimension(:), allocatable :: ixs, iys, izs
 !

@@ -95,7 +95,6 @@ module Timestep
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mx,my,mz,mvar) :: df_tmp
       real :: start_time
       type (pencil_case) :: p
       real :: ds, dtsub

@@ -185,7 +185,7 @@ module Equ
 !
       call before_boundary_shared(f)
       if (lgpu .and. ltest_rhs .and. it == it_test_rhs) then
-        call test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,rhs_cpu)
+        call test_rhs_gpu(f,p,mass_per_proc,early_finalize,rhs_cpu)
       endif
 
       if (lgpu) then
@@ -1774,7 +1774,6 @@ module Equ
       type (pencil_case), intent(IN) :: p
 
       real, dimension(nx) :: dt1_max_loc, dt1_advec, dt1_diffus, dt1_src
-      real :: dt1_preac
 
       if (lupdate_courant_dt.and.(.not.ldt_paronly)) then
         call calc_maxadvec
@@ -1858,7 +1857,7 @@ module Equ
 
     endsubroutine set_dt1_max
 !***********************************************************************
-    subroutine test_rhs_gpu(f,df,p,mass_per_proc,early_finalize,cpu_version)
+    subroutine test_rhs_gpu(f,p,mass_per_proc,early_finalize,cpu_version)
 !
 !  Used to test the CPU rhs vs the DSL code
 !
@@ -1876,7 +1875,6 @@ module Equ
 
       character(len=30) :: name
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension(1), intent(inout) :: mass_per_proc
       logical ,intent(in) :: early_finalize

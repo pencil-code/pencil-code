@@ -87,10 +87,6 @@ module Magnetic
   real, dimension (mz,3) :: aamz
   real, dimension (:,:), allocatable :: aamxy, aamxz
 !
-! Vector potential from file
-!
-  real, dimension (:,:,:,:), allocatable :: ap
-!
 ! Parameters
 !
   integer, parameter :: nresi_max=4
@@ -2249,7 +2245,7 @@ module Magnetic
       use EquationOfState
       use FArrayManager
       use IO, only: input_snap, input_snap_finalize
-      use Gravity, only: gravz, z1, z2
+      use Gravity, only: gravz
       use Initcond
       use Boundcond
       use InitialCondition, only: initial_condition_aa
@@ -4057,47 +4053,48 @@ module Magnetic
 !
     endsubroutine magnetic_before_boundary
 !***********************************************************************
-    subroutine update_char_vel_magnetic(f)
+!NOT USED SO ON COMMENT
+!    subroutine update_char_vel_magnetic(f)
+!!
+!!   Add the Alfven speed to the characteritic velocity
+!!   for slope limited diffusion.
+!!
+!!   25-sep-15/MR+joern: coded
+!!
+!!      use General, only: staggered_mean_scal
+!      use General, only: staggered_max_scal
+!      use Density, only: calc_pencils_density
 !
-!   Add the Alfven speed to the characteritic velocity
-!   for slope limited diffusion.
+!      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!!
+!      type(pencil_case) :: p
+!      logical, dimension(npencils) :: lpenc_loc=.false.
+!      real, dimension(nx) :: tmp
+!!
+!      if (lslope_limit_diff) then
+!!
+!!  Calculate Alfven speed and store temporarily in first slot of diffusive fluxes.
+!!
+!        lpenc_loc((/i_va2,i_bb,i_b2,i_rho1/))=.true.
+!        do n=n1,n2; do m=m1,m2
 !
-!   25-sep-15/MR+joern: coded
+!          call calc_pencils_density(f,p,lpenc_loc)
+!          call calc_pencils_magnetic(f,p,lpenc_loc)
 !
-!      use General, only: staggered_mean_scal
-      use General, only: staggered_max_scal
-      use Density, only: calc_pencils_density
-
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!          if (lboris_correction .and. va2max_boris>0) then
+!            tmp=(1+(p%va2/va2max_boris)**2.)**(-1.0/2.0)
+!            f(l1:l2,m,n,iFF_diff) = sqrt(p%va2*tmp)
+!          else
+!            f(l1:l2,m,n,iFF_diff) = sqrt(p%va2)
+!          endif
 !
-      type(pencil_case) :: p
-      logical, dimension(npencils) :: lpenc_loc=.false.
-      real, dimension(nx) :: tmp
-!
-      if (lslope_limit_diff) then
-!
-!  Calculate Alfven speed and store temporarily in first slot of diffusive fluxes.
-!
-        lpenc_loc((/i_va2,i_bb,i_b2,i_rho1/))=.true.
-        do n=n1,n2; do m=m1,m2
-
-          call calc_pencils_density(f,p,lpenc_loc)
-          call calc_pencils_magnetic(f,p,lpenc_loc)
-
-          if (lboris_correction .and. va2max_boris>0) then
-            tmp=(1+(p%va2/va2max_boris)**2.)**(-1.0/2.0)
-            f(l1:l2,m,n,iFF_diff) = sqrt(p%va2*tmp)
-          else
-            f(l1:l2,m,n,iFF_diff) = sqrt(p%va2)
-          endif
-
-        enddo; enddo
-!
-        !call staggered_mean_scal(f,iFF_diff,iFF_char_c,w_sldchar_mag)
-        call staggered_max_scal(f,iFF_diff,iFF_char_c,w_sldchar_mag)
-      endif
-!
-    endsubroutine update_char_vel_magnetic
+!        enddo; enddo
+!!
+!        !call staggered_mean_scal(f,iFF_diff,iFF_char_c,w_sldchar_mag)
+!        call staggered_max_scal(f,iFF_diff,iFF_char_c,w_sldchar_mag)
+!      endif
+!!
+!    endsubroutine update_char_vel_magnetic
 !***********************************************************************
     subroutine calc_pencils_magnetic_std(f,p)
 !
@@ -5088,7 +5085,7 @@ module Magnetic
       use Sub
 !
       real, dimension (nx) :: chi_diamag
-      real, dimension (nx,3) :: gchi_diamag, Bk_Bki, jj_diamag, tmp
+      real, dimension (nx,3) :: gchi_diamag, jj_diamag, tmp
       type (pencil_case) :: p
 !
       intent(inout)  :: p
@@ -5198,7 +5195,7 @@ module Magnetic
       real, dimension (nx) :: peta_shock
       real, dimension (nx) :: sign_jo,tmp1
       real, dimension (nx) :: eta_mn,etaSS,eta_heat
-      real, dimension (nx) :: vdrift, va2max_beta
+      real, dimension (nx) :: vdrift
       real, dimension (nx) :: del2aa_ini,tanhx2,advec_hall,advec_hypermesh_aa
       real, dimension(nx) :: eta_BB, prof
       real, dimension(3) :: B_ext
@@ -6252,7 +6249,7 @@ module Magnetic
 !
 !  Add possibility of local forcing that is also not delta-correlated in time.
 !
-      if (lforcing_cont_aa_local) call forcing_continuous(df,p)
+      if (lforcing_cont_aa_local) call forcing_continuous(df)
 !
 !  Possibility of relaxation of A in exterior region.
 !
@@ -8252,41 +8249,42 @@ print*,'AXEL2: should not be here (eta) ... '
 !
     endsubroutine helflux
 !***********************************************************************
-    subroutine curflux_dS(uxb,jj)
-!
-!  current helicity flux (preliminary)
-!
-!  27-nov-03/axel: adapted from helflux
-!
-      use Diagnostics
-!
-      real, dimension (nx,3), intent(in) :: uxb,jj
-      real, dimension (nx,3) :: ee
-      real, dimension (nx) :: FCx,FCz
-      real :: FC
-!
-      ee=eta*jj-uxb
-!
-!  calculate current helicity flux in the X and Z directions
-!  Could speed up by only calculating here boundary points!
-!
-      FCx=2*(ee(:,2)*jj(:,3)-ee(:,3)*jj(:,2))*dsurfyz
-      FCz=2*(ee(:,1)*jj(:,2)-ee(:,2)*jj(:,1))*dsurfxy
-!
-!  sum up contribution per pencil
-!  and then stuff result into surf_mn_name for summing up all processors.
-!
-      FC=FCx(nx)-FCx(1)
-      if (lfirst_proc_z) then
-        if (n==n1) FC=FC-sum(FCz)
-        call surf_mn_name(FC,idiag_exjm2,n1)
-      endif
-      if (llast_proc_z) then
-        if (n==n2) FC=FC+sum(FCz)
-        call surf_mn_name(FC,idiag_exjm2,n2)
-      endif
-!
-    endsubroutine curflux_dS
+!NOT USED SO ON COMMENT
+!    subroutine curflux_dS(uxb,jj)
+!!
+!!  current helicity flux (preliminary)
+!!
+!!  27-nov-03/axel: adapted from helflux
+!!
+!      use Diagnostics
+!!
+!      real, dimension (nx,3), intent(in) :: uxb,jj
+!      real, dimension (nx,3) :: ee
+!      real, dimension (nx) :: FCx,FCz
+!      real :: FC
+!!
+!      ee=eta*jj-uxb
+!!
+!!  calculate current helicity flux in the X and Z directions
+!!  Could speed up by only calculating here boundary points!
+!!
+!      FCx=2*(ee(:,2)*jj(:,3)-ee(:,3)*jj(:,2))*dsurfyz
+!      FCz=2*(ee(:,1)*jj(:,2)-ee(:,2)*jj(:,1))*dsurfxy
+!!
+!!  sum up contribution per pencil
+!!  and then stuff result into surf_mn_name for summing up all processors.
+!!
+!      FC=FCx(nx)-FCx(1)
+!      if (lfirst_proc_z) then
+!        if (n==n1) FC=FC-sum(FCz)
+!        call surf_mn_name(FC,idiag_exjm2,n1)
+!      endif
+!      if (llast_proc_z) then
+!        if (n==n2) FC=FC+sum(FCz)
+!        call surf_mn_name(FC,idiag_exjm2,n2)
+!      endif
+!!
+!    endsubroutine curflux_dS
 !***********************************************************************
     subroutine curflux(uxb,jj)
 !
@@ -8362,7 +8360,7 @@ print*,'AXEL2: should not be here (eta) ... '
 !
     endsubroutine write_magnetic_run_pars
 !***********************************************************************
-    subroutine forcing_continuous(df,p)
+    subroutine forcing_continuous(df)
 !
 !  add a continuous forcing term (here currently only for localized rotors)
 !
@@ -8374,10 +8372,10 @@ print*,'AXEL2: should not be here (eta) ... '
       use Sub
 !
       real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
 
       real, dimension (nx) :: phi
       real :: fact
+
 !
 !  calculate forcing
 !
@@ -8508,7 +8506,7 @@ print*,'AXEL2: should not be here (eta) ... '
 !
 !  The following calculation involving spatial averages
 !
-      use Mpicomm, only: mpibcast_real,MPI_COMM_PENCIL
+      use Mpicomm, only: mpibcast_real
       use Diagnostics, only: save_name
 !
       if (idiag_bmx/=0) call calc_bmx
@@ -9527,7 +9525,7 @@ print*,'AXEL2: should not be here (eta) ... '
 
       fac=cmplx(OO-sqrt(16*kz**2+OO**2),0.)
       do n=n1,n2; do m=m1,m2
-        f(l1:l2,m,n,iuu+0)=f(l1:l2,m,n,iuu+0)+ampl*fac/(4*kz)*sin(kz*z(n))
+        f(l1:l2,m,n,iuu+0)=real(f(l1:l2,m,n,iuu+0)+ampl*fac/(4*kz)*sin(kz*z(n)))
         f(l1:l2,m,n,iuu+1)=f(l1:l2,m,n,iuu+1)+ampl*real(exp(cmplx(0,z(n)*kz))* &
                            fac*sqrt(2*kz**2+OO*fac)/(sqrt(2.)*kz*(-6*OO-fac)))
         f(l1:l2,m,n,iaa+0)=f(l1:l2,m,n,iaa+0)+ampl*sin(kz*z(n))/kz
@@ -11543,6 +11541,8 @@ print*,'AXEL2: should not be here (eta) ... '
     subroutine magnetic_after_mn(df)
 !
       real, dimension(mx,my,mz,mvar) :: df
+
+      call keep_compiler_quiet(df)
 !
 !  Electron inertia: our df(:,:,:,iax:iaz) so far is
 !  (1 - l_e^2\Laplace) daa, thus to get the true daa, we need to invert
@@ -11560,12 +11560,6 @@ print*,'AXEL2: should not be here (eta) ... '
 
     endsubroutine magnetic_after_mn
 !****************************************************************************
-    subroutine braginsky
-!
-      call not_implemented('braginsky','in magnetic')
-
-    endsubroutine braginsky
-!***********************************************************************
     subroutine keplerian_gauge(f)
 !
       use Boundcond, only: update_ghosts
@@ -11642,45 +11636,47 @@ print*,'AXEL2: should not be here (eta) ... '
 !
     endsubroutine keplerian_gauge
 !********************************************************************
-    subroutine remove_volume_average(f)
-!
-      use Mpicomm , only: mpiallreduce_sum
-!
-!  Substract mean emf from the radial component of the induction
-!  equation. Activated only when large Bz fields and are present
-!  keplerian advection. Due to this u_phi x Bz term, the radial
-!  component of the magnetic potential
-!  develops a divergence that grows linearly in time. Since it is
-!  purely divergent, it is okay analytically. But numerically it leads to
-!  problems if this divergent grows bigger than the curl, which it does
-!  eventually.
-!
-!  This is a cylindrical version of the rtime_phiavg special file.
-!MR: these comments seem not to apply, routine is now obsolete
-!  13-sep-07/wlad: adapted from remove_mean_momenta
-!
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
-      real :: fsum_tmp,mean_ax
-      integer :: i
-!
-! Average over phi - the result is a (nr,nz) array
-!
-      fsum_tmp = 0.
-      do m=m1,m2; do n=n1,n2 ; do i=l1,l2
-        fsum_tmp = fsum_tmp + f(i,m,n,iax)
-      enddo; enddo; enddo
-      fsum_tmp = fsum_tmp/nwgrid
-!
-! The sum has to be done processor-wise
-! Sum over processors of same ipz, and different ipy
-!
-      call mpiallreduce_sum(fsum_tmp,mean_ax)
-!
-! Gauge-transform radial A
-!
-      f(l1:l2,m1:m2,n1:n2,iax) = f(l1:l2,m1:m2,n1:n2,iax) - mean_ax
-!
-    endsubroutine remove_volume_average
+!NOT USED SO ON COMMENT
+! 
+!    subroutine remove_volume_average(f)
+!!
+!      use Mpicomm , only: mpiallreduce_sum
+!!
+!!  Substract mean emf from the radial component of the induction
+!!  equation. Activated only when large Bz fields and are present
+!!  keplerian advection. Due to this u_phi x Bz term, the radial
+!!  component of the magnetic potential
+!!  develops a divergence that grows linearly in time. Since it is
+!!  purely divergent, it is okay analytically. But numerically it leads to
+!!  problems if this divergent grows bigger than the curl, which it does
+!!  eventually.
+!!
+!!  This is a cylindrical version of the rtime_phiavg special file.
+!!MR: these comments seem not to apply, routine is now obsolete
+!!  13-sep-07/wlad: adapted from remove_mean_momenta
+!!
+!      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+!      real :: fsum_tmp,mean_ax
+!      integer :: i
+!!
+!! Average over phi - the result is a (nr,nz) array
+!!
+!      fsum_tmp = 0.
+!      do m=m1,m2; do n=n1,n2 ; do i=l1,l2
+!        fsum_tmp = fsum_tmp + f(i,m,n,iax)
+!      enddo; enddo; enddo
+!      fsum_tmp = fsum_tmp/nwgrid
+!!
+!! The sum has to be done processor-wise
+!! Sum over processors of same ipz, and different ipy
+!!
+!      call mpiallreduce_sum(fsum_tmp,mean_ax)
+!!
+!! Gauge-transform radial A
+!!
+!      f(l1:l2,m1:m2,n1:n2,iax) = f(l1:l2,m1:m2,n1:n2,iax) - mean_ax
+!!
+!    endsubroutine remove_volume_average
 !********************************************************************
     subroutine get_resistivity_implicit(ndc, diffus_coeff, iz)
 !
@@ -12148,6 +12144,7 @@ print*,'AXEL2: should not be here (eta) ... '
     call copy_addr(lbij_test,p_par(279)) ! bool
     call copy_addr(luse_bgb_as_jxb,p_par(280)) ! bool
     call copy_addr(lreset_vart_only_at_start,p_par(281)) ! bool
+    call copy_addr(enum_div_sld_magn,p_par(282)) ! int
 
     endsubroutine pushpars2c
 !***********************************************************************

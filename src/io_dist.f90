@@ -19,6 +19,7 @@ module Io
   use Cdata
   use File_io, only: delete_file, file_exists
   use Messages, only: fatal_error, warning, svn_id
+  use General, only: keep_compiler_quiet
 !
   implicit none
 !
@@ -123,7 +124,6 @@ module Io
 !
       real :: t_sp   ! t in single precision for backwards compatibility
       integer :: na, ne, bytes, out_size, j, nc, ncomps
-      character (len=6) :: ch
       character (len=fnlen) :: file1, file2
       character (len=30) :: vname, vnm
       logical, save :: lcalled_ast=.false.
@@ -238,7 +238,6 @@ module Io
 !   08-nov-2022/ccyang: remove plain text output (never used)
 !
       use Cdata, only: directory_dist
-      use General, only: keep_compiler_quiet
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: nc
@@ -330,6 +329,8 @@ module Io
       write(lun_output) t_sp, x, y, z, dx, dy, dz
 !
       close(lun_output)
+      if(present(label))     call keep_compiler_quiet(ltruncate)
+      if(present(ltruncate)) call keep_compiler_quiet(ltruncate)
 !
     endsubroutine output_part_snap
 !***********************************************************************
@@ -339,7 +340,6 @@ module Io
 !
 !  21-jan-24/ccyang: adapted from remove_particle() of particles_sub.f90.
 !
-      use General, only: keep_compiler_quiet
       use Messages, only: not_implemented
 !
       integer, dimension(:), intent(in) :: ipar_rmv, ipar_sink
@@ -384,6 +384,7 @@ module Io
 !
 !  03-May-2019/PABourdin: coded
 !
+
       integer, intent(in) :: num, nv, snap
       integer, dimension(nv), intent(in) :: ID
 !
@@ -397,6 +398,8 @@ module Io
       t_sp = t
       write (lun_output) t_sp, nv
       if (nv >= 1) write (lun_output) ID
+
+      call keep_compiler_quiet(snap)
 !
     endsubroutine output_stalker_init
 !***********************************************************************

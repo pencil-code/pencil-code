@@ -171,7 +171,7 @@ module Hydro
   real, dimension(nx) :: profile_SH=0.
 !
   real, dimension (5) :: om_rings=0.
-  integer :: N_modes_uu=0, iuij=0
+  integer :: N_modes_uu=0!, iuij=0
   logical :: llinearized_hydro=.false.
   logical :: ladvection_velocity=.true.
   logical :: lprecession=.false.
@@ -951,7 +951,7 @@ module Hydro
   real, dimension(nx) :: Fmax, frict
   real :: t_vart=0., fade_fact
 !
-  real, dimension (nx) :: prof_amp1, prof_amp2
+  real, dimension (nx) :: prof_amp1
   real, dimension (mz) :: prof_amp3
   real, dimension (my) :: prof_amp4
   real, dimension (nz,3) :: uumz_prof
@@ -3429,7 +3429,6 @@ module Hydro
       real, dimension (nx,3,3) :: tmp33
       real :: cs201=1., cs2011, outest
       integer :: i, j, ju
-      integer :: i_4_49_50, j_4_49_50
 !
       intent(in)   :: lpenc_loc
       intent(inout):: f,p

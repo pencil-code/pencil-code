@@ -75,6 +75,8 @@ module Snapshot
 !
         lsnap_down=.false.
       endif
+! Keeping compiler quiet
+      if (present(flist)) then; endif;
 !
     endsubroutine wsnap_down
 !***********************************************************************
@@ -292,7 +294,6 @@ module Snapshot
       real, save :: tsnap
       integer, save :: nsnap
       logical, save :: lfirst_call=.true.
-      real, dimension(:), allocatable, save :: snaptimes
       character (len=fnlen) :: file
       character (len=intlen) :: ch
       integer :: nv1_capitalvar

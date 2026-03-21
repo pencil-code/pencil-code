@@ -1894,6 +1894,9 @@ module Initcond
           f(l2+1-kx,m1,n1,j+2)=+ampl*aimag(phase_factor_x)
         endif
       endif
+
+      call keep_compiler_quiet(ky)
+      call keep_compiler_quiet(kz)
 !
     endsubroutine beltramik_general
 !***********************************************************************
@@ -2566,7 +2569,6 @@ module Initcond
       real, dimension (mx,my,mz,mfarray) :: f
       real, optional :: kx, ky, kz
       real :: ampl, k=1., fac
-      real :: kx1, ky1, kz1
 !
 !  wavenumber k
 !
@@ -6194,11 +6196,10 @@ module Initcond
       use General, only: loptest, roptest
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: i, i1a, i1b, i2a, i2b, ikx, iky, ikz, stat, ik, nk, ndim_u, ndim_v
+      integer :: i, i1a, i1b, i2a, i2b, ikx, iky, ikz, stat, ndim_u, ndim_v
       real, dimension (:,:,:,:), allocatable :: u_re, u_im, v_re, v_im
       real, dimension (:,:,:), allocatable :: k1, r
       real, dimension (:), allocatable :: kx, ky, kz
-      real, dimension (:), allocatable :: kk
       real :: ampl, kpeak, deriv_prefactor, scale_factor=1.,ksteepness=5.
 !
       if (ampl==0.) then

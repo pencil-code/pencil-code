@@ -773,7 +773,7 @@ module Diagnostics
 !
       real, dimension (nlname) :: fmax_tmp, fsum_tmp, fmax, fsum, fweight_tmp
       real :: vol
-      integer :: iname, imax_count, isum_count, nmax_count, nsum_count, itype, maxreq
+      integer :: iname, imax_count, isum_count, nmax_count, nsum_count, itype
       logical :: lweight_comm, lalways
       integer, parameter :: lun=1
       character (len=fnlen) :: datadir='data',path=''
@@ -1416,7 +1416,7 @@ module Diagnostics
 !  27-aug-13/MR  : reinstated 0p
 !  10-jan-17/MR  : added correction of floating-point formats if not sufficient to hold sign
 !
-      use General, only: safe_character_assign, itoa
+      use General, only: safe_character_assign, itoa, keep_compiler_quiet
 !
       character (len=*) :: cname, cform
       character (len=*) :: ctest
@@ -1502,6 +1502,8 @@ module Diagnostics
       else
         fparse_name=0
       endif
+
+      call keep_compiler_quiet(ncomp)
 !
     endfunction fparse_name
 !***********************************************************************
@@ -2195,7 +2197,7 @@ module Diagnostics
       real, dimension (nx) :: a,aux,rlim
       type (pencil_case) :: p
       real :: dv
-      integer :: iname,i,isum
+      integer :: iname
       ! logical, save :: lfirsttime=.true.
 !
       if (iname /= 0) then
@@ -3881,7 +3883,7 @@ module Diagnostics
 !
       use General, only: allpos_in_array_int
 
-      integer :: nmax, nsum, nmin, i
+      integer :: nmax, nsum
       logical :: firstcall=.true., firstcall_from_pencil_check=.false.
       integer, dimension(2) :: max_range, sum_range
       !$omp threadprivate(firstcall)

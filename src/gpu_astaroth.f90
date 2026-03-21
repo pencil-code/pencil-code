@@ -304,7 +304,6 @@ contains
       real, dimension (mx,my,mz,mfarray), intent(OUT) :: f
       logical, optional :: nowait_
       logical :: nowait
-      integer :: i
 
       nowait = loptest(nowait_)
       if (nowait) then

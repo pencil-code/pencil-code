@@ -274,7 +274,7 @@ module Forcing
       use EquationOfState, only: cs20
       use Hdf5_io, only: file_close_hdf5, file_open_hdf5, input_hdf5
 !
-      real :: zstar,rmin,rmax,a_ell,anum,adenom,jlm_ff,ylm_ff,alphar,Balpha,RYlm,IYlm,intv_rotang
+      real :: zstar,rmin,rmax,a_ell,anum,adenom,jlm_ff,ylm_ff,alphar,Balpha,RYlm,IYlm
       real :: ang_intv,sthphase,cthphase,costhprime,phprime
 
       integer :: l,m,n,i,ilread,ilm,ckno,ilist,emm,aindex,Legendrel,iangle

@@ -715,7 +715,6 @@ module Boundcond
       integer :: ivar1, ivar2, j, topbot
       logical :: ip_ok
       type (boundary_condition) :: bc
-      real :: XXi, XXi0, tau_XXi
 !
       if (nghost<=0) return
 
@@ -1896,7 +1895,6 @@ module Boundcond
       integer, optional :: ivar1_opt, ivar2_opt
 !
       integer :: ivar1, ivar2, j, topbot
-      type (boundary_condition) :: bc
       character(LEN=bclen) :: bc_code, cjvar
       character(LEN=128) :: errmsg
 !
@@ -1992,7 +1990,6 @@ module Boundcond
       integer, optional :: ivar1_opt, ivar2_opt
 !
       integer :: ivar1, ivar2, j, topbot
-      type (boundary_condition) :: bc
       character(LEN=bclen) :: bc_code, cjvar
       character(LEN=128) :: errmsg
 !
@@ -2077,7 +2074,6 @@ module Boundcond
       real, dimension (:,:,:,:) :: f
       integer, optional :: ivar1_opt, ivar2_opt
       integer :: ivar1, ivar2, j, topbot
-      type (boundary_condition) :: bc
       character(LEN=bclen) :: bc_code, cjvar
       character(LEN=128) :: errmsg
 !
