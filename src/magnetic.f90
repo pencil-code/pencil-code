@@ -644,6 +644,7 @@ module Magnetic
   integer :: idiag_azm=0        ! DIAG_DOC:
   integer :: idiag_a2m=0        ! DIAG_DOC: $\left<\Av^2\right>$
   integer :: idiag_arms=0       ! DIAG_DOC: $\left<\Av^2\right>^{1/2}$
+  integer :: idiag_az2m=0       ! DIAG_DOC: $\left<A_z^2\right>$
   integer :: idiag_amax=0       ! DIAG_DOC: $\max(|\Av|)$
   integer :: idiag_divarms=0    ! DIAG_DOC: $\langle(\nabla\cdot\Av)^2\rangle^{1/2}$
   integer :: idiag_beta1m=0     ! DIAG_DOC: $\left<\Bv^2/(2\mu_0 p)\right>$
@@ -7010,6 +7011,7 @@ print*,'AXEL2: should not be here (eta) ... '
       call sum_mn_name(p%aa(:,1),idiag_axm)
       call sum_mn_name(p%aa(:,2),idiag_aym)
       call sum_mn_name(p%aa(:,3),idiag_azm)
+      call sum_mn_name(p%aa(:,3)**2,idiag_az2m)
       call sum_mn_name(p%a2,idiag_a2m)
       call sum_mn_name(p%a2,idiag_arms,lsqrt=.true.)
       call max_mn_name(p%a2,idiag_amax,lsqrt=.true.)
@@ -10607,7 +10609,7 @@ print*,'AXEL2: should not be here (eta) ... '
         idiag_dtFr=0;idiag_dtHr=0;idiag_dtBr=0;
         idiag_bbxmax=0; idiag_bbymax=0; idiag_bbzmax=0
         idiag_jxmax=0; idiag_jymax=0; idiag_jzmax=0
-        idiag_a2m=0; idiag_arms=0; idiag_amax=0; idiag_beta1m=0; idiag_beta1mz=0
+        idiag_a2m=0; idiag_arms=0; idiag_az2m=0; idiag_amax=0; idiag_beta1m=0; idiag_beta1mz=0
         idiag_divarms = 0
         idiag_bij_cov_diffmax=0
         idiag_beta1max=0; idiag_bxm=0; idiag_bym=0; idiag_bzm=0; idiag_axm=0
@@ -10863,6 +10865,7 @@ print*,'AXEL2: should not be here (eta) ... '
         call parse_name(iname,cname(iname),cform(iname),'azm',idiag_azm)
         call parse_name(iname,cname(iname),cform(iname),'a2m',idiag_a2m)
         call parse_name(iname,cname(iname),cform(iname),'arms',idiag_arms)
+        call parse_name(iname,cname(iname),cform(iname),'az2m',idiag_az2m)
         call parse_name(iname,cname(iname),cform(iname),'amax',idiag_amax)
         call parse_name(iname,cname(iname),cform(iname),'divarms',idiag_divarms)
         call parse_name(iname,cname(iname),cform(iname),'vArms',idiag_vArms)
