@@ -449,6 +449,73 @@ module Special
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
+    subroutine calc_diagnostics_special(f,p)
+
+      use Diagnostics
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+!
+!
+      intent(in) :: f,p
+       if (ldiagnos) then
+         if (idiag_hijij2m/=0) call sum_mn_name(p%hijij**2,idiag_hijij2m)
+         if (idiag_gijij2m/=0) call sum_mn_name(p%gijij**2,idiag_gijij2m)
+         if (idiag_h22rms/=0) call sum_mn_name(f(l1:l2,m,n,ihij-1+2)**2,idiag_h22rms,lsqrt=.true.)
+         if (idiag_h33rms/=0) call sum_mn_name(f(l1:l2,m,n,ihij-1+3)**2,idiag_h33rms,lsqrt=.true.)
+         if (idiag_h23rms/=0) call sum_mn_name(f(l1:l2,m,n,ihij-1+5)**2,idiag_h23rms,lsqrt=.true.)
+         if (lggTX_as_aux) then
+           if (idiag_EEGW/=0) call sum_mn_name((f(l1:l2,m,n,iggT)**2+f(l1:l2,m,n,iggX)**2)*EGWpref,idiag_EEGW)
+           if (idiag_gg2m/=0) call sum_mn_name(f(l1:l2,m,n,iggT)**2+f(l1:l2,m,n,iggX)**2,idiag_gg2m)
+           if (idiag_ggT2m/=0) call sum_mn_name(f(l1:l2,m,n,iggT)**2,idiag_ggT2m)
+           if (idiag_ggX2m/=0) call sum_mn_name(f(l1:l2,m,n,iggX)**2,idiag_ggX2m)
+           if (idiag_ggTXm/=0) call sum_mn_name(f(l1:l2,m,n,iggT)*f(l1:l2,m,n,iggX),idiag_ggTXm)
+           if (idiag_ggTm/=0) call sum_mn_name(f(l1:l2,m,n,iggT),idiag_ggTm)
+           if (idiag_ggXm/=0) call sum_mn_name(f(l1:l2,m,n,iggX),idiag_ggXm)
+         endif
+         if (lhhTX_as_aux) then
+           if (idiag_hrms/=0) call sum_mn_name(f(l1:l2,m,n,ihhT)**2+f(l1:l2,m,n,ihhX)**2,idiag_hrms,lsqrt=.true.)
+           if (idiag_hhT2m/=0) call sum_mn_name(f(l1:l2,m,n,ihhT)**2,idiag_hhT2m)
+           if (idiag_hhX2m/=0) call sum_mn_name(f(l1:l2,m,n,ihhX)**2,idiag_hhX2m)
+           if (idiag_hhTXm/=0) call sum_mn_name(f(l1:l2,m,n,ihhT)*f(l1:l2,m,n,ihhX),idiag_hhTXm)
+         endif
+!
+         if (lroot.and.m==mpoint.and.n==npoint) then
+           !if (idiag_h11pt/=0) call save_name(f(lpoint,m,n,ihij+1-1),idiag_h11pt)
+           !if (idiag_h22pt/=0) call save_name(f(lpoint,m,n,ihij+2-1),idiag_h22pt)
+           !if (idiag_h33pt/=0) call save_name(f(lpoint,m,n,ihij+3-1),idiag_h33pt)
+           !if (idiag_h12pt/=0) call save_name(f(lpoint,m,n,ihij+4-1),idiag_h12pt)
+           !if (idiag_h23pt/=0) call save_name(f(lpoint,m,n,ihij+5-1),idiag_h23pt)
+           !if (idiag_h31pt/=0) call save_name(f(lpoint,m,n,ihij+6-1),idiag_h31pt)
+           if (idiag_g11pt/=0) call save_name(f(lpoint,m,n,igij+1-1),idiag_g11pt)
+           if (idiag_g22pt/=0) call save_name(f(lpoint,m,n,igij+2-1),idiag_g22pt)
+           if (idiag_g33pt/=0) call save_name(f(lpoint,m,n,igij+3-1),idiag_g33pt)
+           if (idiag_g12pt/=0) call save_name(f(lpoint,m,n,igij+4-1),idiag_g12pt)
+           if (idiag_g23pt/=0) call save_name(f(lpoint,m,n,igij+5-1),idiag_g23pt)
+           if (idiag_g31pt/=0) call save_name(f(lpoint,m,n,igij+6-1),idiag_g31pt)
+           if (lhhTX_as_aux) then
+             if (idiag_hhTpt/=0) call save_name(f(lpoint,m,n,ihhT),idiag_hhTpt)
+             if (idiag_hhXpt/=0) call save_name(f(lpoint,m,n,ihhX),idiag_hhXpt)
+           endif
+           if (lggTX_as_aux) then
+             if (idiag_ggTpt/=0) call save_name(f(lpoint,m,n,iggT),idiag_ggTpt)
+             if (idiag_ggXpt/=0) call save_name(f(lpoint,m,n,iggX),idiag_ggXpt)
+           endif
+         endif
+!
+         if (lroot.and.m==mpoint2.and.n==npoint2) then
+           if (lhhTX_as_aux) then
+             if (idiag_hhTp2/=0) call save_name(f(lpoint2,m,n,ihhT),idiag_hhTp2)
+             if (idiag_hhXp2/=0) call save_name(f(lpoint2,m,n,ihhX),idiag_hhXp2)
+           endif
+           if (lggTX_as_aux) then
+             if (idiag_ggTp2/=0) call save_name(f(lpoint2,m,n,iggT),idiag_ggTp2)
+             if (idiag_ggXp2/=0) call save_name(f(lpoint2,m,n,iggX),idiag_ggXp2)
+           endif
+         endif
+       endif
+    endsubroutine calc_diagnostics_special
+!***********************************************************************
     subroutine dspecial_dt(f,df,p)
 !
 !  calculate right hand side of ONE OR MORE extra coupled PDEs
@@ -464,7 +531,6 @@ module Special
 !  06-oct-03/tony: coded
 !  07-feb-18/axel: added nscale_factor=0 (no expansion), =.5 (radiation era)
 !
-      use Diagnostics
       use Sub, only: del2, del6
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -557,65 +623,7 @@ module Special
 !  timestep constraint
 !
       if (lfirst.and.ldt) advec_cs2=max(advec_cs2,c_light2*dxyz_2)
-!
-!  diagnostics
-!
-       if (ldiagnos) then
-         if (idiag_hijij2m/=0) call sum_mn_name(p%hijij**2,idiag_hijij2m)
-         if (idiag_gijij2m/=0) call sum_mn_name(p%gijij**2,idiag_gijij2m)
-         if (idiag_h22rms/=0) call sum_mn_name(f(l1:l2,m,n,ihij-1+2)**2,idiag_h22rms,lsqrt=.true.)
-         if (idiag_h33rms/=0) call sum_mn_name(f(l1:l2,m,n,ihij-1+3)**2,idiag_h33rms,lsqrt=.true.)
-         if (idiag_h23rms/=0) call sum_mn_name(f(l1:l2,m,n,ihij-1+5)**2,idiag_h23rms,lsqrt=.true.)
-         if (lggTX_as_aux) then
-           if (idiag_EEGW/=0) call sum_mn_name((f(l1:l2,m,n,iggT)**2+f(l1:l2,m,n,iggX)**2)*EGWpref,idiag_EEGW)
-           if (idiag_gg2m/=0) call sum_mn_name(f(l1:l2,m,n,iggT)**2+f(l1:l2,m,n,iggX)**2,idiag_gg2m)
-           if (idiag_ggT2m/=0) call sum_mn_name(f(l1:l2,m,n,iggT)**2,idiag_ggT2m)
-           if (idiag_ggX2m/=0) call sum_mn_name(f(l1:l2,m,n,iggX)**2,idiag_ggX2m)
-           if (idiag_ggTXm/=0) call sum_mn_name(f(l1:l2,m,n,iggT)*f(l1:l2,m,n,iggX),idiag_ggTXm)
-           if (idiag_ggTm/=0) call sum_mn_name(f(l1:l2,m,n,iggT),idiag_ggTm)
-           if (idiag_ggXm/=0) call sum_mn_name(f(l1:l2,m,n,iggX),idiag_ggXm)
-         endif
-         if (lhhTX_as_aux) then
-           if (idiag_hrms/=0) call sum_mn_name(f(l1:l2,m,n,ihhT)**2+f(l1:l2,m,n,ihhX)**2,idiag_hrms,lsqrt=.true.)
-           if (idiag_hhT2m/=0) call sum_mn_name(f(l1:l2,m,n,ihhT)**2,idiag_hhT2m)
-           if (idiag_hhX2m/=0) call sum_mn_name(f(l1:l2,m,n,ihhX)**2,idiag_hhX2m)
-           if (idiag_hhTXm/=0) call sum_mn_name(f(l1:l2,m,n,ihhT)*f(l1:l2,m,n,ihhX),idiag_hhTXm)
-         endif
-!
-         if (lroot.and.m==mpoint.and.n==npoint) then
-           !if (idiag_h11pt/=0) call save_name(f(lpoint,m,n,ihij+1-1),idiag_h11pt)
-           !if (idiag_h22pt/=0) call save_name(f(lpoint,m,n,ihij+2-1),idiag_h22pt)
-           !if (idiag_h33pt/=0) call save_name(f(lpoint,m,n,ihij+3-1),idiag_h33pt)
-           !if (idiag_h12pt/=0) call save_name(f(lpoint,m,n,ihij+4-1),idiag_h12pt)
-           !if (idiag_h23pt/=0) call save_name(f(lpoint,m,n,ihij+5-1),idiag_h23pt)
-           !if (idiag_h31pt/=0) call save_name(f(lpoint,m,n,ihij+6-1),idiag_h31pt)
-           if (idiag_g11pt/=0) call save_name(f(lpoint,m,n,igij+1-1),idiag_g11pt)
-           if (idiag_g22pt/=0) call save_name(f(lpoint,m,n,igij+2-1),idiag_g22pt)
-           if (idiag_g33pt/=0) call save_name(f(lpoint,m,n,igij+3-1),idiag_g33pt)
-           if (idiag_g12pt/=0) call save_name(f(lpoint,m,n,igij+4-1),idiag_g12pt)
-           if (idiag_g23pt/=0) call save_name(f(lpoint,m,n,igij+5-1),idiag_g23pt)
-           if (idiag_g31pt/=0) call save_name(f(lpoint,m,n,igij+6-1),idiag_g31pt)
-           if (lhhTX_as_aux) then
-             if (idiag_hhTpt/=0) call save_name(f(lpoint,m,n,ihhT),idiag_hhTpt)
-             if (idiag_hhXpt/=0) call save_name(f(lpoint,m,n,ihhX),idiag_hhXpt)
-           endif
-           if (lggTX_as_aux) then
-             if (idiag_ggTpt/=0) call save_name(f(lpoint,m,n,iggT),idiag_ggTpt)
-             if (idiag_ggXpt/=0) call save_name(f(lpoint,m,n,iggX),idiag_ggXpt)
-           endif
-         endif
-!
-         if (lroot.and.m==mpoint2.and.n==npoint2) then
-           if (lhhTX_as_aux) then
-             if (idiag_hhTp2/=0) call save_name(f(lpoint2,m,n,ihhT),idiag_hhTp2)
-             if (idiag_hhXp2/=0) call save_name(f(lpoint2,m,n,ihhX),idiag_hhXp2)
-           endif
-           if (lggTX_as_aux) then
-             if (idiag_ggTp2/=0) call save_name(f(lpoint2,m,n,iggT),idiag_ggTp2)
-             if (idiag_ggXp2/=0) call save_name(f(lpoint2,m,n,iggX),idiag_ggXp2)
-           endif
-         endif
-       endif
+      call calc_diagnostics_special(f,p)
 !
     endsubroutine dspecial_dt
 !***********************************************************************
