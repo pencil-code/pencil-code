@@ -1194,7 +1194,7 @@ module Equ
       use Testfield
       use Testflow
       use Testscalar
-      use Training, only: calc_diagnostics_training, div_sgs_stresses
+      use Training, only: calc_diagnostics_training, dt_sgs_terms
 
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
       real, dimension (mx,my,mz,mvar)   ,intent(OUT  ) :: df
@@ -1374,7 +1374,7 @@ module Equ
 !
         if (lpointmasses) call pointmasses_pde_pencil(f,df,p)
 
-        if(ltraining) call div_sgs_stresses(f,df)
+        if(ltraining) call dt_sgs_terms(f,df)
 
         if (ltraining) call calc_diagnostics_training(f)
 !
