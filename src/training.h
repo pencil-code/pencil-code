@@ -9,7 +9,7 @@
     public :: read_training_run_pars
     public :: write_training_run_pars
     public :: calc_diagnostics_training, rprint_training
-    public :: div_sgs_stresses
+    public :: dt_sgs_terms 
     public :: get_slices_training
     public :: pushpars2c
     real, public :: training_time = 0

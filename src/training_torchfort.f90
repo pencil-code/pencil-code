@@ -441,7 +441,7 @@
 
     endsubroutine calc_tau
 !***************************************************************
-    subroutine div_sgs_stresses(f,df)
+    subroutine dt_sgs_terms(f,df)
 
       use Sub, only: div_tensor
 
@@ -466,7 +466,7 @@
        ! endif
       endif
 
-    endsubroutine div_sgs_stresses
+    endsubroutine dt_sgs_terms 
 !***************************************************************
     subroutine calc_diagnostics_training(f)
 
