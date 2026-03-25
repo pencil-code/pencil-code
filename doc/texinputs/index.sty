@@ -36,7 +36,8 @@
 %%   Right bracket \]     Circumflex    \^     Underscore    \_
 %%   Grave accent  \`     Left brace    \{     Vertical bar  \|
 %%   Right brace   \}     Tilde         \~}
-\NeedsTeXFormat{LaTeX2e}[2020-10-01]
+% \NeedsTeXFormat{LaTeX2e}[2020-10-01]
+\NeedsTeXFormat{LaTeX2e}[2017-04-15] %not sure if \@ifl@t@r works correctly before this (date format change)
 
 \ProvidesPackage{index}[1995/09/28 v4.1beta Improved index support (dmj)]
 \def\disableindex#1{%
@@ -396,6 +397,8 @@
         \old@starttoc{#1}%
     \endgroup
 }
+
+\providecommand\IfFormatAtLeastTF{\@ifl@t@r\fmtversion} %to work with latex versions older than 2020-10-01
 \IfFormatAtLeastTF{2024/11/01}{
 %true: do nothing
 }{
