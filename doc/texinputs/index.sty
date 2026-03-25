@@ -129,7 +129,7 @@
 \newif\if@addtoindex\@addtoindextrue
 
 \newif\ifproofmode\proofmodefalse
-\def\index{\protect\p@index}
+\protected\def\index{\protect\p@index}
 
 \def\p@index{%
     \if@silentindex\@bsphack\fi
@@ -396,6 +396,7 @@
         \old@starttoc{#1}%
     \endgroup
 }
+\IfFormatAtLeastF{2024/11/01}{
 \CheckCommand*{\markboth}[2]{\gdef\@themark{{#1}{#2}}{%
      \let\protect\@unexpandable@protect
      \let\label\relax \let\index\relax \let\glossary\relax
@@ -425,6 +426,7 @@
         \mark{\@themark}%
     \endgroup
     \if@nobreak\ifvmode\nobreak\fi\fi
+}
 }
 \endinput
 %%
