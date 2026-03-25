@@ -36,7 +36,7 @@
 %%   Right bracket \]     Circumflex    \^     Underscore    \_
 %%   Grave accent  \`     Left brace    \{     Vertical bar  \|
 %%   Right brace   \}     Tilde         \~}
-\NeedsTeXFormat{LaTeX2e}[1995/06/01]
+\NeedsTeXFormat{LaTeX2e}[2020-10-01]
 
 \ProvidesPackage{index}[1995/09/28 v4.1beta Improved index support (dmj)]
 \def\disableindex#1{%
@@ -396,7 +396,10 @@
         \old@starttoc{#1}%
     \endgroup
 }
-\IfFormatAtLeastF{2024/11/01}{
+\IfFormatAtLeastTF{2024/11/01}{
+%true: do nothing
+}{
+%false
 \CheckCommand*{\markboth}[2]{\gdef\@themark{{#1}{#2}}{%
      \let\protect\@unexpandable@protect
      \let\label\relax \let\index\relax \let\glossary\relax
