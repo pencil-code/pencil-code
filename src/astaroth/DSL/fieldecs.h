@@ -17,7 +17,6 @@ Field AC_xx_full__mod__chemistry[chemistry_field_sizes]
 Field AC_diff_full__mod__chemistry[chemistry_field_sizes]
 Field AC_diff_full_add__mod__chemistry[chemistry_field_sizes]
 
-Field AC_mu1_full__mod__equationofstate
 
 #if LDUSTVELOCITY
 const int dust_velocity_size = ndustspec
@@ -377,4 +376,7 @@ Field AY_FOURIER_REAL
 Field AY_FOURIER_IMAG
 Field AZ_FOURIER_REAL
 Field AZ_FOURIER_IMAG
+
+Field AC_mu1_full__mod__equationofstate
+
 #include "../stdlib/map.h"
