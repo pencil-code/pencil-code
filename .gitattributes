@@ -1084,6 +1084,7 @@ idl/lib/plotting/aspect_pos.pro -text
 idl/lib/plotting/circ_sym.pro -text
 idl/lib/plotting/circ_sym_old.pro -text
 idl/lib/plotting/contourfill.pro -text
+idl/lib/plotting/errbars.pro -text
 idl/lib/plotting/fllevels.pro -text
 idl/lib/plotting/inset_end.pro -text
 idl/lib/plotting/inset_start.pro -text
