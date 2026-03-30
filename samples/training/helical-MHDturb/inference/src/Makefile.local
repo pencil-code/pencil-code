@@ -8,7 +8,7 @@ EOS      =   eos_idealgas
 HYDRO    =   hydro
 DENSITY  =   density
 ENTROPY  = noentropy
-MAGNETIC =   magnetic
+MAGNETIC = nomagnetic
 GRAVITY  = nogravity
 FORCING  =   forcing
 

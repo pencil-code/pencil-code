@@ -1,13 +1,14 @@
 #if LTRAINING
 communicated FieldSymmetricTensor tau_hydro
-FieldSymmetricTensor bb_tensor_product
 communicated Field3 uumean
-communicated Field3 bbmean
-communicated Field3 grad_lnrho_mean
-communicated Field3 gradupwd_lnrho_mean
 
-communicated Field3  sgs_emf
-communicated Field   tau_density
+//FieldSymmetricTensor bb_tensor_product
+//communicated Field3 bbmean
+//communicated Field3 grad_lnrho_mean
+//communicated Field3 gradupwd_lnrho_mean
+
+//communicated Field3  sgs_emf
+//communicated Field   tau_density
 
 //communicated Field3 UUMEANBatch[6]
 //communicated FieldSymmetricTensor TAUBatch[6]
@@ -115,8 +116,9 @@ write_tensor_product(FieldSymmetricTensor T, real3 uu)
 }
 
 
-
+/*
 Kernel get_bfield(){
+
 	if(!AC_ltrained__mod__training && AC_ltrain_mag__mod__training){
 		write(bbmean,curl(AA))
 	}
@@ -125,12 +127,16 @@ Kernel get_bfield(){
 		write(grad_lnrho_mean,gradient(LNRHO))
 		if(AC_lupw_lnrho__mod__density) write(gradupwd_lnrho_mean,gradient_upwd(LNRHO))
 	}
+	
 }
+*/
+
 
 Kernel fluctutation_terms_and_means(){
 	if(!AC_ltrained__mod__training){
 		write_tensor_product(tau_hydro,UU)
 		write(uumean,gaussian_smooth_inplace(UU))
+		/*
 		//When entering this function bbmean holds the magnetic field
 		if(AC_ltrain_mag__mod__training)
 		{
@@ -153,13 +159,16 @@ Kernel fluctutation_terms_and_means(){
 				write(gradupwd_lnrho_mean,gaussian_smooth_inplace(gradupwd_lnrho_mean))
 			}
 			write(tau_density, density_res)
+			
 		}
+		*/
 	}
 }
 
 Kernel smooth_fluctuation_terms(){
 	if(!AC_ltrained__mod__training){
 	  write(tau_hydro,gaussian_smooth_inplace(tau_hydro))
+		/*
 	  if(AC_ltrain_mag__mod__training)
 	  {
           	write(sgs_emf,gaussian_smooth_inplace(sgs_emf))
@@ -169,6 +178,7 @@ Kernel smooth_fluctuation_terms(){
 	  {
 	  	write(tau_density,gaussian_smooth_inplace(tau_density))
 	  }
+		*/
 	}
 
 }
@@ -176,6 +186,7 @@ Kernel smooth_fluctuation_terms(){
 Kernel compute_taus(){
 	if(!AC_ltrained__mod__training){
 	  real_symmetric_tensor tau_hydro_res = tau_hydro - tensor_product(uumean)
+		/*
 	  if(AC_ltrain_mag__mod__training)
 	  {
 		tau_hydro_res -= (bb_tensor_product - tensor_product(bbmean))
@@ -191,12 +202,13 @@ Kernel compute_taus(){
 		  }
 		  write(tau_density,density_res)
 	  }
+		*/
 	}
 }
 
 
 Kernel smooth_uumean(){
-		write(uumean,gaussian_smooth_inplace(UU))
+		write(uumean,UU)
 }
 
 
@@ -415,7 +427,7 @@ ComputeSteps initialize_uumean(boundconds){
 }
 
 ComputeSteps get_taus(boundconds){
-	get_bfield()
+	//get_bfield()
 	fluctutation_terms_and_means()
 	smooth_fluctuation_terms()
 	compute_taus()	

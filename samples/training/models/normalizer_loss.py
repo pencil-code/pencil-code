@@ -73,7 +73,7 @@ class CustomLoss(torch.nn.Module):
         torch.save(
             {"acc_count": self.normalizer.acc_count, "num_acc": self.normalizer.num_acc, 
              "acc_sum": self.normalizer.acc_sum, "acc_sum_squared": self.normalizer.acc_sum_squared}, 
-            f"stats_current_output.pt"
+            f"all_stats/stats_current_output_rank_{rank}.pt"
         )
     self.counter += 1
 

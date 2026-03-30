@@ -11,7 +11,7 @@
 	!nt=1200, it1=10, isave=100, itorder=3, dt=1e-4
 
   ! then switch to stationary case
- 	nt=6650, it1=50, isave=1000, itorder=3
+ 	nt=10000, it1=50, isave=1000, itorder=3
 
   !dsnap=20., 
 !! uncomment the following block to see the free evolution of the system:
@@ -76,8 +76,9 @@
 	lrun_epoch=T
 	ltrain_mag=F
 	ltrain_dens=F
-	dt_train= 2.6544556700e-04
-	t_train_start=6.8e-3
-	t_train_end=1.001e-1
-	t_train_chkpt=5.0e-2
+	dt_train= 1.5340179637e-01
+	!t_train_start=6.8e-3
+	t_train_start=0.0
+	t_train_end=100.0
+	t_train_chkpt=100
 /

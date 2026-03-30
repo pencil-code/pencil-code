@@ -82,6 +82,7 @@ class SpectralConv3d(nn.Module):
         #Compute Fourier coeffcients up to factor of e^(- something constant)
         x_ft = torch.fft.rfftn(x, dim=[-3,-2,-1])
 
+        """
         # Multiply relevant Fourier modes
         out_ft = torch.zeros(batchsize, self.out_channels, x.size(-3), x.size(-2), x.size(-1)//2 + 1, dtype=torch.cfloat, device=x.device)
         out_ft[:, :, :self.modes1, :self.modes2, :self.modes3] = \
@@ -95,6 +96,22 @@ class SpectralConv3d(nn.Module):
 
         #Return to physical space
         x = torch.fft.irfftn(out_ft, s=(x.size(-3), x.size(-2), x.size(-1)))
+        """
+
+        out_ft = torch.zeros(batchsize, self.out_channels, self.modes1*2, self.modes2*2, self.modes3, dtype=torch.cfloat, device=x.device)
+
+        out_ft[:, :, :self.modes1, :self.modes2, :] = self.compl_mul3d(x_ft[:, :, :self.modes1, :self.modes2, :self.modes3], self.weights1)
+
+        out_ft[:, :, self.modes1:, :self.modes2, :] = self.compl_mul3d(x_ft[:, :, -self.modes1:, :self.modes2, :self.modes3], self.weights2)
+
+        out_ft[:, :, :self.modes1, self.modes2:, :] = self.compl_mul3d(x_ft[:, :, :self.modes1, -self.modes2:, :self.modes3], self.weights3)
+        
+        out_ft[:, :, self.modes1:, self.modes2:, :] = self.compl_mul3d(x_ft[:, :, -self.modes1:, -self.modes2:, :self.modes3], self.weights4)
+
+        # create full spectrum only at inverse FFT
+        x = torch.fft.irfftn(out_ft, s=(x.size(-3), x.size(-2), x.size(-1)))
+
+
         return x
     
 class MLP(nn.Module):
@@ -194,12 +211,15 @@ class FNO(nn.Module):
         x = x[..., :-self.padding]
         x = self.q(x)
         x = x.permute(0, 1, 2, 3, 4) # pad the domain if input is non-periodic
+        
 
         if self.counter % 50 == 0:
+            #very hacky need wont work with different node
+            rank = int(str(x.device).split(":")[1])
             torch.save(
                 {"acc_count": self.normalizer.acc_count, "num_acc": self.normalizer.num_acc,
                 "acc_sum": self.normalizer.acc_sum, "acc_sum_squared": self.normalizer.acc_sum_squared},
-                f"stats_current_input.pt"
+                f"all_stats/stats_current_input_rank_{rank}.pt"
             )
         self.counter += 1
         return x.double()

@@ -4,7 +4,7 @@ import torch
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-stats = torch.load("stats_rank0.pt", weights_only=False, map_location=device)
+stats = torch.load("stats_current_output.pt", weights_only=False, map_location=device)
 
 
 arrays = {

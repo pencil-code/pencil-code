@@ -4,6 +4,9 @@ import os
 import yaml
 import random
 import re
+import glob
+import struct
+import numpy as np
 
 from afno import AFNO
 from fno import FNO
@@ -71,8 +74,10 @@ def build_model(model_save_dir, stats_dir, model_name):
         try:
             if torch.os.path.exists(os.path.join(stats_dir, "stats_current_input.pt")):
                 models[i].normalizer.load_stats(os.path.join(stats_dir, "stats_current_input.pt"))
+                print("creating model with current norm values")
             else:
-                models[i].normalizer.load_stats(os.path.join(stats_dir, "stats_restart_input.pt"))
+                models[i].normalizer.load_stats(os.path.join(stats_dir, "stats_restart_input.pt")) 
+                print("creating model with new norm values")
             model_scripted = torch.jit.script(models[i])
             save_path = os.path.join(model_save_dir, f"{i}.pt")
             model_scripted.save(save_path)
@@ -86,8 +91,10 @@ def build_loss(loss_save_dir, stats_dir):
     loss = CustomLoss()
     if torch.os.path.exists(os.path.join(stats_dir, "stats_current_output.pt")):
         loss.normalizer.load_stats(os.path.join(stats_dir, "stats_current_output.pt"))
+        print("creating loss with current norm values")
     else:
         loss.normalizer.load_stats(os.path.join(stats_dir, "stats_restart_output.pt"))
+        print("creating loss with new norm values")
 
     try:
         # Move model to GPU, JIT, and save
@@ -167,3 +174,94 @@ def rand_dt_train(run_dir, min, max):
     
     with open(run_dir, 'w') as f:
         f.writelines(lines)
+
+
+
+def avg_stats(stats_dir):
+    #sync all norm stats for input
+    fpattern = os.path.join(stats_dir, "stats_current_input_rank_*.pt")
+        
+    files = glob.glob(fpattern)    
+
+    synchronized_data = torch.load(files[0], weights_only=False, map_location=device)
+
+    for f in files[1:]:
+        data = torch.load(f, weights_only=False, map_location=device)
+        synchronized_data["acc_count"] += data["acc_count"]
+        synchronized_data["num_acc"] += data["num_acc"]
+        synchronized_data["acc_sum"] += data["acc_sum"]
+        synchronized_data["acc_sum_squared"] += data["acc_sum_squared"]
+
+    output = os.path.join(stats_dir,"stats_current_input.pt" )
+
+    torch.save(synchronized_data, output)
+
+ 
+
+    #sync all de-norm stats for output
+    fpattern = os.path.join(stats_dir, "stats_current_output_rank_*.pt")
+        
+    files = glob.glob(fpattern)    
+
+    synchronized_data = torch.load(files[0], weights_only=False, map_location=device)
+
+    for f in files[1:]:
+        data = torch.load(f, weights_only=False, map_location=device)
+        synchronized_data["acc_count"] += data["acc_count"]
+        synchronized_data["num_acc"] += data["num_acc"]
+        synchronized_data["acc_sum"] += data["acc_sum"]
+        synchronized_data["acc_sum_squared"] += data["acc_sum_squared"]
+
+    output = os.path.join(stats_dir,"stats_current_output.pt" )
+
+    torch.save(synchronized_data, output)
+
+def ptTObin(stats_dir):
+    stats_file_open = os.path.join(stats_dir, "stats_current_output.pt")
+    stats = torch.load(stats_file_open, weights_only=False, map_location=device)
+
+    arrays = {
+        "acc_count": stats["acc_count"].cpu().numpy(),
+        "num_acc": stats["num_acc"].cpu().numpy(),
+        "acc_sum": stats["acc_sum"].cpu().numpy(),
+        "acc_sum_squared": stats["acc_sum_squared"].cpu().numpy()
+    }
+
+    acc_count = arrays["acc_count"][0]  # 652,044,350.0
+    acc_sum = arrays["acc_sum"]        # Shape (6, 1, 1, 1, 1)
+    acc_sum_sq = arrays["acc_sum_squared"] 
+    epsilon = 1e-8
+
+    # 2. Calculate Mean (acc_sum / acc_count)
+    # This matches your _mean() method
+    means = acc_sum / acc_count
+
+    # 3. Calculate Std (sqrt(acc_sum_sq / acc_count - mean^2))
+    # This matches your _std_with_eps() method
+    variance = (acc_sum_sq / acc_count) - (means**2)
+    stds = np.sqrt(np.maximum(variance, 0)) # Clip to 0 for numerical stability
+    stds = np.maximum(stds, epsilon)        # Apply epsilon
+
+    # 4. Display Results (Flattened for readability)
+    component_means = means.flatten()
+    component_stds = stds.flatten()
+
+    for i in range(len(component_means)):
+        print(f"Component {i}: Mean = {component_means[i]:.8f}, Std = {component_stds[i]:.8f}")
+
+
+
+    stats_file_save = os.path.join(stats_dir, "normalizer.bin")
+    with open(stats_file_save, "wb") as f:
+        for name, arr in arrays.items():
+            # write name length and name (for debugging or identification)
+            name_bytes = name.encode("utf-8")
+            f.write(struct.pack("I", len(name_bytes)))
+            f.write(name_bytes)
+        
+            # write shape info
+            f.write(struct.pack("I", arr.ndim))
+            f.write(struct.pack("I" * arr.ndim, *arr.shape))
+        
+            # write the raw float data
+            f.write(arr.astype(np.float32).tobytes())

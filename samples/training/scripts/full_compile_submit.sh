@@ -7,21 +7,19 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=7
 #SBATCH --gres=gpu:v100:1
-#SBATCH --mem=128G
+#SBATCH --mem=32G
 #SBATCH -o slurm-%x_%J.out
 ####SBATCH --mail-type=ALL
 #SBATCH --output=train.out
 
 
 # current sample name
-#sample_name=helical-MHDturb
-
-sample_name=conv-slab
+sample_name=helical-MHDturb
 
 # training or inference
-mode=training
+mode=inference
 
-ml_model=UNET
+ml_model=unet
 
 data_src="/scratch/project_2000403/$USER/data_$sample_name/data"
 snap_src="/scratch/project_2000403/$USER/snapshots_$sample_name/snapshots"
@@ -38,14 +36,26 @@ module load pytorch/2.4
 export PYTHONPATH=$PYTHONPATH:$PENCIL_HOME/samples/training/models
 
 
+srun -n 1 python3 -c "from build_files import build_model; build_model('$data_src/training', '$data_src/training', '$ml_model')"
 
-srun python3 -c "from build_files import build_model; build_model('$data_src/training', '$data_src/training', '$ml_model')"
+srun -n 1 python3 -c "from build_files import build_loss; build_loss('$data_src/training', '$data_src/training')"
 
-srun python3 -c "from build_files import build_loss; build_loss('$data_src/training', '$data_src/training')"
+srun -n 1 python3 -c "from build_files import rand_dt_train; rand_dt_train('$run_dir', $dt_train_min, $dt_train_max)"
 
-srun python3 -c "from build_files import rand_dt_train; rand_dt_train('$run_dir', $dt_train_min, $dt_train_max)"
+srun -n 1 python3 -c "from build_files import build_torchfort_config; build_torchfort_config('$data_src/training', '$ml_model')"
 
-srun python3 -c "from build_files import build_torchfort_config; build_torchfort_config('$data_src/training', '$ml_model')"
+
+
+if [[ "$mode" == "inference" ]]; then
+	
+		if [[ ! -f "$data_src/training/stationary.pt" || ! -f  "$data_src/training/stats_current_output.pt" ]]; then
+    	echo "Error: Either model file: stationary.pt or stats file: stats_current_output.pt is not found."
+    	exit 1
+		fi
+
+    srun -n 1 python3 -c "from build_files import ptTObin; ptTObin('/scratch/project_2000403/$USER/data_helical-MHDturb/data/training')"
+fi
+
 
 #TP: have to bind /appl to get the right CUDA compiler for PC-A
 #    the one in the container is not the correct one
