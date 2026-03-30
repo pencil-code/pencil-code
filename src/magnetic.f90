@@ -7331,8 +7331,13 @@ print*,'AXEL2: should not be here (eta) ... '
 !
 !  current density components at one point (=pt).
 !
-      if (lroot.and.m==mpoint.and.n==npoint) then
+      !if (lroot.and.m==mpoint.and.n==npoint) then
         !MR: i.e., only pointwise data from root proc domain can be obtained! Intended?
+        !AB: no, changed this (30-mar-2026)
+      if (m==mpoint.and.n==npoint) then
+        if (idiag_axpt/=0) call save_name(p%aa(lpoint2-nghost,1),idiag_axpt)
+        if (idiag_aypt/=0) call save_name(p%aa(lpoint2-nghost,2),idiag_aypt)
+        if (idiag_azpt/=0) call save_name(p%aa(lpoint2-nghost,3),idiag_azpt)
         call save_name(p%bb(lpoint-nghost,1),idiag_bxpt)
         call save_name(p%bb(lpoint-nghost,2),idiag_bypt)
         call save_name(p%bb(lpoint-nghost,3),idiag_bzpt)
@@ -7354,6 +7359,9 @@ print*,'AXEL2: should not be here (eta) ... '
 !  current density components at point 2 (=p2).
 !
       if (lroot.and.m==mpoint2.and.n==npoint2) then
+        if (idiag_axp2/=0) call save_name(p%aa(lpoint2-nghost,1),idiag_axp2)
+        if (idiag_ayp2/=0) call save_name(p%aa(lpoint2-nghost,2),idiag_ayp2)
+        if (idiag_azp2/=0) call save_name(p%aa(lpoint2-nghost,3),idiag_azp2)
         if (idiag_bxp2/=0) call save_name(p%bb(lpoint2-nghost,1),idiag_bxp2)
         if (idiag_byp2/=0) call save_name(p%bb(lpoint2-nghost,2),idiag_byp2)
         if (idiag_bzp2/=0) call save_name(p%bb(lpoint2-nghost,3),idiag_bzp2)
