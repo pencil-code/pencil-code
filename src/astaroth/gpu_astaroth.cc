@@ -1093,7 +1093,7 @@ void denormalize(std::string filename, AcRealSymmetricTensor &tau_means, AcRealS
 
 /***********************************************************************************************/
 extern "C" void torch_infer_c_api(int itsub){	
-#if TRAINING
+#if LTRAINING
 	#include "user_constants.h"
 	if(ltrained && itsub!=1) return;
 	if(!calling_infer){
@@ -1149,7 +1149,7 @@ extern "C" void torch_infer_c_api(int itsub){
 }
 /***********************************************************************************************/
 extern "C" void torch_train_c_api(AcReal *loss_val, int itsub, double t) {
-#if TRAINING
+#if LTRAINING
   #include "user_constants.h"
   #include <stdlib.h>
   if(itsub != 1) return;
@@ -1209,7 +1209,7 @@ extern "C" void torch_train_c_api(AcReal *loss_val, int itsub, double t) {
 }
 /***********************************************************************************************/
 float MSE(){
-#if TRAINING
+#if LTRAINING
 	#include "user_constants.h"
 
 	auto calc_validation = acGetOptimizedDSLTaskGraph(calc_validation_loss);
@@ -1301,7 +1301,7 @@ std::vector<double> buffer;
 
 void print_debug() {
 if (it % 5 !=0) return;
-#if TRAINING
+#if LTRAINING
     #include "user_constants.h"
 		
 		std::string fname = "snapshots/snapshot_38_rank_" + std::to_string(my_rank) + "_it_" + std::to_string(it) + ".bin";
