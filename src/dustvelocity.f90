@@ -1159,12 +1159,12 @@ module Dustvelocity
 !
       if (Omega/=0. .and. lcoriolisforce_dust) then
         if (theta==0) then
-          if (headtt .and. k == 1) print*,'duud_dt: add Coriolis force; Omega=',Omega
+          if (lroot .and. headtt .and. k == 1) print*,'duud_dt: add Coriolis force; Omega=',Omega
           c2=2*Omega
           df(ix+nghost,m,n,iudx(k)) = df(ix+nghost,m,n,iudx(k)) + c2*p%uud(ix,2,k)
           df(ix+nghost,m,n,iudy(k)) = df(ix+nghost,m,n,iudy(k)) - c2*p%uud(ix,1,k)
         else
-          if (headtt .and. k == 1) print*, 'duud_dt: Coriolis force; Omega,theta=',Omega,theta
+          if (lroot .and. headtt .and. k == 1) print*, 'duud_dt: Coriolis force; Omega,theta=',Omega,theta
           c2=2*Omega*cos(theta*pi/180.)
           s2=2*Omega*sin(theta*pi/180.)
           df(ix+nghost,m,n,iudx(k)) = df(ix+nghost,m,n,iudx(k)) + c2*p%uud(ix,2,k)
@@ -1378,11 +1378,6 @@ module Dustvelocity
           endif
         enddo
 !
-!  Advective timestep contribution (condition could be narrower as even with dustdensity,
-!                                   there is not always advection).
-!
-        if (lupdate_courant_dt.and.(ldustdensity.or.ladvection_dust)) maxadvec=maxadvec+p%advec_uud(:,k) !MR: problematic - why sum?
-!
 !  Apply border profile
 !
         if (lborder_profiles) call set_border_dustvelocity(f,df,p,k)
@@ -1390,6 +1385,11 @@ module Dustvelocity
 !  End loop over dust species
 !
       enddo
+!
+!  Advective timestep contribution (condition could be narrower as even with dustdensity,
+!                                   there is not always advection).
+!
+      if (lupdate_courant_dt.and.(ldustdensity.or.ladvection_dust)) maxadvec=maxadvec+maxval(p%advec_uud,2)  !MR: sum problematic
 
       call calc_diagnostics_dustvelocity(p)
 !

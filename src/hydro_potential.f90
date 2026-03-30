@@ -1686,7 +1686,8 @@ module Hydro
 !  ``uu/dx'' for timestep
 !
       if (lupdate_courant_dt.and.ladvection_velocity) then
-        maxadvec=maxadvec+p%advec_uu
+        !maxadvec=maxadvec+p%advec_uu
+        maxadvec=max(maxadvec,p%advec_uu)
         if (headtt.or.ldebug) print*,'duu_dt: max(advec_uu) =',maxval(p%advec_uu)
       endif
 !
