@@ -1227,6 +1227,7 @@ module Equ
       use Testfield
       use Testflow
       use Testscalar
+      use Training, only: dt_sgs_terms
 
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
       real, dimension (mx,my,mz,mvar)   ,intent(INOUT) :: df
