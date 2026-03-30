@@ -642,7 +642,7 @@
     call copy_addr(itau_densityz,p_par(17)) ! int
     call copy_addr(input_channels,p_par(18)) ! int
     call copy_addr(output_channels,p_par(19)) ! int
-    call copy_addr(start_infer,p_par(20))
+    call copy_addr(start_infer,p_par(20)) ! real dconst
 
     endsubroutine pushpars2c
 !***********************************************************************
