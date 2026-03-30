@@ -25,7 +25,7 @@
 
     integer :: model_device=0
     integer :: it_train=-1, it_train_chkpt=-1, it_train_start=1,it_train_end=-1
-    real :: t_train_start = 0.0, t_train_end = -1.0, t_train_chkpt=-1.0
+    real :: t_train_start = 0.0, t_train_end = -1.0, t_train_chkpt=-1.0, start_infer=0.0
 
     !real(KIND=rkind4), dimension(:,:,:,:,:), allocatable, device :: input, label, output
     real, dimension(:,:,:,:,:), allocatable, device :: input, label, output
@@ -46,7 +46,7 @@
     namelist /training_run_pars/ config_file, model, it_train, it_train_start, it_train_chkpt, &
                                  luse_trained_tau, lscale, lwrite_sample, max_loss, lroute_via_cpu,&
                                  it_train_end, lrun_epoch, dt_train, t_train_start, t_train_end, t_train_chkpt,&
-                                 ltrain_mag,ltrain_dens
+                                 ltrain_mag,ltrain_dens, start_infer
 !
     character(LEN=fnlen) :: model_output_dir, checkpoint_output_dir
     integer :: istat, train_step_ckpt, val_step_ckpt
@@ -642,6 +642,7 @@
     call copy_addr(itau_densityz,p_par(17)) ! int
     call copy_addr(input_channels,p_par(18)) ! int
     call copy_addr(output_channels,p_par(19)) ! int
+    call copy_addr(start_infer,p_par(20))
 
     endsubroutine pushpars2c
 !***********************************************************************

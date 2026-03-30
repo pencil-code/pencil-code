@@ -48,6 +48,9 @@ if [[ "$mode" == "inference" ]]; then
     	echo "Error: Either model file: stationary.pt or stats file: stats_current_output.pt is not found."
     	exit 1
 		fi
+
+    srun -n 1 python3 -c "from build_files import ptTObin; ptTObin('$data_src/training')"
+
 else
 	srun -n 1 python3 -c "from build_files import build_model; build_model('$data_src/training', '$data_src/training', '$ml_model')"
 

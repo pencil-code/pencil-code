@@ -27,7 +27,8 @@
 &density_run_pars
 /
 &forcing_run_pars
-  iforce='helical', force=0.07, relhel=1.
+!try reducing (0.01)
+  iforce='helical', force=0.01, relhel=1.
 /
 &magnetic_run_pars
   eta=5e-3
@@ -65,7 +66,7 @@
 	t_train_start=0
 	t_train_end=69.752
 	t_train_chkpt=6.8
-  start_infer=1.5
+  start_infer=100
 /
 &gpu_run_pars
   ltest_bcs=F
