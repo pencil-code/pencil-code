@@ -118,10 +118,14 @@ ifeq ($(RUNTIME_COMPILATION),ON)
 	CMAKE_BUILD_TYPE ?= RelWithDebInfo
 endif
 
-ifeq ($(TRAINING),training_torchfort) 
+#ifeq ($(TRAINING),training_torchfort) 
+ifneq ($(TORCHFORT_PATH),)
 	SUPPRESS_COMPILER_WARNINGS = on
+endif
+
+ifeq ($(TRAINING),training_torchfort) 
 	CMAKE_TRAINING_VALUE = on
-        SOURCES += torch.cc
+  SOURCES += torch.cc
 endif
 
 CMAKE_BUILD_TYPE          ?= Debug

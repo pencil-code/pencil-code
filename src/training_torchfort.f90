@@ -453,7 +453,7 @@
 
       if (ltrained) then 
         call div_tensor(f,div_hydro_sgs,itau_hydro)
-        if (start_infer >= t) then
+        if (t >= start_infer) then
           df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - div_hydro_sgs
         endif
         
