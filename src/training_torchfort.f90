@@ -452,8 +452,8 @@
       real, dimension(nx)   :: div_dens_sgs
 
       if (ltrained) then 
+        call div_tensor(f,div_hydro_sgs,itau_hydro)
         if (start_infer >= t) then
-          call div_tensor(f,div_hydro_sgs,itau_hydro)
           df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - div_hydro_sgs
         endif
         
