@@ -1577,7 +1577,7 @@ calc_timestep(double t)
     	// Step above error threshold so decrease the next time step
     	const AcReal dt_temp = safety*dt*pow(maximum_error,dt_decrease);
     	// Don't decrease the time step by more than a factor of ten
-      constexpr AcReal decrease_factor = (AcReal)0.1;
+        constexpr AcReal decrease_factor = (AcReal)0.1;
     	dt_ = sign(max(abs(dt_temp), decrease_factor*abs(dt)), dt);
     } 
     else
@@ -1629,7 +1629,9 @@ extern "C" void substepGPU(int isubstep, double t)
               || (isubstep == 1 &&  lcourant_dt)
              )
      )
+  {
 	calc_timestep(t);
+  }
   return;
 }
 /***********************************************************************************************/

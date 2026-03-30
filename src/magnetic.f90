@@ -1148,6 +1148,9 @@ module Magnetic
   real, dimension(-nghost:nghost,-nghost:nghost,-nghost:nghost) :: kern_jjsmooth
 !
   real, dimension(nz,nprocz) :: z_allprocs
+
+  real, dimension(mz) :: Bz_stratified
+
 !
 ! for continuous forcing
 !
@@ -1168,8 +1171,6 @@ module Magnetic
   integer :: enum_borderaa(3) = 0
   integer :: enum_iforcing_continuous_aa = 0
 
-  !TP: moved here from saved variable
-  real, dimension(mz) :: Bz_stratified
 
   logical :: lrelaxprof_glob_scaled
 

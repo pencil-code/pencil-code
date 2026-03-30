@@ -1160,7 +1160,9 @@ module Equ
     endsubroutine timestep_diagnostics
 !***********************************************************************
     subroutine calc_time_integrals(f,p)
-
+!
+!  Calculates time integrals
+!
       use Hydro,    only: time_integrals_hydro
       use Magnetic, only: time_integrals_magnetic
 
@@ -1175,7 +1177,9 @@ module Equ
     endsubroutine calc_time_integrals
 !***********************************************************************
     subroutine calc_df_diagnostics(df,p)
-
+!
+!  Calculates all diagnostics depending on df
+!
       use Hydro,    only: df_diagnos_hydro
       use Magnetic, only: df_diagnos_magnetic
 
@@ -1190,6 +1194,9 @@ module Equ
     endsubroutine calc_df_diagnostics
 !***********************************************************************
     subroutine calc_all_rhs(f,df,p)
+!
+!  Calculates all rhss
+!
 
       use Ascalar
       use Chiral
