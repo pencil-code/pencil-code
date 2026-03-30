@@ -8,6 +8,8 @@ module Equ
   use Messages
   use Boundcond
   use Grid, only: calc_pencils_grid, get_grid_mn
+  use Mpicomm, only: MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+                     MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE
 
   implicit none
 !
@@ -769,8 +771,6 @@ module Equ
       subroutine calc_all_before_boundary_diagnostics(f)
 
         use Density, only: density_before_boundary_diagnostics
-        use Mpicomm, only: MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
-                     MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE
 
         real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
 
