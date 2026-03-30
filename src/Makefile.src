@@ -538,7 +538,8 @@ DSL_WORKDIR=$(CUDA_MAKEDIR)/DSL/local
 LIBGPU =
 GPU_DEPS =
 
-ifeq ($(TRAINING),training_torchfort)
+#ifeq ($(TRAINING),training_torchfort)
+ifneq ($(TORCHFORT_PATH),)
   ifneq ($(HYDRO),hydro)
     $(error Training_torchfort needs hydro! Exit.)
   endif
