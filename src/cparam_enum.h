@@ -1,5 +1,9 @@
-!TP: strings to enums
-
+!
+! These integer enums exist to have a unique
+! mapping from strings to integers.
+! At the moment used to transform strings to integers when
+! passing them to the GPU, since integers work nicer there.
+!
 integer, parameter :: enum_unknown_string_string = 0
 integer, parameter :: enum_pde_string = 1
 integer, parameter :: enum_before_lanelastic_string = 2
