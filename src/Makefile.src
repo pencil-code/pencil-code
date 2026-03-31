@@ -3167,19 +3167,15 @@ endif
 special_tmp.f90: special.f90
 	@sed -e's/\(n_special_modules_max *= *\)[1-9][0-9]*/\1'$(SPECIAL_MULT)'/' < special.f90 > special_tmp.f90
 
-ifeq ($(GPU),gpu_astaroth)
 special.so: $(CPARAM_OBJ) $(CDATA_OBJ) $(SPECIAL_OBJ) special_dummies.inc $(SPECIAL_MODULES:=.o)
-	$(LD) $(SPECIAL_MODULES:=.o) $(LIBFLAGS) $(DLL_LDFLAGS) -o special.so
-else
-special.so: $(CPARAM_OBJ) $(CDATA_OBJ) $(SPECIAL_OBJ) special_dummies.inc $(SPECIAL_MODULES:=.o)
-	# pc_mkspecial should run regardless of whether ld succeeds; if ld fails,
-	# we want make to fail AFTER running pc_mkspecial. The backslashes and
-	# semicolons below are essential for this.
-	$(LD) $(SPECIAL_MODULES:=.o) $(DLL_LDFLAGS) -o special.so ;\
-	ld_status=$$? ;\
-	pc_mkspecial.sh "$(SPECIAL_MODULES:=.f90)" ;\
-	exit $$ld_status
-endif
+	@$(LD) $(SPECIAL_MODULES:=.o) $(LIBFLAGS) $(DLL_LDFLAGS) -o special.so ;\
+        ld_status=$$? ;\
+        pc_mkspecial.sh "$(SPECIAL_MODULES:=.f90)" ;\
+        exit $$ld_status
+
+# pc_mkspecial should run regardless of whether ld succeeds; if ld fails,
+# we want make to fail AFTER running pc_mkspecial. The backslashes and
+# semicolons above are essential for this.
 #
 #  comment out the 3 lines ifneq, @, endif below if one gets an error message
 #  about io_dist cannot copy.
