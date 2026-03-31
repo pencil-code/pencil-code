@@ -1273,7 +1273,7 @@ module Special
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=axionSU2back_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
       !call keep_compiler_quiet(f)
 !
     endsubroutine read_special_init_pars
@@ -1282,7 +1282,7 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=axionSU2back_init_pars)
+      write(unit, NML=special_init_pars)
 !
     endsubroutine write_special_init_pars
 !***********************************************************************
@@ -1292,7 +1292,7 @@ module Special
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=axionSU2back_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_run_pars
 !***********************************************************************
@@ -1300,7 +1300,7 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=axionSU2back_run_pars)
+      write(unit, NML=special_run_pars)
 !
     endsubroutine write_special_run_pars
 !***********************************************************************
