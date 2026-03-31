@@ -3167,7 +3167,7 @@ endif
 special_tmp.f90: special.f90
 	@sed -e's/\(n_special_modules_max *= *\)[1-9][0-9]*/\1'$(SPECIAL_MULT)'/' < special.f90 > special_tmp.f90
 
-special.so: $(CPARAM_OBJ) $(CDATA_OBJ) $(SPECIAL_OBJ) special_dummies.inc $(SPECIAL_MODULES:=.o)
+special.so: $(CPARAM_OBJ) $(CDATA_OBJ) $(SPECIAL_OBJ) special_dummies.inc $(SPECIAL_MODULES:=.o)  $(LIBGPU)
 	@$(LD) $(SPECIAL_MODULES:=.o) $(LIBFLAGS) $(DLL_LDFLAGS) -o special.so ;\
         ld_status=$$? ;\
         pc_mkspecial.sh "$(SPECIAL_MODULES:=.f90)" ;\
