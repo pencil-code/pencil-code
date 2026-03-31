@@ -1276,9 +1276,7 @@ module Dustvelocity
 !
       if (lviscd_hyper3_polar) then
         do j=1,3
-          do i=1,3
-            fviscd(j) = fviscd(j) + nud_hyper3(k)*pi4_1*grad6_uud(ix,i,j,k)*dline_1(ix,i)**2
-          enddo
+          fviscd(j) = fviscd(j) + nud_hyper3(k)*pi4_1*sum(grad6_uud(ix,:,j,k)*dline_1(ix,:)**2)
         enddo
         if (lupdate_courant_dt) diffus_nud3=diffus_nud3+nud_hyper3(k)*pi4_1*dxmin_pencil**4
       endif
@@ -1287,9 +1285,7 @@ module Dustvelocity
 !
       if (lviscd_hyper3_mesh) then
         do j=1,3
-          do i=1,3
-            fviscd(j) = fviscd(j) + nud_hyper3_mesh(k)*pi5_1/60.*grad6_uud(ix,i,j,k)*dline_1(ix,i)
-          enddo
+          fviscd(j) = fviscd(j) + nud_hyper3_mesh(k)*pi5_1/60.*sum(grad6_uud(ix,:,j,k)*dline_1(ix,:))
         enddo
         if (lupdate_courant_dt) then
           advec_hypermesh_uud=nud_hyper3_mesh(k)*pi5_1*sqrt(dxyz_2)
