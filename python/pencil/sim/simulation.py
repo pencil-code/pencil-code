@@ -606,8 +606,8 @@ class Simulation:
                             sep='\n',
                         )
                     REEXPORT = True
-            except:
-                print(f"! ERROR: while reading param.nml for {self.path}")
+            except Exception as e:
+                warnings.warn(f"! ERROR: ({e}) while reading param.nml for {self.path}")
                 self.param = False
                 REEXPORT = True
 
