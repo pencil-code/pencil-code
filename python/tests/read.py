@@ -104,6 +104,8 @@ def test_read_param() -> None:
     assert_equal(params.lentropy, True)
     assert_equal(params.ltemperature, False)
 
+    with pytest.raises(AttributeError):
+        params.eos
 
 def test_read_var() -> None:
     """Read var.dat (data cube) file."""
