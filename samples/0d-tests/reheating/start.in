@@ -16,4 +16,6 @@
   lrho_rad=T
   lconf_time=T, lcompute_dphi0=F, dphi0=0.
   lwstate_crit=T, wstate_crit=.3
+  ldefine_a2rhopm_without_Vpotential=F
+  la2rhop_wrong_factor=F
 /
