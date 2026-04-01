@@ -237,9 +237,6 @@ class Param(object):
                 )
                 self.io_strategy = "dist"
 
-        # IL: updating the list of keys as a list
-        self.keys = list(self.__dict__.keys())
-
     def __param_formatter(self, string_part):
         """
         Formats the parameters from the files.
