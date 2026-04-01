@@ -205,11 +205,10 @@ class Param(object):
                     exec(script.replace("\n    ", "\nself.")[198:])
                     del numpy
                 else:
-                    print(
+                    raise RuntimeError(
                         "Param.read: nl2python returned nothing!"
                         + " Is $PENCIL_HOME/bin in the path?"
                     )
-                    return -1
 
         if append_units:
             self.unit_time = self.unit_length / self.unit_velocity
