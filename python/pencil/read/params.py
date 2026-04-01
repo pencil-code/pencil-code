@@ -239,7 +239,6 @@ class Param(object):
 
         # IL: updating the list of keys as a list
         self.keys = list(self.__dict__.keys())
-        return 0
 
     def __param_formatter(self, string_part):
         """
