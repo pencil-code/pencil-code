@@ -571,10 +571,16 @@ class Simulation:
             REEXPORT = True
 
         if self.param == False:
-            try:
-                if exists(join(self.datadir, "param.nml")):
-                    if not quiet: print("~ Reading param.nml.. ")
+            REEXPORT = True
+            if exists(join(self.datadir, "param.nml")):
+                if not quiet: print("~ Reading param.nml.. ")
+
+                try:
                     param = param(quiet=quiet, datadir=self.datadir)
+                except Exception as e:
+                    warnings.warn(f"! ERROR: ({e}) while reading param.nml for {self.path}")
+                    self.param = False
+                else:
                     self.param = _DotDict()
                     allowed_types = (bool, list, float, int, str)
                     # read params into Simulation object
@@ -594,22 +600,16 @@ class Simulation:
                                     subval = getattr(val, subkey)
                                     if isinstance(subval, allowed_types):
                                         self.param[key][subkey] = subval
-                            except:
+                            except Exception:
                                 # not nested param objects
                                 continue
-                    REEXPORT = True
-                else:
-                    if not quiet:
-                        print(
-                            f"? WARNING: for {self.path}",
-                            "? Simulation has not run yet! Meaning: No param.nml found!",
-                            sep='\n',
-                        )
-                    REEXPORT = True
-            except Exception as e:
-                warnings.warn(f"! ERROR: ({e}) while reading param.nml for {self.path}")
-                self.param = False
-                REEXPORT = True
+            else:
+                if not quiet:
+                    print(
+                        f"? WARNING: for {self.path}",
+                        "? Simulation has not run yet! Meaning: No param.nml found!",
+                        sep='\n',
+                    )
 
         if self.param != False and (self.grid == False or self.ghost_grid == False):
             # read grid only if param is not False
