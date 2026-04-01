@@ -150,26 +150,26 @@ class Param(object):
             if param_conflicts:
                 subkey_list = list()
                 for super_name in super_name_list:
-                    if super_name in param_conflicts.keys():
-                        for subkey in param_conflicts[super_name].keys():
+                    if super_name in param_conflicts:
+                        for subkey in param_conflicts[super_name]:
                             subkey_list.append(subkey)
                 for super_name in super_name_list:
-                    if not super_name in param_conflicts.keys():
+                    if not super_name in param_conflicts:
                         if super_name in param_list:
                             del param_list[super_name]
                         super_name_list.remove(super_name)
                 for super_name in super_name_list:
                     for key in name_list:
                         if not key in subkey_list:
-                            if key in param_list[super_name].keys():
+                            if key in param_list[super_name]:
                                 del param_list[super_name][key]
                 for key in name_list:
-                    if key in param_list.keys() and key in subkey_list:
+                    if key in param_list and key in subkey_list:
                         del param_list[key]
 
                 # report conflicts and record nests to retain
-                for key in param_conflicts.keys():
-                    for subkey in param_conflicts[key].keys():
+                for key in param_conflicts:
+                    for subkey in param_conflicts[key]:
                         if not conflicts_quiet:
                             print(
                                 subkey,
@@ -184,12 +184,12 @@ class Param(object):
                             )
 
             # Construct class Params object attributes
-            for key in param_list.keys():
+            for key in param_list:
                 # Nest only parameters with name conflicts
                 if key in super_name_list:
                     ext_object = _Foo()
                     setattr(self, key, ext_object)
-                    for subkey in param_list[key].keys():
+                    for subkey in param_list[key]:
                         if not quiet:
                             print(subkey, "is nested under", key)
                         setattr(ext_object, subkey, param_list[key][subkey])
