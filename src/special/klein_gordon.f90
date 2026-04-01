@@ -32,7 +32,7 @@
 !    NOT IMPLEMENTED FULLY YET - HOOKS NOT PLACED INTO THE PENCIL-CODE
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
-! Declare (for generation of special_dummies.inc) the number of f array
+! Declare (for generation of klein_gordon_dummies.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lspecial = .true.
@@ -78,7 +78,7 @@
 ! Where geo_kws it replaced by the filename of your new module
 ! upto and not including the .f90
 !
-module Special
+module klein_gordon
 !
   use Cdata
   use General, only: keep_compiler_quiet
@@ -140,7 +140,7 @@ module Special
   character (len=labellen), dimension(ninit) :: initspecial='nothing'
   character (len=50) :: echarge_type='const', init_rho_chi='zero'
 !
-  namelist /special_init_pars/ &
+  namelist /klein_gordon_init_pars/ &
       initspecial, phi0, dphi0, phimass, eps, ascale_ini, &
       lcompute_dphi0, lem_backreact, &
       c_phi, lambda_phi, Vprime_choice, amplphi, ampldphi, lno_noise_phi, lno_noise_dphi, &
@@ -154,7 +154,7 @@ module Special
       lwaterfall, lambda_psi, coupl_phipsi, c_psi, amplpsi, ampldpsi, psimass, &
       V0_usr, v_usr, alpha_usr, beta_usr
 !
-  namelist /special_run_pars/ &
+  namelist /klein_gordon_run_pars/ &
       initspecial, phi0, dphi0, phimass, eps, ascale_ini, &
       lem_backreact, c_phi, lambda_phi, Vprime_choice, &
       ldt_klein_gordon, Ndiv, Hscript0, Hscript_choice, &
@@ -1175,7 +1175,7 @@ module Special
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=klein_gordon_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_init_pars
 !***********************************************************************
@@ -1183,7 +1183,7 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=special_init_pars)
+      write(unit, NML=klein_gordon_init_pars)
 !
     endsubroutine write_special_init_pars
 !***********************************************************************
@@ -1193,7 +1193,7 @@ module Special
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=klein_gordon_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_run_pars
 !***********************************************************************
@@ -1201,7 +1201,7 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=special_run_pars)
+      write(unit, NML=klein_gordon_run_pars)
 !
     endsubroutine write_special_run_pars
 !***********************************************************************
@@ -1749,6 +1749,6 @@ module Special
 !**  copies dummy routines from nospecial.f90 for any Special      **
 !**  routines not implemented in this file                         **
 !**                                                                **
-    include '../special_dummies.inc'
+    include '../klein_gordon_dummies.inc'
 !********************************************************************
-endmodule Special
+endmodule klein_gordon

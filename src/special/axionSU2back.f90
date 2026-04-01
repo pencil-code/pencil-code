@@ -12,7 +12,7 @@
 !   5-jan-26/axel: added lalways_backreact_output to produce output independent of nswitch>0
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
-! Declare (for generation of special_dummies.inc) the number of f array
+! Declare (for generation of axionSU2back_dummies.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lspecial = .true.
@@ -22,7 +22,7 @@
 !
 !***************************************************************
 !
-module Special
+module axionSU2back
 !
   use Cdata
   use General, only: keep_compiler_quiet
@@ -78,7 +78,7 @@ module Special
   logical :: lalways_backreact_output=.false.
   character(len=50) :: init_axionSU2back='standard'
   character (len=labellen) :: V_choice='quadratic'
-  namelist /special_init_pars/ &
+  namelist /axionSU2back_init_pars/ &
     k0, dk, fdecay, g, lam, mu, Q0, Qdot0, chi_prefactor, chidot0, H, &
     lconf_time, Ndivt, lanalytic, lvariable_k, axion_sum_range, &
     llnk_spacing_adjustable, llnk_spacing, lim_psi_TR, lleft_psiL_TL, &
@@ -87,7 +87,7 @@ module Special
     lSchwinger_scalar, mscal, sgn_g
 !
   ! run parameters
-  namelist /special_run_pars/ &
+  namelist /axionSU2back_run_pars/ &
     k0, dk, fdecay, g, lam, mu, H, lwith_eps, lupdate_background, &
     lbackreact, sbackreact_Q, sbackreact_JJ, sbackreact_chi, tback, dtback, lconf_time, &
     Ndivt, lanalytic, lvariable_k, llnk_spacing_adjustable, llnk_spacing, &
@@ -1273,7 +1273,7 @@ module Special
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=axionSU2back_init_pars, IOSTAT=iostat)
       !call keep_compiler_quiet(f)
 !
     endsubroutine read_special_init_pars
@@ -1282,7 +1282,7 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=special_init_pars)
+      write(unit, NML=axionSU2back_init_pars)
 !
     endsubroutine write_special_init_pars
 !***********************************************************************
@@ -1292,7 +1292,7 @@ module Special
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=axionSU2back_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_run_pars
 !***********************************************************************
@@ -1300,7 +1300,7 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=special_run_pars)
+      write(unit, NML=axionSU2back_run_pars)
 !
     endsubroutine write_special_run_pars
 !***********************************************************************
@@ -2096,6 +2096,6 @@ module Special
 !**  copies dummy routines from nospecial.f90 for any Special      **
 !**  routines not implemented in this file                         **
 !**                                                                **
-    include '../special_dummies.inc'
+    include '../axionSU2back_dummies.inc'
 !********************************************************************
-endmodule Special
+endmodule axionSU2back
