@@ -963,14 +963,12 @@ module Deriv
 !
       igndx=loptest(ignoredx)
       lexponentiate = loptest(lexp)
+      upwnd = loptest(upwind)
 !
-      if (present(upwind)) then
+      if (upwnd) then
         if (.not. lequidist(j).and..not.lignore_nonequi) &
           call fatal_error('der6_main','upwind cannot be used with '//&
                            'non-equidistant grid.')
-        upwnd = upwind
-      else
-        upwnd = .false.
       endif
 !
       if (j==1) then
