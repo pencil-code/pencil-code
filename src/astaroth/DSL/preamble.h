@@ -162,6 +162,7 @@ output real AC_maxnu
 ac_unused_real_array_1d(index) {suppress_unused_warning(index); return 0.0}
 ac_unused_real_array_2d(index1,index2) {suppress_unused_warning(index1); suppress_unused_warning(index2); return 0.0}
 ac_unused_real_array_3d(index1,index2,index3) {suppress_unused_warning(index1); suppress_unused_warning(index2); suppress_unused_warning(index3); return 0.0}
+const real ac_unused_real_array_2d_dummy_value = 0.0
 const real ac_unused_real_scalar = 0.0
 const real ac_real_unused_scalar = 0.0
 #define epsi AC_REAL_EPSILON
