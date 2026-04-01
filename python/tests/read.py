@@ -107,6 +107,13 @@ def test_read_param() -> None:
     with pytest.raises(AttributeError):
         params.eos
 
+@pytest.mark.xfail(reason="not implemented yet")
+def test_read_param_keepnested() -> None:
+    params = param(DATA_DIR, keep_nested=True)
+    assert params.eos.gamma == 1.666_666_6
+    assert params.hydro.kx_uu == 1.0
+
+
 def test_read_var() -> None:
     """Read var.dat (data cube) file."""
     data = var("var.dat", DATA_DIR, proc=0, quiet=True)
