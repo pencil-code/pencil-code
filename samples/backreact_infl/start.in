@@ -11,6 +11,7 @@
 &magnetic_init_pars
   initaa='power_randomphase_hel', amplaa=1.67e-10, kpeak_aa=50e-6
   initpower_aa=1., relhel_aa=0., initpower2_aa=-5.
+  !learly_set_el_pencil=T
   lscale_tobox=F
   lvacuum=T
 /
@@ -25,6 +26,8 @@
   initpower2_dphi=-3.
   lscale_tobox=F
   lflrw=T, axionmass=1.06e-6
+  ldefine_a2rhopm_without_Vpotential=T
+  la2rhop_wrong_factor=T
 /
 &disp_current_init_pars
   initee='power_randomphase_hel', amplee=1.58e-10, kpeak_ee=50e-6

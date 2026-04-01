@@ -129,8 +129,8 @@ module Special
   logical :: lsolve_for_phi=.true.       !PAR_DOC: whether we still want to solve for phi
   logical :: lwstate_crit=.true.         !PAR_DOC: lwstate_crit switch
   logical :: lheating=.false.            !PAR_DOC: heating criterion
-  logical :: ldefine_a2rhopm_without_Vpotential=.true.    !PAR_DOC: should be false to have correct results
-  logical :: la2rhop_wrong_factor=.true. !PAR_DOC: should be false to have correct results
+  logical :: ldefine_a2rhopm_without_Vpotential=.false.    !PAR_DOC: should be false to have correct results
+  logical :: la2rhop_wrong_factor=.false. !PAR_DOC: should be false to have correct results
   logical, pointer :: lphi_hom, lphi_linear_regime, lnoncollinear_EB, lnoncollinear_EB_aver
   logical, pointer :: lcollinear_EB, lcollinear_EB_aver, lmass_suppression
   logical, pointer :: lallow_bprime_zero
