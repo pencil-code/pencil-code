@@ -50,6 +50,7 @@ class Param(object):
         asdict=True,
         nest_dict=True,
         append_units=True,
+        keep_nested=False,
     ):
         """
         read(datadir='data', param1=False, param2=False, quiet=True,
@@ -84,6 +85,9 @@ class Param(object):
 
         append_units : bool
           Derives dimensional units from standard code units.
+
+        keep_nested: bool
+          Whether to keep the attributes corresponding to individual namelist. If True, self.XXX will contain the entries from XXX_run_pars. Requires nest_dict=True.
 
         Returns
         -------
@@ -135,43 +139,48 @@ class Param(object):
                     nest = nest_dict,
                 )
 
-            if param_conflicts:
-                subkey_list = list()
-                for super_name in super_name_list:
-                    if super_name in param_conflicts:
-                        for subkey in param_conflicts[super_name]:
-                            subkey_list.append(subkey)
+            subkey_list = list() #list of conflicting keys
+            for super_name in super_name_list:
+                if super_name in param_conflicts:
+                    for subkey in param_conflicts[super_name]:
+                        subkey_list.append(subkey)
+
+            if not keep_nested:
+                #Remove namelists with no conflicting keys
                 for super_name in super_name_list:
                     if not super_name in param_conflicts:
                         if super_name in param_list:
                             del param_list[super_name]
                         super_name_list.remove(super_name)
+
+                #For remaining namelists, remove non-conflicting keys
                 for super_name in super_name_list:
                     for key in name_list:
                         if not key in subkey_list:
                             if key in param_list[super_name]:
                                 del param_list[super_name][key]
-                for key in name_list:
-                    if key in param_list and key in subkey_list:
-                        #TODO: it looks like __read_nml already does this!
-                        #If the same key is present in two different namelists, remove it from the root object.
-                        del param_list[key]
 
-                # report conflicts and record nests to retain
-                for key in param_conflicts:
-                    for subkey in param_conflicts[key]:
-                        if not conflicts_quiet:
-                            print(
-                                subkey,
-                                "as",
-                                param_conflicts[key][subkey][0],
-                                "in",
-                                key,
-                                "conflicts with",
-                                param_conflicts[key][subkey][2],
-                                "in",
-                                param_conflicts[key][subkey][1],
-                            )
+            #For conflicting keys, remove the ambiguous entry at the root level.
+            for key in name_list:
+                if key in param_list and key in subkey_list:
+                    #If the same key is present in two different namelists, remove it from the root object.
+                    del param_list[key]
+
+            # report conflicts and record nests to retain
+            for key in param_conflicts:
+                for subkey in param_conflicts[key]:
+                    if not conflicts_quiet:
+                        print(
+                            subkey,
+                            "as",
+                            param_conflicts[key][subkey][0],
+                            "in",
+                            key,
+                            "conflicts with",
+                            param_conflicts[key][subkey][2],
+                            "in",
+                            param_conflicts[key][subkey][1],
+                        )
 
             # Construct class Params object attributes
             for key in param_list:
