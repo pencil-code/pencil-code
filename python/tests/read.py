@@ -112,7 +112,7 @@ def test_read_param() -> None:
     with pytest.raises(AttributeError):
         params.run
 
-@pytest.mark.xfail(reason="not implemented yet")
+# @pytest.mark.xfail(reason="not implemented yet")
 def test_read_param_keepnested() -> None:
     params = param(DATA_DIR, keep_nested=True)
     assert params.eos.gamma == 1.666_666_6
