@@ -107,6 +107,11 @@ def test_read_param() -> None:
     with pytest.raises(AttributeError):
         params.eos
 
+    with pytest.raises(AttributeError):
+        params.init
+    with pytest.raises(AttributeError):
+        params.run
+
 @pytest.mark.xfail(reason="not implemented yet")
 def test_read_param_keepnested() -> None:
     params = param(DATA_DIR, keep_nested=True)
