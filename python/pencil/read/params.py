@@ -326,7 +326,7 @@ class Param(object):
             for super_name_full in nmlobj.keys():
                 super_name = self._clean_namelist_name(super_name_full)
                 if nest:
-                    if not params.__contains__(super_name):
+                    if (super_name not in params) and (super_name not in always_denest):
                         params[super_name] = dict()
                         super_name_list.append(super_name)
                 for name in nmlobj[super_name_full].keys():
@@ -357,7 +357,7 @@ class Param(object):
                 if len(line) > 1 and (line[1] == "&" or line[0] == "&"):
                     super_name = self._clean_namelist_name(line[1:].lower())
                     if nest:
-                        if not params.__contains__(super_name):
+                        if (super_name not in params) and (super_name not in always_denest):
                             params[super_name] = dict()
                             super_name_list.append(super_name)
                 else:
@@ -384,10 +384,6 @@ class Param(object):
                             # Save all parameters nested and unnested
                             if super_name not in always_denest:
                                 params[super_name][name] = value
-
-        for name in always_denest:
-            if name in super_name_list:
-                super_name_list.remove(name)
 
         #Check for name conflicts
         for super_name in super_name_list:
