@@ -355,7 +355,7 @@ class Param(object):
                 lastrawline = rawline.rstrip("\n")
                 line = rawline.rstrip("\n")
                 if len(line) > 1 and (line[1] == "&" or line[0] == "&"):
-                    super_name = self._clean_namelist_name(line[2:].lower())
+                    super_name = self._clean_namelist_name(line[1:].lower())
                     if nest:
                         if not params.__contains__(super_name):
                             params[super_name] = dict()
