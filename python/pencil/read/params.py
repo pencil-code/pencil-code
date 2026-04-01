@@ -155,17 +155,17 @@ class Param(object):
                             subkey_list.append(subkey)
                 for super_name in super_name_list:
                     if not super_name in param_conflicts.keys():
-                        if param_list.__contains__(super_name):
-                            param_list.__delitem__(super_name)
+                        if super_name in param_list:
+                            del param_list[super_name]
                         super_name_list.remove(super_name)
                 for super_name in super_name_list:
                     for key in name_list:
                         if not key in subkey_list:
                             if key in param_list[super_name].keys():
-                                param_list[super_name].__delitem__(key)
+                                del param_list[super_name][key]
                 for key in name_list:
                     if key in param_list.keys() and key in subkey_list:
-                        param_list.__delitem__(key)
+                        del param_list[key]
 
             # If nesting occurs report conflicts and record nests to retain
             if not param_conflicts:
