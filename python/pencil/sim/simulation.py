@@ -602,7 +602,7 @@ class Simulation:
                     if not quiet:
                         print(
                             f"? WARNING: for {self.path}",
-                            + "? Simulation has not run yet! Meaning: No param.nml found!",
+                            "? Simulation has not run yet! Meaning: No param.nml found!",
                             sep='\n',
                         )
                     REEXPORT = True
