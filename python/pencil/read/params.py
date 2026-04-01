@@ -392,7 +392,6 @@ class Param(object):
                                 params[super_name][name] = value
 
         if len(super_name_list) > 0:
-            #Always denest init and run
             for name in always_denest:
                 if name in super_name_list:
                     super_name_list.remove(name)
