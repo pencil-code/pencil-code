@@ -11,7 +11,7 @@ module Deriv
 !
   use Messages
   use Cdata
-  use General, only: keep_compiler_quiet
+  use General, only: keep_compiler_quiet,loptest
   use Cparam, only: lactive_dimension, nxgrid, nygrid, nzgrid
 !
   implicit none
@@ -771,7 +771,7 @@ module Deriv
 !
     endsubroutine der5
 !***********************************************************************
-    subroutine der6_main(f,k,df,j,ignoredx,upwind)
+    subroutine der6_main(f,k,df,j,ignoredx,upwind,lexp)
 !
 !  Calculate 6th derivative of a scalar, get scalar
 !    Used for hyperdiffusion that affects small wave numbers as little as
@@ -791,7 +791,7 @@ module Deriv
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
       integer :: j,k
-      logical, optional :: ignoredx,upwind
+      logical, optional :: ignoredx,upwind,lexp
       logical :: igndx,upwnd
 !
       intent(in)  :: f,k,j,ignoredx
@@ -800,15 +800,9 @@ module Deriv
 !debug      if (loptimise_ders) der_call_count(k,icount_der6,j,1) = & !DERCOUNT
 !debug                          der_call_count(k,icount_der6,j,1) + 1 !DERCOUNT
 !
-      if (present(ignoredx)) then
-        igndx = ignoredx
-      else
-        igndx = .false.
-      endif
-      if (present(upwind)) then
-        upwnd = upwind
-      else
-        upwnd = .false.
+      igndx = loptest(ignoredx)
+      upwnd = loptest(upwind)
+      if (.not. upwnd) then
         if (.not. lequidist(j)) then
           call fatal_error('der6','NOT IMPLEMENTED for non-equidistant grid')
         endif
@@ -816,6 +810,9 @@ module Deriv
           call fatal_error('der6','in non-cartesian coordinates '//&
                'just works if upwinding is used')
         endif
+     endif
+     if (loptest(lexp)) then
+             call fatal_error('der6','NOT IMPLEMENTED lexp=T')
      endif
 !
 !

@@ -707,7 +707,7 @@ module Deriv
 !
     endsubroutine der5
 !***********************************************************************
-    subroutine der6_main(f,k,df,j,ignoredx,upwind)
+    subroutine der6_main(f,k,df,j,ignoredx,upwind,lexp)
 !
 !  Calculate 6th derivative of a scalar, get scalar.
 !  Used for hyperdiffusion that affects small wave numbers as little as
@@ -725,7 +725,7 @@ module Deriv
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (nx), intent(out) :: df
       integer, intent(in) :: j, k
-      logical, intent(in), optional :: ignoredx, upwind
+      logical, intent(in), optional :: ignoredx, upwind,lexp
 !
       call fatal_error('deriv_4th','der6 not implemented yet')
       call keep_compiler_quiet(df)

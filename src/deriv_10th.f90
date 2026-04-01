@@ -12,7 +12,7 @@ module Deriv
   use Cdata
   use Messages, only: fatal_error, warning,not_implemented
   use Cparam, only: lactive_dimension, nxgrid, nygrid, nzgrid
-  use General, only: keep_compiler_quiet
+  use General, only: keep_compiler_quiet, loptest
 !
   implicit none
 !
@@ -303,7 +303,6 @@ module Deriv
 !  12-dec-10/axel: adapted also y and z derivatives
 !  20-nov-16/MR: optional parameter lwo_line_elem added
 !
-      use General, only: loptest
 
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df2,fac,df
@@ -792,6 +791,10 @@ module Deriv
                'just works if upwinding is used')
         endif
       endif
+
+     if (loptest(lexp)) then
+             call fatal_error('der6','NOT IMPLEMENTED lexp=T')
+     endif
 !
       if (j==1) then
         if (nxgrid/=1) then
@@ -1085,7 +1088,6 @@ module Deriv
 !  25-aug-09/axel: adapted from deriv
 !  20-nov-16/MR: optional parameter lwo_line_elem added
 !
-      use General, only: loptest
 
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
@@ -2103,7 +2105,6 @@ module Deriv
 !
 !  24-jan-17/Ivan: coded.
 !
-      use General, only: loptest
 
       real, dimension(mx,my,mz,*) :: f
       integer, intent(IN) :: topbot

@@ -1333,26 +1333,6 @@ module Dustdensity
 !
     endsubroutine pencil_interdep_dustdensity
 !***********************************************************************
-    subroutine get_del6nd_via_global_nd(f,p,k)
-
-      use Sub, only: del6
-
-      integer :: mm,nn
-      real, dimension(mx,my,mz,mfarray) :: f
-      type(pencil_case) :: p
-      integer :: k
-
-      if (iglobal_nd/=0) then
-        if (lfirstpoint) then
-          do mm=1,my; do nn=1,mz
-            f(:,mm,nn,iglobal_nd)=exp(f(:,mm,nn,ilnnd(k)))   !MR: not correct
-          enddo; enddo
-        endif
-        call del6(f,iglobal_nd,p%del6nd(:,k))
-      endif
-
-    endsubroutine get_del6nd_via_global_nd
-!***********************************************************************
     subroutine get_ccondens(p,ttt)
 !
 !  26-oct-25/TP: carved form calc_pencils_dustdensity
@@ -1575,15 +1555,7 @@ module Dustdensity
 ! del6nd
         if (lpencil(i_del6nd)) then
           if (ldustdensity_log) then
-            if (.not. lgpu) then
-              call get_del6nd_via_global_nd(f,p,k)
-            else
-              !TP: Given the above formulation is incorrect 
-              !    (one should not assume the halos to be up to date at least without setting early_finalize)
-              !    could we replace it with the one below?
-              !    Would make GPU porting easier
-              call del6_exp(f,ilnnd(k),p%del6nd(:,k))
-            endif
+            call del6(f,ilnnd(k),p%del6nd(:,k),lexp=.true.)
           else
             call del6(f,ind(k),p%del6nd(:,k))
           endif

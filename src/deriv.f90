@@ -933,7 +933,7 @@ module Deriv
 !
     endsubroutine der5
 !***********************************************************************
-    subroutine der6_main(f,k,df,j,ignoredx,upwind)
+    subroutine der6_main(f,k,df,j,ignoredx,upwind,lexp)
 !
 !  Calculate 6th derivative of a scalar, get scalar.
 !  Used for hyperdiffusion that affects small wave numbers as little as
@@ -951,8 +951,8 @@ module Deriv
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
       integer :: j,k
-      logical, optional :: ignoredx,upwind
-      logical :: igndx,upwnd
+      logical, optional :: ignoredx,upwind,lexp
+      logical :: igndx,upwnd,lexponentiate
       real :: facs
 !
       intent(in)  :: f,k,j,ignoredx,upwind
@@ -962,6 +962,7 @@ module Deriv
 !debug                          der_call_count(k,icount_der6,j,1) + 1 !DERCOUNT
 !
       igndx=loptest(ignoredx)
+      lexponentiate = loptest(lexp)
 !
       if (present(upwind)) then
         if (.not. lequidist(j).and..not.lignore_nonequi) &
@@ -981,10 +982,18 @@ module Deriv
           else
             fac=dx_1(l1:l2)**6
           endif
-          df=fac*(- 20.0* f(l1:l2,m,n,k) &
-                  + 15.0*(f(l1+1:l2+1,m,n,k)+f(l1-1:l2-1,m,n,k)) &
-                  -  6.0*(f(l1+2:l2+2,m,n,k)+f(l1-2:l2-2,m,n,k)) &
-                  +      (f(l1+3:l2+3,m,n,k)+f(l1-3:l2-3,m,n,k)))
+          if(lexponentiate) then
+            df=fac*(- 20.0* exp(f(l1:l2,m,n,k)) &
+                    + 15.0*(exp(f(l1+1:l2+1,m,n,k))+exp(f(l1-1:l2-1,m,n,k))) &
+                    -  6.0*(exp(f(l1+2:l2+2,m,n,k))+exp(f(l1-2:l2-2,m,n,k))) &
+                    +      (exp(f(l1+3:l2+3,m,n,k))+exp(f(l1-3:l2-3,m,n,k))))
+
+          else
+            df=fac*(- 20.0* f(l1:l2,m,n,k) &
+                    + 15.0*(f(l1+1:l2+1,m,n,k)+f(l1-1:l2-1,m,n,k)) &
+                    -  6.0*(f(l1+2:l2+2,m,n,k)+f(l1-2:l2-2,m,n,k)) &
+                    +      (f(l1+3:l2+3,m,n,k)+f(l1-3:l2-3,m,n,k)))
+          endif
         else
           df=0.
         endif
@@ -997,10 +1006,17 @@ module Deriv
           else
             facs=dy_1(m)**6
           endif
-          df=facs*(- 20.0* f(l1:l2,m  ,n,k) &
-                   + 15.0*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
-                   -  6.0*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
-                   +      (f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)))
+          if(lexponentiate) then
+            df=facs*(- 20.0* exp(f(l1:l2,m  ,n,k)) &
+                     + 15.0*(exp(f(l1:l2,m+1,n,k))+exp(f(l1:l2,m-1,n,k))) &
+                     -  6.0*(exp(f(l1:l2,m+2,n,k))+exp(f(l1:l2,m-2,n,k))) &
+                     +      (exp(f(l1:l2,m+3,n,k))+exp(f(l1:l2,m-3,n,k))))
+          else
+            df=facs*(- 20.0* f(l1:l2,m  ,n,k) &
+                     + 15.0*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
+                     -  6.0*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
+                     +      (f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)))
+          endif
           if ((.not.igndx) .and. (.not.upwnd)) then
             if (lspherical_coords) df = df * r1_mn**6
             if (lcylindrical_coords) df = df * rcyl_mn1**6
@@ -1024,15 +1040,29 @@ module Deriv
           endif
 
           if (lcoarse_mn) then
-            df=facs*(- 20.0* f(l1:l2,m,n,k) &
-                     + 15.0*(f(l1:l2,m,ninds(+1,m,n),k)+f(l1:l2,m,ninds(-1,m,n),k)) &
-                     -  6.0*(f(l1:l2,m,ninds(+2,m,n),k)+f(l1:l2,m,ninds(-2,m,n),k)) &
-                     +      (f(l1:l2,m,ninds(+3,m,n),k)+f(l1:l2,m,ninds(-3,m,n),k)))
+            if (lexponentiate) then
+              df=facs*(- 20.0* exp(f(l1:l2,m,n,k)) &
+                       + 15.0*(exp(f(l1:l2,m,ninds(+1,m,n),k))+exp(f(l1:l2,m,ninds(-1,m,n),k))) &
+                       -  6.0*(exp(f(l1:l2,m,ninds(+2,m,n),k))+exp(f(l1:l2,m,ninds(-2,m,n),k))) &
+                       +      (exp(f(l1:l2,m,ninds(+3,m,n),k))+exp(f(l1:l2,m,ninds(-3,m,n),k))))
+            else
+              df=facs*(- 20.0* f(l1:l2,m,n,k) &
+                       + 15.0*(f(l1:l2,m,ninds(+1,m,n),k)+f(l1:l2,m,ninds(-1,m,n),k)) &
+                       -  6.0*(f(l1:l2,m,ninds(+2,m,n),k)+f(l1:l2,m,ninds(-2,m,n),k)) &
+                       +      (f(l1:l2,m,ninds(+3,m,n),k)+f(l1:l2,m,ninds(-3,m,n),k)))
+            endif
           else
-            df=facs*(- 20.0* f(l1:l2,m,n  ,k) &
-                     + 15.0*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
-                     -  6.0*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
-                     +      (f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)))
+            if (lexponentiate) then
+              df=facs*(- 20.0* exp(f(l1:l2,m,n  ,k)) &
+                       + 15.0*(exp(f(l1:l2,m,n+1,k))+exp(f(l1:l2,m,n-1,k))) &
+                       -  6.0*(exp(f(l1:l2,m,n+2,k))+exp(f(l1:l2,m,n-2,k))) &
+                       +      (exp(f(l1:l2,m,n+3,k))+exp(f(l1:l2,m,n-3,k))))
+            else
+              df=facs*(- 20.0* f(l1:l2,m,n  ,k) &
+                       + 15.0*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
+                       -  6.0*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
+                       +      (f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)))
+            endif
           endif
           if ((.not.igndx) .and. (.not.upwnd) .and. lspherical_coords) &
             df = df * (r1_mn * sin1th(m))**6
