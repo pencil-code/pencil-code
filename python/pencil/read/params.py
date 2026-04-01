@@ -329,11 +329,7 @@ class Param(object):
         if lnml:
             nmlobj = f90nml.read(file_name)
             for super_name_full in nmlobj.keys():
-                super_name = (
-                    super_name_full.rsplit("_pars")[0]
-                    .rsplit("_init")[0]
-                    .rsplit("_run")[0]
-                )
+                super_name = self._clean_namelist_name(super_name_full)
                 if nest:
                     if not params.__contains__(super_name):
                         params[super_name] = dict()
@@ -364,13 +360,7 @@ class Param(object):
                 lastrawline = rawline.rstrip("\n")
                 line = rawline.rstrip("\n")
                 if len(line) > 1 and (line[1] == "&" or line[0] == "&"):
-                    super_name = (
-                        line[2:]
-                        .lower()
-                        .rsplit("_pars")[0]
-                        .rsplit("_init")[0]
-                        .rsplit("_run")[0]
-                    )
+                    super_name = self._clean_namelist_name(line[2:].lower())
                     if nest:
                         if not params.__contains__(super_name):
                             params[super_name] = dict()
@@ -420,6 +410,12 @@ class Param(object):
                                 )
 
         return params, param_conflicts, name_list, super_name_list
+
+    def _clean_namelist_name(self, namelist):
+        name = namelist.removesuffix("_pars")
+        for s in ["_init", "_run"]:
+            name = name.removesuffix(s)
+        return name
 
 class _Foo(object): pass
 
