@@ -147,7 +147,7 @@ class Param(object):
                         param_list, filen, param_conflicts, name_list, super_name_list
                     )
 
-            if not param_conflicts:
+            if param_conflicts:
                 subkey_list = list()
                 for super_name in super_name_list:
                     if super_name in param_conflicts.keys():
@@ -167,8 +167,7 @@ class Param(object):
                     if key in param_list.keys() and key in subkey_list:
                         del param_list[key]
 
-            # If nesting occurs report conflicts and record nests to retain
-            if not param_conflicts:
+                # report conflicts and record nests to retain
                 for key in param_conflicts.keys():
                     for subkey in param_conflicts[key].keys():
                         if not conflicts_quiet:
