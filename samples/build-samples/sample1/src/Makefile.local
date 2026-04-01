@@ -18,12 +18,12 @@ FILE_IO   =   file_io_f95
 
 HYDRO     = hydro
 DENSITY   = density
-ENTROPY   = entropy
+ENTROPY   = noentropy
 MAGNETIC  = nomagnetic
 RADIATION = radiation_ray
 PSCALAR   = pscalar
 
-EOS       = eos_ionization
+EOS       = eos_temperature_ionization
 GRAVITY   =   gravity_simple
 SHEAR     = shear
 SPECIAL   = special/klein_gordon special/axionSU2back

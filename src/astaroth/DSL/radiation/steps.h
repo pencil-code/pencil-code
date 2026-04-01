@@ -17,3 +17,25 @@ ComputeSteps Qextrinsic_steps(boundconds)
         sum_up_rays()
 }
 
+source_function_as_intensity(AcBoundary boundary, Field Q)
+{
+        const int3 normal = get_normal(boundary)
+        const int3 boundary_point = get_boundary(normal)
+        int3 domain = boundary_point
+        int3 ghost  = boundary_point
+        for i in 0:1
+        {
+                domain = domain - normal
+                ghost  = ghost  + normal
+                Q[ghost.x][ghost.y][ghost.z] = -SRAD[ghost.x][ghost.y][ghost.z];
+        }
+}
+BoundConds Qintrinsic_bcs
+{
+  ac_const_bc(BOUNDARY_Z,Q_UP,0.0)
+  ac_const_bc(BOUNDARY_Z,Q_DOWN,0.0)
+  ac_const_bc(BOUNDARY_Z,TAU_UP,0.0)
+  ac_const_bc(BOUNDARY_Z,TAU_DOWN,0.0)
+  ac_fixed_bc(BOUNDARY_XYZ,SRAD)
+  ac_fixed_bc(BOUNDARY_XYZ,F_KAPPARHO)
+}
