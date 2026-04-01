@@ -165,6 +165,7 @@ class Param(object):
                                 del param_list[super_name][key]
                 for key in name_list:
                     if key in param_list and key in subkey_list:
+                        #If the same key is present in two different namelists, remove it from the root object.
                         del param_list[key]
 
                 # report conflicts and record nests to retain
