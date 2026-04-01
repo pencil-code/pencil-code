@@ -399,6 +399,7 @@ class Param(object):
                             # Save all parameters nested and unnested
                             if not super_name in ("run", "init"):
                                 params[super_name][name] = value
+
         # If name conflict exists remove unnested copies
         if len(super_name_list) > 0:
             if "run" in super_name_list:
