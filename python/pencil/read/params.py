@@ -391,24 +391,23 @@ class Param(object):
                             if super_name not in always_denest:
                                 params[super_name][name] = value
 
-        if len(super_name_list) > 0:
-            for name in always_denest:
-                if name in super_name_list:
-                    super_name_list.remove(name)
+        for name in always_denest:
+            if name in super_name_list:
+                super_name_list.remove(name)
 
-            #Check for name conflicts
-            for super_name in super_name_list:
-                for alt_name in super_name_list:
-                    for name in params[super_name].keys():
-                        if name in params[alt_name].keys():
-                            if not params[alt_name][name] == params[super_name][name]:
-                                if not super_name in param_conflicts.keys():
-                                    param_conflicts[super_name] = dict()
-                                param_conflicts[super_name][name] = (
-                                    params[super_name][name],
-                                    alt_name,
-                                    params[alt_name][name],
-                                )
+        #Check for name conflicts
+        for super_name in super_name_list:
+            for alt_name in super_name_list:
+                for name in params[super_name].keys():
+                    if name in params[alt_name].keys():
+                        if not params[alt_name][name] == params[super_name][name]:
+                            if not super_name in param_conflicts.keys():
+                                param_conflicts[super_name] = dict()
+                            param_conflicts[super_name][name] = (
+                                params[super_name][name],
+                                alt_name,
+                                params[alt_name][name],
+                            )
 
         return params, param_conflicts, name_list, super_name_list
 
