@@ -1,0 +1,19 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Initialisation parameters
+!
+&init_pars
+  cvsid="$Id: start.in,v 1.3 2026/03/09 03:20:58 brandenb Exp $"
+  unit_system='set'
+  lwrite_ic=F
+  wav1=1e-6
+/
+&special_init_pars
+  lcompute_dphi0=T
+  lscale_tobox=F, lflrw=T, axionmass=1.06e-6, lrho_chi=T
+  initspecial='default'
+  phi0=.7, ascale_ini=1.
+  lrho_rad=T
+  lconf_time=T, lcompute_dphi0=F, dphi0=0.
+  lwstate_crit=T, wstate_crit=.3
+/

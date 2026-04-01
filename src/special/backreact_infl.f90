@@ -98,6 +98,7 @@ module Special
   real :: relhel_phi=0.
   real :: ddotam, a2rhopm, a2rhopm_all, a2rhom, a2rhom_all
   real :: edotbm, edotbm_all, e2m, e2m_all, b2m, b2m_all, a2rhophim, a2rhophim_all
+  real :: a2rhopphim, a2rhopphim_all
   real :: sigE1m_all_nonaver, sigB1m_all_nonaver,sigEm_all,sigBm_all,sigEm_all_diagnos,sigBm_all_diagnos
   real :: a2rhogphim, a2rhogphim_all
   real :: a2, a21, Hscript
@@ -107,6 +108,8 @@ module Special
   real :: count_eb0_all=0., rad_heating=0., ascale_heat=0., ascale_heat_off=0., heating
   real :: aphimax=0., aphimax2=0.  !PAR_DOC: maximum a value above which the phi potential is quenched.
   real :: Gamma_phi0=impossible, Gamma_phi !PAR_DOC: damping factor for phi above aphimax
+  real :: rhophim_crit=1e-21 !PAR_DOC: minimum phi
+  real :: wstate, wstate_crit=0.3333  !PAR_DOC: critical w (EoS) value (slightly below 1/3)
 !
   real, target :: ddotam_all
   real, pointer :: alpf, eta
@@ -120,13 +123,19 @@ module Special
   logical :: lrho_rad=.false.            !PAR_DOC: radiation from inflaton decay
   logical :: lrho_rad_apply=.true.       !PAR_DOC: radiation from inflaton decay, and also applied to df(l1:l2,m,n,iinfl_dphi)
   logical :: lrho_rad_apply2=.true.       !PAR_DOC: radiation from inflaton decay, and also applied to df(l1:l2,m,n,iinfl_dphi)
-  logical :: lrho_chi_corrected=.true.   !PAR_DOC: when false, we use the wrong scale factor in the rho_chi equation
+  logical :: lrho_chi_corrected=.true.   !PAR_DOC: for backward compatibility; when false, we use the wrong scale factor in the rho_chi equation
   logical :: lrho_chi_inhom=.false.      !PAR_DOC: inhomogeneous heating
   logical :: ldefine_a2rhophi_with_Vpotential=.true.  !PAR_DOC: define a2rhophi with Vpotential
+  logical :: lsolve_for_phi=.true.       !PAR_DOC: whether we still want to solve for phi
+  logical :: lwstate_crit=.true.         !PAR_DOC: lwstate_crit switch
+  logical :: lheating=.false.            !PAR_DOC: heating criterion
+  logical :: ldefine_a2rhopm_without_Vpotential=.true.    !PAR_DOC: should be false to have correct results
+  logical :: la2rhop_wrong_factor=.true. !PAR_DOC: should be false to have correct results
   logical, pointer :: lphi_hom, lphi_linear_regime, lnoncollinear_EB, lnoncollinear_EB_aver
   logical, pointer :: lcollinear_EB, lcollinear_EB_aver, lmass_suppression
   logical, pointer :: lallow_bprime_zero
   character (len=labellen) :: Vprime_choice='quadratic', Hscript_choice='default'
+  character (len=labellen) :: heating_choice='Hscript_max'
   character (len=labellen), dimension(ninit) :: initspecial='nothing'
   character (len=50) :: echarge_type='const', init_rho_chi='zero', init_rho_rad='zero'
 !
@@ -140,7 +149,8 @@ module Special
       ncutoff_phi, lscale_tobox, Hscript0, Hscript_choice, infl_v, lflrw, &
       lrho_chi, scale_rho_chi_Heqn, scale_rho_rad_Heqn, amplee_BD_prefactor, deriv_prefactor_ee, &
       lrho_rad, init_rho_rad, lconf_time, &
-      echarge_type, init_rho_chi, rho_chi_init, lrho_chi_inhom
+      echarge_type, init_rho_chi, rho_chi_init, lrho_chi_inhom, rhophim_crit, &
+      wstate_crit, lwstate_crit, heating_choice, ldefine_a2rhopm_without_Vpotential, la2rhop_wrong_factor
 !
   namelist /special_run_pars/ &
       initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
@@ -148,7 +158,8 @@ module Special
       lzeroHubble, ldt_backreact_infl, Ndiv, Hscript0, Hscript_choice, infl_v, &
       lflrw, lrho_chi, scale_rho_chi_Heqn, scale_rho_rad_Heqn, echarge_type, cdt_rho_chi, &
       lrho_rad, lrho_rad_apply, lrho_rad_apply2, lrho_chi_corrected, lrho_chi_inhom, ldefine_a2rhophi_with_Vpotential, &
-      rad_heating, ascale_heat, ascale_heat_off, aphimax, Gamma_phi0, lconf_time
+      rad_heating, ascale_heat, ascale_heat_off, aphimax, Gamma_phi0, lconf_time, rhophim_crit, &
+      wstate_crit, lwstate_crit, heating_choice
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -171,6 +182,7 @@ module Special
   integer :: idiag_sigBma=0     ! DIAG_DOC: $\rho_\chi$
   integer :: idiag_count_eb0a=0 ! DIAG_DOC: $f_\mathrm{EB0}$
   integer :: idiag_heating=0    ! DIAG_DOC: $\theta_\mathrm{heat}$
+  integer :: idiag_wstate=0    ! DIAG_DOC: $w_\mathrm{state}$
 !
   integer :: enum_hscript_choice = 0
   integer :: enum_vprime_choice = 0
@@ -335,6 +347,9 @@ module Special
 !
           case ('default')
             Vpotential=.5*axionmass2*phi0**2
+!
+!  Hubble_ini is here based on the standard (non-reduced) Planck mass.
+!
             Hubble_ini=sqrt(8.*pi/3.*(.5*axionmass2*phi0**2*ascale_ini**2))
             ! dphi0=-ascale_ini*sqrt(2*eps/3.*Vpotential)
             if (lcompute_dphi0) dphi0=-sqrt(1/(12.*pi))*axionmass*ascale_ini
@@ -354,6 +369,9 @@ module Special
               f_ode(iinfl_lna)   =lnascale
               a2                 =exp(f_ode(iinfl_lna))**2
               Hscript            =Hubble_ini/exp(lnascale)
+!
+!  Should not be needed.
+!
 !              f(iinfl_hubble)   =Hscript
             endif
           case ('gaussian-noise')
@@ -569,8 +587,8 @@ module Special
 !
 !  Current choice of temporal form of Gamma_phi.
 !
-      if (aphimax2>0.) then
-        Gamma_phi=Gamma_phi0*.5*(1.+tanh(a2-aphimax2))
+      if (lheating) then
+        Gamma_phi=Gamma_phi0
       else
         Gamma_phi=0.
       endif
@@ -597,13 +615,15 @@ module Special
 !  In the following, Hscript means H if cosmic time is used.
 !  dphi/dt = dphi
 !
-      df(l1:l2,m,n,iinfl_phi)=df(l1:l2,m,n,iinfl_phi)+p%infl_dphi
-      if (lrho_rad .and. lrho_rad_apply) then
-        df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi) - &
-            (pref_Hubble*Hscript+pref_Gamma*Gamma_phi)*p%infl_dphi-pref_Vprime*Vprime
-      else
-        df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi) - &
-            (pref_Hubble*Hscript)*p%infl_dphi-pref_Vprime*Vprime
+      if (lsolve_for_phi) then
+        df(l1:l2,m,n,iinfl_phi)=df(l1:l2,m,n,iinfl_phi)+p%infl_dphi
+        if (lrho_rad .and. lrho_rad_apply) then
+          df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi) - &
+              (pref_Hubble*Hscript+pref_Gamma*Gamma_phi)*p%infl_dphi-pref_Vprime*Vprime
+        else
+          df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi) - &
+              (pref_Hubble*Hscript)*p%infl_dphi-pref_Vprime*Vprime
+        endif
       endif
 !
 !  speed of light term
@@ -770,7 +790,11 @@ module Special
 !  we also need to multiply by a, so we divide by a.
 !
       if (lrho_rad) then
-        heating=Gamma_phi*a2rhophim_all/ascale
+        if (lconf_time) then
+          heating=Gamma_phi*a2rhophim_all/ascale
+        else
+          heating=Gamma_phi*a2rhophim_all*a21
+        endif
         df_ode(iinfl_rho_rad)=df_ode(iinfl_rho_rad)-4.*Hscript*f_ode(iinfl_rho_rad)+heating
       endif
 !
@@ -825,6 +849,7 @@ module Special
         if (lnoncollinear_EB_aver .or. lcollinear_EB_aver) &
           call save_name(count_eb0_all,idiag_count_eb0a)
         call save_name(heating,idiag_heating)
+        call save_name(wstate,idiag_wstate)
 !
       endif
 !
@@ -905,7 +930,7 @@ module Special
         idiag_Hscriptm=0; idiag_lnam=0; idiag_ddotam=0
         idiag_a2rhopm=0; idiag_a2rhom=0; idiag_a2rhophim=0
         idiag_a2rhogphim=0; idiag_rho_chi=0; idiag_rho_rad=0; idiag_sigEma=0
-        idiag_sigBma=0; idiag_count_eb0a=0; idiag_heating=0
+        idiag_sigBma=0; idiag_count_eb0a=0; idiag_heating=0; idiag_wstate=0
       endif
 !
       do iname=1,nname
@@ -928,6 +953,7 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'sigBma',idiag_sigBma)
         call parse_name(iname,cname(iname),cform(iname),'count_eb0a',idiag_count_eb0a)
         call parse_name(iname,cname(iname),cform(iname),'heating',idiag_heating)
+        call parse_name(iname,cname(iname),cform(iname),'wstate',idiag_wstate)
       enddo
 !
     endsubroutine rprint_special
@@ -1046,8 +1072,8 @@ module Special
       use Mpicomm, only: mpireduce_sum, mpiallreduce_sum, mpibcast_real
       use Sub, only: dot2_mn, grad, curl, dot_mn
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real :: sigE1m,sigB1m
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real :: sigE1m, sigB1m, rho_rad, Hscript_prev=0.
 !
 ! TP: to avoid code duplication could this function not be combined with the copy of it in
 !     klein_gordon.f90? We could make an appropriate module and call it from there
@@ -1060,9 +1086,16 @@ module Special
       call mpibcast_real(a2)
       call mpibcast_real(a21)
 !
+!  Here we use the possibility of switching off the phi evolution by setting phi=dphi=0.
+!
+      if (.not.lsolve_for_phi) then
+        f(l1:l2,m,n,iinfl_phi)=0.
+        f(l1:l2,m,n,iinfl_dphi)=0.
+      endif
+!
 !  In the following loop, go through all penciles and add up results to get e2m, etc.
 !
-      ddotam=0.; a2rhopm=0.; a2rhom=0.; e2m=0; b2m=0; edotbm=0; a2rhophim=0.; a2rhogphim=0.
+      ddotam=0.; a2rhopm=0.; a2rhom=0.; e2m=0; b2m=0; edotbm=0; a2rhophim=0.; a2rhopphim=0.; a2rhogphim=0.
       sigE1m=0.; sigB1m=0.
 !
 !  In the following, sum over all mn pencils.
@@ -1076,6 +1109,7 @@ module Special
       a2rhopm=a2rhopm/nwgrid
       a2rhom=a2rhom/nwgrid
       a2rhophim=a2rhophim/nwgrid
+      a2rhopphim=a2rhopphim/nwgrid
       a2rhogphim=a2rhogphim/nwgrid
       ddotam=(four_pi_over_three/nwgrid)*ddotam
       if (lphi_hom .or. lrho_chi .or. lnoncollinear_EB .or. lnoncollinear_EB_aver) then
@@ -1106,6 +1140,7 @@ module Special
       call mpireduce_sum(a2rhopm,a2rhopm_all)
       call mpiallreduce_sum(a2rhom,a2rhom_all)
       call mpireduce_sum(a2rhophim,a2rhophim_all)
+      call mpireduce_sum(a2rhopphim,a2rhopphim_all)
       call mpireduce_sum(a2rhogphim,a2rhogphim_all)
       call mpiallreduce_sum(ddotam,ddotam_all)
       a2rhom_all_diagnos     = a2rhom_all
@@ -1113,6 +1148,14 @@ module Special
       a2rhophim_all_diagnos  = a2rhophim_all
       a2rhogphim_all_diagnos = a2rhogphim_all
       ddotam_all_diagnos     = ddotam_all
+!
+!  Set rho_rad for diagnostics
+!
+      if (lrho_rad) then
+        rho_rad=f_ode(iinfl_rho_rad)
+      else
+        rho_rad=0.
+      endif
 !
 !  Get Hscript and a2rhom_all.
 !
@@ -1124,6 +1167,31 @@ module Special
       call mpibcast_real(Hscript)
       call mpibcast_real(e2m_all)
       call mpibcast_real(b2m_all)
+      call mpibcast_real(a2rhophim_all)
+      call mpibcast_real(a2rhopphim_all)
+!
+!  Alternatitives for deciding when to solve for phi: either when
+!  wstate is not yet reached, or when a2rhophim_all is still big enough.
+!
+      wstate=(a2rhopphim_all*a21+onethird*rho_rad)/(a2rhophim_all*a21+rho_rad)
+      if (lwstate_crit) then
+        lsolve_for_phi=(wstate<wstate_crit)
+      else
+        lsolve_for_phi=(a2rhophim_all*a21)>rhophim_crit
+      endif
+!
+!  Alternatitives for deciding when to turn on heating, i.e., when the
+!  end of inflation occurs.
+!
+      select case (heating_choice)
+        case ('Hscript_max')
+          lheating=Hscript<Hscript_prev
+          Hscript_prev=Hscript
+        case ('aphimax2')
+          lheating=a2>aphimax2
+        case default
+          call fatal_error("special_after_boundary: No such heating_choice: ",trim(heating_choice))
+      endselect
 !
     endsubroutine special_after_boundary
 !***********************************************************************
@@ -1137,6 +1205,7 @@ module Special
       real, intent(inout) :: sigE1m,sigB1m
       real, dimension (nx,3) :: el, bb, gphi, uxb, uu
       real, dimension (nx) :: e2, b2, gphi2, dphi, a2rhop, a2rho, a2rhophi
+      real, dimension (nx) :: a2rhopphi
       real, dimension (nx) :: ddota, phi, Vpotential, edotb, sigE1, sigB1
       real, dimension (nx) :: boost, gam_EB, eprime, bprime, jprime1
 !
@@ -1152,13 +1221,20 @@ module Special
 !
       if (lconf_time) then
         a2rho=0.5*dphi**2
+        if (la2rhop_wrong_factor) then
+          a2rhop=dphi**2
+        else
+          a2rhop=0.5*dphi**2
+        endif
       else
         a2rho=0.5*dphi**2*a2
+        a2rhop=0.5*dphi**2*a2
       endif
 !
 !  a2rhop is for pressure.
 !
-      a2rhop=dphi**2
+!AB: removed following line
+      !a2rhop=dphi**2
       ! if (lphi_hom) then
       !   a2rhop=dphi**2
       !   a2rho=0.5*dphi**2
@@ -1169,13 +1245,21 @@ module Special
         ! alberto: this function is called from special_after_boundary so shouldn't have the ghost zones updated?
         call dot2_mn(gphi,gphi2)
         a2rhogphim=a2rhogphim+sum(0.5*gphi2)
-        a2rhop=a2rhop+onethird*gphi2
+!
+!AB: probably mistake
+!
+        if (la2rhop_wrong_factor) then
+          a2rhop=a2rhop+onethird*gphi2
+        else
+          a2rhop=a2rhop-0.5*onethird*gphi2
+        endif
         a2rho=a2rho+0.5*gphi2
       endif
 !
 !  Set a2rhophim for later accummulation
 !
       a2rhophi=a2rho
+      a2rhopphi=a2rhop
 !
 !  Note the .5*fourthird factor in front of (e2+b2)*a21, but that is
 !  just for rhop, which is output quantity.
@@ -1195,7 +1279,14 @@ module Special
           el=0.
         endif
         call dot2_mn(el,e2)
-        a2rhop=a2rhop+(.5*fourthird)*(e2+b2)*a21
+!
+!AB: probably mistake
+!
+        if (la2rhop_wrong_factor) then
+          a2rhop=a2rhop+(.5*fourthird)*(e2+b2)*a21
+        else
+          a2rhop=a2rhop+(.5*onethird)*(e2+b2)*a21
+        endif
         if (.not. lphi_linear_regime) a2rho=a2rho+.5*(e2+b2)*a21
       endif
 !
@@ -1223,7 +1314,10 @@ module Special
       if (lrho_rad .and. lrho_rad_apply2) &
         a2rho=a2rho+scale_rho_rad_Heqn*a2*f_ode(iinfl_rho_rad)
 !
-      a2rhopm=a2rhopm+sum(a2rhop)
+!  ldefine_a2rhopm_without_Vpotential would be *true* for reproducing the old runs.
+!
+      if (ldefine_a2rhopm_without_Vpotential) &
+        a2rhopm=a2rhopm+sum(a2rhop)
 !
 !  Choice of different potentials
 !
@@ -1246,13 +1340,22 @@ module Special
       ! endif
       ddotam=ddotam+sum(ddota)
       a2rho=a2rho+a2*Vpotential
+      if (.not. ldefine_a2rhopm_without_Vpotential) &
+        a2rhop=a2rhop-a2*Vpotential
       if (ldefine_a2rhophi_with_Vpotential) &
         a2rhophi=a2rhophi+a2*Vpotential
+!
+!  Compute pressure for phi field (without gauge field):
+!
+      a2rhopphi=a2rhopphi-a2*Vpotential
 !
 !  Compute volume average of both a2rho and a2rho_phi
 !
       a2rhom=a2rhom+sum(a2rho)
+      if (.not. ldefine_a2rhopm_without_Vpotential) &
+        a2rhopm=a2rhopm+sum(a2rhop)
       a2rhophim=a2rhophim+sum(a2rhophi)
+      a2rhopphim=a2rhopphim+sum(a2rhopphi)
 !
 !  Compute electromagnetic averages.
 !

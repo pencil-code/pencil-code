@@ -1846,6 +1846,13 @@ samples/0d-tests/reactive_particles/src/cparam.local -text
 samples/0d-tests/reactive_particles/start.in -text
 samples/0d-tests/reactive_particles/tran.dat -text
 samples/0d-tests/reactive_particles/video.in -text
+samples/0d-tests/reheating/README.md -text
+samples/0d-tests/reheating/print.in -text
+samples/0d-tests/reheating/reference.out -text
+samples/0d-tests/reheating/run.in -text
+samples/0d-tests/reheating/src/Makefile.local -text
+samples/0d-tests/reheating/src/cparam.local -text
+samples/0d-tests/reheating/start.in -text
 samples/0d-tests/reionization-saha/parameters.pro -text
 samples/0d-tests/reionization-saha/print.in -text
 samples/0d-tests/reionization-saha/reference.out -text
