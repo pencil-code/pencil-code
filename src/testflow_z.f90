@@ -936,7 +936,7 @@ module Testflow
 !
       if (lupdate_courant_dt) then
         advec_cs2=max(advec_cs2,cs2test*dxyz_2)
-        maxadvec=maxadvec+advec_uu
+        maxadvec=max(maxadvec,advec_uu)
         diffus_nu=nutest*dxyz_2
         maxdiffus=max(maxdiffus,diffus_nu)
       endif
