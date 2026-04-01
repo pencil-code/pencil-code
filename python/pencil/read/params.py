@@ -146,6 +146,7 @@ class Param(object):
                     ) = self._read_nml(
                         param_list, filen, param_conflicts, name_list, super_name_list
                     )
+
             if not param_conflicts:
                 subkey_list = list()
                 for super_name in super_name_list:
