@@ -119,7 +119,7 @@ class Param(object):
             super_name_list = list()
             name_list = list()
             param_conflicts = dict()
-            # If nest_dict is False, parameters with same name will be written by last value
+            # If nest_dict is False, parameters which share names will be overwritten by the last value
             for filen in files:
                 (
                     param_list,
