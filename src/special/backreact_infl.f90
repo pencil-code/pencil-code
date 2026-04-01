@@ -1478,6 +1478,9 @@ module Special
     call copy_addr(lrho_rad,p_par(29)) ! bool
 
     call copy_addr(lrho_rad_apply,p_par(30)) ! bool
+    call copy_addr(heating,p_par(31))
+    call copy_addr(lsolve_for_phi,p_par(32)) ! bool
+    call copy_addr(lheating,p_par(33)) ! bool
     endsubroutine pushpars2c
 !********************************************************************
 !********************************************************************
