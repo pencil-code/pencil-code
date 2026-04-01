@@ -118,6 +118,10 @@ def test_read_param_keepnested() -> None:
     assert params.eos.gamma == 1.666_666_6
     assert params.hydro.kx_uu == 1.0
 
+    with pytest.raises(AttributeError):
+        params.init
+    with pytest.raises(AttributeError):
+        params.run
 
 def test_read_var() -> None:
     """Read var.dat (data cube) file."""
