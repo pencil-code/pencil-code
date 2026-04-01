@@ -390,12 +390,14 @@ class Param(object):
                             if not super_name in ("run", "init"):
                                 params[super_name][name] = value
 
-        # If name conflict exists remove unnested copies
         if len(super_name_list) > 0:
+            #Always denest init and run
             if "run" in super_name_list:
                 super_name_list.remove("run")
             if "init" in super_name_list:
                 super_name_list.remove("init")
+
+            #Check for name conflicts
             for super_name in super_name_list:
                 for alt_name in super_name_list:
                     for name in params[super_name].keys():
