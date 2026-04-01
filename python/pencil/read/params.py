@@ -324,6 +324,7 @@ class Param(object):
 
         r = re.compile(r"(?:[^,(]|\([^)]*\))+")
 
+        always_denest = ["run", "init"]
         # Contain the nested parameters to be retained
         # Contain the nest names for each parameter set
         if lnml:
@@ -344,7 +345,7 @@ class Param(object):
                     name_list.append(name)
                     if nest:
                         # Save all parameters nested and unnested
-                        if not super_name in ("run", "init"):
+                        if super_name not in always_denest:
                             params[super_name][name] = nmlobj[super_name_full][name]
         else:
             for rawline in open(file_name):
@@ -387,15 +388,14 @@ class Param(object):
                         name_list.append(name)
                         if nest:
                             # Save all parameters nested and unnested
-                            if not super_name in ("run", "init"):
+                            if super_name not in always_denest:
                                 params[super_name][name] = value
 
         if len(super_name_list) > 0:
             #Always denest init and run
-            if "run" in super_name_list:
-                super_name_list.remove("run")
-            if "init" in super_name_list:
-                super_name_list.remove("init")
+            for name in always_denest:
+                if name in super_name_list:
+                    super_name_list.remove(name)
 
             #Check for name conflicts
             for super_name in super_name_list:
