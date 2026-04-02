@@ -127,7 +127,7 @@ class Param(object):
                         param_conflicts,
                         name_list,
                         super_name_list,
-                    ) = self.__read_nml(
+                    ) = self._read_nml(
                         param_list,
                         filen,
                         param_conflicts,
@@ -143,7 +143,7 @@ class Param(object):
                         param_conflicts,
                         name_list,
                         super_name_list,
-                    ) = self.__read_nml(
+                    ) = self._read_nml(
                         param_list, filen, param_conflicts, name_list, super_name_list
                     )
             if not param_conflicts:
@@ -301,7 +301,7 @@ class Param(object):
             return tuple(string)
         return self.__param_formatter(string)
 
-    def __read_nml(
+    def _read_nml(
         self, params, file_name, param_conflicts, name_list, super_name_list, nest=False
     ):
         """
@@ -309,7 +309,7 @@ class Param(object):
 
         call signature:
 
-        __read_nml(self, file_name, nest=False)
+        _read_nml(self, file_name, nest=False)
 
         Keyword arguments:
 
