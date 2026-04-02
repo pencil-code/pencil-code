@@ -126,7 +126,7 @@ module Special
   logical :: lnot_amp_GW=.true., lrandom_ampl_GW=.false.
   logical :: llogbranch_GW=.false., ldouble_GW=.false., lLighthill=.false.
   logical :: lrandomize_e1_e2=.false.
-  real, dimension(3,3) :: ij_table
+  integer, dimension(3,3) :: ij_table
   real :: c_light2=1., delk=0., tdelk=0., tau_delk=1.
   real :: tstress_ramp=0., stress_upscale_rate=0., stress_upscale_exp=0., tturnoff=1.
   real :: rescale_GW=1., vx_boost=0., vy_boost=0., vz_boost=0.
@@ -375,7 +375,7 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      use EquationOfState, only: cs0
+      !use EquationOfState, only: cs0
       use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -384,7 +384,7 @@ module Special
       real :: lgt1, lgt2, lgf1, lgf2, lgf, lgt_current
 
       integer :: it_file
-      integer :: stat, i
+      integer :: stat
 !
 !  set index table, count off-diagonal components cyclicly
 !
@@ -963,8 +963,7 @@ module Special
       use Sub, only: dot2_mn
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: prefactor, EEE2
-      real, dimension (nx,3) :: EEEE
+      real, dimension(nx) :: prefactor
       type (pencil_case) :: p
 !
       intent(in) :: f
@@ -1420,11 +1419,11 @@ module Special
       real, dimension (3) :: e1_boost, e2_boost, vboost, kvec_boost, khat_boost
       real, dimension (3) :: ee1_boost, ee2_boost
       real, dimension (6) :: e_T_boost, e_X_boost
-      real :: eTT, eTX, eXT, eXX, phi, tmp, s, c, c1, kk1, kk2, kk3
+      real :: eTT, eTX, eXT, eXX, phi, s, c, c1, kk1, kk2, kk3
       real :: gamma_boost, v_boostsqr, kdotv
-      real :: SCL_re_boost, SCL_im_boost, VCT_re_boost, VCT_im_boost
+      real :: SCL_re_boost, SCL_im_boost, VCT_im_boost
       real :: hhT_boost, hhTim_boost, hhX_boost, hhXim_boost
-      real :: ggT_boost, ggTim_boost, ggX_boost, ggXim_boost
+      !real :: ggT_boost, ggTim_boost, ggX_boost, ggXim_boost
 !
       real :: fact, facthel, cos_angle, angle, sign_switch
       real :: fact_boost, facthel_boost, omboost
