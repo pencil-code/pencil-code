@@ -14,3 +14,4 @@ def test_sim_param(datadir_helical_MHDTurb):
 
     assert sim.param.lmagnetic is True
     assert sim.param['initaa'] == sim.param.initaa
+    assert sim.param['magnetic']['initaa'] == sim.param.initaa
