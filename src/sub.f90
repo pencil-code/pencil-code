@@ -7430,7 +7430,7 @@ nameloop: do
 !
       use Mpicomm, only: mpiallreduce_sum
       use General, only: ioptest
-      use GPU, only: get_ptr_GPU, pFarr_GPU_in
+      !use GPU, only: get_ptr_GPU, pFarr_GPU_in
       use iso_c_binding
 !
       real, dimension(:,:,:,:), intent (inout), target:: f_
@@ -7443,7 +7443,7 @@ nameloop: do
       real :: fac
       real, dimension(:,:,:,:), pointer :: f
 !
-print*, 'in remove_mean'
+!print*, 'in remove_mean'
       !$ if (loffload) then
         !!$ f=c_f_pointer(pFarr_GPU_in)
       !$ else
@@ -7456,8 +7456,8 @@ print*, 'in remove_mean'
 !
 !  Subtract out the mean separately for each field.
 !
-      !$omp target if (loffload) map(to:mean,inda,inde) is_device_ptr(pFarr_GPU_in)
-      !$omp teams distribute parallel do collapse(4)
+      !!$omp target if (loffload) map(to:mean,inda,inde) is_device_ptr(pFarr_GPU_in)
+      !!$omp teams distribute parallel do collapse(4)
       do j=inda,inde
         do n = n1,n2
           do m = m1,m2
@@ -7468,7 +7468,7 @@ print*, 'in remove_mean'
         enddo
         f(l1:l2,m1:m2,n1:n2,j) = f(l1:l2,m1:m2,n1:n2,j) - mean(j)
       enddo
-      !$omp end target
+      !!$omp end target
 !
       if (lroot.and.ip<6) print*,'remove_mean: mean=',mean
 !
@@ -9163,7 +9163,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
 !  which integrates ascale, Hubble, and tphys that are used in other routines.
 !
       use Cdata, only: lread_scl_factor_file_new, ip, lroot, t, tmax, &
-        scl_factor_target, Hp_target, appa_target, wweos_target
+                       scl_factor_target, Hp_target, appa_target, wweos_target
       use Messages, only: fatal_error
 
       use Gpu, only: update_on_gpu
