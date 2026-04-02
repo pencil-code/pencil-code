@@ -97,7 +97,7 @@ module Particles
   character (len=labellen) :: gravx_profile='', gravz_profile=''
   character (len=labellen) :: gravr_profile=''
 
-  real :: rpinit_int=-impossible, rpinit_ext=-impossible
+  real :: rpinit_int=impossible, rpinit_ext=impossible
 !
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
@@ -688,19 +688,26 @@ module Particles
 ! Allow for initializing the particles at a different range (rpinit_[int/ext]) than
 ! the migration/removal range (rp_[int/ext])
 !
-              if (rpinit_int==-impossible) then
+              if (rpinit_int==impossible) then
                 !default values
-                rpar_int = xyz0_loc(1)
+                if (rp_int==impossible) then
+                  rpar_int = xyz0_loc(1)
+                else
+                  rpar_int = rp_int
+                endif
               else
                 rpar_int = rpinit_int
               endif
-              if (rpinit_ext==-impossible) then
-                rpar_ext = xyz1_loc(1)
+              if (rpinit_ext==impossible) then
+                if (rp_ext==impossible) then
+                  rpar_ext = xyz1_loc(1)
+                else
+                  rpar_ext = rp_ext
+                endif
               else
                 rpar_ext = rpinit_ext
               endif
             endif
-
             call random_number_wrapper(rad_scl)
             rad_scl = rpar_int**tmp + rad_scl*(rpar_ext**tmp-rpar_int**tmp)
             rad = rad_scl**(1./tmp)
