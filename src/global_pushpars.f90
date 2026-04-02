@@ -464,6 +464,8 @@ contains
     call copy_addr(llast_proc_x,p_par(1408)) ! bool dconst
     call copy_addr(ijbt,p_par(1409)) ! int
     call copy_addr(ij2t,p_par(1410)) ! int
+    call copy_addr(icp,p_par(1411)) ! int
+    call copy_addr(irr,p_par(1412)) ! int
 
   endsubroutine pushpars2c
 !***********************************************************************

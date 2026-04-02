@@ -731,10 +731,30 @@ module Chemistry
       write (1,*) nchemspec,nreactions
       close (1)
 !
-    if(allocated(a_k4))       a_k4_min = minval(a_k4,1)
-    if(allocated(low_coeff))  low_coeff_abs_max = maxval(abs(low_coeff),1)
-    if(allocated(high_coeff)) high_coeff_abs_max = maxval(abs(high_coeff),1)
-    if(allocated(troe_coeff)) troe_coeff_abs_max = maxval(abs(troe_coeff),1)
+    if(allocated(a_k4)) then
+      if (allocated(a_k4_min)) deallocate(a_k4_min)
+      allocate(a_k4_min(size(a_k4,2)))
+      a_k4_min = minval(a_k4,1)
+    endif
+
+    if(allocated(low_coeff)) then
+      if (allocated(low_coeff_abs_max)) deallocate(low_coeff_abs_max)
+      allocate(low_coeff_abs_max(size(low_coeff,2)))
+      low_coeff_abs_max= maxval(abs(low_coeff_abs_max),1)
+    endif
+
+    if(allocated(high_coeff)) then
+      if (allocated(high_coeff_abs_max)) deallocate(high_coeff_abs_max)
+      allocate(high_coeff_abs_max(size(high_coeff,2)))
+      high_coeff_abs_max= maxval(abs(high_coeff_abs_max),1)
+    endif
+
+    if(allocated(troe_coeff)) then
+      if (allocated(troe_coeff_abs_max)) deallocate(troe_coeff_abs_max)
+      allocate(troe_coeff_abs_max(size(troe_coeff,2)))
+      troe_coeff_abs_max= maxval(abs(troe_coeff_abs_max),1)
+    endif
+
     if(.not. lmultithread) call chemistry_allocate_rhs_arrays
     if (lgpu .and. (l1step_test .or. reac_rate_method=='1step_test')) &
           call warning('initialize_chemistry','1step test will not be correct on the GPU')
@@ -4310,29 +4330,16 @@ module Chemistry
 !
         allocate(low_coeff(3,nreactions),STAT=stat)
         if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate low_coeff")
-        allocate(low_coeff_abs_max(nreactions),STAT=stat)
-        if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate low_coeff_abs_max")
         low_coeff = 0.
-        low_coeff_abs_max = 0.
         allocate(high_coeff(3,nreactions),STAT=stat)
         if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate high_coeff")
-        allocate(high_coeff_abs_max(nreactions),STAT=stat)
-        if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate high_coeff_abs_max")
         high_coeff = 0.
-        high_coeff_abs_max = 0.
         allocate(troe_coeff(3,nreactions),STAT=stat)
         if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate troe_coeff")
-        allocate(troe_coeff_abs_max(nreactions),STAT=stat)
-        if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate troe_coeff_abs_max")
         troe_coeff = 0.
-        troe_coeff_abs_max = 0.
         allocate(a_k4(nchemspec,nreactions),STAT=stat)
         if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate a_k4")
-        allocate(a_k4_min(nreactions),STAT=stat)
-        if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate a_k4_min")
         a_k4 = impossible
-        a_k4_min = impossible
-        allocate(Mplus_case (nreactions),STAT=stat)
         if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate Mplus_case")
         Mplus_case = .false.
         allocate(photochem_case (nreactions),STAT=stat)
@@ -4530,7 +4537,7 @@ module Chemistry
 
 
                     if (ParanthesisInd>0) then
-                      Mplus_case (k)=.true.
+                      Mplus_case(k)=.true.
                     endif
 
                     i=1
