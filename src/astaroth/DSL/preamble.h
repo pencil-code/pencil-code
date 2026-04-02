@@ -196,7 +196,7 @@ const real AC_arms__mod__magnetic = 0.0
 gmem real AC_reac_dust__mod__cdata[1]
 #endif
 
-#if LCHEMISTRY
+#if Lchemistry_MODULE
 #else
 gmem real AC_reac_chem__mod__cdata[1]
 #endif
