@@ -181,7 +181,7 @@ endif
 			  |tr "\n" " "|sed -e's/, /;/g'` $(EXT_KERNELS)" && \
 	echo "const char* cmake_options = \" -DDSL_EXT_SOURCES=\\\"$$ext_srcs\\\" -DDSL_MODULE_DIR=../$(DSL_MODULE_DIR) $(CMAKE_OPTIONS)\";" > cmake_options.h && \
 	mkdir -p submodule/build  && cd submodule/build && export LDFLAGS=""  &&  \
-	cmake  $(CMAKE_OPTIONS) -DDSL_MODULE_DIR=../acc-runtime/$(DSL_MODULE_DIR) -DRUNTIME_COMPILATION=$(RUNTIME_COMPILATION) -DREAD_OVERRIDES=$(READ_OVERRIDES) ..
+	cmake  $(CMAKE_OPTIONS) -DDSL_EXT_SOURCES="$$ext_srcs" -DDSL_MODULE_DIR=../acc-runtime/$(DSL_MODULE_DIR) -DRUNTIME_COMPILATION=$(RUNTIME_COMPILATION) -DREAD_OVERRIDES=$(READ_OVERRIDES) ..
 	cd submodule/build && sed -i -e's/SHELL *= *\/bin\/sh/SHELL = \/bin\/bash/' Makefile && make -j -I../../.. VERBOSE=0 # Build the core Astaroth library
 	@echo PRECISION=$(CMAKE_PREC)
 
