@@ -7393,7 +7393,6 @@ nameloop: do
 !
       real, allocatable, dimension(:) :: mean_tmp
       integer :: j, inde
-      logical :: lexpl
 !
       inde = ioptest(indep,inda)
 !
@@ -7405,14 +7404,15 @@ nameloop: do
 !
 !  Compute mean for each field.
 !
-      lexpl = loptest(lexp)
-      do j=inda,inde
-        if (lexpl) then
+      if (loptest(lexp)) then
+        do j=inda,inde
           mean(j) = mean(j) + sum(exp(f(l1:l2,m1:m2,n1:n2,j)))
-        else
+        enddo
+      else
+        do j=inda,inde
           mean(j) = mean(j) + sum(f(l1:l2,m1:m2,n1:n2,j))
-        endif
-      enddo
+        enddo
+      endif
 !
 !  Compute total mean for all processors
 !
@@ -7421,7 +7421,7 @@ nameloop: do
 !
     endsubroutine global_mean
 !***********************************************************************
-    subroutine remove_mean(f,inda,indep,lexp)
+    subroutine remove_mean(f_,inda,indep,lexp)
 !
 !  Substract mean from a (several) field(s) selected by the index inda
 !  (the index range inda - indep) in f.
@@ -7430,26 +7430,45 @@ nameloop: do
 !
       use Mpicomm, only: mpiallreduce_sum
       use General, only: ioptest
+      use GPU, only: get_ptr_GPU, pFarr_GPU_in
+      use iso_c_binding
 !
-      real, dimension (mx,my,mz,*), intent (inout)        :: f
-      integer,                      intent (in)           :: inda
-      integer,                      intent (in), optional :: indep
-      logical,                      intent (in), optional :: lexp
+      real, dimension(:,:,:,:), intent (inout), target:: f_
+      integer,                  intent (in)           :: inda
+      integer,                  intent (in), optional :: indep
+      logical,                  intent (in), optional :: lexp
 !
       real, allocatable, dimension(:) :: mean, mean_tmp
-      integer :: m,n,j,inde
+      integer :: l,m,n,j,inde
       real :: fac
+      real, dimension(:,:,:,:), pointer :: f
 !
+print*, 'in remove_mean'
+      !$ if (loffload) then
+        !!$ f=c_f_pointer(pFarr_GPU_in)
+      !$ else
+        f => f_
+      !$ endif
       inde = ioptest(indep,inda)
       allocate( mean(inda:inde) )
 !
-      call global_mean(f,inda,mean,inde,lexp)
+      call global_mean(f_,inda,mean,inde,lexp)
 !
 !  Subtract out the mean separately for each field.
 !
+      !$omp target if (loffload) map(to:mean,inda,inde) is_device_ptr(pFarr_GPU_in)
+      !$omp teams distribute parallel do collapse(4)
       do j=inda,inde
+        do n = n1,n2
+          do m = m1,m2
+            do l = l1,l2
+              f(l,m,n,j) = f(l,m,n,j) - mean(j)
+            enddo
+          enddo
+        enddo
         f(l1:l2,m1:m2,n1:n2,j) = f(l1:l2,m1:m2,n1:n2,j) - mean(j)
       enddo
+      !$omp end target
 !
       if (lroot.and.ip<6) print*,'remove_mean: mean=',mean
 !

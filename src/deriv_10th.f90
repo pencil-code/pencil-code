@@ -44,9 +44,7 @@ module Deriv
         der2_coef2=0.125; der2_coef3=-0.09375
 !
       case default
-        write(unit=errormsg,fmt=*) &
-            "der2_type doesn't exist"
-        call fatal_error('initialize_deriv',errormsg)
+        call fatal_error('initialize_deriv','no such der2_type: '//trim(der2_type))
 !
       endselect
 !
@@ -100,7 +98,7 @@ module Deriv
 !debug      if (loptimise_ders) der_call_count(k,icount_der,j,1) = & !DERCOUNT
 !debug                            der_call_count(k,icount_der,j,1)+1 !DERCOUNT
 !
-      if (present(ignoredx)) call fatal_error('der_main', 'optional argument ignoredx is not implemented. ')
+      if (present(ignoredx)) call not_implemented('der_main', 'optional argument ignoredx')
 !
       if (j==1) then
         if (nxgrid/=1) then
@@ -525,10 +523,10 @@ module Deriv
       endif
 !
       if (.not. lequidist(j)) &
-          call fatal_error('der3','NOT IMPLEMENTED for non-equidistant grid')
+          call not_implemented('der3','for non-equidistant grid')
 !
       if (lspherical_coords) &
-           call fatal_error('der3','NOT IMPLEMENTED for spherical coordinates')
+           call not_implemented('der3','for spherical coordinates')
 !
       if (j==1) then
         if (nxgrid/=1) then
@@ -602,11 +600,11 @@ module Deriv
 !debug                          der_call_count(k,icount_der4,j,1) + 1 !DERCOUNT
 !
       if (.not. lequidist(j)) then
-        call fatal_error('der4','NOT IMPLEMENTED for no equidistant grid')
+        call not_implemented('der4','for no equidistant grid')
       endif
 !
       if (lspherical_coords) &
-           call fatal_error('der4','NOT IMPLEMENTED for spherical coordinates')
+           call not_implemented('der4','for spherical coordinates')
 !
       if (present(ignoredx)) then
         igndx = ignoredx
@@ -698,10 +696,10 @@ module Deriv
       endif
 !
       if (.not. lequidist(j)) &
-          call fatal_error('der5','NOT IMPLEMENTED for no equidistant grid')
+          call not_implemented('der5','for no equidistant grid')
 !
       if (lspherical_coords) &
-           call fatal_error('der5','NOT IMPLEMENTED for spherical coordinates')
+           call not_implemented('der5','for spherical coordinates')
 !
       if (j==1) then
         if (nxgrid/=1) then
@@ -747,7 +745,7 @@ module Deriv
 !
     endsubroutine der5
 !***********************************************************************
-    subroutine der6_main(f,k,df,j,ignoredx,upwind)
+    subroutine der6_main(f,k,df,j,ignoredx,upwind,lexp)
 !
 !  Calculate 6th derivative of a scalar, get scalar
 !    Used for hyperdiffusion that affects small wave numbers as little as
@@ -761,13 +759,15 @@ module Deriv
 !   8-jul-02/wolf: coded
 !  25-aug-09/axel: copied from deriv, but not adapted yet
 !
+      use General, only: loptest
+
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
       integer :: j,k
-      logical, optional :: ignoredx,upwind
+      logical, optional :: ignoredx,upwind,lexp
       logical :: igndx,upwnd
 !
-      intent(in)  :: f,k,j,ignoredx
+      intent(in)  :: f,k,j,ignoredx,lexp
       intent(out) :: df
 !
 !debug      if (loptimise_ders) der_call_count(k,icount_der6,j,1) = & !DERCOUNT
@@ -776,9 +776,7 @@ module Deriv
       if (present(ignoredx)) then
         igndx = ignoredx
       else
-        if (.not. lequidist(j)) then
-          call fatal_error('der6','NOT IMPLEMENTED for non-equidistant grid')
-        endif
+        if (.not. lequidist(j)) call not_implemented('der6','for non-equidistant grid')
         igndx = .false.
       endif
 !
@@ -792,9 +790,7 @@ module Deriv
         endif
       endif
 
-     if (loptest(lexp)) then
-             call fatal_error('der6','NOT IMPLEMENTED lexp=T')
-     endif
+     if (loptest(lexp)) call not_implemented('der6','for lexp=T')
 !
       if (j==1) then
         if (nxgrid/=1) then
@@ -884,8 +880,7 @@ module Deriv
       else
         upwnd = .false.
         if (.not. lequidist(j)) &
-             call fatal_error('der6_other','NOT IMPLEMENTED for '//&
-             'non equidistant grid')
+             call not_implemented('der6_other','for non equidistant grid')
         if (.not.lcartesian_coords) &
              call fatal_error('der6_other','in non-cartesian coordinates '//&
              'just works if upwiding is used')
@@ -1003,7 +998,7 @@ module Deriv
         igndx = ignoredx
       else
         if (.not. lequidist(j)) then
-          call fatal_error('der10','NOT IMPLEMENTED for non-equidistant grid')
+          call not_implemented('der10','for non-equidistant grid')
         endif
         igndx = .false.
       endif
@@ -1660,7 +1655,7 @@ module Deriv
       endif
 !
       if (lspherical_coords.or.lcylindrical_coords) &
-           call fatal_error('der5i1j','NOT IMPLEMENTED for non-cartesian coordinates')
+           call not_implemented('der5i1j','for non-cartesian coordinates')
 !
     endsubroutine der5i1j
 !***********************************************************************
@@ -1674,7 +1669,7 @@ module Deriv
       real, dimension (nx) :: df,fac
       integer :: i,j,k
 !
-      call fatal_error("der4i2j","not implemented in deriv_10th")
+      call not_implemented("deriv_10th","der4i2j")
 !
     endsubroutine der4i2j
 !***********************************************************************
@@ -1690,7 +1685,7 @@ module Deriv
       integer,intent(in) :: k
       real, dimension(nx), intent(out) :: df
 !
-      call fatal_error("der2i2j2k","not implemented in deriv_10th")
+      call not_implemented("deriv_10th","der2i2j2k")
       call keep_compiler_quiet(df)
 !
     endsubroutine der2i2j2k
@@ -1702,7 +1697,7 @@ module Deriv
       real, dimension (nx) :: fac
       integer, intent(in) :: k,i,j
 !
-      call fatal_error("der3i3j","not implemented in deriv_10th")
+      call not_implemented("deriv_10th","der3i3j")
       call keep_compiler_quiet(df)
 !
     endsubroutine der3i3j
@@ -1714,7 +1709,7 @@ module Deriv
       real, dimension (nx) :: fac
       integer, intent(in) :: ik,i,j,k
 !
-      call fatal_error("der3i2j1k","not implemented in deriv_10th")
+      call not_implemented("deriv_10th","der3i2j1k")
       call keep_compiler_quiet(df)
 !
     endsubroutine der3i2j1k
@@ -1726,7 +1721,7 @@ module Deriv
       real, dimension (nx) :: fac
       integer, intent(in) :: ik,i,j,k
 !
-      call fatal_error("der4i1j1k","not implemented in deriv_10th")
+      call not_implemented("deriv_10th","der4i1j1k")
       call keep_compiler_quiet(df)
 !
     endsubroutine der4i1j1k
@@ -1749,11 +1744,10 @@ module Deriv
 !debug      if (loptimise_ders) der_call_count(k,icount_der_upwind1st,j,1) = & !DERCOUNT
 !debug                          der_call_count(k,icount_der_upwind1st,j,1) + 1 !DERCOUNT
 !
-      if (.not. lequidist(j)) &
-        call fatal_error('der_upwind1st','NOT IMPLEMENTED for no equidistant grid')
+      if (.not. lequidist(j)) call not_implemented('der_upwind1st','for non-equidistant grid')
 !
       if (lspherical_coords.or.lcylindrical_coords) &
-           call fatal_error('der_upwind1st','NOT IMPLEMENTED for non-cartesian grid')
+           call not_implemented('der_upwind1st','for non-cartesian grid')
 !
       if (j == 1) then
         if (nxgrid /= 1) then
@@ -1938,7 +1932,7 @@ module Deriv
       intent(in)  :: f,k,lll,mmm,nnn,sgn,j
       intent(out) :: df
 
-      call not_implemented('der_onesided_4_slice_main_pt','')
+      call not_implemented('deriv_10th','der_onesided_4_slice_main_pt')
       call keep_compiler_quiet(df)
 
    endsubroutine der_onesided_4_slice_main_pt
@@ -1959,7 +1953,7 @@ module Deriv
       intent(in)  :: f,lll,mmm,nnn,sgn,j
       intent(out) :: df
 
-      call not_implemented('der_onesided_4_slice_other_pt','')
+      call not_implemented('deriv_10th','der_onesided_4_slice_other_pt')
       call keep_compiler_quiet(df)
 
    endsubroutine der_onesided_4_slice_other_pt
@@ -1971,7 +1965,7 @@ module Deriv
       real, dimension (mz), intent(in)  :: f
       real, dimension (nz), intent(out) :: df
 !
-      call fatal_error("deriv_10th","der_z not implemented yet")
+      call not_implemented("deriv_10th","der_z")
 !
 ! To avoid compiler warnings:
       df=f(n1:n2)
@@ -1985,7 +1979,7 @@ module Deriv
       real, dimension (mz), intent(in)  :: f
       real, dimension (nz), intent(out) :: df2
 !
-      call fatal_error("deriv_10th","der2_z not implemented yet")
+      call not_implemented("deriv_10th","der2_z")
 !
 ! To avoid compiler warnings:
 !
@@ -2003,7 +1997,7 @@ module Deriv
       real, dimension (mx), intent(in)  :: f
       real, dimension (nx), intent(out) :: df
 !
-      call fatal_error("deriv_10th", "der_x not implemented yet")
+      call not_implemented("deriv_10th", "der_x")
 !
 ! To avoid compiler warnings:
 !
@@ -2021,7 +2015,7 @@ module Deriv
       real, dimension (mx), intent(in)  :: f
       real, dimension (nx), intent(out) :: df2
 !
-      call stop_it("deriv_10th: der2_x not implemented yet")
+      call not_implemented("deriv_10th","der2_x")
 !
 ! To avoid compiler warnings:
 !
@@ -2071,7 +2065,7 @@ module Deriv
       intent(in)  :: f,j,inds,lignored,lnometric
       intent(out) :: df
 !
-      call fatal_error('deri_3d_inds','Upwinding not implemented for nonuniform grids')
+      call not_implemented('deri_3d_inds','upwinding for nonuniform grids')
 !
 ! dummy computation to avoid compiler warnings of unused variables
 !
