@@ -119,33 +119,21 @@ class Param(object):
             super_name_list = list()
             name_list = list()
             param_conflicts = dict()
-            # Nesting parameters with same name under module attributes
-            if nest_dict:
-                for filen in files:
-                    (
-                        param_list,
-                        param_conflicts,
-                        name_list,
-                        super_name_list,
-                    ) = self._read_nml(
-                        param_list,
-                        filen,
-                        param_conflicts,
-                        name_list,
-                        super_name_list,
-                        nest=True,
-                    )
-            # Parameters with same name will be written by last value
-            else:
-                for filen in files:
-                    (
-                        param_list,
-                        param_conflicts,
-                        name_list,
-                        super_name_list,
-                    ) = self._read_nml(
-                        param_list, filen, param_conflicts, name_list, super_name_list
-                    )
+            # If nest_dict is False, parameters with same name will be written by last value
+            for filen in files:
+                (
+                    param_list,
+                    param_conflicts,
+                    name_list,
+                    super_name_list,
+                ) = self._read_nml(
+                    param_list,
+                    filen,
+                    param_conflicts,
+                    name_list,
+                    super_name_list,
+                    nest = nest_dict,
+                )
 
             if param_conflicts:
                 subkey_list = list()
