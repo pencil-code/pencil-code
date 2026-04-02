@@ -4340,6 +4340,7 @@ module Chemistry
         allocate(a_k4(nchemspec,nreactions),STAT=stat)
         if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate a_k4")
         a_k4 = impossible
+        allocate(Mplus_case (nreactions),STAT=stat)
         if (stat > 0) call fatal_error('chemkin_data',"Couldn't allocate Mplus_case")
         Mplus_case = .false.
         allocate(photochem_case (nreactions),STAT=stat)
