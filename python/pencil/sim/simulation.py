@@ -14,35 +14,12 @@ from pencil.util import (
     PathWrapper,
     pc_print,
     copy_docstring,
+    DotDict as _DotDict,
     )
 
 class CommandFailedError(RuntimeError):
     pass
 
-
-class _DotDict(dict):
-    """A dict subclass that also supports attribute-style access.
-
-    This allows sim.param to be used both as a dict (sim.param['key'])
-    and with attribute access (sim.param.key), so that it is compatible
-    with the Param objects returned by pc.read.param() and accepted by
-    all reading routines.
-    """
-
-    def __getattr__(self, key):
-        try:
-            return self[key]
-        except KeyError:
-            raise AttributeError("param.{} does not exist".format(key))
-
-    def __setattr__(self, key, value):
-        self[key] = value
-
-    def __delattr__(self, key):
-        try:
-            del self[key]
-        except KeyError:
-            raise AttributeError(key)
 
 class Simulation:
     """

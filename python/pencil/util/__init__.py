@@ -136,3 +136,27 @@ def copy_docstring(original):
         target.__doc__ = original.__doc__
         return target
     return wrapper
+
+class DotDict(dict):
+    """A dict subclass that also supports attribute-style access.
+
+    This allows sim.param to be used both as a dict (sim.param['key'])
+    and with attribute access (sim.param.key), so that it is compatible
+    with the Param objects returned by pc.read.param() and accepted by
+    all reading routines.
+    """
+
+    def __getattr__(self, key):
+        try:
+            return self[key]
+        except KeyError:
+            raise AttributeError("{} does not exist".format(key))
+
+    def __setattr__(self, key, value):
+        self[key] = value
+
+    def __delattr__(self, key):
+        try:
+            del self[key]
+        except KeyError:
+            raise AttributeError(key)
