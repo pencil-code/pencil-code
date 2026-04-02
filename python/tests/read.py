@@ -120,6 +120,8 @@ def test_read_param_keepnested() -> None:
     assert params.eos.gamma == 1.666_666_6
     assert params.hydro.kx_uu == 1.0
 
+    assert params['eos']['gamma'] == 1.666_666_6
+
     with pytest.raises(AttributeError):
         params.init
     with pytest.raises(AttributeError):
