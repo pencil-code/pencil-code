@@ -10,7 +10,10 @@
 Contains the parameters of the simulation.
 """
 import warnings
-from pencil.util import copy_docstring
+from pencil.util import (
+    copy_docstring,
+    DotDict as _Foo,
+    )
 
 try:
     import f90nml
@@ -25,20 +28,10 @@ except:
     lnml = False
 
 
-class Param(object):
+class Param(_Foo):
     """
     Param -- holds the simulation parameters.
     """
-
-    def __init__(self):
-        """
-        Fill members with default values.
-        """
-
-        self.keys = []
-
-    def keys(self):
-        return list(self.__dict__.keys())
 
     def read(
         self,
@@ -406,8 +399,6 @@ class Param(object):
         for s in ["_init", "_run"]:
             name = name.removesuffix(s)
         return name
-
-class _Foo(object): pass
 
 @copy_docstring(Param.read)
 def param(*args, **kwargs):
