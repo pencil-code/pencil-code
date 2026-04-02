@@ -104,6 +104,8 @@ def test_read_param() -> None:
     assert_equal(params.lentropy, True)
     assert_equal(params.ltemperature, False)
 
+    assert params['kx_uu'] == 1.0
+
     with pytest.raises(AttributeError):
         params.eos
 
