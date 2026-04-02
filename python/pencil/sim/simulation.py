@@ -553,7 +553,7 @@ class Simulation:
                 if not quiet: print("~ Reading param.nml.. ")
 
                 try:
-                    self.param = param(quiet=quiet, datadir=self.datadir)
+                    self.param = param(quiet=quiet, datadir=self.datadir, keep_nested=True)
                 except Exception as e:
                     warnings.warn(f"! ERROR: ({e}) while reading param.nml for {self.path}")
                     self.param = False
