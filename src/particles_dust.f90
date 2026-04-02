@@ -193,7 +193,7 @@ module Particles
   real :: nucleation_threshold
   logical :: ascalar_ngp=.false., ascalar_cic=.false.
   real :: diffusion_coefficient=0.0
-  real :: rpinit_int=-impossible, rpinit_ext=-impossible
+  real :: rpinit_int=impossible, rpinit_ext=impossible
 !
   logical :: laccretion_removal=.false.,lsmooth_gravity_companion=.false.
   real :: frac_hill=1.0
@@ -1429,13 +1429,13 @@ module Particles
 ! Allow for initializing the particles at a different range (rpinit_[int/ext]) than
 ! the migration/removal range (rp_[int/ext])
 !               
-              if (rpinit_int==-impossible) then
+              if (rpinit_int==impossible) then
                 !default values
                 rpar_int = xyz0_loc(1)              
               else
                 rpar_int = rpinit_int
               endif
-              if (rpinit_ext==-impossible) then
+              if (rpinit_ext==impossible) then
                 rpar_ext = xyz1_loc(1)
               else
                 rpar_ext = rpinit_ext                 
