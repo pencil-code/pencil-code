@@ -404,8 +404,7 @@ module Density
       ! only allow lrelativistic_eos_corr when lrelativistic_eos
       if (.not.lrelativistic_eos.and.lrelativistic_eos_corr) then
         lrelativistic_eos_corr=.false.
-        call warning('register_density', &
-          'to use lrelativistic_eos_corr, set lrelativistic_eos true')
+        call warning('register_density','to use lrelativistic_eos_corr, set lrelativistic_eos true')
       endif
       call put_shared_variable('lrelativistic_eos_corr',lrelativistic_eos_corr)
 !
@@ -1192,8 +1191,8 @@ module Density
 !
         case ('zero', '0'); f(:,:,:,ilnrho)=0.
         case ('const_lnrho'); f(:,:,:,ilnrho)=lnrho_const
-        case ('const_rho'); f(:,:,:,ilnrho)=merge(rho_const,log(rho_const),ldensity_nolog)
-        case ('constant'); f(:,:,:,ilnrho)=merge(rho_left(j),log(rho_left(j)),ldensity_nolog)
+        case ('const_rho'); f(:,:,:,ilnrho)=log(rho_const)
+        case ('constant'); f(:,:,:,ilnrho)=log(rho_left(j))
         case ('linear_lnrho'); f(:,:,:,ilnrho)=lnrho_const-spread(spread(z,1,mx),2,my)/Hrho
         case ('05x2'); f(:,:,:,ilnrho)=lnrho_const+spread(spread(x**2,2,my),3,mz)/Hrho**2/2.
         case ('exp_zbot'); f(:,:,:,ilnrho)=alog(rho_left(j))-spread(spread(z-zbot,1,mx),2,my)/Hrho
@@ -1261,16 +1260,14 @@ module Density
         case ('soundwave-z')
           call soundwave(ampllnrho(j),f,ilnrho,kz=kz_lnrho(j))
         case ('sinwave-phase')
-          call sinwave_phase(f,ilnrho,ampllnrho(j),kx_lnrho(j), &
-                             ky_lnrho(j),kz_lnrho(j),phase_lnrho(j))
+          call sinwave_phase(f,ilnrho,ampllnrho(j),kx_lnrho(j),ky_lnrho(j),kz_lnrho(j),phase_lnrho(j))
         case ('sinwave-phase-nolog')
           do m=m1,m2; do n=n1,n2
             f(l1:l2,m,n,ilnrho) = f(l1:l2,m,n,ilnrho) + alog(1+amplrho(j)*sin(kx_lnrho(j)*x(l1:l2)+ &
                                   ky_lnrho(j)*y(m)+kz_lnrho(j)*z(n)+phase_lnrho(j)))
           enddo; enddo
         case ('coswave-phase')
-          call coswave_phase(f,ilnrho,ampllnrho(j),kx_lnrho(j), &
-                             ky_lnrho(j),kz_lnrho(j),phase_lnrho(j))
+          call coswave_phase(f,ilnrho,ampllnrho(j),kx_lnrho(j),ky_lnrho(j),kz_lnrho(j),phase_lnrho(j))
         case ('sinwave-x')
           call sinwave(ampllnrho(j),f,ilnrho,kx=kx_lnrho(j))
         case ('sinwave-y')
@@ -1745,8 +1742,7 @@ module Density
               real(omega_jeans),aimag(omega_jeans),abs(omega_jeans)
 !
           do n=n1,n2; do m=m1,m2
-            f(l1:l2,m,n,ilnrho) = lnrho_const + &
-              ampllnrho(j)*sin(kx_lnrho(j)*x(l1:l2))
+            f(l1:l2,m,n,ilnrho) = lnrho_const + ampllnrho(j)*sin(kx_lnrho(j)*x(l1:l2))
             f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) + &
                 abs(omega_jeans*ampllnrho(j)) * &
                 sin(kx_lnrho(j)*x(l1:l2)+complex_phase(omega_jeans*ampllnrho(j)))
@@ -1770,7 +1766,7 @@ module Density
 !  initial spectrum
 !
         case ('power_randomphase')
-          call power_randomphase(ampllnrho(j),initpower_lnrho,kgaussian_lnrho,kpeak_lnrho,cutoff_lnrho,&
+          call power_randomphase(ampllnrho(j),initpower_lnrho,kgaussian_lnrho,kpeak_lnrho,cutoff_lnrho, &
             f,ilnrho,ilnrho,lscale_tobox=.false.)
 !
 !  Catch unknown values
@@ -2699,6 +2695,7 @@ module Density
 !   14-oct-25/TP: carved from dlnrho_dt 
 !
       real, dimension(nx) :: advec_hypermesh_rho
+!
       if (lupdate_courant_dt) then
         if (ldynamical_diffusion) then
           diffus_diffrho3 = diffus_diffrho3 + diffrho_hyper3_mesh
@@ -2708,6 +2705,7 @@ module Density
         endif
         advec2_hypermesh=advec2_hypermesh+advec_hypermesh_rho**2
       endif
+!
     endsubroutine calc_advec_hypermesh
 !***********************************************************************
     subroutine dlnrho_dt(f,df,p)
@@ -3567,8 +3565,7 @@ module Density
 !
           if (lentropy) then
             where (r_mn > r_ext)
-              f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss) &
-                -(1.-1./gamma)*f(l1:l2,m,n,ilnrho)+log(cs2top)/gamma
+              f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss)-(1.-1./gamma)*f(l1:l2,m,n,ilnrho)+log(cs2top)/gamma
             elsewhere
               dlncs2=log(-gamma*pot/((mpoly+1.)*cs20))
               f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss)+mpoly*(ggamma/gamma-1.)*dlncs2
@@ -4245,9 +4242,11 @@ module Density
 !  12-2-2025/TP: carved out from dlnrho_dt
 !
         real, dimension(nx) :: density_rhs
-        Schur_dlnrho_RHS_xyaver_z(n-nghost) = Schur_dlnrho_RHS_xyaver_z(n-nghost)+sum(density_rhs)/nxygrid
-        Schur_dlnrho_RHS_zaver_xy(:,m-nghost) = Schur_dlnrho_RHS_zaver_xy(:,m-nghost)+density_rhs/nzgrid
-        Schur_dlnrho_RHS_xyzaver = Schur_dlnrho_RHS_xyzaver+sum(density_rhs)/nwgrid
+!
+      Schur_dlnrho_RHS_xyaver_z(n-nghost) = Schur_dlnrho_RHS_xyaver_z(n-nghost)+sum(density_rhs)/nxygrid
+      Schur_dlnrho_RHS_zaver_xy(:,m-nghost) = Schur_dlnrho_RHS_zaver_xy(:,m-nghost)+density_rhs/nzgrid
+      Schur_dlnrho_RHS_xyzaver = Schur_dlnrho_RHS_xyzaver+sum(density_rhs)/nwgrid
+!
     endsubroutine accumulate_Schur_averages
 !***********************************************************************
     subroutine impose_density_ceiling(f)
