@@ -553,33 +553,10 @@ class Simulation:
                 if not quiet: print("~ Reading param.nml.. ")
 
                 try:
-                    param = param(quiet=quiet, datadir=self.datadir)
+                    self.param = param(quiet=quiet, datadir=self.datadir)
                 except Exception as e:
                     warnings.warn(f"! ERROR: ({e}) while reading param.nml for {self.path}")
                     self.param = False
-                else:
-                    self.param = _DotDict()
-                    allowed_types = (bool, list, float, int, str)
-                    # read params into Simulation object
-                    for key in dir(param):
-                        val = getattr(param, key)
-                        if key.startswith("_") or key == "read":
-                            continue
-                        if isinstance(val, allowed_types):
-                            self.param[key] = val
-                        else:
-                            try:
-                                # allow for nested param objects
-                                self.param[key] = _DotDict()
-                                for subkey in dir(val):
-                                    if subkey.startswith("_") or subkey == "read":
-                                        continue
-                                    subval = getattr(val, subkey)
-                                    if isinstance(subval, allowed_types):
-                                        self.param[key][subkey] = subval
-                            except Exception:
-                                # not nested param objects
-                                continue
             else:
                 if not quiet:
                     print(
