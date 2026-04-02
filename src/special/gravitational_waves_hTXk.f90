@@ -156,7 +156,7 @@ module Special
   real :: nonlinear_source_fact=0., k_in_stress=1.
   integer :: itorder_GW=1, idt_file_safety=12
   integer :: boost_method=2
-  logical :: lsplit_GW_rhs_from_rest_on_gpu=.false.
+  logical :: lsplit_GW_rhs_from_rest_on_gpu=.true.
   integer :: ntimesteps_per_GW_step=1
 !
 ! input parameters
