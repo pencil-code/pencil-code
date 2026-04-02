@@ -642,19 +642,19 @@ module Chemistry
       if(allocated(low_coeff)) then
         if (allocated(low_coeff_abs_max)) deallocate(low_coeff_abs_max)
         allocate(low_coeff_abs_max(size(low_coeff,2)))
-        low_coeff_abs_max= maxval(abs(low_coeff_abs_max),1)
+        low_coeff_abs_max= maxval(abs(low_coeff),1)
       endif
 
       if(allocated(high_coeff)) then
         if (allocated(high_coeff_abs_max)) deallocate(high_coeff_abs_max)
         allocate(high_coeff_abs_max(size(high_coeff,2)))
-        high_coeff_abs_max= maxval(abs(high_coeff_abs_max),1)
+        high_coeff_abs_max= maxval(abs(high_coeff),1)
       endif
 
       if(allocated(troe_coeff)) then
         if (allocated(troe_coeff_abs_max)) deallocate(troe_coeff_abs_max)
         allocate(troe_coeff_abs_max(size(troe_coeff,2)))
-        troe_coeff_abs_max= maxval(abs(troe_coeff_abs_max),1)
+        troe_coeff_abs_max= maxval(abs(troe_coeff),1)
       endif
 
       if(.not. lmultithread) call chemistry_allocate_rhs_arrays
