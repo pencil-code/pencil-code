@@ -7,6 +7,80 @@ Meeting archive for the Python postprocessing development group.
 
 Each entry includes date, participants, and a summary of decisions.
 
+2026 Mar 30
+------------
+
+**Participants:**
+
+Illa R. Losada, Kishore G., Ramkishor Sharma, Vinay Kumar
+
+**Minutes:**
+
+1. **Agenda Items:**
+
+    - Server to host python auto-tests.
+
+    - Placement of tutorials -- Read the Docs vs samples.
+
+    - Array order convention
+
+    - Obsolete documentation items in :ref:`python-decisions`
+
+
+2. **Python Auto-Tests:**
+
+    - Kishore has developed the python-tests. 
+    
+    - We need to set up a server to run these tests automatically on new commits. 
+
+    - Possible options include machines at Nordita. Kishore will    enquire with Axel and report back at the next meeting.
+
+3. **Python Package:**
+
+    - We are moving towards an official Python package installation. This would allow users to install the package via pip.
+
+    - Alberto is leading this effort. 
+
+    - A list of all places with hardcoded paths which would be affected by this needs to be made. Kishore and Illa will do this for python-tests and readthedocs, respectively.
+
+4. **Tutorial Placement:**
+
+    - We need to decide where to place the tutorials (dependinf on the type of tutorial). 
+
+    - Readthedocs will have all general tutorials. Sample specicfic tutorials will be placed in the samples directory.
+
+    - We will have a contents/index page on readthedocs linking to the sample specific tutorials.
+
+    - Jupyter notebook tutorials can be hosted in samples but also linked and rendered on readthedocs.
+
+5. **Docstrings:**
+
+    - We can add example usage of functions in the docstrings. This would be helpful for users and also for testing.
+
+6. **Array Order Convention:**
+
+    - Current array order is [z, y, x]. Consider changing to [x, y, z] (standard convention), but this may break existing scripts.
+
+    - Not discussed further since Alberto and Simon were not around. To be continued at the next meeting.
+
+7. **Obsolete Items:**
+
+    - In python-decisions, should obsolete items be marked as obsolete or removed entirely?
+
+    - We decided to mark them as obsolete for now, but move them to the end of the list in a separate section. This way they are still visible.
+
+8. **Export pencil-code data to other formats:**
+
+    - Vinay is developing a workflow to export data from var files into a format compatible with other codes (currently Athena). This will enable users to run part of their simulations in Pencil Code and then transfer the data for further processing or for code comparison.
+    
+    - The Python routine is being modularized into two components: (i) construction of conserved variables, and (ii) writing data in the required output format with correct processor ordering.
+
+    - This functionality will be incorporated into the Pencil Code Python toolkit and made available to users.
+
+9. **Next Meeting:**
+
+    - Scheduled for end of May/ early June. Vinay will host and set up the Zoom link.
+
 2026 Jan 29
 ------------
 
