@@ -51,6 +51,7 @@ void torch_inferCAPI(int sub_dims[3], AcReal* input, AcReal* label,
  	}
 }
 
+/**
 void torch_createmodel(const char* name, const char* config_fname,MPI_Comm mpi_comm, int device){
 	
 	torchfort_result_t result = torchfort_set_manual_seed(943442);
@@ -61,3 +62,4 @@ void torch_createmodel(const char* name, const char* config_fname,MPI_Comm mpi_c
 		fprintf(stderr,"torchfort_train failed!\n");
  	}
 }
+**/
