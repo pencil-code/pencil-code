@@ -1427,7 +1427,7 @@ if (it % 5 !=0) return;
 }
 /***********************************************************************************************/
 void
-GW_update()
+GW_update(const AcReal dt_gw)
 {
 #if LGRAVITATIONAL_WAVES_HTXK
 	//We set the device id here since another thread than the master might be executing this
@@ -1440,16 +1440,24 @@ GW_update()
 	//TP: do this if you want to test the performance of utilizing the conjugate symmetry
 	//acDeviceFFTR2HermitianPlanarBatched(acGridGetDevice(), acGetF_STRESS_0(),acGetAC_tpq_re__mod__gravitational_waves_htxk_0(),acGetAC_tpq_im__mod__gravitational_waves_htxk_0(),6,STREAM_10);
         acDeviceSynchronizeStream(acGridGetDevice(),STREAM_10);
+	acDeviceSetInput(acGridGetDevice(),AC_dt,dt_gw);
 	acGridExecuteTaskGraph(GW_timestep_graph,1);
+	acDeviceSetInput(acGridGetDevice(),AC_dt,dt);
 #endif
 }
 /***********************************************************************************************/
 extern "C" void afterSubStepGPU()
 {
+	static AcReal dt_gw=0.0;
 #if LGRAVITATIONAL_WAVES_HTXK
 	if (acDeviceGetInput(acGridGetDevice(), AC_step_num) == PC_FIRST_SUB_STEP)
 	{
-	   GW_update();
+	   dt_gw += dt;
+	   if(it % ntimesteps_per_gw_step__mod__gravitational_waves_htxk == 0)
+	   {
+	     GW_update(dt_gw);
+	     dt_gw = 0.0;
+	   }
 	   //TP: do this if you want to test the performance of overlapping GW FFTs with the normal RHS
 	   //GW_thread = std::thread(GW_update);
 	}

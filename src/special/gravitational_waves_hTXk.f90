@@ -3546,6 +3546,8 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
     call copy_addr(appa_om_init,p_par(75)) 
     call copy_addr(luse_mag,p_par(76)) ! bool
     call copy_addr(lsplit_gw_rhs_from_rest_on_gpu,p_par(77)) ! bool
+    call copy_addr(ntimesteps_per_gw_step,p_par(78)) ! int
+
 
     endsubroutine pushpars2c
 !***********************************************************************
