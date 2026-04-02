@@ -1192,8 +1192,8 @@ module Density
 !
         case ('zero', '0'); f(:,:,:,ilnrho)=0.
         case ('const_lnrho'); f(:,:,:,ilnrho)=lnrho_const
-        case ('const_rho'); f(:,:,:,ilnrho)=log(rho_const)
-        case ('constant'); f(:,:,:,ilnrho)=log(rho_left(j))
+        case ('const_rho'); f(:,:,:,ilnrho)=merge(rho_const,log(rho_const),ldensity_nolog)
+        case ('constant'); f(:,:,:,ilnrho)=merge(rho_left(j),log(rho_left(j)),ldensity_nolog)
         case ('linear_lnrho'); f(:,:,:,ilnrho)=lnrho_const-spread(spread(z,1,mx),2,my)/Hrho
         case ('05x2'); f(:,:,:,ilnrho)=lnrho_const+spread(spread(x**2,2,my),3,mz)/Hrho**2/2.
         case ('exp_zbot'); f(:,:,:,ilnrho)=alog(rho_left(j))-spread(spread(z-zbot,1,mx),2,my)/Hrho
@@ -2430,10 +2430,10 @@ module Density
           p%ekin=0.5*p%rho*p%u2
         endif
       endif
+!
 ! Needed to get right maxadvec for diagnostics
-      if (lmultithread .and. ldiff_hyper3_mesh .and. idiag_dtv /= 0) then
-              call calc_advec_hypermesh
-      endif
+!
+      if (lmultithread .and. ldiff_hyper3_mesh .and. idiag_dtv /= 0) call calc_advec_hypermesh
 !
 !  Dummy pencils.
 !
@@ -2584,7 +2584,7 @@ module Density
             !p%rho=p%rho-eps_hless*max(0.d0, min(1.d0, (f(l1:l2,m,n,ihless)+0.5d0*width_hless_absolute-t)/width_hless_absolute))
           endif
         endif
-        p%rho=p%rho/(fourthird*p%lorentz*(1.-.25/p%lorentz))
+        if (lrelativistic) p%rho=p%rho/(fourthird*p%lorentz*(1.-.25/p%lorentz))
       endif
 !
     endsubroutine calc_pencils_linear_density_pnc
