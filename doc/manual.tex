@@ -346,6 +346,9 @@
 \newcommand{\Bhat}{\hat{B}}
 \newcommand{\BBhat}{\hat{\vec{B}}}
 
+\newcommand{\SSSS}{\mbox{\boldmath ${\sf S}$} {}}
+\newcommand{\FFF}{\mbox{\boldmath ${\cal F}$} {}}
+
 \newcommand{\EE}[1]{\,{\times}\,10^{#1}}
 \newcommand{\ttimes}[1]{10^{#1}}
 \newcommand{\xtimes}[2]{#1 \times 10^{#2}}
@@ -5425,8 +5428,7 @@ bulk viscosity.
 \label{ShockViscosity}
 
 Shock viscosity, as it is used here and also in the Stagger Code of {\AA}ke Nordlund,
-is proportional to positive flow convergence, maximum over
-five zones, and smoothed to second order,
+is proportional to the positive flow convergence, maximum over five zones, and smoothed to second order,
 \begin{equation}
 \zeta_{\rm shock}=c_{\rm shock}\left<\max_5[(-\Div\uv)_+]\right>(\min(\delta x,\delta y,\delta z))^2,
 \end{equation}
@@ -5449,7 +5451,10 @@ and
 \rho^{-1}\Gamma_{\rm visc}=2\nu\Strain^2+\zeta_{\rm shock}(\Div\uv)^2.
 \end{equation}
 In the special case with periodic boundary conditions, we have
-$2\langle\Strain^2\rangle=\langle\omv^2\rangle+{4\over3}\langle(\nab\cdot\uv)^2\rangle$.
+$2\langle\Strain^2\rangle=\langle\omv^2\rangle+{4\over3}\langle(\nab\cdot\uv)^2\rangle$.\footnote{
+More generally, we have $2\SSSS^2=-\nab\cdot\FFF^{\omega}-\ov^2+\frac{4}{3}(\nab\cdot\uv)^2$,
+where $\FFF^{\omega}=\ov\times\uv-\frac{4}{3}\uv\,\nab\cdot\uv$ is proportional to a viscous flux term.
+The 4/3 factor in front of the $\langle(\nab\cdot\uv)^2\rangle$ contribution to the heating was incorrectly given as 2/3 in Ref.~\cite{BJNRST96}.}
 
 % ---------------------------------------------------------------------- %
 
@@ -6332,7 +6337,6 @@ For technical details; see also Sect.~\ref{RestartingFromLessPhysics}.
 \def\Imag{\mbox{\rm Im}}
 \def\DD{\rm D}
 \def\ii{\rm i}
-\newcommand{\SSSS}{\mbox{\boldmath ${\sf S}$} {}}
 \def\onethird{{\textstyle{1\over3}}}
 \def\half{{\textstyle{1\over2}}}
 
