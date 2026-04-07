@@ -6667,8 +6667,8 @@ print*,'AXEL2: should not be here (eta) ... '
       if (idiag_betamin /= 0) call max_mn_name(-p%beta, idiag_betamin, lneg=.true.)
       if (idiag_Azmid_min  /= 0) call max_mn_name((offset_min_calc-p%aa(:,3))*xmask1_mag, idiag_Azmid_min,  lneg=.true.)
       if (idiag_Azmid_max  /= 0) call max_mn_name((               +p%aa(:,3))*xmask1_mag, idiag_Azmid_max,  lneg=.true.)
-      if (idiag_Azmid_ymin /= 0) call max_mn_name((offset_min_calc-p%aa(:,3))*ymask1_mag, idiag_Azmid_ymin, lneg=.true.)
-      if (idiag_Azmid_ymax /= 0) call max_mn_name((               +p%aa(:,3))*ymask1_mag, idiag_Azmid_ymax, lneg=.true.)
+      if (idiag_Azmid_ymin /= 0) call max_mn_name((offset_min_calc-p%aa(:,3))*ymask1_mag(m), idiag_Azmid_ymin, lneg=.true.)
+      if (idiag_Azmid_ymax /= 0) call max_mn_name((               +p%aa(:,3))*ymask1_mag(m), idiag_Azmid_ymax, lneg=.true.)
 !AB: obsolete
       !call max_mn_name( p%aa(:,3),idiag_Azmid_max)
 
