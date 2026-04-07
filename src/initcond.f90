@@ -23,7 +23,7 @@ module Initcond
   public :: soundwave,sinwave,sinwave_phase,coswave,coswave_phase,cos_cos_sin
   public :: hatwave
   public :: acosy
-  public :: sph_constb,tanh_hyperbola,sech2x
+  public :: sph_constb,tanh_hyperbola,sech2x,coalesce_tubes
   public :: gaunoise, posnoise, posnoise_rel
   public :: gaunoise_rprof
   public :: gaussian, gaussian3d, gaussianpos
@@ -7869,6 +7869,33 @@ module Initcond
       f(:,:,:,ix+2) = spread(spread(A0*width*amp/(cosh(x/width)**2),2,my),3,mz)
 !
     endsubroutine
+
+!***********************************************************************
+subroutine coalesce_tubes(amp,f,ix,width,cs20)
+
+  real, dimension (mx,my,mz,mfarray) :: f
+  real, dimension (mx,my) :: By0, By
+  real, intent(in) :: amp, width, cs20
+  integer, intent(in) :: ix
+  integer :: m,l
+  do m = m1,m2 
+    do l = l1,l2 
+      f(l,m,:,ix)   = 0.
+      f(l,m,:,ix+1) = 0.
+      f(l,m,:,ix+2) = amp/(2*pi) * tanh(x(l)/width) * cos(y(m)/2) * sin(x(l))
+
+      By(l,m) = amp/(2*pi)/width/cosh(x(l)/width)**2  * cos(y(m)/2) * sin(x(l)) + &
+                    amp/(2*pi) * tanh(x(l)/width) * cos(y(m)/2) * cos(x(l))
+
+      By0(l,m)= amp/(2*pi) * cos(x(l)) * cos(y(m)/2)
+      
+      f(l,m,:,ilnrho) = log(exp(f(l,m,:,ilnrho))+(By0(l,m)**2 - By(l,m)**2)/(2.*cs20))
+
+      !print*,"VK:ilnrho=",ilnrho
+    enddo
+  enddo
+
+end subroutine
 !***********************************************************************
     subroutine pre_stellar_cloud(f, datafile, mass_cloud,  &
         cloud_mode, T_cloud_out_rel, dens_coeff, &
