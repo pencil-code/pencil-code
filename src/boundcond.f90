@@ -7226,8 +7226,8 @@ module Boundcond
           endif
 !
           if (lheatc_kramers.or.lheatc_chiconst) then
-            call get_shared_variable('Fbot',Fbot)
-            if ((headtt) .and. (lroot)) print*,'bc_ss_flux_x: Fbot=',Fbot
+            call get_shared_variable('Ftop',Ftop)
+            if ((headtt) .and. (lroot)) print*,'bc_ss_flux_x: Ftop=',Ftop
           endif
 !
           if (lheatc_kramers) then
