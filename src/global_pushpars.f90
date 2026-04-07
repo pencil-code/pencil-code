@@ -467,6 +467,7 @@ contains
     call copy_addr(icp,p_par(1411)) ! int
     call copy_addr(irr,p_par(1412)) ! int
 
+    call copy_addr(wav1,p_par(1413))
   endsubroutine pushpars2c
 !***********************************************************************
 endmodule Global_pushpars
