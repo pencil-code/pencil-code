@@ -16,7 +16,7 @@
     use Torchfort, only: torchfort_create_distributed_model, torchfort_create_model,&
                          torchfort_result_success,torchfort_load_model,torchfort_load_checkpoint,&
                          torchfort_save_model,torchfort_result_success,torchfort_save_checkpoint,&
-                         torchfort_inference,torchfort_train
+                         !torchfort_inference,torchfort_train
     !use iso_c_binding
 
     implicit none
@@ -390,7 +390,7 @@
         input(:,:,:,:,1) = uumean                    ! host to device    !sngl(uumean)
         label(:,:,:,:,1) = f(:,:,:,itau_hydroxx:itau_hydrozz)    ! host to device
 
-        istat = torchfort_train(model, input, label, train_loss)
+        !istat = torchfort_train(model, input, label, train_loss)
 !print 'TRAIN', it, train_loss
 
       endif
