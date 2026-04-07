@@ -101,7 +101,7 @@ module Special
   real :: amplGW=0., amplGW2=0., amplGWX=0., kpeak_GW=1., initpower_gw=0., initpower2_gw=-4., cutoff_GW=500.
   real :: trace_factor=0., stress_prefactor, fourthird_factor, EGWpref
   real :: nscale_factor_conformal=1., tshift=0., om2_min_factor=1e-4 !(=keep this for now, but in future, we want to put it to 0. exactly)
-  real :: t_equality=3.789E11, t_acceleration=1.9215E13, t_0=1.3725E13
+  real :: t_equality=3.789E11, t_acceleration=1.9215E13 !, t_0=1.3725E13
   real :: k1hel=0., k2hel=1., kgaussian_GW=0., ncutoff_GW=2., relhel_GW=0.
   real, pointer :: ddotam
   logical, pointer :: lconservative, lwaterfall, lflrw
@@ -1187,6 +1187,7 @@ module Special
 !
       if (lfirst) then
         if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dspecial_dt'
+      call keep_compiler_quiet(df)
 !
 !  Compute scale factor.
 !  Note: to prevent division by zero, it is best to put tstart=1. in start.in.
@@ -1251,6 +1252,7 @@ module Special
       real :: sign_switch=0
       real, dimension(nx) :: ggT,ggTim,ggX,ggXim
 
+      call keep_compiler_quiet(p)
       if (lggTX_as_aux) then
 
         ggT   = f(l1:l2,m,n,iggT)
@@ -1348,9 +1350,12 @@ module Special
 !
 !  13-may-18/axel: added remove_mean_value for hij and gij
 !
-      use Sub, only: remove_mean
+      !use Sub, only: remove_mean
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lremove_mean_hij)
+      call keep_compiler_quiet(lremove_mean_gij)
 !
     endsubroutine special_before_boundary
 !***********************************************************************
@@ -1382,6 +1387,7 @@ module Special
 !  Compute the transverse part of the stress tensor by going into Fourier space.
 !
 
+      call keep_compiler_quiet(llast)
       if (lfirst) then
         dt_GW = dt_GW + dt
         it_counter = it_counter + 1
@@ -2181,6 +2187,7 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
 
       character(LEN=3) :: kindstr
 
+      call keep_compiler_quiet(len)
       if (lfirstcall) then
         call make_spectra(f)
         lfirstcall=.false.
@@ -2325,7 +2332,7 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
       real, dimension(nx,ny,nz) :: hij_re,hij_im
       integer :: i,j
       integer :: ikx,iky,ikz
-      real, dimension (3) :: e1, e2, kvec
+      real, dimension (3) :: e1, e2
       real :: ksqr, k1, k2, k3, k1sqr, k2sqr, k3sqr
       real :: hhTre, hhTim, hhXre, hhXim
       real :: e_ij_T, e_ij_X
@@ -2476,20 +2483,15 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,ny,nz) :: S_T_re,S_T_im,S_X_re,S_X_im
       real, intent(IN) :: dt
-      real, dimension (6) :: Pij=0., kij=0., e_T, e_X, Sij_re, Sij_im, delij=0.
+      real, dimension (6) :: Pij=0., kij=0., e_T, e_X, Sij_re, Sij_im
       real, dimension (3) :: e1, e2
-      integer :: i,j,p,q,ikx,iky,ikz,stat,ij,pq,ip,jq
-      real :: fact, delkt, om2_min, kmin
+      integer :: i,j,p,q,ikx,iky,ikz,ij,pq,ip,jq
+      real :: delkt, om2_min, kmin
       real :: ksqr, one_over_k2, k1, k2, k3, k1sqr, k2sqr, k3sqr, ksqrt
       real :: hhTre, hhTim, hhXre, hhXim, coefAre, coefAim
       real :: ggTre, ggTim, ggXre, ggXim, coefBre, coefBim
-      real :: e_ij_T, e_ij_X
       real :: cosot, sinot, sinot_minus, om12, om, om1, om2, dt1
-      real :: eTT, eTX, eXT, eXX
       real :: discrim2
-      !real :: horndeski_alpM_eff, horndeski_alpM_eff2
-      !real :: horndeski_alpM_eff3
-      !real :: horndeski_alpT_eff
       real :: Om_rat_matt, Om_rat_tot1
       real :: dS_T_re, dS_T_im, dS_X_re, dS_X_im
       complex :: coefA, coefB, om_cmplx
@@ -3039,15 +3041,15 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
 !
 !  07-aug-17/axel: coded (MAIN part doing the TT projection)
 !
-      use Fourier, only: fourier_transform, fft_xyz_parallel, kx_fft, ky_fft, kz_fft
+      use Fourier, only: fourier_transform, fft_xyz_parallel
       use Diagnostics
 !
-      real, dimension (:,:,:), allocatable :: S_T_re, S_T_im, S_X_re, S_X_im, g2T_re, g2T_im, g2X_re, g2X_im
+      real, dimension (:,:,:), allocatable :: S_T_re, S_T_im, S_X_re, S_X_im
       real, dimension (:,:,:), allocatable :: hij_re, hij_im
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (6) :: Pij=0., kij=0., e_T, e_X, Sij_re, Sij_im, delij=0.
+      real, dimension (6) :: delij=0.
       real, dimension (:,:,:,:,:), allocatable :: Hijkre, Hijkim
-      integer :: i,j,p,q,ik,ikx,iky,ikz,stat,ij,pq,ip
+      integer :: i,j,p,q,stat,ij,pq,ip
       intent(inout) :: f
       character (len=2) :: label
       real :: dt
@@ -3268,6 +3270,8 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
 !
       integer :: iname
       logical :: lreset,lwrite
+
+      call keep_compiler_quiet(lwrite)
 !!!
 !!!  reset everything in case of reset
 !!!  (this needs to be consistent with what is defined above!)

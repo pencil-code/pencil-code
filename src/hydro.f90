@@ -6288,48 +6288,49 @@ module Hydro
 !
     endsubroutine coriolis_spherical
 !***********************************************************************
-    subroutine coriolis_spherical_del2p(f,p)
-!
-!  coriolis_spherical terms using spherical polars
-!
-!  21-feb-07/axel+dhruba: coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
-!
-!  info about coriolis_spherical term
-!
-      if (headtt) print*, 'coriolis_spherical: Omega=', Omega
-!
-! Not yet coded for angular velocity at an angle with the z axis.
-!
-      if (theta/=0) then
-        print*, 'coriolis_spherical: Omega=,theta=', Omega,theta
-        call not_implemented("coriolis_spherical_del2p","for Omega at an angle with z axis")
-      endif
-!
-!  In (r,theta,phi) coords, we have Omega=(costh, -sinth, 0). Thus,
-!
-!                    ( costh)   (u1)      (+sinth*u3)
-!  -2*Omega x U = -2*(-sinth) X (u2) = 2*(+costh*u3)
-!                    (   0  )   (u3)      (-costh*u2-sinth*u1)
-!
-!  With c2=2*Omega*costh and s2=-2*Omega*sinth we have then
-!
-!                (-s2*u3)
-!  -2*Omega x U = (+c2*u3)
-!                (-c2*u2+s2*u1)
-!
-!
-!  Centrifugal force
-!
-      if (lcentrifugal_force) &
-        call not_implemented("coriolis_spherical_del2p","Centrifugal force in spherical coordinates")
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine coriolis_spherical_del2p
+!TP: on comment since are not used (to suppress compiler warnings)
+!    subroutine coriolis_spherical_del2p(f,p)
+!!
+!!  coriolis_spherical terms using spherical polars
+!!
+!!  21-feb-07/axel+dhruba: coded
+!!
+!      real, dimension (mx,my,mz,mfarray) :: f
+!      type (pencil_case) :: p
+!!
+!!  info about coriolis_spherical term
+!!
+!      if (headtt) print*, 'coriolis_spherical: Omega=', Omega
+!!
+!! Not yet coded for angular velocity at an angle with the z axis.
+!!
+!      if (theta/=0) then
+!        print*, 'coriolis_spherical: Omega=,theta=', Omega,theta
+!        call not_implemented("coriolis_spherical_del2p","for Omega at an angle with z axis")
+!      endif
+!!
+!!  In (r,theta,phi) coords, we have Omega=(costh, -sinth, 0). Thus,
+!!
+!!                    ( costh)   (u1)      (+sinth*u3)
+!!  -2*Omega x U = -2*(-sinth) X (u2) = 2*(+costh*u3)
+!!                    (   0  )   (u3)      (-costh*u2-sinth*u1)
+!!
+!!  With c2=2*Omega*costh and s2=-2*Omega*sinth we have then
+!!
+!!                (-s2*u3)
+!!  -2*Omega x U = (+c2*u3)
+!!                (-c2*u2+s2*u1)
+!!
+!!
+!!  Centrifugal force
+!!
+!      if (lcentrifugal_force) &
+!        call not_implemented("coriolis_spherical_del2p","Centrifugal force in spherical coordinates")
+!!
+!      call keep_compiler_quiet(f)
+!      call keep_compiler_quiet(p)
+!!
+!    endsubroutine coriolis_spherical_del2p
 !***********************************************************************
     subroutine coriolis_cylindrical(df,p)
 !

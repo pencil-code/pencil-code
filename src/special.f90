@@ -118,7 +118,7 @@
 !****************************************************************************
   subroutine initialize_mult_special
 
-    use Cdata, only: lroot, lreloading, iproc
+    use Cdata, only: lroot, lreloading
     use General, only: parser, safe_string_replace
     use Messages, only: fatal_error
     use Mpicomm, only: mpibcast

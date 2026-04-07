@@ -317,7 +317,7 @@ module Special
 !  initialise special condition; called from start.f90
 !  06-oct-2003/tony: coded
 !
-      use Initcond, only: gaunoise, sinwave_phase, hat, power_randomphase_hel, power_randomphase, bunch_davies, bunch_davies2
+      use Initcond, only: gaunoise, sinwave_phase, hat, power_randomphase_hel, power_randomphase, bunch_davies!, bunch_davies2
       use Mpicomm, only: mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -902,6 +902,7 @@ module Special
       real, dimension(mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
 
+      call keep_compiler_quiet(f)
 ! alberto: changed to use the pencils p%infl_phi and p%infl_dphi
       if (ldiagnos) then
         call sum_mn_name(p%infl_phi,idiag_phim)
@@ -960,6 +961,8 @@ module Special
 !
       integer :: iname
       logical :: lreset,lwrite
+
+      call keep_compiler_quiet(lwrite)
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
@@ -1249,7 +1252,7 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, intent(inout) :: sigE1m,sigB1m
-      real, dimension (nx,3) :: el, bb, gphi, uxb, uu
+      real, dimension (nx,3) :: el, bb, gphi
       real, dimension (nx) :: e2, b2, gphi2, dphi, a2rhop, a2rho, a2rhophi
       real, dimension (nx) :: a2rhopphi
       real, dimension (nx) :: ddota, phi, Vpotential, edotb, sigE1, sigB1

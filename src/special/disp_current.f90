@@ -892,8 +892,8 @@ module Special
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx,3) :: gtmp, dJdt, del2JJ
-      real, dimension (nx) :: tmp, tmp2, del2a0, constrainteqn, constrainteqn1
+      real, dimension (nx,3) :: gtmp, dJdt
+      real, dimension (nx) :: tmp, tmp2, del2a0
       real :: inflation_factor=0., mfpf=0., fppf=0.
       integer :: j
 !
@@ -1138,7 +1138,6 @@ module Special
       real, dimension(mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
       real, dimension(nx) :: tmp,constrainteqn
-      real :: mfpf=0.,fppf=0.
       real, dimension(nx,3) :: gtmp
 
       call save_name(get_mfpf(),idiag_mfpf)
@@ -1211,9 +1210,6 @@ module Special
       use Diagnostics
 !
       type(pencil_case) :: p
-!
-      real, dimension(nx) :: fres2, tmp1, Rmmz, bdel2a, jdel2a
-      real, dimension(nx,3) :: tmp2
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1.
 !
@@ -1377,7 +1373,6 @@ module Special
 !  06-jul-06/tony: coded
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (nx) :: tmp
 !
       call keep_compiler_quiet(f)
 !
@@ -1393,8 +1388,6 @@ module Special
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       type (slice_data) :: slices
-!
-      integer :: inamev
 !
 !  Loop over slices
 !
@@ -1414,8 +1407,6 @@ module Special
 
       use Gpu, only: update_on_gpu
 
-      real :: lgt1, lgt2, lgf1, lgf2, lgf, lgt_current
-      integer :: it_file
       real, save :: Hp_old=0.,appa_old=0.
       integer, save :: Hp_index_on_gpu=-1
       integer, save :: appa_index_on_gpu=-1
