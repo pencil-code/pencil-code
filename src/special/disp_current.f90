@@ -153,7 +153,9 @@ module Special
   integer :: idiag_sigEE2m=0    ! DIAG_DOC: $\left<\sigma_\mathrm{E}\Ev^2\right>$
   integer :: idiag_sigBBEm=0    ! DIAG_DOC: $\left<\sigma_\mathrm{E}\Bv\cdot\Ev\right>$
   integer :: idiag_adphiBm=0    ! DIAG_DOC: $\left<(\alpha/f)<\phi'\Bv\cdot\Ev\right>$
+  integer :: idiag_adphiBrms=0  ! DIAG_DOC: $\left<[(\alpha/f)<\phi'\Bv]\right>^{1/2}$
   integer :: idiag_Johmrms=0    ! DIAG_DOC: $\left<\Jv^2\right>^{1/2}$
+  integer :: idiag_curlBrms=0   ! DIAG_DOC: $\left<(\mathrm{curl}\Bv)^2\right>^{1/2}$
   integer :: idiag_echarge=0    ! DIAG_DOC: $\left<e_\mathrm{eff}\right>$
   integer :: idiag_ebm=0        ! DIAG_DOC: $\left<\Ev\cdot\Bv\right>$
 !
@@ -1153,14 +1155,24 @@ module Special
       if (idiag_sigBrms/=0) call sum_mn_name(p%sigB**2,idiag_sigBrms,lsqrt=.true.)
       if (idiag_sigEE2m/=0) call sum_mn_name(p%sigE*p%e2,idiag_sigEE2m)
       if (idiag_sigBBEm/=0) call sum_mn_name(p%sigB*p%eb,idiag_sigBBEm)
-      if (idiag_adphiBm/=0) then
+      if (idiag_adphiBm/=0 .or. idiag_adphiBrms/=0) then
         if (alpf/=0.) call calc_helical_term(p,gtmp,p%dphi,p%gphi,lphi_hom)
-        call dot(alpf*gtmp,p%el,tmp)
-        call sum_mn_name(tmp,idiag_adphiBm)
+        if (idiag_adphiBm/=0) then
+          call dot(alpf*gtmp,p%el,tmp)
+          call sum_mn_name(tmp,idiag_adphiBm)
+        endif
+        if (idiag_adphiBrms/=0) then
+          call dot2_mn(alpf*gtmp,tmp)
+          call sum_mn_name(tmp,idiag_adphiBrms,lsqrt=.true.)
+        endif
       endif
       if (idiag_Johmrms/=0) then
         call dot2_mn(p%jj_ohm,tmp)
         call sum_mn_name(tmp,idiag_Johmrms,lsqrt=.true.)
+      endif
+      if (idiag_curlBrms/=0) then
+        call dot2_mn(p%curlb,tmp)
+        call sum_mn_name(tmp,idiag_curlBrms,lsqrt=.true.)
       endif
       call save_name(echarge,idiag_echarge)
       call sum_mn_name(p%e2,idiag_erms,lsqrt=.true.)
@@ -1277,7 +1289,8 @@ module Special
         idiag_rhoerms=0; idiag_divErms=0; idiag_divJrms=0
         idiag_rhoem=0; idiag_count_eb0=0; idiag_divEm=0; idiag_divJm=0; idiag_constrainteqn=0
         idiag_ebm=0; idiag_sigEm=0; idiag_sigBm=0; idiag_sigErms=0; idiag_sigBrms=0
-        idiag_Johmrms=0; idiag_adphiBm=0; idiag_sigEE2m=0; idiag_sigBBEm=0
+        idiag_Johmrms=0; idiag_curlBrms=0; idiag_adphiBm=0; idiag_adphiBrms=0
+        idiag_sigEE2m=0; idiag_sigBBEm=0
         idiag_eprimerms=0; idiag_bprimerms=0; idiag_jprimerms=0; idiag_gam_EBrms=0; 
         idiag_boostprms=0; idiag_echarge=0; idiag_e2mx=0; idiag_e2mz=0
         cformv=''
@@ -1317,7 +1330,9 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'sigEE2m',idiag_sigEE2m)
         call parse_name(iname,cname(iname),cform(iname),'sigBBEm',idiag_sigBBEm)
         call parse_name(iname,cname(iname),cform(iname),'adphiBm',idiag_adphiBm)
+        call parse_name(iname,cname(iname),cform(iname),'adphiBrms',idiag_adphiBrms)
         call parse_name(iname,cname(iname),cform(iname),'Johmrms',idiag_Johmrms)
+        call parse_name(iname,cname(iname),cform(iname),'curlBrms',idiag_curlBrms)
         call parse_name(iname,cname(iname),cform(iname),'echarge',idiag_echarge)
         call parse_name(iname,cname(iname),cform(iname),'mfpf',idiag_mfpf)
         call parse_name(iname,cname(iname),cform(iname),'fppf',idiag_fppf)

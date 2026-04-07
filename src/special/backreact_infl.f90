@@ -87,7 +87,7 @@ module Special
 !
 !  integer :: iinfl_phi=0, iinfl_dphi=0, iinfl_hubble=0, iinfl_lna=0, Ndiv=100
   integer :: iinfl_phi=0, iinfl_dphi=0, iinfl_lna=0, Ndiv=100
-  integer :: iinfl_rho_chi=0, iinfl_rho_rad=0
+  integer :: iinfl_rho_chi=0, iinfl_rho_rad=0, iinfl_wstate_accum=0., iinfl_time_accum=0.
   real :: ncutoff_phi=1., infl_v=.1
   real :: axionmass=1.06e-6, axionmass2, ascale_ini=1.
   real :: phi0=.44, dphi0=-1.69e-7, c_light_axion=1., lambda_axion=0., eps=.01
@@ -109,7 +109,9 @@ module Special
   real :: aphimax=0., aphimax2=0.  !PAR_DOC: maximum a value above which the phi potential is quenched.
   real :: Gamma_phi0=impossible, Gamma_phi !PAR_DOC: damping factor for phi above aphimax
   real :: rhophim_crit=1e-21 !PAR_DOC: minimum phi
-  real :: wstate, wstate_crit=0.3333  !PAR_DOC: critical w (EoS) value (slightly below 1/3)
+  real :: wstate, wstate_accum, wstate_aver !PAR_DOC: critical w (EoS) value (slightly below 1/3)
+  real :: wstate_crit=0.3333  !PAR_DOC: critical w (EoS) value (slightly below 1/3)
+  real :: wstate_tolerance=0.0001  !PAR_DOC: tolerance w (EoS) value (slightly below 1/3)
 !
   real, target :: ddotam_all
   real, pointer :: alpf, eta
@@ -121,13 +123,14 @@ module Special
   logical :: lskip_projection_phi=.false., lvectorpotential=.false., lflrw=.false.
   logical :: lrho_chi=.false., lno_noise_phi=.false., lno_noise_dphi=.false.
   logical :: lrho_rad=.false.            !PAR_DOC: radiation from inflaton decay
+  logical :: lwstate_accum=.false.       !PAR_DOC: time-integrated EoS
   logical :: lrho_rad_apply=.true.       !PAR_DOC: radiation from inflaton decay, and also applied to df(l1:l2,m,n,iinfl_dphi)
   logical :: lrho_rad_apply2=.true.       !PAR_DOC: radiation from inflaton decay, and also applied to df(l1:l2,m,n,iinfl_dphi)
   logical :: lrho_chi_corrected=.true.   !PAR_DOC: for backward compatibility; when false, we use the wrong scale factor in the rho_chi equation
   logical :: lrho_chi_inhom=.false.      !PAR_DOC: inhomogeneous heating
   logical :: ldefine_a2rhophi_with_Vpotential=.true.  !PAR_DOC: define a2rhophi with Vpotential
   logical :: lsolve_for_phi=.true.       !PAR_DOC: whether we still want to solve for phi
-  logical :: lwstate_crit=.true.         !PAR_DOC: lwstate_crit switch
+  logical :: lwstate_crit=.false.        !PAR_DOC: lwstate_crit switch (would put phi=0, is false by default)
   logical :: lheating=.false.            !PAR_DOC: heating criterion
   logical :: ldefine_a2rhopm_without_Vpotential=.false.    !PAR_DOC: should be false to have correct results
   logical :: la2rhop_wrong_factor=.false. !PAR_DOC: should be false to have correct results
@@ -148,18 +151,19 @@ module Special
       initpower_dphi, initpower2_dphi, cutoff_dphi, kpeak_dphi, &
       ncutoff_phi, lscale_tobox, Hscript0, Hscript_choice, infl_v, lflrw, &
       lrho_chi, scale_rho_chi_Heqn, scale_rho_rad_Heqn, amplee_BD_prefactor, deriv_prefactor_ee, &
-      lrho_rad, init_rho_rad, lconf_time, &
+      lrho_rad, init_rho_rad, lwstate_accum, Gamma_phi0, lconf_time, &
       echarge_type, init_rho_chi, rho_chi_init, lrho_chi_inhom, rhophim_crit, &
-      wstate_crit, lwstate_crit, heating_choice, ldefine_a2rhopm_without_Vpotential, la2rhop_wrong_factor
+      wstate_crit, lwstate_crit, wstate_tolerance, heating_choice, ldefine_a2rhopm_without_Vpotential, la2rhop_wrong_factor
 !
   namelist /special_run_pars/ &
       initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
       lbackreact_infl, lem_backreact, c_light_axion, lambda_axion, Vprime_choice, &
       lzeroHubble, ldt_backreact_infl, Ndiv, Hscript0, Hscript_choice, infl_v, &
       lflrw, lrho_chi, scale_rho_chi_Heqn, scale_rho_rad_Heqn, echarge_type, cdt_rho_chi, &
-      lrho_rad, lrho_rad_apply, lrho_rad_apply2, lrho_chi_corrected, lrho_chi_inhom, ldefine_a2rhophi_with_Vpotential, &
+      lrho_rad, lrho_rad_apply, lrho_rad_apply2, lrho_chi_corrected, lwstate_accum, &
+      lrho_chi_inhom, ldefine_a2rhophi_with_Vpotential, &
       rad_heating, ascale_heat, ascale_heat_off, aphimax, Gamma_phi0, lconf_time, rhophim_crit, &
-      wstate_crit, lwstate_crit, heating_choice
+      wstate_crit, lwstate_crit, wstate_tolerance, heating_choice
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -183,6 +187,7 @@ module Special
   integer :: idiag_count_eb0a=0 ! DIAG_DOC: $f_\mathrm{EB0}$
   integer :: idiag_heating=0    ! DIAG_DOC: $\theta_\mathrm{heat}$
   integer :: idiag_wstate=0    ! DIAG_DOC: $w_\mathrm{state}$
+  integer :: idiag_wstate_aver=0 ! DIAG_DOC: $\langle w_\mathrm{state}\rangle$
 !
   integer :: enum_hscript_choice = 0
   integer :: enum_vprime_choice = 0
@@ -211,6 +216,10 @@ module Special
      if (lflrw) call farray_register_ode('infl_lna',iinfl_lna)
      if (lrho_chi) call farray_register_ode('infl_rho_chi',iinfl_rho_chi)
      if (lrho_rad) call farray_register_ode('infl_rho_rad',iinfl_rho_rad)
+     if (lwstate_accum) then
+       call farray_register_ode('infl_wstate_accum',iinfl_wstate_accum)
+       call farray_register_ode('infl_time_accum',iinfl_time_accum)
+     endif
 !
 !  for power spectra, it is convenient to use ispecialvar and
 !
@@ -308,7 +317,7 @@ module Special
 !  initialise special condition; called from start.f90
 !  06-oct-2003/tony: coded
 !
-      use Initcond, only: gaunoise, sinwave_phase, hat, power_randomphase_hel, power_randomphase, bunch_davies
+      use Initcond, only: gaunoise, sinwave_phase, hat, power_randomphase_hel, power_randomphase, bunch_davies, bunch_davies2
       use Mpicomm, only: mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -405,10 +414,12 @@ module Special
               amplee_BD=amplee_BD_prefactor*Hubble_ini
               if (iex>0) then
                 deriv_prefactor=deriv_prefactor_ee
+                call bunch_davies(f,iax,iaz,iex,iez,amplee_BD,kpeak_phi,deriv_prefactor)
               else
                 deriv_prefactor=0.
+              ! call bunch_davies2(f,iax,iaz,amplee_BD,kpeak_phi)
               endif
-              call bunch_davies(f,iax,iaz,iex,iez,amplee_BD,kpeak_phi,deriv_prefactor)
+              !call bunch_davies(f,iax,iaz,iex,iez,amplee_BD,kpeak_phi,deriv_prefactor)
             endif
           case default
             call fatal_error("init_special","no such initspecial: "//trim(initspecial(j)))
@@ -435,6 +446,13 @@ module Special
           case default
             call fatal_error("init_special: No such init_rho_rad: ", trim(init_rho_rad))
         endselect
+      endif
+!
+!  initial condition for energy density of radiation
+!
+      if (lroot .and. lwstate_accum) then
+        f_ode(iinfl_wstate_accum)=0.
+        f_ode(iinfl_time_accum)=0.
       endif
 !
 !  Better default value based on alpf and axionmass
@@ -798,6 +816,14 @@ module Special
         df_ode(iinfl_rho_rad)=df_ode(iinfl_rho_rad)-4.*Hscript*f_ode(iinfl_rho_rad)+heating
       endif
 !
+!  Compute time-averaged wstate, <wstate>=\int wstate dt/\int dt.
+!
+      if (lwstate_accum .and. lheating) then
+        df_ode(iinfl_wstate_accum)=df_ode(iinfl_wstate_accum)+wstate
+        df_ode(iinfl_time_accum)=df_ode(iinfl_time_accum)+1.
+        wstate_aver=f_ode(iinfl_wstate_accum)/f_ode(iinfl_time_accum)
+      endif
+!
 !  Diagnostics
 !
       if (.not. lmultithread) then
@@ -832,6 +858,19 @@ module Special
         rho_rad=0.
       endif
 !
+!  Set rho_rad for diagnostics
+!
+      if (lwstate_accum) then
+        wstate_accum=f_ode(iinfl_wstate_accum)
+      else
+        wstate_accum=0.
+      endif
+!
+!  Fatal error
+!
+      if (idiag_wstate_aver>0 .and. .not. lwstate_accum) &
+        call fatal_error("calc_ode_diagnostics_special", "lwstate_accum must be true")
+!
       if (ldiagnos) then
         call get_Hscript_and_a2(Hscript_diagnos,a2rhom_all_diagnos)
         if (lflrw) lnascale=f_ode(iinfl_lna)
@@ -850,6 +889,7 @@ module Special
           call save_name(count_eb0_all,idiag_count_eb0a)
         call save_name(heating,idiag_heating)
         call save_name(wstate,idiag_wstate)
+        call save_name(wstate_aver,idiag_wstate_aver)
 !
       endif
 !
@@ -930,7 +970,7 @@ module Special
         idiag_Hscriptm=0; idiag_lnam=0; idiag_ddotam=0
         idiag_a2rhopm=0; idiag_a2rhom=0; idiag_a2rhophim=0
         idiag_a2rhogphim=0; idiag_rho_chi=0; idiag_rho_rad=0; idiag_sigEma=0
-        idiag_sigBma=0; idiag_count_eb0a=0; idiag_heating=0; idiag_wstate=0
+        idiag_sigBma=0; idiag_count_eb0a=0; idiag_heating=0; idiag_wstate=0; idiag_wstate_aver=0
       endif
 !
       do iname=1,nname
@@ -954,6 +994,7 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'count_eb0a',idiag_count_eb0a)
         call parse_name(iname,cname(iname),cform(iname),'heating',idiag_heating)
         call parse_name(iname,cname(iname),cform(iname),'wstate',idiag_wstate)
+        call parse_name(iname,cname(iname),cform(iname),'wstate_aver',idiag_wstate_aver)
       enddo
 !
     endsubroutine rprint_special
@@ -1073,7 +1114,7 @@ module Special
       use Sub, only: dot2_mn, grad, curl, dot_mn
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real :: sigE1m, sigB1m, rho_rad, Hscript_prev=0.
+      real :: sigE1m, sigB1m, rho_rad, Hscript_prev=0., wstate_aver_prev=-1.
 !
 ! TP: to avoid code duplication could this function not be combined with the copy of it in
 !     klein_gordon.f90? We could make an appropriate module and call it from there
@@ -1175,9 +1216,14 @@ module Special
 !
       wstate=(a2rhopphim_all*a21+onethird*rho_rad)/(a2rhophim_all*a21+rho_rad)
       if (lwstate_crit) then
-        lsolve_for_phi=(wstate<wstate_crit)
+        !lsolve_for_phi=(wstate_aver<wstate_crit)
+        !lsolve_for_phi=abs(wstate_aver-wstate_aver_prev) > wstate_tolerance
+        lsolve_for_phi=abs(wstate-wstate_aver_prev) > wstate_tolerance
+        !wstate_aver_prev=wstate_aver
+        wstate_aver_prev=wstate
       else
-        lsolve_for_phi=(a2rhophim_all*a21)>rhophim_crit
+        !lsolve_for_phi=(a2rhophim_all*a21)>rhophim_crit
+        lsolve_for_phi=.true.
       endif
 !
 !  Alternatitives for deciding when to turn on heating, i.e., when the
