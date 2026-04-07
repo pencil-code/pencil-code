@@ -1175,7 +1175,7 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real :: stress_prefactor2, sign_switch=0, fac_stress_comp
+      real :: stress_prefactor2, fac_stress_comp
       type (pencil_case) :: p
 !
       integer :: ij
@@ -2214,7 +2214,7 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
       real, dimension(nx,ny,nz,3,6) :: Hijkim,Hijkre
       integer :: ikx,iky,ikz
       real, dimension (3) :: e1, e2, kvec
-      integer :: i,j,p,q,ik,ij
+      integer :: i,j,ij
       real :: ksqr, k1, k2, k3, k1sqr, k2sqr, k3sqr
       real :: hhTre, hhTim, hhXre, hhXim
       real, dimension (6) :: e_T, e_X
@@ -2326,7 +2326,7 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
       integer :: i,j
       integer :: ikx,iky,ikz
       real, dimension (3) :: e1, e2, kvec
-      real :: ksqr, k1, k2, k3, k1sqr, k2sqr, k3sqr, ksqrt
+      real :: ksqr, k1, k2, k3, k1sqr, k2sqr, k3sqr
       real :: hhTre, hhTim, hhXre, hhXim
       real :: e_ij_T, e_ij_X
 
@@ -2477,8 +2477,8 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
       real, dimension (nx,ny,nz) :: S_T_re,S_T_im,S_X_re,S_X_im
       real, intent(IN) :: dt
       real, dimension (6) :: Pij=0., kij=0., e_T, e_X, Sij_re, Sij_im, delij=0.
-      real, dimension (3) :: e1, e2, kvec
-      integer :: i,j,p,q,ik,ikx,iky,ikz,stat,ij,pq,ip,jq,jStress_ij
+      real, dimension (3) :: e1, e2
+      integer :: i,j,p,q,ikx,iky,ikz,stat,ij,pq,ip,jq
       real :: fact, delkt, om2_min, kmin
       real :: ksqr, one_over_k2, k1, k2, k3, k1sqr, k2sqr, k3sqr, ksqrt
       real :: hhTre, hhTim, hhXre, hhXim, coefAre, coefAim
@@ -2490,7 +2490,6 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
       !real :: horndeski_alpM_eff, horndeski_alpM_eff2
       !real :: horndeski_alpM_eff3
       !real :: horndeski_alpT_eff
-      real :: Om_rat_Lam, Om_rat_Mat
       real :: Om_rat_matt, Om_rat_tot1
       real :: dS_T_re, dS_T_im, dS_X_re, dS_X_im
       complex :: coefA, coefB, om_cmplx

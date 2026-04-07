@@ -4547,8 +4547,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(nreduce) :: fsum_tmp,fsum
       integer, optional :: idir,comm
 !
-      integer :: mpiprocs
-!
       if (nreduce==0) return
 !
       call MPI_ALLREDUCE(fsum_tmp, fsum, nreduce, mpi_precision, MPI_SUM, &
@@ -4566,7 +4564,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(nreduce(1),nreduce(2)) :: fsum_tmp,fsum
       integer, optional :: idir,comm
 !
-      integer :: mpiprocs, num_elements
+      integer :: num_elements
 !
       if (any(nreduce==0)) return
 !
@@ -4587,7 +4585,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(nreduce(1),nreduce(2),nreduce(3)) :: fsum_tmp,fsum
       integer, optional :: idir
 !
-      integer :: mpiprocs, num_elements
+      integer :: num_elements
 !
       if (any(nreduce==0)) return
 !
@@ -4608,7 +4606,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(nreduce(1),nreduce(2),nreduce(3),nreduce(4)) :: fsum_tmp,fsum
       integer, optional :: idir
 !
-      integer :: mpiprocs, num_elements
+      integer :: num_elements
 !
       if (any(nreduce==0)) return
 !
@@ -4629,7 +4627,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(nreduce(1),nreduce(2),nreduce(3),nreduce(4),nreduce(5)) :: fsum_tmp,fsum
       integer, optional :: idir
 !
-      integer :: mpiprocs, num_elements
+      integer :: num_elements
 !
       if (any(nreduce==0)) return
 !
@@ -4689,18 +4687,10 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(nreduce) :: fsum_tmp,fsum
       integer, optional :: idir
 !
-      integer :: mpiprocs
-!
       if (nreduce==0) return
 !
-      if (present(idir)) then
-        mpiprocs=mpigetcomm(idir)
-      else
-        mpiprocs=MPI_COMM_GRID
-      endif
-!
       call MPI_ALLREDUCE(fsum_tmp, fsum, nreduce, MPI_INTEGER, MPI_SUM, &
-                         mpiprocs, mpierr)
+                         get_comm(idir), mpierr)
 !
     endsubroutine mpiallreduce_sum_int_arr
 !***********************************************************************
@@ -5056,7 +5046,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real :: fsum_tmp,fsum
       integer, optional :: idir
 !
-      integer :: mpiprocs
 !
       if (nprocs==1) then
         fsum=fsum_tmp
@@ -5067,13 +5056,8 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !  Sum over y beams and return to the ipy=0 processors (MPI_COMM_YBEAM).
 !  Sum over z beams and return to the ipz=0 processors (MPI_COMM_ZBEAM).
 !
-        if (present(idir)) then
-          mpiprocs=mpigetcomm(idir)
-        else
-          mpiprocs=MPI_COMM_GRID
-        endif
         call MPI_REDUCE(fsum_tmp, fsum, 1, mpi_precision, MPI_SUM, root, &
-                        mpiprocs, mpierr)
+                        get_comm(idir), mpierr)
       endif
 !
     endsubroutine mpireduce_sum_scl
@@ -5128,11 +5112,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       if (nprocs==1) then
         fsum=fsum_tmp
       else
-        if (present(idir)) then
-          mpiprocs=mpigetcomm(idir)
-        else
-          mpiprocs=MPI_COMM_GRID
-        endif
+        mpiprocs = get_comm(idir)
         if (present(inplace)) then
           inplace_opt=inplace
         else
@@ -5174,11 +5154,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       if (nprocs==1) then
         fsum=fsum_tmp
       else
-        if (present(idir)) then
-          mpiprocs=mpigetcomm(idir)
-        else
-          mpiprocs=MPI_COMM_GRID
-        endif
+        mpiprocs = get_comm(idir)
         if (present(inplace)) then
           inplace_opt=inplace
         else
@@ -5204,7 +5180,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(nreduce(1),nreduce(2),nreduce(3),nreduce(4)) :: fsum_tmp,fsum
       integer, optional :: idir
 !
-      integer :: mpiprocs, num_elements
+      integer :: num_elements
 !
       intent(in)  :: fsum_tmp,nreduce
       intent(out) :: fsum
@@ -5214,14 +5190,9 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       if (nprocs==1) then
         fsum=fsum_tmp
       else
-        if (present(idir)) then
-          mpiprocs=mpigetcomm(idir)
-        else
-          mpiprocs=MPI_COMM_GRID
-        endif
         num_elements = product(nreduce)
         call MPI_REDUCE(fsum_tmp, fsum, num_elements, mpi_precision, MPI_SUM, &
-                        root, mpiprocs, mpierr)
+                        root, get_comm(idir), mpierr)
       endif
 !
     endsubroutine mpireduce_sum_arr4
