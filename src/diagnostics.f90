@@ -850,7 +850,7 @@ module Diagnostics
               imax_count=imax_count+1
 !
               if (itype==ilabel_max)            &
-                  vname(iname)=fmax(imax_count)
+                  vname(iname)=-offset_min_calc+fmax(imax_count)
 !
               if (itype==ilabel_max_sqrt)       &
                   vname(iname)=sqrt(fmax(imax_count))
