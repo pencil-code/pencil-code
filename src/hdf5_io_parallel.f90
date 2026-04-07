@@ -1973,47 +1973,6 @@ module HDF5_IO
 !
     endsubroutine input_dim
 !***********************************************************************
-    subroutine wdim_default_grid(file)
-!
-!  Write dimension to file.
-!
-!  02-Nov-2018/PABourdin: redesigned
-!
-      character(len=*), intent(in) :: file
-!
-      if (file == 'dim.dat') return
-      call output_dim (file, mx, my, mz, mxgrid, mygrid, mzgrid, mvar, maux, mglobal)
-!
-    endsubroutine wdim_default_grid
-!***********************************************************************
-    subroutine wdim_default(file, mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out)
-!
-!  Write dimension to file.
-!
-!  02-Nov-2018/PABourdin: redesigned
-!
-      character(len=*), intent(in) :: file
-      integer, intent(in) :: mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out
-!
-      call output_dim (file, mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out, mvar, maux, mglobal)
-!
-    endsubroutine wdim_default
-!***********************************************************************
-    subroutine wdim(file, mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out, mvar_out, maux_out)
-!
-!  Write dimension to file.
-!
-!   8-sep-01/axel: adapted to take my_out,mz_out
-!   4-oct-16/MR: added optional parameters mvar_out,maux_out
-!  02-Nov-2018/PABourdin: redesigned, moved to IO modules
-!
-      character(len=*), intent(in) :: file
-      integer, intent(in) :: mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out, mvar_out, maux_out
-!
-      call output_dim (file, mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out, mvar_out, maux_out, mglobal)
-!
-    endsubroutine wdim
-!***********************************************************************
     subroutine input_average_2D(filename, time, variables, data)
 !
 !  Read an 2D-average file at a given time.
@@ -2768,9 +2727,9 @@ module HDF5_IO
         call warning ('index_get', 'f-array index #'//trim (itoa (ivar))//' not found!')
         if (max_reported == -1) then
           call warning ('index_get', &
-              'This likely indicates a mismatch in the mvar/maux contributions of the modules that are active in this setup.')
+              'This likely indicates a mismatch in the mvar/maux contributions of the modules that are active in this setup')
           call warning ('index_get', &
-              'Alternatively, some variables may not have been initialized correctly. Both is an error and should be fixed!')
+              'Alternatively, some variables may not have been initialized correctly. Both is an error and should be fixed')
         endif
         max_reported = ivar
       endif

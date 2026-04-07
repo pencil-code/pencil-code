@@ -319,6 +319,41 @@ module Io
 
     endsubroutine wgrid
 !***********************************************************************
+    subroutine wdim_default_grid(file)
+
+      use Io_out, only: wdim_ => wdim
+!
+      character (len=*), intent(in) :: file
+!
+      call switch_io
+      call wdim_(file)
+
+    endsubroutine wdim_default_grid
+!***********************************************************************
+    subroutine wdim_default(file, mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out)
+
+      use Io_out, only: wdim_ => wdim
+!
+      character (len=*), intent(in) :: file
+      integer, intent(in) :: mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out
+!
+      call switch_io
+      call wdim(file, mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out)
+
+    endsubroutine wdim_default
+!***********************************************************************
+    subroutine wdim(file, mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out, mvar_out, maux_out)
+
+      use Io_out, only: wdim_ => wdim
+!
+      character (len=*), intent(in) :: file
+      integer, intent(in) :: mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out, mvar_out, maux_out
+
+      call switch_io
+      call wdim_(file, mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out, mvar_out, maux_out)
+
+    endsubroutine wdim
+!***********************************************************************
     subroutine wproc_bounds(file)
 
       use Io_out, only: wproc_bounds_ => wproc_bounds

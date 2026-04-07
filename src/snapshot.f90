@@ -19,6 +19,7 @@ module Snapshot
   type :: pars_for_external
     integer :: ind1, ind2
     character(LEN=fnlen) :: file
+    character(LEN=intlen) :: csnap_nr
   endtype
   type(pars_for_external) :: extpars
 
@@ -27,11 +28,11 @@ module Snapshot
   endinterface
 !
   public :: rsnap, wsnap, wsnap_down, powersnap, output_form, powersnap_prepare, perform_powersnap, &
-            perform_wsnap_ext, perform_wsnap_down
+            perform_wsnap_ext, perform_wsnap_down, perform_wsnap_down_ext
 !
   contains
 !***********************************************************************
-    subroutine wsnap_down(a,flist)
+    subroutine wsnap_down(a)
 !
 !  Write downsampled snapshot file VARd*, labelled consecutively
 !  timestep can be different from timestep for full snapshots
@@ -45,7 +46,6 @@ module Snapshot
       use Sub, only: read_snaptime, update_snaptime
 !
       real, dimension (:,:,:,:) :: a
-      character (len=*), optional :: flist
 !
       real, save :: tsnap
       integer, save :: nsnap
@@ -68,19 +68,18 @@ module Snapshot
 !
         if (.not.lstart.and.lgpu) call copy_farray_from_GPU(a)
         if (lmultithread) then
+          extpars%csnap_nr=ch
 !$        lmasterflags(PERF_WSNAP_DOWN) = .true.
         else
-          call perform_wsnap_down(a)
+          call perform_wsnap_down(a,ch)
         endif
 !
         lsnap_down=.false.
       endif
-! Keeping compiler quiet
-      if (present(flist)) then; endif;
 !
     endsubroutine wsnap_down
 !***********************************************************************
-    subroutine perform_wsnap_down(a)
+    subroutine perform_wsnap_down(a,ch)
 !
 !  Set the range for the variable index.
 !  Not yet possible: both mvar_down and maux_down>0, but mvar_down<mvar,
@@ -89,13 +88,15 @@ module Snapshot
       use Boundcond, only: boundconds_x, boundconds_y, boundconds_z
       use General, only: get_range_no, indgen, safe_character_assign
       use Grid, only: save_grid, coords_aux
-      use HDF5_IO, only: wdim, initialize_hdf5
-      use IO, only: output_snap, output_snap_finalize, lun_output, wgrid, log_filename_to_file
+      use HDF5_IO, only: initialize_hdf5
+      use IO, only: wdim, output_snap, output_snap_finalize, lun_output, wgrid, log_filename_to_file
       use Messages, only: warning
       use Mpicomm, only: periodic_bdry_x, periodic_bdry_y, periodic_bdry_z
       use Persist, only: output_persistent
 
       real, dimension(:,:,:,:) :: a
+      character (len=intlen) :: ch
+
       character (len=fnlen) :: file
 
       logical, save :: lfirst_call=.true.
@@ -104,10 +105,8 @@ module Snapshot
       real, dimension(:,:,:,:), allocatable :: buffer
       integer, dimension(nghost) :: inds
       real, dimension(nghost) :: dxs_ghost, dys_ghost, dzs_ghost
-      character (len=intlen) :: ch
 
-
-      if (mvar_down>0) then
+        if (mvar_down>0) then
           nv1=1
           if (mvar_down==mvar) then
             nv2=mvar+maux_down
@@ -117,6 +116,7 @@ module Snapshot
         else
           nv1=mvar+1; nv2=mvar+maux_down
         endif
+
         allocate(buffer(ndown(1)+2*nghost,ndown(2)+2*nghost,ndown(3)+2*nghost,nv1:nv2))
 
         if (maux_down>0) call update_auxiliaries(a)
@@ -201,13 +201,14 @@ module Snapshot
 !
 !  Calculate auxiliary grid variables for downsampled grid
 !
-        call coords_aux(x(1:ilastx+nghost), y(1:ilasty+nghost),z(1:ilastz+nghost))
+        call coords_aux(x(:ilastx+nghost), y(:ilasty+nghost),z(:ilastz+nghost))
 !
 !  For each direction at boundary: save upper index limit and inner start index for
 !  periodic BCs; then calculate values at downsampled ghost points from BCs
 !
         if (lfirst_proc_x.or.llast_proc_x) then
           l2s=l2; l2is=l2i; l2=ilastx; l2i=l2-nghost+1
+          !print*, 'iproc, l2, l2i=', iproc, l2, l2i
           if (lperi(1).and.nprocx>1) then
             call periodic_bdry_x(buffer,nv1,nv2)
           else
@@ -254,8 +255,8 @@ module Snapshot
 !
         call save_grid(lrestore=.true.)
         call initialize_hdf5
+
         ldownsampling=.false.
-!$      lhelperflags(PERF_WSNAP_DOWN) = .false.
 
     endsubroutine perform_wsnap_down
 !***********************************************************************
@@ -403,9 +404,18 @@ module Snapshot
       real, dimension(:,:,:,:) :: a
 
       call perform_wsnap(a,extpars%ind1,extpars%ind2,extpars%file)
-!$     lhelperflags(PERF_WSNAP) = .false.
+!$    lhelperflags(PERF_WSNAP) = .false.
 
     endsubroutine perform_wsnap_ext
+!***********************************************************************
+    subroutine perform_wsnap_down_ext(a)
+
+      real, dimension(:,:,:,:) :: a
+
+      call perform_wsnap_down(a,extpars%csnap_nr)
+!$    lhelperflags(PERF_WSNAP_DOWN) = .false.
+
+    endsubroutine perform_wsnap_down_ext
 !***********************************************************************
     subroutine perform_wsnap(a,nv1,nv2,file)
 

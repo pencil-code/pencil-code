@@ -71,8 +71,7 @@ program start
   use Initcond
   use InitialCondition, only: initial_condition_all, initial_condition_clean_up
   use Interstellar,     only: init_interstellar
-  use IO,               only: wgrid, directory_names, wproc_bounds, output_globals
-  use HDF5_IO,          only: wdim
+  use IO,               only: wdim, wgrid, directory_names, wproc_bounds, output_globals
   use Lorenz_gauge,     only: init_lorenz_gauge
   use Magnetic,         only: init_aa
   use Messages

@@ -3408,7 +3408,7 @@ module Hydro
 !
       call calc_pencils_hydro_pencpar(f,p,lpencil)
 !
-      endsubroutine calc_pencils_hydro_std
+    endsubroutine calc_pencils_hydro_std
 !***********************************************************************
     subroutine calc_pencils_hydro_nonlinear(f,p,lpenc_loc)
 !
@@ -3450,6 +3450,7 @@ module Hydro
 !
       if (lrelativistic_eos) cs201=1.+cs20
       cs2011=1./cs201
+
       if (lpenc_loc(i_uu)) then
         if (lconservative) then
           tmp_rho=f(l1:l2,m,n,irho)
@@ -3473,7 +3474,7 @@ module Hydro
 !AB: this is never accessed
               endif
             else
-              if (lhiggsless_old) call warning('calc_pencils_hydro',&
+              if (lhiggsless_old) call warning('calc_pencils_hydro', &
                             'pencil u is not correctly computed for lhiggsless_old')
             endif
             if (lrelativistic) then
@@ -3527,19 +3528,21 @@ module Hydro
             ! for all pencils below to be correctly computed, T0i remains
             ! stored in tmp3
             if (lcorrect_penc_u) f(l1:l2,m,n,iux:iuz)=p%uu
-          endif
+
+          endif   !    if (lvv_as_aux .or. lvv_as_comaux) ... else
+
           if (lpenc_loc(i_T0i)) p%T0i=f(l1:l2,m,n,iux:iuz)
           if (lpenc_loc(i_Tij)) then
-                  p%Tij(:,1) = f(l1:l2,m,n,iTij)
-                  p%Tij(:,2) = f(l1:l2,m,n,iTij+1)
-                  p%Tij(:,3) = f(l1:l2,m,n,iTij+2)
-                  p%Tij(:,4) = f(l1:l2,m,n,iTij+3)
-                  p%Tij(:,5) = f(l1:l2,m,n,iTij+4)
-                  p%Tij(:,6) = f(l1:l2,m,n,iTij+5)
+            p%Tij(:,1) = f(l1:l2,m,n,iTij)
+            p%Tij(:,2) = f(l1:l2,m,n,iTij+1)
+            p%Tij(:,3) = f(l1:l2,m,n,iTij+2)
+            p%Tij(:,4) = f(l1:l2,m,n,iTij+3)
+            p%Tij(:,5) = f(l1:l2,m,n,iTij+4)
+            p%Tij(:,6) = f(l1:l2,m,n,iTij+5)
           endif
         else
           p%uu=f(l1:l2,m,n,iux:iuz)
-        endif
+        endif  !  if (lconservative) ... else
       endif
 !
 !  option to save velocity as auxiliary variable. This only makes sense if
@@ -5591,6 +5594,7 @@ module Hydro
       if (lrelativistic_eos) cs201=1.+cs20
       cs2011=1./cs201
       if (iTij==0) call fatal_error("hydro_after_boundary","must compute Tij for lconservative")
+
       do n=1,mz
       do m=1,my
         if (ldensity) then
@@ -5750,7 +5754,8 @@ module Hydro
     !       f(:,m,n,iTij+3+2)=muparaB21*f(:,m,n,ibb+2)*f(:,m,n,ibb+0)
     !     endif
       enddo
-      enddo
+      enddo    !  m-n-loop
+
     endsubroutine hydro_after_boundary_conservative
 !***********************************************************************
     subroutine hydro_after_boundary(f)

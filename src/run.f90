@@ -61,7 +61,7 @@ subroutine helper_loop(f,p)
   use Equ, only: perform_diagnostics
   use Diagnostics, only:  restore_diagnostic_controls,allocate_fnames
 !$ use General, only: signal_wait, signal_send
-  use Snapshot, only: perform_powersnap, perform_wsnap_ext, perform_wsnap_down
+  use Snapshot, only: perform_powersnap, perform_wsnap_ext, perform_wsnap_down_ext
   use Mpicomm, only: mpiwtime
   use Sub, only: check_for_nans_globally
 !
@@ -86,13 +86,13 @@ subroutine helper_loop(f,p)
 !$      lhelperflags(PERF_DIAGS) = .false.
 !$    endif
 !$    if (lhelper_run .and. lhelperflags(PERF_WSNAP)) then
-!Â£      call calc_all_module_diagnostic_auxiliaries(f,p)
+!$£      call calc_all_module_diagnostic_auxiliaries(f,p)
         call perform_wsnap_ext(f)
 !$    else
 !$      lhelperflags(PERF_WSNAP) = .false.
 !$    endif
 !$    if (lhelper_run .and. lhelperflags(PERF_WSNAP_DOWN)) then
-        call perform_wsnap_down(f)
+        call perform_wsnap_down_ext(f)
 !$    else
 !$      lhelperflags(PERF_WSNAP_DOWN) = .false.
 !$    endif
@@ -663,9 +663,9 @@ endsubroutine helper_loop
   use Grid,            only: construct_grid, box_vol, grid_bound_data, set_coorsys_dimmask, &
                              construct_serial_arrays, coarsegrid_interp
   use Gpu,             only: load_farray_to_GPU, initialize_gpu
-  use HDF5_IO,         only: init_hdf5, initialize_hdf5, wdim
+  use HDF5_IO,         only: init_hdf5, initialize_hdf5
   use File_io,         only: file_exists,delete_file
-  use IO,              only: rgrid, wgrid, directory_names, rproc_bounds, wproc_bounds, output_globals, input_globals
+  use IO,              only: wdim, rgrid, wgrid, directory_names, rproc_bounds, wproc_bounds, output_globals, input_globals
   use Messages
   use Mpicomm
   use NSCBC,           only: NSCBC_clean_up
@@ -811,9 +811,7 @@ endsubroutine helper_loop
     lprocbounds_exist = .false.    ! triggers wproc_bounds later
   endif
 
-
   call setup_signal_files
-
 !
 !  Shorthands (global).
 !

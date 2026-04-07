@@ -21,6 +21,7 @@
             write_persist_int_0D, write_persist_int_1D, write_persist_real_0D, &
             write_persist_real_1D, write_persist_torus_rect
   public :: wgrid, rgrid
+  public :: wdim
   public :: wproc_bounds, rproc_bounds
   public :: directory_names, log_filename_to_file
 !
@@ -54,3 +55,10 @@
     module procedure read_persist_real_1D
     module procedure read_persist_torus_rect
   endinterface
+!
+  interface wdim
+    module procedure wdim_default_grid
+    module procedure wdim_default
+    module procedure wdim
+  endinterface
+

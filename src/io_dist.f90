@@ -1236,7 +1236,7 @@ module Io
 !***********************************************************************
     subroutine log_filename_to_file(file,flist)
 !
-!  In the directory containing `filename', append one line to file
+!  In the directory containing file `file', append one line to file
 !  `flist' containing the file part of filename
 !
       use General, only: parse_filename, safe_character_assign

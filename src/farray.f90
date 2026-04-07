@@ -14,7 +14,7 @@ module FArrayManager
   use Cparam, only: mvar,maux,mglobal,maux_com,mscratch,lgpu
   use Cdata, only: nvar,naux,nscratch,nglobal,naux_com,datadir,lroot,lwrite_aux,lreloading, &
                    n_odevars,f_ode,df_ode,lode,f_ode_diagnostics,variable_substepped
-  use HDF5_IO
+  use HDF5_IO, only: index_reset, index_append
   use Messages
 !
   implicit none
@@ -476,11 +476,11 @@ module FArrayManager
 !
     endsubroutine farray_index_append
 !***********************************************************************
-    subroutine farray_index_reset()
+    subroutine farray_index_reset
 !
 ! 14-oct-18/PAB: coded
 !
-      call index_reset()
+      call index_reset
 !
     endsubroutine farray_index_reset
 !***********************************************************************
@@ -1116,7 +1116,7 @@ module FArrayManager
 !
     endsubroutine new_odeitem_atstart
 !***********************************************************************
-    subroutine farray_clean_up()
+    subroutine farray_clean_up
 !
 !  Free any memory allocated for farrays, so G95 doesn't warn about still
 !  allocated memory.
