@@ -33,6 +33,7 @@
 ! PENCILS PROVIDED hjparallel; hjperp; nu_ni1
 ! PENCILS PROVIDED gamma_A2; clight2; gva(3); vmagfric(3)
 ! PENCILS PROVIDED bb_sph(3); advec_va2; Lam; gLam(3)
+! PENCILS EXPECTED infl_dphi
 !***************************************************************
 module Magnetic
 !
@@ -127,7 +128,7 @@ module Magnetic
   real, dimension(2) :: magnetic_yaver_range=(/-max_real,max_real/)
   real, dimension(2) :: magnetic_zaver_range=(/-max_real,max_real/)
   real, dimension(nx) :: xmask_mag, xmask1_mag
-  real, dimension(ny) :: ymask_mag
+  real, dimension(ny) :: ymask_mag, ymask1_mag
   real, dimension(nz) :: zmask_mag
   real, dimension(3,3) :: bij_0D_test=0.
   real :: B0_ext_z=0.0, B0_ext_z_H=0.0
@@ -183,6 +184,8 @@ module Magnetic
   real :: z1_aa=0., z2_aa=0.
   real :: Pm_smag1=1., k1hel=0., k2hel=max_real, qexp_aa=0.
   real :: nfact_aa=4.
+  real :: alpf_MHD=0.  !PAR_DOC: axion coupling (in MHD, if not defined in disp_current)
+  real :: limiter_fact=1.  !PAR_DOC: limiter factor
   real :: r_inner=0., r_outer=0.
   real :: eta_tdep_loverride_ee=0.
   real :: r_dip=1 , epsi_dip=0.1, angle_dip=0., je_heating_factor=1.
@@ -268,6 +271,7 @@ module Magnetic
   logical :: lfactors_aa=.false., lvacuum=.false., ldensity_add_je_heating=.false.
   logical :: loverride_ee=.false., loverride_ee2=.false., loverride_ee_decide=.false.
   logical :: lignore_1rho_in_Lorentz=.false., lnorm_aa_kk=.false., lohm_evolve=.false.
+  logical :: llimiter=.false.
 !
   namelist /magnetic_init_pars/ &
       B_ext, B0_ext, B0_ext_z, B0_ext_z_H, t_bext, t0_bext, J_ext, lohmic_heat, radius, epsilonaa, &
@@ -277,7 +281,7 @@ module Magnetic
       robflow_aa, coefaa, coefbb, phase_aa, phasex_aa, phasey_aa, phasez_aa, inclaa, &
       lpress_equil, lpress_equil_via_ss, lset_AxAy_zero, ladd_bb_init, &
       mu_r, mu_ext_pot, lB_ext_pot, &
-      alp_aniso, ljj_as_comaux, lsmooth_jj, &
+      alpf_MHD, alp_aniso, ljj_as_comaux, lsmooth_jj, &
       lforce_free_test, ampl_B0, N_modes_aa, lno_noise_aa, &
       initpower_aa, initpower2_aa, cutoff_aa, ncutoff_aa, kpeak_aa, &
       lscale_tobox, lsquash_aa, kgaussian_aa, lrandom_ampl_aa, z1_aa, z2_aa, &
@@ -302,7 +306,8 @@ module Magnetic
       lcoulomb, lcoulomb_apply, learly_set_el_pencil, &
       qexp_aa, nfact_aa, lfactors_aa, lvacuum, ldensity_add_je_heating, l2d_aa, &
       loverride_ee_decide, eta_tdep_loverride_ee, z0_gaussian, width_gaussian, &
-      lnorm_aa_kk, lohm_evolve, lhubble_magnetic,r_dip, epsi_dip, angle_dip
+      lnorm_aa_kk, lohm_evolve, lhubble_magnetic,r_dip, epsi_dip, angle_dip, &
+      llimiter, limiter_fact
 !
 ! Run parameters
 !
@@ -409,7 +414,7 @@ module Magnetic
       center1_x, center1_y, center1_z, lcheck_positive_va2, &
       lmean_friction, llocal_friction, LLambda_aa, bthresh_per_brms, &
       iresistivity, lweyl_gauge, ladvective_gauge, ladvective_gauge2, lupw_aa, &
-      alphaSSm,eta_int, eta_ext, eta_shock, eta_va,eta_j, eta_j2, eta_jrho, &
+      alpf_MHD, alphaSSm, eta_int, eta_ext, eta_shock, eta_va,eta_j, eta_j2, eta_jrho, &
       eta_min, eta_max, wresistivity, eta_xy_max, rhomin_jxb, va2max_jxb, va2max_boris, &
       va_min, cmin,va2power_jxb, llorentzforce, linduction, ldiamagnetism, &
       B2_diamag, reinitialize_aa, rescale_aa, initaa, amplaa, lcovariant_magnetic, &
@@ -451,7 +456,8 @@ module Magnetic
       loverride_ee_decide, eta_tdep_loverride_ee, loverride_ee2, lignore_1rho_in_Lorentz, &
       lbext_moving_layer, zbot_moving_layer, ztop_moving_layer, speed_moving_layer, edge_moving_layer, &
       luse_bgb_as_jxb, lno_eta_tdep, luse_scale_factor_in_sigma, ell_jj, tau_jj, lhubble_magnetic, &
-      scl_uxb_in_ohm, eta_tdep_ascale_power,r_dip, epsi_dip, angle_dip, lreset_vart_only_at_start
+      scl_uxb_in_ohm, eta_tdep_ascale_power,r_dip, epsi_dip, angle_dip, lreset_vart_only_at_start, &
+      llimiter, limiter_fact
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -650,8 +656,10 @@ module Magnetic
   integer :: idiag_betam = 0    ! DIAG_DOC: $\langle\beta\rangle$
   integer :: idiag_betamax = 0  ! DIAG_DOC: $\max\beta$
   integer :: idiag_betamin = 0  ! DIAG_DOC: $\min\beta$
-  integer :: idiag_Azmid_min=0  ! DIAG_DOC: $\min A_z^{\rm mid}$
-  integer :: idiag_Azmid_max=0  ! DIAG_DOC: $\max A_z^{\rm mid}$
+  integer :: idiag_Azmid_min=0  ! DIAG_DOC: $\min A_z^{\rm mid}(x)$
+  integer :: idiag_Azmid_max=0  ! DIAG_DOC: $\max A_z^{\rm mid}(x)$
+  integer :: idiag_Azmid_ymin=0 ! DIAG_DOC: $\min A_z^{\rm mid}(y)$
+  integer :: idiag_Azmid_ymax=0 ! DIAG_DOC: $\max A_z^{\rm mid}(y)$
   integer :: idiag_bxm=0        ! DIAG_DOC: $\left<B_x\right>$
   integer :: idiag_bym=0        ! DIAG_DOC: $\left<B_y\right>$
   integer :: idiag_bzm=0        ! DIAG_DOC: $\left<B_z\right>$
@@ -1372,6 +1380,8 @@ module Magnetic
       if (lspecial) then
         call put_shared_variable('B0_ext_z', B0_ext_z)
         call put_shared_variable('Bz_stratified', Bz_stratified)
+   !    if (iex==0) &
+   !      call put_shared_variable('alpf_MHD',alpf_MHD,caller='register_magnetic')
       endif
 
     endsubroutine register_magnetic
@@ -1448,22 +1458,18 @@ module Magnetic
         call warning('initialize_magnetic','B_ext,x /= 0 with shear is not implemented')
 !
 !  Compute mask for x-averaging where x is in magnetic_xaver_range.
-!  Normalize such that the average over the full domain
-!  gives still unity.
+!  Normalize such that the average over the full domain gives still unity.
+!  This is not the case for xmask1_mag, which is just 1 inside the range.
 !
       if (l1 == l2) then
         xmask_mag = 1.
       else
-        !where (      x(l1:l2) >= magnetic_xaver_range(1) &
-        !       .and. x(l1:l2) <= magnetic_xaver_range(2))
-!AB: corrected mask so that it works even if only one point is valid.
         where (      x(l1:l2) > magnetic_xaver_range(1) &
                .and. x(l1:l2) < magnetic_xaver_range(2))
           xmask_mag = 1.
           xmask1_mag = 1.
         elsewhere
           xmask_mag = 0.
-          xmask1_mag = max_real
           xmask1_mag = 0.
         endwhere
         magnetic_xaver_range(1) = max(magnetic_xaver_range(1), xyz0(1))
@@ -1488,10 +1494,14 @@ module Magnetic
       if (m1 == m2) then
         ymask_mag = 1.
       else
-        where (y(m1:m2) >= magnetic_yaver_range(1) .and. y(m1:m2) <= magnetic_yaver_range(2))
+        !where (y(m1:m2) >= magnetic_yaver_range(1) .and. y(m1:m2) <= magnetic_yaver_range(2))
+!AB: changed this in analogy to x so as to have at least one point.
+        where (y(m1:m2) > magnetic_yaver_range(1) .and. y(m1:m2) < magnetic_yaver_range(2))
           ymask_mag = 1.
+          ymask1_mag = 1.
         elsewhere
           ymask_mag = 0.
+          ymask1_mag = 0.
         endwhere
         magnetic_yaver_range(1) = max(magnetic_yaver_range(1), xyz0(2))
         magnetic_yaver_range(2) = min(magnetic_yaver_range(2), xyz1(2))
@@ -3211,6 +3221,16 @@ module Magnetic
         lpenc_requested(i_evth)=.true.
         lpenc_requested(i_phix)=.true.
         lpenc_requested(i_phiy)=.true.
+      endif
+!
+!  Request pencils for axion coupling.
+!
+      if (alpf_MHD/=0.) then
+        if (iex>0) then
+          call fatal_error('daa_dt','alpf_MHD is to be used only without displacement current')
+        else
+          lpenc_requested(i_infl_dphi)=.true.
+        endif
       endif
 !
 !  diagnostics pencils
@@ -5210,7 +5230,7 @@ module Magnetic
       real, dimension (nx) :: eta_mn,etaSS,eta_heat
       real, dimension (nx) :: vdrift
       real, dimension (nx) :: del2aa_ini,tanhx2,advec_hall,advec_hypermesh_aa
-      real, dimension(nx) :: eta_BB, prof
+      real, dimension(nx) :: eta_BB, prof, dlnBrmsdt, limiter
       real, dimension(3) :: B_ext
       real :: tmp, eta_out1, cosalp, sinalp, hall_term_, tau1_jj
       real, parameter :: OmegaSS=1.0
@@ -5240,7 +5260,7 @@ module Magnetic
         endif
       endif
 !
-! set dAdt to zero at the beginning of each execution of this routine
+! Set dAdt to zero at the beginning of each execution of this routine.
 !
       dAdt=0.
       Fmax=1./impossible
@@ -5253,14 +5273,16 @@ module Magnetic
       call get_bext(B_ext)
 !
 !  Add jxb/rho to momentum equation.
+!  The following 60 lines affect Du/Dt or Dlnrho/Dt, but not the magnetic field.
+!  They are needed regardless of whether or not the displacement current is included.
 !
       if (lhydro) then
         if (.not.lkinematic) then
           if (llorentzforce) then
             if (lboris_correction) then
 !
-!  Following Eq. 34 of Gombosi et al. 2002 for Boris correction. Can work with
-!  only const gravity at present
+!  Following Eq. (34) of Gombosi et al. (2002) for the Boris correction.
+!  Can work with only const gravity at present.
 !
                 df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+p%gamma_A2*p%jxbr(:,1)+&
                                   (p%ugu(:,1)+p%rho1gpp(:,1)-p%gg(:,1))*(1-p%gamma_A2)-&
@@ -5318,6 +5340,7 @@ module Magnetic
 !
 !  The following is only needed when the displacement current is not being solved for.
 !  To check this, we check whether ldisp_current=T.
+!  The following lines have not (yet) been correctly indented, because they are so many (1103 lines).
 !
       if ((.not. ldisp_current) .or. loverride_ee) then
 !
@@ -5721,6 +5744,8 @@ module Magnetic
         eta_total = eta_total + p%etajrho
       endif
 !
+!  Resistive Smagorinsky term. But is it correct to reset fres through multsv here?
+!
       if (lresi_smagorinsky) then
         if (.not.lweyl_gauge) then
           if (letasmag_as_aux) then
@@ -5802,7 +5827,7 @@ module Magnetic
         endif
       endif
 !
-! Temperature dependent resistivity for the solar corona (Spitzer 1969)
+! Temperature-dependent resistivity for the solar corona (Spitzer 1969)
 !
       if (lresi_spitzer) then
         if (lweyl_gauge) then
@@ -6074,6 +6099,9 @@ module Magnetic
                                          p%uu(:,3)*p%aa(:,3)*cotth(m))*r1_mn
             endif
 !
+!  Here is where fres is added to the rhs of the dA/dt equation.
+!  But this is only true when ".not.lupw_aa" and if "linduction" are true.
+!
             if (.not.lfargo_advection) then
               dAdt = dAdt-p%uga-ujiaj+fres
             else
@@ -6084,7 +6112,10 @@ module Magnetic
             endif
 !            df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-p%uga-ujiaj+fres
 !
-!  ladvective_gauge2
+!  ladvective_gauge2. This switch solves for the regular advective gauge,
+!  which was also found to lead to the accumulation of large gradients in A;
+!  see Candelaresi, Hubbard, Brandenburg, & Mitra (2012, Phys. Plasmas 18, 012903)
+!  "Magnetic helicity transport in the advective gauge family".
 !
           elseif (ladvective_gauge2) then
             if (lua_as_aux) then
@@ -6093,11 +6124,11 @@ module Magnetic
             else
               call fatal_error('daa_dt','must put lua_as_aux=T for advective_gauge2')
             endif
+          else
 !
 !  ladvective_gauge=F, so just the normal uxb term plus resistive term.
+!  This is the normal configuration.
 !
-          else
-            !print*,'this, right?'
             dAdt = dAdt+ p%uxb+fres
           endif
 !
@@ -6173,6 +6204,17 @@ module Magnetic
           dAdt = dAdt+imp_alpha0*sin(pi*z(n)/imp_halpha)*p%bb
         else
           dAdt = dAdt+sign(imp_alpha0,z(n))*exp(-((2*z(n)-sign(imp_halpha,z(n)))/imp_halpha)**2)*p%bb
+        endif
+      endif
+!
+!  Add field amplification from coupling to axion field. This only works when iex>0.
+!  In that case, we have to get the dphi pencil.
+!
+      if(alpf_MHD/=0.) then
+        if (iex>0) then
+          call fatal_error('daa_dt','alpf_MHD is to be used only without displacement current')
+        else
+          call multsv_add(dAdt,eta*alpf_MHD*p%infl_dphi,p%bb,dAdt)
         endif
       endif
 !
@@ -6278,7 +6320,7 @@ module Magnetic
 !
         if (lA_relprof_global) then
 !
-!  use the directly the global external vector potential
+!  Use directly the global external vector potential.
 !
           dAdt = dAdt-(p%aa-f(l1:l2,m,n,iglobal_ax_ext:iglobal_az_ext))*tau_relprof1
         else
@@ -6349,6 +6391,14 @@ module Magnetic
         call fatal_error('daa_dt','setting lhubble_magnetic=T is not correct')
       endif
 !
+!  Limiter
+!
+      if (llimiter) then
+        dlnBrmsdt=sqrt(max(0.,eta*wav1*(abs(alpf_MHD*p%infl_dphi)-wav1)))
+        limiter=1./(1.+limiter_fact*eta*dlnBrmsdt)
+        call multsv_mn(limiter,dAdt,dAdt)
+      endif
+!
 !  Now add all the contribution to dAdt so far into df.
 !  This is done here, such that contribution from mean-field models are not added to
 !  the electric field. This may need review later.
@@ -6412,11 +6462,14 @@ module Magnetic
 !
       endif
 !
-!  The following is the endif from "((.not. ldisp_current) .or. loverride_ee) then"
+!  The following is the endif from "((.not. ldisp_current) .or. loverride_ee) then".
+!  As indicated above, the block above has not (yet) been indented correctly,
+!  because the number of lines is so large (1103 lines).
 !
       endif
 !
-!  If ldensity and ldensity_add_je_heating, then compute J.E and add it:
+!  If ldensity and ldensity_add_je_heating, then compute J.E and add it.
+!  This would only make sense if the equation for the displacement current is solved.
 !
       if (ldensity .and. ldensity_add_je_heating) then
         if (ldisp_current) then
@@ -6612,8 +6665,12 @@ print*,'AXEL2: should not be here (eta) ... '
       call max_mn_name(p%beta, idiag_betamax)
 
       if (idiag_betamin /= 0) call max_mn_name(-p%beta, idiag_betamin, lneg=.true.)
-      if (idiag_Azmid_min /= 0) call max_mn_name((offset_min_calc-p%aa(:,3))*xmask1_mag, idiag_Azmid_min, lneg=.true.)
-      call max_mn_name( p%aa(:,3),idiag_Azmid_max)
+      if (idiag_Azmid_min  /= 0) call max_mn_name((offset_min_calc-p%aa(:,3))*xmask1_mag, idiag_Azmid_min,  lneg=.true.)
+      if (idiag_Azmid_max  /= 0) call max_mn_name((               +p%aa(:,3))*xmask1_mag, idiag_Azmid_max,  lneg=.true.)
+      if (idiag_Azmid_ymin /= 0) call max_mn_name((offset_min_calc-p%aa(:,3))*ymask1_mag, idiag_Azmid_ymin, lneg=.true.)
+      if (idiag_Azmid_ymax /= 0) call max_mn_name((               +p%aa(:,3))*ymask1_mag, idiag_Azmid_ymax, lneg=.true.)
+!AB: obsolete
+      !call max_mn_name( p%aa(:,3),idiag_Azmid_max)
 
       if (.not.lmultithread) then
 !
@@ -10635,6 +10692,7 @@ print*,'AXEL2: should not be here (eta) ... '
         idiag_jxm=0; idiag_jym=0; idiag_jzm=0
         idiag_betam = 0; idiag_betamax = 0; idiag_betamin = 0
         idiag_Azmid_min=0; idiag_Azmid_max=0
+        idiag_Azmid_ymin=0; idiag_Azmid_ymax=0
         idiag_betamz = 0; idiag_beta2mz = 0
         idiag_betamx = 0; idiag_beta2mx = 0
         idiag_aym=0; idiag_azm=0
@@ -10898,6 +10956,8 @@ print*,'AXEL2: should not be here (eta) ... '
         call parse_name(iname,cname(iname),cform(iname),'betamin',idiag_betamin)
         call parse_name(iname,cname(iname),cform(iname),'Azmid_min',idiag_Azmid_min)
         call parse_name(iname,cname(iname),cform(iname),'Azmid_max',idiag_Azmid_max)
+        call parse_name(iname,cname(iname),cform(iname),'Azmid_ymin',idiag_Azmid_ymin)
+        call parse_name(iname,cname(iname),cform(iname),'Azmid_ymax',idiag_Azmid_ymax)
         call parse_name(iname,cname(iname),cform(iname),'dtb',idiag_dtb)
         call parse_name(iname,cname(iname),cform(iname),'dtHr',idiag_dtHr)
         call parse_name(iname,cname(iname),cform(iname),'dtFr',idiag_dtFr)
