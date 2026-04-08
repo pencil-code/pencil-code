@@ -9,7 +9,7 @@ module Slices
   use Cdata
   use Messages
   use Sub, only: xlocation, zlocation, update_snaptime, read_snaptime, position
-  use General, only: keep_compiler_quiet
+  use General, only: keep_compiler_quiet, div
 !
   implicit none
 !
@@ -276,13 +276,13 @@ contains
             'slice_position=w may be wrong for nprocx>1')
         !midplane slices
         !ix_loc=nxgrid/2+nghost
-        iy = nygrid/2+nghost           !MR: nghost not tb added!
+        iy = div(nygrid,2)+nghost           !MR: nghost not tb added!
         !meridional wedges, at 4 different
         !equally spaced azimuthal locations
-        iz =  0*nzgrid/4+1+nghost
-        iz2=  1*nzgrid/4+1+nghost
-        iz3=  2*nzgrid/4+1+nghost
-        iz4=  3*nzgrid/4+1+nghost
+        iz =  0*div(nzgrid,4)+1+nghost
+        iz2=  1*div(nzgrid,4)+1+nghost
+        iz3=  2*div(nzgrid,4)+1+nghost
+        iz4=  3*div(nzgrid,4)+1+nghost
         ix_loc=0; iy_loc=0
 !
 !  Another slice position for spherical coordinates

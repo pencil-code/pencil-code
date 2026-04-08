@@ -9033,7 +9033,7 @@ module Boundcond
 !  define wave vector
 !
       kx=cshift((/(i-nxl/2,i=0,nxl-1)/),+nxl/2)*2*pi/Lx
-      ky=cshift((/(i-nygrid/2,i=0,nygrid-1)/),+nygrid/2)*2*pi/Ly
+      ky=cshift((/(i-div(nygrid,2),i=0,nygrid-1)/),+div(nygrid,2))*2*pi/Ly
 !
 !  calculate 1/k^2, zero mean
 !
