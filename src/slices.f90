@@ -251,15 +251,15 @@ contains
 !  Please set iz2 in run.in to select a different layer
 !  where nghost+1 <= iz2 <= mzgrid-nghost
 !
-        lwrite_slice_yz=(ipx==floor(nprocx/.2))
+        lwrite_slice_yz=(ipx==div(nprocx,2))
         if (lwrite_slice_yz) then
           if (mod(nprocx,2)==0) then; ix_loc=l1; else; ix_loc=(l1+l2)/2; endif
         endif
-        lwrite_slice_xz=(ipy==floor(nprocy/.2))
+        lwrite_slice_xz=(ipy==div(nprocy,2))
         if (lwrite_slice_xz) then
           if (mod(nprocy,2)==0) then; iy_loc=m1; else; iy_loc=(m1+m2)/2; endif
         endif
-        lwrite_slice_xy=(ipz==floor(nprocz/.2))
+        lwrite_slice_xy=(ipz==div(nprocz,2))
         if (lwrite_slice_xy) then
           if (mod(nprocz,2)==0) then; iz_loc=n1; else; iz_loc=(n1+n2)/2; endif
         endif
@@ -295,7 +295,7 @@ contains
             'slice_position=s may be wrong for nprocx>1')
 
         call xlocation(xtop_slice,ix_loc,lwrite_slice_yz)
-        lwrite_slice_xy2=(ipz==floor(nprocz/.4)); if (lwrite_slice_xy2) iz2_loc=n2
+        lwrite_slice_xy2=(ipz==div(nprocz,4)); if (lwrite_slice_xy2) iz2_loc=n2
         lwrite_slice_xy=lfirst_proc_z; if (lwrite_slice_xy) iz_loc=n1
         lwrite_slice_xz=.false.; iy_loc=0
 !
@@ -311,7 +311,7 @@ contains
         lwrite_slice_xy=lfirst_proc_z; if (lwrite_slice_xy) iz_loc=n1
         lwrite_slice_xz=lfirst_proc_y; if (lwrite_slice_xz) iy_loc=min(m1+10,m2)
         lwrite_slice_yz=lfirst_proc_x; if (lwrite_slice_yz) ix_loc=min(l1+10,l2)
-        lwrite_slice_xz2=(ipy==floor(nprocy/.2))
+        lwrite_slice_xz2=(ipy==div(nprocy,2))
         if (lwrite_slice_xz2) then
           if (mod(nprocy,2)==0) then; iy2_loc=m1; else; iy2_loc=(m1+m2)/2; endif
         endif
@@ -332,9 +332,9 @@ contains
             'slice_position=e may be wrong for nprocx>1')
 
         lwrite_slice_xy=lfirst_proc_z; if (lwrite_slice_xy) iz_loc=n1
-        lwrite_slice_yz=(ipx==floor(nprocx/.2)); if (lwrite_slice_yz) ix_loc=(l1+l2)/2
+        lwrite_slice_yz=(ipx==div(nprocx,2)); if (lwrite_slice_yz) ix_loc=(l1+l2)/2
 
-        lwrite_slice_xy2=(ipz==floor(nprocz/.4))
+        lwrite_slice_xy2=(ipz==div(nprocz,4))
         if (lwrite_slice_xy2) then
           if (nprocz==1) then
             iz2_loc=(n1+n2)/2   !MR: not iz2_loc=(iz+n2)/2!  
@@ -343,7 +343,7 @@ contains
           endif
         endif
 
-        lwrite_slice_xz=(ipy==floor(nprocy/.2))
+        lwrite_slice_xz=(ipy==div(nprocy,2))
         if (lwrite_slice_xz) then
           if (nprocy==1) then
             iy_loc=(m1+m2)/2
