@@ -288,7 +288,7 @@ module Register
         if (lroot.and.leos_ionization.and.ip<14) print*,'initialize_modules: ' &
           //'unit_velocity, unit_density, etc, are in cgs'
         hbar=hbar_cgs/(unit_energy*unit_time)
-        mu0=mu0_cgs*unit_density*(unit_velocity/unit_magnetic)**2
+        mu0=real(mu0_cgs*unit_density*(unit_velocity/unit_magnetic)**2)
         if (unit_temperature/=impossible) then
           sigmaSB=sigmaSB_cgs/(unit_flux/unit_temperature**4)
           k_B=k_B_cgs/(unit_energy/unit_temperature)
@@ -309,7 +309,7 @@ module Register
         if (lroot.and.leos_ionization) print*, &
             'initialize_modules: unit_velocity, unit_density, etc, are in SI'
         hbar=hbar_cgs*1e-7/(unit_energy*unit_time)
-        mu0=1e-7*mu0_cgs*unit_density*(unit_velocity/unit_magnetic)**2
+        mu0=real(1e-7*mu0_cgs*unit_density*(unit_velocity/unit_magnetic)**2)
         if (unit_temperature/=impossible) then
           sigmaSB=sigmaSB_cgs*1e-3/(unit_flux/unit_temperature**4)
           k_B=1e-7*k_B_cgs/(unit_energy/unit_temperature)

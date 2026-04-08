@@ -240,7 +240,6 @@ module Viscosity
 !
   integer :: enum_nnewton_type = 0
   integer :: enum_div_sld_visc = 0
-  integer, dimension(nvisc_max) :: enum_ivisc= 0
   character (len=labellen) :: ivis_res
 !
   contains
@@ -2928,7 +2927,6 @@ module Viscosity
       real, optional, intent(out) :: nu_input
       real, dimension(nx), optional, intent(out) :: nu_pencil
       character (len=labellen), optional :: ivis
-      integer :: i
 !
       if (present(nu_input)) nu_input=nu
       if (present(ivis)) then
@@ -2998,6 +2996,8 @@ module Viscosity
       real, dimension(ndc), intent(out) :: diffus_coeff
       integer, intent(in), optional :: iz
 !
+
+      call keep_compiler_quiet(iz)
       if (lvisc_simplified) then
         diffus_coeff = nu
       else
@@ -3213,6 +3213,11 @@ module Viscosity
     call copy_addr(nu_y,p_par(115))        ! (my)
     call copy_addr(gnu_y,p_par(116))       ! (my)
     call copy_addr(lvisc_nu_const_bulk,p_par(117)) ! bool
+
+    call keep_compiler_quiet(lKit_Olem)
+    call keep_compiler_quiet(nu_mol)
+    call keep_compiler_quiet(r1_lambda)
+    call keep_compiler_quiet(r2_lambda)
 
     endsubroutine pushpars2c
 !***********************************************************************

@@ -185,13 +185,13 @@ module Timestep
           call advance_shear(f, df, dtsub)
         endif
 !
-        start_time = mpiwtime()
+        start_time = real(mpiwtime())
         if (lgpu) then
           call update_after_substep_gpu
         else
           call update_after_substep(f,df,dtsub,llast)
         endif
-        after_substep_sum_time = after_substep_sum_time + mpiwtime()-start_time
+        after_substep_sum_time = after_substep_sum_time + real(mpiwtime())-start_time
 !
         ! [PAB] according to MR this breaks the autotest.
         ! @Piyali: there must be a reason to add an additional global communication,
@@ -216,7 +216,7 @@ module Timestep
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real :: t_start
+      real(KIND=rkind8) :: t_start
       integer :: i
       logical :: headt_save
 
@@ -369,10 +369,12 @@ module Timestep
     subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
+    use General, only: keep_compiler_quiet
 
     integer, parameter :: n_pars=0
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
+    call keep_compiler_quiet(p_par)
     !!call copy_addr(alpha_ts,p_par(1))  ! (3)
     !!call copy_addr(beta_ts ,p_par(2))  ! (3)
 

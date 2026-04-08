@@ -31,7 +31,7 @@ module Pscalar
 !  Init parameters.
 !
   real, dimension(3) :: gradC0=(/0.0,0.0,0.0/)
-  real :: ampllncc=impossible, widthlncc=impossible, lncc_min
+  real :: ampllncc=impossible, widthlncc=impossible
   real :: ampllncc2=impossible, radius_lncc=impossible
   real :: kx_lncc=impossible, ky_lncc=impossible,kz_lncc=impossible
   real :: epsilon_lncc=impossible
@@ -46,7 +46,7 @@ module Pscalar
   logical :: reinitialize_lncc=.false.
   character (len=labellen) :: initlncc='impossible', initlncc2='impossible'
   character (len=labellen) :: initcc='nothing', initcc2='zero'
-  character (len=40) :: tensor_pscalar_file
+  !character (len=40) :: tensor_pscalar_file
   integer :: ll_sh=-1, mm_sh=-1, n_xprof=0
 !
   namelist /pscalar_init_pars/ &
@@ -572,7 +572,6 @@ module Pscalar
       intent(out) :: df
 !
       character(len=2) :: id
-      real, dimension(nx,3) :: tmp
 !
 !  Identify module and boundary conditions.
 !
@@ -781,8 +780,8 @@ module Pscalar
         if (idiag_Qrhoccm/=0) call sum_mn_name(bump*p%rho*p%cc(:,1),idiag_Qrhoccm)
         if (idiag_mcct/=0)    call integrate_mn_name(p%rho*p%cc(:,1),idiag_mcct)
         if (idiag_rhoccm/=0)  call sum_mn_name(p%rho*p%cc(:,1),idiag_rhoccm)
-        if (idiag_rhoc2m/=0)  call sum_mn_name(p%rho*p%cc(:,2),idiag_rhoc2m)
-        if (idiag_rhoc3m/=0)  call sum_mn_name(p%rho*p%cc(:,3),idiag_rhoc3m)
+        if (idiag_rhoc2m/=0)  call sum_mn_name(p%rho*p%cc(:,min(2,size(p%cc,2))),idiag_rhoc2m)
+        if (idiag_rhoc3m/=0)  call sum_mn_name(p%rho*p%cc(:,min(3,size(p%cc,2))),idiag_rhoc3m)
         if (idiag_rhoccmax/=0)  call max_mn_name(p%rho*p%cc(:,1),idiag_rhoccmax)
         if (idiag_mrclncm/=0) call sum_mn_name(-p%rho*p%cc(:,1)*alog(p%cc(:,1)),idiag_mrclncm)
         call max_mn_name(p%cc(:,1),idiag_ccmax)
@@ -897,9 +896,7 @@ module Pscalar
       logical :: lreset
       logical, optional :: lwrite
 !
-      character(len=80) :: fmt
       integer :: iname, inamez, inamey, inamex, inamexy, inamexz
-      integer :: i
       logical :: lwr
 !
       lwr = .false.
@@ -1144,6 +1141,7 @@ module Pscalar
     subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
+    use General,  only: keep_compiler_quiet
 
     integer, parameter :: n_pars=100
     integer(KIND=ikind8), dimension(n_pars) :: p_par
@@ -1180,6 +1178,8 @@ module Pscalar
     call copy_addr(bunit,p_par(30)) ! (nx) (ny) (nz) (3)
     call copy_addr(hhh,p_par(31)) ! (nx) (ny) (nz) (3)
     call copy_addr(cc_xyaver,p_par(32)) ! (mz) (npscalar)
+
+    call keep_compiler_quiet(reinitialize_lncc)
 
     endsubroutine pushpars2c
 !***********************************************************************
