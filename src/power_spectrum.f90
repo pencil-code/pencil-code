@@ -737,7 +737,7 @@ outer:do ikz=1,nz
 !
 !  Sum spectral contributions into bins of k^2 - avoids rounding of k.
 !
-        !$omp do collapse(3) private(k2)
+        !$omp do collapse(3)
         do ikz=1,nz
           do iky=1,ny
             do ikx=1,nx
@@ -4218,7 +4218,7 @@ outer:do ikz=1,nz
     pdf_scl=1.
     pdfy_scl=1.
     !
-    !$omp parallel private(pdf_var,logscale,gcc,gcc2,l,pdf_dx,pdf_dx1,i_pdf) num_threads(num_helper_threads) &
+    !$omp parallel private(pdf_var,logscale,l,pdf_dx,pdf_dx1,i_pdf) num_threads(num_helper_threads) &
     !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
     !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
     !$ thread_id = omp_get_thread_num()+1
