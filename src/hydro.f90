@@ -3468,8 +3468,8 @@ module Hydro
               if (width_hless==0.) then
                 where(real(t) < f(l1:l2,m,n,ihless)) tmp_rho=tmp_rho-eps_hless
               else
-                tmp_rho=tmp_rho-eps_hless &
-                  *max(0.d0, min(1.d0, (f(l1:l2,m,n,ihless)+0.5d0*width_hless_absolute-t)/width_hless_absolute))
+                tmp_rho=real(tmp_rho-eps_hless &
+                  *max(0.d0, min(1.d0, (f(l1:l2,m,n,ihless)+0.5d0*width_hless_absolute-t)/width_hless_absolute)))
 !print*,'AXEL1'
 !AB: this is never accessed
               endif
@@ -4322,9 +4322,9 @@ module Hydro
           case ('inverse')
             frict=ekman_friction/max(real(t),friction_tdep_toffset)
           case ('Thomson')
-            arad_normal=4*sigmaSB/c_light
-            pradrc2=onethird*arad_normal*p%TT**4/(p%rho*c_light**2)
-            frict=ekman_friction*fourthird*p%yH*sigma_Thomson*arad_normal*p%TT**4/(m_p*c_light)
+            arad_normal=real(4*sigmaSB/c_light)
+            pradrc2=real(onethird*arad_normal*p%TT**4/(p%rho*c_light**2))
+            frict=real(ekman_friction*fourthird*p%yH*sigma_Thomson*arad_normal*p%TT**4/(m_p*c_light))
           case ('current')
             if (lmagnetic) then
               frict=ekman_friction*sqrt(p%j2)
@@ -4865,7 +4865,7 @@ module Hydro
 !
         if (idiag_uxfampm/=0 .or. idiag_uyfampm/=0 .or. idiag_uzfampm/=0 .or.&
             idiag_uxfampim/=0 .or. idiag_uxfampim/=0 .or. idiag_uzfampim/=0) then
-          kx = kx_uu(1) + qshear*Omega*ky_uu(1)*t
+          kx = real(kx_uu(1) + qshear*Omega*ky_uu(1)*t)
           space_part_re =  cos(kx*x(l1:l2)+ky_uu(1)*y(m)+kz_uu(1)*z(n))
           space_part_im = -sin(kx*x(l1:l2)+ky_uu(1)*y(m)+kz_uu(1)*z(n))
           if (idiag_uxfampm/=0) call sum_mn_name(p%uu(:,1)*space_part_re,idiag_uxfampm)
@@ -5524,8 +5524,8 @@ module Hydro
           if (ioot/=0)  f(l1:l2,m,n,ioxt:iozt)  =0.
           if (ioost/=0) f(l1:l2,m,n,ioxst:iozst)=0.
         else
-          fact_cos=cos(omega_fourier*t)
-          fact_sin=sin(omega_fourier*t)
+          fact_cos=real(cos(omega_fourier*t))
+          fact_sin=real(sin(omega_fourier*t))
 !
           if (iuut/=0)  f(l1:l2,m,n,iuxt:iuzt)  =f(l1:l2,m,n,iuxt:iuzt)  +dt*p%uu*fact_cos
           if (iuust/=0) f(l1:l2,m,n,iuxst:iuzst)=f(l1:l2,m,n,iuxst:iuzst)+dt*p%uu*fact_sin
@@ -5547,7 +5547,7 @@ module Hydro
 !
       if (.not.(ltime_integrals_always .or. dtcor<=0.)) then
         if (t>t_vart) then
-          t_cor=t
+          t_cor=real(t)
 !
 !  If uut and oot are updated, write t to file and advance t_var after leaving the mn-loop.
 !
@@ -5631,8 +5631,8 @@ module Hydro
               if (width_hless==0.) then
                 where(real(t) < f(:,m,n,ihless)) hydro_energy=hydro_energy-eps_hless
               else
-                hydro_energy=hydro_energy-eps_hless &
-                  *max(0.d0, min(1.d0, (f(:,m,n,ihless)+0.5d0*width_hless_absolute-t)/width_hless_absolute))
+                hydro_energy=real(hydro_energy-eps_hless &
+                  *max(0.d0, min(1.d0, (f(:,m,n,ihless)+0.5d0*width_hless_absolute-t)/width_hless_absolute)))
               endif
             endif
           endif
@@ -5711,7 +5711,7 @@ module Hydro
             if (width_hless==0.) then
               where(real(t) < f(:,m,n,ihless)) press=press-eps_hless
             else
-              press=press-eps_hless*max(0.d0, min(1.d0, (f(:,m,n,ihless)+0.5d0*width_hless_absolute-t)/width_hless_absolute))
+              press=real(press-eps_hless*max(0.d0, min(1.d0, (f(:,m,n,ihless)+0.5d0*width_hless_absolute-t)/width_hless_absolute)))
             endif
           endif
         endif
@@ -5794,8 +5794,8 @@ module Hydro
 !  in degrees.
 !
       if (lprecession) then
-        c=cos(omega_precession*t)
-        s=sin(omega_precession*t)
+        c=real(cos(omega_precession*t))
+        s=real(sin(omega_precession*t))
         alpha_precession_rad=alpha_precession
         cosalp=cos(alpha_precession_rad)
         sinalp=sin(alpha_precession_rad)
@@ -6385,33 +6385,34 @@ module Hydro
 !
     endsubroutine coriolis_cylindrical
 !***********************************************************************
-    subroutine coriolis_cylindrical_del2p(f,p)
-!
-!  Coriolis terms using cylindrical coords
-!  The formulation is the same as in cartesian, but it is better to
-!  keep it here because precession is not implemented for
-!  cylindrical coordinates.
-!
-!  19-sep-07/steveb: coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
-!
-!  info about coriolis_cylindrical term
-!
-      if (headtt) print*, 'coriolis_cylindrical: Omega=', Omega
-!
-! Not yet coded for angular velocity at an angle with the z axis.
-!
-      if (theta/=0) then
-         print*, 'coriolis_cylindrical: Omega=,theta=', Omega,theta
-         call not_implemented("coriolis_cylindrical_del2p","for angular velocity at an angle with z axis")
-      endif
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine coriolis_cylindrical_del2p
+!TP: on comment since not used (to suppress compiler warnings)
+!    subroutine coriolis_cylindrical_del2p(f,p)
+!!
+!!  Coriolis terms using cylindrical coords
+!!  The formulation is the same as in cartesian, but it is better to
+!!  keep it here because precession is not implemented for
+!!  cylindrical coordinates.
+!!
+!!  19-sep-07/steveb: coded
+!!
+!      real, dimension (mx,my,mz,mfarray) :: f
+!      type (pencil_case) :: p
+!!
+!!  info about coriolis_cylindrical term
+!!
+!      if (headtt) print*, 'coriolis_cylindrical: Omega=', Omega
+!!
+!! Not yet coded for angular velocity at an angle with the z axis.
+!!
+!      if (theta/=0) then
+!         print*, 'coriolis_cylindrical: Omega=,theta=', Omega,theta
+!         call not_implemented("coriolis_cylindrical_del2p","for angular velocity at an angle with z axis")
+!      endif
+!!
+!      call keep_compiler_quiet(f)
+!      call keep_compiler_quiet(p)
+!!
+!    endsubroutine coriolis_cylindrical_del2p
 !***********************************************************************
     subroutine coriolis_xdep(df,p)
 !
@@ -6483,7 +6484,7 @@ module Hydro
         else
           ! inside transition => smooth fading:
           if (last_t /= t) then
-            last_t = t
+            last_t = real(t)
 !
 !  smoothly fade out damping according to the following
 !  function of time:
@@ -6505,7 +6506,7 @@ module Hydro
 !  with continuous derivatives. (The default value for Tfade_start is Tdamp/2.)
 !
             ! tau is a normalized t, the transition interval is [-0.5, 0.5]:
-            tau = (t-tfade_start) / (tdamp-tfade_start) - 0.5
+            tau = real((t-tfade_start) / (tdamp-tfade_start) - 0.5)
             if (tau <= -0.5) then
               fade_fact = 1.
             elseif (tau <= 0.5) then
@@ -7868,30 +7869,31 @@ module Hydro
 !
     endsubroutine get_slices_hydro
 !***********************************************************************
-    function decomp_prepare() result (ldecomp)
+!TP: on comment since not used (to suppress compiler warnings)
+!    function decomp_prepare() result (ldecomp)
+!!
+!!  Prepare for Helmholtz decomposition.
+!!
+!!  20-oct-97/axel: coded
+!!
+!      use Sub, only: read_snaptime, update_snaptime
+!!
+!      logical :: ldecomp
 !
-!  Prepare for Helmholtz decomposition.
-!
-!  20-oct-97/axel: coded
-!
-      use Sub, only: read_snaptime, update_snaptime
-!
-      logical :: ldecomp
-
-      character (len=fnlen) :: file
-      integer :: ndummy
-      real :: tdummy
-!
-!  Perform the decomposition in dsnap_down time intervals.
-!
-      file = trim(datadir)//'/tsnap_down.dat'
-!
-!  This routine sets ldecomp=T whenever its time to perform the decomposition.
-!
-      call update_snaptime(file,tdummy,ndummy,dsnap_down,t,ldecomp,nowrite=.true.)
-!
-    endfunction decomp_prepare
-!***********************************************************************
+!      character (len=fnlen) :: file
+!      integer :: ndummy
+!      real :: tdummy
+!!
+!!  Perform the decomposition in dsnap_down time intervals.
+!!
+!      file = trim(datadir)//'/tsnap_down.dat'
+!!
+!!  This routine sets ldecomp=T whenever its time to perform the decomposition.
+!!
+!      call update_snaptime(file,tdummy,ndummy,dsnap_down,t,ldecomp,nowrite=.true.)
+!!
+!    endfunction decomp_prepare
+!!***********************************************************************
     subroutine hydro_after_timestep(f,df,dt_sub)
 !
 !  Hook for modification of the f and df arrays
@@ -9198,6 +9200,11 @@ module Hydro
     call copy_addr(uij_0d_test,p_par(126)) ! (3) (3)
     call copy_addr(luij_test,p_par(127)) ! bool
     call copy_addr(iforcing_cont_uu,p_par(128)) ! int
+
+    call keep_compiler_quiet(look_as_aux)
+    call keep_compiler_quiet(luuk_as_aux)
+    call keep_compiler_quiet(u_out_kep)
+    call keep_compiler_quiet(x2_ff_uu)
 
     endsubroutine pushpars2c
 !***********************************************************************
