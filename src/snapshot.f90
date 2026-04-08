@@ -1338,7 +1338,9 @@ module Snapshot
       real, dimension (mx,my,mz,nv), intent(in) :: a
 !
       integer :: i, j, k, kk
-      real, dimension (nx*ny*nz) :: xx, yy, zz
+      real, allocatable, dimension(:) :: xx,yy,zz
+
+      allocate(xx(nx*ny*nz),yy(nx*ny*nz),zz(nx*ny*nz))  
 !
       open(lun_output,FILE=trim(directory_dist)//trim(file)//'.tec')
 !

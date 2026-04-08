@@ -783,7 +783,6 @@ outer:do ikz=1,nz
     logical, intent(in) :: lvec
 !
     integer :: nk
-    real, dimension(nx,ny,nz) :: a_re,b_re,a_im,b_im
 !  save is needed to avoid repeated allocations every time this subroutine is called.
     real, dimension(:), save, allocatable :: spectrum,spectrum_sum
     character(LEN=fnlen) :: filename
