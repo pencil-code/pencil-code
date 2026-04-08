@@ -1957,7 +1957,7 @@ module Sub
       real, dimension (:,:), intent (in), optional :: a
       logical, intent (in), optional :: lcovariant_derivative
       real, dimension (nx,3), intent (out) :: b
-      integer, parameter :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7
+      integer, parameter :: i1=1,i2=min(2,nx),i3=min(3,nx),i4=min(4,nx),i5=min(5,nx),i6=min(6,nx),i7=min(7,nx)
       integer :: a1,a2
 !
       b(:,1)=aij(:,3,2)-aij(:,2,3)
@@ -9396,7 +9396,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
       endtype real3
       type(real3) :: res
   
-      res%x = dxyz_2(nghost); res%y=dxyz_4(nghost); res%z=dxyz_6(nghost)
+      res%x = dxyz_2(1); res%y=dxyz_4(1); res%z=dxyz_6(1)
   
     endfunction get_dxyzs
 !***********************************************************************    
