@@ -28,12 +28,6 @@ module ImplicitDiffusion
 !
   namelist /implicit_diffusion_run_pars/ implicit_method
 !
-!  Module-specific variables
-!
-  real, dimension(nxgrid) :: ax_imp = 0.0, bx_imp = 0.0, cx_imp = 0.0
-  real, dimension(nygrid) :: ay_imp = 0.0, by_imp = 0.0, cy_imp = 0.0
-  real, dimension(nzgrid) :: az_imp = 0.0, bz_imp = 0.0, cz_imp = 0.0
-!
   contains
 !***********************************************************************
 !***********************************************************************

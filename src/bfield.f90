@@ -537,6 +537,11 @@ module Magnetic
       character(LEN=3) :: kind
 !
       call fatal_error("magnetic_calc_spectra","impossible: iaakim=0, ieekim=0")
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(spectrum)
+      call keep_compiler_quiet(spectrum_hel)
+      call keep_compiler_quiet(lfirstcall)
+      call keep_compiler_quiet(kind)
 !
     endsubroutine magnetic_calc_spectra
 !***********************************************************************
@@ -1004,7 +1009,6 @@ module Magnetic
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       type(slice_data), intent(inout) :: slices
 !
-      integer :: ivar
       real, dimension(3) :: b_ext
 !
 !  Replace B_ext locally to accommodate its time dependence.
@@ -1500,7 +1504,7 @@ module Magnetic
         if (t <= t0_bext) then
           B_ext_out = B0_ext
         else
-          B_ext_out = B0_ext + 0.5 * (1.0 - cos(pi * (t - t0_bext) / (t_bext - t0_bext))) * (B_ext - B0_ext)
+          B_ext_out = real(B0_ext + 0.5 * (1.0 - cos(pi * (t - t0_bext) / (t_bext - t0_bext))) * (B_ext - B0_ext))
         endif
       else bext
         B_ext_out = B_ext
