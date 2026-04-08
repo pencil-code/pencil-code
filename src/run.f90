@@ -111,6 +111,8 @@ endsubroutine helper_loop
 !***********************************************************************
 !$  subroutine signal_helper_and_release_lock
 !
+!$ use General, only: signal_send
+!
 !  At the end of every timeloop two facts concerning the GPU can be true.
 !  1.) The buffers have been copied from the device
 !  2.) Diagnostics are to be performed from them.
@@ -759,6 +761,8 @@ endsubroutine helper_loop
 
 !$ use OMP_lib
 !$ use, intrinsic :: iso_c_binding
+!$ use General,        only: get_cpu
+!$ use Mpicomm, only: mpibarrier
 
   !$ call mpibarrier
   !$omp parallel
@@ -770,9 +774,18 @@ endsubroutine helper_loop
 !***********************************************************************
 !$ subroutine get_core_ids_excluding_the_master
 
+!
 !TP: remove master id from core ids since no one should run on master core and make sure new core ids indexing start from 1
+!
+
 !$ use OMP_lib
 !$ use, intrinsic :: iso_c_binding
+!$ use General,        only: get_cpu
+
+!$  integer :: i,j
+!$  integer :: master_core_id
+!$  integer :: helper_core_id
+!$  integer, dimension(max_threads_possible) :: tmp_core_ids
 
 !$ if (omp_get_thread_num() == 1) helper_core_id = get_cpu()
 !$omp barrier
@@ -809,7 +822,7 @@ endsubroutine helper_loop
   use FArrayManager,   only: farray_clean_up
   use Farray_alloc
   use General,         only: random_seed_wrapper, touch_file, itoa
-!$ use General,        only: signal_init, get_cpu
+!$ use General,        only: signal_init
   use Grid,            only: construct_grid, box_vol, grid_bound_data, set_coorsys_dimmask, &
                              construct_serial_arrays, coarsegrid_interp
   use Gpu,             only: load_farray_to_GPU, initialize_gpu
@@ -845,16 +858,12 @@ endsubroutine helper_loop
 
   character(len=fnlen) :: fproc_bounds
   real(KIND=rkind8) :: time2, tvar1
-  real :: wall_clock_time=0.
   integer :: mvar_in
   logical :: suppress_pencil_check=.false.
   logical :: lnoreset_tzero=.false.
   logical :: lprocbounds_exist
   integer, parameter :: num_helper_masters=1
-!$  integer :: i,j
-!$  integer :: master_core_id
-!$  integer :: helper_core_id
-!$  integer, dimension(max_threads_possible) :: tmp_core_ids
+!$ integer :: i 
 !
   lrun = .true.
 !
@@ -1368,7 +1377,7 @@ endsubroutine helper_loop
 !  Print wall clock time and time per step and processor for diagnostic
 !  purposes.
 !
-  call print_performance_and_memory_usage_metrics(time2-time1)
+  call print_performance_and_memory_usage_metrics(real(time2-time1))
 !
 !  Give all modules the possibility to exit properly.
 !
