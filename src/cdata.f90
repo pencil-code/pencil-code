@@ -173,7 +173,7 @@ module Cdata
   real :: ybot_slice=0.0,ytop_slice=1.0
   real :: zbot_slice=0.0,ztop_slice=1.0
   real :: r_rslice=0.
-  integer :: nth_rslice=min(nxgrid,nygrid,nzgrid)/2, nph_rslice=min(nxgrid,nygrid,nzgrid)
+  integer :: nth_rslice=floor((min(nxgrid,nygrid,nzgrid)/2.)+.1), nph_rslice=min(nxgrid,nygrid,nzgrid)
   real :: glnCrossSec0=0.0, CrossSec_x1=-1., CrossSec_x2=1., CrossSec_w=.1
   logical, dimension(3) :: lperi=.true. !PAR_DOC: vector of the form ($x$,$y$,$z$);
                                         !PAR_DOC: determines whether the corresponding

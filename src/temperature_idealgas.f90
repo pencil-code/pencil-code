@@ -41,15 +41,13 @@ module Energy
   real :: lnTT_const=0.0, TT_const=1.0
   real :: Kgperp=0.0, Kgpara=0.0
   real :: chi=impossible, chi_jump=1., chi_z0=0.0, chi_zwidth=0.0, chi_r_reduce=0.0
-  real :: zbot=0.0, ztop=0.0
   real :: center1_x=0.0, center1_y=0.0, center1_z=0.0
   real :: r_bcz=0.0, chi_shock=0.0, chi_hyper3=0.0, chi_hyper3_mesh=5.0
   real :: Tbump=0.0, Kmin=0.0, Kmax=0.0, hole_slope=0.0, hole_width=0.0
-  real, dimension(nz) :: zmask_temp, zmask_emiss
+  real, dimension(nz) :: zmask_temp
   real, dimension(nzgrid) :: zmask_temp_global
   real, dimension(2) :: temp_zaver_range=(/-max_real,max_real/)
-  real :: mu=1.0
-  real :: hcond0=impossible, hcond1=1.0, hcond2=1.0, Fbot=impossible,Ftop=impossible
+  real :: hcond0=impossible, hcond1=1.0, hcond2=1.0, Fbot=impossible
   real :: luminosity=0.0, wheat=0.1, rcool=0.0, wcool=0.1, cool=0.0
   real :: beta_bouss=-1.0, h_sld_ene=2.0, nlf_sld_ene=1.0
   integer :: temp_zmask_count=1
@@ -3191,6 +3189,8 @@ module Energy
     call copy_addr(gradtt0,p_par(57)) ! real3
     call string_to_enum(enum_borderss,borderss)
     call copy_addr(enum_borderss,p_par(58)) ! int
+
+    call keep_compiler_quiet(lheatc_chiconst_accurate)
  
     endsubroutine pushpars2c
 !***********************************************************************
