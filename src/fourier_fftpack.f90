@@ -7,7 +7,7 @@ module Fourier
   use Cdata
   use Messages
   use Mpicomm, only: transp,transp_other 
-  use General, only: ioptest
+  use General, only: ioptest, keep_compiler_quiet
 !$ use OMP_LIB
 !
   implicit none
@@ -1104,10 +1104,6 @@ module Fourier
       real, dimension (:,:), intent(inout) :: a_re,a_im
       logical, optional, intent(in) :: linv,lneed_im
 !
-      complex, dimension (size(a_re,1)) :: ax
-      real, dimension (size(a_re,2)) :: deltay_x
-      integer :: l,m,ibox,nyl
-      logical :: lforward,lcompute_im
 !
 !$    if(omp_get_level() == 1) then
         !$omp parallel num_threads(num_helper_threads)
@@ -4581,6 +4577,8 @@ module Fourier
       real, dimension (4*nx+15) :: wsave
       integer :: l,n
       integer, parameter :: two=2
+
+      call keep_compiler_quiet(shift_y)
 !
 !  if nxgrid/=nygrid, then stop.
 !
