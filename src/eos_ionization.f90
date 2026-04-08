@@ -49,7 +49,7 @@ module EquationOfState
   real :: cs20=impossible, lnrho0=impossible
   logical :: lpp_as_aux=.false., lcp_as_aux=.false.
   real :: gamma=impossible
-  real :: lnTT0=impossible, TT0=impossible
+  real :: lnTT0=impossible
   real :: cs2bot=impossible, cs2top=impossible
 ! input parameters
   namelist /eos_init_pars/ xHe,yMetals,yHacc,lpp_as_aux,lcp_as_aux
@@ -153,21 +153,21 @@ module EquationOfState
         call warning('initialize_eos','pretend_lnTT is not used with ionization')
         pretend_lnTT=.false.
       endif
-      Rgas=k_B/m_p
+      Rgas=real(k_B/m_p)
       mu1yHxHe=1+3.97153*xHe
-      TT_ion=chiH/k_B
+      TT_ion=real(chiH/k_B)
       lnTT_ion=log(TT_ion)
-      TT_ion_=chiH_/k_B
-      lnTT_ion_=log(chiH_/k_B)
-      lnrho_e=1.5*log((m_e/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu1yHxHe)
-      lnrho_H=1.5*log((m_H/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu1yHxHe)
-      lnrho_He=1.5*log((m_He/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu1yHxHe)
-      lnrho_e_=1.5*log((m_e/hbar)*(chiH_/hbar)/2./pi)+log(m_H)+log(mu1yHxHe)
-      ss_ion=k_B/m_H/mu1yHxHe
+      TT_ion_=real(chiH_/k_B)
+      lnTT_ion_=real(log(chiH_/k_B))
+      lnrho_e =real(1.5*log((m_e/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu1yHxHe))
+      lnrho_H =real(1.5*log((m_H/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu1yHxHe))
+      lnrho_He=real(1.5*log((m_He/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu1yHxHe))
+      lnrho_e_=real(1.5*log((m_e/hbar)*(chiH_/hbar)/2./pi)+log(m_H)+log(mu1yHxHe))
+      ss_ion=real(k_B/m_H/mu1yHxHe)
       ss_ion1=1/ss_ion
       ee_ion=ss_ion*TT_ion
-      kappa0=sigmaH_/m_H/mu1yHxHe/4.0
-      Srad0=sigmaSB*TT_ion**4.0D0/pi
+      kappa0=real(sigmaH_/m_H/mu1yHxHe/4.0)
+      Srad0=real(sigmaSB*TT_ion**4.0D0/pi)
 !
       if (xHe>0) then
         xHe_term=xHe*(log(xHe)-lnrho_He)
@@ -543,6 +543,8 @@ module EquationOfState
 !  Therefore, call fatal error.
 !
       call not_implemented('getmu','for eos_ionization, use cp/cv pencils')
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(mu_tmp)
 !
 ! tobi: the real mean molecular weight would be:
 !
@@ -760,96 +762,97 @@ module EquationOfState
 !
     endsubroutine temperature_hessian
 !***********************************************************************
-    subroutine eosperturb(f,psize,ee,pp,ss)
-!
-!  Set f(l1:l2,m,n,iss), depending on the values of ee and pp
-!
-!  20-jan-15/MR: changes for use of reference state
-!
-  use SharedVariables, only: get_shared_variable
-  use DensityMethods, only: getlnrho,getrho
-!
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      integer, intent(in) :: psize
-      real, dimension(psize), intent(in), optional :: ee, pp, ss
-!
-      real, dimension(psize) :: lnrho_,ss_,rho_,TT_,lnTT_,yH_,fractions
-      real, dimension(:,:), pointer :: reference_state
-      integer :: i
-!
-      if (psize==nx) then
-        if (lreference_state) &
-          call get_shared_variable('reference_state',reference_state,caller='eosperturb')
-        if (ldensity_nolog) then
-          if (lreference_state) then
-            call getrho(f(:,m,n,irho),rho_)
-            lnrho_=log(rho_)+log(f(l1:l2,m,n,irho))
-          else
-            lnrho_=log(f(l1:l2,m,n,irho))
-          endif
-        else
-          if (lreference_state) then
-            call getlnrho(f(:,m,n,ilnrho),lnrho_)
-            lnrho_=lnrho_+log(f(l1:l2,m,n,ilnrho))
-          else
-            lnrho_=f(l1:l2,m,n,ilnrho)
-          endif
-        endif
-        if (present(ee)) then
-          call eoscalc(ilnrho_ee,lnrho_,ee,ss=ss_)
-        elseif (present(pp)) then
-          call eoscalc(ilnrho_pp,lnrho_,pp,ss=ss_)
-        elseif (present(ss)) then
-          ss_=ss
-        endif
-!
-        f(l1:l2,m,n,iss) = ss_
-        if (lreference_state) f(l1:l2,m,n,iss) = f(l1:l2,m,n,iss) - reference_state(:,iref_s)
-!
-      elseif (psize==mx) then
-!
-!  Reference state not yet considered in this branch as undefined in ghost zones.
-!
-        if (ldensity_nolog) then
-          lnrho_=log(f(:,m,n,irho))
-        else
-          lnrho_=f(:,m,n,ilnrho)
-        endif
-        if (present(ee)) then
-          yH_=yHmax
-          yH_=0.5*min(ee/ee_ion,yH_)
-          ivars_mod=ilnrho_ee
-          do i=1,nx
-            call rtsafe(ilnrho_ee,lnrho_(i),ee(i),yHmin,yHmax*min(ee(i)/ee_ion,1.0),yH_(i))
-          enddo
-          !call rtsafe_elem(lnrho_,ee,0.*yH_+yHmin,yHmax*min(ee/ee_ion,1.0),yH_)
-          fractions=(1+yH_+xHe)
-          TT_=(ee-yH_*ee_ion)/(1.5*fractions*ss_ion)
-          lnTT_=log(TT_)
-          ss_=ss_ion*(fractions*(1.5*(lnTT_-lnTT_ion)-lnrho_+2.5) &
-                      -yH_*(2*log(yH_)-lnrho_e-lnrho_H) &
-                      -(1-yH_)*(log(1-yH_+epsi)-lnrho_H)-xHe_term)
-        elseif (present(pp)) then
-          yH_=0.5*yHmax
-          ivars_mod=ilnrho_pp
-          do i=1,nx
-            call rtsafe(ilnrho_pp,lnrho_(i),pp(i),yHmin,yHmax,yH_(i))
-          enddo
-          !call rtsafe_elem(lnrho_,pp,0.*yH_+yHmin,0.*yH_+yHmax,yH_)
-          fractions=(1+yH_+xHe)
-          rho_=exp(lnrho_)
-          TT_=pp/(fractions*ss_ion*rho_)
-          lnTT_=log(TT_)
-          ss_=ss_ion*(fractions*(1.5*(lnTT_-lnTT_ion)-lnrho_+2.5) &
-                     -yH_*(2*log(yH_)-lnrho_e-lnrho_H) &
-                     -(1-yH_)*(log(1-yH_+epsi)-lnrho_H)-xHe_term)
-        elseif (present(ss)) then
-          ss_=ss
-        endif
-        f(:,m,n,iss) = ss_
-      endif
-!
-    endsubroutine eosperturb
+!Unused functions on comment to suppress compiler warnings
+!    subroutine eosperturb(f,psize,ee,pp,ss)
+!!
+!!  Set f(l1:l2,m,n,iss), depending on the values of ee and pp
+!!
+!!  20-jan-15/MR: changes for use of reference state
+!!
+!  use SharedVariables, only: get_shared_variable
+!  use DensityMethods, only: getlnrho,getrho
+!!
+!      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+!      integer, intent(in) :: psize
+!      real, dimension(psize), intent(in), optional :: ee, pp, ss
+!!
+!      real, dimension(psize) :: lnrho_,ss_,rho_,TT_,lnTT_,yH_,fractions
+!      real, dimension(:,:), pointer :: reference_state
+!      integer :: i
+!!
+!      if (psize==nx) then
+!        if (lreference_state) &
+!          call get_shared_variable('reference_state',reference_state,caller='eosperturb')
+!        if (ldensity_nolog) then
+!          if (lreference_state) then
+!            call getrho(f(:,m,n,irho),rho_)
+!            lnrho_=log(rho_)+log(f(l1:l2,m,n,irho))
+!          else
+!            lnrho_=log(f(l1:l2,m,n,irho))
+!          endif
+!        else
+!          if (lreference_state) then
+!            call getlnrho(f(:,m,n,ilnrho),lnrho_)
+!            lnrho_=lnrho_+log(f(l1:l2,m,n,ilnrho))
+!          else
+!            lnrho_=f(l1:l2,m,n,ilnrho)
+!          endif
+!        endif
+!        if (present(ee)) then
+!          call eoscalc(ilnrho_ee,lnrho_,ee,ss=ss_)
+!        elseif (present(pp)) then
+!          call eoscalc(ilnrho_pp,lnrho_,pp,ss=ss_)
+!        elseif (present(ss)) then
+!          ss_=ss
+!        endif
+!!
+!        f(l1:l2,m,n,iss) = ss_
+!        if (lreference_state) f(l1:l2,m,n,iss) = f(l1:l2,m,n,iss) - reference_state(:,iref_s)
+!!
+!      elseif (psize==mx) then
+!!
+!!  Reference state not yet considered in this branch as undefined in ghost zones.
+!!
+!        if (ldensity_nolog) then
+!          lnrho_=log(f(:,m,n,irho))
+!        else
+!          lnrho_=f(:,m,n,ilnrho)
+!        endif
+!        if (present(ee)) then
+!          yH_=yHmax
+!          yH_=0.5*min(ee/ee_ion,yH_)
+!          ivars_mod=ilnrho_ee
+!          do i=1,nx
+!            call rtsafe(ilnrho_ee,lnrho_(i),ee(i),yHmin,yHmax*min(ee(i)/ee_ion,1.0),yH_(i))
+!          enddo
+!          !call rtsafe_elem(lnrho_,ee,0.*yH_+yHmin,yHmax*min(ee/ee_ion,1.0),yH_)
+!          fractions=(1+yH_+xHe)
+!          TT_=(ee-yH_*ee_ion)/(1.5*fractions*ss_ion)
+!          lnTT_=log(TT_)
+!          ss_=ss_ion*(fractions*(1.5*(lnTT_-lnTT_ion)-lnrho_+2.5) &
+!                      -yH_*(2*log(yH_)-lnrho_e-lnrho_H) &
+!                      -(1-yH_)*(log(1-yH_+epsi)-lnrho_H)-xHe_term)
+!        elseif (present(pp)) then
+!          yH_=0.5*yHmax
+!          ivars_mod=ilnrho_pp
+!          do i=1,nx
+!            call rtsafe(ilnrho_pp,lnrho_(i),pp(i),yHmin,yHmax,yH_(i))
+!          enddo
+!          !call rtsafe_elem(lnrho_,pp,0.*yH_+yHmin,0.*yH_+yHmax,yH_)
+!          fractions=(1+yH_+xHe)
+!          rho_=exp(lnrho_)
+!          TT_=pp/(fractions*ss_ion*rho_)
+!          lnTT_=log(TT_)
+!          ss_=ss_ion*(fractions*(1.5*(lnTT_-lnTT_ion)-lnrho_+2.5) &
+!                     -yH_*(2*log(yH_)-lnrho_e-lnrho_H) &
+!                     -(1-yH_)*(log(1-yH_+epsi)-lnrho_H)-xHe_term)
+!        elseif (present(ss)) then
+!          ss_=ss
+!        endif
+!        f(:,m,n,iss) = ss_
+!      endif
+!!
+!    endsubroutine eosperturb
 !!***********************************************************************
     subroutine eoscalc_farray_range(f,psize,lnrho,yH,lnTT,ee,pp,cs2,kapparho,i1,i2)
 !
@@ -916,7 +919,6 @@ module EquationOfState
       real, dimension(psize), intent(out), optional :: yH,lnTT
       real, dimension(psize), intent(out), optional :: ee,pp,kapparho
       real, dimension(psize), optional :: cs2
-      real, dimension(psize) :: lnrho_,yH_,lnTT_,TT,fractions,exponent
 !
       select case (psize)
         case (nx); call eoscalc_farray_range(f,psize,lnrho,yH,lnTT,ee,pp,cs2,kapparho,l1,l2)
@@ -926,48 +928,50 @@ module EquationOfState
 
     endsubroutine eoscalc_farray
 !***********************************************************************
-    subroutine eoscalc_point_(ivars,var1,var2,lnrho,ss,yH,lnTT,ee,pp,cs2)
-    
-      integer, intent(in) :: ivars
-      real, intent(in) :: var1,var2
-      real, intent(out), optional :: lnrho,ss
-      real, intent(out), optional :: yH,lnTT
-      real, intent(out), optional :: ee,pp,cs2
-
-      select case (ivars)
-      case (ipp_ss, irho_eth, ilnrho_eth)
-        call not_implemented("eoscalc_point_","thermodynamic variable combinations ipp_ss, irho_eth, ilnrho_eth")
-      case default
-        call fatal_error("eoscalc_pencil","unknown independent variables combination")
-      end select
-        
-      ivars_mod=ivars
-
-      !call eoscalc_elem(var1,var2,lnrho,ss,yH,lnTT,ee,pp,cs2)
-
-    endsubroutine eoscalc_point_
+!Unused functions on comment to suppress compiler warnings
+!    subroutine eoscalc_point_(ivars,var1,var2,lnrho,ss,yH,lnTT,ee,pp,cs2)
+!    
+!      integer, intent(in) :: ivars
+!      real, intent(in) :: var1,var2
+!      real, intent(out), optional :: lnrho,ss
+!      real, intent(out), optional :: yH,lnTT
+!      real, intent(out), optional :: ee,pp,cs2
+!
+!      select case (ivars)
+!      case (ipp_ss, irho_eth, ilnrho_eth)
+!        call not_implemented("eoscalc_point_","thermodynamic variable combinations ipp_ss, irho_eth, ilnrho_eth")
+!      case default
+!        call fatal_error("eoscalc_pencil","unknown independent variables combination")
+!      end select
+!        
+!      ivars_mod=ivars
+!
+!      !call eoscalc_elem(var1,var2,lnrho,ss,yH,lnTT,ee,pp,cs2)
+!
+!    endsubroutine eoscalc_point_
 !***********************************************************************
-    subroutine eoscalc_pencil_(ivars,var1,var2,lnrho,ss,yH,lnTT,ee,pp,cs2)
-
-      integer, intent(in) :: ivars
-      real, dimension(nx), intent(in) :: var1,var2
-      real, dimension(nx), intent(out), optional :: lnrho,ss
-      real, dimension(nx), intent(out), optional :: yH,lnTT
-      real, dimension(nx), intent(out), optional :: ee,pp,cs2
-
-      select case (ivars)
-      case (ipp_ss, irho_eth, ilnrho_eth)
-        call not_implemented("eoscalc_pencil_","thermodynamic variable combinations ipp_ss, irho_eth, ilnrho_eth")
-      case default
-        !!!call fatal_error("eoscalc_pencil","unknown independent variables combination")
-      end select
-
-      ivars_mod=ivars
-
-      !call eoscalc_elem(var1,var2,lnrho,ss,yH,lnTT,ee,pp,cs2)
-
-    endsubroutine eoscalc_pencil_
-!***********************************************************************
+!Unused functions on comment to suppress compiler warnings
+!    subroutine eoscalc_pencil_(ivars,var1,var2,lnrho,ss,yH,lnTT,ee,pp,cs2)
+!
+!      integer, intent(in) :: ivars
+!      real, dimension(nx), intent(in) :: var1,var2
+!      real, dimension(nx), intent(out), optional :: lnrho,ss
+!      real, dimension(nx), intent(out), optional :: yH,lnTT
+!      real, dimension(nx), intent(out), optional :: ee,pp,cs2
+!
+!      select case (ivars)
+!      case (ipp_ss, irho_eth, ilnrho_eth)
+!        call not_implemented("eoscalc_pencil_","thermodynamic variable combinations ipp_ss, irho_eth, ilnrho_eth")
+!      case default
+!        !!!call fatal_error("eoscalc_pencil","unknown independent variables combination")
+!      end select
+!
+!      ivars_mod=ivars
+!
+!      !call eoscalc_elem(var1,var2,lnrho,ss,yH,lnTT,ee,pp,cs2)
+!
+!    endsubroutine eoscalc_pencil_
+!!***********************************************************************
     subroutine eoscalc_point(ivars,var1,var2,lnrho,ss,yH,lnTT,ee,pp,cs2)
 !
 !   Calculate thermodynamical quantities
@@ -984,7 +988,7 @@ module EquationOfState
       real, intent(out), optional :: lnrho,ss
       real, intent(out), optional :: yH,lnTT
       real, intent(out), optional :: ee,pp,cs2
-      real :: lnrho_,ss_,yH_,lnTT_,TT_,TT1_,rho_,ee_,pp_
+      real :: lnrho_,ss_,yH_,lnTT_,TT_,rho_,ee_,pp_
       real :: fractions,rhs,sqrtrhs
 !
       ivars_mod=ivars
@@ -1504,95 +1508,97 @@ module EquationOfState
 !
     endsubroutine saha
 !***********************************************************************
-    elemental subroutine rtsafe_elem(var1,var2,yHlb,yHub,yH)
-!
-!   safe newton raphson algorithm (adapted from NR) !
-!   09-apr-03/tobi: changed to subroutine
-!
-      real, intent(in)    :: var1,var2
-      real, intent(in)    :: yHlb,yHub
-      real, intent(inout) :: yH
-!
-      real               :: dyHold,dyH,yHl,yHh,f,df,temp
-      integer            :: i
-      integer, parameter :: maxit=1000
-!
-      yHl=yHlb
-      yHh=yHub
-      dyH=1
-      dyHold=dyH
-!
-      call saha_elem(var1,var2,yH,f,df)
-!
-      do i=1,maxit
-        if (        sign(1.,((yH-yHl)*df-f)) &
-                 == sign(1.,((yH-yHh)*df-f)) &
-              .or. abs(2*f) > abs(dyHold*df) ) then
-          dyHold=dyH
-          dyH=0.5*(yHl-yHh)
-          yH=yHh+dyH
-          if (yHh==yH) return
-        else
-          dyHold=dyH
-          dyH=f/df
-          temp=yH
-          yH=yH-dyH
-          if (temp==yH) return
-        endif
-        if (abs(dyH)<yHacc*yH) return
-        call saha_elem(var1,var2,yH,f,df)
-        if (f<0) then
-          yHh=yH
-        else
-          yHl=yH
-        endif
-      enddo
-!
-    endsubroutine rtsafe_elem
+!Unused functions on comment to suppress compiler warnings
+!    elemental subroutine rtsafe_elem(var1,var2,yHlb,yHub,yH)
+!!
+!!   safe newton raphson algorithm (adapted from NR) !
+!!   09-apr-03/tobi: changed to subroutine
+!!
+!      real, intent(in)    :: var1,var2
+!      real, intent(in)    :: yHlb,yHub
+!      real, intent(inout) :: yH
+!!
+!      real               :: dyHold,dyH,yHl,yHh,f,df,temp
+!      integer            :: i
+!      integer, parameter :: maxit=1000
+!!
+!      yHl=yHlb
+!      yHh=yHub
+!      dyH=1
+!      dyHold=dyH
+!!
+!      call saha_elem(var1,var2,yH,f,df)
+!!
+!      do i=1,maxit
+!        if (        sign(1.,((yH-yHl)*df-f)) &
+!                 == sign(1.,((yH-yHh)*df-f)) &
+!              .or. abs(2*f) > abs(dyHold*df) ) then
+!          dyHold=dyH
+!          dyH=0.5*(yHl-yHh)
+!          yH=yHh+dyH
+!          if (yHh==yH) return
+!        else
+!          dyHold=dyH
+!          dyH=f/df
+!          temp=yH
+!          yH=yH-dyH
+!          if (temp==yH) return
+!        endif
+!        if (abs(dyH)<yHacc*yH) return
+!        call saha_elem(var1,var2,yH,f,df)
+!        if (f<0) then
+!          yHh=yH
+!        else
+!          yHl=yH
+!        endif
+!      enddo
+!!
+!    endsubroutine rtsafe_elem
 !***********************************************************************
-    elemental subroutine saha_elem(var1,var2,yH,f,df)
-!
-!   We want to find the root of f.
-!
-!   23-feb-03/tobi: errors fixed
-!
-      real, intent(in)  :: var1,var2,yH
-      real, intent(out) :: f,df
-!
-      real :: lnrho,ss,ee,pp
-      real :: lnTT,dlnTT,TT1,fractions1
-!
-      fractions1=1/(1+yH+xHe)
-!
-      select case (ivars_mod)
-      case (ilnrho_ss)
-        lnrho=var1
-        ss=var2
-        lnTT=(2.0/3.0)*((ss/ss_ion+(1-yH)*(log(1-yH+epsi)-lnrho_H) &
-                        +yH*(2*log(yH)-lnrho_e-lnrho_H) &
-                        +xHe_term)*fractions1+lnrho-2.5)
-      case (ilnrho_ee)
-        lnrho=var1
-        ee=var2
-        !print*,'saha: TT',2.0/3.0*(ee-yH*ee_ion)*fractions1
-        !lnTT=log(2.0/3.0*(ee/ee_ion-yH)*fractions1)
-      !  if (ee<yH*ee_ion) then
-      !    lnTT=-25.
-      !  else
-        lnTT=log(2.0/3.0*(ee-yH*ee_ion)*fractions1)
-      !  endif
-      case (ilnrho_pp)
-        lnrho=var1
-        pp=var2
-        lnTT=log(pp/ss_ion*fractions1)-lnrho
-      end select
-!
-      TT1=exp(-lnTT)
-      f=lnrho_e-lnrho+1.5*lnTT-TT1+log(1-yH+epsi)-2*log(yH)
-      dlnTT=((2.0/3.0)*(-f-TT1)-1)*fractions1
-      df=dlnTT*(1.5+TT1)-1/(1-yH+epsi)-2/yH
-!
-    endsubroutine saha_elem
+!Unused functions on comment to suppress compiler warnings
+!    elemental subroutine saha_elem(var1,var2,yH,f,df)
+!!
+!!   We want to find the root of f.
+!!
+!!   23-feb-03/tobi: errors fixed
+!!
+!      real, intent(in)  :: var1,var2,yH
+!      real, intent(out) :: f,df
+!!
+!      real :: lnrho,ss,ee,pp
+!      real :: lnTT,dlnTT,TT1,fractions1
+!!
+!      fractions1=1/(1+yH+xHe)
+!!
+!      select case (ivars_mod)
+!      case (ilnrho_ss)
+!        lnrho=var1
+!        ss=var2
+!        lnTT=(2.0/3.0)*((ss/ss_ion+(1-yH)*(log(1-yH+epsi)-lnrho_H) &
+!                        +yH*(2*log(yH)-lnrho_e-lnrho_H) &
+!                        +xHe_term)*fractions1+lnrho-2.5)
+!      case (ilnrho_ee)
+!        lnrho=var1
+!        ee=var2
+!        !print*,'saha: TT',2.0/3.0*(ee-yH*ee_ion)*fractions1
+!        !lnTT=log(2.0/3.0*(ee/ee_ion-yH)*fractions1)
+!      !  if (ee<yH*ee_ion) then
+!      !    lnTT=-25.
+!      !  else
+!        lnTT=log(2.0/3.0*(ee-yH*ee_ion)*fractions1)
+!      !  endif
+!      case (ilnrho_pp)
+!        lnrho=var1
+!        pp=var2
+!        lnTT=log(pp/ss_ion*fractions1)-lnrho
+!      end select
+!!
+!      TT1=exp(-lnTT)
+!      f=lnrho_e-lnrho+1.5*lnTT-TT1+log(1-yH+epsi)-2*log(yH)
+!      dlnTT=((2.0/3.0)*(-f-TT1)-1)*fractions1
+!      df=dlnTT*(1.5+TT1)-1/(1-yH+epsi)-2/yH
+!!
+!    endsubroutine saha_elem
 !***********************************************************************
     subroutine isothermal_entropy(lnrho_arr,T0,ss_arr)
 !
@@ -2239,7 +2245,7 @@ module EquationOfState
       real, dimension (:,:), allocatable :: cv,cp
 !
       if (density_scale_factor==impossible) then
-        density_scale=density_scale_cgs/unit_length
+        density_scale=real(density_scale_cgs/unit_length)
       else
         density_scale=density_scale_factor
       endif
