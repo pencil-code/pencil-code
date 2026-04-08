@@ -437,6 +437,7 @@ module EquationOfState
 !
       call keep_compiler_quiet(ivars)
       call keep_compiler_quiet(var1,var2)
+      call keep_compiler_quiet(cs2)
 !
     endsubroutine eoscalc_pencil
 !***********************************************************************
@@ -1861,59 +1862,62 @@ module EquationOfState
 !
     endsubroutine bc_ism
 !***********************************************************************
-    subroutine write_thermodyn
-!
-      call not_implemented('write_thermodyn','for this EOS')
-!
-    endsubroutine write_thermodyn
-!***********************************************************************
-    subroutine read_thermodyn(input_file)
-!
-      character (len=*), intent(in) :: input_file
-!
-      call not_implemented('read_thermodyn','for this EOS')
-!
-      call keep_compiler_quiet(input_file)
-!
-    endsubroutine read_thermodyn
-!***********************************************************************
-    subroutine read_species(input_file)
-!
-      character (len=*) :: input_file
-!
-      call not_implemented('read_species','for this EOS')
-!
-      call keep_compiler_quiet(input_file)
-!
-    endsubroutine read_species
-!***********************************************************************
-    subroutine find_species_index(species_name,ind_glob,ind_chem,found_specie)
-!
-      integer, intent(out) :: ind_glob
-      integer, intent(inout) :: ind_chem
-      character (len=*), intent(in) :: species_name
-      logical, intent(out) :: found_specie
-!
-      call not_implemented('find_species_index','for this EOS')
-!
-      call keep_compiler_quiet(ind_glob)
-      call keep_compiler_quiet(ind_chem)
-      call keep_compiler_quiet(species_name)
-      call keep_compiler_quiet(found_specie)
-!
-    endsubroutine find_species_index
-!***********************************************************************
-    subroutine find_mass(element_name,MolMass)
-!
-      character (len=*), intent(in) :: element_name
-      real, intent(out) :: MolMass
-!
-      call not_implemented('find_mass','for this EOS')
-!
-      call keep_compiler_quiet(element_name)
-      call keep_compiler_quiet(MolMass)
-!
-    endsubroutine find_mass
+!Unused functions are on comment to suppres compiler warnings
+!    subroutine write_thermodyn
+!!
+!      call not_implemented('write_thermodyn','for this EOS')
+!!
+!    endsubroutine write_thermodyn
+!!!***********************************************************************
+!Unused functions are on comment to suppres compiler warnings
+!    subroutine read_thermodyn(input_file)
+!!
+!      character (len=*), intent(in) :: input_file
+!!
+!      call not_implemented('read_thermodyn','for this EOS')
+!!
+!      call keep_compiler_quiet(input_file)
+!!
+!    endsubroutine read_thermodyn
+!!***********************************************************************
+!Unused functions are on comment to suppres compiler warnings
+!    subroutine read_species(input_file)
+!!
+!      character (len=*) :: input_file
+!!
+!      call not_implemented('read_species','for this EOS')
+!!
+!      call keep_compiler_quiet(input_file)
+!!
+!    endsubroutine read_species
+!!***********************************************************************
+!    subroutine find_species_index(species_name,ind_glob,ind_chem,found_specie)
+!!
+!      integer, intent(out) :: ind_glob
+!      integer, intent(inout) :: ind_chem
+!      character (len=*), intent(in) :: species_name
+!      logical, intent(out) :: found_specie
+!!
+!      call not_implemented('find_species_index','for this EOS')
+!!
+!      call keep_compiler_quiet(ind_glob)
+!      call keep_compiler_quiet(ind_chem)
+!      call keep_compiler_quiet(species_name)
+!      call keep_compiler_quiet(found_specie)
+!!
+!    endsubroutine find_species_index
+!!***********************************************************************
+!    subroutine find_mass(element_name,MolMass)
+!!
+!      character (len=*), intent(in) :: element_name
+!      real, intent(out) :: MolMass
+!!
+!      call not_implemented('find_mass','for this EOS')
+!!
+!      call keep_compiler_quiet(element_name)
+!      call keep_compiler_quiet(MolMass)
+!!
+!    endsubroutine find_mass
 !***********************************************************************
     subroutine get_stratz(z, rho0z, dlnrho0dz, eth0z)
 !

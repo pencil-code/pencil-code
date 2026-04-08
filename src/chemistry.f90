@@ -1801,12 +1801,11 @@ module Chemistry
 !
       real :: mO2=0., mH2=0., mN2=0., mH2O=0., mCH4=0., mCO2=0.
 
-      real :: log_inlet_density, del, PP
+      real :: log_inlet_density, PP
       integer :: i_H2=0, i_O2=0, i_H2O=0, i_N2=0
       integer :: ichem_H2=0, ichem_O2=0, ichem_N2=0, ichem_H2O=0
-      integer :: i_CH4=0, i_CO2=0, ichem_CH4=0, ichem_CO2=0
-      real :: initial_mu1, final_massfrac_O2, final_massfrac_CH4, &
-          final_massfrac_H2O, final_massfrac_CO2,final_massfrac_H2
+      real :: initial_mu1, final_massfrac_O2, &
+          final_massfrac_H2O, final_massfrac_H2
       real :: init_H2, init_O2, init_N2, init_H2O, init_CO2, init_CH4
       logical :: lH2=.false., lO2=.false., lN2=.false., lH2O=.false.
       logical :: lCH4=.false., lCO2=.false.
@@ -1953,7 +1952,7 @@ module Chemistry
       real, dimension(mx,my,mz,mfarray) :: f
       integer :: i, j,k
 !
-      real :: initial_mu1, ksi_TTD, dTdr_c, deltaT, PP
+      real :: ksi_TTD, dTdr_c, deltaT, PP
 !
       call air_field(f,PP)
 !
@@ -3076,16 +3075,11 @@ module Chemistry
 !   renormalization of the species
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz) :: sum_Y
       integer :: k
 !
-      sum_Y = 0.
-      do k = 1,nchemspec
-        sum_Y = sum_Y+f(:,:,:,ichemspec(k))
-      enddo
 
       do k = 1,nchemspec
-        f(:,:,:,ichemspec(k)) = f(:,:,:,ichemspec(k))/sum_Y
+        f(:,:,:,ichemspec(k)) = f(:,:,:,ichemspec(k))/sum(f(:,:,:,ichemspec(1):ichemspec(nchemspec)))
       enddo
 !
     endsubroutine chemspec_normalization
@@ -3098,6 +3092,7 @@ module Chemistry
 !
 !  28-feb-08/axel: coded
 !
+      use General, only: div
       character(len=80) :: chemicals=''
       ! Careful, limits the absolut size of the input matrix !!!
       character(len=15) :: file1='chemistry_m.dat', file2='chemistry_p.dat'
@@ -3292,7 +3287,7 @@ module Chemistry
             enddo
           elseif (kreactions_profile(j) == 'square') then
             do n = 1,mz
-              if (n < mz/2) then
+              if (n < div(mz,2)) then
                 kreactions_z(n,j) = kreactions_profile_width(j)
               else
                 kreactions_z(n,j) = 0.
@@ -3396,7 +3391,7 @@ module Chemistry
 !
 !  indices
 !
-      integer :: j, k,i,ii
+      integer :: j, k,i
       integer, parameter :: i1=1, i2=2, i3=3, i4=4, i5=5, i6=6, i7=7, i8=8, i9=9, i10=10
       integer, parameter :: i11=11, i12=12, i13=13, i14=14, i15=15, i16=16, i17=17, i18=18, i19=19
       integer, parameter :: iz1=1, iz2=2, iz3=3, iz4=4, iz5=5, iz6=6, iz7=7, iz8=8, iz9=9, iz10=10
@@ -3688,7 +3683,7 @@ module Chemistry
 !
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      real, dimension(nx) :: ff_condm,sum_DYDt,sum_hhk_DYDt_reac
+      real, dimension(nx) :: sum_DYDt,sum_hhk_DYDt_reac
 
       integer :: ii,k,j
 !
@@ -5104,7 +5099,7 @@ module Chemistry
 !
       real :: Rcal, f_phi, E_a
       real :: init_C3H8, init_O2
-      integer :: i_O2, i_C3H8, j
+      integer :: i_O2, i_C3H8
       real, dimension(nx) :: activation_energy, pre_exp, term1, term2
 !
       if (nreactions /= 1) call fatal_error('roux','nreactions should always be 1')
@@ -5177,7 +5172,7 @@ module Chemistry
       real, dimension(nx) :: rho1
       real, dimension(nx,nchemspec) :: molm
       type (pencil_case) :: p
-      integer :: k,j,ii
+      integer :: k,j
       integer,parameter :: i1=1, i2=2, i3=3, i4=4, i5=5, i6=6, i7=7, i8=8, i9=9, i10=10
       integer,parameter :: i11=11, i12=12, i13=13, i14=14, i15=15, i16=16, i17=17, i18=18, i19=19
 !
@@ -5823,13 +5818,14 @@ module Chemistry
       else
         call fatal_error('get_gamma_slice','No such dir!')
       endif
+      call keep_compiler_quiet(f)
 !
     endsubroutine get_gamma_slice
 !***********************************************************************
     subroutine air_field(f,PP)
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz) :: sum_Y, tmp
+      real, dimension(mx,my,mz) :: sum_Y, tmp 
       real :: PP ! (in dynes = 1atm)
 !
       logical :: emptyfile=.true.
@@ -6403,6 +6399,8 @@ module Chemistry
         slice = mu1_full(l1:l2,m1:m2,index)
         call der_onesided_4_slice_other(mu1_full,sgn,grad_slice,index,direction)
       endif
+
+      call keep_compiler_quiet(f)
 !
     endsubroutine get_mu1_slice
 !***********************************************************************
@@ -7007,7 +7005,7 @@ module Chemistry
       real :: dustbin_width
       real, dimension (nx) :: mfluxcond
 !
-      real, dimension (nx) :: ff_cond_fact, Q_cond
+      real, dimension (nx) :: ff_cond_fact
       real, dimension(ndustspec) :: ad
       integer :: ichem, kkk,k
 !
@@ -7054,7 +7052,7 @@ module Chemistry
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       integer :: ichem, kkk,ix0,ix
-      real :: ffcondp, Q_cond
+      real :: ffcondp
       real, intent(IN) :: rp,dapdt,np_swarm
 !
 ! Modify continuity equation
@@ -7097,7 +7095,6 @@ module Chemistry
       integer :: ichem, kkk,i
       integer, dimension(nx) :: kk_vec
       real, dimension(ndustspec) :: ad
-      real :: Q_nucl
 !
       do i=1,nx
         !
@@ -7140,8 +7137,7 @@ module Chemistry
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      integer :: ichem, kkk,i,ii
-      real, dimension(nx) :: Q_nucl
+      integer :: ichem, kkk,ii
       !
       if (lnucleation .and. dt>0) then
         !
@@ -7170,7 +7166,7 @@ module Chemistry
         else
           df(l1:l2,m,n,icc) = df(l1:l2,m,n,icc) + p%ff_nucl*(1+p%cc(:,1))*p%rho1
         endif
-        df(l1:l2,m,n,icc+1) = df(l1:l2,m,n,icc+1) + p%nucl_rmin*p%ff_nucl*(1+p%cc(:,2))*p%rho1
+        df(l1:l2,m,n,icc+1) = df(l1:l2,m,n,icc+1) + p%nucl_rmin*p%ff_nucl*(1+p%cc(:,min(npscalar,2)))*p%rho1
         !
         !  Generating the nucleii consumes the condensing species
         !
@@ -7207,7 +7203,6 @@ module Chemistry
       real, dimension (nx) :: mfluxcond
       type (pencil_case) :: p
       !
-      integer :: ichem, kkk
       !
       mfluxcond=A_spec*(p%chem_conc(:,ichem_cond_spec)-p%conc_sat_spec)*sqrt(p%TT)
       !
@@ -7224,7 +7219,7 @@ module Chemistry
       type (pencil_case), intent(in) :: p
       real, dimension (nx), intent(out) :: nucleation_rate, nucleation_rmin
       !
-      integer :: ichem, kkk, i
+      integer :: i
       real :: volume_spec_cgs=4.5e-23
       real :: volume_spec
       real, dimension (nx) :: sat_ratio_spec
@@ -7447,6 +7442,18 @@ module Chemistry
     call copy_addr(mc3h8,p_par(131))
     call copy_addr(lcompute_rhs_y_full,p_par(132))
 
+    call keep_compiler_quiet(str_thick)
+    call keep_compiler_quiet(init_x1)
+    call keep_compiler_quiet(init_y1)
+    call keep_compiler_quiet(init_z1)
+    call keep_compiler_quiet(init_rho)
+    call keep_compiler_quiet(init_rho2)
+    call keep_compiler_quiet(lfix_Pr)
+
+    call keep_compiler_quiet(init_x2)
+    call keep_compiler_quiet(init_y2)
+    call keep_compiler_quiet(init_z2)
+
   endsubroutine pushpars2c
 !***********************************************************************
   subroutine make_flame_index(f)
@@ -7459,7 +7466,6 @@ module Chemistry
   integer :: n_loc, m_loc, igrad1, igrad2, ind_chem_spec1, ind_chem_spec2
   integer :: iweight
   logical :: lspec1, lspec2, lweight
-  real, dimension(nx) :: FI
   real, dimension(nx,3) :: grad1, grad2
 !
   call find_species_index(flameind_spec1,igrad1,ind_chem_spec1,lspec1)
