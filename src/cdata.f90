@@ -731,8 +731,8 @@ module Cdata
 !  Phase boundaries for ISM
   real :: ssmask1=0.0,ssmask2=0.0
 !  Coordinates of the point where some quantities can be printed.
-  integer :: lpoint=(mx+1)/2,mpoint=(my+1)/2,npoint=(mz+1)/2
-  integer :: lpoint2=(mx+1)/4,mpoint2=(my+1)/4,npoint2=(mz+1)/4
+  integer :: lpoint=(mx+1)/2,mpoint=(my+1)/2,npoint=floor((mz+1)/2.)
+  integer :: lpoint2=(mx+1)/4,mpoint2=(my+1)/4,npoint2=floor((mz+1)/4.)
   integer :: iproc_pt=0, iproc_p2=0
 !
 !  Diagnostic variables (needs to be consistent with reset list in register.90).

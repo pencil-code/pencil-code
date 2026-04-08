@@ -74,7 +74,7 @@ module Cparam
 
 
   integer, parameter :: nrcyl=nxgrid/2
-  integer, parameter :: nrcylrun=max(nx/20,1)
+  integer, parameter :: nrcylrun=max(floor(nx/.20),1)
 !
 !  Number of bins for Pulsar Timing Array
 !
@@ -147,7 +147,9 @@ module Cparam
 !  Also, there is no NaN concept for integers.
 !
   real, parameter :: impossible=3.9085e37
-  integer, parameter :: impossible_int=-max_int/100
+  !TP: replaced by the truncated value to suppress a compiler warning
+  integer, parameter :: impossible_int=21474836
+  !integer, parameter :: impossible_int=max_int/100
 !
 ! MPI
 !
@@ -172,7 +174,7 @@ module Cparam
   integer, parameter :: ilabel_sum_weighted=7,ilabel_sum_weighted_sqrt=8
   integer, parameter :: ilabel_sum_lim=9,ilabel_complex=100
 !
-  real, parameter :: lntwo=0.69314718055995d0
+  real, parameter :: lntwo=real(0.69314718055995d0)
 !
 !  first zeros of Bessel functions of order 0 and 1
 !  k2bessel0 is the second zero of Bessel function of order 0
@@ -182,17 +184,17 @@ module Cparam
 !
 !  pi and its derivatives.
 !
-  real, parameter :: pi=3.14159265358979323846264338327950d0
+  real, parameter :: pi=3.14159265358979323846264338327950e0
   real, parameter :: pi_1=1./pi,pi4_1=(1.0)/(pi*pi*pi*pi),pi5_1=1.0/(pi*pi*pi*pi*pi)
-  real, parameter :: sqrtpi=1.77245385090551602729816748334115d0
-  real, parameter :: sqrt2=1.41421356237309504880168872420970d0
+  real, parameter :: sqrtpi=1.77245385090551602729816748334115e0
+  real, parameter :: sqrt2=1.41421356237309504880168872420970e0
   real, parameter :: sqrt21=1./sqrt2
   real, parameter :: sqrt2pi=sqrt2*sqrtpi
   real, parameter :: four_pi_over_three=4.0/3.0*pi
   real, parameter :: onethird=1./3., twothird=2./3., fourthird=4./3., onesixth=1./6.
-  real, parameter :: one_over_sqrt3=0.577350269189625764509148780501958d0
-  real, parameter :: twopi = 6.2831853071795864769252867665590d0
-  real, parameter :: dtor = pi/180.d0
+  real, parameter :: one_over_sqrt3=0.577350269189625764509148780501958e0
+  real, parameter :: twopi = 6.2831853071795864769252867665590e0
+  real, parameter :: dtor = pi/180.e0
 !
 !  Physical constants, taken from
 !  http://physics.nist.gov/cuu/Constants/index.html.
