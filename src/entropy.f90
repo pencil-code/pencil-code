@@ -753,9 +753,9 @@ module Energy
 !  Kbot and hcond0 are used interchangibly, so if one is
 !  =impossible, set it to the other's value.
 !
-      if (T0_cgs/=0.) T0=T0_cgs/unit_temperature
-      if (ssmask1==0.) ssmask1=ssmask1_cgs/unit_entropy
-      if (ssmask2==0.) ssmask2=ssmask2_cgs/unit_entropy
+      if (T0_cgs/=0.) T0=real(T0_cgs/unit_temperature)
+      if (ssmask1==0.) ssmask1=real(ssmask1_cgs/unit_entropy)
+      if (ssmask2==0.) ssmask2=real(ssmask2_cgs/unit_entropy)
       if (hcond0==impossible) then
         if (Kbot==impossible) then
           hcond0=0.0
@@ -1117,9 +1117,9 @@ module Energy
 !
         prof_lnT = prof_lnT - alog(real(unit_temperature))
         if (unit_system == 'SI') then
-          prof_z = prof_z * 1.e6 / unit_length
+          prof_z = real(prof_z * 1.e6 / unit_length)
         elseif (unit_system == 'cgs') then
-          prof_z = prof_z * 1.e8 / unit_length
+          prof_z = real(prof_z * 1.e8 / unit_length)
         endif
       endif
 !
@@ -2671,13 +2671,13 @@ module Energy
 !  Pressure is set to 6 times thermal pressure, this factor roughly
 !  allowing for other sources, as modelled by Ferriere.
 !
-      kpc = 3.086D21 / unit_length
+      kpc = real(3.086D21 / unit_length)
       rhoscale = 1.36 * m_p * unit_length**3
       print*, 'ferriere: kpc, rhoscale =', kpc, rhoscale
-      T_c=T_c_cgs/unit_temperature
-      T_w=T_w_cgs/unit_temperature
-      T_i=T_i_cgs/unit_temperature
-      T_h=T_h_cgs/unit_temperature
+      T_c=real(T_c_cgs/unit_temperature)
+      T_w=real(T_w_cgs/unit_temperature)
+      T_i=real(T_i_cgs/unit_temperature)
+      T_h=real(T_h_cgs/unit_temperature)
 !
       do n=n1,n2            ! nb: don't need to set ghost-zones here
       absz=abs(z(n))
@@ -2761,10 +2761,10 @@ module Energy
 !  Set up physical units.
 !
       if (unit_system=='cgs') then
-          g_A = g_A_cgs/unit_velocity*unit_time
-          g_B = g_B_cgs/unit_length
-          g_C = g_C_cgs/unit_velocity*unit_time
-          g_D = g_D_cgs/unit_length
+          g_A = real(g_A_cgs/unit_velocity*unit_time)
+          g_B = real(g_B_cgs/unit_length)
+          g_C = real(g_C_cgs/unit_velocity*unit_time)
+          g_D = real(g_D_cgs/unit_length)
       else if (unit_system=='SI') then
         call not_implemented('ferriere_hs','SI unit conversions')
       endif
@@ -2784,7 +2784,7 @@ module Energy
       do n=n1,n2
       do m=m1,m2
 
-        rho=rho0hs*exp(-m_u*muhs/T0/k_B*(-g_A*g_B+g_A*sqrt(g_B**2 + z(n)**2)+g_C/g_D*z(n)**2/2.))
+        rho=real(rho0hs*exp(-m_u*muhs/T0/k_B*(-g_A*g_B+g_A*sqrt(g_B**2 + z(n)**2)+g_C/g_D*z(n)**2/2.)))
         call putrho(f(:,m,n,ilnrho),rho)
 
 !  Isothermal
@@ -5546,7 +5546,7 @@ module Energy
       if (headtt) print*,'enter heatcond hubeny'
 !
       kappa0_cgs=2.0e-6  !cm2/g
-      kappa0=kappa0_cgs*unit_density/unit_length
+      kappa0=real(kappa0_cgs*unit_density/unit_length)
       kappa=kappa0*p%TT**2
 !
 !  Optical Depth tau=kappa*rho*H
@@ -5562,7 +5562,7 @@ module Energy
 !
         a1=0.375*tau ; a2=0.433013 ; a3=0.25/tau
 !
-        cooling = 2*sigmaSB*p%TT**4/(a1+a2+a3)
+        cooling = real(2*sigmaSB*p%TT**4/(a1+a2+a3))
 !
         df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) - cool_fac*cooling
 !
@@ -6673,7 +6673,7 @@ module Energy
 !
 !  Smoothly switch on heating if required.
 !
-        if ((ttransient>0) .and. (t<ttransient)) heat = heat * t*(2*ttransient-t)/ttransient**2
+        if ((ttransient>0) .and. (t<ttransient)) heat = real(heat * t*(2*ttransient-t)/ttransient**2)
       endif
 !
 !  Allow for different cooling profile functions.
@@ -7065,11 +7065,11 @@ module Energy
         lnQ(:)=0.0
         do i=1,imax-1
           where (( intlnT_1(i) <= lnTT_SI .or. i==1 ) .and. lnTT_SI < intlnT_1(i+1) )
-            lnQ=lnQ + lnH_1(i) + B_1(i)*lnTT_SI
+            lnQ=real(lnQ + lnH_1(i) + B_1(i)*lnTT_SI)
           endwhere
         enddo
         where (lnTT_SI >= intlnT_1(imax) )
-          lnQ = lnQ + lnH_1(imax-1) + B_1(imax-1)*intlnT_1(imax)
+          lnQ = real(lnQ + lnH_1(imax-1) + B_1(imax-1)*intlnT_1(imax))
         endwhere
         if (Pres_cutoff/=impossible) then
           rtv_cool=exp(lnneni+lnQ-unit_lnQ-p%lnTT-p%lnrho)*exp(-p%rho*p%cs2*gamma1/Pres_cutoff)
@@ -7085,11 +7085,11 @@ module Energy
         lnQ(:)=0.0
         do i=1,imax-1
           where (( intlnT_2(i) <= lnTT_SI .or. i==1 ) .and. lnTT_SI < intlnT_2(i+1) )
-            lnQ=lnQ + lnH_2(i) + B_2(i)*lnTT_SI
+            lnQ=real(lnQ + lnH_2(i) + B_2(i)*lnTT_SI)
           endwhere
         enddo
         where (lnTT_SI >= intlnT_2(imax) )
-          lnQ = lnQ + lnH_2(imax-1) + B_2(imax-1)*intlnT_2(imax)
+          lnQ = real(lnQ + lnH_2(imax-1) + B_2(imax-1)*intlnT_2(imax))
         endwhere
         if (Pres_cutoff/=impossible) then
           rtv_cool=exp(lnneni+lnQ-unit_lnQ-p%lnTT-p%lnrho)*exp(-p%rho*p%cs2*gamma1/Pres_cutoff)

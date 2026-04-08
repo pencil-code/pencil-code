@@ -10,7 +10,7 @@
 module Mpicomm
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use General, only: keep_compiler_quiet, keep_compiler_quiet_dble
 !
   implicit none
 !
