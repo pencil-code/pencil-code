@@ -3060,11 +3060,16 @@ module Diagnostics
 !***********************************************************************
     subroutine diagnostics_init_reduc_pointers
 !
+! Phiavg_norm is the dst on the master thread
+! which the local variable on other threads points to 
+!
       p_phiavg_norm => phiavg_norm
 !
     endsubroutine diagnostics_init_reduc_pointers
 !***********************************************************************
     subroutine diagnostics_diag_reductions
+!
+!  Add to the dst on the master thread
 !
       p_phiavg_norm = p_phiavg_norm + phiavg_norm
 !
@@ -4004,7 +4009,7 @@ module Diagnostics
 
     endsubroutine allocate_diagnostic_names
 !***********************************************************************
-    subroutine allocate_diagnostic_arrays()
+    subroutine allocate_diagnostic_arrays
 !
 !  Allocates diagnostic arrays holding the output data
 !  Separate from the name allocations because of multithreading concerns

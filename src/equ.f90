@@ -490,7 +490,9 @@ module Equ
 !***********************************************************************
     subroutine init_reduc_pointers
 !
-!  Initializes pointers used in diagnostics_reductions
+!  Initializes pointers used in diagnostics_reductions.
+!  Each thread has its own copy of the arrays that also exist on the master.
+!  Thus they update the master's copy (e.g. sum up to it) via these pointers
 !
 !  20-feb-23/MR: Coded
 !
@@ -769,7 +771,11 @@ module Equ
       endsubroutine calc_all_module_diagnostics
 !*****************************************************************************
       subroutine calc_all_before_boundary_diagnostics(f)
-
+!
+!  Calculates diagnostic variables that would be normally calculated in before_boundary_cpu
+!  When using the GPUs.
+!  Executed by the helper thread.
+!
         use Density, only: density_before_boundary_diagnostics
 
         real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
@@ -784,9 +790,11 @@ module Equ
       endsubroutine calc_all_before_boundary_diagnostics
 !*****************************************************************************
       subroutine perform_diagnostics(f,p)
+!
+!  Called by the helper to perform the diagnostics when asked for them
+!
 
 !$    use General, only: signal_send
-      !use Slices_methods, only: update_slice_position
       use Special, only: calc_ode_diagnostics_special
       use EquationofState, only: ioncalc
 
@@ -968,7 +976,7 @@ module Equ
 
     endsubroutine calc_all_pencils
 !***********************************************************************
-    subroutine check_if_necessary(f,lcommunicate)
+    subroutine check_if_have_to_wait_for_communication(f,lcommunicate)
 
       use Mpicomm, only: finalize_isendrcv_bdry
 
@@ -984,7 +992,7 @@ module Equ
         endif
       endif
 
-    endsubroutine check_if_necessary
+    endsubroutine check_if_have_to_wait_for_communication
 !***********************************************************************
     subroutine before_boundary_shared(f)
 !
@@ -1196,7 +1204,6 @@ module Equ
 !
 !  Calculates all rhss
 !
-
       use Ascalar
       use Chiral
       use Chemistry
@@ -1339,6 +1346,9 @@ module Equ
     endsubroutine calc_all_rhs
 !***********************************************************************
     subroutine calc_phisums(p)
+!
+!  General phiaverage quantities -- useful for debugging.
+!
 
       use Diagnostics, only: phisum_mn_name_rz
 
@@ -1440,7 +1450,7 @@ module Equ
 !
 !  Make sure all ghost points are set.
 !
-        call check_if_necessary(f,lcommunicate)
+        call check_if_have_to_wait_for_communication(f,lcommunicate)
         call timing('pde','finished boundconds_z',mnloop=.true.)
 !
 !  For each pencil, accumulate through the different modules

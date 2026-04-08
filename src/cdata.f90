@@ -252,7 +252,6 @@ module Cdata
   integer :: ix_loc=1,iy_loc=1, iy2_loc=1
   integer :: iz_loc=1,iz2_loc=1, iz3_loc=1, iz4_loc=1
   integer :: iproc=0,ipx=0,ipy=0,ipz=0,iproc_world=0,ipatch=0
-  logical :: lverbose_performance_log = .false.
   logical :: lprocz_slowest=.true. !PAR_DOC: if set to \code{F}, the ordering
                                    !PAR_DOC: of processor numbers is changed,
                                    !PAR_DOC: so the $z$ processors are now in

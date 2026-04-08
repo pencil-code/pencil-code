@@ -4127,7 +4127,9 @@ module Sub
       dt1_local=dt1_
       ! Timestep growth limiter
       if (ddt > 0.) dt1_local=max(dt1_local,dt1_last)
-!TP: when using the GPU the timestep has already been reduced across ranks
+!TP: When using the GPU the timestep has already been reduced across ranks.
+!    Basically we try to squeeze out a bit of performance by overlapping the reduction
+!    with some computations
       if(lgpu) then
         dt1 = dt1_local
       else
