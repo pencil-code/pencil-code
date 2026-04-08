@@ -8162,6 +8162,14 @@ iloop:do i=1,size(list2)
     endsubroutine string_to_enum_2d
 !***********************************************************************
     integer function idiv(a,b)
+!
+!  This function exists because with the right flags gfortran will complain about divisions like nx/2
+!  being truncated say to 0. It will not if you replace the explicit division with this function.
+!  So if this function appears somewhere in the source code it is a sign gfortran has complained about truncation
+!  with respect to that specific division.
+!
+! 7-Mar-26/TP: coded
+!
             integer :: a,b
             idiv = a/b
     endfunction
