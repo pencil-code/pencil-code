@@ -322,7 +322,8 @@ module Density
 !
   interface calc_pencils_linear_density
     module procedure calc_pencils_linear_density_pnc
-    module procedure calc_pencils_linear_density_std
+    !TP: this is never used
+    !module procedure calc_pencils_linear_density_std
   endinterface calc_pencils_linear_density
 !
 !  module auxiliaries
@@ -2452,19 +2453,20 @@ module Density
 !
       endsubroutine calc_pencils_density_std
 !***********************************************************************
-    subroutine calc_pencils_linear_density_std(f,p)
-!
-! Envelope adjusting calc_pencils_density_pnc to the standard use with
-! lpenc_loc=lpencil
-!
-! 21-sep-13/MR    : coded
-!
-      real, dimension (mx,my,mz,mfarray),intent(IN)   :: f
-      type (pencil_case),                intent(INOUT):: p
-!
-      call calc_pencils_linear_density_pnc(f,p,lpencil)
-!
-      endsubroutine calc_pencils_linear_density_std
+!TP: on comment since not used (to suppress compiler warnings)
+!    subroutine calc_pencils_linear_density_std(f,p)
+!!
+!! Envelope adjusting calc_pencils_density_pnc to the standard use with
+!! lpenc_loc=lpencil
+!!
+!! 21-sep-13/MR    : coded
+!!
+!      real, dimension (mx,my,mz,mfarray),intent(IN)   :: f
+!      type (pencil_case),                intent(INOUT):: p
+!!
+!      call calc_pencils_linear_density_pnc(f,p,lpencil)
+!!
+!      endsubroutine calc_pencils_linear_density_std
 !***********************************************************************
     subroutine calc_pencils_linear_density_pnc(f,p,lpenc_loc)
 !
@@ -2576,7 +2578,7 @@ module Density
           if (width_hless_absolute==0.) then
             where(real(t) < p%hless) p%rho=p%rho-eps_hless
           else
-            p%rho=p%rho-eps_hless*max(0.d0, min(1.d0, (p%hless+0.5d0*width_hless_absolute-t)/width_hless_absolute))
+            p%rho=p%rho-eps_hless*real(max(0.d0, min(1.d0, (p%hless+0.5d0*width_hless_absolute-real(t))/width_hless_absolute)))
             !p%rho=p%rho-eps_hless*max(0.d0, min(1.d0, (f(l1:l2,m,n,ihless)+0.5d0*width_hless_absolute-t)/width_hless_absolute))
           endif
         endif
@@ -3640,9 +3642,9 @@ module Density
           if (lmass_source_random) then
             call random_number_wrapper(fran)
             tmp=sqrt(-2*log(fran(1)))*sin(2*pi*fran(2))
-            dlnrhodt=fprofile*cos(mass_source_omega*t)*tmp
+            dlnrhodt=real(fprofile*cos(mass_source_omega*t)*tmp)
           else
-            dlnrhodt=fprofile*cos(mass_source_omega*t)
+            dlnrhodt=real(fprofile*cos(mass_source_omega*t))
           endif
         case('bumpx','sph-step-down')
           dlnrhodt=fprofile_x
@@ -4132,10 +4134,10 @@ module Density
 !
     endsubroutine boussinesq
 !***********************************************************************
-    subroutine update_reference_state
-!
-    endsubroutine update_reference_state
-!***********************************************************************
+!    subroutine update_reference_state
+!!
+!    endsubroutine update_reference_state
+!!***********************************************************************
     subroutine read_reference_state
 !
 !  Read reference state from a file
@@ -4382,6 +4384,16 @@ module Density
     call copy_addr(density_floor,p_par(82))
     call copy_addr(density_floor_log,p_par(83))
     call copy_addr(lpositive_total_mass,p_par(84)) ! bool
+
+    !TP: this might be actually used in the future
+    call keep_compiler_quiet(enum_div_sld_dens)
+
+    call keep_compiler_quiet(co1_ss)
+    call keep_compiler_quiet(co2_ss)
+    call keep_compiler_quiet(xi_coeff)
+    call keep_compiler_quiet(T_cloud)
+    call keep_compiler_quiet(Sigma1)
+    call keep_compiler_quiet(q_ell)
 
     endsubroutine pushpars2c
 !***********************************************************************
