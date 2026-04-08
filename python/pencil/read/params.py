@@ -159,10 +159,10 @@ class Param(_Foo):
                     #If the same key is present in two different namelists, remove it from the root object.
                     del param_list[key]
 
-            # report conflicts and record nests to retain
-            for key in param_conflicts:
-                for subkey in param_conflicts[key]:
-                    if not conflicts_quiet:
+            if not conflicts_quiet:
+                # report conflicts and record nests to retain
+                for key in param_conflicts:
+                    for subkey in param_conflicts[key]:
                         print(
                             subkey,
                             "as",
