@@ -129,7 +129,6 @@
     character(LEN=128) :: line,parstr
     integer :: i,j,ipos
     character(LEN=40), dimension(n_special_modules_max) :: special_modules
-    character(LEN=8) :: mod_prefix, mod_infix, mod_suffix
     integer(KIND=ikind8) :: sub_handle
 
     if (lreloading) return
@@ -706,7 +705,6 @@
 !
 !  27-nov-08/wlad: coded
 !
-      real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(ndustspec) :: dsize,init_distr,init_distr2
       real :: Ntot
 !
@@ -744,11 +742,20 @@
 !***********************************************************************
     subroutine special_calc_spectra_byte(f,spec,spec_hel,lfirstcall,kind,len)
 
+      use General, only: keep_compiler_quiet
+
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (:) :: spec,spec_hel
       logical :: lfirstcall
       integer :: len
       character, dimension(len) :: kind
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(spec)
+      call keep_compiler_quiet(spec_hel)
+      call keep_compiler_quiet(lfirstcall)
+      call keep_compiler_quiet(kind)
+      call keep_compiler_quiet(len)
 
     endsubroutine special_calc_spectra_byte
 !*********************************************************************** 
@@ -846,7 +853,8 @@
       integer, parameter :: n_pars=0
       integer(KIND=ikind8), dimension(n_pars) :: p_par
 
-      call not_implemented('special_pushpars2c','')
+      call fatal_error('pushpars2c_special','This function should not be called!')
+      call keep_compiler_quiet(p_par)
 
     endsubroutine pushpars2c
 !*********************************************************************** 
