@@ -524,12 +524,11 @@ module Boundcond
       if(.not. allocated(ahead_data)) allocate(ahead_data(ny,nz,mvar))
       if (lfirst) then
         if (ilayer==-1) then
-          last_gettime=t
           ilayer=0
         elseif (t-last_gettime>=timediff) then
           ilayer=mod(ilayer+1,nt_slices)
-          last_gettime=t
         endif
+        last_gettime=real(t)
       endif
 
       if (topbot==BOT) then
@@ -555,11 +554,11 @@ module Boundcond
       if(.not. allocated(ahead_data)) allocate(ahead_data(ny,nz,mvar))
       if (lfirst) then
         if (ilayer==-1) then
-          last_gettime=t
+          last_gettime=real(t)
           ilayer=0
         elseif (t-last_gettime>=timediff) then
           ilayer=mod(ilayer+1,nt_slices)
-          last_gettime=t
+          last_gettime=real(t)
         endif
       endif
 
@@ -593,7 +592,7 @@ module Boundcond
 ! update only in first substep of integration or before integration has started
 !
         if (ilayer(j)==0) then
-          last_gettime=t
+          last_gettime=real(t)
           ilayer(j)=1
           lget=.true.
         elseif (t-last_gettime(j)>=timediff) then
@@ -602,13 +601,13 @@ module Boundcond
           else
             ilayer(j)=ilayer(j)+1   !mod(ilayer(j)+1,nt_slices)
           endif
-          last_gettime(j)=t
+          last_gettime(j)=real(t)
           lget=.true.
         endif
       endif
 
       lboth = ilayer(j)==1 .or. nt_slices==1
-      if (.not.lget) w = (t-last_gettime(j))/timediff
+      if (.not.lget) w = real((t-last_gettime(j))/timediff)
 
       if (topbot==BOT) then
         if (lget) then
@@ -1426,7 +1425,6 @@ module Boundcond
 !  30-dec-16/MR: added BC 'a1s' for constant alpha mean-field model in one dimension
 !
       use General, only: var_is_vec
-      use Gravity, only: gravz_profile
       use Special, only: special_boundconds
       use EquationOfState
       !!use Energy, only: bc_ss_flux
@@ -1741,6 +1739,8 @@ module Boundcond
               case ('cop')
                 ! BCZ_DOC: copy value of last physical point to all ghost cells
                 call bc_copy_z(f,topbot,j)
+              case ('str')
+                call bc_stratified_z(f,topbot,j)
               case ('tay')
                 call tayler_expansion(f,topbot,j,'z')
               case ('exp')
@@ -1895,7 +1895,7 @@ module Boundcond
       integer, optional :: ivar1_opt, ivar2_opt
 !
       integer :: ivar1, ivar2, j, topbot
-      character(LEN=bclen) :: bc_code, cjvar
+      character(LEN=intlen) :: bc_code, cjvar
       character(LEN=128) :: errmsg
 !
       if (nxgrid<=1) return
@@ -1990,7 +1990,7 @@ module Boundcond
       integer, optional :: ivar1_opt, ivar2_opt
 !
       integer :: ivar1, ivar2, j, topbot
-      character(LEN=bclen) :: bc_code, cjvar
+      character(LEN=intlen) :: bc_code, cjvar
       character(LEN=128) :: errmsg
 !
       ivar1=1; ivar2=min(mcom,size(f,4))
@@ -2074,7 +2074,7 @@ module Boundcond
       real, dimension (:,:,:,:) :: f
       integer, optional :: ivar1_opt, ivar2_opt
       integer :: ivar1, ivar2, j, topbot
-      character(LEN=bclen) :: bc_code, cjvar
+      character(LEN=intlen) :: bc_code, cjvar
       character(LEN=128) :: errmsg
 !
       ivar1=1; ivar2=min(mcom,size(f,4))
@@ -4029,7 +4029,7 @@ module Boundcond
 !  x - Udrift_bc*t = dx * (ix - Udrift_bc*t/dx)
 !
       case(BOT)               ! bottom boundary
-        lbc=Udrift_bc*t*dx_1(1)+1.
+        lbc=real(Udrift_bc*t*dx_1(1)+1.)
         lbc0=int(lbc)
         frac=mod(lbc,real(lbc0))
         lbc1=iszx+mod(-lbc0,iszx)
@@ -4043,7 +4043,7 @@ module Boundcond
 !  note: this "top" thing hasn't been adapted or tested yet.
 !  The -lbc0-1 has been changed to +lbc0+1, but has not been tested yet.
 !
-        lbc=Udrift_bc*t*dx_1(1)+1.
+        lbc=real(Udrift_bc*t*dx_1(1)+1.)
         lbc0=int(lbc)
         frac=mod(lbc,real(lbc0))
         lbc1=iszx+mod(+lbc0,iszx)
@@ -4918,7 +4918,7 @@ module Boundcond
 
       XXi0=0.04
       tau_XXi=10.
-      bc_st=XXi0*(1.-(1.+t/tau_XXi)*exp(-t/tau_XXi))
+      bc_st=real(XXi0*(1.-(1.+t/tau_XXi)*exp(-t/tau_XXi)))
 
     endfunction bc_st
 !***********************************************************************
@@ -5201,49 +5201,50 @@ module Boundcond
 !
     endsubroutine bc_onesided_x_old
 !***********************************************************************
-    subroutine bc_onesided_z_orig(f,topbot,j)
-!
-!  One-sided conditions.
-!  These expressions result from combining Eqs(207)-(210), astro-ph/0109497,
-!  corresponding to (9.207)-(9.210) in Ferriz-Mas proceedings.
-!
-!  05-apr-03/axel: coded
-!
-      integer, intent(IN) :: topbot
-      real, dimension (:,:,:,:) :: f
-      integer :: i,j,k
-!
-      select case (topbot)
-!
-      case(BOT)               ! bottom boundary
-        do i=1,nghost
-          k=n1-i
-          f(:,:,k,j)=7*f(:,:,k+1,j) &
-                   -21*f(:,:,k+2,j) &
-                   +35*f(:,:,k+3,j) &
-                   -35*f(:,:,k+4,j) &
-                   +21*f(:,:,k+5,j) &
-                    -7*f(:,:,k+6,j) &
-                      +f(:,:,k+7,j)
-        enddo
-!
-      case(TOP)               ! top boundary
-        do i=1,nghost
-          k=n2+i
-          f(:,:,k,j)=7*f(:,:,k-1,j) &
-                   -21*f(:,:,k-2,j) &
-                   +35*f(:,:,k-3,j) &
-                   -35*f(:,:,k-4,j) &
-                   +21*f(:,:,k-5,j) &
-                    -7*f(:,:,k-6,j) &
-                      +f(:,:,k-7,j)
-        enddo
-!
-      case default
-        call fatal_error("bc_onesided_z ","topbot should be BOT or TOP")
-      endselect
-!
-    endsubroutine bc_onesided_z_orig
+!TP: on comment since not used (to suppress compiler warnings)
+!    subroutine bc_onesided_z_orig(f,topbot,j)
+!!
+!!  One-sided conditions.
+!!  These expressions result from combining Eqs(207)-(210), astro-ph/0109497,
+!!  corresponding to (9.207)-(9.210) in Ferriz-Mas proceedings.
+!!
+!!  05-apr-03/axel: coded
+!!
+!      integer, intent(IN) :: topbot
+!      real, dimension (:,:,:,:) :: f
+!      integer :: i,j,k
+!!
+!      select case (topbot)
+!!
+!      case(BOT)               ! bottom boundary
+!        do i=1,nghost
+!          k=n1-i
+!          f(:,:,k,j)=7*f(:,:,k+1,j) &
+!                   -21*f(:,:,k+2,j) &
+!                   +35*f(:,:,k+3,j) &
+!                   -35*f(:,:,k+4,j) &
+!                   +21*f(:,:,k+5,j) &
+!                    -7*f(:,:,k+6,j) &
+!                      +f(:,:,k+7,j)
+!        enddo
+!!
+!      case(TOP)               ! top boundary
+!        do i=1,nghost
+!          k=n2+i
+!          f(:,:,k,j)=7*f(:,:,k-1,j) &
+!                   -21*f(:,:,k-2,j) &
+!                   +35*f(:,:,k-3,j) &
+!                   -35*f(:,:,k-4,j) &
+!                   +21*f(:,:,k-5,j) &
+!                    -7*f(:,:,k-6,j) &
+!                      +f(:,:,k-7,j)
+!        enddo
+!!
+!      case default
+!        call fatal_error("bc_onesided_z ","topbot should be BOT or TOP")
+!      endselect
+!!
+!    endsubroutine bc_onesided_z_orig
 !***********************************************************************
     subroutine bc_extrap_2_1(f,topbot,j)
 !
@@ -5888,7 +5889,7 @@ module Boundcond
         if (t > tfade_start) then
           if (t < tdamp) then
             ! tau is a normalized t, the transition interval is [-0.5, 0.5]:
-            tau = (t-tfade_start) / (tdamp-tfade_start) - 0.5
+            tau = real((t-tfade_start) / (tdamp-tfade_start) - 0.5)
             fade_fact = 0.5 * (1 - tau * (3 - 4*tau**2))
             ! apply damping with fading:
             gamma_bot = 1.0 - abs (fbcz_bot(j)) * fade_fact
@@ -6183,7 +6184,7 @@ module Boundcond
       case(BOT)
          select case (force_lower_bound)
          case ('vel_time')
-           f(l1,:,:,iuy) = spread(ampl_forc*sin(k_forc*y)*cos(w_forc*t), 2, size(f,3))
+           f(l1,:,:,iuy) = spread(ampl_forc*sin(k_forc*y)*cos(w_forc*real(t)), 2, size(f,3))
          case default
             call fatal_error('bc_force_x','no such force_lower_bound: '//trim(force_lower_bound))
          endselect
@@ -6197,7 +6198,7 @@ module Boundcond
       case(TOP)
          select case (force_upper_bound)
          case ('vel_time')
-            f(l2,:,:,iuy) = spread(ampl_forc*sin(k_forc*y)*cos(w_forc*t), 2, size(f,3))
+            f(l2,:,:,iuy) = spread(ampl_forc*sin(k_forc*y)*cos(w_forc*real(t)), 2, size(f,3))
          case default
             call fatal_error("bc_force_x","no such force_upper_bound: "//trim(force_upper_bound))
          endselect
@@ -6465,7 +6466,7 @@ module Boundcond
              read (unit,rec=frame+1,iostat=ierr) tr
              if (ierr /= 0) then
                frame=1
-               delta_t = t*unit_time                  ! EOF is reached => read again
+               delta_t = real(t*unit_time)                  ! EOF is reached => read again
                read (unit,rec=frame,iostat=ierr) tl
                read (unit,rec=frame+1,iostat=ierr) tr
                ierr=-1
@@ -6557,18 +6558,18 @@ module Boundcond
            call mpirecv_real (uyr, (/ nx, ny /), 0, tag_yr)
          endif
 !
-         uxl = uxl / 10. / unit_velocity
-         uxr = uxr / 10. / unit_velocity
-         uyl = uyl / 10. / unit_velocity
-         uyr = uyr / 10. / unit_velocity
+         uxl = real(uxl / 10. / unit_velocity)
+         uxr = real(uxr / 10. / unit_velocity)
+         uyl = real(uyl / 10. / unit_velocity)
+         uyr = real(uyr / 10. / unit_velocity)
 !
        endif
 !
 !   simple linear interploation between timesteps
 !
        if (tr /= tl) then
-         uxd  = (t*unit_time - (tl+delta_t)) * (uxr - uxl) / (tr - tl) + uxl
-         uyd  = (t*unit_time - (tl+delta_t)) * (uyr - uyl) / (tr - tl) + uyl
+         uxd  = real((t*unit_time - (tl+delta_t)) * (uxr - uxl) / (tr - tl) + uxl)
+         uyd  = real((t*unit_time - (tl+delta_t)) * (uyr - uyl) / (tr - tl) + uyl)
        else
          uxd = uxl
          uyd = uyl
@@ -6783,7 +6784,7 @@ module Boundcond
       allocate(Bz0(bnx,bny),stat=stat)
       if (stat>0) call fatal_error('bc_force_aa_time','Could not allocate Bz0',.true.)
 !
-      time_SI = t*unit_time
+      time_SI = real(t*unit_time)
 !
       if (t_r+delta_t <= time_SI) then
 !
@@ -6913,14 +6914,14 @@ module Boundcond
         endif
 !
         ! Gauss to Tesla and SI to PENCIL units
-        Bz0_l = Bz0_l * 1e-4 / unit_magnetic
-        Bz0_r = Bz0_r * 1e-4 / unit_magnetic
+        Bz0_l = real(Bz0_l * 1e-4 / unit_magnetic)
+        Bz0_r = real(Bz0_r * 1e-4 / unit_magnetic)
 !
         if (luse_vel_field) then
-          vx_l = vx_l / unit_velocity
-          vy_l = vy_l / unit_velocity
-          vx_r = vx_r / unit_velocity
-          vy_r = vy_r / unit_velocity
+          vx_l = real(vx_l / unit_velocity)
+          vy_l = real(vy_l / unit_velocity)
+          vx_r = real(vx_r / unit_velocity)
+          vy_r = real(vy_r / unit_velocity)
         endif
 !
       endif
@@ -9243,9 +9244,9 @@ module Boundcond
 !
       if (k_forc /= impossible) then
         kx=2*pi/Lx*k_forc
-        f(:,:,idz,j) = spread(ampl_forc*sin(kx*x)*cos(w_forc*t), 2, size(f,2))
+        f(:,:,idz,j) = spread(ampl_forc*sin(kx*x)*cos(w_forc*real(t)), 2, size(f,2))
       else
-        f(:,:,idz,j) = spread(ampl_forc*exp(-((x-x_forc)/dx_forc)**2)*cos(w_forc*t), 2, size(f,2))
+        f(:,:,idz,j) = spread(ampl_forc*exp(-((x-x_forc)/dx_forc)**2)*cos(w_forc*real(t)), 2, size(f,2))
       endif
 !
     endsubroutine bc_force_ux_time
