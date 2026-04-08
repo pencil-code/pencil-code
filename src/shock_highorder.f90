@@ -76,6 +76,7 @@ module Shock
   endinterface
 !
   real :: dt_div_pow=0.
+  real, allocatable, dimension(:,:,:) :: tmp
 
   contains
 !***********************************************************************
@@ -113,7 +114,7 @@ module Shock
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      integer :: i,j,k,idum
+      integer :: idum
 !
 !  Initialize shock profile to zero
 !
@@ -383,14 +384,13 @@ module Shock
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
 !
-      real, dimension (mx,my,mz) :: tmp
       real, dimension (nx) :: penc, penc1, penc_perp
       real, dimension (mx,3) :: bb_hat
       integer :: imn
-      integer :: i,j,k
-      integer :: ni,nj,nk
       real :: shock_max, a=0., a1
       logical :: lcommunicate
+
+      if(.not. allocated(tmp)) allocate(tmp(mx,my,mz))
 !
 !  Initialize shock to impossibly large number to force code crash in case of
 !  inconsistencies in boundary conditions.
@@ -565,12 +565,13 @@ module Shock
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
 !
-      real, dimension (mx,my,mz) :: tmp
       real, dimension (nx) :: penc
       integer :: imn
       integer :: i,j,k
       integer :: ni,nj,nk
       logical :: lcommunicate
+
+      if(.not. allocated(tmp)) allocate(tmp(mx,my,mz))
 !
 !  Apply maximum within ishock_max zones to shock profile.
 !
