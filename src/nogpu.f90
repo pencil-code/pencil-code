@@ -56,7 +56,6 @@ contains
 !
       real, dimension (:,:,:,:) :: f
       integer :: itsub
-      logical :: early_finalize
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(itsub)
@@ -67,7 +66,6 @@ contains
 !
       real, dimension (:,:,:,:) :: f
       integer :: itsub
-      logical :: early_finalize
       logical :: lrmv
       real(KIND=rkind8), intent(IN) :: t
 !
@@ -115,6 +113,7 @@ contains
       logical, optional :: nowait_
 
       call keep_compiler_quiet(f)
+      if ((present(nowait_))) call keep_compiler_quiet(nowait_)
 
     endsubroutine copy_farray_from_GPU
 !**************************************************************************

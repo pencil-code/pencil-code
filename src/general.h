@@ -66,11 +66,15 @@
      print*,'store_scattered_array: not available for f95'
      stop
 
+     call keep_compiler_quiet(ind3)
+     call keep_compiler_quiet(layer)
+     call keep_compiler_quiet(src)
+     call keep_compiler_quiet(time)
+
    endsubroutine store_scattered_array
 !***********************************************************************
    subroutine get_scattered_array(ivar,layer,src,dest,timediff,ahead)
 
-     use Cdata, only:ldiagnos
      integer :: ivar,layer
      real, dimension(:,:) :: dest
      real, dimension(:,:), optional :: ahead
@@ -79,6 +83,12 @@
 
      print*,'get_scattered_array: not available for f95'
      stop
+
+     call keep_compiler_quiet(ivar)
+     call keep_compiler_quiet(layer)
+     call keep_compiler_quiet(dest)
+     call keep_compiler_quiet(timediff)
+     call keep_compiler_quiet(ahead)
 
    endsubroutine get_scattered_array
 !***********************************************************************

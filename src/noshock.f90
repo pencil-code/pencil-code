@@ -183,6 +183,8 @@ module Shock
 
     integer, parameter :: n_pars=0
     integer(KIND=ikind8), dimension(n_pars) :: p_par
+    
+    call keep_compiler_quiet(p_par)
 
     endsubroutine pushpars2c
 !***********************************************************************

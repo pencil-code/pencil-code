@@ -256,7 +256,9 @@ module Special
 !!        endif
 !!      endif
 !
+      call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
 !
 !  calc_diagnostics_special must be explicitly called if necessary.
 !
@@ -306,6 +308,8 @@ module Special
 !
 !!      integer :: iname
       logical :: lreset,lwrite
+
+      call keep_compiler_quiet(lwrite)
 !!!
 !!!  reset everything in case of reset
 !!!  (this needs to be consistent with what is defined above!)
@@ -566,11 +570,11 @@ module Special
       integer(KIND=ikind1), dimension(3) :: kind
       integer :: len
 
-      !call keep_compiler_quiet(char(kind))
       call keep_compiler_quiet(len)
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(spectrum,spectrumhel)
       call keep_compiler_quiet(lfirstcall)
+      call keep_compiler_quiet(kind)
       
     endsubroutine special_calc_spectra_byte
 !***********************************************************************
@@ -662,11 +666,9 @@ module Special
 !
 !  27-nov-08/wlad: coded
 !
-      real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(ndustspec) :: dsize,init_distr,init_distr2
       real :: Ntot
 !
-      call keep_compiler_quiet(f)
       call keep_compiler_quiet(dsize,init_distr,init_distr2)
       call keep_compiler_quiet(Ntot)
 !
@@ -717,6 +719,8 @@ module Special
 
       integer, parameter :: n_pars=0
       integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+      call keep_compiler_quiet(p_par)
 
     endsubroutine pushpars2c
 !***********************************************************************

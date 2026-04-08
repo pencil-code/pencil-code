@@ -22,7 +22,7 @@ module Selfgravity
   include 'selfgravity.h'
 !
   real :: rhs_poisson_const=0.
-  real :: gravitational_const=G_Newton_cgs
+  real :: gravitational_const=real(G_Newton_cgs)
   namelist /selfgrav_init_pars/ &
       gravitational_const
 !
@@ -181,6 +181,8 @@ module Selfgravity
 
     integer, parameter :: n_pars=1
     integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call keep_compiler_quiet(p_par)
 
     endsubroutine pushpars2c
 !***********************************************************************

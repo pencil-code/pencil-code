@@ -52,6 +52,8 @@ module ImplicitDiffusion
 
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(ivar1,ivar2)
+      !Poor man's keep_compiler_quiet
+      if(.false.) call get_diffus_coeff()
 !
     endsubroutine integrate_diffusion
 !***********************************************************************

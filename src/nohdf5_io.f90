@@ -210,6 +210,7 @@ module HDF5_IO
 !
       call fatal_error ('input_hdf5_3D', 'you can not use HDF5 without setting an HDF5_IO module')
       call keep_compiler_quiet(name)
+      call keep_compiler_quiet(lghost)
       data(:,:,:) = -1.0
 !
     endsubroutine input_hdf5_3D
@@ -525,29 +526,30 @@ module HDF5_IO
 !                       
     endsubroutine output_timeseries
 !***********************************************************************
-    subroutine input_slice_position(directory,ix_bc_,iy_bc_,iy2_bc_,iz_bc_,iz2_bc_,iz3_bc_,iz4_bc_)
+!TP: on comment since never used (to suppress compiler warnings)
+!    subroutine input_slice_position(directory,ix_bc_,iy_bc_,iy2_bc_,iz_bc_,iz2_bc_,iz3_bc_,iz4_bc_)
+!!
+!!  'data/procN/slice_position.dat' is distributed, but may not be synchronized
+!!  on I/O error (-> dist=0) as this would make it disfunctional; correct a posteriori if necessary.
+!!
+!!  24-May-2019/MR: cloned from output_slice_position
+!!
+!      character(LEN=*) :: directory
+!      integer, intent(out) :: ix_bc_,iy_bc_,iy2_bc_,iz_bc_,iz2_bc_,iz3_bc_,iz4_bc_
+!      logical :: lexist_slice_xy, lexist_slice_xy2, lexist_slice_xy3, lexist_slice_xy4, &
+!                 lexist_slice_xz, lexist_slice_xz2, lexist_slice_yz
 !
-!  'data/procN/slice_position.dat' is distributed, but may not be synchronized
-!  on I/O error (-> dist=0) as this would make it disfunctional; correct a posteriori if necessary.
-!
-!  24-May-2019/MR: cloned from output_slice_position
-!
-      character(LEN=*) :: directory
-      integer, intent(out) :: ix_bc_,iy_bc_,iy2_bc_,iz_bc_,iz2_bc_,iz3_bc_,iz4_bc_
-      logical :: lexist_slice_xy, lexist_slice_xy2, lexist_slice_xy3, lexist_slice_xy4, &
-                 lexist_slice_xz, lexist_slice_xz2, lexist_slice_yz
-
-      open (lun_input, file=trim(directory)//'/data/slice_position.dat', STATUS='unknown')
-      read (lun_input, '(l5,i5)') lexist_slice_xy, iz_bc_
-      read (lun_input, '(l5,i5)') lexist_slice_xy2, iz2_bc_
-      read (lun_input, '(l5,i5)') lexist_slice_xy3, iz3_bc_
-      read (lun_input, '(l5,i5)') lexist_slice_xy4, iz4_bc_
-      read (lun_input, '(l5,i5)') lexist_slice_xz, iy_bc_
-      read (lun_input, '(l5,i5)') lexist_slice_xz2, iy2_bc_
-      read (lun_input, '(l5,i5)') lexist_slice_yz, ix_bc_
-      close(lun_input)
-!
-    endsubroutine input_slice_position
+!      open (lun_input, file=trim(directory)//'/data/slice_position.dat', STATUS='unknown')
+!      read (lun_input, '(l5,i5)') lexist_slice_xy, iz_bc_
+!      read (lun_input, '(l5,i5)') lexist_slice_xy2, iz2_bc_
+!      read (lun_input, '(l5,i5)') lexist_slice_xy3, iz3_bc_
+!      read (lun_input, '(l5,i5)') lexist_slice_xy4, iz4_bc_
+!      read (lun_input, '(l5,i5)') lexist_slice_xz, iy_bc_
+!      read (lun_input, '(l5,i5)') lexist_slice_xz2, iy2_bc_
+!      read (lun_input, '(l5,i5)') lexist_slice_yz, ix_bc_
+!      close(lun_input)
+!!
+!    endsubroutine input_slice_position
 !***********************************************************************
     subroutine input_slice_real_arr(file, time, pos, data)
 !

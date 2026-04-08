@@ -38,7 +38,7 @@ module EquationOfState
   real :: cs2bot=1.0, cs2top=1.0
   real :: Cp_const=impossible
   real :: Pr_number=0.7
-  real :: lnTT0=impossible, TT0=impossible
+  real :: lnTT0=impossible
   logical :: lpres_grad=.false.
 
   contains
@@ -72,6 +72,8 @@ module EquationOfState
 !
       gamma_m1=gamma-1.; gamma1=1./gamma
       rho02 = rho0**2
+
+      call keep_compiler_quiet(f)
 !
     endsubroutine initialize_eos
 !***********************************************************************
@@ -278,6 +280,7 @@ module EquationOfState
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(cs2)
+      call keep_compiler_quiet(cp1tilde)
 !
     endsubroutine pressure_gradient_farray
 !***********************************************************************
@@ -388,6 +391,7 @@ module EquationOfState
 !
       call keep_compiler_quiet(ivars)
       call keep_compiler_quiet(var1,var2)
+      call keep_compiler_quiet(cs2)
 !
     endsubroutine eoscalc_point
 !***********************************************************************
@@ -410,6 +414,7 @@ module EquationOfState
 !
       call keep_compiler_quiet(ivars)
       call keep_compiler_quiet(f)
+      call keep_compiler_quiet(cs2)
 !
     endsubroutine eoscalc_point_f
 !***********************************************************************
@@ -565,7 +570,7 @@ module EquationOfState
 !
       real, pointer :: Flux,FbyK,chi
       real, pointer :: hcond0_kramers, nkramers, chimax_kramers, chimin_kramers
-      logical, pointer :: lmultilayer, lheatc_chiconst, lheatc_kramers, lheatc_Kprof, lheatc_Kconst
+      logical, pointer :: lheatc_chiconst, lheatc_kramers, lheatc_Kprof, lheatc_Kconst
 !
       integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1012,6 +1017,7 @@ module EquationOfState
       real :: tmp
       integer :: i
 !
+      call keep_compiler_quiet(lone_sided)
       if (ldebug) print*,'bc_ss_temp_z: cs20,cs0=',cs20,cs0
 !
 !  Constant temperature/sound speed for entropy, i.e. antisymmetric

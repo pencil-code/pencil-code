@@ -71,47 +71,28 @@ module SGS_hydro
 !
     endsubroutine rprint_SGS_hydro
 !***********************************************************************
-    subroutine pencil_criteria_SGS_hydro
-!
-!  All pencils that the SGS_hydro module depends on are specified here.
-!
-!  20-11-04/anders: coded
-!
-    endsubroutine pencil_criteria_SGS_hydro
-!***********************************************************************
-    subroutine pencil_interdep_SGS_hydro(lpencil_in)
-!
-!  Interdependency among pencils from the SGS_hydro module is specified here.
-!
-!  20-11-04/anders: coded
-!
-      logical, dimension (npencils) :: lpencil_in
-!
-      call keep_compiler_quiet(lpencil_in)
-!
-    endsubroutine pencil_interdep_SGS_hydro
-!***********************************************************************
-    subroutine calc_pencils_SGS_hydro(f,p)
-!
-!  Calculate SGS_hydro pencils.
-!  Most basic pencils should come first, as others may depend on them.
-!
-!  20-11-04/anders: coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
-!
-      intent(in) :: f
-      intent(inout) :: p
-!
-!  define SGS heat
-!
-      if (lpencil(i_SGS_heat)) p%SGS_heat=0.0
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine calc_pencils_SGS_hydro
-!***********************************************************************
+!TP: calc pencils of this module is not used anymore!
+!    subroutine calc_pencils_SGS_hydro(f,p)
+!!
+!!  Calculate SGS_hydro pencils.
+!!  Most basic pencils should come first, as others may depend on them.
+!!
+!!  20-11-04/anders: coded
+!!
+!      real, dimension (mx,my,mz,mfarray) :: f
+!      type (pencil_case) :: p
+!!
+!      intent(in) :: f
+!      intent(inout) :: p
+!!
+!!  define SGS heat
+!!
+!      if (lpencil(i_SGS_heat)) p%SGS_heat=0.0
+!!
+!      call keep_compiler_quiet(f)
+!!
+!    endsubroutine calc_pencils_SGS_hydro
+!!***********************************************************************
     subroutine SGS_hydro_after_boundary(f)
 
       real, dimension (mx,my,mz,mfarray) :: f
@@ -119,21 +100,6 @@ module SGS_hydro
       call keep_compiler_quiet(f)
 !
     endsubroutine SGS_hydro_after_boundary
-!***********************************************************************
-    subroutine calc_SGS_hydro_heat(df,p,Hmax)
-!
-      real, dimension (mx,my,mz,mvar)    :: df
-      type (pencil_case) :: p
-!
-      real, dimension (nx) :: Hmax
-!
-      intent(in) :: df,p,Hmax
-!
-      call keep_compiler_quiet(df)
-      call keep_compiler_quiet(p)
-      call keep_compiler_quiet(Hmax)
-!
-    endsubroutine calc_SGS_hydro_heat
 !***********************************************************************
     subroutine calc_SGS_hydro_force(f,df,p)
 !
@@ -143,6 +109,7 @@ module SGS_hydro
 !
       intent (in) :: df,p
 !
+      call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(p)
 !

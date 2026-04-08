@@ -216,14 +216,6 @@ module Interstellar
 !
     endsubroutine interstellar_before_boundary
 !***********************************************************************
-    subroutine check_SN(f)
-!
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine check_SN
-!***********************************************************************
     subroutine calc_heat_cool_interstellar(f,df,p,Hmax)
 !
 !  adapted from calc_heat_cool
@@ -239,18 +231,12 @@ module Interstellar
 !
     endsubroutine calc_heat_cool_interstellar
 !***********************************************************************
-    subroutine addmassflux(f)
-!
-      real, intent(inout), dimension(mx,my,mz,mfarray) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine addmassflux
-!*****************************************************************************
     subroutine pushpars2c(p_par)
 
       integer, parameter :: n_pars=0
       integer(KIND=ikind8), dimension(n_pars), intent(out) :: p_par
+
+      call keep_compiler_quiet(p_par)
 
     endsubroutine pushpars2c
 !***********************************************************************

@@ -27,7 +27,10 @@
 !***************************************************************
     subroutine write_python_run_pars(unit)
 !
+      use General, only: keep_compiler_quiet
       integer, intent(in) :: unit
+
+      call keep_compiler_quiet(unit)
 
     endsubroutine write_python_run_pars
 !***************************************************************
