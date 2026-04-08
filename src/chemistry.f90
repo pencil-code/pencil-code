@@ -3092,7 +3092,7 @@ module Chemistry
 !
 !  28-feb-08/axel: coded
 !
-      use General, only: div
+      use General, only: idiv
       character(len=80) :: chemicals=''
       ! Careful, limits the absolut size of the input matrix !!!
       character(len=15) :: file1='chemistry_m.dat', file2='chemistry_p.dat'
@@ -3287,7 +3287,7 @@ module Chemistry
             enddo
           elseif (kreactions_profile(j) == 'square') then
             do n = 1,mz
-              if (n < div(mz,2)) then
+              if (n < idiv(mz,2)) then
                 kreactions_z(n,j) = kreactions_profile_width(j)
               else
                 kreactions_z(n,j) = 0.
