@@ -1140,6 +1140,8 @@ module Special
       real, dimension(nx) :: tmp,constrainteqn
       real, dimension(nx,3) :: gtmp
 
+      call keep_compiler_quiet(f)
+
       call save_name(get_mfpf(),idiag_mfpf)
       call save_name(get_fppf(),idiag_fppf)
       call save_name(scl_factor_target,idiag_afact)

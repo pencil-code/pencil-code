@@ -265,8 +265,8 @@ module Special
   integer :: iggT_realspace, iggX_realspace
   integer :: ih11_realspace, ih22_realspace, ih33_realspace
   integer :: ih12_realspace, ih23_realspace, ih31_realspace
-  integer :: ihhT_realspace_boost, ihhX_realspace_boost
-  integer :: iggT_realspace_boost, iggX_realspace_boost
+  !integer :: ihhT_realspace_boost, ihhX_realspace_boost
+  !integer :: iggT_realspace_boost, iggX_realspace_boost
   integer, parameter :: nk=nxgrid/2
   type, public :: GWspectra
     real, dimension(nk) :: GWs   ,GWh   ,GWm   ,Str   ,Stg
@@ -1367,6 +1367,8 @@ module Special
 !  07-aug-17/axel: coded
 
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+
+      call keep_compiler_quiet(f)
 !
     endsubroutine special_after_boundary
 !***********************************************************************
@@ -1422,14 +1424,15 @@ module Special
 ! for boost (dec 7)
       real :: k1_boost, k1sqr_boost, k2_boost,k2sqr_boost,k3_boost, k3sqr_boost
       real :: ksqr_boost, ksqrt_boost, one_over_k_boost
-      real, dimension (3) :: e1_boost, e2_boost, vboost, kvec_boost, khat_boost
-      real, dimension (3) :: ee1_boost, ee2_boost
+      real, dimension (3) :: e1_boost, e2_boost, vboost, kvec_boost
       real, dimension (6) :: e_T_boost, e_X_boost
       real :: eTT, eTX, eXT, eXX, phi, s, c, c1, kk1, kk2, kk3
-      real :: gamma_boost, v_boostsqr, kdotv
-      real :: SCL_re_boost, SCL_im_boost, VCT_im_boost
-      real :: hhT_boost, hhTim_boost, hhX_boost, hhXim_boost
+
+      !real :: SCL_re_boost, SCL_im_boost, VCT_im_boost,khat_boost
       !real :: ggT_boost, ggTim_boost, ggX_boost, ggXim_boost
+
+      real :: gamma_boost, v_boostsqr, kdotv
+      real :: hhT_boost, hhTim_boost, hhX_boost, hhXim_boost
 !
       real :: fact, facthel, cos_angle, angle, sign_switch
       real :: fact_boost, facthel_boost, omboost
@@ -2424,53 +2427,54 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
        enddo
     endsubroutine compute_hij
 !***********************************************************************
-    function has_negative_frequency(ik,ngrid) result(res)
-      integer :: ik,ngrid,nyquist_frequency
-      logical :: res
-      nyquist_frequency = (ngrid/2)+1
-      if(ik > nyquist_frequency) then
-              res = .true.
-      else
-              res = .false.
-      endif
-    endfunction has_negative_frequency
+!TP: potential helper functions if we would bother to take advantage of conjugate symmetry
+!    function has_negative_frequency(ik,ngrid) result(res)
+!      integer :: ik,ngrid,nyquist_frequency
+!      logical :: res
+!      nyquist_frequency = (ngrid/2)+1
+!      if(ik > nyquist_frequency) then
+!              res = .true.
+!      else
+!              res = .false.
+!      endif
+!    endfunction has_negative_frequency
 !***********************************************************************
-    function below_nyquist_frequency(ik,ngrid) result(res)
-      integer :: ik,ngrid,nyquist_frequency
-      logical :: res
-      nyquist_frequency = (ngrid/2)+1
-      if(ik < nyquist_frequency) then
-              res = .true.
-      else
-              res = .false.
-      endif
-    endfunction below_nyquist_frequency
-!***********************************************************************
-    subroutine get_conjugate_pair_index(ik_src,ik_dst,ngrid)
-      integer :: ik_src,ik_dst,ngrid
-      integer :: offset_from_nyquist
-      integer :: nyquist_frequency 
-      nyquist_frequency = (ngrid/2)+1
-      if(ik_src == 1 .or. ik_src == nyquist_frequency) then
-        ik_dst = ik_src
-      else if(has_negative_frequency(ik_src,ngrid)) then
-        offset_from_nyquist = ik_src - nyquist_frequency
-        ik_dst = nyquist_frequency-offset_from_nyquist
-      else
-        offset_from_nyquist = nyquist_frequency - ik_src
-        ik_dst = nyquist_frequency+offset_from_nyquist
-      endif
-    endsubroutine get_conjugate_pair_index
-!***********************************************************************
-    subroutine get_conjugate_pair_indexes(ikx_src,iky_src,ikz_src,ikx_dst,iky_dst,ikz_dst)
-      integer :: ikx_src,iky_src,ikz_src
-      integer :: ikx_dst,iky_dst,ikz_dst
-
-      call get_conjugate_pair_index(ikx_src,ikx_dst,nxgrid)
-      call get_conjugate_pair_index(iky_src,iky_dst,nygrid)
-      call get_conjugate_pair_index(ikz_src,ikz_dst,nzgrid)
-
-    endsubroutine get_conjugate_pair_indexes
+!    function below_nyquist_frequency(ik,ngrid) result(res)
+!      integer :: ik,ngrid,nyquist_frequency
+!      logical :: res
+!      nyquist_frequency = (ngrid/2)+1
+!      if(ik < nyquist_frequency) then
+!              res = .true.
+!      else
+!              res = .false.
+!      endif
+!    endfunction below_nyquist_frequency
+!!***********************************************************************
+!    subroutine get_conjugate_pair_index(ik_src,ik_dst,ngrid)
+!      integer :: ik_src,ik_dst,ngrid
+!      integer :: offset_from_nyquist
+!      integer :: nyquist_frequency 
+!      nyquist_frequency = (ngrid/2)+1
+!      if(ik_src == 1 .or. ik_src == nyquist_frequency) then
+!        ik_dst = ik_src
+!      else if(has_negative_frequency(ik_src,ngrid)) then
+!        offset_from_nyquist = ik_src - nyquist_frequency
+!        ik_dst = nyquist_frequency-offset_from_nyquist
+!      else
+!        offset_from_nyquist = nyquist_frequency - ik_src
+!        ik_dst = nyquist_frequency+offset_from_nyquist
+!      endif
+!    endsubroutine get_conjugate_pair_index
+!!***********************************************************************
+!    subroutine get_conjugate_pair_indexes(ikx_src,iky_src,ikz_src,ikx_dst,iky_dst,ikz_dst)
+!      integer :: ikx_src,iky_src,ikz_src
+!      integer :: ikx_dst,iky_dst,ikz_dst
+!
+!      call get_conjugate_pair_index(ikx_src,ikx_dst,nxgrid)
+!      call get_conjugate_pair_index(iky_src,iky_dst,nygrid)
+!      call get_conjugate_pair_index(ikz_src,ikz_dst,nzgrid)
+!
+!    endsubroutine get_conjugate_pair_indexes
 !***********************************************************************
     subroutine solve_and_stress(f,S_T_re,S_T_im,S_X_re,S_X_im,dt)
 !   TODO: The name is simply a placeholder since could not come up with a better name
@@ -3049,7 +3053,7 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (6) :: delij=0.
       real, dimension (:,:,:,:,:), allocatable :: Hijkre, Hijkim
-      integer :: i,j,p,q,stat,ij,pq,ip
+      integer :: i,j,p,q,stat,ij,pq
       intent(inout) :: f
       character (len=2) :: label
       real :: dt
