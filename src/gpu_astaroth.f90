@@ -125,6 +125,7 @@ contains
       if(ltest_rhs) lread_all_vars_from_device = .true.
 
       str=''
+      !List of unsupported modules
       if (lanelastic) str=trim(str)//', '//'anelastic'
       if (lboussinesq) str=trim(str)//', '//'boussinesq'
       if (lhyperresistivity_strict) str=trim(str)//', '//'hyperresi_strict'
