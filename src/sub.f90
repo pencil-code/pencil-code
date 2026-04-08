@@ -180,6 +180,7 @@ module Sub
 !
   interface multsv
     module procedure multsv_mn
+    module procedure multsv_mn_inplace
   endinterface
 !
   interface multsv_add
@@ -372,40 +373,41 @@ module Sub
 !
     endsubroutine max_mn
 !***********************************************************************
-    subroutine mean_mn(a,res)
-!
-!  Successively calculate mean of a, which is supplied at each call.
-!  Start from zero if lfirstpoint=.true.
-!
-!  17-dec-01/wolf: coded
-!  20-jun-07/dhruba:adapted for spherical polar coordinate system
-!
-      real, dimension (nx) :: a
-      real :: res
-      integer :: isum
-!
-      if (lfirstpoint) then
-        if (lspherical_coords) then
-          res = 0.
-          do isum=l1,l2
-            res = res+x(isum)*x(isum)*sinth(m)*a(isum-nghost)*a(isum-nghost)
-          enddo
-        else
-          res=sum(dble(a))     ! sum at double precision to improve accuracy
-        endif                  ! but how to avoid promotion to quad precision?
-      else
-        if (lspherical_coords) then
-          do isum=l1,l2
-            res = res+x(isum)*x(isum)*sinth(m)*a(isum-nghost)*a(isum-nghost)
-          enddo
-        else
-          res=res+sum(dble(a))
-        endif
-      endif
-!
-      if (lcylindrical_coords) call fatal_error('mean_mn','not implemented for cylindrical')
-!
-    endsubroutine mean_mn
+!TP: on comment since not used (to suppress compiler warnings)
+!    subroutine mean_mn(a,res)
+!!
+!!  Successively calculate mean of a, which is supplied at each call.
+!!  Start from zero if lfirstpoint=.true.
+!!
+!!  17-dec-01/wolf: coded
+!!  20-jun-07/dhruba:adapted for spherical polar coordinate system
+!!
+!      real, dimension (nx) :: a
+!      real :: res
+!      integer :: isum
+!!
+!      if (lfirstpoint) then
+!        if (lspherical_coords) then
+!          res = 0.
+!          do isum=l1,l2
+!            res = res+x(isum)*x(isum)*sinth(m)*a(isum-nghost)*a(isum-nghost)
+!          enddo
+!        else
+!          res=sum(dble(a))     ! sum at double precision to improve accuracy
+!        endif                  ! but how to avoid promotion to quad precision?
+!      else
+!        if (lspherical_coords) then
+!          do isum=l1,l2
+!            res = res+x(isum)*x(isum)*sinth(m)*a(isum-nghost)*a(isum-nghost)
+!          enddo
+!        else
+!          res=res+sum(dble(a))
+!        endif
+!      endif
+!!
+!      if (lcylindrical_coords) call fatal_error('mean_mn','not implemented for cylindrical')
+!!
+!    endsubroutine mean_mn
 !***********************************************************************
     subroutine meanyz_s(f,iif,mean,lexp)
 !
@@ -476,76 +478,78 @@ module Sub
 
     endsubroutine meanyz_v
 !***********************************************************************
-    subroutine rms_mn(a,res)
-!
-!  Successively calculate rms of a, which is supplied at each call.
-!  Start from zero if lfirstpoint=.true.
-!
-!   1-apr-01/axel+wolf: coded
-!
-      real, dimension (nx) :: a
-      real :: res
-      integer :: isum
-!
-      if (lfirstpoint) then
-        if (lspherical_coords) then
-          res = 0.
-          do isum=l1,l2
-            res = res+x(isum)*x(isum)*sinth(m)*a(isum-nghost)*a(isum-nghost)
-          enddo
-        else
-          res=sum(a**2)
-        endif
-      else
-        if (lspherical_coords) then
-          do isum=l1,l2
-            res = res+x(isum)*x(isum)*sinth(m)*a(isum-nghost)*a(isum-nghost)
-          enddo
-        else
-          res=res+sum(a**2)
-        endif
-      endif
-!
-      if (lcylindrical_coords) &
-          call fatal_error('rms_mn','not implemented for cylindrical')
-!
-    endsubroutine rms_mn
+!TP: on comment since not used (to suppress compiler warnings)
+!    subroutine rms_mn(a,res)
+!!
+!!  Successively calculate rms of a, which is supplied at each call.
+!!  Start from zero if lfirstpoint=.true.
+!!
+!!   1-apr-01/axel+wolf: coded
+!!
+!      real, dimension (nx) :: a
+!      real :: res
+!      integer :: isum
+!!
+!      if (lfirstpoint) then
+!        if (lspherical_coords) then
+!          res = 0.
+!          do isum=l1,l2
+!            res = res+x(isum)*x(isum)*sinth(m)*a(isum-nghost)*a(isum-nghost)
+!          enddo
+!        else
+!          res=sum(a**2)
+!        endif
+!      else
+!        if (lspherical_coords) then
+!          do isum=l1,l2
+!            res = res+x(isum)*x(isum)*sinth(m)*a(isum-nghost)*a(isum-nghost)
+!          enddo
+!        else
+!          res=res+sum(a**2)
+!        endif
+!      endif
+!!
+!      if (lcylindrical_coords) &
+!          call fatal_error('rms_mn','not implemented for cylindrical')
+!!
+!    endsubroutine rms_mn
 !***********************************************************************
-    subroutine rms2_mn(a2,res)
-!
-!  Successively calculate rms of a, with a2=a^2 being supplied at each
-!  call.
-!  Start from zero if lfirstpoint=.true.
-!
-!   1-apr-01/axel+wolf: coded
-!
-      real, dimension (nx) :: a2
-      real :: res
-      integer :: isum
-!
-      if (lfirstpoint) then
-        if (lspherical_coords) then
-          res = 0.
-          do isum=l1,l2
-            res = res+x(isum)*x(isum)*sinth(m)*a2(isum-nghost)
-          enddo
-        else
-          res=sum(a2)
-        endif
-      else
-        if (lspherical_coords) then
-          do isum=l1,l2
-            res = res+x(isum)*x(isum)*sinth(m)*a2(isum-nghost)
-          enddo
-        else
-          res=res+sum(a2)
-        endif
-      endif
-!
-      if (lcylindrical_coords) &
-          call fatal_error('rms2_mn','not implemented for cylindrical')
-!
-    endsubroutine rms2_mn
+!TP: on comment since not used (to suppress compiler warnings)
+!    subroutine rms2_mn(a2,res)
+!!
+!!  Successively calculate rms of a, with a2=a^2 being supplied at each
+!!  call.
+!!  Start from zero if lfirstpoint=.true.
+!!
+!!   1-apr-01/axel+wolf: coded
+!!
+!      real, dimension (nx) :: a2
+!      real :: res
+!      integer :: isum
+!!
+!      if (lfirstpoint) then
+!        if (lspherical_coords) then
+!          res = 0.
+!          do isum=l1,l2
+!            res = res+x(isum)*x(isum)*sinth(m)*a2(isum-nghost)
+!          enddo
+!        else
+!          res=sum(a2)
+!        endif
+!      else
+!        if (lspherical_coords) then
+!          do isum=l1,l2
+!            res = res+x(isum)*x(isum)*sinth(m)*a2(isum-nghost)
+!          enddo
+!        else
+!          res=res+sum(a2)
+!        endif
+!      endif
+!!
+!      if (lcylindrical_coords) &
+!          call fatal_error('rms2_mn','not implemented for cylindrical')
+!!
+!    endsubroutine rms2_mn
 !***********************************************************************
     subroutine sum_mn(a,res)
 !
@@ -642,25 +646,26 @@ module Sub
 !
     endsubroutine vec_dot_3tensor
 !***********************************************************************
-    subroutine contract_jk3(a,c)
-!
-!  Contracts the jk of a_ijk.
-!
-!  20-aug-08/dhruba: coded
-!
-      real, dimension (nx,3,3,3) :: a
-      real, dimension (nx,3) :: c
-      integer :: i,j,k
-!
-      intent(in) :: a
-      intent(out) :: c
-!
-      c=0
-      do i=1,3; do j=1,3; do k=1,3
-        c(:,i)=c(:,i)+a(:,i,j,k)
-      enddo; enddo; enddo
-!
-    endsubroutine contract_jk3
+!TP: on comment since not used (to suppress compiler warnings)
+!    subroutine contract_jk3(a,c)
+!!
+!!  Contracts the jk of a_ijk.
+!!
+!!  20-aug-08/dhruba: coded
+!!
+!      real, dimension (nx,3,3,3) :: a
+!      real, dimension (nx,3) :: c
+!      integer :: i,j,k
+!!
+!      intent(in) :: a
+!      intent(out) :: c
+!!
+!      c=0
+!      do i=1,3; do j=1,3; do k=1,3
+!        c(:,i)=c(:,i)+a(:,i,j,k)
+!      enddo; enddo; enddo
+!!
+!    endsubroutine contract_jk3
 !***********************************************************************
     subroutine matrix2linarray(mm,aa)
 !
@@ -1343,6 +1348,28 @@ module Sub
 !
     endsubroutine multsv_mn
 !***********************************************************************
+    subroutine multsv_mn_inplace(a,b)
+!
+!  Vector multiplied with scalar, gives vector.
+!
+!  22-nov-01/nils erland: coded
+!  10-oct-03/axel: a is now the scalar (now consistent with old routines)
+!  24-jun-08/MR: ladd added for incremental work
+!  28-feb-10/bing: removed ladd keyword, use multsv_mn_add instead
+!
+      intent(in) :: a
+      intent(inout) :: b
+!
+      real, dimension (nx,3) :: b
+      real, dimension (nx) :: a
+      integer :: i
+!
+      do i=1,3
+        b(:,i)=a*b(:,i)
+      enddo
+!
+    endsubroutine multsv_mn_inplace
+!***********************************************************************
     subroutine multsv_mn_add(a,b,c)
 !
 !  Vector multiplied with scalar, gives vector.
@@ -1713,36 +1740,37 @@ module Sub
 
     endsubroutine div_tensor
 !***********************************************************************
-    subroutine der_2nd(f,k,df,j)
-
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      real, dimension(nx), intent(out) :: df
-      integer, intent(in) :: j, k
+!TP: on comment since not used (to suppress compiler warnings)
+!    subroutine der_2nd(f,k,df,j)
 !
-      if (j==1) then
-        if (nxgrid/=1) then
-          df=(f(l1+1:l2+1,m,n,k)-f(l1-1:l2-1,m,n,k))/(2.*dx) 
-        else
-          df=0.
-          if (ip<=5) print*, 'der_2nd: Degenerate case in x-direction'
-        endif
-      elseif (j==2) then
-        if (nygrid/=1) then
-          df=(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k))/(2.*dy)
-        else
-          df=0.
-          if (ip<=5) print*, 'der_2nd: Degenerate case in y-direction'
-        endif
-      elseif (j==3) then
-        if (nzgrid/=1) then
-          df=(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k))/(2.*dz)
-        else
-          df=0.
-          if (ip<=5) print*, 'der_2nd: Degenerate case in z-direction'
-        endif
-      endif
-
-    endsubroutine der_2nd
+!      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+!      real, dimension(nx), intent(out) :: df
+!      integer, intent(in) :: j, k
+!!
+!      if (j==1) then
+!        if (nxgrid/=1) then
+!          df=(f(l1+1:l2+1,m,n,k)-f(l1-1:l2-1,m,n,k))/(2.*dx) 
+!        else
+!          df=0.
+!          if (ip<=5) print*, 'der_2nd: Degenerate case in x-direction'
+!        endif
+!      elseif (j==2) then
+!        if (nygrid/=1) then
+!          df=(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k))/(2.*dy)
+!        else
+!          df=0.
+!          if (ip<=5) print*, 'der_2nd: Degenerate case in y-direction'
+!        endif
+!      elseif (j==3) then
+!        if (nzgrid/=1) then
+!          df=(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k))/(2.*dz)
+!        else
+!          df=0.
+!          if (ip<=5) print*, 'der_2nd: Degenerate case in z-direction'
+!        endif
+!      endif
+!
+!    endsubroutine der_2nd
 !***********************************************************************
     subroutine der_4th_stag(f,k,df,j)
 !
@@ -1789,45 +1817,46 @@ module Sub
 
     endsubroutine der_4th_stag
 !***********************************************************************
-    subroutine der_2nd_stag(f,k,df,j)
+!TP: on comment since not used (to suppress compiler warnings)
+!    subroutine der_2nd_stag(f,k,df,j)
+!!
+!!  Calculates 1st order derivative by a 2nd order difference scheme from
+!!  data given on a grid shifted by half a grid step w.r.t. the point looked at.
+!!  Only valid for equidistant grids!
+!!
+!!  23-jun-18/JW: Adapted from der_4ht_stag
+!!
+!      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+!      real, dimension(nx), intent(out) :: df
+!      integer, intent(in) :: j, k
+!!
+!      if (j==1) then
+!        if (nxgrid/=1) then
+!          df=( f(l1:l2,m,n,k)-f(l1-1:l2-1,m,n,k))/(2.*dx)
+!        else
+!          df=0.
+!          if (ip<=5) print*, 'der_2nd_stag: Degenerate case in x-direction'
+!        endif
+!      elseif (j==2) then
+!        if (nygrid/=1) then
+!          df=(f(l1:l2,m  ,n,k)-f(l1:l2,m-1,n,k))/(2*dy)
+!          if (lspherical_coords  ) df = df * r1_mn
+!          if (lcylindrical_coords) df = df * rcyl_mn1
+!        else
+!          df=0.
+!          if (ip<=5) print*, 'der_2nd_stag: Degenerate case in y-direction'
+!        endif
+!      elseif (j==3) then
+!        if (nzgrid/=1) then
+!          df=(f(l1:l2,m,n  ,k)-f(l1:l2,m,n-1,k))/(2.*dz)
+!          if (lspherical_coords) df = df * r1_mn * sin1th(m)
+!        else
+!          df=0.
+!          if (ip<=5) print*, 'der_2nd_stag: Degenerate case in z-direction'
+!        endif
+!      endif
 !
-!  Calculates 1st order derivative by a 2nd order difference scheme from
-!  data given on a grid shifted by half a grid step w.r.t. the point looked at.
-!  Only valid for equidistant grids!
-!
-!  23-jun-18/JW: Adapted from der_4ht_stag
-!
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      real, dimension(nx), intent(out) :: df
-      integer, intent(in) :: j, k
-!
-      if (j==1) then
-        if (nxgrid/=1) then
-          df=( f(l1:l2,m,n,k)-f(l1-1:l2-1,m,n,k))/(2.*dx)
-        else
-          df=0.
-          if (ip<=5) print*, 'der_2nd_stag: Degenerate case in x-direction'
-        endif
-      elseif (j==2) then
-        if (nygrid/=1) then
-          df=(f(l1:l2,m  ,n,k)-f(l1:l2,m-1,n,k))/(2*dy)
-          if (lspherical_coords  ) df = df * r1_mn
-          if (lcylindrical_coords) df = df * rcyl_mn1
-        else
-          df=0.
-          if (ip<=5) print*, 'der_2nd_stag: Degenerate case in y-direction'
-        endif
-      elseif (j==3) then
-        if (nzgrid/=1) then
-          df=(f(l1:l2,m,n  ,k)-f(l1:l2,m,n-1,k))/(2.*dz)
-          if (lspherical_coords) df = df * r1_mn * sin1th(m)
-        else
-          df=0.
-          if (ip<=5) print*, 'der_2nd_stag: Degenerate case in z-direction'
-        endif
-      endif
-
-    endsubroutine der_2nd_stag
+!    endsubroutine der_2nd_stag
 !***********************************************************************
     subroutine div_other(f,g)
 !
@@ -3873,11 +3902,11 @@ module Sub
 !  Replaced t0 = max(t - dt, 0.0D0) -> t0 = t, in case t < 0.
 !
             settout: if (dtout < 0.0) then
-              tout = abs(dtout)+toutoff
+              tout = real(abs(dtout)+toutoff)
             elseif (dtout > 0.0) then settout
               !  make sure the tout is a good time
               t0 = t_temp
-              tout = t0 + (dble(dtout) - modulo(t0, dble(dtout)))
+              tout = real(t0 + (dble(dtout) - modulo(t0, dble(dtout))))
               if (t0 == 0.0) then
                 if (file==trim(trim(datadir)//'/t2davg.dat') .or.  &
                   file==trim(trim(datadir)//'/t1davg.dat')) tout = 0.0
@@ -3900,7 +3929,7 @@ module Sub
 !
       call mpibcast_real(bcast_array,nbcast_array,comm=MPI_COMM_PENCIL)
       tout = bcast_array(1)
-      nout = bcast_array(2)
+      nout = int(bcast_array(2))
 !
     endsubroutine read_snaptime
 !***********************************************************************
@@ -3945,7 +3974,7 @@ module Sub
 !
 !  Set t_sp, which is defined in single precision
 !
-      t_sp=t
+      t_sp=real(t)
 !
 !  Check if no writing tout is requested.
 !
@@ -4015,7 +4044,7 @@ module Sub
 !
           if (dtout<0.0) then
             !tout=toutoff+(tout-toutoff)*10.**onethird
-            tout=toutoff+(tout-toutoff)*10.**onesixth
+            tout=real(toutoff+(tout-toutoff)*10.**onesixth)
           elseif (itsnap/=impossible_int) then
             tout=huge_real
           else
@@ -4074,7 +4103,7 @@ module Sub
 !  lands the simulation at the precise time defined by dsnap.
 !
       if ((tsnap-t > dtmin).and.(t+dt_ > tsnap)) then
-        dt_=tsnap-t
+        dt_=real(tsnap-t)
         lfirst_call=.true.
       endif
 !
@@ -4120,11 +4149,15 @@ module Sub
 !
 !  22-jul-03/axel: coded
 !
+      use General, only: keep_compiler_quiet
+
       character (len=*) :: file
       real, dimension(nx,3) :: vv
       real, dimension(nx) :: v2
       real :: thresh,thresh2
       integer :: l,lun,nvec
+      
+      call keep_compiler_quiet(file)
 !
 !  Return if thresh=0 (default).
 !
@@ -5183,83 +5216,84 @@ module Sub
 !
     endsubroutine coeff_ydep
 !***********************************************************************
-    subroutine nan_inform(f,msg,region,int1,int2,int3,int4,lstop)
-!
-!  Check input array (f or df) for NaN, -Inf, Inf, and output location in
-!  array.
-!
-!  30-apr-04/anders: coded
-!  12-jun-04/anders: region or intervals supplied in call
-!
-      use General, only: notanumber
-!
-      real, dimension(:,:,:,:) :: f
-      character (len=*) :: msg
-      integer :: a,b,c,d,a1=1,a2=mx,b1=1,b2=my,c1=1,c2=mz,d1=1,d2=1
-      integer, dimension(2), optional :: int1,int2,int3,int4
-      character (len=*), optional :: region
-      logical, optional :: lstop
-!
-!  Must set d2 according to whether f or df is considered.
-!
-      d2 = size(f,4)
-!
-!  Set intervals for different predescribed regions.
-!
-      if (present(region)) then
-!
-        select case (region)
-        case ('f_array')
-        case ('pencil')
-          b1=m
-          b2=m
-          c1=n
-          c2=n
-        case ('default')
-          call fatal_error('nan_inform','No such region')
-        endselect
-!
-      endif
-!
-!  Overwrite with supplied intervals.
-!
-      if (present(int1)) then  ! x
-        a1=int1(1)
-        a2=int1(2)
-      endif
-!
-      if (present(int2)) then  ! y
-        b1=int2(1)
-        b2=int2(2)
-      endif
-!
-      if (present(int3)) then  ! z
-        c1=int3(1)
-        c2=int3(2)
-      endif
-!
-      if (present(int4)) then  ! variable
-        d1=int4(1)
-        d2=int4(2)
-      endif
-!
-!  Look for NaN and inf in resulting interval.
-!
-      do a=a1,a2; do b=b1,b2; do c=c1,c2; do d=d1,d2
-        if (notanumber(f(a,b,c,d))) then
-          print*,'nan_inform: NaN with message "', msg, &
-              '" encountered in the variable ', varname(d)
-          print*,'nan_inform: ', varname(d), ' = ', f(a,b,c,d)
-          print*,'nan_inform: t, it, itsub   = ', t, it, itsub
-          print*,'nan_inform: l, m, n, iproc = ', a, b, c, iproc_world
-          print*,'----------------------------'
-          if (present(lstop)) then
-            if (lstop) call fatal_error('nan_stop','')
-          endif
-        endif
-      enddo; enddo; enddo; enddo
-!
-    endsubroutine nan_inform
+!TP: on comment since not used (to suppress compiler warnings)
+!    subroutine nan_inform(f,msg,region,int1,int2,int3,int4,lstop)
+!!
+!!  Check input array (f or df) for NaN, -Inf, Inf, and output location in
+!!  array.
+!!
+!!  30-apr-04/anders: coded
+!!  12-jun-04/anders: region or intervals supplied in call
+!!
+!      use General, only: notanumber
+!!
+!      real, dimension(:,:,:,:) :: f
+!      character (len=*) :: msg
+!      integer :: a,b,c,d,a1=1,a2=mx,b1=1,b2=my,c1=1,c2=mz,d1=1,d2=1
+!      integer, dimension(2), optional :: int1,int2,int3,int4
+!      character (len=*), optional :: region
+!      logical, optional :: lstop
+!!
+!!  Must set d2 according to whether f or df is considered.
+!!
+!      d2 = size(f,4)
+!!
+!!  Set intervals for different predescribed regions.
+!!
+!      if (present(region)) then
+!!
+!        select case (region)
+!        case ('f_array')
+!        case ('pencil')
+!          b1=m
+!          b2=m
+!          c1=n
+!          c2=n
+!        case ('default')
+!          call fatal_error('nan_inform','No such region')
+!        endselect
+!!
+!      endif
+!!
+!!  Overwrite with supplied intervals.
+!!
+!      if (present(int1)) then  ! x
+!        a1=int1(1)
+!        a2=int1(2)
+!      endif
+!!
+!      if (present(int2)) then  ! y
+!        b1=int2(1)
+!        b2=int2(2)
+!      endif
+!!
+!      if (present(int3)) then  ! z
+!        c1=int3(1)
+!        c2=int3(2)
+!      endif
+!!
+!      if (present(int4)) then  ! variable
+!        d1=int4(1)
+!        d2=int4(2)
+!      endif
+!!
+!!  Look for NaN and inf in resulting interval.
+!!
+!      do a=a1,a2; do b=b1,b2; do c=c1,c2; do d=d1,d2
+!        if (notanumber(f(a,b,c,d))) then
+!          print*,'nan_inform: NaN with message "', msg, &
+!              '" encountered in the variable ', varname(d)
+!          print*,'nan_inform: ', varname(d), ' = ', f(a,b,c,d)
+!          print*,'nan_inform: t, it, itsub   = ', t, it, itsub
+!          print*,'nan_inform: l, m, n, iproc = ', a, b, c, iproc_world
+!          print*,'----------------------------'
+!          if (present(lstop)) then
+!            if (lstop) call fatal_error('nan_stop','')
+!          endif
+!        endif
+!      enddo; enddo; enddo; enddo
+!!
+!    endsubroutine nan_inform
 !***********************************************************************
     subroutine parse_bc(bc,bc12)
 !
@@ -5962,21 +5996,21 @@ nameloop: do
       real :: enum,denom
       integer :: i
 !
-      coeff1=(/0.66761295020790986D00, &
-               0.36946093910826145D00, &
-               0.18669829780572704D00, &
-               4.8801451277274492D-2, &
-               1.36528684153155468D-2, &
-               1.7488042503123817D-3, &
-               3.6032044608268575D-4/)
+      coeff1=(/0.66761295020790986E00, &
+               0.36946093910826145E00, &
+               0.18669829780572704E00, &
+               4.8801451277274492E-2, &
+               1.36528684153155468E-2, &
+               1.7488042503123817E-3, &
+               3.6032044608268575E-4/)
 !
-      coeff2=(/0.66761295020791116D00, &
-               0.754817592058897962D00, &
-              -3.7915754844972276D-2, &
-              -0.11379619871302534D00, &
-               1.5035521280605477D-2, &
-               3.1375176929984225D-3, &
-              -5.5599617153443518D-4/)
+      coeff2=(/0.66761295020791116E00, &
+               0.754817592058897962E00, &
+              -3.7915754844972276E-2, &
+              -0.11379619871302534E00, &
+               1.5035521280605477E-2, &
+               3.1375176929984225E-3, &
+              -5.5599617153443518E-4/)
 !
       if (x>1) then
 !
@@ -7438,9 +7472,8 @@ nameloop: do
       integer,                  intent (in), optional :: indep
       logical,                  intent (in), optional :: lexp
 !
-      real, allocatable, dimension(:) :: mean, mean_tmp
+      real, allocatable, dimension(:) :: mean
       integer :: l,m,n,j,inde
-      real :: fac
       real, dimension(:,:,:,:), pointer :: f
 !
 !print*, 'in remove_mean'
@@ -7836,6 +7869,8 @@ nameloop: do
 !
 !  13-03-2020/Joern: coded, based on similar routine in special/solar_corona.f90
 
+      use General, only: keep_compiler_quiet
+
       intent(in) :: f,j,h_slope_limited,nlf,div_type
       intent(out) :: div_flux
 !
@@ -7854,10 +7889,11 @@ nameloop: do
 !
       real :: nlf, h_slope_limited, one_16, fdif_limit, dy12, dz12
       real, dimension(nx) :: dx12
-      !TP: not used!!
       type (pencil_case), intent(in) :: p
       integer :: j,k,ix
       logical :: ldiv_4th
+
+        call keep_compiler_quiet(p)
 !
 ! First set the diffusive flux = cmax*(f_R-f_L) at half grid points
 !
@@ -8459,50 +8495,51 @@ nameloop: do
 !
     endfunction minmod_alt
 !***********************************************************************
-    subroutine calc_lin_interpol(f,j,fim12,fip12,k)
+!TP: on comment since not used (to suppress compiler warnings)
+!    subroutine calc_lin_interpol(f,j,fim12,fip12,k)
+!!
+!! Get values at half grid points l+1/2,m+1/2,n+1/2 depending on case(k)
+!!
+!      intent(in) :: f,k,j
+!      intent(out) :: fim12, fip12
+!!
+!      real, dimension (mx,my,mz,mfarray) :: f
+!      real, dimension (nx) :: fim12, fip12
+!      integer :: j,k
 !
-! Get values at half grid points l+1/2,m+1/2,n+1/2 depending on case(k)
-!
-      intent(in) :: f,k,j
-      intent(out) :: fim12, fip12
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: fim12, fip12
-      integer :: j,k
-
-      select case (k)
-! x-component
-        case(1)
-          if (j == ilnrho) then
-            fim12=0.5*(exp(f(l1:l2,m,n,j))+exp(f(l1-1:l2-1,m,n,j)))
-            fip12=0.5*(exp(f(l1:l2,m,n,j))+exp(f(l1+1:l2+1,m,n,j)))
-          else
-            fim12=0.5*(f(l1:l2,m,n,j)+f(l1-1:l2-1,m,n,j))
-            fip12=0.5*(f(l1:l2,m,n,j)+f(l1+1:l2+1,m,n,j))
-          endif
-! y-component
-        case(2)
-          if (j == ilnrho) then
-            fim12=0.5*(exp(f(l1:l2,m,n,j))+exp(f(l1:l2,m-1,n,j)))
-            fip12=0.5*(exp(f(l1:l2,m,n,j))+exp(f(l1:l2,m+1,n,j)))
-          else
-            fim12=0.5*(f(l1:l2,m,n,j)+f(l1:l2,m-1,n,j))
-            fip12=0.5*(f(l1:l2,m,n,j)+f(l1:l2,m+1,n,j))
-          endif
-! z-component
-        case(3)
-          if (j == ilnrho) then
-            fim12=0.5*(exp(f(l1:l2,m,n,j))+exp(f(l1:l2,m,n-1,j)))
-            fip12=0.5*(exp(f(l1:l2,m,n,j))+exp(f(l1:l2,m,n+1,j)))
-          else
-            fim12=0.5*(f(l1:l2,m,n,j)+f(l1:l2,m,n-1,j))
-            fip12=0.5*(f(l1:l2,m,n,j)+f(l1:l2,m,n+1,j))
-          endif
-        case default
-          call fatal_error('sub:calc_lin_interpol','wrong component')
-        endselect
-!
-    endsubroutine calc_lin_interpol
+!      select case (k)
+!! x-component
+!        case(1)
+!          if (j == ilnrho) then
+!            fim12=0.5*(exp(f(l1:l2,m,n,j))+exp(f(l1-1:l2-1,m,n,j)))
+!            fip12=0.5*(exp(f(l1:l2,m,n,j))+exp(f(l1+1:l2+1,m,n,j)))
+!          else
+!            fim12=0.5*(f(l1:l2,m,n,j)+f(l1-1:l2-1,m,n,j))
+!            fip12=0.5*(f(l1:l2,m,n,j)+f(l1+1:l2+1,m,n,j))
+!          endif
+!! y-component
+!        case(2)
+!          if (j == ilnrho) then
+!            fim12=0.5*(exp(f(l1:l2,m,n,j))+exp(f(l1:l2,m-1,n,j)))
+!            fip12=0.5*(exp(f(l1:l2,m,n,j))+exp(f(l1:l2,m+1,n,j)))
+!          else
+!            fim12=0.5*(f(l1:l2,m,n,j)+f(l1:l2,m-1,n,j))
+!            fip12=0.5*(f(l1:l2,m,n,j)+f(l1:l2,m+1,n,j))
+!          endif
+!! z-component
+!        case(3)
+!          if (j == ilnrho) then
+!            fim12=0.5*(exp(f(l1:l2,m,n,j))+exp(f(l1:l2,m,n-1,j)))
+!            fip12=0.5*(exp(f(l1:l2,m,n,j))+exp(f(l1:l2,m,n+1,j)))
+!          else
+!            fim12=0.5*(f(l1:l2,m,n,j)+f(l1:l2,m,n-1,j))
+!            fip12=0.5*(f(l1:l2,m,n,j)+f(l1:l2,m,n+1,j))
+!          endif
+!        case default
+!          call fatal_error('sub:calc_lin_interpol','wrong component')
+!        endselect
+!!
+!    endsubroutine calc_lin_interpol
 !*******************************************************************************
     subroutine calc_diffusive_flux(diffs,c_char,islope_limiter,h_slope_limited,flux)
 !
@@ -9175,7 +9212,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
       integer, save :: nt_file, it_file
       real, save :: lgt0, dlgt, H0=1.
       real, save :: lgt1, lgt2, lgf1, lgf2, lgf
-      real, save :: lgt_ini, a_ini, Hp_ini, app_om=0
+      real, save :: lgt_ini, a_ini, Hp_ini
       real :: Hp_target_previous, appa_target_previous
 !
       real :: lgt_current
@@ -9370,7 +9407,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
 
       real, dimension(mx,my,mz,mfarray) :: f
       character (len=*), optional :: caller
-      integer :: has_nan_local,has_nan_global
+      integer :: has_nan_local
       integer :: i
 
       !isnan is written out since we cannot always depend on it
