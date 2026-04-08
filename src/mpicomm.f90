@@ -50,7 +50,7 @@
 module Mpicomm
 !
   use Cdata
-  use General, only: find_proc, ioptest,loptest
+  use General, only: find_proc, ioptest,loptest, div
   use Yinyang
 !
   implicit none
@@ -887,13 +887,13 @@ module Mpicomm
         allocate(ubufzo(mx,bufsizes_yz(INZU,ISND),nghost,mcom))
       endif
 
-      if (lfirst_proc_y.and.ipz>=floor(nprocz/3.).and.ipz<2*nprocz/3.) then
+      if (lfirst_proc_y.and.ipz>=div(nprocz,3).and.ipz<2*nprocz/3.) then
         allocate(lbufyo(mx,bufsizes_yz(INYL,ISND),nghost,mcom))
       else
         allocate(lbufyo(mx,nghost,bufsizes_yz(INYL,ISND),mcom))
       endif
 
-      if (llast_proc_y.and.ipz>=floor(nprocz/3.).and.ipz<2*nprocz/3.) then
+      if (llast_proc_y.and.ipz>=div(nprocz,3).and.ipz<2*nprocz/3.) then
         allocate(ubufyo(mx,bufsizes_yz(INYU,ISND),nghost,mcom))
       else
         allocate(ubufyo(mx,nghost,bufsizes_yz(INYU,ISND),mcom))
@@ -904,25 +904,25 @@ module Mpicomm
                 ulbufi(mx,bufsizes_yz_corn(1,INUL,IRCV),bufsizes_yz_corn(2,INUL,IRCV),mcom), &
                 uubufi(mx,bufsizes_yz_corn(1,INUU,IRCV),bufsizes_yz_corn(2,INUU,IRCV),mcom))
 
-      if (lfirst_proc_z.or.lfirst_proc_y.and.ipz>=floor(nprocz/3.).and.ipz<2*nprocz/3.) then
+      if (lfirst_proc_z.or.lfirst_proc_y.and.ipz>=div(nprocz,3).and.ipz<2*nprocz/3.) then
         allocate(llbufo(mx,bufsizes_yz_corn(2,INLL,ISND),bufsizes_yz_corn(1,INLL,ISND),mcom))
       else
         allocate(llbufo(mx,bufsizes_yz_corn(1,INLL,ISND),bufsizes_yz_corn(2,INLL,ISND),mcom))
       endif
 
-      if (lfirst_proc_z.or.llast_proc_y.and.ipz>=floor(nprocz/3.).and.ipz<2*nprocz/3.) then
+      if (lfirst_proc_z.or.llast_proc_y.and.ipz>=div(nprocz,3).and.ipz<2*nprocz/3.) then
         allocate(ulbufo(mx,bufsizes_yz_corn(2,INUL,ISND),bufsizes_yz_corn(1,INUL,ISND),mcom) )
       else
         allocate(ulbufo(mx,bufsizes_yz_corn(1,INUL,ISND),bufsizes_yz_corn(2,INUL,ISND),mcom) )
       endif
 
-      if (llast_proc_z.or.llast_proc_y.and.ipz>=floor(nprocz/3.).and.ipz<2*nprocz/3.) then
+      if (llast_proc_z.or.llast_proc_y.and.ipz>=div(nprocz,3).and.ipz<2*nprocz/3.) then
         allocate(uubufo(mx,bufsizes_yz_corn(2,INUU,ISND),bufsizes_yz_corn(1,INUU,ISND),mcom))
       else
         allocate(uubufo(mx,bufsizes_yz_corn(1,INUU,ISND),bufsizes_yz_corn(2,INUU,ISND),mcom))
       endif
 
-      if (llast_proc_z.or.lfirst_proc_y.and.ipz>=floor(nprocz/3.).and.ipz<2*nprocz/3.) then
+      if (llast_proc_z.or.lfirst_proc_y.and.ipz>=div(nprocz,3).and.ipz<2*nprocz/3.) then
         allocate(lubufo(mx,bufsizes_yz_corn(2,INLU,ISND),bufsizes_yz_corn(1,INLU,ISND),mcom) )
       else
         allocate(lubufo(mx,bufsizes_yz_corn(1,INLU,ISND),bufsizes_yz_corn(2,INLU,ISND),mcom) )
@@ -1204,7 +1204,7 @@ if (llast_proc_z) write(24,'(2(f10.4,1x))') thphprime_strip_y
 !print*, '-----------------'
 endif
 
-          if (ipz>=floor(nprocz/3.).and.ipz<floor(2*nprocz/3.)) then
+          if (ipz>=div(nprocz,3).and.ipz<div(2*nprocz,3)) then
 !
 !  Transposition of thphprime_strip_y, can perhaps be avoided.
 !
@@ -1293,7 +1293,7 @@ if (llast_proc_z) write(26,'(2(f10.4,1x))') thphprime_strip_y
 !print*, '-----------------'
 endif
 
-          if (ipz>=floor(nprocz/3.).and.ipz<floor(2*nprocz/3.)) then
+          if (ipz>=div(nprocz,3).and.ipz<div(2*nprocz,3)) then
 !
 !  Transposition of thphprime_strip_y, can perhaps be avoided.
 !
@@ -1547,11 +1547,11 @@ print*, 'noks_all,ngap_all,nstrip_total=', noks_all,ngap_all,nstrip_total
 !  NB nprocz=2*n, n>=1, comms across y-plane parallel in z!
 !
       if (lcommunicate_y) then
-        poleneigh = find_proc(ipx,     ipy,ipz  +floor(nprocz/2.))
-        pnbcrn    = find_proc(ipx,       0,ipz-1+floor(nprocz/2.))
-        pnfcrn    = find_proc(ipx,       0,ipz+1+floor(nprocz/2.))
-        psfcrn    = find_proc(ipx,nprocy-1,ipz+1+floor(nprocz/2.))
-        psbcrn    = find_proc(ipx,nprocy-1,ipz-1+floor(nprocz/2.))
+        poleneigh = find_proc(ipx,     ipy,ipz  +div(nprocz,2))
+        pnbcrn    = find_proc(ipx,       0,ipz-1+div(nprocz,2))
+        pnfcrn    = find_proc(ipx,       0,ipz+1+div(nprocz,2))
+        psfcrn    = find_proc(ipx,nprocy-1,ipz+1+div(nprocz,2))
+        psbcrn    = find_proc(ipx,nprocy-1,ipz-1+div(nprocz,2))
         !poleneigh = modulo(ipz  +nprocz/2,nprocz)*nprocxy+       ipy*nprocx+ipx
         !pnbcrn    = modulo(ipz-1+nprocz/2,nprocz)*nprocxy+         0*nprocx+ipx !N rev
         !pnfcrn    = modulo(ipz+1+nprocz/2,nprocz)*nprocxy+         0*nprocx+ipx !N fwd
@@ -2502,20 +2502,20 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           c4 = +(frac+2.)*(frac+1.)*frac          *(frac-2.)*(frac-3.)/12.
           c5 = -(frac+2.)*(frac+1.)*frac*(frac-1.)          *(frac-3.)/24.
           c6 = +(frac+2.)*(frac+1.)*frac*(frac-1.)*(frac-2.)          /120.
-          f(1:l1-1,m1:m2,:,ivar1:ivar2) = &
+          f(1:l1-1,m1:m2,:,ivar1:ivar2) = real(&
                c1*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs+2,2) &
               +c2*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs+1,2) &
               +c3*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs  ,2) &
               +c4*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs-1,2) &
               +c5*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs-2,2) &
-              +c6*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs-3,2)
-          f(l2+1:mx,m1:m2,:,ivar1:ivar2) = &
+              +c6*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs-3,2))
+          f(l2+1:mx,m1:m2,:,ivar1:ivar2) = real(&
                c1*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs-2,2) &
               +c2*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs-1,2) &
               +c3*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs  ,2) &
               +c4*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs+1,2) &
               +c5*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs+2,2) &
-              +c6*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs+3,2)
+              +c6*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs+3,2))
         endif
       else
         if (nygrid==1) return ! Periodic boundary conditions already set.
@@ -2759,22 +2759,22 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !       m2 long is the position of the last value from fahi in fa
 !
         m2long = 3*ny
-        f(1:l1-1,m1:m2,:,ivar1:ivar2) = &
+        f(1:l1-1,m1:m2,:,ivar1:ivar2) = real(&
              c1*fa(:,m2long-ny-displs+3:m2long-displs+2,:,ivar1:ivar2) &
             +c2*fa(:,m2long-ny-displs+2:m2long-displs+1,:,ivar1:ivar2) &
             +c3*fa(:,m2long-ny-displs+1:m2long-displs-0,:,ivar1:ivar2) &
             +c4*fa(:,m2long-ny-displs-0:m2long-displs-1,:,ivar1:ivar2) &
             +c5*fa(:,m2long-ny-displs-1:m2long-displs-2,:,ivar1:ivar2) &
-            +c6*fa(:,m2long-ny-displs-2:m2long-displs-3,:,ivar1:ivar2)
+            +c6*fa(:,m2long-ny-displs-2:m2long-displs-3,:,ivar1:ivar2))
 !
 !       ny+1 is the beginning of the block of interior cell from fblo in fb
-        f(l2+1:mx,m1:m2,:,ivar1:ivar2)= &
+        f(l2+1:mx,m1:m2,:,ivar1:ivar2)= real(&
              c1*fb(:,ny+1+displs-2:2*ny+displs-2,:,ivar1:ivar2) &
             +c2*fb(:,ny+1+displs-1:2*ny+displs-1,:,ivar1:ivar2) &
             +c3*fb(:,ny+1+displs  :2*ny+displs  ,:,ivar1:ivar2) &
             +c4*fb(:,ny+1+displs+1:2*ny+displs+1,:,ivar1:ivar2) &
             +c5*fb(:,ny+1+displs+2:2*ny+displs+2,:,ivar1:ivar2) &
-            +c6*fb(:,ny+1+displs+3:2*ny+displs+3,:,ivar1:ivar2)
+            +c6*fb(:,ny+1+displs+3:2*ny+displs+3,:,ivar1:ivar2))
 !
 !  Need to wait till buffer is empty before re-using it again.
 !
@@ -5586,7 +5586,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
           allocate (tmp(nx,ny))
           do n=1,nz
-            do ibox=0,nx/nygrid-1
+            do ibox=0,div(nx,nygrid)-1
               iy=ibox*ny
               tmp=transpose(a(iy+1:iy+ny,:,n))
               a(iy+1:iy+ny,:,n)=tmp
@@ -10488,9 +10488,10 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  20-dec-15/MR: coded
 !
-        integer, parameter :: nprocz_rd=floor(nprocz/3.)
+        integer :: nprocz_rd
         integer :: lenred
 
+        nprocz_rd = div(nprocz,3)
         if (lcutoff_corners) then
           len_cornstrip_y=nycut-1
           len_cornstrip_z=nzcut-1
@@ -10948,7 +10949,7 @@ endif
 
         frgn_setup%root=ncpus
         frgn_setup%tag=tag_foreign
-        frgn_setup%t_last_recvd=t
+        frgn_setup%t_last_recvd=real(t)
 !print*, 'iproc, iproc_world, MPI_COMM_UNIVERSE, MPI_COMM_WORLD=', iproc, &
 !        iproc_world, MPI_COMM_UNIVERSE, MPI_COMM_WORLD
         if (lroot) then

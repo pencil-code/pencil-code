@@ -77,6 +77,11 @@ module General
     module procedure string_to_enum_1d
     module procedure string_to_enum_2d 
   endinterface
+
+  public :: div
+  interface div
+    module procedure int_div
+  endinterface
 ! 
 !
 !  State and default generator of random numbers.
@@ -8158,6 +8163,11 @@ iloop:do i=1,size(list2)
       enddo
 !
     endsubroutine string_to_enum_2d
+!***********************************************************************
+    integer function int_div(a,b)
+            integer :: a,b
+            int_div = a/b
+    endfunction
 !***********************************************************************
 !$  subroutine signal_wait_single(lflag, lvalue)
 !
