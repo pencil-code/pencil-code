@@ -6686,13 +6686,15 @@ module Boundcond
       use Fourier, only : setup_extrapol_fact, field_extrapol_z_parallel
       use Mpicomm, only : mpisend_real, mpirecv_real, &
                           mpisend_logical, mpirecv_logical
+      use General, only: div
 !
       real, dimension (:,:,:,:) :: f
       real, save :: t_l=0., t_r=0., delta_t=0.
       integer :: ierr, lend, frame, stat, rec_l, rec_r
       integer :: rec_vxl, rec_vxr, rec_vyl, rec_vyr ! l- and r-record position if file
-      integer, parameter :: bnx=nxgrid, bny=ny/nprocx ! data in pencil shape
-      integer, parameter :: enx=nygrid, eny=nx/nprocy ! transposed data in pencil shape
+      integer, parameter :: bnx=nxgrid ! data in pencil shape
+      integer, parameter :: enx=nygrid ! transposed data in pencil shape
+      integer :: bny,eny
       integer :: px, py, partner
       integer, parameter :: tag_l=208, tag_r=209, tag_dt=210
       logical, save :: luse_vel_field = .false., first_run = .true.
@@ -6718,6 +6720,8 @@ module Boundcond
       character (len=*), parameter :: mag_times_dat = 'driver/mag_times.dat'
       character (len=*), parameter :: mag_vel_field_dat = 'driver/mag_vel_field.dat'
 !
+      bny=div(ny,nprocx)
+      eny=div(nx,nprocy)
       if (ldownsampling) then
         call warning('bc_force_aa_time','Not available for downsampling')   !,lfirst_proc_xy)
         return

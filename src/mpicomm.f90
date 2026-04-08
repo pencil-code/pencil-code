@@ -8545,8 +8545,9 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(:,:), intent(out) :: out
 !
       integer, parameter :: inx=nx, iny=ny
-      integer, parameter :: onx=nxgrid, ony=ny/nprocx
-      integer, parameter :: bnx=nx, bny=ny/nprocx ! transfer box sizes
+      integer, parameter :: onx=nxgrid
+      integer, parameter :: bnx=nx
+      integer :: ony,bny
       integer :: ibox, partner, nbox, alloc_err
       integer, parameter :: ltag=104, utag=105
       integer, dimension(MPI_STATUS_SIZE) :: stat
@@ -8555,6 +8556,8 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, optional :: comm
       logical, optional :: lsync
 !
+      ony = div(ny,nprocx)
+      bny = ony
       if (nprocx == 1) then
         !$omp workshare
         out = in
@@ -8698,7 +8701,8 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(:,:,:), intent(in) :: in
       real, dimension(:,:,:), intent(out) :: out
 !
-      integer, parameter :: bnx = nx, bny = ny / nprocx
+      integer, parameter :: bnx = nx
+      integer :: bny
       integer, parameter :: ltag = 104, utag = 105
       real, dimension(:,:,:), allocatable :: send_buf, recv_buf
       integer, dimension(MPI_STATUS_SIZE) :: stat
@@ -8708,6 +8712,8 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: ngc
       integer, optional :: comm
       logical, optional :: lsync
+
+      bny = div(ny,nprocx)
 !
 !  No need to remap if nprocx = 1.
 !
@@ -8731,11 +8737,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       iny = size(in, 2)
       dim: if (inx == nx .and. iny == ny) then
         onx = nxgrid
-        ony = ny / nprocx
+        ony = div(ny,nprocx)
         ngc = 0
       elseif (inx == mx .and. iny == my) then dim
         onx = mxgrid
-        ony = ny / nprocx + 2 * nghost
+        ony = div(ny,nprocx) + 2 * nghost
         ngc = nghost
       else dim
         call stop_fatal('remap_to_pencil_xy_3D: input array size mismatch', lfirst_proc_xy)
@@ -8799,9 +8805,10 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(:,:,:,:), intent(out) :: out
 !
       integer, parameter :: inx=nx, iny=ny
-      integer, parameter :: onx=nxgrid, ony=ny/nprocx
+      integer, parameter :: onx=nxgrid
       integer :: inz, ina, onz, ona ! sizes of in and out arrays
-      integer, parameter :: bnx=nx, bny=ny/nprocx ! transfer box sizes
+      integer, parameter :: bnx=nx ! transfer box sizes
+      integer :: ony,bny
       integer :: ibox, partner, nbox, alloc_err
       integer, parameter :: ltag=104, utag=105
       integer, dimension(MPI_STATUS_SIZE) :: stat
@@ -8810,6 +8817,8 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, optional :: comm
       logical, optional :: lsync
 !
+      ony = div(ny,nprocx)
+      bny = ony
       if (nprocx == 1) then
         !$omp workshare
         out = in
@@ -8881,9 +8890,10 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(:,:), intent(in) :: in
       real, dimension(:,:), intent(out) :: out
 !
-      integer, parameter :: inx=nxgrid, iny=ny/nprocx
+      integer, parameter :: inx=nxgrid
       integer, parameter :: onx=nx, ony=ny
-      integer, parameter :: bnx=nx, bny=ny/nprocx ! transfer box sizes
+      integer, parameter :: bnx=nx ! transfer box sizes
+      integer :: iny,bny
       integer :: ibox, partner, nbox, alloc_err
       integer, parameter :: ltag=106, utag=107
       integer, dimension(MPI_STATUS_SIZE) :: stat
@@ -8892,6 +8902,8 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, optional :: comm
       logical, optional :: lsync
 !
+      iny = div(ny,nprocx)
+      bny = iny
       if (nprocx == 1) then
         !$omp workshare
         out = in
@@ -9038,8 +9050,8 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(:,:,:), intent(in) :: in
       real, dimension(:,:,:), intent(out) :: out
 !
-      integer, parameter :: nypx = ny / nprocx
-      integer, parameter :: bnx = nx, bny = nypx
+      integer, parameter :: bnx = nx
+      integer :: nypx, bny
       integer, parameter :: ltag = 106, utag = 107
       real, dimension(:,:,:), allocatable :: send_buf, recv_buf
       integer, dimension(MPI_STATUS_SIZE) :: stat
@@ -9052,6 +9064,8 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  No need to unmap if nprocx = 1.
 !
+      nypx = div(ny,nprocx)
+      bny  = nypx
       if (nprocx == 1) then
         !$omp workshare
         out = in
@@ -9139,10 +9153,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(:,:,:,:), intent(in) :: in
       real, dimension(:,:,:,:), intent(out) :: out
 !
-      integer, parameter :: inx=nxgrid, iny=ny/nprocx
+      integer, parameter :: inx=nxgrid
       integer, parameter :: onx=nx, ony=ny
       integer :: inz, ina, onz, ona ! sizes of in and out arrays
-      integer, parameter :: bnx=nx, bny=ny/nprocx ! transfer box sizes
+      integer, parameter :: bnx=nx ! transfer box sizes
+      integer :: iny,bny
       integer :: ibox, partner, nbox, alloc_err
       integer, parameter :: ltag=106, utag=107
       integer, dimension(MPI_STATUS_SIZE) :: stat
@@ -9151,6 +9166,8 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, optional :: comm
       logical, optional :: lsync
 !
+      iny = div(ny,nprocx)
+      bny = iny
       if (nprocx == 1) then
         !$omp workshare
         out = in

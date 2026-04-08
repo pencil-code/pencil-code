@@ -29,7 +29,7 @@ module Cosmicray
   character (len=labellen) :: initecr='zero', initecr2='zero'
 !
   real :: gammacr=4./3.,gammacr1
-  real :: amplecr=.1,widthecr=.5,ecr_min=0.,ecr_const=0.
+  real :: amplecr=.1,widthecr=.5,ecr_const=0.
   real :: x_pos_cr=.0,y_pos_cr=.0,z_pos_cr=.0
   real :: x_pos_cr2=.0,y_pos_cr2=.0,z_pos_cr2=.0,ampl_Qcr2=0.
   real :: amplecr2=0.,kx_ecr=1.,ky_ecr=1.,kz_ecr=1.,radius_ecr=1.,epsilon_ecr=0.
@@ -441,6 +441,8 @@ module Cosmicray
       integer :: iname,inamez
       logical :: lreset
       logical, optional :: lwrite
+
+      call keep_compiler_quiet(lwrite)
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
@@ -724,7 +726,6 @@ module Cosmicray
     use General , only: string_to_enum
 
     integer, parameter :: n_pars=100
-    integer :: i
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(gammacr,p_par(1))
@@ -741,6 +742,9 @@ module Cosmicray
     call copy_addr(blimiter_cr,p_par(12))
     call copy_addr(simplified_cosmicray_tensor,p_par(13)) ! bool
     call copy_addr(lupw_ecr,p_par(14)) ! bool
+
+    call keep_compiler_quiet(z_pos_cr)
+    call keep_compiler_quiet(z_pos_cr2)
 
     endsubroutine pushpars2c
 !***********************************************************************

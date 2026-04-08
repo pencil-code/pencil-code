@@ -3211,10 +3211,12 @@ module Initcond
       use EquationOfState, only: eoscalc
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nxgrid,nzgrid,mvar) :: slice
+      real, allocatable, dimension(:,:,:) :: slice
       logical :: exist
       integer :: stat
       character (len=labellen) :: strati_type
+      
+      allocate(slice(nxgrid,nzgrid,mvar))
 !
 !  read mean stratification and write into array
 !  if file is not found in run directory, search under trim(directory)
@@ -6842,8 +6844,9 @@ module Initcond
 !
       real, dimension (:,:), allocatable :: Bz
       real, dimension (:,:,:), allocatable :: exp_fact
-      integer, parameter :: bnx=nxgrid, bny=ny/nprocx ! data in pencil shape
-      integer, parameter :: enx=nygrid, eny=nx/nprocy ! transposed data in pencil shape
+      integer, parameter :: bnx=nxgrid ! data in pencil shape
+      integer, parameter :: enx=nygrid ! transposed data in pencil shape
+      integer :: bny,eny
       integer, parameter :: unit=11
       integer, parameter :: tag_xy=131, tag_z=132
       integer :: py, pz, partner
@@ -6856,6 +6859,10 @@ module Initcond
       ! file location settings
       character (len=*), parameter :: mag_field_dat = 'driver/mag_field.dat'
 !
+
+      bny = div(ny,nprocx)
+      eny = div(nx,nprocy)
+
       if (.not. lperi(1) .or. .not. lperi(2)) call fatal_error ('mag_init', &
           'Currently only implemented for xy-periodic setups!')
       if (.not. lequidist(1) .or. .not. lequidist(2)) call not_implemented('mag_init', &
