@@ -50,7 +50,7 @@ module Run_module
     implicit none
 
     integer :: icount, it_last_diagnostic
-    real(KIND=rkind8) :: time1, time_last_diagnostic
+    real(KIND=rkind8) :: time1=impossible, time_last_diagnostic
     real :: time_doing_diagnostics = 0., time_in_timestep = 0.
 
 contains
@@ -857,7 +857,7 @@ endsubroutine helper_loop
   type (pencil_case) :: p
 
   character(len=fnlen) :: fproc_bounds
-  real(KIND=rkind8) :: time2, tvar1
+  real(KIND=rkind8) :: time2=impossible, tvar1
   integer :: mvar_in
   logical :: suppress_pencil_check=.false.
   logical :: lnoreset_tzero=.false.
