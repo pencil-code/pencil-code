@@ -848,7 +848,8 @@
 !***********************************************************************
     subroutine pushpars2c(p_par)
 
-      use Messages, only: not_implemented
+      use Messages, only: fatal_error 
+      use General, only: keep_compiler_quiet
 
       integer, parameter :: n_pars=0
       integer(KIND=ikind8), dimension(n_pars) :: p_par
