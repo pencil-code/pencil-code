@@ -57,7 +57,7 @@
     real(KIND=rkind8) :: t
 
     if (torus%Omega_prec /= 0.) then
-        torus%ph=torus%ph0+torus%Omega_prec*t
+        torus%ph=real(torus%ph0+torus%Omega_prec*t)
     endif
 
     endsubroutine torus_precess
@@ -68,7 +68,7 @@
     real(KIND=rkind8) :: t
 
     if (torus%wob_om(1) /= 0.0 .and. torus%wob_om(2) /= 0.0 .and. torus%wob_om(3) /= 0.0) then
-        torus%center=torus%center0+torus%wob_amp*cos(torus%wob_om*t+torus%wob_phase)
+        torus%center=real(torus%center0+torus%wob_amp*cos(torus%wob_om*t+torus%wob_phase))
      endif
 
     endsubroutine torus_wobble
@@ -79,7 +79,7 @@
     real(KIND=rkind8) :: t
 
     if (torus%extr_rate /= 0.) then
-        torus%r_in=max(torus%r_in0*(1.+torus%extr_rate*t),0.d0)
+        torus%r_in=real(max(torus%r_in0*(1.+torus%extr_rate*t),0.d0))
     endif
 
 
@@ -91,7 +91,7 @@
     real(KIND=rkind8) :: t
 
     if (torus%extz_rate /= 0.) then
-        torus%height=max(torus%height0*(1.+torus%extz_rate*t),0.d0)
+        torus%height=real(max(torus%height0*(1.+torus%extz_rate*t),0.d0))
     endif
 
 
@@ -106,6 +106,9 @@
 
     write(unit=unit,iostat=iostat) torus%center, torus%th, torus%ph, torus%r_in, torus%thick, &
                                                  torus%height
+
+    !TP: poor man's keep_compiler_quiet
+    if(.false.) print*,iomsg
     endsubroutine torus_rect_unfmt_write
 !***********************************************************************
     subroutine torus_rect_unfmt_read(torus,unit,iostat,iomsg)
@@ -117,6 +120,8 @@
 
     read(unit=unit,iostat=iostat) torus%center, torus%th, torus%ph, torus%r_in, torus%thick, &
                                                 torus%height
+    !TP: poor man's keep_compiler_quiet
+    if(.false.) print*,iomsg
     endsubroutine torus_rect_unfmt_read
 !***********************************************************************
   endmodule Geometrical_types

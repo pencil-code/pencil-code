@@ -340,7 +340,7 @@ module DensityMethods
 
       if (ldensity_nolog) then
         if (lreference_state) then
-          if (rl <= (nx+1)/2) then
+          if (rl <= floor((nx+1)/2.)) then
             id = -il
           else
             id = il

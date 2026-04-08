@@ -48,12 +48,13 @@ module Dustdensity
   integer, parameter :: ndiffd_max=4, mmom=24  !(largest possible moment)
 !  integer, parameter :: ndustspec0=10 !8
 !  real, dimension(mx,my,mz,ndustspec,ndustspec0), SAVE :: nd_full
-  real, dimension(nx,ndustspec,ndustspec0) :: dndr_full, ppsf_full
+  real, dimension(nx,ndustspec,ndustspec0) :: ppsf_full
+  !real, dimension(nx,ndustspec,ndustspec0) :: dndr_full
 !  real, dimension(ndustspec0)  :: Ntot_i
   real, dimension(nx,ndustspec,ndustspec) :: dkern
   !$omp threadprivate(dkern)
   real, dimension(ndustspec,ndustspec0) :: init_distr_ki
-  real, dimension(ndustspec0) :: BB=0.
+  !real, dimension(ndustspec0) :: BB=0.
   real, dimension(ndustspec) :: dsize,init_distr2,amplnd_rel=0.
   real, dimension(ndustspec) :: diffnd_ndustspec,mi
   real, dimension(mx,ndustspec) :: init_distr
@@ -75,7 +76,8 @@ module Dustdensity
   real, parameter :: ueta=0.0,teta=0.0,ul0=0.0, tl0=0.0
   real, parameter :: tl01=tl0/(tl0+tini),teta1=teta/(teta+tini)
   real :: rho_w=1.0, Dwater=22.0784e-2
-  real :: delta=1.2, delta0=1.2, deltavd_const=1.
+  real :: deltavd_const=1.
+! real :: delta=1.2, delta0=1.2
   real :: Rgas=8.31e7
   real :: Rgas_unit_sys, m_w=18.
   real :: AA=0.66e-4,  Ntot=1., dt_substep=2e-7
@@ -573,7 +575,7 @@ module Dustdensity
 !  and the proton mass
 !
       if (unit_system == 'cgs') then
-        Rgas_unit_sys = k_B_cgs/m_u_cgs
+        Rgas_unit_sys = real(k_B_cgs/m_u_cgs)
 !        Rgas=Rgas_unit_sys/unit_energy
       else
         call fatal_error('initialize_dustdensity','module works only with cgs units')
@@ -1805,12 +1807,10 @@ module Dustdensity
 !
       real, dimension (nx) :: mfluxcond,fdiffd,gshockgnd, Imr, tmp1, tmp2
       real, dimension (nx) :: diffus_diffnd,diffus_diffnd3,advec_hypermesh_nd
-      real, dimension (nx) :: ff_cond, ff_cond_fact
       integer, dimension(nx) :: kk_vec
-      real :: ff_nucl
       real, dimension (nx,ndustspec) :: dndr_tmp=0.,  dndr
       real, dimension (nx,ndustspec) :: nd_substep, nd_substep_0, K1,K2,K3,K4
-      integer :: k,i,j,kk,ichem, kkk
+      integer :: k,i,j
 !
       intent(in)  :: f,p
       intent(inout) :: df
@@ -2616,7 +2616,7 @@ module Dustdensity
         call eoscalc(ilnrho_ss,f(l1:l2,m,n,ilnrho),f(l1:l2,m,n,iss),pp=pp)
         ppmon = pp*cc*mu/mumon
         ppsat = 6.035e12*exp(-5938*TT1)
-        vth = (3*k_B/(TT1*mmon))**0.5
+        vth = real((3*k_B/(TT1*mmon))**0.5)
         supsatratio1 = ppsat/ppmon
 !
         mfluxcond = vth*cc*rho*(1-supsatratio1)
@@ -2630,7 +2630,7 @@ module Dustdensity
 !        call getpressure(ppmon,1./TT1,rho,p%mu1)
         ppmon=p%pp
         ppsat = 6.035e12*exp(-5938*TT1)
-        vth = (3*k_B/(TT1*mmon))**0.5
+        vth = real((3*k_B/(TT1*mmon))**0.5)
         supsatratio1 = ppsat/ppmon
 !
         mfluxcond = vth*cc*rho*(1-supsatratio1)
@@ -2659,12 +2659,12 @@ module Dustdensity
 !  Assume a hat(om*t) time behavior
 !
       case ('hat(om*t)')
-        mfluxcond=GS_condensparam0+GS_condensparam*tanh(20.*cos(supsatratio_omega*t))
+        mfluxcond=real(GS_condensparam0+GS_condensparam*tanh(20.*cos(supsatratio_omega*t)))
 !
 !  Assume a cos(om*t) time behavior
 !
       case ('cos(om*t)')
-        mfluxcond=GS_condensparam0+GS_condensparam*cos(supsatratio_omega*t)
+        mfluxcond=real(GS_condensparam0+GS_condensparam*cos(supsatratio_omega*t))
 !
 !  Allow only positive values (but commented out now).
 !
@@ -2742,7 +2742,7 @@ module Dustdensity
       real :: deltavd,deltavd_therm
       real :: deltavd_turbu, fact
       real :: deltavd_drift2, deltavd_drift2a, deltavd_drift2b
-      real :: ust,tl01,teta1,mu_air,rho_air, Rik 
+      real :: ust,mu_air,rho_air, Rik 
       real, parameter :: kB=1.38e-16
       integer :: i,j,l,k,lgh
 !
@@ -2815,7 +2815,7 @@ module Dustdensity
 !  urms^2 = 8*kB*T/(pi*m_red)
 !
                 if (ldeltavd_thermal) then
-                  deltavd_therm = sqrt( 8*k_B/(pi*p%TT1(l))*(p%md(l,i)+p%md(l,j))/(p%md(l,i)*p%md(l,j)*unit_md) )
+                  deltavd_therm = real(sqrt( 8*k_B/(pi*p%TT1(l))*(p%md(l,i)+p%md(l,j))/(p%md(l,i)*p%md(l,j)*unit_md) ))
                 else
                   deltavd_therm=0.
                 endif
@@ -3140,7 +3140,6 @@ module Dustdensity
 !  Force certain dust variables to be zero if they have become negative
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: k,l
 !
       if (ldustnulling) then
 
@@ -3340,6 +3339,10 @@ module Dustdensity
       intent(in) :: ppsf_full_i, i
       intent(out) :: dndr_dr
 !
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(ppsf_full_i)
+      call keep_compiler_quiet(i)
+
       if (ndustspec<3) then
         dndr_dr=0.  ! Initialize the "out" array
       else
@@ -3461,8 +3464,8 @@ module Dustdensity
                             -ff(:,ii1)*(rr1-rr3+rr2-rr3)/((rr1-rr3)*(rr2-rr3))
 !
       elseif (ndustspec==2) then
-        dff_dr(:,1) = (ff(:,2) - ff(:,1))/(dsize_loc(2)-dsize_loc(1))
-        dff_dr(:,2) = dff_dr(:,1)
+        dff_dr(:,1) = (ff(:,min(ndustspec,2)) - ff(:,min(ndustspec,1)))/(dsize_loc(min(ndustspec,2))-dsize_loc(min(ndustspec,1)))
+        dff_dr(:,min(2,ndustspec)) = dff_dr(:,1)
       else
         dff_dr(:,1) = 0.
       endif
@@ -3729,6 +3732,9 @@ module Dustdensity
       call copy_addr(diffnd_anisotropic,p_par(72)) ! real3
       call copy_addr(kernel_mean,p_par(73)) ! (ndustspec) (ndustspec)
       call copy_addr(lcondensing_species,p_par(74)) ! bool
+
+      call keep_compiler_quiet(supsatfac)
+      call keep_compiler_quiet(lkeepinitnd)
 
     endsubroutine pushpars2c
 !***********************************************************************

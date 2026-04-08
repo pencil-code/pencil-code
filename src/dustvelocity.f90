@@ -48,7 +48,7 @@ module Dustvelocity
   real, dimension(nx,ndustspec) :: tausd1
   real, dimension(ndustspec) :: md=1.0, mdplus, mdminus, ad=0.
   !$omp threadprivate(md)
-  real, dimension(ndustspec) :: surfd, mi, rhodsad1
+  real, dimension(ndustspec) :: surfd, rhodsad1
   real, dimension(ndustspec) :: tausd=1.0, betad=0.0
   real :: betad0=0.
   real, dimension(ndustspec) :: nud=0.0, nud_hyper3=0.0, nud_shock=0.0, nud_hyper3_mesh=5.0
@@ -1132,7 +1132,7 @@ module Dustvelocity
 !
     endsubroutine add_pseudo_coriolis_force
 !***********************************************************************
-    subroutine direct_integration_of_motion(f,df,p,k,ix)
+    subroutine direct_integration_of_motion(df,p,k,ix)
 !
 !  Direct integration of the equations of dust motion.
 !
@@ -1140,15 +1140,14 @@ module Dustvelocity
 !
       use Sub
 
-      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       integer, intent(IN) :: k,ix
 
       real, dimension (3) :: fviscd, tmp, tmp2
-      real :: tausg1, mudrhod1, tmp3
+      real :: tausg1, mudrhod1
       real :: c2, s2
-      integer :: i, j, ju
+      integer :: j
 
       if (ladvection_dust) df(ix+nghost,m,n,iudx(k):iudz(k)) = &
                            df(ix+nghost,m,n,iudx(k):iudz(k)) - p%udgud(ix,:,k)
@@ -1370,7 +1369,7 @@ module Dustvelocity
             call short_stopping_time_approximation(f,df,p,k,iix)
             !p%advec_uud(iix,k)=0.   !MR: this should be done, as there is no advection where this appr. is applied
           else                       !    changes results, though
-            call direct_integration_of_motion(f,df,p,k,iix)
+            call direct_integration_of_motion(df,p,k,iix)
           endif
         enddo
 !
@@ -1750,6 +1749,7 @@ module Dustvelocity
 !
 !  Reset everything in case of reset.
 !
+      call keep_compiler_quiet(lwrite)
       if (lreset) then
         idiag_dtud=0; idiag_dtnud=0; idiag_ud2m=0; idiag_udx2m=0
         idiag_udxm=0; idiag_udym=0; idiag_udzm=0
