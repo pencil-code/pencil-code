@@ -254,7 +254,7 @@
 !
       if ((ireset_tstart == 0) .or. (tstart == impossible)) then
 !
-        t_test = t_sp
+        t_test = real(t_sp)
         call mpibcast_real(t_test,comm=MPI_COMM_PENCIL)
         call mpiallreduce_or((t_test /= t_sp) .and. .not. lread_from_other_prec &
                              .or. (abs(t_test-t_sp) > 1.e-6),ltest, MPI_COMM_PENCIL)
@@ -275,7 +275,7 @@
               if (lroot) write (*,*) 'Timestamps in snapshot INCONSISTENT.',&
                                      ' Using (max) t=', t_red,'with ireset_tstart=', MAXT,'.'
             endif
-            tstart = t_red
+            tstart = real(t_red)
             if (lroot) write (*,*) 'Timestamps in snapshot INCONSISTENT. Using t=', tstart, '.'
           else
             write (*,*) 'ERROR: '//trim(directory_snap)//'/'//trim(file)// &
@@ -283,7 +283,7 @@
             call stop_it('read_snap')
           endif
         else
-          tstart = t_sp
+          tstart = real(t_sp)
         endif
 !
       endif

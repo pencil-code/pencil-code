@@ -340,7 +340,7 @@ module Snapshot
           case ('tphys')
             t_trigger=tphys
           case ('code_time')
-            t_trigger=t
+            t_trigger=real(t)
           case default
             call fatal_error('wsnap','no such trigger_snap='//trim(trigger_snap))
         end select
@@ -440,18 +440,20 @@ module Snapshot
 
     endsubroutine perform_wsnap
 !***********************************************************************
-    subroutine read_predef_snaptimes(file,snaptimes)
+!TP: on comment since not used (to suppress compiler warnings)
+!    subroutine read_predef_snaptimes(file,snaptimes)
+!!
+!!  Yet a stub.
+!!
+!      use General, only: keep_compiler_quiet
 !
-!  Yet a stub.
+!      character(LEN=fnlen) :: file
+!      real, dimension(:), intent(OUT) :: snaptimes   ! allocatable
+!      
+!      call keep_compiler_quiet(file)
+!      call keep_compiler_quiet(snaptimes)
 !
-      use General, only: keep_compiler_quiet
-
-      character(LEN=fnlen) :: file
-      real, dimension(:), intent(OUT) :: snaptimes   ! allocatable
-      
-      call keep_compiler_quiet(snaptimes)
-
-    endsubroutine read_predef_snaptimes
+!    endsubroutine read_predef_snaptimes
 !***********************************************************************
     subroutine rsnap(chsnap,f,msnap,lread_nogrid)
 !
@@ -792,7 +794,7 @@ module Snapshot
           case ('tphys')
             t_trigger=tphys
           case ('code_time')
-            t_trigger=t
+            t_trigger=real(t)
           case default
             call fatal_error('powersnap_prepare','no such trigger_spec='//trim(trigger_spec))
         end select
@@ -832,7 +834,7 @@ module Snapshot
 !AB: tspec=t is what Touko did before, and it works for unclear reasons.
 !AB: But now, we also have the possibility of other triggers, and then t is not ok.
 !AB: We still don't understand why this tspec=t is even needed...
-        if (trigger_spec=='code_time') tspec=t
+        if (trigger_spec=='code_time') tspec=real(t)
       else 
 
         !TP: if farray was already copied from the gpu during this iteration for rhs diagnostic purposes

@@ -123,7 +123,8 @@ module Io
       character (len=*), optional,intent(IN) :: file
 !
       real :: t_sp   ! t in single precision for backwards compatibility
-      integer :: na, ne, bytes, out_size, j, nc, ncomps
+      integer :: na, ne, bytes, j, nc, ncomps
+      integer(KIND=ikind8) :: out_size
       character (len=fnlen) :: file1, file2
       character (len=30) :: vname, vnm
       logical, save :: lcalled_ast=.false.
@@ -353,7 +354,7 @@ module Io
 !
 !  Write particle IDs.
 !
-      t_sp = t
+      t_sp = real(t)
       open(20, file=trim(directory_snap)//'/rmv_ipar.dat', position='append')
       ipar: do k = 1, nrmv
         if (ipar_sink(k) >= 0) then
@@ -395,7 +396,7 @@ module Io
       open (lun_output, file=trim(directory_dist)//'/particles_stalker.dat', form='unformatted', position='append')
 !
       ! write the time, number, and ID of stalked particles at this processor
-      t_sp = t
+      t_sp = real(t)
       write (lun_output) t_sp, nv
       if (nv >= 1) write (lun_output) ID
 
@@ -417,10 +418,10 @@ module Io
       integer, intent(in), optional :: nvar
       logical, intent(in), optional :: lfinalize
 !
-      character (len=fnlen) :: dataset
       real, dimension(:,:), allocatable, save :: stalk_data
       integer, save :: pos = 0
 !
+      call keep_compiler_quiet(label)
       if (loptest (lfinalize)) then
         ! deallocate temporary stalker particle space
         if (pos > 0) then
@@ -467,6 +468,7 @@ module Io
       character (len=*), dimension (nc), intent(in) :: labels
       real, dimension (mv,nc), intent(in) :: fq
 !
+      call keep_compiler_quiet(labels)
       if (.not. lroot) return
 !
       open(lun_output,FILE=trim(directory_snap)//'/'//trim(file),FORM='unformatted')
@@ -520,6 +522,7 @@ module Io
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
 !
+      call keep_compiler_quiet(label)
 !write(20+iproc,*) 'write_persist_id, label, persist_initialized=',label,persist_initialized 
       write_persist_id = .true.
       if (.not. persist_initialized) write_persist_id = init_write_persist()
@@ -655,6 +658,7 @@ module Io
       integer, intent(in) :: id
       type(torus_rect), intent(in) :: value
 !
+      call keep_compiler_quiet(value%th)
       write_persist_torus_rect = .true.
       if (write_persist_id (label, id)) return
 !
@@ -686,7 +690,7 @@ module Io
         if (kind(a)==rkind4) then
           allocate(adb(mx,my,mz,nv),xdb(mx),ydb(my),zdb(mz))
           call read_snap(file,adb,xdb,ydb,zdb,dxdb,dydb,dzdb,deltaydb,nv,mode)
-          a=adb; x=xdb; y=ydb; z=zdb; dx=dxdb; dy=dydb; dz=dzdb; deltay=deltaydb
+          a=real(adb); x=real(xdb); y=real(ydb); z=real(zdb); dx=real(dxdb); dy=real(dydb); dz=real(dzdb); deltay=real(deltaydb)
         elseif (kind(a)==rkind8) then
           allocate(asg(mx,my,mz,nv),xsg(mx),ysg(my),zsg(mz))
           call read_snap(file,asg,xsg,ysg,zsg,dxsg,dysg,dzsg,deltaysg,nv,mode)
@@ -851,6 +855,7 @@ module Io
       character (len=*), intent(in) :: file
       character (len=*), optional, intent(in) :: label
 !
+      call keep_compiler_quiet(label)
       open (lun_input, FILE=trim(directory_dist)//'/'//file, FORM='unformatted',action='read')
       ! Read number of particles for this processor.
       read (lun_input) nv
@@ -889,6 +894,7 @@ module Io
 !
       integer :: mv_in
 !
+      call keep_compiler_quiet(labels)
       if (lroot) then
         if (ip<=8) print*, 'read pointmass snapshot', trim (file)
         open(lun_input,FILE=trim(directory_snap)//'/'//trim(file),FORM='unformatted')
@@ -940,6 +946,7 @@ module Io
 !
       character (len=*), intent(in) :: label
 !
+      call keep_compiler_quiet(label)
       persist_exists = .false.
 !
     endfunction persist_exists
@@ -988,6 +995,7 @@ module Io
       character (len=*), intent(in) :: label
       logical, intent(out) :: value
 !
+      call keep_compiler_quiet(label)
       read (lun_input) value
       read_persist_logical_0D = .false.
 !
@@ -1002,6 +1010,7 @@ module Io
       character (len=*), intent(in) :: label
       logical, dimension(:), intent(out) :: value
 !
+      call keep_compiler_quiet(label)
       read (lun_input) value
       read_persist_logical_1D = .false.
 !
@@ -1016,6 +1025,7 @@ module Io
       character (len=*), intent(in) :: label
       integer, intent(out) :: value
 !
+      call keep_compiler_quiet(label)
       read (lun_input) value
       read_persist_int_0D = .false.
 !
@@ -1030,6 +1040,7 @@ module Io
       character (len=*), intent(in) :: label
       integer, dimension(:), intent(out) :: value
 !
+      call keep_compiler_quiet(label)
       read (lun_input) value
       read_persist_int_1D = .false.
 !
@@ -1048,10 +1059,11 @@ module Io
       real(KIND=rkind8) :: vdb
       real(KIND=rkind4) :: vsg
 !
+      call keep_compiler_quiet(label)
       if (lread_from_other_prec) then
         if (kind(value)==rkind4) then
           read (lun_input) vdb
-          value=vdb
+          value=real(vdb)
         elseif (kind(value)==rkind8) then
           read (lun_input) vsg
           value=vsg
@@ -1077,11 +1089,12 @@ module Io
       real(KIND=rkind8), dimension(:), allocatable :: vdb
       real(KIND=rkind4), dimension(:), allocatable :: vsg
 !
+      call keep_compiler_quiet(label)
       if (lread_from_other_prec) then
         if (kind(value)==rkind4) then
           allocate(vdb(size(value)))
           read (lun_input) vdb
-          value=vdb
+          value=real(vdb)
         elseif (kind(value)==rkind8) then
           allocate(vsg(size(value)))
           read (lun_input) vsg
@@ -1107,6 +1120,7 @@ module Io
       type(torus_rect), intent(out) :: value
 !
       !read (lun_input) value
+      call keep_compiler_quiet(label)
       read_persist_torus_rect = .false.
 !
     endfunction read_persist_torus_rect
@@ -1124,6 +1138,7 @@ module Io
       character (len=*) :: file
       character (len=*), intent(in), optional :: label
 !
+      call keep_compiler_quiet(label)
       if (lserial_io) call start_serialize
       open(lun_output,FILE=trim(directory_snap)//'/'//file,FORM='unformatted',status='replace')
 !
@@ -1170,7 +1185,7 @@ module Io
         if (kind(a)==rkind4) then
           allocate(adb(mx,my,mz,nv))
           call read_globals(adb)
-          a=adb
+          a=real(adb)
         elseif (kind(a)==rkind8) then
           allocate(asg(mx,my,mz,nv))
           call read_globals(asg)
@@ -1437,9 +1452,9 @@ module Io
             allocate(xdb(mx),ydb(my),zdb(mz),dx_1db(mx),dy_1db(my),dz_1db(mz),dx_tildedb(mx),dy_tildedb(my),dz_tildedb(mz))
             call input_grid(xdb,ydb,zdb,dxdb,dydb,dzdb,Lxdb,Lydb,Lzdb, &
                             dx_1db,dy_1db,dz_1db,dx_tildedb,dy_tildedb,dz_tildedb)
-            x=xdb; y=ydb; z=zdb; dx=dxdb; dy=dydb; dz=dzdb
-            Lx=Lxdb; Ly=Lydb; Lz=Lzdb; dx_1=dx_1db; dy_1=dy_1db; dz_1=dz_1db
-            dx_tilde=dx_tildedb; dy_tilde=dy_tildedb; dz_tilde=dz_tildedb
+            x=real(xdb); y=real(ydb); z=real(zdb); dx=real(dxdb); dy=real(dydb); dz=real(dzdb)
+            Lx=real(Lxdb); Ly=real(Lydb); Lz=real(Lzdb); dx_1=real(dx_1db); dy_1=real(dy_1db); dz_1=real(dz_1db)
+            dx_tilde=real(dx_tildedb); dy_tilde=real(dy_tildedb); dz_tilde=real(dz_tildedb)
           endif
         elseif (kind(x)==rkind8) then
           lotherprec = filesize/=8*datasize
