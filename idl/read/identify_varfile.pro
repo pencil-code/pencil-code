@@ -2,7 +2,7 @@
 ;
 ;  Identifies which of allprocs/var.dat, allprocs/var.h5, proc0/var.dat is the youngest
 ;  If filename is provided, correspondingly which of allprocs/<filename>, allprocs/<h5filename>, proc0/<filename> 
-;  is youngest where <h5filename> is <filename> with .dat replaced by .h5 or .h5 appended if <filename> is VAR[0-9]+.
+;  is youngest where <h5filename> is <filename> with .dat replaced by .h5 or .h5 appended if <filename> is VAR[0-9]+ or VARd[0-9]+.
 ;
 ;  Returns filename.
 ;
@@ -19,6 +19,10 @@
      if dotpos eq -1 then begin
        stem=strtrim(filename,2)
        issnap=stregex(stem,'VAR[0-9]+') ne -1
+;
+; if not regular snapshot, test for downsampled one
+;
+       if not issnap then issnap=stregex(stem,'VARd[0-9]+') ne -1
      endif else $
        stem=strmid(filename,0,dotpos)
 
@@ -42,7 +46,7 @@
        mt[2]=(file_info(datadir+'/allprocs/'+fileb)).mtime
      
      if max(mt,maxind) eq -1 then begin
-       message, 'pc_read: ERROR: No '+file5+' or '+fileb+' found. - Please either give a filename or open an HDF5 file!', /cont
+       message, 'identify_varfile: ERROR: No '+file5+' or '+fileb+' found. - Please either give a filename or open an HDF5 file!', /cont
        return, ''
      endif else begin
        file = maxind eq 0 ? datadir+'/allprocs/'+file5 : (maxind eq 1 ? datadir+'/'+proc+'/'+fileb : datadir+'/allprocs/'+fileb)
