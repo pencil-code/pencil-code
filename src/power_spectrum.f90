@@ -6951,6 +6951,8 @@ outer:do ikz=1,nz
 !   18-nov-2025/TP: coded
 !   18-Feb-2026/Kishore: moved definition of kx array into this function
 !
+    use General, only: div
+   
     integer, intent(IN) :: ikx
     real :: kx
     logical, save :: lfirst = .true.
@@ -6961,9 +6963,9 @@ outer:do ikz=1,nz
       call warn_non_cubical
 !
       if (lcorrect_integer_kcalc) then
-        kx_arr=cshift((/(i-floor(nxgrid/.2),i=0,nxgrid-1)/),floor(nxgrid/.2)) !*2*pi/Lx
+        kx_arr=cshift((/(i-div(nxgrid,2),i=0,nxgrid-1)/),div(nxgrid,2)) !*2*pi/Lx
       else
-        kx_arr=cshift((/(i-floor((nxgrid+1)/.2),i=0,nxgrid-1)/),+floor((nxgrid+1)/.2)) !*2*pi/Lx
+        kx_arr=cshift((/(i-div((nxgrid+1),2),i=0,nxgrid-1)/),+div((nxgrid+1),2)) !*2*pi/Lx
       endif
 !
       if (nxgrid==1) kx_arr=0
@@ -6985,6 +6987,8 @@ outer:do ikz=1,nz
 !   18-nov-2025/TP: coded
 !   18-Feb-2026/Kishore: moved definition of ky array into this function
 !
+    use General, only: div
+
     integer, intent(IN) :: iky
     real :: ky
     logical, save :: lfirst = .true.
@@ -6995,9 +6999,9 @@ outer:do ikz=1,nz
       call warn_non_cubical
 !
       if (lcorrect_integer_kcalc) then
-        ky_arr=cshift((/(i-floor(nygrid/.2),i=0,nygrid-1)/),floor(nygrid/.2)) !*2*pi/Ly
+        ky_arr=cshift((/(i-div(nygrid,2),i=0,nygrid-1)/),div(nygrid,2)) !*2*pi/Ly
       else
-        ky_arr=cshift((/(i-floor((nygrid+1)/.2),i=0,nygrid-1)/),+floor((nygrid+1)/.2)) !*2*pi/Ly
+        ky_arr=cshift((/(i-div((nygrid+1),2),i=0,nygrid-1)/),+div((nygrid+1),2)) !*2*pi/Ly
       endif
 !
       if (nygrid==1) ky_arr=0
@@ -7019,6 +7023,8 @@ outer:do ikz=1,nz
 !   18-nov-2025/TP: coded
 !   18-Feb-2026/Kishore: moved definition of kz array into this function
 !
+    use General, only: div
+
     integer, intent(IN) :: ikz
     real :: kz
     logical, save :: lfirst = .true.
@@ -7029,9 +7035,9 @@ outer:do ikz=1,nz
       call warn_non_cubical
 !
       if (lcorrect_integer_kcalc) then
-        kz_arr=cshift((/(i-floor(nzgrid/.2),i=0,nzgrid-1)/),floor(nzgrid/.2)) !*2*pi/Lz
+        kz_arr=cshift((/(i-div(nzgrid,2),i=0,nzgrid-1)/),div(nzgrid,2)) !*2*pi/Lz
       else
-        kz_arr=cshift((/(i-floor((nzgrid+1)/.2),i=0,nzgrid-1)/),+floor((nzgrid+1)/.2)) !*2*pi/Lz
+        kz_arr=cshift((/(i-div((nzgrid+1),2),i=0,nzgrid-1)/),+div(nzgrid+1,2)) !*2*pi/Lz
       endif
 !
       if (nzgrid==1) kz_arr=0
