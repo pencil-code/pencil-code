@@ -504,6 +504,10 @@ module Syscalls
     integer :: strlen,arrlen
     character(LEN=strlen), dimension(arrlen), intent(IN) :: strarr
 
+    !TP: poor man's version of keep_compiler_quiet
+    if(.false.) then
+            print*,strlen,arrlen,strarr
+    endif
     !call get_char_arr_c(strarr,strlen,arrlen)
 
     endsubroutine get_char_arr
