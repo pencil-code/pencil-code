@@ -39,7 +39,6 @@ module NeutralVelocity
   real :: nun=0.,csn0=0.,csn20,nun_hyper3=0.
   real :: rnoise_int=impossible,rnoise_ext=impossible
   real :: uun_right=0., uun_left=0., widthuun=.1
-  real, dimension (nx,3,3) :: unij5
   character (len=labellen),dimension(ninit) :: iviscn=''
 !
   namelist /neutralvelocity_init_pars/ &
@@ -1071,7 +1070,7 @@ module NeutralVelocity
     subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
-    use General , only: string_to_enum
+    use General , only: string_to_enum,keep_compiler_quiet
 
     integer, parameter :: n_pars=20
     integer(KIND=ikind8), dimension(n_pars) :: p_par
@@ -1096,6 +1095,10 @@ module NeutralVelocity
     call copy_addr(enum_iviscn,p_par(16)) ! int (ninit)
     call string_to_enum(enum_borderuun,borderuun)
     call copy_addr(enum_borderuun,p_par(17)) ! int
+       
+    call keep_compiler_quiet(ampl_unx)
+    call keep_compiler_quiet(ampl_uny)
+    call keep_compiler_quiet(ampl_unz)
 
     endsubroutine pushpars2c
 !***********************************************************************

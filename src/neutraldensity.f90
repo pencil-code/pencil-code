@@ -632,18 +632,19 @@ module NeutralDensity
 
     endsubroutine neutraldensity_after_boundary
 !***********************************************************************
-    subroutine neutraldensity_before_boundary(f)
-
-      use General, only: keep_compiler_quiet
-
-      real, dimension (mx,my,mz,mfarray) :: f
+!Unused functions are on comment to suppress compiler warnings
+!    subroutine neutraldensity_before_boundary(f)
 !
-! Fill global rhon array using the ilnrhon data.
+!      use General, only: keep_compiler_quiet
 !
-      if (.not.lneutraldensity_nolog.and.irhon/=0) &
-        f(l1:l2,m1:m2,n1:n2,irhon) = exp(f(l1:l2,m1:m2,n1:n2,ilnrhon))
-
-    endsubroutine neutraldensity_before_boundary
+!      real, dimension (mx,my,mz,mfarray) :: f
+!!
+!! Fill global rhon array using the ilnrhon data.
+!!
+!      if (.not.lneutraldensity_nolog.and.irhon/=0) &
+!        f(l1:l2,m1:m2,n1:n2,irhon) = exp(f(l1:l2,m1:m2,n1:n2,ilnrhon))
+!
+!    endsubroutine neutraldensity_before_boundary
 !***********************************************************************
     subroutine dlnrhon_dt(f,df,p)
 !
@@ -966,7 +967,7 @@ module NeutralDensity
     subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
-    use General , only: string_to_enum
+    use General , only: string_to_enum,keep_compiler_quiet
 
     integer, parameter :: n_pars=30
     integer(KIND=ikind8), dimension(n_pars) :: p_par
@@ -998,6 +999,15 @@ module NeutralDensity
     call copy_addr(enum_alpha_prescription,p_par(23)) ! int
     call string_to_enum(enum_borderlnrhon,borderlnrhon)
     call copy_addr(enum_borderlnrhon,p_par(24)) ! int
+
+    call keep_compiler_quiet(rhon_right)
+    call keep_compiler_quiet(lnrhon_right)
+    call keep_compiler_quiet(lnrhon_int)
+    call keep_compiler_quiet(lnrhon_ext)
+    call keep_compiler_quiet(lnrhon0)
+    call keep_compiler_quiet(kx_lnrhon)
+    call keep_compiler_quiet(ky_lnrhon)
+
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule NeutralDensity
