@@ -131,6 +131,7 @@ module Special
   logical :: ldefine_a2rhophi_with_Vpotential=.true.  !PAR_DOC: define a2rhophi with Vpotential
   logical :: lsolve_for_phi=.true.       !PAR_DOC: whether we still want to solve for phi
   logical :: lwstate_crit=.false.        !PAR_DOC: lwstate_crit switch (would put phi=0, is false by default)
+  logical :: lwstate_crit_old=.true.     !PAR_DOC: lwstate_crit_old (to restore the old wstate criterion used in the autotest)
   logical :: lheating=.false.            !PAR_DOC: heating criterion
   logical :: ldefine_a2rhopm_without_Vpotential=.false.    !PAR_DOC: should be false to have correct results
   logical :: la2rhop_wrong_factor=.false. !PAR_DOC: should be false to have correct results
@@ -153,7 +154,8 @@ module Special
       lrho_chi, scale_rho_chi_Heqn, scale_rho_rad_Heqn, amplee_BD_prefactor, deriv_prefactor_ee, &
       lrho_rad, init_rho_rad, lwstate_accum, Gamma_phi0, lconf_time, &
       echarge_type, init_rho_chi, rho_chi_init, lrho_chi_inhom, rhophim_crit, &
-      wstate_crit, lwstate_crit, wstate_tolerance, heating_choice, ldefine_a2rhopm_without_Vpotential, la2rhop_wrong_factor
+      wstate_crit, lwstate_crit, lwstate_crit_old, wstate_tolerance, heating_choice, &
+      ldefine_a2rhopm_without_Vpotential, la2rhop_wrong_factor
 !
   namelist /special_run_pars/ &
       initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
@@ -163,7 +165,7 @@ module Special
       lrho_rad, lrho_rad_apply, lrho_rad_apply2, lrho_chi_corrected, lwstate_accum, &
       lrho_chi_inhom, ldefine_a2rhophi_with_Vpotential, &
       rad_heating, ascale_heat, ascale_heat_off, aphimax, Gamma_phi0, lconf_time, rhophim_crit, &
-      wstate_crit, lwstate_crit, wstate_tolerance, heating_choice
+      wstate_crit, lwstate_crit, lwstate_crit_old, wstate_tolerance, heating_choice
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -1219,11 +1221,16 @@ module Special
 !
       wstate=(a2rhopphim_all*a21+onethird*rho_rad)/(a2rhophim_all*a21+rho_rad)
       if (lwstate_crit) then
-        !lsolve_for_phi=(wstate_aver<wstate_crit)
+        if (lwstate_crit_old) then
+          lsolve_for_phi=(wstate<wstate_crit)
+        else
+!leave unindented BEGIN
         !lsolve_for_phi=abs(wstate_aver-wstate_aver_prev) > wstate_tolerance
         lsolve_for_phi=abs(wstate-wstate_aver_prev) > wstate_tolerance
         !wstate_aver_prev=wstate_aver
         wstate_aver_prev=wstate
+!leave unindented END
+        endif
       else
         !lsolve_for_phi=(a2rhophim_all*a21)>rhophim_crit
         lsolve_for_phi=.true.
