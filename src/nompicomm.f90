@@ -234,20 +234,20 @@ module Mpicomm
         c4 = +(frac+2.)*(frac+1.)*frac          *(frac-2.)*(frac-3.)/12.
         c5 = -(frac+2.)*(frac+1.)*frac*(frac-1.)          *(frac-3.)/24.
         c6 = +(frac+2.)*(frac+1.)*frac*(frac-1.)*(frac-2.)          /120.
-        f( 1:l1-1,m1:m2,:,ivar1:ivar2) = &
+        f( 1:l1-1,m1:m2,:,ivar1:ivar2) = real(&
              c1*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs+2,2) &
             +c2*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs+1,2) &
             +c3*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs  ,2) &
             +c4*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs-1,2) &
             +c5*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs-2,2) &
-            +c6*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs-3,2)
-        f(l2+1:mx,m1:m2,:,ivar1:ivar2) = &
+            +c6*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs-3,2))
+        f(l2+1:mx,m1:m2,:,ivar1:ivar2) = real(&
              c1*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs-2,2) &
             +c2*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs-1,2) &
             +c3*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs  ,2) &
             +c4*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs+1,2) &
             +c5*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs+2,2) &
-            +c6*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs+3,2)
+            +c6*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs+3,2))
       endif
 !
     endsubroutine finalize_shearing
@@ -3115,7 +3115,7 @@ module Mpicomm
       
       update_foreign_data=.false.
       call keep_compiler_quiet(dt_foreign)
-      call keep_compiler_quiet(t)
+      call keep_compiler_quiet_dble(t)
 
     endfunction update_foreign_data
 !***********************************************************************
