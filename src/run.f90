@@ -58,7 +58,7 @@ contains
 subroutine helper_loop(f,p)
 !
   use Boundcond, only: update_ghosts
-  use Equ, only: perform_diagnostics
+  use Equ, only: perform_diagnostics, calc_all_module_diagnostic_auxiliaries
   use Diagnostics, only:  restore_diagnostic_controls,allocate_fnames
 !$ use General, only: signal_wait, signal_send
   use Snapshot, only: perform_powersnap, perform_wsnap_ext, perform_wsnap_down_ext
