@@ -74,7 +74,7 @@ module Cparam
 
 
   integer, parameter :: nrcyl=nxgrid/2
-  integer, parameter :: nrcylrun=max(floor((nx/.20) + 0.1),1)
+  integer, parameter :: nrcylrun=max(floor((nx/20.) + 0.1),1)
 !
 !  Number of bins for Pulsar Timing Array
 !
