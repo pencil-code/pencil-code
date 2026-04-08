@@ -149,99 +149,100 @@ module Filter
 !
     endsubroutine rmwig_1d
 !***********************************************************************
-    subroutine rmwig_old(f,df,ivar,explog)
+!TP: on comment since not used (to suppress compiler warnings)
+!    subroutine rmwig_old(f,df,ivar,explog)
+!!
+!!  Remove small scale oscillations (`wiggles') from a component of f,
+!!  normally from lnrho. Sometimes necessary since Nyquist oscillations in
+!!  lnrho do not affect the equation of motion at all (dlnrho=0); thus, in
+!!  order to keep lnrho smooth one needs to smooth lnrho in sporadic time
+!!  intervals.
+!!    Since this is a global operation, we need to do a full loop through
+!!  imn here (including communication and boundary conditions[?]) and
+!!  collect the result in df, from where it is applied to f after the
+!!  loop.
+!!
+!!  This version uses an additive operator D_x^6+D_y^6+D_z^6, and fully
+!!  damps only the diagonal Nyquist wave number. Multiplicative damping in
+!!  the three directions is almost certainly better; see the new rmwig().
+!!  The current routine is kept for testing only and should be reomved at
+!!  some point.
+!!
+!!  8-Jul-02/wolf: coded
+!!
+!      use Boundcond, only: boundconds
+!      use Mpicomm, only: initiate_isendrcv_bdry, finalize_isendrcv_bdry
+!      use Sub, only: del6
+!!
+!      real, dimension (mx,my,mz,mfarray) :: f
+!      real, dimension (mx,my,mz,mvar) :: df
+!      real, dimension (nx) :: tmp
+!      logical, optional :: explog
+!      integer :: ivar
+!      logical :: lcommunicate
+!!
+!      if (lroot.and.ip<14) then
+!        if (ivar == ilnrho) then
+!          print*,'rmwig_old: removing wiggles in lnrho, t=',t
+!        else
+!          write(*,'(" ",A,I2,A,G12.5)') &
+!               'rmwig_old: removing wiggles in variable', ivar, ', t=', t
+!        endif
+!      endif
+!!
+!!  initiate communication and do boundary conditions
+!!  need to call boundconds, because it also deals with x-boundaries!
+!!AB: We don't need to communicate all variables though; just lnrho
+!!WD: I wouldn't care, since this should be applied quite infrequently
+!!
+!      if (ldebug) print*,'rmwig_old: bef. initiate_isendrcv_bdry'
+!      call boundconds(f)
+!      call initiate_isendrcv_bdry(f)
+!!
+!!  Check whether we want to smooth on the actual variable, or on exp(f)
+!!  The latter can be useful if the variable is lnrho or lncc.
+!!
+!      if (present(explog)) then
+!        f(:,:,:,ivar)=exp(f(:,:,:,ivar))
+!        if (lroot) print*,'rmwig_old: turn f into exp(f), ivar=',ivar
+!      endif
+!!
+!!  do loop over y and z
+!!  set indices and check whether communication must now be completed
+!!
+!      lcommunicate=.true.
 !
-!  Remove small scale oscillations (`wiggles') from a component of f,
-!  normally from lnrho. Sometimes necessary since Nyquist oscillations in
-!  lnrho do not affect the equation of motion at all (dlnrho=0); thus, in
-!  order to keep lnrho smooth one needs to smooth lnrho in sporadic time
-!  intervals.
-!    Since this is a global operation, we need to do a full loop through
-!  imn here (including communication and boundary conditions[?]) and
-!  collect the result in df, from where it is applied to f after the
-!  loop.
-!
-!  This version uses an additive operator D_x^6+D_y^6+D_z^6, and fully
-!  damps only the diagonal Nyquist wave number. Multiplicative damping in
-!  the three directions is almost certainly better; see the new rmwig().
-!  The current routine is kept for testing only and should be reomved at
-!  some point.
-!
-!  8-Jul-02/wolf: coded
-!
-      use Boundcond, only: boundconds
-      use Mpicomm, only: initiate_isendrcv_bdry, finalize_isendrcv_bdry
-      use Sub, only: del6
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: tmp
-      logical, optional :: explog
-      integer :: ivar
-      logical :: lcommunicate
-!
-      if (lroot.and.ip<14) then
-        if (ivar == ilnrho) then
-          print*,'rmwig_old: removing wiggles in lnrho, t=',t
-        else
-          write(*,'(" ",A,I2,A,G12.5)') &
-               'rmwig_old: removing wiggles in variable', ivar, ', t=', t
-        endif
-      endif
-!
-!  initiate communication and do boundary conditions
-!  need to call boundconds, because it also deals with x-boundaries!
-!AB: We don't need to communicate all variables though; just lnrho
-!WD: I wouldn't care, since this should be applied quite infrequently
-!
-      if (ldebug) print*,'rmwig_old: bef. initiate_isendrcv_bdry'
-      call boundconds(f)
-      call initiate_isendrcv_bdry(f)
-!
-!  Check whether we want to smooth on the actual variable, or on exp(f)
-!  The latter can be useful if the variable is lnrho or lncc.
-!
-      if (present(explog)) then
-        f(:,:,:,ivar)=exp(f(:,:,:,ivar))
-        if (lroot) print*,'rmwig_old: turn f into exp(f), ivar=',ivar
-      endif
-!
-!  do loop over y and z
-!  set indices and check whether communication must now be completed
-!
-      lcommunicate=.true.
-
-      do imn=1,nyz
-        n=nn(imn)
-        m=mm(imn)
-        if (lcommunicate) then
-          if (necessary(imn)) then
-            call finalize_isendrcv_bdry(f)
-            lcommunicate=.false.
-          endif
-        endif
-        call del6(f,ivar,tmp,ignoredx=.true.)
-! 1/64 would be fine for 1d runs, but in 3d we have higher wave numbers
-!        df(l1:l2,m,n,ivar) = 1./64.*tmp
-        df(l1:l2,m,n,ivar) = 1./192.*tmp
-      enddo
-!
-!  Not necessary to do this in a (cache-efficient) loop updating in
-!  timestep, since this routine will be applied only infrequently.
-!
-      f(l1:l2,m1:m2,n1:n2,ivar) = &
-           f(l1:l2,m1:m2,n1:n2,ivar) + df(l1:l2,m1:m2,n1:n2,ivar)
-!
-!  Check whether we want to smooth on the actual variable, or on exp(f)
-!  The latter can be useful if the variable is lnrho or lncc.
-!
-      if (present(explog)) then
-        f(l1:l2,m1:m2,n1:n2,ivar)=log(f(l1:l2,m1:m2,n1:n2,ivar))
-        if (lroot) print*,'rmwig_old: turn f back into log(f), ivar=',ivar
-      endif
-!
-    endsubroutine rmwig_old
-!***********************************************************************
+!      do imn=1,nyz
+!        n=nn(imn)
+!        m=mm(imn)
+!        if (lcommunicate) then
+!          if (necessary(imn)) then
+!            call finalize_isendrcv_bdry(f)
+!            lcommunicate=.false.
+!          endif
+!        endif
+!        call del6(f,ivar,tmp,ignoredx=.true.)
+!! 1/64 would be fine for 1d runs, but in 3d we have higher wave numbers
+!!        df(l1:l2,m,n,ivar) = 1./64.*tmp
+!        df(l1:l2,m,n,ivar) = 1./192.*tmp
+!      enddo
+!!
+!!  Not necessary to do this in a (cache-efficient) loop updating in
+!!  timestep, since this routine will be applied only infrequently.
+!!
+!      f(l1:l2,m1:m2,n1:n2,ivar) = &
+!           f(l1:l2,m1:m2,n1:n2,ivar) + df(l1:l2,m1:m2,n1:n2,ivar)
+!!
+!!  Check whether we want to smooth on the actual variable, or on exp(f)
+!!  The latter can be useful if the variable is lnrho or lncc.
+!!
+!      if (present(explog)) then
+!        f(l1:l2,m1:m2,n1:n2,ivar)=log(f(l1:l2,m1:m2,n1:n2,ivar))
+!        if (lroot) print*,'rmwig_old: turn f back into log(f), ivar=',ivar
+!      endif
+!!
+!    endsubroutine rmwig_old
+!!***********************************************************************
     subroutine rmwig_xyaverage(f,ivar)
 !
 !  Removes wiggles from the xyaverage of variable ivar.
@@ -282,44 +283,45 @@ module Filter
 !
     endsubroutine rmwig_xyaverage
 !***********************************************************************
-    subroutine rmwig_lnxyaverage(f,ivar)
-!
-!  Removes wiggles from the xyaverage of variable ivar.
-!  This routine works currently only on one processor, which
-!  may not be too bad an approximation even several procs.
-!  This routine operates only on the log of rho, so its not mass conserving
-!
-!  28-Sep-02/axel: coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mz) :: xyaver,xyaver_smooth
-      real :: del_average
-      integer :: ivar
-!
-!  print identifier
-!
-      if (lroot) then
-        if (ivar == ilnrho) then
-          print*,'rmwig_lnxyaverage: removing wiggles in xyaverage of lnrho, t=',t
-        else
-          write(*,'(" ",A,I3,A,G12.5)') &
-          'rmwig_lnxyaverage: removing wiggles in xyaverage of variable ', ivar, 't=', t
-        endif
-      endif
-!
-!  calculate horizontal average and smooth in the vertical direction
-!
-      do n=1,mz
-        xyaver(n)=sum(f(l1:l2,m1:m2,n,ivar))/(nx*ny)
-      enddo
-      call smooth_4th(xyaver,xyaver_smooth,.true.)
-!
-      do n=1,mz
-        del_average=xyaver(n)-xyaver_smooth(n)
-        f(l1:l2,m1:m2,n,ivar)=f(l1:l2,m1:m2,n,ivar)-del_average
-      enddo
-!
-    endsubroutine rmwig_lnxyaverage
+!TP: on comment since not used (to suppress compiler warnings)
+!    subroutine rmwig_lnxyaverage(f,ivar)
+!!
+!!  Removes wiggles from the xyaverage of variable ivar.
+!!  This routine works currently only on one processor, which
+!!  may not be too bad an approximation even several procs.
+!!  This routine operates only on the log of rho, so its not mass conserving
+!!
+!!  28-Sep-02/axel: coded
+!!
+!      real, dimension (mx,my,mz,mfarray) :: f
+!      real, dimension (mz) :: xyaver,xyaver_smooth
+!      real :: del_average
+!      integer :: ivar
+!!
+!!  print identifier
+!!
+!      if (lroot) then
+!        if (ivar == ilnrho) then
+!          print*,'rmwig_lnxyaverage: removing wiggles in xyaverage of lnrho, t=',t
+!        else
+!          write(*,'(" ",A,I3,A,G12.5)') &
+!          'rmwig_lnxyaverage: removing wiggles in xyaverage of variable ', ivar, 't=', t
+!        endif
+!      endif
+!!
+!!  calculate horizontal average and smooth in the vertical direction
+!!
+!      do n=1,mz
+!        xyaver(n)=sum(f(l1:l2,m1:m2,n,ivar))/(nx*ny)
+!      enddo
+!      call smooth_4th(xyaver,xyaver_smooth,.true.)
+!!
+!      do n=1,mz
+!        del_average=xyaver(n)-xyaver_smooth(n)
+!        f(l1:l2,m1:m2,n,ivar)=f(l1:l2,m1:m2,n,ivar)-del_average
+!      enddo
+!!
+!    endsubroutine rmwig_lnxyaverage
 !***********************************************************************
     subroutine smooth_4th(a,b,lbdry)
 !

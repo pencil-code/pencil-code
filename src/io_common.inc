@@ -74,7 +74,7 @@
         if (lread_from_other_prec) then
           if (kind(x)==rkind4) then
             call input_proc_bounds(procx_boundsdb,procy_boundsdb,procz_boundsdb)
-            procx_bounds=procx_boundsdb; procy_bounds=procy_boundsdb; procz_bounds=procz_boundsdb
+            procx_bounds=real(procx_boundsdb); procy_bounds=real(procy_boundsdb); procz_bounds=real(procz_boundsdb)
           elseif (kind(x)==rkind8) then
             call input_proc_bounds(procx_boundssg,procy_boundssg,procz_boundssg)
             procx_bounds=procx_boundssg; procy_bounds=procy_boundssg; procz_bounds=procz_boundssg

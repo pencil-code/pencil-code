@@ -1231,25 +1231,25 @@ module Diagnostics
         do iname=1,nnamez
           if (itype_name_z(iname)==ilabel_max_dt) fnamez(:,:,iname) = dt*fnamez(:,:,iname)
         enddo
-        if (ltimer) taver = mpiwtime()
+        if (ltimer) taver = real(mpiwtime())
         call output_average(datadir, 'xy', nnamez, cnamez, fnamez, nzgrid, t1ddiagnos, lwrite_avg1d_binary, lroot)
         if (ltimer) print *, 'write_1daverages: write xy in ', mpiwtime() - taver, ' seconds'
       endif
 !
       if (nnamey > 0) then
-        if (ltimer) taver = mpiwtime()
+        if (ltimer) taver = real(mpiwtime())
         call output_average(datadir, 'xz', nnamey, cnamey, fnamey, nygrid, t1ddiagnos, lwrite_avg1d_binary, lroot)
         if (ltimer) print *, 'write_1daverages: write xz in ', mpiwtime() - taver, ' seconds'
       endif
 !
       if (nnamex > 0) then
-        if (ltimer) taver = mpiwtime()
+        if (ltimer) taver = real(mpiwtime())
         call output_average(datadir, 'yz', nnamex, cnamex, fnamex, nxgrid, t1ddiagnos, lwrite_avg1d_binary, lroot)
         if (ltimer) print *, 'write_1daverages: write yz in ', mpiwtime() - taver, ' seconds'
       endif
 !
       if (nnamer > 0) then
-        if (ltimer) taver = mpiwtime()
+        if (ltimer) taver = real(mpiwtime())
         if (lfirst_call) then
           call output_average(datadir, 'phi_z', nnamer, cnamer, fnamer, t1ddiagnos, .false., lroot, rcyl)
           lfirst_call = .false.
@@ -1346,13 +1346,13 @@ module Diagnostics
       ltimer = ip <= 12 .and. lroot
 !
       if (lwrite_yaverages) then
-        if (ltimer) taver = mpiwtime()
+        if (ltimer) taver = real(mpiwtime())
         call output_average_2D('y', nnamexz, cnamexz, fnamexz, t2davgfirst, lfirst_proc_y)
         if (ltimer) print *, 'write_2daverages: write y averages in ', mpiwtime() - taver, ' seconds'
       endif
 !
       if (lwrite_zaverages .and. (.not. lyang .or. lcaproot)) then
-        if (ltimer) taver = mpiwtime()
+        if (ltimer) taver = real(mpiwtime())
         if (lcaproot) then
           ! cap root (Yang)
           call output_average_2D('z', nnamexy, cnamexy, fnamexy_cap, t2davgfirst, lfirst_proc_z)
@@ -1364,7 +1364,7 @@ module Diagnostics
       endif
 !
       if (lwrite_phiaverages) then
-        if (ltimer) taver = mpiwtime()
+        if (ltimer) taver = real(mpiwtime())
         ! normalization is already done in phiaverages_rz
         call output_average(datadir, ch2davg, nrcyl, nnamerz, cnamerz, fnamerz, t2davgfirst, rcyl, drcyl)
 
@@ -4062,10 +4062,10 @@ module Diagnostics
 !
 !  Record times for diagnostic and 2d average output.
 !
-    if (l1davgfirst) t1ddiagnos_save=t ! (1-D averages are for THIS time)
-    if (l2davgfirst) t2davgfirst_save=t ! (2-D averages are for THIS time)
-    if (lvideo     ) tslice_save=t ! (slices are for THIS time)
-    if (lout_sound ) tsound_save=t
+    if (l1davgfirst) t1ddiagnos_save=real(t) ! (1-D averages are for THIS time)
+    if (l2davgfirst) t2davgfirst_save=real(t) ! (2-D averages are for THIS time)
+    if (lvideo     ) tslice_save=real(t) ! (slices are for THIS time)
+    if (lout_sound ) tsound_save=real(t)
     if (ldiagnos) then
       dt_save = dt
       it_save = it
@@ -4109,13 +4109,13 @@ module Diagnostics
     appa_target = appa_target_save
 
     if (ldiagnos) then
-      tdiagnos  = t_save
+      tdiagnos  = real(t_save)
       dtdiagnos = dt_save
       itdiagnos = it_save
       eps_rkf_diagnos = eps_rkf_save
     endif
 
-    tspec = tspec_save
+    tspec = real(tspec_save)
     lpencil = lpencil_save
 
     endsubroutine restore_diagnostic_controls
