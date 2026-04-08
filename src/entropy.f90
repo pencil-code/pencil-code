@@ -170,7 +170,6 @@ module Energy
   logical :: lsmooth_ss_run_aver=.false.
   real :: h_sld_ene=2.0, nlf_sld_ene=1.0, w_sldchar_ene2=0.1
   real :: w_sldchar_ene_r0=1.0, w_sldchar_ene_p=8.0
-  real :: xmid
   logical :: lheat_cool_gravz=.false.
   real :: tau_cool_pp=0.0
   character (len=labellen), dimension(ninit) :: initss='nothing'
@@ -695,7 +694,7 @@ module Energy
 !
       use BorderProfiles, only: request_border_driving
       use EquationOfState, only: get_soundspeed, select_eos_variable, get_gamma_etc
-      use Gravity, only: gravz, g0, compute_gravity_star, z1, z2
+      use Gravity, only: gravz, g0, compute_gravity_star, z2
       use Initcond
       use HDF5_IO, only: input_profile, output_profile
       use Mpicomm, only: mpibcast_real
@@ -4397,18 +4396,17 @@ module Energy
 !
       use EquationOfState, only: get_gamma_etc
       use Deriv, only: der_x, der2_x, der_z, der2_z
-      use Mpicomm, only: mpiallreduce_sum, mpibcast_real_arr, MPI_COMM_PENCIL
+      use Mpicomm, only: mpiallreduce_sum, mpibcast_real_arr
       use Sub, only: finalize_aver,calc_all_diff_fluxes,div,smooth,global_mean
       Use General, only: random_number_wrapper
 !
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
 !
-      real, dimension (mx,my,mz) :: cs2p, ruzp
+      real, dimension (mx,my) :: cs2p, ruzp
       real, dimension (mz) :: ruzmz
 !
-      real, dimension (ncool_patch_max) :: dxpatch, dypatch
 !
-      integer :: l,m,n,lf,nn
+      integer :: l,m,n,lf
       real :: fact, tmp1
       real :: gamma,gamma_m1,cv,cv1,cp,cp1
 !
@@ -4633,11 +4631,11 @@ module Energy
         call finalize_aver(nprocxy,12,ruzmz)
 !
         do n=1,mz
-          cs2p(l1:l2,m1:m2,n) = cs20*exp(gamma_m1*(f(l1:l2,m1:m2,n,ilnrho)-lnrho0)+cv1*f(l1:l2,m1:m2,n,iss))-cs2mz(n)
-          ruzp(l1:l2,m1:m2,n) = exp(f(l1:l2,m1:m2,n,ilnrho))*f(l1:l2,m1:m2,n,iuz)-ruzmz(n)
+          cs2p(l1:l2,m1:m2) = cs20*exp(gamma_m1*(f(l1:l2,m1:m2,n,ilnrho)-lnrho0)+cv1*f(l1:l2,m1:m2,n,iss))-cs2mz(n)
+          ruzp(l1:l2,m1:m2) = exp(f(l1:l2,m1:m2,n,ilnrho))*f(l1:l2,m1:m2,n,iuz)-ruzmz(n)
+          f(l1:l2,m1:m2,n,iFenth)=tmp1*cs2p(l1:l2,m1:m2)*ruzp(l1:l2,m1:m2)
         enddo
 !
-        f(l1:l2,m1:m2,:,iFenth)=tmp1*cs2p(l1:l2,m1:m2,:)*ruzp(l1:l2,m1:m2,:)
       endif
 !
     endsubroutine energy_after_boundary
@@ -6491,7 +6489,6 @@ module Energy
     subroutine apply_floor(a)
 !
       real, dimension(nx), intent(inout) :: a
-      integer :: i
 !
       where(a < TT_floor) a=TT_floor
 !
@@ -6661,7 +6658,7 @@ module Energy
       use Sub, only: step, cubic_step
 !
       type (pencil_case) :: p
-      real, dimension (nx) :: heat,prof
+      real, dimension (nx) :: heat
       real :: ztop
       intent(in) :: p
 !
@@ -7584,33 +7581,34 @@ module Energy
 !
     endsubroutine get_slices_energy
 !***********************************************************************
-    subroutine calc_heatcond_zprof(zprof_hcond,zprof_glhc)
-!
-!  Calculate z-profile of heat conduction for multilayer setup.
-!
-!  12-jul-05/axel: coded
-!
-      use Gravity, only: z1, z2
-      use Sub, only: cubic_step, cubic_der_step
-!
-      real, dimension (nz,3) :: zprof_glhc
-      real, dimension (nz) :: zprof_hcond
-      real :: zpt
-!
-      intent(out) :: zprof_hcond,zprof_glhc
-!
-      do n=1,nz
-        zpt=z(n+nghost)
-        zprof_hcond(n) = 1. + (hcond1-1.)*cubic_step(zpt,z1,-widthss) &
-                            + (hcond2-1.)*cubic_step(zpt,z2,+widthss)
-        zprof_hcond(n) = hcond0*zprof_hcond(n)
-        zprof_glhc(n,1:2) = 0.
-        zprof_glhc(n,3) = (hcond1-1.)*cubic_der_step(zpt,z1,-widthss) &
-                        + (hcond2-1.)*cubic_der_step(zpt,z2,+widthss)
-        zprof_glhc(n,3) = hcond0*zprof_glhc(n,3)
-      enddo
-!
-    endsubroutine calc_heatcond_zprof
+!TP: on comment since not used (to suppress compiler warnings)
+!    subroutine calc_heatcond_zprof(zprof_hcond,zprof_glhc)
+!!
+!!  Calculate z-profile of heat conduction for multilayer setup.
+!!
+!!  12-jul-05/axel: coded
+!!
+!      use Gravity, only: z1, z2
+!      use Sub, only: cubic_step, cubic_der_step
+!!
+!      real, dimension (nz,3) :: zprof_glhc
+!      real, dimension (nz) :: zprof_hcond
+!      real :: zpt
+!!
+!      intent(out) :: zprof_hcond,zprof_glhc
+!!
+!      do n=1,nz
+!        zpt=z(n+nghost)
+!        zprof_hcond(n) = 1. + (hcond1-1.)*cubic_step(zpt,z1,-widthss) &
+!                            + (hcond2-1.)*cubic_step(zpt,z2,+widthss)
+!        zprof_hcond(n) = hcond0*zprof_hcond(n)
+!        zprof_glhc(n,1:2) = 0.
+!        zprof_glhc(n,3) = (hcond1-1.)*cubic_der_step(zpt,z1,-widthss) &
+!                        + (hcond2-1.)*cubic_der_step(zpt,z2,+widthss)
+!        zprof_glhc(n,3) = hcond0*zprof_glhc(n,3)
+!      enddo
+!!
+!    endsubroutine calc_heatcond_zprof
 !***********************************************************************
     subroutine get_gravz_heatcond
 !
@@ -8776,6 +8774,11 @@ module Energy
     call copy_addr(rheat,p_par(476)) 
     call copy_addr(heat_int,p_par(477))
     call copy_addr(coef_cs2,p_par(478)) ! (9)
+
+    call keep_compiler_quiet(nsmooth_kramers)
+    call keep_compiler_quiet(patch_fac)
+    call keep_compiler_quiet(thermal_background)
+    call keep_compiler_quiet(thermal_scaling)
 
     endsubroutine pushpars2c
 !***********************************************************************

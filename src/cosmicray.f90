@@ -384,6 +384,8 @@ module Cosmicray
       integer :: iname,inamez
       logical :: lreset
       logical, optional :: lwrite
+
+      call keep_compiler_quiet(lwrite)
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
@@ -595,8 +597,10 @@ module Cosmicray
     use General , only: string_to_enum
 
     integer, parameter :: n_pars=100
-    integer :: i
     integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call keep_compiler_quiet(p_par)
+    call keep_compiler_quiet(limiter_cr)
 
     endsubroutine pushpars2c
 !***********************************************************************

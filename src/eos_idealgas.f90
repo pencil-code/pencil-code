@@ -64,8 +64,8 @@ module EquationOfState
   logical :: lcs2_tdep=.false., lhubble_eos=.false.
 !
   !character (len=labellen) :: meanfield_Beq_profile
-  real, pointer :: meanfield_Beq, chit_quenching, uturb
-  real, dimension(:), pointer :: B_ext
+  !real, pointer :: meanfield_Beq,chit_quenching, uturb
+  !real, dimension(:), pointer :: B_ext
   logical, pointer :: lrelativistic_eos
 !
   real :: Cp_const=impossible
@@ -195,14 +195,14 @@ module EquationOfState
 !  When gamma=1.0 (gamma_m1=0.0), write Rgas=mu*cp or cp=Rgas/mu.
 !
       if (unit_system=='cgs') then
-        Rgas_unit_sys=k_B_cgs/m_u_cgs
+        Rgas_unit_sys=real(k_B_cgs/m_u_cgs)
       elseif (unit_system=='SI') then
-        Rgas_unit_sys=k_B_cgs/m_u_cgs*1.0e-4
+        Rgas_unit_sys=real(k_B_cgs/m_u_cgs*1.0e-4)
       elseif (unit_system=='set') then
         if (gamma_m1==0.0) then
-          Rgas_unit_sys=mu*cp_set
+          Rgas_unit_sys=real(mu*cp_set)
         else
-          Rgas_unit_sys=mu*gamma_m1*gamma1*cp_set
+          Rgas_unit_sys=real(mu*gamma_m1*gamma1*cp_set)
         endif
       endif
 !
@@ -218,7 +218,7 @@ module EquationOfState
           endif
           unit_temperature=unit_velocity**2*Rgas/Rgas_unit_sys
         else
-          if (cp==impossible) cp=cp_set
+          if (cp==impossible) cp=real(cp_set)
           if (gamma_m1==0.0) then
             Rgas=mu*cp
           else
@@ -227,7 +227,7 @@ module EquationOfState
           unit_temperature=unit_velocity**2*Rgas/Rgas_unit_sys
         endif
       else
-        Rgas=Rgas_unit_sys*unit_temperature/unit_velocity**2
+        Rgas=real(Rgas_unit_sys*unit_temperature/unit_velocity**2)
         if (cp==impossible) then
           if (gamma_m1==0.0) then
             cp=Rgas/mu
@@ -286,6 +286,8 @@ module EquationOfState
       use Sub, only: register_report_aux
 !
       real, dimension (mx,my,mz,mfarray) :: f
+
+      call keep_compiler_quiet(f) 
 !
 !  Perform any post-parameter-read initialization
 !
@@ -501,6 +503,7 @@ module EquationOfState
       endif
 
       call keep_compiler_quiet(lreset)
+      call keep_compiler_quiet(lwrite)
 !
     endsubroutine rprint_eos
 !***********************************************************************
@@ -977,7 +980,7 @@ module EquationOfState
             if (lcs2_tdep) then
               select case (tdep_cs2_type)
               case ('exponential')
-                p%cs2=cs20*exp(-cs20_tdep_rate*t)
+                p%cs2=real(cs20*exp(-cs20_tdep_rate*t))
               case ('ascale_power')
                 p%cs2=cs20*ascale**cs2_tdep_ascale_power
                 cs_t=cs0*ascale**(.5*cs2_tdep_ascale_power)
@@ -1338,84 +1341,86 @@ module EquationOfState
 !
     endsubroutine temperature_hessian
 !***********************************************************************
-    subroutine thermal_energy_hessian(f,ivar_eth,del2lneth,hlneth)
-!
-      use Sub, only: g2ij,grad,dot2
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: del2lneth,del2eth,geth2,eth_1
-      real, dimension (nx,3,3) :: hlneth,heth
-      real, dimension (nx,3) :: geth
-      integer :: ivar_eth,i,j
-!
-      intent (in) :: f,ivar_eth
-      intent (out) :: del2lneth,hlneth
-!
-      call g2ij(f,ivar_eth,heth)
-      call grad(f,ivar_eth,geth)
-!
-      call dot2(geth,geth2)
-!
-      del2eth = heth(:,1,1) + heth(:,2,2) + heth(:,3,3)
-!
-      eth_1 = 1./f(l1:l2,m,n,ivar_eth)
-!
-      del2lneth = eth_1*del2eth - eth_1*eth_1*geth2
-!
-      do i=1,3
-        do j=1,3
-          hlneth(:,i,j) = eth_1*(heth(:,i,j) - eth_1*geth(:,i)*geth(:,j))
-        enddo
-      enddo
-!
-    endsubroutine thermal_energy_hessian
+!TP: on comment since not used (to suppress compiler warnings)
+!    subroutine thermal_energy_hessian(f,ivar_eth,del2lneth,hlneth)
+!!
+!      use Sub, only: g2ij,grad,dot2
+!!
+!      real, dimension (mx,my,mz,mfarray) :: f
+!      real, dimension (nx) :: del2lneth,del2eth,geth2,eth_1
+!      real, dimension (nx,3,3) :: hlneth,heth
+!      real, dimension (nx,3) :: geth
+!      integer :: ivar_eth,i,j
+!!
+!      intent (in) :: f,ivar_eth
+!      intent (out) :: del2lneth,hlneth
+!!
+!      call g2ij(f,ivar_eth,heth)
+!      call grad(f,ivar_eth,geth)
+!!
+!      call dot2(geth,geth2)
+!!
+!      del2eth = heth(:,1,1) + heth(:,2,2) + heth(:,3,3)
+!!
+!      eth_1 = 1./f(l1:l2,m,n,ivar_eth)
+!!
+!      del2lneth = eth_1*del2eth - eth_1*eth_1*geth2
+!!
+!      do i=1,3
+!        do j=1,3
+!          hlneth(:,i,j) = eth_1*(heth(:,i,j) - eth_1*geth(:,i)*geth(:,j))
+!        enddo
+!      enddo
+!!
+!    endsubroutine thermal_energy_hessian
 !***********************************************************************
-    subroutine eosperturb(f,psize,ee,pp,ss)
-!
-!  Set f(l1:l2,m,n,iss), depending on the values of ee, pp, and ss.
-!  Adding pressure perturbations is not implemented
-!
-!  20-jan-15/MR: changes for use of reference state
-!
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      integer, intent(in) :: psize
-      real, dimension(psize), intent(in), optional :: ee, pp, ss
-!
-      real, dimension(psize) :: lnrho_
-      integer :: i1,i2
-!
-      select case (psize)
-        case (nx); i1=l1; i2=l2
-        case (mx); i1=1; i2=mx
-        case default; call fatal_error('eosperturb','no such pencil size')
-      end select
-!
-      call getlnrho(f(:,m,n,ilnrho),lnrho_)
-      if (present(ee)) then
-        if (pretend_lnTT) then
-          f(i1:i2,m,n,iss)=log(cv1*ee)
-        else
-          f(i1:i2,m,n,iss)=cv*(log(cv1*ee)-lnTT0-gamma_m1*(lnrho_-lnrho0))
-        endif
-      elseif (present(pp)) then
-        if (pretend_lnTT) then
-          f(i1:i2,m,n,iss)=log(gamma*pp/(gamma_m1*lnrho_))
-        else
-          f(i1:i2,m,n,iss)=cv*(log(gamma*pp/gamma_m1)-gamma*lnrho_-gamma_m1*lnrho0-lnTT0)
-        endif
-      elseif (present(ss)) then
-        if (pretend_lnTT) then
-          f(i1:i2,m,n,iss)=lnTT0+cv1*ss+gamma_m1*(lnrho_-lnrho0)
-        else
-          f(i1:i2,m,n,iss)=ss
-        endif
-      endif
-!
-!  Reference state undefined in ghost zones.
-!
-      if (psize==nx.and.lreference_state) f(i1:i2,m,n,iss) = f(i1:i2,m,n,iss) - reference_state(:,iref_s)
-!
-    endsubroutine eosperturb
+!TP: on comment since not used (to suppress compiler warnings)
+!    subroutine eosperturb(f,psize,ee,pp,ss)
+!!
+!!  Set f(l1:l2,m,n,iss), depending on the values of ee, pp, and ss.
+!!  Adding pressure perturbations is not implemented
+!!
+!!  20-jan-15/MR: changes for use of reference state
+!!
+!      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+!      integer, intent(in) :: psize
+!      real, dimension(psize), intent(in), optional :: ee, pp, ss
+!!
+!      real, dimension(psize) :: lnrho_
+!      integer :: i1,i2
+!!
+!      select case (psize)
+!        case (nx); i1=l1; i2=l2
+!        case (mx); i1=1; i2=mx
+!        case default; call fatal_error('eosperturb','no such pencil size')
+!      end select
+!!
+!      call getlnrho(f(:,m,n,ilnrho),lnrho_)
+!      if (present(ee)) then
+!        if (pretend_lnTT) then
+!          f(i1:i2,m,n,iss)=log(cv1*ee)
+!        else
+!          f(i1:i2,m,n,iss)=cv*(log(cv1*ee)-lnTT0-gamma_m1*(lnrho_-lnrho0))
+!        endif
+!      elseif (present(pp)) then
+!        if (pretend_lnTT) then
+!          f(i1:i2,m,n,iss)=log(gamma*pp/(gamma_m1*lnrho_))
+!        else
+!          f(i1:i2,m,n,iss)=cv*(log(gamma*pp/gamma_m1)-gamma*lnrho_-gamma_m1*lnrho0-lnTT0)
+!        endif
+!      elseif (present(ss)) then
+!        if (pretend_lnTT) then
+!          f(i1:i2,m,n,iss)=lnTT0+cv1*ss+gamma_m1*(lnrho_-lnrho0)
+!        else
+!          f(i1:i2,m,n,iss)=ss
+!        endif
+!      endif
+!!
+!!  Reference state undefined in ghost zones.
+!!
+!      if (psize==nx.and.lreference_state) f(i1:i2,m,n,iss) = f(i1:i2,m,n,iss) - reference_state(:,iref_s)
+!!
+!    endsubroutine eosperturb
 !***********************************************************************
     subroutine eoscalc_farray(f,psize,lnrho,yH,lnTT,ee,pp,cs2,kapparho)
 !
@@ -2031,95 +2036,97 @@ module EquationOfState
 !
     endsubroutine get_average_pressure
 !***********************************************************************
-    subroutine bdry_magnetic(f,quench,task)
-!
-!  Calculate magnetic properties needed for z boundary conditions.
-!  This routine contains calls to more specialized routines.
-!
-!   8-jun-13/axel: coded, originally in magnetic, but cyclic dependence
-!  21-jan-15/MR  : changes for use of reference state.
-!
-      use Sub, only: curl, dot2
-      !use Boundcond, only: boundconds_x, boundconds_y, boundconds_z
-      !use Mpicomm, only: initiate_isendrcv_bdry, finalize_isendrcv_bdry
-      !use Magnetic_meanfield, only: meanfield_chitB
-!
-      real, dimension (:,:,:,:), intent(in) :: f
-      real, dimension (:),       intent(out):: quench
-!
-      real, dimension (size(quench),3) :: bb
-      real, dimension (size(quench)) :: rho,b2
-      character (len=*), intent(in) :: task
-      integer :: j
-!
-      !character (len=linelen), pointer :: dummy
-!
-      if (lrun .and. lmagn_mf) then
-        !call get_shared_variable('meanfield_Beq_profile',dummy,caller='bdry_magnetic')
-        !meanfield_Beq_profile=dummy
-        call get_shared_variable('meanfield_Beq',meanfield_Beq,caller='bdry_magnetic')
-        call get_shared_variable('chit_quenching',chit_quenching)
-        call get_shared_variable('uturb',uturb)
-        call get_shared_variable('B_ext',B_ext)
-      endif
-!
-      select case (task)
-!
-      case ('meanfield_chitB')
-!
-        !call boundconds_x(f,iax,iaz)
-        !call initiate_isendrcv_bdry(f,iax,iaz)
-        !call finalize_isendrcv_bdry(f,iax,iaz)
-        !call boundconds_y(f,iax,iaz)
-        !call boundconds_z(f,iax,iaz)
-!
-!  Add the external field.
-!
-        call curl(f,iaa,bb)
-        do j=1,3
-          bb(:,j)=bb(:,j)!+B_ext(j)
-        enddo
-        call dot2(bb,b2)
-        call getrho(f(:,m,n,ilnrho),rho)
-!
-!  Call mean-field routine.
-!
-        call meanfield_chitB(rho,b2,quench)
-!
-!  capture undefined entries
-!
-      case default
-        call fatal_error('bdry_magnetic','invalid argument')
-      endselect
-!
-    endsubroutine bdry_magnetic
+!TP: on comment since not used (to suppress compiler warnings)
+!    subroutine bdry_magnetic(f,quench,task)
+!!
+!!  Calculate magnetic properties needed for z boundary conditions.
+!!  This routine contains calls to more specialized routines.
+!!
+!!   8-jun-13/axel: coded, originally in magnetic, but cyclic dependence
+!!  21-jan-15/MR  : changes for use of reference state.
+!!
+!      use Sub, only: curl, dot2
+!      !use Boundcond, only: boundconds_x, boundconds_y, boundconds_z
+!      !use Mpicomm, only: initiate_isendrcv_bdry, finalize_isendrcv_bdry
+!      !use Magnetic_meanfield, only: meanfield_chitB
+!!
+!      real, dimension (:,:,:,:), intent(in) :: f
+!      real, dimension (:),       intent(out):: quench
+!!
+!      real, dimension (size(quench),3) :: bb
+!      real, dimension (size(quench)) :: rho,b2
+!      character (len=*), intent(in) :: task
+!      integer :: j
+!!
+!      !character (len=linelen), pointer :: dummy
+!!
+!      if (lrun .and. lmagn_mf) then
+!        !call get_shared_variable('meanfield_Beq_profile',dummy,caller='bdry_magnetic')
+!        !meanfield_Beq_profile=dummy
+!        call get_shared_variable('meanfield_Beq',meanfield_Beq,caller='bdry_magnetic')
+!        call get_shared_variable('chit_quenching',chit_quenching)
+!        call get_shared_variable('uturb',uturb)
+!        call get_shared_variable('B_ext',B_ext)
+!      endif
+!!
+!      select case (task)
+!!
+!      case ('meanfield_chitB')
+!!
+!        !call boundconds_x(f,iax,iaz)
+!        !call initiate_isendrcv_bdry(f,iax,iaz)
+!        !call finalize_isendrcv_bdry(f,iax,iaz)
+!        !call boundconds_y(f,iax,iaz)
+!        !call boundconds_z(f,iax,iaz)
+!!
+!!  Add the external field.
+!!
+!        call curl(f,iaa,bb)
+!        do j=1,3
+!          bb(:,j)=bb(:,j)!+B_ext(j)
+!        enddo
+!        call dot2(bb,b2)
+!        call getrho(f(:,m,n,ilnrho),rho)
+!!
+!!  Call mean-field routine.
+!!
+!        call meanfield_chitB(rho,b2,quench)
+!!
+!!  capture undefined entries
+!!
+!      case default
+!        call fatal_error('bdry_magnetic','invalid argument')
+!      endselect
+!!
+!    endsubroutine bdry_magnetic
 !***********************************************************************
-    subroutine meanfield_chitB(rho,b2,quench)
-!
-!  Calculate magnetic properties needed for z boundary conditions.
-!  This routine contails calls to more specialized routines.
-!
-!   8-jun-13/axel: coded
-!
-      real, dimension(:), intent(IN) :: rho,b2
-      real, dimension(:), intent(OUT):: quench
-!
-      real, dimension(size(rho)) :: Beq21
-!
-!  compute Beq21 = 1/Beq^2
-!XX
-!     select case (meanfield_Beq_profile)
-!     case ('uturbconst');
-        Beq21=mu01/(rho*uturb**2)
-!     case default;
-!       Beq21=1./meanfield_Beq**2
-!     endselect
-!
-!  compute chit_quenching
-!
-      quench=1./(1.+chit_quenching*b2*Beq21)
-!
-    endsubroutine meanfield_chitB
+!TP: on comment since not used (to suppress compiler warnings)
+!    subroutine meanfield_chitB(rho,b2,quench)
+!!
+!!  Calculate magnetic properties needed for z boundary conditions.
+!!  This routine contails calls to more specialized routines.
+!!
+!!   8-jun-13/axel: coded
+!!
+!      real, dimension(:), intent(IN) :: rho,b2
+!      real, dimension(:), intent(OUT):: quench
+!!
+!      real, dimension(size(rho)) :: Beq21
+!!
+!!  compute Beq21 = 1/Beq^2
+!!XX
+!!     select case (meanfield_Beq_profile)
+!!     case ('uturbconst');
+!        Beq21=mu01/(rho*uturb**2)
+!!     case default;
+!!       Beq21=1./meanfield_Beq**2
+!!     endselect
+!!
+!!  compute chit_quenching
+!!
+!      quench=1./(1.+chit_quenching*b2*Beq21)
+!!
+!    endsubroutine meanfield_chitB
 !***********************************************************************
     subroutine bc_ss_flux_turb(f,topbot)
 !
@@ -4454,7 +4461,7 @@ module EquationOfState
       real :: density_scale1, density_scale
 !
       if (density_scale_factor==impossible) then
-        density_scale=density_scale_cgs/unit_length
+        density_scale=real(density_scale_cgs/unit_length)
       else
         density_scale=density_scale_factor
       endif
