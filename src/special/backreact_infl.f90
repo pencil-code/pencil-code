@@ -1537,6 +1537,16 @@ module Special
     call copy_addr(heating,p_par(31))
     call copy_addr(lsolve_for_phi,p_par(32)) ! bool
     call copy_addr(lheating,p_par(33)) ! bool
+
+    call keep_compiler_quiet(rad_heating)
+    call keep_compiler_quiet(rhophim_crit)
+    call keep_compiler_quiet(phase_phi)
+    call keep_compiler_quiet(lbackreact_infl)
+    call keep_compiler_quiet(eps)
+    call keep_compiler_quiet(kgaussian_dphi)
+    call keep_compiler_quiet(ascale_heat_off)
+    call keep_compiler_quiet(ascale_heat)
+
     endsubroutine pushpars2c
 !********************************************************************
 !********************************************************************

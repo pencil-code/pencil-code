@@ -112,7 +112,8 @@ module Special
   logical :: lmagstress=.true., lelectmag=.false., lscalar=.false., lscalar_phi=.false.
   logical :: luse_mag, lggTX_as_aux=.true., lhhTX_as_aux=.true.
   logical :: lremove_mean_hij=.false., lremove_mean_gij=.false.
-  logical :: GWs_spec_complex=.true. !(fixed for now)
+  !Not used at the moment
+  !logical :: GWs_spec_complex=.true. !(fixed for now)
   logical :: lreal_space_hTX_as_aux=.false., lreal_space_gTX_as_aux=.false., lreal_space_hij_as_aux=.false.
   logical :: linflation=.false., lreheating_GW=.false., lmatter_GW=.false., ldark_energy_GW=.false.
   logical :: lonly_mag=.false.!, lread_scl_factor_file=.false.
@@ -3553,6 +3554,11 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
     call copy_addr(luse_mag,p_par(76)) ! bool
     call copy_addr(lsplit_gw_rhs_from_rest_on_gpu,p_par(77)) ! bool
     call copy_addr(ntimesteps_per_gw_step,p_par(78)) ! int
+
+    call keep_compiler_quiet(OmL0)
+    call keep_compiler_quiet(nfactd_GW)
+    call keep_compiler_quiet(lno_transverse_part)
+    call keep_compiler_quiet(aux_stress)
 
 
     endsubroutine pushpars2c
