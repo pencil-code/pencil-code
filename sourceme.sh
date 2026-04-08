@@ -112,4 +112,18 @@ if [ -d .git ]; then
 #
 # Added -C flag to change the directory of the git command to $PENCIL_HOME
     git -C $PENCIL_HOME config pull.rebase true
+#
+# Enforce that all committers have set their email account and username in git before committing
+#
+    touch $PENCIL_HOME/.git/hooks/pre-commit
+    echo "#!/bin/sh
+name=\$(git config user.name)
+email=\$(git config user.email)
+if [ -z \"\$name\" ] || [ -z \"\$email\" ]; then
+  echo \"Error: Git user.name and user.email must be set before committing!!\"
+  exit 1
+fi" > $PENCIL_HOME/.git/hooks/pre-commit
+
+    chmod +x $PENCIL_HOME/.git/hooks/pre-commit
+
 fi
