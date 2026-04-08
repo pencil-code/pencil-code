@@ -58,13 +58,14 @@ module Mpicomm
   include 'mpif.h'
   include 'mpicomm.h'
 !
-  interface mpisend_cmplx
-    module procedure mpisend_cmplx_arr3
-  endinterface
+  !interface mpisend_cmplx
+  !  module procedure mpisend_cmplx_arr3
+  !endinterface
 !
-  interface mpirecv_cmplx
-    module procedure mpirecv_cmplx_arr3
-  endinterface
+  !This interface is on comment in mpicomm.h
+  !interface mpirecv_cmplx
+  !  module procedure mpirecv_cmplx_arr3
+  !endinterface
 !
 !  interface mpigather_and_out
 !    module procedure mpigather_and_out_real
@@ -74,7 +75,7 @@ module Mpicomm
   integer(kind=MPI_OFFSET_KIND) :: size_of_int = 0, size_of_real = 0, size_of_double = 0
   logical :: lcommunicate_y=.false.
 !
-  character(LEN=MPI_MAX_PROCESSOR_NAME), dimension(ncpus) :: nodenames
+  !character(LEN=MPI_MAX_PROCESSOR_NAME), dimension(ncpus) :: nodenames
 !
 !  For f-array processor boundaries
 !
@@ -230,8 +231,9 @@ module Mpicomm
 !
       call MPI_GET_PROCESSOR_NAME(ndname, ndnmlen, mpierr)
       ndname = ndname(1:ndnmlen)
-      call MPI_ALLGATHER(ndname,MPI_MAX_PROCESSOR_NAME,MPI_CHARACTER,nodenames,MPI_MAX_PROCESSOR_NAME, &
-                         MPI_CHARACTER,MPI_COMM_WORLD,mpierr)
+      !TP: not used and causes warnings so on comment
+      !call MPI_ALLGATHER(ndname,MPI_MAX_PROCESSOR_NAME,MPI_CHARACTER,nodenames,MPI_MAX_PROCESSOR_NAME, &
+      !                   MPI_CHARACTER,MPI_COMM_WORLD,mpierr)
 !
 !if (lroot) print*, 'Pencil0: nprocs,MPI_COMM_WORLD', nprocs, MPI_COMM_WORLD
 !
@@ -697,45 +699,46 @@ module Mpicomm
 !
     endfunction index_to_iproc_comm
 !***********************************************************************
-    subroutine set_cubed_sphere_neighbors
+!TP: on comment since not used (to suppress compiler warnings)
+!    subroutine set_cubed_sphere_neighbors
+!!
+!!  Cubed mesh
+!!
+!!  20-dec-15/MR: coded
+!!
+!      integer :: patch_neigh_left, patch_neigh_right, patch_neigh_top, patch_neigh_bot
+!      integer :: ipatch
+!      logical, save :: lcalled=.false.
 !
-!  Cubed mesh
+!      if (lcalled) then
+!        return
+!      else
+!        lcalled=.true.
+!      endif
+!!
+!      if (ipatch<5) then
+!        patch_neigh_right=modulo(ipatch  ,4)+1
+!        patch_neigh_left =modulo(ipatch+2,4)+1
+!        patch_neigh_top  =ZPLUS
+!        patch_neigh_bot  =ZMINUS
+!        if (llast_proc_y)  yuneigh=find_proc(ipx,       0,ipz)+(patch_neigh_right-1)*ncpus
+!        if (lfirst_proc_y) ylneigh=find_proc(ipx,nprocy-1,ipz)+(patch_neigh_left -1)*ncpus
+!        if (ipatch==1 .or. ipatch==3) then
+!          if (llast_proc_z)  zuneigh=find_proc(ipx,ipy,       0)+(patch_neigh_top  -1)*ncpus
+!          if (lfirst_proc_z) zlneigh=find_proc(ipx,ipy,nprocz-1)+(patch_neigh_bot  -1)*ncpus
+!        else
+!          if (llast_proc_z)  zuneigh=find_proc(ipx,       0,ipy)+(patch_neigh_top  -1)*ncpus
+!          if (lfirst_proc_z) zlneigh=find_proc(ipx,nprocy-1,ipy)+(patch_neigh_bot  -1)*ncpus
+!        endif
 !
-!  20-dec-15/MR: coded
-!
-      integer :: patch_neigh_left, patch_neigh_right, patch_neigh_top, patch_neigh_bot
-      integer :: ipatch
-      logical, save :: lcalled=.false.
-
-      if (lcalled) then
-        return
-      else
-        lcalled=.true.
-      endif
-!
-      if (ipatch<5) then
-        patch_neigh_right=modulo(ipatch  ,4)+1
-        patch_neigh_left =modulo(ipatch+2,4)+1
-        patch_neigh_top  =ZPLUS
-        patch_neigh_bot  =ZMINUS
-        if (llast_proc_y)  yuneigh=find_proc(ipx,       0,ipz)+(patch_neigh_right-1)*ncpus
-        if (lfirst_proc_y) ylneigh=find_proc(ipx,nprocy-1,ipz)+(patch_neigh_left -1)*ncpus
-        if (ipatch==1 .or. ipatch==3) then
-          if (llast_proc_z)  zuneigh=find_proc(ipx,ipy,       0)+(patch_neigh_top  -1)*ncpus
-          if (lfirst_proc_z) zlneigh=find_proc(ipx,ipy,nprocz-1)+(patch_neigh_bot  -1)*ncpus
-        else
-          if (llast_proc_z)  zuneigh=find_proc(ipx,       0,ipy)+(patch_neigh_top  -1)*ncpus
-          if (lfirst_proc_z) zlneigh=find_proc(ipx,nprocy-1,ipy)+(patch_neigh_bot  -1)*ncpus
-        endif
-
-print*,'AXEL: patch_neigh_left, patch_neigh_right, patch_neigh_top, patch_neigh_bot=', &
-              patch_neigh_left, patch_neigh_right, patch_neigh_top, patch_neigh_bot
-      elseif (ipatch==5) then
-      elseif (ipatch==6) then
-      endif
-!
-    endsubroutine set_cubed_sphere_neighbors
-!***********************************************************************
+!print*,'AXEL: patch_neigh_left, patch_neigh_right, patch_neigh_top, patch_neigh_bot=', &
+!              patch_neigh_left, patch_neigh_right, patch_neigh_top, patch_neigh_bot
+!      elseif (ipatch==5) then
+!      elseif (ipatch==6) then
+!      endif
+!!
+!    endsubroutine set_cubed_sphere_neighbors
+!!***********************************************************************
     subroutine scatter_snapshot(a,f,indvar1,indvar2)
 !
 !  Scatters a full snapshot (array a) residing in root (w/o ghost zones) to the f-arrays of all ranks
@@ -751,6 +754,8 @@ print*,'AXEL: patch_neigh_left, patch_neigh_right, patch_neigh_top, patch_neigh_
       integer, dimension(4) :: start_get, start_store
       integer :: type_get, type_store, win
       INTEGER(KIND=MPI_ADDRESS_KIND) :: size
+      INTEGER(KIND=MPI_ADDRESS_KIND), parameter :: zero_size=0
+
 
       nvar=indvar2-indvar1+1
       start_get=(/ipx*nx,ipy*ny,ipz*nz,0/)+1
@@ -763,13 +768,9 @@ print*,'AXEL: patch_neigh_left, patch_neigh_right, patch_neigh_top, patch_neigh_
       call MPI_Type_commit(type_get,mpierr)
       call MPI_Type_commit(type_store,mpierr)
 
-      size=nwgrid*size_of_real
-
-      if (lroot) then   ! data tb scattered is on root
-        call MPI_Win_create(a, size, 1, MPI_INFO_NULL, MPI_COMM_WORLD, win, mpierr)
-      else              ! hence other ranks do not declare a window
-        call MPI_Win_create(a, 0, 1, MPI_INFO_NULL, MPI_COMM_WORLD, win, mpierr)
-      endif
+      ! data tb scattered is on root
+      size = merge(nwgrid*size_of_real,zero_size,lroot)
+      call MPI_Win_create(a, size, 1, MPI_INFO_NULL, MPI_COMM_WORLD, win, mpierr)
 
       call MPI_WIN_FENCE(0, win, mpierr)
       call MPI_Get(f, 1, type_store, root, 0, 1, type_get, win, mpierr)
@@ -886,13 +887,13 @@ print*,'AXEL: patch_neigh_left, patch_neigh_right, patch_neigh_top, patch_neigh_
         allocate(ubufzo(mx,bufsizes_yz(INZU,ISND),nghost,mcom))
       endif
 
-      if (lfirst_proc_y.and.ipz>=nprocz/3.and.ipz<2*nprocz/3.) then
+      if (lfirst_proc_y.and.ipz>=floor(nprocz/3.).and.ipz<2*nprocz/3.) then
         allocate(lbufyo(mx,bufsizes_yz(INYL,ISND),nghost,mcom))
       else
         allocate(lbufyo(mx,nghost,bufsizes_yz(INYL,ISND),mcom))
       endif
 
-      if (llast_proc_y.and.ipz>=nprocz/3.and.ipz<2*nprocz/3.) then
+      if (llast_proc_y.and.ipz>=floor(nprocz/3.).and.ipz<2*nprocz/3.) then
         allocate(ubufyo(mx,bufsizes_yz(INYU,ISND),nghost,mcom))
       else
         allocate(ubufyo(mx,nghost,bufsizes_yz(INYU,ISND),mcom))
@@ -903,25 +904,25 @@ print*,'AXEL: patch_neigh_left, patch_neigh_right, patch_neigh_top, patch_neigh_
                 ulbufi(mx,bufsizes_yz_corn(1,INUL,IRCV),bufsizes_yz_corn(2,INUL,IRCV),mcom), &
                 uubufi(mx,bufsizes_yz_corn(1,INUU,IRCV),bufsizes_yz_corn(2,INUU,IRCV),mcom))
 
-      if (lfirst_proc_z.or.lfirst_proc_y.and.ipz>=nprocz/3.and.ipz<2*nprocz/3.) then
+      if (lfirst_proc_z.or.lfirst_proc_y.and.ipz>=floor(nprocz/3.).and.ipz<2*nprocz/3.) then
         allocate(llbufo(mx,bufsizes_yz_corn(2,INLL,ISND),bufsizes_yz_corn(1,INLL,ISND),mcom))
       else
         allocate(llbufo(mx,bufsizes_yz_corn(1,INLL,ISND),bufsizes_yz_corn(2,INLL,ISND),mcom))
       endif
 
-      if (lfirst_proc_z.or.llast_proc_y.and.ipz>=nprocz/3.and.ipz<2*nprocz/3.) then
+      if (lfirst_proc_z.or.llast_proc_y.and.ipz>=floor(nprocz/3.).and.ipz<2*nprocz/3.) then
         allocate(ulbufo(mx,bufsizes_yz_corn(2,INUL,ISND),bufsizes_yz_corn(1,INUL,ISND),mcom) )
       else
         allocate(ulbufo(mx,bufsizes_yz_corn(1,INUL,ISND),bufsizes_yz_corn(2,INUL,ISND),mcom) )
       endif
 
-      if (llast_proc_z.or.llast_proc_y.and.ipz>=nprocz/3.and.ipz<2*nprocz/3.) then
+      if (llast_proc_z.or.llast_proc_y.and.ipz>=floor(nprocz/3.).and.ipz<2*nprocz/3.) then
         allocate(uubufo(mx,bufsizes_yz_corn(2,INUU,ISND),bufsizes_yz_corn(1,INUU,ISND),mcom))
       else
         allocate(uubufo(mx,bufsizes_yz_corn(1,INUU,ISND),bufsizes_yz_corn(2,INUU,ISND),mcom))
       endif
 
-      if (llast_proc_z.or.lfirst_proc_y.and.ipz>=nprocz/3.and.ipz<2*nprocz/3.) then
+      if (llast_proc_z.or.lfirst_proc_y.and.ipz>=floor(nprocz/3.).and.ipz<2*nprocz/3.) then
         allocate(lubufo(mx,bufsizes_yz_corn(2,INLU,ISND),bufsizes_yz_corn(1,INLU,ISND),mcom) )
       else
         allocate(lubufo(mx,bufsizes_yz_corn(1,INLU,ISND),bufsizes_yz_corn(2,INLU,ISND),mcom) )
@@ -1203,7 +1204,7 @@ if (llast_proc_z) write(24,'(2(f10.4,1x))') thphprime_strip_y
 !print*, '-----------------'
 endif
 
-          if (ipz>=nprocz/3.and.ipz<2*nprocz/3) then
+          if (ipz>=floor(nprocz/3.).and.ipz<floor(2*nprocz/3.)) then
 !
 !  Transposition of thphprime_strip_y, can perhaps be avoided.
 !
@@ -1292,7 +1293,7 @@ if (llast_proc_z) write(26,'(2(f10.4,1x))') thphprime_strip_y
 !print*, '-----------------'
 endif
 
-          if (ipz>=nprocz/3.and.ipz<2*nprocz/3) then
+          if (ipz>=floor(nprocz/3.).and.ipz<floor(2*nprocz/3.)) then
 !
 !  Transposition of thphprime_strip_y, can perhaps be avoided.
 !
@@ -1546,11 +1547,11 @@ print*, 'noks_all,ngap_all,nstrip_total=', noks_all,ngap_all,nstrip_total
 !  NB nprocz=2*n, n>=1, comms across y-plane parallel in z!
 !
       if (lcommunicate_y) then
-        poleneigh = find_proc(ipx,     ipy,ipz  +nprocz/2)
-        pnbcrn    = find_proc(ipx,       0,ipz-1+nprocz/2)
-        pnfcrn    = find_proc(ipx,       0,ipz+1+nprocz/2)
-        psfcrn    = find_proc(ipx,nprocy-1,ipz+1+nprocz/2)
-        psbcrn    = find_proc(ipx,nprocy-1,ipz-1+nprocz/2)
+        poleneigh = find_proc(ipx,     ipy,ipz  +floor(nprocz/2.))
+        pnbcrn    = find_proc(ipx,       0,ipz-1+floor(nprocz/2.))
+        pnfcrn    = find_proc(ipx,       0,ipz+1+floor(nprocz/2.))
+        psfcrn    = find_proc(ipx,nprocy-1,ipz+1+floor(nprocz/2.))
+        psbcrn    = find_proc(ipx,nprocy-1,ipz-1+floor(nprocz/2.))
         !poleneigh = modulo(ipz  +nprocz/2,nprocz)*nprocxy+       ipy*nprocx+ipx
         !pnbcrn    = modulo(ipz-1+nprocz/2,nprocz)*nprocxy+         0*nprocx+ipx !N rev
         !pnfcrn    = modulo(ipz+1+nprocz/2,nprocz)*nprocxy+         0*nprocx+ipx !N fwd
@@ -2689,8 +2690,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 !
-!     fa, fb are the buffers we collect recieved data into
-      real, dimension (nghost,4*ny,mz,mcom) :: fa, fb
       integer, dimension (MPI_STATUS_SIZE) :: irecv_stat_fall, irecv_stat_fann
       integer, dimension (MPI_STATUS_SIZE) :: irecv_stat_fal,  irecv_stat_fan
       integer, dimension (MPI_STATUS_SIZE) :: irecv_stat_fbll, irecv_stat_fbnn
@@ -2701,10 +2700,16 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension (MPI_STATUS_SIZE) :: isend_stat_tnb,  isend_stat_tlb
       integer :: ivar1, ivar2, m2long
       real(KIND=rkind8) :: deltay_dy, frac, c1, c2, c3, c4, c5, c6
+
+      !fa, fb are the buffers we collect recieved data into
+      real, save, allocatable, dimension(:,:,:,:) :: fa, fb
 !
       ivar1=1; ivar2=mcom
       if (present(ivar1_opt)) ivar1=ivar1_opt
       if (present(ivar2_opt)) ivar2=ivar2_opt
+
+      if (.not. allocated(fa)) allocate(fa(nghost,4*ny,mz,mcom))
+      if (.not. allocated(fb)) allocate(fb(nghost,4*ny,mz,mcom))
 !
 !  Some special cases have already finished in initiate_shearing.
 !
@@ -3052,6 +3057,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(nx,nz), intent(in) :: Qrad_zx,tau_zx
       real, dimension(nx,nz,0:nprocy-1), intent(out) :: Qrad_zx_all,tau_zx_all
+      integer(kind=MPI_INTEGER_KIND), parameter :: count=nx*nz
 !
 !  Identifier
 !
@@ -3059,10 +3065,10 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  actual MPI calls
 !
-      call MPI_ALLGATHER(tau_zx,nx*nz,mpi_precision,tau_zx_all,nx*nz,mpi_precision, &
+      call MPI_ALLGATHER(tau_zx,count,mpi_precision,tau_zx_all,count,mpi_precision, &
           MPI_COMM_YBEAM,mpierr)
 !
-      call MPI_ALLGATHER(Qrad_zx,nx*nz,mpi_precision,Qrad_zx_all,nx*nz,mpi_precision, &
+      call MPI_ALLGATHER(Qrad_zx,count,mpi_precision,Qrad_zx_all,count,mpi_precision, &
           MPI_COMM_YBEAM,mpierr)
 !
     endsubroutine radboundary_zx_periodic_ray
@@ -3150,7 +3156,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 
       if (present(nonblock)) then
         call MPI_IRECV(bcast_array, 1, mpi_precision, proc_src, &
-                      tag_id, ioptest(comm,MPI_COMM_GRID), stat, nonblock, mpierr)
+                      tag_id, ioptest(comm,MPI_COMM_GRID), nonblock, mpierr)
       else
         call MPI_RECV(bcast_array, 1, mpi_precision, proc_src, &
                       tag_id, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
@@ -3235,33 +3241,34 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine mpirecv_real_arr3
 !***********************************************************************
-    subroutine mpirecv_cmplx_arr3(bcast_array,nbcast_array,proc_src,tag_id,comm,nonblock)
-!
-!  Receive complex array(:,:,:) from other processor.
-!  If present, nonblock is the request id for non-blockin receive.
-!
-!  20-may-06/anders: adapted
-!
-      integer, dimension(3) :: nbcast_array
-      complex, dimension(nbcast_array(1),nbcast_array(2),nbcast_array(3)) :: bcast_array
-      integer :: proc_src, tag_id, num_elements
-      integer, optional :: comm,nonblock
-      integer, dimension(MPI_STATUS_SIZE) :: stat
-!
-      intent(out) :: bcast_array
-!
-      if (any(nbcast_array == 0)) return
-!
-      num_elements = product(nbcast_array)
-      if (present(nonblock)) then
-        call MPI_IRECV(bcast_array, num_elements, MPI_CMPLX, proc_src, &
-                       tag_id, ioptest(comm,MPI_COMM_GRID), nonblock, mpierr)
-      else
-        call MPI_RECV(bcast_array, num_elements, MPI_CMPLX, proc_src, &
-                      tag_id, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
-      endif
-!
-    endsubroutine mpirecv_cmplx_arr3
+!TP: on comment since not used (to suppress compiler warnings)
+!    subroutine mpirecv_cmplx_arr3(bcast_array,nbcast_array,proc_src,tag_id,comm,nonblock)
+!!
+!!  Receive complex array(:,:,:) from other processor.
+!!  If present, nonblock is the request id for non-blockin receive.
+!!
+!!  20-may-06/anders: adapted
+!!
+!      integer, dimension(3) :: nbcast_array
+!      complex, dimension(nbcast_array(1),nbcast_array(2),nbcast_array(3)) :: bcast_array
+!      integer :: proc_src, tag_id, num_elements
+!      integer, optional :: comm,nonblock
+!      integer, dimension(MPI_STATUS_SIZE) :: stat
+!!
+!      intent(out) :: bcast_array
+!!
+!      if (any(nbcast_array == 0)) return
+!!
+!      num_elements = product(nbcast_array)
+!      if (present(nonblock)) then
+!        call MPI_IRECV(bcast_array, num_elements, MPI_CMPLX, proc_src, &
+!                       tag_id, ioptest(comm,MPI_COMM_GRID), nonblock, mpierr)
+!      else
+!        call MPI_RECV(bcast_array, num_elements, MPI_CMPLX, proc_src, &
+!                      tag_id, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
+!      endif
+!!
+!    endsubroutine mpirecv_cmplx_arr3
 !***********************************************************************
     subroutine mpirecv_real_arr4(bcast_array,nbcast_array,proc_src,tag_id,comm,nonblock)
 !
@@ -3445,24 +3452,25 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine mpisend_real_arr
 !***********************************************************************
-    subroutine mpisend_real_arr_assumed(bcast_array,nbcast_array,offset,proc_rec,tag_id,comm)
-!
-!  Sends nbcast_array elements of real array bcast_array from position offset to other processor.
-!  Avoids compilation error when shapes of bcast_array and actual parameter do not agree.
-!
-!  06-oct-22/MR: coded
-!
-      real, dimension(*) :: bcast_array
-      integer(KIND=ikind8) :: offset
-      integer :: nbcast_array,proc_rec,tag_id
-      integer, optional :: comm
-!
-      if (nbcast_array == 0) return
-!
-      call MPI_SEND(bcast_array(offset), nbcast_array, mpi_precision, proc_rec, &
-                    tag_id, ioptest(comm,MPI_COMM_GRID), mpierr)
-!
-    endsubroutine mpisend_real_arr_assumed
+!TP: on comment since not used (to suppress compiler warnings)
+!    subroutine mpisend_real_arr_assumed(bcast_array,nbcast_array,offset,proc_rec,tag_id,comm)
+!!
+!!  Sends nbcast_array elements of real array bcast_array from position offset to other processor.
+!!  Avoids compilation error when shapes of bcast_array and actual parameter do not agree.
+!!
+!!  06-oct-22/MR: coded
+!!
+!      real, dimension(*) :: bcast_array
+!      integer(KIND=ikind8) :: offset
+!      integer :: nbcast_array,proc_rec,tag_id
+!      integer, optional :: comm
+!!
+!      if (nbcast_array == 0) return
+!!
+!      call MPI_SEND(bcast_array(offset), nbcast_array, mpi_precision, proc_rec, &
+!                    tag_id, ioptest(comm,MPI_COMM_GRID), mpierr)
+!!
+!    endsubroutine mpisend_real_arr_assumed
 !***********************************************************************
     subroutine mpisend_real_arr_huge(array,len_array,partner,tag,comm)
 !
@@ -3474,7 +3482,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: partner,tag
       integer, optional :: comm
 !
-      integer :: mult,res
+      integer(KIND=ikind8) :: mult,res
 
       if (len_array == 0) return
 
@@ -3499,7 +3507,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: partner,tag
       integer, optional :: comm
 !
-      integer :: mult,res
+      integer(KIND=ikind8) :: mult,res
       integer, dimension(MPI_STATUS_SIZE) :: stat
 
       if (len_array == 0) return
@@ -3515,26 +3523,27 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 
     endsubroutine mpirecv_real_arr_huge
 !***********************************************************************
-    subroutine mpirecv_real_arr_assumed(bcast_array,nbcast_array,offset,proc_rec,tag_id,comm)
-!
-!  Receives nbcast_array elements of real array bcast_array at position offset from other processor.
-!  Avoids compilation error when shapes of bcast_array and actual parameter do not agree.
-!
-!  06-oct-22/MR: coded
-!
-      real, dimension(*) :: bcast_array
-      integer(KIND=ikind8) :: offset
-      integer :: nbcast_array,proc_rec,tag_id
-      integer, optional :: comm
-!
-      integer, dimension(MPI_STATUS_SIZE) :: stat
-!
-      if (nbcast_array == 0) return
-!
-      call MPI_RECV(bcast_array(offset), nbcast_array, mpi_precision, proc_rec, &
-                    tag_id, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
-!
-    endsubroutine mpirecv_real_arr_assumed
+!TP: on comment since not used (to suppress compiler warnings)
+!    subroutine mpirecv_real_arr_assumed(bcast_array,nbcast_array,offset,proc_rec,tag_id,comm)
+!!
+!!  Receives nbcast_array elements of real array bcast_array at position offset from other processor.
+!!  Avoids compilation error when shapes of bcast_array and actual parameter do not agree.
+!!
+!!  06-oct-22/MR: coded
+!!
+!      real, dimension(*) :: bcast_array
+!      integer(KIND=ikind8) :: offset
+!      integer :: nbcast_array,proc_rec,tag_id
+!      integer, optional :: comm
+!!
+!      integer, dimension(MPI_STATUS_SIZE) :: stat
+!!
+!      if (nbcast_array == 0) return
+!!
+!      call MPI_RECV(bcast_array(offset), nbcast_array, mpi_precision, proc_rec, &
+!                    tag_id, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
+!!
+!    endsubroutine mpirecv_real_arr_assumed
 !***********************************************************************
     subroutine mpisend_real_arr2(bcast_array,nbcast_array,proc_rec,tag_id,comm)
 !
@@ -3580,30 +3589,31 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine mpisend_real_arr3
 !***********************************************************************
-    subroutine mpisend_cmplx_arr3(bcast_array,nbcast_array,proc_rec,tag_id,comm,nonblock)
-!
-!  Send real array(:,:,:) to other processor.
-!  If present, nonblock is the request id for non-blockin send.
-!
-!  20-may-06/anders: adapted
-!
-      integer, dimension(3) :: nbcast_array
-      complex, dimension(nbcast_array(1),nbcast_array(2),nbcast_array(3)) :: bcast_array
-      integer :: proc_rec, tag_id, num_elements
-      integer, optional :: comm,nonblock
-!
-      if (any(nbcast_array == 0)) return
-!
-      num_elements = product(nbcast_array)
-      if (present(nonblock)) then
-        call MPI_ISEND(bcast_array, num_elements, MPI_CMPLX, proc_rec, &
-                       tag_id,ioptest(comm,MPI_COMM_GRID),nonblock, mpierr)
-      else
-        call MPI_SEND(bcast_array, num_elements, MPI_CMPLX, proc_rec, &
-                      tag_id,ioptest(comm,MPI_COMM_GRID),mpierr)
-      endif
-!
-    endsubroutine mpisend_cmplx_arr3
+!TP: on comment since not used (to suppress compiler warnings)
+!    subroutine mpisend_cmplx_arr3(bcast_array,nbcast_array,proc_rec,tag_id,comm,nonblock)
+!!
+!!  Send real array(:,:,:) to other processor.
+!!  If present, nonblock is the request id for non-blockin send.
+!!
+!!  20-may-06/anders: adapted
+!!
+!      integer, dimension(3) :: nbcast_array
+!      complex, dimension(nbcast_array(1),nbcast_array(2),nbcast_array(3)) :: bcast_array
+!      integer :: proc_rec, tag_id, num_elements
+!      integer, optional :: comm,nonblock
+!!
+!      if (any(nbcast_array == 0)) return
+!!
+!      num_elements = product(nbcast_array)
+!      if (present(nonblock)) then
+!        call MPI_ISEND(bcast_array, num_elements, MPI_CMPLX, proc_rec, &
+!                       tag_id,ioptest(comm,MPI_COMM_GRID),nonblock, mpierr)
+!      else
+!        call MPI_SEND(bcast_array, num_elements, MPI_CMPLX, proc_rec, &
+!                      tag_id,ioptest(comm,MPI_COMM_GRID),mpierr)
+!      endif
+!!
+!    endsubroutine mpisend_cmplx_arr3
 !***********************************************************************
     subroutine mpisend_real_arr4(bcast_array,nbcast_array,proc_rec,tag_id,comm)
 !
@@ -4455,7 +4465,8 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(:,:) :: dest_array
       integer, optional :: proc,comm
 
-      integer :: count1,count2,comm_,np,sizeofreal
+      integer :: count1,count2,comm_,np
+      integer(kind=MPI_ADDRESS_KIND) :: sizeofreal
       integer, dimension(:), allocatable :: sendcounts,displs
       integer :: block, segment
       integer :: src_sz1, src_sz2, dest_sz1, dest_sz2, locrank, i2
@@ -5709,11 +5720,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
               ix=ibox*nprocy*ny+px*ny
               send_buf_y=a(ix+1:ix+ny,:,:)
               if (px<ipy) then      ! above diagonal: send first, receive then
-                call MPI_SEND(send_buf_y,sendc_y,mpi_precision,partner,ystag,MPI_COMM_GRID,mpierr)
-                call MPI_RECV(recv_buf_y,recvc_y,mpi_precision,partner,yrtag,MPI_COMM_GRID,stat,mpierr)
+                call MPI_SEND(send_buf_y,sendc_y,mpi_precision,partner,ystag,ioptest(comm,MPI_COMM_GRID),mpierr)
+                call MPI_RECV(recv_buf_y,recvc_y,mpi_precision,partner,yrtag,ioptest(comm,MPI_COMM_GRID),stat,mpierr)
               elseif (px>ipy) then  ! below diagonal: receive first, send then
-                call MPI_RECV(recv_buf_y,recvc_y,mpi_precision,partner,ystag,MPI_COMM_GRID,stat,mpierr)
-                call MPI_SEND(send_buf_y,sendc_y,mpi_precision,partner,yrtag,MPI_COMM_GRID,mpierr)
+                call MPI_RECV(recv_buf_y,recvc_y,mpi_precision,partner,ystag,ioptest(comm,MPI_COMM_GRID),stat,mpierr)
+                call MPI_SEND(send_buf_y,sendc_y,mpi_precision,partner,yrtag,ioptest(comm,MPI_COMM_GRID),mpierr)
               endif
               a(ix+1:ix+ny,:,:)=recv_buf_y
             endif
@@ -7426,7 +7437,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer(KIND=ikind8) :: nbox, nrow
       integer :: x_add, x_sub, y_add, y_sub
       integer, parameter :: xtag=123, ytag=124
-      integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:,:,:), allocatable :: buffer, y_row
 !
@@ -7543,7 +7553,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: px, py, pz, broadcaster, partner, alloc_err
       integer(KIND=ikind8) :: nbox,nrow
       integer, parameter :: xtag=125, ytag=126
-      integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       real, dimension(:,:,:,:), allocatable :: y_row, buffer, extended
 !
@@ -10479,7 +10488,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  20-dec-15/MR: coded
 !
-        integer, parameter :: nprocz_rd=nprocz/3
+        integer, parameter :: nprocz_rd=floor(nprocz/3.)
         integer :: lenred
 
         if (lcutoff_corners) then
@@ -10933,7 +10942,7 @@ endif
       real, dimension(6) :: floatbuf
       logical :: lok
       character(LEN=128) :: messg
-      integer :: ind,j,ll,name_len,nxgrid_foreign,nygrid_foreign,il1,il2,im1,im2,lenx,leny,px,py,tag,peer
+      integer :: ind,j,name_len,nxgrid_foreign,nygrid_foreign,il1,il2,im1,im2,lenx,leny,px,py,peer
 
       if (lforeign) then
 
@@ -11665,7 +11674,7 @@ goto 125!!!
 
       integer :: rank
 
-      call MPI_COMM_SPLIT(MPI_COMM_PENCIL, lwrite_slice_r, iproc, MPI_COMM_RSLICE, mpierr)
+      call MPI_COMM_SPLIT(MPI_COMM_PENCIL, merge(1,0,lwrite_slice_r), iproc, MPI_COMM_RSLICE, mpierr)
       call MPI_COMM_RANK(MPI_COMM_RSLICE,rank,mpierr)
       if (rank==0) root_rslice=iproc
 
