@@ -2687,7 +2687,7 @@ module Hydro
           enddo
 !  Transformation-reflection x -> -x and ux -> -ux
           if (lreflecteddy) then
-           do iz=1,mz; do iy=1,my;do ix=1, div(mx,2)
+           do iz=1,mz; do iy=1,my;do ix=1, idiv(mx,2)
               tmpvec = f(mx-ix+1,iy,iz,iux:iuz)
               f(mx-ix+1,iy,iz,iux)= -f(ix,iy,iz,iux)
               f(ix,iy,iz,iux)=-tmpvec(1)

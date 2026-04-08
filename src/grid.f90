@@ -15,7 +15,7 @@ module Grid
 !
   use Cdata
   use Messages
-  use General, only: div
+  use General, only: idiv
 !
   implicit none
 !
@@ -438,7 +438,7 @@ module Grid
        case ('band','sus')
           a = 1.0
           if (lsymmgrid(1)) then
-            xi1star=div(nxgrid,2)
+            xi1star=idiv(nxgrid,2)
           else
             xi1star=find_star_bisection(a*xi1lo,a*xi1up,x00,x00+Lx,xyz_star(1),grid_func(1),&
                  param2=(/dxi_fact(1), trans_width(1), trans_delta(1)/))/a
@@ -656,7 +656,7 @@ module Grid
        case ('band','sus')
           a = 1.0
           if (lsymmgrid(2)) then 
-            xi2star=div(nygrid,2)
+            xi2star=idiv(nygrid,2)
           else
              xi2star=find_star_bisection(a*xi2lo,a*xi2up,y00,y00+Ly,xyz_star(2),grid_func(2),&
                   param2=(/dxi_fact(2), trans_width(2), trans_delta(2)/))/a

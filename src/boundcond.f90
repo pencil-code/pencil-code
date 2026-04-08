@@ -6686,7 +6686,7 @@ module Boundcond
       use Fourier, only : setup_extrapol_fact, field_extrapol_z_parallel
       use Mpicomm, only : mpisend_real, mpirecv_real, &
                           mpisend_logical, mpirecv_logical
-      use General, only: div
+      use General, only: idiv
 !
       real, dimension (:,:,:,:) :: f
       real, save :: t_l=0., t_r=0., delta_t=0.
@@ -6720,8 +6720,8 @@ module Boundcond
       character (len=*), parameter :: mag_times_dat = 'driver/mag_times.dat'
       character (len=*), parameter :: mag_vel_field_dat = 'driver/mag_vel_field.dat'
 !
-      bny=div(ny,nprocx)
-      eny=div(nx,nprocy)
+      bny=idiv(ny,nprocx)
+      eny=idiv(nx,nprocy)
       if (ldownsampling) then
         call warning('bc_force_aa_time','Not available for downsampling')   !,lfirst_proc_xy)
         return
@@ -9037,7 +9037,7 @@ module Boundcond
 !  define wave vector
 !
       kx=cshift((/(i-nxl/2,i=0,nxl-1)/),+nxl/2)*2*pi/Lx
-      ky=cshift((/(i-div(nygrid,2),i=0,nygrid-1)/),+div(nygrid,2))*2*pi/Ly
+      ky=cshift((/(i-idiv(nygrid,2),i=0,nygrid-1)/),+idiv(nygrid,2))*2*pi/Ly
 !
 !  calculate 1/k^2, zero mean
 !

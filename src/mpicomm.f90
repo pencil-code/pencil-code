@@ -50,7 +50,7 @@
 module Mpicomm
 !
   use Cdata
-  use General, only: find_proc, ioptest,loptest, div
+  use General, only: find_proc, ioptest,loptest, idiv
   use Yinyang
 !
   implicit none
@@ -887,13 +887,13 @@ module Mpicomm
         allocate(ubufzo(mx,bufsizes_yz(INZU,ISND),nghost,mcom))
       endif
 
-      if (lfirst_proc_y.and.ipz>=div(nprocz,3).and.ipz<2*nprocz/3.) then
+      if (lfirst_proc_y.and.ipz>=idiv(nprocz,3).and.ipz<2*nprocz/3.) then
         allocate(lbufyo(mx,bufsizes_yz(INYL,ISND),nghost,mcom))
       else
         allocate(lbufyo(mx,nghost,bufsizes_yz(INYL,ISND),mcom))
       endif
 
-      if (llast_proc_y.and.ipz>=div(nprocz,3).and.ipz<2*nprocz/3.) then
+      if (llast_proc_y.and.ipz>=idiv(nprocz,3).and.ipz<2*nprocz/3.) then
         allocate(ubufyo(mx,bufsizes_yz(INYU,ISND),nghost,mcom))
       else
         allocate(ubufyo(mx,nghost,bufsizes_yz(INYU,ISND),mcom))
@@ -904,25 +904,25 @@ module Mpicomm
                 ulbufi(mx,bufsizes_yz_corn(1,INUL,IRCV),bufsizes_yz_corn(2,INUL,IRCV),mcom), &
                 uubufi(mx,bufsizes_yz_corn(1,INUU,IRCV),bufsizes_yz_corn(2,INUU,IRCV),mcom))
 
-      if (lfirst_proc_z.or.lfirst_proc_y.and.ipz>=div(nprocz,3).and.ipz<2*nprocz/3.) then
+      if (lfirst_proc_z.or.lfirst_proc_y.and.ipz>=idiv(nprocz,3).and.ipz<2*nprocz/3.) then
         allocate(llbufo(mx,bufsizes_yz_corn(2,INLL,ISND),bufsizes_yz_corn(1,INLL,ISND),mcom))
       else
         allocate(llbufo(mx,bufsizes_yz_corn(1,INLL,ISND),bufsizes_yz_corn(2,INLL,ISND),mcom))
       endif
 
-      if (lfirst_proc_z.or.llast_proc_y.and.ipz>=div(nprocz,3).and.ipz<2*nprocz/3.) then
+      if (lfirst_proc_z.or.llast_proc_y.and.ipz>=idiv(nprocz,3).and.ipz<2*nprocz/3.) then
         allocate(ulbufo(mx,bufsizes_yz_corn(2,INUL,ISND),bufsizes_yz_corn(1,INUL,ISND),mcom) )
       else
         allocate(ulbufo(mx,bufsizes_yz_corn(1,INUL,ISND),bufsizes_yz_corn(2,INUL,ISND),mcom) )
       endif
 
-      if (llast_proc_z.or.llast_proc_y.and.ipz>=div(nprocz,3).and.ipz<2*nprocz/3.) then
+      if (llast_proc_z.or.llast_proc_y.and.ipz>=idiv(nprocz,3).and.ipz<2*nprocz/3.) then
         allocate(uubufo(mx,bufsizes_yz_corn(2,INUU,ISND),bufsizes_yz_corn(1,INUU,ISND),mcom))
       else
         allocate(uubufo(mx,bufsizes_yz_corn(1,INUU,ISND),bufsizes_yz_corn(2,INUU,ISND),mcom))
       endif
 
-      if (llast_proc_z.or.lfirst_proc_y.and.ipz>=div(nprocz,3).and.ipz<2*nprocz/3.) then
+      if (llast_proc_z.or.lfirst_proc_y.and.ipz>=idiv(nprocz,3).and.ipz<2*nprocz/3.) then
         allocate(lubufo(mx,bufsizes_yz_corn(2,INLU,ISND),bufsizes_yz_corn(1,INLU,ISND),mcom) )
       else
         allocate(lubufo(mx,bufsizes_yz_corn(1,INLU,ISND),bufsizes_yz_corn(2,INLU,ISND),mcom) )
@@ -1204,7 +1204,7 @@ if (llast_proc_z) write(24,'(2(f10.4,1x))') thphprime_strip_y
 !print*, '-----------------'
 endif
 
-          if (ipz>=div(nprocz,3).and.ipz<div(2*nprocz,3)) then
+          if (ipz>=idiv(nprocz,3).and.ipz<idiv(2*nprocz,3)) then
 !
 !  Transposition of thphprime_strip_y, can perhaps be avoided.
 !
@@ -1293,7 +1293,7 @@ if (llast_proc_z) write(26,'(2(f10.4,1x))') thphprime_strip_y
 !print*, '-----------------'
 endif
 
-          if (ipz>=div(nprocz,3).and.ipz<div(2*nprocz,3)) then
+          if (ipz>=idiv(nprocz,3).and.ipz<idiv(2*nprocz,3)) then
 !
 !  Transposition of thphprime_strip_y, can perhaps be avoided.
 !
@@ -1547,11 +1547,11 @@ print*, 'noks_all,ngap_all,nstrip_total=', noks_all,ngap_all,nstrip_total
 !  NB nprocz=2*n, n>=1, comms across y-plane parallel in z!
 !
       if (lcommunicate_y) then
-        poleneigh = find_proc(ipx,     ipy,ipz  +div(nprocz,2))
-        pnbcrn    = find_proc(ipx,       0,ipz-1+div(nprocz,2))
-        pnfcrn    = find_proc(ipx,       0,ipz+1+div(nprocz,2))
-        psfcrn    = find_proc(ipx,nprocy-1,ipz+1+div(nprocz,2))
-        psbcrn    = find_proc(ipx,nprocy-1,ipz-1+div(nprocz,2))
+        poleneigh = find_proc(ipx,     ipy,ipz  +idiv(nprocz,2))
+        pnbcrn    = find_proc(ipx,       0,ipz-1+idiv(nprocz,2))
+        pnfcrn    = find_proc(ipx,       0,ipz+1+idiv(nprocz,2))
+        psfcrn    = find_proc(ipx,nprocy-1,ipz+1+idiv(nprocz,2))
+        psbcrn    = find_proc(ipx,nprocy-1,ipz-1+idiv(nprocz,2))
         !poleneigh = modulo(ipz  +nprocz/2,nprocz)*nprocxy+       ipy*nprocx+ipx
         !pnbcrn    = modulo(ipz-1+nprocz/2,nprocz)*nprocxy+         0*nprocx+ipx !N rev
         !pnfcrn    = modulo(ipz+1+nprocz/2,nprocz)*nprocxy+         0*nprocx+ipx !N fwd
@@ -5586,7 +5586,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
           allocate (tmp(nx,ny))
           do n=1,nz
-            do ibox=0,div(nx,nygrid)-1
+            do ibox=0,idiv(nx,nygrid)-1
               iy=ibox*ny
               tmp=transpose(a(iy+1:iy+ny,:,n))
               a(iy+1:iy+ny,:,n)=tmp
@@ -8556,7 +8556,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, optional :: comm
       logical, optional :: lsync
 !
-      ony = div(ny,nprocx)
+      ony = idiv(ny,nprocx)
       bny = ony
       if (nprocx == 1) then
         !$omp workshare
@@ -8713,7 +8713,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, optional :: comm
       logical, optional :: lsync
 
-      bny = div(ny,nprocx)
+      bny = idiv(ny,nprocx)
 !
 !  No need to remap if nprocx = 1.
 !
@@ -8737,11 +8737,11 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       iny = size(in, 2)
       dim: if (inx == nx .and. iny == ny) then
         onx = nxgrid
-        ony = div(ny,nprocx)
+        ony = idiv(ny,nprocx)
         ngc = 0
       elseif (inx == mx .and. iny == my) then dim
         onx = mxgrid
-        ony = div(ny,nprocx) + 2 * nghost
+        ony = idiv(ny,nprocx) + 2 * nghost
         ngc = nghost
       else dim
         call stop_fatal('remap_to_pencil_xy_3D: input array size mismatch', lfirst_proc_xy)
@@ -8817,7 +8817,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, optional :: comm
       logical, optional :: lsync
 !
-      ony = div(ny,nprocx)
+      ony = idiv(ny,nprocx)
       bny = ony
       if (nprocx == 1) then
         !$omp workshare
@@ -8902,7 +8902,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, optional :: comm
       logical, optional :: lsync
 !
-      iny = div(ny,nprocx)
+      iny = idiv(ny,nprocx)
       bny = iny
       if (nprocx == 1) then
         !$omp workshare
@@ -9064,7 +9064,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  No need to unmap if nprocx = 1.
 !
-      nypx = div(ny,nprocx)
+      nypx = idiv(ny,nprocx)
       bny  = nypx
       if (nprocx == 1) then
         !$omp workshare
@@ -9166,7 +9166,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, optional :: comm
       logical, optional :: lsync
 !
-      iny = div(ny,nprocx)
+      iny = idiv(ny,nprocx)
       bny = iny
       if (nprocx == 1) then
         !$omp workshare
@@ -10508,7 +10508,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         integer :: nprocz_rd
         integer :: lenred
 
-        nprocz_rd = div(nprocz,3)
+        nprocz_rd = idiv(nprocz,3)
         if (lcutoff_corners) then
           len_cornstrip_y=nycut-1
           len_cornstrip_z=nzcut-1

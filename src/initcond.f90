@@ -5527,21 +5527,21 @@ module Initcond
 !
       scale_factor=1
       if (.not.lscale_tobox1) scale_factor=2*pi/Lx
-      kx=cshift((/(i-div(nxgrid,2),i=0,nxgrid-1)/),div(nxgrid,2))*scale_factor
+      kx=cshift((/(i-idiv(nxgrid,2),i=0,nxgrid-1)/),idiv(nxgrid,2))*scale_factor
       if (lroot.and.ip<10) print*,'AXEL: kx=',kx
 !
       if (.not. lsquash1) then
         scale_factor=1
         if (.not.lscale_tobox1) scale_factor=2*pi/Ly
       endif
-      ky=cshift((/(i-div(nygrid,2),i=0,nygrid-1)/),div(nygrid,2))*scale_factor
+      ky=cshift((/(i-idiv(nygrid,2),i=0,nygrid-1)/),idiv(nygrid,2))*scale_factor
       if (lroot.and.ip<10) print*,'AXEL: ky=',ky
 !
       if (.not. lsquash1) then
         scale_factor=1
         if (.not.lscale_tobox1) scale_factor=2*pi/Lz
       endif
-      kz=cshift((/(i-div(nzgrid,2),i=0,nzgrid-1)/),div(nzgrid,2))*scale_factor
+      kz=cshift((/(i-idiv(nzgrid,2),i=0,nzgrid-1)/),idiv(nzgrid,2))*scale_factor
       if (lroot.and.ip<10) print*,'AXEL: kz=',kz
 !
 !  Generate flat spectrum with random phase (between -pi and pi).
@@ -6243,13 +6243,13 @@ module Initcond
 !  Scale factors if box size is not 2*pi
 !
       scale_factor=2*pi/Lx
-      kx=cshift((/(i-div(nxgrid,2),i=0,nxgrid-1)/),div(nxgrid,2))*scale_factor
+      kx=cshift((/(i-idiv(nxgrid,2),i=0,nxgrid-1)/),idiv(nxgrid,2))*scale_factor
       if (lroot.and.ip<10) print*,'AXEL: kx=',kx
 !
-      ky=cshift((/(i-div(nygrid,2),i=0,nygrid-1)/),div(nygrid,2))*scale_factor
+      ky=cshift((/(i-idiv(nygrid,2),i=0,nygrid-1)/),idiv(nygrid,2))*scale_factor
       if (lroot.and.ip<10) print*,'AXEL: ky=',ky
 !
-      kz=cshift((/(i-div(nzgrid,2),i=0,nzgrid-1)/),div(nzgrid,2))*scale_factor
+      kz=cshift((/(i-idiv(nzgrid,2),i=0,nzgrid-1)/),idiv(nzgrid,2))*scale_factor
       if (lroot.and.ip<10) print*,'AXEL: kz=',kz
 !
 !  Set the 3 components of v_im to Gaussian-distributed random values.
@@ -6860,8 +6860,8 @@ module Initcond
       character (len=*), parameter :: mag_field_dat = 'driver/mag_field.dat'
 !
 
-      bny = div(ny,nprocx)
-      eny = div(nx,nprocy)
+      bny = idiv(ny,nprocx)
+      eny = idiv(nx,nprocy)
 
       if (.not. lperi(1) .or. .not. lperi(2)) call fatal_error ('mag_init', &
           'Currently only implemented for xy-periodic setups!')
