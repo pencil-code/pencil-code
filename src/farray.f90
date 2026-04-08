@@ -1004,12 +1004,15 @@ module FArrayManager
 !***********************************************************************
     function farray_index_by_name_ode(varname,component) result(indx)
 
+      use General, only: keep_compiler_quiet
+
       integer :: indx
       character (len=*), intent(IN) :: varname
       integer, optional, intent(OUT):: component
 
       type (ode_vars_list), pointer :: item
 !
+      call keep_compiler_quiet(component)
       item=>find_by_name_ode(varname)
       if (associated(item)) then
         indx=item%ivar(1)%p

@@ -5075,13 +5075,13 @@ module Initcond
 !
         if ((initpower/=2.).or.(cutoff/=0.)) then
 !
-          k2x = cshift((/(i-(nx+1)/2,i=0,nx-1)/),+(nx+1)/2)*2*pi/Lx
+          k2x = cshift((/(i-floor((nx+1)/.2),i=0,nx-1)/),+floor((nx+1)/.2))*2*pi/Lx
           k2 =      (spread(spread(k2x,2,ny),3,nz))**2
 !
-          k2y = cshift((/(i-(ny+1)/2,i=0,ny-1)/),+(ny+1)/2)*2*pi/Ly
+          k2y = cshift((/(i-floor((ny+1)/.2),i=0,ny-1)/),+floor((ny+1)/.2))*2*pi/Ly
           k2 = k2 + (spread(spread(k2y,1,nx),3,nz))**2
 !
-          k2z = cshift((/(i-(nz+1)/2,i=0,nz-1)/),+(nz+1)/2)*2*pi/Lz
+          k2z = cshift((/(i-floor((nz+1)/.2),i=0,nz-1)/),+floor((nz+1)/.2))*2*pi/Lz
           k2 = k2 + (spread(spread(k2z,1,nx),2,ny))**2
 !
           k2(1,1,1) = 1.  ! Avoid division by zero
@@ -5186,15 +5186,15 @@ module Initcond
 !
         scale_factor=1
         if (.not.lscale_tobox1) scale_factor=2*pi/Lx
-        kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)*scale_factor
+        kx=cshift((/(i-floor((nxgrid+1)/.2),i=0,nxgrid-1)/),+floor((nxgrid+1)/2.))*scale_factor
 !
         scale_factor=1
         if (.not.lscale_tobox1) scale_factor=2*pi/Ly
-        ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2)*scale_factor
+        ky=cshift((/(i-floor((nygrid+1)/.2),i=0,nygrid-1)/),+floor((nygrid+1)/2.))*scale_factor
 !
         scale_factor=1
         if (.not.lscale_tobox1) scale_factor=2*pi/Lz
-        kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2)*scale_factor
+        kz=cshift((/(i-floor((nzgrid+1)/.2),i=0,nzgrid-1)/),+floor((nzgrid+1)/2.))*scale_factor
 !
 !  integration over shells
 !
@@ -5611,8 +5611,8 @@ module Initcond
 !
       if (lfixed_phase1) then
         do i=1,i2-i1+1
-          u_re(:,:,:,i)=u_im(:,:,:,i)*cos(-sqrt(k2)*t)
-          u_im(:,:,:,i)=u_im(:,:,:,i)*sin(-sqrt(k2)*t)
+          u_re(:,:,:,i)=u_im(:,:,:,i)*cos(-sqrt(k2)*real(t))
+          u_im(:,:,:,i)=u_im(:,:,:,i)*sin(-sqrt(k2)*real(t))
         enddo
       endif
 !
@@ -6581,7 +6581,7 @@ module Initcond
       call mpibcast_real(prof_z,prof_nz)
       call mpibcast_real(prof_lnrho,prof_nz)
 !
-      prof_z = prof_z*1.e6/unit_length
+      prof_z = real(prof_z*1.e6/unit_length)
       prof_lnT = prof_lnT - alog(real(unit_temperature))
       prof_lnrho = prof_lnrho - alog(real(unit_density))
 
@@ -6741,19 +6741,19 @@ module Initcond
 !
       if (lroot) then
         if (nxgrid==1.and.nygrid/=1) then
-          Bzflux =  sum(abs(Bz0_r * 1e-4))*dy*unit_length
+          Bzflux =  real(sum(abs(Bz0_r * 1e-4))*dy*unit_length)
           write (*,'(A,E10.2)') 'Bz flux sum(|B|)*dl [Tm] :',Bzflux
         elseif (nxgrid/=1.and.nygrid==1) then
-          Bzflux =  sum(abs(Bz0_r * 1e-4))*dx*unit_length
+          Bzflux =  real(sum(abs(Bz0_r * 1e-4))*dx*unit_length)
           write (*,'(A,E10.2)') 'Bz flux sum(|B|)*dl [Tm] :',Bzflux
         elseif (nxgrid/=1.and.nygrid/=1) then
-          Bzflux =  sum(abs(Bz0_r * 1e-4))*dx*unit_length*dy*unit_length
+          Bzflux =  real(sum(abs(Bz0_r * 1e-4))*dx*unit_length*dy*unit_length)
           write (*,'(A,E10.2)') 'Bz flux sum(|B|)*dA [Tm^2] :',Bzflux
         endif
       endif
 !
       Bz0_i = 0.
-      Bz0_r = Bz0_r * 1e-4 / unit_magnetic ! Gauss to Tesla and SI to PENCIL units
+      Bz0_r = real(Bz0_r * 1e-4 / unit_magnetic) ! Gauss to Tesla and SI to PENCIL units
 !
 !  Fourier Transform of Bz0:
 !
@@ -6911,19 +6911,19 @@ module Initcond
       endif
 !
       ! Gauss to Tesla and SI to PENCIL units
-      Bz = Bz * 1e-4 / unit_magnetic
+      Bz = real(Bz * 1e-4 / unit_magnetic)
 !
       if (lfirst_proc_z) then
         if ((nxgrid==1).and.(nygrid/=1)) then
-          Bz_flux_local = sum(abs(Bz)) * dy * unit_magnetic*unit_length
+          Bz_flux_local = real(sum(abs(Bz)) * dy * unit_magnetic*unit_length)
           call sum_xy (Bz_flux_local, Bz_flux)
           if (lroot) write (*,*) 'Total vertical flux: sum(|Bz|)*dy [T*m] =', Bz_flux
         elseif ((nxgrid/=1).and.(nygrid==1)) then
-          Bz_flux_local = sum(abs(Bz)) * dx * unit_magnetic*unit_length
+          Bz_flux_local = real(sum(abs(Bz)) * dx * unit_magnetic*unit_length)
           call sum_xy (Bz_flux_local, Bz_flux)
           if (lroot) write (*,*) 'Total vertical flux: sum(|Bz|)*dx [T*m] =', Bz_flux
         elseif ((nxgrid/=1).and.(nygrid/=1)) then
-          Bz_flux_local = sum(abs(Bz)) * dx*dy * unit_magnetic*unit_length**2
+          Bz_flux_local = real(sum(abs(Bz)) * dx*dy * unit_magnetic*unit_length**2)
           call sum_xy (Bz_flux_local, Bz_flux)
           if (lroot) write (*,*) 'Total vertical flux: sum(|Bz|)*(dx*dy) [T*m^2] =', Bz_flux
         endif
@@ -7147,7 +7147,7 @@ module Initcond
       call mpibcast_real(prof_lnT,prof_nz)
       call mpibcast_real(prof_z,prof_nz)
       !
-      prof_z = prof_z*1.e6/unit_length
+      prof_z = real(prof_z*1.e6/unit_length)
       prof_lnT = prof_lnT - alog(real(unit_temperature))
       !
       ! get step width
@@ -7862,7 +7862,6 @@ module Initcond
       real, dimension (mx,my,mz,mfarray) :: f
       real :: amp,width
       integer, intent(in) :: ix
-      integer :: m,l
       real, parameter :: A0 = 1.29903871135
       f(:,:,:,ix)   = 0.
       f(:,:,:,ix+1) = 0.
@@ -7932,7 +7931,7 @@ end subroutine
       write (*,*) 'Solar mass:', M_sun
       write (*,*) 'unit_mass:', unit_mass
       write (*,*) 'unit_temperature', unit_temperature
-      mass_cloud = (mass_cloud * M_sun) / unit_mass
+      mass_cloud = real((mass_cloud * M_sun) / unit_mass)
 !
       select case (cloud_mode)
 !
@@ -7950,14 +7949,14 @@ end subroutine
              call fatal_error('Bonnor-Ebert Sphere', 'No input file')
            endif
            read(19,*) var1, len_file
-           bigr = var1/unit_length
+           bigr = real(var1/unit_length)
            write (*,*) '(Modified BE-sphere) R = ', var1, 'cm =',&
                         bigr, 'pc_units'
            do jj = 1, len_file
              read(19,*) var1, var2, var3
-             r_rho(jj) = var1/unit_length
-             lnrho_r(jj) = log(var2/unit_density)
-             lnTT_file(jj) = log(var3/unit_temperature)
+             r_rho(jj) = real(var1/unit_length)
+             lnrho_r(jj) = real(log(var2/unit_density))
+             lnTT_file(jj) = real(log(var3/unit_temperature))
            enddo
 !
            counter = 0
@@ -8018,14 +8017,14 @@ end subroutine
              call fatal_error('Bonnor-Ebert Sphere', 'No input file')
            endif
            read(19,*) var1, len_file, var2
-           bigr = var1/unit_length
-           lnTTpoint0 = log(var2*temp_coeff/unit_temperature)
+           bigr = real(var1/unit_length)
+           lnTTpoint0 = real(log(var2*temp_coeff/unit_temperature))
            write (*,*) '(Isothermal BE-sphere) R =', var1, 'cm =',&
                         bigr, 'pc_units, T =', var2, 'K'
            do jj = 1, len_file
              read(19,*) var1, var2
-             r_rho(jj) = var1/unit_length
-             lnrho_r(jj) = log(var2*dens_coeff/unit_density)
+             r_rho(jj) = real(var1/unit_length)
+             lnrho_r(jj) = real(log(var2*dens_coeff/unit_density))
            enddo
            write (*,*) 'Temperature, lnTT = ', lnTTpoint0
 !
@@ -8127,7 +8126,7 @@ end subroutine
 !
       use IO, only: input_snap, input_snap_finalize
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (mx,my,mz,3) :: apot
+      real, allocatable, dimension (:,:,:,:) :: apot
       logical :: exfile, lbin=.false.
       logical, optional :: lbinary
       integer :: l,m,n, lfile, mfile, nfile, io_status, i
@@ -8135,6 +8134,8 @@ end subroutine
       real, optional :: ampl
       character(len=*) :: datafile
 !
+
+      allocate(apot(mx,my,mz,3))
       inquire (file=datafile, exist=exfile)
       if (present(lbinary)) lbin=lbinary
       if (present(ampl)) scale_aa=ampl
