@@ -86,6 +86,7 @@ module Magnetic_meanfield
   !   if (lpencil(i_mf_EMF)) p%mf_EMF=0.0
   !   if (lpencil(i_mf_EMFdotB)) p%mf_EMFdotB=0.0
       call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_magn_mf
 !***********************************************************************

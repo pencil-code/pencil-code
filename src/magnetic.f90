@@ -1594,7 +1594,7 @@ module Magnetic
 !  Speed of light, sometimes used for displacement current correction
 !
       if (c_light/=impossible) then
-        c_light2=c_light**2
+        c_light2=real(c_light**2)
         c_light21=1./c_light2
       endif
 !
@@ -4356,9 +4356,9 @@ module Magnetic
 !
         if (dipole_moment /= 0.) then
           c=cos(inclaa*pi/180); s=sin(inclaa*pi/180)
-          p%bb(:,1) = p%bb(:,1) + dipole_moment*2*(c*costh(m) + s*sinth(m)*cos(z(n)-omega_Bz_ext*t))*p%r_mn1**3
-          p%bb(:,2) = p%bb(:,2) + dipole_moment*  (c*sinth(m) - s*costh(m)*cos(z(n)-omega_Bz_ext*t))*p%r_mn1**3
-          p%bb(:,3) = p%bb(:,3) + dipole_moment*  (             s*         sin(z(n)-omega_Bz_ext*t))*p%r_mn1**3
+          p%bb(:,1) = real(p%bb(:,1) + dipole_moment*2*(c*costh(m) + s*sinth(m)*cos(z(n)-omega_Bz_ext*t))*p%r_mn1**3)
+          p%bb(:,2) = real(p%bb(:,2) + dipole_moment*  (c*sinth(m) - s*costh(m)*cos(z(n)-omega_Bz_ext*t))*p%r_mn1**3)
+          p%bb(:,3) = real(p%bb(:,3) + dipole_moment*  (             s*         sin(z(n)-omega_Bz_ext*t))*p%r_mn1**3)
         endif
 !
 !  Add the external potential field.
@@ -4925,7 +4925,7 @@ module Magnetic
       if (lpenc_loc(i_ss12)) p%ss12=sqrt(abs(p%sj))
 ! vmagfric
       if (lpenc_loc(i_vmagfric).and.numag/=0.0) then
-        tmp1=mu01/(numag*(B0_magfric/unit_magnetic**2+p%b2))
+        tmp1=real(mu01/(numag*(B0_magfric/unit_magnetic**2+p%b2)))
         do i=1,3
           p%vmagfric(:,i)=abs(p%jxb(:,i))*tmp1
         enddo
@@ -4987,7 +4987,7 @@ module Magnetic
          p%clight2=spread(va2max_boris,1,nx)
        else
          if (lcartesian_coords) then
-           p%clight2 = max(dble(cmin)**2,c_light**2/(1.+max(z(n),0.0)**8)+max(25.0*maxval(p%u2),maxval(p%cs2)))
+           p%clight2 = real(max(dble(cmin)**2,c_light**2/(1.+max(z(n),0.0)**8)+max(25.0*maxval(p%u2),maxval(p%cs2))))
          else if (lspherical_coords) then
            p%clight2 = spread(max(cmin**2,25*maxval(p%u2),maxval(p%cs2)),1,nx)
          endif
@@ -6268,7 +6268,7 @@ module Magnetic
 !AB: Piyali, I think the mu01 should be removed
 !
       if (lmagneto_friction.and.(.not.lhydro).and.numag/=0.0) then
-         tmp1=mu01/(numag*(B0_magfric/unit_magnetic**2+p%b2))
+         tmp1=real(mu01/(numag*(B0_magfric/unit_magnetic**2+p%b2)))
          do i=1,3
            dAdt(:,i) = dAdt(:,i) + p%jxbxb(:,i)*tmp1
          enddo
@@ -8251,7 +8251,7 @@ print*,'AXEL2: should not be here (eta) ... '
         if (lfirst_call) then
           call read_snaptime(trim(file),taareset,naareset,daareset,t)
           if (taareset==0 .or. taareset < t-daareset) then
-            taareset=t+daareset
+            taareset=real(t+daareset)
           endif
           lfirst_call=.false.
         endif
@@ -9710,12 +9710,15 @@ print*,'AXEL2: should not be here (eta) ... '
       real :: B1r_,B1z_,B1
       real, parameter :: tol=10*epsilon(1.0)
       integer :: l
-      real, dimension(mx,my,mz) :: Ax_ext,Ay_ext
+      real, save, allocatable, dimension(:,:,:) :: Ax_ext,Ay_ext
       !real, dimension(nx,3) :: bb_ext_pot
       !real, dimension(nx) :: bb_x,bb_y,bb_z
 !
 !  calculate un-normalized |B| at r=r_ref and z=0 for later normalization
 !
+      if(.not. allocated(Ax_ext)) allocate(Ax_ext(mx,my,mz))
+      if(.not. allocated(Ay_ext)) allocate(Ay_ext(mx,my,mz))
+
       if (lroot.and.ip<=5) print*,'FORCE_FREE_JET: calculating normalization'
 !
       B1r_=sin(pi*mu/2)*gamma_function(   abs(mu) /2) / gamma_function((1+abs(mu))/2)
@@ -11850,8 +11853,8 @@ print*,'AXEL2: should not be here (eta) ... '
 !  Allow external field to precess about z-axis with frequency omega_Bz_ext.
 !
           if (lcartesian_coords .or. lbext_curvilinear) then
-            c = cos(omega_Bz_ext * t)
-            s = sin(omega_Bz_ext * t)
+            c = real(cos(omega_Bz_ext * t))
+            s = real(sin(omega_Bz_ext * t))
             B_ext_out(1) = B_ext(1) * c - B_ext(2) * s
             B_ext_out(2) = B_ext(1) * s + B_ext(2) * c
             B_ext_out(3) = B_ext(3)
@@ -11863,8 +11866,8 @@ print*,'AXEL2: should not be here (eta) ... '
 !
 !  Add moving layer of uniform field
 !
-           zposbot=zbot_moving_layer + t*speed_moving_layer
-           zpostop=ztop_moving_layer + t*speed_moving_layer
+           zposbot=real(zbot_moving_layer + t*speed_moving_layer)
+           zpostop=real(ztop_moving_layer + t*speed_moving_layer)
 
            zprof = step(z(n), zposbot, edge_moving_layer)-step(z(n), zpostop, edge_moving_layer)
            B_ext_out(1:2) = B_ext(1:2)*zprof; B_ext_out(3)=B_ext(3)     ! z component not z dependent
@@ -11899,7 +11902,7 @@ print*,'AXEL2: should not be here (eta) ... '
           if (t <= t0_bext) then
             B_ext_out = B0_ext
           else
-            B_ext_out = B0_ext + 0.5*(1.-cos(pi*(t-t0_bext)/(t_bext-t0_bext)))*(B_ext_out-B0_ext)
+            B_ext_out = real(B0_ext + 0.5*(1.-cos(pi*(t-t0_bext)/(t_bext-t0_bext)))*(B_ext_out-B0_ext))
           endif
           if (present(J_ext_out)) J_ext_out=0.
         endif
@@ -12233,6 +12236,20 @@ print*,'AXEL2: should not be here (eta) ... '
     call copy_addr(alpf_mhd,p_par(284))
     call copy_addr(limiter_fact,p_par(285))
     call copy_addr(llimiter,p_par(286)) ! bool
+
+    call keep_compiler_quiet(znoise_int)
+    call keep_compiler_quiet(znoise_ext)
+    call keep_compiler_quiet(rescaling_fraction)
+    call keep_compiler_quiet(nexp_aa)
+    call keep_compiler_quiet(mu_r)
+    call keep_compiler_quiet(lelectron_inertia)
+    call keep_compiler_quiet(lbeta_as_aux)
+    call keep_compiler_quiet(izav_start)
+    call keep_compiler_quiet(lbraginsky)
+    call keep_compiler_quiet(damp)
+    call keep_compiler_quiet(brms_target)
+    call keep_compiler_quiet(k1y_ff)
+
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Magnetic

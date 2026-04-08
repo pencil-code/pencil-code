@@ -93,7 +93,7 @@ contains
       integer :: iostat
       character (len=fnlen) :: filename
 !
-      t_sp = t
+      t_sp = real(t)
       if (ip<=8.and.lroot) print*,'output_vect: nv =', nv
       filename = trim (datadir_snap)//'/'//trim (file)
 !
@@ -150,7 +150,7 @@ contains
       integer :: iostat
       character (len=fnlen) :: filename
 !
-      t_sp = t
+      t_sp = real(t)
       if ((ip<=8) .and. lroot) print*,'output_scal'
       if (nv /= 1) call stop_it("output_scal: called with scalar field, but nv/=1")
       filename = trim (datadir_snap)//'/'//trim (file)
@@ -209,7 +209,7 @@ contains
 !$    if (omp_in_parallel()) return
 !
       filename = trim (datadir_snap)//'/'//trim (file)
-      t_sp = t
+      t_sp = real(t)
       if (ip<9.and.lroot.and.imn==1) print*,'output_pencil_vect('//filename//'): ndim=',ndim
 !
       if (headtt) write(*,'(A)') 'output_pencil: Writing to ' // trim(filename) // &
@@ -240,7 +240,7 @@ contains
 !
 !$    if (omp_in_parallel()) return
 !
-      t_sp = t
+      t_sp = real(t)
       filename = trim (datadir_snap)//'/'//trim (file)
       if ((ip<=8) .and. lroot .and. imn==1) &
            print*,'output_pencil_scal('//trim(filename)//')'

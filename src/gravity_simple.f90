@@ -777,7 +777,6 @@ module Gravity
 !
       real, dimension(:), allocatable :: data, data_z
       integer :: n_data
-      integer :: iter
 !
       integer, parameter :: unit=12
       integer :: len_double
@@ -1606,6 +1605,8 @@ module Gravity
     call copy_addr(zref,p_par(29))
     call copy_addr(n_pot,p_par(30))
     call copy_addr(reduced_top,p_par(31))
+
+    call keep_compiler_quiet(ygrav)
 
     endsubroutine pushpars2c
 !***********************************************************************

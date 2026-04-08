@@ -201,6 +201,7 @@ contains
       real, dimension (mx,my,mz,mfarray), intent(INOUT) :: f
       integer,                            intent(IN)    :: isubstep
 !
+      call keep_compiler_quiet(f)
       call rhs_gpu_c(isubstep,t)
 !
     endsubroutine rhs_GPU
@@ -215,6 +216,7 @@ contains
       logical :: lrmv
       integer :: lrmv_int,lsubstepping_in_time_int
 !
+      call keep_compiler_quiet(f)
       !TP: pass int since integers are more compatible with C than logical to booleans
       if (lrmv) then
         lrmv_int = 1
@@ -331,6 +333,7 @@ contains
 
       real, dimension (mx,my,mz,mfarray), intent(IN) :: f
 
+      call keep_compiler_quiet(f)
       call load_farray_c
 
     endsubroutine load_farray_to_GPU
