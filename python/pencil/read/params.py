@@ -39,7 +39,7 @@ class Param(_Foo):
         param1=False,
         param2=False,
         quiet=True,
-        conflicts_quiet=False,
+        conflicts_quiet=True,
         asdict=True,
         nest_dict=True,
         append_units=True,
