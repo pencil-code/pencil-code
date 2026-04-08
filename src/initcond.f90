@@ -7877,31 +7877,39 @@ module Initcond
     endsubroutine
 
 !***********************************************************************
-subroutine coalesce_tubes(amp,f,ix,width,cs20)
+  subroutine coalesce_tubes(amp,f,ix,width,cs20)
 
-  real, dimension (mx,my,mz,mfarray) :: f
-  real, dimension (mx,my) :: By0, By
-  real, intent(in) :: amp, width, cs20
-  integer, intent(in) :: ix
-  integer :: m,l
-  do m = m1,m2 
-    do l = l1,l2 
-      f(l,m,:,ix)   = 0.
-      f(l,m,:,ix+1) = 0.
-      f(l,m,:,ix+2) = amp/(2*pi) * tanh(x(l)/width) * cos(y(m)/2) * sin(x(l))
+!
+!  initial vector potential for coalescing tubes/islands in 2D.
+!  reference: https://doi.org/10.1063/1.3420208 -- Huang and Bhattacharjee 2010
+!
+!  7 Apr 2026/vinay.kumar
+!
 
-      By(l,m) = amp/(2*pi)/width/cosh(x(l)/width)**2  * cos(y(m)/2) * sin(x(l)) + &
-                    amp/(2*pi) * tanh(x(l)/width) * cos(y(m)/2) * cos(x(l))
+    real, dimension (mx,my,mz,mfarray) :: f
+    real, dimension (mx,my) :: By0, By
+    real, intent(in) :: amp, width, cs20
+    integer, intent(in) :: ix
+    real :: xx, yy
+    integer :: m,l
 
-      By0(l,m)= amp/(2*pi) * cos(x(l)) * cos(y(m)/2)
-      
-      f(l,m,:,ilnrho) = log(exp(f(l,m,:,ilnrho))+(By0(l,m)**2 - By(l,m)**2)/(2.*cs20))
+    do m = m1,m2 
+      do l = l1,l2 
+        xx = x(l)*2*pi/Lx
+        yy = y(m)*2*pi/Ly
+        f(l,m,:,ix)   = 0.
+        f(l,m,:,ix+1) = 0.
+        f(l,m,:,ix+2) = amp/(2*pi) * tanh(xx/width) * cos(yy/2) * sin(xx)
+        By(l,m) = amp/(2*pi)/width/cosh(xx/width)**2  * cos(yy/2) * sin(xx) + &
+                      amp/(2*pi) * tanh(xx/width) * cos(yy/2) * cos(xx)
+        By0(l,m)= amp/(2*pi) * cos(xx) * cos(yy/2)        
+        f(l,m,:,ilnrho) = log(exp(f(l,m,:,ilnrho)) &
+                          +5/2*pi**2*(amp/(2*pi)*cos(yy/2)*sin(xx))**2 &
+                          +(By0(l,m)**2 - By(l,m)**2)/(2.*cs20))
+      enddo
+    enddo 
 
-      !print*,"VK:ilnrho=",ilnrho
-    enddo
-  enddo
-
-end subroutine
+  end subroutine
 !***********************************************************************
     subroutine pre_stellar_cloud(f, datafile, mass_cloud,  &
         cloud_mode, T_cloud_out_rel, dens_coeff, &
