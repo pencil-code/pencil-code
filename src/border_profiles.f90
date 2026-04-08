@@ -57,7 +57,7 @@ module BorderProfiles
       real, dimension(ny) :: eta
       real, dimension(nz) :: zeta
       real :: border_width, lborder, uborder
-      integer :: l, ierr
+      integer :: l
       real, pointer :: gsum
 !
 !  x-direction
@@ -312,6 +312,7 @@ module BorderProfiles
       type (pencil_case) :: p
 !
       call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_borderprofiles
 !***********************************************************************

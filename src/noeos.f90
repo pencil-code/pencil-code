@@ -1820,7 +1820,7 @@ module EquationOfState
       real :: density_scale1, density_scale
 !
       if (density_scale_factor==impossible) then
-        density_scale=density_scale_cgs/unit_length
+        density_scale=real(density_scale_cgs/unit_length)
       else
         density_scale=density_scale_factor
       endif
