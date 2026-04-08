@@ -16,7 +16,8 @@ module File_io
 !
   interface write_binary_file
     module procedure write_binary_file_char
-    module procedure write_binary_file_str
+    !TP: according to compiler warnings this version is never used!
+    !module procedure write_binary_file_str
   endinterface
 !
   integer, parameter :: parallel_unit=14, parallel_unit_vec=14
@@ -182,32 +183,33 @@ module File_io
 !
     endsubroutine write_binary_file_char
 !***********************************************************************
-    subroutine write_binary_file_str(file,bytes,buffer)
-!
-!  Writes a given buffer (string) to a binary file.
-!
-!  21-jan-2015/MR: copied from write_binary_file_char 
-!
-      character (len=*), intent(in) :: file
-      integer, intent(in) :: bytes
-      character (len=*), intent(in) :: buffer
-!
-      integer :: result
-!
-      call write_binary_file_c(trim(file)//char(0), bytes, buffer, result)
-      
-      if (result /= bytes) then
-        if (result < 0) then
-          print *, 'write_binary_file_str: could not open file for writing "'//trim(file)//'"'
-        elseif (result == 0) then
-          print *, 'write_binary_file_str: could not start writing "'//trim(file)//'"'
-        else
-          print *, 'write_binary_file_str: could not finish writing "'//trim(file)//'"', result
-        endif
-        stop
-      endif
-!
-    endsubroutine write_binary_file_str
+!TP: on comment since never used (to suppress compiler warnings)
+!    subroutine write_binary_file_str(file,bytes,buffer)
+!!
+!!  Writes a given buffer (string) to a binary file.
+!!
+!!  21-jan-2015/MR: copied from write_binary_file_char 
+!!
+!      character (len=*), intent(in) :: file
+!      integer, intent(in) :: bytes
+!      character (len=*), intent(in) :: buffer
+!!
+!      integer :: result
+!!
+!      call write_binary_file_c(trim(file)//char(0), bytes, buffer, result)
+!      
+!      if (result /= bytes) then
+!        if (result < 0) then
+!          print *, 'write_binary_file_str: could not open file for writing "'//trim(file)//'"'
+!        elseif (result == 0) then
+!          print *, 'write_binary_file_str: could not start writing "'//trim(file)//'"'
+!        else
+!          print *, 'write_binary_file_str: could not finish writing "'//trim(file)//'"', result
+!        endif
+!        stop
+!      endif
+!!
+!    endsubroutine write_binary_file_str
 !***********************************************************************
     subroutine strip_comments
 !
