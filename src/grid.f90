@@ -1387,8 +1387,8 @@ module Grid
 !
       if (nzgrid==1) then       ! switch off coarsening if no z-extent
         ncoarse=0
-      elseif (ncoarse>nz/nghost) then
-        ncoarse=nz/nghost
+      elseif (ncoarse>floor(nz/real(nghost))) then
+        ncoarse=floor(nz/real(nghost))
         call warning('initialize_grid','there are jumped-over processors due to grid coarsening'// &
                      ' -> ncoarse reduced to floor(nz/nghost)='//trim(itoa(ncoarse)))
       endif
@@ -1578,28 +1578,29 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
 
     endsubroutine coarsegrid_interp
 !***********************************************************************
-    subroutine quintic_interp(nn,a,ninds,dc)
-
-      integer :: nn
-      real, dimension(:,:) :: a
-      integer, dimension(:) :: ninds
-      real :: dc
-! interpolation weights: 1/([-120,24,-12,12,-24,120]*dx^5) =
-! [-0.00833333,0.0416667,-0.0833333,0.0833333,-0.0416667,0.00833333]*dx^-5
-
-      integer :: iv,izu
-      real, dimension(6), parameter :: coefs = &
-            (/-0.00833333,0.0416667,-0.0833333,0.0833333,-0.0416667,0.00833333/)
-
-      izu=ipz*nz+nghost
-
- !     dels=zgrid(inds)-zgrid(nn)
-      do iv=1,mvar
-        a(nn,iv) = sum(a(ninds,iv)*coefs)/dc**(-5)
-      enddo
-
-    endsubroutine quintic_interp
-!***********************************************************************
+!TP: on comment since not used (to suppress compiler warnings)
+!    subroutine quintic_interp(nn,a,ninds,dc)
+!
+!      integer :: nn
+!      real, dimension(:,:) :: a
+!      integer, dimension(:) :: ninds
+!      real :: dc
+!! interpolation weights: 1/([-120,24,-12,12,-24,120]*dx^5) =
+!! [-0.00833333,0.0416667,-0.0833333,0.0833333,-0.0416667,0.00833333]*dx^-5
+!
+!      integer :: iv,izu
+!      real, dimension(6), parameter :: coefs = &
+!            (/-0.00833333,0.0416667,-0.0833333,0.0833333,-0.0416667,0.00833333/)
+!
+!      izu=ipz*nz+nghost
+!
+! !     dels=zgrid(inds)-zgrid(nn)
+!      do iv=1,mvar
+!        a(nn,iv) = sum(a(ninds,iv)*coefs)/dc**(-5)
+!      enddo
+!
+!    endsubroutine quintic_interp
+!!***********************************************************************
     subroutine save_grid(lrestore)
 !
 !  Saves grid into local statics (needed for downsampled output)
@@ -2054,15 +2055,9 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
       real, optional, dimension(2) :: xistep,delta
       real, optional, dimension(3) :: param2
       real :: m
-      real :: ampl,width,deltai,width_cells,delta_cells
-      real, dimension(size(xi,1))           :: arg1,arg2,band,dx_ratio
-      integer :: i
+      real :: ampl,width,deltai
+      real, dimension(size(xi,1))           :: arg1,arg2
 !
-      real :: alpha, w
-      real :: xc        ! center of refined region (from find_star)
-      real :: xa         ! local shifted coordinate
-      real :: sa, sb, sc  ! SUS cubic transition variables
-      real :: g_mw, g_pw, g_wd ! mapping values at boundaries for continuity
 !
       intent(in)  :: xi,grid_func,param,dxyz,xistep,delta,param2
       intent(out) :: g,gder1,gder2
@@ -2235,39 +2230,39 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
         if (.not. (present(dxyz) .and. present(xistep) .and. present(delta))) &
             call fatal_error('grid_profile_1D',"'step-linear' needs its parameters.")
         if (xistep(1)/=0.0) then
-          g=                                                                    &
+          g=real(                                                                    &
            dxyz(1)*0.5*(xi-delta(1)*log(cosh(dble((xi-xistep(1))/delta(1))))) + &
            dxyz(2)*0.5*(   delta(1)*log(cosh(dble((xi-xistep(1))/delta(1))))  - &
                            delta(2)*log(cosh(dble((xi-xistep(2))/delta(2)))) )+ &
-           dxyz(3)*0.5*(xi+delta(2)*log(cosh(dble((xi-xistep(2))/delta(2)))) )
+           dxyz(3)*0.5*(xi+delta(2)*log(cosh(dble((xi-xistep(2))/delta(2)))) ))
 !
           if (present(gder1)) then
             gder1=                                                      &
-              dxyz(1)*0.5*(1.0-tanh(dble((xi-xistep(1))/delta(1))) ) +  &
+              real(dxyz(1)*0.5*(1.0-tanh(dble((xi-xistep(1))/delta(1))) ) +  &
               dxyz(2)*0.5*(    tanh(dble((xi-xistep(1))/delta(1)))   -  &
                                tanh(dble((xi-xistep(2))/delta(2))) ) +  &
-              dxyz(3)*0.5*(1.0+tanh(dble((xi-xistep(2))/delta(2))) )
+              dxyz(3)*0.5*(1.0+tanh(dble((xi-xistep(2))/delta(2))) ))
 !
           endif
           if (present(gder2)) then
-            gder2=  &
+            gder2=real(  &
                 + 0.5/delta(1)*(dxyz(2)-dxyz(1))/cosh(dble((xi-xistep(1))/delta(1)))**2 &
-                + 0.5/delta(2)*(dxyz(3)-dxyz(2))/cosh(dble((xi-xistep(2))/delta(2)))**2
+                + 0.5/delta(2)*(dxyz(3)-dxyz(2))/cosh(dble((xi-xistep(2))/delta(2)))**2)
           endif
         else ! if xistep(1)=0.0, only a single step is needed
-          g=                                                                    &
+          g= real(                                                              &
            dxyz(2)*0.5*(xi-delta(2)*log(cosh(dble((xi-xistep(2))/delta(2)))) )+ &
-           dxyz(3)*0.5*(xi+delta(2)*log(cosh(dble((xi-xistep(2))/delta(2)))) )
+           dxyz(3)*0.5*(xi+delta(2)*log(cosh(dble((xi-xistep(2))/delta(2)))) ))
 !
           if (present(gder1)) then
-            gder1=                                                      &
+            gder1= real(                                                &
               dxyz(2)*0.5*(1.0-tanh(dble((xi-xistep(2))/delta(2))) ) +  &
-              dxyz(3)*0.5*(1.0+tanh(dble((xi-xistep(2))/delta(2))) )
+              dxyz(3)*0.5*(1.0+tanh(dble((xi-xistep(2))/delta(2))) ))
 !
           endif
           if (present(gder2)) then
-            gder2=  &
-                + 0.5/delta(2)*(dxyz(3)-dxyz(2))/cosh(dble((xi-xistep(2))/delta(2)))**2
+            gder2=real(  &
+                + 0.5/delta(2)*(dxyz(3)-dxyz(2))/cosh(dble((xi-xistep(2))/delta(2)))**2)
           endif
         endif
 !
@@ -2311,7 +2306,6 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
       real, dimension(3) :: param2
       
       real :: ampl,width_cells,delta_cells
-      real, dimension(size(xi,1)) :: arg1,arg2
       integer :: i
 !      
       real :: alpha, w
@@ -2611,7 +2605,6 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
       logical, intent(in), optional :: local
 !
       integer, dimension(size(xi)) :: inear
-      character(len=linelen) :: msg
       logical :: loc
       integer :: shift, inear_max
       real :: h, a, b, c, xiup

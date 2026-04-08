@@ -76,7 +76,7 @@ subroutine helper_loop(f,p)
 !$  do while(lhelper_run)
 !$    call signal_wait(lhelper_perf,lhelper_run)
       call check_for_nans_globally(f,'after reading from the GPU')
-      start_time = mpiwtime()
+      start_time = real(mpiwtime())
 !$    if (lhelper_run) call restore_diagnostic_controls
 
 !$    if (lhelper_run) call update_ghosts(f)
@@ -102,7 +102,7 @@ subroutine helper_loop(f,p)
 !$      lhelperflags(PERF_POWERSNAP) = .false.
 !$    endif
 !$    call signal_send(lhelper_perf,.false.)
-      end_time = mpiwtime()
+      end_time = real(mpiwtime())
       time_doing_diagnostics = time_doing_diagnostics + end_time-start_time
 
 !$  enddo
@@ -250,7 +250,7 @@ endsubroutine helper_loop
     if (lsave .or. ((isave /= 0) .and. .not. lnowrite)) then
       if (lsave .or. (mod(it-isave_shift, isave) == 0)) then
         lsave = .false.
-        if (ip<=12.and.lroot) tvar1=mpiwtime()
+        if (ip<=12.and.lroot) tvar1=real(mpiwtime())
         call wsnap('var.dat',f, mvar_io,ENUM=.false.,noghost=noghost_for_isave)
         if (ip<=12.and.lroot) print*,'wsnap: written snapshot var.dat in ', &
                                      mpiwtime()-tvar1,' seconds'
@@ -391,7 +391,7 @@ endsubroutine helper_loop
     if (lwrite_sound) then
       if ( .not.lout_sound .and. abs( t-tsound - dsound )<= 1.1*dt ) then
         lout_sound = .true.
-        tsound = t
+        tsound = real(t)
       endif
     endif
 !
@@ -494,9 +494,9 @@ endsubroutine helper_loop
 !
 !  Time advance.
 !
-    timer_for_timestep = mpiwtime()
+    timer_for_timestep = real(mpiwtime())
     call time_step(f,df,p)
-    time_in_timestep = time_in_timestep + mpiwtime()-timer_for_timestep
+    time_in_timestep = time_in_timestep + real(mpiwtime())-timer_for_timestep
 !    tdiagnos=t
 !
 !  If overlapping grids are used to get body-confined grid around the solids
@@ -540,15 +540,15 @@ endsubroutine helper_loop
 !  limit.
 !
     if (lroot.and.(idiag_walltime/=0.or.max_walltime/=0.0)) then
-      wall_clock_time=mpiwtime()-time1
+      wall_clock_time=real(mpiwtime()-time1)
       if (lout) call save_name(wall_clock_time,idiag_walltime)
     endif
 !
     if (lout.and.lroot.and.idiag_timeperstep/=0) then
       it_this_diagnostic   = it
-      time_this_diagnostic = mpiwtime()
-      time_per_step = (time_this_diagnostic - time_last_diagnostic) &
-                     /(  it_this_diagnostic -   it_last_diagnostic)
+      time_this_diagnostic = real(mpiwtime())
+      time_per_step = real((time_this_diagnostic - time_last_diagnostic) &
+                     /(  it_this_diagnostic -   it_last_diagnostic))
       it_last_diagnostic   =   it_this_diagnostic
       time_last_diagnostic = time_this_diagnostic
       call save_name(time_per_step,idiag_timeperstep)
@@ -653,7 +653,8 @@ endsubroutine helper_loop
 !
   use Boundcond,       only: update_ghosts, initialize_boundcond
   use Chemistry,       only: chemistry_clean_up
-  use Diagnostics,     only: phiavg_norm, report_undefined_diagnostics, trim_averages,diagnostics_clean_up
+  use Diagnostics,     only: report_undefined_diagnostics, trim_averages,diagnostics_clean_up
+!$ use Diagnostics,    only: phiavg_norm
   use Equ,             only: initialize_pencils, debug_imn_arrays, rhs_sum_time, before_boundary_sum_time,&
                              radtransfer_sum_time,time_spent_copying_and_waiting
   use FArrayManager,   only: farray_clean_up
@@ -703,10 +704,10 @@ endsubroutine helper_loop
   logical :: lnoreset_tzero=.false.
   logical :: lprocbounds_exist
   integer, parameter :: num_helper_masters=1
-  integer :: i,j
-  integer :: master_core_id
-  integer :: helper_core_id
-  integer, dimension(max_threads_possible) :: tmp_core_ids
+!$  integer :: i,j
+!$  integer :: master_core_id
+!$  integer :: helper_core_id
+!$  integer, dimension(max_threads_possible) :: tmp_core_ids
 !
   lrun = .true.
 !
@@ -932,7 +933,7 @@ endsubroutine helper_loop
 !
   f=0.
   if (lroot .and. ldebug) print*, 'memusage before rsnap=', memusage()/1024., 'MBytes'
-  if (lroot) tvar1=mpiwtime()
+  if (lroot) tvar1=real(mpiwtime())
   call rsnap('var.dat',f,mvar_in,lread_nogrid)
   if (lroot) print*,'rsnap: read snapshot var.dat in ',mpiwtime()-tvar1,' seconds'
 !
@@ -977,7 +978,7 @@ endsubroutine helper_loop
   if (lwrite_sound) then
     if (tsound<0.0) then
       ! if sound output starts new
-      tsound=t
+      tsound=real(t)
       ! output initial values
       lout_sound=.true.
     endif
@@ -1158,7 +1159,7 @@ endsubroutine helper_loop
       if (lroot) then
         icount=0
         it_last_diagnostic=icount
-        time1=mpiwtime()
+        time1=real(mpiwtime())
         time_last_diagnostic=time1
       endif
       if (nt>0) call timeloop(f,df,p)
@@ -1170,7 +1171,7 @@ endsubroutine helper_loop
 !
   if (lroot) then
 !
-    time2=mpiwtime()
+    time2=real(mpiwtime())
 !
     print*
     print*, 'Simulation finished after ', icount, ' time-steps'
@@ -1232,7 +1233,7 @@ endsubroutine helper_loop
 !  purposes.
 !
   if (lroot) then
-    wall_clock_time=time2-time1
+    wall_clock_time=real(time2-time1)
     print*
     write(*,'(A,1pG10.3,A,1pG11.4,A)') ' Wall clock time [hours] = ', wall_clock_time/3600.0, &
                                        ' (+/- ', real(mpiwtick())/3600.0, ')'

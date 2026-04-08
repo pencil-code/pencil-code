@@ -1139,6 +1139,9 @@ module Param_IO
        if (ip<14) call information('write_pencil_info','pencil information written to the file pencils.list')
        close(unit)
      endif
+
+     !TP: not sure where to put this
+     call keep_compiler_quiet(niter_poisson)
 !
    endsubroutine write_pencil_info
 !***********************************************************************

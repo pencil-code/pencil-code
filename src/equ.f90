@@ -191,9 +191,9 @@ module Equ
       endif
 
       if (lgpu) then
-        start_time = mpiwtime()
+        start_time = real(mpiwtime())
         call before_boundary_gpu(f,lrmv,itsub,t)
-        end_time = mpiwtime()
+        end_time = real(mpiwtime())
         before_boundary_sum_time = before_boundary_sum_time + end_time-start_time
       else
         call before_boundary_cpu(f)
@@ -267,7 +267,7 @@ module Equ
       if (lupdate_courant_dt) then
         if (dtmax/=0.0) then
           if (lfractional_tstep_advance) then
-            dt1_max=1./(dt_incr*t)
+            dt1_max=real(1./(dt_incr*t))
           else
             dt1_max=1./dtmax
           endif
@@ -302,27 +302,27 @@ module Equ
       if (lgpu) then
         if (ldiagnostic_output) then
           !wait in case the last diagnostic tasks are not finished
-          start_time = mpiwtime()
+          start_time = real(mpiwtime())
           call copy_farray_from_GPU(f)
-          time_spent_copying_and_waiting = time_spent_copying_and_waiting+mpiwtime()-start_time
+          time_spent_copying_and_waiting = time_spent_copying_and_waiting+real(mpiwtime())-start_time
           if (lode) f_ode_diagnostics = f_ode
 !$        lmasterflags(PERF_DIAGS) = .true.
         endif
-        start_time = mpiwtime()
+        start_time = real(mpiwtime())
         call rhs_gpu(f,itsub)
 !TP: should be done after rhs_gpu since if doing testing against cpu want to get the right value of dt
         if (ldiagnostic_output) then
 !$        call save_diagnostic_controls
         endif
-        end_time = mpiwtime()
+        end_time = real(mpiwtime())
         rhs_sum_time = rhs_sum_time + end_time-start_time
       else
         if (ldiagnos.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst) then
                 !if (lroot) print*,'Diagnostic time - CPU=', t
         endif
-        start_time = mpiwtime()
+        start_time = real(mpiwtime())
         call rhs_cpu(f,df,p,mass_per_proc,early_finalize)
-        end_time = mpiwtime()
+        end_time = real(mpiwtime())
         rhs_sum_time = rhs_sum_time + end_time-start_time
 !
 !  Doing df-related work which cannot be finished inside the main mn-loop.
@@ -407,7 +407,7 @@ module Equ
       !    I believe at least itdiagnos and dtdiagnos could be eliminated but not 
       !    worth the effort right now
       if (.not. lsubstepping_in_time .and. .not. lmultithread .and. lfirst) then
-        tdiagnos  = t
+        tdiagnos  = real(t)
         itdiagnos = it
         dtdiagnos = dt
         call finalize_diagnostics
@@ -516,52 +516,52 @@ module Equ
 
     endsubroutine init_reduc_pointers
 !***********************************************************************
-    subroutine diagnostics_reductions
+!$    subroutine diagnostics_reductions
 !
 !  Reduces accumulated diagnostic variables across threads. Only called if using OpenMP
 !
 !  30-mar-23/TP: Coded
 !
-    use Diagnostics
-    use Chemistry, only: chemistry_diags_reductions
-    use Solid_cells, only: sc_diags_reductions
-
-    integer :: imn
-
-      if (ldiagnos .and. allocated(fname)) then
-        do imn=1,size(fname)
-          if (allocated(inds_max_diags)) then
-            if (any(inds_max_diags == imn) .and. fname(imn) /= 0.) &
-              p_fname(imn) = max(p_fname(imn),fname(imn))
-          endif
-          if (allocated(inds_sum_diags)) then
-            if (any(inds_sum_diags == imn)) p_fname(imn) = p_fname(imn) + fname(imn)
-          endif
-        enddo
-      endif
-
-      if (l1davgfirst) then
-        if (allocated(fnamex)) p_fnamex = p_fnamex + fnamex
-        if (allocated(fnamey)) p_fnamey = p_fnamey + fnamey
-        if (allocated(fnamez)) p_fnamez = p_fnamez + fnamez
-        if (allocated(fnamer)) p_fnamer = p_fnamer + fnamer
-      endif
-
-      if (l2davgfirst) then
-        if (allocated(fnamexy)) p_fnamexy = p_fnamexy + fnamexy
-        if (allocated(fnamexz)) p_fnamexz = p_fnamexz + fnamexz
-        if (allocated(fnamerz)) p_fnamerz = p_fnamerz + fnamerz
-      endif
-
-      if (allocated(fname_keep)) p_fname_keep = p_fname_keep + fname_keep
-      if (allocated(fname_sound)) p_fname_sound = p_fname_sound + fname_sound
-      if (allocated(ncountsz)) p_ncountsz = p_ncountsz + ncountsz
-
-      call diagnostics_diag_reductions
-      call chemistry_diags_reductions
-      call sc_diags_reductions
-
-    endsubroutine diagnostics_reductions
+!$    use Diagnostics
+!$    use Chemistry, only: chemistry_diags_reductions
+!$    use Solid_cells, only: sc_diags_reductions
+!$
+!$    integer :: imn
+!$
+!$      if (ldiagnos .and. allocated(fname)) then
+!$        do imn=1,size(fname)
+!$          if (allocated(inds_max_diags)) then
+!$            if (any(inds_max_diags == imn) .and. fname(imn) /= 0.) &
+!$              p_fname(imn) = max(p_fname(imn),fname(imn))
+!$          endif
+!$          if (allocated(inds_sum_diags)) then
+!$            if (any(inds_sum_diags == imn)) p_fname(imn) = p_fname(imn) + fname(imn)
+!$          endif
+!$        enddo
+!$      endif
+!$
+!$      if (l1davgfirst) then
+!$        if (allocated(fnamex)) p_fnamex = p_fnamex + fnamex
+!$        if (allocated(fnamey)) p_fnamey = p_fnamey + fnamey
+!$        if (allocated(fnamez)) p_fnamez = p_fnamez + fnamez
+!$        if (allocated(fnamer)) p_fnamer = p_fnamer + fnamer
+!$      endif
+!$
+!$      if (l2davgfirst) then
+!$        if (allocated(fnamexy)) p_fnamexy = p_fnamexy + fnamexy
+!$        if (allocated(fnamexz)) p_fnamexz = p_fnamexz + fnamexz
+!$        if (allocated(fnamerz)) p_fnamerz = p_fnamerz + fnamerz
+!$      endif
+!$
+!$      if (allocated(fname_keep)) p_fname_keep = p_fname_keep + fname_keep
+!$      if (allocated(fname_sound)) p_fname_sound = p_fname_sound + fname_sound
+!$      if (allocated(ncountsz)) p_ncountsz = p_ncountsz + ncountsz
+!$
+!$      call diagnostics_diag_reductions
+!$      call chemistry_diags_reductions
+!$      call sc_diags_reductions
+!$
+!$    endsubroutine diagnostics_reductions
 !***********************************************************************
     subroutine calc_all_module_diagnostic_auxiliaries(f,p)
 !
@@ -1064,9 +1064,9 @@ module Equ
 !and radiation rays depend on them
 !
       if (lradiation_ray) then
-        start_time = mpiwtime()
+        start_time = real(mpiwtime())
         call radtransfer(f)
-        end_time = mpiwtime()
+        end_time = real(mpiwtime())
         radtransfer_sum_time = radtransfer_sum_time + end_time-start_time
       endif
 
