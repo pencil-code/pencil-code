@@ -177,7 +177,7 @@ if [ -n "`ls *.py 2>/dev/null`" ]; then cp *.py $targetdir; fi
 [ -f batch.sh ] && cp batch.sh $targetdir
 [ -f src/.moduleinfo ] && cp src/.moduleinfo $targetdir/src
 [ -f src/.config-files ] && cp src/.config-files $targetdir/src
-[ -d src/astaroth/DSL/local ] && cp src/astaroth/DSL/local/* $targetdir/src/astaroth/DSL/local
+#[ -d src/astaroth/DSL/local ] && cp src/astaroth/DSL/local/* $targetdir/src/astaroth/DSL/local
 #
 #  if same_source, then link all *.x and *.so files from the original directory.
 #  (We don't want to use a link to the entire src directory, because
@@ -188,42 +188,47 @@ if [ -n "`ls *.py 2>/dev/null`" ]; then cp *.py $targetdir; fi
 if [ $same_source ]; then
   cd $targetdir/src
   pwd
-  if [ -h $olddir/src/run.x ]; then
-    lnk=`readlink $olddir/src/combine_videofiles.x`
+  if [ -e $olddir/src/run.x ]; then
+    lnk=`readlink -f $olddir/src/combine_videofiles.x`
     if [ "$lnk" != "" ]; then ln -s $lnk .; fi
-    lnk=`readlink $olddir/src/read_vectorfiles.x` 
+    lnk=`readlink -f $olddir/src/read_vectorfiles.x` 
     if [ "$lnk" != "" ]; then ln -s $lnk .; fi
-    lnk=`readlink $olddir/src/read_videofiles.x` 
+    lnk=`readlink -f $olddir/src/read_videofiles.x` 
     if [ "$lnk" != "" ]; then ln -s $lnk .; fi
-    lnk=`readlink $olddir/src/read_all_videofiles.x`
+    lnk=`readlink -f $olddir/src/read_all_videofiles.x`
     if [ "$lnk" != "" ]; then ln -s $lnk .; fi
 
-    ln -s `readlink $olddir/src/start.x` .
-    ln -s `readlink $olddir/src/run.x` .
+    ln -s `readlink -f $olddir/src/start.x` .
+    ln -s `readlink -f $olddir/src/run.x` .
 
-    lnk=`readlink $olddir/src/special.so`
+    lnk=`readlink -f $olddir/src/special.so`
     if [ "$lnk" != "" ]; then ln -s $lnk .; fi
 
     if [ -e $olddir/src/astaroth ]; then
 
-      lnk=`readlink $olddir/src/astaroth/libastaroth_dbl.so`
+      lnk=`readlink -f $olddir/src/astaroth/libastaroth_dbl.so`
       if [ "$lnk" != "" ]; then ln -s $lnk astaroth/.; fi
 
-      lnk=`readlink $olddir/src/astaroth/libastaroth_sgl.so`
+      lnk=`readlink -f $olddir/src/astaroth/libastaroth_sgl.so`
       if [ "$lnk" != "" ]; then ln -s $lnk astaroth/.; fi
 
       if [ -e $olddir/src/astaroth/submodule/build ]; then
         mkdir -p astaroth/submodule/build/src/core/kernels
         mkdir astaroth/submodule/build/runtime_compilation
         mkdir -p astaroth/submodule/build/acc-runtime/acc
-        lnk=`readlink $olddir/src/astaroth/submodule/build/src/core/libastaroth_core.so`
+        lnk=`readlink -f $olddir/src/astaroth/submodule/build/src/core/libastaroth_core.so`
         if [ "$lnk" != "" ]; then ln -s  $lnk ./astaroth/submodule/build/src/core; fi 
-        lnk=`readlink $olddir/src/astaroth/submodule/build/src/core/kernels/libkernels.so`
+        lnk=`readlink -f $olddir/src/astaroth/submodule/build/src/core/kernels/libkernels.so`
         if [ "$lnk" != "" ]; then ln -s  $lnk ./astaroth/submodule/build/src/core/kernels; fi
-        lnk=`readlink $olddir/src/astaroth/submodule/build/runtime_compilation/libacc_runtime_compiler.so`
+        lnk=`readlink -f $olddir/src/astaroth/submodule/build/runtime_compilation/libacc_runtime_compiler.so`
         if [ "$lnk" != "" ]; then ln -s  $lnk ./astaroth/submodule/build/runtime_compilation; fi
-        lnk=`readlink $olddir/src/astaroth/submodule/build/acc-runtime/acc/acc`
+        lnk=`readlink -f $olddir/src/astaroth/submodule/build/acc-runtime/acc/acc`
         if [ "$lnk" != "" ]; then ln -s  $lnk ./astaroth/submodule/build/acc-runtime/acc; fi
+	#We don't want the new directory setup by pc_setupsrc but to link to the old one
+	rm -rf astaroth/DSL
+        lnk=`readlink -f $olddir/src/astaroth/DSL
+        if [ "$lnk" != "" ]; then ln -s  $lnk ./astaroth/DSL; fi
+	ln -s $PENCIL_HOME/src/scripts .
       fi
     fi
   else
