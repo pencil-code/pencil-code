@@ -18,4 +18,5 @@
   lwstate_crit=T, wstate_crit=.3
   ldefine_a2rhopm_without_Vpotential=F
   la2rhop_wrong_factor=F
+  lwstate_crit_old=T
 /

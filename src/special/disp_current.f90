@@ -1099,6 +1099,8 @@ module Special
       endif
 !
 !  If ldensity and ldensity_add_je_heating, then compute J.E and add it:
+!  J.E has 2 contribution: we have J=sigE*(E+uxB), so E=-uxB+J/sigE.
+!  We already have the Lorentz for displacement current available.
 !
       if (ldensity .and. ldensity_add_je_heating) then
         if (ldisp_current) then

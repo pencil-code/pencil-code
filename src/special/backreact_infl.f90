@@ -106,12 +106,13 @@ module Special
   real :: amplee_BD_prefactor=0., deriv_prefactor_ee=-1.
   real :: echarge=.0, echarge_const=.303
   real :: count_eb0_all=0., rad_heating=0., ascale_heat=0., ascale_heat_off=0., heating
-  real :: aphimax=0., aphimax2=0.  !PAR_DOC: maximum a value above which the phi potential is quenched.
+  real :: aphimax=0., aphimax2=0. !PAR_DOC: maximum a value above which the phi potential is quenched.
   real :: Gamma_phi0=impossible, Gamma_phi !PAR_DOC: damping factor for phi above aphimax
-  real :: rhophim_crit=1e-21 !PAR_DOC: minimum phi
+  real :: rhophim_crit=1e-21      !PAR_DOC: minimum phi
   real :: wstate, wstate_accum, wstate_aver !PAR_DOC: critical w (EoS) value (slightly below 1/3)
-  real :: wstate_crit=0.3333  !PAR_DOC: critical w (EoS) value (slightly below 1/3)
-  real :: wstate_tolerance=0.0001  !PAR_DOC: tolerance w (EoS) value (slightly below 1/3)
+  real :: wstate_crit=0.3333      !PAR_DOC: critical w (EoS) value (slightly below 1/3)
+  real :: wstate_tolerance=1e-10  !PAR_DOC: tolerance w (EoS) value (slightly below 1/3)
+  real :: wstate_aver_prev=0.     !PAR_DOC: tolerance w (EoS) value (slightly below 1/3)
 !
   real, target :: ddotam_all
   real, pointer :: alpf, eta
@@ -125,13 +126,13 @@ module Special
   logical :: lrho_rad=.false.            !PAR_DOC: radiation from inflaton decay
   logical :: lwstate_accum=.false.       !PAR_DOC: time-integrated EoS
   logical :: lrho_rad_apply=.true.       !PAR_DOC: radiation from inflaton decay, and also applied to df(l1:l2,m,n,iinfl_dphi)
-  logical :: lrho_rad_apply2=.true.       !PAR_DOC: radiation from inflaton decay, and also applied to df(l1:l2,m,n,iinfl_dphi)
+  logical :: lrho_rad_apply2=.true.      !PAR_DOC: radiation from inflaton decay, and also applied to df(l1:l2,m,n,iinfl_dphi)
   logical :: lrho_chi_corrected=.true.   !PAR_DOC: for backward compatibility; when false, we use the wrong scale factor in the rho_chi equation
   logical :: lrho_chi_inhom=.false.      !PAR_DOC: inhomogeneous heating
   logical :: ldefine_a2rhophi_with_Vpotential=.true.  !PAR_DOC: define a2rhophi with Vpotential
   logical :: lsolve_for_phi=.true.       !PAR_DOC: whether we still want to solve for phi
   logical :: lwstate_crit=.false.        !PAR_DOC: lwstate_crit switch (would put phi=0, is false by default)
-  logical :: lwstate_crit_old=.true.     !PAR_DOC: lwstate_crit_old (to restore the old wstate criterion used in the autotest)
+  logical :: lwstate_crit_old=.false.    !PAR_DOC: lwstate_crit_old (to restore the old wstate criterion used in the autotest)
   logical :: lheating=.false.            !PAR_DOC: heating criterion
   logical :: ldefine_a2rhopm_without_Vpotential=.false.    !PAR_DOC: should be false to have correct results
   logical :: la2rhop_wrong_factor=.false. !PAR_DOC: should be false to have correct results
@@ -154,7 +155,7 @@ module Special
       lrho_chi, scale_rho_chi_Heqn, scale_rho_rad_Heqn, amplee_BD_prefactor, deriv_prefactor_ee, &
       lrho_rad, init_rho_rad, lwstate_accum, Gamma_phi0, lconf_time, &
       echarge_type, init_rho_chi, rho_chi_init, lrho_chi_inhom, rhophim_crit, &
-      wstate_crit, lwstate_crit, lwstate_crit_old, wstate_tolerance, heating_choice, &
+      wstate_crit, lwstate_crit, lwstate_crit_old, wstate_tolerance, wstate_aver_prev, heating_choice, &
       ldefine_a2rhopm_without_Vpotential, la2rhop_wrong_factor
 !
   namelist /special_run_pars/ &
@@ -165,7 +166,7 @@ module Special
       lrho_rad, lrho_rad_apply, lrho_rad_apply2, lrho_chi_corrected, lwstate_accum, &
       lrho_chi_inhom, ldefine_a2rhophi_with_Vpotential, &
       rad_heating, ascale_heat, ascale_heat_off, aphimax, Gamma_phi0, lconf_time, rhophim_crit, &
-      wstate_crit, lwstate_crit, lwstate_crit_old, wstate_tolerance, heating_choice
+      wstate_crit, lwstate_crit, lwstate_crit_old, wstate_tolerance, wstate_aver_prev, heating_choice
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -577,12 +578,13 @@ module Special
 !   2-nov-21/axel: first set of equations coded
 !
       use Diagnostics, only: sum_mn_name, max_mn_name, save_name
-      use Sub, only: dot_mn, del2
+      use Sub, only: dot_mn, dot2_mn, del2, grad
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: Vprime
-      real, dimension (nx) :: tmp, del2phi
+      real, dimension (nx,3) :: gphi
+      real, dimension (nx) :: Vprime, Vpotential, a2rhophi
+      real, dimension (nx) :: tmp, del2phi, gphi2
       real :: pref_Vprime=1., pref_Hubble=2., pref_del2=1., pref_alpf, pref_Gamma=impossible
       type (pencil_case) :: p
 !
@@ -598,14 +600,21 @@ module Special
 !
 ! alberto: changed to use the pencils p%infl_phi and p%infl_dphi
       select case (Vprime_choice)
-        case ('quadratic'); Vprime=axionmass2*p%infl_phi
-        case ('quartic'); Vprime=axionmass2*p%infl_phi+(lambda_axion/6.)*p%infl_phi**3
-        case ('cos-profile'); Vprime=axionmass2*lambda_axion*sin(lambda_axion*p%infl_phi)
+        case ('quadratic')
+          Vprime=axionmass2*p%infl_phi
+          Vpotential=.5*axionmass2*p%infl_phi**2
+        case ('quartic')
+          Vprime=axionmass2*p%infl_phi+(lambda_axion/6.)*p%infl_phi**3
+          Vpotential=axionmass2*p%infl_phi+(lambda_axion/6.)*p%infl_phi**3  !(to be corrected)
+        case ('cos-profile')
+          Vprime=axionmass2*lambda_axion*sin(lambda_axion*p%infl_phi)
+          Vpotential=axionmass2*lambda_axion*sin(lambda_axion*p%infl_phi)  !(to be corrected)
         case default
           call fatal_error("dspecial_dt","no such Vprime_choice: "//trim(Vprime_choice))
       endselect
 !
-!  Current choice of temporal form of Gamma_phi.
+!  Current choice of temporal form of Gamma_phi. Heating is currently instantaenous.
+!  to rename lheating -> lheating_phi
 !
       if (lheating) then
         Gamma_phi=Gamma_phi0
@@ -633,7 +642,7 @@ module Special
       endif
 !
 !  In the following, Hscript means H if cosmic time is used.
-!  dphi/dt = dphi
+!  dphi/dt = dphi. So lrho_rad_apply is needed in the inhomogeneous case (but not lrho_rad_apply2).
 !
       if (lsolve_for_phi) then
         df(l1:l2,m,n,iinfl_phi)=df(l1:l2,m,n,iinfl_phi)+p%infl_dphi
@@ -645,6 +654,26 @@ module Special
               (pref_Hubble*Hscript)*p%infl_dphi-pref_Vprime*Vprime
         endif
       endif
+!
+!  Here we include the Gamma_phi contribution to the rhs of the lnrho equation.
+!  drho/dt = ... + a*Gam_phi*a2rhophi/a^6.
+!  This is independent of whether or not lrho_rad=T; which is just for testing.
+!
+        if (lrho_chi_inhom .and. lheating) then
+          if (ldensity) then
+            call grad(f,iinfl_phi,gphi)
+            call dot2_mn(gphi,gphi2)
+            a2rhophi=0.5*p%infl_dphi**2+0.5*gphi2+a2*Vpotential
+            tmp=Gamma_phi*a2rhophi/ascale**5
+            if (ldensity_nolog) then
+              df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+tmp
+            else
+              df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+tmp*p%rho1
+            endif
+          else
+            call fatal_error("dspecial_dt: ","density must be true")
+          endif
+        endif
 !
 !  speed of light term
 !
@@ -808,6 +837,7 @@ module Special
 !  Since a2rhophim_all includes a^2, and we want to have the physical
 !  energy density, so we divide by a^2, but in conformal time,
 !  we also need to multiply by a, so we divide by a.
+!  This "heating" enters the physical (not comoving) rho_rad!
 !
       if (lrho_rad) then
         if (lconf_time) then
@@ -1119,7 +1149,7 @@ module Special
       use Sub, only: dot2_mn, grad, curl, dot_mn
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real :: sigE1m, sigB1m, rho_rad, Hscript_prev=0., wstate_aver_prev=-1.
+      real :: sigE1m, sigB1m, rho_rad, Hscript_prev=0.
 !
 ! TP: to avoid code duplication could this function not be combined with the copy of it in
 !     klein_gordon.f90? We could make an appropriate module and call it from there
@@ -1261,7 +1291,7 @@ module Special
       real, intent(inout) :: sigE1m,sigB1m
       real, dimension (nx,3) :: el, bb, gphi
       real, dimension (nx) :: e2, b2, gphi2, dphi, a2rhop, a2rho, a2rhophi
-      real, dimension (nx) :: a2rhopphi
+      real, dimension (nx) :: tmp, a2rhopphi
       real, dimension (nx) :: ddota, phi, Vpotential, edotb, sigE1, sigB1
       real, dimension (nx) :: boost, gam_EB, eprime, bprime, jprime1
 !
@@ -1312,7 +1342,8 @@ module Special
         a2rho=a2rho+0.5*gphi2
       endif
 !
-!  Set a2rhophim for later accummulation
+!  Set a2rhophim for later accummulation.
+!  This is still local.
 !
       a2rhophi=a2rho
       a2rhopphi=a2rhop
@@ -1365,10 +1396,15 @@ module Special
         endif
       endif
 !
-!  Do the same for rho_rad
+!  Do the same for rho_rad. But this should not be applied in the inhomogeneous case when heating is on.
 !
-      if (lrho_rad .and. lrho_rad_apply2) &
-        a2rho=a2rho+scale_rho_rad_Heqn*a2*f_ode(iinfl_rho_rad)
+      if (lrho_rad .and. lrho_rad_apply2) then
+        if (lrho_chi_inhom) then
+          call fatal_error("prep_ode_right","lrho_rad_apply2 must be true if ldensity")
+        else
+          a2rho=a2rho+scale_rho_rad_Heqn*a2*f_ode(iinfl_rho_rad)
+        endif
+      endif
 !
 !  ldefine_a2rhopm_without_Vpotential would be *true* for reproducing the old runs.
 !
@@ -1406,6 +1442,7 @@ module Special
       a2rhopphi=a2rhopphi-a2*Vpotential
 !
 !  Compute volume average of both a2rho and a2rho_phi
+!  Here, we begin to sum over a2rhophi, so this the last place where the local one was updated.
 !
       a2rhom=a2rhom+sum(a2rho)
       if (.not. ldefine_a2rhopm_without_Vpotential) &
