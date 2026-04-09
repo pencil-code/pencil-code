@@ -4,7 +4,7 @@
 Next Meeting
 =============
 
-**Date:**  TBD. (Probably March 2026, stay tuned!)
+**Date:**  TBD. (Probably May/Jun 2026, stay tuned!)
 
 
 **Proposed agenda:**
