@@ -226,7 +226,7 @@ if [ $same_source ]; then
         if [ "$lnk" != "" ]; then ln -s  $lnk ./astaroth/submodule/build/acc-runtime/acc; fi
 	#We don't want the new directory setup by pc_setupsrc but to link to the old one
 	rm -rf astaroth/DSL
-        lnk=`readlink -f $olddir/src/astaroth/DSL
+        lnk=`readlink -f $olddir/src/astaroth/DSL`
         if [ "$lnk" != "" ]; then ln -s  $lnk ./astaroth/DSL; fi
 	ln -s $PENCIL_HOME/src/scripts .
       fi
