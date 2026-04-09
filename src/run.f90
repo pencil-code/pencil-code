@@ -50,7 +50,7 @@ module Run_module
     implicit none
 
     integer :: icount, it_last_diagnostic
-    real(KIND=rkind8) :: time1=impossible, time_last_diagnostic
+    real(KIND=rkind8) :: time1=0., time_last_diagnostic
     real :: time_doing_diagnostics = 0., time_in_timestep = 0.
 
 contains
@@ -119,14 +119,13 @@ endsubroutine helper_loop
 !  If 1.) is true the lock corresponding to the buffers should be freed
 !  Additionally if 2.) is true the signal that wakes up the helper should tell it to perform something.
 !  Otherwise it gets an empty signal and goes back again to sleep immediately
-!     
 !
 !$  if (lfarray_copied .and. any(lmasterflags)) then
 !$    lhelperflags = lmasterflags
 !$    lmasterflags = .false.
 !$    call signal_send(lhelper_perf,.true.)
 !$    lfarray_copied = .false.
-!$  else if(lfarray_copied) then
+!$  else if (lfarray_copied) then
 !$    lfarray_copied = .false.
 !$    call signal_send(lhelper_perf,.false.)
 !$  endif
@@ -630,6 +629,7 @@ endsubroutine helper_loop
   endsubroutine timeloop
 !***********************************************************************
   subroutine setup_signal_files
+!     
   use File_io,         only: file_exists,delete_file
   use General,         only: touch_file
   use Syscalls,        only: sizeof_real,directory_exists,system_cmd
@@ -638,13 +638,12 @@ endsubroutine helper_loop
 !  We do this instead of e.g. reading it from dim.dat since dim.dat won't exist
 !  if we use HDF5-IO
 !
-    if(lroot) then
-      if (.not. directory_exists('data/allprocs/signals')) then
-              call system_cmd('mkdir data/allprocs/signals')
-      endif
+    if (lroot) then
+      if (.not. directory_exists('data/allprocs/signals')) &
+          call system_cmd('mkdir data/allprocs/signals')
       if (file_exists('data/allprocs/signals/SINGLE_PRECISION_RUN')) call delete_file('data/allprocs/signals/SINGLE_PRECISION_RUN')
       if (file_exists('data/allprocs/signals/DOUBLE_PRECISION_RUN')) call delete_file('data/allprocs/signals/DOUBLE_PRECISION_RUN')
-      if(sizeof_real() < 8) then
+      if (sizeof_real() < 8) then
         call touch_file('data/allprocs/signals/SINGLE_PRECISION_RUN')
       else
         call touch_file('data/allprocs/signals/DOUBLE_PRECISION_RUN')
@@ -652,6 +651,7 @@ endsubroutine helper_loop
       if (file_exists('TIMESTEP_BECAME_TOO_SHORT')) &
         call delete_file('TIMESTEP_BECAME_TOO_SHORT')
     endif
+
   endsubroutine setup_signal_files
 !***********************************************************************
   subroutine print_performance_and_memory_usage_metrics(wall_clock_time)
@@ -692,9 +692,6 @@ endsubroutine helper_loop
           write(*,'(A,1pG14.7)') &
             ' Before boundary wall clock time/timestep/local meshpoint [microsec] =', &
             before_boundary_sum_time/icount/nw/1.0e-6
-          if(lradiation_ray) write(*,'(A,1pG14.7)') &
-            ' Radtransfer wall clock time/timestep/local meshpoint [microsec] =', &
-            radtransfer_sum_time/icount/nw/1.0e-6
           write(*,'(A,1pG14.7)') &
             ' Diagnostics wall clock time/timestep/local meshpoint [microsec] =', &
             time_doing_diagnostics/icount/nw/1.0e-6
@@ -722,22 +719,28 @@ endsubroutine helper_loop
           write(*,'(A,1pG14.7)') &
             ' Before boundary wall clock time/timestep/meshpoint [microsec] =', &
             before_boundary_sum_time/icount/nw/ncpus/1.0e-6
-          if(lradiation_ray) write(*,'(A,1pG14.7)') &
-            ' Radtransfer wall clock time/timestep/meshpoint [microsec] =', &
-            radtransfer_sum_time/icount/nw/ncpus/1.0e-6
-          if(lradiation_ray) write(*,'(A,1pG14.7)') &
-            ' Radtransfer+Rhs wall clock time/timestep/meshpoint [microsec] =', &
-            (rhs_sum_time+radtransfer_sum_time)/icount/nw/ncpus/1.0e-6
 
-          if(ltraining.and.training_time>0) write(*,'(A,1pG14.7)') &
-            ' Training wall clock time/timestep/meshpoint [microsec] =', &
-            (training_time)/icount/nw/1.0e-6
+          if (lradiation_ray) then
+            write(*,'(A,1pG14.7)') &
+              ' Radtransfer wall clock time/timestep/meshpoint [microsec] =', &
+              radtransfer_sum_time/icount/nw/ncpus/1.0e-6
+            write(*,'(A,1pG14.7)') &
+              ' Radtransfer wall clock time/timestep/local meshpoint [microsec] =', &
+              radtransfer_sum_time/icount/nw/1.0e-6
+            write(*,'(A,1pG14.7)') &
+              ' Radtransfer+Rhs wall clock time/timestep/meshpoint [microsec] =', &
+              (rhs_sum_time+radtransfer_sum_time)/icount/nw/ncpus/1.0e-6
+          endif
 
-          if(ltraining.and.inference_time>0) write(*,'(A,1pG14.7)') &
-            ' Inference wall clock time/timestep/meshpoint [microsec] =', &
-            (inference_time)/icount/nw/1.0e-6
+          if (ltraining) then
+            if (training_time>0) write(*,'(A,1pG14.7)') &
+              ' Training wall clock time/timestep/meshpoint [microsec] =', &
+              (training_time)/icount/nw/1.0e-6
 
-
+            if (inference_time>0) write(*,'(A,1pG14.7)') &
+              ' Inference wall clock time/timestep/meshpoint [microsec] =', &
+              (inference_time)/icount/nw/1.0e-6
+          endif
         endif
       endif
     endif
@@ -755,6 +758,7 @@ endsubroutine helper_loop
     endif
     print*
   endif
+
  endsubroutine print_performance_and_memory_usage_metrics
 !***********************************************************************
 !$  subroutine get_all_core_ids
@@ -773,11 +777,9 @@ endsubroutine helper_loop
 !$ endsubroutine get_all_core_ids
 !***********************************************************************
 !$ subroutine get_core_ids_excluding_the_master
-
 !
 !TP: remove master id from core ids since no one should run on master core and make sure new core ids indexing start from 1
 !
-
 !$ use OMP_lib
 !$ use, intrinsic :: iso_c_binding
 !$ use General,        only: get_cpu
@@ -803,6 +805,7 @@ endsubroutine helper_loop
 !$   core_ids = tmp_core_ids
 !$ endif
 !$omp barrier
+
 !$ endsubroutine get_core_ids_excluding_the_master
 !***********************************************************************
   subroutine run_start() bind(C)
@@ -857,7 +860,7 @@ endsubroutine helper_loop
   type (pencil_case) :: p
 
   character(len=fnlen) :: fproc_bounds
-  real(KIND=rkind8) :: time2=impossible, tvar1
+  real(KIND=rkind8) :: time2, tvar1
   integer :: mvar_in
   logical :: suppress_pencil_check=.false.
   logical :: lnoreset_tzero=.false.
@@ -1288,13 +1291,11 @@ endsubroutine helper_loop
 !$  enddo
 !$omp barrier
     call mpibarrier
-
 !
 ! Here the master thread and the helper thread split.
 ! The master will go to timeloop and handle the time integration
 ! and the helper will go the helper_loop and handle diagnostic, snapshots, etc.
 !
-
 !$  if (omp_get_thread_num() == 0) then
 !
 !  Start timing for final timing statistics.
@@ -1314,6 +1315,7 @@ endsubroutine helper_loop
 !$omp barrier
 !$omp end parallel
 !
+  time2=0.
   if (lroot) then
 !
     time2=real(mpiwtime())
