@@ -1584,6 +1584,7 @@ module Special
     call keep_compiler_quiet(ascale_heat_off)
     call keep_compiler_quiet(ascale_heat)
 
+    call copy_addr(lrho_chi_inhom,p_par(34)) ! bool
     endsubroutine pushpars2c
 !********************************************************************
 !********************************************************************
