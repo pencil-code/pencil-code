@@ -1929,6 +1929,12 @@ extern "C" void loadFarray()
 void generate_bcs()
 {
 	if(rank != 0) return;
+	bool bc2ast_exists = (system("ls src/scripts/bc2ast > /dev/null 2>&1") == 0);
+	if(!bc2ast_exists)
+	{
+		fprintf(stderr,"AC Warning: Did not find src/scripts/bc2ast so skipping possible bc generation!\n");
+		return;
+	}
 	if(system("cd src && scripts/bc2ast 1> ../tmp_bcs 2> /dev/null && cd .."))
 	{
 		fprintf(stderr,"AC Error: Was not able to generate bcs!\n");
