@@ -56,7 +56,7 @@ CMAKE_SINGLEPASS = OFF
 OBJECTS = $(SOURCES:.cc=.o) 
 
 #DSL_MODULE_DIR=samples/gputest
-DSL_MODULE_DIR = ../../DSL/local
+DSL_MODULE_DIR = DSL/local
 CWD = $(PWD)
 
 ifeq ($(CMAKE_SINGLEPASS),ON)
@@ -176,9 +176,9 @@ endif
 			  $$PENCIL_HOME/src/astaroth/submodule/acc-runtime/stdlib/*/*.h \
                           $(CWD)/DSL/local/*.h \
 			  |tr "\n" " "|sed -e's/, /;/g'` $(EXT_KERNELS)" && \
-	echo "const char* cmake_options = \" -DDSL_EXT_SOURCES=\\\"$$ext_srcs\\\" -DDSL_MODULE_DIR=../$(DSL_MODULE_DIR) $(CMAKE_OPTIONS)\";" > cmake_options.h && \
+	echo "const char* cmake_options = \" -DDSL_EXT_SOURCES=\\\"$$ext_srcs\\\" -DDSL_MODULE_DIR=../../../$(DSL_MODULE_DIR) $(CMAKE_OPTIONS)\";" > cmake_options.h && \
 	mkdir -p submodule/build  && cd submodule/build && export LDFLAGS=""  &&  \
-	cmake  $(CMAKE_OPTIONS) -DDSL_EXT_SOURCES="$$ext_srcs" -DDSL_MODULE_DIR=../acc-runtime/$(DSL_MODULE_DIR) -DRUNTIME_COMPILATION=$(RUNTIME_COMPILATION) -DREAD_OVERRIDES=$(READ_OVERRIDES) $(AC_HOME)
+	cmake  $(CMAKE_OPTIONS) -DDSL_EXT_SOURCES="$$ext_srcs" -DDSL_MODULE_DIR=../acc-runtime/../../$(DSL_MODULE_DIR) -DRUNTIME_COMPILATION=$(RUNTIME_COMPILATION) -DREAD_OVERRIDES=$(READ_OVERRIDES) $(AC_HOME)
 	cd submodule/build && sed -i -e's/SHELL *= *\/bin\/sh/SHELL = \/bin\/bash/' Makefile && make -j -I../../.. VERBOSE=0 # Build the core Astaroth library
 	@echo PRECISION=$(CMAKE_PREC)
 
@@ -193,9 +193,9 @@ include Makefile.extern
 $(PC_HEADERS): .sentinel
 
 .sentinel: ../scripts/phys_modules2c PC_modulesources.h $(MODULESOURCES)
-	@rm -f $(PCHEADER_DIR)/PC_modulepars.h $(PCHEADER_DIR)/PC_module*funcs.h submodule/acc-runtime/$(DSL_MODULE_DIR)/PC_modulepardecs.h 
+	@rm -f $(PCHEADER_DIR)/PC_modulepars.h $(PCHEADER_DIR)/PC_module*funcs.h $(DSL_MODULE_DIR)/PC_modulepardecs.h 
 	@echo '// automatically generated; do not edit!' > $(PCHEADER_DIR)/PC_modulepars.h
-	@echo '// automatically generated; do not edit!' > submodule/acc-runtime/$(DSL_MODULE_DIR)/PC_modulepardecs.h
+	@echo '// automatically generated; do not edit!' > $(DSL_MODULE_DIR)/PC_modulepardecs.h
 ifeq ($(TRANSPILATION),on)
 	@export DSL_MODULE_DIR=$(DSL_MODULE_DIR); \
         for file in $(MODULESOURCES); do echo processing $$file ...; if [[ $$file =~ eos[_.] ]]; \
@@ -236,7 +236,7 @@ clean:
 #
 cleann: clean
 	@rm -f ../cparam_c.h ../defines_cdata.h ../forcing_c.h ../forcing_pars_c.h ../sub_c.h ../mpicomm_c.h ../boundcond_c.h ../cdata_c.h
-	@rm -f submodule/acc-runtime/$(DSL_MODULE_DIR)/PC_modulepardecs.h
+	@rm -f $(DSL_MODULE_DIR)/PC_modulepardecs.h
 	@rm -f $(PC_HEADER_DIR)/PC_modulepars.h $(PCHEADER_DIR)/PC_module_parfuncs.h
 #
 #--------------------------------------------------------------------------------------------------------------------------------------------
