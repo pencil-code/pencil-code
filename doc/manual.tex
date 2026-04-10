@@ -2425,17 +2425,6 @@ To see which of the commited samples are 100 percent known to run on GPUs, check
 As a rule of thumb, if the sample only requires the following features it can be run on GPUs:
 %AB: I have wrapped these verbatim lines, and sometimes modified. Is this text also in some code? And if so, where?
 \begin{itemize}
-  \item Declare the name of the pencil in the header of the proper physics
-      module. Pencils names must appear come in a ";" separated list, with
-      dimensions in parenthesis after the name [(3) for vector, (3,3) for
-      matrix, etc.].
-  \item Set interdependency of the new pencil (i.e.\ what other pencils does it
-      depend on) in the subroutine \code{pencil_interdep_modulename}
-  \item Make rule for calculating the pencil in \code{calc_pencils_modulename}
-  \item Request the new pencil based on the input parameters in any relevant
-      physics module
-\end{itemize}
-\begin{itemize}
   \item Integration of PDEs and ODEs.
   \item  Boundary conditions that can be formulated
          as local operations. (Boundary conditions outside of those already covered require
