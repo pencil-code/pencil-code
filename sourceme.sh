@@ -115,7 +115,9 @@ if [ -d .git ]; then
 #
 #
 # Enforce that all committers have set their email account and username in git before committing
-# 2024-Apr-10/Kishore: commented the following as it overwrites the user's pre-existing hooks. In general, it is not safe (and very impolite) to automatically add hooks to a user's local git repo. @Touko, as far as I know, git already enforces that the name and email are set (I also tested this on a new user account on may machine). What is the problem that you are trying to solve?
+# 2026-Apr-10/Kishore: commented the following as it overwrites the user's pre-existing hooks. In general, it is not safe (and very impolite) to automatically add hooks to a user's local git repo. @Touko, as far as I know, git already enforces that the name and email are set (I also tested this on a new user account on may machine). What is the problem that you are trying to solve?
+# 2026-Apr-10/TP: @Kishore git does not enforce it since I was making commits without the user info set and was asked explicitly by Philippe to do so, and the say held true for Fred and Matthias at some point.
+# Could we consider appending this snippet to the end of the pre-commit hook instead of overwriting it completely?
 # #
 #     touch $PENCIL_HOME/.git/hooks/pre-commit
 #     echo "#!/bin/sh
