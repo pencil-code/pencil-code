@@ -2408,8 +2408,6 @@ export MPICH_GPU_SUPPORT_ENABLED=1
 \end{verbatim}
 
 The normal usage of GPUs will imply that compilation will happen during the run of the simulation.
-%Because of this for module environments it is imperative that the same modules are used for the run as for the initial compilation.
-%AB: swapped. OK?
 Because of this, it is imperative for module environment that the same modules are used for the run as for the initial compilation.
 To ensure this, add the following to your sbatch script:
 \begin{verbatim}
@@ -2433,6 +2431,22 @@ As a rule of thumb, if the sample only requires the following features it can be
 	(Cases outside of those already covered require explicit use of code tools to generate the GPU code.)
   \item Fourier transforms (requires handwritten modifications to add new physics).
 \end{itemize}
+\subsubsection{Runtime compilation}
+\label{runtime_compilation}
+As stated normal usage of GPUs requires compilation during the running of the setup.
+This is because the code as is with its large number of conditionals would not be performant on the GPUs because for performance Astaroth needs to know at compile-time which stencils are used. Compiling after the parameters have been chosen fixes the problem. 
+
+However it is inconvenient if you want to run a spectrum of runs while varying some numerical parameters if each choice requires separate runtime compilation. Because of this it is possible to tell via code comments does a parameter need recompilation or not.
+The relevant subroutines are called \code{pushpars2c}. The following has examples for boolean and real variables where the former would force recompilation and the latter not.
+\begin{verbatim}
+  call copy_addr(lklein_gordon,p_par(1)) ! bool
+  call copy_addr(wfreeze,p_par(2))
+  call copy_addr(lklein_gordon,p_par(1)) ! bool dconst
+  call copy_addr(wfreeze,p_par(2)) ! real dconst
+\end{verbatim}
+
+If control-flow (if statements/other conditionals) depends on a variable it should trigger recompilation so Astaroth can optimise the code.
+If a variable does not affect control-flow it is often preferable to have the variables not trigger recompilation and it would helpful to add these cases to the code. So in the case you are running such spectrums of runs and are annoyed by the constant need of recompilation please do change the variable to not need the recompilation.
 % ---------------------------------------------------------------------- %
 \subsection{Using a non-equidistant grid}
 \index{mesh, nonuniform}\index{grid, nonuniform}\index{nonuniform grid}
