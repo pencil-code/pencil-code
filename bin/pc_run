@@ -172,7 +172,7 @@ if (defined $config_files) {
 	#Thus I read the config file that was used in pc_build
 	#I don't see any downsides to this, but please remove it if you find one.
         if (-e "src/.config-files") {
-            open my $fh, "<", "src/.config" or die $!;
+            open my $fh, "<", "src/.config-files" or die $!;
             $config_file = do { local $/; <$fh> };
             close $fh;
         }
