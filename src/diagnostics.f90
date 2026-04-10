@@ -4048,7 +4048,8 @@ module Diagnostics
 !***********************************************************************
    subroutine save_diagnostic_controls
 !
-!  Saves threadprivate variables to shared ones.
+!  Saves the diagnostic controls as they are now at the current time
+!  so the helper thread can read them later when it wakes up
 !
 !  25-aug-23/TP: Coded
 !  19-march-25/TP: moved from Equ to here
@@ -4087,7 +4088,7 @@ module Diagnostics
 !***********************************************************************
     subroutine restore_diagnostic_controls
 !
-!   Restores the diagnostics flags that were saved when calculating diagnostics started.
+!   Restores the diagnostics flags that were saved by master when it asked for diagnostics. 
 !
 !   13-nov-23/TP: Written
 !   19-march-25/TP: moved from Equ to here

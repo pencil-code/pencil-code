@@ -107,11 +107,10 @@ module Equ
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call svn_id( &
            "$Id$")
+
 !
-!  Get the adress of the f-array on the GPU's global memory for use
-!  in offloading, training etc.
+!  Load the values of the dynamically changing parameters to the device
 !
-      if (lgpu) call get_farray_ptr_gpu   !Why here? should be static
       call load_variables_to_gpu 
 !
 !  Initialize counter for calculating and communicating print results.
@@ -186,18 +185,19 @@ module Equ
 !  Call "before_boundary" hooks (for f array precalculation)
 !
       call before_boundary_shared(f)
+ !
+ ! If asked test that the CPU implementation is correctly executed on the GPUs
+ !
       if (lgpu .and. ltest_rhs .and. it == it_test_rhs) then
         call test_rhs_gpu(f,p,mass_per_proc,early_finalize,rhs_cpu)
       endif
 
-      if (lgpu) then
-        start_time = real(mpiwtime())
-        call before_boundary_gpu(f,lrmv,itsub,t)
-        end_time = real(mpiwtime())
-        before_boundary_sum_time = before_boundary_sum_time + end_time-start_time
-      else
-        call before_boundary_cpu(f)
+      start_time = real(mpiwtime())
+      if (lgpu) then; call before_boundary_gpu(f,lrmv,itsub,t)
+      else;      call before_boundary_cpu(f)
       endif
+      end_time = real(mpiwtime())
+      before_boundary_sum_time = before_boundary_sum_time + end_time-start_time
 !
 !  Prepare x-ghost zones; required before f-array communication
 !  AND shock calculation
@@ -305,21 +305,18 @@ module Equ
           start_time = real(mpiwtime())
           call copy_farray_from_GPU(f)
           time_spent_copying_and_waiting = time_spent_copying_and_waiting+real(mpiwtime())-start_time
+          !Save the state of the ODE variables as they were when diagnostics were asked for
           if (lode) f_ode_diagnostics = f_ode
+          !Ask the helper to calculate diagnostics
 !$        lmasterflags(PERF_DIAGS) = .true.
         endif
         start_time = real(mpiwtime())
         call rhs_gpu(f,itsub)
 !  Should be done after rhs_gpu since if doing testing against cpu want to get the right value of dt
-        if (ldiagnostic_output) then
-!$        call save_diagnostic_controls
-        endif
+!$      if (ldiagnostic_output) call save_diagnostic_controls
         end_time = real(mpiwtime())
         rhs_sum_time = rhs_sum_time + end_time-start_time
       else
-        if (ldiagnos.or.l1davgfirst.or.l1dphiavg.or.l2davgfirst) then
-                !if (lroot) print*,'Diagnostic time - CPU=', t
-        endif
         start_time = real(mpiwtime())
         call rhs_cpu(f,df,p,mass_per_proc,early_finalize)
         end_time = real(mpiwtime())
@@ -438,9 +435,10 @@ module Equ
     endsubroutine pde
 !***********************************************************************
     subroutine load_variables_to_gpu
-
+!
+!  Loads the values of the dynamically changing parameters to the device
+!
       use GPU, only: update_on_gpu
-
       use Special, only: load_variables_to_gpu_special
       use Hydro, only: load_variables_to_gpu_hydro
 
