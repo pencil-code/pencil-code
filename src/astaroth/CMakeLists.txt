@@ -41,6 +41,7 @@ else()
 	add_definitions(-DAC_CPU_BUILD=0)
 endif()
 
+
 ## Build type
 if (NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE "Release") # Default
@@ -175,3 +176,6 @@ else()
 endif()
 
 target_link_libraries(astaroth_${PREC} astaroth_core)
+target_compile_definitions(astaroth_${PREC} PRIVATE
+   ACC_COMPILER_PATH="${CMAKE_CURRENT_SOURCE_DIR}/submodule/build/acc-runtime/acc/acc"
+)

@@ -738,6 +738,8 @@ void setupConfig(AcMeshInfo& config)
   char build_path[18000];
   sprintf(build_path,"%s/src/astaroth/submodule/build",cwd);
   config.runtime_compilation_build_path = strdup(build_path);
+  config.acc_compiler_path = ACC_COMPILER_PATH;
+
 }
 /***********************************************************************************************/
 //TP: x,y and z macros are too general
