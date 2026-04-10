@@ -214,14 +214,11 @@ if [ $same_source ]; then
 
       if [ -e $olddir/src/astaroth/submodule/build ]; then
         mkdir -p astaroth/submodule/build/src/core/kernels
-        mkdir astaroth/submodule/build/runtime_compilation
         mkdir -p astaroth/submodule/build/acc-runtime/acc
         lnk=`readlink -f $olddir/src/astaroth/submodule/build/src/core/libastaroth_core.so`
         if [ "$lnk" != "" ]; then ln -s  $lnk ./astaroth/submodule/build/src/core; fi 
         lnk=`readlink -f $olddir/src/astaroth/submodule/build/src/core/kernels/libkernels.so`
         if [ "$lnk" != "" ]; then ln -s  $lnk ./astaroth/submodule/build/src/core/kernels; fi
-        lnk=`readlink -f $olddir/src/astaroth/submodule/build/runtime_compilation/libacc_runtime_compiler.so`
-        if [ "$lnk" != "" ]; then ln -s  $lnk ./astaroth/submodule/build/runtime_compilation; fi
         lnk=`readlink -f $olddir/src/astaroth/submodule/build/acc-runtime/acc/acc`
         if [ "$lnk" != "" ]; then ln -s  $lnk ./astaroth/submodule/build/acc-runtime/acc; fi
 	#We don't want the new directory setup by pc_setupsrc but to link to the old one
@@ -256,10 +253,6 @@ if [ $same_source ]; then
       if [ -n "`ls $olddir/src/astaroth/submodule/build/src/core/*.so 2>/dev/null`" ]; then
         if [ ! -n "`ls astaroth/submodule/build/src/core 2>/dev/null`" ]; then mkdir -p astaroth/submodule/build/src/core ; fi
         cp -s $olddir/src/astaroth/submodule/build/src/core/*.so ./astaroth/submodule/build/src/core
-      fi
-      if [ -n "`ls $olddir/src/astaroth/submodule/build/runtime_compilation 2>/dev/null`" ]; then
-        if [ ! -n "`ls astaroth/submodule/build/runtime_compilation 2>/dev/null`" ]; then mkdir -p astaroth/submodule/build/runtime_compilation ; fi
-        cp -s $olddir/src/astaroth/submodule/build/runtime_compilation/libacc_runtime_compiler.so ./astaroth/submodule/build/runtime_compilation
       fi
       if [ -n "`ls $olddir/src/astaroth/submodule/build/src/core/kernels/*.so 2>/dev/null`" ]; then
         if [ ! -n "`ls astaroth/submodule/build/src/core/kernels 2>/dev/null`" ]; then mkdir -p astaroth/submodule/build/src/core/kernels ; fi
