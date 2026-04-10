@@ -167,7 +167,18 @@ if (defined $config_files) {
     if (defined $host_id) {
         $config_file = Pencil::ConfigFinder::find_config_file_for_host($host_id);
     } else {
-        $config_file = Pencil::ConfigFinder::find_config_file()
+	#On CSC machines and on Dardel pc_run finds the wrong configs 
+	#making it so that one has to always give explicitly the config to pc_run via -f.
+	#Thus I added this help to pc_run that it can always cheat and check which config pc_build used.
+	#I don't see any downsides to this, but please remove it if you find one.
+        if (-e "src/.config") {
+            open my $fh, "<", "src/.config" or die $!;
+            $config_file = do { local $/; <$fh> };
+            close $fh;
+        }
+	else {
+          $config_file = Pencil::ConfigFinder::find_config_file()
+	}
     }
     die "Fatal: Couldn't find config file.\n" unless (defined $config_file);
     push @config_files, $config_file;
