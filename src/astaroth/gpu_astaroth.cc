@@ -39,7 +39,7 @@ bool calculated_coeff_scales = false;
 
 // Astaroth headers
 #include "astaroth.h"
-#include "submodule/stdlib/fft.h"
+#include "fft.h"
 
 AcTaskGraph* GW_timestep_graph  =  NULL;
 AcTaskGraph* boundary_z_halo_exchange_graph =  NULL;

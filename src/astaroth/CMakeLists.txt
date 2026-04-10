@@ -125,9 +125,10 @@ add_definitions(-DAC_MPI_ENABLED=1)
 add_definitions(-DAC_DEFAULT_CONFIG="${CMAKE_SOURCE_DIR}/config/astaroth.conf")
 
 ## Includes
-include_directories(./submodule/include)                                  # Library headers
+include_directories($ENV{AC_HOME}/include) #Library headers
+include_directories($ENV{AC_HOME}/stdlib) #Astaroth C++ stdlib
 include_directories(./submodule/build/acc-runtime/api)
-include_directories(./submodule/acc-runtime/api)
+include_directories($ENV{AC_HOME}/acc-runtime/api)
 
 link_directories(./submodule/build/src/core)
 
