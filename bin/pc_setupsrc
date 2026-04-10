@@ -438,8 +438,6 @@ link_astaroth_files()
               $srcdir/astaroth/submodule/acc-runtime/acc \
               $srcdir/astaroth/submodule/acc-runtime/api \
               $srcdir/astaroth/submodule/acc-runtime/built-in \
-              $srcdir/astaroth/submodule/acc-runtime/samples/mhd/* \
-              $srcdir/astaroth/submodule/acc-runtime/samples/gputest/* \
               $srcdir/astaroth/submodule/src \
               $srcdir/astaroth/submodule/runtime_compilation
   do
