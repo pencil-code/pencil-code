@@ -222,14 +222,6 @@ if (defined $config_files) {
     $config_files=$config_file;
     push @config_files, $config_file;
     print STDERR "Found config file <$config_files[0]>\n" unless ($quiet);
-    #Store the config so for example pc_run can read it in later,
-    #since on CSC machines and on Dardel it can't find the right config
-    #without this help
-    if(not -e "src/.config") {
-      open my $fh, ">", "src/.config" or die $!;
-      print $fh "$config_files[0]";
-      close $fh;
-    }
 }
 die "No configuration file found\n" unless @config_files;
 
