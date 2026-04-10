@@ -33,7 +33,6 @@ module GPU
   external radtransfer_gpu_c
   external load_farray_c
   external reload_gpu_config_c
-  external test_rhs_c
   external copy_farray_c
   external update_on_gpu_arr_by_ind_c
   external update_on_gpu_scal_by_ind_c

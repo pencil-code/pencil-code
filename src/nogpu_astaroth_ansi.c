@@ -67,10 +67,6 @@ int FTNIZE(update_on_gpu_arr_by_name_c)(char *varname)
   return 0;
 }
 /* ------------------------------------------------------------------- */
-void FTNIZE(test_rhs_c)(REAL* f_in, REAL* df_truth)
-{
-}
-/* ------------------------------------------------------------------- */
 void FTNIZE(gpu_set_dt_c)(double* t)
 {
 }
