@@ -6405,7 +6405,7 @@ outer:do ikz=1,nz
       close(1)
       open(1,file=trim(datadir)//'/power_'//trim(sp)//'.dat',position='append')
       write(1,timestamp_format) tspec, real(t)
-      write(1,*) spectrum_sum
+      write(1,power_format) spectrum_sum
       close(1)
       open(1,file=trim(datadir)//'/Iv_bc_'//trim(sp)//'.dat',position='append')
       write(1,timestamp_format) tspec, real(t)
