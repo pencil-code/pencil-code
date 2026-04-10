@@ -55,6 +55,8 @@ FTNIZE(cond_init)()
 	assert(res == 0);
 }
 /* ------------------------------------------------------------------------------------ */
+//When this function is called the thread will not make progress until flag == val
+//and after that it will hold the lock associated with cond_handle
 void
 FTNIZE(cond_wait_single)(const int* cond_handle, volatile bool* flag, volatile bool* val)
 {
@@ -62,6 +64,8 @@ FTNIZE(cond_wait_single)(const int* cond_handle, volatile bool* flag, volatile b
    {
 	case DIAG_COND_HANDLE:
 	{
+	  //First has to acquire the lock corresponding to cond_handle
+	  //so will wait until the lock is free
           const int res = pthread_mutex_lock(&diag_mutex);
 	  if (res != 0)
 	  {
@@ -74,6 +78,9 @@ FTNIZE(cond_wait_single)(const int* cond_handle, volatile bool* flag, volatile b
 	    fflush(stdout);
 	    assert(res == 0);
 	  }
+	  //Here while flag != val the thread goes to sleep
+	  //and when it is woken up with an explicit signal it wakes up
+	  //checks condition and if it is not true goes back to sleep
 	  while (*flag != *val) pthread_cond_wait(&diag_cond, &diag_mutex);
 	}
 	return;
@@ -83,6 +90,8 @@ FTNIZE(cond_wait_single)(const int* cond_handle, volatile bool* flag, volatile b
    }
 }
 /* ------------------------------------------------------------------------------------ */
+//Same as above but one can give multiple conditions that should hold true at the same time
+//until the lock is acquired
 void
 FTNIZE(cond_wait_multi)(const int* cond_handle, volatile bool* flag, volatile bool* val, const int* n)
 {
@@ -90,6 +99,8 @@ FTNIZE(cond_wait_multi)(const int* cond_handle, volatile bool* flag, volatile bo
    {
 	case DIAG_COND_HANDLE:
 		{
+	  //First has to acquire the lock corresponding to cond_handle
+	  //so will wait until the lock is free
           const int res = pthread_mutex_lock(&diag_mutex);
 	  if (res != 0)
 	  {
@@ -108,6 +119,9 @@ FTNIZE(cond_wait_multi)(const int* cond_handle, volatile bool* flag, volatile bo
 
 	  while (!condition) 
 	  {
+	        //Here while flag[i] != val[i] the thread goes to sleep
+	        //and when it is woken up with an explicit signal it wakes up
+	        //checks condition and if it is not true goes back to sleep
 		pthread_cond_wait(&diag_cond, &diag_mutex);
 	        for (int i = 0; i < *n; ++i)
 		  condition &= flag[i] == val[i];
@@ -148,6 +162,7 @@ FTNIZE(cond_signal)(const int* cond_handle)
 	  assert(false); //Incorrect cond var handle
    }
 }
+//Gets the core id of the core the thread is running on
 int
 FTNIZE(get_cpu_c)()
 {
@@ -166,22 +181,4 @@ FTNIZE(set_cpu_c)(int* core_id_in)
     const int rc = pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
     return (bool)(1-rc);
 }
-
-void
-FTNIZE(cond_wait)(const int* cond_handle, volatile bool* flag, volatile bool* val)
-{
-   switch(*cond_handle)
-   {
-   case DIAG_COND_HANDLE:
-           pthread_mutex_lock(&diag_mutex);
-	   while(*flag != *val)
-		   pthread_cond_wait(&diag_cond, &diag_mutex);
-	   return;
-   default:
-	   printf("Incorrect cond var handle\n");
-	   assert(false); //Incorrect cond var handle
-   }
-}
-//}
-
 /* ---------------------------------------------------------------------------- */
