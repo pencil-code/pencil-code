@@ -3218,7 +3218,7 @@ Get_z:if (lroot) then
         !!$omp target if(loffload) !map(from: ierr,cum_mass) map(tofrom: SNR) & !needs: cloud_rho,lncloud_TT,preSN) &
         !!$omp        has_device_addr(f)  !globals: ip, irho,ilnrho,ilnTT,iss,ldensity_nolog
         !TP: this is not safe to multithread naively
-        !TP: if one want so multithread this then multithread the scan operation to calculate the CDF and after that pick the random
+        !    if one want so multithread this then multithread the scan operation to calculate the CDF and after that pick the random
         !number
         !!$omp  parallel do collapse(2) num_threads(num_helper_threads) private(dV,rho,lnTT,l,ipsn) &
         !!$omp reduction(+:cum_mass) firstprivate(lfound) !!!reduction unclear
@@ -3680,7 +3680,7 @@ mn_loop:do n=n1,n2
       SN_TT_ratio_max = SN_TT_ratio*TT_SN_max
       !$ lfound = .false.
       !TP: this is not safe to multithread naively
-      !TP: if one want so multithread this then multithread the scan operation to calculate the CDF and after that pick the random
+      !    if one want so multithread this then multithread the scan operation to calculate the CDF and after that pick the random
       !!$omp target if(loffload) !map(tofrom: SNR) has_device_addr(f)  ! needs:
       !irho,ilnrho,iss,ilnTT,frac_eth,dr2_SN,rfactor_SN,TT_SN_max, switches FG radius2mass, c_SN, width_energy, width_mass,&
       !irho_lnTT, irho_ss, irho_ee, SN_TT_ratio_max
@@ -4302,7 +4302,7 @@ mn_loop:do n=n1,n2
 !
     endsubroutine get_props_check
 !*****************************************************************************
-!TP: on comment since not used (to suppress compiler warnings)
+!    on comment since not used (to suppress compiler warnings)
 !    subroutine get_lowest_rho(f,SNR,radius,rho_lowest)   !needs dr2_SN
 !!
 !!  Calculate integral of mass cavity profile.
@@ -4340,7 +4340,7 @@ mn_loop:do n=n1,n2
 !!
 !    endsubroutine get_lowest_rho
 !*****************************************************************************
-!TP: on comment since not used (to suppress compiler warnings)
+!    On comment since not used (to suppress compiler warnings)
 !    subroutine proximity_OB(OB,outward_normal)    ! make pars: m,n, dr2_SN
 !!!$omp declare target device_type(host)   ! needs: x,y,z, L[xyz], lperi; gives: dr2_OB
 !!
@@ -4755,7 +4755,7 @@ mn_loop:do n=n1,n2
 !
     endfunction get_free_OB
 !*****************************************************************************
-!TP: on comment since not used (to suppress compiler warnings)
+!    On comment since not used (to suppress compiler warnings)
 !    subroutine free_OB(iOB)
 !!
 !      integer :: i,iOB
@@ -4774,7 +4774,7 @@ mn_loop:do n=n1,n2
 !!
 !    endsubroutine free_OB
 !*****************************************************************************
-!TP: on comment since not used (to suppress compiler warnings)
+!    On comment since not used (to suppress compiler warnings)
 !    subroutine tidy_OBs
 !!
 !      integer :: i

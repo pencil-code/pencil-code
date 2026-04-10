@@ -6293,7 +6293,7 @@ module Hydro
 !
     endsubroutine coriolis_spherical
 !***********************************************************************
-!TP: on comment since are not used (to suppress compiler warnings)
+!   On comment since are not used (to suppress compiler warnings)
 !    subroutine coriolis_spherical_del2p(f,p)
 !!
 !!  coriolis_spherical terms using spherical polars
@@ -6385,7 +6385,7 @@ module Hydro
 !
     endsubroutine coriolis_cylindrical
 !***********************************************************************
-!TP: on comment since not used (to suppress compiler warnings)
+!  On comment since not used (to suppress compiler warnings)
 !    subroutine coriolis_cylindrical_del2p(f,p)
 !!
 !!  Coriolis terms using cylindrical coords
@@ -7869,7 +7869,7 @@ module Hydro
 !
     endsubroutine get_slices_hydro
 !***********************************************************************
-!TP: on comment since not used (to suppress compiler warnings)
+!  On comment since not used (to suppress compiler warnings)
 !    function decomp_prepare() result (ldecomp)
 !!
 !!  Prepare for Helmholtz decomposition.

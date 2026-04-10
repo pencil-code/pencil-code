@@ -322,7 +322,7 @@ module Density
 !
   interface calc_pencils_linear_density
     module procedure calc_pencils_linear_density_pnc
-    !TP: this is never used
+    !This is never used so on comment to suppress compiler warnings
     !module procedure calc_pencils_linear_density_std
   endinterface calc_pencils_linear_density
 !

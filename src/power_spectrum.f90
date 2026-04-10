@@ -73,7 +73,7 @@ module Power_spectrum
   real :: L_min, L_min_xy
   integer :: nk_xyz, nk_xy, n_loc, m_loc
 !
-!TP: work buffers for power funcs
+!Work buffers for power funcs
 !TP: TODO allocate these at initialize func based on are they actually used
 !
   real, allocatable, dimension(:,:,:) :: a_re,a_im,b_re,b_im,c_re,c_im,d_re,d_im,h_re,h_im
@@ -1058,7 +1058,7 @@ outer:do ikz=1,nz
           if ( zrange(1,i) > 0 ) then
             do global_z_position=zrange(1,i), zrange(2,i), zrange(3,i)
               local_z_position = global_z_position - ipz*nz
-              !TP: if local_z_position is negative the correct position is below this process if greater than nz then above this process
+              !If local_z_position is negative the correct position is below this process if greater than nz then above this process
               if (local_z_position > 0 .and. local_z_position <= nz) &
                 call fft_xy_parallel(ar(:,:,local_z_position),ai(:,:,local_z_position))
             enddo
@@ -2435,7 +2435,7 @@ outer:do ikz=1,nz
 !
   endsubroutine powerLor
 !***********************************************************************
-!TP: on comment since not used (to suppress compiler warnings)
+!  On comment since not used (to suppress compiler warnings)
 !  subroutine powerLor_OLD(f,sp)
 !!
 !!  Calculate power and helicity spectra (on spherical shells) of the
@@ -7194,7 +7194,7 @@ outer:do ikz=1,nz
 !
   endsubroutine output_elements_by_range
 !***********************************************************************
-!TP: on comment since not used (to suppress compiler warnings)
+!  On comment since not used (to suppress compiler warnings)
 !  subroutine gather_and_output_by_range(data, kxrange, kyrange, zrange, label)
 !!
 !!   Gather data on root, slice it according to {kx,ky,z}range, and output it to a previously opened HDF5 file.

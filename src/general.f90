@@ -2130,7 +2130,7 @@ print*, 'rank,ipx,ipy,ipz, find_proc=',rank, ipx,ipy,ipz, find_proc_node_localty
 !
     endsubroutine tridag
 !***********************************************************************
-!TP: on comment since not used (to suppress compiler warnings)
+!    on comment since not used (to suppress compiler warnings)
 !    subroutine tridag_double(a,b,c,r,u,err)
 !!
 !!  Solves tridiagonal system.
@@ -5417,7 +5417,7 @@ endfunction
 !
     endfunction numeric_precision
 !***********************************************************************
-!TP: on comment since not used (to suppress compiler warnings)
+!    On comment since not used (to suppress compiler warnings)
 !    function detect_precision_of_binary(file,reclen) result(prec)
 !!
 !!  only correct for one subrecord only in record.
@@ -6434,7 +6434,7 @@ if (notanumber(source(:,is,js))) print*, 'source(:,is,js): iproc,j=', iproc, ipr
 !
     endfunction linspace
 !***********************************************************************
-!TP: on comment since not used (to suppress compiler warnings)
+!    On comment since not used (to suppress compiler warnings)
 !    subroutine newton_arr(x,func,add,fmax,dxmax,itmax)
 !!
 !!  Newton iteration for a 2d-array of decoupled nonlinear equations.

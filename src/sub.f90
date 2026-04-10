@@ -373,7 +373,7 @@ module Sub
 !
     endsubroutine max_mn
 !***********************************************************************
-!TP: on comment since not used (to suppress compiler warnings)
+!    On comment since not used (to suppress compiler warnings)
 !    subroutine mean_mn(a,res)
 !!
 !!  Successively calculate mean of a, which is supplied at each call.
@@ -478,7 +478,7 @@ module Sub
 
     endsubroutine meanyz_v
 !***********************************************************************
-!TP: on comment since not used (to suppress compiler warnings)
+!    on comment since not used (to suppress compiler warnings)
 !    subroutine rms_mn(a,res)
 !!
 !!  Successively calculate rms of a, which is supplied at each call.
@@ -514,7 +514,7 @@ module Sub
 !!
 !    endsubroutine rms_mn
 !***********************************************************************
-!TP: on comment since not used (to suppress compiler warnings)
+!    On comment since not used (to suppress compiler warnings)
 !    subroutine rms2_mn(a2,res)
 !!
 !!  Successively calculate rms of a, with a2=a^2 being supplied at each
@@ -646,7 +646,7 @@ module Sub
 !
     endsubroutine vec_dot_3tensor
 !***********************************************************************
-!TP: on comment since not used (to suppress compiler warnings)
+!    On comment since not used (to suppress compiler warnings)
 !    subroutine contract_jk3(a,c)
 !!
 !!  Contracts the jk of a_ijk.
@@ -1740,7 +1740,7 @@ module Sub
 
     endsubroutine div_tensor
 !***********************************************************************
-!TP: on comment since not used (to suppress compiler warnings)
+!    on comment since not used (to suppress compiler warnings)
 !    subroutine der_2nd(f,k,df,j)
 !
 !      real, dimension(mx,my,mz,mfarray), intent(in) :: f
@@ -1817,7 +1817,7 @@ module Sub
 
     endsubroutine der_4th_stag
 !***********************************************************************
-!TP: on comment since not used (to suppress compiler warnings)
+!    On comment since not used (to suppress compiler warnings)
 !    subroutine der_2nd_stag(f,k,df,j)
 !!
 !!  Calculates 1st order derivative by a 2nd order difference scheme from
@@ -3103,7 +3103,7 @@ module Sub
 !
 !      call der6(exp(f),k,f_der_exp,j)
 !
-!      !TP: untested analytical expression for now use the non-performant safe way
+!      !untested analytical expression for now use the non-performant safe way
 !      !call der(f,k,f_der1,j)
 !      !call der2(f,k,f_der2,j)
 !      !call der3(f,k,f_der3,j)
@@ -4127,7 +4127,7 @@ module Sub
       dt1_local=dt1_
       ! Timestep growth limiter
       if (ddt > 0.) dt1_local=max(dt1_local,dt1_last)
-!TP: When using the GPU the timestep has already been reduced across ranks.
+!    When using the GPU the timestep has already been reduced across ranks.
 !    Basically we try to squeeze out a bit of performance by overlapping the reduction
 !    with some computations
       if(lgpu) then
@@ -5218,7 +5218,7 @@ module Sub
 !
     endsubroutine coeff_ydep
 !***********************************************************************
-!TP: on comment since not used (to suppress compiler warnings)
+!  On comment since not used (to suppress compiler warnings)
 !    subroutine nan_inform(f,msg,region,int1,int2,int3,int4,lstop)
 !!
 !!  Check input array (f or df) for NaN, -Inf, Inf, and output location in
@@ -8497,7 +8497,7 @@ nameloop: do
 !
     endfunction minmod_alt
 !***********************************************************************
-!TP: on comment since not used (to suppress compiler warnings)
+!  On comment since not used (to suppress compiler warnings)
 !    subroutine calc_lin_interpol(f,j,fim12,fip12,k)
 !!
 !! Get values at half grid points l+1/2,m+1/2,n+1/2 depending on case(k)
@@ -9416,8 +9416,8 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
       has_nan_local = merge(1,0,any(f > huge_real .or. f /= f))
       !call mpireduce_max_int(has_nan_local,has_nan_global)
 
-      !TP: might as well check only locally and then call mpiabort to exit globally
-      !    saves some communication and is maybe a bit simpler
+      !Might as well check only locally and then call mpiabort to exit globally
+      !saves some communication and is maybe a bit simpler
       if (has_nan_local == 1) then
 
         if (.not. present(caller)) then

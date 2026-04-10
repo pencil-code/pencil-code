@@ -1117,6 +1117,11 @@ module Register
         call parse_name(iname,cname(iname),cform(iname),'timeperstep',idiag_timeperstep)
         call parse_name(iname,cname(iname),cform(iname),'eps_rkf',idiag_eps_rkf)
       enddo
+      if (idiag_dtv /= 0 .or. &
+          idiag_dtdiffus /= 0 .or. &
+          idiag_dtdiffus2 /= 0 .or. &
+          idiag_dtdiffus3 /= 0 .or. &
+          idiag_Rmesh /= 0 .or. idiag_Rmesh3 /=0) ltimestep_diagnostics = .true.
 !
 !  phi-averages
 !

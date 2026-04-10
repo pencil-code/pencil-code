@@ -310,7 +310,7 @@ module Equ
         endif
         start_time = real(mpiwtime())
         call rhs_gpu(f,itsub)
-!TP: should be done after rhs_gpu since if doing testing against cpu want to get the right value of dt
+!  Should be done after rhs_gpu since if doing testing against cpu want to get the right value of dt
         if (ldiagnostic_output) then
 !$        call save_diagnostic_controls
         endif
@@ -403,7 +403,7 @@ module Equ
 
       endif     ! if (.not. lgpu)
 
-      !TP: Update diagnostics controls which is done earlier when multithreading.
+      !    Update diagnostics controls which is done earlier when multithreading.
       !    I believe at least itdiagnos and dtdiagnos could be eliminated but not 
       !    worth the effort right now
       if (.not. lsubstepping_in_time .and. .not. lmultithread .and. lfirst) then
@@ -448,8 +448,9 @@ module Equ
 
       if (lspecial) call load_variables_to_gpu_special
       if (lhydro)   call load_variables_to_gpu_hydro
-      !TP: need to load it on the first substep where it is wrong!
+      !    Need to load it on the first substep where it is wrong!
       !    and the correct one after dt is calculated to be in sync with the CPU
+      !    This because we want to recreate the buggy behaviour in the short-stopping time approximation
       if (lgpu .and. (ldustvelocity .or. ldustdensity) .and. (itsub <= 2)) &
         call update_on_gpu(dt_beta_ts_index,'AC_dt_beta_ts__mod__cdata')
 
@@ -487,6 +488,14 @@ module Equ
       if (lvideo .and. lwrite_slices) call wvid(f)
 !
     endsubroutine write_diagnostics
+!***********************************************************************
+     !subroutine restrict_cores
+      !TP: example code to explicitly set and get cores the thread are running on
+      !    the flexible way to set this is with OMP_PROC_BIND=close,spread, but in case that fails one can be sure by using the code
+      !below
+!!$    if (omp_get_thread_num() /= 0) call set_cpu(core_ids(omp_get_thread_num()+1))
+      !print*,"omp_id,cpu_id,mpi_id: ",omp_get_thread_num(), get_cpu(), iproc
+     !endsubroutine restrict_cores
 !***********************************************************************
     subroutine init_reduc_pointers
 !
@@ -601,7 +610,7 @@ module Equ
         n=nn(imn)
         m=mm(imn)
 !
-!TP: for the moment calc_all_diagnostic_auxilaries does not support coarse grid
+!  For the moment calc_all_diagnostic_auxilaries does not support coarse grid
 !
 !  Skip points not belonging to coarse grid.
 !
@@ -666,17 +675,10 @@ module Equ
 !  Parallelization across all helper threads.
 !
       call init_reduc_pointers
-
-      !TP: if equ had an initialization routine this would fit there better
-      if (idiag_Rmesh /= 0 .or. idiag_Rmesh3 /=0 ) ltimestep_diagnostics = .true.
 !
 !  If doing diagnostics together with the GPU lupdate_courant_dt means to calculate some of the timestep diagnostics
 !
       if (lgpu) then
-        if (idiag_dtv /= 0 .or. &
-            idiag_dtdiffus /= 0 .or. &
-            idiag_dtdiffus2 /= 0 .or. &
-            idiag_dtdiffus3 /= 0) ltimestep_diagnostics = .true.
         lupdate_courant_dt = lcourant_dt .and. ltimestep_diagnostics
       endif
 
@@ -685,15 +687,12 @@ module Equ
 !$    call restore_diagnostic_controls
 !      
 !     TP: on some nvfortan compilers copyin does not seem to be enough to ensure diagnostic arrays are allocated
-!     TP: not sure was the copyin ever sufficient, but not that important since we can always explicitly check
+!         not sure was the copyin ever sufficient, but not that important since we can always explicitly check
 !$    if (.not. allocated(fname)) call allocate_diagnostic_arrays
       if (lchemistry) call chemistry_allocate_rhs_arrays
       lfirstpoint=.true.
-      !TP: example code to explicitly set and get cores the thread are running on
-      !TP: the flexible way to set this is with OMP_PROC_BIND=close,spread, but in case that fails one can be sure by using the code
-      !below
-!!$    if (omp_get_thread_num() /= 0) call set_cpu(core_ids(omp_get_thread_num()+1))
-      !print*,"omp_id,cpu_id,mpi_id: ",omp_get_thread_num(), get_cpu(), iproc
+
+      !call restrict_cores
 
       !$omp do
       do imn=1,nyz
@@ -708,7 +707,7 @@ module Equ
         n=nn(imn)
         m=mm(imn)
 !
-!TP: for the moment calc_all_module_diagnostics does not support coarse grid
+!  For the moment calc_all_module_diagnostics does not support coarse grid
 !
 !  Skip points not belonging to coarse grid.
 !
@@ -1429,7 +1428,7 @@ module Equ
 !
 !  Skip points not belonging to coarse grid.
 !
-        !TP: not active for the GPU
+        ! Not active for the GPU
         !lcoarse_mn=lcoarse.and.mexts(1)<=m.and.m<=mexts(2)
         !if (lcoarse_mn) then
         !  lcoarse_mn=lcoarse_mn.and.ninds(0,m,n)>0

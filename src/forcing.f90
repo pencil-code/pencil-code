@@ -4358,7 +4358,7 @@ module Forcing
 !
     endfunction calc_force_ampl
 !***********************************************************************
-!TP: on comment since not used (to suppress compiler warnings)
+!    On comment since not used (to suppress compiler warnings)
 !    subroutine forcing_hel_noshear(f)
 !!
 !!  add helical forcing function, using a set of precomputed wavevectors
@@ -4547,7 +4547,7 @@ module Forcing
 !!
 !    endsubroutine forcing_hel_noshear
 !***********************************************************************
-!TP: on comment since not used (to suppress compiler warnings)
+!    On comment since not used (to suppress compiler warnings)
 !    subroutine forcing_roberts(f)
 !!
 !!  add some artificial fountain flow
@@ -5595,7 +5595,7 @@ module Forcing
 !
     endsubroutine calc_pencils_forcing
 !***********************************************************************
-!TP: on comment since not used (to suppress compiler warnings)
+!    on comment since not used (to suppress compiler warnings)
 !    subroutine random_isotropic_KS_setup(initpower,kmin,kmax)
 !!
 !!  Produces random, isotropic field from energy spectrum following the
@@ -5992,7 +5992,7 @@ module Forcing
           !force(:,i2d2)=+fact*sin(k2d*x(l1:l2))*cos(k2d*y(m))
           !force(:,i2d3)= 0.
           !TP: wrote out in full to help transpilation
-          !TP: preserved l2dxz even though seems wrong in the sense that first second index is initialized and later zerod?
+          !    preserved l2dxz even though seems wrong in the sense that first second index is initialized and later zeroed?
           if (l2dxz) then
             force(:,2)=-fact*cos(k2d*x(l1:l2))*sin(k2d*y(m))
             force(:,1)=+fact*sin(k2d*x(l1:l2))*cos(k2d*y(m))

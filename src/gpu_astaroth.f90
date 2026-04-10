@@ -217,18 +217,9 @@ contains
       integer :: lrmv_int,lsubstepping_in_time_int
 !
       call keep_compiler_quiet(f)
-      !TP: pass int since integers are more compatible with C than logical to booleans
-      if (lrmv) then
-        lrmv_int = 1
-      else
-        lrmv_int = 0
-      endif
-      if(lsubstepping_in_time) then
-       lsubstepping_in_time_int = 1
-      else
-       lsubstepping_in_time_int = 0
-      endif
-
+      !transform to integers since they are more compatible with C than logical to booleans
+      lrmv_int = merge(1,0,lrmv)
+      lsubstepping_in_time_int = merge(1,0,lsubstepping_in_time)
       call before_boundary_gpu_c(lrmv_int,isubstep,t,lsubstepping_in_time_int)
 !
     endsubroutine before_boundary_gpu

@@ -699,7 +699,7 @@ module Mpicomm
 !
     endfunction index_to_iproc_comm
 !***********************************************************************
-!TP: on comment since not used (to suppress compiler warnings)
+!    On comment since not used (to suppress compiler warnings)
 !    subroutine set_cubed_sphere_neighbors
 !!
 !!  Cubed mesh
@@ -3241,7 +3241,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine mpirecv_real_arr3
 !***********************************************************************
-!TP: on comment since not used (to suppress compiler warnings)
+!    On comment since not used (to suppress compiler warnings)
 !    subroutine mpirecv_cmplx_arr3(bcast_array,nbcast_array,proc_src,tag_id,comm,nonblock)
 !!
 !!  Receive complex array(:,:,:) from other processor.
@@ -3452,7 +3452,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine mpisend_real_arr
 !***********************************************************************
-!TP: on comment since not used (to suppress compiler warnings)
+!    On comment since not used (to suppress compiler warnings)
 !    subroutine mpisend_real_arr_assumed(bcast_array,nbcast_array,offset,proc_rec,tag_id,comm)
 !!
 !!  Sends nbcast_array elements of real array bcast_array from position offset to other processor.
@@ -3523,7 +3523,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 
     endsubroutine mpirecv_real_arr_huge
 !***********************************************************************
-!TP: on comment since not used (to suppress compiler warnings)
+!    On comment since not used (to suppress compiler warnings)
 !    subroutine mpirecv_real_arr_assumed(bcast_array,nbcast_array,offset,proc_rec,tag_id,comm)
 !!
 !!  Receives nbcast_array elements of real array bcast_array at position offset from other processor.
@@ -3589,7 +3589,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine mpisend_real_arr3
 !***********************************************************************
-!TP: on comment since not used (to suppress compiler warnings)
+!    On comment since not used (to suppress compiler warnings)
 !    subroutine mpisend_cmplx_arr3(bcast_array,nbcast_array,proc_rec,tag_id,comm,nonblock)
 !!
 !!  Send real array(:,:,:) to other processor.

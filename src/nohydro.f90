@@ -431,7 +431,7 @@ module Hydro
 !
     endsubroutine hydro_after_boundary
 !***********************************************************************
-!TP: on comment since not used (to suppress compiler warnings)
+!    On comment since not used (to suppress compiler warnings)
 !    subroutine random_isotropic_KS_setup_tony(initpower,kmin,kmax)
 !!
 !!   produces random, isotropic field from energy spectrum following the
@@ -571,7 +571,7 @@ module Hydro
 !!
 !    endsubroutine random_isotropic_KS_setup_tony
 !***********************************************************************
-!TP: on comment since not used (to suppress compiler warnings)
+!    On comment since not used (to suppress compiler warnings)
 !    subroutine random_isotropic_KS_setup(initpower,kmin,kmax)
 !!
 !!   produces random, isotropic field from energy spectrum following the
@@ -1011,7 +1011,7 @@ module Hydro
 !
     endsubroutine hydro_clean_up
 !***********************************************************************
-!TP: on comment since not used (to suppress compiler warnings)
+!    On comment since not used (to suppress compiler warnings)
 !    subroutine find_umax(f,umax)
 !!
 !!  Dummy subroutine

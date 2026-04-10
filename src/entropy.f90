@@ -7581,7 +7581,7 @@ module Energy
 !
     endsubroutine get_slices_energy
 !***********************************************************************
-!TP: on comment since not used (to suppress compiler warnings)
+!   On comment since not used (to suppress compiler warnings)
 !    subroutine calc_heatcond_zprof(zprof_hcond,zprof_glhc)
 !!
 !!  Calculate z-profile of heat conduction for multilayer setup.
