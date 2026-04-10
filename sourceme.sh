@@ -113,17 +113,19 @@ if [ -d .git ]; then
 # Added -C flag to change the directory of the git command to $PENCIL_HOME
     git -C $PENCIL_HOME config pull.rebase true
 #
-# Enforce that all committers have set their email account and username in git before committing
 #
-    touch $PENCIL_HOME/.git/hooks/pre-commit
-    echo "#!/bin/sh
-name=\$(git config user.name)
-email=\$(git config user.email)
-if [ -z \"\$name\" ] || [ -z \"\$email\" ]; then
-  echo \"Error: Git user.name and user.email must be set before committing!!\"
-  exit 1
-fi" > $PENCIL_HOME/.git/hooks/pre-commit
-
-    chmod +x $PENCIL_HOME/.git/hooks/pre-commit
-
+# Enforce that all committers have set their email account and username in git before committing
+# 2024-Apr-10/Kishore: commented the following as it overwrites the user's pre-existing hooks. In general, it is not safe (and very impolite) to automatically add hooks to a user's local git repo. @Touko, as far as I know, git already enforces that the name and email are set (I also tested this on a new user account on may machine). What is the problem that you are trying to solve?
+# #
+#     touch $PENCIL_HOME/.git/hooks/pre-commit
+#     echo "#!/bin/sh
+# name=\$(git config user.name)
+# email=\$(git config user.email)
+# if [ -z \"\$name\" ] || [ -z \"\$email\" ]; then
+#   echo \"Error: Git user.name and user.email must be set before committing!!\"
+#   exit 1
+# fi" > $PENCIL_HOME/.git/hooks/pre-commit
+# 
+#     chmod +x $PENCIL_HOME/.git/hooks/pre-commit
+# 
 fi
