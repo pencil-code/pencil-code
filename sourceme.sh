@@ -97,6 +97,7 @@ if [ -z $_sourceme ]; then	# called for the first time?
   fi
 fi
 
+#TODO: should we be checking for "$PENCIL_HOME/.git" here?
 if [ -d .git ]; then
 #
 # Enforce basic pull policy to "rebase".
