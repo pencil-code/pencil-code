@@ -103,18 +103,18 @@ if [ -d .git ]; then
 # `git config get pull.rebase` and checking that it does not return "false"
 # I think the above has the advantage of also checking the value inherited from
 # the global config, if any.
-	if [[ `grep '^\srebase *= *false' .git/config` != "" ]]; then
-	echo !!!WARNING - you have \"rebase = false\" settings in your .git/config!!!
-	echo !!!Pull strategy should always be \"--rebase\" on all branches!!!
-    fi
+  if [[ `grep '^\srebase *= *false' .git/config` != "" ]]; then
+    echo !!!WARNING - you have \"rebase = false\" settings in your .git/config!!!
+    echo !!!Pull strategy should always be \"--rebase\" on all branches!!!
+  fi
 #
 # Enforce basic pull policy to "rebase".
 #
 # Added -C flag to change the directory of the git command to $PENCIL_HOME
-    git -C $PENCIL_HOME config pull.rebase true
+  git -C $PENCIL_HOME config pull.rebase true
 #
 # Prevent git from using an auto-generated email address if the email address has not been set
-    git -C $PENCIL_HOME config user.useConfigOnly true
+  git -C $PENCIL_HOME config user.useConfigOnly true
 #
 #
 # Enforce that all committers have set their email account and username in git before committing
