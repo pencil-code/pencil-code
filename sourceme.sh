@@ -98,19 +98,13 @@ if [ -z $_sourceme ]; then	# called for the first time?
 fi
 
 if [ -d .git ]; then
-# 2025-Nov-11/Kishore: Matthias, I think it would be cleaner to check the config
-# value by running
-# `git config get pull.rebase` and checking that it does not return "false"
-# I think the above has the advantage of also checking the value inherited from
-# the global config, if any.
-  if [[ `grep '^\srebase *= *false' .git/config` != "" ]]; then
-    echo !!!WARNING - you have \"rebase = false\" settings in your .git/config!!!
-    echo !!!Pull strategy should always be \"--rebase\" on all branches!!!
-  fi
 #
 # Enforce basic pull policy to "rebase".
 #
-# Added -C flag to change the directory of the git command to $PENCIL_HOME
+  if [[ "$(git config get pull.rebase)" = "false" ]]; then
+    echo !!!WARNING - you have \"rebase = false\" settings in your .git/config!!!
+    echo !!!Pull strategy should always be \"--rebase\" on all branches!!!
+  fi
   git -C $PENCIL_HOME config pull.rebase true
 #
 # Prevent git from using an auto-generated email address if the email address has not been set
