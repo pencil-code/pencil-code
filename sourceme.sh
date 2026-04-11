@@ -105,6 +105,7 @@ if [ -n "$PENCIL_HOME" -a -d "$PENCIL_HOME/.git" ]; then
   if [[ "$(git config get pull.rebase)" = "false" ]]; then
     echo !!!WARNING - you have \"rebase = false\" settings in your .git/config!!!
     echo !!!Pull strategy should always be \"--rebase\" on all branches!!!
+    echo !!!Changing it to \"true\"!!!
   fi
   git -C $PENCIL_HOME config pull.rebase true
 #
