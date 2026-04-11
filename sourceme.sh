@@ -1,6 +1,7 @@
 #
 #  This file tries to set the PENCIL_HOME environment variable if it
 #  doesn't exist yet, and then adds stuff to your PATH and IDL_PATH.
+#  If you are using Git, it also modifies the Git configuration.
 #
 #  If _sourceme_quiet is set, no output is printed, which enables you to
 #  put the lines
