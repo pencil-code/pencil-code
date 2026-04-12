@@ -1502,6 +1502,7 @@ module Special
       call copy_addr(je_heating_factor,p_par(46))
       call copy_addr(va_limit,p_par(47))
 
+    call copy_addr(lohmic_heating_ee,p_par(48)) ! bool
     endsubroutine pushpars2c
 !***********************************************************************
 !
