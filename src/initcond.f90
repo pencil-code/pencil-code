@@ -6204,7 +6204,8 @@ module Initcond
       real, dimension (:,:,:), allocatable :: k1, r
       real, dimension (:), allocatable :: kx, ky, kz
       real :: ampl, ampl_scaled, kpeak, deriv_prefactor, scale_factor=1.,ksteepness=5.
-      logical :: linv=.true., lappy_BD_k1D_factor
+      logical :: linv=.true.
+      logical, optional :: lappy_BD_k1D_factor
 !
       if (ampl==0.) then
         if (lroot) print*,'bunch_davies: do nothing with variables i1a,i1b,i2a,i2b=',i1a,i1b,i2a,i2b
@@ -6216,7 +6217,7 @@ module Initcond
 !  But with this factor included, the spectra become independent of k1.
 !
       scale_factor=2*pi/Lx
-      if (lappy_BD_k1D_factor) then
+      if (loptest(lappy_BD_k1D_factor)) then
         ampl_scaled=ampl*scale_factor**1.5
       else
         ampl_scaled=ampl
