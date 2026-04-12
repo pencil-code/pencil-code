@@ -68,7 +68,7 @@ module Power_spectrum
   integer, dimension(:), allocatable :: k2s
   integer :: nk_truebin=0
   logical :: lpowerdat_existed=.false.
-  logical :: lcorrect_integer_kcalc=.false.
+  logical :: lcorrect_integer_kcalc=.false.  !PAR_DOC: use k=i-N/2 instead of i-(N+1)/2.
   logical :: lpdf_2d_variable_range=.false.
   real :: L_min, L_min_xy
   integer :: nk_xyz, nk_xy, n_loc, m_loc
@@ -6945,7 +6945,7 @@ outer:do ikz=1,nz
 !   x-component of the wave vector, defined here for the *full* mesh.
 !   Each processor will see only part of it.
 !   Ignore *2*pi/Lx factor, because later we want k to be integers.
-!   The implementation here is correct only for cubical domains (in new code,
+!   The implementation here is correct only for cubic domains (in new code,
 !   try to use get_k2 or get_k2_xy instead).
 !
 !   18-nov-2025/TP: coded

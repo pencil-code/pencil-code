@@ -136,6 +136,7 @@ module Special
   logical :: lheating=.false.            !PAR_DOC: heating criterion
   logical :: ldefine_a2rhopm_without_Vpotential=.false.    !PAR_DOC: should be false to have correct results
   logical :: la2rhop_wrong_factor=.false. !PAR_DOC: should be false to have correct results
+  logical :: lappy_BD_k1D_factor=.false. !PAR_DOC: appy $k_1^D$ factor in the Bunch-Davies initial condition.
   logical, pointer :: lphi_hom, lphi_linear_regime, lnoncollinear_EB, lnoncollinear_EB_aver
   logical, pointer :: lcollinear_EB, lcollinear_EB_aver, lmass_suppression
   logical, pointer :: lallow_bprime_zero
@@ -156,7 +157,7 @@ module Special
       lrho_rad, init_rho_rad, lwstate_accum, Gamma_phi0, lconf_time, &
       echarge_type, init_rho_chi, rho_chi_init, lrho_chi_inhom, rhophim_crit, &
       wstate_crit, lwstate_crit, lwstate_crit_old, wstate_tolerance, wstate_aver_prev, heating_choice, &
-      ldefine_a2rhopm_without_Vpotential, la2rhop_wrong_factor
+      ldefine_a2rhopm_without_Vpotential, la2rhop_wrong_factor, lappy_BD_k1D_factor
 !
   namelist /special_run_pars/ &
       initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
@@ -320,7 +321,7 @@ module Special
 !  initialise special condition; called from start.f90
 !  06-oct-2003/tony: coded
 !
-      use Initcond, only: gaunoise, sinwave_phase, hat, power_randomphase_hel, power_randomphase, bunch_davies!, bunch_davies2
+      use Initcond, only: gaunoise, sinwave_phase, hat, power_randomphase_hel, power_randomphase, bunch_davies
       use Mpicomm, only: mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -406,18 +407,20 @@ module Special
 !
 !  For Bunch-Davies, the amplitude Hubble_ini is used.
 !  We apply this optionally here also to the gauge field.
+!  The amplitudes amplphi and amplee_BD_prefactor should be unity in theory.
 !
           case ('Bunch-Davies')
             if (lroot) print*,'Hubble_ini=',Hubble_ini
             amplphi_BD=amplphi*Hubble_ini
             deriv_prefactor=1.
             call bunch_davies(f,iinfl_phi,iinfl_phi,iinfl_dphi,iinfl_dphi, &
-                              amplphi_BD,kpeak_phi,deriv_prefactor)
+                              amplphi_BD,kpeak_phi,deriv_prefactor,lappy_BD_k1D_factor)
             if (amplee_BD_prefactor/=0.) then
               amplee_BD=amplee_BD_prefactor*Hubble_ini
               if (iex>0) then
                 deriv_prefactor=deriv_prefactor_ee
-                call bunch_davies(f,iax,iaz,iex,iez,amplee_BD,kpeak_phi,deriv_prefactor)
+                call bunch_davies(f,iax,iaz,iex,iez, &
+                  amplee_BD,kpeak_phi,deriv_prefactor,lappy_BD_k1D_factor)
               else
                 deriv_prefactor=0.
               ! call bunch_davies2(f,iax,iaz,amplee_BD,kpeak_phi)

@@ -65,6 +65,7 @@ module Special
   logical :: lvectorpotential=.false.
   logical :: lphi_hom=.false., lphi_linear_regime=.false.   !AB: these variables should have been defined in backreaction.
   logical :: lpsi_hom=.false.
+  logical :: lohmic_heating_ee=.true.   !PAR_DOC: just positive definite part of heating.
   logical :: lno_noise_ee=.false., lnoncollinear_EB=.false., lnoncollinear_EB_aver=.false.
   logical :: lcollinear_EB=.false., lcollinear_EB_aver=.false.
   logical :: leedot_as_aux=.false., lcurlyA=.true., lsolve_chargedensity=.false.
@@ -111,7 +112,7 @@ module Special
     reinitialize_ee, initee, rescale_ee, lmass_suppression, mass_chi, &
     lallow_bprime_zero, lapply_Gamma_corr, coupl_gy, lpsi_hom, alpfpsi, &
     loverride_c_light, ldensity_add_je_heating, je_heating_factor, &
-    llorentzforce_ee, aderiv_scaling, vA_limit
+    llorentzforce_ee, aderiv_scaling, vA_limit, lohmic_heating_ee
 !
 ! Declare any index variables necessary for main or
 !
@@ -1104,7 +1105,12 @@ module Special
 !
       if (ldensity .and. ldensity_add_je_heating) then
         if (ldisp_current) then
-          call dot(p%jj,p%el,tmp)
+          if (lohmic_heating_ee) then
+            call dot2_mn(p%jj,tmp)
+            tmp=tmp/p%sigE
+          else
+            call dot(p%jj,p%el,tmp)
+          endif
           if (je_heating_factor/=1.) tmp=tmp*je_heating_factor
           df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+tmp*p%rho1
         else

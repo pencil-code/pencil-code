@@ -6189,10 +6189,11 @@ module Initcond
 !
     endsubroutine power_randomphase_hel
 !***********************************************************************
-    subroutine bunch_davies(f,i1a,i1b,i2a,i2b,ampl,kpeak,deriv_prefactor)
+    subroutine bunch_davies(f,i1a,i1b,i2a,i2b,ampl,kpeak,deriv_prefactor,lappy_BD_k1D_factor)
 !
 !  21-mar-25/axel: adapted from power_randomphase_hel
 !  21-may-25/axel: when kpeak<0, interpret is as sharp cutoff; powerlaw otherwise.
+!  12-apr-26/axel: added lappy_BD_k1D_factor, hardwired linv=T (indep of N, F -> scales with N^6 in 3-D)
 !
       use Fourier, only: fft_xyz_parallel
       use General, only: loptest, roptest
@@ -6202,13 +6203,23 @@ module Initcond
       real, dimension (:,:,:,:), allocatable :: u_re, u_im, v_re, v_im
       real, dimension (:,:,:), allocatable :: k1, r
       real, dimension (:), allocatable :: kx, ky, kz
-      real :: ampl, kpeak, deriv_prefactor, scale_factor=1.,ksteepness=5.
+      real :: ampl, ampl_scaled, kpeak, deriv_prefactor, scale_factor=1.,ksteepness=5.
+      logical :: linv=.true., lappy_BD_k1D_factor
 !
       if (ampl==0.) then
-        if (lroot) print*,'bunch_davies: set variables to zero; i1a,i1b,i2a,i2b=',i1a,i1b,i2a,i2b
-        !f(:,:,:,i1a:i1b) = 0.
-        !f(:,:,:,i2a:i2b) = 0.
+        if (lroot) print*,'bunch_davies: do nothing with variables i1a,i1b,i2a,i2b=',i1a,i1b,i2a,i2b
         return
+      endif
+!
+!  Apply lappy_BD_k1D_factor. Note that what we call here scale_factor is the same as k1.
+!  Note also that this factor is here the other way around than in Caranano's thesis.
+!  But with this factor included, the spectra become independent of k1.
+!
+      scale_factor=2*pi/Lx
+      if (lappy_BD_k1D_factor) then
+        ampl_scaled=ampl*scale_factor**1.5
+      else
+        ampl_scaled=ampl
       endif
 !
 !  Allocate memory for arrays r and k1.
@@ -6242,7 +6253,6 @@ module Initcond
 !
 !  Scale factors if box size is not 2*pi
 !
-      scale_factor=2*pi/Lx
       kx=cshift((/(i-idiv(nxgrid,2),i=0,nxgrid-1)/),idiv(nxgrid,2))*scale_factor
       if (lroot.and.ip<10) print*,'AXEL: kx=',kx
 !
@@ -6291,22 +6301,6 @@ module Initcond
       endif
       if (lroot) k1(1,1,1) = 1.  ! To avoid division by zero.
 !
-!  Put cutoff at kpeak in v_im.
-!
-!     if (kpeak<0.) then
-!       where(k1>=abs(kpeak))
-!         v_im(:,:,:,1)=0.
-!         v_im(:,:,:,2)=0.
-!         v_im(:,:,:,3)=0.
-!       endwhere
-!     else
-!       where(k1>=kpeak)
-!         v_im(:,:,:,1)=v_im(:,:,:,1)*(kpeak/k1)**3
-!         v_im(:,:,:,2)=v_im(:,:,:,2)*(kpeak/k1)**3
-!         v_im(:,:,:,3)=v_im(:,:,:,3)*(kpeak/k1)**3
-!       endwhere
-!     endif
-!
 !  Compute Bunch-Davies vacuum, A = e^(-i*k*eta)/sqrt(2*k), so
 !  E = -dA/deta = +i*k*e^(-i*k*eta)/sqrt(2*k) = i*e^(-i*k*eta)*sqrt(k/2)
 !  Here, v_im serves as a temporary array until the last line.
@@ -6315,22 +6309,24 @@ module Initcond
 !  exp(-i*k1) = cos(-i*k1) + i*sin(-i*k1)
 !
       do i=1,1+i1b-i1a
-        !u_re(:,:,:,i)=+ampl*v_im(:,:,:,i)*cos(-k1)/sqrt(k1*2.)
-        !u_im(:,:,:,i)=+ampl*v_im(:,:,:,i)*sin(-k1)/sqrt(k1*2.)
-        u_re(:,:,:,i)=+ampl*v_re(:,:,:,i)/sqrt(2.*k1)*.5*(1.-tanh(ksteepness*(k1/kpeak-1.)))
-        u_im(:,:,:,i)=+ampl*v_im(:,:,:,i)/sqrt(2.*k1)*.5*(1.-tanh(ksteepness*(k1/kpeak-1.)))
-        v_re(:,:,:,i)=-k1*u_im(:,:,:,i)
-        v_im(:,:,:,i)=+k1*u_re(:,:,:,i)
+        u_re(:,:,:,i)=+ampl_scaled*v_re(:,:,:,i)/sqrt(2.*k1)*.5*(1.-tanh(ksteepness*(k1/kpeak-1.)))
+        u_im(:,:,:,i)=+ampl_scaled*v_im(:,:,:,i)/sqrt(2.*k1)*.5*(1.-tanh(ksteepness*(k1/kpeak-1.)))
+        if (i2a>0) then
+          v_re(:,:,:,i)=-k1*u_im(:,:,:,i)
+          v_im(:,:,:,i)=+k1*u_re(:,:,:,i)
+        endif
       enddo
 !
 !  Fourier transform to real space.
 !
       do i=1,1+i1b-i1a
-        call fft_xyz_parallel(u_re(:,:,:,i),u_im(:,:,:,i),linv=.true.)
-        call fft_xyz_parallel(v_re(:,:,:,i),v_im(:,:,:,i),linv=.true.)
+        call fft_xyz_parallel(u_re(:,:,:,i),u_im(:,:,:,i),linv=linv)
+        if (i2a>0) &
+          call fft_xyz_parallel(v_re(:,:,:,i),v_im(:,:,:,i),linv=linv)
       enddo
 !
-!  Use real parts of u and v for A and E.
+!  Use real parts of u and v for A and E. But do the second part only if
+!  the prefactor is different from zero.
 !
       f(l1:l2,m1:m2,n1:n2,i1a:i1b)=f(l1:l2,m1:m2,n1:n2,i1a:i1b)+u_re
       f(l1:l2,m1:m2,n1:n2,i2a:i2b)=f(l1:l2,m1:m2,n1:n2,i2a:i2b)+v_re*deriv_prefactor
