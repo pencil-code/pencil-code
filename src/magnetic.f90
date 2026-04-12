@@ -4625,26 +4625,26 @@ module Magnetic
             p%jj=mu01*p%curlb
             p%jj_ohm=0.
           endif
-        endif
 !
 !  Add external j-field.
 !
-        do j=1,3
-          if (iglobal_jext(j)/=0) p%jj(:,j)=p%jj(:,j)+f(l1:l2,m,n,iglobal_jext(j))
-        enddo
+          do j=1,3
+            if (iglobal_jext(j)/=0) p%jj(:,j)=p%jj(:,j)+f(l1:l2,m,n,iglobal_jext(j))
+          enddo
 !
 !  Add an external J-field (for the Bell instability).
 !
-        if (lJ_ext) then
-          if (J_ext_quench/=0) then
-            quench=1./(1.+J_ext_quench*p%b2)
-            do j=1,3
-              p%jj(:,j)=p%jj(:,j)-J_ext(j)*quench
-            enddo
-          else
-            do j=1,3
-              p%jj(:,j)=p%jj(:,j)-J_ext(j)
-            enddo
+          if (lJ_ext) then
+            if (J_ext_quench/=0) then
+              quench=1./(1.+J_ext_quench*p%b2)
+              do j=1,3
+                p%jj(:,j)=p%jj(:,j)-J_ext(j)*quench
+              enddo
+            else
+              do j=1,3
+                p%jj(:,j)=p%jj(:,j)-J_ext(j)
+              enddo
+            endif
           endif
         endif
       endif
