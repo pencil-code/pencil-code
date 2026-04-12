@@ -1851,6 +1851,9 @@ module Magnetic
                            trim(iresistivity(i)))
         endselect
       enddo
+
+      if (lresi_eta_xtdep) call fatal_error('initialize_magnetic', &
+               'lresi_eta_tdep must be false if lresi_eta_xtdep is true')
 !
 !  The case tdep_eta_type='mean-field' is related to Schwinger effect, not to mean-field electrodynamics.
 !
@@ -4541,39 +4544,28 @@ module Magnetic
 !
           if (lresi_eta_tdep .or. lresi_eta_xtdep .or. lresi_hyper2_tdep .or. lresi_hyper3_tdep) then
             call get_eta_t_and_xtdep(f,p)
-!
-!  endif from lresi_eta_tdep
-!
           endif
-        endif
 !
 !  Check whether or not the displacement current is being computed.
 !  When iex>0, eta_total is not yet set, so we must do it here.
 !  Note, however, that p%jj_ohm can also be computed in disp_current,
 !  so we must not overwrite it here.
 !
-        if (ldisp_current) then
-          if (lresi_eta_tdep) then
-            if (lresi_eta_xtdep) call fatal_error('calc_pencils_magnetic_pencpar', &
-                'lresi_eta_tdep must be false if lresi_eta_xtdep is true')
-            eta_total=eta_tdep
-          elseif (lresi_eta_xtdep) then
-            eta_total=eta_xtdep
-          else
+          if (ldisp_current) then
+            if (lresi_eta_tdep) then
+              eta_total=eta_tdep
+            elseif (lresi_eta_xtdep) then
+              eta_total=eta_xtdep
+            else
 !
 !  Must not overwrite jj_ohm here.
 !  Need to check that it is still always initialized.
 !
-            !p%jj=0.
-            !p%jj_ohm=0.
-            eta_total=eta
-          endif
+              !p%jj=0.
+              !p%jj_ohm=0.
+              eta_total=eta
+            endif
 !
-          if (lvacuum) then
-            p%jj=0.
-            p%jj_ohm=0.
-            eta_total=huge1
-          else
 !
 !  The Ohm's current is independent of loverride_ee2, etc.
 !  AB: eta_total and the rest are pencils, but it complains about inconsistent ranks. So I put (1).
@@ -4625,14 +4617,14 @@ module Magnetic
 !
               p%jj=p%jj_ohm
             endif
-          endif
-        else
+          else
 !
 !  Go here in standard MHD if no displacement current exists.
 !  In that case, no ohmic current is needed or used and p%jj is set to mu01*p%curlb.
 !
-          p%jj=mu01*p%curlb
-          p%jj_ohm=0.
+            p%jj=mu01*p%curlb
+            p%jj_ohm=0.
+          endif
         endif
 !
 !  Add external j-field.
