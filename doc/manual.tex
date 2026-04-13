@@ -2432,7 +2432,7 @@ As a rule of thumb, if the sample only requires the following features it can be
   \item Fourier transforms (requires handwritten modifications to add new physics).
 \end{itemize}
 \subsubsection{Runtime compilation}
-\label{runtime_compilation}
+\label{runtime-compilation}
 As stated normal usage of GPUs requires compilation during the running of the setup.
 This is because the code as is with its large number of conditionals would not be performant on the GPUs because for performance Astaroth needs to know at compile-time which stencils are used. Compiling after the parameters have been chosen fixes the problem. 
 
