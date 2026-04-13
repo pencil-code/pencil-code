@@ -1347,7 +1347,12 @@ module Energy
           call fatal_error('initialize_energy','no such cooling_profile: '//trim(cooling_profile))
         endselect
         profz_cool = cool*profz_cool
-        profz1_cool = cool1*profz1_cool
+
+        !TP: profz1_cool does not a defined value if cooling_profile is not volheat_surfcool
+        !    so will get error when debug flags are enabled if I don't mask this computation
+        if(cooling_profile == 'volheat_surfcool') then
+          profz1_cool = cool1*profz1_cool
+        endif
 
         if (luminosity/=0.0) then
 !
