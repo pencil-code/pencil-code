@@ -544,7 +544,7 @@ endsubroutine helper_loop
 !
     if (lboussinesq) call boussinesq(f)
 !
-    if (lroot) icount=icount+1  !  reliable loop count even for premature exit
+    icount=icount+1  !  reliable loop count even for premature exit
 !
 !  Update time averages and time integrals.
 !
@@ -1262,9 +1262,9 @@ endsubroutine helper_loop
       call pencil_consistency_check(f,df,p)
     endif
   endif
-  it = it_save
-  !TP: for now before it is agreed on zero it to effectively not make it persistent
-  it = 0
+  if(it_save > 0) it = it_save
+  !TP: for now before it is agreed on set it to 1 to effectively not make it persistent
+  it = 1
 !
 !  Globally catch eventual 'stop_it_if_any' call from single MPI ranks
 !
@@ -1307,8 +1307,8 @@ endsubroutine helper_loop
 !  Initialize timestep diagnostics during the run (whether used or not,
 !  see idiag_timeperstep).
 !
+      icount=0
       if (lroot) then
-        icount=0
         it_last_diagnostic=icount
         time1=real(mpiwtime())
         time_last_diagnostic=time1
