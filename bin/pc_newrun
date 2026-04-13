@@ -221,10 +221,11 @@ if [ $same_source ]; then
         if [ "$lnk" != "" ]; then ln -s  $lnk ./astaroth/submodule/build/src/core/kernels; fi
         lnk=`readlink -f $olddir/src/astaroth/submodule/build/acc-runtime/acc/acc`
         if [ "$lnk" != "" ]; then ln -s  $lnk ./astaroth/submodule/build/acc-runtime/acc; fi
-	#We don't want the new directory setup by pc_setupsrc but to link to the old one
+	#We don't want the new directory setup by pc_setupsrc but to copy to the old one
+	#We copy since DSL/local/boundconds.h can be different
 	rm -rf astaroth/DSL
         lnk=`readlink -f $olddir/src/astaroth/DSL`
-        if [ "$lnk" != "" ]; then ln -s  $lnk ./astaroth/DSL; fi
+        if [ "$lnk" != "" ]; then cp -r  $lnk ./astaroth; fi
 	ln -s $PENCIL_HOME/src/scripts .
       fi
       if [ -e $olddir/src/astaroth/submodule/build/runtime_build ]; then
@@ -233,6 +234,10 @@ if [ $same_source ]; then
         if [ "$lnk" != "" ]; then ln -s  $lnk ./astaroth/submodule/build/runtime_build/src/core; fi 
         lnk=`readlink -f $olddir/src/astaroth/submodule/build/runtime_build/src/core/kernels/libkernels.so`
         if [ "$lnk" != "" ]; then ln -s  $lnk ./astaroth/submodule/build/runtime_build/src/core/kernels; fi 
+        lnk=`readlink -f $olddir/src/astaroth/PC_moduleflags.h`
+        if [ "$lnk" != "" ]; then ln -s  $lnk ./astaroth/PC_moduleflags.h; fi 
+        lnk=`readlink -f $olddir/src/*_c.h`
+        if [ "$lnk" != "" ]; then ln -s  $lnk .; fi 
 	cp $olddir/src/astaroth/submodule/build/runtime_build/previous_cmake_options ./astaroth/submodule/build/runtime_build
 	cp $olddir/src/astaroth/submodule/build/runtime_build/overrides.h ./astaroth/submodule/build/runtime_build
       fi

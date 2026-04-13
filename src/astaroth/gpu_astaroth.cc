@@ -440,6 +440,13 @@ void setupConfig(AcMeshInfo& config)
   //We do this because changing where the compiler path would kick in unnecessary recompilations.
   config.acc_compiler_path = ACC_COMPILER_PATH;
 
+  sprintf(build_path,"%s/src/astaroth",get_cwd());
+  //This is here to skip the unnecessary make in case we run pc_newrun -s
+  if(strcmp(build_path,ORIGINAL_BUILD_PATH))
+  {
+	  config.runtime_compilation_skip_make_if_nothing_has_changed = true;
+  }
+
 }
 /***********************************************************************************************/
 //TP: x,y and z macros are too general

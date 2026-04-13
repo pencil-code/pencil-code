@@ -178,5 +178,6 @@ endif()
 
 target_link_libraries(astaroth_${PREC} astaroth_core)
 target_compile_definitions(astaroth_${PREC} PRIVATE
+   ORIGINAL_BUILD_PATH="${CMAKE_CURRENT_SOURCE_DIR}"
    ACC_COMPILER_PATH="${CMAKE_CURRENT_SOURCE_DIR}/submodule/build/acc-runtime/acc/acc"
 )

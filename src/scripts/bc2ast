@@ -16,7 +16,7 @@ sed -e'/select  *case  *(bc'$1'12/,/end *select/ ! d' \
     -e'/^ *!/ d' \
     -e's/^ *case(\([^)]\)) *$/\1/' \
     -e's/^ *call  *\(.*\) *$/\1/' \
-    -e'/case.*'nil'/,$ d' boundcond.f90 > tmp
+    -e'/case.*'nil'/,$ d' $PENCIL_HOME/src/boundcond.f90 > tmp
 }
 #
 function make_ac_bound_cond()
