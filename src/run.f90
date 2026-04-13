@@ -1262,9 +1262,7 @@ endsubroutine helper_loop
       call pencil_consistency_check(f,df,p)
     endif
   endif
-  if(it_save > 0) it = it_save
-  !TP: for now before it is agreed on set it to 1 to effectively not make it persistent
-  it = 1
+  if(lpersistent_it .and. it_save > 0) it = it_save
 !
 !  Globally catch eventual 'stop_it_if_any' call from single MPI ranks
 !

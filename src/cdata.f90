@@ -676,6 +676,8 @@ module Cdata
 
   integer, target :: m,n
   integer :: nt=10000000, it=0, itorder=3, itsub=0, it_timing=0, it_rmv=0
+  !Whether it should persist between restarts
+  logical :: lpersistent_it =.false.
   logical :: ltiming_io=.false.
   logical :: lwrite_slices=.false., lwrite_1daverages=.false., lwrite_2daverages=.false.
   logical :: lwrite_tracers=.false., lwrite_fixed_points=.false.

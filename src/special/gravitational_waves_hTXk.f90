@@ -89,6 +89,7 @@ module Special
   implicit none
 !
   include '../special.h'
+  include '../record_types.h'
 !
 ! Declare index of new variables in f array (if any).
 !
@@ -159,6 +160,10 @@ module Special
   integer :: boost_method=2
   logical :: lsplit_GW_rhs_from_rest_on_gpu=.true.
   integer :: ntimesteps_per_GW_step=1
+!
+! Accumulated dt for gravitational wave update.
+!
+      real :: dt_GW=0.0
 !
 ! input parameters
 !
@@ -641,7 +646,12 @@ module Special
 !
       call keep_compiler_quiet(f)
 !
-        appa_om_init = appa_om
+      appa_om_init = appa_om
+
+!It has to be persistent in this case to avoid restarts
+!from messing updates across multiple timesteps
+      if(ntimesteps_per_GW_step > 1) lpersistent_it = .true.
+
     endsubroutine initialize_special
 !***********************************************************************
     subroutine read_pulsar_data
@@ -1384,7 +1394,6 @@ module Special
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       real, intent(in) :: dt_
       logical, intent(in) :: llast
-      real, save :: dt_GW=0.0
 !
 !  Compute the transverse part of the stress tensor by going into Fourier space.
 !
@@ -1402,6 +1411,39 @@ module Special
       call keep_compiler_quiet(dt_)
 !
     endsubroutine special_after_timestep
+!***********************************************************************
+    subroutine input_persist_special_id(id,done)
+!
+!  Read the accumulated dt for GW update
+!
+!  13-Apr-2026/TP: coded
+!
+
+!
+      use IO, only: read_persist
+!
+      integer :: id
+      logical :: done
+!
+      select case (id)
+        case (id_record_DT_GW)
+          if (read_persist ('DT_GW', dt_GW)) return
+      endselect
+!
+    endsubroutine input_persist_special_id
+!***********************************************************************
+    subroutine input_persist_special()
+!
+!  Read the accumulated dt for GW update
+!
+!  13-Apr-2026/TP: coded
+!
+      use IO, only: read_persist
+!
+      logical :: error
+!
+      error = read_persist ('DT_GW', dt_GW)
+    endsubroutine input_persist_special
 !***********************************************************************
     subroutine make_spectra(f)
 !
