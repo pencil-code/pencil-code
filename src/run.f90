@@ -364,7 +364,7 @@ endsubroutine helper_loop
 !
   if (lgpu .and. lcourant_dt .and. ldt) call gpu_set_dt()
 
-  Time_loop: do while (icount<=nt)
+  Time_loop: do while (icount<nt)
 !
 !  Possibility to turn off logspacing for time series output
 !
