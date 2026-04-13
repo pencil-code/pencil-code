@@ -364,7 +364,7 @@ endsubroutine helper_loop
 !
   if (lgpu .and. lcourant_dt .and. ldt) call gpu_set_dt()
 
-  Time_loop: do while (icount<nt)
+  Time_loop: do while (icount<=nt)
 !
 !  Possibility to turn off logspacing for time series output
 !
@@ -866,6 +866,7 @@ endsubroutine helper_loop
   logical :: lnoreset_tzero=.false.
   logical :: lprocbounds_exist
   integer, parameter :: num_helper_masters=1
+  integer :: it_save
 !$ integer :: i 
 !
   lrun = .true.
@@ -1250,6 +1251,7 @@ endsubroutine helper_loop
 !
 !  Perform pencil_case consistency check if requested.
 !
+  it_save = it 
   it = 1          ! needed for pencil check
   suppress_pencil_check = control_file_exists("NO-PENCIL-CHECK")
   if ( ((lpencil_check .and. .not. suppress_pencil_check) .or. &
@@ -1260,6 +1262,9 @@ endsubroutine helper_loop
       call pencil_consistency_check(f,df,p)
     endif
   endif
+  it = it_save
+  !TP: for now before it is agreed on zero it to effectively not make it persistent
+  it = 0
 !
 !  Globally catch eventual 'stop_it_if_any' call from single MPI ranks
 !
