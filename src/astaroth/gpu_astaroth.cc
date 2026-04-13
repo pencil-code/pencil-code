@@ -1077,17 +1077,14 @@ GW_update(const AcReal dt_gw)
 extern "C" void afterSubStepGPU()
 {
 	static AcReal dt_gw=0.0;
-	static int it_counter = 0;
 #if LGRAVITATIONAL_WAVES_HTXK
 	if (acDeviceGetInput(acGridGetDevice(), AC_step_num) == PC_FIRST_SUB_STEP)
 	{
-	   it_counter++;
 	   dt_gw += dt;
-	   if(it_counter == ntimesteps_per_gw_step__mod__gravitational_waves_htxk)
+	   if((it+1) % ntimesteps_per_gw_step__mod__gravitational_waves_htxk == 0)
 	   {
 	     GW_update(dt_gw);
 	     dt_gw = 0.0;
-	     it_counter = 0;
 	   }
 	   //Do this if you want to test the performance of overlapping GW FFTs with the normal RHS
 	   //Usually this has given subpar performance

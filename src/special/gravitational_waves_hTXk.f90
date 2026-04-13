@@ -1384,7 +1384,6 @@ module Special
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       real, intent(in) :: dt_
       logical, intent(in) :: llast
-      integer, save :: it_counter=0
       real, save :: dt_GW=0.0
 !
 !  Compute the transverse part of the stress tensor by going into Fourier space.
@@ -1393,11 +1392,9 @@ module Special
       call keep_compiler_quiet(llast)
       if (lfirst) then
         dt_GW = dt_GW + dt
-        it_counter = it_counter + 1
-        if(it_counter == ntimesteps_per_GW_step) then
+        if(mod(it+1,ntimesteps_per_GW_step) == 0) then
           call compute_gT_and_gX_from_gij(f,'St',dt_GW)
           dt_GW = 0.0
-          it_counter = 0
         endif
       endif
 !
