@@ -402,6 +402,7 @@ module PointMasses
       real, dimension(nqpar,3) :: positions
       real :: absolute_offset_star,baricenter_secondaries
       real :: velocity_baricenter_secondaries,mass_secondaries
+      real :: rr
       integer :: k,ks
 !
       intent (in) :: f
@@ -733,17 +734,18 @@ module PointMasses
         do k=1,nqpar
            if (lcartesian_coords) then
               !vr*cos(phi)-vphi*sin(phi)
-              fq(k,ivxq) = velocity(k,1)*cos(fq(k,iyq)) - velocity(k,2)*sin(fq(k,iyq))
+              rr=sqrt(fq(k,ixq)**2+fq(k,iyq)**2)
+              fq(k,ivxq) = velocity(k,1)*fq(k,ixq)/rr - velocity(k,2)*fq(k,iyq)/rr
               !vr*sin(phi)+vphi*cos(phi)
-              fq(k,ivxq) = velocity(k,1)*sin(fq(k,iyq)) + velocity(k,2)*cos(fq(k,iyq))
+              fq(k,ivyq) = velocity(k,1)*fq(k,iyq)/rr + velocity(k,2)*fq(k,ixq)/rr
               fq(k,ivzq) = velocity(k,3)
            elseif (lcylindrical_coords) then 
               fq(k,ivxq:ivzq) = velocity(k,1:3)
            elseif (lspherical_coords) then
               !vr*sin(phi)+vz*cos(phi)
-              fq(k,ivxq) = velocity(k,1)*sin(fq(k,iyq)) + velocity(k,3)*cos(fq(k,iyq))
+              fq(k,ivxq) = velocity(k,1)*sin(fq(k,izq)) + velocity(k,3)*cos(fq(k,izq))
               !vr*cos(phi)-vz*sin(phi)
-              fq(k,ivxq) = velocity(k,1)*cos(fq(k,iyq)) - velocity(k,3)*sin(fq(k,iyq))
+              fq(k,ivyq) = velocity(k,1)*cos(fq(k,izq)) - velocity(k,3)*sin(fq(k,izq))
               !vphi
               fq(k,ivzq) = velocity(k,2)
            endif
