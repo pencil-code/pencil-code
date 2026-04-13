@@ -157,6 +157,15 @@ my $log            = ($opts{'l'} || $opts{'log'}             || '');
 my $log_dir        = (              $opts{'log-dir'}         || '');
 
 my @config_files;
+#On CSC machines and on Dardel pc_run finds the wrong configs 
+#making it so that one has to always give explicitly the config to pc_run via -f.
+#Thus I read the config file that was used in pc_build
+#I don't see any downsides to this, but please remove it if you find one.
+if (!defined $config_files && -e "src/.config-files") {
+    open my $fh, "<", "src/.config-files" or die $!;
+    $config_files = do { local $/; <$fh> };
+    close $fh;
+}
 if (defined $config_files) {
     my @files = split(/[,\s\+]+/s, $config_files);
     @config_files = Pencil::ConfigFinder::locate_config_files(@files) ;
@@ -167,18 +176,7 @@ if (defined $config_files) {
     if (defined $host_id) {
         $config_file = Pencil::ConfigFinder::find_config_file_for_host($host_id);
     } else {
-	#On CSC machines and on Dardel pc_run finds the wrong configs 
-	#making it so that one has to always give explicitly the config to pc_run via -f.
-	#Thus I read the config file that was used in pc_build
-	#I don't see any downsides to this, but please remove it if you find one.
-        if (-e "src/.config-files") {
-            open my $fh, "<", "src/.config-files" or die $!;
-            $config_file = do { local $/; <$fh> };
-            close $fh;
-        }
-	else {
-          $config_file = Pencil::ConfigFinder::find_config_file()
-	}
+        $config_file = Pencil::ConfigFinder::find_config_file()
     }
     die "Fatal: Couldn't find config file.\n" unless (defined $config_file);
     push @config_files, $config_file;
