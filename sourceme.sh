@@ -102,6 +102,13 @@ if [ -n "$PENCIL_HOME" -a -d "$PENCIL_HOME/.git" ]; then
 #
 # Enforce basic pull policy to "rebase".
 #
+# NOTE: `git config option-name` is deprecated. The new syntax is
+# `git config get option-name`
+# `git config set option-name value`
+# We are not using the `get` and `set` subcommands right now (2026-Apr) since we
+# still have to support older git versions, but expect it to break at some point
+# in the future.
+#
   if [ "$(git -C $PENCIL_HOME config pull.rebase)" = "false" ]; then
     echo !!!WARNING - you have configured \"rebase = false\"!!!
     echo !!!Now changing it to \"true\"!!!
