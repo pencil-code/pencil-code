@@ -19,7 +19,7 @@ module Equ
   public :: perform_diagnostics
   public :: calc_all_module_diagnostic_auxiliaries
 !
-  real, public    :: before_boundary_sum_time=0.
+  real, public    :: before_and_after_boundary_sum_time=0.
   real, public    :: time_spent_copying_and_waiting=0.
   real, public    :: radtransfer_sum_time   =0.
   real, public    :: rhs_sum_time=0.
@@ -197,7 +197,7 @@ module Equ
       else;      call before_boundary_cpu(f)
       endif
       end_time = real(mpiwtime())
-      before_boundary_sum_time = before_boundary_sum_time + end_time-start_time
+      before_and_after_boundary_sum_time = before_and_after_boundary_sum_time + end_time-start_time
 !
 !  Prepare x-ghost zones; required before f-array communication
 !  AND shock calculation
@@ -295,8 +295,10 @@ module Equ
 !  MR+joern+axel, 8.10.2015
 !
       call timing('pde','before "after_boundary" calls')
+      start_time = real(mpiwtime())
       call after_boundary_shared(f)
       if (.not. lgpu) call after_boundary_cpu(f,df)
+      before_and_after_boundary_sum_time = before_and_after_boundary_sum_time + real(mpiwtime())-start_time
       call timing('pde','after "after_boundary" calls')
 !
       if (lgpu) then

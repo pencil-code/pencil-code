@@ -186,10 +186,8 @@ module Timestep
         endif
 !
         start_time = real(mpiwtime())
-        if (lgpu) then
-          call update_after_substep_gpu
-        else
-          call update_after_substep(f,df,dtsub,llast)
+        if (lgpu) then; call update_after_substep_gpu
+        else;           call update_after_substep(f,df,dtsub,llast)
         endif
         after_substep_sum_time = after_substep_sum_time + real(mpiwtime())-start_time
 !

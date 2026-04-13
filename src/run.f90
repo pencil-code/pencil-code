@@ -658,7 +658,7 @@ endsubroutine helper_loop
 
   use Timestep,        only: after_substep_sum_time
   use Mpicomm,         only: mpiwtick,mpireduce_max_int,mpireduce_sum_int
-  use Equ,             only: rhs_sum_time, before_boundary_sum_time,&
+  use Equ,             only: rhs_sum_time, before_and_after_boundary_sum_time,&
                              radtransfer_sum_time,time_spent_copying_and_waiting
   use Training,        only: training_time, inference_time
   use Syscalls,        only: memusage
@@ -690,8 +690,8 @@ endsubroutine helper_loop
             ' After substep wall clock time/timestep/local meshpoint [microsec] =', &
             after_substep_sum_time/icount/nw/1.0e-6
           write(*,'(A,1pG14.7)') &
-            ' Before boundary wall clock time/timestep/local meshpoint [microsec] =', &
-            before_boundary_sum_time/icount/nw/1.0e-6
+            ' Before+After boundary wall clock time/timestep/local meshpoint [microsec] =', &
+            before_and_after_boundary_sum_time/icount/nw/1.0e-6
           write(*,'(A,1pG14.7)') &
             ' Diagnostics wall clock time/timestep/local meshpoint [microsec] =', &
             time_doing_diagnostics/icount/nw/1.0e-6
@@ -717,8 +717,8 @@ endsubroutine helper_loop
             ' After substep wall clock time/timestep/meshpoint [microsec] =', &
             after_substep_sum_time/icount/nw/ncpus/1.0e-6
           write(*,'(A,1pG14.7)') &
-            ' Before boundary wall clock time/timestep/meshpoint [microsec] =', &
-            before_boundary_sum_time/icount/nw/ncpus/1.0e-6
+            ' Before+After boundary wall clock time/timestep/meshpoint [microsec] =', &
+            before_and_after_boundary_sum_time/icount/nw/ncpus/1.0e-6
 
           if (lradiation_ray) then
             write(*,'(A,1pG14.7)') &

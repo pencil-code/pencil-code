@@ -60,6 +60,7 @@ const bool performance_logs = false;
 
 //TP: these are ugly but for the moment we live with these
 #if TRANSPILATION
+  #define thread_block_loop_factors thread_block_loop_factors__mod__gpu
   #define luses_aa_pot2_top luses_aa_pot2_top__mod__cdata 
   #define luses_aa_pwd_top luses_aa_pwd_top__mod__cdata 
   #define lsplit_gw_rhs_from_rest_on_gpu lsplit_gw_rhs_from_rest_on_gpu__mod__gravitational_waves_htxk
@@ -348,10 +349,11 @@ void setupConfig(AcMeshInfo& config)
   PCLoad(config, AC_use_cuda_aware_mpi,lcuda_aware_mpi);
   PCLoad(config, AC_bidiagonal_derij,lbidiagonal_derij);
 
-#if TRANSPILATION
   PCLoad(config, AC_x,x__mod__cdata);
   PCLoad(config, AC_y,y__mod__cdata);
   PCLoad(config, AC_z,z__mod__cdata);
+
+  PCLoad(config, AC_thread_block_loop_factors,thread_block_loop_factors);
 
   PCLoad(config, AC_inv_cyl_r,rcyl_mn1);
   PCLoad(config, AC_inv_r,r1_mn);
@@ -373,13 +375,10 @@ void setupConfig(AcMeshInfo& config)
   PCLoad(config, AC_y12,y12__mod__cdata);
   PCLoad(config, AC_sinth12,sinth12__mod__cdata);
   PCLoad(config, AC_z12,z12__mod__cdata);
-#endif
 
   PCLoad(config, AC_rk_order, itorder);
   PCLoad(config, AC_shear,lshear);
-#if TRANSPILATION
   PCLoad(config, AC_rk_cumulative_df,lcumulative_df_on_gpu);
-#endif
 
   if (lcartesian_coords)
   {
@@ -848,30 +847,42 @@ float MSE(){
 /***********************************************************************************************/
 void load_f_ode()
 {
-        //TP: this is simply the initial implementation
-        //TODO: benchmark what is the most efficient way of getting ode array to the GPU each substep
-#if TRANSPILATION
+	//This seems to be a sufficiently performant way to keep ODE variables in sync:
+	//For backreact_infl 256^3 subdomain:
+	//Loading ode variables took: 6.08199999987846e-04
+	//BeforeBoundary took: 7.85426100003406e-03 to 1.9e-2 (TODO: why does it fluctuate so much?)
+        //RHS TOOK:   1.451359e-02
+	//So for large enough subdomains rhs dominates
         if (n_odevars > 0)
         {
+                AcReal start = MPI_Wtime();
                 acDeviceSynchronizeStream(acGridGetDevice(),STREAM_DEFAULT);
                 acDeviceLoad(acGridGetDevice(), STREAM_DEFAULT, mesh.info, AC_f_ode);
                 acDeviceSynchronizeStream(acGridGetDevice(),STREAM_DEFAULT);
+	        if(performance_logs) acLogFromRootProc(rank,"Loading ode variables took: %.14e\n",MPI_Wtime()-start);
         }
-#endif
 }
 /***********************************************************************************************/
-extern "C" void beforeBoundaryGPU(bool lrmv, int isubstep, double t, bool lsubstepping_in_time)
+void
+reload_dynamically_changing_variables(bool lrmv, int isubstep, double t, bool lsubstepping_in_time)
 {
-// Load values of ODE variables to GPU since before boundary may use them
+// Loads the values of the ODE variables
+// which are are advanced on the host in dspecial_dt_ode
 	load_f_ode();
-
-// Load those dynamical parameters which depend on time to GPU
-
+// Sets the values of input parameters to the kernels.
+// Does not load them to the device but instead sets values of the Astaroth config
+// from which input parameters to the kernels are read from
         acDeviceSetInput(acGridGetDevice(), AC_step_num,(PC_SUB_STEP_NUMBER) (isubstep-1));
  	acDeviceSetInput(acGridGetDevice(), AC_lrmv, lrmv);
  	acDeviceSetInput(acGridGetDevice(), AC_t, AcReal(t));
  	acDeviceSetInput(acGridGetDevice(), AC_lsubstepping_in_time, lsubstepping_in_time);
-
+}
+/***********************************************************************************************/
+extern "C" void beforeBoundaryGPU(bool lrmv, int isubstep, double t, bool lsubstepping_in_time)
+{
+	reload_dynamically_changing_variables(lrmv,isubstep,t,lsubstepping_in_time);
+        
+	AcReal start_time = MPI_Wtime();
 // Execute all "before-boundary-actions", which do not update the halos, by separate task graph
 	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_before_boundary_steps),1);
 
@@ -910,6 +921,7 @@ extern "C" void beforeBoundaryGPU(bool lrmv, int isubstep, double t, bool lsubst
 #if LNEWTON_COOLING
 	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_integrate_tau),1);
 #endif
+	if(performance_logs) acLogFromRootProc(rank,"BeforeBoundary took: %.14e\n",MPI_Wtime()-start_time);
 }
 /***********************************************************************************************/
 bool idx_init = false;
@@ -1252,7 +1264,7 @@ extern "C" void substepGPU(int isubstep, double t)
   auto start = MPI_Wtime();
   acGridExecuteTaskGraph(rhs, 1);
   auto end = MPI_Wtime();
-  if (performance_logs && !rank) fprintf(stderr,"RHS TOOK: %14e\n",end-start);
+  if (performance_logs) acLogFromRootProc(rank,"RHS TOOK: %14e\n",end-start);
   if (ldt && (   (isubstep == 5 && !lcourant_dt) 
               || (isubstep == 1 &&  lcourant_dt)
              )

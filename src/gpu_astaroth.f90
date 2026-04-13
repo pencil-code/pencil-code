@@ -87,10 +87,14 @@ module GPU
   ! It is useful to be able to vary this in case some samples need some
   ! integration time for some of the fields to have meaningful values
   integer :: it_test_rhs = 1
+  ! How should reduction kernels decompose the subdomain into smaller chunks.
+  ! The decomposition allows to do partial reductions before the global reduction.
+  ! This saves memory and work.
+  integer, dimension(3) :: thread_block_loop_factors = (/1,1,1/)
 
   namelist /gpu_run_pars/ &
      ltest_bcs,lac_sparse_autotuning,lcpu_timestep_on_gpu,lsingle_precision_timestep,lcumulative_df_on_gpu,&
-     lread_all_vars_from_device,lcuda_aware_mpi,ltest_rhs,it_test_rhs
+     lread_all_vars_from_device,lcuda_aware_mpi,ltest_rhs,it_test_rhs,thread_block_loop_factors
 
 contains
 !***********************************************************************
@@ -391,6 +395,7 @@ contains
     call copy_addr(lcuda_aware_mpi,p_par(6)) ! bool
     call copy_addr(ltest_bcs,p_par(7)) ! bool
     call copy_addr(lsingle_precision_timestep,p_par(8)) ! bool
+    call copy_addr(thread_block_loop_factors,p_par(9)) ! int3 dconst
     endsubroutine pushpars2c
 !**************************************************************************
 endmodule GPU
