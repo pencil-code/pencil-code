@@ -5250,20 +5250,29 @@ For isothermal hydrodynamics, see \S\ref{entropy} below.
 
 \subsection{Induction equation}
 
+We do not normally use the Weyl gauge,
 \begin{equation}
   \frac{\partial\Av}{\partial t}
-  = \uv\times\Bv - \eta\mu_0\jv \; .
+  = \uv\times\Bv - \eta\mu_0\jv \; ,
 \label{dAdt}
 \end{equation}
-
+but rather the resistive gauge,
+\begin{equation}
+  \frac{\partial\Av}{\partial t}
+  = \uv\times\Bv + \eta\nabla^2\Av \; .
+\label{resistive-gauge}
+\end{equation}
 Here $\Av$ is the magnetic vector potential\index{Vector potential},
 $\Bv = \curl\Av$ the magnetic
 flux density, $\eta = 1/(\mu_0\sigma)$ is the magnetic diffusivity
 ($\sigma$ denoting the electrical conductivity), and $\mu_0$ the
 magnetic vacuum permeability.
-This form of the induction equation corresponds to the \name{Weyl gauge}
-$\Phi=0$, where $\Phi$ denotes the scalar potential.
-
+In the \name{Weyl gauge}, $\Phi=0$, where $\Phi$ denotes the scalar potential.
+In the \name{resistive gauge}, we have $\Phi=\eta\nab\cdot\Av$.
+It has the advantage that the terms $A_{x,xx}$, $A_{y,yy}$, and $A_{z,zz}$
+are present and prevent wiggles the vector potential.
+Although the terms $A_{x,x}$, $A_{y,y}$, and $A_{z,z}$ are absent in $\Bv$,
+the can affect the result if the terms are large compared with $\Bv$.
 
 % ---------------------------------------------------------------------- %
 

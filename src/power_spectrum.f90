@@ -457,6 +457,7 @@ outer:do ikz=1,nz
     use Mpicomm, only: mpireduce_sum
     use General, only: itoa
     use Sub, only: curli
+    use Deriv, only: der
     use File_io, only: file_exists
 !
     real, dimension (mx,my,mz,mfarray) :: f
@@ -506,6 +507,14 @@ outer:do ikz=1,nz
           else
             call curli(f,ivv,a1(:,m-nghost,n-nghost),ivec)
           endif
+        enddo
+        enddo
+      elseif (trim(sp)=='gph') then
+        !$omp do collapse(2)
+        do n_loc=n1,n2
+        do m_loc=m1,m2
+          m=m_loc;n=n_loc
+          call der(f,ispecialvar,a1(:,m-nghost,n-nghost),ivec)
         enddo
         enddo
       elseif (trim(sp)=='b') then
@@ -2224,7 +2233,7 @@ outer:do ikz=1,nz
     !$omp end workshare
 !
 !  Compute Lorentz force, unless ijxb>0.
-!  Why do we need m=m_loc;n=n_loc?
+!  Need m=m_loc;n=n_loc to make gij etc work correctly.
 !
     !$omp do collapse(2)
     do m_loc=m1,m2
@@ -2265,7 +2274,7 @@ outer:do ikz=1,nz
     !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
     !$ thread_id = omp_get_thread_num()+1
 !
-!  Lorentz force spectra (spectra of L*L^*)
+!  Lorentz force spectra (spectra of L*L^*=a^2) and work against Lorentz (a*b).
 !
       if (sp=='Lor') then
         !$omp workshare
@@ -2436,207 +2445,218 @@ outer:do ikz=1,nz
 !
   endsubroutine powerLor
 !***********************************************************************
-!  On comment since not used (to suppress compiler warnings)
-!  subroutine powerLor_OLD(f,sp)
-!!
-!!  Calculate power and helicity spectra (on spherical shells) of the
-!!  variable specified by `sp', i.e. either the spectra of uu and kinetic
-!!  helicity, or those of bb and magnetic helicity..
-!!  Since this routine is only used at the end of a time step,
-!!  one could in principle reuse the df array for memory purposes.
-!!
-!!   3-oct-10/axel: added compution of krms (for realisability condition)
-!!  22-jan-13/axel: corrected for x parallelization
-!!
-!    use Fourier, only: fft_xyz_parallel
-!    use Mpicomm, only: mpireduce_sum
-!    use Sub, only: gij, gij_etc, curl_mn, cross_mn
-!!
-!    integer, parameter :: nk=nxgrid/2
-!    integer :: k,ikx,iky,ikz,ivec, stat
-!    real :: k2
-!    real, dimension(mx,my,mz,mfarray) :: f
-!    real, dimension(:,:,:,:), allocatable :: tmpv, scrv
-!    real, dimension(:,:,:), allocatable :: c_re, c_im
-!    real, dimension(nx,3) :: aa,bb,jj,jxb
-!    real, dimension(nx,3,3) :: aij,bij
-!    real, dimension(nk) :: nks,nks_sum
-!    real, dimension(nk) :: k2m,k2m_sum,krms
-!    real, dimension(nk) :: spectrum,spectrum_sum
-!    real, dimension(nk) :: spectrumhel,spectrumhel_sum
-!    character (len=3) :: sp
-!    logical, save :: lwrite_krms=.true.
-!!
-!!  identify version
-!!
-!    if (lroot .AND. ip<10) call svn_id( &
-!         "$Id$")
-!!
-!!  Note, if lhydro=F, then f(:,:,:,1:3) does no longer contain
-!!  velocity. In that case, we want the magnetic field instead.
-!!
-!    if (.not.lhydro) then
-!      allocate(tmpv(mx,my,mz,3),stat=stat)
-!      if (stat>0) call fatal_error('powerLor_OLD','Cannot allocate memory for tmpv')
-!      allocate(scrv(mx,my,mz,3),stat=stat)
-!      if (stat>0) call fatal_error('powerLor_OLD','Cannot allocate memory for scrv')
-!      allocate(c_re(nx,ny,nz),stat=stat)
-!      if (stat>0) call fatal_error('powerLor_OLD','Cannot allocate memory for c_re')
-!      allocate(c_im(nx,ny,nz),stat=stat)
-!      if (stat>0) call fatal_error('powerLor_OLD','Cannot allocate memory for c_im')
-!    endif
-!!
-!!  initialize power spectrum to zero
-!!
-!    k2m=0.
-!    nks=0.
-!    spectrum=0.
-!    spectrumhel=0.
-!!
-!!  compute Lorentz force
-!!
-!    do m_loc=m1,m2
-!    do n_loc=n1,n2
-!      m=m_loc;n=n_loc
-!      aa=f(l1:l2,m,n,iax:iaz)
-!      call gij(f,iaa,aij,1)
-!      call gij_etc(f,iaa,aa,aij,bij)
-!      call curl_mn(aij,bb,aa)
-!      call curl_mn(bij,jj,bb)
-!      call cross_mn(jj,bb,jxb)
-!      a_vec_re(:,m-nghost,n-nghost,:) = jxb
-!      if (.not.lhydro) tmpv(l1:l2,m,n,:)=bb
-!      if (.not.lhydro) scrv(l1:l2,m,n,:)=jj
-!    enddo
-!    enddo
-!!
-!!  loop over all the components
-!!
-!    do ivec=1,3
-!!
-!!  Lorentz force spectra (spectra of L*L^*)
-!!
-!      if (sp=='Lor') then
-!        b_re=a_vec_re(:,:,:,ivec)
-!        if (lhydro) then
-!          a_re=f(l1:l2,m1:m2,n1:n2,ivec)
-!        else
-!          a_re=tmpv(l1:l2,m1:m2,n1:n2,ivec)
-!          c_re=scrv(l1:l2,m1:m2,n1:n2,ivec)
-!          c_im=0.
-!        endif
-!        a_im=0.
-!        b_im=0.
-!!
-!      endif
-!!
-!!  Doing the Fourier transform
-!!
-!      call fft_xyz_parallel(a_re,a_im)
-!      call fft_xyz_parallel(b_re,b_im)
-!      if (.not.lhydro) call fft_xyz_parallel(c_re,c_im)
-!!
-!!  integration over shells
-!!
-!      if (lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
-!      do ikz=1,nz
-!        do iky=1,ny
-!          do ikx=1,nx
-!            k2=get_k2_old(ikx+ipx*nx,iky+ipy*ny,ikz+ipz*nz)
-!            k=nint(sqrt(k2))
-!            if (k>=0 .and. k<=(nk-1)) then
-!!
-!!  sum energy and helicity spectra
-!!  Remember: a=B, b=Lor, c=J, so for nonhydro, we want a.b and c.b
-!!
-!              if (lhydro) then
-!                spectrum(k+1)=spectrum(k+1) &
-!                   +b_re(ikx,iky,ikz)**2 &
-!                   +b_im(ikx,iky,ikz)**2
-!              else
-!                spectrum(k+1)=spectrum(k+1) &
-!                   +c_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
-!                   +c_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
-!              endif
-!              spectrumhel(k+1)=spectrumhel(k+1) &
-!                 +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
-!                 +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
-!!
-!!  compute krms only once
-!!
-!              if (lwrite_krms) then
-!                k2m(k+1)=k2m(k+1)+k2
-!                nks(k+1)=nks(k+1)+1.
-!              endif
-!!
-!!  end of loop through all points
-!!
-!            endif
-!          enddo
-!        enddo
-!      enddo
-!!
-!    enddo !(from loop over ivec)
-!!
-!!  Summing up the results from the different processors
-!!  The result is available only on root
-!!
-!    call mpireduce_sum(spectrum,spectrum_sum,nk)
-!    call mpireduce_sum(spectrumhel,spectrumhel_sum,nk)
-!!
-!!  compute krms only once
-!!
-!    if (lwrite_krms) then
-!      call mpireduce_sum(k2m,k2m_sum,nk)
-!      call mpireduce_sum(nks,nks_sum,nk)
-!      if (iproc/=root) lwrite_krms=.false.
-!    endif
-!!
-!!  on root processor, write global result to file
-!!  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>
-!!  ok for helicity, so \int F(k) dk = <o.u> = 1/2 <o*.u+o.u*>
-!!
-!!  append to diagnostics file
-!!
-!    if (lroot) then
-!      if (ip<10) print*,'Writing power spectrum ',sp &
-!           ,' to ',trim(datadir)//'/power_'//trim(sp)//'.dat'
-!!
-!      spectrum_sum=.5*spectrum_sum
-!      open(1,file=trim(datadir)//'/power_'//trim(sp)//'.dat',position='append')
-!      if (lformat) then
-!        do k = 1, nk
-!          write(1,'(i4,3p,8e10.2)') k, spectrum_sum(k)
-!        enddo
-!      else
-!        write(1,timestamp_format) tspec, real(t)
-!        write(1,power_format) spectrum_sum
-!      endif
-!      close(1)
-!!
-!      open(1,file=trim(datadir)//'/powerhel_'//trim(sp)//'.dat',position='append')
-!      if (lformat) then
-!        do k = 1, nk
-!          write(1,'(i4,3p,8e10.2)') k, spectrumhel_sum(k)
-!        enddo
-!      else
-!        write(1,timestamp_format) tspec, real(t)
-!        write(1,power_format) spectrumhel_sum
-!      endif
-!      close(1)
-!!
-!      if (lwrite_krms) then
-!        krms=sqrt(k2m_sum/nks_sum)
-!        open(1,file=trim(datadir)//'/power_krms.dat',position='append')
-!        write(1,power_format) krms
-!        close(1)
-!        lwrite_krms=.false.
-!      endif
-!    endif
-!!
-!    if (allocated(tmpv)) deallocate(tmpv)
-!!
-!  endsubroutine powerLor_OLD
+  subroutine powerOmU(f,sp)
+!
+!  Calculate power and helicity spectra (on spherical shells) of the
+!  variable specified by `sp', i.e. either the spectra of uu and kinetic
+!  helicity, or those of bb and magnetic helicity..
+!  Since this routine is only used at the end of a time step,
+!  one could in principle reuse the df array for memory purposes.
+!
+!  14-apr-26/axel: adapted from powerLor
+!
+    use Fourier, only: fft_xyz_parallel
+    use Mpicomm, only: mpireduce_sum
+    use Sub, only: gij, gij_etc, curl_mn, cross_mn
+!
+    integer, parameter :: nk=nxgrid/2
+    integer :: k, ikx, iky, ikz, ivec, stat
+    real :: k2
+    real, dimension(mx,my,mz,mfarray) :: f
+    real, dimension(nx,3) :: uu,oo,oxu
+    real, dimension(nx,3,3) :: uij
+    real, dimension(nk) :: nks,nks_sum
+    real, dimension(nk) :: k2m,k2m_sum,krms
+    real, dimension(nk) :: spectrum, spectrum_sum, spectrum2, spectrum2_sum
+    real, dimension(nk) :: spectrumhel, spectrumhel_sum, spectrum2hel, spectrum2hel_sum
+    character (len=3) :: sp
+    logical, save :: lwrite_krms=.true.
+!
+!  identify version
+!
+    if (lroot .AND. ip<10) call svn_id( &
+         "$Id$")
+!
+!  initialize power spectrum to zero
+!
+    !$omp workshare
+    k2m=0.
+    nks=0.
+    spectrum=0.
+    spectrumhel=0.
+    spectrum2=0.
+    spectrum2hel=0.
+    !$omp end workshare
+!
+!  Compute oxu force.
+!
+    !$omp do collapse(2)
+    do m_loc=m1,m2
+    do n_loc=n1,n2
+      m=m_loc;n=n_loc
+      uu=f(l1:l2,m,n,iux:iuz)
+      call gij(f,iuu,uij,1)
+      call curl_mn(uij,oo,uu)
+      call cross_mn(oo,uu,oxu)
+      a_vec_re(:,m-nghost,n-nghost,:)=oxu
+    enddo
+    enddo
+    !$omp end parallel
+!
+!  loop over all the components
+!
+    do ivec=1,3
+    !$omp parallel private(k,k2) num_threads(num_helper_threads) &
+    !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+    !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+    !$ thread_id = omp_get_thread_num()+1
+!
+!  oxu force spectra (spectra of L*L^*=a^2) and work against oxu (a*b).
+!
+      if (sp=='OmU') then
+        !$omp workshare
+        b_re=a_vec_re(:,:,:,ivec)
+        !$omp end workshare
+        !$omp workshare
+        a_re=f(l1:l2,m1:m2,n1:n2,ivec)
+        !$omp end workshare
+        !$omp workshare
+        a_im=0.
+        b_im=0.
+        !$omp end workshare
+      endif
+!
+!  Doing the Fourier transform
+!
+      call fft_xyz_parallel(a_re,a_im)
+      call fft_xyz_parallel(b_re,b_im)
+!
+!  integration over shells
+!
+      if (ip<10) call information('powerLor','fft done; now integrate over shells')
+      !$omp do collapse(3) reduction(+:spectrum,spectrumhel,spectrum2hel,spectrum2,k2m,nks)
+      do ikz=1,nz
+      do iky=1,ny
+      do ikx=1,nx
+        k2=get_k2_old(ikx+ipx*nx,iky+ipy*ny,ikz+ipz*nz)
+        k=nint(sqrt(k2))
+        if (k>=0 .and. k<=(nk-1)) then
+!
+!  sum energy and helicity spectra
+!  Remember: a=B, b=Lor, c=J, so for nonhydro, we want a.b and c.b
+!  But for lhydro_kinematic.and.iux/=0, c is ignored.
+!  Furthermore, spectrumhel is u_k^*.(JxB)_k.
+!  If u is unknown, we also compute spectrum2=Sp(J) and spectrum2hel=Sp(J,B).
+!
+          spectrum(k+1)=spectrum(k+1) &
+             +b_re(ikx,iky,ikz)**2 &
+             +b_im(ikx,iky,ikz)**2
+          spectrumhel(k+1)=spectrumhel(k+1) &
+             +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
+             +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
+!
+!  compute krms only once
+!
+          if (lwrite_krms) then
+            k2m(k+1)=k2m(k+1)+k2
+            nks(k+1)=nks(k+1)+1.
+          endif
+!
+!  end of loop through all points
+!
+        endif
+      enddo
+      enddo
+      enddo
+    !$omp end parallel
+    enddo !  do ivec=1,3
+!
+!  Summing up the results from the different processors
+!  The result is available only on root
+!
+    call mpireduce_sum(spectrum,spectrum_sum,nk)
+    call mpireduce_sum(spectrumhel,spectrumhel_sum,nk)
+    call mpireduce_sum(spectrum2,spectrum2_sum,nk)
+    call mpireduce_sum(spectrum2hel,spectrum2hel_sum,nk)
+!
+!  compute krms only once
+!
+    if (lwrite_krms) then
+      call mpireduce_sum(k2m,k2m_sum,nk)
+      call mpireduce_sum(nks,nks_sum,nk)
+      if (iproc/=root) lwrite_krms=.false.
+    endif
+!
+!  on root processor, write global result to file
+!  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>
+!  ok for helicity, so \int F(k) dk = <o.u> = 1/2 <o*.u+o.u*>
+!
+!  append to diagnostics file
+!
+    if (lroot) then
+      if (ip<10) print*,'Writing power spectrum ',sp &
+           ,' to ',trim(datadir)//'/power_'//trim(sp)//'.dat'
+!
+!  normal 2 spectra, so \int E_Lor(k) dk = <(JxB)^2>/2.
+!
+      spectrum_sum=.5*spectrum_sum
+      open(1,file=trim(datadir)//'/power_'//trim(sp)//'.dat',position='append')
+      if (lformat) then
+        do k = 1, nk
+          write(1,'(i4,3p,8e10.2)') k, spectrum_sum(k)
+        enddo
+      else
+        write(1,timestamp_format) tspec, real(t)
+        write(1,power_format) spectrum_sum
+      endif
+      close(1)
+!
+      open(1,file=trim(datadir)//'/powerhel_'//trim(sp)//'.dat',position='append')
+      if (lformat) then
+        do k = 1, nk
+          write(1,'(i4,3p,8e10.2)') k, spectrumhel_sum(k)
+        enddo
+      else
+        write(1,timestamp_format) tspec, real(t)
+        write(1,power_format) spectrumhel_sum
+      endif
+      close(1)
+!
+!  additional 2 spectra
+!
+      spectrum2_sum=.5*spectrum2_sum
+      open(1,file=trim(datadir)//'/power_2'//trim(sp)//'.dat',position='append')
+      if (lformat) then
+        do k = 1, nk
+          write(1,'(i4,3p,8e10.2)') k, spectrum2_sum(k)
+        enddo
+      else
+        write(1,timestamp_format) tspec, real(t)
+        write(1,power_format) spectrum2_sum
+      endif
+      close(1)
+!
+      open(1,file=trim(datadir)//'/powerhel_2'//trim(sp)//'.dat',position='append')
+      if (lformat) then
+        do k = 1, nk
+          write(1,'(i4,3p,8e10.2)') k, spectrum2hel_sum(k)
+        enddo
+      else
+        write(1,timestamp_format) tspec, real(t)
+        write(1,power_format) spectrum2hel_sum
+      endif
+      close(1)
+!
+      if (lwrite_krms) then
+        krms=sqrt(k2m_sum/nks_sum)
+        open(1,file=trim(datadir)//'/power_krms.dat',position='append')
+        write(1,power_format) krms
+        close(1)
+        lwrite_krms=.false.
+      endif
+    endif
+!
+  endsubroutine powerOmU
 !***********************************************************************
   subroutine powerEMF(f,sp)
 !

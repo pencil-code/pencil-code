@@ -108,14 +108,14 @@ module Param_IO
       uxy_spec, bxy_spec, jxbxy_spec, xy_spec, oo_spec, relvel_spec, &
       uxj_spec, vec_spec, ou_spec, oun_spec, ab_spec, azbz_spec, uzs_spec, ub_spec, &
       bb2_spec, jj2_spec, ele_spec, a0_spec, pot_spec, &
-      Lor_spec, EMF_spec, Tra_spec, GWs_spec, GWh_spec, GWm_spec, Str_spec, Stg_spec, &
+      Lor_spec, OmU_spec, EMF_spec, Tra_spec, GWs_spec, GWh_spec, GWm_spec, Str_spec, Stg_spec, &
       Gab_spec, Gan_spec, GBb_spec, &
       GWs_spec_boost, GWh_spec_boost, &
       SCL_spec, VCT_spec, Tpq_spec, TGW_spec, GWd_spec, GWe_spec, GWf_spec, GWg_spec, &
       SCL_spec_boost, VCT_spec_boost, &
       StT_spec, StX_spec, &
       vel_phispec, mag_phispec, &
-      uxj_phispec, vec_phispec, ou_phispec, ab_phispec, EP_spec, hEP_spec, ro_spec, &
+      uxj_phispec, vec_phispec, ou_phispec, ab_phispec, EP_spec, hEP_spec, ro_spec, gph_spec, &
       nd_spec, ud_spec, ux_spec, uy_spec, uz_spec, ucp_spec, &
       TT_spec, ss_spec, cc_spec, cr_spec, mu_spec, sp_spec, ssp_spec, sssp_spec, &
       isaveglobal, lr_spec, r2u_spec, &
@@ -158,14 +158,14 @@ module Param_IO
       uxy_spec, bxy_spec, jxbxy_spec, xy_spec, oo_spec, relvel_spec, &
       uxj_spec, vec_spec, ou_spec, oun_spec, ab_spec, azbz_spec, uzs_spec, ub_spec, &
       bb2_spec, jj2_spec, ele_spec, a0_spec, pot_spec, &
-      Lor_spec, EMF_spec, Tra_spec, GWs_spec, GWh_spec, GWm_spec, Str_spec, Stg_spec, &
+      Lor_spec, OmU_spec, EMF_spec, Tra_spec, GWs_spec, GWh_spec, GWm_spec, Str_spec, Stg_spec, &
       Gab_spec, Gan_spec, GBb_spec, &
       GWs_spec_boost, GWh_spec_boost, &
       SCL_spec, VCT_spec, Tpq_spec, TGW_spec, GWd_spec, GWe_spec, GWf_spec, GWg_spec, &
       SCL_spec_boost, VCT_spec_boost, &
       StT_spec, StX_spec, &
       vel_phispec, mag_phispec, &
-      uxj_phispec, vec_phispec, ou_phispec, ab_phispec, EP_spec, hEP_spec, ro_spec, abs_u_spec, &
+      uxj_phispec, vec_phispec, ou_phispec, ab_phispec, EP_spec, hEP_spec, ro_spec, gph_spec, abs_u_spec, &
       nd_spec, ud_spec, ux_spec, uy_spec, uz_spec, ucp_spec, &
       TT_spec, ss_spec, cc_spec, cr_spec, mu_spec, sp_spec, ssp_spec, sssp_spec, &
       isaveglobal, lr_spec, r2u_spec, &
