@@ -123,6 +123,16 @@ module power_spectrum
 !
     endsubroutine powerLor
 !***********************************************************************
+    subroutine powerOmU(f,sp)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      character (len=3) :: sp
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(sp)
+!
+    endsubroutine powerOmU
+!***********************************************************************
     subroutine powerEMF(f,sp)
 !
       real, dimension (mx,my,mz,mfarray) :: f
