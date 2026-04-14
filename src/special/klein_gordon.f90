@@ -519,7 +519,6 @@ module Special
 !***********************************************************************
     subroutine pencil_criteria_special
 
-    integer :: i
 !
 !  All pencils that this special module depends on are specified here.
 !
@@ -1152,6 +1151,7 @@ module Special
       real, dimension(mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
 
+      call keep_compiler_quiet(f)
       if (ldiagnos) then
         call sum_mn_name(p%phi,idiag_phim)
         if (idiag_phi2m/=0) call sum_mn_name(p%phi**2,idiag_phi2m)
@@ -1223,6 +1223,7 @@ module Special
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
 !
+      call keep_compiler_quiet(lwrite)
       if (lreset) then
         idiag_phim=0; idiag_phi2m=0; idiag_phirms=0
         idiag_dphim=0; idiag_dphi2m=0; idiag_dphirms=0
@@ -1285,7 +1286,6 @@ module Special
       real, dimension (mx,my,mz,mvar+maux) :: f
       type (slice_data) :: slices
 !
-      integer :: inamev
 !
 !  Loop over slices
 !
@@ -1744,6 +1744,8 @@ module Special
     call copy_addr(v_usr,p_par(56))
     call copy_addr(v0_usr,p_par(57))
     call copy_addr(lcombine_prep_ode_right_with_rhs,p_par(58)) ! bool
+    call keep_compiler_quiet(eps)
+    call keep_compiler_quiet(phase_phi)
 
     endsubroutine pushpars2c
 !********************************************************************

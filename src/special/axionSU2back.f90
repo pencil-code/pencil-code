@@ -240,9 +240,8 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: lnH, lna, a
-      real :: kmax=2., lnkmax, lnk0=1.
-      real :: Q, Qdot, chi, chidot, phi, phidot
-      real :: U, V, beta
+      real :: phidot
+      real :: V, beta
       integer :: ik
 !
 !  Initialize any module variables which are parameter dependent
@@ -345,9 +344,7 @@ module Special
       real, dimension (nx) :: psi, psidot, TR, TRdot, uR, uRdot
       real, dimension (nx) :: impsi, impsidot, imTR, imTRdot, imuR, imuRdot
       real :: chi0, V, Uprime0, beta, fourier_factor
-      real :: lnt, lnH, lna, a
-      real :: kmax=2., lnkmax, lnk0=1.
-      integer :: ik
+      real :: a
 !
       intent(inout) :: f
 !
@@ -591,12 +588,11 @@ module Special
       real, dimension (nx) :: impsi , impsidot , impsiddot , imTR, imTRdot, imTRddot, imuR, imuRdot, imuRddot
       real, dimension (nx) :: impsiL, impsiLdot, impsiLddot, imTL, imTLdot, imTLddot, imuL, imuLdot, imuLddot
       real, dimension (nx) :: epsQE, epsQB
-      real :: Q, Qdot, chi, chidot, phi, phidot, adot, addot
+      real :: Q, Qdot, chi, chidot, adot, addot
       real :: Uprime, mQ, xi
       real :: sign_swap=1.
       real, parameter :: fact=1.
       real :: epsilon_sr,inflaton
-      integer :: ik
       type (pencil_case) :: p
 !
       intent(in) :: p
@@ -981,6 +977,9 @@ module Special
       real, dimension(mx,my,mz,mfarray) :: f
       real, parameter :: fact=1.
       type(pencil_case) :: p
+
+      call keep_compiler_quiet(p)
+
       if (ldiagnos) then
 
         call get_analytical_solution(psi_anal,psidot_anal,TR_anal,TRdot_anal)
@@ -1065,8 +1064,11 @@ module Special
       real :: Q, Qdot, chi, chidot, phi, phidot
       real :: Uprime, mQ, xi, Vprime, beta
       !real :: U, Uprime, mQ, xi, V, Vprime
-      real :: fact=1., sign_swap=1.
+      real :: fact=1.
       real :: epsilon_sr,inflaton
+
+
+      call keep_compiler_quiet(grant_sum)
 !
 !  Set the all variable
 !
@@ -1360,6 +1362,7 @@ module Special
 !  13-may-18/axel: added remove_mean_value for hij and gij
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      call keep_compiler_quiet(f)
 !
     endsubroutine special_before_boundary
 !***********************************************************************
@@ -1505,10 +1508,10 @@ module Special
 
       real, dimension (nx) :: TR, TRdot, imTR, imTRdot, TReff2, TRdoteff2
       real, dimension (nx) :: TL, TLdot, imTL, imTLdot, TLeff2, TLdoteff2
-      real, dimension (nx) :: uR, uRdot, imuR, imuRdot, uReff2, uReff2m, uReff2km
-      real, dimension (nx) :: uL, uLdot, imuL, imuLdot, uLeff2, uLeff2m, uLeff2km
+      real, dimension (nx) :: uR, imuR, uReff2, uReff2m, uReff2km
+      real, dimension (nx) :: uL, imuL, uLeff2, uLeff2m, uLeff2km
       real, dimension (nx) :: psi, psidot, impsi , impsidot
-      real, dimension (nx) :: TRpsi , TRpsik , TRpsidot , TRdotpsi
+      real, dimension (nx) :: TRpsi , TRpsidot , TRdotpsi
       real, dimension (nx) :: TRdot_abs2, TLdot_abs2, TReff2k2m, TLeff2k2m
       real :: xi,chidot,mQ,Qdot
       real :: a
@@ -1719,13 +1722,13 @@ module Special
       real, dimension(nx) :: TRpsim, TRpsikm, TRpsidotm, TRdotpsim
       real, dimension(nx) :: TRdoteff2km, TRdoteff2m, TReff2km, TReff2m
       real, dimension(nx) :: TLdoteff2km, TLdoteff2m, TLeff2km, TLeff2m
-      real, dimension(nx) :: uRdoteff2km, uRdoteff2m, uReff2km, uReff2m
-      real, dimension(nx) :: uLdoteff2km, uLdoteff2m, uLeff2km, uLeff2m
+      real, dimension(nx) :: uReff2km, uReff2m
+      real, dimension(nx) :: uLeff2km, uLeff2m
       real :: Q, Qdot, chi, chidot, phi, phidot
       real :: U, V, beta
-      real :: lnt, lnH, lna, a, lnkmin, lnkmax
+      real :: lnH, lna, a, lnkmin, lnkmax
       integer :: ik, nswitch
-      real :: epsilon_sr,inflaton
+      real :: inflaton
 !
 !  make ODE variables available (should exist on all processors)
 !
@@ -1919,7 +1922,7 @@ module Special
 !
 !   SAMPLE IMPLEMENTATION
 !
-      integer :: iname, inamexy, inamexz
+      integer :: iname, inamexy
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
@@ -2085,6 +2088,8 @@ module Special
     call copy_addr(mscal,p_par(64))
     call copy_addr(sgn_g,p_par(65))
     call copy_addr(lschwinger_scalar,p_par(66)) ! bool
+
+    call keep_compiler_quiet(lvariable_k)
     endsubroutine pushpars2c
 !***********************************************************************
 !***********************************************************************
