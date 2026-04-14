@@ -37,7 +37,7 @@ module GPU
   external update_on_gpu_arr_by_ind_c
   external update_on_gpu_scal_by_ind_c
   external pos_real_ptr_c
-  external gpu_set_dt_c
+  external gpu_prepare_for_first_substep_c
   external torchtrain_c 
   external torchinfer_c
   external get_gpu_reduced_vars_c
@@ -234,11 +234,11 @@ contains
       call update_after_substep_gpu_c
     endsubroutine update_after_substep_gpu
 !**************************************************************************
-    subroutine gpu_set_dt
+    subroutine gpu_prepare_for_first_substep
 !
-      call gpu_set_dt_c(t)
+      call gpu_prepare_for_first_substep_c(t)
 !
-    endsubroutine gpu_set_dt
+    endsubroutine gpu_prepare_for_first_substep 
 !**************************************************************************
     function get_ptr_GPU(ind1,ind2,lout) result(pFarr)
 !

@@ -67,7 +67,7 @@ int FTNIZE(update_on_gpu_arr_by_name_c)(char *varname)
   return 0;
 }
 /* ------------------------------------------------------------------- */
-void FTNIZE(gpu_set_dt_c)(double* t)
+void FTNIZE(gpu_prepare_for_first_substep_c)(double* t)
 {
 }
 /* ------------------------------------------------------------------- */

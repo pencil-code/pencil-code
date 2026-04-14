@@ -80,6 +80,12 @@ ComputeSteps AC_before_boundary_steps(boundconds)
 	entropy_reductions()
 	entropy_mean_derivs()
 }
+
+ComputeSteps AC_initialize_sums(boundconds)
+{
+	initial_prep_ode()
+}
+
 ComputeSteps AC_before_boundary_steps_including_halos(boundconds)
 {
 	ioncalc()

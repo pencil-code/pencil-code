@@ -340,6 +340,17 @@ get_cwd()
 /***********************************************************************************************/
 #define PCLoad acPushToConfig
 /***********************************************************************************************/
+int same_path(const char *p1, const char *p2) {
+    char r1[PATH_MAX];
+    char r2[PATH_MAX];
+
+    if (!realpath(p1, r1) || !realpath(p2, r2)) {
+        return 0; // failed to resolve
+    }
+
+    return strcmp(r1, r2) == 0;
+}
+/***********************************************************************************************/
 void setupConfig(AcMeshInfo& config)
 {
   config = acInitInfo();
@@ -444,7 +455,7 @@ void setupConfig(AcMeshInfo& config)
 
   sprintf(build_path,"%s/src/astaroth",get_cwd());
   //This is here to skip the unnecessary make in case we run pc_newrun -s
-  if(strcmp(build_path,ORIGINAL_BUILD_PATH))
+  if(!same_path(build_path,ORIGINAL_BUILD_PATH))
   {
 	  config.runtime_compilation_skip_make_if_nothing_has_changed = true;
   }
@@ -1966,17 +1977,17 @@ void testBCs()
   exit(EXIT_SUCCESS);
 }
 /***********************************************************************************************/
-extern "C" void gpuSetDt(double t)
+extern "C" void prepareForFirstSubstep(double t)
 {
 	acGridSynchronizeStream(STREAM_ALL);
  	acDeviceSetInput(acGridGetDevice(), AC_t,AcReal(t));
 	beforeBoundaryGPU(false,0,t,false);
-	if (!lcourant_dt)
+	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_initialize_sums),1);
+	if (!lcourant_dt || !ldt)
 	{
-		fprintf(stderr,"gpuSetDt works only for Courant timestep!!\n");
-		exit(EXIT_FAILURE);
+		return;
 	}
-	//TP: not needed but for extra safety
+	//Not needed but for extra safety
   	acDeviceSetInput(acGridGetDevice(), AC_step_num, (PC_SUB_STEP_NUMBER) 0);
 	const auto graph = acGetOptimizedDSLTaskGraph(AC_calculate_timestep);
 
@@ -1986,8 +1997,8 @@ extern "C" void gpuSetDt(double t)
 	set_dt(dt1_);
 	dt1_interface = dt1_;
         acDeviceSwapBuffers(acGridGetDevice());
+	//Not strictly needed but for extra safety
 	loadFarray();
-	//TP: not strictly needed but for extra safety
 }
 /***********************************************************************************************/
 //Reads the results of reductions and copies them to the host.

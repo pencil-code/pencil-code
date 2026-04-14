@@ -141,9 +141,9 @@ contains
 
     endsubroutine update_on_gpu
 !**************************************************************************
-    subroutine gpu_set_dt()
+    subroutine gpu_prepare_for_first_substep()
 
-    endsubroutine gpu_set_dt
+    endsubroutine gpu_prepare_for_first_substep
 !**************************************************************************
     subroutine infer_gpu(flag)
 

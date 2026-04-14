@@ -37,7 +37,7 @@ void updateInConfigArr(int);
 int  updateInConfigArrName(char *);
 void updateInConfigScal(int,REAL);
 int  updateInConfigScalName(char *, REAL);
-void gpuSetDt(double t);
+void prepareForFirstSubstep(double t);
 void random_initial_condition(void);
 void getGPUReducedVars(REAL* dst);
 void testBCs(void);
@@ -206,9 +206,9 @@ int FTNIZE(update_on_gpu_arr_by_name_c)(char *varname)
   return updateInConfigArrName(varname);
 }
 /* ---------------------------------------------------------------------- */
-void FTNIZE(gpu_set_dt_c)(double* t)
+void FTNIZE(gpu_prepare_for_first_substep_c)(double* t)
 {
-  gpuSetDt(*t);
+  prepareForFirstSubstep(*t);
 }
 /* ---------------------------------------------------------------------- */
 void FTNIZE(radtransfer_gpu_c)(){
