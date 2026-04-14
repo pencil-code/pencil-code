@@ -134,6 +134,8 @@ module Special
   logical :: lwstate_crit=.false.        !PAR_DOC: lwstate_crit switch (would put phi=0, is false by default)
   logical :: lwstate_crit_old=.false.    !PAR_DOC: lwstate_crit_old (to restore the old wstate criterion used in the autotest)
   logical :: lheating=.false.            !PAR_DOC: heating criterion
+  logical :: lheating_always=.false.     !PAR_DOC: heating criterion, set to true once lheating=T.
+  logical :: lheating_keep_on=.false.    !PAR_DOC: heating criterion
   logical :: ldefine_a2rhopm_without_Vpotential=.false.    !PAR_DOC: should be false to have correct results
   logical :: la2rhop_wrong_factor=.false. !PAR_DOC: should be false to have correct results
   logical :: lappy_BD_k1D_factor=.false. !PAR_DOC: appy $k_1^D$ factor in the Bunch-Davies initial condition.
@@ -167,7 +169,8 @@ module Special
       lrho_rad, lrho_rad_apply, lrho_rad_apply2, lrho_chi_corrected, lwstate_accum, &
       lrho_chi_inhom, ldefine_a2rhophi_with_Vpotential, &
       rad_heating, ascale_heat, ascale_heat_off, aphimax, Gamma_phi0, lconf_time, rhophim_crit, &
-      wstate_crit, lwstate_crit, lwstate_crit_old, wstate_tolerance, wstate_aver_prev, heating_choice
+      wstate_crit, lwstate_crit, lwstate_crit_old, wstate_tolerance, wstate_aver_prev, &
+      heating_choice, lheating_keep_on
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -620,9 +623,10 @@ module Special
       endselect
 !
 !  Current choice of temporal form of Gamma_phi. Heating is currently instantaenous.
-!  to rename lheating -> lheating_phi
+!  to rename lheating -> lheating_phi. The switch lheating_always is false by default
+!  and set to true after the first time lheating is true and if lheating_keep_on is true.
 !
-      if (lheating) then
+      if (lheating .or. lheating_always) then
         Gamma_phi=Gamma_phi0
       else
         Gamma_phi=0.
@@ -1280,8 +1284,11 @@ module Special
 !
       select case (heating_choice)
         case ('Hscript_max')
-          lheating=Hscript<Hscript_prev
-          Hscript_prev=Hscript
+          if (.not. lheating_always) then
+            lheating=Hscript<Hscript_prev
+            Hscript_prev=Hscript
+            lheating_always=lheating .and. lheating_keep_on
+          endif
         case ('aphimax2')
           lheating=a2>aphimax2
         case default
