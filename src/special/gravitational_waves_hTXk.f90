@@ -1427,7 +1427,7 @@ module Special
 !
       select case (id)
         case (id_record_DT_GW)
-          if (read_persist ('DT_GW', dt_GW)) return
+          done = read_persist ('DT_GW', dt_GW)
       endselect
 !
     endsubroutine input_persist_special_id

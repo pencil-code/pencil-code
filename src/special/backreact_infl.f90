@@ -1307,7 +1307,7 @@ module Special
       real, intent(inout) :: sigE1m,sigB1m
       real, dimension (nx,3) :: el, bb, gphi
       real, dimension (nx) :: e2, b2, gphi2, dphi, a2rhop, a2rho, a2rhophi
-      real, dimension (nx) :: tmp, a2rhopphi
+      real, dimension (nx) :: a2rhopphi
       real, dimension (nx) :: ddota, phi, Vpotential, edotb, sigE1, sigB1
       real, dimension (nx) :: boost, gam_EB, eprime, bprime, jprime1
 !
