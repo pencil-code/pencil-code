@@ -1,4 +1,5 @@
 #if LBACKREACT_INFL
+#define AC_lcombine_prep_ode_right_with_rhs AC_lcombine_prep_ode_right_with_rhs__mod__backreact_infl
 output global real AC_e2m_all__mod__backreact_infl
 output global real AC_b2m_all__mod__backreact_infl
 output global real AC_sige1m_all_nonaver__mod__backreact_infl
@@ -170,6 +171,7 @@ prep_ode_right()
 #else
 
 #if LKLEIN_GORDON
+#define AC_lcombine_prep_ode_right_with_rhs AC_lcombine_prep_ode_right_with_rhs__mod__klein_gordon
 output global real AC_e2m_all__mod__klein_gordon
 output global real AC_b2m_all__mod__klein_gordon
 output global real AC_sige1m_all_nonaver__mod__klein_gordon
@@ -356,7 +358,7 @@ prep_ode_right(){}
 #endif
 Kernel prep_ode_right_kernel(){
 //This is done either here in before boundary or together with the rhss if this flag is true 
-   if(!AC_lcombine_prep_ode_right_with_rhs__mod__backreact_infl) prep_ode_right()
+   if(!AC_lcombine_prep_ode_right_with_rhs) prep_ode_right()
 }
 //If we use the 'approximative' scheme then we have do the sums once outside of rhs
 //to have a good starting point for the first rhs

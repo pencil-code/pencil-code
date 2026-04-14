@@ -142,7 +142,7 @@ module Special
   logical, pointer :: lphi_hom, lphi_linear_regime, lnoncollinear_EB, lnoncollinear_EB_aver
   logical, pointer :: lcollinear_EB, lcollinear_EB_aver, lmass_suppression
   logical, pointer :: lallow_bprime_zero
-  !Whether the sums needed for the ODE advancement are done in the together in the same kernel as the rhs
+  !Whether the sums needed for the ODE and rhs advancement are done in the together in the same kernel as the rhs
   !advancement. Benchmarks seem to suggest that combining them is indeed more performant.
   !This approach is however strictly approximative since we effectively take the value of Hscript from the preceeding substep
   logical :: lcombine_prep_ode_right_with_rhs = .false.
@@ -1581,6 +1581,7 @@ module Special
     call copy_addr(lrho_chi_inhom,p_par(34)) ! bool
     call copy_addr(lheating_always,p_par(35)) ! bool
     call copy_addr(lcombine_prep_ode_right_with_rhs,p_par(36)) ! bool
+    call copy_addr(lsolve_for_phi_always,p_par(37)) ! bool
 
     endsubroutine pushpars2c
 !********************************************************************

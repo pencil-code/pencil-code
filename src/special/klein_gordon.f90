@@ -125,6 +125,10 @@ module Special
   real, pointer :: sigE_prefactor, sigB_prefactor, mass_chi
   real, dimension (nx) :: dt1_special
   real, dimension (nx, 4, 3) :: dfdxs=0.
+  !Whether the sums needed for the ODE and rhs advancement are done in the together in the same kernel as the rhs
+  !advancement. Benchmarks seem to suggest that combining them is indeed more performant.
+  !This approach is however strictly approximative since we effectively take the value of Hscript from the preceeding substep
+  logical :: lcombine_prep_ode_right_with_rhs = .false.
   logical :: lcompute_dphi0=.true., lem_backreact=.false.
   logical :: lscale_tobox=.true., ldt_klein_gordon=.true., lconf_time=.true.
   logical :: lskip_projection_phi=.false., lvectorpotential=.false., lflrw=.false.
@@ -1739,6 +1743,7 @@ module Special
     call copy_addr(beta_usr,p_par(55))
     call copy_addr(v_usr,p_par(56))
     call copy_addr(v0_usr,p_par(57))
+    call copy_addr(lcombine_prep_ode_right_with_rhs,p_par(58)) ! bool
 
     endsubroutine pushpars2c
 !********************************************************************
