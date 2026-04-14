@@ -87,7 +87,7 @@ module Special
 !
 !  integer :: iinfl_phi=0, iinfl_dphi=0, iinfl_hubble=0, iinfl_lna=0, Ndiv=100
   integer :: iinfl_phi=0, iinfl_dphi=0, iinfl_lna=0, Ndiv=100
-  integer :: iinfl_rho_chi=0, iinfl_rho_rad=0, iinfl_wstate_accum=0., iinfl_time_accum=0.
+  integer :: iinfl_rho_chi=0, iinfl_rho_rad=0
   real :: ncutoff_phi=1., infl_v=.1
   real :: axionmass=1.06e-6, axionmass2, ascale_ini=1.
   real :: phi0=.44, dphi0=-1.69e-7, c_light_axion=1., lambda_axion=0., eps=.01
@@ -109,10 +109,10 @@ module Special
   real :: aphimax=0., aphimax2=0. !PAR_DOC: maximum a value above which the phi potential is quenched.
   real :: Gamma_phi0=impossible, Gamma_phi !PAR_DOC: damping factor for phi above aphimax
   real :: rhophim_crit=1e-21      !PAR_DOC: minimum phi
-  real :: wstate, wstate_accum, wstate_aver !PAR_DOC: critical w (EoS) value (slightly below 1/3)
-  real :: wstate_crit=0.3333      !PAR_DOC: critical w (EoS) value (slightly below 1/3)
-  real :: wstate_tolerance=1e-10  !PAR_DOC: tolerance w (EoS) value (slightly below 1/3)
-  real :: wstate_aver_prev=0.     !PAR_DOC: tolerance w (EoS) value (slightly below 1/3)
+  real :: wstate, wstate_aver     !PAR_DOC: critical w (EoS) value (slightly below 1/3)
+  real :: wstate_crit=0.333333333 !PAR_DOC: critical w (EoS) value (1/3)
+  real :: wstate_tolerance=0.     !PAR_DOC: tolerance w (EoS) value
+  real :: wstate_prev=0.          !PAR_DOC: value of wstate in the previous iteration.
 !
   real, target :: ddotam_all
   real, pointer :: alpf, eta
@@ -124,13 +124,13 @@ module Special
   logical :: lskip_projection_phi=.false., lvectorpotential=.false., lflrw=.false.
   logical :: lrho_chi=.false., lno_noise_phi=.false., lno_noise_dphi=.false.
   logical :: lrho_rad=.false.            !PAR_DOC: radiation from inflaton decay
-  logical :: lwstate_accum=.false.       !PAR_DOC: time-integrated EoS
   logical :: lrho_rad_apply=.true.       !PAR_DOC: radiation from inflaton decay, and also applied to df(l1:l2,m,n,iinfl_dphi)
   logical :: lrho_rad_apply2=.true.      !PAR_DOC: radiation from inflaton decay, and also applied to df(l1:l2,m,n,iinfl_dphi)
   logical :: lrho_chi_corrected=.true.   !PAR_DOC: for backward compatibility; when false, we use the wrong scale factor in the rho_chi equation
   logical :: lrho_chi_inhom=.false.      !PAR_DOC: inhomogeneous heating
   logical :: ldefine_a2rhophi_with_Vpotential=.true.  !PAR_DOC: define a2rhophi with Vpotential
   logical :: lsolve_for_phi=.true.       !PAR_DOC: whether we still want to solve for phi
+  logical :: lsolve_for_phi_always=.true. !PAR_DOC: whether we still want to solve for phi
   logical :: lwstate_crit=.false.        !PAR_DOC: lwstate_crit switch (would put phi=0, is false by default)
   logical :: lwstate_crit_old=.false.    !PAR_DOC: lwstate_crit_old (to restore the old wstate criterion used in the autotest)
   logical :: lheating=.false.            !PAR_DOC: heating criterion
@@ -160,9 +160,9 @@ module Special
       initpower_dphi, initpower2_dphi, cutoff_dphi, kpeak_dphi, &
       ncutoff_phi, lscale_tobox, Hscript0, Hscript_choice, infl_v, lflrw, &
       lrho_chi, scale_rho_chi_Heqn, scale_rho_rad_Heqn, amplee_BD_prefactor, deriv_prefactor_ee, &
-      lrho_rad, init_rho_rad, lwstate_accum, Gamma_phi0, lconf_time, &
+      lrho_rad, init_rho_rad, Gamma_phi0, lconf_time, &
       echarge_type, init_rho_chi, rho_chi_init, lrho_chi_inhom, rhophim_crit, &
-      wstate_crit, lwstate_crit, lwstate_crit_old, wstate_tolerance, wstate_aver_prev, heating_choice, &
+      wstate_crit, lwstate_crit, lwstate_crit_old, wstate_tolerance, wstate_prev, heating_choice, &
       ldefine_a2rhopm_without_Vpotential, la2rhop_wrong_factor, lappy_BD_k1D_factor
 !
   namelist /special_run_pars/ &
@@ -170,10 +170,10 @@ module Special
       lbackreact_infl, lem_backreact, c_light_axion, lambda_axion, Vprime_choice, &
       lzeroHubble, ldt_backreact_infl, Ndiv, Hscript0, Hscript_choice, infl_v, &
       lflrw, lrho_chi, scale_rho_chi_Heqn, scale_rho_rad_Heqn, echarge_type, cdt_rho_chi, &
-      lrho_rad, lrho_rad_apply, lrho_rad_apply2, lrho_chi_corrected, lwstate_accum, &
+      lrho_rad, lrho_rad_apply, lrho_rad_apply2, lrho_chi_corrected, &
       lrho_chi_inhom, ldefine_a2rhophi_with_Vpotential, &
       rad_heating, ascale_heat, ascale_heat_off, aphimax, Gamma_phi0, lconf_time, rhophim_crit, &
-      wstate_crit, lwstate_crit, lwstate_crit_old, wstate_tolerance, wstate_aver_prev, &
+      wstate_crit, lwstate_crit, lwstate_crit_old, wstate_tolerance, wstate_prev, &
       heating_choice, lheating_keep_on, lcombine_prep_ode_right_with_rhs
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
@@ -228,10 +228,6 @@ module Special
      if (lflrw) call farray_register_ode('infl_lna',iinfl_lna)
      if (lrho_chi) call farray_register_ode('infl_rho_chi',iinfl_rho_chi)
      if (lrho_rad) call farray_register_ode('infl_rho_rad',iinfl_rho_rad)
-     if (lwstate_accum) then
-       call farray_register_ode('infl_wstate_accum',iinfl_wstate_accum)
-       call farray_register_ode('infl_time_accum',iinfl_time_accum)
-     endif
 !
 !  for power spectra, it is convenient to use ispecialvar and
 !
@@ -462,13 +458,6 @@ module Special
         endselect
       endif
 !
-!  initial condition for energy density of radiation
-!
-      if (lroot .and. lwstate_accum) then
-        f_ode(iinfl_wstate_accum)=0.
-        f_ode(iinfl_time_accum)=0.
-      endif
-!
 !  Better default value based on alpf and axionmass
 !  Particle physics group Chin. Phys. C 38, 090001, (2014).
 !  But we take larger values of 10^{-8} or so.
@@ -657,8 +646,10 @@ module Special
 !
 !  In the following, Hscript means H if cosmic time is used.
 !  dphi/dt = dphi. So lrho_rad_apply is needed in the inhomogeneous case (but not lrho_rad_apply2).
+!  We have d2phi/dt^2 = ... (2*Hscript+Gamma_phi)*dphi/dt, so the timestep constraint is
+!  dt < 1/(2*Hscript+Gamma_phi).
 !
-      if (lsolve_for_phi) then
+      if (lsolve_for_phi .and. lsolve_for_phi_always) then
         df(l1:l2,m,n,iinfl_phi)=df(l1:l2,m,n,iinfl_phi)+p%infl_dphi
         if (lrho_rad .and. lrho_rad_apply) then
           df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi) - &
@@ -743,11 +734,13 @@ module Special
 !  Total contribution to the timestep.
 !  If Ndiv=0 is set, we compute instead an advective timestep based on the Alfven speed.
 !  vA=B/sqrt(rho_chi), so dt=C_M*dx/vA. In practice, C_M (=cdt_rho_chi) can be 20.
+!  This timestep constraint should not be used if hydrodynamics is evolved.
+!  If it is used, it should be based on cobformal time using comoving B and rho.
 !
       if (lfirst .and. ldt .and. ldt_backreact_infl) then
         if (Ndiv==0.) then
           if (lrho_chi) then
-            advec2=advec2+(b2m_all/f_ode(iinfl_rho_chi))*dxyz_2/cdt_rho_chi**2
+            advec2=advec2+(a21**2*b2m_all/f_ode(iinfl_rho_chi))*dxyz_2/cdt_rho_chi**2
           else
             call fatal_error("dspecial_dt", "lrho_chi must be .true. when Ndiv=0")
           endif
@@ -862,14 +855,6 @@ module Special
         df_ode(iinfl_rho_rad)=df_ode(iinfl_rho_rad)-4.*Hscript*f_ode(iinfl_rho_rad)+heating
       endif
 !
-!  Compute time-averaged wstate, <wstate>=\int wstate dt/\int dt.
-!
-      if (lwstate_accum .and. lheating) then
-        df_ode(iinfl_wstate_accum)=df_ode(iinfl_wstate_accum)+wstate
-        df_ode(iinfl_time_accum)=df_ode(iinfl_time_accum)+1.
-        wstate_aver=f_ode(iinfl_wstate_accum)/f_ode(iinfl_time_accum)
-      endif
-!
 !  Diagnostics
 !
       if (.not. lmultithread) then
@@ -903,19 +888,6 @@ module Special
       else
         rho_rad=0.
       endif
-!
-!  Set rho_rad for diagnostics
-!
-      if (lwstate_accum) then
-        wstate_accum=f_ode(iinfl_wstate_accum)
-      else
-        wstate_accum=0.
-      endif
-!
-!  Fatal error
-!
-      if (idiag_wstate_aver>0 .and. .not. lwstate_accum) &
-        call fatal_error("calc_ode_diagnostics_special", "lwstate_accum must be true")
 !
       if (ldiagnos) then
         call get_Hscript_and_a2(Hscript_diagnos,a2rhom_all_diagnos)
@@ -1181,7 +1153,7 @@ module Special
 !
 !  Here we use the possibility of switching off the phi evolution by setting phi=dphi=0.
 !
-      if (.not.lsolve_for_phi) then
+      if (.not. (lsolve_for_phi .and. lsolve_for_phi_always)) then
         f(l1:l2,m,n,iinfl_phi)=0.
         f(l1:l2,m,n,iinfl_dphi)=0.
       endif
@@ -1265,21 +1237,21 @@ module Special
 !
 !  Alternatitives for deciding when to solve for phi: either when
 !  wstate is not yet reached, or when a2rhophim_all is still big enough.
+!  Once lsolve_for_phi is false, we also put lsolve_for_phi_always to false
+!  can this will never allow lsolve_for_phi to become true.
 !
       wstate=(a2rhopphim_all*a21+onethird*rho_rad)/(a2rhophim_all*a21+rho_rad)
       if (lwstate_crit) then
         if (lwstate_crit_old) then
           lsolve_for_phi=(wstate<wstate_crit)
         else
-!leave unindented BEGIN
-        !lsolve_for_phi=abs(wstate_aver-wstate_aver_prev) > wstate_tolerance
-        lsolve_for_phi=abs(wstate-wstate_aver_prev) > wstate_tolerance
-        !wstate_aver_prev=wstate_aver
-        wstate_aver_prev=wstate
-!leave unindented END
+          if (lsolve_for_phi_always) then
+            lsolve_for_phi=abs(wstate-wstate_prev) > wstate_tolerance
+            wstate_prev=wstate
+            lsolve_for_phi_always=lsolve_for_phi
+          endif
         endif
       else
-        !lsolve_for_phi=(a2rhophim_all*a21)>rhophim_crit
         lsolve_for_phi=.true.
       endif
 !
