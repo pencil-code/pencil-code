@@ -91,10 +91,13 @@ module GPU
   ! The decomposition allows to do partial reductions before the global reduction.
   ! This saves memory and work.
   integer, dimension(3) :: thread_block_loop_factors = (/1,1,1/)
+  ! This saves memory at the cost of potential performance by not creating streams
+  ! which take surprisingly large amount of memory. Mainly needed for the autotest in norlx51
+  logical :: lonly_default_stream_for_taskgraphs = .false.
 
   namelist /gpu_run_pars/ &
      ltest_bcs,lac_sparse_autotuning,lcpu_timestep_on_gpu,lsingle_precision_timestep,lcumulative_df_on_gpu,&
-     lread_all_vars_from_device,lcuda_aware_mpi,ltest_rhs,it_test_rhs,thread_block_loop_factors
+     lread_all_vars_from_device,lcuda_aware_mpi,ltest_rhs,it_test_rhs,thread_block_loop_factors,lonly_default_stream_for_taskgraphs
 
 contains
 !***********************************************************************
@@ -396,6 +399,7 @@ contains
     call copy_addr(ltest_bcs,p_par(7)) ! bool
     call copy_addr(lsingle_precision_timestep,p_par(8)) ! bool
     call copy_addr(thread_block_loop_factors,p_par(9)) ! int3 dconst
+    call copy_addr(lonly_default_stream_for_taskgraphs,p_par(10)) ! bool dconst
     endsubroutine pushpars2c
 !**************************************************************************
 endmodule GPU

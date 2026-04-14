@@ -392,10 +392,8 @@ void setupConfig(AcMeshInfo& config)
   {
           PCLoad(config, AC_coordinate_system, AC_CYLINDRICAL_COORDINATES);
   }
-  //TP: this is needed to not run out of memory for spherical-gdisk-planet-thermo on norlx51
-#if LNEWTON_COOLING
-  PCLoad(config,AC_only_default_stream_for_taskgraphs, lcpu_timestep_on_gpu);
-#endif
+  //TP: this is needed to not run out of memory for spherical-gdisk-planet-thermo and backreact_infl on norlx51
+  PCLoad(config,AC_only_default_stream_for_taskgraphs, lonly_default_stream_for_taskgraphs__mod__gpu);
   PCLoad(config, AC_domain_decomposition, (int3) {nprocx,nprocy,nprocz});
   PCLoad(config, AC_ngrid, (int3){nxgrid,nygrid,nzgrid});
   PCLoad(config, AC_skip_single_gpu_optim, true);
