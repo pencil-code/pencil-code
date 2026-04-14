@@ -362,10 +362,11 @@ Field3 ERROR_AA
 Field  ERROR_RHO
 Field  ERROR_SS
 
-single_precision Field3 SG_ERROR_UU
-single_precision Field3 SG_ERROR_AA
-single_precision Field  SG_ERROR_RHO
-single_precision Field  SG_ERROR_SS
+run_const AcPrecision AC_error_buffer_precision = AC_REAL_PRECISION
+precision(AC_error_buffer_precision) Field3 SG_ERROR_UU
+precision(AC_error_buffer_precision) Field3 SG_ERROR_AA
+precision(AC_error_buffer_precision) Field  SG_ERROR_RHO
+precision(AC_error_buffer_precision) Field  SG_ERROR_SS
 
 Field SPLIT_DIFFUSION_UPDATE_BUFFER_REAL
 Field SPLIT_DIFFUSION_UPDATE_BUFFER_IMAG

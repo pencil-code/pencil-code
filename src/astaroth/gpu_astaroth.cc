@@ -397,6 +397,7 @@ void setupConfig(AcMeshInfo& config)
 #if LGRAVITATIONAL_WAVES_HTXK
   PCLoad(config,AC_GW_Fourier_precision,lsingle_precision_ffts_for_gw_update__mod__gravitational_waves_htxk ? AC_SINGLE_PRECISION : AC_REAL_PRECISION);
 #endif
+  PCLoad(config,AC_error_buffer_precision,lsingle_precision_timestep ? AC_SINGLE_PRECISION : AC_REAL_PRECISION);
   PCLoad(config, AC_domain_decomposition, (int3) {nprocx,nprocy,nprocz});
   PCLoad(config, AC_ngrid, (int3){nxgrid,nygrid,nzgrid});
   PCLoad(config, AC_skip_single_gpu_optim, true);
