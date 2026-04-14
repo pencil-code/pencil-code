@@ -160,6 +160,7 @@ module Special
   integer :: boost_method=2
   logical :: lsplit_GW_rhs_from_rest_on_gpu=.true.
   integer :: ntimesteps_per_GW_step=1
+  logical :: lsingle_precision_ffts_for_gw_update=.false.
 !
 ! Accumulated dt for gravitational wave update.
 !
@@ -205,6 +206,7 @@ module Special
     lread_scl_factor_file, t_ini, OmL0, OmM0, idt_file_safety, &
     lconstmod_in_stress, k_in_stress, itorder_GW, lLighthill, &
     lsplit_GW_rhs_from_rest_on_gpu, ntimesteps_per_GW_step, &
+    lsingle_precision_ffts_for_gw_update, &
     lread_pulsar !, nbin_angular
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
@@ -3593,6 +3595,7 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
     call copy_addr(luse_mag,p_par(76)) ! bool
     call copy_addr(lsplit_gw_rhs_from_rest_on_gpu,p_par(77)) ! bool
     call copy_addr(ntimesteps_per_gw_step,p_par(78)) ! int dconst
+    call copy_addr(lsingle_precision_ffts_for_gw_update,p_par(79)) ! bool
 
     call keep_compiler_quiet(OmL0)
     call keep_compiler_quiet(nfactd_GW)

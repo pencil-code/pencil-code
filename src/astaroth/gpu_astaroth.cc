@@ -394,6 +394,9 @@ void setupConfig(AcMeshInfo& config)
   }
   //TP: this is needed to not run out of memory for spherical-gdisk-planet-thermo and backreact_infl on norlx51
   PCLoad(config,AC_only_default_stream_for_taskgraphs, lonly_default_stream_for_taskgraphs__mod__gpu);
+#if LGRAVITATIONAL_WAVES_HTXK
+  PCLoad(config,AC_GW_Fourier_precision,lsingle_precision_ffts_for_gw_update__mod__gravitational_waves_htxk ? AC_SINGLE_PRECISION : AC_REAL_PRECISION);
+#endif
   PCLoad(config, AC_domain_decomposition, (int3) {nprocx,nprocy,nprocz});
   PCLoad(config, AC_ngrid, (int3){nxgrid,nygrid,nzgrid});
   PCLoad(config, AC_skip_single_gpu_optim, true);

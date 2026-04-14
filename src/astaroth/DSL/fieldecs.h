@@ -324,8 +324,9 @@ const real tini = AC_REAL_MIN*5
 Field AC_cp_full__mod__chemistry
 Field AC_lambda_full__mod__chemistry
 Field AC_cv_full__mod__chemistry
-Field AC_tpq_re__mod__gravitational_waves_htxk[6]
-Field AC_tpq_im__mod__gravitational_waves_htxk[6]
+run_const AcPrecision AC_GW_Fourier_precision = AC_REAL_PRECISION
+precision(AC_GW_Fourier_precision) Field AC_tpq_re__mod__gravitational_waves_htxk[6]
+precision(AC_GW_Fourier_precision) Field AC_tpq_im__mod__gravitational_waves_htxk[6]
 Field AC_nonlinear_tpq_re__mod__gravitational_waves_htxk[6]
 Field AC_nonlinear_tpq_im__mod__gravitational_waves_htxk[6]
 
