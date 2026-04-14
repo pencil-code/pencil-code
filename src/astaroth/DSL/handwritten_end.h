@@ -168,5 +168,9 @@
 
           }
    }
+#if LBACKREACT_INFL
+//This is done either together with the rhss here or if this flag is false then in before boundary
+   if(AC_lcombine_prep_ode_right_with_rhs__mod__backreact_infl) prep_ode_right()
+#endif
  }
 

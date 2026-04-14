@@ -13,7 +13,8 @@ output global real AC_ddotam_all__mod__backreact_infl
 field_order(AC_iinfl_phi__mod__backreact_infl-1)  Field F_INFL_PHI
 field_order(AC_iinfl_dphi__mod__backreact_infl-1) Field F_INFL_DPHI
 
-Kernel prep_ode_right(){
+prep_ode_right()
+{
   real AC_a21__mod__backreact_infl
   real AC_a2__mod__backreact_infl
   if(AC_lflrw__mod__backreact_infl)
@@ -195,7 +196,7 @@ field_order(AC_idphi_down_im__mod__klein_gordon-1) Field F_DPHI_DOWN_IM
 field_order(AC_ipsi__mod__klein_gordon-1)  Field F_PSI
 field_order(AC_idpsi__mod__klein_gordon-1) Field F_DPSI
 
-Kernel prep_ode_right(){
+prep_ode_right(){
   real AC_a21__mod__klein_gordon
   real AC_a2__mod__klein_gordon
   if(AC_lflrw__mod__klein_gordon)
@@ -350,6 +351,10 @@ Kernel prep_ode_right(){
 }
 
 #else
-Kernel prep_ode_right(){}
+prep_ode_right(){}
 #endif
 #endif
+Kernel prep_ode_right_kernel(){
+//This is done either here in before boundary or together with the rhss if this flag is true 
+   if(!AC_lcombine_prep_ode_right_with_rhs__mod__backreact_infl) prep_ode_right()
+}

@@ -142,6 +142,10 @@ module Special
   logical, pointer :: lphi_hom, lphi_linear_regime, lnoncollinear_EB, lnoncollinear_EB_aver
   logical, pointer :: lcollinear_EB, lcollinear_EB_aver, lmass_suppression
   logical, pointer :: lallow_bprime_zero
+  !Whether the sums needed for the ODE advancement are done in the together in the same kernel as the rhs
+  !advancement. Benchmarks seem to suggest that combining them is indeed more performant,
+  !but good to have an option to fall back to old scheme
+  logical :: lcombine_prep_ode_right_with_rhs = .true.
   character (len=labellen) :: Vprime_choice='quadratic', Hscript_choice='default'
   character (len=labellen) :: heating_choice='Hscript_max'
   character (len=labellen), dimension(ninit) :: initspecial='nothing'
@@ -170,7 +174,7 @@ module Special
       lrho_chi_inhom, ldefine_a2rhophi_with_Vpotential, &
       rad_heating, ascale_heat, ascale_heat_off, aphimax, Gamma_phi0, lconf_time, rhophim_crit, &
       wstate_crit, lwstate_crit, lwstate_crit_old, wstate_tolerance, wstate_aver_prev, &
-      heating_choice, lheating_keep_on
+      heating_choice, lheating_keep_on, lcombine_prep_ode_right_with_rhs
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -1345,6 +1349,8 @@ module Special
       if (.not. lphi_hom) then
         call grad(f,iinfl_phi,gphi)    !MR: the ghost zones are not necessarily updated!!!
         ! alberto: this function is called from special_after_boundary so shouldn't have the ghost zones updated?
+        !TP: Not necessarily, since if learly_finalize=.false. it can be that the halo exchange has not finished
+        !    here yet.
         call dot2_mn(gphi,gphi2)
         a2rhogphim=a2rhogphim+sum(0.5*gphi2)
 !
@@ -1572,7 +1578,7 @@ module Special
     call copy_addr(lambda_axion,p_par(14))
     call copy_addr(lconf_time,p_par(15)) ! bool
     call copy_addr(c_light_axion,p_par(16)) 
-    call copy_addr(lem_backreact,p_par(17))
+    call copy_addr(lem_backreact,p_par(17)) ! bool
     call copy_addr(ldt_backreact_infl,p_par(18)) ! bool
     call copy_addr(ndiv,p_par(19)) ! int
     call copy_addr(lrho_chi,p_par(20)) ! bool
@@ -1602,6 +1608,8 @@ module Special
 
     call copy_addr(lrho_chi_inhom,p_par(34)) ! bool
     call copy_addr(lheating_always,p_par(35)) ! bool
+    call copy_addr(lcombine_prep_ode_right_with_rhs,p_par(36)) ! bool
+
     endsubroutine pushpars2c
 !********************************************************************
 !********************************************************************
