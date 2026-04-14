@@ -1423,6 +1423,9 @@ void autotune_all_integration_substeps()
         beforeBoundaryGPU(false,i,0.0,false);
   }
   radTransfer();
+  //This is here mainly because GW_update will allocate buffers on the first call
+  //and I don't those allocations to mess with timing measurements for short runs
+  GW_update(0.0);
   splitUpdate(1e11,1);
 }
 /***********************************************************************************************/
