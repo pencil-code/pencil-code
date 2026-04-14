@@ -2460,7 +2460,7 @@ outer:do ikz=1,nz
     use Sub, only: gij, gij_etc, curl_mn, cross_mn
 !
     integer, parameter :: nk=nxgrid/2
-    integer :: k, ikx, iky, ikz, ivec, stat
+    integer :: k, ikx, iky, ikz, ivec 
     real :: k2
     real, dimension(mx,my,mz,mfarray) :: f
     real, dimension(nx,3) :: uu,oo,oxu
@@ -2476,6 +2476,7 @@ outer:do ikz=1,nz
 !
     if (lroot .AND. ip<10) call svn_id( &
          "$Id$")
+    !$omp parallel num_threads(num_helper_threads)
 !
 !  initialize power spectrum to zero
 !

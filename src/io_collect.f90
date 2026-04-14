@@ -371,12 +371,22 @@ module Io
 !
 !  23-Oct-2018/PABourdin: adapted from output_snap
 !
+      use General, only: keep_compiler_quiet
+
       integer, intent(in) :: mv, nv
       integer, dimension (mv), intent(in) :: ipar
       real, dimension (mv,mparray), intent(in) :: a
       character (len=*), intent(in) :: file
       character (len=*), optional, intent(in) :: label
       logical, optional, intent(in) :: ltruncate
+
+      call keep_compiler_quiet(ipar)
+      call keep_compiler_quiet(a)
+      call keep_compiler_quiet(mv)
+      call keep_compiler_quiet(nv)
+      call keep_compiler_quiet(file)
+      call keep_compiler_quiet(label)
+      call keep_compiler_quiet(ltruncate)
 !
       call fatal_error ('output_part_snap', 'not implemented for "io_collect"', .true.)
 !
@@ -411,8 +421,14 @@ module Io
 !
 !  03-May-2019/PABourdin: coded
 !
+      use General, only: keep_compiler_quiet
       integer, intent(in) :: num, nv, snap
       integer, dimension(nv), intent(in) :: ID
+
+      call keep_compiler_quiet(num)
+      call keep_compiler_quiet(nv)
+      call keep_compiler_quiet(snap)
+      call keep_compiler_quiet(ID)
 !
       call fatal_error ('output_stalker_init', 'not implemented for "io_collect"', .true.)
 !
@@ -424,11 +440,19 @@ module Io
 !
 !  03-May-2019/PABourdin: coded
 !
+      use General, only: keep_compiler_quiet
       character (len=*), intent(in) :: label
       integer, intent(in) :: mv, nv
       real, dimension (mv), intent(in) :: data
       logical, intent(in), optional :: lfinalize
       integer, intent(in), optional :: nvar
+
+      call keep_compiler_quiet(label)
+      call keep_compiler_quiet(mv)
+      call keep_compiler_quiet(nv)
+      call keep_compiler_quiet(data)
+      call keep_compiler_quiet(nvar)
+      call keep_compiler_quiet(lfinalize)
 !
       call fatal_error ('output_stalker', 'not implemented for "io_collect"', .true.)
 !
@@ -450,11 +474,17 @@ module Io
 !
 !  26-Oct-2018/PABourdin: adapted from output_snap
 !
+      use General, only: keep_compiler_quiet
       character (len=*), intent(in) :: file
       integer, intent(in) :: mv, nc
       character (len=*), dimension (mqarray), intent(in) :: labels
       real, dimension (mv,mparray), intent(in) :: fq
 !
+      call keep_compiler_quiet(file)
+      call keep_compiler_quiet(fq)
+      call keep_compiler_quiet(labels)
+      call keep_compiler_quiet(mv)
+      call keep_compiler_quiet(nc)
       call fatal_error ('output_pointmass', 'not implemented for "io_collect"', .true.)
 !
     endsubroutine output_pointmass
@@ -478,7 +508,6 @@ module Io
       real, dimension (:), allocatable :: gx, gy, gz
       integer, parameter :: tag_ga=675
       integer :: pz, pa, z_start, io_len, alloc_err, io_size, iz
-      integer(kind=8) :: rec_len
       real :: t_sp   ! t in single precision for backwards compatibility
 !
       lread_add = .true.
@@ -607,6 +636,7 @@ module Io
 !
 !  25-Oct-2018/PABourdin: apadpted and moved to IO module
 !
+      use General, only: keep_compiler_quiet
       integer, intent(in) :: mv
       integer, dimension (mv), intent(out) :: ipar
       real, dimension (mv,mparray), intent(out) :: ap
@@ -614,6 +644,8 @@ module Io
       character (len=*), intent(in) :: file
       character (len=*), optional, intent(in) :: label
 !
+      call keep_compiler_quiet(file)
+      call keep_compiler_quiet(label)
       call fatal_error ('input_part_snap', 'not implemented for "io_collect"', .true.)
       ipar=0; nv=0; npar_total=0; ap=0.
 !
@@ -625,11 +657,14 @@ module Io
 !
 !  26-Oct-2018/PABourdin: coded
 !
+      use General, only: keep_compiler_quiet
       character (len=*), intent(in) :: file
       integer, intent(in) :: mv, nc
       character (len=*), dimension (nc), intent(in) :: labels
       real, dimension (mv,nc), intent(out) :: fq
 !
+      call keep_compiler_quiet(labels)
+      call keep_compiler_quiet(file)
       call fatal_error ('input_pointmass', 'not implemented for "io_collect"', .true.)
       fq(1,1)=0.
 !
@@ -1022,6 +1057,7 @@ module Io
 !
 !  16-May-2020/MR: coded
 !
+      use General, only: keep_compiler_quiet
       use Geometrical_types
 
       character (len=*), intent(in) :: label
@@ -1033,6 +1069,8 @@ module Io
 !
       !write (lun_output) value
       write_persist_torus_rect = .false.
+      !Poor man's keep_compiler_quiet
+      if(.false.) print*,value%th
 !
     endfunction write_persist_torus_rect
 !***********************************************************************
@@ -1077,8 +1115,10 @@ module Io
 !
 !  12-Oct-2019/PABourdin: coded
 !
+      use General, only: keep_compiler_quiet
       character (len=*), intent(in) :: label
 !
+      call keep_compiler_quiet(label)
       persist_exists = .false.
 !
     endfunction persist_exists
@@ -1408,11 +1448,13 @@ module Io
 !
 !  16-May-2020/MR: coded
 !
+      use General, only: keep_compiler_quiet
       use Geometrical_types
 
       character (len=*), intent(in) :: label
       type(torus_rect), intent(out) :: value
 !
+      call keep_compiler_quiet(label)
       !read (lun_input) value
       read_persist_torus_rect = .false.
 !
@@ -1424,11 +1466,13 @@ module Io
 !
 !  10-Feb-2012/PABourdin: coded
 !
+      use General, only: keep_compiler_quiet
       character (len=*) :: file
       integer :: nv
       real, dimension (mx,my,mz,nv) :: a
       character (len=*), intent(in), optional :: label
 !
+      call keep_compiler_quiet(label)
       call output_snap (a, nv2=nv, file=file, mode=0)
       call output_snap_finalize
 !
@@ -1488,7 +1532,7 @@ module Io
 !  10-Feb-2012/PABourdin: adapted for collective IO
 !
       use Mpicomm, only: collect_grid
-      use General, only: loptest
+      use General, only: loptest,keep_compiler_quiet
 !
       character (len=*) :: file
       integer, optional :: mxout,myout,mzout
@@ -1498,6 +1542,9 @@ module Io
       integer :: alloc_err
       real :: t_sp   ! t in single precision for backwards compatibility
 !
+      call keep_compiler_quiet(mxout)
+      call keep_compiler_quiet(myout)
+      call keep_compiler_quiet(mzout)
       if (lyang) return      ! grid collection only needed on Yin grid, as grids are identical
 
       if (loptest(lwrite,.not.luse_oldgrid)) then

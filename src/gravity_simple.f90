@@ -635,10 +635,10 @@ module Gravity
 !  Set up physical units.
 !
       if (unit_system=='cgs') then
-        g_A = g_A_factor*g_A_cgs/unit_velocity*unit_time
-        g_B = g_B_factor*g_B_cgs/unit_length
-        g_C = g_C_factor*g_C_cgs/unit_velocity*unit_time
-        g_D = g_D_factor*g_D_cgs/unit_length
+        g_A = real(g_A_factor*g_A_cgs/unit_velocity*unit_time)
+        g_B = real(g_B_factor*g_B_cgs/unit_length)
+        g_C = real(g_C_factor*g_C_cgs/unit_velocity*unit_time)
+        g_D = real(g_D_factor*g_D_cgs/unit_length)
       else if (unit_system=='SI') then
         call not_implemented('initialize_gravity','SI unit conversions')
       endif
@@ -649,39 +649,39 @@ module Gravity
 !  nb: 331.5 is conversion factor: 10^-9 cm/s^2 -> kpc/Gyr^2)  (/= 321.1 ?!?)
 !AB: These numbers should be inserted in the appropriate units.
 !AB: As it is now, it can never make much sense.
-        gravz_zpencil = -(g_A*z/sqrt(z**2+g_B**2) + g_C*z/g_D)
+        gravz_zpencil = real(-(g_A*z/sqrt(z**2+g_B**2) + g_C*z/g_D))
 !
       case ('Ferriere-R')
 !
 !  Set up physical units.
 !
       if (unit_system=='cgs') then
-        g_A = g_A_factor*g_A_cgs/unit_velocity*unit_time
-        g_B = g_B_factor*g_B_cgs/unit_length
-        g_C = g_C_factor*g_C_cgs/unit_velocity*unit_time
-        g_D = g_D_factor*g_D_cgs/unit_length
-        g_E = g_E_factor*g_E_cgs/unit_length
-        g_F = g_F_factor*g_F_cgs/unit_length
-        if (Rsol==impossible) Rsol=Rsol_cgs/unit_length
-        if (Rgal==impossible) Rgal=Rsol_cgs/unit_length
+        g_A = real(g_A_factor*g_A_cgs/unit_velocity*unit_time)
+        g_B = real(g_B_factor*g_B_cgs/unit_length)
+        g_C = real(g_C_factor*g_C_cgs/unit_velocity*unit_time)
+        g_D = real(g_D_factor*g_D_cgs/unit_length)
+        g_E = real(g_E_factor*g_E_cgs/unit_length)
+        g_F = real(g_F_factor*g_F_cgs/unit_length)
+        if (Rsol==impossible) Rsol=real(Rsol_cgs/unit_length)
+        if (Rgal==impossible) Rgal=real(Rsol_cgs/unit_length)
       else if (unit_system=='SI') then
 !        call not_implemented('initialize_gravity','SI unit conversions')
-        g_A = g_A_factor*g_A_cgs/unit_velocity*unit_time/1e2
-        g_B = g_B_factor*g_B_cgs/unit_length/1e2
-        g_C = g_C_factor*g_C_cgs/unit_velocity*unit_time/1e2
-        g_D = g_D_factor*g_D_cgs/unit_length/1e2
-        g_E = g_E_factor*g_E_cgs/unit_length/1e2
-        g_F = g_F_factor*g_F_cgs/unit_length/1e2
-        if (Rsol==impossible) Rsol=Rsol_cgs/unit_length/1e2
-        if (Rgal==impossible) Rgal=Rsol_cgs/unit_length/1e2
+        g_A = real(g_A_factor*g_A_cgs/unit_velocity*unit_time/1e2)
+        g_B = real(g_B_factor*g_B_cgs/unit_length/1e2)
+        g_C = real(g_C_factor*g_C_cgs/unit_velocity*unit_time/1e2)
+        g_D = real(g_D_factor*g_D_cgs/unit_length/1e2)
+        g_E = real(g_E_factor*g_E_cgs/unit_length/1e2)
+        g_F = real(g_F_factor*g_F_cgs/unit_length/1e2)
+        if (Rsol==impossible) Rsol=real(Rsol_cgs/unit_length/1e2)
+        if (Rgal==impossible) Rgal=real(Rsol_cgs/unit_length/1e2)
       endif
 !
 !  Gravity profile from K. Ferriere, ApJ 497, 759, 1998, eq (36)
 !  at various radius relative to the solar radius.  (for interstellar runs)
 !  Rsol and Rgal are by default 8.5 kpc
 !
-      gravz_zpencil = -(g_A*z/sqrt(z**2+g_B**2)*exp((Rsol-Rgal)/g_F) &
-                      + g_C*z/g_D*(Rsol**2+g_E**2)/(Rgal**2+g_E**2)-2*Omega*(Omega+Sshear)*z)
+      gravz_zpencil = real(-(g_A*z/sqrt(z**2+g_B**2)*exp((Rsol-Rgal)/g_F) &
+                      + g_C*z/g_D*(Rsol**2+g_E**2)/(Rgal**2+g_E**2)-2*Omega*(Omega+Sshear)*z))
 
 !
       case ('Galactic-hs')
@@ -815,7 +815,7 @@ module Gravity
         endif
 !
         ! convert z coordinates from SI to Pencil units
-        data_z = data_z / unit_length
+        data_z = real(data_z / unit_length)
       endif
 !
       ! broadcast profile
@@ -1052,9 +1052,9 @@ module Gravity
       case ('accretor')
         if (lpencil(i_gg)) then
           if (laccretor_peri) then
-            xaccretor=atan(tan(kaccretor*(x(l1:l2)-accretor_speed*t)))/kaccretor
+            xaccretor=real(atan(tan(kaccretor*(x(l1:l2)-accretor_speed*t)))/kaccretor)
           else
-            xaccretor=x(l1:l2)-accretor_speed*t
+            xaccretor=real(x(l1:l2)-accretor_speed*t)
           endif
           one_over_r=1./sqrt(xaccretor**2+y(m)**2+z(n)**2+accretor_rsoft**2)
           fact=-accretor_grav*one_over_r**3
