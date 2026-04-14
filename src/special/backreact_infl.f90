@@ -143,9 +143,9 @@ module Special
   logical, pointer :: lcollinear_EB, lcollinear_EB_aver, lmass_suppression
   logical, pointer :: lallow_bprime_zero
   !Whether the sums needed for the ODE advancement are done in the together in the same kernel as the rhs
-  !advancement. Benchmarks seem to suggest that combining them is indeed more performant,
-  !but good to have an option to fall back to old scheme
-  logical :: lcombine_prep_ode_right_with_rhs = .true.
+  !advancement. Benchmarks seem to suggest that combining them is indeed more performant.
+  !This approach is however strictly approximative since we effectively take the value of Hscript from the preceeding substep
+  logical :: lcombine_prep_ode_right_with_rhs = .false.
   character (len=labellen) :: Vprime_choice='quadratic', Hscript_choice='default'
   character (len=labellen) :: heating_choice='Hscript_max'
   character (len=labellen), dimension(ninit) :: initspecial='nothing'
