@@ -5250,24 +5250,35 @@ For isothermal hydrodynamics, see \S\ref{entropy} below.
 
 \subsection{Induction equation}
 
-We do not normally use the Weyl gauge,
+We start from the general induction equation for the 
+vector potential,
+
 \begin{equation}
   \frac{\partial\Av}{\partial t}
-  = \uv\times\Bv - \eta\mu_0\jv \; ,
+  = \uv\times\Bv - \eta\mu_0\jv -\nabla\Phi \; ,
 \label{dAdt}
 \end{equation}
-but rather the resistive gauge,
+
+where $\Av$ is the magnetic vector potential\index{Vector potential},
+$\Bv = \curl\Av$ the magnetic
+flux density, $\Phi$ is the scalar potential,
+$\eta = 1/(\mu_0\sigma)$ is the magnetic diffusivity
+($\sigma$ denoting the electrical conductivity), and $\mu_0$ the
+magnetic vacuum permeability.
+
+In the Weyl gauge, $\Phi=0$, and the induction equation reduces to
+\begin{equation}
+  \frac{\partial\Av}{\partial t}
+  = \uv\times\Bv - \eta\mu_0\jv \; .
+\label{dAdt}
+\end{equation}
+
+However, we do not normally use the Weyl gauge, but rather the resistive gauge,
 \begin{equation}
   \frac{\partial\Av}{\partial t}
   = \uv\times\Bv + \eta\nabla^2\Av \; .
 \label{resistive-gauge}
 \end{equation}
-Here $\Av$ is the magnetic vector potential\index{Vector potential},
-$\Bv = \curl\Av$ the magnetic
-flux density, $\eta = 1/(\mu_0\sigma)$ is the magnetic diffusivity
-($\sigma$ denoting the electrical conductivity), and $\mu_0$ the
-magnetic vacuum permeability.
-In the \name{Weyl gauge}, $\Phi=0$, where $\Phi$ denotes the scalar potential.
 In the \name{resistive gauge}, we have $\Phi=\eta\nab\cdot\Av$.
 It has the advantage that the terms $A_{x,xx}$, $A_{y,yy}$, and $A_{z,zz}$
 are present and prevent wiggles the vector potential.

@@ -429,31 +429,67 @@ class Power(object):
         )
         setattr(self, power_name, power_array)
 
+    # def _read_power(self, power_name, file_name, datadir):
+    #     """
+    #     Handles output of power subroutine.
+    #     """
+    #     nk = self._get_nk_xyz(datadir)
+    #     block_size = np.ceil(nk/8) + 1
+
+    #     time = []
+    #     power_array = []
+    #     with open(os.path.join(datadir, file_name), "r") as f:
+    #         for line_idx, line in enumerate(f):
+    #             if line_idx % block_size == 0:
+    #                 time.append(self._parse_time_line(line))
+    #             else:
+    #                 for value_string in line.strip().split():
+    #                     power_array.append(ffloat(value_string))
+
+    #     # Reformat into arrays.
+    #     time = np.array(time)
+    #     power_array = (
+    #         np.array(power_array)
+    #         .reshape([len(time), nk])
+    #         .astype(np.float32)
+    #     )
+    #     self.t = time.astype(np.float32)
+    #     setattr(self, power_name, power_array)
+
+
     def _read_power(self, power_name, file_name, datadir):
-        """
-        Handles output of power subroutine.
-        """
+
         nk = self._get_nk_xyz(datadir)
-        block_size = np.ceil(nk/8) + 1
 
-        time = []
-        power_array = []
+        times = []
+        power_blocks = []
+        current_block = []
+
         with open(os.path.join(datadir, file_name), "r") as f:
-            for line_idx, line in enumerate(f):
-                if line_idx % block_size == 0:
-                    time.append(self._parse_time_line(line))
-                else:
-                    for value_string in line.strip().split():
-                        power_array.append(ffloat(value_string))
+            for line in f:
 
-        # Reformat into arrays.
-        time = np.array(time)
-        power_array = (
-            np.array(power_array)
-            .reshape([len(time), nk])
-            .astype(np.float32)
-        )
-        self.t = time.astype(np.float32)
+                values = line.split()
+
+                # time line
+                if len(values) <= 2:
+                    if current_block:
+                        power_blocks.append(current_block)
+                        current_block = []
+
+                    times.append(self._parse_time_line(line))
+
+                # data line
+                else:
+                    current_block.extend(ffloat(v) for v in values)
+
+            # append last block
+            if current_block:
+                power_blocks.append(current_block)
+
+        time = np.array(times, dtype=np.float32)
+        power_array = np.array(power_blocks, dtype=np.float32)
+
+        self.t = time
         setattr(self, power_name, power_array)
 
     @functools.lru_cache(maxsize=128)
