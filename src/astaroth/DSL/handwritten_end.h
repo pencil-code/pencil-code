@@ -169,10 +169,7 @@
           }
    }
 //This is done either together with the rhss here or if this flag is false then in before boundary
-#if LBACKREACT_INFL
-   if(AC_lcombine_prep_ode_right_with_rhs) prep_ode_right()
-#endif
-#if LKLEIN_GORDON
+#if LBACKREACT_INFL || LKLEIN_GORODON
    if(AC_lcombine_prep_ode_right_with_rhs) prep_ode_right()
 #endif
  }

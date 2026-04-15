@@ -357,8 +357,10 @@ prep_ode_right(){}
 #endif
 #endif
 Kernel prep_ode_right_kernel(){
+#if LBACKREACT_INFL || LKLEIN_GORDON
 //This is done either here in before boundary or together with the rhss if this flag is true 
    if(!AC_lcombine_prep_ode_right_with_rhs) prep_ode_right()
+#endif
 }
 //If we use the 'approximative' scheme then we have do the sums once outside of rhs
 //to have a good starting point for the first rhs
