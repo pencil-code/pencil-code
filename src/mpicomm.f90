@@ -748,7 +748,7 @@ module Mpicomm
 !  23-oct-23/MR: coded
 !
       real, dimension(:,:,:,:), intent(in):: a
-      real, dimension(mx,my,mz,mfarray), intent(out):: f
+      real, dimension(:,:,:,:), intent(out):: f
       integer, intent(in) :: indvar1,indvar2
 
       integer, dimension(4) :: start_get, start_store
@@ -1899,7 +1899,7 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
 !
       use General, only: transpose_mn, notanumber, copy_kinked_strip_z, copy_kinked_strip_y, reset_triangle, notanumber
 
-      real, dimension(mx,my,mz,mfarray), intent(inout):: f
+      real, dimension(:,:,:,:), intent(inout):: f
       integer, optional,                 intent(in)   :: ivar1_opt, ivar2_opt
 !
       integer :: ivar1, ivar2, j
@@ -2474,7 +2474,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !                      y-ghosts are not needed
 !  20-june-02/nils: adapted from pencil_mpi
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 !
       real(KIND=rkind8) :: deltay_dy, frac, c1, c2, c3, c4, c5, c6
@@ -2687,7 +2687,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !  20-june-02/nils: adapted from pencil_mpi
 !  02-mar-02/ulf: Sliding periodic boundary conditions in x
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:,:) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 !
       integer, dimension (MPI_STATUS_SIZE) :: irecv_stat_fall, irecv_stat_fann
