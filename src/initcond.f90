@@ -1444,6 +1444,8 @@ module Initcond
 !  jump
 !
 !  19-sep-02/axel: coded
+!  16-apr-26/TP: wrote the spread calls out since at least with -O0 on the Cray compiler
+!                on LUMI would otherwise run out of stack space
 !
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1454,7 +1456,8 @@ module Initcond
       real :: fleft,fright,width
       real :: xmid,ymid,zmid
       character(len=*) :: dir
-      integer :: l,m
+      integer :: l,m,n
+
 !
 !  jump; check direction
 !
@@ -1462,15 +1465,27 @@ module Initcond
 !
       case ('x')
         profx=fleft+(fright-fleft)*.5*(1.+tanh((x-xmid)/width))
-        f(:,:,:,i)=f(:,:,:,i)+spread(spread(profx,2,my),3,mz)
+        do m=1,my
+        do n=1,mz
+          f(:,m,n,i)=f(:,m,n,i)+profx
+        enddo
+        enddo
 !
       case ('y')
         profy=fleft+(fright-fleft)*.5*(1.+tanh((y-ymid)/width))
-        f(:,:,:,i)=f(:,:,:,i)+spread(spread(profy,1,mx),3,mz)
+        do l=1,mx
+        do n=1,mz
+          f(l,:,n,i)=f(l,:,n,i)+profy
+        enddo
+        enddo
 !
       case ('z')
         profz=fleft+(fright-fleft)*.5*(1.+tanh((z-zmid)/width))
-        f(:,:,:,i)=f(:,:,:,i)+spread(spread(profz,1,mx),2,my)
+        do l=1,mx
+        do m=1,my
+          f(l,m,:,i)=f(l,m,:,i)+profz
+        enddo
+        enddo
 !
 !  2-D shocks
 !
@@ -1578,6 +1593,8 @@ module Initcond
 !
 !  19-jun-02/axel: coded
 !   5-jul-02/axel: made additive (if called twice), kx,ky,kz are optional
+!  16-apr-26/TP: wrote the spread calls out since at least with -O0 on the Cray compiler
+!                on LUMI would otherwise run out of stack space
 !
       integer :: i,j
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1586,6 +1603,7 @@ module Initcond
       real, dimension (mz) :: sfuncz,cfuncz
       real, optional :: kx,ky,kz,kx2,ky2,kz2,phase
       real :: ampl,k=1.,ph
+      integer :: l,m,n
 !
 !  This routine should be removed by 2020
 !
@@ -1614,12 +1632,32 @@ module Initcond
           if (lroot) print*,'beltrami_old: ampl=0; kx=',k
         elseif (ampl>0) then
           if (lroot) print*,'beltrami_old: Beltrami field (pos-hel): kx,i=',k,i
-          j=i+1; f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncx,2,my),3,mz)
-          j=i+2; f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncx,2,my),3,mz)
+          j=i+1 
+          do m=1,my
+          do n=1,mz
+                f(:,m,n,j)=f(:,m,n,j)+sfuncx
+          enddo
+          enddo
+          j=i+2 
+          do m=1,my
+          do n=1,mz
+                f(:,m,n,j)=f(:,m,n,j)+cfuncx
+          enddo
+          enddo
         elseif (ampl<0) then
           if (lroot) print*,'beltrami_old: Beltrami field (neg-hel): kx,i=',k,i
-          j=i+1; f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncx,2,my),3,mz)
-          j=i+2; f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncx,2,my),3,mz)
+          j=i+1 
+          do m=1,my
+          do n=1,mz
+            f(:,m,n,j)=f(:,m,n,j)+cfuncx
+          enddo
+          enddo
+          j=i+2 
+          do m=1,my
+          do n=1,mz
+            f(:,m,n,j)=f(:,m,n,j)+sfuncx
+          enddo
+          enddo
         endif
       endif
 !
@@ -1635,12 +1673,32 @@ module Initcond
           if (lroot) print*,'beltrami_old: ampl=0; ky=',k
         elseif (ampl>0) then
           if (lroot) print*,'beltrami_old: Beltrami field (pos-hel): ky,i=',k,i
-          j=i;   f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncy,1,mx),3,mz)
-          j=i+2; f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncy,1,mx),3,mz)
+          j=i   
+          do l=1,mx
+          do n=1,mz
+            f(l,:,n,j)=f(l,:,n,j)+cfuncy
+          enddo
+          enddo
+          j=i+2 
+          do l=1,mx
+          do n=1,mz
+            f(l,:,n,j)=f(l,:,n,j)+sfuncy
+          enddo
+          enddo
         elseif (ampl<0) then
           if (lroot) print*,'beltrami_old: Beltrami field (neg-hel): ky,i=',k,i
-          j=i;   f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncy,1,mx),3,mz)
-          j=i+2; f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncy,1,mx),3,mz)
+          j=i  
+          do l=1,mx
+          do n=1,mz
+            f(l,:,n,j)=f(l,:,n,j)+sfuncy
+          enddo
+          enddo
+          j=i+2
+          do l=1,mx
+          do n=1,mz
+            f(l,:,n,j)=f(l,:,n,j)+cfuncy
+          enddo
+          enddo
         endif
       endif
 !
@@ -1656,12 +1714,32 @@ module Initcond
           if (lroot) print*,'beltrami_old: ampl=0; kz=',k
         elseif (ampl>0) then
           if (lroot) print*,'beltrami_old: Beltrami field (pos-hel): kz,i=',k,i
-          j=i;   f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncz,1,mx),2,my)
-          j=i+1; f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncz,1,mx),2,my)
+          j=i;
+          do l=1,mx
+          do m=1,my
+            f(l,m,:,j)=f(l,m,:,j)+sfuncz
+          enddo
+          enddo
+          j=i+1 
+          do l=1,mx
+          do m=1,my
+            f(l,m,:,j)=f(l,m,:,j)+cfuncz
+          enddo
+          enddo
         elseif (ampl<0) then
           if (lroot) print*,'beltrami_old: Beltrami field (neg-hel): kz,i=',k,i
-          j=i;   f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncz,1,mx),2,my)
-          j=i+1; f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncz,1,mx),2,my)
+          j=i;   
+          do l=1,mx
+          do m=1,my
+            f(l,m,:,j)=f(l,m,:,j)+cfuncz
+          enddo
+          enddo
+          j=i+1 
+          do l=1,mx
+          do m=1,my
+            f(l,m,:,j)=f(l,m,:,j)+sfuncz
+          enddo
+          enddo
         endif
       endif
 !
@@ -1754,6 +1832,8 @@ module Initcond
 !
 !  19-jun-02/axel: coded
 !   5-jul-02/axel: made additive (if called twice), kx,ky,kz are optional
+!  16-apr-26/TP: wrote the spread calls out since at least with -O0 on the Cray compiler
+!                on LUMI would otherwise run out of stack space
 !
       use Sub, only: cubic_step
 !
@@ -1764,6 +1844,7 @@ module Initcond
       real, dimension (mz) :: sfuncz,cfuncz,zprof
       real, optional :: kx,ky,kz,kx2,ky2,kz2,phase,sigma,z0,width
       real :: ampl,k,ph,sig
+      integer :: l,m,n
 !
 !  possibility of shifting the Beltrami wave by phase ph
 !
@@ -1811,12 +1892,33 @@ module Initcond
           if (lroot) print*,'beltrami: ampl=0; kx=',k
         elseif (ampl>0) then
           if (lroot) print*,'beltrami: Beltrami field (pos-hel): kx,i=',k,i
-          j=i+1; f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncx,2,my),3,mz)*sig
-          j=i+2; f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncx,2,my),3,mz)
+          j=i+1 
+          do m=1,my
+          do n=1,mz
+            f(:,m,n,j)=f(:,m,n,j)+sfuncx*sig
+          enddo
+          enddo
+
+          j=i+2 
+          do m=1,my
+          do n=1,mz
+            f(:,m,n,j)=f(:,m,n,j)+cfuncx
+          enddo
+          enddo
         elseif (ampl<0) then
           if (lroot) print*,'beltrami: Beltrami field (neg-hel): kx,i=',k,i
-          j=i+1; f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncx,2,my),3,mz)
-          j=i+2; f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncx,2,my),3,mz)*sig
+          j=i+1
+          do m=1,my
+          do n=1,mz
+            f(:,m,n,j)=f(:,m,n,j)+cfuncx
+          enddo
+          enddo
+          j=i+2
+          do m=1,my
+          do n=1,mz
+            f(:,m,n,j)=f(:,m,n,j)+sfuncx*sig
+          enddo
+          enddo
         endif
       endif
 !
@@ -1832,12 +1934,32 @@ module Initcond
           if (lroot) print*,'beltrami: ampl=0; ky=',k
         elseif (ampl>0) then
           if (lroot) print*,'beltrami: Beltrami field (pos-hel): ky,i=',k,i
-          j=i;   f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncy,1,mx),3,mz)
-          j=i+2; f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncy,1,mx),3,mz)*sig
+          j=i   
+          do l=1,mx
+          do n=1,mz
+            f(l,:,n,j)=f(l,:,n,j)+cfuncy
+          enddo
+          enddo
+          j=i+2 
+          do l=1,mx
+          do n=1,mz
+            f(l,:,n,j)=f(l,:,n,j)+sfuncy*sig
+          enddo
+          enddo
         elseif (ampl<0) then
           if (lroot) print*,'beltrami: Beltrami field (neg-hel): ky,i=',k,i
-          j=i;   f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncy,1,mx),3,mz)*sig
-          j=i+2; f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncy,1,mx),3,mz)
+          j=i;
+          do l=1,mx
+          do n=1,mz
+            f(l,:,n,j)=f(l,:,n,j)+sfuncy*sig
+          enddo
+          enddo
+          j=i+2
+          do l=1,mx
+          do n=1,mz
+            f(l,:,n,j)=f(l,:,n,j)+cfuncy
+          enddo
+          enddo
         endif
       endif
 !
@@ -1853,12 +1975,32 @@ module Initcond
           if (lroot) print*,'beltrami: ampl=0; kz=',k
         elseif (ampl>0) then
           if (lroot) print*,'beltrami: Beltrami field (pos-hel): kz,i=',k,i
-          j=i;   f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncz,1,mx),2,my)*sig
-          j=i+1; f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncz,1,mx),2,my)
+          j=i   
+          do l=1,mx
+          do m=1,my
+            f(l,m,:,j)=f(l,m,:,j)+sfuncz*sig
+          enddo
+          enddo
+          j=i+1
+          do l=1,mx
+          do m=1,my
+            f(l,m,:,j)=f(l,m,:,j)+cfuncz
+          enddo
+          enddo
         elseif (ampl<0) then
           if (lroot) print*,'beltrami: Beltrami field (neg-hel): kz,i=',k,i
-          j=i;   f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncz,1,mx),2,my)
-          j=i+1; f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncz,1,mx),2,my)*sig
+          j=i
+          do l=1,mx
+          do m=1,my
+            f(l,m,:,j)=f(l,m,:,j)+cfuncz
+          enddo
+          enddo
+          j=i+1
+          do l=1,mx
+          do m=1,my
+            f(l,m,:,j)=f(l,m,:,j)+sfuncz*sig
+          enddo
+          enddo
         endif
       endif
 !
@@ -1949,6 +2091,8 @@ module Initcond
 !
 !  19-jun-02/axel: coded
 !   5-jul-02/axel: made additive (if called twice), kx,ky,kz are optional
+!  16-apr-26/TP: wrote the spread calls out since at least with -O0 on the Cray compiler
+!                on LUMI would otherwise run out of stack space
 !
       integer :: i,j
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1958,6 +2102,7 @@ module Initcond
       logical, optional :: sym
       real, optional :: kx,ky,kz,kx2,ky2,kz2,phase
       real :: ampl,k=1.,kp,km,ph
+      integer :: l,m,n
 !
 !  possibility of shifting the Bihelical wave by phase ph
 !
@@ -1988,12 +2133,32 @@ module Initcond
           if (lroot) print*,'bihelical: ampl=0; kx=',k
         elseif (ampl>0) then
           if (lroot) print*,'bihelical: Bihelical field (pos-hel): kx,i=',k,i
-          j=i+1; f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncx,2,my),3,mz)
-          j=i+2; f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncx,2,my),3,mz)
+          j=i+1
+          do m=1,my
+          do n=1,mz
+            f(:,m,n,j)=f(:,m,n,j)+sfuncx
+          enddo
+          enddo
+          j=i+2
+          do m=1,my
+          do n=1,mz
+            f(:,m,n,j)=f(:,m,n,j)+cfuncx
+          enddo
+          enddo
         elseif (ampl<0) then
           if (lroot) print*,'bihelical: Bihelical field (neg-hel): kx,i=',k,i
-          j=i+1; f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncx,2,my),3,mz)
-          j=i+2; f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncx,2,my),3,mz)
+          j=i+1
+          do m=1,my
+          do n=1,mz
+            f(:,m,n,j)=f(:,m,n,j)+cfuncx
+          enddo
+          enddo
+          j=i+2 
+          do m=1,my
+          do n=1,mz
+            f(:,m,n,j)=f(:,m,n,j)+sfuncx
+          enddo
+          enddo
         endif
       endif
 !
@@ -2015,12 +2180,32 @@ module Initcond
           if (lroot) print*,'bihelical: ampl=0; ky=',k
         elseif (ampl>0) then
           if (lroot) print*,'bihelical: Bihelical field (pos-hel): ky,i=',k,i
-          j=i;   f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncy,1,mx),3,mz)
-          j=i+2; f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncy,1,mx),3,mz)
+          j=i
+          do l=1,mx
+          do n=1,mz
+            f(l,:,n,j)=f(l,:,n,j)+cfuncy
+          enddo
+          enddo
+          j=i+2
+          do l=1,mx
+          do n=1,mz
+            f(l,:,n,j)=f(l,:,n,j)+sfuncy
+          enddo
+          enddo
         elseif (ampl<0) then
           if (lroot) print*,'bihelical: Bihelical field (neg-hel): ky,i=',k,i
-          j=i;   f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncy,1,mx),3,mz)
-          j=i+2; f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncy,1,mx),3,mz)
+          j=i
+          do l=1,mx
+          do n=1,mz
+            f(l,:,n,j)=f(l,:,n,j)+sfuncy
+          enddo
+          enddo
+          j=i+2
+          do l=1,mx
+          do n=1,mz
+            f(l,:,n,j)=f(l,:,n,j)+cfuncy
+          enddo
+          enddo
         endif
       endif
 !
@@ -2042,12 +2227,32 @@ module Initcond
           if (lroot) print*,'bihelical: ampl=0; kz=',k
         elseif (ampl>0) then
           if (lroot) print*,'bihelical: Bihelical field (pos-hel): kz,i=',k,i
-          j=i;   f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncz,1,mx),2,my)
-          j=i+1; f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncz,1,mx),2,my)
+          j=i  
+          do l=1,mx
+          do m=1,my
+            f(l,m,:,j)=f(l,m,:,j)+sfuncz
+          enddo
+          enddo
+          j=i+1
+          do l=1,mx
+          do m=1,my
+            f(l,m,:,j)=f(l,m,:,j)+cfuncz
+          enddo
+          enddo
         elseif (ampl<0) then
           if (lroot) print*,'bihelical: Bihelical field (neg-hel): kz,i=',k,i
-          j=i;   f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncz,1,mx),2,my)
-          j=i+1; f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncz,1,mx),2,my)
+          j=i
+          do l=1,mx
+          do m=1,my
+            f(l,m,:,j)=f(l,m,:,j)+cfuncz
+          enddo
+          enddo
+          j=i+1
+          do l=1,mx
+          do m=1,my
+            f(l,m,:,j)=f(l,m,:,j)+sfuncz
+          enddo
+          enddo
         endif
       endif
 !
@@ -2088,6 +2293,8 @@ module Initcond
 !  Beltrami field (as initial condition)
 !
 !  23-sep-10/dhruba: adapted from beltrami
+!  16-apr-26/TP: wrote the spread calls out since at least with -O0 on the Cray compiler
+!                on LUMI would otherwise run out of stack space
 !
       integer :: i,j
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2097,6 +2304,7 @@ module Initcond
       real, optional :: kx,ky,kz,kx2,ky2,kz2,phase
       real :: ampl,k=1.,ph
       complex :: omg,omgsqr
+      integer :: l,m,n
 !
 ! complex cube roots of unity
 !
@@ -2128,12 +2336,32 @@ module Initcond
           if (lroot) print*,'beltrami: ampl=0; kx=',k
         elseif (ampl>0) then
           if (lroot) print*,'beltrami: Beltrami field (pos-hel): kx,i=',k,i
-          j=i+1; f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncx,2,my),3,mz)
-          j=i+2; f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncx,2,my),3,mz)
+          j=i+1; 
+          do m=1,my
+          do n=1,mz
+            f(:,m,n,j)=f(:,m,n,j)+sfuncx
+          enddo
+          enddo
+          j=i+2
+          do m=1,my
+          do n=1,mz
+            f(:,m,n,j)=f(:,m,n,j)+cfuncx
+          enddo
+          enddo
         elseif (ampl<0) then
           if (lroot) print*,'beltrami: Beltrami field (neg-hel): kx,i=',k,i
-          j=i+1; f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncx,2,my),3,mz)
-          j=i+2; f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncx,2,my),3,mz)
+          j=i+1
+          do m=1,my
+          do n=1,mz
+            f(:,m,n,j)=f(:,m,n,j)+cfuncx
+          enddo
+          enddo
+          j=i+2
+          do m=1,my
+          do n=1,mz
+            f(:,m,n,j)=f(:,m,n,j)+sfuncx
+          enddo
+          enddo
         endif
       endif
 !
@@ -2151,12 +2379,32 @@ module Initcond
           if (lroot) print*,'beltrami: ampl=0; ky=',k
         elseif (ampl>0) then
           if (lroot) print*,'beltrami: Beltrami field (pos-hel): ky,i=',k,i
-          j=i;   f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncy,1,mx),3,mz)
-          j=i+2; f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncy,1,mx),3,mz)
+          j=i
+          do l=1,mx
+          do n=1,mz
+            f(l,:,n,j)=f(l,:,n,j)+cfuncy
+          enddo
+          enddo
+          j=i+2
+          do l=1,mx
+          do n=1,mz
+            f(l,:,n,j)=f(l,:,n,j)+sfuncy
+          enddo
+          enddo
         elseif (ampl<0) then
           if (lroot) print*,'beltrami: Beltrami field (neg-hel): ky,i=',k,i
-          j=i;   f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncy,1,mx),3,mz)
-          j=i+2; f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncy,1,mx),3,mz)
+          j=i
+          do l=1,mx
+          do n=1,mz
+            f(l,:,n,j)=f(l,:,n,j)+sfuncy
+          enddo
+          enddo
+          j=i+2
+          do l=1,mx
+          do n=1,mz
+            f(l,:,n,j)=f(l,:,n,j)+cfuncy
+          enddo
+          enddo
         endif
       endif
 !
@@ -2174,12 +2422,32 @@ module Initcond
           if (lroot) print*,'beltrami: ampl=0; kz=',k
         elseif (ampl>0) then
           if (lroot) print*,'beltrami: Beltrami field (pos-hel): kz,i=',k,i
-          j=i;   f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncz,1,mx),2,my)
-          j=i+1; f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncz,1,mx),2,my)
+          j=i
+          do l=1,mx
+          do m=1,my
+            f(l,m,:,j)=f(l,m,:,j)+sfuncz
+          enddo
+          enddo
+          j=i+1
+          do l=1,mx
+          do m=1,my
+            f(l,m,:,j)=f(l,m,:,j)+cfuncz
+          enddo
+          enddo
         elseif (ampl<0) then
           if (lroot) print*,'beltrami: Beltrami field (neg-hel): kz,i=',k,i
-          j=i;   f(:,:,:,j)=f(:,:,:,j)+spread(spread(cfuncz,1,mx),2,my)
-          j=i+1; f(:,:,:,j)=f(:,:,:,j)+spread(spread(sfuncz,1,mx),2,my)
+          j=i
+          do l=1,mx
+          do m=1,my
+            f(l,m,:,j)=f(l,m,:,j)+cfuncz
+          enddo
+          enddo
+          j=i+1 
+          do l=1,mx
+          do m=1,my
+            f(l,m,:,j)=f(l,m,:,j)+sfuncz
+          enddo
+          enddo
         endif
       endif
 !
@@ -2304,6 +2572,8 @@ module Initcond
 !  Roberts Flow (as initial condition)
 !
 !   9-jun-05/axel: coded
+!  16-apr-26/TP: wrote the spread calls out since at least with -O0 on the Cray compiler
+!                on LUMI would otherwise run out of stack space
 !
       integer :: i,j
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2311,6 +2581,7 @@ module Initcond
       real, optional :: kx
       character (len=labellen) :: flowtype='I'
       character (len=labellen), optional :: flow
+      integer :: l,m,n
 !
 !  Possibility of changing the wavenumber
 !
@@ -2334,18 +2605,42 @@ module Initcond
 !
 !  shifted by 90 degrees in the x and y directions
 !
-        j=i+0; f(:,:,:,j)=f(:,:,:,j)+fac1*spread(spread(sin(k*x),2,my),3,mz)&
-                                         *spread(spread(cos(k*y),1,mx),3,mz)
+        j=i+0
+        do l=1,mx
+        do m=1,my
+        do n=1,mz
+          f(l,m,n,j)=f(l,m,n,j)+fac1*sin(k*x(l))*cos(k*y(m))
+        enddo
+        enddo
+        enddo
 !
-        j=i+1; f(:,:,:,j)=f(:,:,:,j)-fac1*spread(spread(cos(k*x),2,my),3,mz)&
-                                         *spread(spread(sin(k*y),1,mx),3,mz)
+        j=i+1
+        do l=1,mx
+        do m=1,my
+        do n=1,mz
+          f(l,m,n,j)=f(l,m,n,j)-fac1*cos(k*x(l))*sin(k*y(m))
+        enddo
+        enddo
+        enddo
 !
         if (flowtype=='I-shift') then
-          j=i+2; f(:,:,:,j)=f(:,:,:,j)+fac2*spread(spread(sin(k*x),2,my),3,mz)&
-                                           *spread(spread(sin(k*y),1,mx),3,mz)
+          j=i+2
+          do l=1,mx
+          do m=1,my
+          do n=1,mz
+            f(l,m,n,j)=f(l,m,n,j)+fac2*sin(k*x(l))*sin(k*y(m))
+          enddo
+          enddo
+          enddo
         elseif (flowtype=='II-shift') then
-          j=i+2; f(:,:,:,j)=f(:,:,:,j)+fac2*spread(spread(cos(k*x),2,my),3,mz)&
-                                           *spread(spread(cos(k*y),1,mx),3,mz)
+          j=i+2
+          do l=1,mx
+          do m=1,my
+          do n=1,mz
+            f(l,m,n,j)=f(l,m,n,j)+fac2*cos(k*x(l))*cos(k*y(m))
+          enddo
+          enddo
+          enddo
         else
           call fatal_error('robertsflow','no such flowtype')
         endif
@@ -2354,18 +2649,42 @@ module Initcond
 !  original, where field = curl(phi*zz)+phi*zz and curl(phi*zz)+tilde(phi)*zz
 !  with phi=cosk0x*cosk0y for flows I and II, respectively.
 !
-        j=i+0; f(:,:,:,j)=f(:,:,:,j)-fac1*spread(spread(cos(k*x),2,my),3,mz)&
-                                         *spread(spread(sin(k*y),1,mx),3,mz)
+        j=i+0
+        do l=1,mx
+        do m=1,my
+        do n=1,mz
+          f(l,m,n,j)=f(l,m,n,j)-fac1*cos(k*x(l))*sin(k*y(m))
+        enddo
+        enddo
+        enddo
 !
-        j=i+1; f(:,:,:,j)=f(:,:,:,j)+fac1*spread(spread(sin(k*x),2,my),3,mz)&
-                                         *spread(spread(cos(k*y),1,mx),3,mz)
+        j=i+1
+        do l=1,mx
+        do m=1,my
+        do n=1,mz
+          f(l,m,n,j)=f(l,m,n,j)+fac1*sin(k*x(l))*cos(k*y(m))
+        enddo
+        enddo
+        enddo
 !
         if (flowtype=='I') then
-          j=i+2; f(:,:,:,j)=f(:,:,:,j)+fac2*spread(spread(cos(k*x),2,my),3,mz)&
-                                           *spread(spread(cos(k*y),1,mx),3,mz)
+          j=i+2
+          do l=1,mx
+          do m=1,my
+          do n=1,mz
+            f(l,m,n,j)=f(l,m,n,j)+fac2*cos(k*x(l))*cos(k*y(m))
+          enddo
+          enddo
+          enddo
         elseif (flowtype=='II') then
-          j=i+2; f(:,:,:,j)=f(:,:,:,j)+fac2*spread(spread(sin(k*x),2,my),3,mz)&
-                                           *spread(spread(sin(k*y),1,mx),3,mz)
+          j=i+2
+          do l=1,mx
+          do m=1,my
+          do n=1,mz
+            f(l,m,n,j)=f(l,m,n,j)+fac2*sin(k*x(l))*sin(k*y(m))
+          enddo
+          enddo
+          enddo
         else
           call fatal_error('robertsflow','no such flowtype')
         endif
