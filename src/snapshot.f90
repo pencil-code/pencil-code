@@ -463,6 +463,9 @@ module Snapshot
 !   5-jan-13/axel: allowed for lread_oldsnap_lnrho2rho=T
 !   8-mar-13/MR  : made f assumed-size to work properly with calls in run.f90
 !  12-feb-15/MR  : added substraction of reference state
+!  15-apr-26/TP  : made f assumed-size again because of weird Fortran rules
+!                  having an explicit size allows the compiler to make a copy of
+!                  it ---> can run out of stack space
 !
       use IO, only: input_snap, input_snap_finalize
       use Persist, only: input_persistent
@@ -476,7 +479,7 @@ module Snapshot
 !
       logical :: lread_nogrid
       integer :: msnap, mode,ipscalar
-      real, dimension (mx,my,mz,msnap) :: f
+      real, dimension (:,:,:,:) :: f
       real, dimension (:,:,:,:), allocatable :: f_oversize
       character (len=*) :: chsnap
       character (len=fnlen) :: file
