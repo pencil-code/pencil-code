@@ -32,7 +32,8 @@ module Io
   logical :: lcollective_IO=.true.
   character (len=labellen) :: IO_strategy="HDF5"
 !
-  character (len=fnlen) :: last_snapshot = ""
+  !Not used so on comment
+  !character (len=fnlen) :: last_snapshot = ""
   logical :: lread_add
   character (len=fnlen) :: varfile_name
 !
@@ -107,7 +108,6 @@ module Io
       real, dimension(mzgrid), intent(in), optional :: gz
 !
       real, dimension(mxgrid+mygrid+mzgrid) :: tmp_grid
-      integer :: px, py, pz, partner
       integer, parameter :: tag_gx=680, tag_gy=681, tag_gz=682
 !
       if (lroot) then
@@ -405,7 +405,7 @@ module Io
 !
 !  02-May-2019/PABourdin: coded
 !
-      use General, only: itoa
+      use General, only: itoa, keep_compiler_quiet
 !
       integer, intent(in) :: num, nv, snap
       integer, dimension(nv), intent(in) :: ID
@@ -413,6 +413,7 @@ module Io
       character (len=fnlen) :: filename
       real :: t_sp
 !
+      call keep_compiler_quiet(num)
       filename = trim(directory_snap)//'/PSTALK'//trim(itoa(snap))//'.h5'
 !
       ! open global HDF5 file and write particle data
@@ -440,6 +441,7 @@ module Io
 !
 !  02-May-2019/PABourdin: coded
 !
+      use General, only: keep_compiler_quiet
       character (len=*), intent(in) :: label
       integer, intent(in) :: mv, nv
       real, dimension (mv), intent(in) :: data
@@ -448,6 +450,8 @@ module Io
 !
       character (len=fnlen) :: dataset
 !
+      call keep_compiler_quiet(nvar)
+      call keep_compiler_quiet(lfinalize)
       dataset = 'stalker/'//trim(label)
       call output_hdf5 (dataset, data(1:nv), nv)
 !
@@ -503,16 +507,17 @@ module Io
 !
     endsubroutine output_pointmass
 !***********************************************************************
-    subroutine initialize_slice(label, pos)
-!
-!  27-Oct-2018/PABourdin: coded
-!
-      character (len=*), intent(in) :: label
-      integer, intent(in) :: pos
-!
-!!      if (pos >= 0) call create_group_hdf5 (label)
-!
-    endsubroutine initialize_slice
+!Unused functions on comment to suppress compiler warnings
+!    subroutine initialize_slice(label, pos)
+!!
+!!  27-Oct-2018/PABourdin: coded
+!!
+!      character (len=*), intent(in) :: label
+!      integer, intent(in) :: pos
+!!
+!!!      if (pos >= 0) call create_group_hdf5 (label)
+!!
+!    endsubroutine initialize_slice
 !***********************************************************************
     subroutine input_snap(file, a, nv, mode, label, ivar0, data_label)
 !
@@ -905,9 +910,12 @@ contains
 !
 !  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
 !
+      use General, only: keep_compiler_quiet
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
 !
+      call keep_compiler_quiet(label)
+      call keep_compiler_quiet(id)
       write_persist_id = .true.
       if (.not. persist_initialized) write_persist_id = init_write_persist ()
       if (.not. persist_initialized) return
@@ -1272,11 +1280,15 @@ contains
 !  16-May-2020/MR: coded
 !
       use Geometrical_types
+      use General, only: keep_compiler_quiet
 
       character (len=*), intent(in) :: label
       type(torus_rect) :: value    !, intent(out) :: value
 !
+      call keep_compiler_quiet(label)
       read_persist_torus_rect = .false.
+      !Poor man's keep_compiler_quiet
+      if(.false.) print*,value%th
 !
     endfunction read_persist_torus_rect
 !***********************************************************************
@@ -1359,7 +1371,7 @@ contains
 !  27-Oct-2018/PABourdin: coded
 !
       use File_io, only: file_exists
-      use General, only: loptest
+      use General, only: loptest,keep_compiler_quiet
 !
       character (len=*), intent(in) :: file
       integer, intent(in), optional :: mxout,myout,mzout
@@ -1368,6 +1380,10 @@ contains
       character (len=fnlen) :: filename
       logical :: lexists
 !
+      call keep_compiler_quiet(mxout)
+      call keep_compiler_quiet(myout)
+      call keep_compiler_quiet(mzout)
+      call keep_compiler_quiet(file)
       if (lyang) return      ! grid collection only needed on Yin grid, as grids are identical
 !
       if (loptest(lwrite,.not.luse_oldgrid)) then
@@ -1387,6 +1403,7 @@ contains
 !  27-Oct-2018/PABourdin: coded
 !
       use Mpicomm, only: mpibcast_real, MPI_COMM_PENCIL
+      use General, only: keep_compiler_quiet
 !
       character (len=*) :: file         ! not used
 !
@@ -1394,6 +1411,7 @@ contains
       real, dimension (:), allocatable :: gx, gy, gz
       integer :: alloc_err
 !
+      call keep_compiler_quiet(file)
       allocate (gx(mxgrid), gy(mygrid), gz(mzgrid), stat=alloc_err)
       if (alloc_err > 0) call fatal_error ('rgrid', 'Could not allocate memory for gx,gy,gz', .true.)
 !

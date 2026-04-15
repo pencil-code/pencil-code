@@ -87,11 +87,12 @@ module InitialCondition
 !  Includes neutral hydrogen and warm ionized hydrogen plus helium
 !  proportionately. Multiply by m_u_cgs for gas density
 !
-  real, parameter, dimension(5) :: nfraction_cgs = & ! particles per cm cubed normalized to 1 at midplane
-                                      (/0.6541, 0.1775, 0.1028, 0.0245, 0.0411/)
-  real, parameter, dimension(5) :: hscale_cgs = & ! scale height in cm
-                       (/3.9188e20, 9.8125e20, 1.2435e21, 2.1600e20, 2.7771e21/)
-  real, dimension(5) :: rho_fraction, hscale
+!  Not used so on comment
+  !real, parameter, dimension(5) :: nfraction_cgs = & ! particles per cm cubed normalized to 1 at midplane
+  !                                    (/0.6541, 0.1775, 0.1028, 0.0245, 0.0411/)
+  !real, parameter, dimension(5) :: hscale_cgs = & ! scale height in cm
+  !                     (/3.9188e20, 9.8125e20, 1.2435e21, 2.1600e20, 2.7771e21/)
+  !real, dimension(5) :: rho_fraction, hscale
 !
 !  Heating function, cooling function and mass movement
 !  method selection.
@@ -133,8 +134,13 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
+      use General, only: keep_compiler_quiet
       if (lroot) call svn_id( &
          "$Id$")
+
+      call keep_compiler_quiet(rhox)
+      call keep_compiler_quiet(heating_select)
+      call keep_compiler_quiet(cooling_select)
 !
     endsubroutine register_initial_condition
 !***********************************************************************
@@ -293,7 +299,7 @@ module InitialCondition
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      integer :: i ,j, l, m, n
+      integer :: j, l, m, n
       real, dimension(nx) :: nxran
 !
       if (.not. lmagnetic) then
