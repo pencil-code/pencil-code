@@ -3143,7 +3143,12 @@ FORCE_GPU_MAKE:
 #  Rule for building the Astaroth and interface libraries.
 #
 #$(LIBGPU): $(GPU_DEPS)
-$(LIBGPU): $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/Makefile.vendor FORCE_GPU_MAKE
+$(DSL_WORKDIR)/boundconds.h:
+	rm -f astaroth/DSL/local/boundconds.h
+	touch astaroth/DSL/local/boundconds.h
+	@scripts/bc2ast 1> astaroth/DSL/local/boundconds.h
+
+$(LIBGPU): $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/Makefile.vendor FORCE_GPU_MAKE $(DSL_WORKDIR)/boundconds.h
 	@echo "Building Astaroth and interface libraries - see src/astaroth/ac_build.log!"
 	cd astaroth && make MPICOMM=$(MPICOMM) RUNTIME_COMPILATION=$(RUNTIME_COMPILATION) TRAINING=$(TRAINING) PRECISION=$(REAL_PRECISION) READ_OVERRIDES=$(READ_OVERRIDES) TRANSPILATION=$(TRANSPILATION) GENERATE_DSL_CODE=$(GENERATE_DSL_CODE) >& ac_build.log
 #
@@ -3345,9 +3350,6 @@ ifeq ($(wildcard $(DSL_WORKDIR)/solve_two.ac),)
     endif
   endif
 endif
-	rm -f astaroth/DSL/local/boundconds.h
-	touch astaroth/DSL/local/boundconds.h
-	@scripts/bc2ast 1> astaroth/DSL/local/boundconds.h
 
 #	@sed -e':loop' -e'N' -e'$$!b loop' -e's/\#pragma  *once//' -e's/\# *define *\([A-Z0-9_][A-Z0-9_]*\)/..\/..\/\L\1.f90 /g' -e's/\n/ /g' < $(CUDA_INCDIR)/PC_moduleflags.h >> $(CUDA_MAKEDIR)/PC_modulesources.h
 #
