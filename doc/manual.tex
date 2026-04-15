@@ -2446,7 +2446,7 @@ The relevant subroutines are called \code{pushpars2c}. The following has example
 \end{verbatim}
 
 If control-flow (if statements/other conditionals) depends on a variable it should trigger recompilation so Astaroth can optimise the code.
-If a variable does not affect control-flow it is often preferable to have the variables not trigger recompilation and it would helpful to add these cases to the code. So in the case you are running such spectrums of runs and are annoyed by the constant need of recompilation please do change the variable to not need the recompilation.
+If a variable does not affect control-flow it is often preferable to have the variables not trigger recompilation and it would be helpful to add these cases to the code. So, whenever you are annoyed by the constant need of recompilation because of a certain variable, please do change the variable to not need the recompilation if you have made sure it does not affect control-flow (and is not likely to do so in the future).
 % ---------------------------------------------------------------------- %
 \subsection{Using a non-equidistant grid}
 \index{mesh, nonuniform}\index{grid, nonuniform}\index{nonuniform grid}
