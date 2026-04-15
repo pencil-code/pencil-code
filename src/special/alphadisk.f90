@@ -52,12 +52,12 @@ module Special
   real    :: temperature_precision=0.1 ! Newton-Raphson iteration precision
   real    :: sigma_middle=1.           ! Dividing line between linear and log
                                        !  tables
-  real    :: sigma_floor=1d-4          ! Density floor of the simulation, also
+  real    :: sigma_floor=real(1d-4)    ! Density floor of the simulation, also
                                        !  lower limit of the log table
   logical :: lwind=.true.
-  real    :: mdot_input=1.0d-7         ! Mass accretion rate in Msun/yr
-  real    :: mwind_input=1.0d-8        ! Wind mass loss rate in Msun/yr
-  real    :: alpha=1.0d-2              !
+  real    :: mdot_input=real(1.0d-7)   ! Mass accretion rate in Msun/yr
+  real    :: mwind_input=real(1.0d-8)  ! Wind mass loss rate in Msun/yr
+  real    :: alpha=real(1.0d-2)        !
   integer :: nsigma_table=500          ! Resolution of look-up tables for the
                                        !   solution of temperature.
   real    :: tmid_table_buffer=0.01    ! Small buffer for temperature, so that
@@ -109,9 +109,9 @@ module Special
    integer :: maxit=1000
 !
    real :: Rgas=8.314d7
-   real :: mmol=2.4
+   !real :: mmol=2.4
    real :: gamma=1.4
-   real :: stbz=5.6704d-5
+   real :: stbz=real(5.6704d-5)
    real :: Rgasmu,cp
    real :: T1=132.,T2=170.,T3=375.,T4=390.
    real :: T5=580.,T6=680.,T7=960.,T8=1570.,T9=3730.
@@ -167,18 +167,18 @@ module Special
 !
 !  Set constants.
 !
-      msun_cgs     = 1.98892d33 !g
-      mearth_cgs   = 5.9722d27  !g
-      AU_cgs       = 1.49d13    !cm
+      msun_cgs     = real(1.98892d33) !g
+      mearth_cgs   = real(5.9722d27)  !g
+      AU_cgs       = real(1.49d13)    !cm
       yr_cgs       = 31556926.  !s
-      GNewton_cgs  = 6.67d-8
-      kB_cgs       = 1.380649d-16 !erg/K
-      munit_cgs    = 1.660538d-30 ! g
+      GNewton_cgs  = real(6.67d-8)
+      kB_cgs       = real(1.380649d-16) !erg/K
+      munit_cgs    = real(1.660538d-30) ! g
 !
 !  Some shortcuts
 !
       AU1_cgs=1./AU_cgs
-      Myr=1d6*yr_cgs
+      Myr=real(1d6*yr_cgs)
       one_over_three_pi=1./(3*pi)
       Rgasmu=Rgas/2.4
       cp=gamma*Rgasmu/(gamma-1)
@@ -602,6 +602,7 @@ module Special
       type(pencil_case), intent(IN) :: p
       real, dimension (nx) :: psigma,nu
 
+      call keep_compiler_quiet(p)
       if(ldiagnos .or. l1davgfirst) psigma = f(l1:l2,m,n,isigma)
       if (ldiagnos) then
 
@@ -1334,17 +1335,17 @@ module Special
 !
       if (tt < 0.0) call fatal_error("calc_opacity", "negative temperature")
       if (TT <= T1) then
-        k=2d-4 ; a=0 ; b= 2.1  ; kk=k*tt**b
+        k=real(2d-4) ; a=0 ; b= 2.1  ; kk=k*tt**b
       else if ((TT > T1) .and. (TT <= T2)) then
         k=3.   ; a=0 ; b=-0.01 ; kk=k*tt**b
       else if ((TT > T2) .and. (TT <= T3)) then
         k=0.01 ; a=0 ; b= 1.1  ; kk=k*tt**b
       else if ((TT > T3) .and. (TT <= T4)) then
-        k=5d4  ; a=0 ; b=-1.5  ; kk=k*tt**b
+        k=real(5d4)  ; a=0 ; b=-1.5  ; kk=k*tt**b
       else if ((TT > T4) .and. (TT <= T5)) then
         k=0.1  ; a=0 ;  b= 0.7 ; kk=k*tt**b
       else if ((TT > T5) .and. (TT <= T6)) then
-        k=2d15 ; a=0 ; b=-5.2  ; kk=k*tt**b
+        k=real(2d15) ; a=0 ; b=-5.2  ; kk=k*tt**b
       else if ((TT > T6) .and. (TT <= T7)) then
         k=0.02 ; a=0 ; b= 0.8  ; kk=k*tt**b
       else if ((TT > T7) .and. (TT <= T8)) then
@@ -1353,9 +1354,9 @@ module Special
         rho=sigma/(2*H)
         logkk=logk+a*alog10(rho)+b*alog10(TT)
         kk=10**(logkk)
-        k=1d33
+        k=real(1d33)
       else if ((TT > T8) .and. (TT <= T9)) then
-        k=1d-8 ; a=2./3 ; b=3.
+        k=real(1d-8) ; a=2./3 ; b=3.
         H=sqrt(TT*cp*(gamma-1))/omega
         rho=sigma/(2*H)
         kk=k*rho**a*tt**b
