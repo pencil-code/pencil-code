@@ -1131,6 +1131,7 @@ module Density
       real, pointer :: gravitational_const
       real, dimension(:), allocatable :: theta_rhobar,rhobar_,A_rhobar_
       logical :: lrhobar_exists
+      integer :: l,m,n
 !
       intent(inout) :: f
 !
@@ -1194,10 +1195,38 @@ module Density
         case ('const_lnrho'); f(:,:,:,ilnrho)=lnrho_const
         case ('const_rho'); f(:,:,:,ilnrho)=log(rho_const)
         case ('constant'); f(:,:,:,ilnrho)=log(rho_left(j))
-        case ('linear_lnrho'); f(:,:,:,ilnrho)=lnrho_const-spread(spread(z,1,mx),2,my)/Hrho
-        case ('05x2'); f(:,:,:,ilnrho)=lnrho_const+spread(spread(x**2,2,my),3,mz)/Hrho**2/2.
-        case ('exp_zbot'); f(:,:,:,ilnrho)=alog(rho_left(j))-spread(spread(z-zbot,1,mx),2,my)/Hrho
-        case ('exp_rbot'); f(:,:,:,ilnrho)=lnrho_const-spread(spread(x-xyz0(1),2,my),3,mz)/Hrho
+        case ('linear_lnrho')
+          do l=1,mx
+          do m=1,my
+          do n=1,mz
+            f(l,m,n,ilnrho)=lnrho_const-z(n)/Hrho
+          enddo
+          enddo
+          enddo
+        case ('05x2')
+          do l=1,mx
+          do m=1,my
+          do n=1,mz
+            f(l,m,n,ilnrho)=lnrho_const+x(l)**2/Hrho**2/2.
+          enddo
+          enddo
+          enddo
+        case ('exp_zbot'); 
+          do l=1,mx
+          do m=1,my
+          do n=1,mz
+            f(l,m,n,ilnrho)=alog(rho_left(j))-(z(n)-zbot)/Hrho
+          enddo
+          enddo
+          enddo
+        case ('exp_rbot'); 
+          do l=1,mx
+          do m=1,my
+          do n=1,mz
+            f(l,m,n,ilnrho)=lnrho_const-(x(l)-xyz0(1))/Hrho
+          enddo
+          enddo
+          enddo
         case ('invsqr')
           do ix=1,mx
             if (x(ix)<=r0_rho) then
@@ -1215,8 +1244,13 @@ module Density
             endif
           enddo
         case ('x-point_xy')
-          f(:,:,:,ilnrho)=f(:,:,:,ilnrho)-.5*ampllnrho(j)/cs20*( spread(spread(x**2,2,my),3,mz) &
-                                                                +spread(spread(y**2,1,mx),3,mz) )
+          do l=1,mx
+          do m=1,my
+          do n=1,mz
+            f(l,m,n,ilnrho)=f(l,m,n,ilnrho)-.5*ampllnrho(j)/cs20*(x(l)**2 + y(m)**2)
+          enddo
+          enddo
+          enddo
         case ('mode')
           call modes(ampllnrho(j),coeflnrho,f,ilnrho,kx_lnrho(j), ky_lnrho(j),kz_lnrho(j))
         case ('blob')
@@ -1315,27 +1349,51 @@ module Density
 !  1/cosh^2 profile
 !
         case ('cosh21-z')
-          f(:,:,:,ilnrho)=spread(spread(max(lnrho_const,alog(1./cosh(kz_lnrho(j)*z/sqrt2)**2)),1,mx),2,my)
+          do l=1,mx
+          do m=1,my
+          do n=1,mz
+            f(l,m,n,ilnrho)=max(lnrho_const,alog(1./cosh(kz_lnrho(j)*z(n)/sqrt2)**2))
+          enddo
+          enddo
+          enddo
 !
 !  use code to plot EoS
 !
         case ('lnrho_vs_lnT')
           if (ilnTT==0) call fatal_error("init_lnrho","ilnTT==0")
-          f(:,:,:,ilnrho)=spread(spread(y,1,mx),3,mz)
-          f(:,:,:,ilnTT)=spread(spread(x,2,my),3,mz)
+          do l=1,mx
+          do m=1,my
+          do n=1,mz
+            f(l,m,n,ilnrho) = y(m)
+            f(l,m,n,ilnTT)  = x(l)
+          enddo
+          enddo
+          enddo
 !
 !  use code to plot EoS
 !
         case ('lnrho_vs_ss')
           if (iss==0) call fatal_error("init_lnrho","iss==0")
-          f(:,:,:,ilnrho)=spread(spread(y,1,mx),3,mz)
-          f(:,:,:,iss)=spread(spread(x,2,my),3,mz)
+          do l=1,mx
+          do m=1,my
+          do n=1,mz
+            f(l,m,n,ilnrho) = y(m)
+            f(l,m,n,iss)    = x(l)
+          enddo
+          enddo
+          enddo
 !
 !  Noise, but just x-dependent.
 !
         case ('gaussian-noise-x')
           call gaunoise(ampllnrho(j),f,ilnrho,ilnrho)
-          f(:,:,:,ilnrho)=spread(spread(f(:,4,4,ilnrho),2,my),3,mz) !(watch 1-D)
+          do l=1,mx
+          do m=1,my
+          do n=1,mz
+            f(l,m,n,ilnrho) = f(l,4,4,ilnrho)
+          enddo
+          enddo
+          enddo
 !
 !  Density jump (for shocks).
 !
