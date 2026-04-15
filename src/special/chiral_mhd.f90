@@ -100,7 +100,7 @@ module Special
    real :: source5_expt=0., source5_expt2=0.
    real :: muS_const=0., coef_muS=0., coef_mu5=0., Cw=0.
    real, dimension(1) :: meanmu5=0.
-   real :: flucmu5=0., meanB2=0., Brms=0.
+   !real :: flucmu5=0., meanB2=0., Brms=0.
    real :: initpower_mu5=0., cutoff_mu5=0.
    real :: initpower_muS=0., cutoff_muS=0.
    real :: kgaussian_mu5=0.,kpeak_mu5=0.
@@ -114,7 +114,6 @@ module Special
    real, dimension (nx) :: dt1_lambda5, dt1_D5, dt1_gammaf5
    real, dimension (nx) :: dt1_CMW, dt1_Dmu, dt1_vmu, dt1_special
    real, dimension (nx) :: dt1_CVE1, dt1_CVE2 
-   real, dimension (nx) :: uxbj
    integer :: imu5, imuS
    logical :: lmuS=.false., lCVE=.false.
    logical :: ldiffmu5_hyper2_simplified=.false.
@@ -233,7 +232,6 @@ module Special
 !
       use SharedVariables, only : get_shared_variable
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: ierr
 !
 !  set gammaf5_input to input value (which was gammaf5)
 !  and similarly for source5_input
@@ -275,7 +273,7 @@ module Special
       use Initcond
       use Sub, only: remove_mean, blob
 !
-      real, dimension (mx,my,mz,mfarray) :: f,df
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       intent(inout) :: f
 !
@@ -516,7 +514,7 @@ module Special
       intent(in) :: f,p
       intent(inout) :: df
 !
-      real, dimension (nx) :: dmu5, dmuS, uujj, bdotgmuS, bdotgmu5
+      real, dimension (nx) :: dmu5, dmuS, bdotgmuS, bdotgmu5
       real, dimension (nx) :: muSmu5, oobb, oogmuS, oogmu5
       real, dimension (nx,3) :: mu5bb, muSmu5oo
 !
@@ -692,6 +690,8 @@ module Special
       real,dimension(mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
 
+      call keep_compiler_quiet(f)
+
       if (ldiagnos) then
         call sum_mn_name(p%muS,idiag_muSm)
         if (idiag_muSrms/=0) call sum_mn_name(p%muS**2,idiag_muSrms,lsqrt=.true.)
@@ -803,6 +803,8 @@ module Special
 !
       integer :: iname
       logical :: lreset,lwrite
+
+      call keep_compiler_quiet(lwrite)
 !
 !  check for those quantities for which we want video slices
 !
@@ -899,6 +901,8 @@ module Special
 !  22-aug-21/axel: temporal profile for gammaf5
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+
+      call keep_compiler_quiet(f)
 !
 !  Choice of gammaf5_tdep profiles.
 !
@@ -949,7 +953,7 @@ module Special
             source5=0.
           elseif (t<=t2_source5) then
             !source5=source5_input*exp(-gammaf5*(t-t1_source5))
-            source5=source5_input*exp(-source5_expt*(t-t1_source5))
+            source5=real(source5_input*exp(-source5_expt*(t-t1_source5)))
           else
             source5=0.
           endif
@@ -962,14 +966,14 @@ module Special
             source5=0.
           else
             !source5 = source5_input * (t-t1_source5) * exp(-source5_expt2 * ((t-t1_source5)**2))
-            source5 = source5_input * (t-t1_source5)/source5_expt2 * exp(-((t-t1_source5)**2)/source5_expt2**2)
+            source5 = real(source5_input * (t-t1_source5)/source5_expt2 * exp(-((t-t1_source5)**2)/source5_expt2**2))
           endif
 !
 !  Time-dependent profile for source of mu5, derived from Andrew's notes (Updated)
 !
         case ('smooth_source_new')
             !source5 = source5_input * (t-t1_source5) * exp(-source5_expt2 * ((t-t1_source5)**2))
-          source5 = source5_input * (t)/source5_expt2 * exp(-((t)**2-source5_expt2**2)/(2*source5_expt2**2))
+          source5 = real(source5_input * (t)/source5_expt2 * exp(-((t)**2-source5_expt2**2)/(2*source5_expt2**2)))
 !
 !  Time-dependent profile for source of mu5.
 !
@@ -977,9 +981,9 @@ module Special
           if (t<=t1_source5) then
             source5=0.
           elseif (t<=t2_source5) then
-            source5=source5_input*(t - t1_source5)/(t2_source5-t1_source5)
+            source5=real(source5_input*(t - t1_source5)/(t2_source5-t1_source5))
           else
-            source5=source5_input*exp(-source5_expt*(t-t2_source5))
+            source5=real(source5_input*exp(-source5_expt*(t-t2_source5)))
           endif
 !
 !  Default.
@@ -1067,6 +1071,8 @@ module Special
     call copy_addr(idiag_mu5bjm,p_par(34)) ! int
     call copy_addr(idiag_mu5bjrms,p_par(35)) ! int
     call copy_addr(meanmu5,p_par(36)) ! (1)
+    
+    call keep_compiler_quiet(diffmuSmax)
 
     endsubroutine pushpars2c
 !***********************************************************************
