@@ -54,7 +54,7 @@ module Chemistry
   real :: lambda_const=impossible
   real :: visc_const=impossible
   real :: Diff_coef_const=impossible
-  real :: Sc_number=0.7!, Pr_number=0.7
+  real :: Sc_number=0.7, Pr_number=0.7
 !  real :: Cp_const=impossible
   real :: Cv_const=impossible
   logical :: lfix_Sc=.false., lfix_Pr=.false.
@@ -244,7 +244,7 @@ module Chemistry
       lThCond_simple,lambda_const, visc_const,Cp_const,Cv_const,Diff_coef_const, &
       init_x1,init_x2,init_y1,init_y2,init_z1,init_z2,init_TT1,&
       init_TT2,init_rho, &
-      init_ux,init_uy,init_uz,l1step_test,Sc_number,init_pressure,lfix_Sc, &
+      init_ux,init_uy,init_uz,l1step_test,Sc_number,Pr_number,init_pressure,lfix_Sc, &
       str_thick,lfix_Pr, lT_tanh,lT_const, lheatc_chemistry, lspecies_cond_simplified, &
       ldamp_zone_for_NSCBC, latmchem, lcloud, prerun_directory, &
       lchemistry_diag,lfilter_strict,linit_temperature, &
@@ -272,7 +272,7 @@ module Chemistry
       lgradP_terms, lnormalize_chemspec, lnormalize_chemspec_N2, &
       gam_surf_energy_cgs, isurf_energy, iconc_sat_spec, nucleation_rate_coeff_cgs, &
       lnoevap, lnolatentheat, gam_surf_energy_mul_fac, deltaH_cgs,&
-      min_nucl_radius_cgs, lupw_chemspec, &
+      min_nucl_radius_cgs, lupw_chemspec, Pr_number, &
       lFlame_index_as_aux, lmixture_fraction_as_aux, mixture_fraction_element, &
       flameind_spec1, flameind_spec2
 !
@@ -694,6 +694,8 @@ module Chemistry
 !                   D = Diff_coef_const/\rho*(T/T0)**n0.7, with T0 now = 298K.
 !
       if (lDiff_simple .and. Diff_coef_const == impossible) Diff_coef_const = 2.58e-4  !MR: the same as lambda_const?
+      if (lfix_Pr .and. Pr_number == 0.) call fatal_error('initialize_chemistry', &
+          'Pr_number must be nonzero when lfix_Pr=T')
 !
 !  true_density_cond_spec
 !
@@ -2962,7 +2964,23 @@ module Chemistry
 !
 !  Thermal diffusivity
 !
-            if (lheatc_chemistry .and. (.not. lThCond_simple)) call calc_therm_diffus_coef
+            if (lheatc_chemistry .and. (.not. lThCond_simple)) then
+              if (lfix_Pr) then
+                do j3 = nn1,nn2
+                  do j2 = mm1,mm2
+                    if (visc_const == impossible) then
+                      lambda_full(ll1:ll2,j2,j3) = f(ll1:ll2,j2,j3,iviscosity) * &
+                          rho_full(ll1:ll2,j2,j3) * cp_full(ll1:ll2,j2,j3) / Pr_number
+                    else
+                      lambda_full(ll1:ll2,j2,j3) = visc_const * &
+                          rho_full(ll1:ll2,j2,j3) * cp_full(ll1:ll2,j2,j3) / Pr_number
+                    endif
+                  enddo
+                enddo
+              else
+                call calc_therm_diffus_coef
+              endif
+            endif
 !
           endif
         else
@@ -3627,13 +3645,13 @@ module Chemistry
         else
           diffus_chem=0.
           do j = 1,nx
-            if (ldiffusion .and. .not. ldiff_simple) then
+            if (ldiffusion) then
 !
 !--------------------------------------
 !  This expression should be discussed
 !--------------------------------------
 !
-              diffus_chem(j) = diffus_chem(j)+maxval(Diff_full_add(l1+j-1,m,n,1:nchemspec))*dxyz_2(j)
+              diffus_chem(j) = diffus_chem(j)+maxval(p%Diff_penc_add(j,1:nchemspec))*dxyz_2(j)
             else
               diffus_chem(j) = 0.
             endif
@@ -3738,9 +3756,9 @@ module Chemistry
           if (idiag_Ymin(ii)/= 0) call max_mn_name(-f(l1:l2,m,n,ichemspec(ii)),idiag_Ymin(ii),lneg=.true.)
           if (idiag_TYm(ii)/= 0) &
             call sum_mn_name(max(1.-f(l1:l2,m,n,ichemspec(ii))/Ythresh(ii),0.),idiag_TYm(ii))
-          if (idiag_diffm(ii)/= 0)   call sum_mn_name( Diff_full_add(l1:l2,m,n,ii),idiag_diffm(ii))
-          if (idiag_diffmax(ii)/= 0) call max_mn_name( Diff_full_add(l1:l2,m,n,ii),idiag_diffmax(ii))
-          if (idiag_diffmin(ii)/= 0) call max_mn_name(-Diff_full_add(l1:l2,m,n,ii),idiag_diffmin(ii),lneg=.true.)
+          if (idiag_diffm(ii)/= 0)   call sum_mn_name(p%Diff_penc_add(:,ii),idiag_diffm(ii))
+          if (idiag_diffmax(ii)/= 0) call max_mn_name(p%Diff_penc_add(:,ii),idiag_diffmax(ii))
+          if (idiag_diffmin(ii)/= 0) call max_mn_name(-p%Diff_penc_add(:,ii),idiag_diffmin(ii),lneg=.true.)
         enddo
 !
         call sum_mn_name(cp_full(l1:l2,m,n),idiag_cpfull)
