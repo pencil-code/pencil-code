@@ -643,11 +643,7 @@ module Special
 !  Read pulsar data.
 !
       if (lread_pulsar) call read_pulsar_data
-!
-!  Keep compiler quiet.
-!
-      call keep_compiler_quiet(f)
-!
+
       appa_om_init = appa_om
 
 !It has to be persistent in this case to avoid restarts
