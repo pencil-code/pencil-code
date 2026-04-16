@@ -5175,6 +5175,87 @@ module Magnetic
       endif
     endsubroutine calc_eta_total
 !***********************************************************************
+    subroutine calc_magnetic_slope_limited(f,df,p)
+!
+!  16-apr-2026/TP: carved from daa_dt
+!
+
+      use Sub, only: calc_slope_diff_flux, dot
+
+      real, intent(in), dimension (mx,my,mz,mfarray) :: f
+      real, intent(out), dimension (mx,my,mz,mvar) :: df
+      type (pencil_case), intent(in) :: p
+!
+      real, dimension (nx,3,3) :: d_sld_flux
+      real, dimension (nx)   :: tmp1
+      real, dimension (nx,3) :: tmp2
+      integer :: j
+!     if (lmagnetic_slope_limited) then
+      if (lsld_bb) then
+!
+!   Using diffusive flux of B on A
+!   Idea: DA_i/dt  = ... - e_ikl Dsld_k B_l
+!     where Dsld is the SLD operator
+!   normal way:  DA_i/dt = ... partial_j Dsld_j A_l
+!
+        do j=1,3
+          call calc_slope_diff_flux(f,ibx+(j-1),p,h_sld_magn,nlf_sld_magn,tmp1,div_sld_magn, &
+                                    FLUX1=d_sld_flux(:,1,j),FLUX2=d_sld_flux(:,2,j),FLUX3=d_sld_flux(:,3,j))
+        enddo
+!
+        tmp2(:,1)= (-d_sld_flux(:,2,3) + d_sld_flux(:,3,2))*fac_sld_magn
+        tmp2(:,2)= (-d_sld_flux(:,3,1) + d_sld_flux(:,1,3))*fac_sld_magn
+        tmp2(:,3)= (-d_sld_flux(:,1,2) + d_sld_flux(:,2,1))*fac_sld_magn
+!
+        fres=fres + tmp2
+      else
+!
+        if (lcylindrical_coords .or. lspherical_coords) then
+          do j=1,3
+            call calc_slope_diff_flux(f,iax+(j-1),p,h_sld_magn,nlf_sld_magn,tmp2(:,j),div_sld_magn, &
+                                      FLUX1=d_sld_flux(:,1,j),FLUX2=d_sld_flux(:,2,j),FLUX3=d_sld_flux(:,3,j))
+          enddo
+!
+          if (lcylindrical_coords) then
+            fres(:,1)=fres(:,1)+tmp2(:,1)-(d_sld_flux(:,2,2))/x(l1:l2)
+            fres(:,2)=fres(:,2)+tmp2(:,2)+(d_sld_flux(:,2,1))/x(l1:l2)
+            fres(:,3)=fres(:,3)+tmp2(:,3)
+          elseif(lspherical_coords) then
+            fres(:,1)=fres(:,1)+tmp2(:,1)-(d_sld_flux(:,2,2)+d_sld_flux(:,3,3))/x(l1:l2)
+            fres(:,2)=fres(:,2)+tmp2(:,2)+(d_sld_flux(:,2,1)-d_sld_flux(:,3,3)*cotth(m))/x(l1:l2)
+            fres(:,3)=fres(:,3)+tmp2(:,3)+(d_sld_flux(:,3,1)+d_sld_flux(:,3,2)*cotth(m))/x(l1:l2)
+          endif
+        else
+          do j=1,3
+            call calc_slope_diff_flux(f,iax+(j-1),p,h_sld_magn,nlf_sld_magn,tmp2(:,j),div_sld_magn)
+          enddo
+            fres=fres+tmp2
+        endif
+      endif
+!
+!     Heating is jj*divF_sld
+!     or Heating is just jj*(-e_ijk Dsld_k B_l) (for lsld_bb=T)
+!
+      if (lohmic_heat) then
+        call dot(tmp2,p%jj,tmp1)
+        if (lentropy) then
+          if (pretend_lnTT) then
+            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%cv1*max(0.0,tmp1)*p%rho1*p%TT1
+          else
+            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + max(0.0,tmp1)*p%rho1*p%TT1
+          endif
+        else if (ltemperature) then
+          if (ltemperature_nolog) then
+            df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT) + p%cv1*max(0.0,tmp1)*p%rho1
+          else
+            df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cv1*max(0.0,tmp1)*p%rho1*p%TT1
+          endif
+        else if (lthermal_energy) then
+          df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + max(0.0,tmp1)
+        endif
+      endif
+    endsubroutine calc_magnetic_slope_limited
+!***********************************************************************
     subroutine daa_dt(f,df,p)
 !
 !  Magnetic field evolution.
@@ -5215,7 +5296,6 @@ module Magnetic
       real, dimension (nx,3) :: aa_xyaver
       real, dimension (nx,3) :: geta,uxb_upw,tmp2
       real, dimension (nx,3) :: dAdt, gradeta_shock, aa1, uu1, dJdt, del2jj
-      real, dimension (nx,3,3) :: d_sld_flux
       real, dimension (nx) :: ftot, dAtot
       real, dimension (nx) :: peta_shock
       real, dimension (nx) :: sign_jo,tmp1
@@ -5929,70 +6009,7 @@ module Magnetic
 !   Slope limited diffusion for magnetic field
 !
       if (lmagnetic_slope_limited.and.llast) then
-!       if (lmagnetic_slope_limited) then
-        if (lsld_bb) then
-!
-!   Using diffusive flux of B on A
-!   Idea: DA_i/dt  = ... - e_ikl Dsld_k B_l
-!     where Dsld is the SLD operator
-!   normal way:  DA_i/dt = ... partial_j Dsld_j A_l
-!
-          do j=1,3
-            call calc_slope_diff_flux(f,ibx+(j-1),p,h_sld_magn,nlf_sld_magn,tmp1,div_sld_magn, &
-                                      FLUX1=d_sld_flux(:,1,j),FLUX2=d_sld_flux(:,2,j),FLUX3=d_sld_flux(:,3,j))
-          enddo
-!
-          tmp2(:,1)= (-d_sld_flux(:,2,3) + d_sld_flux(:,3,2))*fac_sld_magn
-          tmp2(:,2)= (-d_sld_flux(:,3,1) + d_sld_flux(:,1,3))*fac_sld_magn
-          tmp2(:,3)= (-d_sld_flux(:,1,2) + d_sld_flux(:,2,1))*fac_sld_magn
-!
-          fres=fres + tmp2
-        else
-!
-          if (lcylindrical_coords .or. lspherical_coords) then
-            do j=1,3
-              call calc_slope_diff_flux(f,iax+(j-1),p,h_sld_magn,nlf_sld_magn,tmp2(:,j),div_sld_magn, &
-                                        FLUX1=d_sld_flux(:,1,j),FLUX2=d_sld_flux(:,2,j),FLUX3=d_sld_flux(:,3,j))
-            enddo
-!
-            if (lcylindrical_coords) then
-              fres(:,1)=fres(:,1)+tmp2(:,1)-(d_sld_flux(:,2,2))/x(l1:l2)
-              fres(:,2)=fres(:,2)+tmp2(:,2)+(d_sld_flux(:,2,1))/x(l1:l2)
-              fres(:,3)=fres(:,3)+tmp2(:,3)
-            elseif(lspherical_coords) then
-              fres(:,1)=fres(:,1)+tmp2(:,1)-(d_sld_flux(:,2,2)+d_sld_flux(:,3,3))/x(l1:l2)
-              fres(:,2)=fres(:,2)+tmp2(:,2)+(d_sld_flux(:,2,1)-d_sld_flux(:,3,3)*cotth(m))/x(l1:l2)
-              fres(:,3)=fres(:,3)+tmp2(:,3)+(d_sld_flux(:,3,1)+d_sld_flux(:,3,2)*cotth(m))/x(l1:l2)
-            endif
-          else
-            do j=1,3
-              call calc_slope_diff_flux(f,iax+(j-1),p,h_sld_magn,nlf_sld_magn,tmp2(:,j),div_sld_magn)
-            enddo
-              fres=fres+tmp2
-          endif
-        endif
-!
-!     Heating is jj*divF_sld
-!     or Heating is just jj*(-e_ijk Dsld_k B_l) (for lsld_bb=T)
-!
-        if (lohmic_heat) then
-          call dot(tmp2,p%jj,tmp1)
-          if (lentropy) then
-            if (pretend_lnTT) then
-              df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%cv1*max(0.0,tmp1)*p%rho1*p%TT1
-            else
-              df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + max(0.0,tmp1)*p%rho1*p%TT1
-            endif
-          else if (ltemperature) then
-            if (ltemperature_nolog) then
-              df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT) + p%cv1*max(0.0,tmp1)*p%rho1
-            else
-              df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cv1*max(0.0,tmp1)*p%rho1*p%TT1
-            endif
-          else if (lthermal_energy) then
-            df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + max(0.0,tmp1)
-          endif
-        endif
+        call calc_magnetic_slope_limited(f,df,p)
       endif
 !
 !  Special contributions to this module are called here.

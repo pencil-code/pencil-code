@@ -2768,6 +2768,28 @@ module Density
 !
     endsubroutine calc_advec_hypermesh
 !***********************************************************************
+    subroutine calc_sld_fdiff(f,p,fdiff)
+!
+!   16-apr-26/TP: carved from dlnrho_dt 
+!
+      use Sub, only: calc_slope_diff_flux
+      
+      real, intent(in), dimension(mx,my,mz,mfarray) :: f
+      type(pencil_case), intent(in) :: p
+      real, intent(inout),  dimension(nx) :: fdiff
+
+      real, dimension (nx) :: tmp
+
+      if (ldensity_nolog) then
+        call calc_slope_diff_flux(f,irho,p,h_sld_dens,nlf_sld_dens,tmp,div_sld_dens)
+        fdiff=fdiff+tmp
+      else
+        call calc_slope_diff_flux(f,ilnrho,p,h_sld_dens,nlf_sld_dens,tmp,div_sld_dens)
+        fdiff=fdiff+tmp*p%rho1
+      endif
+
+    endsubroutine calc_sld_fdiff
+!***********************************************************************
     subroutine dlnrho_dt(f,df,p)
 !
 !  Continuity equation.
@@ -3017,13 +3039,7 @@ module Density
 !   Slope limited diffusion for density
 !
       if (ldensity_slope_limited.and.llast) then
-        if (ldensity_nolog) then
-          call calc_slope_diff_flux(f,irho,p,h_sld_dens,nlf_sld_dens,tmp,div_sld_dens)
-          fdiff=fdiff+tmp
-        else
-          call calc_slope_diff_flux(f,ilnrho,p,h_sld_dens,nlf_sld_dens,tmp,div_sld_dens)
-          fdiff=fdiff+tmp*p%rho1
-        endif
+        call calc_sld_fdiff(f,p,fdiff)
       endif
 !
 !  Interface for your personal subroutines calls

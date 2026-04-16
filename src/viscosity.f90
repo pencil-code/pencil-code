@@ -1285,6 +1285,80 @@ module Viscosity
 !
     endsubroutine pencil_interdep_viscosity
 !***********************************************************************
+    subroutine calc_visc_slope_limited(f,p)
+!
+!   16-apr-26/TP: carved from calc_pencils_viscosity
+!
+      use Sub, only: calc_slope_diff_flux
+      real, intent(in), dimension(mx,my,mz,mfarray) :: f
+      type(pencil_case), intent(inout) :: p
+
+      real, dimension (nx,3) :: tmp
+      real, dimension (nx) :: div_flux,viscous_heat
+      real, dimension (nx,3,3) :: d_sld_flux
+      integer :: i
+!
+!
+      !p%char_speed_slope=f(l1:l2,m,n,iFF_char_c)            ! old implementation
+      !p%fvisc=p%fvisc-f(l1:l2,m,n,iFF_div_uu:iFF_div_uu+2)  ! old implementation
+!
+!     use sld only in last sub timestep
+!
+      if (lviscosity_heat) then
+        if (lcylindrical_coords .or. lspherical_coords) then
+          do i=1,3
+            call calc_slope_diff_flux(f,iux+(i-1),p,h_sld_visc,nlf_sld_visc,tmp(:,i),div_sld_visc, &
+                                      HEAT=viscous_heat,HEAT_TYPE='viscose', &
+                                      FLUX1=d_sld_flux(:,1,i),FLUX2=d_sld_flux(:,2,i),FLUX3=d_sld_flux(:,3,i))
+            if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+max(0.0,viscous_heat)/p%rho
+          enddo
+          if (lcylindrical_coords) then
+            p%fvisc(:,1)=p%fvisc(:,1)+tmp(:,1)-(d_sld_flux(:,2,2))/x(l1:l2)
+            p%fvisc(:,2)=p%fvisc(:,2)+tmp(:,2)+(d_sld_flux(:,2,1))/x(l1:l2)
+            p%fvisc(:,3)=p%fvisc(:,3)+tmp(:,3)
+          elseif (lspherical_coords) then
+            if (lsld_notensor) then
+              p%fvisc(:,1)=p%fvisc(:,1)+tmp(:,1)
+              p%fvisc(:,2)=p%fvisc(:,2)+tmp(:,2)
+              p%fvisc(:,3)=p%fvisc(:,3)+tmp(:,3)
+            else
+              p%fvisc(:,1)=p%fvisc(:,1)+tmp(:,1)-(d_sld_flux(:,2,2)+d_sld_flux(:,3,3))/x(l1:l2)
+              p%fvisc(:,2)=p%fvisc(:,2)+tmp(:,2)+(d_sld_flux(:,2,1)-d_sld_flux(:,3,3)*cotth(m))/x(l1:l2)
+              p%fvisc(:,3)=p%fvisc(:,3)+tmp(:,3)+(d_sld_flux(:,3,1)+d_sld_flux(:,3,2)*cotth(m))/x(l1:l2)
+            endif
+          endif
+        else
+          do i=1,3
+            call calc_slope_diff_flux(f,iux+(i-1),p,h_sld_visc,nlf_sld_visc,div_flux,div_sld_visc, &
+                                      HEAT=viscous_heat,HEAT_TYPE='viscose')
+            p%fvisc(:,i)=p%fvisc(:,i) + div_flux 
+            if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+max(0.0,viscous_heat)/p%rho
+          enddo
+        endif
+      else
+        if (lcylindrical_coords .or. lspherical_coords) then
+          do i=1,3
+            call calc_slope_diff_flux(f,iux+(i-1),p,h_sld_visc,nlf_sld_visc,tmp(:,i),div_sld_visc, &
+                                      FLUX1=d_sld_flux(:,1,i),FLUX2=d_sld_flux(:,2,i),FLUX3=d_sld_flux(:,3,i))
+          enddo
+          if (lcylindrical_coords) then
+            p%fvisc(:,1)=p%fvisc(:,1)+tmp(:,1)-(d_sld_flux(:,2,2))/x(l1:l2)
+            p%fvisc(:,2)=p%fvisc(:,2)+tmp(:,2)+(d_sld_flux(:,2,1))/x(l1:l2)
+            p%fvisc(:,3)=p%fvisc(:,3)+tmp(:,3)
+          elseif (lspherical_coords) then
+            p%fvisc(:,1)=p%fvisc(:,1)+tmp(:,1)-(d_sld_flux(:,2,2)+d_sld_flux(:,3,3))/x(l1:l2)
+            p%fvisc(:,2)=p%fvisc(:,2)+tmp(:,2)+(d_sld_flux(:,2,1)-d_sld_flux(:,3,3)*cotth(m))/x(l1:l2)
+            p%fvisc(:,3)=p%fvisc(:,3)+tmp(:,3)+(d_sld_flux(:,3,1)+d_sld_flux(:,3,2)*cotth(m))/x(l1:l2)
+          endif
+        else
+          do i=1,3
+            call calc_slope_diff_flux(f,iux+(i-1),p,h_sld_visc,nlf_sld_visc,div_flux,div_sld_visc)
+            p%fvisc(:,i)=p%fvisc(:,i) + div_flux 
+          enddo
+        endif
+      endif
+    endsubroutine calc_visc_slope_limited
+!***********************************************************************
     subroutine calc_pencils_viscosity(f,p)
 !
 !  Calculate Viscosity pencils.
@@ -1309,7 +1383,6 @@ module Viscosity
       real, dimension (nx) :: lambda_phi,prof,prof2,derprof,derprof2
       real, dimension (nx) :: gradnu_effective,fac,advec_hypermesh_uu
       real, dimension (nx,3) :: deljskl2,fvisc_nnewton2
-      real, dimension (nx,3,3) :: d_sld_flux
 !
       integer :: i,j,ju,ii,jj,kk,ll
       logical :: ldiffus_total, ldiffus_total3
@@ -2213,68 +2286,7 @@ module Viscosity
 !  following Rempel (2014). Here the divergence of the flux is used.
 !
       if (lvisc_slope_limited .and. llast) then
-!
-!       tmp3 :  divergence of flux
-!       tmp4 :  heating, switch to turn on heating calc.
-!
-        !p%char_speed_slope=f(l1:l2,m,n,iFF_char_c)            ! old implementation
-        !p%fvisc=p%fvisc-f(l1:l2,m,n,iFF_div_uu:iFF_div_uu+2)  ! old implementation
-!
-!       use sld only in last sub timestep
-!
-        if (lviscosity_heat) then
-          if (lcylindrical_coords .or. lspherical_coords) then
-            do i=1,3
-              call calc_slope_diff_flux(f,iux+(i-1),p,h_sld_visc,nlf_sld_visc,tmp2(:,i),div_sld_visc, &
-                                        HEAT=tmp4,HEAT_TYPE='viscose', &
-                                        FLUX1=d_sld_flux(:,1,i),FLUX2=d_sld_flux(:,2,i),FLUX3=d_sld_flux(:,3,i))
-              if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+max(0.0,tmp4)/p%rho
-            enddo
-            if (lcylindrical_coords) then
-              p%fvisc(:,1)=p%fvisc(:,1)+tmp2(:,1)-(d_sld_flux(:,2,2))/x(l1:l2)
-              p%fvisc(:,2)=p%fvisc(:,2)+tmp2(:,2)+(d_sld_flux(:,2,1))/x(l1:l2)
-              p%fvisc(:,3)=p%fvisc(:,3)+tmp2(:,3)
-            elseif (lspherical_coords) then
-              if (lsld_notensor) then
-                p%fvisc(:,1)=p%fvisc(:,1)+tmp2(:,1)
-                p%fvisc(:,2)=p%fvisc(:,2)+tmp2(:,2)
-                p%fvisc(:,3)=p%fvisc(:,3)+tmp2(:,3)
-              else
-                p%fvisc(:,1)=p%fvisc(:,1)+tmp2(:,1)-(d_sld_flux(:,2,2)+d_sld_flux(:,3,3))/x(l1:l2)
-                p%fvisc(:,2)=p%fvisc(:,2)+tmp2(:,2)+(d_sld_flux(:,2,1)-d_sld_flux(:,3,3)*cotth(m))/x(l1:l2)
-                p%fvisc(:,3)=p%fvisc(:,3)+tmp2(:,3)+(d_sld_flux(:,3,1)+d_sld_flux(:,3,2)*cotth(m))/x(l1:l2)
-              endif
-            endif
-          else
-            do i=1,3
-              call calc_slope_diff_flux(f,iux+(i-1),p,h_sld_visc,nlf_sld_visc,tmp3,div_sld_visc, &
-                                        HEAT=tmp4,HEAT_TYPE='viscose')
-              p%fvisc(:,i)=p%fvisc(:,i) + tmp3
-              if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+max(0.0,tmp4)/p%rho
-            enddo
-          endif
-        else
-          if (lcylindrical_coords .or. lspherical_coords) then
-            do i=1,3
-              call calc_slope_diff_flux(f,iux+(i-1),p,h_sld_visc,nlf_sld_visc,tmp2(:,i),div_sld_visc, &
-                                        FLUX1=d_sld_flux(:,1,i),FLUX2=d_sld_flux(:,2,i),FLUX3=d_sld_flux(:,3,i))
-            enddo
-            if (lcylindrical_coords) then
-              p%fvisc(:,1)=p%fvisc(:,1)+tmp2(:,1)-(d_sld_flux(:,2,2))/x(l1:l2)
-              p%fvisc(:,2)=p%fvisc(:,2)+tmp2(:,2)+(d_sld_flux(:,2,1))/x(l1:l2)
-              p%fvisc(:,3)=p%fvisc(:,3)+tmp2(:,3)
-            elseif (lspherical_coords) then
-              p%fvisc(:,1)=p%fvisc(:,1)+tmp2(:,1)-(d_sld_flux(:,2,2)+d_sld_flux(:,3,3))/x(l1:l2)
-              p%fvisc(:,2)=p%fvisc(:,2)+tmp2(:,2)+(d_sld_flux(:,2,1)-d_sld_flux(:,3,3)*cotth(m))/x(l1:l2)
-              p%fvisc(:,3)=p%fvisc(:,3)+tmp2(:,3)+(d_sld_flux(:,3,1)+d_sld_flux(:,3,2)*cotth(m))/x(l1:l2)
-            endif
-          else
-            do i=1,3
-              call calc_slope_diff_flux(f,iux+(i-1),p,h_sld_visc,nlf_sld_visc,tmp3,div_sld_visc)
-              p%fvisc(:,i)=p%fvisc(:,i) + tmp3
-            enddo
-          endif
-        endif
+        call calc_visc_slope_limited(f,p)
       endif
 !
 !  viscous force: in Schur-223 flow we use

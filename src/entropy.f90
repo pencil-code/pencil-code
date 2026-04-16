@@ -3602,6 +3602,23 @@ module Energy
 !
     endsubroutine calc_pencils_energy
 !***********************************************************************
+    subroutine calc_energy_slope_limited(f,df,p)
+!
+!   16-apr-26/TP: carved from denergy_dt
+!
+      use Sub, only: calc_slope_diff_flux
+
+      real, intent(in),  dimension(mx,my,mz,mfarray) :: f
+      real, intent(out), dimension(mx,my,mz,mvar) :: df
+      type(pencil_case), intent(in) :: p
+
+      real, dimension(nx) :: tmp
+
+      call calc_slope_diff_flux(f,iss,p,h_sld_ene,nlf_sld_ene,tmp,div_sld_ene)
+      df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+tmp
+
+    endsubroutine calc_energy_slope_limited
+!***********************************************************************
     subroutine denergy_dt(f,df,p)
 !
 !  Calculate right hand side of entropy equation,
@@ -3766,8 +3783,7 @@ module Energy
 !     Slope-limited diffusion
 !
       if (lenergy_slope_limited.and.llast) then
-        call calc_slope_diff_flux(f,iss,p,h_sld_ene,nlf_sld_ene,tmp1,div_sld_ene)
-        df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+tmp1
+        call calc_energy_slope_limited(f,df,p)
       endif
 !
 !  Explicit heating/cooling terms.
