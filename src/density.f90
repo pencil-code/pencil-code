@@ -2802,10 +2802,47 @@ module Density
 
     endsubroutine calc_sld_fdiff
 !***********************************************************************
-    subroutine dlnrho_dt(f,df,p)
-!
-!  Continuity equation.
-!  Calculate dlnrho/dt = - u.gradlnrho - divu
+    subroutine apply_massdiff_fix(df,p,fdiff)
+
+      use EquationOfState, only: get_gamma_etc
+
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case), intent(in) :: p
+      real, dimension(nx), intent(in) :: fdiff
+      real, dimension(nx) :: tmp
+      real :: gamma
+
+      if (ldensity_nolog) then
+        tmp = fdiff*p%rho1
+      else
+        tmp = fdiff
+      endif
+      if (lhydro.and.(.not.lhydro_potential)) then
+        !  when using lhydro_potential, df doesn't have iux:iuz entries
+        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - p%uu(:,1) * tmp;
+        df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - p%uu(:,2) * tmp;
+        df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) - p%uu(:,3) * tmp;
+      endif
+      if (lentropy.and.(.not.pretend_lnTT)) then
+        if (lgamma_is_1) then
+          df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%cv*tmp
+        else
+          !Fred: reference Piyali - missing gamma from correction
+          call get_gamma_etc(gamma)
+          df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - gamma*p%cv*tmp
+        endif
+      elseif (lentropy.and.pretend_lnTT) then
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - tmp
+      elseif (ltemperature.and.(.not. ltemperature_nolog)) then
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - tmp
+      elseif (ltemperature.and.ltemperature_nolog) then
+        df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - tmp*p%TT
+      elseif (lthermal_energy) then
+        df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + 0.5 * fdiff * p%u2
+      endif
+    endsubroutine apply_massdiff_fix
+!***********************************************************************
+    subroutine dlnrho_dt_std(f,df,p)
 !
 !   7-jun-02/axel: incorporated from subroutine pde
 !  21-oct-15/MR: changes for slope-limited diffusion
@@ -2816,44 +2853,27 @@ module Density
 !  03-apr-20/joern: restructured and fixed slope-limited diffusion
 !  06-mar-25/alberto: added corrections in the subrelativistic limit
 !
+!  Continuity equation.
+!
       use Deriv, only: der6
       use Special, only: special_calc_density
-      use EquationOfState, only: get_gamma_etc
       use Sub
-!
+
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
       intent(in)  :: p
       intent(inout) :: df,f
-!
+
       real, dimension (nx) :: fdiff
-      real :: gamma
       real, dimension (nx) :: tmp
       real, dimension (nx,3) :: tmpv
       real, dimension (nx) :: density_rhs, density_rhs_tmp
       integer :: j
       logical :: ldt_up
       real :: cs201=1., cs20_corr=1.
-!
-!  Identify module and boundary conditions.
-!
-      call timing('dlnrho_dt','entered',mnloop=.true.)
-      if (headtt.or.ldebug) print*,'dlnrho_dt: SOLVE'
-      if (headtt) call identify_bcs('lnrho',ilnrho)
-!
-      if (lSchur_3D3D1D) then
-!
-!  Accumulatively calculate the RHS of Schur flow equations, but only finalize after the mn loop.
-!
-        density_rhs=p%uglnrho+p%divu
-        call accumulate_Schur_averages(density_rhs)
-!
-      else
-!
-!  Continuity equation.
-!
+
       if (lcontinuity_gas) then
         if (.not. lweno_transport .and. .not. lffree .and. .not. lreduced_sound_speed .and. &
             ieos_profile=='nothing' .and. .not. lfargo_advection) then
@@ -3061,34 +3081,7 @@ module Density
 !  Improve energy and momentum conservation by compensating for mass diffusion
 !
       if (lmassdiff_fix.and..not.lconservative) then
-        if (ldensity_nolog) then
-          tmp = fdiff*p%rho1
-        else
-          tmp = fdiff
-        endif
-        if (lhydro.and.(.not.lhydro_potential)) then
-          !  when using lhydro_potential, df doesn't have iux:iuz entries
-          df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - p%uu(:,1) * tmp;
-          df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - p%uu(:,2) * tmp;
-          df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) - p%uu(:,3) * tmp;
-        endif
-        if (lentropy.and.(.not.pretend_lnTT)) then
-          if (lgamma_is_1) then
-            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%cv*tmp
-          else
-            !Fred: reference Piyali - missing gamma from correction
-            call get_gamma_etc(gamma)
-            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - gamma*p%cv*tmp
-          endif
-        elseif (lentropy.and.pretend_lnTT) then
-          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - tmp
-        elseif (ltemperature.and.(.not. ltemperature_nolog)) then
-          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - tmp
-        elseif (ltemperature.and.ltemperature_nolog) then
-          df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - tmp*p%TT
-        elseif (lthermal_energy) then
-          df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + 0.5 * fdiff * p%u2
-        endif
+        call apply_massdiff_fix(df,p,fdiff)
       endif
 !
 !  Hyper diffusion.
@@ -3202,6 +3195,74 @@ module Density
 !  Apply border profile
 !
       if (lborder_profiles) call set_border_density(f,df,p)
+    endsubroutine dlnrho_dt_std
+!***********************************************************************
+    subroutine dlnrho_dt(f,df,p)
+!
+!  Continuity equation.
+!  Calculate dlnrho/dt = - u.gradlnrho - divu
+!
+!   7-jun-02/axel: incorporated from subroutine pde
+!  21-oct-15/MR: changes for slope-limited diffusion
+!   4-aug-17/axel: implemented terms for ultrarelativistic EoS
+!  25-may-18/fred: updated mass diffusion correction and set default
+!                  not default for hyperdiff, but correction applies
+!                  to all fdiff if lmassdiff_fix=T
+!  03-apr-20/joern: restructured and fixed slope-limited diffusion
+!  06-mar-25/alberto: added corrections in the subrelativistic limit
+!
+!
+      use Sub, only: identify_bcs 
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+!
+      intent(in)  :: p
+      intent(inout) :: df,f
+
+      real, dimension(nx) :: density_rhs, fdiff
+!
+!
+!  Identify module and boundary conditions.
+!
+      call timing('dlnrho_dt','entered',mnloop=.true.)
+      if (headtt.or.ldebug) print*,'dlnrho_dt: SOLVE'
+      if (headtt) call identify_bcs('lnrho',ilnrho)
+!
+      if (lSchur_3D3D1D) then
+!
+!  Accumulatively calculate the RHS of Schur flow equations, but only finalize after the mn loop.
+!
+        density_rhs=p%uglnrho+p%divu
+        call accumulate_Schur_averages(density_rhs)
+!
+      else if(loperator_split_update) then
+        if(lsplit_sld) then
+!
+!   Slope limited diffusion for density
+!
+          fdiff=0.
+          if (ldensity_slope_limited.and.llast) then
+            call calc_sld_fdiff(f,p,fdiff)
+          endif
+!
+!  Improve energy and momentum conservation by compensating for mass diffusion
+!
+          if (lmassdiff_fix.and..not.lconservative) then
+            call apply_massdiff_fix(df,p,fdiff)
+          endif
+!
+!  Add diffusion term to continuity equation
+!
+          if (ldensity_nolog) then
+            df(l1:l2,m,n,irho)   = df(l1:l2,m,n,irho)   + fdiff
+          else
+            df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + fdiff
+          endif
+        endif
+      else
+        call dlnrho_dt_std(f,df,p)
 !
       endif   !  if (lSchur_3D3D1D) then ... else
 !
