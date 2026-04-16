@@ -31,7 +31,7 @@ if ( $io_scheme == 'io_hdf5' ) then
   cp data/grid.h5 $newdir/data
   ln -s $olddir/data/allprocs/var.h5 $newdir/data/allprocs/var.h5
 else
-  cp data/allprocs/grid.dat $newdir/data/allprocs
-  cp data/allprocs/ode.dat $newdir/data/allprocs
+  rm -f $newdir/data/allprocs/grid.dat; ln -s $olddir/data/allprocs/grid.dat $newdir/data/allprocs/grid.dat
+  rm -f $newdir/data/allprocs/ode.dat; ln -s $olddir/data/allprocs/ode.dat $newdir/data/allprocs/ode.dat
   pc_copyvar v v $newdir -s -e
 endif
