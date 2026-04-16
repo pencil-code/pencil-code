@@ -4115,6 +4115,112 @@ module Hydro
 !
     endsubroutine update_char_vel_hydro
 !***********************************************************************
+    subroutine apply_advective_term(f,df,p)
+
+      use Deriv, only: der
+      use Sub,   only: dot
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mvar)    :: df
+      type(pencil_case) :: p
+
+      real, dimension (nx) :: ugu_Schur_x, ugu_Schur_y, ugu_Schur_z
+      real, dimension (nx) :: tmp
+      real, dimension (nx,3,3) :: puij_Schur
+      integer :: i,j
+
+      if (.not. lconservative .and. .not. lweno_transport .and. &
+          .not. lno_meridional_flow .and. .not. lfargo_advection) then
+        if (lSchur_3D3D1D_uu) then
+          call dot(p%uu,p%uij(:,1,:),ugu_Schur_x)
+          call dot(p%uu,p%uij(:,2,:),ugu_Schur_y)
+          ugu_Schur_z=p%uu(:,3)*p%uij(:,3,3)
+          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-ugu_Schur_x
+          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-ugu_Schur_y
+          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-ugu_Schur_z
+        elseif (lSchur_2D2D3D_uu) then
+          do j=1,3
+          do i=1,3
+            puij_Schur(:,i,j) = p%uij(:,i,j)
+          enddo
+          enddo
+          puij_Schur(:,1,3) = 0
+          puij_Schur(:,2,3) = 0
+          call dot(p%uu,puij_Schur(:,1,:),ugu_Schur_x)
+          call dot(p%uu,puij_Schur(:,2,:),ugu_Schur_y)
+          call dot(p%uu,puij_Schur(:,3,:),ugu_Schur_z)
+          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-ugu_Schur_x
+          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-ugu_Schur_y
+          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-ugu_Schur_z
+        elseif (lSchur_2D2D1D_uu) then
+          do j=1,3
+          do i=1,3
+            puij_Schur(:,i,j) = p%uij(:,i,j)
+          enddo
+          enddo
+          puij_Schur(:,1,3) = 0
+          puij_Schur(:,2,3) = 0
+          call dot(p%uu,puij_Schur(:,1,:),ugu_Schur_x)
+          call dot(p%uu,puij_Schur(:,2,:),ugu_Schur_y)
+          ugu_Schur_z=p%uu(:,3)*p%uij(:,3,3)
+          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-ugu_Schur_x
+          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-ugu_Schur_y
+          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-ugu_Schur_z
+        else
+          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%ugu
+        endif
+      endif
+!
+      if (ldensity.and.lconservative) then
+!
+!  diagonals first
+!
+        call der(f,iTij+0,tmp,1) ; df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tmp
+        call der(f,iTij+1,tmp,2) ; df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tmp
+        call der(f,iTij+2,tmp,3) ; df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tmp
+!
+!  "Tij4" = T12
+!  "Tij5" = T23
+!  "Tij6" = T31
+!  next the off-diagonals
+!  T_11,1 + T_12,2 + T_13,3 = (0,1) + (3,2) + (5,3); (T23=T32 does not enter)
+!
+        call der(f,iTij+3,tmp,2) ; df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tmp
+        call der(f,iTij+5,tmp,3) ; df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tmp
+!
+!  T_21,1 + T_22,2 + T_23,3 = (1,2) + (3,1) + (4,3); (T13=T31 does not enter)
+!
+        call der(f,iTij+3,tmp,1) ; df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tmp
+        call der(f,iTij+4,tmp,3) ; df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tmp
+!
+!  T_31,1 + T_32,2 + T_33,3 = (2,3) + (5,1) + (4,2); (T12=T21 does not enter)
+!
+        call der(f,iTij+5,tmp,1) ; df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tmp
+        call der(f,iTij+4,tmp,2) ; df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tmp
+!
+      endif
+!
+!  WENO transport.
+!
+      if (lweno_transport) then
+        do j=1,3
+          df(l1:l2,m,n,iux-1+j)=df(l1:l2,m,n,iux-1+j)-(p%transpurho(:,j)-p%uu(:,j)*p%transprho)*p%rho1
+        enddo
+      endif
+!
+!  No meridional flow : turn off the meridional flow (in spherical)
+!  useful for debugging.
+!
+!  18-Mar-2010/AJ: this should probably go in a special module.
+!  12-Mar-2017/WL: Agree, looks very specific.
+!
+      if (lno_meridional_flow) then
+        f(l1:l2,m,n,iux:iuy)=0.0
+        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-p%ugu(:,3)
+      endif
+!
+      if (lfargo_advection) df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%uuadvec_guu
+    endsubroutine apply_advective_term
+!***********************************************************************
     subroutine duu_dt(f,df,p)
 !
 !  velocity evolution
@@ -4143,9 +4249,8 @@ module Hydro
       intent(inout) :: f,df
 
       real, dimension (nx,3) :: uu1, tmpv
-      real, dimension (nx) :: tmp, ftot, ugu_Schur_x, ugu_Schur_y, ugu_Schur_z
+      real, dimension (nx) :: tmp, ftot
       real, dimension (nx) :: arad_normal, pradrc2
-      real, dimension (nx,3,3) :: puij_Schur
       real :: hubble_factor
       integer :: i,j
 !
@@ -4162,108 +4267,17 @@ module Hydro
         call identify_bcs('uz',iuz)
         if (lslope_limit_diff) call identify_bcs('sld_char',isld_char)
       endif
+
+      if(.not. loperator_split_update) then
 !
 !  Advection term, i.e., subtract u.gradu.
 !  In the relativistic case, this is automatically
 !  u.gradS, and then we also need to subtract (divu)*S,
 !  but that is currently done in noentropy.
 !
-      if (ladvection_velocity) then
-        if (.not. lconservative .and. .not. lweno_transport .and. &
-            .not. lno_meridional_flow .and. .not. lfargo_advection) then
-          if (lSchur_3D3D1D_uu) then
-            call dot(p%uu,p%uij(:,1,:),ugu_Schur_x)
-            call dot(p%uu,p%uij(:,2,:),ugu_Schur_y)
-            ugu_Schur_z=p%uu(:,3)*p%uij(:,3,3)
-            df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-ugu_Schur_x
-            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-ugu_Schur_y
-            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-ugu_Schur_z
-          elseif (lSchur_2D2D3D_uu) then
-            do j=1,3
-            do i=1,3
-              puij_Schur(:,i,j) = p%uij(:,i,j)
-            enddo
-            enddo
-            puij_Schur(:,1,3) = 0
-            puij_Schur(:,2,3) = 0
-            call dot(p%uu,puij_Schur(:,1,:),ugu_Schur_x)
-            call dot(p%uu,puij_Schur(:,2,:),ugu_Schur_y)
-            call dot(p%uu,puij_Schur(:,3,:),ugu_Schur_z)
-            df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-ugu_Schur_x
-            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-ugu_Schur_y
-            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-ugu_Schur_z
-          elseif (lSchur_2D2D1D_uu) then
-            do j=1,3
-            do i=1,3
-              puij_Schur(:,i,j) = p%uij(:,i,j)
-            enddo
-            enddo
-            puij_Schur(:,1,3) = 0
-            puij_Schur(:,2,3) = 0
-            call dot(p%uu,puij_Schur(:,1,:),ugu_Schur_x)
-            call dot(p%uu,puij_Schur(:,2,:),ugu_Schur_y)
-            ugu_Schur_z=p%uu(:,3)*p%uij(:,3,3)
-            df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-ugu_Schur_x
-            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-ugu_Schur_y
-            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-ugu_Schur_z
-          else
-            df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%ugu
-          endif
+        if (ladvection_velocity) then
+          call apply_advective_term(f,df,p)
         endif
-!
-        if (ldensity.and.lconservative) then
-!
-!  diagonals first
-!
-          call der(f,iTij+0,tmp,1) ; df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tmp
-          call der(f,iTij+1,tmp,2) ; df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tmp
-          call der(f,iTij+2,tmp,3) ; df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tmp
-!
-!  "Tij4" = T12
-!  "Tij5" = T23
-!  "Tij6" = T31
-!  next the off-diagonals
-!  T_11,1 + T_12,2 + T_13,3 = (0,1) + (3,2) + (5,3); (T23=T32 does not enter)
-!
-          call der(f,iTij+3,tmp,2) ; df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tmp
-          call der(f,iTij+5,tmp,3) ; df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tmp
-!
-!  T_21,1 + T_22,2 + T_23,3 = (1,2) + (3,1) + (4,3); (T13=T31 does not enter)
-!
-          call der(f,iTij+3,tmp,1) ; df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tmp
-          call der(f,iTij+4,tmp,3) ; df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tmp
-!
-!  T_31,1 + T_32,2 + T_33,3 = (2,3) + (5,1) + (4,2); (T12=T21 does not enter)
-!
-          call der(f,iTij+5,tmp,1) ; df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tmp
-          call der(f,iTij+4,tmp,2) ; df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tmp
-!
-        endif
-!
-!  WENO transport.
-!
-        if (lweno_transport) then
-          do j=1,3
-            df(l1:l2,m,n,iux-1+j)=df(l1:l2,m,n,iux-1+j)-(p%transpurho(:,j)-p%uu(:,j)*p%transprho)*p%rho1
-          enddo
-        endif
-!
-!  No meridional flow : turn off the meridional flow (in spherical)
-!  useful for debugging.
-!
-!  18-Mar-2010/AJ: this should probably go in a special module.
-!  12-Mar-2017/WL: Agree, looks very specific.
-!
-        if (lno_meridional_flow) then
-          f(l1:l2,m,n,iux:iuy)=0.0
-          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-p%ugu(:,3)
-        endif
-!
-        if (lfargo_advection) df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%uuadvec_guu
-!
-!  endif from ladvection_velocity
-!
-      endif
 !
 !  Coriolis force, -2*Omega x u (unless lprecession=T)
 !  Omega=(-sin_theta, 0, cos_theta), where theta corresponds to
@@ -4271,150 +4285,153 @@ module Hydro
 !  the equator. Cartesian coordinates (x,y,z) now correspond to
 !  (theta,phi,r) i.e. (south,east,up), in spherical polar coordinates
 !
-      if (Omega/=0.) then
+        if (Omega/=0.) then
 !
-        if (lcylindrical_coords) then
-          call coriolis_cylindrical(df,p)
-        elseif (lspherical_coords) then
-          call coriolis_spherical(df,p)
-        elseif (lprecession) then
-          call precession(df,p)
-        elseif (lrotation_xaxis) then
-          call coriolis_cartesian_xaxis(df,p%uu,iux)
-        else
-          call coriolis_cartesian(df,p%uu,iux)
+          if (lcylindrical_coords) then
+            call coriolis_cylindrical(df,p)
+          elseif (lspherical_coords) then
+            call coriolis_spherical(df,p)
+          elseif (lprecession) then
+            call precession(df,p)
+          elseif (lrotation_xaxis) then
+            call coriolis_cartesian_xaxis(df,p%uu,iux)
+          else
+            call coriolis_cartesian(df,p%uu,iux)
+          endif
+!
         endif
-!
-      endif
 !
 !  Coriolis force with in Cartesian domain with Omega=Omega(x)
 !
-      if (lcoriolis_xdep) call coriolis_xdep(df,p)
+        if (lcoriolis_xdep) call coriolis_xdep(df,p)
 !
 !  Artificial baroclinic term, Tbaro=curl(Sbaro), where
 !  Sbaro=Sbaro0*(pomega^2/2)*grad(z^2/2), so that Tbaro=Sbaro0*pomega*\vec{z},
 !  i.e., Tbaro=Sbaro0*r*sinth*(costh, -sinth, 0).
 !
-      if (Sbaro0/=0.) then
-        df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+Sbaro0*x(l1:l2)*sinth(m1:m2)*costh(m)
-        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-Sbaro0*x(l1:l2)*sinth(m1:m2)**2
-      endif
+        if (Sbaro0/=0.) then
+          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+Sbaro0*x(l1:l2)*sinth(m1:m2)*costh(m)
+          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-Sbaro0*x(l1:l2)*sinth(m1:m2)**2
+        endif
 !
 !  Interface for your personal subroutines calls
 !
-      if (lspecial) call special_calc_hydro(f,df,p)
+        if (lspecial) call special_calc_hydro(f,df,p)
+      endif
 !
 ! calculate viscous force
 !
       if (lviscosity) call calc_viscous_force(df,p)
-      if (lSGS_hydro) call calc_SGS_hydro_force(f,df,p)
+
+      if(.not. loperator_split_update) then
+        if (lSGS_hydro) call calc_SGS_hydro_force(f,df,p)
 !
 !  Ekman Friction, used only in two dimensional runs.
 !  But it can also be used as photon drag in 3-D, for example.
 !  In that case, it would be time dependent.
 !
-      if (ekman_friction/=0) then
-        select case (friction_tdep)
-          case ('nothing')
-            frict=ekman_friction
-          case ('linear')
-            frict=ekman_friction*max(min(real(t-friction_tdep_toffset)/friction_tdep_tau0,1.),0.)
-          case ('inverse')
-            frict=ekman_friction/max(real(t),friction_tdep_toffset)
-          case ('Thomson')
-            arad_normal=real(4*sigmaSB/c_light)
-            pradrc2=real(onethird*arad_normal*p%TT**4/(p%rho*c_light**2))
-            frict=real(ekman_friction*fourthird*p%yH*sigma_Thomson*arad_normal*p%TT**4/(m_p*c_light))
-          case ('current')
-            if (lmagnetic) then
-              frict=ekman_friction*sqrt(p%j2)
-            else
-              call fatal_error("duu_dt","lmagnetic must be true")
-            endif
-          case ('step', 'cs-step')
-            if (t<=t1_ekman) then
-              frict=0.
-            elseif (t<=t2_ekman) then
-              if (friction_tdep=='cs-step') then
-                frict=ekman_friction*sqrt(p%cs2)
+        if (ekman_friction/=0) then
+          select case (friction_tdep)
+            case ('nothing')
+              frict=ekman_friction
+            case ('linear')
+              frict=ekman_friction*max(min(real(t-friction_tdep_toffset)/friction_tdep_tau0,1.),0.)
+            case ('inverse')
+              frict=ekman_friction/max(real(t),friction_tdep_toffset)
+            case ('Thomson')
+              arad_normal=real(4*sigmaSB/c_light)
+              pradrc2=real(onethird*arad_normal*p%TT**4/(p%rho*c_light**2))
+              frict=real(ekman_friction*fourthird*p%yH*sigma_Thomson*arad_normal*p%TT**4/(m_p*c_light))
+            case ('current')
+              if (lmagnetic) then
+                frict=ekman_friction*sqrt(p%j2)
               else
-                frict=ekman_friction
+                call fatal_error("duu_dt","lmagnetic must be true")
               endif
-            else
-              frict=0.
-            endif
-          case default
-            call fatal_error('duu_dt','unknown value of friction_tdep')
-        endselect
+            case ('step', 'cs-step')
+              if (t<=t1_ekman) then
+                frict=0.
+              elseif (t<=t2_ekman) then
+                if (friction_tdep=='cs-step') then
+                  frict=ekman_friction*sqrt(p%cs2)
+                else
+                  frict=ekman_friction
+                endif
+              else
+                frict=0.
+              endif
+            case default
+              call fatal_error('duu_dt','unknown value of friction_tdep')
+          endselect
 !
 !  Timestep constraint and apply damping term to momentum equation.
 !
-        maxsrc=maxsrc+maxval(frict)
-        call multsv_mn(frict,p%uu,tmpv)
-        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-tmpv
-      endif
+          maxsrc=maxsrc+maxval(frict)
+          call multsv_mn(frict,p%uu,tmpv)
+          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-tmpv
+        endif
 !
 !  Hubble friction, here the term for supercomoving coordinates with nconf1p5.
 !  This could be steered later with the ascale_type parameter in cdata.f90.
 !
-      if (lhubble_hydro) then
-        select case (ascale_type)
-          case ('default'); hubble_factor=.5*Hubble*ascale**1.5
-          case ('general'); hubble_factor=(2.-nconformal)*Hubble*ascale**nconformal
-        endselect
-        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-hubble_factor*p%uu
-      endif
+        if (lhubble_hydro) then
+          select case (ascale_type)
+            case ('default'); hubble_factor=.5*Hubble*ascale**1.5
+            case ('general'); hubble_factor=(2.-nconformal)*Hubble*ascale**nconformal
+          endselect
+          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-hubble_factor*p%uu
+        endif
 !
 !  Boussinesq approximation: -g_z*alpha*(T-T_0) added.
 !  Use Rayleigh number only with ltemperature.
 !  Note: the buoyancy term is currently scaled with Ra*Pr, but Pr is also
 !  regulated though mu and K, so Pr should eventually be eliminated.
 !
-      if (lboussinesq.and.ltemperature) then
-        if (lsphere_in_a_box) then
-          do j=1,3
-            df(l1:l2,m,n,iuu-1+j)=df(l1:l2,m,n,iuu-1+j) + p%r_mn*Ra*Pr*f(l1:l2,m,n,iTT)*p%evr(:,j)
-          enddo
-        else
-          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+Ra*Pr*f(l1:l2,m,n,iTT) !  gravity in the opposite z direction
+        if (lboussinesq.and.ltemperature) then
+          if (lsphere_in_a_box) then
+            do j=1,3
+              df(l1:l2,m,n,iuu-1+j)=df(l1:l2,m,n,iuu-1+j) + p%r_mn*Ra*Pr*f(l1:l2,m,n,iTT)*p%evr(:,j)
+            enddo
+          else
+            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+Ra*Pr*f(l1:l2,m,n,iTT) !  gravity in the opposite z direction
+          endif
         endif
-      endif
 !
 !  Add possibility of forcing that is not delta-correlated in time.
 !
-      if (lforcing_cont_uu) then
-        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz) + ampl_fcont_uu*p%fcont(:,:,iforcing_cont_uu)
-      endif
+        if (lforcing_cont_uu) then
+          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz) + ampl_fcont_uu*p%fcont(:,:,iforcing_cont_uu)
+        endif
 !
 !  Damp motions in some regions for some time spans if desired.
 !  For geodynamo: addition of dampuint evaluation.
 !
-      if (tdamp/=0.or.dampuext/=0.or.dampuint/=0) call udamping(f,df,p)
+        if (tdamp/=0.or.dampuext/=0.or.dampuint/=0) call udamping(f,df,p)
 !
 !  adding differential rotation via a frictional term
 !
-      if (tau_diffrot1/=0.) call impose_profile_diffrot(f,df,uuprof,ldiffrot_test)
+        if (tau_diffrot1/=0.) call impose_profile_diffrot(f,df,uuprof,ldiffrot_test)
 !
 !  impose velocity ceiling
 !
-      if (velocity_ceiling/=0.) call impose_velocity_ceiling(f)
+        if (velocity_ceiling/=0.) call impose_velocity_ceiling(f)
 !
 !  Save the advective derivative as an auxiliary.
 !  MR: not the full story if there is a Lorentz force
 !
-      if (ladv_der_as_aux) then
-        f(l1:l2,m,n,i_adv_derx:i_adv_derz) = p%fpres + p%fvisc
-        if (lgrav) f(l1:l2,m,n,i_adv_derx:i_adv_derz) = f(l1:l2,m,n,i_adv_derx:i_adv_derz) + p%gg
-      endif
+        if (ladv_der_as_aux) then
+          f(l1:l2,m,n,i_adv_derx:i_adv_derz) = p%fpres + p%fvisc
+          if (lgrav) f(l1:l2,m,n,i_adv_derx:i_adv_derz) = f(l1:l2,m,n,i_adv_derx:i_adv_derz) + p%gg
+        endif
 !
 !  Velocity in spherical coordinates from a Cartesian simulation
 !  for sphere-in-a-box setups
 !
-      if (luu_sph_as_aux.and.lsphere_in_a_box) then
-        f(l1:l2,m,n,iuu_sphr) = p%uu(:,1)*p%evr(:,1)+p%uu(:,2)*p%evr(:,2)+p%uu(:,3)*p%evr(:,3)
-        f(l1:l2,m,n,iuu_spht) = p%uu(:,1)*p%evth(:,1)+p%uu(:,2)*p%evth(:,2)+p%uu(:,3)*p%evth(:,3)
-        f(l1:l2,m,n,iuu_sphp) = p%uu(:,1)*p%phix+p%uu(:,2)*p%phiy
-      endif
+        if (luu_sph_as_aux.and.lsphere_in_a_box) then
+          f(l1:l2,m,n,iuu_sphr) = p%uu(:,1)*p%evr(:,1)+p%uu(:,2)*p%evr(:,2)+p%uu(:,3)*p%evr(:,3)
+          f(l1:l2,m,n,iuu_spht) = p%uu(:,1)*p%evth(:,1)+p%uu(:,2)*p%evth(:,2)+p%uu(:,3)*p%evth(:,3)
+          f(l1:l2,m,n,iuu_sphp) = p%uu(:,1)*p%phix+p%uu(:,2)*p%phiy
+        endif
 !
 !  Possibility to damp mean x momentum, ruxm, to zero.
 !  This can be useful in situations where a mean flow is generated.
@@ -4424,38 +4441,39 @@ module Hydro
 !  of <uy> due to the shear term. If there is rotation, the epicyclic
 !  motion brings one always back to no mean flow on the average.
 !
-      if (tau_damp_ruxm/=0.) df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-ruxm*p%rho1*tau_damp_ruxm1
-      if (tau_damp_ruym/=0.) df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-ruym*p%rho1*tau_damp_ruym1
-      if (tau_damp_ruzm/=0.) df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-ruzm*p%rho1*tau_damp_ruzm1
+        if (tau_damp_ruxm/=0.) df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-ruxm*p%rho1*tau_damp_ruxm1
+        if (tau_damp_ruym/=0.) df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-ruym*p%rho1*tau_damp_ruym1
+        if (tau_damp_ruzm/=0.) df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-ruzm*p%rho1*tau_damp_ruzm1
 !
 !  Apply border profiles
 !
-      if (lborder_profiles) call set_border_hydro(f,df,p)
+        if (lborder_profiles) call set_border_hydro(f,df,p)
 !
 !  Fred: Option to constrain timestep for large forces
 !
-      if ( lupdate_courant_dt.and.(lcdt_tauf.or.ldiagnos.and.idiag_dtF/=0) .or. &
-           ldiagnos.and.idiag_taufmin/=0 ) then
+        if ( lupdate_courant_dt.and.(lcdt_tauf.or.ldiagnos.and.idiag_dtF/=0) .or. &
+             ldiagnos.and.idiag_taufmin/=0 ) then
 
-        do j =1,3
-          where (abs(p%uu(:,j))>1)   !MR: What would in general be the significance of 1 here?
-            uu1(:,j)=1./p%uu(:,j)
-          elsewhere
-            uu1(:,j)=1.
-          endwhere
-        enddo
-        do j=1,3
-          ftot=abs(df(l1:l2,m,n,iux+j-1)*uu1(:,j))
-          if (lupdate_courant_dt.and.lcdt_tauf) dt1_max=max(dt1_max,ftot/cdtf)
-          if (ldiagnos.and.(idiag_dtF/=0.or.idiag_taufmin/=0)) Fmax=max(Fmax,ftot)
-        enddo
+          do j =1,3
+            where (abs(p%uu(:,j))>1)   !MR: What would in general be the significance of 1 here?
+              uu1(:,j)=1./p%uu(:,j)
+            elsewhere
+              uu1(:,j)=1.
+            endwhere
+          enddo
+          do j=1,3
+            ftot=abs(df(l1:l2,m,n,iux+j-1)*uu1(:,j))
+            if (lupdate_courant_dt.and.lcdt_tauf) dt1_max=max(dt1_max,ftot/cdtf)
+            if (ldiagnos.and.(idiag_dtF/=0.or.idiag_taufmin/=0)) Fmax=max(Fmax,ftot)
+          enddo
+        endif
+
+        call calc_diagnostics_hydro(f,p)
+        call sum_mn_name(pradrc2,idiag_pradrc2)
+!
+        call timing('duu_dt','finished',mnloop=.true.)
+!
       endif
-
-      call calc_diagnostics_hydro(f,p)
-      call sum_mn_name(pradrc2,idiag_pradrc2)
-!
-      call timing('duu_dt','finished',mnloop=.true.)
-!
     endsubroutine duu_dt
 !*******************************************************************************
     subroutine calc_0d_diagnostics_hydro(f,p)
