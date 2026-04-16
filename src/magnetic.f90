@@ -4254,6 +4254,136 @@ module Magnetic
       endselect
     endsubroutine get_eta_t_and_xtdep
 !***********************************************************************
+    subroutine calc_jj(f,p)
+
+!
+!  16-apr-2026/TP: carved from daa_dt to operator split SLD
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      type(pencil_case) :: p
+      integer :: j
+      real, dimension(nx) :: quench
+
+      if (lvacuum) then
+        p%jj=0.
+        p%jj_ohm=0.
+        eta_total=huge1
+        eta_xtdep=huge1
+        eta_tdep=huge1
+      else
+!
+!  The following allows us to let eta change with time, t-eta_tdep_toffset.
+!  The eta_tdep_toffset is used in cosmology where time starts at t=1.
+!  lresi_eta_tdep_t0_norm is not the default because of backward compatbility.
+!  The default is problematic because then eta_tdep /= eta for t < eta_tdep_t0.
+!
+        if (lresi_eta_tdep .or. lresi_eta_xtdep .or. lresi_hyper2_tdep .or. lresi_hyper3_tdep) then
+          call get_eta_t_and_xtdep(f,p)
+        endif
+!
+!  Check whether or not the displacement current is being computed.
+!  When iex>0, eta_total is not yet set, so we must do it here.
+!  Note, however, that p%jj_ohm can also be computed in disp_current,
+!  so we must not overwrite it here.
+!
+        if (ldisp_current) then
+          if (lresi_eta_tdep) then
+            eta_total=eta_tdep
+          elseif (lresi_eta_xtdep) then
+            eta_total=eta_xtdep
+          else
+!
+!  Must not overwrite jj_ohm here.
+!  Need to check that it is still always initialized.
+!
+            !p%jj=0.
+            !p%jj_ohm=0.
+            eta_total=eta
+          endif
+!
+!
+!  The Ohm's current is independent of loverride_ee2, etc.
+!  AB: eta_total and the rest are pencils, but it complains about inconsistent ranks. So I put (1).
+!  When the eta:s below are not known. p%jj_ohm may already have been computed in disp_current.
+!  Whether it works with lohm_evolve needs to be checked.
+!  learly_set_el_pencil=T is needed in all cases with displacement current.
+!
+          if (lresi_eta_tdep .or. lresi_eta_xtdep .or. eta/=0.) then
+            if (lohm_evolve) then
+              p%jj_ohm=f(l1:l2,m,n,ijx:ijz)
+            else
+              if (learly_set_el_pencil) then
+                if (iex /=0 ) then
+                  p%el=f(l1:l2,m,n,iex:iez)
+                endif
+              endif
+              do j=1,3
+                p%jj_ohm(:,j)=(p%el(:,j)+scl_uxb_in_ohm*p%uxb(:,j))*mu01/eta_total
+              enddo
+            endif
+          endif
+!
+!  In (hopefully) all other cases, p%jj_ohm is either initialized
+!  to zero or known from disp_current, but can check here:
+!
+          if (ip<9) print*,'AXEL: p%jj_ohm(1,:)=',p%jj_ohm(1,:)
+!
+!  Compute current for Lorentz force.
+!  Note that loverride_ee2 is a "permanent" switch,
+!  i.e., it is the same for the entire run.
+!  There is the option to add in the displacement current,
+!  if ladd_disp_current_from_aux=T.
+!
+          if (loverride_ee2) then
+            if (ladd_disp_current_from_aux) then
+              if (iedotx>0 .and. iedotz>0) then
+                p%jj=mu01*p%curlb-c_light21*f(l1:l2,m,n,iedotx:iedotz)
+              else
+                call fatal_error('calc_pencils_magnetic_pencpar', &
+                    'need leedot_as_aux=T in special/disp_current')
+              endif
+            else
+              p%jj=mu01*p%curlb
+            endif
+          else
+!
+!  If not loverride_ee2, then the current in the Lorentz force is the same
+!  as the Ohmic current.
+!
+            p%jj=p%jj_ohm
+          endif
+        else
+!
+!  Go here in standard MHD if no displacement current exists.
+!  In that case, no ohmic current is needed or used and p%jj is set to mu01*p%curlb.
+!
+          p%jj=mu01*p%curlb
+          p%jj_ohm=0.
+        endif
+!
+!  Add external j-field.
+!
+        do j=1,3
+          if (iglobal_jext(j)/=0) p%jj(:,j)=p%jj(:,j)+f(l1:l2,m,n,iglobal_jext(j))
+        enddo
+!
+!  Add an external J-field (for the Bell instability).
+!
+        if (lJ_ext) then
+          if (J_ext_quench/=0) then
+            quench=1./(1.+J_ext_quench*p%b2)
+            do j=1,3
+              p%jj(:,j)=p%jj(:,j)-J_ext(j)*quench
+            enddo
+          else
+            do j=1,3
+              p%jj(:,j)=p%jj(:,j)-J_ext(j)
+            enddo
+          endif
+        endif
+      endif
+    endsubroutine calc_jj
+!***********************************************************************
     subroutine calc_pencils_magnetic_pencpar(f,p,lpenc_loc)
 !
 !  Calculate Magnetic pencils.
@@ -4529,124 +4659,7 @@ module Magnetic
 ! jj
 !
       if (lpenc_loc(i_jj) .or. lpenc_loc(i_jj_ohm)) then
-        if (lvacuum) then
-          p%jj=0.
-          p%jj_ohm=0.
-          eta_total=huge1
-          eta_xtdep=huge1
-          eta_tdep=huge1
-        else
-!
-!  The following allows us to let eta change with time, t-eta_tdep_toffset.
-!  The eta_tdep_toffset is used in cosmology where time starts at t=1.
-!  lresi_eta_tdep_t0_norm is not the default because of backward compatbility.
-!  The default is problematic because then eta_tdep /= eta for t < eta_tdep_t0.
-!
-          if (lresi_eta_tdep .or. lresi_eta_xtdep .or. lresi_hyper2_tdep .or. lresi_hyper3_tdep) then
-            call get_eta_t_and_xtdep(f,p)
-          endif
-!
-!  Check whether or not the displacement current is being computed.
-!  When iex>0, eta_total is not yet set, so we must do it here.
-!  Note, however, that p%jj_ohm can also be computed in disp_current,
-!  so we must not overwrite it here.
-!
-          if (ldisp_current) then
-            if (lresi_eta_tdep) then
-              eta_total=eta_tdep
-            elseif (lresi_eta_xtdep) then
-              eta_total=eta_xtdep
-            else
-!
-!  Must not overwrite jj_ohm here.
-!  Need to check that it is still always initialized.
-!
-              !p%jj=0.
-              !p%jj_ohm=0.
-              eta_total=eta
-            endif
-!
-!
-!  The Ohm's current is independent of loverride_ee2, etc.
-!  AB: eta_total and the rest are pencils, but it complains about inconsistent ranks. So I put (1).
-!  When the eta:s below are not known. p%jj_ohm may already have been computed in disp_current.
-!  Whether it works with lohm_evolve needs to be checked.
-!  learly_set_el_pencil=T is needed in all cases with displacement current.
-!
-            if (lresi_eta_tdep .or. lresi_eta_xtdep .or. eta/=0.) then
-              if (lohm_evolve) then
-                p%jj_ohm=f(l1:l2,m,n,ijx:ijz)
-              else
-                if (learly_set_el_pencil) then
-                  if (iex /=0 ) then
-                    p%el=f(l1:l2,m,n,iex:iez)
-                  endif
-                endif
-                do j=1,3
-                  p%jj_ohm(:,j)=(p%el(:,j)+scl_uxb_in_ohm*p%uxb(:,j))*mu01/eta_total
-                enddo
-              endif
-            endif
-!
-!  In (hopefully) all other cases, p%jj_ohm is either initialized
-!  to zero or known from disp_current, but can check here:
-!
-            if (ip<9) print*,'AXEL: p%jj_ohm(1,:)=',p%jj_ohm(1,:)
-!
-!  Compute current for Lorentz force.
-!  Note that loverride_ee2 is a "permanent" switch,
-!  i.e., it is the same for the entire run.
-!  There is the option to add in the displacement current,
-!  if ladd_disp_current_from_aux=T.
-!
-            if (loverride_ee2) then
-              if (ladd_disp_current_from_aux) then
-                if (iedotx>0 .and. iedotz>0) then
-                  p%jj=mu01*p%curlb-c_light21*f(l1:l2,m,n,iedotx:iedotz)
-                else
-                  call fatal_error('calc_pencils_magnetic_pencpar', &
-                      'need leedot_as_aux=T in special/disp_current')
-                endif
-              else
-                p%jj=mu01*p%curlb
-              endif
-            else
-!
-!  If not loverride_ee2, then the current in the Lorentz force is the same
-!  as the Ohmic current.
-!
-              p%jj=p%jj_ohm
-            endif
-          else
-!
-!  Go here in standard MHD if no displacement current exists.
-!  In that case, no ohmic current is needed or used and p%jj is set to mu01*p%curlb.
-!
-            p%jj=mu01*p%curlb
-            p%jj_ohm=0.
-          endif
-!
-!  Add external j-field.
-!
-          do j=1,3
-            if (iglobal_jext(j)/=0) p%jj(:,j)=p%jj(:,j)+f(l1:l2,m,n,iglobal_jext(j))
-          enddo
-!
-!  Add an external J-field (for the Bell instability).
-!
-          if (lJ_ext) then
-            if (J_ext_quench/=0) then
-              quench=1./(1.+J_ext_quench*p%b2)
-              do j=1,3
-                p%jj(:,j)=p%jj(:,j)-J_ext(j)*quench
-              enddo
-            else
-              do j=1,3
-                p%jj(:,j)=p%jj(:,j)-J_ext(j)
-              enddo
-            endif
-          endif
-        endif
+        call calc_jj(f,p)
       endif
 ! exa
       if (lpenc_loc(i_exa)) call cross_mn(-p%uxb+eta*p%jj,p%aa,p%exa)
