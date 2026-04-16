@@ -2469,7 +2469,19 @@ module Density
 !
 !  Differentiate between log density and linear density.
 !
-      if (ldensity_nolog) then
+      if (loperator_split_update) then
+        if (lsplit_sld .and. ldensity_slope_limited) then
+          if(ldensity_nolog) then
+            p%rho = f(l1:l2,m,n,irho)
+            p%rho1 = 1.0/p%rho
+            p%lnrho = log(p%rho)
+          else
+            p%lnrho = f(l1:l2,m,n,ilnrho)
+            p%rho1 =  exp(-p%lnrho)
+            p%rho  =  1.0/p%rho1
+          endif
+        endif
+      else if (ldensity_nolog) then
         call calc_pencils_linear_density_pnc(f,p,lpenc_loc)
       else
         call calc_pencils_log_density_pnc(f,p,lpenc_loc)

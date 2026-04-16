@@ -637,13 +637,17 @@ module Cdata
 !
 !  Variables for substepping in time
 !
-!  For knowing does the current iteration correspond to a substep loop
+! For knowing does the current iteration correspond to a substep loop
   logical :: lsubstepping_in_time=.false.
-!  How many substeps to be done per one actual timestep
-   integer :: number_of_substeps_per_timestep = 0
-!  For knowing which variables are substepped
+! How many substeps to be done per one actual timestep
+  integer :: number_of_substeps_per_timestep = 0
+! For knowing which variables are substepped
   logical, dimension(mvar) :: variable_substepped=.false.
   logical, dimension(100) :: lspecial_substepped=.false.
+  ! For knowing does the current iteration correspond to an operator split loop
+  logical :: loperator_split_update = .false.
+  ! Are SLD terms split or not
+  logical :: lsplit_sld = .false.
 
 !
 !  Variables related to calculating diagnostic output.

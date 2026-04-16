@@ -1359,22 +1359,24 @@ module Viscosity
       endif
     endsubroutine calc_visc_slope_limited
 !***********************************************************************
-    subroutine calc_pencils_viscosity(f,p)
+    subroutine calc_pencils_viscosity_pnc(f,p,lpenc_loc)
 !
-!  Calculate Viscosity pencils.
-!  Most basic pencils should come first, as others may depend on them.
-!
-!  20-nov-04/anders: coded
-!  18-may-12/MR: calculation of viscous heat for boussinesq added
-!  14-oct-15/MR: corrected viscous force for slope-limited flux
-!  03-apr-20/joern: restructured and fixed slope-limited diffusion
+!  19-dec-16/MR: fixed bug: m,n must be from Cdata. Added precalculation of nu_smag in f array.
+!                Rewritten viscous heating from slope-limited diffusion.
+!  18-may-17/MR: corrected wrong order of loops for viscous heating by slope-limited diffusion.
+!  16-jun-18/axel: reverted "severe bug..." of r74487; see "!AB_REM:" and "!AB_ADD"
+!  16-aug-18/MR: replaced Joerns implementation of linear interpolation from staggered to normal
+!                grid as it was not bi-/trilinear in 2D/3D;
+!                added 3rd order interpolation (default)
+!  03-apr-20/joern: restructured and fixed slope-limited diffusion, SLD commented out here.
 !
       use Deriv, only: der5i1j,der6,der_x,der2_x
       use Diagnostics, only: max_mn_name, sum_mn_name
       use Sub
-!
+
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
+      logical, dimension(:), intent(IN) :: lpenc_loc
       intent(inout) :: f,p
 !
       real, dimension (nx,3) :: tmp,tmp2,gradnu,sgradnu,gradnu_shock
@@ -1386,14 +1388,9 @@ module Viscosity
 !
       integer :: i,j,ju,ii,jj,kk,ll
       logical :: ldiffus_total, ldiffus_total3
-!
-!  Viscous force and viscous heating are calculated here (for later use).
-!
-      p%fvisc=0.0                               !!! not needed
-      if (lpencil(i_visc_heat)) p%visc_heat=0.0
 
-      ldiffus_total = lupdate_courant_dt .or. lpencil(i_diffus_total)
-      ldiffus_total3 = lupdate_courant_dt .or. lpencil(i_diffus_total3)
+      ldiffus_total = lupdate_courant_dt .or. lpenc_loc(i_diffus_total)
+      ldiffus_total3 = lupdate_courant_dt .or. lpenc_loc(i_diffus_total3)
       if (ldiffus_total.or.ldiffus_total3) then
         p%diffus_total=0.0
         p%diffus_total2=0.0
@@ -1408,7 +1405,7 @@ module Viscosity
 !
       if (.not. limplicit_viscosity .and. lvisc_simplified) then
         p%fvisc=p%fvisc+nu*p%del2u
-        if (lpencil(i_visc_heat)) then
+        if (lpenc_loc(i_visc_heat)) then
           if (lboussinesq) then
             p%visc_heat=p%visc_heat+2.*nu*p%sij2
           else
@@ -1466,7 +1463,7 @@ module Viscosity
         do i=1,3
           p%fvisc(:,i)=p%fvisc(:,i) + murho1*(p%del2u(:,i)+1.0/3.0*p%graddivu(:,i))
         enddo
-        if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*murho1*p%sij2
+        if (lpenc_loc(i_visc_heat)) p%visc_heat=p%visc_heat+2*murho1*p%sij2
         if (ldiffus_total) p%diffus_total=p%diffus_total+murho1
       endif
 !
@@ -1477,7 +1474,7 @@ module Viscosity
         do i=1,3
           p%fvisc(:,i)=p%fvisc(:,i)+zetarho1*p%graddivu(:,i)
         enddo
-        if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+zetarho1*p%divu**2
+        if (lpenc_loc(i_visc_heat)) p%visc_heat=p%visc_heat+zetarho1*p%divu**2
         if (ldiffus_total) p%diffus_total=p%diffus_total+zetarho1
       endif
 !
@@ -1492,7 +1489,7 @@ module Viscosity
         do i=1,3
           p%fvisc(:,i)=p%fvisc(:,i) + murho1*(p%del2u(:,i)+1.0/3.0*p%graddivu(:,i) + p%sglnrho(:,i))
         enddo
-        if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*murho1*p%sij2
+        if (lpenc_loc(i_visc_heat)) p%visc_heat=p%visc_heat+2*murho1*p%sij2
         if (ldiffus_total) p%diffus_total=p%diffus_total+murho1
       endif
 !
@@ -1504,7 +1501,7 @@ module Viscosity
         do i=1,3
           p%fvisc(:,i)=p%fvisc(:,i) + muTT*(p%del2u(:,i)+1.0/3.0*p%graddivu(:,i)+2*nu_cspeed*p%sglnTT(:,i))
         enddo
-        if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*muTT*p%sij2
+        if (lpenc_loc(i_visc_heat)) p%visc_heat=p%visc_heat+2*muTT*p%sij2
         if (ldiffus_total) p%diffus_total=p%diffus_total+muTT
       endif
 !
@@ -1520,7 +1517,7 @@ module Viscosity
         do i=1,3
           p%fvisc(:,i)=p%fvisc(:,i) + muTT*(p%del2u(:,i)+1.0/3.0*p%graddivu(:,i)+5.*p%sglnTT(:,i))
         enddo
-        if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*muTT*p%sij2
+        if (lpenc_loc(i_visc_heat)) p%visc_heat=p%visc_heat+2*muTT*p%sij2
         if (ldiffus_total) p%diffus_total=p%diffus_total+muTT
       endif
 !
@@ -1557,7 +1554,7 @@ module Viscosity
           endif
         endif
 !
-        if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*muTT*p%sij2
+        if (lpenc_loc(i_visc_heat)) p%visc_heat=p%visc_heat+2*muTT*p%sij2
         if (ldiffus_total) p%diffus_total=p%diffus_total+muTT
       endif
 !
@@ -1590,7 +1587,7 @@ module Viscosity
             p%fvisc=p%fvisc+nu*(p%del2u+1.0/3.0*p%graddivu)
           endif
         endif
-        if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*nu*p%sij2
+        if (lpenc_loc(i_visc_heat)) p%visc_heat=p%visc_heat+2*nu*p%sij2
         if (ldiffus_total) p%diffus_total=p%diffus_total+nu
       endif
 !
@@ -1600,7 +1597,7 @@ module Viscosity
     if (lvisc_nu_const_bulk) then
       do j=1,3
         p%fvisc(:,j) = p%fvisc(:,j) + zeta*(p%graddivu(:,j) + p%divu*p%glnrho(:,j))
-        if (lpencil(i_visc_heat)) p%visc_heat = p%visc_heat + zeta*p%divu**2
+        if (lpenc_loc(i_visc_heat)) p%visc_heat = p%visc_heat + zeta*p%divu**2
         if (ldiffus_total) p%diffus_total = p%diffus_total + zeta
       enddo
     endif
@@ -1609,7 +1606,7 @@ module Viscosity
 !
       if (lvisc_nu_tdep .or. lvisc_hyper3_simplified_tdep) then
         p%fvisc=p%fvisc+2*nu_tdep*p%sglnrho+nu_tdep*(p%del2u+1./3.*p%graddivu)
-        if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*nu_tdep*p%sij2
+        if (lpenc_loc(i_visc_heat)) p%visc_heat=p%visc_heat+2*nu_tdep*p%sij2
         if (ldiffus_total) p%diffus_total=p%diffus_total+nu_tdep
         if (ldiffus_total3) p%diffus_total3=p%diffus_total3+nu_tdep
       endif
@@ -1629,7 +1626,7 @@ module Viscosity
 !
 !  Viscous heating and time step.
 !
-        if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*p%nu*p%sij2
+        if (lpenc_loc(i_visc_heat)) p%visc_heat=p%visc_heat+2*p%nu*p%sij2
         if (ldiffus_total) p%diffus_total=p%diffus_total+p%nu
       endif
 !
@@ -1668,7 +1665,7 @@ module Viscosity
         !p%fvisc=p%fvisc+2*pnu*p%sglnrho+pnu*(p%del2u+1./3.*p%graddivu) &
         !        +2*sgradnu
         p%fvisc=p%fvisc+tmp+2*sgradnu
-        if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*pnu*p%sij2
+        if (lpenc_loc(i_visc_heat)) p%visc_heat=p%visc_heat+2*pnu*p%sij2
         if (ldiffus_total) p%diffus_total=p%diffus_total+pnu
       endif
 !
@@ -1722,7 +1719,7 @@ module Viscosity
         call multmv(p%sij,gradnu,sgradnu)
         call multsv(pnu,2*p%sglnrho+p%del2u+1./3.*p%graddivu,tmp)
         p%fvisc=p%fvisc+tmp+2*sgradnu
-        if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*pnu*p%sij2
+        if (lpenc_loc(i_visc_heat)) p%visc_heat=p%visc_heat+2*pnu*p%sij2
         if (ldiffus_total) p%diffus_total=p%diffus_total+pnu
       endif
 !
@@ -1752,7 +1749,7 @@ module Viscosity
         call multmv(p%sij,gradnu,sgradnu)
         call multsv(pnu,2*p%sglnrho+p%del2u+1./3.*p%graddivu,tmp)
         p%fvisc=p%fvisc+tmp+2*sgradnu
-        if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*pnu*p%sij2
+        if (lpenc_loc(i_visc_heat)) p%visc_heat=p%visc_heat+2*pnu*p%sij2
         if (ldiffus_total) p%diffus_total=p%diffus_total+pnu
       endif
 !
@@ -1773,7 +1770,7 @@ module Viscosity
 !
         call multmv(p%sij,gradnu,sgradnu)    ! tb simplified as gradnu has only one component
         p%fvisc=p%fvisc + nu_y(m)*(2.*p%sglnrho+p%del2u+1./3.*p%graddivu) + 2.*sgradnu
-        if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2.*nu_y(m)*p%sij2
+        if (lpenc_loc(i_visc_heat)) p%visc_heat=p%visc_heat+2.*nu_y(m)*p%sij2
         if (ldiffus_total) p%diffus_total=p%diffus_total+nu_y(m)
       endif
 !
@@ -1789,7 +1786,7 @@ module Viscosity
         call multmv(p%sij,gradnu,sgradnu)
         call multsv(pnu,2*p%sglnrho+p%del2u+1./3.*p%graddivu,tmp)
         p%fvisc=p%fvisc+tmp+2*sgradnu
-        if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*pnu*p%sij2
+        if (lpenc_loc(i_visc_heat)) p%visc_heat=p%visc_heat+2*pnu*p%sij2
         if (ldiffus_total) p%diffus_total=p%diffus_total+pnu
       endif
 !
@@ -1814,7 +1811,7 @@ module Viscosity
         !p%fvisc=p%fvisc+2*pnu*p%sglnrho+pnu*(p%del2u+1./3.*p%graddivu) &
         !        +2*sgradnu
         p%fvisc=p%fvisc+tmp+2*sgradnu
-        if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*pnu*p%sij2
+        if (lpenc_loc(i_visc_heat)) p%visc_heat=p%visc_heat+2*pnu*p%sij2
         if (ldiffus_total) p%diffus_total=p%diffus_total+pnu
       endif
 !
@@ -1830,7 +1827,7 @@ module Viscosity
         call multsv_add(tmp2,nu_shock*p%divu,p%gshock,tmp)
         p%fvisc=p%fvisc+tmp
         if (ldiffus_total) p%diffus_total=p%diffus_total+(nu_shock*p%shock)
-        if (lpencil(i_visc_heat).and.lshock_heat) p%visc_heat=p%visc_heat+nu_shock*p%shock*p%divu**2
+        if (lpenc_loc(i_visc_heat).and.lshock_heat) p%visc_heat=p%visc_heat+nu_shock*p%shock*p%divu**2
       endif
 !
 !  viscous force: nu_shock with vertical profile
@@ -1852,7 +1849,7 @@ module Viscosity
         call multsv_mn_add(p%shock*p%divu,gradnu_shock,tmp)
         p%fvisc=p%fvisc+tmp
         if (ldiffus_total) p%diffus_total=p%diffus_total+(pnu_shock*p%shock)
-        if (lpencil(i_visc_heat).and.lshock_heat) p%visc_heat=p%visc_heat+pnu_shock*p%shock*p%divu**2
+        if (lpenc_loc(i_visc_heat).and.lshock_heat) p%visc_heat=p%visc_heat+pnu_shock*p%shock*p%divu**2
       endif
 !
 !  viscous force: nu_shock with radial profile
@@ -1881,7 +1878,7 @@ module Viscosity
         call multsv_mn_add(p%shock*p%divu,gradnu_shock,tmp)
         p%fvisc=p%fvisc+tmp
         if (ldiffus_total) p%diffus_total=p%diffus_total+(pnu_shock*p%shock)
-        if (lpencil(i_visc_heat).and.lshock_heat) p%visc_heat=p%visc_heat+pnu_shock*p%shock*p%divu**2
+        if (lpenc_loc(i_visc_heat).and.lshock_heat) p%visc_heat=p%visc_heat+pnu_shock*p%shock*p%divu**2
       endif
 !
 !  viscous force: div(nu_shock * grad(uu_i))
@@ -1893,7 +1890,7 @@ module Viscosity
         enddo
         p%fvisc = p%fvisc + nu_shock * tmp
         if (ldiffus_total) p%diffus_total = p%diffus_total + nu_shock * p%shock
-        if (lpencil(i_visc_heat) .and. headtt) &
+        if (lpenc_loc(i_visc_heat) .and. headtt) &
           call warning('calc_pencils_viscosity','shock heating not implemented for lvisc_shock_simple=T')
       endif
 !
@@ -1901,7 +1898,7 @@ module Viscosity
 !
       if (lvisc_hyper2_simplified) then
         p%fvisc=p%fvisc-nu_hyper2*p%del4u
-        if (lpencil(i_visc_heat)) then
+        if (lpenc_loc(i_visc_heat)) then
           if (headtt) call warning('calc_pencils_viscosity', 'viscous heating '// &
                                    'not implemented for lvisc_hyper2_simplified')
         endif
@@ -1912,7 +1909,7 @@ module Viscosity
 !
       if (lvisc_hyper3_simplified) then
         p%fvisc=p%fvisc+nu_hyper3*p%del6u
-        if (lpencil(i_visc_heat)) then
+        if (lpenc_loc(i_visc_heat)) then
           if (headtt) call warning('calc_pencils_viscosity', 'viscous heating '// &
                                    'not implemented for lvisc_hyper3_simplified')
         endif
@@ -1923,7 +1920,7 @@ module Viscosity
 !
       if (lvisc_hyper2_simplified_tdep) then
         p%fvisc=p%fvisc-nu_tdep*p%del4u
-        if (lpencil(i_visc_heat)) then
+        if (lpenc_loc(i_visc_heat)) then
           if (headtt) call warning('calc_pencils_viscosity', 'viscous heating '// &
                                    'not implemented for lvisc_hyper2_simplified')
         endif
@@ -1932,7 +1929,7 @@ module Viscosity
 !
       if (lvisc_hyper3_simplified_tdep) then
         p%fvisc=p%fvisc+nu_tdep*p%del6u
-        if (lpencil(i_visc_heat)) then
+        if (lpenc_loc(i_visc_heat)) then
           if (headtt) call warning('calc_pencils_viscosity', 'viscous heating '// &
                                    'not implemented for lvisc_hyper3_simplified')
         endif
@@ -1949,7 +1946,7 @@ module Viscosity
             p%fvisc(:,j) = p%fvisc(:,j) + nu_hyper3*pi4_1*tmp3*dline_1(:,i)**2
           enddo
         enddo
-        if (lpencil(i_visc_heat)) then
+        if (lpenc_loc(i_visc_heat)) then
           if (headtt) call warning('calc_pencils_viscosity', 'viscous heating '// &
                                    'not implemented for lvisc_hyper3_polar')
         endif
@@ -1970,7 +1967,7 @@ module Viscosity
             endif
           enddo
         enddo
-        if (lpencil(i_visc_heat)) then
+        if (lpenc_loc(i_visc_heat)) then
           if (headtt) call warning('calc_pencils_viscosity', 'viscous heating '// &
                                    'not implemented for lvisc_hyper3_mesh')
         endif
@@ -1996,7 +1993,7 @@ module Viscosity
             p%fvisc(:,j) = p%fvisc(:,j) + nu_hyper3_mesh*pi5_1/60.*sum(p%der6u_res(:,:,j)*dline_1,2)
           endif
         enddo
-        if (lpencil(i_visc_heat)) then
+        if (lpenc_loc(i_visc_heat)) then
           if (headtt) call warning('calc_pencils_viscosity', 'viscous heating '// &
                                    'not implemented for lvisc_hyper3_mesh')
         endif
@@ -2023,7 +2020,7 @@ module Viscosity
             endif
           enddo
         enddo
-        if (lpencil(i_visc_heat)) then
+        if (lpenc_loc(i_visc_heat)) then
           if (headtt) call warning('calc_pencils_viscosity', 'viscous heating '// &
                                    'not implemented for lvisc_hyper3_csmesh')
         endif
@@ -2045,7 +2042,7 @@ module Viscosity
         do i=1,3
           p%fvisc(:,i)=p%fvisc(:,i)+murho1*p%del6u(:,i)
         enddo
-        if (lpencil(i_visc_heat)) then
+        if (lpenc_loc(i_visc_heat)) then
           if (headtt) call warning('calc_pencils_viscosity', 'viscous heating '// &
                                    'not implemented for lvisc_hyper3_rho_nu_const')
         endif
@@ -2060,7 +2057,7 @@ module Viscosity
         do i=1,3
           p%fvisc(:,i)=p%fvisc(:,i)+murho1*(p%del6u(:,i) + p%grad5divu(:,i))
         enddo
-        if (lpencil(i_visc_heat)) then
+        if (lpenc_loc(i_visc_heat)) then
           do i=1,3; do j=1,3
 !
 !  Dissipation is *not* positive definite.
@@ -2080,7 +2077,7 @@ module Viscosity
         do i=1,3
           p%fvisc(:,i)=p%fvisc(:,i)+nu_hyper3*p%rho1*f(l1:l2,m,n,ihypvis-1+i)
         enddo
-        if (lpencil(i_visc_heat)) then  ! Should be eps=2*mu*{del2[del2(S)]}^2
+        if (lpenc_loc(i_visc_heat)) then  ! Should be eps=2*mu*{del2[del2(S)]}^2
           if (headtt) &                 ! (see Haugen & Brandenburg 2004 eq. 7)
             call warning('calc_pencils_viscosity', 'viscous heating '// &
                          'not implemented for lvisc_hyper3_mu_const_strict')
@@ -2095,7 +2092,7 @@ module Viscosity
         do i=1,3
           p%fvisc(:,i)=p%fvisc(:,i)+nu_hyper3*p%rho1*(p%del6u_strict(:,i) + 1./3*p%del4graddivu(:,i))
         enddo
-        if (lpencil(i_visc_heat)) then  ! Should be eps=2*mu*{del2[del2(S)]}^2
+        if (lpenc_loc(i_visc_heat)) then  ! Should be eps=2*mu*{del2[del2(S)]}^2
           if (headtt) &                 ! (see Haugen & Brandenburg 2004 eq. 7)
             call warning('calc_pencils_viscosity', 'viscous heating '// &
                          'not implemented for lvisc_hyper3_mu_const_strict_otf')
@@ -2112,7 +2109,7 @@ module Viscosity
         do i=1,3
           p%fvisc(:,i)=p%fvisc(:,i)+nu_hyper3*f(l1:l2,m,n,ihypvis-1+i)
         enddo
-        if (lpencil(i_visc_heat)) then
+        if (lpenc_loc(i_visc_heat)) then
           if (headtt) call warning('calc_pencils_viscosity', 'viscous heating '// &
                                    'not implemented for lvisc_hyper3_nu_const_strict')
         endif
@@ -2128,7 +2125,7 @@ module Viscosity
           p%fvisc(:,i)=p%fvisc(:,i)+tmp(:,i)*p%rho1
         enddo
 !
-        if (lpencil(i_visc_heat)) then
+        if (lpenc_loc(i_visc_heat)) then
           if (headtt) call warning('calc_pencils_viscosity', 'viscous heating '// &
                                    'not implemented for lvisc_hyper3_rho_nu_const_aniso')
         endif
@@ -2154,7 +2151,7 @@ module Viscosity
           p%fvisc(:,i)=p%fvisc(:,i)+tmp(:,i)+tmp3
         enddo
 !
-        if (lpencil(i_visc_heat)) then
+        if (lpenc_loc(i_visc_heat)) then
           if (headtt) call warning('calc_pencils_viscosity', 'viscous heating '// &
                                    'not implemented for lvisc_hyper3_nu_const_aniso')
         endif
@@ -2174,7 +2171,7 @@ module Viscosity
         do i=1,3
           p%fvisc(:,i)=p%fvisc(:,i)+murho1*p%del6u_bulk(:,i)
         enddo
-        if (lpencil(i_visc_heat)) then
+        if (lpenc_loc(i_visc_heat)) then
           if (headtt) call warning('calc_pencils_viscosity', 'viscous heating '// &
                                    'not implemented for lvisc_hyper3_rho_nu_const_bulk')
         endif
@@ -2185,7 +2182,7 @@ module Viscosity
 !
       if (lvisc_hyper3_nu_const) then
         p%fvisc=p%fvisc+nu_hyper3*(p%del6u+p%uij5glnrho)
-        if (lpencil(i_visc_heat)) then
+        if (lpenc_loc(i_visc_heat)) then
           if (headtt) call warning('calc_pencils_viscosity', 'viscous heating '// &
                                    'not implemented for lvisc_hyper3_nu_const')
         endif
@@ -2236,7 +2233,7 @@ module Viscosity
           call multmv(p%sij,gradnu,sgradnu)
           p%fvisc=p%fvisc+2.*sgradnu
         endif
-        if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*p%nu_smag*p%sij2
+        if (lpenc_loc(i_visc_heat)) p%visc_heat=p%visc_heat+2*p%nu_smag*p%sij2
         if (ldiffus_total) p%diffus_total=p%diffus_total+p%nu_smag
       endif
 !
@@ -2259,7 +2256,7 @@ module Viscosity
         call multsv_mn(p%nu_smag,p%sglnrho,tmp2)
         call multsv_mn(p%nu_smag,p%del2u+1./3.*p%graddivu,tmp)
         p%fvisc=p%fvisc+2*tmp2+tmp
-        if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*p%nu_smag*p%sij2
+        if (lpenc_loc(i_visc_heat)) p%visc_heat=p%visc_heat+2*p%nu_smag*p%sij2
         if (ldiffus_total) p%diffus_total=p%diffus_total+p%nu_smag
 
       endif
@@ -2275,18 +2272,11 @@ module Viscosity
         call multsv_mn(p%nu_smag,p%sglnrho,tmp2)
         call multsv_mn(p%nu_smag,p%del2u+1./3.*p%graddivu,tmp)
         p%fvisc=p%fvisc+2*tmp2+tmp
-        if (lpencil(i_visc_heat)) then
+        if (lpenc_loc(i_visc_heat)) then
           if (headtt) call warning('calc_pencils_viscosity','viscous heating term '// &
                                    'is not implemented for lvisc_smag_cross_simplified')
         endif
         if (ldiffus_total) p%diffus_total=p%diffus_total+p%nu_smag
-      endif
-!
-!  Calculate viscouse force for slope limited diffusion
-!  following Rempel (2014). Here the divergence of the flux is used.
-!
-      if (lvisc_slope_limited .and. llast) then
-        call calc_visc_slope_limited(f,p)
       endif
 !
 !  viscous force: in Schur-223 flow we use
@@ -2354,16 +2344,6 @@ module Viscosity
         endif
       endif
 !
-!  Store viscous heating rate in auxiliary variable if requested.
-!  Just necessary immediately before writing snapshots, but how would we
-!  know we are?
-!
-      if (lvisc_heat_as_aux) f(l1:l2,m,n,ivisc_heat) = p%visc_heat
-!
-!  Store viscous force (acceleration) in auxiliary variable if requested.
-!
-      if (lvisc_forc_as_aux) f(l1:l2,m,n,ivisc_forcx:ivisc_forcz) = p%fvisc
-!
 !  Calculate max total diffusion coefficient for timestep calculation etc.
 !
       if (lupdate_courant_dt) then
@@ -2389,6 +2369,52 @@ module Viscosity
         maxdiffus3=max(maxdiffus3,diffus_nu3)
 
       endif
+    endsubroutine calc_pencils_viscosity_pnc
+!***********************************************************************
+    subroutine calc_pencils_viscosity(f,p)
+!
+!  Calculate Viscosity pencils.
+!  Most basic pencils should come first, as others may depend on them.
+!
+!  20-nov-04/anders: coded
+!  18-may-12/MR: calculation of viscous heat for boussinesq added
+!  14-oct-15/MR: corrected viscous force for slope-limited flux
+!  03-apr-20/joern: restructured and fixed slope-limited diffusion
+!
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+      intent(inout) :: f,p
+!
+!  Viscous force and viscous heating are calculated here (for later use).
+!
+      p%fvisc=0.0                               !!! not needed
+      if (lpencil(i_visc_heat)) p%visc_heat=0.0
+
+      if(.not. loperator_split_update) then
+        call calc_pencils_viscosity_pnc(f,p,lpencil)
+      endif
+
+!
+!  Calculate viscouse force for slope limited diffusion
+!  following Rempel (2014). Here the divergence of the flux is used.
+!
+      if (lvisc_slope_limited .and. llast) then
+        call calc_visc_slope_limited(f,p)
+      endif
+
+      if(.not. loperator_split_update) then
+!
+!  Store viscous heating rate in auxiliary variable if requested.
+!  Just necessary immediately before writing snapshots, but how would we
+!  know we are?
+!
+        if (lvisc_heat_as_aux) f(l1:l2,m,n,ivisc_heat) = p%visc_heat
+!
+!  Store viscous force (acceleration) in auxiliary variable if requested.
+!
+        if (lvisc_forc_as_aux) f(l1:l2,m,n,ivisc_forcx:ivisc_forcz) = p%fvisc
+      endif
 !
     endsubroutine calc_pencils_viscosity
 !***********************************************************************
@@ -2402,7 +2428,6 @@ module Viscosity
 !                grid as it was not bi-/trilinear in 2D/3D;
 !                added 3rd order interpolation (default)
 !  03-apr-20/joern: restructured and fixed slope-limited diffusion, SLD commented out here.
-
 !
       use Sub, only: div, calc_all_diff_fluxes, grad, dot_mn, calc_sij2, &
                      stagger_to_base_interp_1st, stagger_to_base_interp_3rd

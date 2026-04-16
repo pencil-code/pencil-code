@@ -782,7 +782,13 @@ module EquationOfState
       real, dimension (mx,my,mz,mfarray),intent(INOUT):: f
       type (pencil_case),                intent(INOUT):: p
 !
-      call calc_pencils_eos_pencpar(f,p,lpencil)
+      if(.not. loperator_split_update) then
+        call calc_pencils_eos_pencpar(f,p,lpencil)
+      else if(lsplit_sld) then
+        p%cv1 = cv1
+        p%lnTT=lnTT0+cv1*p%ss+gamma_m1*(p%lnrho-lnrho0)
+        p%TT1 = exp(-p%lnTT)
+      endif
 !
     endsubroutine calc_pencils_eos_std
 !***********************************************************************
