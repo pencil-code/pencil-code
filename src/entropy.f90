@@ -3619,6 +3619,76 @@ module Energy
 
     endsubroutine calc_energy_slope_limited
 !***********************************************************************
+    subroutine add_pressure(df,p)
+!
+!  Pressure term in momentum equation (setting lpressuregradient_gas to
+!  .false. allows suppressing pressure term for test purposes).
+!
+      use General, only: notanumber
+
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
+
+      if (lpressuregradient_gas) then
+        if (notanumber(p%fpres)) then
+          if (lproc_print) then
+            print*, 'denergy_dt: it',it,'t',t,'p%fpres contains a NaN at iproc=', iproc
+            if (.not.allproc_print) lproc_print=.false.
+          endif
+          if (ip<6) print*, 'p%fpres =',p%fpres
+          !call fatal_error('denergy_dt','fatal_error w/o FORCE')
+          !Fred reverted Axel's change above, reapplying FORCE to ensure all processes terminate, otherwise job hangs costing billing units
+          !Axel to revisit why change was needed in due course
+          call fatal_error('denergy_dt','fatal_error with FORCE', FORCE=.true.)
+        endif
+        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + p%fpres
+!
+!  If reference state is used, -grad(p')/rho is needed in momentum equation, hence fpres -> fpres + grad(p0)/rho.
+!
+        if (lreference_state) &
+          df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + reference_state(:,iref_gp)*p%rho1
+      endif
+!
+!  Add pressure force from global density gradient.
+!
+      if (any(beta_glnrho_scaled/=0.0)) then
+        if (headtt) print*, 'denergy_dt: adding global pressure gradient force'
+        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - p%cs2*beta_glnrho_scaled(1)
+        df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - p%cs2*beta_glnrho_scaled(2)
+        df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) - p%cs2*beta_glnrho_scaled(3)
+      endif
+    endsubroutine add_pressure
+!***********************************************************************
+    subroutine advect_entropy(df,p)
+!
+!  Advection of entropy.
+!  If pretend_lnTT=.true., we pretend that ss is actually lnTT
+!  Otherwise, in the regular case with entropy, s is the dimensional
+!  specific entropy, i.e. it is not divided by cp.
+!  NOTE: in the entropy module it is lnTT that is advanced, so
+!  there are additional cv1 terms on the right hand side.
+!
+    use EquationOfState, only: get_gamma_etc
+
+    real,dimension(mx,my,mz,mvar) :: df
+    type(pencil_case) :: p
+    real :: gamma,gamma_m1
+
+    if (pretend_lnTT) then
+      call get_gamma_etc(gamma); gamma_m1=gamma-1.
+      df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%divu*gamma_m1-p%uglnTT
+    else
+      if (lweno_transport) then
+        df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) - p%transprhos*p%rho1 + p%ss*p%rho1*p%transprho
+      elseif (lfargo_advection) then
+        df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%uuadvec_gss
+      else
+        df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%ugss
+      endif
+    endif
+
+    endsubroutine advect_entropy
+!***********************************************************************
     subroutine denergy_dt(f,df,p)
 !
 !  Calculate right hand side of entropy equation,
@@ -3629,7 +3699,6 @@ module Energy
 !   2-feb-03/axel: added possibility of ionization
 !
       use Diagnostics
-      use EquationOfState, only: get_gamma_etc
       use Interstellar, only: calc_heat_cool_interstellar
       use Special, only: special_calc_energy
       use Sub
@@ -3645,7 +3714,6 @@ module Energy
 !
       real :: ztop,xi,profile_cor
       integer :: j
-      real :: gamma,gamma_m1
 !
       Hmax = 1./impossible
       ssmax = 1./impossible
@@ -3658,172 +3726,130 @@ module Energy
         call identify_bcs('ss',iss)
         print*,'denergy_dt: lnTT,cs2,cp1=', p%lnTT(1), p%cs2(1), p%cp1(1)
       endif
-!
-!  Pressure term in momentum equation (setting lpressuregradient_gas to
-!  .false. allows suppressing pressure term for test purposes).
-!
-      if (lhydro) then
-        if (lpressuregradient_gas) then
-          if (notanumber(p%fpres)) then
-            if (lproc_print) then
-              print*, 'denergy_dt: it',it,'t',t,'p%fpres contains a NaN at iproc=', iproc
-              if (.not.allproc_print) lproc_print=.false.
-            endif
-            if (ip<6) print*, 'p%fpres =',p%fpres
-            !call fatal_error('denergy_dt','fatal_error w/o FORCE')
-            !Fred reverted Axel's change above, reapplying FORCE to ensure all processes terminate, otherwise job hangs costing billing units
-            !Axel to revisit why change was needed in due course
-            call fatal_error('denergy_dt','fatal_error with FORCE', FORCE=.true.)
-          endif
-          df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + p%fpres
-!
-!  If reference state is used, -grad(p')/rho is needed in momentum equation, hence fpres -> fpres + grad(p0)/rho.
-!
-          if (lreference_state) &
-            df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + reference_state(:,iref_gp)*p%rho1
-        endif
-!
-!  Add pressure force from global density gradient.
-!
-        if (any(beta_glnrho_scaled/=0.0)) then
-          if (headtt) print*, 'denergy_dt: adding global pressure gradient force'
-          df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - p%cs2*beta_glnrho_scaled(1)
-          df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - p%cs2*beta_glnrho_scaled(2)
-          df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) - p%cs2*beta_glnrho_scaled(3)
-        endif
+
+      if (.not. loperator_split_update) then
+        if (lhydro) then
+          call add_pressure(df,p)
 !
 !  Velocity damping in the coronal heating zone.
 !  NOTE: same functionality as uuprof='damp_corona' in hydro.f90
 !
-        if (tau_cor>0) then
-          ztop=xyz0(3)+Lxyz(3)
-          if (z(n)>=z_cor) then
-            xi=(z(n)-z_cor)/(ztop-z_cor)
-            profile_cor=xi**2*(3-2*xi)
-            df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - profile_cor*f(l1:l2,m,n,iux:iuz)/tau_cor
-          endif
+         if (tau_cor>0) then
+           ztop=xyz0(3)+Lxyz(3)
+           if (z(n)>=z_cor) then
+             xi=(z(n)-z_cor)/(ztop-z_cor)
+             profile_cor=xi**2*(3-2*xi)
+             df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - profile_cor*f(l1:l2,m,n,iux:iuz)/tau_cor
+           endif
+         endif
+!
         endif
-!
-      endif
-!
-!  Advection of entropy.
-!  If pretend_lnTT=.true., we pretend that ss is actually lnTT
-!  Otherwise, in the regular case with entropy, s is the dimensional
-!  specific entropy, i.e. it is not divided by cp.
-!  NOTE: in the entropy module it is lnTT that is advanced, so
-!  there are additional cv1 terms on the right hand side.
-!
-      if (ladvection_entropy) then
-        if (pretend_lnTT) then
-          call get_gamma_etc(gamma); gamma_m1=gamma-1.
-          df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%divu*gamma_m1-p%uglnTT
-        else
-          if (lweno_transport) then
-            df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) - p%transprhos*p%rho1 + p%ss*p%rho1*p%transprho
-          elseif (lfargo_advection) then
-            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%uuadvec_gss
-          else
-            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%ugss
-          endif
+        if (ladvection_entropy) then
+          call advect_entropy(df,p)
         endif
-      endif
 !
 !  Add advection term from an imposed spatially constant gradient of S.
 !  This makes sense really only for periodic boundary conditions.
 !
-      do j=1,3
-        if (gradS0_imposed(j)/=0.) df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-gradS0_imposed(j)*p%uu(:,j)
-      enddo
+        do j=1,3
+          if (gradS0_imposed(j)/=0.) df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-gradS0_imposed(j)*p%uu(:,j)
+        enddo
 !
 !  Calculate viscous contribution to entropy.
 !
-      diffus_chi=0.; diffus_chi3=0.
+        diffus_chi=0.; diffus_chi3=0.
+      endif
 
       if (lviscosity .and. lviscosity_heat) call calc_viscous_heat(df,p,Hmax)
+      if(.not. loperator_split_update) then
 !
 !  Entry possibility for "personal" entries.
 !  In that case you'd need to provide your own "special" routine.
 !
-      if (lspecial) call special_calc_energy(f,df,p)
+        if (lspecial) call special_calc_energy(f,df,p)
 !
 !  Thermal conduction delegated to different subroutines.
 !
-      if (lheatc_Kprof)    call calc_heatcond(f,df,p)
-      if (lheatc_Kconst)   call calc_heatcond_constK(df,p)
-      if (lheatc_sfluct)   call calc_heatcond_sfluct(df,p)
-      if (lheatc_chiconst) call calc_heatcond_constchi(f,df,p)
-      if (lheatc_chi_cspeed) call calc_heatcond_cspeed_chi(df,p)
-      if (lheatc_sqrtrhochiconst) call calc_heatcond_sqrtrhochi(df,p)
-      if (lheatc_shock.or.lheatc_shock2) call calc_heatcond_shock(df,p)
-      if (lheatc_shock_profr) call calc_heatcond_shock_profr(df,p)
-      if (lheatc_hyper3ss)    call calc_heatcond_hyper3(df,p)
-      if (lheatc_spitzer)     call calc_heatcond_spitzer(df,p)
-      if (lheatc_hubeny)      call calc_heatcond_hubeny(df,p)
-      if (lheatc_kramers)     call calc_heatcond_kramers(f,df,p)
-      if (lheatc_chit)        call calc_heatcond_chit(f,df,p)
-      if (lheatc_smagorinsky) call calc_heatcond_smagorinsky(f,df,p)
-      if (lheatc_corona) then
-        call calc_heatcond_spitzer(df,p)
-        call newton_cool(df,p)
-        call calc_heat_cool_RTV(df,p)
-      endif
-      if (lheatc_tensordiffusion)call calc_heatcond_tensor(df,p)
-      if (lheatc_hyper3ss_polar) call calc_heatcond_hyper3_polar(f,df)
-      if (lheatc_hyper3ss_mesh)  call calc_heatcond_hyper3_mesh(f,df)
-      if (lheatc_hyper3ss_aniso) call calc_heatcond_hyper3_aniso(f,df)
+        if (lheatc_Kprof)    call calc_heatcond(f,df,p)
+        if (lheatc_Kconst)   call calc_heatcond_constK(df,p)
+        if (lheatc_sfluct)   call calc_heatcond_sfluct(df,p)
+        if (lheatc_chiconst) call calc_heatcond_constchi(f,df,p)
+        if (lheatc_chi_cspeed) call calc_heatcond_cspeed_chi(df,p)
+        if (lheatc_sqrtrhochiconst) call calc_heatcond_sqrtrhochi(df,p)
+        if (lheatc_shock.or.lheatc_shock2) call calc_heatcond_shock(df,p)
+        if (lheatc_shock_profr) call calc_heatcond_shock_profr(df,p)
+        if (lheatc_hyper3ss)    call calc_heatcond_hyper3(df,p)
+        if (lheatc_spitzer)     call calc_heatcond_spitzer(df,p)
+        if (lheatc_hubeny)      call calc_heatcond_hubeny(df,p)
+        if (lheatc_kramers)     call calc_heatcond_kramers(f,df,p)
+        if (lheatc_chit)        call calc_heatcond_chit(f,df,p)
+        if (lheatc_smagorinsky) call calc_heatcond_smagorinsky(f,df,p)
+        if (lheatc_corona) then
+          call calc_heatcond_spitzer(df,p)
+          call newton_cool(df,p)
+          call calc_heat_cool_RTV(df,p)
+        endif
+        if (lheatc_tensordiffusion)call calc_heatcond_tensor(df,p)
+        if (lheatc_hyper3ss_polar) call calc_heatcond_hyper3_polar(f,df)
+        if (lheatc_hyper3ss_mesh)  call calc_heatcond_hyper3_mesh(f,df)
+        if (lheatc_hyper3ss_aniso) call calc_heatcond_hyper3_aniso(f,df)
 !
-      if (lupdate_courant_dt) then
-        maxdiffus=max(maxdiffus,diffus_chi)
-        maxdiffus3=max(maxdiffus3,diffus_chi3)
+        if (lupdate_courant_dt) then
+          maxdiffus=max(maxdiffus,diffus_chi)
+          maxdiffus3=max(maxdiffus3,diffus_chi3)
+        endif
       endif
+!
       !!!if (lenergy_slope_limited.and.llast) &
       !!!  df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-f(l1:l2,m,n,iFF_div_ss)
 !
 !     Slope-limited diffusion
 !
-      if (lenergy_slope_limited.and.llast) then
+      if (loperator_split_update .eqv. lsplit_sld .and. lenergy_slope_limited.and.llast) then
         call calc_energy_slope_limited(f,df,p)
       endif
+
+      if(.not. loperator_split_update) then
 !
 !  Explicit heating/cooling terms.
 !
-      if (lcalc_heat_cool) call calc_heat_cool(df,p,Hmax)
-      if (tdown/=0.0) call newton_cool(df,p)
-      if (cool_RTV/=0.0) call calc_heat_cool_RTV(df,p)
-      if (lprestellar_cool_iso) call calc_heat_cool_prestellar(f,df,p)
+        if (lcalc_heat_cool) call calc_heat_cool(df,p,Hmax)
+        if (tdown/=0.0) call newton_cool(df,p)
+        if (cool_RTV/=0.0) call calc_heat_cool_RTV(df,p)
+        if (lprestellar_cool_iso) call calc_heat_cool_prestellar(f,df,p)
 !
 !  Interstellar radiative cooling and UV heating.
 !
-      if (linterstellar) call calc_heat_cool_interstellar(f,df,p,Hmax)
+        if (linterstellar) call calc_heat_cool_interstellar(f,df,p,Hmax)
 !
 !  Possibility of entropy relaxation in exterior region.
 !
-      if (tau_ss_exterior/=0.0) call calc_tau_ss_exterior(df,p)
+        if (tau_ss_exterior/=0.0) call calc_tau_ss_exterior(df,p)
 !
 !  Apply border profile
 !
-      if (lborder_profiles) call set_border_entropy(f,df,p)
+        if (lborder_profiles) call set_border_entropy(f,df,p)
 !
 !  Enforce maximum heating rate timestep constraint
 !
 
-      if (lupdate_courant_dt) then
-        if (lthdiff_Hmax.or.idiag_dtH/=0) then
-          if (lthdiff_Hmax) then
+        if (lupdate_courant_dt) then
+          if (lthdiff_Hmax.or.idiag_dtH/=0) then
+            if (lthdiff_Hmax) then
+              ssmax=max(ssmax,abs(df(l1:l2,m,n,iss))*p%cv1)
+              dt1_max=max(dt1_max,ssmax/cdts)
+            elseif (lrhs_max) then
+              dt1_max=max(dt1_max,abs(Hmax/p%ee/cdts))
+            endif
+          elseif (ldiagnos.and.idiag_tauhmin/=0) then
             ssmax=max(ssmax,abs(df(l1:l2,m,n,iss))*p%cv1)
-            dt1_max=max(dt1_max,ssmax/cdts)
-          elseif (lrhs_max) then
-            dt1_max=max(dt1_max,abs(Hmax/p%ee/cdts))
           endif
-        elseif (ldiagnos.and.idiag_tauhmin/=0) then
-          ssmax=max(ssmax,abs(df(l1:l2,m,n,iss))*p%cv1)
         endif
-      endif
 !
 !  Calculate entropy related diagnostics.
 !
-      call calc_diagnostics_energy(f,p)
-
+        call calc_diagnostics_energy(f,p)
+      endif
     endsubroutine denergy_dt
 !***********************************************************************
     subroutine calc_0d_diagnostics_energy(p)
