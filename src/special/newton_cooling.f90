@@ -276,12 +276,14 @@ module Special
       use Mpicomm,only: mpibcast_real,mpisend_real,mpirecv_real
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      integer :: i,n,j
+      integer :: i,n
       real, dimension(nx,nz) :: tau_column_local,tmp
-      real, dimension(nx,nz,0:nprocy-1) :: tau_column_yroot,tmp3
+      real, dimension(nx,nz,0:nprocy-1) :: tau_column_yroot
       integer, parameter :: y1tag=117
       integer, parameter :: y2tag=217
       integer :: partner,py,broadcaster,collector
+
+      call keep_compiler_quiet(f)
 !
       do n=1,nz; do i=1,nx
         tau_column_local(i,n)=sum(dtau(i,:,n))
@@ -327,14 +329,14 @@ module Special
 !***********************************************************************
     subroutine calc_cooling_time(f,p,taucool,taucool1)
 !
-      use EquationOfState, only: cs20,rho0
 !
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       real, dimension(nx) :: tmp,tau_eff,Rd,OOK1
       real, dimension(nx), intent(out) :: taucool,taucool1
+
+      call keep_compiler_quiet(f)
 !
-      integer :: i
 !
       tmp=p%cp**1.5 * gamma1 * sqrt(gamma_m1) / (3.*sigmaSB) * p%rho * p%TT**(-2.5)
       tau_eff = 0.375*q%tau + .25*sqrt(3.) + .25/q%tau
