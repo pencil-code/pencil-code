@@ -96,7 +96,7 @@ module Special
   real :: initpower_dphi=0., cutoff_dphi=0., initpower2_dphi=0.
   real :: kgaussian_phi=0.,kpeak_phi=0., kgaussian_dphi=0., kpeak_dphi=0.
   real :: relhel_phi=0.
-  real :: ddotam, a2rhopm, a2rhopm_all, a2rhom, a2rhom_all
+  real :: ddotam, a2rhopm, a2rhopm_all, a2rhom, a2rhom_all, rhom, rhom_all
   real :: edotbm, edotbm_all, e2m, e2m_all, b2m, b2m_all, a2rhophim, a2rhophim_all
   real :: a2rhopphim, a2rhopphim_all
   real :: sigE1m_all_nonaver, sigB1m_all_nonaver,sigEm_all,sigBm_all,sigEm_all_diagnos,sigBm_all_diagnos
@@ -162,7 +162,7 @@ module Special
       lrho_chi, scale_rho_chi_Heqn, scale_rho_rad_Heqn, amplee_BD_prefactor, deriv_prefactor_ee, &
       lrho_rad, init_rho_rad, Gamma_phi0, lconf_time, &
       echarge_type, init_rho_chi, rho_chi_init, lrho_chi_inhom, rhophim_crit, &
-      wstate_crit, lwstate_crit, lwstate_crit_old, wstate_tolerance, wstate_prev, heating_choice, &
+      wstate_crit, lwstate_crit, lwstate_crit_old, wstate_tolerance, lsolve_for_phi_always, heating_choice, &
       ldefine_a2rhopm_without_Vpotential, la2rhop_wrong_factor, lappy_BD_k1D_factor
 !
   namelist /special_run_pars/ &
@@ -173,7 +173,7 @@ module Special
       lrho_rad, lrho_rad_apply, lrho_rad_apply2, lrho_chi_corrected, &
       lrho_chi_inhom, ldefine_a2rhophi_with_Vpotential, &
       rad_heating, ascale_heat, ascale_heat_off, aphimax, Gamma_phi0, lconf_time, rhophim_crit, &
-      wstate_crit, lwstate_crit, lwstate_crit_old, wstate_tolerance, wstate_prev, &
+      wstate_crit, lwstate_crit, lwstate_crit_old, wstate_tolerance, lsolve_for_phi_always, &
       heating_choice, lheating_keep_on, lcombine_prep_ode_right_with_rhs
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
@@ -671,7 +671,7 @@ module Special
             a2rhophi=0.5*p%infl_dphi**2+0.5*gphi2+a2*Vpotential
             tmp=Gamma_phi*a2rhophi/ascale**5
             if (ldensity_nolog) then
-              df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+tmp
+              df(l1:l2,m,n,irho)=df(l1:l2,m,n,irho)+tmp
             else
               df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+tmp*p%rho1
             endif
@@ -993,7 +993,7 @@ module Special
         idiag_a2rhopm=0; idiag_a2rhom=0; idiag_a2rhophim=0
         idiag_a2rhogphim=0; idiag_rho_chi=0; idiag_rho_rad=0; idiag_sigEma=0
         idiag_sigBma=0; idiag_count_eb0a=0; idiag_heating=0; idiag_wstate=0
-        idiag_wstate_aver=0; Gamma_phi=0
+        idiag_wstate_aver=0; idiag_Gamma_phi=0
       endif
 !
       do iname=1,nname
@@ -1160,8 +1160,8 @@ module Special
 !
 !  In the following loop, go through all penciles and add up results to get e2m, etc.
 !
-      ddotam=0.; a2rhopm=0.; a2rhom=0.; e2m=0; b2m=0; edotbm=0; a2rhophim=0.; a2rhopphim=0.; a2rhogphim=0.
-      sigE1m=0.; sigB1m=0.
+      ddotam=0.; a2rhopm=0.; a2rhom=0.; rhom=0; e2m=0; b2m=0; edotbm=0
+      a2rhophim=0.; a2rhopphim=0.; a2rhogphim=0.; sigE1m=0.; sigB1m=0.
 !
 !  In the following, sum over all mn pencils.
 !
@@ -1171,6 +1171,7 @@ module Special
       enddo
       enddo
 !
+      rhom=rhom/nwgrid
       a2rhopm=a2rhopm/nwgrid
       a2rhom=a2rhom/nwgrid
       a2rhophim=a2rhophim/nwgrid
@@ -1202,6 +1203,12 @@ module Special
         endif
       endif
 !
+!  Some use mpiallreduce_sum and others mpireduce_sum.
+!  When the result is needed on all processors, use mpiallreduce_sum.
+!  But we additionally use "call mpibcast_real(rhom_all)",
+!  so maybe "all" is not needed?
+!
+      call mpiallreduce_sum(rhom,rhom_all)
       call mpireduce_sum(a2rhopm,a2rhopm_all)
       call mpiallreduce_sum(a2rhom,a2rhom_all)
       call mpireduce_sum(a2rhophim,a2rhophim_all)
@@ -1235,12 +1242,20 @@ module Special
       call mpibcast_real(a2rhophim_all)
       call mpibcast_real(a2rhopphim_all)
 !
+!  Compute rhom, which is needed for wstate.
+!
+      if (ldensity) then
+        call mpibcast_real(rhom_all)
+        wstate=(a2rhopphim_all*a21+onethird*rhom)/(a2rhophim_all*a21+rhom)
+      else
+        wstate=(a2rhopphim_all*a21+onethird*rho_rad)/(a2rhophim_all*a21+rho_rad)
+      endif
+!
 !  Alternatitives for deciding when to solve for phi: either when
 !  wstate is not yet reached, or when a2rhophim_all is still big enough.
 !  Once lsolve_for_phi is false, we also put lsolve_for_phi_always to false
 !  can this will never allow lsolve_for_phi to become true.
 !
-      wstate=(a2rhopphim_all*a21+onethird*rho_rad)/(a2rhophim_all*a21+rho_rad)
       if (lwstate_crit) then
         if (lwstate_crit_old) then
           lsolve_for_phi=(wstate<wstate_crit)
@@ -1434,6 +1449,16 @@ module Special
 !  Compute pressure for phi field (without gauge field):
 !
       a2rhopphi=a2rhopphi-a2*Vpotential
+!
+!  Compute rhom, which is needed for wstate.
+!
+      if (ldensity) then
+        if (ldensity_nolog) then
+          rhom=rhom+sum(f(l1:l2,m,n,irho))
+        else
+          rhom=rhom+sum(exp(f(l1:l2,m,n,ilnrho)))
+        endif
+      endif
 !
 !  Compute volume average of both a2rho and a2rho_phi
 !  Here, we begin to sum over a2rhophi, so this the last place where the local one was updated.
