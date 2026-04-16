@@ -1616,6 +1616,7 @@ module Special
     call copy_addr(lcombine_prep_ode_right_with_rhs,p_par(36)) ! bool
     call copy_addr(lsolve_for_phi_always,p_par(37)) ! bool
 
+    call copy_addr(rhom_all,p_par(38))
     endsubroutine pushpars2c
 !********************************************************************
 !********************************************************************
