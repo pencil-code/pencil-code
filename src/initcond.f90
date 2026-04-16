@@ -8220,7 +8220,7 @@ module Initcond
                       amp/(2*pi) * tanh(xx/width) * cos(yy/2) * cos(xx)
         By0(l,m)= amp/(2*pi) * cos(xx) * cos(yy/2)        
         f(l,m,:,ilnrho) = log(exp(f(l,m,:,ilnrho)) &
-                          +5/2*pi**2*(amp/(2*pi)*cos(yy/2)*sin(xx))**2 &
+                          +(2*pi/Lx)*(2*pi/Ly)*(1/cs20)*5/8*(amp/(2*pi)*cos(yy/2)*sin(xx))**2 &
                           +(By0(l,m)**2 - By(l,m)**2)/(2.*cs20))
       enddo
     enddo 
