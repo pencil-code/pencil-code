@@ -1307,7 +1307,7 @@ module Viscosity
       if (lviscosity_heat) then
         if (lcylindrical_coords .or. lspherical_coords) then
           do i=1,3
-            call calc_slope_diff_flux(f,iux+(i-1),p,h_sld_visc,nlf_sld_visc,tmp(:,i),div_sld_visc, &
+            call calc_slope_diff_flux(f,iux+(i-1),h_sld_visc,nlf_sld_visc,tmp(:,i),div_sld_visc, &
                                       HEAT=viscous_heat,HEAT_TYPE='viscose', &
                                       FLUX1=d_sld_flux(:,1,i),FLUX2=d_sld_flux(:,2,i),FLUX3=d_sld_flux(:,3,i))
             if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+max(0.0,viscous_heat)/p%rho
@@ -1329,7 +1329,7 @@ module Viscosity
           endif
         else
           do i=1,3
-            call calc_slope_diff_flux(f,iux+(i-1),p,h_sld_visc,nlf_sld_visc,div_flux,div_sld_visc, &
+            call calc_slope_diff_flux(f,iux+(i-1),h_sld_visc,nlf_sld_visc,div_flux,div_sld_visc, &
                                       HEAT=viscous_heat,HEAT_TYPE='viscose')
             p%fvisc(:,i)=p%fvisc(:,i) + div_flux 
             if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+max(0.0,viscous_heat)/p%rho
@@ -1338,7 +1338,7 @@ module Viscosity
       else
         if (lcylindrical_coords .or. lspherical_coords) then
           do i=1,3
-            call calc_slope_diff_flux(f,iux+(i-1),p,h_sld_visc,nlf_sld_visc,tmp(:,i),div_sld_visc, &
+            call calc_slope_diff_flux(f,iux+(i-1),h_sld_visc,nlf_sld_visc,tmp(:,i),div_sld_visc, &
                                       FLUX1=d_sld_flux(:,1,i),FLUX2=d_sld_flux(:,2,i),FLUX3=d_sld_flux(:,3,i))
           enddo
           if (lcylindrical_coords) then
@@ -1352,7 +1352,7 @@ module Viscosity
           endif
         else
           do i=1,3
-            call calc_slope_diff_flux(f,iux+(i-1),p,h_sld_visc,nlf_sld_visc,div_flux,div_sld_visc)
+            call calc_slope_diff_flux(f,iux+(i-1),h_sld_visc,nlf_sld_visc,div_flux,div_sld_visc)
             p%fvisc(:,i)=p%fvisc(:,i) + div_flux 
           enddo
         endif

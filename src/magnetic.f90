@@ -5199,7 +5199,7 @@ module Magnetic
 !   normal way:  DA_i/dt = ... partial_j Dsld_j A_l
 !
         do j=1,3
-          call calc_slope_diff_flux(f,ibx+(j-1),p,h_sld_magn,nlf_sld_magn,tmp1,div_sld_magn, &
+          call calc_slope_diff_flux(f,ibx+(j-1),h_sld_magn,nlf_sld_magn,tmp1,div_sld_magn, &
                                     FLUX1=d_sld_flux(:,1,j),FLUX2=d_sld_flux(:,2,j),FLUX3=d_sld_flux(:,3,j))
         enddo
 !
@@ -5212,7 +5212,7 @@ module Magnetic
 !
         if (lcylindrical_coords .or. lspherical_coords) then
           do j=1,3
-            call calc_slope_diff_flux(f,iax+(j-1),p,h_sld_magn,nlf_sld_magn,tmp2(:,j),div_sld_magn, &
+            call calc_slope_diff_flux(f,iax+(j-1),h_sld_magn,nlf_sld_magn,tmp2(:,j),div_sld_magn, &
                                       FLUX1=d_sld_flux(:,1,j),FLUX2=d_sld_flux(:,2,j),FLUX3=d_sld_flux(:,3,j))
           enddo
 !
@@ -5227,7 +5227,7 @@ module Magnetic
           endif
         else
           do j=1,3
-            call calc_slope_diff_flux(f,iax+(j-1),p,h_sld_magn,nlf_sld_magn,tmp2(:,j),div_sld_magn)
+            call calc_slope_diff_flux(f,iax+(j-1),h_sld_magn,nlf_sld_magn,tmp2(:,j),div_sld_magn)
           enddo
             fres=fres+tmp2
         endif

@@ -1291,10 +1291,10 @@ module Energy
 !
       if (lenergy_slope_limited.and.llast) then
         if (ltemperature_nolog) then
-          call calc_slope_diff_flux(f,iTT,p,h_sld_ene,nlf_sld_ene,tmp,div_sld_ene)
+          call calc_slope_diff_flux(f,iTT,h_sld_ene,nlf_sld_ene,tmp,div_sld_ene)
           thdiff=thdiff+tmp
         else
-          call calc_slope_diff_flux(f,ilnTT,p,h_sld_ene,nlf_sld_ene,tmp,div_sld_ene)
+          call calc_slope_diff_flux(f,ilnTT,h_sld_ene,nlf_sld_ene,tmp,div_sld_ene)
           thdiff=thdiff+tmp*p%TT1
        endif
      endif

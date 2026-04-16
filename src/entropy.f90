@@ -3614,7 +3614,7 @@ module Energy
 
       real, dimension(nx) :: tmp
 
-      call calc_slope_diff_flux(f,iss,p,h_sld_ene,nlf_sld_ene,tmp,div_sld_ene)
+      call calc_slope_diff_flux(f,iss,h_sld_ene,nlf_sld_ene,tmp,div_sld_ene)
       df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+tmp
 
     endsubroutine calc_energy_slope_limited

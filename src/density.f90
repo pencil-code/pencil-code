@@ -2781,10 +2781,10 @@ module Density
       real, dimension (nx) :: tmp
 
       if (ldensity_nolog) then
-        call calc_slope_diff_flux(f,irho,p,h_sld_dens,nlf_sld_dens,tmp,div_sld_dens)
+        call calc_slope_diff_flux(f,irho,h_sld_dens,nlf_sld_dens,tmp,div_sld_dens)
         fdiff=fdiff+tmp
       else
-        call calc_slope_diff_flux(f,ilnrho,p,h_sld_dens,nlf_sld_dens,tmp,div_sld_dens)
+        call calc_slope_diff_flux(f,ilnrho,h_sld_dens,nlf_sld_dens,tmp,div_sld_dens)
         fdiff=fdiff+tmp*p%rho1
       endif
 

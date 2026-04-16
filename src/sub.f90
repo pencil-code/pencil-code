@@ -7862,7 +7862,7 @@ nameloop: do
 
     endsubroutine characteristic_speed
 !***********************************************************************
-    subroutine calc_slope_diff_flux(f,j,p,h_slope_limited,nlf,div_flux,div_type, &
+    subroutine calc_slope_diff_flux(f,j,h_slope_limited,nlf,div_flux,div_type, &
                                     heat,heat_type,flux1,flux2,flux3)
 !
 !  Calculate diffusiv flux, divergence of diffusiv flux and
@@ -7891,11 +7891,9 @@ nameloop: do
 !
       real :: nlf, h_slope_limited, one_16, fdif_limit, dy12, dz12
       real, dimension(nx) :: dx12
-      type (pencil_case), intent(in) :: p
       integer :: j,k,ix
       logical :: ldiv_4th
 
-        call keep_compiler_quiet(p)
 !
 ! First set the diffusive flux = cmax*(f_R-f_L) at half grid points
 !
