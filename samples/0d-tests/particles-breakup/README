@@ -1,0 +1,29 @@
+Directory:
+    ${PENCIL_HOME}/samples/0d-tests/particles-breakup
+SVN Id:
+    $Id$
+Maintainer:
+    Nils Erland L. Haugen <nils.e.haugen/gmail[dot]com>
+Added:
+    April 2026
+Status:
+    setup, compile, start, and run verified in this tree
+Recommended resolution:
+    1x1x1
+Comments:
+    0D Lagrangian particle test for Kelvin-Helmholtz breakup using the
+    particles_breakup module, set up as a large water droplet falling in
+    quiescent air at atmospheric conditions. The gas remains a 0D periodic
+    background with no particle feedback, while the particle feels constant
+    vertical gravity and pure Stokes drag.
+
+    The sample uses cgs units. The carrier gas density is set to
+    rho0=1.225e-3 g/cm^3, the gas kinematic viscosity is nu=0.15 cm^2/s,
+    the particle material density is rhopmat=1 g/cm^3, and the Kelvin-
+    Helmholtz surface-tension and liquid-viscosity inputs correspond to
+    water near room temperature.
+
+    Gravity is applied through the particle module with gravz=-981 cm/s^2.
+    The initial droplet velocity is zero. This remains a reduced settling/
+    breakup test intended to study parcel evolution and final size
+    distributions rather than a fully resolved falling-drop flow field.

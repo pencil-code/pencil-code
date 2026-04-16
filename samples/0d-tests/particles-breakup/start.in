@@ -1,0 +1,51 @@
+!                              -*-f90-*-     (for emacs)
+!
+! Initialisation parameters for the particles-breakup sample
+!
+&init_pars
+  cvsid='$Id$',
+  lperi =      T,      T,      T
+  ip=14, lwrite_ic=T, lwrite_aux=T
+  lcopysnapshots_exp=T
+/
+&eos_init_pars
+  gamma=1.0, rho0=1. !rho0=1.225e-3
+/
+&density_init_pars
+  ldensity_nolog=T
+  rho_const=1.225e-3
+  initlnrho="const_rho"
+/
+&hydro_init_pars
+  inituu='const-ux'
+  ampluu=0.0
+/
+&particles_init_pars
+  initxxp='constant'
+  xp0=0.0, yp0=0.0, zp0=0.0
+  initvvp='constant'
+  vpx0=0.0, vpy0=0.0, vpz0=0.0
+  gravz_profile='const'
+  gravz=-981.0
+  lwithhold_init_particles=T
+  frac_init_particles=0.0001
+  ldragforce_dust_par=F, ldragforce_gas_par=F
+  eps_dtog=1.0
+/
+&particles_radius_init_pars
+  initap='constant', ap0=10.0, rhopmat=1.0
+/
+&particles_number_init_pars
+  initnpswarm='constant'
+  np_swarm0=1.0
+/
+&particles_breakup_init_pars
+  lparticles_breakup_kh=T
+  tstart_particles_breakup=0.0
+  kh_B0=0.61
+  kh_B1=40.0
+  kh_B2=0.05
+  kh_sigma=72.0
+  kh_mu_liquid=0.01
+  kh_min_child_npswarm=1e-6
+/

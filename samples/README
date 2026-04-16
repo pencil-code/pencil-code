@@ -90,6 +90,7 @@ turbulent_flame                     Nils Erland L. Haugen <nils.e.haugen/gmail[d
 0d-tests/coag_kernel_cst            Anders Johansen <anders/astro.lu.se>
 0d-tests/coag_kernel_lin            Anders Johansen <anders/astro.lu.se>
 0d-tests/coagulation-fragmentation  Anders Johansen <anders@astro.lu.se>
+0d-tests/particles-breakup          Nils Erland L. Haugen <nils.e.haugen/gmail[dot]com>
 0d-tests/heating_ionize_planck      Axel Brandenburg <brandenb/nordita[dot]org>
 0d-tests/heating_ionize             Axel Brandenburg <brandenb/nordita[dot]org>
 0d-tests/heating_noionize           Axel Brandenburg <brandenb/nordita[dot]org>

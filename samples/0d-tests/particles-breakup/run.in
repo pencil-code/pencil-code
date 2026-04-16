@@ -1,0 +1,37 @@
+!
+!  Run parameters for the particles-breakup sample
+!
+&run_pars
+  cvsid='$Id$',
+  nt=2500, it1=100, cdt=0.05, cdtv=0.05, isave=1000, itorder=3
+!    nt=1, it1=1, cdt=0.05, cdtv=0.05, isave=1000, itorder=3	
+  dsnap=1.0e37, dvid=1.0e37, dtmin=1e-12, dtmax=0.05
+  lpencil_check=F
+  lpencil_check_small=F
+  !dt=2e-5
+/
+&eos_run_pars
+/
+&density_run_pars
+/
+&hydro_run_pars
+/
+&particles_run_pars
+  ldragforce_gas_par=F
+  ldragforce_dust_par = T
+  ldraglaw_epstein    = F
+  ldraglaw_purestokes = T
+  gravz_profile='const'
+  gravz=-981.0
+/
+&viscosity_run_pars
+  nu=0.15
+/
+&particles_radius_run_pars
+/
+&particles_number_run_pars
+/
+&particles_breakup_run_pars
+  lparticles_breakup_kh=T
+  tstart_particles_breakup=0.0
+/

@@ -1833,6 +1833,18 @@ samples/0d-tests/heating_noionize/run.in -text
 samples/0d-tests/heating_noionize/src/Makefile.local -text
 samples/0d-tests/heating_noionize/src/cparam.local -text
 samples/0d-tests/heating_noionize/start.in -text
+samples/0d-tests/particles-breakup/NEVERLOCK -text
+samples/0d-tests/particles-breakup/README -text
+samples/0d-tests/particles-breakup/plot_res.pro -text
+samples/0d-tests/particles-breakup/print.in -text
+samples/0d-tests/particles-breakup/reference.out -text
+samples/0d-tests/particles-breakup/run.in -text
+samples/0d-tests/particles-breakup/src/Makefile.local -text
+samples/0d-tests/particles-breakup/src/cparam.local -text
+samples/0d-tests/particles-breakup/start.in -text
+samples/0d-tests/particles-breakup/video.in -text
+samples/0d-tests/particles-breakup/xyaver.in -text
+samples/0d-tests/particles-breakup/xzaver.in -text
 samples/0d-tests/reactive_particles/README -text
 samples/0d-tests/reactive_particles/air.dat -text
 samples/0d-tests/reactive_particles/chem.inp -text
@@ -4727,6 +4739,7 @@ src/noopacity.f90 -text
 src/noparticles.f90 -text
 src/noparticles_adaptation.f90 -text
 src/noparticles_adsorbed.f90 -text
+src/noparticles_breakup.f90 -text
 src/noparticles_caustics.f90 -text
 src/noparticles_chemistry.f90 -text
 src/noparticles_coagulation.f90 -text
@@ -4812,6 +4825,8 @@ src/particles_adaptation.f90 -text
 src/particles_adaptation.h -text
 src/particles_adsorbed.f90 -text
 src/particles_adsorbed.h -text
+src/particles_breakup.f90 -text
+src/particles_breakup.h -text
 src/particles_caustics.f90 -text
 src/particles_caustics.h -text
 src/particles_cdata.f90 -text
