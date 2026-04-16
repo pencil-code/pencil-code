@@ -3644,7 +3644,6 @@ module Energy
       intent(inout) :: df
 !
       real :: ztop,xi,profile_cor
-      real, dimension(nx) :: tmp1
       integer :: j
       real :: gamma,gamma_m1
 !
