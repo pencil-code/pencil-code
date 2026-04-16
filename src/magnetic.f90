@@ -2513,6 +2513,10 @@ module Magnetic
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,iaz)=.25*pi_1*amplaa(j)*(x(l1:l2)/Lxyz(1))**2
           enddo; enddo
+        case ('Az-x2')
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,iaz)= (x(l1:l2))**2 / 2
+          enddo; enddo
         case ('Ay=x')
 !
 !  Initial  Ay=r/2
