@@ -658,77 +658,85 @@ module Special
           df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi) - &
               (pref_Hubble*Hscript)*p%infl_dphi-pref_Vprime*Vprime
         endif
+      else
+!
+!  Here we use the possibility of switching off the rhs of the phi evolution
+!
+        df(l1:l2,m,n,iinfl_phi)=0.
+        df(l1:l2,m,n,iinfl_dphi)=0.
       endif
 !
 !  Here we include the Gamma_phi contribution to the rhs of the lnrho equation.
 !  drho/dt = ... + a*Gam_phi*a2rhophi/a^6.
 !  This is independent of whether or not lrho_rad=T; which is just for testing.
 !
-        if (lrho_chi_inhom .and. lheating) then
-          if (ldensity) then
-            call grad(f,iinfl_phi,gphi)
-            call dot2_mn(gphi,gphi2)
-            a2rhophi=0.5*p%infl_dphi**2+0.5*gphi2+a2*Vpotential
-            tmp=Gamma_phi*a2rhophi/ascale**5
-            if (ldensity_nolog) then
-              df(l1:l2,m,n,irho)=df(l1:l2,m,n,irho)+tmp
-            else
-              df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+tmp*p%rho1
-            endif
+      if (lrho_chi_inhom .and. lheating) then
+        if (ldensity) then
+          call grad(f,iinfl_phi,gphi)
+          call dot2_mn(gphi,gphi2)
+          a2rhophi=0.5*p%infl_dphi**2+0.5*gphi2+a2*Vpotential
+          tmp=Gamma_phi*a2rhophi/ascale**5
+          if (ldensity_nolog) then
+            df(l1:l2,m,n,irho)=df(l1:l2,m,n,irho)+tmp
           else
-            call fatal_error("dspecial_dt: ","density must be true")
+            df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+tmp*p%rho1
           endif
+        else
+          call fatal_error("dspecial_dt: ","density must be true")
         endif
+      endif
 !
 !  speed of light term
 !
-      if (c_light_axion/=0. .and. .not. lphi_hom) then
-        call del2(f,iinfl_phi,del2phi)
-        df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi) + &
-            c_light_axion**2*pref_del2*del2phi
-        ! if (lconf_time) then
-        !   df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+c_light_axion**2*del2phi
-        ! else
-        !   df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+c_light_axion**2*a21*del2phi
-        !endif
-      endif
+      if (lsolve_for_phi .and. lsolve_for_phi_always) then
+        if (c_light_axion/=0. .and. .not. lphi_hom) then
+          call del2(f,iinfl_phi,del2phi)
+          df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi) + &
+              c_light_axion**2*pref_del2*del2phi
+          ! if (lconf_time) then
+          !   df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+c_light_axion**2*del2phi
+          ! else
+          !   df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+c_light_axion**2*a21*del2phi
+          !endif
+        endif
 !
 !  magnetic terms, add (alpf/a^2)*(E.B) to dphi'/dt equation
 !
-      if (lmagnetic .and. lem_backreact) then
-        if (lphi_hom .and. .not. lphi_linear_regime) then
-          df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+pref_alpf*alpf*edotbm_all
-        endif
+        if (lmagnetic .and. lem_backreact) then
+          if (lphi_hom .and. .not. lphi_linear_regime) then
+            df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+pref_alpf*alpf*edotbm_all
+          endif
 !
 !  Compute E.B only when displacement current is included.
 !  Note that alpf does not (currently) exist in MHD.
 !
-        if (.not. lphi_hom) then
-          if (iex>0) then
-            call dot_mn(p%el,p%bb,tmp)
-          else
-            call dot_mn(p%jj,p%bb,tmp)
-            tmp=eta*tmp
+          if (.not. lphi_hom) then
+            if (iex>0) then
+              call dot_mn(p%el,p%bb,tmp)
+            else
+              call dot_mn(p%jj,p%bb,tmp)
+              tmp=eta*tmp
+            endif
+            df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+pref_alpf*alpf*tmp
           endif
-          df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+pref_alpf*alpf*tmp
+          ! if (lconf_time) then
+          !   if (lphi_hom) then
+          !     if (.not. lphi_linear_regime) &
+          !       df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+alpf*edotbm_all*a21
+          !   else
+          !     call dot_mn(p%el,p%bb,tmp)
+          !     df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+alpf*tmp*a21
+          !   endif
+          ! else
+          !   if (lphi_hom) then
+          !     if (.not. lphi_linear_regime) &
+          !       df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+alpf*edotbm_all*a21**2
+          !   else
+          !     call dot_mn(p%el,p%bb,tmp)
+          !     df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+alpf*tmp*a21**2
+          !   endif
+          ! endif
         endif
-        ! if (lconf_time) then
-        !   if (lphi_hom) then
-        !     if (.not. lphi_linear_regime) &
-        !       df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+alpf*edotbm_all*a21
-        !   else
-        !     call dot_mn(p%el,p%bb,tmp)
-        !     df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+alpf*tmp*a21
-        !   endif
-        ! else
-        !   if (lphi_hom) then
-        !     if (.not. lphi_linear_regime) &
-        !       df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+alpf*edotbm_all*a21**2
-        !   else
-        !     call dot_mn(p%el,p%bb,tmp)
-        !     df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi)+alpf*tmp*a21**2
-        !   endif
-        ! endif
       endif
 !
 !  Total contribution to the timestep.
