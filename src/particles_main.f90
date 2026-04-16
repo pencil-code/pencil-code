@@ -13,6 +13,7 @@ module Particles_main
   use Particles_cdata
   use Particles_chemistry
   use Particles_coagulation
+  use Particles_breakup
   use Particles_condensation
   use Particles_collisions
   use Particles_density
@@ -70,6 +71,7 @@ module Particles_main
       call register_particles_TT
       call register_particles_mass
       call register_particles_drag
+      call register_particles_breakup
       call register_particles_chem
       call register_particles_ads
       call register_particles_surfspec
@@ -112,6 +114,7 @@ module Particles_main
       call rprint_particles_surf         (lreset,LWRITE=lroot)
       call rprint_particles_chem         (lreset,LWRITE=lroot)
       call rprint_particles_coagulation  (lreset,LWRITE=lroot)
+      call rprint_particles_breakup      (lreset,LWRITE=lroot)
       call rprint_particles_condensation (lreset,LWRITE=lroot)
       call rprint_particles_collisions   (lreset,LWRITE=lroot)
       call rprint_particles_diagnos_dv   (lreset,LWRITE=lroot)
@@ -209,6 +212,7 @@ module Particles_main
       call initialize_particles_TT        (f)
       call initialize_particles_mass      (f)
       call initialize_particles_drag
+      call initialize_particles_breakup  (f)
       call initialize_particles_ads       (f)
       call initialize_particles_surf      (f)
       call initialize_particles_coag      (f)
@@ -339,6 +343,7 @@ module Particles_main
       call read_namelist(read_particles_selfg_init_pars, 'particles_selfgrav',lparticles_selfgravity)
       call read_namelist(read_particles_mass_init_pars , 'particles_mass'    ,lparticles_mass)
       call read_namelist(read_particles_drag_init_pars , 'particles_drag'    ,lparticles_drag)
+      call read_namelist(read_particles_breakup_init_pars,'particles_breakup',lparticles_breakup)
       call read_namelist(read_particles_TT_init_pars   , 'particles_TT'      ,lparticles_temperature)
       call read_namelist(read_particles_ads_init_pars  , 'particles_ads'     ,lparticles_adsorbed)
       call read_namelist(read_particles_surf_init_pars , 'particles_surf'    ,lparticles_surfspec)
@@ -362,6 +367,7 @@ module Particles_main
       call read_namelist(read_particles_coag_run_pars ,'particles_coag'         ,lparticles_coagulation)
       call read_namelist(read_particles_cond_run_pars ,'particles_cond'         ,lparticles_condensation)
       call read_namelist(read_particles_coll_run_pars ,'particles_coll'         ,lparticles_collisions)
+      call read_namelist(read_particles_breakup_run_pars,'particles_breakup'    ,lparticles_breakup)
       call read_namelist(read_particles_stir_run_pars ,'particles_stirring'     ,lparticles_stirring)
       call read_namelist(read_pstalker_run_pars       ,'particles_stalker'      ,lparticles_stalker)
       call read_namelist(read_pars_diagnos_dv_run_pars,'particles_diagnos_dv'   ,lparticles_diagnos_dv)
@@ -535,7 +541,7 @@ module Particles_main
 !  Discrete particle collisions. Must be done at the end of the time-step.
 !   This call also sorts the particles into mn
 !
-      call particles_discrete_collisions
+      call particles_discrete_collisions(f)
 !
       call particles_diffusion(fp)
 !
@@ -570,16 +576,18 @@ module Particles_main
 !
     endsubroutine split_update_particles
 !***********************************************************************
-    subroutine particles_discrete_collisions
+    subroutine particles_discrete_collisions(f)
 !
 !  Discrete particle collisions.
 !
 !  13-nov-09/anders: coded
 !
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+!
       if ( lparticles_stirring .and. llast ) call particle_stirring(fp,ineargrid)
 !
       if ( (lparticles_collisions .or. lparticles_coagulation .or. &
-          lparticles_condensation) .and. llast ) then
+          lparticles_condensation .or. lparticles_breakup) .and. llast ) then
 !
         call boundconds_particles(fp,ipar)
         call map_nearest_grid(fp,ineargrid)
@@ -593,6 +601,7 @@ module Particles_main
           if (lparticles_collisions)   call particles_collisions_pencils(fp,ineargrid)
           if (lparticles_coagulation)  call particles_coagulation_pencils(fp,ineargrid)
           if (lparticles_condensation) call particles_condensation_pencils(fp,ineargrid)
+          if (lparticles_breakup)      call particles_breakup_pencils(f,fp,ineargrid)
         endif
 !
       endif
@@ -797,6 +806,7 @@ module Particles_main
       if (lparticles_adsorbed)    call dpads_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_surfspec)    call dpsurf_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_number)      call dnpswarm_dt(f,df,fp,dfp,ineargrid)
+      if (lparticles_breakup)     call dbreakup_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_density)     call drhopswarm_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_selfgravity) call dvvp_dt_selfgrav(f,df,fp,dfp,ineargrid)
 !
