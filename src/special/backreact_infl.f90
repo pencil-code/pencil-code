@@ -1162,8 +1162,8 @@ module Special
 !  Here we use the possibility of switching off the phi evolution by setting phi=dphi=0.
 !
       if (.not. (lsolve_for_phi .and. lsolve_for_phi_always)) then
-        f(l1:l2,m,n,iinfl_phi)=0.
-        f(l1:l2,m,n,iinfl_dphi)=0.
+        f(:,:,:,iinfl_phi)=0.
+        f(:,:,:,iinfl_dphi)=0.
       endif
 !
 !  In the following loop, go through all penciles and add up results to get e2m, etc.
