@@ -549,6 +549,7 @@ doc/HDF5/data_layout_chunked_indexed.txt -text
 doc/HDF5/data_layout_collect-x.txt -text
 doc/HDF5/data_layout_collect-xy.txt -text
 doc/HDF5/data_layout_parallel.txt -text
+doc/HDF5/time-series_layout_chunked.txt -text
 doc/Makefile -text
 doc/README -text
 doc/citations/.gitignore -text
