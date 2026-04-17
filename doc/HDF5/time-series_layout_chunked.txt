@@ -24,3 +24,11 @@ Therefore, each "quantity" needs its own "iteration" and "last".
 This increases the storage footprint, but reading is still efficient
 because HDF5 would anyway read a full block in one IO operation.
 Also the overhead of storing 1000 scalars is much lager...
+
+When restarting a simulation from an earlier snapshot, all arrays
+("data" and "iteration") must be overwritten at the right places.
+For that, we first need to check if "iteration[last]" is larger or
+equal to the iteration number to be written. If so, we must find
+the next smaller "iteration" and set it's index as the new "last".
+(We could trigger a down-size of the arrays, but as HDF5 can anyway
+not delete used space, we simply keep the allocation for later use.)
