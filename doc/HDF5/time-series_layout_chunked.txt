@@ -1,4 +1,3 @@
-Sample layout for a simulation with a grid of [nx,ny,nz] grid points per processor.
 For time-series data, the distribution on processors is irrelevant.
 The initial chunk dimensions are denoted in square brackets.
 When needed, we allocate another chunk for each of the arrays.
