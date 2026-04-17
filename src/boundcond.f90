@@ -2650,6 +2650,8 @@ module Boundcond
 !  11-nov-02/wolf: coded
 !  18-feb-24/axel: adapted from bc_sym_x to model Comisso+15; use -cos instead of +cos(ky).
 !
+      use General, only: keep_compiler_quiet
+
       integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
       real, optional :: val
@@ -2659,6 +2661,8 @@ module Boundcond
       real :: ky
 !
       ky=2.*pi/Lxyz(2)
+      call keep_compiler_quiet(sgn)
+      call keep_compiler_quiet(rel)
 !
       select case (topbot)
 !
@@ -2704,6 +2708,7 @@ module Boundcond
   !  11-nov-02/wolf: coded
   !  18-feb-24/axel: adapted from bc_sym_x to model Comisso+15; use -cos instead of +cos(ky).
   !
+        use General, only: keep_compiler_quiet
         integer, intent(IN) :: topbot
         real, dimension (:,:,:,:) :: f
         real, optional :: val
@@ -2712,6 +2717,8 @@ module Boundcond
   !
         real :: ky
   !
+        call keep_compiler_quiet(sgn)
+        call keep_compiler_quiet(rel)
         ky=2.*pi/Lxyz(2)
   !
         select case (topbot)

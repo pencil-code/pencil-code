@@ -3432,6 +3432,7 @@ module Dustdensity
       real :: rr1=0.,rr2=0.,rr3=0.
       intent(in) :: ff, dsize_loc
       intent(out) :: dff_dr
+      integer :: ndust_2nd_species
 !
 !  df/dx = y0*(2x-x1-x2)/(x01*x02)+y1*(2x-x0-x2)/(x10*x12)+y2*(2x-x0-x1)/(x20*x21)
 !  Where: x01 = x0-x1, x02 = x0-x2, x12 = x1-x2, etc.
@@ -3465,7 +3466,8 @@ module Dustdensity
 !
       elseif (ndustspec==2) then
         dff_dr(:,1) = (ff(:,min(ndustspec,2)) - ff(:,min(ndustspec,1)))/(dsize_loc(min(ndustspec,2))-dsize_loc(min(ndustspec,1)))
-        dff_dr(:,min(2,ndustspec)) = dff_dr(:,1)
+        ndust_2nd_species = min(ndustspec,2)
+        dff_dr(:,ndust_2nd_species) = dff_dr(:,1)
       else
         dff_dr(:,1) = 0.
       endif
