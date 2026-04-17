@@ -36,3 +36,9 @@ equal to the iteration number to be written. If so, we must find
 the next smaller "iteration" and set it's index as the new "last".
 (We could trigger a down-size of the arrays, but as HDF5 can anyway
 not delete used space, we simply keep the allocation for later use.)
+
+When we write data (no matter if after a restart or not), we read "last".
+After and increment by one, this is the array's target index to write to.
+If this target is beyond the allocated "size", we call the HDF5 resize()
+function in order to allocate more space and increase "size" accordingly.
+"iteration" is written (or overwritten) with the current iteration.
