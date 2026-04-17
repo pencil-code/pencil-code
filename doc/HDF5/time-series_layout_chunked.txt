@@ -1,21 +1,25 @@
 For time-series data, the distribution on processors is irrelevant.
 The initial chunk dimensions are denoted in square brackets.
 When needed, we allocate another chunk for each of the arrays.
+In this example the chunk size is NC, where 8192 is probably a good
+choice, because we do not want to have too much overhead for resizing.
 The group and dataset structure and dimensions would be as follows:
 
 
 quantity/
-	data		[1000]
-	iteration	[1000]
+	data		[NC]
+	iteration	[NC]
 	last		0
+	size		NC
 
 
 The quantity is a group, where each of those quantities consists of:
 "data" stores usually floating-point data in a growing array,
 "iteration" gives the iteration of the data array's indices,
 and "last" denotes the last valid entry in "data" and "iteration".
+"size" gives the actual size of the allocation space for the arrays.
 Initially, "data" is empty, but the minimum chunk size is allocated.
-This means "iteration" is also empty and "last" has the value 0.
+This means "iteration" is also empty, "last" is 0, and "size" is NC.
 "iteration" and "last" are naturally integer values.
 
 We need to note that each quantity is in principle independent
@@ -23,7 +27,7 @@ because "print.in" variables could be added and removed any time.
 Therefore, each "quantity" needs its own "iteration" and "last".
 This increases the storage footprint, but reading is still efficient
 because HDF5 would anyway read a full block in one IO operation.
-Also the overhead of storing 1000 scalars is much lager...
+Also the overhead of storing NC scalars is certainly much lager...
 
 When restarting a simulation from an earlier snapshot, all arrays
 ("data" and "iteration") must be overwritten at the right places.
