@@ -45,3 +45,6 @@ After and increment by one, this is the array's target index to write to.
 If this target is beyond the allocated "size", we call the HDF5 resize()
 function in order to allocate more space and increase "size" accordingly.
 "iteration" is written (or overwritten) with the current iteration.
+
+
+HDF5 files storing slices and averages should follow a similar scheme.
