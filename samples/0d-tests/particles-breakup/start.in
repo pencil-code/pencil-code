@@ -7,6 +7,7 @@
   lperi =      T,      T,      T
   ip=14, lwrite_ic=T, lwrite_aux=T
   lcopysnapshots_exp=T
+ltolerate_namelist_errors=T
 /
 &eos_init_pars
   gamma=1.0, rho0=1. !rho0=1.225e-3

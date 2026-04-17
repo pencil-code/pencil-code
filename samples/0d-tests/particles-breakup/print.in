@@ -1,7 +1,6 @@
 it(f8.0)
 t(e11.3)
 dt(e11.3)
-vpm(e11.3)
 vpzmin(e11.3)
 vpzmax(e11.3)
 vpzm(e11.3)
