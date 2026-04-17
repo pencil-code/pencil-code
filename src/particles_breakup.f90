@@ -37,18 +37,19 @@ module Particles_breakup
   real :: rt_Ctau = 1.0
   real :: kh_sigma = 7.2e-2
   real :: kh_min_child_npswarm = 0.0
+  real :: nu_liq = 1e-2    !PAR_DOC: kinematic viscosity of the liquid (in cgs units)
   integer :: rt_method = 2
   integer :: idiag_imskhm = 0
 !
   namelist /particles_breakup_init_pars/ &
       lparticles_breakup_kh, lparticles_breakup_rt, tstart_particles_breakup, &
       kh_B0, kh_B1, kh_B2, rt_CRT, rt_Ctau, rt_method, kh_sigma, &
-      kh_min_child_npswarm
+      kh_min_child_npswarm, nu_liq
 !
   namelist /particles_breakup_run_pars/ &
       lparticles_breakup_kh, lparticles_breakup_rt, tstart_particles_breakup, &
       kh_B0, kh_B1, kh_B2, rt_CRT, rt_Ctau, rt_method, kh_sigma, &
-      kh_min_child_npswarm
+      kh_min_child_npswarm, nu_liq
 !
 contains
 !***********************************************************************
@@ -359,7 +360,7 @@ contains
     subroutine compute_kh_scales(dp,rho_gas,nu_gas,urmag,we_g,we_p,rep,oh,tay,lambda_kh,omega_kh,tau_kh)
       real, intent(in) :: dp, rho_gas, nu_gas, urmag
       real, intent(out) :: we_g, we_p, rep, oh, tay, lambda_kh, omega_kh, tau_kh
-      real :: denom
+      real :: denom, rep_liq
 !
 !  Dimensionless groups and KH correlations used in the breakup model.
 !  These are the quantities needed to reconstruct the stable KH scale d_KH
@@ -367,8 +368,9 @@ contains
       we_g = rho_gas * urmag**2 * dp / kh_sigma
       we_p = rhopmat * urmag**2 * dp / kh_sigma
       rep = urmag * dp / max(nu_gas,tini)
+      rep_liq = urmag * dp / max(nu_liq,tini)
 !
-      oh = sqrt(max(we_p,0.0)) / max(rep,tini)
+      oh = sqrt(max(we_p,0.0)) / max(rep_liq,tini)
       tay = oh * sqrt(max(we_g,0.0))
 !      
       lambda_kh = 4.51 * dp * (1.0 + 0.45*sqrt(max(oh,0.0))) * (1.0 + 0.4*tay**0.7) / &

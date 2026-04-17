@@ -804,6 +804,7 @@ module Param_IO
         call write_stub ('particles_ads', lparticles_adsorbed)
         call write_stub ('particles_surf', lparticles_surfspec)
         call write_stub ('particles_chem', lparticles_chemistry)
+        call write_stub ('particles_breakup', lparticles_breakup)
 !
         if (.not. lstart) then
           call write_stub ('particles_adapt', lparticles_adaptation)
