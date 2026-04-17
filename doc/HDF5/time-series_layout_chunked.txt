@@ -18,9 +18,9 @@ quantity/
 
 The quantity is a group, where each of those quantities consists of:
 "data" stores usually floating-point data in a growing array,
-"iteration" gives the iteration of the data array's indices,
+"iteration" gives the iteration of the data array's elements,
 and "last" denotes the last valid entry in "data" and "iteration".
-"size" gives the actual size of the allocation space for the arrays.
+"size" gives the actual size of the allocated space for the arrays.
 Initially, "data" is empty, but the minimum chunk size is allocated.
 This means "iteration" is also empty, "last" is 0, and "size" is NC.
 "iteration" and "last" are naturally integer values.
