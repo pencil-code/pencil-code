@@ -277,6 +277,11 @@ varcontent[imskh].variable = 'KH breakup accumulator (imskh)'
 varcontent[imskh].idlvar   = 'imskh'
 varcontent[imskh].idlinit  = INIT_SCALAR
 ;
+default, itbrt, 0
+varcontent[itbrt].variable = 'RT breakup timer (itbrt)'
+varcontent[itbrt].idlvar   = 'itbrt'
+varcontent[itbrt].idlinit  = INIT_SCALAR
+;
 default, inucl_Se, 0
 varcontent[inucl_Se].variable = 'Supersaturation at nucleation'
 varcontent[inucl_Se].idlvar   = 'nucl_Se'
