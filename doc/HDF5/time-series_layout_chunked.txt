@@ -5,7 +5,7 @@ In this example the chunk size is NC, where 2048 is probably a good
 choice, because we do not want to have too much overhead for resizing.
 In average, 1024 floats are wasted space, but this makes only 8 kB.
 (Maybe there are better choices depending on the block size of the
-underlying file system and the HDF5 metadata overhead...)
+underlying file system (8/16/32 kB) and the HDF5 metadata overhead.)
 The group and dataset structure and dimensions would be as follows:
 
 
