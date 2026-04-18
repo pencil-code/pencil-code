@@ -12,7 +12,7 @@
       use File_Io, only: file_exists
 
       character(LEN=fnlen) :: stem, filename
-      character(LEN=labellen) :: ext
+      character(LEN=3) :: ext
 
       filename = trim(stem)//'.'//trim(ext)
       if (.not.file_exists(trim(directory_snap)//'/'//trim(filename))) then
