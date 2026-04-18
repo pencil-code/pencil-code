@@ -1580,6 +1580,11 @@ module Special
       call copy_addr(va_limit,p_par(47))
 
     call copy_addr(lohmic_heating_ee,p_par(48)) ! bool
+    call copy_addr(ladvance_ee,p_par(49)) ! bool
+    call copy_addr(lohmic_heating_justee,p_par(50)) ! bool
+    call copy_addr(eta_given,p_par(51))
+    call copy_addr(cdt_sige,p_par(52))
+    call copy_addr(ldt_disp_current,p_par(53)) ! bool
     endsubroutine pushpars2c
 !***********************************************************************
 !
