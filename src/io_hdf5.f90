@@ -535,7 +535,7 @@ module Io
       character (len=fnlen) :: dataset, dataset_var
       integer :: pos
 !
-      varfile_name = trim(directory_snap)//'/'//trim(gen_in_snapname(file,'h5'))
+      varfile_name = trim(directory_snap)//'/'//trim(gen_in_snapname(file,'h5 '))
       dataset = 'f'
       if (present (label)) dataset = label
       if (dataset == 'globals') then
