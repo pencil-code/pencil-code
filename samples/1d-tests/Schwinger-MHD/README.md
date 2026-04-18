@@ -19,6 +19,9 @@ succeeds
 
 ## Comments:
 
+This sample run covers time ranges with displacement current included
+at early times and without displacement current at late times.
+The length of the time step is adjusted automatically.
 in preparation
 
 ## Links:

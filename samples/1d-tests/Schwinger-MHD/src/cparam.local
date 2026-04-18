@@ -8,5 +8,5 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 2
 !
-integer, parameter :: ncpus=1,nprocx=1,nprocz=1,nprocy=ncpus/(nprocx*nprocz)
+integer, parameter :: ncpus=4,nprocx=4,nprocz=1,nprocy=ncpus/(nprocx*nprocz)
 integer, parameter :: nxgrid=64,nygrid=1,nzgrid=1
