@@ -1,0 +1,49 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  sample file for 1-D sound wave
+!
+&run_pars
+  cvsid="$Id: run.in,v 1.1 2026/04/14 14:40:21 brandenb Exp $"
+  nt=7000, it1=100, isave=2000, itorder=3
+  dsnap=2e5, dvid=1e5, tmax=2e9, dtmin=-1e-12
+  dspec=-1e5, lspec_start=T, ou_spec=T, ab_spec=T, ele_spec=T, sp_spec=T, mu_spec=T, Lor_spec=T, OmU_spec=T, ro_spec=T, gph_spec=T
+  lwrite_aux=T, lpencil_check=F
+  lpencil_check_small=F
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+  idiff='normal', diffrho=1e5
+/
+&viscosity_run_pars
+  nu=1e5
+/
+&magnetic_run_pars
+  ldensity_add_je_heating=F
+  llorentzforce=F
+/
+&power_spectrum_run_pars
+  lcorrect_integer_kcalc=T
+/
+&backreact_infl_run_pars
+  lbackreact_infl=T, ldt_backreact_infl=T, Ndiv=0, cdt_phi=1e-2
+  echarge_type='erun'
+  lrho_chi_inhom=T, wstate_tolerance=0e-6
+  Gamma_phi0=1e-7, lrho_rad_apply2=F
+  lheating_keep_on=T, lwstate_crit=T
+/
+&disp_current_run_pars
+  lmass_suppression=F, mass_chi=1e2
+  luse_scale_factor_in_sigma=T
+  lcollinear_EB=T, sigB_prefactor=1., sigE_prefactor=1.
+  lallow_bprime_zero=T
+  lphi_hom=F, lphi_linear_regime=F
+  ldensity_add_je_heating=T, lohmic_heating_ee=T, lohmic_heating_justee=T
+  lapply_Gamma_corr=F
+  alpf=90.
+  llorentzforce_ee=T
+  !ladvance_ee=F
+  cdt_sigE=1.
+/
