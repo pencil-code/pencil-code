@@ -1,0 +1,35 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Initialisation parameters
+!
+&init_pars
+  cvsid="$Id: start.in,v 1.1 2026/04/14 14:40:21 brandenb Exp $"
+  unit_system='set'
+  lwrite_ic=F
+  wav1=2e-6
+/
+&eos_init_pars
+  gamma=1., cs0=0.57735027
+/
+&hydro_init_pars
+/
+&density_init_pars
+  initlnrho='const_rho', rho_const=1e-22
+/
+&magnetic_init_pars
+  lscale_tobox=F, lvacuum=F, lohm_evolve=F, learly_set_el_pencil=T
+/
+&backreact_infl_init_pars
+  lscale_tobox=F, lflrw=T, axionmass=1.06e-6, lrho_chi=T
+  initspecial='default', 'Bunch-Davies'
+  amplphi=1e0, amplee_BD_prefactor=1e0, kpeak_phi=50e-6
+  phi0=0.7, ascale_ini=1., init_rho_chi='given', rho_chi_init=1e-22
+  lrho_chi=T, lrho_rad=T
+  lappy_BD_k1D_factor=T
+/
+&disp_current_init_pars
+  llongitudinalE=F, lsolve_chargedensity=T
+  luse_scale_factor_in_sigma=T
+  lsigE_as_aux=T, lsigB_as_aux=T
+  lscale_tobox=F
+/

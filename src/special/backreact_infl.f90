@@ -102,7 +102,8 @@ module Special
   real :: sigE1m_all_nonaver, sigB1m_all_nonaver,sigEm_all,sigBm_all,sigEm_all_diagnos,sigBm_all_diagnos
   real :: a2rhogphim, a2rhogphim_all
   real :: a2, a21, Hscript
-  real :: Hscript0=0., scale_rho_chi_Heqn=1., scale_rho_rad_Heqn=1., rho_chi_init=0., cdt_rho_chi=1.
+  real :: Hscript0=0., scale_rho_chi_Heqn=1., scale_rho_rad_Heqn=1., rho_chi_init=0.
+  real :: cdt_rho_chi=1., cdt_phi=1e-2
   real :: amplee_BD_prefactor=0., deriv_prefactor_ee=-1.
   real :: echarge=.0, echarge_const=.303
   real :: count_eb0_all=0., rad_heating=0., ascale_heat=0., ascale_heat_off=0., heating
@@ -130,7 +131,7 @@ module Special
   logical :: lrho_chi_inhom=.false.      !PAR_DOC: inhomogeneous heating
   logical :: ldefine_a2rhophi_with_Vpotential=.true.  !PAR_DOC: define a2rhophi with Vpotential
   logical :: lsolve_for_phi=.true.       !PAR_DOC: whether we still want to solve for phi
-  logical :: lsolve_for_phi_always=.true. !PAR_DOC: whether we still want to solve for phi
+  logical :: lsolve_for_phi_always=.true. !PAR_DOC: can use lsolve_for_phi_always=F to force not to solve for phi.
   logical :: lwstate_crit=.false.        !PAR_DOC: lwstate_crit switch (would put phi=0, is false by default)
   logical :: lwstate_crit_old=.false.    !PAR_DOC: lwstate_crit_old (to restore the old wstate criterion used in the autotest)
   logical :: lheating=.false.            !PAR_DOC: heating criterion
@@ -139,9 +140,11 @@ module Special
   logical :: ldefine_a2rhopm_without_Vpotential=.false.    !PAR_DOC: should be false to have correct results
   logical :: la2rhop_wrong_factor=.false. !PAR_DOC: should be false to have correct results
   logical :: lappy_BD_k1D_factor=.false. !PAR_DOC: appy $k_1^D$ factor in the Bunch-Davies initial condition.
+  logical :: lswitch_toMHD_when_nophi=.true. !PAR_DOC: switch to MHD when phi evolution is turned off.
   logical, pointer :: lphi_hom, lphi_linear_regime, lnoncollinear_EB, lnoncollinear_EB_aver
   logical, pointer :: lcollinear_EB, lcollinear_EB_aver, lmass_suppression
   logical, pointer :: lallow_bprime_zero
+  logical, pointer :: ladvance_ee
   !Whether the sums needed for the ODE and rhs advancement are done in the together in the same kernel as the rhs
   !advancement. Benchmarks seem to suggest that combining them is indeed more performant.
   !This approach is however strictly approximative since we effectively take the value of Hscript from the preceeding substep
@@ -169,12 +172,14 @@ module Special
       initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
       lbackreact_infl, lem_backreact, c_light_axion, lambda_axion, Vprime_choice, &
       lzeroHubble, ldt_backreact_infl, Ndiv, Hscript0, Hscript_choice, infl_v, &
-      lflrw, lrho_chi, scale_rho_chi_Heqn, scale_rho_rad_Heqn, echarge_type, cdt_rho_chi, &
+      lflrw, lrho_chi, scale_rho_chi_Heqn, scale_rho_rad_Heqn, echarge_type, &
+      cdt_rho_chi, cdt_phi, &
       lrho_rad, lrho_rad_apply, lrho_rad_apply2, lrho_chi_corrected, &
       lrho_chi_inhom, ldefine_a2rhophi_with_Vpotential, &
       rad_heating, ascale_heat, ascale_heat_off, aphimax, Gamma_phi0, lconf_time, rhophim_crit, &
       wstate_crit, lwstate_crit, lwstate_crit_old, wstate_tolerance, lsolve_for_phi_always, &
-      heating_choice, lheating_keep_on, lcombine_prep_ode_right_with_rhs
+      heating_choice, lheating_keep_on, lcombine_prep_ode_right_with_rhs, &
+      lswitch_toMHD_when_nophi
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -285,6 +290,7 @@ module Special
           call get_shared_variable('lnoncollinear_EB_aver',lnoncollinear_EB_aver)
           call get_shared_variable('lmass_suppression',lmass_suppression)
           call get_shared_variable('lallow_bprime_zero',lallow_bprime_zero)
+          call get_shared_variable('ladvance_ee',ladvance_ee)
           call get_shared_variable('mass_chi',mass_chi)
         else
           if (.not.associated(lphi_hom)) allocate(lphi_hom, lphi_linear_regime, &
@@ -418,18 +424,18 @@ module Special
             amplphi_BD=amplphi*Hubble_ini
             deriv_prefactor=1.
             call bunch_davies(f,iinfl_phi,iinfl_phi,iinfl_dphi,iinfl_dphi, &
-                              amplphi_BD,kpeak_phi,deriv_prefactor,lappy_BD_k1D_factor)
+              amplphi_BD,kpeak_phi,deriv_prefactor, &
+              lappy_BD_k1D_factor=lappy_BD_k1D_factor)
             if (amplee_BD_prefactor/=0.) then
               amplee_BD=amplee_BD_prefactor*Hubble_ini
               if (iex>0) then
                 deriv_prefactor=deriv_prefactor_ee
                 call bunch_davies(f,iax,iaz,iex,iez, &
-                  amplee_BD,kpeak_phi,deriv_prefactor,lappy_BD_k1D_factor)
+                  amplee_BD,kpeak_phi,deriv_prefactor, &
+                  lappy_BD_k1D_factor=lappy_BD_k1D_factor)
               else
                 deriv_prefactor=0.
-              ! call bunch_davies2(f,iax,iaz,amplee_BD,kpeak_phi)
               endif
-              !call bunch_davies(f,iax,iaz,iex,iez,amplee_BD,kpeak_phi,deriv_prefactor)
             endif
           case default
             call fatal_error("init_special","no such initspecial: "//trim(initspecial(j)))
@@ -740,15 +746,30 @@ module Special
       endif
 !
 !  Total contribution to the timestep.
-!  If Ndiv=0 is set, we compute instead an advective timestep based on the Alfven speed.
+!  If Ndiv=0 is set, we compute the timestep based on the frequency of phi and
+!  based on the advective timestep from the Alfven speed for rho_chi.
 !  vA=B/sqrt(rho_chi), so dt=C_M*dx/vA. In practice, C_M (=cdt_rho_chi) can be 20.
 !  This timestep constraint should not be used if hydrodynamics is evolved.
 !  If it is used, it should be based on cobformal time using comoving B and rho.
 !
       if (lfirst .and. ldt .and. ldt_backreact_infl) then
         if (Ndiv==0.) then
+          if (lsolve_for_phi .and. lsolve_for_phi_always) then
+            if (dimensionality==0) then
+              dt1_special=axionmass*sqrt(a2)/cdt_phi
+            else
+              advec2=max(advec2,axionmass2*a2*dxyz_2/cdt_phi**2)
+              dt1_special=0.
+            endif
+          !else
+            !call fatal_error("dspecial_dt", "check dt")
+          endif
+!
+!  Additional constraint from vA=B/sqrt(rho_chi), but this is only relevant
+!  when ldensity=F, because otherwise the standard Alfven constaint applies.
+!
           if (lrho_chi) then
-            advec2=advec2+(a21**2*b2m_all/f_ode(iinfl_rho_chi))*dxyz_2/cdt_rho_chi**2
+            advec2=max(advec2,a21**2*b2m_all/f_ode(iinfl_rho_chi)*dxyz_2/cdt_rho_chi**2)
           else
             call fatal_error("dspecial_dt", "lrho_chi must be .true. when Ndiv=0")
           endif
@@ -1164,6 +1185,7 @@ module Special
       if (.not. (lsolve_for_phi .and. lsolve_for_phi_always)) then
         f(:,:,:,iinfl_phi)=0.
         f(:,:,:,iinfl_dphi)=0.
+        if (lswitch_toMHD_when_nophi) ladvance_ee=.false.
       endif
 !
 !  In the following loop, go through all penciles and add up results to get e2m, etc.
