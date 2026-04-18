@@ -189,6 +189,7 @@ module Special
   integer :: idiag_dphim=0      ! DIAG_DOC: $\left<\phi'\right>$
   integer :: idiag_dphi2m=0     ! DIAG_DOC: $\left<(\phi')^2\right>$
   integer :: idiag_dphirms=0    ! DIAG_DOC: $\left<(\phi')^2\right>^{1/2}$
+  integer :: idiag_dtphi=0      ! DIAG_DOC: $dt/cdtphi$
   integer :: idiag_Hscriptm=0   ! DIAG_DOC: $\left<{\cal a*H}\right>$
   integer :: idiag_lnam=0       ! DIAG_DOC: $\left<\ln a\right>$
   integer :: idiag_ddotam=0     ! DIAG_DOC: $a''/a$
@@ -778,16 +779,6 @@ module Special
         dt1_max=max(dt1_max,dt1_special)
       endif
 !
-!      if (lfirst.and.ldt.and.ldt_backreact_infl) then
-!        tmp2 = axionmass*sqrt(a2)
-!        if (tmp2 > Hscript) then
-!          dt1_special = Ndiv*abs(tmp2)
-!        else
-!          dt1_special = Ndiv*abs(Hscript)
-!        endif
-!        dt1_max=max(dt1_max,dt1_special)
-!      endif
-!
 !  Diagnostics
 !
       call calc_diagnostics_special(f,p)
@@ -958,6 +949,7 @@ module Special
         call sum_mn_name(p%infl_dphi,idiag_dphim)
         if (idiag_dphi2m/=0) call sum_mn_name(p%infl_dphi**2,idiag_dphi2m)
         if (idiag_dphirms/=0) call sum_mn_name(p%infl_dphi**2,idiag_dphirms,lsqrt=.true.)
+        call max_mn_name(sqrt(advec2)/cdt_phi,idiag_dtphi,l_dt=.true.)
       endif
 !
     endsubroutine calc_diagnostics_special
@@ -1016,7 +1008,7 @@ module Special
 !
       if (lreset) then
         idiag_phim=0; idiag_phi2m=0; idiag_phirms=0
-        idiag_dphim=0; idiag_dphi2m=0; idiag_dphirms=0
+        idiag_dphim=0; idiag_dphi2m=0; idiag_dphirms=0; idiag_dtphi=0
         idiag_Hscriptm=0; idiag_lnam=0; idiag_ddotam=0
         idiag_a2rhopm=0; idiag_a2rhom=0; idiag_a2rhophim=0
         idiag_a2rhogphim=0; idiag_rho_chi=0; idiag_rho_rad=0; idiag_sigEma=0
@@ -1031,6 +1023,7 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'dphim',idiag_dphim)
         call parse_name(iname,cname(iname),cform(iname),'dphi2m',idiag_dphi2m)
         call parse_name(iname,cname(iname),cform(iname),'dphirms',idiag_dphirms)
+        call parse_name(iname,cname(iname),cform(iname),'dtphi',idiag_dtphi)
         call parse_name(iname,cname(iname),cform(iname),'Hscriptm',idiag_Hscriptm)
         call parse_name(iname,cname(iname),cform(iname),'lnam',idiag_lnam)
         call parse_name(iname,cname(iname),cform(iname),'ddotam',idiag_ddotam)
