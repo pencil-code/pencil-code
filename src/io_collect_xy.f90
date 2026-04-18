@@ -374,7 +374,7 @@ module Io
 !
     endsubroutine output_pointmass
 !***********************************************************************
-    subroutine input_snap(file, a, nv, mode)
+    subroutine input_snap(file_, a, nv, mode)
 !
 !  read snapshot file, possibly with mesh and time (if mode=1)
 !
@@ -387,7 +387,7 @@ module Io
       use Mpicomm, only: localize_xy, mpibcast_real, stop_it_if_any, MPI_COMM_PENCIL
       use Syscalls, only: sizeof_real
 !
-      character (len=*) :: file
+      character (len=*) :: file_
       integer, intent(in) :: nv
       real, dimension (mx,my,mz,nv), intent(out) :: a
       integer, optional, intent(in) :: mode
@@ -399,6 +399,7 @@ module Io
       integer(kind=8) :: rec_len
       logical :: lread_add
       real :: t_sp, t_test   ! t in single precision for backwards compatibility
+      character(LEN=fnlen) :: file
 !
       lread_add = .true.
       if (present (mode)) lread_add = (mode == 1)
@@ -407,12 +408,14 @@ module Io
         allocate (ga(mxgrid,mygrid,mz,nv), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('input_snap', 'Could not allocate memory for ga', .true.)
 !
+        file=gen_in_snapname(file_,'dat')
         if (ip <= 8) print *, 'input_snap: open ', file
 !
         if (ldirect_access) then
           inquire (IOLENGTH=io_len) t_sp
           rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8) * mz * nv * io_len
           ! on some systems record lengths are limited to 2^30
+
           open (lun_input, FILE=trim (directory_snap)//'/'//file, access='direct', recl=rec_len, status='old')
 
           read (lun_input, rec=1) len_in_rec     ! always 4 bytes?

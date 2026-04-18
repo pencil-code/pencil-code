@@ -696,7 +696,8 @@ module Energy
       use EquationOfState, only: get_soundspeed, select_eos_variable, get_gamma_etc
       use Gravity, only: gravz, g0, compute_gravity_star, z2
       use Initcond
-      use HDF5_IO, only: input_profile, output_profile
+      use HDF5_IO, only: output_profile
+      use IO, only: read_profile
       use Mpicomm, only: mpibcast_real
       use SharedVariables, only: put_shared_variable, get_shared_variable
       use Sub, only: blob, write_zprof, step, cubic_step
@@ -1100,7 +1101,7 @@ module Energy
 !
 !  Read entropy profile (used for cooling to reference profile)
 !
-      if (lcooling_ss_mz .and. lrun) call input_profile('ss_mz', 'z', ss_mz, mz, lhas_ghost=.true.)
+      if (lcooling_ss_mz .and. lrun) call read_profile('ss_mz', 'z', ss_mz, mz, lhas_ghost=.true.)
 !
 !  Initial temperature profile is given in ln(T) in [K] over z in [Mm].
 !

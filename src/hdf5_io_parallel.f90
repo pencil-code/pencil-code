@@ -6,9 +6,9 @@
 module HDF5_IO
 !
   use Cdata
-  use General, only: loptest, itoa, numeric_precision, keep_compiler_quiet
+  use General, only: loptest, ioptest, itoa, numeric_precision, keep_compiler_quiet
   use HDF5
-  use Messages, only: fatal_error, warning
+  use Messages, only: fatal_error, warning, not_implemented
   use Mpicomm, only: mpiscan_int, mpibcast_int
   use Syscalls, only: sleep
 !
@@ -91,9 +91,6 @@ module HDF5_IO
 !
 !  28-Oct-2016/PABoudin: coded
 !
-      use Cdata
-      use General, only: ioptest
-!
       integer, dimension(3), optional :: nxyz, ngrid
       integer, optional :: mvar_, maux_
 !
@@ -164,7 +161,8 @@ module HDF5_IO
 !
       use Syscalls, only: sizeof_real
 !
-      ! initialize parallel HDF5 Fortran libaray
+!  initialize parallel HDF5 Fortran library
+!
       call h5open_f (h5_err)
       call check_error (h5_err, 'initialize parallel HDF5 library', caller='init_hdf5')
       h5_dptype = H5T_NATIVE_DOUBLE
@@ -178,7 +176,8 @@ module HDF5_IO
 !***********************************************************************
     subroutine finalize_hdf5
 !
-      ! close the HDF5 library
+!  close the HDF5 library
+!
       call h5close_f (h5_err)
       call check_error (h5_err, 'close parallel HDF5 library', caller='finalize_hdf5')
 !
@@ -188,8 +187,6 @@ module HDF5_IO
 !
 !   7-May-2019/MR: made caller optional, added module variable scaller,
 !                  so caller needs to be set only once in a subroutine
-!
-      use General, only: loptest
 !
       integer, intent(in) :: code
       character(len=*), intent(in) :: message
@@ -226,7 +223,6 @@ module HDF5_IO
 !
 !   7-May-2019/MR: added optional par comm for use in h5pset_fapl_mpio_f (default: MPI_COMM_PENCIL)
 !
-      use General, only: loptest, ioptest
       use Mpicomm, only: MPI_COMM_PENCIL, MPI_INFO_NULL
 !
       character(len=*), intent(inout) :: file
@@ -357,7 +353,7 @@ module HDF5_IO
       character(len=*), intent(in) :: name
       character(len=*), intent(out) :: data
 !
-      call fatal_error('input_hdf5_string','not yet implemented')
+      call not_implemented('input_hdf5_string','')
       call keep_compiler_quiet(name)
       data = ''
 !
@@ -381,8 +377,6 @@ module HDF5_IO
 !  Read HDF5 dataset as scalar or array.
 !
 !  05-Jun-2017/Fred: coded based on input_hdf5_1D
-!
-      use General, only: loptest
 !
       character(len=*), intent(in) :: name
       integer, intent(in) :: nv
@@ -415,8 +409,6 @@ module HDF5_IO
 !  Read HDF5 dataset as scalar or array.
 !
 !  24-Oct-2018/PABourdin: coded
-!
-      use General, only: loptest
 !
       character(len=*), intent(in) :: name
       integer, intent(in) :: nv
@@ -513,8 +505,6 @@ module HDF5_IO
 !
 !  26-Oct-2016/PABourdin: coded
 !
-      use General, only: loptest
-!
       character(len=*), intent(in) :: name
       integer, intent(in) :: nv
       real, dimension(nv), intent(out) :: data
@@ -530,6 +520,7 @@ module HDF5_IO
       ! open dataset
       call h5dopen_f (h5_file, trim (name), h5_dset, h5_err)
       call check_error (h5_err, 'open dataset', name, caller='input_local_hdf5_1D',lerrcont=lerrcont)
+      call h5eprint_f(h5_err)
       if (loptest(lerrcont)) return
 !
       ! read dataset
@@ -546,8 +537,6 @@ module HDF5_IO
 !  Read HDF5 dataset as scalar or array.
 !
 !  24-Oct-2016/PABourdin: coded
-!
-      use General, only: loptest
 !
       character(len=*), intent(in) :: name
       integer, intent(in) :: nv
@@ -725,8 +714,6 @@ module HDF5_IO
 !
 !  26-Oct-2016/MR: coded
 !
-      use General, only: loptest
-!
       character(len=*), intent(in) :: name
       integer, dimension(2), intent(in) :: gdims, iprocs
       real, dimension(:,:), intent(out) :: data
@@ -789,8 +776,6 @@ module HDF5_IO
 !  26-Oct-2016/PABourdin: coded
 !  09-Feb-2026/Kishore: added lghost flag.
 !
-      use General, only: loptest
-!
       character(len=*), intent(in) :: name
       real, dimension(:,:,:), intent(out) :: data
       logical, optional, intent(inout) :: lerrcont
@@ -806,11 +791,11 @@ module HDF5_IO
       loc_start = local_start
       glo_size = global_size
       if (.not. loptest(lghost, .true.)) then
-            loc_subsize(1:3) = (/nx, ny, nz/)
-            loc_size(1:3) = (/nx, ny, nz/)
-            glo_start(1:3) = (/ipx, ipy, ipz/)*loc_subsize(1:3)
-            loc_start(1:3) = 0
-            glo_size(1:3) = (/nxgrid, nygrid, nzgrid/)
+        loc_subsize(1:3) = (/nx, ny, nz/)
+        loc_size(1:3) = (/nx, ny, nz/)
+        glo_start(1:3) = (/ipx, ipy, ipz/)*loc_subsize(1:3)
+        loc_start(1:3) = 0
+        glo_size(1:3) = (/nxgrid, nygrid, nzgrid/)
       endif
 !
       ! define 'memory-space' to indicate the local data portion in memory
@@ -861,8 +846,6 @@ module HDF5_IO
 !  Read HDF5 dataset from a distributed 4D array.
 !
 !  26-Oct-2016/PABourdin: coded
-!
-      use General, only: loptest
 !
       character(len=*), intent(in) :: name
       integer, intent(in) :: nv
@@ -1026,8 +1009,6 @@ module HDF5_IO
 !
 !  24-Oct-2018/PABourdin: coded
 !
-      use General, only: loptest
-!
       character(len=*), intent(in) :: name
       integer, intent(in) :: nv
       integer, dimension(nv), intent(in) :: data
@@ -1180,8 +1161,6 @@ module HDF5_IO
 !  Write HDF5 dataset as scalar or array.
 !
 !  24-Oct-2016/PABourdin: coded
-!
-      use General, only: loptest
 !
       character(len=*), intent(in) :: name
       integer, intent(in) :: nv
@@ -1506,8 +1485,6 @@ module HDF5_IO
 !
 !  29-Oct-2018/PABourdin: coded
 !   7-May-2019/MR: made has_data optional (default: .true.)
-!
-      use General, only: loptest
 !
       character(len=*), intent(in) :: name
       real, dimension(:,:), pointer :: data
@@ -1934,11 +1911,9 @@ module HDF5_IO
     endsubroutine output_dim
 !***********************************************************************
     subroutine input_dim(file, mx_in, my_in, mz_in, mvar_in, maux_in, mglobal_in, &
-        prec_in, nghost_in, nprocx_in, nprocy_in, nprocz_in, local)
+                         prec_in, nghost_in, nprocx_in, nprocy_in, nprocz_in, local)
 !
 !  Read dimensions from dim.dat (local or global).
-!
-      use General, only: loptest
 !
       character(len=*), intent(in) :: file
       integer, intent(out) :: mx_in, my_in, mz_in, mvar_in, maux_in, mglobal_in
@@ -2270,7 +2245,7 @@ module HDF5_IO
       real, intent(out) :: pos
       real, dimension(:,:,:), intent(out) :: data
 !
-      call fatal_error ('input_slice_real_arr', 'not implemented for HDF5')
+      call not_implemented('input_slice_real_arr', 'for HDF5')
 !
       call keep_compiler_quiet (file)
       call keep_compiler_quiet (pos)
@@ -2292,7 +2267,7 @@ module HDF5_IO
       type (scattered_array), intent(out) :: data
       integer :: ind, nt
 !
-      call fatal_error ('input_slice_scat', 'Not implemented for HDF5')
+      call not_implemented('input_slice_scat', 'for HDF5')
 !
       call keep_compiler_quiet (file)
       call keep_compiler_quiet (pos)
@@ -2466,7 +2441,6 @@ module HDF5_IO
 !
 !  07-Nov-2018/PABourdin: coded
 !
-      use General, only: loptest
       use File_io, only: parallel_file_exists
 !
       real, dimension(:) :: coord, a
@@ -2527,8 +2501,6 @@ module HDF5_IO
 !  Reads a profile from a file along any direction.
 !
 !  07-Nov-2018/PABourdin: coded
-!
-      use General, only: loptest
 !
       character(len=*), intent(in) :: name
       character, intent(in) :: type
@@ -2724,7 +2696,7 @@ module HDF5_IO
       enddo
 !
       if (lroot .and. .not. loptest (quiet) .and. (index_get == '') .and. (max_reported < ivar)) then
-        call warning ('index_get', 'f-array index #'//trim (itoa (ivar))//' not found!')
+        call warning ('index_get', 'f-array index #'//trim (itoa (ivar))//' not found')
         if (max_reported == -1) then
           call warning ('index_get', &
               'This likely indicates a mismatch in the mvar/maux contributions of the modules that are active in this setup')
@@ -2821,7 +2793,6 @@ module HDF5_IO
 !
 !  13-Nov-2018/PABourdin: moved from other functions
 !
-      use General, only: loptest
       use Mpicomm, only: collect_grid
       use Syscalls, only: sizeof_real
 !

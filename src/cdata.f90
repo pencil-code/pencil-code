@@ -1046,6 +1046,7 @@ module Cdata
   integer, dimension(max_threads_possible) :: core_ids
 !$ logical, volatile :: lhelper_run=.true., lhelper_perf
 !$ logical :: loffload=.false.
+!$ integer :: ngpus=0
 !
 ! threadprivate definitions for OpenMP
 !

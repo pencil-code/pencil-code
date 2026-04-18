@@ -489,7 +489,7 @@ module Io
 !
     endsubroutine output_pointmass
 !***********************************************************************
-    subroutine input_snap(file, a, nv, mode)
+    subroutine input_snap(file_, a, nv, mode)
 !
 !  read snapshot file, possibly with mesh and time (if mode=1)
 !  10-Feb-2012/PABourdin: coded
@@ -497,9 +497,8 @@ module Io
 !
       use File_io, only: backskip_to_time
       use Mpicomm, only: localize_xy, mpibcast_real, MPI_COMM_PENCIL
-      use Syscalls, only: sizeof_real
 !
-      character (len=*) :: file
+      character (len=*), intent(in) :: file_
       integer, intent(in) :: nv
       real, dimension (mx,my,mz,nv), intent(out) :: a
       integer, optional, intent(in) :: mode
@@ -509,6 +508,7 @@ module Io
       integer, parameter :: tag_ga=675
       integer :: pz, pa, z_start, io_len, alloc_err, io_size, iz
       real :: t_sp   ! t in single precision for backwards compatibility
+      character(LEN=fnlen) :: file
 !
       lread_add = .true.
       if (present (mode)) lread_add = (mode == 1)
@@ -524,6 +524,8 @@ module Io
         else
           io_size=mxgrid*mygrid*io_len
         endif
+
+        file = gen_in_snapname(file_,'dat')
         open (lun_input, FILE=trim (directory_snap)//'/'//file, access='direct', recl=io_size, status='old')
 !
         if (ip <= 8) print *, 'input_snap: read dim=', mxgrid, mygrid, mzgrid, nv

@@ -27,8 +27,8 @@ module Persist
   include 'record_types.h'
 !
   interface input_persistent_general
-     module procedure input_persist_general_by_id
-     module procedure input_persist_general_by_label
+    module procedure input_persist_general_by_id
+    module procedure input_persist_general_by_label
   endinterface
 !
   contains
@@ -68,8 +68,8 @@ module Persist
 !
       if (read_persist_id ('INITIAL_BLOCK_ID', id, .true.)) then
         if (.not. present (file)) return
-        if (file == 'var.dat') then
-          if (init_read_persist ('pers_'//file)) return
+        if (file == 'var') then
+          if (init_read_persist ('pers_'//trim(file)//'.dat')) return
         elseif (index (file, 'VAR') == 1) then
           if (init_read_persist ('PERS_'//file(4:))) return
         else
@@ -86,7 +86,6 @@ module Persist
         return
       endif
 !
-
       if (read_persist_id ('FIRST_BLOCK_ID', id)) return
 
       do while (id /= id_block_PERSISTENT)
@@ -239,9 +238,8 @@ module Persist
         endif
       endif
 
-      if(read_persist('ITERATION_NUMBER',it)) then
+      if (read_persist('ITERATION_NUMBER',it)) &
         call warning('input_persist_general_by_label','no persistent value of it found')
-      endif
 !
     endsubroutine input_persist_general_by_label
 !***********************************************************************
@@ -278,7 +276,7 @@ module Persist
       endif
 !
       if (.not. lstart.and. .not. lcourant_dt) then
-        if(ldt .and. .not. lcourant_dt) then
+        if (ldt .and. .not. lcourant_dt) then
           dt_save = dt_next
         else
           dt_save = dt

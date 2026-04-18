@@ -521,7 +521,7 @@ module Boundcond
       real, save :: last_gettime, timediff
       real, allocatable, dimension(:,:,:), save :: ahead_data
 
-      if(.not. allocated(ahead_data)) allocate(ahead_data(ny,nz,mvar))
+      if (.not. allocated(ahead_data)) allocate(ahead_data(ny,nz,mvar))
       if (lfirst) then
         if (ilayer==-1) then
           ilayer=0
@@ -551,7 +551,7 @@ module Boundcond
       real, save :: last_gettime, timediff
       real, allocatable, dimension(:,:,:), save :: ahead_data
 
-      if(.not. allocated(ahead_data)) allocate(ahead_data(ny,nz,mvar))
+      if (.not. allocated(ahead_data)) allocate(ahead_data(ny,nz,mvar))
       if (lfirst) then
         if (ilayer==-1) then
           last_gettime=real(t)
@@ -585,7 +585,7 @@ module Boundcond
       real, allocatable, dimension(:,:,:), save :: ahead_data
       real :: w
 
-      if(.not. allocated(ahead_data)) allocate(ahead_data(ny,nz,mvar))
+      if (.not. allocated(ahead_data)) allocate(ahead_data(ny,nz,mvar))
       lget=.false.
       if (itsub==0.or.lfirst) then
 !
@@ -681,14 +681,17 @@ module Boundcond
     endsubroutine boundconds_x_c
 !***********************************************************************
     subroutine bc_sts(f,topbot,j)
+!
       use EquationOfState, only: bc_stellar_surface
+!
       real, dimension(mx,my,mz,mfarray) :: f
       integer, intent(IN) ::  topbot,j
-      !Normal usage of StS assumes that StS is set for both ilnrho and ilnTT.
-      !But since bc_stellar_surface sets both of them need to call it only once
-      if(j == ilnrho) then
-        call bc_stellar_surface(f,topbot)
-      endif
+!
+!  Normal usage of 'sts' assumes that it is set for both ilnrho and ilnTT.
+!  But since bc_stellar_surface sets both of them one needs to call it only once.
+!
+      if (j == ilnrho) call bc_stellar_surface(f,topbot)
+!
     endsubroutine bc_sts
 !***********************************************************************
     subroutine boundconds_x(f,ivar1_opt,ivar2_opt)
@@ -723,7 +726,8 @@ module Boundcond
       if (present(ivar1_opt)) ivar1=ivar1_opt
       if (present(ivar2_opt)) ivar2=ivar2_opt
 !
-!!print*, 'boundconds_x: mcom,mfarray,ivar1,ivar2=', mcom,mfarray,ivar1,ivar2
+!if (ldownsampling) print*, 'boundconds_x: mcom,mfarray,ivar1,ivar2=', mcom,mfarray,ivar1,ivar2,maxval(abs(f))
+!flush(6)
       select case (nxgrid)
 !
       case (1)
@@ -6499,10 +6503,10 @@ module Boundcond
        integer, parameter :: unit=1
        integer(KIND=ikind8) :: rlen
 !
-       if(.not. allocated(uxl)) allocate(uxl(nx,ny))
-       if(.not. allocated(uxr)) allocate(uxr(nx,ny))
-       if(.not. allocated(uyl)) allocate(uyl(nx,ny))
-       if(.not. allocated(uyr)) allocate(uyr(nx,ny))
+       if (.not. allocated(uxl)) allocate(uxl(nx,ny))
+       if (.not. allocated(uxr)) allocate(uxr(nx,ny))
+       if (.not. allocated(uyl)) allocate(uyl(nx,ny))
+       if (.not. allocated(uyr)) allocate(uyr(nx,ny))
 
        if (ldownsampling) then
          call warning('uu_driver','Not available for downsampling')  !,lfirst_proc_xy)
@@ -9665,7 +9669,7 @@ module Boundcond
 !***********************************************************************
     subroutine set_consistent_vel_boundary(f,dirn,boundtype,topbot,comp,lsuccess)
 !
-!  This subroutine checks, if the velocity paramters like type and  topbot
+!  This subroutine checks, if the velocity paramters like type and topbot
 !  are set consistently with eg. the initial condition.
 !
 !  14-sep-12/joern: coded, adapted from subroutine set_consistent_density_boundary

@@ -375,11 +375,11 @@ module File_io
 !
       !if (.not. find_namelist (trim(name)//trim(type)//trim(suffix))) then
       call find_namelist (trim(name)//trim(type)//trim(suffix), found, lnamelist_optional)
-      if(.not. found .and. lnamelist_optional) return
+      if (.not. found .and. lnamelist_optional) return
 !
       ! G95 complains 'ierr' is used but not set, even though 'reader' has intent(out).
       ! PABourdin:
-      ! Yes, because 'reader' is here a function *pointer* an it can not be verified if the actual reader has intent(out).
+      ! Yes, because 'reader' is here a function *pointer* and it can not be verified whether the actual reader has intent(out).
       ierr = 0
       call reader(ierr)
 !
@@ -394,10 +394,10 @@ module File_io
         lnamelist_error = .true.
         if (lroot) then
           if (ierr == -1) then
-            call warning ('read_namelist', 'namelist "'//trim(name)//trim(type)//trim(suffix)//'" is missing!')
+            call warning ('read_namelist', 'namelist "'//trim(name)//trim(type)//trim(suffix)//'" is missing')
           else
             call warning ('read_namelist', 'namelist "'//trim(name)//trim(type)//trim(suffix)// &
-                          '" has an error ('//trim(itoa(ierr))//')!')
+                          '" has an error ('//trim(itoa(ierr))//')')
           endif
         endif
       endif

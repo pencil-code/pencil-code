@@ -1052,7 +1052,7 @@ module Io
 !
     endsubroutine output_pointmass
 !***********************************************************************
-    subroutine input_snap(file, a, nv, mode)
+    subroutine input_snap(file_, a, nv, mode)
 !
 !  read snapshot file, possibly with mesh and time (if mode=1)
 !  10-Feb-2012/PABourdin: coded
@@ -1061,7 +1061,7 @@ module Io
       use File_io, only: backskip_to_time
       use Mpicomm, only: localize_xy, mpibcast_real
 !
-      character (len=*) :: file
+      character (len=*) :: file_
       integer, intent(in) :: nv
       real, dimension (mx,my,mz,nv), intent(out) :: a
       integer, optional, intent(in) :: mode
@@ -1069,6 +1069,7 @@ module Io
       real, dimension (:), allocatable :: gx, gy, gz
       integer :: handle, alloc_err
       real :: t_sp   ! t in single precision for backwards compatibility
+      character (len=fnlen) :: file
 !
       lread_add = .true.
       if (present (mode)) lread_add = (mode == 1)
@@ -1079,6 +1080,7 @@ module Io
 !
 ! Create 'local_type' to be the local data portion that is being saved.
 !
+      file=gen_in_snapname(file_,'dat')
       call MPI_TYPE_CREATE_SUBARRAY (io_dims, local_size, subsize, local_start, order, mpi_precision, local_type, mpi_err)
       call check_success ('input', 'create local subarray', file)
       call MPI_TYPE_COMMIT (local_type, mpi_err)
