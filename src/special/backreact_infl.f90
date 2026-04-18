@@ -293,10 +293,11 @@ module Special
           call get_shared_variable('ladvance_ee',ladvance_ee)
           call get_shared_variable('mass_chi',mass_chi)
         else
-          if (.not.associated(lphi_hom)) allocate(lphi_hom, lphi_linear_regime, &
+          if (.not.associated(lphi_hom)) allocate(lphi_hom, lphi_linear_regime, ladvance_ee, &
             lcollinear_EB, lnoncollinear_EB, lcollinear_EB_aver, lnoncollinear_EB_aver)
           lphi_hom=.true.
           lphi_linear_regime=.true.
+          ladvance_ee=.false.
           lcollinear_EB=.false.
           lnoncollinear_EB=.false.
           lcollinear_EB_aver=.false.
@@ -761,8 +762,6 @@ module Special
               advec2=max(advec2,axionmass2*a2*dxyz_2/cdt_phi**2)
               dt1_special=0.
             endif
-          !else
-            !call fatal_error("dspecial_dt", "check dt")
           endif
 !
 !  Additional constraint from vA=B/sqrt(rho_chi), but this is only relevant
@@ -1185,7 +1184,7 @@ module Special
       if (.not. (lsolve_for_phi .and. lsolve_for_phi_always)) then
         f(:,:,:,iinfl_phi)=0.
         f(:,:,:,iinfl_dphi)=0.
-        if (lswitch_toMHD_when_nophi) ladvance_ee=.false.
+        if (lswitch_toMHD_when_nophi .and. iex>0) ladvance_ee=.false.
       endif
 !
 !  In the following loop, go through all penciles and add up results to get e2m, etc.
