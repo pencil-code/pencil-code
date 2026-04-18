@@ -5276,63 +5276,12 @@ module Magnetic
       endif
     endsubroutine calc_magnetic_slope_limited
 !***********************************************************************
-    subroutine daa_dt(f,df,p)
+    subroutine mag_identify_bcs
 !
-!  Magnetic field evolution.
+!  Identify boundary conditions.
 !
-!  Calculate dA/dt=uxB+3/2 Omega_0 A_y x_dir -eta mu_0 J.
-!  Add jxb/rho to momentum equation.
-!  Add eta mu_0 j2/rho to entropy equation.
-!
-!  22-nov-01/nils: coded
-!   1-may-02/wolf: adapted for pencil_modular
-!  17-jun-03/ulf:  added bx^2, by^2 and bz^2 as separate diagnostics
-!   8-aug-03/axel: introduced B_ext21=1./B_ext**2, and set =1 to avoid div. by 0
-!  12-aug-03/christer: added alpha effect (alpha in the equation above)
-!  26-may-04/axel: ambipolar diffusion added
-!  18-jun-04/axel: Hall term added
-!   9-apr-12/MR: upwinding for ladvective_gauge=F generalized
-!  31-mar-13/axel: Stokes parameter integration from synchrotron emission
-!  25-aug-13/MR: simplified calls of save_name_sound
-!  15-oct-15/MR: changes for slope-limited diffusion
-!  14-apr-16/MR: changes for Yin-Yang: only yz slices at the moment!
-!   4-aug-17/axel: implemented terms for ultrarelativistic EoS
-!  03-apr-20/joern: restructured and fixed slope-limited diffusion
-!
-      use Debug_IO, only: output_pencil
-      use Deriv, only: der6
-      use Special, only: special_calc_magnetic
-      use Sub
-      use General, only: transform_thph_yy, notanumber
+      use Sub, only: identify_bcs
 
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
-!
-      intent(in)   :: p
-      intent(inout):: f,df
-!
-      real, dimension (nx,3) :: ujiaj,gua,ajiuj
-      real, dimension (nx,3) :: aa_xyaver
-      real, dimension (nx,3) :: geta,uxb_upw,tmp2
-      real, dimension (nx,3) :: dAdt, gradeta_shock, aa1, uu1, dJdt, del2jj
-      real, dimension (nx) :: ftot, dAtot
-      real, dimension (nx) :: peta_shock
-      real, dimension (nx) :: sign_jo,tmp1
-      real, dimension (nx) :: eta_mn,etaSS,eta_heat
-      real, dimension (nx) :: vdrift
-      real, dimension (nx) :: del2aa_ini,tanhx2,advec_hall,advec_hypermesh_aa
-      real, dimension(nx) :: eta_BB, prof, dlnBrmsdt, limiter
-      real, dimension(3) :: B_ext
-      real :: tmp, eta_out1, cosalp, sinalp, hall_term_, tau1_jj
-      real, parameter :: OmegaSS=1.0
-      integer :: i,j,k,ju,ix,nphi
-      integer, parameter :: nxy=nxgrid*nygrid
-!
-!  Identify module and boundary conditions.
-!
-      call timing('daa_dt','entered',mnloop=.true.)
-      if (headtt.or.ldebug) print*,'daa_dt: SOLVE'
       if (headtt) then
         call identify_bcs('Ax',iax)
         call identify_bcs('Ay',iay)
@@ -5351,26 +5300,24 @@ module Magnetic
           call identify_bcs('sld_char',isld_char)
         endif
       endif
-!
-! Set dAdt to zero at the beginning of each execution of this routine.
-!
-      dAdt=0.
-      Fmax=1./impossible
-      dAmax=1./impossible
-      ssmax=1./impossible
-      if (lfirstpoint) lproc_print=.true.
-!
-!  Replace B_ext locally to accommodate its time dependence.
-!
-      call get_bext(B_ext)
+    endsubroutine mag_identify_bcs
+!***********************************************************************
+    subroutine add_lorentz_force(df,p)
 !
 !  Add jxb/rho to momentum equation.
 !  The following 60 lines affect Du/Dt or Dlnrho/Dt, but not the magnetic field.
 !  They are needed regardless of whether or not the displacement current is included.
 !
-      if (lhydro) then
-        if (.not.lkinematic) then
-          if (llorentzforce) then
+!  19-apr-2026/TP: carved from daa_dt
+!
+     use Sub, only: dot
+
+     real, dimension(mx,my,mz,mvar) :: df
+     type(pencil_case) :: p
+
+     real, dimension(nx) :: tmp1
+
+      if (lhydro .and. .not. lkinematic .and. llorentzforce) then
             if (lboris_correction) then
 !
 !  Following Eq. (34) of Gombosi et al. (2002) for the Boris correction.
@@ -5426,18 +5373,32 @@ module Magnetic
                 endif
               endif
             endif
-          endif
-        endif
       endif
+    endsubroutine add_lorentz_force
+!***********************************************************************
+    subroutine calc_resistivity(f,p)
 !
-!  The following is only needed when the displacement current is not being solved for.
-!  To check this, we check whether ldisp_current=T.
-!  The following lines have not (yet) been correctly indented, because they are so many (1103 lines).
+!  Resistivity term
 !
-      if ((.not. ldisp_current) .or. loverride_ee) then
+!  19-apr-2026/TP: carved from daa_dt
 !
-!  Restivivity term
-!
+      use Sub
+      use Deriv, only: der6
+
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      type(pencil_case), intent(in) :: p
+      real, dimension (nx,3) :: geta,gradeta_shock,tmp2
+      real, dimension (nx) :: peta_shock
+      real, dimension (nx) :: sign_jo, tmp1
+      real, dimension (nx) :: advec_hypermesh_aa
+      real, dimension (nx) :: vdrift
+      real, dimension (nx) :: del2aa_ini
+      real, dimension (nx) :: eta_mn, etaSS
+      real, dimension (nx) :: eta_BB
+      real, dimension (nx) :: tanhx2, prof
+      real :: cosalp, sinalp
+      integer :: i,j,ju
+      real, parameter :: OmegaSS=1.0
 !  Because of gauge invariance, we can add the gradient of an arbitrary scalar
 !  field Phi to the induction equation without changing the magnetic field,
 !    dA/dt = u x B - eta j + grad(Phi).
@@ -5976,66 +5937,189 @@ module Magnetic
         endif
         eta_total = eta_total + eta_BB
       endif
+    endsubroutine calc_resistivity
+!***********************************************************************
+    subroutine relax_towards_profile(f,p,dAdt)
 !
-!  anisotropic B-dependent diffusivity
+!  Relaxing A towards a given profile A_0 on a timescale tau_relprof,
+!  note that tau_relprof*u_rms*kf>>1  for this relaxation to affect only the mean fields.
 !
-      if (eta_aniso_BB/=0.0) then
-        where (p%b2==0.)
-          tmp1=0.
-        elsewhere
-          tmp1=eta_aniso_BB/p%b2
-        endwhere
-        if (lquench_eta_aniso) tmp1=tmp1/(1.+quench_aniso*Arms)
-        do j=1,3
-          df(l1:l2,m,n,iaa-1+j)=df(l1:l2,m,n,iaa-1+j)-tmp1*p%jb*p%bb(:,j)
-        enddo
-        eta_total = eta_total + eta_aniso_BB
-      endif
+!  19-apr-2026/TP: carved from daa_dt
 !
-!  Ambipolar diffusion in the strong coupling approximation.
+      real, dimension (mx,my,mz,mfarray) :: f
+      type(pencil_case) :: p
+      real, dimension (nx,3) :: dAdt
+
+!      dAdt= dAdt-(p%aa-A_relprof(:,m,n,:))*tau_relprof1
+! Piyali: The above is not right as dimension of A_relprof(nx,ny,nz,3),
+! so m,n indices should be the following:
 !
-      if (lambipolar_diffusion) then
-        do j=1,3
-          df(l1:l2,m,n,iaa-1+j)=df(l1:l2,m,n,iaa-1+j)+p%nu_ni1*p%jxbrxb(:,j)
-        enddo
-        if (lentropy .and. lneutralion_heat) then
-          if (pretend_lnTT) then
-            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%cv1*p%TT1*p%nu_ni1*p%jxbr2
-          else
-            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%TT1*p%nu_ni1*p%jxbr2
+       if (lA_relprof_global) then
+!
+!  Use directly the global external vector potential.
+!
+         dAdt = dAdt-(p%aa-f(l1:l2,m,n,iglobal_ax_ext:iglobal_az_ext))*tau_relprof1
+       else
+         !dAdt= dAdt-(p%aa-A_relprof(:,m-m1+1,n-n1+1,:))*tau_relprof1
+         if (lrelaxprof_glob_scaled) then
+           dAdt = dAdt-(p%aa-amp_relprof*f(l1:l2,m,n,iglobal_ax_ext:iglobal_az_ext))*tau_relprof1
+         else
+           dAdt = dAdt-(p%aa-A_relprof(n-nghost,1))*tau_relprof1
+         endif
+       endif
+    endsubroutine relax_towards_profile
+!***********************************************************************
+    subroutine evolve_current_density(f,df,p)
+!
+!  Evolve current density.
+!
+!  19-apr-2026/TP: carved from daa_dt
+!
+      use Sub, only: del2v 
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
+
+      real, dimension(nx,3) :: dJdt, del2jj
+      real :: tau1_jj
+      integer :: j
+
+       if (tau_jj>0) then
+          tau1_jj=1./tau_jj
+          do j=1,3
+!
+!  Here we would need to add tau*sigmaB*B
+!
+            dJdt(:,j)=tau1_jj*(p%el(:,j)+p%uxb(:,j))*mu01/eta_total
+          enddo
+          if (ell_jj/=0.) then
+            call del2v(f,ijx,del2jj)
+            dJdt=dJdt+(ell_jj**2*tau1_jj)*del2jj
           endif
-        elseif (ltemperature .and. lneutralion_heat) then
-            df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cv1*p%TT1*p%nu_ni1*p%jxbr2
+          df(l1:l2,m,n,ijx:ijz)=df(l1:l2,m,n,ijx:ijz)+dJdt
+        else
+          call fatal_error('evolve_current_density','tau_jj must be finite and positive')
         endif
-        eta_total = eta_total + p%nu_ni1*p%va2
+    endsubroutine evolve_current_density
+!***********************************************************************
+    subroutine calc_timestep_constraints
+!
+!  Multiply resistivity by Nyquist scale, for resistive time-step.
+!
+!  19-apr-2026/TP: carved from daa_dt
+!
+        integer :: nphi
+        diffus_eta =eta_total *dxyz_2
+        diffus_eta2=diffus_eta2*dxyz_4
+!
+        if (ldynamical_diffusion .and. lresi_hyper3_mesh) then
+          diffus_eta3 = diffus_eta3 * sum(dline_1,2)
+        else
+          diffus_eta3 = diffus_eta3*dxyz_6
+        endif
+        if (lpole(2) .and. lcoarse) then
+
+          if (lfirst_proc_y .and. m<m1+1.5*ncoarse .and. m>=m1) then
+            nphi = max(mod(int(ncoarse/(m-m1+1)),ncoarse+1),1)
+          elseif (llast_proc_y .and. m>m2-1.5*ncoarse .and. m<=m2) then
+            nphi = max(mod(int(ncoarse/(m2-m+1)),ncoarse+1),1)
+          else
+            nphi = 1
+          endif
+          !if (lroot .and. n==n1) print*,'fred: nphi, m',nphi, m
+          diffus_eta =diffus_eta /nphi**2
+          diffus_eta2=diffus_eta2/nphi**4
+!
+          if (.not.(ldynamical_diffusion .and. lresi_hyper3_mesh)) diffus_eta3 = diffus_eta3/nphi**6
+        endif
+!
+        if (headtt.or.ldebug) then
+          print*, 'daa_dt: max(diffus_eta)  =', maxval(diffus_eta)
+          print*, 'daa_dt: max(diffus_eta2) =', maxval(diffus_eta2)
+          print*, 'daa_dt: max(diffus_eta3) =', maxval(diffus_eta3)
+        endif
+
+        maxdiffus=max(maxdiffus,diffus_eta)
+        maxdiffus2=max(maxdiffus2,diffus_eta2)
+        maxdiffus3=max(maxdiffus3,diffus_eta3)
+!
+    endsubroutine calc_timestep_constraints
+!***********************************************************************
+    subroutine calculate_spherical_bb_in_a_box(f,p)
+      real, dimension(mx,my,mz,mfarray) :: f
+      type(pencil_case) :: p
+!
+!  Magnetic field in spherical coordinates from a Cartesian simulation
+!  for sphere-in-a-box setups
+!
+!  19-apr-2026/TP: carved from daa_dt
+!
+        f(l1:l2,m,n,ibb_sphr) = p%bb(:,1)*p%evr(:,1)+p%bb(:,2)*p%evr(:,2)+p%bb(:,3)*p%evr(:,3)
+        f(l1:l2,m,n,ibb_spht) = p%bb(:,1)*p%evth(:,1)+p%bb(:,2)*p%evth(:,2)+p%bb(:,3)*p%evth(:,3)
+        f(l1:l2,m,n,ibb_sphp) = p%bb(:,1)*p%phix+p%bb(:,2)*p%phiy
+    endsubroutine calculate_spherical_bb_in_a_box
+!***********************************************************************
+    subroutine constraint_timestep_by_rhs_and_heating(df,p,dAdt)
+!
+!  Option to constrain timestep for large forces and heat sources to include
+!  Lorentz force and Ohmic heating terms
+!  should set in entropy lthdiff_Hmax=F and lrhs_max=F & in hydro lcdt_tauf=F as handled here
+!
+!  19-apr-2026/TP: carved from daa_dt
+!
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
+      real, dimension(nx,3) :: dAdt
+
+      real, dimension(nx) :: dAtot,ftot
+      real, dimension(nx,3) :: aa1,uu1
+      integer :: j
+
+      if (lhydro) then
+        do j =1,3
+              where (abs(p%uu(:,j))>1)   !MR: What is the significance of unity in this criterion?
+                uu1(:,j)=1./p%uu(:,j)
+              elsewhere
+                uu1(:,j)=1.
+              endwhere
+        enddo
       endif
-!
-!  Consider here the action of a mean friction term, -LLambda*Abar.
-!  Works only on one processor. Note that there is also the analogous case
-!  to Ekman friction; see below.
-!
-      if (lmean_friction) then
-        call calc_aaxyaver(aa_xyaver,f)
-        dAdt = dAdt-LLambda_aa*aa_xyaver
-      elseif (llocal_friction) then
-        dAdt = dAdt-LLambda_aa*p%aa
+      do j =1,3
+        where (abs(p%aa(:,j))>1)
+          aa1(:,j)=1./p%aa(:,j)
+        elsewhere
+          aa1(:,j)=1.
+        endwhere
+      enddo
+      do j=1,3
+        dAtot=abs(dAdt(:,j)*aa1(:,j))
+        dt1_max=max(dt1_max,dAtot/cdtf)
+        dAmax=max(dAmax,dAtot/cdtf)
+        if (lhydro) then
+          ftot=abs(df(l1:l2,m,n,iux+j-1)*uu1(:,j))
+          dt1_max=max(dt1_max,ftot/cdtf)
+          Fmax=max(Fmax,ftot/cdtf)
+        endif
+      enddo
+      if (lentropy) then
+        ssmax = max(ssmax,abs(df(l1:l2,m,n,iss))*p%cv1/cdts)
+        dt1_max=max(dt1_max,ssmax)
       endif
+
+    endsubroutine constraint_timestep_by_rhs_and_heating
+!***********************************************************************
+    subroutine add_ohmic_heat(df,p)
+    use Sub, only: cubic_step
+    real,dimension(mx,my,mz,mvar) :: df
+    type(pencil_case) :: p
 !
-!SLD      if (lmagnetic_slope_limited.and.llast) then
-!SLD        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-f(l1:l2,m,n,iFF_div_aa:iFF_div_aa+2)
-!SLD        if (lohmic_heat) then
-!SLD          call dot(f(l1:l2,m,n,iFF_div_aa:iFF_div_aa+2),p%jj,phi)                !tb checked
-!SLD          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+(eta_total*mu0)*p%rho1*p%TT1*phi
-!   Slope limited diffusion for magnetic field
+!  Add Ohmic heat to entropy or temperature equation.
 !
-      if (lmagnetic_slope_limited.and.&
-        ((lfirst .and. lfirst_sld) .or. (llast .and. .not. lfirst_sld))) then
-        call calc_magnetic_slope_limited(f,df,p)
-      endif
+!  19-apr-2026/TP: carved from daa_dt
 !
-!  Special contributions to this module are called here.
-!
-      if (lspecial) call special_calc_magnetic(f,df,p)
+
+    real, dimension(nx) :: eta_heat
+
 !
 ! possibility to reduce ohmic heating near the boundary
 ! currently implemented only for a profile in z above a value no_ohmic_heat_z0
@@ -6047,43 +6131,96 @@ module Magnetic
       else
         eta_heat=eta_total
       endif
-!
-!  Add Ohmic heat to entropy or temperature equation.
-!
-      if (.not.lkinematic.and.lohmic_heat) then
-        if (lentropy) then
-          if (pretend_lnTT) then
-            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%cv1*eta_heat*mu0*p%j2*p%rho1*p%TT1
-          else
-            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + eta_heat*mu0*p%j2*p%rho1*p%TT1
-          endif
-        else if (ltemperature) then
-          if (ltemperature_nolog) then
-            df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT) + p%cv1*eta_heat*mu0*p%j2*p%rho1
-          else
-            df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cv1*eta_heat*mu0*p%j2*p%rho1*p%TT1
-          endif
-        else if (lthermal_energy) then
-          df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + eta_heat*mu0*p%j2
-        endif
+
+    if (lentropy) then
+      if (pretend_lnTT) then
+        df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%cv1*eta_heat*mu0*p%j2*p%rho1*p%TT1
+      else
+        df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + eta_heat*mu0*p%j2*p%rho1*p%TT1
       endif
+    else if (ltemperature) then
+      if (ltemperature_nolog) then
+        df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT) + p%cv1*eta_heat*mu0*p%j2*p%rho1
+      else
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cv1*eta_heat*mu0*p%j2*p%rho1*p%TT1
+      endif
+    else if (lthermal_energy) then
+      df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + eta_heat*mu0*p%j2
+    endif
+
+    endsubroutine add_ohmic_heat
+!***********************************************************************
+    subroutine add_battery_term(dAdt,p)
 !
-!  Switch off diffusion in boundary slice if requested by boundconds.
+!  Add Battery term.
+!  corrected by Mikhail Modestov
 !
-!  Only need to do this on bottommost (topmost) processors
-!  and in bottommost (topmost) pencils.
+!  19-apr-2026/TP: carved from daa_dt
 !
-      do j=1,3
-        if (lfrozen_bb_bot(j)) then
-                if(lfirst_proc_z.and.n==n1) fres(:,j)=0.
+      real, dimension(nx,3) :: dAdt
+      type(pencil_case) :: p
+
+      if (headtt) print*,'daa_dt: battery_term=',battery_term
+!---  call multsv_mn(p%rho2,p%fpres,baroclinic)
+!AB: corrected by Patrick Adams
+      dAdt = dAdt-battery_term*p%fpres
+      if (headtt.or.ldebug) print*,'daa_dt: max(battery_term) =',&
+!MR; corrected for the time being to fix the auto-test
+!          battery_term*maxval(baroclinic)
+          battery_term*maxval(p%fpres)
+    endsubroutine add_battery_term
+!***********************************************************************
+    subroutine add_hall_term(dAdt,p)
+!
+!  Add Hall term.
+!
+!  19-apr-2026/TP: carved from daa_dt
+!
+      use General, only: notanumber
+
+      real, dimension(nx,3) :: dAdt
+      type(pencil_case) :: p
+
+      real :: hall_term_
+      real, dimension (nx) :: advec_hall
+
+      select case (ihall_term)
+        case ('const'); hall_term_=hall_term
+        case ('t-dep'); hall_term_=hall_term*max(real(t),hall_tdep_t0)**hall_tdep_exponent
+        case ('z-dep'); hall_term_=hall_term/(1.-(z(n)-xyz1(3))/Hhall)**hall_zdep_exponent
+      endselect
+      if (headtt) print*,'daa_dt: hall_term=',hall_term_
+      dAdt=dAdt-hall_term_*p%jxb
+      if (lupdate_courant_dt) then
+        advec_hall=sum(abs(p%uu-hall_term_*p%jj)*dline_1,2)
+        if (notanumber(advec_hall)) then
+          if (lproc_print) then
+            print*, 'daa_dt: advec_hall =',advec_hall
+            if (.not.allproc_print) lproc_print=.false.
+          endif
         endif
-        if (lfrozen_bb_top(j)) then
-                if (llast_proc_z.and.n==n2) fres(:,j)=0.
-        endif
-      enddo
+        advec2=advec2+advec_hall**2
+        if (headtt.or.ldebug) print*,'daa_dt: max(advec_hall) =', maxval(advec_hall)
+      endif
+    endsubroutine add_hall_term
+!***********************************************************************
+    subroutine calc_induction_equation(f,dAdt,p)
 !
 !  Induction equation.
 !
+!  19-apr-2026/TP: carved from daa_dt
+!
+
+      use Sub, only: doupwind, cross, grad 
+
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension (nx,3) :: dAdt
+      type(pencil_case) :: p
+
+      real, dimension (nx,3) :: ujiaj,ajiuj,gua
+      real, dimension (nx,3) :: uxb_upw
+      integer :: j,k
+
       if (.not.lupw_aa) then
         if (linduction) then
           if (ladvective_gauge) then
@@ -6226,208 +6363,324 @@ module Magnetic
 !
         if (linduction) dAdt= dAdt + uxb_upw + fres
       endif
+    endsubroutine calc_induction_equation
+!***********************************************************************
+    subroutine apply_anisotropic_B_dependent_diffusion(df,p)
+!
+!  anisotropic B-dependent diffusivity
+!
+!  19-apr-2026/TP: carved from daa_dt
+!
+      real, dimension (mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
+
+      real, dimension (nx) :: tmp1
+      integer :: j
+
+      where (p%b2==0.)
+        tmp1=0.
+      elsewhere
+        tmp1=eta_aniso_BB/p%b2
+      endwhere
+      if (lquench_eta_aniso) tmp1=tmp1/(1.+quench_aniso*Arms)
+      do j=1,3
+        df(l1:l2,m,n,iaa-1+j)=df(l1:l2,m,n,iaa-1+j)-tmp1*p%jb*p%bb(:,j)
+      enddo
+      eta_total = eta_total + eta_aniso_BB
+    endsubroutine apply_anisotropic_B_dependent_diffusion
+!***********************************************************************
+    subroutine calc_AD(df,p)
+!
+!  Ambipolar diffusion in the strong coupling approximation.
+!
+!  19-apr-2026/TP: carved from daa_dt
+!
+      real, dimension (mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
+
+      integer :: j
+
+      do j=1,3
+        df(l1:l2,m,n,iaa-1+j)=df(l1:l2,m,n,iaa-1+j)+p%nu_ni1*p%jxbrxb(:,j)
+      enddo
+      if (lentropy .and. lneutralion_heat) then
+        if (pretend_lnTT) then
+          df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%cv1*p%TT1*p%nu_ni1*p%jxbr2
+        else
+          df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%TT1*p%nu_ni1*p%jxbr2
+        endif
+      elseif (ltemperature .and. lneutralion_heat) then
+          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cv1*p%TT1*p%nu_ni1*p%jxbr2
+      endif
+      eta_total = eta_total + p%nu_ni1*p%va2
+    endsubroutine calc_AD
+!***********************************************************************
+    subroutine freeze_fres
+!
+!  Switch off diffusion in boundary slice if requested by boundconds.
+!
+!  19-apr-2026/TP: carved from daa_dt
+!
+      integer :: j
+!  Only need to do this on bottommost (topmost) processors
+!  and in bottommost (topmost) pencils.
+!
+        do j=1,3
+          if (lfrozen_bb_bot(j)) then
+                  if(lfirst_proc_z.and.n==n1) fres(:,j)=0.
+          endif
+          if (lfrozen_bb_top(j)) then
+                  if (llast_proc_z.and.n==n2) fres(:,j)=0.
+          endif
+        enddo
+    endsubroutine freeze_fres
+!***********************************************************************
+    subroutine daa_dt(f,df,p)
+!
+!  Magnetic field evolution.
+!
+!  Calculate dA/dt=uxB+3/2 Omega_0 A_y x_dir -eta mu_0 J.
+!  Add jxb/rho to momentum equation.
+!  Add eta mu_0 j2/rho to entropy equation.
+!
+!  22-nov-01/nils: coded
+!   1-may-02/wolf: adapted for pencil_modular
+!  17-jun-03/ulf:  added bx^2, by^2 and bz^2 as separate diagnostics
+!   8-aug-03/axel: introduced B_ext21=1./B_ext**2, and set =1 to avoid div. by 0
+!  12-aug-03/christer: added alpha effect (alpha in the equation above)
+!  26-may-04/axel: ambipolar diffusion added
+!  18-jun-04/axel: Hall term added
+!   9-apr-12/MR: upwinding for ladvective_gauge=F generalized
+!  31-mar-13/axel: Stokes parameter integration from synchrotron emission
+!  25-aug-13/MR: simplified calls of save_name_sound
+!  15-oct-15/MR: changes for slope-limited diffusion
+!  14-apr-16/MR: changes for Yin-Yang: only yz slices at the moment!
+!   4-aug-17/axel: implemented terms for ultrarelativistic EoS
+!  03-apr-20/joern: restructured and fixed slope-limited diffusion
+!
+      use Debug_IO, only: output_pencil
+      use Deriv, only: der6
+      use Special, only: special_calc_magnetic
+      use Sub
+      use General, only: transform_thph_yy, notanumber
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+!
+      intent(in)   :: p
+      intent(inout):: f,df
+!
+      real, dimension (nx,3) :: aa_xyaver
+      real, dimension (nx,3) :: dAdt
+      real, dimension (nx) :: tmp1
+      real, dimension(nx) :: dlnBrmsdt, limiter
+      real, dimension(3) :: B_ext
+      real :: tmp, eta_out1, sinalp
+      integer :: i,j,k,ju,ix
+      integer, parameter :: nxy=nxgrid*nygrid
+!
+!  Identify module and boundary conditions.
+!
+      call timing('daa_dt','entered',mnloop=.true.)
+      if (headtt.or.ldebug) print*,'daa_dt: SOLVE'
+     
+      call mag_identify_bcs
+!
+! Set dAdt to zero at the beginning of each execution of this routine.
+!
+      dAdt=0.
+      Fmax=1./impossible
+      dAmax=1./impossible
+      ssmax=1./impossible
+      if (lfirstpoint) lproc_print=.true.
+
+      if(.not. loperator_split_update) then
+!
+!  Replace B_ext locally to accommodate its time dependence.
+!
+        call get_bext(B_ext)
+!
+!  Add jxb/rho to momentum equation.
+!
+        call add_lorentz_force(df,p)
+      endif
+!
+!  The following is only needed when the displacement current is not being solved for.
+!  To check this, we check whether ldisp_current=T.
+!  The following lines have not (yet) been correctly indented, because they are so many (1103 lines).
+!
+      if ((.not. ldisp_current) .or. loverride_ee) then
+        if(.not. loperator_split_update) then
+          call calc_resistivity(f,p)
+!
+!  anisotropic B-dependent diffusivity
+!
+          if (eta_aniso_BB/=0.0) call apply_anisotropic_B_dependent_diffusion(df,p)
+!
+!  Ambipolar diffusion in the strong coupling approximation.
+!
+          if (lambipolar_diffusion) call calc_AD(df,p)
+!
+!  Consider here the action of a mean friction term, -LLambda*Abar.
+!  Works only on one processor. Note that there is also the analogous case
+!  to Ekman friction; see below.
+!
+          if (lmean_friction) then
+            call calc_aaxyaver(aa_xyaver,f)
+            dAdt = dAdt-LLambda_aa*aa_xyaver
+          elseif (llocal_friction) then
+            dAdt = dAdt-LLambda_aa*p%aa
+          endif
+        endif
+!
+!   Slope limited diffusion for magnetic field
+!
+        if ((loperator_split_update .eqv. lsplit_sld) .and. lmagnetic_slope_limited.and.&
+          ((lfirst .and. lfirst_sld) .or. (llast .and. .not. lfirst_sld))) then
+          call calc_magnetic_slope_limited(f,df,p)
+        endif
+!
+!  Special contributions to this module are called here.
+!
+        if (.not. loperator_split_update .and. lspecial) call special_calc_magnetic(f,df,p)
+!
+!  Add Ohmic heat to entropy or temperature equation.
+!
+        if (.not.lkinematic.and.lohmic_heat) then
+          call add_ohmic_heat(df,p)
+        endif
+        if(.not. loperator_split_update) then
+!
+!  Switch off diffusion in boundary slice if requested by boundconds.
+!
+          call freeze_fres
+!
+!  Induction equation.
+!
+          call calc_induction_equation(f,dAdt,p)
 !
 !  limp_alpha=T, add artificial z dependent alpha dynamo.
 !
-      if(limp_alpha) then
-        if (abs(z(n))<=imp_halpha/2) then
-          dAdt = dAdt+imp_alpha0*sin(pi*z(n)/imp_halpha)*p%bb
-        else
-          dAdt = dAdt+sign(imp_alpha0,z(n))*exp(-((2*z(n)-sign(imp_halpha,z(n)))/imp_halpha)**2)*p%bb
-        endif
-      endif
+          if(limp_alpha) then
+            if (abs(z(n))<=imp_halpha/2) then
+              dAdt = dAdt+imp_alpha0*sin(pi*z(n)/imp_halpha)*p%bb
+            else
+              dAdt = dAdt+sign(imp_alpha0,z(n))*exp(-((2*z(n)-sign(imp_halpha,z(n)))/imp_halpha)**2)*p%bb
+            endif
+          endif
 !
 !  Add field amplification from coupling to axion field. This only works when iex>0.
 !  In that case, we have to get the dphi pencil.
 !
-      if(alpf_MHD/=0.) then
-        if (iex>0) then
-          call fatal_error('daa_dt','alpf_MHD is to be used only without displacement current')
-        else
-          call multsv_add(dAdt,eta*alpf_MHD*p%infl_dphi,p%bb,dAdt)
-        endif
-      endif
+          if(alpf_MHD/=0.) then
+            if (iex>0) then
+              call fatal_error('daa_dt','alpf_MHD is to be used only without displacement current')
+            else
+              call multsv_add(dAdt,eta*alpf_MHD*p%infl_dphi,p%bb,dAdt)
+            endif
+          endif
 !
 !  Add Hall term.
 !
-      if (hall_term/=0.0) then
-        select case (ihall_term)
-          case ('const'); hall_term_=hall_term
-          case ('t-dep'); hall_term_=hall_term*max(real(t),hall_tdep_t0)**hall_tdep_exponent
-          case ('z-dep'); hall_term_=hall_term/(1.-(z(n)-xyz1(3))/Hhall)**hall_zdep_exponent
-        endselect
-        if (headtt) print*,'daa_dt: hall_term=',hall_term_
-        dAdt=dAdt-hall_term_*p%jxb
-        if (lupdate_courant_dt) then
-          advec_hall=sum(abs(p%uu-hall_term_*p%jj)*dline_1,2)
-          if (notanumber(advec_hall)) then
-            if (lproc_print) then
-              print*, 'daa_dt: advec_hall =',advec_hall
-              if (.not.allproc_print) lproc_print=.false.
-            endif
-          endif
-          advec2=advec2+advec_hall**2
-          if (headtt.or.ldebug) print*,'daa_dt: max(advec_hall) =', maxval(advec_hall)
-        endif
-      endif
+          if (hall_term/=0.0) call add_hall_term(dAdt,p)
 !
 !  Add Battery term.
 !  corrected by Mikhail Modestov
 !
-      if (battery_term/=0.0) then
-        if (headtt) print*,'daa_dt: battery_term=',battery_term
-!---    call multsv_mn(p%rho2,p%fpres,baroclinic)
-!AB: corrected by Patrick Adams
-        dAdt = dAdt-battery_term*p%fpres
-        if (headtt.or.ldebug) print*,'daa_dt: max(battery_term) =',&
-!MR; corrected for the time being to fix the auto-test
-!            battery_term*maxval(baroclinic)
-            battery_term*maxval(p%fpres)
-      endif
+          if (battery_term/=0.0) call add_battery_term(dAdt,p)
 !
 !  Add ambipolar diffusion in strong coupling approximation
 !
-      if (lambipolar_strong_coupling.and.tauAD/=0.0) then
-        dAdt=dAdt+tauAD*p%jxbxb
-        eta_total = eta_total + tauAD*mu01*p%b2
-      endif
+          if (lambipolar_strong_coupling.and.tauAD/=0.0) then
+            dAdt=dAdt+tauAD*p%jxbxb
+            eta_total = eta_total + tauAD*mu01*p%b2
+          endif
 !
 !  Add jxb/(b^2\nu) magneto-frictional velocity to uxb term
 !  Note that this is similar to lambipolar_strong_coupling, but here
 !  there is a division by b^2.
 !AB: Piyali, I think the mu01 should be removed
 !
-      if (lmagneto_friction.and.(.not.lhydro).and.numag/=0.0) then
-         tmp1=real(mu01/(numag*(B0_magfric/unit_magnetic**2+p%b2)))
-         do i=1,3
-           dAdt(:,i) = dAdt(:,i) + p%jxbxb(:,i)*tmp1
-         enddo
-         if (.not. linduction) dAdt = dAdt + fres
-      endif
+          if (lmagneto_friction.and.(.not.lhydro).and.numag/=0.0) then
+             tmp1=real(mu01/(numag*(B0_magfric/unit_magnetic**2+p%b2)))
+             do i=1,3
+               dAdt(:,i) = dAdt(:,i) + p%jxbxb(:,i)*tmp1
+             enddo
+             if (.not. linduction) dAdt = dAdt + fres
+          endif
 !
 !  Possibility of adding extra diffusivity in some halo of given geometry.
 !  eta_out is now the diffusivity in the outer halo.
 !
-      if (height_eta/=0.0) then
-        if (headtt) print*,'daa_dt: height_eta,eta_out,lhalox=',height_eta,eta_out,lhalox
-        if (lhalox) then
-          do ix=1,nx
-            tmp=(x(ix)/height_eta)**2
-            eta_out1=eta_out*(1.0-exp(-tmp**5/max(1.0-tmp,1.0e-5)))-eta
-          enddo
-        else
-          !eta_out1=eta_out*0.5*(1.-erfunc((z(n)-height_eta)/eta_zwidth))-eta
+          if (height_eta/=0.0) then
+            if (headtt) print*,'daa_dt: height_eta,eta_out,lhalox=',height_eta,eta_out,lhalox
+            if (lhalox) then
+              do ix=1,nx
+                tmp=(x(ix)/height_eta)**2
+                eta_out1=eta_out*(1.0-exp(-tmp**5/max(1.0-tmp,1.0e-5)))-eta
+              enddo
+            else
+            !eta_out1=eta_out*0.5*(1.-erfunc((z(n)-height_eta)/eta_zwidth))-eta
 !AB: 2018-12-18 changed to produce change *above* height_eta.
-          eta_out1=(eta_out-eta)*.5*(1.+erfunc((z(n)-height_eta)/eta_zwidth))
-        endif
-        dAdt = dAdt-(eta_out1*mu0)*p%jj
-        eta_total = eta_total + eta_out1*mu0
-      endif
+              eta_out1=(eta_out-eta)*.5*(1.+erfunc((z(n)-height_eta)/eta_zwidth))
+            endif
+            dAdt = dAdt-(eta_out1*mu0)*p%jj
+            eta_total = eta_total + eta_out1*mu0
+          endif
 !
 !  Ekman Friction, used only in two dimensional runs.
 !
-      if (ekman_friction_aa/=0) df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-ekman_friction_aa*p%aa
+          if (ekman_friction_aa/=0) df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-ekman_friction_aa*p%aa
 !
 !  Add possibility of forcing that is not delta-correlated in time.
 !
-      if (lforcing_cont_aa) dAdt=dAdt+ ampl_fcont_aa*p%fcont(:,:,iforcing_cont_aa)
+          if (lforcing_cont_aa) dAdt=dAdt+ ampl_fcont_aa*p%fcont(:,:,iforcing_cont_aa)
 !
 !  Add possibility of local forcing that is also not delta-correlated in time.
 !
-      if (lforcing_cont_aa_local) call forcing_continuous(df)
+          if (lforcing_cont_aa_local) call forcing_continuous(df)
 !
 !  Possibility of relaxation of A in exterior region.
 !
-      if (tau_aa_exterior/=0.0) call calc_tau_aa_exterior(f,df)
+          if (tau_aa_exterior/=0.0) call calc_tau_aa_exterior(f,df)
 !
 !  Relaxing A towards a given profile A_0 on a timescale tau_relprof,
 !  note that tau_relprof*u_rms*kf>>1  for this relaxation to affect only the mean fields.
 !
-      if (tau_relprof/=0.0) then
-!        dAdt= dAdt-(p%aa-A_relprof(:,m,n,:))*tau_relprof1
-! Piyali: The above is not right as dimension of A_relprof(nx,ny,nz,3),
-! so m,n indices should be the following:
-!
-        if (lA_relprof_global) then
-!
-!  Use directly the global external vector potential.
-!
-          dAdt = dAdt-(p%aa-f(l1:l2,m,n,iglobal_ax_ext:iglobal_az_ext))*tau_relprof1
-        else
-          !dAdt= dAdt-(p%aa-A_relprof(:,m-m1+1,n-n1+1,:))*tau_relprof1
-          if (lrelaxprof_glob_scaled) then
-            dAdt = dAdt-(p%aa-amp_relprof*f(l1:l2,m,n,iglobal_ax_ext:iglobal_az_ext))*tau_relprof1
-          else
-            dAdt = dAdt-(p%aa-A_relprof(n-nghost,1))*tau_relprof1
-          endif
-        endif
-      endif
+          if (tau_relprof /= 0.0) call relax_towards_profile(f,p,dAdt)
 !
 !  Apply border profiles.
 !
-      if (lborder_profiles) call set_border_magnetic(f,df,p)
+          if (lborder_profiles) call set_border_magnetic(f,df,p)
 !
 !  Option to constrain timestep for large forces and heat sources to include
 !  Lorentz force and Ohmic heating terms
 !  should set in entropy lthdiff_Hmax=F and lrhs_max=F & in hydro lcdt_tauf=F as handled here
 !
-      if (lupdate_courant_dt.and.lrhs_max) then
-        if (lhydro) then
-          do j =1,3
-                where (abs(p%uu(:,j))>1)   !MR: What is the significance of unity in this criterion?
-                  uu1(:,j)=1./p%uu(:,j)
-                elsewhere
-                  uu1(:,j)=1.
-                endwhere
-          enddo
-        endif
-        do j =1,3
-          where (abs(p%aa(:,j))>1)
-            aa1(:,j)=1./p%aa(:,j)
-          elsewhere
-            aa1(:,j)=1.
-          endwhere
-        enddo
-        do j=1,3
-          dAtot=abs(dAdt(:,j)*aa1(:,j))
-          dt1_max=max(dt1_max,dAtot/cdtf)
-          dAmax=max(dAmax,dAtot/cdtf)
-          if (lhydro) then
-            ftot=abs(df(l1:l2,m,n,iux+j-1)*uu1(:,j))
-            dt1_max=max(dt1_max,ftot/cdtf)
-            Fmax=max(Fmax,ftot/cdtf)
+          if (lupdate_courant_dt.and.lrhs_max) then
+            call constraint_timestep_by_rhs_and_heating(df,p,dAdt)
           endif
-        enddo
-        if (lentropy) then
-          ssmax = max(ssmax,abs(df(l1:l2,m,n,iss))*p%cv1/cdts)
-          dt1_max=max(dt1_max,ssmax)
-        endif
-      endif
 !
-!  Magnetic field in spherical coordinates from a Cartesian simulation
-!  for sphere-in-a-box setups
-!
-      if (lbb_sph_as_aux.and.lsphere_in_a_box) then
-        f(l1:l2,m,n,ibb_sphr) = p%bb(:,1)*p%evr(:,1)+p%bb(:,2)*p%evr(:,2)+p%bb(:,3)*p%evr(:,3)
-        f(l1:l2,m,n,ibb_spht) = p%bb(:,1)*p%evth(:,1)+p%bb(:,2)*p%evth(:,2)+p%bb(:,3)*p%evth(:,3)
-        f(l1:l2,m,n,ibb_sphp) = p%bb(:,1)*p%phix+p%bb(:,2)*p%phiy
-      endif
+          if (lbb_sph_as_aux.and.lsphere_in_a_box) then
+            call calculate_spherical_bb_in_a_box(f,p)
+          endif
 !
 !  Hubble parameter (doesn't look generic)
 !  It should usually not be applied.
 !
-      if (lhubble_magnetic) then
-        dAdt = dAdt - 2.*Hubble*ascale**1.5*p%AA
-        call fatal_error('daa_dt','setting lhubble_magnetic=T is not correct')
-      endif
+          if (lhubble_magnetic) then
+            dAdt = dAdt - 2.*Hubble*ascale**1.5*p%AA
+            call fatal_error('daa_dt','setting lhubble_magnetic=T is not correct')
+          endif
 !
 !  Limiter
 !
-      if (llimiter) then
-        dlnBrmsdt=sqrt(max(0.,eta*wav1*(abs(alpf_MHD*p%infl_dphi)-wav1)))
-        limiter=1./(1.+limiter_fact*eta*dlnBrmsdt)
-        call multsv_mn(limiter,dAdt,dAdt)
-      endif
+          if (llimiter) then
+            dlnBrmsdt=sqrt(max(0.,eta*wav1*(abs(alpf_MHD*p%infl_dphi)-wav1)))
+            limiter=1./(1.+limiter_fact*eta*dlnBrmsdt)
+            call multsv_mn(limiter,dAdt,dAdt)
+          endif
 !
 !  Now add all the contribution to dAdt so far into df.
 !  This is done here, such that contribution from mean-field models are not added to
@@ -6437,107 +6690,54 @@ module Magnetic
 !  current is not being advanced. It should therefore be turned into a pencil.
 !  But we could use dAdt here for diagnostics.
 !
-      df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+dAdt
+          df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+dAdt
 !
 !  Call right-hand side for mean-field stuff (do this just before ldiagnos)
 !
-      if (lmagn_mf) call daa_dt_meanfield(f,df,p)
+          if (lmagn_mf) call daa_dt_meanfield(f,df,p)
 !
 !  Electric field E = -dA/dt, store the Electric field in f-array if asked for.
 !  This line must not be used when the displacement current is being solved for.
 !  But it might actually work correctly.
 !
-      if (lee_as_aux .and. lfirst) then
-        if (headtt) print*,'f(l1:l2,m,n,iex:iez)=-dAdt is set'
-        f(l1:l2,m,n,iex:iez)=-df(l1:l2,m,n,iax:iaz)
-      endif
+          if (lee_as_aux .and. lfirst) then
+            if (headtt) print*,'f(l1:l2,m,n,iex:iez)=-dAdt is set'
+            f(l1:l2,m,n,iex:iez)=-df(l1:l2,m,n,iax:iaz)
+          endif
 !
 !  Multiply resistivity by Nyquist scale, for resistive time-step.
 !
-      if (lupdate_courant_dt) then
-!
-        diffus_eta =eta_total *dxyz_2
-        diffus_eta2=diffus_eta2*dxyz_4
-!
-        if (ldynamical_diffusion .and. lresi_hyper3_mesh) then
-          diffus_eta3 = diffus_eta3 * sum(dline_1,2)
-        else
-          diffus_eta3 = diffus_eta3*dxyz_6
+          if (lupdate_courant_dt) then
+            call calc_timestep_constraints
+          endif !end of "if (.not. loperator_split_update) then"
         endif
-        if (lpole(2) .and. lcoarse) then
-
-          if (lfirst_proc_y .and. m<m1+1.5*ncoarse .and. m>=m1) then
-            nphi = max(mod(int(ncoarse/(m-m1+1)),ncoarse+1),1)
-          elseif (llast_proc_y .and. m>m2-1.5*ncoarse .and. m<=m2) then
-            nphi = max(mod(int(ncoarse/(m2-m+1)),ncoarse+1),1)
-          else
-            nphi = 1
-          endif
-          !if (lroot .and. n==n1) print*,'fred: nphi, m',nphi, m
-          diffus_eta =diffus_eta /nphi**2
-          diffus_eta2=diffus_eta2/nphi**4
-!
-          if (.not.(ldynamical_diffusion .and. lresi_hyper3_mesh)) diffus_eta3 = diffus_eta3/nphi**6
-        endif
-!
-        if (headtt.or.ldebug) then
-          print*, 'daa_dt: max(diffus_eta)  =', maxval(diffus_eta)
-          print*, 'daa_dt: max(diffus_eta2) =', maxval(diffus_eta2)
-          print*, 'daa_dt: max(diffus_eta3) =', maxval(diffus_eta3)
-        endif
-
-        maxdiffus=max(maxdiffus,diffus_eta)
-        maxdiffus2=max(maxdiffus2,diffus_eta2)
-        maxdiffus3=max(maxdiffus3,diffus_eta3)
-!
-      endif
-!
-!  The following is the endif from "((.not. ldisp_current) .or. loverride_ee) then".
-!  As indicated above, the block above has not (yet) been indented correctly,
-!  because the number of lines is so large (1103 lines).
-!
-      endif
+      endif ! end of "if ((.not. ldisp_current) .or. loverride_ee) then"
+      
+      if(.not. loperator_split_update) then
 !
 !  If ldensity and ldensity_add_je_heating, then compute J.E and add it.
 !  This would only make sense if the equation for the displacement current is solved.
 !
-      if (ldensity .and. ldensity_add_je_heating) then
-        if (ldisp_current) then
-          call dot(p%jj,p%el,tmp1)
-          if (je_heating_factor/=1.) tmp1=tmp1*je_heating_factor
-          df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+tmp1*p%rho1
-        else
-          call fatal_error('daa_dt','J.E heating not programmed yet')
+        if (ldensity .and. ldensity_add_je_heating) then
+          if (ldisp_current) then
+            call dot(p%jj,p%el,tmp1)
+            if (je_heating_factor/=1.) tmp1=tmp1*je_heating_factor
+            df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+tmp1*p%rho1
+          else
+            call fatal_error('daa_dt','J.E heating not programmed yet')
+          endif
         endif
-      endif
 !
 !  Evolve current density.
 !
-      if (lresi_eta_tdep .or. lresi_eta_xtdep .or. eta/=0.) then
-      if (lohm_evolve) then
-print*,'AXEL2: should not be here (eta) ... '
-        if (tau_jj>0) then
-          tau1_jj=1./tau_jj
-          do j=1,3
-!
-!  Here we would need to add tau*sigmaB*B
-!
-            dJdt(:,j)=tau1_jj*(p%el(:,j)+p%uxb(:,j))*mu01/eta_total
-          enddo
-          if (ell_jj/=0.) then
-            call del2v(f,ijx,del2jj)
-            dJdt=dJdt+(ell_jj**2*tau1_jj)*del2jj
-          endif
-          df(l1:l2,m,n,ijx:ijz)=df(l1:l2,m,n,ijx:ijz)+dJdt
-        else
-          call fatal_error('daa_dt','tau_jj must be finite and positive')
+        if (lohm_evolve .and. (lresi_eta_tdep .or. lresi_eta_xtdep .or. eta/=0.)) then
+          call evolve_current_density(f,df,p)
         endif
-      endif
-      endif
 !
 !  Do diagnostics, which includes also slices.
 !
-      call calc_diagnostics_magnetic(f,p)
+        call calc_diagnostics_magnetic(f,p)
+      endif
 !
 !  Debug output.
 !
