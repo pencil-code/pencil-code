@@ -1909,8 +1909,8 @@ samples/1d-tests/Schwinger-MHD/README.md -text
 samples/1d-tests/Schwinger-MHD/print.in -text
 samples/1d-tests/Schwinger-MHD/reference.out -text
 samples/1d-tests/Schwinger-MHD/run.in -text
-samples/1d-tests/Schwinger-MHD/scr/Makefile.local -text
-samples/1d-tests/Schwinger-MHD/scr/cparam.local -text
+samples/1d-tests/Schwinger-MHD/src/Makefile.local -text
+samples/1d-tests/Schwinger-MHD/src/cparam.local -text
 samples/1d-tests/Schwinger-MHD/start.in -text
 samples/1d-tests/alphadisk/README -text
 samples/1d-tests/alphadisk/print.in -text
