@@ -134,6 +134,12 @@ module Timestep
 !  Change df according to the chosen physics modules.
 !
         call pde(f,df,p)
+        
+        if(lfirst .and. lfirst_sld .and. lsplit_sld) then
+           loperator_split_update = .true.
+           call pde(f,df,p)
+           loperator_split_update = .false.
+        endif
 
         if(present(dt_)) then
           dt_used = dt_
