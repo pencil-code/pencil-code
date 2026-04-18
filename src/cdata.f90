@@ -648,6 +648,9 @@ module Cdata
   logical :: loperator_split_update = .false.
   ! Are SLD terms split or not
   logical :: lsplit_sld = .false.
+  ! Whether to apply SLD on the first substep or the default on the old substep
+  ! TP (TODO) : discuss could we in general move to do the SLD on the first substep and get rid of this switch
+  logical :: lfirst_sld = .false.
 
 !
 !  Variables related to calculating diagnostic output.

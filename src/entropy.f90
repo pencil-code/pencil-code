@@ -3805,7 +3805,8 @@ module Energy
 !
 !     Slope-limited diffusion
 !
-      if (loperator_split_update .eqv. lsplit_sld .and. lenergy_slope_limited.and.llast) then
+      if (loperator_split_update .eqv. lsplit_sld .and. lenergy_slope_limited.and.&
+        ((lfirst .and. lfirst_sld) .or. (llast .and. .not. lfirst_sld))) then
         call calc_energy_slope_limited(f,df,p)
       endif
 
@@ -4371,7 +4372,8 @@ module Energy
 !    Slope limited diffusion: update characteristic speed
 !    Not staggered yet
 !
-     if (lslope_limit_diff .and. llast) then
+     if (lslope_limit_diff .and. &
+        ((lfirst .and. lfirst_sld) .or. (llast .and. .not. lfirst_sld))) then
         call get_gamma_etc(gamma,cv=cv); gamma_m1=gamma-1.; cv1=1./cv
 !
        if (ldensity_nolog) then

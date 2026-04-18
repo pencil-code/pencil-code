@@ -3988,7 +3988,8 @@ module Magnetic
 !  Find bb and jj if as communicated auxiliary.
 !
       if (lbb_as_comaux .or. ljj_as_comaux .or. &
-          lalfven_as_aux.or. (lslope_limit_diff .and. llast)) then
+          lalfven_as_aux.or. (lslope_limit_diff .and.&
+        ((lfirst .and. lfirst_sld) .or. (llast .and. .not. lfirst_sld)))) then
         call zero_ghosts(f, iax, iaz)       !MR: needed given the next statement?
         call update_ghosts(f, iax, iaz)     !MR: only the "real" BCs matter here
 
@@ -4036,7 +4037,8 @@ module Magnetic
 !
 !  Find Alfven speed as communicated auxiliary
 !
-          if (lalfven_as_aux .or. (lslope_limit_diff .and. llast)) then
+          if (lalfven_as_aux .or. (lslope_limit_diff .and. &
+        ((lfirst .and. lfirst_sld) .or. (llast .and. .not. lfirst_sld)))) then
             if (ldensity) then
               if (ldensity_nolog) then
                 rho1=1./f(l1:l2,m,n,irho)
@@ -4058,7 +4060,8 @@ module Magnetic
               tmp=abs(tmp)
             endif
             if (lalfven_as_aux) f(l1:l2,m,n,ialfven)= tmp
-            if (lslope_limit_diff .and. llast) then
+            if (lslope_limit_diff .and. &
+        ((lfirst .and. lfirst_sld) .or. (llast .and. .not. lfirst_sld))) then
               if (lboris_correction .and. va2max_boris>0) tmp=tmp/sqrt(1.+(tmp/va2max_boris)**2.)
               f(l1:l2,m,n,isld_char)=f(l1:l2,m,n,isld_char)+w_sldchar_mag*sqrt(tmp)
            endif
@@ -6021,7 +6024,8 @@ module Magnetic
 !SLD          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+(eta_total*mu0)*p%rho1*p%TT1*phi
 !   Slope limited diffusion for magnetic field
 !
-      if (lmagnetic_slope_limited.and.llast) then
+      if (lmagnetic_slope_limited.and.&
+        ((lfirst .and. lfirst_sld) .or. (llast .and. .not. lfirst_sld))) then
         call calc_magnetic_slope_limited(f,df,p)
       endif
 !

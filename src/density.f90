@@ -3070,7 +3070,8 @@ module Density
 !
 !   Slope limited diffusion for density
 !
-      if (loperator_split_update .eqv. lsplit_sld .and. ldensity_slope_limited.and.llast) then
+      if (loperator_split_update .eqv. lsplit_sld .and. ldensity_slope_limited.and.&
+        ((lfirst .and. lfirst_sld) .or. (llast .and. .not. lfirst_sld))) then
         call calc_sld_fdiff(f,p,fdiff)
       endif
 !
@@ -3243,7 +3244,8 @@ module Density
 !   Slope limited diffusion for density
 !
           fdiff=0.
-          if (ldensity_slope_limited.and.llast) then
+          if (ldensity_slope_limited.and.&
+           ((lfirst .and. lfirst_sld) .or. (llast .and. .not. lfirst_sld))) then
             call calc_sld_fdiff(f,p,fdiff)
           endif
 !

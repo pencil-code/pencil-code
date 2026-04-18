@@ -4045,7 +4045,8 @@ module Hydro
 !    Slope limited diffusion: update characteristic speed
 !    Not staggered yet, happpens later
 !
-     if (lslope_limit_diff .and. llast) then
+     if (lslope_limit_diff .and. &
+        ((lfirst .and. lfirst_sld) .or. (llast .and. .not. lfirst_sld))) then
 !     if (lslope_limit_diff) then
        do m=1,my
        do n=1,mz

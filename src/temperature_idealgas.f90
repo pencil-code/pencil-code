@@ -1289,7 +1289,8 @@ module Energy
 !
 !     Slope-limited diffusion
 !
-      if (lenergy_slope_limited.and.llast) then
+      if (lenergy_slope_limited.and.&
+        ((lfirst .and. lfirst_sld) .or. (llast .and. .not. lfirst_sld))) then
         if (ltemperature_nolog) then
           call calc_slope_diff_flux(f,iTT,h_sld_ene,nlf_sld_ene,tmp,div_sld_ene)
           thdiff=thdiff+tmp

@@ -2399,7 +2399,8 @@ module Viscosity
 !  Calculate viscouse force for slope limited diffusion
 !  following Rempel (2014). Here the divergence of the flux is used.
 !
-      if (lvisc_slope_limited .and. llast) then
+      if (lvisc_slope_limited .and. &
+        ((lfirst .and. lfirst_sld) .or. (llast .and. .not. lfirst_sld))) then
         call calc_visc_slope_limited(f,p)
       endif
 
