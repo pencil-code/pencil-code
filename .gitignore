@@ -696,3 +696,14 @@ doc/readthedocs/pencil-docker/.env
 !samples/1d-tests/Schwinger-MHD/src/.run_directories.log
 !samples/1d-tests/Schwinger-MHD/src/pc_build_tmp_*
 !samples/1d-tests/Schwinger-MHD/src/.pc_build_history
+!samples/1d-tests/Schwinger-MHD/idl/.DS_Store
+!samples/1d-tests/Schwinger-MHD/idl/*.directory
+!samples/1d-tests/Schwinger-MHD/idl/*.pyc
+!samples/1d-tests/Schwinger-MHD/idl/*~
+!samples/1d-tests/Schwinger-MHD/idl/.*.swp
+!samples/1d-tests/Schwinger-MHD/idl/host-ID
+!samples/1d-tests/Schwinger-MHD/idl/revision.txt
+!samples/1d-tests/Schwinger-MHD/idl/*-eps-converted-to.pdf
+!samples/1d-tests/Schwinger-MHD/idl/.run_directories.log
+!samples/1d-tests/Schwinger-MHD/idl/pc_build_tmp_*
+!samples/1d-tests/Schwinger-MHD/idl/.pc_build_history
