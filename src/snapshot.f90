@@ -275,7 +275,7 @@ module Snapshot
 !
       use Boundcond, only: update_ghosts
       use General, only: safe_character_assign, loptest
-      use IO, only: log_filename_to_file
+      use IO, only: log_filename_to_file, IO_strategy
       use Sub, only: read_snaptime, update_snaptime
       use Syscalls, only: system_cmd
       use Mpicomm, only: mpibarrier
@@ -295,7 +295,7 @@ module Snapshot
       real, save :: tsnap
       integer, save :: nsnap
       logical, save :: lfirst_call=.true.
-      character (len=fnlen) :: file
+      character (len=fnlen) :: file,tmpfile
       character (len=intlen) :: ch
       integer :: nv1_capitalvar
 !
@@ -342,7 +342,7 @@ module Snapshot
           case ('code_time')
             t_trigger=real(t)
           case default
-            call fatal_error('wsnap','no such trigger_snap='//trim(trigger_snap))
+            call fatal_error('wsnap','no such trigger_snap: '//trim(trigger_snap))
         end select
         call update_snaptime(file,tsnap,nsnap,dsnap,dble(t_trigger),lsnap,ch)
 !
@@ -381,9 +381,11 @@ module Snapshot
         ! update ghosts, because 'update_auxiliaries' may change the data
         if (.not. loptest(noghost).or.ncoarse>1) call update_ghosts(a)
         call safe_character_assign(file,trim(chsnap))
-        if (lbackup_snap .and. .not.lstart .and. .not.(chsnap=='crash.dat' .or. chsnap(1:1)=='d' )) &
-            call system_cmd('mv -f '//trim(directory_snap)//'/'//trim(file)//' '// &
-                            trim(directory_snap)//'/'//trim(file)//'.bck '//' > /dev/null 2>&1')
+        if (lbackup_snap .and. .not.lstart .and. .not.(chsnap=='crash.dat' .or. chsnap(1:1)=='d' .or. chsnap(1:3)=='VAR')) then
+          tmpfile=merge('var.h5 ','var.dat',IO_strategy=='HDF5')
+          call system_cmd('mv -f '//trim(directory_snap)//'/'//trim(tmpfile)//' '// &
+                          trim(directory_snap)//'/'//trim(tmpfile)//'.bck '//' > /dev/null 2>&1')
+        endif
         if (lmultithread.and.nt>0) then
           extpars%ind1=1; extpars%ind2=msnap; extpars%file=file
 !$        lmasterflags(PERF_WSNAP) = .true.
@@ -499,7 +501,6 @@ module Snapshot
         mode=1
       endif
       file = chsnap
-      if (lbackup_snap.and..not. file_exists(trim(directory_snap)//'/'//trim(chsnap))) file = trim(chsnap)//'.bck'
       if (lroot) call touch_file(trim(workdir)//'/READING')
 !
 !  No need to read maux variables as they will be calculated
@@ -695,7 +696,7 @@ module Snapshot
 !
       elseif (lread_oldsnap_nocoolprof) then
         if (lroot) print*,'read old snapshot file (but without cooling profile)'
-        call input_snap('var.dat',f,msnap-1,mode)
+        call input_snap('var',f,msnap-1,mode)
         if (lpersist) call input_persistent
         call input_snap_finalize
         ! shift the rest of the data

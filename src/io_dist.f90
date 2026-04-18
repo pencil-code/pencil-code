@@ -2,7 +2,7 @@
 !
 !  Distributed IO (i.e. each process writes its own file data/procX)
 !
-!  The file format written by output_snap() (and used, e.g. in var.dat)
+!  The file format written by output_snap (and used, e.g. in var.dat)
 !  consists of the followinig Fortran records:
 !    1. data(mx,my,mz,nvar)
 !    2. t(1), x(mx), y(my), z(mz), dx(1), dy(1), dz(1), deltay(1)
@@ -268,7 +268,7 @@ module Io
 !
     endsubroutine output_average_2D
 !***********************************************************************
-    subroutine output_slice_position()
+    subroutine output_slice_position
 !
 !  Record slice positions.
 !
@@ -276,7 +276,7 @@ module Io
 !
       use HDF5_IO, only: hdf5_output_slice_position
 !
-      call hdf5_output_slice_position()
+      call hdf5_output_slice_position
 !
     endsubroutine output_slice_position
 !***********************************************************************
@@ -339,7 +339,7 @@ module Io
 !
 !  Writes the log of removed particles to a file.
 !
-!  21-jan-24/ccyang: adapted from remove_particle() of particles_sub.f90.
+!  21-jan-24/ccyang: adapted from remove_particle of particles_sub.f90.
 !
       use Messages, only: not_implemented
 !
@@ -667,13 +667,13 @@ module Io
 !
     endfunction write_persist_torus_rect
 !***********************************************************************
-    subroutine input_snap(file,a,nv,mode)
+    subroutine input_snap(file_,a,nv,mode)
 !
 !  manages reading of snapshot from different precision
 !
 !  24-oct-13/MR: coded
 !
-      character (len=*), intent(in) :: file
+      character (len=*), intent(in) :: file_
       integer, intent(in) :: nv, mode
       real, dimension (mx,my,mz,nv), intent(out) :: a
 
@@ -685,6 +685,9 @@ module Io
 
       real(KIND=rkind8) :: dxdb,dydb,dzdb,deltaydb
       real(KIND=rkind4) :: dxsg,dysg,dzsg,deltaysg
+      character (len=fnlen) :: file
+
+      file = gen_in_snapname(file_,'dat')
 
       if (lread_from_other_prec) then
         if (kind(a)==rkind4) then
@@ -1175,7 +1178,6 @@ module Io
 !
       real(KIND=rkind8), dimension(:,:,:,:), allocatable :: adb
       real(KIND=rkind4), dimension(:,:,:,:), allocatable :: asg
-
 !
       if (lserial_io) call start_serialize
 !

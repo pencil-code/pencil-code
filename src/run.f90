@@ -658,7 +658,7 @@ endsubroutine helper_loop
 
   endsubroutine setup_signal_files
 !***********************************************************************
-  subroutine print_performance_and_memory_usage_metrics(wall_clock_time)
+  subroutine print_metrics(wall_clock_time)
 
   use Timestep,        only: after_substep_sum_time
   use Mpicomm,         only: mpiwtick,mpireduce_max_int,mpireduce_sum_int
@@ -763,7 +763,7 @@ endsubroutine helper_loop
     print*
   endif
 
- endsubroutine print_performance_and_memory_usage_metrics
+ endsubroutine print_metrics
 !***********************************************************************
 !$  subroutine get_all_core_ids
 
@@ -1098,7 +1098,7 @@ endsubroutine helper_loop
   f=0.
   if (lroot .and. ldebug) print*, 'memusage before rsnap=', memusage()/1024., 'MBytes'
   if (lroot) tvar1=real(mpiwtime())
-  call rsnap('var.dat',f,mvar_in,lread_nogrid)
+  call rsnap('var',f,mvar_in,lread_nogrid)
   if (lroot) print*,'rsnap: read snapshot var.dat in ',mpiwtime()-tvar1,' seconds'
 !
 !  If we decided to use a new grid, we need to overwrite the data
@@ -1124,7 +1124,7 @@ endsubroutine helper_loop
 !  Set initial time to zero if requested. This is dangerous, however!
 !  One may forget removing this entry after having set this once.
 !  It is therefore safer to say lini_t_eq_zero_once=.true.,
-!  which does the reset once once, unless NORESET_TZERO is removed.
+!  which does the reset only once, unless NORESET_TZERO is removed.
 !
   if (lini_t_eq_zero) t=0.0
 !
@@ -1386,7 +1386,7 @@ endsubroutine helper_loop
 !  Print wall clock time and time per step and processor for diagnostic
 !  purposes.
 !
-  call print_performance_and_memory_usage_metrics(real(time2-time1))
+  call print_metrics(real(time2-time1))
 !
 !  Give all modules the possibility to exit properly.
 !

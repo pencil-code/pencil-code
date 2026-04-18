@@ -3809,8 +3809,8 @@ module Sub
 !
     endsubroutine gradf_upw1st
 !***********************************************************************
-    subroutine rdim(file,mx_in,my_in,mz_in,mvar_in,maux_in,mglobal_in,&
-        prec_in,nghost_in,ipx_in, ipy_in, ipz_in)
+    subroutine rdim(file,mx_in,my_in,mz_in,mvar_in,maux_in,mglobal_in, &
+                    prec_in,nghost_in,ipx_in, ipy_in, ipz_in)
 !
 !  Read dimension from file.
 !
@@ -3822,7 +3822,7 @@ module Sub
       integer           :: mvar_in,maux_in,mglobal_in,nghost_in
       integer           :: ipx_in, ipy_in, ipz_in
 !
-!  Every processor writes to their procN/dim.dat (with io_dist.f90).
+!  Every processor reads from its procN/dim.dat (with io_dist.f90).
 !
       open(124,file=file,FORM='formatted')
       read(124,*) mx_in,my_in,mz_in,mvar_in,maux_in,mglobal_in

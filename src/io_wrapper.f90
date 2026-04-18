@@ -2,7 +2,7 @@
 module Io
 !
   use Cparam, only: mx,my,mz,mparray,labellen,fnlen,fmtlen
-  use Cdata, only: lstart, lroot
+  use Cdata, only: lstart, lroot, ip
 !
   implicit none
 
@@ -36,7 +36,7 @@ module Io
       else
         call warning('register_io','IO_LOCK file found - alternative IO strategy for input will be ignored.')
       endif
-      call switch_io
+      call switch_io('register_io')
     else
       IO_strategy = IO_strategy_
       lcollective_IO = lcollective_IO_
@@ -46,13 +46,16 @@ module Io
 
   endsubroutine register_io
 !***********************************************************************
-  subroutine switch_io
+  subroutine switch_io(caller)
 
-     use Io_out, only: register_io_ => register_io, &
-                       IO_strategy_ => IO_strategy, &
-                       lcollective_IO_ => lcollective_IO, &
-                       directory_names_ => directory_names
-     use Syscalls, only: system_cmd
+    use Io_out, only: register_io_ => register_io, &
+                      IO_strategy_ => IO_strategy, &
+                      lcollective_IO_ => lcollective_IO, &
+                      directory_names_ => directory_names
+    use Messages, only: information
+    use Syscalls, only: system_cmd
+
+    character(LEN=*) :: caller
 
     if (.not.lswitched_to_out) then
 
@@ -62,8 +65,8 @@ module Io
 
       call directory_names_
       call register_io_
-
-     if (lroot) call system_cmd("touch IO_LOCK")
+      if (lroot) call system_cmd("touch IO_LOCK")
+      if (ip<11) call information('switch_io','caller = '//trim(caller))
 
     endif
 
@@ -305,6 +308,25 @@ module Io
 !
     endsubroutine rproc_bounds
 !***********************************************************************
+    subroutine read_profile(fname, type, a, np, lhas_ghost)
+!
+      use Io_in, only: read_profile_in => read_profile
+      use Io_out, only: read_profile_out => read_profile
+!
+      character (len=*), intent(in) :: fname
+      character, intent(in) :: type
+      integer, intent(in) :: np
+      real, dimension(np), intent(out) :: a
+      logical, optional :: lhas_ghost
+!
+     if (lswitched_to_out) then
+        call read_profile_out(fname, type, a, np, lhas_ghost)
+      else
+        call read_profile_in(fname, type, a, np, lhas_ghost)
+      endif
+!
+    endsubroutine read_profile
+!***********************************************************************
     subroutine wgrid(file,mxout,myout,mzout,lwrite)
 
       use Io_out, only: wgrid_ => wgrid
@@ -314,7 +336,7 @@ module Io
       integer, optional :: mxout,myout,mzout
       logical, optional :: lwrite
 !
-      call switch_io
+      call switch_io('wgrid')
       call wgrid_(file,mxout,myout,mzout,loptest(lwrite,lwr_grid))
 
     endsubroutine wgrid
@@ -325,7 +347,7 @@ module Io
 !
       character (len=*), intent(in) :: file
 !
-      call switch_io
+      call switch_io('wdim_default_grid')
       call wdim_(file)
 
     endsubroutine wdim_default_grid
@@ -337,7 +359,7 @@ module Io
       character (len=*), intent(in) :: file
       integer, intent(in) :: mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out
 !
-      call switch_io
+      call switch_io('wdim_default')
       call wdim(file, mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out)
 
     endsubroutine wdim_default
@@ -349,7 +371,7 @@ module Io
       character (len=*), intent(in) :: file
       integer, intent(in) :: mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out, mvar_out, maux_out
 
-      call switch_io
+      call switch_io('wdim')
       call wdim_(file, mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out, mvar_out, maux_out)
 
     endsubroutine wdim
@@ -360,7 +382,7 @@ module Io
 !
       character (len=*) :: file
 !
-      call switch_io
+      call switch_io('wproc_bounds')
       call wproc_bounds_(file)
 
     endsubroutine wproc_bounds
@@ -373,7 +395,7 @@ module Io
       integer,           optional,intent(IN) :: nv1,nv2
       character (len=*), optional,intent(IN) :: file
 !
-      call switch_io
+      call switch_io('output_snap')
       call output_snap_(a,nv1,nv2,file)
 !
     endsubroutine output_snap
@@ -397,7 +419,7 @@ module Io
 
       use Io_out, only: output_snap_finalize_ => output_snap_finalize
 
-      call switch_io
+      call switch_io('output_snap_finalize')
       call output_snap_finalize_
 !
     endsubroutine output_snap_finalize
@@ -473,7 +495,7 @@ module Io
       character (len=*), optional, intent(in) :: label
       logical, optional, intent(in) :: ltruncate
 !
-      call switch_io
+      call switch_io('output_part_snap')
       call output_part_snap_(ipar, ap, mv, nv, file, label, ltruncate)
 !
     endsubroutine output_part_snap
@@ -486,7 +508,7 @@ module Io
       real, dimension(:,:), intent(in) :: fp_rmv, fp_sink
       integer, intent(in) :: nrmv
 !
-      call switch_io
+      call switch_io('output_part_rmv')
       call output_part_rmv_(ipar_rmv, ipar_sink, fp_rmv, fp_sink, nrmv)
 !
     endsubroutine output_part_rmv
@@ -498,7 +520,7 @@ module Io
       integer, intent(in) :: num, nv, snap
       integer, dimension(nv), intent(in) :: ID
 !
-      call switch_io
+      call switch_io('output_stalker_init')
       call output_stalker_init_(num, nv, snap, ID)
 !
     endsubroutine output_stalker_init
@@ -513,7 +535,7 @@ module Io
       integer, intent(in), optional :: nvar
       logical, intent(in), optional :: lfinalize
 !
-      call switch_io
+      call switch_io('output_stalker')
       call output_stalker_(label, mv, nv, data, nvar, lfinalize)
 !
     endsubroutine output_stalker
@@ -522,7 +544,7 @@ module Io
 
       use Io_out, only: output_part_finalize_ => output_part_finalize
 
-      call switch_io
+      call switch_io('output_part_finalize')
       call output_part_finalize_
 !
     endsubroutine output_part_finalize
@@ -536,7 +558,7 @@ module Io
       character (len=*), dimension (nc), intent(in) :: labels
       real, dimension (mv,nc), intent(in) :: fq
 !
-      call switch_io
+      call switch_io('output_pointmass')
       call output_pointmass_(file, labels, fq, mv, nc)
 !
     endsubroutine output_pointmass
@@ -550,7 +572,7 @@ module Io
       character (len=*) :: file
       character (len=*), intent(in), optional :: label
 !
-      call switch_io
+      call switch_io('output_globals')
       call output_globals_(file, a, nv, label)
 
     endsubroutine output_globals
@@ -571,7 +593,7 @@ module Io
 !
       character (len=*), intent(in), optional :: file
 !
-      call switch_io
+      call switch_io('init_write_persist')
       init_write_persist=init_write_persist_(file)
 
     endfunction init_write_persist
@@ -583,7 +605,7 @@ module Io
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
 !
-      call switch_io
+      call switch_io('write_persist_id')
       write_persist_id = write_persist_id_(label, id)
 !
     endfunction write_persist_id
@@ -713,7 +735,7 @@ module Io
       integer, intent(in) :: id
       logical, intent(in) :: value
 !
-      call switch_io
+      call switch_io('write_persist_logical_0D')
       write_persist_logical_0D = write_persist_logical_0D_(label, id, value)
 !
     endfunction write_persist_logical_0D
@@ -726,7 +748,7 @@ module Io
       integer, intent(in) :: id
       logical, dimension(:), intent(in) :: value
 !
-      call switch_io
+      call switch_io('write_persist_logical_1D')
       write_persist_logical_1D = write_persist_logical_1D_(label, id, value)
 !
     endfunction write_persist_logical_1D
@@ -739,7 +761,7 @@ module Io
       integer, intent(in) :: id
       integer, intent(in) :: value
 !
-      call switch_io
+      call switch_io('write_persist_int_0D')
       write_persist_int_0D = write_persist_int_0D_(label, id, value)
 !
     endfunction write_persist_int_0D
@@ -752,7 +774,7 @@ module Io
       integer, intent(in) :: id
       integer, dimension(:), intent(in) :: value
 !
-      call switch_io
+      call switch_io('write_persist_int_1D')
       write_persist_int_1D = write_persist_int_1D_(label, id, value)
 !
     endfunction write_persist_int_1D
@@ -765,7 +787,7 @@ module Io
       integer, intent(in) :: id
       real, intent(in) :: value
 !
-      call switch_io
+      call switch_io('write_persist_real_0D')
       write_persist_real_0D = write_persist_real_0D_(label, id, value)
 !
     endfunction write_persist_real_0D
@@ -778,7 +800,7 @@ module Io
       integer, intent(in) :: id
       real, dimension(:), intent(in) :: value
 !
-      call switch_io
+      call switch_io('write_persist_real_1D')
       write_persist_real_1D = write_persist_real_1D_(label, id, value)
 !
     endfunction write_persist_real_1D
@@ -796,7 +818,7 @@ module Io
       integer, intent(in) :: id
       type(torus_rect), intent(in) :: value
 !
-      call switch_io
+      call switch_io('write_persist_torus_rect')
       write_persist_torus_rect = write_persist_torus_rect_(label, id, value)
 !
     endfunction write_persist_torus_rect

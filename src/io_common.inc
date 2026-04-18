@@ -1,3 +1,31 @@
+! vi: syntax=fortran
+!
+!***********************************************************************
+    function gen_in_snapname(stem,ext) result(filename)
+!
+!  Constructs filename for snapshot to be read from stem and extension ext. Appends '.bck'
+!  in order to read the backup file in case the wanted file is absent, but the backup file exists.
+!  Fatal error if neither exists.
+!
+!  12-apr-26/MR: coded
+!
+      use File_Io, only: file_exists
+
+      character(LEN=fnlen) :: stem, filename
+      character(LEN=labellen) :: ext
+
+      filename = trim(stem)//'.'//trim(ext)
+      if (.not.file_exists(trim(directory_snap)//'/'//trim(filename))) then
+        if (lbackup_snap) then
+          if (.not.file_exists(trim(directory_snap)//'/'//trim(filename)//'.bck')) then
+            call fatal_error('gen_filename','neither snapshot file '//trim(filename)//' nor '// trim(filename)//'.bck exists')
+	  else
+	    filename=trim(filename)//'.bck'
+          endif
+        endif
+      endif
+
+    endfunction gen_in_snapname
 !***********************************************************************
     subroutine wdim_default_grid(file)
 !
@@ -251,5 +279,24 @@
       call mpibcast(f_ode,n_odevars)
   
     endsubroutine input_ode
+!***********************************************************************
+    subroutine read_profile(fname, type, a, np, lhas_ghost)
+!
+!  Read a profile from a file (taken from stratification, for example).
+!
+!  15-may-15/MR: coded as wrapper for input_profile
+!                avoids use HDF5_IO in physics modules.
+!
+      use HDF5_IO, only: input_profile
+!
+      character (len=*), intent(in) :: fname
+      character, intent(in) :: type
+      integer, intent(in) :: np
+      real, dimension(np), intent(out) :: a
+      logical, optional :: lhas_ghost
+
+      call input_profile(fname, type, a, np, lhas_ghost)
+
+    endsubroutine read_profile
 !***********************************************************************
 

@@ -12,10 +12,9 @@
 module Io
 !
   use Cdata
-  use Cparam, only: intlen, fnlen, max_int
   use File_io, only: delete_file
   use HDF5_IO
-  use Messages, only: fatal_error, svn_id, warning
+  use Messages, only: fatal_error, svn_id, warning, not_implemented
 !
   implicit none
 !
@@ -32,8 +31,7 @@ module Io
   logical :: lcollective_IO=.true.
   character (len=labellen) :: IO_strategy="HDF5"
 !
-  !Not used so on comment
-  !character (len=fnlen) :: last_snapshot = ""
+  !character (len=fnlen) :: last_snapshot = ""  !not unsed
   logical :: lread_add
   character (len=fnlen) :: varfile_name
 !
@@ -58,7 +56,7 @@ module Io
 
       call get_environment_variable ('HDF5_USE_FILE_LOCKING', locking)
       if (trim(locking) /= 'FALSE') &
-          call warning ('register_io', 'HDF5 files are possibly locked; writing may fail.')
+          call warning ('register_io', 'HDF5 files are possibly locked; writing may fail')
 !
     endsubroutine register_io
 !***********************************************************************
@@ -270,7 +268,7 @@ module Io
       call create_group_hdf5 (group)
       if (label == 'z') then
         allocate (component(size(data,2),size(data,3)), stat = alloc_err)
-        if (alloc_err > 0) call fatal_error('output_average_2D', 'Could not allocate memory for component')
+        if (alloc_err > 0) call fatal_error('output_average_2D', 'could not allocate component')
         do ia = 1, nc
           component = data(ia,:,:)
           local_data => component
@@ -303,8 +301,6 @@ module Io
 !
 !  13-nov-20/ccyang: wrapper
 !
-      use HDF5_IO, only: hdf5_output_slice_position
-!
       call hdf5_output_slice_position
 !
     endsubroutine output_slice_position
@@ -314,8 +310,6 @@ module Io
 !  Append to a slice file
 !
 !  13-nov-20/ccyang: wrapper
-!
-      use HDF5_IO, only: hdf5_output_slice
 !
       logical, intent(in) :: lwrite
       real, intent(in) :: time
@@ -383,7 +377,6 @@ module Io
 !  21-jan-24/ccyang: stub
 !
       use General, only: keep_compiler_quiet
-      use Messages, only: not_implemented
 !
       integer, dimension(:), intent(in) :: ipar_rmv, ipar_sink
       real, dimension(:,:), intent(in) :: fp_rmv, fp_sink
@@ -530,7 +523,6 @@ module Io
 !  12-Oct-2023/Fred: ivar0 optional start parameter for handling change of labels
 !                    e.g. rho2lnrho
 !
-      use File_io, only: backskip_to_time
       use General, only: ioptest
       use Syscalls, only: islink
 !
@@ -543,14 +535,14 @@ module Io
       character (len=fnlen) :: dataset, dataset_var
       integer :: pos
 !
-      varfile_name = trim(directory_snap)//'/'//trim(file)//'.h5'
+      varfile_name = trim(directory_snap)//'/'//trim(gen_in_snapname(file,'h5'))
       dataset = 'f'
       if (present (label)) dataset = label
       if (dataset == 'globals') then
         if ((file(1:7) == 'timeavg') .or. (file(1:4) == 'TAVG')) then
           varfile_name = trim(datadir)//'/averages/'//trim(file)//'.h5'
         else
-          varfile_name = trim(datadir_snap)//'/'//trim(file)//'.h5'
+          varfile_name = trim(datadir_snap)//'/'//trim(file)//'.h5'   !MR: strange - directly in data?
         endif
       endif
 !
@@ -626,7 +618,7 @@ module Io
         if (.not.lomit_add_data) then
 !
           allocate (gx(mxgrid), gy(mygrid), gz(mzgrid), stat=alloc_err)
-          if (alloc_err > 0) call fatal_error ('input_snap', 'Could not allocate memory for gx,gy,gz', .true.)
+          if (alloc_err > 0) call fatal_error ('input_snap', 'could not allocate gx,gy,gz', .true.)
 
           lerrcont=.false.
           if (lroot) then
@@ -699,6 +691,7 @@ module Io
           if (snaplink/='') then
             call system_cmd('rm -f '//snaplink)
             snaplink=''
+!if (lroot) print*,'deleted link'
           endif
 !
           deallocate (gx, gy, gz)
@@ -707,7 +700,6 @@ module Io
       endif
 !
 contains
-!
 !------------------------------------------------------------------------------------------------
       subroutine recover_time_from_series(time)
 !
@@ -760,8 +752,6 @@ contains
 !
 !  13-nov-20/ccyang: wrapper
 !
-      use HDF5_IO, only: hdf5_input_slice
-!
       character(len=*), intent(in) :: file
       real, intent(out):: time, pos
       real, dimension(:,:,:), intent(out):: data
@@ -777,7 +767,6 @@ contains
 !  13-nov-20/ccyang: wrapper
 !
       use General, only: scattered_array
-      use HDF5_IO, only: hdf5_input_slice
 !
       character(len=*), intent(in) :: file
       real, intent(out):: pos
@@ -854,7 +843,7 @@ contains
       if (lroot) then
         call file_open_hdf5 (filename, read_only=.true., global=.false.)
         call input_hdf5 ('number', mv_in)
-        if (mv_in /= mv) call fatal_error ("input_pointmass", "Number of points seems incorrect.", .true.)
+        if (mv_in /= mv) call fatal_error ("input_pointmass", "Number of points seems incorrect", .true.)
         if (mv_in > 0) then
           do pos=1, nc
             label = trim (labels(pos))
@@ -1288,7 +1277,7 @@ contains
       call keep_compiler_quiet(label)
       read_persist_torus_rect = .false.
       !Poor man's keep_compiler_quiet
-      if(.false.) print*,value%th
+      if (.false.) print*,value%th
 !
     endfunction read_persist_torus_rect
 !***********************************************************************

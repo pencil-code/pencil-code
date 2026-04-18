@@ -1,6 +1,6 @@
 module Global_pushpars
+
   use Cdata
-  use Cparam
 
 contains
 !***********************************************************************
@@ -446,10 +446,10 @@ contains
     call copy_addr(iby,p_par(1396)) ! int
     call copy_addr(ibb,p_par(1397)) ! int
     do j = 1,mvar
-        if(bcz12(j,TOP) == 'pot') luses_aa_pot2_top = .true.
-        if(bcz12(j,BOT) == 'pot') luses_aa_pot2_bot = .true.
-        if(bcz12(j,TOP) == 'pwd') luses_aa_pwd_top = .true.
-        if(bcz12(j,BOT) == 'pwd') luses_aa_pwd_bot = .true.
+      if (bcz12(j,TOP) == 'pot') luses_aa_pot2_top = .true.
+      if (bcz12(j,BOT) == 'pot') luses_aa_pot2_bot = .true.
+      if (bcz12(j,TOP) == 'pwd') luses_aa_pwd_top = .true.
+      if (bcz12(j,BOT) == 'pwd') luses_aa_pwd_bot = .true.
     enddo
     call copy_addr(luses_aa_pot2_top,p_par(1398)) ! bool
     call copy_addr(luses_aa_pot2_bot,p_par(1399)) ! bool
@@ -466,8 +466,10 @@ contains
     call copy_addr(ij2t,p_par(1410)) ! int
     call copy_addr(icp,p_par(1411)) ! int
     call copy_addr(irr,p_par(1412)) ! int
-
     call copy_addr(wav1,p_par(1413))
+    !call copy_addr(necessary,p_par(1414))  ! bool (ny*nz)
+    call copy_addr(imn,p_par(1415))  ! int
+
   endsubroutine pushpars2c
 !***********************************************************************
 endmodule Global_pushpars
