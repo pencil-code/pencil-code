@@ -36,7 +36,7 @@ module Special
 ! input parameters
 !
   real, dimension (ninit) :: amplee=0.0 !, kx_aa=1.0, ky_aa=1.0, kz_aa=1.0
-  real, dimension (nx) :: etaSchw
+  real, dimension (nx) :: etaSchw, diffus_etaSchw
   real :: alpf=0., alpfpsi=0.
   real :: ampl_ex=0.0, ampl_ey=0.0, ampl_ez=0.0, ampl_a0=0.0
   real :: kx_ex=0.0, kx_ey=0.0, kx_ez=0.0
@@ -124,6 +124,7 @@ module Special
 ! Declare any index variables necessary for main or
 !
   real :: c_light2
+  real :: max_sigE
 !
 ! other variables (needs to be consistent with reset list below)
 !
@@ -155,6 +156,8 @@ module Special
   integer :: idiag_eym=0        ! DIAG_DOC: $\left<E_y\right>$
   integer :: idiag_ezm=0        ! DIAG_DOC: $\left<E_z\right>$
   integer :: idiag_etaSchw=0    ! DIAG_DOC: $1/\left<\sigma_\mathrm{E}\right>$
+  integer :: idiag_dteta=0      ! DIAG_DOC: $dt/cdtv$
+  integer :: idiag_dtsigE=0     ! DIAG_DOC: $dt/cdt\_sigE$
   integer :: idiag_sigEm=0      ! DIAG_DOC: $\left<\sigma_\mathrm{E}\right>$
   integer :: idiag_sigBm=0      ! DIAG_DOC: $\left<\sigma_\mathrm{B}\right>$
   integer :: idiag_sigErms=0    ! DIAG_DOC: $\left<\sigma_\mathrm{E}^2\right>^{1/2}$
@@ -816,9 +819,10 @@ module Special
 !
       if (lfirst.and.ldt.and.ldt_disp_current) then
         if (ladvance_ee) then
-          dt1_max=max(dt1_max,maxval(p%sigE)/cdt_sigE)
+          dt1_max=max(dt1_max,p%sigE/cdt_sigE)
         else
-        maxdiffus=max(maxdiffus,etaSchw*dxyz_2)
+        diffus_etaSchw=etaSchw*dxyz_2
+        maxdiffus=max(maxdiffus,diffus_etaSchw)
         endif
       endif
 !
@@ -1282,6 +1286,13 @@ module Special
         call sum_mn_name(constrainteqn,idiag_constrainteqn)
       endif
 !
+!  Fractional timestep constraints.
+!
+      call max_mn_name(p%sigE/cdt_sigE,idiag_dtsigE,l_dt=.true.)
+      call max_mn_name(diffus_etaSchw/cdtv,idiag_dteta,l_dt=.true.)
+!
+!  Diagnostics.
+!
       call calc_1d_diagnostics_special(p)
 !
     endsubroutine calc_diagnostics_special
@@ -1370,7 +1381,8 @@ module Special
         idiag_mfpf=0; idiag_fppf=0; idiag_afact=0
         idiag_rhoerms=0; idiag_divErms=0; idiag_divJrms=0
         idiag_rhoem=0; idiag_count_eb0=0; idiag_divEm=0; idiag_divJm=0; idiag_constrainteqn=0
-        idiag_etaSchw=0; idiag_sigEm=0; idiag_sigBm=0; idiag_sigErms=0; idiag_sigBrms=0
+        idiag_dteta=0; idiag_dtsigE=0; idiag_etaSchw=0
+        idiag_sigEm=0; idiag_sigBm=0; idiag_sigErms=0; idiag_sigBrms=0
         idiag_ebm=0; idiag_Johmrms=0; idiag_curlBrms=0; idiag_adphiBm=0; idiag_adphiBrms=0
         idiag_sigEE2m=0; idiag_sigBBEm=0
         idiag_eprimerms=0; idiag_bprimerms=0; idiag_jprimerms=0; idiag_gam_EBrms=0; 
@@ -1405,6 +1417,8 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'rhoem',idiag_rhoem)
         call parse_name(iname,cname(iname),cform(iname),'count_eb0',idiag_count_eb0)
         call parse_name(iname,cname(iname),cform(iname),'etaSchw',idiag_etaSchw)
+        call parse_name(iname,cname(iname),cform(iname),'dtsigE',idiag_dtsigE)
+        call parse_name(iname,cname(iname),cform(iname),'dteta',idiag_dteta)
         call parse_name(iname,cname(iname),cform(iname),'sigEm',idiag_sigEm)
         call parse_name(iname,cname(iname),cform(iname),'sigBm',idiag_sigBm)
         call parse_name(iname,cname(iname),cform(iname),'ebm',idiag_ebm)
