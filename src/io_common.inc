@@ -11,8 +11,8 @@
 !
       use File_Io, only: file_exists
 
-      character(LEN=fnlen) :: stem, filename
-      character(LEN=3) :: ext
+      character(LEN=*) :: stem,ext
+      character(LEN=fnlen) :: filename
 
       filename = trim(stem)//'.'//trim(ext)
       if (.not.file_exists(trim(directory_snap)//'/'//trim(filename))) then
