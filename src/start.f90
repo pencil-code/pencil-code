@@ -360,11 +360,11 @@ program start
 !  and read modify_filename into f
 !
   if (lmodify) then
-    call rsnap('var.dat',df,mvar,lread_nogrid)
+    call rsnap('var',df,mvar,lread_nogrid)
     call rsnap(modify_filename,f,mvar,lread_nogrid)
   else
     if (lread_oldsnap) then
-      call rsnap('var.dat',f,mvar,lread_nogrid)
+      call rsnap('var',f,mvar,lread_nogrid)
     else
       f(:,:,:,1:mvar)=0.0
     endif
