@@ -6508,7 +6508,8 @@ module Initcond
 !
     endsubroutine power_randomphase_hel
 !***********************************************************************
-    subroutine bunch_davies(f,i1a,i1b,i2a,i2b,ampl,kpeak,deriv_prefactor,lappy_BD_k1D_factor)
+    subroutine bunch_davies(f,i1a,i1b,i2a,i2b,ampl,kpeak,deriv_prefactor, &
+        lappy_BD_k1D_factor,lapply_BD_kNy_factor,linv)
 !
 !  21-mar-25/axel: adapted from power_randomphase_hel
 !  21-may-25/axel: when kpeak<0, interpret is as sharp cutoff; powerlaw otherwise.
@@ -6523,8 +6524,8 @@ module Initcond
       real, dimension (:,:,:), allocatable :: k1, r
       real, dimension (:), allocatable :: kx, ky, kz
       real :: ampl, ampl_scaled, kpeak, deriv_prefactor, scale_factor=1.,ksteepness=5.
-      logical :: linv=.true.
-      logical, optional :: lappy_BD_k1D_factor
+      real :: kNy_x, kNy_y, kNy_z
+      logical, optional :: lappy_BD_k1D_factor,lapply_BD_kNy_factor,linv
 !
       if (ampl==0.) then
         if (lroot) print*,'bunch_davies: do nothing with variables i1a,i1b,i2a,i2b=',i1a,i1b,i2a,i2b
@@ -6536,7 +6537,12 @@ module Initcond
 !  But with this factor included, the spectra become independent of k1.
 !
       scale_factor=2*pi/Lx
-      if (loptest(lappy_BD_k1D_factor)) then
+      if (loptest(lapply_BD_kNy_factor)) then
+        kNy_x=2*pi*nxgrid/Lx
+        kNy_y=2*pi*nygrid/Ly
+        kNy_z=2*pi*nzgrid/Lz
+        ampl_scaled=ampl*sqrt(kNy_x*kNy_y*kNy_z)
+      elseif (loptest(lappy_BD_k1D_factor)) then
         ampl_scaled=ampl*scale_factor**1.5
       else
         ampl_scaled=ampl
@@ -6640,9 +6646,9 @@ module Initcond
 !  Fourier transform to real space.
 !
       do i=1,1+i1b-i1a
-        call fft_xyz_parallel(u_re(:,:,:,i),u_im(:,:,:,i),linv=linv)
+        call fft_xyz_parallel(u_re(:,:,:,i),u_im(:,:,:,i),linv=loptest(linv))
         if (i2a>0) &
-          call fft_xyz_parallel(v_re(:,:,:,i),v_im(:,:,:,i),linv=linv)
+          call fft_xyz_parallel(v_re(:,:,:,i),v_im(:,:,:,i),linv=loptest(linv))
       enddo
 !
 !  Use real parts of u and v for A and E. But do the second part only if

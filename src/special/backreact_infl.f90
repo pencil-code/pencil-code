@@ -139,7 +139,9 @@ module Special
   logical :: lheating_keep_on=.false.    !PAR_DOC: heating criterion
   logical :: ldefine_a2rhopm_without_Vpotential=.false.    !PAR_DOC: should be false to have correct results
   logical :: la2rhop_wrong_factor=.false. !PAR_DOC: should be false to have correct results
-  logical :: lappy_BD_k1D_factor=.false. !PAR_DOC: appy $k_1^D$ factor in the Bunch-Davies initial condition.
+  logical :: lappy_BD_k1D_factor=.false. !PAR_DOC: apply $k_1^D$ factor in the Bunch-Davies initial condition (NOTE typo in name!)
+  logical :: lapply_BD_kNy_factor=.false. !PAR_DOC: apply $1/N^(D/2)$ factor in the Bunch-Davies initial condition.
+  logical :: linv_BD=.true.              !PAR_DOC: apply forward transform in the Bunch-Davies initial condition.
   logical :: lswitch_toMHD_when_nophi=.true. !PAR_DOC: switch to MHD when phi evolution is turned off.
   logical, pointer :: lphi_hom, lphi_linear_regime, lnoncollinear_EB, lnoncollinear_EB_aver
   logical, pointer :: lcollinear_EB, lcollinear_EB_aver, lmass_suppression
@@ -165,8 +167,9 @@ module Special
       lrho_chi, scale_rho_chi_Heqn, scale_rho_rad_Heqn, amplee_BD_prefactor, deriv_prefactor_ee, &
       lrho_rad, init_rho_rad, Gamma_phi0, lconf_time, &
       echarge_type, init_rho_chi, rho_chi_init, lrho_chi_inhom, rhophim_crit, &
-      wstate_crit, lwstate_crit, lwstate_crit_old, wstate_tolerance, lsolve_for_phi_always, heating_choice, &
-      ldefine_a2rhopm_without_Vpotential, la2rhop_wrong_factor, lappy_BD_k1D_factor
+      wstate_crit, lwstate_crit, lwstate_crit_old, wstate_tolerance, lsolve_for_phi_always, &
+      heating_choice, ldefine_a2rhopm_without_Vpotential, la2rhop_wrong_factor, &
+      lappy_BD_k1D_factor, lapply_BD_kNy_factor, linv_BD
 !
   namelist /special_run_pars/ &
       initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
@@ -191,6 +194,7 @@ module Special
   integer :: idiag_dphirms=0    ! DIAG_DOC: $\left<(\phi')^2\right>^{1/2}$
   integer :: idiag_dtphi=0      ! DIAG_DOC: $dt/cdtphi$
   integer :: idiag_Hscriptm=0   ! DIAG_DOC: $\left<{\cal a*H}\right>$
+  integer :: idiag_ascale=0     ! DIAG_DOC: $a$
   integer :: idiag_lnam=0       ! DIAG_DOC: $\left<\ln a\right>$
   integer :: idiag_ddotam=0     ! DIAG_DOC: $a''/a$
   integer :: idiag_a2rhopm=0    ! DIAG_DOC: $a^2 (\rho+p)$
@@ -427,14 +431,16 @@ module Special
             deriv_prefactor=1.
             call bunch_davies(f,iinfl_phi,iinfl_phi,iinfl_dphi,iinfl_dphi, &
               amplphi_BD,kpeak_phi,deriv_prefactor, &
-              lappy_BD_k1D_factor=lappy_BD_k1D_factor)
+              lappy_BD_k1D_factor=lappy_BD_k1D_factor, &
+              lapply_BD_kNy_factor=lapply_BD_kNy_factor, linv=linv_BD)
             if (amplee_BD_prefactor/=0.) then
               amplee_BD=amplee_BD_prefactor*Hubble_ini
               if (iex>0) then
                 deriv_prefactor=deriv_prefactor_ee
                 call bunch_davies(f,iax,iaz,iex,iez, &
                   amplee_BD,kpeak_phi,deriv_prefactor, &
-                  lappy_BD_k1D_factor=lappy_BD_k1D_factor)
+                  lappy_BD_k1D_factor=lappy_BD_k1D_factor, &
+                  lapply_BD_kNy_factor=lapply_BD_kNy_factor, linv=linv_BD)
               else
                 deriv_prefactor=0.
               endif
@@ -912,8 +918,9 @@ module Special
         call get_Hscript_and_a2(Hscript_diagnos,a2rhom_all_diagnos)
         if (lflrw) lnascale=f_ode(iinfl_lna)
         call save_name(Hscript_diagnos,idiag_Hscriptm)
-        call save_name(lnascale,idiag_lnam)
         call save_name(ddotam_all_diagnos,idiag_ddotam)
+        call save_name(lnascale,idiag_lnam)
+        call save_name(ascale,idiag_ascale)
         call save_name(a2rhopm_all_diagnos,idiag_a2rhopm)
         call save_name(a2rhom_all_diagnos,idiag_a2rhom)
         call save_name(a2rhophim_all_diagnos,idiag_a2rhophim)
@@ -1009,7 +1016,7 @@ module Special
       if (lreset) then
         idiag_phim=0; idiag_phi2m=0; idiag_phirms=0
         idiag_dphim=0; idiag_dphi2m=0; idiag_dphirms=0; idiag_dtphi=0
-        idiag_Hscriptm=0; idiag_lnam=0; idiag_ddotam=0
+        idiag_Hscriptm=0; idiag_lnam=0; idiag_ascale=0; idiag_ddotam=0
         idiag_a2rhopm=0; idiag_a2rhom=0; idiag_a2rhophim=0
         idiag_a2rhogphim=0; idiag_rho_chi=0; idiag_rho_rad=0; idiag_sigEma=0
         idiag_sigBma=0; idiag_count_eb0a=0; idiag_heating=0; idiag_wstate=0
@@ -1026,6 +1033,7 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'dtphi',idiag_dtphi)
         call parse_name(iname,cname(iname),cform(iname),'Hscriptm',idiag_Hscriptm)
         call parse_name(iname,cname(iname),cform(iname),'lnam',idiag_lnam)
+        call parse_name(iname,cname(iname),cform(iname),'ascale',idiag_ascale)
         call parse_name(iname,cname(iname),cform(iname),'ddotam',idiag_ddotam)
         call parse_name(iname,cname(iname),cform(iname),'a2rhopm',idiag_a2rhopm)
         call parse_name(iname,cname(iname),cform(iname),'a2rhom',idiag_a2rhom)
