@@ -23,7 +23,7 @@ module Initcond
   public :: soundwave,sinwave,sinwave_phase,coswave,coswave_phase,cos_cos_sin
   public :: hatwave
   public :: acosy
-  public :: sph_constb,tanh_hyperbola,sech2x,coalesce_tubes
+  public :: sph_constb,tanh_hyperbola,sech2x,coalesce_tubes,coalesce_tubes_pe
   public :: gaunoise, posnoise, posnoise_rel
   public :: gaunoise_rprof
   public :: gaussian, gaussian3d, gaussianpos
@@ -8226,6 +8226,44 @@ module Initcond
     enddo 
 
   end subroutine
+
+!***********************************************************************
+  subroutine coalesce_tubes_pe(amp,f,ix,width,cs20)
+
+    !
+    !  initial vector potential for coalescing tubes/islands in 2D.
+    !  reference: https://doi.org/10.1063/1.3420208 -- Huang and Bhattacharjee 2010
+    !
+    !  7 Apr 2026/vinay.kumar
+    !
+    
+        real, dimension (mx,my,mz,mfarray) :: f
+        real, dimension (mx,my) :: By0, By
+        real, intent(in) :: amp, width, cs20
+        integer, intent(in) :: ix
+        real :: xx, yy
+        integer :: m,l
+    
+        do m = m1,m2 
+          do l = l1,l2 
+            xx = x(l)*2*pi/Lx
+            yy = y(m)*2*pi/Ly
+            f(l,m,:,ix)   = 0.
+            f(l,m,:,ix+1) = 0.
+            f(l,m,:,ix+2) = amp/(2*pi) * tanh(xx/width) * cos(yy/2) * sin(xx)
+            By(l,m) = amp/(2*pi)/width/cosh(xx/width)**2  * cos(yy/2) * sin(xx) + &
+                          amp/(2*pi) * tanh(xx/width) * cos(yy/2) * cos(xx)
+            By0(l,m)= amp/(2*pi) * cos(xx) * cos(yy/2)        
+            !f(l,m,:,ilnrho) = log(exp(f(l,m,:,ilnrho)) &
+            !                  +(2*pi/Lx)*(2*pi/Ly)*(1/cs20)*5/8*(amp/(2*pi)*cos(yy/2)*sin(xx))**2 &
+            !                  +(By0(l,m)**2 - By(l,m)**2)/(2.*cs20))
+            
+            
+            !    set pressure equilibrium in start.in
+          enddo
+        enddo 
+    
+      end subroutine
 !***********************************************************************
     subroutine pre_stellar_cloud(f, datafile, mass_cloud,  &
         cloud_mode, T_cloud_out_rel, dens_coeff, &

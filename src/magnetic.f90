@@ -2301,6 +2301,7 @@ module Magnetic
         case ('tanhxy'); call tanh_hyperbola(amplaa(j),f,iaa,sheet_position,sheet_thickness,sheet_hyp)
         case ('sech2x'); call sech2x(amplaa(j),f,iaa,sheet_thickness)
         case ('coalesce_tubes'); call coalesce_tubes(amplaa(j),f,iaa,sheet_thickness,cs20)
+        case ('coalesce_tubes_pe'); call coalesce_tubes_pe(amplaa(j),f,iaa,sheet_thickness,cs20)
         case ('exponential'); call exponential(amplaa(j),f,iaa,kz_aa(j))
         case ('bsiny'); call acosy(amplaa(j),f,iaa,ky_aa(j))
         case ('mode'); call modev(amplaa(j),coefaa,f,iaa,kx_aa(j),ky_aa(j),kz_aa(j))
