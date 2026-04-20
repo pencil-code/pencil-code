@@ -3809,6 +3809,7 @@ samples/spherical-convection/run.in -text
 samples/spherical-convection/src/Makefile.local -text
 samples/spherical-convection/src/cparam.local -text
 samples/spherical-convection/start.in -text
+samples/spherical-gdisk-planet-thermo/NEVERLOCK -text
 samples/spherical-gdisk-planet-thermo/README -text
 samples/spherical-gdisk-planet-thermo/print.in -text
 samples/spherical-gdisk-planet-thermo/reference.out -text
