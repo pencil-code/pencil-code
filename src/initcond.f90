@@ -8212,7 +8212,8 @@ module Initcond
     real, dimension (mx,my) :: By0, By
     real, intent(in) :: amp, width, cs20
     integer, intent(in) :: ix
-    real :: xx, yy
+    real :: xx, yy, width_r
+
     integer :: m,l
 
     do m = m1,m2 
@@ -8249,7 +8250,7 @@ module Initcond
         real, dimension (mx,my) :: By0, By
         real, intent(in) :: amp, width, cs20
         integer, intent(in) :: ix
-        real :: xx, yy
+        real :: xx, yy, width_r
         integer :: m,l
     
         do m = m1,m2 
