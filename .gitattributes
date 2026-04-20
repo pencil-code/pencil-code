@@ -4577,6 +4577,7 @@ src/grid.f90 -text
 src/gsl_wrapper.c -text
 src/hdf5_io.h -text
 src/hdf5_io_parallel.f90 -text
+src/hdf5_io_parallel_chunked.f90 -text
 src/headers_c.h -text
 src/heatflux.f90 -text
 src/heatflux.h -text
