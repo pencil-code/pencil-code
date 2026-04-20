@@ -52,6 +52,10 @@ module InitialCondition
 !
       if (lroot) call svn_id( &
            "$Id$")
+
+      call keep_compiler_quiet(npoly_exp)
+      call keep_compiler_quiet(npoly_fac)
+      call keep_compiler_quiet(r_ss)
 !
     endsubroutine register_initial_condition
 !***********************************************************************
@@ -97,13 +101,13 @@ module InitialCondition
       real :: T00, rho00, Rsurf, Tsurf, coef1, L00, sigma, cs2_surf, cs2_top
       real :: cs2_bot
       real :: Tcor, Rmin, wmin, cs2_cor, rho_surf
-      real :: Lsun=3.84e26, Rsun=7e8, Omsun=2.7e-6, Msun=2e30, cvsun=20786.1
+      real :: Lsun=3.84e26, Rsun=7e8, Omsun=2.7e-6, Msun=2e30
       real :: GG=6.67348e-11, rhosun=200., fluxratio, Omsim, gratio, rratio
       real :: T00sun=2.23e6
       real :: volume, total_mass, tmp, tau_KH
       real, pointer :: gravx
       real :: gamma, cv
-      integer :: i, j, n, m, ix, ierr, nsurf, nsurf_global
+      integer :: i, j, n, m, ix, nsurf, nsurf_global
       integer, parameter :: unit=1
 
       character (len=120) :: wfile
