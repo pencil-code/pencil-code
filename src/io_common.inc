@@ -14,7 +14,12 @@
       character(LEN=*) :: stem,ext
       character(LEN=fnlen) :: filename
 
-      filename = trim(stem)//'.'//trim(ext)
+      if (stem(1:3)=='VAR'.and.trim(ext)=='dat') then
+        filename = trim(stem)
+      else
+        filename = trim(stem)//'.'//trim(ext)
+      endif
+
       if (.not.file_exists(trim(directory_snap)//'/'//trim(filename))) then
         if (lbackup_snap) then
           if (.not.file_exists(trim(directory_snap)//'/'//trim(filename)//'.bck')) then
