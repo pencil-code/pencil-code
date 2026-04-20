@@ -1504,7 +1504,7 @@ module HDF5_IO
 !
     endsubroutine output_hdf5_profile_1D
 !***********************************************************************
-    subroutine output_local_hdf5_1D_0D(name, data, pos, array_size, chunk_size)
+    subroutine output_local_hdf5_1D_0D(name, data, pos, chunk_size)
 !
 !  Write a scalar in a chunked HDF5 1D data array at a specified position.
 !
@@ -1512,7 +1512,7 @@ module HDF5_IO
 !
       character(len=*), intent(in) :: name
       real, intent(in) :: data
-      integer, intent(in) :: pos, array_size, chunk_size
+      integer, intent(in) :: pos, chunk_size
 !
       integer(kind=8), dimension(1) :: h5_stride, h5_count, loc_dim, glob_dim, loc_start, glob_start
 !
@@ -1520,12 +1520,9 @@ module HDF5_IO
       if (.not. lwrite) return
 !
       loc_dim(1) = 1
-      glob_dim(1) = array_size
+      glob_dim(1) = pos + 1
       loc_start(1) = pos
       glob_start(1) = 0
-      do while (pos >= glob_dim(1))
-        glob_dim(1) = glob_dim(1) + chunk_size
-      enddo
 !
       ! define 'file-space' to indicate the data portion in the file
       call h5screate_simple_f (1, glob_dim, h5_fspace, h5_err)
@@ -1539,22 +1536,26 @@ module HDF5_IO
         ! open dataset
         call h5dopen_f (h5_file, trim (name), h5_dset, h5_err)
         call check_error (h5_err, 'open dataset', name)
-        if (glob_dim(1) > array_size) then
-          call h5dset_extent_f (h5_dset, glob_dim(1), h5_err)
-          call check_error (h5_err, 'extend dataset', name)
-!          call h5dclose_f (h5_dset, h5_err)
-!          call check_error (h5_err, 'close extended dataset', name)
-!          call h5dopen_f (h5_file, trim (name), h5_dset, h5_err)
-!          call check_error (h5_err, 'reopen extended dataset', name)
-        endif
+        call h5dget_space_f (h5_dset, h5_dspace, h5_err)
+        call h5sget_simple_extent_dims_f (h5_dspace, glob_dim, glob_dim, h5_err)
+ write (*,*) '=> new extent; ', glob_dim(1)
+        call h5dset_extent_f (h5_dset, glob_dim(1), h5_err)
+        call check_error (h5_err, 'extend dataset', name)
+        call h5dget_space_f (h5_file, h5_dspace, h5_err)
+        call check_error (h5_err, 'refresh extended data space', name)
       else
+        ! define 'data-space' to indicate an endlessly growing array
+        call h5screate_simple_f (1, glob_dim, h5_dspace, h5_err, (/ H5S_UNLIMITED_F /))
+        call check_error (h5_err, 'create data space', name)
         ! create the property list
         call h5pcreate_f (H5P_DATASET_CREATE_F, h5_plist, h5_err)
         call check_error (h5_err, 'create property list', name)
         call h5pset_chunk_f (h5_plist, 1, glob_dim, h5_err)
         call check_error (h5_err, 'set propertiy list', name)
+        call h5pset_fill_time_f(h5_plist, H5D_FILL_TIME_NEVER_F, h5_err)
+        call check_error (h5_err, 'set fill time', name)
         ! create the dataset
-        call h5dcreate_f (h5_file, trim (name), h5_ntype, h5_fspace, h5_dset, h5_err, h5_plist)
+        call h5dcreate_f (h5_file, trim (name), h5_ntype, h5_dspace, h5_dset, h5_err, h5_plist)
         call check_error (h5_err, 'create dataset', name)
 !
         call h5pclose_f (h5_plist, h5_err)
@@ -1576,12 +1577,14 @@ module HDF5_IO
       call check_error (h5_err, 'close file space', name)
       call h5sclose_f (h5_mspace, h5_err)
       call check_error (h5_err, 'close memory space', name)
+      call h5sclose_f (h5_dspace, h5_err)
+      call check_error (h5_err, 'close data space', name)
       call h5dclose_f (h5_dset, h5_err)
       call check_error (h5_err, 'close dataset', name)
 !
     endsubroutine output_local_hdf5_1D_0D
 !***********************************************************************
-    subroutine output_local_hdf5_int_1D_0D(name, data, pos, array_size, chunk_size)
+    subroutine output_local_hdf5_int_1D_0D(name, data, pos, chunk_size)
 !
 !  Write a scalar in a chunked HDF5 1D integer data array at a specified position.
 !
@@ -1589,7 +1592,7 @@ module HDF5_IO
 !
       character(len=*), intent(in) :: name
       integer, intent(in) :: data
-      integer, intent(in) :: pos, array_size, chunk_size
+      integer, intent(in) :: pos, chunk_size
 !
       integer(kind=8), dimension(1) :: h5_stride, h5_count, loc_dim, glob_dim, loc_start, glob_start
 !
@@ -1597,12 +1600,9 @@ module HDF5_IO
       if (.not. lwrite) return
 !
       loc_dim(1) = 1
-      glob_dim(1) = array_size
+      glob_dim(1) = pos + 1
       loc_start(1) = pos
       glob_start(1) = 0
-      do while (pos >= array_size)
-        glob_dim(1) = glob_dim(1) + chunk_size
-      enddo
 !
       ! define 'file-space' to indicate the data portion in the file
       call h5screate_simple_f (1, glob_dim, h5_fspace, h5_err)
@@ -1616,22 +1616,21 @@ module HDF5_IO
         ! open dataset
         call h5dopen_f (h5_file, trim (name), h5_dset, h5_err)
         call check_error (h5_err, 'open dataset', name)
-        if (glob_dim(1) > array_size) then
-          call h5dset_extent_f (h5_dset, glob_dim(1), h5_err)
-          call check_error (h5_err, 'extend dataset', name)
-!          call h5dclose_f (h5_dset, h5_err)
-!          call check_error (h5_err, 'close extended dataset', name)
-!          call h5dopen_f (h5_file, trim (name), h5_dset, h5_err)
-!          call check_error (h5_err, 'reopen extended dataset', name)
-        endif
+        call h5dset_extent_f (h5_dset, glob_dim(1), h5_err)
+        call check_error (h5_err, 'extend dataset', name)
+        call h5dget_space_f (h5_file, h5_dspace, h5_err)
+        call check_error (h5_err, 'refresh extended data space', name)
       else
+        ! define 'data-space' to indicate an endlessly growing array
+        call h5screate_simple_f (1, glob_dim, h5_dspace, h5_err, (/ H5S_UNLIMITED_F /))
+        call check_error (h5_err, 'create data space', name)
         ! create the property list
         call h5pcreate_f (H5P_DATASET_CREATE_F, h5_plist, h5_err)
         call check_error (h5_err, 'create property list', name)
         call h5pset_chunk_f (h5_plist, 1, glob_dim, h5_err)
         call check_error (h5_err, 'set propertiy list', name)
         ! create the dataset
-        call h5dcreate_f (h5_file, trim (name), H5T_NATIVE_INTEGER, h5_fspace, h5_dset, h5_err, h5_plist)
+        call h5dcreate_f (h5_file, trim (name), H5T_NATIVE_INTEGER, h5_dspace, h5_dset, h5_err, h5_plist)
         call check_error (h5_err, 'create dataset', name)
 !
         call h5pclose_f (h5_plist, h5_err)
@@ -2423,7 +2422,7 @@ module HDF5_IO
       character (len=fmtlen) label
       character(len=fnlen) :: filename
       logical :: lexists
-      integer :: last, last_iter, array_size
+      integer :: last, last_iter
       integer, parameter :: chunk_size = 1024
 !
       if (.not. lroot) return
@@ -2455,14 +2454,13 @@ module HDF5_IO
             ts_offsets(pos) = last + 1
           endif
         endif
-        array_size = ((ts_offsets(pos) / chunk_size) + 1) * chunk_size
         call create_group_hdf5 (label)
 ! write (*,*) nname, pos, ' '//trim(label), ' offset:', ts_offsets(pos)
-        call output_hdf5 (trim (label)//'/data', data(pos), ts_offsets(pos), array_size, chunk_size)
+        call output_hdf5 (trim (label)//'/data', data(pos), ts_offsets(pos), chunk_size)
         if ((itype_name(pos) >= ilabel_complex) .and. (cform(pos) /= '')) then
-          call output_hdf5 (trim (label)//'/imaginary_part', data_im(pos), ts_offsets(pos), array_size, chunk_size)
+          call output_hdf5 (trim (label)//'/imaginary_part', data_im(pos), ts_offsets(pos), chunk_size)
         endif
-        call output_hdf5 (trim (label)//'/iteration', it-1, ts_offsets(pos), array_size, chunk_size)
+        call output_hdf5 (trim (label)//'/iteration', it-1, ts_offsets(pos), chunk_size)
         call output_hdf5 (trim (label)//'/last', ts_offsets(pos))
         ts_offsets(pos) = ts_offsets(pos) + 1
       enddo
