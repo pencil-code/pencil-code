@@ -8219,6 +8219,8 @@ module Initcond
       do l = l1,l2 
         xx = x(l)*2*pi/Lx
         yy = y(m)*2*pi/Ly
+        width = width*2*pi/Lx
+
         f(l,m,:,ix)   = 0.
         f(l,m,:,ix+1) = 0.
         f(l,m,:,ix+2) = amp/(2*pi) * tanh(xx/width) * cos(yy/2) * sin(xx)
