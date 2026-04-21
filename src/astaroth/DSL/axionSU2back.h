@@ -30,6 +30,16 @@ field_order(AC_iaxi_impsildot__mod__axionsu2back-1) Field F_AXI_IMPSILDOT
 field_order(AC_iaxi_imtl__mod__axionsu2back-1) Field F_AXI_IMTL    
 field_order(AC_iaxi_imtldot__mod__axionsu2back-1) Field F_AXI_IMTLDOT 
 
+field_order(AC_iaxi_ur__mod__axionsu2back-1)      Field F_AXI_UR
+field_order(AC_iaxi_urdot__mod__axionsu2back-1)   Field F_AXI_URDOT
+field_order(AC_iaxi_imur__mod__axionsu2back-1)    Field F_AXI_IMUR
+field_order(AC_iaxi_imurdot__mod__axionsu2back-1) Field F_AXI_IMURDOT
+
+field_order(AC_iaxi_ul__mod__axionsu2back-1)      Field F_AXI_UL
+field_order(AC_iaxi_uldot__mod__axionsu2back-1)   Field F_AXI_ULDOT
+field_order(AC_iaxi_imul__mod__axionsu2back-1)    Field F_AXI_IMUL
+field_order(AC_iaxi_imuldot__mod__axionsu2back-1) Field F_AXI_IMULDOT
+
 Kernel calc_axion_integral(real AC_t__mod__cdata){
   real trdoteff2m
   real trdoteff2km
@@ -247,5 +257,168 @@ Kernel calc_axion_integral(real AC_t__mod__cdata){
   reduce_sum(tleff2m    ,AC_tleff2m_sum)
 }
 #else
+#if LAXIONU1BACK
+global output real AC_edotb_sum__mod__axionu1back
+global output real AC_rhoe__mod__axionu1back
+global output real AC_rhob__mod__axionu1back
+
+
+field_order(AC_iaxi_ar__mod__axionu1back-1)    Field F_AXI_AR
+field_order(AC_iaxi_ardot__mod__axionu1back-1) Field F_AXI_ARDOT 
+field_order(AC_iaxi_al__mod__axionu1back-1)    Field F_AXI_AL
+field_order(AC_iaxi_aldot__mod__axionu1back-1) Field F_AXI_ALDOT
+
+field_order(AC_iaxi_imar__mod__axionu1back-1)    Field F_AXI_IMAR
+field_order(AC_iaxi_imardot__mod__axionu1back-1) Field F_AXI_IMARDOT 
+field_order(AC_iaxi_imal__mod__axionu1back-1)    Field F_AXI_IMAL
+field_order(AC_iaxi_imaldot__mod__axionu1back-1) Field F_AXI_IMALDOT
+
+Kernel calc_axion_integral(real t){
+  suppress_unused_warning(t)
+  real ar
+  real ardot
+  real imar
+  real imardot
+  real areff2
+  real arardoteff
+  real imarardoteff
+  real ardoteff2
+  real imareff2
+  real imardoteff2
+  real al
+  real aldot
+  real imal
+  real imaldot
+  real alaldoteff
+  real imalaldoteff
+  real aleff2
+  real aldoteff2
+  real imaleff2
+  real imaldoteff2
+  real psi
+  real psidot
+  real impsi
+  real impsidot
+  real a
+  real phi_0
+  real phidot_0
+  real v_0
+  real beta_0
+  real vprime_0
+  real phiddot_0
+  real tmp_0
+  real alpha_gmssm_0
+  real h__mod__axionu1back
+  if (AC_lhubble__mod__axionu1back) {
+    phi_0=AC_f_ode__mod__cdata[AC_iaxi_phi__mod__axionu1back-1]
+    phidot_0=AC_f_ode__mod__cdata[AC_iaxi_phidot__mod__axionu1back-1]
+    if(AC_enum_v_choice__mod__axionu1back == enum_alpha_attractors_string) {
+      beta_0=sqrt(2./(3.*AC_alpha__mod__axionu1back))
+      v_0=AC_alpha__mod__axionu1back*AC_m_alpha__mod__axionu1back*pow(((tanh(beta_0*phi_0/2)*tanh(beta_0*phi_0/2))),AC_n_alpha__mod__axionu1back)
+      vprime_0=AC_alpha__mod__axionu1back*AC_m_alpha__mod__axionu1back*AC_n_alpha__mod__axionu1back*beta_0*tanh(beta_0*phi_0/2)*(1./(cosh(beta_0*phi_0/2)*cosh(beta_0*phi_0/2)))
+    }
+    else if(AC_enum_v_choice__mod__axionu1back == enum_quadratic_string)   {
+      v_0=0.5*(AC_m_phi__mod__axionu1back*AC_m_phi__mod__axionu1back)*(phi_0*phi_0)
+      vprime_0=(AC_m_phi__mod__axionu1back*AC_m_phi__mod__axionu1back)*phi_0
+    }
+    else if(AC_enum_v_choice__mod__axionu1back == enum_gmssm_string)   {
+      tmp_0=phi_0/AC_phi_0__mod__axionu1back
+      alpha_gmssm_0=1-AC_alpha1_gmssm__mod__axionu1back
+      v_0=(AC_lambda_gmssm__mod__axionu1back*AC_lambda_gmssm__mod__axionu1back*AC_lambda_gmssm__mod__axionu1back*AC_lambda_gmssm__mod__axionu1back)*(0.5*(tmp_0*tmp_0)-(alpha_gmssm_0*onethird)*(tmp_0*tmp_0*tmp_0*tmp_0*tmp_0*tmp_0)+ (alpha_gmssm_0/10.)*(tmp_0*tmp_0*tmp_0*tmp_0*tmp_0*tmp_0*tmp_0*tmp_0*tmp_0*tmp_0))
+      vprime_0=(AC_lambda_gmssm__mod__axionu1back*AC_lambda_gmssm__mod__axionu1back*AC_lambda_gmssm__mod__axionu1back*AC_lambda_gmssm__mod__axionu1back)*(tmp_0-2*alpha_gmssm_0*(tmp_0*tmp_0*tmp_0*tmp_0*tmp_0)+ alpha_gmssm_0*(tmp_0*tmp_0*tmp_0*tmp_0*tmp_0*tmp_0*tmp_0*tmp_0*tmp_0))/AC_phi_0__mod__axionu1back
+    }
+    else {
+    }
+    if (AC_lbackreact__mod__axionu1back) {
+      h__mod__axionu1back=sqrt(8.*pi*onethird*(1/AC_mpl2__mod__axionu1back)*(0.5*(phidot_0*phidot_0)+v_0+AC_rhoe__mod__axionu1back+AC_rhob__mod__axionu1back))
+    }
+    else {
+      h__mod__axionu1back=sqrt(8.*pi*onethird*(1/AC_mpl2__mod__axionu1back)*(0.5*(phidot_0*phidot_0)+v_0))
+    }
+    phiddot_0=-3.*h__mod__axionu1back*phidot_0-vprime_0
+  }
+  else if (lgpu)   {
+    h__mod__axionu1back=AC_h_init__mod__axionu1back
+  }
+  if (AC_lhubble__mod__axionu1back) {
+    a = exp(AC_f_ode__mod__cdata[AC_iaxi_lna__mod__axionu1back-1])
+  }
+  else {
+    a = 1.
+  }
+  ar   =value(Field(AC_iaxi_ar__mod__axionu1back-1))
+  ardot=value(Field(AC_iaxi_ardot__mod__axionu1back-1))
+  al   =value(Field(AC_iaxi_al__mod__axionu1back-1))
+  aldot=value(Field(AC_iaxi_aldot__mod__axionu1back-1))
+  imar   =value(Field(AC_iaxi_imar__mod__axionu1back-1))
+  imardot=value(Field(AC_iaxi_imardot__mod__axionu1back-1))
+  imal   =value(Field(AC_iaxi_imal__mod__axionu1back-1))
+  imaldot=value(Field(AC_iaxi_imaldot__mod__axionu1back-1))
+  areff2=ar*ar
+  aleff2=al*al
+  ardoteff2=ardot*ardot
+  aldoteff2=aldot*aldot
+  imareff2=imar*imar
+  imaleff2=imal*imal
+  imardoteff2=imardot*imardot
+  imaldoteff2=imaldot*imaldot
+  arardoteff=ar*ardot
+  imarardoteff=imar*imardot
+  alaldoteff=al*aldot
+  imalaldoteff=imal*imaldot
+  if (AC_lquant_filter__mod__axionu1back) {
+    if (AC_horizon_factor__mod__axionu1back==0.) {
+      if (areff2<1./(2.*a*h__mod__axionu1back)) {
+        areff2=0.
+        aleff2=0.
+        imareff2=0.
+        imaleff2=0.
+        aldoteff2=0.
+        ardoteff2=0.
+        imardoteff2=0.
+        imaldoteff2=0.
+        arardoteff=0.
+        imarardoteff=0.
+        alaldoteff=0.
+        imalaldoteff=0.
+      }
+    }
+    else if (AC_horizon_factor__mod__axionu1back>0.) {
+      if (AC_k__mod__axionu1back[vertexIdx.x-NGHOST_VAL]>(a*h__mod__axionu1back*AC_horizon_factor__mod__axionu1back)) {
+        areff2=0.
+        aleff2=0.
+        imareff2=0.
+        imaleff2=0.
+        aldoteff2=0.
+        ardoteff2=0.
+        imardoteff2=0.
+        imaldoteff2=0.
+        arardoteff=0.
+        imarardoteff=0.
+        alaldoteff=0.
+        imalaldoteff=0.
+      }
+    }
+  }
+  b2__mod__axionu1back    = 0.0
+  e2__mod__axionu1back    = 0.0
+  edotb__mod__axionu1back = 0.0
+  if (AC_llnk_spacing_adjustable__mod__axionu1back  ||  AC_llnk_spacing__mod__axionu1back) {
+    b2__mod__axionu1back=0.5*(4.*pi*(AC_k__mod__axionu1back[vertexIdx.x-NGHOST_VAL]*AC_k__mod__axionu1back[vertexIdx.x-NGHOST_VAL]*AC_k__mod__axionu1back[vertexIdx.x-NGHOST_VAL]*AC_k__mod__axionu1back[vertexIdx.x-NGHOST_VAL]*AC_k__mod__axionu1back[vertexIdx.x-NGHOST_VAL])*AC_dlnk__mod__axionu1back)*pow(a,(-4))*(areff2+imareff2+aleff2+imaleff2)/(twopi*twopi*twopi)
+    e2__mod__axionu1back=0.5*(4.*pi*(AC_k__mod__axionu1back[vertexIdx.x-NGHOST_VAL]*AC_k__mod__axionu1back[vertexIdx.x-NGHOST_VAL]*AC_k__mod__axionu1back[vertexIdx.x-NGHOST_VAL])*AC_dlnk__mod__axionu1back)*pow(a,(-2))*(ardoteff2+imardoteff2+aldoteff2+imaldoteff2)/(twopi*twopi*twopi)
+    edotb__mod__axionu1back=(4.*pi*(AC_k__mod__axionu1back[vertexIdx.x-NGHOST_VAL]*AC_k__mod__axionu1back[vertexIdx.x-NGHOST_VAL]*AC_k__mod__axionu1back[vertexIdx.x-NGHOST_VAL]*AC_k__mod__axionu1back[vertexIdx.x-NGHOST_VAL])*AC_dlnk__mod__axionu1back)*a*(arardoteff+imarardoteff-alaldoteff-imalaldoteff)/(twopi*twopi*twopi)
+  }
+  else {
+    b2__mod__axionu1back=0.5*(4.*pi*(AC_k__mod__axionu1back[vertexIdx.x-NGHOST_VAL]*AC_k__mod__axionu1back[vertexIdx.x-NGHOST_VAL]*AC_k__mod__axionu1back[vertexIdx.x-NGHOST_VAL]*AC_k__mod__axionu1back[vertexIdx.x-NGHOST_VAL])*AC_dk__mod__axionu1back)*(areff2+imareff2+aleff2+imaleff2)/(twopi*twopi*twopi)
+    e2__mod__axionu1back=0.5*(4.*pi*(AC_k__mod__axionu1back[vertexIdx.x-NGHOST_VAL]*AC_k__mod__axionu1back[vertexIdx.x-NGHOST_VAL])*AC_dk__mod__axionu1back)*(a*a)*(ardoteff2+imardoteff2+aldoteff2+imaldoteff2)/(twopi*twopi*twopi)
+    edotb__mod__axionu1back=(4.*pi*(AC_k__mod__axionu1back[vertexIdx.x-NGHOST_VAL]*AC_k__mod__axionu1back[vertexIdx.x-NGHOST_VAL]*AC_k__mod__axionu1back[vertexIdx.x-NGHOST_VAL])*AC_dk__mod__axionu1back)*a*(arardoteff+imarardoteff-alaldoteff-imalaldoteff)/(twopi*twopi*twopi)
+  }
+  reduce_sum(b2__mod__axionu1back,AC_rhob__mod__axionu1back)
+  reduce_sum(e2__mod__axionu1back,AC_rhoe__mod__axionu1back)
+  reduce_sum(edotb__mod__axionu1back, AC_edotb_sum__mod__axionu1back)
+}
+
+#else
 Kernel calc_axion_integral(real t){suppress_unused_warning(t)}
+#endif
 #endif
