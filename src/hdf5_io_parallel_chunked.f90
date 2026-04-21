@@ -1536,12 +1536,9 @@ module HDF5_IO
         ! open dataset
         call h5dopen_f (h5_file, trim (name), h5_dset, h5_err)
         call check_error (h5_err, 'open dataset', name)
-        call h5dget_space_f (h5_dset, h5_dspace, h5_err)
-        call h5sget_simple_extent_dims_f (h5_dspace, glob_dim, glob_dim, h5_err)
- write (*,*) '=> new extent; ', glob_dim(1)
         call h5dset_extent_f (h5_dset, glob_dim(1), h5_err)
         call check_error (h5_err, 'extend dataset', name)
-        call h5dget_space_f (h5_file, h5_dspace, h5_err)
+        call h5dget_space_f (h5_dset, h5_dspace, h5_err)
         call check_error (h5_err, 'refresh extended data space', name)
       else
         ! define 'data-space' to indicate an endlessly growing array
@@ -1618,7 +1615,7 @@ module HDF5_IO
         call check_error (h5_err, 'open dataset', name)
         call h5dset_extent_f (h5_dset, glob_dim(1), h5_err)
         call check_error (h5_err, 'extend dataset', name)
-        call h5dget_space_f (h5_file, h5_dspace, h5_err)
+        call h5dget_space_f (h5_dset, h5_dspace, h5_err)
         call check_error (h5_err, 'refresh extended data space', name)
       else
         ! define 'data-space' to indicate an endlessly growing array
@@ -1629,6 +1626,8 @@ module HDF5_IO
         call check_error (h5_err, 'create property list', name)
         call h5pset_chunk_f (h5_plist, 1, glob_dim, h5_err)
         call check_error (h5_err, 'set propertiy list', name)
+        call h5pset_fill_time_f(h5_plist, H5D_FILL_TIME_NEVER_F, h5_err)
+        call check_error (h5_err, 'set fill time', name)
         ! create the dataset
         call h5dcreate_f (h5_file, trim (name), H5T_NATIVE_INTEGER, h5_dspace, h5_dset, h5_err, h5_plist)
         call check_error (h5_err, 'create dataset', name)
@@ -1652,6 +1651,8 @@ module HDF5_IO
       call check_error (h5_err, 'close file space', name)
       call h5sclose_f (h5_mspace, h5_err)
       call check_error (h5_err, 'close memory space', name)
+      call h5sclose_f (h5_dspace, h5_err)
+      call check_error (h5_err, 'close data space', name)
       call h5dclose_f (h5_dset, h5_err)
       call check_error (h5_err, 'close dataset', name)
 !
