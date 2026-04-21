@@ -1164,7 +1164,7 @@ module Io
 !
     endsubroutine output_globals
 !***********************************************************************
-    subroutine input_globals(file, a, nv)
+    subroutine input_globals(file_, a, nv)
 !
 !  Read globals snapshot file, ignoring mesh.
 !
@@ -1172,16 +1172,18 @@ module Io
 !
       use Mpicomm, only: start_serialize,end_serialize
 !
-      character (len=*) :: file
+      character (len=*) :: file_
       integer :: nv
       real, dimension (mx,my,mz,nv) :: a
 !
       real(KIND=rkind8), dimension(:,:,:,:), allocatable :: adb
       real(KIND=rkind4), dimension(:,:,:,:), allocatable :: asg
+      character (len=fnlen) :: file
 !
       if (lserial_io) call start_serialize
-!
-      open(lun_input,FILE=trim(directory_snap)//'/'//file,FORM='unformatted',status='old',action='read')
+
+      file = gen_in_snapname(file_,'dat')
+      open(lun_input,FILE=trim(directory_snap)//'/'//trim(file),FORM='unformatted',status='old',action='read')
 
       if (lread_from_other_prec) then
         if (kind(a)==rkind4) then

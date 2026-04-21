@@ -233,15 +233,7 @@ module NeutralDensity
 !  Tell the BorderProfiles module if we intend to use border driving, so
 !  that the module can request the right pencils.
 !
-      select case (borderlnrhon)
-!
-      case ('zero','0','constant','stratification')
-         call request_border_driving(borderlnrhon)
-      case ('nothing')
-        if (lroot.and.ip<=5) print*,"initialize_neutraldensity: borderlnrhon='nothing'"
-      case default
-         call fatal_error('initialize_neutraldensity','no such borderlnrhon: '//trim(borderlnrhon))
-      endselect
+      call request_border_driving((/borderlnrhon/),'initialize_neutraldensity',ilnrhon)
 !
     endsubroutine initialize_neutraldensity
 !***********************************************************************
@@ -868,9 +860,7 @@ module NeutralDensity
          f_target=(p%rcyl_mn-p%r_mn)/(cs20*p%r_mn)
          if (lneutraldensity_nolog) f_target=exp(f_target)
          call border_driving(f,df,p,f_target,ilnrhon)
-      case ('nothing')
       endselect
-!
 !
     endsubroutine set_border_neutraldensity
 !***********************************************************************

@@ -385,7 +385,7 @@ module Io
 !
       use File_io, only: backskip_to_time
       use Mpicomm, only: localize_xy, mpibcast_real, stop_it_if_any, MPI_COMM_PENCIL
-      use Syscalls, only: sizeof_real
+      use Syscalls, only: sizeof_real, islink
 !
       character (len=*) :: file_
       integer, intent(in) :: nv
@@ -409,6 +409,7 @@ module Io
         if (alloc_err > 0) call fatal_error ('input_snap', 'Could not allocate memory for ga', .true.)
 !
         file=gen_in_snapname(file_,'dat')
+        if (islink(trim(directory_snap)//'/'//trim(file))) snaplink=trim(directory_snap)//'/'//trim(file)
         if (ip <= 8) print *, 'input_snap: open ', file
 !
         if (ldirect_access) then
@@ -485,12 +486,19 @@ module Io
 !
 !  11-Feb-2012/Bourdin.KIS: coded
 !
+      use Syscalls, only: system_cmd
+
       if (persist_initialized) then
         persist_initialized = .false.
         persist_last_id = -max_int
       endif
 !
       if (ldistribute_persist .or. lfirst_proc_xy) close (lun_input)
+!
+      if (snaplink/='') then
+        call system_cmd('rm -f '//snaplink)
+        snaplink=''
+      endif
 !
     endsubroutine input_snap_finalize
 !***********************************************************************

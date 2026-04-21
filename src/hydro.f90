@@ -1334,25 +1334,13 @@ module Hydro
            borderuu(1)/='nothing' .and. &
            borderuu(2)=='nothing' .and. &
            borderuu(3)=='nothing') then
-        borderuu(2)=borderuu(1)
-        borderuu(3)=borderuu(1)
+        borderuu(2:3)=borderuu(1)
       endif
 !
 !  Tell the BorderProfiles module if we intend to use border driving, so
 !  that the module can request the right pencils.
 !
-      do j=1,3
-!
-        select case (borderuu(j))
-        case ('zero','0','constant','initial-condition')
-          call request_border_driving(borderuu(j))
-        case ('nothing')
-          if (lroot.and.ip<=5) print*,"initialize_hydro: borderuu='nothing'"
-        case default
-          call fatal_error('initialize_hydro','no such borderuu: '//trim(borderuu(j)))
-        end select
-
-      enddo
+      call request_border_driving(borderuu,'initialize_hydro',iux,iuz)
 !
 !  Hand over Coriolis force to Particles_drag.
 !

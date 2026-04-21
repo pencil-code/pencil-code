@@ -615,20 +615,11 @@ module Dustdensity
 
       if (dust_chemistry=='pscalar'.and..not.(lpscalar_nolog.or.lpscalar)) &
           call fatal_error("dustdensity","pscalar module needed for dust_chemistry='pscalar'")
-
-      select case (bordernd)
-!
-      case ('zero','0','initial-condition')
 !
 !  Tell the BorderProfiles module if we intend to use border driving, so
 !  that the module can request the right pencils.
 !
-        call request_border_driving(bordernd)
-      case ('nothing')
-        if (lroot.and.ip<=5) print*,"initialize_dustdensity: bordernd='nothing'"
-      case default
-        call fatal_error('initialize_dustdensity','no such bordernd: '//trim(bordernd))
-      endselect
+      call request_border_driving((/bordernd/),'initialize_dustdensity',ind(1),ind(ndustspec))
 !
 !MR: ad-hoc correction to fix the auto-test; needs to be checked!
       ppsf_full = 0.
@@ -2291,9 +2282,7 @@ module Dustdensity
       case ('initial-condition')
         call set_border_initcond(f,ind(k),f_target)
         call border_driving(f,df,p,f_target,ind(k))
-      case ('nothing')
       endselect
-
 !
     endsubroutine set_border_dustdensity
 !***********************************************************************

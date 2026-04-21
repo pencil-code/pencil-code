@@ -578,14 +578,7 @@ module Energy
 !  Tell the BorderProfiles module if we intend to use border driving, so
 !  that the module can request the right pencils.
 !
-      select case (borderss)
-      case ('zero','0','constant','initial-condition')
-        call request_border_driving(borderss)
-      case ('nothing')
-        if (lroot.and.ip<=5) print*, "set_border_entropy: borderss='nothing'"
-      case default
-        call fatal_error('set_border_entropy','no such borderss: '//trim(borderss))
-      endselect
+      call request_border_driving((/borderss/),'initialize_energy',ilnTT)
 !
 !  logical variable lpressuregradient_gas shared with hydro modules
 !
@@ -1748,7 +1741,6 @@ module Energy
           call border_driving(f,df,p,f_target,ilnTT)
         endif
 
-      case ('nothing')
       endselect
 !
     endsubroutine set_border_entropy

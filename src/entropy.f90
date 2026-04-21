@@ -1537,15 +1537,7 @@ module Energy
 !  Tell the BorderProfiles module if we intend to use border driving, so
 !  that the module can request the right pencils.
 !
-      select case (borderss)
-!
-      case ('zero','0','constant','initial-condition','initial-temperature')
-        call request_border_driving(borderss)
-      case ('nothing')
-        if (lroot.and.ip<=5) print*, "initialize_energy: borderss='nothing'"
-      case default
-        call fatal_error('initialize_energy','no such borderss: '//trim(borderss))
-      endselect
+      call request_border_driving((/borderss/),'initialize_energy',iss)
 
       if (lheatc_kramers) then
         call put_shared_variable('hcond0_kramers',hcond0_kramers)
@@ -4754,7 +4746,6 @@ module Energy
         f_target = ss_init - gamma_m1*cv*(p%lnrho-lnrho_init)
         call border_driving(f,df,p,f_target,iss)
 !
-      case ('nothing')
       endselect
 !
 !

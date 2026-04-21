@@ -357,7 +357,9 @@ program start
 !  by the various procedures below.
 !
 !  If lmodify is true, read var.dat into auxiliary array df
-!  and read modify_filename into f
+!  and read modify_filename into f. 
+!  20-apr-26/MR: Note that from now on modify_filename must not contain an extension (like .dat or .h5)
+!                It will be set according to the IO_strategy.
 !
   if (lmodify) then
     call rsnap('var',df,mvar,lread_nogrid)

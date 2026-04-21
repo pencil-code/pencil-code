@@ -57,8 +57,7 @@
             open (lun_input, FILE=trim(readdir)//'/'//trim(file), FORM='unformatted', status='old', iostat=ios)
             if (ios==0) then
 
-              if (islink(trim(readdir)//'/'//trim(file))) &
-                 snaplink=trim(readdir)//'/'//trim(file)
+              if (islink(trim(readdir)//'/'//trim(file))) snaplink=trim(readdir)//'/'//trim(file)
 !      if (ip<=8) print *, 'read_snap: open, mx,my,mz,nv=', mx, my, mz, nv
 
               if (lwrite_2d) then

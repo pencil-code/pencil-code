@@ -880,15 +880,7 @@ module Density
 !  Tell the BorderProfiles module if we intend to use border driving, so
 !  that the module can request the right pencils.
 !
-      select case (borderlnrho)
-!
-      case ('zero','0','constant','initial-condition')
-        call request_border_driving(borderlnrho)
-      case ('nothing')
-        if (headtt.and.ip<=5) print*,"initialize_density: borderlnrho='nothing'"
-      case default
-        call fatal_error('initialize_density',"no such borderlnrho: '"//trim(borderlnrho)//"'")
-      end select
+      call request_border_driving((/borderlnrho/),'initialize_density',ilnrho)
 !
 !  Check if we are solving partially force-free equations.
 !
@@ -3407,8 +3399,6 @@ module Density
         call set_border_initcond(f,ilnrho,f_target)
         call border_driving(f,df,p,f_target,ilnrho)
 !
-      case ('nothing')
-
       endselect
 !
     endsubroutine set_border_density

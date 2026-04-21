@@ -1194,7 +1194,7 @@ endsubroutine helper_loop
 !
 !  Read global variables (if any).
 !
-  if (mglobal/=0 .and. lread_global) call input_globals('global.dat', &
+  if (mglobal/=0 .and. lread_global) call input_globals('global', &
       f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
 !
 !  Prepare particles.
