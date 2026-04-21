@@ -2454,30 +2454,22 @@ module HDF5_IO
       do pos = 1, nname
         label = cname(pos)
         label = label(1:min(index(label,' '), index(label,'('))-1)
- write (*,*) 'A pos:', pos, '/', nname, ' label="'//trim(label)//'"'
         if (label == 'it') cycle
- write (*,*) 'B pos:', pos, '/', nname, ' label="'//trim(label)//'"'
         if (ts_offsets(pos) == -1) then
           ts_offsets(pos) = 0
- write (*,*) 'C pos:', pos, '/', nname, ' label="'//trim(label)//'"'
           if (lexists .and. exists_in_hdf5 (trim (label)//'/last')) then
- write (*,*) 'D pos:', pos, '/', nname, ' label="'//trim(label)//'"'
             call input_hdf5 (trim (label)//'/last', last)
- write (*,*) 'E pos:', pos, '/', nname, ' label="'//trim(label)//'"'
             call input_hdf5 (trim (label)//'/iteration', last_iter, last)
- write (*,*) 'F pos:', pos, '/', nname, ' label="'//trim(label)//'"'
             do while ((it < last_iter) .and. (last > 0))
               ! find the writing position in the array
               last = last - 1
               call input_hdf5 (trim (label)//'/iteration', last_iter, last)
             enddo
             if (it <= last_iter) last = last - 1
- write (*,*) 'G pos:', pos, '/', nname, ' label="'//trim(label)//'"'
             ts_offsets(pos) = last + 1
           endif
         endif
         call create_group_hdf5 (label)
-! write (*,*) nname, pos, ' '//trim(label), ' offset:', ts_offsets(pos)
         call output_hdf5 (trim (label)//'/data', data(pos), ts_offsets(pos), chunk_size)
         if ((itype_name(pos) >= ilabel_complex) .and. (cform(pos) /= '')) then
           call output_hdf5 (trim (label)//'/imaginary_part', data_im(pos), ts_offsets(pos), chunk_size)
