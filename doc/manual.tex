@@ -2447,6 +2447,12 @@ The relevant subroutines are called \code{pushpars2c}. The following has example
 
 If control-flow (if statements/other conditionals) depends on a variable it should trigger recompilation so Astaroth can optimise the code.
 If a variable does not affect control-flow it is often preferable to have the variables not trigger recompilation and it would be helpful to add these cases to the code. So, whenever you are annoyed by the constant need of recompilation because of a certain variable, please do change the variable to not need the recompilation if you have made sure it does not affect control-flow (and is not likely to do so in the future).
+\subsubsection{Performance tips}
+To hide the cost of communication as much as possible, it is preferable to have as large subdomains as possible.
+Commonly used subdomain (= per-process) sizes for accelerated setups are of the order of $256^3$ or bigger.
+Another aspect worth considering is the cadence of the diagnostic outputs.
+Since the diagnostics are performed on the CPUs each diagnostic output needs to copy the mesh from the device, which is on most hardware is quite slow, and has to compute the diagnostics themselves on the slower hardware of CPUs and/or perform I/O, which is even slower. Thus an overly small cadence of diagnostic output will prevent any speedup. With a high enough cadence the diagnostics are computed/stored alongside the time integration and the time required for them is completely hidden.
+This is especially doing for power spectra, which requires a lot of communication and thus cannot be totally hidden since it competes with the time integration for access to the network.
 % ---------------------------------------------------------------------- %
 \subsection{Using a non-equidistant grid}
 \index{mesh, nonuniform}\index{grid, nonuniform}\index{nonuniform grid}
