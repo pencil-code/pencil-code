@@ -96,7 +96,7 @@ class ParticleStalkData(object):
                         continue
                     setattr(self, key.lower(), ps[key].T)
 
-            except:
+            except Exception:
                 print(
                     "! ERROR: no idl<->python bridge found. Try whats written in pstalk-comment to fix that issue."
                 )

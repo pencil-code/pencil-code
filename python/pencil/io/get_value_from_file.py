@@ -270,7 +270,7 @@ def get_value_from_file(
         if is_int(q):
             q = int(q)
             q_type = "INT"
-    except:
+    except Exception:
         if type(q) == type("string") and "," in q:
             q, q_type = string_to_tuple(q)  # q is a TULPE_something
 

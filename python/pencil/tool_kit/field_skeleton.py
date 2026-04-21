@@ -536,7 +536,7 @@ class NullPoint(object):
         try:
             import vtk as vtk
             from vtk.util import numpy_support as VN
-        except:
+        except Exception:
             print("Warning: no vtk library found.")
 
         writer = vtk.vtkUnstructuredGridWriter()
@@ -589,7 +589,7 @@ class NullPoint(object):
         # Ensure compatability between vtk 5 and 6.
         try:
             writer.SetInputData(grid_data)
-        except:
+        except Exception:
             writer.SetInput(grid_data)
         writer.Write()
 
@@ -614,7 +614,7 @@ class NullPoint(object):
         try:
             import vtk as vtk
             from vtk.util import numpy_support as VN
-        except:
+        except Exception:
             print("Warning: no vtk library found.")
 
         reader = vtk.vtkUnstructuredGridReader()
@@ -955,7 +955,7 @@ class Separatrix(object):
 
         try:
             import vtk as vtk
-        except:
+        except Exception:
             print("Warning: no vtk library found.")
 
         writer = vtk.vtkUnstructuredGridWriter()
@@ -980,7 +980,7 @@ class Separatrix(object):
         # Ensure compatability between vtk 5 and 6.
         try:
             writer.SetInputData(grid_data)
-        except:
+        except Exception:
             writer.SetInput(grid_data)
         writer.Write()
 
@@ -1005,7 +1005,7 @@ class Separatrix(object):
         try:
             import vtk as vtk
             from vtk.util import numpy_support as VN
-        except:
+        except Exception:
             print("Warning: no vtk library found.")
 
         reader = vtk.vtkUnstructuredGridReader()
@@ -1187,7 +1187,7 @@ class Spine(object):
 
         try:
             import vtk as vtk
-        except:
+        except Exception:
             print("Warning: no vtk library found.")
 
         writer = vtk.vtkPolyDataWriter()
@@ -1218,7 +1218,7 @@ class Spine(object):
         # Insure compatability between vtk 5 and 6.
         try:
             writer.SetInputData(poly_data)
-        except:
+        except Exception:
             writer.SetInput(poly_data)
         writer.Write()
 
@@ -1242,7 +1242,7 @@ class Spine(object):
 
         try:
             import vtk as vtk
-        except:
+        except Exception:
             print("Warning: no vtk library found.")
 
         reader = vtk.vtkPolyDataReader()

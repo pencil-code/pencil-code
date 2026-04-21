@@ -262,7 +262,7 @@ def space_struct(
         D[0] = 0.0
         try:
             N[0] = arr[arr.mask == False].size / arr.size
-        except:
+        except Exception:
             N[0] = 1.0
         ell[0] = 0.0
     if D2:
@@ -283,7 +283,7 @@ def space_struct(
         D[0, 0] = 0.0
         try:
             N[0, 0] = arr[arr.mask == False].size / arr.size
-        except:
+        except Exception:
             N[0, 0] = 1.0
         ell[0, 0] = 0.0
     if D3:
@@ -306,7 +306,7 @@ def space_struct(
         D[0, 0, 0] = 0.0
         try:
             N[0, 0, 0] = arr[arr.mask == False].size / arr.size
-        except:
+        except Exception:
             N[0, 0, 0] = 1.0
         ell[0, 0, 0] = 0.0
     if not quiet:

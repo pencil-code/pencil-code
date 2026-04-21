@@ -610,7 +610,7 @@ class DataCube(object):
 
         try:
             tmp_id = infile.read_record("h")
-        except:
+        except Exception:
             return -1
         block_id = 0
         pers_obj = _Persist()

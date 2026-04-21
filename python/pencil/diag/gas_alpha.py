@@ -66,7 +66,7 @@ def gas_alpha(sim=False, t_range=[0, -1], OVERWRITE=False):
     try:
         print("~ reading time series..")
         ts = SIM.get_ts()
-    except:
+    except Exception:
         print("! ERROR: Couldnt read time series!")
         return False
 
@@ -75,7 +75,7 @@ def gas_alpha(sim=False, t_range=[0, -1], OVERWRITE=False):
         csm = ts.csm
         if csm[0] == 0:
             csm = 1.0
-    except:
+    except Exception:
         print(
             "? WARNING: Couldnt find >csm< in time series, set it to csm = 1. This may be incorrect!"
         )

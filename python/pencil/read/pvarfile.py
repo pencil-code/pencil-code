@@ -257,29 +257,29 @@ class ParticleData(object):
         try:
             #Position vector
             setattr(self, "xxp", np.array([self.xp, self.yp, self.zp]))
-        except:
+        except Exception:
             pass
         try:
             #Velocity vector
             setattr(self, "vvp", np.array([self.vpx,self.vpy,self.vpz]))
-        except:
+        except Exception:
             pass
         try:
             #Magnetic vector
             setattr(self, "bbp", np.array([self.bpx,self.bpy,self.bpz]))
-        except:
+        except Exception:
             pass
         try:
             #Spin vector
             setattr(self, "ssp", np.array([self.psx,self.psy,self.psz]))
-        except:
+        except Exception:
             pass
         try:
             #Rate if strain tensor
             setattr(self, "wij", np.array([self.up11,self.up12,self.up13],
                                           [self.up21,self.up22,self.up23],
                                           [self.up31,self.up32,self.up33]))
-        except:
+        except Exception:
             pass
 
     def __natural_sort(self, procs_list):

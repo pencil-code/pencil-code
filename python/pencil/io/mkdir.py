@@ -18,7 +18,7 @@ def mkdir(destination, lfs=False, MB=1, count=1):
     if not os.path.exists(destination):
         try:
             os.makedirs(destination)
-        except:
+        except Exception:
             if os.path.exists(destination):
                 pass
         if lfs:

@@ -106,7 +106,7 @@ class npfile(object):
     def __del__(self):
         try:
             self.file.close()
-        except:
+        except Exception:
             pass
 
     def close(self):

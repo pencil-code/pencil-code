@@ -20,7 +20,7 @@ from pencil.math import dot, dot2, cross, cpu_optimal
 from pencil.math.derivatives import curl, div, curl2, grad, del2
 try:
     from pencil.calc import grav_profile
-except:
+except Exception:
     pc_print("grav_profile not defined: setting to zero")
     def grav_profile(grav, x, y, z):
         if "z" in grav:

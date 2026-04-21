@@ -151,7 +151,7 @@ class ParticlesVtk(object):
                 # Ensure compatability between vtk 5 and 6.
                 try:
                     writer.SetInputData(self.vtk_grid_data[tidx - self.ti])
-                except:
+                except Exception:
                     writer.SetInput(self.vtk_grid_data[tidx - self.ti])
                 writer.Write()
         else:
@@ -165,6 +165,6 @@ class ParticlesVtk(object):
             # Ensure compatability between vtk 5 and 6.
             try:
                 writer.SetInputData(self.vtk_grid_data[0])
-            except:
+            except Exception:
                 writer.SetInput(self.vtk_grid_data[0])
             writer.Write()

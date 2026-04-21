@@ -46,7 +46,7 @@ def ffloat(x):
     try:
         return float(x)
 
-    except:
+    except Exception:
         warnings.warn("This usage of pc.util.ffloat will be removed soon. If you believe your use-case is legitimate, please email <pencil-code-python@googlegroups.com> describing it.")
         val = re.sub(r"(-?\d+\.?\d*)([+-]\d+)", r"\1E\2", x)
         return float(val)

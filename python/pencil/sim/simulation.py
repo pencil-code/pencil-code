@@ -594,7 +594,7 @@ class Simulation:
                 self.param["dx"] = self.grid.dx
                 self.param["dy"] = self.grid.dy
                 self.param["dz"] = self.grid.dz
-            except:
+            except Exception:
                 if not quiet:
                     print(
                         "? WARNING: Updating grid and ghost_grid "

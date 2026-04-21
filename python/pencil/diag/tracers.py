@@ -407,7 +407,7 @@ class Tracers(object):
 
         try:
             import h5py
-        except:
+        except Exception:
             print("Warning: no h5py library found.")
 
         self.params.destination = destination
@@ -481,7 +481,7 @@ class Tracers(object):
 
         try:
             import h5py
-        except:
+        except Exception:
             print("Warning: no h5py library found.")
 
         # Open the file.
