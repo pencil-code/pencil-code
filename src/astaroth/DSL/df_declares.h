@@ -102,7 +102,7 @@ real DF_STRESS_4 = 0.0
 real DF_STRESS_5 = 0.0
 
 
-#if LAXIONSU2BACK
+#if LAXIONSU2BACK 
 real DF_AXI_PSI    = rk_intermediate_split_first(F_AXI_PSI,step_num)
 real DF_AXI_PSIDOT = rk_intermediate_split_first(F_AXI_PSIDOT,step_num)
 real DF_AXI_IMPSI  = rk_intermediate_split_first(F_AXI_IMPSI,step_num)
@@ -122,7 +122,30 @@ real DF_AXI_PSIL    = rk_intermediate_split_first(F_AXI_PSIL,step_num)
 real DF_AXI_PSILDOT = rk_intermediate_split_first(F_AXI_PSILDOT,step_num)
 real DF_AXI_IMPSIL    = rk_intermediate_split_first(F_AXI_IMPSIL,step_num)
 real DF_AXI_IMPSILDOT = rk_intermediate_split_first(F_AXI_IMPSILDOT,step_num)
+
+real DF_AXI_UR      = rk_intermediate_split_first(F_AXI_UR,step_num)
+real DF_AXI_URDOT   = rk_intermediate_split_first(F_AXI_URDOT,step_num)
+real DF_AXI_IMUR    = rk_intermediate_split_first(F_AXI_IMUR,step_num)
+real DF_AXI_IMURDOT = rk_intermediate_split_first(F_AXI_IMURDOT,step_num)
+
+real DF_AXI_UL      = rk_intermediate_split_first(F_AXI_UL,step_num)
+real DF_AXI_ULDOT   = rk_intermediate_split_first(F_AXI_ULDOT,step_num)
+real DF_AXI_IMUL    = rk_intermediate_split_first(F_AXI_IMUL,step_num)
+real DF_AXI_IMULDOT = rk_intermediate_split_first(F_AXI_IMULDOT,step_num)
 #endif
+
+#if LAXIONU1BACK 
+real DF_AXI_AR      = rk_intermediate_split_first(F_AXI_AR,step_num)
+real DF_AXI_ARDOT   = rk_intermediate_split_first(F_AXI_ARDOT,step_num)
+real DF_AXI_IMAR    = rk_intermediate_split_first(F_AXI_IMAR,step_num)
+real DF_AXI_IMARDOT = rk_intermediate_split_first(F_AXI_IMARDOT,step_num)
+
+real DF_AXI_AL      = rk_intermediate_split_first(F_AXI_AL,step_num)
+real DF_AXI_ALDOT   = rk_intermediate_split_first(F_AXI_ALDOT,step_num)
+real DF_AXI_IMAL    = rk_intermediate_split_first(F_AXI_IMAL,step_num)
+real DF_AXI_IMALDOT = rk_intermediate_split_first(F_AXI_IMALDOT,step_num)
+#endif
+
 
 
 real DF_GAMMA = rk_intermediate_split_first(F_GAMMA,step_num)

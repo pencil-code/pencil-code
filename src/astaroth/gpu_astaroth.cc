@@ -2006,6 +2006,11 @@ extern "C" void prepareForFirstSubstep(double t)
 extern "C" void getGPUReducedVars(AcReal* dst)
 {
         acDeviceSynchronizeStream(acGridGetDevice(),STREAM_DEFAULT);
+#if LAXIONU1BACK
+	dst[0] = acDeviceGetOutput(acGridGetDevice(), AC_edotb_sum__mod__axionu1back);
+	dst[1] = acDeviceGetOutput(acGridGetDevice(), AC_rhoe__mod__axionu1back);
+	dst[2] = acDeviceGetOutput(acGridGetDevice(), AC_rhob__mod__axionu1back);
+#endif
 #if LAXIONSU2BACK
 	dst[0] = acDeviceGetOutput(acGridGetDevice(), AC_grand_sum);
 	dst[1] = acDeviceGetOutput(acGridGetDevice(), AC_dgrant_sum);
