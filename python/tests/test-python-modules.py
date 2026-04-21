@@ -11,6 +11,7 @@ import re
 import subprocess
 import sys
 import warnings
+import datetime
 
 try:
     import coverage
@@ -227,6 +228,7 @@ def json_to_html(
     if repo_info is not None:
         html_body += f"""
     <p>Tested git commit: {repo_info.commit} (branch {repo_info.branch})</p>
+    <p>Date: {datetime.datetime.now()}</p>
     """
 
     if add_coverage_link:
