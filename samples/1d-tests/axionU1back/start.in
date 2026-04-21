@@ -1,0 +1,16 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Initialisation parameters for axion U(1) problem
+!
+&init_pars
+  cvsid="96f8e86d7"
+  bcx='no','no','no','no','no','no','no','no'
+!  lpoint2=1, mpoint2=1, npoint2=1
+  lwrite_ic=F
+/
+&special_init_pars
+  alpf=40., phi_ini=0.7
+  llnk_spacing=F
+  k0=1.56e-5
+!  nmin0=0, nmax0=5
+/
