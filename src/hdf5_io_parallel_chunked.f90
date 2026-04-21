@@ -436,21 +436,34 @@ module HDF5_IO
       integer, intent(out) :: data
       integer, intent(in) :: pos
 !
-      integer(HSIZE_T), dimension(1) :: size
+      integer(kind=8), dimension(1) :: glob_start, h5_count
 !
       if (lcollective) call check_error (1, 'local input requires local file', caller='input_local_hdf5_int_1D_0D')
       if (.not. lwrite) return
 !
-      size = (/ pos /)
+      ! define 'memory-space' to indicate the local data portion in memory
+      call h5screate_f (H5S_SCALAR_F, h5_mspace, h5_err)
+      call check_error (h5_err, 'create local memory space', name, caller='input_local_hdf5_int_1D_0D')
+!
+      ! define local 'hyper-slab' in the global file
+      glob_start(1) = pos
+      h5_count(1) = 1
+      call h5sselect_hyperslab_f (h5_fspace, H5S_SELECT_SET_F, glob_start, h5_count, h5_err)
+      call check_error (h5_err, 'select hyperslab within file', name)
 !
       ! open dataset
       call h5dopen_f (h5_file, trim (name), h5_dset, h5_err)
       call check_error (h5_err, 'open dataset', name, caller='input_local_hdf5_int_1D_0D')
 !
       ! read requested element from dataset
-      call h5dread_f (h5_dset, H5T_NATIVE_INTEGER, data, size, h5_err)
+      call h5dread_f (h5_dset, H5T_NATIVE_INTEGER, data, h5_count, h5_err, h5_mspace, h5_fspace)
       call check_error (h5_err, 'read data', name)
-      ! close dataset
+!
+      ! close data spaces, dataset, and the property list
+      call h5sclose_f (h5_fspace, h5_err)
+      call check_error (h5_err, 'close file space', name)
+      call h5sclose_f (h5_mspace, h5_err)
+      call check_error (h5_err, 'close memory space', name)
       call h5dclose_f (h5_dset, h5_err)
       call check_error (h5_err, 'close dataset', name)
 !
@@ -2439,19 +2452,25 @@ module HDF5_IO
       do pos = 1, nname
         label = cname(pos)
         label = label(1:min(index(label,' '), index(label,'('))-1)
+ write (*,*) 'A pos:', pos, '/', nname, ' label="'//trim(label)//'"'
         if (label == 'it') cycle
+ write (*,*) 'B pos:', pos, '/', nname, ' label="'//trim(label)//'"'
         if (ts_offsets(pos) == -1) then
           ts_offsets(pos) = 0
+ write (*,*) 'C pos:', pos, '/', nname, ' label="'//trim(label)//'"'
           if (lexists .and. exists_in_hdf5 (trim (label)//'/last')) then
+ write (*,*) 'D pos:', pos, '/', nname, ' label="'//trim(label)//'"'
             call input_hdf5 (trim (label)//'/last', last)
+ write (*,*) 'E pos:', pos, '/', nname, ' label="'//trim(label)//'"'
             call input_hdf5 (trim (label)//'/iteration', last_iter, last)
+ write (*,*) 'F pos:', pos, '/', nname, ' label="'//trim(label)//'"'
             do while ((it < last_iter) .and. (last > 0))
               ! find the writing position in the array
               last = last - 1
               call input_hdf5 (trim (label)//'/iteration', last_iter, last)
             enddo
             if (it <= last_iter) last = last - 1
- write (*,*) 'pos:', pos, '/', nname, ' label="'//trim(label)//'" offset:', last+1
+ write (*,*) 'G pos:', pos, '/', nname, ' label="'//trim(label)//'"'
             ts_offsets(pos) = last + 1
           endif
         endif
