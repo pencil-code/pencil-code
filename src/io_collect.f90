@@ -497,6 +497,7 @@ module Io
 !
       use File_io, only: backskip_to_time
       use Mpicomm, only: localize_xy, mpibcast_real, MPI_COMM_PENCIL
+      use Syscalls, only: islink
 !
       character (len=*), intent(in) :: file_
       integer, intent(in) :: nv
@@ -526,7 +527,8 @@ module Io
         endif
 
         file = gen_in_snapname(file_,'dat')
-        open (lun_input, FILE=trim (directory_snap)//'/'//file, access='direct', recl=io_size, status='old')
+        if (islink(trim(directory_snap)//'/'//trim(file))) snaplink=trim(directory_snap)//'/'//trim(file)
+        open (lun_input, FILE=trim(directory_snap)//'/'//file, access='direct', recl=io_size, status='old')
 !
         if (ip <= 8) print *, 'input_snap: read dim=', mxgrid, mygrid, mzgrid, nv
         ! iterate through xy-leading processors in the z-direction
@@ -588,12 +590,19 @@ module Io
 !
 !  11-Feb-2012/PABourdin: coded
 !
+      use Syscalls, only: system_cmd
+
       if (persist_initialized) then
         persist_initialized = .false.
         persist_last_id = -max_int
       endif
 !
       if (lroot) close (lun_input)
+!
+      if (snaplink/='') then
+        call system_cmd('rm -f '//snaplink)
+        snaplink=''
+      endif
 !
     endsubroutine input_snap_finalize
 !***********************************************************************

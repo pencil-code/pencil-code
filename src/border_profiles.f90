@@ -29,8 +29,8 @@ module BorderProfiles
   real                :: fraction_tborder1=impossible
   real                :: fac_sqrt_gsum1=1.0
 !
-  real, dimension(:,:,:,:), allocatable :: f_init
-  real, dimension (:,:,:),  allocatable :: fsave_init_xy,fsave_init_xz
+  integer :: iborder_var_max=0
+  real, dimension(:,:,:), allocatable :: fsave_init_xy,fsave_init_xz
 !
   logical :: lborder_driving=.false.
   logical :: lborder_quenching=.false.
@@ -50,8 +50,8 @@ module BorderProfiles
 !                  calls to initialize are done in Register.
 !
       use HDF5_IO, only: output_profile
+      use IO, only: input_snap, input_snap_finalize
       use SharedVariables, only: get_shared_variable
-      use Messages, only: fatal_error
 !
       real, dimension(nx) :: xi
       real, dimension(ny) :: eta
@@ -59,6 +59,9 @@ module BorderProfiles
       real :: border_width, lborder, uborder
       integer :: l
       real, pointer :: gsum
+      logical, save :: lread=.true.
+      real :: t_old
+      real, dimension(:,:,:,:), allocatable :: f_init
 !
 !  x-direction
 !
@@ -184,13 +187,12 @@ module BorderProfiles
         close(1)
       endif
 !
-!
-!  Switch border quenching on if any border frac is non-zero
+!  Switch border quenching on if any border frac is non-zero.
 !
       if (any(border_frac_x/=0).or.&
           any(border_frac_y/=0).or.&
           any(border_frac_z/=0).or.&
-          any(border_frac_r/=0))     lborder_quenching=.true.
+          any(border_frac_r/=0)) lborder_quenching=.true.
 !
 !  Use a fixed timescale to drive the boundary, independently of radius.
 !  Else use some fraction of the local orbital time.
@@ -216,59 +218,83 @@ module BorderProfiles
       endif
 !
       if (lmeridional_border_drive.and..not.lspherical_coords) &
-           call fatal_error("initialize_border_profiles", &
-           "drive meridional borders for spherical coords only")
+        call fatal_error("initialize_border_profiles","drive meridional borders for spherical coords only")
 !
-    endsubroutine initialize_border_profiles
-!***********************************************************************
-    subroutine request_border_driving(border_var)
+      if (lborder_driving) then
 !
-!  Tell the BorderProfiles subroutine that we need border driving.
-!  Used for requesting the right pencils. Also save the initial
-!  conditions in case that is the border profile to be used.
+!  Save the initial conditions in case that the border profile is to be used.
 !
-!  25-aug-09/anders: coded
-!  06-mar-11/wlad  : added IC functionality
-!
-      use IO, only: input_snap, input_snap_finalize
-!
-      character (len=labellen) :: border_var
-      logical, save :: lread=.true.
-      real :: t_old
-!
-      lborder_driving=.true.
-!
-!  Check if there is a variable requesting initial condition as border
-!
-      if (lread .and. (border_var=='initial-condition')) then
-
-        if (.not.allocated(f_init)) allocate(f_init(mx,my,mz,mvar))
-        if (.not.allocated(fsave_init_xy)) allocate(fsave_init_xy(nx,ny,mvar))
-        if (.not.allocated(fsave_init_xz)) allocate(fsave_init_xz(nx,nz,mvar))
-!
-!  Read the data into an initial condition array f_init that will be saved
-!
-        t_old = t
-        if (.not.allocated(f_init)) allocate(f_init(mx,my,mz,mvar))
-        call input_snap ('VAR0', f_init, mvar, mode=0)
-        if (t_old /= t) then
-           if (lroot) then
+        if (lread) then  !MR: too restrictive in case of reloading with changes in border_profile use.
+!                
+          if (.not.allocated(f_init)) allocate(f_init(mx,my,mz,iborder_var_max))
+          if (.not.allocated(fsave_init_xy)) allocate(fsave_init_xy(nx,ny,iborder_var_max))
+          if (.not.allocated(fsave_init_xz)) allocate(fsave_init_xz(nx,nz,iborder_var_max))
+!  
+!  Read the data into an initial condition array f_init that will be saved.
+!  
+          t_old = t
+          call input_snap ('VAR0', f_init, iborder_var_max, mode=0)
+          if (t_old /= t) then
+            if (lroot) then
               print*,"You have requested to read VAR0 to set the border profile."
               print*,"This action has modified the time stamp of the simulation."
               print*,"This is probably not what you want. Likely you are starting,"
               print*,"from a previous snapshot with less physics, and set ireset_tstart=0 in start.in."
               print*,"You probably want to reset it to the default value in run.in."
               print*,"Do it by setting ireset_tstart=2 in run_pars."
-           endif
-           call fatal_error("request_border_driving","")
-        endif
-        call input_snap_finalize
-        lread=.false.
-
-        fsave_init_xy(:,:,:)=f_init(l1:l2,m1:m2,npoint,:)
-        fsave_init_xz(:,:,:)=f_init(l1:l2,mpoint,n1:n2,:)
+            endif
+            call fatal_error("request_border_driving","")
+          endif
+          call input_snap_finalize
+          lread=.false.
+! 
+!  Transfer the needed variables to permanent arrays.
 !
+          fsave_init_xy=f_init(l1:l2,m1:m2,npoint,:)
+          fsave_init_xz=f_init(l1:l2,mpoint,n1:n2,:)
+          iborder_var_max=0     ! clean table for case of reloading
+!
+        endif
+!  
       endif
+
+    endsubroutine initialize_border_profiles
+!***********************************************************************
+    subroutine request_border_driving(bordertype,caller,ivar_border1,ivar_border2)
+!
+!  Tell the BorderProfiles subroutine that we need border driving; determines maximum variable index
+!  iborder_var_max across all modules, which employ border driving.
+!  Used for requesting the right pencils.
+!  Only to be called if there is a variable requesting initial condition as border.
+!
+!  25-aug-09/anders: coded
+!  06-mar-11/wlad  : added IC functionality
+!
+      use General, only: ioptest
+!
+      character(LEN=*), dimension(:) :: bordertype
+      character(LEN=*) :: caller
+      integer, intent(IN) :: ivar_border1
+      integer, optional, intent(IN) :: ivar_border2
+
+      integer :: j
+!
+      do j=1,size(bordertype)
+!
+        select case(bordertype(j))
+!  
+        case default
+          call fatal_error(trim(caller)//'.request_border_driving','no such bordertype: '//trim(bordertype(j)))
+        case ('zero','0','constant','nothing')
+          if (headtt.and.ip<=5) print*,trim(caller)//'.request_border_driving'//': '//trim(bordertype(j))// &
+                                       "='nothing','zero','0' or 'constant'"
+        case ('initial-condition')
+!  
+          lborder_driving=.true.
+          iborder_var_max = max(iborder_var_max,ioptest(ivar_border2,ivar_border1))
+!  
+        endselect
+      enddo
 !
     endsubroutine request_border_driving
 !***********************************************************************
@@ -330,9 +356,9 @@ module BorderProfiles
         call set_border_xz(ivar,fborder)
       else
         if (lroot) then
-          print*,'The system has no obvious symmetry. It is    '
-          print*,'better to stop and check how you want to save'
-          print*,'the initial condition for border profiles    '
+          print*,'The system has no obvious symmetry.'
+          print*,'Better to stop and check how you want to save'
+          print*,'the initial condition for border profiles.'
         endif
         call fatal_error('set_border_initcond','')
       endif
@@ -543,7 +569,6 @@ module BorderProfiles
    subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
-    use General , only: string_to_enum
 
     integer, parameter :: n_pars=10
     integer(KIND=ikind8), dimension(n_pars) :: p_par
@@ -553,7 +578,7 @@ module BorderProfiles
     call copy_addr(fac_sqrt_gsum1,p_par(3))
     call copy_addr(fsave_init_xy,p_par(4)) ! (nx) (ny) (mvar)
     call copy_addr(fsave_init_xz,p_par(5)) ! (nx) (nz) (mvar)
+    
    endsubroutine pushpars2c
 !***********************************************************************
-
 endmodule BorderProfiles

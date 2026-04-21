@@ -20,7 +20,7 @@ module BorderProfiles
 !
   contains
 !***********************************************************************
-    subroutine initialize_border_profiles()
+    subroutine initialize_border_profiles
 !
 !  Position-dependent quenching factor that multiplies rhs of pde
 !  by a factor that goes gradually to zero near the boundaries.
@@ -43,15 +43,20 @@ module BorderProfiles
 !
     endsubroutine initialize_border_profiles
 !***********************************************************************
-    subroutine request_border_driving(border_var)
+    subroutine request_border_driving(bordertype,caller,ivar_border1,ivar_border2)
+!           
+      character(LEN=*), dimension(:) :: bordertype
+      character(LEN=*) :: caller
+      integer, intent(IN) :: ivar_border1
+      integer, optional, intent(IN) :: ivar_border2
 !
-      character (len=labellen) :: border_var
-
-      call keep_compiler_quiet(border_var)
+      call keep_compiler_quiet(ivar_border1)
+      call keep_compiler_quiet(bordertype)
+      call keep_compiler_quiet(caller)
 !
     endsubroutine request_border_driving
 !***********************************************************************
-    subroutine pencil_criteria_borderprofiles()
+    subroutine pencil_criteria_borderprofiles
 !
     endsubroutine pencil_criteria_borderprofiles
 !***********************************************************************
@@ -87,8 +92,6 @@ module BorderProfiles
       real, dimension (nx) :: f_target
       integer :: j
 !
-!  Dummy routine
-!
       call keep_compiler_quiet(j)
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
@@ -102,8 +105,6 @@ module BorderProfiles
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real :: dt_sub
-!
-!  Dummy routine
 !
       call keep_compiler_quiet(dt_sub)
       call keep_compiler_quiet(df)

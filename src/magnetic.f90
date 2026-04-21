@@ -1443,7 +1443,7 @@ module Magnetic
 !  Set ljj_as_comaux=T and get kernels
 !   if lsmooth_jj is used
 !
-      if(lsmooth_jj) then
+      if (lsmooth_jj) then
         ljj_as_comaux=lsmooth_jj
         call get_smooth_kernel(kern_jjsmooth,LGAUSS=.true.)
       endif
@@ -2055,25 +2055,13 @@ module Magnetic
            borderaa(1)/='nothing' .and. &
            borderaa(2)=='nothing' .and. &
            borderaa(3)=='nothing') then
-        borderaa(2)=borderaa(1)
-        borderaa(3)=borderaa(1)
+        borderaa(2:3)=borderaa(1)
       endif
 !
 !  Tell the BorderProfiles module if we intend to use border driving, so
 !  that the module can request the right pencils.
 !
-      do j=1,3
-!
-        select case (borderaa(j))
-        case ('zero','0','initial-condition')
-          call request_border_driving(borderaa(j))
-        case ('nothing')
-          if (lroot.and.ip<=5) print*,"set_border_magnetic: borderaa='nothing'"
-        case default
-          call fatal_error('initialize_magnetic','No such borderaa: '//trim(borderaa(j)))
-        end select
-
-      enddo
+      call request_border_driving(borderaa,'initialize_magnetic',iax,iaz)
 !
 !  Initialize individual modules, but need to do this only if
 !  lmagn_mf is true.
@@ -4479,7 +4467,7 @@ module Magnetic
           call get_bext(B_ext,j_ext)
           if (any(B_ext/=0.)) then
             if (lhubble_magnetic) then
-              do j = 1,3; if(B_ext(j) /= 0.0) p%bb(:,j) = p%bb(:,j) + B_ext(j)/ascale**2; enddo;
+              do j = 1,3; if (B_ext(j) /= 0.0) p%bb(:,j) = p%bb(:,j) + B_ext(j)/ascale**2; enddo;
             else
               do j = 1,3; p%bb(:,j) = p%bb(:,j) + B_ext(j); enddo;
             endif
@@ -5241,7 +5229,7 @@ module Magnetic
             fres(:,1)=fres(:,1)+tmp2(:,1)-(d_sld_flux(:,2,2))/x(l1:l2)
             fres(:,2)=fres(:,2)+tmp2(:,2)+(d_sld_flux(:,2,1))/x(l1:l2)
             fres(:,3)=fres(:,3)+tmp2(:,3)
-          elseif(lspherical_coords) then
+          elseif (lspherical_coords) then
             fres(:,1)=fres(:,1)+tmp2(:,1)-(d_sld_flux(:,2,2)+d_sld_flux(:,3,3))/x(l1:l2)
             fres(:,2)=fres(:,2)+tmp2(:,2)+(d_sld_flux(:,2,1)-d_sld_flux(:,3,3)*cotth(m))/x(l1:l2)
             fres(:,3)=fres(:,3)+tmp2(:,3)+(d_sld_flux(:,3,1)+d_sld_flux(:,3,2)*cotth(m))/x(l1:l2)
@@ -5287,17 +5275,17 @@ module Magnetic
         call identify_bcs('Ax',iax)
         call identify_bcs('Ay',iay)
         call identify_bcs('Az',iaz)
-        if(lbb_as_comaux) then
+        if (lbb_as_comaux) then
           call identify_bcs('Bx',ibx)
           call identify_bcs('By',iby)
           call identify_bcs('Bz',ibz)
         endif
-        if(ljj_as_comaux) then
+        if (ljj_as_comaux) then
           call identify_bcs('Jx',ijx)
           call identify_bcs('Jy',ijy)
           call identify_bcs('Jz',ijz)
         endif
-        if(lslope_limit_diff) then
+        if (lslope_limit_diff) then
           call identify_bcs('sld_char',isld_char)
         endif
       endif
@@ -7248,7 +7236,7 @@ module Magnetic
       if (lmultithread .and. (idiag_epsM /= 0 .or. idiag_epsM2 /= 0 &
           .or. idiag_epsM3 /= 0 .or. idiag_epsM4 /= 0 .or. idiag_dteta /= 0)) then
           call calc_eta_total(f,p)
-          if(idiag_dteta /= 0) diffus_eta =eta_total *dxyz_2
+          if (idiag_dteta /= 0) diffus_eta =eta_total *dxyz_2
       endif
 !
 ! <J.B>
@@ -8331,7 +8319,6 @@ module Magnetic
           call set_border_initcond(f,iaa+j-1,f_target(:,j))
           call border_driving(f,df,p,f_target(:,j),iaa+j-1)
 !
-        case ('nothing')
         endselect
       enddo
 !
@@ -9947,8 +9934,8 @@ module Magnetic
 !
 !  calculate un-normalized |B| at r=r_ref and z=0 for later normalization
 !
-      if(.not. allocated(Ax_ext)) allocate(Ax_ext(mx,my,mz))
-      if(.not. allocated(Ay_ext)) allocate(Ay_ext(mx,my,mz))
+      if (.not. allocated(Ax_ext)) allocate(Ax_ext(mx,my,mz))
+      if (.not. allocated(Ay_ext)) allocate(Ay_ext(mx,my,mz))
 
       if (lroot.and.ip<=5) print*,'FORCE_FREE_JET: calculating normalization'
 !

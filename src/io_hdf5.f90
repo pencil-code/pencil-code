@@ -691,7 +691,7 @@ module Io
           if (snaplink/='') then
             call system_cmd('rm -f '//snaplink)
             snaplink=''
-!if (lroot) print*,'deleted link'
+            if (lroot) print*,'Deleted symbolic link '//trim(snaplink)
           endif
 !
           deallocate (gx, gy, gz)

@@ -387,6 +387,7 @@ module Io
 !  04-Sep-2015/PABourdin: adapted from 'io_collect_xy'
 !
       use Mpicomm, only: localize_xy, mpibcast_real, stop_it_if_any, MPI_COMM_PENCIL
+      use Syscalls, only: islink
 !
       character (len=*) :: file_
       integer, intent(in) :: nv
@@ -411,6 +412,7 @@ module Io
         if (ip <= 8) print *, 'input_snap: open ', file
 !
         file=gen_in_snapname(file_,'dat')
+        if (islink(trim(directory_snap)//'/'//trim(file))) snaplink=trim(directory_snap)//'/'//trim(file)
         open (lun_input, FILE=trim (directory_snap)//'/'//file, access='stream', form='unformatted', status='old')
         read (lun_input) ga
 !
@@ -465,12 +467,19 @@ module Io
 !
 !  04-Sep-2015/PABourdin: adapted from 'io_collect_xy'
 !
+      use Syscalls, only: system_cmd
+
       if (persist_initialized) then
         persist_initialized = .false.
         persist_last_id = -max_int
       endif
 !
       if (lfirst_proc_xy) close (lun_input)
+!
+      if (snaplink/='') then
+        call system_cmd('rm -f '//snaplink)
+        snaplink=''
+      endif
 !
     endsubroutine input_snap_finalize
 !***********************************************************************

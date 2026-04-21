@@ -163,21 +163,14 @@ module NeutralVelocity
 !
       if (ladvection_velocity.and.lupw_uun) &
         call warning('initialize_neutralvelocity','upwinding advection term not well tested')
-
-      select case (borderuun)
-      case ('zero','0','constant')
 !
 !  Tell the BorderProfiles module if we intend to use border driving, so
 !  that the modules can request the right pencils.
 !
-        call request_border_driving(borderuun)
-      case ('initial-condition')
-        call fatal_error("initialize_neutralvelocity","borderuu = 'initial-condition': set mcount/ncount")
-      case ('nothing')
-        if (lroot.and.ip<=5) print*,"initialize_neutralvelocity: borderuu='nothing'"
-      case default
-        call fatal_error('initialize_neutralvelocity','no such borderuun: '//trim(borderuun))
-      endselect
+      if (borderuun=='initial-condition') &
+        call fatal_error("initialize_neutralvelocity","borderuun = 'initial-condition': set mcount/ncount")
+
+      call request_border_driving((/borderuun/),'initialize_neutralvelocity',iunx,iunz)
 !
 !  Turn off neutral viscosity if zero viscosity
 !
@@ -595,6 +588,7 @@ module NeutralVelocity
       if (lupdate_courant_dt.and.dimensionality>0) then
         advec2=advec2+p%advec_csn2
         maxadvec=maxadvec+p%advec_uun
+        !maxadvec=max(maxadvec,p%advec_uun)
       endif
 !
 !  Apply border profiles
@@ -772,9 +766,7 @@ module NeutralVelocity
           ju=j+iuun-1
           call border_driving(f,df,p,f_target(:,j),ju)
         enddo
-      case ('nothing')
       endselect
-!
 !
     endsubroutine set_border_neutralvelocity
 !***********************************************************************

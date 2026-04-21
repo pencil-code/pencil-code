@@ -493,20 +493,11 @@ module Dustvelocity
       
       if (ldust_pressure.and.dust_pressure_factor==0.0) &
           call fatal_error('initialize_dustvelocity','dust_pressure_factor should not be 0')
-
-      select case (borderuud)
-      case ('zero','0','initial-condition')
 !
 !  Tell the BorderProfiles module if we intend to use border driving, so
 !  that the module can request the right pencils.
 !
-        call request_border_driving(borderuud)
-      case ('nothing')
-        if (lroot.and.ip<=5) print*,"initialize_dustvelocity: borderuud='nothing'"
-!
-      case default
-        call fatal_error('initialize_dustvelocity','no such borderuud: '//trim(borderuud))
-      endselect
+      call request_border_driving((/borderuud/),'initialize_dustvelocity',ind(1),ind(ndustspec))
 !
       if (Omega_pseudo/=0. .and. .not.lshear) &
         call warning('initialize_dustvelocity','pseudo-Coriolis force has only a meaning with background shear')
@@ -1465,7 +1456,7 @@ module Dustvelocity
 !
 !  09-may-12/wlad: coded
 !
-      use BorderProfiles,  only: border_driving,set_border_initcond
+      use BorderProfiles, only: border_driving,set_border_initcond
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -1492,7 +1483,6 @@ module Dustvelocity
           call border_driving(f,df,p,f_target(:,j),ju)
         enddo
 !
-      case ('nothing')
       endselect
 !
     endsubroutine set_border_dustvelocity
