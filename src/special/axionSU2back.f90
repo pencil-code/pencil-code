@@ -1163,36 +1163,6 @@ module Special
       endif
     endsubroutine calc_ode_dt
 !***********************************************************************
-    subroutine read_sums_from_device
-!
-!  Why do we need to do this like so?
-!  Is anyone going to run this with GPUs?
-!
-!  16-dec-2025/axel: added JJ_R etc
-!
-      use GPU, only: get_gpu_reduced_vars
-      real, dimension(12) :: tmp
-      call get_gpu_reduced_vars(tmp)
-      grand_sum  = tmp(1)
-      dgrant_sum = tmp(2)
-      JJ_R_sum = tmp(11)
-      JJ_L_sum = tmp(12)
-      if (ldiagnos) then
-              grand_sum_diagnos = grand_sum
-              dgrant_sum_diagnos = dgrant_sum
-              JJ_R_sum_diagnos = JJ_R_sum 
-              JJ_L_sum_diagnos = JJ_L_sum 
-              TRdoteff2km_sum = tmp(3)
-              TRdoteff2m_sum =  tmp(4)
-              TReff2km_sum = tmp(5)
-              TReff2m_sum =  tmp(6)
-              TLdoteff2km_sum = tmp(7)
-              TLdoteff2m_sum =  tmp(8)
-              TLeff2km_sum = tmp(9)
-              TLeff2m_sum =  tmp(10)
-      endif
-    endsubroutine read_sums_from_device
-!***********************************************************************
     subroutine dspecial_dt_ode
 !
 !  Calculate right hand side(s) of one or more extra coupled ODEs.
@@ -2011,6 +1981,44 @@ module Special
       enddo
 !
     endsubroutine rprint_special
+!***********************************************************************
+! Subroutines below needed only for GPUs, if you do not care about GPUs don't worry about them
+!***********************************************************************
+    subroutine read_sums_from_device
+!
+!  The sums needed for ODE and PDE advancement are computed on the GPUs in before_boundary.
+!  Then we need them back on the host to advance the ODEs which this function does.
+!
+!  16-dec-2025/axel: added JJ_R etc
+!
+
+!  AB: Is anyone going to run this with GPUs?
+!  TP: I don't know. I see the point that these simulations inexpensive enough
+!      that no one would bother. 
+!      If you think the GPU stuff is annoying and gets in the way for no benefit I can remove it.
+
+      use GPU, only: get_gpu_reduced_vars
+      real, dimension(12) :: tmp
+      call get_gpu_reduced_vars(tmp)
+      grand_sum  = tmp(1)
+      dgrant_sum = tmp(2)
+      JJ_R_sum = tmp(11)
+      JJ_L_sum = tmp(12)
+      if (ldiagnos) then
+              grand_sum_diagnos = grand_sum
+              dgrant_sum_diagnos = dgrant_sum
+              JJ_R_sum_diagnos = JJ_R_sum 
+              JJ_L_sum_diagnos = JJ_L_sum 
+              TRdoteff2km_sum = tmp(3)
+              TRdoteff2m_sum =  tmp(4)
+              TReff2km_sum = tmp(5)
+              TReff2m_sum =  tmp(6)
+              TLdoteff2km_sum = tmp(7)
+              TLdoteff2m_sum =  tmp(8)
+              TLeff2km_sum = tmp(9)
+              TLeff2m_sum =  tmp(10)
+      endif
+    endsubroutine read_sums_from_device
 !***********************************************************************
     subroutine pushpars2c(p_par)
 

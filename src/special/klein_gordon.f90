@@ -1047,38 +1047,6 @@ module Special
 !
     endsubroutine dspecial_dt
 !***********************************************************************
-    subroutine read_sums_from_device
- !
- ! Read back the values of the reductions done on the GPU 
- !
-      use GPU, only: get_gpu_reduced_vars
-      real, dimension(10) :: tmp
-
-      call get_gpu_reduced_vars(tmp)
-      a2rhom_all     = tmp(1)
-      a2rhopm_all    = tmp(2)
-      a2rhophim_all  = tmp(3)
-      a2rhogphim_all = tmp(4)
-      sigE1m_all_nonaver = tmp(5)
-      sigB1m_all_nonaver = tmp(6)
-      ddotam_all         = tmp(7)
-      e2m_all            = tmp(8)
-      b2m_all            = tmp(9)
-      call get_Hscript_and_a2(Hscript,a2rhom_all)
-      call get_echarge
-      call get_sigE_and_B
-      if (lfirst .and. lout) then
-        a2rhom_all_diagnos     = a2rhom_all 
-        a2rhopm_all_diagnos    = a2rhopm_all 
-        a2rhophim_all_diagnos  = a2rhophim_all 
-        a2rhogphim_all_diagnos = a2rhogphim_all
-        ddotam_all_diagnos     = ddotam_all
-        sigEm_all_diagnos      = sigEm_all
-        sigBm_all_diagnos      = sigBm_all
-      endif
-
-    endsubroutine read_sums_from_device
-!***********************************************************************
     subroutine dspecial_dt_ode
 !
       use SharedVariables, only: get_shared_variable
@@ -1681,6 +1649,41 @@ module Special
 !
     endsubroutine prep_ode_right
 !********************************************************************
+! Subroutines below needed only for GPUs, if you do not care about GPUs don't worry about them
+!***********************************************************************
+    subroutine read_sums_from_device
+!
+!  The sums needed for ODE and PDE advancement are computed on the GPUs in before_boundary.
+!  Then we need them back on the host to advance the ODEs which this function does.
+!
+      use GPU, only: get_gpu_reduced_vars
+      real, dimension(10) :: tmp
+
+      call get_gpu_reduced_vars(tmp)
+      a2rhom_all     = tmp(1)
+      a2rhopm_all    = tmp(2)
+      a2rhophim_all  = tmp(3)
+      a2rhogphim_all = tmp(4)
+      sigE1m_all_nonaver = tmp(5)
+      sigB1m_all_nonaver = tmp(6)
+      ddotam_all         = tmp(7)
+      e2m_all            = tmp(8)
+      b2m_all            = tmp(9)
+      call get_Hscript_and_a2(Hscript,a2rhom_all)
+      call get_echarge
+      call get_sigE_and_B
+      if (lfirst .and. lout) then
+        a2rhom_all_diagnos     = a2rhom_all 
+        a2rhopm_all_diagnos    = a2rhopm_all 
+        a2rhophim_all_diagnos  = a2rhophim_all 
+        a2rhogphim_all_diagnos = a2rhogphim_all
+        ddotam_all_diagnos     = ddotam_all
+        sigEm_all_diagnos      = sigEm_all
+        sigBm_all_diagnos      = sigBm_all
+      endif
+
+    endsubroutine read_sums_from_device
+!***********************************************************************
     subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
