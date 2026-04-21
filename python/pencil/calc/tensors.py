@@ -91,7 +91,7 @@ class Tensors(object):
         # if iy None or scalar create numpy array
         try:
             iy.size > 0
-        except:
+        except Exception:
             print("exception")
             if iy == None:
                 print("exception None")
@@ -120,7 +120,7 @@ class Tensors(object):
         try:
             imask.size > 0
             print("imask shape is {}".format(imask.shape))
-        except:
+        except Exception:
             if lskip_zeros:
                 index = alpformat.format(1, 1)
                 izero = np.array(

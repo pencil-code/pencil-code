@@ -231,7 +231,7 @@ class DiffusionData(object):
             try:
                 print("## saving results in" + join(out_path, out_name))
                 save(obj=self, name=out_name, folder=out_path)
-            except:
+            except Exception:
                 print("!! Unexpected error:", sys.exc_info()[0])
                 print("!! Check if you have writing rights.")
                 raise

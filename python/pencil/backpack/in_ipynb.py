@@ -3,7 +3,7 @@ def in_ipynb():
 
     try:
         return "ZMQ" in str(get_ipython())
-    except:
+    except Exception:
         return False
 
     # try:

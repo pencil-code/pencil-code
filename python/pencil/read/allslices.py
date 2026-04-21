@@ -222,7 +222,7 @@ class SliceSeries(object):
                             if ds.__contains__(str(it)):
                                 try:
                                     slice_series[istart] = ds[str(it) + "/data"][::downsample,::downsample]
-                                except:
+                                except Exception:
                                     print("{} data corrupted or missing".format(it))
                                     continue
                             else:
@@ -288,7 +288,7 @@ class SliceSeries(object):
                 field_list = list(set(field_list))
                 try:
                     field_list.remove("position")
-                except:
+                except Exception:
                     pass
 
             # Initialize the extensions list.
@@ -307,7 +307,7 @@ class SliceSeries(object):
                 extension_list = sorted(set(extension_list))
                 try:
                     extension_list.remove("dat")
-                except:
+                except Exception:
                     pass
 
             if len(iter_list) > 0:
@@ -409,7 +409,7 @@ class SliceSeries(object):
 
                     try:
                         infile = FortranFile(file_name)
-                    except:
+                    except Exception:
                         continue
 
                     islice = 0

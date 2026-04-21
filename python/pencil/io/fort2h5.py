@@ -216,7 +216,7 @@ def var2h5(
                         try:
                             var.deltay
                             lshear = True
-                        except:
+                        except AttributeError:
                             lshear = False
 
                         if lpersist:
@@ -228,7 +228,7 @@ def var2h5(
                                         persist[key][0] = var.__getattribute__(key)[
                                             0
                                         ].encode()
-                                except:
+                                except Exception:
                                     pass
                         else:
                             persist = None
@@ -292,7 +292,7 @@ def var2h5(
                 try:
                     var.deltay
                     lshear = True
-                except:
+                except AttributeError:
                     lshear = False
 
                 if lpersist:
@@ -302,7 +302,7 @@ def var2h5(
                             persist[key] = var.__getattribute__(key)[()]
                             if type(persist[key][0]) == str:
                                 persist[key][0] = var.__getattribute__(key)[0].encode()
-                        except:
+                        except Exception:
                             pass
                 else:
                     persist = None
@@ -443,7 +443,7 @@ def slices2h5(
     try:
         int(int(readlines2[0].split(" ")[-1].split("\n")[0]))
         lines2 = ["xy", "xy2", "xy3", "xy4", "xz", "xz2", "yz"]
-    except:
+    except Exception:
         for line in readlines2:
             lines2.append(line.split(" ")[-1].split("\n")[0].lower())
     # check if number of slice options as expected

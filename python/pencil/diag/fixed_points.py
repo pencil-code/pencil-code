@@ -785,7 +785,7 @@ class FixedPoint(object):
 
         try:
             import h5py
-        except:
+        except Exception:
             print("Error in diag/fixed_points.py: Dependency of h5py not fullfilled.")
 
         # Open the file.
@@ -822,7 +822,7 @@ class FixedPoint(object):
                         group["fixed_tracers_{0}".format(fixed_idx)].value
                     )
                     fixed_idx += 1
-                except:
+                except Exception:
                     break
             if self.params.int_q == "curly_A":
                 self.curly_A.append(group["curly_A"].value)
@@ -837,7 +837,7 @@ class FixedPoint(object):
         self.tracers = Tracers()
         try:
             self.tracers.read(datadir=datadir, file_name=tracer_file_name)
-        except:
+        except Exception:
             if quiet:
                 pass
             else:

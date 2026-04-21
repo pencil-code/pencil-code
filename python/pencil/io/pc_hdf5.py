@@ -62,7 +62,7 @@ def open_h5(
                 process = sub.Popen(cmd.split(), stdout=sub.PIPE)
                 output, error = process.communicate()
                 print(cmd, output, error)
-            except:
+            except Exception:
                 while exists(join(path, fname)):
                     pass
     if comm:
@@ -111,7 +111,7 @@ def group_h5(
         if not status == "r" and (delete or overwrite):
             try:
                 h5obj.__delitem__(groupname)
-            except:
+            except Exception:
                 while h5obj.__contains__(groupname):
                     pass
             if np.mod(rank, size) == 0:
@@ -155,11 +155,11 @@ def dataset_h5(
     """
     try:
         ldata = len(data) > 0
-    except:
+    except Exception:
         ldata = data is not None
     try:
         lshape = len(shape) > 0
-    except:
+    except Exception:
         lshape = shape is not None
     # if both overwrite and delete, delete is False
     if delete:
@@ -188,7 +188,7 @@ def dataset_h5(
         if not status == "r" and (delete or overwrite):
             try:
                 h5obj.__delitem__(dataname)
-            except:
+            except Exception:
                 while h5obj.__contains__(dataname):
                     pass
             if np.mod(rank, size) == 0:

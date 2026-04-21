@@ -623,7 +623,7 @@ class Averages(object):
                 file_id = FortranFile(
                     os.path.join(datadir, proc_dir, aver_file_name)
                 )
-            except:
+            except Exception:
                 # Not all proc dirs have a [yz]averages.dat.
                 print("Averages of processor {0} missing.".format(proc))
                 sys.stdout.flush()
@@ -665,7 +665,7 @@ class Averages(object):
                         # Finished reading.
                         break
                     iiter += 1
-                except:
+                except Exception:
                     # Finished reading.
                     break
             file_id.close()
@@ -770,7 +770,7 @@ class Averages(object):
                     )
                     raw_idx += 1
                 line_idx += 1
-        except:
+        except Exception:
             raise RuntimeError(f"Error: There was a problem reading {aver_file_name} at line {line_idx}.\nCalculated values: n_vars = {n_vars}, nw = {nw}.\nAre these correct?")
 
         # Restructure the raw data and add it to the Averages object.

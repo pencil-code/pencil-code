@@ -163,7 +163,7 @@ def animate_interactive(
 
     try:
         import thread
-    except:
+    except Exception:
         import _thread as thread
 
     # We need to define these variables as globals, as they are being used
@@ -251,7 +251,7 @@ def animate_interactive(
         if pause:
             try:
                 thread.start_new_thread(play, ("play_thread",))
-            except:
+            except Exception:
                 print("Error: unable to start play thread.")
 
     def pausing(event):

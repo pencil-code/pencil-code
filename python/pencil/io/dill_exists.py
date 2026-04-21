@@ -31,6 +31,6 @@ def dill_exists(name, folder=False, sim=False):
             return False
         return True
 
-    except:  # if anything goes wrong
+    except Exception:  # if anything goes wrong
         print("!! ERROR: Something went wrong when checking for the dill file!")
         return False

@@ -44,10 +44,10 @@ def pkl_load(name, folder=False, sim=False):
         try:  # open file and return it
             with open(file, "rb") as f:
                 return pickle.load(f)
-        except:
+        except Exception:
             with open(join(sim_path, file), "rb") as f:
                 return pickle.load(f)
 
-    except:  # if anything goes wrong
+    except Exception:  # if anything goes wrong
         print("!! ERROR: Something went wrong while importing pkl-file!")
         return False

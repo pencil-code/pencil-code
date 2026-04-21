@@ -26,6 +26,6 @@ def pkl_exists(name, folder=False):
             return False
         return True
 
-    except:  # if anything goes wrong
+    except Exception:  # if anything goes wrong
         print("!! ERROR: Something went wrong when checking for the pkl file!")
         return False

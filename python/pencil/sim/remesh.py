@@ -22,7 +22,7 @@ from os.path import exists
 try:
     import f90nml
     lnml=True
-except:
+except Exception:
     lnml=False
 
 def local_remesh(var, xsrc, ysrc, zsrc, xdst, ydst, zdst, quiet=True, kind="linear"):
@@ -657,7 +657,7 @@ def src2dst_remesh(
                         tmp[:] = srch5["persist"][key][0]
                         try:
                             pers.create_dataset(key, data=tmp)
-                        except:
+                        except Exception:
                             pers.__delitem__(key)
                             pers.create_dataset(key, data=tmp)
                 dsth5.require_dataset("time", (), dtype=dtype)
@@ -810,7 +810,7 @@ def src2dst_remesh(
         if comm:
             try:
                 dsth5.atomic = True
-            except:
+            except Exception:
                 print("atomic not supported with driver {}".format(driver))
             print(dsth5.filename,"atomic status:",dsth5.atomic)
         nx, ny, nz =(
@@ -931,13 +931,13 @@ def src2dst_remesh(
             if comm:
                 try:
                     srch5.atomic = True
-                except:
+                except Exception:
                     print("atomic not supported with driver {}".format(driver))
             with dh5 as dsth5:
                 if comm:
                     try:
                         dsth5.atomic = True
-                    except:
+                    except Exception:
                         print("atomic not supported with driver {}".format(driver))
                 if not quiet:
                     if rank == 0 or rank == size - 1:
@@ -980,7 +980,7 @@ def src2dst_remesh(
                                 )
                                 print(iz,"srcn1 {} zin {:.3f} n1 {} zout {:.3f}".format(
                                        srcn1,   zin[srcn1],n1,   zout[n1]))
-                            except:
+                            except Exception:
                                 srcn1 = 0
                             try:
                                 srcn2 = np.min(
@@ -988,7 +988,7 @@ def src2dst_remesh(
                                 )
                                 print(iz,"srcn2 {} zin {:.3f} n2 {} zout {:.3f}".format(
                                        srcn2,   zin[srcn2],n2,   zout[n2]))
-                            except:
+                            except Exception:
                                 srcn2 = zin.size - 1
                             n1out = n1 + dstghost
                             n2out = n2 - dstghost + 1
@@ -1013,7 +1013,7 @@ def src2dst_remesh(
                                 )
                                 print(iy,"srcm1 {} yin {:.3f} m1 {} yout {:.3f}".format(
                                        srcm1,   yin[srcm1],m1,   yout[m1]))
-                            except:
+                            except Exception:
                                 srcm1 = 0
                             try:
                                 srcm2 = np.min(
@@ -1021,7 +1021,7 @@ def src2dst_remesh(
                                 )
                                 print(iy,"srcm2 {} yin {:.3f} m2 {} yout {:.3f}".format(
                                        srcm2,   yin[srcm2],m2,   yout[m2]))
-                            except:
+                            except Exception:
                                 srcm2 = yin.size - 1
                             m1out = m1 + dstghost
                             m2out = m2 - dstghost + 1
@@ -1046,7 +1046,7 @@ def src2dst_remesh(
                                 )
                                 print(ix,"srcl1 {} xin {:.3f} l1 {} xout {:.3f}".format(
                                        srcl1,   xin[srcl1],l1,   xout[l1]))
-                            except:
+                            except Exception:
                                 srcl1 = 0
                             try:
                                 srcl2 = np.min(
@@ -1054,7 +1054,7 @@ def src2dst_remesh(
                                 )
                                 print(ix,"srcl2 {} xin {:.3f} l2 {} xout {:.3f}".format(
                                        srcl2,   xin[srcl2],l2,   xout[l2]))
-                            except:
+                            except Exception:
                                 srcl2 = zin.size - 1
                             l1out = l1 + dstghost
                             l2out = l2 - dstghost + 1

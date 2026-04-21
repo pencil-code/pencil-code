@@ -19,7 +19,7 @@ try:
     import f90nml
 
     lnml = True
-except:
+except Exception:
     print(
         "Warning: recommend to add f90nml to library with \
     'pip3 install f90nml' (Python 3) or \
@@ -264,7 +264,7 @@ class Param(_Foo):
             if "." in string_part:
                 return float(string_part)
             return int(string_part)
-        except:
+        except Exception:
             return re.sub("'", "", string_part)
 
     def __tuple_catch(self, string):

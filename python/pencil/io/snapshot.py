@@ -1112,7 +1112,7 @@ def write_h5_averages(
                                 comm=comm,
                                 size=size,
                             )
-                        except:
+                        except Exception:
                             continue
         for it in indx:
             ds[str(it)]["time"][:] = aver.t[it - indx[0]]
@@ -1133,7 +1133,7 @@ def write_h5_averages(
                         try:
                             data.shape
                             ds[str(it)][key][:] = data[it - indx[0]]
-                        except:
+                        except Exception:
                             continue
     if not quiet:
         print(filename + " written on rank {}".format(rank))

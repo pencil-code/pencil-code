@@ -49,7 +49,7 @@ def get(path=".", quiet=False):
                 raise RuntimeError
 
             return sim
-        except:
+        except Exception:
             import os
 
             print(

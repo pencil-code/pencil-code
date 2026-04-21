@@ -104,7 +104,7 @@ class Index(object):
                 continue
             try:
                 val = int(clean.split("=")[1].strip())
-            except:
+            except Exception:
                 val = np.arange(int(re.search(r"\(([0-9]+)\)", clean).group(1)))[
                     0
                 ] + int(clean.split("=")[1].strip().split("+")[1])
