@@ -5501,9 +5501,14 @@ module Deriv
 !***********************************************************************
     subroutine deri_3d_inds(f,df,inds,j,lignored,lnometric)
 !
-!  dummy routine for compatibility
+!     Calculate the hyperdiffusion correction that converts the centered first
+!     derivative to the upwind first derivative. Used by calc_del6_for_upwind
+!     for non-equidistant grids.
 !
-!  26-mar-12/MR: coded
+!     26-mar-12/MR: coded dummy routine
+!     21-apr-2026/Kishore: working implementation
+!
+      use Quiet
 !
       real, dimension (mx,my,mz)          :: f
       real, dimension (nx)                :: df
@@ -5514,12 +5519,21 @@ module Deriv
       intent(in)  :: f,j,inds,lignored,lnometric
       intent(out) :: df
 !
-      call fatal_error('deri_3d_inds','Upwinding not implemented for nonuniform grids')
+      real, dimension (nx) :: del6
 !
-! dummy computation to avoid compiler warnings of unused variables
+      call keep_compiler_quiet(lignored)
+      call keep_compiler_quiet(lnometric)
+      call keep_compiler_quiet(inds)
 !
-      if (present(lignored).and.present(lnometric)) &
-          df  = inds + f(l1:l2,1,1) + j
+      call der6(f,del6,j,ignoredx=.true.)
+!
+      if (j==1) then
+        df = del6*dx_1(l1:l2)/60
+      elseif (j==2) then
+        df = del6*dy_1(m)/60
+      elseif (j==3) then
+        df = del6*dz_1(n)/60
+      endif
 !
     endsubroutine deri_3d_inds
 !************************************************************************
