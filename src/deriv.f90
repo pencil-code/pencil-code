@@ -5505,6 +5505,18 @@ module Deriv
 !     derivative to the upwind first derivative. Used by calc_del6_for_upwind
 !     for non-equidistant grids.
 !
+!     The correction calculated here is
+!     (dz_1 / 60) [ \frac{d^6 f}{d \zeta^6} ]_{cent,2}
+!     which is correct even for non-equidistant grids (where we have used
+!     notation similar to appendix B of [1], zeta is a coordinate in which the
+!     grid spacing is 1, and dz_1 = d\zeta/d z).
+!
+!     Note that this is mathematically identical to the way upwinding is done
+!     when lignore_nonequi=T . We retain this as a separate subroutine to avoid
+!     breaking deriv_alt.f90.
+!
+!     [1]: Dobler, Stix, Brandenburg 2006. ApJ, 638, pp. 336–347.
+!
 !     26-mar-12/MR: coded dummy routine
 !     21-apr-2026/Kishore: working implementation
 !
