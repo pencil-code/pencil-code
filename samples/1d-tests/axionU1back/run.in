@@ -1,0 +1,14 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Runtime parameters
+!
+&run_pars
+  cvsid="96f8e86d7"
+  lpencil_check_small=F, isave=500000, itorder=3
+  nt=100
+  it1=10, dtmin=1e-20
+  dsnap=1.e10
+/
+&special_run_pars
+  ikdata=2
+/
