@@ -436,7 +436,7 @@ module HDF5_IO
       integer, intent(out) :: data
       integer, intent(in) :: pos
 !
-      integer(kind=8), dimension(1) :: glob_start, h5_count
+      integer(kind=8), dimension(1) :: h5_offset, h5_count
 !
       if (lcollective) call check_error (1, 'local input requires local file', caller='input_local_hdf5_int_1D_0D')
       if (.not. lwrite) return
@@ -445,15 +445,17 @@ module HDF5_IO
       call h5screate_f (H5S_SCALAR_F, h5_mspace, h5_err)
       call check_error (h5_err, 'create local memory space', name, caller='input_local_hdf5_int_1D_0D')
 !
-      ! define local 'hyper-slab' in the global file
-      glob_start(1) = pos
-      h5_count(1) = 1
-      call h5sselect_hyperslab_f (h5_fspace, H5S_SELECT_SET_F, glob_start, h5_count, h5_err)
-      call check_error (h5_err, 'select hyperslab within file', name)
-!
       ! open dataset
       call h5dopen_f (h5_file, trim (name), h5_dset, h5_err)
       call check_error (h5_err, 'open dataset', name, caller='input_local_hdf5_int_1D_0D')
+!
+      ! define local 'hyper-slab' in the global file
+      h5_offset(1) = pos
+      h5_count(1) = 1
+      call h5dget_space_f (h5_dset, h5_fspace, h5_err)
+      call check_error (h5_err, 'get file space of dataset', name)
+      call h5sselect_hyperslab_f (h5_fspace, H5S_SELECT_SET_F, h5_offset, h5_count, h5_err)
+      call check_error (h5_err, 'select hyperslab within file', name)
 !
       ! read requested element from dataset
       call h5dread_f (h5_dset, H5T_NATIVE_INTEGER, data, h5_count, h5_err, h5_mspace, h5_fspace)
