@@ -2462,6 +2462,8 @@ module HDF5_IO
             call input_hdf5 (trim (label)//'/iteration', last_iter, last)
             do while ((it < last_iter) .and. (last > 0))
               ! find the writing position in the array
+ ! *** WORK HERE: Problem is that on a re-run, the first iteration is beginning again from 0.
+ ! *** WORK HERE: Iteration numbers are completely meaningless, they need to be replaced => with time?
               last = last - 1
               call input_hdf5 (trim (label)//'/iteration', last_iter, last)
             enddo
