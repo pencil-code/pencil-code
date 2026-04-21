@@ -2451,7 +2451,7 @@ module HDF5_IO
               call input_hdf5 (trim (label)//'/iteration', last_iter, last)
             enddo
             if (it <= last_iter) last = last - 1
-! write (*,*) pos, ' '//trim(label), ' offset:', last+1
+ write (*,*) 'pos:', pos, '/', nname, ' label='//trim(label), ' offset:', last+1
             ts_offsets(pos) = last + 1
           endif
         endif
