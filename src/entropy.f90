@@ -1537,7 +1537,11 @@ module Energy
 !  Tell the BorderProfiles module if we intend to use border driving, so
 !  that the module can request the right pencils.
 !
-      call request_border_driving((/borderss/),'initialize_energy',iss)
+      if (borderss=='initial-temperature') then
+        call request_border_driving((/'initial-condition'/),'initialize_energy',ilnrho,iss)
+      else
+        call request_border_driving((/borderss/),'initialize_energy',iss)
+      endif
 
       if (lheatc_kramers) then
         call put_shared_variable('hcond0_kramers',hcond0_kramers)
@@ -4747,7 +4751,6 @@ module Energy
         call border_driving(f,df,p,f_target,iss)
 !
       endselect
-!
 !
     endsubroutine set_border_entropy
 !***********************************************************************
