@@ -1508,21 +1508,23 @@ module Grid
 !  Not strictly needed but give a slightly
 !  performance boost on equidistant cartesian
 !
-      dx1_scalar = dx_1(nghost)
-      dy1_scalar = dy_1(nghost)
-      dz1_scalar = dz_1(nghost)
+      if(nghost > 0) then
+        dx1_scalar = dx_1(nghost)
+        dy1_scalar = dy_1(nghost)
+        dz1_scalar = dz_1(nghost)
 
-      dx2_scalar = dx1_scalar*dx1_scalar
-      dy2_scalar = dy1_scalar*dy1_scalar
-      dz2_scalar = dz1_scalar*dz1_scalar
+        dx2_scalar = dx1_scalar*dx1_scalar
+        dy2_scalar = dy1_scalar*dy1_scalar
+        dz2_scalar = dz1_scalar*dz1_scalar
 
-      dx4_scalar = dx2_scalar*dx2_scalar
-      dy4_scalar = dy2_scalar*dy2_scalar
-      dz4_scalar = dz2_scalar*dz2_scalar
+        dx4_scalar = dx2_scalar*dx2_scalar
+        dy4_scalar = dy2_scalar*dy2_scalar
+        dz4_scalar = dz2_scalar*dz2_scalar
 
-      dx6_scalar = dx4_scalar*dx2_scalar
-      dy6_scalar = dy4_scalar*dy2_scalar
-      dz6_scalar = dz4_scalar*dz2_scalar
+        dx6_scalar = dx4_scalar*dx2_scalar
+        dy6_scalar = dy4_scalar*dy2_scalar
+        dz6_scalar = dz4_scalar*dz2_scalar
+      endif
 !
     endsubroutine initialize_grid
 !***********************************************************************
