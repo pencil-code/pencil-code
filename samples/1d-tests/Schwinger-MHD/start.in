@@ -4,6 +4,7 @@
 !
 &init_pars
   cvsid="$Id: start.in,v 1.1 2026/04/14 14:40:21 brandenb Exp $"
+  random_gen='nr_f90'
   unit_system='set'
   lwrite_ic=F
   wav1=2e-6
@@ -25,7 +26,7 @@
   amplphi=1e0, amplee_BD_prefactor=1e0, kpeak_phi=50e-6
   phi0=0.7, ascale_ini=1., init_rho_chi='given', rho_chi_init=1e-22
   lrho_chi=T, lrho_rad=T
-  lappy_BD_k1D_factor=T
+  lapply_BD_kNy_factor=T, linv_BD=F
 /
 &disp_current_init_pars
   llongitudinalE=F, lsolve_chargedensity=T

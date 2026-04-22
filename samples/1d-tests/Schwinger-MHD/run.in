@@ -30,12 +30,11 @@
 &backreact_infl_run_pars
   lbackreact_infl=T, ldt_backreact_infl=T, Ndiv=0, cdt_phi=1e-2
   echarge_type='erun'
-  lrho_chi_inhom=T, wstate_tolerance=0e-6
+  lrho_chi_inhom=T, wstate_tolerance=1e-10
   Gamma_phi0=1e-7, lrho_rad_apply2=F
   lheating_keep_on=T, lwstate_crit=T
 /
 &disp_current_run_pars
-  lmass_suppression=F, mass_chi=1e2
   luse_scale_factor_in_sigma=T
   lcollinear_EB=T, sigB_prefactor=1., sigE_prefactor=1.
   lallow_bprime_zero=T
@@ -44,6 +43,5 @@
   lapply_Gamma_corr=F
   alpf=90.
   llorentzforce_ee=T
-  !ladvance_ee=F
   cdt_sigE=1.
 /

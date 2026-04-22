@@ -10,3 +10,6 @@
 !
 integer, parameter :: ncpus=4,nprocx=4,nprocz=1,nprocy=ncpus/(nprocx*nprocz)
 integer, parameter :: nxgrid=64,nygrid=1,nzgrid=1
+!integer, parameter :: nxgrid=64,nygrid=nxgrid,nzgrid=nxgrid
+!integer, parameter :: nxgrid=64,nygrid=nxgrid,nzgrid=1
+!integer, parameter :: nxgrid=32,nygrid=nxgrid,nzgrid=nxgrid
