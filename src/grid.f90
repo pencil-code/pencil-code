@@ -612,8 +612,10 @@ module Grid
               xi2(i)=0.5-nghost+0.5+(ipy*ny+i-1)*&
                 (nygrid+2.*(nghost-0.5)-1)/(nygrid+2.*nghost-1)
             enddo
+            !The max is to avoid division by zero that stops compilation.
+            !It will not influence results as long as nghost > 0
             xi2proc = (/ (real(1 - nghost) + (real(nghost + i * ny) - 0.5) * real(mygrid - 2) &
-                                                                           / real(mygrid - 1), i = 0, nprocy) /)
+                                                                           / max(real(mygrid - 1),1.), i = 0, nprocy) /)
           endif
 !
           call grid_profile(xi2,grid_func(2),g2,g2der1,g2der2,dxyz= &
@@ -1388,8 +1390,10 @@ module Grid
 !
       if (nzgrid==1) then       ! switch off coarsening if no z-extent
         ncoarse=0
-      elseif (ncoarse>floor(nz/real(nghost))) then
-        ncoarse=floor(nz/real(nghost))
+      !The maxes are to avoid divisions by zero that stop compilation
+      !They will not influence the results as long as nghost > 0
+      elseif (ncoarse>floor(nz/real(max(nghost,1)))) then
+        ncoarse=floor(nz/real(max(nghost,1)))
         call warning('initialize_grid','there are jumped-over processors due to grid coarsening'// &
                      ' -> ncoarse reduced to floor(nz/nghost)='//trim(itoa(ncoarse)))
       endif
@@ -3059,11 +3063,13 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
       dc( 1:nghost)  = coors(nghost+2:2*nghost+1)-coors(nghost+1:2*nghost)
       dc(-nghost+1:0)= dc(nghost:1:-1)
 !print*, 'DX,Y,Z=', dx,dy,dz
-      call calc_coeffs_1(dc,coeffs(:,BOT))
+!The mins are to avoid compilation failure, and will not have any influence when nghost>0
+!and naturally this function is not needed for nghost=0
+      call calc_coeffs_1(dc,coeffs(:,min(BOT,2*nghost)))
       dc(-nghost+1:0)= coors(sc-2*nghost+1:sc-nghost)-coors(sc-2*nghost:sc-nghost-1)
       dc( 1:nghost)  = dc(0:-nghost+1:-1)
 
-      call calc_coeffs_1(dc,coeffs(:,TOP))
+      call calc_coeffs_1(dc,coeffs(:,min(TOP,2*nghost)))
 
     endsubroutine calc_bound_coeffs
 !***********************************************************************
