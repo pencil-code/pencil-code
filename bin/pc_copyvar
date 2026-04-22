@@ -29,6 +29,7 @@
 #    -s               -  create symbolic link instead of copy
 #    -execute=1, -e   -  really execute copy or link
 #    -q               -  don't display copy/link command
+#    -d               -  source path is path of data directory, not working directory
 #
 set data=data/
 set narg=0
@@ -39,6 +40,7 @@ set quiet=0
 set e=0
 set s=0
 set q=0
+set d=0
 #
 #  Sort through all command line input.
 #
@@ -89,6 +91,12 @@ else if ( $narg == 3 ) then
 else
   set dest='.'
   set source='.'
+endif
+#
+if ($d != 0) then
+  set source_data=$source/
+else
+  set source_data=$source/$data
 endif
 #
 #  Abbrevations.
@@ -146,16 +154,16 @@ else
   echo "This command would execute"
 endif
 if ($link) then
-  echo "  rm -f $dest/${data}proc[0-9]*/$var2; ln -s $source/${data}proc[0-9]*/$var1 $dest/${data}proc[0-9]*/$var2"
+  echo "  rm -f $dest/${data}proc[0-9]*/$var2; ln -s ${source_data}proc[0-9]*/$var1 $dest/${data}proc[0-9]*/$var2"
 else
-  echo "  $cp $source/${data}proc[0-9]*/$var1 $dest/${data}proc[0-9]*/$var2"
+  echo "  $cp ${source_data}proc[0-9]*/$var1 $dest/${data}proc[0-9]*/$var2"
 endif
 if ($execute) echo ""
 #
 #  Only execute the command if -e or -execute=1 is set, to avoid catastrophes.
 #
 if ($execute) then
-  foreach dir ( $source/${data}proc*[0-9] )
+  foreach dir ( ${source_data}proc*[0-9] )
     set procdir=`basename $dir`
     if ($remdest) then
       set res=`ssh $dest:s/:/ ls -d //${data}$procdir`
@@ -169,12 +177,12 @@ if ($execute) then
     endif
     if ($link) then
       if ( ! $quiet ) then
-        echo "rm -f $dest/${data}$procdir/$var2; ln -s $source/${data}$procdir/$var1 $dest/${data}$procdir/$var2"
+        echo "rm -f $dest/${data}$procdir/$var2; ln -s ${source_data}$procdir/$var1 $dest/${data}$procdir/$var2"
       endif
-      rm -f $dest/${data}$procdir/$var2; ln -s $source/${data}$procdir/$var1 $dest/${data}$procdir/$var2
+      rm -f $dest/${data}$procdir/$var2; ln -s ${source_data}$procdir/$var1 $dest/${data}$procdir/$var2
     else
-      echo "$cp $source/${data}$procdir/$var1 $dest/${data}$procdir/$var2"
-      $cp $source/${data}$procdir/$var1 $dest/${data}$procdir/$var2
+      echo "$cp ${source_data}$procdir/$var1 $dest/${data}$procdir/$var2"
+      $cp ${source_data}$procdir/$var1 $dest/${data}$procdir/$var2
     endif
   end
 else
