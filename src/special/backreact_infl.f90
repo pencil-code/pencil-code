@@ -1645,6 +1645,7 @@ module Special
     call copy_addr(rhom_all,p_par(38))
     call copy_addr(axionmass,p_par(39))
     call copy_addr(cdt_phi,p_par(40))
+    call copy_addr(gamma_phi_exp,p_par(41))
     endsubroutine pushpars2c
 !********************************************************************
 !********************************************************************
