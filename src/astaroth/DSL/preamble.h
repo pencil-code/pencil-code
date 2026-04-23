@@ -26,6 +26,14 @@ const int AC_xtop__mod__equationofstate=nx
 #define AC_ny ny
 #define AC_nz nz
 
+#define AC_nxgrid nxgrid
+#define AC_nygrid nxgrid
+#define AC_nzgrid nxgrid
+
+#define AC_nxgrid__mod__cparam nxgrid
+#define AC_nygrid__mod__cparam nxgrid
+#define AC_nzgrid__mod__cparam nxgrid
+
 #undef AC_mx
 #undef AC_my
 #undef AC_mz
@@ -172,9 +180,6 @@ const real ac_unused_real_array_2d_dummy_value = 0.0
 const real ac_unused_real_scalar = 0.0
 const real ac_real_unused_scalar = 0.0
 #define epsi AC_REAL_EPSILON
-#define AC_nxgrid__mod__cparam nxgrid
-#define AC_nygrid__mod__cparam nxgrid
-#define AC_nzgrid__mod__cparam nxgrid
 #define maux__mod__cparam maux
 
 global output real AC_Arms
