@@ -2461,7 +2461,7 @@ module Density
 !
 !  Differentiate between log density and linear density.
 !
-      if (loperator_split_update) then
+      if (lsplit_update) then
         if (lsplit_sld .and. ldensity_slope_limited) then
           if(ldensity_nolog) then
             p%rho = f(l1:l2,m,n,irho)
@@ -3062,7 +3062,7 @@ module Density
 !
 !   Slope limited diffusion for density
 !
-      if (loperator_split_update .eqv. lsplit_sld .and. ldensity_slope_limited.and.&
+      if (lsplit_update .eqv. lsplit_sld .and. ldensity_slope_limited.and.&
         ((lfirst .and. lfirst_sld) .or. (llast .and. .not. lfirst_sld))) then
         call calc_sld_fdiff(f,p,fdiff)
       endif
@@ -3230,7 +3230,7 @@ module Density
         density_rhs=p%uglnrho+p%divu
         call accumulate_Schur_averages(density_rhs)
 !
-      else if(loperator_split_update) then
+      else if(lsplit_update) then
         if(lsplit_sld) then
 !
 !   Slope limited diffusion for density

@@ -129,6 +129,9 @@ contains
       character(LEN=512) :: str
 !
       if(ltest_rhs) lread_all_vars_from_device = .true.
+      !If we are doing any split updates then we have to use the same cumulative scheme
+      !as on the CPUs
+      if(lsplit_sld) lcumulative_df_on_gpu = .true.
 
       str=''
       !List of unsupported modules

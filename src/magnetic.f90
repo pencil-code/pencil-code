@@ -5403,7 +5403,6 @@ module Magnetic
 !
       if (headtt) print*, 'daa_dt: iresistivity=', iresistivity
 !
-      fres=0.
       eta_total=0.; diffus_eta2=0.; diffus_eta3=0.
 !
 !  Uniform resistivity
@@ -6465,8 +6464,8 @@ module Magnetic
       real, dimension (nx) :: tmp1
       real, dimension(nx) :: dlnBrmsdt, limiter
       real, dimension(3) :: B_ext
-      real :: tmp, eta_out1, sinalp
-      integer :: i,j,k,ju,ix
+      real :: tmp, eta_out1 
+      integer :: i,ix
       integer, parameter :: nxy=nxgrid*nygrid
 !
 !  Identify module and boundary conditions.
@@ -6484,7 +6483,7 @@ module Magnetic
       ssmax=1./impossible
       if (lfirstpoint) lproc_print=.true.
 
-      if(.not. loperator_split_update) then
+      if(.not. lsplit_update) then
 !
 !  Replace B_ext locally to accommodate its time dependence.
 !
@@ -6499,8 +6498,10 @@ module Magnetic
 !  To check this, we check whether ldisp_current=T.
 !  The following lines have not (yet) been correctly indented, because they are so many (1103 lines).
 !
+
       if ((.not. ldisp_current) .or. loverride_ee) then
-        if(.not. loperator_split_update) then
+        fres=0.
+        if(.not. lsplit_update) then
           call calc_resistivity(f,p)
 !
 !  anisotropic B-dependent diffusivity
@@ -6525,21 +6526,21 @@ module Magnetic
 !
 !   Slope limited diffusion for magnetic field
 !
-        if ((loperator_split_update .eqv. lsplit_sld) .and. lmagnetic_slope_limited.and.&
+        if ((lsplit_update .eqv. lsplit_sld) .and. lmagnetic_slope_limited.and.&
           ((lfirst .and. lfirst_sld) .or. (llast .and. .not. lfirst_sld))) then
           call calc_magnetic_slope_limited(f,df,p)
         endif
 !
 !  Special contributions to this module are called here.
 !
-        if (.not. loperator_split_update .and. lspecial) call special_calc_magnetic(f,df,p)
+        if (.not. lsplit_update .and. lspecial) call special_calc_magnetic(f,df,p)
 !
 !  Add Ohmic heat to entropy or temperature equation.
 !
         if (.not.lkinematic.and.lohmic_heat) then
           call add_ohmic_heat(df,p)
         endif
-        if(.not. loperator_split_update) then
+        if(.not. lsplit_update) then
 !
 !  Switch off diffusion in boundary slice if requested by boundconds.
 !
@@ -6698,11 +6699,13 @@ module Magnetic
 !
           if (lupdate_courant_dt) then
             call calc_timestep_constraints
-          endif !end of "if (.not. loperator_split_update) then"
-        endif
+          endif 
+        else
+          df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+fres
+        endif !end of "if (.not. lsplit_update) then"
       endif ! end of "if ((.not. ldisp_current) .or. loverride_ee) then"
       
-      if(.not. loperator_split_update) then
+      if(.not. lsplit_update) then
 !
 !  If ldensity and ldensity_add_je_heating, then compute J.E and add it.
 !  This would only make sense if the equation for the displacement current is solved.

@@ -346,19 +346,10 @@ module Energy
 
     endsubroutine energy_after_boundary
 !***********************************************************************
-    subroutine denergy_dt(f,df,p)
-!
-!  Calculate pressure gradient term for isothermal/polytropic equation
-!  of state.
-!
-      real, dimension (mx,my,mz,mfarray) :: f
+    subroutine add_pressure(df,p)
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-!
       integer :: j
-!
-      intent(in) :: f,p
-      intent(inout) :: df
 !
 !  Add isothermal/polytropic pressure term in momentum equation.
 !
@@ -376,8 +367,24 @@ module Energy
           enddo
         endif
       endif
-      !    Have to do this here since important for some modules like photoelectric_dust
-      !    (this overwrites the setting there)
+    endsubroutine add_pressure
+!***********************************************************************
+    subroutine denergy_dt(f,df,p)
+!
+!  Calculate pressure gradient term for isothermal/polytropic equation
+!  of state.
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+!
+      intent(in) :: f,p
+      intent(inout) :: df
+
+      if(.not. lsplit_update) call add_pressure(df,p)
+
+!    Have to do this here since important for some modules like photoelectric_dust
+!    (this overwrites the setting there)
       if (lupdate_courant_dt .and. leos.and.ldensity.and.lhydro) advec_cs2=p%advec_cs2
 
 

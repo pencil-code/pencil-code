@@ -3724,7 +3724,7 @@ module Energy
         print*,'denergy_dt: lnTT,cs2,cp1=', p%lnTT(1), p%cs2(1), p%cp1(1)
       endif
 
-      if (.not. loperator_split_update) then
+      if (.not. lsplit_update) then
         if (lhydro) then
           call add_pressure(df,p)
 !
@@ -3758,7 +3758,7 @@ module Energy
       endif
 
       if (lviscosity .and. lviscosity_heat) call calc_viscous_heat(df,p,Hmax)
-      if(.not. loperator_split_update) then
+      if(.not. lsplit_update) then
 !
 !  Entry possibility for "personal" entries.
 !  In that case you'd need to provide your own "special" routine.
@@ -3802,12 +3802,12 @@ module Energy
 !
 !     Slope-limited diffusion
 !
-      if (loperator_split_update .eqv. lsplit_sld .and. lenergy_slope_limited.and.&
+      if (lsplit_update .eqv. lsplit_sld .and. lenergy_slope_limited.and.&
         ((lfirst .and. lfirst_sld) .or. (llast .and. .not. lfirst_sld))) then
         call calc_energy_slope_limited(f,df,p)
       endif
 
-      if(.not. loperator_split_update) then
+      if(.not. lsplit_update) then
 !
 !  Explicit heating/cooling terms.
 !

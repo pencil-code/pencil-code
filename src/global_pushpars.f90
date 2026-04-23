@@ -467,8 +467,8 @@ contains
     call copy_addr(icp,p_par(1411)) ! int
     call copy_addr(irr,p_par(1412)) ! int
     call copy_addr(wav1,p_par(1413))
-    !call copy_addr(necessary,p_par(1414))  ! bool (ny*nz)
-    call copy_addr(imn,p_par(1415))  ! int
+    call copy_addr(lsplit_sld,p_par(1414)) ! bool
+    call copy_addr(lfirst_sld,p_par(1415)) ! bool
 
   endsubroutine pushpars2c
 !***********************************************************************

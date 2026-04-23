@@ -2391,7 +2391,7 @@ module Viscosity
       p%fvisc=0.0                               !!! not needed
       if (lpencil(i_visc_heat)) p%visc_heat=0.0
 
-      if(.not. loperator_split_update) then
+      if(.not. lsplit_update) then
         call calc_pencils_viscosity_pnc(f,p,lpencil)
       endif
 
@@ -2399,12 +2399,12 @@ module Viscosity
 !  Calculate viscouse force for slope limited diffusion
 !  following Rempel (2014). Here the divergence of the flux is used.
 !
-      if (lvisc_slope_limited .and. &
+      if (lvisc_slope_limited .and. lsplit_sld .eqv. lsplit_update .and. &
         ((lfirst .and. lfirst_sld) .or. (llast .and. .not. lfirst_sld))) then
         call calc_visc_slope_limited(f,p)
       endif
 
-      if(.not. loperator_split_update) then
+      if(.not. lsplit_update) then
 !
 !  Store viscous heating rate in auxiliary variable if requested.
 !  Just necessary immediately before writing snapshots, but how would we

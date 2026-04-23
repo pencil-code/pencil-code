@@ -782,7 +782,7 @@ module EquationOfState
       real, dimension (mx,my,mz,mfarray),intent(INOUT):: f
       type (pencil_case),                intent(INOUT):: p
 !
-      if(.not. loperator_split_update) then
+      if(.not. lsplit_update) then
         call calc_pencils_eos_pencpar(f,p,lpencil)
       else if(lsplit_sld) then
         p%cv1 = cv1

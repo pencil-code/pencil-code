@@ -4238,10 +4238,10 @@ module Hydro
       intent(inout) :: f,df
 
       real, dimension (nx,3) :: uu1, tmpv
-      real, dimension (nx) :: tmp, ftot
+      real, dimension (nx) :: ftot
       real, dimension (nx) :: arad_normal, pradrc2
       real :: hubble_factor
-      integer :: i,j
+      integer :: j
 !
       Fmax=1./impossible
       if (lfirstpoint) lproc_print=.true.
@@ -4257,7 +4257,7 @@ module Hydro
         if (lslope_limit_diff) call identify_bcs('sld_char',isld_char)
       endif
 
-      if(.not. loperator_split_update) then
+      if(.not. lsplit_update) then
 !
 !  Advection term, i.e., subtract u.gradu.
 !  In the relativistic case, this is automatically
@@ -4312,7 +4312,7 @@ module Hydro
 !
       if (lviscosity) call calc_viscous_force(df,p)
 
-      if(.not. loperator_split_update) then
+      if(.not. lsplit_update) then
         if (lSGS_hydro) call calc_SGS_hydro_force(f,df,p)
 !
 !  Ekman Friction, used only in two dimensional runs.

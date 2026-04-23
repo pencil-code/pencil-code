@@ -645,7 +645,7 @@ module Cdata
   logical, dimension(mvar) :: variable_substepped=.false.
   logical, dimension(100) :: lspecial_substepped=.false.
   ! For knowing does the current iteration correspond to an operator split loop
-  logical :: loperator_split_update = .false.
+  logical :: lsplit_update = .false.
   ! Are SLD terms split or not
   logical :: lsplit_sld = .false.
   ! Whether to apply SLD on the first substep or the default on the old substep

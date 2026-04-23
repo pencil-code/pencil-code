@@ -281,3 +281,21 @@ const real tl0  = 0.0
 const real tl01  = tl0/(tl0+tini)
 const real teta1 = teta/(teta+tini)
 #endif
+
+read_df(Field f, int step_num, bool split_update)
+{
+  if(AC_lsplit_sld__mod__cdata && !split_update && AC_llast__mod__cdata)
+  {
+	  return previous(f)
+  }
+  return rk_intermediate_split_first(f,step_num)
+}
+
+read_df(Field3 f, int step_num, bool split_update)
+{
+  return real3(
+		  read_df(f.x,step_num,split_update),
+		  read_df(f.y,step_num,split_update),
+		  read_df(f.z,step_num,split_update)
+	      )
+}
