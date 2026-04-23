@@ -109,6 +109,7 @@ module Special
   real :: count_eb0_all=0., rad_heating=0., ascale_heat=0., ascale_heat_off=0., heating
   real :: aphimax=0., aphimax2=0. !PAR_DOC: maximum a value above which the phi potential is quenched.
   real :: Gamma_phi0=impossible, Gamma_phi !PAR_DOC: damping factor for phi above aphimax
+  real :: Gamma_phi_exp=3.        !PAR_DOC: scale factor exponent on Gamma_phi
   real :: rhophim_crit=1e-21      !PAR_DOC: minimum phi
   real :: wstate, wstate_aver     !PAR_DOC: critical w (EoS) value (slightly below 1/3)
   real :: wstate_crit=0.333333333 !PAR_DOC: critical w (EoS) value (1/3)
@@ -182,7 +183,7 @@ module Special
       rad_heating, ascale_heat, ascale_heat_off, aphimax, Gamma_phi0, lconf_time, rhophim_crit, &
       wstate_crit, lwstate_crit, lwstate_crit_old, wstate_tolerance, lsolve_for_phi_always, &
       heating_choice, lheating_keep_on, lcombine_prep_ode_right_with_rhs, &
-      lswitch_toMHD_when_nophi
+      lswitch_toMHD_when_nophi, Gamma_phi_exp
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -689,7 +690,7 @@ module Special
           call grad(f,iinfl_phi,gphi)
           call dot2_mn(gphi,gphi2)
           a2rhophi=0.5*p%infl_dphi**2+0.5*gphi2+a2*Vpotential
-          tmp=Gamma_phi*a2rhophi/ascale**5
+          tmp=Gamma_phi*a2rhophi*ascale**Gamma_phi_exp
           if (ldensity_nolog) then
             df(l1:l2,m,n,irho)=df(l1:l2,m,n,irho)+tmp
           else
