@@ -7316,8 +7316,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       bnz = size (in, 3)
       nbox = bnx*bny*bnz
 !
-      collector = ipx + ipy*nprocx
-      if (present (dest_proc)) collector = collector + dest_proc*nprocxy
+      collector = find_proc(ipx,ipy,ioptest(dest_proc))
 !
       if (iproc == collector) then
         ! collect the data
@@ -7378,8 +7377,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       bna = size (in, 4)
       nbox = bnx*bny*bnz*bna
 !
-      collector = ipx + ipy*nprocx
-      if (present (dest_proc)) collector = collector + dest_proc*nprocxy
+      collector = find_proc(ipx,ipy,ioptest(dest_proc))
 !
       if (iproc == collector) then
         ! collect the data
@@ -7450,7 +7448,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       rny = cny*nprocy + 2*nghost
       nrow = bnx*rny*bnz*bna
 !
-      collector = ipz * nprocxy
+      collector = find_proc(0,0,ipz)
       if (present (dest_proc)) collector = collector + dest_proc
       pz = ioptest(source_pz,ipz)
 !
@@ -7569,7 +7567,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       rny = gny + 2*nghost
       nrow = bnx*rny*bnz*bna
 !
-      broadcaster = ipz * nprocxy
+      broadcaster = find_iproc(0,0,ipz)
       if (present (source_proc)) broadcaster = broadcaster + source_proc
       pz = ipz
       if (present (dest_pz)) pz = dest_pz
@@ -10017,16 +10015,17 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  25-nov-10/MR: coded
 !
+      use General, only: find_proc_coords
+
       integer,                    intent(in)  :: n1
       real, dimension(n1,nz)    , intent(in)  :: sendbuf
       real, dimension(n1,nzgrid), intent(out) :: recvbuf
       integer, optional,          intent(in)  :: lproc
 !
-      integer :: lpx, lpy
+      integer :: lpx, lpy, lpz
 !
       if (present(lproc)) then
-        lpy = lproc/nprocx
-        lpx = mod(lproc,nprocx)
+        call find_proc_coords(lproc,lpx,lpy,lpz)
       else
         lpy=0; lpx=0
       endif
@@ -10260,9 +10259,9 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 ! global processor number
 !
                        if (ltrans) then
-                          ig = ipz*nprocxy + ipx*nprocx + ipy
+                          ig = find_proc(ipy,ipx,ipz)
                         else
-                          ig = ipz*nprocxy + ipy*nprocx + ipx
+                          ig = find_proc(ipx,ipy,ipz)
                         endif
 !
 ! global lower and upper x index bounds for processor ipx
