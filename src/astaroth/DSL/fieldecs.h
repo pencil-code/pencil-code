@@ -298,18 +298,6 @@ tini_sqrt_div_separate(real numerator, real a, real b)
 
 #define AC_NGHOST_VAL__mod__cparam NGHOST_VAL
 
-#define AC_mx AC_mlocal.x
-#define AC_my AC_mlocal.y
-#define AC_mz AC_mlocal.z
-
-#define AC_nx AC_nlocal.x
-#define AC_ny AC_nlocal.y
-#define AC_nz AC_nlocal.z
-
-#define AC_nxgrid AC_ngrid.x
-#define AC_nygrid AC_ngrid.y
-#define AC_nzgrid AC_ngrid.z
-
 #define AC_dsx AC_ds.x
 #define AC_dsy AC_ds.y
 #define AC_dsz AC_ds.z

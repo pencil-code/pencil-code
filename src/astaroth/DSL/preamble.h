@@ -1,5 +1,7 @@
 #include "../../PC_moduleflags.h"
 
+#define REAL_MAX AC_REAL_MAX
+
 #if LENTROPY
 #define LENERGY 1
 #endif
@@ -7,6 +9,30 @@ const bool AC_lpencil_check__mod__cdata = false
 const bool AC_lpencil_check_at_work__mod__cdata = false
 
 #include "../typedefs.h"
+
+#define IN_DSL 1
+#include "cparam.h"
+#undef AC_bot
+#undef AC_top
+#include "../../../cparam_c.h"
+const int AC_xtop__mod__equationofstate=nx
+#include "../../../cparam_pencils.inc_c.h"
+
+#undef AC_nx
+#undef AC_ny
+#undef AC_nz
+
+#define AC_nx nx
+#define AC_ny ny
+#define AC_nz nz
+
+#undef AC_mx
+#undef AC_my
+#undef AC_mz
+
+#define AC_mx mx 
+#define AC_my my 
+#define AC_mz mz 
 
 #define AC_n1 n1
 #define AC_m1 m1
@@ -49,18 +75,6 @@ const int prof_nz = 150
 
 #define AC_NGHOST_VAL__mod__cparam NGHOST_VAL
 
-#define AC_mx mx 
-#define AC_my my 
-#define AC_mz mz 
-
-#define AC_nx nx 
-#define AC_ny ny
-#define AC_nz nz 
-
-#define AC_nxgrid nxgrid 
-#define AC_nygrid nygrid 
-#define AC_nzgrid nzgrid 
-
 #define AC_dsx AC_ds.x
 #define AC_dsy AC_ds.y
 #define AC_dsz AC_ds.z
@@ -77,16 +91,8 @@ const int prof_nz = 150
 //#include "../stdlib/pc_derivs.h"
 #include "../stdlib/general_operators.h"
 #define AC_NGHOST__mod__cparam nghost
-#define REAL_MAX AC_REAL_MAX
 //TP: nphis1 and nphis2 don't actually work. simply declared to compile the code
 //
-#define IN_DSL 1
-#include "cparam.h"
-#undef AC_bot
-#undef AC_top
-#include "../../../cparam_c.h"
-const int AC_xtop__mod__equationofstate=nx
-#include "../../../cparam_pencils.inc_c.h"
 #include "PC_modulepardecs.h"
 #include "../stdlib/optimized_integrators.h"
 #include "../stdlib/slope_limited_diffusion.h"
