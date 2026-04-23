@@ -129,6 +129,9 @@ contains
       character(LEN=512) :: str
 !
       if(ltest_rhs) lread_all_vars_from_device = .true.
+      !If there are enough GPUs we can distribute the autotuning between them
+      !and it won't take too long
+      if(ncpus >= 8) lac_sparse_autotuning = .false.
 
       str=''
       !List of unsupported modules
