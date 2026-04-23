@@ -1687,7 +1687,9 @@ extern "C" void reloadConfig()
 	  if (rank == 0) 
 	  {
 		  fprintf(stderr,"Was not successful in closing Astaroth lib!\n");
-		  system("touch ERROR");
+		  int err = system("touch ERROR");
+		  if(err)
+		    fprintf(stderr,"Unable to create ERROR file!\n");
 	  }
   	  MPI_Barrier(MPI_COMM_WORLD);
 	  exit(EXIT_FAILURE);
@@ -1700,7 +1702,9 @@ extern "C" void reloadConfig()
 	  if(rank == 0) 
 	  {
 		  fprintf(stderr,"Was not able to compile Astaroth!\n");
-		  system("touch ERROR");
+		  int err = system("touch ERROR");
+		  if(err)
+		    fprintf(stderr,"Unable to create ERROR file!\n");
 	  }
   	  MPI_Barrier(MPI_COMM_WORLD);
 	  exit(EXIT_FAILURE);
