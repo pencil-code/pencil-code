@@ -132,6 +132,9 @@ contains
       !If we are doing any split updates then we have to use the same cumulative scheme
       !as on the CPUs
       if(lsplit_sld) lcumulative_df_on_gpu = .true.
+      !If there are enough GPUs we can distribute the autotuning between them
+      !and it won't take too long
+      if(ncpus >= 8) lac_sparse_autotuning = .false.
 
       str=''
       !List of unsupported modules
