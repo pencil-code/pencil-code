@@ -33,14 +33,14 @@ module PointMasses
   real, dimension(nqpar) :: r1_smooth
   real, dimension(nqpar) :: frac_smooth=0.4
   real, dimension(nqpar) :: accrete_hills_frac=0.2, final_ramped_mass=0.0
-  real, dimension(nqpar) :: StokesNumber=1.
+  real, dimension(nqpar) :: StokesNumber=1.,St1
   real, pointer :: rhs_poisson_const, tstart_selfgrav
   real :: eccentricity=0.0, semimajor_axis=1.0
   real :: totmass, totmass1
   real :: GNewton1, GNewton=impossible, density_scale=0.001
   real :: cdtq=0.1
   real :: hills_tempering_fraction=0.8
-  real :: ugas=0.0,Omega_coriolis=0.0
+  real :: ugas=0.0
   real :: tau_accretion=1.0
 !
   integer :: ramp_orbits=5
@@ -63,7 +63,8 @@ module PointMasses
   logical :: lexclude_hills=.false.
   logical :: lgas_removal=.false.,lmomentum_removal=.false.
   logical :: ladd_dragforce=.false.,lquadratic_drag=.false.,llinear_drag=.true.
-  logical :: lcoriolis_force=.false.
+  logical :: lcoriolis_force_pointmass=.true.,lcentrifugal_force_pointmass=.false.
+  logical :: lshear_accel_pointmass=.true.
   logical :: l2D,l3D
 !
   character (len=labellen) :: initxxq='random', initvvq='nothing'
@@ -97,9 +98,10 @@ module PointMasses
       ipotential_pointmass, density_scale,&
       lgas_gravity,ldust_gravity,&
       ladd_dragforce,ugas,StokesNumber,&
-      lquadratic_drag,llinear_drag,lcoriolis_force,Omega_coriolis,&
+      lquadratic_drag,llinear_drag,&
       frac_smooth,lexclude_hills,tau_accretion,lgas_removal,lmomentum_removal,&
-      lnoselfgrav_primary
+      lnoselfgrav_primary,lcoriolis_force_pointmass,lcentrifugal_force_pointmass,&
+      lshear_accel_pointmass
 !
   integer, dimension(nqpar,3) :: idiag_xxq=0,idiag_vvq=0
   integer, dimension(nqpar)   :: idiag_torqint=0,idiag_torqext=0
@@ -311,7 +313,8 @@ module PointMasses
       l2Dsph=    lspherical_coords  .and.(lxpresent.and.(.not.lypresent).and.      lzpresent )
       l2D=l2Dcyl.or.l2Dsph
 !
-
+      St1=1./StokesNumber
+!
       if (lcylindrical_coords.and.bcqy=='p2pi'.and.lselfgravity) &
            call fatal_error("initialize_pointmasses", &
            "bcqy='p2pi' assumes the range is -pi:pi;"//achar(10)//"selfgravity_logspirals "// & 
@@ -1068,7 +1071,18 @@ module PointMasses
 !
 !  22-sep-06/wlad: coded
 !
+      integer :: k
+!
       if (lreset_cm) call reset_center_of_mass
+!
+!  Allow for the possibility that the ensemble of pointmasses itself is orbiting a larger
+!  distant body, the whole system rotating with frequency Omega (set in hydro or shear).
+!
+      if (lshear .and. Omega/=0.0 .and. nygrid /= 1) then
+        do k=1,nqpar
+          dfq(k,iyq)  = dfq(k,iyq) - qshear*Omega*fq(k,ixq)
+        enddo
+      endif
 !
     endsubroutine dxxq_dt_pointmasses
 !***********************************************************************
@@ -1100,6 +1114,28 @@ module PointMasses
 !
       do k=1,nqpar
         call gravity_pointmasses(k,hill_radius_square,.true.)
+!
+!  Allow for the possibility that the ensemble of pointmasses itself is orbiting a larger
+!  distant body, the whole system rotating with frequency Omega (set in hydro or shear).
+!
+        if (Omega/=0) then
+          if (lcoriolis_force_pointmass) then
+            if (headtt) print*,'dvvq_dt_pointmasses: Add Coriolis force; Omega=', Omega
+            dfq(k,ivxq) = dfq(k,ivxq) + 2.0*Omega*fq(k,ivyq)
+            dfq(k,ivyq) = dfq(k,ivyq) - 2.0*Omega*fq(k,ivxq)
+          endif
+!         
+          if (lcentrifugal_force_pointmass) then
+            if (headtt) print*,'dvvq_dt_pointmasses: Add Centrifugal force; Omega=', Omega
+            dfq(k,ivxq) = dfq(k,ivxq) + Omega**2*fq(k,ixq)
+            dfq(k,ivyq) = dfq(k,ivyq) + Omega**2*fq(k,iyq)
+          endif
+!
+          if (lshear .and. lshear_accel_pointmass) then
+            if (headtt) print*,'dvvq_dt_pointmasses: Add shear acceleration; Omega=', Omega             
+            dfq(k,ivyq) = dfq(k,ivyq) + qshear * Omega * fq(k,ivxq)
+          endif
+        endif 
       enddo
 !
 !  Position and velocity diagnostics (per massive particle).
@@ -1244,11 +1280,6 @@ module PointMasses
             dfq_cart(k,:) = dfq_cart(k,:) - Omega2_pm*evr_cart(1:3)
             if (ladd_dragforce) call dragforce_pointmasses(k)
 !
-            if (lcoriolis_force) then
-              dfq(k,ivxq) = dfq(k,ivxq) + 2*Omega_Coriolis*fq(k,ivyq)
-              dfq(k,ivyq) = dfq(k,ivyq) - 2*Omega_Coriolis*fq(k,ivxq)
-            endif
-!
           else
             dfp_pt(ivpx_cart:ivpz_cart) = dfp_pt(ivpx_cart:ivpz_cart) - Omega2_pm*evr_cart(1:3)
           endif
@@ -1287,10 +1318,10 @@ module PointMasses
 !
       uup=(/0.,ugas,0./)
       if (llinear_drag) then
-        dfq(k,ivxq:ivzq) = dfq(k,ivxq:ivzq) - (fq(k,ivxq:ivzq)-uup)/StokesNumber(k)
+        dfq(k,ivxq:ivzq) = dfq(k,ivxq:ivzq) - (fq(k,ivxq:ivzq)-uup)*St1(k)
       else if (lquadratic_drag) then
         dfq(k,ivxq:ivzq) = dfq(k,ivxq:ivzq) - &
-                           abs(fq(k,ivxq:ivzq)-uup)*(fq(k,ivxq:ivzq)-uup)/StokesNumber(k)
+                           abs(fq(k,ivxq:ivzq)-uup)*(fq(k,ivxq:ivzq)-uup)*St1(k)
       else
         call fatal_error("dragforce_pointmasses","drag should be linear or quadratic")
       endif
