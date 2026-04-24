@@ -7567,7 +7567,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       rny = gny + 2*nghost
       nrow = bnx*rny*bnz*bna
 !
-      broadcaster = find_iproc(0,0,ipz)
+      broadcaster = find_proc(0,0,ipz)
       if (present (source_proc)) broadcaster = broadcaster + source_proc
       pz = ipz
       if (present (dest_pz)) pz = dest_pz
