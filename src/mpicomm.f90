@@ -7418,11 +7418,17 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !  Globalizes local 4D data first along the x, then along the y-direction to
 !  the destination processor. The local data is supposed to include the ghost
 !  cells. Inner ghost layers are cut away during the combination of the data.
-!  'dest_proc' is the destination iproc number relative to the first processor
-!  in the corresponding xy-plane (Default: 0, equals lfirst_proc_xy).
+!  'dest_proc' is an offset to define the pz-layer relative to the one of the current process.
+!   The collector is always the first process of the the corresponding xy-plane (equals lfirst_proc_xy).
 !  'source_pz' specifies the source pz-layer (Default: ipz).
 !
 !  23-Apr-2012/Bourdin.KIS: adapted from non-torus-type globalize_xy
+!  24-Apr-2026/TP: changed the meaning if dest_proc so this function does not have to assume
+!                  a specific proc mapping. The old one was:
+!                 "'dest_proc' is the destination iproc number relative to the first processor
+!                 in the corresponding xy-plane (Default: 0, equals lfirst_proc_xy)."
+!                 Checked that the single call specifying the parameter would still stay the same
+!                 with the default process mapping.
 !
       real, dimension(:,:,:,:), intent(in) :: in
       real, dimension(:,:,:,:), intent(out), optional :: out
@@ -7448,8 +7454,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       rny = cny*nprocy + 2*nghost
       nrow = bnx*rny*bnz*bna
 !
-      collector = find_proc(0,0,ipz)
-      if (present (dest_proc)) collector = collector + dest_proc
+      collector = find_proc(0,0,ipz + ioptest(dest_proc))
       pz = ioptest(source_pz,ipz)
 !
       if (iproc == collector) then
@@ -7534,11 +7539,16 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !  Localizes global 4D data first along the y, then along the x-direction to
 !  the destination processor. The global data is supposed to include the outer
 !  ghost layers. The returned data will include inner ghost layers.
-!  'source_proc' is the source iproc number relative to the first processor
-!  in the corresponding xy-plane (Default: 0, equals lfirst_proc_xy).
+!  'dest_proc' is an offset to define the pz-layer relative to the one of the current process.
+!   The broadcaster is always the first process of the the corresponding xy-plane (equals lfirst_proc_xy).
 !  'dest_pz' specifies the destination pz-layer (Default: ipz).
 !
 !  23-Apr-2012/Bourdin.KIS: adapted from non-torus-type localize_xy
+!  24-Apr-2026/TP: Changed the meaning of source_proc to make the function agnostic amout the process mapping function.
+!                  Made sure the existing calls were still correct with the default process mapping
+!                  The old meaning was:
+!                  "'source_proc' is the source iproc number relative to the first processor
+!                  "in the corresponding xy-plane (Default: 0, equals lfirst_proc_xy)."
 !
       real, dimension(:,:,:,:), intent(out) :: out
       real, dimension(:,:,:,:), intent(in), optional :: in
@@ -7550,6 +7560,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: rnx, rny ! x- and y-row box sizes
       integer :: px, py, pz, broadcaster, partner, alloc_err
       integer(KIND=ikind8) :: nbox,nrow
+      integer :: broadcaster_z
       integer, parameter :: xtag=125, ytag=126
 !
       real, dimension(:,:,:,:), allocatable :: y_row, buffer, extended
@@ -7567,8 +7578,8 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       rny = gny + 2*nghost
       nrow = bnx*rny*bnz*bna
 !
-      broadcaster = find_proc(0,0,ipz)
-      if (present (source_proc)) broadcaster = broadcaster + source_proc
+      broadcaster_z = ipz + ioptest(source_proc)
+      broadcaster = find_proc(0,0,broadcaster_z)
       pz = ipz
       if (present (dest_pz)) pz = dest_pz
 !
@@ -7594,7 +7605,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
             extended(:,1:nghost,:,:) = 0.0
             extended(:,rny-nghost+1:rny,:,:) = 0.0
           endif
-          call localize_xy(out, extended, broadcaster - ipz * nprocxy, pz)
+          call localize_xy(out, extended, broadcaster_z - ipz, pz)
           return
         endif
         if (cnx * nprocx + 2*nghost /= size (in, 1)) &
