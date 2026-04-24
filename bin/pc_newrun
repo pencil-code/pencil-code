@@ -227,20 +227,22 @@ if [ $same_source ]; then
         lnk=`readlink -f $olddir/src/astaroth/DSL`
         if [ "$lnk" != "" ]; then cp -r  $lnk ./astaroth; fi
 	ln -s $PENCIL_HOME/src/scripts .
+        lnk=`readlink -f $olddir/src/astaroth/PC_moduleflags.h`
+        if [ "$lnk" != "" ]; then ln -s  $lnk ./astaroth/PC_moduleflags.h; fi 
       fi
+
       if [ -e $olddir/src/astaroth/submodule/build/runtime_build ]; then
         mkdir -p astaroth/submodule/build/runtime_build/src/core/kernels
         lnk=`readlink -f $olddir/src/astaroth/submodule/build/runtime_build/src/core/libastaroth_core.so`
         if [ "$lnk" != "" ]; then ln -s  $lnk ./astaroth/submodule/build/runtime_build/src/core; fi 
         lnk=`readlink -f $olddir/src/astaroth/submodule/build/runtime_build/src/core/kernels/libkernels.so`
         if [ "$lnk" != "" ]; then ln -s  $lnk ./astaroth/submodule/build/runtime_build/src/core/kernels; fi 
-        lnk=`readlink -f $olddir/src/astaroth/PC_moduleflags.h`
-        if [ "$lnk" != "" ]; then ln -s  $lnk ./astaroth/PC_moduleflags.h; fi 
         lnk=`readlink -f $olddir/src/*_c.h`
         if [ "$lnk" != "" ]; then ln -s  $lnk .; fi 
 	cp $olddir/src/astaroth/submodule/build/runtime_build/previous_cmake_options ./astaroth/submodule/build/runtime_build
 	cp $olddir/src/astaroth/submodule/build/runtime_build/overrides.h ./astaroth/submodule/build/runtime_build
       fi
+
     fi
   else
     cd $olddir;
