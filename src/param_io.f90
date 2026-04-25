@@ -235,7 +235,10 @@ module Param_IO
       uu_kx0z, oo_kx0z, bb_kx0z, jj_kx0z, bb_k00z, ee_k00z, gwT_fft3d, &
       Em_specflux, Hm_specflux, Hc_specflux, density_scale_factor, radius_diag, offset_min_calc, &
       lmorton_curve, lsuppress_parallel_reductions, &
-      shared_mem_name, lupdate_cvs, lread_oldsnap_nocoolprof,thetamin
+      shared_mem_name, lupdate_cvs, lread_oldsnap_nocoolprof,thetamin, &
+      lspec_tcrit, tspec_crit_log_interval, &
+      lsnap_tcrit, tsnap_crit_log_interval, &
+      lvid_tcrit, tvid_crit_log_interval
 !
   namelist /IO_pars/ &
       lcollective_IO, IO_strategy

@@ -316,6 +316,9 @@ module Cdata
   character (len=labellen) :: trigger_spec='code_time'  !PAR_DOC: trigger quantity for spectral output
   character (len=labellen) :: trigger_vid='code_time'   !PAR_DOC: trigger quantity for video output
   logical :: lsnap=.false., lsnap_down=.false., lspec=.false., lspec_start=.false., lspec_at_tplusdt=.false.
+  logical :: lspec_tcrit=.false. !PAR_DOC: allow setting critical time for switching to log interval for dspec.
+  logical :: lsnap_tcrit=.false. !PAR_DOC: allow setting critical time for switching to log interval for dsnap.
+  logical :: lvid_tcrit=.false. !PAR_DOC: allow setting critical time for switching to log interval for dvid.
   real :: dsnap=100. !PAR_DOC: save a snapshot (VAR file) every dsnap time units
   real :: dsnap_down=0. !PAR_DOC: save a downsampled snapshot every dsnap time units
   real :: d1davg=impossible !PAR_DOC: save 1D (xy, yz, ...) averages every d1davg
@@ -324,6 +327,9 @@ module Cdata
     !PAR_DOC: units
   real :: dvid=0. !PAR_DOC: save slice (video) files every dvid time units.
   real :: dspec=impossible !PAR_DOC: save power spectra every dspec time units
+  real :: tspec_crit_log_interval=impossible !PAR_DOC: critical time above which we set dspec to a negative value.
+  real :: tsnap_crit_log_interval=impossible !PAR_DOC: critical time above which we set dsnap to a negative value.
+  real :: tvid_crit_log_interval=impossible !PAR_DOC: critical time above which we set dvid to a negative value.
   real :: dit1=impossible
   real :: dtracers=0., dfixed_points=0.
   real :: crash_file_dtmin_factor=-1.0

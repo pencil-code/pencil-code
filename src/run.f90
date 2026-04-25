@@ -375,6 +375,10 @@ endsubroutine helper_loop
     if (.not.(lit1_logspacing.and.real(t)<tmax_logspacing)) &
       lout = (mod(it-1,it1) == 0) .and. (it > it1start)
 !
+    if (lspec_tcrit) call check_tspec_crit_log_interval
+    if (lsnap_tcrit) call check_tsnap_crit_log_interval
+    if (lvid_tcrit) call check_tvid_crit_log_interval
+!
     if (lout .or. emergency_stop) then
 !
 !  Exit do loop if file `STOP' exists.
@@ -631,6 +635,48 @@ endsubroutine helper_loop
 !$ lmultithread = .false.
 
   endsubroutine timeloop
+!***********************************************************************
+  subroutine check_tspec_crit_log_interval
+!     
+!  Check whether t>tspec_crit_log_interval.
+!  If so, we set dspec=-tspec_crit_log_interval (i.e., to a negative value)
+!  and also set lspec_tcrit=.false.
+!
+    if (t>tspec_crit_log_interval) then
+      dspec=-tspec_crit_log_interval
+      lspec_tcrit=.false.
+      if (lroot) print*,'Switched dspec=',dspec
+    endif
+!
+  endsubroutine check_tspec_crit_log_interval
+!***********************************************************************
+  subroutine check_tsnap_crit_log_interval
+!     
+!  check whether t>tsnap_crit_log_interval.
+!  If so, we set dsnap=-tsnap_crit_log_interval (i.e., to a negative value)
+!  and also set lsnap_tcrit=.false.
+!
+    if (t>tsnap_crit_log_interval) then
+      dsnap=-tsnap_crit_log_interval
+      lsnap_tcrit=.false.
+      if (lroot) print*,'Switched dsnap=',dsnap
+    endif
+!
+  endsubroutine check_tsnap_crit_log_interval
+!***********************************************************************
+  subroutine check_tvid_crit_log_interval
+!     
+!  check whether t>tvid_crit_log_interval.
+!  If so, we set dvid=-tvid_crit_log_interval (i.e., to a negative value)
+!  and also set lvid_tcrit=.false.
+!
+    if (t>tvid_crit_log_interval) then
+      dvid=-tvid_crit_log_interval
+      lvid_tcrit=.false.
+      if (lroot) print*,'Switched dvid=',dvid
+    endif
+!
+  endsubroutine check_tvid_crit_log_interval
 !***********************************************************************
   subroutine setup_signal_files
 !     

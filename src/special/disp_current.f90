@@ -57,6 +57,7 @@ module Special
   logical :: luse_scale_factor_in_sigma=.false., lapply_Gamma_corr=.true.
   logical, pointer :: lohm_evolve, lphi_doublet, lphi_hypercharge
   logical, pointer :: lwaterfall
+  logical, pointer :: lrelativistic_eos
   real, pointer :: eta, Hscript, echarge, sigEm_all, sigBm_all
   integer :: iGamma=0, ia0=0, idiva_name=0, ieedot=0, iedotx=0, iedoty=0, iedotz=0
   integer :: idivE=0, isigE=0, isigB=0
@@ -329,6 +330,15 @@ module Special
       endif
 !
       if (lphi_hom) weight_longitudinalE=0.
+!
+!  To know whether we are solving the relativistic eos equations we need to get lrelativistic_eos from density.
+!
+      if (ldensity) then
+        call get_shared_variable('lrelativistic_eos',lrelativistic_eos, caller='initialize_backreact_infl')
+      else
+        allocate(lrelativistic_eos)
+        lrelativistic_eos=.false.
+      endif
 !
       call keep_compiler_quiet(f)
 !
@@ -1199,7 +1209,13 @@ module Special
 !
 !  Add Lorentz force in displacement current module
 !
-      if (llorentzforce_ee) df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxbr
+      if (llorentzforce_ee) then
+        if (lrelativistic_eos) then
+          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+.75*p%jxbr
+        else
+          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxbr
+        endif
+      endif
 !
 !  If requested, put divE, sigE, or sigB into f array as auxiliaries.
 !
