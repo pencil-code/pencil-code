@@ -577,8 +577,8 @@ module BorderProfiles
     call copy_addr(fraction_tborder1,p_par(2))
     call copy_addr(fac_sqrt_gsum1,p_par(3))
     call copy_addr(iborder_var_max,p_par(4))   ! int
-    call copy_addr(fsave_init_xy,p_par(5))     ! (nx) (ny) (AC_iborder_var_max__mod__borderprofiles)
-    call copy_addr(fsave_init_xz,p_par(6))     ! (nx) (nz) (AC_iborder_var_max__mod__borderprofiles)
+    if(allocated(fsave_init_xy)) call copy_addr(fsave_init_xy,p_par(5))     ! (nx) (ny) (AC_iborder_var_max__mod__borderprofiles)
+    if(allocated(fsave_init_xz)) call copy_addr(fsave_init_xz,p_par(6))     ! (nx) (nz) (AC_iborder_var_max__mod__borderprofiles)
     
    endsubroutine pushpars2c
 !***********************************************************************
