@@ -30,6 +30,7 @@ module BorderProfiles
   real                :: fac_sqrt_gsum1=1.0
 !
   integer :: iborder_var_max=0
+  integer :: iborder_var_max_current =0
   real, dimension(:,:,:), allocatable :: fsave_init_xy,fsave_init_xz
 !
   logical :: lborder_driving=.false.
@@ -252,6 +253,7 @@ module BorderProfiles
 !
           fsave_init_xy=f_init(l1:l2,m1:m2,npoint,:)
           fsave_init_xz=f_init(l1:l2,mpoint,n1:n2,:)
+          iborder_var_max_current = iborder_var_max
           iborder_var_max=0     ! clean table for case of reloading
 !
         endif
@@ -576,9 +578,9 @@ module BorderProfiles
     call copy_addr(tborder1,p_par(1))
     call copy_addr(fraction_tborder1,p_par(2))
     call copy_addr(fac_sqrt_gsum1,p_par(3))
-    call copy_addr(iborder_var_max,p_par(4))   ! int
-    if(allocated(fsave_init_xy)) call copy_addr(fsave_init_xy,p_par(5))     ! (nx) (ny) (AC_iborder_var_max__mod__borderprofiles)
-    if(allocated(fsave_init_xz)) call copy_addr(fsave_init_xz,p_par(6))     ! (nx) (nz) (AC_iborder_var_max__mod__borderprofiles)
+    call copy_addr(iborder_var_max_current,p_par(4))   ! int
+    if(allocated(fsave_init_xy)) call copy_addr(fsave_init_xy,p_par(5))     ! (nx) (ny) (iborder_var_max_current__mod__borderprofiles)
+    if(allocated(fsave_init_xz)) call copy_addr(fsave_init_xz,p_par(6))     ! (nx) (nz) (iborder_var_max_current__mod__borderprofiles)
     
    endsubroutine pushpars2c
 !***********************************************************************
