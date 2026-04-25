@@ -132,7 +132,8 @@ module Special
   logical :: lrho_chi_inhom=.false.      !PAR_DOC: inhomogeneous heating
   logical :: ldefine_a2rhophi_with_Vpotential=.true.  !PAR_DOC: define a2rhophi with Vpotential
   logical :: lsolve_for_phi=.true.       !PAR_DOC: whether we still want to solve for phi
-  logical :: lsolve_for_phi_always=.true. !PAR_DOC: can use lsolve_for_phi_always=F to force not to solve for phi.
+  logical :: lsolve_for_phi_switch=.true. !PAR_DOC: switch must be on for automatically switching off the phi solver.
+  logical :: lsolve_for_phi_always=.true. !PAR_DOC: misnomer: is now used for switching off the phi solver: is now used for switching off the phi solver
   logical :: lwstate_crit=.false.        !PAR_DOC: lwstate_crit switch (would put phi=0, is false by default)
   logical :: lwstate_crit_old=.false.    !PAR_DOC: lwstate_crit_old (to restore the old wstate criterion used in the autotest)
   logical :: lheating=.false.            !PAR_DOC: heating criterion
@@ -168,7 +169,8 @@ module Special
       lrho_chi, scale_rho_chi_Heqn, scale_rho_rad_Heqn, amplee_BD_prefactor, deriv_prefactor_ee, &
       lrho_rad, init_rho_rad, Gamma_phi0, lconf_time, &
       echarge_type, init_rho_chi, rho_chi_init, lrho_chi_inhom, rhophim_crit, &
-      wstate_crit, lwstate_crit, lwstate_crit_old, wstate_tolerance, lsolve_for_phi_always, &
+      wstate_crit, lwstate_crit, lwstate_crit_old, wstate_tolerance, &
+      lsolve_for_phi_always, lsolve_for_phi_switch, &
       heating_choice, ldefine_a2rhopm_without_Vpotential, la2rhop_wrong_factor, &
       lappy_BD_k1D_factor, lapply_BD_kNy_factor, linv_BD
 !
@@ -181,7 +183,8 @@ module Special
       lrho_rad, lrho_rad_apply, lrho_rad_apply2, lrho_chi_corrected, &
       lrho_chi_inhom, ldefine_a2rhophi_with_Vpotential, &
       rad_heating, ascale_heat, ascale_heat_off, aphimax, Gamma_phi0, lconf_time, rhophim_crit, &
-      wstate_crit, lwstate_crit, lwstate_crit_old, wstate_tolerance, lsolve_for_phi_always, &
+      wstate_crit, lwstate_crit, lwstate_crit_old, wstate_tolerance, &
+      lsolve_for_phi_always, lsolve_for_phi_switch, &
       heating_choice, lheating_keep_on, lcombine_prep_ode_right_with_rhs, &
       lswitch_toMHD_when_nophi, Gamma_phi_exp
 !
@@ -664,7 +667,7 @@ module Special
 !  We have d2phi/dt^2 = ... (2*Hscript+Gamma_phi)*dphi/dt, so the timestep constraint is
 !  dt < 1/(2*Hscript+Gamma_phi).
 !
-      if (lsolve_for_phi .and. lsolve_for_phi_always) then
+      if (lsolve_for_phi_always) then
         df(l1:l2,m,n,iinfl_phi)=df(l1:l2,m,n,iinfl_phi)+p%infl_dphi
         if (lrho_rad .and. lrho_rad_apply) then
           df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi) - &
@@ -1149,7 +1152,7 @@ module Special
 !
 !  Here we use the possibility of switching off the phi evolution by setting phi=dphi=0.
 !
-      if (.not. (lsolve_for_phi .and. lsolve_for_phi_always)) then
+      if (.not. (lsolve_for_phi_always)) then
         f(:,:,:,iinfl_phi)=0.
         f(:,:,:,iinfl_dphi)=0.
         if (lswitch_toMHD_when_nophi .and. iex>0) ladvance_ee=.false.
@@ -1260,7 +1263,8 @@ module Special
           if (lsolve_for_phi_always) then
             lsolve_for_phi=abs(wstate-wstate_prev) > wstate_tolerance
             wstate_prev=wstate
-            lsolve_for_phi_always=lsolve_for_phi
+            if (lsolve_for_phi_switch) &
+              lsolve_for_phi_always=lsolve_for_phi
           endif
         endif
       else
