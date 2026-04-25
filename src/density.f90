@@ -4434,8 +4434,8 @@ module Density
     call copy_addr(lhubble_density,p_par(71)) ! bool
     call copy_addr(wdamp_rho,p_par(72))
 
-    call copy_addr(h_sld_dens,p_par(73))
-    call copy_addr(nlf_sld_dens,p_par(74))
+    call copy_addr(h_sld_dens,p_par(73)) ! real dconst
+    call copy_addr(nlf_sld_dens,p_par(74)) ! real dconst
     call copy_addr(lconserve_total_mass,p_par(75)) ! bool
     !TP: total mass is a dconst so won't recompile when continuing a simulation where the mass has slightly changed
     call copy_addr(total_mass,p_par(76)) ! real dconst

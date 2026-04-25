@@ -8772,8 +8772,8 @@ module Energy
     if (allocated(chit_prof_fluct_stored)) call copy_addr(chit_prof_fluct_stored,p_par(459)) ! (max_n)
     if (allocated(dchit_prof_fluct_stored)) call copy_addr(dchit_prof_fluct_stored,p_par(461)) ! (max_n)
     call copy_addr(w_sldchar_ene,p_par(462))
-    call copy_addr(h_sld_ene,p_par(463))
-    call copy_addr(nlf_sld_ene,p_par(464))
+    call copy_addr(h_sld_ene,p_par(463)) ! real dconst
+    call copy_addr(nlf_sld_ene,p_par(464)) ! real dconst
     call copy_addr(hcondxbot,p_par(465))
     call copy_addr(hcondxtop,p_par(466))
     call copy_addr(pp_cool,p_par(467))

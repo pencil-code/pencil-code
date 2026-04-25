@@ -3216,8 +3216,8 @@ module Viscosity
 
     call copy_addr(nu_r_reduce,p_par(107))
     call copy_addr(lvisc_nu_reduce_ddr,p_par(108)) ! bool
-    call copy_addr(h_sld_visc,p_par(109))
-    call copy_addr(nlf_sld_visc,p_par(110))
+    call copy_addr(h_sld_visc,p_par(109)) ! real dconst
+    call copy_addr(nlf_sld_visc,p_par(110)) ! real dconst
     call copy_addr(lambda_v0b,p_par(111))
     call copy_addr(lambda_v1b,p_par(112))
     call copy_addr(lambda_v0t,p_par(113))

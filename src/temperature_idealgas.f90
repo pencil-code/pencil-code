@@ -3151,8 +3151,8 @@ module Energy
     call copy_addr(wcool,p_par(25))
     call copy_addr(cool,p_par(26))
     call copy_addr(beta_bouss,p_par(27))
-    call copy_addr(h_sld_ene,p_par(28))
-    call copy_addr(nlf_sld_ene,p_par(29))
+    call copy_addr(h_sld_ene,p_par(28)) ! real dconst
+    call copy_addr(nlf_sld_ene,p_par(29)) ! real dconst
     call copy_addr(ladvection_temperature,p_par(30)) ! bool
     call copy_addr(lupw_lntt,p_par(31)) ! bool
     call copy_addr(lcalc_heat_cool,p_par(32)) ! bool

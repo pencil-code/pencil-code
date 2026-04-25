@@ -12219,8 +12219,8 @@ print*,'AXEL2: should not be here (eta) ... '
     call copy_addr(lrelaxprof_glob_scaled,p_par(263)) ! bool
     call copy_addr(scl_uxb_in_ohm,p_par(264))
     call copy_addr(w_sldchar_mag,p_par(265))
-    call copy_addr(h_sld_magn,p_par(266))
-    call copy_addr(nlf_sld_magn,p_par(267))
+    call copy_addr(h_sld_magn,p_par(266)) ! real dconst
+    call copy_addr(nlf_sld_magn,p_par(267)) ! real dconst
     call copy_addr(eta_tdep_ascale_power,p_par(268))
     call copy_addr(lremove_meanaxy,p_par(269)) ! bool
     call copy_addr(tau_remove_meanaxy,p_par(270))
