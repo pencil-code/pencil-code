@@ -50,7 +50,7 @@ module BorderProfiles
       integer, intent(IN) :: ivar_border1
       integer, optional, intent(IN) :: ivar_border2
 !
-      call keep_compiler_quiet(ivar_border1)
+      call keep_compiler_quiet(ivar_border1,ivar_border2)
       call keep_compiler_quiet(bordertype)
       call keep_compiler_quiet(caller)
 !

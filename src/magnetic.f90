@@ -11995,7 +11995,7 @@ print*,'AXEL2: should not be here (eta) ... '
     call copy_addr(hall_tdep_exponent,p_par(45))
     call copy_addr(hhall,p_par(46))
     call copy_addr(hall_zdep_exponent,p_par(47))
-    call copy_addr(ampl_beltrami,p_par(48))
+    call copy_addr(ampl_beltrami,p_par(48)) ! real dconst
     call copy_addr(eta_jump,p_par(49))
     call copy_addr(eta_jump0,p_par(50))
     call copy_addr(eta_jump1,p_par(51))
