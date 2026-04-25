@@ -32,7 +32,7 @@
   echarge_type='erun'
   lrho_chi_inhom=T, wstate_tolerance=1e-10
   Gamma_phi0=1e-7, lrho_rad_apply2=F
-  lheating_keep_on=T, lwstate_crit=T
+  lheating_keep_on=T, lwstate_crit=T, Gamma_phi_exp=-5.
 /
 &disp_current_run_pars
   luse_scale_factor_in_sigma=T
