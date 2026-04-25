@@ -3105,7 +3105,7 @@ module Viscosity
     integer, parameter :: n_pars=200
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
-    call copy_addr(nu,p_par(1))
+    call copy_addr(nu,p_par(1)) ! real dconst
     call copy_addr(zeta,p_par(2))
     call copy_addr(nu_hyper3,p_par(3))
     call copy_addr(nu_shock,p_par(4))

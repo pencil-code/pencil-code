@@ -46,10 +46,10 @@ contains
     call copy_addr(ldt_paronly,p_par(24)) ! bool
     call copy_addr(ldt,p_par(25)) ! bool
     call copy_addr(dt,p_par(26))
-    call copy_addr(cdt,p_par(27))
+    call copy_addr(cdt,p_par(27)) ! real dconst
     call copy_addr(cdtc,p_par(28))
     call copy_addr(cdt_poly,p_par(29))
-    call copy_addr(cdtv,p_par(30))
+    call copy_addr(cdtv,p_par(30)) ! real dconst
     call copy_addr(cdtv2,p_par(31))
     call copy_addr(cdtv3,p_par(32))
     call copy_addr(cdtsrc,p_par(33))

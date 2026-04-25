@@ -1181,6 +1181,7 @@ module Magnetic
 
 
   logical :: lrelaxprof_glob_scaled
+  logical :: lnonzero_eta = .false.
 
   contains
 !***********************************************************************
@@ -2240,6 +2241,8 @@ module Magnetic
      else
        Bz_stratified = 0.
      endif
+
+     lnonzero_eta = eta /= 0.
 
     endsubroutine initialize_magnetic
 !***********************************************************************
@@ -4566,7 +4569,7 @@ module Magnetic
 !  Whether it works with lohm_evolve needs to be checked.
 !  learly_set_el_pencil=T is needed in all cases with displacement current.
 !
-            if (lresi_eta_tdep .or. lresi_eta_xtdep .or. eta/=0.) then
+            if (lresi_eta_tdep .or. lresi_eta_xtdep .or. lnonzero_eta) then
               if (lohm_evolve) then
                 p%jj_ohm=f(l1:l2,m,n,ijx:ijz)
               else
@@ -6485,7 +6488,7 @@ module Magnetic
 !
 !  Evolve current density.
 !
-      if (lresi_eta_tdep .or. lresi_eta_xtdep .or. eta/=0.) then
+      if (lresi_eta_tdep .or. lresi_eta_xtdep .or. lnonzero_eta) then
       if (lohm_evolve) then
 print*,'AXEL2: should not be here (eta) ... '
         if (tau_jj>0) then
@@ -11945,7 +11948,7 @@ print*,'AXEL2: should not be here (eta) ... '
     integer, parameter :: n_pars=500
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
-    call copy_addr(eta,p_par(1))
+    call copy_addr(eta,p_par(1)) ! real dconst
     call copy_addr(eta_hyper2,p_par(2))
     call copy_addr(eta_hyper3,p_par(3))
     call copy_addr(lresi_eta_const,p_par(4)) ! bool
@@ -12237,6 +12240,7 @@ print*,'AXEL2: should not be here (eta) ... '
     call copy_addr(alpf_mhd,p_par(284))
     call copy_addr(limiter_fact,p_par(285))
     call copy_addr(llimiter,p_par(286)) ! bool
+    call copy_addr(lnonzero_eta,p_par(287)) ! bool
 
     call keep_compiler_quiet(znoise_int)
     call keep_compiler_quiet(znoise_ext)
