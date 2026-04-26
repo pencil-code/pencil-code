@@ -115,6 +115,8 @@ module Special
   real :: wstate_crit=0.333333333 !PAR_DOC: critical w (EoS) value (1/3)
   real :: wstate_tolerance=0.     !PAR_DOC: tolerance w (EoS) value
   real :: wstate_prev=0.          !PAR_DOC: value of wstate in the previous iteration.
+  real :: a4rhophim               !PAR_DOC: actual value of a4rhophim
+  real :: a4rhophim_crit=0.       !PAR_DOC: critical value of a4rhophim below lsolve_phi=F is set.
 !
   real, target :: ddotam_all
   real, pointer :: alpf, eta
@@ -132,6 +134,7 @@ module Special
   logical :: lrho_chi_inhom=.false.      !PAR_DOC: inhomogeneous heating
   logical :: ldefine_a2rhophi_with_Vpotential=.true.  !PAR_DOC: define a2rhophi with Vpotential
   logical :: lsolve_for_phi=.true.       !PAR_DOC: whether we still want to solve for phi
+  logical :: lsolve_for_phi2=.true.      !PAR_DOC: whether we still want to solve for phi
   logical :: lsolve_for_phi_switch=.true. !PAR_DOC: switch must be on for automatically switching off the phi solver.
   logical :: lsolve_for_phi_always=.true. !PAR_DOC: misnomer: is now used for switching off the phi solver: is now used for switching off the phi solver
   logical :: lwstate_crit=.false.        !PAR_DOC: lwstate_crit switch (would put phi=0, is false by default)
@@ -186,7 +189,7 @@ module Special
       wstate_crit, lwstate_crit, lwstate_crit_old, wstate_tolerance, &
       lsolve_for_phi_always, lsolve_for_phi_switch, &
       heating_choice, lheating_keep_on, lcombine_prep_ode_right_with_rhs, &
-      lswitch_toMHD_when_nophi, Gamma_phi_exp
+      lswitch_toMHD_when_nophi, Gamma_phi_exp, a4rhophim_crit
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -205,6 +208,7 @@ module Special
   integer :: idiag_a2rhom=0     ! DIAG_DOC: $a^2 \rho$
   integer :: idiag_a2rhophim=0  ! DIAG_DOC: $a^2 \rho_\phi$
   integer :: idiag_a2rhogphim=0 ! DIAG_DOC: $0.5 <grad \phi^2>$
+  integer :: idiag_a4rhophim=0  ! DIAG_DOC: $<\rho_\phi>$
   integer :: idiag_rho_chi=0    ! DIAG_DOC: $\rho_\chi$
   integer :: idiag_rho_rad=0    ! DIAG_DOC: $\rho_\mathrm{rad}$
   integer :: idiag_sigEma=0     ! DIAG_DOC: $\rho_\chi$
@@ -219,7 +223,7 @@ module Special
   integer :: enum_vprime_choice = 0
   integer :: enum_echarge_type = 0
 
-  real :: a2rhom_all_diagnos, a2rhopm_all_diagnos, a2rhophim_all_diagnos
+  real :: a2rhom_all_diagnos, a2rhopm_all_diagnos, a2rhophim_all_diagnos, a4rhophim_all_diagnos
   real :: a2rhogphim_all_diagnos, ddotam_all_diagnos
 
   contains
@@ -667,7 +671,7 @@ module Special
 !  We have d2phi/dt^2 = ... (2*Hscript+Gamma_phi)*dphi/dt, so the timestep constraint is
 !  dt < 1/(2*Hscript+Gamma_phi).
 !
-      if (lsolve_for_phi_always) then
+      if (lsolve_for_phi_always .and. lsolve_for_phi .and. lsolve_for_phi2) then
         df(l1:l2,m,n,iinfl_phi)=df(l1:l2,m,n,iinfl_phi)+p%infl_dphi
         if (lrho_rad .and. lrho_rad_apply) then
           df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi) - &
@@ -706,7 +710,7 @@ module Special
 !
 !  speed of light term
 !
-      if (lsolve_for_phi .and. lsolve_for_phi_always) then
+      if (lsolve_for_phi .and. lsolve_for_phi_always .and. lsolve_for_phi2) then
         if (c_light_axion/=0. .and. .not. lphi_hom) then
           call del2(f,iinfl_phi,del2phi)
           df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi) + &
@@ -895,6 +899,7 @@ module Special
         call save_name(a2rhom_all_diagnos,idiag_a2rhom)
         call save_name(a2rhophim_all_diagnos,idiag_a2rhophim)
         call save_name(a2rhogphim_all_diagnos,idiag_a2rhogphim)
+        call save_name(a4rhophim_all_diagnos,idiag_a4rhophim)
         call save_name(rho_chi,idiag_rho_chi)
         call save_name(rho_rad,idiag_rho_rad)
         call save_name(sigEm_all_diagnos,idiag_sigEma)
@@ -987,7 +992,7 @@ module Special
         idiag_phim=0; idiag_phi2m=0; idiag_phirms=0
         idiag_dphim=0; idiag_dphi2m=0; idiag_dphirms=0; idiag_dtphi=0
         idiag_Hscriptm=0; idiag_lnam=0; idiag_ascale=0; idiag_ddotam=0
-        idiag_a2rhopm=0; idiag_a2rhom=0; idiag_a2rhophim=0
+        idiag_a2rhopm=0; idiag_a2rhom=0; idiag_a2rhophim=0; idiag_a4rhophim=0
         idiag_a2rhogphim=0; idiag_rho_chi=0; idiag_rho_rad=0; idiag_sigEma=0
         idiag_sigBma=0; idiag_count_eb0a=0; idiag_heating=0; idiag_wstate=0
         idiag_wstate_aver=0; idiag_Gamma_phi=0
@@ -1009,6 +1014,7 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'a2rhom',idiag_a2rhom)
         call parse_name(iname,cname(iname),cform(iname),'a2rhophim',idiag_a2rhophim)
         call parse_name(iname,cname(iname),cform(iname),'a2rhogphim',idiag_a2rhogphim)
+        call parse_name(iname,cname(iname),cform(iname),'a4rhophim',idiag_a4rhophim)
         call parse_name(iname,cname(iname),cform(iname),'rho_chi',idiag_rho_chi)
         call parse_name(iname,cname(iname),cform(iname),'rho_rad',idiag_rho_rad)
         call parse_name(iname,cname(iname),cform(iname),'sigEma',idiag_sigEma)
@@ -1152,7 +1158,7 @@ module Special
 !
 !  Here we use the possibility of switching off the phi evolution by setting phi=dphi=0.
 !
-      if (.not. (lsolve_for_phi_always)) then
+      if (.not. (lsolve_for_phi_always .and. lsolve_for_phi .and. lsolve_for_phi2)) then
         f(:,:,:,iinfl_phi)=0.
         f(:,:,:,iinfl_dphi)=0.
         if (lswitch_toMHD_when_nophi .and. iex>0) ladvance_ee=.false.
@@ -1161,7 +1167,7 @@ module Special
 !  In the following loop, go through all penciles and add up results to get e2m, etc.
 !
       ddotam=0.; a2rhopm=0.; a2rhom=0.; rhom=0; e2m=0; b2m=0; edotbm=0
-      a2rhophim=0.; a2rhopphim=0.; a2rhogphim=0.; sigE1m=0.; sigB1m=0.
+      a2rhophim=0.; a2rhopphim=0.; a2rhogphim=0.; a4rhophim=0.; sigE1m=0.; sigB1m=0.
 !
 !  In the following, sum over all mn pencils.
 !
@@ -1270,6 +1276,12 @@ module Special
       else
         lsolve_for_phi=.true.
       endif
+!
+!  Additional criterion
+!
+      a4rhophim=a2rhophim_all*ascale**2
+      a4rhophim_all_diagnos=a4rhophim
+      lsolve_for_phi2=a4rhophim > a4rhophim_crit
 !
 !  Alternatitives for deciding when to turn on heating, i.e., when the
 !  end of inflation occurs.

@@ -1,10 +1,10 @@
 PRO power,var1,var2,last,w,v1=v1,v2=v2,v3=v3,all=all,wait=wait,k=k,qk=k2s,$
           spec1=spec1,spec2=spec2,spec3=spec3,scal2=scal2,scal3=scal3, $
-          i=i,tt=tt,noplot=noplot,tmin=tmin,tmax=tmax, $
+          i=i,tt=tt,tcode=tcode,noplot=noplot,tmin=tmin,tmax=tmax, $
           tot=tot,lin=lin,png=png,yrange=yrange,norm=norm,helicity2=helicity2, $
           compensate1=compensate1,compensate2=compensate2, $
           compensate3=compensate3,datatopdir=datatopdir,double=double, $
-          lkscale=lkscale,cyl=cyl,zwav=zwav,dimcyl=dimcyl
+          lkscale=lkscale,cyl=cyl,zwav=zwav,dimcyl=dimcyl,no_tcode=no_tcode
 ;
 ;  $Id$
 ;
@@ -32,7 +32,8 @@ PRO power,var1,var2,last,w,v1=v1,v2=v2,v3=v3,all=all,wait=wait,k=k,qk=k2s,$
 ;  spec3 : Returns all the spectral snapshots of the third variable
 ;  scal2 : Scaling factor for the second spectrum
 ;  i     : The index of the last time is i-2
-;  tt    : Returns the times for the different snapshots (vector)
+;  tt    : Returns the times [or trigger value] for the different snapshots (vector)
+;  tcode : Returns the code time, which may be different from the trigger value
 ;  noplot: Do not plot if set
 ;  tmin  : First time for plotting snapshots  (if /all is set) 
 ;  tmax  : Last time for plotting snapshots  (if /all is set) 
@@ -206,7 +207,11 @@ openr, unit, datatopdir+'/'+file1, /get_lun
   end
 
   while ~eof(unit) do begin
-    readf,unit,time
+    if keyword_set(no_tcode) then begin
+      readf,unit,time
+    endif else begin
+      readf,unit,time,tcode
+    endelse
     readf,unit,spectrum1
     ;if (max(spectrum1(1:*)) gt globalmax) then globalmax=max(spectrum1(1:*))
     ;if (min(spectrum1(1:*)) lt globalmin) then globalmin=min(spectrum1(1:*))
@@ -223,6 +228,7 @@ else $
   spec1=keyword_set(double) ? dblarr(imax,i-1) : fltarr(imax,i-1)
 ;
 tt=fltarr(i-1)
+tcode=fltarr(i-1)
 lasti=i-2
 default,yrange,[10.0^(floor(alog10(min(spectrum1(1:*))))),10.0^ceil(alog10(max(spectrum1(1:*))))]
 ;
@@ -314,9 +320,14 @@ openr, unit_1, datatopdir+'/'+file1, /get_lun
     endif
 
     while ~eof(unit_1) do begin
-      	readf,unit_1,time
+        if keyword_set(no_tcode) then begin
+      	  readf,unit_1,time
+        endif else begin
+      	  readf,unit_1,time,tcode1
+	  tcode[i-1]=tcode1
+        endelse
        	readf,unit_1,spectrum1
-	tt(i-1)=time
+	tt[i-1]=time
   ;if keyword_set(cyl) then begin
   ;endif else begin
   ;endelse
@@ -335,7 +346,11 @@ openr, unit_1, datatopdir+'/'+file1, /get_lun
        	if unit_2__open then begin
 
           on_ioerror, filend2
-	  readf,unit_2,time
+          if keyword_set(no_tcode) then begin
+	    readf,unit_2,time
+          endif else begin
+	    readf,unit_2,time,tcode2
+          endelse
 	  readf,unit_2,spectrum2
           if keyword_set(cyl) then $
             spec2(*,*,i-1)=spectrum2 $
@@ -371,7 +386,11 @@ cont2:
         ;
        	if unit_3__open then begin
           on_ioerror, filend3
-	  readf,unit_3,time
+          if keyword_set(no_tcode) then begin
+	    readf,unit_3,time
+          endif else begin
+	    readf,unit_3,time,tcode3
+          endelse
 	  readf,unit_3,spectrum3
           if keyword_set(cyl) then $
             spec3(*,*,i-1)=spectrum3 $
