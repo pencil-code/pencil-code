@@ -4981,8 +4981,8 @@ module Boundcond
 
       real :: XXi0, tau_XXi
 
-      XXi0=0.05
-      tau_XXi=1.
+      XXi0=0.04
+      tau_XXi=2.
       bc_st=real(XXi0*(1.-(1.+t/tau_XXi)*exp(-t/tau_XXi)))
 
     endfunction bc_st
@@ -4991,8 +4991,8 @@ module Boundcond
 
     real :: XXi0, tau_XXi
 
-    XXi0=0.05
-    tau_XXi=1.
+    XXi0=0.04
+    tau_XXi=2.
     bc_st2=real(XXi0 * t * exp(-t/tau_XXi) / tau_XXi**2)
 
   endfunction bc_st2
