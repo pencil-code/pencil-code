@@ -1662,6 +1662,7 @@ module Special
     call copy_addr(axionmass,p_par(39))
     call copy_addr(cdt_phi,p_par(40))
     call copy_addr(gamma_phi_exp,p_par(41))
+    call copy_addr(lsolve_for_phi2,p_par(42)) ! bool
     endsubroutine pushpars2c
 !********************************************************************
 !********************************************************************
