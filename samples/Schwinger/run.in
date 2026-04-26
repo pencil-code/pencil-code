@@ -8,7 +8,7 @@
   dsnap=1e5, dvid=5e5, tmax=2e6, dtmin=-1e-12
   dspec=5e3, lspec_start=T, ab_spec=T, ele_spec=T, sp_spec=T, mu_spec=T
   lwrite_aux=T, lpencil_check=F
-  lpencil_check_small=T
+  lpencil_check_small=F
   dt=1e2
 /
 &magnetic_run_pars
