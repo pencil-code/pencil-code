@@ -88,6 +88,10 @@ Kernel sld_calc_char_speed(PC_SUB_STEP_NUMBER step_num)
 	{
 		res = calculate_characteristic_speed(AC_w_sldchar_hyd__mod__hydro, UU, 1.0, energy_sld_sound_speed(), AC_w_sldchar_mag__mod__magnetic, curl(AA), LNRHO, AC_mu0__mod__cdata)
 		write(SLD_CHAR_SPEED,res)
+		if(AC_lsld_bb__mod__magnetic)
+		{
+			write(F_BVEC,curl(AA))
+		}
 	}
 #endif
 }
