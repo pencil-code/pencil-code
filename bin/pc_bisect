@@ -179,6 +179,8 @@ exit 0;
 
 sub set_revision {
 	my $revision = shift || 0;
+	my $dirs;
+	my $result;
 
 	if ($revision < 1) { die "Invalid SVN revision number!\n"; }
 
@@ -186,7 +188,17 @@ sub set_revision {
 	$? = 0;
 	$! = 0;
 
-	my $result = `svn up --force --accept=tf -r $revision 2>&1`;
+	# revert any local changes that may conflict on update
+	$dirs = `$(ls -d */ | grep -v 'config/')`;
+	if ($?) { die "Could not get list of directories at $revision:\n$!\n$dirs\n"; }
+	$dirs =~ s/\n\s*/ /g;
+	$dirs =~ s/ +$//;
+	if (!$dirs) { die "Could not get any directoreis at $revision:\n$!\n"; }
+	$result = `svn revert -R --remove-added $dirs 2>&1`;
+	if ($?) { die "Could not revert working copy at $revision:\n$!\n$result\n"; }
+
+	# switch to specified revision
+	$result = `svn up --force --accept=tf -r $revision 2>&1`;
 	if ($?) { die "Could not get SVN revision $revision:\n$!\n$result\n"; }
 }
 
