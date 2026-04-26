@@ -1273,7 +1273,7 @@ module Special
           call sum_mn_name(tmp,idiag_adphiBrms,lsqrt=.true.)
         endif
       endif
-      if (idiag_Johmrms/=0 .or. idiag_J2sigEm) then
+      if (idiag_Johmrms/=0 .or. idiag_J2sigEm/=0) then
         call dot2_mn(p%jj_ohm,tmp)
         call sum_mn_name(tmp,idiag_Johmrms,lsqrt=.true.)
         call sum_mn_name(etaSchw*tmp,idiag_J2sigEm)
