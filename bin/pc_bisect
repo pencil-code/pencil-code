@@ -189,7 +189,7 @@ sub set_revision {
 	$! = 0;
 
 	# revert any local changes that may conflict on update
-	$dirs = `$(ls -d */ | grep -v 'config/')`;
+	$dirs = `ls -d */ | grep -v 'config/'`;
 	if ($?) { die "Could not get list of directories at $revision:\n$!\n$dirs\n"; }
 	$dirs =~ s/\n\s*/ /g;
 	$dirs =~ s/ +$//;
