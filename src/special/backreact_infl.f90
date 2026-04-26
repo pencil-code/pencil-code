@@ -96,8 +96,8 @@ module Special
   real :: initpower_dphi=0., cutoff_dphi=0., initpower2_dphi=0.
   real :: kgaussian_phi=0.,kpeak_phi=0., kgaussian_dphi=0., kpeak_dphi=0.
   real :: relhel_phi=0.
-  real :: ddotam, a2rhopm, a2rhopm_all, a2rhom, a2rhom_all, rhom, rhom_all
-  real :: edotbm, edotbm_all, e2m, e2m_all, b2m, b2m_all, a2rhophim, a2rhophim_all
+  real :: ddotam, a2rhopm, a2rhopm_all, a2rhom, a4rhom, a2rhom_all, a4rhom_all, rhom, rhom_all
+  real :: edotbm, edotbm_all, e2m, e2m_all, b2m, b2m_all, a2rhophim, a4rhophim, a2rhophim_all, a4rhophim_all
   real :: a2rhopphim, a2rhopphim_all
   real :: sigE1m_all_nonaver, sigB1m_all_nonaver,sigEm_all,sigBm_all,sigEm_all_diagnos,sigBm_all_diagnos
   real :: a2rhogphim, a2rhogphim_all
@@ -115,7 +115,6 @@ module Special
   real :: wstate_crit=0.333333333 !PAR_DOC: critical w (EoS) value (1/3)
   real :: wstate_tolerance=0.     !PAR_DOC: tolerance w (EoS) value
   real :: wstate_prev=0.          !PAR_DOC: value of wstate in the previous iteration.
-  real :: a4rhophim               !PAR_DOC: actual value of a4rhophim
   real :: a4rhophim_crit=0.       !PAR_DOC: critical value of a4rhophim below lsolve_phi=F is set.
 !
   real, target :: ddotam_all
@@ -137,13 +136,13 @@ module Special
   logical :: lsolve_for_phi2=.true.      !PAR_DOC: whether we still want to solve for phi
   logical :: lsolve_for_phi_switch=.true. !PAR_DOC: switch must be on for automatically switching off the phi solver.
   logical :: lsolve_for_phi_always=.true. !PAR_DOC: misnomer: is now used for switching off the phi solver: is now used for switching off the phi solver
-  logical :: lwstate_crit=.false.        !PAR_DOC: lwstate_crit switch (would put phi=0, is false by default)
+  logical :: lwstate_crit=.true.         !PAR_DOC: lwstate_crit switch (would put phi=0, is false by default)
   logical :: lwstate_crit_old=.false.    !PAR_DOC: lwstate_crit_old (to restore the old wstate criterion used in the autotest)
   logical :: lheating=.false.            !PAR_DOC: heating criterion
   logical :: lheating_always=.false.     !PAR_DOC: heating criterion, set to true once lheating=T.
   logical :: lheating_keep_on=.false.    !PAR_DOC: heating criterion
   logical :: ldefine_a2rhopm_without_Vpotential=.false.    !PAR_DOC: should be false to have correct results
-  logical :: la2rhop_wrong_factor=.false. !PAR_DOC: should be false to have correct results
+  logical :: la2rhop_wrong_factor=.false. !PAR_DOC: should be false to have correct results; kept for backwards compatibility
   logical :: lappy_BD_k1D_factor=.false. !PAR_DOC: apply $k_1^D$ factor in the Bunch-Davies initial condition (NOTE typo in name!)
   logical :: lapply_BD_kNy_factor=.false. !PAR_DOC: apply $1/N^(D/2)$ factor in the Bunch-Davies initial condition.
   logical :: linv_BD=.true.              !PAR_DOC: apply forward transform in the Bunch-Davies initial condition.
@@ -158,6 +157,7 @@ module Special
   logical :: lcombine_prep_ode_right_with_rhs = .false.
   character (len=labellen) :: Vprime_choice='quadratic', Hscript_choice='default'
   character (len=labellen) :: heating_choice='Hscript_max'
+  character (len=labellen) :: solve_phi_criterion='wstate'
   character (len=labellen), dimension(ninit) :: initspecial='nothing'
   character (len=50) :: echarge_type='const', init_rho_chi='zero', init_rho_rad='zero'
 !
@@ -189,7 +189,7 @@ module Special
       wstate_crit, lwstate_crit, lwstate_crit_old, wstate_tolerance, &
       lsolve_for_phi_always, lsolve_for_phi_switch, &
       heating_choice, lheating_keep_on, lcombine_prep_ode_right_with_rhs, &
-      lswitch_toMHD_when_nophi, Gamma_phi_exp, a4rhophim_crit
+      lswitch_toMHD_when_nophi, Gamma_phi_exp, a4rhophim_crit, solve_phi_criterion
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -207,8 +207,8 @@ module Special
   integer :: idiag_a2rhopm=0    ! DIAG_DOC: $a^2 (\rho+p)$
   integer :: idiag_a2rhom=0     ! DIAG_DOC: $a^2 \rho$
   integer :: idiag_a2rhophim=0  ! DIAG_DOC: $a^2 \rho_\phi$
+  integer :: idiag_a4rhophim=0  ! DIAG_DOC: $a^4 \rho_\phi$
   integer :: idiag_a2rhogphim=0 ! DIAG_DOC: $0.5 <grad \phi^2>$
-  integer :: idiag_a4rhophim=0  ! DIAG_DOC: $<\rho_\phi>$
   integer :: idiag_rho_chi=0    ! DIAG_DOC: $\rho_\chi$
   integer :: idiag_rho_rad=0    ! DIAG_DOC: $\rho_\mathrm{rad}$
   integer :: idiag_sigEma=0     ! DIAG_DOC: $\rho_\chi$
@@ -271,6 +271,7 @@ module Special
 !
       use SharedVariables, only: get_shared_variable
       use FArrayManager, only: farray_index_by_name_ode
+      use Messages, only: warning
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: iLCDM_lna
@@ -335,6 +336,14 @@ module Special
         lallow_bprime_zero=.false.
         mass_chi=0.
       endif
+!
+!  Redundancy checks. To be removed when these logicals are removed.
+!
+      if (lwstate_crit_old) call warning("initialize_special","lwstate_crit_old ONLY for 0d-tests/reheating")
+      if (.not.lwstate_crit) call fatal_error("initialize_special","lwstate_crit disabled")
+      if (.not.lsolve_for_phi2) call fatal_error("initialize_special","lsolve_for_phi2 disabled")
+      if (.not.lsolve_for_phi_always) call fatal_error("initialize_special","lsolve_for_phi_always disabled")
+      if (.not.lsolve_for_phi_switch) call fatal_error("initialize_special","lsolve_for_phi_switch disabled")
 !
       call keep_compiler_quiet(f)
 !
@@ -607,7 +616,7 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: gphi
-      real, dimension (nx) :: Vprime, Vpotential, a2rhophi
+      real, dimension (nx) :: Vprime, Vpotential, a2rhophi, a4rhophi
       real, dimension (nx) :: tmp, del2phi, gphi2
       real :: pref_Vprime=1., pref_Hubble=2., pref_del2=1., pref_alpf, pref_Gamma=impossible
       type (pencil_case) :: p
@@ -671,7 +680,7 @@ module Special
 !  We have d2phi/dt^2 = ... (2*Hscript+Gamma_phi)*dphi/dt, so the timestep constraint is
 !  dt < 1/(2*Hscript+Gamma_phi).
 !
-      if (lsolve_for_phi_always .and. lsolve_for_phi .and. lsolve_for_phi2) then
+      if (lsolve_for_phi) then
         df(l1:l2,m,n,iinfl_phi)=df(l1:l2,m,n,iinfl_phi)+p%infl_dphi
         if (lrho_rad .and. lrho_rad_apply) then
           df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi) - &
@@ -697,6 +706,7 @@ module Special
           call grad(f,iinfl_phi,gphi)
           call dot2_mn(gphi,gphi2)
           a2rhophi=0.5*p%infl_dphi**2+0.5*gphi2+a2*Vpotential
+          a4rhophi=a2*a2rhophi
           tmp=Gamma_phi*a2rhophi*ascale**Gamma_phi_exp
           if (ldensity_nolog) then
             df(l1:l2,m,n,irho)=df(l1:l2,m,n,irho)+tmp
@@ -710,7 +720,7 @@ module Special
 !
 !  speed of light term
 !
-      if (lsolve_for_phi .and. lsolve_for_phi_always .and. lsolve_for_phi2) then
+      if (lsolve_for_phi) then
         if (c_light_axion/=0. .and. .not. lphi_hom) then
           call del2(f,iinfl_phi,del2phi)
           df(l1:l2,m,n,iinfl_dphi)=df(l1:l2,m,n,iinfl_dphi) + &
@@ -770,7 +780,7 @@ module Special
 !
       if (lfirst .and. ldt .and. ldt_backreact_infl) then
         if (Ndiv==0.) then
-          if (lsolve_for_phi .and. lsolve_for_phi_always) then
+          if (lsolve_for_phi) then
             if (dimensionality==0) then
               dt1_special=axionmass*sqrt(a2)/cdt_phi
             else
@@ -898,8 +908,8 @@ module Special
         call save_name(a2rhopm_all_diagnos,idiag_a2rhopm)
         call save_name(a2rhom_all_diagnos,idiag_a2rhom)
         call save_name(a2rhophim_all_diagnos,idiag_a2rhophim)
-        call save_name(a2rhogphim_all_diagnos,idiag_a2rhogphim)
         call save_name(a4rhophim_all_diagnos,idiag_a4rhophim)
+        call save_name(a2rhogphim_all_diagnos,idiag_a2rhogphim)
         call save_name(rho_chi,idiag_rho_chi)
         call save_name(rho_rad,idiag_rho_rad)
         call save_name(sigEm_all_diagnos,idiag_sigEma)
@@ -992,7 +1002,7 @@ module Special
         idiag_phim=0; idiag_phi2m=0; idiag_phirms=0
         idiag_dphim=0; idiag_dphi2m=0; idiag_dphirms=0; idiag_dtphi=0
         idiag_Hscriptm=0; idiag_lnam=0; idiag_ascale=0; idiag_ddotam=0
-        idiag_a2rhopm=0; idiag_a2rhom=0; idiag_a2rhophim=0; idiag_a4rhophim=0
+        idiag_a2rhopm=0; idiag_a2rhom=0; idiag_a4rhophim=0; idiag_a2rhophim=0
         idiag_a2rhogphim=0; idiag_rho_chi=0; idiag_rho_rad=0; idiag_sigEma=0
         idiag_sigBma=0; idiag_count_eb0a=0; idiag_heating=0; idiag_wstate=0
         idiag_wstate_aver=0; idiag_Gamma_phi=0
@@ -1013,8 +1023,8 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'a2rhopm',idiag_a2rhopm)
         call parse_name(iname,cname(iname),cform(iname),'a2rhom',idiag_a2rhom)
         call parse_name(iname,cname(iname),cform(iname),'a2rhophim',idiag_a2rhophim)
-        call parse_name(iname,cname(iname),cform(iname),'a2rhogphim',idiag_a2rhogphim)
         call parse_name(iname,cname(iname),cform(iname),'a4rhophim',idiag_a4rhophim)
+        call parse_name(iname,cname(iname),cform(iname),'a2rhogphim',idiag_a2rhogphim)
         call parse_name(iname,cname(iname),cform(iname),'rho_chi',idiag_rho_chi)
         call parse_name(iname,cname(iname),cform(iname),'rho_rad',idiag_rho_rad)
         call parse_name(iname,cname(iname),cform(iname),'sigEma',idiag_sigEma)
@@ -1158,7 +1168,7 @@ module Special
 !
 !  Here we use the possibility of switching off the phi evolution by setting phi=dphi=0.
 !
-      if (.not. (lsolve_for_phi_always .and. lsolve_for_phi .and. lsolve_for_phi2)) then
+      if (.not. lsolve_for_phi) then
         f(:,:,:,iinfl_phi)=0.
         f(:,:,:,iinfl_dphi)=0.
         if (lswitch_toMHD_when_nophi .and. iex>0) ladvance_ee=.false.
@@ -1167,7 +1177,7 @@ module Special
 !  In the following loop, go through all penciles and add up results to get e2m, etc.
 !
       ddotam=0.; a2rhopm=0.; a2rhom=0.; rhom=0; e2m=0; b2m=0; edotbm=0
-      a2rhophim=0.; a2rhopphim=0.; a2rhogphim=0.; a4rhophim=0.; sigE1m=0.; sigB1m=0.
+      a2rhophim=0.; a4rhophim=0.; a2rhopphim=0.; a2rhogphim=0.; sigE1m=0.; sigB1m=0.
 !
 !  In the following, sum over all mn pencils.
 !
@@ -1181,6 +1191,7 @@ module Special
       a2rhopm=a2rhopm/nwgrid
       a2rhom=a2rhom/nwgrid
       a2rhophim=a2rhophim/nwgrid
+      a4rhophim=a4rhophim/nwgrid
       a2rhopphim=a2rhopphim/nwgrid
       a2rhogphim=a2rhogphim/nwgrid
       ddotam=(four_pi_over_three/nwgrid)*ddotam
@@ -1218,12 +1229,14 @@ module Special
       call mpireduce_sum(a2rhopm,a2rhopm_all)
       call mpiallreduce_sum(a2rhom,a2rhom_all)
       call mpireduce_sum(a2rhophim,a2rhophim_all)
+      call mpireduce_sum(a4rhophim,a4rhophim_all)
       call mpireduce_sum(a2rhopphim,a2rhopphim_all)
       call mpireduce_sum(a2rhogphim,a2rhogphim_all)
       call mpiallreduce_sum(ddotam,ddotam_all)
       a2rhom_all_diagnos     = a2rhom_all
       a2rhopm_all_diagnos    = a2rhopm_all
       a2rhophim_all_diagnos  = a2rhophim_all
+      a4rhophim_all_diagnos  = a4rhophim_all
       a2rhogphim_all_diagnos = a2rhogphim_all
       ddotam_all_diagnos     = ddotam_all
 !
@@ -1246,6 +1259,7 @@ module Special
       call mpibcast_real(e2m_all)
       call mpibcast_real(b2m_all)
       call mpibcast_real(a2rhophim_all)
+      call mpibcast_real(a4rhophim_all)
       call mpibcast_real(a2rhopphim_all)
 !
 !  Compute rhom, which is needed for wstate.
@@ -1258,33 +1272,32 @@ module Special
       endif
 !
 !  Alternatitives for deciding when to solve for phi: either when
-!  wstate is not yet reached, or when a2rhophim_all is still big enough.
-!  Once lsolve_for_phi is false, we also put lsolve_for_phi_always to false
-!  can this will never allow lsolve_for_phi to become true.
+!  wstate is not yet reached, or when a4rhophim is still big enough.
 !
-      if (lwstate_crit) then
-        if (lwstate_crit_old) then
-          lsolve_for_phi=(wstate<wstate_crit)
-        else
-          if (lsolve_for_phi_always) then
-            lsolve_for_phi=abs(wstate-wstate_prev) > wstate_tolerance
-            wstate_prev=wstate
-            if (lsolve_for_phi_switch) &
-              lsolve_for_phi_always=lsolve_for_phi
-          endif
-        endif
-      else
-        lsolve_for_phi=.true.
+      if (lsolve_for_phi) then
+        select case (solve_phi_criterion)
+          case ('rhophi')
+            lsolve_for_phi=a4rhophim > a4rhophim_crit
+            if (lroot .and. .not. lsolve_for_phi) print*,'rhophi criterion activated'
+          case ('wstate')
+            if (lwstate_crit_old) then
+              lsolve_for_phi=(wstate<wstate_crit)
+              if (lroot .and. .not. lsolve_for_phi) print*,'OLD wstate criterion activated'
+            else 
+              if (lsolve_for_phi_always) then
+                lsolve_for_phi=abs(wstate-wstate_prev) > wstate_tolerance
+                wstate_prev=wstate
+                lsolve_for_phi_always=lsolve_for_phi
+              endif
+              if (lroot .and. .not. lsolve_for_phi) print*,'wstate criterion activated'
+            endif
+          case default
+            call fatal_error("special_after_boundary: No such solve_phi_criterion: ",trim(solve_phi_criterion))
+        endselect
       endif
 !
-!  Additional criterion
-!
-      a4rhophim=a2rhophim_all*ascale**2
-      a4rhophim_all_diagnos=a4rhophim
-      lsolve_for_phi2=a4rhophim > a4rhophim_crit
-!
-!  Alternatitives for deciding when to turn on heating, i.e., when the
-!  end of inflation occurs.
+!  Alternatitives for deciding when to turn on heating,
+!  i.e., when the end of inflation occurs.
 !
       select case (heating_choice)
         case ('Hscript_max')
@@ -1310,7 +1323,7 @@ module Special
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, intent(inout) :: sigE1m,sigB1m
       real, dimension (nx,3) :: el, bb, gphi
-      real, dimension (nx) :: e2, b2, gphi2, dphi, a2rhop, a2rho, a2rhophi
+      real, dimension (nx) :: e2, b2, gphi2, dphi, a2rhop, a2rho, a2rhophi, a4rhophi
       real, dimension (nx) :: a2rhopphi
       real, dimension (nx) :: ddota, phi, Vpotential, edotb, sigE1, sigB1
       real, dimension (nx) :: boost, gam_EB, eprime, bprime, jprime1
@@ -1368,6 +1381,7 @@ module Special
 !  This is still local.
 !
       a2rhophi=a2rho
+      a4rhophi=a2rho*a2
       a2rhopphi=a2rhop
 !
 !  Note the .5*fourthird factor in front of (e2+b2)*a21, but that is
@@ -1378,13 +1392,11 @@ module Special
         call dot2_mn(bb,b2)
 !
 !  In MHD, when we don't have the electric field, we can use -uxB for now.
+!  This method is currently not used.
 !
         if (iex/=0) then
           el=f(l1:l2,m,n,iex:iez)
         else
-   !      uu=f(l1:l2,m,n,iux:iuz)
-   !      call cross_mn(uu,bb,uxb)
-   !      el=-uxb
           el=0.
         endif
         call dot2_mn(el,e2)
@@ -1480,6 +1492,7 @@ module Special
       if (.not. ldefine_a2rhopm_without_Vpotential) &
         a2rhopm=a2rhopm+sum(a2rhop)
       a2rhophim=a2rhophim+sum(a2rhophi)
+      a4rhophim=a4rhophim+sum(a4rhophi)
       a2rhopphim=a2rhopphim+sum(a2rhopphi)
 !
 !  Compute electromagnetic averages.
