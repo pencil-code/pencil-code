@@ -142,7 +142,7 @@ module Special
   logical :: lheating_always=.false.     !PAR_DOC: heating criterion, set to true once lheating=T.
   logical :: lheating_keep_on=.false.    !PAR_DOC: heating criterion
   logical :: ldefine_a2rhopm_without_Vpotential=.false.    !PAR_DOC: should be false to have correct results
-  logical :: la2rhop_wrong_factor=.false. !PAR_DOC: should be false to have correct results; kept for backwards compatibility
+  logical :: la2rhop_wrong_factor=.false. !PAR_DOC: should be false to have correct results; kept for backward compatibility
   logical :: lappy_BD_k1D_factor=.false. !PAR_DOC: apply $k_1^D$ factor in the Bunch-Davies initial condition (NOTE typo in name!)
   logical :: lapply_BD_kNy_factor=.false. !PAR_DOC: apply $1/N^(D/2)$ factor in the Bunch-Davies initial condition.
   logical :: linv_BD=.true.              !PAR_DOC: apply forward transform in the Bunch-Davies initial condition.
@@ -706,7 +706,6 @@ module Special
           call grad(f,iinfl_phi,gphi)
           call dot2_mn(gphi,gphi2)
           a2rhophi=0.5*p%infl_dphi**2+0.5*gphi2+a2*Vpotential
-          a4rhophi=a2*a2rhophi
           tmp=Gamma_phi*a2rhophi*ascale**Gamma_phi_exp
           if (ldensity_nolog) then
             df(l1:l2,m,n,irho)=df(l1:l2,m,n,irho)+tmp

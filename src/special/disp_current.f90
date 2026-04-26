@@ -168,6 +168,8 @@ module Special
   integer :: idiag_adphiBm=0    ! DIAG_DOC: $\left<(\alpha/f)<\phi'\Bv\cdot\Ev\right>$
   integer :: idiag_adphiBrms=0  ! DIAG_DOC: $\left<[(\alpha/f)<\phi'\Bv]\right>^{1/2}$
   integer :: idiag_Johmrms=0    ! DIAG_DOC: $\left<\Jv^2\right>^{1/2}$
+  integer :: idiag_J2sigEm=0    ! DIAG_DOC: $\left<\Jv^2/\sigma_E\right>$
+  integer :: idiag_ujxb1m=0     ! DIAG_DOC: $\left<\uv\cdot(\Jv\times\Bv)_E\right>$
   integer :: idiag_curlBrms=0   ! DIAG_DOC: $\left<(\mathrm{curl}\Bv)^2\right>^{1/2}$
   integer :: idiag_echarge=0    ! DIAG_DOC: $\left<e_\mathrm{eff}\right>$
   integer :: idiag_ebm=0        ! DIAG_DOC: $\left<\Ev\cdot\Bv\right>$
@@ -1271,14 +1273,23 @@ module Special
           call sum_mn_name(tmp,idiag_adphiBrms,lsqrt=.true.)
         endif
       endif
-      if (idiag_Johmrms/=0) then
+      if (idiag_Johmrms/=0 .or. idiag_J2sigEm) then
         call dot2_mn(p%jj_ohm,tmp)
         call sum_mn_name(tmp,idiag_Johmrms,lsqrt=.true.)
+        call sum_mn_name(etaSchw*tmp,idiag_J2sigEm)
       endif
       if (idiag_curlBrms/=0) then
         call dot2_mn(p%curlb,tmp)
         call sum_mn_name(tmp,idiag_curlBrms,lsqrt=.true.)
       endif
+!
+!  Calculate <u.(jxb)>.
+!
+      if (idiag_ujxb1m/=0) then
+        call dot(p%uu,p%jxb,tmp)
+        call sum_mn_name(tmp,idiag_ujxb1m)
+      endif
+!
       call save_name(echarge,idiag_echarge)
       call sum_mn_name(p%e2,idiag_erms,lsqrt=.true.)
       call sum_mn_name(p%edot2,idiag_edotrms,lsqrt=.true.)
@@ -1399,7 +1410,8 @@ module Special
         idiag_rhoem=0; idiag_count_eb0=0; idiag_divEm=0; idiag_divJm=0; idiag_constrainteqn=0
         idiag_dteta=0; idiag_dtsigE=0; idiag_etaSchw=0
         idiag_sigEm=0; idiag_sigBm=0; idiag_sigErms=0; idiag_sigBrms=0
-        idiag_ebm=0; idiag_Johmrms=0; idiag_curlBrms=0; idiag_adphiBm=0; idiag_adphiBrms=0
+        idiag_ebm=0; idiag_Johmrms=0; idiag_J2sigEm=0; idiag_curlBrms=0
+        idiag_adphiBm=0; idiag_adphiBrms=0; idiag_ujxb1m=0
         idiag_sigEE2m=0; idiag_sigBBEm=0
         idiag_eprimerms=0; idiag_bprimerms=0; idiag_jprimerms=0; idiag_gam_EBrms=0; 
         idiag_boostprms=0; idiag_echarge=0; idiag_e2mx=0; idiag_e2mz=0
@@ -1443,8 +1455,10 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'sigEE2m',idiag_sigEE2m)
         call parse_name(iname,cname(iname),cform(iname),'sigBBEm',idiag_sigBBEm)
         call parse_name(iname,cname(iname),cform(iname),'adphiBm',idiag_adphiBm)
+        call parse_name(iname,cname(iname),cform(iname),'ujxb1m',idiag_ujxb1m)
         call parse_name(iname,cname(iname),cform(iname),'adphiBrms',idiag_adphiBrms)
         call parse_name(iname,cname(iname),cform(iname),'Johmrms',idiag_Johmrms)
+        call parse_name(iname,cname(iname),cform(iname),'J2sigEm',idiag_J2sigEm)
         call parse_name(iname,cname(iname),cform(iname),'curlBrms',idiag_curlBrms)
         call parse_name(iname,cname(iname),cform(iname),'echarge',idiag_echarge)
         call parse_name(iname,cname(iname),cform(iname),'mfpf',idiag_mfpf)
@@ -1591,7 +1605,7 @@ module Special
       call copy_addr(lmass_suppression,p_par(25)) ! bool
       call copy_addr(beta_inflation,p_par(26))
       call copy_addr(c_light2,p_par(27))
-      call copy_addr(idiag_bcurlem,p_par(28)) ! int
+      call copy_addr(idiag_BcurlEm,p_par(28)) ! int
       call copy_addr(idiag_adphibm,p_par(29)) ! int
       call copy_addr(idiag_johmrms,p_par(30)) ! int
       call copy_addr(lapply_gamma_corr,p_par(31)) ! bool
