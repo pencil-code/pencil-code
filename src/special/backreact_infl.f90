@@ -218,6 +218,7 @@ module Special
   integer :: idiag_wstate=0     ! DIAG_DOC: $w_\mathrm{state}$
   integer :: idiag_wstate_aver=0 ! DIAG_DOC: $\langle w_\mathrm{state}\rangle$
   integer :: idiag_Gamma_phi=0  ! DIAG_DOC: $\langle w_\mathrm{state}\rangle$
+  integer :: idiag_Gam_phi=0    ! DIAG_DOC: $\langle w_\mathrm{state}\rangle$
 !
   integer :: enum_hscript_choice = 0
   integer :: enum_vprime_choice = 0
@@ -919,6 +920,7 @@ module Special
         call save_name(wstate,idiag_wstate)
         call save_name(wstate_aver,idiag_wstate_aver)
         call save_name(Gamma_phi,idiag_Gamma_phi)
+        call save_name(Gamma_phi,idiag_Gam_phi) !(shorter name for Gamma_phi)
 !
       endif
 !
@@ -1004,7 +1006,7 @@ module Special
         idiag_a2rhopm=0; idiag_a2rhom=0; idiag_a4rhophim=0; idiag_a2rhophim=0
         idiag_a2rhogphim=0; idiag_rho_chi=0; idiag_rho_rad=0; idiag_sigEma=0
         idiag_sigBma=0; idiag_count_eb0a=0; idiag_heating=0; idiag_wstate=0
-        idiag_wstate_aver=0; idiag_Gamma_phi=0
+        idiag_wstate_aver=0; idiag_Gamma_phi=0; idiag_Gam_phi=0
       endif
 !
       do iname=1,nname
@@ -1033,6 +1035,7 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'wstate',idiag_wstate)
         call parse_name(iname,cname(iname),cform(iname),'wstate_aver',idiag_wstate_aver)
         call parse_name(iname,cname(iname),cform(iname),'Gamma_phi',idiag_Gamma_phi)
+        call parse_name(iname,cname(iname),cform(iname),'Gam_phi',idiag_Gam_phi)
       enddo
 !
     endsubroutine rprint_special

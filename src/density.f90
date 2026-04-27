@@ -51,7 +51,7 @@ module Density
   real, dimension (mz) :: profz_ffree=1.0, dprofz_ffree=0.0
   real, dimension(mz) :: profz_eos=1.0,dprofz_eos=0.0
   real, target :: mpoly=impossible
-  real, pointer :: mpoly0, mpoly1, mpoly2, eps_hless, width_hless_absolute
+  real, pointer :: mpoly0, mpoly1, mpoly2, eps_hless, width_hless_absolute, nu_tdep
   real, dimension(nx) :: xmask_den
   real, dimension(nx) :: fprofile_x=1.
   real, dimension(nz) :: fprofile_z=1.
@@ -59,7 +59,7 @@ module Density
   real, dimension(nx) :: reduce_cs2_profx = 1.0
   real, dimension(mz) :: reduce_cs2_profz = 1.0
   real :: width_eos_prof=0.2
-  character(LEN=labellen) :: ireference_state='nothing', ieos_profile='nothing'
+  character(LEN=labellen) :: ireference_state='nothing', ieos_profile='nothing', tdep_kap_type='Sc'
   real :: reference_state_mass=0.
 !
 !  Schur flow quantities
@@ -75,7 +75,7 @@ module Density
   real, dimension(2) :: density_xaver_range=(/-max_real,max_real/)
   real, dimension(2) :: density_zaver_range=(/-max_real,max_real/)
   real :: lnrho_const=0.0, rho_const=1.0, Hrho=1., ggamma=impossible
-  real :: cdiffrho=0.0, diffrho=0.0, diff_cspeed=0.5
+  real :: cdiffrho=0.0, diffrho=0.0, diff_cspeed=0.5, kap_tdep=0.0
   real :: diffrho_hyper3=0.0, diffrho_hyper3_mesh=5.0, diffrho_shock=0.0
   real :: eps_planet=0.5, q_ell=5.0, hh0=0.0
   real :: mass_source_omega=0.
@@ -102,6 +102,7 @@ module Density
   real :: rescale_rho=1.0
   real :: xjump_mid=0.0,yjump_mid=0.0,zjump_mid=0.0
   real :: kgaussian_lnrho=0., initpower_lnrho=2, kpeak_lnrho=1., cutoff_lnrho=0.
+  real :: Sc=0.0     !PAR_DOC: given value to compute kap_tdep (~diffrho) based on nu_tdep
   real, target :: reduce_cs2 = 1.0
   complex :: coeflnrho=0.0
   integer, parameter :: ndiff_max=4
@@ -113,8 +114,8 @@ module Density
   logical :: lisothermal_fixed_Hrho=.false.
   logical :: lmass_source=.false., lmass_source_random=.false., lcontinuity_gas=.true.
   logical :: lupw_lnrho=.false.,lupw_rho=.false.
-  logical :: ldiff_normal=.false.,ldiff_hyper3=.false.,ldiff_shock=.false.
-  logical :: ldiff_cspeed=.false.
+  logical :: ldiff_normal=.false., ldiff_kap_tdep=.false., ldiff_hyper3=.false.
+  logical :: ldiff_shock=.false., ldiff_cspeed=.false.
   logical :: ldiff_hyper3lnrho=.false.,ldiff_hyper3_aniso=.false.
   logical :: ldiff_hyper3_polar=.false.,lanti_shockdiffusion=.false.
   logical :: ldiff_hyper3_mesh=.false.,ldiff_hyper3_strict=.false.
@@ -233,7 +234,8 @@ module Density
       lsubtract_init_stratification, ireference_state, &
       h_sld_dens, lrho_flucz_as_aux, nlf_sld_dens, div_sld_dens, &
       lSchur_3D3D1D, &
-      lrelativistic_eos_term1, lrelativistic_eos_term2
+      lrelativistic_eos_term1, lrelativistic_eos_term2, &
+      Sc, tdep_kap_type
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !  Note: drho2m is based on rho0, while rhof2m is based on <rho>(z).
@@ -277,6 +279,7 @@ module Density
   integer :: idiag_inertiazz_car=0  ! DIAG_DOC: $xx$ component of the inertia tensor (Cartesian coordinates)
   integer :: idiag_vol=0        ! DIAG_DOC: $\int\,dV$ (volume)
   integer :: idiag_grhomax=0    ! DIAG_DOC: $\max (|\nabla \varrho|)$
+  integer :: idiag_kap_tdep=0   ! DIAG_DOC: time-dependent diffusivity
 !
 ! xy averaged diagnostics given in xyaver.in
   integer :: idiag_rhomz=0      ! XYAVG_DOC: $\left<\varrho\right>_{xy}$
@@ -677,6 +680,7 @@ module Density
 !  Initialize mass diffusion.
 !
       ldiff_normal=.false.
+      ldiff_kap_tdep=.false.
       ldiff_cspeed=.false.
       ldiff_shock=.false.
       ldiff_hyper3=.false.
@@ -699,6 +703,9 @@ module Density
         case ('normal')
           if (lroot) print*,'diffusion: div(D*grad(rho))'
           ldiff_normal=.true.
+        case ('kap-tdep')
+          if (lroot) print*,'diffusion: div(D*grad(rho))'
+          ldiff_kap_tdep=.true.
         case ('cspeed')
           if (lroot) print*,'diffusion: div(D*grad(rho))'
           ldiff_cspeed=.true.
@@ -1071,7 +1078,13 @@ module Density
         call get_shared_variable('eps_hless',eps_hless)
         if (lrun) call get_shared_variable('width_hless_absolute',width_hless_absolute)
       endif
-
+!
+!  Get nu_tdep if we need it for kap_tdep calculation.
+!
+      if (ldiff_kap_tdep .and. tdep_kap_type=='Sc') then
+        call get_shared_variable('nu_tdep', nu_tdep)
+      endif
+!
       if (lcontinuity_gas.and..not.lweno_transport.and.ldensity_nolog.and.lconservative.and..not.lhydro) &
         call fatal_error_local('initialize_density','divss not available without hydro')
 !
@@ -2303,7 +2316,7 @@ module Density
           lpenc_requested(i_del2lnrho)=.true.
         endif
       endif
-      if (ldiff_normal.or.ldiff_cspeed) then
+      if (ldiff_normal .or. ldiff_kap_tdep .or. ldiff_cspeed) then
         if (ldensity_nolog .or. ldiffusion_nolog) then
           lpenc_requested(i_del2rho)=.true.
           if (ldiffusion_nolog) lpenc_requested(i_rho1)=.true.
@@ -2738,6 +2751,17 @@ module Density
         Schur_dlnrho_RHS_zaver_xy=0.
       endif
 !
+!  The following allows us to let the diffusivity change with time.
+!
+      if (ldiff_kap_tdep) then
+        select case (tdep_kap_type)
+          case ('Sc')
+            kap_tdep=nu_tdep/Sc
+          case default
+            call fatal_error('density_after_boundary','unknown value of tdep_kap_type')
+        endselect
+      endif
+!
       call keep_compiler_quiet(f)
 !
     endsubroutine density_after_boundary
@@ -2973,6 +2997,8 @@ module Density
 !
       ldt_up = lupdate_courant_dt
 !
+!  Constant diffusivity (constant in space and time).
+!
       if (ldiff_normal) then  ! Normal diffusion operator
         if (ldensity_nolog) then
           fdiff = fdiff + diffrho*p%del2rho
@@ -2985,6 +3011,22 @@ module Density
         endif
         if (ldt_up) diffus_diffrho=diffus_diffrho+diffrho
         if (headtt) print*,'dlnrho_dt: diffrho=', diffrho
+      endif
+!
+!  Time-dependent diffusivity, but otherwise the same as constant in space.
+!
+      if (ldiff_kap_tdep) then
+        if (ldensity_nolog) then
+          fdiff = fdiff + kap_tdep*p%del2rho
+        else
+          if (ldiffusion_nolog) then
+            fdiff = fdiff + kap_tdep*p%rho1*p%del2rho
+          else
+            fdiff = fdiff + kap_tdep*(p%del2lnrho+p%glnrho2)
+          endif
+        endif
+        if (ldt_up) diffus_diffrho=diffus_diffrho+kap_tdep
+        if (headtt) print*,'dlnrho_dt: kap-tdep=', kap_tdep
       endif
 !
       if (ldiff_cspeed) then  ! Normal diffusion operator
@@ -3121,7 +3163,7 @@ module Density
 !AB: at the meeting in Toulouse we discussed that it should rather
 !AB: involve the actual time step dt, but its value is not known during
 !AB: the first execution of a 3rd order substep. I keep this comment,
-!AB: so we don't forget about this issue. A plauble thing to try is to
+!AB: so we don't forget about this issue. A plausible thing to try is to
 !AB: check if dt==0, then leave fdiff unchanged (hoping that this is
 !AB: the default value when it hasn't been set yet).
             !fdiff = fdiff + diffrho_hyper3_mesh*pi5_1/60.*tmp/dt
@@ -3351,6 +3393,9 @@ module Density
           call dot2(p%grho,tmp); tmp=sqrt(tmp)
           call max_mn_name(tmp,idiag_grhomax)
         endif
+        !if (idiag_kap_tdep/=0) call sum_mn_name(spread(kap_tdep,1,nx),idiag_kap_tdep)
+        !if (lroot) call save_name(kap_tdep,idiag_kap_tdep)
+        call save_name(kap_tdep,idiag_kap_tdep)
       endif
 
     endsubroutine calc_0d_diagnostics_density
@@ -3869,7 +3914,7 @@ module Density
         idiag_rhof2mz=0; idiag_rhof2upmz=0; idiag_rhof2downmz=0
         idiag_gzlnrhomz=0; idiag_uglnrhomz=0; idiag_uygzlnrhomz=0; idiag_uzgylnrhomz=0
         idiag_rhomxy=0; idiag_rhomr=0; idiag_totmass=0; idiag_mass=0; idiag_vol=0
-        idiag_rhomxz=0; idiag_grhomax=0; idiag_inertiaxx=0; idiag_inertiayy=0
+        idiag_rhomxz=0; idiag_grhomax=0; idiag_kap_tdep=0; idiag_inertiaxx=0; idiag_inertiayy=0
         idiag_inertiazz=0; idiag_inertiaxx_car=0; idiag_inertiayy_car=0
         idiag_inertiazz_car=0; idiag_rhomxmask=0; idiag_rhomzmask=0
         idiag_sigma=0; idiag_rho2mxy=0; idiag_sphmass=0
@@ -3914,6 +3959,7 @@ module Density
         call parse_name(iname,cname(iname),cform(iname),'inertiazz_car',idiag_inertiazz_car)
         call parse_name(iname,cname(iname),cform(iname),'vol',idiag_vol)
         call parse_name(iname,cname(iname),cform(iname),'grhomax',idiag_grhomax)
+        call parse_name(iname,cname(iname),cform(iname),'kap_tdep',idiag_kap_tdep)
       enddo
 !
 !  Check for those quantities for which we want xy-averages.

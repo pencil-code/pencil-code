@@ -43,12 +43,13 @@ module Viscosity
   real :: rzero_lambda=impossible,wlambda=0.,rmax_lambda=impossible
   real :: offamp_lambda=1.,r1_lambda=impossible,r2_lambda=impossible
   real :: lambda_jump=0.,roffset_lambda=0.
+  real :: PrM=0.0          !PAR_DOC: given value to compute nu based on sigEm_all
   real :: PrM_turb=0.0
   real :: meanfield_nuB=0.0
   real :: nu_infinity=0.,nu0=0.,non_newton_lambda=0.,carreau_exponent=0.
   real :: nu_smag_Ma2_power=0.0
   real :: nu_rcyl_min=impossible
-  real, pointer :: cs_t
+  real, pointer :: cs_t, sigEm_all
   character (len=labellen) :: nnewton_type='none'
   character (len=labellen) :: div_sld_visc='2nd'
   real :: nnewton_tscale=0.0,nnewton_step_width=0.0
@@ -135,7 +136,7 @@ module Viscosity
       llambda_scale_with_nu, Lambda_V0, Lambda_V1, Lambda_H1, &
       lambda_profile,rzero_lambda,wlambda,r1_lambda,r2_lambda,rmax_lambda, &
       offamp_lambda,lambda_jump,lmeanfield_nu,lmagfield_nu,meanfield_nuB, &
-      PrM_turb, roffset_lambda, nu_spitzer, nu_jump2, nu_spitzer_max, &
+      PrM, PrM_turb, roffset_lambda, nu_spitzer, nu_jump2, nu_spitzer_max, &
       widthnu_shock, znu_shock, xnu_shock, nu_jump_shock, dynu, &
       nnewton_type,nu_infinity,nu0,non_newton_lambda,carreau_exponent, &
       nnewton_tscale,nnewton_step_width,lKit_Olem,damp_sound,luse_nu_rmn_prof, &
@@ -311,6 +312,7 @@ module Viscosity
       call put_shared_variable('lvisc_hyper3_nu_const_strict',lvisc_hyper3_nu_const_strict, &
                                caller='register_viscosity')
       call put_shared_variable('nu',nu)
+      call put_shared_variable('nu_tdep',nu_tdep)
 !
 ! Even if there is no lambda_effect, that has to be
 ! communicated to the boundary conditions. In case llambda_effect=T,
@@ -735,6 +737,12 @@ module Viscosity
             print*,ipz,z(n),etat_z(n),detat_z(n)  ! better into file
           enddo
         endif
+      endif
+!
+!  Get sigEm_all if we need it for viscosity calculation.
+!
+      if (lvisc_nu_tdep .and. tdep_nu_type=='PrM_sigEm') then
+        call get_shared_variable('sigEm_all', sigEm_all)
       endif
 !
 !  Compute mask for x-averaging where x is in vis_xaver_range.
@@ -2465,6 +2473,9 @@ module Viscosity
           else
             nu_tdep=cs_t/nu_tdep_kcs
           endif
+        case ('PrM_sigEm')
+          nu_tdep=min(nu,PrM/sigEm_all)
+          !nu_tdep=nu
         case default
           call fatal_error('viscosity_after_boundary','unknown value of tdep_nu_type')
         endselect
