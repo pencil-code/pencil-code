@@ -8754,8 +8754,6 @@ module Energy
     call string_to_enum(enum_borderss,borderss)
     call copy_addr(enum_borderss,p_par(195)) ! int
 
-    call copy_addr(hcond_kconst,p_par(413))
-
     call copy_addr(hcond_prof_size,p_par(414)) ! int
     call copy_addr(chit_prof_size,p_par(415)) ! int
     call copy_addr(chit_prof_fluct_stored_size,p_par(416)) ! int
