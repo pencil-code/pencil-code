@@ -1511,6 +1511,7 @@ module Special
 !
       if (sigEmax/=impossible .and. lroot) then
         sigE_prefactor=1./(1.+sigEm_all/sigEmax)
+        call mpibcast_real(sigE_prefactor)
         if (lmessage_sigE_quenching_activated .and. sigE_prefactor<1.) then
           print*,'sigE quenching activated'
           lmessage_sigE_quenching_activated=.false.
