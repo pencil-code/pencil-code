@@ -66,6 +66,7 @@ subroutine helper_loop(f,p)
   use Sub, only: check_for_nans_globally
 !
   real, dimension (mx,my,mz,mfarray) :: f
+  real :: tvar1
   type (pencil_case) :: p
 
   real :: start_time,end_time
@@ -87,7 +88,10 @@ subroutine helper_loop(f,p)
 !$    endif
 !$    if (lhelper_run .and. lhelperflags(PERF_WSNAP)) then
 !$      call calc_all_module_diagnostic_auxiliaries(f,p)
+        if (ip<=12.and.lroot) tvar1=real(mpiwtime())
         call perform_wsnap_ext(f)
+        if (ip<=12.and.lroot) print*,'wsnap: written snapshot var.dat in ', &
+                                   mpiwtime()-tvar1,' seconds'
 !$    else
 !$      lhelperflags(PERF_WSNAP) = .false.
 !$    endif
@@ -273,9 +277,9 @@ endsubroutine helper_loop
     if (lsave .or. ((isave /= 0) .and. .not. lnowrite)) then
       if (lsave .or. (mod(it-isave_shift, isave) == 0)) then
         lsave = .false.
-        if (ip<=12.and.lroot) tvar1=real(mpiwtime())
+        if (.not. lmultithread .and. ip<=12.and.lroot) tvar1=real(mpiwtime())
         call wsnap('var.dat',f, mvar_io,ENUM=.false.,noghost=noghost_for_isave)
-        if (ip<=12.and.lroot) print*,'wsnap: written snapshot var.dat in ', &
+        if (.not. lmultithread .and. ip<=12.and.lroot) print*,'wsnap: written snapshot var.dat in ', &
                                      mpiwtime()-tvar1,' seconds'
         call wsnap_timeavgs('timeavg.dat',ENUM=.false.)
         if (lparticles) call write_snapshot_particles(f,ENUM=.false.)
