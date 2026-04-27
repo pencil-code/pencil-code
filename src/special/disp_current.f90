@@ -1499,10 +1499,11 @@ module Special
 !***********************************************************************
     subroutine special_after_boundary(f)
 !
-!  Possibility to modify the f array after the boundaries are
-!  communicated.
+!  Possibility to modify the f array after the boundaries are communicated.
 !
 !  06-jul-06/tony: coded
+!
+      use Mpicomm, only: mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       logical :: lmessage_sigE_quenching_activated=.true.
