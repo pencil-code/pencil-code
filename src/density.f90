@@ -4505,6 +4505,8 @@ module Density
     call keep_compiler_quiet(Sigma1)
     call keep_compiler_quiet(q_ell)
 
+    call copy_addr(kap_tdep,p_par(85))
+    call copy_addr(ldiff_kap_tdep,p_par(86)) ! bool
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Density
