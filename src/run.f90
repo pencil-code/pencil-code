@@ -924,6 +924,9 @@ endsubroutine helper_loop
 !  Get processor numbers and define whether we are root.
 !
   call mpicomm_init
+  if (lroot) then
+    time1=real(mpiwtime())
+  endif
 !
 !  Initialize OpenMP use
 !
@@ -1358,8 +1361,7 @@ endsubroutine helper_loop
       icount=0
       if (lroot) then
         it_last_diagnostic=icount
-        time1=real(mpiwtime())
-        time_last_diagnostic=time1
+        time_last_diagnostic=real(mpiwtime())
       endif
       if (nt>0) call timeloop(f,df,p)
 !$  else
