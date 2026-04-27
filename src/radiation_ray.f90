@@ -2910,15 +2910,6 @@ module Radiation
     call copy_addr(lradpress,p_par(76))         ! bool
     call copy_addr(dtau_thresh_min, p_par(77))
     call copy_addr(dtau_thresh_max, p_par(78))
-    call copy_addr(idiag_qradmax,p_par(79)) ! int
-    call copy_addr(idiag_qradrms,p_par(80)) ! int
-    call copy_addr(scalefactor_srad,p_par(81)) ! (mnu__mod__radiation)
-    call copy_addr(srad_const,p_par(82))
-    call copy_addr(amplsrad,p_par(83))
-    call copy_addr(radius_srad,p_par(84))
-    call copy_addr(kx_srad,p_par(85))
-    call copy_addr(ky_srad,p_par(86))
-    call copy_addr(kz_srad,p_par(87))
 
     endsubroutine pushpars2c
 !***********************************************************************
