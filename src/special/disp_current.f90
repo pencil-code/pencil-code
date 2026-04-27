@@ -104,13 +104,14 @@ module Special
   ! run parameters
   real :: beta_inflation=0., rescale_ee=1., vA_limit=0., eta_given=impossible
   real :: cdt_sigE=1.   !PAR_DOC: time step constraint from 1/sigE
+  real :: sigEmax=impossible   !PAR_DOC: time step constraint from 1/sigE
   logical :: reinitialize_ee=.false.
   logical :: ldt_disp_current=.true.  !PAR_DOC: invoke timestep constraint from sigE
   character (len=labellen) :: aderiv_scaling='table'
 !
   namelist /special_run_pars/ &
     alpf, llongitudinalE, llorenz_gauge_disp, lphi_hom, lphi_linear_regime, &
-    leedot_as_aux, ldivE_as_aux, lsigE_as_aux, lsigB_as_aux, &
+    leedot_as_aux, ldivE_as_aux, lsigE_as_aux, lsigB_as_aux, sigEmax, &
     eta_ee, lcurlyA, beta_inflation, &
     weight_longitudinalE, lswitch_off_divJ, lswitch_off_Gamma, &
     lnoncollinear_EB, lnoncollinear_EB_aver, luse_scale_factor_in_sigma, &
@@ -1504,6 +1505,17 @@ module Special
 !  06-jul-06/tony: coded
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      logical :: lmessage_sigE_quenching_activated=.true.
+!
+!  Possibility of limiting sigE by reducing the prefactor
+!
+      if (sigEmax/=impossible .and. lroot) then
+        sigE_prefactor=1./(1.+sigEm_all/sigEmax)
+        if (lmessage_sigE_quenching_activated .and. sigE_prefactor<1.) then
+          print*,'sigE quenching activated'
+          lmessage_sigE_quenching_activated=.false.
+        endif
+      endif
 !
       call keep_compiler_quiet(f)
 !
