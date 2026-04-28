@@ -5677,8 +5677,14 @@ module Hydro
           rho=hydro_energy/(cs201*lorentz_gamma2-cs20)
           rho_gam21=1./(cs201*rho*lorentz_gamma2+B_ext2)
         else
-          rho=hydro_energy/(cs201*lorentz_gamma2-cs20)
-          rho_gam21=1./(cs201*rho*lorentz_gamma2)
+          if(.not. lrelativistic) then
+            rho=f(:,m,n,irho)
+            rho_gam21=1./rho
+          else
+            rho=hydro_energy/(cs201*lorentz_gamma2-cs20)
+            rho_gam21=1./(cs201*rho*lorentz_gamma2)
+          endif
+
         endif
 !
 !  If just conservative and non-relativistic, we just set rho and rho_gam21.
@@ -5716,10 +5722,9 @@ module Hydro
 !if (iproc==1.and.m==m1.and.n==n1) print*,'AXEL: f(80:160,m,n,irho)=',t,f(80:160,m,n,irho)
 !if (iproc==1.and.m==m1.and.n==n1) print*,'AXEL: f(80:160,m,n,iuu)=',t,f(80:160,m,n,iuu)
         do j=0,2
-          if(lconservative_pressure_on_rhs) then
-            f(:,m,n,iTij+j)=rho_gam21*f(:,m,n,iuu+j)**2
-          else
-            f(:,m,n,iTij+j)=rho_gam21*f(:,m,n,iuu+j)**2+press
+          f(:,m,n,iTij+j)=rho_gam21*f(:,m,n,iuu+j)**2
+          if(.not. lconservative_pressure_on_rhs) then
+            f(:,m,n,iTij+j)=f(:,m,n,iTij+j)+press
           endif
         enddo
 !
