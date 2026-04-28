@@ -11,7 +11,9 @@ fixed_boundary Kernel twopass_solve_final(PC_SUB_STEP_NUMBER step_num, real dt)
 		  {
 			uu_updated = rk_final(F_UU,step_num,dt)
 			real3 force = get_deltacorr_force(step_num)
+#if Lhydro_MODULE
 			if(AC_lconservative__mod__hydro) force *= RHO
+#endif
 			write(F_UU,  uu_updated + force)
 		  }
 		}

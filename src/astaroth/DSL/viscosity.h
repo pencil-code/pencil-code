@@ -5,7 +5,7 @@ Kernel viscosity_after_boundary()
 	{
 		if(AC_lconservative__mod__hydro)
 		{
-			uij = gradient_tensor(UU,RHO)
+			uij = gradient_tensor(MOM,RHO)
 			Sij = traceless_strain(uij)
 			write(F_SIJ_0,Sij[0][0])
 			write(F_SIJ_1,Sij[1][1])

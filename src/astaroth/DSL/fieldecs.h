@@ -244,6 +244,8 @@ const Field3 F_UVEC    = {F_UX,F_UY,F_UZ}
 const Field3 F_UU      = {F_UX,F_UY,F_UZ}
 #define F_UU F_UVEC
 #define UU F_UU
+//TP: if lconservative iux:iuz correspond to momenta say have this define to write easier to read code
+#define MOM UU  
 
 const Field3 F_UNVEC    = {F_UNX,F_UNY,F_UNZ}
 const Field3 F_UUN      = {F_UNX,F_UNY,F_UNZ}
