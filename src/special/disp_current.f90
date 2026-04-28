@@ -1663,6 +1663,7 @@ module Special
     call copy_addr(cdt_sige,p_par(52))
     call copy_addr(ldt_disp_current,p_par(53)) ! bool
     call copy_addr(sige_ceiling,p_par(54))
+    call copy_addr(sige_const_value,p_par(55))
     endsubroutine pushpars2c
 !***********************************************************************
 !
