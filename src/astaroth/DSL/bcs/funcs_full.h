@@ -72,7 +72,7 @@ bc_ss_flux(boundary, topbot, bool lone_sided)
   lnrho = LNRHO[vertexIdx.x][vertexIdx.y][AC_n1-1]
   if (topbot == AC_bot) {
     if (AC_pretend_lnTT) {
-      tmp_xy=-FbotKbot/exp(SS[vertexIdx.x][vertexIdx.y][AC_n1-1]);
+      tmp_xy=-fbotkbot__mod__energy/exp(SS[vertexIdx.x][vertexIdx.y][AC_n1-1]);
       for i in 1:NGHOST+1 {
         SS[vertexIdx.x][vertexIdx.y][AC_n1-i-1]=SS[vertexIdx.x][vertexIdx.y][AC_n1+i-1]-AC_dz2_bound[-i+NGHOST]*tmp_xy;
       }
@@ -92,13 +92,13 @@ bc_ss_flux(boundary, topbot, bool lone_sided)
         cs2_xy=AC_cs20*exp(AC_gamma_m1*(lnrho-AC_lnrho0)+AC_cv1*cs2_xy);
       }
       if (AC_lheatc_chiconst) {
-        tmp_xy=Fbot/(rho_xy*AC_chi*cs2_xy);
+        tmp_xy=AC_fbot__mod__energy/(rho_xy*AC_chi*cs2_xy);
       }
       else if (AC_lheatc_kramers) {
-        tmp_xy=Fbot*pow(rho_xy,(2*nkramers))*pow((AC_cp*AC_gamma_m1),(6.5*nkramers))  /(hcond0_kramers*pow(cs2_xy,(6.5*nkramers+1.)));
+        tmp_xy=AC_fbot__mod__energy*pow(rho_xy,(2*nkramers))*pow((AC_cp*AC_gamma_m1),(6.5*nkramers))  /(hcond0_kramers*pow(cs2_xy,(6.5*nkramers+1.)));
       }
       else {
-        tmp_xy=AC_cp__mod__equationofstate*FbotKbot/cs2_xy;
+        tmp_xy=AC_cp__mod__equationofstate*fbotkbot__mod__energy/cs2_xy;
       }
       for i in 1:NGHOST+1 {
         rho_xy = LNRHO[vertexIdx.x][vertexIdx.y][AC_n1+i-1]-LNRHO[vertexIdx.x][vertexIdx.y][AC_n1-i-1];
@@ -111,7 +111,7 @@ bc_ss_flux(boundary, topbot, bool lone_sided)
   }
   else if (topbot == AC_top) {
     if (AC_pretend_lnTT) {
-      tmp_xy=-FtopKtop/exp(SS[vertexIdx.x][vertexIdx.y][AC_n2-1]);
+      tmp_xy=-AC_ftopktop__mod__energy/exp(SS[vertexIdx.x][vertexIdx.y][AC_n2-1]);
       for i in 1:NGHOST+1 {
         SS[vertexIdx.x][vertexIdx.y][AC_n2-i-1]=SS[vertexIdx.x][vertexIdx.y][AC_n2+i-1]-AC_dz2_bound[i+NGHOST]*tmp_xy;
       }
@@ -131,13 +131,13 @@ bc_ss_flux(boundary, topbot, bool lone_sided)
         cs2_xy=AC_cs20*exp(AC_gamma_m1*(LNRHO[vertexIdx.x][vertexIdx.y][AC_n2-1]-AC_lnrho0)+AC_cv1*cs2_xy);
       }
       if (AC_lheatc_chiconst) {
-        tmp_xy=Ftop/(rho_xy*AC_chi*cs2_xy);
+        tmp_xy=AC_ftop__mod__energy/(rho_xy*AC_chi*cs2_xy);
       }
       else if (AC_lheatc_kramers) {
-        tmp_xy=Ftop*pow(rho_xy,(2*nkramers))*pow((AC_cp*AC_gamma_m1),(6.5*nkramers))  /(hcond0_kramers*pow(cs2_xy,(6.5*nkramers+1.)));
+        tmp_xy=AC_ftop__mod__energy*pow(rho_xy,(2*nkramers))*pow((AC_cp*AC_gamma_m1),(6.5*nkramers))  /(hcond0_kramers*pow(cs2_xy,(6.5*nkramers+1.)));
       }
       else {
-        tmp_xy=AC_cp*FtopKtop/cs2_xy;
+        tmp_xy=AC_cp*AC_ftopktop__mod__energy/cs2_xy;
       }
       for i in 1:NGHOST+1 {
         rho_xy = LNRHO[vertexIdx.x][vertexIdx.y][AC_n2+i-1]-LNRHO[vertexIdx.x][vertexIdx.y][AC_n2-i-1];
@@ -903,9 +903,9 @@ bc_ss_flux_x(AcBoundary boundary, AC_TOP_BOT topbot)
   fac=AC_gamma_m1__mod__equationofstate/AC_gamma__mod__equationofstate
   if (topbot == AC_bot) {
     if (AC_pretend_lntt__mod__cdata) {
-      SS[l1-1-1][vertexIdx.y][vertexIdx.z]=SS[1+l1-1][vertexIdx.y][vertexIdx.z]+AC_dx2_bound__mod__cdata[-1+NGHOST+1-1]*AC_FbotKbot__mod__energy/exp(SS[l1-1][vertexIdx.y][vertexIdx.z])
-      SS[l1-2-1][vertexIdx.y][vertexIdx.z]=SS[2+l1-1][vertexIdx.y][vertexIdx.z]+AC_dx2_bound__mod__cdata[-2+NGHOST+1-1]*AC_FbotKbot__mod__energy/exp(SS[l1-1][vertexIdx.y][vertexIdx.z])
-      SS[l1-3-1][vertexIdx.y][vertexIdx.z]=SS[3+l1-1][vertexIdx.y][vertexIdx.z]+AC_dx2_bound__mod__cdata[-3+NGHOST+1-1]*AC_FbotKbot__mod__energy/exp(SS[l1-1][vertexIdx.y][vertexIdx.z])
+      SS[l1-1-1][vertexIdx.y][vertexIdx.z]=SS[1+l1-1][vertexIdx.y][vertexIdx.z]+AC_dx2_bound__mod__cdata[-1+NGHOST+1-1]*AC_fbotkbot__mod__energy/exp(SS[l1-1][vertexIdx.y][vertexIdx.z])
+      SS[l1-2-1][vertexIdx.y][vertexIdx.z]=SS[2+l1-1][vertexIdx.y][vertexIdx.z]+AC_dx2_bound__mod__cdata[-2+NGHOST+1-1]*AC_fbotkbot__mod__energy/exp(SS[l1-1][vertexIdx.y][vertexIdx.z])
+      SS[l1-3-1][vertexIdx.y][vertexIdx.z]=SS[3+l1-1][vertexIdx.y][vertexIdx.z]+AC_dx2_bound__mod__cdata[-3+NGHOST+1-1]*AC_fbotkbot__mod__energy/exp(SS[l1-1][vertexIdx.y][vertexIdx.z])
     }
     else {
       if (AC_ldensity_nolog__mod__cdata) {
@@ -933,13 +933,13 @@ bc_ss_flux_x(AcBoundary boundary, AC_TOP_BOT topbot)
         if (AC_chimax_kramers__mod__energy>0) {
           krho1kr_yz = min(krho1kr_yz, AC_chimax_kramers__mod__energy*cp_loc)
         }
-        tmp_yz=AC_Fbot__mod__energy/(work_yz*krho1kr_yz*tmp_yz)
+        tmp_yz=AC_fbot__mod__energy/(work_yz*krho1kr_yz*tmp_yz)
       }
       else if (AC_lheatc_chiconst__mod__energy) {
-        tmp_yz=AC_Fbot__mod__energy/(work_yz*AC_chi__mod__energy*cp_loc*tmp_yz)
+        tmp_yz=AC_fbot__mod__energy/(work_yz*AC_chi__mod__energy*cp_loc*tmp_yz)
       }
       else {
-        tmp_yz=AC_FbotKbot__mod__energy/tmp_yz
+        tmp_yz=AC_fbotkbot__mod__energy/tmp_yz
       }
       if (AC_lreference_state__mod__cdata) {
         work_yz= 1./(RHO[l1-1][vertexIdx.y][vertexIdx.z]+AC_reference_state__mod__density[1-1][iref_rho-1])
@@ -1002,9 +1002,9 @@ bc_ss_flux_x(AcBoundary boundary, AC_TOP_BOT topbot)
   }
   else if (topbot == AC_top) {
     if (AC_pretend_lntt__mod__cdata) {
-      SS[1+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]=SS[AC_l2__mod__cdata-1-1][vertexIdx.y][vertexIdx.z]-AC_dx2_bound__mod__cdata[2+NGHOST-1]*AC_FtopKtop__mod__energy/exp(SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])
-      SS[2+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]=SS[AC_l2__mod__cdata-2-1][vertexIdx.y][vertexIdx.z]-AC_dx2_bound__mod__cdata[3+NGHOST-1]*AC_FtopKtop__mod__energy/exp(SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])
-      SS[3+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]=SS[AC_l2__mod__cdata-3-1][vertexIdx.y][vertexIdx.z]-AC_dx2_bound__mod__cdata[4+NGHOST-1]*AC_FtopKtop__mod__energy/exp(SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])
+      SS[1+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]=SS[AC_l2__mod__cdata-1-1][vertexIdx.y][vertexIdx.z]-AC_dx2_bound__mod__cdata[2+NGHOST-1]*AC_ftopktop__mod__energy/exp(SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])
+      SS[2+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]=SS[AC_l2__mod__cdata-2-1][vertexIdx.y][vertexIdx.z]-AC_dx2_bound__mod__cdata[3+NGHOST-1]*AC_ftopktop__mod__energy/exp(SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])
+      SS[3+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]=SS[AC_l2__mod__cdata-3-1][vertexIdx.y][vertexIdx.z]-AC_dx2_bound__mod__cdata[4+NGHOST-1]*AC_ftopktop__mod__energy/exp(SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])
     }
     else {
       if (AC_ldensity_nolog__mod__cdata) {
@@ -1032,13 +1032,13 @@ bc_ss_flux_x(AcBoundary boundary, AC_TOP_BOT topbot)
         if (AC_chimax_kramers__mod__energy>0) {
           krho1kr_yz = min(krho1kr_yz, AC_chimax_kramers__mod__energy*cp_loc)
         }
-        tmp_yz=ftop/(work_yz*krho1kr_yz*tmp_yz)
+        tmp_yz=AC_ftop__mod__energy/(work_yz*krho1kr_yz*tmp_yz)
       }
       else if (AC_lheatc_chiconst__mod__energy) {
-        tmp_yz=ftop/(work_yz*AC_chi__mod__energy*cp_loc*tmp_yz)
+        tmp_yz=AC_ftop__mod__energy/(work_yz*AC_chi__mod__energy*cp_loc*tmp_yz)
       }
       else {
-        tmp_yz=AC_FtopKtop__mod__energy/tmp_yz
+        tmp_yz=AC_ftopktop__mod__energy/tmp_yz
       }
       if (AC_lreference_state__mod__cdata) {
         tmp_yz = tmp_yz + AC_reference_state__mod__density[nx-1][iref_gs-1]
@@ -3981,7 +3981,7 @@ bc_ss_flux_condturb_x(AcBoundary boundary,AC_TOP_BOT topbot)
       else {
         kxbot=AC_hcondxbot__mod__energy
       }
-      dsdx_yz=(AC_Fbot__mod__energy/tt_yz)/(AC_chit_prof1__mod__energy*AC_chi_t__mod__energy*rho_yz + kxbot*AC_cv1__mod__equationofstate)
+      dsdx_yz=(AC_fbot__mod__energy/tt_yz)/(AC_chit_prof1__mod__energy*AC_chi_t__mod__energy*rho_yz + kxbot*AC_cv1__mod__equationofstate)
       if (AC_lreference_state__mod__cdata) {
         dsdx_yz = dsdx_yz + AC_reference_state__mod__density[AC_xbot__mod__equationofstate-1][iref_gs-1]
       }

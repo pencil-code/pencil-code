@@ -147,10 +147,6 @@ global output float AC_dt1_max_single_precision
 output real AC_dt1_advec
 output real AC_dt1_diffus
 
-#if Leos_idealgas_MODULE
-#define AC_lntt0__mod__equationofstate AC_lnTT0__mod__equationofstate
-#endif
-
 #define AC_gamma1__mod__energy  AC_gamma1__mod__equationofstate 
 #define AC_gamma1__mod__magnetc AC_gamma1__mod__equationofstate 
 #define AC_lupdate_courant_dt__mod__cdata (AC_lfirst__mod__cdata && lcourant_dt)
@@ -214,16 +210,6 @@ gmem real AC_reac_chem__mod__cdata[1]
 
 const real AC_ascale__mod__cdata = 0.0
 
-#define AC_ftopktop__mod__energy AC_FtopKtop__mod__energy
-#define AC_fbotkbot__mod__energy AC_FbotKbot__mod__energy
-#define AC_fbot__mod__energy AC_Fbot__mod__energy 
-#define AC_ftop__mod__energy AC_Ftop__mod__energy 
-#define FbotKbot AC_FbotKbot__mod__energy
-#define Fbot AC_Fbot__mod__energy
-#define fbot Fbot
-#define ftop Ftop
-#define FtopKtop AC_FtopKtop__mod__energy
-#define Ftop AC_Ftop__mod__energy
 #define fbcx AC_fbcx__mod__cdata
 #define fbcy AC_fbcy__mod__cdata
 #define fbcz AC_fbcz__mod__cdata
