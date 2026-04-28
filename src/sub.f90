@@ -42,6 +42,7 @@ module Sub
   public :: curl_horizontal
   public :: div_other
   public :: gij, g2ij, gij_etc
+  public :: gij_v_times_s
   public :: gijl_symmetric
   public :: bij_tilde
   public :: symmetrise3x3_ut2lt
@@ -1532,6 +1533,35 @@ module Sub
       enddo; enddo
 !
     endsubroutine gij
+!***********************************************************************
+    subroutine gij_v_times_s(f,k_v,k_s,g)
+!
+!  Calculate gradient of a vector times scalar, return matrix.
+!
+!  28-aug-26/TP: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: k_v,k_s
+      real, dimension (nx,3,3) :: g,vij
+      real, dimension (nx,3) :: v,grads
+      real, dimension (nx)   :: s
+!
+      call gij(f,k_v,vij,1)
+      call grad(f,k_s,grads)
+      s   = f(l1:l2,m,n,k_s)
+      v   = f(l1:l2,m,n,k_v:k_v+2)
+      g(:,1,1) = vij(:,1,1)*s + v(:,1)*grads(:,1)
+      g(:,1,2) = vij(:,1,2)*s + v(:,1)*grads(:,2)
+      g(:,1,3) = vij(:,1,3)*s + v(:,1)*grads(:,3)
+
+      g(:,2,1) = vij(:,2,1)*s + v(:,2)*grads(:,1)
+      g(:,2,2) = vij(:,2,2)*s + v(:,2)*grads(:,2)
+      g(:,2,3) = vij(:,2,3)*s + v(:,2)*grads(:,3)
+
+      g(:,3,1) = vij(:,3,1)*s + v(:,3)*grads(:,1)
+      g(:,3,2) = vij(:,3,2)*s + v(:,3)*grads(:,2)
+      g(:,3,3) = vij(:,3,3)*s + v(:,3)*grads(:,3)
+    endsubroutine gij_v_times_s
 !***********************************************************************
     subroutine gijl_symmetric(f,k,gijl)
 !
