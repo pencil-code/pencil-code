@@ -227,7 +227,7 @@ module Forcing
 !
   integer, dimension(n_forcing_cont_max) :: enum_iforcing_cont = 0
   logical, pointer :: lconservative_ptr
-  logical :: lconservative
+  logical :: lconservative_hydro = .false.
 
   contains
 !
@@ -271,7 +271,7 @@ module Forcing
 !                      in the horizontal direction.  
 !
       use General, only: bessj,itoa
-      use SharedVariables, only: get_shared_variable, iSHVAR_ERR_NOSUCHVAR
+      use SharedVariables, only: get_shared_variable 
       use Sub, only: step,erfunc,stepdown,register_report_aux
       use EquationOfState, only: cs20
       use Hdf5_io, only: file_close_hdf5, file_open_hdf5, input_hdf5
@@ -285,7 +285,14 @@ module Forcing
       character (len=labellen) :: tmp
       real, dimension(3) :: fcont_from_file_read_input
       character (len=fnlen) :: filename
-      integer :: ierr
+      integer :: ierr = 0
+
+      if(lhydro) then
+        call get_shared_variable('lconservative',lconservative_ptr,ierr,caller='initialize_forcing')
+        if(ierr == 0) then
+          lconservative_hydro = lconservative_ptr
+        endif
+      endif
 
       cs0=sqrt(cs20)
 !
@@ -1294,14 +1301,6 @@ module Forcing
 !
       if (r_ff /=0. .or. rcyl_ff/=0.) profz_k = tanh(z/width_ff)
 
-      if(lhydro) then
-        call get_shared_variable('lconservative',lconservative_ptr,ierr,caller='initialize_forcing')
-        if(ierr == iSHVAR_ERR_NOSUCHVAR) then
-                lconservative = .false.
-        else
-                lconservative = lconservative_ptr
-        endif
-      endif
 !
     endsubroutine initialize_forcing
 !***********************************************************************
@@ -2279,7 +2278,7 @@ module Forcing
                   forcing_rhs2(:,j) = force_ampl*real(cmplx(0.,coef3(j))*fxyz)*fda(j)
                 endif
 
-                if(lconservative .and. jf == iux .or. jf == iuy .or. jf == iuz) then
+                if(lconservative_hydro .and. (jf == iux .or. jf == iuy .or. jf == iuz)) then
                   forcing_rhs(:,j) = forcing_rhs(:,j)*f(l1:l2,m,n,irho)
                 endif
 !
