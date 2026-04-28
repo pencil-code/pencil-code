@@ -1,6 +1,6 @@
 #if Lhydro_MODULE && Ldensity_MODULE
 Kernel hydro_after_boundary_conservative(real AC_t__mod__cdata){
-  real cs201
+  real cs201 = 1.0
   real cs2011
   real delx
   real rho
@@ -127,9 +127,15 @@ Kernel hydro_after_boundary_conservative(real AC_t__mod__cdata){
   	else {
   	  press=rho*AC_cs20__mod__equationofstate
   	}
-  	DF_TIJ_0=rho_gam21*(F_UX*F_UX)+press
-  	DF_TIJ_1=rho_gam21*(F_UY*F_UY)+press
-  	DF_TIJ_2=rho_gam21*(F_UZ*F_UZ)+press
+  	DF_TIJ_0=rho_gam21*(F_UX*F_UX)
+  	DF_TIJ_1=rho_gam21*(F_UY*F_UY)
+  	DF_TIJ_2=rho_gam21*(F_UZ*F_UZ)
+	if(!AC_lconservative_pressure_on_rhs__mod__hydro)
+	{
+  	  DF_TIJ_0+=press
+  	  DF_TIJ_1+=press
+  	  DF_TIJ_2+=press
+	}
   	DF_TIJ_3=rho_gam21*F_UX*F_UY
   	DF_TIJ_4=rho_gam21*F_UY*F_UZ
   	DF_TIJ_5=rho_gam21*F_UZ*F_UX

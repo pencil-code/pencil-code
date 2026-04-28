@@ -1096,6 +1096,15 @@ module Density
       if (density_floor>0.) density_floor_log=alog(density_floor)
       if (density_ceiling>0.) density_ceiling_log=alog(density_ceiling)
 
+      if(lconservative) then
+        if(.not. ldensity_nolog) call fatal_error('initialize_density', 'must use ldensity_nolog=T for lconservative=T')
+        if(.not. lrelativistic) then
+          if(any(f(l1:l2,m1:m2,n1:n2,irho) == 0.)) then
+              call fatal_error('initialize_density', 'Can not have zero density for lconservative=T')
+          endif
+        endif
+      endif
+
       !TP: used in boundary conditions on Astaroth side
       reference_state_padded = 0.
       reference_state_padded(l1:l2,:) = reference_state
@@ -2279,6 +2288,10 @@ module Density
 !
 !  19-11-04/anders: coded
 !
+      use SharedVariables, only: put_shared_variable, get_shared_variable
+
+      logical, pointer :: lconservative_pressure_on_rhs
+
       if (ldensity_nolog) lpenc_requested(i_rho)=.true.
       if (lcontinuity_gas) then
         if (lweno_transport) then
@@ -2288,12 +2301,14 @@ module Density
           if (ldensity_nolog) then
             if (lconservative) then
               if (lhydro) lpenc_requested(i_divss)=.true.
+              call get_shared_variable('lconservative_pressure_on_rhs', lconservative_pressure_on_rhs,&
+              caller="pencil_criteria_density")
+              if (lconservative_pressure_on_rhs) lpenc_requested(i_grho) = .true.
             else
               lpenc_requested(i_ugrho)=.true.
 !            lpenc_requested(i_uglnrho)=.false.
             endif
           else
-            if (lconservative) call fatal_error('pencil_criteria_density', 'must use ldensity_nolog=T')
             lpenc_requested(i_uglnrho)=.true.
 !            lpenc_requested(i_ugrho)=.false.
           endif

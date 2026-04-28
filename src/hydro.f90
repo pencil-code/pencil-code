@@ -194,6 +194,7 @@ module Hydro
   logical :: lreflecteddy=.false.,louinit=.false.
   logical :: lskip_projection=.false.
   logical :: lconservative=.false., lrelativistic=.false.
+  logical :: lconservative_pressure_on_rhs=.false.
   logical, pointer :: lrelativistic_eos, lrelativistic_eos_corr
   logical :: lno_noise_uu=.false., lrho_nonuni_uu=.false.
   logical :: llorentz_limiter=.false., full_3D=.false.
@@ -325,6 +326,7 @@ module Hydro
       omega_out, omega_in, lprecession, omega_precession, omega_fourier, &
       alpha_precession, lshear_rateofstrain, r_omega, w_omega, &
       lconservative, lrelativistic, niter_relB, lalways_use_gij_etc, amp_centforce, &
+      lconservative_pressure_on_rhs,&
       lcalc_uumean, lcalc_uumeanx, lcalc_uumeanxy, lcalc_uumeanxz, lcalc_uumeanz, &
       lcalc_ruumeanz, lcalc_ruumeanxy, &
       lforcing_cont_uu, width_ff_uu, x1_ff_uu, x2_ff_uu, &
@@ -1135,6 +1137,7 @@ module Hydro
 !  shared variable of lconservative for density
 !
       call put_shared_variable('lconservative',lconservative)
+      call put_shared_variable('lconservative_pressure_on_rhs',lconservative_pressure_on_rhs)
       call put_shared_variable('lhiggsless',lhiggsless)
       call put_shared_variable('lrelativistic',lrelativistic)
 
@@ -1726,6 +1729,9 @@ module Hydro
         call mpibcast(yhless,nhless)
         call mpibcast(zhless,nhless)
       endif
+
+      !TP: don't want to consider this on the GPU and would prefer if we could refactor this flag out
+      if(lgpu) lcorrect_penc_u = .false.
 
       endsubroutine initialize_hydro
 !***********************************************************************
@@ -5554,7 +5560,7 @@ module Hydro
 !
 !  In the conservative case, we calculate the Lorentz gamma squared and Tij here,
 !  rather than in before_boundary, because the B-field is unknown otherwise.
-!  In the non-relativisitic case, then Tij=rho*ui*uj+delij*p,
+!  In the non-relativistic case, then Tij=rho*ui*uj+delij*p,
 !  so with p=cs2*rho="press", we have Tij=Ti0*Tj0/rho+cs2*rho*delij.
 !  To deal with truly nonrelativistic eos and conservative formulation,
 !  we need to set rho_gam21=1/rho.
@@ -5710,7 +5716,11 @@ module Hydro
 !if (iproc==1.and.m==m1.and.n==n1) print*,'AXEL: f(80:160,m,n,irho)=',t,f(80:160,m,n,irho)
 !if (iproc==1.and.m==m1.and.n==n1) print*,'AXEL: f(80:160,m,n,iuu)=',t,f(80:160,m,n,iuu)
         do j=0,2
-          f(:,m,n,iTij+j)=rho_gam21*f(:,m,n,iuu+j)**2+press
+          if(lconservative_pressure_on_rhs) then
+            f(:,m,n,iTij+j)=rho_gam21*f(:,m,n,iuu+j)**2
+          else
+            f(:,m,n,iTij+j)=rho_gam21*f(:,m,n,iuu+j)**2+press
+          endif
         enddo
 !
 !  off-diagonal terms:
@@ -5729,6 +5739,8 @@ module Hydro
             f(:,m,n,ivv+j)=rho_gam21*f(:,m,n,iuu+j)
           enddo
         endif
+
+
 !
 !  The following hasn't been prepared yet.
 !
@@ -9188,7 +9200,7 @@ module Hydro
     call copy_addr(uij_0d_test,p_par(126)) ! (3) (3)
     call copy_addr(luij_test,p_par(127)) ! bool
     call copy_addr(iforcing_cont_uu,p_par(128)) ! int
-
+    call copy_addr(lconservative_pressure_on_rhs,p_par(129)) ! bool
     call keep_compiler_quiet(look_as_aux)
     call keep_compiler_quiet(luuk_as_aux)
     call keep_compiler_quiet(u_out_kep)

@@ -5,6 +5,7 @@
 #include "../alphadisk/after_timestep.h"
 #include "../gravitational_waves.h"
 #include "../hydro/hydro_after_boundary_conservative.h"
+#include "../viscosity.h"
 #include "../ioncalc.h"
 #include "../newton_cooling.h"
 #include "../polymer.h"
@@ -72,6 +73,7 @@ ComputeSteps AC_before_boundary_steps(boundconds)
 	magnetic_before_boundary(AC_lrmv)
 	bfield_get_j()
 	bfield_get_e()
+	viscosity_after_boundary()
 	hydro_after_boundary_conservative(AC_t)
 	calc_axion_integral(AC_t)
 	prep_ode_right_kernel()

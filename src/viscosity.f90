@@ -30,6 +30,7 @@ module Viscosity
   character (len=labellen), dimension(nvisc_max) :: ivisc=''
   character (len=labellen) :: lambda_profile='uniform', tdep_nu_type='powerlaw'
   real :: nu=0.0, nu_cspeed=0.5
+  real :: mu=0.0
   real :: nu_tdep=0.0, nu_tdep_exponent=0.0, nu_tdep_t0=0.0, nu_tdep_toffset=0.0
   real :: nu_tdep_t1=0.0, nu_tdep_t2=0.0, nu_tdep_kcs=0.0, nu_r_reduce=0.0
   real :: zeta=0.0, nu_mol=0.0, nu_hyper2=0.0, nu_hyper3=0.0
@@ -50,6 +51,7 @@ module Viscosity
   real :: nu_smag_Ma2_power=0.0
   real :: nu_rcyl_min=impossible
   real, pointer :: cs_t, sigEm_all
+  logical, pointer :: lconservative
   character (len=labellen) :: nnewton_type='none'
   character (len=labellen) :: div_sld_visc='2nd'
   real :: nnewton_tscale=0.0,nnewton_step_width=0.0
@@ -126,9 +128,12 @@ module Viscosity
   real :: no_visc_heat_z0=max_real, no_visc_heat_zwidth=0.0
   real :: damp_sound=0., nu_tdep_ascale_power=0.
   real :: h_sld_visc=2.0, nlf_sld_visc=1.0
+  logical :: lrate_of_strain_as_aux = .false.
+  integer :: iSij=0
+
 !
   namelist /viscosity_run_pars/ &
-      limplicit_viscosity, nu, nu_tdep_exponent, &
+      limplicit_viscosity, nu, mu, nu_tdep_exponent, &
       lvisc_nu_tdep_t0_norm, nu_tdep_t0, nu_tdep_t1, nu_tdep_t2, nu_tdep_kcs, nu_tdep_toffset, &
       zeta, nu_hyper2, nu_hyper3, ivisc, nu_mol, C_smag, gamma_smag, nu_shock, &
       nu_aniso_hyper3, lvisc_heat_as_aux,nu_jump,znu,xnu,xnu2,widthnu,widthnu2, &
@@ -144,7 +149,7 @@ module Viscosity
       lvisc_smag_Ma, nu_smag_Ma2_power, nu_cspeed, lno_visc_heat_zbound, &
       no_visc_heat_z0,no_visc_heat_zwidth, div_sld_visc ,lvisc_forc_as_aux, &
       lvisc_rho_nu_const_prefact, nu_rcyl_min, nu_r_reduce, &
-      tdep_nu_type, nu_tdep_ascale_power
+      tdep_nu_type, nu_tdep_ascale_power,lrate_of_strain_as_aux
 !
 ! diagnostic variable markers (needs to be consistent with reset list below)
 !
@@ -306,6 +311,11 @@ module Viscosity
         aux_count=aux_count+3
         ivisc_forcx=ivisc_forc;ivisc_forcy=ivisc_forc+1;ivisc_forcz=ivisc_forc+2
       endif
+
+      if(lrate_of_strain_as_aux) then
+        call farray_register_auxiliary('Sij',iSij,vector=6,communicated=.true.,rhs=.true.)
+      endif
+
 !
 !  Shared variables.
 !
@@ -343,6 +353,7 @@ module Viscosity
 !
       integer :: i
       real :: y1, y0
+
 !
 !  Default viscosity.
 !  nu-const (as opposed to mu=rho*nu=const) may still allow for a profile of nu.
@@ -394,6 +405,8 @@ module Viscosity
       lvisc_snr_damp=.false.
       lvisc_spitzer=.false.
       lvisc_slope_limited=.false.
+
+      call get_shared_variable('lconservative',lconservative)
 !
 !  For Boussinesq, density is constant, so must use lvisc_simplified.
 !
@@ -414,8 +427,11 @@ module Viscosity
         case ('nu-non-newtonian')
           if (lroot) print*,'viscous force: div(nu*Sij)'
           lvisc_nu_non_newtonian=.true.
-        case ('rho-nu-const','rho_nu-const', '1')
-          if (lroot) print*,'viscous force: mu/rho*(del2u+graddivu/3)'
+        case ('rho-nu-const','rho_nu-const', 'mu-const', '1')
+          if (lconservative) lvisc_rho_nu_const_prefact = .true.
+          if (mu == 0.0) mu = nu
+          if(lvisc_rho_nu_const_prefact .and. lroot) print*,'viscous force: mu*(del2u+graddivu/3)'
+          if(.not. lvisc_rho_nu_const_prefact .and. lroot) print*,'viscous force: mu/rho*(del2u+graddivu/3)'
           lvisc_rho_nu_const=.true.
         case ('rho-nu-const-bulk')
           if (lroot) print*,'viscous force: (zeta/rho)*graddivu'
@@ -590,16 +606,21 @@ module Viscosity
           call fatal_error('calc_viscous_forcing','No such ivisc('//trim(itoa(i))//'): '//trim(ivisc(i)))
         endselect
       enddo
+
 !
 !  If we're timestepping, die or warn if the viscosity coefficient that
 !  corresponds to the chosen viscosity type is not set.
 !
+
       if (lrun) then
-        if ((lvisc_simplified.or.lvisc_rho_nu_const.or. &
+        if ((lvisc_simplified.or. &
              lvisc_sqrtrho_nu_const.or.lvisc_nu_const.or. &
              lvisc_nu_tdep.or.lvisc_nu_cspeed.or. &
              lvisc_mu_cspeed).and.nu==0.0) &
             call warning('initialize_viscosity','Viscosity coefficient nu is zero')
+
+        if (lvisc_rho_nu_const .and. mu==0.0) &
+            call warning('initialize_viscosity','Viscosity coefficient mu is zero')
 
         if ((lvisc_rho_nu_const_bulk.or.lvisc_nu_const_bulk).and.zeta==0.0) &
             call fatal_error('initialize_viscosity','Viscosity coefficient zeta is zero')
@@ -790,6 +811,7 @@ module Viscosity
           exit
         endif
       enddo
+
 
     endsubroutine initialize_viscosity
 !***********************************************************************
@@ -1391,6 +1413,7 @@ module Viscosity
       real, dimension (nx) :: lambda_phi,prof,prof2,derprof,derprof2
       real, dimension (nx) :: gradnu_effective,fac,advec_hypermesh_uu
       real, dimension (nx,3) :: deljskl2,fvisc_nnewton2
+      real, dimension (nx,3) :: divS
 !
       integer :: i,j,ju,ii,jj,kk,ll
       logical :: ldiffus_total, ldiffus_total3
@@ -1467,13 +1490,21 @@ module Viscosity
 !
       if (lvisc_rho_nu_const) then
         if (lvisc_rho_nu_const_prefact) then
-          murho1=nu         !(=mu=dynamical viscosity)
+          murho1=mu         !(=mu=dynamical viscosity)
         else
-          murho1=nu*p%rho1  !(=mu/rho)
+          murho1=mu*p%rho1  !(=mu/rho)
         endif
-        do i=1,3
-          p%fvisc(:,i)=p%fvisc(:,i) + murho1*(p%del2u(:,i)+1.0/3.0*p%graddivu(:,i))
-        enddo
+
+        if(lrate_of_strain_as_aux) then
+          call div_tensor(f,divS,iSij)
+          do i=1,3
+            p%fvisc(:,i) = p%fvisc(:,i) + 2*murho1*divS(:,i)
+          enddo
+        else
+          do i=1,3
+            p%fvisc(:,i)=p%fvisc(:,i) + murho1*(p%del2u(:,i)+1.0/3.0*p%graddivu(:,i))
+          enddo
+        endif
         if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*murho1*p%sij2
         if (ldiffus_total) p%diffus_total=p%diffus_total+murho1
       endif
@@ -2413,12 +2444,15 @@ module Viscosity
 
 !
       use Sub, only: div, calc_all_diff_fluxes, grad, dot_mn, calc_sij2, &
-                     stagger_to_base_interp_1st, stagger_to_base_interp_3rd
+                     stagger_to_base_interp_1st, stagger_to_base_interp_3rd, &
+                     gij_v_times_s, traceless_strain
       use General, only: reduce_grad_dim,notanumber
       use DensityMethods, only: getrho
       use Boundcond, only: update_ghosts
 
       real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension (nx,3,3) :: uij,Sij
+      real, dimension (nx) :: divu
 
       real, dimension(nx) :: rho, tmp
 
@@ -2450,6 +2484,26 @@ module Viscosity
 !
         call update_ghosts(f,inusmag)
 !
+      endif
+!
+! Calculates the viscous stress tensor
+!
+      if(lrate_of_strain_as_aux) then
+        do m=m1,m2
+        do n=n1,n2
+          call gij_v_times_s(f,iux,irho,uij)
+          divu = uij(:,1,1) + uij(:,2,2) + uij(:,3,3)
+
+          call traceless_strain(uij,divu,Sij)
+
+          f(l1:l2,m,n,iSij+0) = Sij(:,1,1) - (1./3.)*divu
+          f(l1:l2,m,n,iSij+1) = Sij(:,2,2) - (1./3.)*divu
+          f(l1:l2,m,n,iSij+2) = Sij(:,3,3) - (1./3.)*divu
+          f(l1:l2,m,n,iSij+3) = Sij(:,1,2)
+          f(l1:l2,m,n,iSij+4) = Sij(:,1,3)
+          f(l1:l2,m,n,iSij+5) = Sij(:,2,3)
+        enddo
+        enddo
       endif
 !
 !  The following allows us to let nu change with time, t-nu_tdep_toffset.
@@ -3236,6 +3290,10 @@ module Viscosity
     call copy_addr(nu_y,p_par(115))        ! (my)
     call copy_addr(gnu_y,p_par(116))       ! (my)
     call copy_addr(lvisc_nu_const_bulk,p_par(117)) ! bool
+    call copy_addr(mu,p_par(118))
+    call copy_addr(lrate_of_strain_as_aux,p_par(119)) ! bool
+    call copy_addr(iSij,p_par(120)) ! int
+
 
     call keep_compiler_quiet(lKit_Olem)
     call keep_compiler_quiet(nu_mol)

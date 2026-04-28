@@ -51,6 +51,15 @@ field_order(AC_itij__mod__hydro != 0 ? AC_itij__mod__hydro+4-1 : -1) Field F_TIJ
 field_order(AC_itij__mod__hydro != 0 ? AC_itij__mod__hydro+5-1 : -1) Field F_TIJ_5
 #endif
 
+#if LVISCOSITY
+field_order(AC_isij__mod__viscosity != 0 ? AC_isij__mod__viscosity+0-1 : -1) Field F_SIJ_0
+field_order(AC_isij__mod__viscosity != 0 ? AC_isij__mod__viscosity+1-1 : -1) Field F_SIJ_1
+field_order(AC_isij__mod__viscosity != 0 ? AC_isij__mod__viscosity+2-1 : -1) Field F_SIJ_2
+field_order(AC_isij__mod__viscosity != 0 ? AC_isij__mod__viscosity+3-1 : -1) Field F_SIJ_3
+field_order(AC_isij__mod__viscosity != 0 ? AC_isij__mod__viscosity+4-1 : -1) Field F_SIJ_4
+field_order(AC_isij__mod__viscosity != 0 ? AC_isij__mod__viscosity+5-1 : -1) Field F_SIJ_5
+#endif
+
 field_order(AC_ilamra__mod__advective_gauge-1) Field F_LAMRA
 
 field_order(AC_iunx__mod__cdata-1) Field UUNX

@@ -31,6 +31,7 @@ module Energy
   logical, pointer :: lpressuregradient_gas
   logical :: lviscosity_heat=.false.
   logical, pointer :: lffree, lrelativistic_eos, lconservative
+  logical, pointer :: lconservative_pressure_on_rhs
   real, pointer :: profx_ffree(:),profy_ffree(:),profz_ffree(:)
 !
   integer :: idiag_dtc=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta_x
@@ -140,6 +141,7 @@ module Energy
 !
       if (lhydro.and..not.lhydro_potential.and.iphiuu==0) then
         call get_shared_variable('lconservative', lconservative)
+        call get_shared_variable('lconservative_pressure_on_rhs', lconservative_pressure_on_rhs)
       else
         allocate(lconservative)
         lconservative=.false.
@@ -182,7 +184,8 @@ module Energy
 !
 !  20-11-04/anders: coded
 !
-      if (lhydro.and.lpressuregradient_gas.and..not.lconservative) lpenc_requested(i_fpres)=.true.
+      if (lhydro.and.lpressuregradient_gas.and..not.(lconservative.and. .not. lconservative_pressure_on_rhs))& 
+              lpenc_requested(i_fpres)=.true.
       if (leos.and.ldensity.and.lhydro.and.ldt) lpenc_requested(i_cs2)=.true.
       if (any(beta_glnrho_scaled /= 0.)) lpenc_requested(i_cs2)=.true.
 !
@@ -279,6 +282,8 @@ module Energy
               if (ldensity.and.lrelativistic_eos) then
                 !if (.not.lconservative) p%fpres(:,j)=-.75*p%cs2*p%glnrho(:,j)
                 if (.not.lconservative) p%fpres(:,j)=-p%cs2/(1 + p%cs2)*p%glnrho(:,j)
+              else if(lconservative) then
+                p%fpres(:,j)=-p%cs2*p%grho(:,j)
               else
                 p%fpres(:,j)=-p%cs2*p%glnrho(:,j)
               endif
@@ -362,7 +367,7 @@ module Energy
 !
 !  Add isothermal/polytropic pressure term in momentum equation.
 !
-      if (lhydro.and.lpressuregradient_gas.and..not.lconservative &
+      if (lhydro.and.lpressuregradient_gas.and..not.(lconservative .and. .not. lconservative_pressure_on_rhs) &
           .and.(.not.lhydro_potential)) then
 
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%fpres

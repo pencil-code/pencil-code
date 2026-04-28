@@ -10,7 +10,8 @@ fixed_boundary Kernel twopass_solve_final(PC_SUB_STEP_NUMBER step_num, real dt)
 		  if(!AC_lkinflow_as_aux__mod__cdata)
 		  {
 			uu_updated = rk_final(F_UU,step_num,dt)
-			const real3 force = get_deltacorr_force(step_num)
+			real3 force = get_deltacorr_force(step_num)
+			if(AC_lconservative__mod__hydro) force *= RHO
 			write(F_UU,  uu_updated + force)
 		  }
 		}
