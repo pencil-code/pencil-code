@@ -3421,7 +3421,7 @@ module Hydro
       use Sub, only: multsv_mn, del2v_etc, gij_etc, u_dot_grad, del6v, &
         dot2_mn, gij, div_mn, traceless_strain, curl_mn, multm2_sym_mn, &
         dot_mn, cross, del4v, del4graddiv, d2fi_dxj, del2fi_dxjk, h_dot_grad, &
-        invmat_DB, multmv, dot_mn_sv_pencil
+        invmat_DB, multmv, dot_mn_sv_pencil, gij_v_times_s
       use WENO_transport, only: weno_transp
       use EquationOfState, only: cs20
 !
@@ -3554,7 +3554,11 @@ module Hydro
         if (lvv_as_aux .or. lvv_as_comaux) then
           call gij(f,ivv,p%uij,1)
         else
-          call gij(f,iuu,p%uij,1)
+          if (lconservative) then
+            call gij_v_times_s(f,iuu,irho,p%uij)
+          else
+            call gij(f,iuu,p%uij,1)
+          endif
         endif
 !
 !  In 0-D, initialize to p%uij to uij_0D_test
