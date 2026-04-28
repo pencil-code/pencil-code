@@ -58,6 +58,7 @@ module Special
   logical, pointer :: lohm_evolve, lphi_doublet, lphi_hypercharge
   logical, pointer :: lwaterfall
   logical, pointer :: lrelativistic_eos
+  logical, pointer :: lsigE_const
   real, pointer :: eta, Hscript, echarge, sigEm_all, sigBm_all
   integer :: iGamma=0, ia0=0, idiva_name=0, ieedot=0, iedotx=0, iedoty=0, iedotz=0
   integer :: idivE=0, isigE=0, isigB=0
@@ -104,8 +105,9 @@ module Special
   ! run parameters
   real :: beta_inflation=0., rescale_ee=1., vA_limit=0., eta_given=impossible
   real :: cdt_sigE=1.   !PAR_DOC: time step constraint from 1/sigE
-  real :: sigE_ceiling=1.      !PAR_DOC: ceiling
-  real :: sigEmax=impossible   !PAR_DOC: time step constraint from 1/sigE
+  real :: sigEmax=impossible       !PAR_DOC: time step constraint from 1/sigE
+  real :: sigE_ceiling=impossible  !PAR_DOC: ceiling
+  real :: sigE_const_value=impossible  !PAR_DOC: constant value if set
   logical :: reinitialize_ee=.false.
   logical :: ldt_disp_current=.true.  !PAR_DOC: invoke timestep constraint from sigE
   character (len=labellen) :: aderiv_scaling='table'
@@ -121,7 +123,7 @@ module Special
     lallow_bprime_zero, lapply_Gamma_corr, coupl_gy, lpsi_hom, alpfpsi, &
     loverride_c_light, ldensity_add_je_heating, je_heating_factor, &
     llorentzforce_ee, aderiv_scaling, vA_limit, &
-    lohmic_heating_ee, lohmic_heating_justee, &
+    lohmic_heating_ee, lohmic_heating_justee, sigE_const_value, &
     ladvance_ee, eta_given, ldt_disp_current, cdt_sigE
 !
 ! Declare any index variables necessary for main or
@@ -243,6 +245,7 @@ module Special
       call put_shared_variable('lphi_hom',lphi_hom)
       call put_shared_variable('lpsi_hom',lpsi_hom)
       call put_shared_variable('sigE_ceiling',sigE_ceiling)
+      call put_shared_variable('sigE_const_value',sigE_const_value)
       call put_shared_variable('lphi_linear_regime',lphi_linear_regime)
       call put_shared_variable('sigE_prefactor',sigE_prefactor)
       call put_shared_variable('sigB_prefactor',sigB_prefactor)
@@ -293,6 +296,7 @@ module Special
       if (luse_scale_factor_in_sigma) then
         call get_shared_variable('Hscript', Hscript ,caller='initialize_special')
         call get_shared_variable('echarge', echarge)
+        call get_shared_variable('lsigE_const', lsigE_const)
         call get_shared_variable('sigEm_all', sigEm_all)
         call get_shared_variable('sigBm_all', sigBm_all)
         call get_shared_variable('lohm_evolve', lohm_evolve)
@@ -302,8 +306,9 @@ module Special
         echarge=0.
         sigEm_all=0.
         sigBm_all=0.
-        allocate(lohm_evolve)
+        allocate(lohm_evolve,lsigE_const)
         lohm_evolve=.false.
+        lsigE_const=.false.
       endif
 !
 !  Reinitialize magnetic field using a small selection of perturbations
@@ -701,7 +706,19 @@ module Special
           p%sigE=sigEm_all
           p%sigB=sigBm_all
         endif
-        if (sigE_ceiling/=1.) p%sigE=min(p%sigE,sigE_ceiling)
+!
+!  Impose a ceiling unless sigE_ceiling is impossible.
+!
+        if (sigE_ceiling/=impossible) p%sigE=min(p%sigE,sigE_ceiling)
+!
+!  Put p%sigE=sigE_const_value when lsigE_const=T.
+!
+        if (lsigE_const) then
+          if (sigE_const_value==impossible) &
+            call fatal_error('calc_pencils_special','sigE_const_value must not be impossible')
+          p%sigE=sigE_const_value
+          p%sigB=0.
+        endif
 !
 !  Now compute current, using any of the 4 expressions above.
 !  This also sets the auxiliary array (l1:l2,m,n,ijx:ijz), if needed.
@@ -762,7 +779,7 @@ module Special
       endif
 !
 ! edot2
-! XX AB: to be deleted
+! AB: leedot_as_aux is not used; is to be deleted
 !
       if (leedot_as_aux) then
         call dot2_mn(f(l1:l2,m,n,iedotx:iedotz),p%edot2)

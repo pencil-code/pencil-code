@@ -116,7 +116,8 @@ module Special
   real :: wstate_tolerance=0.     !PAR_DOC: tolerance w (EoS) value
   real :: wstate_prev=0.          !PAR_DOC: value of wstate in the previous iteration.
   real :: a4rhophim_crit=0.       !PAR_DOC: critical value of a4rhophim below lsolve_phi=F is set.
-  real, pointer :: sigE_ceiling   !PAR_DOC: ceiling
+  real, pointer :: sigE_ceiling   !PAR_DOC: sigE ceiling
+  real, pointer :: sigE_const_value !PAR_DOC: constant value for sigE
 !
   real, target :: ddotam_all
   real, pointer :: alpf, eta
@@ -148,6 +149,8 @@ module Special
   logical :: lapply_BD_kNy_factor=.false. !PAR_DOC: apply $1/N^(D/2)$ factor in the Bunch-Davies initial condition.
   logical :: linv_BD=.true.              !PAR_DOC: apply forward transform in the Bunch-Davies initial condition.
   logical :: lswitch_toMHD_when_nophi=.true. !PAR_DOC: switch to MHD when phi evolution is turned off.
+  logical :: lsigE_const_if_lsolve_for_phi=.false. !PAR_DOC: allow to check for lsigE_const_if_lsolve_for_phi
+  logical :: lsigE_const=.false. !PAR_DOC: put sigE to a constant if true.
   logical, pointer :: lphi_hom, lphi_linear_regime, lnoncollinear_EB, lnoncollinear_EB_aver
   logical, pointer :: lcollinear_EB, lcollinear_EB_aver, lmass_suppression
   logical, pointer :: lallow_bprime_zero
@@ -190,7 +193,8 @@ module Special
       wstate_crit, lwstate_crit, lwstate_crit_old, wstate_tolerance, &
       lsolve_for_phi_always, lsolve_for_phi_switch, &
       heating_choice, lheating_keep_on, lcombine_prep_ode_right_with_rhs, &
-      lswitch_toMHD_when_nophi, Gamma_phi_exp, a4rhophim_crit, solve_phi_criterion
+      lswitch_toMHD_when_nophi, Gamma_phi_exp, a4rhophim_crit, solve_phi_criterion, &
+      lsigE_const_if_lsolve_for_phi, lsigE_const
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -258,6 +262,7 @@ module Special
       call put_shared_variable('Hscript',Hscript)
       call put_shared_variable('e2m_all',e2m_all)
       call put_shared_variable('b2m_all',b2m_all)
+      call put_shared_variable('lsigE_const',lsigE_const)
       call put_shared_variable('sigEm_all',sigEm_all,caller='register_backreact_infl')
       call put_shared_variable('sigBm_all',sigBm_all,caller='register_backreact_infl')
       call put_shared_variable('echarge',echarge,caller='register_backreact_infl')
@@ -306,14 +311,17 @@ module Special
           call get_shared_variable('lnoncollinear_EB_aver',lnoncollinear_EB_aver)
           call get_shared_variable('lmass_suppression',lmass_suppression)
           call get_shared_variable('lallow_bprime_zero',lallow_bprime_zero)
+          call get_shared_variable('sigE_const_value',sigE_const_value)
           call get_shared_variable('sigE_ceiling',sigE_ceiling)
           call get_shared_variable('ladvance_ee',ladvance_ee)
           call get_shared_variable('mass_chi',mass_chi)
         else
           if (.not.associated(lphi_hom)) allocate(lphi_hom, lphi_linear_regime, ladvance_ee, &
-            lcollinear_EB, lnoncollinear_EB, lcollinear_EB_aver, lnoncollinear_EB_aver, sigE_ceiling)
+            lcollinear_EB, lnoncollinear_EB, lcollinear_EB_aver, lnoncollinear_EB_aver, &
+            sigE_ceiling, sigE_const_value)
           lphi_hom=.true.
-          sigE_ceiling=1.
+          sigE_ceiling=impossible
+          sigE_const_value=impossible
           lphi_linear_regime=.true.
           ladvance_ee=.false.
           lcollinear_EB=.false.
@@ -324,13 +332,14 @@ module Special
         endif
       else
         if (.not.associated(alpf)) allocate(alpf, lphi_hom, lphi_linear_regime, &
-          sigE_ceiling, sigE_prefactor, sigB_prefactor, lcollinear_EB, lcollinear_EB_aver, &
+          sigE_prefactor, sigB_prefactor, lcollinear_EB, lcollinear_EB_aver, &
           lnoncollinear_EB, lnoncollinear_EB_aver, lmass_suppression, &
-          lallow_bprime_zero, mass_chi)
+          sigE_ceiling, sigE_const_value, lallow_bprime_zero, mass_chi)
         alpf=0.
         lphi_hom=.false.
         lphi_linear_regime=.false.
-        sigE_ceiling=1.
+        sigE_ceiling=impossible
+        sigE_const_value=impossible
         sigE_prefactor=0.
         sigB_prefactor=0.
         lcollinear_EB=.false.
@@ -703,8 +712,13 @@ module Special
       endif
 !
 !  Here we include the Gamma_phi contribution to the rhs of the lnrho equation.
-!  drho/dt = ... + a*Gam_phi*a2rhophi/a^6.
-!  This is independent of whether or not lrho_rad=T; which is just for testing.
+!  drho^ph/dt = ... + a*Gam_phi*rhophi^ph
+!             = ... + a*Gam_phi*a^2*rhophi^ph/a^2
+!             = ... + a*Gam_phi*a2rhophi^ph/a^2
+!  (1/a^4)*drho^com/dt = ... + a*Gam_phi*rhophi^ph
+!  drho^com/dt = ... + a^5*Gam_phi*rhophi^ph
+!              = ... + a^3*Gam_phi*"a2rhophi^ph"
+!  so Gamma_phi_exp=3.
 !
       if (lrho_chi_inhom .and. lheating) then
         if (ldensity) then
@@ -1113,15 +1127,19 @@ module Special
             sigE1m_all=sigE1m_all*mass_suppression_fact
           endif
         else
-          sigE1m_all = sigE1m_all_nonaver
-          sigB1m_all = sigB1m_all_nonaver
+          sigE1m_all=sigE1m_all_nonaver
+          sigB1m_all=sigB1m_all_nonaver
         endif
 !
 !  Apply Chypercharge, echarge, and Hscript universally for aver and nonaver.
 !
         sigEm_all=sigE_prefactor*Chypercharge*echarge**3*sigE1m_all/Hscript
         sigBm_all=sigB_prefactor*Chypercharge*echarge**3*sigB1m_all/Hscript
-        if (sigE_ceiling/=1.) sigEm_all=min(sigEm_all,sigE_ceiling)
+        if (sigE_ceiling/=impossible) sigEm_all=min(sigEm_all,sigE_ceiling)
+        if (lsigE_const) then
+          sigE1m_all=sigE_const_value
+          sigB1m_all=0.
+        endif
       endif
 !
     endsubroutine get_sigE_and_B
@@ -1222,7 +1240,11 @@ module Special
         if (lrho_chi .or. lnoncollinear_EB .or. lcollinear_EB) then
           sigE1m=sigE1m/nwgrid
           sigB1m=sigB1m/nwgrid
-          if (sigE_ceiling/=1.) sigEm_all=min(sigE1m,sigE_ceiling)
+          if (sigE_ceiling/=impossible) sigEm_all=min(sigE1m,sigE_ceiling)
+          if (lsigE_const) then
+            sigE1m=sigE_const_value
+            sigB1m=0.
+          endif
           call mpiallreduce_sum(sigE1m,sigE1m_all_nonaver)
           call mpiallreduce_sum(sigB1m,sigB1m_all_nonaver)
         endif
@@ -1302,6 +1324,18 @@ module Special
           case default
             call fatal_error("special_after_boundary: No such solve_phi_criterion: ",trim(solve_phi_criterion))
         endselect
+      endif
+!
+!  Criterion for when sigE=const is set. Once lsigE_const=T, we put
+!  lsigE_const_if_lsolve_for_phi=.false. to precent further checks.
+!
+      if (lsigE_const_if_lsolve_for_phi) then
+        lsigE_const=.not. lsolve_for_phi
+        if (lsigE_const) then
+          sigE_const_value=sigEm_all
+          if (lroot) print*,'lsigE_const criterion activated, sigE_const_value=',sigE_const_value
+          lsigE_const_if_lsolve_for_phi=.false.
+        endif
       endif
 !
 !  Alternatitives for deciding when to turn on heating,
