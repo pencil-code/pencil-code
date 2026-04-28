@@ -104,6 +104,7 @@ module Special
   ! run parameters
   real :: beta_inflation=0., rescale_ee=1., vA_limit=0., eta_given=impossible
   real :: cdt_sigE=1.   !PAR_DOC: time step constraint from 1/sigE
+  real :: sigE_ceiling=1.      !PAR_DOC: ceiling
   real :: sigEmax=impossible   !PAR_DOC: time step constraint from 1/sigE
   logical :: reinitialize_ee=.false.
   logical :: ldt_disp_current=.true.  !PAR_DOC: invoke timestep constraint from sigE
@@ -111,8 +112,8 @@ module Special
 !
   namelist /special_run_pars/ &
     alpf, llongitudinalE, llorenz_gauge_disp, lphi_hom, lphi_linear_regime, &
-    leedot_as_aux, ldivE_as_aux, lsigE_as_aux, lsigB_as_aux, sigEmax, &
-    eta_ee, lcurlyA, beta_inflation, &
+    leedot_as_aux, ldivE_as_aux, lsigE_as_aux, lsigB_as_aux, &
+    eta_ee, lcurlyA, beta_inflation, sigEmax, sigE_ceiling, &
     weight_longitudinalE, lswitch_off_divJ, lswitch_off_Gamma, &
     lnoncollinear_EB, lnoncollinear_EB_aver, luse_scale_factor_in_sigma, &
     lcollinear_EB, lcollinear_EB_aver, sigE_prefactor, sigB_prefactor, &
@@ -126,7 +127,6 @@ module Special
 ! Declare any index variables necessary for main or
 !
   real :: c_light2
-  real :: max_sigE
 !
 ! other variables (needs to be consistent with reset list below)
 !
@@ -242,6 +242,7 @@ module Special
       call put_shared_variable('alpfpsi',alpfpsi)
       call put_shared_variable('lphi_hom',lphi_hom)
       call put_shared_variable('lpsi_hom',lpsi_hom)
+      call put_shared_variable('sigE_ceiling',sigE_ceiling)
       call put_shared_variable('lphi_linear_regime',lphi_linear_regime)
       call put_shared_variable('sigE_prefactor',sigE_prefactor)
       call put_shared_variable('sigB_prefactor',sigB_prefactor)
@@ -700,6 +701,7 @@ module Special
           p%sigE=sigEm_all
           p%sigB=sigBm_all
         endif
+        if (sigE_ceiling/=1.) p%sigE=min(p%sigE,sigE_ceiling)
 !
 !  Now compute current, using any of the 4 expressions above.
 !  This also sets the auxiliary array (l1:l2,m,n,ijx:ijz), if needed.

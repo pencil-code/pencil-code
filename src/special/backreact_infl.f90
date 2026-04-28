@@ -116,6 +116,7 @@ module Special
   real :: wstate_tolerance=0.     !PAR_DOC: tolerance w (EoS) value
   real :: wstate_prev=0.          !PAR_DOC: value of wstate in the previous iteration.
   real :: a4rhophim_crit=0.       !PAR_DOC: critical value of a4rhophim below lsolve_phi=F is set.
+  real, pointer :: sigE_ceiling   !PAR_DOC: ceiling
 !
   real, target :: ddotam_all
   real, pointer :: alpf, eta
@@ -305,12 +306,14 @@ module Special
           call get_shared_variable('lnoncollinear_EB_aver',lnoncollinear_EB_aver)
           call get_shared_variable('lmass_suppression',lmass_suppression)
           call get_shared_variable('lallow_bprime_zero',lallow_bprime_zero)
+          call get_shared_variable('sigE_ceiling',sigE_ceiling)
           call get_shared_variable('ladvance_ee',ladvance_ee)
           call get_shared_variable('mass_chi',mass_chi)
         else
           if (.not.associated(lphi_hom)) allocate(lphi_hom, lphi_linear_regime, ladvance_ee, &
-            lcollinear_EB, lnoncollinear_EB, lcollinear_EB_aver, lnoncollinear_EB_aver)
+            lcollinear_EB, lnoncollinear_EB, lcollinear_EB_aver, lnoncollinear_EB_aver, sigE_ceiling)
           lphi_hom=.true.
+          sigE_ceiling=1.
           lphi_linear_regime=.true.
           ladvance_ee=.false.
           lcollinear_EB=.false.
@@ -321,12 +324,13 @@ module Special
         endif
       else
         if (.not.associated(alpf)) allocate(alpf, lphi_hom, lphi_linear_regime, &
-          sigE_prefactor, sigB_prefactor, lcollinear_EB, lcollinear_EB_aver, &
+          sigE_ceiling, sigE_prefactor, sigB_prefactor, lcollinear_EB, lcollinear_EB_aver, &
           lnoncollinear_EB, lnoncollinear_EB_aver, lmass_suppression, &
           lallow_bprime_zero, mass_chi)
         alpf=0.
         lphi_hom=.false.
         lphi_linear_regime=.false.
+        sigE_ceiling=1.
         sigE_prefactor=0.
         sigB_prefactor=0.
         lcollinear_EB=.false.
@@ -1117,6 +1121,7 @@ module Special
 !
         sigEm_all=sigE_prefactor*Chypercharge*echarge**3*sigE1m_all/Hscript
         sigBm_all=sigB_prefactor*Chypercharge*echarge**3*sigB1m_all/Hscript
+        if (sigE_ceiling/=1.) sigEm_all=min(sigEm_all,sigE_ceiling)
       endif
 !
     endsubroutine get_sigE_and_B
@@ -1217,6 +1222,7 @@ module Special
         if (lrho_chi .or. lnoncollinear_EB .or. lcollinear_EB) then
           sigE1m=sigE1m/nwgrid
           sigB1m=sigB1m/nwgrid
+          if (sigE_ceiling/=1.) sigEm_all=min(sigE1m,sigE_ceiling)
           call mpiallreduce_sum(sigE1m,sigE1m_all_nonaver)
           call mpiallreduce_sum(sigB1m,sigB1m_all_nonaver)
         endif
