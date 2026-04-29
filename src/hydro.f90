@@ -3554,7 +3554,7 @@ module Hydro
         if (lvv_as_aux .or. lvv_as_comaux) then
           call gij(f,ivv,p%uij,1)
         else
-          if (lconservative) then
+          if (.not. lrelativistic .and. lconservative) then
             call gij_v_times_s(f,iuu,irho,p%uij)
           else
             call gij(f,iuu,p%uij,1)
