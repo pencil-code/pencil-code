@@ -12,9 +12,7 @@
     use Cdata
     use General, only: itoa
     use Messages
-    use Cudafor, only: cudaSetDevice,CUDASUCCESS,cudaGetDeviceCount
-    use Torchfort, only: torchfort_create_distributed_model,&
-                         torchfort_result_success,torchfort_load_model,torchfort_load_checkpoint,&
+    use Torchfort, only: torchfort_result_success,&
                          torchfort_save_model,torchfort_result_success,torchfort_save_checkpoint,&
                          torchfort_inference,torchfort_train
     !use iso_c_binding
@@ -69,7 +67,7 @@
       use File_IO, only: file_exists
       use Mpicomm, only: mpibcast, MPI_COMM_PENCIL
       use Syscalls, only: system_cmd
-      use Gpu, only: TF_create_model
+      use Gpu, only: TF_create_model, TF_load_model, TF_load_model_checkpoint
 
       real, dimension (mx,my,mz,mfarray) :: f
 
@@ -81,11 +79,6 @@
 
       if (.not.lhydro) call fatal_error('initialize_training','needs HYDRO module')
 
-      istat = cudaGetDeviceCount(ndevs)
-      if (istat /= CUDASUCCESS) call fatal_error('initialize_training','cudaGetDeviceCount failed')
-      istat = cudaSetDevice(mod(iproc,ndevs))
-      if (istat /= CUDASUCCESS) call fatal_error('initialize_training','cudaSetDevice failed')
-  
       model_output_dir=trim(datadir)//'/training/' 
       checkpoint_output_dir=model_output_dir
       model_file = trim(model)//'.pt'
@@ -102,34 +95,15 @@
 !
 ! TorchFort create model
 !
-      !print*, 'CONFIG FILE=', trim(model_output_dir)//trim(config_file)
-      !if (ldist) then
-        !istat = torchfort_create_distributed_model(trim(model), trim(model_output_dir)//trim(config_file), MPI_COMM_PENCIL, mod(iproc,ndevs))
-
-      !else
-      !  call TF_create_model(trim(model), trim(model_output_dir)//trim(config_file), ldist)
-      !endif
 
       call TF_create_model(trim(model), trim(model_output_dir)//trim(config_file), ldist)
 !need this to be false for now but should be ltrained
       if (ltrained.and..not.lrun_epoch) then
-        istat = torchfort_load_model(trim(model), trim(modelfn))
-        if (istat /= TORCHFORT_RESULT_SUCCESS) then
-          call fatal_error("initialize_training","when loading model: istat="//trim(itoa(istat)))
-        else
-          call information('initialize_training','TORCHFORT MODEL "'//trim(modelfn)//'" LOADED SUCCESFULLY')
-        endif
+        call TF_load_model(trim(model), trim(modelfn))
       else
         if (file_exists(trim(checkpoint_output_dir)//'/'//trim(model)//'.pt').and.lroot) then
-          print *, 'loaded checkpoint'
           ltrained=.false.
-          istat = torchfort_load_checkpoint(trim(model), trim(checkpoint_output_dir), train_step_ckpt, val_step_ckpt)
-          if (istat /= TORCHFORT_RESULT_SUCCESS) then
-            call fatal_error("initialize_training","when loading checkpoint: istat="//trim(itoa(istat)))
-          else
-            call information('initialize_training','TORCHFORT CHECKPOINT LOADED SUCCESFULLY')
-          endif
-
+          call TF_load_model_checkpoint(trim(model), trim(checkpoint_output_dir))
         endif
       endif
 

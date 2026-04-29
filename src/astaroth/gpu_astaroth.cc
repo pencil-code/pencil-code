@@ -175,6 +175,9 @@ void torch_infer_CAPI(int sub_dims[3], AcReal* input, AcReal* label,
 		     const int input_fields, const int output_fields, const char* model_name, bool subsample);
 void torch_create_model_CAPI(const char* name, const char* config_fname, int device);
 void torch_create_distributed_model_CAPI(const char* name, const char* config_fname, MPI_Comm mpi_comm, int device);
+bool torch_load_CAPI(const char* name, const char* fname);
+bool torch_load_checkpoint_CAPI(const char* name, const char* checkpoint_dir, int64_t* step_train, int64_t* step_inference);
+
 void scaling();
 extern "C" void print_debug();
 float MSE();
@@ -646,6 +649,33 @@ extern "C" void tf_create_model_c_api(const char *model_name, const char* config
 	}
 	fflush(stderr);
 	fflush(stdout);
+#endif
+}
+/***********************************************************************************************/
+extern "C" void tf_load_model_c_api(const char* name, const char* fname){
+#if LTRAINING
+	bool success = torch_load_CAPI(name, fname);
+
+	if (success != 0){
+		acLogFromRootProc(rank, "Error when loading model %s\n", name);
+	}
+	acLogFromRootProc(rank, "Torchfort model %s loaded succesfully", name);
+	fflush(stdout);
+	fflush(stderr);
+#endif
+}
+/***********************************************************************************************/
+extern "C" void tf_load_model_checkpoint_c_api(const char* name, const char* checkpoint_dir){
+#if LTRAINING
+	int64_t step_train=0;
+	int64_t step_inference=0;
+	bool success = torch_load_checkpoint_CAPI(name, checkpoint_dir, &step_train, &step_inference);
+	if (success != 0){
+		acLogFromRootProc(rank, "Error when loading model %s\n", name);
+	}
+	acLogFromRootProc(rank, "Torchfort model %s loaded succesfully\n", name);
+	fflush(stdout);
+	fflush(stderr);
 #endif
 }
 /***********************************************************************************************/

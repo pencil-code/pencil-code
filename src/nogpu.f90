@@ -207,4 +207,16 @@ contains
     subroutine tau_snapshots()
     endsubroutine tau_snapshots
 !**************************************************************************
+  subroutine TF_load_model(model_name, fname)
+    character(len=*), intent(in) :: model_name, fname
+    call keep_compiler_quite(model_name)
+    call keep_compiler_quite(fname)
+  endsubroutine TF_load_model
+!***********************************************************************
+  subroutine TF_load_model_checkpoint(model_name, checkpoint_dir)
+    character(len=*), intent(in) :: model_name, checkpoint_dir
+    call keep_compiler_quite(model_name)
+    call keep_compiler_quite(checkpoint_dir)
+  endsubroutine TF_load_model_checkpoint
+!***********************************************************************
 endmodule GPU

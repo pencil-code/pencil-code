@@ -15,6 +15,9 @@
 
 set -e
 
+generate_override=1
+
+
 # current sample name
 sample_name=TG-VORTEXh5
 
@@ -40,64 +43,65 @@ export PYTHONPATH=$PYTHONPATH:$PENCIL_HOME/samples/training/models
 
 
 
+if [[ "$generate_override" == 0 ]]; then
 
-
-if [[ "$mode" == "inference" ]]; then
+	if [[ "$mode" == "inference" ]]; then
+		
+			if [[ ! -f "$data_src/training/stationary.pt" || ! -f  "$data_src/training/stats_current_output.pt" ]]; then
+	    	echo "Error: Either model file: stationary.pt or stats file: stats_current_output.pt is not found."
+	    	exit 1
+			fi
 	
-		if [[ ! -f "$data_src/training/stationary.pt" || ! -f  "$data_src/training/stats_current_output.pt" ]]; then
-    	echo "Error: Either model file: stationary.pt or stats file: stats_current_output.pt is not found."
-    	exit 1
-		fi
-
-    srun -n 1 python3 -c "from build_files import ptTObin; ptTObin('$data_src/training')"
-else
+	    srun -n 1 python3 -c "from build_files import ptTObin; ptTObin('$data_src/training')"
+	else
+		
+		srun -n 1 python3 -c "from build_files import build_model; build_model('$data_src/training', '$data_src/training', '$ml_model')"
 	
-	srun -n 1 python3 -c "from build_files import build_model; build_model('$data_src/training', '$data_src/training', '$ml_model')"
-
-	srun -n 1 python3 -c "from build_files import build_loss; build_loss('$data_src/training', '$data_src/training')"
-
-	srun -n 1 python3 -c "from build_files import rand_dt_train; rand_dt_train('$run_dir', $dt_train_min, $dt_train_max)"
-
-	srun -n 1 python3 -c "from build_files import build_torchfort_config; build_torchfort_config('$data_src/training', '$ml_model')"
-fi
-
-
-#TP: have to bind /appl to get the right CUDA compiler for PC-A
-#    the one in the container is not the correct one
-
-
-apptainer exec --nv \
-		-B $PENCIL_HOME:$PENCIL_HOME \
-		-B /appl:/appl \
-		-B $sample_src/scripts/compile_p1.sh:/opt/scripts/compile_p1.sh \
-		-B /users/$USER/tmpdir:/opt/tmpdir \
-		$sample_src/torchfort_latest_withdf5.sif bash /opt/scripts/compile_p1.sh
-
-
-WATCH_FILE="src/astaroth/submodule/build/runtime_build/overrides.h"
-
-set +e
-rm -f "$WATCH_FILE"
-set -e
-
-apptainer exec --nv \
-		-B $PENCIL_HOME:$PENCIL_HOME \
-		-B /appl:/appl \
-		-B $sample_src/scripts/run.sh:/opt/scripts/run.sh \
-		-B $data_src:$sample_src/data \
-		-B $snap_src:$sample_src/snapshots \
-		torchfort_latest_withdf5.sif bash /opt/scripts/run.sh &
-
-APP_PID=$!
-
-echo "Checking for creation of $WATCH_FILE..."
-while [ ! -f "$WATCH_FILE" ]; do
-    sleep 2  
-done
-
-if [ -f "$WATCH_FILE" ]; then
-    echo "overrides file created! Stopping Apptainer..."
-    kill $APP_PID
+		srun -n 1 python3 -c "from build_files import build_loss; build_loss('$data_src/training', '$data_src/training')"
+	
+		srun -n 1 python3 -c "from build_files import rand_dt_train; rand_dt_train('$run_dir', $dt_train_min, $dt_train_max)"
+	
+		srun -n 1 python3 -c "from build_files import build_torchfort_config; build_torchfort_config('$data_src/training', '$ml_model')"
+	fi
+	
+	
+	#TP: have to bind /appl to get the right CUDA compiler for PC-A
+	#    the one in the container is not the correct one
+	
+	
+	apptainer exec --nv \
+			-B $PENCIL_HOME:$PENCIL_HOME \
+			-B /appl:/appl \
+			-B $sample_src/scripts/compile_p1.sh:/opt/scripts/compile_p1.sh \
+			-B /users/$USER/tmpdir:/opt/tmpdir \
+			$sample_src/torchfort_latest_withdf5.sif bash /opt/scripts/compile_p1.sh
+	
+	
+	WATCH_FILE="src/astaroth/submodule/build/runtime_build/overrides.h"
+	
+	set +e
+	rm -f "$WATCH_FILE"
+	set -e
+	
+	apptainer exec --nv \
+			-B $PENCIL_HOME:$PENCIL_HOME \
+			-B /appl:/appl \
+			-B $sample_src/scripts/run.sh:/opt/scripts/run.sh \
+			-B $data_src:$sample_src/data \
+			-B $snap_src:$sample_src/snapshots \
+			torchfort_latest_withdf5.sif bash /opt/scripts/run.sh &
+	
+	APP_PID=$!
+	
+	echo "Checking for creation of $WATCH_FILE..."
+	while [ ! -f "$WATCH_FILE" ]; do
+	    sleep 2  
+	done
+	
+	if [ -f "$WATCH_FILE" ]; then
+	    echo "overrides file created! Stopping Apptainer..."
+	    kill $APP_PID
+	fi
 fi
 
 apptainer exec --nv \

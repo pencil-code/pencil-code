@@ -14,6 +14,7 @@ typedef float  AcReal;
 #define TORCH_PRECISION TORCHFORT_FLOAT
 #endif
 
+/***********************************************************************************************/
 void torch_train_CAPI(int sub_dims[3], AcReal* input, AcReal* label, AcReal* loss_val,
 		     const int input_fields, const int output_fields, const char* model_name){
 
@@ -32,9 +33,11 @@ void torch_train_CAPI(int sub_dims[3], AcReal* input, AcReal* label, AcReal* los
  	if (res != TORCHFORT_RESULT_SUCCESS)
  	{
  		fprintf(stderr,"torchfort_train failed!\n");
+		fflush(stderr);
  	}
 }
 
+/***********************************************************************************************/
 void torch_infer_CAPI(int sub_dims[3], AcReal* input, AcReal* label, 
 		     const int input_fields, const int output_fields, const char* model_name, bool subsample){
 
@@ -56,9 +59,11 @@ void torch_infer_CAPI(int sub_dims[3], AcReal* input, AcReal* label,
  	if (res != TORCHFORT_RESULT_SUCCESS)
  	{
  		fprintf(stderr,"torchfort_train failed!\n");
+		fflush(stderr);
  	}
 }
 
+/***********************************************************************************************/
 void torch_create_model_CAPI(const char* name, const char* config_fname, int device){
 	
 	torchfort_result_t result = torchfort_set_manual_seed(943442);
@@ -67,9 +72,11 @@ void torch_create_model_CAPI(const char* name, const char* config_fname, int dev
  	if (res != TORCHFORT_RESULT_SUCCESS)
  	{
 		fprintf(stderr,"torchfort_train failed!\n");
+		fflush(stderr);
  	}
 }
 
+/***********************************************************************************************/
 void torch_create_distributed_model_CAPI(const char* name, const char* config_fname, MPI_Comm mpi_comm, int device){
 	
 	torchfort_result_t result = torchfort_set_manual_seed(943442);
@@ -78,5 +85,27 @@ void torch_create_distributed_model_CAPI(const char* name, const char* config_fn
  	if (res != TORCHFORT_RESULT_SUCCESS)
  	{
 		fprintf(stderr,"torchfort_train failed!\n");
+		fflush(stderr);
  	}
 }
+/***********************************************************************************************/
+bool torch_load_CAPI(const char* name, const char* fname){
+	torchfort_result_t res = torchfort_set_manual_seed(943442);
+	res = torchfort_load_model(name, fname);
+ 	if (res != TORCHFORT_RESULT_SUCCESS)
+ 	{
+		return 1;
+ 	}
+	return 0;
+}
+/***********************************************************************************************/
+bool torch_load_checkpoint_CAPI(const char* name, const char* checkpoint_dir, int64_t* step_train, int64_t* step_inference){
+	torchfort_result_t res = torchfort_set_manual_seed(943442);
+	res = torchfort_load_checkpoint(name, checkpoint_dir, step_train, step_inference);
+ 	if (res != TORCHFORT_RESULT_SUCCESS)
+ 	{
+		return 1;
+ 	}
+	return 0;
+}
+/***********************************************************************************************/

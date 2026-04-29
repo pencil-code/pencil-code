@@ -42,6 +42,8 @@ void testBCs(void);
 void splitUpdate(const REAL,const FINT);
 
 // Torchfort
+void tf_load_model_c_api(const char*, const char*);
+void tf_load_model_checkpoint_c_api(const char*, const char*);
 void tf_create_model_c_api(const char*, const char*, FINT, bool);
 void torch_train_c_api(REAL*, int, double); 
 void torch_infer_c_api(int);
@@ -78,6 +80,16 @@ void FTNIZE(tf_create_model_c)(const char *model_name, const char *config_file_p
 /* ---------------------------------------------------------------------- */
 void FTNIZE(print_snapshot_c)(){
 	print_debug();
+}
+/* ---------------------------------------------------------------------- */
+void FTNIZE(tf_load_model_c)(const char* model_name, const char* fname)
+{
+	tf_load_model_c_api(model_name, fname);
+}
+/* ---------------------------------------------------------------------- */
+void FTNIZE(tf_load_model_checkpoint_c)(const char* model_name, const char* checkpoint_dir)
+{
+	tf_load_model_checkpoint_c_api(model_name, checkpoint_dir);
 }
 /* ---------------------------------------------------------------------- */
 void FTNIZE(initialize_gpu_c)(REAL* f, FINT* comm_fint, double* t, FINT* nt,

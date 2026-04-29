@@ -18,7 +18,7 @@ sample_name=helical-MHDturb
 
 # training or inference
 #mode=training_multi
-mode=inference
+mode=training
 
 ml_model=unet
 

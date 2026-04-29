@@ -47,6 +47,8 @@ module GPU
   external torchinfer_c
   external tf_create_model_c
   external print_snapshot_c
+  external tf_load_model_c
+  external tf_load_model_checkpoint_c
 
 
   integer, external :: update_on_gpu_arr_by_name_c
@@ -133,6 +135,16 @@ contains
   subroutine tau_snapshots()
     call print_snapshot_c()
   endsubroutine tau_snapshots
+!***********************************************************************
+  subroutine TF_load_model(model_name, fname)
+    character(len=*), intent(in) :: model_name, fname
+    call tf_load_model_c(trim(model_name) // c_null_char, trim(fname) // c_null_char)
+  endsubroutine TF_load_model
+!***********************************************************************
+  subroutine TF_load_model_checkpoint(model_name, checkpoint_dir)
+    character(len=*), intent(in) :: model_name, checkpoint_dir
+    call tf_load_model_checkpoint_c(trim(model_name) // c_null_char, trim(checkpoint_dir) // c_null_char)
+  endsubroutine TF_load_model_checkpoint
 !***********************************************************************
     subroutine initialize_GPU(f)
 !
