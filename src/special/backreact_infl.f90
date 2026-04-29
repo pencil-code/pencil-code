@@ -153,6 +153,7 @@ module Special
   logical :: lit1_reset_if_lsolve_for_phi=.false.  !PAR_DOC: allow to check for it1_reset_if_lsolve_for_phi
   logical :: lit1_reset=.false.                    !PAR_DOC: put lit1_reset to a new value if true.
   logical :: lsigE_const_if_lsolve_for_phi=.false. !PAR_DOC: allow to check for lsigE_const_if_lsolve_for_phi
+  logical :: lsigE_const_ifnot_lsolve_for_phi=.false. !PAR_DOC: allow to check for lsigE_const_if_lsolve_for_phi
   logical :: lsigE_const=.false.                   !PAR_DOC: put sigE to a constant if true.
   logical, pointer :: lphi_hom, lphi_linear_regime, lnoncollinear_EB, lnoncollinear_EB_aver
   logical, pointer :: lcollinear_EB, lcollinear_EB_aver, lmass_suppression
@@ -198,7 +199,7 @@ module Special
       heating_choice, lheating_keep_on, lcombine_prep_ode_right_with_rhs, &
       lswitch_toMHD_when_nophi, Gamma_phi_exp, a4rhophim_crit, solve_phi_criterion, &
       lit1_reset_if_lsolve_for_phi, it1_reset_value, &
-      lsigE_const_if_lsolve_for_phi, lsigE_const
+      lsigE_const_ifnot_lsolve_for_phi, lsigE_const, lsigE_const_if_lsolve_for_phi
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -1325,20 +1326,22 @@ module Special
               endif
               if (lroot .and. .not. lsolve_for_phi) print*,'wstate criterion activated'
             endif
+          case ('always-off')
+            lsolve_for_phi=.false.
           case default
             call fatal_error("special_after_boundary: No such solve_phi_criterion: ",trim(solve_phi_criterion))
         endselect
       endif
 !
 !  Criterion for when sigE=const is set. Once lsigE_const=T, we put
-!  lsigE_const_if_lsolve_for_phi=.false. to prevent further checks.
+!  lsigE_const_ifnot_lsolve_for_phi=.false. to prevent further checks.
 !
-      if (lsigE_const_if_lsolve_for_phi) then
+      if (lsigE_const_ifnot_lsolve_for_phi .or. lsigE_const_if_lsolve_for_phi) then
         lsigE_const=.not. lsolve_for_phi
         if (lsigE_const) then
           if (sigE_const_value==impossible) sigE_const_value=sigEm_all
           if (lroot) print*,'lsigE_const criterion activated, sigE_const_value=',sigE_const_value
-          lsigE_const_if_lsolve_for_phi=.false.
+          lsigE_const_ifnot_lsolve_for_phi=.false.
         endif
       endif
 !

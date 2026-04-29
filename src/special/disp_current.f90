@@ -647,7 +647,6 @@ module Special
 !
       if (lnoncollinear_EB .or. lnoncollinear_EB_aver .or. lcollinear_EB .or. lcollinear_EB_aver) then
         if (lnoncollinear_EB) then
-
           p%boost=sqrt((p%e2-p%b2)**2+4.*p%eb**2)
           p%gam_EB=sqrt21*sqrt(1.+(p%e2+p%b2)/p%boost)
           p%eprime=sqrt21*sqrt(p%e2-p%b2+p%boost)
@@ -757,7 +756,7 @@ module Special
 !  current based on Ohm's law, i.e., E = -uxb + J/sigE.
 !
           if (.not. ladvance_ee) then
-            if (lnoncollinear_EB) then
+            if (lnoncollinear_EB .or. lnoncollinear_EB_aver) then
               call fatal_error('calc_pencils_special','MHD works only for collinear case')
             else
               call multsv_mn(etaSchw,p%jj_ohm,tmpv)
