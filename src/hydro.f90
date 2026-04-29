@@ -3557,6 +3557,8 @@ module Hydro
           if (.not. lrelativistic .and. lconservative) then
             call gij_v_times_s(f,iuu,irho,p%uij)
           else
+            !TP: is it okay that this is never true for the relativistic case?
+            !    lcorrect_penc_u does not fix the issue
             call gij(f,iuu,p%uij,1)
           endif
         endif
