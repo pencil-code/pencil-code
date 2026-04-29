@@ -63,7 +63,7 @@ module General
   public :: linspace
   public :: linear_interpolate_2d, linear_interpolate_1d, get_linterp_weights_1D, interpol_tabulated
   public :: chk_time
-  public :: get_species_nr
+  public :: get_species_nr,posindex_to_1Dindex,expand_1Dindex
   public :: get_from_nml_str,get_from_nml_log,get_from_nml_real,get_from_nml_int,convert_nml
   public :: compress_nvidia
   public :: qualify_position_bilin, qualify_position_bicub, &
@@ -78,8 +78,6 @@ module General
     module procedure string_to_enum_2d 
   endinterface
   public :: idiv
-
-! 
 !
 !  State and default generator of random numbers.
 !
@@ -471,7 +469,7 @@ module General
       !Experimental so guarded by .false.
       if (.false..and.all((/nprocx_node,nprocy_node,nprocz_node/)>0)) then
         call find_proc_coords_node_localty(rank,ipx,ipy,ipz)
-print*, 'rank,ipx,ipy,ipz, find_proc=',rank, ipx,ipy,ipz, find_proc_node_localty(ipx,ipy,ipz)
+!print*, 'rank,ipx,ipy,ipz, find_proc=',rank, ipx,ipy,ipz, find_proc_node_localty(ipx,ipy,ipz)
       else
         if (lmorton_curve) then
           proc_coords = getmortonrank3d(rank,nprocx,nprocy,nprocz)
@@ -7079,6 +7077,42 @@ iloop:do i=1,size(list2)
 
     endfunction interpol_tabulated
 !***********************************************************************
+    function posindex_to_1Dindex(indx,indy,indz,rank) result(res)
+!
+!  Forms a 1D index into a (nx,ny,nz)-arrary from a triple index.
+!  Optionally, combines with the process rank such that rank and index can be recovered.
+!
+!  21-apr-26/MR: coded
+
+      integer, intent(in) :: indx,indy,indz
+      integer, optional, intent(in) :: rank
+      real :: res
+
+      res = real(nx)*(ny*(indz-1) + indy-1) + indx-1  ! ranges from 0 to nx*ny*nz-1=nw-1
+      if (present(rank)) res = res + nw*rank          ! -> floor(res/nw) = rank
+
+    endfunction posindex_to_1Dindex
+!***********************************************************************
+    subroutine expand_1Dindex(rindex,indx,indy,indz,rank)
+
+      real, intent(in) :: rindex
+      integer, intent(out) :: indx,indy,indz
+      integer, optional, intent(out) :: rank
+
+      integer :: ind, resid
+
+      ind = int(rindex)
+
+      resid = mod(ind,nw)
+      indx = mod(resid,nx)
+      indy = mod(resid-indx,nxy)
+      indz = resid/nxy
+      if (present(rank)) rank=ind/nw
+
+      indx=indx+1; indy=indy+1; indz=indz+1
+
+    endsubroutine expand_1Dindex
+!***********************************************************************
     subroutine allocate_using_dims_1d(src, dims)
 !
 ! Allocates allocatable arrays usind 1d dimensions
@@ -8171,8 +8205,9 @@ iloop:do i=1,size(list2)
 !
 ! 7-Mar-26/TP: coded
 !
-            integer :: a,b
-            idiv = a/b
+    integer :: a,b
+    idiv = a/b
+!
     endfunction
 !***********************************************************************
 !$  subroutine signal_wait_single(lflag, lvalue)

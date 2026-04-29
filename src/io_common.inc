@@ -79,6 +79,23 @@
 !
     endsubroutine wdim
 !***********************************************************************
+    function read_precision() result(res)
+!
+!  Returns precision as stored in data/proc*/dim.dat.
+!
+!  29-apr-26/MR: coded
+!
+    use HDF5_IO, only: input_dim
+
+    character :: res
+
+    integer ::  mx_in,my_in,mz_in,mvar_in,maux_in,mglobal_in,nghost_in,nprocx_in,nprocy_in,nprocz_in
+
+    call input_dim('.', mx_in, my_in, mz_in, mvar_in, maux_in, mglobal_in, &
+                   res, nghost_in, nprocx_in, nprocy_in, nprocz_in, local=.true.)
+
+    endfunction read_precision
+!***********************************************************************
     subroutine rproc_bounds(file)
 !
 !   Import processor boundaries from file.

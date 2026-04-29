@@ -21,7 +21,7 @@
             write_persist_int_0D, write_persist_int_1D, write_persist_real_0D, &
             write_persist_real_1D, write_persist_torus_rect
   public :: wgrid, rgrid, read_profile
-  public :: wdim
+  public :: wdim, read_precision
   public :: wproc_bounds, rproc_bounds
   public :: directory_names, log_filename_to_file
 !

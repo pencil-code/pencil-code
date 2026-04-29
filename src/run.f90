@@ -880,12 +880,14 @@ endsubroutine helper_loop
   use Farray_alloc
   use General,         only: random_seed_wrapper, touch_file, itoa
 !$ use General,        only: signal_init
+  use General,         only: numeric_precision
   use Grid,            only: construct_grid, box_vol, grid_bound_data, set_coorsys_dimmask, &
                              construct_serial_arrays, coarsegrid_interp
   use Gpu,             only: load_farray_to_GPU, initialize_gpu
   use HDF5_IO,         only: init_hdf5, initialize_hdf5
   use File_io,         only: file_exists,delete_file
-  use IO,              only: wdim, rgrid, wgrid, directory_names, rproc_bounds, wproc_bounds, output_globals, input_globals
+  use IO,              only: wdim, rgrid, wgrid, directory_names, rproc_bounds, wproc_bounds, &
+                             output_globals, input_globals, read_precision
   use Messages
   use Mpicomm
   use NSCBC,           only: NSCBC_clean_up
@@ -977,6 +979,10 @@ endsubroutine helper_loop
   if (rkind16<0) call warning('run','quad precision not supported, switch to double')
   if (rkind16==rkind8) call warning('run','quad precision suppressed')
 !
+  if (.not.lread_from_other_prec) then
+    if (read_precision() /= numeric_precision()) &
+      call fatal_error("run","trying to run with precision changed")
+  endif
   if (any(downsampl>1) .or. mvar_down>0 .or. maux_down>0) then
 !
 !  If downsampling, calculate local start indices and number of data in
@@ -1041,7 +1047,6 @@ endsubroutine helper_loop
   call register_modules
   if (lparticles) call particles_register_modules
   call initialize
-!
 !
 !  Inform about verbose level.
 !
