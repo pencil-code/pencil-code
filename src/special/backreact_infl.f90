@@ -1332,7 +1332,7 @@ module Special
       if (lsigE_const_if_lsolve_for_phi) then
         lsigE_const=.not. lsolve_for_phi
         if (lsigE_const) then
-          sigE_const_value=sigEm_all
+          if (sigE_const_value==impossible) sigE_const_value=sigEm_all
           if (lroot) print*,'lsigE_const criterion activated, sigE_const_value=',sigE_const_value
           lsigE_const_if_lsolve_for_phi=.false.
         endif
