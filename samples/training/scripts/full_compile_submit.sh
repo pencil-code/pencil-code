@@ -13,14 +13,17 @@
 #SBATCH --output=train.out
 
 
+set -e
+
 # current sample name
-sample_name=helical-MHDturb
+sample_name=TG-VORTEXh5
 
 # training or inference
-mode=inference
+mode=training
 
 ml_model=unet
 
+#data_src="/scratch/project_2000403/$USER/data_$sample_name-multi-gpu/data"
 data_src="/scratch/project_2000403/$USER/data_$sample_name/data"
 snap_src="/scratch/project_2000403/$USER/snapshots_$sample_name/snapshots"
 sample_src="$PENCIL_HOME/samples/training/$sample_name/$mode"
@@ -36,13 +39,6 @@ module load pytorch/2.4
 export PYTHONPATH=$PYTHONPATH:$PENCIL_HOME/samples/training/models
 
 
-srun -n 1 python3 -c "from build_files import build_model; build_model('$data_src/training', '$data_src/training', '$ml_model')"
-
-srun -n 1 python3 -c "from build_files import build_loss; build_loss('$data_src/training', '$data_src/training')"
-
-srun -n 1 python3 -c "from build_files import rand_dt_train; rand_dt_train('$run_dir', $dt_train_min, $dt_train_max)"
-
-srun -n 1 python3 -c "from build_files import build_torchfort_config; build_torchfort_config('$data_src/training', '$ml_model')"
 
 
 
@@ -53,7 +49,16 @@ if [[ "$mode" == "inference" ]]; then
     	exit 1
 		fi
 
-    srun -n 1 python3 -c "from build_files import ptTObin; ptTObin('/scratch/project_2000403/$USER/data_helical-MHDturb/data/training')"
+    srun -n 1 python3 -c "from build_files import ptTObin; ptTObin('$data_src/training')"
+else
+	
+	srun -n 1 python3 -c "from build_files import build_model; build_model('$data_src/training', '$data_src/training', '$ml_model')"
+
+	srun -n 1 python3 -c "from build_files import build_loss; build_loss('$data_src/training', '$data_src/training')"
+
+	srun -n 1 python3 -c "from build_files import rand_dt_train; rand_dt_train('$run_dir', $dt_train_min, $dt_train_max)"
+
+	srun -n 1 python3 -c "from build_files import build_torchfort_config; build_torchfort_config('$data_src/training', '$ml_model')"
 fi
 
 
@@ -71,7 +76,9 @@ apptainer exec --nv \
 
 WATCH_FILE="src/astaroth/submodule/build/runtime_build/overrides.h"
 
-rm -r "$WATCH_FILE"
+set +e
+rm -f "$WATCH_FILE"
+set -e
 
 apptainer exec --nv \
 		-B $PENCIL_HOME:$PENCIL_HOME \

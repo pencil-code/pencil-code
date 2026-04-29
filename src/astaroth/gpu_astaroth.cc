@@ -19,6 +19,7 @@
 #include <fstream>
 #include <dlfcn.h>
 #include <thread>
+#include <stack>
 
 static std::thread GW_thread{};
 static int device_id = 0;
@@ -168,14 +169,15 @@ static MPI_Comm comm_pencil = MPI_COMM_NULL;
 static AcMesh mesh = acInitMesh();
 //static AcMesh test_mesh;
 
-void torch_trainCAPI(int sub_dims[3], AcReal* input, AcReal* label, AcReal* loss_val,
+void torch_train_CAPI(int sub_dims[3], AcReal* input, AcReal* label, AcReal* loss_val,
 		     const int input_fields, const int output_fields, const char* model_name);
-void torch_inferCAPI(int sub_dims[3], AcReal* input, AcReal* label, 
-		     const int input_fields, const int output_fields, const char* model_name);
+void torch_infer_CAPI(int sub_dims[3], AcReal* input, AcReal* label, 
+		     const int input_fields, const int output_fields, const char* model_name, bool subsample);
+void torch_create_model_CAPI(const char* name, const char* config_fname, int device);
+void torch_create_distributed_model_CAPI(const char* name, const char* config_fname, MPI_Comm mpi_comm, int device);
 void scaling();
-void print_debug();
+extern "C" void print_debug();
 float MSE();
-//void torch_createmodel(const char* name, const char* config_fname, MPI_Comm mpi_comm, int device);
 
 extern "C" void copyFarray(AcReal* f);    // forward declaration
 extern "C" void loadFarray(); // forward declaration
@@ -610,6 +612,43 @@ extern "C" void registerGPU()
 #endif
 }
 /***********************************************************************************************/
+extern "C" void tf_create_model_c_api(const char *model_name, const char* config_file_path, int comm_fint, bool ldist){
+#if LTRAINING
+	int ndevices = 0;
+	
+	if(acGetDeviceCount(&ndevices) != cudaSuccess)
+	{
+			fprintf(stderr, "initialize_training, acGetDeviceCount failed");
+			fflush(stderr);
+			exit(EXIT_FAILURE);
+	}
+
+  if(acSetDevice(rank % ndevices) != cudaSuccess)
+  {
+  		fprintf(stderr,"Was not able to set device id!\n");
+			fflush(stderr);
+ 			exit(EXIT_FAILURE);
+  }
+
+  acLogFromRootProc(rank,"CONFIG_FILE: %s\n", config_file_path);
+  acLogFromRootProc(rank,"Model_NAME: %s\n", model_name);
+	
+	if(ldist){
+  	comm_pencil = MPI_Comm_f2c(comm_fint);
+  	acLogFromRootProc(rank,"CREATING DISTRIBUTED TRAINING\n");
+		torch_create_distributed_model_CAPI(model_name, config_file_path, comm_pencil, 0);
+	}
+
+	else{
+  	acLogFromRootProc(rank,"CREATING SINGLE TRAINING\n");
+		torch_create_model_CAPI(model_name, config_file_path, 0);
+
+	}
+	fflush(stderr);
+	fflush(stdout);
+#endif
+}
+/***********************************************************************************************/
 // used as a flag to check if we need to calcualte the taus & uumean again
 bool called_training = false;
 
@@ -735,10 +774,10 @@ extern "C" void torch_infer_c_api(int itsub)
 {	
 #if LTRAINING
 	#include "user_constants.h"
-	if(ltrained && itsub!=1) return;
+	if(!ltrained) return;
 	if(!calling_infer){
 		AcRealSymmetricTensor tau_means = mesh.info[AC_tau_hydro_means];
-		AcRealSymmetricTensor tau_stds  = mesh.info[AC_tau_hydro_stds];
+		AcRealSymmetricTenaor tau_stds  = mesh.info[AC_tau_hydro_stds];
     acLogFromRootProc(rank,"Doing inference\n");
 		fprintf(stderr,"means xx: %f, yy: %f, zz: %f, xy: %f, yz: %f, xz: %f\n", tau_means.xx, tau_means.yy, tau_means.zz, tau_means.xy, tau_means.yz, tau_means.xz);
 		fprintf(stderr,"stds xx: %f, yy: %f, zz: %f, xy: %f, yz: %f, xz: %f\n", tau_stds.xx, tau_stds.yy, tau_stds.zz, tau_stds.xy, tau_stds.yz, tau_stds.xz);
@@ -767,6 +806,7 @@ extern "C" void torch_infer_c_api(int itsub)
 	if (randomNumber == 4) acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEANBatch[4].x, &uumean_ptr, &out);
 	if (randomNumber == 5) acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEANBatch[5].x, &uumean_ptr, &out);
 	*/
+	
 
 	//
 	//check if trained on same grid size and do not smooth the averaged out vals
@@ -776,15 +816,14 @@ extern "C" void torch_infer_c_api(int itsub)
 	acDeviceGetVertexBufferPtrs(acGridGetDevice(), TAU_HYDRO_INFERRED.xx, &tau_infer_ptr, &out);
 
 	acGridHaloExchange();
-
-	torch_inferCAPI((int[]){mx,my,mz}, uumean_ptr, tau_infer_ptr,input_channels,output_channels,"stationary");
+	
+	torch_infer_CAPI((int[]){mx,my,mz}, uumean_ptr, tau_infer_ptr,input_channels,output_channels,"stationary",calling_train);
 	
 	auto descale_inf = acGetOptimizedDSLTaskGraph(descale_inferred_taus);
 	acGridExecuteTaskGraph(descale_inf, 1);
 
         bcs = acGetOptimizedDSLTaskGraph(boundconds);	
 	acGridExecuteTaskGraph(bcs,1);
-
 #endif
 }
 /***********************************************************************************************/
@@ -820,7 +859,7 @@ extern "C" void torch_train_c_api(AcReal *loss_val, int itsub, double t) {
   acDeviceGetVertexBufferPtrs(acGridGetDevice(), uumean.x, &uumean_ptr, &out);
   
   acGridHaloExchange();
-  torch_trainCAPI((int[]){mx,my,mz}, uumean_ptr, TAU_ptr, loss_val,input_channels,output_channels,"stationary");
+  torch_train_CAPI((int[]){mx,my,mz}, uumean_ptr, TAU_ptr, loss_val,input_channels,output_channels,"stationary");
   train_loss.push_back(*loss_val);
 	train_nts.push_back(it);
   train_counter++;
@@ -947,12 +986,22 @@ extern "C" void beforeBoundaryGPU(bool lrmv, int isubstep, double t, bool lsubst
 bool idx_init = false;
 std::vector<size_t> idx_cache;
 std::vector<double> buffer;
-void print_debug() {
-if (it % 5 !=0) return;
+std::stack<int> snaps({20000, 15000, 10000, 5000, 1000, 500, 100, 50, 10});
+
+
+extern "C" void print_debug() {
+/*
+	if (snaps.empty() || it< snaps.top()) return;
+
+	while (!snaps.empty() && it >= snaps.top()) {
+		snaps.pop();
+	}
+*/
+
 #if LTRAINING
     #include "user_constants.h"
 		
-		std::string fname = "snapshots/snapshot_38_rank_" + std::to_string(my_rank) + "_it_" + std::to_string(it) + ".bin";
+		std::string fname = "snapshots/snapshot_294_rank_" + std::to_string(my_rank) + "_it_" + std::to_string(it) + ".bin";
 		std::ifstream infile(fname, std::ios::binary);
 		if (infile.good()) return;
 		

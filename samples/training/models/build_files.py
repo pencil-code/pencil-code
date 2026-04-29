@@ -64,7 +64,7 @@ def build_model(model_save_dir, stats_dir, model_name):
     
     for i in models:
         # Example input (Batch=1, Channels=3, Depth=70, Height=70, Width=70)
-        x = torch.randn(1, 3, 70, 70, 70).to(device)
+        x = torch.randn(1, 3, 42, 42, 42).to(device)
     
         # Forward pass
         out = models[i](x)

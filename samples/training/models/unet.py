@@ -53,7 +53,7 @@ class Normalizer(torch.nn.Module):
 
 
 class UNet3D(nn.Module):
-    def __init__(self, in_channels=3, out_channels=6, init_features=16):
+    def __init__(self, in_channels=3, out_channels=6, init_features=16, sampling_delta=7):
         super(UNet3D, self).__init__()
         features = init_features
 
@@ -77,9 +77,16 @@ class UNet3D(nn.Module):
 
         self.counter = 0
 
+        self.delta = sampling_delta
+
     def forward(self, x):
-        x = self.normalizer(x, accumulate=True).float()
-        enc1 = self.encoder1(x)
+        B,C,X,Y,Z = x.shape
+        if(X == 294 and Y == 294 and Z==294):
+            x_sampled =  x[:, :, ::self.delta, ::self.delta, ::self.delta]
+        else:
+            x_sampled = x
+        x_sampled = self.normalizer(x_sampled, accumulate=True).float()
+        enc1 = self.encoder1(x_sampled)
         enc2 = self.encoder2(self.pool1(enc1))
 
         bottleneck = self.bottleneck(self.pool2(enc2))
@@ -97,10 +104,12 @@ class UNet3D(nn.Module):
         dec1 = self.decoder1(dec1)
 
         if self.counter % 50 == 0:
+            #very hacky need wont work with different node
+            rank = int(str(x.device).split(":")[1])
             torch.save(
                 {"acc_count": self.normalizer.acc_count, "num_acc": self.normalizer.num_acc,
                 "acc_sum": self.normalizer.acc_sum, "acc_sum_squared": self.normalizer.acc_sum_squared},
-                f"stats_current_input.pt"
+                f"all_stats/stats_current_input_rank_{rank}.pt"
             )
         self.counter += 1
 

@@ -20,8 +20,6 @@
 
 #include "headers_c.h"
 
-void torch_train_c_api(REAL*, int, double); 
-void torch_infer_c_api(int);
 void registerGPU();
 void initializeGPU(REAL*, FINT, double, FINT, FINT, FINT);
 void finalizeGPU();
@@ -42,6 +40,13 @@ void random_initial_condition(void);
 void getGPUReducedVars(REAL* dst);
 void testBCs(void);
 void splitUpdate(const REAL,const FINT);
+
+// Torchfort
+void tf_create_model_c_api(const char*, const char*, FINT, bool);
+void torch_train_c_api(REAL*, int, double); 
+void torch_infer_c_api(int);
+void print_debug();
+
 
 // for Gnu Compiler
 extern char *__cparam_MOD_coornames;
@@ -65,6 +70,14 @@ void FTNIZE(torchtrain_c)(REAL* loss_val, FINT* itsub, double* t)
 void FTNIZE(torchinfer_c)(FINT* itsub)
 {
 	torch_infer_c_api(*itsub);
+}
+/* ---------------------------------------------------------------------- */
+void FTNIZE(tf_create_model_c)(const char *model_name, const char *config_file_path, FINT* comm_fint, FINT* lmpicomm){
+	tf_create_model_c_api(model_name, config_file_path, *comm_fint, (* lmpicomm ==1) ? true : false);
+}
+/* ---------------------------------------------------------------------- */
+void FTNIZE(print_snapshot_c)(){
+	print_debug();
 }
 /* ---------------------------------------------------------------------- */
 void FTNIZE(initialize_gpu_c)(REAL* f, FINT* comm_fint, double* t, FINT* nt,
@@ -230,3 +243,10 @@ void FTNIZE(split_update_gpu_c)(void)
 	splitUpdate(1e-15,1000000);
 }
 /* ------------------------------------------------------------------- */
+/*                                                                        
+void FTNIZE(torchfort_save_model)(const char* model_name, const char* fil ename)
+{                                                                         
+	torchFortSaveModel(model_name, filename);                               
+}                                                                         
+*/                                                                        
+/* ------------------------------------------------------------------- */ 

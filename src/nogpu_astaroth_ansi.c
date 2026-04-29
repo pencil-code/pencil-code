@@ -99,4 +99,11 @@ void FTNIZE(split_update_gpu_c)(void)
 {
 }
 /* ------------------------------------------------------------------- */
-
+void FTNIZE(tf_create_model_c)(const char *model_name, const char *config_file_path, FINT* comm_fint, FINT *lmpicomm)
+{
+}
+/* ------------------------------------------------------------------- */
+void FTNIZE(print_snapshot_c)()
+{
+}
+/* ---------------------------------------------------------------------- */

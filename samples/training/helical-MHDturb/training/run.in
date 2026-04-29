@@ -4,7 +4,7 @@
 !
 &run_pars
   cvsid='$Id$',
-  nt=20050, it1=50, cdt=0.2, cdtv=0.3, isave=10000, itorder=3 !(longer run)
+  nt=20050, it1=50, cdt=0.8, cdtv=0.8, isave=10000, itorder=3 !(longer run)
   !nt=50, it1=10, cdt=0.4, cdtv=0.3, isave=10000, itorder=3        !(sample run)
   dsnap=1e10, dvid=1e10,  !(for longer run)
   !dsnap=50, dvid=0.1,  !(for sample run)
@@ -60,14 +60,12 @@
 	lrun_epoch=T
 	ltrain_mag=F
 	ltrain_dens=F
-	dt_train= 1.5876298313e-01
+	dt_train= 1.4652100115e-01
 	!t_train_start=6.8e-3
 	t_train_start=0
 	t_train_end=69.752
 	t_train_chkpt=6.8
+  ldist=F
 /
 &gpu_run_pars
-  ltest_bcs=F
-  lcpu_timestep_on_gpu=T
-  lcuda_aware_mpi=F
 /

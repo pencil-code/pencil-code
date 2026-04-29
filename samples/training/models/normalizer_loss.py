@@ -66,10 +66,24 @@ class CustomLoss(torch.nn.Module):
     self.mse = nn.MSELoss()
 
   def forward(self, prediction, label):
-    label = label.double()
-    rank = int(str(label.device).split(":")[1]) 
-    label = self.normalizer(label, True)
+    lB, lC, lX, lY, lZ = label.shape
+
+    pB, pC, pX, pY, pZ = prediction.shape
+
+    dx, dy, dz = lX // pX, lY // pY, lZ // pZ
+        
+    if lX > pX:
+        label_sampled = label[:, :, ::dx, ::dy, ::dz]
+    else:
+        label_sampled = label
+
+    label_sampled = label_sampled.to(prediction.dtype)
+
+    with torch.no_grad():
+        label_norm = self.normalizer(label_sampled, accumulate=True)
+
     if self.counter % 50 == 0:
+        rank = int(str(label.device).split(":")[1]) 
         torch.save(
             {"acc_count": self.normalizer.acc_count, "num_acc": self.normalizer.num_acc, 
              "acc_sum": self.normalizer.acc_sum, "acc_sum_squared": self.normalizer.acc_sum_squared}, 
@@ -77,4 +91,4 @@ class CustomLoss(torch.nn.Module):
         )
     self.counter += 1
 
-    return self.mse(prediction, label) 
+    return self.mse(prediction, label_norm) 

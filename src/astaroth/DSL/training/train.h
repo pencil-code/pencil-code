@@ -12,7 +12,6 @@ communicated Field3 uumean
 
 //communicated Field3 UUMEANBatch[6]
 //communicated FieldSymmetricTensor TAUBatch[6]
-communicated FieldSymmetricTensor TAUinf
 
 field_order(AC_itau_hydroxx__mod__training-1) communicated Field TAU_HYDRO_INFERRED_XX
 field_order(AC_itau_hydroyy__mod__training-1) communicated Field TAU_HYDRO_INFERRED_YY
@@ -45,9 +44,6 @@ const Field3 TAU_DENSITY_INFERRED =
 
 global input int AC_ranNum
 
-// preloading it here to test
-//run_const real_symmetric_tensor AC_tau_hydro_means = real_symmetric_tensor(0.0024336507863808626, 0.0023183275345662374, 0.0024617763654825736, 1.802288700705976e-05, -9.72095252118678e-06, 2.735474403381727e-06);
-//run_const real_symmetric_tensor AC_tau_hydro_stds = real_symmetric_tensor(0.002253919896356017, 0.0022694939419375454, 0.002285549657341413, 0.0013589343336438352, 0.001388473901677819, 0.0013662344561588327);
 run_const real_symmetric_tensor AC_tau_hydro_means
 run_const real_symmetric_tensor AC_tau_hydro_stds
 
@@ -346,6 +342,12 @@ Kernel l2_sum(){
    reduce_sum(res,AC_l2_sum)
 }
 
+
+
+
+
+
+
 Kernel scale_kernel(FieldSymmetricTensor TAU, Field3 UUMEAN){
 
 	write(TAU, train_scale(TAU, minTAU, maxTAU))
@@ -406,6 +408,7 @@ Kernel descale_inferred_taus_kernel()
 {
 	descale_tensor(TAU_HYDRO_INFERRED, AC_tau_hydro_stds, AC_tau_hydro_means)
 }
+
 
 ComputeSteps descale_inferred_taus(boundconds)
 {

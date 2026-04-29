@@ -128,7 +128,7 @@ class MLP(nn.Module):
     
 
 class FNO(nn.Module):
-    def __init__(self, modes1 = 19, modes2 = 19, modes3 = 19, width=128, padding=6, in_channels=3, out_channels=6):
+    def __init__(self, modes1 = 19, modes2 = 19, modes3 = 19, width=128, padding=6, in_channels=3, out_channels=6, delta=7):
         super(FNO, self).__init__()
 
         """
@@ -173,44 +173,54 @@ class FNO(nn.Module):
 
         self.q = MLP(self.width, self.out_channels, self.width * 4)
 
+        self.delta=delta
+
     
     def forward(self, x):
+        B,C,X,Y,Z = x.shape
         x = self.normalizer(x, accumulate=True).float()
+        #if(X == 294 and Y == 294 and Z==294):
+        #    x_sampled =  x[:, :, ::self.delta, ::self.delta, ::self.delta]
+        #else:
+        #    x_sampled = x
 
-        x = x.permute(0, 2, 3, 4, 1)
+        x_sampled=x
 
-        x = self.p(x)
+
+        x_sampled = x_sampled.permute(0, 2, 3, 4, 1)
+
+        x_sampled = self.p(x_sampled)
  
-        x = x.permute(0, 4, 1, 2, 3)
+        x_sampled = x_sampled.permute(0, 4, 1, 2, 3)
 
-        x = F.pad(x, [0,self.padding]) # pad the domain if input is non-periodic
+        x_sampled = F.pad(x_sampled, [0,self.padding]) # pad the domain if input is non-periodic
 
-        x1 = self.conv0(x)
+        x1 = self.conv0(x_sampled)
         x1 = self.mlp0(x1)
-        x2 = self.w0(x)
-        x = x1 + x2
-        x = F.gelu(x)
+        x2 = self.w0(x_sampled)
+        x_sampled = x1 + x2
+        x_sampled = F.gelu(x_sampled)
 
-        x1 = self.conv1(x)
+        x1 = self.conv1(x_sampled)
         x1 = self.mlp1(x1)
-        x2 = self.w1(x)
-        x = x1 + x2
-        x = F.gelu(x)
+        x2 = self.w1(x_sampled)
+        x_sampled = x1 + x2
+        x_sampled = F.gelu(x_sampled)
 
-        x1 = self.conv2(x)
+        x1 = self.conv2(x_sampled)
         x1 = self.mlp2(x1)
-        x2 = self.w2(x)
-        x = x1 + x2
-        x = F.gelu(x)
+        x2 = self.w2(x_sampled)
+        x_sampled = x1 + x2
+        x_sampled = F.gelu(x_sampled)
 
-        x1 = self.conv3(x)
+        x1 = self.conv3(x_sampled)
         x1 = self.mlp3(x1)
-        x2 = self.w3(x)
-        x = x1 + x2
+        x2 = self.w3(x_sampled)
+        x_sampled = x1 + x2
 
-        x = x[..., :-self.padding]
-        x = self.q(x)
-        x = x.permute(0, 1, 2, 3, 4) # pad the domain if input is non-periodic
+        x_sampled = x_sampled[..., :-self.padding]
+        x_sampled = self.q(x_sampled)
+        x_sampled = x_sampled.permute(0, 1, 2, 3, 4) # pad the domain if input is non-periodic
         
 
         if self.counter % 50 == 0:
@@ -222,4 +232,4 @@ class FNO(nn.Module):
                 f"all_stats/stats_current_input_rank_{rank}.pt"
             )
         self.counter += 1
-        return x.double()
+        return x_sampled.double()

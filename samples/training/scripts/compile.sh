@@ -22,6 +22,9 @@ export CUDACXX=/appl/spack/v018/install-tree/gcc-11.3.0/cuda-11.7.0-zucvj4/bin/n
 #pc_build -f $PENCIL_HOME/config/compilers/separate/nvidia-fortran.conf TORCHFORT_PATH=/opt/torchfort HDF5_PATH=/opt/hdf5 FFLAGS+="-O0 -g -traceback" RUNTIME_COMPILATION=on
 
 #TP: then re-compile (no need to clean) with the following and you should have the correct code
+#pc_build -f $PENCIL_HOME/config/compilers/separate/nvidia-fortran.conf TORCHFORT_PATH=/scratch/project_2016901/sgiridha/torchfort_native_install/torchfort-install/lib/ HDF5_PATH=/opt/hdf5 FFLAGS+="-O0 -g -traceback" READ_OVERRIDES=on RUNTIME_COMPILATION=off
+
+
 pc_build -f $PENCIL_HOME/config/compilers/separate/nvidia-fortran.conf TORCHFORT_PATH=/opt/torchfort HDF5_PATH=/opt/hdf5 FFLAGS+="-O0 -g -traceback" READ_OVERRIDES=on RUNTIME_COMPILATION=off
 
 #pc_build -f $PENCIL_HOME/config/compilers/separate/nvidia-fortran.conf -t read_all_videofiles

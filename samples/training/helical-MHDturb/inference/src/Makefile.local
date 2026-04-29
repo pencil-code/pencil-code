@@ -20,4 +20,3 @@ POWER    =   power_spectrum
 
 TRAINING=training_torchfort
 GPU=gpu_astaroth
-TRANSPILATION=on

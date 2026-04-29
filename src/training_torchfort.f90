@@ -13,10 +13,10 @@
     use General, only: itoa
     use Messages
     use Cudafor, only: cudaSetDevice,CUDASUCCESS,cudaGetDeviceCount
-    use Torchfort, only: torchfort_create_distributed_model, torchfort_create_model,&
+    use Torchfort, only: torchfort_create_distributed_model,&
                          torchfort_result_success,torchfort_load_model,torchfort_load_checkpoint,&
                          torchfort_save_model,torchfort_result_success,torchfort_save_checkpoint,&
-                         !torchfort_inference,torchfort_train
+                         torchfort_inference,torchfort_train
     !use iso_c_binding
 
     implicit none
@@ -37,7 +37,7 @@
 
     character(LEN=fnlen) :: model='model', config_file="config_mlp_native.yaml", model_file
 
-    logical :: lroute_via_cpu=.false., lfortran_launched, luse_trained_tau, lwrite_sample=.false., lscale=.true.
+    logical :: lroute_via_cpu=.false., lfortran_launched, luse_trained_tau, lwrite_sample=.false., lscale=.true., ldist=.false.
     real :: max_loss=1.e-4, dt_train=1.e-10
 
     integer :: idiag_loss=0            ! DIAG_DOC: torchfort training loss
@@ -46,7 +46,7 @@
     namelist /training_run_pars/ config_file, model, it_train, it_train_start, it_train_chkpt, &
                                  luse_trained_tau, lscale, lwrite_sample, max_loss, lroute_via_cpu,&
                                  it_train_end, lrun_epoch, dt_train, t_train_start, t_train_end, t_train_chkpt,&
-                                 ltrain_mag,ltrain_dens, start_infer
+                                 ltrain_mag,ltrain_dens, start_infer, ldist
 !
     character(LEN=fnlen) :: model_output_dir, checkpoint_output_dir
     integer :: istat, train_step_ckpt, val_step_ckpt
@@ -69,6 +69,7 @@
       use File_IO, only: file_exists
       use Mpicomm, only: mpibcast, MPI_COMM_PENCIL
       use Syscalls, only: system_cmd
+      use Gpu, only: TF_create_model
 
       real, dimension (mx,my,mz,mfarray) :: f
 
@@ -101,19 +102,15 @@
 !
 ! TorchFort create model
 !
-      print*, 'CONFIG FILE=', trim(model_output_dir)//trim(config_file)
-      if (lmpicomm) then
-        istat = torchfort_create_distributed_model(trim(model), trim(model_output_dir)//trim(config_file), &
-                                                   MPI_COMM_PENCIL, mod(iproc,ndevs))
-      else
-        istat = torchfort_create_model(trim(model), trim(model_output_dir)//trim(config_file), model_device)
-      endif
-      if (istat /= TORCHFORT_RESULT_SUCCESS) then
-        call fatal_error("initialize_training","when creating model "//trim(model)//": istat="//trim(itoa(istat)))
-      else
-        call information('initialize_training','TORCHFORT LIB LOADED SUCCESFULLY')
-      endif
+      !print*, 'CONFIG FILE=', trim(model_output_dir)//trim(config_file)
+      !if (ldist) then
+        !istat = torchfort_create_distributed_model(trim(model), trim(model_output_dir)//trim(config_file), MPI_COMM_PENCIL, mod(iproc,ndevs))
 
+      !else
+      !  call TF_create_model(trim(model), trim(model_output_dir)//trim(config_file), ldist)
+      !endif
+
+      call TF_create_model(trim(model), trim(model_output_dir)//trim(config_file), ldist)
 !need this to be false for now but should be ltrained
       if (ltrained.and..not.lrun_epoch) then
         istat = torchfort_load_model(trim(model), trim(modelfn))
@@ -213,6 +210,7 @@
     subroutine training_after_boundary(f)
      
       use Sub, only: smooth
+      use GPU, only: tau_snapshots
 
       real, dimension (mx,my,mz,mfarray) :: f
 
@@ -242,6 +240,9 @@
 !
       ! added false since there is another way for writing samples
       !if (lvideo .or. lwrite_sample .and. mod(it, 50)==0) then
+      if (it==105.or.it==505.or.it==1005.or.it==5005.or.it==8005.or.it==8505.or.it==9005.or.it==9505.or.it==10005) then
+        call tau_snapshots()
+      endif
       if (.false.) then
 !     
         call calc_tau(f)

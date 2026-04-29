@@ -2,11 +2,11 @@
 #SBATCH --job-name=test_torchfort
 #SBATCH --account=project_2016901
 #SBATCH --partition=gpu
-#SBATCH --time=48:00:00
+#SBATCH --time=10:00:00
 #SBATCH --nodes=1
-#SBATCH --ntasks=4
+#SBATCH --ntasks=1
 #SBATCH --cpus-per-task=7
-#SBATCH --gres=gpu:v100:4
+#SBATCH --gres=gpu:v100:1
 #SBATCH --mem=32G
 #SBATCH -o slurm-%x_%J.out
 ####SBATCH --mail-type=ALL
@@ -17,17 +17,17 @@
 sample_name=helical-MHDturb
 
 # training or inference
-mode=training_multi
+mode=training
 
 # unet or fno
-ml_model=fno
+ml_model=unet
 
-dt_train_min=0.14
-dt_train_max=0.175
+dt_train_min=0.09
+dt_train_max=0.07
 
 
-#data_src="/scratch/project_2000403/$USER/data_$sample_name/data"
-data_src="/scratch/project_2000403/$USER/data_$sample_name-multi-gpu/data"
+data_src="/scratch/project_2000403/$USER/data_$sample_name/data"
+#data_src="/scratch/project_2000403/$USER/data_$sample_name-multi-gpu/data"
 snap_src="/scratch/project_2000403/$USER/snapshots_$sample_name/snapshots"
 sample_src="$PENCIL_HOME/samples/training/$sample_name/$mode"
 
@@ -43,6 +43,12 @@ EPOCHS=50
 
 for ((i=1; i<=EPOCHS; i++)); do
     echo "=== Starting Epoch $i / $EPOCHS ==="
+
+		if [ $i -eq 1 ]; then
+			rm $data_src/training/stationary.pt
+			rm $data_src/training/stats_current_output.pt
+			rm $data_src/training/stats_current_input.pt
+		fi
 
 		if [ $i -le 2 ]; then
 			# fresh start with known mean and std deviation instead of cold start (which might tend to overfit to the largest values)

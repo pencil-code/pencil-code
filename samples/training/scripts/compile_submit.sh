@@ -13,7 +13,7 @@
 
 
 # current sample name
-sample_name=conv-slab
+sample_name=helical-MHDturb
 
 # training or inference
 mode=training
@@ -29,7 +29,7 @@ sample_src="$PENCIL_HOME/samples/training/$sample_name/$mode"
 apptainer exec --nv \
 		-B $PENCIL_HOME:$PENCIL_HOME \
 		-B /appl:/appl \
-		-B $sample_src/scripts/compile.sh:/opt/scripts/compile.sh \
+		-B $sample_src/scripts/compile_p2.sh:/opt/scripts/compile_p2.sh \
 		-B /users/$USER/tmpdir:/opt/tmpdir \
-		$sample_src/torchfort_latest_withdf5.sif bash /opt/scripts/compile.sh
+		$sample_src/torchfort_latest_withdf5.sif bash /opt/scripts/compile_p2.sh
 

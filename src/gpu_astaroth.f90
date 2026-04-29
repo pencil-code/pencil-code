@@ -38,11 +38,16 @@ module GPU
   external update_on_gpu_scal_by_ind_c
   external pos_real_ptr_c
   external gpu_prepare_for_first_substep_c
-  external torchtrain_c 
-  external torchinfer_c
   external get_gpu_reduced_vars_c
   external test_bcs_c
   external split_update_gpu_c
+
+  ! Torchfort
+  external torchtrain_c 
+  external torchinfer_c
+  external tf_create_model_c
+  external print_snapshot_c
+
 
   integer, external :: update_on_gpu_arr_by_name_c
   integer, external :: update_on_gpu_scal_by_name_c
@@ -117,6 +122,17 @@ contains
     call torchinfer_c(flag)
 
   endsubroutine infer_gpu
+!***********************************************************************
+  subroutine TF_create_model(model_name, config_file_path, lmpicomm)
+    use Mpicomm, only: MPI_COMM_PENCIL
+    logical :: lmpicomm
+    character(len=*), intent(in) :: model_name, config_file_path
+    call tf_create_model_c(trim(model_name) // c_null_char, trim(config_file_path) // c_null_char, MPI_COMM_PENCIL, lmpicomm)
+  endsubroutine TF_create_model
+!***********************************************************************
+  subroutine tau_snapshots()
+    call print_snapshot_c()
+  endsubroutine tau_snapshots
 !***********************************************************************
     subroutine initialize_GPU(f)
 !
