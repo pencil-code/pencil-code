@@ -88,6 +88,7 @@ module Special
 !  integer :: iinfl_phi=0, iinfl_dphi=0, iinfl_hubble=0, iinfl_lna=0, Ndiv=100
   integer :: iinfl_phi=0, iinfl_dphi=0, iinfl_lna=0, Ndiv=100
   integer :: iinfl_rho_chi=0, iinfl_rho_rad=0
+  integer :: it1_reset_value=0  !PAR_DOC: new it1 value after lit1_reset
   real :: ncutoff_phi=1., infl_v=.1
   real :: axionmass=1.06e-6, axionmass2, ascale_ini=1.
   real :: phi0=.44, dphi0=-1.69e-7, c_light_axion=1., lambda_axion=0., eps=.01
@@ -149,8 +150,10 @@ module Special
   logical :: lapply_BD_kNy_factor=.false. !PAR_DOC: apply $1/N^(D/2)$ factor in the Bunch-Davies initial condition.
   logical :: linv_BD=.true.              !PAR_DOC: apply forward transform in the Bunch-Davies initial condition.
   logical :: lswitch_toMHD_when_nophi=.true. !PAR_DOC: switch to MHD when phi evolution is turned off.
+  logical :: lit1_reset_if_lsolve_for_phi=.false.  !PAR_DOC: allow to check for it1_reset_if_lsolve_for_phi
+  logical :: lit1_reset=.false.                    !PAR_DOC: put lit1_reset to a new value if true.
   logical :: lsigE_const_if_lsolve_for_phi=.false. !PAR_DOC: allow to check for lsigE_const_if_lsolve_for_phi
-  logical :: lsigE_const=.false. !PAR_DOC: put sigE to a constant if true.
+  logical :: lsigE_const=.false.                   !PAR_DOC: put sigE to a constant if true.
   logical, pointer :: lphi_hom, lphi_linear_regime, lnoncollinear_EB, lnoncollinear_EB_aver
   logical, pointer :: lcollinear_EB, lcollinear_EB_aver, lmass_suppression
   logical, pointer :: lallow_bprime_zero
@@ -194,6 +197,7 @@ module Special
       lsolve_for_phi_always, lsolve_for_phi_switch, &
       heating_choice, lheating_keep_on, lcombine_prep_ode_right_with_rhs, &
       lswitch_toMHD_when_nophi, Gamma_phi_exp, a4rhophim_crit, solve_phi_criterion, &
+      lit1_reset_if_lsolve_for_phi, it1_reset_value, &
       lsigE_const_if_lsolve_for_phi, lsigE_const
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
@@ -1327,7 +1331,7 @@ module Special
       endif
 !
 !  Criterion for when sigE=const is set. Once lsigE_const=T, we put
-!  lsigE_const_if_lsolve_for_phi=.false. to precent further checks.
+!  lsigE_const_if_lsolve_for_phi=.false. to prevent further checks.
 !
       if (lsigE_const_if_lsolve_for_phi) then
         lsigE_const=.not. lsolve_for_phi
@@ -1335,6 +1339,22 @@ module Special
           if (sigE_const_value==impossible) sigE_const_value=sigEm_all
           if (lroot) print*,'lsigE_const criterion activated, sigE_const_value=',sigE_const_value
           lsigE_const_if_lsolve_for_phi=.false.
+        endif
+      endif
+!
+!  Criterion for when it1 is reset. Once this is the case, we put
+!  lit1_reset_if_lsolve_for_phi=.false. to prevent further checks.
+!
+      if (lit1_reset_if_lsolve_for_phi) then
+        lit1_reset=.not. lsolve_for_phi
+        if (lit1_reset) then
+          if (it1_reset_value==0) then
+            it1=it1*50
+          else
+            it1=it1_reset_value
+          endif
+          if (lroot) print*,'it1_reset criterion activated, it1_reset_value=',it1_reset_value
+          lit1_reset_if_lsolve_for_phi=.false.
         endif
       endif
 !
