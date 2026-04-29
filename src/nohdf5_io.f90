@@ -418,7 +418,7 @@ module HDF5_IO
 !
 !  Read dimensions from dim.dat (local or global).
 !
-      use General, only: loptest
+      use General, only: loptest,itoa
 
       character (len=*), intent(in) :: wrkdir
       integer, intent(out) :: mx_in, my_in, mz_in, mvar_in, maux_in, mglobal_in
@@ -428,21 +428,24 @@ module HDF5_IO
       character (len=fnlen) :: filename
       character :: prec_in
       integer :: iprocz_slowest, ipx_in, ipy_in, ipz_in
+      logical :: lread
 !
-      if (lroot) then
-        ! local or global dimension file
-        if (loptest(local)) then
-          filename = trim(wrkdir)//'/data/proc0/dim.dat'
-        else
-          filename = trim(wrkdir)//'/data/dim.dat'
-        endif
+      ! local or global dimension file
+      if (loptest(local)) then
+        filename = trim(wrkdir)//'/data/'//trim(itoa(iproc_world))//'/dim.dat'
+        lread=.true.
+      else
+        filename = trim(wrkdir)//'/data/dim.dat'
+        lread=lroot
+      endif
+      if (lread) then
         open(lun_input,file=filename)
         read(lun_input,'(3i7,3i7)') mx_in, my_in, mz_in, mvar_in, maux_in, mglobal_in
         read(lun_input,'(a)') prec_in
         read(lun_input,'(3i5)') nghost_in
         if (loptest(local)) then
           read(lun_input,'(4i5)') ipx_in, ipy_in, ipz_in
-          nprocx_in=ipx_in; nprocy_in=ipy_in; nprocz_in=ipz_in
+          nprocx_in=ipx_in; nprocy_in=ipy_in; nprocz_in=ipz_in    !???
         else
           read(lun_input,'(4i5)') nprocx_in, nprocy_in, nprocz_in, iprocz_slowest
         endif
