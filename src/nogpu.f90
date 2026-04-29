@@ -194,4 +194,17 @@ contains
 
     endsubroutine pushpars2c
 !**************************************************************************
+    subroutine TF_create_model(model_name, config_file_path, lmpicomm)
+      logical :: lmpicomm
+      character(len=*), intent(in) :: model_name, config_file_path
+      
+      call keep_compiler_quiet(lmpicomm)
+      call keep_compiler_quiet(model_name)
+      call keep_compiler_quiet(config_file_path)
+
+    endsubroutine TF_create_model
+!**************************************************************************
+    subroutine tau_snapshots()
+    endsubroutine tau_snapshots
+!**************************************************************************
 endmodule GPU
