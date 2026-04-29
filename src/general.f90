@@ -7103,7 +7103,7 @@ iloop:do i=1,size(list2)
 
       ind = int(rindex)
 
-      resid = mod(ind,nw)
+      resid = mod(int(ind,KIND=ikind8),nw)
       indx = mod(resid,nx)
       indy = mod(resid-indx,nxy)
       indz = resid/nxy
