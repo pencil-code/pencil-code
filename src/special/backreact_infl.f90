@@ -1178,7 +1178,7 @@ module Special
 !
 !  06-jul-06/tony: coded
 !
-      use Mpicomm, only: mpireduce_sum, mpiallreduce_sum, mpibcast_real
+      use Mpicomm, only: mpireduce_sum, mpiallreduce_sum, mpibcast_real, mpibcast_int
       use Sub, only: dot2_mn, grad, curl, dot_mn
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -1354,6 +1354,7 @@ module Special
             it1=it1_reset_value
           endif
           if (lroot) print*,'it1_reset criterion activated, it1_reset_value=',it1_reset_value
+          call mpibcast_int(it1)
           lit1_reset_if_lsolve_for_phi=.false.
         endif
       endif
