@@ -1411,10 +1411,12 @@ module Magnetic
       use Forcing, only: n_forcing_cont
       use Yinyang_mpi, only: initialize_zaver_yy
       use Slices_methods, only: alloc_slice_buffers
+      integer :: l,m,n
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i, j, nyl, nycap, ierr
       real :: eta_zdep_exponent
+      real, dimension(nz) :: Ax_xyaver
 !
       call get_gamma_etc(gamma)
       gamma1=1./gamma; gamma_m1=gamma-1.
@@ -1617,15 +1619,20 @@ module Magnetic
         do j=1,ninit
           select case (initaa(j))
           case ('rescale'); f(:,:,:,iax:iaz)=rescale_aa*f(:,:,:,iax:iaz)
-          case ('remove_xyaver_from_Ax'); f(l1:l2,m1:m2,n1:n2,iax)=f(l1:l2,m1:m2,n1:n2,iax)- &
-            spread(spread(sum(sum(f(l1:l2,m1:m2,n1:n2,iax),dim=2)/ny,dim=1)/nx,1,nx),2,ny)
+          case ('remove_xyaver_from_Ax')
+             Ax_xyaver = sum(sum(f(l1:l2,m1:m2,n1:n2,iax),dim=2),dim=1)/(nx*ny)
+             do l=l1,l2; do m=m1,m2; do n=n1,n2
+               f(l,m,n,iax)=f(l,m,n,iax)-Ax_xyaver(n-nghost)
+             enddo; enddo; enddo
           case ('gaussian-noise'); call gaunoise(amplaa(j),f,iax,iaz)
           case ('hor-tube'); call htube(amplaa(j),f,iax,iaz,radius,epsilonaa,center1_x,center1_z)
           case ('cosxcosy'); call cosx_cosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),kz_aa(j))
           case ('coswave-Ay-kx'); call coswave(amplaa(j),f,iay,kx=kx_aa(j))
           case ('sinwave-Ax-kz'); call sinwave(amplaa(j),f,iax,kz=kz_aa(j))
-          case ('toroidal'); f(:,:,:,iax)=-amplaa(j)*spread(spread( 1.0/x, 2,my),3,mz) &
-                                                    *spread(spread( y,     1,mx),3,mz)
+          case ('toroidal'); 
+            do l=1,mx; do m=1,my; do n=1,mz;
+              f(l,m,n,iax)=-amplaa(j)*(1.0/x(l))*y(m)
+            enddo; enddo; enddo
           case default
           endselect
         enddo
