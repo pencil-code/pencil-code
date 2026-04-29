@@ -981,7 +981,7 @@ endsubroutine helper_loop
 !
   if (.not.lread_from_other_prec) then
     if (read_precision() /= numeric_precision()) &
-      call fatal_error("run","trying to run with precision changed")
+      call warning("run","trying to run with precision changed")
   endif
   if (any(downsampl>1) .or. mvar_down>0 .or. maux_down>0) then
 !
