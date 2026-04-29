@@ -777,7 +777,7 @@ extern "C" void torch_infer_c_api(int itsub)
 	if(!ltrained) return;
 	if(!calling_infer){
 		AcRealSymmetricTensor tau_means = mesh.info[AC_tau_hydro_means];
-		AcRealSymmetricTenaor tau_stds  = mesh.info[AC_tau_hydro_stds];
+		AcRealSymmetricTensor tau_stds  = mesh.info[AC_tau_hydro_stds];
     acLogFromRootProc(rank,"Doing inference\n");
 		fprintf(stderr,"means xx: %f, yy: %f, zz: %f, xy: %f, yz: %f, xz: %f\n", tau_means.xx, tau_means.yy, tau_means.zz, tau_means.xy, tau_means.yz, tau_means.xz);
 		fprintf(stderr,"stds xx: %f, yy: %f, zz: %f, xy: %f, yz: %f, xz: %f\n", tau_stds.xx, tau_stds.yy, tau_stds.zz, tau_stds.xy, tau_stds.yz, tau_stds.xz);
