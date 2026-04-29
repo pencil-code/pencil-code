@@ -10,11 +10,14 @@ module GPU
 !
   use Cparam
   use General, only: keep_compiler_quiet, lpointer, keep_compiler_quiet_dble
+  use iso_c_binding
 
   implicit none
 
   logical :: ltest_bcs,ltest_rhs
   integer :: it_test_rhs
+  type(C_PTR) :: pFarr_GPU_in, pFarr_GPU_out
+
   include 'gpu.h'
 
 contains
@@ -195,9 +198,10 @@ contains
     endsubroutine pushpars2c
 !**************************************************************************
     subroutine TF_create_model(model_name, config_file_path, lmpicomm)
+
       logical :: lmpicomm
       character(len=*), intent(in) :: model_name, config_file_path
-      
+
       call keep_compiler_quiet(lmpicomm)
       call keep_compiler_quiet(model_name)
       call keep_compiler_quiet(config_file_path)
@@ -208,15 +212,21 @@ contains
     endsubroutine tau_snapshots
 !**************************************************************************
   subroutine TF_load_model(model_name, fname)
+
     character(len=*), intent(in) :: model_name, fname
-    call keep_compiler_quite(model_name)
-    call keep_compiler_quite(fname)
+
+    call keep_compiler_quiet(model_name)
+    call keep_compiler_quiet(fname)
+
   endsubroutine TF_load_model
 !***********************************************************************
   subroutine TF_load_model_checkpoint(model_name, checkpoint_dir)
+
     character(len=*), intent(in) :: model_name, checkpoint_dir
-    call keep_compiler_quite(model_name)
-    call keep_compiler_quite(checkpoint_dir)
+
+    call keep_compiler_quiet(model_name)
+    call keep_compiler_quiet(checkpoint_dir)
+
   endsubroutine TF_load_model_checkpoint
 !***********************************************************************
 endmodule GPU
