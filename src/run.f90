@@ -217,7 +217,7 @@ endsubroutine helper_loop
 ! 5-sep-2024/TP: extracted from timeloop
 !
     use Equ,             only: write_diagnostics
-    use Snapshot,        only: powersnap, powersnap_prepare, wsnap, wsnap_down, output_form
+    use Snapshot,        only: powersnap, wsnap, wsnap_down, output_form
     use Particles_main,  only: write_snapshot_particles
     use PointMasses,     only: pointmasses_write_snapshot
     use Mpicomm,         only: mpiwtime
@@ -981,7 +981,7 @@ endsubroutine helper_loop
 !
   if (.not.lread_from_other_prec) then
     if (read_precision() /= numeric_precision()) &
-      call warning("run","trying to run with precision changed")
+      call fatal_error("run","trying to run with precision changed")
   endif
   if (any(downsampl>1) .or. mvar_down>0 .or. maux_down>0) then
 !
