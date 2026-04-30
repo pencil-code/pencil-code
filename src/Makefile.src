@@ -3430,6 +3430,12 @@ hdf5_io%.o: hdf5_io%.f90 hdf5_io.h Makefile.local
 geometrical_types.o: geometrical_types.f90
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) -c geometrical_types.f90 -o geometrical_types.o
 #
+initcond.o: 
+        $(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAG_HEAP_ALLOC) -c initcond.f90 -o initcond.o
+#
+$(INITIAL_CONDITION_OBJ):
+        $(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAG_HEAP_ALLOC) -c $(INITIAL_CONDITION_SRC) -o $(INITIAL_CONDITION_OBJ)
+#
 special/meanfield_e_tensor.o: special/meanfield_e_tensor.f90
 ifeq ($(USE_SPECIAL_DISPATCHER),yes)
 	$(FC_HDF5) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) $(DLL_FFLAGS) -c special/meanfield_e_tensor.f90 -o special/meanfield_e_tensor.o
