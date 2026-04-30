@@ -2578,7 +2578,7 @@ module EquationOfState
 !  Enforce ds/dx = -(cp*gamma_m1*Fbot/cs2 + K*gamma_m1*glnrho)/(gamma*K+chi_t*rho)
 !
           do i=1,nghost
-            call getdlnrho_x(f(:,:,:,ilnrho),l1,i,rho_yz,dlnrhodx_yz)
+            call getdlnrho_x(f,ilnrho,l1,i,rho_yz,dlnrhodx_yz)
             f(l1-i,:,:,iss)=f(l1+i,:,:,iss) + Kxbot*gamma_m1/(Kxbot*cv1+chit_prof1*chi_t*rho_yz)* &
                             dlnrhodx_yz + dx2_bound(-i)*dsdx_yz
           enddo
@@ -2804,7 +2804,7 @@ module EquationOfState
 !  Enforce ds/dz = -(cp*gamma_m1*Fbot/cs2 + K*gamma_m1*glnrho)/(gamma*K+chi_t*rho)
 !
           do i=1,nghost
-            call getdlnrho_z(f(:,:,:,ilnrho),n1,i,TT_xy)             ! here TT_xy = d_z ln(rho)
+            call getdlnrho_z(f,ilnrho,n1,i,TT_xy)             ! here TT_xy = d_z ln(rho)
             f(:,:,n1-i,iss)=f(:,:,n1+i,iss) + cp*(rho_xy*TT_xy+dz2_bound(-i)*dsdz_xy)
           enddo
 !
@@ -3611,7 +3611,7 @@ module EquationOfState
           if (ldensity_nolog) then
 !
             if (lreference_state) then
-              call getdlnrho_x(f(:,:,:,ilnrho),l1,i,rho_yz,dlnrho)     ! dlnrho = d_x ln(rho)
+              call getdlnrho_x(f,ilnrho,l1,i,rho_yz,dlnrho)     ! dlnrho = d_x ln(rho)
               f(l1-i,:,:,iss) =  f(l1+i,:,:,iss) + dx2_bound(-i)*reference_state(XBOT,iref_gs) &
                                + (cp-cv)*dlnrho
             else
@@ -3632,7 +3632,7 @@ module EquationOfState
         do i=1,nghost
           if (ldensity_nolog) then
             if (lreference_state) then
-              call getdlnrho_x(f(:,:,:,ilnrho),l2,i,rho_yz,dlnrho)    ! dlnrho = d_x ln(rho)
+              call getdlnrho_x(f,ilnrho,l2,i,rho_yz,dlnrho)    ! dlnrho = d_x ln(rho)
               f(l2+i,:,:,iss) =  f(l2-i,:,:,iss) - dx2_bound(i)*reference_state(XTOP,iref_gs) &
                                - (cp-cv)*dlnrho
             else
@@ -3680,7 +3680,7 @@ module EquationOfState
         if (cs2bot<=0.) call fatal_error('bc_ss_stemp_y','cannot have cs2bot<=0')
 
         do i=1,nghost
-          call getdlnrho_y(f(:,:,:,ilnrho),m1,i,dlnrho)    ! dlnrho = d_y ln(rho)
+          call getdlnrho_y(f,ilnrho,m1,i,dlnrho)    ! dlnrho = d_y ln(rho)
           f(:,m1-i,:,iss) = f(:,m1+i,:,iss) + (cp-cv)*dlnrho
         enddo
 !
@@ -3690,7 +3690,7 @@ module EquationOfState
         if (cs2top<=0.) call fatal_error('bc_ss_stemp_y','cannot have cs2top<=0')
 
         do i=1,nghost
-          call getdlnrho_y(f(:,:,:,ilnrho),m2,i,dlnrho)    ! dlnrho = d_y ln(rho)
+          call getdlnrho_y(f,ilnrho,m2,i,dlnrho)    ! dlnrho = d_y ln(rho)
           f(:,m2+i,:,iss) = f(:,m2-i,:,iss) - (cp-cv)*dlnrho
         enddo
 !
@@ -3730,7 +3730,7 @@ module EquationOfState
         if (cs2bot<=0.) call fatal_error('bc_ss_stemp_z','cannot have cs2bot<=0')
 
         do i=1,nghost
-          call getdlnrho_z(f(:,:,:,ilnrho),n1,i,dlnrho)     ! dlnrho = d_z ln(rho)
+          call getdlnrho_z(f,ilnrho,n1,i,dlnrho)     ! dlnrho = d_z ln(rho)
           f(:,:,n1-i,iss) = f(:,:,n1+i,iss) + (cp-cv)*dlnrho
         enddo
 !
@@ -3740,7 +3740,7 @@ module EquationOfState
         if (cs2top<=0.) call fatal_error('bc_ss_stemp_z','cannot have cs2top<=0')
 
         do i=1,nghost
-          call getdlnrho_z(f(:,:,:,ilnrho),n2,i,dlnrho)     ! dlnrho = d_z ln(rho)
+          call getdlnrho_z(f,ilnrho,n2,i,dlnrho)     ! dlnrho = d_z ln(rho)
           f(:,:,n2+i,iss) = f(:,:,n2-i,iss) - (cp-cv)*dlnrho
         enddo
       case default

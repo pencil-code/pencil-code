@@ -168,7 +168,7 @@
             call set_ghosts_for_onesided_ders(f,topbot,iss,3,.true.)
           else
             do i=1,nghost
-              call getdlnrho_z(f(:,:,:,ilnrho),n1,i,rho_xy)           ! rho_xy=del_z ln(rho)
+              call getdlnrho_z(f,ilnrho,n1,i,rho_xy)           ! rho_xy=del_z ln(rho)
               f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+(cp-cv)*(rho_xy+dz2_bound(-i)*tmp_xy)   !! factor cp removed
             enddo
           endif
@@ -222,7 +222,7 @@
             call set_ghosts_for_onesided_ders(f,topbot,iss,3,.true.)
           else
             do i=1,nghost
-              call getdlnrho_z(f(:,:,:,ilnrho),n2,i,rho_xy)        ! rho_xy=del_z ln(rho)
+              call getdlnrho_z(f,ilnrho,n2,i,rho_xy)        ! rho_xy=del_z ln(rho)
               f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+(cp-cv)*(-rho_xy-dz2_bound(i)*tmp_xy)   !! factor cp removed!
             enddo
           endif
@@ -903,7 +903,7 @@
 !  Enforce ds/dz = -(cp*gamma_m1*Fbot/cs2 + K*gamma_m1*glnrho)/(gamma*K+chi_t*rho)
 !
           do i=1,nghost
-            call getdlnrho_z(f(:,:,:,ilnrho),n1,i,TT_xy)             ! here TT_xy = d_z ln(rho)
+            call getdlnrho_z(f,ilnrho,n1,i,TT_xy)             ! here TT_xy = d_z ln(rho)
             f(:,:,n1-i,iss)=f(:,:,n1+i,iss) + cp*(rho_xy*TT_xy+dz2_bound(-i)*dsdz_xy)
           enddo
 !
@@ -1859,7 +1859,7 @@
         if (cs2bot<=0.) call fatal_error('bc_ss_stemp_y','cannot have cs2bot<=0')
 
         do i=1,nghost
-          call getdlnrho_y(f(:,:,:,ilnrho),m1,i,dlnrho)    ! dlnrho = d_y ln(rho)
+          call getdlnrho_y(f,ilnrho,m1,i,dlnrho)    ! dlnrho = d_y ln(rho)
           f(:,m1-i,:,iss) = f(:,m1+i,:,iss) + (cp-cv)*dlnrho
         enddo
 !
@@ -1869,7 +1869,7 @@
         if (cs2top<=0.) call fatal_error('bc_ss_stemp_y','cannot have cs2top<=0')
 
         do i=1,nghost
-          call getdlnrho_y(f(:,:,:,ilnrho),m2,i,dlnrho)    ! dlnrho = d_y ln(rho)
+          call getdlnrho_y(f,ilnrho,m2,i,dlnrho)    ! dlnrho = d_y ln(rho)
           f(:,m2+i,:,iss) = f(:,m2-i,:,iss) - (cp-cv)*dlnrho
         enddo
 !
@@ -1907,7 +1907,7 @@
         if (cs2bot<=0.) call fatal_error('bc_ss_stemp_z','cannot have cs2bot<=0')
 
         do i=1,nghost
-          call getdlnrho_z(f(:,:,:,ilnrho),n1,i,dlnrho)     ! dlnrho = d_z ln(rho)
+          call getdlnrho_z(f,ilnrho,n1,i,dlnrho)     ! dlnrho = d_z ln(rho)
           f(:,:,n1-i,iss) = f(:,:,n1+i,iss) + (cp-cv)*dlnrho
         enddo
 !
@@ -1917,7 +1917,7 @@
         if (cs2top<=0.) call fatal_error('bc_ss_stemp_z','cannot have cs2top<=0')
 
         do i=1,nghost
-          call getdlnrho_z(f(:,:,:,ilnrho),n2,i,dlnrho)     ! dlnrho = d_z ln(rho)
+          call getdlnrho_z(f,ilnrho,n2,i,dlnrho)     ! dlnrho = d_z ln(rho)
           f(:,:,n2+i,iss) = f(:,:,n2-i,iss) - (cp-cv)*dlnrho
         enddo
       case default
