@@ -887,7 +887,7 @@ endsubroutine helper_loop
   use HDF5_IO,         only: init_hdf5, initialize_hdf5
   use File_io,         only: file_exists,delete_file
   use IO,              only: wdim, rgrid, wgrid, directory_names, rproc_bounds, wproc_bounds, &
-                             output_globals, input_globals, read_precision
+                             output_globals, input_globals, read_precision, IO_STRATEGY
   use Messages
   use Mpicomm
   use NSCBC,           only: NSCBC_clean_up
@@ -979,7 +979,8 @@ endsubroutine helper_loop
   if (rkind16<0) call warning('run','quad precision not supported, switch to double')
   if (rkind16==rkind8) call warning('run','quad precision suppressed')
 !
-  if (.not.lread_from_other_prec) then
+  !TP: reading does not work with HDF5 and for HDF5 reading strings has not yet been implemented
+  if (.not.lread_from_other_prec .and. IO_STRATEGY/="HDF5") then
     if (read_precision() /= numeric_precision()) &
       call fatal_error("run","trying to run with precision changed")
   endif
