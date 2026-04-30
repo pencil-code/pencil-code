@@ -59,11 +59,7 @@ OBJECTS = $(SOURCES:.cc=.o)
 DSL_MODULE_DIR = DSL/local
 CWD = $(PWD)
 
-ifeq ($(CMAKE_SINGLEPASS),ON)
-  DSL_MODULE_FILE = solve_single.ac
-else
-  DSL_MODULE_FILE = solve_two.ac
-endif
+DSL_MODULE_FILE = solve.ac
 
 EXT_KERNELS =
 ifneq ($(filter shock,$(MODULESOURCES)),)
@@ -85,7 +81,6 @@ GENERATE_DSL_CODE        ?= off
 MODIFY_SOURCE_CODE       ?= off
 INLINING                 ?= off
 READ_OVERRIDES           ?= off
-USE_HEFFTE               ?= off
 USE_HEFFTE               ?= off
 GPU_FFT                  ?= VENDOR
 GPU_FFT_ENABLED              ?= ON
@@ -158,8 +153,8 @@ endif
 #
 astaroth_libs: $(PC_HEADERS) DSL/local/mhdsolver.ac
 ifeq ($(TRANSPILATION),on)
-	@if ! cmp -s DSL/solve_two.ac DSL/local/solve_two.ac; then \
-		cp DSL/solve_two.ac DSL/local/; \
+	@if ! cmp -s DSL/$(DSL_MODULE_FILE) DSL/local/$(DSL_MODULE_FILE); then \
+		cp DSL/$(DSL_MODULE_FILE) DSL/local/; \
 	fi
 endif
 ifeq ($(READ_OVERRIDES),on)
@@ -241,42 +236,8 @@ cleann: clean
 #
 #--------------------------------------------------------------------------------------------------------------------------------------------
 OPTFLAGS = -O1 
-#-funroll-loops -march=native 
-# -gencode arch=compute_60,code=sm_60
-#  Original
-
-# MV's adaptation for TIARA cluster. Compiles with: 
-#  1) cuda/9.0   3) openmpi/2.0.1_ic16.0            5) hdf5/1.8.16_openmpi_2.0.1_ic16.0 7) gcc/5.3.0
-#  2) intel/2016 4) fftw/2.1.5_openmpi_2.0.1_ic16.0 6) cuda/9.1
-#CCFLAGS = -ccbin gcc -std=c++11 -shared -Xcompiler -fPIC --debug -I. -I../.. -I.. 
-##CCFLAGS = -ccbin icpc -Xcompiler -std=c++11 -shared -Xcompiler -fPIC --debug -I. -I../.. -I.. 
-
-#CCFLAGS = $(OPTFLAGS) -std=c++11 -shared -Xcompiler -fPIC --debug -I.. -Isubmodule/include -Isubmodule/build -g -G -lm
 CCFLAGS = $(OPTFLAGS) -Xcompiler -shared -fPIC --debug -I.. -Isubmodule/include -Isubmodule/build -Isubmodule/build/acc-runtime/api -g -G -lm
-#CCFLAGS = -std=c++11 -Xcompiler --debug -I. -I../.. -I.. -Isubmodule -Isubmodule/src -Isubmodule/include -Isubmodule/src/standalone -g -G -lm
-
-#export CUDA_NVCC_FLAGS='-shared -Xcompiler -fPIC'
-#export CUDA_NVCC_FLAGS='-shared -fPIC'
-
-#astaroth_$(PREC).so: PC_modulesources.h $(MODULESOURCES) $(PCHEADER_DIR)/PC_moduleflags.h $(PC_HEADERS) astaroth_libs $(OBJECTS)
-#	$(CPP) $(CCFLAGS) $(CUFLAGS) -shared -o astaroth_$(PREC).so $(OBJECTS) -L submodule/build/src/core -L submodule/build/src/core/kernels -L submodule/build/src/utils -lastaroth_core -lkernels -Isubmodule/include
-#-lastaroth_utils
-
-#-DCMAKE_CXX_COMPILER=/appl/spack/install-tree/gcc-4.8.5/gcc-8.3.0-qzmzn5/bin/c++ .. \
-
-
 %.o: %.cc
 	$(CPP) $(CCFLAGS) $(ENVIRON) -c $< -o $@
 
-#@echo '// automatically generated; do not edit!' > diagnostics/PC_modulediags.h
-#@rm -f diagnostics/PC_modulediags_init.h
-#@sed -e's/_diags_/_diags_init_/' <  diagnostics/PC_modulediags.h > diagnostics/PC_modulediags_init.h
-#        @for file in $(MODULESOURCES); do echo processing $$file ...; if [[ $$file =~ eos[_.] ]]; \
-#        then ../scripts/phys_modules2c par $$file equationofstate; ../scripts/phys_modules2c diag $$file equationofstate;\
-#        else ../scripts/phys_modules2c par $$file; ../scripts/phys_modules2c diag $$file; fi; done
-
-#@sed -e'/\/\// d' -e's/#include *//' -e's/"//g' < submodule/acc-runtime/$(DSL_MODULE_DIR)/PC_modulepardecs.h | xargs rm -f
-#@sed -e'/\/\// d' -e's/#include *//' -e's/"//g' < $(PC_HEADER_DIR)/PC_modulepars.h | xargs rm -f
-#@sed -e'/\/\// d' -e's/#include *//' -e's/"//g' < diagnostics/PC_modulediags.h | xargs rm -f
-#@sed -e'/\/\// d' -e's/#include *//' -e's/"//g' < diagnostics/PC_modulediags_init.h | xargs rm -f
 

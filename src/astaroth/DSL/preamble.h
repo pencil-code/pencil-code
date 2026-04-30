@@ -107,7 +107,6 @@ const int prof_nz = 150
 
 #include "../fieldecs.h"
 
-output real AC_maxchi
 #if Ltimestep_rkf_lowsto_MODULE
 enum PC_SUB_STEP_NUMBER
 {
@@ -144,8 +143,6 @@ minval(real x) {return x}
 
 global output real  AC_dt1_max
 global output float AC_dt1_max_single_precision
-output real AC_dt1_advec
-output real AC_dt1_diffus
 
 #define AC_gamma1__mod__energy  AC_gamma1__mod__equationofstate 
 #define AC_gamma1__mod__magnetc AC_gamma1__mod__equationofstate 
@@ -167,7 +164,6 @@ output real aaz_initial_max
 output real rho_initial_max
 output real ss_initial_max
 
-output real AC_maxnu
 
 ac_unused_real_array_1d(index) {suppress_unused_warning(index); return 0.0}
 ac_unused_real_array_2d(index1,index2) {suppress_unused_warning(index1); suppress_unused_warning(index2); return 0.0}
@@ -234,8 +230,7 @@ const real AC_ascale__mod__cdata = 0.0
 #define AC_lread_oldsnap AC_lread_oldsnap__mod__cdata
 
 #include "../stdlib/bc.h"
-#include "../bcs/funcs_full.h"
-#include "../bcs/funcs_overload.h"
+#include "../bcs"
 #include "../hydro/before_boundary.h"
 
 #ifndef LDISP_CURRENT

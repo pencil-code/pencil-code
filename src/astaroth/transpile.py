@@ -35,7 +35,7 @@ def main():
     os.system("mv rhs.ac DSL/local/rhs.h")
     os.system("mv cparam.h DSL/local")
     os.system("mv static_var_declares.h DSL/local")
-    os.system("cp DSL/solve_two.ac DSL/local")
+    os.system("cp DSL/solve.ac DSL/local")
 
 if __name__ == "__main__":
     main()
