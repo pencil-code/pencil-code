@@ -419,6 +419,7 @@ module HDF5_IO
 !  Read dimensions from dim.dat (local or global).
 !  If local=.true., nprocx_in, nprocy_in, nprocz_in contain the processor coordinates
 !  from dim.dat, not the processor numbers (which are not stored there).
+!  Default: local=.false.
 !
       use General, only: loptest,itoa
 
