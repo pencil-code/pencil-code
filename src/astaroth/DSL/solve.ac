@@ -1,0 +1,171 @@
+#include "mhdsolver.ac"
+#include "../GW-rhs.h"
+
+fixed_boundary Kernel twopass_solve_final(PC_SUB_STEP_NUMBER step_num, real dt)
+{
+	if(lcourant_dt)
+	{
+                real updated_rho = 1.0
+		if(AC_irho__mod__cdata != 0 || AC_ilnrho__mod__cdata != 0) 
+		{
+			updated_rho = rk_final(F_RHO,step_num,dt)
+#if Ldensity_MODULE
+			if(AC_density_floor__mod__density > 0.0)
+			{
+				if(AC_ldensity_nolog__mod__cdata)
+				{
+					updated_rho = max(updated_rho,AC_density_floor__mod__density)
+				}
+				else
+				{
+					updated_rho = max(updated_rho,AC_density_floor_log__mod__density)
+				}
+			}
+			write(F_RHO, updated_rho)
+#endif 
+		}
+		if(AC_iuu__mod__cdata != 0) 
+		{
+		  if(!AC_lkinflow_as_aux__mod__cdata)
+		  {
+			uu_updated = rk_final(F_UU,step_num,dt)
+			real3 force = get_deltacorr_force(step_num)
+#if Lhydro_MODULE
+			if(AC_lconservative__mod__hydro) force *= updated_rho
+#endif
+			write(F_UU,  uu_updated + force)
+		  }
+		}
+		if(AC_iaa__mod__cdata != 0) write(F_AA, rk_final(F_AA,step_num,dt))
+		if(lbfield) write(F_BVEC, rk_final(F_BVEC,step_num,dt))
+  		if (AC_itt__mod__cdata != 0 || AC_ilntt__mod__cdata != 0)  write( F_TT,  rk_final(F_TT, step_num,dt))
+  		if (AC_iss__mod__cdata != 0)  write( F_SS,  rk_final(F_SS, step_num,dt))
+                if(AC_iuun__mod__cdata != 0) write(F_UUN, rk_final(F_UUN,step_num,dt))
+                if(AC_irhon__mod__cdata != 0 || AC_ilnrhon__mod__cdata != 0) write(F_RHON, rk_final(F_RHON,step_num,dt))
+#if LCHIRAL
+  	        if (AC_ixx_chiral__mod__chiral != 0) write(F_XX_CHIRAL,rk_final(F_XX_CHIRAL,step_num,dt))
+  	        if (AC_iyy_chiral__mod__chiral != 0) write(F_YY_CHIRAL,rk_final(F_YY_CHIRAL,step_num,dt))
+  	        if (AC_izz_chiral__mod__chiral != 0) write(F_ZZ_CHIRAL,rk_final(F_ZZ_CHIRAL,step_num,dt))
+#endif
+	        if (AC_iecr__mod__cdata != 0) write(F_ECR,rk_final(F_ECR,step_num,dt))
+	        if(lchemistry)
+	        {
+	        	for i in 0:nchemspec
+	        	{
+	        		write(F_CHEMISTRY_SPECIES[i],rk_final(F_CHEMISTRY_SPECIES[i],step_num,dt))
+	        	}
+	        }
+		if(ldustvelocity)
+		{
+			for i in 0:ndustspec
+			{
+				write(F_DUST_VELOCITY[i],rk_final(F_DUST_VELOCITY[i],step_num,dt))
+			}
+		}
+		if(ldustdensity)
+		{
+			for i in 0:ndustspec
+			{
+				write(F_DUST_DENSITY[i],rk_final(F_DUST_DENSITY[i],step_num,dt))
+			}
+		}
+#if LALPHADISK
+	        write(F_SIGMA,rk_final(F_SIGMA,step_num,dt))
+#endif
+#if LDISP_CURRENT
+		if(AC_iex__mod__cdata != 0) write(F_EVEC,rk_final(F_EVEC,step_num,dt))
+		if(AC_igamma__mod__disp_current != 0) write(F_GAMMA,rk_final(F_GAMMA,step_num,dt))
+#endif
+#if LAXIONSU2BACK
+		if(AC_iaxi_psi__mod__axionsu2back != 0)    write(F_AXI_PSI     ,rk_final(F_AXI_PSI    ,step_num,dt)) 
+		if(AC_iaxi_psidot__mod__axionsu2back != 0) write(F_AXI_PSIDOT  ,rk_final(F_AXI_PSIDOT ,step_num,dt)) 
+		if(AC_iaxi_impsi__mod__axionsu2back != 0)    write(F_AXI_IMPSI   , rk_final(F_AXI_IMPSI    ,step_num,dt)) 
+		if(AC_iaxi_impsidot__mod__axionsu2back != 0) write(F_AXI_IMPSIDOT, rk_final(F_AXI_IMPSIDOT ,step_num,dt))  
+
+		if(AC_iaxi_tr__mod__axionsu2back != 0)     write(F_AXI_TR      ,rk_final(F_AXI_TR     ,step_num,dt)) 
+		if(AC_iaxi_trdot__mod__axionsu2back != 0)  write(F_AXI_TRDOT   ,rk_final(F_AXI_TRDOT  ,step_num,dt)) 
+		if(AC_iaxi_imtr__mod__axionsu2back != 0)     write(F_AXI_IMTR    , rk_final(F_AXI_IMTR     ,step_num,dt)) 
+		if(AC_iaxi_imtrdot__mod__axionsu2back != 0)  write(F_AXI_IMTRDOT , rk_final(F_AXI_IMTRDOT  ,step_num,dt)) 
+		
+		if(AC_iaxi_tl__mod__axionsu2back != 0)        write(F_AXI_TL        , rk_final(F_AXI_TL       ,step_num,dt)) 
+		if(AC_iaxi_tldot__mod__axionsu2back != 0)     write(F_AXI_TLDOT     , rk_final(F_AXI_TLDOT    ,step_num,dt))
+		if(AC_iaxi_imtl__mod__axionsu2back != 0)      write(F_AXI_IMTL      , rk_final(F_AXI_IMTL     ,step_num,dt))
+		if(AC_iaxi_imtldot__mod__axionsu2back != 0)   write(F_AXI_IMTLDOT   , rk_final(F_AXI_IMTLDOT  ,step_num,dt))
+
+		if(AC_iaxi_psil__mod__axionsu2back != 0)      write(F_AXI_PSIL      , rk_final(F_AXI_PSIL     ,step_num,dt))      
+		if(AC_iaxi_psildot__mod__axionsu2back != 0)   write(F_AXI_PSILDOT   , rk_final(F_AXI_PSILDOT  ,step_num,dt))
+		if(AC_iaxi_impsil__mod__axionsu2back != 0)    write(F_AXI_IMPSIL    , rk_final(F_AXI_IMPSIL   ,step_num,dt))  
+		if(AC_iaxi_impsildot__mod__axionsu2back != 0) write(F_AXI_IMPSILDOT , rk_final(F_AXI_IMPSILDOT,step_num,dt))
+
+	        if(AC_iaxi_ur__mod__axionsu2back != 0)      write(F_AXI_UR   , rk_final(F_AXI_UR   ,step_num,dt))
+	        if(AC_iaxi_urdot__mod__axionsu2back != 0)   write(F_AXI_URDOT, rk_final(F_AXI_URDOT,step_num,dt))
+	        if(AC_iaxi_imur__mod__axionsu2back != 0)    write(F_AXI_IMUR   , rk_final(F_AXI_IMUR   ,step_num,dt))
+	        if(AC_iaxi_imurdot__mod__axionsu2back != 0) write(F_AXI_IMURDOT, rk_final(F_AXI_IMURDOT,step_num,dt))
+	        if(AC_iaxi_ul__mod__axionsu2back != 0)      write(F_AXI_UL   , rk_final(F_AXI_UL   ,step_num,dt))
+	        if(AC_iaxi_uldot__mod__axionsu2back != 0)   write(F_AXI_ULDOT, rk_final(F_AXI_ULDOT,step_num,dt))
+	        if(AC_iaxi_imul__mod__axionsu2back != 0)    write(F_AXI_IMUL   , rk_final(F_AXI_IMUL   ,step_num,dt))
+	        if(AC_iaxi_imuldot__mod__axionsu2back != 0) write(F_AXI_IMULDOT, rk_final(F_AXI_IMULDOT,step_num,dt))
+#endif
+#  if LAXIONU1BACK
+                if(AC_iaxi_ar__mod__axionu1back != 0)    write(F_AXI_AR   , rk_final(F_AXI_AR   ,step_num,dt))
+                if(AC_iaxi_ardot__mod__axionu1back != 0) write(F_AXI_ARDOT, rk_final(F_AXI_ARDOT,step_num,dt))
+                if(AC_iaxi_al__mod__axionu1back != 0)    write(F_AXI_AL   , rk_final(F_AXI_AL   ,step_num,dt))
+                if(AC_iaxi_aldot__mod__axionu1back != 0) write(F_AXI_ALDOT, rk_final(F_AXI_ALDOT,step_num,dt))
+
+                if(AC_iaxi_imar__mod__axionu1back != 0)    write(F_AXI_IMAR   , rk_final(F_AXI_IMAR   ,step_num,dt))
+                if(AC_iaxi_imardot__mod__axionu1back != 0) write(F_AXI_IMARDOT, rk_final(F_AXI_IMARDOT,step_num,dt))
+                if(AC_iaxi_imal__mod__axionu1back != 0)    write(F_AXI_IMAL   , rk_final(F_AXI_IMAL   ,step_num,dt))
+                if(AC_iaxi_imaldot__mod__axionu1back != 0) write(F_AXI_IMALDOT, rk_final(F_AXI_IMALDOT,step_num,dt))
+#  endif
+
+
+#if LBACKREACT_INFL
+		if(AC_iinfl_phi__mod__backreact_infl != 0)  write(F_INFL_PHI ,rk_final(F_INFL_PHI ,step_num,dt))
+		if(AC_iinfl_dphi__mod__backreact_infl != 0) write(F_INFL_DPHI,rk_final(F_INFL_DPHI,step_num,dt))
+#endif
+#if LKLEIN_GORDON
+		if(AC_iphi__mod__klein_gordon != 0)  write(F_PHI ,rk_final(F_PHI ,step_num,dt))
+		if(AC_idphi__mod__klein_gordon != 0) write(F_DPHI,rk_final(F_DPHI,step_num,dt))
+
+		if(AC_iphi_up_im__mod__klein_gordon != 0)   write(F_PHI_UP_IM,rk_final(F_PHI_UP_IM,step_num,dt))
+		if(AC_iphi_down_re__mod__klein_gordon != 0) write(F_PHI_DOWN_RE,rk_final(F_PHI_DOWN_RE,step_num,dt))
+		if(AC_iphi_down_im__mod__klein_gordon != 0) write(F_PHI_DOWN_IM,rk_final(F_PHI_DOWN_IM,step_num,dt))
+
+		if(AC_idphi_up_im__mod__klein_gordon != 0)   write(F_DPHI_UP_IM,rk_final(F_DPHI_UP_IM,    step_num,dt))
+		if(AC_idphi_down_re__mod__klein_gordon != 0) write(F_DPHI_DOWN_RE,rk_final(F_DPHI_DOWN_RE,step_num,dt))
+		if(AC_idphi_down_im__mod__klein_gordon != 0) write(F_DPHI_DOWN_IM,rk_final(F_DPHI_DOWN_IM,step_num,dt))
+
+		if(AC_ipsi__mod__klein_gordon != 0)  write(F_PSI ,rk_final(F_PSI ,step_num,dt))
+		if(AC_idpsi__mod__klein_gordon != 0) write(F_DPSI,rk_final(F_DPSI,step_num,dt))
+#endif
+#if LDISP_CURRENT
+		if(AC_igamma__mod__disp_current != 0) write(F_GAMMA,rk_final(F_GAMMA,step_num,dt)) 
+		if(AC_irhoe__mod__disp_current  != 0) write(F_RHOE ,rk_final(F_RHOE ,step_num,dt))
+		if(AC_idiva_name__mod__disp_current  != 0) write(F_DIVA_NAME ,rk_final(F_DIVA_NAME ,step_num,dt))
+		if(AC_ia0__mod__disp_current != 0)    write(F_A0   ,rk_final(F_A0   ,step_num,dt))
+		if(AC_iex__mod__cdata != 0)    write(F_EVEC ,rk_final(F_EVEC ,step_num  ,dt)) 
+#endif
+#if LCHIRAL_MHD
+                if(AC_imu5__mod__chiral_mhd != 0) write(F_MU5, rk_final(F_MU5, step_num,dt))
+                if(AC_imus__mod__chiral_mhd != 0) write(F_MUS, rk_final(F_MUS, step_num,dt))
+#endif
+		if(lpolymer)
+		{
+			for i in 0:6
+			{
+				write(F_POLY[i],rk_final(F_POLY[i],step_num,dt))
+			}
+		}
+#if LADVECTIVE_GAUGE
+		if(AC_ilamra__mod__advective_gauge != 0) write(F_LAMRA,rk_final(F_LAMRA, step_num,dt))
+#endif
+	        if(lpscalar)
+	        {
+	        	for i in 0:npscalar
+	        	{
+	        		write(F_CVEC[i],rk_final(F_CVEC[i],step_num,dt))
+	        	}
+	        }
+	}
+}
+#include "../steps.h"
