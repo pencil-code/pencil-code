@@ -176,24 +176,24 @@ module DensityMethods
 !
     endsubroutine getrho_2dyz 
 !***********************************************************************
-    subroutine getdlnrho_x(f, rl, il, rho, dlnrho)
+    subroutine getdlnrho_x(f, i, rl, il, rho, dlnrho)
 !
 !  03-apr-15/ccyang: dummy.
 !
-      integer, intent(in) :: rl, il
+      integer, intent(in) :: i, rl, il
       real, dimension(mx,my,mz), intent(in) :: f
       real, dimension(my,mz), intent(in) :: rho
       real, dimension(my,mz), intent(out):: dlnrho
 !
       call fatal_error('getdlnrho_x', 'not implemented.')
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(rl,il)
+      call keep_compiler_quiet(i,rl,il)
       call keep_compiler_quiet(rho)
       call keep_compiler_quiet(dlnrho)
 !
     endsubroutine getdlnrho_x
 !***********************************************************************
-    subroutine getdlnrho_y(f, rm, im, dlnrho)
+    subroutine getdlnrho_y(f,i, rm, im, dlnrho)
 !
 !  03-apr-15/ccyang: dummy.
 
@@ -203,12 +203,12 @@ module DensityMethods
 !
       call fatal_error('getdlnrho_y', 'not implemented.')
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(rm,im)
+      call keep_compiler_quiet(i,rm,im)
       call keep_compiler_quiet(dlnrho)
 !
     endsubroutine getdlnrho_y
 !***********************************************************************
-    subroutine getdlnrho_z(f, rn, in, dlnrho)
+    subroutine getdlnrho_z(f, i, rn, in, dlnrho)
 !
 !  03-apr-15/ccyang: dummy.
 !
@@ -218,7 +218,7 @@ module DensityMethods
 !
       call fatal_error('getdlnrho_z', 'not implemented.')
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(rn,in)
+      call keep_compiler_quiet(i,rn,in)
       call keep_compiler_quiet(dlnrho)
 !
     endsubroutine getdlnrho_z
