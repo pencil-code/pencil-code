@@ -6034,7 +6034,7 @@ module Forcing
           force(:,2)=+fact*kx*sinx(l1:l2,i)*cosy(m,i) - fact2*kx*siny(m,i)*cosy(m,i)
           force(:,3)=+fact*relhel*kf*cosx(l1:l2,i)*cosy(m,i)
 !
-          if ( Omega/=0. .and. theta==0. ) then  ! Obs, only implemented for rotation axis in z direction.
+          if (lrotation .and. theta==0. ) then  ! Obs, only implemented for rotation axis in z direction.
             fact = 2.*ampl_ff(i)*Omega
             force(:,1)= force(:,1)-fact*kx*sinx(l1:l2,i)*cosy(m,i)
             force(:,2)= force(:,2)-fact*ky*cosx(l1:l2,i)*siny(m,i)

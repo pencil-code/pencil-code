@@ -499,6 +499,7 @@ module Dustvelocity
 !
       call request_border_driving((/borderuud/),'initialize_dustvelocity',ind(1),ind(ndustspec))
 !
+      lcoriolisforce_dust = lcoriolisforce_dust .and. lrotation
       if (Omega_pseudo/=0. .and. .not.lshear) &
         call warning('initialize_dustvelocity','pseudo-Coriolis force has only a meaning with background shear')
 !
@@ -1147,7 +1148,7 @@ module Dustvelocity
 !  Omega=(-sin_theta, 0, cos_theta)
 !  theta corresponds to latitude
 !
-      if (Omega/=0. .and. lcoriolisforce_dust) then
+      if (lcoriolisforce_dust) then
         if (theta==0) then
           if (lroot .and. headtt .and. k == 1) print*,'duud_dt: add Coriolis force; Omega=',Omega
           c2=2*Omega

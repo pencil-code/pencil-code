@@ -508,7 +508,7 @@ module NeutralVelocity
 !  Omega to the left), one should choose Omega=-90 for the equator,
 !  for example.
 !
-      if (Omega/=0.) then
+      if (lrotation) then
         if (theta==0) then
           if (lcoriolis_force) then
             if (headtt) print*,'duun_dt: add Coriolis force; Omega=',Omega

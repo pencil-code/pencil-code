@@ -60,7 +60,7 @@ contains
     call copy_addr(lmaximal_cdtv,p_par(41)) ! bool
     call copy_addr(lmaximal_cdt,p_par(42)) ! bool
     call copy_addr(llsode,p_par(43)) ! bool
-    call copy_addr(omega,p_par(44))
+    call copy_addr(Omega,p_par(44)) ! real dconst
     call copy_addr(theta,p_par(45))
     call copy_addr(sshear,p_par(46))
     call copy_addr(ldensity_nolog,p_par(47)) ! bool
@@ -469,6 +469,7 @@ contains
     call copy_addr(wav1,p_par(1413))
     !call copy_addr(necessary,p_par(1414))  ! bool (ny*nz)
     call copy_addr(imn,p_par(1415))  ! int
+    call copy_addr(lrotation,p_par(1416)) ! bool
 
   endsubroutine pushpars2c
 !***********************************************************************

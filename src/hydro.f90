@@ -1262,7 +1262,8 @@ module Hydro
       if (ldamp_fade .and. (tfade_start >= tdamp) .and. (tdamp > 0.0)) &
           call fatal_error ('initialize_hydro', 'set tfade_start < tdamp')
 
-      if (Omega/=0.) then
+      lrotation = Omega/=0.
+      if (lrotation) then
 !
 !  defining an r-dependent profile for Omega. The Coriolis force will be suppressed
 !  in r < r_omega with the width w_omega, for having the supression for r> r_omega,
@@ -1355,7 +1356,7 @@ module Hydro
         lcoriolis_force = .false.
         if (lroot) print *, 'initialize_hydro: turned off and hand over Coriolis force to Particles_drag. '
       endif
-      if (lrun) lcoriolis_force = lcoriolis_force .and. Omega/=0.
+      if (lrun) lcoriolis_force = lcoriolis_force .and. lrotation
 !
       lshear_in_coriolis=lshear_in_coriolis.and.lcoriolis_force.and.lshear
 !
@@ -1440,7 +1441,7 @@ module Hydro
             'lremove_uumeanxy=T may interfere with lremove_uumean[xyz]=T')
       endif
 !
-      if (Omega/=0. .and. lyinyang) then
+      if (lrotation .and. lyinyang) then
         if (phi==0.) then
 !
 !  Rotate \vec{Omega} on Yang grid.
@@ -1736,6 +1737,7 @@ module Hydro
 
       !TP: don't want to consider this on the GPU and would prefer if we could refactor this flag out
       if(lgpu) lcorrect_penc_u = .false.
+      
 
       endsubroutine initialize_hydro
 !***********************************************************************
@@ -4278,7 +4280,7 @@ module Hydro
 !  the equator. Cartesian coordinates (x,y,z) now correspond to
 !  (theta,phi,r) i.e. (south,east,up), in spherical polar coordinates
 !
-      if (Omega/=0.) then
+      if (lrotation) then
 !
         if (lcylindrical_coords) then
           call coriolis_cylindrical(df,p)
@@ -6126,7 +6128,7 @@ module Hydro
       real :: c2, s2
 !
 !
-      if (Omega /= 0. .and. theta==0) then
+      if (lrotation .and. theta==0) then
 !
         if (lcoriolis_force) then
 !
@@ -6202,7 +6204,7 @@ module Hydro
 !
       real :: c2, s2
 !
-      if (Omega /= 0.0 .and. lcoriolis_force) then
+      if (lrotation .and. lcoriolis_force) then
 !
         if (headtt) print*,'coriolis_cartesian_xaxis: Coriolis force; Omega, theta=', Omega, theta
 !

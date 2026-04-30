@@ -4367,7 +4367,7 @@ module Boundcond
                 endif
                 do k=1,nghost
                    fac=(1.-dx2_bound(-k)/x(l1+k))**lambda_exp
-                   if (Omega==0) then
+                   if (.not. lrotation) then
                      f(l1-k,iy,:,j) = f(l1+k,iy,:,j)*fac
                    else
                      f(l1-k,iy,:,j) = (f(l1+k,iy,:,j)+Omega*x(l1+k)*sth)*fac &
@@ -4389,7 +4389,7 @@ module Boundcond
                 endif
                 do k=1,nghost
                    fac=(1.-dx2_bound(-k)/x(l1+k))**lambda_exp
-                   if (Omega==0) then
+                   if (.not. lrotation) then
                      f(l1-k,iy,:,j) = f(l1+k,iy,:,j)*fac
                    else
                      f(l1-k,iy,:,j) = (f(l1+k,iy,:,j)+Omega*x(l1+k))*fac
@@ -4431,7 +4431,7 @@ module Boundcond
                 endif
                 do k=1,nghost
                   fac=(1.+dx2_bound(k)/x(l2-k))**lambda_exp
-                  if (Omega==0) then
+                  if (.not. lrotation) then
                     f(l2+k,iy,:,j) = f(l2-k,iy,:,j)*fac
                   else
                     f(l2+k,iy,:,j) = (f(l2-k,iy,:,j)+Omega*x(l2-k)*sth)*fac &
@@ -4453,7 +4453,7 @@ module Boundcond
                 endif
                 do k=1,nghost
                   fac=(1.+dx2_bound(k)/x(l2-k))**lambda_exp
-                  if (Omega==0) then
+                  if (.not. lrotation) then
                     f(l2+k,iy,:,j) = f(l2-k,iy,:,j)*fac
                   else
                     f(l2+k,iy,:,j) = (f(l2-k,iy,:,j)+Omega*x(l2-k))*fac
@@ -4705,7 +4705,7 @@ module Boundcond
             do k=1,nghost
               cos2thm_k= costh(m1-k)**2-sinth(m1-k)**2
               cos2thmpk= costh(m1+k)**2-sinth(m1+k)**2
-              if (Omega==0) then
+              if (.not. lrotation) then
                 do ix=1,size(f,1)
                   if (llambda_scale_with_nu) then
                     f(ix,m1-k,:,j)= f(ix,m1+k,:,j)* &
@@ -4755,7 +4755,7 @@ module Boundcond
             do k=1,nghost
               cos2thm_k= costh(m2-k)**2-sinth(m2-k)**2
               cos2thmpk= costh(m2+k)**2-sinth(m2+k)**2
-              if (Omega==0)then
+              if (.not. lrotation)then
                 do ix=1,size(f,1)
                   if (llambda_scale_with_nu) then
                     f(ix,m2+k,:,j)= f(ix,m2-k,:,j)* &

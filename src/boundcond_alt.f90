@@ -2697,7 +2697,7 @@ module Boundcond
           do iy=1,my
             lambda_exp=-(Lambda_V0b+Lambda_V1b*sinth(iy)*sinth(iy))
             do k=1,nghost
-               if (Omega==0) then
+               if (.not. lrotation) then
                  f(l1-k,iy,:,j)= f(l1+k,iy,:,j)*(x(l1-k)/x(l1+k)) &
                      **(1-(lambda_exp/nu))
                else
@@ -2720,7 +2720,7 @@ module Boundcond
           do iy=1,my
             lambda_exp=-(Lambda_V0t+Lambda_V1t*sinth(iy)*sinth(iy))
             do k=1,nghost
-              if (Omega==0) then
+              if (.not. lrotation) then
                 f(l2+k,iy,:,j)= f(l2-k,iy,:,j)*((x(l2+k)/x(l2-k)) &
                     **(1-(lambda_exp/nu)))
               else
@@ -2977,7 +2977,7 @@ module Boundcond
           do k=1,nghost
               cos2thm_k= costh(m1-k)**2-sinth(m1-k)**2
               cos2thmpk= costh(m1+k)**2-sinth(m1+k)**2
-            if (Omega==0) then
+            if (.not. lrotation) then
                do ix=1,mx
                   f(ix,m1-k,:,j)= f(ix,m1+k,:,j)* &
                        (exp(LH1(ix)*cos2thmpk/(4.*nu))*sin1th(m1+k)) &
@@ -3009,7 +3009,7 @@ module Boundcond
           do k=1,nghost
             cos2thm_k= costh(m2-k)**2-sinth(m2-k)**2
             cos2thmpk= costh(m2+k)**2-sinth(m2+k)**2
-            if (Omega==0)then
+            if (.not. lrotation)then
                do ix=1,mx
                   f(ix,m2+k,:,j)= f(ix,m2-k,:,j)* &
                    (exp(LH1(ix)*cos2thm_k/(4.*nu))*sin1th(m2-k)) &
