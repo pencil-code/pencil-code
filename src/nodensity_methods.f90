@@ -180,7 +180,7 @@ module DensityMethods
 !***********************************************************************
     subroutine getdlnrho_z(f,i,rn,in,dlnrho)
 
-      integer,                   intent(in) :: rn,in
+      integer,                   intent(in) :: i,rn,in
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(mx,my),    intent(out):: dlnrho
 
