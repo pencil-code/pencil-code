@@ -1196,6 +1196,7 @@ module Hydro
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mz) :: c, s
       integer :: j,myl,jhless ! currently unused: nycap
+      integer :: l,m,n
       real :: slope,uinn,uext,zbot
       logical :: lvectorpotential=.false.
 !
@@ -1238,7 +1239,10 @@ module Hydro
           case ('flip-ux'); f(:,:,:,iux)=-f(:,:,:,iux)
           case ('flip-uy'); f(:,:,:,iuy)=-f(:,:,:,iuy)
           case ('mult-uz-lower-xbdry'); if (ipx==0) f(1:l1,:,:,iuz)=rescale_uu*f(1:l1,:,:,iuz)
-          case ('Om_inner'); f(:,:,:,iuz)=Om_inner*spread(spread(xyz0(1)**2/x,2,my)*spread(sin(y),1,mx),3,mz)
+          case ('Om_inner'); 
+            do l=1,mx; do m=1,my; do n=1,mz;
+              f(l,m,n,iuz)=Om_inner*(xyz0(1)**2/x(l))*sin(y(m))
+            enddo; enddo; enddo
           case ('power_randomphase_hel')
             call power_randomphase_hel(ampluu(j),initpower,initpower2, &
               cutoff,ncutoff,kpeak,f,iux,iuz,relhel_uu,kgaussian_uu, &
@@ -1978,7 +1982,10 @@ module Hydro
           ! Ensure really is zero, as may have used lread_oldsnap
           f(:,:,:,iux:iuz)=0.
         case ('const_uu','const-uu'); do i=1,3; f(:,:,:,iuu+i-1) = uu_const(i); enddo
-        case ('shear'); f(:,:,:,iuy) = -qshear*Omega*spread(spread(x,2,my),3,mz)
+        case ('shear'); 
+          do l=1,mx; do m=1,my; do n=1,mz;
+            f(l,m,n,iuz)=-qshear*Omega*x(l)
+          enddo; enddo; enddo
         case('smooth_step_ux')
           xhalf= 0.5*(xyz1(1)+xyz0(1))
           do iy=m1,m2;do iz=n1,n2

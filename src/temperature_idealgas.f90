@@ -681,7 +681,9 @@ module Energy
 !
             if (ltemperature_nolog) then
               TTz=fbcz(iTT,1)+(z-xyz0(3))/Lxyz(3)*(fbcz(iTT,2)-fbcz(iTT,1))
-              f(:,:,:,iTT)=f(:,:,:,iTT)+spread(spread(TTz,1,mx),2,my)
+              do l=1,mx; do m=1,my; do n=1,mz
+                f(l,m,n,iTT)=f(l,m,n,iTT)+TTz(n)
+              enddo; enddo; enddo
               cs2bot=gamma_m1*fbcz(iTT,1)
               cs2top=gamma_m1*fbcz(iTT,2)
             else

@@ -1726,7 +1726,8 @@ module Energy
       real :: cs2int,ss0,ssint,ztop,ss_ext,pot0,pot_ext
       real, pointer :: fac_cs
       integer, pointer :: isothmid
-      integer :: j,n,m
+      integer :: j,l,n,m
+      real, allocatable, dimension(:,:,:) :: f_lnrho
       logical :: lnothing, save_pretend_lnTT
       real :: gamma,gamma_m1,gamma1,cv,cp,cp1
 !
@@ -1764,7 +1765,12 @@ module Energy
             call blob_radeq(ampl_ss(j),f,iss,radius_ss(j),center1_x(j),center1_y(j),center1_z(j))
           case ('isothermal')
             if (ldensity_nolog) then
-              call isothermal_entropy(log(f(:,:,:,irho)),T0,f(:,:,:,iss))
+              !Done in this cumbersome manner to get rid of large tmp array on the stack
+              allocate(f_lnrho(mx,my,mz))
+              do l=1,mx; do m=1,my; do n=1,mz
+                f_lnrho(l,m,n) = log(f(l,m,n,irho))
+              enddo; enddo; enddo
+              call isothermal_entropy(f_lnrho,T0,f(:,:,:,iss))
             else
               call isothermal_entropy(f(:,:,:,ilnrho),T0,f(:,:,:,iss))
             endif
@@ -2026,8 +2032,11 @@ module Energy
             call blob(-cp1*ampl_ss(j),f,ilnrho,radius_ss(j),center1_x(j),center1_y(j),center1_z(j))
             if (ldensity_nolog) then
               f(:,:,:,irho) = exp(f(:,:,:,ilnrho))
-              if (lreference_state) &
-                f(l1:l2,:,:,irho) = f(l1:l2,:,:,irho) - spread(spread(reference_state(:,iref_rho),2,my),3,mz)
+              if (lreference_state) then
+                do m=1,my; do n=1,mz;
+                  f(l1:l2,m,n,irho) = f(l1:l2,m,n,irho) - reference_state(:,iref_rho)
+                enddo; enddo
+              endif
             endif
           case ('single_polytrope')
             call single_polytrope(f)
@@ -2107,6 +2116,7 @@ module Energy
       real, optional :: xblob,yblob,zblob
       real :: ampl,radius,x01,y01,z01
       integer :: i
+      integer :: l,m,n
 !
 !  Single blob.
 !
@@ -2129,9 +2139,13 @@ module Energy
         if (lroot) print*,'ampl=0 in blob_radeq'
       else
         if (lroot.and.ip<14) print*,'blob: variable i,ampl=',i,ampl
-        f(:,:,:,i)=f(:,:,:,i)+ampl*( spread(spread(exp(-((x-x01)/radius)**2),2,my),3,mz) &
-                                    *spread(spread(exp(-((y-y01)/radius)**2),1,mx),3,mz)&
-                                    *spread(spread(exp(-((z-z01)/radius)**2),1,mx),2,my))
+        do l=1,mx; do m=1,my; do n=1,mz
+          f(l,m,n,i)=f(l,m,n,i)+ampl*(&
+                                         exp(-((x(l)-x01)/radius)**2)&
+                                        *exp(-((y(m)-y01)/radius)**2)&
+                                        *exp(-((z(n)-z01)/radius)**2)&
+                                    )
+        enddo; enddo; enddo
       endif
 !
     endsubroutine blob_radeq
@@ -8207,6 +8221,7 @@ module Energy
       real :: beta0,beta1,TT_bcz
       real :: lnrho_int,lnrho_ext,lnrho_bcz
       real :: gamma,gamma_m1,cp,cp1
+      integer :: m,n
 !
       if (lroot) print*,'r_bcz in entropy.f90=',r_bcz
 !
@@ -8258,8 +8273,11 @@ module Energy
 !
       if (ldensity_nolog) then
         f(:,:,:,irho) = exp(f(:,:,:,irho))
-        if (lreference_state) &
-          f(l1:l2,:,:,irho) = f(l1:l2,:,:,irho)-spread(spread(reference_state(:,iref_rho),2,my),3,mz)
+        if (lreference_state) then
+          do m = 1,size(f,2); do n=1,size(f,3)
+            f(l1:l2,m,n,irho) = f(l1:l2,m,n,irho)-reference_state(:,iref_rho)
+          enddo; enddo
+        endif
       endif
 !
     endsubroutine shell_ss_layers

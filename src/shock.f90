@@ -408,6 +408,7 @@ module Shock
       real, dimension (mx) :: penc,penc_perp
       real, dimension (mx,3) :: bb_hat
       integer :: jj,kk
+      integer :: l,m,n
       logical :: lcommunicate
 !
       if ((.not.lshock_first).or.lfirst) then
@@ -743,7 +744,9 @@ module Shock
 !
         if (lshock_modulation_z) then
           modulation_z=.5*(1.+erfunc((z-z_shock)/width_shock))
-          f(:,:,:,ishock)=f(:,:,:,ishock)*spread(spread(modulation_z,1,mx),2,my)
+          do l=1,mx; do m=1,my; do n=1,mz
+            f(l,m,n,ishock)=f(l,m,n,ishock)*modulation_z(n)
+          enddo; enddo; enddo
         endif
 !
         endif

@@ -199,11 +199,13 @@ module DensityMethods
 
       real, dimension(:,:,:), intent(in) :: f
       real, dimension(size(f,1),size(f,2),size(f,3)), intent(out):: rho
+      integer :: m,n
 
       if (ldensity_nolog) then
         if (lreference_state) then
-          rho(l1:l2,:,:) = f(l1:l2,:,:) &
-                          +spread(spread(reference_state(:,iref_rho),2,size(f,2)),3,size(f,3))  !!!
+           do m=1,size(f,2); do n=1,size(f,3)
+            rho(l1:l2,m,n) = f(l1:l2,m,n) + reference_state(:,iref_rho)
+           enddo; enddo
         else
           rho=f
         endif
