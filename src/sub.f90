@@ -5834,6 +5834,7 @@ nameloop: do
       real :: ampl1=1., ampl2=1., norm=1.
       real, optional :: radius_x
       logical, optional :: lexp, lperi, lconst_aver
+      integer :: l,m,n
 !
 !  Single  blob.
 !
@@ -5902,10 +5903,13 @@ nameloop: do
    !        *spread(spread(exp(-fact  *delz**2),1,mx),2,my)))
           call fatal_error('blob','AB: hope lexp is not used here')
         else
-          f(:,:,:,i)=f(:,:,:,i)+ampl1+ampl2*norm*( &
-             spread(spread(exp(-factx*delx**2),2,my),3,mz) &
-            *spread(spread(exp(-fact *dely**2),1,mx),3,mz) &
-            *spread(spread(exp(-fact *delz**2),1,mx),2,my))
+          do l=1,mx; do m=1,my; do n=1,mz
+            f(l,m,n,i)=f(l,m,n,i) + ampl1+ampl2*norm*(&
+                                              exp(-factx*delx(l)**2) &
+                                             *exp(-fact*dely(m)**2) &
+                                             *exp(-fact*delz(n)**2) &
+                                                )
+          enddo; enddo; enddo
         endif
       endif
 !
@@ -5926,6 +5930,7 @@ nameloop: do
       real, dimension (my) :: dely
       real, dimension (mz) :: delz
       real :: ampl, radius, fact, ampl1=1., ampl2=1., norm=1.
+      integer :: l,m,n
 !
 !  Compute nblobs random numbers
 !
@@ -5958,10 +5963,13 @@ nameloop: do
         norm=1./sqrt(twopi*radius**2)**dimensionality
         fact=.5/radius**2
 !
-        f(:,:,:,i)=f(:,:,:,i)+ampl1+ampl2*norm*( &
-             spread(spread(exp(-fact*delx**2),2,my),3,mz) &
-            *spread(spread(exp(-fact*dely**2),1,mx),3,mz) &
-            *spread(spread(exp(-fact*delz**2),1,mx),2,my))
+        do l=1,mx; do m=1,my; do n=1,mz
+          f(l,m,n,i)=f(l,m,n,i) + ampl1+ampl2*norm*(&
+                                            exp(-fact*delx(l)**2) &
+                                           *exp(-fact*dely(m)**2) &
+                                           *exp(-fact*delz(n)**2) &
+                                              )
+        enddo; enddo; enddo
       enddo
 !
     endsubroutine blobs

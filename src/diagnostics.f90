@@ -1184,6 +1184,7 @@ module Diagnostics
       real, dimension(nrcyl,nz,nprocz,nnamerz) :: fsumrz
       real, dimension(nrcyl) :: norm
       real, dimension(:,:,:,:) :: fnamerz
+      integer  :: l,m,n
 !
 !  Communicate over all processors.
 !  The result is only present on the root processor
@@ -1194,7 +1195,9 @@ module Diagnostics
         if (ipz==0) call mpireduce_sum(phiavg_norm,norm,nrcyl,idir=12)  ! avoid double comm!
         if (lroot) then
           do i=1,nnamerz
-            fnamerz(:,:,:,i)=fsumrz(:,:,:,i)/spread(spread(norm,2,nz),3,nprocz)
+            do l=1,nrcyl; do m=1,nz; do n = 1,nprocz;
+              fnamerz(l,m,n,i)=fsumrz(l,m,n,i)/norm(l)
+            enddo; enddo; enddo
           enddo
 !do i=1,nnamerz
 !if (lroot) print*, 'fnamerz(:,:,:,i)=', i,maxval(abs(fnamerz(:,:,:,i)))

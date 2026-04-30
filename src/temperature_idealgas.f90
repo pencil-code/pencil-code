@@ -625,6 +625,7 @@ module Energy
       real, dimension (mz) :: TTz
 !
       integer :: j
+      integer :: l,m,n
       logical :: lnothing=.true.
       real :: haut, Rgas, Ttop, alpha, beta, expo, ztop
 !
@@ -662,9 +663,13 @@ module Energy
           case ('const_dTTdz')
             TTz=TT_const+z
             if (ltemperature_nolog) then
-              f(:,:,:,iTT)=f(:,:,:,iTT)+spread(spread(TTz,1,mx),2,my)
+              do l=1,mx; do m=1,my; do n=1,mz
+                f(l,m,n,iTT)=f(l,m,n,iTT)+TTz(n)
+              enddo; enddo; enddo
             else
-              f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+spread(spread(log(TTz),1,mx),2,my)
+              do l=1,mx; do m=1,my; do n=1,mz
+                f(l,m,n,ilnTT)=f(l,m,n,ilnTT)+log(TTz(n))
+              enddo; enddo; enddo
             endif
             cs2bot=gamma_m1*TTz(n1)
             cs2top=gamma_m1*TTz(n2)
