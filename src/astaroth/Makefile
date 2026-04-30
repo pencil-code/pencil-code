@@ -153,8 +153,8 @@ endif
 #
 astaroth_libs: $(PC_HEADERS) DSL/local/mhdsolver.ac
 ifeq ($(TRANSPILATION),on)
-	@if ! cmp -s DSL/$(DSL_MODULE_FILE) DSL/local/$(DSL_MODULE_FILE); then \
-		cp DSL/$(DSL_MODULE_FILE) DSL/local/; \
+	@if ! cmp -s $(PENCIL_HOME)/src/astaroth/DSL/$(DSL_MODULE_FILE) DSL/local/$(DSL_MODULE_FILE); then \
+		cp $(PENCIL_HOME)/src/astaroth/DSL/$(DSL_MODULE_FILE) DSL/local/; \
 	fi
 endif
 ifeq ($(READ_OVERRIDES),on)
