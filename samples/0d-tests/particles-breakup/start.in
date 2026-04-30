@@ -5,6 +5,8 @@
 &init_pars
   cvsid='$Id$',
   lperi =      T,      T,      T
+  xyz0  = -50.0, -50.0, -50.0
+  Lxyz  = 100.0, 100.0, 100.0
   ip=14, lwrite_ic=T, lwrite_aux=T
   lcopysnapshots_exp=T
 ltolerate_namelist_errors=T
@@ -45,15 +47,6 @@ ltolerate_namelist_errors=T
   np_swarm0=1.0
 /
 &particles_breakup_init_pars
-  lparticles_breakup_kh=T
-  lparticles_breakup_rt=T
-  tstart_particles_breakup=0.0
-  kh_B0=0.61
-  kh_B1=40.0
-  kh_B2=0.05
-  rt_CRT=0.1
-  rt_Ctau=1.0
-  rt_method=1
-  kh_sigma=72.0
-  kh_min_child_npswarm=1e-6
+  sigma_liq=72.0           ! liquid surface tension [dyn/cm], CGS (water in air)
+  nu_liq=1.0e-2            ! liquid kinematic viscosity [cm^2/s], CGS (water)
 /

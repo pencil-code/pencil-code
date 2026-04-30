@@ -83,7 +83,7 @@ module Particles_cdata
   integer :: idlncc=0
   integer :: idfg=0,idfx=0,idfy=0,idfz=0
   integer :: ivpxt=0, ivpzt=0
-  integer :: imskh = 0, itbrt = 0
+  integer :: imskh = 0, itbrt = 0, itbpe = 0
 
 
   integer :: npar_inserted_tot=0
