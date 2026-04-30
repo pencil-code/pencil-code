@@ -1387,6 +1387,7 @@ module Viscosity
           enddo
         endif
       endif
+
     endsubroutine calc_visc_slope_limited
 !***********************************************************************
     subroutine calc_pencils_viscosity(f,p)

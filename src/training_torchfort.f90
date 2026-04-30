@@ -12,8 +12,8 @@
     use Cdata
     use General, only: itoa
     use Messages
-    use Torchfort, only: torchfort_result_success,&
-                         torchfort_save_model,torchfort_result_success,torchfort_save_checkpoint,&
+    use Torchfort, only: TORCHFORT_RESULT_SUCCESS, &
+                         torchfort_save_model,torchfort_result_success,torchfort_save_checkpoint, &
                          torchfort_inference,torchfort_train
     !use iso_c_binding
 
@@ -114,17 +114,21 @@
         allocate(output(mx, my, mz, 6, 1))
         allocate(label (mx, my, mz, 6, 1))
       endif
+!
       f(:,:,:,itau_hydroxx:itau_hydroyz)   = 0.0
+!
       if (ltrain_dens) then 
         f(:,:,:,itau_densityx:itau_densityz) = 0.0
         input_channels  = input_channels  + 1
         output_channels = output_channels + 3
       endif
+!
       if (ltrain_mag) then
         f(:,:,:,isgs_emfx:isgs_emfz)       = 0.0
         input_channels  = input_channels  + 3
         output_channels = output_channels + 3
       endif
+!
     endsubroutine initialize_training
 !***********************************************************************
     subroutine register_training
@@ -142,20 +146,20 @@
       ltrain_dens = ltrain_dens .and. ldensity
 !
       call farray_register_auxiliary('tau_hydro',itau_hydro,vector=6,rhs=.true.,communicated=.true.)
-      if(ltrain_mag) call farray_register_auxiliary('sgs_emf',isgs_emf,vector=3,rhs=.true.,communicated=.true.)
-      if(ltrain_dens)  call farray_register_auxiliary('tau_density',itau_density,vector=3,rhs=.true.,communicated=.true.)
+      if (ltrain_mag) call farray_register_auxiliary('sgs_emf',isgs_emf,vector=3,rhs=.true.,communicated=.true.)
+      if (ltrain_dens)  call farray_register_auxiliary('tau_density',itau_density,vector=3,rhs=.true.,communicated=.true.)
 !
 !  Indices to access tau.
 !
-      if(lhydro) then
+      if (lhydro) then
         itau_hydroxx=itau_hydro; itau_hydroyy=itau_hydro+1; itau_hydrozz=itau_hydro+2; itau_hydroxy=itau_hydro+3; itau_hydroxz=itau_hydro+4; itau_hydroyz=itau_hydro+5
       endif
 
-      if(ltrain_mag) then
+      if (ltrain_mag) then
         isgs_emfx=isgs_emf; isgs_emfy=isgs_emf+1; isgs_emfz=isgs_emf+2;
       endif
 
-      if(ltrain_dens) then
+      if (ltrain_dens) then
         itau_densityx=itau_density; itau_densityy=itau_density+1; itau_densityz=itau_density+2;
       endif
 
@@ -266,8 +270,7 @@
 
       endif
 
-      if (istat /= TORCHFORT_RESULT_SUCCESS) &
-        call fatal_error("infer","istat="//trim(itoa(istat)))
+      if (istat /= TORCHFORT_RESULT_SUCCESS) call fatal_error("infer","istat="//trim(itoa(istat)))
 
     endsubroutine infer
 !***************************************************************
@@ -290,34 +293,40 @@
     endsubroutine
 !***************************************************************
     subroutine save_model
-      if (iproc == root) print*,"Saving model to ",trim(model_output_dir)//trim(model_file)
-      !SG: should save the model instead of checkpoint in the end
-       istat = torchfort_save_model(model, trim(model_output_dir)//trim(model_file))
-       if (istat /= TORCHFORT_RESULT_SUCCESS) &
-         call fatal_error("save_model","when saving model: istat="//trim(itoa(istat)))
-       lmodel_saved = .true.
-      if (iproc == root) print*,"Model saved to ",trim(model_output_dir)//trim(model_file)
+
+      if (iproc == root) then
+
+        call information("save_model","saving ML model to ",trim(model_output_dir)//trim(model_file))
+        !SG: should save the model instead of checkpoint in the end
+        istat = torchfort_save_model(model, trim(model_output_dir)//trim(model_file))
+        if (istat /= TORCHFORT_RESULT_SUCCESS) &
+           print*, "save_model: Error when saving ML model: istat="//trim(itoa(istat))
+         lmodel_saved = .true.
+
+      endif
+
     endsubroutine save_model
 !***************************************************************
     subroutine save_chkpt
-       if (lroot.and.lfirst.and.((mod(it,it_train_chkpt)==0).or.((t-t_last_chkpt) >= t_train_chkpt))) then
-       print*, 'model: ', trim(model)
+
+      if (lroot.and.lfirst.and.(mod(it,it_train_chkpt)==0 .or. (t-t_last_chkpt) >= t_train_chkpt)) then
+
+        !print*, 'model: ', trim(model)
         istat = torchfort_save_checkpoint(trim(model), trim(checkpoint_output_dir))
         t_last_chkpt=t
         if (istat /= TORCHFORT_RESULT_SUCCESS) &
-          call fatal_error("train","when saving checkpoint: istat="//trim(itoa(istat)))
+          call fatal_error("save_chkpt","when saving ML checkpoint: istat="//trim(itoa(istat)))
         lckpt_written = .true.
         !print*, 'it, it_train_chkpt: , t:, t_train_chkpt: , t_last_chkpt: ', it, it_train_chkpt, t, t_train_chkpt, t_last_chkpt, trim(model), istat, trim(checkpoint_output_dir), lckpt_written
-      endif
 
+      endif
 
     endsubroutine save_chkpt
 !***************************************************************
     subroutine train(f)
    
-      use Gpu, only: get_ptr_gpu_training, train_gpu, infer_gpu
+      use Gpu, only: get_ptr_gpu_training, train_gpu
       use Mpicomm, only: mpiwtime
-  
 
       real, dimension (mx,my,mz,mfarray) :: f
     
@@ -326,10 +335,9 @@
 
       if (it<it_train_start .or. t<t_train_start) return
 
-      ldo_training_step = &
-              ((it_train /= -1) .and. mod(it,it_train)==0) .or. &
-              ((t-t_last_train) >= dt_train)
-      if(.not. ldo_training_step) return
+      ldo_training_step = ((it_train /= -1) .and. mod(it,it_train)==0) .or. &
+                          ((t-t_last_train) >= dt_train)
+      if (.not. ldo_training_step) return
       
       t_last_train = t
       if (.not. lfortran_launched) then
@@ -375,10 +383,10 @@
       if (train_loss <= max_loss) ltrained=.true.
       if ((it_train_end >= 0) .and. it >= it_train_end) ltrained=.true.
       if ((t_train_end >= 0) .and. t >= t_train_end) ltrained=.true.
-      if(ltrained) then
-            call save_model
+      if (ltrained) then
+        call save_model
       else
-            call save_chkpt
+        call save_chkpt
       endif
 
     endsubroutine train
@@ -416,7 +424,7 @@
 
     endsubroutine calc_tau
 !***************************************************************
-    subroutine dt_sgs_terms(f,df)
+    subroutine dtraining_dt(f,df)
 
       use Sub, only: div_tensor
 
@@ -432,18 +440,18 @@
           df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - div_hydro_sgs
         endif
         
-       !if(ltrain_mag) then
+       !if (ltrain_mag) then
        !  df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + f(l1:l2,m,n,isgs_emfx:isgs_emfz)
        !endif
 
-       ! if(ltrain_dens) then
+       ! if (ltrain_dens) then
        !   call div_tensor(f,itau_hydro,div_dens_sgs)
        !   df(l1:l2,m,n,ilnrho)  = df(l1:l2,m,n,ilnrho)  - div_dens_sgs
        ! endif
       endif
       if (ltraining) call calc_diagnostics_training(f)
 
-    endsubroutine dt_sgs_terms 
+    endsubroutine dtraining_dt
 !***************************************************************
     subroutine calc_diagnostics_training(f)
 
@@ -553,10 +561,7 @@
 !  Save trained model.
 !
       if (.not.lstart) then
-        if (ltrained .or. .not.lmodel_saved) then
-                call save_model
-      
-        endif
+        if (ltrained .or. .not.lmodel_saved) call save_model
         if (lfortran_launched) deallocate(input,label,output)
       endif
 

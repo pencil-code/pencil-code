@@ -36,7 +36,7 @@ module GhostFold
       real, dimension (nx+2,ny+2,1,ivar2-ivar1+1) :: df_tmp_xy
       real, dimension (nx+2,1,nz,ivar2-ivar1+1) :: df_tmp_xz
       real, dimension (1,ny,nz,ivar2-ivar1+1) :: df_tmp_yz
-      integer :: nvar_fold, iproc_rcv, ivar
+      integer :: nvar_fold, iproc_rcv
       integer :: itag1=10, itag2=11, itag3=12, itag4=13, itag5=14, itag6=15
 !
       nvar_fold=ivar2-ivar1+1
@@ -163,7 +163,7 @@ module GhostFold
       real, dimension (nx+2,ny+2,1,ivar2-ivar1+1) :: f_tmp_xy
       real, dimension (nx+2,1,nz,ivar2-ivar1+1)   :: f_tmp_xz
       real, dimension (1,ny,nz,ivar2-ivar1+1) :: f_tmp_yz
-      integer :: nvar_fold, iproc_rcv, ivar
+      integer :: nvar_fold, iproc_rcv
       integer :: itag1=10, itag2=11, itag3=12, itag4=13, itag5=14, itag6=15
 !
       nvar_fold=ivar2-ivar1+1
@@ -296,8 +296,7 @@ subroutine fold_df_3points(df,ivar1,ivar2)
       real, dimension (nx+6,ny+6,3,ivar2-ivar1+1) :: df_tmp_xy
       real, dimension (nx+6,3,nz,ivar2-ivar1+1) :: df_tmp_xz
       real, dimension (3,ny,nz,ivar2-ivar1+1) :: df_tmp_yz
-      real, dimension (ny,nz) :: df_tmp_yz_one
-      integer :: nvar_fold, iproc_rcv, ivar
+      integer :: nvar_fold, iproc_rcv
       integer :: itag1=10, itag2=11, itag3=12, itag4=13, itag5=14, itag6=15
       integer :: l1m3, l2p3, m1m1, m2p3
 !
@@ -434,23 +433,23 @@ subroutine fold_df_3points(df,ivar1,ivar2)
 !
 !  Shift the left boundary by -deltay.
 !
-        first: if (lfirst_proc_x) then
-          comp1: do ivar = ivar1, ivar2
+        if (lfirst_proc_x) then
+          do ivar = ivar1, ivar2
             work = f(l1-ng:l1-1,m1:m2,n1:n2,ivar)
             call yshift_block(ng, work, -deltay)
             f(l1-ng:l1-1,m1:m2,n1:n2,ivar) = work
-          enddo comp1
-        endif first
+          enddo
+        endif
 !
 !  Shift the right boundary by +deltay.
 !
-        last: if (llast_proc_x) then
-          comp2: do ivar = ivar1, ivar2
+        if (llast_proc_x) then
+          do ivar = ivar1, ivar2
             work = f(l2+1:l2+ng,m1:m2,n1:n2,ivar)
             call yshift_block(ng, work, +deltay)
             f(l2+1:l2+ng,m1:m2,n1:n2,ivar) = work
-          enddo comp2
-        endif last
+          enddo
+        endif
 !
     endsubroutine yshift_ghost
 !*******************************************************************************
@@ -562,8 +561,7 @@ subroutine reverse_fold_f_3points(f,ivar1,ivar2)
       real, dimension (nx,ny,3,ivar2-ivar1+1) :: f_tmp_xy
       real, dimension (nx,3,nz,ivar2-ivar1+1) :: f_tmp_xz
       real, dimension (3,ny,nz,ivar2-ivar1+1) :: f_tmp_yz
-      real, dimension (ny,nz) :: f_tmp_yz_one
-      integer :: nvar_fold, iproc_rcv, ivar
+      integer :: nvar_fold, iproc_rcv
       integer :: itag1=10, itag2=11, itag3=12, itag4=13, itag5=14, itag6=15
       integer :: l1m1, l1m3, l2p1, l2p3
       integer :: m1m1, m1m3, m2p1, m2p3
@@ -716,8 +714,7 @@ subroutine reverse_fold_df_3points(f,ivar1,ivar2)
       real, dimension (nx,ny,3,ivar2-ivar1+1) :: f_tmp_xy
       real, dimension (nx,3,nz,ivar2-ivar1+1) :: f_tmp_xz
       real, dimension (3,ny,nz,ivar2-ivar1+1) :: f_tmp_yz
-      real, dimension (ny,nz) :: f_tmp_yz_one
-      integer :: nvar_fold, iproc_rcv, ivar
+      integer :: nvar_fold, iproc_rcv
       integer :: itag1=10, itag2=11, itag3=12, itag4=13, itag5=14, itag6=15
       integer :: l1m1, l1m3, l2p1, l2p3
       integer :: m2m1, m2m3, m2p1, m2p3

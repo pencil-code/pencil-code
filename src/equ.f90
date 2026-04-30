@@ -678,9 +678,7 @@ module Equ
 !
 !  If doing diagnostics together with the GPU lupdate_courant_dt means to calculate some of the timestep diagnostics
 !
-      if (lgpu) then
-        lupdate_courant_dt = lcourant_dt .and. ltimestep_diagnostics
-      endif
+      if (lgpu) lupdate_courant_dt = lcourant_dt .and. ltimestep_diagnostics
 
 !$omp parallel if (.not. lsuppress_parallel_reductions) private(p) num_threads(num_helper_threads) &
 !$omp copyin(t,dxmax_pencil,fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
@@ -698,11 +696,11 @@ module Equ
       do imn=1,nyz
         !Done since with multithreading RHS is not evaluated
         if (lmultithread .and. lupdate_courant_dt) then
-                if (idiag_dtdiffus/=0 .or. idiag_Rmesh /= 0)  maxdiffus    = 0.0
-                maxadvec     = 0.0
-                advec2       = 0.0
-                advec_cs2    = 0.0
-                advec2_hypermesh  = 0.0
+          if (idiag_dtdiffus/=0 .or. idiag_Rmesh /= 0) maxdiffus = 0.0
+          maxadvec     = 0.0
+          advec2       = 0.0
+          advec_cs2    = 0.0
+          advec2_hypermesh  = 0.0
         endif
         n=nn(imn)
         m=mm(imn)
@@ -1232,7 +1230,7 @@ module Equ
       use Testfield
       use Testflow
       use Testscalar
-      use Training, only: dt_sgs_terms
+      use Training, only: dtraining_dt
 
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
       real, dimension (mx,my,mz,mvar)   ,intent(INOUT) :: df
@@ -1340,7 +1338,7 @@ module Equ
 !
         if (lpointmasses) call pointmasses_pde_pencil(f,df,p)
 
-        if (ltraining) call dt_sgs_terms(f,df)
+        if (ltraining) call dtraining_dt(f,df)
 
     endsubroutine calc_all_rhs
 !***********************************************************************
@@ -1401,7 +1399,7 @@ module Equ
       use Testfield
       use Testflow
       use Testscalar
-      use Training, only: calc_diagnostics_training, dt_sgs_terms
+      use Training, only: calc_diagnostics_training
 
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
       real, dimension (mx,my,mz,mvar)   ,intent(OUT  ) :: df

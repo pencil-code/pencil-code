@@ -66,7 +66,7 @@
 
     endsubroutine rprint_training
 !***************************************************************
-    subroutine dt_sgs_terms(f,df)
+    subroutine dtraining_dt(f,df)
 
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -74,7 +74,7 @@
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
 
-    endsubroutine dt_sgs_terms
+    endsubroutine dtraining_dt
 !***************************************************************
     subroutine finalize_training
 

@@ -236,8 +236,7 @@ module Messages
         endif
       endif
       !$ endif
-      if(lgpu) call mpiabort
-
+      if (lgpu) call mpiabort
 !
     endsubroutine fatal_error_local
 !***********************************************************************
