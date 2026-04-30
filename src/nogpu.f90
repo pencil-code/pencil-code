@@ -16,7 +16,6 @@ module GPU
 
   logical :: ltest_bcs,ltest_rhs
   integer :: it_test_rhs
-  type(C_PTR) :: pFarr_GPU_in, pFarr_GPU_out
 
   include 'gpu.h'
 

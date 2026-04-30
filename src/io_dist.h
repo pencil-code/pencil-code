@@ -11,6 +11,7 @@
       character(LEN=1024) :: mailstr
       character(LEN=20) :: cjobid
       integer, parameter :: lun_input1=89
+      integer :: l,m,n,ll
 
       if (lserial_io) call start_serialize
 
@@ -161,7 +162,9 @@
                     else
                       read (lun_input,iostat=iosr) a(:,1:len1d,1:len1d,:)
                     endif
-                    a=spread(spread(a(:,m1,n1,:),2,my),3,mz)
+                    do l=1,size(a,1); do m=1,size(a,2); do n=1,size(a,3); do ll=1,size(a,4)
+                      a(l,m,n,ll) = a(l,m1,n1,ll) 
+                    enddo; enddo; enddo; enddo
                   elseif (nghost_read_fewer==-2) then
                     if (ivar_omit(1)>0) allocate(tmp_omit(len1d,my,len1d,ivar_omit(1):ivar_omit(2)))
                     if (ivar_omit(1)==1) then
@@ -173,7 +176,9 @@
                     else
                       read (lun_input,iostat=iosr) a(1:len1d,:,1:len1d,:)
                     endif
-                    a=spread(spread(a(l1,:,n1,:),1,mx),3,mz)
+                    do l=1,size(a,1); do m=1,size(a,2); do n=1,size(a,3); do ll=1,size(a,4)
+                      a(l,m,n,ll) = a(l1,m,n1,ll) 
+                    enddo; enddo; enddo; enddo
                   elseif (nghost_read_fewer==-3) then
                     if (ivar_omit(1)>0) allocate(tmp_omit(len1d,len1d,mz,ivar_omit(1):ivar_omit(2)))
                     if (ivar_omit(1)==1) then
@@ -185,7 +190,9 @@
                     else
                       read (lun_input,iostat=iosr) a(1:len1d,1:len1d,:,:)
                     endif
-                    a=spread(spread(a(l1,m1,:,:),1,mx),2,my)
+                    do l=1,size(a,1); do m=1,size(a,2); do n=1,size(a,3); do ll=1,size(a,4)
+                      a(l,m,n,ll) = a(l1,m1,n,ll) 
+                    enddo; enddo; enddo; enddo
                   else
                     call fatal_error('read_snap','nghost_read_fewer must be >=0')
                   endif
