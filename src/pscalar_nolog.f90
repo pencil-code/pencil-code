@@ -289,10 +289,10 @@ module Pscalar
         case ('propto-uz'); call wave_uu(amplcc,f,icc,kz=kz_cc)
         case ('cosx_cosy_cosz'); call cosx_cosy_cosz(amplcc,f,icc,kx_cc,ky_cc,kz_cc)
         case ('triquad'); call triquad(amplcc,f,icc,kx_cc,ky_cc,kz_cc,kxx_cc,kyy_cc,kzz_cc)
-        case ('semiangmom'); 
-          do l=1,mx; do m=1,my; do n=1,mz;
+        case ('semiangmom')
+          do l=1,mx; do m=1,my; do n=1,mz
             f(l,m,n,icc) = (1-2*powerlr*hoverr**2-1.5*zoverh**2*hoverr**2)*x(l) +3*zoverh*hoverr*z(n)
-          enddo
+          enddo; enddo; enddo
         case ('sound-wave')
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,icc)=-amplcc*cos(kx_cc*x(l1:l2))
