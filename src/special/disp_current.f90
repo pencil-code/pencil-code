@@ -109,6 +109,7 @@ module Special
   real :: sigE_ceiling=impossible  !PAR_DOC: ceiling
   real :: sigE_const_value=impossible  !PAR_DOC: constant value if set
   logical :: reinitialize_ee=.false.
+  logical :: lresistive_gauge_ee=.false. !possibility of resistive gauge when ladvance_ee=F.
   logical :: ldt_disp_current=.true.  !PAR_DOC: invoke timestep constraint from sigE
   character (len=labellen) :: aderiv_scaling='table'
 !
@@ -122,7 +123,7 @@ module Special
     reinitialize_ee, initee, rescale_ee, lmass_suppression, mass_chi, &
     lallow_bprime_zero, lapply_Gamma_corr, coupl_gy, lpsi_hom, alpfpsi, &
     loverride_c_light, ldensity_add_je_heating, je_heating_factor, &
-    llorentzforce_ee, aderiv_scaling, vA_limit, &
+    lresistive_gauge_ee, llorentzforce_ee, aderiv_scaling, vA_limit, &
     lohmic_heating_ee, lohmic_heating_justee, sigE_const_value, &
     ladvance_ee, eta_given, ldt_disp_current, cdt_sigE
 !
@@ -754,12 +755,18 @@ module Special
 !
 !  If no time advance of E, we add here the expression without dispacement
 !  current based on Ohm's law, i.e., E = -uxb + J/sigE.
+!  For numerical reasons, we may want to use lresistive_gauge_ee=T (not the default).
+!  In that case, terms such as Ax,xx, Ay,yy, and Az,zz are present.
 !
           if (.not. ladvance_ee) then
             if (lnoncollinear_EB .or. lnoncollinear_EB_aver) then
               call fatal_error('calc_pencils_special','MHD works only for collinear case')
             else
-              call multsv_mn(etaSchw,p%jj_ohm,tmpv)
+              if (lresistive_gauge_ee) then
+                call multsv_mn(-etaSchw,p%del2a,tmpv)
+              else
+                call multsv_mn(etaSchw,p%jj_ohm,tmpv)
+              endif
               f(l1:l2,m,n,iex:iez)=-p%uxb+tmpv
             endif
           endif
@@ -852,8 +859,8 @@ module Special
         if (ladvance_ee) then
           dt1_max=max(dt1_max,p%sigE/cdt_sigE)
         else
-        diffus_etaSchw=etaSchw*dxyz_2
-        maxdiffus=max(maxdiffus,diffus_etaSchw)
+          diffus_etaSchw=etaSchw*dxyz_2
+          maxdiffus=max(maxdiffus,diffus_etaSchw)
         endif
       endif
 !
