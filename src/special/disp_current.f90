@@ -1670,6 +1670,7 @@ module Special
     call copy_addr(ldt_disp_current,p_par(53)) ! bool
     call copy_addr(sige_ceiling,p_par(54))
     call copy_addr(sige_const_value,p_par(55))
+    call copy_addr(lresistive_gauge_ee,p_par(56)) ! bool
     endsubroutine pushpars2c
 !***********************************************************************
 !
