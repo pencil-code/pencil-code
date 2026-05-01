@@ -3369,6 +3369,8 @@ outer:do ikz=1,nz
 !  Make sure corresponding changes are made in cdata, param_io, and
 !  powersnap, which is in snapshot.f90.
 !
+!   1-May-2026/Kishore: basic support for non-cubical boxes
+!
     use Fourier, only: fft_xyz_parallel
     use General, only: itoa
     use Mpicomm, only: mpireduce_sum
@@ -3380,13 +3382,13 @@ outer:do ikz=1,nz
     logical, intent(in), optional :: lsqrt
     integer, intent(in), optional :: iapn_index
     integer, pointer :: inp,irhop,iapn(:)
-    integer, parameter :: nk=nxgrid/2
+    integer :: nk
     integer :: k,ikx,iky,ikz, ivec, ia0
     real :: k2,fact
     real, dimension (mx,my,mz,mfarray) :: f
-    real, dimension(nk) :: spectrum,spectrum_sum
-    real, dimension(nk) :: hor_spectrum, hor_spectrum_sum
-    real, dimension(nk) :: ver_spectrum, ver_spectrum_sum
+    real, dimension(:), allocatable, save :: spectrum,spectrum_sum
+    real, dimension(:), allocatable, save :: hor_spectrum, hor_spectrum_sum
+    real, dimension(:), allocatable, save :: ver_spectrum, ver_spectrum_sum
     real, dimension(nx) :: bbi
     real, dimension(nx,3) :: gLam
     character (len=*) :: sp
@@ -3396,9 +3398,11 @@ outer:do ikz=1,nz
     if (lroot .AND. ip<10) call svn_id( &
          "$Id$")
 !
-    if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
-      call warning("powerscl", "computation of wavevector wrong for non-cubic domains")
-  
+    if (lroot .and. (minval(Lxyz) /= maxval(Lxyz)) .and. &
+      (lvertical_spectra .or. lhorizontal_spectra)) call warning("powerscl", &
+      "computation of wavevector wrong for non-cubic domains with &
+      &lvertical_spectra or lhorizontal_spectra")
+!
     if (sp=='np') then
       call get_shared_variable('inp', inp, caller='powerscl')
     elseif (sp=='na') then
@@ -3406,7 +3410,15 @@ outer:do ikz=1,nz
     elseif (sp=='rp') then
       call get_shared_variable('irhop', irhop, caller='powerscl')
     endif
-  
+!
+    nk = nk_xyz
+!
+    if (.not. allocated(spectrum)) then
+      allocate(spectrum(nk), spectrum_sum(nk))
+      allocate(hor_spectrum(nk), hor_spectrum_sum(nk))
+      allocate(ver_spectrum(nk), ver_spectrum_sum(nk))
+    endif
+!
     !$omp parallel private(ia0,k,k2,bbi,fact,gLam) num_threads(num_helper_threads) &
     !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
     !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
@@ -3617,7 +3629,7 @@ outer:do ikz=1,nz
       !
       !  integration over shells
       !
-      k2=get_k2_old(ikx+ipx*nx,iky+ipy*ny,ikz+ipz*nz)
+      k2=get_k2(ikx+ipx*nx,iky+ipy*ny,ikz+ipz*nz)
       k=nint(sqrt(k2))
       if (sp=='ucp') then
         fact=k2  !  take gradient
