@@ -1510,15 +1510,20 @@ outer:do ikz=1,nz
     real, save, allocatable, dimension(:,:,:,:) :: bEP, hEP
     real, dimension(2), optional :: sumspec
     complex, save, allocatable, dimension(:,:,:) :: phi
-    real, dimension(nk) :: spectrum,spectrum_sum
-    real, dimension(nk) :: spectrumhel,spectrumhel_sum
+    real, dimension(:), save, allocatable :: spectrum,spectrum_sum
+    real, dimension(:), save, allocatable :: spectrumhel,spectrumhel_sum
     real, allocatable, dimension(:,:), save :: cyl_spectrum, cyl_spectrum_sum
     real, allocatable, dimension(:,:), save :: cyl_spectrumhel, cyl_spectrumhel_sum
     character (len=3) :: sp
     logical, optional :: lnowrite
     logical, save :: lwrite_krms=.true.
     logical :: lfirstcall
-  
+!
+    if (.not.allocated(spectrum)) then
+      allocate(spectrum(nk),spectrum_sum(nk))
+      allocate(spectrumhel(nk),spectrumhel_sum(nk))
+    endif
+!
     if (lcylindrical_spectra) then
       if (.not. allocated(cyl_spectrum)) &
         allocate(cyl_spectrum(nk,nzgrid), cyl_spectrum_sum(nk,nzgrid), cyl_spectrumhel(nk,nzgrid), cyl_spectrumhel_sum(nk,nzgrid))
