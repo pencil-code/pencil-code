@@ -1490,7 +1490,8 @@ outer:do ikz=1,nz
 !  one could in principle reuse the df array for memory purposes.
 !
 !   3-oct-10/axel: added compution of krms (for realisability condition)
-!  22-jan-13/axel: corrected for x parallelization
+!   22-jan-13/axel: corrected for x parallelization
+!   1-may-2026/Kishore: fixed for non-cubical domains (but not when lcylindrical_spectra=T)
 !
     use Chiral, only: iXX_chiral, iYY_chiral, iXX2_chiral, iYY2_chiral
     use Fourier, only: fft_xyz_parallel
@@ -1499,19 +1500,18 @@ outer:do ikz=1,nz
     use Mpicomm, only: mpireduce_sum
     use Sub, only: del2vi_etc, del2v_etc, cross, grad, curli, curl, dot2
 !
-    integer, parameter :: nk=nxgrid/2
+    integer :: nk
     integer :: k, ikx, iky, ikz, jkz, im, in, ivec, ivec_jj
     real :: k2
     real, dimension (mx,my,mz,mfarray) :: f
     real, dimension(nx) :: jji, b2, j2
     real, dimension(nx,3) :: bb, bbEP, hhEP, jj, gtmp1, gtmp2
-    real, dimension(nk) :: nks=0.,nks_sum=0.
-    real, dimension(nk) :: k2m=0.,k2m_sum=0., krms, km1
     real, save, allocatable, dimension(:,:,:,:) :: bEP, hEP
     real, dimension(2), optional :: sumspec
     complex, save, allocatable, dimension(:,:,:) :: phi
     real, dimension(:), save, allocatable :: spectrum,spectrum_sum
     real, dimension(:), save, allocatable :: spectrumhel,spectrumhel_sum
+    real, dimension(:), save, allocatable :: nks, nks_sum, k2m, k2m_sum, krms, km1
     real, allocatable, dimension(:,:), save :: cyl_spectrum, cyl_spectrum_sum
     real, allocatable, dimension(:,:), save :: cyl_spectrumhel, cyl_spectrumhel_sum
     character (len=3) :: sp
@@ -1519,9 +1519,20 @@ outer:do ikz=1,nz
     logical, save :: lwrite_krms=.true.
     logical :: lfirstcall
 !
+    nk = nk_xyz
+!
     if (.not.allocated(spectrum)) then
       allocate(spectrum(nk),spectrum_sum(nk))
       allocate(spectrumhel(nk),spectrumhel_sum(nk))
+!
+      allocate(nks(nk), nks_sum(nk))
+      allocate(k2m(nk), k2m_sum(nk))
+      allocate(krms(nk), km1(nk))
+!
+      nks = 0.
+      nks_sum = 0.
+      k2m = 0.
+      k2m_sum = 0.
     endif
 !
     if (lcylindrical_spectra) then
@@ -1536,8 +1547,8 @@ outer:do ikz=1,nz
 !
     if (lroot .AND. ip<10) call svn_id("$Id$")
 !
-    if (headt .and. (minval(Lxyz) /= maxval(Lxyz))) &
-      call warning("powerhel", "computation of wavevector wrong for non-cubical domains")
+    if (headt .and. (minval(Lxyz) /= maxval(Lxyz)) .and. lcylindrical_spectra) &
+      call warning("powerhel", "computation of cylindrical wavevector wrong for non-cubical domains")
 !
 ! Select cases where spectra are precomputed
 !
@@ -1986,7 +1997,7 @@ outer:do ikz=1,nz
       do ikz=1,nz
         do iky=1,ny
           do ikx=1,nx
-            k2=get_k2_old(ikx+ipx*nx,iky+ipy*ny,ikz+ipz*nz)
+            k2=get_k2(ikx+ipx*nx,iky+ipy*ny,ikz+ipz*nz)
             k=nint(sqrt(k2))
             if (k>=0 .and. k<=(nk-1)) then
 !
