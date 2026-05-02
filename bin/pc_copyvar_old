@@ -1,0 +1,183 @@
+#!/bin/csh
+#  $Id$
+#
+#  Author: Anders Johansen
+#
+#  Usage:
+#    pc_copyvar var1 var2 source dest [-e | -execute=1] [-s]
+#    pc_copyvar var1 var2 dest [-e | -execute=1] [-s]
+#    pc_copyvar var1 var2 [-e | -execute=1] [-s]
+#
+#  Examples:
+#    pc_copyvar var.dat VAR9 ../othersim
+#      copies all var.dat files from current directory to VAR9 in '../othersim'
+#    pc_copyvar v v onesim othersim
+#      copies all var.dat files from 'onesim' directory to var.dat in 'othersim'
+#    pc_copyvar 8 v onesim othersim
+#      copies all VAR8 files from 'onesim' directory to var.dat in 'othersim'
+#    pc_copyvar v v onesim $USER@server:othersim -cp=scp
+#      copies with scp to other server. cp is automatically set to 'scp' if
+#      a colon appears in the source or destination directories.
+#
+#  Abbreviations:
+#    v, var       - var.dat
+#    p, pvar      - pvar.dat
+#    og, ogvar    - ogvar.dat (overlapping grid)
+#    naked number - VAR*
+#
+#  Options:
+#    -s               -  create symbolic link instead of copy
+#    -execute=1, -e   -  really execute copy or link
+#    -q               -  don't display copy/link command
+#
+set data=data/
+set narg=0
+set cp=cp
+set execute=0
+set link=0
+set quiet=0
+set e=0
+set s=0
+set q=0
+#
+#  Sort through all command line input.
+#
+foreach block ($argv)
+  if ("$block" =~ -*) then # optional input
+    if ("$block" =~ *=*) then
+      set variable = `perl -e "@a = split /=/, '$block'; print @a[0]"`
+      set value    = `perl -e "@a = split /=/, '$block'; print @a[1]"`
+      set variable = `perl -e "@a = substr('$variable',1); print @a[0]"`
+      set $variable = $value
+    else # option
+      set option   = `perl -e "@a = substr('$block',1); print @a[0]"`
+      set $option
+    endif
+  else # count number of mandatory input slots
+    set narg=`expr $narg + 1`
+  endif
+end
+#
+#  Need at least three fields of mandatory input.
+#
+if ( $narg < 2 ) then
+  echo "Usage: pc_copyvar var1 var2 source dest [-e | -execute=1] [-s] [-q]"
+  echo "       pc_copyvar var1 var2 dest [-e | -execute=1] [-s] [-q]"
+  echo "       pc_copyvar var1 var2 [-e | -execute=1] [-s] [-q]"
+  exit
+endif
+if ($e != 0) then
+  set execute=1
+endif
+if ($s != 0) then
+  set link=1
+endif
+if ($q != 0) then
+  set quiet=1
+endif
+#
+#  Snapshots names and source and destination directories.
+#
+set var1=$argv[1]
+set var2=$argv[2]
+if ( $narg > 3) then
+  set source=$argv[3]
+  set dest=$argv[4]
+else if ( $narg == 3 ) then
+  set dest=$argv[3]
+  set source='.'
+else
+  set dest='.'
+  set source='.'
+endif
+#
+#  Abbrevations.
+#
+if ( $var1 =~ "v" || $var1 =~ "var") then
+  set var1='var.dat'
+endif
+if ( $var2 =~ "v" || $var2 =~ "var") then
+  set var2='var.dat'
+endif
+if ( $var1 =~ "p" || $var1 =~ "pvar") then
+  set var1='pvar.dat'
+endif
+if ( $var2 =~ "p" || $var2 =~ "pvar") then
+  set var2='pvar.dat'
+endif
+if ( $var1 =~ "og" || $var1 =~ "ogvar") then
+  set var1='ogvar.dat'
+endif
+if ( $var2 =~ "og" || $var2 =~ "kgvar") then
+  set var2='ogvar.dat'
+endif
+#
+#  Naked integers get 'VAR' in front.
+#
+set int1=`perl -e '$int = '$var1' =~ /^\d+$/; print $int;'`
+if ( $int1 =~ 1 ) then
+  set var1="VAR$var1"
+endif
+set int2=`perl -e '$int = '$var2' =~ /^\d+$/; print $int;'`
+if ( $int2 =~ 1 ) then
+  set var2="VAR$var2"
+endif
+#
+#  Automatically set cp to 'scp' if ':' appears in source or destination.
+#
+set remsource=`echo $source | grep -c ":"`
+set remdest=`echo $dest | grep -c ":"`
+if ($remdest > 0 || $remsource > 0) then
+  set cp="scp"
+  set link=0
+endif
+if ($link) then
+  if (`echo $source | grep -c "^\/"` == 0) then
+    set source=`pwd`"/"$source 
+  endif
+endif
+#
+#  Inform what is about to happen.
+#
+echo ""
+if ($execute) then
+  echo "Going to execute"
+else
+  echo "This command would execute"
+endif
+if ($link) then
+  echo "  rm -f $dest/${data}proc[0-9]*/$var2; ln -s $source/${data}proc[0-9]*/$var1 $dest/${data}proc[0-9]*/$var2"
+else
+  echo "  $cp $source/${data}proc[0-9]*/$var1 $dest/${data}proc[0-9]*/$var2"
+endif
+if ($execute) echo ""
+#
+#  Only execute the command if -e or -execute=1 is set, to avoid catastrophes.
+#
+if ($execute) then
+  foreach dir ( $source/${data}proc*[0-9] )
+    set procdir=`basename $dir`
+    if ($remdest) then
+      set res=`ssh $dest:s/:/ ls -d //${data}$procdir`
+      if ($res:t != $procdir) then
+        nohup ssh $dest:s/:/ mkdir //${data}$procdir >& /dev/null
+      endif
+    else
+      if (! -e $dest/${data}$procdir ) then
+         mkdir $dest/${data}$procdir
+       endif
+    endif
+    if ($link) then
+      if ( ! $quiet ) then
+        echo "rm -f $dest/${data}$procdir/$var2; ln -s $source/${data}$procdir/$var1 $dest/${data}$procdir/$var2"
+      endif
+      rm -f $dest/${data}$procdir/$var2; ln -s $source/${data}$procdir/$var1 $dest/${data}$procdir/$var2
+    else
+      echo "$cp $source/${data}$procdir/$var1 $dest/${data}$procdir/$var2"
+      $cp $source/${data}$procdir/$var1 $dest/${data}$procdir/$var2
+    endif
+  end
+else
+  echo ""
+  echo "** To really do this, run the same command with -e or -execute=1 **"
+endif

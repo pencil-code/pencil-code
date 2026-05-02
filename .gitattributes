@@ -46,6 +46,7 @@ bin/pc_complete -text
 bin/pc_config.sh -text
 bin/pc_configtest -text
 bin/pc_copyvar -text
+bin/pc_copyvar_old -text
 bin/pc_cvsup -text
 bin/pc_debug -text
 bin/pc_deprecated_slice_links -text

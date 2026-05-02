@@ -22,6 +22,7 @@ cd $olddir
 #  copy from old to new run directory
 #
 cp data/param* $newdir/data
+cp data/dim.dat $newdir/data
 #
 # is not necessary as proc_bounds.dat is recreated when missing; when yet done, grid/proc layout agreement must be checked
 cp data/proc_bounds.dat $newdir/data
@@ -33,6 +34,6 @@ if ( $io_scheme == 'io_hdf5' ) then
 else
   rm -f $newdir/data/allprocs/grid.dat; ln -s $olddir/data/allprocs/grid.dat $newdir/data/allprocs/grid.dat
   rm -f $newdir/data/allprocs/ode.dat; ln -s $olddir/data/allprocs/ode.dat $newdir/data/allprocs/ode.dat
-  pc_copyvar grid.dat grid.dat $newdir -s -e
-  pc_copyvar v v $newdir -s -e
+  pc_copyvar_old grid.dat grid.dat $newdir -s -e
+  pc_copyvar_old v v $newdir -s -e
 endif
