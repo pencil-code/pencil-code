@@ -1521,14 +1521,13 @@ void autotune_all_integration_substeps()
   splitUpdate(1e11,1);
 }
 /***********************************************************************************************/
-extern "C" void loadFarray()
+AcMesh
+get_f_src()
 {
-  AcMesh src = mesh;
-  AcMesh tmp;
   if (dimensionality == 1)
   {
-  	acHostMeshCopy(mesh, &tmp);
-	src = tmp;
+        AcMesh src;
+  	acHostMeshCopy(mesh, &src);
     	for (int i = 0; i < mfarray; ++i)
   	{
 		const int index = (i < mvar) ? i : maux_vtxbuf_index[i];
@@ -1558,11 +1557,12 @@ extern "C" void loadFarray()
 			}
 		}
 	}
+	return src;
   }
   if (dimensionality == 2 && nygrid == 1)
   {
-  	acHostMeshCopy(mesh, &tmp);
-	src = tmp;
+        AcMesh src;
+  	acHostMeshCopy(mesh, &src);
     	for (int i = 0; i < mfarray; ++i)
   	{
 		const int index = (i < mvar) ? i : maux_vtxbuf_index[i];
@@ -1577,11 +1577,12 @@ extern "C" void loadFarray()
 			}
 		}
 	}
+	return src;
   }
   if (dimensionality == 0)
   {
-  	acHostMeshCopy(mesh, &tmp);
-	src = tmp;
+	AcMesh src;
+  	acHostMeshCopy(mesh, &src);
     	for (int i = 0; i < mfarray; ++i)
   	{
 		const int index = (i < mvar) ? i : maux_vtxbuf_index[i];
@@ -1590,26 +1591,35 @@ extern "C" void loadFarray()
 		const size_t ac_index = 0;
 		src.vertex_buffer[index][ac_index] = mesh.vertex_buffer[index][f_index];
 	}
+	return src;
   }
+  return mesh;
+}
+/***********************************************************************************************/
+extern "C" void loadFarray()
+{
+  AcMesh src = get_f_src();
   acGridSynchronizeStream(STREAM_ALL);
-  {
-    for (int i = 0; i < mvar; ++i)
-  	acDeviceLoadVertexBuffer(acGridGetDevice(), STREAM_DEFAULT, src, VertexBufferHandle(i));
 
-    int n_aux_on_gpu = 0;
-    for (int i = 0; i < mfarray; ++i)
-      if (maux_vtxbuf_index[i] != -1)
-      {
-	      n_aux_on_gpu++;
-  		acDeviceLoadVertexBuffer(acGridGetDevice(), STREAM_DEFAULT, src, VertexBufferHandle(maux_vtxbuf_index[i]));
-      }
-    for (int i = 0; i < mfarray-mvar-maux; ++i)
+  for (int i = 0; i < mvar; ++i)
+      acDeviceLoadVertexBuffer(acGridGetDevice(), STREAM_DEFAULT, src, VertexBufferHandle(i));
+
+  int n_aux_on_gpu = 0;
+  for (int i = 0; i < mfarray; ++i)
+  {
+    if (maux_vtxbuf_index[i] != -1)
     {
-  	acDeviceLoadVertexBuffer(acGridGetDevice(), STREAM_DEFAULT, src, VertexBufferHandle(mvar+n_aux_on_gpu+i));
+        n_aux_on_gpu++;
+      	acDeviceLoadVertexBuffer(acGridGetDevice(), STREAM_DEFAULT, src, VertexBufferHandle(maux_vtxbuf_index[i]));
     }
   }
+  for (int i = 0; i < mglobal; ++i)
+  {
+      acDeviceLoadVertexBuffer(acGridGetDevice(), STREAM_DEFAULT, src, VertexBufferHandle(mvar+n_aux_on_gpu+i));
+  }
+
   acGridSynchronizeStream(STREAM_ALL);
-  if (dimensionality == 1) acHostMeshDestroy(&tmp);
+  if (dimensionality != 3) acHostMeshDestroy(&src);
 }
 /***********************************************************************************************/
 void generate_bcs()
