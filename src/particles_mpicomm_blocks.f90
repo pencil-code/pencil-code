@@ -66,8 +66,6 @@ module Particles_mpicomm
 !
       integer :: ibx, iby, ibz
 !
-      integer :: mpi_err
-!
 !  Check consistency of brick partition.
 !
       if (mod(nbrickx,nprocx)/=0) then

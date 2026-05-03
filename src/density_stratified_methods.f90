@@ -59,6 +59,7 @@ module DensityMethods
       real, intent(in) :: f
       integer, intent(in) :: irf        ! here dummy parameter only
 !
+      getrho_s = 0.0
       call fatal_error('getrho_s', 'not implemented.')
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(irf)

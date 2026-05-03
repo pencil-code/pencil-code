@@ -118,6 +118,7 @@ module Particles_sink
       endif
 !
       call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lrhop_roche_unit)
 !
     endsubroutine initialize_particles_sink
 !***********************************************************************
@@ -255,6 +256,8 @@ module Particles_sink
       real, dimension(1) :: rhop_interp, gpotself_interp
       integer :: k, ix0, iy0, iz0, npar_sink_loc, iblock
       real :: rhoc,rhop_interp_diag
+
+      call keep_compiler_quiet(dfp)
 !
       if (ip<=6) print*, 'create_particles_sink: entering, iproc, it, itsub=', iproc, it, itsub
 !
@@ -481,7 +484,7 @@ module Particles_sink
 !
       integer, dimension(0:ncpus-1) :: npar_sink_proc
       integer, dimension(27) :: iproc_recv_list, iproc_send_list
-      integer :: i, j, j1, j2, k, k1, k2, ireq, ierr, nreq, krmv
+      integer :: i, j, j1, j2, k, k1, k2, krmv
       integer :: nproc_comm, iproc_comm
       integer :: npar_sink_loc, npar_sink
       integer :: ipx_send, ipy_send, ipz_send, ipx_recv, ipy_recv, ipz_recv
@@ -1313,7 +1316,7 @@ module Particles_sink
       real, dimension (3) :: uu_gas
       real :: vxk, vyk, vzk
       real :: xold, yold, zold, vxold, vyold, vzold
-      real :: r, r2, v, v2, tsub, told, rj, gmass, rhill, rsurf, dtsub
+      real :: r, r2, v, v2, tsub, told, gmass, rhill, rsurf, dtsub
       real :: tausp, tausp1
       integer :: itsubsub, iblock, nhalforbx, nhalforby, nhalforbz
       logical :: laccrete_subgrid
@@ -1595,6 +1598,8 @@ module Particles_sink
       logical, optional :: lwrite
 !
       integer :: iname
+
+      call keep_compiler_quiet(lreset,lwrite)
 !
 !  Run through all possible names that may be listed in print.in.
 !

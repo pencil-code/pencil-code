@@ -7103,11 +7103,11 @@ iloop:do i=1,size(list2)
 
       ind = int(rindex)
 
-      resid = mod(int(ind,KIND=ikind8),nw)
+      resid = int(mod(int(ind,KIND=ikind8),nw))
       indx = mod(resid,nx)
       indy = mod(resid-indx,nxy)
       indz = resid/nxy
-      if (present(rank)) rank=ind/nw
+      if (present(rank)) rank=int(ind/nw)
 
       indx=indx+1; indy=indy+1; indz=indz+1
 

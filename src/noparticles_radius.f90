@@ -186,7 +186,6 @@ module Particles_radius
       real, dimension (mpar_loc,mparray) :: fp
       integer, intent(in) :: ip
       real, intent(out) :: mpi
-      real :: api
 !
       mpi = -1.0
       call keep_compiler_quiet(fp)

@@ -251,9 +251,11 @@ module Particles
       real, dimension (mpar_loc,mparray), intent (in) :: fp
 !
       real :: rhom
-      integer :: ierr, jspec
+      integer :: jspec
       real, pointer :: reference_state_mass
       real, pointer :: temperature_power_law
+
+      call keep_compiler_quiet(fp)
 !
 !  This module is incompatible with normal domain decomposition.
 !
@@ -1433,6 +1435,9 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension(mpar_loc,mparray), intent(in) :: fp
       integer, dimension(mpar_loc,3), intent(in) :: ineargrid
       type (pencil_case) :: p
+
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(ineargrid)
 !
       if (lpencil(i_np)) p%np=f(l1:l2,m,n,inp)
 !
@@ -2442,10 +2447,9 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       real, dimension (mpar_loc,mparray) :: fp
       real, dimension(3) :: uup, duu
-      type (pencil_case) :: p
       real :: tausp1_par,tmp,tmp1
       integer :: k, ix0, iy0, iz0, jspec, ib
-      real :: kd,fd,mach,mach2,fac,OO,rho,cs2
+      real :: kd,fd,mach,fac,OO,rho,cs2
       real :: knudsen,reynolds,lambda
       real :: inv_particle_radius,kn_crit
       logical, optional :: lstokes

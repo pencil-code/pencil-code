@@ -117,7 +117,6 @@ module Selfgravity
       use EquationOfState, only: get_stratz
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: ierr=0
       integer :: i
 !
 !  Initialize gravitational potential to zero.

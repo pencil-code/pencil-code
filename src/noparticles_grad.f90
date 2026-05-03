@@ -72,6 +72,7 @@ module Particles_grad
       call keep_compiler_quiet(fp)
       call keep_compiler_quiet(npar_low)
       call keep_compiler_quiet(npar_high)
+      call keep_compiler_quiet(ineargrid)
       call keep_compiler_quiet(init)
 !
       endsubroutine set_particle_grad
