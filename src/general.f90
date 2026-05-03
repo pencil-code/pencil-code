@@ -3624,7 +3624,7 @@ endfunction
         ind = index( zeile(inda:), tz )
 !
         if ( inda+ind-1 < lenz .and. parser == lenf ) then
-          print*, 'Parser - Warning: too many substrings!'
+          print*, 'Parser - Warning: too many substrings in "'//trim(zeile)//'" (>',lenf,')! '
           return
         endif
 !

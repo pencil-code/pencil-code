@@ -103,9 +103,9 @@
                            'input_persist_special_id      ', &
                            'output_persistent_special     ', &
                            'special_particles_after_dtsub ', &
-                           'calc_diagnostics_special      ',  &
-                           'calc_ode_diagnostics_special  ',  &
-                           'prep_rhs_special              ',  &
+                           'calc_diagnostics_special      ', &
+                           'calc_ode_diagnostics_special  ', &
+                           'prep_rhs_special              ', &
                            'load_variables_to_gpu_special '  &
                    /)
 
@@ -127,13 +127,15 @@
     integer, parameter :: RTLD_LAZY=0, RTLD_NOW=1
 
     character(LEN=128) :: line,parstr
-    integer :: i,j,ipos
+    integer :: i,j,ipos,ind
     character(LEN=40), dimension(n_special_modules_max) :: special_modules
     integer(KIND=ikind8) :: sub_handle
 
     if (lreloading) return
 
     call get_env_var("PC_MODULES_LIST", special_modules_list)
+    ind = index(special_modules_list,'#')
+    if (ind>0) special_modules_list(ind:)=''  ! remove trailing comment
     n_special_modules=parser(trim(special_modules_list),special_modules,' ')
     !Remove trailing newlines
     do i=1,n_special_modules
