@@ -8676,6 +8676,7 @@ module Boundcond
       integer, parameter :: bnx=nygrid, bny=nx/nprocy
       integer :: kx_start, stat, pos_z
       real :: delta_z, reduce_factor=1.
+      integer :: ix,iy,iz
 !
       if (ldownsampling) then
         call warning('bc_force_aa_time','not available for downsampling')   !,lfirst_proc_xy)
@@ -8708,8 +8709,9 @@ module Boundcond
           if (stat > 0) call fatal_error ('bc_aa_pot_field_extrapol', 'could not allocate exp_fact_bot', .true.)
           ! Get wave numbers already in transposed pencil shape and calculate exp(|k|)
           kx_start = (ipx+ipy*nprocx)*bny
-          exp_fact_bot = spread (exp (sqrt (spread (ky_fft(1:bnx), 2, bny) ** 2 + &
-                                            spread (kx_fft(kx_start+1:kx_start+bny), 1, bnx) ** 2)), 3, nghost)
+          do ix=1,bnx; do iy=1,bny; do iz=1,nghost
+            exp_fact_bot(ix,iy,iz) = exp(sqrt(ky_fft(ix) ** 2 + kx_fft(kx_start+iy) ** 2 ))
+          enddo; enddo; enddo
           do pos_z = 1, nghost
             ! dz is positive => enhance structures or contrast
             delta_z = reduce_factor * (z(n1) - z(n1-nghost+pos_z-1))
@@ -8726,8 +8728,9 @@ module Boundcond
           if (stat > 0) call fatal_error ('bc_aa_pot_field_extrapol', 'could not allocate exp_fact_top', .true.)
           ! Get wave numbers already in transposed pencil shape and calculate exp(|k|)
           kx_start = (ipx+ipy*nprocx)*bny
-          exp_fact_top = spread (exp (sqrt (spread (ky_fft(1:bnx), 2, bny) ** 2 + &
-                                            spread (kx_fft(kx_start+1:kx_start+bny), 1, bnx) ** 2)), 3, nghost)
+          do ix=1,bnx; do iy=1,bny; do iz=1,nghost
+            exp_fact_top(ix,iy,iz) = exp(sqrt(ky_fft(ix) ** 2 + kx_fft(kx_start+iy) ** 2 ))
+          enddo; enddo; enddo
           do pos_z = 1, nghost
             ! dz is negative => decay of structures
             delta_z = z(n2) - z(n2+pos_z)
