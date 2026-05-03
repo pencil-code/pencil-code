@@ -452,8 +452,12 @@ sub setup_environment {
       $ENV{OMP_PROC_BIND} = 'close,spread';
       $ENV{OMP_MAX_ACTIVE_LEVELS} = 2;
       $ENV{OMP_WAIT_POLICY} = 'PASSIVE';
-      $ENV{OMP_NUM_THREADS}    = $ENV{SLURM_CPUS_PER_TASK};
-      $ENV{SRUN_CPUS_PER_TASK} = $ENV{SLURM_CPUS_PER_TASK};    # shall not be effective!
+      my $ncpus = $ENV{SLURM_CPUS_PER_TASK};
+      if (!defined $ncpus) {
+          chomp($ncpus = `nproc`);
+      }
+      $ENV{OMP_NUM_THREADS}    = $ncpus;
+      $ENV{SRUN_CPUS_PER_TASK} = $ncpus;
     }
     if ($settings{'mpich'}) {
       if($_[0] eq "run") {
