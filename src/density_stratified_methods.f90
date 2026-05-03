@@ -193,11 +193,11 @@ module DensityMethods
 !
     endsubroutine getdlnrho_x
 !***********************************************************************
-    subroutine getdlnrho_y(f,i, rm, im, dlnrho)
+    subroutine getdlnrho_y(f, i, rm, im, dlnrho)
 !
 !  03-apr-15/ccyang: dummy.
 
-      integer, intent(in) :: rm, im
+      integer, intent(in) :: i,rm, im
       real, dimension(mx,my,mz), intent(in) :: f
       real, dimension(mx,mz), intent(out):: dlnrho
 !
@@ -212,7 +212,7 @@ module DensityMethods
 !
 !  03-apr-15/ccyang: dummy.
 !
-      integer, intent(in) :: rn, in
+      integer, intent(in) :: i, rn, in
       real, dimension(mx,my,mz), intent(in) :: f
       real, dimension(mx,my), intent(out):: dlnrho
 !
