@@ -1,0 +1,6 @@
+#!/bin/sh
+#
+# Wrapper to overwrite var.dat with var.dat.bck
+for d in data/proc[0-9]*; do
+    mv "$d/var.dat.bck" "$d/var.dat"
+done
