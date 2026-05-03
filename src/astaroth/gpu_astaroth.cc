@@ -1619,7 +1619,7 @@ extern "C" void loadFarray()
   }
 
   acGridSynchronizeStream(STREAM_ALL);
-  if (dimensionality != 3) acHostMeshDestroy(&src);
+  if (dimensionality < 2 || (dimensionality == 2 && nygrid == 1)) acHostMeshDestroy(&src);
 }
 /***********************************************************************************************/
 void generate_bcs()
