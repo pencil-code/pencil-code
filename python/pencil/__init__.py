@@ -3,11 +3,22 @@ The __init__ file is used not only to import the sub-modules, but also to
 set everything up properly.
 """
 
-import lazy_loader as lazy
+from .util import (
+    pc_print
+    )
+
+lazy_loader_imported = False
+try:
+  import lazy_loader as lazy
+  lazy_loader_imported = True
+except ImportError:
+   pc_print(
+           "Was not able to import lazy_loader so importing pc will be slower.\nYou can install lazy_loader with pip3 install lazy_loader."
+    )
+
 
 from .util import (
-    pc_print,
-    is_sim_dir,
+    is_sim_dir
     )
 
 try:
@@ -41,7 +52,9 @@ submodules = [
     "pipelines",
     ]
 
-__getattr__, __dir__, _ = lazy.attach(__name__, submodules)
+if lazy_loader_imported:
+  __getattr__, __dir__, _ = lazy.attach(__name__, submodules)
+
 
 # Internal routines.
 def get_sim(path=".", quiet=True):
