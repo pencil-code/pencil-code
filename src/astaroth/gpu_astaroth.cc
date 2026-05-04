@@ -169,12 +169,12 @@ static MPI_Comm comm_pencil = MPI_COMM_NULL;
 static AcMesh mesh = acInitMesh();
 //static AcMesh test_mesh;
 
-void torch_train_CAPI(int sub_dims[3], AcReal* input, AcReal* label, AcReal* loss_val,
+bool torch_train_CAPI(int sub_dims[3], AcReal* input, AcReal* label, AcReal* loss_val,
 		     const int input_fields, const int output_fields, const char* model_name);
-void torch_infer_CAPI(int sub_dims[3], AcReal* input, AcReal* label, 
+bool torch_infer_CAPI(int sub_dims[3], AcReal* input, AcReal* label, 
 		     const int input_fields, const int output_fields, const char* model_name, bool subsample);
-void torch_create_model_CAPI(const char* name, const char* config_fname, int device);
-void torch_create_distributed_model_CAPI(const char* name, const char* config_fname, MPI_Comm mpi_comm, int device);
+bool torch_create_model_CAPI(const char* name, const char* config_fname, int device);
+bool torch_create_distributed_model_CAPI(const char* name, const char* config_fname, MPI_Comm mpi_comm, int device);
 bool torch_load_CAPI(const char* name, const char* fname);
 bool torch_load_checkpoint_CAPI(const char* name, const char* checkpoint_dir, int64_t* step_train, int64_t* step_inference);
 bool torch_save_model_CAPI(const char* name, const char* fname);
@@ -640,14 +640,23 @@ extern "C" void tf_create_model_c_api(const char *model_name, const char* config
 	
 	if(ldist){
   	comm_pencil = MPI_Comm_f2c(comm_fint);
-  	acLogFromRootProc(rank,"CREATING DISTRIBUTED TRAINING\n");
-		torch_create_distributed_model_CAPI(model_name, config_file_path, comm_pencil, 0);
+		bool success = torch_create_distributed_model_CAPI(model_name, config_file_path, comm_pencil, 0);
+		if (success != 0){
+			acLogFromRootProc(rank, "Error when creating distributed model: %s from config file: %s\n", model_name, config_file_path);
+		}
+		else{
+  		acLogFromRootProc(rank,"CREATED DISTRIBUTED TRAINING\n");
+		}
 	}
 
 	else{
-  	acLogFromRootProc(rank,"CREATING SINGLE TRAINING\n");
-		torch_create_model_CAPI(model_name, config_file_path, 0);
-
+		bool success = torch_create_model_CAPI(model_name, config_file_path, 0);
+		if (success != 0){
+			acLogFromRootProc(rank, "Error when creating the model: %s from config file: %s\n", model_name, config_file_path);
+		}
+		else{
+  		acLogFromRootProc(rank,"CREATED SINGLE TRAINING\n");
+		}
 	}
 	fflush(stderr);
 	fflush(stdout);
@@ -661,7 +670,9 @@ extern "C" void tf_load_model_c_api(const char* name, const char* fname){
 	if (success != 0){
 		acLogFromRootProc(rank, "Error when loading model %s\n", name);
 	}
-	acLogFromRootProc(rank, "Torchfort model %s loaded succesfully", name);
+	else{
+		acLogFromRootProc(rank, "Torchfort model %s loaded succesfully", name);
+	}
 	fflush(stdout);
 	fflush(stderr);
 #endif
@@ -675,7 +686,9 @@ extern "C" void tf_load_model_checkpoint_c_api(const char* name, const char* che
 	if (success != 0){
 		acLogFromRootProc(rank, "Error when loading model %s\n", name);
 	}
-	acLogFromRootProc(rank, "Torchfort model %s loaded succesfully\n", name);
+	else{
+		acLogFromRootProc(rank, "Torchfort model %s loaded succesfully\n", name);
+	}
 	fflush(stdout);
 	fflush(stderr);
 #endif
@@ -687,7 +700,9 @@ extern "C" void tf_save_model_c_api(const char* name, const char* fname){
 	if(success != 0){
 		acLogFromRootProc(rank, "save_model: Error when saving ML model: %s\n", name);
 	}
-	acLogFromRootProc(rank, "save_model: Saving ML model to: %s\n", fname);
+	else{
+		acLogFromRootProc(rank, "save_model: Saving ML model to: %s\n", fname);
+	}
 	fflush(stdout);
 	fflush(stderr);
 #endif
@@ -699,7 +714,9 @@ extern "C" void tf_save_checkpoint_c_api(const char* name, const char* checkpoin
 	if(success != 0){
 		acLogFromRootProc(rank, "save_checkpoint: Error when checkpointing ML model: %s in directory: %s\n", name, checkpoint_dir);
 	}
-	acLogFromRootProc(rank, "save_checkpoint: Checkpoint ML model to: %s\n", checkpoint_dir);
+	else{
+		acLogFromRootProc(rank, "save_checkpoint: Checkpoint ML model to: %s\n", checkpoint_dir);
+	}
 	fflush(stdout);
 	fflush(stderr);
 #endif
