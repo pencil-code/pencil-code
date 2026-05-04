@@ -228,4 +228,21 @@ contains
 
   endsubroutine TF_load_model_checkpoint
 !***********************************************************************
+  subroutine TF_save_model(model_name, fname)
+
+    character(len=*), intent(in) :: model_name, fname
+
+    call keep_compiler_quiet(model_name)
+    call keep_compiler_quiet(fname)
+
+  endsubroutine TF_save_model
+!***********************************************************************
+  subroutine TF_save_checkpoint(model_name, checkpoint_dir)
+
+    character(len=*), intent(in) :: model_name, checkpoint_dir
+
+    call keep_compiler_quiet(model_name)
+    call keep_compiler_quiet(checkpoint_dir)
+  endsubroutine TF_save_checkpoint
+!***********************************************************************
 endmodule GPU

@@ -115,3 +115,11 @@ void FTNIZE(tf_load_model_checkpoint_c)(const char* model_name, const char* chec
 {
 }
 /* ---------------------------------------------------------------------- */
+void FTNIZE(tf_save_model_c)(const char* model_name, const char* fname)
+{
+}
+/* ---------------------------------------------------------------------- */
+void FTNIZE(tf_save_checkpoint_c)(const char* model_name, const char* checkpoint_dir)
+{
+}
+/* ---------------------------------------------------------------------- */

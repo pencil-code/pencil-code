@@ -13,7 +13,7 @@
     use General, only: itoa
     use Messages
     use Torchfort, only: TORCHFORT_RESULT_SUCCESS, &
-                         torchfort_save_model,torchfort_result_success,torchfort_save_checkpoint, &
+                         torchfort_result_success, &
                          torchfort_inference,torchfort_train
     !use iso_c_binding
 
@@ -294,14 +294,15 @@
 !***************************************************************
     subroutine save_model
 
+    use Gpu, only: TF_save_model
+
       if (iproc == root) then
 
-        call information("save_model","saving ML model to ",trim(model_output_dir)//trim(model_file))
         !SG: should save the model instead of checkpoint in the end
-        istat = torchfort_save_model(model, trim(model_output_dir)//trim(model_file))
-        if (istat /= TORCHFORT_RESULT_SUCCESS) &
-           print*, "save_model: Error when saving ML model: istat="//trim(itoa(istat))
-         lmodel_saved = .true.
+        
+        call TF_save_model(trim(model), trim(model_output_dir)//trim(model_file))
+
+        lmodel_saved = .true.
 
       endif
 
@@ -309,14 +310,16 @@
 !***************************************************************
     subroutine save_chkpt
 
+    use Gpu, only: TF_save_checkpoint
+
       if (lroot.and.lfirst.and.(mod(it,it_train_chkpt)==0 .or. (t-t_last_chkpt) >= t_train_chkpt)) then
 
-        !print*, 'model: ', trim(model)
-        istat = torchfort_save_checkpoint(trim(model), trim(checkpoint_output_dir))
+        call TF_save_checkpoint(trim(model), trim(checkpoint_output_dir))
+
         t_last_chkpt=t
-        if (istat /= TORCHFORT_RESULT_SUCCESS) &
-          call fatal_error("save_chkpt","when saving ML checkpoint: istat="//trim(itoa(istat)))
+
         lckpt_written = .true.
+
         !print*, 'it, it_train_chkpt: , t:, t_train_chkpt: , t_last_chkpt: ', it, it_train_chkpt, t, t_train_chkpt, t_last_chkpt, trim(model), istat, trim(checkpoint_output_dir), lckpt_written
 
       endif

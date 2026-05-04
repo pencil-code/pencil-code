@@ -177,6 +177,8 @@ void torch_create_model_CAPI(const char* name, const char* config_fname, int dev
 void torch_create_distributed_model_CAPI(const char* name, const char* config_fname, MPI_Comm mpi_comm, int device);
 bool torch_load_CAPI(const char* name, const char* fname);
 bool torch_load_checkpoint_CAPI(const char* name, const char* checkpoint_dir, int64_t* step_train, int64_t* step_inference);
+bool torch_save_model_CAPI(const char* name, const char* fname);
+bool torch_save_checkpoint_CAPI(const char* name, const char* checkpoint_dir);
 
 void scaling();
 extern "C" void print_debug();
@@ -674,6 +676,30 @@ extern "C" void tf_load_model_checkpoint_c_api(const char* name, const char* che
 		acLogFromRootProc(rank, "Error when loading model %s\n", name);
 	}
 	acLogFromRootProc(rank, "Torchfort model %s loaded succesfully\n", name);
+	fflush(stdout);
+	fflush(stderr);
+#endif
+}
+/***********************************************************************************************/
+extern "C" void tf_save_model_c_api(const char* name, const char* fname){
+#if LTRAINING
+	bool success = torch_save_model_CAPI(name, fname);
+	if(success != 0){
+		acLogFromRootProc(rank, "save_model: Error when saving ML model: %s\n", name);
+	}
+	acLogFromRootProc(rank, "save_model: Saving ML model to: %s\n", fname);
+	fflush(stdout);
+	fflush(stderr);
+#endif
+}
+/***********************************************************************************************/
+extern "C" void tf_save_checkpoint_c_api(const char* name, const char* checkpoint_dir){
+#if LTRAINING
+	bool success = torch_save_checkpoint_CAPI(name, checkpoint_dir);
+	if(success != 0){
+		acLogFromRootProc(rank, "save_checkpoint: Error when checkpointing ML model: %s in directory: %s\n", name, checkpoint_dir);
+	}
+	acLogFromRootProc(rank, "save_checkpoint: Checkpoint ML model to: %s\n", checkpoint_dir);
 	fflush(stdout);
 	fflush(stderr);
 #endif

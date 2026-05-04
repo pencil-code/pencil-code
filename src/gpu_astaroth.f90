@@ -49,6 +49,8 @@ module GPU
   external print_snapshot_c
   external tf_load_model_c
   external tf_load_model_checkpoint_c
+  external tf_save_model_c
+  external tf_save_checkpoint_c
 
 
   integer, external :: update_on_gpu_arr_by_name_c
@@ -145,6 +147,16 @@ contains
     character(len=*), intent(in) :: model_name, checkpoint_dir
     call tf_load_model_checkpoint_c(trim(model_name) // c_null_char, trim(checkpoint_dir) // c_null_char)
   endsubroutine TF_load_model_checkpoint
+!***********************************************************************
+  subroutine TF_save_model(model_name, fname)
+    character(len=*), intent(in) :: model_name, fname
+    call tf_save_model_c(trim(model_name) // c_null_char, trim(fname) // c_null_char)
+  endsubroutine TF_save_model
+!***********************************************************************
+  subroutine TF_save_checkpoint(model_name, checkpoint_dir)
+    character(len=*), intent(in) :: model_name, checkpoint_dir
+    call tf_save_checkpoint_c(trim(model_name) // c_null_char, trim(checkpoint_dir) // c_null_char)
+  endsubroutine TF_save_checkpoint
 !***********************************************************************
     subroutine initialize_GPU(f)
 !
