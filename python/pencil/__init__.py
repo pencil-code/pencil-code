@@ -54,7 +54,9 @@ submodules = [
 
 if lazy_loader_imported:
   __getattr__, __dir__, _ = lazy.attach(__name__, submodules)
-
+else:
+    for mod in submodules:
+      __import__(f"{__name__}.{mod}")
 
 # Internal routines.
 def get_sim(path=".", quiet=True):
