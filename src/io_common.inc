@@ -94,8 +94,13 @@
 !
 !  Root reads global dim.dat.
 !
+!     2026-May-04/Kishore: added local below to fix samples/backwards-compatible.
+!     2026-May-04/Kishore: which has only `data/proc0/dim.dat`. I haven't tested
+!     2026-May-04/Kishore: the effect with, e.g., io_collect.
+!
       call input_dim('.', mx_in, my_in, mz_in, mvar_in, maux_in, mglobal_in, &
-                     res, nghost_in, nprocx_in, nprocy_in, nprocz_in)
+                     res, nghost_in, nprocx_in, nprocy_in, nprocz_in, &
+                     local=.not.lcollective_IO)
 
       call mpibcast(res)
 
