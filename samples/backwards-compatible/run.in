@@ -8,6 +8,7 @@
   dsnap=5.0
   random_gen='nr_f90', cdt=0.4
   save_lastsnap=F
+  lwrite_dim_again=F
   lpencil_check=T
 /
 &eos_run_pars
