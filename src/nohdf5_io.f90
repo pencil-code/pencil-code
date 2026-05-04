@@ -435,7 +435,7 @@ module HDF5_IO
 !
         ! local or global dimension file
         if (loptest(local)) then
-          filename = trim(wrkdir)//'/data/proc/'//trim(itoa(iproc_world))//'dim.dat'
+          filename = trim(wrkdir)//'/data/proc'//trim(itoa(iproc_world))//'/dim.dat'
           lread=.true.
         else
           filename = trim(wrkdir)//'/data/dim.dat'
