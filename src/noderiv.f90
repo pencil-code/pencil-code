@@ -35,7 +35,7 @@ module Deriv
       !real, dimension(-2:3), intent(in ) :: grid
       !real, dimension(-3:3), intent(out) :: coeffs
       real, dimension(-0:1), intent(in ) :: grid
-      real, dimension(-1:1), intent(out) :: coeffs
+      real, dimension(-0:0), intent(out) :: coeffs
 !
       if (lroot) print*,'calc_coeffs_1 is not evaluated'
 !--   call fatal_error("calc_coeffs_1","not coded for deriv_2nd")

@@ -3064,14 +3064,11 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
 
       dc( 1:nghost)  = coors(nghost+2:2*nghost+1)-coors(nghost+1:2*nghost)
       dc(-nghost+1:0)= dc(nghost:1:-1)
-!print*, 'DX,Y,Z=', dx,dy,dz
-!The mins are to avoid compilation failure, and will not have any influence when nghost>0
-!and naturally this function is not needed for nghost=0
-      call calc_coeffs_1(dc,coeffs(:,min(BOT,2*nghost)))
+      call calc_coeffs_1(dc,coeffs(:,BOT))
+!
       dc(-nghost+1:0)= coors(sc-2*nghost+1:sc-nghost)-coors(sc-2*nghost:sc-nghost-1)
       dc( 1:nghost)  = dc(0:-nghost+1:-1)
-
-      call calc_coeffs_1(dc,coeffs(:,min(TOP,2*nghost)))
+      call calc_coeffs_1(dc,coeffs(:,TOP))
 
     endsubroutine calc_bound_coeffs
 !***********************************************************************
