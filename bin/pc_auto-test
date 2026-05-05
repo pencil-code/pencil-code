@@ -179,6 +179,7 @@ my %tests = (
                          conv-slab-flat
                          coronae_heatflux_boris
                          helical-MHDturb_HDF5
+                         helical-MHDturb-noncube
                          power_xy/complex
                          power_xy/complex_iodist
                          power_xy/complex_lpowerxyhdf5/nprocx_2
