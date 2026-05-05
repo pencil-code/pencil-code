@@ -263,6 +263,7 @@ sub run_tests_on {
     $shost = "\u$shost";
 
     if ($html) {
+        if ($first) { print "<h1>Details</h1>" };
         unless ($first) { print "<p>\n<hr>\n<p>\n" };
         print "<h2>$shost:</h2>\n\n<pre>\n";
     } else {
@@ -316,7 +317,15 @@ sub run_tests_on {
                 print "</pre>\n".'<a id="'.$1.'"></a>'."\n<pre>";
             }
             if ($empty && ($line =~ /^\s*(?:All .*? tests? succeeded\.|\#*\s*auto-test failed\s*\#*)\s*$/is)) {
-                print "</pre>\n".'<a id="summary"></a>'."\n<pre>";
+                if ($local) {
+                    print <<"END_PRINT";
+</pre>
+</div> <!-- id="div_details" -->
+<div id="div_summary">
+<h1>Summary</h1>
+<pre>
+END_PRINT
+                }
             }
             $empty = 0;
             if ($line =~ /^[\s\-]*$/s) { $empty = 1; }
@@ -478,15 +487,45 @@ END_XMLHEAD
         <meta name="language" content="en">
         <meta http-equiv="content-type" content="text/html; charset=UTF-8" >
         <title>$testname</title>
+        <style>
+            #flex {
+                display: flex;
+                flex-direction: column;
+            }
+            #div_summary {
+                order: 1;
+            }
+
+            #div_details {
+                order: 2;
+            }
+
+            #div_footer {
+                order: 3;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            h2 {
+                font-size: 1rem;
+            }
+        </style>
 </head>
 <body>
 
 <p>$date</p>
 <pre>$commandline</pre>
-<p><a href="#summary">click to jump to summary</a></p>
 END_HEAD
         if ($coverage) {
             print "<p><a href=\"$lcov_output_dir_name\">click to view coverage report</a></p>\n";
+        }
+        if ($local) {
+            print <<"END_HEAD";
+<div id="flex">
+<div id="div_details">
+END_HEAD
         }
     } else {
         print "$date\n\n";
@@ -497,12 +536,25 @@ sub print_footer {
 
     my $date = scalar localtime();
     if ($html) {
-        print <<"END_FOOT";
+        if ($local) {
+            print <<"END_FOOT";
+</pre>
+</div> <!-- id="div_summary" -->
+<div id="div_footer">
+$date
+</div> <!-- id="div_footer" -->
+</div> <!-- id="flex" -->
+</body>
+</html>
+END_FOOT
+        } else {
+            print <<"END_FOOT";
 </pre>
 $date
 </body>
 </html>
 END_FOOT
+        }
     }
     if ($with_xml) {
         $xml.=<<"END_XMLFOOT";
