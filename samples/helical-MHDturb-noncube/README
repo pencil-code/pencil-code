@@ -1,0 +1,12 @@
+Directory:
+    ${PENCIL_HOME}/samples/helical-MHDturb-noncube
+SVN Id:
+    $Id$
+Maintainer:
+    Kishore G <kishore96/gmail[dot]com>
+Added:
+    05-May-2026
+Status:
+    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+Comments:
+    Identical to helical-MHDTurb_HDF5, except that the box is no longer a cube.
