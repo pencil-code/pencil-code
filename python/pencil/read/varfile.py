@@ -233,8 +233,6 @@ class DataCube(object):
             inds = sorted([v for k, v in self._index.items()])
             m = {v: i+1 for i,v in enumerate(inds)}
             self._index = {k:m[v] for k,v in self._index.items()}
-            #TP: put on comment since Python was complaining about improper syntax
-            #print(f"{self._index = }") #debug
         else:
             self._index = index.__dict__
 
