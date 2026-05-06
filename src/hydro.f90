@@ -2989,7 +2989,8 @@ module Hydro
         if (lweno_transport.and.ldensity_nolog) then
           lpenc_requested(i_rho1)=.true.
           lpenc_requested(i_transpurho)=.true.
-        else
+        !When using momentum advection is handled by divergence of Tij
+        else if(.not. lconservative) then
           lpenc_requested(i_ugu)=.true.
         endif
       endif
@@ -3566,9 +3567,11 @@ module Hydro
           if (.not. lrelativistic .and. lconservative) then
             call gij_v_times_s(f,iuu,irho,p%uij)
           else
-            !TP: is it okay that this is never true for the relativistic case?
-            !    lcorrect_penc_u does not fix the issue
-            call gij(f,iuu,p%uij,1)
+            if (.not.lpencil_check_at_work) then
+              call fatal_error('calc_pencils_hydro',&
+                  'calculating uij correctly for lrelativistic=T .and. lconservative=T requires velocity as auxiliary ' &
+                   // ACHAR(10) // '                              i.e. lvv_as_aux = lvv_as_comaux = T')
+            endif
           endif
         endif
 !
