@@ -3564,14 +3564,18 @@ module Hydro
         if (lvv_as_aux .or. lvv_as_comaux) then
           call gij(f,ivv,p%uij,1)
         else
-          if (.not. lrelativistic .and. lconservative) then
-            call gij_v_times_s(f,iuu,irho,p%uij)
-          else
-            if (.not.lpencil_check_at_work) then
-              call fatal_error('calc_pencils_hydro',&
-                  'calculating uij correctly for lrelativistic=T .and. lconservative=T requires velocity as auxiliary ' &
-                   // ACHAR(10) // '                              i.e. lvv_as_aux = lvv_as_comaux = T')
+          if (lconservative) then
+            if(lrelativistic) then
+              if (.not.lpencil_check_at_work) then
+                call fatal_error('calc_pencils_hydro',&
+                    'calculating uij correctly for lrelativistic=T .and. lconservative=T requires velocity as auxiliary ' &
+                     // ACHAR(10) // '                              i.e. lvv_as_aux = lvv_as_comaux = T')
+              endif
+            else
+              call gij_v_times_s(f,iuu,irho,p%uij)
             endif
+          else
+            call gij(f,iuu,p%uij,1)
           endif
         endif
 !
