@@ -1428,7 +1428,7 @@ void copyFarray(AcReal* f)
 
   AcMesh* dst = &mesh;
   AcMesh tmp;
-  if (dimensionality <= 1 || (dimensionality == 2 && nygrid == 1))
+  if (nghost > 0 && (dimensionality <= 1 || (dimensionality == 2 && nygrid == 1)))
   {
   	acHostMeshCopy(mesh, &tmp);
 	dst = &tmp;
@@ -1448,7 +1448,7 @@ void copyFarray(AcReal* f)
   acGridSynchronizeStream(STREAM_ALL);
   // Astaroth does not allocate ghost zones for inactive dimensions for 1d and 2d simulations, and unlike for xy  we cannot simply offset into the farray so have to manually copy the values
   //    This is fine since 1d simulations are anyways mainly for testing
-  if (dimensionality == 1)
+  if (nghost > 0 && dimensionality == 1)
   {
   	for (int i = 0; i < end; ++i)
   	{
@@ -1480,7 +1480,7 @@ void copyFarray(AcReal* f)
 	}
   	acHostMeshDestroy(&tmp);
   }
-  if (dimensionality == 0)
+  if (nghost > 0 && dimensionality == 0)
   {
     	for (int i = 0; i < end; ++i)
   	{
@@ -1491,7 +1491,7 @@ void copyFarray(AcReal* f)
  		mesh.vertex_buffer[i][f_index] = dst->vertex_buffer[i][ac_index];
 	}
   }
-  if (dimensionality == 2 && nygrid == 1)
+  if (nghost > 0 && dimensionality == 2 && nygrid == 1)
   {
     	for (int i = 0; i < end; ++i)
   	{
@@ -1567,7 +1567,7 @@ void autotune_all_integration_substeps()
 AcMesh
 get_f_src()
 {
-  if (dimensionality == 1)
+  if (nghost > 0 && dimensionality == 1)
   {
         AcMesh src;
   	acHostMeshCopy(mesh, &src);
@@ -1602,7 +1602,7 @@ get_f_src()
 	}
 	return src;
   }
-  if (dimensionality == 2 && nygrid == 1)
+  if (nghost > 0 && dimensionality == 2 && nygrid == 1)
   {
         AcMesh src;
   	acHostMeshCopy(mesh, &src);
@@ -1622,7 +1622,7 @@ get_f_src()
 	}
 	return src;
   }
-  if (dimensionality == 0)
+  if (nghost > 0 && dimensionality == 0)
   {
 	AcMesh src;
   	acHostMeshCopy(mesh, &src);
@@ -1662,7 +1662,7 @@ extern "C" void loadFarray()
   }
 
   acGridSynchronizeStream(STREAM_ALL);
-  if (dimensionality < 2 || (dimensionality == 2 && nygrid == 1)) acHostMeshDestroy(&src);
+  if (nghost > 0 && (dimensionality < 2 || (dimensionality == 2 && nygrid == 1))) acHostMeshDestroy(&src);
 }
 /***********************************************************************************************/
 void generate_bcs()

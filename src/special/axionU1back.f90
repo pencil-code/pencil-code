@@ -338,8 +338,10 @@ module Special
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
-    subroutine get_Hubble
-    real :: phi, phidot, V, beta, Vprime, phiddot, tmp, alpha_gmssm
+    subroutine get_Hubble_and_scale_factor(f_ode)
+
+      real, dimension(n_odevars), intent(IN) :: f_ode
+      real :: phi, phidot, V, beta, Vprime, phiddot, tmp, alpha_gmssm
 !
       if (lhubble) then
         phi=f_ode(iaxi_phi)
@@ -371,8 +373,9 @@ module Special
         phiddot=-3.*H*phidot-Vprime
       else if (lgpu) then
         H=H_init
+        a=1.0
       endif
-    endsubroutine get_Hubble
+    endsubroutine get_Hubble_and_scale_factor
 !***********************************************************************
     subroutine dspecial_dt(f,df,p)
 !
@@ -420,7 +423,7 @@ module Special
       imAR=f(l1:l2,m,n,iaxi_imAR)
       imARdot=f(l1:l2,m,n,iaxi_imARdot)
 !
-      call get_Hubble
+      call get_Hubble_and_scale_factor(f_ode)
       phidot=f_ode(iaxi_phidot)
 !
 !
@@ -504,7 +507,7 @@ module Special
 
 !
 !
-      Call get_Hubble
+      Call get_Hubble_and_scale_factor(f_ode)
       if (lhubble) then
         select case (V_choice)
           case ('alpha_attractors')
@@ -548,7 +551,7 @@ module Special
 !  identify module and boundary conditions
 !
       if (lgpu) then
-        call read_sums_from_device
+        call read_sums_from_GPU
       endif
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dSPECIAL_dt'
 !
@@ -580,7 +583,7 @@ module Special
       real :: phiddot
 
       if (lhubble) then
-        call get_Hubble
+        call get_Hubble_and_scale_factor(f_ode)
         call save_name(a     ,idiag_a)
         call save_name(f_ode(iaxi_phi)   ,idiag_phi)
         call save_name(f_ode(iaxi_phidot),idiag_phidot)
@@ -725,13 +728,7 @@ module Special
       real, dimension (nx) :: psi, psidot, impsi , impsidot
       real :: a
 
-!      if (lgpu .and. .not. lhubble) H = H_init
-      call get_Hubble
-      if (lhubble) then
-          a = exp(f_ode(iaxi_lna))
-      else
-          a = 1.
-      endif
+      call get_Hubble_and_scale_factor(f_ode)
       AR   =f(l1:l2,m,n,iaxi_AR)
       ARdot=f(l1:l2,m,n,iaxi_ARdot)
       AL   =f(l1:l2,m,n,iaxi_AL)
@@ -856,6 +853,17 @@ module Special
 !
     endsubroutine rprint_special
 !***********************************************************************
+! Subroutines below needed only for GPUs, if you do not care about GPUs don't worry about them
+!***********************************************************************
+    subroutine read_sums_from_GPU
+      use GPU, only: get_gpu_reduced_vars
+      real, dimension(12) :: tmp
+      call get_gpu_reduced_vars(tmp)
+      edotb_sum = tmp(1)
+      rhoe      = tmp(2)
+      rhob      = tmp(3)
+    endsubroutine read_sums_from_GPU
+!***********************************************************************
     subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
@@ -888,6 +896,17 @@ module Special
     call copy_addr(llnk_spacing,p_par(52)) ! bool
     call copy_addr(dlnk,p_par(53))
     call copy_addr(dk,p_par(54))
+    call copy_addr(iaxi_imaldot,p_par(55)) ! int
+    call copy_addr(iaxi_imardot,p_par(56)) ! int
+    call copy_addr(m_phi,p_par(57))
+    call copy_addr(phi_0,p_par(58))
+    call copy_addr(lambda_gmssm,p_par(59))
+    call copy_addr(alpha1_gmssm,p_par(60))
+    call copy_addr(const_sigma,p_par(61))
+    call copy_addr(lbackreact,p_par(64)) ! bool
+    call copy_addr(lquant_filter,p_par(65)) ! bool
+    call copy_addr(horizon_factor,p_par(65)) ! bool
+
 
     endsubroutine pushpars2c
 !***********************************************************************

@@ -309,6 +309,8 @@ my @gpu_tests = qw(
 			 #1d-tests/axionSU2back
 			 2d-tests/chemistry_GrayScott
 			 MRI-turbulence_hyper
+			 1d-tests/axionU1back
+			 #1d-tests/axionSU2back
                    );
 
 		   #Was tested to work but need multi-gpu Fourier 1d-tests/horndeski_choiceIII
