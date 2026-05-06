@@ -1051,7 +1051,7 @@ module Special
 !
       use SharedVariables, only: get_shared_variable
 !
-      if(lgpu) call read_sums_from_device
+      if(lgpu) call read_sums_from_GPU
       call get_Hscript_and_a2(Hscript,a2rhom_all)
       if (lflrw) df_ode(ilna)=df_ode(ilna)+Hscript
 !
@@ -1651,7 +1651,7 @@ module Special
 !********************************************************************
 ! Subroutines below needed only for GPUs, if you do not care about GPUs don't worry about them
 !***********************************************************************
-    subroutine read_sums_from_device
+    subroutine read_sums_from_GPU
 !
 !  The sums needed for ODE and PDE advancement are computed on the GPUs in before_boundary.
 !  Then we need them back on the host to advance the ODEs which this function does.
@@ -1682,7 +1682,7 @@ module Special
         sigBm_all_diagnos      = sigBm_all
       endif
 
-    endsubroutine read_sums_from_device
+    endsubroutine read_sums_from_GPU
 !***********************************************************************
     subroutine pushpars2c(p_par)
 

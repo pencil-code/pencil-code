@@ -1177,7 +1177,7 @@ module Special
 !  identify module and boundary conditions
 !
       if (lgpu) then
-        call read_sums_from_device
+        call read_sums_from_GPU
       endif
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dSPECIAL_dt'
 !
@@ -1984,7 +1984,7 @@ module Special
 !***********************************************************************
 ! Subroutines below needed only for GPUs, if you do not care about GPUs don't worry about them
 !***********************************************************************
-    subroutine read_sums_from_device
+    subroutine read_sums_from_GPU
 !
 !  The sums needed for ODE and PDE advancement are computed on the GPUs in before_boundary.
 !  Then we need them back on the host to advance the ODEs which this function does.
@@ -2018,7 +2018,7 @@ module Special
               TLeff2km_sum = tmp(9)
               TLeff2m_sum =  tmp(10)
       endif
-    endsubroutine read_sums_from_device
+    endsubroutine read_sums_from_GPU
 !***********************************************************************
     subroutine pushpars2c(p_par)
 
