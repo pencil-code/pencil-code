@@ -127,8 +127,10 @@ module Magnetic
   real, dimension(2) :: magnetic_xaver_range=(/-max_real,max_real/)
   real, dimension(2) :: magnetic_yaver_range=(/-max_real,max_real/)
   real, dimension(2) :: magnetic_zaver_range=(/-max_real,max_real/)
-  real, dimension(nx) :: xmask_mag, xmask1_mag
-  real, dimension(ny) :: ymask_mag, ymask1_mag
+  real, dimension(nx) :: xmask_mag
+  logical, dimension(nx) :: lxmask_mag=.true.
+  real, dimension(ny) :: ymask_mag
+  logical, dimension(ny) :: lymask_mag=.true.
   real, dimension(nz) :: zmask_mag
   real, dimension(3,3) :: bij_0D_test=0.
   real :: B0_ext_z=0.0, B0_ext_z_H=0.0
@@ -1470,10 +1472,10 @@ module Magnetic
         where (      x(l1:l2) > magnetic_xaver_range(1) &
                .and. x(l1:l2) < magnetic_xaver_range(2))
           xmask_mag = 1.
-          xmask1_mag = 1.
+          lxmask_mag = .true.
         elsewhere
           xmask_mag = 0.
-          xmask1_mag = 0.
+          lxmask_mag = .false.
         endwhere
         magnetic_xaver_range(1) = max(magnetic_xaver_range(1), xyz0(1))
         magnetic_xaver_range(2) = min(magnetic_xaver_range(2), xyz1(1))
@@ -1501,10 +1503,10 @@ module Magnetic
 !AB: changed this in analogy to x so as to have at least one point.
         where (y(m1:m2) > magnetic_yaver_range(1) .and. y(m1:m2) < magnetic_yaver_range(2))
           ymask_mag = 1.
-          ymask1_mag = 1.
+          lymask_mag = .true.
         elsewhere
           ymask_mag = 0.
-          ymask1_mag = 0.
+          lymask_mag = .false.
         endwhere
         magnetic_yaver_range(1) = max(magnetic_yaver_range(1), xyz0(2))
         magnetic_yaver_range(2) = min(magnetic_yaver_range(2), xyz1(2))
@@ -6676,16 +6678,18 @@ print*,'AXEL2: should not be here (eta) ... '
       call sum_mn_name(p%beta, idiag_betam)
       call max_mn_name(p%beta, idiag_betamax)
 !
-!  Use xmask1_mag and ymask1_mag to isolate a line through a given point (e.g., 0, as given by the mask).
+!  Use lxmask_mag and lymask_mag to isolate a line through a given point (e.g., 0, as given by the mask).
 !  This is uselful for reconnection experiments where one wants to plot the time derivative of Azmin
 !  to compute the reconnection time. The y in the names idiag_Azmid_ymin and idiag_Azmid_ymax
 !  indicate that the cut is taken for y-const, i.e., along x in this case.
 !
       if (idiag_betamin /= 0) call max_mn_name(-p%beta, idiag_betamin, lneg=.true.)
-      if (idiag_Azmid_min  /= 0) call max_mn_name((offset_min_calc-p%aa(:,3))*xmask1_mag, idiag_Azmid_min,  lneg=.true.)
-      if (idiag_Azmid_max  /= 0) call max_mn_name((offset_min_calc+p%aa(:,3))*xmask1_mag, idiag_Azmid_max)
-      if (idiag_Azmid_ymin /= 0) call max_mn_name((offset_min_calc-p%aa(:,3))*ymask1_mag(m-m1+1), idiag_Azmid_ymin, lneg=.true.)
-      if (idiag_Azmid_ymax /= 0) call max_mn_name((offset_min_calc+p%aa(:,3))*ymask1_mag(m-m1+1), idiag_Azmid_ymax)
+      if (idiag_Azmid_min /= 0) call max_mn_name(-p%aa(:,3), idiag_Azmid_min, lneg=.true., mask=lxmask_mag)
+      if (idiag_Azmid_max /= 0) call max_mn_name( p%aa(:,3), idiag_Azmid_max, mask=lxmask_mag)
+      if (lymask_mag(m-nghost)) then
+        if (idiag_Azmid_ymin /= 0) call max_mn_name(-p%aa(:,3), idiag_Azmid_ymin, lneg=.true.)
+        if (idiag_Azmid_ymax /= 0) call max_mn_name( p%aa(:,3), idiag_Azmid_ymax)
+      endif
 
       if (.not.lmultithread) then
 !

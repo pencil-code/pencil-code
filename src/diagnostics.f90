@@ -1876,7 +1876,7 @@ module Diagnostics
 !
     endsubroutine sum_name_int
 !***********************************************************************
-    subroutine max_mn_name(a,iname,lsqrt,l_dt,lneg,lreciprocal)
+    subroutine max_mn_name(a,iname,lsqrt,l_dt,lneg,lreciprocal,mask)
 !
 !  Successively calculate maximum of a, which is supplied at each call.
 !  Start from zero if lfirstpoint=.true.
@@ -1889,13 +1889,14 @@ module Diagnostics
       real, dimension (nx) :: a
       integer :: iname
       logical, optional :: lsqrt,l_dt,lneg,lreciprocal
+      logical, dimension (nx), optional :: mask
 !
       if (iname==0) return
 !
       if (lfirstpoint) then
-        fname(iname)=maxval(a)
+        fname(iname)=maxval(a,mask)
       else
-        fname(iname)=max(fname(iname),maxval(a))
+        fname(iname)=max(fname(iname),maxval(a,mask))
       endif
 !
 !  Set corresponding entry in itype_name.
