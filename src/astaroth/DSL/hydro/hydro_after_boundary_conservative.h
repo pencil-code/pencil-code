@@ -140,9 +140,9 @@ Kernel hydro_after_boundary_conservative(real AC_t__mod__cdata){
   	DF_TIJ_4=rho_gam21*F_UY*F_UZ
   	DF_TIJ_5=rho_gam21*F_UZ*F_UX
   	if (AC_lvv_as_aux__mod__hydro  ||  AC_lvv_as_comaux__mod__hydro) {
-  	  DF_VX=rho_gam21*F_UX
-  	  DF_VY=rho_gam21*F_UY
-  	  DF_VZ=rho_gam21*F_UZ
+	  write(VX,rho_gam21*F_UX)
+	  write(VY,rho_gam21*F_UY)
+	  write(VZ,rho_gam21*F_UZ)
   	}
   	write(F_TIJ_0,DF_TIJ_0)
   	write(F_TIJ_1,DF_TIJ_1)
@@ -150,6 +150,7 @@ Kernel hydro_after_boundary_conservative(real AC_t__mod__cdata){
   	write(F_TIJ_3,DF_TIJ_3)
   	write(F_TIJ_4,DF_TIJ_4)
   	write(F_TIJ_5,DF_TIJ_5)
+
   }
 }
 #else

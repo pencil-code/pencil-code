@@ -42,6 +42,10 @@ field_order(AC_iuz__mod__cdata-1) Field UUZ
 #define F_UY UUY
 #define F_UZ UUZ
 
+field_order(AC_ivx__mod__cdata-1) Field VX
+field_order(AC_ivy__mod__cdata-1) Field VY
+field_order(AC_ivz__mod__cdata-1) Field VZ
+
 #if LHYDRO
 field_order(AC_itij__mod__hydro != 0 ? AC_itij__mod__hydro+0-1 : -1) Field F_TIJ_0
 field_order(AC_itij__mod__hydro != 0 ? AC_itij__mod__hydro+1-1 : -1) Field F_TIJ_1

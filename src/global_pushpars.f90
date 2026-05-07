@@ -470,6 +470,9 @@ contains
     !call copy_addr(necessary,p_par(1414))  ! bool (ny*nz)
     call copy_addr(imn,p_par(1415))  ! int
     call copy_addr(lrotation,p_par(1416)) ! bool
+    call copy_addr(ivx,p_par(1417)) ! int
+    call copy_addr(ivy,p_par(1418)) ! int
+    call copy_addr(ivz,p_par(1419)) ! int
 
   endsubroutine pushpars2c
 !***********************************************************************
