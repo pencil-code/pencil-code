@@ -353,7 +353,6 @@ module Viscosity
 !
       integer :: i
       real :: y1, y0
-
 !
 !  Default viscosity.
 !  nu-const (as opposed to mu=rho*nu=const) may still allow for a profile of nu.
@@ -406,7 +405,7 @@ module Viscosity
       lvisc_spitzer=.false.
       lvisc_slope_limited=.false.
 
-      call get_shared_variable('lconservative',lconservative)
+      call get_shared_variable('lconservative',lconservative,caller='initialize_viscosity')
       call get_shared_variable('lrelativistic',lrelativistic)
 !
 !  For Boussinesq, density is constant, so must use lvisc_simplified.
@@ -2760,7 +2759,14 @@ module Viscosity
 !
       fvisc = p%fvisc
       if (lmagfield_nu) then; do i=1,3; fvisc(:,i) = fvisc(:,i)/(1.+p%b2/meanfield_nuB**2); enddo; endif
-      if(.not. lrelativistic .and. lconservative) then; do i=1,3; fvisc(:,i) = fvisc(:,i)*p%rho; enddo; endif
+!
+!  All viscous forces are based on the velocity and represent accelerations.
+!  Hence, for lconservative=T, we have to multiply with rho.
+!
+      if (.not. lrelativistic .and. lconservative) then
+        do i=1,3; fvisc(:,i) = fvisc(:,i)*p%rho; enddo
+      endif
+
       df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + fvisc
 
       call calc_diagnostics_viscosity(p)
