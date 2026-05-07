@@ -116,9 +116,10 @@ sub header {
           . "\\begin{document}\n\n"
     }
 
+    my $label_width = 0.98 - $descr_width;
     $string .=
         "% ---------------------------------------------------------------- %\n"
-      . "\\begin{longtable}{lp{$descr_width\\textwidth}}\n"
+      . "\\begin{longtable}{p{$label_width\\textwidth}p{$descr_width\\textwidth}}\n"
       . "\\toprule\n"
       . "  \\multicolumn{1}{c}{\\emph{Module}} \& {\\emph{Description}} \\\\\n";
 
