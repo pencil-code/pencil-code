@@ -13,7 +13,7 @@ sub longtable {
 #   $doc->module_table()
 #   $doc->module_table(sort_files    => 1/0,
 #                   print_empty   => 0/1,
-#                   descr_width   => '0.7\textwidth',
+#                   descr_width   => '0.7',
 #                   selfcontained => 0/1)
 #
 # Output docstrings in a LaTeX {longtable} environment.
@@ -81,7 +81,7 @@ sub header {
 #
     my @files =  @{shift()};
     my $selfcontained = shift;
-    my $descr_width = (shift || '0.9\textwidth');
+    my $descr_width = (shift || '0.9');
 
     my $string =
         '%% $Id$' . "\n"
@@ -118,7 +118,7 @@ sub header {
 
     $string .=
         "% ---------------------------------------------------------------- %\n"
-      . "\\begin{longtable}{lp{$descr_width}}\n"
+      . "\\begin{longtable}{lp{$descr_width\\textwidth}}\n"
       . "\\toprule\n"
       . "  \\multicolumn{1}{c}{\\emph{Module}} \& {\\emph{Description}} \\\\\n";
 

@@ -207,17 +207,17 @@ $zavg_doc->write_to_file({ file          => 'inlinedoc-zavg.tex',
 $bcx_doc->write_to_file({ file          => 'inlinedoc-bcx.tex',
                           sort_files    => 1,
                           print_empty   => 0,
-                          descr_width   => '0.8\textwidth',
+                          descr_width   => '0.8',
                         });
 $bcy_doc->write_to_file({ file          => 'inlinedoc-bcy.tex',
                           sort_files    => 1,
                           print_empty   => 0,
-                          descr_width   => '0.8\textwidth',
+                          descr_width   => '0.8',
                         });
 $bcz_doc->write_to_file({ file          => 'inlinedoc-bcz.tex',
                           sort_files    => 1,
                           print_empty   => 0,
-                          descr_width   => '0.8\textwidth',
+                          descr_width   => '0.8',
                         });
 $param_doc->write_to_file({ file          => 'inlinedoc-param.tex',
                             sort_files    => 1,
@@ -227,7 +227,7 @@ $param_doc->write_to_file({ file          => 'inlinedoc-param.tex',
 $mod_doc->write_to_file({ file       => 'inlinedoc-modules.tex',
                           sort_files   => 1,
                           print_empty  => 0,
-                          descr_width   => '0.6\textwidth',
+                          descr_width   => '0.6',
                         });
 # ---------------------------------------------------------------------- #
 sub get_src_files {

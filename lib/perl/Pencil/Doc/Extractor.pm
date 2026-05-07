@@ -122,7 +122,7 @@ sub write_to_file {
 #   $doc->write_to_file(file          => 'filename',
 #                       sort_files    => 1/0,
 #                       print_empty   => 0/1,
-#                       descr_width   => '0.7\textwidth',
+#                       descr_width   => '0.7',
 #                       selfcontained => 0/1,
 #                       )
 #
@@ -153,7 +153,7 @@ sub longtable {
 #   $doc->longtable()
 #   $doc->longtable(sort_files    => 1/0,
 #                   print_empty   => 0/1,
-#                   descr_width   => '0.7\textwidth',
+#                   descr_width   => '0.7',
 #                   selfcontained => 0/1)
 #
 # Output docstrings in a LaTeX {longtable} environment.
@@ -391,7 +391,7 @@ sub header {
     my $self = shift;
     my @files =  @{shift()};
     my $selfcontained = shift;
-    my $descr_width = (shift || '0.7\textwidth');
+    my $descr_width = (shift || '0.7');
 
     my $string =
         '%% $Id$' . "\n"
@@ -428,7 +428,7 @@ sub header {
 
     $string .=
         "% ---------------------------------------------------------------- %\n"
-      . "\\begin{longtable}{lp{$descr_width}}\n"
+      . "\\begin{longtable}{lp{$descr_width\\textwidth}}\n"
       . "\\toprule\n"
       . "  \\multicolumn{1}{c}{\\emph{Variable}} \& {\\emph{Meaning}} \\\\\n";
 
