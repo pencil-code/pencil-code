@@ -6690,7 +6690,7 @@ print*,'AXEL2: should not be here (eta) ... '
       if (lymask_mag(m-nghost)) then
         if (idiag_Azmid_ymin /= 0) call max_mn_name(-p%aa(:,3), idiag_Azmid_ymin, lneg=.true.)
         if (idiag_Azmid_ymax /= 0) call max_mn_name( p%aa(:,3), idiag_Azmid_ymax)
-      elseif (firstpoint) then      ! initialization if first point is masked out 
+      elseif (lfirstpoint) then      ! initialization if first point is masked out 
         if (idiag_Azmid_ymin /= 0) fname(idiag_Azmid_ymin)=-impossible
         if (idiag_Azmid_ymax /= 0) fname(idiag_Azmid_ymax)=-impossible
       endif
