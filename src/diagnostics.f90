@@ -1894,9 +1894,17 @@ module Diagnostics
       if (iname==0) return
 !
       if (lfirstpoint) then
-        fname(iname)=maxval(a,mask)
+        if(present(mask)) then
+          fname(iname)=maxval(a,mask)
+        else
+          fname(iname)=maxval(a)
+        endif
       else
-        fname(iname)=max(fname(iname),maxval(a,mask))
+        if(present(mask)) then
+          fname(iname)=max(fname(iname),maxval(a,mask))
+        else
+          fname(iname)=max(fname(iname),maxval(a))
+        endif
       endif
 !
 !  Set corresponding entry in itype_name.
