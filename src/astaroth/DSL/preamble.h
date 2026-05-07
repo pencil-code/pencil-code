@@ -230,7 +230,8 @@ const real AC_ascale__mod__cdata = 0.0
 #define AC_lread_oldsnap AC_lread_oldsnap__mod__cdata
 
 #include "../stdlib/bc.h"
-#include "../bcs"
+#include "../bcs/funcs.h"
+#include "../bcs/funcs_overload.h"
 #include "../hydro/before_boundary.h"
 
 #ifndef LDISP_CURRENT
@@ -244,9 +245,8 @@ const bool AC_lallow_bprime_zero__mod__disp_current = false
 #endif
 
 #define AC_iproc_world__mod__cdata (0)
+
 #include "../axionSU2back.h"
-
-
 #include "../backreact_infl.h"
 
 #if LPOLYMER

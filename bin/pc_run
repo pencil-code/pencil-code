@@ -446,7 +446,7 @@ sub dump_parameters {
 # ---------------------------------------------------------------------- #
 sub setup_environment {
 
-    $ENV{PC_MODULES_LIST} = `grep '^ *SPECIAL *=' src/Makefile.local | tail -n 1 | tr "[A-Z]" "[a-z]" | sed -e's/.*= *//' -e's/special.//g'`;
+    $ENV{PC_MODULES_LIST} = `grep '^ *SPECIAL *=' src/Makefile.local | tail -n 1 | tr "[A-Z]" "[a-z]" | sed -e's/.*= *//' -e's/special.//g' -e's/#.*$//'`;
     #print "pc_run:MODULES:", $ENV{PC_MODULES_LIST}, "\n";
     #Might as well set all of these env variables always since they don't
     #hurt when running single-threaded

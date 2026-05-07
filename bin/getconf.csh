@@ -2300,7 +2300,7 @@ endif
 #  echo 'MODULE_[PRE|IN|SUF]FIX="'$MODULE_PREFIX'", "'$MODULE_INFIX'", "'$MODULE_SUFFIX'"'
 #endif
 
-setenv PC_MODULES_LIST `grep '^ *SPECIAL *=' src/Makefile.local | tail -n 1 | tr "[A-Z]" "[a-z]" | sed -e's/.*= *//' -e's/special\///g'` 
+setenv PC_MODULES_LIST `grep '^ *SPECIAL *=' src/Makefile.local | tail -n 1 | tr "[A-Z]" "[a-z]" | sed -e's/.*= *//' -e's/special\///g' -e's/#.*$//'` 
 
 # Determine data directory (defaults to `data')
 if (-r datadir.in) then

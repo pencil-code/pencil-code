@@ -244,7 +244,7 @@ module BorderProfiles
               print*,"You probably want to reset it to the default value in run.in."
               print*,"Do it by setting ireset_tstart=2 in run_pars."
             endif
-            call fatal_error("request_border_driving","")
+            call fatal_error("initialize_border_profiles","")
           endif
           call input_snap_finalize
           lread=.false.

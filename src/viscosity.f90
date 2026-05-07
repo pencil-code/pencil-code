@@ -312,7 +312,7 @@ module Viscosity
         ivisc_forcx=ivisc_forc;ivisc_forcy=ivisc_forc+1;ivisc_forcz=ivisc_forc+2
       endif
 
-      if(lrate_of_strain_as_aux) then
+      if (lrate_of_strain_as_aux) then
         call farray_register_auxiliary('Sij',iSij,vector=6,communicated=.true.,rhs=.true.)
       endif
 
@@ -430,8 +430,8 @@ module Viscosity
         case ('rho-nu-const','rho_nu-const', 'mu-const', '1')
           if (lconservative) lvisc_rho_nu_const_prefact = .true.
           if (mu == 0.0) mu = nu
-          if(lvisc_rho_nu_const_prefact .and. lroot) print*,'viscous force: mu*(del2u+graddivu/3)'
-          if(.not. lvisc_rho_nu_const_prefact .and. lroot) print*,'viscous force: mu/rho*(del2u+graddivu/3)'
+          if (lvisc_rho_nu_const_prefact .and. lroot) print*,'viscous force: mu*(del2u+graddivu/3)'
+          if (.not. lvisc_rho_nu_const_prefact .and. lroot) print*,'viscous force: mu/rho*(del2u+graddivu/3)'
           lvisc_rho_nu_const=.true.
         case ('rho-nu-const-bulk')
           if (lroot) print*,'viscous force: (zeta/rho)*graddivu'
@@ -1496,7 +1496,7 @@ module Viscosity
           murho1=mu*p%rho1  !(=mu/rho)
         endif
 
-        if(lrate_of_strain_as_aux) then
+        if (lrate_of_strain_as_aux) then
           call div_tensor(f,divS,iSij)
           do i=1,3
             p%fvisc(:,i) = p%fvisc(:,i) + 2*murho1*divS(:,i)
@@ -2493,7 +2493,7 @@ module Viscosity
 !
 ! Calculates the viscous stress tensor
 !
-      if(lrate_of_strain_as_aux) then
+      if (lrate_of_strain_as_aux) then
         do m=m1,m2
         do n=n1,n2
           call gij_v_times_s(f,iux,irho,uij)
@@ -3304,7 +3304,6 @@ module Viscosity
     call copy_addr(mu,p_par(118))
     call copy_addr(lrate_of_strain_as_aux,p_par(119)) ! bool
     call copy_addr(iSij,p_par(120)) ! int
-
 
     call keep_compiler_quiet(lKit_Olem)
     call keep_compiler_quiet(nu_mol)

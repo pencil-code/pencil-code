@@ -3608,6 +3608,8 @@ endfunction
 !  10-apr-11/MR: coded
 !  18-nov-13/MR: removed dummy parameter lenf, can be inferred from feld
 !
+      use Cdata, only: lroot
+!
       character (len=*),               intent(in)  :: zeile
       character (len=*), dimension(:), intent(out) :: feld
       character,                       intent(in)  :: tz
@@ -3624,7 +3626,8 @@ endfunction
         ind = index( zeile(inda:), tz )
 !
         if ( inda+ind-1 < lenz .and. parser == lenf ) then
-          print*, 'Parser - Warning: too many substrings in "'//trim(zeile)//'" (>',lenf,')! '
+          if (lroot) print*, 'WARNING: parser -- too many substrings in "'//trim(zeile)//'" (>'// &
+                             trim(itoa(lenf))//')!!!'
           return
         endif
 !

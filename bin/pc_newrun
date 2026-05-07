@@ -61,10 +61,10 @@ parentdir=`pwd`
 echo "Parent directory: " $parentdir
 if [ -d $newdir ]; then
   echo "The directory $newdir already exists!"
-  echo "You had better stop and check..."
+  echo "Stop and check..."
   exit
 else
-  mkdir $newdir
+  mkdir -p $newdir
   echo "Created directory $newdir"
 fi
 cd $newdir

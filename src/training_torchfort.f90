@@ -12,9 +12,7 @@
     use Cdata
     use General, only: itoa
     use Messages
-    use Torchfort, only: TORCHFORT_RESULT_SUCCESS, &
-                         torchfort_result_success, &
-                         torchfort_inference,torchfort_train
+    use Torchfort, only: TORCHFORT_RESULT_SUCCESS,torchfort_inference,torchfort_train
     !use iso_c_binding
 
     implicit none
