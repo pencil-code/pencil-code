@@ -35,7 +35,7 @@ To use the code, you will need the following:
 
 .. _man1_obtaining_the_code:
 
-Otaining the code
+Obtaining the code
 =================
 
 
