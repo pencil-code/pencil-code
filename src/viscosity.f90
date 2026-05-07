@@ -51,7 +51,7 @@ module Viscosity
   real :: nu_smag_Ma2_power=0.0
   real :: nu_rcyl_min=impossible
   real, pointer :: cs_t, sigEm_all
-  logical, pointer :: lconservative
+  logical, pointer :: lconservative,lrelativistic
   character (len=labellen) :: nnewton_type='none'
   character (len=labellen) :: div_sld_visc='2nd'
   real :: nnewton_tscale=0.0,nnewton_step_width=0.0
@@ -407,6 +407,7 @@ module Viscosity
       lvisc_slope_limited=.false.
 
       call get_shared_variable('lconservative',lconservative)
+      call get_shared_variable('lrelativistic',lrelativistic)
 !
 !  For Boussinesq, density is constant, so must use lvisc_simplified.
 !
