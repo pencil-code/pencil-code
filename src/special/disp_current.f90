@@ -36,7 +36,7 @@ module Special
 ! input parameters
 !
   real, dimension (ninit) :: amplee=0.0 !, kx_aa=1.0, ky_aa=1.0, kz_aa=1.0
-  real, dimension (nx) :: etaSchw, diffus_etaSchw
+  real, dimension (nx) :: etaSchw, diffus_etaSchw=0.
   real :: alpf=0., alpfpsi=0.
   real :: ampl_ex=0.0, ampl_ey=0.0, ampl_ez=0.0, ampl_a0=0.0
   real :: kx_ex=0.0, kx_ey=0.0, kx_ez=0.0

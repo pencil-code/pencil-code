@@ -2412,6 +2412,7 @@ module Viscosity
         !if (ldynamical_diffusion .and. lvisc_hyper3_mesh) then
 !2026-01-01/axel: put everthing under lvisc_hyper3_mesh, because otherwise diffus_nu3 would be set while lvisc_hyper3_mesh=F
 !2026-01-03/axel: included also lvisc_hyper3_rho_nu_const_symm and a few, but others may still be needed.
+!2026-05-07/axel: moved the line maxdiffus3=max(maxdiffus3,diffus_nu3) under "if (lvisc_hyper3_mesh ..."
         if (lvisc_hyper3_mesh .or. lvisc_hyper3_simplified .or. lvisc_hyper3_simplified_tdep .or. &
             lvisc_hyper3_mesh_residual .or. lvisc_hyper3_mesh .or. lvisc_hyper3_rho_nu_const .or. &
             lvisc_hyper3_mu_const_strict .or. lvisc_hyper3_nu_const .or. &
@@ -2423,10 +2424,10 @@ module Viscosity
           else
             diffus_nu3 = p%diffus_total3*dxyz_6
           endif
+          maxdiffus3=max(maxdiffus3,diffus_nu3)
         endif
         maxdiffus =max(maxdiffus ,diffus_nu)
         maxdiffus2=max(maxdiffus2,p%diffus_total2*dxyz_4)
-        maxdiffus3=max(maxdiffus3,diffus_nu3)
 
       endif
 !
