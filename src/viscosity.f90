@@ -2006,7 +2006,7 @@ module Viscosity
             if (ldynamical_diffusion) then
               p%fvisc(:,j) = p%fvisc(:,j) + nu_hyper3_mesh * p%uij6(:,j,i) * dline_1(:,i)
             else
-              p%fvisc(:,j) = p%fvisc(:,j) + nu_hyper3_mesh*pi5_1/60.* p%uij6(:,i,j)*dline_1(:,i)
+              p%fvisc(:,j) = p%fvisc(:,j) + nu_hyper3_mesh*pi5_1/60.* p%uij6(:,j,i)*dline_1(:,i)
             endif
           enddo
         enddo
