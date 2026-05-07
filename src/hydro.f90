@@ -3457,9 +3457,9 @@ module Hydro
 !
     endsubroutine calc_pencils_hydro_std
 !***********************************************************************
-    subroutine calc_pencils_hydro_nonlinear_directly_from_f(f,p,lpenc_loc,iuu)
+    subroutine calc_pencils_hydro_nonlinear_from_f(f,p,lpenc_loc,iuu)
 !
-! All pencils which require f directly, so we can compute them correctly for lconservative by passing ivv inplace of iuu
+! All pencils which require f, so we can compute them correctly for lconservative by passing ivv inplace of iuu
 !
 ! 7-May-26/TP: carved from calc_pencils_hydro_nonlinear
 !
@@ -3684,7 +3684,7 @@ module Hydro
           enddo
         endif
       endif
-    endsubroutine calc_pencils_hydro_nonlinear_directly_from_f
+    endsubroutine calc_pencils_hydro_nonlinear_from_f
 !***********************************************************************
     subroutine calc_pencils_hydro_nonlinear(f,p,lpenc_loc)
 !
@@ -3823,9 +3823,9 @@ module Hydro
       if (lpenc_loc(i_u2)) call dot2_mn(p%uu,p%u2)
 
       if (lvv_as_aux .or. lvv_as_comaux) then
-        call calc_pencils_hydro_nonlinear_directly_from_f(f,p,lpenc_loc,ivv)
+        call calc_pencils_hydro_nonlinear_from_f(f,p,lpenc_loc,ivv)
       else
-        call calc_pencils_hydro_nonlinear_directly_from_f(f,p,lpenc_loc,iuu)
+        call calc_pencils_hydro_nonlinear_from_f(f,p,lpenc_loc,iuu)
       endif
 
 ! divu
