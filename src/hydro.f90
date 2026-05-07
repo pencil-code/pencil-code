@@ -24,7 +24,7 @@
 ! PENCILS PROVIDED divu0; u0ij(3,3); uu0(3)
 ! PENCILS PROVIDED uu_advec(3); uuadvec_guu(3)
 ! PENCILS PROVIDED del6u_strict(3); del4graddivu(3); uu_sph(3)
-! PENCILS PROVIDED der6u_res(3,3)
+! PENCILS PROVIDED der6u_res(3,3); uij6(3,3)
 ! PENCILS PROVIDED lorentz; hless; advec_uu
 ! PENCILS PROVIDED T00; T0i(3); Tij(6); velx(3)
 !
@@ -1021,8 +1021,9 @@ module Hydro
 !  After a reload, we need to rewrite index.pro, but the auxiliary
 !  arrays are already allocated and must not be allocated again.
 !
-      if (lvv_as_aux .or. lvv_as_comaux) &
-        call register_report_aux('vv', ivv, ivx, ivy, ivz, communicated=.true.)
+      if (lvv_as_aux .or. lvv_as_comaux) then
+        call register_report_aux('vv', ivv, ivx, ivy, ivz, communicated=.true.,rhs=.true.,read_from_gpu=.true.)
+      endif
 !
 !  omega as aux
 !
@@ -3353,6 +3354,7 @@ module Hydro
                  // ACHAR(10) // '                              i.e. lvv_as_aux = lvv_as_comaux = T.')
         endif
         if (lpencil_in(i_uij5))             call pencil_needs_ivv("uij5")
+        if (lpencil_in(i_uij6))             call pencil_needs_ivv("uij6")
         if (lpencil_in(i_ugu))              call pencil_needs_ivv("ugu")
         if (lpencil_in(i_d2uidxj))          call pencil_needs_ivv("d2uidxj")
         if (lpencil_in(i_uijk))             call pencil_needs_ivv("uijk")
@@ -3543,6 +3545,8 @@ module Hydro
 !     endif
 ! uij5
       if (lpenc_loc(i_uij5)) call gij(f,iuu,p%uij5,5)
+! uij6
+      if (lpenc_loc(i_uij6)) call gij(f,iuu,p%uij6,6,IGNOREDX=.true.)
 !
 !  ugu
 !

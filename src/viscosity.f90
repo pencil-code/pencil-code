@@ -428,7 +428,6 @@ module Viscosity
           if (lroot) print*,'viscous force: div(nu*Sij)'
           lvisc_nu_non_newtonian=.true.
         case ('rho-nu-const','rho_nu-const', 'mu-const', '1')
-          if (lconservative) lvisc_rho_nu_const_prefact = .true.
           if (mu == 0.0) mu = nu
           if (lvisc_rho_nu_const_prefact .and. lroot) print*,'viscous force: mu*(del2u+graddivu/3)'
           if (.not. lvisc_rho_nu_const_prefact .and. lroot) print*,'viscous force: mu/rho*(del2u+graddivu/3)'
@@ -1291,6 +1290,11 @@ module Viscosity
         lpenc_requested(i_divu)=.true.
         lpenc_requested(i_glnrho)=.true.
       endif
+      if (lvisc_hyper3_polar .or. &
+          lvisc_hyper3_mesh  .or. &
+          lvisc_hyper3_csmesh) then
+          lpenc_requested(i_uij6)=.true.
+      endif
 !
 !  fviscmax has been revised to show absolute maximum rather than component
 !  maximum and largest component negative no longer computed. Sign of the
@@ -1983,10 +1987,8 @@ module Viscosity
 !
       if (lvisc_hyper3_polar) then
         do j=1,3
-          ju=j+iuu-1
           do i=1,3
-            call der6(f,ju,tmp3,i,IGNOREDX=.true.)
-            p%fvisc(:,j) = p%fvisc(:,j) + nu_hyper3*pi4_1*tmp3*dline_1(:,i)**2
+            p%fvisc(:,j) = p%fvisc(:,j) + nu_hyper3*pi4_1*p%uij6(:,j,i)*dline_1(:,i)**2
           enddo
         enddo
         if (lpencil(i_visc_heat)) then
@@ -2000,13 +2002,11 @@ module Viscosity
 !
       if (lvisc_hyper3_mesh) then
         do j=1,3
-          ju=j+iuu-1
           do i=1,3
-            call der6(f,ju,tmp3,i,IGNOREDX=.true.)
             if (ldynamical_diffusion) then
-              p%fvisc(:,j) = p%fvisc(:,j) + nu_hyper3_mesh * tmp3 * dline_1(:,i)
+              p%fvisc(:,j) = p%fvisc(:,j) + nu_hyper3_mesh * p%uij6(:,j,i) * dline_1(:,i)
             else
-              p%fvisc(:,j) = p%fvisc(:,j) + nu_hyper3_mesh*pi5_1/60.* tmp3 *dline_1(:,i)
+              p%fvisc(:,j) = p%fvisc(:,j) + nu_hyper3_mesh*pi5_1/60.* p%uij6(:,i,j)*dline_1(:,i)
             endif
           enddo
         enddo
@@ -2055,11 +2055,10 @@ module Viscosity
         do j=1,3
           ju=j+iuu-1
           do i=1,3
-            call der6(f,ju,tmp3,i,IGNOREDX=.true.)
             if (ldynamical_diffusion) then
-              p%fvisc(:,j)=p%fvisc(:,j)+nu_hyper3_mesh*sqrt(p%cs2)*tmp3*dline_1(:,i)
+              p%fvisc(:,j)=p%fvisc(:,j)+nu_hyper3_mesh*sqrt(p%cs2)*p%uij6(:,j,i)*dline_1(:,i)
             else
-              p%fvisc(:,j)=p%fvisc(:,j)+nu_hyper3_mesh*sqrt(p%cs2)*pi5_1/60.*tmp3*dline_1(:,i)
+              p%fvisc(:,j)=p%fvisc(:,j)+nu_hyper3_mesh*sqrt(p%cs2)*pi5_1/60.*p%uij6(:,j,i)*dline_1(:,i)
             endif
           enddo
         enddo
@@ -2752,18 +2751,16 @@ module Viscosity
 !
       intent (in) :: p
       intent (inout) :: df
+      real, dimension(nx,3) :: fvisc
 !
       integer :: i
 !
 !  Add viscosity to equation of motion
 !
-      if (lmagfield_nu) then
-        do i=1,3
-          df(l1:l2,m,n,iux+i-1) = df(l1:l2,m,n,iux+i-1) + p%fvisc(:,i)/(1.+p%b2/meanfield_nuB**2)
-        enddo
-      else
-        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + p%fvisc
-      endif
+      fvisc = p%fvisc
+      if (lmagfield_nu) then; do i=1,3; fvisc(:,i) = fvisc(:,i)/(1.+p%b2/meanfield_nuB**2); enddo; endif
+      if(.not. lrelativistic .and. lconservative) then; do i=1,3; fvisc(:,i) = fvisc(:,i)*p%rho; enddo; endif
+      df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + fvisc
 
       call calc_diagnostics_viscosity(p)
 
