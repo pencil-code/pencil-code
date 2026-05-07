@@ -1029,7 +1029,7 @@ module Viscosity
            lvisc_nu_profr_twosteps .or. lvisc_nu_shock_profz .or. &
            lvisc_nut_from_magnetic .or. lvisc_nu_shock_profr .or. lvisc_mu_cspeed)) &
         lpenc_requested(i_TT1)=.true.
-      if (lvisc_rho_nu_const .or. lvisc_rho_nu_const_bulk .or. &
+      if ((lvisc_rho_nu_const .and. .not. lrate_of_strain_as_aux) .or. lvisc_rho_nu_const_bulk .or. &
           lvisc_sqrtrho_nu_const .or. &
           lvisc_nu_const .or. lvisc_nu_tdep .or. lvisc_nu_cspeed .or. &
           lvisc_nu_prof.or.lvisc_nu_profx.or.lvisc_spitzer .or. &
@@ -1076,7 +1076,7 @@ module Viscosity
       endif
       if (lvisc_nu_profr_powerlaw) lpenc_requested(i_rcyl_mn)=.true.
       if (lvisc_nu_profr_powerlaw.and.luse_nu_rmn_prof) lpenc_requested(i_r_mn)=.true.
-      if (lvisc_rho_nu_const .or. &
+      if ((lvisc_rho_nu_const .and. .not. lrate_of_strain_as_aux) .or. &
           lvisc_sqrtrho_nu_const .or. lvisc_nu_const .or. lvisc_nu_tdep .or. &
           lvisc_smag .or. lvisc_smag_simplified .or. lvisc_smag_cross_simplified .or. &
           lvisc_nu_prof .or. lvisc_nu_profx .or. lvisc_spitzer .or. &
