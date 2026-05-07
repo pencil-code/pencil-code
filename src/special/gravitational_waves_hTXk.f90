@@ -648,7 +648,7 @@ module Special
 
 !It has to be persistent in this case to avoid restarts
 !from messing updates across multiple timesteps
-      if(ntimesteps_per_GW_step > 1) lpersistent_it = .true.
+      if (ntimesteps_per_GW_step > 1) lpersistent_it = .true.
 
     endsubroutine initialize_special
 !***********************************************************************
@@ -1072,7 +1072,7 @@ module Special
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
-    subroutine    compute_scl_factor
+    subroutine compute_scl_factor
 !
 !   25-jun-2025/TP: carved from dspecial_dt
 ! 
@@ -1092,6 +1092,7 @@ module Special
           scale_factor=(t+tshift)**nscale_factor_conformal
         endif
       endif
+
     endsubroutine compute_scl_factor
 !***********************************************************************
     subroutine read_Hp_and_appa_target
@@ -1126,11 +1127,11 @@ module Special
       lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
       appa_target=10**lgf/Hp_ini**2
 
-      if(lgpu .and. Hp_old /= Hp_target) then
+      if (lgpu .and. Hp_old /= Hp_target) then
         call update_on_gpu(Hp_index_on_gpu,'AC_hp_target__mod__cdata',Hp_target)
       endif
 
-      if(lgpu .and. appa_old /= appa_target) then
+      if (lgpu .and. appa_old /= appa_target) then
         call update_on_gpu(appa_index_on_gpu,'AC_appa_target__mod__cdata',appa_target)
       endif
 
@@ -1399,7 +1400,7 @@ module Special
       call keep_compiler_quiet(llast)
       if (lfirst) then
         dt_GW = dt_GW + dt
-        if(mod(it+1,ntimesteps_per_GW_step) == 0) then
+        if (mod(it+1,ntimesteps_per_GW_step) == 0) then
           call compute_gT_and_gX_from_gij(f,'St',dt_GW)
           dt_GW = 0.0
         endif
@@ -1561,8 +1562,8 @@ module Special
 !
 !  compute e1 and e2 vectors
 !
-              if(abs(k1)<abs(k2)) then
-                if(abs(k1)<abs(k3)) then !(k1 is pref dir)
+              if (abs(k1)<abs(k2)) then
+                if (abs(k1)<abs(k3)) then !(k1 is pref dir)
                   e1=(/0.,-k3,+k2/)
                   e2=(/k2sqr+k3sqr,-k2*k1,-k3*k1/)
                 else !(k3 is pref dir)
@@ -1570,7 +1571,7 @@ module Special
                   e2=(/k1*k3,k2*k3,-(k1sqr+k2sqr)/)
                 endif
               else !(k2 smaller than k1)
-                if(abs(k2)<abs(k3)) then !(k2 is pref dir)
+                if (abs(k2)<abs(k3)) then !(k2 is pref dir)
                   e1=(/-k3,0.,+k1/)
                   e2=(/+k1*k2,-(k1sqr+k3sqr),+k3*k2/)
                 else !(k3 is pref dir)
@@ -1668,8 +1669,8 @@ module Special
 !
 !  Construction of boosted polarization tensors
 !
-                if(abs(k1)<abs(k2)) then
-                  if(abs(k1)<abs(k3)) then !(k1_boost is pref dir)
+                if (abs(k1)<abs(k2)) then
+                  if (abs(k1)<abs(k3)) then !(k1_boost is pref dir)
                     e1_boost=(/0.,-k3_boost,+k2_boost/)
                     e2_boost=(/k2sqr_boost+k3sqr_boost,-k2_boost*k1_boost,-k3_boost*k1_boost/)
                   else !(k3 is pref dir)
@@ -1677,7 +1678,7 @@ module Special
                     e2_boost=(/k1_boost*k3_boost,k2_boost*k3_boost,-(k1sqr_boost+k2sqr_boost)/)
                   endif
                 else !(k2 smaller than k1_boost)
-                  if(abs(k2)<abs(k3)) then !(k2 is pref dir)
+                  if (abs(k2)<abs(k3)) then !(k2 is pref dir)
                     e1_boost=(/-k3_boost,0.,+k1_boost/)
                     e2_boost=(/+k1_boost*k2_boost,-(k1sqr_boost+k3sqr_boost),+k3_boost*k2_boost/)
                   else !(k3 is pref dir)
@@ -2293,8 +2294,8 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
 !
 !  compute e1 and e2 vectors (for lnonlinear_source only)
 !
-                if(abs(k1)<abs(k2)) then
-                  if(abs(k1)<abs(k3)) then !(k1 is pref dir)
+                if (abs(k1)<abs(k2)) then
+                  if (abs(k1)<abs(k3)) then !(k1 is pref dir)
                     e1=(/0.,-k3,+k2/)
                     e2=(/k2sqr+k3sqr,-k2*k1,-k3*k1/)
                   else !(k3 is pref dir)
@@ -2302,7 +2303,7 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
                     e2=(/k1*k3,k2*k3,-(k1sqr+k2sqr)/)
                   endif
                 else !(k2 smaller than k1)
-                  if(abs(k2)<abs(k3)) then !(k2 is pref dir)
+                  if (abs(k2)<abs(k3)) then !(k2 is pref dir)
                     e1=(/-k3,0.,+k1/)
                     e2=(/+k1*k2,-(k1sqr+k3sqr),+k3*k2/)
                   else !(k3 is pref dir)
@@ -2395,8 +2396,8 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
 !
 !  compute e1 and e2 vectors
 !
-              if(abs(k1)<abs(k2)) then
-                if(abs(k1)<abs(k3)) then !(k1 is pref dir)
+              if (abs(k1)<abs(k2)) then
+                if (abs(k1)<abs(k3)) then !(k1 is pref dir)
                   e1=(/0.,-k3,+k2/)
                   e2=(/k2sqr+k3sqr,-k2*k1,-k3*k1/)
                 else !(k3 is pref dir)
@@ -2404,7 +2405,7 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
                   e2=(/k1*k3,k2*k3,-(k1sqr+k2sqr)/)
                 endif
               else !(k2 smaller than k1)
-                if(abs(k2)<abs(k3)) then !(k2 is pref dir)
+                if (abs(k2)<abs(k3)) then !(k2 is pref dir)
                   e1=(/-k3,0.,+k1/)
                   e2=(/+k1*k2,-(k1sqr+k3sqr),+k3*k2/)
                 else !(k3 is pref dir)
@@ -2470,7 +2471,7 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
 !      integer :: ik,ngrid,nyquist_frequency
 !      logical :: res
 !      nyquist_frequency = (ngrid/2)+1
-!      if(ik > nyquist_frequency) then
+!      if (ik > nyquist_frequency) then
 !              res = .true.
 !      else
 !              res = .false.
@@ -2481,7 +2482,7 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
 !      integer :: ik,ngrid,nyquist_frequency
 !      logical :: res
 !      nyquist_frequency = (ngrid/2)+1
-!      if(ik < nyquist_frequency) then
+!      if (ik < nyquist_frequency) then
 !              res = .true.
 !      else
 !              res = .false.
@@ -2493,9 +2494,9 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
 !      integer :: offset_from_nyquist
 !      integer :: nyquist_frequency 
 !      nyquist_frequency = (ngrid/2)+1
-!      if(ik_src == 1 .or. ik_src == nyquist_frequency) then
+!      if (ik_src == 1 .or. ik_src == nyquist_frequency) then
 !        ik_dst = ik_src
-!      else if(has_negative_frequency(ik_src,ngrid)) then
+!      else if (has_negative_frequency(ik_src,ngrid)) then
 !        offset_from_nyquist = ik_src - nyquist_frequency
 !        ik_dst = nyquist_frequency-offset_from_nyquist
 !      else
@@ -2724,8 +2725,8 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
 !
 !  compute e1 and e2 vectors
 !
-              if(abs(k1)<abs(k2)) then
-                if(abs(k1)<abs(k3)) then !(k1 is pref dir)
+              if (abs(k1)<abs(k2)) then
+                if (abs(k1)<abs(k3)) then !(k1 is pref dir)
                   e1=(/0.,-k3,+k2/)
                   e2=(/k2sqr+k3sqr,-k2*k1,-k3*k1/)
                 else !(k3 is pref dir)
@@ -2733,7 +2734,7 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
                   e2=(/k1*k3,k2*k3,-(k1sqr+k2sqr)/)
                 endif
               else !(k2 smaller than k1)
-                if(abs(k2)<abs(k3)) then !(k2 is pref dir)
+                if (abs(k2)<abs(k3)) then !(k2 is pref dir)
                   e1=(/-k3,0.,+k1/)
                   e2=(/+k1*k2,-(k1sqr+k3sqr),+k3*k2/)
                 else !(k3 is pref dir)

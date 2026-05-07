@@ -489,7 +489,6 @@ module Special
 !***********************************************************************
     subroutine calc_ode_dt(f_ode,phi,phidot,phiddot,H)
 !
-!
       use General, only: random_number_wrapper
       use Mpicomm
       use Sub
@@ -502,12 +501,10 @@ module Special
 !
 !  Set the all variable
 !
-      if(iaxi_phi > 0) phi = f_ode(iaxi_phi)
-      if(iaxi_phidot > 0) phidot = f_ode(iaxi_phidot)
-
+      if (iaxi_phi > 0) phi = f_ode(iaxi_phi)
+      if (iaxi_phidot > 0) phidot = f_ode(iaxi_phidot)
 !
-!
-      Call get_Hubble_and_scale_factor(f_ode)
+      call get_Hubble_and_scale_factor(f_ode)
       if (lhubble) then
         select case (V_choice)
           case ('alpha_attractors')
@@ -545,7 +542,6 @@ module Special
 !  Due to the multi-step Runge Kutta timestepping used one MUST always
 !  add to the present contents of the df_ode array.  NEVER reset it to zero.
 !
-!
       real ::  phiddot, phidot
 !
 !  identify module and boundary conditions
@@ -576,7 +572,6 @@ module Special
     endsubroutine dspecial_dt_ode
 !***********************************************************************
     subroutine  calc_ode_diagnostics_special(f_ode)
-!
 !
       use Diagnostics
       real, dimension(n_odevars), intent(IN) :: f_ode
@@ -720,6 +715,7 @@ module Special
     endsubroutine special_after_boundary
 !***********************************************************************
     subroutine calc_integrand(f)
+!
       real, dimension (mx,my,mz,mfarray), intent(IN) :: f
       real, dimension (nx) :: AR, ARdot, imAR, imARdot, AReff2, ARARdoteff, imARARdoteff
       real, dimension (nx) :: ARdoteff2, imAReff2, imARdoteff2

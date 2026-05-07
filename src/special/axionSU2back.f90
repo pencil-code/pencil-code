@@ -516,10 +516,10 @@ module Special
     endsubroutine calc_pencils_special
 !***********************************************************************
     subroutine get_Hubble
+!
     real :: phi,phidot,U,V,beta,chi,chidot,Q,Qdot
 !
 !  29-jul-25/TP: carved from dspecial_dt/dt_ode
-!
 !
 !  Possibility to evolve the Hubble parameter (in cosmic time)
 !
@@ -544,9 +544,11 @@ module Special
       else if (lgpu) then
         H=H_init
       endif
+!
     endsubroutine get_Hubble
 !***********************************************************************
     subroutine get_analytical_solution(psi_anal,psidot_anal,TR_anal,TRdot_anal)
+!
       real, dimension(nx), intent(OUT) :: psi_anal,psidot_anal,TR_anal,TRdot_anal
       if (lconf_time) then
         psi_anal=(1./sqrt(2.*k))*cos(-k*t)
@@ -559,6 +561,7 @@ module Special
         TR_anal=(1./sqrt(2.*k))*cos(k/(a*H))
         TRdot_anal=(k/sqrt(2.*k))*sin(k/(a*H))
       endif
+!
     endsubroutine get_analytical_solution
 !***********************************************************************
     subroutine dspecial_dt(f,df,p)
@@ -1047,10 +1050,10 @@ module Special
       else
         get_mQ=g*Q/H
       endif
+!
     endfunction get_mQ
 !***********************************************************************
-    subroutine calc_ode_dt(f_ode,Qddot,chiddot,phiddot,grant_sum,dgrant_sum, &
-      JJ_sum)
+    subroutine calc_ode_dt(f_ode,Qddot,chiddot,phiddot,grant_sum,dgrant_sum,JJ_sum)
 !
 !  29-jul-25/TP: carved from dspecial_dt_ode
 !
@@ -1067,7 +1070,6 @@ module Special
       real :: fact=1.
       real :: epsilon_sr,inflaton
 
-
       call keep_compiler_quiet(grant_sum)
 !
 !  Set the all variable
@@ -1076,8 +1078,8 @@ module Special
       Qdot=f_ode(iaxi_Qdot)
       chi=f_ode(iaxi_chi)
       chidot=f_ode(iaxi_chidot)
-      if(iaxi_phi > 0) phi = f_ode(iaxi_phi)
-      if(iaxi_phidot > 0) phidot = f_ode(iaxi_phidot)
+      if (iaxi_phi > 0) phi = f_ode(iaxi_phi)
+      if (iaxi_phidot > 0) phidot = f_ode(iaxi_phidot)
 
       if (lhubble) then
         Hdot=-.5*phidot**2-.5*chidot**2-((Qdot+H*Q)**2+g**2*Q**4)
@@ -1470,7 +1472,6 @@ module Special
 !
 !  29-jul-25/TP: carved from special_after_boundary
 !
-
       real, dimension (mx,my,mz,mfarray), intent(IN) :: f
       real, dimension(nx) ,intent(OUT)  :: TRpsim, TRpsikm, TRpsidotm, TRdotpsim
       real, dimension(nx) ,intent(OUT)  :: TRdoteff2km, TRdoteff2m, TReff2km, TReff2m
@@ -1853,7 +1854,7 @@ module Special
        JJ_L_sum=0.
        JJ_sum=0.
      endif
-     if(.not. lmultithread) then
+     if (.not. lmultithread) then
         grand_sum_diagnos  = grand_sum
         dgrant_sum_diagnos = dgrant_sum
         rhoT_sum_diagnos = rhoT_sum

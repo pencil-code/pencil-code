@@ -205,6 +205,7 @@ module Special
   real :: a2rhopsim_all_diagnos, a2rhogpsim_all_diagnos
 
   integer :: ia0 = 0, iW0 = 0
+
   contains
 !****************************************************************************
     subroutine register_special
@@ -439,7 +440,7 @@ module Special
             t=tstart
             Hubble_ini=sqrt(8.*pi/3.*(.5*dphi0**2+.5*phimass2*phi0**2*ascale_ini**2))
             lnascale=log(ascale_ini)
-            if (lroot .and. lflrw) f_ode(ilna)=lnascale
+            if (lflrw) f_ode(ilna)=lnascale
   !
           case ('default')
             Vpotential=.5*phimass2*phi0**2
@@ -450,7 +451,7 @@ module Special
             lnascale=log(ascale_ini)
             f(:,:,:,iphi)   = f(:,:,:,iphi)   + phi0
             f(:,:,:,idphi)  = f(:,:,:,idphi)  + dphi0
-            if (lroot .and. lflrw) then
+            if (lflrw) then
               f_ode(ilna)   =lnascale
               a2                 =exp(f_ode(ilna))**2
               Hscript            =Hubble_ini/exp(lnascale)
@@ -503,7 +504,7 @@ module Special
 !
 !  initial condition for energy density of charged particles
 !
-      if (lroot .and. lrho_chi) then
+      if (lrho_chi) then
         select case (init_rho_chi)
           case ('zero');  f_ode(iinfl_rho_chi)=0.
           case ('given'); f_ode(iinfl_rho_chi)=rho_chi_init
@@ -518,7 +519,6 @@ module Special
     endsubroutine init_special
 !***********************************************************************
     subroutine pencil_criteria_special
-
 !
 !  All pencils that this special module depends on are specified here.
 !
@@ -540,6 +540,7 @@ module Special
       endif
 !
 !  Call pencils phi and dphi
+!
       lpenc_requested(i_phi)=.true.
       lpenc_requested(i_dphi)=.true.
 
@@ -1051,7 +1052,7 @@ module Special
 !
       use SharedVariables, only: get_shared_variable
 !
-      if(lgpu) call read_sums_from_GPU
+      if (lgpu) call read_sums_from_GPU
       call get_Hscript_and_a2(Hscript,a2rhom_all)
       if (lflrw) df_ode(ilna)=df_ode(ilna)+Hscript
 !
@@ -1094,7 +1095,7 @@ module Special
 
       if (ldiagnos) then
         call get_Hscript_and_a2(Hscript_diagnos,a2rhom_all_diagnos)
-        if(lflrw) lnascale=f_ode(ilna)
+        if (lflrw) lnascale=f_ode(ilna)
         call save_name(Hscript_diagnos,idiag_Hscriptm)
         call save_name(lnascale,idiag_lnam)
         call save_name(ddotam_all_diagnos,idiag_ddotam)
@@ -1360,9 +1361,10 @@ module Special
     endsubroutine prep_rhs_special
 !***********************************************************************
     subroutine get_a2
-  
+
       real :: lnascale
-      if(lflrw) then
+  
+      if (lflrw) then
         lnascale=f_ode(ilna)
         ascale=exp(lnascale)
       endif
@@ -1453,9 +1455,7 @@ module Special
       a2rhogpsim_all_diagnos = a2rhogpsim_all
       ddotam_all_diagnos     = ddotam_all
 
-      if (lroot .and. lflrw) then
-        call get_Hscript_and_a2(Hscript,a2rhom_all)
-      endif
+      if (lflrw) call get_Hscript_and_a2(Hscript,a2rhom_all)
 !
 !  Broadcast to other processors, and each processor uses put_shared_variable
 !  to get the values to other subroutines.

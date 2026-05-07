@@ -408,7 +408,7 @@ module Special
             t=tstart
             Hubble_ini=sqrt(8.*pi/3.*(.5*dphi0**2+.5*axionmass2*phi0**2*ascale_ini**2))
             lnascale=log(ascale_ini)
-            if (lroot .and. lflrw) f_ode(iinfl_lna)=lnascale
+            if (lflrw) f_ode(iinfl_lna)=lnascale
 !
           case ('default')
             Vpotential=.5*axionmass2*phi0**2
@@ -430,7 +430,7 @@ module Special
             lnascale=log(ascale_ini)
             f(:,:,:,iinfl_phi)   =f(:,:,:,iinfl_phi)   +phi0
             f(:,:,:,iinfl_dphi)  =f(:,:,:,iinfl_dphi)  +dphi0
-            if (lroot .and. lflrw) then
+            if (lflrw) then
               f_ode(iinfl_lna)   =lnascale
               a2                 =exp(f_ode(iinfl_lna))**2
               Hscript            =Hubble_ini/exp(lnascale)
@@ -488,7 +488,7 @@ module Special
 !
 !  initial condition for energy density of charged particles
 !
-      if (lroot .and. lrho_chi) then
+      if (lrho_chi) then
         select case (init_rho_chi)
           case ('zero'); f_ode(iinfl_rho_chi)=0.
           case ('given'); f_ode(iinfl_rho_chi)=rho_chi_init
@@ -499,7 +499,7 @@ module Special
 !
 !  initial condition for energy density of radiation
 !
-      if (lroot .and. lrho_rad) then
+      if (lrho_rad) then
         select case (init_rho_rad)
           case ('zero'); f_ode(iinfl_rho_rad)=0.
           !case ('given'); f_ode(iinfl_rho_rad)=rho_rad_init
@@ -1285,7 +1285,7 @@ module Special
 !
 !  Get Hscript and a2rhom_all.
 !
-      if (lroot .and. lflrw) call get_Hscript_and_a2(Hscript,a2rhom_all)
+      if (lflrw) call get_Hscript_and_a2(Hscript,a2rhom_all)
 !
 !  Broadcast to other processors, and each processor uses put_shared_variable
 !  to get the values to other subroutines.
