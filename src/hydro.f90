@@ -1168,7 +1168,7 @@ module Hydro
 ! of gas velocity as auxiliary
 !
       if (lparticles_grad) lgradu_as_aux=.true.
-      if (lSGS_hydro) call register_SGS_hydro
+      if (lSGS_hydro) call register_SGS_hydro      
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -2975,6 +2975,16 @@ module Hydro
 !
     endsubroutine init_uu
 !***********************************************************************
+    subroutine pencil_needs_ivv(pencil_name)
+      character (len=*) :: pencil_name
+
+      call fatal_error('pencil_interdep_hydro',&
+            'calculating ' // pencil_name // ' correctly for lconservative=T requires velocity as an auxiliary ' &
+             // ACHAR(10) // '                              i.e. lvv_as_aux = lvv_as_comaux = T.'&
+             // ACHAR(10) // 'If the pencil only needs 1st or 2nd order derivatives you could consider '&
+             // 'to write out the product rules out and lift this restriction.')
+    endsubroutine pencil_needs_ivv
+!***********************************************************************
     subroutine pencil_criteria_hydro
 !
 !  All pencils that the Hydro module depends on are specified here.
@@ -3335,6 +3345,33 @@ module Hydro
       endif
 
       if (idiag_dtu/=0) ltimestep_diagnostics=.true.
+
+      if(lconservative .and. .not. (lvv_as_aux .or. lvv_as_comaux)) then
+        if (lpencil_in(i_uij) .and. lrelativistic) then
+          call fatal_error('pencil_interdep_hydro',&
+                'calculating uij correctly for lrelativistic=T .and. lconservative=T requires velocity as an auxiliary ' &
+                 // ACHAR(10) // '                              i.e. lvv_as_aux = lvv_as_comaux = T.')
+        endif
+        if (lpencil_in(i_uij5))             call pencil_needs_ivv("uij5")
+        if (lpencil_in(i_ugu))              call pencil_needs_ivv("ugu")
+        if (lpencil_in(i_d2uidxj))          call pencil_needs_ivv("d2uidxj")
+        if (lpencil_in(i_uijk))             call pencil_needs_ivv("uijk")
+        if (lpencil_in(i_del4u))            call pencil_needs_ivv("del4u")
+        if (lpencil_in(i_del6u))            call pencil_needs_ivv("del6u")
+        if (lpencil_in(i_del6u_strict))     call pencil_needs_ivv("del6u_strict")
+        if (lpencil_in(i_del4graddivu))     call pencil_needs_ivv("del4_graddivu")
+        if (lpencil_in(i_ogu))              call pencil_needs_ivv("ogu")
+        if (lpencil_in(i_grad5divu))        call pencil_needs_ivv("grad5divu")
+        if (lpencil_in(i_del6u_bulk))       call pencil_needs_ivv("del6u_bulk")
+        if (lpencil_in(i_der6u_res))        call pencil_needs_ivv("der6u_res")
+        if (lpencil_in(i_graddivu))         call pencil_needs_ivv("graddivu")
+        if (lpencil_in(i_curlo))            call pencil_needs_ivv("curlo")
+        if (lpencil_in(i_transpurho))       call pencil_needs_ivv("transpurho")
+        !TP: I guess in the relativistic case one takes del2 of whatever one is solving for because of numerical reasons
+        !    and it is fine for it not to be actually del2 of the velocity? This is at least done for 1d-tests/rel-shock.
+        !    If so, could we consider having a pencil with a separate name for del2 of the variable being solved for?
+        if (.not. lrelativistic .and. lpencil_in(i_del2u))      call pencil_needs_ivv("del2u")
+      endif
 !
     endsubroutine pencil_interdep_hydro
 !***********************************************************************
@@ -3355,7 +3392,11 @@ module Hydro
       logical, dimension(:),              intent(IN)   :: lpenc_loc
 !
       if (llinearized_hydro) then
-        call calc_pencils_hydro_linearized(f,p,lpenc_loc)
+        if (lvv_as_aux .or. lvv_as_comaux) then
+          call calc_pencils_hydro_linearized(f,p,lpenc_loc,ivv)
+        else
+          call calc_pencils_hydro_linearized(f,p,lpenc_loc,iuu)
+        endif
       else
         call calc_pencils_hydro_nonlinear(f,p,lpenc_loc)
       endif
@@ -3414,6 +3455,233 @@ module Hydro
 !
     endsubroutine calc_pencils_hydro_std
 !***********************************************************************
+    subroutine calc_pencils_hydro_nonlinear_directly_from_f(f,p,lpenc_loc,iuu)
+!
+! All pencils which require f directly, so we can compute them correctly for lconservative by passing ivv inplace of iuu
+!
+! 7-May-26/TP: carved from calc_pencils_hydro_nonlinear
+!
+
+      use Deriv, only: der6, der5i1j
+      use Sub, only: multsv_mn, del2v_etc, gij_etc, u_dot_grad, del6v, &
+        dot2_mn, gij, div_mn, traceless_strain, curl_mn, multm2_sym_mn, &
+        dot_mn, cross, del4v, del4graddiv, d2fi_dxj, del2fi_dxjk, h_dot_grad, &
+        invmat_DB, multmv, dot_mn_sv_pencil, gij_v_times_s
+      use WENO_transport, only: weno_transp
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+      logical, dimension(npencils) :: lpenc_loc
+      integer :: iuu,iux,iuy,iuz
+!
+      real, dimension (nx) :: tmp 
+      integer :: i, j, ju
+!
+      intent(in)   :: lpenc_loc
+      intent(inout):: f,p
+
+!
+!  option to save velocity as auxiliary variable. This only makes sense if
+!  the iuu slot does not correspond to the actual velocity, which is the
+!  case when lconservative or lrelativity.
+!
+  !if (m==m1 .and. n==n1) print*,'AXEL-11 vv from f ar=',f(l1,m,n,ivx:ivz)
+  !if (m==m1 .and. n==n1) print*,'AXEL-11 vv from p%uu=',p%uu(1,:)
+  !    if (lvv_as_aux .or. lvv_as_comaux) f(l1:l2,m,n,ivx:ivz) = p%uu
+!
+! uij
+!
+      if (lpenc_loc(i_uij)) then
+        if (lconservative .and. .not. (lvv_as_aux .or. lvv_as_comaux)) then
+          call gij_v_times_s(f,iuu,irho,p%uij)
+        else
+          call gij(f,iuu,p%uij,1)
+        endif
+!
+!  In 0-D, initialize to p%uij to uij_0D_test
+!
+        if (dimensionality == 0 .or. luij_test) then
+          do i=1,nx; p%uij(i,:,:)=uij_0D_test; enddo
+        endif
+!
+!  if gradu is to be stored as auxiliary then we store it now
+!
+        !if (lgradu_as_aux .or. lparticles_lyapunov .or. lparticles_caustics .or. lparticles_tetrad) then
+        if (lgradu_as_aux .or. lparticles_lyapunov .or. lparticles_caustics .or. lparticles_tetrad &
+          .or. luij_as_aux) then
+          f(l1:l2,m,n,iguij+0) = p%uij(:,1,1)
+          f(l1:l2,m,n,iguij+1) = p%uij(:,1,2)
+          f(l1:l2,m,n,iguij+2) = p%uij(:,1,3)
+
+          f(l1:l2,m,n,iguij+3) = p%uij(:,2,1)
+          f(l1:l2,m,n,iguij+4) = p%uij(:,2,2)
+          f(l1:l2,m,n,iguij+5) = p%uij(:,2,3)
+
+          f(l1:l2,m,n,iguij+6) = p%uij(:,3,1)
+          f(l1:l2,m,n,iguij+7) = p%uij(:,3,2)
+          f(l1:l2,m,n,iguij+8) = p%uij(:,3,3)
+        endif
+      endif
+!
+!  Possibility of uij as auxiliary array (alternative method)
+!
+   !    if (luij_as_aux) then
+   !      f(l1:l2,m,n,iuij  :iuij+2)=p%uij(:,:,1)
+   !      f(l1:l2,m,n,iuij+3:iuij+5)=p%uij(:,:,2)
+   !      f(l1:l2,m,n,iuij+6:iuij+8)=p%uij(:,:,3)
+   !    endif
+!
+!      if (.not.lpenc_loc_check_at_work) then
+!        write(*,*) 'uurad,rad',p%uij(1:6,1,1)
+!      endif
+!
+! divS, needed for relativistic calculations
+!
+!     if (lpenc_loc(i_divss)) then
+!       call div(f,iux,p%divss)
+!print*,'AXEL: divss now calculated: p%divss(1:5)=',p%divss(1:5)
+!     endif
+! uij5
+      if (lpenc_loc(i_uij5)) call gij(f,iuu,p%uij5,5)
+!
+!  ugu
+!
+      if (lpenc_loc(i_ugu)) then
+        if (headtt.and.lupw_uu) print *,'calc_pencils_hydro: upwinding advection term'
+        call u_dot_grad(f,iuu,p%uij      ,p%uu,p%ugu,UPWIND=lupw_uu)
+!
+!      if (.not.lpenc_loc_check_at_work) then
+!        write(*,*) 'ugu',p%ugu(1:6,1)
+!      endif
+!        if (.not.lpenc_loc_check_at_work) then
+!          write(*,*) 'DM',x(l1:l2)
+!          write(*,*) 'DM',p%uu(:,1)
+!          write(*,*) 'DM',p%uij(:,1,1)
+!        endif
+!
+!  If lffree switched is used, we need to turn off the u.gradu term
+!  to ensure momentum conservation.
+!
+        if (ldensity) then
+          if (lffree) then
+            tmp=profx_ffree*profy_ffree(m)*profz_ffree(n)
+            do j=1,3
+              p%ugu(:,j)=p%ugu(:,j)*tmp
+            enddo
+          endif
+        endif
+      endif
+!
+!del2uj, d^u/dx^2 etc
+!
+      if (lpenc_loc(i_d2uidxj)) call d2fi_dxj(f,iuu,p%d2uidxj)
+!
+! deluidxjk
+!
+      if (lpenc_loc(i_uijk)) call del2fi_dxjk(f,iuu,p%uijk)
+! del4u, del6u, del4graddivu, and del6u_strict
+      if (lpenc_loc(i_del4u)) call del4v(f,iuu,p%del4u)
+      if (lpenc_loc(i_del6u)) call del6v(f,iuu,p%del6u)
+      if (lpenc_loc(i_del6u_strict)) call del6v(f,iuu,p%del6u_strict,LSTRICT=.true.)
+      if (lpenc_loc(i_del4graddivu)) call del4graddiv(f,iuu,p%del4graddivu)
+! Has to be here since ogu uses oo
+! oo (=curlu)
+      if (lpenc_loc(i_oo)) then
+        if (ioo /= 0) then
+          p%oo = f(l1:l2,m,n,iox:ioz)
+        else
+          call curl_mn(p%uij,p%oo,p%uu)
+        endif
+      endif
+! ogu ... ogu2
+      if (lpenc_loc(i_ogu)) call u_dot_grad(f,iuu,p%uij,p%oo,p%ogu,UPWIND=lupw_uu)
+!
+! grad5divu
+!
+      if (lpenc_loc(i_grad5divu)) then
+        do i=1,3
+          p%grad5divu(:,i) = 0.0
+          do j=1,3
+            ju=iuu+j-1
+            call der5i1j(f,ju,tmp,i,j)
+            p%grad5divu(:,i) = p%grad5divu(:,i) + tmp
+          enddo
+        enddo
+      endif
+! del6u_bulk
+      if (lpenc_loc(i_del6u_bulk)) then
+        do i=1,3; call der6(f,iuu+(i-1),p%del6u_bulk(:,i),i); enddo
+      endif
+! der6u_res
+      if (lpenc_loc(i_der6u_res)) then
+        if (lcartesian_coords) call not_implemented("calc_pencils_hydro_nonlinear", &
+                                                    "pencil der6u_res for Cartesian coordinates")
+        do j=1,3
+          ju=j+iuu-1
+          do i=1,3
+            if (lcylindrical_coords.and.ju==iuy.and.i==1) then
+              call der6(i,f(:,m,n,iuy)-uu_average_cyl(:,n),p%der6u_res(:,i,j),IGNOREDX=.true.)
+            elseif (lspherical_coords.and.ju==iuz.and.i==1) then
+              call der6(i,f(:,m,n,iuz)-uu_average_sph(:,m),p%der6u_res(:,i,j),IGNOREDX=.true.)
+            else
+              call der6(f,ju,p%der6u_res(:,i,j),i,IGNOREDX=.true.)
+            endif
+          enddo
+        enddo
+      endif
+!
+! del2u, graddivu
+!
+      if (.not.lcartesian_coords.or.lalways_use_gij_etc) then
+        if (lpenc_loc(i_graddivu)) then
+          if (headtt.or.ldebug) print*,'calc_pencils_hydro: call gij_etc'
+          call gij_etc(f,iuu,p%uu,p%uij,p%oij,GRADDIV=p%graddivu)
+        endif
+        if (lpenc_loc(i_del2u)) then
+          call curl_mn(p%oij,p%curlo,p%oo)
+          p%del2u=p%graddivu-p%curlo
+        endif
+      else
+!
+!  all 3 together
+!
+        if (lpenc_loc(i_del2u).and.lpenc_loc(i_graddivu).and.lpenc_loc(i_curlo)) then
+          call del2v_etc(f,iuu,DEL2=p%del2u,GRADDIV=p%graddivu,CURLCURL=p%curlo)
+!
+!  all 3 possible pairs
+!
+        elseif (lpenc_loc(i_del2u).and.lpenc_loc(i_graddivu)) then
+          call del2v_etc(f,iuu,DEL2=p%del2u,GRADDIV=p%graddivu)
+        elseif (lpenc_loc(i_del2u).and.lpenc_loc(i_curlo)) then
+          call del2v_etc(f,iuu,DEL2=p%del2u,CURLCURL=p%curlo)
+        elseif (lpenc_loc(i_graddivu).and.lpenc_loc(i_curlo)) then
+          call del2v_etc(f,iuu,GRADDIV=p%graddivu,CURLCURL=p%curlo)
+!
+!  all 3 individually
+!
+        elseif (lpenc_loc(i_del2u)) then
+          call del2v_etc(f,iuu,DEL2=p%del2u)
+        elseif (lpenc_loc(i_graddivu)) then
+          call del2v_etc(f,iuu,GRADDIV=p%graddivu)
+        elseif (lpenc_loc(i_curlo)) then
+          call del2v_etc(f,iuu,CURLCURL=p%curlo)
+        endif
+      endif
+! transpurho
+      if (lpenc_loc(i_transpurho).and.ldensity_nolog) then
+        if (lreference_state) then
+          do i=1,3
+            call weno_transp(f,m,n,iuu+(i-1),irho,iuu,iuu+1,iuu+2,p%transpurho(:,i),dx_1,dy_1,dz_1, &
+                             ref1=reference_state(:,iref_rho))
+          enddo
+        else
+          do i=1,3
+            call weno_transp(f,m,n,iuu+(i-1),irho,iuu,iuu+1,iuu+2,p%transpurho(:,1),dx_1,dy_1,dz_1)
+          enddo
+        endif
+      endif
+    endsubroutine calc_pencils_hydro_nonlinear_directly_from_f
+!***********************************************************************
     subroutine calc_pencils_hydro_nonlinear(f,p,lpenc_loc)
 !
 !  Calculate Hydro pencils.
@@ -3439,12 +3707,11 @@ module Hydro
       type (pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc
 !
-      real, dimension (nx) :: tmp, DD
-      real, dimension (nx) :: tmp_rho
+      real, dimension (nx) :: tmp,DD,tmp_rho
       real, dimension (nx,3) :: tmp3, tmp3g
       real, dimension (nx,3,3) :: tmp33
       real :: cs201=1., cs2011, outest
-      integer :: i, j, ju
+      integer :: j
 !
       intent(in)   :: lpenc_loc
       intent(inout):: f,p
@@ -3548,80 +3815,15 @@ module Hydro
           p%uu=f(l1:l2,m,n,iux:iuz)
         endif  !  if (lconservative) ... else
       endif
-!
-!  option to save velocity as auxiliary variable. This only makes sense if
-!  the iuu slot does not correspond to the actual velocity, which is the
-!  case when lconservative or lrelativity.
-!
-  !if (m==m1 .and. n==n1) print*,'AXEL-11 vv from f ar=',f(l1,m,n,ivx:ivz)
-  !if (m==m1 .and. n==n1) print*,'AXEL-11 vv from p%uu=',p%uu(1,:)
-  !    if (lvv_as_aux .or. lvv_as_comaux) f(l1:l2,m,n,ivx:ivz) = p%uu
-!
 ! u2
       if (lpenc_loc(i_u2)) call dot2_mn(p%uu,p%u2)
-! uij
-      if (lpenc_loc(i_uij)) then
-        if (lvv_as_aux .or. lvv_as_comaux) then
-          call gij(f,ivv,p%uij,1)
-        else
-          if (lconservative) then
-            if(lrelativistic) then
-              if (.not.lpencil_check_at_work) then
-                call fatal_error('calc_pencils_hydro',&
-                    'calculating uij correctly for lrelativistic=T .and. lconservative=T requires velocity as auxiliary ' &
-                     // ACHAR(10) // '                              i.e. lvv_as_aux = lvv_as_comaux = T')
-              endif
-            else
-              call gij_v_times_s(f,iuu,irho,p%uij)
-            endif
-          else
-            call gij(f,iuu,p%uij,1)
-          endif
-        endif
-!
-!  In 0-D, initialize to p%uij to uij_0D_test
-!
-      if (dimensionality == 0 .or. luij_test) then
-        do i=1,nx; p%uij(i,:,:)=uij_0D_test; enddo
-      endif
-!
-!  if gradu is to be stored as auxiliary then we store it now
-!
-        !if (lgradu_as_aux .or. lparticles_lyapunov .or. lparticles_caustics .or. lparticles_tetrad) then
-        if (lgradu_as_aux .or. lparticles_lyapunov .or. lparticles_caustics .or. lparticles_tetrad &
-          .or. luij_as_aux) then
-          f(l1:l2,m,n,iguij+0) = p%uij(:,1,1)
-          f(l1:l2,m,n,iguij+1) = p%uij(:,1,2)
-          f(l1:l2,m,n,iguij+2) = p%uij(:,1,3)
 
-          f(l1:l2,m,n,iguij+3) = p%uij(:,2,1)
-          f(l1:l2,m,n,iguij+4) = p%uij(:,2,2)
-          f(l1:l2,m,n,iguij+5) = p%uij(:,2,3)
-
-          f(l1:l2,m,n,iguij+6) = p%uij(:,3,1)
-          f(l1:l2,m,n,iguij+7) = p%uij(:,3,2)
-          f(l1:l2,m,n,iguij+8) = p%uij(:,3,3)
-        endif
+      if (lvv_as_aux .or. lvv_as_comaux) then
+        call calc_pencils_hydro_nonlinear_directly_from_f(f,p,lpenc_loc,ivv)
+      else
+        call calc_pencils_hydro_nonlinear_directly_from_f(f,p,lpenc_loc,iuu)
       endif
-!
-!  Possibility of uij as auxiliary array (alternative method)
-!
-   !    if (luij_as_aux) then
-   !      f(l1:l2,m,n,iuij  :iuij+2)=p%uij(:,:,1)
-   !      f(l1:l2,m,n,iuij+3:iuij+5)=p%uij(:,:,2)
-   !      f(l1:l2,m,n,iuij+6:iuij+8)=p%uij(:,:,3)
-   !    endif
-!
-!      if (.not.lpenc_loc_check_at_work) then
-!        write(*,*) 'uurad,rad',p%uij(1:6,1,1)
-!      endif
-!
-! divS, needed for relativistic calculations
-!
-!     if (lpenc_loc(i_divss)) then
-!       call div(f,iux,p%divss)
-!print*,'AXEL: divss now calculated: p%divss(1:5)=',p%divss(1:5)
-!     endif
+
 ! divu
       if (lpenc_loc(i_divu)) then
         call div_mn(p%uij,p%divu,p%uu)
@@ -3637,16 +3839,6 @@ module Hydro
 ! enddo
 ! sij2
       if (lpenc_loc(i_sij2)) call multm2_sym_mn(p%sij,p%sij2)
-! uij5
-      if (lpenc_loc(i_uij5)) call gij(f,iuu,p%uij5,5)
-! oo (=curlu)
-      if (lpenc_loc(i_oo)) then
-        if (ioo /= 0) then
-          p%oo = f(l1:l2,m,n,iox:ioz)
-        else
-          call curl_mn(p%uij,p%oo,p%uu)
-        endif
-      endif
 ! o2 and oxu2
       if (lpenc_loc(i_o2)) call dot2_mn(p%oo,p%o2)
 ! ou and oxu
@@ -3662,38 +3854,8 @@ module Hydro
           write(*,*)'WARNING : hydro:ou has different sign than relhel'
         endif
       endif
-!
-!  ugu
-!
-      if (lpenc_loc(i_ugu)) then
-        if (headtt.and.lupw_uu) print *,'calc_pencils_hydro: upwinding advection term'
-        call u_dot_grad(f,iuu,p%uij      ,p%uu,p%ugu,UPWIND=lupw_uu)
-!
-!      if (.not.lpenc_loc_check_at_work) then
-!        write(*,*) 'ugu',p%ugu(1:6,1)
-!      endif
-!        if (.not.lpenc_loc_check_at_work) then
-!          write(*,*) 'DM',x(l1:l2)
-!          write(*,*) 'DM',p%uu(:,1)
-!          write(*,*) 'DM',p%uij(:,1,1)
-!        endif
-!
-!  If lffree switched is used, we need to turn off the u.gradu term
-!  to ensure momentum conservation.
-!
-        if (ldensity) then
-          if (lffree) then
-            tmp=profx_ffree*profy_ffree(m)*profz_ffree(n)
-            do j=1,3
-              p%ugu(:,j)=p%ugu(:,j)*tmp
-            enddo
-          endif
-        endif
-      endif
 ! ugu2
       if (lpenc_loc(i_ugu2)) call dot2_mn(p%ugu,p%ugu2)
-! ogu ... ogu2
-      if (lpenc_loc(i_ogu)) call u_dot_grad(f,iuu,p%uij,p%oo,p%ogu,UPWIND=lupw_uu)
 ! u3u21, u1u32, u2u13, u2u31, u3u12, u1u23
       if (lpenc_loc(i_u3u21)) p%u3u21=p%uu(:,3)*p%uij(:,2,1)
       if (lpenc_loc(i_u1u32)) p%u1u32=p%uu(:,1)*p%uij(:,3,2)
@@ -3701,108 +3863,6 @@ module Hydro
       if (lpenc_loc(i_u2u31)) p%u2u31=p%uu(:,2)*p%uij(:,3,1)
       if (lpenc_loc(i_u3u12)) p%u3u12=p%uu(:,3)*p%uij(:,1,2)
       if (lpenc_loc(i_u1u23)) p%u1u23=p%uu(:,1)*p%uij(:,2,3)
-! del4u, del6u, del4graddivu, and del6u_strict
-      if (lpenc_loc(i_del4u)) call del4v(f,iuu,p%del4u)
-      if (lpenc_loc(i_del6u)) call del6v(f,iuu,p%del6u)
-      if (lpenc_loc(i_del6u_strict)) call del6v(f,iuu,p%del6u_strict,LSTRICT=.true.)
-      if (lpenc_loc(i_del4graddivu)) call del4graddiv(f,iuu,p%del4graddivu)
-! del6u_bulk
-      if (lpenc_loc(i_del6u_bulk)) then
-        call der6(f,iux,p%del6u_bulk(:,1),1)
-        call der6(f,iuy,p%del6u_bulk(:,2),2)
-        call der6(f,iuz,p%del6u_bulk(:,3),3)
-      endif
-! der6u_res
-      if (lpenc_loc(i_der6u_res)) then
-        if (lcartesian_coords) call not_implemented("calc_pencils_hydro_nonlinear", &
-                                                    "pencil der6u_res for Cartesian coordinates")
-        do j=1,3
-          ju=j+iuu-1
-          do i=1,3
-            if (lcylindrical_coords.and.ju==iuy.and.i==1) then
-              call der6(i,f(:,m,n,iuy)-uu_average_cyl(:,n),p%der6u_res(:,i,j),IGNOREDX=.true.)
-            elseif (lspherical_coords.and.ju==iuz.and.i==1) then
-              call der6(i,f(:,m,n,iuz)-uu_average_sph(:,m),p%der6u_res(:,i,j),IGNOREDX=.true.)
-            else
-              call der6(f,ju,p%der6u_res(:,i,j),i,IGNOREDX=.true.)
-            endif
-          enddo
-        enddo
-      endif
-!
-! del2u, graddivu
-!
-      if (.not.lcartesian_coords.or.lalways_use_gij_etc) then
-        if (lpenc_loc(i_graddivu)) then
-          if (headtt.or.ldebug) print*,'calc_pencils_hydro: call gij_etc'
-          call gij_etc(f,iuu,p%uu,p%uij,p%oij,GRADDIV=p%graddivu)
-        endif
-        if (lpenc_loc(i_del2u)) then
-          call curl_mn(p%oij,p%curlo,p%oo)
-          p%del2u=p%graddivu-p%curlo
-        endif
-      else
-!
-!  all 3 together
-!
-        if (lpenc_loc(i_del2u).and.lpenc_loc(i_graddivu).and.lpenc_loc(i_curlo)) then
-          call del2v_etc(f,iuu,DEL2=p%del2u,GRADDIV=p%graddivu,CURLCURL=p%curlo)
-!
-!  all 3 possible pairs
-!
-        elseif (lpenc_loc(i_del2u).and.lpenc_loc(i_graddivu)) then
-          call del2v_etc(f,iuu,DEL2=p%del2u,GRADDIV=p%graddivu)
-        elseif (lpenc_loc(i_del2u).and.lpenc_loc(i_curlo)) then
-          call del2v_etc(f,iuu,DEL2=p%del2u,CURLCURL=p%curlo)
-        elseif (lpenc_loc(i_graddivu).and.lpenc_loc(i_curlo)) then
-          call del2v_etc(f,iuu,GRADDIV=p%graddivu,CURLCURL=p%curlo)
-!
-!  all 3 individually
-!
-        elseif (lpenc_loc(i_del2u)) then
-          call del2v_etc(f,iuu,DEL2=p%del2u)
-        elseif (lpenc_loc(i_graddivu)) then
-          call del2v_etc(f,iuu,GRADDIV=p%graddivu)
-        elseif (lpenc_loc(i_curlo)) then
-          call del2v_etc(f,iuu,CURLCURL=p%curlo)
-        endif
-      endif
-!
-!del2uj, d^u/dx^2 etc
-!
-      if (lpenc_loc(i_d2uidxj)) call d2fi_dxj(f,iuu,p%d2uidxj)
-!
-! deluidxjk
-!
-      if (lpenc_loc(i_uijk)) call del2fi_dxjk(f,iuu,p%uijk)
-!
-! grad5divu
-!
-      if (lpenc_loc(i_grad5divu)) then
-        do i=1,3
-          p%grad5divu(:,i) = 0.0
-          do j=1,3
-            ju=iuu+j-1
-            call der5i1j(f,ju,tmp,i,j)
-            p%grad5divu(:,i) = p%grad5divu(:,i) + tmp
-          enddo
-        enddo
-      endif
-! transpurho
-      if (lpenc_loc(i_transpurho).and.ldensity_nolog) then
-        if (lreference_state) then
-          call weno_transp(f,m,n,iux,irho,iux,iuy,iuz,p%transpurho(:,1),dx_1,dy_1,dz_1, &
-                           ref1=reference_state(:,iref_rho))
-          call weno_transp(f,m,n,iuy,irho,iux,iuy,iuz,p%transpurho(:,2),dx_1,dy_1,dz_1, &
-                           ref1=reference_state(:,iref_rho))
-          call weno_transp(f,m,n,iuz,irho,iux,iuy,iuz,p%transpurho(:,3),dx_1,dy_1,dz_1, &
-                           ref1=reference_state(:,iref_rho))
-        else
-          call weno_transp(f,m,n,iux,irho,iux,iuy,iuz,p%transpurho(:,1),dx_1,dy_1,dz_1)
-          call weno_transp(f,m,n,iuy,irho,iux,iuy,iuz,p%transpurho(:,2),dx_1,dy_1,dz_1)
-          call weno_transp(f,m,n,iuz,irho,iux,iuy,iuz,p%transpurho(:,3),dx_1,dy_1,dz_1)
-        endif
-      endif
 !
       if (lpenc_loc(i_uu_advec)) then
 !
@@ -3864,7 +3924,7 @@ module Hydro
 !
     endsubroutine calc_pencils_hydro_nonlinear
 !***********************************************************************
-    subroutine calc_pencils_hydro_linearized(f,p,lpenc_loc)
+    subroutine calc_pencils_hydro_linearized(f,p,lpenc_loc,iuu)
 !
 !  Calculate linearized hydro pencils.
 !  Most basic pencils should come first, as others may depend on them.
@@ -3881,6 +3941,7 @@ module Hydro
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc
+      integer :: iuu
 !
       real, dimension (nx) :: tmp, tmp2
       real, dimension (nx,3) :: ugu0,u0gu
@@ -3888,8 +3949,9 @@ module Hydro
 !
       intent(in) :: f, lpenc_loc
       intent(out) :: p
+
 ! uu
-      if (lpenc_loc(i_uu)) p%uu=f(l1:l2,m,n,iux:iuz)
+      if (lpenc_loc(i_uu)) p%uu=f(l1:l2,m,n,iuu:iuu+2)
       if (lpenc_loc(i_uu0)) p%uu0=f(l1:l2,m,n,iu0x:iu0z)
 ! u2, should not be calculated
       if (lpenc_loc(i_u2)) call fatal_error('calc_pencils_hydro_linearized','u2 pencil not calculated')
@@ -3942,12 +4004,10 @@ module Hydro
       if (lpenc_loc(i_del4graddivu)) call del4graddiv(f,iuu,p%del4graddivu)
 ! del6u_bulk
       if (lpenc_loc(i_del6u_bulk)) then
-        call der6(f,iux,tmp,1)
-        p%del6u_bulk(:,1)=tmp
-        call der6(f,iuy,tmp,2)
-        p%del6u_bulk(:,2)=tmp
-        call der6(f,iuz,tmp,3)
-        p%del6u_bulk(:,3)=tmp
+        do i=1,3
+          call der6(f,iuu+(i-1),tmp,i)
+          p%del6u_bulk(:,i)=tmp
+        enddo
       endif
 !
 ! del2u, graddivu

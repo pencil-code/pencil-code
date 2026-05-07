@@ -3613,7 +3613,7 @@ module Energy
 !
     endsubroutine calc_pencils_energy
 !***********************************************************************
-    subroutine calc_energy_slope_limited(f,df,p)
+    subroutine calc_energy_slope_limited(f,df)
 !
 !   16-apr-26/TP: carved from denergy_dt
 !
@@ -3621,7 +3621,6 @@ module Energy
 
       real, intent(in),  dimension(mx,my,mz,mfarray) :: f
       real, intent(out), dimension(mx,my,mz,mvar) :: df
-      type(pencil_case), intent(in) :: p
 
       real, dimension(nx) :: tmp
 
@@ -3793,7 +3792,7 @@ module Energy
 !     Slope-limited diffusion
 !
       if (lenergy_slope_limited.and.llast) then
-        call calc_energy_slope_limited(f,df,p)
+        call calc_energy_slope_limited(f,df)
       endif
 !
 !  Explicit heating/cooling terms.
