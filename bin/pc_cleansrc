@@ -74,7 +74,7 @@ clean_src()
 
 prune_dir()
 {
-  this=$1
+  this=$1 #only used for the printed message
   clean_objects="*.o *.so *.a *.mod *.x *.inc .build-history .buildinfo .buildtime tmp"
   clean_links="start.csh start_run.csh run.csh getconf.csh Makefile src/.cvsignore"
   clean_files="pc_commands.log COMPLETED ERROR LOCK STOP FULLSTOP src/Makefile src/mpicomm_double.f90 src/revision.txt src/.current-precision src/.config-files src/.moduleinfo"
