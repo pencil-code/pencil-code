@@ -371,7 +371,7 @@ module Special
           H=sqrt(8.*pi*onethird*(1/mpl2)*(.5*phidot**2+V))
         endif
         phiddot=-3.*H*phidot-Vprime
-      else if (lgpu) then
+      else
         H=H_init
         a=1.0
       endif
@@ -726,7 +726,6 @@ module Special
       real, dimension (nx) :: AL, ALdot, imAL, imALdot, ALALdoteff, imALALdoteff
       real, dimension (nx) :: ALeff2,  ALdoteff2, imALeff2, imALdoteff2
       real, dimension (nx) :: psi, psidot, impsi , impsidot
-      real :: a
 
       call get_Hubble_and_scale_factor(f_ode)
       AR   =f(l1:l2,m,n,iaxi_AR)
