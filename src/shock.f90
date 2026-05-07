@@ -76,6 +76,11 @@ module Shock
     module procedure shock_divu_perp_pencil
   endinterface
 !
+! When lconservative=T, iux:iuz correspond to momentum so
+! we have to get velocity from ivv
+!
+  integer :: ivel,ivelx,ively,ivelz
+!
   contains
 !***********************************************************************
     subroutine register_shock()
@@ -102,6 +107,11 @@ module Shock
 !
        real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
+       ivel = merge(ivv,iuu,ivv /= 0)
+       ivelx = ivel
+       ively = ivel+1
+       ivelz = ivel+2
+
        if (nghost < 3) then
          if (lroot .and. (nghost == 1)) write (*,*) '=> Retry with the "deriv_2nd_all" module.'
          if (lroot .and. (nghost == 2)) write (*,*) '=> Retry with the "deriv_4th_all" module.'
@@ -151,7 +161,7 @@ module Shock
 !  periodic boundaries if the shock viscosity is assumed periodic.
 !
       if (lrun .and. .not. lforce_periodic_shockviscosity) then
-        if (bcx(ishock)=='p' .and. .not. all(bcx(iux:iuz)=='p'   )) then
+        if (bcx(ishock)=='p' .and. .not. all(bcx(ivelx:ivelz)=='p'   )) then
           if (lroot) then
             print*, 'initialize_shock: shock viscosity has bcx=''p'', but the velocity field is not'
             print*, '                  periodic! (you must set a proper boundary condition for the'
@@ -162,7 +172,7 @@ module Shock
           endif
           call fatal_error('initialize_shock','')
         endif
-        if (bcy(ishock)=='p' .and. .not. all(bcy(iux:iuz)=='p')) then
+        if (bcy(ishock)=='p' .and. .not. all(bcy(ivelx:ivelz)=='p')) then
           if (lroot) then
             print*, 'initialize_shock: shock viscosity has bcy=''p'', but the velocity field is not'
             print*, '                  periodic! (you must set a proper boundary condition for the'
@@ -173,7 +183,7 @@ module Shock
           endif
           call fatal_error('initialize_shock','')
         endif
-        if (bcz(ishock)=='p' .and. .not. all(bcz(iux:iuz)=='p')) then
+        if (bcz(ishock)=='p' .and. .not. all(bcz(ivelx:ivelz)=='p')) then
           if (lroot) then
             print*, 'initialize_shock: shock viscosity has bcz=''p'', but the velocity field is not'
             print*, '                  periodic! (you must set a proper boundary condition for the'
@@ -185,6 +195,7 @@ module Shock
           call fatal_error('initialize_shock','')
         endif
       endif
+
 !
     endsubroutine initialize_shock
 !***********************************************************************
@@ -454,11 +465,11 @@ module Shock
 !  2. communication
 !  3. y- and z-boundaries
 !
-          call initiate_isendrcv_bdry(f,iux,iuz)
+          call initiate_isendrcv_bdry(f,ivelx,ivelz)
           if (early_finalize) then
-            call finalize_isendrcv_bdry(f,iux,iuz)
-            call boundconds_y(f,iux,iuz)
-            call boundconds_z(f,iux,iuz)
+            call finalize_isendrcv_bdry(f,ivelx,ivelz)
+            call boundconds_y(f,ivelx,ivelz)
+            call boundconds_z(f,ivelx,ivelz)
           endif
 !
 !  do loop over y and z
@@ -475,9 +486,9 @@ module Shock
 !
             if (lcommunicate) then
               if (necessary(imn)) then
-                call finalize_isendrcv_bdry(f,iux,iuz)
-                call boundconds_y(f,iux,iuz)
-                call boundconds_z(f,iux,iuz)
+                call finalize_isendrcv_bdry(f,ivelx,ivelz)
+                call boundconds_y(f,ivelx,ivelz)
+                call boundconds_z(f,ivelx,ivelz)
                 lcommunicate=.false.
               endif
             endif
@@ -495,8 +506,8 @@ module Shock
 !
         elseif (lcommunicate_uu) then
 !  Communicate uu ghost zones
-          call boundconds_x(f,iux,iuz)
-          call initiate_isendrcv_bdry(f,iux,iuz)
+          call boundconds_x(f,ivelx,ivelz)
+          call initiate_isendrcv_bdry(f,ivelx,ivelz)
 !
 !  Divu over internal region
 !
@@ -548,9 +559,9 @@ module Shock
 !
 !  End communication of uu ghost zones and set global boundary conditions.
 !
-          call finalize_isendrcv_bdry(f,iux,iuz)
-          call boundconds_y(f,iux,iuz)
-          call boundconds_z(f,iux,iuz)
+          call finalize_isendrcv_bdry(f,ivelx,ivelz)
+          call boundconds_y(f,ivelx,ivelz)
+          call boundconds_z(f,ivelx,ivelz)
 !
 !  Divu over external region
 !
@@ -1296,43 +1307,43 @@ module Shock
       if (nxgrid/=1) then
          fac=1./(2.*dx)
          df(1     ,:,:) =  df(1    ,:,:) &
-                           + (  4.*f(2,:,:,iux) &
-                              - 3.*f(1,:,:,iux) &
-                              -    f(3,:,:,iux))*fac
+                           + (  4.*f(2,:,:,ivelx) &
+                              - 3.*f(1,:,:,ivelx) &
+                              -    f(3,:,:,ivelx))*fac
          df(2:mx-1,:,:) =  df(2:mx-1,:,:) &
-                           + ( f(3:mx,:,:,iux)-f(1:mx-2,:,:,iux) ) * fac
+                           + ( f(3:mx,:,:,ivelx)-f(1:mx-2,:,:,ivelx) ) * fac
          df(mx    ,:,:) =  df(mx    ,:,:) &
-                           + (  3.*f(mx  ,:,:,iux) &
-                              - 4.*f(mx-1,:,:,iux) &
-                              +    f(mx-2,:,:,iux))*fac
+                           + (  3.*f(mx  ,:,:,ivelx) &
+                              - 4.*f(mx-1,:,:,ivelx) &
+                              +    f(mx-2,:,:,ivelx))*fac
       endif
 !
       if (nygrid/=1) then
          fac=1./(2.*dy)
          df(:,1     ,:) = df(:,1     ,:) &
-                          + (  4.*f(:,2,:,iuy) &
-                             - 3.*f(:,1,:,iuy) &
-                             -    f(:,3,:,iuy))*fac
+                          + (  4.*f(:,2,:,ively) &
+                             - 3.*f(:,1,:,ively) &
+                             -    f(:,3,:,ively))*fac
          df(:,2:my-1,:) = df(:,2:my-1,:) &
-                          + (f(:,3:my,:,iuy)-f(:,1:my-2,:,iuy))*fac
+                          + (f(:,3:my,:,ively)-f(:,1:my-2,:,ively))*fac
          df(:,my    ,:) = df(:,my    ,:) &
-                          + (  3.*f(:,my  ,:,iuy) &
-                             - 4.*f(:,my-1,:,iuy) &
-                             +    f(:,my-2,:,iuy))*fac
+                          + (  3.*f(:,my  ,:,ively) &
+                             - 4.*f(:,my-1,:,ively) &
+                             +    f(:,my-2,:,ively))*fac
       endif
 !
       if (nzgrid/=1) then
          fac=1./(2.*dz)
          df(:,:,1     ) = df(:,:,1     ) &
-                          + (  4.*f(:,:,2,iuz) &
-                             - 3.*f(:,:,1,iuz) &
-                             -    f(:,:,3,iuz))*fac
+                          + (  4.*f(:,:,2,ivelz) &
+                             - 3.*f(:,:,1,ivelz) &
+                             -    f(:,:,3,ivelz))*fac
          df(:,:,2:mz-1) = df(:,:,2:mz-1) &
-                          + (f(:,:,3:mz,iuz)-f(:,:,1:mz-2,iuz))*fac
+                          + (f(:,:,3:mz,ivelz)-f(:,:,1:mz-2,ivelz))*fac
          df(:,:,mz    ) = df(:,:,mz    ) &
-                          + (  3.*f(:,:,mz  ,iuz) &
-                             - 4.*f(:,:,mz-1,iuz) &
-                             +    f(:,:,mz-2,iuz))*fac
+                          + (  3.*f(:,:,mz  ,ivelz) &
+                             - 4.*f(:,:,mz-1,ivelz) &
+                             +    f(:,:,mz-2,ivelz))*fac
       endif
 !
     endsubroutine shock_divu_farray
@@ -1352,24 +1363,24 @@ module Shock
       if (nxgrid/=1) then
          fac=1./(2.*dx)
          df(2:mx-1) = df(2:mx-1)     &
-               + (f(3:mx  ,m     ,n     ,iux) &
-               -  f(1:mx-2,m     ,n     ,iux) ) &
+               + (f(3:mx  ,m     ,n     ,ivelx) &
+               -  f(1:mx-2,m     ,n     ,ivelx) ) &
                * fac
       endif
 !
       if (nygrid/=1) then
          fac=1./(2.*dy)
          df = df  &
-               + (f(:     ,m+1   ,n     ,iuy)   &
-               -  f(:     ,m-1   ,n     ,iuy) ) &
+               + (f(:     ,m+1   ,n     ,ively)   &
+               -  f(:     ,m-1   ,n     ,ively) ) &
                * fac
       endif
 !
       if (nzgrid/=1) then
          fac=1./(2.*dz)
          df = df       &
-               + (f(:     ,m     ,n+1   ,iuz)   &
-               -  f(:     ,m     ,n-1   ,iuz) ) &
+               + (f(:     ,m     ,n+1   ,ivelz)   &
+               -  f(:     ,m     ,n-1   ,ivelz) ) &
                * fac
       endif
     endsubroutine shock_divu_pencil
@@ -1393,34 +1404,34 @@ module Shock
       if (nxgrid/=1) then
          fac=bb_hat(:,1)/(2*dx)
          divu_perp(l1-2:l2+2) = divu_perp(l1-2:l2+2)                          &
-           - fac(l1-2:l2+2)*(bb_hat(l1-2:l2+2,1)*( f(l1-1:l2+3,m  ,n  ,iux)   &
-                                                 - f(l1-3:l2+1,m  ,n  ,iux) ) &
-                           + bb_hat(l1-2:l2+2,2)*( f(l1-1:l2+3,m  ,n  ,iuy)   &
-                                                 - f(l1-3:l2+1,m  ,n  ,iuy) ) &
-                           + bb_hat(l1-2:l2+2,3)*( f(l1-1:l2+3,m  ,n  ,iuz)   &
-                                                 - f(l1-3:l2+1,m  ,n  ,iuz) ) )
+           - fac(l1-2:l2+2)*(bb_hat(l1-2:l2+2,1)*( f(l1-1:l2+3,m  ,n  ,ivelx)   &
+                                                 - f(l1-3:l2+1,m  ,n  ,ivelx) ) &
+                           + bb_hat(l1-2:l2+2,2)*( f(l1-1:l2+3,m  ,n  ,ively)   &
+                                                 - f(l1-3:l2+1,m  ,n  ,ively) ) &
+                           + bb_hat(l1-2:l2+2,3)*( f(l1-1:l2+3,m  ,n  ,ivelz)   &
+                                                 - f(l1-3:l2+1,m  ,n  ,ivelz) ) )
       endif
 !
       if (nygrid/=1) then
          fac=bb_hat(:,2)/(2*dy)
          divu_perp(l1-2:l2+2) = divu_perp(l1-2:l2+2)                          &
-           - fac(l1-2:l2+2)*(bb_hat(l1-2:l2+2,1)*( f(l1-2:l2+2,m+1,n  ,iux)   &
-                                                 - f(l1-2:l2+2,m-1,n  ,iux) ) &
-                           + bb_hat(l1-2:l2+2,2)*( f(l1-2:l2+2,m+1,n  ,iuy)   &
-                                                 - f(l1-2:l2+2,m-1,n  ,iuy) ) &
-                           + bb_hat(l1-2:l2+2,3)*( f(l1-2:l2+2,m+1,n  ,iuz)   &
-                                                 - f(l1-2:l2+2,m-1,n  ,iuz) ) )
+           - fac(l1-2:l2+2)*(bb_hat(l1-2:l2+2,1)*( f(l1-2:l2+2,m+1,n  ,ivelx)   &
+                                                 - f(l1-2:l2+2,m-1,n  ,ivelx) ) &
+                           + bb_hat(l1-2:l2+2,2)*( f(l1-2:l2+2,m+1,n  ,ively)   &
+                                                 - f(l1-2:l2+2,m-1,n  ,ively) ) &
+                           + bb_hat(l1-2:l2+2,3)*( f(l1-2:l2+2,m+1,n  ,ivelz)   &
+                                                 - f(l1-2:l2+2,m-1,n  ,ivelz) ) )
       endif
 !
       if (nzgrid/=1) then
          fac=bb_hat(:,3)/(2*dz)
          divu_perp(l1-2:l2+2) = divu_perp(l1-2:l2+2)                          &
-           - fac(l1-2:l2+2)*(bb_hat(l1-2:l2+2,1)*( f(l1-2:l2+2,m  ,n+1,iux)   &
-                                                 - f(l1-2:l2+2,m  ,n-1,iux) ) &
-                           + bb_hat(l1-2:l2+2,2)*( f(l1-2:l2+2,m  ,n+1,iuy)   &
-                                                 - f(l1-2:l2+2,m  ,n-1,iuy) ) &
-                           + bb_hat(l1-2:l2+2,3)*( f(l1-2:l2+2,m  ,n+1,iuz)   &
-                                                 - f(l1-2:l2+2,m  ,n-1,iuz) ) )
+           - fac(l1-2:l2+2)*(bb_hat(l1-2:l2+2,1)*( f(l1-2:l2+2,m  ,n+1,ivelx)   &
+                                                 - f(l1-2:l2+2,m  ,n-1,ivelx) ) &
+                           + bb_hat(l1-2:l2+2,2)*( f(l1-2:l2+2,m  ,n+1,ively)   &
+                                                 - f(l1-2:l2+2,m  ,n-1,ively) ) &
+                           + bb_hat(l1-2:l2+2,3)*( f(l1-2:l2+2,m  ,n+1,ivelz)   &
+                                                 - f(l1-2:l2+2,m  ,n-1,ivelz) ) )
       endif
 !
     endsubroutine shock_divu_perp_pencil
@@ -1444,9 +1455,9 @@ module Shock
         do k=n1,n2
         do j=m1,m2
         do i=l1,l2
-!          df(i,j,k)=sum(f(i-3:i+3, j-3:j+3, k+3    , iuz)) - sum(f(i-3:i+3, j-3:j+3, k-3    , iuz)) + &
-!                    sum(f(i-3:i+3, j+3    , k-3:k+3, iuy)) - sum(f(i-3:i+3, j-3    , k-3:k+3, iuy)) + &
-!                    sum(f(i+3    , j-3:j+3, k-3:k+3, iux)) - sum(f(i-3    , j-3:j+3, k-3:k+3, iux))
+!          df(i,j,k)=sum(f(i-3:i+3, j-3:j+3, k+3    , ivelz)) - sum(f(i-3:i+3, j-3:j+3, k-3    , ivelz)) + &
+!                    sum(f(i-3:i+3, j+3    , k-3:k+3, ively)) - sum(f(i-3:i+3, j-3    , k-3:k+3, ively)) + &
+!                    sum(f(i+3    , j-3:j+3, k-3:k+3, ivelx)) - sum(f(i-3    , j-3:j+3, k-3:k+3, ivelx))
         enddo
         enddo
         enddo
@@ -1457,25 +1468,25 @@ module Shock
         do i=l1,l2
           fac = (-1./18.) / dx
           diamond = ( &
-                       f(i  , j, k+3 , iuz)  &
-                     + f(i+1, j, k+2 , iuz) + f(i+1, j, k+2 , iux)  &
-                     + f(i+2, j, k+1 , iuz) + f(i+2, j, k+1 , iux)  &
-                     + f(i+3, j, k   , iux) &
-                     - f(i+2, j, k-1 , iuz) + f(i+2, j, k-1 , iux)  &
-                     - f(i+1, j, k-2 , iuz) + f(i+1, j, k-2 , iux)  &
-                     - f(i  , j, k-3 , iuz) &
-                     - f(i-1, j, k-2 , iuz) - f(i-1, j, k-2 , iux)  &
-                     - f(i-2, j, k-1 , iuz) - f(i-2, j, k-1 , iux)  &
-                     - f(i-3, j, k   , iux)  &
-                     + f(i-2, j, k+1 , iuz) - f(i-2, j, k+1 , iux)  &
-                     + f(i-1, j, k+2 , iuz) - f(i-1, j, k+2 , iux)  &
+                       f(i  , j, k+3 , ivelz)  &
+                     + f(i+1, j, k+2 , ivelz) + f(i+1, j, k+2 , ivelx)  &
+                     + f(i+2, j, k+1 , ivelz) + f(i+2, j, k+1 , ivelx)  &
+                     + f(i+3, j, k   , ivelx) &
+                     - f(i+2, j, k-1 , ivelz) + f(i+2, j, k-1 , ivelx)  &
+                     - f(i+1, j, k-2 , ivelz) + f(i+1, j, k-2 , ivelx)  &
+                     - f(i  , j, k-3 , ivelz) &
+                     - f(i-1, j, k-2 , ivelz) - f(i-1, j, k-2 , ivelx)  &
+                     - f(i-2, j, k-1 , ivelz) - f(i-2, j, k-1 , ivelx)  &
+                     - f(i-3, j, k   , ivelx)  &
+                     + f(i-2, j, k+1 , ivelz) - f(i-2, j, k+1 , ivelx)  &
+                     + f(i-1, j, k+2 , ivelz) - f(i-1, j, k+2 , ivelx)  &
                     ) * fac
 !
           fac = (1./16.) / dx
-          cube    = (  sum(f(i-2:i+2, j, k-2    , iuz)) &
-                     - sum(f(i-2:i+2, j, k+2    , iuz)) &
-                     + sum(f(i-2    , j, k-2:k+2, iux)) &
-                     - sum(f(i+2    , j, k-2:k+2, iux)) &
+          cube    = (  sum(f(i-2:i+2, j, k-2    , ivelz)) &
+                     - sum(f(i-2:i+2, j, k+2    , ivelz)) &
+                     + sum(f(i-2    , j, k-2:k+2, ivelx)) &
+                     - sum(f(i+2    , j, k-2:k+2, ivelx)) &
                     ) * fac
 !
           if (lwith_extreme_div) then
@@ -1618,9 +1629,9 @@ module Shock
         do k=n1,n2
         do j=m1,m2
         do i=l1,l2
-!          df(i,j,k)=sum(f(i-3:i+3, j-3:j+3, k+3    , iuz)) - sum(f(i-3:i+3, j-3:j+3, k-3    , iuz)) + &
-!                    sum(f(i-3:i+3, j+3    , k-3:k+3, iuy)) - sum(f(i-3:i+3, j-3    , k-3:k+3, iuy)) + &
-!                    sum(f(i+3    , j-3:j+3, k-3:k+3, iux)) - sum(f(i-3    , j-3:j+3, k-3:k+3, iux))
+!          df(i,j,k)=sum(f(i-3:i+3, j-3:j+3, k+3    , ivelz)) - sum(f(i-3:i+3, j-3:j+3, k-3    , ivelz)) + &
+!                    sum(f(i-3:i+3, j+3    , k-3:k+3, ively)) - sum(f(i-3:i+3, j-3    , k-3:k+3, ively)) + &
+!                    sum(f(i+3    , j-3:j+3, k-3:k+3, ivelx)) - sum(f(i-3    , j-3:j+3, k-3:k+3, ivelx))
         enddo
         enddo
         enddo
@@ -1635,26 +1646,26 @@ module Shock
         j=m1
         do i=l1,l2
           octagon = ( &
-                     + f(i+2 , j, k+2 , iuz) + f(i+2 , j, k+2 , iux) &
-                     + f(i+3 , j, k+1 , iuz) + f(i+3 , j, k+1 , iux) &
-                     - f(i+1 , j, k-3 , iuz) + f(i+1 , j, k-3 , iux) &  ! Bottom right /
-                     - f(i+2 , j, k-2 , iuz) + f(i+2 , j, k-2 , iux) &
-                     - f(i+3 , j, k-1 , iuz) + f(i+3 , j, k-1 , iux) &
-                     - f(i-1 , j, k-3 , iuz) - f(i-1 , j, k-3 , iux) &  ! Bottom left \
-                     - f(i-2 , j, k-2 , iuz) - f(i-2 , j, k-2 , iux) &
-                     - f(i-3 , j, k-1 , iuz) - f(i-3 , j, k-1 , iux) &
-                     + f(i-2 , j, k+2 , iuz) - f(i-2 , j, k+2 , iux) &
-                     + f(i-3 , j, k+1 , iuz) - f(i-3 , j, k+1 , iux) &
+                     + f(i+2 , j, k+2 , ivelz) + f(i+2 , j, k+2 , ivelx) &
+                     + f(i+3 , j, k+1 , ivelz) + f(i+3 , j, k+1 , ivelx) &
+                     - f(i+1 , j, k-3 , ivelz) + f(i+1 , j, k-3 , ivelx) &  ! Bottom right /
+                     - f(i+2 , j, k-2 , ivelz) + f(i+2 , j, k-2 , ivelx) &
+                     - f(i+3 , j, k-1 , ivelz) + f(i+3 , j, k-1 , ivelx) &
+                     - f(i-1 , j, k-3 , ivelz) - f(i-1 , j, k-3 , ivelx) &  ! Bottom left \
+                     - f(i-2 , j, k-2 , ivelz) - f(i-2 , j, k-2 , ivelx) &
+                     - f(i-3 , j, k-1 , ivelz) - f(i-3 , j, k-1 , ivelx) &
+                     + f(i-2 , j, k+2 , ivelz) - f(i-2 , j, k+2 , ivelx) &
+                     + f(i-3 , j, k+1 , ivelz) - f(i-3 , j, k+1 , ivelx) &
                     ) * fac_diag &
                   + (  &
-                       f(i+3 , j, k-1 , iux) - f(i-3 , j, k-1 , iux) &  ! left and right |
-                     + f(i+3 , j, k   , iux) - f(i-3 , j, k   , iux) &
-                     + f(i+3 , j, k+1 , iux) - f(i-3 , j, k+1 , iux) &
-                     + f(i-1 , j, k+2 , iuz) - f(i-1 , j, k-3 , iuz) &  ! top and bottom -
-                     + f(i   , j, k+2 , iuz) - f(i   , j, k-3 , iuz) &
-                     + f(i+1 , j, k+2 , iuz) - f(i+1 , j, k-3 , iuz) &
-                     + f(i-2 , j, k+2 , iuz) &
-                     + f(i+2 , j, k+2 , iuz) &
+                       f(i+3 , j, k-1 , ivelx) - f(i-3 , j, k-1 , ivelx) &  ! left and right |
+                     + f(i+3 , j, k   , ivelx) - f(i-3 , j, k   , ivelx) &
+                     + f(i+3 , j, k+1 , ivelx) - f(i-3 , j, k+1 , ivelx) &
+                     + f(i-1 , j, k+2 , ivelz) - f(i-1 , j, k-3 , ivelz) &  ! top and bottom -
+                     + f(i   , j, k+2 , ivelz) - f(i   , j, k-3 , ivelz) &
+                     + f(i+1 , j, k+2 , ivelz) - f(i+1 , j, k-3 , ivelz) &
+                     + f(i-2 , j, k+2 , ivelz) &
+                     + f(i+2 , j, k+2 , ivelz) &
                     ) * fac_straight
 !
           df(i,j,k)=scale_and_chop(octagon)
@@ -1668,25 +1679,25 @@ module Shock
         j=m1
         do i=l1,l2
           octagon = ( &
-                     + f(i+1 , j, k+3 , iuz) + f(i+1 , j, k+3 , iux) &
-                     + f(i+2 , j, k+2 , iuz) + f(i+2 , j, k+2 , iux) &
-                     + f(i+3 , j, k+1 , iuz) + f(i+3 , j, k+1 , iux) &
-                     - f(i+2 , j, k-2 , iuz) + f(i+2 , j, k-2 , iux) &
-                     - f(i+3 , j, k-1 , iuz) + f(i+3 , j, k-1 , iux) &
-                     - f(i-2 , j, k-2 , iuz) - f(i-2 , j, k-2 , iux) &
-                     - f(i-3 , j, k-1 , iuz) - f(i-3 , j, k-1 , iux) &
-                     + f(i-2 , j, k+2 , iuz) - f(i-2 , j, k+2 , iux) &
-                     + f(i-3 , j, k+1 , iuz) - f(i-3 , j, k+1 , iux) &
+                     + f(i+1 , j, k+3 , ivelz) + f(i+1 , j, k+3 , ivelx) &
+                     + f(i+2 , j, k+2 , ivelz) + f(i+2 , j, k+2 , ivelx) &
+                     + f(i+3 , j, k+1 , ivelz) + f(i+3 , j, k+1 , ivelx) &
+                     - f(i+2 , j, k-2 , ivelz) + f(i+2 , j, k-2 , ivelx) &
+                     - f(i+3 , j, k-1 , ivelz) + f(i+3 , j, k-1 , ivelx) &
+                     - f(i-2 , j, k-2 , ivelz) - f(i-2 , j, k-2 , ivelx) &
+                     - f(i-3 , j, k-1 , ivelz) - f(i-3 , j, k-1 , ivelx) &
+                     + f(i-2 , j, k+2 , ivelz) - f(i-2 , j, k+2 , ivelx) &
+                     + f(i-3 , j, k+1 , ivelz) - f(i-3 , j, k+1 , ivelx) &
                     ) * fac_diag &
                   + (  &
-                       f(i+3 , j, k-1 , iux) - f(i-3 , j, k-1 , iux) &  ! left and right |
-                     + f(i+3 , j, k   , iux) - f(i-3 , j, k   , iux) &
-                     + f(i+3 , j, k+1 , iux) - f(i-3 , j, k+1 , iux) &
-                     + f(i-1 , j, k+3 , iuz) - f(i-1 , j, k-2 , iuz) &  ! top and bottom -
-                     + f(i   , j, k+3 , iuz) - f(i   , j, k-2 , iuz) &
-                     + f(i+1 , j, k+3 , iuz) - f(i+1 , j, k-2 , iuz) &
-                     - f(i-2 , j, k-2 , iuz) &
-                     - f(i+2 , j, k-2 , iuz) &
+                       f(i+3 , j, k-1 , ivelx) - f(i-3 , j, k-1 , ivelx) &  ! left and right |
+                     + f(i+3 , j, k   , ivelx) - f(i-3 , j, k   , ivelx) &
+                     + f(i+3 , j, k+1 , ivelx) - f(i-3 , j, k+1 , ivelx) &
+                     + f(i-1 , j, k+3 , ivelz) - f(i-1 , j, k-2 , ivelz) &  ! top and bottom -
+                     + f(i   , j, k+3 , ivelz) - f(i   , j, k-2 , ivelz) &
+                     + f(i+1 , j, k+3 , ivelz) - f(i+1 , j, k-2 , ivelz) &
+                     - f(i-2 , j, k-2 , ivelz) &
+                     - f(i+2 , j, k-2 , ivelz) &
                     ) * fac_straight
 !
           df(i,j,k)=scale_and_chop(octagon)
@@ -1700,26 +1711,26 @@ module Shock
         do k=n1i,n2i
         do i=l1i,l2i
           octagon = ( &
-                       f(i+1 , j, k+3 , iuz) + f(i+1 , j, k+3 , iux) &  ! Top right \
-                     + f(i+2 , j, k+2 , iuz) + f(i+2 , j, k+2 , iux) &
-                     + f(i+3 , j, k+1 , iuz) + f(i+3 , j, k+1 , iux) &
-                     - f(i+1 , j, k-3 , iuz) + f(i+1 , j, k-3 , iux) &  ! Bottom right /
-                     - f(i+2 , j, k-2 , iuz) + f(i+2 , j, k-2 , iux) &
-                     - f(i+3 , j, k-1 , iuz) + f(i+3 , j, k-1 , iux) &
-                     - f(i-1 , j, k-3 , iuz) - f(i-1 , j, k-3 , iux) &  ! Bottom left \
-                     - f(i-2 , j, k-2 , iuz) - f(i-2 , j, k-2 , iux) &
-                     - f(i-3 , j, k-1 , iuz) - f(i-3 , j, k-1 , iux) &
-                     + f(i-1 , j, k+3 , iuz) - f(i-1 , j, k+3 , iux) &  ! Top left /
-                     + f(i-2 , j, k+2 , iuz) - f(i-2 , j, k+2 , iux) &
-                     + f(i-3 , j, k+1 , iuz) - f(i-3 , j, k+1 , iux) &
+                       f(i+1 , j, k+3 , ivelz) + f(i+1 , j, k+3 , ivelx) &  ! Top right \
+                     + f(i+2 , j, k+2 , ivelz) + f(i+2 , j, k+2 , ivelx) &
+                     + f(i+3 , j, k+1 , ivelz) + f(i+3 , j, k+1 , ivelx) &
+                     - f(i+1 , j, k-3 , ivelz) + f(i+1 , j, k-3 , ivelx) &  ! Bottom right /
+                     - f(i+2 , j, k-2 , ivelz) + f(i+2 , j, k-2 , ivelx) &
+                     - f(i+3 , j, k-1 , ivelz) + f(i+3 , j, k-1 , ivelx) &
+                     - f(i-1 , j, k-3 , ivelz) - f(i-1 , j, k-3 , ivelx) &  ! Bottom left \
+                     - f(i-2 , j, k-2 , ivelz) - f(i-2 , j, k-2 , ivelx) &
+                     - f(i-3 , j, k-1 , ivelz) - f(i-3 , j, k-1 , ivelx) &
+                     + f(i-1 , j, k+3 , ivelz) - f(i-1 , j, k+3 , ivelx) &  ! Top left /
+                     + f(i-2 , j, k+2 , ivelz) - f(i-2 , j, k+2 , ivelx) &
+                     + f(i-3 , j, k+1 , ivelz) - f(i-3 , j, k+1 , ivelx) &
                     ) * fac_diag &
                   + (  &
-                       f(i+3 , j, k-1 , iux) - f(i-3 , j, k-1 , iux) &  ! left and right |
-                     + f(i+3 , j, k   , iux) - f(i-3 , j, k   , iux) &
-                     + f(i+3 , j, k+1 , iux) - f(i-3 , j, k+1 , iux) &
-                     + f(i-1 , j, k+3 , iuz) - f(i-1 , j, k-3 , iuz) &  ! top and bottom -
-                     + f(i   , j, k+3 , iuz) - f(i   , j, k-3 , iuz) &
-                     + f(i+1 , j, k+3 , iuz) - f(i+1 , j, k-3 , iuz) &
+                       f(i+3 , j, k-1 , ivelx) - f(i-3 , j, k-1 , ivelx) &  ! left and right |
+                     + f(i+3 , j, k   , ivelx) - f(i-3 , j, k   , ivelx) &
+                     + f(i+3 , j, k+1 , ivelx) - f(i-3 , j, k+1 , ivelx) &
+                     + f(i-1 , j, k+3 , ivelz) - f(i-1 , j, k-3 , ivelz) &  ! top and bottom -
+                     + f(i   , j, k+3 , ivelz) - f(i   , j, k-3 , ivelz) &
+                     + f(i+1 , j, k+3 , ivelz) - f(i+1 , j, k-3 , ivelz) &
                     ) * fac_straight
 !
           df(i,j,k)=scale_and_chop(octagon)

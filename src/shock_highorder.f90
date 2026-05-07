@@ -77,6 +77,11 @@ module Shock
 !
   real :: dt_div_pow=0.
   real, allocatable, dimension(:,:,:) :: tmp
+!
+! When lconservative=T, iux:iuz correspond to momentum so
+! we have to get velocity from ivv
+!
+  integer :: ivel,ivelx,ively,ivelz
 
   contains
 !***********************************************************************
@@ -118,6 +123,11 @@ module Shock
 !
 !  Initialize shock profile to zero
 !
+      ivel = merge(ivv,iuu,ivv /= 0)
+      ivelx = ivel
+      ively = ivel+1
+      ivelz = ivel+2
+
       f(:,:,:,ishock)=0.0
       if (ldivu_perp) then
         call register_report_aux('shock_perp',ishock_perp,communicated=.true.)
@@ -152,7 +162,7 @@ module Shock
 !  periodic boundaries if the shock viscosity is assumed periodic.
 !
       if (lrun .and. .not. lforce_periodic_shockviscosity) then
-        if ((bcx(ishock) == 'p') .and. .not. all(bcx(iux:iuz) == 'p')) then
+        if ((bcx(ishock) == 'p') .and. .not. all(bcx(ivelx:ivelz) == 'p')) then
           if (lroot) then
             print*, 'initialize_shock: shock viscosity has bcx=''p'', but the velocity field is not'
             print*, '                  periodic! You must set a proper boundary condition for the'
@@ -161,7 +171,7 @@ module Shock
           endif
           call fatal_error('initialize_shock','')
         endif
-        if (bcy(ishock)=='p' .and. .not. all(bcy(iux:iuz)=='p')) then
+        if (bcy(ishock)=='p' .and. .not. all(bcy(ivelx:ivelz)=='p')) then
           if (lroot) then
             print*, 'initialize_shock: shock viscosity has bcy=''p'', but the velocity field is not'
             print*, '                  periodic! You must set a proper boundary condition for the'
@@ -170,7 +180,7 @@ module Shock
           endif
           call fatal_error('initialize_shock','')
         endif
-        if (bcz(ishock)=='p' .and. .not. all(bcz(iux:iuz)=='p')) then
+        if (bcz(ishock)=='p' .and. .not. all(bcz(ivelx:ivelz)=='p')) then
           if (lroot) then
             print*, 'initialize_shock: shock viscosity has bcz=''p'', but the velocity field is not'
             print*, '                  periodic! You must set a proper boundary condition for the'
@@ -180,6 +190,7 @@ module Shock
           call fatal_error('initialize_shock','')
         endif
       endif
+
 !
     endsubroutine initialize_shock
 !***********************************************************************
@@ -390,6 +401,7 @@ module Shock
       real :: shock_max, a=0., a1
       logical :: lcommunicate
 
+
       if(.not. allocated(tmp)) allocate(tmp(mx,my,mz))
 !
 !  Initialize shock to impossibly large number to force code crash in case of
@@ -399,9 +411,9 @@ module Shock
 !
 !  Compute divergence of velocity field.
 !
-      call boundconds_x(f,iux,iux)
+      call boundconds_x(f,ivelx,ivelx)
 !
-      call initiate_isendrcv_bdry(f,iux,iuz)
+      call initiate_isendrcv_bdry(f,ivelx,ivelz)
 !
       if (lshock_linear) a1 = shock_linear / dxmax
 !
@@ -417,16 +429,16 @@ module Shock
 !
         if (lcommunicate) then
           if (necessary(imn)) then
-            call finalize_isendrcv_bdry(f,iux,iuz)
-            call boundconds_y(f,iuy,iuy)
-            call boundconds_z(f,iuz,iuz)
+            call finalize_isendrcv_bdry(f,ivelx,ivelz)
+            call boundconds_y(f,ively,ively)
+            call boundconds_z(f,ivelz,ivelz)
             lcommunicate=.false.
           endif
         endif
 !
 ! The following will calculate div u for any coordinate system.
 !
-        call div(f,iuu,penc)
+        call div(f,ivel,penc)
         if (lconvergence_only) then
           f(l1:l2,m,n,ishock) = max(0.0,-penc)
         else
@@ -474,15 +486,15 @@ module Shock
               penc = 0.
               penc1 = 0.
               if (nxgrid > 1) then
-                penc = penc + abs(f(l1:l2,m,n,iux) * dx_1(l1:l2))
+                penc = penc + abs(f(l1:l2,m,n,ivelx) * dx_1(l1:l2))
                 penc1 = penc1 + dx_1(l1:l2)**2
               endif
               if (nygrid > 1) then
-                penc = penc + abs(f(l1:l2,m,n,iuy) * dy_1(m))
+                penc = penc + abs(f(l1:l2,m,n,ively) * dy_1(m))
                 penc1 = penc1 + dy_1(m)**2
               endif
               if (nzgrid > 1) then
-                penc = penc + abs(f(l1:l2,m,n,iuz) * dz_1(n))
+                penc = penc + abs(f(l1:l2,m,n,ivelz) * dz_1(n))
                 penc1 = penc1 + dz_1(n)**2
               endif
               a1 = max(a1, maxval(penc / penc1))
@@ -528,7 +540,7 @@ module Shock
           n = nn(imn)
           m = mm(imn)
 !
-          call div(f,iuu,penc)
+          call div(f,ivel,penc)
           call bb_unitvec_shock(f,bb_hat)
           call shock_divu_perp(f,bb_hat,penc,penc_perp)
           f(l1:l2,m,n,ishock_perp)=max(0.,-penc_perp)
@@ -642,6 +654,7 @@ module Shock
       integer :: i,j,k
       integer :: ni,nj,nk
       logical :: lcommunicate
+
 !
 !  Smooth with a Gaussian profile
 !
@@ -715,70 +728,70 @@ module Shock
       if (nxgrid/=1) then
          fac=bb_hat(l1:l2,1)/(60*dx)
          divu_perp(:) = divu_perp(:)                          &
-                  - fac*(bb_hat(l1:l2,1)*( f(l1+3:l2+3,m  ,n  ,iux)   &
-                                   + 45.0*(f(l1+1:l2+1,m  ,n  ,iux)   &
-                                         - f(l1-1:l2-1,m  ,n  ,iux))  &
-                                   -  9.0*(f(l1+2:l2+2,m  ,n  ,iux)   &
-                                         - f(l1-2:l2-2,m  ,n  ,iux))  &
-                                         - f(l1-3:l2-3,m  ,n  ,iux) ) &
-                       + bb_hat(l1:l2,2)*( f(l1+3:l2+3,m  ,n  ,iuy)   &
-                                   + 45.0*(f(l1+1:l2+1,m  ,n  ,iuy)   &
-                                         - f(l1-1:l2-1,m  ,n  ,iuy))  &
-                                   -  9.0*(f(l1+2:l2+2,m  ,n  ,iuy)   &
-                                         - f(l1-2:l2-2,m  ,n  ,iuy))  &
-                                         - f(l1-3:l2-3,m  ,n  ,iuy) ) &
-                       + bb_hat(l1:l2,3)*( f(l1+3:l2+3,m  ,n  ,iuz)   &
-                                   + 45.0*(f(l1+1:l2+1,m  ,n  ,iuz)   &
-                                         - f(l1-1:l2-1,m  ,n  ,iuz))  &
-                                   -  9.0*(f(l1+2:l2+2,m  ,n  ,iuz)   &
-                                         - f(l1-2:l2-2,m  ,n  ,iuz))  &
-                                         - f(l1-3:l2-3,m  ,n  ,iuz) ) )
+                  - fac*(bb_hat(l1:l2,1)*( f(l1+3:l2+3,m  ,n  ,ivelx)   &
+                                   + 45.0*(f(l1+1:l2+1,m  ,n  ,ivelx)   &
+                                         - f(l1-1:l2-1,m  ,n  ,ivelx))  &
+                                   -  9.0*(f(l1+2:l2+2,m  ,n  ,ivelx)   &
+                                         - f(l1-2:l2-2,m  ,n  ,ivelx))  &
+                                         - f(l1-3:l2-3,m  ,n  ,ivelx) ) &
+                       + bb_hat(l1:l2,2)*( f(l1+3:l2+3,m  ,n  ,ively)   &
+                                   + 45.0*(f(l1+1:l2+1,m  ,n  ,ively)   &
+                                         - f(l1-1:l2-1,m  ,n  ,ively))  &
+                                   -  9.0*(f(l1+2:l2+2,m  ,n  ,ively)   &
+                                         - f(l1-2:l2-2,m  ,n  ,ively))  &
+                                         - f(l1-3:l2-3,m  ,n  ,ively) ) &
+                       + bb_hat(l1:l2,3)*( f(l1+3:l2+3,m  ,n  ,ivelz)   &
+                                   + 45.0*(f(l1+1:l2+1,m  ,n  ,ivelz)   &
+                                         - f(l1-1:l2-1,m  ,n  ,ivelz))  &
+                                   -  9.0*(f(l1+2:l2+2,m  ,n  ,ivelz)   &
+                                         - f(l1-2:l2-2,m  ,n  ,ivelz))  &
+                                         - f(l1-3:l2-3,m  ,n  ,ivelz) ) )
       endif
 !
       if (nygrid/=1) then
          fac=bb_hat(l1:l2,2)/(60*dy)
          divu_perp(:) = divu_perp(:)                          &
-                  - fac*(bb_hat(l1:l2,1)*( f(  l1:l2  ,m+3,n  ,iux)   &
-                                   + 45.0*(f(  l1:l2  ,m+1,n  ,iux)   &
-                                         - f(  l1:l2  ,m-1,n  ,iux))  &
-                                   -  9.0*(f(  l1:l2  ,m+2,n  ,iux)   &
-                                         - f(  l1:l2  ,m-2,n  ,iux))  &
-                                         - f(  l1:l2  ,m-3,n  ,iux) ) &
-                       + bb_hat(l1:l2,2)*( f(  l1:l2  ,m+3,n  ,iuy)   &
-                                   + 45.0*(f(  l1:l2  ,m+1,n  ,iuy)   &
-                                         - f(  l1:l2  ,m-1,n  ,iuy))  &
-                                   -  9.0*(f(  l1:l2  ,m+2,n  ,iuy)   &
-                                         - f(  l1:l2  ,m-2,n  ,iuy))  &
-                                         - f(  l1:l2  ,m-3,n  ,iuy) ) &
-                       + bb_hat(l1:l2,3)*( f(  l1:l2  ,m+3,n  ,iuz)   &
-                                   + 45.0*(f(  l1:l2  ,m+1,n  ,iuz)   &
-                                         - f(  l1:l2  ,m-1,n  ,iuz))  &
-                                   -  9.0*(f(  l1:l2  ,m+2,n  ,iuz)   &
-                                         - f(  l1:l2  ,m-2,n  ,iuz))  &
-                                         - f(  l1:l2  ,m-3,n  ,iuz) ) )
+                  - fac*(bb_hat(l1:l2,1)*( f(  l1:l2  ,m+3,n  ,ivelx)   &
+                                   + 45.0*(f(  l1:l2  ,m+1,n  ,ivelx)   &
+                                         - f(  l1:l2  ,m-1,n  ,ivelx))  &
+                                   -  9.0*(f(  l1:l2  ,m+2,n  ,ivelx)   &
+                                         - f(  l1:l2  ,m-2,n  ,ivelx))  &
+                                         - f(  l1:l2  ,m-3,n  ,ivelx) ) &
+                       + bb_hat(l1:l2,2)*( f(  l1:l2  ,m+3,n  ,ively)   &
+                                   + 45.0*(f(  l1:l2  ,m+1,n  ,ively)   &
+                                         - f(  l1:l2  ,m-1,n  ,ively))  &
+                                   -  9.0*(f(  l1:l2  ,m+2,n  ,ively)   &
+                                         - f(  l1:l2  ,m-2,n  ,ively))  &
+                                         - f(  l1:l2  ,m-3,n  ,ively) ) &
+                       + bb_hat(l1:l2,3)*( f(  l1:l2  ,m+3,n  ,ivelz)   &
+                                   + 45.0*(f(  l1:l2  ,m+1,n  ,ivelz)   &
+                                         - f(  l1:l2  ,m-1,n  ,ivelz))  &
+                                   -  9.0*(f(  l1:l2  ,m+2,n  ,ivelz)   &
+                                         - f(  l1:l2  ,m-2,n  ,ivelz))  &
+                                         - f(  l1:l2  ,m-3,n  ,ivelz) ) )
       endif
 !
       if (nzgrid/=1) then
          fac=bb_hat(l1:l2,3)/(60*dz)
          divu_perp(:) = divu_perp(:)                          &
-                  - fac*(bb_hat(l1:l2,1)*( f(  l1:l2  ,m  ,n+3,iux)   &
-                                   + 45.0*(f(  l1:l2  ,m,  n+1,iux)   &
-                                         - f(  l1:l2  ,m,  n-1,iux))  &
-                                   -  9.0*(f(  l1:l2  ,m,  n+2,iux)   &
-                                         - f(  l1:l2  ,m,  n-2,iux))  &
-                                         - f(  l1:l2  ,m  ,n-3,iux) ) &
-                       + bb_hat(l1:l2,2)*( f(  l1:l2  ,m  ,n+3,iuy)   &
-                                   + 45.0*(f(  l1:l2  ,m,  n+1,iuy)   &
-                                         - f(  l1:l2  ,m,  n-1,iuy))  &
-                                   -  9.0*(f(  l1:l2  ,m,  n+2,iuy)   &
-                                         - f(  l1:l2  ,m,  n-2,iuy))  &
-                                         - f(  l1:l2  ,m  ,n-3,iuy) ) &
-                       + bb_hat(l1:l2,3)*( f(  l1:l2  ,m  ,n+3,iuz)   &
-                                   + 45.0*(f(  l1:l2  ,m,  n+1,iuz)   &
-                                         - f(  l1:l2  ,m,  n-1,iuz))  &
-                                   -  9.0*(f(  l1:l2  ,m,  n+2,iuz)   &
-                                         - f(  l1:l2  ,m,  n-2,iuz))  &
-                                         - f(  l1:l2  ,m  ,n-3,iuz) ) )
+                  - fac*(bb_hat(l1:l2,1)*( f(  l1:l2  ,m  ,n+3,ivelx)   &
+                                   + 45.0*(f(  l1:l2  ,m,  n+1,ivelx)   &
+                                         - f(  l1:l2  ,m,  n-1,ivelx))  &
+                                   -  9.0*(f(  l1:l2  ,m,  n+2,ivelx)   &
+                                         - f(  l1:l2  ,m,  n-2,ivelx))  &
+                                         - f(  l1:l2  ,m  ,n-3,ivelx) ) &
+                       + bb_hat(l1:l2,2)*( f(  l1:l2  ,m  ,n+3,ively)   &
+                                   + 45.0*(f(  l1:l2  ,m,  n+1,ively)   &
+                                         - f(  l1:l2  ,m,  n-1,ively))  &
+                                   -  9.0*(f(  l1:l2  ,m,  n+2,ively)   &
+                                         - f(  l1:l2  ,m,  n-2,ively))  &
+                                         - f(  l1:l2  ,m  ,n-3,ively) ) &
+                       + bb_hat(l1:l2,3)*( f(  l1:l2  ,m  ,n+3,ivelz)   &
+                                   + 45.0*(f(  l1:l2  ,m,  n+1,ivelz)   &
+                                         - f(  l1:l2  ,m,  n-1,ivelz))  &
+                                   -  9.0*(f(  l1:l2  ,m,  n+2,ivelz)   &
+                                         - f(  l1:l2  ,m,  n-2,ivelz))  &
+                                         - f(  l1:l2  ,m  ,n-3,ivelz) ) )
       endif
 !
     endsubroutine shock_divu_perp_pencil
