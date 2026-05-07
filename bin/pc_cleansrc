@@ -80,8 +80,6 @@ prune_dir()
   clean_files="pc_commands.log COMPLETED ERROR LOCK STOP FULLSTOP src/Makefile src/mpicomm_double.f90 src/revision.txt src/.current-precision src/.config-files src/.moduleinfo"
   src_dir="src"
 
-  (
-  cd "$this"
   if [ -d $src_dir ] || [ `ls -1 $clean_links $clean_files 2>/dev/null | wc -l` -ge 1 ]; then
     if [ "$this" = '.' ] || [ -z "$this" ] ; then
       echo "Cleaning up run directory..."
@@ -92,7 +90,6 @@ prune_dir()
     delete_files "$clean_files"
     clean_src "$src_dir" "$clean_objects"
   fi
-  )
 }
 
 enter_subdirs()
@@ -133,7 +130,10 @@ if [ -d "$start_dir" ]; then
   if [ "$1" = "-R" ]; then
     enter_subdirs "" "$start_dir"
   else
+    (
+    cd $start_dir
     prune_dir "$start_dir"
+    )
   fi
 else
   echo "No such directory: '$start_dir'"
