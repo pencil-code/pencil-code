@@ -2450,7 +2450,7 @@ module Viscosity
 !
       use Sub, only: div, calc_all_diff_fluxes, grad, dot_mn, calc_sij2, &
                      stagger_to_base_interp_1st, stagger_to_base_interp_3rd, &
-                     gij_v_times_s, traceless_strain
+                     gij_v_times_s, gij, traceless_strain
       use General, only: reduce_grad_dim,notanumber
       use DensityMethods, only: getrho
       use Boundcond, only: update_ghosts
@@ -2494,21 +2494,29 @@ module Viscosity
 ! Calculates the viscous stress tensor
 !
       if (lrate_of_strain_as_aux) then
+        if (.not.lcartesian_coords) &
+           call not_implemented('viscosity_after_boundary','for curvilinear coordinates')
+
         do m=m1,m2
         do n=n1,n2
-          call gij_v_times_s(f,iux,irho,uij)
+          if (lconservative) then
+            call gij_v_times_s(f,iuu,irho,uij)
+          else
+            call gij(f,iuu,uij,1)
+          endif
           divu = uij(:,1,1) + uij(:,2,2) + uij(:,3,3)
 
           call traceless_strain(uij,divu,Sij)
 
-          f(l1:l2,m,n,iSij+0) = Sij(:,1,1) - (1./3.)*divu
-          f(l1:l2,m,n,iSij+1) = Sij(:,2,2) - (1./3.)*divu
-          f(l1:l2,m,n,iSij+2) = Sij(:,3,3) - (1./3.)*divu
+          f(l1:l2,m,n,iSij+0) = Sij(:,1,1)
+          f(l1:l2,m,n,iSij+1) = Sij(:,2,2)
+          f(l1:l2,m,n,iSij+2) = Sij(:,3,3)
           f(l1:l2,m,n,iSij+3) = Sij(:,1,2)
           f(l1:l2,m,n,iSij+4) = Sij(:,1,3)
           f(l1:l2,m,n,iSij+5) = Sij(:,2,3)
         enddo
         enddo
+
       endif
 !
 !  The following allows us to let nu change with time, t-nu_tdep_toffset.
