@@ -1498,22 +1498,27 @@ module Sub
 !
     endsubroutine cross_0
 !***********************************************************************
-    subroutine gij(f,k,g,nder)
+    subroutine gij(f,k,g,nder,ignoredx)
 !
 !  Calculate gradient of a vector, return matrix.
 !
 !   3-apr-01/axel+gitta: coded
 !
       use Deriv, only: der,der2,der3,der4,der5,der6
+      use General, only: loptest
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3,3) :: g
       real, dimension (nx) :: tmp
       integer :: i,j,k,k1,nder
+      logical, optional :: ignoredx
 !
       intent(in) :: f,k
       intent(out) :: g
 !
+      if(nder /= 6 .and. loptest(ignoredx)) then
+        call fatal_error("gij","ignoredx implemented only for nder==6")
+      endif
       k1=k-1
       do i=1,3; do j=1,3
         if (nder == 1) then
@@ -1527,7 +1532,7 @@ module Sub
         elseif (nder == 5) then
           call der5(f,k1+i,tmp,j)
         elseif (nder == 6) then
-          call der6(f,k1+i,tmp,j)
+          call der6(f,k1+i,tmp,j,ignoredx)
         endif
         g(:,i,j)=tmp
       enddo; enddo
