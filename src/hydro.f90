@@ -250,6 +250,7 @@ module Hydro
   real :: tdamp=0.,tfade_start=-1.,dampu=0.,wdamp=0.
   real :: dampuint=0.0,dampuext=0.0,rdampint=impossible,rdampext=impossible
   real :: ydampint=impossible,ydampext=impossible
+  real :: zdampint=impossible,zdampext=impossible
   real :: ruxm=0.,ruym=0.,ruzm=0.
   real :: tau_damp_ruxm1=0.,tau_damp_ruym1=0.,tau_damp_ruzm1=0.
   real :: tau_damp_ruxm=0.,tau_damp_ruym=0.,tau_damp_ruzm=0.,tau_diffrot1=0.
@@ -347,7 +348,7 @@ module Hydro
       limpose_only_horizontal_uumz, luu_fluc_as_aux, Om_inner, luu_sph_as_aux, &
       ltime_integrals_always, dtcor, lvart_in_shear_frame, lSchur_3D3D1D_uu, &
       lSchur_2D2D3D_uu, lSchur_2D2D1D_uu, &
-      lhiggsless, vwall, alpha_hless, width_hless, qshear
+      lhiggsless, vwall, alpha_hless, width_hless, qshear, zdampint, zdampext
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -1524,6 +1525,11 @@ module Hydro
       case ('remove_vertical_shear')
         if (.not.lcalc_uumean) &
           call fatal_error("initialize_hydro","you need to set lcalc_uumean=T for uuprof='remove_vertical_shear'")
+
+      case ('damp_mean_uz_prof_bdr')
+        if (.not.lcalc_uumeanz) &
+          call fatal_error("initialize_hydro","you need to set lcalc_uumeanz=T for uuprof='remove_mean_uz_prof'")
+        prof_amp3=1.-tanh((z-zdampint)/width_ff_uu)
 
       case ('vertical_shear_x_sinz')
         zbot=xyz0(3)
@@ -8714,6 +8720,10 @@ module Hydro
       case ('remove_vertical_shear')
         f(l1:l2,m,n,iux)=f(l1:l2,m,n,iux)-uumz(n,1)
         f(l1:l2,m,n,iuy)=f(l1:l2,m,n,iuy)-uumz(n,2)
+!
+!  damp horizontally averaged uz neaer the boundary                                                                                                                                                                                          !
+      case ('damp_mean_uz_prof_bdr')
+        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*prof_amp3(n)*uumz(n,3)
 !
 !  vertical shear profile
 !
