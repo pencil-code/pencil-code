@@ -62,8 +62,6 @@ entropy_smooth(bool lrmv)
 #else
 Kernel entropy_reductions()
 {
-	suppress_unused_warning(t)
-	suppress_unused_warning(dt)
 }
 Kernel entropy_update_running_average(real t, real dt)
 {
