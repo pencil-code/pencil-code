@@ -18,7 +18,6 @@
 /STRUCT_FUNC/ b end
 /SYSCALLS/ b end
 /TESTPERTURB/ b end
-/TIMEAVG/ b end
 /VISCOSITY/ b end
 /WENO_TRANSPORT/ b end
 /STREAMLINES/ b end

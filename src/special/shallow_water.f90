@@ -336,6 +336,8 @@ module Special
       real,dimension(mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
 
+
+      call keep_compiler_quiet(f)
       if (idiag_dtgh/=0) &
            call max_mn_name(sqrt(advec_cg2)/cdt,idiag_dtgh,l_dt=.true.)
 !  
@@ -408,6 +410,8 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
       real, dimension (nx) :: ugh0
+
+      call keep_compiler_quiet(f)
 !     
       if (.not.ldensity_nolog) call fatal_error("","")
 !
@@ -456,10 +460,9 @@ module Special
 !
     real, dimension (mx,my,mz,mfarray), intent(in) :: f
     real, dimension (mx,my,mz,mvar), intent(inout) :: df
-    integer :: i,ju
+    integer :: i
     type (pencil_case), intent(in) :: p
 !     
-    real, dimension(nx) :: rr, rr1,uu_jet
 !
 !  Momentum equation; rho = g*eta  
 !

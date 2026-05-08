@@ -4,6 +4,7 @@
   public :: initialize_timeavg
   public :: update_timeavgs
   public :: wsnap_timeavgs
+  public :: pushpars2c
 
 ! Variables
 ! [ajwm] SHOULDN'T BE SHARED

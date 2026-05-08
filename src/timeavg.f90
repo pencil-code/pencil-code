@@ -146,5 +146,18 @@ module Timeavg
 !
     endsubroutine wsnap_timeavgs
 !***********************************************************************
+    subroutine pushpars2c(p_par)
+
+      use Syscalls, only: copy_addr
+
+      integer, parameter :: n_pars=10
+      integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+      call copy_addr(tavg,p_par(1))
+      call copy_addr(mtavg,p_par(2)) ! int
+      call copy_addr(idx_tavg,p_par(3)) ! int (mtavg__mod__timeavg)
+
+    endsubroutine pushpars2c
+!***********************************************************************
 
 endmodule Timeavg

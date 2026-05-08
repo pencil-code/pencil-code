@@ -1004,6 +1004,7 @@ reload_dynamically_changing_variables(bool lrmv, int isubstep, double t, bool ls
 // Sets the values of input parameters to the kernels.
 // Does not load them to the device but instead sets values of the Astaroth config
 // from which input parameters to the kernels are read from
+        acDeviceSetInput(acGridGetDevice(), AC_timestep_number,it);
         acDeviceSetInput(acGridGetDevice(), AC_step_num,(PC_SUB_STEP_NUMBER) (isubstep-1));
  	acDeviceSetInput(acGridGetDevice(), AC_lrmv, lrmv);
  	acDeviceSetInput(acGridGetDevice(), AC_t, AcReal(t));
@@ -1411,6 +1412,12 @@ extern "C" void substepGPU(int isubstep, double t)
   {
 	calc_timestep(t);
   }
+#if LTIMEAVGS
+  if(isubstep == num_substeps)
+  {
+	  acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_update_timeavgs));
+  }
+#endif
   return;
 }
 /***********************************************************************************************/
