@@ -170,6 +170,7 @@
           		write(F_CVEC[i],rk_intermediate(F_CVEC[i],DF_ICC__MOD__CDATA[i],step_num,AC_dt__mod__cdata))
           	}
           }
+	  if(AC_iss_run_aver__mod__cdata != 0) write(F_SS_RUN_AVER,rk_intermediate(F_SS_RUN_AVER,DF_SS_RUN_AVER,step_num,AC_dt__mod__cdata))
    }
    else
    {

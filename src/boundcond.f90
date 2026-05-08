@@ -1472,6 +1472,7 @@ module Boundcond
 
               is_vec = var_is_vec(j)
 
+
               select case (bcz12(j,topbot))
               case ('0')
                 ! BCZ_DOC: zero value in ghost zones, free value on boundary
@@ -1925,7 +1926,17 @@ module Boundcond
             cjvar=itoa(j)
             bc_code=bcx12(j,topbot)
             errmsg=''
-!
+
+            if(j == iss_run_aver .and. bc_code /= 'nil') then
+                    bcx12(j,topbot) = 'nil'
+                    if (lroot) print*,"Changed iss_run_aver bc to nil" 
+                    if(lgpu) then
+                            print*,"To run on GPUs please enter nill!"
+                            goto 10
+                    endif
+                    cycle
+            endif
+
             if (bc_code == 'she') then
               if (bcx12(j,1) /= bcx12(j,2)) then
                 errmsg='generalize '//trim(bc_code)//' to have sheared periodic boundary on only one end'; goto 10
@@ -1943,7 +1954,7 @@ module Boundcond
               case ('Fcm')
                 if (j/=iss) then; errmsg=' not allowed for variable no. '//trim(cjvar); goto 10; endif
               case ('sT')
-                if (.not.(j==iss .or. j==iss_run_aver)) then; errmsg=' not allowed for variable no. '//trim(cjvar); goto 10; endif
+                if (.not.(j==iss)) then; errmsg=' not allowed for variable no. '//trim(cjvar); goto 10; endif
               case ('asT')
                 if (j/=iss) then; errmsg=' not allowed for variable no. '//trim(cjvar); goto 10; endif
               case ('hat')
@@ -2017,6 +2028,16 @@ module Boundcond
           bc_code=bcy12(j,topbot)
           cjvar=itoa(j)
           errmsg=''
+
+          if(j == iss_run_aver .and. bc_code /= 'nil') then
+                  bcy12(j,topbot) = 'nil'
+                  if (lroot) print*,"Changed iss_run_aver bc to nil: Will time average the boundary of ss" 
+                  if(lgpu) then
+                          print*,"To run on GPUs please enter nill!"
+                          goto 20
+                  endif
+                  cycle
+          endif
 !
           select case (bc_code)
           case ('pp')
@@ -2036,7 +2057,7 @@ module Boundcond
             if (j/=iss) then; errmsg=' not allowed for variable no. '//trim(cjvar); goto 20; endif
           case ('sT')
             ! BCY: symmetric temp.
-            if (.not.(j==iss .or. j==iss_run_aver)) then; errmsg=' not allowed for variable no. '//trim(cjvar); goto 20; endif
+            if (.not.(j==iss)) then; errmsg=' not allowed for variable no. '//trim(cjvar); goto 20; endif
           case ('asT')
             ! BCY: select entropy for uniform ghost temperature
             ! BCY: matching fluctuating boundary value,
@@ -2098,10 +2119,22 @@ module Boundcond
 !
         do j=ivar1,ivar2
 !
+
           bc_code=bcz12(j,topbot)
           cjvar=itoa(j)
           errmsg=''
 !
+
+          if(j == iss_run_aver .and. bc_code /= 'nil') then
+                  bcz12(j,topbot) = 'nil'
+                  if (lroot) print*,"Changed iss_run_aver bc to nil" 
+                  if(lgpu) then
+                          print*,"To run on GPUs please enter nill!"
+                          goto 30
+                  endif
+                  cycle
+          endif
+
           select case (bc_code)
           case ('yy')
             ! BCZ: Yin-Yang grid
@@ -2177,7 +2210,7 @@ module Boundcond
           case ('cp')
             if (j/=ilnrho) then; errmsg=' not allowed for variable no. '//trim(cjvar); goto 30; endif
           case ('sT')
-            if (.not.(j==iss .or. j==iss_run_aver)) then; errmsg=' not allowed for variable no. '//trim(cjvar); goto 30; endif
+            if (.not.(j==iss)) then; errmsg=' not allowed for variable no. '//trim(cjvar); goto 30; endif
           case ('ctz')
             if (j/=iss) then; errmsg=' not allowed for variable no. '//trim(cjvar); goto 30; endif
           case ('cdz')

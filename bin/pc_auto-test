@@ -194,6 +194,7 @@ my %tests = (
                          meanfield_special_e_tensor_GCD
                          dust-accretion
                          superparticle_condensation
+                         mdwarf-ss-running-aver-gpu
                      )],
              # Level 4 for now contains all non-canonical tests that run,
              # but produce wrong results - and need immediate action (fixme)
@@ -283,6 +284,7 @@ my @gpu_tests = qw(
 			 #continuous-forcing-from-file
 			 #1d-tests/sod_10
                          #2d-tests/conv-slab-MLT
+                         mdwarf-ss-running-aver-gpu
                          #1d-tests/conduction/c1_readstrat
                          #1d-tests/conduction/c1_readstrat_ghost
                          1d-tests/conduction/cT1

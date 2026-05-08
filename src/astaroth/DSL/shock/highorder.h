@@ -1,6 +1,4 @@
 #if LSHOCK
-// checked 18.6.
-#include "../stdlib/smooth_max.h"
 
 // Get divergence of velocity.
 divu_shock()

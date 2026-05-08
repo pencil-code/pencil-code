@@ -75,6 +75,7 @@ module GPU
   ! usual by picking only the most likely ones (empirically gives for large grids the same as the 
   ! larger search, but is considerably faster).
   logical :: lac_sparse_autotuning=.true.
+  logical :: lac_sparse_autotuning_always=.false.
   ! Whether df is 0 or the accumulated value at the start of the kernel.
   ! For simplicity df is zero and then accumulated to the buffer, but sometimes you need to be careful like with
   ! short stopping time approximation in dustvelocity (the only case we are aware at the moment where the difference matter
@@ -105,7 +106,8 @@ module GPU
   logical :: lonly_default_stream_for_taskgraphs = .false.
 
   namelist /gpu_run_pars/ &
-     ltest_bcs,lac_sparse_autotuning,lcpu_timestep_on_gpu,lsingle_precision_timestep,lcumulative_df_on_gpu,&
+     ltest_bcs,lac_sparse_autotuning,lac_sparse_autotuning_always,&
+     lcpu_timestep_on_gpu,lsingle_precision_timestep,lcumulative_df_on_gpu,&
      lread_all_vars_from_device,lcuda_aware_mpi,ltest_rhs,it_test_rhs,thread_block_loop_factors,lonly_default_stream_for_taskgraphs
 
 contains
@@ -172,6 +174,8 @@ contains
       !If there are enough GPUs we can distribute the autotuning between them
       !and it won't take too long
       if(ncpus >= 8) lac_sparse_autotuning = .false.
+
+      if(lac_sparse_autotuning_always) lac_sparse_autotuning = .true.
 
       str=''
       !List of unsupported modules

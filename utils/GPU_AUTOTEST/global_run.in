@@ -9,4 +9,6 @@
 	lcumulative_df_on_gpu=T
 	!Needed to run out of memory on norlx51
 	lonly_default_stream_for_taskgraphs=T
+	!Force sparse autotuning always
+	lac_sparse_autotuning_always=T
 /

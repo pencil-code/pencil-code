@@ -81,7 +81,9 @@ ComputeSteps AC_before_boundary_steps(boundconds)
 	calc_poly_fr()
 	sld_calc_char_speed(AC_step_num)
 	entropy_reductions()
-	entropy_mean_derivs()
+	entropy_mean_derivs_x()
+	entropy_mean_derivs_z()
+	entropy_smooth(AC_lrmv)
 }
 
 ComputeSteps AC_initialize_sums(boundconds)
@@ -89,9 +91,11 @@ ComputeSteps AC_initialize_sums(boundconds)
 	initial_prep_ode()
 }
 
+
 ComputeSteps AC_before_boundary_steps_including_halos(boundconds)
 {
 	ioncalc()
+	entropy_update_running_average(AC_t,AC_dt)
 }
 
 ComputeSteps AC_after_timestep(boundconds)
@@ -121,6 +125,9 @@ ComputeSteps AC_integrate_tau(boundconds)
 
 BoundConds boundconds{
   #include "boundconds.h"
+#if LENTROPY
+   ac_fixed_fields(BOUNDARY_XYZ)
+#endif
 #if LNEWTON_COOLING
   ac_const_bc(BOUNDARY_Y_BOT,TAU_BELOW,0.0)
   ac_const_bc(BOUNDARY_Y_TOP,TAU_ABOVE,0.0)

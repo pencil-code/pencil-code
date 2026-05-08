@@ -218,7 +218,7 @@ field_order(AC_iyh__mod__cdata-1) Field F_YH
 #define LNTT F_TT
 #define F_LNTT F_TT
 Field F_GLOBAL_HCOND
-Field F_SS_RUN_AVER
+field_order(AC_iss_run_aver__mod__cdata-1) Field F_SS_RUN_AVER
 Field F_ADV_DERX
 Field F_ADV_DERY
 Field F_ADV_DERZ

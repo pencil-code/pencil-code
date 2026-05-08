@@ -166,6 +166,7 @@ fixed_boundary Kernel twopass_solve_final(PC_SUB_STEP_NUMBER step_num, real dt)
 	        		write(F_CVEC[i],rk_final(F_CVEC[i],step_num,dt))
 	        	}
 	        }
+	        if(AC_iss_run_aver__mod__cdata != 0) write(F_SS_RUN_AVER,rk_final(F_SS_RUN_AVER,step_num,dt))
 	}
 }
 #include "../steps.h"

@@ -1028,7 +1028,9 @@ extern "C" void beforeBoundaryGPU(bool lrmv, int isubstep, double t, bool lsubst
 	{
 		AcTaskGraph* bcs = acGetOptimizedDSLTaskGraph(boundconds);
 		acGridExecuteTaskGraph(bcs,1);                            // apply boundconds
-		acGridHaloExchange();                                     // halo communication
+		//This is not anymore done since it is fine for the resulting inner halos to be incorrect.
+		//If those inner halos are later needed they will be anyways communicated
+		//acGridHaloExchange();                                     // halo communication
 		acGridExecuteTaskGraph(steps_updating_halos,1);           // f-array update
 	}
 #if LSELFGRAVITY

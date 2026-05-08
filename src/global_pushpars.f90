@@ -473,6 +473,7 @@ contains
     call copy_addr(ivx,p_par(1417)) ! int
     call copy_addr(ivy,p_par(1418)) ! int
     call copy_addr(ivz,p_par(1419)) ! int
+    call copy_addr(tau_aver1,p_par(1420)) 
 
   endsubroutine pushpars2c
 !***********************************************************************

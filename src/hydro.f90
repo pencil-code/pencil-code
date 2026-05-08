@@ -3480,7 +3480,7 @@ module Hydro
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc
-      integer :: iuu,iux,iuy,iuz
+      integer :: iuu
 !
       real, dimension (nx) :: tmp 
       integer :: i, j, ju
@@ -3629,9 +3629,9 @@ module Hydro
         do j=1,3
           ju=j+iuu-1
           do i=1,3
-            if (lcylindrical_coords.and.ju==iuy.and.i==1) then
+            if (lcylindrical_coords.and.j==2.and.i==1) then
               call der6(i,f(:,m,n,iuy)-uu_average_cyl(:,n),p%der6u_res(:,i,j),IGNOREDX=.true.)
-            elseif (lspherical_coords.and.ju==iuz.and.i==1) then
+            elseif (lspherical_coords.and.j==3.and.i==1) then
               call der6(i,f(:,m,n,iuz)-uu_average_sph(:,m),p%der6u_res(:,i,j),IGNOREDX=.true.)
             else
               call der6(f,ju,p%der6u_res(:,i,j),i,IGNOREDX=.true.)

@@ -4171,3 +4171,11 @@ bc_aa_pwd(AcBoundary boundary, AC_TOP_BOT topbot)
 	ac_fixed_bc(boundary,AAY)
 	ac_fixed_bc(boundary,AAZ)
 }
+
+ac_fixed_fields(AcBoundary boundary)
+{
+	if(AC_iss_run_aver__mod__cdata > 0)
+	{
+		ac_fixed_bc(boundary,F_SS_RUN_AVER)
+	}
+}

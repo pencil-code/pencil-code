@@ -106,6 +106,7 @@ const int prof_nz = 150
 #include "../stdlib/slope_limited_diffusion.h"
 
 #include "../fieldecs.h"
+#include "../stdlib/smooth_max.h"
 
 #if Ltimestep_rkf_lowsto_MODULE
 enum PC_SUB_STEP_NUMBER
@@ -261,6 +262,9 @@ const real yhmax = 1-AC_REAL_EPSILON
 //Crucially lmultithread has to be false from the point of view GPU that we don't do some things twice
 const bool AC_lmultithread__mod__cdata = false
 #if Lentropy_MODULE
+Profile<X> AC_ssmx__mod__energy
+Profile<X> AC_del2ssmx__mod__energy
+
 Profile<Z> AC_ssmz__mod__energy
 Profile<Z> AC_del2ssmz__mod__energy
 #endif

@@ -14,7 +14,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED ugss; Ma2; fpres(3); uglnTT; sglnTT(3); transprhos !,dsdr
-! PENCILS PROVIDED initss; initlnrho; uuadvec_gss; advec_cs2; cool_prof
+! PENCILS PROVIDED initss; initlnrho; uuadvec_gss; advec_cs2; cool_prof 
 !
 !***************************************************************
 module Energy
@@ -288,6 +288,8 @@ module Energy
                                 ! DIAG_DOC:   \quad(mean entropy)
   integer :: idiag_ss2m=0       ! DIAG_DOC: $\left<(s/c_p)^2\right>$
                                 ! DIAG_DOC:   \quad(mean squared entropy)
+  integer :: idiag_ss_run_averm=0 
+                                ! DIAG_DOC:   \quad(mean of the running average of entropy)
   integer :: idiag_eem=0        ! DIAG_DOC: $\left<e\right>$
   integer :: idiag_ppm=0        ! DIAG_DOC: $\left<p\right>$
   integer :: idiag_ppmax=0      ! DIAG_DOC: $\max(p)$
@@ -1630,6 +1632,7 @@ module Energy
 !
         if (lcalc_heat_cool) call not_implemented('initialize_energy','calc_heat_cool for pretend_lnTT=T')
       endif
+
 !
     endsubroutine initialize_energy
 !***********************************************************************
@@ -2101,8 +2104,9 @@ module Energy
 !  Set the initial condition for running average of entropy equal to
 !  initial entropy
 !
-      if (lss_running_aver_as_aux .or. lss_running_aver_as_var) &
+      if (lss_running_aver_as_aux .or. lss_running_aver_as_var) then
           f(:,m1:m2,n1:n2,iss_run_aver) = f(:,m1:m2,n1:n2,iss)
+      endif
 !
     endsubroutine init_energy
 !***********************************************************************
@@ -3587,6 +3591,7 @@ module Energy
       if (lpencil(i_initss).and.iglobal_ss0/=0) p%initss=f(l1:l2,m,n,iglobal_ss0)
 !
       if (lpencil(i_uuadvec_gss)) call h_dot_grad(p%uu_advec,p%gss,p%uuadvec_gss)
+
 !
 !  ``cs2/dx^2'' for timestep
 !
@@ -3604,6 +3609,7 @@ module Energy
           if (headtt.or.ldebug) print*, 'calc_pencils_energy: max(advec_cs2) =', maxval(p%advec_cs2)
         endif
       endif
+
 !
       if (lcooling_patches.and.lpencil(i_cool_prof)) p%cool_prof=f(l1:l2,m,n,icool_prof)
 
@@ -3836,7 +3842,7 @@ module Energy
 
     endsubroutine denergy_dt
 !***********************************************************************
-    subroutine calc_0d_diagnostics_energy(p)
+    subroutine calc_0d_diagnostics_energy(f,p)
 !
 !  Calculate entropy related diagnostics.
 !
@@ -3846,6 +3852,7 @@ module Energy
 
       type(pencil_case) :: p
 
+      real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(nx) :: ufpres, glnTT2, Ktmp
       real, dimension(nx) :: gT2,gs2,gTxgso,gTxgs2,chix
       real, dimension(nx,3) :: gTxgs
@@ -3898,6 +3905,7 @@ module Energy
         if (idiag_ssruzm/=0) call sum_mn_name(p%ss*p%rho*p%uu(:,3),idiag_ssruzm)
         if (idiag_ssuzm/=0) call sum_mn_name(p%ss*p%uu(:,3),idiag_ssuzm)
         call sum_mn_name(p%ss,idiag_ssm)
+        if(idiag_ss_run_averm /= 0) call sum_mn_name(f(l1:l2,m,n,iss_run_aver),idiag_ss_run_averm)
         if (idiag_ssbycpm/=0) call sum_mn_name(p%ss*p%cp1,idiag_ssbycpm)
         if (idiag_ss2m/=0) call sum_mn_name(p%ss**2,idiag_ss2m)
         call sum_mn_name(p%ee,idiag_eem)
@@ -4309,7 +4317,7 @@ module Energy
 
       call calc_2d_diagnostics_energy(p)
       call calc_1d_diagnostics_energy(f,p)
-      call calc_0d_diagnostics_energy(p)
+      call calc_0d_diagnostics_energy(f,p)
 
     endsubroutine calc_diagnostics_energy
 !***********************************************************************
@@ -4636,7 +4644,9 @@ module Energy
 !  Compute running average of entropy
 !
       if (lss_running_aver) then
-        if (t<dt) f(:,:,:,iss_run_aver)=f(:,:,:,iss)
+        if (t == 0. .or. t<dt) then
+          f(:,:,:,iss_run_aver)=f(:,:,:,iss)
+        endif
         f(:,:,:,iss_run_aver)=(1.-dt/tau_aver1)*f(:,:,:,iss_run_aver)+dt/tau_aver1*f(:,:,:,iss)
         if (lsmooth_ss_run_aver.and.lrmv) call smooth(f,iss_run_aver)
       endif
@@ -7296,6 +7306,7 @@ module Energy
         call parse_name(iname,cname(iname),cform(iname),'ssruzm',idiag_ssruzm)
         call parse_name(iname,cname(iname),cform(iname),'ssuzm',idiag_ssuzm)
         call parse_name(iname,cname(iname),cform(iname),'ssm',idiag_ssm)
+        call parse_name(iname,cname(iname),cform(iname),'ss_run_averm',idiag_ss_run_averm)
         call parse_name(iname,cname(iname),cform(iname),'ssbycpm',idiag_ssbycpm)
         call parse_name(iname,cname(iname),cform(iname),'ss2m',idiag_ss2m)
         call parse_name(iname,cname(iname),cform(iname),'eem',idiag_eem)
@@ -8751,10 +8762,8 @@ module Energy
     call copy_addr(dchit_aniso_prof,p_par(176)) ! (nx)
     call copy_addr(cs2mz,p_par(178)) ! (mz)
     call copy_addr(gssmz,p_par(179)) ! (mz) (3)
-    call copy_addr(ssmx,p_par(181)) ! (mx)
     call copy_addr(gssmx,p_par(182)) ! (nx) (3)
     call copy_addr(cs2mx,p_par(183)) ! (nx)
-    call copy_addr(del2ssmx,p_par(184)) ! (nx)
     call copy_addr(cs2mxy,p_par(185)) ! (nx) (my)
     call copy_addr(ssmxy,p_par(186)) ! (nx) (my)
     call copy_addr(cs2cool_x,p_par(187)) ! (nx)
@@ -8804,6 +8813,8 @@ module Energy
     call copy_addr(rheat,p_par(476)) 
     call copy_addr(heat_int,p_par(477))
     call copy_addr(coef_cs2,p_par(478)) ! (9)
+    call copy_addr(lsmooth_ss_run_aver,p_par(479)) ! bool
+
 
     call keep_compiler_quiet(nsmooth_kramers)
     call keep_compiler_quiet(patch_fac)
