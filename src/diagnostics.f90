@@ -4058,9 +4058,9 @@ module Diagnostics
 
     endsubroutine allocate_diagnostic_arrays
 !***********************************************************************
-   subroutine save_diagnostic_controls(ltime_only)
+   subroutine save_diagnostic_controls(lsnap_time)
 
-     logical, optional :: ltime_only
+     logical, optional :: lsnap_time
 !
 !  Saves the diagnostic controls as they are now at the current time
 !  so the helper thread can read them later when it wakes up
@@ -4068,10 +4068,12 @@ module Diagnostics
 !  25-aug-23/TP: Coded
 !  19-march-25/TP: moved from Equ to here
 !
-    t_save  = t ! (diagnostics/snapshot are for THIS time)
+    if(loptest(lsnap_time)) then
+      t_snap_save = t
+      return
+    endif
 
-    if(loptest(ltime_only)) return
-
+    t_save  = t 
     l1davgfirst_save = l1davgfirst
     ldiagnos_save = ldiagnos
     l1dphiavg_save = l1dphiavg
@@ -4103,13 +4105,19 @@ module Diagnostics
 
     endsubroutine save_diagnostic_controls
 !***********************************************************************
-    subroutine restore_diagnostic_controls
+    subroutine restore_diagnostic_controls(lsnap_time)
+
+     logical, optional :: lsnap_time
 !
 !   Restores the diagnostics flags that were saved by master when it asked for diagnostics. 
 !
 !   13-nov-23/TP: Written
 !   19-march-25/TP: moved from Equ to here
 !
+    if(loptest(lsnap_time)) then
+      t = t_snap_save
+      return
+    endif
     l1davgfirst = l1davgfirst_save
     ldiagnos = ldiagnos_save
     l1dphiavg = l1dphiavg_save

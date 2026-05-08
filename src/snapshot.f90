@@ -70,7 +70,7 @@ module Snapshot
         if (.not.lstart.and.lgpu) call copy_farray_from_GPU(a)
         if (lmultithread) then
           extpars%csnap_nr=ch
-          call save_diagnostic_controls(ltime_only=.true.)
+          call save_diagnostic_controls(lsnap_time=.true.)
 !$        lmasterflags(PERF_WSNAP_DOWN) = .true.
         else
           call perform_wsnap_down(a,ch)
@@ -362,7 +362,7 @@ module Snapshot
           call safe_character_assign(file,trim(chsnap)//ch)
           if (lmultithread) then
             extpars%ind1=nv1_capitalvar; extpars%ind2=msnap; extpars%file=file
-            call save_diagnostic_controls(ltime_only=.true.)
+            call save_diagnostic_controls(lsnap_time=.true.)
 !$          lmasterflags(PERF_WSNAP) = .true.
           else
             call perform_wsnap(a,nv1_capitalvar,msnap,file)
@@ -392,7 +392,7 @@ module Snapshot
         endif
         if (lmultithread.and.nt>0) then
           extpars%ind1=1; extpars%ind2=msnap; extpars%file=file
-          call save_diagnostic_controls(ltime_only=.true.)
+          call save_diagnostic_controls(lsnap_time=.true.)
 !$        lmasterflags(PERF_WSNAP) = .true.
         else
           call perform_wsnap(a,1,msnap,file)
@@ -867,7 +867,7 @@ module Snapshot
         if (ldo_all .and. .not. lmultithread) call update_ghosts(f)
 !
         if (lmultithread) then
-          call save_diagnostic_controls(ltime_only=.true.)
+          call save_diagnostic_controls(lsnap_time=.true.)
 !$        lmasterflags(PERF_POWERSNAP) = .true.
         else
           call perform_powersnap(f)

@@ -86,6 +86,7 @@ subroutine helper_loop(f,p)
 !$    else
 !$      lhelperflags(PERF_DIAGS) = .false.
 !$    endif
+!$    if (lhelper_run) call restore_diagnostic_controls(lsnap_time=.true.)
 !$    if (lhelper_run .and. lhelperflags(PERF_WSNAP)) then
 !$      call calc_all_module_diagnostic_auxiliaries(f,p)
         if (ip<=12.and.lroot) tvar1=real(mpiwtime())

@@ -1037,7 +1037,7 @@ module Cdata
   real :: deltay_save,scl_factor_target_save,Hp_target_save, appa_target_save
   logical :: ltimestep_diagnostics = .false.
 
-  real(KIND=rkind8) :: t_save,tspec_save
+  real(KIND=rkind8) :: t_save,tspec_save,t_snap_save
   real :: t1ddiagnos_save,t2davgfirst_save,tslice_save,tsound_save
 
 !$ logical, volatile, dimension(n_helperflags) :: lhelperflags=(/.false.,.false.,.false.,.false./)
