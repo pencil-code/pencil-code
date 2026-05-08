@@ -945,3 +945,4 @@ integer, parameter :: enum_imposedZcs2Zcore_string = 935
 integer, parameter :: enum_csZstep_string = 936
 integer, parameter :: enum_from_file_h5_string = 937
 integer, parameter :: enum_gmssm_string = 938
+integer, parameter :: enum_damp_mean_uz_prof_bdr_string = 939
