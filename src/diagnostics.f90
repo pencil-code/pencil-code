@@ -4058,7 +4058,9 @@ module Diagnostics
 
     endsubroutine allocate_diagnostic_arrays
 !***********************************************************************
-   subroutine save_diagnostic_controls
+   subroutine save_diagnostic_controls(lonly_time)
+
+     logical, optional :: lonly_time
 !
 !  Saves the diagnostic controls as they are now at the current time
 !  so the helper thread can read them later when it wakes up
@@ -4066,6 +4068,10 @@ module Diagnostics
 !  25-aug-23/TP: Coded
 !  19-march-25/TP: moved from Equ to here
 !
+    t_save  = t ! (diagnostics/snapshot are for THIS time)
+
+    if(loptest(lonly_time)) return
+
     l1davgfirst_save = l1davgfirst
     ldiagnos_save = ldiagnos
     l1dphiavg_save = l1dphiavg
@@ -4076,7 +4082,6 @@ module Diagnostics
     l2davg_save = l2davg
     lout_sound_save = lout_sound
     lvideo_save = lvideo
-    t_save  = t ! (diagnostics are for THIS time)
 !
 !  Record times for diagnostic and 2d average output.
 !
