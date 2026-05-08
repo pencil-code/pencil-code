@@ -44,7 +44,7 @@ module Snapshot
 !
       use General, only: safe_character_assign
       use Sub, only: read_snaptime, update_snaptime
-      use Diagnostics, save_diagnostic_controls
+      use Diagnostics, only: save_diagnostic_controls
 !
       real, dimension (:,:,:,:) :: a
 !
@@ -70,7 +70,7 @@ module Snapshot
         if (.not.lstart.and.lgpu) call copy_farray_from_GPU(a)
         if (lmultithread) then
           extpars%csnap_nr=ch
-          call save_diagnostic_controls(lonly_time=.true.)
+          call save_diagnostic_controls(ltime_only=.true.)
 !$        lmasterflags(PERF_WSNAP_DOWN) = .true.
         else
           call perform_wsnap_down(a,ch)
@@ -282,7 +282,7 @@ module Snapshot
       use Syscalls, only: system_cmd
       use Mpicomm, only: mpibarrier
       use Chemistry, only: make_flame_index, make_mixture_fraction
-      use Diagnostics, save_diagnostic_controls
+      use Diagnostics, only: save_diagnostic_controls
 !
 !  The dimension msnap can either be mfarray (for f-array in run.f90)
 !  or just mvar (for f-array in start.f90 or df-array in run.f90

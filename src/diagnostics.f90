@@ -4058,9 +4058,9 @@ module Diagnostics
 
     endsubroutine allocate_diagnostic_arrays
 !***********************************************************************
-   subroutine save_diagnostic_controls(lonly_time)
+   subroutine save_diagnostic_controls(ltime_only)
 
-     logical, optional :: lonly_time
+     logical, optional :: ltime_only
 !
 !  Saves the diagnostic controls as they are now at the current time
 !  so the helper thread can read them later when it wakes up
@@ -4070,7 +4070,7 @@ module Diagnostics
 !
     t_save  = t ! (diagnostics/snapshot are for THIS time)
 
-    if(loptest(lonly_time)) return
+    if(loptest(ltime_only)) return
 
     l1davgfirst_save = l1davgfirst
     ldiagnos_save = ldiagnos
