@@ -247,7 +247,7 @@ module InitialCondition
 
       ghcond_global = -cv*(gamma-1.)/(4*pi)* &
            ( (4*pi*rr_sph**2*heat*(npoly+1) + lumi*gnpoly)*rr_sph*gg_r - lumi*(npoly+1)*(2*gg_r + rr_sph*ggg_r) ) &
-           / (rr_sph**3*gg_r**2)
+           / (rr_sph**3*gg_r**2 + tini)
       ghcond_global(1) = 0.
       ghcond_global(2) = 0.5*ghcond_global(3)
 
