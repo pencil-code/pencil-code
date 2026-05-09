@@ -2381,7 +2381,9 @@ In \file{src/Makefile.local} add the following options:
 
 Compilation and running are done in the same manner as for normal CPU setups.
 By default the code assumes communication is done with CUDA-aware MPI, which means the GPUs speak directly to each other.
-If you have to ask is your MPI CUDA-aware enabled then it most likely is not.
+If you have to ask is your MPI CUDA-aware enabled then it most likely is not.\footnote{
+If Openmpi has been built with CUDA support, you will see \code{cuda} in the output of \command{ompi\_info | grep "MPI extensions"}.
+}
 Thus trying to run the code in CUDA-aware mode will most likely cause a segmentation fault and the code to crash. 
 
 To turn off CUDA-aware MPI add the following options to \file{run.in}
