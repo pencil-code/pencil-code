@@ -2457,7 +2457,9 @@ module HDF5_IO
         if (label == 'it') cycle
         if (ts_offsets(pos) == -1) then
           ts_offsets(pos) = 0
-          if (lexists .and. exists_in_hdf5 (trim (label)//'/last')) then
+          lexists = exists_in_hdf5 (trim (label))
+          if (lexists) lexists = exists_in_hdf5 (trim (label)//'/last')
+          if (lexists) then
             call input_hdf5 (trim (label)//'/last', last)
             call input_hdf5 (trim (label)//'/iteration', last_iter, last)
             do while ((it < last_iter) .and. (last > 0))
