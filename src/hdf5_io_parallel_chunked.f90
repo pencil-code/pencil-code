@@ -331,7 +331,7 @@ module HDF5_IO
         if (h5_err /= 0) call sleep (nsleep)
       enddo
 !
-      call check_error (h5_err, 'close file "'//trim (current)//'"',caller='file_close_hdf5')
+      call check_error (h5_err, 'close file "'//trim (current)//'"', caller='file_close_hdf5')
 !
       current = repeat (' ', fnlen)
       lcollective = .false.
@@ -362,7 +362,7 @@ module HDF5_IO
       if (.not. lwrite) return
 !
       call h5lexists_f(h5_file, trim (name), exists_in_hdf5, h5_err)
-      if (h5_err /= 0) exists_in_hdf5 = .false.
+      call check_error (h5_err, 'check for existence of "'//trim (name)//'"', caller='exists_in_hdf5')
 !
     endfunction exists_in_hdf5
 !***********************************************************************
