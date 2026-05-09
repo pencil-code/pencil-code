@@ -20,7 +20,7 @@
 #   pc_build [<options>] [<MAKE_VAR1=val1> [<MAKE_VAR2>=val2 ...]]
 # Options:
 #   -h, --help      This help.
-#   -d, --debug     Show debug output.
+#   -d              Show debug output.
 #       --clean     Run 'make clean'.
 #       --cleanall  Run 'pc_setupsrc; make cleanall'.
 #   -f <files>,
@@ -30,6 +30,11 @@
 #                   config file based on a host ID.
 #                   If not provided and the environment variable PENCIL_CONFIG_FILES is set,
 #                   the value of the latter is taken over for <files>.
+#       --gnu       Use GNU-GCC environment.
+#       --cray      Use Cray environment.
+#       --intel     Use Intel environment.
+#       --debug     Use debug extensions matching to compiler environment.
+#       --optimal   Use optimal production flags for compiler environment.
 #   -H <id>
 #       --host-id=<id>
 #                   Use the given <id> as host ID.
@@ -69,6 +74,10 @@
 #   pc_build -f /home/USER/myconfig
 #       will use the configuration file /home/USER/myconfig.conf if it
 #       exists.
+#   pc_build --gcc --debug
+#       will use the GNU-GCC compiler collection with the debug settings.
+#   pc_build --intel --optimal
+#       will produce optimized code for production using the Intel compiler.
 #   pc_build -H workhorse
 #       will look for, and use the configuration file for host ID
 #       'workhorse'. If no config file is found, pc_build exits with an
@@ -121,10 +130,15 @@ my (%opts);                     # Options hash for GetOptions
 ## Process command line
 GetOptions(\%opts,
            qw( -h   --help
-               -d   --debug
+               -d
                     --clean
                     --cleanall
                -f=s --config-files=s
+                    --gnu
+                    --cray
+                    --intel
+                    --debug
+                    --optimal
                -H=s --host-id=s
                -i
                -j=n --jobs=n
@@ -141,7 +155,7 @@ GetOptions(\%opts,
                -v   --version )
           ) or die "Aborting.\n";
 
-my $debug = ($opts{'d'} || $opts{'debug'} || '');
+my $debug = ($opts{'d'} || '');
 if ($debug) {
     printopts(\%opts);
     print "\@ARGV = '@ARGV'\n";
@@ -150,10 +164,21 @@ if ($debug) {
 if ($opts{'h'} || $opts{'help'})    { die usage();   }
 if ($opts{'v'} || $opts{'version'}) { die version(); }
 
+my $gnu          = (              $opts{'gnu'}            || '');
+my $cray         = (              $opts{'cray'}           || '');
+my $intel        = (              $opts{'intel'}          || '');
+my $debug_flags  = (              $opts{'debug'}          || '');
+my $optimal      = (              $opts{'optimal'}        || '');
+my @mutex = ($gnu, $cray, $intel);
+my $mutexes = grep { $_ } @mutex;
+if ($mutexes > 1) { die "Can use only one of the Compiler options!\n"; }
+
 my $clean        = (              $opts{'clean'}          || '');
 my $cleanall     = (              $opts{'cleanall'}       || '');
 my $config_files = ($opts{'f'} || $opts{'config-files'}   || undef);
+if (($mutexes >= 1) && $config_files) { die "Can not use Compiler option together with -f option!\n"; }
 my $host_id      = ($opts{'H'} || $opts{'host-id'}        || undef);
+if (($mutexes >= 1) && $host_id) { die "Can not use Compiler option together with -H option!\n"; }
 my $debug_config = ($opts{'D'} || $opts{'debug-config'}   || '');
 my $show_system_host_id = ($opts{'i'}                     || '');
 my $show_host_ids = ($opts{'I'}                           || '');
@@ -167,7 +192,7 @@ my $quiet        = ($opts{'q'} || $opts{'quiet'}          || '');
 my $serial       = ($opts{'s'} || $opts{'serial'}         || '');
 my $target       = ($opts{'t'} || $opts{'target'}         || undef);
 
-if (!defined $target){
+if (!defined $target) {
     $target = 'default_to_be';
 }
 else{
