@@ -293,8 +293,13 @@ outer:do ikz=1,nz
 !
     call allocate_workbuffers
 !
+!   Unused variables
+!
+!   2026-May-09/Kishore: Axel added pdfy_*_logscale in commit ceffba0a3b9a, but they don't
+!   2026-May-09/Kishore: seem to be used anywhere as of now (or even in that commit)
     call keep_compiler_quiet(pdfy_max_logscale)
     call keep_compiler_quiet(pdfy_min_logscale)
+!
   endsubroutine initialize_power_spectrum
 !***********************************************************************
   subroutine read_power_spectrum_run_pars(iostat)
