@@ -164,21 +164,40 @@ if ($debug) {
 if ($opts{'h'} || $opts{'help'})    { die usage();   }
 if ($opts{'v'} || $opts{'version'}) { die version(); }
 
+my $config_files = ($opts{'f'} || $opts{'config-files'}   || undef);
+my $host_id      = ($opts{'H'} || $opts{'host-id'}        || undef);
+
 my $gnu          = (              $opts{'gnu'}            || '');
 my $cray         = (              $opts{'cray'}           || '');
 my $intel        = (              $opts{'intel'}          || '');
 my $debug_flags  = (              $opts{'debug'}          || '');
 my $optimal      = (              $opts{'optimal'}        || '');
+if ($debug_flags && $optimal) { die "Options --debug and --optional are contradictory!\n"; }
 my @mutex = ($gnu, $cray, $intel);
 my $mutexes = grep { $_ } @mutex;
 if ($mutexes > 1) { die "Can use only one of the Compiler options!\n"; }
+if ($mutexes >= 1) {
+    if ($config_files) { die "Can not use Compiler option together with -f option!\n"; }
+    if ($host_id) { die "Can not use Compiler option together with -H option!\n"; }
+    if ($gnu) {
+        $config_files = "GNU-GCC_MPI";
+        if ($debug_flags) { $config_files .= ",GNU-GCC_debug"; }
+        if ($optimal) { $config_files .= ",GNU-GCC_optimal"; }
+    }
+    if ($cray) {
+        $config_files = "Cray_MPI";
+        if ($debug_flags) { $config_files .= ",Cray_debug"; }
+        if ($optimal) { $config_files .= ",Cray_optimal"; }
+    }
+    if ($intel) {
+        $config_files = "Intel_MPI";
+        if ($debug_flags) { $config_files .= ",Intel_debug"; }
+        if ($optimal) { $config_files .= ",Intel_optimal"; }
+    }
+}
 
 my $clean        = (              $opts{'clean'}          || '');
 my $cleanall     = (              $opts{'cleanall'}       || '');
-my $config_files = ($opts{'f'} || $opts{'config-files'}   || undef);
-if (($mutexes >= 1) && $config_files) { die "Can not use Compiler option together with -f option!\n"; }
-my $host_id      = ($opts{'H'} || $opts{'host-id'}        || undef);
-if (($mutexes >= 1) && $host_id) { die "Can not use Compiler option together with -H option!\n"; }
 my $debug_config = ($opts{'D'} || $opts{'debug-config'}   || '');
 my $show_system_host_id = ($opts{'i'}                     || '');
 my $show_host_ids = ($opts{'I'}                           || '');
