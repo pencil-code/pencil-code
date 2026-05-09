@@ -284,7 +284,7 @@ outer:do ikz=1,nz
     if (n_spectra>0) then
       if (lintegrate_z .and. nprocx>1) then
         call warning('initialize_power_spectrum', &
-          'lintegrate_shell uses mpigather_xy which assumes nprocx==1. ' //&
+          'lintegrate_z uses mpigather_xy which assumes nprocx==1. ' //&
           'Your results are most likely garbage.')
       endif
     endif
