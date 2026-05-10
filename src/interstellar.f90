@@ -594,7 +594,7 @@ module Interstellar
 !
         if (ampl_SN==impossible) ampl_SN=ampl_SN_cgs / unit_energy
 !  dimensional norm for Sedov-Taylor relations
-        sedov_norm=unit_density/1e-24*ampl_SN_cgs/unit_energy
+        sedov_norm=unit_density/1e-24 * (ampl_SN_cgs/unit_energy)
 !  parameters for energy losses prior to SN initialisation
 !  ref Kim & Ostriker 2015 Eq 7 dimensional norm shell formation time
 !  ref Simpson et al. 2015 Eq 17
