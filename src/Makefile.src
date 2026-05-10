@@ -227,7 +227,7 @@ include Makefile.local
 #
 include Makefile.inc
 #
-# Fortran 2003 standard compilation settings.
+# Fortran 2008 standard compilation settings.
 #
 include Makefile-standard.inc
 #
@@ -3201,7 +3201,7 @@ ifneq ($(IO),io_wrapper)
 ifeq ($(IO),io_mpi2)
 	$(FC) $(ALL_COMP_FLAGS) $(ALLOW_ARG_MISMATCH) -o $(IO_OBJ) -c $(IO_SRC)
 else
-	$(FC) $(ALL_COMP_FLAGS) $(FSTD_2003) -o $(IO_OBJ) -c $(IO_SRC)
+	$(FC) $(ALL_COMP_FLAGS) $(FSTD_2008) -o $(IO_OBJ) -c $(IO_SRC)
 endif
 endif
 #
@@ -3214,7 +3214,7 @@ $(IO_IN_OBJ): $(IO_IN_SRC) Makefile.local
 ifeq ($(IO_IN),io_mpi2)
 	$(FC) $(ALL_COMP_FLAGS) $(ALLOW_ARG_MISMATCH) -o $(IO_IN_OBJ) -c $(IO_IN_SRC)
 else
-	$(FC) $(ALL_COMP_FLAGS) $(FSTD_2003) -o $(IO_IN_OBJ) -c $(IO_IN_SRC)
+	$(FC) $(ALL_COMP_FLAGS) $(FSTD_2008) -o $(IO_IN_OBJ) -c $(IO_IN_SRC)
 endif
 	@$(call sed_follow_link,"s/^\( *[^!]*module  *\)Io_in/\1Io/",$(IO_IN_SRC))
 $(IO_OUT_OBJ): $(IO_OUT_SRC) Makefile.local
@@ -3225,7 +3225,7 @@ $(IO_OUT_OBJ): $(IO_OUT_SRC) Makefile.local
 ifeq ($(IO_OUT),io_mpi2)
 	$(FC) $(ALL_COMP_FLAGS) $(ALLOW_ARG_MISMATCH) -o $(IO_OUT_OBJ) -c $(IO_OUT_SRC)
 else
-	$(FC) $(ALL_COMP_FLAGS) $(FSTD_2003) -o $(IO_OUT_OBJ) -c $(IO_OUT_SRC)
+	$(FC) $(ALL_COMP_FLAGS) $(FSTD_2008) -o $(IO_OUT_OBJ) -c $(IO_OUT_SRC)
 endif
 	@$(call sed_follow_link,"s/^\( *[^!]*module  *\)Io_out/\1Io/",$(IO_OUT_SRC))
 endif
