@@ -44,7 +44,7 @@ module Chemistry
   real :: Rgas, Rgas_unit_sys=1.
   real, dimension(mx,my,mz) :: cp_full, cv_full
   real, dimension(:,:,:), pointer :: mu1_full
-  real, dimension(mx,my,mz) :: lambda_full, rho_full, TT_full
+  real, dimension(mx,my,mz) :: lambda_full = 0.0, rho_full, TT_full
   real, dimension(mx,my,mz,nchemspec) :: cv_R_spec_full
 !real, dimension (mx,my,mz) ::  e_int_full,cp_R_spec
 
@@ -1374,6 +1374,8 @@ module Chemistry
           if (lpencil(i_glambda)) &
             call not_implemented('calc_pencils_chemistry','glambda pencil for lSmag_heat_transport=T')
         else
+          ! [PABourdin] use of "lambda_full" without initialization!
+          ! uncovered with F2008 on the "2d-tests/chemistry_GrayScott" autotest.
           p%lambda = lambda_full(l1:l2,m,n)
           if (lpencil(i_glambda)) call grad(lambda_full,p%glambda)
         endif
