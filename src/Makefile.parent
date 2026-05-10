@@ -146,10 +146,10 @@ Makefile_inc:
 Fortran_standard:
 	@case "$(FILE_IO)" in \
 	'file_io_f2003') \
-	    echo "FSTD=$(FSTD_2003)" > src/Makefile-standard.inc; \
+	    echo "FSTD=$(FSTD_2008)" > src/Makefile-standard.inc; \
 	    ;; \
 	*) \
-	    echo "FSTD=$(FSTD_2003)" > src/Makefile-standard.inc; \
+	    echo "FSTD=$(FSTD_2008)" > src/Makefile-standard.inc; \
 	    ;; \
 	esac;
 
