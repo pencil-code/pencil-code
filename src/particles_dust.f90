@@ -190,7 +190,7 @@ module Particles
 !  real :: A3=0., A2=0., G_condensation=0.
   real :: A3=0., A2=0.
   real, target :: G_condensation=0.0
-  real :: nucleation_threshold
+  real :: nucleation_threshold=0.0
   logical :: ascalar_ngp=.false., ascalar_cic=.false.
   real :: diffusion_coefficient=0.0
   real :: rpinit_int=impossible, rpinit_ext=impossible
