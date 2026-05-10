@@ -48,7 +48,7 @@ module EquationOfState
 !
   real :: lnpp_bot=0.
   real :: ss_bot=0.
-  real :: TTbot, TTtop
+  real :: TTbot=0., TTtop=0.
 !
   real :: va2max_eos=huge1
   integer :: va2power_eos=5
