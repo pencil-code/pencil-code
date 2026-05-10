@@ -186,7 +186,7 @@ include Makefile.local
 #
 include Makefile.inc
 #
-# Fortran 2003 standard compilation settings.
+# Fortran 2003 / 2008 standard compilation settings.
 #
 include Makefile-standard.inc
 #
@@ -2921,9 +2921,9 @@ fftpack.o: fftpack.f90
 param_io.o: param_io.f90
 	$(FC) $(ALL_COMP_FLAGS) -o param_io.o -c param_io.f90
 diagnostics_outlog.o: diagnostics_outlog.f90
-	$(FC) $(ALL_COMP_FLAGS) $(FSTD_2003) -o diagnostics_outlog.o -c diagnostics_outlog.f90
+	$(FC) $(ALL_COMP_FLAGS) $(FSTD_2008) -o diagnostics_outlog.o -c diagnostics_outlog.f90
 io_collect_xy_f2003.o: io_collect_xy_f2003.f90
-	$(FC) $(ALL_COMP_FLAGS) $(FSTD_2003) -o io_collect_xy_f2003.o -c io_collect_xy_f2003.f90
+	$(FC) $(ALL_COMP_FLAGS) $(FSTD_2008) -o io_collect_xy_f2003.o -c io_collect_xy_f2003.f90
 file_io_f95.o: file_io_f95.f90
 	$(FC) $(ALL_COMP_FLAGS) -o file_io_f95.o -c file_io_f95.f90
 file_io_dist.o: file_io_dist.f90
