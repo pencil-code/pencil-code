@@ -154,7 +154,7 @@ module Chemistry
 !
   real, allocatable, dimension(:,:,:,:,:) :: Bin_Diff_coef
   real, allocatable, dimension(:,:,:,:) :: Diff_full, Diff_full_add
-  real, dimension(mx,my,mz,nchemspec) :: XX_full
+  real, dimension(mx,my,mz,nchemspec) :: XX_full = 0.0
   real, dimension(mx,my,mz,nchemspec) :: species_viscosity
   real, dimension(mx,my,mz,nchemspec) :: RHS_Y_full
   real, dimension(nchemspec) :: nu_spec=0., mobility=1.
@@ -1165,6 +1165,8 @@ module Chemistry
 !
       if (lpencil(i_gXXk)) then
         do k = 1,nchemspec
+          ! [PABourdin] use of "XX_full" without initialization!
+          ! uncovered with F2008 on the "2d-tests/chemistry_GrayScott" autotest.
           call grad(XX_full(:,:,:,k),p%gXXk(:,:,k))
         enddo
       endif
