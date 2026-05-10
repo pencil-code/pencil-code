@@ -1176,6 +1176,157 @@ module HDF5_IO
 !
     endsubroutine output_hdf5_int_1D
 !***********************************************************************
+    subroutine output_hdf5_int64_0D(name, data)
+!
+!  Write HDF5 dataset as 64-bit integer scalar from one or all processors.
+!
+!  10-May-2026/PABourdin: adapted from native integer version
+!
+      character(len=*), intent(in) :: name
+      integer(kind=int64), intent(in) :: data
+!
+      integer(kind=int64), dimension(1) :: output = (/ 1 /)
+!
+      output = data
+      call output_hdf5_int64_1D(name, output, output(1), .true.)
+!
+    endsubroutine output_hdf5_int64_0D
+!***********************************************************************
+    subroutine output_local_hdf5_int64_1D(name, data, nv)
+!
+!  Write HDF5 dataset as 64-bit integer array from one or all processors.
+!
+!  10-May-2026/PABourdin: adapted from native integer version
+!
+      character(len=*), intent(in) :: name
+      integer(kind=int64), intent(in) :: nv
+      integer(kind=int64), dimension(nv), intent(in) :: data
+!
+      integer(kind=int64), dimension(1) :: size
+!
+      if (lcollective) call check_error (1, 'local output requires local file', caller='output_local_hdf5_int64_1D')
+      if (.not. lwrite) return
+!
+      size = (/ nv /)
+!
+      ! create data space
+      call h5screate_simple_f (1, size, h5_dspace, h5_err)
+      call check_error (h5_err, 'create integer data space', name, caller='output_local_hdf5_int64_1D')
+      if (exists_in_hdf5 (name)) then
+        ! open dataset
+        call h5dopen_f (h5_file, trim (name), h5_dset, h5_err)
+        call check_error (h5_err, 'open integer dataset', name)
+      else
+        ! create dataset
+        call h5dcreate_f (h5_file, trim (name), H5T_NATIVE_INTEGER, h5_dspace, h5_dset, h5_err)
+        call check_error (h5_err, 'create integer dataset', name)
+      endif
+      ! write dataset
+      call h5dwrite_f (h5_dset, H5T_NATIVE_B64, data, size, h5_err)
+      call check_error (h5_err, 'write integer data', name)
+      ! close dataset and data space
+      call h5dclose_f (h5_dset, h5_err)
+      call check_error (h5_err, 'close integer dataset', name)
+      call h5sclose_f (h5_dspace, h5_err)
+      call check_error (h5_err, 'close integer data space', name)
+!
+    endsubroutine output_local_hdf5_int64_1D
+!***********************************************************************
+    subroutine output_hdf5_int64_1D(name, data, nv, same_size)
+!
+!  Write HDF5 dataset as 64-bit integer array from one or all processors.
+!
+!  10-May-2026/PABourdin: adapted from native integer version
+!
+      use General, only: loptest
+!
+      character(len=*), intent(in) :: name
+      integer(kind=int64), intent(in) :: nv
+      integer(kind=int64), dimension(nv), intent(in) :: data
+      logical, optional, intent(in) :: same_size
+!
+      integer :: num, total, offset, last
+      integer(kind=int64), dimension(1) :: local_size_1D, local_subsize_1D, local_start_1D
+      integer(kind=int64), dimension(1) :: global_size_1D, global_start_1D
+      integer(kind=int64), dimension(1) :: h5_stride, h5_count
+!
+      if (.not. lcollective) then
+        call output_local_hdf5_int64_1D(name, data, nv)
+        return
+      endif
+!
+      if (loptest(same_size)) then
+        last = nv * (iproc + 1) - 1
+        total = nv * ncpus
+        offset = nv * iproc
+      else
+        num = nv
+        call mpiscan_int(num, offset)
+        last = offset - 1
+        total = offset
+        offset = offset - nv
+        call mpibcast_int(total, ncpus-1)
+      endif
+      local_start_1D = 0
+      local_size_1D = nv
+      local_subsize_1D = nv
+      global_size_1D = total
+      global_start_1D = offset
+!
+      ! define 'file-space' to indicate the data portion in the global file
+      call h5screate_simple_f (1, global_size_1D, h5_fspace, h5_err)
+      call check_error (h5_err, 'create global file space', name, caller='output_hdf5_int64_1D')
+!
+      ! define 'memory-space' to indicate the local data portion in memory
+      call h5screate_simple_f (1, local_size_1D, h5_mspace, h5_err)
+      call check_error (h5_err, 'create local memory space', name)
+!
+      if (exists_in_hdf5 (name)) then
+        ! open dataset
+        call h5dopen_f (h5_file, trim (name), h5_dset, h5_err)
+        call check_error (h5_err, 'open integer dataset', name)
+      else
+        ! create the dataset
+        call h5dcreate_f (h5_file, trim (name), H5T_NATIVE_B64, h5_fspace, h5_dset, h5_err)
+        call check_error (h5_err, 'create dataset', name)
+      endif
+      call h5sclose_f (h5_fspace, h5_err)
+      call check_error (h5_err, 'close global file space', name)
+!
+      ! define local 'hyper-slab' in the global file
+      h5_stride(:) = 1
+      h5_count(:) = 1
+      call h5dget_space_f (h5_dset, h5_fspace, h5_err)
+      call check_error (h5_err, 'get dataset for file space', name)
+      call h5sselect_hyperslab_f (h5_fspace, H5S_SELECT_SET_F, global_start_1D, h5_count, h5_err, h5_stride, local_subsize_1D)
+      call check_error (h5_err, 'select hyperslab within file', name)
+!
+      ! define local 'hyper-slab' portion in memory
+      call h5sselect_hyperslab_f (h5_mspace, H5S_SELECT_SET_F, local_start_1D, h5_count, h5_err, h5_stride, local_subsize_1D)
+      call check_error (h5_err, 'select hyperslab within memory', name)
+!
+      ! prepare data transfer
+      call h5pcreate_f (H5P_DATASET_XFER_F, h5_plist, h5_err)
+      call check_error (h5_err, 'set data transfer properties', name)
+      call h5pset_dxpl_mpio_f_wrapper (h5_plist, H5FD_MPIO_COLLECTIVE_F, h5_err)
+      call check_error (h5_err, 'select collective IO', name)
+!
+      ! collectively write the data
+      call h5dwrite_f (h5_dset, H5T_NATIVE_INTEGER, data, global_size_1D, h5_err, h5_mspace, h5_fspace, h5_plist)
+      call check_error (h5_err, 'write dataset', name)
+!
+      ! close data spaces, dataset, and the property list
+      call h5sclose_f (h5_fspace, h5_err)
+      call check_error (h5_err, 'close file space', name)
+      call h5sclose_f (h5_mspace, h5_err)
+      call check_error (h5_err, 'close memory space', name)
+      call h5dclose_f (h5_dset, h5_err)
+      call check_error (h5_err, 'close dataset', name)
+      call h5pclose_f (h5_plist, h5_err)
+      call check_error (h5_err, 'close parameter list', name)
+!
+    endsubroutine output_hdf5_int64_1D
+!***********************************************************************
     subroutine output_hdf5_0D(name, data)
 !
       character(len=*), intent(in) :: name
