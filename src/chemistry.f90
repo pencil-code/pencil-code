@@ -206,7 +206,7 @@ module Chemistry
 !
 !   Species constants
 !
-  real, dimension(nchemspec,24), target :: species_constants
+  real, dimension(nchemspec,24), target :: species_constants = 0.0
 !
 !   Lewis coefficients
 !
@@ -1179,6 +1179,8 @@ module Chemistry
 !
       if (lpencil(i_mukmu1)) then
         do k = 1,nchemspec
+          ! [PABourdin] use of "species_constants" without initialization!
+          ! uncovered with F2008 on the "2d-tests/chemistry_GrayScott" autotest.
           p%mukmu1(:,k) = species_constants(k,imass)/unit_mass*p%mu1(:)
         enddo
       endif
