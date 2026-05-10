@@ -1,10 +1,8 @@
 !                              -*-f90-*-     (for emacs)
 !
-!  Runtime parameters for linear streaming instability.
-!
 &run_pars
-    nt = 501, it1 = 100
-    tmax = 0.01, dsnap = 0.02, dvid = 0.001
+    nt = 100000, it1 = 1000
+    tmax = 1, dsnap = 0.1, dvid = 0.01
 /
 &eos_run_pars
 /

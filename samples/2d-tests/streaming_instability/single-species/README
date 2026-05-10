@@ -12,7 +12,7 @@ Recommended resolution:
     None, but varying the resolution is a good test of how many grid
     points the code needs to resolve the streaming instability.
 Comments:
-    Linear mode (linA) of the streaming instability.
+    Linear mode (linB) of the streaming instability.
 References:
     Youdin, A., & Johansen, A.: 2007, ``Protoplanetary Disk Turbulence
     Driven by the Streaming Instability: Linear Evolution and Numerical
