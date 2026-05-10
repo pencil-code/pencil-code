@@ -19,6 +19,7 @@ module HDF5_IO
   use Messages, only: fatal_error, warning
   use Mpicomm, only: mpiscan_int, mpibcast_int
   use Syscalls, only: sleep
+  use iso_fortran_env, only: int64
 !
   implicit none
 !
@@ -73,8 +74,8 @@ module HDF5_IO
   integer :: h5_err
   integer(HID_T) :: h5_file, h5_dset, h5_plist, h5_fspace, h5_mspace, h5_dspace, h5_ntype, h5_dptype, h5_group
   integer, parameter :: n_dims = 3
-  integer(kind=8), dimension(n_dims+1) :: local_size, local_subsize, local_start
-  integer(kind=8), dimension(n_dims+1) :: global_size, global_start
+  integer(kind=int64), dimension(n_dims+1) :: local_size, local_subsize, local_start
+  integer(kind=int64), dimension(n_dims+1) :: global_size, global_start
   logical :: lcollective = .false., lwrite = .false.
   character(len=fnlen) :: current
   integer :: mvar_out, maux_out
@@ -436,7 +437,7 @@ module HDF5_IO
       integer, intent(out) :: data
       integer, intent(in) :: pos
 !
-      integer(kind=8), dimension(1) :: h5_offset, h5_count
+      integer(kind=int64), dimension(1) :: h5_offset, h5_count
 !
       if (lcollective) call check_error (1, 'local input requires local file', caller='input_local_hdf5_int_1D_0D')
       if (.not. lwrite) return
@@ -486,9 +487,9 @@ module HDF5_IO
       logical, optional, intent(inout) :: lerrcont
 !
       integer :: total, offset, last
-      integer(kind=8), dimension(1) :: local_size_1D, local_subsize_1D, local_start_1D
-      integer(kind=8), dimension(1) :: global_size_1D, global_start_1D
-      integer(kind=8), dimension(1) :: h5_stride, h5_count
+      integer(kind=int64), dimension(1) :: local_size_1D, local_subsize_1D, local_start_1D
+      integer(kind=int64), dimension(1) :: global_size_1D, global_start_1D
+      integer(kind=int64), dimension(1) :: h5_stride, h5_count
 !
       if (.not. lcollective) then
         call input_local_hdf5_int_1D(name, data, nv,lerrcont)
@@ -617,9 +618,9 @@ module HDF5_IO
       logical, optional, intent(inout) :: lerrcont
 !
       integer :: total, offset, last
-      integer(kind=8), dimension(1) :: local_size_1D, local_subsize_1D, local_start_1D
-      integer(kind=8), dimension(1) :: global_size_1D, global_start_1D
-      integer(kind=8), dimension(1) :: h5_stride, h5_count
+      integer(kind=int64), dimension(1) :: local_size_1D, local_subsize_1D, local_start_1D
+      integer(kind=int64), dimension(1) :: global_size_1D, global_start_1D
+      integer(kind=int64), dimension(1) :: h5_stride, h5_count
 !
       if (.not. lcollective) then
         call input_local_hdf5_1D(name, data, nv, lerrcont)
@@ -727,7 +728,7 @@ module HDF5_IO
       real, dimension(:) :: data
       integer, intent(in) :: ldim, gdim, np1, np2
 !
-      integer(kind=8), dimension(1) :: h5_stride, h5_count, loc_dim, glob_dim, loc_start, glob_start, loc_subdim
+      integer(kind=int64), dimension(1) :: h5_stride, h5_count, loc_dim, glob_dim, loc_start, glob_start, loc_subdim
 !
       if (.not. lcollective) &
           call check_error (1, '1D profile input requires global file', name, caller='input_hdf5_part_2D')
@@ -793,8 +794,8 @@ module HDF5_IO
       real, dimension(:,:), intent(out) :: data
       logical, optional, intent(inout) :: lerrcont
 !
-      integer(kind=8), dimension(2), parameter :: h5_stride=1, h5_count=1
-      integer(kind=8), dimension(2) :: ldims, gdims_i8
+      integer(kind=int64), dimension(2), parameter :: h5_stride=1, h5_count=1
+      integer(kind=int64), dimension(2) :: ldims, gdims_i8
 !
       ! define 'memory-space' to indicate the local data portion in memory
       ldims = (/ size (data,1), size (data,2) /)
@@ -857,9 +858,9 @@ module HDF5_IO
       logical, optional, intent(inout) :: lerrcont
       logical, optional, intent(in) :: lghost
 !
-      integer(kind=8), dimension(n_dims) :: h5_stride, h5_count
+      integer(kind=int64), dimension(n_dims) :: h5_stride, h5_count
       integer, parameter :: n = n_dims
-      integer(kind=8), dimension(n_dims+1) :: loc_size, loc_subsize, loc_start, glo_size, glo_start
+      integer(kind=int64), dimension(n_dims+1) :: loc_size, loc_subsize, loc_start, glo_size, glo_start
 !
       loc_subsize = local_subsize
       loc_size = local_size
@@ -930,7 +931,7 @@ module HDF5_IO
       real, dimension(:,:,:,:), intent(out) :: data
       logical, optional, intent(inout) :: lerrcont
 !
-      integer(kind=8), dimension(n_dims+1) :: h5_stride, h5_count
+      integer(kind=int64), dimension(n_dims+1) :: h5_stride, h5_count
 !
       ! read other 4D array
       global_size(n_dims+1) = nv
@@ -1027,7 +1028,7 @@ module HDF5_IO
 !***********************************************************************
     subroutine output_hdf5_int_0D(name, data)
 !
-!  Write HDF5 dataset as scalar from one or all processor.
+!  Write HDF5 dataset as native integer from one or all processors.
 !
 !  22-Oct-2018/PABourdin: coded
 !
@@ -1043,7 +1044,7 @@ module HDF5_IO
 !***********************************************************************
     subroutine output_local_hdf5_int_1D(name, data, nv)
 !
-!  Write HDF5 dataset as scalar from one or all processor.
+!  Write HDF5 dataset as native integer array from one or all processors.
 !
 !  23-Oct-2018/PABourdin: coded
 !
@@ -1051,7 +1052,7 @@ module HDF5_IO
       integer, intent(in) :: nv
       integer, dimension(nv), intent(in) :: data
 !
-      integer(kind=8), dimension(1) :: size
+      integer(kind=int64), dimension(1) :: size
 !
       if (lcollective) call check_error (1, 'local output requires local file', caller='output_local_hdf5_int_1D')
       if (.not. lwrite) return
@@ -1095,9 +1096,9 @@ module HDF5_IO
       logical, optional, intent(in) :: same_size
 !
       integer :: total, offset, last
-      integer(kind=8), dimension(1) :: local_size_1D, local_subsize_1D, local_start_1D
-      integer(kind=8), dimension(1) :: global_size_1D, global_start_1D
-      integer(kind=8), dimension(1) :: h5_stride, h5_count
+      integer(kind=int64), dimension(1) :: local_size_1D, local_subsize_1D, local_start_1D
+      integer(kind=int64), dimension(1) :: global_size_1D, global_start_1D
+      integer(kind=int64), dimension(1) :: h5_stride, h5_count
 !
       if (.not. lcollective) then
         call output_local_hdf5_int_1D(name, data, nv)
@@ -1194,7 +1195,7 @@ module HDF5_IO
       integer, intent(in) :: nv
       real, dimension(nv), intent(in) :: data
 !
-      integer(kind=8), dimension(1) :: size
+      integer(kind=int64), dimension(1) :: size
 !
       if (lcollective) call check_error (1, 'local output requires local file', caller='output_local_hdf5_1D')
       if (.not. lwrite) return
@@ -1250,9 +1251,9 @@ module HDF5_IO
       logical, optional, intent(in) :: same_size
 !
       integer :: total, offset, last
-      integer(kind=8), dimension(1) :: local_size_1D, local_subsize_1D, local_start_1D
-      integer(kind=8), dimension(1) :: global_size_1D, global_start_1D
-      integer(kind=8), dimension(1) :: h5_stride, h5_count
+      integer(kind=int64), dimension(1) :: local_size_1D, local_subsize_1D, local_start_1D
+      integer(kind=int64), dimension(1) :: global_size_1D, global_start_1D
+      integer(kind=int64), dimension(1) :: h5_stride, h5_count
 !
       if (.not. lcollective) then
         call output_local_hdf5_1D(name, data, nv)
@@ -1341,7 +1342,7 @@ module HDF5_IO
       integer, intent(in) :: py, pz
 !
       integer, parameter :: n = 3
-      integer(kind=8), dimension(n) :: h5_stride, h5_count, loc_dim, glob_dim, loc_start, glob_start
+      integer(kind=int64), dimension(n) :: h5_stride, h5_count, loc_dim, glob_dim, loc_start, glob_start
 !
       if (.not. lcollective) &
           call check_error (1, '1D pencil output requires global file', name, caller='output_hdf5_pencil_1D')
@@ -1446,7 +1447,7 @@ module HDF5_IO
       integer, intent(in) :: ldim, gdim, ip, np1, np2, ng
       logical, intent(in) :: lhas_data
 !
-      integer(kind=8), dimension(1) :: h5_stride, h5_count, loc_dim, glob_dim, loc_start, glob_start, loc_subdim
+      integer(kind=int64), dimension(1) :: h5_stride, h5_count, loc_dim, glob_dim, loc_start, glob_start, loc_subdim
 !
       if (.not. lcollective) &
           call check_error (1, '1D profile output requires global file', name, caller='output_hdf5_profile_1D')
@@ -1529,7 +1530,7 @@ module HDF5_IO
       real, intent(in) :: data
       integer, intent(in) :: pos, chunk_size
 !
-      integer(kind=8), dimension(1) :: h5_stride, h5_count, loc_dim, glob_dim, loc_start, glob_start
+      integer(kind=int64), dimension(1) :: h5_stride, h5_count, loc_dim, glob_dim, loc_start, glob_start
 !
       if (lcollective) call check_error (1, 'local 1D_0D output requires local file', caller='output_local_hdf5_1D_0D')
       if (.not. lwrite) return
@@ -1606,7 +1607,7 @@ module HDF5_IO
       integer, intent(in) :: data
       integer, intent(in) :: pos, chunk_size
 !
-      integer(kind=8), dimension(1) :: h5_stride, h5_count, loc_dim, glob_dim, loc_start, glob_start
+      integer(kind=int64), dimension(1) :: h5_stride, h5_count, loc_dim, glob_dim, loc_start, glob_start
 !
       if (lcollective) call check_error (1, 'local 1D_0D output requires local file', caller='output_local_hdf5_int_1D_0D')
       if (.not. lwrite) return
@@ -1683,7 +1684,7 @@ module HDF5_IO
       integer, intent(in) :: dim1, dim2
       real, dimension(dim1,dim2), intent(in) :: data
 !
-      integer(kind=8), dimension(2) :: size
+      integer(kind=int64), dimension(2) :: size
 !
       if (lcollective) call check_error (1, 'local 2D output requires local file', caller='output_local_hdf5_2D')
       if (.not. lwrite) return
@@ -1729,7 +1730,7 @@ module HDF5_IO
       integer, intent(in) :: ldim1, ldim2, gdim1, gdim2, ip1, ip2
       logical, optional, intent(in) :: has_data
 !
-      integer(kind=8), dimension(2) :: h5_stride, h5_count, loc_dim, glob_dim, loc_start, glob_start
+      integer(kind=int64), dimension(2) :: h5_stride, h5_count, loc_dim, glob_dim, loc_start, glob_start
       logical :: lhas_data
 !
       if (.not. lcollective) &
@@ -1821,7 +1822,7 @@ module HDF5_IO
       integer, intent(in) :: dim1, dim2, dim3
       real, dimension(dim1,dim2,dim3), intent(in) :: data
 !
-      integer(kind=8), dimension(3) :: size
+      integer(kind=int64), dimension(3) :: size
 !
       if (lcollective) call check_error (1, 'local 3D output requires local file', caller='output_local_hdf5_3D')
       if (.not. lwrite) return
@@ -1862,7 +1863,7 @@ module HDF5_IO
       character(len=*), intent(in) :: name
       real, dimension(:,:,:), intent(in) :: data
 !
-      integer(kind=8), dimension(n_dims) :: h5_stride, h5_count
+      integer(kind=int64), dimension(n_dims) :: h5_stride, h5_count
       integer, parameter :: n = n_dims
 !
       if (.not. lcollective) &
@@ -1932,7 +1933,7 @@ module HDF5_IO
       integer, intent(in) :: dim1, dim2, dim3, dim4
       real, dimension(dim1,dim2,dim3,dim4), intent(in) :: data
 !
-      integer(kind=8), dimension(4) :: size
+      integer(kind=int64), dimension(4) :: size
 !
       if (lcollective) call check_error (1, 'local 4D output requires local file', caller='output_local_hdf5_4D')
       if (.not. lwrite) return
@@ -1974,7 +1975,7 @@ module HDF5_IO
       integer, intent(in) :: nv
       real, dimension(:,:,:,:), intent(in) :: data
 !
-      integer(kind=8), dimension(n_dims+1) :: h5_stride, h5_count
+      integer(kind=int64), dimension(n_dims+1) :: h5_stride, h5_count
 !
       if (.not. lcollective) &
           call check_error (1, '4D array output requires global file', name, caller='output_hdf5_4D')
