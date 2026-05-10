@@ -12,7 +12,6 @@ module Timeavg
   include 'timeavg.h'
 !
   integer :: idx_tavg=0         ! just scalar, since unused and no mtavg known
-  real :: tavg=0.0
 !
   contains
 !***********************************************************************

@@ -18,8 +18,7 @@ module Timeavg
 !
   real, dimension(mx,my,mz,mtavg) :: f_tavg
   integer, dimension(mtavg) :: idx_tavg=0
-  real :: tavg=0.
-
+!
   contains
 !***********************************************************************
     subroutine initialize_timeavg(a)
@@ -27,15 +26,12 @@ module Timeavg
 !  Initialize time averages to the corresponding values
 !
 !  7-oct-02/wolf: coded
+!  10-May-2026/PABourdin: debugged and simplified
 !
       real, dimension(mx,my,mz,mfarray) :: a
       integer :: i
 
       intent (in) :: a
-!
-!  initialize values
-!
-      call update_timeavgs(a,0.,INIT=.true.)
 !
 !  Build list of indices for f; defaults to indices 1 to mtavg, so
 !  setting mtavg=mvar will automatically average all variables.
@@ -48,44 +44,34 @@ module Timeavg
           if (lroot.and.ip<14) print*, 'TIMEAVG: defaulting idx no.', i, ' to ', i
           idx_tavg(i)=i
         endif
+!
+        !  initialize values
+        f_tavg(:,:,:,i) = a(:,:,:,idx_tavg(i))
       enddo
 !
     endsubroutine initialize_timeavg
 !***********************************************************************
-    subroutine update_timeavgs(a,dt,init)
+    subroutine update_timeavgs(a,dt)
 !
 !  Called after a time step, this routine updates the time averages from
 !  the variable vector a.
-!  With optional argument INIT=.true., initialize to a.
 !
 !  7-oct-02/wolf: coded
+!  10-May-2026/PABourdin: debugged and simplified
 !
       real, dimension(mx,my,mz,mfarray) :: a
       real :: dt,weight
-      integer :: i,idx
-      logical, optional :: init
-      logical :: init1=.false.
+      integer :: i
 
       intent (in) :: a
 !
-      init1=.false.             ! somehow the initialization above does
-                                ! not seem to work on Cincinnatus
       if (tavg <= 0) return
-      if (present(init)) init1=init
 !
       weight = min(dt/tavg,1.)
       do i=1,mtavg
-        idx = idx_tavg(i)
-        if (idx > 0) then       ! should always be the case; MR: if so then idx_tavg is not needed
-          if (init1) then
-            f_tavg(:,:,:,i) = a(:,:,:,idx)
-          else
-!            f_tavg(:,:,:,i) = weight*a(:,:,:,idx) + (1-weight)*f_tavg(:,:,:,i)
-            ! numerically slightly better (probably irrelevant):
-            f_tavg(:,:,:,i) = f_tavg(:,:,:,i) &
-                              + weight*(a(:,:,:,idx)-f_tavg(:,:,:,i) )
-          endif
-        endif
+        !f_tavg(:,:,:,i) = weight*a(:,:,:,idx_tavg(i)) + (1-weight)*f_tavg(:,:,:,i)
+        ! numerically slightly better (probably irrelevant):
+        f_tavg(:,:,:,i) = f_tavg(:,:,:,i) + weight*(a(:,:,:,idx_tavg(i))-f_tavg(:,:,:,i) )
       enddo
 !
     endsubroutine update_timeavgs

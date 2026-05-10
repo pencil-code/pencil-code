@@ -711,6 +711,8 @@ module Cdata
   logical :: lreset_seed=.false.
   logical :: lproper_averages=.false.
   character (len=1) :: slice_position='p'
+! time avaraging
+  real :: tavg=0.
 ! averaging over smaller box
   logical :: lav_smallx=.false.,loutside_avg=.false.
   real :: xav_max=impossible
