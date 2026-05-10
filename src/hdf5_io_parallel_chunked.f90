@@ -1044,7 +1044,7 @@ module HDF5_IO
 !***********************************************************************
     subroutine output_local_hdf5_int_1D(name, data, nv)
 !
-!  Write HDF5 dataset as native integer array from one or all processors.
+!  Write HDF5 dataset as native integer array from one processor.
 !
 !  23-Oct-2018/PABourdin: coded
 !
@@ -1084,7 +1084,7 @@ module HDF5_IO
 !***********************************************************************
     subroutine output_hdf5_int_1D(name, data, nv, same_size)
 !
-!  Write HDF5 dataset as array from one or all processors.
+!  Write HDF5 dataset as native integer array from one or all processors.
 !
 !  24-Oct-2018/PABourdin: coded
 !
