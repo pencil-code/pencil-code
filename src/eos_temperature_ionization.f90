@@ -31,7 +31,7 @@ module EquationOfState
   include 'eos.h'
   include 'eos_params.h'
 !
-  integer :: icv, idelta, igamma, inabad
+  integer :: icv=0, idelta=0, igamma=0, inabad=0
 !  integer :: icp, icv, ics, idelta, igamma, inabad
   !  secondary parameters calculated in initialize
   real :: mu1_0,Rgas,mu1yHxHe
