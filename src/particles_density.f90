@@ -24,7 +24,7 @@ module Particles_density
 !
   include 'particles_density.h'
 !
-  real :: rhop_swarm0=1.0, rhop_swarm1=1.0, rhop_swarm2, rhop_swarm3
+  real :: rhop_swarm0=1.0, rhop_swarm1=1.0, rhop_swarm2=1.0, rhop_swarm3=1.0
   real :: gravr_swarm0=1.0, gravr_swarm1=1.0
   real, pointer :: rhs_poisson_const
   character (len=labellen), dimension(ninit) :: initrhopswarm='nothing'
@@ -255,6 +255,8 @@ module Particles_density
 !
       integer, intent(in) :: unit
 !
+      print*,initrhopswarm, rhop_swarm0, rhop_swarm1, rhop_swarm2, rhop_swarm3
+      print*,gravr_swarm0, gravr_swarm1, eps_dtog
       write(unit, NML=particles_dens_init_pars)
 !
     endsubroutine write_particles_dens_init_pars
