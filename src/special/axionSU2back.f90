@@ -65,7 +65,7 @@ module Special
   real :: rhoT_sum_diagnos
 
   real :: sbackreact_Q=1., sbackreact_chi=1., sbackreact_JJ=1., tback=1e6, dtback=1e6
-  real :: lnkmin0=0., lnkmin0_dummy, lnkmax0, dlnk
+  real :: lnkmin0=-1., lnkmin0_dummy, lnkmax0, dlnk
   real :: nmin0=-1., nmax0=3., horizon_factor=0., sgn=1.
   real, dimension (nx) :: dt1_special, lnk
   logical :: lbackreact=.false., lwith_eps=.true., lupdate_background=.true.

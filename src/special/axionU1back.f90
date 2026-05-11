@@ -45,7 +45,7 @@ module Special
   real :: alpha=0.1, m_alpha=3.285e-11, n_alpha=1.5
   real :: phi_0=0.014, lambda_gmssm=1.0, alpha1_gmssm=6.5e-11, const_sigma=0.0
 
-  real :: lnkmin0, lnkmin0_dummy, lnkmax0, dlnk
+  real :: lnkmin0=-1., lnkmin0_dummy, lnkmax0, dlnk
   real :: nmin0=-1., nmax0=3., horizon_factor=0., sgn=1.
   real :: edotb_sum, rhob, rhoe
   real, dimension (nx) :: dt1_special, lnk
