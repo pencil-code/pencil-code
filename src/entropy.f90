@@ -4149,7 +4149,13 @@ module Energy
           if (lheatc_smagorinsky) call xysum_mn_name_z(-Pr_smag1*p%nu_smag*p%rho*p%TT*gss1(:,3),idiag_fturbz)
 ! from calc_heatcond_constchi, calc_heatcond_kramers, calc_heatcond
           if (lheatc_Kprof.or.lheatc_chiconst.or.lheatc_kramers) then
-            if (idiag_fturbz/=0) call xysum_mn_name_z(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,3),idiag_fturbz)
+            if (idiag_fturbz/=0) then 
+              if(chi_t == 0.) then
+                call xysum_mn_name_z(spread(0.,1,nx),idiag_fturbz)
+              else
+                call xysum_mn_name_z(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,3),idiag_fturbz)
+              endif
+            endif
           endif
         endif
 
