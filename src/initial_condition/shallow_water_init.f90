@@ -20,12 +20,12 @@ module InitialCondition
 !
   include '../initial_condition.h'
 !
-  real :: eta0=0.0, k_eta, x0_drop, y0_drop
+  real :: eta0=0.0, k_eta=1., x0_drop=0., y0_drop=0.
   real :: Omega_SB=1.0,gamma_parameter=1.0
-  real :: v_jet_peak,sigma_jet,r_jet_cent
+  real :: v_jet_peak=1.0,sigma_jet=1.0,r_jet_cent=0.
   real :: Omega_vortex=1.
 ! Vortex parameters: 
-  real :: xv0,yv0, bv,rm,vm,rout  
+  real :: xv0=0.,yv0=0.,bv=1.,rm=1.,vm=1.,rout=0.
   integer :: nagrid=10000
 !
   character (len=labellen), dimension(ninit) :: init_shallow_density='nothing'
