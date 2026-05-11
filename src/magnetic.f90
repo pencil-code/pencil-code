@@ -3912,7 +3912,7 @@ module Magnetic
 !
         fact=1./nxygrid
         do j=1,3
-          do nl=n1,n2
+          do nl=1,mz
             aamz(nl,j)=fact*sum(f(l1:l2,m1:m2,nl,iax+j-1))
           enddo
         enddo
