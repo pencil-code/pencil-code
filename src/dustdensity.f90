@@ -546,12 +546,12 @@ module Dustdensity
 !
 !  Filling the array containing the dust size
 !  if the maximum size (dsize_max) of the dust grain is nonzero.
+!  The default is ad and special modules can override this
 !
 !      if (latm_chemistry) then
+        dsize=ad
         if (lspecial) then
           call set_init_parameters(Ntot,dsize,init_distr,init_distr2)
-        else
-          dsize=ad
         endif
 
         init_distr_ki=0.
