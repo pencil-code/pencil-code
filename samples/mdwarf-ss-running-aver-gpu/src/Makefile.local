@@ -22,4 +22,4 @@ TIMEAVG   = notimeavg
 INITIAL_CONDITION = initial_condition/star_in_a_box_poly
 
 REAL_PRECISION = double
-GPU=gpu_astaroth
+#GPU=gpu_astaroth
