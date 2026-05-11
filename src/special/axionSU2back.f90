@@ -65,7 +65,7 @@ module Special
   real :: rhoT_sum_diagnos
 
   real :: sbackreact_Q=1., sbackreact_chi=1., sbackreact_JJ=1., tback=1e6, dtback=1e6
-  real :: lnkmin0, lnkmin0_dummy, lnkmax0, dlnk
+  real :: lnkmin0=0., lnkmin0_dummy, lnkmax0, dlnk
   real :: nmin0=-1., nmax0=3., horizon_factor=0., sgn=1.
   real, dimension (nx) :: dt1_special, lnk
   logical :: lbackreact=.false., lwith_eps=.true., lupdate_background=.true.
@@ -296,6 +296,7 @@ module Special
             k(ik)=exp(lnk(ik))
           enddo
           if (ip<10) print*,'iproc,lnk=',iproc,lnk
+
           kindex_array=nint((lnk-lnkmin0)/dlnk)
         endif
       elseif (llnk_spacing) then
@@ -1153,7 +1154,7 @@ module Special
           fact=1.
         endif
 !
-!  apply factor to switch on bachreaction gradually:
+!  apply factor to switch on backreaction gradually:
 !
         if (lconf_time) then
           Qddot  =Qddot  -sbackreact_Q  *fact*a**2 *grand_sum
@@ -1687,7 +1688,7 @@ module Special
 !
 !  07-aug-17/axel: coded
 
-      use Mpicomm, only: mpireduce_sum, mpibcast
+      use Mpicomm, only: mpiallreduce_sum, mpibcast
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(nx) :: TRpsim, TRpsikm, TRpsidotm, TRdotpsim
@@ -1837,18 +1838,18 @@ module Special
 !  Compute the sum over all processors.
 !  But result is only needed on root processor.
 !
-      call mpireduce_sum(sum(grand),grand_sum,1)
-      call mpireduce_sum(sum(grant),grant_sum,1)
-      call mpireduce_sum(sum(dgrant),dgrant_sum,1)
-      call mpireduce_sum(sum(rhoT),rhoT_sum,1)
+      call mpiallreduce_sum(sum(grand),grand_sum,1)
+      call mpiallreduce_sum(sum(grant),grant_sum,1)
+      call mpiallreduce_sum(sum(dgrant),dgrant_sum,1)
+      call mpiallreduce_sum(sum(rhoT),rhoT_sum,1)
       if (lSchwinger_scalar) then
-        call mpireduce_sum(sum(uReff2km),uReff2km_sum,1)
-        call mpireduce_sum(sum(uReff2m),uReff2m_sum,1)
-        call mpireduce_sum(sum(uLeff2km),uLeff2km_sum,1)
-        call mpireduce_sum(sum(uLeff2m),uLeff2m_sum,1)
-        call mpireduce_sum(sum(JJ_R),JJ_R_sum,1)
-        call mpireduce_sum(sum(JJ_L),JJ_L_sum,1)
-        call mpireduce_sum(sum(JJ_R+JJ_L),JJ_sum,1)
+        call mpiallreduce_sum(sum(uReff2km),uReff2km_sum,1)
+        call mpiallreduce_sum(sum(uReff2m),uReff2m_sum,1)
+        call mpiallreduce_sum(sum(uLeff2km),uLeff2km_sum,1)
+        call mpiallreduce_sum(sum(uLeff2m),uLeff2m_sum,1)
+        call mpiallreduce_sum(sum(JJ_R),JJ_R_sum,1)
+        call mpiallreduce_sum(sum(JJ_L),JJ_L_sum,1)
+        call mpiallreduce_sum(sum(JJ_R+JJ_L),JJ_sum,1)
      else
        JJ_R_sum=0.
        JJ_L_sum=0.
@@ -1862,22 +1863,22 @@ module Special
 !
 !  These 8 lines are only needed for diagnostics and could be escaped.
 !
-      call mpireduce_sum(sum(TRpsim),TRpsim_sum,1)
-      call mpireduce_sum(sum(TRpsikm),TRpsikm_sum,1)
-      call mpireduce_sum(sum(TRpsidotm),TRpsidotm_sum,1)
-      call mpireduce_sum(sum(TRdotpsim),TRdotpsim_sum,1)
+      call mpiallreduce_sum(sum(TRpsim),TRpsim_sum,1)
+      call mpiallreduce_sum(sum(TRpsikm),TRpsikm_sum,1)
+      call mpiallreduce_sum(sum(TRpsidotm),TRpsidotm_sum,1)
+      call mpiallreduce_sum(sum(TRdotpsim),TRdotpsim_sum,1)
 !
-      call mpireduce_sum(sum(TRdoteff2km),TRdoteff2km_sum,1)
-      call mpireduce_sum(sum(TRdoteff2m),TRdoteff2m_sum,1)
-      call mpireduce_sum(sum(TReff2km),TReff2km_sum,1)
-      call mpireduce_sum(sum(TReff2m),TReff2m_sum,1)
+      call mpiallreduce_sum(sum(TRdoteff2km),TRdoteff2km_sum,1)
+      call mpiallreduce_sum(sum(TRdoteff2m),TRdoteff2m_sum,1)
+      call mpiallreduce_sum(sum(TReff2km),TReff2km_sum,1)
+      call mpiallreduce_sum(sum(TReff2m),TReff2m_sum,1)
 !
 !  Same for left-handed modes
 !
-      call mpireduce_sum(sum(TLdoteff2km),TLdoteff2km_sum,1)
-      call mpireduce_sum(sum(TLdoteff2m),TLdoteff2m_sum,1)
-      call mpireduce_sum(sum(TLeff2km),TLeff2km_sum,1)
-      call mpireduce_sum(sum(TLeff2m),TLeff2m_sum,1)
+      call mpiallreduce_sum(sum(TLdoteff2km),TLdoteff2km_sum,1)
+      call mpiallreduce_sum(sum(TLdoteff2m),TLdoteff2m_sum,1)
+      call mpiallreduce_sum(sum(TLeff2km),TLeff2km_sum,1)
+      call mpiallreduce_sum(sum(TLeff2m),TLeff2m_sum,1)
 !
     endsubroutine special_after_boundary
 !***********************************************************************
