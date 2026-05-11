@@ -2864,6 +2864,8 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
               S_T_im(ikx,iky,ikz)=0.
               S_X_im(ikx,iky,ikz)=0.
               if (llinphase_in_stress) then
+                !TP: is multiplying the complex component by cos(omega*t)*sin(omega*t)
+                !    instead of sin(omega*t) meaningful? I would expect the latter.
                 S_T_re(ikx,iky,ikz)=S_T_re(ikx,iky,ikz)*cos(slope_linphase_in_stress*t)
                 S_T_im(ikx,iky,ikz)=S_T_re(ikx,iky,ikz)*sin(slope_linphase_in_stress*t)
                 S_X_re(ikx,iky,ikz)=S_X_re(ikx,iky,ikz)*cos(slope_linphase_in_stress*t)
