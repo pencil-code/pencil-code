@@ -3,7 +3,6 @@
 
       if (nxgrid/=1) then
         kx_fft=cshift((/(i-idiv((nxgrid+1),2),i=0,nxgrid-1)/),+idiv((nxgrid+1),2))*2*pi/Lx
-        kx_fft2=kx_fft**2
         kx_nyq=idiv(nxgrid,2) * 2*pi/Lx
       else
         kx_fft=0.0
@@ -12,7 +11,6 @@
 !
       if (nygrid/=1) then
         ky_fft=cshift((/(i-idiv((nygrid+1),2),i=0,nygrid-1)/),+idiv((nygrid+1),2))*2*pi/Ly
-        ky_fft2=ky_fft**2
         ky_nyq=idiv(nygrid,2) * 2*pi/Ly
       else
         ky_fft=0.0
@@ -21,10 +19,13 @@
 !
       if (nzgrid/=1) then
         kz_fft=cshift((/(i-idiv((nzgrid+1),2),i=0,nzgrid-1)/),+idiv((nzgrid+1),2))*2*pi/Lz
-        kz_fft2=kz_fft**2
         kz_nyq=idiv(nzgrid,2) * 2*pi/Lz
       else
         kz_fft=0.0
         kz_nyq=0.0
       endif
+
+      kx_fft2=kx_fft**2
+      ky_fft2=ky_fft**2
+      kz_fft2=kz_fft**2
 
