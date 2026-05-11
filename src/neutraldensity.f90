@@ -31,7 +31,7 @@ module NeutralDensity
   real :: diffrhon=0.,diffrhon_hyper3=0.,diffrhon_shock=0.
   real :: lnrhon_const=0., rhon_const=1.
   real :: lnrhon_int=0.,lnrhon_ext=0.
-  real :: lnrhon0,lnrhon_left,lnrhon_right,alpha,zeta
+  real :: lnrhon0=0.,lnrhon_left=0.,lnrhon_right=0.,alpha,zeta
   real, dimension(3) :: diffrhon_hyper3_aniso=0.
   integer, parameter :: ndiff_max=4
   logical :: lmass_source=.false.,lcontinuity_neutral=.true.
