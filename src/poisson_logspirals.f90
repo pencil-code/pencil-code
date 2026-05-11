@@ -41,7 +41,7 @@ module Poisson
   include 'poisson.h'
 !
   real, pointer :: Gnewton_ptr
-  real :: Gnewton
+  real :: Gnewton=G_Newton_cgs
   real :: Bsmooth=0.01
 !
   namelist /poisson_init_pars/ Gnewton,Bsmooth
