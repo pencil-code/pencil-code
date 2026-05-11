@@ -740,6 +740,7 @@ module Magnetic
   integer :: idiag_jx4m=0       ! DIAG_DOC: $\left< J_x^4 \right>$
   integer :: idiag_jy4m=0       ! DIAG_DOC: $\left< J_y^4 \right>$
   integer :: idiag_jz4m=0       ! DIAG_DOC: $\left< J_z^4 \right>$
+  integer :: idiag_jz3m=0       ! DIAG_DOC: $\left< J_z^3 \right>$
   integer :: idiag_jh2m1=0      ! DIAG_DOC: $\left< J_\perp^2 \right>^{I}$
   integer :: idiag_jx2m1=0      ! DIAG_DOC: $\left< J_x^2 \right>^{I}$
   integer :: idiag_jy2m1=0      ! DIAG_DOC: $\left< J_y^2 \right>^{I}$
@@ -4567,10 +4568,9 @@ module Magnetic
 !  Need to check that it is still always initialized.
 !
               !p%jj=0.
-              !p%jj_ohm=0.
+              if (it==1) p%jj_ohm=0.
               eta_total=eta
             endif
-!
 !
 !  The Ohm's current is independent of loverride_ee2, etc.
 !  AB: eta_total and the rest are pencils, but it complains about inconsistent ranks. So I put (1).
@@ -6982,6 +6982,7 @@ print*,'AXEL2: should not be here (eta) ... '
       if (idiag_jx4m/=0) call sum_mn_name(p%jj(:,1)**4,idiag_jx4m)
       if (idiag_jy4m/=0) call sum_mn_name(p%jj(:,2)**4,idiag_jy4m)
       if (idiag_jz4m/=0) call sum_mn_name(p%jj(:,3)**4,idiag_jz4m)
+      if (idiag_jz3m/=0) call sum_mn_name(p%jj(:,3)**3,idiag_jz3m)
       if (idiag_bxbym/=0) call sum_mn_name(p%bbb(:,1)*p%bbb(:,2),idiag_bxbym)
       if (idiag_bxbzm/=0) call sum_mn_name(p%bbb(:,1)*p%bbb(:,3),idiag_bxbzm)
       if (idiag_bybzm/=0) call sum_mn_name(p%bbb(:,2)*p%bbb(:,3),idiag_bybzm)
@@ -10725,7 +10726,7 @@ print*,'AXEL2: should not be here (eta) ... '
         idiag_bx3m=0; idiag_by3m=0; idiag_bz3m=0
         idiag_bx4m=0; idiag_by4m=0; idiag_bz4m=0
         idiag_jx2m=0; idiag_jy2m=0; idiag_jz2m=0
-        idiag_jx4m=0; idiag_jy4m=0; idiag_jz4m=0
+        idiag_jx4m=0; idiag_jy4m=0; idiag_jz4m=0; idiag_jz3m=0
         idiag_jx2m1=0; idiag_jx2m2=0; idiag_jx2m3=0; idiag_jh2m1=0
         idiag_jy2m1=0; idiag_jy2m2=0; idiag_jy2m3=0
         idiag_bxbymx = 0; idiag_bxbzmx = 0; idiag_bybzmx = 0
@@ -11008,6 +11009,7 @@ print*,'AXEL2: should not be here (eta) ... '
         call parse_name(iname,cname(iname),cform(iname),'jx4m',idiag_jx4m)
         call parse_name(iname,cname(iname),cform(iname),'jy4m',idiag_jy4m)
         call parse_name(iname,cname(iname),cform(iname),'jz4m',idiag_jz4m)
+        call parse_name(iname,cname(iname),cform(iname),'jz3m',idiag_jz3m)
         call parse_name(iname,cname(iname),cform(iname),'jh2m1',idiag_jh2m1)
         call parse_name(iname,cname(iname),cform(iname),'jx2m1',idiag_jx2m1)
         call parse_name(iname,cname(iname),cform(iname),'jy2m1',idiag_jy2m1)
