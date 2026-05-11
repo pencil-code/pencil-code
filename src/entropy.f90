@@ -5385,7 +5385,7 @@ module Energy
 !
 !  This particular version assumes a simple polytrope, so mpoly is known.
 !
-      if (headtt) print*,'calc_heatcond_constK_arrays: hcond=', maxval(hcond)
+      if (headtt) print*,'calc_heatcond_constK_arrays: hcond=', hcond_Kconst
 !
 !  Heat conduction
 !  Note: these routines require revision when ionization turned on
