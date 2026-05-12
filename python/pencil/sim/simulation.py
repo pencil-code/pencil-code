@@ -966,7 +966,13 @@ class Simulation:
 
         with open(join(self.datadir, "time_series.dat"), "rb") as fh:
             first = next(fh).decode()
-            fh.seek(-1024, 2)
+            try:
+                fh.seek(-2, 2)
+                while fh.read(1).decode() != '\n':
+                    fh.seek(-2, 1)
+            except OSError:
+                #single-line file
+                fh.seek(0)
             last = fh.readlines()[-1].decode()
 
         header = [
