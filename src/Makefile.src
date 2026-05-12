@@ -513,6 +513,8 @@ endif
 ifneq ($(findstring gpu_astaroth, $(GPU)),)
     override MULTITHREADING=openmp
     override MPICOMM=mpicomm
+    #Needed because of large subdomains
+    override FARRAY_ALLOC=farray_alloc
 endif
 
 ifeq ($(USE_SPECIAL_DISPATCHER),yes)
