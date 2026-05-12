@@ -143,7 +143,7 @@ module Boundcond
 !
 !  23-oct-13/ccyang: coded.
 !
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: f
 !
       call zero_ghosts_range(f, 1, mfarray)
 !
@@ -155,7 +155,7 @@ module Boundcond
 !
 !  23-oct-13/ccyang: coded.
 !
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: f
       integer, intent(in) :: ivar1
       integer, intent(in), optional :: ivar2_opt
 !
@@ -194,7 +194,7 @@ module Boundcond
       use EquationOfState, only: get_gamma_etc
       use SharedVariables, only: get_shared_variable
 
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 
       integer :: ix_bc,ix2_bc,iy_bc,iy2_bc,iz_bc,iz2_bc,idum
       logical :: lread_slice_yz,lread_slice_yz2,lread_slice_xz,lread_slice_xz2, &
@@ -673,7 +673,7 @@ module Boundcond
 !
 !  Envelope for being called from C code.
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 
       call boundconds_x(f,ivar1_opt,ivar2_opt)
@@ -684,7 +684,7 @@ module Boundcond
 !
       use EquationOfState, only: bc_stellar_surface
 !
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer, intent(IN) ::  topbot,j
 !
 !  Normal usage of 'sts' assumes that it is set for both ilnrho and ilnTT.
@@ -1106,7 +1106,7 @@ module Boundcond
 
       use EquationOfState
 
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: topbot,j
 
       if (j==iss)   call bc_ss_flux_x(f,topbot)
@@ -1117,7 +1117,7 @@ module Boundcond
     subroutine bc_d1s_x(f,topbot,j)
 
       use EquationOfState
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: topbot,j
 
       call bc_set_val_x(f,topbot,j,fbcx(j,topbot))
@@ -1129,7 +1129,7 @@ module Boundcond
 
       use EquationOfState
 
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: topbot,j
 
       call bval_from_neumann(f,topbot,j,1,fbcx(j,topbot))
@@ -1141,7 +1141,7 @@ module Boundcond
 !
 !  Envelope for being called from C code.
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 
       call boundconds_y(f,ivar1_opt,ivar2_opt)
@@ -1399,7 +1399,7 @@ module Boundcond
     subroutine bc_d1s_y(f,topbot,j)
 
       use EquationOfState
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: topbot,j
 
        call bc_set_val_y(f,topbot,j,fbcy(j,topbot))
@@ -1411,7 +1411,7 @@ module Boundcond
 !
 !  Envelope for being called from C code.
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 
       call boundconds_z(f,ivar1_opt,ivar2_opt)
@@ -1791,7 +1791,7 @@ module Boundcond
       use EquationOfState
       use Magnetic_meanfield, only: pc_aasb_const_alpha
 
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: topbot,j
 
       call pc_aasb_const_alpha(f,topbot,j)
@@ -1803,7 +1803,7 @@ module Boundcond
 
       use EquationOfState
 
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: topbot,j
 
       call bc_set_val_z(f,topbot,j,fbcz(j,topbot))
@@ -1815,7 +1815,7 @@ module Boundcond
 
       use EquationOfState
 
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: topbot,j
 
       call bval_from_neumann(f,topbot,j,3,fbcz(j,topbot))
@@ -1827,7 +1827,7 @@ module Boundcond
 
       use EquationOfState
 
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: topbot,j
 
       if (j==iss) call bc_ss_flux(f,topbot)
@@ -1840,7 +1840,7 @@ module Boundcond
 
       use EquationOfState
 
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: topbot,j
 
       if (j==ilnrho) call bc_lnrho_temp_z(f,topbot)
@@ -1853,7 +1853,7 @@ module Boundcond
       use EquationOfState
       use Gravity
 
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: topbot,j
 
       if ((j==ilnrho) .or. (j==irho_b) .or. (j==iss)) then
@@ -1868,7 +1868,7 @@ module Boundcond
 
       use EquationOfState
 
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: topbot,j
 
       if (j == ilnTT) then
@@ -1883,7 +1883,7 @@ module Boundcond
 
       use EquationOfState
 
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: topbot,j
 
       call bc_wind_z(f,topbot,fbcz(j,topbot))

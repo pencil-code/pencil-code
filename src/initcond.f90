@@ -102,7 +102,7 @@ module Initcond
 !  14-oct-09/irina: coded
 !
       integer :: i,j,k
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: dmx,radius, dtheta,theta
 !
      dmx=(l2-l1)/mx
@@ -128,7 +128,7 @@ module Initcond
 !  26-jul-02/axel: coded
 !
       integer :: i,j
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, optional :: kx,ky,kz,KKx,KKy,KKz
       real :: ampl,kx1=pi/2.,ky1=0.,kz1=pi/2.,KKx1=0.,KKy1=0.,KKz1=0.
 !
@@ -167,7 +167,7 @@ module Initcond
 !  20-jan-07/axel: adapted
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real,optional :: kx,ky,kz
       real :: ampl,kx1=pi/2.,ky1=0.,kz1=pi/2.
 !
@@ -199,7 +199,7 @@ module Initcond
 !   2-dec-03/axel: coded
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real,optional :: kx,ky,kz
       real :: ampl,kx1=pi/2.,ky1=0.,kz1=pi/2.
 !
@@ -230,7 +230,7 @@ module Initcond
 !   8-may-12/axel: coded
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real,optional :: ky,kz
       real :: ampl, ky1=0., kz1=pi/2., x1, x2
 !
@@ -260,7 +260,7 @@ module Initcond
 !   2-dec-03/axel: coded
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, optional :: kx, ky, kz, xbot, nexp
       real :: ampl, kx1=pi/2., ky1=0., kz1=pi/2., xbot_, nexp_
 !
@@ -307,7 +307,7 @@ module Initcond
 !   2-dec-03/axel: coded
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real,optional :: kx,ky,kz,phasey
       real :: ampl,kx1=pi/2.,ky1=0.,kz1=pi/2., phasey1=0.
 !
@@ -341,7 +341,7 @@ module Initcond
       use General, only: roptest
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real,optional :: kx,ky,kz,phasey
 !
       real :: ampl,kx1,ky1,kz1,phasey1
@@ -374,7 +374,7 @@ module Initcond
 !   1-jul-07/axel: coded
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real,optional :: kx,ky,kz
       real :: ampl,kx1=pi/2.,ky1=0.,kz1=pi/2.
 !
@@ -403,7 +403,7 @@ module Initcond
 !   2-jul-07/axel: coded
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real,optional :: kx,ky,kz
       real :: ampl,kx1=pi/2.,ky1=0.,kz1=pi/2.
 !
@@ -432,7 +432,7 @@ module Initcond
 !  15-mar-07/axel: coded
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real,optional :: kx,ky,kz
       real :: ampl,kx1=pi/2.,ky1=0.,kz1=pi/2.
 !
@@ -462,7 +462,7 @@ module Initcond
 !  26-mar-25/TP: coded
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real,optional :: kx,ky,kz
       real :: ampl,kx1=pi/2.,ky1=0.,kz1=pi/2.
 !
@@ -493,7 +493,7 @@ module Initcond
 !   2-dec-03/axel: coded
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real,optional :: kx,ky,kz
       real :: ampl,kx1=pi/2.,ky1=0.,kz1=pi/2.
 !
@@ -524,7 +524,7 @@ module Initcond
 !  13-aug-09/axel: coded
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real,optional :: kx,kz
       real :: ampl,kx1=pi/2.,kz1=pi/2.
 !
@@ -554,7 +554,7 @@ module Initcond
 !  13-aug-09/axel: coded
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real,optional :: ky,kz
       real :: ampl,ky1=pi/2.,kz1=pi/2.
 !
@@ -584,7 +584,7 @@ module Initcond
 !   2-dec-03/axel: coded
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real,optional :: kx,ky,kz
       real :: ampl,kx1=pi/2.,ky1=0.,kz1=pi/2.
 !
@@ -614,7 +614,7 @@ module Initcond
 !  15-aug-09/axel: adapted from cosy_sinz
 !
       integer :: i,j
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real,optional :: kx,kz
       real :: ampl,kx1=1.,kz1=pi
 !
@@ -636,7 +636,7 @@ module Initcond
 !   11-oct-06/wolf: modified to only set one component of aa
 !
       integer :: i,j
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real,optional :: ky,kz
       real :: ampl,ky1=1.,kz1=pi
 !
@@ -658,7 +658,7 @@ module Initcond
 !   11-oct-06/wolf: modified to only set one component of aa
 !
       integer :: i,j
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real,optional :: ky,kz
       real :: ampl,ky1=1.,kz1=pi
 !
@@ -688,7 +688,7 @@ module Initcond
 !   11-oct-06/wolf: modified to only set one component of aa
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real,optional :: ky,kz
       real :: ampl,ky1=1.,kz1=pi
 !
@@ -711,7 +711,7 @@ module Initcond
 !   2-dec-03/axel: coded
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real,optional :: kx,ky,kz
       real :: ampl,kx1=pi/2.,ky1=0.,kz1=pi/2.
 !
@@ -748,7 +748,7 @@ module Initcond
 !  21-feb-08/axel: coded
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real,optional :: kx,ky,kz
       real :: ampl,kx1=1.,ky1=1.,kz1=1.
 !
@@ -787,7 +787,7 @@ module Initcond
 !   9-dec-10/bing: coded
 !
       integer, intent(in) :: i
-      real, dimension (mx,my,mz,mfarray) ,intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:) ,intent(inout) :: f
       real, intent(in) :: ampl,x0,y0
 !
       if (ampl==0) then
@@ -806,7 +806,7 @@ module Initcond
 !  21-may-11/axel: coded
 !
       integer, intent(in) :: i
-      real, dimension (mx,my,mz,mfarray) ,intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:) ,intent(inout) :: f
       real, intent(in) :: ampl,x0,y0
 !
       if (ampl==0) then
@@ -824,7 +824,7 @@ module Initcond
 !   9-mar-08/axel: coded
 !
       integer :: i,ll1,ll2,mm1,mm2,nn1,nn2
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl,ampl2,width
 !
       intent(in)  :: ampl,ampl2,i,width
@@ -855,7 +855,7 @@ module Initcond
 !   12-jul-07/mgellert: coded
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl, mu, omegao, omegai, rinner, router, a, b
 !
       rinner=xyz0(1)
@@ -889,7 +889,7 @@ module Initcond
       real, dimension (nr)               :: om_nr, xsteps
       real, dimension (nr+2)             :: om_all, om_diff
       real, dimension (:), allocatable   :: omx
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real                              :: ampl, mu, gap, omegao, omegai, rinner, router, step
       real                              :: x0, y0
       character(len=20)                 :: unfmt
@@ -955,7 +955,7 @@ module Initcond
 !   2-may-03/axel: coded
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real,optional :: kx,ky,kz
       real :: ampl,width,k=1.,width2,k2
 !
@@ -1011,7 +1011,7 @@ module Initcond
 !   9-nov-04/anders: coded
 !
       integer :: i,l
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: kx,ky,kz,kx2,ky2,kz2
       real :: ampl,width,width2
 !
@@ -1044,7 +1044,7 @@ module Initcond
 !  20-sep-03/axel: added 1/2 factor in defn; hopefully ok with everyone?
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real,optional :: kx,ky,kz
       real :: ampl,k=1.
 !
@@ -1095,7 +1095,7 @@ module Initcond
 !  28-may-03/axel: coded
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl,radius,radius21
 !
       radius21=1./radius**2
@@ -1113,7 +1113,7 @@ module Initcond
 !  Maybe could have been done by extending gaussian3d, but didn't want to interfere
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl,radius,posx, posy, posz, radius21, alp
       real, dimension (nx) :: phase_factor
       real, optional :: slope
@@ -1159,7 +1159,7 @@ module Initcond
 !   2-may-03/axel: coded
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, optional :: kx,ky,kz
       real :: ampl,k=1.
 !
@@ -1210,7 +1210,7 @@ module Initcond
 !   6-jul-02/axel: coded
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, optional :: kx,ky,kz
       real :: ampl,k=1.
 !
@@ -1261,7 +1261,7 @@ module Initcond
 !  21-sep-09/axel: coded
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, optional :: kx,ky,kz
       real :: ampl,k=1.
 !
@@ -1312,7 +1312,7 @@ module Initcond
 !  14-apr-03/axel: coded
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, optional :: kx,ky,kz
       real :: ampl,k=1.
 !
@@ -1363,7 +1363,7 @@ module Initcond
 !  30-oct-03/axel: coded
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl,ky
 !
       do n=n1,n2; do m=m1,m2
@@ -1381,7 +1381,7 @@ module Initcond
 !  30-oct-03/axel: coded
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       complex :: coef
       complex :: ii=(0.,1.)
       real :: ampl,kx,ky,kz
@@ -1399,7 +1399,7 @@ module Initcond
 !  30-oct-03/axel: coded
 !
       integer :: i,ivv
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       complex, dimension (3) :: coef
       complex :: ii=(0.,1.)
       real :: ampl,kx,ky,kz
@@ -1419,7 +1419,7 @@ module Initcond
 !  30-oct-03/axel: coded
 !
       integer :: i,ivv
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       complex, dimension (3) :: coef,coefb
       complex :: ii=(0.,1.)
       real :: ampl,kx,ky,kz,k2
@@ -1448,7 +1448,7 @@ module Initcond
 !                on LUMI would otherwise run out of stack space
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (mx,my) :: profxy
       real, dimension (mx) :: profx
       real, dimension (my) :: profy
@@ -1523,7 +1523,7 @@ module Initcond
 !  21-apr-05/axel: added possibility of Bz component
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (mx) :: profy,profz,alog_cosh_xwidth
       real :: fyleft,fyright,fzleft,fzright,width
       character(len=*) :: dir
@@ -1562,7 +1562,7 @@ module Initcond
 !  21-apr-05/axel: added possibility of Bz component
 !
       integer :: i,il,im
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (mz) :: profx,profy,alog_cosh_zwidth
       real :: fyleft,fyright,fxleft,fxright,width
       character(len=*) :: dir
@@ -1597,7 +1597,7 @@ module Initcond
 !                on LUMI would otherwise run out of stack space
 !
       integer :: i,j
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (mx) :: sfuncx,cfuncx
       real, dimension (my) :: sfuncy,cfuncy
       real, dimension (mz) :: sfuncz,cfuncz
@@ -1754,7 +1754,7 @@ module Initcond
       use Sub, only: cubic_step
 !
       integer :: i,j,l,m,n
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (mx) :: sfuncx,cfuncx,xprof
       real, dimension (my) :: sfuncy,cfuncy,yprof
       real, dimension (mz) :: sfuncz,cfuncz,zprof
@@ -1838,7 +1838,7 @@ module Initcond
       use Sub, only: cubic_step
 !
       integer :: i,j
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (mx) :: sfuncx,cfuncx
       real, dimension (my) :: sfuncy,cfuncy
       real, dimension (mz) :: sfuncz,cfuncz,zprof
@@ -2014,7 +2014,7 @@ module Initcond
 !  16-apr-21/axel: coded
 !
       integer :: i,j
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: kx, ky, kz
       real :: ampl, phase
       complex :: phase_factor_x
@@ -2050,7 +2050,7 @@ module Initcond
 !   5-jul-02/axel: made additive (if called twice), kx,ky,kz are optional
 !
       integer :: i,j,l,m,n
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: kx, ky, kz, phase, k, cfunc, sfunc
       !real :: ex=.1, ey=.33, ez=.58
       !real :: ex=1., ey=.0, ez=1.
@@ -2095,7 +2095,7 @@ module Initcond
 !                on LUMI would otherwise run out of stack space
 !
       integer :: i,j
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (mx) :: sfuncx,cfuncx
       real, dimension (my) :: sfuncy,cfuncy
       real, dimension (mz) :: sfuncz,cfuncz
@@ -2264,7 +2264,7 @@ module Initcond
 !
       integer :: i
       integer :: ix,iy,iz
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl,kz,nfactor,maxAx,maxAy,zmax,zmin,zzm !,maxA
       complex :: omega,Ax,Ay
 !
@@ -2297,7 +2297,7 @@ module Initcond
 !                on LUMI would otherwise run out of stack space
 !
       integer :: i,j
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (mx) :: sfuncx,cfuncx
       real, dimension (my) :: sfuncy,cfuncy
       real, dimension (mz) :: sfuncz,cfuncz
@@ -2460,7 +2460,7 @@ module Initcond
 !  12-nov-09/axel: coded
 !
       integer :: i,j,l
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (mx) :: J0,J1
       real :: ampl,kx,kx1
 !
@@ -2490,7 +2490,7 @@ module Initcond
 !  12-nov-09/axel: coded
 !
       integer :: i,j,l
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (mx) :: J0
       real :: ampl,kx,kx1
 !
@@ -2516,7 +2516,7 @@ module Initcond
 !  23-mar-16/axel: coded
 !
       integer :: i,j,dimensionality
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl,kx,ky,kz
 !
 !  check input parameters
@@ -2548,7 +2548,7 @@ module Initcond
 !  21-aug-07/axel: coded
 !
       integer :: i,j
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl,kx,kz,zbot
 !
 !  check input parameters
@@ -2576,7 +2576,7 @@ module Initcond
 !                on LUMI would otherwise run out of stack space
 !
       integer :: i,j
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl,k=1.,kf,fac1,fac2,relhel
       real, optional :: kx
       character (len=labellen) :: flowtype='I'
@@ -2699,7 +2699,7 @@ module Initcond
 !   6-jan-25/axel: coded
 !
       integer :: i,j
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl,k=1.,kf,fac1,fac2,relhel
       real, optional :: kx
       character (len=labellen) :: flowtype='I'
@@ -2746,7 +2746,7 @@ module Initcond
 !   2-mar-13/axel: coded
 !
       integer :: j
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl,KKz,fact
 !
 !  By(z)=B0*exp(-z/2H), and put KKz=1/2H, so
@@ -2764,7 +2764,7 @@ module Initcond
 !   9-jun-05/axel: coded
 !
       integer :: i,j
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl,kx,ky,kz
 !
 !  prepare coefficients
@@ -2783,7 +2783,7 @@ module Initcond
 !  24-may-09/axel: coded
 !
       integer :: i,j
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl,kx,ky,kz
 !
 !  sets up a nearly force-free bipolar region
@@ -2806,7 +2806,7 @@ module Initcond
 !  24-may-09/axel: coded
 !
       integer :: i,j
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl,kx,ky
 !
 !  sets up a nearly force-free bipolar region
@@ -2829,7 +2829,7 @@ module Initcond
 !   2-aug-02/axel: adapted from Beltrami
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (mx) :: envelope_x
       real, optional :: kx,ky,kz,width
       real :: ampl, k=1., fac
@@ -2885,7 +2885,7 @@ module Initcond
 !  14-nov-03/axel: adapted from sinwave
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, optional :: kx, ky, kz
       real :: ampl, k=1., fac
 !
@@ -2938,7 +2938,7 @@ module Initcond
 !!  14-nov-03/axel: adapted from sinwave
 !!
 !      integer :: i
-!      real, dimension (mx,my,mz,mfarray) :: f
+!      real, contiguous, dimension(:,:,:,:) :: f
 !      real,optional :: kx,ky,kz
 !      real :: ampl
 !!
@@ -2957,7 +2957,7 @@ module Initcond
 !  27-aug-09/dhruba: adapted from sinwave
 !
       integer :: izero,l,m
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl
 !
 ! set minimum and maximum values for r and theta
@@ -2983,7 +2983,7 @@ module Initcond
 !  22-jul-22/axel: added keyword pos for positive values only
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, optional :: kx, ky, kz, power, pos
       real :: ampl,k=1.,fac,width,pow=1.
 !
@@ -3041,7 +3041,7 @@ module Initcond
 !  14-nov-03/axel: adapted from sound wave
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, optional :: kx,ky,kz
       real :: ampl,k=1.,fac
 !
@@ -3091,7 +3091,7 @@ module Initcond
 !
 !  23-jan-06/anders: adapted from sinwave.
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl, kx, ky, kz, phase, fact, k2
       integer :: i
       logical, optional :: lnorm_kk
@@ -3128,7 +3128,7 @@ module Initcond
 !
 !  13-jun-06/anders: adapted from sinwave-phase.
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl, kx, ky, kz, phase, fact, k2
       integer :: i
       logical, optional :: lnorm_kk
@@ -3165,7 +3165,7 @@ module Initcond
 !
 !  13-jun-05/maurice reyes: sent to axel via email
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (mx) :: funx
       real, dimension (my) :: funy
       real, dimension (mz) :: funz
@@ -3228,7 +3228,7 @@ module Initcond
       use Sub, only: write_zprof
       use Cdata, only: lnoghost_strati
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (mzgrid) :: lnrho0,ss0,lnTT0,acc0
       real, dimension (mz) :: lnrho_mz,ss_mz,lnTT_mz
       real :: tmp,var1,var2,var3
@@ -3410,7 +3410,7 @@ module Initcond
 !
       use EquationOfState, only: eoscalc
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (mxgrid) :: lnrho0,ss0,lnTT0
       real :: tmp,var1,var2
       logical :: exist
@@ -3529,7 +3529,7 @@ module Initcond
 !
       use EquationOfState, only: eoscalc
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, allocatable, dimension(:,:,:) :: slice
       logical :: exist
       integer :: stat
@@ -3581,7 +3581,7 @@ module Initcond
 !
       use Mpicomm, only: mpireduce_sum, mpibcast_real, MPI_COMM_PENCIL
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx) :: hh, xi
       real, dimension (mz) :: hz
       real :: delS,ampl,sigma2,sigma,delta2,delta,eps,radius,a_ell,b_ell,c_ell
@@ -3710,7 +3710,7 @@ module Initcond
 !
       use Mpicomm, only: mpireduce_sum, mpibcast_real, MPI_COMM_PENCIL
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx) :: hh, xi, r_ell
       real :: rbound,sigma2,sigma,delta2,delta,eps,radius
       real :: gamma,eps2,radius2,width,a_ell,b_ell,c_ell
@@ -3823,7 +3823,7 @@ module Initcond
 !
 !   8-jun-04/anders: adapted from planet
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx) :: r_ell, xi
       real :: sigma,eps_ell,a_ell,b_ell,width,rbound
 !
@@ -3859,7 +3859,7 @@ module Initcond
 !  Baroclinic shearing sheet initial condition
 !  11-nov-03/anders: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: sz,I_int
       real :: gamma,dlnrhobdx,co1_ss,co2_ss,cs20
 !
@@ -3901,7 +3901,7 @@ module Initcond
 !  19-may-02/axel: coded
 !
       integer :: i,j
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl
 !
       if (lroot) print*, 'crazy: sinusoidal magnetic field: for debugging purposes'
@@ -3927,7 +3927,7 @@ module Initcond
 !  24-april-09/dhruba: coded
 !
       integer :: i,ix,iy
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl
 !      real :: arg1,arg2
 !
@@ -3952,7 +3952,7 @@ module Initcond
 !  30-may-11/axel: tanh layer
 !
       integer :: i1
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl,eps
 !
       if (ampl==0) then
@@ -3982,7 +3982,7 @@ module Initcond
 !  14-jul-13/axel: adapted for Cartesian coordinates
 !
       integer :: i1,i2
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx) :: rr,rr2,pp,Ap
       real :: ampl,radius
 !
@@ -4036,7 +4036,7 @@ module Initcond
 !  14-jul-13/axel: coded
 !
       integer :: i1,i2
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx) :: rr2,tmp
       real :: ampl,radius
 !
@@ -4086,7 +4086,7 @@ module Initcond
 !  11-sep-02/axel: allowed for scalar field (if i1=i2)
 !
       integer :: i1,i2
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx) :: tmp,tube_radius_sqr !,modulate
       real :: ampl,radius,eps
       real :: center1_x,center1_z
@@ -4139,7 +4139,7 @@ module Initcond
 !                  in Vermersch & Brandenburg (2009, AN 330, 797-806).
 !
       integer :: i1,i2
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx) :: tmp,modulate,tube_radius_sqr
       real :: ampl,radius,eps,kx
       real :: center1_y,center1_z
@@ -4197,7 +4197,7 @@ module Initcond
       use Sub, only: erfunc
 !
       integer :: i1,i2,l
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl,a,eps,width,tmp,radius,r_minus_a
       real :: center1_x,center1_z
 !
@@ -4258,7 +4258,7 @@ module Initcond
 !  11-sep-02/axel: allowed for scalar field (if i1=i2)
 !
       integer :: i1,i2
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx) :: tmp,modulate
       real :: ampl,radius,epsilon_nonaxi,ky
 !
@@ -4312,7 +4312,7 @@ module Initcond
 !  17-may-15/piyali.chatterjee: coded from  htube2
 !
       integer :: i1,i2
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (mx) :: tmp,modulate
       real :: ampl,radius,epsilon_nonaxi,kx,qtube
       real :: center1_y,center1_z,rhorad
@@ -4372,7 +4372,7 @@ module Initcond
 !
 !   7-dec-02/axel: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl,H,A0,gravz,cs0,rho0,lnrho0
 !
       if (ampl==0) then
@@ -4397,7 +4397,7 @@ module Initcond
 !  19-jun-02/axel: coded
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl,zflayer,width
 !
       if (ampl==0) then
@@ -4422,7 +4422,7 @@ module Initcond
 !  09-apr-10/piyali: copied from hfluxlayer
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl,zflayer,width
       logical, intent(in), optional :: ladd_bb
 !
@@ -4456,7 +4456,7 @@ module Initcond
 !  19-jul-13/axel+illa: copied from hfluxlayer_y
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl
 !
       if (ampl==0) then
@@ -4481,7 +4481,7 @@ module Initcond
 !  22-mar-04/axel: coded
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl,xflayer,width
 !
       if (ampl==0) then
@@ -4506,7 +4506,7 @@ module Initcond
 !  17-jun-04/axel: coded
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl,kx,kz,zmid
 !
       if (ampl==0) then
@@ -4537,7 +4537,7 @@ module Initcond
 !  19-jun-02/axel: coded
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl,kz,zbot
 !
       if (ampl==0) then
@@ -4564,7 +4564,7 @@ module Initcond
 !  19-jun-02/axel: coded
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl,kx
 !
       if (ampl==0) then
@@ -4590,7 +4590,7 @@ module Initcond
 !  19-jun-02/axel: coded
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl
 !
       if (ampl==0) then
@@ -4615,7 +4615,7 @@ module Initcond
 !  27-jul-02/axel: coded
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl
 !
       if (ampl==0) then
@@ -4640,7 +4640,7 @@ module Initcond
 !  24-jul-03/axel: adapted from uniform_x
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl
 !
       if (ampl==0) then
@@ -4671,7 +4671,7 @@ module Initcond
 !  27-jul-02/axel: coded
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx) :: rr
       real :: ampl
 !
@@ -4700,7 +4700,7 @@ module Initcond
       use Sub, only: erfunc
 
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl, z0_gaussian, width_gaussian
 !
       if (ampl==0) then
@@ -4726,7 +4726,7 @@ module Initcond
 !  05-jul-07/mgellert: coded
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl
 !
       if (ampl==0) then
@@ -4756,7 +4756,7 @@ module Initcond
 !  02-aug-2005/joishi: allowed for arbitrary kx
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl
       real, optional :: kx
       real :: k
@@ -4789,7 +4789,7 @@ module Initcond
 !  22-jun-04/anders: adapted from vfield
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl,kx
 !
       if (ampl==0) then
@@ -4815,7 +4815,7 @@ module Initcond
 !
       integer :: i,i1,i2
       real, dimension (mx) :: tmp
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl
 !
 !  set gaussian random noise vector
@@ -4842,7 +4842,7 @@ module Initcond
 !
       integer :: i
       real, dimension (mx) :: tmp
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl
 !
 !  set positive random noise vector
@@ -4873,7 +4873,7 @@ module Initcond
 !
       integer :: i,i1,i2
       real, dimension (mx) :: tmp
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl,ampl_rel
 !
 !  set random noise vector
@@ -4900,7 +4900,7 @@ module Initcond
 !
       integer :: i
       real, dimension (mx) :: tmp
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl,ampl_rel
 !
 !  set random noise vector
@@ -4926,7 +4926,7 @@ module Initcond
 !  10-sep-03/axel: result only *added* to whatever f array had before
 !
       real :: ampl
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: i1,i2
 !
       intent(in)    :: ampl,i1,i2
@@ -4966,7 +4966,7 @@ module Initcond
 !  10-sep-03/axel: result only *added* to whatever f array had before
 !
       real :: ampl
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: i
 !
       real, dimension (mx) :: r,p,tmp
@@ -5004,7 +5004,7 @@ module Initcond
 ! 18-apr-04/wolf: adapted from gaunoise_vect
 !
       real, dimension (nz) :: ampl
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: i1,i2
 !
       real, dimension (mx) :: r,p,tmp
@@ -5038,7 +5038,7 @@ module Initcond
 ! 18-apr-04/wolf: coded
 !
       real, dimension (nz) :: ampl
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: i
 !
       intent(in)    :: ampl,i
@@ -5060,7 +5060,7 @@ module Initcond
       use Sub, only: cubic_step, get_radial_distance
 !
       real :: ampl,rnoise_int,rnoise_ext
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: i1,i2
 !
       real, dimension (mx) :: prof, rr, r, p, tmp, rr_cyl, rr_sph
@@ -5116,7 +5116,7 @@ module Initcond
 !
 !  18-apr-04/wolf: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl,rnoise_int,rnoise_ext
       integer :: i
 !
@@ -5136,7 +5136,7 @@ module Initcond
 ! 23-nov-02/axel: included scaling factor ampl, corrected lperi argument
 !
       real :: amplx,amply,amplz
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: ivar
 !
       real, dimension (nx) :: tmp
@@ -5182,7 +5182,7 @@ module Initcond
 !  20-jul-09/hubbard: coded
 !
       real :: ampl
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: ivar
 !
       real, dimension (nx) :: tmp
@@ -5239,7 +5239,7 @@ module Initcond
 ! 21-jul-09/hubbard: coded
 !
       real :: powerlr
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: ivar
 !
       real :: zoverh, hoverr
@@ -5266,7 +5266,7 @@ module Initcond
 !  7-dec-02/axel: coded
 !
       integer :: ivar
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl,kx,ky,kz
 !
       if (lroot) print*, 'cos_cos_sin: ivar = ', ivar
@@ -5288,7 +5288,7 @@ module Initcond
 !  12-feb-03/ulf: coded
 !
       integer :: ivar
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl,ky,kz
 !
       if (lroot) print*, 'tor_pert: sinusoidal modulation of ivar = ', ivar
@@ -5308,7 +5308,7 @@ module Initcond
 !  16-jul-03/axel: coded
 !
       real :: ampl
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: ivar
 !
       if (lroot) print*, 'const_omega: constant angular velcoity  = ', ivar
@@ -5326,7 +5326,7 @@ module Initcond
 !  16-jul-03/axel: coded
 !
       real :: ampl
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: ivar
 !
       if (lroot) print*, 'diffrot: sinusoidal modulation of ivar = ', ivar
@@ -5344,7 +5344,7 @@ module Initcond
 !  16-jul-03/axel: coded
 !
       real :: ampl
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: ivar
 !
       real :: kx,kz
@@ -5369,7 +5369,7 @@ module Initcond
       use Fourier, only: fourier_transform
 !
       real :: ampl,initpower,cutoff
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: i1,i2
 !
       real, dimension (:,:,:), allocatable :: k2, u_re, u_im
@@ -5465,7 +5465,7 @@ module Initcond
       real, dimension (:,:,:), allocatable :: k2, u_re, u_im, r
       real, dimension (:,:,:), allocatable :: k2mkpeak
       real, dimension (:), allocatable :: kx, ky, kz
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl,initpower,mhalf,cutoff,scale_factor
       real :: nfact=4.,kpeak,kpeak1,kpeak21,nexp1,nexp2,kgaussian,fact
 !
@@ -5668,7 +5668,7 @@ module Initcond
       logical :: lskip_projection,lfactors,llogbranch,ldouble, ltime, ltime_old1
       logical :: ltime_new1, lrho_nonuni1, l2d1, lsqrt_qirro1, lnot_amp1, lrandom_ampl1
       logical :: lfixed_phase1
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: i, i1, i2, ikx, iky, ikz, stat, ik, nk, ilnr1
       integer, intent(in), optional :: ilnr
       real, intent(in), optional :: k1hel, k2hel, qexp, nfact0, compk0
@@ -6518,7 +6518,7 @@ module Initcond
       use Fourier, only: fft_xyz_parallel
       use General, only: loptest, roptest
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: i, i1a, i1b, i2a, i2b, ikx, iky, ikz, stat, ndim_u, ndim_v
       real, dimension (:,:,:,:), allocatable :: u_re, u_im, v_re, v_im
       real, dimension (:,:,:), allocatable :: k1, r
@@ -6683,7 +6683,7 @@ module Initcond
       use Sub, only: cross, dot, dot2
 !
       integer :: modeN,N_modes,l,n,m,i1
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
 ! how many wavenumbers?
       real, dimension (3,1024) :: kk,RA,RB !or through whole field for each wavenumber?
@@ -6811,7 +6811,7 @@ module Initcond
 !
       use Sub, only: cross, dot, dot2
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       character (len=1) :: dummy
       complex :: ii=(0.,1.)
@@ -6875,7 +6875,7 @@ module Initcond
       use EquationOfState, only: lnrho0,cs20,cs2top,cs2bot
       use Mpicomm, only: mpibcast_real
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: tmp,ztop,zbot,gamma,gamma_m1,dummy=1.
       integer, parameter :: prof_nz=150
       real, dimension (prof_nz) :: prof_lnT,prof_lnrho,prof_z
@@ -6980,7 +6980,7 @@ module Initcond
       use Fourier, only: fourier_transform_other, kx_fft, ky_fft
       use Mpicomm, only: mpibcast_real,stop_it_if_any
 !
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, contiguous, dimension(:,:,:,:), intent (inout) :: f
 !
       real, dimension (:,:), allocatable :: kx,ky,k2,Bz0_i,Bz0_r,A_r,A_i
       logical, intent (in) :: periodic
@@ -7162,7 +7162,7 @@ module Initcond
       use Fourier, only: setup_extrapol_fact, field_extrapol_z_parallel
       use Mpicomm, only: stop_it_if_any, mpisend_real, mpirecv_real, sum_xy
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: f
 !
       real, dimension (:,:), allocatable :: Bz
       real, dimension (:,:,:), allocatable :: exp_fact
@@ -7288,7 +7288,7 @@ module Initcond
 !
       use Mpicomm, only: stop_it_if_any, distribute_xy
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: f
 !
       real, dimension (:,:), allocatable :: A_global, A_local
       integer, parameter :: unit=11
@@ -7346,7 +7346,7 @@ module Initcond
 !
       use Mpicomm, only: stop_it_if_any, distribute_xy, mpisend_real, mpirecv_real
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: f
 !
       real, dimension (:,:,:), allocatable :: A_global, A_local
       integer, parameter :: unit=11
@@ -7443,7 +7443,7 @@ module Initcond
       use Gravity, only: gravz
       use Mpicomm, only: mpibcast_real
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ztop,zbot,dummy=1.
       integer, parameter :: prof_nz=150
       real, dimension (prof_nz) :: prof_lnT,prof_z
@@ -7525,7 +7525,7 @@ module Initcond
 !
 !  5-nov-05/weezy: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl
       integer::i
 !
@@ -7552,7 +7552,7 @@ module Initcond
       use Mpicomm, only: mpireduce_sum, mpibcast_real
 !
       integer :: i,icpu
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl,tmp1,tmp3
       real, dimension(ncpus)::sumtmp,tmp2
 !
@@ -7624,7 +7624,7 @@ module Initcond
       use Mpicomm, only: mpireduce_sum, mpibcast_real
 !
       integer :: i ,icpu
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl,tmp1,tmp3
       real, dimension(ncpus)::sumtmp,tmp2
 !
@@ -7687,7 +7687,7 @@ module Initcond
 !  18-feb-10/mvaisala: coded
 !
       integer :: i,j,l
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, optional :: xsphere,ysphere,zsphere
       real :: omega, radius, phi, rr_rot, ampl, x01=0.
       real :: y01=0., z01=0., x_real, y_real, z_real
@@ -7741,7 +7741,7 @@ module Initcond
 !  18-feb-10/mvaisala: coded
 !
       integer :: i,j,l
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, optional :: xsphere,ysphere,zsphere
       real :: omega, radius, phi, rr_rot, ampl, x01=0.
       real :: y01=0., z01=0., x_real, y_real, z_real
@@ -7792,7 +7792,7 @@ module Initcond
 !
 !  18-jun-13/MR: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: ix
       real :: amp, rpart, rr2, pom2, r_inner, r_outer
       real, optional :: r_inner_, r_outer_
@@ -7852,7 +7852,7 @@ module Initcond
 !
 !  30-nov-25/axel: adapted from dipole
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: ix
       real :: amp, rpart, rr2, pom2, r_inner, r_outer
       real, optional :: r_inner_, r_outer_
@@ -7906,7 +7906,7 @@ module Initcond
 !
 !  30-nov-25/axel: adapted from dipole
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: ix
       real :: amp, rpart, rr2, pom2, r_inner, r_outer
       real, optional :: r_inner_, r_outer_
@@ -7959,7 +7959,7 @@ module Initcond
 !
 !  30-nov-25/axel: adapted from dipole
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: ix
       real :: amp, rpart, rr2, pom2, r_inner, r_outer
       real, optional :: r_inner_, r_outer_
@@ -8009,7 +8009,7 @@ module Initcond
 !
 !  initial vector potential for dipole A
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: ix
       real :: amp, rr, r, angle
 !
@@ -8041,7 +8041,7 @@ module Initcond
 !
 !  initial vector potential for dipole B
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: ix
       real :: amp, rr, e, angle
 !
@@ -8069,7 +8069,7 @@ module Initcond
 !
 !  18-jun-13/MR: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: ix
       real :: amp, amp2, rpart, rr2, pom2, r_inner, r_outer
       real, optional :: r_inner_, r_outer_
@@ -8131,7 +8131,7 @@ module Initcond
 !
       use General, only: loptest
 
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: ix
       real :: amp, rpart
       logical, optional :: ladd
@@ -8167,7 +8167,7 @@ module Initcond
 !
 !  23 June 2016/dhruba.mitra
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: amp,yzero,delta,kk
       integer, intent(in) :: ix
       integer :: m,l
@@ -8188,7 +8188,7 @@ module Initcond
 !
 !  23 Mar 2026/vinay.kumar
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: amp,width
       integer, intent(in) :: ix
       real, parameter :: A0 = 1.29903871135
@@ -8208,7 +8208,7 @@ module Initcond
 !  7 Apr 2026/vinay.kumar
 !
 
-    real, dimension (mx,my,mz,mfarray) :: f
+    real, contiguous, dimension(:,:,:,:) :: f
     real, dimension (mx,my) :: By0, By
     real, intent(in) :: amp, width, cs20
     integer, intent(in) :: ix
@@ -8246,7 +8246,7 @@ module Initcond
 !  7 Apr 2026/vinay.kumar
 !
     
-    real, dimension (mx,my,mz,mfarray) :: f
+    real, contiguous, dimension(:,:,:,:) :: f
     real, dimension (mx,my) :: By0, By
     real, intent(in) :: amp, width, cs20
     integer, intent(in) :: ix
@@ -8294,7 +8294,7 @@ module Initcond
       integer :: jj, test, n, m, l, len_file
       integer, parameter :: BE_resolution = 2000
       logical :: exist !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: f
       real, dimension (BE_resolution) :: lnTT_file, lnrho_r, r_rho
       real :: tmp, var1, var2, var3
       real :: bigr, mass_cloud
@@ -8463,7 +8463,7 @@ module Initcond
 !   generated by an external script.
 !   13-may-13/mvaisala: created
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: f
       logical :: exfile
       integer :: l,m,n, lfile, mfile, nfile, io_status, i
       real :: value
@@ -8505,7 +8505,7 @@ module Initcond
 !   13-may-13/mvaisala: created
 !
       use IO, only: input_snap, input_snap_finalize
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: f
       real, allocatable, dimension (:,:,:,:) :: apot
       logical :: exfile, lbin=.false.
       logical, optional :: lbinary

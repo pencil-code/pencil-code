@@ -1416,7 +1416,7 @@ module Magnetic
       use Slices_methods, only: alloc_slice_buffers
       integer :: l,m,n
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: i, j, nyl, nycap, ierr
       real :: eta_zdep_exponent
       real, dimension(nz) :: Ax_xyaver
@@ -2276,7 +2276,7 @@ module Magnetic
       use General, only: yin2yang_coors, transform_thph_yy
       use File_io, only: read_zaver
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       real, dimension (nz) :: tmp
       real, dimension (nx,3) :: bb
@@ -3856,7 +3856,7 @@ module Magnetic
       use Mpicomm, only: mpiallreduce_sum
       use Poisson
 
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: f
 
       real :: fact
       integer :: l,j,ml,nl
@@ -4107,7 +4107,7 @@ module Magnetic
 !      use General, only: staggered_max_scal
 !      use Density, only: calc_pencils_density
 !
-!      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!      real, contiguous, dimension(:,:,:,:), intent(inout) :: f
 !!
 !      type(pencil_case) :: p
 !      logical, dimension(npencils) :: lpenc_loc=.false.
@@ -4142,7 +4142,7 @@ module Magnetic
 !
 !  Standard version (_std): global variable lpencil contains information about needed pencils.
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout):: f
+      real, contiguous, dimension(:,:,:,:), intent(inout):: f
       type (pencil_case),                 intent(out)  :: p
 !
       call calc_pencils_magnetic_pencpar(f,p,lpencil)
@@ -4155,7 +4155,7 @@ module Magnetic
 !
       use SharedVariables, only: get_shared_variable
 
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous, dimension(:,:,:,:), intent(in) :: f
       type(pencil_case), intent(in) :: p
 
       real, dimension (nx) :: Eabs, Babs
@@ -4277,7 +4277,7 @@ module Magnetic
       use General, only: notanumber
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout):: f
+      real, contiguous, dimension(:,:,:,:), intent(inout):: f
       type (pencil_case),                 intent(out)  :: p
       logical, dimension(:),              intent(in)   :: lpenc_loc
 !
@@ -5146,7 +5146,7 @@ module Magnetic
 !  before_boundary or after_boundary
 !
       real, dimension(nx,3) :: aa_xyaver
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: j
       integer, parameter :: nxy=nxgrid*nygrid
 
@@ -5156,7 +5156,7 @@ module Magnetic
     endsubroutine calc_aaxyaver
 !***********************************************************************
     subroutine calc_eta_total(f,p)
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       type(pencil_case), intent(IN) :: p
       real, dimension(nx)   :: eta_mn
       real, dimension(nx,3) :: geta
@@ -5187,8 +5187,8 @@ module Magnetic
 
       use Sub, only: calc_slope_diff_flux, dot
 
-      real, intent(in), dimension (mx,my,mz,mfarray) :: f
-      real, intent(out), dimension (mx,my,mz,mvar) :: df
+      real, intent(in), contiguous, dimension(:,:,:,:) :: f
+      real, intent(out), contiguous, dimension(:,:,:,:) :: df
       type (pencil_case), intent(in) :: p
 !
       real, dimension (nx,3,3) :: d_sld_flux
@@ -5290,8 +5290,8 @@ module Magnetic
       use Sub
       use General, only: transform_thph_yy, notanumber
 
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 !
       intent(in)   :: p
@@ -7898,7 +7898,7 @@ print*,'AXEL2: should not be here (eta) ... '
 !  21-may-21/alberto: possibility of ltime_integrals_always=F to compute <b(t,x).b(t0,x)> adapted from hydro
 !   2-jul-21/hongzhe: possibility of resetting bbt every dtcor time
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       type (pencil_case) :: p
 !
       intent(inout) :: f
@@ -7974,7 +7974,7 @@ print*,'AXEL2: should not be here (eta) ... '
       use Diagnostics, only: sum_mn_name
       use Sub
 !
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 !
       real, dimension (nx,3) :: uudot,aadot,udotxb,B1_gradu
@@ -8018,7 +8018,7 @@ print*,'AXEL2: should not be here (eta) ... '
       use Diagnostics, only: save_name
       use Sub, only: div, calc_all_diff_fluxes, dot2_mn, vecout_initialize
 !
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: f
 
       real, dimension(nx) :: tmp
       real, save :: phase_beltrami_before=impossible
@@ -8101,9 +8101,9 @@ print*,'AXEL2: should not be here (eta) ... '
 !
       use BorderProfiles, only: border_driving,set_border_initcond
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       type (pencil_case) :: p
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       real, dimension (nx,3) :: f_target
       integer :: j
 !
@@ -8132,7 +8132,7 @@ print*,'AXEL2: should not be here (eta) ... '
 !
 !  16-apr-21/axel: adapted from gravitational_waves_hTXk.f90
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (:) :: spectrum,spectrum_hel
       logical :: lfirstcall
       character(LEN=3) :: kind
@@ -8257,7 +8257,7 @@ print*,'AXEL2: should not be here (eta) ... '
 !
       use Sub, only: update_snaptime, read_snaptime
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       character (len=fnlen) :: file
       logical :: lmagnetic_out
       logical, save :: lfirst_call=.true.
@@ -8296,8 +8296,8 @@ print*,'AXEL2: should not be here (eta) ... '
 !
       use Gravity, only: zgrav
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
       real :: scl
       integer :: j
 !
@@ -8472,7 +8472,7 @@ print*,'AXEL2: should not be here (eta) ... '
       use Mpicomm, only: mpibcast_real
       use Sub
 !
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
 
       real, dimension (nx) :: phi
       real :: fact
@@ -8529,7 +8529,7 @@ print*,'AXEL2: should not be here (eta) ... '
       use General, only: transform_thph_yy_other
       use Slices_methods, only: assign_slices_vec, assign_slices_scal
 
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       type (slice_data) :: slices
 !
 !  Loop over slices
@@ -9295,7 +9295,7 @@ print*,'AXEL2: should not be here (eta) ... '
 !
       use EquationOfState, only: cs20
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: iuu,iaa,ilnrho
       real :: ampl, kx, mu0, ampl0
 
@@ -9362,7 +9362,7 @@ print*,'AXEL2: should not be here (eta) ... '
 !  29-apr-03/axel: added sqrt(rho*mu0)/k factor
 !   7-aug-17/axel: added sqrt(.75) for lrelativistic_eos=T
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: iuu,iaa,ilnrho
       real :: ampl,kx,mu0
 
@@ -9436,7 +9436,7 @@ print*,'AXEL2: should not be here (eta) ... '
 !
 !  06-dec-06/wolf: adapted from alfven_z
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl, amplu, ky, mu0
       integer :: iuu,iaa
 !
@@ -9470,7 +9470,7 @@ print*,'AXEL2: should not be here (eta) ... '
 !
 !  18-aug-02/axel: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl, amplu, kz, mu0
       integer :: iuu,iaa
 !
@@ -9501,7 +9501,7 @@ print*,'AXEL2: should not be here (eta) ... '
 !
 !  16-jun-07/axel: adapted from alfven_y
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl,kx,ky,mu0
       integer :: iuu,iaa
 
@@ -9527,7 +9527,7 @@ print*,'AXEL2: should not be here (eta) ... '
 !
 !  16-jun-07/axel: adapted from alfven_xy
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl,kx,kz,mu0
       integer :: iuu,iaa
 
@@ -9558,7 +9558,7 @@ print*,'AXEL2: should not be here (eta) ... '
 !
 !  18-aug-02/axel: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl,kz,O,fac
       integer :: iuu,iaa
 !
@@ -9583,7 +9583,7 @@ print*,'AXEL2: should not be here (eta) ... '
 !
 !  13-jan-12/axel: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl,kz,B0,J0,lam,oA
       integer :: iuu,iaa
 !
@@ -9615,7 +9615,7 @@ print*,'AXEL2: should not be here (eta) ... '
 !
 !  28-june-04/anders: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl,kz,OO
       complex :: fac
       integer :: iuu,iaa
@@ -9651,7 +9651,7 @@ print*,'AXEL2: should not be here (eta) ... '
 !   05-may-2008/wolf: coded
 !
       real :: ampl,kx_aa,ky_aa
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       real, dimension (nx) :: xxi2,ee
       real, dimension (nx) :: costh,sinth,cosphi,sinphi,ss,rr,aar,aap
@@ -9813,7 +9813,7 @@ print*,'AXEL2: should not be here (eta) ... '
 !
 !  23-jul-05/wolf:coded
 !
-      real, intent(inout), dimension (mx,my,mz,mfarray) :: f
+      real, intent(inout), contiguous, dimension(:,:,:,:) :: f
       real, intent(in) :: ampl,inclaa
       real, dimension (nx) :: r_1_mn,r_2_mn,sigma0,sigma1, r_mn
       real :: fact
@@ -9863,7 +9863,7 @@ print*,'AXEL2: should not be here (eta) ... '
 !
 !  30-june-04/grs: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: f
       real, dimension(nx) :: theta_mn,ar,atheta,aphi,r_mn,phi_mn
       real :: C_int,C_ext,A_int,A_ext
       integer :: j
@@ -10487,7 +10487,7 @@ print*,'AXEL2: should not be here (eta) ... '
 !
       use Sub, only: dot2
 !
-      real, dimension (mx,my,mz,mfarray), intent (in) :: f
+      real, contiguous, dimension(:,:,:,:), intent (in) :: f
       real, dimension (mx,3), intent (out) :: bb_hat
 !
       !Tobi: Not sure about this value
@@ -11607,7 +11607,7 @@ print*,'AXEL2: should not be here (eta) ... '
 !
       use ImplicitDiffusion, only: integrate_diffusion
 !
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: f
 !
 !  Implicitly solve the resistive term.
 !
@@ -11620,8 +11620,8 @@ print*,'AXEL2: should not be here (eta) ... '
       use Mpicomm, only: mpibcast_real
       use Sub, only: vecout_finalize, remove_mean
 !
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
       real :: dtsub
 !
       if (lfargo_advection) then
@@ -11648,7 +11648,7 @@ print*,'AXEL2: should not be here (eta) ... '
 !****************************************************************************
     subroutine magnetic_after_mn(df)
 !
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
 
       call keep_compiler_quiet(df)
 !
@@ -11688,7 +11688,7 @@ print*,'AXEL2: should not be here (eta) ... '
 !  13-sep-07/wlad: adapted from remove_mean_momenta
 !  28-mar-17/MR: reinstated update_ghosts.
 !
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, contiguous, dimension(:,:,:,:), intent (inout) :: f
       real, dimension (mx,mz) :: fsum_tmp,glambda_rz,lambda
       real, dimension (mz) :: glambda_z
       integer :: i,l
@@ -11763,7 +11763,7 @@ print*,'AXEL2: should not be here (eta) ... '
 !!MR: these comments seem not to apply, routine is now obsolete
 !!  13-sep-07/wlad: adapted from remove_mean_momenta
 !!
-!      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+!      real, contiguous, dimension(:,:,:,:), intent (inout) :: f
 !      real :: fsum_tmp,mean_ax
 !      integer :: i
 !!
