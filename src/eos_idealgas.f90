@@ -285,7 +285,7 @@ module EquationOfState
       use SharedVariables, only: get_shared_variable
       use Sub, only: register_report_aux
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 
       call keep_compiler_quiet(f) 
 !
@@ -474,7 +474,7 @@ module EquationOfState
 !
 !   12-aug-03/tony: implemented
 !
-      real, dimension (mx,my,mz,mfarray), optional :: f
+      real, contiguous, dimension(:,:,:,:), optional :: f
       real, optional, intent(out) :: mu_tmp
 !
 !  mu = mu_H * (1 - xHe) + mu_He * xHe
@@ -511,7 +511,7 @@ module EquationOfState
 !
       use Slices_methods, only: assign_slices_scal
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       type (slice_data) :: slices
 !
 !  Loop over slices.
@@ -779,7 +779,7 @@ module EquationOfState
 !
 !  9-oct-15/MR: coded
 !
-      real, dimension (mx,my,mz,mfarray),intent(INOUT):: f
+      real, contiguous, dimension(:,:,:,:),intent(INOUT):: f
       type (pencil_case),                intent(INOUT):: p
 !
       call calc_pencils_eos_pencpar(f,p,lpencil)
@@ -796,7 +796,7 @@ module EquationOfState
 !
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray),intent(INOUT):: f
+      real, contiguous, dimension(:,:,:,:),intent(INOUT):: f
       type (pencil_case),                intent(INOUT):: p
       logical, dimension(:),             intent(IN)   :: lpenc_loc
 !
@@ -1179,7 +1179,7 @@ module EquationOfState
 !   17-nov-03/tobi: adapted from subroutine eoscalc
 !   20-jan-15/MR: changes for use of reference state
 !
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous, dimension(:,:,:,:), intent(in) :: f
       real, dimension(nx), intent(out) :: cs2
       real, dimension(nx), intent(out), optional :: cp1tilde
 !
@@ -1270,7 +1270,7 @@ module EquationOfState
 !
 !   17-nov-03/tobi: adapted from subroutine eoscalc
 !
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous, dimension(:,:,:,:), intent(in) :: f
       real, dimension(nx,3), intent(in) :: glnrho,gss
       real, dimension(nx,3), intent(out) :: glnTT
 !
@@ -1297,7 +1297,7 @@ module EquationOfState
       use Sub, only: dot2
 !
       type (pencil_case) :: p
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous, dimension(:,:,:,:), intent(in) :: f
       real, dimension(nx) :: tmp
 !
 !  pretend_lnTT
@@ -1325,7 +1325,7 @@ module EquationOfState
 !
 !   17-nov-03/tobi: adapted from subroutine eoscalc
 !
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous, dimension(:,:,:,:), intent(in) :: f
       real, dimension(nx,3,3), intent(in) :: hlnrho,hss
       real, dimension(nx,3,3), intent(out) :: hlnTT
 !
@@ -1346,7 +1346,7 @@ module EquationOfState
 !!
 !      use Sub, only: g2ij,grad,dot2
 !!
-!      real, dimension (mx,my,mz,mfarray) :: f
+!      real, contiguous, dimension(:,:,:,:) :: f
 !      real, dimension (nx) :: del2lneth,del2eth,geth2,eth_1
 !      real, dimension (nx,3,3) :: hlneth,heth
 !      real, dimension (nx,3) :: geth
@@ -1382,7 +1382,7 @@ module EquationOfState
 !!
 !!  20-jan-15/MR: changes for use of reference state
 !!
-!      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+!      real, contiguous, dimension(:,:,:,:), intent(inout) :: f
 !      integer, intent(in) :: psize
 !      real, dimension(psize), intent(in), optional :: ee, pp, ss
 !!
@@ -1434,7 +1434,7 @@ module EquationOfState
 !   12-feb-15/MR  : changes for reference state
 !
 !
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous, dimension(:,:,:,:), intent(in) :: f
       integer, intent(in) :: psize
       real, dimension(psize), intent(out), optional :: lnrho
       real, dimension(psize), intent(out), optional :: yH,ee,pp,kapparho
@@ -2493,7 +2493,7 @@ module EquationOfState
       real, pointer :: Fbot, Ftop
 !
       integer, intent(IN) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (my,mz) :: dsdx_yz, TT_yz, rho_yz, dlnrhodx_yz, Kxbot
       integer :: i
       real, pointer :: hcond0_kramers, nkramers
@@ -2612,7 +2612,7 @@ module EquationOfState
       real, pointer :: Fbot, Ftop
 !
       integer, intent(IN) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (my,mz) :: dsdx_yz
       real, dimension (-nghost:nghost) :: lnrmx, lnrmx_tmp
       real :: cs2mx, cs2mx_tmp
@@ -2734,7 +2734,7 @@ module EquationOfState
       logical, pointer :: lheatc_chiconst
 !
       integer, intent(IN) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (mx,my) :: dsdz_xy, TT_xy, rho_xy
       integer :: i
       real, pointer :: hcond0_kramers, nkramers

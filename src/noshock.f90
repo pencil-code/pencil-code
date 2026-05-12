@@ -45,7 +45,7 @@ module Shock
 !***********************************************************************
     subroutine initialize_shock(f)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -82,7 +82,7 @@ module Shock
 !
 !  26-jun-06/tony: dummy
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       type (slice_data) :: slices
 !
       call keep_compiler_quiet(f)
@@ -121,7 +121,7 @@ module Shock
 !  20-11-04/anders: coded
 !  24-jan-05/tony: modified from visc_shock.f90
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       type (pencil_case) :: p
 !
       intent(in) :: f
@@ -150,7 +150,7 @@ module Shock
 !  23-nov-02/tony: coded
 !  24-jan-05/tony: modified from visc_shock.f90
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -163,7 +163,7 @@ module Shock
 !  23-nov-02/tony: coded
 !  24-jan-05/tony: modified from visc_shock.f90
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -171,7 +171,7 @@ module Shock
 !***********************************************************************
     subroutine shock_before_boundary(f)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !     
 !  Shock profile calculation.
 !

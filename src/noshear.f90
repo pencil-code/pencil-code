@@ -82,7 +82,7 @@ module Shear
 !
 !   1-may-08/anders: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -115,7 +115,7 @@ module Shear
 !
 !  01-may-09/wlad: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       type (pencil_case) :: p
 !
       intent(in) :: f,p
@@ -131,7 +131,7 @@ module Shear
 !
 !  2-july-02/nils: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
@@ -155,7 +155,7 @@ module Shear
 !
 !  18-aug-02/axel: incorporated from nompicomm.f90
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real :: dt_shear
 !
@@ -189,7 +189,7 @@ module Shear
 !
 !  01-oct-07/anders: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: ivar1, ivar2
 !
       call keep_compiler_quiet(f)
@@ -205,8 +205,8 @@ module Shear
 !  28-apr-11/wlad: coded
 !  02-aug-11/MR: added optionals jstep,shear1
 !
-      real, dimension(mx,my,mz,mfarray), intent(in)           :: f
-      real, dimension(mx,my,mz,mvar)   , intent(inout)        :: df
+      real, contiguous, dimension(:,:,:,:), intent(in)           :: f
+      real, contiguous, dimension(:,:,:,:)   , intent(inout)     :: df
       integer,                           intent(in)           :: nvars, jstart
       integer,                           intent(in), optional :: jstep
       logical,                           intent(in), optional :: shear1
