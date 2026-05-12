@@ -8,7 +8,8 @@
 /* ------------------------------------------------------------------- */
 void FTNIZE(initialize_gpu_c)(REAL* f, FINT* comm_fint, double* t, int* nt, 
 				FINT* lreads_all_vars_from_device_,
-				FINT* lcpu_timestep_on_gpu_
+				FINT* lcpu_timestep_on_gpu_,
+				FINT* lac_sparse_autotuning_
 				)
 {
 }

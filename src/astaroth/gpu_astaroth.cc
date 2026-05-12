@@ -135,7 +135,6 @@ const bool performance_logs = false;
   #define lsingle_precision_timestep lsingle_precision_timestep__mod__gpu
   #define lperi                  lperi__mod__cdata
   #define lxyz                   lxyz__mod__cdata
-  #define lac_sparse_autotuning  lac_sparse_autotuning__mod__gpu
   #define ldebug ldebug__mod__cdata
   
   #define deltay  deltay__mod__cdata
@@ -357,6 +356,7 @@ int same_path(const char *p1, const char *p2) {
 
     return strcmp(r1, r2) == 0;
 }
+static int lac_sparse_autotuning = 0
 /***********************************************************************************************/
 void setupConfig(AcMeshInfo& config)
 {
@@ -1712,8 +1712,10 @@ extern "C" void testBCs();     // forward declaration
 /***********************************************************************************************/
 extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_,
 				int lread_all_vars_from_device_,
-				int lcpu_timestep_on_gpu_)  // MPI_Fint comm_fint
+				int lcpu_timestep_on_gpu_,
+				int lac_sparse_autotuning_)  // MPI_Fint comm_fint
 {
+  lac_sparse_autotuning = lac_sparse_autotuning_;
   if(lread_all_vars_from_device_) lread_all_vars_from_device = true;
   if(lcpu_timestep_on_gpu_) lcpu_timestep_on_gpu = true;
   //Setup configurations used for initializing and running the GPU code

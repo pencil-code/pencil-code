@@ -167,6 +167,9 @@ contains
       real, dimension(:,:,:,:), intent(IN) :: f
       integer :: lread_all_vars_from_device_int
       integer :: lcpu_timestep_on_gpu_int
+      integer :: lac_sparse_autotuning_int
+
+
 
       character(LEN=512) :: str
 !
@@ -201,8 +204,9 @@ contains
 
       lread_all_vars_from_device_int = merge(1,0,lread_all_vars_from_device)
       lcpu_timestep_on_gpu_int       = merge(1,0,lcpu_timestep_on_gpu)
+      lac_sparse_autotuning_int      = merge(1,0,lac_sparse_autotuning)
       call initialize_gpu_c(f,MPI_COMM_PENCIL,t,nt,lread_all_vars_from_device_int,&
-                            lcpu_timestep_on_gpu_int)
+                            lcpu_timestep_on_gpu_int,lac_sparse_autotuning_int)
 !
 ! Load farray to gpu
 !
@@ -439,7 +443,6 @@ contains
     integer, parameter :: n_pars=50
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
-    call copy_addr(lac_sparse_autotuning,p_par(2)) ! bool
     call copy_addr(lskip_rtime_compilation,p_par(3)) ! bool
     call copy_addr(lcumulative_df_on_gpu,p_par(4)) ! bool
     call copy_addr(lcuda_aware_mpi,p_par(6)) ! bool
