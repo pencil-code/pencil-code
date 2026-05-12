@@ -1268,41 +1268,47 @@ module Io
       lpar_loc = .true.
 !
       offset = get_disp_to_par_real(npar_tot)
-      call MPI_FILE_SET_VIEW(handle, offset + (ixp - 1) * int(npar_tot, KIND=MPI_OFFSET_KIND), &
-                             mpi_precision, mpi_precision, "native", io_info, mpi_err)
-      call check_success("input_part", "set view of", fpath)
-!
-      xp: if (lroot) then
-        call MPI_FILE_READ(handle, rbuf, npar_tot, mpi_precision, status, mpi_err)
-        call check_success_local("input_part", "read xp of")
-      endif xp
+      dsize = int(npar_tot, KIND=MPI_OFFSET_KIND) * size_of_real
+      goxp: if (lroot) then
+        call MPI_FILE_SEEK(handle, offset + int(ixp - 1, KIND=MPI_OFFSET_KIND) * dsize, MPI_SEEK_SET, mpi_err)
+        call check_success_local("input_part", "seek xp")
+      endif goxp
       call fatal_error_local_collect()
 !
       inx: if (lactive_dimension(1)) then
+        xp: if (lroot) then
+          call MPI_FILE_READ(handle, rbuf, npar_tot, mpi_precision, status, mpi_err)
+          call check_success_local("input_part", "read xp of")
+        endif xp
         call MPI_BCAST(rbuf, npar_tot, mpi_precision, root, MPI_COMM_PENCIL, mpi_err)
         if (mpi_err /= MPI_SUCCESS) call fatal_error("input_part", "unable to broadcast xp. ")
         lpar_loc = lpar_loc .and. procx_bounds(ipx) <= rbuf(1:npar_tot) .and. rbuf(1:npar_tot) < procx_bounds(ipx+1)
+      else if (lroot) then inx
+        call MPI_FILE_SEEK(handle, dsize, MPI_SEEK_CUR, mpi_err)
+        call check_success_local("input_part", "skip xp of")
       endif inx
-!
-      yp: if (lroot) then
-        call MPI_FILE_READ(handle, rbuf, npar_tot, mpi_precision, status, mpi_err)
-        call check_success_local("input_part", "read yp of")
-      endif yp
       call fatal_error_local_collect()
 !
       iny: if (lactive_dimension(2)) then
+        yp: if (lroot) then
+          call MPI_FILE_READ(handle, rbuf, npar_tot, mpi_precision, status, mpi_err)
+          call check_success_local("input_part", "read yp of")
+        endif yp
         call MPI_BCAST(rbuf, npar_tot, mpi_precision, root, MPI_COMM_PENCIL, mpi_err)
         if (mpi_err /= MPI_SUCCESS) call fatal_error("input_part", "unable to broadcast yp. ")
         lpar_loc = lpar_loc .and. procy_bounds(ipy) <= rbuf(1:npar_tot) .and. rbuf(1:npar_tot) < procy_bounds(ipy+1)
+      else if (lroot) then iny
+        call MPI_FILE_SEEK(handle, dsize, MPI_SEEK_CUR, mpi_err)
+        call check_success_local("input_part", "skip yp of")
       endif iny
-!
-      zp: if (lroot) then
-        call MPI_FILE_READ(handle, rbuf, npar_tot, mpi_precision, status, mpi_err)
-        call check_success_local("input_part", "read zp of")
-      endif zp
       call fatal_error_local_collect()
 !
       inz: if (lactive_dimension(3)) then
+        zp: if (lroot) then
+          call MPI_FILE_READ(handle, rbuf, npar_tot, mpi_precision, status, mpi_err)
+          call check_success_local("input_part", "read zp of")
+        endif zp
+        call fatal_error_local_collect()
         call MPI_BCAST(rbuf, npar_tot, mpi_precision, root, MPI_COMM_PENCIL, mpi_err)
         if (mpi_err /= MPI_SUCCESS) call fatal_error("input_part", "unable to broadcast zp. ")
         lpar_loc = lpar_loc .and. procz_bounds(ipz) <= rbuf(1:npar_tot) .and. rbuf(1:npar_tot) < procz_bounds(ipz+1)
@@ -1360,7 +1366,6 @@ module Io
       call check_success_local("input_part", "commit MPI data type")
       call fatal_error_local_collect()
 !
-      dsize = int(npar_tot, KIND=MPI_OFFSET_KIND) * size_of_real
       real1: do i = 1, mparray
         call MPI_FILE_SET_VIEW(handle, offset, mpi_precision, ftype, "native", io_info, mpi_err)
         call check_success("input_part", "set view of", fpath)
