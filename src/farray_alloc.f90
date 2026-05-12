@@ -5,8 +5,13 @@
   implicit none
 
   real, dimension(:,:,:,:), allocatable :: df
-  real, dimension(:,:,:,:), pointer :: f
-  real, dimension(:,:,:,:), allocatable, target :: f_arr
+  real, dimension(:,:,:,:), allocatable :: f
+  !TP: Matthias, I put the stuff related to shared mem
+  !    now on comment since it requires the usage of a pointer
+  !    and that causes an extra copy when enterting the timeloop
+  !    which breaks multithreaded diagnostics
+  !real, dimension(:,:,:,:), pointer :: f
+  !real, dimension(:,:,:,:), allocatable, target :: f_arr
 
   public :: f, df
   public :: initialize, finalize
@@ -26,7 +31,7 @@
   integer :: stat
   integer(KIND=int64), parameter  :: mxyz=mx*my*mz
   integer(KIND=int64), parameter  :: nelems=mxyz*mfarray
-  type(C_PTR) :: fp
+  !type(C_PTR) :: fp
 
   interface
     type(C_PTR) function allocate_shm(num,name)
@@ -45,13 +50,14 @@
 
     !mvar=nvar; maux=naux; maux_com=naux_com; mscratch=nscratch; mglobal=nglobal
 
-    if (shared_mem_name/='') then
-      fp = allocate_shm(nelems,shared_mem_name//char(0))
-      call c_f_pointer(fp,f,(/mx,my,mz,mfarray/))
-    else
-      allocate(f_arr(mx,my,mz,mfarray),STAT=stat)
-      f => f_arr
-    endif
+    !if (shared_mem_name/='') then
+    !  fp = allocate_shm(nelems,shared_mem_name//char(0))
+    !  call c_f_pointer(fp,f,(/mx,my,mz,mfarray/))
+    !else
+    !  allocate(f_arr(mx,my,mz,mfarray),STAT=stat)
+    !  f => f_arr
+    !endif
+    allocate(f(mx,my,mz,mfarray),STAT=stat)
 
     if (stat>0) call fatal_error('farray_alloc','Could not allocate f')
     if (nt>0.and..not.lgpu) then
@@ -65,7 +71,7 @@
 !******************************************************************************
   subroutine finalize
 
-    if (allocated(f_arr)) deallocate(f_arr)
+    if (allocated(f)) deallocate(f)
     !if (shared_mem_name=='') deallocate fp   !?
     if (allocated(df)) deallocate(df) 
 
