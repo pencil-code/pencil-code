@@ -106,7 +106,7 @@ void FTNIZE(tf_save_checkpoint_c)(const char* model_name, const char* checkpoint
 /* ---------------------------------------------------------------------- */
 void FTNIZE(initialize_gpu_c)(REAL* f, FINT* comm_fint, double* t, FINT* nt,
 				FINT* lread_all_vars_from_device_,
-				FINT* lcpu_timestep_on_gpu_
+				FINT* lcpu_timestep_on_gpu_,
 				FINT* lac_sparse_autotuning_
 				)
 {

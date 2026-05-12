@@ -356,7 +356,7 @@ int same_path(const char *p1, const char *p2) {
 
     return strcmp(r1, r2) == 0;
 }
-static int lac_sparse_autotuning = 0
+static int lac_sparse_autotuning = 0;
 /***********************************************************************************************/
 void setupConfig(AcMeshInfo& config)
 {
