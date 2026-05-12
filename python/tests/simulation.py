@@ -6,6 +6,7 @@ already used while setting up the other tests.
 
 from test_utils import require_sample, get_rundir
 from pencil.sim import Simulation
+import numpy as np
 
 @require_sample("samples/helical-MHDturb")
 def test_sim_param(datadir_helical_MHDTurb):
@@ -15,3 +16,10 @@ def test_sim_param(datadir_helical_MHDTurb):
     assert sim.param.lmagnetic is True
     assert sim.param['initaa'] == sim.param.initaa
     assert sim.param['magnetic']['initaa'] == sim.param.initaa
+
+@require_sample("samples/helical-MHDturb")
+def test_sim_getTlast(datadir_helical_MHDTurb):
+    simdir = get_rundir("samples/helical-MHDturb")
+    sim = Simulation(path=simdir, hard=True, quiet=True)
+
+    assert np.isclose(sim.get_T_last(), 0.320)
