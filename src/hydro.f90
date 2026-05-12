@@ -1195,7 +1195,7 @@ module Hydro
       use Slices_methods, only: alloc_slice_buffers
       use Yinyang_mpi, only: initialize_zaver_yy
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (mz) :: c, s
       integer :: j,myl,jhless ! currently unused: nycap
       integer :: l,m,n
@@ -1761,7 +1761,7 @@ module Hydro
       use DensityMethods, only: getrho
       use Yinyang_mpi, only: zsum_yy
 !
-      real, dimension (mx,my,mz,mfarray), intent(IN) :: f
+      real, contiguous, dimension(:,:,:,:), intent(IN) :: f
 !
       real, dimension (nx) :: rho,rux,ruy,ruz
       integer, parameter :: nreduce=3
@@ -1951,7 +1951,7 @@ module Hydro
       use Mpicomm, only: lyang
       use SharedVariables, only: get_shared_variable
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (3) :: tmpvec,xhhless
 !
       real, dimension (nx,3) :: tmp_nx3
@@ -3395,7 +3395,7 @@ module Hydro
 !
       use General, only: notanumber
 
-      real, dimension (mx,my,mz,mfarray), intent(INOUT):: f
+      real, contiguous, dimension(:,:,:,:), intent(INOUT):: f
       type (pencil_case),                 intent(INOUT):: p
       logical, dimension(:),              intent(IN)   :: lpenc_loc
 !
@@ -3456,7 +3456,7 @@ module Hydro
 !
 ! 21-sep-13/MR    : coded
 !
-      real, dimension (mx,my,mz,mfarray),intent(INOUT):: f
+      real, contiguous, dimension(:,:,:,:),intent(INOUT):: f
       type (pencil_case),                intent(INOUT):: p
 !
       call calc_pencils_hydro_pencpar(f,p,lpencil)
@@ -3477,7 +3477,7 @@ module Hydro
         invmat_DB, multmv, dot_mn_sv_pencil, gij_v_times_s
       use WENO_transport, only: weno_transp
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       type (pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc
       integer :: iuu
@@ -3713,7 +3713,7 @@ module Hydro
       use WENO_transport, only: weno_transp
       use EquationOfState, only: cs20
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       type (pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc
 !
@@ -3948,7 +3948,7 @@ module Hydro
       use Sub
       use WENO_transport
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       type (pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc
       integer :: iuu
@@ -4097,7 +4097,7 @@ module Hydro
       use Sub, only: curl, remove_mean
       use Mpicomm, only: mpiallreduce_sum
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: f
 !
       real, dimension(nx,3) :: pv
 !
@@ -4194,7 +4194,7 @@ module Hydro
 !
       use General, only: staggered_mean_vec,staggered_max_vec
 
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: f
 !
 !      call staggered_mean_vec(f,iux,iFF_char_c,w_sldchar_hyd)
       call staggered_max_vec(f,iux,iFF_char_c,w_sldchar_hyd)
@@ -4221,8 +4221,8 @@ module Hydro
       use General, only: transform_thph_yy, notanumber
       use Deriv, only: der
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 !
       intent(inout) :: p
@@ -5584,7 +5584,7 @@ module Hydro
 !  11-dec-21/hongzhe: uut and oot are now always in lab frame, but their update time
 !                     is write to file for future shear-frame transformation.
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       type (pencil_case) :: p
 !
       intent(inout) :: f
@@ -5667,7 +5667,7 @@ module Hydro
 !
       use Sub, only:  dot2_mx, dot2
       use EquationOfState, only: cs20
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       intent(inout) :: f
       real :: cs201=1., cs2011
       real, dimension (mx) :: delx
@@ -5869,7 +5869,7 @@ module Hydro
 !
       use Sub, only: finalize_aver, vecout_initialize, dot2_mx, dot2
 
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       intent(inout) :: f
 
       real, dimension (3,3) :: mat_cent1=0.,mat_cent2=0.,mat_cent3=0.
@@ -6101,9 +6101,9 @@ module Hydro
 !
       use BorderProfiles,  only: border_driving,set_border_initcond
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       type (pencil_case) :: p
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       real, dimension (nx,3) :: f_target
       integer :: j
 !
@@ -6168,7 +6168,7 @@ module Hydro
 !
 !  19-jan-07/axel: added terms derived by Gailitis
 !
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 !
       integer :: j
@@ -6194,7 +6194,7 @@ module Hydro
 !  30-oct-09/MR: outsourced, parameter velind added
 !  15-feb-15/MR: calculation of Coriolis force of shear flow added
 !
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: df
       real, dimension (nx,3),          intent(in)  :: uu
       integer,                         intent(in)  :: velind
 !
@@ -6275,7 +6275,7 @@ module Hydro
 !
 !  09-aug-10/GG:
 !
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: df
       real, dimension (nx,3),          intent(in)  :: uu
       integer,                         intent(in)  :: velind
 !
@@ -6303,7 +6303,7 @@ module Hydro
 !  21-feb-07/axel+dhruba: coded
 !  22-dec-15/MR: extended for situation with Omega along y axis (relevant for Yin-Yang grid).
 !
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type (pencil_case) :: p
       real :: c2,s2,Om2,cp2,cs2,ss2
 !
@@ -6397,7 +6397,7 @@ module Hydro
 !!
 !!  21-feb-07/axel+dhruba: coded
 !!
-!      real, dimension (mx,my,mz,mfarray) :: f
+!      real, contiguous, dimension(:,:,:,:) :: f
 !      type (pencil_case) :: p
 !!
 !!  info about coriolis_spherical term
@@ -6443,7 +6443,7 @@ module Hydro
 !
 !  19-sep-07/steveb: coded
 !
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type (pencil_case) :: p
       real :: c2, s2
 !
@@ -6492,7 +6492,7 @@ module Hydro
 !!
 !!  19-sep-07/steveb: coded
 !!
-!      real, dimension (mx,my,mz,mfarray) :: f
+!      real, contiguous, dimension(:,:,:,:) :: f
 !      type (pencil_case) :: p
 !!
 !!  info about coriolis_cylindrical term
@@ -6518,7 +6518,7 @@ module Hydro
 !
 !  28-may-09/PJK: coded
 !
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type (pencil_case) :: p
       real, dimension (nx) :: c1, c2
 !
@@ -6633,8 +6633,8 @@ module Hydro
       use Diagnostics, only: sum_mn_name
       use Sub, only: step
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 !
       real, dimension (nx) :: pdamp
@@ -7916,7 +7916,7 @@ module Hydro
       use General, only: transform_thph_yy_other
       use Slices_methods, only: assign_slices_scal, assign_slices_vec
 
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       type (slice_data) :: slices
 !
 !  Loop over slices
@@ -8004,8 +8004,8 @@ module Hydro
       use Sub, only: div, vecout_finalize
       use Poisson, only: inverse_laplacian, inverse_laplacian_fft_z    !, inverse_laplacian_z_2nd_neumann
 !
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
       real :: dt_sub
 !
       logical :: lwrite_debug=.false.
@@ -8083,8 +8083,8 @@ module Hydro
       use Cdata
       use Mpicomm
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
       real, dimension (nx,ny) :: acyl_re,acyl_im
       real, dimension (nz) :: asph_re,asph_im
       real, dimension (nx) :: phidot
@@ -8427,7 +8427,7 @@ module Hydro
       use Mpicomm, only: mpiallreduce_sum
       use Sub, only: remove_mean
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout)        :: f
+      real, contiguous, dimension(:,:,:,:), intent(inout)        :: f
       integer,                            intent(in)           :: indux
       integer,                            intent(in), optional :: indrho
 !
@@ -8545,7 +8545,7 @@ module Hydro
       use Mpicomm, only: mpiallreduce_sum
       use DensityMethods, only: getrho
 !
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, contiguous, dimension(:,:,:,:), intent (inout) :: f
       integer,                            intent (in)    :: induz
 !
       real, dimension (nx) :: tmp, rho, wx
@@ -8600,7 +8600,7 @@ module Hydro
 !
 !  11-jun-08/axel: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, contiguous, dimension(:,:,:,:), intent (inout) :: f
       integer :: l1bc,l2bc
 !
       select case (interior_bc_hydro_profile)
@@ -8638,8 +8638,8 @@ module Hydro
 !
       use Sub, only: step
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
       character (len=labellen) :: prof_diffrot
       logical :: ldiffrot_test
 !
@@ -9006,7 +9006,7 @@ module Hydro
 !
 !  13-aug-2007/anders: implemented.
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: f
 !
       if (velocity_ceiling>0.0) then
         where (f(l1:l2,m,n,iux)> velocity_ceiling) f(l1:l2,m,n,iux)= velocity_ceiling
@@ -9026,7 +9026,7 @@ module Hydro
 !
 !  26-apr-2010/dhruba: coded.
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: f
       integer :: m,n
       real :: rone,theta,theta1
 !
@@ -9056,7 +9056,7 @@ module Hydro
       use EquationOfState, only: cs20,get_gamma_etc
       use Deriv, only: der
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: f
       real, dimension (mx) :: tmp
       real :: gamma
       integer :: m,n
@@ -9137,7 +9137,7 @@ module Hydro
     subroutine calc_gradu(f)
 !
     use Sub, only : gij
-    real, dimension (mx,my,mz,mfarray) :: f
+    real, contiguous, dimension(:,:,:,:) :: f
     integer :: imn,jk,jj,kk
     real, dimension(nx,3,3) :: gradu
 !

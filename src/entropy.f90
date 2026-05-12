@@ -705,7 +705,7 @@ module Energy
       use Sub, only: blob, write_zprof, step, cubic_step
       use File_io, only: file_exists
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       real, dimension (nzgrid) :: tmpz
       real, dimension (nx) :: tmpz_penc
@@ -1645,7 +1645,7 @@ module Energy
 !
       use EquationOfState, only: get_gamma_etc
 !
-      real, dimension(mx,my,mz,mfarray), intent(INOUT) :: f
+      real, contiguous, dimension(:,:,:,:), intent(INOUT) :: f
 !
       real, dimension(mx,my) :: ssmxy
       integer :: n
@@ -1721,7 +1721,7 @@ module Energy
       use InitialCondition, only: initial_condition_ss
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       intent(inout) :: f
 !
       real, dimension (nx) :: tmp,pot
@@ -2116,7 +2116,7 @@ module Energy
 !
 !   6-may-07/axel: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, optional :: xblob,yblob,zblob
       real :: ampl,radius,x01,y01,z01
       integer :: i
@@ -2173,7 +2173,7 @@ module Energy
       use Gravity, only: gravz
       use Sub, only: step
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (mz) :: stp
       real :: tmp,mpoly,zint,zbot,zblend,beta1,cs2int,ssint
       integer :: isoth
@@ -2251,7 +2251,7 @@ module Energy
       use Gravity, only: gravz, nu_epicycle
       use Sub, only: step
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (mz) :: stp
       real :: tmp,mpoly,zint,zbot,zblend,beta1,cs2int,ssint, nu_epicycle2
       integer :: isoth
@@ -2314,7 +2314,7 @@ module Energy
       use EquationOfState, only: eoscalc
       use Gravity, only: gravz
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: f
       real, intent(in) :: lnrho_bot,ss_const
       real :: cs2_,lnrho,lnrho_m
 !
@@ -2363,7 +2363,7 @@ module Energy
       use EquationOfState, only: get_gamma_etc
       use Gravity, only: gravz
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: f
       real :: zz,lnrho,ss,rho,cs2,dlnrho,dss
       integer :: iz
       real :: gamma,gamma_m1
@@ -2430,7 +2430,7 @@ module Energy
       use General, only: safe_character_assign
       use Gravity, only: z1
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: f
       real, dimension (nzgrid) :: tempm,lnrhom
       real :: zm,ztop,mixinglength_flux,lnrho,ss,lnTT
       real :: zbot,rbot,rt_old,rt_new,rb_old,rb_new,crit,rhotop,rhobot
@@ -2532,7 +2532,7 @@ module Energy
       use EquationOfState, only: eoscalc, get_gamma_etc
       use Gravity, only: g0
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: f
       real, dimension (nx) :: lnrho,lnTT,TT,pert_TT,r_mn
       real :: beta1
       real :: gamma,gamma_m1,cp,cp1
@@ -2629,7 +2629,7 @@ module Energy
       use EquationOfState, only: eoscalc, get_gamma_etc
       use Gravity, only: gravz, zinfty
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: f
 !
       real, dimension (nx) :: lnrho,TT
       real :: beta1
@@ -2674,7 +2674,7 @@ module Energy
       use EquationOfState, only: eoscalc
       use Mpicomm, only: mpibcast_real, MPI_COMM_PENCIL
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension(nx) :: absz
       real(KIND=rkind8), dimension(nx) :: n_c,n_w,n_i,n_h
 !  T in K, k_B s.t. pp is in code units ( = 9.59e-15 erg/cm/s^2)
@@ -2767,7 +2767,7 @@ module Energy
       use EquationOfState , only: eoscalc, getmu, get_gamma_etc
       use Mpicomm, only: mpibcast_real, MPI_COMM_PENCIL
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension(nx) :: rho,pp
       real :: rho0hs,muhs,fmpi1
       real :: g_A, g_C
@@ -2839,7 +2839,7 @@ module Energy
       use EquationOfState, only: eoscalc
       use Mpicomm, only: mpibcast_real, MPI_COMM_PENCIL
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 
       real, dimension(nx) :: rho,pp,ss
       real :: rho0hs,cs0hs,H0hs,fmpi1
@@ -2907,7 +2907,7 @@ module Energy
 !
       use EquationOfState, only: get_gamma_etc
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       real, dimension (4) :: rpp,rpr,rpu,rpv
       integer :: l,ind,n,m
@@ -3530,7 +3530,7 @@ module Energy
       use Sub, only: u_dot_grad, grad, multmv, h_dot_grad
       use WENO_transport, only: weno_transp
 !
-      real, dimension(mx,my,mz,mfarray), intent(IN)   :: f
+      real, contiguous, dimension(:,:,:,:), intent(IN)   :: f
       type(pencil_case),                 intent(INOUT):: p
 !
       integer :: j
@@ -3625,7 +3625,7 @@ module Energy
 !
       use Sub, only: calc_slope_diff_flux
 
-      real, intent(in),  dimension(mx,my,mz,mfarray) :: f
+      real, intent(in),  contiguous, dimension(:,:,:,:) :: f
       real, intent(out), dimension(mx,my,mz,mvar) :: df
 
       real, dimension(nx) :: tmp
@@ -3652,8 +3652,8 @@ module Energy
       use Viscosity, only: calc_viscous_heat
       use General, only: notanumber
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 !
       intent(inout)  :: f,p
@@ -3852,7 +3852,7 @@ module Energy
 
       type(pencil_case) :: p
 
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension(nx) :: ufpres, glnTT2, Ktmp
       real, dimension(nx) :: gT2,gs2,gTxgso,gTxgs2,chix
       real, dimension(nx,3) :: gTxgs
@@ -4014,7 +4014,7 @@ module Energy
       use Diagnostics
       use Sub, only: cross, dot2
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
 !
       real, dimension (nx,3) :: gTxgs
@@ -4295,7 +4295,7 @@ module Energy
 !***********************************************************************
     subroutine calc_diagnostics_energy(f,p)
 
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
 
       real, dimension(nx) :: thdiff
@@ -4335,7 +4335,7 @@ module Energy
 !
       use Sub, only: finalize_aver
 !
-      real, dimension (mx,my,mz,mfarray), intent(IN) :: f
+      real, contiguous, dimension(:,:,:,:), intent(IN) :: f
       real, dimension (mx,my),            intent(OUT):: ssmxy
 !
       integer :: l,m
@@ -4361,7 +4361,7 @@ module Energy
       use EquationOfState, only: get_gamma_etc
       use Sub, only : step
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: f
       real, dimension (mx) :: cs2, prof_cs, fact_rho, fact_wsld
       real :: rhotop, lnrhotop, w_sldrat2=1.0
       real :: gamma,gamma_m1,cv,cv1
@@ -4444,7 +4444,7 @@ module Energy
       use Sub, only: finalize_aver,calc_all_diff_fluxes,div,smooth,global_mean
       Use General, only: random_number_wrapper
 !
-      real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
+      real, contiguous, dimension(:,:,:,:),intent(INOUT) :: f
 !
       real, dimension (mx,my) :: cs2p, ruzp
       real, dimension (mz) :: ruzmz
@@ -4698,7 +4698,7 @@ module Energy
 !      use General, only: staggered_mean_scal
       use General, only: staggered_max_scal
 !
-      real, dimension(mx,my,mz,mfarray), intent(INOUT) :: f
+      real, contiguous, dimension(:,:,:,:), intent(INOUT) :: f
 !
       real, dimension(mx) :: cs2
 !
@@ -4729,7 +4729,7 @@ module Energy
       use EquationOfState, only: get_gamma_etc
       use BorderProfiles, only: border_driving, set_border_initcond
 !
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       type (pencil_case) :: p
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(nx) :: f_target
@@ -4790,7 +4790,7 @@ module Energy
       use Sub, only: dot, multmv_transp, multsv_mn
 
       real, dimension (nx), intent(out) :: thdiff
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       type (pencil_case) :: p
 !
       real, dimension(nx) :: g2
@@ -4862,8 +4862,8 @@ module Energy
       use EquationOfState, only: get_gamma_etc
       use Sub, only: dot, multmv_transp, multsv_mn
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 !
       intent(inout) :: df
@@ -4898,7 +4898,7 @@ module Energy
       use EquationOfState, only: get_gamma_etc
       use Sub, only: dot
 !
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type (pencil_case) :: p
       real, dimension (nx) :: thdiff,g2,thchi
       real :: gamma
@@ -4991,7 +4991,7 @@ module Energy
       use EquationOfState, only: get_gamma_etc
       use Sub, only: dot
 !
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type (pencil_case) :: p
       real, dimension (nx) :: thdiff,g2,rhochi
       real :: gamma
@@ -5070,7 +5070,7 @@ module Energy
 !
 !  17-jun-05/anders: coded
 !
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 !
       real, dimension (nx) :: thdiff
@@ -5104,8 +5104,8 @@ module Energy
 !
       use Sub, only: del6fj
 !
-      real, dimension (mx,my,mz,mfarray),intent(in) :: f
-      real, dimension (mx,my,mz,mvar),intent(inout) :: df
+      real, contiguous, dimension(:,:,:,:),intent(in) :: f
+      real, contiguous, dimension(:,:,:,:),intent(inout) :: df
 !
       real, dimension (nx) :: thdiff
 !
@@ -5133,8 +5133,8 @@ module Energy
 !
       use Deriv, only: der6
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
 !
       intent(in)  :: f
       intent(inout) :: df
@@ -5166,8 +5166,8 @@ module Energy
 !
       use Deriv, only: der6
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
 !
       intent(in)  :: f
       intent(inout) :: df
@@ -5220,7 +5220,7 @@ module Energy
       use EquationOfState, only: get_gamma_etc
       use Sub, only: dot
 !
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type (pencil_case) :: p
       real, dimension (nx) :: thdiff,g2,gshockglnTT,gshockgss
       real :: gamma
@@ -5312,7 +5312,7 @@ module Energy
       use EquationOfState, only: get_gamma_etc
       use Sub, only: dot, step, der_step
 !
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type (pencil_case) :: p
       real, dimension (nx) :: thdiff,g2,gshockglnTT,gchiglnTT,pchi_shock
       real, dimension (nx,3) :: gradchi_shock
@@ -5444,7 +5444,7 @@ module Energy
 !
 !
       type (pencil_case) :: p
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
 !
       intent(in) :: p
       intent(inout) :: df
@@ -5473,7 +5473,7 @@ module Energy
       use EquationOfState, only: get_gamma_etc
       use Sub, only: dot2_mn, multsv_mn, tensor_diffusion_coef
 !
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       real, dimension (nx,3) :: gvKpara,gvKperp,tmpv,tmpv2
       real, dimension (nx) :: bb2,thdiff,b1
       real, dimension (nx) :: tmps,vKpara,vKperp
@@ -5540,7 +5540,7 @@ module Energy
       use Diagnostics, only: max_mn_name
       use Sub, only: tensor_diffusion_coef, dot, dot2
 !
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       real, dimension (nx) :: cosbgT,gT2,b2,rhs
       real, dimension (nx) :: vKpara,vKperp
 !
@@ -5578,7 +5578,7 @@ module Energy
 !
 !  07-feb-07/wlad+heidar : coded
 !
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       real, dimension (nx) :: tau,cooling,kappa,a1,a3
       real :: a2,kappa0,kappa0_cgs
 !
@@ -5661,8 +5661,8 @@ module Energy
       use Sub, only: dot
       use General, only: notanumber
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 !
       intent(in) :: p
@@ -5757,8 +5757,8 @@ module Energy
       use Sub, only: dot, grad
       use General, only: notanumber
 !
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
       type (pencil_case) :: p
       real, dimension (nx) :: thdiff, chix, g2
 !
@@ -5856,7 +5856,7 @@ module Energy
       use General, only: notanumber
 
       type (pencil_case), intent(IN) :: p
-      real, dimension (mx,my,mz,mfarray), intent(IN) :: f
+      real, contiguous, dimension(:,:,:,:), intent(IN) :: f
       real, dimension (nx), intent(OUT) :: thdiff
       real, dimension (nx,3) :: glnThcond,glhc
       real, dimension (nx) :: g2,del2ss1,chix
@@ -6061,8 +6061,8 @@ module Energy
 !  30-mar-06/ngrs: simplified calculations using p%glnTT and p%del2lnTT
 !  14-sep-25/TP:   separated calculation of thdiff and diffus_chi from update of df
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 !
       intent(in) :: f,p
@@ -6091,7 +6091,7 @@ module Energy
 !
       use Sub, only: dot
 !
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type (pencil_case) :: p
       real, dimension (nx) :: thdiff,g2,del2ss1
       integer :: j
@@ -6169,8 +6169,8 @@ module Energy
       use Deriv, only: der6
       use Diagnostics
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
       type (pencil_case) :: p
       real, dimension (nx) :: thdiff, thdiff1, g2, del2ss0, del2ss1
       real, dimension (nx,3) :: gradchit_prof, gradchit_prof_fluct
@@ -6326,7 +6326,7 @@ module Energy
       use Diagnostics, only: sum_mn_name, xysum_mn_name_z
       use EquationOfState, only: get_gamma_etc
 !
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type (pencil_case) :: p
       real, dimension (nx) :: Hmax, tmp
 !
@@ -7057,7 +7057,7 @@ module Energy
       use Debug_IO, only: output_pencil
       use EquationOfState, only: get_gamma_etc
 !
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 !
       real, dimension (nx) :: lnQ,rtv_cool,lnTT_SI,lnneni,delta_lnTT,tmp
@@ -7174,7 +7174,7 @@ module Energy
 !
       use Gravity, only: zgrav
 !
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type (pencil_case) :: p
       real :: scl
 !
@@ -7199,8 +7199,8 @@ module Energy
 !
       use EquationOfState, only: eoscalc
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 !
       intent(in) :: p
@@ -7528,7 +7528,7 @@ module Energy
       use EquationOfState, only: eoscalc
       use Slices_methods, only: assign_slices_scal, addto_slices, process_slices, exp2d
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       type (slice_data) :: slices
 !
       character(LEN=labellen) :: sname
@@ -7833,7 +7833,7 @@ module Energy
       real, optional,        intent(in ) :: amp,amp1,amp2,pos1,pos2
       logical, optional,     intent(in ) :: llog
       type(pencil_case),                 optional, intent(in) :: p
-      real, dimension(mx,my,mz,mfarray), optional, intent(in) :: f
+      real, contiguous, dimension(:,:,:,:), optional, intent(in) :: f
       real, dimension(:),                optional, intent(in) :: stored_prof, stored_dprof
 !
       real, dimension(nx) :: r_mn, r_mn1
@@ -7994,7 +7994,7 @@ module Energy
       use Debug_IO, only: output_pencil
       use EquationOfState, only: get_gamma_etc
 !
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       real, dimension (nx) :: newton
       real :: lnTTor
       integer :: i
@@ -8232,7 +8232,7 @@ module Energy
       use EquationOfState, only: eoscalc, get_gamma_etc
       use Gravity, only: g0
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: f
       real, dimension (nx) :: TT,r_mn
       real :: beta0,beta1,TT_bcz
       real :: lnrho_int,lnrho_ext,lnrho_bcz
@@ -8307,7 +8307,7 @@ module Energy
       use EquationOfState, only: eoscalc, get_gamma_etc
       use SharedVariables, only: get_shared_variable
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: f
       real, dimension (nx) :: lnrho, TT
       real :: beta0, beta1, TT_bcz, TT_ext, TT_int
       real :: lnrho_bcz
@@ -8365,7 +8365,7 @@ module Energy
       use Gravity, only: gravz
       use SharedVariables, only: get_shared_variable
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: f
       real, dimension (nx) :: lnrho, TT
       real :: beta, zbot, ztop, TT0
       real, pointer :: gravx
@@ -8489,7 +8489,7 @@ module Energy
 !
       use EquationOfState, only: eoscalc
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       if (lfpres_from_pressure) then
         do n=1,mz; do m=1,my
@@ -8506,7 +8506,7 @@ module Energy
 !
 !  07-aug-11/ccyang: coded
 !
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       if (.not.lreference_state .and. entropy_floor /= impossible) &
         where(f(:,:,:,iss) < entropy_floor) f(:,:,:,iss) = entropy_floor

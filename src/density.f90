@@ -470,7 +470,7 @@ module Density
       use InitialCondition, only: initial_condition_all
       use Mpicomm, only: mpiallreduce_sum
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: tmp
       real, dimension (nzgrid) :: tmpz
       real, dimension (nghost) :: dummy
@@ -1129,7 +1129,7 @@ module Density
       use InitialCondition, only: initial_condition_lnrho
       use SharedVariables, only: get_shared_variable
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx) :: pot, prof, tmp
       real, dimension (ninit) :: lnrho_left,lnrho_right
       real :: lnrhoint,cs2int,pot0
@@ -1914,7 +1914,7 @@ module Density
 !    
       use Sub, only: finalize_aver
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       intent(inout) :: f
 !
       real :: fact
@@ -1981,7 +1981,7 @@ module Density
 !
       use Sub, only: finalize_aver
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       intent(inout) :: f
 !
       real :: fact,cur_mass
@@ -2041,7 +2041,7 @@ module Density
 !
       use General, only: staggered_mean_scal
 !
-      real, dimension(mx,my,mz,mfarray), intent(INOUT) :: f
+      real, contiguous, dimension(:,:,:,:), intent(INOUT) :: f
 !
       real, parameter :: weight=.0
 !
@@ -2069,7 +2069,7 @@ module Density
       use Sub, only: step
       use Gravity, only: gravz
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (mz) :: stp
       real :: tmp,mpoly,zint,zbot,zblend,beta1,cs2int,lnrhoint
       integer :: isoth
@@ -2139,7 +2139,7 @@ module Density
       use Sub, only: step
       use Gravity, only: gravz, nu_epicycle
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (mz) :: stp
       real :: tmp,mpoly,zint,zbot,zblend,beta1,cs2int,lnrhoint,nu_epicycle2
       integer :: isoth
@@ -2191,7 +2191,7 @@ module Density
       use EquationOfState, only: get_gamma_etc
       use Gravity, only: g0,potential
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: f
       real, dimension (nx) :: pot, r_mn
       real :: beta1,lnrho_int,lnrho_ext,pot_int,pot_ext
       real :: gamma, gamma_m1
@@ -2255,7 +2255,7 @@ module Density
       use EquationOfState, only: get_gamma_etc
       use Sub, only: grad
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx) :: lnrho,cs2
       real, dimension (nx,3) :: glnrho
       real, dimension (nx,3) :: gg_mn
@@ -2480,7 +2480,7 @@ module Density
 !
 !  19-11-04/anders: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       type (pencil_case) :: p
       logical, dimension(:), intent(IN) :: lpenc_loc
       intent(in) :: f
@@ -2524,7 +2524,7 @@ module Density
 !
 ! 21-sep-13/MR    : coded
 !
-      real, dimension (mx,my,mz,mfarray),intent(IN)   :: f
+      real, contiguous, dimension(:,:,:,:),intent(IN)   :: f
       type (pencil_case),                intent(INOUT):: p
 !
       call calc_pencils_density_pnc(f,p,lpencil)
@@ -2539,7 +2539,7 @@ module Density
 !!
 !! 21-sep-13/MR    : coded
 !!
-!      real, dimension (mx,my,mz,mfarray),intent(IN)   :: f
+!      real, contiguous, dimension(:,:,:,:),intent(IN)   :: f
 !      type (pencil_case),                intent(INOUT):: p
 !!
 !      call calc_pencils_linear_density_pnc(f,p,lpencil)
@@ -2561,7 +2561,7 @@ module Density
       use Sub, only: div,grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij,dot_mn,h_dot_grad, &
                      del6_strict,calc_del6_for_upwind
 
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       type (pencil_case) :: p
       logical, dimension(:), intent(IN) :: lpenc_loc
       intent(in) :: f
@@ -2676,7 +2676,7 @@ module Density
       use General, only: notanumber
       use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,del6_strict,multmv,g2ij,dot_mn,h_dot_grad
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       type (pencil_case) :: p
       logical, dimension(:) :: lpenc_loc
 !
@@ -2755,7 +2755,7 @@ module Density
 !
       !use Sub, only: div, grad, dot_mn, finalize_aver
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: f
 !
       if (lSchur_3D3D1D) then
 !
@@ -2805,7 +2805,7 @@ module Density
 !
       use Sub, only: calc_slope_diff_flux
       
-      real, intent(in), dimension(mx,my,mz,mfarray) :: f
+      real, intent(in), contiguous, dimension(:,:,:,:) :: f
       type(pencil_case), intent(in) :: p
       real, intent(inout),  dimension(nx) :: fdiff
 
@@ -2840,8 +2840,8 @@ module Density
       use EquationOfState, only: get_gamma_etc
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 !
       intent(in)  :: p
@@ -3250,7 +3250,7 @@ module Density
 !***********************************************************************
     subroutine calc_diagnostics_density(f,p)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
 !
       call calc_2d_diagnostics_density(p)
@@ -3285,7 +3285,7 @@ module Density
 !
       use Diagnostics
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
 !
       real, dimension (nx) :: uzmask
@@ -3351,7 +3351,7 @@ module Density
       use Sub,only: dot2
       use General
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
 !
       real, dimension(nx), parameter :: unitpencil=1.
@@ -3417,7 +3417,7 @@ module Density
 !***********************************************************************
     subroutine split_update_density(f)
 !
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous, dimension(:,:,:,:), intent(in) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -3432,8 +3432,8 @@ module Density
 !
       use BorderProfiles, only: border_driving,set_border_initcond
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
       real, dimension (nx) :: f_target
       type (pencil_case)  :: p
 !
@@ -3487,7 +3487,7 @@ module Density
       use EquationOfState, only: get_gamma_etc
       use Gravity
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       real, dimension (nx) :: pot,tmp
       real :: gamma, gamma_m1, cp, cp1
@@ -3545,7 +3545,7 @@ module Density
       use EquationOfState, only: get_gamma_etc
       use Gravity
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       real, dimension (nx) :: pot,tmp
       real :: pot1,tmp1
@@ -3616,7 +3616,7 @@ module Density
       use EquationOfState, only: get_gamma_etc
       use Gravity, only: gravz_profile,gravz,zinfty,zref,zgrav,potential,nu_epicycle
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx) :: pot,dlncs2,r_mn
       real :: ztop,zbot,zref2,pot_ext,lnrho_ref,ptop,pbot
       real :: gamma, gamma_m1
@@ -3738,8 +3738,8 @@ module Density
       use General, only: random_number_wrapper
       use Sub, only: step
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 !
       real, dimension (2) :: fran
@@ -3813,7 +3813,7 @@ module Density
 !  10-feb-15/MR: adaptations for reference state
 !  17-may-23/hongzhe: implemented non-uniform density floor (for lnrho only)
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: f
 !
       real :: density_floor_local
       integer :: i, j, k
@@ -4065,7 +4065,7 @@ module Density
       use EquationOfState, only: get_gamma_etc
       use Gravity, only: potential,lnumerical_equilibrium
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx) :: pot
       real :: pot0
       real, dimension (nx) :: r_mn
@@ -4110,7 +4110,7 @@ module Density
 !
       use EquationOfState, only: eoscalc,ilnrho_TT, get_gamma_etc
 
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: haut
       real, dimension (nx) :: TT
       real :: gamma, gamma_m1
@@ -4143,7 +4143,7 @@ module Density
 !
       use Slices_methods
 
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       type (slice_data) :: slices
       character(LEN=labellen) :: name
 !
@@ -4181,7 +4181,7 @@ module Density
 !***********************************************************************
     subroutine get_slices_pressure(f,slices)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       type (slice_data) :: slices
 !
       call keep_compiler_quiet(f)
@@ -4193,7 +4193,7 @@ module Density
 !
 !  10-dec-09/piyali: added to pass initial average density
 !
-    real, dimension (mx,my,mz,mfarray):: f
+    real, contiguous, dimension(:,:,:,:):: f
     real:: init_average_density
 !
       call keep_compiler_quiet(f)
@@ -4207,8 +4207,8 @@ module Density
 !
       use Sub, only: finalize_aver
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
       real, dimension (1) :: mass_per_proc
 !
       if (lSchur_3D3D1D) then
@@ -4253,7 +4253,7 @@ module Density
 !  23-mar-2012/dintrans: coded
 !  dummy routine for the Boussinesq approximation
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -4335,7 +4335,7 @@ module Density
 !
       real :: mean_density
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       intent(in) :: f
 !
       integer :: n,m
@@ -4383,7 +4383,7 @@ module Density
 !
 !  3-mar-2017/MR: implemented.
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: f
 !
 !  Impose the density ceiling
 !
@@ -4400,7 +4400,7 @@ module Density
 !***********************************************************************s
     subroutine write_z_stratification(f)
 
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous, dimension(:,:,:,:), intent(in) :: f
 !
       if (lwrite_stratification) then
         open(19,file=trim(directory_dist)//'/stratification.dat')

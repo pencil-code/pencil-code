@@ -1324,7 +1324,7 @@ module Viscosity
 !   16-apr-26/TP: carved from calc_pencils_viscosity
 !
       use Sub, only: calc_slope_diff_flux
-      real, intent(in), dimension(mx,my,mz,mfarray) :: f
+      real, intent(in), contiguous, dimension(:,:,:,:) :: f
       type(pencil_case), intent(inout) :: p
 
       real, dimension (nx,3) :: tmp
@@ -1408,7 +1408,7 @@ module Viscosity
       use Diagnostics, only: max_mn_name, sum_mn_name
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       type (pencil_case) :: p
       intent(inout) :: f,p
 !
@@ -2454,7 +2454,7 @@ module Viscosity
       use DensityMethods, only: getrho
       use Boundcond, only: update_ghosts
 
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx,3,3) :: uij,Sij
       real, dimension (nx) :: divu
 
@@ -2697,7 +2697,7 @@ module Viscosity
 !
       use Sub, only: cubic_step
 !
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type (pencil_case) :: p
       real, dimension (nx),intent(inout) :: Hmax
 !
@@ -2746,7 +2746,7 @@ module Viscosity
 !
       use Diagnostics, only: max_mn_name
 !
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 !
       intent (in) :: p
@@ -2987,7 +2987,7 @@ module Viscosity
       use Sub, only: get_radial_distance
       use Gravity, only: acceleration
 !
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 !
       real, dimension (nx) :: diss,rr_sph,rr_cyl,g_r,OO2
@@ -3080,7 +3080,7 @@ module Viscosity
 !
       use ImplicitDiffusion, only: integrate_diffusion
 !
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: f
 !
       if (limplicit_viscosity) call integrate_diffusion(get_viscosity_implicit, f, iux, iuz)
 !
