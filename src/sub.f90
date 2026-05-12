@@ -419,7 +419,7 @@ module Sub
 !
       use General, only: loptest
 
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: iif
       real, dimension(nx) :: mean
       logical, optional :: lexp
@@ -452,7 +452,7 @@ module Sub
 !
       use General, only: loptest
 
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: iif1,iif2
       real, dimension(nx,iif2-iif1+1) :: mean
       logical, optional :: lexp
@@ -1507,7 +1507,7 @@ module Sub
       use Deriv, only: der,der2,der3,der4,der5,der6
       use General, only: loptest
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx,3,3) :: g
       real, dimension (nx) :: tmp
       integer :: i,j,k,k1,nder
@@ -1545,7 +1545,7 @@ module Sub
 !
 !  28-aug-26/TP: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: k_v,k_s
       real, dimension (nx,3,3) :: g,vij
       real, dimension (nx,3) :: v,grads
@@ -1577,7 +1577,7 @@ module Sub
 !
       use Deriv, only: der
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx,3,3,3) :: gijl
       real, dimension (nx,3,3,3) :: tmpg
       real, dimension (nx) :: tmp
@@ -1611,7 +1611,7 @@ module Sub
 !
       use Deriv, only: der
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx,3) :: g
       integer :: k
 !
@@ -1655,7 +1655,7 @@ module Sub
 !
       use Deriv, only: der5
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx,3) :: g
       real, dimension (nx) :: tmp
       integer :: k
@@ -1689,7 +1689,7 @@ module Sub
       use Deriv, only: der
       use General, only: loptest
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: k
       real, dimension (nx) :: g
       logical, optional :: ldiff_fluxes
@@ -1756,7 +1756,7 @@ module Sub
       !Assumes the tensor is symmetric and that indices are in the following increasing order:
       !itensor=xx,yy,zz,xy,xz,yz
 
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous, dimension(:,:,:,:), intent(in) :: f
       real, dimension(nx,3), intent(out) :: divergence
       integer, intent(in) :: itensor
       integer :: itensor_xx,itensor_yy,itensor_zz
@@ -1778,7 +1778,7 @@ module Sub
 !    on comment since not used (to suppress compiler warnings)
 !    subroutine der_2nd(f,k,df,j)
 !
-!      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+!      real, contiguous, dimension(:,:,:,:), intent(in) :: f
 !      real, dimension(nx), intent(out) :: df
 !      integer, intent(in) :: j, k
 !!
@@ -1817,7 +1817,7 @@ module Sub
 !   4-feb-16/MR: checked again
 !  16-nov-16/MR: modifications for non-Cartesian coordinates.
 !
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous, dimension(:,:,:,:), intent(in) :: f
       real, dimension(nx), intent(out) :: df
       integer, intent(in) :: j, k
 !
@@ -1861,7 +1861,7 @@ module Sub
 !!
 !!  23-jun-18/JW: Adapted from der_4ht_stag
 !!
-!      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+!      real, contiguous, dimension(:,:,:,:), intent(in) :: f
 !      real, dimension(nx), intent(out) :: df
 !      integer, intent(in) :: j, k
 !!
@@ -2043,7 +2043,7 @@ module Sub
 !
       use Deriv, only: der
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx,3) :: g
       real, dimension (nx) :: tmp1,tmp2
       integer :: k
@@ -2088,7 +2088,7 @@ module Sub
 !
       use Deriv, only: der
 !
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous, dimension(:,:,:,:), intent(in) :: f
       real, dimension(nx,3), intent(out) :: g
       integer, intent(in) :: k
       logical, intent(in), optional :: ignoredx
@@ -2180,7 +2180,7 @@ module Sub
 !
       use Deriv, only: der
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx) :: g
       real, dimension (nx) :: tmp1,tmp2
       integer :: k,k1,i
@@ -2252,7 +2252,7 @@ module Sub
       intent(in) :: f,k
       intent(out) :: del2f
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx) :: del2f,d2fdx,d2fdy,d2fdz,tmp
       integer :: k
 !
@@ -2316,7 +2316,7 @@ module Sub
 !
       use Deriv, only: der
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, optional, dimension(nx,3,3) :: fij
       real, optional, dimension(nx,3) :: pff
       real, dimension (nx,3) :: del2f
@@ -2372,7 +2372,7 @@ module Sub
 !  Calculate del2 of a 3x3 symmetric matrix, get matrix
 !  23-feb-11/dhruba: coded in a new manner
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx,3,3) :: del2f
       real, dimension (nx) :: tmp
       integer :: i,j,k,k1
@@ -2415,7 +2415,7 @@ module Sub
       intent(in) :: f,k
       intent(out) :: del2f
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx) :: del2f,d2fdx,d2fdy,d2fdz,tmp
       real, dimension (3) :: vec
       integer :: k
@@ -2452,7 +2452,7 @@ module Sub
       intent(in) :: f,k
       intent(out) :: del2fkdxij
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx,3,3,3) :: del2fkdxij
       real, dimension(nx) :: tmp
       integer :: k
@@ -2487,7 +2487,7 @@ module Sub
       intent(in) :: f,k
       intent(out) :: d2fidxj
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx,3,3) :: d2fidxj
       real, dimension(nx,3) :: tmp
       integer :: k
@@ -2513,7 +2513,7 @@ module Sub
       intent(in) :: f,k
       intent(out) :: d2fdxj
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx,3) :: d2fdxj
       integer :: k
 !
@@ -2559,7 +2559,7 @@ module Sub
 !
       use Deriv, only: der,der2,derij
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx,3,3) :: fjji,fijj
       real, dimension (nx,3,3), optional :: gradcurl
       real, dimension (nx,3), optional :: del2,graddiv,curlcurl
@@ -2699,7 +2699,7 @@ module Sub
 !
       use Deriv, only: der2,derij
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx,3,3) :: fjji,fijj
       real, dimension (nx), optional :: del2,graddiv,curlcurl
       real, dimension (nx) :: tmp
@@ -2746,7 +2746,7 @@ module Sub
 !
 !  09-dec-03/nils: adapted from del6v
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx,3) :: del4f
       real, dimension (nx) :: tmp
       integer :: i,k,k1
@@ -2779,7 +2779,7 @@ module Sub
 !
       use General, only : loptest
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx,3) :: del6f
       real, dimension (nx) :: tmp
       integer :: i,k,k1
@@ -2817,7 +2817,7 @@ module Sub
 !
       use Deriv, only: der2,derij,der
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous, dimension(:,:,:,:), intent(in) :: f
       real, dimension (nx,3),             intent(in) :: bb
       real, dimension (nx,3,*),           intent(out):: bijtilde
       real, dimension (nx,3,3), optional, intent(out):: bij_cov_corr
@@ -2895,7 +2895,7 @@ module Sub
       use Deriv, only: der2,derij
       use General, only: loptest
 !
-      real, dimension (mx,my,mz,mfarray), intent (in) :: f
+      real, contiguous, dimension(:,:,:,:), intent (in) :: f
       integer, intent (in) :: iref
       logical, intent (in), optional :: lcovariant_derivative
       real, dimension (nx,3), intent (in), optional :: aa
@@ -3059,7 +3059,7 @@ module Sub
 !
       use Deriv, only: der2,derij
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx,3,3) :: g
       real, dimension (nx) :: tmp
       integer :: i,j,k
@@ -3091,7 +3091,7 @@ module Sub
       intent(in) :: f,k,ignoredx
       intent(out) :: del4f
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx) :: del4f,d4fdx,d4fdy,d4fdz
       integer :: k
       logical, optional :: ignoredx
@@ -3131,7 +3131,7 @@ module Sub
 !!
 !      use Deriv, only: der,der2,der3,der4,der5,der6
 !!
-!      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+!      real, contiguous, dimension(:,:,:,:), intent(in) :: f
 !      integer, intent(in) :: k,j
 !      real, dimension(nx), intent(out) :: f_der_exp
 !      real, dimension(nx) :: f_der1,f_der2,f_der3,f_der4,f_der5,f_der6
@@ -3175,7 +3175,7 @@ module Sub
       intent(in) :: f,k,ignoredx
       intent(out) :: del6f
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx) :: del6f,d6fdx,d6fdy,d6fdz
       integer :: k
       logical, optional :: ignoredx,lexp
@@ -3217,7 +3217,7 @@ module Sub
 !
       use Deriv, only: der6,der4i2j,der2i2j2k
 !
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension(nx) :: del6,tmp
       integer :: k,i,j
 !      
@@ -3268,7 +3268,7 @@ module Sub
 !
       use Deriv, only: der6,der4i2j,der2i2j2k,der5i1j,der3i3j,der3i2j1k,der4i1j1k
 !
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension(nx,3) :: del4graddivu
       real, dimension(nx) :: tmp
       integer :: ikk,ki,kj
@@ -3369,7 +3369,7 @@ module Sub
       intent(in) :: f,k
       intent(out) :: del6f
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx) :: del6f,d6fdx,d6fdy,d6fdz
       real, dimension (3) :: vec
       integer :: k
@@ -3398,7 +3398,7 @@ module Sub
       intent(in) :: f,k
       intent(out) :: del6f
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx,3) :: del6f
       real, dimension (nx) :: tmp
       integer :: i,k,k1
@@ -3431,7 +3431,7 @@ module Sub
       intent(in) :: f,k,gradf,uu,upwind
       intent(out) :: ugradf
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx,3,3) :: gradf
       real, dimension (nx,3) :: uu,ff,ugradf
       real, dimension (nx) :: tmp
@@ -3485,7 +3485,7 @@ module Sub
       intent(in) :: f,k,gradf,uu,iadvec
       intent(out) :: ugradf
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx,3,3) :: gradf
       real, dimension (nx,3) :: uu,ff,ugradf,grad_f_tmp
       real, dimension (nx) :: tmp
@@ -3540,7 +3540,7 @@ module Sub
       intent(in) :: gradM,f,k
       intent(out) :: ugradM
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx,3,3,3) :: gradM
       real,dimension(nx,3) :: uu
       real, dimension (nx,3,3) :: ugradM
@@ -3602,7 +3602,7 @@ module Sub
       intent(in) :: f,k,gradf,uu,upwind,ladd
       intent(out) :: ugradf
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx,3) :: uu,gradf
       real, dimension (nx) :: ugradf
       integer :: k
@@ -3639,7 +3639,7 @@ module Sub
       intent(in) :: f,k,gradf,uu,iadvec,ladd
       intent(out) :: ugradf
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx,3) :: uu,gradf
       real, dimension (nx) :: ugradf, udelf
       logical, optional :: ladd
@@ -3684,7 +3684,7 @@ module Sub
       intent(in) :: f,k,j
       intent(out) :: udelf
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real,dimension(nx) :: udelf
       real, dimension (nx) :: vel,velpj,velmj,amhalf,aphalf,delfj,delfjp1,delfjm1
       integer :: k,j
@@ -3834,7 +3834,7 @@ module Sub
       intent(in) :: f,uu
       intent(out) :: gradf
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx,3) :: uu,gradf
       integer :: j,k
 !
@@ -4255,7 +4255,7 @@ module Sub
 !
 !  14-aug-06/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension(nx) :: retval
       real, dimension (mx) :: tmp_penc
       real, dimension (mx) :: meanf
@@ -4306,7 +4306,7 @@ module Sub
 !
 !  20-jul-06/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension(nx) :: smth
       real, dimension(7,7,7), optional :: smth_kernel_
       integer :: j,l
@@ -4380,7 +4380,7 @@ module Sub
 !
 !  05-jun-20/joern: coded, adapted from smooth
 !
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous, dimension(:,:,:,:), intent(in) :: f
       integer, intent(in) :: ivar
       real, dimension(-nghost:nghost,-nghost:nghost,-nghost:nghost), intent(in) :: kernel
       real, dimension(nx), intent(out) :: smth
@@ -4454,7 +4454,7 @@ module Sub
 !
 !  02-may-23/GM: Coded
 !
-    real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+    real, contiguous, dimension(:,:,:,:), intent(inout) :: f
     integer, intent(IN) :: ivar1,ivar2
 !    integer,  intent(in) :: bc
 
@@ -5830,7 +5830,7 @@ nameloop: do
 !   7-jul-20/axel: allowed for lexp=.true. to take exp of Gaussian
 !
       integer :: i
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (mx) :: delx
       real, dimension (my) :: dely
       real, dimension (mz) :: delz
@@ -5929,7 +5929,7 @@ nameloop: do
       use General, only: random_number_wrapper
 !
       integer :: i, iblob, nblobs
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nblobs*3) :: r0
       real, dimension (mx) :: delx
       real, dimension (my) :: dely
@@ -7376,7 +7376,7 @@ nameloop: do
 !
       use Deriv, only: der6, deri_3d_inds
 !
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension(nx,3)             :: del6f, hh
       real, dimension(nx)               :: del6f_upwind
       integer, dimension(nx)            :: indxs
@@ -7431,7 +7431,7 @@ nameloop: do
 !  12-apr-12/MR: optional parameter modified
 !   8-apr-17/wlyra: encapsulated the calculation of del6     
 !
-      real, dimension(mx,my,mz,mfarray),intent(IN)          :: f
+      real, contiguous, dimension(:,:,:,:),intent(IN)          :: f
       integer                                               :: k
       real, dimension(nx,3),            intent(IN)          :: uu
       real, dimension(nx),              intent(INOUT)       :: ugradf
@@ -7657,7 +7657,7 @@ nameloop: do
 !
       use Mpicomm, only: mpiallreduce_max, MPI_COMM_PENCIL
 !
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous, dimension(:,:,:,:), intent(in) :: f
       integer, intent(in) :: iv
 !
       real :: umax1
@@ -7679,7 +7679,7 @@ nameloop: do
 !
       use Mpicomm, only: mpiallreduce_sum
 !
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous, dimension(:,:,:,:), intent(in) :: f
       integer, intent(in) :: iv
 !
       real :: s1, s
@@ -7700,7 +7700,7 @@ nameloop: do
 !
       use Mpicomm, only: mpiallreduce_sum
 !
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous, dimension(:,:,:,:), intent(in) :: f
       integer, intent(in) :: iv
       real, dimension(nz) :: rms
 !
@@ -7858,7 +7858,7 @@ nameloop: do
       intent(in) :: f,k,ldiv_4th
       intent(out) :: cmax_im12,cmax_ip12
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx) :: cmax_im12,cmax_ip12
       integer :: k
       logical :: ldiv_4th
@@ -7922,7 +7922,7 @@ nameloop: do
       intent(in) :: f,j,h_slope_limited,nlf,div_type
       intent(out) :: div_flux
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx,3) :: flux_im12,flux_imm12,flux_ip12,flux_ipp12
       real, dimension (nx) :: div_flux, dens_m1, dens_p1, dens,rfac,q1
       real, dimension (nx+2) :: densx
@@ -8278,7 +8278,7 @@ nameloop: do
       intent(out) :: fim12_l,fim12_r,fim1
       intent(out) :: fip12_l,fip12_r,fip1
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx) :: fim12_l,fim12_r,fim1
       real, dimension (nx) :: fip12_l,fip12_r,fip1
       real, dimension (nx) :: delfy,delfz,delfyp1,delfym1,delfzp1,delfzm1
@@ -8549,7 +8549,7 @@ nameloop: do
 !      intent(in) :: f,k,j
 !      intent(out) :: fim12, fip12
 !!
-!      real, dimension (mx,my,mz,mfarray) :: f
+!      real, contiguous, dimension(:,:,:,:) :: f
 !      real, dimension (nx) :: fim12, fip12
 !      integer :: j,k
 !
@@ -8776,7 +8776,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
 !
 !  16-dec-16/MR: Outsourced from hydro.
 !
-      real, dimension (mx,my,mz,mfarray), intent(IN) :: f
+      real, contiguous, dimension(:,:,:,:), intent(IN) :: f
       real, dimension(nx),                intent(OUT):: sij2
       logical,                  optional, intent(IN) :: lshear_rateofstrain
 
@@ -8877,7 +8877,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
 !
       use Mpicomm, only: mpiallreduce_sum
 !
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, contiguous, dimension(:,:,:,:), intent (inout) :: f
       integer,                            intent (in)    :: ind1,ind2
 !
       real, dimension (nx) :: uu
@@ -9451,7 +9451,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
       use Mpicomm, only: mpireduce_max_int,mpiabort
       use General, only: notanumber
 
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       character (len=*), optional :: caller
       integer :: has_nan_local
       integer :: i

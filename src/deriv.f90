@@ -99,7 +99,7 @@ module Deriv
 !  21-feb-07/axel: added 1/r and 1/pomega factors for non-coord basis
 !  20-sep-13/ccyang: added optional argument ignoredx
 !
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous, dimension(:,:,:,:), intent(in) :: f
       real, dimension(nx), intent(out) :: df
       integer, intent(in) :: j, k
       logical, intent(in), optional :: ignoredx
@@ -486,7 +486,7 @@ module Deriv
 !
       use General, only: loptest
 
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous, dimension(:,:,:,:), intent(in) :: f
       real, dimension (nx), intent(out) :: df2
       integer, intent(in) :: j,k
       logical, intent(in), optional :: lwo_line_elem
@@ -692,7 +692,7 @@ module Deriv
 !
 !  10-feb-06/anders: adapted from der5
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx) :: df
       integer :: j,k
       logical, optional :: ignoredx
@@ -776,7 +776,7 @@ module Deriv
 !   9-dec-03/nils: adapted from der6
 !  10-feb-06/anders: corrected sign and factor
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx) :: df
       integer :: j,k
       logical, optional :: ignoredx,upwind
@@ -863,7 +863,7 @@ module Deriv
 !
 !  29-oct-04/anders: adapted from der6
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx) :: df,fac
       integer :: j,k
       logical, optional :: ignoredx
@@ -948,7 +948,7 @@ module Deriv
 !
       use General, only: loptest
 
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx) :: df,fac
       integer :: j,k
       logical, optional :: ignoredx,upwind,lexp
@@ -1079,7 +1079,7 @@ module Deriv
       intent(in) :: f,k,j
       intent(out) :: delfk,delfkp1,delfkm1
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx) :: delfk,delfkp1,delfkm1,fac
       real, dimension (nx,-1:1) :: delf
       real, dimension (0:nx+1) :: delfx
@@ -1380,7 +1380,7 @@ module Deriv
 !
       use General, only: loptest
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx) :: df,fac
       integer :: i,j,k
       logical, optional :: lwo_line_elem
@@ -1788,7 +1788,7 @@ module Deriv
 !
 !  05-dec-06/anders: adapted from derij
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx) :: df,fac
       integer :: i,j,k
 !
@@ -1987,7 +1987,7 @@ module Deriv
 !
 !  02-apr-17/wlyra: adapted from der5i1j
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx) :: df,fac
       integer :: i,j,k
 !
@@ -2248,7 +2248,7 @@ module Deriv
 !
 !  02-apr-17/wlyra: coded
 !
-      real, dimension (mx,my,mz,mfarray),intent(in) :: f
+      real, contiguous, dimension(:,:,:,:),intent(in) :: f
       real, dimension (nx) :: fac
       integer,intent(in) :: k
       real, dimension(nx), intent(out) :: df
@@ -2614,7 +2614,7 @@ module Deriv
     endsubroutine der2i2j2k
 !***********************************************************************
     subroutine der3i3j(f,k,df,i,j)
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx), intent(out) :: df
       real, dimension (nx) :: fac
       integer, intent(in) :: k,i,j
@@ -2771,7 +2771,7 @@ module Deriv
 !***********************************************************************
     subroutine der3i2j1k(f,ik,df,i,j,k)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx), intent(out) :: df
       real, dimension (nx) :: fac
       integer, intent(in) :: ik,i,j,k
@@ -4361,7 +4361,7 @@ module Deriv
 !***********************************************************************
     subroutine der4i1j1k(f,ik,df,i,j,k)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx), intent(out) :: df
       real, dimension (nx) :: fac
       integer, intent(in) :: ik,i,j,k
@@ -5172,7 +5172,7 @@ module Deriv
 !
 !  Useful for advecting non-logarithmic variables
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx,3) :: uu
       real, dimension (nx) :: df
       integer :: j,k,l
@@ -5243,7 +5243,7 @@ module Deriv
 !
 !   7-jul-08/arne: coded.
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (:,:) :: df
       real :: fac
       integer :: pos,k,sgn,j
@@ -5303,7 +5303,7 @@ module Deriv
 !
 !  15-oct-09/Natalia: coded.
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real  :: df
       real :: fac
       integer :: pos,lll,mmm,nnn,k,sgn,j
@@ -5531,7 +5531,7 @@ module Deriv
 !
       use General, only: keep_compiler_quiet
 !
-      real, dimension(mx,my,mz,mfarray), intent(IN):: f
+      real, contiguous, dimension(:,:,:,:), intent(IN):: f
       real, dimension(my,mz)           , intent(IN):: inh
       real                             , intent(IN):: fac
       integer                          , intent(IN):: topbot
