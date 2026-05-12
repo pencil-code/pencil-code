@@ -37,7 +37,7 @@ module Filter
 !
       use Boundcond, only: boundconds_x, boundconds_y, boundconds_z
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (mx,my,mz,mvar) :: df
       logical, optional :: explog
       integer :: ivar1,ivar2
@@ -95,7 +95,7 @@ module Filter
       use Mpicomm, only: initiate_isendrcv_bdry, finalize_isendrcv_bdry
       use Deriv, only: der6
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: tmp
       real :: awigg
@@ -174,7 +174,7 @@ module Filter
 !      use Mpicomm, only: initiate_isendrcv_bdry, finalize_isendrcv_bdry
 !      use Sub, only: del6
 !!
-!      real, dimension (mx,my,mz,mfarray) :: f
+!      real, contiguous, dimension(:,:,:,:) :: f
 !      real, dimension (mx,my,mz,mvar) :: df
 !      real, dimension (nx) :: tmp
 !      logical, optional :: explog
@@ -251,7 +251,7 @@ module Filter
 !
 !  28-Sep-02/axel: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (mz) :: xyaver,xyaver_smooth
       real :: del_average,rhom1,rhom2
       integer :: ivar
@@ -293,7 +293,7 @@ module Filter
 !!
 !!  28-Sep-02/axel: coded
 !!
-!      real, dimension (mx,my,mz,mfarray) :: f
+!      real, contiguous, dimension(:,:,:,:) :: f
 !      real, dimension (mz) :: xyaver,xyaver_smooth
 !      real :: del_average
 !      integer :: ivar

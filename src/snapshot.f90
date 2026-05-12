@@ -828,7 +828,7 @@ module Snapshot
       use Sub, only: update_snaptime
       use Diagnostics, only: save_diagnostic_controls
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       logical, optional :: lwrite_only
 !
       logical :: llwrite_only=.false.,ldo_all,lfirstcall_powerhel
@@ -897,7 +897,7 @@ module Snapshot
       use General, only: parser
 !$    use OMP_lib
 
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 
       real, dimension (:,:,:), allocatable :: b_vec
       integer :: ivec,stat,ipos,ispec,nloc,mloc,n_pdfs,i,n_cs
@@ -1231,7 +1231,7 @@ module Snapshot
       use Radiation, only: radtransfer
       use Shock, only: calc_shock_profile,calc_shock_profile_simple
 !
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: a
+      real, contiguous, dimension(:,:,:,:), intent (inout) :: a
 !
       if (lshock) then
         call calc_shock_profile(a)

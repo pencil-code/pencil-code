@@ -21,14 +21,17 @@
   use Messages, only: fatal_error
   use Syscalls, only: memusage
   use iso_c_binding
+  use iso_fortran_env,only: int64
 
   integer :: stat
-  integer(KIND=ikind8) :: nelems=mx*my*mz*mfarray
+  integer(KIND=int64), parameter  :: mxyz=mx*my*mz
+  integer(KIND=int64), parameter  :: nelems=mxyz*mfarray
   type(C_PTR) :: fp
 
   interface
     type(C_PTR) function allocate_shm(num,name)
-      import :: c_ptr, ikind8
+      import :: c_ptr, ikind8,int64
+      integer(KIND=int64)  :: nelems
       integer(KIND=ikind8) :: num
       character(LEN=*) :: name
     endfunction

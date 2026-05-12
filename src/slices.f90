@@ -116,7 +116,7 @@ contains
       use Training,        only: get_slices_training
       use Mpicomm,         only: mpiwtime
 !
-      real, dimension (mx,my,mz,mfarray), intent(IN) :: f
+      real, contiguous, dimension(:,:,:,:), intent(IN) :: f
 !
       logical :: lslices_legacy=.true.
       integer :: inamev

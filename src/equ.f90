@@ -88,8 +88,8 @@ module Equ
 !      use, intrinsic :: iso_fortran_env
 !$    use General, only: signal_send
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
       type (pencil_case) :: p
       intent(inout):: f       ! inout due to lshift_datacube_x,
                               ! density floor, or velocity ceiling
@@ -466,7 +466,7 @@ module Equ
     use Slices
     use Diagnostics
 
-    real, dimension (mx,my,mz,mfarray) :: f
+    real, contiguous, dimension(:,:,:,:) :: f
 !
 !  Print diagnostic averages to screen and file.
 !
@@ -594,7 +594,7 @@ module Equ
 !$    use OMP_lib
 !$    use General, only: get_cpu, set_cpu
 
-      real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
+      real, contiguous, dimension(:,:,:,:),intent(INOUT) :: f
       type (pencil_case) :: p
 
       integer :: imn
@@ -667,7 +667,7 @@ module Equ
 !$    use OMP_lib
 !$    use General, only: get_cpu, set_cpu
 
-      real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
+      real, contiguous, dimension(:,:,:,:),intent(INOUT) :: f
       type (pencil_case) :: p
 
       integer :: imn
@@ -775,7 +775,7 @@ module Equ
 !
         use Density, only: density_before_boundary_diagnostics
 
-        real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
+        real, contiguous, dimension(:,:,:,:),intent(INOUT) :: f
 
         !$omp parallel if (.not. lsuppress_parallel_reductions) num_threads(num_helper_threads) &
         !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
@@ -795,7 +795,7 @@ module Equ
       use Special, only: calc_ode_diagnostics_special
       use EquationofState, only: ioncalc
 
-      real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
+      real, contiguous, dimension(:,:,:,:),intent(INOUT) :: f
       type (pencil_case) :: p
 
         if (lmultithread .and. (leos_ionization.or.leos_temperature_ionization)) call ioncalc(f)
@@ -903,7 +903,7 @@ module Equ
       use Testscalar
       use Viscosity, only: calc_pencils_viscosity
 
-      real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
+      real, contiguous, dimension(:,:,:,:),intent(INOUT) :: f
       type (pencil_case)                ,intent(INOUT) :: p
 !
 !  The solid cells may have to be updated at the beginning of every
@@ -977,7 +977,7 @@ module Equ
 
       use Mpicomm, only: finalize_isendrcv_bdry
 
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       logical :: lcommunicate
 
       if (lcommunicate) then
@@ -1001,7 +1001,7 @@ module Equ
       use Shear, only: shear_before_boundary
       use Interstellar, only: interstellar_before_boundary
 
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 
       if (linterstellar) call interstellar_before_boundary(f)
       if (lshear)        call shear_before_boundary(f)
@@ -1027,7 +1027,7 @@ module Equ
       use Pscalar, only: pscalar_before_boundary
       use Testflow, only: testflow_before_boundary
       use Testfield, only: testfield_before_boundary
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
 !  Calculate the potential of the self gravity. Must be done before
 !  communication in order to be able to take the gradient of the potential
@@ -1060,7 +1060,7 @@ module Equ
       use Mpicomm, only: mpiwtime
       use Radiation, only: radtransfer
 
-      real, intent(INOUT), dimension(mx,my,mz,mfarray) :: f
+      real, intent(INOUT), contiguous, dimension(:,:,:,:) :: f
       real :: start_time,end_time
 
       if (ltraining) call training_after_boundary(f)
@@ -1097,8 +1097,8 @@ module Equ
       use Special, only: special_after_boundary
       use Chemistry, only: calc_for_chem_mixture
 
-      real, intent(INOUT), dimension(mx,my,mz,mfarray) :: f
-      real, intent(INOUT), dimension(mx,my,mz,mvar)    :: df
+      real, intent(INOUT), contiguous, dimension(:,:,:,:) :: f
+      real, intent(INOUT), contiguous, dimension(:,:,:,:)    :: df
 !
 !  Calculate shock profile (simple).
 !
@@ -1170,7 +1170,7 @@ module Equ
       use Hydro,    only: time_integrals_hydro
       use Magnetic, only: time_integrals_magnetic
 
-      real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
+      real, contiguous, dimension(:,:,:,:),intent(INOUT) :: f
       type (pencil_case)                ,intent(IN) :: p
 
       if (ltime_integrals.and.llast) then
@@ -1187,7 +1187,7 @@ module Equ
       use Hydro,    only: df_diagnos_hydro
       use Magnetic, only: df_diagnos_magnetic
 
-      real, dimension (mx,my,mz,mvar),intent(IN) :: df
+      real, contiguous, dimension(:,:,:,:),intent(IN) :: df
       type (pencil_case)                ,intent(IN) :: p
 
       if (ldiagnos) then
@@ -1232,8 +1232,8 @@ module Equ
       use Testscalar
       use Training, only: dtraining_dt
 
-      real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
-      real, dimension (mx,my,mz,mvar)   ,intent(INOUT) :: df
+      real, contiguous, dimension(:,:,:,:),intent(INOUT) :: f
+      real, contiguous, dimension(:,:,:,:)   ,intent(INOUT) :: df
       type (pencil_case)                ,intent(INOUT) :: p
 
 !  hydro, density, and entropy evolution
@@ -1401,8 +1401,8 @@ module Equ
       use Testscalar
       use Training, only: calc_diagnostics_training
 
-      real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
-      real, dimension (mx,my,mz,mvar)   ,intent(OUT  ) :: df
+      real, contiguous, dimension(:,:,:,:),intent(INOUT) :: f
+      real, contiguous, dimension(:,:,:,:)   ,intent(OUT  ) :: df
       type (pencil_case)                ,intent(INOUT) :: p
       real, dimension(1)                ,intent(INOUT) :: mass_per_proc
       logical                           ,intent(IN   ) :: early_finalize
@@ -1566,7 +1566,7 @@ module Equ
 !
       use Snapshot
 !
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       integer, save :: icrash=0
       character (len=10) :: filename
@@ -1606,7 +1606,7 @@ module Equ
       use Sub,       only: find_max_fvec, find_rms_fvec
       use Viscosity, only: dynamical_viscosity
 !
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous, dimension(:,:,:,:), intent(in) :: f
 !
       real :: uc
 !
@@ -1639,7 +1639,7 @@ module Equ
       use Energy, only: impose_energy_floor
       use Hydro, only: impose_velocity_ceiling
 !
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: f
 !
       call impose_density_floor(f)
       call impose_density_ceiling(f)
@@ -1655,7 +1655,7 @@ module Equ
       use Sub, only: quintic_step
       use Solid_Cells, only: freeze_solid_cells
 
-      real, dimension(mx,my,mz,mvar), intent(inout) :: df
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: df
       type (pencil_case) :: p
 
       logical, dimension(npencils) :: lpenc_loc
@@ -1964,7 +1964,7 @@ module Equ
       use FarrayManager, only: farray_get_name
 
       character(len=30) :: name
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       type (pencil_case) :: p
       real, dimension(1), intent(inout) :: mass_per_proc
       logical ,intent(in) :: early_finalize
@@ -1983,8 +1983,8 @@ module Equ
           import mfarray
           import mvar
           import pencil_case
-          real, dimension (mx,my,mz,mfarray) :: f
-          real, dimension (mx,my,mz,mvar) :: df
+          real, contiguous, dimension(:,:,:,:) :: f
+          real, contiguous, dimension(:,:,:,:) :: df
           type (pencil_case) :: p
           real, dimension(1), intent(inout) :: mass_per_proc
           logical ,intent(in) :: early_finalize

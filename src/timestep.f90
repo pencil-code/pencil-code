@@ -90,8 +90,8 @@ module Timestep
       use GPU, only: update_after_substep_gpu, split_update_gpu
       use Mpicomm, only: mpiwtime
 
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
       real :: start_time
       type (pencil_case) :: p
       real :: ds, dtsub
@@ -211,8 +211,8 @@ module Timestep
       use GPU, only: split_update_gpu
       use Equ, only: pde
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
       type (pencil_case) :: p
       real(KIND=rkind8) :: t_start
       integer :: i
@@ -284,7 +284,7 @@ module Timestep
       use Viscosity, only: split_update_viscosity
       use Particles_main, only: split_update_particles
 !
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: f
 !
 !  Dispatch to respective modules.
 !
@@ -311,8 +311,8 @@ module Timestep
       use Particles_main, only: particles_special_after_dtsub, particles_write_rmv
 !
       logical, intent(in) :: llast
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
       real :: dtsub
 !
 !  Enables checks to avoid unnecessary communication

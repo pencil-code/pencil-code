@@ -256,7 +256,7 @@ module Register
 !$    use OMP_lib
 !!$    use mt
 !
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
 !  Defaults for some logicals; will later be set to true if needed.
 !
@@ -464,7 +464,7 @@ module Register
       use Special,        only: finalize_special
       use Training,       only: finalize_training
 !
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       call particles_finalize
       call finalize_special(f)

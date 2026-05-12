@@ -65,7 +65,7 @@ subroutine helper_loop(f,p)
   use Mpicomm, only: mpiwtime
   use Sub, only: check_for_nans_globally
 !
-  real, dimension (mx,my,mz,mfarray) :: f
+  real, contiguous, dimension(:,:,:,:) :: f
   real :: tvar1
   type (pencil_case) :: p
 
@@ -153,7 +153,7 @@ endsubroutine helper_loop
     use Particles_main,   only: particles_rprint_list, particles_initialize_modules
 !$ use General, only: signal_wait, signal_send
 
-    real, dimension (mx,my,mz,mfarray) :: f
+    real, contiguous, dimension(:,:,:,:) :: f
     logical :: lreload_file, lreload_always_file
     real :: dtmp
 
@@ -229,7 +229,7 @@ endsubroutine helper_loop
     use Streamlines,     only: wtracers
     use Io,              only: output_globals
 
-    real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+    real, contiguous, dimension(:,:,:,:), intent(inout) :: f
     integer :: isave_shift=0
     real :: tvar1
 !
@@ -351,7 +351,7 @@ endsubroutine helper_loop
 !$ use OMP_lib
 !$ use General, only: signal_send, signal_wait
 !
-  real, dimension (mx,my,mz,mfarray) :: f
+  real, contiguous, dimension(:,:,:,:) :: f
   real, dimension (mx,my,mz,mvar) :: df
   type (pencil_case) :: p
 !
