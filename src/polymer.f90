@@ -88,7 +88,7 @@ module Polymer
 !
 !  14-aug-08/dhruba: initialize polymer field
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -116,7 +116,7 @@ module Polymer
 !
       use Initcond
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real :: rsqr
       integer :: j,ix,iy,iz
 !
@@ -256,7 +256,7 @@ module Polymer
 !
 !  18-aug-08/dhruba: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (pencil_case) :: p
       integer :: ipi,ipj,ipk
 !
@@ -301,7 +301,7 @@ module Polymer
 !  Calculate polymer pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (pencil_case) :: p
       real, dimension (nx,3) :: grad_fr_dotC
       integer :: i,j
@@ -337,7 +337,7 @@ module Polymer
 !  Calculate polymer pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (pencil_case) :: p
 !
       call keep_compiler_quiet(f)
@@ -377,8 +377,8 @@ module Polymer
 !
 !  18-aug-08/dhruba: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: f
+      real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case) :: p
       real, dimension(nx,3,3) :: uijT
       real, dimension(nx) :: diffus_eta_poly
@@ -471,8 +471,8 @@ module Polymer
 !
 !  24-feb-11/dhruba: moved to a subroutine
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: f
+      real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case) :: p
       integer :: ipi,ipj,ipk
 !
@@ -493,7 +493,7 @@ module Polymer
 !***********************************************************************
     subroutine calc_polymer_after_boundary(f)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real :: rsqr
       integer :: ix,iy,iz
 !
@@ -554,7 +554,7 @@ module Polymer
 !
 !  26-jul-06/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (slice_data) :: slices
 !
       call keep_compiler_quiet(f)

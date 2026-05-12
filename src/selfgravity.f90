@@ -116,7 +116,7 @@ module Selfgravity
 !
       use EquationOfState, only: get_stratz
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       integer :: i
 !
 !  Initialize gravitational potential to zero.
@@ -289,7 +289,7 @@ module Selfgravity
 !
       use Sub, only: grad
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (pencil_case) :: p
 !
       real :: c
@@ -332,7 +332,7 @@ module Selfgravity
       use FArrayManager
       use Poisson
 !
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous,dimension(:,:,:,:), intent(inout) :: f
 !
       real, dimension (nx,ny,nz) :: rhs_poisson
 !
@@ -445,7 +445,7 @@ module Selfgravity
 !
 !  15-may-06/anders+jeff: coded
 !
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 !
       intent(in) :: p

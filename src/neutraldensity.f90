@@ -285,7 +285,7 @@ module NeutralDensity
       use General, only: notanumber
       use EquationOfState, only: cs20, cs2bot,cs2top
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       logical :: lnothing
       integer :: j
@@ -477,7 +477,7 @@ module NeutralDensity
 !
       use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (pencil_case) :: p
       intent(inout) :: f,p
 !
@@ -600,7 +600,7 @@ module NeutralDensity
 
       use General, only: keep_compiler_quiet
 
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real :: ramping_period
 
       if (lpretend_star) then
@@ -629,7 +629,7 @@ module NeutralDensity
 !
 !      use General, only: keep_compiler_quiet
 !
-!      real, dimension (mx,my,mz,mfarray) :: f
+!      real, contiguous,dimension(:,:,:,:) :: f
 !!
 !! Fill global rhon array using the ilnrhon data.
 !!
@@ -648,8 +648,8 @@ module NeutralDensity
       use Deriv, only: der6
       use Sub, only: identify_bcs, del6fj, dot_mn
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: f
+      real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 !
       intent(in)  :: f,p
@@ -835,9 +835,9 @@ module NeutralDensity
       use BorderProfiles, only: border_driving
       use EquationOfState, only: cs0,cs20
 !
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (pencil_case) :: p
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: df
 
       real, dimension(nx) :: f_target !,OO_sph,OO_cyl,cs,theta
 !      real :: r0_pot=0.1

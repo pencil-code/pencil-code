@@ -132,7 +132,7 @@ module Pscalar
 !
       use SharedVariables, only: put_shared_variable
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
 !  Re-initialize scalar
 !
@@ -166,7 +166,7 @@ module Pscalar
       use Initcond
       use InitialCondition, only: initial_condition_lncc
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real :: der, prof
 !
       select case (initlncc)
@@ -312,7 +312,7 @@ module Pscalar
 !
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (pencil_case) :: p
 !
       intent(in) :: f
@@ -349,8 +349,8 @@ module Pscalar
       use Special, only: special_calc_pscalar
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: f
+      real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 !
       real, dimension (nx) :: tmp                        
@@ -564,7 +564,7 @@ module Pscalar
 !
       use Slices_methods, only: assign_slices_scal,process_slices,exp2d
 
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (slice_data) :: slices
 
       character(LEN=fmtlen) :: sname
@@ -590,7 +590,7 @@ module Pscalar
 !
 !  Dummy.
 !
-      real, dimension (mx,my,mz,mfarray), intent(IN) :: f
+      real, contiguous,dimension(:,:,:,:), intent(IN) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -636,7 +636,7 @@ module Pscalar
 !
       use Sub
 !
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case) :: p
       real :: tensor_pscalar_diff
 !

@@ -286,7 +286,7 @@ module Dustdensity
       use Mpicomm, only: mpibcast
       use Special, only: set_init_parameters
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 
 !      real, dimension (ndustspec) :: Ntot_tmp!, lnds
       integer :: i,j,k,row,col
@@ -646,7 +646,7 @@ module Dustdensity
       use General, only: notanumber
       use Sub, only: blob
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       real, dimension (nx) :: eps
       real :: lnrho_z, Hrho, rho00, rhod00, mdpeak, rhodmt, del, fac
@@ -995,7 +995,7 @@ module Dustdensity
 !
       use EquationOfState, only: cs20
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       real, dimension (mz) :: rho, eps
       real :: Hg, Hd, Sigmad, Xi, fXi, dfdXi, rho1, lnrho, epsz0
@@ -1407,7 +1407,7 @@ module Dustdensity
       use Sub
       use General, only: spline_integral
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (pencil_case) :: p
 !
       real, dimension (nx) :: tmp, T_tmp
@@ -1792,8 +1792,8 @@ module Dustdensity
       use Deriv, only: der6
       use Chemistry, only: cond_spec_cond, cond_spec_nucl
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: f
+      real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 !
       real, dimension (nx) :: mfluxcond,fdiffd,gshockgnd, Imr, tmp1, tmp2
@@ -2142,7 +2142,7 @@ module Dustdensity
       use Diagnostics
 
       type (pencil_case) :: p
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 
       integer :: k
 
@@ -2262,8 +2262,8 @@ module Dustdensity
 !
       use BorderProfiles,  only: border_driving,set_border_initcond
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: f
+      real, contiguous,dimension(:,:,:,:) :: df
       real, dimension (nx) :: f_target
       type (pencil_case)  :: p
       integer :: k
@@ -2291,7 +2291,7 @@ module Dustdensity
 !  Redistribute dust number density and dust density in mass bins
 !
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (nx,ndustspec) :: nd
       real, dimension (ndustspec) :: ndnew,mdnew,minew
       integer :: j,k,i_targ,l,lgh
@@ -2361,8 +2361,8 @@ module Dustdensity
 !  dust_condensation_lmdvar is the old dust_condensation routine.
 !  For lmdvar=.false., we use an advection formalism in mass space.
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: f
+      real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case) :: p
       real, dimension (nx) :: mfluxcond
 !
@@ -2385,8 +2385,8 @@ module Dustdensity
 !
 !  27-jan-15/axel+nils: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: f
+      real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case) :: p
       real, dimension (nx) :: mfluxcond, mfluxcondp, mfluxcondm, cc_tmp
       real, dimension (nx) :: coefkp, coefkm, coefk0
@@ -2532,8 +2532,8 @@ module Dustdensity
 !
 !  Calculate condensation of dust on existing dust surfaces
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: f
+      real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case) :: p
       real, dimension (nx) :: mfluxcond, cc_tmp
       real :: dmdfac
@@ -2591,7 +2591,7 @@ module Dustdensity
       use EquationOfState, only: getmu,eoscalc,getpressure
       use Chemistry, only: find_species_index, condensing_species_rate
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (nx) :: mfluxcond,rho,TT1,cc
       type (pencil_case) :: p
 
@@ -2670,7 +2670,7 @@ module Dustdensity
 !
 !  Check for dust grain mass interval overflows and redistribute mdbins.
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       if (.not. lchemistry) then
         call null_dust_vars(f)
@@ -2683,7 +2683,7 @@ module Dustdensity
 !
       use General, only: keep_compiler_quiet
 
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
 ! To start collision on the fly.
 !
@@ -2722,7 +2722,7 @@ module Dustdensity
 !
       use Sub, only: dot2
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type(pencil_case) :: p
 
       real, dimension (nx) :: TT,Kn, cor_factor, D_coeff, Di, Dk, Dik, KBC, vmean_i, vmean_k
@@ -2922,8 +2922,8 @@ module Dustdensity
 !
 !   8-sep-16/axel: new momentum-conserving term
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: f
+      real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 !
       real :: dndfac, dndfaci, dndfacj, tmp
@@ -3128,7 +3128,7 @@ module Dustdensity
 !
 !  Force certain dust variables to be zero if they have become negative
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       if (ldustnulling) then
 
@@ -3274,7 +3274,7 @@ module Dustdensity
 !
       use Slices_methods, only: assign_slices_scal
 
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (slice_data) :: slices
 
       integer :: ispec
@@ -3318,7 +3318,7 @@ module Dustdensity
 !
 !      use General, only: spline, spline_derivative_double
 
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (pencil_case) :: p
       real, dimension (nx,ndustspec) :: dndr_dr,ff_tmp
       real, dimension (nx,ndustspec) :: ppsf_full_i, nd_substep,  nd_new
@@ -3471,7 +3471,7 @@ module Dustdensity
 !
       use General, only: random_number_wrapper
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 
       integer :: k, j, j1,j2,j3, iii
       real :: spot_size=1., RR
@@ -3573,7 +3573,7 @@ module Dustdensity
 !  Impose a minimum density by setting all lower densities to the minimum
 !  value (density_floor). Useful for debugging purposes.
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous,dimension(:,:,:,:), intent(inout) :: f
 !
 !  Impose the density floor.
 !
@@ -3592,7 +3592,7 @@ module Dustdensity
 !  lognormal initial condition. Now as subroutine, so it can also be
 !  called for reinitialization without replicating code.
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous,dimension(:,:,:,:), intent(inout) :: f
       logical :: loverwrite
 !
       real :: fac

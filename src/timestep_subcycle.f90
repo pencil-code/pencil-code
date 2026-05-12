@@ -58,9 +58,9 @@ module Timestep
       use Boundcond
       use General, only: notanumber
 !
-      real, dimension (mx,my,mz,mfarray) :: f,fsub,fm1
+      real, contiguous,dimension(:,:,:,:) :: f,fsub,fm1
       real, dimension (mx,my,mz) :: fm2, fj
-      real, dimension (mx,my,mz,mvar) :: df,dfsub,dfm1
+      real, contiguous,dimension(:,:,:,:) :: df,dfsub,dfm1
       type (pencil_case) :: p
       real :: ds
       real :: dt1, dt1_local, dt1_last=0.0
@@ -262,8 +262,8 @@ module Timestep
       use Special
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: f
+      real, contiguous,dimension(:,:,:,:) :: df
       real :: dt_in
       type (pencil_case) :: p
 !
@@ -420,7 +420,7 @@ module Timestep
     use Messages, only: fatal_error
     use Sub, only: grad, gij, curl_mn, dot2_mn, gij_etc
 !
-    real, dimension (mx,my,mz,mfarray) :: f
+    real, contiguous,dimension(:,:,:,:) :: f
     type (pencil_case) :: p
 !
     real :: B2_ext

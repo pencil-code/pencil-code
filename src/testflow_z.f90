@@ -257,7 +257,7 @@ module Testflow
       use sub, only:zlocation
       use EquationOfState, only : cs0
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real :: range, cn
 
       integer :: izpos
@@ -475,7 +475,7 @@ module Testflow
       use Sub
       use InitialCondition, only: initial_condition_uutest
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       integer :: j,ihhtest,jtest,offset
       character(len=labellen) selector
@@ -637,8 +637,8 @@ module Testflow
       use Shear, only: shear_variables
       use Deriv, only: der5_single
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: f
+      real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 !
       intent(in)    :: f,p
@@ -1028,7 +1028,7 @@ module Testflow
 !
 !  12-sep-09/axel: adapted from the corresponding magnetic routine
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (slice_data) :: slices
 !
 !  Loop over slices
@@ -1062,7 +1062,7 @@ module Testflow
       use Cdata
       use Mpicomm
 
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous,dimension(:,:,:,:), intent(inout) :: f
 !
       if (lremove_mean_momenta_testflow) &
         call remove_mean_momenta(f,iuutest)
@@ -1081,7 +1081,7 @@ module Testflow
       use Cdata
       use Mpicomm, only: mpiallreduce_sum
 
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous,dimension(:,:,:,:), intent(inout) :: f
 
       real    :: hm, hm1, fac
       integer :: ihhtest,i,j
@@ -1135,8 +1135,8 @@ module Testflow
       use Mpicomm, only: mpiallreduce_sum
       use Forcing, only:forcing_cont
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (mx,my,mz,mvar),    intent(inout) :: df
+      real, contiguous,dimension(:,:,:,:), intent(inout) :: f
+      real, contiguous,dimension(:,:,:,:),    intent(inout) :: df
 !
       real, dimension (3,0:njtestflow) :: unltestm, unltestm1      ! unltestm1, hnltestm1 local fields for MPI correspondence
       real, dimension (  0:njtestflow) :: hnltestm, hnltestm1

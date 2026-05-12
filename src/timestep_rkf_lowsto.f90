@@ -164,8 +164,8 @@ module Timestep
           solid_cells_timestep_second
       use Shear, only: advance_shear
 !
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mx,my,mz,mfarray), target :: f
+      real, contiguous,dimension(:,:,:,:) :: df
+      real, contiguous,dimension(:,:,:,:), target :: f
       real, dimension (nx) :: scal
       type (pencil_case) :: p
       real, dimension(itter) :: dt_beta_ts
@@ -361,7 +361,7 @@ module Timestep
       use Viscosity, only: split_update_viscosity
       use Particles_main, only: split_update_particles
 !
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous,dimension(:,:,:,:), intent(inout) :: f
 !
 !  Dispatch to respective modules.
 !
@@ -388,8 +388,8 @@ module Timestep
       use Particles_main, only: particles_special_after_dtsub, particles_write_rmv
 !
       logical, intent(in) :: llast
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: f
+      real, contiguous,dimension(:,:,:,:) :: df
       real :: dtsub
 !
 !  Enables checks to avoid unnecessary communication

@@ -46,7 +46,7 @@ module Deriv
 !
 !  Dummy routine
 !
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous,dimension(:,:,:,:), intent(in) :: f
       real, dimension(nx), intent(in) :: df
       integer, intent(in) :: j, k
       logical, intent(in), optional :: ignoredx
@@ -125,7 +125,7 @@ module Deriv
 !
       use General, only: loptest
 
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (nx) :: df2,fac,df
       integer :: j,k
       logical, optional :: lwo_line_elem
@@ -160,7 +160,7 @@ module Deriv
 !
 !  Dummy routine
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (nx) :: df,fac
       integer :: j,k
       logical, optional :: ignoredx
@@ -173,7 +173,7 @@ module Deriv
 !
 !  Dummy routine
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (nx) :: df
       real :: fac
       integer :: j,k
@@ -187,7 +187,7 @@ module Deriv
 !
 !  Dummy routine
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (nx) :: df
       integer :: j,k
       logical, optional :: ignoredx
@@ -199,7 +199,7 @@ module Deriv
 !
 !  Dummy routine
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (nx) :: df,fac
       integer :: j,k
       logical, optional :: ignoredx,upwind
@@ -214,7 +214,7 @@ module Deriv
 !
       intent(in) :: f,k,j
       intent(in) :: delfk,delfkp1,delfkm1
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (nx) :: delfk,delfkp1,delfkm1,fac
       real, dimension (nx,-1:1) :: delf
       real, dimension (0:nx+1) :: delfx
@@ -273,7 +273,7 @@ module Deriv
 !
       use General, only: loptest
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (nx) :: df,fac
       integer :: i,j,k
       logical, optional :: lwo_line_elem
@@ -296,7 +296,7 @@ module Deriv
 !
 !  Dummy routine
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (nx) :: df,fac
       integer :: i,j,k
       intent(in) :: f,k,df,i,j
@@ -307,7 +307,7 @@ module Deriv
 !
 !  Dummy routine
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (nx) :: df,fac
       integer :: i,j,k
       intent(in) :: f,k,df,i,j
@@ -318,7 +318,7 @@ module Deriv
 !      
 !  Dummy routine
 !
-      real, dimension (mx,my,mz,mfarray),intent(in) :: f
+      real, contiguous,dimension(:,:,:,:),intent(in) :: f
       real, dimension (nx) :: fac
       integer,intent(in) :: k
       real, dimension(nx), intent(in) :: df
@@ -329,7 +329,7 @@ module Deriv
 !
 !  Dummy routine
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (nx), intent(in) :: df
       real, dimension (nx) :: fac
       integer, intent(in) :: k,i,j
@@ -340,7 +340,7 @@ module Deriv
 !
 !  Dummy routine
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (nx), intent(in) :: df
       real, dimension (nx) :: fac
       integer, intent(in) :: ik,i,j,k
@@ -351,7 +351,7 @@ module Deriv
 !
 !  Dummy routine
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (nx), intent(in) :: df
       real, dimension (nx) :: fac
       integer, intent(in) :: ik,i,j,k
@@ -362,7 +362,7 @@ module Deriv
 !
 !  Dummy routine
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (nx,3) :: uu
       real, dimension (nx) :: df
       integer :: j,k,l
@@ -375,7 +375,7 @@ module Deriv
 !
 !  Dummy routine
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (:,:) :: df
       real :: fac
       integer :: pos,k,sgn,j
@@ -388,7 +388,7 @@ module Deriv
 !
 !  Dummy routine
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real  :: df
       real :: fac
       integer :: pos,lll,mmm,nnn,k,sgn,j
@@ -444,7 +444,7 @@ module Deriv
 !
 !   dummy routine
 !
-      real, dimension(mx,my,mz,mfarray), intent(IN):: f
+      real, contiguous,dimension(:,:,:,:), intent(IN):: f
       real, dimension(my,mz)           , intent(IN):: inh
       real                             , intent(IN):: fac
       integer                          , intent(IN):: topbot

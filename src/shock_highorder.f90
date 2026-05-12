@@ -117,7 +117,7 @@ module Shock
       use Sub, only: register_report_aux, smoothing_kernel
       use General, only: itoa
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       integer :: idum
 !
@@ -288,7 +288,7 @@ module Shock
 !
       use Slices_methods, only: assign_slices_scal
 
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (slice_data) :: slices
 !
 !  Loop over slices
@@ -338,7 +338,7 @@ module Shock
 !
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (pencil_case) :: p
 !
       intent(in) :: f
@@ -393,7 +393,7 @@ module Shock
       use Magnetic, only: bb_unitvec_shock
       use Sub, only: div
 !
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, contiguous,dimension(:,:,:,:), intent (inout) :: f
 !
       real, dimension (nx) :: penc, penc1, penc_perp
       real, dimension (mx,3) :: bb_hat
@@ -575,7 +575,7 @@ module Shock
       use Boundcond, only: boundconds_x, boundconds_y, boundconds_z
       use Mpicomm, only: initiate_isendrcv_bdry, finalize_isendrcv_bdry
 !
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, contiguous,dimension(:,:,:,:), intent (inout) :: f
 !
       real, dimension (nx) :: penc
       integer :: imn
@@ -646,7 +646,7 @@ module Shock
       use Mpicomm, only: initiate_isendrcv_bdry, finalize_isendrcv_bdry
 !
       real, dimension (mx,my,mz), intent (out) :: tmp
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, contiguous,dimension(:,:,:,:), intent (inout) :: f
       integer, intent(in) :: ivar
 !
       real, dimension (nx) :: penc
@@ -700,7 +700,7 @@ module Shock
 !***********************************************************************
     subroutine shock_before_boundary(f)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
 !  Shock profile calculation.
 !
@@ -716,7 +716,7 @@ module Shock
 !  16-aug-06/tobi: coded
 !  07-jun-18/fred: revised to include higher order gradient u
 !
-      real, dimension (mx,my,mz,mfarray), intent (in) :: f
+      real, contiguous,dimension(:,:,:,:), intent (in) :: f
       real, dimension (mx,3), intent (in) :: bb_hat
       real, dimension (nx), intent (in) :: divu
       real, dimension (nx), intent (out) :: divu_perp
@@ -803,7 +803,7 @@ module Shock
 !
 !  12-apr-05/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent (in) :: f
+      real, contiguous,dimension(:,:,:,:), intent (in) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -819,7 +819,7 @@ module Shock
       use Magnetic, only: get_bext
       use Sub, only: gij, curl_mn
 !
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous,dimension(:,:,:,:), intent(in) :: f
       real, dimension(nx) :: speed
 !
       real, dimension(nx,3,3) :: aij

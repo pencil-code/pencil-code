@@ -67,7 +67,7 @@
       use Syscalls, only: system_cmd
       use Gpu, only: TF_create_model, TF_load_model, TF_load_model_checkpoint
 
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 
       character(LEN=fnlen) :: modelfn
       integer :: ndevs
@@ -188,7 +188,7 @@
       use Sub, only: smooth
       use GPU, only: tau_snapshots
 
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 
       if (ltrained) then
 
@@ -242,7 +242,7 @@
       use Sub, only: smooth
       use Mpicomm, only: mpiwtime
 
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (:,:,:,:), pointer :: ptr_uu, ptr_tau
 
       if (lfortran_launched) then
@@ -329,7 +329,7 @@
       use Gpu, only: get_ptr_gpu_training, train_gpu
       use Mpicomm, only: mpiwtime
 
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
     
       real, save :: t_last_train = 0.0
       logical :: ldo_training_step
@@ -396,7 +396,7 @@
 
       use Sub, only: smooth
 
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
 !  Smooth velocity.
 !
@@ -429,8 +429,8 @@
 
       use Sub, only: div_tensor
 
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: f
+      real, contiguous,dimension(:,:,:,:) :: df
 
       real, dimension(nx,3) :: div_hydro_sgs
       real, dimension(nx)   :: div_dens_sgs
@@ -458,7 +458,7 @@
 
       use Diagnostics, only: sum_mn_name, save_name
 
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 
       integer :: i,j,jtau
 
@@ -478,7 +478,7 @@
 !
       use Slices_methods, only: assign_slices_scal
 
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (slice_data) :: slices
 !
 !  Loop over slices

@@ -179,7 +179,7 @@ module Energy
       use SharedVariables, only: get_shared_variable
       use Slices_methods, only: alloc_slice_buffers
 !
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, contiguous,dimension(:,:,:,:), intent (inout) :: f
 !
       real, pointer :: tsg
 !
@@ -274,7 +274,7 @@ module Energy
       use EquationOfState, only: rho0, cs20
       use InitialCondition, only: initial_condition_ss
 !
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, contiguous,dimension(:,:,:,:), intent (inout) :: f
 !
       integer :: j
       logical :: lnothing=.true.
@@ -430,7 +430,7 @@ module Energy
       use Sub, only: u_dot_grad
       use WENO_transport, only: weno_transp
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (pencil_case) :: p
 !
       real, dimension(nx) :: penc
@@ -476,8 +476,8 @@ module Energy
       use Viscosity, only: calc_viscous_heat
       use Deriv, only: der6
 !
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      real, dimension(mx,my,mz,mvar), intent(inout) :: df
+      real, contiguous,dimension(:,:,:,:), intent(in) :: f
+      real, contiguous,dimension(:,:,:,:), intent(inout) :: df
       type(pencil_case), intent(in) :: p
 !
       real, dimension(nx) :: Hmax=0.0, ugeth, d6eth, penc
@@ -589,7 +589,7 @@ module Energy
       use Diagnostics
       use Slices_methods, only: store_slices
 
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type(pencil_case) :: p
 
       call keep_compiler_quiet(f)
@@ -636,7 +636,7 @@ module Energy
 !
 !   1-apr-20/joern: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous,dimension(:,:,:,:), intent(inout) :: f
       real, dimension (mx) :: cs2
 !
 !    Slope limited diffusion: update characteristic speed
@@ -789,7 +789,7 @@ module Energy
       use Slices_methods, only: assign_slices_scal, process_slices, exp2d
       use EquationOfState, only: eoscalc, irho_eth, ilnrho_eth
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (slice_data) :: slices
 !
       real, dimension(nx) :: penc
@@ -856,7 +856,7 @@ module Energy
 !
 !  29-aug-11/ccyang: coded
 !
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       real, dimension(nx) :: eth, rho, eth1
       integer :: i, j, k
@@ -948,7 +948,7 @@ module Energy
       use Boundcond, only: zero_ghosts, update_ghosts
       use Density, only: impose_density_floor
 !
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous,dimension(:,:,:,:), intent(inout) :: f
 !
       integer, dimension(mx,my,mz) :: status
       real, dimension(mx,my,mz) :: delta_eth
@@ -1430,7 +1430,7 @@ module Energy
 !
 !   25-sep-15/MR+joern: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous,dimension(:,:,:,:), intent(in) :: f
 
       call keep_compiler_quiet(f)
 

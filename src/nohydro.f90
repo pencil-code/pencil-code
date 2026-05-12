@@ -100,7 +100,7 @@ module Hydro
 !
       use FArrayManager
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       if (kinflow=='KS') then
 !        call random_isotropic_KS_setup(-5./3.,1.,(nxgrid)/2.)
@@ -150,7 +150,7 @@ module Hydro
 !
 !  14-oct-13/MR: coded
 !
-        real, dimension (mx,my,mz,mfarray), intent(IN) :: f
+        real, contiguous,dimension(:,:,:,:), intent(IN) :: f
         call keep_compiler_quiet(f)
 !
       endsubroutine calc_means_hydro
@@ -162,7 +162,7 @@ module Hydro
 !
 !   7-jun-02/axel: adapted from hydro
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -230,7 +230,7 @@ module Hydro
 !
 ! 21-sep-13/MR    : coded
 !
-      real, dimension (mx,my,mz,mfarray),intent(IN) :: f
+      real, contiguous,dimension(:,:,:,:),intent(IN) :: f
       type (pencil_case),                intent(OUT):: p
 !
       call calc_pencils_hydro_pencpar(f,p,lpencil)
@@ -248,7 +248,7 @@ module Hydro
       use General, only: random_number_wrapper
       use Sub, only: quintic_step, quintic_der_step, dot_mn, dot2_mn
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (pencil_case) :: p
       logical, dimension(:) :: lpenc_loc
 !
@@ -319,7 +319,7 @@ module Hydro
 !
 !   17-dec-2010/Bourdin.KIS: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous,dimension(:,:,:,:), intent(inout) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -333,8 +333,8 @@ module Hydro
 !
       use Diagnostics, only: sum_mn_name, save_name
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: f
+      real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 !
       intent(in)  :: df,p
@@ -387,7 +387,7 @@ module Hydro
 !
 !   1-jul-08/axel: dummy
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (pencil_case) :: p
 !
       intent(in) :: f,p
@@ -404,7 +404,7 @@ module Hydro
 !  30-oct-09/MR: outsourced, parameter velind added
 !  checked to be an equivalent change by auto-test conv-slab-noequi, mdwarf
 !
-      real, dimension (mx,my,mz,mvar), intent(out) :: df
+      real, contiguous,dimension(:,:,:,:), intent(out) :: df
       real, dimension (nx,3),          intent(in)  :: uu
       integer,                         intent(in)  :: velind
 !
@@ -418,7 +418,7 @@ module Hydro
 !
 !  dummy routine
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -957,7 +957,7 @@ module Hydro
 !
 !  26-jun-06/tony: dummy
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (slice_data) :: slices
 !
       call keep_compiler_quiet(f)
@@ -979,7 +979,7 @@ module Hydro
 !
 !  32-nov-06/tobi: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -989,7 +989,7 @@ module Hydro
 !
 !  13-aug-2007/anders: dummy
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous,dimension(:,:,:,:), intent(in) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -1016,7 +1016,7 @@ module Hydro
 !!
 !!  Dummy subroutine
 !!
-!      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+!      real, contiguous,dimension(:,:,:,:), intent(in) :: f
 !      real, intent(out) :: umax
 !!
 !      call keep_compiler_quiet(f)
@@ -1032,8 +1032,8 @@ module Hydro
 !***********************************************************************
     subroutine hydro_after_timestep(f,df,dtsub)
 !
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: f
+      real, contiguous,dimension(:,:,:,:) :: df
       real :: dtsub
 !
       call keep_compiler_quiet(f,df)
@@ -1047,7 +1047,7 @@ module Hydro
 !
 !   25-sep-15/MR+joern: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous,dimension(:,:,:,:), intent(in) :: f
 
       call keep_compiler_quiet(f)
 
@@ -1061,7 +1061,7 @@ module Hydro
 !
 ! Dummy
 !
-    real, dimension (mx,my,mz,mfarray) :: f
+    real, contiguous,dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
 

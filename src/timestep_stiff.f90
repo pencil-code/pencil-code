@@ -82,8 +82,8 @@ module Timestep
 !
       use Messages
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: f
+      real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 !
       real :: errmax, tnew
@@ -171,14 +171,14 @@ module Timestep
       intent(inout) :: f
       intent(out)   :: df, p, errmax
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: fscal
+      real, contiguous,dimension(:,:,:,:) :: f
+      real, contiguous,dimension(:,:,:,:) :: fscal
       ! Note: The tmp array will not use more memory than the temporary
       !   array that would be implicitly created with calls like
       !     call pde(f + a21*k(:,:,:,:,1), k(:,:,:,:,2),p))
-      real, dimension (mx,my,mz,mfarray) :: tmp
+      real, contiguous,dimension(:,:,:,:) :: tmp
       real, dimension (mx,my,mz,nchemspec,nchemspec) :: jacob
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case) :: p
       integer, dimension (mx,my,mz,nchemspec) :: indx
       real, dimension(mx,my,mz,mfarray,4) :: k

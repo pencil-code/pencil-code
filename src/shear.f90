@@ -217,7 +217,7 @@ module Shear
       use General, only: random_number_wrapper
       use Mpicomm, only: mpibcast_real
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
 !  Possible to shear around a random position in x, to let all points
 !  be subjected to shear in a statistically equal way.
@@ -267,7 +267,7 @@ module Shear
 !
 !  01-may-09/wlad: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (pencil_case) :: p
 !
       intent(in) :: f
@@ -298,7 +298,7 @@ module Shear
 !
       use Deriv, only: der, der6
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
@@ -420,7 +420,7 @@ module Shear
 !
       use Deriv, only: der
 !
-      real, dimension(mx,my,mz,mfarray), intent(in)    :: f
+      real, contiguous,dimension(:,:,:,:), intent(in)    :: f
       real, dimension(mx,my,mz,mvar)   , intent(inout) :: df
 !
       integer, intent(in) :: nvars, jstart
@@ -478,7 +478,7 @@ module Shear
       use Diagnostics, only: save_name
       use Mpicomm, only: update_neighbors, isendrcv_bdry_x
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real :: dt_shear
       integer :: ivar
@@ -744,7 +744,7 @@ module Shear
 !
       use Mpicomm, only: initiate_shearing, finalize_shearing
 !
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous,dimension(:,:,:,:), intent(inout) :: f
       integer, intent(in) :: ivar1, ivar2
       logical, save :: lfirstcall=.true.
 !
@@ -782,7 +782,7 @@ module Shear
 !
       use Fourier, only: fourier_shift_yz_y
 !
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous,dimension(:,:,:,:), intent(inout) :: f
       integer, intent(in) :: ivar1, ivar2
 !
       real, dimension (ny,nz) :: f_tmp_yz

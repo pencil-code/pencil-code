@@ -465,7 +465,7 @@ outer:do ikz=1,nz
     use Deriv, only: der
     use File_io, only: file_exists
 !
-    real, dimension (mx,my,mz,mfarray) :: f
+    real, contiguous,dimension(:,:,:,:) :: f
     character (len=*) :: sp
     integer, intent(in), optional :: iapn_index
     real, dimension(:) :: spectrum
@@ -591,7 +591,7 @@ outer:do ikz=1,nz
     use Sub, only: curli
     use File_io, only: file_exists
 !
-    real, dimension (mx,my,mz,mfarray) :: f
+    real, contiguous,dimension(:,:,:,:) :: f
     character (len=*) :: sp
     integer, intent(in), optional :: iapn_index
   
@@ -672,7 +672,7 @@ outer:do ikz=1,nz
 !
     use Sub, only: curli
 !
-    real, dimension (mx,my,mz,mfarray), intent(in) :: f
+    real, contiguous,dimension(:,:,:,:), intent(in) :: f
     character (len=*), intent(in) :: sp
     real, dimension(nx,ny,nz), intent(out) :: a_re, a_im
     integer, intent(in) :: ivec
@@ -723,7 +723,7 @@ outer:do ikz=1,nz
 !
     use Fourier, only: fft_xyz_parallel
 !
-    real, dimension (mx,my,mz,mfarray), intent(in) :: f
+    real, contiguous,dimension(:,:,:,:), intent(in) :: f
     character (len=*), intent(in) :: sp1,sp2
     real, dimension(:), intent(out) :: spectrum
     real, dimension(nx,ny,nz), intent(out) :: a_re,a_im,b_re,b_im
@@ -793,7 +793,7 @@ outer:do ikz=1,nz
     use Mpicomm, only: mpireduce_sum
     use File_io, only: file_exists
 !
-    real, dimension (mx,my,mz,mfarray), intent(in) :: f
+    real, contiguous,dimension(:,:,:,:), intent(in) :: f
     character (len=*), intent(in) :: sp1, sp2
     logical, intent(in) :: lvec
 !
@@ -859,7 +859,7 @@ outer:do ikz=1,nz
 
     integer, parameter :: nk=nx/2
 
-    real, dimension (mx,my,mz,mfarray) :: f
+    real, contiguous,dimension(:,:,:,:) :: f
     character (len=1) :: sp
     real, dimension(nk) :: spectrum
     integer :: k,ikx,iky,ikz,ivec
@@ -925,7 +925,7 @@ outer:do ikz=1,nz
 !
     use Mpicomm, only: mpireduce_sum
 !
-    real, dimension (mx,my,mz,mfarray) :: f
+    real, contiguous,dimension(:,:,:,:) :: f
     character (len=1) :: sp
 
     integer, parameter :: nk=nx/2
@@ -982,7 +982,7 @@ outer:do ikz=1,nz
 !
     implicit none
 !
-    real, dimension(mx,my,mz,mfarray), intent(in) :: f
+    real, contiguous,dimension(:,:,:,:), intent(in) :: f
     character (LEN=*), intent(in)                 :: sp
     integer, optional, intent(in)                 :: ivecp
     real, dimension(nx,ny,nz), intent(out) :: ar, ai
@@ -1124,7 +1124,7 @@ outer:do ikz=1,nz
 !
     implicit none
 !
-    real, dimension(mx,my,mz,mfarray), intent(in) :: f
+    real, contiguous,dimension(:,:,:,:), intent(in) :: f
     character (len=*),                 intent(in) :: sp
     character (len=*), optional,       intent(in) :: sp2
 !
@@ -1508,7 +1508,7 @@ outer:do ikz=1,nz
     integer :: nk
     integer :: k, ikx, iky, ikz, jkz, im, in, ivec, ivec_jj
     real :: k2
-    real, dimension (mx,my,mz,mfarray) :: f
+    real, contiguous,dimension(:,:,:,:) :: f
     real, dimension(nx) :: jji, b2, j2
     real, dimension(nx,3) :: bb, bbEP, hhEP, jj, gtmp1, gtmp2
     real, save, allocatable, dimension(:,:,:,:) :: bEP, hEP
@@ -2208,7 +2208,7 @@ outer:do ikz=1,nz
     integer, parameter :: nk=nxgrid/2
     integer :: k, ikx, iky, ikz, ivec, stat
     real :: k2
-    real, dimension(mx,my,mz,mfarray) :: f
+    real, contiguous,dimension(:,:,:,:) :: f
     real, dimension(:,:,:,:), allocatable :: tmpv, scrv
     real, dimension(:,:,:), allocatable :: c_re, c_im
     real, dimension(nx,3) :: aa,bb,jj,jxb
@@ -2483,7 +2483,7 @@ outer:do ikz=1,nz
     integer, parameter :: nk=nxgrid/2
     integer :: k, ikx, iky, ikz, ivec 
     real :: k2
-    real, dimension(mx,my,mz,mfarray) :: f
+    real, contiguous,dimension(:,:,:,:) :: f
     real, dimension(nx,3) :: uu,oo,oxu
     real, dimension(nx,3,3) :: uij
     real, dimension(nk) :: nks,nks_sum
@@ -2698,7 +2698,7 @@ outer:do ikz=1,nz
     integer, parameter :: nk=nxgrid/2
     integer :: k,ikx,iky,ikz,ivec
     real :: k2
-    real, dimension (mx,my,mz,mfarray) :: f
+    real, contiguous,dimension(:,:,:,:) :: f
     real, save, allocatable, dimension (:,:,:,:) :: EMF,JJJ,EMB,BBB
     real, dimension(nx,3) :: uu,aa,bb,jj,uxb,uxj
     real, dimension(nx,3,3) :: aij,bij
@@ -2897,7 +2897,7 @@ outer:do ikz=1,nz
     integer, parameter :: nk=nxgrid/2
     integer :: k,ikx,iky,ikz,ivec
     real :: k2
-    real, dimension (mx,my,mz,mfarray) :: f
+    real, contiguous,dimension(:,:,:,:) :: f
     real, allocatable, dimension(:,:,:,:) :: Adv, Str, BBB
     real, dimension(nx,3) :: uu, aa, bb, divu, bbdivu, bgradu, ugradb
     real, dimension(nx,3,3) :: uij, aij, bij
@@ -3092,7 +3092,7 @@ outer:do ikz=1,nz
     use Sub, only: gij, gij_etc, curl_mn, cross_mn
     use Special, only: special_calc_spectra
 !
-    real, dimension (mx,my,mz,mfarray) :: f
+    real, contiguous,dimension(:,:,:,:) :: f
     character (len=3) :: sp
     logical :: lfirstcall
   
@@ -3390,7 +3390,7 @@ outer:do ikz=1,nz
     integer :: nk
     integer :: k,ikx,iky,ikz, ivec, ia0
     real :: k2,fact
-    real, dimension (mx,my,mz,mfarray) :: f
+    real, contiguous,dimension(:,:,:,:) :: f
     real, dimension(:), allocatable, save :: spectrum,spectrum_sum
     real, dimension(:), allocatable, save :: hor_spectrum, hor_spectrum_sum
     real, dimension(:), allocatable, save :: ver_spectrum, ver_spectrum_sum
@@ -3720,7 +3720,7 @@ outer:do ikz=1,nz
     use Sub, only: curli
     use General, only: itoa
 !
-    real, dimension (mx,my,mz,mfarray) :: f
+    real, contiguous,dimension(:,:,:,:) :: f
     character (len=1) :: sp
     integer :: ivec
     integer, optional :: ivar
@@ -3986,7 +3986,7 @@ outer:do ikz=1,nz
     use SharedVariables, only: get_shared_variable
     use FArrayManager, only: farray_index_by_name
 !
-    real, dimension (mx,my,mz,mfarray), intent(in) :: f
+    real, contiguous,dimension(:,:,:,:), intent(in) :: f
     character (len=*), intent(in) :: variabl_in
     real, optional, intent(in) :: pdf_mean_in, pdf_rms_in
 !
@@ -4230,7 +4230,7 @@ outer:do ikz=1,nz
     integer :: l, i_pdf, i_pdfy
     integer :: n_pdf=100, n_pdfy=100
     integer, allocatable, dimension(:,:) :: pdf_yy, pdf_yy_sum
-    real, dimension (mx,my,mz,mfarray) :: f
+    real, contiguous,dimension(:,:,:,:) :: f
     real, dimension (nx) :: pdf_var,pdfy_var
     integer, dimension (2) :: nreduce
     real :: pdf_mean, pdf_rms, pdf_dx, pdf_dx1, pdf_scl, pdfy_scl
@@ -4352,7 +4352,7 @@ outer:do ikz=1,nz
     use Mpicomm, only: mpireduce_sum_int
     use Sub, only: del2v_etc, curl
 !
-    real, dimension (mx,my,mz,mfarray) :: f
+    real, contiguous,dimension(:,:,:,:) :: f
     character (len=*) :: sp
 !
     integer, parameter :: nk=nxgrid/2, npdf=130
@@ -4499,7 +4499,7 @@ outer:do ikz=1,nz
     use Fourier, only: fourier_transform_real_1
 !
     integer :: j,l,ivec,ispec,ifirst_fft
-    real, dimension (mx,my,mz,mfarray) :: f
+    real, contiguous,dimension(:,:,:,:) :: f
     real, allocatable, dimension(:,:,:), save :: a1
     real, dimension(nygrid/2) :: spectrumy,spectrumy_sum
     real, dimension(nzgrid/2) :: spectrum,spectrum_sum
@@ -4671,7 +4671,7 @@ outer:do ikz=1,nz
     use Sub, only: curli
 !
     integer :: j,l,ivec,ispec,ifirst_fft
-    real, dimension (mx,my,mz,mfarray) :: f
+    real, contiguous,dimension(:,:,:,:) :: f
     real, allocatable, dimension(:,:,:), save :: a1,b1
     real, dimension(nzgrid/2) :: spectrum,spectrum_sum
     real, dimension(nzgrid/2) :: spectrumhel,spectrumhel_sum
@@ -4815,7 +4815,7 @@ outer:do ikz=1,nz
 !
     integer, parameter :: nk=nx/2
     integer :: k,ikx,iky,ikz,ivec
-    real, dimension (mx,my,mz,mfarray) :: f
+    real, contiguous,dimension(:,:,:,:) :: f
     real, save, allocatable, dimension(:,:,:,:) :: a1,b1
     real, dimension(nx,3) :: tmp_a1
     real, dimension(nk) :: spectrum,spectrum_sum
@@ -4930,7 +4930,7 @@ outer:do ikz=1,nz
     integer, dimension(nk) :: nmu
     real, allocatable, dimension(:,:) :: kmu, dmu
     real :: k2, mu, mu_offset, kmu2
-    real, dimension (mx,my,mz,mfarray) :: f
+    real, contiguous,dimension(:,:,:,:) :: f
 !
     real, allocatable, dimension(:,:,:), save :: ux_re, ux_im
     real, allocatable, dimension(:,:,:), save :: uy_re, uy_im
@@ -5412,7 +5412,7 @@ outer:do ikz=1,nz
     integer, parameter :: nk=nxgrid/2
     integer :: ikx, iky, ikz, ivec
     integer :: k3,k
-    real, dimension (mx,my,mz,mfarray) :: f
+    real, contiguous,dimension(:,:,:,:) :: f
     real, dimension(nk) :: spectrum,spectrum_sum
     real, dimension(nk) :: spectrumhel,spectrumhel_sum
     character (len=3) :: sp
@@ -5571,7 +5571,7 @@ outer:do ikz=1,nz
     integer :: jkx
     real :: k2
     real, pointer :: t_cor
-    real, dimension (mx,my,mz,mfarray) :: f
+    real, contiguous,dimension(:,:,:,:) :: f
     real, dimension(nk) :: nks,nks_sum
     real, dimension(nk) :: k2m,k2m_sum,krms
     real, dimension(nk) :: spectrum,spectrum_sum
@@ -5897,7 +5897,7 @@ outer:do ikz=1,nz
     use Shear, only: shear_frame_transform
     use SharedVariables, only: get_shared_variable
 !
-    real, dimension (mx,my,mz,mfarray) :: f
+    real, contiguous,dimension(:,:,:,:) :: f
     character (len=*) :: sp
 !
     integer, parameter :: nk=nxgrid/2
@@ -6179,7 +6179,7 @@ outer:do ikz=1,nz
     integer :: kxx,kyy,kzz,kint
     real :: k2, rr, k, j0, j0x, j0y, j0z, j1, dx_2pi_box
     real, dimension(4) :: w
-    real, dimension (mx,my,mz,mfarray) :: f
+    real, contiguous,dimension(:,:,:,:) :: f
     real, save, allocatable, dimension(:,:,:) :: gLam
     real, dimension(nx,3) :: gLam_tmp
     real, dimension(4,nk) :: correl,correl_sum
@@ -6493,7 +6493,7 @@ outer:do ikz=1,nz
     use Sub, only: del2vi_etc, del2v_etc, cross, grad, curli, curl, dot2
     use Shear, only: shear_frame_transform
 !
-    real, dimension (mx,my,mz,mfarray) :: f
+    real, contiguous,dimension(:,:,:,:) :: f
     character (len=*) :: sp
     character (len=4) :: sp2
 !
@@ -6731,7 +6731,7 @@ outer:do ikz=1,nz
     integer, parameter :: nk=max(nxgrid/2,nygrid/2,nzgrid/2)
     integer :: p,q,lp,lq,ivec,iky,ikz
     integer :: nlk_p, nlk_q
-    real, dimension (mx,my,mz,mfarray) :: f
+    real, contiguous,dimension(:,:,:,:) :: f
     real, dimension(nx,3) :: uu,aa,bb,uxb,jj,curljj
     real, dimension(nx,3,3) :: aij,bij
     real, save, allocatable, dimension(:,:,:,:) :: uuu,bbb,jjj,curljjj

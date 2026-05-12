@@ -37,7 +37,7 @@ module Dustdensity
 !***********************************************************************
     subroutine initialize_dustdensity(f)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -45,7 +45,7 @@ module Dustdensity
 !***********************************************************************
     subroutine init_nd(f)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -65,7 +65,7 @@ module Dustdensity
 !***********************************************************************
     subroutine dustdensity_after_boundary(f)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 
       call keep_compiler_quiet(f)
 !
@@ -73,7 +73,7 @@ module Dustdensity
 !***********************************************************************
     subroutine dustdensity_before_boundary(f)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 
       call keep_compiler_quiet(f)
 !
@@ -81,7 +81,7 @@ module Dustdensity
 !***********************************************************************
     subroutine calc_pencils_dustdensity(f,p)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (pencil_case) :: p
 !
       intent(in) :: f, p
@@ -93,8 +93,8 @@ module Dustdensity
 !***********************************************************************
     subroutine dndmd_dt(f,df,p)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: f
+      real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 !
       call keep_compiler_quiet(f)
@@ -106,7 +106,7 @@ module Dustdensity
     subroutine calc_diagnostics_dustdensity(f,p)
 !
       type (pencil_case) :: p
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
@@ -156,7 +156,7 @@ module Dustdensity
 !***********************************************************************
     subroutine get_slices_dustdensity(f,slices)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (slice_data) :: slices
 !
       call keep_compiler_quiet(f)
@@ -166,7 +166,7 @@ module Dustdensity
 !***********************************************************************
    subroutine impose_dustdensity_floor(f)
 !
-     real, dimension (mx,my,mz,mfarray) :: f
+     real, contiguous,dimension(:,:,:,:) :: f
 !
      call keep_compiler_quiet(f)
 !

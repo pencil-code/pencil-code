@@ -56,7 +56,7 @@ module Magnetic
 !
 !  24-nov-2002/tony: dummy routine
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
 !  Precalculate 1/mu (moved here from register.f90)
 !
@@ -79,7 +79,7 @@ module Magnetic
 !
 !  Dummy routine
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -113,7 +113,7 @@ module Magnetic
 !
 !  29-may-14/ccyang: dummy
 !
-      real, dimension(mx,my,mz,mfarray), intent(in):: f
+      real, contiguous,dimension(:,:,:,:), intent(in):: f
 !
       call keep_compiler_quiet(f)
 !
@@ -123,7 +123,7 @@ module Magnetic
 !
 !  Standard version (_std): global variable lpencil contains information about needed pencils.
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout):: f
+      real, contiguous,dimension(:,:,:,:), intent(inout):: f
       type (pencil_case),                 intent(out)  :: p
 !
       call calc_pencils_magnetic_pencpar(f,p,lpencil)
@@ -137,7 +137,7 @@ module Magnetic
 !
 !  20-11-04/anders: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (pencil_case) :: p
       logical, dimension(:) :: lpenc_loc
 !
@@ -169,8 +169,8 @@ module Magnetic
 !
 !  Dummy routine
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: f
+      real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 !
       intent(in) :: f, df, p
@@ -184,7 +184,7 @@ module Magnetic
 !
 !  Dummy routine
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (pencil_case) :: p
 !
       intent(in) :: f, p
@@ -198,7 +198,7 @@ module Magnetic
 !
 !  Dummy routine
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (pencil_case) :: p
 !
       intent(in) :: f, p
@@ -212,7 +212,7 @@ module Magnetic
 !
 !  Dummy routine
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (pencil_case) :: p
 !
       intent(in) :: f,p
@@ -226,7 +226,7 @@ module Magnetic
 !
 !  Dummy routine
 !
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 !
       intent(in)  ::  df, p
@@ -240,7 +240,7 @@ module Magnetic
 !
 !  Dummy routine
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       intent(inout) :: f
 !
       call keep_compiler_quiet(f)
@@ -251,7 +251,7 @@ module Magnetic
 !
 !  Dummy routine
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (:) :: spectrum,spectrum_hel
       logical :: lfirstcall
       character(LEN=3) :: kind
@@ -270,7 +270,7 @@ module Magnetic
 !
 !  Dummy routine
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       intent(inout) :: f
 !
       call keep_compiler_quiet(f)
@@ -328,7 +328,7 @@ module Magnetic
 !
 !  Dummy routine
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (slice_data) :: slices
 !
       call keep_compiler_quiet(f)
@@ -346,7 +346,7 @@ module Magnetic
 !
 !  Dummy routine
 !
-      real, dimension (mx,my,mz,mfarray), intent (in) :: f
+      real, contiguous,dimension(:,:,:,:), intent (in) :: f
       real, dimension (mx,3), intent (out) :: bb_hat
 !
       call keep_compiler_quiet(f)
@@ -388,7 +388,7 @@ module Magnetic
 !
 !  dummy
 !
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous,dimension(:,:,:,:), intent(inout) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -396,8 +396,8 @@ module Magnetic
 !***********************************************************************
     subroutine magnetic_after_timestep(f,df,dtsub)
 !
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: f
+      real, contiguous,dimension(:,:,:,:) :: df
       real :: dtsub
 !
       call keep_compiler_quiet(f,df)
@@ -407,7 +407,7 @@ module Magnetic
 !****************************************************************************
     subroutine magnetic_after_mn(df)
 !
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: df
 !
       call keep_compiler_quiet(df)
 !

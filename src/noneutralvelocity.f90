@@ -57,7 +57,7 @@ module NeutralVelocity
 !
 !  18-mar-03/axel: dummy routine
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -91,7 +91,7 @@ module NeutralVelocity
 !
 !  13-nov-04/anders: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (pencil_case) :: p
 !
       intent(in) :: f,p
@@ -109,8 +109,8 @@ module NeutralVelocity
 !
 !  18-mar-03/axel: dummy routine
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: f
+      real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 !
       call keep_compiler_quiet(f)

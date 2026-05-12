@@ -140,7 +140,7 @@ module EquationOfState
 !
       use Sub, only: register_report_aux
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       if (lroot) print*,'initialize_eos: ENTER'
 !
@@ -332,7 +332,7 @@ module EquationOfState
 !
 !  9-oct-15/MR: coded
 !
-      real, dimension (mx,my,mz,mfarray),intent(IN)   :: f
+      real, contiguous,dimension(:,:,:,:),intent(IN)   :: f
       type (pencil_case),                intent(INOUT):: p
 !
       call calc_pencils_eos_pencpar(f,p,lpencil)
@@ -347,7 +347,7 @@ module EquationOfState
 !
       use Sub, only: grad,del2,del6,g2ij
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc
 !
@@ -503,7 +503,7 @@ module EquationOfState
 !
 !   12-aug-03/tony: implemented dummy
 !
-      real, dimension (mx,my,mz,mfarray), optional :: f
+      real, contiguous,dimension(:,:,:,:), optional :: f
       real, optional, intent(out) :: mu_tmp
 !
       mu_tmp=0.
@@ -523,7 +523,7 @@ module EquationOfState
 !***********************************************************************
     subroutine init_eos(f)
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous,dimension(:,:,:,:), intent(inout) :: f
 !
       call ioncalc(f)
 !
@@ -533,7 +533,7 @@ module EquationOfState
 !
 !   calculate degree of ionization and temperature
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       real, dimension (mx) :: yH,rho1,TT1,rhs,sqrtrhs
       real, dimension (mx) :: mu1,yH_term_cp,TT_term_cp
@@ -593,7 +593,7 @@ module EquationOfState
 !   04-apr-06/tobi: Adapted for this EOS module
 !   27-jan-11/MR: caught zero in calculation of kapparho
 !
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous,dimension(:,:,:,:), intent(in) :: f
       integer, intent(in) :: psize
       real, dimension(psize), intent(out), optional :: lnrho
       real, dimension(psize), intent(out), optional :: yH,lnTT,mu1
@@ -890,7 +890,7 @@ module EquationOfState
 !   23-apr-2014/pete: dummy
 !
       integer, intent(IN) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       call not_implemented('bc_ss_flux_condturb_x','in eos_temperature_ionization')
 !
@@ -904,7 +904,7 @@ module EquationOfState
 !   07-jan-2015/pete: dummy
 !
       integer, intent(IN) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       call not_implemented('bc_ss_flux_condturb_mean_x','in eos_temperature_ionization')
 !
@@ -918,7 +918,7 @@ module EquationOfState
 !   15-jul-2014/pete: dummy
 !
       integer, intent(IN) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       call not_implemented('bc_ss_flux','in eos_temperature_ionization')
 !

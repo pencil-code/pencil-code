@@ -58,8 +58,8 @@ module Timestep
 !
 !  22-jun-15/ccyang: coded.
 !
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension(mx,my,mz,mvar), intent(inout) :: df
+      real, contiguous,dimension(:,:,:,:), intent(inout) :: f
+      real, contiguous,dimension(:,:,:,:), intent(inout) :: df
       type(pencil_case), intent(inout) :: p
 !
       logical :: lfirstcall = .true.
@@ -114,8 +114,8 @@ module Timestep
       use Special, only: special_after_timestep
       use Sub, only: shift_dt
 !
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension(mx,my,mz,mvar), intent(inout) :: df
+      real, contiguous,dimension(:,:,:,:), intent(inout) :: f
+      real, contiguous,dimension(:,:,:,:), intent(inout) :: df
       type(pencil_case), intent(inout) :: p
       logical, intent(in) :: lfirst_half
 !
@@ -213,7 +213,7 @@ module Timestep
       use Viscosity, only: split_update_viscosity
       use Particles_main, only: split_update_particles
 !
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous,dimension(:,:,:,:), intent(inout) :: f
 !
 !  Dispatch to respective modules.
 !

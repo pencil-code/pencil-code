@@ -105,7 +105,7 @@ module Shock
 !
 !  20-nov-02/tony: coded
 !
-       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+       real, contiguous,dimension(:,:,:,:), intent(inout) :: f
 !
        ivel = merge(ivv,iuu,ivv /= 0)
        ivelx = ivel
@@ -262,7 +262,7 @@ module Shock
 !
       use Slices_methods, only: assign_slices_scal
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous,dimension(:,:,:,:), intent(in) :: f
       type (slice_data) :: slices
 !
 !  Loop over slices
@@ -308,7 +308,7 @@ module Shock
 !
       use Sub, only: grad
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (pencil_case) :: p
 !
       intent(in) :: f
@@ -334,7 +334,7 @@ module Shock
 !***********************************************************************
     subroutine shock_before_boundary(f)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
 !  Shock profile calculation.
 !
@@ -351,7 +351,7 @@ module Shock
 !
 !for debug      use Debug_IO
 !
-     real, dimension (mx,my,mz,mfarray) :: f
+     real, contiguous,dimension(:,:,:,:) :: f
      real, dimension (mx,my,mz) :: tmp
 !
 !  Exit if were're not using the "simple" shock profile code or it's the wrong time.
@@ -413,7 +413,7 @@ module Shock
       use Magnetic, only: bb_unitvec_shock
 !
       logical :: early_finalize
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (mx,my,mz) :: tmp
       real, dimension (mz) :: modulation_z
       real, dimension (mx) :: penc,penc_perp
@@ -987,7 +987,7 @@ module Shock
 !
 !  27-apr-03/tony: adapted from shock_max3
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (mx) :: maxf
       integer :: j
       integer :: ii,jj,kk
@@ -1058,7 +1058,7 @@ module Shock
 !
 !  14-aug-06/tony: adapted from shock_max3
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (mx) :: tmp_penc
       real, dimension (mx) :: maxf
       real, parameter :: t1 = 1.
@@ -1103,7 +1103,7 @@ module Shock
 !
 !  27-apr-03/tony: adapted from shock_max3
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (mx) :: maxf
       integer :: j
       integer :: ii,jj,kk
@@ -1298,7 +1298,7 @@ module Shock
 !
 !  23-nov-02/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous,dimension(:,:,:,:), intent(in) :: f
       real, dimension (mx,my,mz), intent(out) :: df
       real :: fac
 !
@@ -1355,7 +1355,7 @@ module Shock
 !
 !  23-nov-02/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (mx) :: df
       real :: fac
 !
@@ -1392,7 +1392,7 @@ module Shock
 !
 !  16-aug-06/tobi: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent (in) :: f
+      real, contiguous,dimension(:,:,:,:), intent (in) :: f
       real, dimension (mx,3), intent (in) :: bb_hat
       real, dimension (mx), intent (in) :: divu
       real, dimension (mx), intent (out) :: divu_perp
@@ -1444,7 +1444,7 @@ module Shock
 !
 !  01-apr-05/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (mx,my,mz) :: df
       real :: cube, diamond, fac
       integer :: i,j,k
@@ -1536,7 +1536,7 @@ module Shock
 !***********************************************************************
     subroutine scale_and_chop_internalboundary(f)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       integer :: i,j,k
 !
       if ((nxgrid/=1).and.(nygrid/=1).and.(nzgrid/=1)) then
@@ -1618,7 +1618,7 @@ module Shock
 !
 !  01-apr-05/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (mx,my,mz) :: df
       real :: octagon, fac_diag, fac_straight
       integer :: i,j,k
@@ -1747,7 +1747,7 @@ module Shock
 !  periodic boundary condition
 !  11-nov-02/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       if (nprocx==1.and.lperi(1))  then
         f(l1:l1i ,:,:,ishock) = f(l1:l1i,:,:,ishock) + f(l2+1:mx,:,:,ishock)
@@ -1763,7 +1763,7 @@ module Shock
 !  periodic boundary condition
 !  11-nov-02/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       if (nprocy==1.and.lperi(2)) then
         f(:,m1:m1i,:,ishock)  = f(:,m1:m1i,:,ishock) + f(:,m2+1:my,:,ishock)
@@ -1779,7 +1779,7 @@ module Shock
 !  periodic boundary condition
 !  11-nov-02/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       if (nprocz==1.and.lperi(3))  then
         f(:,:,n1:n1i ,ishock) = f(:,:,n1:n1i,ishock) + f(:,:,n2+1:mz,ishock)

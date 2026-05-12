@@ -81,8 +81,8 @@ module Timestep
 !
       use Messages, only: warning
 
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: f
+      real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 !
       real :: errmax, dt_temp, dt_last
@@ -220,14 +220,14 @@ module Timestep
 !
       intent(inout) :: f
       intent(out)   :: df, p, errmax
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: f
+      real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case) :: p
       real, dimension(mx,my,mz,mvar,5) :: k
 ! Note: The tmp array will not use more memory than the temporary
 !   array that would be implicitly created with calls like
 !   call pde(f + b21*k(:,:,:,:,1), k(:,:,:,:,2), p)
-      real, dimension (mx,my,mz,mfarray) :: tmp
+      real, contiguous,dimension(:,:,:,:) :: tmp
       real, dimension(nx) :: scal, err
       real :: errmax, errmaxs, dtsub, told
       integer :: j
@@ -437,14 +437,14 @@ module Timestep
 !
       intent(inout) :: f
       intent(out)   :: df, p, errmax
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: f
+      real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case) :: p
       real, dimension(mx,my,mz,mvar,3) :: k
 ! Note: The tmp array will not use more memory than the temporary
 !   array that would be implicitly created with calls like
 !   call pde(f + b21*k(:,:,:,:,1), k(:,:,:,:,2), p)
-      real, dimension (mx,my,mz,mfarray) :: tmp
+      real, contiguous,dimension(:,:,:,:) :: tmp
       real, dimension(nx) :: scal, err
       real :: errmax, errmaxs, dtsub, told
       integer :: j
@@ -586,8 +586,8 @@ module Timestep
       use Particles_main, only: particles_special_after_dtsub
 !
       logical, intent(in) :: llast
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: f
+      real, contiguous,dimension(:,:,:,:) :: df
       real :: dtsub
 !
 !  Enables checks to avoid unnecessary communication

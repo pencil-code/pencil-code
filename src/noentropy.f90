@@ -80,7 +80,7 @@ module Energy
       use EquationOfState, only: cs0, select_eos_variable, get_gamma_etc
       use SharedVariables, only: get_shared_variable
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       real :: cp
 !
@@ -161,7 +161,7 @@ module Energy
 !
       use EquationOfState, only: cs20
 !
-      real, dimension(mx,my,mz,mfarray), intent(INOUT) :: f
+      real, contiguous,dimension(:,:,:,:), intent(INOUT) :: f
 !
       if (lslope_limit_diff) f(2:mx-2,2:my-2,2:mz-2,iFF_char_c) &
                              = max(f(2:mx-2,2:my-2,2:mz-2,iFF_char_c), w_sldchar_ene*sqrt(cs20))
@@ -172,7 +172,7 @@ module Energy
 !
 !  Initialise energy; called from start.f90.
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -255,7 +255,7 @@ module Energy
 !
 !  20-nov-04/anders: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (pencil_case) :: p
 !
       integer :: j
@@ -325,7 +325,7 @@ module Energy
 !
       use EquationOfState, only: cs0
 !
-      real, dimension (mx,my,mz,mfarray), intent(INOUT) :: f
+      real, contiguous,dimension(:,:,:,:), intent(INOUT) :: f
 !
 !    Slope limited diffusion: update characteristic speed
 !    Not staggered yet
@@ -345,7 +345,7 @@ module Energy
 !
 !  Dummy routine.
 !
-      real, dimension (mx,my,mz,mfarray), intent(IN) :: f
+      real, contiguous,dimension(:,:,:,:), intent(IN) :: f
 !
       call keep_compiler_quiet(f)
 
@@ -356,8 +356,8 @@ module Energy
 !  Calculate pressure gradient term for isothermal/polytropic equation
 !  of state.
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: f
+      real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 !
       integer :: j
@@ -396,7 +396,7 @@ module Energy
       
       use Diagnostics
 
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type(pencil_case) :: p
 
       real, dimension(nx) :: ufpres
@@ -429,7 +429,7 @@ module Energy
 !***********************************************************************
     subroutine get_slices_energy(f,slices)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (slice_data) :: slices
 !
       call keep_compiler_quiet(f)
@@ -441,7 +441,7 @@ module Energy
 !
 !  18-feb-10/anders: dummy
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -451,7 +451,7 @@ module Energy
 !
 !  Dummy subroutine
 !
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -533,8 +533,8 @@ module Energy
 !***********************************************************************
     subroutine energy_after_timestep(f,df,dtsub)
 !
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: f
+      real, contiguous,dimension(:,:,:,:) :: df
       real :: dtsub
 !
       call keep_compiler_quiet(f,df)
@@ -546,7 +546,7 @@ module Energy
 !
 !  Dummy subroutine
 !
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous,dimension(:,:,:,:), intent(inout) :: f
 !
       call keep_compiler_quiet(f)
 !

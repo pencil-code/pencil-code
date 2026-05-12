@@ -530,7 +530,7 @@ module Interstellar
       use EquationOfState, only: getmu, get_gamma_etc
       use General, only: random_seed_wrapper
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       integer :: i, int1_list, stat
       integer, dimension(4) :: int4_list
       real, dimension(13) :: real13_list
@@ -1452,7 +1452,7 @@ module Interstellar
 !
       use Slices_methods, only: assign_slices_scal
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (slice_data) :: slices
 !
 !  Loop over slices
@@ -1511,7 +1511,7 @@ module Interstellar
 !
       use General, only: itoa, random_seed_wrapper
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       logical :: lnothing=.true.
       character (len=intlen) :: iinit_str
@@ -1716,7 +1716,7 @@ module Interstellar
 !
       use Messages, only: fatal_error
 !
-      real, dimension(mx,my,mz,mfarray), intent(IN)   :: f
+      real, contiguous,dimension(:,:,:,:), intent(IN)   :: f
       type(pencil_case),                 intent(INOUT):: p
 !
       integer :: i
@@ -1767,7 +1767,7 @@ module Interstellar
 !
 !  01-aug-06/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous,dimension(:,:,:,:), intent(inout) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -1782,7 +1782,7 @@ module Interstellar
 !
       use Gpu, only: update_on_gpu
 
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous,dimension(:,:,:,:), intent(inout) :: f
       !integer, save :: ind_scale=-1
 !
       if (lfirst) then
@@ -1875,7 +1875,7 @@ module Interstellar
 !  13-jul-15/fred: requires initial_condition/hs_equilibrium_ism.f90
 !  17-jun-25/fred: recommend instead initial_condition/ths_equilibrium_ism.f90
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous,dimension(:,:,:,:), intent(inout) :: f
       real, dimension(mz), intent(out) :: zheat
 !
       real, dimension(mz) :: lambda=0.0, lnTT, zrho
@@ -1949,8 +1949,8 @@ module Interstellar
 !
 !      use Messages, only: fatal_error
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real, contiguous,dimension(:,:,:,:), intent(inout) :: f
+      real, contiguous,dimension(:,:,:,:), intent(inout) :: df
       type (pencil_case), intent(in) :: p
       real, dimension (nx), intent(inout) :: Hmax
 !
@@ -2137,7 +2137,7 @@ module Interstellar
       use General, only: touch_file
       use Gpu, only: load_farray_to_GPU
 !
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
 !  Only allow SNII if no SNI this step (may not be worth keeping).
 !  This is depricated, both types can occur in same step
@@ -2216,7 +2216,7 @@ module Interstellar
 !
 !  If time for next SNI, then implement, and calculate time of subsequent SNI.
 !
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       logical :: l_SNI
       integer :: try_count, iSNR, ierr
 !
@@ -2324,7 +2324,7 @@ module Interstellar
 !
 !  If time for next SNI, then implement, and calculate time of subsequent SNI.
 !
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       integer :: try_count, iSNR, ierr
       logical :: l_SNI
 !
@@ -2465,7 +2465,7 @@ module Interstellar
       use Mpicomm, only: mpiallreduce_sum
       use Grid, only: get_dVol
 !
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real :: franSN, rhom, scaled_interval, tmp_interval
 !
       intent(in) :: f
@@ -2556,7 +2556,7 @@ module Interstellar
       use Grid, only: get_dVol
       use Mpicomm, only: mpiallreduce_sum
 !
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real :: t_interval
       integer :: SNind
 !
@@ -2643,7 +2643,7 @@ module Interstellar
       use Grid, only: get_dVol
       use Mpicomm, only: mpiallreduce_sum, mpibcast_real
 !
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, dimension(nx) :: rho, lnTT, dV
       real :: cloud_mass, cloud_mass_dim, freq_SNII, prob_SNII
       real :: franSN, fmpi1
@@ -2807,7 +2807,7 @@ module Interstellar
 !
       use General, only: find_proc
 
-      real, intent(inout), dimension(mx,my,mz,mfarray) :: f
+      real, intent(inout), contiguous,dimension(:,:,:,:) :: f
       type (SNRemnant), intent(inout) :: SNR
 !
       real :: z00, x00, y00
@@ -2869,7 +2869,7 @@ module Interstellar
 !
       real, dimension(nx) :: dV
 !
-      real, intent(inout), dimension(mx,my,mz,mfarray) :: f
+      real, intent(inout), contiguous,dimension(:,:,:,:) :: f
       real, intent(in) :: h_SN
       type (SNRemnant), intent(inout) :: SNR
 !
@@ -3091,7 +3091,7 @@ Get_z:if (lroot) then
 !
       use General, only: random_seed_wrapper, random_number_wrapper, find_proc
 !
-      real, intent(inout), dimension(mx,my,mz,mfarray) :: f
+      real, intent(inout), contiguous,dimension(:,:,:,:) :: f
       type (SNRemnant), intent(inout) :: SNR
 !
       real, dimension(3) :: fran3
@@ -3148,7 +3148,7 @@ Get_z:if (lroot) then
       use Grid, only: get_dVol
       !$ use omp_lib
 !
-      real, intent(inout), dimension(mx,my,mz,mfarray) :: f
+      real, intent(inout), contiguous,dimension(:,:,:,:) :: f
       real, intent(in) , dimension(ncpus) :: cloud_mass_byproc
       type (SNRemnant), intent(inout) :: SNR
       integer, intent(in), dimension(4,npreSN)::preSN
@@ -3311,7 +3311,7 @@ mn_loop:do n=n1,n2
       use Gpu, only: copy_farray_from_GPU
       use Mpicomm, only: mpibcast_int, mpibcast_real
 !
-      real, intent(inout), dimension(mx,my,mz,mfarray) :: f
+      real, intent(inout), contiguous,dimension(:,:,:,:) :: f
       type (SNRemnant), intent(inout) :: SNR
 !
       real, dimension(7) :: fmpi7
@@ -3434,7 +3434,7 @@ mn_loop:do n=n1,n2
       use Gpu, only: copy_farray_from_GPU
       use Grid, only: get_dVol
 !
-      real, intent(inout), dimension(mx,my,mz,mfarray) :: f
+      real, intent(inout), contiguous,dimension(:,:,:,:) :: f
       type (SNRemnant), intent(inout) :: SNR
       integer, intent(inout), optional, dimension(4,npreSN) :: preSN
       integer, intent(inout), optional :: ierr
@@ -4109,7 +4109,7 @@ mn_loop:do n=n1,n2
       use Mpicomm, only: mpiallreduce_sum,mpiallreduce_min,mpiallreduce_max
       use Grid, only: get_dVol
 !
-      real, intent(in), dimension(mx,my,mz,mfarray) :: f
+      real, intent(in), contiguous,dimension(:,:,:,:) :: f
       type (SNRemnant), intent(in) :: remnant
       real, intent(out) :: rhom, ekintot, rhomin
       integer, optional :: ierr
@@ -4217,7 +4217,7 @@ mn_loop:do n=n1,n2
       use Mpicomm, only: mpiallreduce_sum
       use Grid, only: get_dVol
 !
-      real, intent(in), dimension(mx,my,mz,mfarray) :: f
+      real, intent(in), contiguous,dimension(:,:,:,:) :: f
       type (SNRemnant), intent(in) :: remnant
       real, intent(in) :: cvelocity_SN, cmass_SN
       real, intent(out) :: ekintot, rhom
@@ -4311,7 +4311,7 @@ mn_loop:do n=n1,n2
 !!
 !      use Mpicomm, only: mpiallreduce_max
 !!
-!      real, intent(in), dimension(mx,my,mz,mfarray) :: f
+!      real, intent(in), contiguous,dimension(:,:,:,:) :: f
 !      type (SNRemnant), intent(inout) :: SNR
 !      real, intent(in) :: radius
 !      real, intent(out) :: rho_lowest

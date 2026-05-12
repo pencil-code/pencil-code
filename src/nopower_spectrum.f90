@@ -50,7 +50,7 @@ module power_spectrum
 !
       use General, only: ioptest
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       character (len=1) :: sp
       integer, optional :: iapn_index
 !
@@ -64,7 +64,7 @@ module power_spectrum
 !
       use General, only: ioptest
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       character (len=1) :: sp1,sp2
       logical :: lvec
 !
@@ -77,7 +77,7 @@ module power_spectrum
 !***********************************************************************
     subroutine power_2d(f,sp)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       character (len=1) :: sp
 !
       call keep_compiler_quiet(f)
@@ -87,7 +87,7 @@ module power_spectrum
 !***********************************************************************
     subroutine power_xy(f,sp,sp2)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       character (len=1) :: sp
       character (len=1), optional :: sp2
 !
@@ -99,7 +99,7 @@ module power_spectrum
 !***********************************************************************
     subroutine powerhel(f,sp,lfirstcall,sumspec,lnowrite)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, dimension(2), optional :: sumspec
       character (len=3) :: sp
       logical :: lfirstcall
@@ -115,7 +115,7 @@ module power_spectrum
 !***********************************************************************
     subroutine powerLor(f,sp)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       character (len=3) :: sp
 !
       call keep_compiler_quiet(f)
@@ -125,7 +125,7 @@ module power_spectrum
 !***********************************************************************
     subroutine powerOmU(f,sp)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       character (len=3) :: sp
 !
       call keep_compiler_quiet(f)
@@ -135,7 +135,7 @@ module power_spectrum
 !***********************************************************************
     subroutine powerEMF(f,sp)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       character (len=3) :: sp
 !
       call keep_compiler_quiet(f)
@@ -145,7 +145,7 @@ module power_spectrum
 !***********************************************************************
     subroutine powerTra(f,sp)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       character (len=3) :: sp
 !
       call keep_compiler_quiet(f)
@@ -155,7 +155,7 @@ module power_spectrum
 !***********************************************************************
     subroutine powerGWs(f,sp,lfirstcall)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       character (len=3) :: sp
       logical :: lfirstcall
 !
@@ -170,7 +170,7 @@ module power_spectrum
       use General, only: ioptest
 
       logical, intent(in), optional :: lsqrt
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       character (len=2) :: sp
       integer, optional :: iapn_index
 !
@@ -183,7 +183,7 @@ module power_spectrum
 !***********************************************************************
     subroutine power_1d(f,sp,ivec,ivar)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       character (len=1) :: sp
       integer :: ivec
       integer, optional :: ivar
@@ -199,7 +199,7 @@ module power_spectrum
 !***********************************************************************
     subroutine pdf(f,variabl_in,pdf_mean_in,pdf_rms_in)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, optional :: pdf_mean_in,pdf_rms_in
       character (len=*) :: variabl_in
 !
@@ -212,7 +212,7 @@ module power_spectrum
     !***********************************************************************
     subroutine pdf_2d(f,variabl,pdf_mean,pdf_rms)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real :: pdf_mean,pdf_rms
       character (len=*) :: variabl
 !
@@ -224,7 +224,7 @@ module power_spectrum
     !***********************************************************************
     subroutine pdf1d_ang(f,sp)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       character (len=*) :: sp
 !
       call keep_compiler_quiet(f)
@@ -234,7 +234,7 @@ module power_spectrum
 !***********************************************************************
     subroutine power_phi(f,sp)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       character (len=*) :: sp
 !
       call keep_compiler_quiet(f)
@@ -244,7 +244,7 @@ module power_spectrum
 !***********************************************************************
     subroutine powerhel_phi(f,sp)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       character (len=*) :: sp
 !
       call keep_compiler_quiet(f)
@@ -254,7 +254,7 @@ module power_spectrum
 !***********************************************************************
   subroutine power_vec(f,sp)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       character (len=*) :: sp
 !
       call keep_compiler_quiet(f)
@@ -264,7 +264,7 @@ module power_spectrum
 !***********************************************************************
   subroutine polar_spectrum(f,sp)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       character (len=*) :: sp
 !
       call keep_compiler_quiet(f)
@@ -274,7 +274,7 @@ module power_spectrum
 !***********************************************************************
   subroutine power1d_plane(f,sp)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       character (len=*) :: sp
 !
       call keep_compiler_quiet(f)
@@ -284,7 +284,7 @@ module power_spectrum
 !***********************************************************************
   subroutine power_cor(f,sp)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       character (len=*) :: sp
 !
       call keep_compiler_quiet(f)
@@ -294,7 +294,7 @@ module power_spectrum
 !***********************************************************************
   subroutine power_cor_scl(f,sp)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       character (len=*) :: sp
 !
       call keep_compiler_quiet(f)
@@ -304,7 +304,7 @@ module power_spectrum
 !***********************************************************************
   subroutine quadratic_invariants(f,sp)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       character (len=*) :: sp
 !
       call keep_compiler_quiet(f)
@@ -314,7 +314,7 @@ module power_spectrum
 !***********************************************************************
   subroutine power_fft3d_vec(f,sp,sp2)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       character (len=*) :: sp
       character (len=4) :: sp2
 !
@@ -326,7 +326,7 @@ module power_spectrum
 !***********************************************************************
   subroutine power_transfer_mag(f,sp)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       character (len=*) :: sp
 !
       call keep_compiler_quiet(f)

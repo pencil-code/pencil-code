@@ -185,7 +185,7 @@ module Energy
       use SharedVariables, only: get_shared_variable
       use EquationOfState, only: select_eos_variable
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       integer :: ierr,i
 !
 !  Set iTT requal to ilnTT if we are considering non-logarithmic temperature.
@@ -326,7 +326,7 @@ module Energy
       use Initcond, only: jump, gaunoise
       use InitialCondition, only: initial_condition_ss
 !
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, contiguous,dimension(:,:,:,:), intent (inout) :: f
       real, dimension (nx) :: profx
       real :: der, prof
 !
@@ -594,7 +594,7 @@ module Energy
 !
       use Sub, only: u_dot_grad
 !
-      real, dimension (mx,my,mz,mfarray), intent (in) :: f
+      real, contiguous,dimension(:,:,:,:), intent (in) :: f
       type (pencil_case), intent (inout) :: p
 !
 !  Mach Speed
@@ -678,8 +678,8 @@ module Energy
       use Interstellar, only: calc_heat_cool_interstellar
       use Diagnostics, only: save_name, sum_mn_name
 !
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
-      real, dimension (mx,my,mz,mvar), intent (out) :: df
+      real, contiguous,dimension(:,:,:,:), intent (inout) :: f
+      real, contiguous,dimension(:,:,:,:), intent (out) :: df
       type (pencil_case) :: p
 !
       real, dimension (nx,3) :: damp, rhoT1gpp
@@ -816,7 +816,7 @@ module Energy
 
       use Diagnostics, only: max_mn_name,sum_mn_name,xysum_mn_name_z
 
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type(pencil_case) :: p
 !
 !  Calculate temperature related diagnostics
@@ -874,7 +874,7 @@ module Energy
 !
       use EquationOfState, only: get_gamma_etc
 
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous,dimension(:,:,:,:), intent(inout) :: f
       real, dimension (nx) :: cs2
       real :: gamma, gamma_m1, cp
 !
@@ -908,7 +908,7 @@ module Energy
       use Diagnostics, only: max_mn_name
       use Sub, only: dot,multsv
 !
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 !
       real, dimension (nx) :: g2,gamma
@@ -939,7 +939,7 @@ module Energy
 !
       use Diagnostics, only: max_mn_name
 !
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 !
 !  Add heat conduction to RHS of temperature equation
@@ -967,7 +967,7 @@ module Energy
       use Diagnostics, only: max_mn_name
       use Sub, only: dot
 !
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case) :: p
       real, dimension (nx) :: thdiff,g2,gshockglnTT
 !
@@ -1007,7 +1007,7 @@ module Energy
 !
       use Sub, only: cubic_step
 !
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 !
       real, dimension (nx) :: heat
@@ -1154,7 +1154,7 @@ module Energy
 !
       use Slices_methods, only: assign_slices_scal, process_slices, exp2d, log2d
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (slice_data) :: slices
 !
 !  Loop over slices
@@ -1192,7 +1192,7 @@ module Energy
 !
 !   25-sep-15/MR+joern: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous,dimension(:,:,:,:), intent(in) :: f
 
       call keep_compiler_quiet(f)
 

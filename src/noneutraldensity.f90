@@ -54,7 +54,7 @@ module Neutraldensity
 !
 !  18-mar-03/axel: adapted from neutraldensity
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -88,7 +88,7 @@ module Neutraldensity
 !
 !  13-nov-04/anders: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (pencil_case) :: p
 !
       intent(in) :: f, p
@@ -108,7 +108,7 @@ module Neutraldensity
 !***********************************************************************
     subroutine neutraldensity_after_boundary(f)
 
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 
       call keep_compiler_quiet(f)
 
@@ -121,8 +121,8 @@ module Neutraldensity
 !
 !  18-mar-03/axel: adapted from neutraldensity
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: f
+      real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 !
       call keep_compiler_quiet(f)

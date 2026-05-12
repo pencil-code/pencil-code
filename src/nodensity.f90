@@ -63,7 +63,7 @@ module Density
       use DensityMethods, only: initialize_density_methods
       use SharedVariables, only: get_shared_variable
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       real, dimension(:), pointer :: beta_glnrho_global_
 !
@@ -94,7 +94,7 @@ module Density
 !***********************************************************************
     subroutine init_lnrho(f)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -102,7 +102,7 @@ module Density
 !***********************************************************************
     subroutine density_after_boundary(f)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -135,7 +135,7 @@ module Density
 !
 ! 21-sep-13/MR: coded
 !
-      real, dimension (mx,my,mz,mfarray),intent(IN) :: f
+      real, contiguous,dimension(:,:,:,:),intent(IN) :: f
       type (pencil_case),                intent(OUT):: p
 !
       call calc_pencils_density_pnc(f,p,lpencil)
@@ -151,7 +151,7 @@ module Density
 !
       use EquationOfState, only: lnrho0, rho0
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (pencil_case) :: p
       logical, dimension(:) :: lpenc_loc
 !
@@ -188,7 +188,7 @@ module Density
 !***********************************************************************
     subroutine density_before_boundary_diagnostics(f)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
 
@@ -196,7 +196,7 @@ module Density
 !***********************************************************************
     subroutine density_before_boundary(f)
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous,dimension(:,:,:,:), intent(inout) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -204,8 +204,8 @@ module Density
 !***********************************************************************
     subroutine dlnrho_dt(f,df,p)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: f
+      real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 !
       intent(in) :: f,df,p
@@ -217,7 +217,7 @@ module Density
 !***********************************************************************
     subroutine calc_diagnostics_density(f,p)
 
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type(pencil_case) :: p
 
       call keep_compiler_quiet(p)
@@ -227,7 +227,7 @@ module Density
 !***********************************************************************
     subroutine split_update_density(f)
 !
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous,dimension(:,:,:,:), intent(in) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -235,7 +235,7 @@ module Density
 !***********************************************************************
     subroutine impose_density_floor(f)
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous,dimension(:,:,:,:), intent(in) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -284,7 +284,7 @@ module Density
 !***********************************************************************
     subroutine get_slices_density(f,slices)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (slice_data) :: slices
 !
       call keep_compiler_quiet(f)
@@ -294,7 +294,7 @@ module Density
 !***********************************************************************
     subroutine get_slices_pressure(f,slices)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (slice_data) :: slices
 !
       call keep_compiler_quiet(f)
@@ -306,7 +306,7 @@ module Density
 !
 !  10-dec-09/piyali: added to pass initial average density
 !
-    real, dimension (mx,my,mz,mfarray):: f
+    real, contiguous,dimension(:,:,:,:):: f
     real:: init_average_density
 !
       call keep_compiler_quiet(f)
@@ -318,8 +318,8 @@ module Density
 !
 !  14-dec-09/dintrans: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: f
+      real, contiguous,dimension(:,:,:,:) :: df
       real, dimension(1) :: mass_per_proc
 !
       call keep_compiler_quiet(f,df)
@@ -342,7 +342,7 @@ module Density
 !  23-mar-2012/dintrans: coded
 !  dummy routine for the Boussinesq approximation
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -358,7 +358,7 @@ module Density
 !
       real :: mean_density
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       intent(in) :: f
 !
       mean_density=rho0
@@ -376,7 +376,7 @@ module Density
 !
       use EquationOfState, only: rho0
 !
-      real, dimension(mx,my,mz,mfarray), intent(INOUT) :: f
+      real, contiguous,dimension(:,:,:,:), intent(INOUT) :: f
 !
       if (lslope_limit_diff) f(2:mx-2,2:my-2,2:mz-2,iFF_char_c) &
                             =f(2:mx-2,2:my-2,2:mz-2,iFF_char_c) + rho0**2
@@ -385,7 +385,7 @@ module Density
 !***********************************************************************s
     subroutine write_z_stratification(f)
 
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous,dimension(:,:,:,:), intent(in) :: f
       call keep_compiler_quiet(f)
 !
     endsubroutine write_z_stratification
@@ -394,7 +394,7 @@ module Density
 !
 !  Dummy routine.
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous,dimension(:,:,:,:), intent(inout) :: f
 
       call keep_compiler_quiet(f)
 

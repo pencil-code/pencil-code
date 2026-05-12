@@ -145,7 +145,7 @@ module EquationOfState
 !
 ! Initialize variable selection code (needed for RELOADing)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 
       ieosvars=-1
       ieosvar_count=0
@@ -328,7 +328,7 @@ module EquationOfState
 !
       use Slices_methods, only: assign_slices_scal
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (slice_data) :: slices
 !
 !  Loop over slices.
@@ -447,7 +447,7 @@ module EquationOfState
 !
 !  9-oct-15/MR: coded
 !
-      real, dimension (mx,my,mz,mfarray),intent(INOUT):: f
+      real, contiguous,dimension(:,:,:,:),intent(INOUT):: f
       type (pencil_case),                intent(INOUT):: p
 !
       call calc_pencils_eos_pencpar(f,p,lpencil)
@@ -464,7 +464,7 @@ module EquationOfState
 !
       use Sub, only: grad, del2, dot2
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc
       real, dimension(nx) :: glnTT2,TT1del2TT,del2lnrho
@@ -594,7 +594,7 @@ module EquationOfState
 !***********************************************************************
    subroutine getdensity(f,EE,TT,yH,rho_full)
 !
-     real, dimension (mx,my,mz,mfarray) :: f
+     real, contiguous,dimension(:,:,:,:) :: f
      real, dimension (mx,my,mz), intent(out) :: rho_full
      real, intent(in), optional :: EE,TT,yH
 !
@@ -612,7 +612,7 @@ module EquationOfState
 !***********************************************************************
    subroutine gettemperature(f,TT_full)
 !
-     real, dimension (mx,my,mz,mfarray) :: f
+     real, contiguous,dimension(:,:,:,:) :: f
      real, dimension (mx,my,mz), intent(out) :: TT_full
 !
       if (ltemperature_nolog) then
@@ -762,7 +762,7 @@ module EquationOfState
 !   23-apr-2014/pete: dummy
 !
       integer, intent(IN) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -774,7 +774,7 @@ module EquationOfState
 !   07-jan-2015/pete: dummy
 !
       integer, intent(IN) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
@@ -786,7 +786,7 @@ module EquationOfState
 !   15-jul-2014/pete: dummy
 !
       integer, intent(IN) :: topbot
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)

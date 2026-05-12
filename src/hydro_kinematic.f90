@@ -226,7 +226,7 @@ module Hydro
       use Mpicomm
       use Slices_methods, only: alloc_slice_buffers
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real :: sph, sph_har_der, LP1
       real, dimension (nx) :: vel_prof, tmp_mn
       real, dimension (nx,3) :: tmp_nx3
@@ -538,7 +538,7 @@ module Hydro
 !
       use Sub, only: finalize_aver
 
-      real, dimension (mx,my,mz,mfarray), intent(IN) :: f
+      real, contiguous,dimension(:,:,:,:), intent(IN) :: f
 !
       type(pencil_case),dimension(:), allocatable :: p          ! vector as scalar quantities not allocatable
       logical, dimension(:), allocatable :: lpenc_loc
@@ -589,7 +589,7 @@ module Hydro
 !
 !   7-jun-02/axel: adapted from hydro
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -697,7 +697,7 @@ module Hydro
 !
 ! 21-sep-13/MR    : coded
 !
-      real, dimension (mx,my,mz,mfarray),intent(IN) :: f
+      real, contiguous,dimension(:,:,:,:),intent(IN) :: f
       type (pencil_case),                intent(OUT):: p
 !
       call calc_pencils_hydro_pencpar(f,p,lpencil)
@@ -725,7 +725,7 @@ module Hydro
       use Sub
       use Mpicomm
 !
-      real, dimension (mx,my,mz,mfarray),intent(IN) :: f
+      real, contiguous,dimension(:,:,:,:),intent(IN) :: f
       type (pencil_case),                intent(OUT):: p
       logical, dimension(npencils),      intent(IN) :: lpenc_loc
 !
@@ -2735,7 +2735,7 @@ module Hydro
       use Sub, only: smooth, eulag_filter
       use General, only: random_number_wrapper
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous,dimension(:,:,:,:), intent(inout) :: f
 !
       real :: fac
       real, save :: t_foreign=0.
@@ -2812,8 +2812,8 @@ module Hydro
       use Diagnostics
       use FArrayManager
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: f
+      real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case) :: p
       real, dimension (nx) :: advec_uu
       logical, save :: lfirst_aux=.true.
@@ -2852,7 +2852,7 @@ module Hydro
 !
 !   1-jul-08/axel: dummy
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (pencil_case) :: p
 !
       intent(in) :: f,p
@@ -2873,7 +2873,7 @@ module Hydro
 !  30-oct-09/MR: outsourced, parameter velind added
 !  checked to be an equivalent change by auto-test conv-slab-noequi, mdwarf
 !
-      real, dimension (mx,my,mz,mvar), intent(out) :: df
+      real, contiguous,dimension(:,:,:,:), intent(out) :: df
       real, dimension (nx,3),          intent(in)  :: uu
       integer,                         intent(in)  :: velind
 !
@@ -2887,7 +2887,7 @@ module Hydro
 !
 !  Dummy routine.
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       intent(inout) :: f
 !
 !  Random phase, amplitude and wavenumber.
@@ -3611,7 +3611,7 @@ module Hydro
 !
       use Slices_methods, only: assign_slices_vec
 
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (slice_data) :: slices
 !
 !  Loop over slices
@@ -3639,8 +3639,8 @@ module Hydro
 !
 !  12-mar-17/wlyra: coded. 
 !
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: f
+      real, contiguous,dimension(:,:,:,:) :: df
       real :: dt_sub
 !
       call keep_compiler_quiet(f,df)
@@ -3662,7 +3662,7 @@ module Hydro
 !
 !  32-nov-06/tobi: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -3673,7 +3673,7 @@ module Hydro
 !!
 !!  Dummy.
 !!
-!      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+!      real, contiguous,dimension(:,:,:,:), intent (inout) :: f
 !      integer,                            intent (in)    :: indux
 !
 !      call keep_compiler_quiet(f)
@@ -3685,7 +3685,7 @@ module Hydro
 !
 !  13-aug-2007/anders: dummy
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous,dimension(:,:,:,:), intent(in) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -3867,7 +3867,7 @@ module Hydro
 !***********************************************************************
     subroutine calc_gradu(f)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
   
       call not_implemented('calc_gradu','in hydro_kinematic') 
       call keep_compiler_quiet(f)
@@ -3881,7 +3881,7 @@ module Hydro
 !   calculation of characteristic velocity
 !   for slope limited diffusion
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous,dimension(:,:,:,:), intent(inout) :: f
       real, parameter :: i64_1=1/64.
 !
       if (lslope_limit_diff) then
@@ -3911,7 +3911,7 @@ module Hydro
       use Initcond, only: power_randomphase_hel
       use General, only: random_seed_wrapper
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real :: kgaussian=0., cutoff=1e9, relhel_kinflow=0., qirro_kinflow=1., ncutoff=1.
       logical :: lscale_tobox=.false., lskip_projection=.false., lvectorpotential=.false.
 !

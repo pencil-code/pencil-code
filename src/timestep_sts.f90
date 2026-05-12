@@ -48,8 +48,8 @@ module Timestep
       use Mpicomm, only: mpiallreduce_max,MPI_COMM_PENCIL
       use Special, only: special_after_timestep
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (mx,my,mz,mvar), intent(out) :: df
+      real, contiguous,dimension(:,:,:,:), intent(inout) :: f
+      real, contiguous,dimension(:,:,:,:), intent(out) :: df
       type (pencil_case), intent(out) :: p
 !
       real :: dt1, dt1_local

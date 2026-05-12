@@ -183,7 +183,7 @@ module Testfield
       use FArrayManager
       use Slices_methods, only: alloc_slice_buffers
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, dimension(mz) :: ztestfield, c, s
       real :: ktestfield_effective
       integer :: jtest
@@ -369,7 +369,7 @@ module Testfield
       use Sub
       use InitialCondition, only: initial_condition_aatest
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       integer :: j
 !
       do j=1,ninit
@@ -484,8 +484,8 @@ module Testfield
       use Hydro, only: uumz,lcalc_uumeanz
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: f
+      real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 
       real, dimension (nx,3) :: uxB,B0test=0,bbtest
@@ -827,7 +827,7 @@ module Testfield
       use General, only: keep_compiler_quiet
       use Slices_methods, only: assign_slices_vec
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (slice_data) :: slices
 !
 !  Loop over slices
@@ -853,7 +853,7 @@ module Testfield
 !
       use General, only: keep_compiler_quiet
 
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous,dimension(:,:,:,:), intent(inout) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -870,7 +870,7 @@ module Testfield
       use Hydro, only: calc_pencils_hydro
       use Mpicomm, only: mpiallreduce_sum, mpibcast_real
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (mz) :: c,s
 !
       real, dimension (nz,nprocz,3,njtest) :: uxbtestm1=0.,uxbtestm1_tmp=0.
@@ -1037,7 +1037,7 @@ module Testfield
       use Cdata
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       character (len=fnlen) :: file
       logical :: ltestfield_out
       logical, save :: lfirst_call=.true.

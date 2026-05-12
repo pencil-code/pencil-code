@@ -1310,7 +1310,7 @@ module Forcing
 !  Since forcing is constant during one time step,
 !  this can be added as an Euler 1st order step
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       logical, save :: lfirstforce=.true., lfirstforce2=.true.
       logical, save :: llastforce=.true., llastforce2=.true.
@@ -1405,7 +1405,7 @@ module Forcing
       use General, only: random_number_wrapper
       use EquationOfState, only: cs20
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       integer :: iran1,iran2,kx1,ky1,kx2,ky2
       real, dimension(nx,3) :: forcing_rhs
       real, dimension(nx) :: xkx1,xkx2
@@ -1506,7 +1506,7 @@ module Forcing
       use Sub, only: step
       use EquationOfState, only: cs20
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, dimension(nx,3) :: forcing_rhs
       real, dimension(nx) :: xkx
       real,dimension(4) :: fran
@@ -1562,7 +1562,7 @@ module Forcing
       use Sub, only: del2v_etc,dot,dot_mn
       use Mpicomm, only: mpireduce_sum
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real :: kx0,kx,ky,kz,force_ampl,pi_over_Lx
       real :: phase,ffnorm
       real, dimension (2) :: fran
@@ -2097,7 +2097,7 @@ module Forcing
       use DensityMethods, only: getrho1
       use Diagnostics, only: sum_mn_name
 !
-      real, dimension (mx,my,mz,mfarray), intent(INOUT) :: f
+      real, contiguous,dimension(:,:,:,:), intent(INOUT) :: f
 
       real, dimension (nx) :: rho1, ruf, rho, force_ampl, bdotf, jdotf
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,forcing_rhs2
@@ -2498,7 +2498,7 @@ module Forcing
       real, dimension (mz) :: kfscl
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,forcing_rhs2
       real, dimension (nx,3) :: fda,uu,oo,curlo
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       complex, dimension (mx) :: fx
       complex, dimension (my) :: fy
       complex, dimension (mz) :: fz
@@ -2933,7 +2933,7 @@ module Forcing
       real, dimension (2) :: fran
       real, dimension (nx) :: rho1
       real, dimension (nx,3) :: variable_rhs,forcing_rhs
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       complex, dimension (mx) :: fx
       complex, dimension (my) :: fy
       complex, dimension (mz) :: fz
@@ -3129,7 +3129,7 @@ module Forcing
       use General, only: random_number_wrapper
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       !
       real, dimension(3) :: ee
       real, dimension(nx,3) :: capitalT,capitalS,capitalH,psi
@@ -3260,7 +3260,7 @@ module Forcing
       use Sub
       use Mpicomm
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       !
       real, dimension(3) :: ee
       real, dimension(nx,3) :: capitalT,capitalS,psi
@@ -3411,7 +3411,7 @@ module Forcing
 !
       real, dimension (nx) :: ruf,rho
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (mx) :: cosx,sinx
       real :: cost,sint,cosym,sinym
       real :: fact
@@ -3482,7 +3482,7 @@ module Forcing
 !
       real, dimension (nx) :: ruf,rho
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (mx) :: cosx,sinx
       real :: cost,sint,cosym,sinym
       real :: fact
@@ -3553,7 +3553,7 @@ module Forcing
 !
       real, dimension (nx) :: ruf,rho
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (mx), save :: sinx,cosx
       real, dimension (my), save :: siny,cosy
       real, dimension (mz), save :: cosz
@@ -3632,7 +3632,7 @@ module Forcing
       use Mpicomm, only: mpireduce_sum
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       real, dimension (nx) :: ruf,rho
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all
@@ -3719,7 +3719,7 @@ module Forcing
 !
 !  17-jul-06/axel: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       real :: fact, om
       integer :: m,n
@@ -3755,7 +3755,7 @@ module Forcing
 !
       real, dimension (nx) :: ruf,rho
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (mx), save :: sinx
       real, dimension (my), save :: siny
       real, dimension (mz), save :: sinz
@@ -3834,7 +3834,7 @@ module Forcing
       use Mpicomm, only: mpireduce_sum
       use Sub, only: multsv_mn,dot_mn,del2v_etc
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real :: force_ampl, force_tmp
 !
       real, dimension (3) :: fran
@@ -4060,7 +4060,7 @@ module Forcing
       use Mpicomm, only: mpireduce_sum
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real :: force_ampl, force_tmp
 !
       real, dimension (3) :: fran
@@ -4245,7 +4245,7 @@ module Forcing
       use Mpicomm, only: mpireduce_sum
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real :: ampl
 !
       real, dimension (nx) :: r,p,tmp,rho,ruf
@@ -4335,7 +4335,7 @@ module Forcing
       use DensityMethods, only: getrho
       use Mpicomm, only: mpiallreduce_sum
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (nx,3) :: uu
       real, dimension (nx) :: rho,udotf
       complex, dimension (mx) :: fx
@@ -4388,7 +4388,7 @@ module Forcing
 !      real, dimension (2) :: fran
 !      real, dimension (nx) :: radius,tmpx
 !!      real, dimension (mz) :: tmpz
-!      real, dimension (mx,my,mz,mfarray) :: f
+!      real, contiguous,dimension(:,:,:,:) :: f
 !      complex, dimension (mx) :: fx
 !      complex, dimension (my) :: fy
 !      complex, dimension (mz) :: fz
@@ -4570,7 +4570,7 @@ module Forcing
 !!
 !!  30-may-02/axel: coded
 !!
-!      real, dimension (mx,my,mz,mfarray) :: f
+!      real, contiguous,dimension(:,:,:,:) :: f
 !      real, dimension (nx) :: sxx,cxx
 !      real, dimension (mx) :: sx,cx
 !      real, dimension (my) :: sy,cy
@@ -4650,7 +4650,7 @@ module Forcing
 !
 !  30-may-02/axel: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (nx) :: sxx,cxx
       real, dimension (mx) :: sx,cx
       real, dimension (my) :: sy,cy
@@ -4729,7 +4729,7 @@ module Forcing
 !
 !  19-jun-02/axel+bertil: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (nx) :: fx
       real, dimension (mz) :: fz
       real :: kx,ffnorm
@@ -4759,7 +4759,7 @@ module Forcing
 !
 !  19-jul-02/axel: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (nx,nz) :: xx,zz,r2,tmp,fx,fz
       real :: ffnorm,ry2,fy,ytwist1,ytwist2
 !
@@ -4813,7 +4813,7 @@ module Forcing
 !
 !  26-jul-02/axel: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (nx,nz) :: fx,fz,tmp
       real :: force_ampl,ffnorm,ffnorm2
 !
@@ -4857,7 +4857,7 @@ module Forcing
 !
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, save :: tforce=0.
       logical, save :: lfirst_call=.true.
       integer, save :: nforce=0
@@ -4894,7 +4894,7 @@ module Forcing
       use Sub
       use General, only: random_number_wrapper
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, save :: t_next_blob=1.
       logical, save :: lfirst_call=.true.
       integer, parameter :: t_interval_blobs=50.
@@ -4951,7 +4951,7 @@ module Forcing
 !  06-dec-13/nishant: made kkx etc allocatable
 !  23-dec-18/axel: forcing_helicity has now similar capabilities
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 
       real, dimension (nx) :: ruf,rho
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all
@@ -5062,7 +5062,7 @@ module Forcing
       use Mpicomm, only: mpireduce_sum
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       real :: force_ampl
       real, dimension (nx) :: ruf,rho,rho1
@@ -5166,7 +5166,7 @@ module Forcing
       use General, only: random_number_wrapper
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real :: kx0,ky,kz
       real :: phase
       real :: kav
@@ -5473,7 +5473,7 @@ module Forcing
 !***********************************************************************
     subroutine forcing_after_boundary(f)
 !
-      real, dimension (mx,my,mz,mfarray),intent(OUT) :: f
+      real, contiguous,dimension(:,:,:,:),intent(OUT) :: f
 !
       if (lforcing_cont) call forcing_cont_after_boundary
 !
@@ -5558,7 +5558,7 @@ module Forcing
 !
       use Sub, only: multsv_mn, gij, curl_mn
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (pencil_case) :: p
 !
       intent(inout) :: f,p

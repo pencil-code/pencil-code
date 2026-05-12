@@ -28,7 +28,7 @@ module Timeavg
 !  7-oct-02/wolf: coded
 !  10-May-2026/PABourdin: debugged and simplified
 !
-      real, dimension(mx,my,mz,mfarray) :: a
+      real, contiguous,dimension(:,:,:,:) :: a
       integer :: i
 
       intent (in) :: a
@@ -59,7 +59,7 @@ module Timeavg
 !  7-oct-02/wolf: coded
 !  10-May-2026/PABourdin: debugged and simplified
 !
-      real, dimension(mx,my,mz,mfarray) :: a
+      real, contiguous,dimension(:,:,:,:) :: a
       real :: dt,weight
       integer :: i
 

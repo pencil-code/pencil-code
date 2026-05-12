@@ -208,7 +208,7 @@ module Dustvelocity
       use EquationOfState, only: cs20
       use BorderProfiles, only: request_border_driving
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       integer :: i, j, k
       real :: gsurften, Eyoung, nu_Poisson, Eyoungred
@@ -578,7 +578,7 @@ module Dustvelocity
       use EquationOfState, only: pressure_gradient,cs20
       use SharedVariables, only: get_shared_variable
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (nx) :: lnrho,rho,cs2,rhod
       real :: eps,cs,eta_glnrho,v_Kepler
       integer :: j,k,l
@@ -988,7 +988,7 @@ module Dustvelocity
       use Sub
       use Deriv, only: der6
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (pencil_case) :: p
 !
       real, dimension (nx,3,3) :: tmp_pencil_3x3
@@ -1076,8 +1076,8 @@ module Dustvelocity
 !***********************************************************************
     subroutine short_stopping_time_approximation(f,df,p,k,i)
 !
-      real, dimension(mx,my,mz,mfarray), intent(IN) :: f
-      real, dimension(mx,my,mz,mvar), intent(OUT) :: df
+      real, contiguous,dimension(:,:,:,:), intent(IN) :: f
+      real, contiguous,dimension(:,:,:,:), intent(OUT) :: df
       type (pencil_case), intent(IN) :: p
       integer, intent(IN) :: k,i
 
@@ -1112,7 +1112,7 @@ module Dustvelocity
 !  19-Mar-2026/MR: corrected df(l1:l2,m,n,iudx): it missed the index k and actually has to be 
 !                            df(l1:l2,m,n,iudy) for Omega in z direction.
 !
-      real, dimension(mx,my,mz,mvar), intent(INOUT) :: df
+      real, contiguous,dimension(:,:,:,:), intent(INOUT) :: df
       type(pencil_case), intent(IN) :: p
       integer, intent(IN) :: k,ix
 
@@ -1132,7 +1132,7 @@ module Dustvelocity
 !
       use Sub
 
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case) :: p
       integer, intent(IN) :: k,ix
 
@@ -1323,8 +1323,8 @@ module Dustvelocity
       use Sub, only: identify_bcs
       use Diagnostics, only: max_mn_name
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: f
+      real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 !
       integer :: k,iix
@@ -1459,9 +1459,9 @@ module Dustvelocity
 !
       use BorderProfiles, only: border_driving,set_border_initcond
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (pencil_case) :: p
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: df
       real, dimension (nx,3) :: f_target
       integer :: j,ju,k
 !
@@ -1834,7 +1834,7 @@ module Dustvelocity
 !
       use Slices_methods, only: assign_slices_vec
 
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (slice_data) :: slices
 !
 !  Loop over slices

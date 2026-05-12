@@ -50,7 +50,7 @@ module Dustvelocity
 !***********************************************************************
     subroutine initialize_dustvelocity(f)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       ud_spec=.false.
       call keep_compiler_quiet(f)
@@ -63,7 +63,7 @@ module Dustvelocity
 !***********************************************************************
     subroutine init_uud(f)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -83,7 +83,7 @@ module Dustvelocity
 !***********************************************************************
     subroutine calc_pencils_dustvelocity(f,p)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (pencil_case) :: p
 !
       intent(in) :: f,p
@@ -95,8 +95,8 @@ module Dustvelocity
 !***********************************************************************
     subroutine duud_dt(f,df,p)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: f
+      real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 !
       call keep_compiler_quiet(f)
@@ -156,7 +156,7 @@ module Dustvelocity
 !***********************************************************************
     subroutine get_slices_dustvelocity(f,slices)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (slice_data) :: slices
 !
       call keep_compiler_quiet(f)

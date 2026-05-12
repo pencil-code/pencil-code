@@ -348,7 +348,7 @@ module Energy
       use Slices_methods, only: alloc_slice_buffers
       use BorderProfiles, only: request_border_driving
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (nx) :: dhcond
       logical :: lnothing
       integer :: i
@@ -621,7 +621,7 @@ module Energy
       !use Initcond, only: modes
       use Initcond
 !
-      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, contiguous,dimension(:,:,:,:), intent (inout) :: f
       real, dimension (mz) :: TTz
 !
       integer :: j
@@ -1064,7 +1064,7 @@ module Energy
       use Sub, only: u_dot_grad,grad,multmv,del2
       use Deriv, only: der2
 !
-      real, dimension (mx,my,mz,mfarray), intent (in) :: f
+      real, contiguous,dimension(:,:,:,:), intent (in) :: f
       type (pencil_case), intent (inout) :: p
       integer :: j
       real, dimension(nx,3) :: gpp
@@ -1201,8 +1201,8 @@ module Energy
       use Sub, only: identify_bcs, calc_slope_diff_flux
       use Viscosity, only: calc_viscous_heat
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: f
+      real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 !
       real, dimension (nx) :: Hmax=0.0, thdiff, tmp, advec_hypermesh_ss
@@ -1398,7 +1398,7 @@ module Energy
 
       use Slices_methods, only: store_slices
 
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type(pencil_case) :: p
 
       call keep_compiler_quiet(f)
@@ -1702,9 +1702,9 @@ module Energy
 !
       use BorderProfiles, only: border_driving, set_border_initcond
 !
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (pencil_case) :: p
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: df
       real, dimension(nx) :: f_target
 !
       select case (borderss)
@@ -1758,7 +1758,7 @@ module Energy
 !
 !   1-apr-20/joern: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous,dimension(:,:,:,:), intent(inout) :: f
       real, dimension (mx) :: cs2
 !
 !    Slope limited diffusion: update characteristic speed
@@ -1790,7 +1790,7 @@ module Energy
       use Sub, only: grad, finalize_aver
       use EquationOfState, only : eoscalc
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
 !
       real :: fact
       real, dimension (nx,3):: gradTT
@@ -1848,7 +1848,7 @@ module Energy
       use Diagnostics, only: max_mn_name
       use Sub, only: dot
 !
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case) :: p
       real, dimension (nx) :: thdiff, g2, gshockgTT, gshockglnTT
 !
@@ -1893,7 +1893,7 @@ module Energy
       use Gravity, only: gravz
       use EquationOfState, only: lnrho0,cs20,cs2top,cs2bot,eoscalc,ilnrho_TT
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous,dimension(:,:,:,:), intent(inout) :: f
       real, dimension (nzgrid) :: temp,lnrho
       real :: hcond, dtemp, dlnrho, ss
       integer :: i,n,iz
@@ -1958,8 +1958,8 @@ module Energy
       use EquationOfState, only: cs20
       use Sub, only: step
 !
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: f
+      real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case) :: p
       real, dimension (nx) :: tau, kappa, a1, a3, prof, heat
       real :: a2, kappa0, kappa0_cgs
@@ -2035,7 +2035,7 @@ module Energy
       use Diagnostics, only: max_mn_name
       use Sub, only: dot
 !
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case) :: p
       real, dimension (nx) :: g2
 !
@@ -2072,8 +2072,8 @@ module Energy
       use Sub, only: dot
       use Deriv, only: der_x,der2_x
 !
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real, contiguous,dimension(:,:,:,:), intent(in) :: f
+      real, contiguous,dimension(:,:,:,:), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
       real, dimension (nx) :: rr, g2,g2_r, dlnrhodx, dTTdx, d2TTdx2
@@ -2112,7 +2112,7 @@ module Energy
       use Diagnostics, only: max_mn_name
       use Sub, only: dot, cubic_step, cubic_der_step
 !
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case) :: p
       real, dimension (nx) :: g2, chi_z, gradchi_z
 !
@@ -2159,7 +2159,7 @@ module Energy
       use Diagnostics, only: max_mn_name
       use Sub, only: dot
 !
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case)  :: p
       real, dimension(nx) :: g2, chix
 !
@@ -2203,7 +2203,7 @@ module Energy
       use Diagnostics, only: max_mn_name
       use Sub, only: dot
 !
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case)  :: p
       real, dimension(nx) :: g2, chix,hcondTT
 !
@@ -2247,7 +2247,7 @@ module Energy
       use Sub, only: dot
       use General, only: notanumber
 !
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 !
       intent(in) :: p
@@ -2290,7 +2290,7 @@ module Energy
       use Diagnostics, only: max_mn_name
       use Sub, only: dot, multsv
 !
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: df
       real, dimension (nx)   :: dhcond, g1, chix
       real, dimension (nx,3) :: gLnhcond=0.
       type (pencil_case)     :: p
@@ -2335,8 +2335,8 @@ module Energy
       use Sub, only: dot, step, der_step
       use Gravity, only: z1, z2
 !
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: f
+      real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 !
       real, dimension(nx) :: g2, dhcond, chix
@@ -2404,7 +2404,7 @@ module Energy
       use Diagnostics, only: max_mn_name
       use Sub, only: dot,dot2,tensor_diffusion_coef
 !
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 !
       real, dimension (nx) :: cosbgT,gT2,b2
@@ -2730,7 +2730,7 @@ module Energy
 !
       use Slices_methods, only: assign_slices_scal, process_slices, log2d, exp2d
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       type (slice_data) :: slices
 !
 !  Loop over slices
@@ -2765,7 +2765,7 @@ module Energy
       use Gravity, only: gravz
       use EquationOfState, only: cs20, lnrho0, cs2bot, cs2top
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous,dimension(:,:,:,:), intent(inout) :: f
       real :: beta, zbot, ztop, T0, temp
 !
 !  beta is the (negative) temperature gradient
@@ -2816,7 +2816,7 @@ module Energy
       use Gravity, only: gravz, z1, z2
       use EquationOfState, only: cs2top, cs2bot, lnrho0
 !
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous,dimension(:,:,:,:) :: f
       real :: Ttop, T1, T2, beta0, beta1, beta2, temp
       real :: lnrhotop, lnrho1, lnrho2, ztop
       integer :: i
@@ -2873,7 +2873,7 @@ module Energy
       use EquationOfState, only: rho0, lnrho0, get_soundspeed, eoscalc, ilnrho_TT
       use Sub, only: step, interp1, erfunc
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous,dimension(:,:,:,:), intent(inout) :: f
       integer, parameter   :: nr=100
       integer              :: i,l,iter
       real, dimension (nr) :: r, lnrho, temp, lumi, g, hcond
@@ -3104,7 +3104,7 @@ module Energy
 !      use General, only: staggered_mean_scal
       use General, only: staggered_max_scal
 !
-      real, dimension(mx,my,mz,mfarray), intent(INOUT) :: f
+      real, contiguous,dimension(:,:,:,:), intent(INOUT) :: f
 !
       real, dimension(mx) :: cs2
 
