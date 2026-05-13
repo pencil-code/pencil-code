@@ -59,6 +59,7 @@ module Pencil_check
       logical, dimension (mfarray) :: lfound_nan_loc=.false.
       logical :: lconsistent=.true., lconsistent_allproc=.false.
       logical, dimension(mfarray) :: lconsistent_var =.true.
+      logical, dimension(nname) :: lconsistent_diagnos
       integer :: ncomponents
       character(len=30) :: name
       logical :: ldie=.false.
@@ -390,6 +391,7 @@ f_lop:  do iv=1,mvar
         else
           f_other=f
         endif
+        dt = dt_ref
         fname=0.0; fweight=0.0
         call initialize_pencils(p,penc0)
 !
@@ -407,8 +409,10 @@ f_lop:  do iv=1,mvar
 !
         lconsistent=.true.
         lconsistent_allproc=.false.
+        lconsistent_diagnos = .true.
         do k=1,nname
           lconsistent=(fname(k)==fname_ref(k))
+          lconsistent_diagnos(k) = lconsistent
           if (.not.lconsistent) exit
         enddo
 !
@@ -443,6 +447,13 @@ f_lop:  do iv=1,mvar
                   trim(pencil_names(penc))//' (',penc,')'// &
                   ' is not requested for diagnostics, '// &
                   'but calculating it changes the diagnostics!'
+              do k=1,nname
+                 if(.not. lconsistent_diagnos(k)) then
+                   print '(a,i4,a)','pencil_consistency_check: '// &
+                  'diagnos changed: ' // cname(k)
+                 endif
+              enddo
+               
               ldie=.true.
             endif
           else

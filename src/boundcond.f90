@@ -1929,7 +1929,7 @@ module Boundcond
 
             if(j == iss_run_aver .and. bc_code /= 'nil') then
                     bcx12(j,topbot) = 'nil'
-                    if (lroot) print*,"Changed iss_run_aver bc to nil" 
+                    if (lroot) print*,"Changed iss_run_aver bc to nil: Will time average the boundary of ss" 
                     if(lgpu) then
                             print*,"To run on GPUs please enter nill!"
                             goto 10
@@ -2127,7 +2127,7 @@ module Boundcond
 
           if(j == iss_run_aver .and. bc_code /= 'nil') then
                   bcz12(j,topbot) = 'nil'
-                  if (lroot) print*,"Changed iss_run_aver bc to nil" 
+                  if (lroot) print*,"Changed iss_run_aver bc to nil: Will time average the boundary of ss" 
                   if(lgpu) then
                           print*,"To run on GPUs please enter nill!"
                           goto 30
