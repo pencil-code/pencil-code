@@ -231,12 +231,6 @@ include Makefile.inc
 #
 include Makefile-standard.inc
 #
-# Add real-time library calls if we need shared memory allocation
-#
-ifeq  ($(FARRAY_ALLOC),farray_alloc)
-	override LDFLAGS += -lrt
-endif
-#
 # Compile files with particle programming structure if particles are chosen.
 #
 ifneq ($(PARTICLES),noparticles)
@@ -515,6 +509,13 @@ ifneq ($(findstring gpu_astaroth, $(GPU)),)
     override MPICOMM=mpicomm
     #Needed because of large subdomains
     override FARRAY_ALLOC=farray_alloc
+endif
+#
+# Add real-time library calls if we need shared memory allocation
+#
+ifeq  ($(FARRAY_ALLOC),farray_alloc)
+  #2026-May-13/Kishore: also need `-lc` to use ftruncate?
+  override LDFLAGS += -lrt
 endif
 
 ifeq ($(USE_SPECIAL_DISPATCHER),yes)
