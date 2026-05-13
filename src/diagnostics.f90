@@ -103,6 +103,7 @@ module Diagnostics
   endinterface zsum_mn_name_xy_mpar
 !
   real, target, dimension (nrcyl) :: phiavg_norm
+  logical :: lcalculating_phiavg_norm = .false.
   public :: phiavg_norm
   !$omp threadprivate(phiavg_norm)
 
@@ -3067,6 +3068,7 @@ module Diagnostics
 !  As we calculate z-averages, multiply by nzgrid when used.
 !
       if (n==nn(1)) phiavg_norm=phiavg_norm+sum(phiavg_profile,2)
+      lcalculating_phiavg_norm = .true.
 !
     endsubroutine calc_phiavg_profile
 !***********************************************************************
@@ -3083,7 +3085,7 @@ module Diagnostics
 !
 !  Add to the dst on the master thread
 !
-      p_phiavg_norm = p_phiavg_norm + phiavg_norm
+    if(lcalculating_phiavg_norm) p_phiavg_norm = p_phiavg_norm + phiavg_norm
 !
     endsubroutine diagnostics_diag_reductions
 !***********************************************************************

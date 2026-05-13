@@ -29,7 +29,7 @@ module Timestep
 !
   real, dimension(mvar) :: farraymin
   real, dimension (:,:,:,:), allocatable, target :: f1
-  real, dimension (:,:,:,:), pointer :: farr
+  real, contiguous, dimension (:,:,:,:), pointer :: farr
   real, dimension (:,:,:,:), allocatable :: errdf
   real, dimension (5) :: beta_hat, dt_beta_hat, dt_alpha_ts
   real            :: dt_increase, dt_decrease, errmax, errmaxs
