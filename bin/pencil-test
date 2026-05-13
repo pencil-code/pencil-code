@@ -422,6 +422,7 @@ sub build_remote_cmd {
     #2026-May-13/Kishore: rather than the above it would be much cleaner to just do
     #2026-May-13/Kishore: `git submodule update --init --recursive`, but I am
     #2026-May-13/Kishore: not sure what the minimum required git version is for that.
+    #2026-May-13/TP: Yes, but we cannot rely that PC itself is a git repo as it can be (and for auto-test is) a SVN repo.
     }
     if ($update) {
         my $prev_wd=cwd();
