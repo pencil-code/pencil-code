@@ -174,5 +174,5 @@ To generate DSL code from the Fortran code:
 Make sure the fortran-parse submodule is up to date with:
 git submodule update --init --remote
 In Makefile.local set TRANSPILATION=on
-And when calling make/pc_build pass GENERATE_DSL_CODE=on
+This is now the default scheme so it is on by default
 
