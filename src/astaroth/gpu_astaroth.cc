@@ -1866,6 +1866,7 @@ extern "C" void reloadConfig()
   acDeviceUpdate(acGridGetDevice(), mesh.info);
   acGridSynchronizeStream(STREAM_ALL);
 #endif
+  acStoreConfig(acDeviceGetLocalConfig(acGridGetDevice()), "PC-AC.conf");
   acLogFromRootProc(rank, "DONE reloading on GPU\n");
   fflush(stdout);
   fflush(stderr);
