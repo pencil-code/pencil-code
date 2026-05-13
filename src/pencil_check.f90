@@ -44,11 +44,13 @@ module Pencil_check
       use General, only: random_number_wrapper, random_seed_wrapper, notanumber
       use Mpicomm, only: mpireduce_and, mpireduce_max, mpireduce_or, &
                          mpibcast_logical, stop_it_if_any, MPI_COMM_PENCIL
+      use FarrayManager, only: farray_get_name
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, allocatable, dimension(:,:,:,:) :: df_ref, f_other
+      real, allocatable, dimension(:,:,:,:) :: df_ref, f_ref, f_other
+      real :: dt_ref
       real, allocatable, dimension(:) :: fname_ref
       real, dimension (nx) :: dt1_max_ref
       integer :: i,j,k,penc,iv,nite,k_fail,k_fail_allproc
@@ -56,6 +58,9 @@ module Pencil_check
       logical, dimension (mfarray) :: lfound_nan=.false.
       logical, dimension (mfarray) :: lfound_nan_loc=.false.
       logical :: lconsistent=.true., lconsistent_allproc=.false.
+      logical, dimension(mfarray) :: lconsistent_var =.true.
+      integer :: ncomponents
+      character(len=30) :: name
       logical :: ldie=.false.
       integer :: mem_stat1, mem_stat2
       real :: save_dt
@@ -72,6 +77,7 @@ module Pencil_check
 !  Allocate memory for alternative df, fname.
 !
       allocate(f_other(mx,my,mz,mfarray)  ,stat=mem_stat1)
+      allocate(f_ref(mx,my,mz,mfarray)    ,stat=mem_stat1)
       allocate(df_ref(mx,my,mz,mvar)      ,stat=mem_stat2)
       if ((mem_stat1>0).or.(mem_stat2>0)) then
         if (lroot) then
@@ -95,20 +101,30 @@ module Pencil_check
         call random_seed_wrapper(PUT=iseed_org)
         do i=1,mfarray
           if (maxval(abs(f(l1:l2,m1:m2,n1:n2,i)))==0.0) then
-            call random_number_wrapper(f_other(:,:,:,i))
+            call random_number_wrapper(f_ref(:,:,:,i))
           else
-            f_other(:,:,:,i)=f(:,:,:,i)
+            f_ref(:,:,:,i)=f(:,:,:,i)
           endif
         enddo
       else
-        f_other=f
+        f_ref=f
       endif
       df_ref=0.0
+      f_other = f_ref
       call initialize_pencils(p,penc0)
 !
 !  Calculate reference results with all requested pencils on.
 !
       lpencil=lpenc_requested
+!  This initial call to pde is to set dt.
+!  It is important that dt has nonzero value for example for correct testing
+!  when using running average of entropy
+      call pde(f_other,df_ref,p)
+      dt_ref = dt
+
+      df_ref=0.0
+      f_other = f_ref
+      call initialize_pencils(p,penc0)
       call pde(f_other,df_ref,p)
       dt1_max_ref=dt1_max
 !
@@ -153,18 +169,8 @@ module Pencil_check
             print*, 'pencil_consistency_check: performing full pencil check'// &
             ' (takes a while)'
         df=0.0
-        if (lpencil_check_no_zeros) then
-          call random_seed_wrapper(PUT=iseed_org)
-          do i=1,mvar+maux
-            if (maxval(abs(f(l1:l2,m1:m2,n1:n2,i)))==0.0) then
-              call random_number_wrapper(f_other(:,:,:,i))
-            else
-              f_other(:,:,:,i)=f(:,:,:,i)
-            endif
-          enddo
-        else
-          f_other=f
-        endif
+        f_other = f_ref
+        dt = dt_ref
         call initialize_pencils(p,penc0)
 !
 !  Calculate results with one pencil swapped.
@@ -193,6 +199,7 @@ module Pencil_check
 !
         lconsistent=.true.
         lconsistent_allproc=.false.
+        lconsistent_var = .true.
         if (ldt) then
           do i=1,nx
             if (dt1_max(i)/=dt1_max_ref(i)) then
@@ -205,6 +212,7 @@ module Pencil_check
 f_loop:   do iv=1,mvar
             do k=n1,n2; do j=m1,m2; do i=l1,l2
               lconsistent=(df(i,j,k,iv)==df_ref(i,j,k,iv))
+              lconsistent_var(iv) =(df(i,j,k,iv)==df_ref(i,j,k,iv))
               if (.not. lconsistent) exit f_loop
             enddo; enddo; enddo
           enddo f_loop
@@ -225,6 +233,13 @@ f_loop:   do iv=1,mvar
                   'MISSING PENCIL... pencil '// &
                   trim(pencil_names(penc))//' (',penc,')'// &
                   ' is not requested, but calculating it changes the results!'
+              do iv =1,mvar
+                if(.not. lconsistent_var(iv)) then
+                  ncomponents = farray_get_name(iv,name)
+                  print '(a,i4,a)',' pencil_consistency_check: '// &
+                  'Value changed for field: '// name
+                endif
+              enddo
               ldie=.true.
             endif
           else

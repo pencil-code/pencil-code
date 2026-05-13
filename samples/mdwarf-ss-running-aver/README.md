@@ -16,6 +16,8 @@ Axel Brandenburg <brandenb/nordita[dot]org>
 succeeds with revision -r39855, but not with -r39856, after Fred's check-in
 r39856 | fredgent | 2025-03-19 10:02:25 +0100 (Wed, 19 Mar 2025) | 1 line
 Merge branch 'gputestv6'
+The issue is now resolved. The issue was handling of dt in pencil_check, which has now been fixed:
+each iteration of pencil_check gets the same dt.
 
 ## Recommended resolution:
 

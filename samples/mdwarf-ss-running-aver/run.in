@@ -14,7 +14,8 @@
   max_walltime=42000.
   it_rmv=1
 !  dvid = 10., r_rslice=.9, nth_rslice=50, nph_rslice=50 ! slices from spherical radius r_rslice
-  lpencil_check_small=F
+  lpencil_check      =T
+  lpencil_check_small=T
 /
 &eos_run_pars
 /
