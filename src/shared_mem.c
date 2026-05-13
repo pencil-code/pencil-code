@@ -1,3 +1,5 @@
+#define _POSIX_C_SOURCE 200112L //for ftruncate with glibc
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>           // For O_* constants
