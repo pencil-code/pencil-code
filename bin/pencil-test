@@ -419,6 +419,9 @@ sub build_remote_cmd {
 	  fi
 	) || echo "UPDATE ERROR: was not able to update or clone the submodules";
 	';
+    #2026-May-13/Kishore: rather than the above it would be much cleaner to just do
+    #2026-May-13/Kishore: `git submodule update --init --recursive`, but I am
+    #2026-May-13/Kishore: not sure what the minimum required git version is for that.
     }
     if ($update) {
         my $prev_wd=cwd();
