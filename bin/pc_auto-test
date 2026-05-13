@@ -188,6 +188,7 @@ my %tests = (
                          power_xy/integrate_shell
                          power_xy/integrate_shell_z
                          testfield_nonlin_z
+						 test_farray_alloc
                          spherical-convection
                          spherical-convection-corona
                          small-scale-dynamo_slope-limited-diffusion
