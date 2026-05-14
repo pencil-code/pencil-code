@@ -84,7 +84,7 @@ cd "$tmpdir"
 
 if test -e "$foldername"; then
     echo "Destination folder exists; assuming repo has already been cloned"
-    cd $foldername
+    cd "$foldername"
     git fetch --depth=1
     git reset --hard "origin/$branchname"
     git clean -xfd
