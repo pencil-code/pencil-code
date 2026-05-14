@@ -72,6 +72,14 @@ clean_src()
   rmdir $dir >/dev/null 2>&1
 }
 
+clean_astaroth()
+{
+  dir="$1"
+  if [ -d $dir ]; then
+    make -C "$dir" cleann
+  fi
+}
+
 prune_dir()
 {
   this=$1 #only used for the printed message
@@ -86,6 +94,7 @@ prune_dir()
     else
       echo "Cleaning up run directory: '$this'"
     fi
+    clean_astaroth "$src_dir/astaroth"
     delete_links "$clean_links"
     delete_files "$clean_files"
     clean_src "$src_dir" "$clean_objects"
