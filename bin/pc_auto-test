@@ -1050,7 +1050,7 @@ sub my_ok {
         # report only first failure:
         $failed{$dir} = $phase unless defined($failed{$dir});
         mark_failed ($dir);
-    if ($gpu) {
+    if ($gpu && $log_dir) {
         if ($phase eq 'compilation') {
             system ('cat src/astaroth/ac_build.log >> '.$log_dir.'/'.$dir.'/build.log');
         } else {
