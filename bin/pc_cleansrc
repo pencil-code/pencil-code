@@ -74,6 +74,7 @@ clean_src()
 
 clean_astaroth()
 {
+  #must be called before delete_links since we need src/astaroth/Makefile to exist
   dir="$1"
   if [ -d $dir ]; then
     make -C "$dir" cleann
