@@ -1050,15 +1050,15 @@ sub my_ok {
         # report only first failure:
         $failed{$dir} = $phase unless defined($failed{$dir});
         mark_failed ($dir);
-	if ($gpu) {
-	    if ($phase eq 'compilation') {
-	        system ('cat src/astaroth/ac_build.log >> '.$log_dir.'/'.$dir.'/build.log');
-	    } else {
-	        if (($phase eq 'running') || ($phase eq 'results')) {
-	            system ('cat ac_compilation.log >> '.$log_dir.'/'.$dir.'/run.log');
-	        }
-	    }
-	}
+    if ($gpu) {
+        if ($phase eq 'compilation') {
+            system ('cat src/astaroth/ac_build.log >> '.$log_dir.'/'.$dir.'/build.log');
+        } else {
+            if (($phase eq 'running') || ($phase eq 'results')) {
+                system ('cat ac_compilation.log >> '.$log_dir.'/'.$dir.'/run.log');
+            }
+        }
+    }
     }
 
 
