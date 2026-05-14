@@ -380,7 +380,7 @@ sub find_include_file {
 # If $fragment starts with `./', only the directory part of $base_file is
 # considered.
 # Otherwise, the search path consists of
-# 1. ${HOME}/.pencil-config ,
+# 1. ${HOME}/.pencil/config ,
 # 2. ${PENCIL_HOME}/config .
 #
     my ($fragment, $base_file) = @_;
@@ -390,7 +390,7 @@ sub find_include_file {
         $fragment = $1;
         push @path, ".";
     } else {
-        for my $dir ("$ENV{HOME}/.pencil-config", "$ENV{PENCIL_HOME}/config") {
+        for my $dir ("$ENV{HOME}/.pencil/config", "$ENV{PENCIL_HOME}/config") {
             push @path, $dir if (-d $dir);
         }
     }

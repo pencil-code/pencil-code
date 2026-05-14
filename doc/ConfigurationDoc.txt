@@ -71,7 +71,7 @@ Statements of the form ''%include <config-file>'' are recursively replaced by th
 
 If the ''<config-file>'' starts with “''./''”, the search path for the included file contains just the directory where the current file (containing the ''%include'' statement) is located.
 Otherwise, the search path used for finding that file consists of
-* the directory ''${HOME}/.pencil-config'' if it exists;
+* the directory ''${HOME}/.pencil/config'' if it exists;
 * the directory ''${PENCIL_HOME}/config'' .
 
 Thus, a file ''${PENCIL_HOME}/config/os/Linux'' can include ''${PENCIL_HOME}/config/os/Unix'' with either of
