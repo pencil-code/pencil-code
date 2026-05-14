@@ -87,7 +87,7 @@ if test -e "$foldername"; then
     cd $foldername
     git fetch --depth=1
     git reset --hard "origin/$branchname"
-    git clean -xf
+    git clean -xfd
 else
     git clone --depth=1 --branch "$branchname" "$repo" "$foldername"
     cd "$foldername"
@@ -96,6 +96,7 @@ fi
 
 if [ "$submodules" = "true" ]; then
     git submodule update --init --recursive --depth 1
+    git submodule foreach --recursive git clean -xfd
 fi
 
 #Start with a clean environment to avoid conflicts with already-enabled versions of Pencil
