@@ -19,14 +19,16 @@ Options:
                             Default: master
     -o,--auto-test-options  Options to pass to pc_auto-test.
                             Default: "--max-level=1"
+    -s,--submodules         Whether to clone submodules as well (e.g. Astaroth)
+                            Default: no
 '''
 
 # BEGIN option parsing
 #https://stackoverflow.com/questions/192249/how-do-i-parse-command-line-arguments-in-bash/29754866#29754866
 set -o errexit -o pipefail -o noclobber -o nounset
 
-LONGOPTS=branch:,auto-test-options:,repo:,help
-OPTIONS=b:o:r:h
+LONGOPTS=branch:,auto-test-options:,repo:,help,submodules
+OPTIONS=b:o:r:hs
 
 PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@") || exit 2
 eval set -- "$PARSED"
@@ -34,6 +36,7 @@ eval set -- "$PARSED"
 auto_test_options="--max-level=1"
 branchname=master
 repo="https://pencil-code.org/git"
+submodules="false"
 while true; do
     case "$1" in
         -b|--branch)
@@ -47,6 +50,10 @@ while true; do
         -r|--repo)
             repo=$2
             shift 2
+            ;;
+        -s|--submodules)
+            submodules="true"
+            shift 1
             ;;
         -h|--help)
             echo "$help"
@@ -66,7 +73,7 @@ done
 
 sanitized_repo_name=$(echo $repo | tr -d ':/') #remove characters which would cause problems in folder names.
 tmpdir=~/.cache/pc_isolated_test
-foldername="pencil-code-$branchname-$sanitized_repo_name"
+foldername="pencil-code-submodules-$submodules-$branchname-$sanitized_repo_name"
 
 set -e
 
@@ -85,6 +92,10 @@ else
     git clone --depth=1 --branch "$branchname" "$repo" "$foldername"
     cd "$foldername"
     git remote set-branches origin "$branchname"
+fi
+
+if [ "$submodules" = "true" ]; then
+    git submodule update --init --recursive
 fi
 
 #Start with a clean environment to avoid conflicts with already-enabled versions of Pencil
