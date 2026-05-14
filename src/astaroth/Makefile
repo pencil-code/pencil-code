@@ -216,7 +216,7 @@ endif
 clean:
 	@rm -f $(OBJECTS)
 	@rm -f *.so .sentinel cmake_options.h
-	@if [[ -d submodule/build ]]; then rm -f -rI submodule/build; fi # Removes the files generated with cmake for the Astaroth code
+	@if [[ -d submodule/build ]]; then rm -f -r submodule/build; fi # Removes the files generated with cmake for the Astaroth code
 	@rm -rf build
 	@rm -rf scheduler-build
 	@rm -rf include
