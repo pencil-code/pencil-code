@@ -95,7 +95,7 @@ else
 fi
 
 if [ "$submodules" = "true" ]; then
-    git submodule update --init --recursive
+    git submodule update --init --recursive --depth 1
 fi
 
 #Start with a clean environment to avoid conflicts with already-enabled versions of Pencil
