@@ -7106,8 +7106,8 @@ iloop:do i=1,size(list2)
 
       ind = int(rindex); resid=ind
       if (present(rank)) resid = modulo(ind,nw)
-      indx = modulo(resid,nx)
-      indy = modulo(resid/nx,ny)
+      indx = modulo(resid,int(nx,kind=ikind8))
+      indy = modulo(resid/nx,int(ny,kind=ikind8))
       indz = resid/nxy
       if (present(rank)) rank=int(ind/nw)
 
