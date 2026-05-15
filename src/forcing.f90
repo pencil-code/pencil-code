@@ -6693,17 +6693,17 @@ module Forcing
     do i = 1,n_forcing_cont_max
         call string_to_enum(enum_iforcing_cont(i),iforcing_cont(i))
     enddo
-    call copy_addr(enum_iforcing_cont,p_par(74)) ! int (n_forcing_cont_max)
-    if (allocated(fcont_from_file)) call copy_addr(fcont_from_file,p_par(75)) ! (nx) (ny) (nz) (3)
-    if (allocated(ks_k)) call copy_addr(ks_k,p_par(76)) ! (3) (ks_modes)
-    if (allocated(ks_a)) call copy_addr(ks_a,p_par(77)) ! (3) (ks_modes)
-    if (allocated(ks_b)) call copy_addr(ks_b,p_par(78)) ! (3) (ks_modes)
-    if (allocated(ks_omega)) call copy_addr(ks_omega,p_par(79)) ! (ks_modes)
-    call copy_addr(lforce_helical,p_par(80)) ! bool (2)
-    call copy_addr(lsecond_force,p_par(81)) ! bool
-    call copy_addr(torus,p_par(82)) ! torus_rect
-    call copy_addr(lfcont_as_comaux,p_par(83)) ! bool
-    call copy_addr(ifcont_aux,p_par(84)) ! int (n_forcing_cont_max)
+    call copy_addr(enum_iforcing_cont,p_par(76)) ! int (n_forcing_cont_max)
+    if (allocated(fcont_from_file)) call copy_addr(fcont_from_file,p_par(77)) ! (nx) (ny) (nz) (3)
+    if (allocated(ks_k)) call copy_addr(ks_k,p_par(78)) ! (3) (ks_modes)
+    if (allocated(ks_a)) call copy_addr(ks_a,p_par(79)) ! (3) (ks_modes)
+    if (allocated(ks_b)) call copy_addr(ks_b,p_par(80)) ! (3) (ks_modes)
+    if (allocated(ks_omega)) call copy_addr(ks_omega,p_par(81)) ! (ks_modes)
+    call copy_addr(lforce_helical,p_par(82)) ! bool (2)
+    call copy_addr(lsecond_force,p_par(83)) ! bool
+    call copy_addr(torus,p_par(84)) ! torus_rect
+    call copy_addr(lfcont_as_comaux,p_par(85)) ! bool
+    call copy_addr(ifcont_aux,p_par(86)) ! int (n_forcing_cont_max)
 
     call keep_compiler_quiet(x1_fcont)
     call keep_compiler_quiet(x2_fcont)
