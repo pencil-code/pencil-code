@@ -750,8 +750,8 @@ module Mpicomm
 !
 !  23-oct-23/MR: coded
 !
-      real, dimension(:,:,:,:), intent(in):: a
-      real, dimension(:,:,:,:), intent(out):: f
+      real, contiguous, dimension(:,:,:,:), intent(in):: a
+      real, contiguous, dimension(:,:,:,:), intent(out):: f
       integer, intent(in) :: indvar1,indvar2
 
       integer, dimension(4) :: start_get, start_store
@@ -1555,7 +1555,7 @@ print*, 'noks_all,ngap_all,nstrip_total=', noks_all,ngap_all,nstrip_total
 !
       use General, only: notanumber
 
-      real, dimension(:,:,:,:), intent(inout):: f
+      real, contiguous, dimension(:,:,:,:), intent(inout):: f
       integer, optional,        intent(in)   :: ivar1_opt, ivar2_opt
 !
       integer :: tolowyr,touppyr,tolowys,touppys,tolowzr,touppzr,tolowzs,touppzs ! msg. tags placeholders
@@ -1939,7 +1939,7 @@ if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
 !
       use General, only: transpose_mn, notanumber, copy_kinked_strip_z, copy_kinked_strip_y, reset_triangle, notanumber
 
-      real, dimension(:,:,:,:), intent(inout):: f
+      real, contiguous, dimension(:,:,:,:), intent(inout):: f
       integer, optional,                 intent(in)   :: ivar1_opt, ivar2_opt
 !
       integer :: ivar1, ivar2, j
@@ -2278,7 +2278,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !   2-may-09/anders: coded
 !
-      real, dimension(:,:,:,:), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: f
       integer, intent(in), optional :: ivar1_opt, ivar2_opt
 !
       integer :: ivar1, ivar2, nbufx, j
@@ -2514,7 +2514,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !                      y-ghosts are not needed
 !  20-june-02/nils: adapted from pencil_mpi
 !
-      real, dimension (:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 !
       real(KIND=rkind8) :: deltay_dy, frac, c1, c2, c3, c4, c5, c6
@@ -2727,7 +2727,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !  20-june-02/nils: adapted from pencil_mpi
 !  02-mar-02/ulf: Sliding periodic boundary conditions in x
 !
-      real, dimension (:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 !
       integer, dimension (MPI_STATUS_SIZE) :: irecv_stat_fall, irecv_stat_fann
@@ -10945,7 +10945,7 @@ endif
      use General, only: var_is_vec
      use Yinyang, only: bilin_interp, biquad_interp
 
-      real, dimension(:,:,:,:), intent(IN) :: f
+      real, contiguous, dimension(:,:,:,:), intent(IN) :: f
       integer,                  intent(IN) :: ivar1, ivar2, pos, type
       real, dimension(:,:,:,:), intent(OUT):: buffer
 
@@ -11563,7 +11563,8 @@ stop
       use General, only: loptest,linear_interpolate_1d, itoa
 !      use IO, only: output_snap, output_snap_finalize
 
-      real, dimension(:,:,:,:) :: f,frgn_buffer,interp_buffer
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(:,:,:,:) :: frgn_buffer,interp_buffer
       integer :: ivar1, ivar2, lf1
       logical, optional :: lnonblock
       integer, parameter :: ytag=115
