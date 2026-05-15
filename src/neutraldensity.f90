@@ -31,7 +31,7 @@ module NeutralDensity
   real :: diffrhon=0.,diffrhon_hyper3=0.,diffrhon_shock=0.
   real :: lnrhon_const=0., rhon_const=1.
   real :: lnrhon_int=0.,lnrhon_ext=0.
-  real :: lnrhon0=0.,lnrhon_left=0.,lnrhon_right=0.,alpha,zeta
+  real :: lnrhon0=0.,lnrhon_left=0.,lnrhon_right=0.,alpha=0.,zeta=0.
   real, dimension(3) :: diffrhon_hyper3_aniso=0.
   integer, parameter :: ndiff_max=4
   logical :: lmass_source=.false.,lcontinuity_neutral=.true.
@@ -40,12 +40,11 @@ module NeutralDensity
   logical :: ldiffn_hyper3lnrhon=.false.,ldiffn_hyper3_aniso=.false.
   logical :: lfreeze_lnrhonint=.false.,lfreeze_lnrhonext=.false.
   logical :: ldiffn_hyper3_polar=.false., luse_as_ionization=.false.
-  logical :: lpretend_star,lramp_up
+  logical :: lpretend_star=.false.,lramp_up=.false.
   real :: star_form_threshold=1.,star_form_exponent=1.5
   character (len=labellen), dimension(ninit) :: initlnrhon='nothing'
   character (len=labellen), dimension(ndiff_max) :: idiffn=''
   character (len=labellen) :: borderlnrhon='nothing', alpha_prescription='const'
-  character (len=intlen) :: iinit_str
 !
   namelist /neutraldensity_init_pars/ &
        ampllnrhon,initlnrhon,    &
@@ -174,7 +173,7 @@ module NeutralDensity
           if (lroot .and. (.not. lnothing)) print*,'diffusion: nothing'
         case default
           call fatal_error('initialize_neutraldensity', &
-               'No such value for idiff('//trim(itoa(i))//'): '//trim(idiffn(i)))
+               'no such idiff('//trim(itoa(i))//'): '//trim(idiffn(i)))
         endselect
         lnothing=.true.
       enddo
@@ -289,6 +288,7 @@ module NeutralDensity
 !
       logical :: lnothing
       integer :: j
+      character (len=intlen) :: iinit_str
 !
 !  Set default values for sound speed at top and bottom.
 !  These may be updated in one of the following initialization routines.
@@ -585,12 +585,11 @@ module NeutralDensity
   !         if (ip<10) print*,'AXEL: p%alpha=',p%alpha
   !         if (ip<10) print*,'AXEL: unit_alpha=',unit_alpha
           else
-            call fatal_error('calc_pencils_neutraldensity', &
-              'no energy equation is used')
+            call fatal_error('calc_pencils_neutraldensity','entropy equation is not used')
           endif
         case default
           call fatal_error('calc_pencils_neutraldensity', &
-            'No such value for alpha_prescription')
+            'no such alpha_prescription: '//trim(alpha_prescription))
         endselect
       endif
 !
@@ -721,9 +720,9 @@ module NeutralDensity
             call del6fj(f,diffrhon_hyper3_aniso,ilnrhon,tmp)
             fdiff = fdiff + tmp
             if (lupdate_courant_dt) diffus_diffrhon3=diffus_diffrhon3 + &
-                                                 diffrhon_hyper3_aniso(1)*dline_1(:,1)**6 + &
-                                                 diffrhon_hyper3_aniso(2)*dline_1(:,2)**6 + &
-                                                 diffrhon_hyper3_aniso(3)*dline_1(:,3)**6
+                                                     diffrhon_hyper3_aniso(1)*dline_1(:,1)**6 + &
+                                                     diffrhon_hyper3_aniso(2)*dline_1(:,2)**6 + &
+                                                     diffrhon_hyper3_aniso(3)*dline_1(:,3)**6
             if (headtt) print*,'dlnrhon_dt: diffrhon_hyper3=(Dx,Dy,Dz)=',diffrhon_hyper3_aniso
           endif
         endif

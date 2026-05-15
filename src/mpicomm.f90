@@ -50,7 +50,7 @@
 module Mpicomm
 !
   use Cdata
-  use General, only: find_proc, ioptest,loptest, idiv
+  use General, only: find_proc, ioptest, loptest, idiv
   use Yinyang
 !
   implicit none
@@ -74,6 +74,7 @@ module Mpicomm
 !
   integer(kind=MPI_OFFSET_KIND) :: size_of_int = 0, size_of_real = 0, size_of_double = 0
   logical :: lcommunicate_y=.false.
+  integer(KIND=MPI_ADDRESS_KIND), parameter :: zero_size=0
 !
   !character(LEN=MPI_MAX_PROCESSOR_NAME), dimension(ncpus) :: nodenames
 !
@@ -260,6 +261,7 @@ module Mpicomm
 
       if (sizeof_real() < 8) then
         mpi_precision = MPI_REAL
+        MPI_2FLOAT = MPI_2REAL
         MPI_CMPLX = MPI_COMPLEX
         if (lroot) then
           write (*,*) ""
@@ -272,6 +274,7 @@ module Mpicomm
       else
         mpi_precision = MPI_DOUBLE_PRECISION
         MPI_CMPLX = MPI_DOUBLE_COMPLEX
+        MPI_2FLOAT = MPI_2DOUBLE_PRECISION
       endif
 
       call MPI_COMM_DUP(MPI_COMM_PENCIL,MPI_COMM_GRID,mpierr)
@@ -754,8 +757,6 @@ module Mpicomm
       integer, dimension(4) :: start_get, start_store
       integer :: type_get, type_store, win
       INTEGER(KIND=MPI_ADDRESS_KIND) :: size
-      INTEGER(KIND=MPI_ADDRESS_KIND), parameter :: zero_size=0
-
 
       nvar=indvar2-indvar1+1
       start_get=(/ipx*nx,ipy*ny,ipz*nz,0/)+1
@@ -770,17 +771,56 @@ module Mpicomm
 
       ! data tb scattered is on root
       size = merge(nwgrid*size_of_real,zero_size,lroot)
-      call MPI_Win_create(a, size, 1, MPI_INFO_NULL, MPI_COMM_WORLD, win, mpierr)
+      call MPI_Win_create(a, size, 1, MPI_INFO_NULL, MPI_COMM_PENCIL, win, mpierr)
 
       call MPI_WIN_FENCE(0, win, mpierr)
-      call MPI_Get(f, 1, type_store, root, 0, 1, type_get, win, mpierr)
+      call MPI_Get(f, 1, type_store, root, zero_size, 1, type_get, win, mpierr)
       call MPI_WIN_FENCE(0, win, mpierr)
 
+      call MPI_WIN_FREE(win,mpierr)
       call MPI_TYPE_FREE(type_get,mpierr)
       call MPI_TYPE_FREE(type_store,mpierr)
-      call MPI_WIN_FREE(win,mpierr)
 
     endsubroutine scatter_snapshot
+!***********************************************************************
+    subroutine fetch_to_process_masked(array,length,mask,ranks,irank)
+!
+! Fetch elements of array selected by mask from rank ranks(imax) to rank irank (default: root);
+! imax is counted according to masked-in elements of array. Uses one-sided MPI communication.
+!
+! 6-may-26/MR: coded
+!
+      integer, intent(in) :: length
+      real, dimension(length), intent(inout) :: array
+      logical, dimension(length), intent(in) :: mask
+      integer, dimension(:), intent(in) :: ranks
+      integer, optional, intent(in) :: irank
+
+      integer :: win,ind,imax
+      integer(KIND=MPI_ADDRESS_KIND) :: winsize,idisp
+      logical :: lamfetcher
+
+      lamfetcher = iproc_world==ioptest(irank,root)
+      winsize = length*size_of_real    !merge(zero_size,length*size_of_real,lamfetcher)
+
+      call MPI_WIN_CREATE(array, winsize, size_of_real, MPI_INFO_NULL, MPI_COMM_PENCIL, win, mpierr)
+      call MPI_WIN_FENCE(MPI_MODE_NOPRECEDE, win, mpierr)
+      if (lamfetcher) then
+        imax=1
+        do ind=1,length
+          if (mask(ind)) then                  ! for each masked-in array element, get the value from rank(imax)
+            if (ranks(imax)/=iproc_world) then ! don't fetch from yourself
+              idisp=ind-1
+              call MPI_Get(array(ind), 1, mpi_precision, ranks(imax), idisp, 1, mpi_precision, win, mpierr)
+            endif
+            imax=imax+1
+          endif
+        enddo
+      endif
+      call MPI_WIN_FENCE(0, win, mpierr)
+      call MPI_WIN_FREE(win,mpierr)
+
+    endsubroutine fetch_to_process_masked
 !***********************************************************************
     subroutine yyinit
 !
@@ -4913,6 +4953,56 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine mpireduce_max_arr
 !***********************************************************************
+    subroutine mpireduce_max_arr_inplace(fmax,nreduce,comm)
+!
+!  Calculate total maximum for each array element and return to root.
+!
+      integer :: nreduce
+      real, dimension(nreduce) :: fmax
+      integer, optional :: comm
+!
+      if (nreduce==0) return
+!
+      if (lroot) then
+        call MPI_REDUCE(MPI_IN_PLACE, fmax, nreduce, mpi_precision, MPI_MAX, root, &
+                        ioptest(comm,MPI_COMM_PENCIL), mpierr)
+      else
+        call MPI_REDUCE(fmax, fmax, nreduce, mpi_precision, MPI_MAX, root, &
+                        ioptest(comm,MPI_COMM_PENCIL), mpierr)
+      endif
+!
+    endsubroutine mpireduce_max_arr_inplace
+!***********************************************************************
+    subroutine mpireduce_maxloc_arr(fmax,maxranks,nreduce,comm)
+!
+!  Calculate total maximum for each array element along with its location and return both to root.
+!
+!  27-apr-26/MR: coded
+!
+      integer :: nreduce
+      real, dimension(nreduce) :: fmax
+      integer, dimension(nreduce) :: maxranks
+      integer, optional :: comm
+!
+      real :: fmaxloc(2,nreduce)
+
+      if (nreduce==0) return
+!
+      fmaxloc(1,:)=fmax
+      fmaxloc(2,:)=iproc_world
+
+      if (lroot) then
+        call MPI_REDUCE(MPI_IN_PLACE, fmaxloc, nreduce, MPI_2FLOAT, MPI_MAXLOC, root, &
+                        ioptest(comm,MPI_COMM_PENCIL), mpierr)
+        fmax=fmaxloc(1,:)
+        maxranks=fmaxloc(2,:)
+      else
+        call MPI_REDUCE(fmaxloc, fmaxloc, nreduce, MPI_2FLOAT, MPI_MAXLOC, root, &
+                        ioptest(comm,MPI_COMM_PENCIL), mpierr)
+      endif
+!
+    endsubroutine mpireduce_maxloc_arr
+!***********************************************************************
     subroutine mpireduce_max_arr2(fmax_tmp,fmax,nreduce,comm)
 !
 !  Calculate total maximum for each array element and return to root.
@@ -5057,7 +5147,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real :: fsum_tmp,fsum
       integer, optional :: idir
 !
-!
       if (nprocs==1) then
         fsum=fsum_tmp
       else
@@ -5072,6 +5161,40 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       endif
 !
     endsubroutine mpireduce_sum_scl
+!***********************************************************************
+    subroutine mpireduce_sum_arr_inplace(fsum,nreduce,idir,comm)
+!
+!  Calculate total sum for each array element and return to root.
+!
+      integer :: nreduce
+      real, dimension(nreduce) :: fsum
+      integer, optional :: idir,comm
+!
+      integer :: mpiprocs
+!
+      intent(in)  :: nreduce
+      intent(inout) :: fsum
+!
+      if (nreduce==0) return
+!
+      if (nprocs==1) then
+        return
+      else
+        if (present(idir)) then
+          mpiprocs=mpigetcomm(idir)
+        else
+          mpiprocs=ioptest(comm,MPI_COMM_GRID)
+        endif
+        if (lroot) then
+          call MPI_REDUCE(MPI_IN_PLACE, fsum, nreduce, mpi_precision, MPI_SUM, root, &
+                          mpiprocs, mpierr)
+        else
+          call MPI_REDUCE(fsum, fsum, nreduce, mpi_precision, MPI_SUM, root, &
+                          mpiprocs, mpierr)
+        endif
+      endif
+!
+    endsubroutine mpireduce_sum_arr_inplace
 !***********************************************************************
     subroutine mpireduce_sum_arr(fsum_tmp,fsum,nreduce,idir,comm)
 !

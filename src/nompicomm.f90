@@ -1159,6 +1159,36 @@ module Mpicomm
 !
     endsubroutine mpiallreduce_sum_arr_inplace
 !***********************************************************************
+    subroutine mpireduce_max_arr_inplace(fmax,nreduce,comm)
+!
+!  Calculate total maximum for each array element and return to root.
+!
+      integer :: nreduce
+      real, dimension(nreduce) :: fmax
+      integer, optional :: comm
+!
+      call keep_compiler_quiet(fmax)
+      call keep_compiler_quiet(nreduce,comm)
+
+    endsubroutine mpireduce_max_arr_inplace
+!***********************************************************************
+    subroutine mpireduce_maxloc_arr(fmax,maxranks,nreduce,comm)
+!
+!  Calculate total maximum for each array element along with its location and return both to root.
+!
+!  27-apr-26/MR: coded
+!
+      integer :: nreduce
+      real, dimension(nreduce) :: fmax
+      integer, dimension(nreduce) :: maxranks
+      integer, optional :: comm
+
+      maxranks=0
+      call keep_compiler_quiet(fmax)
+      call keep_compiler_quiet(nreduce,comm)
+
+    endsubroutine mpireduce_maxloc_arr
+!***********************************************************************
     subroutine mpiallreduce_sum_int_scl(fsum_tmp,fsum,comm)
 !
       integer :: fsum_tmp, fsum
@@ -1189,6 +1219,19 @@ module Mpicomm
       if (ALWAYS_FALSE) print*, fsum
       
     endsubroutine mpiallreduce_sum_int_arr_inplace
+!***********************************************************************
+    subroutine mpireduce_sum_arr_inplace(fsum,nreduce,idir,comm)
+!
+!  Calculate total sum for each array element and return to root.
+!
+      integer :: nreduce
+      real, dimension(nreduce) :: fsum
+      integer, optional :: idir,comm
+
+      if (ALWAYS_FALSE) print*, fsum
+      if (ALWAYS_FALSE) print*, present(idir), present(comm)
+!
+    endsubroutine mpireduce_sum_arr_inplace
 !***********************************************************************
     subroutine mpiallreduce_max_scl_sgl(fmax_tmp,fmax,comm)
 !
@@ -3152,5 +3195,19 @@ module Mpicomm
       f(l1:l2,m1:m2,n1:n2,indvar1:indvar2) = a
 
     endsubroutine scatter_snapshot
+!***********************************************************************
+    subroutine fetch_to_process_masked(array,size,mask,ranks,irank)
+
+      integer, intent(in) :: size
+      real, dimension(size), intent(inout) :: array
+      real, dimension(size), intent(in) :: mask
+      integer, dimension(size), intent(in) :: ranks
+      integer, optional, intent(in) :: irank
+
+      call keep_compiler_quiet(size,irank)
+      call keep_compiler_quiet(array,mask)
+      call keep_compiler_quiet(ranks)
+
+    endsubroutine fetch_to_process_masked
 !***********************************************************************
 endmodule Mpicomm

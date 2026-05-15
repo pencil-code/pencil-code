@@ -7102,13 +7102,12 @@ iloop:do i=1,size(list2)
       integer, intent(out) :: indx,indy,indz
       integer, optional, intent(out) :: rank
 
-      integer :: ind, resid
+      integer(KIND=ikind8) :: ind,resid
 
-      ind = int(rindex)
-
-      resid = int(mod(int(ind,KIND=ikind8),nw))
-      indx = mod(resid,nx)
-      indy = mod(resid-indx,nxy)
+      ind = int(rindex); resid=ind
+      if (present(rank)) resid = modulo(ind,nw)
+      indx = modulo(resid,nx)
+      indy = modulo(resid/nx,ny)
       indz = resid/nxy
       if (present(rank)) rank=int(ind/nw)
 

@@ -211,7 +211,7 @@ module Hydro
 ! The following is useful to debug the forcing - Dhruba
   real :: ampl_Omega=0.0
   real :: omega_ini=0.0
-  logical :: loutest, ldiffrot_test=.false.
+  logical :: loutest=.false., ldiffrot_test=.false.
   real :: r_cyl = 1.0, skin_depth = 1e-1
   real :: rnoise_int=impossible,rnoise_ext=impossible
   real :: PrRa  !preliminary
@@ -1160,10 +1160,10 @@ module Hydro
       if (lhiggsless) then
         ! normalization with T00 at initial time gives bar epsilon = alpha/(1 + alpha)
         eps_hless = alpha_hless/(1.+alpha_hless)
-        call put_shared_variable ('eps_hless',eps_hless,caller='register_hydro')
+        call put_shared_variable ('eps_hless',eps_hless)
         ! width_hless is the smoothing in units of grid points
         width_hless_absolute=width_hless*dx/vwall
-        call put_shared_variable ('width_hless_absolute',width_hless_absolute,caller='initialize_hydro')
+        call put_shared_variable ('width_hless_absolute',width_hless_absolute)
       endif
 !
 ! If we are to solve for gradient of dust particle velocity, we must store gradient
@@ -3804,7 +3804,7 @@ module Hydro
               call multsv_mn(p%rho1,tmp3,p%uu)
               ! alberto: I commented the line below by mistake, recovered
               p%uu=p%uu*cs2011
-            endif
+            endif    !  if (lrelativistic)
             ! alberto: once computed pencil u from f-array, store temporarily
             ! for all pencils below to be correctly computed, T0i remains
             ! stored in tmp3
@@ -3824,7 +3824,7 @@ module Hydro
         else
           p%uu=f(l1:l2,m,n,iux:iuz)
         endif  !  if (lconservative) ... else
-      endif
+      endif    !  if (lpenc_loc(i_uu))
 ! u2
       if (lpenc_loc(i_u2)) call dot2_mn(p%uu,p%u2)
 
@@ -3983,7 +3983,7 @@ module Hydro
       endif
 ! o2
       if (lpenc_loc(i_o2) .or. lpenc_loc(i_oxu2)) &
-        call fatal_error('calc_pencils_hydro_linearized','o2 or oxu2 pencils not calculate')
+        call fatal_error('calc_pencils_hydro_linearized','o2 or oxu2 pencils not calculated')
 ! ou
       if (lpenc_loc(i_ou) .or. lpenc_loc(i_oxu)) &
         call fatal_error('calc_pencils_hydro_linearized','ou or oxu pencils not calculated')
@@ -4341,7 +4341,7 @@ module Hydro
 !  12-Mar-2017/WL: Agree, looks very specific.
 !
         if (lno_meridional_flow) then
-          f(l1:l2,m,n,iux:iuy)=0.0
+          f(l1:l2,m,n,iux:iuy)=0.
           df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-p%ugu(:,3)
         endif
 !
@@ -5815,7 +5815,7 @@ module Hydro
 !if (iproc==1.and.m==m1.and.n==n1) print*,'AXEL: f(80:160,m,n,iuu)=',t,f(80:160,m,n,iuu)
         do j=0,2
           f(:,m,n,iTij+j)=rho_gam21*f(:,m,n,iuu+j)**2
-          if(.not. lconservative_pressure_on_rhs) then
+          if (.not. lconservative_pressure_on_rhs) then
             f(:,m,n,iTij+j)=f(:,m,n,iTij+j)+press
           endif
         enddo
@@ -5836,8 +5836,6 @@ module Hydro
             f(:,m,n,ivv+j)=rho_gam21*f(:,m,n,iuu+j)
           enddo
         endif
-
-
 !
 !  The following hasn't been prepared yet.
 !

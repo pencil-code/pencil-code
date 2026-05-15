@@ -51,7 +51,7 @@
   public :: transp_xz, transp_zx
 
   public :: communicate_vect_field_ghosts, communicate_xy_ghosts
-  public :: fill_zghostzones_3vec
+  public :: fill_zghostzones_3vec, fetch_to_process_masked
 
   public :: sum_xy, distribute_xy, collect_xy, distribute_yz
   public :: distribute_z, collect_z
@@ -80,7 +80,7 @@
 ! Foreign application routines.
   public :: initialize_foreign_comm, get_foreign_snap_initiate, get_foreign_snap_finalize, update_foreign_data
 ! Variables
-  public :: ipx, ipy, ipz, lroot, iproc, mpi_precision, MPI_CMPLX, nprocs
+  public :: ipx, ipy, ipz, lroot, iproc, mpi_precision, MPI_CMPLX, MPI_2FLOAT, nprocs
   public :: lfirst_proc_x, lfirst_proc_y, lfirst_proc_z, lfirst_proc_xy, lfirst_proc_yz, lfirst_proc_xz, lfirst_proc_xyz
   public :: llast_proc_x, llast_proc_y, llast_proc_z, llast_proc_xy, llast_proc_yz, llast_proc_xz, llast_proc_xyz
   public :: MPI_COMM_WORLD, MPI_COMM_GRID, MPI_COMM_PENCIL, MPI_COMM_XYPLANE, MPI_COMM_XZPLANE, MPI_COMM_YZPLANE, &
@@ -246,9 +246,11 @@
   interface mpireduce_max
     module procedure mpireduce_max_scl
     module procedure mpireduce_max_arr
+    module procedure mpireduce_max_arr_inplace
     module procedure mpireduce_max_arr2
     module procedure mpireduce_max_scl_int
     module procedure mpireduce_max_arr_int
+    module procedure mpireduce_maxloc_arr
   endinterface
 !
   interface mpireduce_max_int
@@ -284,6 +286,7 @@
     module procedure mpireduce_sum_arr2
     module procedure mpireduce_sum_arr3
     module procedure mpireduce_sum_arr4
+    module procedure mpireduce_sum_arr_inplace
   endinterface
 !
   interface distribute_xy
@@ -429,7 +432,7 @@
 
   character(LEN=4), public :: cyinyang=' '
 
-  integer :: mpi_precision, MPI_CMPLX
+  integer :: mpi_precision, MPI_CMPLX, MPI_2FLOAT
 
 !$omp threadprivate(MPI_COMM_GRID, MPI_COMM_PENCIL, MPI_COMM_XBEAM, MPI_COMM_YBEAM, MPI_COMM_ZBEAM, &
 !$omp MPI_COMM_XYPLANE, MPI_COMM_XZPLANE, MPI_COMM_YZPLANE, MPI_COMM_RSLICE)

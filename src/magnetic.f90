@@ -6681,19 +6681,14 @@ print*,'AXEL2: should not be here (eta) ... '
       if (idiag_betamin /= 0) call max_mn_name(-p%beta, idiag_betamin, lneg=.true.)
 !
 !  Use lxmask_mag and lymask_mag to isolate a line through a given point (e.g., 0, as given by the mask).
-!  This is uselful for reconnection experiments where one wants to plot the time derivative of Azmin
+!  This is useful for reconnection experiments where one wants to plot the time derivative of Azmin
 !  to compute the reconnection time. The y in the names idiag_Azmid_ymin and idiag_Azmid_ymax
 !  indicate that the cut is taken for y-const, i.e., along x in this case.
 !
-      if (idiag_Azmid_min /= 0) call max_mn_name(-p%aa(:,3), idiag_Azmid_min, lneg=.true., mask=lxmask_mag)
-      if (idiag_Azmid_max /= 0) call max_mn_name( p%aa(:,3), idiag_Azmid_max, mask=lxmask_mag)
-      if (lymask_mag(m-nghost)) then
-        if (idiag_Azmid_ymin /= 0) call max_mn_name(-p%aa(:,3), idiag_Azmid_ymin, lneg=.true.)
-        if (idiag_Azmid_ymax /= 0) call max_mn_name( p%aa(:,3), idiag_Azmid_ymax)
-      else
-        call max_mn_name(spread(-impossible,1,nx),idiag_Azmid_ymin,lneg=.true.)
-        call max_mn_name(spread(-impossible,1,nx),idiag_Azmid_ymax)
-      endif
+      if (idiag_Azmid_min /=0) call max_mn_name(-p%aa(:,3), idiag_Azmid_min, lneg=.true., mask=lxmask_mag)
+      if (idiag_Azmid_max /=0) call max_mn_name( p%aa(:,3), idiag_Azmid_max, mask=lxmask_mag)
+      if (idiag_Azmid_ymin/=0) call max_mn_name(-p%aa(:,3), idiag_Azmid_ymin, lneg=.true., mask=spread(lymask_mag(m-nghost),1,nx))
+      if (idiag_Azmid_ymax/=0) call max_mn_name( p%aa(:,3), idiag_Azmid_ymax, mask=spread(lymask_mag(m-nghost),1,nx))
 
       if (.not.lmultithread) then
 !
