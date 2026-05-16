@@ -35,5 +35,6 @@ else
   rm -f $newdir/data/allprocs/grid.dat; ln -s $olddir/data/allprocs/grid.dat $newdir/data/allprocs/grid.dat
   rm -f $newdir/data/allprocs/ode.dat; ln -s $olddir/data/allprocs/ode.dat $newdir/data/allprocs/ode.dat
   pc_copyvar_old grid.dat grid.dat $newdir -s -e
+  pc_copyvar_old dim.dat dim.dat $newdir -s -e
   pc_copyvar_old v v $newdir -s -e
 endif
