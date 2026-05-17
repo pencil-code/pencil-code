@@ -366,6 +366,7 @@ module Cdata
                                    !PAR_DOC: file{start.in}, put:
                                    !PAR_DOC: \cmd{ireset_tstart=0, lread_oldsnap=T, lwrite_var_anyway=T}
   logical :: lwrite_var_anyway=.false., lbackup_snap=.false.
+  integer :: nsnap_backups = 1
   logical :: lwrite_last_powersnap=.false., lwrite_fsum=.false.
   logical :: lread_oldsnap_rho2lnrho=.false.
   logical :: lread_oldsnap_nomag=.false. !PAR_DOC: if set \code{T}, the

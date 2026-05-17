@@ -283,6 +283,7 @@ module Snapshot
       use Mpicomm, only: mpibarrier
       use Chemistry, only: make_flame_index, make_mixture_fraction
       use Diagnostics, only: save_diagnostic_controls
+      use General, only: itoa
 !
 !  The dimension msnap can either be mfarray (for f-array in run.f90)
 !  or just mvar (for f-array in start.f90 or df-array in run.f90
@@ -300,6 +301,8 @@ module Snapshot
       logical, save :: lfirst_call=.true.
       character (len=fnlen) :: file,tmpfile
       character (len=intlen) :: ch
+      character (len=:), allocatable :: base_file,backup_file
+      integer :: i
       integer :: nv1_capitalvar
 !
 ! Prepare auxilliaries that are used only for later visualization
@@ -387,8 +390,16 @@ module Snapshot
         call safe_character_assign(file,trim(chsnap))
         if (lbackup_snap .and. .not.lstart .and. .not.(chsnap=='crash.dat' .or. chsnap(1:1)=='d' .or. chsnap(1:3)=='VAR')) then
           tmpfile=merge('var.h5 ','var.dat',IO_strategy=='HDF5')
-          call system_cmd('mv -f '//trim(directory_snap)//'/'//trim(tmpfile)//' '// &
-                          trim(directory_snap)//'/'//trim(tmpfile)//'.bck '//' > /dev/null 2>&1')
+          base_file = trim(directory_snap)//'/'//trim(tmpfile)
+          backup_file = base_file // '.bck'
+          if(nsnap_backups > 1) then
+            do i = nsnap_backups,2,-1
+              call system_cmd('mv -f '// backup_file // '.' // trim(itoa(i-1)) // ' ' // &
+                                         backup_file // '.' // trim(itoa(i)) // ' > /dev/null 2>&1')
+            enddo
+            backup_file = backup_file // '.1'
+          endif
+          call system_cmd('mv -f '// base_file // ' ' // backup_file //' > /dev/null 2>&1')
         endif
         if (lmultithread.and.nt>0) then
           extpars%ind1=1; extpars%ind2=msnap; extpars%file=file
