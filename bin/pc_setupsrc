@@ -554,11 +554,6 @@ do
     usage_from_header $IAM
     exit 1
   ;;
-  -?)
-    . $pencil_home_path/lib/sh/functions.sh
-    usage_from_header $IAM
-    exit 1
-  ;;
   --help)
     . $pencil_home_path/lib/sh/functions.sh
     usage_from_header $IAM
@@ -580,12 +575,13 @@ do
     shift
     break
   ;;
+  -*)
+    . $pencil_home_path/lib/sh/functions.sh
+    echo UNRECOGNISED PARAMETER: $1
+    usage_from_header $IAM
+    exit 1
+  ;;
   *)
-    if [ $specified_src ]; then
-      echo UNRECOGNISED PARAMETER
-      usage_from_header $IAM
-      exit 1
-    fi
     src=$1
   ;;
   esac
