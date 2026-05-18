@@ -1374,7 +1374,9 @@ sub test_compile {
 
         # First pc_setupsrc, then make clean (if requested). Must be done
         # in this order as pc_setupsrc links the Makefile to the run directory.
-        test_shell_cmd("pc_setupsrc --pencil-home $pencil_home",
+        my $setupsrc_cmd = "pc_setupsrc --pencil-home $pencil_home";
+        $setupsrc_cmd .= " --force-astaroth" if ($gpu);
+        test_shell_cmd($setupsrc_cmd,
                        $dir,
                        "setting up directory",
                        QUIET);
