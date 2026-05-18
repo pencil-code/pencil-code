@@ -562,11 +562,11 @@ do
   ;;
   --min)
     link_all=0
-    break
+    shift
   ;;
   --force-astaroth)
     force_link_gpu=1
-    break
+    shift
   ;;
   --)
     shift
