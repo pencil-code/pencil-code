@@ -13,6 +13,7 @@
 # Options:
 #   --pencil-home <dir>   Specify the root path of the Pencil Code directory
 #   --min                 Link only a minimum of files
+#   --force-astaroth      Link `src/astaroth` regardless of settings in Makefile.local
 IAM=$0
 #
 link_scripts()
@@ -543,6 +544,7 @@ scripts="start.csh start_run.csh run.csh getconf.csh"
 pencil_home_path=$PENCIL_HOME
 src="`pwd`/src"
 link_all=1
+force_link_gpu=0
 #
 while [ $# -gt 0 ]
 do
@@ -568,6 +570,10 @@ do
   ;;
   --min)
     link_all=0
+    break
+  ;;
+  --force-astaroth)
+    force_link_gpu=1
     break
   ;;
   --)
@@ -652,7 +658,7 @@ if [ -f "$src/Makefile.local" ]; then
     make_initial_condition_dir
     if [ "$link_all" -eq 1 ]; then link_initial_condition_files; fi
   fi
-  if [ "`grep '^[^#]*= *gpu_astaroth' $src/Makefile.local`" != "" ]; then 
+  if [ "`grep '^[^#]*= *gpu_astaroth' $src/Makefile.local`" != "" -o "$force_link_gpu" -eq 1 ]; then 
     make_astaroth_dir
     if [ "$link_all" -eq 1 ]; then link_astaroth_files; fi
   fi
