@@ -14,8 +14,10 @@
 #   --pencil-home <dir>   Specify the root path of the Pencil Code directory
 #   --min                 Link only a minimum of files
 #   --force-astaroth      Link `src/astaroth` regardless of settings in Makefile.local
+
 IAM=$0
-#
+
+#-----------------------------------------------------------------------------
 link_scripts()
 {
   echo "Linking job submission/execution scripts."
