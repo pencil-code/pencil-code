@@ -551,12 +551,7 @@ force_link_gpu=0
 while [ $# -gt 0 ]
 do
   case $1 in
-  -h)
-    . $pencil_home_path/lib/sh/functions.sh
-    usage_from_header $IAM
-    exit 1
-  ;;
-  --help)
+  -h | --help)
     . $pencil_home_path/lib/sh/functions.sh
     usage_from_header $IAM
     exit 1
