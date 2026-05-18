@@ -77,7 +77,7 @@ clean_astaroth()
   #must be called before delete_files since we need src/Makefile to exist
   dir="$1"
   if [ -e "$dir/Makefile" ]; then
-    make -C "$dir" clean_astaroth
+    make -C "$dir" clean_astaroth &> /dev/null
   fi
 }
 
