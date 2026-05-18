@@ -7397,7 +7397,7 @@ module Chemistry
     call copy_addr(kreactions_p,p_par(50)) ! (mreactions)
     call copy_addr(kreactions_z,p_par(51)) ! (mz) (mreactions)
     call copy_addr(kreactions_m,p_par(52)) ! (mreactions)
-    call copy_addr(sijm,p_par(53)) ! (nchemspec) (mreactions)
+    if(allocated(Sijm)) call copy_addr(Sijm,p_par(53)) ! (nchemspec) (mreactions)
 
     call copy_addr(rgas_unit_sys,p_par(54))
     call copy_addr(diff_coef_const,p_par(55))
@@ -7426,9 +7426,9 @@ module Chemistry
     call copy_addr(index_n2,p_par(78)) ! int
     call copy_addr(index_o2n2,p_par(79)) ! int
     call copy_addr(stoichio,p_par(84)) ! (nchemspec) (mreactions)
-    call copy_addr(sijp,p_par(85)) ! (nchemspec) (mreactions)
-    call copy_addr(sijm_,p_par(86)) ! (nchemspec) (mreactions)
-    call copy_addr(sijp_,p_par(87)) ! (nchemspec) (mreactions)
+    if(allocated(Sijp))   call copy_addr(Sijp,p_par(85)) ! (nchemspec) (mreactions)
+    if(allocated(Sijm_))  call copy_addr(Sijm_,p_par(86)) ! (nchemspec) (mreactions)
+    if(allocated(Sijp_))  call copy_addr(Sijp_,p_par(87)) ! (nchemspec) (mreactions)
     call copy_addr(back,p_par(88)) ! bool (mreactions)
     call copy_addr(initial_massfractions,p_par(89)) ! (nchemspec)
     call copy_addr(b_n,p_par(94)) ! (mreactions)
