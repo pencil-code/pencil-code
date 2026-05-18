@@ -338,9 +338,9 @@ module Filter
       a2=-1./16.
       a1=1./4.
       a0=5./8.
-      do 100 n=3,mz-2
+      do n=3,mz-2
         b(n)=a0*a(n)+a1*(a(n-1)+a(n+1))+a2*(a(n-2)+a(n+2))
-100   continue
+      enddo
 !
 !  next nearest points to the boundaries
 !

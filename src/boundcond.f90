@@ -3918,9 +3918,9 @@ module Boundcond
 !
       select case(topbot)
       case(BOT)               ! bottom boundary
-        forall (i=1:nghost) f(l1-i,:,:,j) = real(sgn) * f(l1+i-1,:,:,j)
+        do concurrent (i=1:nghost); f(l1-i,:,:,j) = real(sgn) * f(l1+i-1,:,:,j); enddo
       case(TOP)               ! top boundary
-        forall (i=1:nghost) f(l2+i,:,:,j) = real(sgn) * f(l2-i+1,:,:,j)
+        do concurrent (i=1:nghost); f(l2+i,:,:,j) = real(sgn) * f(l2-i+1,:,:,j); enddo
       case default
         call fatal_error('bc_sf_x','topbot should be BOT or TOP')
       endselect
@@ -3946,9 +3946,9 @@ module Boundcond
 !
       select case(topbot)
       case(BOT)               ! bottom boundary
-        forall (i=1:nghost) f(:,m1-i,:,j) = real(sgn) * f(:,m1+i-1,:,j)
+        do concurrent  (i=1:nghost); f(:,m1-i,:,j) = real(sgn) * f(:,m1+i-1,:,j); enddo
       case(TOP)               ! top boundary
-        forall (i=1:nghost) f(:,m2+i,:,j) = real(sgn) * f(:,m2-i+1,:,j)
+        do concurrent  (i=1:nghost); f(:,m2+i,:,j) = real(sgn) * f(:,m2-i+1,:,j); enddo
       case default
         call fatal_error('bc_sf_y','topbot should be BOT or TOP')
       endselect
@@ -3974,9 +3974,9 @@ module Boundcond
 !
       select case(topbot)
       case(BOT)               ! bottom boundary
-        forall (i=1:nghost) f(:,:,n1-i,j) = real(sgn) * f(:,:,n1+i-1,j)
+        do concurrent  (i=1:nghost); f(:,:,n1-i,j) = real(sgn) * f(:,:,n1+i-1,j); enddo
       case(TOP)               ! top boundary
-        forall (i=1:nghost) f(:,:,n2+i,j) = real(sgn) * f(:,:,n2-i+1,j)
+        do concurrent  (i=1:nghost); f(:,:,n2+i,j) = real(sgn) * f(:,:,n2-i+1,j); enddo
       case default
         call fatal_error('bc_sf_z','topbot should be BOT or TOP')
       endselect
@@ -8404,12 +8404,12 @@ module Boundcond
 !  Bottom boundary.
 !
       case(BOT)
-        forall(i=1:nghost) f(:,:,n1-i,j) = f(:,:,n1,j)
+       do concurrent (i=1:nghost); f(:,:,n1-i,j) = f(:,:,n1,j); enddo
 !
 !  Top boundary.
 !
       case(TOP)
-        forall(i=1:nghost) f(:,:,n2+i,j) = f(:,:,n2,j)
+        do concurrent (i=1:nghost); f(:,:,n2+i,j) = f(:,:,n2,j); enddo
 !
 !  Default.
 !

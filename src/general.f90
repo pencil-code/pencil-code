@@ -2929,11 +2929,11 @@ module General
       IF (X>FLOAT(N)) THEN
       BJM = BESSJ0(X)
       BJ  = BESSJ1(X)
-      DO 11 J = 1,N-1
+      DO J = 1,N-1
       BJP = J*TOX*BJ-BJM
       BJM = BJ
       BJ  = BJP
-   11 CONTINUE
+      ENDDO
       BESSJ = BJ
       ELSE
       M = 2*((N+INT(SQRT(FLOAT(IACC*N))))/2)
@@ -2942,7 +2942,7 @@ module General
       SUM1 = 0.
       BJP = 0.
       BJ  = 1.
-      DO 12 J = M,1,-1
+      DO J = M,1,-1
       BJM = J*TOX*BJ-BJP
       BJP = BJ
       BJ  = BJM
@@ -2955,7 +2955,7 @@ module General
       IF (JSUM/=0) SUM1 = SUM1+BJ
       JSUM = 1-JSUM
       IF (J==N) BESSJ = BJP
-   12 CONTINUE
+      ENDDO
       SUM1 = 2.*SUM1-BJ
       BESSJ = BESSJ/SUM1
       ENDIF

@@ -7707,7 +7707,9 @@ nameloop: do
       real, dimension(nz) :: rms_loc
       integer :: k
 !
-      forall(k = n1:n2) rms_loc(k-nghost) = sum(f(l1:l2,m1:m2,k,iv:iv+2)**2)
+      do concurrent (k = n1:n2)
+        rms_loc(k-nghost) = sum(f(l1:l2,m1:m2,k,iv:iv+2)**2)
+      enddo
       call mpiallreduce_sum(rms_loc, rms, nz)
       rms = sqrt(rms / nxygrid)
 !
