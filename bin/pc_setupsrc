@@ -589,6 +589,12 @@ do
   esac
   shift
 done
+
+#To handle folder name being specified after --
+if [ $# -gt 0 ]; then
+  src=$1
+fi
+
 #
 . $pencil_home_path/lib/sh/functions.sh
 #
