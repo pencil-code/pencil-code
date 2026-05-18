@@ -558,13 +558,15 @@ do
   ;;
   --pencil-home)
     pencil_home_path=$2
-    shift
+    shift 2
   ;;
   --min)
     link_all=0
+    shift
   ;;
   --force-astaroth)
     force_link_gpu=1
+    shift
   ;;
   --)
     shift
@@ -578,9 +580,9 @@ do
   ;;
   *)
     src=$1
+    shift
   ;;
   esac
-  shift
 done
 
 #To handle folder name being specified after --
