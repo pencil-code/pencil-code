@@ -3152,7 +3152,7 @@ FORCE_GPU_MAKE:
 #$(LIBGPU): $(GPU_DEPS)
 $(DSL_WORKDIR)/boundconds.h:
 	rm -f astaroth/DSL/local/boundconds.h
-	mkdir -p astaroth/DSL/local
+# 	mkdir -p astaroth/DSL/local #seems to cause problems on norlx51, but why?
 	touch astaroth/DSL/local/boundconds.h
 	@scripts/bc2ast 1> astaroth/DSL/local/boundconds.h
 
