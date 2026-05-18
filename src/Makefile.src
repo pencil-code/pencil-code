@@ -3754,6 +3754,10 @@ clean_astaroth:
 	rm -f $(CUDA_MAKEDIR)/Makefile.vendor
 	rm -f $(CUDA_MAKEDIR)/Makefile.module_info
 	rm -f *_c.h
+#	2026-May-18/Kishore: TODO: not sure what to do about files in astaroth/DSL/local;
+#	comments in those files suggest they can be changed by the user, but if
+#	they are left behind by pc_cleansrc, one cannot compile the run again
+#	without manually removing astaroth/DSL/local.
 #
 #  Clean up, but leave makefile and TAGS.
 #
