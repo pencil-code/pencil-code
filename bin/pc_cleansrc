@@ -74,10 +74,10 @@ clean_src()
 
 clean_astaroth()
 {
-  #must be called before delete_links since we need src/astaroth/Makefile to exist
+  #must be called before delete_files since we need src/Makefile to exist
   dir="$1"
-  if [ -d "$dir/Makefile" ]; then
-    make -C "$dir" cleann
+  if [ -e "$dir/Makefile" ]; then
+    make -C "$dir" clean_astaroth
   fi
 }
 
@@ -95,7 +95,7 @@ prune_dir()
     else
       echo "Cleaning up run directory: '$this'"
     fi
-    clean_astaroth "$src_dir/astaroth"
+    clean_astaroth "$src_dir"
     delete_links "$clean_links"
     delete_files "$clean_files"
     clean_src "$src_dir" "$clean_objects"
