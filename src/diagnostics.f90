@@ -4093,6 +4093,7 @@ module Diagnostics
     if (l2davgfirst) t2davgfirst_save=real(t) ! (2-D averages are for THIS time)
     if (lvideo     ) tslice_save=real(t) ! (slices are for THIS time)
     if (lout_sound ) tsound_save=real(t)
+!   NOTE: tspec_save is set in powersnap
     if (ldiagnos) then
       dt_save = dt
       it_save = it
