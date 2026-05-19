@@ -225,11 +225,15 @@ include Makefile.local
 # Double precision settings and similar. Must be included _after_
 # Makefile.local, so we can set REAL_PRECISION=double there.
 #
+ifeq ($(filter clean cleann cleanall distclean,$(target)),)
 include Makefile.inc
+endif
 #
 # Fortran 2008 standard compilation settings.
 #
+ifeq ($(filter clean cleann cleanall distclean,$(target)),)
 include Makefile-standard.inc
+endif
 #
 # Compile files with particle programming structure if particles are chosen.
 #
