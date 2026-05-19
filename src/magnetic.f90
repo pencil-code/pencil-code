@@ -4192,7 +4192,7 @@ module Magnetic
 !
         call get_shared_variable('lrho_chi',lrho_chi, caller='initialize_magnetic')
 !
-!  need e2m, b2m
+!  need e2m, b2m (Note that the following is only used when tdep_eta_type="mean-field".)
 !
         if (.not. lrho_chi) call fatal_error('calc_pencils_magnetic_pencpar', &
              'lrho_chi must be true when using mean-field')

@@ -31,6 +31,7 @@ module Viscosity
   character (len=labellen) :: lambda_profile='uniform', tdep_nu_type='powerlaw'
   real :: nu=0.0, nu_cspeed=0.5
   real :: mu=0.0
+  real :: ell_gam=0.0   !PAR_DOC: photon mean-free path in the tight coupling regime
   real :: nu_tdep=0.0, nu_tdep_exponent=0.0, nu_tdep_t0=0.0, nu_tdep_toffset=0.0
   real :: nu_tdep_t1=0.0, nu_tdep_t2=0.0, nu_tdep_kcs=0.0, nu_r_reduce=0.0
   real :: zeta=0.0, nu_mol=0.0, nu_hyper2=0.0, nu_hyper3=0.0
@@ -130,7 +131,6 @@ module Viscosity
   real :: h_sld_visc=2.0, nlf_sld_visc=1.0
   logical :: lrate_of_strain_as_aux = .false.
   integer :: iSij=0
-
 !
   namelist /viscosity_run_pars/ &
       limplicit_viscosity, nu, mu, nu_tdep_exponent, &
@@ -154,6 +154,7 @@ module Viscosity
 ! diagnostic variable markers (needs to be consistent with reset list below)
 !
   integer :: idiag_nu_tdep=0    ! DIAG_DOC: time-dependent viscosity
+  integer :: idiag_ell_gam=0    ! DIAG_DOC: time-dependent photon mean free path
   integer :: idiag_fviscm=0     ! DIAG_DOC: Mean value of viscous acceleration
   integer :: idiag_fviscmin=0   ! DIAG_DOC: Min value of viscous acceleration (redundant)
   integer :: idiag_fviscmax=0   ! DIAG_DOC: Max absolute viscous acceleration
@@ -459,7 +460,8 @@ module Viscosity
         case ('nu-tdep')
           if (lroot) print*,'time-dependent nu*(del2u+graddivu/3+2S.glnrho)'
           if (nu/=0.) lpenc_requested(i_sij)=.true.
-          call get_shared_variable('cs_t',cs_t,caller='initialize_viscosity')
+          if (tdep_nu_type=='ascale_power_cs-step') &
+            call get_shared_variable('cs_t',cs_t,caller='initialize_viscosity')
           lvisc_nu_tdep=.true.
         case ('nu-prof')
           if (lroot) print*,'viscous force with a vertical profile for nu'
@@ -925,7 +927,7 @@ module Viscosity
         idiag_epsK2=0; idiag_epsK3=0; idiag_epsK4=0
         idiag_visc_heatm=0; idiag_mesh3Remax=0; idiag_meshRemax=0; idiag_Reshock=0
         idiag_nuD2uxbxm=0; idiag_nuD2uxbym=0; idiag_nuD2uxbzm=0
-        idiag_nu_tdep=0; idiag_fviscm=0 ; idiag_fviscrmsx=0
+        idiag_nu_tdep=0; idiag_ell_gam=0; idiag_fviscm=0 ; idiag_fviscrmsx=0
         idiag_fviscmz=0; idiag_fviscmx=0; idiag_fviscmxy=0
         idiag_epsKmz=0; idiag_numx=0; idiag_fviscymxy=0
         idiag_sijxxmz=0; idiag_sijxymz=0; idiag_sijxzmz=0
@@ -940,6 +942,7 @@ module Viscosity
       if (lroot.and.ip<14) print*,'rprint_viscosity: run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'nu_tdep',idiag_nu_tdep)
+        call parse_name(iname,cname(iname),cform(iname),'ell_gam',idiag_ell_gam)
         call parse_name(iname,cname(iname),cform(iname),'fviscm',idiag_fviscm)
         call parse_name(iname,cname(iname),cform(iname),'fviscmin',idiag_fviscmin)
         call parse_name(iname,cname(iname),cform(iname),'qfviscm',idiag_qfviscm)
@@ -2453,12 +2456,14 @@ module Viscosity
       use General, only: reduce_grad_dim,notanumber
       use DensityMethods, only: getrho
       use Boundcond, only: update_ghosts
+      use Diagnostics, only: save_name
 
       real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx,3,3) :: uij,Sij
       real, dimension (nx) :: divu
 
       real, dimension(nx) :: rho, tmp
+      real :: n_ele, ell_gam, xH, rhob, nu
 
       if (lnusmag_as_aux) then
 !
@@ -2542,6 +2547,13 @@ module Viscosity
         case ('PrM_sigEm')
           nu_tdep=min(nu,PrM/sigEm_all)
           !nu_tdep=nu
+        case ('recombination')
+          xH=.7546
+          rhob=4.21e-31/ascale**3
+          n_ele=xH*rhob/m_p
+          ell_gam=1./(ascale*n_ele*sigma_Thomson)
+          nu_tdep=c_light*ell_gam
+          if (lroot) call save_name(ell_gam,idiag_ell_gam)
         case default
           call fatal_error('viscosity_after_boundary','unknown value of tdep_nu_type')
         endselect

@@ -155,6 +155,7 @@ module Special
   logical :: lsigE_const_if_lsolve_for_phi=.false. !PAR_DOC: allow to check for lsigE_const_if_lsolve_for_phi
   logical :: lsigE_const_ifnot_lsolve_for_phi=.false. !PAR_DOC: allow to check for lsigE_const_if_lsolve_for_phi
   logical :: lsigE_const=.false.                   !PAR_DOC: put sigE to a constant if true.
+  logical :: lBD_scaling_wHubble=.true.            !PAR_DOC: Bunch-Davies scaling with Hubble (true for backward compatible, but should be false to be correct)
   logical, pointer :: lphi_hom, lphi_linear_regime, lnoncollinear_EB, lnoncollinear_EB_aver
   logical, pointer :: lcollinear_EB, lcollinear_EB_aver, lmass_suppression
   logical, pointer :: lallow_bprime_zero
@@ -183,7 +184,7 @@ module Special
       wstate_crit, lwstate_crit, lwstate_crit_old, wstate_tolerance, &
       lsolve_for_phi_always, lsolve_for_phi_switch, &
       heating_choice, ldefine_a2rhopm_without_Vpotential, la2rhop_wrong_factor, &
-      lappy_BD_k1D_factor, lapply_BD_kNy_factor, linv_BD
+      lappy_BD_k1D_factor, lapply_BD_kNy_factor, linv_BD, lBD_scaling_wHubble
 !
   namelist /special_run_pars/ &
       initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
@@ -414,6 +415,7 @@ module Special
             Vpotential=.5*axionmass2*phi0**2
 !
 !  Hubble_ini is here based on the standard (non-reduced) Planck mass.
+!  The following is only corrrect for the quadratic potential!
 !
             Hubble_ini=sqrt(8.*pi/3.*(.5*axionmass2*phi0**2*ascale_ini**2))
             ! dphi0=-ascale_ini*sqrt(2*eps/3.*Vpotential)
@@ -463,14 +465,22 @@ module Special
 !
           case ('Bunch-Davies')
             if (lroot) print*,'Hubble_ini=',Hubble_ini
-            amplphi_BD=amplphi*Hubble_ini
+            if (lBD_scaling_wHubble) then
+              amplphi_BD=amplphi*Hubble_ini
+            else
+              amplphi_BD=amplphi
+            endif
             deriv_prefactor=1.
             call bunch_davies(f,iinfl_phi,iinfl_phi,iinfl_dphi,iinfl_dphi, &
               amplphi_BD,kpeak_phi,deriv_prefactor, &
               lappy_BD_k1D_factor=lappy_BD_k1D_factor, &
               lapply_BD_kNy_factor=lapply_BD_kNy_factor, linv=linv_BD)
             if (amplee_BD_prefactor/=0.) then
-              amplee_BD=amplee_BD_prefactor*Hubble_ini
+              if (lBD_scaling_wHubble) then
+                amplee_BD=amplee_BD_prefactor*Hubble_ini
+              else
+                amplee_BD=amplee_BD_prefactor
+              endif
               if (iex>0) then
                 deriv_prefactor=deriv_prefactor_ee
                 call bunch_davies(f,iax,iaz,iex,iez, &
@@ -816,9 +826,11 @@ module Special
 !  when ldensity=F, because otherwise the standard Alfven constaint applies.
 !
           if (lrho_chi) then
-            advec2=max(advec2,a21**2*b2m_all/f_ode(iinfl_rho_chi)*dxyz_2/cdt_rho_chi**2)
-          else
-            call fatal_error("dspecial_dt", "lrho_chi must be .true. when Ndiv=0")
+            if (.not. (lrho_chi_inhom .and. ldensity)) &
+              advec2=max(advec2,a21**2*b2m_all/f_ode(iinfl_rho_chi)*dxyz_2/cdt_rho_chi**2)
+    !     else
+    !       call fatal_error("dspecial_dt", "lrho_chi must be .true. when Ndiv=0")
+    ! now ok
           endif
         else
           dt1_special = Ndiv*abs(Hscript)
@@ -1480,7 +1492,7 @@ module Special
 !  option to take the inhomogeneous rho instead
 !  Here, in the expression a2rho, rho is not comoving, but the rho from f(l1:l2,m,n,ilnrho) is comoving.
 !
-      if (lrho_chi) then
+      if (lrho_chi .or. lrho_chi_inhom) then
         if (lrho_chi_inhom) then
           if (ldensity) then
             if (ldensity_nolog) then
