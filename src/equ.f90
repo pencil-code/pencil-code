@@ -193,8 +193,10 @@ module Equ
       endif
 
       start_time = real(mpiwtime())
-      if (lgpu) then; call before_boundary_gpu(f,lrmv,itsub,t)
-      else;      call before_boundary_cpu(f)
+      if (lgpu) then
+        call before_boundary_gpu(f,lrmv,itsub,t)
+      else
+        call before_boundary_cpu(f)
       endif
       end_time = real(mpiwtime())
       before_and_after_boundary_sum_time = before_and_after_boundary_sum_time + end_time-start_time
