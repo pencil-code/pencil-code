@@ -823,7 +823,7 @@ module Special
           endif
 !
 !  Additional constraint from vA=B/sqrt(rho_chi), but this is only relevant
-!  when ldensity=F, because otherwise the standard Alfven constaint applies.
+!  when ldensity=F, because otherwise the standard Alfven constraint applies.
 !
           if (lrho_chi) then
             if (.not. (lrho_chi_inhom .and. ldensity)) &
