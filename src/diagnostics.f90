@@ -4141,7 +4141,8 @@ module Diagnostics
     Hp_target   = Hp_target_save
     appa_target = appa_target_save
 
-    if (ldiagnos) then
+    !Kishore: TODO: need to also check for tslice, tspec, and tsound below?
+    if (ldiagnos.or.l1davgfirst.or.l2davgfirst) then
       tdiagnos  = real(t_save)
       dtdiagnos = dt_save
       itdiagnos = it_save
