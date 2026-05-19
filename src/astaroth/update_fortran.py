@@ -13,7 +13,7 @@ def main():
     os.environ["PENCIL_USER"] = "GPU_AUTOTEST"
     source_command = ""
     submodule_command = "git submodule update --init --remote"
-    build_command = f"cd {PC_HOME}/samples/build-samples/{sample} && pc_build -f GNU-GCC_MPI+GNU-GCC_GPU+GNU-GCC_debug MODIFY_SOURCE_CODE=on"
+    build_command = f"cd {PC_HOME}/samples/build-samples/{sample} && pc_setupsrc --force-astaroth && pc_build -f GNU-GCC_MPI+GNU-GCC_GPU+GNU-GCC_debug MODIFY_SOURCE_CODE=on"
     command = f"{submodule_command} && {build_command}"
     return os.system(command)
 
