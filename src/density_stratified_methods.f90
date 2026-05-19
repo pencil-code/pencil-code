@@ -13,6 +13,7 @@ module DensityMethods
     module procedure getrho_1d
     module procedure getrho_2dyz
     module procedure getrho_2d
+    module procedure getrho_2dxy
   endinterface
 !
   interface getrho1
@@ -161,6 +162,19 @@ module DensityMethods
       call keep_compiler_quiet(rho)
 !
     endsubroutine getrho_2d
+!***********************************************************************
+    subroutine getrho_2dxy(f,iz,irho,rho)
+
+      real, dimension(:,:,:,:), intent(in) :: f
+      integer, intent(in) :: iz,irho
+      real, dimension(size(f,1),size(f,2)), intent(out):: rho
+
+      call fatal_error('getrho_2dxy', 'not implemented.')
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(rho)
+      call keep_compiler_quiet(iz,irho)
+
+    endsubroutine getrho_2dxy
 !***********************************************************************
     subroutine getrho_2dyz(f, ix, rho)
 !

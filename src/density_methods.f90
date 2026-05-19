@@ -16,6 +16,7 @@ module DensityMethods
     module procedure getrho_1d
     module procedure getrho_2dyz
     module procedure getrho_2d
+    module procedure getrho_2dxy
     module procedure getrho_3d
   endinterface
 !
@@ -145,11 +146,13 @@ module DensityMethods
 
       real, dimension(:,:), intent(in) :: f
       real, dimension(size(f,1),size(f,2)), intent(out):: lnrho
+      integer :: m
 
       if (ldensity_nolog) then
         if (lreference_state) then
-          lnrho(l1:l2,:)= log(f(l1:l2,:) &
-                         +spread(reference_state(:,iref_rho),2,size(f,2)))  !!!
+          do m=1,size(f,2)
+            lnrho(l1:l2,m)= log(f(l1:l2,m)) + reference_state(:,iref_rho)
+          enddo
         else
           lnrho=log(f)
         endif
@@ -177,15 +180,37 @@ module DensityMethods
 
     endsubroutine getlnrho_2dyz
 !***********************************************************************
+    subroutine getrho_2dxy(f,iz,irho,rho)
+
+      real, contiguous, dimension(:,:,:,:), intent(in) :: f
+      integer, intent(in) :: iz,irho
+      real, dimension(size(f,1),size(f,2)), intent(out):: rho
+      integer :: i,j
+
+      if (ldensity_nolog) then
+        if (lreference_state) then
+          do i=1,size(f,2)
+            rho(l1:l2,i)= f(l1:l2,i,iz,irho) + reference_state(:,iref_rho)
+          enddo
+        else
+          rho=f(:,:,iz,irho)
+        endif
+      else
+          rho=exp(f(:,:,iz,irho))
+      endif
+    endsubroutine getrho_2dxy
+!***********************************************************************
     subroutine getrho_2d(f,rho)
 
       real, dimension(:,:), intent(in) :: f
       real, dimension(size(f,1),size(f,2)), intent(out):: rho
+      integer :: i
 
       if (ldensity_nolog) then
         if (lreference_state) then
-          rho(l1:l2,:)= f(l1:l2,:) &
-                       +spread(reference_state(:,iref_rho),2,size(f,2))  !!!
+          do i=1,size(f,2)
+            rho(l1:l2,i)= f(l1:l2,i) + reference_state(:,iref_rho)
+          enddo
         else
           rho=f
         endif
@@ -287,11 +312,15 @@ module DensityMethods
 
       real, dimension(mx,my), intent(out):: f
       real,                   intent(in) :: lnrho
+      integer :: m
 !
       if (ldensity_nolog) then
         f(l1:l2,:)=exp(lnrho)
-        if (lreference_state) &
-          f(l1:l2,:)=f(l1:l2,:)-spread(reference_state(:,iref_rho),2,my)
+        if (lreference_state) then
+         do m=1,my
+           f(l1:l2,m)=f(l1:l2,m)-reference_state(:,iref_rho)
+         enddo
+        endif
       else
         f(l1:l2,:)=lnrho
       endif
@@ -306,7 +335,7 @@ module DensityMethods
       use Deriv, only: der
 
       integer,                             intent(in) :: iz
-      real, dimension(:,:,:,:),            intent(in) :: f
+      real, contiguous, dimension(:,:,:,:),            intent(in) :: f
       real, dimension(size(f,1),size(f,2)),intent(out):: derlnrho
 
       integer :: n_save, m_save
@@ -314,18 +343,20 @@ module DensityMethods
       n_save=n; m_save=m         ! save global n,m as we might be inside an mn-loop
       n=iz
       do m=1,size(f,2)
-        call der(f(:,:,:,ilnrho),derlnrho(:,m),3)        ! = d \[ln]rho / dz
+        call der(f,ilnrho,derlnrho(:,m),3)        ! = d \[ln]rho / dz
       enddo
       n=n_save; m=m_save
 
       if (ldensity_nolog) then
         if (lreference_state) then
-          derlnrho(l1:l2,:) = derlnrho(l1:l2,:)/(f(l1:l2,:,iz,ilnrho) &
-                             +spread(reference_state(:,iref_rho),2,my))   !!!
+          do m=1,size(f,2)
+            derlnrho(l1:l2,m) = derlnrho(l1:l2,m)/(f(l1:l2,m,iz,ilnrho) + reference_state(:,iref_rho))
+          enddo
         else
           derlnrho = derlnrho/f(:,:,iz,ilnrho)
         endif
       endif
+      n=n_save; m=m_save
 !
     endsubroutine getderlnrho_z
 !***********************************************************************
@@ -359,13 +390,15 @@ module DensityMethods
       integer,                   intent(in) :: i,rm,im
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(mx,mz),    intent(out):: dlnrho
+      integer :: m
 
       dlnrho = f(:,rm+im,:,i)-f(:,rm-im,:,i)
 
       if (ldensity_nolog) then
         if (lreference_state) then
-          dlnrho(l1:l2,:) = dlnrho(l1:l2,:)/(f(l1:l2,rm,:,i) &
-                           +spread(reference_state(:,iref_rho),2,mz))   !!!
+          do m=1,size(f,2)
+            dlnrho(l1:l2,m) = dlnrho(l1:l2,m)/(f(l1:l2,rm,m,i) +reference_state(:,iref_rho))
+          enddo
         else
           dlnrho = dlnrho/f(:,rm,:,i)
         endif
@@ -376,14 +409,15 @@ module DensityMethods
     subroutine getdlnrho_z(f,i,rn,in,dlnrho)
 
       integer,                              intent(in) :: i,rn,in
-      real, dimension(:,:,:,:),               intent(in) :: f
+      real, contiguous, dimension(:,:,:,:),               intent(in) :: f
       real, dimension(size(f,1),size(f,2)), intent(out):: dlnrho
 
       dlnrho = f(:,:,rn+in,i)-f(:,:,rn-in,i)          ! = Delta \rho or Delta log(\rho)
       if (ldensity_nolog) then
         if (lreference_state) then
-          dlnrho(l1:l2,:) = dlnrho(l1:l2,:)/(f(l1:l2,:,rn,i) &
-                           +spread(reference_state(:,iref_rho),2,my))   !!!
+          do m=1,size(f,2)
+            dlnrho(l1:l2,m) = dlnrho(l1:l2,m)/(f(l1:l2,m,rn,i) + reference_state(:,iref_rho))
+          enddo
         else
           dlnrho = dlnrho/f(:,:,rn,i)
         endif

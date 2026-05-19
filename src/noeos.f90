@@ -577,9 +577,17 @@ module EquationOfState
       real, dimension (mx,my,mz,mfarray) :: f
       logical, optional :: lone_sided
 !
-      real, dimension (mx,my) :: FbyKT_xy, TT_xy, rho_xy, Krho1kr_xy, cp, cv, pp_xy
+      real, save, allocatable, dimension (:,:) :: FbyKT_xy, TT_xy, rho_xy, Krho1kr_xy, cp, cv, pp_xy
       integer :: i, il, im, ivars, n, ig1, ig2, dir
 !
+      if (.not. allocated(FbyKT_xy))     allocate(FbyKT_xy(mx,my))
+      if (.not. allocated(TT_xy))        allocate(TT_xy(mx,my))
+      if (.not. allocated(rho_xy))       allocate(rho_xy(mx,my))
+      if (.not. allocated(Krho1kr_xy))   allocate(Krho1kr_xy(mx,my))
+      if (.not. allocated(cp))           allocate(cp(mx,my))
+      if (.not. allocated(cv))           allocate(cv(mx,my))
+      if (.not. allocated(pp_xy))        allocate(pp_xy(mx,my))
+
       if (ldebug) print*,'bc_ss_flux: ENTER - cs20,cs0=',cs20,cs0
 !
       call get_shared_variable('lheatc_chiconst',lheatc_chiconst)
@@ -651,7 +659,7 @@ module EquationOfState
         enddo
       else
 !
-        call getrho(f(:,:,n,ilnrho),rho_xy)
+        call getrho(f,n,ilnrho,rho_xy)
 !
         if (ldensity_nolog) then
           ivars=irho_ss
@@ -1973,3 +1981,4 @@ module EquationOfState
     endsubroutine eos_before_boundary
 !***********************************************************************
 endmodule EquationOfState
+
