@@ -186,10 +186,6 @@ include Makefile.local
 #
 include Makefile.inc
 #
-# Fortran 2003 / 2008 standard compilation settings.
-#
-include Makefile-standard.inc
-#
 # Compile files with particle programming structure if particles are chosen.
 #
 ifneq ($(PARTICLES),noparticles)
@@ -2830,7 +2826,7 @@ EXECUTABLES=$(MAIN_EXECUTABLES)
 # delete already compiled .x files:
 #
 LAST_OBJ=$(EXECUTABLES:.x=.o)
-legacy_code: Makefile.inc Makefile-standard.inc cparam.inc | $(SPECIAL_DEPS)
+legacy_code: Makefile.inc cparam.inc | $(SPECIAL_DEPS)
 	$${PENCIL_HOME}/utils/pc_identify_revision --reset
 	@echo "<buildtime>\n  <timestamp type='start'>`date`</timestamp>" > .buildtime
 ifdef FC_HDF5_FULL
@@ -2851,7 +2847,7 @@ endif
 	@echo "  <timestamp   type='end'>`date`</timestamp>\n</buildtime>" >> .buildtime
 	$${PENCIL_HOME}/utils/pc_identify_revision --write
 
-code: Makefile.inc Makefile-standard.inc cparam.inc | $(SPECIAL_DEPS)
+code: Makefile.inc cparam.inc | $(SPECIAL_DEPS)
 	$${PENCIL_HOME}/utils/pc_identify_revision --reset
 	@echo "<buildtime>\n  <timestamp type='start'>`date`</timestamp>" > .buildtime
 ifdef FC_HDF5_FULL
@@ -2960,7 +2956,6 @@ clean:  slender
 	rm -f .sentinel $(CUDA_MAKEDIR)/PC_modulesources.h $(CUDA_MAKEDIR)/PC_modulepars.h $(CUDA_MAKEDIR)/PC_moduleparfuncs.h $(CUDA_INCDIR)/PC_moduleflags.h  # for GPU
 	rm -f nompicomm_*.f90 mpicomm_*.f90 # temporary workaround to remove old "mpicomm_double.f90"
 	printf "# %s\n" "Empty" "(This file was written by 'make')" > Makefile.inc
-	printf "# %s\n" "Empty" "(This file was written by 'make')" > Makefile-standard.inc
 #
 #  Clean up all
 #  (there should be no Makefile_inc; but if there is, `make' just does nothing)
@@ -2968,7 +2963,7 @@ clean:  slender
 cleann: clean
 	rm -f Makefile src/Makefile Makefile_inc TAGS
 	rm -rf semiauto-conf_tmp f90_qnd_log_dir
-	rm -f *.inc && touch Makefile.inc Makefile-standard.inc
+	rm -f *.inc && touch Makefile.inc
 	$(MAKE) $(MAKEOPTS) -f Makefile.src Makefile
 #
 #  Same thing.
@@ -2979,7 +2974,7 @@ cleanall: cleann
 #
 distclean: cleanall
 	find . -type l -print0 | xargs -0 rm -f
-	rm -rf special pre_and_post_processing initial_condition Makefile Makefile.inc Makefile-standard.inc Makefile.depend
+	rm -rf special pre_and_post_processing initial_condition Makefile Makefile.inc Makefile.depend
 	rm -rf semiauto-conf* *.log history
 #
 #  Common dependencies used in Makefile.library and Makefile.depend.
