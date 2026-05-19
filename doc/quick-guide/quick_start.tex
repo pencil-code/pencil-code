@@ -578,10 +578,10 @@ Administrators should be able to help here.
 
 As Astaroth by default assumes that communication is done with CUDA-aware MPI (direct data transfer between GPUs),
 employing an MPI library/module, lacking such support, will cause the code to crash (segmentation fault). 
-In this case, try to turn off CUDA-aware MPI by
+In this case, try to turn off CUDA-aware MPI by adding the following to your build config
 \begin{verbatim}
-  lcuda_aware_mpi=F
+  CUDA_AWARE_MPI=OFF
 \end{verbatim}
-in \code{gpu\_run\_pars}.
+.
 
 \end{document}

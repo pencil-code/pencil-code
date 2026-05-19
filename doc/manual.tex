@@ -2386,12 +2386,11 @@ If Openmpi has been built with CUDA support, you will see \code{cuda} in the out
 }
 Thus trying to run the code in CUDA-aware mode will most likely cause a segmentation fault and the code to crash. 
 
-To turn off CUDA-aware MPI add the following options to \file{run.in}
+To turn off CUDA-aware MPI add the following to your build config
 \begin{verbatim}
-&gpu_run_pars
-  lcuda_aware_mpi=F
-/
+  CUDA_AWARE_MPI=OFF
 \end{verbatim}
+.
 
 The GPU-enabled version uses threads to compute the diagnostics alongside the time integration happening on the GPUs.
 Because of this you should have at least 2 threads executing per process.
