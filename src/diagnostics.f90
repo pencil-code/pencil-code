@@ -4143,6 +4143,7 @@ module Diagnostics
     appa_target = appa_target_save
 
     !Kishore: TODO: need to also check for tslice, tspec, and tsound below?
+    !Kishore: Using ldiagnostic_output below breaks even 0D diagnostics.
     if (ldiagnos.or.l1davgfirst.or.l2davgfirst) then
       tdiagnos  = real(t_save)
       dtdiagnos = dt_save
