@@ -352,8 +352,8 @@ module Magnetic
   logical :: lfreeze_aint=.false., lfreeze_aext=.false.
   logical :: lweyl_gauge=.false., ladvective_gauge=.false.
   logical :: lupw_aa=.false., ladvective_gauge2=.false.
-  logical :: lcalc_aameanz=.false.,lcalc_aamean
-  equivalence (lcalc_aamean,lcalc_aameanz)     ! for compatibility
+  logical :: lcalc_aamean=.false. ! This exists only for backwards compatibility
+  logical :: lcalc_aameanz=.false.
   logical :: lforcing_cont_aa=.false.
   integer :: iforcing_cont_aa=0
   logical :: lelectron_inertia=.false.
@@ -2167,6 +2167,8 @@ module Magnetic
 
       endif
 
+      !For backwards compatibility lcalc_aamean means lcalc_aameanz
+      lcalc_aameanz = lcalc_aamean
       lcalc_aameanz = lcalc_aameanz.or.lremove_meanaz
       if ((lspherical_coords.or.lcylindrical_coords).and.(lremove_meanax.or.lremove_meanaxy.or.lremove_meanaxz)) &
         call warning('initialize_magnetic','removing x or x[yz] average not precise for curvilinear coordinates')
