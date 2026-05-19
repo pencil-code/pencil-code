@@ -1,8 +1,6 @@
 &gpu_run_pars
 	!For testing perform the timestep exactly the same
 	lcpu_timestep_on_gpu=T
-	!There is no CUDA-aware MPI on norlx51
-	lcuda_aware_mpi=F
 	!For testing we can read all variables since we do not care about performance
 	lread_all_vars_from_device=T	
 	!Needed because of short stopping time approximation in dustvelocity

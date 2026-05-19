@@ -149,7 +149,6 @@ const bool performance_logs = false;
   #define input_channels  input_channels__mod__training
   #define output_channels output_channels__mod__training
 
-  #define lcuda_aware_mpi            lcuda_aware_mpi__mod__gpu
   #define lsecond_force lsecond_force__mod__forcing
   #define lforce_helical lforce_helical__mod__forcing
 
@@ -364,7 +363,8 @@ void setupConfig(AcMeshInfo& config)
  
   #include "PC_modulepars.h"
 
-  PCLoad(config, AC_use_cuda_aware_mpi,lcuda_aware_mpi);
+  //CUDA_AWARE_MPI is true by default, to turn it off set CUDA_AWARE_MPI=OFF in your config
+  PCLoad(config, AC_use_cuda_aware_mpi,CUDA_AWARE_MPI);
   PCLoad(config, AC_bidiagonal_derij,lbidiagonal_derij);
 
   PCLoad(config, AC_x,x__mod__cdata);

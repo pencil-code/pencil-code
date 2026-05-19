@@ -85,9 +85,6 @@ module GPU
   ! By default only pde variables and those aux variables that are registered to be always read are read from the device.
   ! If this is true all variables are always read
   logical :: lread_all_vars_from_device = .false.
-  ! Whether to use CUDA-aware MPI. If you have it you should always want to use it, but sometimes you do not have it or using
-  ! it is more unstable than routing the communication via the host yourself.
-  logical :: lcuda_aware_mpi=.true.
   ! Whether to test the agreement of bcs on GPU and CPU
   logical :: ltest_bcs =.false.
   ! Whether to test the agreement of RHS on GPU and CPU
@@ -108,7 +105,7 @@ module GPU
   namelist /gpu_run_pars/ &
      ltest_bcs,lac_sparse_autotuning,lac_sparse_autotuning_always,&
      lcpu_timestep_on_gpu,lsingle_precision_timestep,lcumulative_df_on_gpu,&
-     lread_all_vars_from_device,lcuda_aware_mpi,ltest_rhs,it_test_rhs,thread_block_loop_factors,lonly_default_stream_for_taskgraphs
+     lread_all_vars_from_device,ltest_rhs,it_test_rhs,thread_block_loop_factors,lonly_default_stream_for_taskgraphs
 
 contains
 !***********************************************************************
@@ -445,7 +442,6 @@ contains
 
     call copy_addr(lskip_rtime_compilation,p_par(3)) ! bool
     call copy_addr(lcumulative_df_on_gpu,p_par(4)) ! bool
-    call copy_addr(lcuda_aware_mpi,p_par(6)) ! bool
     call copy_addr(ltest_bcs,p_par(7)) ! bool
     call copy_addr(lsingle_precision_timestep,p_par(8)) ! bool
     call copy_addr(thread_block_loop_factors,p_par(9)) ! int3 dconst

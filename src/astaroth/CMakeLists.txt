@@ -6,6 +6,7 @@ cmake_minimum_required(VERSION 3.19)
 
 ## Options
 option(DOUBLE_PRECISION       "Generates double precision code."                           ON)
+option(CUDA_AWARE_MPI         "Setting of CUDA-aware MPI machine-wide. Both need to be true to use CUDA-aware MPI" ON)
 option(USE_HIP                "Use HIP as the underlying GPGPU library instead of CUDA"    OFF)
 option(USE_OMP                "Enables use of openmp"                                      ON)
 option(USE_DARDEL             "Target machine is Dardel(PDC, Stockholm"                    OFF)
@@ -101,6 +102,12 @@ include(FetchContent)
 ## Global flags
 if (DOUBLE_PRECISION)
   add_definitions(-DAC_DOUBLE_PRECISION=1)
+endif()
+
+if (CUDA_AWARE_MPI)
+  add_definitions(-DCUDA_AWARE_MPI=true)
+else()
+  add_definitions(-DCUDA_AWARE_MPI=false)
 endif()
 
 if (SINGLEPASS_INTEGRATION)
