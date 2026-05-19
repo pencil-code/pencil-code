@@ -75,7 +75,7 @@ module Sub
   public :: mult_matrix, mult_mat_vv, invmat_DB
 !
   public :: read_line_from_file, control_file_exists
-  public :: noform
+  public :: noform, len_fmtd_expr
 !
   public :: update_snaptime, read_snaptime
   public :: shift_dt, set_dt
@@ -590,20 +590,16 @@ module Sub
 !***********************************************************************
     subroutine dot_mn(a,b,c,ladd)
 !
-!  Dot product, c=a.b, on pencil arrays
+!  Dot product, c=a.b, on pencil arrays.
 !
 !   3-apr-01/axel+gitta: coded
 !  24-jun-08/MR: ladd added for incremental work
 !
       use General, only: loptest
 !
-      real, dimension (:,:) :: a,b
-      real, dimension (:) :: c
-!
-      logical, optional :: ladd
-!
-      intent(in) :: a,b,ladd
-      intent(inout) :: c
+      real, dimension (:,:), intent(IN) :: a,b
+      real, dimension (:), intent(INOUT) :: c
+      logical, optional, intent(IN) :: ladd
 !
       integer :: i
       logical :: l0
@@ -4534,12 +4530,15 @@ module Sub
 !
     endsubroutine identify_bcs
 !***********************************************************************
-    function noform(cname,lcomplex)
+    function noform(cname,lcomplex,addlengths,addtexts)
 !
-!  Given a string of the form `name(format)',
+!  Given a string cname of the form `name(format)',
 !  returns the name without format, fills empty space
 !  of correct length (depending on format) with dashes.
-
+!  If additional data (like extrema positions) are associated with the diagnostic requested by cname:
+!  addlength: length of all strings for additional data.
+!  addtext: array with header names for additional data.
+!
 !  For output as legend.dat and first line of time_series.dat.
 !
 !  22-jun-02/axel: coded
@@ -4547,17 +4546,19 @@ module Sub
 !  26-aug-13/MR: unnecessary p descriptors removed from cform
 !
       use Cparam, only: max_col_width
-      use General, only: loptest
+      use General, only: loptest,ioptest
 !
       character (len=*) :: cname
       logical, optional :: lcomplex
+      integer, dimension(:), optional :: addlengths
+      character(LEN=*), dimension(:), optional :: addtexts
+
       character (len=max_col_width) :: noform,cform,cnumber,dashes
-      integer :: index_e,index_f,index_g,index_i,index_d,index_r,index1,index2
-      integer :: iform0,iform1,iform2,length,number,number1,number2,io_code
+      integer :: iform0,iform1,iform2,length,number,number1,number2,dashlen,lendiff,ii
 !
       intent(in)  :: cname
 !
-!  Fill DASHES with, well, dashes.
+!  Fill dashes with -'s.
 !
       dashes = repeat('-', max_col_width)
 !
@@ -4578,7 +4579,55 @@ module Sub
         length=iform0-1
       endif
 !
-!  Find length of formatted expression, examples: f10.2, e10.3, g12.1 .
+!  length is now length of diagnostic name.
+!
+!  Find length of expression formatted with format cform.
+!
+      number=len_fmtd_expr(cform)
+!
+!  With complex numbers, length is doubled + (, ).
+!
+      if (loptest(lcomplex)) number = 2*number+4
+      number1=max(0,(number-length)/2)
+      number2=max(1,number-length-number1) ! at least one separating dash
+!
+!  Sanity check.
+!
+      if (number1+length+number2 > max_col_width) &
+        call error("noform","Length of diagnostic name and/or width of format > max_col_width. -"// &
+                   " Increase max_col_width or sanitize print.in{,.double}")
+!
+      noform=dashes(:number1)//cname(:length)//dashes(:number2)
+
+      if (present(addlengths)) then
+        if (.not.present(addtexts)) return   ! addlength and addtext need to come together
+        !print*, 'addlengths,textlen,dahslen=',addlengths,textlen,dashlen 
+        do ii=1,size(addtexts)
+          lendiff=addlengths(ii)-len_trim(addtexts(ii))
+          if (lendiff>=0) then
+            dashlen=floor(real(lendiff)/2.)
+          else
+            dashlen=1
+          endif
+          noform=trim(noform)//dashes(1:dashlen)//trim(addtexts(ii))//dashes(1:dashlen)
+        enddo
+      endif
+!
+    endfunction noform
+!***********************************************************************
+    function len_fmtd_expr(cform) result (number)
+!
+!  Find length=number of formatted expression from format cform, examples: f10.2, e10.3, g12.1 .
+!
+!  5-may-26/MR: carved out from noform
+!
+      character(LEN=*) :: cform
+      integer :: number
+
+      character (len=len(cform)) :: cnumber
+      integer :: index_e,index_f,index_g,index_i,index_d,index_r,index1,index2
+      integer :: io_code
+
 !  index_1 is the position of the format type (f,e,g), and
 !  index_d is the position of the dot.
 !
@@ -4599,24 +4648,12 @@ module Sub
 !
 !  Error while reading or end of file.
 !
-        print*,'noform: formatting problem'
+        print*,'len_fmtd_expr: formatting problem'
         print*,'problematic cnumber= <',cnumber,'>'
         number=10
       endif
-      if (loptest(lcomplex)) number = 2*number+4
-      number1=max(0,(number-length)/2)
-      number2=max(1,number-length-number1) ! at least one separating dash
-!
-!  Sanity check.
-!
-      if (number1+length+number2 > max_col_width) then
-        call error("noform", &
-                   "Increase max_col_width or sanitize print.in{,.double}")
-      endif
-!
-      noform=dashes(1:number1)//cname(1:length)//dashes(1:number2)
-!
-    endfunction noform
+
+    endfunction len_fmtd_expr
 !***********************************************************************
     function levi_civita(i,j,k)
 !
@@ -8785,9 +8822,13 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
       real, dimension(nx,3) :: uu
       real, dimension(nx,3,3) :: uij, sij
 
+      integer :: ivel
+
+      ivel = merge(ivv,iuu,ivv/=0)  !  if velocity is in auxiliary ivv (conservative) use ivv
+
 ! uij from f
-      call gij(f,iuu,uij,1)
-      uu=f(l1:l2,m,n,iux:iuz)
+      call gij(f,ivel,uij,1)
+      uu=f(l1:l2,m,n,ivel:ivel+2)
 ! divu -> uij2
       call div_mn(uij,sij2,uu)
 ! sij

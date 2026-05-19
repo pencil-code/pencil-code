@@ -257,6 +257,8 @@ module Density
   integer :: idiag_drhom=0      ! DIAG_DOC: $<\varrho-\varrho_0>$
   integer :: idiag_rhomin=0     ! DIAG_DOC: $\min(\rho)$
   integer :: idiag_rhomax=0     ! DIAG_DOC: $\max(\rho)$
+  integer :: idiag_rhominloc=0  ! DIAG_DOC: $location of \min(\rho)$
+  integer :: idiag_rhomaxloc=0  ! DIAG_DOC: $location of \max(\rho)$
   integer :: idiag_lnrhomin=0   ! DIAG_DOC: $\min(\log\rho)$
   integer :: idiag_lnrhomax=0   ! DIAG_DOC: $\max(\log\rho)$
   integer :: idiag_rhorms=0     ! DIAG_DOC: $\sqrt{<\varrho^2>}$
@@ -2380,7 +2382,8 @@ module Density
       if (idiag_rhom/=0 .or. idiag_rho2m/=0 .or.idiag_rho4m/=0 .or.idiag_rho6m/=0 .or. &
            idiag_rho8m/=0 .or. idiag_rho12m/=0 .or. idiag_rhof2m/=0 .or. idiag_rhomy/=0 .or. &
            idiag_rhomx/=0 .or. idiag_rho2mx/=0 .or. idiag_rhomz/=0 .or. idiag_rho2mz/=0 .or. &
-           idiag_rhomin/=0 .or.  idiag_rhomax/=0 .or. idiag_rhomxz/=0 .or. &
+           idiag_rhomin/=0 .or.  idiag_rhomax/=0 .or. idiag_rhominloc/=0 .or. idiag_rhomaxloc/=0 .or. &
+           idiag_rhomxz/=0 .or. &
            idiag_totmass/=0 .or. idiag_mass/=0 .or. idiag_drho2m/=0 .or. idiag_rhorms/=0 .or. &
            idiag_inertiaxx/=0 .or. idiag_inertiayy/=0 .or. idiag_inertiazz/=0 .or. &
            idiag_inertiaxx_car/=0 .or. idiag_inertiayy_car/=0 .or. idiag_inertiazz_car/=0 .or. &
@@ -2773,7 +2776,7 @@ module Density
           case ('Sc')
             kap_tdep=nu_tdep/Sc
           case default
-            call fatal_error('density_after_boundary','unknown value of tdep_kap_type')
+            call fatal_error('density_after_boundary','no such tdep_kap_type: '//trim(tdep_kap_type))
         endselect
       endif
 !
@@ -2893,10 +2896,8 @@ module Density
               !if (lrelativistic_eos) density_rhs=fourthird*density_rhs
               if (ladvection_density) density_rhs = density_rhs - cs20_corr*p%ugrho
               density_rhs=cs201*density_rhs
-            endif
-            if (lrelativistic_eos .and. .not.lconservative) then
-              call fatal_error('lrelativistic_eos only implemented with lnrho evolution', &
-                               'dlnrho_dt in density.f90')
+              if (lrelativistic_eos) &
+                 call not_implemented('dlnrho_dt','lrelativistic_eos with linear rho and lconservative=F')
               ! alberto: to be implemented
             endif
 !
@@ -3383,15 +3384,17 @@ module Density
           if (idiag_sphmass/=0) call integrate_mn_name(rmask*p%rho,idiag_sphmass)
         endif
         call integrate_mn_name(unitpencil,idiag_vol)
-        if (idiag_rhomin/=0)   call max_mn_name(-p%rho,idiag_rhomin,lneg=.true.)
-        call max_mn_name(p%rho,idiag_rhomax)
+
+        if (idiag_rhomin/=0) call max_mn_name(-p%rho,idiag_rhomin,lneg=.true.,iname_loc=idiag_rhominloc)
+        call max_mn_name(p%rho,idiag_rhomax,iname_loc=idiag_rhomaxloc)
+
         if (idiag_lnrhomin/=0) call max_mn_name(-p%lnrho,idiag_lnrhomin,lneg=.true.)
         call max_mn_name(p%lnrho,idiag_lnrhomax)
         if (idiag_rho2m/=0)    call sum_mn_name(p%rho**2,idiag_rho2m)
         if (idiag_rho4m/=0)    call sum_mn_name(p%rho**4,idiag_rho4m)
         if (idiag_rho6m/=0)    call sum_mn_name(p%rho**6,idiag_rho6m)
         if (idiag_rho8m/=0)    call sum_mn_name(p%rho**8,idiag_rho8m)
-        if (idiag_rho12m/=0)    call sum_mn_name(p%rho**12,idiag_rho12m)
+        if (idiag_rho12m/=0)   call sum_mn_name(p%rho**12,idiag_rho12m)
         if (idiag_rhof2m/=0.and.lrho_flucz_as_aux) call sum_mn_name(f(l1:l2,m,n,irho_flucz)**2,idiag_rhof2m)
         if (idiag_rhorms/=0)   call sum_mn_name(p%rho**2,idiag_rhorms,lsqrt=.true.)
         if (idiag_lnrhorms/=0) call sum_mn_name(p%lnrho**2,idiag_lnrhorms,lsqrt=.true.)
@@ -3835,7 +3838,8 @@ module Density
               where (f(i,:,:,ilnrho)<density_floor_local) f(i,:,:,ilnrho) = density_floor_local
             enddo
           case default
-            call fatal_error_local('impose_density_floor','no such density_floor_profile implemented')
+            call fatal_error_local('impose_density_floor','no such density_floor_profile'// &
+                                   trim(density_floor_profile))
           endselect
         endif
       else
@@ -3921,7 +3925,7 @@ module Density
         idiag_rhof2m=0; idiag_lnrho2m=0
         idiag_drho2m=0; idiag_drhom=0; idiag_rhorms=0; idiag_lnrhorms=0
         idiag_ugrhom=0; idiag_ugrhomz=0; idiag_uglnrhom=0
-        idiag_rhomin=0; idiag_rhomax=0; idiag_dtd=0; idiag_dtd3=0
+        idiag_rhomin=0; idiag_rhomax=0; idiag_rhominloc=0; idiag_rhomaxloc=0; idiag_dtd=0; idiag_dtd3=0
         idiag_lnrhomin=0; idiag_lnrhomax=0;
         idiag_lnrhomphi=0; idiag_rhomphi=0
         idiag_rhomz=0; idiag_rho2mz=0; idiag_rhomy=0; idiag_rhomx=0; idiag_rho2mx=0
@@ -3956,6 +3960,8 @@ module Density
         call parse_name(iname,cname(iname),cform(iname),'drhom',idiag_drhom)
         call parse_name(iname,cname(iname),cform(iname),'rhomin',idiag_rhomin)
         call parse_name(iname,cname(iname),cform(iname),'rhomax',idiag_rhomax)
+        call parse_name(iname,cname(iname),cform(iname),'rhominloc',idiag_rhominloc)
+        call parse_name(iname,cname(iname),cform(iname),'rhomaxloc',idiag_rhomaxloc)
         call parse_name(iname,cname(iname),cform(iname),'lnrhomin',idiag_lnrhomin)
         call parse_name(iname,cname(iname),cform(iname),'lnrhomax',idiag_lnrhomax)
         call parse_name(iname,cname(iname),cform(iname),'lnrho2m',idiag_lnrho2m)
@@ -3976,6 +3982,11 @@ module Density
         call parse_name(iname,cname(iname),cform(iname),'grhomax',idiag_grhomax)
         call parse_name(iname,cname(iname),cform(iname),'kap_tdep',idiag_kap_tdep)
       enddo
+!
+!  Enable extrema value output if only location is requested.
+!
+      if (idiag_rhomaxloc/=0.and.idiag_rhomax==0) idiag_rhomax=idiag_rhomaxloc
+      if (idiag_rhominloc/=0.and.idiag_rhomin==0) idiag_rhomin=idiag_rhominloc
 !
 !  Check for those quantities for which we want xy-averages.
 !
@@ -4522,6 +4533,7 @@ module Density
 
     call copy_addr(kap_tdep,p_par(85))
     call copy_addr(ldiff_kap_tdep,p_par(86)) ! bool
+
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Density

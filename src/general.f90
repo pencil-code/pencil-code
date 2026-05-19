@@ -7082,11 +7082,12 @@ iloop:do i=1,size(list2)
 !***********************************************************************
     function posindex_to_1Dindex(indx,indy,indz,rank) result(res)
 !
-!  Forms a 1D index into a (nx,ny,nz)-arrary from a triple index.
-!  Optionally, combines with the process rank such that rank and index can be recovered.
+!  Forms a 1D index into a (nx,ny,nz)-arrary from the triple index (indx,indy,indz).
+!  Optionally, combines with the process rank such that both index and rank can be recovered.
+!  Tripel index is 1-based, rank is 0-based.
 !
 !  21-apr-26/MR: coded
-
+!
       integer, intent(in) :: indx,indy,indz
       integer, optional, intent(in) :: rank
       real :: res
@@ -7097,7 +7098,12 @@ iloop:do i=1,size(list2)
     endfunction posindex_to_1Dindex
 !***********************************************************************
     subroutine expand_1Dindex(rindex,indx,indy,indz,rank)
-
+!
+!  Inverse of posindex_to_1Dindex: triple index and (optionally) rank from 1D index.
+!  Tripel index is 1-based, rank is 0-based.
+!
+!  21-apr-26/MR: coded
+!
       real, intent(in) :: rindex
       integer, intent(out) :: indx,indy,indz
       integer, optional, intent(out) :: rank
