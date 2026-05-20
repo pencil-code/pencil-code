@@ -853,7 +853,6 @@ module Diagnostics
       logical,optional,        intent(in)   :: lcomplex
 !
       real, dimension (nlname) :: fmax, fsum, fweight_tmp
-      logical, dimension (nlname) :: lmask
       real :: vol
       integer :: iname, imax_count, isum_count, itype
       logical :: lweight_comm,lalways,llocations
@@ -923,8 +922,7 @@ module Diagnostics
 !  Fetch the encoded maximum locations from the ranks where they occur into fname_keep for the slots,
 !  for which locations are requested (mask is (itype_name(1:nlname)/ilabel_extr_lim)>0)
 !
-          lmask=(itype_name(1:nlname)/ilabel_extr_lim)>0
-          call fetch_to_process_masked(fname_keep,nlname,lmask,maxranks)
+          call fetch_to_process_masked(fname_keep,nlname,(itype_name(1:nlname)/ilabel_extr_lim)>0,maxranks)
         else
           call mpireduce_max(fmax,imax_count)
         endif

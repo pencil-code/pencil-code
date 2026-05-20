@@ -3200,7 +3200,7 @@ module Mpicomm
 
       integer, intent(in) :: size
       real, dimension(size), intent(inout) :: array
-      real, dimension(size), intent(in) :: mask
+      logical, dimension(size), intent(in) :: mask
       integer, dimension(size), intent(in) :: ranks
       integer, optional, intent(in) :: irank
 
