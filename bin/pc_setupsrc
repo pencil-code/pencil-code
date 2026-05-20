@@ -588,6 +588,12 @@ if [ $# -gt 0 ]; then
   src=$1
 fi
 
+#Temporary hack, attempting to fix GPU autotests on norlx51
+pencil_user=$PENCIL_USER
+if [ "$pencil_user" = GPU_AUTOTEST ]; then
+  force_link_gpu=1
+fi
+
 #
 . $pencil_home_path/lib/sh/functions.sh
 #
