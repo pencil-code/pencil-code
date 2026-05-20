@@ -155,7 +155,8 @@ module Special
   logical :: lsigE_const_if_lsolve_for_phi=.false. !PAR_DOC: allow to check for lsigE_const_if_lsolve_for_phi
   logical :: lsigE_const_ifnot_lsolve_for_phi=.false. !PAR_DOC: allow to check for lsigE_const_if_lsolve_for_phi
   logical :: lsigE_const=.false.                   !PAR_DOC: put sigE to a constant if true.
-  logical :: lBD_scaling_wHubble=.true.            !PAR_DOC: Bunch-Davies scaling with Hubble (true for backward compatible, but should be false to be correct)
+  logical :: lBD_scaling_wHubble=.true.            !PAR_DOC: Bunch-Davies scaling with Hubble (true for backward compatibility, but should be false to be correct)
+  logical :: lold_lrho_chi_dtconstraint=.true.     !PAR_DOC: old lrho_chi dt constraint (use false for new and correct version)
   logical, pointer :: lphi_hom, lphi_linear_regime, lnoncollinear_EB, lnoncollinear_EB_aver
   logical, pointer :: lcollinear_EB, lcollinear_EB_aver, lmass_suppression
   logical, pointer :: lallow_bprime_zero
@@ -200,7 +201,8 @@ module Special
       heating_choice, lheating_keep_on, lcombine_prep_ode_right_with_rhs, &
       lswitch_toMHD_when_nophi, Gamma_phi_exp, a4rhophim_crit, solve_phi_criterion, &
       lit1_reset_if_lsolve_for_phi, it1_reset_value, &
-      lsigE_const_ifnot_lsolve_for_phi, lsigE_const, lsigE_const_if_lsolve_for_phi
+      lsigE_const_ifnot_lsolve_for_phi, lsigE_const, lsigE_const_if_lsolve_for_phi, &
+      lold_lrho_chi_dtconstraint
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -826,7 +828,7 @@ module Special
 !  when ldensity=F, because otherwise the standard Alfven constraint applies.
 !
           if (lrho_chi) then
-            if (.not. (lrho_chi_inhom .and. ldensity)) &
+            if (lold_lrho_chi_dtconstraint .or. .not. (lrho_chi_inhom .and. ldensity)) &
               advec2=max(advec2,a21**2*b2m_all/f_ode(iinfl_rho_chi)*dxyz_2/cdt_rho_chi**2)
     !     else
     !       call fatal_error("dspecial_dt", "lrho_chi must be .true. when Ndiv=0")
