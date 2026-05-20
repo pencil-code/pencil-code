@@ -355,7 +355,6 @@ module Diagnostics
 
         call gen_form_legend(fform,legend)
 !
-!print*, 'fform=', trim(fform)
         if (ldebug) then
           write(0,*) 'PRINTS.prints: format = ', trim(fform)
           write(0,*) 'PRINTS.prints: args   = ', fname(1:nname)
@@ -381,10 +380,10 @@ module Diagnostics
 !  Add accumulated values in fname_keep to current ones if existent.
 !
         where( fname_keep(1:nname) /= impossible .and. &
-               itype_name(1:nname)<ilabel_complex .and. itype_name(1:nname)>=0 ) &
+               itype_name(1:nname)<ilabel_ignore .and. itype_name(1:nname)>=0 ) &
            buffer(1:nname) = buffer(1:nname)+fname_keep(1:nname)
 !
-!  Write 'time_series.h5' if output format is HDF5
+!  Write 'time_series.h5' if output format is HDF5.
 !
         if (IO_strategy == "HDF5".and.lwrite_ts_hdf5) call output_timeseries (buffer, fname_keep)
         nnamel=nname
@@ -406,16 +405,18 @@ module Diagnostics
 
           itype=itype_name(iname)
           if (itype<0) then
-            iname_loc = itype/ilabel_extr_lim     ! extract the location index
+            iname_loc = itype/ilabel_extr_lim   ! extract the location index
 
-            if (iname_loc>0) then      ! extremum with location
+            if (iname_loc>0) then               ! extremum with location
+!
+!  Expand the data item into location indicesn and rank.
+!
               call expand_1Dindex(fname_keep(iname),ix_loc,iy_loc,iz_loc,rank=rank)
-              call find_proc_coords(rank,ipx_loc,ipy_loc,ipz_loc)
-              if (index(cform(iname_loc),'.0')/=0) then     ! integer-implying format -> put indices in timeseries
+              call find_proc_coords(rank,ipx_loc,ipy_loc,ipz_loc)    ! proc coordinates from rank
+              if (index(cform(iname_loc),'.0')/=0) then     ! integer-implying format -> global indices in timeseries
                 call insert(buffer,(/real(ix_loc+ipx_loc*nx),real(iy_loc+ipy_loc*ny),real(iz_loc+ipz_loc*nz), &
                             real(rank)/),inamel+1,nnamel)
-              else                                          ! float-implying format -> put coordinates in timeseries
-              !print*, 'EXPAND:', iname_loc,cform(iname_loc), fname_keep(iname),ix_loc,iy_loc,iz_loc,rank,ipx_loc,ipy_loc,ipz_loc,xgrid(ix_loc+ipx_loc*nx),ygrid(iy_loc+ipy_loc*ny),zgrid(iz_loc+ipz_loc*nz)
+              else                                          ! float-implying format -> coordinates in timeseries
                 call insert(buffer,(/xgrid(ix_loc+ipx_loc*nx),ygrid(iy_loc+ipy_loc*ny),zgrid(iz_loc+ipz_loc*nz), &
                             real(rank)/),inamel+1,nnamel)
               endif
@@ -438,7 +439,7 @@ module Diagnostics
           lfirst_call = .false.
         endif
         write(lun,'(a)') trim(line)
-        flush(lun)               ! this is a F2003 feature...
+        flush(lun)
         close(lun)
         if (lupdate_cvs) call system_cmd("cvs ci -m 'automatic update' > /dev/null 2>&1")
 !
@@ -564,28 +565,37 @@ module Diagnostics
 
             elseif (itype_name(iname)<0 .and. itype_name(iname)/ilabel_extr_lim>0) then ! extrema with location
 
-              iname_loc = itype_name(iname)/ilabel_extr_lim
+              iname_loc = itype_name(iname)/ilabel_extr_lim  ! index of location diagnostic
               cform_loc = cform(iname_loc)
               if (iname==iname_loc) then
                 cform_ext = 'g11.2'      ! only location was requested, so give extrema a flexible format
               else   
                 cform_ext = cform(iname)
               endif
-              lenrank=floor(alog10(real(ncpus)))+1
-              lenloc = len_fmtd_expr(trim(cform_loc))
+
+              lenrank=floor(alog10(real(ncpus)))+1     !  number of digits for rank from ncpus
+              lenloc = len_fmtd_expr(trim(cform_loc))  !  length of time-series entry acc. to cform_loc
               tform = comma//trim(cform_ext)//comma &
                            //'" ("'//comma//trim(cform_loc)//comma &
                            //'","'//comma//trim(cform_loc)//comma &
-                           //'","'//comma//trim(cform_loc)//comma &                 ! format for rank
-                           //'", "'//comma//'f'//trim(itoa(lenrank+1))//'.0,TL1,")"'! acc. to ncpus
-              addlengths = (/lenloc+2,lenloc+1,lenloc+1,lenrank+1/)    ! brackets and commas!
-              if (index(cform_loc,'.0')/=0) then        ! a quasi-integer format
-                addtexts=(/'ix  ','iy  ','iz  ','rank'/)
-              else
-                addtexts=(/'x   ','y   ','z   ','rank'/)
+                           //'","'//comma//trim(cform_loc)//comma &
+                           //'", "'//comma//'f'//trim(itoa(lenrank+1))//'.0,TL1,")"'!  format for rank
+!
+               if (present(legend)) then
+!
+!  Lengths for formatted entries of location, brackets and commas included.
+!
+                 addlengths = (/lenloc+2,lenloc+1,lenloc+1,lenrank+1/)
+!
+!  Additional header texts for location.
+!
+                if (index(cform_loc,'.0')/=0) then         ! a quasi-integer format -> indices
+                  addtexts=(/'ix  ','iy  ','iz  ','rank'/)
+                else                                       ! float format -> coordinates
+                  addtexts=(/'x   ','y   ','z   ','rank'/)
+                endif
+                call safe_character_append(legend,noform(cname(iname),addlengths=addlengths,addtexts=addtexts))
               endif
-              if (present(legend)) call safe_character_append(legend, &
-                noform(cname(iname),addlengths=addlengths,addtexts=addtexts))
 
             else
               if (fname(iname)/=0.) then
@@ -887,9 +897,9 @@ module Diagnostics
               lweight_comm=.true.
             endif
           endif
+
         endif
       enddo
-      !if (lroot) print*, 'DIAGNOSTIC: isum_count, fsum=', isum_count, fsum(1:isum_count)
 
       if (imax_count==0 .and. isum_count==0) return
 !
@@ -907,7 +917,11 @@ module Diagnostics
       if (imax_count>0) then
         if (llocations) then
           if (.not.allocated(maxranks)) allocate(maxranks(imax_count))
-          call mpireduce_max(fmax,maxranks,imax_count)
+          call mpireduce_max(fmax,maxranks,imax_count)   ! Get the maximum values and the ranks where they occur.
+!
+!  Fetch the encoded maximum locations from the ranks where they occur into fname_keep for the slots,
+!  for which locations are requested (mask is (itype_name(1:nlname)/ilabel_extr_lim)>0)
+!
           call fetch_to_process_masked(fname_keep,nlname,(itype_name(1:nlname)/ilabel_extr_lim)>0,maxranks)
         else
           call mpireduce_max(fmax,imax_count)
@@ -915,6 +929,7 @@ module Diagnostics
       endif
       call mpireduce_sum(fsum,isum_count)  !,nonblock=maxreq)              ! wrong for Yin-Yang due to overlap
       if (lweight_comm) call mpireduce_sum(fweight_tmp,fweight,isum_count) !   ~
+
       !call mpiwait(maxreq)
 !
 !  The results are present only on the root processor.
@@ -929,11 +944,12 @@ module Diagnostics
         do iname=1,nlname
 !
           itype = itype_name(iname)
-          if (itype<0) itype = mod(itype,ilabel_extr_lim)
+          if (itype==ilabel_ignore) cycle
+          if (itype<0) itype = mod(itype,ilabel_extr_lim)   ! extract base label for extrema
 
           if (lalways.or.itype>=ilabel_complex) then
 
-            if (itype<0) then ! max
+            if (itype<0) then !  extrema
               imax_count=imax_count+1
 !
               if (itype==ilabel_max) &
@@ -1966,11 +1982,14 @@ module Diagnostics
 !
 !  Successively calculate maximum of a, which is supplied at each call.
 !  Start from zero if lfirstpoint=.true.
+!  Optional mask is conveyed to maxval/maxloc.
+!  Optional iname_loc>0 indicates that additionally the location of the maximum is requested.
 !
 !   1-apr-01/axel+wolf: coded
 !   4-may-02/axel: adapted for fname array
 !  23-jun-02/axel: allows for taking square root in the end
 !  29-jun-12/MR: incorporated test for iname/=0
+!  29-apr-26/MR: added optional parameter iname_loc
 !
       use General, only: ioptest,posindex_to_1Dindex,expand_1Dindex
 
@@ -2033,8 +2052,11 @@ module Diagnostics
         if (iname_loc_/=0) then
           itype_name(iname) = itype_name(iname) + ilabel_extr_lim*iname_loc_
           if (iname_loc_/=iname) then
+!
+!  If there is a separate extremum slot in fname, the location slot is ignored when finalizing the diagnostic.
+!
             itype_name(iname_loc_)=ilabel_ignore
-          else       !  if only location was asked for, change the name by removing "loc".
+          else       ! if only location was asked for, change the diagnostic name by removing pending "loc".
             indloc=index(cname(iname),'loc')
             if (indloc>0) cname(iname)=cname(iname)(1:indloc-1)//cname(iname)(indloc+3:)
           endif
