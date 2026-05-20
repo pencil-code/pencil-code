@@ -69,7 +69,6 @@ module Testfield
        lin_testfield,lam_testfield,om_testfield,delta_testfield, &
        ltestfield_newz,leta_rank2,lphase_adjust, &
        ltestfield_taver,llorentzforce_testfield, &
-       ltestfield_profile_eta_z, &
        luxb_as_aux,ljxb_as_aux,lignore_uxbtestm, &
        ltest_uxb,ltest_jxb, &
        lforcing_cont_aatest,ampl_fcont_aatest, &
