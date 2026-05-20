@@ -1757,6 +1757,7 @@ module Special
     call copy_addr(gamma_phi_exp,p_par(41))
     call copy_addr(lsolve_for_phi2,p_par(42)) ! bool
     call copy_addr(lsige_const,p_par(43)) ! bool
+    call copy_addr(lold_lrho_chi_dtconstraint,p_par(44)) ! bool
     endsubroutine pushpars2c
 !********************************************************************
 !********************************************************************
