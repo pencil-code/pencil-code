@@ -2463,7 +2463,7 @@ module Viscosity
       real, dimension (nx) :: divu
 
       real, dimension(nx) :: rho, tmp
-      real :: n_ele, ell_gam, xH, rhob, nu
+      real :: n_ele, ell_gam, xH, rhob
 
       if (lnusmag_as_aux) then
 !
