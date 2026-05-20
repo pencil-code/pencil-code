@@ -3205,7 +3205,8 @@ module Mpicomm
       integer, optional, intent(in) :: irank
 
       call keep_compiler_quiet(size,irank)
-      call keep_compiler_quiet(array,mask)
+      call keep_compiler_quiet(array)
+      call keep_compiler_quiet(mask)
       call keep_compiler_quiet(ranks)
 
     endsubroutine fetch_to_process_masked
