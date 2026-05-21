@@ -6642,13 +6642,15 @@ module Hydro
 !  Damping coefficient is dampu (if >0) or |dampu|/dt (if dampu <0).
 !  With ldamp_fade=T, damping coefficient is smoothly fading out
 !
-        if ((dampu /= 0.) .and. (t < tdamp)) then
-          if (dampu > 0.0) then
-            ! absolute damping per time unit
-            df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - fade_fact*dampu*f(l1:l2,m,n,iux:iuz)
-          else
-            ! dampu < 0: damping per time-step (dt is multiplied in timestep)
-            df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + fade_fact*dampu/dt*f(l1:l2,m,n,iux:iuz)
+        if (dampu /= 0.0) then
+          if (t < tdamp) then
+            if (dampu > 0.0) then
+              ! absolute damping per time unit
+              df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - fade_fact*dampu*f(l1:l2,m,n,iux:iuz)
+            else
+              ! dampu < 0: damping per time-step (dt is multiplied in timestep)
+              df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + fade_fact*dampu/dt*f(l1:l2,m,n,iux:iuz)
+            endif
           endif
         endif
 !

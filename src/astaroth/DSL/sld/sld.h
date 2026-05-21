@@ -14,8 +14,6 @@ energy_sld_sound_speed(){
   real get_cp_return_value_0_2
   real get_cv_return_value_1_2
   real step_vector_return_value_3
-  real step_vector_return_value_3
-  real step_vector_return_value_3
   real DF_SLD_CHAR_ENTROPY
   if (present(gamma)) {
     gamma=AC_gamma__mod__equationofstate
