@@ -50,7 +50,9 @@
 ;;;                   contains the position where reading was
 ;;;                   terminated due to STOP_AT, or -1 if the end of
 ;;;                   the file was reached.
-;;;  INDS_COMPL    -- returns list of positions of complex quantities in line 
+;;;  INDS_COMPL    -- returns list of positions of complex quantities in line
+;;;                   (detected by opening bracket); = [-1] if none are present
+;;;  INDS_POSIT    -- returns list of positions of position compounds in line
 ;;;                   (detected by opening bracket); = [-1] if none are present
 ;;;  SEPMINUS      -- minus sign of a numeral allowed to separate columns (e.g. .123E+00-.456E+00 would be read as two quantities)
 ;;;
@@ -64,7 +66,7 @@ function input_table, filename, $
                       STOP_AT=stop_at, FILEPOSITION=fileposition, $
                       COMMENT_CHAR=cchar, DOUBLE=double, $
                       NOFILE_OK=nofile_ok, VERBOSE=verb, $
-                      HELP=help, INDS_COMPL=inds_compl, SEPMINUS=sepminus
+                      HELP=help, INDS_COMPL=inds_compl, INDS_POSIT=inds_posit, SEPMINUS=sepminus
   ;on_error,2
   default, sepminus, 1
 
@@ -173,19 +175,45 @@ function input_table, filename, $
 
         ;; split the line, accept whitespace and (|,|) as separators (for complex output)
         inds_fields = strsplit(line,'[(,)]| ',/REGEX,count=N_cols)      
- 
-        ;; obtain number of complex quantities
-        inds_bracks = strsplit(line,'[(] *',/REGEX,count=N_compl)
-        N_compl=N_compl-1
+
+        ;; obtain number of compound quantities (complex or position data)
+        inds_bracks = strsplit(line,'[(] *',/REGEX,count=N_compound)
+        N_compound--
         ;; reduce by one as strsplit returns at least one substring
-        ;; yet untreated case: already first quantity is complex
-        inds_compl = [-1]
-        if N_compl gt 0 then begin
-          ;; determine positions of complex quantities
-          for i=1,N_compl do $
-            inds_compl = [inds_compl,where( inds_fields eq inds_bracks(i) )]
-          inds_compl = inds_compl[1:*]
-        endif 
+        ;; yet untreated case: already first quantity is a compound
+
+        N_compl=0 & N_posit=0
+        if N_compound gt 0 then begin
+
+          inds_bracks=inds_bracks(1:*)
+          inds_compound = []
+          ;; determine positions of compound quantities
+          for i=0,N_compound-1 do $
+            inds_compound = [inds_compound,where( inds_fields eq inds_bracks(i) )]
+
+          inds_bracks = strsplit(line,'[)] *',/REGEX,count=N_clbracks)
+          N_clbracks-- & inds_bracks=inds_bracks(1:*)
+
+          if N_clbracks ne N_compound then begin
+            print, 'Error: opening and closing brackets do not match'
+            stop
+          endif
+
+          inds_compound_end=[]
+          for i=0,N_clbracks-1 do $
+            inds_compound_end = [inds_compound_end,where( inds_fields eq inds_bracks(i) )]
+
+          ;; Determine type of compound
+          inds_compl=[] & inds_posit=[]
+          for i=0,N_compound-1 do begin
+            if inds_compound_end(i) - inds_compound(i) eq 2 then $
+              inds_compl=[inds_compl,inds_compound(i)] $
+            else if inds_compound_end(i) - inds_compound(i) eq 4 then $
+              inds_posit=[inds_posit,inds_compound(i)]
+          endfor
+          N_compl=(size(inds_compl))[1] & N_posit=(size(inds_posit))[1]
+
+        endif
 
         if (double) then begin
           row  = dblarr(N_cols)
@@ -213,7 +241,7 @@ function input_table, filename, $
       if (not found_stop) then begin
         is_empty = (strlen(line) eq 0)
         if (not (is_empty)) then begin ; a data line
-          if N_compl gt 0 then $
+          if N_compl gt 0 or N_posit gt 0 then $
             line = strjoin(strsplit(line,' |[(,)]',/REGEX,/EXTRACT),' ')
 
   	  if (not sepminus) then begin
@@ -248,7 +276,7 @@ function input_table, filename, $
   
   ;; Clean up
   data = data[*,0:idat-1]
-  
+
   close, in_file
   free_lun, in_file
   if (verb) then begin

@@ -214,27 +214,25 @@ COMPILE_OPT IDL2,HIDDEN
 ;  Read table.
 ;
   newheader=line
-  full_data=0.
-  full_labels=''
 
   while (fileposition ne -1) do begin
 
     labels = parse_tsheader(newheader)
     ncols = n_elements(labels)
     newheader=['^#[-a-zA-Z_][-a-zA-Z_]','^#[a-zA-Z][a-zA-Z0-9_]']
+    undefine, inds_posit & undefine, inds_compl
     data = input_table(fullfilename,double=double, stop_at=newheader, $
-           fileposition=fileposition,verbose=verbose,inds_compl=inds_compl,sepminus=sepminus)
+           fileposition=fileposition,verbose=verbose,inds_compl=inds_compl,inds_posit=inds_posit,sepminus=sepminus)
 
-    if inds_compl[0] ne -1 then begin
+    nlabs=n_elements(labels) & intlabel_inds=[]  ; intlabels contains indices of integer slots
+    for i=0,nlabs-1 do $
+      if strcmp(labels[i], 'it', /fold_case) then intlabel_inds=[i]   ; hardcoded for 'it'
 ;
 ;  If there are complex quantities in output
-;
-      ninds=n_elements(inds_compl)
-      nlabs=n_elements(labels)
-;
 ;  Replace the corresponding labels: <label> --> <label>_r <label>_i
 ;
-      for i=0,ninds-1 do begin
+    if is_defined(inds_compl) then begin
+      for i=0,n_elements(inds_compl)-1 do begin
 
         ind = inds_compl[i]
         if ind eq n_elements(labels)-1 then $
@@ -247,12 +245,26 @@ COMPILE_OPT IDL2,HIDDEN
       
     endif
  
+    if is_defined(inds_posit) then $
+      for i=0,n_elements(inds_posit)-1 do begin
+
+        ind = inds_posit[i]
+
+        if strcmp(strtrim(labels[ind],2),'ix', /fold_case) then $
+          intlabel_inds = [intlabel_inds,[ind,ind+1,ind+2,ind+3]] $  ; position indices/ranks to intlabel_inds
+        else $
+          intlabel_inds = [intlabel_inds,[ind+3]]                    ; only position ranks to intlabel_inds
+
+        labels[ind:ind+3] = labels[ind-1]+'loc_'+labels[ind:ind+3]   ; position labels derived from adjacent
+      endfor							     ; extremum label
+
     if ((size(data))[1] ne ncols) then $
       message, /INFO, 'Inconsistency: label number different from column number'
 ;
 ;  Merge read data into full data set.
 ;
-    if ((size(full_labels))[0] eq 0) then begin
+    if not is_defined(full_labels) then begin
+
       ; If it's the first time just chunk the data into place
       full_labels=labels
       full_data=data
@@ -260,24 +272,31 @@ COMPILE_OPT IDL2,HIDDEN
           full_data=reform(full_data,n_elements(full_data),1)
       if ((size(full_data))[0] eq 0) then $
           full_data=reform([full_data],1,1)
+      full_intlabel_inds=intlabel_inds
+
     end else begin
-      col_index=intarr(ncols)
+
+      col_index=intarr(ncols) 
+      full_intlabel_inds=[]    ; for each subtable, full_intlabel_inds is build anew
       for i=0,ncols-1 do begin
-        if (not in_list(labels[i],full_labels)) then begin
+
+        if (not in_list(labels[i],full_labels)) then begin  ; a label is new
           old_full_labels=full_labels
           old_ncols=n_elements(old_full_labels)
           full_labels=strarr(old_ncols+1)
-          full_labels[0:old_ncols-1]=old_full_labels[*]
-          old_full_labels=0.
+          full_labels[0:old_ncols-1]=old_full_labels
+          undefine, old_full_labels
 
-          full_labels[old_ncols]=labels[i]
+          full_labels[old_ncols]=labels[i]  ; append new label to full_labels
           col_index[i]=old_ncols
         endif else $
           col_index[i]=list_idx(labels[i],full_labels)
+
+        if where(intlabel_inds eq i) ne -1 then full_intlabel_inds = [full_intlabel_inds,col_index[i]]
+
       endfor
          
       old_ncols=(size(full_data))[1]
-    
       old_nrows=(size(full_data))[2]
 
       new_ncols=(size(full_labels))[1]
@@ -293,7 +312,7 @@ COMPILE_OPT IDL2,HIDDEN
       endelse
     
       full_data[0:old_ncols-1,0:old_nrows-1] = old_full_data[0:old_ncols-1,0:old_nrows-1]
-      old_full_data=0.          ; Clear the allocated memory 
+      undefine, old_full_data          ; Clear the allocated memory 
     
       for i=0,ncols-1 do $
         full_data[col_index[i],old_nrows:new_nrows-1]=data[i,*]
@@ -362,7 +381,7 @@ COMPILE_OPT IDL2,HIDDEN
   cmd = 'object = {'            ; build a command to execute
   for i=0,ncols-1 do begin
     if (i eq 0) then pref=' ' else pref=', '
-    if (strcmp (full_labels[i], 'it', /fold_case)) then begin
+    if in_list(i,full_intlabel_inds) then begin  ; if item is actually integer
       cmd = cmd + pref + full_labels[i] $
                        + ': long(reform(full_data[' $
                        + strtrim(i,2) + ',ii]))'
@@ -372,12 +391,12 @@ COMPILE_OPT IDL2,HIDDEN
                        + strtrim(i,2) + ',ii])'
     endelse
   endfor
-  cmd = cmd + ' }'
+  cmd += '}'
 ;
   if (execute(cmd) ne 1) then $
       message, 'There was a problem executing <' + cmd + '>', /INFO
 ;
-;  Unwrap and quantities that may have been separately requested from object.
+;  Unwrap any quantities that may have been separately requested from object.
 ;
   num = (size(data))[1]
   if (in_list('it',full_labels))   then it = object.it
