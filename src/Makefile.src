@@ -11,6 +11,7 @@ SHELL = bash
 #
 BORDER_PROFILES    = noborder_profiles
 BOUNDCOND          =   boundcond
+ASTAROTH_CPU_BUILD = off
 DEBUG              = nodebug
 GHOST_CHECK        =   ghost_check
 DIAGNOSTICS        =   diagnostics
@@ -3160,7 +3161,7 @@ $(DSL_WORKDIR)/boundconds.h:
 
 $(LIBGPU): $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/Makefile.vendor FORCE_GPU_MAKE $(DSL_WORKDIR)/boundconds.h
 	@echo "Building Astaroth and interface libraries - see src/astaroth/ac_build.log!"
-	cd astaroth && make MPICOMM=$(MPICOMM) RUNTIME_COMPILATION=$(RUNTIME_COMPILATION) TRAINING=$(TRAINING) PRECISION=$(REAL_PRECISION) READ_OVERRIDES=$(READ_OVERRIDES) TRANSPILATION=$(TRANSPILATION) GENERATE_DSL_CODE=$(GENERATE_DSL_CODE) >& ac_build.log
+	cd astaroth && make MPICOMM=$(MPICOMM) RUNTIME_COMPILATION=$(RUNTIME_COMPILATION) TRAINING=$(TRAINING) PRECISION=$(REAL_PRECISION) READ_OVERRIDES=$(READ_OVERRIDES) TRANSPILATION=$(TRANSPILATION) GENERATE_DSL_CODE=$(GENERATE_DSL_CODE) CPU_BUILD=$(ASTAROTH_CPU_BUILD) >& ac_build.log
 #
 special_preps:
 ifeq ($(USE_SPECIAL_DISPATCHER),no)

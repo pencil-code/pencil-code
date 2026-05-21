@@ -2,6 +2,7 @@
 /^ *#/ b end
 /^ *[A-Z0-9_]* *= *-/ b end
 /io_/ b end
+/ASTAROTH_CPU_BUILD/ b end
 /DEBUG/ b end
 /DERIV/ b end
 /GHOSTFOLD/ b end
