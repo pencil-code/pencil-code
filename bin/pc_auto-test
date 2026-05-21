@@ -1195,6 +1195,10 @@ sub test_shell_cmd {
         # Retry compilation after cleaning
         my $cleanmsg = cleansrc($dir);
         return $cleanmsg if ($test_status);
+
+        my $setupmsg = setupsrc($dir);
+        return $setupmsg if ($test_status);
+
         print STDERR "\nRetrying `$env$nice $cmd`\n" if ($debug);
         $! = 0;                     # reset
         $res = `$env$nice $cmd 2>&1`;
@@ -1373,6 +1377,20 @@ sub cleansrc {
     test_shell_cmd("pc_cleansrc", $dir, "cleaning up", QUIET);
     return "ERROR running pc_cleansrc" if ($test_status);
 }
+# ---------------------------------------------------------------------- #
+sub setupsrc {
+# wrapper for pc_setupsrc
+    my $dir = shift;
+
+    my $setupsrc_cmd = "pc_setupsrc --pencil-home $pencil_home";
+    $setupsrc_cmd .= " --force-astaroth" if ($gpu);
+    test_shell_cmd($setupsrc_cmd,
+                    $dir,
+                    "setting up directory",
+                    QUIET);
+    return 'ERROR calling pc_setupsrc' if ($test_status);
+}
+# ---------------------------------------------------------------------- #
 sub test_compile {
 # Test compilation only
     if ($t_comp) {
@@ -1382,19 +1400,13 @@ sub test_compile {
 
         print "    Compiling..            ";
 
-        # First pc_setupsrc, then make clean (if requested). Must be done
-        # in this order as pc_setupsrc links the Makefile to the run directory.
-        my $setupsrc_cmd = "pc_setupsrc --pencil-home $pencil_home";
-        $setupsrc_cmd .= " --force-astaroth" if ($gpu);
-        test_shell_cmd($setupsrc_cmd,
-                       $dir,
-                       "setting up directory",
-                       QUIET);
-        return 'ERROR calling pc_setupsrc' if ($test_status);
         if ($clean) {
             my $cleanmsg = cleansrc($dir);
             return $cleanmsg if ($test_status);
         }
+
+        my $setupmsg = setupsrc($dir);
+        return $setupmsg if ($test_status);
 
         # Compile in double precision if we have data for that
         if (-r 'print.in.double' && -r 'reference.out.double') {
