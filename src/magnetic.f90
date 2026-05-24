@@ -342,6 +342,7 @@ module Magnetic
   real :: imp_alpha0=0.0, imp_halpha=0.0, c_light2, c_light21
   real, target :: betamin_jxb = 0.0
   real, dimension(mx,my) :: eta_xy
+  real, dimension(nx,3) :: geta
   real, dimension(mx,my,3) :: geta_xy
   real, dimension(nz,3) :: A_relprof
   real, dimension(mz) :: coskz,sinkz,eta_z,geta_z
@@ -1148,6 +1149,7 @@ module Magnetic
 ! Auxiliary module variables
 !
   real, dimension(nx) :: eta_total=0.,eta_smag=0.,Fmax,dAmax,ssmax, &
+                         eta_mn, &
                          diffus_eta=0.,diffus_eta2=0.,diffus_eta3=0.
   !$omp threadprivate(eta_total,diffus_eta)
   real, dimension(nx,3) :: fres,forcing_rhs
@@ -3532,6 +3534,8 @@ module Magnetic
           if (lequatorz) write(*,*) 'pencil-criteria_magnetic: box divided along z dirn'
         endif
       endif
+
+      if (idiag_dteta/=0) ltimestep_diagnostics=.true.
 !
 !  check for pencil_criteria_magn_mf
 !
@@ -4534,44 +4538,55 @@ module Magnetic
 !
       if (ldiamagnetism) call diamagnetism(p)
 !
-! jj
+! eta total (majority are still in daa_dt, but this is the more appropriate place)
 !
-      if (lpenc_loc(i_jj) .or. lpenc_loc(i_jj_ohm)) then
-        if (lvacuum) then
-          p%jj=0.
-          p%jj_ohm=0.
-          eta_total=huge1
-          eta_xtdep=huge1
-          eta_tdep=huge1
-        else
+      eta_total = 0.
+
+      if(lresi_eta_const .and. .not. limplicit_resistivity) eta_total = eta_total + eta
+
+      if(lresi_shell) then
+       call eta_shell(p)
+       eta_total = eta_total + eta_mn
+      endif
 !
 !  The following allows us to let eta change with time, t-eta_tdep_toffset.
 !  The eta_tdep_toffset is used in cosmology where time starts at t=1.
 !  lresi_eta_tdep_t0_norm is not the default because of backward compatbility.
 !  The default is problematic because then eta_tdep /= eta for t < eta_tdep_t0.
 !
-          if (lresi_eta_tdep .or. lresi_eta_xtdep .or. lresi_hyper2_tdep .or. lresi_hyper3_tdep) then
-            call get_eta_t_and_xtdep(f,p)
-          endif
+      if (lresi_eta_tdep .or. lresi_eta_xtdep .or. lresi_hyper2_tdep .or. lresi_hyper3_tdep) then
+        call get_eta_t_and_xtdep(f,p)
+        if (lresi_eta_tdep) then
+          eta_total=eta_total + eta_tdep
+        elseif (lresi_eta_xtdep) then
+          eta_total=eta_total+eta_xtdep
+        endif
+      endif
+
+      if(lvacuum) eta_total=huge1
+!
+! jj
+!
+      if (lpenc_loc(i_jj) .or. lpenc_loc(i_jj_ohm)) then
+        if (lvacuum) then
+          p%jj=0.
+          p%jj_ohm=0.
+          eta_xtdep=huge1
+          eta_tdep=huge1
+        else
 !
 !  Check whether or not the displacement current is being computed.
-!  When iex>0, eta_total is not yet set, so we must do it here.
 !  Note, however, that p%jj_ohm can also be computed in disp_current,
 !  so we must not overwrite it here.
 !
           if (ldisp_current) then
-            if (lresi_eta_tdep) then
-              eta_total=eta_tdep
-            elseif (lresi_eta_xtdep) then
-              eta_total=eta_xtdep
-            else
+            if(.not. lresi_eta_tdep .or. lresi_eta_xtdep) then
 !
 !  Must not overwrite jj_ohm here.
 !  Need to check that it is still always initialized.
 !
               !p%jj=0.
               if (it==1) p%jj_ohm=0.
-              eta_total=eta
             endif
 !
 !  The Ohm's current is independent of loverride_ee2, etc.
@@ -4657,6 +4672,8 @@ module Magnetic
       endif
 ! exa
       if (lpenc_loc(i_exa)) call cross_mn(-p%uxb+eta*p%jj,p%aa,p%exa)
+
+
 ! exatotal
       if (lpenc_loc(i_exatotal)) then
         do j=1,3
@@ -5157,31 +5174,6 @@ module Magnetic
       enddo
     endsubroutine calc_aaxyaver
 !***********************************************************************
-    subroutine calc_eta_total(f,p)
-      real, contiguous, dimension(:,:,:,:) :: f
-      type(pencil_case), intent(IN) :: p
-      real, dimension(nx)   :: eta_mn
-      real, dimension(nx,3) :: geta
-      eta_total = 0.0
-      if (lresi_shell) then
-        call eta_shell(p,eta_mn,geta)
-        eta_total = eta_total + eta_mn
-      endif
-      if (lresi_eta_tdep .or. lresi_eta_xtdep .or. lresi_hyper2_tdep .or. lresi_hyper3_tdep) then
-        call get_eta_t_and_xtdep(f,p)
-        if (ldisp_current) then
-          if (lresi_eta_tdep) then
-            eta_total = eta_tdep
-          elseif (lresi_eta_xtdep) then
-            eta_total=eta_xtdep
-          endif
-        endif
-      endif
-      if (lresi_eta_const) then
-        eta_total = eta_total + eta
-      endif
-    endsubroutine calc_eta_total
-!***********************************************************************
     subroutine calc_magnetic_slope_limited(f,df,p)
 !
 !  16-apr-2026/TP: carved from daa_dt
@@ -5301,12 +5293,12 @@ module Magnetic
 !
       real, dimension (nx,3) :: ujiaj,gua,ajiuj
       real, dimension (nx,3) :: aa_xyaver
-      real, dimension (nx,3) :: geta,uxb_upw,tmp2
+      real, dimension (nx,3) :: uxb_upw,tmp2
       real, dimension (nx,3) :: dAdt, gradeta_shock, aa1, uu1, dJdt, del2jj
       real, dimension (nx) :: ftot, dAtot
       real, dimension (nx) :: peta_shock
       real, dimension (nx) :: sign_jo,tmp1
-      real, dimension (nx) :: eta_mn,etaSS,eta_heat
+      real, dimension (nx) :: etaSS,eta_heat
       real, dimension (nx) :: vdrift
       real, dimension (nx) :: del2aa_ini,tanhx2,advec_hall,advec_hypermesh_aa
       real, dimension(nx) :: eta_BB, prof, dlnBrmsdt, limiter
@@ -5441,7 +5433,7 @@ module Magnetic
       if (headtt) print*, 'daa_dt: iresistivity=', iresistivity
 !
       fres=0.
-      eta_total=0.; diffus_eta2=0.; diffus_eta3=0.
+      diffus_eta2=0.; diffus_eta3=0.
 !
 !  Uniform resistivity
 !
@@ -5460,7 +5452,6 @@ module Magnetic
              del2aa_ini = ampl_efield*(-2 + 8*tanhx2 - 6*tanhx2*tanhx2 )
              fres(:,3) = fres(:,3) - eta*mu0*del2aa_ini
           endif
-          eta_total = eta_total + eta
         endif
       endif
 !
@@ -5692,11 +5683,9 @@ module Magnetic
       endif
 !
       if (lresi_shell) then
-        call eta_shell(p,eta_mn,geta)
         do j=1,3
           fres(:,j)=fres(:,j)+eta_mn*p%del2a(:,j)+geta(:,j)*p%diva
         enddo
-        eta_total=eta_total+eta_mn
       endif
 !
       if (lresi_eta_shock) then
@@ -6438,8 +6427,6 @@ module Magnetic
         f(l1:l2,m,n,iex:iez)=-df(l1:l2,m,n,iax:iaz)
       endif
 !
-!  Multiply resistivity by Nyquist scale, for resistive time-step.
-!
       if (lupdate_courant_dt) then
 !
         diffus_eta =eta_total *dxyz_2
@@ -7031,12 +7018,6 @@ print*,'AXEL2: should not be here (eta) ... '
 !
       call integrate_mn_name(p%ab,idiag_ab_int)
       call integrate_mn_name(p%jb,idiag_jb_int)
-
-      if (lmultithread .and. (idiag_epsM /= 0 .or. idiag_epsM2 /= 0 &
-          .or. idiag_epsM3 /= 0 .or. idiag_epsM4 /= 0 .or. idiag_dteta /= 0)) then
-          call calc_eta_total(f,p)
-          if (idiag_dteta /= 0) diffus_eta =eta_total *dxyz_2
-      endif
 !
 ! <J.B>
 !
@@ -8143,7 +8124,7 @@ print*,'AXEL2: should not be here (eta) ... '
 !
     endsubroutine magnetic_calc_spectra
 !***********************************************************************
-    subroutine eta_shell(p,eta_mn,geta)
+    subroutine eta_shell(p)
 !
 !  24-nov-03/dave: coded
 !  23-jun-09/axel: generalized to lcylinder_in_a_box
@@ -8151,9 +8132,7 @@ print*,'AXEL2: should not be here (eta) ... '
       use Sub, only: step, der_step
 !
       type (pencil_case) :: p
-      real, dimension (nx) :: eta_mn
       real, dimension (nx) :: prof,eta_r
-      real, dimension (nx,3) :: geta
       real :: d_int,d_ext
 !
       eta_r=0.
