@@ -1385,6 +1385,7 @@ module Special
             lheating=Hscript<Hscript_prev
             Hscript_prev=Hscript
             lheating_always=lheating .and. lheating_keep_on
+            if (lroot .and. lheating) print*,'switch to lheating=T'
           endif
         case ('aphimax2')
           lheating=a2>aphimax2
