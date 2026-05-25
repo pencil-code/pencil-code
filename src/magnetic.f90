@@ -4290,6 +4290,7 @@ module Magnetic
       real, dimension (nx,3) :: tmp ! currently unused: bb_ext_pot
       real, dimension (nx) :: rho1_jxb, quench, StokesI_ncr, tmp1, bbgb, va2max_beta
       real, dimension(3) :: B_ext, j_ext
+      real, dimension(nx) :: sign_jo
       real :: c,s
       integer :: i, j, ix
 
@@ -4563,6 +4564,43 @@ module Magnetic
         endif
       endif
 
+      if (lresi_xdep) then
+        eta_total=eta_total+eta_x(l1:l2)
+      endif
+
+      if (lresi_ydep) then
+        eta_total=eta_total+eta_y(m)
+      endif
+
+      if(lresi_zdep .and. .not. limplicit_resistivity) then
+        eta_total = eta_total + eta_z(n)
+      endif
+
+      if (lresi_xydep) then
+        eta_total=eta_total+eta_xy(l1:l2,m)
+      endif
+
+
+      if (lresi_sqrtrhoeta_const) then
+        eta_total=eta_total+eta*sqrt(p%rho1)
+      endif
+
+      if(lresi_spitzer) then
+        eta_total = eta_total + eta_spitzer*exp(-1.5*p%lnTT)
+      endif
+
+      if (lresi_cspeed) then
+        eta_total = eta_total + eta*exp(eta_cspeed*p%lnTT)
+      endif
+
+      if (lresi_eta_proptouz) then
+        eta_total = eta_total + eta*ampl_eta_uz*p%uu(:,3)
+      endif
+
+      if (lambipolar_strong_coupling.and.tauAD/=0.0) then
+        eta_total = eta_total + tauAD*mu01*p%b2
+      endif
+
       if(lvacuum) eta_total=huge1
 !
 ! jj
@@ -4712,6 +4750,7 @@ module Magnetic
           p%etava = mu0 * eta_va * dxmax * sqrt(p%va2)
           if (eta_min > 0.) where (p%etava < eta_min) p%etava = 0.
         endif
+        if(lresi_etava.or.lresi_vAspeed) eta_total = eta_total + p%etava
       endif
 ! gradient of va
       if (lpenc_loc(i_gva).and.lalfven_as_aux) then
@@ -4726,16 +4765,19 @@ module Magnetic
       if (lpenc_loc(i_etaj)) then
         p%etaj = mu0 * eta_j * dxmax**2 * sqrt(mu0 * p%j2 * p%rho1)
         if (eta_min > 0.) where (p%etaj < eta_min) p%etaj = 0.
+        if(lresi_etaj) eta_total = eta_total + p%etaj
       endif
 ! eta_j2
       if (lpenc_loc(i_etaj2)) then
         p%etaj2 = etaj20 * p%j2 * p%rho1
         if (eta_min > 0.) where (p%etaj2 < eta_min) p%etaj2 = 0.
+        if(lresi_etaj2) eta_total = eta_total + p%etaj2
       endif
 ! eta_jrho
       if (lpenc_loc(i_etajrho)) then
         p%etajrho = mu0 * eta_jrho * dxmax * sqrt(p%j2) * p%rho1
         if (eta_min > 0.) where (p%etajrho < eta_min) p%etajrho = 0.
+        if(lresi_etajrho) eta_total = eta_total + p%etajrho
       endif
 ! jxb
       if (lpenc_loc(i_jxb)) call cross_mn(p%jj,p%bb,p%jxb)
@@ -4995,6 +5037,10 @@ module Magnetic
 !  Ambipolar diffusion pencil
 !
       if (lpenc_loc(i_nu_ni1)) call set_ambipolar_diffusion(p)
+
+      if (lambipolar_diffusion) then
+        eta_total = eta_total + p%nu_ni1*p%va2
+      endif
 !
 ! reduced speed of light pencil
 !
@@ -5010,6 +5056,28 @@ module Magnetic
        endif
        p%gamma_A2=p%clight2/(p%clight2+p%va2+tini)
      endif
+!
+! Smaroginsky resistivity
+!
+      if (lresi_smagorinsky) then
+        eta_smag=(D_smag*dxmax)**2.*sqrt(p%j2)
+      endif
+
+      if (lresi_smagorinsky_nusmag) then
+         eta_smag=Pm_smag1*p%nu_smag
+      endif
+
+      if (lresi_smagorinsky_cross) then
+        sign_jo=1.
+        do i=1,nx
+          if (p%jo(i) < 0) sign_jo(i)=-1.
+        enddo
+        eta_smag=(D_smag*dxmax)**2.*sign_jo*sqrt(p%jo*sign_jo)
+      endif
+
+      if (((lresi_smagorinsky .or. lresi_smagorinsky_nusmag .or. lresi_smagorinsky_cross))) eta_total = eta_total + eta_smag
+      !TP: The code originally added eta_smag twice, I assume this is a bug?
+      !if ((lresi_smagorinsky  .or. lresi_smagorinsky_nusmag .or. lresi_smagorinsky_cross)) eta_total = eta_total + eta_smag
 !
 !  Dummy pencils. At the moment, we say that magnetic calculates the p%el pencil,
 !  but in reality it is calculated in one of the special routines (disp_current)
@@ -5297,7 +5365,7 @@ module Magnetic
       real, dimension (nx,3) :: dAdt, gradeta_shock, aa1, uu1, dJdt, del2jj
       real, dimension (nx) :: ftot, dAtot
       real, dimension (nx) :: peta_shock
-      real, dimension (nx) :: sign_jo,tmp1
+      real, dimension (nx) :: tmp1
       real, dimension (nx) :: etaSS,eta_heat
       real, dimension (nx) :: vdrift
       real, dimension (nx) :: del2aa_ini,tanhx2,advec_hall,advec_hypermesh_aa
@@ -5474,7 +5542,6 @@ module Magnetic
             fres = fres + eta_tdep * p%del2a
           endif
         endif
-        eta_total = eta_total + eta_tdep
       endif
 !
 !  z-dependent resistivity
@@ -5488,7 +5555,6 @@ module Magnetic
             do j = 1,3; fres(:,j) = fres(:,j) + eta_z(n) * p%del2a(:,j); enddo
             fres(:,3) = fres(:,3) + geta_z(n) * p%diva
           endif
-          eta_total = eta_total + eta_z(n)
 
         else    !MR: What about Weyl gauge here?
           ! Assuming geta_z(:,1) = geta_z(:,2) = 0
@@ -5507,7 +5573,6 @@ module Magnetic
             fres(:,j)=fres(:,j)+eta*sqrt(p%rho1) * (p%del2a(:,j)-0.5*p%diva*p%glnrho(:,j))
           enddo
         endif
-        eta_total=eta_total+eta*sqrt(p%rho1)
       endif
 !
 !  Anisotropic tensor, eta_ij = eta*delta_ij + eta1*qi*qj; see
@@ -5546,7 +5611,6 @@ module Magnetic
         do j=1,3
           fres(:,j)=fres(:,j)+eta_xy(l1:l2,m)*p%del2a(:,j)+geta_xy(l1:l2,m,j)*p%diva
         enddo
-        eta_total=eta_total+eta_xy(l1:l2,m)
       endif
 !
       if (lresi_xdep) then
@@ -5560,7 +5624,6 @@ module Magnetic
           enddo
           fres(:,1)=fres(:,1)+geta_x(l1:l2)*p%diva
         endif
-        eta_total=eta_total+eta_x(l1:l2)
       endif
 !
       if (lresi_rdep) then
@@ -5580,7 +5643,6 @@ module Magnetic
         else
           fres(:,2)=fres(:,2)+geta_y(m)*p%diva
         endif
-        eta_total=eta_total+eta_y(m)
       endif
 !
 !  Note that one has to use eta_hyper2 < 0 to have diffusion.
@@ -5781,7 +5843,6 @@ module Magnetic
         if (lweyl_gauge) then
             do i = 1,3; fres(:,i) = fres(:,i) - p%etava * p%jj(:,i); enddo;
         endif
-        eta_total = eta_total + p%etava
       endif
 !
 !  Generalized Alfven speed dependent resistivity
@@ -5794,22 +5855,18 @@ module Magnetic
             fres(:,i) = fres(:,i) + mu0 * p%etava * p%del2a(:,i) + eta_va/vArms * p%diva * p%gva(:,i)
           enddo
         endif
-        eta_total = eta_total + p%etava
       endif
 !
       if (lresi_etaj) then
-              do i = 1,3; fres(:,i) = fres(:,i) - p%etaj * p%jj(:,i); enddo;
-        eta_total = eta_total + p%etaj
+        do i = 1,3; fres(:,i) = fres(:,i) - p%etaj * p%jj(:,i); enddo;
       endif
 !
       if (lresi_etaj2) then
-              do i = 1,3; fres(:,i) = fres(:,i) - p%etaj2 * p%jj(:,i); enddo;
-        eta_total = eta_total + p%etaj2
+        do i = 1,3; fres(:,i) = fres(:,i) - p%etaj2 * p%jj(:,i); enddo;
       endif
 !
       if (lresi_etajrho) then
-              do i = 1,3; fres(:,i) = fres(:,i) - p%etajrho * p%jj(:,i); enddo;
-        eta_total = eta_total + p%etajrho
+        do i = 1,3; fres(:,i) = fres(:,i) - p%etajrho * p%jj(:,i); enddo;
       endif
 !
 !  Resistive Smagorinsky term. But is it correct to reset fres through multsv here?
@@ -5817,7 +5874,6 @@ module Magnetic
       if (lresi_smagorinsky) then
         if (.not.lweyl_gauge) then
           if (letasmag_as_aux) then
-             eta_smag=(D_smag*dxmax)**2.*sqrt(p%j2)
              call multsv(eta_smag+eta,p%del2a,fres)
              call grad(f,ietasmag,geta)
 !
@@ -5829,12 +5885,10 @@ module Magnetic
 !
 !  Term grad(eta_smag) divA not implemented with pencils!
 !
-            eta_smag=(D_smag*dxmax)**2.*sqrt(p%j2)
             call multsv(eta_smag+eta,p%del2a,fres)
 !
           endif
         else
-          eta_smag=(D_smag*dxmax)**2.*sqrt(p%j2)
 !
           do j=1,3
             fres(:,j)=fres(:,j)-eta_smag*mu0*p%jj(:,j)
@@ -5844,7 +5898,6 @@ module Magnetic
       endif
 !
       if (lresi_smagorinsky_nusmag) then
-         eta_smag=Pm_smag1*p%nu_smag
          call multsv(eta_smag+eta,p%del2a,fres)
 !
          call grad(f,inusmag,geta)
@@ -5854,15 +5907,9 @@ module Magnetic
       endif
 !
       if (lresi_smagorinsky_cross) then
-        sign_jo=1.
-        do i=1,nx
-          if (p%jo(i) < 0) sign_jo(i)=-1.
-        enddo
-        eta_smag=(D_smag*dxmax)**2.*sign_jo*sqrt(p%jo*sign_jo)
         call multsv(eta_smag+eta,p%del2a,fres)
       endif
-      if (((lresi_smagorinsky .or. lresi_smagorinsky_nusmag .or. lresi_smagorinsky_cross))) eta_total = eta_total + eta_smag
-      if ((lresi_smagorinsky  .or. lresi_smagorinsky_nusmag .or. lresi_smagorinsky_cross)) eta_total = eta_total + eta_smag
+
 !
 !  Anomalous resistivity. Sets in when the ion-electron drift speed is
 !  larger than some critical value.
@@ -5907,7 +5954,6 @@ module Magnetic
             fres(:,i)=fres(:,i)+eta_spitzer*exp(-1.5*p%lnTT)*(p%del2a(:,i)-1.5*p%diva*p%glnTT(:,i))
           enddo
         endif
-        eta_total = eta_total + eta_spitzer*exp(-1.5*p%lnTT)
       endif
 !
 ! Resistivity proportional to sound speed for stability of SN Turbulent ISM
@@ -5923,7 +5969,6 @@ module Magnetic
             fres(:,i)=fres(:,i)+eta*exp(eta_cspeed*p%lnTT)*(p%del2a(:,i)+0.5*p%diva*p%glnTT(:,i))
           enddo
         endif
-        eta_total = eta_total + eta*exp(eta_cspeed*p%lnTT)
       endif
 !
 ! Resistivity proportional to vertical velocity
@@ -5938,7 +5983,6 @@ module Magnetic
             fres(:,i)=fres(:,i)+eta*ampl_eta_uz*(p%uu(:,3)*p%del2a(:,i)+p%uij(:,3,i)*p%diva)
           enddo
         endif
-        eta_total = eta_total + eta*ampl_eta_uz*p%uu(:,3)
       endif
 !
 ! Magnetic field dependent resistivity
@@ -5983,7 +6027,6 @@ module Magnetic
         elseif (ltemperature .and. lneutralion_heat) then
             df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cv1*p%TT1*p%nu_ni1*p%jxbr2
         endif
-        eta_total = eta_total + p%nu_ni1*p%va2
       endif
 !
 !  Consider here the action of a mean friction term, -LLambda*Abar.
@@ -6264,7 +6307,6 @@ module Magnetic
 !
       if (lambipolar_strong_coupling.and.tauAD/=0.0) then
         dAdt=dAdt+tauAD*p%jxbxb
-        eta_total = eta_total + tauAD*mu01*p%b2
       endif
 !
 !  Add jxb/(b^2\nu) magneto-frictional velocity to uxb term
