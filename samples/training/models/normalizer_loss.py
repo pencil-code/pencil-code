@@ -61,34 +61,24 @@ class Normalizer(torch.nn.Module):
 class CustomLoss(torch.nn.Module):
   def __init__(self):
     super(CustomLoss, self).__init__()
-    self.normalizer = Normalizer([1,6,1,1,1], "output")
-    self.counter = 0 # Needed to save the normalisation stats for output
     self.mse = nn.MSELoss()
 
   def forward(self, prediction, label):
-    lB, lC, lX, lY, lZ = label.shape
 
-    pB, pC, pX, pY, pZ = prediction.shape
-
-    dx, dy, dz = lX // pX, lY // pY, lZ // pZ
+    label_sampled = label[:,:,3:-3,3:-3,3:-3]
         
-    if lX > pX:
-        label_sampled = label[:, :, ::dx, ::dy, ::dz]
-    else:
-        label_sampled = label
+    #label_sampled = label
+
+    #lB, lC, lX, lY, lZ = label_sampled.shape
+
+    #pB, pC, pX, pY, pZ = prediction.shape
+
+    #dx, dy, dz = lX // pX, lY // pY, lZ // pZ
+
+    #if lX > pX:
+    #    label_sampled = label_sampled[:, :, ::dx, ::dy, ::dz]
 
     label_sampled = label_sampled.to(prediction.dtype)
-
-    with torch.no_grad():
-        label_norm = self.normalizer(label_sampled, accumulate=True)
-
-    if self.counter % 50 == 0:
-        rank = int(str(label.device).split(":")[1]) 
-        torch.save(
-            {"acc_count": self.normalizer.acc_count, "num_acc": self.normalizer.num_acc, 
-             "acc_sum": self.normalizer.acc_sum, "acc_sum_squared": self.normalizer.acc_sum_squared}, 
-            f"all_stats/stats_current_output_rank_{rank}.pt"
-        )
-    self.counter += 1
+    label_norm=label_sampled
 
     return self.mse(prediction, label_norm) 

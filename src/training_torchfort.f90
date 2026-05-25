@@ -33,7 +33,7 @@
 
     character(LEN=fnlen) :: model='model', config_file="config_mlp_native.yaml", model_file
 
-    logical :: lroute_via_cpu=.false., lfortran_launched, luse_trained_tau, lwrite_sample=.false., lscale=.true., ldist=.false.
+    logical :: lroute_via_cpu=.false., lfortran_launched, luse_trained_tau, lwrite_sample=.false., lscale=.true.
     real :: max_loss=1.e-4, dt_train=1.e-10
 
     integer :: idiag_loss=0            ! DIAG_DOC: torchfort training loss
@@ -42,7 +42,7 @@
     namelist /training_run_pars/ config_file, model, it_train, it_train_start, it_train_chkpt, &
                                  luse_trained_tau, lscale, lwrite_sample, max_loss, lroute_via_cpu,&
                                  it_train_end, lrun_epoch, dt_train, t_train_start, t_train_end, t_train_chkpt,&
-                                 ltrain_mag,ltrain_dens, start_infer, ldist
+                                 ltrain_mag,ltrain_dens, start_infer
 !
     character(LEN=fnlen) :: model_output_dir, checkpoint_output_dir
     integer :: istat, train_step_ckpt, val_step_ckpt
@@ -94,7 +94,7 @@
 ! TorchFort create model
 !
 
-      call TF_create_model(trim(model), trim(model_output_dir)//trim(config_file), ldist)
+      call TF_create_model(trim(model), trim(model_output_dir)//trim(config_file), lmpicomm)
 !need this to be false for now but should be ltrained
       if (ltrained.and..not.lrun_epoch) then
         call TF_load_model(trim(model), trim(modelfn))
@@ -216,9 +216,9 @@
 !
       ! added false since there is another way for writing samples
       !if (lvideo .or. lwrite_sample .and. mod(it, 50)==0) then
-      if (it==105.or.it==505.or.it==1005.or.it==5005.or.it==8005.or.it==8505.or.it==9005.or.it==9505.or.it==10005) then
-        call tau_snapshots()
-      endif
+      !if (mod(it, 10000)==0) then
+        !call tau_snapshots()
+      !endif
       if (.false.) then
 !     
         call calc_tau(f)

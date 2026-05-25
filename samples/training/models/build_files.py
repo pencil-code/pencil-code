@@ -72,12 +72,12 @@ def build_model(model_save_dir, stats_dir, model_name):
         
         # Saving as torchscript
         try:
-            if torch.os.path.exists(os.path.join(stats_dir, "stats_current_input.pt")):
-                models[i].normalizer.load_stats(os.path.join(stats_dir, "stats_current_input.pt"))
-                print("creating model with current norm values")
-            else:
-                models[i].normalizer.load_stats(os.path.join(stats_dir, "stats_restart_input.pt")) 
-                print("creating model with new norm values")
+            #if torch.os.path.exists(os.path.join(stats_dir, "stats_current_input.pt")):
+            #    models[i].normalizer.load_stats(os.path.join(stats_dir, "stats_current_input.pt"))
+            #    print("creating model with current norm values")
+            #else:
+            #    models[i].normalizer.load_stats(os.path.join(stats_dir, "stats_restart_input.pt")) 
+            #    print("creating model with new norm values")
             model_scripted = torch.jit.script(models[i])
             save_path = os.path.join(model_save_dir, f"{i}.pt")
             model_scripted.save(save_path)
@@ -89,12 +89,12 @@ def build_model(model_save_dir, stats_dir, model_name):
 
 def build_loss(loss_save_dir, stats_dir):
     loss = CustomLoss()
-    if torch.os.path.exists(os.path.join(stats_dir, "stats_current_output.pt")):
-        loss.normalizer.load_stats(os.path.join(stats_dir, "stats_current_output.pt"))
-        print("creating loss with current norm values")
-    else:
-        loss.normalizer.load_stats(os.path.join(stats_dir, "stats_restart_output.pt"))
-        print("creating loss with new norm values")
+    #if torch.os.path.exists(os.path.join(stats_dir, "stats_current_output.pt")):
+    #    loss.normalizer.load_stats(os.path.join(stats_dir, "stats_current_output.pt"))
+    #    print("creating loss with current norm values")
+    #else:
+    #    loss.normalizer.load_stats(os.path.join(stats_dir, "stats_restart_output.pt"))
+    #    print("creating loss with new norm values")
 
     try:
         # Move model to GPU, JIT, and save

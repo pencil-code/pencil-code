@@ -1,10 +1,10 @@
 #!/bin/bash
-#SBATCH --job-name=test_torchfort
+#SBATCH --job-name=torch
 #SBATCH --account=project_2016901
-#SBATCH --partition=gputest
+#SBATCH --partition=gpu
 #SBATCH --time=00:15:00
-#SBATCH --nodes=1
-#SBATCH --ntasks=1
+#SBATCH --nodes=2
+#SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=7
 #SBATCH --gres=gpu:v100:1
 #SBATCH --mem=128G
@@ -17,7 +17,6 @@
 sample_name=helical-MHDturb
 
 # training or inference
-#mode=training_multi
 mode=training
 
 ml_model=unet
@@ -52,6 +51,7 @@ if [[ "$mode" == "inference" ]]; then
     srun -n 1 python3 -c "from build_files import ptTObin; ptTObin('$data_src/training')"
 
 else
+	rm -f "${data_src}/training/stationary.pt"
 	srun -n 1 python3 -c "from build_files import build_model; build_model('$data_src/training', '$data_src/training', '$ml_model')"
 
 	srun -n 1 python3 -c "from build_files import build_loss; build_loss('$data_src/training', '$data_src/training')"
@@ -62,11 +62,10 @@ else
 fi
 
 apptainer exec --nv \
-		-B $PENCIL_HOME:$PENCIL_HOME \
-		-B /appl:/appl \
-		-B $sample_src/scripts/run.sh:/opt/scripts/run.sh \
-		-B $data_src:$sample_src/data \
-		-B $snap_src:$sample_src/snapshots \
-		torchfort_latest_withdf5.sif bash /opt/scripts/run.sh
-
-
+    -B "$PENCIL_HOME:$PENCIL_HOME" \
+    -B /appl:/appl \
+    -B "$sample_src/scripts/run.sh:/opt/scripts/run.sh" \
+    -B "$data_src:$sample_src/data" \
+    -B "$snap_src:$sample_src/snapshots" \
+    -B "$(which srun):$(which srun)" \
+    torchfort_latest_withdf5.sif bash /opt/scripts/run.sh

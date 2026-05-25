@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=test_torchfort
+#SBATCH --job-name=torch
 #SBATCH --account=project_2016901
 #SBATCH --partition=gpu
 #SBATCH --time=10:00:00

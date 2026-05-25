@@ -40,7 +40,6 @@ class Normalizer(torch.nn.Module):
         self.acc_sum_squared += data_sum_squared
         self.acc_count += torch.tensor(batched_data[0,0,:,:,:].numel()).to(self.num_acc.device)
         self.num_acc += torch.tensor(1.0).to(self.num_acc.device)
-        
     def _mean(self):
         safe_count = torch.maximum(self.acc_count, torch.tensor(1.0).to(self.acc_count.device))
         return self.acc_sum / safe_count
@@ -75,17 +74,20 @@ class UNet3D(nn.Module):
 
         self.conv = nn.Conv3d(features, out_channels, kernel_size=1)
 
-        self.counter = 0
-
         self.delta = sampling_delta
 
     def forward(self, x):
         B,C,X,Y,Z = x.shape
+        x_sampled = x[:,:,3:-3,3:-3,3:-3].float()
+
+
+        """
         if(X == 294 and Y == 294 and Z==294):
-            x_sampled =  x[:, :, ::self.delta, ::self.delta, ::self.delta]
+            x_sampled =  x_sampled[:, :, ::self.delta, ::self.delta, ::self.delta]
         else:
-            x_sampled = x
-        x_sampled = self.normalizer(x_sampled, accumulate=True).float()
+            x_sampled = x_sampled
+        """
+
         enc1 = self.encoder1(x_sampled)
         enc2 = self.encoder2(self.pool1(enc1))
 
@@ -103,17 +105,7 @@ class UNet3D(nn.Module):
         dec1 = torch.cat((dec1, enc1), dim=1)
         dec1 = self.decoder1(dec1)
 
-        if self.counter % 50 == 0:
-            #very hacky need wont work with different node
-            rank = int(str(x.device).split(":")[1])
-            torch.save(
-                {"acc_count": self.normalizer.acc_count, "num_acc": self.normalizer.num_acc,
-                "acc_sum": self.normalizer.acc_sum, "acc_sum_squared": self.normalizer.acc_sum_squared},
-                f"all_stats/stats_current_input_rank_{rank}.pt"
-            )
-        self.counter += 1
-
-        return self.conv(dec1).double()
+        return self.conv(dec1).float()
 
 
     

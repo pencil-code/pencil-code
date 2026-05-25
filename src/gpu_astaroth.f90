@@ -128,9 +128,11 @@ contains
 !***********************************************************************
   subroutine TF_create_model(model_name, config_file_path, lmpicomm)
     use Mpicomm, only: MPI_COMM_PENCIL
+    integer :: lmpicomm_int
     logical :: lmpicomm
     character(len=*), intent(in) :: model_name, config_file_path
-    call tf_create_model_c(trim(model_name) // c_null_char, trim(config_file_path) // c_null_char, MPI_COMM_PENCIL, lmpicomm)
+    lmpicomm_int = merge(1,0,lmpicomm)
+    call tf_create_model_c(trim(model_name) // c_null_char, trim(config_file_path) // c_null_char, MPI_COMM_PENCIL, lmpicomm_int)
   endsubroutine TF_create_model
 !***********************************************************************
   subroutine tau_snapshots()

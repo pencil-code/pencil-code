@@ -1,12 +1,12 @@
 #!/bin/bash
-#SBATCH --job-name=test_torchfort
+#SBATCH --job-name=torch
 #SBATCH --account=project_2016901
 #SBATCH --partition=gputest
 #SBATCH --time=00:15:00
 #SBATCH --nodes=1
-#SBATCH --ntasks=1
+#SBATCH --ntasks=2
 #SBATCH --cpus-per-task=7
-#SBATCH --gres=gpu:v100:1
+#SBATCH --gres=gpu:v100:2
 #SBATCH --mem=32G
 #SBATCH -o slurm-%x_%J.out
 ####SBATCH --mail-type=ALL
@@ -15,11 +15,11 @@
 
 set -e
 
-generate_override=1
+generate_override=0
 
 
 # current sample name
-sample_name=TG-VORTEXh5
+sample_name=helical-MHDturb
 
 # training or inference
 mode=training

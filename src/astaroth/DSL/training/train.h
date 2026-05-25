@@ -44,8 +44,8 @@ const Field3 TAU_DENSITY_INFERRED =
 
 global input int AC_ranNum
 
-run_const real_symmetric_tensor AC_tau_hydro_means
-run_const real_symmetric_tensor AC_tau_hydro_stds
+real_symmetric_tensor AC_tau_hydro_means
+real_symmetric_tensor AC_tau_hydro_stds
 
 
 
@@ -112,6 +112,9 @@ write_tensor_product(FieldSymmetricTensor T, real3 uu)
 }
 
 
+
+
+
 /*
 Kernel get_bfield(){
 
@@ -126,6 +129,8 @@ Kernel get_bfield(){
 	
 }
 */
+
+
 
 
 Kernel fluctutation_terms_and_means(){
@@ -409,6 +414,86 @@ Kernel descale_inferred_taus_kernel()
 	descale_tensor(TAU_HYDRO_INFERRED, AC_tau_hydro_stds, AC_tau_hydro_means)
 }
 
+global output real in_acc_sum[3]
+global output real in_acc_sum_squared[3]
+
+
+global output real out_acc_sum[6]
+global output real out_acc_sum_squared[6]
+
+
+accumulate_norm_sum(Field F, sum_dst, sum_squared_dst){
+	reduce_sum(F, sum_dst)
+	reduce_sum(F*F, sum_squared_dst)
+}
+
+accumulate_norm_sum_add(Field F, sum_dst, sum_squared_dst){
+	reduce_sum_add(F, sum_dst)
+	reduce_sum_add(F*F, sum_squared_dst)
+}
+
+normalize_field(Field F, acc_sum, acc_sum_squared, count){
+        real num_acc = (real)count*AC_ngrid.x*AC_ngrid.y*AC_ngrid.z
+		real mean = acc_sum/num_acc
+		real std_squared=(acc_sum_squared /num_acc) - (mean*mean)
+		real std = sqrt(std_squared)
+        real std = max(std, 1e-8)
+		return (F - mean)/std
+}
+
+
+
+Kernel compute_norm_sums()
+{
+	//inputs
+	reduce_sum_add(uumean.x,in_acc_sum[0])
+	reduce_sum_add(uumean.y,in_acc_sum[1])
+	reduce_sum_add(uumean.z,in_acc_sum[2])
+
+	reduce_sum_add(uumean.x*uumean.x,in_acc_sum_squared[0])
+	reduce_sum_add(uumean.y*uumean.y,in_acc_sum_squared[1])
+	reduce_sum_add(uumean.z*uumean.z,in_acc_sum_squared[2])
+        
+	//outputs 
+	reduce_sum_add(tau_hydro.xx,out_acc_sum[0])
+	reduce_sum_add(tau_hydro.yy,out_acc_sum[1])
+	reduce_sum_add(tau_hydro.zz,out_acc_sum[2])
+	reduce_sum_add(tau_hydro.xy,out_acc_sum[3])
+	reduce_sum_add(tau_hydro.yz,out_acc_sum[4])
+	reduce_sum_add(tau_hydro.xz,out_acc_sum[5])
+
+	reduce_sum_add(tau_hydro.xx*tau_hydro.xx,out_acc_sum_squared[0])
+	reduce_sum_add(tau_hydro.yy*tau_hydro.yy,out_acc_sum_squared[1])
+	reduce_sum_add(tau_hydro.zz*tau_hydro.zz,out_acc_sum_squared[2])
+	reduce_sum_add(tau_hydro.xy*tau_hydro.xy,out_acc_sum_squared[3])
+	reduce_sum_add(tau_hydro.yz*tau_hydro.yz,out_acc_sum_squared[4])
+	reduce_sum_add(tau_hydro.xz*tau_hydro.xz,out_acc_sum_squared[5])
+
+
+}
+
+Kernel normalize_fields(int count)
+{
+    
+	 write(uumean.x,normalize_field(uumean.x,in_acc_sum[0],in_acc_sum_squared[0],max(1,count)))
+	 write(uumean.y,normalize_field(uumean.y,in_acc_sum[1],in_acc_sum_squared[1],max(1,count)))
+	 write(uumean.z,normalize_field(uumean.z,in_acc_sum[2],in_acc_sum_squared[2],max(1,count)))
+     
+
+	 write(tau_hydro.xx,normalize_field(tau_hydro.xx,out_acc_sum[0],out_acc_sum_squared[0],max(1,count)))
+	 write(tau_hydro.yy,normalize_field(tau_hydro.yy,out_acc_sum[1],out_acc_sum_squared[1],max(1,count)))
+	 write(tau_hydro.zz,normalize_field(tau_hydro.zz,out_acc_sum[2],out_acc_sum_squared[2],max(1,count)))
+	 write(tau_hydro.xy,normalize_field(tau_hydro.xy,out_acc_sum[3],out_acc_sum_squared[3],max(1,count)))
+	 write(tau_hydro.yz,normalize_field(tau_hydro.yz,out_acc_sum[4],out_acc_sum_squared[4],max(1,count)))
+	 write(tau_hydro.xz,normalize_field(tau_hydro.xz,out_acc_sum[5],out_acc_sum_squared[5],max(1,count)))
+     
+}
+
+input int AC_count
+ComputeSteps normalize(boundconds){
+  compute_norm_sums()
+  normalize_fields(AC_count)
+}
 
 ComputeSteps descale_inferred_taus(boundconds)
 {

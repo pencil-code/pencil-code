@@ -472,8 +472,8 @@ module Register
       call finalize_deriv
       call finalize_io
       if (lrun.and.nt>0) then
-        call finalize_gpu
         call finalize_training
+        call finalize_gpu
       endif
 !
     endsubroutine finalize_modules

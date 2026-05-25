@@ -45,7 +45,7 @@ bool calculated_coeff_scales = false;
 AcTaskGraph* GW_timestep_graph  =  NULL;
 AcTaskGraph* boundary_z_halo_exchange_graph =  NULL;
 //TP: logs performance metrics of Astaroth
-const bool performance_logs = false;
+const bool performance_logs = true;
 
 #define real AcReal
 #include "math_utils.h"
@@ -617,6 +617,43 @@ extern "C" void registerGPU()
 #endif
 }
 /***********************************************************************************************/
+void save_stats(){
+#if LTRAINING
+	#include "user_constants.h"
+    if(rank==0){
+        std::ofstream myFile;
+        std::string fileString = "running_statistics.csv";	
+        myFile.open(fileString);
+        myFile << "count,acc_count,in_acc_sum_x,in_acc_sum_y,in_acc_sum_z,in_acc_sum_squared_x,in_acc_sum_squared_y,in_acc_sum_squared_z,out_acc_sum_xx,out_acc_sum_yy,out_acc_sum_zz,out_acc_sum_xy,out_acc_sum_yz,out_acc_sum_xz,out_acc_sum_squared_xx,out_acc_sum_squared_yy,out_acc_sum_squared_zz,out_acc_sum_squared_xy,out_acc_sum_squared_yz,out_acc_sum_squared_xz\n";
+        
+        auto in_acc_sum_x = acDeviceGetOutput(acGridGetDevice(), in_acc_sum[0]);
+        auto in_acc_sum_y = acDeviceGetOutput(acGridGetDevice(), in_acc_sum[1]);
+        auto in_acc_sum_z = acDeviceGetOutput(acGridGetDevice(), in_acc_sum[2]);
+
+        auto in_acc_sum_squared_x = acDeviceGetOutput(acGridGetDevice(), in_acc_sum_squared[0]);
+        auto in_acc_sum_squared_y = acDeviceGetOutput(acGridGetDevice(), in_acc_sum_squared[1]);
+        auto in_acc_sum_squared_z = acDeviceGetOutput(acGridGetDevice(), in_acc_sum_squared[2]);
+
+        auto out_acc_sum_xx = acDeviceGetOutput(acGridGetDevice(), out_acc_sum[0]);
+        auto out_acc_sum_yy = acDeviceGetOutput(acGridGetDevice(), out_acc_sum[1]);
+        auto out_acc_sum_zz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum[2]);
+        auto out_acc_sum_xy = acDeviceGetOutput(acGridGetDevice(), out_acc_sum[3]);
+        auto out_acc_sum_yz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum[4]);
+        auto out_acc_sum_xz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum[5]);
+
+        auto out_acc_sum_squared_xx = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_squared[0]);
+        auto out_acc_sum_squared_yy = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_squared[1]);
+        auto out_acc_sum_squared_zz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_squared[2]);
+        auto out_acc_sum_squared_xy = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_squared[3]);
+        auto out_acc_sum_squared_yz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_squared[4]);
+        auto out_acc_sum_squared_xz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_squared[5]);
+
+        myFile <<  in_acc_sum_x << "," << in_acc_sum_y << "," << in_acc_sum_z << "," << in_acc_sum_squared_x << "," << in_acc_sum_squared_y << "," << in_acc_sum_squared_z << "," <<  out_acc_sum_xx << "," <<  out_acc_sum_yy << "," <<  out_acc_sum_zz << "," <<  out_acc_sum_xy << "," << out_acc_sum_yz << "," << out_acc_sum_xz << "," << out_acc_sum_squared_xx << "," << out_acc_sum_squared_yy << "," << out_acc_sum_squared_zz << "," << out_acc_sum_squared_xy << "," << out_acc_sum_squared_yz << "," << out_acc_sum_squared_xz << "\n";
+
+        myFile.close();
+    }
+#endif
+}
 extern "C" void tf_create_model_c_api(const char *model_name, const char* config_file_path, int comm_fint, bool ldist){
 #if LTRAINING
 	int ndevices = 0;
@@ -639,8 +676,8 @@ extern "C" void tf_create_model_c_api(const char *model_name, const char* config
   acLogFromRootProc(rank,"Model_NAME: %s\n", model_name);
 	
 	if(ldist){
-  	comm_pencil = MPI_Comm_f2c(comm_fint);
-		bool success = torch_create_distributed_model_CAPI(model_name, config_file_path, comm_pencil, 0);
+  	    comm_pencil = MPI_Comm_f2c(comm_fint);
+		bool success = torch_create_distributed_model_CAPI(model_name, config_file_path, comm_pencil, rank % ndevices);
 		if (success != 0){
 			acLogFromRootProc(rank, "Error when creating distributed model: %s from config file: %s\n", model_name, config_file_path);
 		}
@@ -701,6 +738,7 @@ extern "C" void tf_save_model_c_api(const char* name, const char* fname){
 		acLogFromRootProc(rank, "save_model: Error when saving ML model: %s\n", name);
 	}
 	else{
+        save_stats();
 		acLogFromRootProc(rank, "save_model: Saving ML model to: %s\n", fname);
 	}
 	fflush(stdout);
@@ -715,6 +753,7 @@ extern "C" void tf_save_checkpoint_c_api(const char* name, const char* checkpoin
 		acLogFromRootProc(rank, "save_checkpoint: Error when checkpointing ML model: %s in directory: %s\n", name, checkpoint_dir);
 	}
 	else{
+        save_stats();
 		acLogFromRootProc(rank, "save_checkpoint: Checkpoint ML model to: %s\n", checkpoint_dir);
 	}
 	fflush(stdout);
@@ -922,6 +961,13 @@ extern "C" void torch_train_c_api(AcReal *loss_val, int itsub, double t) {
   auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
   acGridExecuteTaskGraph(bcs,1);
   	
+  acGridHaloExchange();
+
+  train_counter++;
+  acDeviceSetInput(acGridGetDevice(), AC_count, train_counter);
+
+  acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(normalize),1);
+  acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(boundconds),1);
 
   AcReal* out = NULL;
   AcReal* uumean_ptr = NULL;
@@ -930,13 +976,12 @@ extern "C" void torch_train_c_api(AcReal *loss_val, int itsub, double t) {
   
   acDeviceGetVertexBufferPtrs(acGridGetDevice(), tau_hydro.xx, &TAU_ptr, &out);
   acDeviceGetVertexBufferPtrs(acGridGetDevice(), uumean.x, &uumean_ptr, &out);
-  
+ 
   acGridHaloExchange();
   torch_train_CAPI((int[]){mx,my,mz}, uumean_ptr, TAU_ptr, loss_val,input_channels,output_channels,"stationary");
   train_loss.push_back(*loss_val);
-	train_nts.push_back(it);
-  train_counter++;
-  print_debug();
+  train_nts.push_back(it);
+  //print_debug();
   if (it==nt){
   	std::ofstream myFile;
   	std::string fileString = "train_loss_" + std::to_string(my_rank)  + ".csv";	
@@ -954,9 +999,7 @@ extern "C" void torch_train_c_api(AcReal *loss_val, int itsub, double t) {
   		myFile << train_nts[i] << "\n";
   	}
   	myFile.close();
-
   }
-
 #endif
 }
 /***********************************************************************************************/
@@ -1077,7 +1120,7 @@ extern "C" void print_debug() {
 #if LTRAINING
     #include "user_constants.h"
 		
-		std::string fname = "snapshots/snapshot_294_rank_" + std::to_string(my_rank) + "_it_" + std::to_string(it) + ".bin";
+		std::string fname = "snapshots/snapshot_multi_normalized_"+ std::to_string(nxgrid*nygrid*nzgrid)  +"_rank_" + std::to_string(rank) + "_it_" + std::to_string(it) + ".bin";
 		std::ifstream infile(fname, std::ios::binary);
 		if (infile.good()) return;
 		
@@ -1925,23 +1968,23 @@ extern "C" void finalizeGPU()
 	
 	// write the loss values to a file
 
-	std::ofstream myFile;
-
-	std::string fileString = "train_loss_" + std::to_string(my_rank)  + ".csv";	
-	myFile.open(fileString);
+  std::ofstream myFile;
+  std::string fileString = "train_loss_" + std::to_string(my_rank)  + ".csv";	
+  myFile.open(fileString);
   myFile << "epoch,train_loss\n";
-	for (int i=0;i<train_loss.size();i++){
-		myFile << i << "," << train_loss[i] << "\n";
-	}
+  for (int i=0;i<train_loss.size();i++){
+    myFile << i << "," << train_loss[i] << "\n";
+  }
   myFile.close();
 
-	std::string train_sample = "train_sample_" + std::to_string(my_rank) + ".csv";
+  std::string train_sample = "train_sample_" + std::to_string(my_rank) + ".csv";
   myFile.open(train_sample);
   myFile << "train_sample_nts\n";
   for (int i=0;i<train_nts.size();i++){
   	myFile << train_nts[i] << "\n";
   }
-	myFile.close();
+  myFile.close();
+
 }
 /***********************************************************************************************/
 extern "C" void random_initial_condition()
@@ -1955,6 +1998,7 @@ extern "C" void random_initial_condition()
 /***********************************************************************************************/
 void testBCs()
 {
+
   //if (dimensionality != 3) return;
   // Set random seed for reproducibility
   srand(321654987);
