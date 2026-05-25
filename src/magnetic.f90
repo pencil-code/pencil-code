@@ -349,6 +349,7 @@ module Magnetic
   real, dimension(mx) :: eta_x,geta_x
   real, dimension(my) :: eta_y,geta_y
   real, dimension(nx) :: eta_r
+  !$omp threadprivate(eta_r)
   real, dimension(nx,3) :: geta_r
   logical :: lfreeze_aint=.false., lfreeze_aext=.false.
   logical :: lweyl_gauge=.false., ladvective_gauge=.false.
@@ -1149,9 +1150,9 @@ module Magnetic
 ! Auxiliary module variables
 !
   real, dimension(nx) :: eta_total=0.,eta_smag=0.,Fmax,dAmax,ssmax, &
-                         eta_mn, &
+                         eta_mn, eta_BB, &
                          diffus_eta=0.,diffus_eta2=0.,diffus_eta3=0.
-  !$omp threadprivate(eta_total,diffus_eta)
+  !$omp threadprivate(eta_total,diffus_eta,eta_mn,eta_BB)
   real, dimension(nx,3) :: fres,forcing_rhs
   real, dimension(nzgrid) :: eta_zgrid=0.0
   real, dimension(mz) :: feta_ztdep=0.0
@@ -4545,9 +4546,39 @@ module Magnetic
 
       if(lresi_eta_const .and. .not. limplicit_resistivity) eta_total = eta_total + eta
 
+      if (lresi_rdep) then
+        call eta_rdep(eta_r,geta_r,rdep_profile,p)
+        eta_total=eta_total+eta_r
+      endif
+
       if(lresi_shell) then
        call eta_shell(p)
        eta_total = eta_total + eta_mn
+      endif
+
+      if (lresi_eta_shock) then
+        eta_total=eta_total+eta_shock*p%shock
+      endif
+
+      if (lresi_eta_shock2) then
+        eta_total=eta_total+eta_shock2*p%shock**2
+      endif
+
+      if (lresi_eta_shock_perp) then
+        eta_total=eta_total+eta_shock*p%shock_perp
+      endif
+
+      if (lresi_magfield) then
+        eta_BB=eta/(1.+etaB*p%bb(:,2)**2)
+        eta_total = eta_total + eta_BB
+      endif
+
+      if (eta_aniso_BB/=0.0) then
+        eta_total = eta_total + eta_aniso_BB
+      endif
+
+      if (lresi_eta_aniso) then
+        eta_total=eta_total+abs(eta1_aniso)
       endif
 !
 !  The following allows us to let eta change with time, t-eta_tdep_toffset.
@@ -5369,7 +5400,7 @@ module Magnetic
       real, dimension (nx) :: etaSS,eta_heat
       real, dimension (nx) :: vdrift
       real, dimension (nx) :: del2aa_ini,tanhx2,advec_hall,advec_hypermesh_aa
-      real, dimension(nx) :: eta_BB, prof, dlnBrmsdt, limiter
+      real, dimension(nx) :: prof, dlnBrmsdt, limiter
       real, dimension(3) :: B_ext
       real :: tmp, eta_out1, cosalp, sinalp, hall_term_, tau1_jj
       real, parameter :: OmegaSS=1.0
@@ -5589,7 +5620,6 @@ module Magnetic
         if (lquench_eta_aniso) prof=prof/(1.+quench_aniso*Arms)
         fres(:,1)=fres(:,1)-prof*cosalp*(cosalp*p%jj(:,1)+sinalp*p%jj(:,2))
         fres(:,2)=fres(:,2)-prof*sinalp*(cosalp*p%jj(:,1)+sinalp*p%jj(:,2))
-        eta_total=eta_total+abs(eta1_aniso)
       endif
 !
 !  Shakura-Sunyaev type resistivity (mainly just as a demo to show
@@ -5627,11 +5657,9 @@ module Magnetic
       endif
 !
       if (lresi_rdep) then
-        call eta_rdep(eta_r,geta_r,rdep_profile,p)
         do j=1,3
           fres(:,j)=fres(:,j)+eta_r*p%del2a(:,j)+geta_r(:,j)*p%diva
         enddo
-        eta_total=eta_total+eta_r
       endif
 !
       if (lresi_ydep) then
@@ -5750,7 +5778,7 @@ module Magnetic
         enddo
       endif
 !
-      if (lresi_eta_shock) then
+      if(lresi_eta_shock) then
         if (lweyl_gauge) then
           do i=1,3
             fres(:,i)=fres(:,i)-eta_shock*p%shock*mu0*p%jj(:,i)
@@ -5760,7 +5788,6 @@ module Magnetic
             fres(:,i)=fres(:,i)+eta_shock*(p%shock*p%del2a(:,i)+p%diva*p%gshock(:,i))
           enddo
         endif
-        eta_total=eta_total+eta_shock*p%shock
       endif
 !
       if (lresi_eta_shock2) then
@@ -5773,7 +5800,6 @@ module Magnetic
             fres(:,i)=fres(:,i)+eta_shock2*(p%shock**2*p%del2a(:,i)+2*p%shock*p%diva*p%gshock(:,i))
           enddo
         endif
-        eta_total=eta_total+eta_shock2*p%shock**2
       endif
 !
 ! diffusivity: eta-shock with vertical profile
@@ -5836,7 +5862,6 @@ module Magnetic
             fres(:,i)=fres(:,i)+ eta_shock*(p%shock_perp*p%del2a(:,i)+p%diva*p%gshock_perp(:,i))
           enddo
         endif
-        eta_total=eta_total+eta_shock*p%shock_perp
       endif
 !
       if (lresi_etava) then
@@ -5988,13 +6013,11 @@ module Magnetic
 ! Magnetic field dependent resistivity
 !
       if (lresi_magfield) then
-        eta_BB=eta/(1.+etaB*p%bb(:,2)**2)
         if (lweyl_gauge) then
           do i=1,3
             fres(:,i)=fres(:,i)-mu0*eta_BB*p%jj(:,i)
           enddo
         endif
-        eta_total = eta_total + eta_BB
       endif
 !
 !  anisotropic B-dependent diffusivity
@@ -6009,7 +6032,6 @@ module Magnetic
         do j=1,3
           df(l1:l2,m,n,iaa-1+j)=df(l1:l2,m,n,iaa-1+j)-tmp1*p%jb*p%bb(:,j)
         enddo
-        eta_total = eta_total + eta_aniso_BB
       endif
 !
 !  Ambipolar diffusion in the strong coupling approximation.
