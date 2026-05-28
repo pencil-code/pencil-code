@@ -433,6 +433,10 @@ def animate_interactive(
         manager.show()
 
     time_step = 0
+    #Done to return (None,None) in case one is not using
+    #this function interactively and thus there are not buttons
+    button_reverse = None
+    button_forward = None
     if not movie_file is None:
         import os
 
