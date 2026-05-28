@@ -200,7 +200,7 @@ module Hydro
   logical :: llorentz_limiter=.false., full_3D=.false.
   logical :: lhiggsless=.false., lhiggsless_old=.false.
   logical :: lsqrt_qirro_uu=.false., lset_uz_zero=.false.
-  logical :: lnorm_vw_hless=.false., lcorrect_penc_u=.true.
+  logical :: lnorm_vw_hless=.false.
   logical :: lampluu_adjust_ascale=.false.   !PAR_DOC: automatically adjust initial u-amplitude
   real, pointer :: profx_ffree(:),profy_ffree(:),profz_ffree(:)
   real, pointer :: B_ext2
@@ -243,7 +243,7 @@ module Hydro
       lno_noise_uu, lrho_nonuni_uu, lpower_profile_file_uu, &
       llorentz_limiter, lhiggsless, lhiggsless_old, vwall, alpha_hless, width_hless, &
       xjump_mid, yjump_mid, zjump_mid, qini, lnorm_vw_hless, &
-      lcorrect_penc_u, qshear, lampluu_adjust_ascale
+      qshear, lampluu_adjust_ascale
 !
 !  Run parameters.
 !
@@ -1741,10 +1741,6 @@ module Hydro
         call mpibcast(yhless,nhless)
         call mpibcast(zhless,nhless)
       endif
-
-      !TP: don't want to consider this on the GPU and would prefer if we could refactor this flag out
-      if(lgpu) lcorrect_penc_u = .false.
-      
 
       endsubroutine initialize_hydro
 !***********************************************************************
@@ -3805,10 +3801,6 @@ module Hydro
               ! alberto: I commented the line below by mistake, recovered
               p%uu=p%uu*cs2011
             endif    !  if (lrelativistic)
-            ! alberto: once computed pencil u from f-array, store temporarily
-            ! for all pencils below to be correctly computed, T0i remains
-            ! stored in tmp3
-            if (lcorrect_penc_u) f(l1:l2,m,n,iux:iuz)=p%uu
 
           endif   !    if (lvv_as_aux .or. lvv_as_comaux) ... else
 
@@ -3922,15 +3914,6 @@ module Hydro
       endif
       ! alberto: we might want to consider higgsless also for non-conservative
       if (.not.lhiggsless_old.and.lhiggsless) p%hless = f(l1:l2,m,n,ihless)
-!
-! alberto: recover T0i in f-array (temporarily, we have stored the
-!          actual velocity for good reconstruction of all pencils)
-!
-      if (lconservative.and.lcorrect_penc_u) then
-        if (.not.lvv_as_aux.and..not.lvv_as_comaux) then
-          f(l1:l2,m,n,iux:iuz)=tmp3
-        endif
-      endif
 !
     endsubroutine calc_pencils_hydro_nonlinear
 !***********************************************************************
@@ -9294,7 +9277,6 @@ module Hydro
     if (allocated(zhless)) call copy_addr(zhless,p_par(119)) ! (nhless__mod__hydro)
     call copy_addr(width_hless,p_par(120))
     call copy_addr(width_hless_absolute,p_par(121))
-    call copy_addr(lcorrect_penc_u,p_par(122)) ! bool
     call copy_addr(lcalc_uuavg,p_par(123)) ! bool
     call copy_addr(lremove_mean_angmom,p_par(124)) ! bool
     call copy_addr(luij_as_aux,p_par(125)) ! bool
