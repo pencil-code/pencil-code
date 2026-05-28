@@ -108,6 +108,7 @@ module Special
   real :: sigEmax=impossible       !PAR_DOC: time step constraint from 1/sigE
   real :: sigE_ceiling=impossible  !PAR_DOC: ceiling
   real :: sigE_const_value=impossible  !PAR_DOC: constant value if set
+  real :: etaSchw_max=impossible   !PAR_DOC: constant value if set
   logical :: reinitialize_ee=.false.
   logical :: lresistive_gauge_ee=.false.   !PAR_DOC: possibility of resistive gauge when ladvance_ee=F.
   logical :: lresistive_gauge_disp=.false. !PAR_DOC: resitive gauge when displacement current is solved for.
@@ -126,7 +127,8 @@ module Special
     loverride_c_light, ldensity_add_je_heating, je_heating_factor, &
     lresistive_gauge_ee, llorentzforce_ee, aderiv_scaling, vA_limit, &
     lohmic_heating_ee, lohmic_heating_justee, sigE_const_value, &
-    ladvance_ee, eta_given, ldt_disp_current, cdt_sigE, lresistive_gauge_disp
+    ladvance_ee, eta_given, ldt_disp_current, cdt_sigE, &
+    lresistive_gauge_disp, etaSchw_max
 !
 ! Declare any index variables necessary for main or
 !
@@ -1032,9 +1034,15 @@ module Special
       if (lmagnetic) then
 !
 !  Decide here about resistive versus temporal (Weyl) gauge
+!  Allow for possibility to limit the diffusivity factor,
+!  which is needed for early times when etaSchw can be huge.
 !
         if (lresistive_gauge_disp) then
-          call multsv(etaSchw,p%graddiva,gtmp)
+          if (etaSchw_max==impossible) then
+            call multsv(etaSchw,p%graddiva,gtmp)
+          else
+            call multsv(min(etaSchw,etaSchw_max),p%graddiva,gtmp)
+          endif
           df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-p%el+gtmp
         else
           df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-p%el
