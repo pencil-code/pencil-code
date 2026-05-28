@@ -1086,7 +1086,13 @@ module Viscosity
           lvisc_nu_profr_twosteps .or. lvisc_nu_profy_bound .or. &
           lvisc_nut_from_magnetic .or. lvisc_nu_cspeed .or. lvisc_mu_cspeed) &
         lpenc_requested(i_del2u)=.true.
-      if (.not. limplicit_viscosity .and. lvisc_simplified) lpenc_requested(i_del2u)=.true.
+      if (.not. limplicit_viscosity .and. lvisc_simplified) then
+        if(lconservative .and. lconservative) then
+          lpenc_requested(i_del2T)=.true.
+        else
+          lpenc_requested(i_del2u)=.true.
+        endif
+      endif
       if (lvisc_hyper3_simplified .or. lvisc_hyper3_simplified_tdep .or. &
           lvisc_hyper3_rho_nu_const .or. &
           lvisc_hyper3_nu_const .or. lvisc_hyper3_rho_nu_const_symm ) &
@@ -1444,14 +1450,21 @@ module Viscosity
 !  numerically easy and in most cases qualitatively OK.
 !  For boussinesq (divu=0) this is exact.
 !  In all other cases we use nu*o2.
+!  For the conservative relativistic case we take nu*del2Ti0,
+!  where Tij is the energy-momentum tensor.
+!  This is done for numerical stability.
 !
       if (.not. limplicit_viscosity .and. lvisc_simplified) then
-        p%fvisc=p%fvisc+nu*p%del2u
-        if (lpencil(i_visc_heat)) then
-          if (lboussinesq) then
-            p%visc_heat=p%visc_heat+2.*nu*p%sij2
-          else
-            p%visc_heat=p%visc_heat+nu*p%o2
+        if(lconservative .and. lrelativistic) then
+          p%fvisc=p%fvisc+nu*p%del2T
+        else
+          p%fvisc=p%fvisc+nu*p%del2u
+          if (lpencil(i_visc_heat)) then
+            if (lboussinesq) then
+              p%visc_heat=p%visc_heat+2.*nu*p%sij2
+            else
+              p%visc_heat=p%visc_heat+nu*p%o2
+            endif
           endif
         endif
         if (ldiffus_total) p%diffus_total=p%diffus_total+nu

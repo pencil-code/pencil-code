@@ -17,7 +17,7 @@
 ! PENCILS PROVIDED divu; oo(3); o2; ou; oxu2; oxu(3); u2; uij(3,3); uu(3); curlo(3)
 ! PENCILS PROVIDED sij(3,3); sij2; uij5(3,3); ugu(3); ugu2; oij(3,3)
 ! PENCILS PROVIDED d2uidxj(3,3), uijk(3,3,3); ogu(3)
-! PENCILS PROVIDED u3u21; u1u32; u2u13; del2u(3); del4u(3); del6u(3)
+! PENCILS PROVIDED u3u21; u1u32; u2u13; del2u(3); del2T(3); del4u(3); del6u(3)
 ! PENCILS PROVIDED u2u31; u3u12; u1u23
 ! PENCILS PROVIDED graddivu(3); del6u_bulk(3); grad5divu(3)
 ! PENCILS PROVIDED rhougu(3); der6u(3); transpurho(3)
@@ -3371,10 +3371,7 @@ module Hydro
         if (lpencil_in(i_graddivu))         call pencil_needs_ivv("graddivu")
         if (lpencil_in(i_curlo))            call pencil_needs_ivv("curlo")
         if (lpencil_in(i_transpurho))       call pencil_needs_ivv("transpurho")
-        !TP: I guess in the relativistic case one takes del2 of whatever one is solving for because of numerical reasons
-        !    and it is fine for it not to be actually del2 of the velocity? This is at least done for 1d-tests/rel-shock.
-        !    If so, could we consider having a pencil with a separate name for del2 of the variable being solved for?
-        if (.not. lrelativistic .and. lpencil_in(i_del2u))      call pencil_needs_ivv("del2u")
+        if (lpencil_in(i_del2u))            call pencil_needs_ivv("del2u")
       endif
 !
     endsubroutine pencil_interdep_hydro
@@ -3635,6 +3632,16 @@ module Hydro
           enddo
         enddo
       endif
+!
+! del2T
+!
+     if(lpenc_loc(i_del2T)) then
+       if(.not. lconservative) then
+          call fatal_error('calc_pencils_hydro_nonlinear', 'del2T implemented only for lconservative')
+       endif
+       call del2v_etc(f,iuu,DEL2=p%del2T)
+     endif
+!
 !
 ! del2u, graddivu
 !
