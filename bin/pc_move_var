@@ -1,0 +1,34 @@
+#!/bin/sh
+#
+# Usage:
+#   ./pc_move_var SRC DST
+#
+# Examples:
+#   ./pc_move_proc_var 
+#   ./pc_move_proc_var 
+#
+# This moves:
+#   data/proc*/SRC -> data/proc*/DST
+#
+
+set -eu
+
+if [ "$#" -lt 2 ]; then
+    echo "Usage: $0 SRC DST"
+    exit 1
+fi
+
+src_base="$1"
+dst_base="$2"
+
+
+for dir in data/proc[0-9]*; do
+    src="$dir/${src_base}"
+    dst="$dir/${dst_base}"
+
+    if [ -f "$src" ]; then
+        mv "$src" "$dst"
+    else
+        echo "Missing: $src"
+    fi
+done

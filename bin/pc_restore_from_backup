@@ -1,19 +1,13 @@
 #!/bin/sh
 # Wrapper to overwrite var.dat with var.dat.bck
+
 if [ -n "$1" ]; then
     d="$1"
     suffix=".bck.$d"
 else
     suffix=".bck"
 fi
+src="var.dat$suffix"
+dst="var.dat"
+pc_move_var "$src" "$dst"
 
-for dir in data/proc[0-9]*; do
-    src="$dir/var.dat$suffix"
-    dst="$dir/var.dat"
-
-    if [ -f "$src" ]; then
-        mv "$src" "$dst"
-    else
-        echo "Missing: $src"
-    fi
-done
