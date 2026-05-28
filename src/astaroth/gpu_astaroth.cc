@@ -45,7 +45,7 @@ bool calculated_coeff_scales = false;
 AcTaskGraph* GW_timestep_graph  =  NULL;
 AcTaskGraph* boundary_z_halo_exchange_graph =  NULL;
 //TP: logs performance metrics of Astaroth
-const bool performance_logs = true;
+const bool performance_logs = false;
 
 #define real AcReal
 #include "math_utils.h"
