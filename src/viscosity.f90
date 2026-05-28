@@ -1637,6 +1637,9 @@ module Viscosity
             p%fvisc=p%fvisc+nu*(p%del2u+1.0/3.0*p%graddivu)
           endif
         endif
+!
+!  Standard calculation of heating per unit mass.
+!
         if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*nu*p%sij2
         if (ldiffus_total) p%diffus_total=p%diffus_total+nu
       endif
@@ -2554,6 +2557,7 @@ module Viscosity
           ell_gam=1./(ascale*n_ele*sigma_Thomson)
           nu_tdep=c_light*ell_gam
           if (lroot) call save_name(ell_gam,idiag_ell_gam)
+          if (lroot .and. ip<6) print*,'AXEL: m_p, sigma_Thomson, c_light=',m_p, sigma_Thomson, c_light
         case default
           call fatal_error('viscosity_after_boundary','unknown value of tdep_nu_type')
         endselect
@@ -2863,6 +2867,9 @@ module Viscosity
 
         if (idiag_fviscrmsx/=0) call sum_mn_name(xmask_vis*fvisc2,idiag_fviscrmsx,lsqrt=.true.)
         call sum_mn_name(p%visc_heat,idiag_visc_heatm)
+!
+!  Standard calculation of epsK
+!
         if (idiag_epsK/=0) call sum_mn_name(p%visc_heat*p%rho,idiag_epsK)
         if (idiag_epsK2/=0) call sum_mn_name((p%visc_heat*p%rho)**2,idiag_epsK2)
         if (idiag_epsK3/=0) call sum_mn_name((p%visc_heat*p%rho)**3,idiag_epsK3)

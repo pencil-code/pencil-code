@@ -139,7 +139,7 @@ module Param_IO
       lpoint, mpoint, npoint, lpoint2, mpoint2, npoint2, &
       lfatal_num_vector_369, density_scale_factor, &
       lsmooth_farray,farray_smooth_width, radius_diag, offset_min_calc, lread_oldsnap_nocoolprof,&
-      lswap_init_lnrho_uu,thetamin,lsymmgrid
+      lswap_init_lnrho_uu, thetamin, lsymmgrid, lbaryons
 !
   namelist /run_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lpole, ncoarse, &

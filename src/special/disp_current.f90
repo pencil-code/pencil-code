@@ -109,7 +109,8 @@ module Special
   real :: sigE_ceiling=impossible  !PAR_DOC: ceiling
   real :: sigE_const_value=impossible  !PAR_DOC: constant value if set
   logical :: reinitialize_ee=.false.
-  logical :: lresistive_gauge_ee=.false. !possibility of resistive gauge when ladvance_ee=F.
+  logical :: lresistive_gauge_ee=.false.   !PAR_DOC: possibility of resistive gauge when ladvance_ee=F.
+  logical :: lresistive_gauge_disp=.false. !PAR_DOC: resitive gauge when displacement current is solved for.
   logical :: ldt_disp_current=.true.  !PAR_DOC: invoke timestep constraint from sigE
   character (len=labellen) :: aderiv_scaling='table'
 !
@@ -125,7 +126,7 @@ module Special
     loverride_c_light, ldensity_add_je_heating, je_heating_factor, &
     lresistive_gauge_ee, llorentzforce_ee, aderiv_scaling, vA_limit, &
     lohmic_heating_ee, lohmic_heating_justee, sigE_const_value, &
-    ladvance_ee, eta_given, ldt_disp_current, cdt_sigE
+    ladvance_ee, eta_given, ldt_disp_current, cdt_sigE, lresistive_gauge_disp
 !
 ! Declare any index variables necessary for main or
 !
@@ -499,9 +500,11 @@ module Special
         lpenc_requested(i_rho1)=.true.
       endif
 !
-      !if (llorenz_gauge_disp) then
-      !  lpenc_requested(i_diva)=.true.
-      !endif
+!  Need graddiva for resitive gauge when displacement current is solved for:
+!
+      if (lresistive_gauge_disp) then
+        lpenc_requested(i_graddiva)=.true.
+      endif
 !
 !  Terms for Gamma evolution.
 !
@@ -1027,8 +1030,15 @@ module Special
 !  Solve dA/dt = -E.
 !
       if (lmagnetic) then
-
-        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-p%el
+!
+!  Decide here about resistive versus temporal (Weyl) gauge
+!
+        if (lresistive_gauge_disp) then
+          call multsv(etaSchw,p%graddiva,gtmp)
+          df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-p%el+gtmp
+        else
+          df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-p%el
+        endif
 !
 !  Solve: dE/dt = curlB - mu*J
 !

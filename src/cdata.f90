@@ -245,7 +245,6 @@ module Cdata
 !
 !  Parameters related to message passing.
 !
-!
   integer, dimension(-1:1,-1:1,-1:1) :: neighbors = 0
   integer, dimension(26) :: iproc_comm = -1
   integer :: nproc_comm = 0
@@ -420,6 +419,7 @@ module Cdata
   logical :: lfatal_num_vector_369=.true.
   logical :: lsmooth_farray=.false.
   logical :: lupdate_cvs=.false.
+  logical :: lbaryons=.true.  !PAR_DOC: interpret rho as the baryon velocity; it affects vA2 pencil.
 !
 !  Entries related to the scale factor of the universe
 !

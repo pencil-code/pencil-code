@@ -4472,10 +4472,15 @@ module Magnetic
       endif
 !
 !  The following is also computed if there is no displacement current.
+!  Added possibility to compute p%graddiva if requested (needed for displacement current).
 !
       if (lpenc_loc(i_bij).and.lpenc_loc(i_del2a)) then
         if (lcartesian_coords) then
-          call gij_etc(f,iaa,BIJ=p%bij,DEL2=p%del2a)
+          if (lpenc_loc(i_graddiva)) then
+            call gij_etc(f,iaa,BIJ=p%bij,DEL2=p%del2a,GRADDIV=p%graddiva)
+          else
+            call gij_etc(f,iaa,BIJ=p%bij,DEL2=p%del2a)
+          endif
           if (lpenc_loc(i_curlb) .and. .not. ljj_as_comaux) call curl_mn(p%bij,p%curlb)
         else
           call gij_etc(f,iaa,AA=p%aa,AIJ=p%aij,BIJ=p%bij,DEL2=p%del2a, &
@@ -4763,7 +4768,16 @@ module Magnetic
         if (ascale==1.) then
           p%va2=p%b2*mu01*p%rho1
         else
-          p%va2=ascale**(2.*nconformal-3.)*p%b2*mu01*p%rho1
+          if (lbaryons) then
+            p%va2=ascale**(2.*nconformal-3.)*p%b2*mu01*p%rho1
+          else
+            if (nconformal==1.) then
+              p%va2=p%b2*mu01*p%rho1
+            else
+              call fatal_error('calc_pencils_magnetic_pencpar', &
+                'nconformal/=1. not ok when lbaryons=F')
+            endif
+          endif
         endif
         if (lcheck_positive_va2 .and. minval(p%va2)<0.0) then   !MR: better some tiny value for 0?
           print*, 'calc_pencils_magnetic: Alfven speed is imaginary!'

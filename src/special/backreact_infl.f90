@@ -127,6 +127,7 @@ module Special
   logical :: lcompute_dphi0=.true.
   logical :: lbackreact_infl=.true., lem_backreact=.true., lzeroHubble=.false.
   logical :: lscale_tobox=.true., ldt_backreact_infl=.true., lconf_time=.true.
+  logical :: lold_ldt_phi=.true.     !PAR_DOC: for backward compatibility.
   logical :: lskip_projection_phi=.false., lvectorpotential=.false., lflrw=.false.
   logical :: lrho_chi=.false., lno_noise_phi=.false., lno_noise_dphi=.false.
   logical :: lrho_rad=.false.            !PAR_DOC: radiation from inflaton decay
@@ -190,7 +191,7 @@ module Special
   namelist /special_run_pars/ &
       initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
       lbackreact_infl, lem_backreact, c_light_axion, lambda_axion, Vprime_choice, &
-      lzeroHubble, ldt_backreact_infl, Ndiv, Hscript0, Hscript_choice, infl_v, &
+      lzeroHubble, lold_ldt_phi, ldt_backreact_infl, Ndiv, Hscript0, Hscript_choice, infl_v, &
       lflrw, lrho_chi, scale_rho_chi_Heqn, scale_rho_rad_Heqn, echarge_type, &
       cdt_rho_chi, cdt_phi, &
       lrho_rad, lrho_rad_apply, lrho_rad_apply2, lrho_chi_corrected, &
@@ -816,11 +817,20 @@ module Special
       if (lfirst .and. ldt .and. ldt_backreact_infl) then
         if (Ndiv==0.) then
           if (lsolve_for_phi) then
-            if (dimensionality==0) then
-              dt1_special=axionmass*sqrt(a2)/cdt_phi
+            if (lold_ldt_phi) then
+              if (dimensionality==0) then
+                dt1_special=axionmass*sqrt(a2)/cdt_phi
+              else
+                advec2=max(advec2,axionmass2*a2*dxyz_2/cdt_phi**2)
+                dt1_special=0.
+              endif
             else
-              advec2=max(advec2,axionmass2*a2*dxyz_2/cdt_phi**2)
-              dt1_special=0.
+!
+!  New (corrected) timestep constraint for phi: always (for quadratic potential):
+!  dt < cdt_phi*ma*a. In addition, there is a speed-of-light constraint from del2phi.
+!
+              dt1_special=axionmass*ascale/cdt_phi
+              advec2=max(advec2,dxyz_2/cdt_phi**2)
             endif
           endif
 !
@@ -979,7 +989,10 @@ module Special
         call sum_mn_name(p%infl_dphi,idiag_dphim)
         if (idiag_dphi2m/=0) call sum_mn_name(p%infl_dphi**2,idiag_dphi2m)
         if (idiag_dphirms/=0) call sum_mn_name(p%infl_dphi**2,idiag_dphirms,lsqrt=.true.)
-        call max_mn_name(sqrt(advec2)/cdt_phi,idiag_dtphi,l_dt=.true.)
+!
+!  Fractional timestep constraints.
+!
+        call max_mn_name(spread(axionmass*ascale/cdt_phi,1,nx),idiag_dtphi,l_dt=.true.)
       endif
 !
     endsubroutine calc_diagnostics_special
