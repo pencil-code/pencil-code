@@ -4553,7 +4553,7 @@ module Sub
       integer, dimension(:), optional :: addlengths
       character(LEN=*), dimension(:), optional :: addtexts
 
-      character (len=max_col_width) :: noform,cform,cnumber,dashes
+      character (len=max_col_width) :: noform,cform,dashes
       integer :: iform0,iform1,iform2,length,number,number1,number2,dashlen,lendiff,ii
 !
       intent(in)  :: cname
