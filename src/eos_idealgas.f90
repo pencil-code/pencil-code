@@ -2050,7 +2050,7 @@ module EquationOfState
 !      !use Mpicomm, only: initiate_isendrcv_bdry, finalize_isendrcv_bdry
 !      !use Magnetic_meanfield, only: meanfield_chitB
 !!
-!      real, dimension (:,:,:,:), intent(in) :: f
+!      real, contiguous, dimension(:,:,:,:), intent(in) :: f
 !      real, dimension (:),       intent(out):: quench
 !!
 !      real, dimension (size(quench),3) :: bb
@@ -2140,7 +2140,7 @@ module EquationOfState
 !                   added branches for Kramers heat conductivity (using sigmaSBt!)
 !
       integer, intent(IN) :: topbot
-      real, dimension (:,:,:,:) :: f
+      real, contiguous, dimension (:,:,:,:) :: f
 !
       logical, pointer :: lheatc_kramers
       real, pointer :: chi,chi_t,hcondzbot,hcondztop
@@ -2307,7 +2307,7 @@ module EquationOfState
       real, pointer :: chi_t,hcondxbot,hcondxtop,chit_prof1,chit_prof2
 !
       integer, intent(IN) :: topbot
-      real, dimension (:,:,:,:) :: f
+      real, contiguous, dimension (:,:,:,:) :: f
       real, dimension (size(f,2),size(f,3)) :: dsdx_yz,cs2_yz,rho_yz,dlnrhodx_yz,TT_yz
       real, dimension (size(f,2),size(f,3)) :: hcond_total
       integer :: i
@@ -2835,7 +2835,7 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
       integer, intent(IN) :: topbot
-      real, dimension (:,:,:,:) :: f
+      real, contiguous, dimension (:,:,:,:) :: f
       real, dimension (size(f,1),size(f,2)) :: tmp_xy
       integer :: i
 !
@@ -2905,7 +2905,7 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
       integer, intent(IN) :: topbot
-      real, dimension (:,:,:,:) :: f
+      real, contiguous, dimension (:,:,:,:) :: f
       real :: tmp
       real, dimension(my,mz) :: lnrho_yz
       integer :: i
@@ -3021,7 +3021,7 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
       integer, intent(IN) :: topbot
-      real, dimension (:,:,:,:) :: f
+      real, contiguous, dimension (:,:,:,:) :: f
       real :: tmp
       integer :: i
       real, dimension(mx,mz) :: lnrho_xz
@@ -3119,7 +3119,7 @@ module EquationOfState
       use General, only: loptest
       use Deriv, only: set_ghosts_for_onesided_ders
 !
-      real, dimension (:,:,:,:) :: f
+      real, contiguous, dimension (:,:,:,:) :: f
       integer, intent(IN) :: topbot
       logical, optional :: lone_sided
 !
@@ -3277,7 +3277,7 @@ module EquationOfState
       use Gravity, only: gravz
 !
       integer, intent(IN) :: topbot
-      real, dimension (:,:,:,:) :: f
+      real, contiguous, dimension (:,:,:,:) :: f
       real :: tmp
       integer :: i
       real, dimension(mx,my) :: lnrho_xy
@@ -3359,7 +3359,7 @@ module EquationOfState
       use Gravity, only: lnrho_bot,lnrho_top,ss_bot,ss_top
 !
       integer, intent(IN) :: topbot
-      real, dimension (:,:,:,:) :: f
+      real, contiguous, dimension (:,:,:,:) :: f
       integer :: i
 !
       if (ldebug) print*,'bc_lnrho_pressure_z: cs20,cs0=',cs20,cs0
@@ -3464,7 +3464,7 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
       integer, intent(IN) :: topbot
-      real, dimension (:,:,:,:) :: f
+      real, contiguous, dimension (:,:,:,:) :: f
 !
       real :: tmp
       real, dimension(mx,my) :: lnrho_xy
@@ -3519,7 +3519,7 @@ module EquationOfState
       use Gravity, only: gravz
 !
       integer, intent(IN) :: topbot
-      real, dimension (:,:,:,:) :: f
+      real, contiguous, dimension (:,:,:,:) :: f
 !
       real :: tmp,dcs2bot
       integer :: i
@@ -3585,7 +3585,7 @@ module EquationOfState
       use DensityMethods, only: getdlnrho_x
 !
       integer, intent(IN) :: topbot
-      real, dimension (:,:,:,:) :: f
+      real, contiguous, dimension (:,:,:,:) :: f
       integer :: i
       real, dimension(:,:), allocatable :: rho_yz,dlnrho
       if (ldebug) print*,'bc_ss_stemp_x: cs20,cs0=',cs20,cs0
@@ -3659,7 +3659,7 @@ module EquationOfState
       use DensityMethods, only: getdlnrho_y
 !
       integer, intent(IN) :: topbot
-      real, dimension (:,:,:,:) :: f
+      real, contiguous, dimension (:,:,:,:) :: f
 !
       integer :: i
       real, dimension(mx,mz) :: dlnrho
@@ -3710,7 +3710,7 @@ module EquationOfState
       use DensityMethods, only: getdlnrho_z
 !
       integer, intent(IN) :: topbot
-      real, dimension (:,:,:,:) :: f
+      real, contiguous, dimension (:,:,:,:) :: f
       integer :: i
       real, dimension(mx,my) :: dlnrho
 !
@@ -3764,7 +3764,7 @@ module EquationOfState
 !  25-2010/fred: adapted from bc_ss_stemp_z
 !
       integer, intent(IN) :: topbot
-      real, dimension (:,:,:,:) :: f
+      real, contiguous, dimension (:,:,:,:) :: f
       integer :: i
 !
       if (ldebug) print*,'bc_ss_a2stemp_z: cs20,cs0=',cs20,cs0
@@ -3816,7 +3816,7 @@ module EquationOfState
 !  25-2010/fred: adapted from bc_ss_stemp_z
 !
       integer, intent(IN) :: topbot
-      real, dimension (:,:,:,:) :: f
+      real, contiguous, dimension (:,:,:,:) :: f
       integer :: i
 !
       if (ldebug) print*,'bc_ss_a2stemp_z: cs20,cs0=',cs20,cs0
@@ -3867,7 +3867,7 @@ module EquationOfState
 !
 !  25-2010/fred: adapted from bc_ss_stemp_z
 !
-      real, dimension (:,:,:,:) :: f
+      real, contiguous, dimension (:,:,:,:) :: f
       integer, intent(IN) :: topbot
       integer :: i
 !
@@ -3912,7 +3912,7 @@ module EquationOfState
 !  11-jul-2002/nils: moved into the entropy module
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      real, dimension (:,:,:,:) :: f
+      real, contiguous, dimension (:,:,:,:) :: f
       integer, intent(IN) :: topbot
       real, dimension (size(f,1),size(f,2)) :: cs2_2d
       integer :: i
@@ -3953,7 +3953,7 @@ module EquationOfState
 !***********************************************************************
     subroutine bc_stellar_surface(f,topbot)
 !
-      real, dimension (:,:,:,:) :: f
+      real, contiguous, dimension (:,:,:,:) :: f
       integer, intent(IN) :: topbot
 !
       call not_implemented("bc_stellar_surface","in eos_idealgas")
@@ -3981,7 +3981,7 @@ module EquationOfState
       use Gravity, only: potential
       use Sub, only: div
 !
-      real, dimension (:,:,:,:), intent (inout) :: f
+      real, contiguous, dimension(:,:,:,:), intent (inout) :: f
       integer, intent(IN) :: topbot
 
       real, dimension (size(f,2),size(f,3)) :: cs2,gravterm,centterm,uphi,rho
@@ -4085,7 +4085,7 @@ module EquationOfState
       use Gravity, only: potential, gravz
       use Sub, only: div
 !
-      real, dimension (:,:,:,:), intent (inout) :: f
+      real, contiguous, dimension(:,:,:,:), intent (inout) :: f
       integer, intent(IN) :: topbot
 !
       real, dimension (size(f,1),size(f,2)) :: cs2
@@ -4322,7 +4322,7 @@ module EquationOfState
       use Fourier, only: fourier_transform_xy_xy, fourier_transform_other, kx_fft, ky_fft
       use Gravity, only: potential
 !
-      real, dimension (:,:,:,:), intent (inout) :: f
+      real, contiguous, dimension(:,:,:,:), intent (inout) :: f
       integer, intent(IN) :: topbot
 !
       real, dimension (nx,ny) :: kx,ky,kappa,exp_fact
@@ -4456,7 +4456,7 @@ module EquationOfState
 !  start_pars or run_pars density_scale_factor=... in dimensionless units
 !
       integer, intent(IN) :: topbot
-      real, dimension (:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: j,k
       real :: density_scale1, density_scale
 !
