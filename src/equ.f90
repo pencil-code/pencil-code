@@ -563,7 +563,12 @@ module Equ
 !$      if (l2davgfirst) then
 !$        if (allocated(fnamexy)) p_fnamexy = p_fnamexy + fnamexy
 !$        if (allocated(fnamexz)) p_fnamexz = p_fnamexz + fnamexz
-!$        if (allocated(fnamerz)) p_fnamerz = p_fnamerz + fnamerz
+!$        if (allocated(fnamerz)) then 
+!$          if(.not. associated(p_fnamerz)) then
+!$            call fatal_error('diagnostic_reductions','p_fnamerz was not for some reason associated!')
+!$          endif
+!$          p_fnamerz = p_fnamerz + fnamerz
+!$        endif
 !$      endif
 !$
 !$      if (allocated(fname_keep)) p_fname_keep = p_fname_keep + fname_keep
