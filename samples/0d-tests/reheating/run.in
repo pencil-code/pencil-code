@@ -8,6 +8,7 @@
   dsnap=2e5, dvid=1e5, dtmin=-1e-12
   lwrite_aux=T, lpencil_check=F
   lpencil_check_small=F
+  !lpencil_check=T
   dt=100.
 /
 &power_spectrum_run_pars
@@ -17,5 +18,7 @@
   lbackreact_infl=T, ldt_backreact_infl=T
   echarge_type='erun'
   Gamma_phi0=1e-8, aphimax=45., lrho_rad_apply=T, lrho_rad_apply2=T
-  !rhophim_crit=1e-29
+  !solve_phi_criterion='rhophi', a4rhophim_crit=1e-30
+  lheating_keep_on=F
+  ldt_Gamma_phi=F, cdt_Gamma_phi=1.
 /

@@ -104,14 +104,13 @@ module Special
   real :: a2rhogphim, a2rhogphim_all
   real :: a2, a21, Hscript
   real :: Hscript0=0., scale_rho_chi_Heqn=1., scale_rho_rad_Heqn=1., rho_chi_init=0.
-  real :: cdt_rho_chi=1., cdt_phi=1e-2
+  real :: cdt_rho_chi=1., cdt_phi=1e-2, cdt_Gamma_phi=1.
   real :: amplee_BD_prefactor=0., deriv_prefactor_ee=-1.
   real :: echarge=.0, echarge_const=.303
   real :: count_eb0_all=0., rad_heating=0., ascale_heat=0., ascale_heat_off=0., heating
   real :: aphimax=0., aphimax2=0. !PAR_DOC: maximum a value above which the phi potential is quenched.
   real :: Gamma_phi0=impossible, Gamma_phi !PAR_DOC: damping factor for phi above aphimax
   real :: Gamma_phi_exp=3.        !PAR_DOC: scale factor exponent on Gamma_phi
-  real :: rhophim_crit=1e-21      !PAR_DOC: minimum phi
   real :: wstate, wstate_aver     !PAR_DOC: critical w (EoS) value (slightly below 1/3)
   real :: wstate_crit=0.333333333 !PAR_DOC: critical w (EoS) value (1/3)
   real :: wstate_tolerance=0.     !PAR_DOC: tolerance w (EoS) value
@@ -128,6 +127,7 @@ module Special
   logical :: lbackreact_infl=.true., lem_backreact=.true., lzeroHubble=.false.
   logical :: lscale_tobox=.true., ldt_backreact_infl=.true., lconf_time=.true.
   logical :: lold_ldt_phi=.true.     !PAR_DOC: for backward compatibility.
+  logical :: ldt_Gamma_phi=.false.   !PAR_DOC: time step constraint from Gam_phi
   logical :: lskip_projection_phi=.false., lvectorpotential=.false., lflrw=.false.
   logical :: lrho_chi=.false., lno_noise_phi=.false., lno_noise_dphi=.false.
   logical :: lrho_rad=.false.            !PAR_DOC: radiation from inflaton decay
@@ -141,16 +141,16 @@ module Special
   logical :: lsolve_for_phi_switch=.true. !PAR_DOC: switch must be on for automatically switching off the phi solver.
   logical :: lsolve_for_phi_always=.true. !PAR_DOC: misnomer: is now used for switching off the phi solver: is now used for switching off the phi solver
   logical :: lwstate_crit=.true.         !PAR_DOC: lwstate_crit switch (would put phi=0, is false by default)
-  logical :: lwstate_crit_old=.false.    !PAR_DOC: lwstate_crit_old (to restore the old wstate criterion used in the autotest)
+  logical :: lwstate_crit_old=.false.    !PAR_DOC: lwstate_crit_old (to restore the old wstate criterion used in the 0d-tests/reheating autotest)
   logical :: lheating=.false.            !PAR_DOC: heating criterion
   logical :: lheating_always=.false.     !PAR_DOC: heating criterion, set to true once lheating=T.
-  logical :: lheating_keep_on=.false.    !PAR_DOC: heating criterion
+  logical :: lheating_keep_on=.true.     !PAR_DOC: should be true to prevent further checks on heating
   logical :: ldefine_a2rhopm_without_Vpotential=.false.    !PAR_DOC: should be false to have correct results
   logical :: la2rhop_wrong_factor=.false. !PAR_DOC: should be false to have correct results; kept for backward compatibility
   logical :: lappy_BD_k1D_factor=.false. !PAR_DOC: apply $k_1^D$ factor in the Bunch-Davies initial condition (NOTE typo in name!)
   logical :: lapply_BD_kNy_factor=.false. !PAR_DOC: apply $1/N^(D/2)$ factor in the Bunch-Davies initial condition.
   logical :: linv_BD=.true.              !PAR_DOC: apply forward transform in the Bunch-Davies initial condition.
-  logical :: lswitch_toMHD_when_nophi=.true. !PAR_DOC: switch to MHD when phi evolution is turned off.
+  logical :: lswitch_toMHD_when_nophi=.true. !PAR_DOC: switch to MHD when phi evolution is turned off (phi is not included in current MHD solver).
   logical :: lit1_reset_if_lsolve_for_phi=.false.  !PAR_DOC: allow to check for it1_reset_if_lsolve_for_phi
   logical :: lit1_reset=.false.                    !PAR_DOC: put lit1_reset to a new value if true.
   logical :: lsigE_const_if_lsolve_for_phi=.false. !PAR_DOC: allow to check for lsigE_const_if_lsolve_for_phi
@@ -182,7 +182,7 @@ module Special
       ncutoff_phi, lscale_tobox, Hscript0, Hscript_choice, infl_v, lflrw, &
       lrho_chi, scale_rho_chi_Heqn, scale_rho_rad_Heqn, amplee_BD_prefactor, deriv_prefactor_ee, &
       lrho_rad, init_rho_rad, Gamma_phi0, lconf_time, &
-      echarge_type, init_rho_chi, rho_chi_init, lrho_chi_inhom, rhophim_crit, &
+      echarge_type, init_rho_chi, rho_chi_init, lrho_chi_inhom, &
       wstate_crit, lwstate_crit, lwstate_crit_old, wstate_tolerance, &
       lsolve_for_phi_always, lsolve_for_phi_switch, &
       heating_choice, ldefine_a2rhopm_without_Vpotential, la2rhop_wrong_factor, &
@@ -191,12 +191,13 @@ module Special
   namelist /special_run_pars/ &
       initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
       lbackreact_infl, lem_backreact, c_light_axion, lambda_axion, Vprime_choice, &
-      lzeroHubble, lold_ldt_phi, ldt_backreact_infl, Ndiv, Hscript0, Hscript_choice, infl_v, &
+      lzeroHubble, lold_ldt_phi, ldt_backreact_infl, ldt_Gamma_phi, Ndiv, &
+      Hscript0, Hscript_choice, infl_v, &
       lflrw, lrho_chi, scale_rho_chi_Heqn, scale_rho_rad_Heqn, echarge_type, &
-      cdt_rho_chi, cdt_phi, &
+      cdt_rho_chi, cdt_phi, cdt_Gamma_phi, &
       lrho_rad, lrho_rad_apply, lrho_rad_apply2, lrho_chi_corrected, &
       lrho_chi_inhom, ldefine_a2rhophi_with_Vpotential, &
-      rad_heating, ascale_heat, ascale_heat_off, aphimax, Gamma_phi0, lconf_time, rhophim_crit, &
+      rad_heating, ascale_heat, ascale_heat_off, aphimax, Gamma_phi0, lconf_time, &
       wstate_crit, lwstate_crit, lwstate_crit_old, wstate_tolerance, &
       lsolve_for_phi_always, lsolve_for_phi_switch, &
       heating_choice, lheating_keep_on, lcombine_prep_ode_right_with_rhs, &
@@ -649,7 +650,7 @@ module Special
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: gphi
       real, dimension (nx) :: Vprime, Vpotential, a2rhophi, a4rhophi
-      real, dimension (nx) :: tmp, del2phi, gphi2
+      real, dimension (nx) :: tmp, del2phi, gphi2, Gamma_phi_rho_rhs
       real :: pref_Vprime=1., pref_Hubble=2., pref_del2=1., pref_alpf, pref_Gamma=impossible
       type (pencil_case) :: p
 !
@@ -743,11 +744,11 @@ module Special
           call grad(f,iinfl_phi,gphi)
           call dot2_mn(gphi,gphi2)
           a2rhophi=0.5*p%infl_dphi**2+0.5*gphi2+a2*Vpotential
-          tmp=Gamma_phi*a2rhophi*ascale**Gamma_phi_exp
+          Gamma_phi_rho_rhs=Gamma_phi*a2rhophi*ascale**Gamma_phi_exp
           if (ldensity_nolog) then
-            df(l1:l2,m,n,irho)=df(l1:l2,m,n,irho)+tmp
+            df(l1:l2,m,n,irho)=df(l1:l2,m,n,irho)+Gamma_phi_rho_rhs
           else
-            df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+tmp*p%rho1
+            df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+Gamma_phi_rho_rhs*p%rho1
           endif
         else
           call fatal_error("dspecial_dt: ","density must be true")
@@ -831,6 +832,12 @@ module Special
 !
               dt1_special=axionmass*ascale/cdt_phi
               advec2=max(advec2,dxyz_2/cdt_phi**2)
+            endif
+!
+!  Time step constraint from Gam_phi
+!
+            if (ldt_Gamma_phi .and. lrho_chi_inhom .and. lheating) then
+              dt1_special=max(dt1_special,Gamma_phi_rho_rhs*p%rho1/cdt_Gamma_phi)
             endif
           endif
 !
@@ -1327,7 +1334,7 @@ module Special
 !  Compute rhom, which is needed for wstate.
 !
       if (ldensity) then
-        call mpibcast_real(rhom_all)
+!??     call mpibcast_real(rhom_all)
         wstate=(a2rhopphim_all*a21+onethird*rhom)/(a2rhophim_all*a21+rhom)
       else
         wstate=(a2rhopphim_all*a21+onethird*rho_rad)/(a2rhophim_all*a21+rho_rad)
@@ -1340,7 +1347,13 @@ module Special
         select case (solve_phi_criterion)
           case ('rhophi')
             lsolve_for_phi=a4rhophim > a4rhophim_crit
-            if (lroot .and. .not. lsolve_for_phi) print*,'rhophi criterion activated'
+            if (lroot .and. .not. lsolve_for_phi) then
+              print*,'rhophi criterion activated'
+              open (1,file=trim(datadir)//'/pc_constants.pro',position="append")
+              write (1,*) 'ascale_phioff=',ascale,';(rhophi criterion activated)'
+              write (1,*) 't_phioff=',t
+              close (1)
+            endif
           case ('wstate')
             if (lwstate_crit_old) then
               lsolve_for_phi=(wstate<wstate_crit)
@@ -1389,8 +1402,10 @@ module Special
         endif
       endif
 !
-!  Alternatitives for deciding when to turn on heating,
-!  i.e., when the end of inflation occurs.
+!  Alternatitives for deciding when to turn on heating.
+!  Usually, this is done when the end of inflation occurs, i.e., Hscript_max=max.
+!  If lheating_keep_on=T (default), this criterion is evaluated only once.
+!  If it is false, it keeps checking, which also affects the 0d-tests/reheating autotest.
 !
       select case (heating_choice)
         case ('Hscript_max')
@@ -1398,7 +1413,13 @@ module Special
             lheating=Hscript<Hscript_prev
             Hscript_prev=Hscript
             lheating_always=lheating .and. lheating_keep_on
-            if (lroot .and. lheating) print*,'switch to lheating=T'
+            if (lroot .and. lheating .and. lheating_keep_on) then
+              print*,'switch to lheating=T'
+              open (1,file=trim(datadir)//'/pc_constants.pro',position="append")
+              write (1,*) 'ascale_heating=',ascale
+              write (1,*) 't_heating=',t
+              close (1)
+            endif
           endif
         case ('aphimax2')
           lheating=a2>aphimax2
@@ -1461,7 +1482,7 @@ module Special
         call dot2_mn(gphi,gphi2)
         a2rhogphim=a2rhogphim+sum(0.5*gphi2)
 !
-!AB: probably mistake
+!AB: probably mistake, but keep la2rhop_wrong_factor for backward compatibility
 !
         if (la2rhop_wrong_factor) then
           a2rhop=a2rhop+onethird*gphi2
@@ -1752,7 +1773,6 @@ module Special
     call copy_addr(lheating,p_par(33)) ! bool
 
     call keep_compiler_quiet(rad_heating)
-    call keep_compiler_quiet(rhophim_crit)
     call keep_compiler_quiet(phase_phi)
     call keep_compiler_quiet(lbackreact_infl)
     call keep_compiler_quiet(eps)

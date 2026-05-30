@@ -118,7 +118,7 @@ module Register
 !
       if (lroot) then
         open (1,file=trim(datadir)//'/pc_constants.pro')
-        write (1,*) '; This file contain pc constants of interest to IDL'
+        write (1,*) '; This file contains pc constants of interest to IDL'
         close (1)
       endif
 !

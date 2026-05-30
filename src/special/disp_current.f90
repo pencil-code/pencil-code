@@ -113,6 +113,7 @@ module Special
   logical :: lresistive_gauge_ee=.false.   !PAR_DOC: possibility of resistive gauge when ladvance_ee=F.
   logical :: lresistive_gauge_disp=.false. !PAR_DOC: resitive gauge when displacement current is solved for.
   logical :: ldt_disp_current=.true.  !PAR_DOC: invoke timestep constraint from sigE
+  logical :: llate_reset_el_pencil=.false.  !PAR_DOC: late reset of el pencil, should probably be true in future.
   character (len=labellen) :: aderiv_scaling='table'
 !
   namelist /special_run_pars/ &
@@ -128,7 +129,7 @@ module Special
     lresistive_gauge_ee, llorentzforce_ee, aderiv_scaling, vA_limit, &
     lohmic_heating_ee, lohmic_heating_justee, sigE_const_value, &
     ladvance_ee, eta_given, ldt_disp_current, cdt_sigE, &
-    lresistive_gauge_disp, etaSchw_max
+    lresistive_gauge_disp, etaSchw_max, llate_reset_el_pencil
 !
 ! Declare any index variables necessary for main or
 !
@@ -716,7 +717,7 @@ module Special
 !
         if (sigE_ceiling/=impossible) p%sigE=min(p%sigE,sigE_ceiling)
 !
-!  Put p%sigE=sigE_const_value when lsigE_const=T.
+!  Put p%sigE=sigE_const_value when lsigE_const=T (this is not normally used).
 !
         if (lsigE_const) then
           if (sigE_const_value==impossible) &
@@ -762,6 +763,7 @@ module Special
 !  current based on Ohm's law, i.e., E = -uxb + J/sigE.
 !  For numerical reasons, we may want to use lresistive_gauge_ee=T (not the default).
 !  In that case, terms such as Ax,xx, Ay,yy, and Az,zz are present.
+!  Also update the electric field pencil.
 !
           if (.not. ladvance_ee) then
             if (lnoncollinear_EB .or. lnoncollinear_EB_aver) then
@@ -773,6 +775,7 @@ module Special
                 call multsv_mn(etaSchw,p%jj_ohm,tmpv)
               endif
               f(l1:l2,m,n,iex:iez)=-p%uxb+tmpv
+              if (llate_reset_el_pencil) p%el=f(l1:l2,m,n,iex:iez)
             endif
           endif
         endif
