@@ -342,6 +342,8 @@ module Energy
   integer :: idiag_TTm=0        ! DIAG_DOC: $\left<T\right>$
   integer :: idiag_TTmax=0      ! DIAG_DOC: $T_{\max}$
   integer :: idiag_TTmin=0      ! DIAG_DOC: $T_{\min}$
+  integer :: idiag_TTmaxloc=0   ! DIAG_DOC: location of $T_{\max}$
+  integer :: idiag_TTminloc=0   ! DIAG_DOC: location of $T_{\min}$
   integer :: idiag_gTmax=0      ! DIAG_DOC: $\max (|\nabla T|)$
   integer :: idiag_ssmax=0      ! DIAG_DOC: $s_{\max}$
   integer :: idiag_ssmin=0      ! DIAG_DOC: $s_{\min}$
@@ -3889,8 +3891,8 @@ module Energy
         endif
         if (idiag_ssmax/=0) call max_mn_name(p%ss*uT,idiag_ssmax)
         if (idiag_ssmin/=0) call max_mn_name(-p%ss*uT,idiag_ssmin,lneg=.true.)
-        if (idiag_TTmax/=0) call max_mn_name(p%TT*uT,idiag_TTmax)
-        if (idiag_TTmin/=0) call max_mn_name(-p%TT*uT,idiag_TTmin,lneg=.true.)
+        if (idiag_TTmax/=0) call max_mn_name(p%TT*uT,idiag_TTmax,iname_loc=idiag_TTmaxloc)
+        if (idiag_TTmin/=0) call max_mn_name(-p%TT*uT,idiag_TTmin,lneg=.true.,iname_loc=idiag_TTminloc)
         if (idiag_gTmax/=0) then
           call dot2(p%glnTT,glnTT2)
           call max_mn_name(p%TT*sqrt(glnTT2),idiag_gTmax)
@@ -7259,6 +7261,7 @@ module Energy
         idiag_ugradpm=0; idiag_ethtot=0; idiag_dtchi=0; idiag_ssmphi=0; idiag_ss2mphi=0
         idiag_fradbot=0; idiag_fradtop=0; idiag_TTtop=0
         idiag_yHmax=0; idiag_yHm=0; idiag_TTmax=0; idiag_TTmin=0; idiag_TTm=0
+        idiag_TTmaxloc=0; idiag_TTminloc=0;
         idiag_ssmax=0; idiag_ssmin=0; idiag_gTmax=0; idiag_csmax=0
         idiag_gTrms=0; idiag_gsrms=0; idiag_gTxgsrms=0; idiag_gTxgsom=0
         idiag_fconvm=0; idiag_fconvz=0; idiag_dcoolz=0; idiag_heatmz=0; idiag_fradz=0
@@ -7333,6 +7336,8 @@ module Energy
         call parse_name(iname,cname(iname),cform(iname),'TTm',idiag_TTm)
         call parse_name(iname,cname(iname),cform(iname),'TTmax',idiag_TTmax)
         call parse_name(iname,cname(iname),cform(iname),'TTmin',idiag_TTmin)
+        call parse_name(iname,cname(iname),cform(iname),'TTminloc',idiag_TTminloc)
+        call parse_name(iname,cname(iname),cform(iname),'TTmaxloc',idiag_TTmaxloc)
         call parse_name(iname,cname(iname),cform(iname),'gTmax',idiag_gTmax)
         call parse_name(iname,cname(iname),cform(iname),'ssmin',idiag_ssmin)
         call parse_name(iname,cname(iname),cform(iname),'ssmax',idiag_ssmax)
@@ -7348,6 +7353,12 @@ module Energy
         call parse_name(iname,cname(iname),cform(iname),'chikrammax',idiag_chikrammax)
         call parse_name(iname,cname(iname),cform(iname),'TT2m',idiag_TT2m)
       enddo
+!
+!  Enable extrema value output if *only location is requested*.
+!  Necessary to obtain even the location in this case.
+!
+      if (idiag_TTmaxloc/=0.and.idiag_TTmax==0) idiag_TTmax=idiag_TTmaxloc
+      if (idiag_TTminloc/=0.and.idiag_TTmin==0) idiag_TTmin=idiag_TTminloc
 !
 !  Check for those quantities for which we want yz-averages.
 !
