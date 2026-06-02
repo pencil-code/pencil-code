@@ -296,7 +296,6 @@ module Special
             k(ik)=exp(lnk(ik))
           enddo
           if (ip<10) print*,'iproc,lnk=',iproc,lnk
-
           kindex_array=nint((lnk-lnkmin0)/dlnk)
         endif
       elseif (llnk_spacing) then
@@ -468,8 +467,8 @@ module Special
               endif
             endif
           enddo
-          enddo 
-          write(6,1000) 'iproc,TR=',iproc,TR
+          enddo
+          !write(6,1000) 'iproc,TR=',iproc,TR
 !
         case default
           call fatal_error("init_special","no such init_axionSU2back: "//trim(init_axionSU2back))
@@ -881,6 +880,7 @@ module Special
             endif
 !
 !  Schwinger. But it is not clear whether this applies to the current time or the updated one for Hdot.
+!  Currently only for cosmic time.
 !
             if (lSchwinger_scalar) then
               adot=a*H
@@ -1155,6 +1155,7 @@ module Special
         endif
 !
 !  apply factor to switch on backreaction gradually:
+!  Schwinger again only for cosmic time.
 !
         if (lconf_time) then
           Qddot  =Qddot  -sbackreact_Q  *fact*a**2 *grand_sum
@@ -1627,15 +1628,47 @@ module Special
           rhoT=rhoT+(4.*pi*k**3*dlnk)*(TLdot_abs2+((k/a)**2+2.*mQ*H*k/a)*TLeff2)/(2.*a**2)
         endif
 !
-!  Schwinger
+!  Schwinger, currently only for cosmic time.
 !
         if (lSchwinger_scalar) then
           uReff2=uR**2+imuR**2
           uLeff2=uL**2+imuL**2
+!
+!  Apply horizon factor
+!
+          if (horizon_factor==0.) then
+            if (headt.and.lfirst) print*,'horizon_factor=',horizon_factor
+            where (uReff2<1./(2.*a*H))
+              uReff2=0.
+            endwhere
+          elseif (horizon_factor>0.) then
+            where (k>(a*H*horizon_factor))
+              uReff2=0.
+            endwhere
+          endif
+!
+!  same for left
+!
+          if (horizon_factor==0.) then
+            if (headt.and.lfirst) print*,'horizon_factor=',horizon_factor
+            where (uLeff2<1./(2.*a*H))
+              uLeff2=0.
+            endwhere
+          elseif (horizon_factor>0.) then
+            where (k>(a*H*horizon_factor))
+              uLeff2=0.
+            endwhere
+          endif
+!
+!  Secondary terms:
+!
           uReff2km=(4.*pi*k**3*dlnk)*uReff2*(k/a)
           uReff2m=(4.*pi*k**3*dlnk)*uReff2
           uLeff2km=(4.*pi*k**3*dlnk)*uLeff2*(k/a)
           uLeff2m=(4.*pi*k**3*dlnk)*uLeff2
+!
+!  Actual integral:
+!
           JJ_R=(4.*pi*k**3*dlnk)*(.5*sgn_g*mQ*H-onethird*k/a)*uReff2*sgn_g*g/a**2
           JJ_L=(4.*pi*k**3*dlnk)*(.5*sgn_g*mQ*H+onethird*k/a)*uLeff2*sgn_g*g/a**2
         endif
