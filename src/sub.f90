@@ -120,6 +120,7 @@ module Sub
   public :: find_index_by_bisection
   public :: calc_scl_factor
   public :: get_dxyzs
+  public :: get_random_vec
 !
   interface poly                ! Overload the `poly' function
     module procedure poly_0
@@ -9521,5 +9522,31 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
       endif
 
     endsubroutine check_for_nans_globally
-!***********************************************************************    
+!***********************************************************************
+    subroutine get_random_vec(a, ampl)
+!
+!     Get a vector with a random direction and a prescribed magnitude (default 1)
+!
+!     2026-Jun-03/Kishore: coded
+!
+      use General, only: random_number_wrapper
+!
+      real, dimension(3), intent(out) :: a
+      real, intent(in), optional :: ampl
+!
+      real, dimension(2) :: rnd
+      real :: theta, phi
+!
+      call random_number_wrapper(rnd)
+      theta = rnd(1)*pi
+      phi = rnd(2)*2*pi
+!
+      a(1) = sin(theta)*cos(phi)
+      a(2) = sin(theta)*sin(phi)
+      a(3) = cos(theta)
+!
+      if (present(ampl)) a = ampl * a
+!
+    endsubroutine
+!***********************************************************************
 endmodule Sub
