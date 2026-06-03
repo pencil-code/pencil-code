@@ -44,7 +44,9 @@ module Particles_radius
   real :: xi_accretion = 0., lambda = 1.
   real :: coeff_Kelvin = 0.,  coeff_kappa = 0.
   real :: n0 = 1., alpha = 1., b=1.
-  real :: r_CCN = 1.e-6, kappa_aerosol = 0.1, Rv=461.5, sigma_w = 7.2e-2     
+  real :: r_CCN = 1.e-6, kappa_aerosol = 0.1, Rv=461.5, sigma_w = 7.2e-2
+  real :: rr_d = 0.0
+  real :: rr_q = 2.5
   integer :: nbin_initdist=20, ip1=npar/2
   logical :: lsweepup_par=.false., lcondensation_par=.false.
   logical :: llatent_heat=.true., lborder_driving_ocean=.false.
@@ -68,6 +70,7 @@ module Particles_radius
       aplow, apmid, aphigh, mbar, ap1, ip1, qplaw, eps_dtog, nbin_initdist, &
       sigma_initdist, a0_initdist, rpbeta0, lparticles_radius_rpbeta, &
       lfixed_particles_radius, lambda, &
+      rr_d, rr_q, &
       n0, b, alpha, lcondensing_species
 !
   namelist /particles_radius_run_pars/ &
@@ -86,6 +89,7 @@ module Particles_radius
       ltauascalar, modified_vapor_diffusivity, ldt_evaporation, &
       ldt_condensation, ldt_condensation_off, &
       ldust_condensation, xi_accretion, ldust_accretion, &
+      rr_d, rr_q, &
       tstart_condensation_par, lfree_molecule,lcondensing_species
 !
   integer :: idiag_apm=0, idiag_ap2m=0, idiag_ap3m=0,idiag_apmin=0, idiag_apmax=0
@@ -491,6 +495,24 @@ module Particles_radius
           call random_number_wrapper(fp(npar_low:npar_high,iap))
           fp(npar_low:npar_high,iap) = ((aphigh**(qplaw+1.0)-aplow**(qplaw+1.0)) &
               *fp(npar_low:npar_high,iap)+aplow**(qplaw+1.0))**(1.0/(qplaw+1.0))
+!
+!  Rosin-Rammler (Weibull-3) initial droplet-size distribution, written
+!  in terms of *diameter*:  P(d > D) = exp(-(D/rr_d)^rr_q).
+!  Inverse-CDF sampling: d = rr_d * (-ln(u))^(1/rr_q),  u ~ U(0,1].
+!  We then convert d to radius (fp(:,iap) holds the radius).  Used by
+!  the multi-hole gasoline injector validation in Li, He & Zhao 2014
+!  (Applied Thermal Eng., 65, 282-292) with q = 2.5.
+        case ('rosin-rammler')
+          if (rr_d <= 0.0) call fatal_error('set_particle_radius', &
+              'initap=rosin-rammler requires rr_d > 0 (characteristic diameter)')
+          if (rr_q <= 0.0) call fatal_error('set_particle_radius', &
+              'initap=rosin-rammler requires rr_q > 0 (shape parameter)')
+          if (initial .and. lroot) print*, &
+              'set_particles_radius: rosin-rammler  d_X=', rr_d, '  q=', rr_q
+          call random_number_wrapper(fp(npar_low:npar_high,iap))
+          fp(npar_low:npar_high,iap) = max(fp(npar_low:npar_high,iap), tini)
+          fp(npar_low:npar_high,iap) = 0.5 * rr_d * &
+              (-log(fp(npar_low:npar_high,iap)))**(1.0/rr_q)
 !
         case default
           call fatal_error('init_particles_radius','no such initap: '//trim(initap(j)))
