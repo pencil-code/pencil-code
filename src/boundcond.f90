@@ -1098,7 +1098,7 @@ module Boundcond
 !  Default.
 !
       case default
-        call fatal_error("bc_wind_density_x: ","topbot should be BOT or TOP")
+        call fatal_error("bc_wind_density_x","topbot should be BOT or TOP")
       endselect
     endsubroutine bc_wind_density_x
 !***********************************************************************
@@ -2403,7 +2403,7 @@ module Boundcond
         if (nprocx==1) f(l2+1:,:,:,j) = f(l1:l1i,:,:,j)
 !
       case default
-        call fatal_error("bc_per_x: ","topbot should be BOT or TOP")
+        call fatal_error("bc_per_x","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_per_x
@@ -2427,7 +2427,7 @@ module Boundcond
         if (nprocy==1) f(:,m2+1:,:,j) = f(:,m1:m1i,:,j)
 !
       case default
-        call fatal_error("bc_per_y: ","topbot should be BOT or TOP")
+        call fatal_error("bc_per_y","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_per_y
@@ -2501,7 +2501,7 @@ module Boundcond
           f(:,m2+1:,nhalf+1:n2,j) = sgn*f(:,m2:m2i:-1,n1:nhalf  ,j)
         endif
       case default
-        call fatal_error("bc_pper_y: ","topbot should be BOT or TOP")
+        call fatal_error("bc_pper_y","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_pper_y
@@ -2525,7 +2525,7 @@ module Boundcond
         if (nprocz==1) f(:,:,n2+1:,j) = f(:,:,n1:n1i,j)
 !
       case default
-        call fatal_error("bc_per_z: ","topbot should be BOT or TOP")
+        call fatal_error("bc_per_z","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_per_z
@@ -2629,7 +2629,7 @@ module Boundcond
                       +f(l2-3,:,:,j)*(2*tmp1-6*tmp2)) &
                       /(-2*tmp1-6*tmp2)
       case default
-        call fatal_error("bc_a2r_x: ","topbot should be BOT or TOP")
+        call fatal_error("bc_a2r_x","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_a2r_x
@@ -2671,7 +2671,7 @@ module Boundcond
         endif
 !
       case default
-        call fatal_error("bc_sym_x: ","topbot should be BOT or TOP")
+        call fatal_error("bc_sym_x","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_sym_x
@@ -2728,7 +2728,7 @@ module Boundcond
         ! endif
 !
       case default
-        call fatal_error("bc_sym_x_ydep: ","topbot should be BOT or TOP")
+        call fatal_error("bc_sym_x_ydep","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_sym_x_ydep
@@ -2773,7 +2773,7 @@ module Boundcond
 
 
         case default
-          call fatal_error("bc_sym_x_ydep: ","topbot should be BOT or TOP")
+          call fatal_error("bc_sym_x_ydep","topbot should be BOT or TOP")
         endselect
   !
       endsubroutine bc_sym_x_ydep2
@@ -2821,7 +2821,7 @@ module Boundcond
         i=3; f(l2+i,:,:,j)=(-(2.-3.*dxR)*f(l2-i,:,:,j)+27.*extra2)/(2.+3.*dxR)
 !
       case default
-        call fatal_error("bc_cpc_x: ","topbot should be BOT or TOP")
+        call fatal_error("bc_cpc_x","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_cpc_x
@@ -2861,7 +2861,7 @@ module Boundcond
         i=3; f(l2+i,:,:,j)=(490*f(l2,:,:,j)-270*f1_co+27*f2_co+(3*dxR-2)*f(l2-i,:,:,j))/(3*dxR+2)
 !
       case default
-        call fatal_error("bc_cpz_x: ","topbot should be BOT or TOP")
+        call fatal_error("bc_cpz_x","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_cpz_x
@@ -2902,7 +2902,7 @@ module Boundcond
         i=3; f(l2+i,:,:,j)=((490+180*dxR**2)*f(l2,:,:,j)-270*f1_co+27*f2_co+(3*dxR-2)*f(l2-i,:,:,j))/(3*dxR+2)
 !
       case default
-        call fatal_error("bc_cpp_x: ","topbot should be BOT or TOP")
+        call fatal_error("bc_cpp_x","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_cpp_x
@@ -2954,7 +2954,7 @@ module Boundcond
 !                      +f(l2-3,:,:,j)*(-tmp+3))/(tmp+3)
 !!
 !      case default
-!        call fatal_error("bc_spr_x: ","topbot should be BOT or TOP")
+!        call fatal_error("bc_spr_x","topbot should be BOT or TOP")
 !      endselect
 !!
 !    endsubroutine bc_spr_x
@@ -2991,7 +2991,7 @@ module Boundcond
         enddo
 !
       case default
-        call fatal_error("bc_spr_x: ","topbot should be BOT or TOP")
+        call fatal_error("bc_spr_x","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_spr_x
@@ -3035,7 +3035,7 @@ module Boundcond
         endif
 !
       case default
-        call fatal_error("bc_symset_x: ","topbot should be BOT or TOP")
+        call fatal_error("bc_symset_x","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_symset_x
@@ -3060,7 +3060,7 @@ module Boundcond
         do i=1,nghost; f(l2+i,:,:,j)=f(l2-i,:,:,j)+dx2_bound( i)*val; enddo
 !
       case default
-        call fatal_error("bc_symderset_x: ","topbot should be BOT or TOP")
+        call fatal_error("bc_symderset_x","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_symderset_x
@@ -3102,7 +3102,7 @@ module Boundcond
         do i=1,nghost; f(l2+i,:,:,j)=f(l2-i,:,:,j); enddo
 !
       case default
-        call fatal_error("bc_symset0der_x: ","topbot should be BOT or TOP")
+        call fatal_error("bc_symset0der_x","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_symset0der_x
@@ -3152,7 +3152,7 @@ module Boundcond
         endif
 !
       case default
-        call fatal_error("bc_slope_x: ","topbot should be BOT or TOP")
+        call fatal_error("bc_slope_x","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_slope_x
@@ -3183,7 +3183,7 @@ module Boundcond
         enddo
 !
       case default
-        call fatal_error("bc_ghost_slope_x: ","topbot should be BOT or TOP")
+        call fatal_error("bc_ghost_slope_x","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_ghost_slope_x
@@ -3214,7 +3214,7 @@ module Boundcond
         enddo
 !
       case default
-        call fatal_error("bc_shear_x: ","topbot should be BOT or TOP")
+        call fatal_error("bc_shear_x","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_shear_x
@@ -3245,7 +3245,7 @@ module Boundcond
         enddo
 !
       case default
-        call fatal_error("bc_shear_y: ","topbot should be BOT or TOP")
+        call fatal_error("bc_shear_y","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_shear_y
@@ -3276,7 +3276,7 @@ module Boundcond
         enddo
 !
       case default
-        call fatal_error("bc_shear_z: ","topbot should be BOT or TOP")
+        call fatal_error("bc_shear_z","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_shear_z
@@ -3341,7 +3341,7 @@ module Boundcond
         endif
 !
       case default
-        call fatal_error("bc_dr0_x: ","topbot should be BOT or TOP")
+        call fatal_error("bc_dr0_x","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_dr0_x
@@ -3379,7 +3379,7 @@ module Boundcond
 !  default
 !
       case default
-        call fatal_error("bc_overshoot_x: ","topbot should be BOT or TOP")
+        call fatal_error("bc_overshoot_x","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_overshoot_x
@@ -3417,7 +3417,7 @@ module Boundcond
 !  default
 !
       case default
-        call fatal_error("bc_overshoot_z: ","topbot should be BOT or TOP")
+        call fatal_error("bc_overshoot_z","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_overshoot_z
@@ -3475,7 +3475,7 @@ module Boundcond
         endif
 !
       case default
-        call fatal_error("bc_antis_x: ","topbot should be BOT or TOP")
+        call fatal_error("bc_antis_x","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_antis_x
@@ -3523,7 +3523,7 @@ module Boundcond
         endif
 !
       case default
-        call fatal_error("bc_sym_y: ","topbot should be BOT or TOP")
+        call fatal_error("bc_sym_y","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_sym_y
@@ -3583,7 +3583,7 @@ module Boundcond
         enddo
 !
       case default
-        call fatal_error("bc_sym_y: ","topbot should be BOT or TOP")
+        call fatal_error("bc_sym_y","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_stratified_y
@@ -3640,7 +3640,7 @@ module Boundcond
         enddo
 !
       case default
-        call fatal_error("bc_sym_z: ","topbot should be BOT or TOP")
+        call fatal_error("bc_sym_z","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_stratified_z
@@ -3687,7 +3687,7 @@ module Boundcond
         endif
 !
       case default
-        call fatal_error("bc_symset_y: ","topbot should be BOT or TOP")
+        call fatal_error("bc_symset_y","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_symset_y
@@ -3712,7 +3712,7 @@ module Boundcond
         do i=1,nghost; f(:,m2+i,:,j)=f(:,m2-i,:,j)+dy2_bound(i)*val; enddo
 !
       case default
-        call fatal_error("bc_symderset_y: ","topbot should be BOT or TOP")
+        call fatal_error("bc_symderset_y","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_symderset_y
@@ -3739,7 +3739,7 @@ module Boundcond
         do i=1,nghost; f(:,m2+i,:,j)=f(:,m2-i,:,j)+dy2_bound(i)*derval; enddo
 !
       case default
-        call fatal_error("bc_csymderset_y: ","topbot should be BOT or TOP")
+        call fatal_error("bc_csymderset_y","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_csymderset_y
@@ -3781,7 +3781,7 @@ module Boundcond
         do i=1,nghost; f(:,m2+i,:,j)=f(:,m2-i,:,j); enddo
 !
       case default
-        call fatal_error("bc_symset0der_y: ","topbot should be BOT or TOP")
+        call fatal_error("bc_symset0der_y","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_symset0der_y
@@ -3834,7 +3834,7 @@ module Boundcond
                       +f(:,m2-3,:,j)*(-1-1.5*tmp))/(1-1.5*tmp)
 !
       case default
-        call fatal_error("bc_spt_y: ","topbot should be BOT or TOP")
+        call fatal_error("bc_spt_y","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_spt_y
@@ -3894,7 +3894,7 @@ module Boundcond
         endif
 !
       case default
-        call fatal_error("bc_sym_z: ","topbot should be BOT or TOP")
+        call fatal_error("bc_sym_z","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_sym_z
@@ -3918,9 +3918,9 @@ module Boundcond
 !
       select case(topbot)
       case(BOT)               ! bottom boundary
-        do concurrent (i=1:nghost); f(l1-i,:,:,j) = real(sgn) * f(l1+i-1,:,:,j); enddo
+        f(l1-1:l1-nghost:-1,:,:,j) = real(sgn) * f(l1:l1+nghost-1,:,:,j)
       case(TOP)               ! top boundary
-        do concurrent (i=1:nghost); f(l2+i,:,:,j) = real(sgn) * f(l2-i+1,:,:,j); enddo
+        f(l2+1:l2+nghost,:,:,j) = real(sgn) * f(l2:l2-nghost+1:-1,:,:,j)
       case default
         call fatal_error('bc_sf_x','topbot should be BOT or TOP')
       endselect
@@ -3946,9 +3946,9 @@ module Boundcond
 !
       select case(topbot)
       case(BOT)               ! bottom boundary
-        do concurrent  (i=1:nghost); f(:,m1-i,:,j) = real(sgn) * f(:,m1+i-1,:,j); enddo
+        f(:,m1-1:m1-nghost:-1,:,j) = real(sgn) * f(:,m1:m1+nghost-1,:,j)
       case(TOP)               ! top boundary
-        do concurrent  (i=1:nghost); f(:,m2+i,:,j) = real(sgn) * f(:,m2-i+1,:,j); enddo
+        f(:,m2+1:m2+nghost,:,j) = real(sgn) * f(:,m2:m2-nghost+1:-1,:,j)
       case default
         call fatal_error('bc_sf_y','topbot should be BOT or TOP')
       endselect
@@ -3974,9 +3974,9 @@ module Boundcond
 !
       select case(topbot)
       case(BOT)               ! bottom boundary
-        do concurrent  (i=1:nghost); f(:,:,n1-i,j) = real(sgn) * f(:,:,n1+i-1,j); enddo
+        f(:,:,n1-1:n1-nghost:-1,j) = real(sgn) * f(:,:,n1:n1+nghost-1,j)
       case(TOP)               ! top boundary
-        do concurrent  (i=1:nghost); f(:,:,n2+i,j) = real(sgn) * f(:,:,n2-i+1,j); enddo
+        f(:,:,n2+1:n2+nghost,j) = real(sgn) * f(:,:,n2:n2-nghost+1:-1,j)
       case default
         call fatal_error('bc_sf_z','topbot should be BOT or TOP')
       endselect
@@ -4020,7 +4020,7 @@ module Boundcond
         do i=1,nghost; f(:,:,n2+i,j)=f(:,:,n2-i,j); enddo
 !
       case default
-        call fatal_error("bc_symset0der_z: ","topbot should be BOT or TOP")
+        call fatal_error("bc_symset0der_z","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_symset0der_z
@@ -5099,7 +5099,7 @@ module Boundcond
           enddo
 !
       case default
-        call fatal_error("bc_van_x: ","topbot should be BOT or TOP")
+        call fatal_error("bc_van_x","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_van_x
@@ -5128,7 +5128,7 @@ module Boundcond
           enddo
 !
       case default
-        call fatal_error("bc_van_y: ","topbot should be BOT or TOP")
+        call fatal_error("bc_van_y","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_van_y
@@ -5157,7 +5157,7 @@ module Boundcond
           enddo
 !
       case default
-        call fatal_error("bc_van_z: ","topbot should be BOT or TOP")
+        call fatal_error("bc_van_z","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_van_z
@@ -5379,7 +5379,7 @@ module Boundcond
         f(:,:,n2+3,j)=0.05*(127*f(:,:,n2,j)-81*f(:,:,n2-1,j)-99*f(:,:,n2-2,j)+73*f(:,:,n2-3,j))
 !
       case default
-        call fatal_error("bc_extrap_2_1: ","topbot should be BOT or TOP")
+        call fatal_error("bc_extrap_2_1","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_extrap_2_1
@@ -5409,7 +5409,7 @@ module Boundcond
         f(l2+3,:,:,j)=0.05*(127*f(l2,:,:,j)-81*f(l2-1,:,:,j)-99*f(l2-2,:,:,j)+73*f(l2-3,:,:,j))
 !
       case default
-        call fatal_error("bcx_extrap_2_1: ","topbot should be BOT or TOP")
+        call fatal_error("bcx_extrap_2_1","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bcx_extrap_2_1
@@ -5439,7 +5439,7 @@ module Boundcond
         f(:,m2+3,:,j)=0.05*(127*f(:,m2,:,j)-81*f(:,m2-1,:,j)-99*f(:,m2-2,:,j)+73*f(:,m2-3,:,j))
 !
       case default
-        call fatal_error("bcy_extrap_2_1: ","topbot should be BOT or TOP")
+        call fatal_error("bcy_extrap_2_1","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bcy_extrap_2_1
@@ -5476,7 +5476,7 @@ module Boundcond
         f(:,:,n2+3,j)=1./35.*(157*f(:,:,n2,j)-33*f(:,:,n2-1,j)-108*f(:,:,n2-2,j)-68*f(:,:,n2-3,j)+87*f(:,:,n2m4,j))
 !
       case default
-        call fatal_error("bc_extrap_2_2: ","topbot should be BOT or TOP")
+        call fatal_error("bc_extrap_2_2","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_extrap_2_2
@@ -5513,7 +5513,7 @@ module Boundcond
         f(l2+3,:,:,j)=1./35.*(157*f(l2,:,:,j)-33*f(l2-1,:,:,j)-108*f(l2-2,:,:,j)-68*f(l2-3,:,:,j)+87*f(l2m4,:,:,j))
 !
       case default
-        call fatal_error("bcx_extrap_2_2: ","topbot should be BOT or TOP")
+        call fatal_error("bcx_extrap_2_2","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bcx_extrap_2_2
@@ -5564,7 +5564,7 @@ module Boundcond
         endif
 !
       case default
-        call fatal_error("bcx_extrap_frac_2: ","topbot should be BOT or TOP")
+        call fatal_error("bcx_extrap_frac_2","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bcx_extrap_frac_2
@@ -5601,7 +5601,7 @@ module Boundcond
         f(:,m2+3,:,j)=1./35.*(157*f(:,m2,:,j)-33*f(:,m2-1,:,j)-108*f(:,m2-2,:,j)-68*f(:,m2-3,:,j)+87*f(:,m2m4,:,j))
 !
       case default
-        call fatal_error("bcy_extrap_2_2: ","topbot should be BOT or TOP")
+        call fatal_error("bcy_extrap_2_2","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bcy_extrap_2_2
@@ -5646,7 +5646,7 @@ module Boundcond
         enddo
 !
       case default
-        call fatal_error("bcy_extrap_2_3: ","topbot should be BOT or TOP")
+        call fatal_error("bcy_extrap_2_3","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bcy_extrap_2_3
@@ -5688,7 +5688,7 @@ module Boundcond
              (-27*f(:,:,n2-1,j)-13*f(:,:,n2-2,j)+14*f(:,:,n2-3,j))
 !
       case default
-        call fatal_error("bc_extrap0_2_0: ","topbot should be BOT or TOP")
+        call fatal_error("bc_extrap0_2_0","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_extrap0_2_0
@@ -5722,7 +5722,7 @@ module Boundcond
         f(:,:,n2+3,j)=0.05*(-81*f(:,:,n2-1,j)-99*f(:,:,n2-2,j)+73*f(:,:,n2-3,j))
 !
       case default
-        call fatal_error("bc_extrap0_2_1: ","topbot should be BOT or TOP")
+        call fatal_error("bc_extrap0_2_1","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_extrap0_2_1
@@ -5764,7 +5764,7 @@ module Boundcond
         f(:,:,n2+3,j)=1./35.*(-33*f(:,:,n2-1,j)-108*f(:,:,n2-2,j)-68*f(:,:,n2-3,j)+87*f(:,:,n2m4,j))
 !
       case default
-        call fatal_error("bc_extrap0_2_2: ","topbot should be BOT or TOP")
+        call fatal_error("bc_extrap0_2_2","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_extrap0_2_2
@@ -5810,7 +5810,7 @@ module Boundcond
         enddo
 !
       case default
-        call fatal_error("bcx_extrap_2_3: ","topbot should be BOT or TOP")
+        call fatal_error("bcx_extrap_2_3","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bcx_extrap_2_3
@@ -6308,7 +6308,7 @@ module Boundcond
          case ('vel_time')
             f(l2,:,:,iuy) = spread(ampl_forc*sin(k_forc*y)*cos(w_forc*real(t)), 2, size(f,3))
          case default
-            call fatal_error("bc_force_x","no such force_upper_bound: "//trim(force_upper_bound))
+            call fatal_error("bc_force_x","no such force_upper_bound"//trim(force_upper_bound))
          endselect
          !
          !  Now fill ghost zones imposing antisymmetry w.r.t. the values just set:
@@ -6388,7 +6388,7 @@ module Boundcond
           f(l2+1:,:,:,j)=1.
 !
       case default
-        call fatal_error("bc_one_x: ","topbot should be BOT or TOP")
+        call fatal_error("bc_one_x","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_one_x
@@ -6412,7 +6412,7 @@ module Boundcond
           f(:,m2+1:,:,j)=1.
 !
       case default
-        call fatal_error("bc_one_y: ","topbot should be BOT or TOP")
+        call fatal_error("bc_one_y","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_one_y
@@ -6436,7 +6436,7 @@ module Boundcond
           f(:,:,n2+1:,j)=1.
 !
       case default
-        call fatal_error("bc_one_z: ","topbot should be BOT or TOP")
+        call fatal_error("bc_one_z","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_one_z
@@ -6457,7 +6457,7 @@ module Boundcond
       case(TOP)               ! top boundary
         lfrozen_top_var_x(j) = .true.
       case default
-        call fatal_error("bc_freeze_var_x: ","topbot should be BOT or TOP")
+        call fatal_error("bc_freeze_var_x","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_freeze_var_x
@@ -6478,7 +6478,7 @@ module Boundcond
       case(TOP)               ! top boundary
         lfrozen_top_var_y(j) = .true.
       case default
-        call fatal_error("bc_freeze_var_y: ","topbot should be BOT or TOP")
+        call fatal_error("bc_freeze_var_y","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_freeze_var_y
@@ -6499,7 +6499,7 @@ module Boundcond
       case(TOP)               ! top boundary
         lfrozen_top_var_z(j) = .true.
       case default
-        call fatal_error("bc_freeze_var_z: ","topbot should be BOT or TOP")
+        call fatal_error("bc_freeze_var_z","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_freeze_var_z
@@ -7541,7 +7541,7 @@ module Boundcond
 !  Default.
 !
       case default
-        call fatal_error("bc_zero_x: ","topbot should be BOT or TOP")
+        call fatal_error("bc_zero_x","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_zero_x
@@ -7571,7 +7571,7 @@ module Boundcond
 !  Default.
 !
       case default
-        call fatal_error("bc_zero_y: ","topbot should be BOT or TOP")
+        call fatal_error("bc_zero_y","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_zero_y
@@ -7601,7 +7601,7 @@ module Boundcond
 !  Default.
 !
       case default
-        call fatal_error("bc_zero_z: ","topbot should be BOT or TOP")
+        call fatal_error("bc_zero_z","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_zero_z
@@ -7667,7 +7667,7 @@ module Boundcond
 !  Default.
 !
       case default
-        call fatal_error("bc_inflow_z: ","topbot should be BOT or TOP")
+        call fatal_error("bc_inflow_z","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_inflow_z
@@ -7733,7 +7733,7 @@ module Boundcond
 !  Default.
 !
       case default
-        call fatal_error("bc_outflow_x: ","topbot should be BOT or TOP")
+        call fatal_error("bc_outflow_x","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_outflow_x
@@ -7799,7 +7799,7 @@ module Boundcond
 !  Default.
 !
       case default
-        call fatal_error("bc_inflow_x: ","topbot should be BOT or TOP")
+        call fatal_error("bc_inflow_x","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_inflow_x
@@ -7870,7 +7870,7 @@ module Boundcond
 !  Default.
 !
       case default
-        call fatal_error("bc_outflow_x: ","topbot should be BOT or TOP")
+        call fatal_error("bc_outflow_x","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_outflow_x_e1
@@ -7936,7 +7936,7 @@ module Boundcond
 !  Default.
 !
       case default
-        call fatal_error("bc_outflow_y: ","topbot should be BOT or TOP")
+        call fatal_error("bc_outflow_y","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_outflow_y
@@ -8003,7 +8003,7 @@ module Boundcond
 !  Default.
 !
       case default
-        call fatal_error("bc_outflow_z: ","topbot should be BOT or TOP")
+        call fatal_error("bc_outflow_z","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_outflow_z
@@ -8057,7 +8057,7 @@ module Boundcond
         enddo
 !
       case default
-        call fatal_error("bc_inflow_zero_deriv_z: ","topbot should be BOT or TOP")
+        call fatal_error("bc_inflow_zero_deriv_z","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_inflow_zero_deriv_z
@@ -8111,7 +8111,7 @@ module Boundcond
         enddo
 !
       case default
-        call fatal_error("bc_outflow_zero_deriv_z: ","topbot should be BOT or TOP")
+        call fatal_error("bc_outflow_zero_deriv_z","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_outflow_zero_deriv_z
@@ -8158,7 +8158,7 @@ module Boundcond
         enddo
 !
       case default
-        call fatal_error("bc_inflow_inwards_deriv_z: ","topbot should be BOT or TOP")
+        call fatal_error("bc_inflow_inwards_deriv_z","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_inflow_inwards_deriv_z
@@ -8205,7 +8205,7 @@ module Boundcond
         enddo
 !
       case default
-        call fatal_error("bc_outflow_outwards_deriv_z: ","topbot should be BOT or TOP")
+        call fatal_error("bc_outflow_outwards_deriv_z","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_outflow_outwards_deriv_z
@@ -8267,7 +8267,7 @@ module Boundcond
 !  Default.
 !
       case default
-        call fatal_error("bc_steady_z: ","topbot should be BOT or TOP")
+        call fatal_error("bc_steady_z","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_steady_z
@@ -8299,7 +8299,7 @@ module Boundcond
 !  Default.
 !
       case default
-        call fatal_error("bc_copy_x: ","topbot should be BOT or TOP")
+        call fatal_error("bc_copy_x","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_copy_x
@@ -8331,7 +8331,7 @@ module Boundcond
 !  Default.
 !
       case default
-        call fatal_error("bc_copy_y: ","topbot should be BOT or TOP")
+        call fatal_error("bc_copy_y","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_copy_y
@@ -8382,7 +8382,7 @@ module Boundcond
 !  Default.
 !
       case default
-        call fatal_error("bc_copy_y_noinflow: ","topbot should be BOT or TOP")
+        call fatal_error("bc_copy_y_noinflow","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_copy_y_noinflow
@@ -8404,17 +8404,17 @@ module Boundcond
 !  Bottom boundary.
 !
       case(BOT)
-       do concurrent (i=1:nghost); f(:,:,n1-i,j) = f(:,:,n1,j); enddo
+        do i=1,nghost; f(:,:,n1-i,j) = f(:,:,n1,j); enddo
 !
 !  Top boundary.
 !
       case(TOP)
-        do concurrent (i=1:nghost); f(:,:,n2+i,j) = f(:,:,n2,j); enddo
+        do i=1,nghost; f(:,:,n2+i,j) = f(:,:,n2,j); enddo
 !
 !  Default.
 !
       case default
-        call fatal_error("bc_copy_z: ","topbot should be BOT or TOP")
+        call fatal_error("bc_copy_z","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_copy_z
@@ -8440,7 +8440,7 @@ module Boundcond
 !  Default.
 !
       case default
-        call fatal_error("bc_expother_x: ","topbot should be BOT or TOP")
+        call fatal_error("bc_expother_x","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_expother_x
@@ -8466,7 +8466,7 @@ module Boundcond
 !  Default.
 !
       case default
-        call fatal_error("bc_expother_y: ","topbot should be BOT or TOP")
+        call fatal_error("bc_expother_y","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_expother_y
@@ -8492,7 +8492,7 @@ module Boundcond
 !  Default.
 !
       case default
-        call fatal_error("bc_expother_z: ","topbot should be BOT or TOP")
+        call fatal_error("bc_expother_z","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_expother_z
@@ -8545,7 +8545,7 @@ module Boundcond
 !  Default.
 !
       case default
-        call fatal_error("bc_copy_z_noinflow: ","topbot should be BOT or TOP")
+        call fatal_error("bc_copy_z_noinflow","topbot should be BOT or TOP")
       endselect
 !
     endsubroutine bc_copy_z_noinflow
@@ -8575,7 +8575,7 @@ module Boundcond
       case(TOP)               ! top boundary
         lfrozen_bb_top(j-iax+1) = .true.    ! set flag
       case default
-        call fatal_error("bc_frozen_in_bb: ","topbot should be BOT or TOP")
+        call fatal_error("bc_frozen_in_bb","topbot should be BOT or TOP")
       endselect
 !
       lfirstcall=.false.
@@ -9238,7 +9238,7 @@ module Boundcond
 !  Default.
 !
       case default
-        call fatal_error("bc_wind: ","topbot should be BOT or TOP")
+        call fatal_error("bc_wind","topbot should be BOT or TOP")
       endselect
 !
       local_flux=sum(exp(f(l1:l2,m1:m2,ntb,ilnrho))*f(l1:l2,m1:m2,ntb,iuz))
@@ -9515,7 +9515,7 @@ module Boundcond
         dir = 1
 !
       case default
-        call fatal_error("bc_aa_pot_1D: ","topbot should be BOT or TOP")
+        call fatal_error("bc_aa_pot_1D","topbot should be BOT or TOP")
       endselect
 !
       if (nygrid>1) call fatal_error('bc_aa_pot_1D','only for nygrid=1')
