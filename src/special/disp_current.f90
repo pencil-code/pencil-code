@@ -1042,9 +1042,9 @@ module Special
 !
         if (lresistive_gauge_disp) then
           if (etaSchw_max==impossible) then
-            call multsv(etaSchw,p%graddiva,gtmp)
+            call multsv_mn(etaSchw,p%graddiva,gtmp)
           else
-            call multsv(min(etaSchw,etaSchw_max),p%graddiva,gtmp)
+            call multsv_mn(min(etaSchw,etaSchw_max),p%graddiva,gtmp)
           endif
           df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-p%el+gtmp
         else

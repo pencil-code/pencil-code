@@ -183,6 +183,10 @@ include Makefile.extern
 $(PC_HEADERS): .sentinel
 
 .sentinel: ../scripts/phys_modules2c PC_modulesources.h $(MODULESOURCES)
+ifeq ($(MODIFY_SOURCE_CODE),on)
+	  rm -f PC_modulesources_old.h
+	  python3 transpile.py --modify_source_code
+endif
 	@rm -f $(PCHEADER_DIR)/PC_modulepars.h $(PCHEADER_DIR)/PC_module*funcs.h $(DSL_MODULE_DIR)/PC_modulepardecs.h 
 	@echo '// automatically generated; do not edit!' > $(PCHEADER_DIR)/PC_modulepars.h
 	@echo '// automatically generated; do not edit!' > $(DSL_MODULE_DIR)/PC_modulepardecs.h
@@ -204,11 +208,9 @@ ifeq ($(TRANSPILATION),on)
         ifeq ($(GENERATE_DSL_CODE),on)
 	  rm -f PC_modulesources_old.h
         endif
-        ifeq ($(MODIFY_SOURCE_CODE),on)
-	  python3 transpile.py --modify_source_code
-        else
+ifneq ($(MODIFY_SOURCE_CODE),on)
 	  python3 transpile.py
-        endif
+endif
 	cp PC_modulesources.h PC_modulesources_old.h
 else
 	@touch DSL/local/mhdsolver.ac
