@@ -6083,14 +6083,6 @@ module Chemistry
       logical :: found_specie
       character(len=30) :: spe, specie_string
 !
-      !init_premixed_fuel(1)="SiO"
-      !init_premixed_fuel(2)="CO"
-      !init_fuel_molar_ratio(1)=0.5
-      !init_fuel_molar_ratio(2)=0.5
-      !init_fuel_O2_demand(1)=0.5
-      !init_fuel_O2_demand(2)=0.5
-      !phi=1.0
-
       print*,"init_premixed_fuel=",init_premixed_fuel
       
       call find_species_index("O2",ind_glob,ichem_O2,found_specie)
@@ -6100,8 +6092,8 @@ module Chemistry
       !
       ! Check that the molar ratios of the fuel sums to unity
       !
-      if (sum(init_fuel_molar_ratio) .ne. 1.0) then
-        !call fatal_error("premixed_equiv_ratio","init_fuel_molar_ratio must sum to unity.")
+      if (abs(sum(init_fuel_molar_ratio)-1.0) > 1e-5) then
+        call fatal_error("premixed_equiv_ratio","init_fuel_molar_ratio must sum to unity.")
       endif
       !
       ! Loop over all species and check which that are present
@@ -6110,7 +6102,8 @@ module Chemistry
         if (init_fuel_molar_ratio(i) .gt. 0) then
           specie_string=init_premixed_fuel(i)
           call find_species_index(specie_string,ind_glob,ind_chem,found_specie)
-          conc(ind_chem)=conc(ichem_O2)*init_phi*init_fuel_molar_ratio(i)*init_fuel_O2_demand(i)
+          conc(ind_chem)=conc(ichem_O2)*init_phi*init_fuel_molar_ratio(i) &
+                         /sum(init_fuel_molar_ratio*init_fuel_O2_demand)
           print*,"i,specie_string,ind_glob_ind_chem,found_specie=",i,specie_string,ind_glob,ind_chem,found_specie,conc(ind_chem)
         endif
       enddo
@@ -6165,7 +6158,7 @@ module Chemistry
         enddo
       endif
       !
-      if (sum(initial_massfractions) .ne. 1.0) then
+      if (abs(sum(initial_massfractions)-1.0) > 1e-5) then
         call fatal_error("premixed_equiv_ratio","initial_massfractions must sum to unity.")
       endif
 !
