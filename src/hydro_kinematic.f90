@@ -60,6 +60,7 @@ module Hydro
   real :: tsforce_ampl=0., tsforce_wavenumber=0.
   real ::  dtforce=impossible, ampl_random
   real, dimension(3) :: location,location_fixed=(/0.,0.,0./)
+  real, dimension(3) :: qvec_gb, avec_gb
   logical :: lupw_uu=.false., lkinflow_as_uudat=.false.
   logical :: lcalc_uumeanz=.false.,lcalc_uumeanxy=.false.
   logical :: lcalc_uumeanx=.false.,lcalc_uumeanxz=.false.
@@ -2600,6 +2601,26 @@ module Hydro
                      *(1.0-0.92-0.2*(cos(y(m)))**2))
         endif
 !
+! Gilbert & Bayly (1992) renovating flow (nonhelical version)
+! u = \vec{a} \sin(\vec{q|\cdot\vec{x} + \psi)
+! where
+!   \vec{q} has a randomly chosen direction and prescribed magnitude kpeak_kinflow,
+!   \vec{a} is randomly chosen in the plane perpendicular to \vec{q}, and
+!   \psi is randomly chosen between 0 and 2\pi.
+! Reference: https://doi.org/10.1017/S0022112092002003
+!
+! You must set lkinflow_as_comaux=T to calculate p%oo etc.
+! tsforce controls the renovation time of the flow (by default, renovates every timestep).
+! ampl_kinflow sets the value of urms.
+!
+      case ('Gilbert-Bayly')
+        if (lpenc_loc(i_uu)) then
+          tmp_mn = sin(qvec_gb(1)*x(l1:l2) + qvec_gb(2)*y(m) + qvec_gb(3)*z(n) + phase1)
+          do ii = 1,3
+            p%uu(:,ii) = avec_gb(ii) * tmp_mn
+          enddo
+        endif
+!
 ! no kinematic flow.
 !
       case ('none')
@@ -2731,12 +2752,12 @@ module Hydro
 !   16-dec-10/bing: coded
 !
       use Mpicomm, only: update_foreign_data
-      use Sub, only: smooth, eulag_filter
+      use Sub, only: smooth, eulag_filter, get_random_vec, dot
       use General, only: random_number_wrapper
 !
       real, contiguous,dimension(:,:,:,:), intent(inout) :: f
 !
-      real :: fac
+      real :: fac, qdota
       real, save :: t_foreign=0.
       integer :: j
 !
@@ -2797,6 +2818,25 @@ module Hydro
       elseif (kinematic_flow=='HelicalShearingWave'.or.kinematic_flow=='ShearingWave') then
         ky_uukin=1.
         kx_uukin=real(-ky_uukin*Sshear*t)
+!
+      elseif (kinematic_flow=='Gilbert-Bayly') then
+        if (t > tsforce) then
+          tsforce = tsforce + dtforce
+!
+          call random_number_wrapper(phase1); phase1 = 2*pi*phase1
+          call get_random_vec(qvec_gb, kpeak_kinflow)
+          call get_random_vec(avec_gb)
+!
+!         make avec perpendicular to qvec
+          call dot(qvec_gb, avec_gb, qdota)
+          do j = 1,3
+            avec_gb(j) = avec_gb(j) - qvec_gb(j)*qdota
+          enddo
+!
+!         fix amplitude so that urms == ampl_kinflow
+          avec_gb = sqrt(2.) * ampl_kinflow * avec_gb / sqrt(sum(avec_gb**2))
+        endif
+!
       endif
 !
     endsubroutine hydro_before_boundary
@@ -3394,6 +3434,12 @@ module Hydro
         done = .true.
       elseif (id == id_record_HYDRO_WAVENUMBER) then
         if (read_persist ('HYDRO_WAVENUMBER', tsforce_wavenumber)) return
+        done = .true.
+      elseif (id == id_record_HYDRO_QVEC_GB) then
+        if (read_persist ('HYDRO_QVEC_GB', qvec_gb)) return
+        done = .true.
+      elseif (id == id_record_HYDRO_AVEC_GB) then
+        if (read_persist ('HYDRO_AVEC_GB', avec_gb)) return
         done = .true.
       endif
 !
