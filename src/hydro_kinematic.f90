@@ -3478,6 +3478,12 @@ module Hydro
       error = read_persist ('HYDRO_WAVENUMBER', tsforce_wavenumber)
       if (lroot .and. .not. error) print *, 'input_persist_hydro: tsforce_wavenumber = ', tsforce_wavenumber
 !
+      error = read_persist ('HYDRO_AVEC_GB', avec_gb)
+      if (lroot .and. .not. error) print *, 'input_persist_hydro: avec_gb = ', avec_gb
+!
+      error = read_persist ('HYDRO_QVEC_GB', qvec_gb)
+      if (lroot .and. .not. error) print *, 'input_persist_hydro: qvec_gb = ', qvec_gb
+!
     endsubroutine input_persist_hydro
 !***********************************************************************
     logical function output_persistent_hydro()
