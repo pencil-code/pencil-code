@@ -1256,7 +1256,7 @@ module Magnetic
 !  arrays are already allocated and must not be allocated again.
 !
       if (lbb_as_aux .or. lbb_as_comaux) &
-        call register_report_aux('bb', ibb, ibx, iby, ibz, communicated=lbb_as_comaux)
+        call register_report_aux('bb', ibb, ibx, iby, ibz, communicated=lbb_as_comaux, rhs=.true.)
       if (ljj_as_aux .or. ljj_as_comaux) &
         call register_report_aux('jj', ijj, ijx, ijy, ijz, communicated=ljj_as_comaux)
       if (lbij_as_aux) call farray_register_auxiliary('bij', ibij, vector=9)
@@ -1323,6 +1323,9 @@ module Magnetic
         lslope_limit_diff = .true.
         if (dimensionality<3) lisotropic_advection=.true.
         lbb_as_comaux=lsld_bb
+        if(lsld_bb .and. ibb == 0) then
+          call register_report_aux('bb', ibb, ibx, iby, ibz, communicated=lbb_as_comaux, rhs=.true.)
+        endif
         if (isld_char == 0) then
           call farray_register_auxiliary('sld_char',isld_char,communicated=.true.,rhs=.true.)
           if (lroot) write(15,*) 'sld_char= fltarr(mx,my,mz)*one'
