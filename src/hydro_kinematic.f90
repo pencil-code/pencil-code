@@ -56,7 +56,7 @@ module Hydro
   real, dimension(mz) :: profz_kinflow1=1.!, profz_kinflow2=1., profz_kinflow3=1.
 !
   real :: u_out_kep=0.0
-  real :: tphase_kinflow=-1., phase1=0., phase2=0., tsforce=0.
+  real :: tphase_kinflow=-1., phase1=0., phase2=0., tsforce=-1.
   real :: tsforce_ampl=0., tsforce_wavenumber=0.
   real ::  dtforce=impossible, ampl_random
   real, dimension(3) :: location,location_fixed=(/0.,0.,0./)
