@@ -2,14 +2,21 @@
 !
 !  Secondary breakup of Lagrangian liquid parcels.
 !
-!  Three independent models are available:
+!  Four independent models are available:
+!
+!    HG (Huh-Gosman) - Aguerre & Nigro, Computers and Fluids 190 (2019)
+!         30-48, section 3.1 and Appendix B2 (Algorithm 2).  Primary
+!         atomization driven by injector-generated turbulence.  Acts
+!         only inside the liquid core (gated on |z - z_inj| < L_bu).
+!         Each parcel carries its own birth time so the turbulence
+!         scales L_T(t) and tau_T(t) decay with parcel age, exactly as
+!         in the original Huh-Gosman 1991 paper.
 !
 !    KH (Kelvin-Helmholtz) and RT (Rayleigh-Taylor) - Aguerre & Nigro,
-!         Computers and Fluids 190 (2019) 30-48, sections 3.2-3.3 and
-!         Appendices B3-B4.  These are designed for very high Weber
-!         numbers typical of fuel-injector sprays and can be (and by
-!         default now are) gated on a minimum gas Weber number to keep
-!         them inside their regime of validity.
+!         sections 3.2-3.3 and Appendices B3-B4.  These are designed
+!         for very high Weber numbers typical of fuel-injector sprays
+!         and can be (and by default now are) gated on a minimum gas
+!         Weber number to keep them inside their regime of validity.
 !
 !    PE (Pilch-Erdman) - Pilch, M. & Erdman, C.A., Use of breakup time
 !         data and velocity history data to predict the maximum size of
@@ -23,16 +30,20 @@
 !         used here also follow Apte, Gorokhovski & Moin, IJMF 29
 !         (2003) 1503-1522.
 !
-!  When the PE branch is enabled it has priority over KH and RT inside
-!  particles_breakup_pencils: at most one of the three models acts on
-!  any given parcel in any given step.
+!  Branch priority within particles_breakup_pencils:
+!    1. HG (highest)  -- inside the liquid core, only HG acts.
+!    2. RT            -- outside the liquid core, RT specialist.
+!    3. KH            -- outside the liquid core, KH specialist.
+!    4. PE (lowest)   -- regime fallback for what neither RT nor KH
+!                        claimed.
+!  At most one branch acts on any parcel in any step.
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 !
 ! CPARAM logical, parameter :: lparticles_breakup = .true.
 !
 ! MPVAR CONTRIBUTION 0
-! MPAUX CONTRIBUTION 3
+! MPAUX CONTRIBUTION 6
 !
 !***************************************************************
 module Particles_breakup
@@ -53,12 +64,7 @@ module Particles_breakup
   logical :: lparticles_breakup_kh = .false.
   logical :: lparticles_breakup_rt = .false.
   logical :: lparticles_breakup_pe = .false.
-!  Verbose flag: when .true., a one-line summary is written to stdout at
-!  every individual breakup event, naming the mechanism (PE bag /
-!  bag-stamen / sheet stripping / catastrophic; RT; KH stripping or KH
-!  full conversion) along with the parcel id, time, parent and child
-!  diameters and the local gas Weber number.  Off by default to keep
-!  log files quiet for production runs.
+  logical :: lparticles_breakup_hg = .false.
   logical :: lprint_breakup_mode = .false.
   real :: tstart_particles_breakup = 0.0
   real :: kh_B0 = 0.61
@@ -81,22 +87,62 @@ module Particles_breakup
   real :: pe_we_crit = 12.0          ! base critical Weber number, Eq. (5)
   real :: pe_child_factor = 0.5      ! child-parcel size as a fraction of d_max
                                      !  (~0.5 = mass-median, 1.0 = max stable)
-!  Minimum parent diameter at which PE may still fire.  Default is one
-!  micrometre (1e-4 cm in cgs) - well below the meteorological raindrop
-!  band but still above the integrator-stiff regime that develops once a_p
-!  drops to subnormal.  Setting this to 0 reproduces the unguarded
-!  cascade.
   real :: pe_min_diameter = 1.0e-12
-!  Lower bound on the post-breakup diameter; serves as a final numerical
-!  guard so that round-off in compute_pe_scales (e.g. an over-large urmag
-!  due to a stiff drag step) cannot drive a_p into subnormal range.
   real :: pe_floor_diameter = 1.0e-12
 !  Maximum factor by which a single breakup event is allowed to shrink
-!  the parent diameter.  Caps catastrophic-regime events that would
-!  otherwise feed the runaway described above; the cascade is then
-!  spread over multiple breakup events (each separated by tau_PE) which
-!  is what Pilch-Erdman themselves describe as a multistage process.
+!  the parent diameter for PE.
   real :: pe_max_shrink_ratio = 0.0001
+!
+!  Liquid-core (L_bu) gate for the RT branch.  Aguerre & Nigro 2019
+!  Section 3.4 prescribes that within L_bu = (C_bu/2) D_inj sqrt(rho_p/rho_g)
+!  of the orifice, only HG and KH compete (RT is silent), and beyond
+!  L_bu RT takes priority over KH.  When c_bu = 0 (default) the gate is
+!  disabled and RT acts everywhere it is enabled - this is backwards
+!  compatible with the existing samples.  Set c_bu to ~7 (Li et al.,
+!  AppliedThermalEng 2014) and supply d_inj and z_inj for the geometry
+!  to recover the paper's hybrid recipe.
+  real :: c_bu  = 0.0          ! Aguerre-Nigro / Li et al. constant
+  real :: d_inj = 0.0          ! injector orifice diameter [cm]
+  real :: z_inj = 0.0          ! injector axial position [cm]
+  real :: l_bu  = 0.0          ! liquid-core length, computed in init
+!
+!  Huh-Gosman (HG) primary-atomization parameters.  Defaults follow the
+!  "best configuration" of Aguerre & Nigro 2019, Table 3.  All quantities
+!  are in the simulation's physical units (cgs in the ECN sample).
+!
+!    hg_k1   - droplet-shrinkage rate coefficient (Eq. 3.13).
+!    hg_C1   - tolerance for child-parcel emission as a fraction of m_p
+!              (analogue of kh_B2; "if accumulated stripped mass exceeds
+!              C1*m_p, emit a child parcel of size 2*L_A").
+!    hg_C2   - atomization length constant L_A = C2 * L_T (Eq. 3.4).
+!    hg_C3   - turbulent contribution to the atomization time
+!              tau_A = C3 * tau_T + C4 * tau_w  (Eq. 3.5).
+!    hg_C4   - wave-growth contribution to the atomization time.
+!    hg_C5   - prefactor of the initial turbulent kinetic energy k_0.
+!    hg_C6   - prefactor of the wave-growth time tau_w (Eq. 3.10).
+!    hg_Cmu  - turbulence-model constant Cmu (Eq. 3.7).
+!    hg_Ke   - injector geometry constant entering eps_0 (Eq. 3.8).
+!    hg_Ui   - injection velocity used in the turbulence-energy
+!              estimate (cgs: cm/s).  Strictly speaking this should
+!              come from the per-parcel injection state; we take it as
+!              a single global value because all parcels in this sample
+!              are injected at the same speed.
+!    hg_Li   - injector-orifice length (cgs: cm).
+!    lhg_turb_decay - apply Huh-Gosman 1991 turbulence-decay laws for
+!              L_T(t), tau_T(t) (Eq. 3.6 with t replaced by parcel age).
+!              Setting this to .false. freezes L_T = L_T0, tau_T = tau_T0.
+  real :: hg_k1   = 0.175
+  real :: hg_C1   = 0.1
+  real :: hg_C2   = 2.0
+  real :: hg_C3   = 1.2
+  real :: hg_C4   = 0.4
+  real :: hg_C5   = 5.0
+  real :: hg_C6   = 2.0
+  real :: hg_Cmu  = 0.09
+  real :: hg_Ke   = 0.27
+  real :: hg_Ui   = 0.0
+  real :: hg_Li   = 0.0
+  logical :: lhg_turb_decay = .true.
 !
   integer :: rt_method = 2
   integer :: idiag_imskhm = 0
@@ -104,23 +150,32 @@ module Particles_breakup
   integer :: idiag_wegm = 0       ! mean per-parcel gas Weber number
   integer :: idiag_wegmin = 0     ! minimum per-parcel gas Weber number
   integer :: idiag_wegmax = 0     ! maximum per-parcel gas Weber number
+  integer :: idiag_d32m = 0       ! Sauter mean diameter, weighted by npswarm
 !
   namelist /particles_breakup_init_pars/ &
       lparticles_breakup_kh, lparticles_breakup_rt, lparticles_breakup_pe, &
+      lparticles_breakup_hg, &
       tstart_particles_breakup, &
       kh_B0, kh_B1, kh_B2, rt_CRT, rt_Ctau, rt_method, sigma_liq, &
       kh_min_child_npswarm, nu_liq, kh_we_min, rt_we_min, &
       pe_we_crit, pe_child_factor, pe_min_diameter, &
       pe_floor_diameter, pe_max_shrink_ratio, &
+      c_bu, d_inj, z_inj, &
+      hg_k1, hg_C1, hg_C2, hg_C3, hg_C4, hg_C5, hg_C6, &
+      hg_Cmu, hg_Ke, hg_Ui, hg_Li, lhg_turb_decay, &
       lprint_breakup_mode
 !
   namelist /particles_breakup_run_pars/ &
       lparticles_breakup_kh, lparticles_breakup_rt, lparticles_breakup_pe, &
+      lparticles_breakup_hg, &
       tstart_particles_breakup, &
       kh_B0, kh_B1, kh_B2, rt_CRT, rt_Ctau, rt_method, sigma_liq, &
       kh_min_child_npswarm, nu_liq, kh_we_min, rt_we_min, &
       pe_we_crit, pe_child_factor, pe_min_diameter, &
       pe_floor_diameter, pe_max_shrink_ratio, &
+      c_bu, d_inj, z_inj, &
+      hg_k1, hg_C1, hg_C2, hg_C3, hg_C4, hg_C5, hg_C6, &
+      hg_Cmu, hg_Ke, hg_Ui, hg_Li, lhg_turb_decay, &
       lprint_breakup_mode
 !
 contains
@@ -128,10 +183,29 @@ contains
     subroutine register_particles_breakup()
 !
 !  Register particle-local breakup state.
+!  imskh - KH stripped-mass accumulator (Aguerre-Nigro Eq. 3.20)
+!  itbrt - RT breakup-time accumulator (Aguerre-Nigro Eq. 3.26)
+!  itbpe - PE breakup-time accumulator (Pilch-Erdman 1987)
+!  itage - parcel "birth time" t_birth, so age = t - fp(k,itage).
+!          Set to a sentinel value (negative) once HG is finished
+!          with that parcel so it is not re-entered.
+!  imshg - HG stripped-mass accumulator (Aguerre-Nigro Eq. 3.13)
+!  imech - per-parcel "lineage" tag identifying the most recent
+!          breakup event:
+!            0 = no breakup yet (treated as HG mother by post-processing)
+!            1 = HG mother       2 = HG child
+!            3 = KH mother       4 = KH child
+!            5 = RT mother       6 = RT-modified parcel
+!          The tag is sticky: it is never reset to 0, only overwritten
+!          when a new event acts on the parcel.  Used by plot_fig12.pro
+!          and plot_fig11.pro for per-mechanism SMD and volume curves.
 !
       call append_npaux('imskh', imskh)
       call append_npaux('itbrt', itbrt)
       call append_npaux('itbpe', itbpe)
+      call append_npaux('itage', itage)
+      call append_npaux('imshg', imshg)
+      call append_npaux('imech', imech)
 !
     endsubroutine register_particles_breakup
 !***********************************************************************
@@ -139,16 +213,39 @@ contains
 !
 !  Check the breakup configuration.
 !
+      use EquationOfState, only: rho0
+!
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
 !
       if (lparticles_breakup_kh .or. lparticles_breakup_rt .or. &
-          lparticles_breakup_pe) then
+          lparticles_breakup_pe .or. lparticles_breakup_hg) then
         if (.not. lparticles_radius) call fatal_error('initialize_particles_breakup', &
             'particle breakup requires Particles_radius')
         if (.not. lparticles_number) call fatal_error('initialize_particles_breakup', &
             'particle breakup requires Particles_number')
         if (lparticles_blocks) call not_implemented('initialize_particles_breakup', &
             'particle breakup for particles_blocks')
+      endif
+!
+!  Compute the liquid-core length L_bu used to gate the RT branch
+!  (Aguerre & Nigro 2019, Section 3.4):
+!    L_bu = (C_bu/2) D_inj sqrt(rho_p / rho_g_ref)
+!  with rho_g_ref taken as the EOS reference density rho0.  When
+!  c_bu = 0 (default) the gate is disabled and l_bu remains zero.
+      if (c_bu > 0.0) then
+        if (d_inj <= 0.0) call fatal_error('initialize_particles_breakup', &
+            'c_bu > 0 requires d_inj > 0 (orifice diameter)')
+        if (rhopmat <= 0.0) call fatal_error('initialize_particles_breakup', &
+            'c_bu > 0 requires rhopmat > 0 (liquid density)')
+        if (rho0 <= 0.0) call fatal_error('initialize_particles_breakup', &
+            'c_bu > 0 requires rho0 > 0 (gas reference density)')
+        l_bu = 0.5 * c_bu * d_inj * sqrt(rhopmat / rho0)
+        if (lroot) then
+          write(*,'(a,1pe11.4,a)') 'initialize_particles_breakup: L_bu = ', &
+              l_bu, ' cm (RT silenced within this distance from injector)'
+        endif
+      else
+        l_bu = 0.0
       endif
       if (lparticles_breakup_kh) then
         if (kh_B0 <= 0.0) call fatal_error('initialize_particles_breakup', &
@@ -179,10 +276,37 @@ contains
             call fatal_error('initialize_particles_breakup', &
             'pe_max_shrink_ratio must lie in (0,1]')
       endif
+      if (lparticles_breakup_hg) then
+        if (l_bu <= 0.0) call fatal_error('initialize_particles_breakup', &
+            'lparticles_breakup_hg=T requires c_bu > 0 (HG only acts inside L_bu)')
+        if (hg_Ui <= 0.0) call fatal_error('initialize_particles_breakup', &
+            'hg_Ui must be positive (injection velocity)')
+        if (hg_Li <= 0.0) call fatal_error('initialize_particles_breakup', &
+            'hg_Li must be positive (orifice length)')
+        if (d_inj <= 0.0) call fatal_error('initialize_particles_breakup', &
+            'lparticles_breakup_hg=T requires d_inj > 0 (orifice diameter)')
+        if (hg_k1 <= 0.0) call fatal_error('initialize_particles_breakup', &
+            'hg_k1 must be positive')
+        if (hg_C1 <= 0.0) call fatal_error('initialize_particles_breakup', &
+            'hg_C1 must be positive')
+        if (hg_C2 <= 0.0 .or. hg_C3 <= 0.0 .or. hg_C4 <= 0.0 .or. &
+            hg_C5 <= 0.0 .or. hg_C6 <= 0.0) call fatal_error( &
+            'initialize_particles_breakup', &
+            'hg_C2..hg_C6 must all be positive')
+        if (hg_Cmu <= 0.0) call fatal_error('initialize_particles_breakup', &
+            'hg_Cmu must be positive')
+        if (hg_Ke  <= 0.0) call fatal_error('initialize_particles_breakup', &
+            'hg_Ke must be positive')
+        if (lroot) then
+          write(*,'(a)') 'initialize_particles_breakup: HG primary atomization enabled'
+          write(*,'(a,1pe11.4,a,1pe11.4)') &
+              '  hg_Ui = ', hg_Ui, '  hg_Li = ', hg_Li
+        endif
+      endif
       if (kh_we_min < 0.0 .or. rt_we_min < 0.0) call fatal_error( &
           'initialize_particles_breakup', 'KH/RT Weber floors must be >= 0')
       if (lparticles_breakup_kh .or. lparticles_breakup_rt .or. &
-          lparticles_breakup_pe) then
+          lparticles_breakup_pe .or. lparticles_breakup_hg) then
         if (sigma_liq <= 0.0) call fatal_error('initialize_particles_breakup', &
             'sigma_liq must be positive')
       endif
@@ -242,6 +366,7 @@ contains
         idiag_wegm = 0
         idiag_wegmin = 0
         idiag_wegmax = 0
+        idiag_d32m = 0
       endif
 !
       if (lroot .and. ip < 14) print*,'rprint_particles_breakup: run through parse list'
@@ -251,6 +376,7 @@ contains
         call parse_name(iname,cname(iname),cform(iname),'wegm',idiag_wegm)
         call parse_name(iname,cname(iname),cform(iname),'wegmin',idiag_wegmin)
         call parse_name(iname,cname(iname),cform(iname),'wegmax',idiag_wegmax)
+        call parse_name(iname,cname(iname),cform(iname),'d32m',idiag_d32m)
       enddo
 !
       call keep_compiler_quiet(lwrite)
@@ -264,6 +390,9 @@ contains
 !  during the regular particle RHS phase, while the actual discrete breakup
 !  update is still applied later in particles_discrete_collisions.
 !
+      use Diagnostics, only: save_name
+      use Mpicomm, only: mpiallreduce_sum
+!
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       real, dimension(mpar_loc,mparray), intent(in) :: fp
@@ -272,7 +401,11 @@ contains
 !
       real, dimension(mpar_loc) :: we_g_arr
       real, dimension(3) :: uup
+      real, dimension(3) :: xxp_loc        ! contiguous copy of fp(k,ixp:izp)
       real :: rho_gas, lnrho_gas, urmag, dp_loc
+      real :: ap_loc, np_loc, dp2, dp3, smd_value
+      real :: sum_d3_loc, sum_d2_loc, sum_d3_glob, sum_d2_glob
+      integer, dimension(3) :: inear_loc   ! contiguous copy of ineargrid(k,:)
       integer :: k
       logical :: lneed_we
 !
@@ -289,9 +422,15 @@ contains
           do k = 1, npar_loc
             if (fp(k,iap) <= 0.0) cycle
             if (fp(k,inpswarm) <= 0.0) cycle
-            call interpolate_linear(f,iux,iuz,fp(k,ixp:izp),uup, &
-                ineargrid(k,:),0,ipar(k))
-            call get_local_gas_density(f,fp(k,ixp:izp),ineargrid(k,:), &
+!  Copy non-contiguous slices into contiguous local arrays to suppress
+!  the runtime "array temporary was created" warnings emitted under
+!  -fcheck=all.  Same number of memory copies, but the compiler can see
+!  that xxp_loc / inear_loc are contiguous and so does not warn.
+            xxp_loc(:)   = fp(k,ixp:izp)
+            inear_loc(:) = ineargrid(k,:)
+            call interpolate_linear(f,iux,iuz,xxp_loc,uup, &
+                inear_loc,0,ipar(k))
+            call get_local_gas_density(f,xxp_loc,inear_loc, &
                 ipar(k),rho_gas,lnrho_gas)
             urmag = sqrt(sum((uup - fp(k,ivpx:ivpz))**2))
             dp_loc = 2.0*fp(k,iap)
@@ -301,6 +440,36 @@ contains
           if (idiag_wegmax /= 0) call max_par_name(we_g_arr(1:npar_loc),idiag_wegmax)
           if (idiag_wegmin /= 0) call max_par_name(-we_g_arr(1:npar_loc), &
               idiag_wegmin,lneg=.true.)
+        endif
+!
+!  Sauter mean diameter D_32 = sum_p (N_p d_p^3) / sum_p (N_p d_p^2),
+!  weighted by the number of physical droplets per parcel.  We accumulate
+!  the two sums locally on each process, MPI-allreduce them, then write
+!  one global ratio per time step.  This is *not* the same as <ap>: the
+!  parcel-mean of ap drops to the fragment scale very quickly because
+!  every super-parcel - whether it represents one big droplet or 10^6
+!  tiny ones - counts the same in <ap>; D_32 weights by population.
+        if (idiag_d32m /= 0) then
+          sum_d3_loc = 0.0
+          sum_d2_loc = 0.0
+          do k = 1, npar_loc
+            ap_loc = fp(k,iap)
+            np_loc = fp(k,inpswarm)
+            if (ap_loc <= 0.0 .or. np_loc <= 0.0) cycle
+            dp_loc = 2.0*ap_loc
+            dp2 = dp_loc*dp_loc
+            dp3 = dp2*dp_loc
+            sum_d3_loc = sum_d3_loc + np_loc*dp3
+            sum_d2_loc = sum_d2_loc + np_loc*dp2
+          enddo
+          call mpiallreduce_sum(sum_d3_loc, sum_d3_glob)
+          call mpiallreduce_sum(sum_d2_loc, sum_d2_glob)
+          if (sum_d2_glob > 0.0) then
+            smd_value = sum_d3_glob / sum_d2_glob
+          else
+            smd_value = 0.0
+          endif
+          call save_name(smd_value, idiag_d32m)
         endif
       endif
 !
@@ -318,16 +487,16 @@ contains
 !  appended to fp and take part from the next step on.
 !
 !  Branch priority (highest first):
-!    1. Pilch-Erdman (PE) - regime-aware, covers vibrational / bag /
-!       bag-stamen / sheet-stripping / catastrophic regimes.
+!    1. Huh-Gosman (HG) - primary atomisation, Aguerre & Nigro App. B2.
+!       Acts inside the liquid core (|z - z_inj| < L_bu) only.
 !    2. Rayleigh-Taylor (RT) - Aguerre & Nigro (Appendix B4) gated by
-!       rt_we_min.
+!       rt_we_min.  Silenced inside L_bu.
 !    3. Kelvin-Helmholtz (KH) - Aguerre & Nigro (Appendix B3) gated by
 !       kh_we_min, only relevant for sheet-stripping.
+!    4. Pilch-Erdman (PE) - regime-aware fallback covering vibrational
+!       / bag / bag-stamen / sheet-stripping / catastrophic regimes.
 !
-!  At most one branch acts on any parcel in any step.  When PE is enabled
-!  it preempts RT and KH for that parcel; otherwise the legacy KH+RT path
-!  is followed exactly as in the original Aguerre-Nigro implementation.
+!  At most one branch acts on any parcel in any step.
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(mpar_loc,mparray), intent(inout) :: fp
@@ -340,10 +509,14 @@ contains
       real :: lambda_rt, omega_rt, tau_rt, acc_rt, cd_drag
       real :: tau_pe, dp_max_stable, we_g_pe, oh_pe
       real :: mp_old, mp_child, ms_new, ms_inc, np_child
+      real :: age_loc, l_a_hg, tau_a_hg, dp_child_hg, ddp_hg
+      real, dimension(3) :: xxp_loc        ! contiguous copy of fp(k,ixp:izp)
+      integer, dimension(3) :: inear_loc   ! contiguous copy of ineargrid(k,:)
       integer :: k, npar_loc_old, pe_regime
+      logical :: lin_core
 !
       if (.not. (lparticles_breakup_kh .or. lparticles_breakup_rt .or. &
-                 lparticles_breakup_pe)) return
+                 lparticles_breakup_pe .or. lparticles_breakup_hg)) return
       if (.not. llast) return
       if (t < tstart_particles_breakup) return
 !
@@ -358,8 +531,14 @@ contains
         if (fp(k,inpswarm) <= 0.0) cycle
 !
 !  Interpolate local carrier-gas state to the particle position.
-        call interpolate_linear(f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),0,ipar(k))
-        call get_local_gas_density(f,fp(k,ixp:izp),ineargrid(k,:),ipar(k),rho_gas,lnrho_gas)
+!  Slices fp(k,ixp:izp) and ineargrid(k,:) are non-contiguous in memory
+!  (Fortran is column-major, so the first index is the fast one).  We
+!  copy them into local contiguous 3-element arrays so the compiler does
+!  not silently create temporaries and trigger -fcheck=all warnings.
+        xxp_loc(:)   = fp(k,ixp:izp)
+        inear_loc(:) = ineargrid(k,:)
+        call interpolate_linear(f,iux,iuz,xxp_loc,uup,inear_loc,0,ipar(k))
+        call get_local_gas_density(f,xxp_loc,inear_loc,ipar(k),rho_gas,lnrho_gas)
         call get_local_gas_kinematic_viscosity(rho_gas,nu_gas)
 !
         urmag = sqrt(sum((uup - fp(k,ivpx:ivpz))**2))
@@ -376,48 +555,160 @@ contains
         we_g = rho_gas * urmag**2 * dp_old / max(sigma_liq,tini)
 !
 !  Branch priority (highest first):
-!    1. RT (catastrophic specialist) - fires when lparticles_breakup_rt
-!       and We_g >= rt_we_min.
-!    2. KH (sheet-stripping specialist) - fires when lparticles_breakup_kh
-!       and We_g >= kh_we_min and RT did not claim the parcel.
-!    3. PE (regime-aware fallback) - fires when lparticles_breakup_pe
-!       and neither RT nor KH claimed the parcel.
+!    1. HG (primary atomisation, Aguerre-Nigro App. B2) - fires when
+!       lparticles_breakup_hg and the parcel is still inside the
+!       liquid core L_bu and the HG flag has not been disabled for it.
+!    2. RT (catastrophic specialist) - fires when lparticles_breakup_rt
+!       and We_g >= rt_we_min.  Silenced inside L_bu.
+!    3. KH (sheet-stripping specialist) - fires when lparticles_breakup_kh
+!       and We_g >= kh_we_min and RT/HG did not claim the parcel.
+!    4. PE (regime-aware fallback) - fires when lparticles_breakup_pe
+!       and none of HG / RT / KH claimed the parcel.
 !  At most one branch acts on any parcel in any step.  When a branch owns
 !  the parcel, the OTHER branches' accumulators are reset so that stale
 !  values cannot affect a future hand-back.
 !
-!  -------- Branch 1 : RT (Aguerre & Nigro, App. B4) -----------------
-        if (lparticles_breakup_rt .and. we_g >= rt_we_min) then
+!  Liquid-core gate: when c_bu > 0, parcels with |z - z_inj| < L_bu
+!  are inside the intact liquid core (Aguerre & Nigro Section 3.4).
+!  HG runs ONLY inside the core; RT runs ONLY outside the core; KH and
+!  PE run anywhere where their gates are satisfied (KH/PE will be
+!  effectively silent inside the core because HG will consume the
+!  parcel via the cycle below).
+        lin_core = (l_bu > 0.0 .and. abs(fp(k,izp) - z_inj) < l_bu)
+!
+!  -------- Branch 1 : HG (Aguerre & Nigro, App. B2) -----------------
+!  Active inside the liquid core only, on parcels whose HG flag is
+!  still alive (fp(k,itage) >= 0).  Once HG drives d_p down to 2*L_A
+!  it sets fp(k,itage) to a negative sentinel, so the parcel is
+!  released to RT/KH/PE on subsequent steps even if it is still
+!  geometrically inside L_bu.
+        if (lparticles_breakup_hg .and. lin_core .and. fp(k,itage) >= 0.0) then
+!  Reset competing accumulators so they cannot resurrect stale state
+!  when the parcel is later handed off.
+          fp(k,itbrt) = 0.0
           fp(k,imskh) = 0.0
           fp(k,itbpe) = 0.0
-          call compute_rt_scales(dp_old,rho_gas,nu_gas,urmag,cd_drag,acc_rt,lambda_rt,omega_rt,tau_rt)
-!  RT is supposed to be active in this branch; degenerate scales are a
-!  red flag, not a "skip silently" condition.
-          if (tau_rt <= 0.0 .or. lambda_rt <= 0.0) call fatal_error( &
+!
+          age_loc = max(t - fp(k,itage), 0.0)
+          call compute_hg_scales(age_loc, urmag, rho_gas, l_a_hg, tau_a_hg, dp_child_hg)
+          if (tau_a_hg <= 0.0 .or. l_a_hg <= 0.0 .or. dp_child_hg <= 0.0) call fatal_error( &
               'particles_breakup_pencils', &
-              'RT scales degenerate (tau_rt or lambda_rt <= 0) above rt_we_min')
-          if (dp_old > lambda_rt) then
-            fp(k,itbrt) = fp(k,itbrt) + dt
-            if (fp(k,itbrt) > tau_rt) then
+              'HG scales degenerate (tau_a, L_A or dp_child <= 0) inside liquid core')
+!
+          if (dp_old > dp_child_hg) then
+!  Mass-shrinkage rate: d(d_p)/dt = -k1 * d_child / tau_A (Eq. 3.13).
+            ddp_hg = hg_k1 * dp_child_hg / tau_a_hg * dt
+            ddp_hg = min(ddp_hg, dp_old - dp_child_hg)
+            dp_new = max(dp_old - ddp_hg, dp_child_hg)
+            mp_old = mass_from_diameter(dp_old)
+            ms_inc = mass_from_diameter(dp_old) - mass_from_diameter(dp_new)
+            ms_new = fp(k,imshg) + ms_inc
+!
+            if (ms_new > mp_old) then
+!  Full-conversion branch: parcel is reinterpreted as a swarm of
+!  HG-stable droplets; inflate npswarm to conserve mass.
               if (lprint_breakup_mode) then
-                write(*,'(a,i0,a,1pe12.4,a,1pe10.3,a,1pe10.3,a,1pe10.3,a,1pe10.3,a,1pe10.3)') &
+                write(*,'(a,i0,a,1pe12.4,a,1pe10.3,a,1pe10.3,a,1pe10.3,a,1pe10.3)') &
                     'particles_breakup: ipar=', ipar(k), ' t=', t, &
-                    ' RT catastrophic  d_p: ', dp_old, &
-                    ' -> ', lambda_rt, ' cm  urmag=', urmag, &
-                    ' cm/s  rho_g=', rho_gas, '  We_g=', we_g
+                    ' HG full-conversion d_p: ', dp_old, &
+                    ' -> ', dp_child_hg, ' cm  urmag=', urmag, &
+                    ' cm/s  rho_g=', rho_gas
               endif
-              call apply_rt_breakup(fp,k,dp_old,lambda_rt)
+              diameter_ratio = dp_old / dp_child_hg
+              fp(k,inpswarm) = fp(k,inpswarm) * diameter_ratio**3
+              fp(k,iap)      = 0.5 * dp_child_hg
+              fp(k,imshg)    = 0.0
+!  Mark HG as finished for this parcel.
+              fp(k,itage)    = -1.0
+!  Full conversion: parcel now represents HG-stable child droplets.
+              fp(k,imech)    = 2
+              call update_particle_mass_fields(fp,k)
+            elseif (ms_new >= hg_C1 * mp_old) then
+!  Child-emission branch: emit a child of size dp_child_hg carrying the
+!  accumulated stripped mass; mother retains the rest.
+              mp_child = mass_from_diameter(dp_child_hg)
+              np_child = fp(k,inpswarm) * ms_new / max(mp_child,tini)
+              if (lprint_breakup_mode) then
+                write(*,'(a,i0,a,1pe12.4,a,1pe10.3,a,1pe10.3,a,1pe10.3,a,1pe10.3)') &
+                    'particles_breakup: ipar=', ipar(k), ' t=', t, &
+                    ' HG stripping       d_p: ', dp_old, &
+                    ' -> ', dp_child_hg, ' cm (child)  urmag=', urmag, &
+                    ' cm/s  rho_g=', rho_gas
+              endif
+              fp(k,iap)   = 0.5 * diameter_from_mass(max(mp_old - ms_new, 0.0))
+              fp(k,imshg) = 0.0
+!  Mother retains its identity; tag as HG mother.
+              fp(k,imech) = 1
+              call update_particle_mass_fields(fp,k)
+              if (np_child > kh_min_child_npswarm) then
+                call insert_child_particle(fp,ineargrid,k,dp_child_hg,np_child, &
+                                           child_mech=2)
+              endif
+            else
+!  Not enough stripped mass yet - keep accumulating.
+              fp(k,iap)   = 0.5 * dp_new
+              fp(k,imshg) = ms_new
+!  Mother is being shrunk by HG; tag as HG mother.
+              fp(k,imech) = 1
+              call update_particle_mass_fields(fp,k)
             endif
           else
-            fp(k,itbrt) = 0.0
+!  Parcel diameter has reached 2*L_A: HG is exhausted; mark and release.
+            fp(k,itage) = -1.0
+            fp(k,imshg) = 0.0
           endif
           cycle
         endif
 !
-!  -------- Branch 2 : KH (Aguerre & Nigro, App. B3) -----------------
+!  -------- Branch 2 : RT (Aguerre & Nigro, App. B4) -----------------
+!  Liquid-core gate: when c_bu > 0, RT is silenced for parcels still
+!  inside the liquid core L_bu of the orifice (Section 3.4 of the
+!  paper).  The parcel falls through to KH (and PE, if those are
+!  enabled) without RT consuming it.  This is what produces a
+!  finite-length intact liquid core in the early spray and gives the
+!  paper its longer penetration than a "RT from t=0" run would.
+        if (lparticles_breakup_rt .and. we_g >= rt_we_min) then
+          if (lin_core) then
+!  Inside L_bu: RT is silent.  Reset the RT accumulator only; leave
+!  imskh and itbpe alone so KH (or PE) can keep their own state.
+            fp(k,itbrt) = 0.0
+!  Fall through (do NOT cycle) so the KH branch below is tried.
+          else
+!  Outside L_bu: RT may act.  This block is the original Aguerre-Nigro
+!  Algorithm 4: trigger when d_p > Lambda_RT, fire when t_b > tau_RT.
+            fp(k,imskh) = 0.0
+            fp(k,itbpe) = 0.0
+            fp(k,imshg) = 0.0
+            call compute_rt_scales(dp_old,rho_gas,nu_gas,urmag,cd_drag,acc_rt,lambda_rt,omega_rt,tau_rt)
+!  RT is supposed to be active in this branch; degenerate scales are a
+!  red flag, not a "skip silently" condition.
+            if (tau_rt <= 0.0 .or. lambda_rt <= 0.0) call fatal_error( &
+                'particles_breakup_pencils', &
+                'RT scales degenerate (tau_rt or lambda_rt <= 0) above rt_we_min')
+            if (dp_old > lambda_rt) then
+              fp(k,itbrt) = fp(k,itbrt) + dt
+              if (fp(k,itbrt) > tau_rt) then
+                if (lprint_breakup_mode) then
+                  write(*,'(a,i0,a,1pe12.4,a,1pe10.3,a,1pe10.3,a,1pe10.3,a,1pe10.3,a,1pe10.3)') &
+                      'particles_breakup: ipar=', ipar(k), ' t=', t, &
+                      ' RT catastrophic  d_p: ', dp_old, &
+                      ' -> ', lambda_rt, ' cm  urmag=', urmag, &
+                      ' cm/s  rho_g=', rho_gas, '  We_g=', we_g
+                endif
+                call apply_rt_breakup(fp,k,dp_old,lambda_rt)
+              endif
+            else
+              fp(k,itbrt) = 0.0
+            endif
+            cycle
+          endif
+        endif
+!
+!  -------- Branch 3 : KH (Aguerre & Nigro, App. B3) -----------------
         if (lparticles_breakup_kh .and. we_g >= kh_we_min) then
           fp(k,itbrt) = 0.0
           fp(k,itbpe) = 0.0
+          fp(k,imshg) = 0.0
           call compute_kh_scales(dp_old,rho_gas,nu_gas,urmag,we_g,we_p,rep,oh,tay,lambda_kh,omega_kh,tau_kh)
           if (tau_kh <= 0.0 .or. lambda_kh <= 0.0) cycle
 !
@@ -455,6 +746,8 @@ contains
             fp(k,iap) = 0.5*dp_child
             fp(k,imskh) = 0.0
             fp(k,itbrt) = 0.0
+!  Full conversion: parcel now represents KH-stable child droplets.
+            fp(k,imech) = 4
             call update_particle_mass_fields(fp,k)
           elseif (ms_new >= kh_B2*mp_old) then
 !
@@ -474,33 +767,33 @@ contains
             fp(k,iap) = 0.5 * diameter_from_mass(max(mp_old - ms_new, 0.0))
             fp(k,imskh) = 0.0
             fp(k,itbrt) = 0.0
+!  Mother retains its identity; tag as KH mother.
+            fp(k,imech) = 3
             call update_particle_mass_fields(fp,k)
 !
             if (np_child > kh_min_child_npswarm) then
-              call insert_child_particle(fp,ineargrid,k,dp_child,np_child)
+              call insert_child_particle(fp,ineargrid,k,dp_child,np_child, &
+                                         child_mech=4)
             endif
           else
 !
 !  Not enough stripped mass yet: keep carrying it on the mother parcel.
 !
             fp(k,imskh) = ms_new
+!  Tag as KH mother since KH is acting on it (even though no event yet).
+            fp(k,imech) = 3
           endif
           cycle    ! KH owned this parcel for the step
         endif
 !
-!  -------- Branch 3 : PE (Pilch-Erdman) -----------------------------
+!  -------- Branch 4 : PE (Pilch-Erdman) -----------------------------
 !  Catches everything below rt_we_min and below kh_we_min - i.e. the bag,
 !  bag-stamen and (when KH is off) sheet-stripping regimes.
 !
-!  Active guards: pe_min_diameter, pe_floor_diameter, pe_max_shrink_ratio
-!  (these only constrain the post-breakup size; they never silently skip
-!  a breakup event).  If tau_pe < dt the run aborts with a fatal_error
-!  rather than silently dropping the breakup, on the assumption that
-!  such a regime indicates either an inappropriate time step or a deeper
-!  numerical pathology that the user should see.
         if (lparticles_breakup_pe) then
           fp(k,itbrt) = 0.0
           fp(k,imskh) = 0.0
+          fp(k,imshg) = 0.0
           if (dp_old > max(pe_min_diameter, pe_floor_diameter)) then
             call compute_pe_scales(dp_old,rho_gas,urmag,oh_pe,we_g_pe, &
                                    tau_pe,dp_max_stable,pe_regime)
@@ -538,10 +831,13 @@ contains
 !
 !  No model active for this parcel - nothing to do.  Reset all
 !  accumulators so they cannot resurrect when a branch becomes active
-!  again later.
+!  again later.  Note: itage is NOT reset here - it is the parcel's
+!  birth time, set once at insertion and only flipped by HG itself
+!  when HG finishes with that parcel.
         fp(k,itbrt) = 0.0
         fp(k,imskh) = 0.0
         fp(k,itbpe) = 0.0
+        fp(k,imshg) = 0.0
       enddo
 !
     endsubroutine particles_breakup_pencils
@@ -696,6 +992,10 @@ contains
       fp(k,imskh) = 0.0
       fp(k,itbrt) = 0.0
       fp(k,itbpe) = 0.0
+!  Tag as RT-modified parcel (post-RT child population in Aguerre &
+!  Nigro Fig 12 nomenclature).  When this parcel later undergoes another
+!  RT event, the tag stays at 6.
+      fp(k,imech) = 6
       call update_particle_mass_fields(fp,k)
 !
     endsubroutine apply_rt_breakup
@@ -788,6 +1088,76 @@ contains
 !
     endsubroutine compute_pe_scales
 !***********************************************************************
+    subroutine compute_hg_scales(age, urmag, rho_gas, l_a, tau_a, dp_child)
+!
+!  Huh-Gosman primary-atomization scales for a single parcel.
+!  Follows Aguerre & Nigro 2019 §3.1 / Eqs. 3.6-3.11 with the original
+!  Huh-Gosman 1991 turbulence-decay laws.  All quantities are in the
+!  simulation's physical units (cgs in the ECN sample).
+!
+!    Inputs:
+!      age      - parcel age since injection (= t - t_birth)
+!      urmag    - |u_gas - u_p| at the parcel
+!      rho_gas  - local gas density at the parcel
+!    Outputs:
+!      l_a      - HG atomization length L_A = C2 * L_T(age)
+!      tau_a    - HG atomization time   tau_A = C3*tau_T(age) + C4*tau_w
+!      dp_child - target child-droplet diameter = 2 * L_A (Eq. 3.4)
+!
+      real, intent(in)  :: age, urmag, rho_gas
+      real, intent(out) :: l_a, tau_a, dp_child
+!
+      real :: k0, eps0, l_t0, tau_t0, l_t, tau_t, tau_w, decay_arg, decay_l
+      real :: rho_ratio
+!
+!  Initial turbulence scales at the orifice exit (parcel age = 0).
+!  Eqs. 3.7-3.8 of the paper, with K_e the Huh-Gosman injector constant.
+      k0   = hg_C5 * hg_Ui*hg_Ui / max(8.0 * hg_Li / max(d_inj,tini), tini)
+      eps0 = hg_C5 * hg_Ke * hg_Ui**3 / max(2.0 * hg_Li, tini)
+!
+      if (k0 <= 0.0 .or. eps0 <= 0.0) then
+        l_a = 0.0; tau_a = 0.0; dp_child = 0.0
+        return
+      endif
+!
+      l_t0   = hg_Cmu * k0**1.5 / eps0
+      tau_t0 = hg_Cmu * k0       / eps0
+!
+!  Huh-Gosman 1991 turbulence decay (Eq. 3.6 with t -> parcel age):
+!    L_T(t)   = L_T0   * (1 + 0.0828 * t / tau_T0)^0.457
+!    tau_T(t) = tau_T0 * (1 + 0.0828 * t / tau_T0)
+!  When lhg_turb_decay = .false. the scales are frozen at their initial
+!  values, which is the recipe used by Huh-Gosman in the original 1991
+!  paper for steady jets.
+      if (lhg_turb_decay .and. tau_t0 > 0.0) then
+        decay_arg = 1.0 + 0.0828 * age / tau_t0
+        decay_arg = max(decay_arg, 1.0)        ! guard against tiny negative ages
+        decay_l   = decay_arg**0.457
+        l_t   = l_t0   * decay_l
+        tau_t = tau_t0 * decay_arg
+      else
+        l_t   = l_t0
+        tau_t = tau_t0
+      endif
+!
+!  Wave-growth time tau_w = C6 * L_A * sqrt(rho_p/rho_g) / U_r (Eq. 3.10).
+!  We use L_A = C2 * L_T as in Eq. 3.4.
+      l_a = hg_C2 * l_t
+      if (urmag <= tini .or. rho_gas <= tini .or. rhopmat <= 0.0) then
+        tau_w = huge(1.0)
+      else
+        rho_ratio = sqrt(rhopmat / rho_gas)
+        tau_w = hg_C6 * l_a * rho_ratio / urmag
+      endif
+!
+!  Atomization time tau_A = C3 * tau_T + C4 * tau_w (Eq. 3.5).
+      tau_a = hg_C3 * tau_t + hg_C4 * tau_w
+!
+!  Child-droplet diameter (Eq. 3.4 of the paper).
+      dp_child = 2.0 * l_a
+!
+    endsubroutine compute_hg_scales
+!***********************************************************************
     subroutine apply_pe_breakup(fp,k,dp_old,dp_new)
 !
 !  Realise a Pilch-Erdman breakup event on parcel k.  We retain a single
@@ -819,17 +1189,23 @@ contains
 !
     endsubroutine apply_pe_breakup
 !***********************************************************************
-    subroutine insert_child_particle(fp,ineargrid,kmother,dp_child,np_child)
+    subroutine insert_child_particle(fp,ineargrid,kmother,dp_child,np_child, &
+                                     child_mech)
 !
 !  Append a child parcel to fp that inherits the mother state except for
 !  droplet size, child swarm count, and breakup accumulator.
 !  The child starts at the same position and with the same velocity as the
 !  mother; only the parcel-internal droplet properties are changed.
 !
+!  Optional argument child_mech sets the child's "lineage" tag fp(:,imech).
+!  Pass 2 for HG children, 4 for KH children, etc.  When omitted, the
+!  child inherits the mother's tag.
+!
       real, dimension(mpar_loc,mparray), intent(inout) :: fp
       integer, dimension(mpar_loc,3), intent(inout) :: ineargrid
       integer, intent(in) :: kmother
       real, intent(in) :: dp_child, np_child
+      integer, optional, intent(in) :: child_mech
 !
       integer :: knew
 !
@@ -852,6 +1228,14 @@ contains
       fp(knew,imskh) = 0.0
       fp(knew,itbrt) = 0.0
       fp(knew,itbpe) = 0.0
+      fp(knew,imshg) = 0.0
+!  The child inherits the mother's itage from the fp(knew,:) = fp(kmother,:)
+!  copy above, which gives a child the same "age since injection" as its
+!  parent.  This is the right choice: the child has just been emitted from
+!  the same liquid column as the mother, so its turbulence decay state
+!  should match.
+!  Lineage tag: caller-supplied child_mech overrides the inherited value.
+      if (present(child_mech)) fp(knew,imech) = real(child_mech)
 !
       if (iapinit /= 0) fp(knew,iapinit) = fp(knew,iap)
       call update_particle_mass_fields(fp,knew,reset_initial=.true.)

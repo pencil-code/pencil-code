@@ -54,6 +54,7 @@ module Particles
   real :: xp3=0.0, yp3=0.0, zp3=0.0, vpx3=0.0, vpy3=0.0, vpz3=0.0
   real :: Lx0=0.0, Ly0=0.0, Lz0=0.0
   real :: delta_vp0=1.0, tausp1=0.0, rpbeta=0.0
+  real :: cone_half_angle_deg = 0.0
   real :: nu_epicycle=0.0, nu_epicycle2=0.0
   real :: beta_dPdr_dust=0.0, beta_dPdr_dust_scaled=0.0
   real :: tausg_min=0.0, tausg1_max=0.0, epsp_friction_increase=100.0
@@ -235,7 +236,8 @@ module Particles
       thermophoretic_T0, lnostore_uu, ldt_grav_par, ldragforce_radialonly, &
       lsinkpoint, xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, &
       lcoriolis_force_par, lcentrifugal_force_par, ldt_adv_par, Lx0, Ly0, &
-      Lz0, lglobalrandom, lswap_radius_and_number, linsert_particles_continuously, &
+      Lz0, cone_half_angle_deg, &
+      lglobalrandom, lswap_radius_and_number, linsert_particles_continuously, &
       lrandom_particle_pencils, lnocalc_np, lnocalc_rhop, &
       np_const, rhop_const, particle_radius, lignore_rhop_swarm, &
       rhopmat, Deltauy_gas_friction, xp1, &
@@ -293,6 +295,7 @@ module Particles
       l_shell, k_shell, lparticlemesh_pqs_assignment, pscalar_sink_rate, &
       lpscalar_sink, lsherwood_const, lnu_draglaw, nu_draglaw,lbubble, &
       rpbeta_species, rpbeta, gab_width, initxxp, initvvp, &
+      cone_half_angle_deg, &
       particles_insert_ramp_time, tstart_insert_particles, birthring_r, &
       birthring_width, lsimple_volume, &
       lgaussian_birthring, tstart_rpbeta, linsert_as_many_as_possible, &
@@ -1051,7 +1054,7 @@ module Particles
       real, dimension(mx,my,mz,mfarray), intent(out) :: f
       real, dimension(mpar_loc,mparray), intent(out) :: fp
       integer, dimension(mpar_loc,3), intent(out) :: ineargrid
-      real, dimension(mpar_loc) :: rr_tmp, az_tmp
+      real, dimension(mpar_loc) :: rr_tmp, az_tmp, OO_tmp
 !
       real, dimension(3) :: uup, Lxyz_par, xyz0_par, xyz1_par
       real :: vpx_sum, vpy_sum, vpz_sum
@@ -2178,6 +2181,13 @@ module Particles
       if (ldiffuse_passive) f(:,:,:,idlncc) = 0.0
       if (ldiffuse_dragf) f(:,:,:,idfx:idfz) = 0.0
 !
+!  Stamp the parcel "birth time".  itage, imshg and imech are registered by
+!  particles_breakup.
+!  
+      if (itage /= 0) fp(1:npar_loc,itage) = t
+      if (imshg /= 0) fp(1:npar_loc,imshg) = 0.0
+      if (imech /= 0) fp(1:npar_loc,imech) = 0.0
+!
     endsubroutine init_particles
 !***********************************************************************
     subroutine insert_lost_particles(f,fp,ineargrid)
@@ -2436,6 +2446,22 @@ module Particles
                 fp(npar_loc_old+1:npar_loc,ivpz) = vpz0
               endif
 !
+            case ('spray-cone')
+!
+              if (cone_half_angle_deg < 0.0 .or. cone_half_angle_deg > 90.0) &
+                  call fatal_error_local('insert_particles', &
+                  'cone_half_angle_deg must lie in [0, 90]')
+              do k = npar_loc_old+1, npar_loc
+                call random_number_wrapper(rr_tmp(k))
+                call random_number_wrapper(az_tmp(k))
+                rr_tmp(k) = rr_tmp(k) * cone_half_angle_deg * (pi/180.0)
+                az_tmp(k) = az_tmp(k) * 2.0*pi
+                OO_tmp(k) = sqrt(vpx0*vpx0 + vpy0*vpy0 + vpz0*vpz0)
+                fp(k,ivpx) = OO_tmp(k) * sin(rr_tmp(k)) * cos(az_tmp(k))
+                fp(k,ivpy) = OO_tmp(k) * sin(rr_tmp(k)) * sin(az_tmp(k))
+                fp(k,ivpz) = sign(OO_tmp(k) * cos(rr_tmp(k)), vpz0)
+              enddo
+!
             case ('zero')
 !              if (lroot) print*, 'insert_particles: Zero particle velocity'
               fp(1:npar_loc,ivpx:ivpz) = 0.0
@@ -2459,6 +2485,13 @@ module Particles
           if (lparticles_radius) call set_particle_radius(f,fp,npar_loc_old+1,npar_loc)
           if (lparticles_number) call set_particle_number(f,fp,npar_loc_old+1,npar_loc)
           if (lbirthring_depletion) fp(npar_loc_old+1:npar_loc,ibrtime) = 0.0
+!
+!  Stamp the parcel "birth time" so the breakup module can compute an age
+!  (t - t_birth) for the Huh-Gosman turbulence-decay laws.
+!
+          if (itage /= 0) fp(npar_loc_old+1:npar_loc,itage) = t
+          if (imshg /= 0) fp(npar_loc_old+1:npar_loc,imshg) = 0.0
+          if (imech /= 0) fp(npar_loc_old+1:npar_loc,imech) = 0.0
 !
 !  Particles are not allowed to be present in non-existing dimensions.
 !  This would give huge problems with interpolation later.
