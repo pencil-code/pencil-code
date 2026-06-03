@@ -110,7 +110,7 @@ module Hydro
   logical :: lrandom_ampl=.false.
   logical :: ltime_old_kinflow=.false.
 !
-  namelist /hydro_start_pars/ &
+  namelist /hydro_init_pars/ &
       lkinflow_as_comaux, lkinflow_as_uudat
 !
   namelist /hydro_run_pars/ &
