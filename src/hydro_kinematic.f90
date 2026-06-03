@@ -3465,9 +3465,11 @@ module Hydro
 !***********************************************************************
     subroutine read_hydro_init_pars(iostat)
 !
+      use File_io, only: parallel_unit
+!
       integer, intent(out) :: iostat
 !
-      iostat = 0
+      read(parallel_unit, NML=hydro_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_hydro_init_pars
 !***********************************************************************
@@ -3475,7 +3477,7 @@ module Hydro
 !
       integer, intent(in) :: unit
 !
-      call keep_compiler_quiet(unit)
+      write(unit, NML=hydro_init_pars)
 !
     endsubroutine write_hydro_init_pars
 !***********************************************************************
