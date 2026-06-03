@@ -1692,6 +1692,9 @@ module Special
     call copy_addr(sige_ceiling,p_par(54))
     call copy_addr(sige_const_value,p_par(55))
     call copy_addr(lresistive_gauge_ee,p_par(56)) ! bool
+    call copy_addr(etaschw_max,p_par(57))
+    call copy_addr(lresistive_gauge_disp,p_par(58)) ! bool
+    call copy_addr(llate_reset_el_pencil,p_par(59)) ! bool
     endsubroutine pushpars2c
 !***********************************************************************
 !
