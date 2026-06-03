@@ -2788,12 +2788,13 @@ module Hydro
             phase1=eps_kinflow*phase1
             phase2=eps_kinflow*phase2
           endif
-
         endif
+!
       elseif (kinematic_flow=='ShearRoberts2'.or.kinematic_flow=='ShearRoberts1') then
         ky_uukin=1.
         kx_uukin=real(ky_uukin*(mod(.5-eps_kinflow*t,1.D0)-.5))
         if (ip==11) write(21,*) t,kx_uukin
+!
       elseif (kinematic_flow=='HelicalShearingWave'.or.kinematic_flow=='ShearingWave') then
         ky_uukin=1.
         kx_uukin=real(-ky_uukin*Sshear*t)
