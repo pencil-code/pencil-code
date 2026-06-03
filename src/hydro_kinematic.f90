@@ -3511,6 +3511,8 @@ module Hydro
       if (write_persist ('HYDRO_TSFORCE', id_record_HYDRO_TSFORCE, tsforce)) return
       if (write_persist ('HYDRO_AMPL', id_record_HYDRO_AMPL, tsforce_ampl)) return
       if (write_persist ('HYDRO_WAVENUMBER', id_record_HYDRO_WAVENUMBER, tsforce_wavenumber)) return
+      if (write_persist ('HYDRO_AVEC_GB', id_record_HYDRO_AVEC_GB, avec_gb)) return
+      if (write_persist ('HYDRO_QVEC_GB', id_record_HYDRO_QVEC_GB, qvec_gb)) return
 !
       output_persistent_hydro = .false.
 !
