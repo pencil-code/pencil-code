@@ -1,0 +1,12 @@
+Directory:
+    ${PENCIL_HOME}/samples/renovating-flow
+SVN Id:
+    $Id$
+Maintainer:
+    Kishore G <kishore96.work/gmail[dot]com>
+Added:
+    03-Jun-2026
+Status:
+    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+Comments:
+    The Gilbert-Bayly (1992) model.

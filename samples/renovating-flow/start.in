@@ -1,0 +1,14 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Initialisation parameters
+!
+&init_pars
+  random_gen='nr_f90'
+  lwrite_aux=T
+/
+&hydro_init_pars
+  lkinflow_as_comaux=T
+/
+&magnetic_init_pars
+  initaa='gaussian-noise', amplaa=1e-4
+/

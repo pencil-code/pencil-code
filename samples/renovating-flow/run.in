@@ -1,0 +1,18 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Run parameters
+!
+&run_pars
+  nt = 100
+  lpencil_check=T
+/
+&hydro_run_pars
+  kinematic_flow = 'Gilbert-Bayly'
+  ampl_kinflow = 1
+  kpeak_kinflow = 3
+  dtforce = 1
+/
+&magnetic_run_pars
+  lupw_aa = T
+  eta = 2e-2
+/
