@@ -574,7 +574,7 @@ module Param_IO
         call read_namelist(read_initial_condition_pars   ,'initial_condition_pars',linitial_condition, loptional)
         call read_namelist(read_streamlines_init_pars    ,'streamlines'    ,lstreamlines, loptional)
         call read_namelist(read_eos_init_pars            ,'eos'            ,leos, loptional)
-        call read_namelist(read_hydro_init_pars          ,'hydro'          ,lhydro, loptional)
+        call read_namelist(read_hydro_init_pars          ,'hydro'          ,lhydro.or.lhydro_kinematic, loptional)
         call read_namelist(read_density_init_pars        ,'density'        ,ldensity, loptional)
         call read_namelist(read_gravity_init_pars        ,'grav'           ,lgrav, loptional)
         call read_namelist(read_selfgravity_init_pars    ,'selfgrav'       ,.true., loptest(loptional) .or. (.not. lselfgravity))
