@@ -618,11 +618,14 @@ module Hydro
 !  Diagnostic pencils.
 !
       if (idiag_urms/=0 .or. idiag_umax/=0 .or. idiag_u2m/=0 .or. &
-          idiag_um2/=0) lpenc_diagnos(i_u2)=.true.
+          idiag_um2/=0 .or. idiag_rumax/=0) lpenc_diagnos(i_u2)=.true.
       if (idiag_orms/=0 .or. idiag_omax/=0 .or. idiag_o2m/=0) lpenc_diagnos(i_o2)=.true.
       if (idiag_oum/=0 .or. idiag_ourms/=0 .or. idiag_oumxy/=0) lpenc_diagnos(i_ou)=.true.
       if (idiag_oxurms/=0) lpenc_diagnos(i_oxu2)=.true.
-      if (idiag_divum/=0) lpenc_diagnos(i_divu)=.true.
+      if (idiag_divum/=0 .or. idiag_divu2m/=0) lpenc_diagnos(i_divu)=.true.
+      if (idiag_ruxm/=0 .or. idiag_ruym/=0 .or. idiag_ruzm/=0 .or. &
+          idiag_rumax/=0) lpenc_diagnos(i_rho)=.true.
+      if (idiag_Marms/=0 .or. idiag_Mamax/=0) lpenc_diagnos(i_Ma2)=.true.
 !
       if (idiag_EEK/=0 .or. idiag_ekin/=0 .or. idiag_ekintot/=0) then
         lpenc_diagnos(i_rho)=.true.
@@ -2693,17 +2696,44 @@ module Hydro
         call sum_mn_name(p%o2,idiag_orms,lsqrt=.true.)
         call max_mn_name(p%u2,idiag_umax,lsqrt=.true.)
         call max_mn_name(p%o2,idiag_omax,lsqrt=.true.)
+!
+        if (idiag_ux2m/=0) call sum_mn_name(p%uu(:,1)**2,idiag_ux2m)
+        if (idiag_uy2m/=0) call sum_mn_name(p%uu(:,2)**2,idiag_uy2m)
+        if (idiag_uz2m/=0) call sum_mn_name(p%uu(:,3)**2,idiag_uz2m)
+!
+        if (idiag_uxuym/=0) call sum_mn_name(p%uu(:,1)*p%uu(:,2),idiag_uxuym)
+        if (idiag_uxuzm/=0) call sum_mn_name(p%uu(:,1)*p%uu(:,3),idiag_uxuzm)
+        if (idiag_uyuzm/=0) call sum_mn_name(p%uu(:,2)*p%uu(:,3),idiag_uyuzm)
+!
+        if (idiag_ruxm/=0) call sum_mn_name(p%rho*p%uu(:,1),idiag_ruxm)
+        if (idiag_ruym/=0) call sum_mn_name(p%rho*p%uu(:,2),idiag_ruym)
+        if (idiag_ruzm/=0) call sum_mn_name(p%rho*p%uu(:,3),idiag_ruzm)
+        if (idiag_rumax/=0) call max_mn_name(p%rho*sqrt(p%u2),idiag_rumax)
+!
+        call sum_mn_name(p%uu(:,1),idiag_umx)
+        call sum_mn_name(p%uu(:,2),idiag_umy)
+        call sum_mn_name(p%uu(:,3),idiag_umz)
+!
+        call sum_mn_name(p%Ma2,idiag_Marms,lsqrt=.true.)
+        call max_mn_name(p%Ma2,idiag_Mamax,lsqrt=.true.)
+!
         if (idiag_uzrms/=0)  call sum_mn_name(p%uu(:,3)**2,idiag_uzrms,lsqrt=.true.)
         if (idiag_uzmax/=0)  call max_mn_name(p%uu(:,3)**2,idiag_uzmax,lsqrt=.true.)
+!
         call sum_mn_name(p%u2,idiag_u2m)
         call max_mn_name(p%u2,idiag_um2)
+        call sum_mn_name(p%o2,idiag_o2m)
+!
         call sum_mn_name(p%ou,idiag_oum)
         if (idiag_ourms/=0)  call sum_mn_name(p%ou**2,idiag_ourms,lsqrt=.true.)
         call sum_mn_name(p%oxu2,idiag_oxurms,lsqrt=.true.)
+!
         if (idiag_EEK/=0)    call sum_mn_name(.5*p%rho*p%u2,idiag_EEK)
         if (idiag_ekin/=0)   call sum_mn_name(.5*p%rho*p%u2,idiag_ekin)
         if (idiag_ekintot/=0)call integrate_mn_name(.5*p%rho*p%u2,idiag_ekintot)
+!
         call sum_mn_name(p%divu,idiag_divum)
+        if (idiag_divu2m/=0) call sum_mn_name(p%divu**2,idiag_divu2m)
 !
 !  Kinetic field components at one point (=pt).
 !
