@@ -144,12 +144,11 @@ module Hydro
   integer :: idiag_urms=0,idiag_umax=0,idiag_uzrms=0
   integer :: idiag_uzmax=0,idiag_orms=0,idiag_omax=0
   integer :: idiag_ux2m=0,idiag_uy2m=0,idiag_uz2m=0
-  integer :: idiag_uxuym=0,idiag_uxuzm=0,idiag_uyuzm=0,idiag_oumphi=0
+  integer :: idiag_uxuym=0,idiag_uxuzm=0,idiag_uyuzm=0
   integer :: idiag_ruxm=0,idiag_ruym=0,idiag_ruzm=0,idiag_rumax=0
   integer :: idiag_umx=0
   integer :: idiag_umy=0,idiag_umz=0
   integer :: idiag_Marms=0,idiag_Mamax=0,idiag_divu2m=0,idiag_epsK=0
-  integer :: idiag_urmphi=0,idiag_upmphi=0,idiag_uzmphi=0,idiag_u2mphi=0
   integer :: idiag_phase1=0,idiag_phase2=0
   integer :: idiag_ekintot=0,idiag_ekin=0
   integer :: idiag_divum=0
@@ -3579,13 +3578,12 @@ module Hydro
         idiag_uxpt=0; idiag_uypt=0; idiag_uzpt=0
         idiag_urms=0; idiag_umax=0; idiag_uzrms=0; idiag_uzmax=0
         idiag_phase1=0; idiag_phase2=0
-        idiag_orms=0; idiag_omax=0; idiag_oumphi=0
+        idiag_orms=0; idiag_omax=0
         idiag_ruxm=0; idiag_ruym=0; idiag_ruzm=0; idiag_rumax=0
         idiag_ux2m=0; idiag_uy2m=0; idiag_uz2m=0
         idiag_uxuym=0; idiag_uxuzm=0; idiag_uyuzm=0
         idiag_umx=0; idiag_umy=0; idiag_umz=0
         idiag_Marms=0; idiag_Mamax=0; idiag_divu2m=0; idiag_epsK=0
-        idiag_urmphi=0; idiag_upmphi=0; idiag_uzmphi=0; idiag_u2mphi=0
         idiag_EEK=0; idiag_ekin=0; idiag_ekintot=0
         idiag_divum=0
         idiag_oumxy=0;idiag_uxmxy=0;idiag_uymxy=0;idiag_uzmxy=0
