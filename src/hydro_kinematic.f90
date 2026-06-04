@@ -2651,8 +2651,7 @@ module Hydro
       if (lpenc_loc(i_o2)) call dot2_mn(p%oo,p%o2)
 ! ou
       if (lpenc_loc(i_ou)) call dot_mn(p%oo,p%uu,p%ou)
-! ou and oxu
-      if (lpenc_loc(i_ou)) call dot_mn(p%oo,p%uu,p%ou)
+! oxu
       if (lpenc_loc(i_oxu)) call cross(p%oo,p%uu,p%oxu)
       if (lpenc_loc(i_oxu2)) call dot2_mn(p%oxu,p%oxu2)
 
