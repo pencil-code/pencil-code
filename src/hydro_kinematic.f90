@@ -148,7 +148,7 @@ module Hydro
   integer :: idiag_ruxm=0,idiag_ruym=0,idiag_ruzm=0,idiag_rumax=0
   integer :: idiag_umx=0
   integer :: idiag_umy=0,idiag_umz=0
-  integer :: idiag_Marms=0,idiag_Mamax=0,idiag_divu2m=0,idiag_epsK=0
+  integer :: idiag_Marms=0,idiag_Mamax=0,idiag_divu2m=0
   integer :: idiag_phase1=0,idiag_phase2=0
   integer :: idiag_ekintot=0,idiag_ekin=0
   integer :: idiag_divum=0
@@ -3583,7 +3583,7 @@ module Hydro
         idiag_ux2m=0; idiag_uy2m=0; idiag_uz2m=0
         idiag_uxuym=0; idiag_uxuzm=0; idiag_uyuzm=0
         idiag_umx=0; idiag_umy=0; idiag_umz=0
-        idiag_Marms=0; idiag_Mamax=0; idiag_divu2m=0; idiag_epsK=0
+        idiag_Marms=0; idiag_Mamax=0; idiag_divu2m=0
         idiag_EEK=0; idiag_ekin=0; idiag_ekintot=0
         idiag_divum=0
         idiag_oumxy=0;idiag_uxmxy=0;idiag_uymxy=0;idiag_uzmxy=0
@@ -3626,7 +3626,6 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'Marms',idiag_Marms)
         call parse_name(iname,cname(iname),cform(iname),'Mamax',idiag_Mamax)
         call parse_name(iname,cname(iname),cform(iname),'divu2m',idiag_divu2m)
-        call parse_name(iname,cname(iname),cform(iname),'epsK',idiag_epsK)
         call parse_name(iname,cname(iname),cform(iname),'uxpt',idiag_uxpt)
         call parse_name(iname,cname(iname),cform(iname),'uypt',idiag_uypt)
         call parse_name(iname,cname(iname),cform(iname),'uzpt',idiag_uzpt)
