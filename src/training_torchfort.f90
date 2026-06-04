@@ -12,7 +12,6 @@
     use Cdata
     use General, only: itoa
     use Messages
-    use Torchfort, only: TORCHFORT_RESULT_SUCCESS,torchfort_inference,torchfort_train
     !use iso_c_binding
 
     implicit none
@@ -27,7 +26,7 @@
     real, dimension(:,:,:,:,:), allocatable, device :: input, label, output
     real :: train_loss   !(KIND=rkind4) :: train_loss
 
-    integer :: itau_density, itau_densityx, itau_densityy, itau_densityz
+    integer :: itau_bb, itau_bbxx, itau_bbxy, itau_bbxz, itau_bbyy, itau_bbyz, itau_bbzz
     integer :: itau_hydro, itau_hydroxx, itau_hydroxy, itau_hydroxz, itau_hydroyy, itau_hydroyz, itau_hydrozz
     integer :: isgs_emf, isgs_emfx, isgs_emfy, isgs_emfz
 
@@ -115,16 +114,15 @@
 !
       f(:,:,:,itau_hydroxx:itau_hydroyz)   = 0.0
 !
-      if (ltrain_dens) then 
-        f(:,:,:,itau_densityx:itau_densityz) = 0.0
-        input_channels  = input_channels  + 1
-        output_channels = output_channels + 3
-      endif
 !
       if (ltrain_mag) then
         f(:,:,:,isgs_emfx:isgs_emfz)       = 0.0
         input_channels  = input_channels  + 3
         output_channels = output_channels + 3
+
+        f(:,:,:,itau_bbxx:itau_bbyz)   = 0.0
+        input_channels  = input_channels  + 6
+        output_channels = output_channels + 6
       endif
 !
     endsubroutine initialize_training
@@ -144,10 +142,12 @@
       ltrain_dens = ltrain_dens .and. ldensity
 !
       call farray_register_auxiliary('tau_hydro',itau_hydro,vector=6,rhs=.true.,communicated=.true.)
-      if (ltrain_mag) call farray_register_auxiliary('sgs_emf',isgs_emf,vector=3,rhs=.true.,communicated=.true.)
-      if (ltrain_dens)  call farray_register_auxiliary('tau_density',itau_density,vector=3,rhs=.true.,communicated=.true.)
+      if (ltrain_mag) then 
+       call farray_register_auxiliary('sgs_emf',isgs_emf,vector=3,rhs=.true.,communicated=.true.)
+       call farray_register_auxiliary('tau_bb',itau_bb,vector=6,rhs=.true.,communicated=.true.)
+      endif
 !
-!  Indices to access tau.
+!  Indices to access taus and emf.
 !
       if (lhydro) then
         itau_hydroxx=itau_hydro; itau_hydroyy=itau_hydro+1; itau_hydrozz=itau_hydro+2; itau_hydroxy=itau_hydro+3; itau_hydroxz=itau_hydro+4; itau_hydroyz=itau_hydro+5
@@ -155,10 +155,7 @@
 
       if (ltrain_mag) then
         isgs_emfx=isgs_emf; isgs_emfy=isgs_emf+1; isgs_emfz=isgs_emf+2;
-      endif
-
-      if (ltrain_dens) then
-        itau_densityx=itau_density; itau_densityy=itau_density+1; itau_densityz=itau_density+2;
+        itau_bbxx=itau_bb; itau_bbyy=itau_bb+1; itau_bbzz=itau_bb+2; itau_bbxy=itau_bb+3; itau_bbxz=itau_bb+4; itau_bbyz=itau_bb+5
       endif
 
     endsubroutine register_training
@@ -256,7 +253,7 @@
 ! Copy data from host to device.
 !
         input(:,:,:,:,1) = uumean
-        istat = torchfort_inference(model, input, output)
+        !istat = torchfort_inference(model, input, output)
       else
         !istat = torchfort_inference(model, get_ptr_gpu_training(iux,iuz), &
         !                                   get_ptr_gpu_training(itau_hydroxx,itau_hydrozz))
@@ -268,7 +265,6 @@
 
       endif
 
-      if (istat /= TORCHFORT_RESULT_SUCCESS) call fatal_error("infer","istat="//trim(itoa(istat)))
 
     endsubroutine infer
 !***************************************************************
@@ -379,7 +375,6 @@
 
       endif
 
-      if (istat /= TORCHFORT_RESULT_SUCCESS) call fatal_error("train","istat="//trim(itoa(istat)))
 
       if (train_loss <= max_loss) ltrained=.true.
       if ((it_train_end >= 0) .and. it >= it_train_end) ltrained=.true.
@@ -433,22 +428,18 @@
       real, contiguous,dimension(:,:,:,:) :: df
 
       real, dimension(nx,3) :: div_hydro_sgs
-      real, dimension(nx)   :: div_dens_sgs
+      real, dimension(nx,3) :: div_mag_sgs
 
       if (ltrained) then 
         call div_tensor(f,div_hydro_sgs,itau_hydro)
+        if (ltrain_mag) call div_tensor(f,div_mag_sgs,itau_bb)
         if (t >= start_infer) then
           df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - div_hydro_sgs
+          if (ltrain_mag) then
+            df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - div_mag_sgs
+            df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + f(l1:l2,m,n,isgs_emfx:isgs_emfz)
+          endif
         endif
-        
-       !if (ltrain_mag) then
-       !  df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + f(l1:l2,m,n,isgs_emfx:isgs_emfz)
-       !endif
-
-       ! if (ltrain_dens) then
-       !   call div_tensor(f,itau_hydro,div_dens_sgs)
-       !   df(l1:l2,m,n,ilnrho)  = df(l1:l2,m,n,ilnrho)  - div_dens_sgs
-       ! endif
       endif
       if (ltraining) call calc_diagnostics_training(f)
 
@@ -618,9 +609,9 @@
     call copy_addr(isgs_emfx,p_par(12)) ! int
     call copy_addr(isgs_emfy,p_par(13)) ! int
     call copy_addr(isgs_emfz,p_par(14)) ! int
-    call copy_addr(itau_densityx,p_par(15)) ! int
-    call copy_addr(itau_densityy,p_par(16)) ! int
-    call copy_addr(itau_densityz,p_par(17)) ! int
+    !call copy_addr(itau_densityx,p_par(15)) ! int
+    !call copy_addr(itau_densityy,p_par(16)) ! int
+    !call copy_addr(itau_densityz,p_par(17)) ! int
     call copy_addr(input_channels,p_par(18)) ! int
     call copy_addr(output_channels,p_par(19)) ! int
     call copy_addr(start_infer,p_par(20)) ! real dconst

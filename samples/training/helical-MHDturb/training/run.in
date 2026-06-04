@@ -60,7 +60,7 @@
 	lrun_epoch=T
 	ltrain_mag=F
 	ltrain_dens=F
-	dt_train= 1.4598560812e-01
+	dt_train= 1.7248442881e-01
 	!t_train_start=6.8e-3
 	t_train_start=0
 	t_train_end=69.752
@@ -69,5 +69,4 @@
 &gpu_run_pars
   ltest_bcs=F
   lcpu_timestep_on_gpu=T
-  lcuda_aware_mpi=F
 /
