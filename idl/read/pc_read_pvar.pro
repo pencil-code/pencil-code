@@ -282,6 +282,26 @@ varcontent[itbrt].variable = 'RT breakup timer (itbrt)'
 varcontent[itbrt].idlvar   = 'itbrt'
 varcontent[itbrt].idlinit  = INIT_SCALAR
 ;
+default, itbpe, 0
+varcontent[itbpe].variable = 'PE breakup timer (itbpe)'
+varcontent[itbpe].idlvar   = 'itbpe'
+varcontent[itbpe].idlinit  = INIT_SCALAR
+;
+default, itage, 0
+varcontent[itage].variable = 'HG parcel birth time (itage)'
+varcontent[itage].idlvar   = 'itage'
+varcontent[itage].idlinit  = INIT_SCALAR
+;
+default, imshg, 0
+varcontent[imshg].variable = 'HG breakup accumulator (imshg)'
+varcontent[imshg].idlvar   = 'imshg'
+varcontent[imshg].idlinit  = INIT_SCALAR
+;
+default, imech, 0
+varcontent[imech].variable = 'Breakup lineage tag (imech)'
+varcontent[imech].idlvar   = 'imech'
+varcontent[imech].idlinit  = INIT_SCALAR
+;
 default, inucl_Se, 0
 varcontent[inucl_Se].variable = 'Supersaturation at nucleation'
 varcontent[inucl_Se].idlvar   = 'nucl_Se'
@@ -856,6 +876,15 @@ endif
 ;  Put data and parameters in object.
 ;
 npar_found=n_elements(where(ipar eq 1))+0L
+;
+;  Guard against the case where every processor reports npar_loc==0
+;  (e.g. an early snapshot taken before linsert_particles_continuously
+;  has fired), so the global iipar concatenation never happened.
+;  Without this, create_struct below tries to embed an undefined
+;  variable.
+;
+if (n_elements(iipar) eq 0) then iipar = -1L
+;
 if objout then $
   makeobject="object = create_struct(name=objectname," + $
              "['t','x','y','z','dx','dy','dz','npar_found','ipar'," + $
