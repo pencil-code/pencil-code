@@ -189,6 +189,7 @@ my %tests = (
                          power_xy/complex_nprocz_2
                          power_xy/integrate_shell
                          power_xy/integrate_shell_z
+                         renovating-flow
                          testfield_nonlin_z
                          test_farray_alloc
                          spherical-convection
