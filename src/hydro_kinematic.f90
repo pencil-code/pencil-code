@@ -2833,11 +2833,13 @@ module Hydro
 !  Store uu as auxiliary variable in f-array if requested by lkinflow_as_aux.
 !  Just neccessary immediately before writing snapshots, but how would we
 !  know we are?
-!  Changed lkinflow_as_aux -> (lkinflow_as_aux.or.lkinflow_as_comaux)
 !
-     if (lpencil(i_uu).and.lkinflow_as_aux.and.(get_lupdate_aux().or.lfirst_aux)) f(l1:l2,m,n,iux:iuz)=p%uu
-     !if (lpencil(i_uu).and.(lkinflow_as_aux.or.lkinflow_as_comaux).and. &
-     !    (lupdate_aux.or.lfirst_aux)) f(l1:l2,m,n,iux:iuz)=p%uu
+!  2026-Jun-04/Kishore: changed lkinflow_as_aux -> (lkinflow_as_aux.or.lkinflow_as_comaux).
+!                       Axel had earlier suggested this change in a comment.
+!                       (see commit 89c5a868244ee31b7dd2872516ac34b109a38330)
+!
+     if (lpencil(i_uu).and.(lkinflow_as_aux.or.lkinflow_as_comaux).and. &
+        (get_lupdate_aux().or.lfirst_aux)) f(l1:l2,m,n,iux:iuz)=p%uu
      if (.not.lpencil_check_at_work) lfirst_aux=.false.
 !
       call calc_diagnostics_hydro(f,p)
