@@ -2727,7 +2727,7 @@ module Hydro
 !***********************************************************************
     subroutine hydro_before_boundary(f)
 !
-!  Dummy routine
+!  Do global, time-dependent flow calculations here:
 !
 !   16-dec-10/bing: coded
 !
@@ -2740,8 +2740,6 @@ module Hydro
       real :: fac
       real, save :: t_foreign=0.
       integer :: j
-!
-!  Do global, time-dependent flow calculations here:
 !
       if (kinematic_flow=='from-foreign-snap') then
         if (lfirst) then
