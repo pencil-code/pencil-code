@@ -97,7 +97,8 @@ module Special
   real :: initpower_dphi=0., cutoff_dphi=0., initpower2_dphi=0.
   real :: kgaussian_phi=0.,kpeak_phi=0., kgaussian_dphi=0., kpeak_dphi=0.
   real :: relhel_phi=0.
-  real :: ddotam, a2rhopm, a2rhopm_all, a2rhom, a4rhom, a2rhom_all, a4rhom_all, rhom, rhom_all
+  real :: ddotam, a2rhopm, a2rhopm_all, a2rhom, a4rhom, a2rhom_all, a4rhom_all
+  real :: rhom, rhom_all, rhokinm, rhokinm_all
   real :: edotbm, edotbm_all, e2m, e2m_all, b2m, b2m_all, a2rhophim, a4rhophim, a2rhophim_all, a4rhophim_all
   real :: a2rhopphim, a2rhopphim_all
   real :: sigE1m_all_nonaver, sigB1m_all_nonaver,sigEm_all,sigBm_all,sigEm_all_diagnos,sigBm_all_diagnos
@@ -158,10 +159,13 @@ module Special
   logical :: lsigE_const=.false.                   !PAR_DOC: put sigE to a constant if true.
   logical :: lBD_scaling_wHubble=.true.            !PAR_DOC: Bunch-Davies scaling with Hubble (true for backward compatibility, but should be false to be correct)
   logical :: lold_lrho_chi_dtconstraint=.true.     !PAR_DOC: old lrho_chi dt constraint (use false for new and correct version)
+  logical :: linclude_rhokin_in_a2rho=.false.      !PAR_DOC: include rhokin in a2rho
+  logical :: linclude_rho_EBK_in_wstate=.false.    !PAR_DOC: include rhoE, rhoB, and rhokin in wstate
   logical, pointer :: lphi_hom, lphi_linear_regime, lnoncollinear_EB, lnoncollinear_EB_aver
   logical, pointer :: lcollinear_EB, lcollinear_EB_aver, lmass_suppression
   logical, pointer :: lallow_bprime_zero
   logical, pointer :: ladvance_ee
+  logical, pointer :: lrelativistic_eos
   !Whether the sums needed for the ODE and rhs advancement are done in the together in the same kernel as the rhs
   !advancement. Benchmarks seem to suggest that combining them is indeed more performant.
   !This approach is however strictly approximative since we effectively take the value of Hscript from the preceeding substep
@@ -204,7 +208,7 @@ module Special
       lswitch_toMHD_when_nophi, Gamma_phi_exp, a4rhophim_crit, solve_phi_criterion, &
       lit1_reset_if_lsolve_for_phi, it1_reset_value, &
       lsigE_const_ifnot_lsolve_for_phi, lsigE_const, lsigE_const_if_lsolve_for_phi, &
-      lold_lrho_chi_dtconstraint
+      lold_lrho_chi_dtconstraint, linclude_rhokin_in_a2rho, linclude_rho_EBK_in_wstate
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -359,6 +363,15 @@ module Special
         lmass_suppression=.false.
         lallow_bprime_zero=.false.
         mass_chi=0.
+      endif
+!
+!  To know whether we are solving the relativistic eos equations we need to get lrelativistic_eos from density.
+!
+      if (ldensity) then
+        call get_shared_variable('lrelativistic_eos',lrelativistic_eos, caller='initialize_backreact_infl')
+      else
+        allocate(lrelativistic_eos)
+        lrelativistic_eos=.false.
       endif
 !
 !  Redundancy checks. To be removed when these logicals are removed.
@@ -1217,7 +1230,7 @@ module Special
       use Sub, only: dot2_mn, grad, curl, dot_mn
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real :: sigE1m, sigB1m, rho_rad, Hscript_prev=0.
+      real :: tmp, sigE1m, sigB1m, rho_rad, Hscript_prev=0.
 !
 ! TP: to avoid code duplication could this function not be combined with the copy of it in
 !     klein_gordon.f90? We could make an appropriate module and call it from there
@@ -1231,6 +1244,7 @@ module Special
       call mpibcast_real(a21)
 !
 !  Here we use the possibility of switching off the phi evolution by setting phi=dphi=0.
+!  This should happen immediately when lsolve_for_phi=F, but there seems to be some delay.
 !
       if (.not. lsolve_for_phi) then
         f(:,:,:,iinfl_phi)=0.
@@ -1240,7 +1254,7 @@ module Special
 !
 !  In the following loop, go through all penciles and add up results to get e2m, etc.
 !
-      ddotam=0.; a2rhopm=0.; a2rhom=0.; rhom=0; e2m=0; b2m=0; edotbm=0
+      ddotam=0.; a2rhopm=0.; a2rhom=0.; rhom=0; rhokinm=0; e2m=0; b2m=0; edotbm=0
       a2rhophim=0.; a4rhophim=0.; a2rhopphim=0.; a2rhogphim=0.; sigE1m=0.; sigB1m=0.
 !
 !  In the following, sum over all mn pencils.
@@ -1295,6 +1309,7 @@ module Special
 !  so maybe "all" is not needed?
 !
       call mpiallreduce_sum(rhom,rhom_all)
+      call mpiallreduce_sum(rhokinm,rhokinm_all)
       call mpireduce_sum(a2rhopm,a2rhopm_all)
       call mpiallreduce_sum(a2rhom,a2rhom_all)
       call mpireduce_sum(a2rhophim,a2rhophim_all)
@@ -1332,12 +1347,23 @@ module Special
       call mpibcast_real(a2rhopphim_all)
 !
 !  Compute rhom, which is needed for wstate.
+!  In the line with tmp, everything is comoving.
+!  Then, because we divide by a2rhom_all, where rho is physical,
+!  we need to divide by a2 to have the equivalent expression.
 !
       if (ldensity) then
-!??     call mpibcast_real(rhom_all)
-        wstate=(a2rhopphim_all*a21+onethird*rhom)/(a2rhophim_all*a21+rhom)
+        if (linclude_rho_EBK_in_wstate) then
+          tmp=rhom_all+.5*(e2m_all+b2m_all+rhokinm_all)
+          wstate=(a2rhopphim_all+onethird*a21*tmp)/a2rhom_all
+        else
+          wstate=(a2rhopphim_all*a21+onethird*rhom)/(a2rhophim_all*a21+rhom)
+        endif
       else
-        wstate=(a2rhopphim_all*a21+onethird*rho_rad)/(a2rhophim_all*a21+rho_rad)
+        if (linclude_rho_EBK_in_wstate) then
+          call fatal_error("backreact_infl special_after_boundary: ","linclude_rhokin_in_a2rho=T not possible")
+        else
+          wstate=(a2rhopphim_all*a21+onethird*rho_rad)/(a2rhophim_all*a21+rho_rad)
+        endif
       endif
 !
 !  Alternatitives for deciding when to solve for phi: either when
@@ -1416,8 +1442,8 @@ module Special
             if (lroot .and. lheating .and. lheating_keep_on) then
               print*,'switch to lheating=T'
               open (1,file=trim(datadir)//'/pc_constants.pro',position="append")
-              write (1,*) 'ascale_heating=',ascale
-              write (1,*) 't_heating=',t
+              write (1,*) 'ascale_reheating=',ascale
+              write (1,*) 't_reheating=',t
               close (1)
             endif
           endif
@@ -1439,7 +1465,7 @@ module Special
       real, intent(inout) :: sigE1m,sigB1m
       real, dimension (nx,3) :: el, bb, gphi
       real, dimension (nx) :: e2, b2, gphi2, dphi, a2rhop, a2rho, a2rhophi, a4rhophi
-      real, dimension (nx) :: a2rhopphi
+      real, dimension (nx) :: a2rhopphi, tmp
       real, dimension (nx) :: ddota, phi, Vpotential, edotb, sigE1, sigB1
       real, dimension (nx) :: boost, gam_EB, eprime, bprime, jprime1
 !
@@ -1533,15 +1559,38 @@ module Special
         if (lrho_chi_inhom) then
           if (ldensity) then
             if (ldensity_nolog) then
-              a2rho=a2rho+scale_rho_chi_Heqn/a2*f(l1:l2,m,n,irho)
+              a2rho=a2rho+a21*scale_rho_chi_Heqn*f(l1:l2,m,n,irho)
             else
-              a2rho=a2rho+scale_rho_chi_Heqn/a2*exp(f(l1:l2,m,n,ilnrho))
+              a2rho=a2rho+a21*scale_rho_chi_Heqn*exp(f(l1:l2,m,n,ilnrho))
             endif
           else
-            call fatal_error("backreact_infl special_after_boundary: No such Vprime_choice: ","density must be true")
+            call fatal_error("backreact_infl special_after_boundary: ","density must be true")
+          endif
+!
+!  Kinetic energy density, i.e., (1/2) <rho*u^2> or (2/3) <rho*u^2>.
+!  Here we have the option of adding rhokin to a2rho.
+!
+          if (lhydro .and. linclude_rhokin_in_a2rho) then
+            call dot2_mn(f(l1:l2,m,n,iux:iuz),tmp)
+            if (ldensity_nolog) then
+              tmp=tmp*f(l1:l2,m,n,irho)
+            else
+              tmp=tmp*exp(f(l1:l2,m,n,ilnrho))
+            endif
+            if (lrelativistic_eos) then
+              a2rho=a2rho+twothird*a21*tmp
+              rhokinm=rhokinm+sum(twothird*tmp)
+            else
+              a2rho=a2rho+.5*a21*tmp
+              rhokinm=rhokinm+sum(.5*tmp)
+            endif
           endif
         else
-          a2rho=a2rho+scale_rho_chi_Heqn*a2*f_ode(iinfl_rho_chi)
+          if (linclude_rhokin_in_a2rho) then
+            call fatal_error("backreact_infl special_after_boundary: ","linclude_rhokin_in_a2rho=T not possible")
+          else
+            a2rho=a2rho+scale_rho_chi_Heqn*a2*f_ode(iinfl_rho_chi)
+          endif
         endif
       endif
 !
