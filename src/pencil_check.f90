@@ -97,8 +97,8 @@ module Pencil_check
       lfirst=.true.
       headt=.false.
       itsub=1  ! some modules like dustvelocity.f90 reference dt_beta_ts(itsub)
+      call random_seed_wrapper(GET=iseed_org)
       if (lpencil_check_no_zeros) then
-        call random_seed_wrapper(GET=iseed_org)
         call random_seed_wrapper(PUT=iseed_org)
         do i=1,mfarray
           if (maxval(abs(f(l1:l2,m1:m2,n1:n2,i)))==0.0) then
@@ -117,6 +117,7 @@ module Pencil_check
 !  Calculate reference results with all requested pencils on.
 !
       lpencil=lpenc_requested
+      call random_seed_wrapper(PUT=iseed_org)
 !  This initial call to pde is to set dt.
 !  It is important that dt has nonzero value for example for correct testing
 !  when using running average of entropy
@@ -126,6 +127,7 @@ module Pencil_check
       df_ref=0.0
       f_other = f_ref
       call initialize_pencils(p,penc0)
+      call random_seed_wrapper(PUT=iseed_org)
       call pde(f_other,df_ref,p)
       dt1_max_ref=dt1_max
 !
@@ -183,6 +185,7 @@ module Pencil_check
           lpencil=.true.
         endif
 
+        call random_seed_wrapper(PUT=iseed_org)
         call pde(f_other,df,p)
         lfound_nan=.false.
         do iv=1,mvar; do n=n1,n2; do m=m1,m2
@@ -289,6 +292,7 @@ f_loop:   do iv=1,mvar
       call initialize_pencils(p,0.5*penc0)
 !
       lpencil=lpenc_requested
+      call random_seed_wrapper(PUT=iseed_org)
       call pde(f_other,df,p)
       lfound_nan=.false.
       do iv=1,mvar; do n=n1,n2; do m=m1,m2
