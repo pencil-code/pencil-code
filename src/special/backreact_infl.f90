@@ -1353,7 +1353,7 @@ module Special
 !
       if (ldensity) then
         if (linclude_rho_EBK_in_wstate) then
-          tmp=rhom_all+.5*(e2m_all+b2m_all+rhokinm_all)
+          tmp=rhom_all+.5*(e2m_all+b2m_all)+rhokinm_all
           wstate=(a2rhopphim_all+onethird*a21*tmp)/a2rhom_all
         else
           wstate=(a2rhopphim_all*a21+onethird*rhom)/(a2rhophim_all*a21+rhom)
@@ -1586,6 +1586,9 @@ module Special
             endif
           endif
         else
+!
+!  Here the homogeneous case
+!
           if (linclude_rhokin_in_a2rho) then
             call fatal_error("backreact_infl special_after_boundary: ","linclude_rhokin_in_a2rho=T not possible")
           else
