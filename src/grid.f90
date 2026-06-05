@@ -3052,7 +3052,7 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
 !
 !  26-mar-15/MR: extracted from deriv_alt.
 !
-  use Deriv, only: calc_coeffs_1
+      use Deriv, only: calc_coeffs_1
 !
       real, dimension(:),                intent(IN ) :: coors
       real, dimension(-nghost:nghost,2), intent(OUT) :: coeffs
