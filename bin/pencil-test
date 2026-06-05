@@ -651,7 +651,9 @@ sub icon_result {
 sub icon_write {
     my $icon = shift;
     my $force = (shift || 0);
-    if (!$local) { die "Not yet implemented to write icon on remote host!\n"; }
+
+    # if (!$local) { die "Not yet implemented to write icon on remote host!\n"; }
+    if (!$local) { return; }
 
     # Output icon
     my $svg = "result.svg";
