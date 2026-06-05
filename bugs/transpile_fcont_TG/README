@@ -1,0 +1,32 @@
+`pc_run` fails with
+```
+ pde: ENTER
+SVN: -------            v.         (                   ) $Id$
+
+ ---it-------t---------dt--------urms-----
+      0      0.000  4.07E-01  0.00000E+00
+ check_for_nans_globally: found nans: after reading from the GPU !
+ check_for_nans_globally: nan in Field:            1
+ check_for_nans_globally: nan in Field:            2
+ check_for_nans_globally: nan in Field:            3
+ check_for_nans_globally: nan in Field:            4
+```
+After running, `src/astaroth/DSL/local/mhdsolver.ac` has
+```
+else if(AC_enum_iforcing_cont__mod__forcing[i_88_109-1] == enum_tg_string)   {
+          fact_87_88_109=2.*AC_ampl_ff__mod__forcing[i_88_109-1]
+          ac_transformed_pencil_fcont[i_88_109-1].x=+fact_87_88_109*AC_sinx__mod__forcing[vertexIdx.x][i_88_109]*AC_cosy__mod__forcing[AC_m__mod__cdata-1][i_88_109-1]*AC_cosz__mod__forcing[AC_n__mod__cdata-1][i_88_109-1]
+          ac_transformed_pencil_fcont[i_88_109-1].y=-fact_87_88_109*AC_cosx__mod__forcing[vertexIdx.x][i_88_109]*AC_siny__mod__forcing[AC_m__mod__cdata-1][i_88_109-1]*AC_cosz__mod__forcing[AC_n__mod__cdata-1][i_88_109-1]
+          ac_transformed_pencil_fcont[i_88_109-1].z=0.
+        }
+```
+Note the `AC_sinx__mod__forcing[vertexIdx.x][i_88_109]`. Manually modifying the
+DSL code such that 1 is subtracted from the index makes the run succeed.
+
+Software versions:
+- Pencil: e50e04e61b006320134347b6e4c3d0313ab1bb21 (git commit)
+- gcc: 16.1.1
+- Python: 3.14.5
+- cmake: 4.3.3
+- flex: 2.6.4
+- bison: 3.8.2

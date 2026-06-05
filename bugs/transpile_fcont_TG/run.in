@@ -1,0 +1,20 @@
+&run_pars
+  nt = 10
+  it1 = 1
+/
+&eos_run_pars
+/
+&hydro_run_pars
+  lforcing_cont_uu=T
+/
+&density_run_pars
+/
+&forcing_run_pars
+  lforcing_cont = T
+  iforcing_cont(1) = 'TG'
+  ampl_ff(1) = 5e-3
+  kf_fcont(1) = 1
+/
+&viscosity_run_pars
+  nu = 1e-2
+/
