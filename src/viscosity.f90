@@ -129,6 +129,8 @@ module Viscosity
   real :: no_visc_heat_z0=max_real, no_visc_heat_zwidth=0.0
   real :: damp_sound=0., nu_tdep_ascale_power=0.
   real :: h_sld_visc=2.0, nlf_sld_visc=1.0
+  real :: ascale_visc=1.  !PAR_DOC: value of ascale below which nu for recombination is constant
+  logical :: lvisc_const_below_ascale=.false.  !PAR_DOC: visc=const for ascale below ascale_visc
   logical :: lrate_of_strain_as_aux = .false.
   integer :: iSij=0
 !
@@ -149,7 +151,8 @@ module Viscosity
       lvisc_smag_Ma, nu_smag_Ma2_power, nu_cspeed, lno_visc_heat_zbound, &
       no_visc_heat_z0,no_visc_heat_zwidth, div_sld_visc ,lvisc_forc_as_aux, &
       lvisc_rho_nu_const_prefact, nu_rcyl_min, nu_r_reduce, &
-      tdep_nu_type, nu_tdep_ascale_power,lrate_of_strain_as_aux
+      tdep_nu_type, nu_tdep_ascale_power,lrate_of_strain_as_aux, &
+      ascale_visc, lvisc_const_below_ascale
 !
 ! diagnostic variable markers (needs to be consistent with reset list below)
 !
@@ -2563,11 +2566,18 @@ module Viscosity
         case ('PrM_sigEm')
           nu_tdep=min(nu,PrM/sigEm_all)
           !nu_tdep=nu
+!
+!  Viscosity for recombination. Allow for a value of ascale below which nu is constant.
+!
         case ('recombination')
           xH=.7546
           rhob=4.21e-31/ascale**3
           n_ele=xH*rhob/m_p
           ell_gam=1./(ascale*n_ele*sigma_Thomson)
+          if (lvisc_const_below_ascale) then
+            ell_gam=ell_gam/min(ascale/ascale_visc,1.)**2
+            ell_gam=ell_gam/min(ascale/ascale_visc,1.)**2
+          endif
           nu_tdep=c_light*ell_gam
           if (lroot) call save_name(ell_gam,idiag_ell_gam)
           if (lroot .and. ip<6) print*,'AXEL: m_p, sigma_Thomson, c_light=',m_p, sigma_Thomson, c_light
