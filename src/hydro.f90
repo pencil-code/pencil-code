@@ -5410,9 +5410,9 @@ module Hydro
         if (idiag_uxuzmxz/=0) call ysum_mn_name_xz(p%uu(:,1)*p%uu(:,3),idiag_uxuzmxz)
         if (idiag_uyuzmxz/=0) call ysum_mn_name_xz(p%uu(:,2)*p%uu(:,3),idiag_uyuzmxz)
         call ysum_mn_name_xz(p%ou,idiag_oumxz)
-        call ysum_mn_name_xz(p%oo(:,1)**2,idiag_ox2mxz)
-        call ysum_mn_name_xz(p%oo(:,2)**2,idiag_oy2mxz)
-        call ysum_mn_name_xz(p%oo(:,3)**2,idiag_oz2mxz)
+        if (idiag_ox2mxz/=0) call ysum_mn_name_xz(p%oo(:,1)**2,idiag_ox2mxz)
+        if (idiag_oy2mxz/=0) call ysum_mn_name_xz(p%oo(:,2)**2,idiag_oy2mxz)
+        if (idiag_oz2mxz/=0) call ysum_mn_name_xz(p%oo(:,3)**2,idiag_oz2mxz)
 
         call ysum_mn_name_xz(p%oo(:,2),idiag_oymxz)
 !
