@@ -27,30 +27,27 @@ This directory contains samples and scripts to compile/run and create deep learn
 ## Workflow: Training & Inference
 
 ### Initial Setup
-Navigate to your chosen sample and create necessary symbolic links:
+Navigate to your chosen sample and create necessary symbolic links and add correct modules:
 
 **Prerequisites:** Both the `scripts directory` and the `container image` be symbolicly linked in the current working sample subdirectory.
 
 ```bash
+module purge
+module load gcc/11.3.0
+module load /appl/opt/nvhpc-hpcx-cuda11/24.11
+module load cmake
+
 cd <sample name>/<training/inference>
 ln -s ../../scripts .
-ln -s <path to container> .
 ```
 
 
 ### 1. Compile the sample
 
 **Configuration:**
-Edit `scripts/compile_submit.sh` and set:
-- `sample_name`: One of `TG`, `conv-slab`, or `helical-MHDturb`
-- `mode`: Either `training` or `inference`
-- Run the script using `bash` or `sbatch`
+- `pc_build -f NVCC_MPI+torch`
+- `sbatch scripts/run_native.sh`
 
-**Execution:**
-```bash
-bash scripts/compile_submit.sh
-```
----
 
 ### 2. Generate Training/Inference Files
 This step creates the three essential files needed for TorchFort:
@@ -100,35 +97,11 @@ python build_training_files.py ./training_files AFNO
 
 ### 3. Run Training or Inference
 
-Two scripts are available depending on your use case:
-
-#### Option A: Single Run (`run_submit.sh`)
-
-Use this for single training sessions or inference runs.
-
-**Configuration:**
-Edit `scripts/run_submit.sh` and set:
-- `sample_name`: Your sample name
-- `mode`: Either `training` or `inference`
-- `data_src`: Path to directory containing the training files from Step 2
-- `snap_src`: Path to snapshot data directory (must exist)
+Once runtime compilation succeeds, use the script `run_native.sh` that calls `pc_run` for subsequent runs.
 
 **Execution:**
 ```bash
-sbatch scripts/run_submit.sh
-```
-
-#### Option B: Multi-Epoch Training (`run_submit_epoch.sh`)
-
-Use this for training across multiple epochs with checkpointing.
-
-**Configuration:**
-Same as Option A, plus:
-- Verify epoch count and checkpoint settings in the script
-
-**Execution:**
-```bash
-sbatch scripts/run_submit_epoch.sh
+sbatch scripts/run_native.sh
 ```
 
 ---
@@ -185,7 +158,8 @@ samples/training/
 │   ├── create_training_files.sh   # Training file generation
 │   ├── build_training_files.py    # Python model builder
 │   ├── run_submit.sh              # Single run script
-│   └── run_submit_epoch.sh        # Multi-epoch training script
+│   ├── run_submit_epoch.sh        # Multi-epoch training script
+│   └── run_native.sh              # For running torchfort without the container
 ├── models/
 │   ├── model_config.yaml          # Model hyperparameters
 │   ├── unet.py                    # UNet/CNN implementation
