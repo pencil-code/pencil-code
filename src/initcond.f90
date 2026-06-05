@@ -5507,15 +5507,15 @@ module Initcond
 !
         scale_factor=1
         if (.not.lscale_tobox1) scale_factor=2*pi/Lx
-        kx=cshift((/(i-floor((nxgrid+1)/.2),i=0,nxgrid-1)/),+floor((nxgrid+1)/2.))*scale_factor
+        kx=cshift((/(i-idiv(nxgrid,2),i=0,nxgrid-1)/),idiv(nxgrid,2))*scale_factor
 !
         scale_factor=1
         if (.not.lscale_tobox1) scale_factor=2*pi/Ly
-        ky=cshift((/(i-floor((nygrid+1)/.2),i=0,nygrid-1)/),+floor((nygrid+1)/2.))*scale_factor
+        ky=cshift((/(i-idiv(nygrid,2),i=0,nygrid-1)/),idiv(nygrid,2))*scale_factor
 !
         scale_factor=1
         if (.not.lscale_tobox1) scale_factor=2*pi/Lz
-        kz=cshift((/(i-floor((nzgrid+1)/.2),i=0,nzgrid-1)/),+floor((nzgrid+1)/2.))*scale_factor
+        kz=cshift((/(i-idiv(nzgrid,2),i=0,nzgrid-1)/),idiv(nzgrid,2))*scale_factor
 !
 !  integration over shells
 !
@@ -5554,7 +5554,7 @@ module Initcond
 !  but in 2-D, we have: E(k) ~ u^2 k, so we have n=2m+1, so m=(n-1)/2.
 !  Further, since we operate on k^2, we need m/2 (called mhalf below)
 !
-        mhalf=.5*(.5*initpower-1)
+        mhalf=.25*(initpower-dimensionality+1)
 !
 !  generate all 3 velocity components separately
 !
