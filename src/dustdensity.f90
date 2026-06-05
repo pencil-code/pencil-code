@@ -2749,7 +2749,6 @@ module Dustdensity
 !
           do l=1,nx
             lgh=l+nghost
-            if (lmdvar) md = f(lgh,m,n,imd)
             do i=1,ndustspec
               do j=i,ndustspec
 !

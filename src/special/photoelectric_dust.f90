@@ -187,7 +187,7 @@ module Special
       real, dimension(nx) :: areas, rhop_tmp
       real, dimension(nx,3) :: grhop_tmp
       type (pencil_case) :: p
-      integer :: j, l
+      integer :: j
 !
       if (ldivrhop_by_vol) then
         areas = x(l1:l2)*y(m)/dy_1(m)
@@ -219,6 +219,8 @@ module Special
 !
         if (const3/=0.0) then
           q%fpres_localisotropic(:,j) = -const3*p%cs2*(p%glnrho(:,j)+p%glnTT(:,j))
+        else
+          q%fpres_localisotropic(:,j) = 0.0
         endif
       enddo
 !
@@ -337,7 +339,7 @@ module Special
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
-      integer :: j,ju,k
+      integer :: j,k
 !
       if (lfirst.and.ldt) advec_cs2 = (const3*p%cs2 + const2*gamma1 + const1) * dxyz_2
       if (headtt.or.ldebug) print*, 'dss_dt: max(advec_cs2) =', maxval(advec_cs2)
@@ -346,8 +348,7 @@ module Special
 !
       if (ldust_pressureforce) then
         do j=1,3 
-          ju=j+iuu-1
-          df(l1:l2,m,n,ju) = df(l1:l2,m,n,ju) + q%fpres(:,j)
+          df(l1:l2,m,n,iuu+j-1) = df(l1:l2,m,n,iuu+j-1) + q%fpres(:,j)
         enddo
       endif
 !

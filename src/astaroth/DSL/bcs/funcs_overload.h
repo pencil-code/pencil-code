@@ -79,3 +79,8 @@ bc_hs_z(AcBoundary boundary, AC_TOP_BOT topbot, Field j)
 #endif
 #endif
 
+
+bc_outflow_z(AcBoundary boundary,AC_TOP_BOT topbot,Field f)
+{
+	bc_outflow_z(boundary,topbot,f,false)
+}

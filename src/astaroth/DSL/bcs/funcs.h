@@ -4179,3 +4179,88 @@ ac_fixed_fields(AcBoundary boundary)
 		ac_fixed_bc(boundary,F_SS_RUN_AVER)
 	}
 }
+
+bc_outflow_z(AcBoundary boundary,AC_TOP_BOT topbot,Field f,bool lforce)
+{
+  suppress_unused_warning(boundary)
+  if(topbot == AC_bot) {
+    if (f[vertexIdx.x][vertexIdx.y][n1-1]<0.0) {
+      f[vertexIdx.x][vertexIdx.y][n1-1-1]=+f[vertexIdx.x][vertexIdx.y][1+n1-1]
+      f[vertexIdx.x][vertexIdx.y][n1-2-1]=+f[vertexIdx.x][vertexIdx.y][2+n1-1]
+      f[vertexIdx.x][vertexIdx.y][n1-3-1]=+f[vertexIdx.x][vertexIdx.y][3+n1-1]
+    }
+    else {
+      f[vertexIdx.x][vertexIdx.y][n1-1-1]=-f[vertexIdx.x][vertexIdx.y][1+n1-1]
+      f[vertexIdx.x][vertexIdx.y][n1-2-1]=-f[vertexIdx.x][vertexIdx.y][2+n1-1]
+      f[vertexIdx.x][vertexIdx.y][n1-3-1]=-f[vertexIdx.x][vertexIdx.y][3+n1-1]
+      f[vertexIdx.x][vertexIdx.y][n1-1]=0.0
+    }
+    if (lforce) {
+      if (f[vertexIdx.x][vertexIdx.y][n1-0-1] > 0.0) {
+        f[vertexIdx.x][vertexIdx.y][n1-0-1] = 0.0
+      }
+      if (f[vertexIdx.x][vertexIdx.y][n1-1-1] > 0.0) {
+        f[vertexIdx.x][vertexIdx.y][n1-1-1] = 0.0
+      }
+      if (f[vertexIdx.x][vertexIdx.y][n1-2-1] > 0.0) {
+        f[vertexIdx.x][vertexIdx.y][n1-2-1] = 0.0
+      }
+      if (f[vertexIdx.x][vertexIdx.y][n1-3-1] > 0.0) {
+        f[vertexIdx.x][vertexIdx.y][n1-3-1] = 0.0
+      }
+    }
+  }
+  else if(topbot == AC_top)   {
+    if (f[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]>0.0) {
+      f[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1]=+f[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1-1]
+      f[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1]=+f[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-2-1]
+      f[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1]=+f[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-3-1]
+    }
+    else {
+      f[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1]=-f[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1-1]
+      f[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1]=-f[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-2-1]
+      f[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1]=-f[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-3-1]
+      f[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]=0.0
+    }
+    if (lforce) {
+      if (f[vertexIdx.x][vertexIdx.y][0+AC_n2__mod__cdata-1] < 0.0) {
+        f[vertexIdx.x][vertexIdx.y][0+AC_n2__mod__cdata-1] = 0.0
+      }
+      if (f[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1] < 0.0) {
+        f[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1] = 0.0
+      }
+      if (f[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1] < 0.0) {
+        f[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1] = 0.0
+      }
+      if (f[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1] < 0.0) {
+        f[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1] = 0.0
+      }
+    }
+  }
+  else {
+  }
+}
+
+bc_van3rd_z(AcBoundary boundary,AC_TOP_BOT topbot,Field j)
+{
+  suppress_unused_warning(boundary)
+  real cpoly0
+  real cpoly1
+  real cpoly2
+  if(topbot == AC_bot) {
+    cpoly0=j[vertexIdx.x][vertexIdx.y][n1-1]
+    cpoly1=-(3*j[vertexIdx.x][vertexIdx.y][n1-1]-4*j[vertexIdx.x][vertexIdx.y][1+n1-1]+j[vertexIdx.x][vertexIdx.y][2+n1-1])/(2*AC_dz__mod__cdata)
+    cpoly2=-(-j[vertexIdx.x][vertexIdx.y][n1-1]+2*j[vertexIdx.x][vertexIdx.y][1+n1-1]-j[vertexIdx.x][vertexIdx.y][2+n1-1])/(2*(AC_dz__mod__cdata*AC_dz__mod__cdata))
+    j[vertexIdx.x][vertexIdx.y][n1-1-1] = cpoly0 - cpoly1*1*AC_dz__mod__cdata + cpoly2*((1*AC_dz__mod__cdata)*(1*AC_dz__mod__cdata))
+    j[vertexIdx.x][vertexIdx.y][n1-2-1] = cpoly0 - cpoly1*2*AC_dz__mod__cdata + cpoly2*((2*AC_dz__mod__cdata)*(2*AC_dz__mod__cdata))
+    j[vertexIdx.x][vertexIdx.y][n1-3-1] = cpoly0 - cpoly1*3*AC_dz__mod__cdata + cpoly2*((3*AC_dz__mod__cdata)*(3*AC_dz__mod__cdata))
+  }
+  else if(topbot == AC_top)   {
+    cpoly0=j[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]
+    cpoly1=-(-3*j[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]+4*j[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1-1]-j[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-2-1])/(2*AC_dz__mod__cdata)
+    cpoly2=-(-j[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]+2*j[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1-1]-j[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-2-1])/(2*(AC_dz__mod__cdata*AC_dz__mod__cdata))
+    j[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1] = cpoly0 + cpoly1*1*AC_dz__mod__cdata + cpoly2*((1*AC_dz__mod__cdata)*(1*AC_dz__mod__cdata))
+    j[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1] = cpoly0 + cpoly1*2*AC_dz__mod__cdata + cpoly2*((2*AC_dz__mod__cdata)*(2*AC_dz__mod__cdata))
+    j[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1] = cpoly0 + cpoly1*3*AC_dz__mod__cdata + cpoly2*((3*AC_dz__mod__cdata)*(3*AC_dz__mod__cdata))
+  }
+}
