@@ -5193,7 +5193,7 @@ module Magnetic
 !MR: Why is advec_va2 not cumulative?
         if (notanumber(p%advec_va2)) then
           if (lproc_print) then
-            print*, 'calc_pencils_magnetic: advec_va2  =',p%advec_va2
+            if (ip<15) print*, 'calc_pencils_magnetic: advec_va2  =',p%advec_va2
             if (.not.allproc_print) lproc_print=.false.
           endif
         endif

@@ -3426,7 +3426,7 @@ module Hydro
 
         if (notanumber(p%advec_uu)) then
           if (lproc_print) then
-            print*, 'calc_pencils_hydro: p%advec_uu =',p%advec_uu
+            if (ip<15) print*, 'calc_pencils_hydro: p%advec_uu =',p%advec_uu
             if (.not.allproc_print) lproc_print=.false.
           endif
         endif

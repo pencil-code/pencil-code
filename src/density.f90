@@ -2698,7 +2698,7 @@ module Density
       if (lpenc_loc(i_glnrho).or.lpenc_loc(i_grho)) then
         call grad(f,ilnrho,p%glnrho)
         if (notanumber(p%glnrho)) then
-          print*, 'density:iproc,it,m,n=', iproc_world,it,m,n
+          if (ip<15) print*, 'density:iproc,it,m,n=', iproc_world,it,m,n
           !print*, 'it,m,n=', it,m,n
           !write(iproc+10,*) "density:f(:,m,n,ilnrho)=",f(:,m,n,ilnrho)
           call fatal_error_local('calc_pencils_density','NaNs in p%glnrho')
@@ -2998,7 +2998,7 @@ module Density
           if (ldensity_nolog) then
             df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) - 3.*Hubble*ascale**1.5*p%rho
           else
-            df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - 3.*Hubble*ascale**1.5
+            df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - 3.*cs201*Hubble*ascale**nconformal
           endif
         endif
 !
