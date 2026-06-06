@@ -2576,7 +2576,6 @@ module Viscosity
           ell_gam=1./(ascale*n_ele*sigma_Thomson)
           if (lvisc_const_below_ascale) then
             ell_gam=ell_gam/min(ascale/ascale_visc,1.)**2
-            ell_gam=ell_gam/min(ascale/ascale_visc,1.)**2
           endif
           nu_tdep=c_light*ell_gam
           if (lroot) call save_name(ell_gam,idiag_ell_gam)
