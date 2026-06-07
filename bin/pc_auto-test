@@ -267,6 +267,7 @@ my %tests = (
 my @gpu_tests = qw(
                          1d-tests/sine-Gordon_doublet
                          decay-reconnection
+			 debris-photoelectric-fluid
 			 fcont_TG
                          spherical-gdisk-planet-thermo
 			 interstellar
