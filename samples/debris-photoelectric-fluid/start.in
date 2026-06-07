@@ -13,9 +13,9 @@
   lwrite_aux=T
 !
   lperi=T,T,F
-  bcz='a','a','out','v3' ,'a','a','set:set','v3' ,'s'
-  fbcz1= 0,0,0,0,0,0, 0.3,0,0
-  fbcz2= 0,0,0,0,0,0,-0.3,0,0
+  bcz='a','a','out','v3' ,'a','a','set:set','v3'
+  fbcz1= 0,0,0,0,0,0, 0.3,0
+  fbcz2= 0,0,0,0,0,0,-0.3,0
 !
 /
 &initial_condition_pars

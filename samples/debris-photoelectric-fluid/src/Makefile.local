@@ -20,5 +20,3 @@ REAL_PRECISION = double
 INITIAL_CONDITION = initial_condition/dust-equilibrium
 
 SPECIAL = special/photoelectric_dust
-
-SHOCK = shock

@@ -46,8 +46,6 @@
   iviscd='hyper3-simplified' , 'simplified' 
   nud_hyper3=3e-15 , nud=1e-4 
 /
-&shock_run_pars
-/
 &shear_run_pars
 /
 &special_run_pars
