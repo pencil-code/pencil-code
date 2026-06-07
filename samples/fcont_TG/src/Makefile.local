@@ -4,6 +4,3 @@ HYDRO     =   hydro
 DENSITY   =   density
 REAL_PRECISION = double
 
-GPU = gpu_astaroth
-RUNTIME_COMPILATION=on
-TRANSPILATION=on

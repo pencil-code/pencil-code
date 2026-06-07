@@ -178,6 +178,8 @@ my %tests = (
                          interlocked-fluxrings
                          conv-slab-flat
                          coronae_heatflux_boris
+		         decay-reconnection
+			 fcont_TG
                          helical-MHDturb_HDF5
                          helical-MHDturb-noncube
                          power_xy/complex
@@ -264,7 +266,8 @@ my %tests = (
 	    # the test machine
 my @gpu_tests = qw(
                          1d-tests/sine-Gordon_doublet
-                         decay-reconnection #not in %tests
+                         decay-reconnection
+			 fcont_TG
                          spherical-gdisk-planet-thermo
 			 interstellar
                          #chiral-diffusion
