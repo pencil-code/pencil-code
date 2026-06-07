@@ -2002,7 +2002,7 @@ module Diagnostics
       real :: newmax
       logical :: lchanged
       integer, dimension(1) :: max_loc
-      integer :: iname_loc_,indx,indy,indz,rank,indloc
+      integer :: iname_loc_,indloc
 !
       if (iname==0) return
 !

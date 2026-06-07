@@ -185,7 +185,7 @@ module DensityMethods
       real, contiguous, dimension(:,:,:,:), intent(in) :: f
       integer, intent(in) :: iz,irho
       real, dimension(size(f,1),size(f,2)), intent(out):: rho
-      integer :: i,j
+      integer :: i
 
       if (ldensity_nolog) then
         if (lreference_state) then

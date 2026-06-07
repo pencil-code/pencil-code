@@ -2,7 +2,7 @@
 !
 !
 &run_pars
-  nt=190000, it1=100, isave=1000, itorder=3
+  nt=51, it1=10, isave=1000, itorder=3
   dspec=1, lspec_start=T, ou_spec=T, ab_spec=T
   dsnap=200., dvid=.1, d1davg=20., d2davg=20.
   lpencil_check_small=F

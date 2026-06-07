@@ -13,6 +13,3 @@ FOURIER   =   fourier_fftpack
 POWER     =   power_spectrum
 #POISSON   =   poisson
 REAL_PRECISION = double
-GPU       =   gpu_astaroth
-MULTITHREADING=openmp
-RUNTIME_COMPILATION = on
