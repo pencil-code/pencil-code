@@ -242,7 +242,7 @@ sub read_line_data_fancy {
 sub read_line_data1 {
     my $dir = "$pc_home/tests";
 
-    my $ref_file = "$dir/python/read-time-series/test1.ref";
+    my $ref_file = "$test_dir/data/line-2.dat";
     my $comp1 = Test::NumericFileComparator->new($ref_file);
     ok($comp1, "Parse $ref_file");
 }
