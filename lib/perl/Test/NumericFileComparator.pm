@@ -527,10 +527,14 @@ sub _extract_data {
     croak("No data found in $file") unless @$cols_ref;
 
     my %accuracies;
-    if (%$accs_ref) {
-        %accuracies = %$accs_ref;
-    } else {
-        %accuracies = _infer_accuracies($vars_ref, $cols_ref);
+    my %inferred_accuracies = _infer_accuracies($vars_ref, $cols_ref);
+    foreach (@$vars_ref) {
+        my $var = $_;
+        if ((%$accs_ref) && ($accs_ref->{$var} ne "auto")) {
+            $accuracies{$var} = $accs_ref->{$var};
+        } else {
+            $accuracies{$var} = $inferred_accuracies{$var};
+        }
     }
     my %values = _numerical_values($vars_ref, $cols_ref);
 
@@ -575,6 +579,10 @@ sub _parse_accuracy {
 # Parse an accuracy string like '1e-3', '1e-3:r', or '1e-6:a|1e-3:r' to a
 # pair of numbers like (), (), or ()
     my ($string) = @_;
+
+    if ($string eq "auto") {
+        return $string;
+    }
 
     my ($abs, $rel) = (0, 0);
     foreach my $acc (split(/\|/, $string)) {
