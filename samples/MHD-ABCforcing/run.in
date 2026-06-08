@@ -13,7 +13,10 @@
 &density_run_pars
 /
 &forcing_run_pars
-  lforcing_cont=T, ampl_ff=1e-4, k1_ff=1.
+  lforcing_cont=T
+  ampl_ff(1)=1e-4
+  k1_ff=1.
+  iforcing_cont(1) = 'ABC'
 /
 &magnetic_run_pars
   b_ext=.0,.1,.0
