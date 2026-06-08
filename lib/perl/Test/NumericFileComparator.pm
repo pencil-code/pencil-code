@@ -12,10 +12,6 @@
 # License version 3 or later; see $PENCIL_HOME/license/GNU_public_license.txt.
 #
 
-# TODO:
-# - We currently assume that either no or all accuracies are specified.
-#   Need to implement the mixed case.
-
 package Test::NumericFileComparator;
 
 use warnings;
@@ -148,8 +144,9 @@ or '1.2e-3:a'). Numbers followed by ':r' indicate relative precision (e.g.
 this case, two numbers are considered sufficiently equal if they are close
 enough by either absolute or relative accuracy.
 
-If no accuracy is specified, for each column / line, an absolute accuracy
-of 1.5 times the last digit of the largest number (by modulus) is used.
+If no accuracy is specified for a particular column / line (or the keyword
+'auto' is given in place of the accuracy), an absolute accuracy of 1.5 times
+the last digit of the largest number (by modulus) is used.
 
 
 =head2 Methods
