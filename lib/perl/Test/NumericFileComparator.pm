@@ -499,7 +499,7 @@ sub _read_file_in_line_format {
             }
 
             if ($mixed_accuracies) {
-                croak "Accuracies must either be specified for no variables, or for all variables (file: $file)\n";
+                croak "If you do not want to specify the accuracy for a particular variable, use the keyword 'auto' (file: $file)\n";
             }
 
             if (defined $acc) {
