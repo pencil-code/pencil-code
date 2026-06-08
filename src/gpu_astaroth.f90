@@ -36,6 +36,7 @@ module GPU
   external copy_farray_c
   external update_on_gpu_arr_by_ind_c
   external update_on_gpu_scal_by_ind_c
+  external update_on_gpu_vec_by_ind_c
   external pos_real_ptr_c
   external gpu_prepare_for_first_substep_c
   external get_gpu_reduced_vars_c
@@ -55,6 +56,7 @@ module GPU
 
   integer, external :: update_on_gpu_arr_by_name_c
   integer, external :: update_on_gpu_scal_by_name_c
+  integer, external :: update_on_gpu_vec_by_name_c
 
   !integer(KIND=ikind8) :: pFarr_GPU_in, pFarr_GPU_out
   type(C_PTR) :: pFarr_GPU_in, pFarr_GPU_out
@@ -390,6 +392,25 @@ contains
       call reload_gpu_config_c
 
     endsubroutine reload_GPU_config
+!**************************************************************************
+    subroutine update_on_gpu_vec(index, varname, value)
+!
+!  Updates an element of the Astaroth configuration, identified by name or index, on the GPU.
+!
+      integer, intent(inout) :: index
+      character(LEN=*),optional :: varname
+      real, dimension(3), optional :: value
+      if (index>=0) then
+        if (present(value)) then
+          call update_on_gpu_vec_by_ind_c(index,value)
+        endif
+      else
+        if (present(value)) then
+          index = update_on_gpu_vec_by_name_c(varname//char(0),value)
+        endif
+        if (index<0) call fatal_error('update_on_gpu','variable "'//trim(varname)//'" not found')
+      endif
+    endsubroutine update_on_gpu_vec
 !**************************************************************************
     subroutine update_on_gpu(index, varname, value)
 !

@@ -3914,7 +3914,6 @@ module Boundcond
       integer, intent(in) :: sgn, j
       integer, intent(IN) :: topbot
 !
-      integer :: i
 !
       select case(topbot)
       case(BOT)               ! bottom boundary
@@ -3942,7 +3941,6 @@ module Boundcond
       integer, intent(in) :: sgn, j
       integer, intent(IN) :: topbot
 !
-      integer :: i
 !
       select case(topbot)
       case(BOT)               ! bottom boundary
@@ -3970,7 +3968,6 @@ module Boundcond
       integer, intent(in) :: sgn, j
       integer, intent(IN) :: topbot
 !
-      integer :: i
 !
       select case(topbot)
       case(BOT)               ! bottom boundary

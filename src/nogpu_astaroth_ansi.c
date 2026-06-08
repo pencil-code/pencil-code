@@ -54,11 +54,20 @@ void FTNIZE(update_on_gpu_scal_by_ind_c)(int *index, REAL* value)
 {
 }
 /* ------------------------------------------------------------------- */
+void FTNIZE(update_on_gpu_vec_by_ind_c)(int *index, REAL* value)
+{
+}
+/* ------------------------------------------------------------------- */
 void FTNIZE(update_on_gpu_arr_by_ind_c)(int *index)
 {
 }
 /* ------------------------------------------------------------------- */
 int FTNIZE(update_on_gpu_scal_by_name_c)(char *varname, REAL* value)
+{
+  return 0;
+}
+/* ------------------------------------------------------------------- */
+int FTNIZE(update_on_gpu_vec_by_name_c)(char *varname, REAL* value)
 {
   return 0;
 }

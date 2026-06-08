@@ -2783,6 +2783,10 @@ module Hydro
       use Mpicomm, only: update_foreign_data
       use Sub, only: smooth, eulag_filter, get_random_vec, dot
       use General, only: random_number_wrapper
+      use Gpu, only: update_on_gpu_vec
+      integer, save :: qvec_gb_index=-1
+      integer, save :: avec_gb_index=-1
+      real, dimension(3) ::  qvec_gb_local,avec_gb_local
 !
       real, contiguous,dimension(:,:,:,:), intent(inout) :: f
 !
@@ -2853,17 +2857,26 @@ module Hydro
           tsforce = tsforce + dtforce
 !
           call random_number_wrapper(phase1); phase1 = 2*pi*phase1
-          call get_random_vec(qvec_gb, kpeak_kinflow)
-          call get_random_vec(avec_gb)
+          call get_random_vec(qvec_gb_local, kpeak_kinflow)
+          call get_random_vec(avec_gb_local)
 !
 !         make avec perpendicular to qvec
-          call dot(qvec_gb, avec_gb, qdota)
+          call dot(qvec_gb_local, avec_gb_local, qdota)
           do j = 1,3
-            avec_gb(j) = avec_gb(j) - qvec_gb(j)*qdota
+            avec_gb_local(j) = avec_gb_local(j) - qvec_gb_local(j)*qdota
           enddo
 !
 !         fix amplitude so that urms == ampl_kinflow
-          avec_gb = sqrt(2.) * ampl_kinflow * avec_gb / sqrt(sum(avec_gb**2))
+          avec_gb_local = sqrt(2.) * ampl_kinflow * avec_gb_local / sqrt(sum(avec_gb_local**2))
+          if(lgpu) then
+            call update_on_gpu_vec(qvec_gb_index,'AC_qvec_gb__mod__hydro',qvec_gb_local)
+            call update_on_gpu_vec(avec_gb_index,'AC_avec_gb__mod__hydro',avec_gb_local)
+          endif
+          if((lgpu .and. ldiagnos) .or. .not. lgpu) then
+            qvec_gb = qvec_gb_local
+            avec_gb = avec_gb_local
+            print*,"VECTORS: ",it,qvec_gb,avec_gb
+          endif
         endif
 !
       endif
@@ -4096,10 +4109,10 @@ module Hydro
     call copy_addr(profy_kinflow2,p_par(65)) ! (my)
     call copy_addr(profy_kinflow3,p_par(66)) ! (my)
     call copy_addr(location,p_par(67)) ! real3
-    call copy_addr(ks_k,p_par(68)) ! (3) (ks_modes__mod__hydro)
-    call copy_addr(ks_a,p_par(69)) ! (3) (ks_modes__mod__hydro)
-    call copy_addr(ks_b,p_par(70)) ! (3) (ks_modes__mod__hydro)
-    call copy_addr(ks_omega,p_par(71)) ! (ks_modes__mod__hydro)
+    if(allocated(KS_k)) call copy_addr(KS_k,p_par(68)) ! (3) (ks_modes__mod__hydro)
+    if(allocated(KS_A)) call copy_addr(KS_A,p_par(69)) ! (3) (ks_modes__mod__hydro)
+    if(allocated(KS_B)) call copy_addr(KS_B,p_par(70)) ! (3) (ks_modes__mod__hydro)
+    if(allocated(KS_omega)) call copy_addr(ks_omega,p_par(71)) ! (ks_modes__mod__hydro)
     call string_to_enum(enum_kinematic_flow,kinematic_flow)
     call string_to_enum(enum_wind_profile,wind_profile)
     call copy_addr(enum_kinematic_flow,p_par(72)) ! int
@@ -4109,11 +4122,15 @@ module Hydro
     if (allocated(dpldtheta)) call copy_addr(dpldtheta,p_par(76)) ! (mx)
     if (allocated(dzldr)) call copy_addr(dzldr,p_par(77)) ! (my)
 
+    call copy_addr(qvec_gb,p_par(78)) ! real3 dconst
+    call copy_addr(avec_gb,p_par(79)) ! real3 dconst
+
     call keep_compiler_quiet(uphi_at_rzero)
     call keep_compiler_quiet(uphi_at_rmax)
     call keep_compiler_quiet(uphi_rmax)
     call keep_compiler_quiet(u_out_kep)
     call keep_compiler_quiet(radial_shear)
+
 
     endsubroutine pushpars2c
 !***********************************************************************

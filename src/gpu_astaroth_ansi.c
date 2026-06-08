@@ -35,6 +35,8 @@ void updateInConfigArr(int);
 int  updateInConfigArrName(char *);
 void updateInConfigScal(int,REAL);
 int  updateInConfigScalName(char *, REAL);
+void updateInConfigVec(int,REAL*);
+int  updateInConfigVecName(char *, REAL*);
 void prepareForFirstSubstep(double t);
 void random_initial_condition(void);
 void getGPUReducedVars(REAL* dst);
@@ -228,6 +230,11 @@ void FTNIZE(update_on_gpu_scal_by_ind_c)(int *index, REAL* value)
 {
   updateInConfigScal(*index,*value);
 }
+void FTNIZE(update_on_gpu_vec_by_ind_c)(int *index, REAL* value)
+{
+  updateInConfigVec(*index,value);
+}
+/* ---------------------------------------------------------------------- */
 /* ---------------------------------------------------------------------- */
 void FTNIZE(update_on_gpu_arr_by_ind_c)(int *index)
 {
@@ -237,6 +244,11 @@ void FTNIZE(update_on_gpu_arr_by_ind_c)(int *index)
 int FTNIZE(update_on_gpu_scal_by_name_c)(char *varname, REAL* value)
 {
   return updateInConfigScalName(varname,*value);
+}
+/* ---------------------------------------------------------------------- */
+int FTNIZE(update_on_gpu_vec_by_name_c)(char *varname, REAL* value)
+{
+  return updateInConfigVecName(varname,value);
 }
 /* ---------------------------------------------------------------------- */
 int FTNIZE(update_on_gpu_arr_by_name_c)(char *varname)

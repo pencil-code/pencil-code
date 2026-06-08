@@ -143,6 +143,17 @@ contains
 
     endsubroutine update_on_gpu
 !**************************************************************************
+    subroutine update_on_gpu_vec(index, varname, value)
+      integer, intent(inout) :: index
+      character(LEN=*),optional :: varname
+      real, dimension(3), optional :: value
+      
+      call keep_compiler_quiet(index)
+      if (present(varname)) call keep_compiler_quiet(varname)
+      if (present(value)) call keep_compiler_quiet(value)
+
+    endsubroutine update_on_gpu_vec
+!**************************************************************************
     subroutine gpu_prepare_for_first_substep()
 
     endsubroutine gpu_prepare_for_first_substep

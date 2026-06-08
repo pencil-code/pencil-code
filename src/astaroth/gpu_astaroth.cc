@@ -1927,6 +1927,13 @@ extern "C" void updateInConfigScal(int index, AcReal value)
      acDeviceSynchronizeStream(acGridGetDevice(),STREAM_DEFAULT);
 }
 /***********************************************************************************************/
+extern "C" void updateInConfigVec(int index, AcReal* value_)
+{
+     const AcReal3 value = (AcReal3){value_[0],value_[1],value_[2]};
+     acDeviceLoadVectorUniform(acGridGetDevice(),STREAM_DEFAULT,static_cast<AcReal3Param>(index),value);
+     acDeviceSynchronizeStream(acGridGetDevice(),STREAM_DEFAULT);
+}
+/***********************************************************************************************/
 extern "C" int updateInConfigArrName(char *name)
 {
     int index = -1;
@@ -1949,6 +1956,21 @@ extern "C" int updateInConfigScalName(char *name, AcReal value)
        if (strcmp(realparam_names[i],name)==0) index=i;
     }
     if (index>-1) updateInConfigScal(index, value);
+    else
+    {
+       fprintf(stderr,"Astaroth WARNING: Did not entry named %s in config!!\n",name);
+       fflush(stderr);
+    }
+    return index;
+}
+/**********************************************************************************************/
+extern "C" int updateInConfigVecName(char *name, AcReal* value_)
+{
+    int index = -1;
+    for (int i=0; i<NUM_REAL3_PARAMS; i++){
+       if (strcmp(real3param_names[i],name)==0) index=i;
+    }
+    if (index>-1) updateInConfigVec(index, value_);
     else
     {
        fprintf(stderr,"Astaroth WARNING: Did not entry named %s in config!!\n",name);
