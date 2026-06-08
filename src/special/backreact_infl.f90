@@ -152,6 +152,7 @@ module Special
   logical :: lapply_BD_kNy_factor=.false. !PAR_DOC: apply $1/N^(D/2)$ factor in the Bunch-Davies initial condition.
   logical :: linv_BD=.true.              !PAR_DOC: apply forward transform in the Bunch-Davies initial condition.
   logical :: lswitch_toMHD_when_nophi=.true. !PAR_DOC: switch to MHD when phi evolution is turned off (phi is not included in current MHD solver).
+  logical :: lswitch_toMHD_when_heating=.false. !PAR_DOC: switch to MHD at the start of reheating
   logical :: lit1_reset_if_lsolve_for_phi=.false.  !PAR_DOC: allow to check for it1_reset_if_lsolve_for_phi
   logical :: lit1_reset=.false.                    !PAR_DOC: put lit1_reset to a new value if true.
   logical :: lsigE_const_if_lsolve_for_phi=.false. !PAR_DOC: allow to check for lsigE_const_if_lsolve_for_phi
@@ -205,7 +206,8 @@ module Special
       wstate_crit, lwstate_crit, lwstate_crit_old, wstate_tolerance, &
       lsolve_for_phi_always, lsolve_for_phi_switch, &
       heating_choice, lheating_keep_on, lcombine_prep_ode_right_with_rhs, &
-      lswitch_toMHD_when_nophi, Gamma_phi_exp, a4rhophim_crit, solve_phi_criterion, &
+      lswitch_toMHD_when_nophi, lswitch_toMHD_when_heating, &
+      Gamma_phi_exp, a4rhophim_crit, solve_phi_criterion, &
       lit1_reset_if_lsolve_for_phi, it1_reset_value, &
       lsigE_const_ifnot_lsolve_for_phi, lsigE_const, lsigE_const_if_lsolve_for_phi, &
       lold_lrho_chi_dtconstraint, linclude_rhokin_in_a2rho, linclude_rho_EBK_in_wstate
@@ -1439,12 +1441,24 @@ module Special
             lheating=Hscript<Hscript_prev
             Hscript_prev=Hscript
             lheating_always=lheating .and. lheating_keep_on
-            if (lroot .and. lheating .and. lheating_keep_on) then
-              print*,'switch to lheating=T'
-              open (1,file=trim(datadir)//'/pc_constants.pro',position="append")
-              write (1,*) 'ascale_reheating=',ascale
-              write (1,*) 't_reheating=',t
-              close (1)
+            !if (lroot .and. lheating .and. lheating_keep_on) then
+            if (lheating .and. lheating_keep_on) then
+              if (lroot) then
+                print*,'switch to lheating=T'
+                open (1,file=trim(datadir)//'/pc_constants.pro',position="append")
+                write (1,*) 'ascale_reheating=',ascale
+                write (1,*) 't_reheating=',t
+                close (1)
+              endif
+              if (lswitch_toMHD_when_heating .and. iex>0) then
+                ladvance_ee=.false.
+                if (lroot) then
+                  open (1,file=trim(datadir)//'/pc_constants.pro',position="append")
+                  write (1,*) 'ascale_noadvance_ee=',ascale
+                  write (1,*) 't_noadvance_ee=',t
+                  close (1)
+                endif
+              endif
             endif
           endif
         case ('aphimax2')

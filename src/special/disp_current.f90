@@ -114,6 +114,8 @@ module Special
   logical :: lresistive_gauge_disp=.false. !PAR_DOC: resitive gauge when displacement current is solved for.
   logical :: ldt_disp_current=.true.  !PAR_DOC: invoke timestep constraint from sigE
   logical :: llate_reset_el_pencil=.false.  !PAR_DOC: late reset of el pencil, should probably be true in future.
+  logical :: linclude_dphiB_in_MHD=.false.  !PAR_DOC: include dphi*B in MHD approximation
+  logical :: linclude_gphixE_in_MHD=.false.  !PAR_DOC: include gphixE in MHD approximation
   character (len=labellen) :: aderiv_scaling='table'
 !
   namelist /special_run_pars/ &
@@ -129,7 +131,8 @@ module Special
     lresistive_gauge_ee, llorentzforce_ee, aderiv_scaling, vA_limit, &
     lohmic_heating_ee, lohmic_heating_justee, sigE_const_value, &
     ladvance_ee, eta_given, ldt_disp_current, cdt_sigE, &
-    lresistive_gauge_disp, etaSchw_max, llate_reset_el_pencil
+    lresistive_gauge_disp, etaSchw_max, llate_reset_el_pencil, &
+    linclude_dphiB_in_MHD, linclude_gphixE_in_MHD
 !
 ! Declare any index variables necessary for main or
 !
@@ -583,13 +586,13 @@ module Special
 !
 !   24-nov-04/tony: coded
 !
-      use Sub, only: grad, div, curl, del2v, dot2_mn, dot, levi_civita, del2v_etc, cross_mn, multsv_mn
+      use Sub, only: grad, div, curl, del2v, dot2_mn, dot, levi_civita, del2v_etc, cross_mn, multsv_mn, multsv_add
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
-      real, dimension (nx,3) :: tmpv
-      real, dimension (nx) :: tmp, mass_suppression_fact
+      real, dimension (nx,3) :: tmpv, E_MHD
+      real, dimension (nx) :: tmp, mass_suppression_fact, gphi2
       integer :: i,j,k
 !
       intent(inout) :: f
@@ -774,7 +777,42 @@ module Special
               else
                 call multsv_mn(etaSchw,p%jj_ohm,tmpv)
               endif
-              f(l1:l2,m,n,iex:iez)=-p%uxb+tmpv
+              E_MHD=-p%uxb+tmpv
+              if (linclude_dphiB_in_MHD) then
+                call multsv_add(E_MHD,etaSchw*alpf*p%infl_dphi,p%bb,E_MHD)
+                if (linclude_gphixE_in_MHD) then
+                  call dot2_mn(p%gphi,gphi2)
+                  tmp=1./(1.+gphi2)
+!
+!  eps_123*EMHD(2)
+!  eps_132*EMHD(3)
+!
+                  f(l1:l2,m,n,iex)=tmp*( &
+                    (1.+p%gphi(:,1)**2)*E_MHD(:,1) &
+                       +p%gphi(:,3)    *E_MHD(:,2) &
+                       -p%gphi(:,2)    *E_MHD(:,3))
+!
+!  eps_231*EMHD(3)
+!  eps_213*EMHD(1)
+!
+                  f(l1:l2,m,n,iey)=tmp*( &
+                       -p%gphi(:,3)    *E_MHD(:,1) &
+                   +(1.+p%gphi(:,2)**2)*E_MHD(:,2) &
+                       +p%gphi(:,1)    *E_MHD(:,3))
+!
+!  eps_312*EMHD(1)
+!  eps_321*EMHD(2)
+!
+                  f(l1:l2,m,n,iey)=tmp*( &
+                       +p%gphi(:,2)    *E_MHD(:,1) &
+                       -p%gphi(:,1)    *E_MHD(:,2) &
+                   +(1.+p%gphi(:,3)**2)*E_MHD(:,3))
+                else
+                  f(l1:l2,m,n,iex:iez)=E_MHD
+                endif
+              else
+                f(l1:l2,m,n,iex:iez)=E_MHD
+              endif
               if (llate_reset_el_pencil) p%el=f(l1:l2,m,n,iex:iez)
             endif
           endif
@@ -1042,9 +1080,9 @@ module Special
 !
         if (lresistive_gauge_disp) then
           if (etaSchw_max==impossible) then
-            call multsv_mn(etaSchw,p%graddiva,gtmp)
+            call multsv(etaSchw,p%graddiva,gtmp)
           else
-            call multsv_mn(min(etaSchw,etaSchw_max),p%graddiva,gtmp)
+            call multsv(min(etaSchw,etaSchw_max),p%graddiva,gtmp)
           endif
           df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-p%el+gtmp
         else
@@ -1114,7 +1152,7 @@ module Special
             call calc_helical_term(p,gtmp,p%dphi,p%gphi,lphi_hom)
             if (ldensity .and. vA_limit>0) then
               tmp=1./(1.+p%b2*p%rho1/vA_limit**2)
-              call multsv_mn(tmp,gtmp,gtmp)
+              call multsv(tmp,gtmp,gtmp)
             endif
             df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-alpf*gtmp
 !
@@ -1123,7 +1161,7 @@ module Special
               !   df(l1:l2,m,n,idiva_name)=df(l1:l2,m,n,idiva_name)+del2a0
               ! else
               if (.not. lphi_hom) then
-                call dot_mn(p%gphi,p%bb,tmp)
+                call dot(p%gphi,p%bb,tmp)
                 df(l1:l2,m,n,idiva_name)=df(l1:l2,m,n,idiva_name)+alpf*tmp
               endif
             endif
@@ -1133,7 +1171,7 @@ module Special
             df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-alpfpsi*gtmp
             if (llorenz_gauge_disp) then
               if (.not. lpsi_hom) then
-                call dot_mn(p%gpsi,p%bb,tmp)
+                call dot(p%gpsi,p%bb,tmp)
                 df(l1:l2,m,n,idiva_name)=df(l1:l2,m,n,idiva_name)+alpfpsi*tmp
               endif
             endif
