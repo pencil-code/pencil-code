@@ -2875,8 +2875,8 @@ module Hydro
           if((lgpu .and. ldiagnos) .or. .not. lgpu) then
             qvec_gb = qvec_gb_local
             avec_gb = avec_gb_local
-            print*,"VECTORS: ",it,qvec_gb,avec_gb
           endif
+          if(lpencil_check_at_work) tsforce = -1.0
         endif
 !
       endif
@@ -2971,6 +2971,7 @@ module Hydro
 !
       real, contiguous,dimension(:,:,:,:) :: f
       intent(inout) :: f
+
 !
 !  Random phase, amplitude and wavenumber.
 !
