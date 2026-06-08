@@ -302,7 +302,11 @@ sub _compare_numbers {
             "$label expected $exp, got $got, differs by > $abs_acc"
             );
     } else {
-        ok($exp == $got, "$label expected $exp, got $got");
+        #2026-Jun-08/Kishore: at least on my machine (perl 5.42.2),
+        # 1.5*1e-4 - 1.5e-4 = 2.71050543121376e-20 , so simply testing $exp == $got
+        # below makes some tests fail. 1e-15 is just chosen based on the machine
+        # epsilon for 64-bit floats, but probably can be made smaller.
+        ok(abs($exp - $got) < 1e-15, "$label expected $exp, got $got");
     }
 }
 
