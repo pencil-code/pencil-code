@@ -592,7 +592,7 @@ module Special
       type (pencil_case) :: p
 !
       real, dimension (nx,3) :: tmpv, E_MHD
-      real, dimension (nx) :: tmp, mass_suppression_fact, gphi2
+      real, dimension (nx) :: tmp, mass_suppression_fact, gphi2, prefactor
       integer :: i,j,k
 !
       intent(inout) :: f
@@ -779,34 +779,35 @@ module Special
               endif
               E_MHD=-p%uxb+tmpv
               if (linclude_dphiB_in_MHD) then
-                call multsv_add(E_MHD,etaSchw*alpf*p%infl_dphi,p%bb,E_MHD)
+                call multsv_add(E_MHD,alpf*etaSchw*p%infl_dphi,p%bb,E_MHD)
                 if (linclude_gphixE_in_MHD) then
                   call dot2_mn(p%gphi,gphi2)
-                  tmp=1./(1.+gphi2)
+                  prefactor=alpf*etaSchw
+                  tmp=1./(1.+prefactor*gphi2)
 !
 !  eps_123*EMHD(2)
 !  eps_132*EMHD(3)
 !
                   f(l1:l2,m,n,iex)=tmp*( &
-                    (1.+p%gphi(:,1)**2)*E_MHD(:,1) &
-                       +p%gphi(:,3)    *E_MHD(:,2) &
-                       -p%gphi(:,2)    *E_MHD(:,3))
+                    (1.+prefactor*p%gphi(:,1)**2)*E_MHD(:,1) &
+                       +prefactor*p%gphi(:,3)    *E_MHD(:,2) &
+                       -prefactor*p%gphi(:,2)    *E_MHD(:,3))
 !
 !  eps_231*EMHD(3)
 !  eps_213*EMHD(1)
 !
                   f(l1:l2,m,n,iey)=tmp*( &
-                       -p%gphi(:,3)    *E_MHD(:,1) &
-                   +(1.+p%gphi(:,2)**2)*E_MHD(:,2) &
-                       +p%gphi(:,1)    *E_MHD(:,3))
+                       -prefactor*p%gphi(:,3)    *E_MHD(:,1) &
+                   +(1.+prefactor*p%gphi(:,2)**2)*E_MHD(:,2) &
+                       +prefactor*p%gphi(:,1)    *E_MHD(:,3))
 !
 !  eps_312*EMHD(1)
 !  eps_321*EMHD(2)
 !
-                  f(l1:l2,m,n,iey)=tmp*( &
-                       +p%gphi(:,2)    *E_MHD(:,1) &
-                       -p%gphi(:,1)    *E_MHD(:,2) &
-                   +(1.+p%gphi(:,3)**2)*E_MHD(:,3))
+                  f(l1:l2,m,n,iez)=tmp*( &
+                       +prefactor*p%gphi(:,2)    *E_MHD(:,1) &
+                       -prefactor*p%gphi(:,1)    *E_MHD(:,2) &
+                   +(1.+prefactor*p%gphi(:,3)**2)*E_MHD(:,3))
                 else
                   f(l1:l2,m,n,iex:iez)=E_MHD
                 endif

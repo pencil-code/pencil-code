@@ -117,6 +117,7 @@ module Special
   real :: wstate_tolerance=0.     !PAR_DOC: tolerance w (EoS) value
   real :: wstate_prev=0.          !PAR_DOC: value of wstate in the previous iteration.
   real :: a4rhophim_crit=0.       !PAR_DOC: critical value of a4rhophim below lsolve_phi=F is set.
+  real :: lna_switch_toMHD=4.17   !PAR_DOC: critical value when to switch to MHD (if lswitch_toMHD_at_lna=T)
   real, pointer :: sigE_ceiling   !PAR_DOC: sigE ceiling
   real, pointer :: sigE_const_value !PAR_DOC: constant value for sigE
 !
@@ -162,6 +163,7 @@ module Special
   logical :: lold_lrho_chi_dtconstraint=.true.     !PAR_DOC: old lrho_chi dt constraint (use false for new and correct version)
   logical :: linclude_rhokin_in_a2rho=.false.      !PAR_DOC: include rhokin in a2rho
   logical :: linclude_rho_EBK_in_wstate=.false.    !PAR_DOC: include rhoE, rhoB, and rhokin in wstate
+  logical :: lswitch_toMHD_at_lna=.false.          !PAR_DOC: option to use lna as criterion for switching to MHD
   logical, pointer :: lphi_hom, lphi_linear_regime, lnoncollinear_EB, lnoncollinear_EB_aver
   logical, pointer :: lcollinear_EB, lcollinear_EB_aver, lmass_suppression
   logical, pointer :: lallow_bprime_zero
@@ -210,7 +212,8 @@ module Special
       Gamma_phi_exp, a4rhophim_crit, solve_phi_criterion, &
       lit1_reset_if_lsolve_for_phi, it1_reset_value, &
       lsigE_const_ifnot_lsolve_for_phi, lsigE_const, lsigE_const_if_lsolve_for_phi, &
-      lold_lrho_chi_dtconstraint, linclude_rhokin_in_a2rho, linclude_rho_EBK_in_wstate
+      lold_lrho_chi_dtconstraint, linclude_rhokin_in_a2rho, linclude_rho_EBK_in_wstate, &
+      lswitch_toMHD_at_lna, lna_switch_toMHD
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -1466,6 +1469,20 @@ module Special
         case default
           call fatal_error("special_after_boundary: No such heating_choice: ",trim(heating_choice))
       endselect
+!
+!  Option to switch to MHD when lna has exceeded a certain critical value.
+!
+      if (lswitch_toMHD_at_lna .and. ladvance_ee) then
+        if (f_ode(iinfl_lna)>lna_switch_toMHD) then
+          ladvance_ee=.false.
+          if (lroot) then
+            open (1,file=trim(datadir)//'/pc_constants.pro',position="append")
+            write (1,*) 'ascale_noadvance_ee=',ascale,';(lswitch_toMHD_at_lna criterion activated)'
+            write (1,*) 't_noadvance_ee=',t
+            close (1)
+          endif
+        endif
+      endif
 !
     endsubroutine special_after_boundary
 !***********************************************************************
