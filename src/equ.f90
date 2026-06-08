@@ -1005,6 +1005,7 @@ module Equ
 !
 !  6-jul-25/TP: carved from pde
 !
+      use Hydro, only: hydro_before_boundary
       use Shear, only: shear_before_boundary
       use Interstellar, only: interstellar_before_boundary
 
@@ -1012,6 +1013,7 @@ module Equ
 
       if (linterstellar) call interstellar_before_boundary(f)
       if (lshear)        call shear_before_boundary(f)
+      if (lhydro_kinematic) call hydro_before_boundary(f)
 !
     endsubroutine before_boundary_shared
 !***********************************************************************
@@ -1045,7 +1047,7 @@ module Equ
       if (ldustdensity)  call dustdensity_before_boundary(f)
       if (ldensity .and. ldiagnos) call density_before_boundary_diagnostics(f)
       if (ldensity.or.lboussinesq) call density_before_boundary(f)
-      if (lhydro.or.lhydro_kinematic) call hydro_before_boundary(f)
+      if (lhydro)        call hydro_before_boundary(f)
       if (lmagnetic)     call magnetic_before_boundary(f)
                          call energy_before_boundary(f)
       if (lchiral)       call chiral_before_boundary(f)
