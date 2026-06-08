@@ -23,3 +23,5 @@
 &viscosity_run_pars
   nu=1e-1
 /
+&power_spectrum_run_pars
+/
