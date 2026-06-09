@@ -2619,14 +2619,10 @@ module Hydro
 !
       case ('Gilbert-Bayly')
         if (lpenc_loc(i_uu)) then
-          if(lkinflow_as_aux) then
-            p%uu = f(l1:l2,m,n,iux:iuz)
-          else
-            tmp_mn = sin(qvec_gb(1)*x(l1:l2) + qvec_gb(2)*y(m) + qvec_gb(3)*z(n) + phase1)
-            do ii = 1,3
-              p%uu(:,ii) = avec_gb(ii) * tmp_mn
-            enddo
-          endif
+          tmp_mn = sin(qvec_gb(1)*x(l1:l2) + qvec_gb(2)*y(m) + qvec_gb(3)*z(n) + phase1)
+          do ii = 1,3
+            p%uu(:,ii) = avec_gb(ii) * tmp_mn
+          enddo
         endif
 !
 ! no kinematic flow.
