@@ -2881,7 +2881,7 @@ module Hydro
           endif
         endif
 
-        if(lkinflow_as_aux) then
+        if(lkinflow_as_aux .and. .not. lgpu) then
           do m = m1,m2
           do n = n1,n2
             tmp_mn = sin(qvec_gb(1)*x(l1:l2) + qvec_gb(2)*y(m) + qvec_gb(3)*z(n) + phase1)
