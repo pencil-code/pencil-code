@@ -22,16 +22,16 @@ def main():
         sources_are_different = True
     else:
         sources_are_different = os.system("diff PC_modulesources.h PC_modulesources_old.h")
-    skip_generation = os.path.exists("DSL/local/mhdsolver.ac") and os.path.exists("DSL/local/rhs.h") and not sources_are_different
+    skip_generation = os.path.exists("DSL/local/rhs.h") and not sources_are_different
     if skip_generation:
         return
 
     os.system(command)
     os.system("rm res-inlined.txt")
-    rhs_already_exists = os.path.exists("DSL/local/rhs.h") and os.path.exists("DSL/local/mhdsolver.ac") and not os.system("diff mhdsolver-rhs.inc DSL/local/mhdsolver.ac") and not os.system("diff rhs.ac DSL/local/GW-rhs.h")
+    rhs_already_exists = os.path.exists("DSL/local/rhs.h") and not os.system("diff rhs.ac DSL/local/rhs.h") 
     if (rhs_already_exists): 
         return
-    os.system("mv mhdsolver-rhs.inc DSL/local/mhdsolver.ac")
+
     os.system("mv rhs.ac DSL/local/rhs.h")
     os.system("mv cparam.h DSL/local")
     os.system("mv static_var_declares.h DSL/local")

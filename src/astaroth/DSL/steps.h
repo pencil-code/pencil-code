@@ -84,6 +84,7 @@ ComputeSteps AC_before_boundary_steps(boundconds)
 	entropy_mean_derivs_x()
 	entropy_mean_derivs_z()
 	entropy_smooth(AC_lrmv)
+	kinematic_flow(AC_step_num,AC_dt,AC_t,AC_lrmv)
 }
 
 ComputeSteps AC_initialize_sums(boundconds)
