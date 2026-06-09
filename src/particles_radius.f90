@@ -64,10 +64,7 @@ module Particles_radius
   logical :: lgas_enthalpy_flux=.false.
   integer :: iabsm=0
   real, pointer :: cp_part_evap
-!  Per-droplet net mass-loss rate from the Sherwood-film model (g/s, >0 leaving
-!  the droplet), read by particles_temperature for the convective-heat
-!  Stefan-flow correction (allocated only when the film model is active).
-  real, allocatable, dimension (:) :: mdot_film
+  real, allocatable, dimension (:), target :: mdot_film
   character(len=labellen), dimension(ninit) :: initap='nothing'
   character(len=labellen) :: condensation_coefficient_type='constant'
 !
@@ -157,7 +154,7 @@ module Particles_radius
 !
       use EquationOfState, only: get_gamma_etc
       use General, only: random_number_wrapper
-      use SharedVariables, only: get_shared_variable
+      use SharedVariables, only: get_shared_variable, put_shared_variable
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mpar_loc,mparray) :: fp
@@ -263,6 +260,9 @@ module Particles_radius
 !  Stefan-flow correction in particles_temperature (lstefan_flow).
         if (.not. allocated(mdot_film)) allocate(mdot_film(mpar_loc))
         mdot_film = 0.0
+!  Share the film mass-loss rate with particles_temperature (Stefan-flow
+!  correction).
+        call put_shared_variable('mdot_film',mdot_film,caller='initialize_particles_radius')
       endif
 !
 !  Droplet evaporative cooling needs the droplet heat capacity (shared by

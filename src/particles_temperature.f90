@@ -23,7 +23,6 @@ module Particles_temperature
   use Particles_mpicomm
   use Particles_sub
   use Particles_chemistry, only: get_temperature_chemistry
-  use Particles_radius, only: mdot_film
 !
   implicit none
 !
@@ -33,6 +32,7 @@ module Particles_temperature
   logical :: lrad_part=.false.,lconv_heating=.true.
   logical :: lpart_nuss_const=.false.
   logical :: lstefan_flow = .true.
+  real, dimension(:), pointer :: mdot_film => null()
   logical :: ldiffuse_backtemp = .false.,ldiffTT=.false.
   logical :: lconst_part_temp=.false.
   logical :: lrayleigh_rad_limit=.false.
@@ -98,11 +98,20 @@ module Particles_temperature
 !
 !  28-aug-14/jonas+nils: coded
 !
+      use SharedVariables, only: get_shared_variable
+!
       real, dimension(mx,my,mz,mfarray) :: f
       integer :: ndimx,ndimy,ndimz
-! 
+      integer :: ierr
+!
       if (lpart_temp_backreac .and. ldiffuse_backtemp .and. ldensity_nolog .and. ltemperature_nolog) &
         call not_implemented('initialize_particles_TT', 'for ldensity_nolog=T, ltemperature_nolog=T')
+!
+!  Fetch the film mass-loss rate shared by particles_radius. It is only present
+!  when the Sherwood-film model is active; otherwise mdot_film stays
+!  unassociated and the Stefan-flow branch below falls back accordingly.
+!
+      if (lstefan_flow) call get_shared_variable('mdot_film',mdot_film,ierr=ierr)
 !
       call find_weight_array_dims(ndimx,ndimy,ndimz)
 !
@@ -331,7 +340,7 @@ module Particles_temperature
           if (lconv_heating) then
             if (lstefan_flow .and. lparticles_chemistry) then
               stefan_b = mass_loss(k)*p%cv(inx0)/(2*pi*fp(k,iap)*Nuss_p(k)*cond)
-            elseif (lstefan_flow .and. allocated(mdot_film)) then
+            elseif (lstefan_flow .and. associated(mdot_film)) then
 !  Stefan-flow blowing from the Sherwood-film (evaporation/absorption) net mass
 !  efflux supplied by particles_radius (mdot_film), for liquid droplets without
 !  the surface-chemistry module.
