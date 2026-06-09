@@ -430,6 +430,7 @@
       real, dimension(nx,3) :: div_hydro_sgs
       real, dimension(nx,3) :: div_mag_sgs
 
+
       if (ltrained) then 
         call div_tensor(f,div_hydro_sgs,itau_hydro)
         if (ltrain_mag) call div_tensor(f,div_mag_sgs,itau_bb)
@@ -437,7 +438,7 @@
           df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - div_hydro_sgs
           if (ltrain_mag) then
             df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - div_mag_sgs
-            df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + f(l1:l2,m,n,isgs_emfx:isgs_emfz)
+            !df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + f(l1:l2,m,n,isgs_emfx:isgs_emfz)
           endif
         endif
       endif
@@ -606,15 +607,23 @@
     call copy_addr(ltrained,p_par(9)) ! bool
     call copy_addr(ltrain_mag,p_par(10)) ! bool
     call copy_addr(ltrain_dens,p_par(11)) ! bool
-    call copy_addr(isgs_emfx,p_par(12)) ! int
-    call copy_addr(isgs_emfy,p_par(13)) ! int
-    call copy_addr(isgs_emfz,p_par(14)) ! int
+    call copy_addr(isgs_emf,p_par(12)) ! int
+    call copy_addr(isgs_emfx,p_par(13)) ! int
+    call copy_addr(isgs_emfy,p_par(14)) ! int
+    call copy_addr(isgs_emfz,p_par(15)) ! int
+    call copy_addr(itau_bb,p_par(16)) ! int
+    call copy_addr(itau_bbxx,p_par(17)) ! int
+    call copy_addr(itau_bbyy,p_par(18)) ! int
+    call copy_addr(itau_bbzz,p_par(19)) ! int
+    call copy_addr(itau_bbxy,p_par(20)) ! int
+    call copy_addr(itau_bbyz,p_par(21)) ! int
+    call copy_addr(itau_bbxz,p_par(22)) ! int
     !call copy_addr(itau_densityx,p_par(15)) ! int
     !call copy_addr(itau_densityy,p_par(16)) ! int
     !call copy_addr(itau_densityz,p_par(17)) ! int
-    call copy_addr(input_channels,p_par(18)) ! int
-    call copy_addr(output_channels,p_par(19)) ! int
-    call copy_addr(start_infer,p_par(20)) ! real dconst
+    call copy_addr(input_channels,p_par(23)) ! int
+    call copy_addr(output_channels,p_par(24)) ! int
+    call copy_addr(start_infer,p_par(25)) ! real dconst
 
     endsubroutine pushpars2c
 !***********************************************************************
