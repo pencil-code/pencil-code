@@ -551,7 +551,7 @@ class Power(object):
                 ("power", ""),
                 ("cyl_power", "_cyl"),
                 ]:
-                if file_name[:len(prefix)] == prefix and fileext in ["dat", "h5"]:
+                if file_name.startswith(prefix) and fileext in ["dat", "h5"]:
                     """
                     Examples for power_name:
                     powero.dat -> o
