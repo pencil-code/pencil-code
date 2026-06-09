@@ -1255,6 +1255,22 @@ module Magnetic
 !  After a reload, we need to rewrite index.pro, but the auxiliary
 !  arrays are already allocated and must not be allocated again.
 !
+
+      if (any(iresistivity=='eta-slope-limited')) then
+        if(lsld_bb) lbb_as_comaux = .true.
+        if (any(iresistivity=='eta-slope-limited')) then
+          lslope_limit_diff = .true.
+          if (dimensionality<3) lisotropic_advection=.true.
+          if (isld_char == 0) then
+            call farray_register_auxiliary('sld_char',isld_char,communicated=.true.,rhs=.true.)
+            if (lroot) write(15,*) 'sld_char= fltarr(mx,my,mz)*one'
+            aux_var(aux_count)=',sld_char'
+            if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
+            aux_count=aux_count+1
+          endif
+        endif
+      endif
+
       if (lbb_as_aux .or. lbb_as_comaux) &
         call register_report_aux('bb', ibb, ibx, iby, ibz, communicated=lbb_as_comaux, rhs=.true.)
       if (ljj_as_aux .or. ljj_as_comaux) &
@@ -1319,21 +1335,6 @@ module Magnetic
 !
       if (lalfven_as_aux) call register_report_aux('alfven',ialfven,communicated=.true.)
 !
-      if (any(iresistivity=='eta-slope-limited')) then
-        lslope_limit_diff = .true.
-        if (dimensionality<3) lisotropic_advection=.true.
-        lbb_as_comaux=lsld_bb
-        if(lsld_bb .and. ibb == 0) then
-          call register_report_aux('bb', ibb, ibx, iby, ibz, communicated=lbb_as_comaux, rhs=.true.)
-        endif
-        if (isld_char == 0) then
-          call farray_register_auxiliary('sld_char',isld_char,communicated=.true.,rhs=.true.)
-          if (lroot) write(15,*) 'sld_char= fltarr(mx,my,mz)*one'
-          aux_var(aux_count)=',sld_char'
-          if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
-          aux_count=aux_count+1
-        endif
-      endif
 !
 !  Register nusmag as auxilliary variable
 !
