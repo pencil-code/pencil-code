@@ -1734,6 +1734,8 @@ module Special
     call copy_addr(etaschw_max,p_par(57))
     call copy_addr(lresistive_gauge_disp,p_par(58)) ! bool
     call copy_addr(llate_reset_el_pencil,p_par(59)) ! bool
+    call copy_addr(linclude_dphib_in_mhd,p_par(60)) ! bool
+    call copy_addr(linclude_gphixe_in_mhd,p_par(61)) ! bool
     endsubroutine pushpars2c
 !***********************************************************************
 !

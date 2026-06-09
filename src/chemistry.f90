@@ -7845,6 +7845,8 @@ module Chemistry
     call keep_compiler_quiet(init_y2)
     call keep_compiler_quiet(init_z2)
 
+    call copy_addr(t_boil_cgs,p_par(133))
+    call copy_addr(p_boil_cgs,p_par(134))
   endsubroutine pushpars2c
 !***********************************************************************
   subroutine make_flame_index(f)

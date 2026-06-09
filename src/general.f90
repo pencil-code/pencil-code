@@ -8162,6 +8162,8 @@ iloop:do i=1,size(list2)
         dst = enum_gmssm_string
       case('damp_mean_uz_prof_bdr')
         dst = enum_damp_mean_uz_prof_bdr_string
+      case('global-heat')
+        dst = enum_globalZheat_string
       case('waterfall')
         dst = enum_waterfall_string
       case('imposed-cs2-core')

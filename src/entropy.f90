@@ -8860,6 +8860,7 @@ module Energy
     call keep_compiler_quiet(thermal_background)
     call keep_compiler_quiet(thermal_scaling)
 
+    call copy_addr(lcool_prof_as_var,p_par(480)) ! bool
     endsubroutine pushpars2c
 !***********************************************************************
 !********************************************************************
