@@ -2854,7 +2854,9 @@ module Hydro
 !
       elseif (kinematic_flow=='Gilbert-Bayly') then
         if (t > tsforce) then
-          tsforce = tsforce + dtforce
+          if (.not.lpencil_check_at_work) then
+            tsforce = tsforce + dtforce
+          endif
 !
           call random_number_wrapper(phase1); phase1 = 2*pi*phase1
           call get_random_vec(qvec_gb_local, kpeak_kinflow)
@@ -2868,6 +2870,7 @@ module Hydro
 !
 !         fix amplitude so that urms == ampl_kinflow
           avec_gb_local = sqrt(2.) * ampl_kinflow * avec_gb_local / sqrt(sum(avec_gb_local**2))
+!
           if(lgpu) then
             call update_on_gpu_vec(qvec_gb_index,'AC_qvec_gb__mod__hydro',qvec_gb_local)
             call update_on_gpu_vec(avec_gb_index,'AC_avec_gb__mod__hydro',avec_gb_local)
@@ -2876,7 +2879,6 @@ module Hydro
             qvec_gb = qvec_gb_local
             avec_gb = avec_gb_local
           endif
-          if(lpencil_check_at_work) tsforce = -1.0
         endif
 !
       endif
