@@ -517,23 +517,29 @@ class Power(object):
 
         for file_name in file_list_in:
             fileext = file_name.split('.')[-1]
-            if file_name[:5] == "power" and fileext in ["dat", "h5"]:
-                """
-                Examples for power_name:
-                powero.dat -> o
-                powero.u_xy.dat -> ou_xy
-                power_krms.dat -> krms
-                powerux_xy.dat -> ux_xy
-                """
-                fname_no_ext = file_name.removesuffix(f".{fileext}")
-                power_name = fname_no_ext.replace(".", "") #dots not allowed in attribute names
-                power_name = power_name.removeprefix("power").removeprefix("_")
+            for prefix, keysuffix in [
+                ("power", ""),
+                ("cyl_power", "_cyl"),
+                ]:
+                if file_name[:len(prefix)] == prefix and fileext in ["dat", "h5"]:
+                    """
+                    Examples for power_name:
+                    powero.dat -> o
+                    powero.u_xy.dat -> ou_xy
+                    power_krms.dat -> krms
+                    powerux_xy.dat -> ux_xy
+                    cyl_power_kin.dat -> kin_cyl
+                    """
+                    fname_no_ext = file_name.removesuffix(f".{fileext}")
+                    power_name = fname_no_ext.replace(".", "") #dots not allowed in attribute names
+                    power_name = power_name.removeprefix(prefix).removeprefix("_")
+                    power_name += keysuffix
 
-                if not quiet:
-                    print("appending", power_name)
+                    if not quiet:
+                        print("appending", power_name)
 
-                power_list.append(power_name)
-                file_list.append(file_name)
+                    power_list.append(power_name)
+                    file_list.append(file_name)
 
         return power_list, file_list
 
