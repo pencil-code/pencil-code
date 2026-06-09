@@ -203,6 +203,8 @@ module Hydro
         iuz=iuu+2
         if (lroot .and. (ip<14)) print*, 'initialize_hydro: iuu = ', iuu
       endif
+
+      if(lkinflow_as_comaux) lkinflow_as_aux = .true.
 !
       kinflow=kinematic_flow
 
@@ -305,7 +307,7 @@ module Hydro
 !
 ! kinflows end here
 !
-      if ((lkinflow_as_aux.or.lkinflow_as_comaux) .and. iuu/=0) then
+      if ((lkinflow_as_aux) .and. iuu/=0) then
 !
 !  The kinematic flow can only be used as auxiliary if it has been registered.
 !  Later registering by setting lkinflow_as_aux or lkinflow_as_comaux to .true. at 
@@ -2617,10 +2619,14 @@ module Hydro
 !
       case ('Gilbert-Bayly')
         if (lpenc_loc(i_uu)) then
-          tmp_mn = sin(qvec_gb(1)*x(l1:l2) + qvec_gb(2)*y(m) + qvec_gb(3)*z(n) + phase1)
-          do ii = 1,3
-            p%uu(:,ii) = avec_gb(ii) * tmp_mn
-          enddo
+          if(lkinflow_as_aux) then
+            p%uu = f(l1:l2,m,n,iux:iuz)
+          else
+            tmp_mn = sin(qvec_gb(1)*x(l1:l2) + qvec_gb(2)*y(m) + qvec_gb(3)*z(n) + phase1)
+            do ii = 1,3
+              p%uu(:,ii) = avec_gb(ii) * tmp_mn
+            enddo
+          endif
         endif
 !
 ! no kinematic flow.
@@ -2787,12 +2793,14 @@ module Hydro
       integer, save :: qvec_gb_index=-1
       integer, save :: avec_gb_index=-1
       real, dimension(3) ::  qvec_gb_local,avec_gb_local
+      real, dimension(nx) :: tmp_mn
 !
       real, contiguous,dimension(:,:,:,:), intent(inout) :: f
 !
       real :: fac, qdota
       real, save :: t_foreign=0.
       integer :: j
+      integer :: ii
 !
       if (kinematic_flow=='from-foreign-snap') then
         if (lfirst) then
@@ -2880,6 +2888,17 @@ module Hydro
             avec_gb = avec_gb_local
           endif
         endif
+
+        if(lkinflow_as_aux) then
+          do m = m1,m2
+          do n = n1,n2
+            tmp_mn = sin(qvec_gb(1)*x(l1:l2) + qvec_gb(2)*y(m) + qvec_gb(3)*z(n) + phase1)
+            do ii = 1,3
+              f(l1:l2,m,n,iux-1+ii) = avec_gb(ii)*tmp_mn
+            enddo
+          enddo
+          enddo
+        endif
 !
       endif
 !
@@ -2921,8 +2940,9 @@ module Hydro
 !  2026-Jun-04/Kishore: changed lkinflow_as_aux -> (lkinflow_as_aux.or.lkinflow_as_comaux).
 !                       Axel had earlier suggested this change in a comment.
 !                       (see commit 89c5a868244ee31b7dd2872516ac34b109a38330)
+!  2026-Jun-9/TP: Made lkinflow_as_aux be true if lkinflow_as_comaux is true so now we simply have lkinflow_as_aux
 !
-     if (lpencil(i_uu).and.(lkinflow_as_aux.or.lkinflow_as_comaux).and. &
+     if (lpencil(i_uu).and.(lkinflow_as_aux).and. &
         (get_lupdate_aux().or.lfirst_aux)) f(l1:l2,m,n,iux:iuz)=p%uu
      if (.not.lpencil_check_at_work) lfirst_aux=.false.
 !
