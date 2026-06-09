@@ -353,10 +353,11 @@ module Special
         if (.not.associated(alpf)) allocate(alpf, lphi_hom, lphi_linear_regime, &
           sigE_prefactor, sigB_prefactor, lcollinear_EB, lcollinear_EB_aver, &
           lnoncollinear_EB, lnoncollinear_EB_aver, lmass_suppression, &
-          sigE_ceiling, sigE_const_value, lallow_bprime_zero, mass_chi)
+          sigE_ceiling, sigE_const_value, lallow_bprime_zero, mass_chi, ladvance_ee)
         alpf=0.
         lphi_hom=.false.
         lphi_linear_regime=.false.
+        ladvance_ee=.false.
         sigE_ceiling=impossible
         sigE_const_value=impossible
         sigE_prefactor=0.
