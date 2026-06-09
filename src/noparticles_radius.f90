@@ -20,6 +20,11 @@ module Particles_radius
 !
   include 'particles_radius.h'
 !
+!  Never-allocated counterpart of the Sherwood-film mass-loss rate, so that
+!  particles_temperature (which may be compiled with this no-module) can test
+!  allocated(mdot_film) for its Stefan-flow branch.
+  real, allocatable, dimension (:) :: mdot_film
+!
   contains
 !***********************************************************************
     subroutine register_particles_radius()

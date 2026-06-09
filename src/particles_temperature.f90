@@ -23,6 +23,7 @@ module Particles_temperature
   use Particles_mpicomm
   use Particles_sub
   use Particles_chemistry, only: get_temperature_chemistry
+  use Particles_radius, only: mdot_film
 !
   implicit none
 !
@@ -66,6 +67,7 @@ module Particles_temperature
 !  27-aug-14/jonas+nils: coded
 !
       use FArrayManager, only: farray_register_auxiliary
+      use SharedVariables, only: put_shared_variable
 !
       if (lroot) call svn_id( &
           "$Id: particles_temperature.f90 21950 2014-07-08 08:53:00Z jonas.kruger $")
@@ -73,6 +75,11 @@ module Particles_temperature
 !  Indices for particle position.
 !
       call append_npvar('iTp',iTp)
+!
+!  Share the droplet heat capacity so particles_radius can add the latent
+!  (evaporative) cooling to the droplet temperature equation.
+!
+      call put_shared_variable('cp_part',cp_part,caller='register_particles_TT')
 !
 !  We need to register an auxiliary array to dmp
 !
@@ -324,6 +331,11 @@ module Particles_temperature
           if (lconv_heating) then
             if (lstefan_flow .and. lparticles_chemistry) then
               stefan_b = mass_loss(k)*p%cv(inx0)/(2*pi*fp(k,iap)*Nuss_p(k)*cond)
+            elseif (lstefan_flow .and. allocated(mdot_film)) then
+!  Stefan-flow blowing from the Sherwood-film (evaporation/absorption) net mass
+!  efflux supplied by particles_radius (mdot_film), for liquid droplets without
+!  the surface-chemistry module.
+              stefan_b = mdot_film(k)*p%cv(inx0)/(2*pi*fp(k,iap)*Nuss_p(k)*cond)
             else
               stefan_b=0.0
             endif

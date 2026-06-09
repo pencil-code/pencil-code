@@ -53,5 +53,7 @@
   public :: chemistry_diags_reductions
   public :: cond_spec_cond, cond_spec_nucl, condensing_species_rate
   public :: cond_spec_cond_lagr, cond_spec_nucl_lagr
+  public :: cond_spec_film_rate, cond_spec_Lmass, cond_spec_transfer_cv
+  public :: cond_spec_absorb_rate, absorb_spec_lagr, absorb_spec_Lsol
   public :: pushpars2c, make_flame_index, make_mixture_fraction
   public :: chemistry_allocate_rhs_arrays

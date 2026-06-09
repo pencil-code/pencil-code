@@ -184,6 +184,35 @@ module Chemistry
   real :: molar_mass_spec, atomic_m_spec, A_spec
   real :: deltaH_cgs = 7.07e12 ! in erg/mol
   !real :: deltaH_cgs = 3.55e12 ! in erg/mol (based on Tboil and 1025C)
+  ! Boiling point and reference pressure for the Clausius-Clapeyron saturation
+  ! curve (cond_spec_sat_conc / cond_spec_psat).  Defaults reproduce the
+  ! previously hard-coded values; override via chemistry_run_pars for other
+  ! condensing species (e.g. NH3: T_boil_cgs=239.82).
+  real :: T_boil_cgs = 2503.        ! normal boiling point [K]
+  real :: P_boil_cgs = 1013250.     ! pressure at T_boil [Ba] (1 atm)
+  ! Mass diffusivity of the condensing species in the carrier gas, used by the
+  ! Sherwood film (d^2-law) evaporation model cond_spec_film_rate.
+  real :: Dcond_cgs = 0.            ! [cm^2/s]; 0 -> film model unusable
+  real :: Dcond = 0.                ! code units, set in initialize_chemistry
+  ! ---- Gas absorption into a liquid droplet (e.g. NH3 into water) ----------
+  ! A second gaseous species ('absorbing_species') dissolves into the droplet
+  ! tracked by particles_radius.  Surface partial pressure from a swappable
+  ! VLE routine (absorb_spec_psurf); 'henry' = dilute Henry's law.
+  character(len=labellen) :: absorbing_species='nothing'
+  character(len=labellen) :: henry_model='henry'
+  integer :: i_absorb_spec=0, ichem_absorb_spec=0
+  real :: molar_mass_absorb=0.
+  logical, pointer :: labsorbing_species
+  logical :: labsorbing_on=.false.   ! plain copy, .false. unless particles_radius enables it
+  ! Henry volatility constant (mole-fraction basis): p_s = H(T) x, with
+  !   H(T) = Henry_ref * exp[ Henry_B (1/Henry_Tref - 1/T) ]  [pressure units].
+  ! Defaults (NH3 in water): Henry_ref ~ 0.94 atm, Henry_B ~ 4090 K.
+  real :: Henry_ref_cgs = 0.        ! [Ba]; 0 -> absorption model unusable
+  real :: Henry_ref = 0.            ! code units, set in initialize_chemistry
+  real :: Henry_Tref = 298.15       ! [K]
+  real :: Henry_B = 4090.           ! [K] (van't Hoff slope of the volatility)
+  real :: dHsol_cgs = 0.            ! enthalpy of solution [erg/mol], >0 exothermic
+  real :: Dabs_cgs = 0., Dabs = 0.  ! absorbing-species diffusivity [cm^2/s]/code
   real :: gam_surf_energy_mul_fac=1.0
   real :: conc_sat_spec_cgs=1e-8 !units of mol/cm^3
   real :: min_nucl_radius_cgs=1e-8 ! units of cm
@@ -252,6 +281,7 @@ module Chemistry
       file_name, lreac_as_aux, init_zz1, init_zz2, flame_pos, &
       reac_rate_method,global_phi, lSmag_heat_transport, Pr_turb, lSmag_diffusion, z_cloud, &
       lhotspot, lchem_detailed, condensing_species, conc_sat_spec_cgs, &
+      absorbing_species, &
       true_density_cond_spec_cgs, delta_chem, press, init_premixed_fuel, &
       init_fuel_molar_ratio,init_fuel_O2_demand,init_temp_fuel, init_temp_oxidizer, init_phi, &
       lFlame_index_as_aux, lmixture_fraction_as_aux, mixture_fraction_element, ifuel_flow, &
@@ -272,6 +302,8 @@ module Chemistry
       lgradP_terms, lnormalize_chemspec, lnormalize_chemspec_N2, &
       gam_surf_energy_cgs, isurf_energy, iconc_sat_spec, nucleation_rate_coeff_cgs, &
       lnoevap, lnolatentheat, gam_surf_energy_mul_fac, deltaH_cgs,&
+      T_boil_cgs, P_boil_cgs, Dcond_cgs, &
+      henry_model, Henry_ref_cgs, Henry_Tref, Henry_B, dHsol_cgs, Dabs_cgs, &
       min_nucl_radius_cgs, lupw_chemspec, Pr_number, &
       lFlame_index_as_aux, lmixture_fraction_as_aux, mixture_fraction_element, &
       flameind_spec1, flameind_spec2
@@ -522,6 +554,26 @@ module Chemistry
               endif
             endif
           endif
+!
+!  Absorbing species (gas that dissolves into the droplet, e.g. NH3 in water).
+!  Only particles_radius shares labsorbing_species, so guard the fetch with
+!  lparticles_radius (a dust-only chemistry run never provides it).
+!
+          if (lparticles_radius) then
+            call get_shared_variable('labsorbing_species',labsorbing_species)
+            labsorbing_on = labsorbing_species
+            if (labsorbing_on) then
+              call find_species_index(absorbing_species,i_absorb_spec,ichem_absorb_spec,found_specie)
+              if (.not. found_specie) then
+                print*,"absorbing_species=",absorbing_species
+                call fatal_error('initialize_chemistry','there is no such absorbing species')
+              endif
+              if (lroot) then
+                print*,"Absorbing species: ",trim(absorbing_species), &
+                       " ichem=",ichem_absorb_spec
+              endif
+            endif
+          endif
         endif
 
         if (lfix_Sc .and. any(idiag_diffm/=0)) then
@@ -721,6 +773,16 @@ module Chemistry
         molar_mass_spec = species_constants(ichem_cond_spec,imass)
         atomic_m_spec=molar_mass_spec*m_u
         A_spec=sqrt(8.*k_B/(pi*atomic_m_spec))*molar_mass_spec/(4.*true_density_cond_spec)
+        ! Diffusivity in code units (D has dimensions length^2/time).
+        Dcond = Dcond_cgs/unit_length**2*unit_time
+      endif
+!
+! Constants for the absorbing species (gas -> droplet).
+!
+      if (labsorbing_on) then
+        molar_mass_absorb = species_constants(ichem_absorb_spec,imass)
+        Dabs = Dabs_cgs/unit_length**2*unit_time
+        Henry_ref = Henry_ref_cgs/unit_pressure
       endif
 !
 ! Do we want upwinding
@@ -1070,6 +1132,21 @@ module Chemistry
         endif
         if (lnucleation .or. lcondensing_species) then
           lpenc_requested(i_conc_sat_spec) = .true.
+        endif
+!  Pencils needed by the Sherwood film (d^2-law) evaporation model.  The
+!  Diff_penc_add pencil is the per-species transport diffusivity, used when
+!  Dcond_cgs<=0 (the physical default; constant Dcond_cgs>0 overrides it).
+        if (lcondensing_species .or. labsorbing_on) then
+          lpenc_requested(i_rho) = .true.
+          lpenc_requested(i_nu) = .true.
+          lpenc_requested(i_pp) = .true.
+          lpenc_requested(i_mu1) = .true.
+          lpenc_requested(i_Diff_penc_add) = .true.
+!  For the gas-side enthalpy flux of the transferred mass (lgas_enthalpy_flux).
+          lpenc_requested(i_TT) = .true.
+          lpenc_requested(i_TT1) = .true.
+          lpenc_requested(i_cv1) = .true.
+          lpenc_requested(i_rho1) = .true.
         endif
       endif
 !
@@ -3727,7 +3804,11 @@ module Chemistry
       endif
 
       if (ldustdensity .or. lparticles) then
-         if (lnucleation .or. lcondensing_species) then
+!  Store the supersaturation field only if the aux slot exists (it is
+!  registered for the nucleation path, lpartnucleation, in particles_dust).
+!  lcondensing_species without nucleation leaves isupsat=0, so guard the write
+!  (consistent with the isupsat/=0 guard further down at the diagnostics).
+         if ((lnucleation .or. lcondensing_species) .and. isupsat/=0) then
             f(l1:l2,m,n,isupsat)=p%chem_conc(:,ichem_cond_spec)&
                /max(p%conc_sat_spec,1e-20)
         endif
@@ -7299,22 +7380,315 @@ module Chemistry
         !
         type (pencil_case) :: p
         !
-        real, dimension (nx) :: conc_sat_spec, tmp1
-        real :: P_boil_cgs = 1013250 ! 1bar in Ba (=0.1Pa)
-        real :: T_boil_cgs = 2503 ! in K
-        real :: P_boil
+        real, dimension (nx) :: conc_sat_spec, ppsat
+        !
+        ! T_boil_cgs and P_boil_cgs are now module/namelist parameters
+        ! (chemistry_run_pars), defaulting to the former hard-coded values.
         !
         if (iconc_sat_spec=="const") then
           conc_sat_spec=conc_sat_spec_cgs*unit_length**3
         elseif (iconc_sat_spec=="Clausius") then
-          P_boil=P_boil_cgs/unit_pressure
-          tmp1=-deltaH_cgs/(unit_energy*Rgas)*(p%TT1-unit_temperature/T_boil_cgs)
-          conc_sat_spec=P_boil*exp(tmp1)/(Rgas*p%TT)
+          call cond_spec_psat(p%TT,ppsat)          ! elemental over the pencil
+          conc_sat_spec=ppsat/(Rgas*p%TT)
         else
           call fatal_error("cond_spec_sat_conc","no such iconc_sat_spec")
         endif
         !
       end subroutine cond_spec_sat_conc
+!***********************************************************************
+      elemental subroutine cond_spec_psat(TT,psat)
+!
+!  Clausius-Clapeyron saturation (partial) pressure of the condensing species
+!  at the (code-unit) temperature TT, returned in code pressure units.  Used
+!  both per-pencil (cond_spec_sat_conc) and per-droplet (cond_spec_film_rate).
+!  Convention matches the former cond_spec_sat_conc: 1/TT is 1/T_code (= p%TT1)
+!  and the reference uses unit_temperature/T_boil_cgs (T_boil_cgs in K).
+!
+        real, intent(in)  :: TT
+        real, intent(out) :: psat
+!
+        psat = P_boil_cgs/unit_pressure &
+               *exp(-deltaH_cgs/(unit_energy*Rgas)*(1./TT - unit_temperature/T_boil_cgs))
+!
+      end subroutine cond_spec_psat
+!***********************************************************************
+      subroutine cond_spec_film_rate(p,ix,Tdrop,ap,urel,dapdt)
+!
+!  Sherwood film / classical d^2-law evaporation rate for a single droplet.
+!
+!    mdot   = pi d Sh rho_g D ln(1+B_M)              [g/s, mass leaving drop]
+!    dap/dt = -Sh rho_g D ln(1+B_M) / (2 ap rho_liq) [cm/s]   (<0: evaporation)
+!    Sh     = 2 + 0.6 Re_p^(1/2) Sc^(1/3)            (Ranz-Marshall)
+!    B_M    = (Y_s - Y_inf)/(1 - Y_s)                (Spalding)
+!
+!  The surface mass fraction Y_s is built from the saturation pressure at the
+!  DROPLET temperature Tdrop (isothermal-droplet assumption), so the driving
+!  potential is the true surface-to-far-field gradient.  For Sh=2 (quiescent)
+!  this integrates to d^2(t) = d0^2 - K t with K = 8 rho_g D ln(1+B_M)/rho_liq.
+!
+!  Diffusivity D: if Dcond_cgs>0 a constant D is used (e.g. for the analytic
+!  d^2-law validation); otherwise D is taken from the SAME per-species
+!  diffusion coefficient the chemistry module uses for the species transport
+!  equation, p%Diff_penc_add(:,ichem_cond_spec) (mixture-averaged / binary,
+!  T- and composition-dependent, evaluated at the local gas-cell state).
+!
+        type (pencil_case), intent(in) :: p
+        integer, intent(in) :: ix
+        real, intent(in)  :: Tdrop, ap, urel
+        real, intent(out) :: dapdt
+        real :: psat, Dv, mdot_out
+!
+!  Pick the diffusivity (constant override vs. chemistry transport value).
+        if (Dcond > 0.) then
+          Dv = Dcond
+        else
+          Dv = p%Diff_penc_add(ix,ichem_cond_spec)
+        endif
+        if (Dv <= 0.) call fatal_error('cond_spec_film_rate', &
+            'diffusivity <= 0: set Dcond_cgs>0, or enable chemistry diffusion')
+!
+!  Surface state: equilibrium at the droplet temperature, then the shared
+!  Sherwood-film mass flux leaving the droplet.
+        call cond_spec_psat(Tdrop,psat)
+        call sherwood_film_mdot(p,ix,ap,urel,molar_mass_spec,ichem_cond_spec,Dv,psat,mdot_out)
+!  dap/dt = -mdot_out/(4 pi a^2 rho_liq)  (<0 evaporation, >0 condensation).
+        dapdt = -mdot_out/(4.*pi*ap**2*true_density_cond_spec)
+!
+      end subroutine cond_spec_film_rate
+!***********************************************************************
+      subroutine sherwood_film_mdot(p,ix,ap,urel,Mc,ichem,Dv,psurf,mdot_out)
+!
+!  Generic Sherwood-film (Ranz-Marshall + Spalding) mass flux LEAVING the
+!  droplet, shared by the evaporation (cond_spec_film_rate) and absorption
+!  (cond_spec_absorb_rate) models.  Given the transferring species' molar mass
+!  Mc, gas index ichem, gas-side diffusivity Dv and equilibrium surface partial
+!  pressure psurf, returns mdot_out>0 = leaving the droplet (evaporation /
+!  desorption), <0 = entering (condensation / absorption).
+!
+        type (pencil_case), intent(in) :: p
+        integer, intent(in) :: ix, ichem
+        real, intent(in)  :: ap, urel, Mc, Dv, psurf
+        real, intent(out) :: mdot_out
+        real :: Xs, Ys, Yinf, BM, Re_p, Sc, Sh, rho_g, nu_g, Mbar, Mnc, Xinf
+!
+        rho_g = p%rho(ix)
+        nu_g  = p%nu(ix)
+!  Far-field species mass/mole fractions from the molar concentration.
+        Yinf  = p%chem_conc(ix,ichem)*Mc/rho_g
+        Mbar  = 1./p%mu1(ix)
+        Xinf  = Yinf*Mbar/Mc
+!  Mean molar mass of the remaining (non-transferring) gas.
+        Mnc   = (Mbar - Xinf*Mc)/max(1.-Xinf,1e-30)
+!  Surface mass fraction from the equilibrium surface partial pressure.
+        Xs    = min(psurf/p%pp(ix),0.999)
+        Ys    = Xs*Mc/(Xs*Mc+(1.-Xs)*Mnc)
+!  Spalding transfer number, Reynolds, Schmidt, Ranz-Marshall Sherwood.
+!  Clamp B_M>-1 so ln(1+B_M) stays finite in the strong-absorption limit.
+        BM    = max((Ys-Yinf)/max(1.-Ys,1e-30), -0.999)
+        Re_p  = 2.*ap*urel/max(nu_g,1e-30)
+        Sc    = nu_g/Dv
+        Sh    = 2.+0.6*sqrt(max(Re_p,0.))*Sc**(1./3.)
+        mdot_out = pi*(2.*ap)*Sh*rho_g*Dv*log(1.+BM)
+!
+      end subroutine sherwood_film_mdot
+!***********************************************************************
+      subroutine cond_spec_Lmass(Lmass)
+!
+!  Latent heat of the condensing species per unit mass, in code units.
+!  deltaH_cgs is erg/mol and molar_mass_spec g/mol, giving erg/g; specific
+!  energy converts to code units as velocity^2, hence the unit_velocity^2.
+!
+        real, intent(out) :: Lmass
+!
+        Lmass = deltaH_cgs/(molar_mass_spec*unit_velocity**2)
+!
+      end subroutine cond_spec_Lmass
+!***********************************************************************
+      subroutine cond_spec_transfer_cv(ix0,cv_cond,cv_absorb)
+!
+!  Gas-phase specific heat at constant volume [code units, erg/g/K in cgs] of
+!  the condensing and absorbing species at the global x-index ix0 of the
+!  current (m,n) pencil.  This is the SAME per-species cv the eos uses to build
+!  the mixture cv (cv_full = sum_k Y_k cv_R_spec_full_k Rgas/M_k), so when the
+!  phase-change mass source adds/removes a species the eos credits/debits the
+!  gas energy by exactly mdot*cv_spec*T_g.  particles_radius uses these to make
+!  the interfacial sensible-energy flux exactly conservative: the droplet
+!  accounts the transferred mass at the liquid cp, the gas at its species cv,
+!  and the difference (cp_liq*T_p - cv_spec*T_g) is delivered/removed explicitly.
+!
+        integer, intent(in) :: ix0
+        real, intent(out) :: cv_cond, cv_absorb
+!
+        cv_cond = 0.; cv_absorb = 0.
+        if (lcondensing_species) &
+            cv_cond = cv_R_spec_full(ix0,m,n,ichem_cond_spec)*Rgas/molar_mass_spec
+        if (labsorbing_on) &
+            cv_absorb = cv_R_spec_full(ix0,m,n,ichem_absorb_spec)*Rgas/molar_mass_absorb
+!
+      end subroutine cond_spec_transfer_cv
+!***********************************************************************
+      subroutine absorb_spec_psurf(Tdrop,xN,pNs)
+!
+!  Equilibrium (surface) partial pressure of the absorbing species over the
+!  droplet, in code pressure units.  Swappable VLE model:
+!    'henry' : dilute Henry's law on a mole-fraction basis,
+!              p = H(T) x,  H(T) = Henry_ref exp[Henry_B (1/Tref - 1/T)].
+!    'patek-klomfar' : NH3-H2O bubble pressure from Patek & Klomfar (1995),
+!              obtained by inverting their bubble-temperature correlation for
+!              pressure; the NH3 partial pressure is the bubble pressure minus
+!              the Raoult water partial pressure.  Valid over the full
+!              composition range (their correlation is fitted to ~2 MPa).
+!  Temperature convention as in cond_spec_psat: Tdrop is the code-unit droplet
+!  temperature (1/Tdrop = 1/T_code) and Henry_Tref is in K.
+!
+        real, intent(in)  :: Tdrop, xN
+        real, intent(out) :: pNs
+        real :: H, p_bub, pw
+!
+        select case (henry_model)
+        case ('henry')
+          H = Henry_ref*exp(Henry_B*(unit_temperature/Henry_Tref - 1./Tdrop))
+          pNs = H*xN
+        case ('patek-klomfar')
+!  Total solution bubble pressure [MPa] -> code pressure (1 MPa = 1e7 Ba),
+!  then subtract the Raoult water partial pressure to get the NH3 partial.
+          p_bub = bubble_pressure_pk(Tdrop*unit_temperature,xN)*1.0e7/unit_pressure
+          call cond_spec_psat(Tdrop,pw)            ! water saturation, code units
+          pNs   = max(p_bub - (1.-xN)*pw, 0.)
+        case default
+          call fatal_error('absorb_spec_psurf','no such henry_model: '//trim(henry_model))
+          pNs = 0.
+        endselect
+!
+      end subroutine absorb_spec_psurf
+!***********************************************************************
+      real function bubble_temp_pk(p_MPa,x) result(Tbub)
+!
+!  Patek & Klomfar (1995) bubble-point temperature of the NH3-H2O liquid [K]:
+!    T = T0 * sum_i a_i (1-x)^m_i [ln(p0/p)]^n_i,   T0=100 K, p0=2 MPa,
+!  with x the liquid NH3 mole fraction and p in MPa.
+!  Ref: J. Patek & J. Klomfar, Int. J. Refrigeration 18 (1995) 228-234, Eq.(1).
+!  Coefficients validated here against pure-water and pure-NH3 saturation at
+!  1 atm and 2 MPa (agreement < 0.3 K).
+!
+        real, intent(in) :: p_MPa, x
+        integer, parameter :: nbt=14
+        integer, dimension(nbt), parameter :: &
+            mm=(/0,0,0,0,0,1,1,1,2,4,5,5,6,7/), &
+            nn=(/0,1,2,3,4,0,1,2,3,0,0,1,0,1/)
+        real, dimension(nbt), parameter :: aa=(/ &
+            3.22302, -0.384206, 0.0460965, -0.00378945, 1.35610e-4, &
+            0.487755, -0.120108, 0.0106154, -5.33589e-4, 7.85041, &
+            -11.5941, -0.0523150, 4.89596, 0.0421059 /)
+        real :: lp
+        integer :: i
+!
+        lp = log(2.0/p_MPa)
+        Tbub = 0.
+        do i=1,nbt
+          Tbub = Tbub + aa(i)*(1.-x)**mm(i)*lp**nn(i)
+        enddo
+        Tbub = 100.0*Tbub
+!
+      end function bubble_temp_pk
+!***********************************************************************
+      real function bubble_pressure_pk(T_K,x) result(p_MPa)
+!
+!  Bubble pressure [MPa] at (T_K, x) by inverting bubble_temp_pk (bubble
+!  temperature increases monotonically with pressure), via bisection in ln p.
+!  Bracketed to the fitted validity range [1e-6, 2] MPa.
+!
+        real, intent(in) :: T_K, x
+        real :: lo, hi
+        integer :: it
+!
+        lo = 1.0e-6
+        hi = 2.0
+        do it=1,60
+          p_MPa = sqrt(lo*hi)
+          if (bubble_temp_pk(p_MPa,x) < T_K) then
+            lo = p_MPa
+          else
+            hi = p_MPa
+          endif
+        enddo
+        p_MPa = sqrt(lo*hi)
+!
+      end function bubble_pressure_pk
+!***********************************************************************
+      subroutine cond_spec_absorb_rate(p,ix,Tdrop,ap,mN,mW,urel,mdotN)
+!
+!  Mass rate of the absorbing species LEAVING the droplet (outward positive,
+!  code units) -- the SAME sign convention as the condensing-species flux
+!  (dot m_W = cond_spec_film_rate's mdot_out): mdotN<0 for absorption
+!  (gas -> drop), mdotN>0 for desorption (drop -> gas).  Sherwood-film form with
+!  the surface state from the VLE routine; the liquid mole fraction is built
+!  from the dissolved (mN) and solvent (mW) masses, using the condensing species
+!  as the solvent (molar_mass_spec).
+!
+        type (pencil_case), intent(in) :: p
+        integer, intent(in) :: ix
+        real, intent(in)  :: Tdrop, ap, mN, mW, urel
+        real, intent(out) :: mdotN
+        real :: pNs, xN, mdot_out
+!
+        if (Dabs <= 0.) call fatal_error('cond_spec_absorb_rate', &
+            'Dabs_cgs must be set (>0) in chemistry_run_pars')
+!
+!  Liquid mole fraction of the absorbing species (solvent = condensing species),
+!  then the equilibrium surface partial pressure and the shared Sherwood-film
+!  flux.  sherwood_film_mdot already returns the outward (leaving-drop) flux, so
+!  absorption (gas -> drop) is naturally negative -- no sign flip is applied,
+!  giving the same outward-positive convention as the condensing species.
+        xN = (mN/molar_mass_absorb)/max(mN/molar_mass_absorb + mW/molar_mass_spec, 1e-30)
+        call absorb_spec_psurf(Tdrop,xN,pNs)
+        call sherwood_film_mdot(p,ix,ap,urel,molar_mass_absorb,ichem_absorb_spec,Dabs,pNs,mdot_out)
+        mdotN = mdot_out
+!
+      end subroutine cond_spec_absorb_rate
+!***********************************************************************
+      subroutine absorb_spec_lagr(f,df,p,ix0,ix,np_swarm,mdotN)
+!
+!  Gas-phase back-reaction for absorption: the absorbing species mass leaves
+!  the gas (continuity + species), analogous to condensation of that species.
+!  mdotN is the OUTWARD (leaving-drop) flux (same convention as the condensing
+!  species), so mdotN<0 = absorbed into the droplet, i.e. removed from the gas.
+!
+        real, dimension(mx,my,mz,mfarray) :: f
+        real, dimension(mx,my,mz,mvar) :: df
+        type (pencil_case) :: p
+        real, intent(in) :: np_swarm, mdotN
+        integer, intent(in) :: ix0, ix
+        real :: ffabs
+        integer :: ichem, kkk
+!
+        ffabs = -mdotN*np_swarm       ! mass/volume/time leaving the gas (>0 for absorption)
+        if (ldensity_nolog) then
+          df(ix0,m,n,irho)   = df(ix0,m,n,irho)   - ffabs
+        else
+          df(ix0,m,n,ilnrho) = df(ix0,m,n,ilnrho) - ffabs*p%rho1(ix)
+        endif
+        do ichem = 1,nchemspec
+          kkk = ichemspec(ichem)
+          if (kkk==i_absorb_spec) then
+            df(ix0,m,n,kkk) = df(ix0,m,n,kkk) + ffabs*(f(ix0,m,n,kkk)-1.)*p%rho1(ix)
+          else
+            df(ix0,m,n,kkk) = df(ix0,m,n,kkk) + ffabs*f(ix0,m,n,kkk)*p%rho1(ix)
+          endif
+        enddo
+!
+      end subroutine absorb_spec_lagr
+!***********************************************************************
+      subroutine absorb_spec_Lsol(Lsol)
+!
+!  Heat of solution of the absorbing species per unit mass, in code units.
+!  dHsol_cgs [erg/mol] > 0 is exothermic (released on absorption -> heats drop).
+!
+        real, intent(out) :: Lsol
+!
+        Lsol = dHsol_cgs/(molar_mass_absorb*unit_velocity**2)
+!
+      end subroutine absorb_spec_Lsol
 !***********************************************************************
     subroutine chemistry_init_reduc_pointers
 !

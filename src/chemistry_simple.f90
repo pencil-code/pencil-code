@@ -5133,6 +5133,77 @@ module Chemistry
 !
     end subroutine cond_spec_nucl_lagr
 !***********************************************************************
+    subroutine cond_spec_film_rate(p,ix,Tdrop,ap,urel,dapdt)
+!
+      type (pencil_case), intent(in) :: p
+      integer, intent(in) :: ix
+      real, intent(in)  :: Tdrop, ap, urel
+      real, intent(out) :: dapdt
+!
+      dapdt = 0.
+      call keep_compiler_quiet(p)
+      call keep_compiler_quiet(ix)
+      call keep_compiler_quiet(Tdrop,ap,urel)
+!
+    end subroutine cond_spec_film_rate
+!***********************************************************************
+    subroutine cond_spec_Lmass(Lmass)
+!
+      real, intent(out) :: Lmass
+!
+      Lmass = 0.
+!
+    end subroutine cond_spec_Lmass
+!***********************************************************************
+    subroutine cond_spec_transfer_cv(ix0,cv_cond,cv_absorb)
+!
+      integer, intent(in) :: ix0
+      real, intent(out) :: cv_cond, cv_absorb
+!
+      cv_cond = 0.; cv_absorb = 0.
+      call keep_compiler_quiet(ix0)
+!
+    end subroutine cond_spec_transfer_cv
+!***********************************************************************
+    subroutine cond_spec_absorb_rate(p,ix,Tdrop,ap,mN,mW,urel,mdotN)
+!
+      type (pencil_case), intent(in) :: p
+      integer, intent(in) :: ix
+      real, intent(in)  :: Tdrop, ap, mN, mW, urel
+      real, intent(out) :: mdotN
+!
+      mdotN = 0.
+      call keep_compiler_quiet(p)
+      call keep_compiler_quiet(ix)
+      call keep_compiler_quiet(Tdrop,ap,urel)
+      call keep_compiler_quiet(mN,mW)
+!
+    end subroutine cond_spec_absorb_rate
+!***********************************************************************
+    subroutine absorb_spec_lagr(f,df,p,ix0,ix,np_swarm,mdotN)
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      real, intent(in) :: np_swarm, mdotN
+      integer, intent(in) :: ix0, ix
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
+      call keep_compiler_quiet(np_swarm,mdotN)
+      call keep_compiler_quiet(ix0,ix)
+!
+    end subroutine absorb_spec_lagr
+!***********************************************************************
+    subroutine absorb_spec_Lsol(Lsol)
+!
+      real, intent(out) :: Lsol
+!
+      Lsol = 0.
+!
+    end subroutine absorb_spec_Lsol
+!***********************************************************************
     subroutine chemistry_init_reduc_pointers
 !
 ! 7-feb-24/TP:  allocates memory needed for reductions
