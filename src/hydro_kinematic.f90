@@ -61,6 +61,8 @@ module Hydro
   real ::  dtforce=impossible, ampl_random
   real, dimension(3) :: location,location_fixed=(/0.,0.,0./)
   real, dimension(3) :: qvec_gb, avec_gb
+  !$omp threadprivate(qvec_gb,avec_gb)
+  real, dimension(3) :: qvec_gb_save, avec_gb_save
   logical :: lupw_uu=.false., lkinflow_as_uudat=.false.
   logical :: lcalc_uumeanz=.false.,lcalc_uumeanxy=.false.
   logical :: lcalc_uumeanx=.false.,lcalc_uumeanxz=.false.
@@ -197,7 +199,7 @@ module Hydro
 !  ncpus, nprocy, etc.
 !
       if (lkinflow_as_aux.or.lkinflow_as_comaux) then
-        call farray_register_auxiliary('uu',iuu,vector=3,communicated=lkinflow_as_comaux)
+        call farray_register_auxiliary('uu',iuu,vector=3,communicated=lkinflow_as_comaux,rhs=.true.)
         iux=iuu
         iuy=iuu+1
         iuz=iuu+2
@@ -2788,7 +2790,6 @@ module Hydro
       use Gpu, only: update_on_gpu_vec
       integer, save :: qvec_gb_index=-1
       integer, save :: avec_gb_index=-1
-      real, dimension(3) ::  qvec_gb_local,avec_gb_local
       real, dimension(nx) :: tmp_mn
 !
       real, contiguous,dimension(:,:,:,:), intent(inout) :: f
@@ -2863,25 +2864,20 @@ module Hydro
           endif
 !
           call random_number_wrapper(phase1); phase1 = 2*pi*phase1
-          call get_random_vec(qvec_gb_local, kpeak_kinflow)
-          call get_random_vec(avec_gb_local)
+          call get_random_vec(qvec_gb, kpeak_kinflow)
+          call get_random_vec(avec_gb)
 !
 !         make avec perpendicular to qvec
-          call dot(qvec_gb_local, avec_gb_local, qdota)
+          call dot(qvec_gb, avec_gb, qdota)
           do j = 1,3
-            avec_gb_local(j) = avec_gb_local(j) - qvec_gb_local(j)*qdota
+            avec_gb(j) = avec_gb(j) - qvec_gb(j)*qdota
           enddo
 !
 !         fix amplitude so that urms == ampl_kinflow
-          avec_gb_local = sqrt(2.) * ampl_kinflow * avec_gb_local / sqrt(sum(avec_gb_local**2))
-!
+          avec_gb= sqrt(2.) * ampl_kinflow * avec_gb/ sqrt(sum(avec_gb**2))
           if(lgpu) then
-            call update_on_gpu_vec(qvec_gb_index,'AC_qvec_gb__mod__hydro',qvec_gb_local)
-            call update_on_gpu_vec(avec_gb_index,'AC_avec_gb__mod__hydro',avec_gb_local)
-          endif
-          if((lgpu .and. ldiagnos) .or. .not. lgpu) then
-            qvec_gb = qvec_gb_local
-            avec_gb = avec_gb_local
+            call update_on_gpu_vec(qvec_gb_index,'AC_qvec_gb__mod__hydro',qvec_gb)
+            call update_on_gpu_vec(avec_gb_index,'AC_avec_gb__mod__hydro',avec_gb)
           endif
         endif
 
@@ -2899,6 +2895,16 @@ module Hydro
       endif
 !
     endsubroutine hydro_before_boundary
+!***********************************************************************
+    subroutine hydro_save_diagnostic_controls
+            qvec_gb_save = qvec_gb
+            avec_gb_save = avec_gb
+    endsubroutine hydro_save_diagnostic_controls
+!***********************************************************************
+    subroutine hydro_restore_diagnostic_controls
+            qvec_gb = qvec_gb_save
+            avec_gb = avec_gb_save
+    endsubroutine hydro_restore_diagnostic_controls
 !***********************************************************************
     subroutine duu_dt(f,df,p)
 !

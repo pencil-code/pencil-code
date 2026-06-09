@@ -1082,5 +1082,12 @@ module Hydro
     subroutine load_variables_to_gpu_hydro
     endsubroutine load_variables_to_gpu_hydro
 !***********************************************************************
+!***********************************************************************
+    subroutine hydro_save_diagnostic_controls
+    endsubroutine hydro_save_diagnostic_controls
+!***********************************************************************
+    subroutine hydro_restore_diagnostic_controls
+    endsubroutine hydro_restore_diagnostic_controls
+!***********************************************************************
 endmodule Hydro
 

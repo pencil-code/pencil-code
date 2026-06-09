@@ -317,7 +317,10 @@ module Equ
         start_time = real(mpiwtime())
         call rhs_gpu(f,itsub)
 !  Should be done after rhs_gpu since if doing testing against cpu want to get the right value of dt
-!$      if (ldiagnostic_output) call save_diagnostic_controls
+!$      if (ldiagnostic_output) then 
+!$        call save_diagnostic_controls
+!$        call hydro_save_diagnostic_controls
+!$      endif 
         end_time = real(mpiwtime())
         rhs_sum_time = rhs_sum_time + end_time-start_time
       else
@@ -598,6 +601,7 @@ module Equ
 !
       use Magnetic,only: calc_diagnostic_auxiliaries_magnetic
       use Diagnostics
+      use Hydro, only: hydro_restore_diagnostic_controls
 !$    use OMP_lib
 !$    use General, only: get_cpu, set_cpu
 
@@ -611,6 +615,7 @@ module Equ
 !$omp parallel if (.not. lsuppress_parallel_reductions) private(p) num_threads(num_helper_threads) &
 !$omp copyin(t,dxmax_pencil,fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
 !$    call restore_diagnostic_controls
+!$    call hydro_restore_diagnostic_controls
 
       !$omp do
       do imn=1,nyz
@@ -653,7 +658,7 @@ module Equ
       use Forcing, only: calc_diagnostics_forcing
       use Gravity, only: calc_diagnostics_gravity
       use Heatflux, only: calc_diagnostics_heatflux
-      use Hydro, only: calc_diagnostics_hydro
+      use Hydro, only: calc_diagnostics_hydro, hydro_restore_diagnostic_controls
       use Interstellar, only: calc_diagnostics_interstellar
       use Lorenz_gauge, only: calc_diagnostics_lorenz_gauge
       use Magnetic, only: calc_diagnostics_magnetic
@@ -690,6 +695,7 @@ module Equ
 !$omp parallel if (.not. lsuppress_parallel_reductions) private(p) num_threads(num_helper_threads) &
 !$omp copyin(t,dxmax_pencil,fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
 !$    call restore_diagnostic_controls
+!$    call hydro_restore_diagnostic_controls
 !      
 !     TP: on some nvfortan compilers copyin does not seem to be enough to ensure diagnostic arrays are allocated
 !         not sure was the copyin ever sufficient, but not that important since we can always explicitly check

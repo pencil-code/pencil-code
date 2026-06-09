@@ -24,6 +24,8 @@
   public :: pushpars2c
   public :: calc_diagnostics_hydro, df_diagnos_hydro
   public :: load_variables_to_gpu_hydro
+  public :: hydro_save_diagnostic_controls
+  public :: hydro_restore_diagnostic_controls
 !
 ! WL: SHOULDN'T BE PUBLIC!
 !
