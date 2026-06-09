@@ -27,7 +27,7 @@
 &density_run_pars
   lupw_lnrho=T
   lconserve_total_mass=T
-  total_mass=0.212759
+!  total_mass=0.212759
   !idiff='density-slope-limited'
   h_sld_dens = 2.0
 /
