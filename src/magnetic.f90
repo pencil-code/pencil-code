@@ -4642,6 +4642,11 @@ module Magnetic
       endif
 
       if(lvacuum) eta_total=huge1
+
+      if (lmultithread .and. lupdate_courant_dt) then
+        diffus_eta =eta_total *dxyz_2
+        maxdiffus=max(maxdiffus,diffus_eta)
+      endif
 !
 ! jj
 !

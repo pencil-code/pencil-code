@@ -623,7 +623,10 @@ module Hydro
 !
       if (idiag_urms/=0 .or. idiag_umax/=0 .or. idiag_u2m/=0 .or. &
           idiag_um2/=0 .or. idiag_rumax/=0) lpenc_diagnos(i_u2)=.true.
-      if (idiag_orms/=0 .or. idiag_omax/=0 .or. idiag_o2m/=0) lpenc_diagnos(i_o2)=.true.
+      if (idiag_orms/=0 .or. idiag_omax/=0 .or. idiag_o2m/=0) then
+              if(lkinflow_as_aux) lpenc_diagnos(i_uij) = .true.
+              lpenc_diagnos(i_o2)=.true.
+      endif
       if (idiag_oum/=0 .or. idiag_ourms/=0 .or. idiag_oumxy/=0) lpenc_diagnos(i_ou)=.true.
       if (idiag_oxurms/=0) lpenc_diagnos(i_oxu2)=.true.
       if (idiag_divum/=0 .or. idiag_divu2m/=0) lpenc_diagnos(i_divu)=.true.
@@ -665,6 +668,9 @@ module Hydro
       if (lpencil_in(i_oxu)) then
         lpencil_in(i_uu)=.true.
         lpencil_in(i_oo)=.true.
+      endif
+      if (lpencil_in(i_o2)) then
+        lpencil_in(i_oo) = .true.
       endif
 ! oo
       if (lpencil_in(i_ou)) then
@@ -745,6 +751,7 @@ module Hydro
       real, dimension(nx) :: rone, argx, pom2, ck_r
       real, dimension(nx) :: psi1, psi2, psi3, psi4, rho_prof, prof, prof1
       real, dimension(nx) :: random_r, random_p, random_tmp
+      real, dimension (nx) :: advec_uu
 !      real :: random_r_pt, random_p_pt
       real :: fac, fac2, argy, argz, cxt, cyt, czt, omt, del
       real :: fpara, dfpara, ecost, esint, epst, sin2t, cos2t
@@ -2682,6 +2689,18 @@ module Hydro
       if (lpenc_loc(i_oxu)) call cross(p%oo,p%uu,p%oxu)
       if (lpenc_loc(i_oxu2)) call dot2_mn(p%oxu,p%oxu2)
 
+!
+!  uu/dx for timestep (if kinematic_flow is set)
+!
+      if (kinematic_flow/='none') then
+        if (lupdate_courant_dt) then
+          advec_uu=sum(abs(p%uu)*dline_1,2)
+          !maxadvec=maxadvec+advec_uu
+          maxadvec=max(maxadvec,advec_uu)
+          if (headtt.or.ldebug) print*, 'duu_dt: max(advec_uu) =', maxval(advec_uu)
+        endif
+      endif
+
     endsubroutine calc_pencils_hydro_pencpar
 !***********************************************************************
     subroutine calc_diagnostics_hydro(f,p)
@@ -2918,22 +2937,10 @@ module Hydro
       real, contiguous,dimension(:,:,:,:) :: f
       real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case) :: p
-      real, dimension (nx) :: advec_uu
       logical, save :: lfirst_aux=.true.
 !
       intent(in)  :: df,p
       intent(out) :: f
-!
-!  uu/dx for timestep (if kinematic_flow is set)
-!
-      if (kinematic_flow/='none') then
-        if (lupdate_courant_dt) then
-          advec_uu=sum(abs(p%uu)*dline_1,2)
-          !maxadvec=maxadvec+advec_uu
-          maxadvec=max(maxadvec,advec_uu)
-          if (headtt.or.ldebug) print*, 'duu_dt: max(advec_uu) =', maxval(advec_uu)
-        endif
-      endif
 !
 !  Store uu as auxiliary variable in f-array if requested by lkinflow_as_aux.
 !  Just neccessary immediately before writing snapshots, but how would we
