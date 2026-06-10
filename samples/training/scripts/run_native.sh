@@ -61,9 +61,6 @@ export OMP_WAIT_POLICY=PASSIVE
 
 export OMPI_MCA_coll_hcoll_enable=0
 
-export NCCL_DEBUG=INFO
-export TORCH_DISTRIBUTED_DEBUG=INFO
-
 
 rm data/training/stationary.pt
 
