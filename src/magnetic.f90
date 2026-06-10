@@ -178,7 +178,7 @@ module Magnetic
   real :: th_spot=PI/4
   real :: non_ffree_factor=1.
   real :: etaB=0.
-  real :: tau_relprof=0.0, tau_relprof1, amp_relprof=1.0 , k_relprof=1.0
+  real :: tau_relprof=0.0, tau_relprof1=impossible, amp_relprof=1.0 , k_relprof=1.0
   real, pointer :: Hscript, e2m_all, b2m_all, echarge
   real :: cp=impossible
   real :: dipole_moment=0.0
@@ -386,7 +386,7 @@ module Magnetic
   real :: h_sld_magn=2.0,nlf_sld_magn=1.0,fac_sld_magn=1.0
   real :: ampl_efield=0.
   real :: w_sldchar_mag=1., tau_remove_meanaxy=1.0
-  real :: rhoref=impossible, rhoref1
+  real :: rhoref=impossible, rhoref1=impossible
   real :: ell_jj=0., tau_jj=1.
   real :: scl_uxb_in_ohm=1.
   character (len=labellen) :: A_relaxprofile='0,coskz,0'
@@ -1171,7 +1171,7 @@ module Magnetic
   real, dimension (mx) :: phix,sinx,cosx
   real, dimension (my) :: phiy,siny,cosy
   real, dimension (mz) :: phiz,sinz,cosz
-  real :: R2,R12
+  real :: R2=impossible,R12=impossible
 
   real :: gamma, gamma1, gamma_m1
 
