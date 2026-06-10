@@ -1436,6 +1436,12 @@ module Energy
           profr_cool = step(x(l1:l2),rcool1,wcool)-step(x(l1:l2),rcool2,wcool)
           profr1_cool= 1.+deltaT*cos(2.*pi*(y(m)-y0)/Ly)
 !
+!  Radial double-gaussian internal heating/cooling profile
+!
+        case ('volheat_surfcool')
+          profr_cool = exp(-0.5*((x(l1:l2)-rcool)/wcool)**2)
+          profr1_cool = exp(-0.5*((x(l1:l2)-rcool1)/wcool1)**2)
+!
 !  Latitude dependent heating/cooling (see above) plus additional cooling
 !  layer on top.
 !
