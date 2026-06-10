@@ -40,8 +40,8 @@
 ;   IDL> streamlines = pc_get_streamline (B, anchor=seeds, grid=grid)
 ;   IDL> Temp_streamlines = pc_extract_streamline (Temp, streamlines, name='Temp')
 ;   IDL> B_streamlines = pc_extract_streamline (B, streamlines, name='B')
-;   IDL> Temp_streamline = pc_select_streamline (Temp_streamline, 1)
-;   IDL> B_streamline = pc_select_streamline (B_streamline, 1)
+;   IDL> Temp_streamline = pc_select_streamline (Temp_streamlines, 1)
+;   IDL> B_streamline = pc_select_streamline (B_streamlines, 1)
 ;   IDL> B_abs = B_streamline[0,*]^2 + B_streamline[1,*]^2 + B_streamline[2,*]^2
 ;   IDL> plot, distances, Temp_streamline, xtitle="coordinate along streamline", ytitle="temperature"
 ;   IDL> plot, distances, B_abs, xtitle="coordinate along streamline", ytitle="magnetic field", /ylog
@@ -54,8 +54,8 @@
 ;   IDL> streamlines = pc_get_streamline (B, anchor=seeds, grid=grid)
 ;   IDL> Temp_streamlines = pc_extract_streamline (Temp, streamlines, name='Temp', grid=grid)
 ;   IDL> B_streamlines = pc_extract_streamline (B, streamlines, name='B', grid=grid)
-;   IDL> Temp_streamline = pc_select_streamline (Temp_streamline, 1)
-;   IDL> B_streamline = pc_select_streamline (B_streamline, 1)
+;   IDL> Temp_streamline = pc_select_streamline (Temp_streamlines, 1)
+;   IDL> B_streamline = pc_select_streamline (B_streamlines, 1)
 ;   IDL> B_abs = B_streamline[0,*]^2 + B_streamline[1,*]^2 + B_streamline[2,*]^2
 ;   IDL> plot, distances, Temp_streamline, xtitle="coordinate along streamline", ytitle="temperature"
 ;   IDL> plot, distances, B_abs, xtitle="coordinate along streamline", ytitle="magnetic field", /ylog
