@@ -77,5 +77,5 @@ export PATH=$NVHPC_BASE/cuda/11.8/bin:$PATH
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$NVHPC_BASE/cuda/11.8/lib64:\
 $NVHPC_BASE/cuda/11.8/targets/x86_64-linux/lib:\
 
-#pc_run start
+pc_run start
 pc_run run

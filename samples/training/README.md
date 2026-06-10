@@ -34,8 +34,12 @@ Navigate to your chosen sample and create necessary symbolic links and add corre
 ```bash
 module purge
 module load gcc/11.3.0
-module load /appl/opt/nvhpc-hpcx-cuda11/24.11
+module use /appl/opt/nvhpc/modulefiles
+module load nvhpc-hpcx-cuda11/24.11
 module load cmake
+
+# to force the use of cuda 11.8 instead of cuda 12.6
+export NVHPC_CUDA_HOME=/appl/opt/nvhpc/Linux_x86_64/24.11/cuda/11.8
 
 cd <sample name>/<training/inference>
 ln -s ../../scripts .
