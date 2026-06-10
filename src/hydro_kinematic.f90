@@ -61,8 +61,9 @@ module Hydro
   real ::  dtforce=impossible, ampl_random
   real, dimension(3) :: location,location_fixed=(/0.,0.,0./)
   real, dimension(3) :: qvec_gb, avec_gb
-  !$omp threadprivate(qvec_gb,avec_gb)
+  !$omp threadprivate(qvec_gb,avec_gb,phase1,phase2)
   real, dimension(3) :: qvec_gb_save, avec_gb_save
+  real :: phase1_save,phase2_save
   logical :: lupw_uu=.false., lkinflow_as_uudat=.false.
   logical :: lcalc_uumeanz=.false.,lcalc_uumeanxy=.false.
   logical :: lcalc_uumeanx=.false.,lcalc_uumeanxz=.false.
@@ -2806,9 +2807,10 @@ module Hydro
       use Mpicomm, only: update_foreign_data
       use Sub, only: smooth, eulag_filter, get_random_vec, dot
       use General, only: random_number_wrapper
-      use Gpu, only: update_on_gpu_vec
+      use Gpu, only: update_on_gpu_vec, update_on_gpu
       integer, save :: qvec_gb_index=-1
       integer, save :: avec_gb_index=-1
+      integer, save :: phase1_index=-1
       real, dimension(nx) :: tmp_mn
 !
       real, contiguous,dimension(:,:,:,:), intent(inout) :: f
@@ -2897,6 +2899,7 @@ module Hydro
           if(lgpu) then
             call update_on_gpu_vec(qvec_gb_index,'AC_qvec_gb__mod__hydro',qvec_gb)
             call update_on_gpu_vec(avec_gb_index,'AC_avec_gb__mod__hydro',avec_gb)
+            call update_on_gpu(phase1_index,'AC_phase1__mod__hydro',phase1)
           endif
         endif
 
@@ -2918,11 +2921,15 @@ module Hydro
     subroutine hydro_save_diagnostic_controls
             qvec_gb_save = qvec_gb
             avec_gb_save = avec_gb
+            phase1_save  = phase1
+            phase2_save  = phase2
     endsubroutine hydro_save_diagnostic_controls
 !***********************************************************************
     subroutine hydro_restore_diagnostic_controls
             qvec_gb = qvec_gb_save
             avec_gb = avec_gb_save
+            phase1  = phase1_save
+            phase2  = phase2_save
     endsubroutine hydro_restore_diagnostic_controls
 !***********************************************************************
     subroutine duu_dt(f,df,p)
@@ -4074,8 +4081,8 @@ module Hydro
     integer, parameter :: n_pars=200
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
-    call copy_addr(phase1,p_par(1))
-    call copy_addr(phase2,p_par(2))
+    call copy_addr(phase1,p_par(1)) ! real dconst
+    call copy_addr(phase2,p_par(2)) ! real dconst
     call copy_addr(ampl_random,p_par(3))
     call copy_addr(ks_modes,p_par(4)) ! int
     call copy_addr(random_ampl,p_par(5))

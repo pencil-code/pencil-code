@@ -272,6 +272,7 @@ my @gpu_tests = qw(
 			 fcont_TG
                          spherical-gdisk-planet-thermo
 			 interstellar
+                         renovating-flow
                          #chiral-diffusion
 			 #1d-tests/rel-shock
 			 #1d-tests/ambipolar_diffusion
