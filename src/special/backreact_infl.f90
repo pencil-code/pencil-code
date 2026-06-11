@@ -335,9 +335,10 @@ module Special
           call get_shared_variable('ladvance_ee',ladvance_ee)
           call get_shared_variable('mass_chi',mass_chi)
         else
-          if (.not.associated(lphi_hom)) allocate(lphi_hom, lphi_linear_regime, ladvance_ee, &
+          if (.not.associated(alpf)) allocate(alpf,lphi_hom, lphi_linear_regime, ladvance_ee, &
             lcollinear_EB, lnoncollinear_EB, lcollinear_EB_aver, lnoncollinear_EB_aver, &
             sigE_ceiling, sigE_const_value)
+          alpf=0.
           lphi_hom=.true.
           sigE_ceiling=impossible
           sigE_const_value=impossible
@@ -1027,7 +1028,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -1047,7 +1048,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)

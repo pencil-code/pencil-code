@@ -1631,7 +1631,7 @@ endif
 !***********************************************************************
     subroutine read_special_init_pars(iomsg)
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       iostat = 0
@@ -1654,7 +1654,7 @@ endif
 !***********************************************************************
     subroutine read_special_run_pars(iomsg)
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       iostat = 0
