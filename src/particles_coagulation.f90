@@ -54,6 +54,7 @@ module Particles_coagulation
   logical :: sphericalKernel=.false.
   logical :: lcheck_reference_radius=.false.
   logical :: lremove_particle_phys=.true., lremove_particle=.false., lremove_particle2=.false.
+  logical :: lbrownian_coag_correction=.true.  ! use thermal (coalescence) velocity in the Brownian kernel
   character (len=labellen) :: droplet_coagulation_model='standard'
 !
   real, dimension(:,:), allocatable :: r_ik_mat, cum_func_sec_ik
@@ -93,7 +94,7 @@ module Particles_coagulation
       sphericalKernel, normal_coagulation, tstart_droplet_coagulation, &
       lcheck_reference_radius, reference_radius, &
       lremove_particle_phys, lremove_particle, lremove_particle2, &
-      lcollision_output_swapped, part_melt_temp
+      lcollision_output_swapped, part_melt_temp, lbrownian_coag_correction
 !
   contains
 !***********************************************************************
@@ -108,12 +109,24 @@ module Particles_coagulation
       use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      logical, pointer :: lbrownian_p
+      integer :: ierr
 !
 !  Fatal error if Particle_radius module not used.
 !
       if (.not.lparticles_radius) &
           call fatal_error('initialize_particles_coag', &
           'must use Particles_radius module for coagulation')
+!
+!  The thermal-velocity (coalescence) correction reinterprets the Brownian
+!  velocity entering the kernel; it is only meaningful when Brownian forces are
+!  active (lbrownian_forces in particles_dust). Disable it otherwise, regardless
+!  of the namelist setting of lbrownian_coag_correction.
+!
+      if (lbrownian_coag_correction) then
+        call get_shared_variable('lbrownian_forces', lbrownian_p, ierr=ierr)
+        if (ierr/=0 .or. .not. lbrownian_p) lbrownian_coag_correction=.false.
+      endif
 !
 !  Allocate neighbour array necessary for identifying collisions.
 !
@@ -303,6 +316,7 @@ module Particles_coagulation
       real, dimension (3) :: xpj, xpk, vpj, vpk
       real :: lambda_mfp1, deltavjk, tau_coll1, prob, rran, kernel
       real :: npswarmj, npswarmk
+      logical :: lbrown_jk
       integer :: l, j, k, ncoll, ncoll_par, npart_par
 !
       intent (in) :: ineargrid
@@ -425,7 +439,22 @@ module Particles_coagulation
 !
 !  Relative particle speed.
 !
-                  if (sphericalKernel) then
+                  lbrown_jk=.false.
+                  if (lbrownian_coag_correction .and. itaup>0) &
+                      lbrown_jk=(fp(k,itaup)>0.0 .and. fp(j,itaup)>0.0)
+                  if (lbrown_jk) then
+!
+!  Thermal (coalescence) relative velocity for the free-molecular Brownian
+!  kernel. The velocity stored in ivp[xyz] is the random-walk displacement rate
+!  a_p^Brown*tau_p, whose per-component variance scales as 1/dt. Rescaling each
+!  particle velocity by sqrt(dt/(2*tau_p)) collapses it to the equipartition
+!  thermal velocity ~sqrt(k_B T/m_p), so the relative speed has the time-step-
+!  independent variance k_B T (1/m_i+1/m_j) and the coagulation rate no longer
+!  carries a spurious dt^(-1/2) dependence.
+!
+                    deltavjk=sqrt(0.5*dt*sum((vpk/sqrt(fp(k,itaup)) &
+                                             -vpj/sqrt(fp(j,itaup)))**2))
+                  elseif (sphericalKernel) then
                     deltavjk=2*sqrt(sum(((vpk-vpj)*(xpk-xpj))**2))/sqrt(sum((xpk-xpj)**2))
                   else
                     deltavjk=sqrt(sum((vpk-vpj)**2))
