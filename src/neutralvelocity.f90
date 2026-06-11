@@ -36,7 +36,7 @@ module NeutralVelocity
   logical :: ladvection_velocity=.true.,lpressuregradient=.true.
   logical :: lviscneutral=.true.,lelectron_pressure=.false.
   real :: colldrag=0,electron_pressure=1
-  real :: nun=0.,csn0=0.,csn20,nun_hyper3=0.
+  real :: nun=0.,csn0=0.,nun_hyper3=0.
   real :: rnoise_int=impossible,rnoise_ext=impossible
   real :: uun_right=0., uun_left=0., widthuun=.1
   character (len=labellen),dimension(ninit) :: iviscn=''
@@ -93,6 +93,7 @@ module NeutralVelocity
   real, dimension(nx) :: cions_rhon,cneut_rho,diffus_nun
   integer, dimension(ninit) :: enum_iviscn = 0
   integer :: enum_borderuun = 0
+  real :: csn20
 
   contains
 !***********************************************************************
@@ -180,13 +181,15 @@ module NeutralVelocity
 !
       endsubroutine initialize_neutralvelocity
 !***********************************************************************
-    subroutine read_neutralvelocity_init_pars(iostat)
+    subroutine read_neutralvelocity_init_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=neutralvelocity_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=neutralvelocity_init_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_neutralvelocity_init_pars
 !***********************************************************************
@@ -198,13 +201,15 @@ module NeutralVelocity
 !
     endsubroutine write_neutralvelocity_init_pars
 !***********************************************************************
-    subroutine read_neutralvelocity_run_pars(iostat)
+    subroutine read_neutralvelocity_run_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=neutralvelocity_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=neutralvelocity_run_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_neutralvelocity_run_pars
 !***********************************************************************
@@ -588,7 +593,7 @@ module NeutralVelocity
       if (lupdate_courant_dt.and.dimensionality>0) then
         advec2=advec2+p%advec_csn2
         maxadvec=maxadvec+p%advec_uun
-        !maxadvec=max(maxadvec,p%advec_uun)
+        !better: maxadvec=max(maxadvec,p%advec_uun)
       endif
 !
 !  Apply border profiles
@@ -714,7 +719,7 @@ module NeutralVelocity
       if (l2davgfirst) then
         if (idiag_unrmphi/=0) call phisum_mn_name_rz(p%uun(:,1)*p%pomx+p%uun(:,2)*p%pomy,idiag_unrmphi)
         if (idiag_unpmphi/=0) call phisum_mn_name_rz(p%uun(:,1)*p%phix+p%uun(:,2)*p%phiy,idiag_unpmphi)
-        if (idiag_unzmphi/=0) call phisum_mn_name_rz(p%uun(:,3),idiag_unzmphi)
+        call phisum_mn_name_rz(p%uun(:,3),idiag_unzmphi)
         call phisum_mn_name_rz(p%un2,idiag_un2mphi)
         call zsum_mn_name_xy(p%uun(:,1),idiag_unxmxy)
         call zsum_mn_name_xy(p%uun(:,2),idiag_unymxy)

@@ -40,7 +40,6 @@ module Poisson
 !
   include 'poisson.h'
 !
-  real, pointer :: Gnewton_ptr
   real :: Gnewton=G_Newton_cgs
   real :: Bsmooth=0.01
 !
@@ -67,7 +66,7 @@ module Poisson
 !
 contains
 !***********************************************************************
-    subroutine initialize_poisson()
+    subroutine initialize_poisson
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -75,12 +74,14 @@ contains
 !  18-oct-07/anders: adapted
 !
       use SharedVariables, only: get_shared_variable
+
+      real, pointer :: Gnewton_ptr
 !
-      call check_setup()
+      call check_setup
 !
 !  Dimensionality
 !
-      call decide_fourier_routine()
+      call decide_fourier_routine
 !
       innerradius=xyz0(1)
 !
@@ -101,11 +102,11 @@ contains
 !
 !  Coordinates u,phi (Fourier grid) and r,x,y (physical grid) are generated
 !
-      call generate_coordinates()
+      call generate_coordinates
 !
 !  Kernals for each integral (gr,gphi,V)
 !
-      call generate_kernals()
+      call generate_kernals
 !
       !print*, 'leaving initialize_poisson'
 !
@@ -256,7 +257,7 @@ contains
 !
     endsubroutine fourier_to_physical_proc
 !***********************************************************************
-    subroutine generate_coordinates()
+    subroutine generate_coordinates
 !
 !  Generates all coordinates that will be used, sets the smoothing factor (function of the 
 !  radial spacing). Coordinates needed for the method are constructed by reading in existing
@@ -457,13 +458,15 @@ contains
 !
     endsubroutine decide_fourier_routine
 !***********************************************************************
-    subroutine read_poisson_init_pars(iostat)
+    subroutine read_poisson_init_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=poisson_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=poisson_init_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_poisson_init_pars
 !***********************************************************************
@@ -475,13 +478,15 @@ contains
 !
     endsubroutine write_poisson_init_pars
 !***********************************************************************
-    subroutine read_poisson_run_pars(iostat)
+    subroutine read_poisson_run_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=poisson_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=poisson_run_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_poisson_run_pars
 !***********************************************************************
@@ -511,11 +516,11 @@ contains
 !
 ! Mass fields for each integral
 !
-      call generate_massfields()
+      call generate_massfields
 !
 ! Mass fields and kernals are used to compute quatities of interest
 !
-      call compute_acceleration()
+      call compute_acceleration
 !
       potential = 0.0 ! Should I pick a more ridiculous number? Something that will be
                       ! more noticeable if it gets anywhere it shouldn't be?
@@ -592,7 +597,7 @@ contains
 !
     endsubroutine generate_fourier_density
 !***********************************************************************
-    subroutine generate_kernals()
+    subroutine generate_kernals
 !
 !  Calculates the kernals for the three relevant integrals. These are functions
 !  only of the coordinate geometry of the disk, and will therefore be constant.
@@ -621,7 +626,7 @@ contains
 !
     endsubroutine generate_kernals
 !***********************************************************************
-    subroutine generate_massfields()
+    subroutine generate_massfields
 !
 !  Calculates the mass fields (density distributions weighted exponentially by
 !  coordinate locations) for the three relevant integrals. These are dependent
@@ -639,7 +644,7 @@ contains
 !
     endsubroutine generate_massfields
 !***********************************************************************
-    subroutine compute_acceleration()
+    subroutine compute_acceleration
 !
 ! Uses kernals and mass fields for the two acceleration integrals to
 ! calculate gravitational accelerations.

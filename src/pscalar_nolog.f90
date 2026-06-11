@@ -888,13 +888,15 @@ module Pscalar
 
     endsubroutine calc_diagnostics_pscalar
 !***********************************************************************
-    subroutine read_pscalar_init_pars(iostat)
+    subroutine read_pscalar_init_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=pscalar_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=pscalar_init_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_pscalar_init_pars
 !***********************************************************************
@@ -906,13 +908,15 @@ module Pscalar
 !
     endsubroutine write_pscalar_init_pars
 !***********************************************************************
-    subroutine read_pscalar_run_pars(iostat)
+    subroutine read_pscalar_run_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=pscalar_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=pscalar_run_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_pscalar_run_pars
 !***********************************************************************

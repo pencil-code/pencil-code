@@ -60,7 +60,6 @@ module Pencil_check
       logical :: lconsistent=.true., lconsistent_allproc=.false.
       logical, dimension(mfarray) :: lconsistent_var =.true.
       logical, dimension(nname) :: lconsistent_diagnos
-      integer :: ncomponents
       character(len=30) :: name
       logical :: ldie=.false.
       integer :: mem_stat1, mem_stat2
@@ -238,8 +237,8 @@ f_loop:   do iv=1,mvar
                   trim(pencil_names(penc))//' (',penc,')'// &
                   ' is not requested, but calculating it changes the results!'
               do iv =1,mvar
-                if(.not. lconsistent_var(iv)) then
-                  ncomponents = farray_get_name(iv,name)
+                if (.not. lconsistent_var(iv)) then
+                  name = farray_get_name(iv)
                   print '(a,i4,a)',' pencil_consistency_check: '// &
                   'Value changed for field: '// name
                 endif
@@ -452,7 +451,7 @@ f_lop:  do iv=1,mvar
                   ' is not requested for diagnostics, '// &
                   'but calculating it changes the diagnostics!'
               do k=1,nname
-                 if(.not. lconsistent_diagnos(k)) then
+                 if (.not. lconsistent_diagnos(k)) then
                    print '(a,i4,a)','pencil_consistency_check: '// &
                   'diagnos changed: ' // cname(k)
                  endif

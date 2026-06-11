@@ -1201,7 +1201,7 @@ module Magnetic
 !  03-apr-20/joern: restructured and fixed slope-limited diffusion
 !
       use Sub, only: register_report_aux
-      use FArrayManager, only: farray_register_pde, farray_register_auxiliary, farray_index_by_name_ode
+      use FArrayManager, only: farray_register_pde, farray_register_auxiliary
       use SharedVariables, only: put_shared_variable
 !
       call farray_register_pde('aa',iaa,vector=3)
@@ -8472,17 +8472,19 @@ print*,'AXEL2: should not be here (eta) ... '
 !
     endsubroutine curflux
 !***********************************************************************
-    subroutine read_magnetic_init_pars(iostat)
+    subroutine read_magnetic_init_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=magnetic_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=magnetic_init_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
 !  read namelist for mean-field theory (if invoked)
 !
-      if (lmagn_mf) call read_magn_mf_init_pars(iostat)
+      if (lmagn_mf) call read_magn_mf_init_pars(iomsg)
 !
     endsubroutine read_magnetic_init_pars
 !***********************************************************************
@@ -8498,17 +8500,19 @@ print*,'AXEL2: should not be here (eta) ... '
 !
     endsubroutine write_magnetic_init_pars
 !***********************************************************************
-    subroutine read_magnetic_run_pars(iostat)
+    subroutine read_magnetic_run_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=magnetic_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=magnetic_run_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
 !  read namelist for mean-field theory (if invoked)
 !
-      if (lmagn_mf) call read_magn_mf_run_pars(iostat)
+      if (lmagn_mf) call read_magn_mf_run_pars(iomsg)
 !
     endsubroutine read_magnetic_run_pars
 !***********************************************************************
@@ -10666,7 +10670,7 @@ print*,'AXEL2: should not be here (eta) ... '
 !
     endsubroutine input_persist_magnetic_id
 !***********************************************************************
-    subroutine input_persist_magnetic()
+    subroutine input_persist_magnetic
 !
 !  Read in the stored phase and amplitude for the correction of the Beltrami
 !  wave forcing.
@@ -10685,7 +10689,7 @@ print*,'AXEL2: should not be here (eta) ... '
 !
     endsubroutine input_persist_magnetic
 !***********************************************************************
-    logical function output_persistent_magnetic()
+    logical function output_persistent_magnetic
 !
 !  Write the stored phase and amplitude for the
 !  correction of the Beltrami wave forcing

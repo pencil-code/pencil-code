@@ -3599,13 +3599,15 @@ module Hydro
 !
     endfunction output_persistent_hydro
 !***********************************************************************
-    subroutine read_hydro_init_pars(iostat)
+    subroutine read_hydro_init_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=hydro_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=hydro_init_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_hydro_init_pars
 !***********************************************************************
@@ -3617,13 +3619,15 @@ module Hydro
 !
     endsubroutine write_hydro_init_pars
 !***********************************************************************
-    subroutine read_hydro_run_pars(iostat)
+    subroutine read_hydro_run_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=hydro_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=hydro_run_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_hydro_run_pars
 !***********************************************************************

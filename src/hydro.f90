@@ -2979,13 +2979,15 @@ module Hydro
     endsubroutine init_uu
 !***********************************************************************
     subroutine pencil_needs_ivv(pencil_name)
+
       character (len=*) :: pencil_name
 
       call fatal_error('pencil_interdep_hydro',&
             'calculating ' // pencil_name // ' correctly for lconservative=T requires velocity as an auxiliary ' &
              // ACHAR(10) // '                              i.e. lvv_as_aux = lvv_as_comaux = T.'&
              // ACHAR(10) // 'If the pencil only needs 1st or 2nd order derivatives you could consider '&
-             // 'to write out the product rules out and lift this restriction.')
+             // 'to write out the product rules and lift this restriction.')
+
     endsubroutine pencil_needs_ivv
 !***********************************************************************
     subroutine pencil_criteria_hydro
@@ -3003,7 +3005,7 @@ module Hydro
           lpenc_requested(i_rho1)=.true.
           lpenc_requested(i_transpurho)=.true.
         !When using momentum advection is handled by divergence of Tij
-        else if(.not. lconservative) then
+        else if (.not. lconservative) then
           lpenc_requested(i_ugu)=.true.
         endif
       endif
@@ -3349,29 +3351,29 @@ module Hydro
 
       if (idiag_dtu/=0) ltimestep_diagnostics=.true.
 
-      if(lconservative .and. .not. (lvv_as_aux .or. lvv_as_comaux)) then
+      if (lconservative .and. .not. (lvv_as_aux .or. lvv_as_comaux)) then
         if (lpencil_in(i_uij) .and. lrelativistic) then
           call fatal_error('pencil_interdep_hydro',&
                 'calculating uij correctly for lrelativistic=T .and. lconservative=T requires velocity as an auxiliary ' &
                  // ACHAR(10) // '                              i.e. lvv_as_aux = lvv_as_comaux = T.')
         endif
-        if (lpencil_in(i_uij5))             call pencil_needs_ivv("uij5")
-        if (lpencil_in(i_uij6))             call pencil_needs_ivv("uij6")
-        if (lpencil_in(i_ugu))              call pencil_needs_ivv("ugu")
-        if (lpencil_in(i_d2uidxj))          call pencil_needs_ivv("d2uidxj")
-        if (lpencil_in(i_uijk))             call pencil_needs_ivv("uijk")
-        if (lpencil_in(i_del4u))            call pencil_needs_ivv("del4u")
-        if (lpencil_in(i_del6u))            call pencil_needs_ivv("del6u")
-        if (lpencil_in(i_del6u_strict))     call pencil_needs_ivv("del6u_strict")
-        if (lpencil_in(i_del4graddivu))     call pencil_needs_ivv("del4_graddivu")
-        if (lpencil_in(i_ogu))              call pencil_needs_ivv("ogu")
-        if (lpencil_in(i_grad5divu))        call pencil_needs_ivv("grad5divu")
-        if (lpencil_in(i_del6u_bulk))       call pencil_needs_ivv("del6u_bulk")
-        if (lpencil_in(i_der6u_res))        call pencil_needs_ivv("der6u_res")
-        if (lpencil_in(i_graddivu))         call pencil_needs_ivv("graddivu")
-        if (lpencil_in(i_curlo))            call pencil_needs_ivv("curlo")
-        if (lpencil_in(i_transpurho))       call pencil_needs_ivv("transpurho")
-        if (lpencil_in(i_del2u))            call pencil_needs_ivv("del2u")
+        if (lpencil_in(i_uij5))         call pencil_needs_ivv("uij5")
+        if (lpencil_in(i_uij6))         call pencil_needs_ivv("uij6")
+        if (lpencil_in(i_ugu))          call pencil_needs_ivv("ugu")
+        if (lpencil_in(i_d2uidxj))      call pencil_needs_ivv("d2uidxj")
+        if (lpencil_in(i_uijk))         call pencil_needs_ivv("uijk")
+        if (lpencil_in(i_del4u))        call pencil_needs_ivv("del4u")
+        if (lpencil_in(i_del6u))        call pencil_needs_ivv("del6u")
+        if (lpencil_in(i_del6u_strict)) call pencil_needs_ivv("del6u_strict")
+        if (lpencil_in(i_del4graddivu)) call pencil_needs_ivv("del4_graddivu")
+        if (lpencil_in(i_ogu))          call pencil_needs_ivv("ogu")
+        if (lpencil_in(i_grad5divu))    call pencil_needs_ivv("grad5divu")
+        if (lpencil_in(i_del6u_bulk))   call pencil_needs_ivv("del6u_bulk")
+        if (lpencil_in(i_der6u_res))    call pencil_needs_ivv("der6u_res")
+        if (lpencil_in(i_graddivu))     call pencil_needs_ivv("graddivu")
+        if (lpencil_in(i_curlo))        call pencil_needs_ivv("curlo")
+        if (lpencil_in(i_transpurho))   call pencil_needs_ivv("transpurho")
+        if (lpencil_in(i_del2u))        call pencil_needs_ivv("del2u")
       endif
 !
     endsubroutine pencil_interdep_hydro
@@ -6537,6 +6539,7 @@ module Hydro
     subroutine update_fade_fact
 
       use GPU, only: update_on_gpu
+
       real, save :: last_t = -1.0
       real, save :: fade_fact_old = -1.0
       integer, save :: fade_fact_index_on_gpu = -1
@@ -6604,9 +6607,8 @@ module Hydro
         endif
       endif
 
-      if (lgpu .and. fade_fact_old /= fade_fact) then
+      if (lgpu .and. fade_fact_old /= fade_fact) &
         call update_on_gpu(fade_fact_index_on_gpu,'AC_fade_fact__mod__hydro',fade_fact)
-      endif
 
       fade_fact_old = fade_fact
 
@@ -6704,13 +6706,15 @@ module Hydro
 !
     endsubroutine udamping
 !***********************************************************************
-    subroutine read_hydro_init_pars(iostat)
+    subroutine read_hydro_init_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=hydro_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=hydro_init_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_hydro_init_pars
 !***********************************************************************
@@ -6722,15 +6726,17 @@ module Hydro
 !
     endsubroutine write_hydro_init_pars
 !***********************************************************************
-    subroutine read_hydro_run_pars(iostat)
+    subroutine read_hydro_run_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=hydro_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=hydro_run_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
-      if (lSGS_hydro) call read_SGS_hydro_run_pars(iostat)      
+      if (lSGS_hydro) call read_SGS_hydro_run_pars(iomsg)      
 !
     endsubroutine read_hydro_run_pars
 !***********************************************************************

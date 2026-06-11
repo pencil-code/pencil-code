@@ -569,13 +569,15 @@ module Testflow
 !
     endsubroutine pencil_interdep_testflow
 !***********************************************************************
-    subroutine read_testflow_init_pars(iostat)
+    subroutine read_testflow_init_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=testflow_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=testflow_init_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_testflow_init_pars
 !***********************************************************************
@@ -587,13 +589,15 @@ module Testflow
 !
     endsubroutine write_testflow_init_pars
 !***********************************************************************
-    subroutine read_testflow_run_pars(iostat)
+    subroutine read_testflow_run_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=testflow_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=testflow_run_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_testflow_run_pars
 !***********************************************************************

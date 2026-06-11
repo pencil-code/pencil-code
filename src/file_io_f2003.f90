@@ -236,9 +236,6 @@ module File_io
       logical, optional :: lno_warning
 !
       integer :: pos, len, max_len
-      logical :: lwarn
-!
-      lwarn = .not. loptest (lno_warning)
 !
       if (lroot) then
 !print*, 'name=', name
@@ -262,7 +259,7 @@ module File_io
             endif
           endif
         enddo
-        if (.not. lfound .and. lwarn) call warning ('find_namelist', 'namelist "'//trim(name)//'" is missing!')
+        if (.not. lfound .and. .not. loptest(lno_warning)) call warning ('find_namelist', 'namelist "'//trim(name)//'" is missing')
       endif
 !
       call mpibcast (lfound,comm=MPI_COMM_PENCIL)

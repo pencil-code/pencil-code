@@ -823,13 +823,15 @@ module NSCBC
 !
     endsubroutine bc_nscbc_prf
 !***********************************************************************
-    subroutine read_NSCBC_init_pars(iostat)
+    subroutine read_NSCBC_init_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=NSCBC_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=NSCBC_init_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
       if (lnscbc) call parse_nscbc(nscbc_bc,nscbc_bc1,nscbc_bc2)
 !
@@ -843,12 +845,13 @@ module NSCBC
 !
     endsubroutine write_NSCBC_init_pars
 !***********************************************************************
-    subroutine read_NSCBC_run_pars(iostat)
+    subroutine read_NSCBC_run_pars(iomsg)
 !
       use File_io, only: parallel_unit
       use Sub, only : rdim
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
       integer :: stat
       logical :: exist
       character (len=fnlen) :: file
@@ -858,7 +861,8 @@ module NSCBC
       inlet_profile(1)='uniform'
       zz_profile(1)='uniform'
 !
-      read(parallel_unit, NML=NSCBC_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=NSCBC_run_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
       if (lnscbc) call parse_nscbc(nscbc_bc,nscbc_bc1,nscbc_bc2)
 !

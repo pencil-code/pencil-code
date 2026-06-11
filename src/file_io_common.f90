@@ -40,7 +40,6 @@ module File_io
       integer(kind=8) :: rec_len, num_rec, num, len, i
       integer, intent(in) :: reference
 !
-!
       if (num_rec < 0) then
         num_rec = -num_rec
         rec_len = -rec_len
@@ -337,13 +336,13 @@ module File_io
 !  18-aug-15/PABourdin: reworked to simplify code and display all errors at once
 !  19-aug-15/PABourdin: renamed from 'read_pars' to 'read_namelist'
 !
-      use Cdata, only: lnamelist_error, lparam_nml, lstart, lroot
+      use Cdata, only: lnamelist_error, lparam_nml, lstart, lroot, iomsglen
       use General, only: loptest, itoa, ioptest
       use Messages, only: warning
 !
       interface
-        subroutine reader(iostat)
-          integer, intent(out) :: iostat
+        subroutine reader(iomsg)
+          character(LEN=*), intent(out) :: iomsg
         endsubroutine reader
       endinterface
 !
@@ -351,13 +350,13 @@ module File_io
       logical, optional, intent(in) :: lactive
       logical, optional, intent(in) :: loptional
 !
-      integer :: ierr
-      logical :: found
+      character(len=iomsglen) :: msg
+      logical :: lfound
       logical :: lnamelist_optional
       character(len=5) :: type, suffix
       character(len=4) :: run_type
 !
-      lnamelist_optional = loptest (loptional)
+      lnamelist_optional = loptest(loptional)
 !
       if (.not. loptest (lactive, .true.)) return
 !
@@ -366,40 +365,35 @@ module File_io
       else
         run_type = 'run'
       endif
-      if (name /= '') type = '_'//run_type
-      suffix = '_pars'
       if (name == 'initial_condition_pars') then
         type = ''
         suffix = ''
+      else
+        type = adjustl(merge(' ','_',name=='')//run_type)
+        suffix = '_pars'
       endif
 !
       !if (.not. find_namelist (trim(name)//trim(type)//trim(suffix))) then
-      call find_namelist (trim(name)//trim(type)//trim(suffix), found, lnamelist_optional)
-      if (.not. found .and. lnamelist_optional) return
+      call find_namelist (trim(name)//trim(type)//trim(suffix), lfound, lnamelist_optional)
+      if (.not. lfound) then
+        if (.not.lnamelist_optional) then
+          if (.not. lparam_nml) lnamelist_error = .true.  !???
+          call parallel_rewind
+        endif
+        return
+      endif
 !
       ! G95 complains 'ierr' is used but not set, even though 'reader' has intent(out).
       ! PABourdin:
       ! Yes, because 'reader' is here a function *pointer* and it can not be verified whether the actual reader has intent(out).
-      ierr = 0
-      call reader(ierr)
+      msg=""
+      call reader(msg)
 !
-      if (ierr /= 0) then
-!
-        if (.not.found) then
-          if (.not. lparam_nml) lnamelist_error = .true.
-          call parallel_rewind
-          return
-        endif
+      if (msg /= "") then
 !
         lnamelist_error = .true.
-        if (lroot) then
-          if (ierr == -1) then
-            call warning ('read_namelist', 'namelist "'//trim(name)//trim(type)//trim(suffix)//'" is missing')
-          else
-            call warning ('read_namelist', 'namelist "'//trim(name)//trim(type)//trim(suffix)// &
-                          '" has an error ('//trim(itoa(ierr))//')')
-          endif
-        endif
+        call warning ('read_namelist', 'namelist "'//trim(name)//trim(type)//trim(suffix)// &
+                      '" has an error: '//trim(msg))
       endif
 !
       call parallel_rewind

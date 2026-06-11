@@ -80,7 +80,7 @@ module Param_IO
   integer :: niter_poisson  ! dummy
 !
   namelist /init_pars/ &
-      cvsid, ip, xyz0, xyz1, Lxyz, lperi, lshift_origin, lshift_origin_lower,&
+      cvsid, ip, xyz0, xyz1, Lxyz, lperi, lshift_origin, lshift_origin_lower, &
       xyz_units, wav1, wav1z, coord_system, lpole, ncoarse, lfix_unit_std, &
       lequidist, coeff_grid, zeta_grid0, grid_func, xyz_star, lwrite_ic, lwrite_avg1d_binary, &
       lnowrite, luniform_z_mesh_aspect_ratio, unit_system, unit_length, &
@@ -128,7 +128,7 @@ module Param_IO
       luse_latitude, lshift_datacube_x, lfargo_advection, yequator, lequatory, &
       lequatorz, zequator, lav_smallx, xav_max, niter_poisson, &
       lforce_shear_bc,lread_from_other_prec, &
-      pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w,&
+      pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w, &
       lcorotational_frame, rcorot, lproper_averages, &
       ldirect_access, ltolerate_namelist_errors, &
       lyinyang, cyinyang_intpol_type, yy_biquad_weights, &
@@ -138,7 +138,7 @@ module Param_IO
       lnoghost_strati, ichannel1, ichannel2, tag_foreign, &
       lpoint, mpoint, npoint, lpoint2, mpoint2, npoint2, &
       lfatal_num_vector_369, density_scale_factor, &
-      lsmooth_farray,farray_smooth_width, radius_diag, offset_min_calc, lread_oldsnap_nocoolprof,&
+      lsmooth_farray,farray_smooth_width, radius_diag, offset_min_calc, lread_oldsnap_nocoolprof, &
       lswap_init_lnrho_uu, thetamin, lsymmgrid, lbaryons
 !
   namelist /run_pars/ &
@@ -218,7 +218,7 @@ module Param_IO
       lread_less, lread_nogrid, lformat, ltec, lread_global, &
       llsode, lsplit_second, nu_sts, permute_sts, lfargo_advection, &
       ldynamical_diffusion, ldyndiff_useumax, re_mesh, lghostfold_usebspline, &
-      lreset_seed, loutput_varn_at_exact_tsnap, lstop_on_ioerror, mailaddress, mailcmd, submithost,&
+      lreset_seed, loutput_varn_at_exact_tsnap, lstop_on_ioerror, mailaddress, mailcmd, submithost, &
       theta_lower_border, wborder_theta_lower, theta_upper_border, &
       wborder_theta_upper, fraction_tborder, lmeridional_border_drive, &
       lread_from_other_prec, downsampl, lfullvar_in_slices, ivar_omit, &
@@ -307,23 +307,27 @@ module Param_IO
 !
     endsubroutine get_snapdir
 !***********************************************************************
-    subroutine read_init_pars(iostat)
+    subroutine read_init_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=init_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_init_pars
 !***********************************************************************
-    subroutine read_run_pars(iostat)
+    subroutine read_run_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=run_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_run_pars
 !***********************************************************************
@@ -462,7 +466,7 @@ module Param_IO
 !                llogging
 !
       use Dustvelocity, only: copy_bcs_dust
-      use File_io, only: parallel_open, parallel_close, read_namelist, parallel_file_exists
+      use File_io, only: parallel_open, parallel_close, parallel_file_exists
       use General, only: loptest
       use Mpicomm, only: stop_it_if_any
       use Particles_main, only: read_all_particles_run_pars
@@ -577,7 +581,7 @@ module Param_IO
         call read_namelist(read_hydro_init_pars          ,'hydro'          ,lhydro.or.lhydro_kinematic, loptional)
         call read_namelist(read_density_init_pars        ,'density'        ,ldensity, loptional)
         call read_namelist(read_gravity_init_pars        ,'grav'           ,lgrav, loptional)
-        call read_namelist(read_selfgravity_init_pars    ,'selfgrav'       ,.true., loptest(loptional) .or. (.not. lselfgravity))
+        call read_namelist(read_selfgravity_init_pars    ,'selfgrav'       ,.true., loptest(loptional).or.(.not.lselfgravity))
         call read_namelist(read_poisson_init_pars        ,'poisson'        ,lpoisson, loptional)
         call read_namelist(read_energy_init_pars         ,'entropy'        ,lenergy, loptional)
         call read_namelist(read_magnetic_init_pars       ,'magnetic'       ,lmagnetic, loptional)
@@ -695,7 +699,7 @@ module Param_IO
 !
 !  prints one sample namelist
 !
-!   1-sep-15/PABourin: coded
+!   1-sep-15/PABourdin: coded
 !
       character(len=*) :: namelist
       logical :: needed
@@ -711,7 +715,11 @@ module Param_IO
         type = 'run_pars'
       endif
       if (namelist /= '') type = '_'//trim (type)
-      if (loptest (omit_suffix)) type = ''
+      if (loptest(omit_suffix)) then
+        type = ''
+        if (namelist == '') call warning('write_stub','namelist parameter empty and omit_suffix=T '// &
+                                         '-> invalid namelist written')
+      endif
 !
       write (*,'(A)') '&'//trim (namelist)//trim (type)
       write (*,'(A)') '/'

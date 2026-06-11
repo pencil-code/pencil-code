@@ -34,18 +34,18 @@ module ImplicitDiffusion
 !  PUBLIC ROUTINES GO BELOW HERE.
 !***********************************************************************
 !***********************************************************************
-    subroutine read_implicit_diff_run_pars(iostat)
+    subroutine read_implicit_diff_run_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=implicit_diffusion_run_pars, iostat=iostat)
+      read(parallel_unit, NML=implicit_diffusion_run_pars, iostat=iostat, iomsg=iomsg)
       limplicit_diffusion_with_fft = implicit_method == 'fft'
       limplicit_diffusion_with_cg  = implicit_method == 'cg'
-      if(limplicit_diffusion_with_cg .and. .not. lgpu) then
-        call fatal_error('read_implicit_diff_run_pars','Conjugate Gradient solver is only implemented for the GPU!')
-      endif
+      if (limplicit_diffusion_with_cg .and. .not. lgpu) &
+        call fatal_error('read_implicit_diff_run_pars','Conjugate Gradient solver is only implemented for the GPU')
 !
     endsubroutine read_implicit_diff_run_pars
 !***********************************************************************

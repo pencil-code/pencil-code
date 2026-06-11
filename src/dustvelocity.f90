@@ -1687,13 +1687,15 @@ module Dustvelocity
 !
     endsubroutine get_stoppingtime
 !***********************************************************************
-    subroutine read_dustvelocity_init_pars(iostat)
+    subroutine read_dustvelocity_init_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=dustvelocity_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=dustvelocity_init_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_dustvelocity_init_pars
 !***********************************************************************
@@ -1705,13 +1707,15 @@ module Dustvelocity
 !
     endsubroutine write_dustvelocity_init_pars
 !***********************************************************************
-    subroutine read_dustvelocity_run_pars(iostat)
+    subroutine read_dustvelocity_run_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=dustvelocity_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=dustvelocity_run_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_dustvelocity_run_pars
 !***********************************************************************

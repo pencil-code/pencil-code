@@ -583,13 +583,15 @@ module Selfgravity
 !
     endsubroutine calc_cylgrav_stresses
 !***********************************************************************
-    subroutine read_selfgravity_init_pars(iostat)
+    subroutine read_selfgravity_init_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=selfgrav_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=selfgrav_init_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_selfgravity_init_pars
 !***********************************************************************
@@ -601,13 +603,15 @@ module Selfgravity
 !
     endsubroutine write_selfgravity_init_pars
 !***********************************************************************
-    subroutine read_selfgravity_run_pars(iostat)
+    subroutine read_selfgravity_run_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=selfgrav_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=selfgrav_run_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_selfgravity_run_pars
 !***********************************************************************

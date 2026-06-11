@@ -30,15 +30,17 @@
 
     endsubroutine python_initialize
 !***********************************************************************
-    subroutine read_python_run_pars(iostat)
+    subroutine read_python_run_pars(iomsg)
 !
 ! 23-jan-24/MR: coded
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=python_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=python_run_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 
     endsubroutine read_python_run_pars
 !***************************************************************

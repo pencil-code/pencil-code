@@ -431,13 +431,15 @@ module Testfield
 !
     endsubroutine pencil_interdep_testfield
 !***********************************************************************
-    subroutine read_testfield_init_pars(iostat)
+    subroutine read_testfield_init_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=testfield_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=testfield_init_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_testfield_init_pars
 !***********************************************************************
@@ -449,13 +451,15 @@ module Testfield
 !
     endsubroutine write_testfield_init_pars
 !***********************************************************************
-    subroutine read_testfield_run_pars(iostat)
+    subroutine read_testfield_run_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=testfield_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=testfield_run_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_testfield_run_pars
 !***********************************************************************

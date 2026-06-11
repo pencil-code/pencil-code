@@ -353,14 +353,14 @@
 !
     endsubroutine register_particles_special
 !*********************************************************************** 
-    subroutine read_special_init_pars(iostat)
+    subroutine read_special_init_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
       integer :: i
 !
       do i=1,n_special_modules
-        call caller1(special_sub_handles(i,I_READ_SPECIAL_INIT_PARS),iostat)
+        call caller1(special_sub_handles(i,I_READ_SPECIAL_INIT_PARS),iomsg)
       enddo
 !
     endsubroutine read_special_init_pars
@@ -377,14 +377,14 @@
 !
     endsubroutine write_special_init_pars
 !***********************************************************************
-    subroutine read_special_run_pars(iostat)
+    subroutine read_special_run_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
       integer :: i
 !
       do i=1,n_special_modules
-        call caller1(special_sub_handles(i,I_READ_SPECIAL_RUN_PARS),iostat)
+        call caller1(special_sub_handles(i,I_READ_SPECIAL_RUN_PARS),iomsg)
       enddo
 !
     endsubroutine read_special_run_pars

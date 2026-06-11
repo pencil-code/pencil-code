@@ -285,9 +285,6 @@ module File_io
       integer :: ierr, pos, state, max_len, line_len
       character(len=36000) :: line
       character :: ch
-      logical :: lwarn
-!
-      lwarn = .not. loptest (lno_warning)
 !
       if (lroot) then
 !
@@ -336,7 +333,8 @@ module File_io
         enddo
 
         call parallel_rewind
-        if (.not. lfound .and. lwarn) call warning ('find_namelist', 'namelist "'//trim(name)//'" is missing!')
+        if (.not. lfound .and. .not.loptest(lno_warning)) & 
+            call warning ('find_namelist','namelist "'//trim(name)//'" is missing')
       endif
 !
       call mpibcast (lfound,comm=MPI_COMM_PENCIL)

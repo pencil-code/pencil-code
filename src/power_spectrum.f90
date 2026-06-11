@@ -302,7 +302,7 @@ outer:do ikz=1,nz
 !
   endsubroutine initialize_power_spectrum
 !***********************************************************************
-  subroutine read_power_spectrum_run_pars(iostat)
+  subroutine read_power_spectrum_run_pars(iomsg)
 !
 ! 05-feb-14/MR: added ordering of z ranges
 ! 12-mar-14/MR: changed merge_ranges into function
@@ -310,7 +310,8 @@ outer:do ikz=1,nz
     use File_io, only: parallel_unit
     use General, only : parser, read_range, merge_ranges, quick_sort
 !
-    integer, intent(out) :: iostat
+    character(LEN=*), intent(out) :: iomsg
+    integer :: iostat
 !
     integer :: i, iend_zrange
     character (LEN=20), dimension(nz_max) :: czranges
@@ -318,7 +319,8 @@ outer:do ikz=1,nz
     integer, dimension(nz_max) :: iperm
     logical :: ldum
 !
-    read(parallel_unit, NML=power_spectrum_run_pars, IOSTAT=iostat)
+    read(parallel_unit, NML=power_spectrum_run_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
     if (iostat /= 0) return
 !
     kxrange(:,1) = (/1,nxgrid,1/)

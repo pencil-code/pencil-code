@@ -103,8 +103,9 @@ module Cparam
 !  datelen        date-and-time string
 !  max_col_width  diagnostic column
 !  nscbc_len      ?
+!  iomsglen       length of I/O error messages
 !
-  integer, parameter :: fnlen=135,intlen=21,bclen=3,labellen=40,linelen=256
+  integer, parameter :: fnlen=135,intlen=21,bclen=3,labellen=40,linelen=256,iomsglen=256
   integer, parameter :: datelen=30,max_col_width=64,nscbc_len=24,fmtlen=30
 !
 !  Significant length of random number generator state.

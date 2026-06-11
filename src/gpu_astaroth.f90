@@ -58,7 +58,6 @@ module GPU
   integer, external :: update_on_gpu_scal_by_name_c
   integer, external :: update_on_gpu_vec_by_name_c
 
-  !integer(KIND=ikind8) :: pFarr_GPU_in, pFarr_GPU_out
   type(C_PTR) :: pFarr_GPU_in, pFarr_GPU_out
   ! Since on the GPU calculation of df and update of f happen without synchronization
   ! of the decomposed portions of the subdomains (or different processes) we can't compute
@@ -200,7 +199,6 @@ contains
 
       if (str/='') call fatal_error('initialize_GPU','no GPU implementation available for module(s) "'// &
                                     trim(str(3:))//'"')
-!
       if (dt<=0.) dt = dtmin
 
       lread_all_vars_from_device_int = merge(1,0,lread_all_vars_from_device)
@@ -213,16 +211,21 @@ contains
 !
       if (nt>0) call load_farray_to_GPU(f)
 
-  !print'(a,1x,Z0,1x,Z0)', 'pFarr_GPU_in,pFarr_GPU_out=', pFarr_GPU_in,pFarr_GPU_out
+      call get_farray_ptr_gpu
+!print'(a,1x,Z0,1x,Z0)', 'pFarr_GPU_in,pFarr_GPU_out=', pFarr_GPU_in,pFarr_GPU_out
+!flush(6)
+
     endsubroutine initialize_GPU
 !**************************************************************************
-    subroutine read_gpu_run_pars(iostat)
+    subroutine read_gpu_run_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=gpu_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=gpu_run_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_gpu_run_pars 
 !***********************************************************************
@@ -248,7 +251,7 @@ contains
 !**************************************************************************
     subroutine get_farray_ptr_gpu
 
-      call get_farray_ptr_gpu_c(pFarr_GPU_in)
+      call get_farray_ptr_gpu_c(pFarr_GPU_in,pFarr_GPU_out)
 
     endsubroutine get_farray_ptr_gpu
 !**************************************************************************
@@ -283,7 +286,9 @@ contains
     endsubroutine before_boundary_gpu
 !**************************************************************************
     subroutine update_after_substep_gpu
+
       call update_after_substep_gpu_c
+
     endsubroutine update_after_substep_gpu
 !**************************************************************************
     subroutine gpu_prepare_for_first_substep
@@ -297,13 +302,13 @@ contains
 !  Fetches the address of the f-array counterpart on the GPU for slots from ind1 to ind2
 !  and transforms it to a Fortran pointer.
 !
-      integer :: ind1
+      integer, optional :: ind1
       integer, optional :: ind2
       logical, optional :: lout
 
       real, dimension(:,:,:,:), pointer :: pFarr
 
-      integer :: i2
+      integer :: i1,i2
 
       interface
         type(c_ptr) function pos_real_ptr_c(ptr,ind)
@@ -313,11 +318,16 @@ contains
         endfunction
       endinterface
 
-      i2 = ioptest(ind2,ind1)
-      if (loptest(lout)) then
-        call c_f_pointer(pos_real_ptr_c(pFarr_GPU_out,ind1-1),pFarr,(/mx,my,mz,i2-ind1+1/))
+      if (present(ind1)) then
+        i1 = ind1
+        i2 = ioptest(ind2,ind1)
       else
-        call c_f_pointer(pos_real_ptr_c(pFarr_GPU_in,ind1-1),pFarr,(/mx,my,mz,i2-ind1+1/))
+        i1=1; i2=mfarray
+      endif
+      if (loptest(lout)) then
+        call c_f_pointer(pos_real_ptr_c(pFarr_GPU_out,i1-1),pFarr,(/mx,my,mz,i2-i1+1/))
+      else
+        call c_f_pointer(pos_real_ptr_c(pFarr_GPU_in,i1-1),pFarr,(/mx,my,mz,i2-i1+1/))
       endif
 
     endfunction get_ptr_GPU
@@ -438,21 +448,29 @@ contains
     endsubroutine update_on_gpu
 !**************************************************************************
     subroutine radtransfer_gpu
+
       call radtransfer_gpu_c
+
     endsubroutine
 !**************************************************************************
     subroutine get_gpu_reduced_vars(dst)
+
       real, dimension(10) :: dst
       call get_gpu_reduced_vars_c(dst)
+
     endsubroutine get_gpu_reduced_vars
 !**************************************************************************
     subroutine test_gpu_bcs
-            call test_bcs_c
+
+      call test_bcs_c
+
     endsubroutine test_gpu_bcs
 !**************************************************************************
     subroutine split_update_gpu(f)
+
       real, dimension (mx,my,mz,mfarray), intent(INOUT) :: f
       call split_update_gpu_c(f)
+
     endsubroutine split_update_gpu
 !**************************************************************************
     subroutine pushpars2c(p_par)
@@ -469,6 +487,7 @@ contains
     call copy_addr(lsingle_precision_timestep,p_par(8)) ! bool
     call copy_addr(thread_block_loop_factors,p_par(9)) ! int3 dconst
     call copy_addr(lonly_default_stream_for_taskgraphs,p_par(10)) ! bool dconst
+
     endsubroutine pushpars2c
 !**************************************************************************
 endmodule GPU

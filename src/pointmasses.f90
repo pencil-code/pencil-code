@@ -1431,13 +1431,15 @@ module PointMasses
 !
     endsubroutine point_par_name
 !***********************************************************************
-    subroutine read_pointmasses_init_pars(iostat)
+    subroutine read_pointmasses_init_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=pointmasses_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=pointmasses_init_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_pointmasses_init_pars
 !***********************************************************************
@@ -1449,13 +1451,15 @@ module PointMasses
 !
     endsubroutine write_pointmasses_init_pars
 !***********************************************************************
-    subroutine read_pointmasses_run_pars(iostat)
+    subroutine read_pointmasses_run_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=pointmasses_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=pointmasses_run_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_pointmasses_run_pars
 !***********************************************************************

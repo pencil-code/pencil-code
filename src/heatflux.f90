@@ -344,13 +344,15 @@ module Heatflux
 !
   endsubroutine calc_diagnostics_heatflux
 !***********************************************************************
-    subroutine read_heatflux_run_pars(iostat)
+    subroutine read_heatflux_run_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=heatflux_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=heatflux_run_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_heatflux_run_pars
 !***********************************************************************
@@ -649,6 +651,7 @@ module Heatflux
 !       For incomperating all we use:
 !
         maxadvec = maxadvec + (0.36*c_spitzer + 0.64*c_spitzer0)/dxmin_pencil
+        !better: maxadvec = max(maxadvec,(0.36*c_spitzer + 0.64*c_spitzer0)/dxmin_pencil)
 !
 !       In case tau_inv_va > tau_inv_spitzer is c_spitzer > c_spitzer0 and we get:
 !       maxadvec = maxadvec + 0.36*c_spitzer/dxmin_pencil
@@ -666,6 +669,7 @@ module Heatflux
         diffspitz = Kspitzer_para*exp(2.5*p%lnTT-p%lnrho)*p%cv1*abs(cosgT_b)
         c_spitzer = sqrt(diffspitz*tau_inv_spitzer)
         maxadvec = maxadvec + c_spitzer/dxmin_pencil
+        !better: maxadvec = max(maxadvec,c_spitzer/dxmin_pencil)
         dt1_max=max(dt1_max,tau_inv_spitzer/cdts)
       endif
 !
