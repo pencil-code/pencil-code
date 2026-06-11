@@ -42,6 +42,7 @@ void random_initial_condition(void);
 void getGPUReducedVars(REAL* dst);
 void testBCs(void);
 void splitUpdate(const REAL,const FINT);
+void copyVBApointers(REAL**, REAL**);
 
 // Torchfort
 void tf_save_checkpoint_c_api(const char*, const char*);
@@ -150,21 +151,20 @@ void FTNIZE(finalize_gpu_c)()
   finalizeGPU();
 }
 /* ---------------------------------------------------------------------- */
-void FTNIZE(get_farray_ptr_gpu_c)(REAL** p_f_in)
+void FTNIZE(get_farray_ptr_gpu_c)(REAL** p_f_in, REAL** p_f_out)
 {
-  getFArrayIn(p_f_in);
+  //getFArrayIn(p_f_in);
+  copyVBApointers(p_f_in,p_f_out);
 }
 /* ---------------------------------------------------------------------- */
 void FTNIZE(before_boundary_gpu_c)(FINT *lrmv, FINT *isubstep, double *t, FINT *lsubstepping_in_time)
 {
-  beforeBoundaryGPU(
-		  (*lrmv == 1) ? true : false,
-		  *isubstep,*t,*lsubstepping_in_time);
+  beforeBoundaryGPU((*lrmv == 1) ? true : false, *isubstep, *t, *lsubstepping_in_time);
 }
 /* ---------------------------------------------------------------------- */
 void FTNIZE(update_after_substep_gpu_c)()
 {
-	afterSubStepGPU();
+  afterSubStepGPU();
 }
 /* ---------------------------------------------------------------------- */
 void FTNIZE(rhs_gpu_c)(FINT *isubstep, double* t)

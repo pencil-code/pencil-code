@@ -347,7 +347,7 @@ COMPILE_OPT IDL2,HIDDEN
   if (monotone) then begin
     itt=where(full_labels eq 't') & itt = itt[0]
     if (itt eq -1) then begin
-      print, 'Error while making time monotomous: '+ $
+      print, 'Error while making time monotonous: '+ $
           'time variable was not found in time series.'
       print, 'Labels: ', full_labels
       stop
