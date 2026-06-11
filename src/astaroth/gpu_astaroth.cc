@@ -653,6 +653,7 @@ void save_stats(){
         myFile.close();
     }
 #endif
+}
 /***********************************************************************************************/
 void read_stats(){
 #if LTRAINING
@@ -680,7 +681,7 @@ void read_stats(){
             std::vector<std::string> row;
             
             while (std::getline(ss, val, ',')){
-                row.push_back(field);
+                row.push_back(val);
             }
             
             count = std::stoi(row[0]);
@@ -714,7 +715,6 @@ void read_stats(){
 #endif
 }
 /***********************************************************************************************/
-}
 extern "C" void tf_create_model_c_api(const char *model_name, const char* config_file_path, int comm_fint, bool ldist){
 #if LTRAINING
 	int ndevices = 0;
