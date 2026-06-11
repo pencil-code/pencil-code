@@ -374,7 +374,10 @@ module File_io
       endif
 !
       !if (.not. find_namelist (trim(name)//trim(type)//trim(suffix))) then
-      call find_namelist (trim(name)//trim(type)//trim(suffix), lfound, lnamelist_optional)
+      lfound=.true.
+      if (.not.(trim(name)=='special')) &   ! special modules can be multiple - check existence in reader!
+          call find_namelist (trim(name)//trim(type)//trim(suffix), lfound, lnamelist_optional)
+
       if (.not. lfound) then
         if (.not.lnamelist_optional) then
           if (.not. lparam_nml) lnamelist_error = .true.  !???
