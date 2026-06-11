@@ -7,7 +7,18 @@ communicated Field3 bbmean
 //communicated Field3 grad_lnrho_mean
 //communicated Field3 gradupwd_lnrho_mean
 
-communicated Field3  sgs_emf
+field_order(AC_isgs_emfx__mod__training-1) communicated Field F_SGS_EMF_X
+field_order(AC_isgs_emfy__mod__training-1) communicated Field F_SGS_EMF_Y
+field_order(AC_isgs_emfz__mod__training-1) communicated Field F_SGS_EMF_Z
+
+const Field3 F_SGS_EMFVEC =
+{  
+    F_SGS_EMF_X,
+    F_SGS_EMF_Y,
+    F_SGS_EMF_Z
+}
+#define sgs_emf F_SGS_EMFVEC
+
 //communicated Field   tau_density
 
 //communicated Field3 UUMEANBatch[6]

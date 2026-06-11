@@ -277,3 +277,7 @@ const real tl0  = 0.0
 const real tl01  = tl0/(tl0+tini)
 const real teta1 = teta/(teta+tini)
 #endif
+
+#if LTRAINING
+#include "../training/train.h"
+#endif

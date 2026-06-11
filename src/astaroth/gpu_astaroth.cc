@@ -648,11 +648,72 @@ void save_stats(){
         auto out_acc_sum_squared_yz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_squared[4]);
         auto out_acc_sum_squared_xz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_squared[5]);
 
-        myFile <<  in_acc_sum_x << "," << in_acc_sum_y << "," << in_acc_sum_z << "," << in_acc_sum_squared_x << "," << in_acc_sum_squared_y << "," << in_acc_sum_squared_z << "," <<  out_acc_sum_xx << "," <<  out_acc_sum_yy << "," <<  out_acc_sum_zz << "," <<  out_acc_sum_xy << "," << out_acc_sum_yz << "," << out_acc_sum_xz << "," << out_acc_sum_squared_xx << "," << out_acc_sum_squared_yy << "," << out_acc_sum_squared_zz << "," << out_acc_sum_squared_xy << "," << out_acc_sum_squared_yz << "," << out_acc_sum_squared_xz << "\n";
+        myFile << train_counter << "," << nxgrid*nygrid*nzgrid << "," << in_acc_sum_x << "," << in_acc_sum_y << "," << in_acc_sum_z << "," << in_acc_sum_squared_x << "," << in_acc_sum_squared_y << "," << in_acc_sum_squared_z << "," <<  out_acc_sum_xx << "," <<  out_acc_sum_yy << "," <<  out_acc_sum_zz << "," <<  out_acc_sum_xy << "," << out_acc_sum_yz << "," << out_acc_sum_xz << "," << out_acc_sum_squared_xx << "," << out_acc_sum_squared_yy << "," << out_acc_sum_squared_zz << "," << out_acc_sum_squared_xy << "," << out_acc_sum_squared_yz << "," << out_acc_sum_squared_xz << "\n";
 
         myFile.close();
     }
 #endif
+/***********************************************************************************************/
+void read_stats(){
+#if LTRAINING
+    if(rank==0){
+        std::ifstream statistics("running_statistics.csv");
+        int count;
+        int domain;
+        std::vector<AcReal> in_sum;
+        std::vector<AcReal> in_sum_sq;
+        std::vector<AcReal> out_sum;
+        std::vector<AcReal> out_sum_sq;
+
+		if (!statistics.is_open()){
+			fprintf(stderr, "Could not open running_statistics file");
+			fflush(stderr);
+			exit(EXIT_FAILURE);
+		}
+        
+        std::string line;
+        std::getline(statistics, line);
+
+        while(std::getline(statistics, line)){
+            std::stringstream ss(line);
+            std::string val;
+            std::vector<std::string> row;
+            
+            while (std::getline(ss, val, ',')){
+                row.push_back(field);
+            }
+            
+            count = std::stoi(row[0]);
+            domain = std::stoi(row[1]);
+
+            in_sum.push_back(std::stod(row[2]));
+            in_sum.push_back(std::stod(row[3]));
+            in_sum.push_back(std::stod(row[4]));
+
+            in_sum_sq.push_back(std::stod(row[5]));
+            in_sum_sq.push_back(std::stod(row[6]));
+            in_sum_sq.push_back(std::stod(row[7]));
+
+
+            out_sum.push_back(std::stod(row[8]));
+            out_sum.push_back(std::stod(row[9]));
+            out_sum.push_back(std::stod(row[10]));
+            out_sum.push_back(std::stod(row[11]));
+            out_sum.push_back(std::stod(row[12]));
+            out_sum.push_back(std::stod(row[13]));
+
+            out_sum_sq.push_back(std::stod(row[14]));
+            out_sum_sq.push_back(std::stod(row[15]));
+            out_sum_sq.push_back(std::stod(row[16]));
+            out_sum_sq.push_back(std::stod(row[17]));
+            out_sum_sq.push_back(std::stod(row[18]));
+            out_sum_sq.push_back(std::stod(row[19]));
+        }
+        
+    }
+#endif
+}
+/***********************************************************************************************/
 }
 extern "C" void tf_create_model_c_api(const char *model_name, const char* config_file_path, int comm_fint, bool ldist){
 #if LTRAINING
@@ -667,7 +728,7 @@ extern "C" void tf_create_model_c_api(const char *model_name, const char* config
 
   if(acSetDevice(rank % ndevices) != cudaSuccess)
   {
-  		fprintf(stderr,"Was not able to set device id!\n");
+  		    fprintf(stderr,"Was not able to set device id!\n");
 			fflush(stderr);
  			exit(EXIT_FAILURE);
   }
@@ -726,6 +787,8 @@ extern "C" void tf_load_model_checkpoint_c_api(const char* name, const char* che
 	else{
 		acLogFromRootProc(rank, "Torchfort model %s loaded succesfully\n", name);
 	}
+    
+
 	fflush(stdout);
 	fflush(stderr);
 #endif

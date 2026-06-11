@@ -13,10 +13,6 @@
 #include "../entropy/after_boundary.h"
 #include "../implicit_diffusion.h"
 
-//TP: the training code needs to be improved that it can be included always (requires conditionals when to do the calculations)
-#if LTRAINING
-#include "../training/train.h"
-#endif
 
 
 input real AC_dt
