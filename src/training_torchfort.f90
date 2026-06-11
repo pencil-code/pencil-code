@@ -112,7 +112,9 @@
         allocate(label (mx, my, mz, 6, 1))
       endif
 !
-      f(:,:,:,itau_hydroxx:itau_hydroyz)   = 0.0
+      if(lhydro) then
+        f(:,:,:,itau_hydroxx:itau_hydroyz)   = 0.0
+      endif
 !
 !
       if (ltrain_mag) then
@@ -203,7 +205,9 @@
           endif
           tauerror = sum(f(l1:l2,m1:m2,n1:n2,itau_hydroxx:itau_hydrozz)**2)/nx
         else
-          f(:,:,:,itau_hydroxx:itau_hydrozz) = output(:,:,:,:,1)
+          if(lhydro) then
+            f(:,:,:,itau_hydroxx:itau_hydrozz) = output(:,:,:,:,1)
+          endif
         endif
       else
         if (lfirst) call train(f)
@@ -225,8 +229,10 @@
         if (lscale) call descale(tau_pred, output_min, output_max)
 
         if (lwrite_sample .and. mod(it, 50)==0) then
-          call write_sample(f(:,:,:,itau_hydroxx), mx, my, mz, "target_"//trim(itoa(iproc))//".hdf5")
-          call write_sample(tau_pred(:,:,:,1), mx, my, mz, "pred_"//trim(itoa(iproc))//".hdf5")
+          if(lhydro) then
+            call write_sample(f(:,:,:,itau_hydroxx), mx, my, mz, "target_"//trim(itoa(iproc))//".hdf5")
+            call write_sample(tau_pred(:,:,:,1), mx, my, mz, "pred_"//trim(itoa(iproc))//".hdf5")
+          endif
         endif
 
       endif
@@ -360,15 +366,21 @@
 ! outp scaling.
 !
           if (it == it_train_start) then
-            output_min = minval(f(:,:,:,itau_hydroxx:itau_hydrozz))
-            output_max = maxval(f(:,:,:,itau_hydroxx:itau_hydrozz))
+            if(lhydro) then
+              output_min = minval(f(:,:,:,itau_hydroxx:itau_hydrozz))
+              output_max = maxval(f(:,:,:,itau_hydroxx:itau_hydrozz))
+            endif
           endif
-          call scale(f(:,:,:,itau_hydroxx:itau_hydrozz), output_min, output_max)
+          if(lhydro) then
+            call scale(f(:,:,:,itau_hydroxx:itau_hydrozz), output_min, output_max)
+          endif
         endif
 
         ! print*, output_min, output_max, input_min, input_max
-        input(:,:,:,:,1) = uumean                    ! host to device    !sngl(uumean)
-        label(:,:,:,:,1) = f(:,:,:,itau_hydroxx:itau_hydrozz)    ! host to device
+        if(lhydro) then
+          input(:,:,:,:,1) = uumean                    ! host to device    !sngl(uumean)
+          label(:,:,:,:,1) = f(:,:,:,itau_hydroxx:itau_hydrozz)    ! host to device
+        endif
 
         !istat = torchfort_train(model, input, label, train_loss)
 !print 'TRAIN', it, train_loss
@@ -392,6 +404,8 @@
       use Sub, only: smooth
 
       real, contiguous,dimension(:,:,:,:) :: f
+
+      if(.not. lhydro) return
 !
 !  Smooth velocity.
 !
@@ -432,13 +446,13 @@
 
 
       if (ltrained) then 
-        call div_tensor(f,div_hydro_sgs,itau_hydro)
+        if (lhydro)     call div_tensor(f,div_hydro_sgs,itau_hydro)
         if (ltrain_mag) call div_tensor(f,div_mag_sgs,itau_bb)
         if (t >= start_infer) then
-          df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - div_hydro_sgs
+          if (lhydro) df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - div_hydro_sgs
           if (ltrain_mag) then
-            df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - div_mag_sgs
-            df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + f(l1:l2,m,n,isgs_emfx:isgs_emfz)
+            if(lhydro) df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - div_mag_sgs
+            df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) - f(l1:l2,m,n,isgs_emfx:isgs_emfz)
           endif
         endif
       endif
