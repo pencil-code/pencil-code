@@ -1986,7 +1986,7 @@ module Equ
       real, dimension (:,:,:,:), allocatable :: f_copy,f_diff,df_tmp,df_copy,f_beta,f_abs_diff
       real, dimension(5) :: beta_ts,alpha_ts
 
-      integer :: i
+      integer :: i,ncomponents
 
       interface
         subroutine cpu_version(f,df,p,mass_per_proc,early_finalize)
@@ -2113,7 +2113,7 @@ module Equ
         print*,"Max comp diff loc: ",maxloc(f_diff(l1:l2,m1:m2,n1:n2,1:mvar))
 
         do i = 1,mfarray
-          name = farray_get_name(i)
+          ncomponents = farray_get_name(i,name)
           print*,"Max comp diff for ",name,i,": ",maxval(f_diff(l1:l2,m1:m2,n1:n2,i))
           print*,"Avg comp diff for ",name,i,": ",sum(f_diff(l1:l2,m1:m2,n1:n2,i))/(nx*ny*nz)
           print*,"Max comp loc  for ",name,i,": ",maxloc(f_diff(l1:l2,m1:m2,n1:n2,i))
