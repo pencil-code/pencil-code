@@ -10689,7 +10689,7 @@ print*,'AXEL2: should not be here (eta) ... '
 !
     endsubroutine input_persist_magnetic
 !***********************************************************************
-    logical function output_persistent_magnetic
+    logical function output_persistent_magnetic()
 !
 !  Write the stored phase and amplitude for the
 !  correction of the Beltrami wave forcing
