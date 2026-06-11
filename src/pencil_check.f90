@@ -62,7 +62,7 @@ module Pencil_check
       logical, dimension(nname) :: lconsistent_diagnos
       character(len=30) :: name
       logical :: ldie=.false.
-      integer :: mem_stat1, mem_stat2
+      integer :: mem_stat1, mem_stat2,ncomponents
       real :: save_dt
 !
       if (lroot) print*, 'pencil_consistency_check: checking pencil case'
@@ -238,7 +238,8 @@ f_loop:   do iv=1,mvar
                   ' is not requested, but calculating it changes the results!'
               do iv =1,mvar
                 if (.not. lconsistent_var(iv)) then
-                  name = farray_get_name(iv)
+                  !name = farray_get_name(iv)
+                  ncomponents = farray_get_name(iv,name)
                   print '(a,i4,a)',' pencil_consistency_check: '// &
                   'Value changed for field: '// name
                 endif
