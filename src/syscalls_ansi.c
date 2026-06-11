@@ -95,6 +95,12 @@ void FTNIZE(caller1)
   (*func)(par1);
 }
 /* ---------------------------------------------------------------------- */
+void FTNIZE(caller_str)
+     (void (**func)(char*), char* str)
+{
+  (*func)(str);
+}
+/* ---------------------------------------------------------------------- */
 void FTNIZE(caller2)
      (void (**func)(void*,void*), void* par1, void* par2)
 {

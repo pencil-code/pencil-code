@@ -17,7 +17,7 @@
     include 'special.h'
 
     external caller, caller0, caller1, caller2, caller3, caller4, caller5, caller5_str5, caller6, &
-             func_int_caller0
+             caller_str, func_int_caller0
     integer(KIND=ikind8), external :: dlopen_c, dlsym_c
     external dlclose_c
 !
@@ -360,7 +360,7 @@
       integer :: i
 !
       do i=1,n_special_modules
-        call caller1(special_sub_handles(i,I_READ_SPECIAL_INIT_PARS),iomsg)
+        call caller_str(special_sub_handles(i,I_READ_SPECIAL_INIT_PARS),iomsg)
       enddo
 !
     endsubroutine read_special_init_pars
@@ -384,7 +384,7 @@
       integer :: i
 !
       do i=1,n_special_modules
-        call caller1(special_sub_handles(i,I_READ_SPECIAL_RUN_PARS),iomsg)
+        call caller_str(special_sub_handles(i,I_READ_SPECIAL_RUN_PARS),iomsg)
       enddo
 !
     endsubroutine read_special_run_pars
