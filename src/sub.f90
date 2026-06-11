@@ -7347,7 +7347,7 @@ nameloop: do
         if (vec == 3) then
           call farray_register_auxiliary (trim(name), index, vector=3, communicated=communicated,&
           rhs=rhs,read_from_gpu=read_from_gpu)
-if (lroot) print*, 'name,index=',name,index 
+!if (lroot) print*, 'name,index=',name,index 
         elseif (vec == 2) then
           call farray_register_auxiliary (trim(name), index, array=2, communicated=communicated,&
           rhs=rhs,read_from_gpu=read_from_gpu)
@@ -7360,7 +7360,8 @@ if (lroot) print*, 'name,index=',name,index
         if (vec >= 3) ind_aux3 = index + 2
       else
         if (lroot) print *, 'register_report_aux: i'//trim(name)//' =', index
-        call farray_index_append (name, index, lroot, vec)
+        call farray_index_append ('i'//trim(name), index, vec)
+        !call farray_index_append (name, index, lroot, vec)
       endif
 !
     endsubroutine register_report_aux
