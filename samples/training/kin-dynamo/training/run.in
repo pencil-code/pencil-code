@@ -1,0 +1,50 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  run parameters for kinematic dynamo run with Glen Roberts flow
+!
+&run_pars
+  cvsid='$Id$'
+  nt=3051, it1=50, isave=1000, itorder=3
+  dsnap=500, dvid=30.0
+  random_gen='nr_f90'
+  lpencil_check=F
+  lpencil_check_small=F
+  !nghost_read_fewer=0, luse_oldgrid=T
+/
+&hydro_run_pars
+  kinematic_flow='roberts'
+  kx_uukin=8.0
+  ky_uukin=8.0
+/
+&magnetic_run_pars
+  eta=0.1
+  !eta1=5.522
+/
+
+&power_spectrum_run_pars
+  lzero_spec_zerok=T
+/
+
+&training_run_pars
+  lroute_via_cpu=F
+  it_train=1, it_train_chkpt=5000
+  !it_train_start=1200
+  luse_trained_tau=F
+  max_loss=1.e-100
+  model='stationary'
+  config_file='config_torchfort.yaml'
+  it_train_end=20000
+  lrun_epoch=T
+  ltrain_mag=F
+  ltrain_dens=F
+  dt_train= 1.7248442881e-01
+  !t_train_start=6.8e-3
+  t_train_start=0
+  t_train_end=69.752
+  t_train_chkpt=6.8
+/
+
+&gpu_run_pars
+  ltest_bcs=F
+  lcpu_timestep_on_gpu=T
+/

@@ -1,0 +1,16 @@
+###                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+
+MPICOMM  = mpicomm
+HYDRO     =   hydro_kinematic
+DENSITY   = nodensity
+MAGNETIC  =   magnetic
+VISCOSITY = noviscosity
+EOS       = noeos
+DERIV     =   deriv_10th
+FOURIER  =   fourier_fftpack
+POWER    =   power_spectrum
+TRAINING=training_torchfort
+GPU=gpu_astaroth
