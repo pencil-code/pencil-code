@@ -122,11 +122,11 @@ module Forcing
 !
     endsubroutine forcing_cont
 !***********************************************************************
-    subroutine read_forcing_run_pars(iostat)
+    subroutine read_forcing_run_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_forcing_run_pars
 !***********************************************************************

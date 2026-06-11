@@ -98,11 +98,11 @@ module Particles_density
 !
     endsubroutine drhopswarm_dt
 !***********************************************************************
-    subroutine read_particles_dens_init_pars(iostat)
+    subroutine read_particles_dens_init_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_particles_dens_init_pars
 !***********************************************************************

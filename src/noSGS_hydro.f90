@@ -46,11 +46,11 @@ module SGS_hydro
 !
     endsubroutine initialize_SGS_hydro
 !***********************************************************************
-    subroutine read_SGS_hydro_run_pars(iostat)
+    subroutine read_SGS_hydro_run_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_SGS_hydro_run_pars
 !***********************************************************************

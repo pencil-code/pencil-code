@@ -71,11 +71,11 @@ module Particles_coagulation
 !
     endsubroutine particles_coagulation_blocks
 !***********************************************************************
-    subroutine read_particles_coag_run_pars(iostat)
+    subroutine read_particles_coag_run_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_particles_coag_run_pars
 !***********************************************************************

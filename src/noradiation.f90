@@ -124,11 +124,11 @@ module Radiation
 !
     endsubroutine calc_diagnostics_radiation
 !***********************************************************************
-    subroutine read_radiation_init_pars(iostat)
+    subroutine read_radiation_init_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_radiation_init_pars
 !***********************************************************************
@@ -140,11 +140,11 @@ module Radiation
 !
     endsubroutine write_radiation_init_pars
 !***********************************************************************
-    subroutine read_radiation_run_pars(iostat)
+    subroutine read_radiation_run_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_radiation_run_pars
 !***********************************************************************

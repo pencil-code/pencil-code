@@ -16,12 +16,12 @@
     subroutine python_initialize
     endsubroutine python_initialize
 !***************************************************************
-    subroutine read_python_run_pars(iostat)
+    subroutine read_python_run_pars(iomsg)
 !
       use General, only: keep_compiler_quiet
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
       
-      call keep_compiler_quiet(iostat)
+      call keep_compiler_quiet(iomsg)
 
     endsubroutine read_python_run_pars
 !***************************************************************

@@ -68,11 +68,11 @@ module Testflow
 !
     endsubroutine pencil_interdep_testflow
 !***********************************************************************
-    subroutine read_testflow_init_pars(iostat)
+    subroutine read_testflow_init_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_testflow_init_pars
 !***********************************************************************
@@ -84,11 +84,11 @@ module Testflow
 !
     endsubroutine write_testflow_init_pars
 !***********************************************************************
-    subroutine read_testflow_run_pars(iostat)
+    subroutine read_testflow_run_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_testflow_run_pars
 !***********************************************************************

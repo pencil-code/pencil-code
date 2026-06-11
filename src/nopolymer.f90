@@ -124,11 +124,11 @@ module Polymer
 !
     endsubroutine calc_polymer_after_boundary
 !***********************************************************************
-    subroutine read_polymer_init_pars(iostat)
+    subroutine read_polymer_init_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_polymer_init_pars
 !***********************************************************************
@@ -140,11 +140,11 @@ module Polymer
 !
     endsubroutine write_polymer_init_pars
 !***********************************************************************
-    subroutine read_polymer_run_pars(iostat)
+    subroutine read_polymer_run_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_polymer_run_pars
 !***********************************************************************

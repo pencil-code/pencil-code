@@ -410,13 +410,15 @@ module Particles_number
 !
     endsubroutine dnpswarm_dt
 !***********************************************************************
-    subroutine read_particles_num_init_pars(iostat)
+    subroutine read_particles_num_init_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=particles_number_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=particles_number_init_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_particles_num_init_pars
 !***********************************************************************
@@ -428,13 +430,15 @@ module Particles_number
 !
     endsubroutine write_particles_num_init_pars
 !***********************************************************************
-    subroutine read_particles_num_run_pars(iostat)
+    subroutine read_particles_num_run_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=particles_number_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=particles_number_run_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_particles_num_run_pars
 !***********************************************************************

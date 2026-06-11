@@ -38,11 +38,11 @@ module Cosmicrayflux
 !
     endsubroutine initialize_cosmicrayflux
 !***********************************************************************
-    subroutine read_cosmicrayflux_init_pars(iostat)
+    subroutine read_cosmicrayflux_init_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_cosmicrayflux_init_pars
 !***********************************************************************
@@ -54,11 +54,11 @@ module Cosmicrayflux
 !
     endsubroutine write_cosmicrayflux_init_pars
 !***********************************************************************
-    subroutine read_cosmicrayflux_run_pars(iostat)
+    subroutine read_cosmicrayflux_run_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_cosmicrayflux_run_pars
 !***********************************************************************

@@ -40,11 +40,11 @@ module Particles_stirring
 !
     endsubroutine particle_stirring
 !***********************************************************************
-    subroutine read_particles_stir_run_pars(iostat)
+    subroutine read_particles_stir_run_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_particles_stir_run_pars
 !***********************************************************************

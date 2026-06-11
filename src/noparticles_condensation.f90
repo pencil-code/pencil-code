@@ -79,13 +79,13 @@ module Particles_condensation
 !
     endsubroutine particles_condensation_blocks
 !***********************************************************************
-    subroutine read_particles_cond_init_pars(iostat)
+    subroutine read_particles_cond_init_pars(iomsg)
 !
 !  18-jun-17/anders: coded
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      call keep_compiler_quiet(iostat)
+      call keep_compiler_quiet(iomsg)
 !
     endsubroutine read_particles_cond_init_pars
 !***********************************************************************
@@ -99,15 +99,15 @@ module Particles_condensation
 !
     endsubroutine write_particles_cond_init_pars
 !***********************************************************************
-    subroutine read_particles_cond_run_pars(iostat)
+    subroutine read_particles_cond_run_pars(iomsg)
 !
 !  18-jun-17/anders: coded
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      call keep_compiler_quiet(iostat)
+      call keep_compiler_quiet(iomsg)
 !
     endsubroutine read_particles_cond_run_pars
 !***********************************************************************

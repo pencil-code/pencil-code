@@ -92,11 +92,11 @@ module Poisson
 !
     endsubroutine inverse_laplacian_semispectral
 !***********************************************************************
-    subroutine read_poisson_init_pars(iostat)
+    subroutine read_poisson_init_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_poisson_init_pars
 !***********************************************************************
@@ -108,11 +108,11 @@ module Poisson
 !
     endsubroutine write_poisson_init_pars
 !***********************************************************************
-    subroutine read_poisson_run_pars(iostat)
+    subroutine read_poisson_run_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_poisson_run_pars
 !***********************************************************************

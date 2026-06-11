@@ -37,7 +37,7 @@ module Selfgravity
       use SharedVariables, only: put_shared_variable
 
       call put_shared_variable('rhs_poisson_const',rhs_poisson_const, caller='register_selfgravity')
-      call put_shared_variable('gravitational_const',gravitational_const, caller='register_selfgravity')
+      call put_shared_variable('gravitational_const',gravitational_const)
 
     endsubroutine register_selfgravity
 !***********************************************************************
@@ -125,15 +125,18 @@ module Selfgravity
 
     endsubroutine calc_diagnostics_selfgrav
 !***********************************************************************
-    subroutine read_selfgravity_init_pars(iostat)
+    subroutine read_selfgravity_init_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+
+      integer :: iostat
 !
-      read(parallel_unit, NML=selfgrav_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=selfgrav_init_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
       !TP: Do something ugly since init pars for no module should always be optional
-      iostat=0
+      iomsg=""
 !
     endsubroutine read_selfgravity_init_pars
 !***********************************************************************
@@ -145,11 +148,11 @@ module Selfgravity
 !
     endsubroutine write_selfgravity_init_pars
 !***********************************************************************
-    subroutine read_selfgravity_run_pars(iostat)
+    subroutine read_selfgravity_run_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_selfgravity_run_pars
 !***********************************************************************
@@ -177,7 +180,6 @@ module Selfgravity
     subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
-    use General , only: string_to_enum
 
     integer, parameter :: n_pars=1
     integer(KIND=ikind8), dimension(n_pars) :: p_par

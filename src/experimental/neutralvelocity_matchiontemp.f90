@@ -153,7 +153,7 @@ module NeutralVelocity
 !  Tell the BorderProfiles module if we intend to use border driving, so
 !  that the modules can request the right pencils.
 !
-      if (borderuun/='nothing') call request_border_driving(borderuun)
+      call request_border_driving(borderuun,'initialize_neutralvelocity',iuux,iuuz)
 !
 !  Turn off advection for 0-D runs.
 !
@@ -172,13 +172,15 @@ module NeutralVelocity
 !
       endsubroutine initialize_neutralvelocity
 !***********************************************************************
-    subroutine read_neutralvelocity_init_pars(iostat)
+    subroutine read_neutralvelocity_init_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=neutralvelocity_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=neutralvelocity_init_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_neutralvelocity_init_pars
 !***********************************************************************
@@ -190,13 +192,15 @@ module NeutralVelocity
 !
     endsubroutine write_neutralvelocity_init_pars
 !***********************************************************************
-    subroutine read_neutralvelocity_run_pars(iostat)
+    subroutine read_neutralvelocity_run_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=neutralvelocity_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=neutralvelocity_run_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_neutralvelocity_run_pars
 !***********************************************************************

@@ -2193,17 +2193,21 @@ module Magnetic_meanfield
 !
     endsubroutine Omega_effect
 !***********************************************************************
-    subroutine read_magn_mf_init_pars(iostat)
+    subroutine read_magn_mf_init_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(inout) :: iomsg
+
+      integer :: iostat
+      character(LEN=iomsglen) :: msg
 !
-      read(parallel_unit, NML=magn_mf_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=magn_mf_init_pars, IOSTAT=iostat, IOMSG=msg)
+      if (iostat/=0) iomsg=trim(iomsg)//"; "//trim(msg)
 !
 !  read namelist for secondary modules in mean-field theory (if invoked)
 !
-      if (lmagn_mf_demfdt) call read_magn_mf_demfdt_init_pars(iostat)
+      if (lmagn_mf_demfdt) call read_magn_mf_demfdt_init_pars(iomsg)
 !
     endsubroutine read_magn_mf_init_pars
 !***********************************************************************
@@ -2219,17 +2223,21 @@ module Magnetic_meanfield
 !
     endsubroutine write_magn_mf_init_pars
 !***********************************************************************
-    subroutine read_magn_mf_run_pars(iostat)
+    subroutine read_magn_mf_run_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(inout) :: iomsg
 !
-      read(parallel_unit, NML=magn_mf_run_pars, IOSTAT=iostat)
+      integer :: iostat
+      character(LEN=iomsglen) :: msg
+!
+      read(parallel_unit, NML=magn_mf_run_pars, IOSTAT=iostat, IOMSG=msg)
+      if (iostat/=0) iomsg=trim(iomsg)//"; "//trim(msg)
 !
 !  read namelist for secondary modules in mean-field theory (if invoked)
 !
-      if (lmagn_mf_demfdt) call read_magn_mf_demfdt_run_pars(iostat)
+      if (lmagn_mf_demfdt) call read_magn_mf_demfdt_run_pars(iomsg)
 !
     endsubroutine read_magn_mf_run_pars
 !***********************************************************************

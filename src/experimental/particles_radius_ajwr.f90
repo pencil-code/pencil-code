@@ -787,14 +787,16 @@ module Particles_radius
 !
     endsubroutine dap_dt
 !***********************************************************************
-    subroutine read_particles_rad_init_pars(iostat)
+    subroutine read_particles_rad_init_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
       integer :: pos
 !
-      read(parallel_unit, NML=particles_radius_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=particles_radius_init_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
 !  Find how many different particle radii we are using. This must be done
 !  because not all parts of the code are adapted to work with more than one
@@ -816,13 +818,15 @@ module Particles_radius
 !
     endsubroutine write_particles_rad_init_pars
 !***********************************************************************
-    subroutine read_particles_rad_run_pars(iostat)
+    subroutine read_particles_rad_run_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=particles_radius_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=particles_radius_run_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_particles_rad_run_pars
 !***********************************************************************

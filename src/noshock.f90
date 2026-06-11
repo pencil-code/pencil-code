@@ -51,11 +51,11 @@ module Shock
 !
     endsubroutine initialize_shock
 !***********************************************************************
-    subroutine read_shock_run_pars(iostat)
+    subroutine read_shock_run_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_shock_run_pars
 !***********************************************************************

@@ -113,11 +113,11 @@ module Dustvelocity
 !
     endsubroutine calc_diagnostics_dustvelocity
 !***********************************************************************
-    subroutine read_dustvelocity_init_pars(iostat)
+    subroutine read_dustvelocity_init_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_dustvelocity_init_pars
 !***********************************************************************
@@ -129,11 +129,11 @@ module Dustvelocity
 !
     endsubroutine write_dustvelocity_init_pars
 !***********************************************************************
-    subroutine read_dustvelocity_run_pars(iostat)
+    subroutine read_dustvelocity_run_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_dustvelocity_run_pars
 !***********************************************************************

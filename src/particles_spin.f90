@@ -231,7 +231,7 @@ module Particles_spin
 !
     endsubroutine dps_dt
 !***********************************************************************
-    subroutine read_particles_spin_init_pars(iostat)
+    subroutine read_particles_spin_init_pars(iomsg)
 !
 !  Read initialization parameters from namelist particles_spin_init_pars.
 !
@@ -239,9 +239,11 @@ module Particles_spin
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=particles_spin_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=particles_spin_init_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_particles_spin_init_pars
 !***********************************************************************
@@ -257,7 +259,7 @@ module Particles_spin
 !
     endsubroutine write_particles_spin_init_pars
 !***********************************************************************
-    subroutine read_particles_spin_run_pars(iostat)
+    subroutine read_particles_spin_run_pars(iomsg)
 !
 !  Read runtime parameters from namelist particles_spin_run_pars.
 !
@@ -265,9 +267,11 @@ module Particles_spin
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=particles_spin_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=particles_spin_run_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_particles_spin_run_pars
 !***********************************************************************

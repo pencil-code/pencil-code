@@ -30,9 +30,9 @@ contains
       call keep_compiler_quiet(f)
     endsubroutine initialize_particles_breakup
 !***********************************************************************
-    subroutine read_particles_breakup_init_pars(iostat)
-      integer, intent(out) :: iostat
-      iostat = 0
+    subroutine read_particles_breakup_init_pars(iomsg)
+      character(LEN=*), intent(out) :: iomsg
+      iomsg=""
     endsubroutine read_particles_breakup_init_pars
 !***********************************************************************
     subroutine write_particles_breakup_init_pars(unit)
@@ -40,9 +40,9 @@ contains
       call keep_compiler_quiet(unit)
     endsubroutine write_particles_breakup_init_pars
 !***********************************************************************
-    subroutine read_particles_breakup_run_pars(iostat)
-      integer, intent(out) :: iostat
-      iostat = 0
+    subroutine read_particles_breakup_run_pars(iomsg)
+      character(LEN=*), intent(out) :: iomsg
+      iomsg=""
     endsubroutine read_particles_breakup_run_pars
 !***********************************************************************
     subroutine write_particles_breakup_run_pars(unit)

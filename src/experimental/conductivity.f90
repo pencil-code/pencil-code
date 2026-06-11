@@ -147,13 +147,15 @@ module Conductivity
 !
     endsubroutine initialize_conductivity
 !***********************************************************************
-    subroutine read_conductivity_run_pars(iostat)
+    subroutine read_conductivity_run_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=conductivity_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=conductivity_run_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_conductivity_run_pars
 !***********************************************************************

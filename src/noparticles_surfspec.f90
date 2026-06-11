@@ -52,11 +52,11 @@ module Particles_surfspec
 ! ******************************************************************************
 !  19.09.2014/Jonas:coded
 
-  subroutine read_particles_surf_init_pars(iostat)
+  subroutine read_particles_surf_init_pars(iomsg)
 !
-    integer, intent(out) :: iostat
+    character(LEN=*), intent(out) :: iomsg
 
-    iostat = 0
+    iomsg=""
   endsubroutine read_particles_surf_init_pars
 ! ******************************************************************************
 !  19.09.2014/Jonas:coded
@@ -70,11 +70,11 @@ module Particles_surfspec
 !  19.09.2014/Jonas:coded
 !
 
-  subroutine read_particles_surf_run_pars(iostat)
+  subroutine read_particles_surf_run_pars(iomsg)
 !
-    integer, intent(out) :: iostat
+    character(LEN=*), intent(out) :: iomsg
 
-    iostat = 0
+    iomsg=""
   endsubroutine read_particles_surf_run_pars
 ! ******************************************************************************
 !  19.09.2014/Jonas:coded

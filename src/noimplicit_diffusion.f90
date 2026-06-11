@@ -22,11 +22,11 @@ module ImplicitDiffusion
 !
   contains
 !***********************************************************************
-    subroutine read_implicit_diff_run_pars(iostat)
+    subroutine read_implicit_diff_run_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_implicit_diff_run_pars
 !***********************************************************************

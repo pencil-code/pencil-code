@@ -180,13 +180,13 @@ module Hydro
 !
     endsubroutine hydro_after_boundary
 !***********************************************************************
-    subroutine read_hydro_run_pars(iostat)
+    subroutine read_hydro_run_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_hydro_run_pars
 !***********************************************************************
@@ -202,9 +202,9 @@ module Hydro
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_hydro_run_pars
 !***********************************************************************

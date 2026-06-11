@@ -113,11 +113,11 @@ module Particles_mass
 !
     endsubroutine dpmass_dt_pencil
 !***********************************************************************
-    subroutine read_particles_mass_init_pars(iostat)
+    subroutine read_particles_mass_init_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_particles_mass_init_pars
 !***********************************************************************
@@ -129,11 +129,11 @@ module Particles_mass
 !
     endsubroutine write_particles_mass_init_pars
 !***********************************************************************
-    subroutine read_particles_mass_run_pars(iostat)
+    subroutine read_particles_mass_run_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_particles_mass_run_pars
 !***********************************************************************

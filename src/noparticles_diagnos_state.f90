@@ -64,11 +64,11 @@ module Particles_diagnos_state
 !
     endsubroutine insert_particles_diagnos_state
 !***********************************************************************
-    subroutine read_pars_diag_state_run_pars(iostat)
+    subroutine read_pars_diag_state_run_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_pars_diag_state_run_pars
 !***********************************************************************

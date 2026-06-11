@@ -139,11 +139,11 @@ module Lorenz_gauge
 !
     endsubroutine calc_diagnostics_lorenz_gauge
 !***********************************************************************
-    subroutine read_lorenz_gauge_init_pars(iostat)
+    subroutine read_lorenz_gauge_init_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_lorenz_gauge_init_pars
 !***********************************************************************
@@ -155,11 +155,11 @@ module Lorenz_gauge
 !
     endsubroutine write_lorenz_gauge_init_pars
 !***********************************************************************
-    subroutine read_lorenz_gauge_run_pars(iostat)
+    subroutine read_lorenz_gauge_run_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_lorenz_gauge_run_pars
 !***********************************************************************

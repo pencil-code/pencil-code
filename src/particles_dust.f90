@@ -7094,17 +7094,19 @@ endif
 !      
     endsubroutine particles_diffusion
 !***********************************************************************
-    subroutine read_particles_init_pars(iostat)
+    subroutine read_particles_init_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read (parallel_unit, NML=particles_init_pars, IOSTAT=iostat)
+      read (parallel_unit, NML=particles_init_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
 ! if we are using particles_potential
 !
-      if (lparticles_potential) call read_particles_pot_init_pars(iostat)
+      if (lparticles_potential) call read_particles_pot_init_pars(iomsg)
 !
     endsubroutine read_particles_init_pars
 !***********************************************************************
@@ -7120,17 +7122,19 @@ endif
 !
     endsubroutine write_particles_init_pars
 !***********************************************************************
-    subroutine read_particles_run_pars(iostat)
+    subroutine read_particles_run_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read (parallel_unit, NML=particles_run_pars, IOSTAT=iostat)
+      read (parallel_unit, NML=particles_run_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
 ! if we are using particles_potential
 !
-      if (lparticles_potential) call read_particles_pot_run_pars(iostat)
+      if (lparticles_potential) call read_particles_pot_run_pars(iomsg)
 !
 !  If we have bubbles, the advective derivative has to be saved in
 !  an auxiliary variable

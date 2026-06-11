@@ -70,13 +70,13 @@ contains
       call keep_compiler_quiet(ineargrid)
     endsubroutine dpersist_dt
 !***********************************************************************
-    subroutine read_ppersist_init_pars(iostat)
+    subroutine read_ppersist_init_pars(iomsg)
 !
       use General, only: keep_compiler_quiet
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      call keep_compiler_quiet(iostat)
+      call keep_compiler_quiet(iomsg)
     endsubroutine read_ppersist_init_pars
 !***********************************************************************
     subroutine write_ppersist_init_pars(unit)
@@ -88,13 +88,13 @@ contains
       call keep_compiler_quiet(unit)
     endsubroutine write_ppersist_init_pars
 !***********************************************************************
-    subroutine read_ppersist_run_pars(iostat)
+    subroutine read_ppersist_run_pars(iomsg)
 !
       use General, only: keep_compiler_quiet
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      call keep_compiler_quiet(iostat)
+      call keep_compiler_quiet(iomsg)
 !
     endsubroutine read_ppersist_run_pars
 !***********************************************************************

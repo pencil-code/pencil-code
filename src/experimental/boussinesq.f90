@@ -138,19 +138,22 @@ module Density
 !
     endsubroutine init_lnrho
 !***********************************************************************
-    subroutine read_density_run_pars(iostat)
+    subroutine read_density_run_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=density_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=density_run_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_density_run_pars
 !***********************************************************************
-    subroutine read_density_init_pars(iostat)
+    subroutine read_density_init_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
       iostat = 0
 !

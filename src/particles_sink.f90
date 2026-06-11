@@ -1550,13 +1550,15 @@ module Particles_sink
 !
     endsubroutine subgrid_accretion
 !***********************************************************************
-    subroutine read_particles_sink_init_pars(iostat)
+    subroutine read_particles_sink_init_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=particles_sink_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=particles_sink_init_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_particles_sink_init_pars
 !***********************************************************************
@@ -1568,13 +1570,15 @@ module Particles_sink
 !
     endsubroutine write_particles_sink_init_pars
 !***********************************************************************
-    subroutine read_particles_sink_run_pars(iostat)
+    subroutine read_particles_sink_run_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=particles_sink_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=particles_sink_run_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_particles_sink_run_pars
 !***********************************************************************

@@ -1629,13 +1629,15 @@ endif
       endif
     endsubroutine calc_diagnostics_special
 !***********************************************************************
-    subroutine read_special_init_pars(iostat)
+    subroutine read_special_init_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
       iostat = 0
       call setParameterDefaults
-      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
       if (lroot) write (*,*) 'read_special_init_pars parameters read...'
       call parseParameters
       if (lroot) write (*,*) 'read_special_init_pars parameters parsed...'
@@ -1650,15 +1652,17 @@ endif
 
    endsubroutine write_special_init_pars
 !***********************************************************************
-    subroutine read_special_run_pars(iostat)
+    subroutine read_special_run_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
       iostat = 0
 
       call setParameterDefaults
       if (lroot) write (*,*) 'read_special_run_pars parameters read...'
-      read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
       call parseParameters
       if (lroot) write (*,*) 'read_special_run_pars parameters parsed...'
 !

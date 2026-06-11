@@ -2702,13 +2702,15 @@ k_loop:   do while (.not. (k>npar_loc))
 !
     endsubroutine particles_diffusion
 !***********************************************************************
-    subroutine read_particles_init_pars(iostat)
+    subroutine read_particles_init_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=particles_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=particles_init_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_particles_init_pars
 !***********************************************************************
@@ -2720,13 +2722,15 @@ k_loop:   do while (.not. (k>npar_loc))
 !
     endsubroutine write_particles_init_pars
 !***********************************************************************
-    subroutine read_particles_run_pars(iostat)
+    subroutine read_particles_run_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=particles_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=particles_run_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_particles_run_pars
 !***********************************************************************

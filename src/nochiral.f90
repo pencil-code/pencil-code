@@ -131,11 +131,11 @@ module Chiral
 
     endsubroutine chiral_before_boundary
 !***********************************************************************
-    subroutine read_chiral_init_pars(iostat)
+    subroutine read_chiral_init_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_chiral_init_pars
 !***********************************************************************
@@ -147,11 +147,11 @@ module Chiral
 !
     endsubroutine write_chiral_init_pars
 !***********************************************************************
-    subroutine read_chiral_run_pars(iostat)
+    subroutine read_chiral_run_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_chiral_run_pars
 !***********************************************************************

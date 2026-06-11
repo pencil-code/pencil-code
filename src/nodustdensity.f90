@@ -113,11 +113,11 @@ module Dustdensity
 !
     endsubroutine calc_diagnostics_dustdensity
 !***********************************************************************
-    subroutine read_dustdensity_init_pars(iostat)
+    subroutine read_dustdensity_init_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_dustdensity_init_pars
 !***********************************************************************
@@ -129,11 +129,11 @@ module Dustdensity
 !
     endsubroutine write_dustdensity_init_pars
 !***********************************************************************
-    subroutine read_dustdensity_run_pars(iostat)
+    subroutine read_dustdensity_run_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_dustdensity_run_pars
 !***********************************************************************

@@ -111,11 +111,11 @@ module Solid_Cells
 !
     endfunction in_solid_cell
 !***********************************************************************
-    subroutine read_solid_cells_init_pars(iostat)
+    subroutine read_solid_cells_init_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_solid_cells_init_pars
 !***********************************************************************
@@ -127,11 +127,11 @@ module Solid_Cells
 !
     endsubroutine write_solid_cells_init_pars
 !***********************************************************************
-    subroutine read_solid_cells_run_pars(iostat)
+    subroutine read_solid_cells_run_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_solid_cells_run_pars
 !***********************************************************************

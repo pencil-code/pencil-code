@@ -56,11 +56,11 @@ module Particles_adaptation
 !
     endsubroutine particles_adaptation_pencils
 !***********************************************************************
-    subroutine read_particles_adapt_run_pars(iostat)
+    subroutine read_particles_adapt_run_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_particles_adapt_run_pars
 !***********************************************************************

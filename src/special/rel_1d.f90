@@ -271,13 +271,15 @@ module rel_1d
 
     endsubroutine dspecial_dt
 !***********************************************************************
-    subroutine read_special_init_pars(iostat)
+    subroutine read_special_init_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=rel_1d_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=rel_1d_init_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_special_init_pars
 !***********************************************************************
@@ -289,13 +291,15 @@ module rel_1d
 !
     endsubroutine write_special_init_pars
 !***********************************************************************
-    subroutine read_special_run_pars(iostat)
+    subroutine read_special_run_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=rel_1d_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=rel_1d_run_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_special_run_pars
 !***********************************************************************

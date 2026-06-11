@@ -123,11 +123,11 @@ module Particles_radius
 !
     endsubroutine dap_dt
 !***********************************************************************
-    subroutine read_particles_rad_init_pars(iostat)
+    subroutine read_particles_rad_init_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_particles_rad_init_pars
 !***********************************************************************
@@ -139,11 +139,11 @@ module Particles_radius
 !
     endsubroutine write_particles_rad_init_pars
 !***********************************************************************
-    subroutine read_particles_rad_run_pars(iostat)
+    subroutine read_particles_rad_run_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_particles_rad_run_pars
 !***********************************************************************

@@ -47,11 +47,11 @@ module Viscosity
 !
     endsubroutine initialize_viscosity
 !***********************************************************************
-    subroutine read_viscosity_run_pars(iostat)
+    subroutine read_viscosity_run_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_viscosity_run_pars
 !***********************************************************************

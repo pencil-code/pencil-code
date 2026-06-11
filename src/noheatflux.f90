@@ -121,11 +121,11 @@ module Heatflux
 
     endsubroutine calc_diagnostics_heatflux
 !***********************************************************************
-    subroutine read_heatflux_run_pars(iostat)
+    subroutine read_heatflux_run_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_heatflux_run_pars
 !***********************************************************************

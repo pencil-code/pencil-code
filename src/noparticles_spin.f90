@@ -125,11 +125,11 @@ module Particles_spin
 !
     endsubroutine dps_dt
 !***********************************************************************
-    subroutine read_particles_spin_init_pars(iostat)
+    subroutine read_particles_spin_init_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_particles_spin_init_pars
 !***********************************************************************
@@ -141,11 +141,11 @@ module Particles_spin
 !
     endsubroutine write_particles_spin_init_pars
 !***********************************************************************
-    subroutine read_particles_spin_run_pars(iostat)
+    subroutine read_particles_spin_run_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_particles_spin_run_pars
 !***********************************************************************

@@ -373,17 +373,18 @@ module InitialCondition
 !
     endsubroutine initial_condition_vvp
 !***********************************************************************
-    subroutine read_initial_condition_pars(iostat)
+    subroutine read_initial_condition_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
       ! *** IMPORTANT: ***
-      ! If you use this as template, please uncomment the following line:
-      !read(parallel_unit, NML=initial_condition_pars, IOSTAT=iostat)
+      ! If you use this as template, please uncomment the following lines:
+      !read(parallel_unit, NML=initial_condition_pars, IOSTAT=iostat, IOMSG=iomsg)
+      !if (iostat==0) iomsg=""
 !
     endsubroutine read_initial_condition_pars
 !***********************************************************************

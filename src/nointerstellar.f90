@@ -90,11 +90,11 @@ module Interstellar
 !
     endsubroutine get_slices_interstellar
 !***********************************************************************
-    subroutine read_interstellar_init_pars(iostat)
+    subroutine read_interstellar_init_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_interstellar_init_pars
 !***********************************************************************
@@ -106,11 +106,11 @@ module Interstellar
 !
     endsubroutine write_interstellar_init_pars
 !***********************************************************************
-    subroutine read_interstellar_run_pars(iostat)
+    subroutine read_interstellar_run_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_interstellar_run_pars
 !***********************************************************************

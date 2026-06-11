@@ -283,10 +283,10 @@ module Particles_chemistry
   subroutine cleanup_chemistry_pencils
   endsubroutine cleanup_chemistry_pencils
 ! ******************************************************************************
-  subroutine read_particles_chem_init_pars(iostat)
-    integer, intent(out) :: iostat
+  subroutine read_particles_chem_init_pars(iomsg)
+    character(LEN=*), intent(out) :: iomsg
 
-    iostat = 0
+    iomsg=""
   endsubroutine read_particles_chem_init_pars
 ! ******************************************************************************
   subroutine write_particles_chem_init_pars(unit)
@@ -295,10 +295,10 @@ module Particles_chemistry
     call keep_compiler_quiet(unit)
   endsubroutine write_particles_chem_init_pars
 ! ******************************************************************************
-  subroutine read_particles_chem_run_pars(iostat)
-    integer, intent(out) :: iostat
+  subroutine read_particles_chem_run_pars(iomsg)
+    character(LEN=*), intent(out) :: iomsg
 
-    iostat = 0
+    iomsg=""
   endsubroutine read_particles_chem_run_pars
 ! ******************************************************************************
   subroutine write_particles_chem_run_pars(unit)

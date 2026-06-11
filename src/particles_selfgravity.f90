@@ -361,13 +361,15 @@ module Particles_selfgravity
 !
     endsubroutine dvvp_dt_selfgrav
 !***********************************************************************
-    subroutine read_particles_selfg_init_pars(iostat)
+    subroutine read_particles_selfg_init_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=particles_selfgrav_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=particles_selfgrav_init_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_particles_selfg_init_pars
 !***********************************************************************
@@ -379,13 +381,15 @@ module Particles_selfgravity
 !
     endsubroutine write_particles_selfg_init_pars
 !***********************************************************************
-    subroutine read_particles_selfg_run_pars(iostat)
+    subroutine read_particles_selfg_run_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=particles_selfgrav_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=particles_selfgrav_run_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_particles_selfg_run_pars
 !***********************************************************************

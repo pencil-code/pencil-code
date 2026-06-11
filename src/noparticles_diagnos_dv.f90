@@ -36,11 +36,11 @@ module Particles_diagnos_dv
 !
     endsubroutine initialize_particles_diagnos_dv
 !***********************************************************************
-    subroutine read_pars_diagnos_dv_run_pars(iostat)
+    subroutine read_pars_diagnos_dv_run_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_pars_diagnos_dv_run_pars
 !***********************************************************************

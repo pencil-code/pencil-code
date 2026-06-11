@@ -3272,13 +3272,15 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
 !
     endsubroutine dchemistry_dt
 !***********************************************************************
-    subroutine read_chemistry_init_pars(iostat)
+    subroutine read_chemistry_init_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read (parallel_unit, NML=chemistry_init_pars, IOSTAT=iostat)
+      read (parallel_unit, NML=chemistry_init_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_chemistry_init_pars
 !***********************************************************************
@@ -3290,13 +3292,15 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
 !
     endsubroutine write_chemistry_init_pars
 !***********************************************************************
-    subroutine read_chemistry_run_pars(iostat)
+    subroutine read_chemistry_run_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read (parallel_unit, NML=chemistry_run_pars, IOSTAT=iostat)
+      read (parallel_unit, NML=chemistry_run_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_chemistry_run_pars
 !***********************************************************************

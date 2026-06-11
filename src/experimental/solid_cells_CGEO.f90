@@ -3208,11 +3208,14 @@
       endsubroutine freeze_solid_cells
 !***********************************************************************
       subroutine read_solid_cells_init_pars(unit,iostat)
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: unit
+      character(LEN=*), intent(out) :: iomsg
+      integer, optional :: iostat
 !
-      if (present(iostat)) then
-        read(unit,NML=solid_cells_init_pars,ERR=99, IOSTAT=iostat)
+      if (present(iomsg)) then
+        read(unit,NML=solid_cells_init_pars,ERR=99, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
       else
         read(unit,NML=solid_cells_init_pars,ERR=99)
       endif
@@ -3221,11 +3224,14 @@
       endsubroutine read_solid_cells_init_pars
 !***********************************************************************
       subroutine read_solid_cells_run_pars(unit,iostat)
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: unit
+      character(LEN=*), intent(out) :: iomsg
+      integer, optional :: iostat
 !
-      if (present(iostat)) then
-        read(unit,NML=solid_cells_run_pars,ERR=99, IOSTAT=iostat)
+      if (present(iomsg)) then
+        read(unit,NML=solid_cells_run_pars,ERR=99, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
       else
         read(unit,NML=solid_cells_run_pars,ERR=99)
       endif

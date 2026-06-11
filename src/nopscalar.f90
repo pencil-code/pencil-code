@@ -136,11 +136,11 @@ module Pscalar
 !
     endsubroutine dlncc_dt
 !***********************************************************************
-    subroutine read_pscalar_init_pars(iostat)
+    subroutine read_pscalar_init_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_pscalar_init_pars
 !***********************************************************************
@@ -152,11 +152,11 @@ module Pscalar
 !
     endsubroutine write_pscalar_init_pars
 !***********************************************************************
-    subroutine read_pscalar_run_pars(iostat)
+    subroutine read_pscalar_run_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_pscalar_run_pars
 !***********************************************************************

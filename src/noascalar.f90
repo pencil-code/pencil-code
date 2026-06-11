@@ -129,11 +129,11 @@ module Ascalar
 !
     endsubroutine calc_diagnostics_ascalar
 !***********************************************************************
-    subroutine read_ascalar_init_pars(iostat)
+    subroutine read_ascalar_init_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_ascalar_init_pars
 !***********************************************************************
@@ -145,11 +145,11 @@ module Ascalar
 !
     endsubroutine write_ascalar_init_pars
 !***********************************************************************
-    subroutine read_ascalar_run_pars(iostat)
+    subroutine read_ascalar_run_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_ascalar_run_pars
 !***********************************************************************

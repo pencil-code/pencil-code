@@ -44,11 +44,11 @@ module Shear
 !
     endsubroutine initialize_shear
 !***********************************************************************
-    subroutine read_shear_init_pars(iostat)
+    subroutine read_shear_init_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_shear_init_pars
 !***********************************************************************
@@ -60,11 +60,11 @@ module Shear
 !
     endsubroutine write_shear_init_pars
 !***********************************************************************
-    subroutine read_shear_run_pars(iostat)
+    subroutine read_shear_run_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_shear_run_pars
 !***********************************************************************

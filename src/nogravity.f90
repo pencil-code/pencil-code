@@ -72,11 +72,11 @@ module Gravity
 !
     endsubroutine initialize_gravity
 !***********************************************************************
-    subroutine read_gravity_init_pars(iostat)
+    subroutine read_gravity_init_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_gravity_init_pars
 !***********************************************************************
@@ -88,11 +88,11 @@ module Gravity
 !
     endsubroutine write_gravity_init_pars
 !***********************************************************************
-    subroutine read_gravity_run_pars(iostat)
+    subroutine read_gravity_run_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_gravity_run_pars
 !***********************************************************************

@@ -753,13 +753,17 @@ endsubroutine get_cell_neighbours
 !
     endsubroutine get_interaction_force
 !***********************************************************************
-    subroutine read_particles_pot_init_pars(iostat)
+    subroutine read_particles_pot_init_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(inout) :: iomsg
+
+      integer :: iostat
+      character(LEN=iomsglen) :: msg
 !
-      read(parallel_unit, NML=particles_potential_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=particles_potential_init_pars, IOSTAT=iostat, IOMSG=msg)
+      if (iostat/=0) iomsg=trim(iomsg)//"; "//trim(msg)
 !
     endsubroutine read_particles_pot_init_pars
 !***********************************************************************
@@ -771,13 +775,17 @@ endsubroutine get_cell_neighbours
 !
     endsubroutine write_particles_pot_init_pars
 !***********************************************************************
-    subroutine read_particles_pot_run_pars(iostat)
+    subroutine read_particles_pot_run_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(inout) :: iomsg
+
+      integer :: iostat
+      character(LEN=iomsglen) :: msg
 !
-      read(parallel_unit, NML=particles_potential_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=particles_potential_run_pars, IOSTAT=iostat, IOMSG=msg)
+      if (iostat/=0) iomsg=trim(iomsg)//"; "//trim(msg)
 !
     endsubroutine read_particles_pot_run_pars
 !***********************************************************************

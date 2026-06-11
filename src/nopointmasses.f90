@@ -119,10 +119,10 @@ module PointMasses
 !
     endsubroutine calc_diagnostics_pointmasses
 !***********************************************************************         
-    subroutine read_pointmasses_init_pars(iostat)
+    subroutine read_pointmasses_init_pars(iomsg)
 !
-      integer, intent(out) :: iostat
-      iostat=0
+      character(LEN=*), intent(out) :: iomsg
+      iomsg=""
 !
     endsubroutine read_pointmasses_init_pars
 !***********************************************************************
@@ -134,10 +134,10 @@ module PointMasses
 !
     endsubroutine write_pointmasses_init_pars
 !***********************************************************************
-    subroutine read_pointmasses_run_pars(iostat)
+    subroutine read_pointmasses_run_pars(iomsg)
 !
-      integer, intent(out) :: iostat
-      iostat=0
+      character(LEN=*), intent(out) :: iomsg
+      iomsg=""
 !
     endsubroutine read_pointmasses_run_pars
 !***********************************************************************

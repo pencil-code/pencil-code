@@ -112,11 +112,11 @@ module Particles_temperature
 !
     endsubroutine dpTT_dt
 !***********************************************************************
-    subroutine read_particles_TT_init_pars(iostat)
+    subroutine read_particles_TT_init_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_particles_TT_init_pars
 !***********************************************************************
@@ -128,11 +128,11 @@ module Particles_temperature
 !
     endsubroutine write_particles_TT_init_pars
 !***********************************************************************
-    subroutine read_particles_TT_run_pars(iostat)
+    subroutine read_particles_TT_run_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_particles_TT_run_pars
 !***********************************************************************

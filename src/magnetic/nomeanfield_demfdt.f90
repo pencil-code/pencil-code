@@ -100,11 +100,11 @@ module Magnetic_meanfield_demfdt
 
     endsubroutine calc_diagnostics_dt_meanfield
 !***********************************************************************
-    subroutine read_magn_mf_demfdt_init_pars(iostat)
+    subroutine read_magn_mf_demfdt_init_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_magn_mf_demfdt_init_pars
 !***********************************************************************
@@ -116,11 +116,11 @@ module Magnetic_meanfield_demfdt
 !
     endsubroutine write_magn_mf_demfdt_init_pars
 !***********************************************************************
-    subroutine read_magn_mf_demfdt_run_pars(iostat)
+    subroutine read_magn_mf_demfdt_run_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_magn_mf_demfdt_run_pars
 !***********************************************************************

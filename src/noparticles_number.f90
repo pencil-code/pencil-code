@@ -130,11 +130,11 @@ module Particles_number
 
     endsubroutine calc_diagnostics_particles_num
 !***********************************************************************
-    subroutine read_particles_num_init_pars(iostat)
+    subroutine read_particles_num_init_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_particles_num_init_pars
 !***********************************************************************
@@ -146,11 +146,11 @@ module Particles_number
 !
     endsubroutine write_particles_num_init_pars
 !***********************************************************************
-    subroutine read_particles_num_run_pars(iostat)
+    subroutine read_particles_num_run_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_particles_num_run_pars
 !***********************************************************************

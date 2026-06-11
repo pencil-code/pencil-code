@@ -43,11 +43,11 @@ module Detonate
 !
     endsubroutine initialize_detonate
 !***********************************************************************
-    subroutine read_detonate_run_pars(iostat)
+    subroutine read_detonate_run_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_detonate_run_pars
 !***********************************************************************

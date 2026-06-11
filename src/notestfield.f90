@@ -71,11 +71,11 @@ module Testfield
 !
     endsubroutine pencil_interdep_testfield
 !***********************************************************************
-    subroutine read_testfield_init_pars(iostat)
+    subroutine read_testfield_init_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_testfield_init_pars
 !***********************************************************************
@@ -87,11 +87,11 @@ module Testfield
 !
     endsubroutine write_testfield_init_pars
 !***********************************************************************
-    subroutine read_testfield_run_pars(iostat)
+    subroutine read_testfield_run_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_testfield_run_pars
 !***********************************************************************

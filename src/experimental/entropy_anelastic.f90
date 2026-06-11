@@ -256,7 +256,6 @@ module Energy
 !
 !  21-jul-02/wolf: coded
 !
-      use BorderProfiles, only: request_border_driving
       use EquationOfState, only: cs0, get_soundspeed, &
                                  select_eos_variable, get_gamma_etc
       use FArrayManager
@@ -581,13 +580,15 @@ module Energy
 !
       endsubroutine initialize_energy
 !***********************************************************************
-    subroutine read_energy_init_pars(iostat)
+    subroutine read_energy_init_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=entropy_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=entropy_init_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_energy_init_pars
 !***********************************************************************
@@ -599,12 +600,14 @@ module Energy
 !
     endsubroutine write_energy_init_pars
 !***********************************************************************
-    subroutine read_energy_run_pars(iostat)
+    subroutine read_energy_run_pars(iomsg)
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=entropy_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=entropy_run_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_energy_run_pars
 !***********************************************************************

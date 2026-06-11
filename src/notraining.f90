@@ -26,11 +26,11 @@
 
     endsubroutine register_training
 !***********************************************************************
-    subroutine read_training_run_pars(iostat)
+    subroutine read_training_run_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 
-      call keep_compiler_quiet(iostat)
+      call keep_compiler_quiet(iomsg)
 !
     endsubroutine read_training_run_pars
 !***************************************************************

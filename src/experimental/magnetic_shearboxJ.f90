@@ -1359,9 +1359,7 @@ module Magnetic
 !  Tell the BorderProfiles module if we intend to use border driving, so
 !  that the module can request the right pencils.
 !
-      do j=1,3
-        if (borderaa(j)/='nothing') call request_border_driving(borderaa(j))
-      enddo
+      call request_border_driving(borderaa,'initialize_magnetic',iax,iaz)
 !
 !  Register an extra aux slot for bb if requested (so bb and jj are written
 !  to snapshots and can be easily analyzed later). For this to work you
@@ -5127,17 +5125,19 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
 !
     endsubroutine curflux
 !***********************************************************************
-    subroutine read_magnetic_init_pars(iostat)
+    subroutine read_magnetic_init_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=magnetic_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=magnetic_init_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
 !  read namelist for mean-field theory (if invoked)
 !
-      if (lmagn_mf) call read_magn_mf_init_pars(iostat)
+      if (lmagn_mf) call read_magn_mf_init_pars(iomsg)
 !
     endsubroutine read_magnetic_init_pars
 !***********************************************************************
@@ -5153,17 +5153,19 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
 !
     endsubroutine write_magnetic_init_pars
 !***********************************************************************
-    subroutine read_magnetic_run_pars(iostat)
+    subroutine read_magnetic_run_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=magnetic_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=magnetic_run_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
 !  read namelist for mean-field theory (if invoked)
 !
-      if (lmagn_mf) call read_magn_mf_run_pars(iostat)
+      if (lmagn_mf) call read_magn_mf_run_pars(iomsg)
 !
     endsubroutine read_magnetic_run_pars
 !***********************************************************************

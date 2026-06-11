@@ -105,13 +105,13 @@ module Particles_lyapunov
 !
     endsubroutine dlyapunov_dt_pencil
 !***********************************************************************
-    subroutine read_plyapunov_init_pars(iostat)
+    subroutine read_plyapunov_init_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 
-      iostat=0
+      iomsg=""
 !
     endsubroutine read_plyapunov_init_pars
 !***********************************************************************
@@ -122,13 +122,13 @@ module Particles_lyapunov
 !
     endsubroutine write_plyapunov_init_pars
 !***********************************************************************
-    subroutine read_plyapunov_run_pars(iostat)
+    subroutine read_plyapunov_run_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 
-      iostat=0
+      iomsg=""
 !
     endsubroutine read_plyapunov_run_pars
 !***********************************************************************

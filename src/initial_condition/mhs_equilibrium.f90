@@ -794,13 +794,15 @@ module InitialCondition
 !
     endsubroutine enforce_numerical_equilibrium
 !***********************************************************************
-    subroutine read_initial_condition_pars(iostat)
+    subroutine read_initial_condition_pars(iomsg)
 !
       use File_io, only: parallel_unit
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
 !
-      read(parallel_unit, NML=initial_condition_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=initial_condition_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_initial_condition_pars
 !***********************************************************************

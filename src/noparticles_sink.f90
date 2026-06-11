@@ -95,11 +95,11 @@ module Particles_sink
 !
     endsubroutine remove_particles_sink
 !***********************************************************************
-    subroutine read_particles_sink_init_pars(iostat)
+    subroutine read_particles_sink_init_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_particles_sink_init_pars
 !***********************************************************************
@@ -111,11 +111,11 @@ module Particles_sink
 !
     endsubroutine write_particles_sink_init_pars
 !***********************************************************************
-    subroutine read_particles_sink_run_pars(iostat)
+    subroutine read_particles_sink_run_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      iostat = 0
+      iomsg=""
 !
     endsubroutine read_particles_sink_run_pars
 !***********************************************************************

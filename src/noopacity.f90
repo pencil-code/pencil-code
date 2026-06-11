@@ -26,11 +26,11 @@ module Opacity
 !
       endsubroutine initialize_opacity
 !***********************************************************************
-      subroutine read_opacity_run_pars(iostat)
+      subroutine read_opacity_run_pars(iomsg)
 !
-      integer, intent(out) :: iostat
+      character(LEN=*), intent(out) :: iomsg
 !
-      call keep_compiler_quiet(iostat)
+      call keep_compiler_quiet(iomsg)
 
       endsubroutine read_opacity_run_pars
 !***********************************************************************
