@@ -5518,7 +5518,17 @@ module Magnetic
                       select case (ascale_type)
                         case ('default'); df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxbr
                         case ('superconformal'); df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+ascale*p%jxbr
-                        case ('general'); df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+ascale**(2.*nconformal-3.)*p%jxbr
+                        case ('general')
+                          if (lbaryons) then
+                            df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+ascale**(2.*nconformal-3.)*p%jxbr
+                          else
+                            if (nconformal==1.) then
+                              df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxbr
+                            else
+                              call fatal_error('calc_pencils_magnetic_pencpar', &
+                                'nconformal/=1. not ok when lbaryons=F')
+                            endif
+                          endif
                       endselect
                     endif
                   endif
