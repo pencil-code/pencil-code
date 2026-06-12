@@ -547,7 +547,7 @@ GPU_DEPS =
 
 #ifeq ($(TRAINING),training_torchfort)
 ifneq ($(TORCHFORT_PATH),)
-  ifneq ($(HYDRO),hydro)
+  ifeq ($(HYDRO),nohydro)
     $(error Training_torchfort needs hydro! Exit.)
   endif
   ifneq ($(MODULE_CMD),)
