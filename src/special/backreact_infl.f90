@@ -662,6 +662,7 @@ module Special
 !
 !  06-oct-03/tony: coded
 !   2-nov-21/axel: first set of equations coded
+!  13-jun-26/axel: corrected: lphi_hom --> lphi_linear_regime (for E.B feedback)
 !
       use Diagnostics, only: sum_mn_name, max_mn_name, save_name
       use Sub, only: dot_mn, dot2_mn, del2, grad
@@ -790,6 +791,7 @@ module Special
         endif
 !
 !  magnetic terms, add (alpf/a^2)*(E.B) to dphi'/dt equation
+!  Is only included when lphi_hom=T and lphi_linear_regime=F, i.e., when homogeneous feedback.
 !
         if (lmagnetic .and. lem_backreact) then
           if (lphi_hom .and. .not. lphi_linear_regime) then
@@ -797,9 +799,9 @@ module Special
           endif
 !
 !  Compute E.B only when displacement current is included.
-!  Note that alpf does not (currently) exist in MHD.
+!  The iex=0 option should not be used.
 !
-          if (.not. lphi_hom) then
+          if (.not. lphi_linear_regime) then
             if (iex>0) then
               call dot_mn(p%el,p%bb,tmp)
             else
