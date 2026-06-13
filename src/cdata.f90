@@ -709,6 +709,7 @@ module Cdata
   logical :: ltime_integrals=.false.
   logical :: lreset_seed=.false.
   logical :: lproper_averages=.false.
+  logical :: lappend_pc_constants=.false.   !PAR_DOC: always append when true to preserve history
   character (len=1) :: slice_position='p'
 ! time avaraging
   real :: tavg=0.

@@ -129,7 +129,7 @@ module Param_IO
       lequatorz, zequator, lav_smallx, xav_max, niter_poisson, &
       lforce_shear_bc,lread_from_other_prec, &
       pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w, &
-      lcorotational_frame, rcorot, lproper_averages, &
+      lcorotational_frame, rcorot, lproper_averages, lappend_pc_constants, &
       ldirect_access, ltolerate_namelist_errors, &
       lyinyang, cyinyang_intpol_type, yy_biquad_weights, &
       lcutoff_corners, nycut, nzcut, rel_dang, &
@@ -224,7 +224,7 @@ module Param_IO
       lread_from_other_prec, downsampl, lfullvar_in_slices, ivar_omit, &
       lread_scl_factor_file_new, lphase, &
       lsubstract_reference_state, lzaver_on_input, &
-      ldirect_access, lproper_averages, lmaximal_cdt, lmaximal_cdtv, lreiterate, &
+      ldirect_access, lproper_averages, lappend_pc_constants, lmaximal_cdt, lmaximal_cdtv, lreiterate, &
       pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w, &
       cyinyang_intpol_type, yy_biquad_weights, lcutoff_corners, nycut, nzcut, rel_dang, &
       lignore_nonequi, tag_foreign, lforeign_comm_nblckg, tau_aver1, fmt_avgs, &

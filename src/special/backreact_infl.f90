@@ -108,7 +108,7 @@ module Special
   real :: cdt_rho_chi=1., cdt_phi=1e-2, cdt_Gamma_phi=1.
   real :: amplee_BD_prefactor=0., deriv_prefactor_ee=-1.
   real :: echarge=.0, echarge_const=.303
-  real :: count_eb0_all=0., rad_heating=0., ascale_heat=0., ascale_heat_off=0., heating
+  real :: count_eb0_all=0., rad_heating=0., ascale_heat=0., ascale_heat_width=0., ascale_heat_off=0., heating
   real :: aphimax=0., aphimax2=0. !PAR_DOC: maximum a value above which the phi potential is quenched.
   real :: Gamma_phi0=impossible, Gamma_phi !PAR_DOC: damping factor for phi above aphimax
   real :: Gamma_phi_exp=3.        !PAR_DOC: scale factor exponent on Gamma_phi
@@ -164,6 +164,7 @@ module Special
   logical :: linclude_rhokin_in_a2rho=.false.      !PAR_DOC: include rhokin in a2rho
   logical :: linclude_rho_EBK_in_wstate=.false.    !PAR_DOC: include rhoE, rhoB, and rhokin in wstate
   logical :: lswitch_toMHD_at_lna=.false.          !PAR_DOC: option to use lna as criterion for switching to MHD
+  logical :: lsmooth_Gamma_phi=.false.             !PAR_DOC: smooth increase of Gamma_phi
   logical, pointer :: lphi_hom, lphi_linear_regime, lnoncollinear_EB, lnoncollinear_EB_aver
   logical, pointer :: lcollinear_EB, lcollinear_EB_aver, lmass_suppression
   logical, pointer :: lallow_bprime_zero
@@ -203,8 +204,9 @@ module Special
       lflrw, lrho_chi, scale_rho_chi_Heqn, scale_rho_rad_Heqn, echarge_type, &
       cdt_rho_chi, cdt_phi, cdt_Gamma_phi, &
       lrho_rad, lrho_rad_apply, lrho_rad_apply2, lrho_chi_corrected, &
-      lrho_chi_inhom, ldefine_a2rhophi_with_Vpotential, &
-      rad_heating, ascale_heat, ascale_heat_off, aphimax, Gamma_phi0, lconf_time, &
+      lrho_chi_inhom, ldefine_a2rhophi_with_Vpotential, rad_heating, &
+      lsmooth_Gamma_phi, ascale_heat, ascale_heat_width, ascale_heat_off, &
+      aphimax, Gamma_phi0, lconf_time, &
       wstate_crit, lwstate_crit, lwstate_crit_old, wstate_tolerance, &
       lsolve_for_phi_always, lsolve_for_phi_switch, &
       heating_choice, lheating_keep_on, lcombine_prep_ode_right_with_rhs, &
@@ -705,7 +707,11 @@ module Special
 !  and set to true after the first time lheating is true and if lheating_keep_on is true.
 !
       if (lheating .or. lheating_always) then
-        Gamma_phi=Gamma_phi0
+        if (lsmooth_Gamma_phi) then
+          Gamma_phi=Gamma_phi0*.5*(1.+tanh((ascale-ascale_heat)/ascale_heat_width))
+        else
+          Gamma_phi=Gamma_phi0
+        endif
       else
         Gamma_phi=0.
       endif

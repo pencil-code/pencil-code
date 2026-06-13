@@ -115,9 +115,15 @@ module Register
       endif
 !
 !  Initialize file for writing constants to be read by IDL.
+!  Allow for lappend_pc_constants=T to prevent overwriting during restart;
+!  but need to manually edit afterwards.
 !
       if (lroot) then
-        open (1,file=trim(datadir)//'/pc_constants.pro')
+        if (lappend_pc_constants) then
+          open (1,file=trim(datadir)//'/pc_constants.pro',position="append")
+        else
+          open (1,file=trim(datadir)//'/pc_constants.pro')
+        endif
         write (1,*) '; This file contains pc constants of interest to IDL'
         close (1)
       endif
