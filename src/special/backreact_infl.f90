@@ -1892,6 +1892,10 @@ module Special
     call copy_addr(cdt_gamma_phi,p_par(45))
     call copy_addr(lold_ldt_phi,p_par(46)) ! bool
     call copy_addr(ldt_gamma_phi,p_par(47)) ! bool
+    call copy_addr(width,p_par(48))
+    call copy_addr(ascale_heat,p_par(49))
+    call copy_addr(ascale_heat_width,p_par(50))
+    call copy_addr(lsmooth_gamma_phi,p_par(51)) ! bool
     endsubroutine pushpars2c
 !********************************************************************
 !********************************************************************
