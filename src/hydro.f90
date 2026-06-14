@@ -9274,7 +9274,7 @@ module Hydro
     call copy_addr(prof_amp4,p_par(100)) ! (my)
     call copy_addr(uumz_prof,p_par(101)) ! (nz) (3)
     call copy_addr(omega_prof,p_par(102)) ! (nx) (ny)
-    call copy_addr(Omegav,p_par(103)) ! (3)
+    call copy_addr(Omegav,p_par(103)) ! (3) dconst
 
     call string_to_enum(enum_friction_tdep,friction_tdep)
     call copy_addr(enum_friction_tdep,p_par(104)) ! int
