@@ -88,7 +88,9 @@ class SliceSeries(object):
 
         Notes
         -----
-        Use the attribute keys to get a list of attributes
+        - Use the attribute keys to get a list of attributes
+        - self.coordinate is the 1-based index of the slice including ghost zones at each output time
+        - self.position is the coordinate value of the slice at each output time
 
         Examples
         --------
