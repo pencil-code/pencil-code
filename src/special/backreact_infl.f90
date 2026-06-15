@@ -81,7 +81,7 @@ module Special
   implicit none
 !
   include '../special.h'
-!
+  include '../record_types.h'
 !
 ! Declare index of new variables in f array (if any).
 !
@@ -897,6 +897,8 @@ module Special
       use Diagnostics , only: 
 !
 !  Here is the Friedmann equation. For cosmic time, Hscript means H.
+!  Hscript is computed in get_Hscript_and_a2 and based on a2rhom_all, where rhom_all is physical.
+!  The comoving total energy density would be a^2*a2rhom_all.
 !
       if (lgpu) call read_sums_from_GPU
       call get_Hscript_and_a2(Hscript,a2rhom_all)
@@ -1128,6 +1130,60 @@ module Special
       enddo
 !
     endsubroutine rprint_special
+!*****************************************************************************
+    subroutine input_persist_special_id(id,done)
+!
+!  Read in the parameters of the next SNI
+!
+!  13-Dec-2011/Bourdin.KIS: reworked
+!  14-jul-2015/fred: removed obsolete Remnant persistant variable from current
+!  read and added new cluster variables. All now consistent with any io
+!
+      use IO, only: read_persist, lun_input
+!
+      integer, intent(in) :: id
+      logical, intent(inout) :: done
+!
+      select case (id)
+        ! for backwards-compatibility (deprecated):
+        case (id_record_LSOLVE_FOR_PHI)
+          read (lun_input) lsolve_for_phi
+          done = .false.
+      endselect
+!
+    endsubroutine input_persist_special_id
+!*****************************************************************************
+    subroutine input_persist_special()
+!
+!  Read in the stored time of the next SNI.
+!
+!  12-Oct-2019/PABourdin: coded
+!
+      use IO, only: read_persist
+!
+      logical :: error
+!
+      error = read_persist ('LSOLVE_FOR_PHI', lsolve_for_phi)
+      if (lroot .and. .not. error) print *, 'input_persist_special: lsolve_for_phi = ', lsolve_for_phi
+!
+    endsubroutine input_persist_special
+!*****************************************************************************
+    logical function output_persistent_special()
+!
+!  Writes out the time of the next SNI
+!
+!  13-Dec-2011/Bourdin.KIS: reworked
+!  15-jun-2015/axel: adapted from interstellar during office hours
+!
+      use IO, only: write_persist
+!
+      output_persistent_special = .true.
+!
+      if (write_persist ('LSOLVE_FOR_PHI', id_record_LSOLVE_FOR_PHI, lsolve_for_phi)) return
+!
+      output_persistent_special = .false.
+!
+    endfunction output_persistent_special
 !***********************************************************************
     subroutine get_echarge
 !

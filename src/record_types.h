@@ -70,3 +70,6 @@ integer, parameter :: id_record_SPECIAL_LNKMIN0  = 340
 
 ! special/gravitational_waves_hTXk.f90
 integer, parameter :: id_record_DT_GW            = 350
+
+! special/backreact_infl.f90
+integer, parameter :: id_record_LSOLVE_FOR_PHI          = 360

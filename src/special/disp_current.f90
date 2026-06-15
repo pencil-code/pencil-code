@@ -177,6 +177,8 @@ module Special
   integer :: idiag_sigEE2m=0    ! DIAG_DOC: $\left<\sigma_\mathrm{E}\Ev^2\right>$
   integer :: idiag_sigBBEm=0    ! DIAG_DOC: $\left<\sigma_\mathrm{E}\Bv\cdot\Ev\right>$
   integer :: idiag_adphiBm=0    ! DIAG_DOC: $\left<(\alpha/f)<\phi'\Bv\cdot\Ev\right>$
+  integer :: idiag_adphiB2m=0   ! DIAG_DOC: $\left<(\alpha/f)<\phi'\Bv^2/\sigma_E\right>$
+  integer :: idiag_adphiJBm=0   ! DIAG_DOC: $\left<(\alpha/f)<\phi'\Jv\cdot\Bv/\sigma_E\right>$
   integer :: idiag_adphiBrms=0  ! DIAG_DOC: $\left<[(\alpha/f)<\phi'\Bv]\right>^{1/2}$
   integer :: idiag_Johmrms=0    ! DIAG_DOC: $\left<\Jv^2\right>^{1/2}$
   integer :: idiag_J2sigEm=0    ! DIAG_DOC: $\left<\Jv^2/\sigma_E\right>$
@@ -979,7 +981,9 @@ module Special
     endsubroutine calc_axion_term
 !***********************************************************************
     subroutine calc_helical_term(p,gtmp,dphi,gphi,lphihom)
-
+!
+!  Compute gtmp = phi'*B + gphi x E, or just phi'*B when lphihom=T (homogeneous case)
+!
       use Sub
 
       type(pencil_case), intent(IN) :: p
@@ -1348,17 +1352,33 @@ module Special
       if (idiag_sigBrms/=0) call sum_mn_name(p%sigB**2,idiag_sigBrms,lsqrt=.true.)
       if (idiag_sigEE2m/=0) call sum_mn_name(p%sigE*p%e2,idiag_sigEE2m)
       if (idiag_sigBBEm/=0) call sum_mn_name(p%sigB*p%eb,idiag_sigBBEm)
-      if (idiag_adphiBm/=0 .or. idiag_adphiBrms/=0) then
+!
+!  Magnetic helicity and energy production from axion term:
+!  adphiBm denotes (alp/f)*phi'*E.B (for electric energy production).
+!  In the MHD case, when the displacement current can be neglected, we compute
+!  adphiB2m = (alp/f)*<etaSchw*dphi*B^2> and adphiJBm = (alp/f)*<etaSchw*dphi*J.B>.
+!
+      if (idiag_adphiBm/=0 .or. idiag_adphiBrms/=0 .or. &
+          idiag_adphiB2m/=0 .or. idiag_adphiJBm/=0) then
         if (alpf/=0.) call calc_helical_term(p,gtmp,p%dphi,p%gphi,lphi_hom)
         if (idiag_adphiBm/=0) then
           call dot(alpf*gtmp,p%el,tmp)
           call sum_mn_name(tmp,idiag_adphiBm)
+        endif
+        if (idiag_adphiB2m/=0) then
+          call dot(alpf*gtmp,p%bb,tmp)
+          call sum_mn_name(etaSchw*tmp,idiag_adphiB2m)
+        endif
+        if (idiag_adphiJBm/=0) then
+          call dot(alpf*gtmp,p%jj,tmp)
+          call sum_mn_name(etaSchw*tmp,idiag_adphiJBm)
         endif
         if (idiag_adphiBrms/=0) then
           call dot2_mn(alpf*gtmp,tmp)
           call sum_mn_name(tmp,idiag_adphiBrms,lsqrt=.true.)
         endif
       endif
+!
       if (idiag_Johmrms/=0 .or. idiag_J2sigEm/=0) then
         call dot2_mn(p%jj_ohm,tmp)
         call sum_mn_name(tmp,idiag_Johmrms,lsqrt=.true.)
@@ -1503,7 +1523,7 @@ module Special
         idiag_dteta=0; idiag_dtsigE=0; idiag_etaSchw=0
         idiag_sigEm=0; idiag_sigBm=0; idiag_sigErms=0; idiag_sigBrms=0
         idiag_ebm=0; idiag_Johmrms=0; idiag_J2sigEm=0; idiag_curlBrms=0
-        idiag_adphiBm=0; idiag_adphiBrms=0; idiag_ujxb1m=0
+        idiag_adphiBm=0; idiag_adphiB2m=0; idiag_adphiJBm=0; idiag_adphiBrms=0; idiag_ujxb1m=0
         idiag_sigEE2m=0; idiag_sigBBEm=0
         idiag_eprimerms=0; idiag_bprimerms=0; idiag_jprimerms=0; idiag_gam_EBrms=0; 
         idiag_boostprms=0; idiag_echarge=0; idiag_e2mx=0; idiag_e2mz=0
@@ -1547,6 +1567,8 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'sigEE2m',idiag_sigEE2m)
         call parse_name(iname,cname(iname),cform(iname),'sigBBEm',idiag_sigBBEm)
         call parse_name(iname,cname(iname),cform(iname),'adphiBm',idiag_adphiBm)
+        call parse_name(iname,cname(iname),cform(iname),'adphiB2m',idiag_adphiB2m)
+        call parse_name(iname,cname(iname),cform(iname),'adphiJBm',idiag_adphiJBm)
         call parse_name(iname,cname(iname),cform(iname),'ujxb1m',idiag_ujxb1m)
         call parse_name(iname,cname(iname),cform(iname),'adphiBrms',idiag_adphiBrms)
         call parse_name(iname,cname(iname),cform(iname),'Johmrms',idiag_Johmrms)
