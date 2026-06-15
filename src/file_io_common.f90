@@ -196,7 +196,7 @@ module File_io
       file_size = -2
       if (file_exists(file)) then
         file_size = -1
-        call file_size_c(trim(file)//char(0), file_size)
+        inquire(file=trim(file), size=file_size)
       endif
 !
     endfunction file_size
