@@ -474,6 +474,7 @@ contains
     call copy_addr(ivz,p_par(1419)) ! int
     call copy_addr(tau_aver1,p_par(1420)) 
     call copy_addr(lbaryons,p_par(1421)) ! bool
+    call copy_addr(density_scale_factor,p_par(1422))
 
   endsubroutine pushpars2c
 !***********************************************************************
