@@ -290,10 +290,11 @@ module InitialCondition
 !  corresponding heating function.
 !
         lumi = -4.*pi*rr_sph**2*hcond_global*dTdr_global
+        heat = 0.0
         do j=2,nr-1
            heat(j) = (lumi(j+1)-lumi(j-1))/(2.*drr)
         enddo
-        heat = heat/(4*pi*(rr_sph+tini)**2)
+        heat = heat/((4*pi*(rr_sph+tini)**2)+tini)
 !
 !  Assume that heating and radiation are in equilibrium in the core where
 !  the luminosity increases as a function of radius and take care of
