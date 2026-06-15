@@ -1031,19 +1031,21 @@ extern "C" void torch_train_c_api(AcReal *loss_val, int itsub, double t) {
 
   acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(normalize),1);
   acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(boundconds),1);
-
-  AcReal* out = NULL;
-  AcReal* uumean_ptr = NULL;
-  AcReal* TAU_ptr = NULL;
-  *loss_val = 0.1;
-  
-  acDeviceGetVertexBufferPtrs(acGridGetDevice(), tau_hydro.xx, &TAU_ptr, &out);
-  acDeviceGetVertexBufferPtrs(acGridGetDevice(), uumean.x, &uumean_ptr, &out);
+  *loss_val=INT_MAX;
+  if(lhydro){
+    AcReal* out = NULL;
+    AcReal* uumean_ptr = NULL;
+    AcReal* TAU_ptr = NULL;
+    *loss_val = 0.1;
+    
+    acDeviceGetVertexBufferPtrs(acGridGetDevice(), tau_hydro.xx, &TAU_ptr, &out);
+    acDeviceGetVertexBufferPtrs(acGridGetDevice(), uumean.x, &uumean_ptr, &out);
  
-  acGridHaloExchange();
-  torch_train_CAPI((int[]){mx,my,mz}, uumean_ptr, TAU_ptr, loss_val,input_channels,output_channels,"stationary");
-  train_loss.push_back(*loss_val);
-  train_nts.push_back(it);
+    acGridHaloExchange();
+    torch_train_CAPI((int[]){mx,my,mz}, uumean_ptr, TAU_ptr, loss_val,input_channels,output_channels,"stationary");
+    train_loss.push_back(*loss_val);
+    train_nts.push_back(it);
+  }
   //print_debug();
   if (it==nt){
   	std::ofstream myFile;

@@ -74,7 +74,7 @@
       lfortran_launched = .not. lgpu .or. lroute_via_cpu
       if (lreloading) return
 
-      if (.not.lhydro) call fatal_error('initialize_training','needs HYDRO module')
+      !if (.not.lhydro) call fatal_error('initialize_training','needs HYDRO module')
 
       model_output_dir=trim(datadir)//'/training/' 
       checkpoint_output_dir=model_output_dir
