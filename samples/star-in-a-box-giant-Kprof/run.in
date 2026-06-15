@@ -1,0 +1,47 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  Run parameters
+!
+&run_pars
+  nt=10, it1=1, isave=500, itorder=3
+  cdt=0.9, cdtv=0.3, dtmin=1e-6,
+  dsnap=100, d2davg=10, ! time intervals for writing snapshots and phi-averages
+  lwrite_aux=T
+  lread_aux=T
+  it_rmv=1
+  lpencil_check_small=T
+  lpencil_check=T
+/
+&eos_run_pars
+/
+&hydro_run_pars
+  dampuext = 5, rdampext=1.03, wdamp = 0.02,
+  lupw_uu=T
+  Omega=1.  ! rotation rate
+  luu_sph_as_aux=T
+/
+&density_run_pars
+  lupw_lnrho=T
+  lconserve_total_mass=T
+  idiff='density-slope-limited'
+  h_sld_dens = 2.0
+/
+&grav_run_pars
+/
+&entropy_run_pars
+  heattype='global-heat'
+  luminosity = 1e-4
+  iheatcond='K-profile'
+  lhcond_global=T
+  cs2cool=0.94603076116598717
+  cooltype='cs2-rho', cool=5., rcool=1.03, wcool=0.02,
+  lupw_ss=T
+/
+&magnetic_run_pars
+  eta=2e-3
+  lupw_aa=T
+  lbb_sph_as_aux=T
+/
+&viscosity_run_pars
+  nu=2e-3, ivisc='nu-const'
+/

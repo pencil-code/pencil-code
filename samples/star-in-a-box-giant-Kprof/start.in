@@ -1,0 +1,46 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  Initialisation parameters
+!
+&init_pars
+  xyz0  = -1.1,-1.1,-1.1,       ! first corner of box
+  Lxyz  =  2.2, 2.2, 2.2,       ! box size
+  lperi =  F  , F  , F,         ! periodic direction?
+  lsphere_in_a_box = T
+  lwrite_aux = T
+  r_ext = 1.
+  bcx = 'a','s','s','a2','sT','s','a','s','s','cop'
+  bcy = 's','a','s','a2','sT','s','s','a','s','cop'
+  bcz = 's','s','a','a2','sT','s','s','s','a','cop'
+/
+&initial_condition_pars
+  star_luminosity=1e-4
+  Kproftype='const+gaussian'
+  max_rheat = 0.5
+  Rstar=1., nad=1.5
+  npoly1 = 3.25,npoly2 =1.5
+  r1_poly=.2, width_npoly=0.05
+  r1_K=0.2, width_K=0.2, K_floor=1e-3
+/
+&eos_init_pars
+  cs0 = 1.7, rho0 = 1.
+/
+&hydro_init_pars
+  inituu = 'gaussian-noise-rprof',
+  ampluu = 1e-4
+  luu_sph_as_aux=T  
+/
+&density_init_pars
+/
+&grav_init_pars
+  ipotential = 'RGB-1Msun-11.7'
+/
+&entropy_init_pars
+  lhcond_global=T
+  lcool_prof_as_var=T
+/
+&magnetic_init_pars
+  initaa = 'gaussian-noise-rprof',
+  amplaa = 1e-4
+  lbb_sph_as_aux=T  
+/
