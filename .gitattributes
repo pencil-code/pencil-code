@@ -5225,4 +5225,5 @@ utils/xiangyu/restart-new-dir-VAR-PVAR -text
 utils/xiangyu/restart-new-dir-VAR-PVAR-h5 -text
 samples/decay-reconnection/NEVERLOCK -text
 utils/philippe/LCT/flow_reb_cube.pro -text
+utils/philippe/LCT/velocity_field_lct.pro -text
 utils/philippe/extras/signum.pro -text
