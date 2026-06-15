@@ -5224,4 +5224,5 @@ utils/wolf/tests/t/run_tests.pl -text
 utils/xiangyu/restart-new-dir-VAR-PVAR -text
 utils/xiangyu/restart-new-dir-VAR-PVAR-h5 -text
 samples/decay-reconnection/NEVERLOCK -text
+utils/philippe/LCT/flow_reb_cube.pro -text
 utils/philippe/extras/signum.pro -text
