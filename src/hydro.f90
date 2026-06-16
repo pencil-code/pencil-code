@@ -3445,6 +3445,17 @@ module Hydro
         maxadvec=max(maxadvec,p%advec_uu)
         if (headtt.or.ldebug) print*,'calc_pencils_hydro: max(advec_uu) =',maxval(p%advec_uu)
       endif
+
+!
+! Coriolis force for diagnostics.
+! Would be better if coriolis force would always be calculated into a pencil, but that is for future
+!
+      if (lcartesian_coords .and. (.not. lrotation_xaxis) .and. lrotation .and. theta==0) then
+        if(idiag_coriolis_number /= 0) then
+          coriolis_force(:,1) =  2*Omega*p%uu(:,2)
+          coriolis_force(:,2) = -2*Omega*p%uu(:,1)
+        endif
+      endif
 !
       endsubroutine calc_pencils_hydro_pencpar
 !***********************************************************************
@@ -6216,11 +6227,6 @@ module Hydro
           c2=2*Omega
           df(l1:l2,m,n,velind  )=df(l1:l2,m,n,velind  )+c2*uu(:,2)
           df(l1:l2,m,n,velind+1)=df(l1:l2,m,n,velind+1)-c2*uu(:,1)
-          if(idiag_coriolis_number /= 0) then
-            coriolis_force(:,1) =  c2*uu(:,2)
-            coriolis_force(:,2) = -c2*uu(:,2)
-          endif
-!
         endif
 !
 !  Add centrifugal force (doing this with periodic boundary
