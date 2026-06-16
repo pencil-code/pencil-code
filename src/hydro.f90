@@ -9326,6 +9326,7 @@ module Hydro
     call keep_compiler_quiet(u_out_kep)
     call keep_compiler_quiet(x2_ff_uu)
 
+    call copy_addr(idiag_coriolis_number,p_par(130)) ! int
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Hydro
