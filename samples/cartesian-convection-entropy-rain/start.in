@@ -31,5 +31,5 @@
   lFenth_as_aux=T
   lss_flucz_as_aux=T
   lTT_flucz_as_aux=T
-!  lcalc_cs2mz_mean_diag=T
+  lcalc_cs2mz_mean_diag=T
 /
