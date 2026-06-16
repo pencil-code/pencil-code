@@ -2060,6 +2060,10 @@ module Equ
 
       f_diff = abs((f_copy-f)/(f_copy+tini))
       f_abs_diff = abs((f_copy-f))
+      where(f_copy == 0.0 .and. abs(f_abs_diff) < 1e-20)
+              f_diff     = 0.0
+              f_abs_diff = 0.0
+      endwhere
 
       if (nxgrid == 1 .and. nygrid == 1) then
         print*,"Max diff all: ",maxval(f_diff(l1,m1,n1:n2,1:mfarray))
