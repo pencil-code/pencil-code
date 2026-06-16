@@ -622,6 +622,7 @@ module Hydro
   integer :: idiag_uyzrms=0     ! DIAG_DOC: $u_{y,z}^{\rm rms}$
   integer :: idiag_uzyrms=0     ! DIAG_DOC: $u_{z,y}^{\rm rms}$
   integer :: idiag_sld_char_rms=0
+  integer :: idiag_coriolis_number=0 ! DIAG_DOC: $\left< \frac{|u \cdot \nabla u|}{\Omega \times u} \right>$
   integer :: idiag_urmsn=0,idiag_urmss=0,idiag_urmsh=0
   integer :: idiag_ormsn=0,idiag_ormss=0,idiag_ormsh=0
   integer :: idiag_oumn=0,idiag_oums=0,idiag_oumh=0
@@ -960,6 +961,8 @@ module Hydro
   real, dimension (nz,3) :: uumz_prof
   real, dimension (nx,3) :: fint,fext
   real, dimension (nx,ny) :: omega_prof
+  real, dimension (nx,3) :: coriolis_force = 0.0
+  !$omp threadprivate(coriolis_force)
 
   integer :: enum_friction_tdep = 0
   integer :: enum_uuprof = 0
@@ -3109,6 +3112,7 @@ module Hydro
         lpenc_diagnos(i_divu)=.true.
         lpenc_diagnos(i_rho)=.true.
       endif
+      if(idiag_coriolis_number /= 0) lpenc_diagnos(i_ugu2) = .true.
       if (idiag_Marms/=0 .or. idiag_Mamax/=0) lpenc_diagnos(i_Ma2)=.true.
       if (idiag_u3u21m/=0 .or. idiag_u3u21mz/=0) lpenc_diagnos(i_u3u21)=.true.
       if (idiag_u1u32m/=0 .or. idiag_u1u32mz/=0) lpenc_diagnos(i_u1u32)=.true.
@@ -4551,6 +4555,7 @@ module Hydro
       real, dimension (nx) :: odel2um,uref,curlo2,qo,quxo,graddivu2
       real, dimension (nx,Nmodes_SH) :: urlm
       real, dimension (nx) :: rmask, lorr
+      real, dimension (nx) :: tmp
       real :: kx,cs201=1.
       integer :: k
 !
@@ -4568,6 +4573,11 @@ module Hydro
         if (.not.lmultithread) then
           if (idiag_dtF/=0) call max_mn_name(Fmax/cdtf,idiag_dtF,l_dt=.true.)
           call max_mn_name(Fmax,idiag_taufmin,lreciprocal=.true.)
+        endif
+
+        if(idiag_coriolis_number/=0) then
+            call dot2(coriolis_force,tmp)
+            call sum_mn_name(sqrt(tmp/(p%ugu2+tini)),idiag_coriolis_number)
         endif
 !
 ! urlm
@@ -4678,6 +4688,8 @@ module Hydro
         if (idiag_rux2m/=0) call sum_mn_name(p%rho*p%uu(:,1)**2,idiag_rux2m)
         if (idiag_ruy2m/=0) call sum_mn_name(p%rho*p%uu(:,2)**2,idiag_ruy2m)
         if (idiag_ruz2m/=0) call sum_mn_name(p%rho*p%uu(:,3)**2,idiag_ruz2m)
+
+
         ! alberto: needs to be changed as p%rho and p%uu
         !          contain physical rho and uu (instead of T00 and T0i)
         ! call sum_mn_name(p%rho,idiag_T00m)
@@ -6204,6 +6216,10 @@ module Hydro
           c2=2*Omega
           df(l1:l2,m,n,velind  )=df(l1:l2,m,n,velind  )+c2*uu(:,2)
           df(l1:l2,m,n,velind+1)=df(l1:l2,m,n,velind+1)-c2*uu(:,1)
+          if(idiag_coriolis_number /= 0) then
+            coriolis_force(:,1) =  c2*uu(:,2)
+            coriolis_force(:,2) = -c2*uu(:,2)
+          endif
 !
         endif
 !
@@ -7231,6 +7247,7 @@ module Hydro
         idiag_udpxym=0;idiag_udpyzm=0;idiag_udpxzm=0
         idiag_taufmin=0
         idiag_dtF=0
+        idiag_coriolis_number=0
         idiag_nshift=0
         idiag_frict=0; idiag_pradrc2=0
         ivid_oo=0; ivid_o2=0; ivid_ou=0; ivid_divu=0; ivid_u2=0; ivid_Ma2=0; ivid_uu_sph=0
@@ -7501,6 +7518,7 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'udpxzm',idiag_udpxzm)
         call parse_name(iname,cname(iname),cform(iname),'taufmin',idiag_taufmin)
         call parse_name(iname,cname(iname),cform(iname),'dtF',idiag_dtF)
+        call parse_name(iname,cname(iname),cform(iname),'coriolis_number',idiag_coriolis_number)
         call parse_name(iname,cname(iname),cform(iname),'nshift',idiag_nshift)
         call parse_name(iname,cname(iname),cform(iname),'uduum',idiag_uduum)
         call parse_name(iname,cname(iname),cform(iname),'frict',idiag_frict)
