@@ -1,0 +1,56 @@
+!
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Convection in vertically stratified atmosphere/solar convection zone
+! Run parameters
+!
+&run_pars
+  cvsid="2022c4a26"
+  nt=10, it1=1, isave=2000 !, tmax=3000
+  dsnap=100., dvid=100., ialive=0,
+  cdtv=0.40, cdt=0.9, d2davg=100.
+  slice_position='c', zbot_slice=0., ztop_slice=0.97
+  lwrite_aux=T
+  max_walltime=171000.
+  lpersist=F
+!  lread_oldsnap_nocoolprof=T
+/
+&eos_run_pars
+/
+&hydro_run_pars
+  lupw_uu=T
+  lcalc_uumeanz=T
+/
+&density_run_pars
+  lupw_lnrho=T
+  lconserve_total_mass=T
+  lcalc_lnrhomean=T
+  lrho_flucz_as_aux=T
+  idiff = 'density-slope-limited'
+  h_sld_dens = 2.0
+/
+&grav_run_pars
+  gravz_profile='const',gravz=-1.
+/
+&entropy_run_pars
+  lcool_prof_as_var=T
+  lFenth_as_aux=T
+  lss_flucz_as_aux=T
+  lTT_flucz_as_aux=T
+  lcalc_cs2mz_mean_diag=T
+  cooling_profile='step-local-patches', cool=5., wcool=0.01, zcool=0.96
+  amp_patch=2., wpatch=0.05, ncool_patch=5
+  iheatcond='kramers','chit'
+  hcond0_kramers=2.826255, nkramers=1.
+  Fbot=0.001
+  lupw_ss=T
+  lchit_fluct=T
+  lcalc_ssmean=T
+  chit_fluct_prof1=1., chit_fluct_prof2=1., widthss=0.025
+  zz1_fluct=-1., zz2_fluct=2.
+  chi_t1=1e-3
+/
+&viscosity_run_pars
+  ivisc='nu-const'
+  nu=1e-3
+/
