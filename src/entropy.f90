@@ -221,7 +221,7 @@ module Energy
       hcond0_kramers, nkramers, alpha_MLT, lprestellar_cool_iso, lread_hcond, &
       limpose_heat_ceiling, heat_ceiling, lcooling_ss_mz, lss_running_aver_as_aux, &
       lss_running_aver_as_var, lFenth_as_aux, lss_flucz_as_aux, lTT_flucz_as_aux, &
-      xjump_mid, yjump_mid, zjump_mid, lcool_prof_as_var
+      xjump_mid, yjump_mid, zjump_mid, lcool_prof_as_var, lcalc_cs2mz_mean_diag
 !
 !  Run parameters.
 !
@@ -643,7 +643,7 @@ module Energy
         if (iTT_flucz==0) then
           call farray_register_auxiliary('TT_flucz',iTT_flucz)
         else
-          if (lroot) print*, 'register_energy: iTT_run_aver = ', iTT_flucz
+          if (lroot) print*, 'register_energy: iTT_flucz = ', iTT_flucz
           call farray_index_append('iTT_flucz',iTT_flucz)
         endif
         if (lroot) write(15,*) 'TT_flucz = fltarr(mx,my,mz)*one'
