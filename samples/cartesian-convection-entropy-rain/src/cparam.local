@@ -6,7 +6,8 @@
 !  This file is included by cparam.f90
 !
 ! MAUX CONTRIBUTION 5
-! MVAR CONTRIBUTION 1
+! MVAR CONTRIBUTION 0
+! MGLOBAL CONTRIBUTION 1
 ! COMMUNICATED AUXILIARIES 1
 !
 integer, parameter :: ncpus=8,nprocy=4,nprocz=2,nprocx=1

@@ -7,7 +7,7 @@
   xyz0  = -2., -2., -0.45,         ! first corner of box
   Lxyz  =  4.,  4.,  1.5,          ! box size
   lperi =  T ,   T ,   F,          ! periodic direction?
-  bcz = 's','s','a','a2','c1:cT','s','cop'
+  bcz = 's','s','a','a2','c1:cT','cop'
 /
 &eos_init_pars
   cs0=0.3, gamma=1.6666666,
@@ -27,7 +27,7 @@
   initss='piecew-poly', widthss=0.025
   mpoly0=1.5, mpoly1=3.25, mpoly2=0., isothtop=1,
   cs2cool=0.09
-  lcool_prof_as_var=T
+  lcool_prof_as_global=T
   lFenth_as_aux=T
   lss_flucz_as_aux=T
   lTT_flucz_as_aux=T

@@ -14,6 +14,7 @@
   max_walltime=171000.
   lpersist=F
 !  lread_oldsnap_nocoolprof=T
+  lread_global=F
 /
 &eos_run_pars
 /
