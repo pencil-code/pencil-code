@@ -18,7 +18,9 @@
 !***************************************************************
     subroutine read_python_run_pars(iomsg)
 !
+      use Cparam, only: iomsglen
       use General, only: keep_compiler_quiet
+
       character(LEN=iomsglen), intent(out) :: iomsg
       
       call keep_compiler_quiet(iomsg)
