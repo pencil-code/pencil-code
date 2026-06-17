@@ -867,14 +867,12 @@ module Register
 !
 !  Ignore comments in all lists.
 !
-
       if (nname>0) then
         ldummy = read_name_format(print_in_file,cname,nname)
       elseif ( nname==0 ) then
         call fatal_error('rprint_list','You must have a "'//trim(print_in_file)// &
                          '" file in the run directory with valid print requests!')
       endif
-
 !
       if (lroot .and. (ip<14)) print*, 'rprint_list: nname=', nname
 !

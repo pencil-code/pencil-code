@@ -66,15 +66,14 @@ int FTNIZE(islink_c) (char *filename)
 }
 /* ---------------------------------------------------------------------- */
 
-void FTNIZE(file_size_c)
-     (char *filename, FINT *bytes)
+void FTNIZE(file_size_c) (char *filename, FINT *bytes)
+{
 /* Determines the size of a file.
    Returns:
    * positive integer containing the file size of a given file
    * -2 if the file could not be found or opened
    * -1 if retrieving the file size failed
 */
-{
   struct stat fileStat;
   int file = -1;
 
