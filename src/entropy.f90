@@ -163,7 +163,8 @@ module Energy
   logical :: lss_running_aver_as_var=.false.
   logical, target :: lss_running_aver=.false.
   logical :: lFenth_as_aux=.false.
-  logical :: lcool_prof_as_var=.false.
+  logical :: lcool_prof_as_var   =.false.
+  logical :: lcool_prof_as_global=.false.
   logical :: lss_flucz_as_aux=.false., lsld_char_wprofr=.false.
   logical :: lTT_flucz_as_aux=.false., lsld_char_cslimit=.false.
   logical :: lchi_t1_noprof=.false., lsld_char_rholimit=.false.
@@ -221,7 +222,8 @@ module Energy
       hcond0_kramers, nkramers, alpha_MLT, lprestellar_cool_iso, lread_hcond, &
       limpose_heat_ceiling, heat_ceiling, lcooling_ss_mz, lss_running_aver_as_aux, &
       lss_running_aver_as_var, lFenth_as_aux, lss_flucz_as_aux, lTT_flucz_as_aux, &
-      xjump_mid, yjump_mid, zjump_mid, lcool_prof_as_var, lcalc_cs2mz_mean_diag
+      xjump_mid, yjump_mid, zjump_mid, lcool_prof_as_var, lcool_prof_as_global,&
+      lcalc_cs2mz_mean_diag
 !
 !  Run parameters.
 !
@@ -266,6 +268,7 @@ module Energy
       heattype, nheat_rho, nheat_TT, lrhs_max, &
       wpatch, amp_patch, ncool_patch, &
       patch_fac, coolfac, lnew_cooling_patches, lcool_prof_as_var, &
+      lcool_prof_as_global,&
       tau_cool_pp,pp_cool, coef_cs2, rheat, heat_int
 !
 !  Diagnostic variables for print.in
@@ -554,9 +557,15 @@ module Energy
 !
 !  Register slot for a 3D cooling profile if required.
 !
-      if (lcool_prof_as_var) then
+      if (lcool_prof_as_global) then
         call farray_register_global('cool_prof',icool_prof)
+        !One could consider as having a third flag which is true if 
+        !lcool_prof_as_global or lcool_prof_as_var but this works for now
+        lcool_prof_as_var = .true.
+      else if (lcool_prof_as_var) then
+        call farray_register_pde('cool_prof',icool_prof)
       endif
+
 !
 !  Identify version number.
 !
@@ -6817,7 +6826,7 @@ module Energy
           heat = luminosity*prof
         case ('global-heat') ! 3D heating profile from auxilliary array
           if (.not. lcool_prof_as_var) call fatal_error('get_heat_cool_gravr', &
-            "Need to have lcool_prof_as_var=T to use heattype='global-heat'")
+            "Need to have lcool_prof_as_var=T or lcool_prof_as_global=T to use heattype='global-heat'")
           prof = p%cool_prof
           heat = luminosity*prof
         case ('cs2-rho') ! heating depending on ambient density and temperature

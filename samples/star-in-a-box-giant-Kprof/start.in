@@ -40,7 +40,7 @@
 /
 &entropy_init_pars
   lhcond_global=T
-  lcool_prof_as_var=T
+  lcool_prof_as_global=T
 /
 &magnetic_init_pars
   initaa = 'gaussian-noise-rprof',
