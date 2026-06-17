@@ -9,9 +9,12 @@
   lsphere_in_a_box = T
   lwrite_aux = T
   r_ext = 1.
-  bcx = 'a','s','s','a2','sT','s','a','s','s','cop'
-  bcy = 's','a','s','a2','sT','s','s','a','s','cop'
-  bcz = 's','s','a','a2','sT','s','s','s','a','cop'
+  !bcx = 'a','s','s','a2','sT','a','s','s','cop'
+  !bcy = 's','a','s','a2','sT','s','a','s','cop'
+  !bcz = 's','s','a','a2','sT','s','s','a','cop'
+  bcx = 'a','s','s','a2','sT','a','s','s'
+  bcy = 's','a','s','a2','sT','s','a','s'
+  bcz = 's','s','a','a2','sT','s','s','a'
 /
 &initial_condition_pars
   star_luminosity=1e-4
