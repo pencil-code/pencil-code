@@ -93,12 +93,6 @@ else
   set source='.'
 endif
 #
-if ($d != 0) then
-  set source_data=$source/
-else
-  set source_data=$source/$data
-endif
-#
 #  Abbrevations.
 #
 if ( $var1 =~ "v" || $var1 =~ "var") then
@@ -143,6 +137,12 @@ if ($link) then
   if (`echo $source | grep -c "^\/"` == 0) then
     set source=`pwd`"/"$source 
   endif
+endif
+#
+if ($d != 0) then
+  set source_data=$source/
+else
+  set source_data=$source/$data
 endif
 #
 #  Inform what is about to happen.
