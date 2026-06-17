@@ -3751,7 +3751,7 @@ slender:
 clean_astaroth:
 	if [ -d ./$(CUDA_MAKEDIR) ]; then \
 		rm -f ../PC-AC.conf; \
-		$(MAKE) -C $(CUDA_MAKEDIR) clean; \
+		cd  $(CUDA_MAKEDIR); $(MAKE) cleann; cd ..; \
 	fi
 	rm -f .sentinel $(CUDA_MAKEDIR)/PC_modulesources.h $(CUDA_INCDIR)/PC_moduleflags.h  $(CUDA_MAKEDIR)/PC_module_parfuncs.h $(CUDA_MAKEDIR)/PC_modulepars.h; \
 	rm -f $(CUDA_MAKEDIR)/Makefile.vendor; \
