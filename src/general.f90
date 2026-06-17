@@ -8176,6 +8176,8 @@ iloop:do i=1,size(list2)
         dst = enum_gilbertZbayly_string
       case('diffrot_from_expansion')
         dst = enum_diffrot_from_expansion_string
+      case ('step-local-patches')
+        dst = enum_stepZlocalZpatches
       case default
         dst = enum_unknown_string_string
         if (lroot) print*, 'No string enum for: ', src

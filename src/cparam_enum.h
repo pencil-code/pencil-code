@@ -949,3 +949,4 @@ integer, parameter :: enum_damp_mean_uz_prof_bdr_string = 939
 integer, parameter :: enum_gilbertZbayly_string = 940
 integer, parameter :: enum_diffrot_from_expansion_string = 941
 integer, parameter :: enum_globalZheat_string = 942
+integer, parameter :: enum_stepZlocalZpatches = 943
