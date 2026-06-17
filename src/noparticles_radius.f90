@@ -125,7 +125,7 @@ module Particles_radius
 !***********************************************************************
     subroutine read_particles_rad_init_pars(iomsg)
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
 !
       iomsg=""
 !
@@ -141,7 +141,7 @@ module Particles_radius
 !***********************************************************************
     subroutine read_particles_rad_run_pars(iomsg)
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
 !
       iomsg=""
 !

@@ -46,7 +46,7 @@ module Shear
 !***********************************************************************
     subroutine read_shear_init_pars(iomsg)
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
 !
       iomsg=""
 !
@@ -62,7 +62,7 @@ module Shear
 !***********************************************************************
     subroutine read_shear_run_pars(iomsg)
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
 !
       iomsg=""
 !

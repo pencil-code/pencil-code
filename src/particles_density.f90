@@ -245,7 +245,7 @@ module Particles_density
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=particles_dens_init_pars, IOSTAT=iostat, IOMSG=iomsg)

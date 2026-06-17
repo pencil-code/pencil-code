@@ -24,7 +24,7 @@ module ImplicitDiffusion
 !***********************************************************************
     subroutine read_implicit_diff_run_pars(iomsg)
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
 !
       iomsg=""
 !

@@ -38,7 +38,7 @@ module ImplicitDiffusion
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=implicit_diffusion_run_pars, iostat=iostat, iomsg=iomsg)

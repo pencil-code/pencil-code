@@ -131,7 +131,7 @@ module Ascalar
 !***********************************************************************
     subroutine read_ascalar_init_pars(iomsg)
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
 !
       iomsg=""
 !
@@ -147,7 +147,7 @@ module Ascalar
 !***********************************************************************
     subroutine read_ascalar_run_pars(iomsg)
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
 !
       iomsg=""
 !

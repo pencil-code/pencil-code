@@ -311,7 +311,7 @@ module Param_IO
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -323,7 +323,7 @@ module Param_IO
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=run_pars, IOSTAT=iostat, IOMSG=iomsg)

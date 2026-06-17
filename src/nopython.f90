@@ -19,7 +19,7 @@
     subroutine read_python_run_pars(iomsg)
 !
       use General, only: keep_compiler_quiet
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
       
       call keep_compiler_quiet(iomsg)
 

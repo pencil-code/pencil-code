@@ -107,7 +107,7 @@ module Particles_adsorbed
   endsubroutine dpads_dt
 ! ******************************************************************************
   subroutine read_particles_ads_init_pars(iomsg)
-    character(LEN=*), intent(out) :: iomsg
+    character(LEN=iomsglen), intent(out) :: iomsg
 
     iomsg=""
   endsubroutine read_particles_ads_init_pars
@@ -119,7 +119,7 @@ module Particles_adsorbed
   endsubroutine write_particles_ads_init_pars
 ! ******************************************************************************
   subroutine read_particles_ads_run_pars(iomsg)
-    character(LEN=*), intent(out) :: iomsg
+    character(LEN=iomsglen), intent(out) :: iomsg
 
     iomsg=""
   endsubroutine read_particles_ads_run_pars

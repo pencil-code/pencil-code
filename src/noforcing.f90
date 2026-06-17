@@ -124,7 +124,7 @@ module Forcing
 !***********************************************************************
     subroutine read_forcing_run_pars(iomsg)
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
 !
       iomsg=""
 !

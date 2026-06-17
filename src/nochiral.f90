@@ -133,7 +133,7 @@ module Chiral
 !***********************************************************************
     subroutine read_chiral_init_pars(iomsg)
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
 !
       iomsg=""
 !
@@ -149,7 +149,7 @@ module Chiral
 !***********************************************************************
     subroutine read_chiral_run_pars(iomsg)
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
 !
       iomsg=""
 !

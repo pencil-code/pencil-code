@@ -109,7 +109,7 @@ module Particles_tetrad
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
 
       iomsg=""
 !
@@ -126,7 +126,7 @@ module Particles_tetrad
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
 
       iomsg=""
 !

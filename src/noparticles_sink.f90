@@ -97,7 +97,7 @@ module Particles_sink
 !***********************************************************************
     subroutine read_particles_sink_init_pars(iomsg)
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
 !
       iomsg=""
 !
@@ -113,7 +113,7 @@ module Particles_sink
 !***********************************************************************
     subroutine read_particles_sink_run_pars(iomsg)
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
 !
       iomsg=""
 !

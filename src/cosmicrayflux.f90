@@ -295,7 +295,7 @@ module Cosmicrayflux
 !*******************************************************************************
     subroutine read_cosmicrayflux_init_pars(iomsg)
       use File_io, only: parallel_unit
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
       integer :: iostat
       read(parallel_unit, NML=cosmicrayflux_init_pars, IOSTAT=iostat, IOMSG=iomsg)
       if (iostat==0) iomsg=""
@@ -308,7 +308,7 @@ module Cosmicrayflux
 !*******************************************************************************
     subroutine read_cosmicrayflux_run_pars(iomsg)
       use File_io, only: parallel_unit
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
       integer :: iostat
       read(parallel_unit, NML=cosmicrayflux_run_pars, IOSTAT=iostat, IOMSG=iomsg)
       if (iostat==0) iomsg=""

@@ -827,7 +827,7 @@ module NSCBC
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=NSCBC_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -850,7 +850,7 @@ module NSCBC
       use File_io, only: parallel_unit
       use Sub, only : rdim
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
       integer :: iostat
       integer :: stat
       logical :: exist

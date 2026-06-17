@@ -83,7 +83,7 @@ module Particles_condensation
 !
 !  18-jun-17/anders: coded
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
 !
       call keep_compiler_quiet(iomsg)
 !
@@ -105,7 +105,7 @@ module Particles_condensation
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
 !
       call keep_compiler_quiet(iomsg)
 !
