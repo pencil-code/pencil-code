@@ -3276,7 +3276,7 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read (parallel_unit, NML=chemistry_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -3296,7 +3296,7 @@ cp_spec_glo(:,j2,j3,k)=cp_R_spec/species_constants(k,imass)*Rgas
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read (parallel_unit, NML=chemistry_run_pars, IOSTAT=iostat, IOMSG=iomsg)

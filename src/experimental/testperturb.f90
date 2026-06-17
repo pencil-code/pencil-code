@@ -133,7 +133,7 @@ module TestPerturb
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=testperturb_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -153,7 +153,7 @@ module TestPerturb
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=testperturb_run_pars, IOSTAT=iostat, IOMSG=iomsg)

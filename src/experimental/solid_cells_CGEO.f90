@@ -3208,9 +3208,9 @@
       endsubroutine freeze_solid_cells
 !***********************************************************************
       subroutine read_solid_cells_init_pars(unit,iostat)
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
       integer :: unit
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
       integer, optional :: iostat
 !
       if (present(iomsg)) then
@@ -3224,9 +3224,9 @@
       endsubroutine read_solid_cells_init_pars
 !***********************************************************************
       subroutine read_solid_cells_run_pars(unit,iostat)
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
       integer :: unit
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
       integer, optional :: iostat
 !
       if (present(iomsg)) then

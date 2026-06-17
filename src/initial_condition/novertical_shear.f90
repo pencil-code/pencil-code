@@ -315,7 +315,7 @@ module InitialCondition
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
 !
       read(parallel_unit, NML=initial_condition_pars, IOSTAT=iostat, IOMSG=iomsg)
       if (iostat==0) iomsg=""

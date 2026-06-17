@@ -102,7 +102,7 @@ module Magnetic_meanfield_demfdt
 !***********************************************************************
     subroutine read_magn_mf_demfdt_init_pars(iomsg)
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
 !
       iomsg=""
 !
@@ -118,7 +118,7 @@ module Magnetic_meanfield_demfdt
 !***********************************************************************
     subroutine read_magn_mf_demfdt_run_pars(iomsg)
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(LEN=iomsglen), intent(out) :: iomsg
 !
       iomsg=""
 !
