@@ -342,7 +342,8 @@ module File_io
 !
       interface
         subroutine reader(iomsg)
-          character(LEN=*), intent(out) :: iomsg
+          use Cparam, only: iomsglen
+          character(LEN=iomsglen), intent(out) :: iomsg
         endsubroutine reader
       endinterface
 !
