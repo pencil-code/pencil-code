@@ -23,7 +23,7 @@
       if (.not.file_exists(trim(directory_snap)//'/'//trim(filename))) then
         if (lbackup_snap) then
           if (.not.file_exists(trim(directory_snap)//'/'//trim(filename)//'.bck')) then
-            call fatal_error('gen_filename','neither snapshot file '//trim(filename)//' nor '// trim(filename)//'.bck exists')
+            call fatal_error('gen_in_snapname','neither snapshot file '//trim(filename)//' nor '// trim(filename)//'.bck exists')
           else
             filename=trim(filename)//'.bck'
           endif
