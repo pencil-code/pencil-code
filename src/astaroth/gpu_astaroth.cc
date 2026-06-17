@@ -358,11 +358,33 @@ int same_path(const char *p1, const char *p2) {
 }
 static int lac_sparse_autotuning = 0;
 /***********************************************************************************************/
+void
+sortMaux()
+{
+    std::vector<int> used_maux;
+    for (int i = 0; i < mfarray; ++i) {
+        if (maux_vtxbuf_index[i] != -1)
+            used_maux.push_back(maux_vtxbuf_index[i]);
+    }
+    // Sort them
+    std::sort(used_maux.begin(), used_maux.end());
+    // Put them back
+    int j = 0;
+    for (int i = 0; i < mfarray; ++i) {
+        if (maux_vtxbuf_index[i] != -1)
+            maux_vtxbuf_index[i] = used_maux[j++];
+    }
+}
 void setupConfig(AcMeshInfo& config)
 {
   config = acInitInfo();
  
   #include "PC_modulepars.h"
+
+  //TP: this is because we non-communicated auxs might be registered before communicated ones
+  //TP: the whole think with maux_vtxbuf_index is a bit of a mess...
+  //TP: would be great if I can come up with a better design.
+  sortMaux();
 
   //CUDA_AWARE_MPI is true by default, to turn it off set CUDA_AWARE_MPI=OFF in your config
   PCLoad(config, AC_use_cuda_aware_mpi,CUDA_AWARE_MPI);

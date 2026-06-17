@@ -1451,7 +1451,8 @@ module Magnetic
       endif
 !
 !PJK: moved from register_magnetic at least temporarily
-      if (lbb_sph_as_aux) call register_report_aux('bb_sph', ibb_sph, ibb_sphr, ibb_spht, ibb_sphp)
+      if (lbb_sph_as_aux) call register_report_aux('bb_sph', ibb_sph, ibb_sphr, ibb_spht, ibb_sphp,&
+                                                    rhs=.true.,read_from_gpu=.true.)
 !
 !  Set ljj_as_comaux=T and get kernels
 !   if lsmooth_jj is used
@@ -12335,6 +12336,9 @@ print*,'AXEL2: should not be here (eta) ... '
     call copy_addr(limiter_fact,p_par(285))
     call copy_addr(llimiter,p_par(286)) ! bool
     call copy_addr(lnonzero_eta,p_par(287)) ! bool
+    call copy_addr(ibb_sphr,p_par(288)) ! int
+    call copy_addr(ibb_spht,p_par(289)) ! int
+    call copy_addr(ibb_sphp,p_par(290)) ! int
 
     call keep_compiler_quiet(znoise_int)
     call keep_compiler_quiet(znoise_ext)

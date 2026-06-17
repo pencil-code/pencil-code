@@ -1,6 +1,18 @@
 #include "../freeze_df.h"
  if(!AC_lsubstepping_in_time__mod__cdata)
  {
+#if Lhydro_MODULE
+   if(AC_iuu_sphr__mod__hydro != 0)
+   {
+	   write(F_UU_SPHVEC,real3(DF_UU_SPHR,DF_UU_SPHT,DF_UU_SPHP))
+   }
+#endif
+#if Lmagnetic_MODULE
+   if(AC_ibb_sphr__mod__magnetic != 0)
+   {
+	   write(F_BB_SPHVEC,real3(DF_BB_SPHR,DF_BB_SPHT,DF_BB_SPHP))
+   }
+#endif
    if(lcourant_dt)
    {
 
@@ -9,6 +21,7 @@
         	write( F_UU,  rk_intermediate(F_UU , DF_UU,  step_num, AC_dt__mod__cdata) )
         }
         if (AC_iuun__mod__cdata != 0)   write( F_UUN,  rk_intermediate(F_UUN , DF_UUN,  step_num, AC_dt__mod__cdata) )
+
     	if ((AC_ilnrho__mod__cdata + AC_irho__mod__cdata) != 0)  write(F_RHO, rk_intermediate(F_RHO, DF_RHO, step_num, AC_dt__mod__cdata) )
           if ((AC_ilnrhon__mod__cdata + AC_irhon__mod__cdata) != 0)  write(F_RHON, rk_intermediate(F_RHON, DF_RHON, step_num, AC_dt__mod__cdata) )
     	if (AC_iss__mod__cdata != 0)  write( F_SS,  rk_intermediate(F_SS, DF_SS,  step_num, AC_dt__mod__cdata) )

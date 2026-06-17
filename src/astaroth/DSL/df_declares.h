@@ -16,9 +16,6 @@ real3 DF_JVEC          = rk_intermediate_split_first(F_JVEC,step_num)
 real3 DF_AVEC          = rk_intermediate_split_first(F_AVEC,step_num)
 real3 DF_JXBVEC        = rk_intermediate_split_first(F_JXBVEC,step_num)
 real3 DF__ADV_DERVEC   = rk_intermediate_split_first(F__ADV_DERVEC,step_num)
-real  DF_UU_SPHR       = rk_intermediate_split_first(F_UU_SPHR,step_num)
-real  DF_UU_SPHT       = rk_intermediate_split_first(F_U_SPHT,step_num)
-real  DF_UU_SPHP       = rk_intermediate_split_first(F_UU_SPHP,step_num)
 real  DF_NRHO          = rk_intermediate_split_first(F_NRHO,step_num)
 real  DF_SS            = rk_intermediate_split_first(F_SS,step_num)
 real  DF_TT            = rk_intermediate_split_first(F_TT,step_num)
@@ -209,3 +206,10 @@ reac_dust__mod__cdata = 0.0
 #endif
 
 const bool AC_lsubstepping_in_time__mod__cdata = false
+
+real  DF_UU_SPHR       = 0.0
+real  DF_UU_SPHT       = 0.0
+real  DF_UU_SPHP       = 0.0
+real  DF_BB_SPHR       = 0.0
+real  DF_BB_SPHT       = 0.0
+real  DF_BB_SPHP       = 0.0

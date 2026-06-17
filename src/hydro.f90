@@ -1097,7 +1097,8 @@ module Hydro
 !
       if (luu_sph_as_aux.and.lsphere_in_a_box) then
         if (iuu_sph==0) then
-          call farray_register_auxiliary('uu_sph',iuu_sph,vector=3)
+          call farray_register_auxiliary('uu_sph',iuu_sph,vector=3,&
+                                          rhs=.true.,read_from_gpu=.true.)
           iuu_sphr = iuu_sph; iuu_spht = iuu_sph+1; iuu_sphp = iuu_sph+2;
         else
           if (lroot) print*, 'register_hydro: iuu_sph = ', iuu_sph
@@ -9327,6 +9328,9 @@ module Hydro
     call copy_addr(luij_test,p_par(127)) ! bool
     call copy_addr(iforcing_cont_uu,p_par(128)) ! int
     call copy_addr(lconservative_pressure_on_rhs,p_par(129)) ! bool
+    call copy_addr(iuu_sphr,p_par(130)) ! int
+    call copy_addr(iuu_spht,p_par(131)) ! int
+    call copy_addr(iuu_sphp,p_par(132)) ! int
     call keep_compiler_quiet(look_as_aux)
     call keep_compiler_quiet(luuk_as_aux)
     call keep_compiler_quiet(u_out_kep)

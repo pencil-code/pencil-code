@@ -539,7 +539,8 @@ module Energy
 !
 !  6-nov-01/wolf: coded
 !
-      use FArrayManager, only: farray_register_pde, farray_register_auxiliary, farray_index_append
+      use FArrayManager, only: farray_register_pde, farray_register_auxiliary, farray_index_append, &
+                               farray_register_global
       use SharedVariables, only: put_shared_variable
 !
       call farray_register_pde('ss',iss)
@@ -554,7 +555,7 @@ module Energy
 !  Register slot for a 3D cooling profile if required.
 !
       if (lcool_prof_as_var) then
-        call farray_register_pde('cool_prof',icool_prof)
+        call farray_register_global('cool_prof',icool_prof)
       endif
 !
 !  Identify version number.
@@ -587,8 +588,8 @@ module Energy
 !  Heat conductivity and its gradient.
 !
       if (lhcond_global) then
-        call farray_register_auxiliary('hcond',iglobal_hcond)
-        call farray_register_auxiliary('glhc',iglobal_glhc,vector=3)
+        call farray_register_global('hcond',iglobal_hcond)
+        call farray_register_global('glhc',iglobal_glhc,vector=3)
       endif
 !
 !  Running average of entropy

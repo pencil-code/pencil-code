@@ -79,6 +79,8 @@ field_order(AC_iglobal_gg__mod__cdata != 0 ? AC_iglobal_gg__mod__cdata-1+2 : -1)
 
 const Field3 F_GLOBAL_GVEC = {F_GLOBAL_GX,F_GLOBAL_GY,F_GLOBAL_GZ}
 
+field_order(AC_icool_prof__mod__cdata-1) Field F_COOL_PROF
+
 
 
 field_order(AC_ilnrho__mod__cdata-1) Field RHO
@@ -154,8 +156,14 @@ Field F_U0X, F_U0Y, F_U0Z
 field_order(AC_ilorentz__mod__cdata-1) Field F_LORENTZ
 Field F_GUIJ11,F_GUIJ21,F_GUIJ31,F_GUIJ12,F_GUIJ22,F_GUIJ32,F_GUIJ13,F_GUIJ23,F_GUIJ33
 Field F_OX, F_OY, F_OZ
-Field F_UU_SPHX, F_UU_SPHY, F_UU_SPHZ
-Field F_BB_SPHX, F_BB_SPHY, F_BB_SPHZ
+field_order(AC_iuu_sphr__mod__hydro-1) Field F_UU_SPHR
+field_order(AC_iuu_spht__mod__hydro-1) Field F_UU_SPHT
+field_order(AC_iuu_sphp__mod__hydro-1) Field F_UU_SPHP
+
+field_order(AC_ibb_sphr__mod__magnetic-1) Field F_BB_SPHR
+field_order(AC_ibb_spht__mod__magnetic-1) Field F_BB_SPHT
+field_order(AC_ibb_sphp__mod__magnetic-1) Field F_BB_SPHP
+
 Field F_HLESS
 Field F_EOSVAR2
 Field F_GLOBAL_CS2
@@ -164,11 +172,8 @@ Field F_CS
 Field F_VISC_HEAT
 Field3 F_VISC_FORCVEC
 Field3 F_JXBVEC
-Field F_UU_SPHR
-Field F_UU_SPHP
 Field  F_NRHO
 Field  F_RUN_AVER
-Field F_U_SPHT
 Field F_SS_B
 Field F_RHO_B
 Field F_ETH
@@ -217,20 +222,22 @@ field_order(AC_iyh__mod__cdata-1) Field F_YH
 #define TT F_TT
 #define LNTT F_TT
 #define F_LNTT F_TT
-Field F_GLOBAL_HCOND
+field_order(AC_iglobal_hcond__mod__cdata-1) Field F_GLOBAL_HCOND
 field_order(AC_iss_run_aver__mod__cdata-1) Field F_SS_RUN_AVER
 Field F_ADV_DERX
 Field F_ADV_DERY
 Field F_ADV_DERZ
-Field F_GLOBAL_GLHX,F_GLOBAL_GLHY,F_GLOBAL_GLHZ
+field_order(AC_iglobal_glhc__mod__cdata == 0 ? -1 : 0+AC_iglobal_glhc__mod__cdata-1) Field F_GLOBAL_GLHX
+field_order(AC_iglobal_glhc__mod__cdata == 0 ? -1 : 1+AC_iglobal_glhc__mod__cdata-1) Field F_GLOBAL_GLHY
+field_order(AC_iglobal_glhc__mod__cdata == 0 ? -1 : 2+AC_iglobal_glhc__mod__cdata-1) Field F_GLOBAL_GLHZ
 Field F_HYPREX, F_HYPREY, F_HYPREZ
 Field F_ETAT
 
 
 
-field_order(AC_iglobal_glnTT__mod__cdata == 0 ? -1 : 0+AC_iglobal_glnTT__mod__cdata-1) Field F_GLOBAL_GLNTX
-field_order(AC_iglobal_glnTT__mod__cdata == 0 ? -1 : 1+AC_iglobal_glnTT__mod__cdata-1) Field F_GLOBAL_GLNTY
-field_order(AC_iglobal_glnTT__mod__cdata == 0 ? -1 : 2+AC_iglobal_glnTT__mod__cdata-1) Field F_GLOBAL_GLNTZ
+field_order(AC_iglobal_glntt__mod__cdata == 0 ? -1 : 0+AC_iglobal_glntt__mod__cdata-1) Field F_GLOBAL_GLNTX
+field_order(AC_iglobal_glntt__mod__cdata == 0 ? -1 : 1+AC_iglobal_glntt__mod__cdata-1) Field F_GLOBAL_GLNTY
+field_order(AC_iglobal_glntt__mod__cdata == 0 ? -1 : 2+AC_iglobal_glntt__mod__cdata-1) Field F_GLOBAL_GLNTZ
 const Field3 F_GLOBAL_GLNTVEC = {F_GLOBAL_GLNTX,F_GLOBAL_GLNTY,F_GLOBAL_GLNTZ}
 const Field3 F_AVEC    = {F_AX, F_AY, F_AZ}
 #define F_AA F_AVEC
@@ -258,9 +265,9 @@ const Field3 F_UUN      = {F_UNX,F_UNY,F_UNZ}
 
 const Field3 F_U0VEC   = {F_U0X, F_U0Y, F_U0Z}
 const Field3 F_OVEC    = {F_OX, F_OY, F_OZ}
-const Field3 F_UU_SPH_VEC  = {F_UU_SPHX, F_UU_SPHY, F_UU_SPHZ}
-const Field3 F_UU_SPHVEC   = {F_UU_SPHX, F_UU_SPHY, F_UU_SPHZ}
-const Field3 F_BB_SPHVEC   = {F_BB_SPHX, F_BB_SPHY, F_BB_SPHZ}
+const Field3 F_UU_SPH_VEC  = {F_UU_SPHR, F_UU_SPHT, F_UU_SPHP}
+const Field3 F_UU_SPHVEC   = {F_UU_SPHR, F_UU_SPHT, F_UU_SPHP}
+const Field3 F_BB_SPHVEC   = {F_BB_SPHR, F_BB_SPHT, F_BB_SPHP}
 const Field3 F_BVEC        = {F_BX,F_BY,F_BZ}
 const Field3 F_GLOBAL_GLHVEC = {F_GLOBAL_GLHX,F_GLOBAL_GLHY,F_GLOBAL_GLHZ}
 
