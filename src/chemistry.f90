@@ -7556,7 +7556,7 @@ module Chemistry
         case ('patek-klomfar')
 !  Total solution bubble pressure [MPa] -> code pressure (1 MPa = 1e7 Ba),
 !  then subtract the Raoult water partial pressure to get the NH3 partial.
-          p_bub = bubble_pressure_pk(Tdrop*unit_temperature,xN)*1.0e7/unit_pressure
+          p_bub = bubble_pressure_pk(real(Tdrop*unit_temperature),xN)*1.0e7/unit_pressure
           call cond_spec_psat(Tdrop,pw)            ! water saturation, code units
           pNs   = max(p_bub - (1.-xN)*pw, 0.)
         case default
