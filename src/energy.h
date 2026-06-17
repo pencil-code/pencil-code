@@ -6,7 +6,7 @@
   public :: read_energy_init_pars, write_energy_init_pars
   public :: read_energy_run_pars, write_energy_run_pars
   public :: rprint_energy, get_slices_energy
-  public :: init_energy, denergy_dt, energy_after_boundary
+  public :: init_energy, denergy_dt, energy_after_boundary, energy_after_boundary_diagnostics
   public :: pencil_criteria_energy, pencil_interdep_energy
   public :: calc_pencils_energy, fill_farray_pressure
   public :: impose_energy_floor, energy_before_boundary

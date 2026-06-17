@@ -786,6 +786,7 @@ module Equ
 !  Executed by the helper thread.
 !
         use Density, only: density_before_boundary_diagnostics
+        use Energy,  only: energy_after_boundary_diagnostics
 
         real, contiguous, dimension(:,:,:,:),intent(INOUT) :: f
 
@@ -794,6 +795,7 @@ module Equ
         !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
 
         call density_before_boundary_diagnostics(f)
+        call energy_after_boundary_diagnostics(f)
         !$omp end parallel
 
       endsubroutine calc_all_before_boundary_diagnostics
@@ -1097,7 +1099,7 @@ module Equ
       use Viscosity, only: viscosity_after_boundary
       use Magnetic, only: magnetic_after_boundary
       use Dustdensity, only: dustdensity_after_boundary
-      use Energy, only: energy_after_boundary
+      use Energy, only: energy_after_boundary,energy_after_boundary_diagnostics
       use Gravity, only: gravity_after_boundary
       use Forcing, only: forcing_after_boundary
       use Shock, only: calc_shock_profile_simple
@@ -1123,6 +1125,7 @@ module Equ
       if (lmagnetic)       call magnetic_after_boundary(f)
       if (ldustdensity)    call dustdensity_after_boundary(f)
       if (lenergy)         call energy_after_boundary(f)
+      if (lenergy)         call energy_after_boundary_diagnostics(f)
       if (lgrav)           call gravity_after_boundary(f)
       if (lforcing)        call forcing_after_boundary(f)
       if (lpolymer)        call calc_polymer_after_boundary(f)

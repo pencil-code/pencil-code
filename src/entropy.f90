@@ -4467,6 +4467,46 @@ module Energy
 !
     endsubroutine energy_before_boundary
 !***********************************************************************
+    subroutine energy_after_boundary_diagnostics(f)
+
+      use EquationOfState, only: get_gamma_etc
+      use Sub, only: finalize_aver
+
+      real, contiguous, dimension(:,:,:,:),intent(INOUT) :: f
+      real, dimension (mz) :: ruzmz
+      real, dimension (mx,my) :: cs2p, ruzp
+      real :: gamma,gamma_m1,cv,cv1,cp,cp1
+      real :: fact, tmp1
+!
+!  Enthalpy flux as auxilliary array
+!
+      if (lFenth_as_aux) then
+!
+        call get_gamma_etc(gamma,cp=cp,cv=cv); gamma_m1=gamma-1.; cp1=1./cp; cv1=1./cv
+!
+        tmp1=cp1/gamma_m1
+!
+        f(:,:,:,iFenth)=0.
+!
+        fact=1./nxygrid
+        cs2p=0.
+        ruzp=0.
+        ruzmz=0.
+        do n=1,mz
+          ruzmz(n)= fact*sum(exp(f(l1:l2,m1:m2,n,ilnrho))*f(l1:l2,m1:m2,n,iuz))
+        enddo
+        call finalize_aver(nprocxy,12,ruzmz)
+!
+        do n=1,mz
+          cs2p(l1:l2,m1:m2) = cs20*exp(gamma_m1*(f(l1:l2,m1:m2,n,ilnrho)-lnrho0)+cv1*f(l1:l2,m1:m2,n,iss))-cs2mz(n)
+          ruzp(l1:l2,m1:m2) = exp(f(l1:l2,m1:m2,n,ilnrho))*f(l1:l2,m1:m2,n,iuz)-ruzmz(n)
+          f(l1:l2,m1:m2,n,iFenth)=tmp1*cs2p(l1:l2,m1:m2)*ruzp(l1:l2,m1:m2)
+        enddo
+!
+      endif
+!
+    endsubroutine energy_after_boundary_diagnostics
+!***********************************************************************
     subroutine energy_after_boundary(f)
 !
 !  Calculate <s>, which is needed for diffusion with respect to xy-flucts.
@@ -4482,8 +4522,6 @@ module Energy
 !
       real, contiguous, dimension(:,:,:,:),intent(INOUT) :: f
 !
-      real, dimension (mx,my) :: cs2p, ruzp
-      real, dimension (mz) :: ruzmz
 !
 !
       integer :: l,m,n,lf
@@ -4691,33 +4729,6 @@ module Energy
         endif
         f(:,:,:,iss_run_aver)=(1.-dt/tau_aver1)*f(:,:,:,iss_run_aver)+dt/tau_aver1*f(:,:,:,iss)
         if (lsmooth_ss_run_aver.and.lrmv) call smooth(f,iss_run_aver)
-      endif
-!
-!  Enthalpy flux as auxilliary array
-!
-      if (lFenth_as_aux) then
-!
-        call get_gamma_etc(gamma,cp=cp,cv=cv); gamma_m1=gamma-1.; cp1=1./cp; cv1=1./cv
-!
-        tmp1=cp1/gamma_m1
-!
-        f(:,:,:,iFenth)=0.
-!
-        fact=1./nxygrid
-        cs2p=0.
-        ruzp=0.
-        ruzmz=0.
-        do n=1,mz
-          ruzmz(n)= fact*sum(exp(f(l1:l2,m1:m2,n,ilnrho))*f(l1:l2,m1:m2,n,iuz))
-        enddo
-        call finalize_aver(nprocxy,12,ruzmz)
-!
-        do n=1,mz
-          cs2p(l1:l2,m1:m2) = cs20*exp(gamma_m1*(f(l1:l2,m1:m2,n,ilnrho)-lnrho0)+cv1*f(l1:l2,m1:m2,n,iss))-cs2mz(n)
-          ruzp(l1:l2,m1:m2) = exp(f(l1:l2,m1:m2,n,ilnrho))*f(l1:l2,m1:m2,n,iuz)-ruzmz(n)
-          f(l1:l2,m1:m2,n,iFenth)=tmp1*cs2p(l1:l2,m1:m2)*ruzp(l1:l2,m1:m2)
-        enddo
-!
       endif
 !
     endsubroutine energy_after_boundary

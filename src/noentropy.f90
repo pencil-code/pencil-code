@@ -319,6 +319,11 @@ module Energy
 !
     endsubroutine calc_pencils_energy
 !***********************************************************************
+    subroutine energy_after_boundary_diagnostics(f)
+      real, contiguous,dimension(:,:,:,:), intent(INOUT) :: f
+      call keep_compiler_quiet(f)
+    endsubroutine energy_after_boundary_diagnostics
+!***********************************************************************
     subroutine energy_before_boundary(f)
 !
 !  03-apr-20/joern: restructured and fixed slope-limited diffusion
