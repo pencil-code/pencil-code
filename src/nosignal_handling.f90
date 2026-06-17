@@ -32,6 +32,8 @@ module Signal_handling
 !***********************************************************************
     subroutine read_signal_init_pars(iomsg)
 !
+      use Cparam, only: iomsglen
+
       character(LEN=iomsglen), intent(out) :: iomsg
 !
       iomsg=""
