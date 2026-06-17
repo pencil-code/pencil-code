@@ -4467,6 +4467,43 @@ module Energy
 !
     endsubroutine energy_before_boundary
 !***********************************************************************
+    subroutine compute_z_average_sound_speed(f)
+
+      use EquationOfState, only: get_gamma_etc
+      use Sub, only: finalize_aver
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: f
+!
+!
+      integer :: l
+      real :: gamma,gamma_m1,cv,cv1,cp,cp1,fact
+
+!
+      call get_gamma_etc(gamma,cv=cv); gamma_m1=gamma-1.; cv1=1./cv
+!
+      fact=1./nxygrid
+      cs2mz=0.
+      if (ldensity_nolog) then
+        if (lreference_state) then
+          do n=1,mz
+            cs2mz(n)= fact*sum(cs20*exp(gamma_m1*(alog(f(l1:l2,m1:m2,n,irho) &
+                     +spread(reference_state(:,iref_rho),2,ny)) &
+                     -lnrho0)+cv1*(f(l1:l2,m1:m2,n,iss)+reference_state(l-l1+1,iref_s))))
+          enddo
+        else
+          do n=1,mz
+            cs2mz(n)= fact*sum(cs20*exp(gamma_m1*(alog(f(l1:l2,m1:m2,n,irho)) &
+                     -lnrho0)+cv1*f(l1:l2,m1:m2,n,iss)))
+          enddo
+        endif
+      else
+        do n=1,mz
+          cs2mz(n)= fact*sum(cs20*exp(gamma_m1*(f(l1:l2,m1:m2,n,ilnrho) &
+                   -lnrho0)+cv1*f(l1:l2,m1:m2,n,iss)))
+        enddo
+      endif
+      call finalize_aver(nprocxy,12,cs2mz)
+    endsubroutine compute_z_average_sound_speed
+!***********************************************************************
     subroutine energy_after_boundary_diagnostics(f)
 
       use EquationOfState, only: get_gamma_etc
@@ -4477,6 +4514,25 @@ module Energy
       real, dimension (mx,my) :: cs2p, ruzp
       real :: gamma,gamma_m1,cv,cv1,cp,cp1
       real :: fact, tmp1
+!
+!
+!  Compute average sound speed cs2(z)
+!
+      if (lcalc_cs2mz_mean .or. lcalc_cs2mz_mean_diag) then
+        if (lcalc_cs2mz_mean_diag) call compute_z_average_sound_speed(f)
+!
+!
+!  Sound speed fluctuations as auxilliary array
+!
+        if (lTT_flucz_as_aux) then
+          call get_gamma_etc(gamma,cp=cp,cv=cv); gamma_m1=gamma-1.; cp1=1./cp; cv1=1./cv
+          tmp1=cp1/gamma_m1
+          do n=1,mz
+            f(l1:l2,m1:m2,n,iTT_flucz) = tmp1* &
+            (cs20*exp(gamma_m1*(f(l1:l2,m1:m2,n,ilnrho)-lnrho0)+cv1*f(l1:l2,m1:m2,n,iss))-cs2mz(n))
+          enddo
+        endif
+      endif
 !
 !  Enthalpy flux as auxilliary array
 !
@@ -4660,44 +4716,7 @@ module Energy
 !
 !  Compute average sound speed cs2(z)
 !
-      if (lcalc_cs2mz_mean .or. lcalc_cs2mz_mean_diag) then
-!
-        call get_gamma_etc(gamma,cv=cv); gamma_m1=gamma-1.; cv1=1./cv
-!
-        fact=1./nxygrid
-        cs2mz=0.
-        if (ldensity_nolog) then
-          if (lreference_state) then
-            do n=1,mz
-              cs2mz(n)= fact*sum(cs20*exp(gamma_m1*(alog(f(l1:l2,m1:m2,n,irho) &
-                       +spread(reference_state(:,iref_rho),2,ny)) &
-                       -lnrho0)+cv1*(f(l1:l2,m1:m2,n,iss)+reference_state(l-l1+1,iref_s))))
-            enddo
-          else
-            do n=1,mz
-              cs2mz(n)= fact*sum(cs20*exp(gamma_m1*(alog(f(l1:l2,m1:m2,n,irho)) &
-                       -lnrho0)+cv1*f(l1:l2,m1:m2,n,iss)))
-            enddo
-          endif
-        else
-          do n=1,mz
-            cs2mz(n)= fact*sum(cs20*exp(gamma_m1*(f(l1:l2,m1:m2,n,ilnrho) &
-                     -lnrho0)+cv1*f(l1:l2,m1:m2,n,iss)))
-          enddo
-        endif
-        call finalize_aver(nprocxy,12,cs2mz)
-!
-!  Sound speed fluctuations as auxilliary array
-!
-        if (lTT_flucz_as_aux) then
-          call get_gamma_etc(gamma,cp=cp,cv=cv); gamma_m1=gamma-1.; cp1=1./cp; cv1=1./cv
-          tmp1=cp1/gamma_m1
-          do n=1,mz
-            f(l1:l2,m1:m2,n,iTT_flucz) = tmp1* &
-            (cs20*exp(gamma_m1*(f(l1:l2,m1:m2,n,ilnrho)-lnrho0)+cv1*f(l1:l2,m1:m2,n,iss))-cs2mz(n))
-          enddo
-        endif
-      endif
+      if (lcalc_cs2mz_mean) call compute_z_average_sound_speed(f)
 !
 !  Compute volume average of entropy.
 !
