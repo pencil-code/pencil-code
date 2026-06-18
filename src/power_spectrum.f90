@@ -2912,7 +2912,7 @@ outer:do ikz=1,nz
          "$Id$")
 
     if(.not. allocated(BBB)) allocate(BBB(mx,my,mz,3))
-    !$omp parallel private(uu,aa,aij,bij,bb,jj,uxb,uxj) num_threads(num_helper_threads)
+    !$omp parallel private(dphi,aa,aij,bb) num_threads(num_helper_threads)
     !$ thread_id = omp_get_thread_num()+1
 !
 !  initialize power spectrum to zero
