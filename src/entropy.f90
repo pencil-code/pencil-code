@@ -4475,7 +4475,7 @@ module Energy
 !
 !
       integer :: l
-      real :: gamma,gamma_m1,cv,cv1,cp,cp1,fact
+      real :: gamma,gamma_m1,cv,cv1,fact
 
 !
       call get_gamma_etc(gamma,cv=cv); gamma_m1=gamma-1.; cv1=1./cv
@@ -4582,7 +4582,7 @@ module Energy
 !
       integer :: l,m,n,lf
       real :: fact, tmp1
-      real :: gamma,gamma_m1,cv,cv1,cp,cp1
+      real :: gamma,gamma_m1,cv,cv1
 !
 !  Compute horizontal average of entropy. Include the ghost zones,
 !  because they have just been set.
