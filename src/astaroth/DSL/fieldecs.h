@@ -166,7 +166,7 @@ field_order(AC_ibb_sphp__mod__magnetic-1) Field F_BB_SPHP
 
 Field F_HLESS
 Field F_EOSVAR2
-Field F_GLOBAL_CS2
+field_order(AC_iglobal_cs2__mod__equationofstate-1) Field F_GLOBAL_CS2
 Field F_PP
 Field F_CS
 Field F_VISC_HEAT
