@@ -12040,7 +12040,7 @@ print*,'AXEL2: should not be here (eta) ... '
     use Syscalls, only: copy_addr
     use General , only: string_to_enum
 
-    integer, parameter :: n_pars=500
+    integer, parameter :: n_pars=400
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(eta,p_par(1)) ! real dconst
@@ -12339,6 +12339,12 @@ print*,'AXEL2: should not be here (eta) ... '
     call copy_addr(ibb_sphr,p_par(288)) ! int
     call copy_addr(ibb_spht,p_par(289)) ! int
     call copy_addr(ibb_sphp,p_par(290)) ! int
+    call copy_addr(iglobal_ax_ext,p_par(291)) ! int
+    call copy_addr(iglobal_ay_ext,p_par(292)) ! int
+    call copy_addr(iglobal_az_ext,p_par(293)) ! int
+    call copy_addr(iglobal_bx_ext,p_par(294)) ! int
+    call copy_addr(iglobal_by_ext,p_par(295)) ! int
+    call copy_addr(iglobal_bz_ext,p_par(296)) ! int
 
     call keep_compiler_quiet(znoise_int)
     call keep_compiler_quiet(znoise_ext)
