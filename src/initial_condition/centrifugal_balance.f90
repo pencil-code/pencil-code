@@ -164,6 +164,7 @@ module InitialCondition
       call put_shared_variable('etamu0_spiral',etamu0_spiral)
       call put_shared_variable('Omega0_spiral',Omega0_spiral)
       call put_shared_variable('r0_spiral',r0_spiral)
+      call keep_compiler_quiet(B_ext)
 !
     endsubroutine register_initial_condition
 !***********************************************************************
