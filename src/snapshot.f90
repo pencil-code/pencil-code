@@ -935,6 +935,7 @@ module Snapshot
         if (jb_spec)  call powerhel(f,'j.b',lfirstcall_powerhel) !(not ready yet) ! ready now
         if (ja_spec)  call powerhel(f,'j.a',lfirstcall_powerhel) !(for now, use this instead) ! now does j.b spectra
         if (Lor_spec) call powerLor(f,'Lor')
+        if (aBE_spec) call poweraBE(f,'aBE')
         if (OmU_spec) call powerOmU(f,'OmU')
         if (EMF_spec) call powerEMF(f,'EMF')
         if (Tra_spec) call powerTra(f,'Tra')

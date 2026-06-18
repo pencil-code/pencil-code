@@ -123,6 +123,16 @@ module power_spectrum
 !
     endsubroutine powerLor
 !***********************************************************************
+    subroutine poweraBE(f,sp)
+!
+      real, contiguous,dimension(:,:,:,:) :: f
+      character (len=3) :: sp
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(sp)
+!
+    endsubroutine poweraBE
+!***********************************************************************
     subroutine powerOmU(f,sp)
 !
       real, contiguous,dimension(:,:,:,:) :: f
