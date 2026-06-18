@@ -7,7 +7,8 @@
   xyz0  = -2., -2., -0.45,         ! first corner of box
   Lxyz  =  4.,  4.,  1.5,          ! box size
   lperi =  T ,   T ,   F,          ! periodic direction?
-  bcz = 's','s','a','a2','c1:cT','cop'
+  !bcz = 's','s','a','a2','c1:cT','cop'
+  bcz = 's','s','a','a2','c1:cT'
 /
 &eos_init_pars
   cs0=0.3, gamma=1.6666666,

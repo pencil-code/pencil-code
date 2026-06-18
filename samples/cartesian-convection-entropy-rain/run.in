@@ -27,8 +27,8 @@
   lconserve_total_mass=T
   lcalc_lnrhomean=T
   lrho_flucz_as_aux=T
-  idiff = 'density-slope-limited'
-  h_sld_dens = 2.0
+  !idiff = 'density-slope-limited'
+  !h_sld_dens = 2.0
 /
 &grav_run_pars
   gravz_profile='const',gravz=-1.
