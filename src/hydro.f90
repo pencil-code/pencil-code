@@ -622,7 +622,7 @@ module Hydro
   integer :: idiag_uyzrms=0     ! DIAG_DOC: $u_{y,z}^{\rm rms}$
   integer :: idiag_uzyrms=0     ! DIAG_DOC: $u_{z,y}^{\rm rms}$
   integer :: idiag_sld_char_rms=0
-  integer :: idiag_coriolis_number=0 ! DIAG_DOC: $\left< \frac{|u \cdot \nabla u|}{\Omega \times u} \right>$
+  integer :: idiag_coriolis_number=0 ! DIAG_DOC: $\left< \frac{|2\boldsymbol\Omega \times \uv|}{|\uv \cdot \nabla \uv|} \right>$
   integer :: idiag_urmsn=0,idiag_urmss=0,idiag_urmsh=0
   integer :: idiag_ormsn=0,idiag_ormss=0,idiag_ormsh=0
   integer :: idiag_oumn=0,idiag_oums=0,idiag_oumh=0
