@@ -1621,7 +1621,7 @@ module General
 !
       if (destLen<srcLen) then
         print*, "safe_character_assign: ", &
-            "RUNTIME ERROR: FORCED STRING TRUNCATION WHEN ASSIGNING '" &
+            "RUNTIME WARNING: FORCED STRING TRUNCATION WHEN ASSIGNING '" &
              //src//"' to ",destLen," characters"
         dest=src(1:destLen)
       else
