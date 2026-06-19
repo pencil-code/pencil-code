@@ -3113,7 +3113,7 @@ module Hydro
         lpenc_diagnos(i_divu)=.true.
         lpenc_diagnos(i_rho)=.true.
       endif
-      if(idiag_coriolis_number /= 0) lpenc_diagnos(i_ugu2) = .true.
+      if (idiag_coriolis_number /= 0) lpenc_diagnos(i_ugu2) = .true.
       if (idiag_Marms/=0 .or. idiag_Mamax/=0) lpenc_diagnos(i_Ma2)=.true.
       if (idiag_u3u21m/=0 .or. idiag_u3u21mz/=0) lpenc_diagnos(i_u3u21)=.true.
       if (idiag_u1u32m/=0 .or. idiag_u1u32mz/=0) lpenc_diagnos(i_u1u32)=.true.
@@ -3446,13 +3446,12 @@ module Hydro
         maxadvec=max(maxadvec,p%advec_uu)
         if (headtt.or.ldebug) print*,'calc_pencils_hydro: max(advec_uu) =',maxval(p%advec_uu)
       endif
-
 !
 ! Coriolis force for diagnostics.
 ! Would be better if coriolis force would always be calculated into a pencil, but that is for future
 !
       if (lcartesian_coords .and. (.not. lrotation_xaxis) .and. lrotation .and. theta==0) then
-        if(idiag_coriolis_number /= 0) then
+        if (idiag_coriolis_number /= 0) then
           coriolis_force(:,1) =  2*Omega*p%uu(:,2)
           coriolis_force(:,2) = -2*Omega*p%uu(:,1)
         endif
@@ -3653,8 +3652,8 @@ module Hydro
 !
 ! del2T
 !
-     if(lpenc_loc(i_del2T)) then
-       if(.not. lconservative) then
+     if (lpenc_loc(i_del2T)) then
+       if (.not. lconservative) then
           call fatal_error('calc_pencils_hydro_nonlinear', 'del2T implemented only for lconservative')
        endif
        call del2v_etc(f,iuu,DEL2=p%del2T)
@@ -4567,7 +4566,6 @@ module Hydro
       real, dimension (nx) :: odel2um,uref,curlo2,qo,quxo,graddivu2
       real, dimension (nx,Nmodes_SH) :: urlm
       real, dimension (nx) :: rmask, lorr
-      real, dimension (nx) :: tmp
       real :: kx,cs201=1.
       integer :: k
 !
@@ -4587,9 +4585,9 @@ module Hydro
           call max_mn_name(Fmax,idiag_taufmin,lreciprocal=.true.)
         endif
 
-        if(idiag_coriolis_number/=0) then
-            call dot2(coriolis_force,tmp)
-            call sum_mn_name(sqrt(tmp/(p%ugu2+tini)),idiag_coriolis_number)
+        if (idiag_coriolis_number/=0) then
+          call dot2(coriolis_force,qo)
+          call sum_mn_name(sqrt(qo/(p%ugu2+tini)),idiag_coriolis_number)
         endif
 !
 ! urlm
@@ -5113,12 +5111,12 @@ module Hydro
             idiag_Rxzdownmz/=0 .or. idiag_Ryzdownmz/=0) then
           where (p%uu(:,3) < 0.)
             uus = p%uu(:,3)
-            uzmask = -p%uu(:,3)/abs(p%uu(:,3))
+            uzmask = 1.
           elsewhere
             uus = 0.
             uzmask = 0.
           endwhere
-          if (idiag_ffdownmz/=0) call xysum_mn_name_z(-uus/abs(p%uu(:,3)),idiag_ffdownmz)
+          if (idiag_ffdownmz/=0) call xysum_mn_name_z(uzmask,idiag_ffdownmz)
           call xysum_mn_name_z(uus,idiag_uzdownmz)
           if (idiag_ruzdownmz/=0) call xysum_mn_name_z(p%rho*uus,idiag_ruzdownmz)
           if (idiag_uz2downmz/=0) call xysum_mn_name_z(uus**2,idiag_uz2downmz)
@@ -5785,7 +5783,7 @@ module Hydro
           rho=hydro_energy/(cs201*lorentz_gamma2-cs20)
           rho_gam21=1./(cs201*rho*lorentz_gamma2+B_ext2)
         else
-          if(.not. lrelativistic) then
+          if (.not. lrelativistic) then
             rho=f(:,m,n,irho)
             rho_gam21=1./rho
           else
@@ -7525,7 +7523,7 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'udpxzm',idiag_udpxzm)
         call parse_name(iname,cname(iname),cform(iname),'taufmin',idiag_taufmin)
         call parse_name(iname,cname(iname),cform(iname),'dtF',idiag_dtF)
-        call parse_name(iname,cname(iname),cform(iname),'coriolis_number',idiag_coriolis_number)
+        call parse_name(iname,cname(iname),cform(iname),'Com',idiag_coriolis_number)
         call parse_name(iname,cname(iname),cform(iname),'nshift',idiag_nshift)
         call parse_name(iname,cname(iname),cform(iname),'uduum',idiag_uduum)
         call parse_name(iname,cname(iname),cform(iname),'frict',idiag_frict)
