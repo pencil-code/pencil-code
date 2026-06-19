@@ -5090,7 +5090,7 @@ module Hydro
             idiag_Ryzupmz/=0) then
           where (p%uu(:,3) > 0.)
             uus = p%uu(:,3)
-            uzmask = p%uu(:,3)/abs(p%uu(:,3))
+            uzmask = 1.
           elsewhere
             uus=0.
             uzmask = 0.
@@ -5484,7 +5484,7 @@ module Hydro
             idiag_Ryzupmxy/=0) then
           where (p%uu(:,1) > 0.)
             uus = p%uu(:,1)
-            uxmask = p%uu(:,1)/abs(p%uu(:,1))
+            uxmask = 1.
           elsewhere
             uus=0.
             uxmask = 0.
@@ -5505,12 +5505,12 @@ module Hydro
             idiag_Rxzdownmxy/=0 .or. idiag_Ryzdownmxy/=0) then
           where (p%uu(:,1) < 0.)
             uus = p%uu(:,1)
-            uxmask = -p%uu(:,1)/abs(p%uu(:,1))
+            uxmask = 1.
           elsewhere
             uus = 0.
             uxmask = 0.
           endwhere
-          if (idiag_ffdownmxy/=0) call zsum_mn_name_xy(-uus/abs(p%uu(:,1)),idiag_ffdownmxy)
+          if (idiag_ffdownmxy/=0) call zsum_mn_name_xy(uxmask,idiag_ffdownmxy)
           Call zsum_mn_name_xy(uus,idiag_uxdownmxy)
           if (idiag_ruxdownmxy/=0) call zsum_mn_name_xy(p%rho*uus,idiag_ruxdownmxy)
           if (idiag_ux2downmxy/=0) call zsum_mn_name_xy(uus**2,idiag_ux2downmxy)
