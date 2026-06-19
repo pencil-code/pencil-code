@@ -327,6 +327,7 @@ integer, parameter :: nadsspec=${\($nadsspec+0)}
 integer, parameter :: nsurfreacspec=${\($nsurfreacspec+0)}
 integer, parameter :: ndustrad=${\($ndustrad+0)}
 integer, parameter :: npartdisp=${\($npartdisp+0)}
+integer, parameter :: n_special_modules=1
 
 EOF
 

@@ -642,6 +642,9 @@ module Cdata
   logical :: lpencil_check_diagnos_opti=.false.
   logical :: lpencil_check_at_work=.false.
   integer :: ipencil_swap=0
+!
+!  Pars for multiple special modules.
+!
   integer :: special_module_index=1
 !
 !  Variables for substepping in time

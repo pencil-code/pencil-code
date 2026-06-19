@@ -138,12 +138,12 @@ program start
   if (.not.lnowrite) then
     allocate(f(mx,my,mz,mfarray),STAT=stat)
     if (stat>0) call fatal_error('start','Could not allocate f')
+    f=huge(1.0)
   endif
 !
 !  Pre-initialize f and df to absurd value (to crash the code should we
 !  later use uninitialized slots of those fields).
 !
-  f=huge(1.0)
   if (lmodify .or. nfilter/=0) then
     allocate(df(mx,my,mz,mvar),STAT=stat)
     if (stat>0) call fatal_error('start','Could not allocate df')
@@ -581,8 +581,8 @@ program start
     endif
     print*
   endif
-  !
-!  Gvie all modules the possibility to exit properly.
+!
+!  Give all modules the possibility to exit properly.
 !
   call finalize_modules(f)
 !

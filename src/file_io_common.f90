@@ -336,14 +336,14 @@ module File_io
 !  18-aug-15/PABourdin: reworked to simplify code and display all errors at once
 !  19-aug-15/PABourdin: renamed from 'read_pars' to 'read_namelist'
 !
-      use Cdata, only: lnamelist_error, lparam_nml, lstart, lroot, iomsglen
+      use Cdata, only: lnamelist_error, lparam_nml, lstart, lroot, iomsglen, n_special_modules
       use General, only: loptest, itoa, ioptest
       use Messages, only: warning
 !
       interface
         subroutine reader(iomsg)
-          use Cparam, only: iomsglen
-          character(LEN=iomsglen), intent(out) :: iomsg
+          use Cparam, only: n_special_modules, iomsglen
+          character(LEN=n_special_modules*iomsglen), intent(out) :: iomsg
         endsubroutine reader
       endinterface
 !
@@ -351,15 +351,15 @@ module File_io
       logical, optional, intent(in) :: lactive
       logical, optional, intent(in) :: loptional
 !
-      character(len=iomsglen) :: msg
+      character(len=n_special_modules*iomsglen) :: msg
       logical :: lfound
       logical :: lnamelist_optional
-      character(len=5) :: type, suffix
+      character(len=12) :: type
       character(len=4) :: run_type
 !
-      lnamelist_optional = loptest(loptional)
-!
       if (.not. loptest (lactive, .true.)) return
+!
+      lnamelist_optional = loptest(loptional)
 !
       if (lstart .or. lparam_nml) then
         run_type = 'init'
@@ -368,16 +368,15 @@ module File_io
       endif
       if (name == 'initial_condition_pars') then
         type = ''
-        suffix = ''
       else
-        type = adjustl(merge(' ','_',name=='')//run_type)
-        suffix = '_pars'
+        type = trim(adjustl(merge(' ','_',name=='')//run_type))//'_pars'
       endif
 !
       !if (.not. find_namelist (trim(name)//trim(type)//trim(suffix))) then
       lfound=.true.
-      if (.not.(trim(name)=='special')) &   ! special modules can be multiple - check existence in reader!
-          call find_namelist (trim(name)//trim(type)//trim(suffix), lfound, lnamelist_optional)
+
+      if (n_special_modules==1) &   ! multiple special modules -> check existence in reader!
+          call find_namelist(trim(name)//trim(type), lfound, lnamelist_optional)
 
       if (.not. lfound) then
         if (.not.lnamelist_optional) then
@@ -387,17 +386,18 @@ module File_io
         return
       endif
 !
-      ! G95 complains 'ierr' is used but not set, even though 'reader' has intent(out).
-      ! PABourdin:
-      ! Yes, because 'reader' is here a function *pointer* and it can not be verified whether the actual reader has intent(out).
       msg=""
       call reader(msg)
 !
       if (msg /= "") then
-!
         lnamelist_error = .true.
-        call warning ('read_namelist', 'namelist "'//trim(name)//trim(type)//trim(suffix)// &
-                      '" has an error: '//trim(msg))
+        if (n_special_modules>1) then
+          call warning('read_namelist','namelist(s) "'//trim(name)//trim(type)//'" have an error: '//trim(msg))
+          if (lroot.and.index(msg,'end-of-file')/=0) &
+              print*,'             something like "read past end-of-file" indicates missing namelist.' 
+        else
+          call warning('read_namelist','namelist "'//trim(name)//trim(type)//'" has an error: '//trim(msg))
+        endif
       endif
 !
       call parallel_rewind
