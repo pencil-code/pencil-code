@@ -936,6 +936,8 @@ module Snapshot
         if (ja_spec)  call powerhel(f,'j.a',lfirstcall_powerhel) !(for now, use this instead) ! now does j.b spectra
         if (Lor_spec) call powerLor(f,'Lor')
         if (aBE_spec) call poweraBE(f,'aBE')
+        if (ABE2_spec) call poweraBE(f,'ABE') !(scalar variant of 'aBE')
+        if (uBE_spec) call poweraBE(f,'uBE') !(E^2 and E.uxB spectra)
         if (OmU_spec) call powerOmU(f,'OmU')
         if (EMF_spec) call powerEMF(f,'EMF')
         if (Tra_spec) call powerTra(f,'Tra')

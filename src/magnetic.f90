@@ -7156,7 +7156,6 @@ print*,'AXEL2: should not be here (eta) ... '
 !
 !  Not correct for hyperresistivity:
 !
-      
       if (idiag_epsM/=0) call sum_mn_name(eta_total*mu0*p%j2,idiag_epsM)
       if (idiag_epsM2/=0) call sum_mn_name((eta_total*mu0*p%j2)**2,idiag_epsM2)
       if (idiag_epsM3/=0) call sum_mn_name((eta_total*mu0*p%j2)**3,idiag_epsM3)

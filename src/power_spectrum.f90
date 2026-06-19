@@ -2892,7 +2892,7 @@ outer:do ikz=1,nz
     use Sub, only: gij, gij_etc, curl_mn, cross_mn
 !
     integer, parameter :: nk=nxgrid/2
-    integer :: k,ikx,iky,ikz,ivec
+    integer :: k,ikx,iky,ikz,ivec,nvec
     real :: k2
     real, contiguous,dimension(:,:,:,:) :: f
     real, save, allocatable, dimension (:,:,:,:) :: BBB
@@ -2924,7 +2924,7 @@ outer:do ikz=1,nz
     spectrumhel=0.
     !$omp end workshare
 !
-!  compute EMFentz force
+!  compute contributions to magnetic energy.
 !
     !$omp do collapse(2)
     do m_loc=m1,m2
@@ -2934,16 +2934,30 @@ outer:do ikz=1,nz
       dphi=f(l1:l2,m,n,ispecialvar2)
       call gij(f,iaa,aij,1)
       call curl_mn(aij,bb,aa)
-      BBB(l1:l2,m,n,1)=dphi*bb(:,1)
-      BBB(l1:l2,m,n,2)=dphi*bb(:,2)
-      BBB(l1:l2,m,n,3)=dphi*bb(:,3)
+      if (sp=='aBE') then
+        nvec=3
+        BBB(l1:l2,m,n,1)=dphi*bb(:,1)
+        BBB(l1:l2,m,n,2)=dphi*bb(:,2)
+        BBB(l1:l2,m,n,3)=dphi*bb(:,3)
+      elseif (sp=='ABE') then
+        nvec=1
+        BBB(l1:l2,m,n,1)=f(l1:l2,m,n,ispecialvar2)
+        BBB(l1:l2,m,n,2)=bb(:,1)*f(l1:l2,m,n,iex) &
+                        +bb(:,2)*f(l1:l2,m,n,iey) &
+                        +bb(:,3)*f(l1:l2,m,n,iez)
+      elseif (sp=='uBE') then
+        nvec=3
+        BBB(l1:l2,m,n,1)=f(l1:l2,m,n,iuy)*bb(:,3)-f(l1:l2,m,n,iuz)*bb(:,2)
+        BBB(l1:l2,m,n,2)=f(l1:l2,m,n,iuz)*bb(:,1)-f(l1:l2,m,n,iux)*bb(:,3)
+        BBB(l1:l2,m,n,3)=f(l1:l2,m,n,iux)*bb(:,2)-f(l1:l2,m,n,iuy)*bb(:,1)
+      endif
     enddo
     enddo
     !$omp end parallel
 !
 !  loop over all the components
 !
-    do ivec=1,3
+    do ivec=1,nvec
 !$omp parallel private(k,k2) num_threads(num_helper_threads) &
 !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
 !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
@@ -2955,6 +2969,22 @@ outer:do ikz=1,nz
         !$omp workshare
         a_re=BBB(l1:l2,m1:m2,n1:n2,ivec)
         b_re=f(l1:l2,m1:m2,n1:n2,iee+ivec-1)
+        a_im=0.
+        b_im=0.
+        !$omp end workshare
+!
+      elseif (sp=='ABE') then
+        !$omp workshare
+        a_re=BBB(l1:l2,m1:m2,n1:n2,1)
+        b_re=BBB(l1:l2,m1:m2,n1:n2,2)
+        a_im=0.
+        b_im=0.
+        !$omp end workshare
+!
+      elseif (sp=='uBE') then
+        !$omp workshare
+        a_re=f(l1:l2,m1:m2,n1:n2,iee+ivec-1)
+        b_re=BBB(l1:l2,m1:m2,n1:n2,ivec)
         a_im=0.
         b_im=0.
         !$omp end workshare
@@ -3001,7 +3031,7 @@ outer:do ikz=1,nz
       enddo
 !
     !$omp end parallel
-    enddo !  do ivec=1,3
+    enddo !  do ivec=1,3 (or nvec)
 !
 !  Summing up the results from the different processors
 !  The result is available only on root

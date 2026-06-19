@@ -823,7 +823,7 @@ module Cdata
   logical :: ux_spec=.false., uy_spec=.false., uz_spec=.false., a0_spec=.false., ucp_spec=.false.
   logical :: ou_spec=.false., ab_spec=.false., azbz_spec=.false., uzs_spec=.false.
   logical :: ub_spec=.false., Lor_spec=.false., OmU_spec=.false., EMF_spec=.false., Tra_spec=.false.
-  logical :: aBE_spec=.false.
+  logical :: aBE_spec=.false., ABE2_spec=.false., uBE_spec=.false.
   logical :: GWs_spec=.false., GWh_spec=.false., GWm_spec=.false., Str_spec=.false., Stg_spec=.false.
   logical :: Gab_spec=.false., Gan_spec=.false., GBb_spec=.false.
   logical :: GWs_spec_boost=.false., GWh_spec_boost=.false.
