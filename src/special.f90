@@ -390,11 +390,12 @@
 !
       use File_io, only: parallel_rewind
 
-      character(LEN=n_special_modules*iomsglen), intent(inout) :: iomsg
+      character(LEN=n_special_modules*iomsglen), intent(out) :: iomsg
 !
       integer :: i
       character(LEN=iomsglen) :: msg
 !
+      iomsg=''
       do i=1,n_special_modules
         call caller2(special_sub_handles(i,I_READ_SPECIAL_RUN_PARS),msg,iomsglen)
         if (msg/='') then
