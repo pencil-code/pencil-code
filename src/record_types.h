@@ -72,4 +72,5 @@ integer, parameter :: id_record_SPECIAL_LNKMIN0  = 340
 integer, parameter :: id_record_DT_GW            = 350
 
 ! special/backreact_infl.f90
-integer, parameter :: id_record_LSOLVE_FOR_PHI          = 360
+integer, parameter :: id_record_LHEATING_ALWAYS  = 360
+integer, parameter :: id_record_LSOLVE_FOR_PHI   = 361
