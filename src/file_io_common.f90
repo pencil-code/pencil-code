@@ -393,7 +393,7 @@ module File_io
         lnamelist_error = .true.
         if (n_special_modules>1) then
           call warning('read_namelist','namelist(s) "'//trim(name)//trim(type)//'" have an error: '//trim(msg))
-          if (lroot.and.(index(msg,'end-of-file') .or. index(msg,'end of file'))/=0) &
+          if (lroot.and.(index(msg,'end-of-file')/=0 .or. index(msg,'end of file')/=0)) &
               print*,'             something like "past end of file" indicates missing namelist.'
         else
           call warning('read_namelist','namelist "'//trim(name)//trim(type)//'" has an error: '//trim(msg))
