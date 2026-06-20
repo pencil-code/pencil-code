@@ -343,7 +343,7 @@ module File_io
       interface
         subroutine reader(iomsg)
           use Cparam, only: n_special_modules, iomsglen
-          character(LEN=n_special_modules*iomsglen), intent(out) :: iomsg
+          character(LEN=*), intent(out) :: iomsg
         endsubroutine reader
       endinterface
 !
@@ -393,8 +393,8 @@ module File_io
         lnamelist_error = .true.
         if (n_special_modules>1) then
           call warning('read_namelist','namelist(s) "'//trim(name)//trim(type)//'" have an error: '//trim(msg))
-          if (lroot.and.index(msg,'end-of-file')/=0) &
-              print*,'             something like "read past end-of-file" indicates missing namelist.' 
+          if (lroot.and.(index(msg,'end-of-file') .or. index(msg,'end of file'))/=0) &
+              print*,'             something like "past end of file" indicates missing namelist.'
         else
           call warning('read_namelist','namelist "'//trim(name)//trim(type)//'" has an error: '//trim(msg))
         endif
