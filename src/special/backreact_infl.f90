@@ -288,6 +288,7 @@ module Special
       call put_shared_variable('sigBm_all',sigBm_all,caller='register_backreact_infl')
       call put_shared_variable('echarge',echarge,caller='register_backreact_infl')
       call put_shared_variable('lrho_chi',lrho_chi)
+print*,'AXEL1: lheating_always=',lheating_always
 !
     endsubroutine register_special
 !***********************************************************************
@@ -706,6 +707,7 @@ module Special
 !  to rename lheating -> lheating_phi. The switch lheating_always is false by default
 !  and set to true after the first time lheating is true and if lheating_keep_on is true.
 !
+print*,'AXEL9: lheating_always=',lheating_always
       if (lheating .or. lheating_always) then
         if (lsmooth_Gamma_phi) then
           Gamma_phi=Gamma_phi0*.5*(1.+tanh((ascale-ascale_heat)/ascale_heat_width))
@@ -1145,7 +1147,9 @@ module Special
       logical, intent(inout) :: done
 !
       select case (id)
-        ! for backwards-compatibility (deprecated):
+        case (id_record_LHEATING_ALWAYS)
+          read (lun_input) lheating_always
+          done = .false.
         case (id_record_LSOLVE_FOR_PHI)
           read (lun_input) lsolve_for_phi
           done = .false.
@@ -1155,13 +1159,16 @@ module Special
 !*****************************************************************************
     subroutine input_persist_special()
 !
-!  Read in the stored time of the next SNI.
+!  Read in the stored time for lheating_always, lsolve_for_phi, etc.
 !
 !  12-Oct-2019/PABourdin: coded
 !
       use IO, only: read_persist
 !
       logical :: error
+!
+      error = read_persist ('LHEATING_ALWAYS', lheating_always)
+      if (lroot .and. .not. error) print *, 'input_persist_special: lheating_always = ', lheating_always
 !
       error = read_persist ('LSOLVE_FOR_PHI', lsolve_for_phi)
       if (lroot .and. .not. error) print *, 'input_persist_special: lsolve_for_phi = ', lsolve_for_phi
@@ -1178,6 +1185,8 @@ module Special
       use IO, only: write_persist
 !
       output_persistent_special = .true.
+!
+      if (write_persist ('LHEATING_ALWAYS', id_record_LHEATING_ALWAYS, lheating_always)) return
 !
       if (write_persist ('LSOLVE_FOR_PHI', id_record_LSOLVE_FOR_PHI, lsolve_for_phi)) return
 !
@@ -1503,10 +1512,12 @@ module Special
         endif
       endif
 !
-!  Alternatitives for deciding when to turn on heating.
+!  Alternatitives for deciding when to turn on reheating.
 !  Usually, this is done when the end of inflation occurs, i.e., Hscript_max=max.
-!  If lheating_keep_on=T (default), this criterion is evaluated only once.
+!  If lheating_keep_on=T (default), this criterion is evaluated only once,
+!  because it sets lheating_always=T, so no further checks are done.
 !  If it is false, it keeps checking, which also affects the 0d-tests/reheating autotest.
+!  Must have lheating_always as persist.
 !
       select case (heating_choice)
         case ('Hscript_max')
