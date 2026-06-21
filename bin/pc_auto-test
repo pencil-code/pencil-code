@@ -2167,7 +2167,7 @@ sub mark_failed {
         print "===> Test failed at latest with revision:\n";
         print "SVN: ".get_SVN_revision ($last)."\n";
         my $commit = get_GIT_commit ($last);
-        if ($log_dir) {
+        if ($log_dir && ($commit !~ /[ \.\-]/s)) {
             print 'GIT: <a href="'.$base_URL.'commit/'.$commit.'">'.$commit."</a>\n";
         }
         else {
