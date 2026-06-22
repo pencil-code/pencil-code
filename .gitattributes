@@ -3095,6 +3095,7 @@ samples/bonnor_ebert_sphere/src/cparam.local -text
 samples/bonnor_ebert_sphere/start.in -text
 samples/bonnor_ebert_sphere/video.in -text
 samples/bonnor_ebert_sphere/video.insv -text
+samples/cartesian-convection-entropy-rain/NEVERLOCK -text
 samples/cartesian-convection-kramers/README -text
 samples/cartesian-convection-kramers/print.in -text
 samples/cartesian-convection-kramers/reference.out -text
