@@ -280,6 +280,7 @@ module Hydro
   logical :: lcalc_uumeanx=.false.,lcalc_uumeany=.false.,lcalc_uumeanxz=.false.
   logical :: lcalc_ruumeanz=.false.,lcalc_ruumeanxy=.false.
   logical :: lforcing_cont_uu=.false.
+  logical :: lforcing_cont_uu_diff=.false.   !PAR_DOC: forcing with respect the velocity difference
   integer :: iforcing_cont_uu=0
   logical :: lcoriolis_xdep=.false.
   logical :: lno_meridional_flow=.false.
@@ -330,7 +331,7 @@ module Hydro
       lconservative_pressure_on_rhs,&
       lcalc_uumean, lcalc_uumeanx, lcalc_uumeanxy, lcalc_uumeanxz, lcalc_uumeanz, &
       lcalc_ruumeanz, lcalc_ruumeanxy, &
-      lforcing_cont_uu, width_ff_uu, x1_ff_uu, x2_ff_uu, &
+      lforcing_cont_uu, lforcing_cont_uu_diff, width_ff_uu, x1_ff_uu, x2_ff_uu, &
       loo_as_aux, luut_as_aux, luust_as_aux, loot_as_aux, loost_as_aux, &
       luij_test, luij_as_aux, llorentz_as_aux, loutest, ldiffrot_test, &
       interior_bc_hydro_profile, lhydro_bc_interior, z1_interior_bc_hydro, &
@@ -575,6 +576,7 @@ module Hydro
   integer :: idiag_qmax=0       ! DIAG_DOC: $\max(|\qv|)$
   integer :: idiag_qom=0        ! DIAG_DOC: $\left<\qv\cdot\omv\right>$
   integer :: idiag_quxom=0      ! DIAG_DOC: $\left<\qv\cdot(\uv\times\omv)\right>$
+  integer :: idiag_qsglnrhom=0  ! DIAG_DOC: $\left<\qv\cdot\bm{G}\right>$
   integer :: idiag_oglnrxgdum=0 ! DIAG_DOC: $\left<\boldsymbol{\omega}\cdot(\ln\varrho)\times\nabla\nablacdot\uv\right>$
   integer :: idiag_qezxum=0     ! DIAG_DOC: $\left< (\boldsymbol{e_z} \times \mathbf{u}) \cdot \mathbf{q} \right>$
   integer :: idiag_quysm=0      ! DIAG_DOC: $\left< \frac{1}{\tau} (u_y^S - u_y) \mathbf{\hat{y}} \cdot \mathbf{q} \right>$
@@ -1220,6 +1222,11 @@ module Hydro
         if (iforcing_cont_uu==0) &
           call fatal_error('initialize_hydro','no valid continuous forcing available')
       endif
+!
+!  Block use of lforcing_cont_uu_diff if lforcing_cont_uu=F.
+!
+      if (lforcing_cont_uu_diff .and. .not. lforcing_cont_uu) &
+        call fatal_error('initialize_hydro','must put lforcing_cont_uu=T')
 !
 !  Calculate cosz*sinz, cos^2, and sinz^2, to take moments with
 !  of ux2, uxuy, etc.
@@ -3092,13 +3099,15 @@ module Hydro
           idiag_oxoym/=0 .or. idiag_oxozm/=0 .or. idiag_oyozm/=0 .or. &
           idiag_oxuzxm/=0 .or. idiag_oyuzym/=0 .or. idiag_pvzm /=0 .or. &
           idiag_quxom/=0 .or. idiag_qezxum/=0 .or. idiag_quysm/=0 .or. &
-          idiag_jxbrqm/=0 .or. idiag_oglnrxgdum/=0) lpenc_diagnos(i_oo)=.true.
+          idiag_jxbrqm/=0 .or. idiag_oglnrxgdum/=0 .or. idiag_qsglnrhom/=0) lpenc_diagnos(i_oo)=.true.
       if (idiag_oglnrxgdum/=0) lpenc_diagnos(i_glnrho)=.true.
       if (idiag_orms/=0 .or. idiag_omax/=0 .or. idiag_o2m/=0 .or. idiag_o2u2m/=0 .or. idiag_o2sphm/=0 .or. &
           idiag_ormsh/=0 .or. idiag_o2mz/=0 ) lpenc_diagnos(i_o2)=.true.
       if (idiag_q2m/=0 .or. idiag_qrms/=0 .or. idiag_qmax/=0 .or. idiag_qfm/=0 .or. &
-          idiag_qom/=0 .or. idiag_quxom/=0 .or. idiag_qezxum/=0 .or. idiag_quysm/=0 .or. idiag_jxbrqm/=0) &
+          idiag_qom/=0 .or. idiag_quxom/=0 .or. idiag_qezxum/=0 .or. idiag_quysm/=0 .or. &
+          idiag_jxbrqm/=0 .or. idiag_qsglnrhom/=0) &
           lpenc_diagnos(i_curlo)=.true.
+      if (idiag_qsglnrhom/=0) lpenc_diagnos(i_sglnrho)=.true.
       if (idiag_divu2m/=0 .or. idiag_divu2mz/=0 .or. idiag_divru2mz/=0 .or. &
           idiag_divum/=0 .or. idiag_rdivum/=0) lpenc_diagnos(i_divu)=.true.
       if (idiag_rdivum/=0 .or. idiag_fkinzm/=0 .or. idiag_ruzupmz/=0 .or. idiag_ruzdownmz/=0) &
@@ -4478,9 +4487,14 @@ module Hydro
       endif
 !
 !  Add possibility of forcing that is not delta-correlated in time.
+!  If lforcing_cont_uu_diff=T, then we force with respect to the difference.
 !
       if (lforcing_cont_uu) then
-        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz) + ampl_fcont_uu*p%fcont(:,:,iforcing_cont_uu)
+        if (lforcing_cont_uu_diff) then
+          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz) + ampl_fcont_uu*(p%fcont(:,:,iforcing_cont_uu)-p%uu)
+        else
+          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz) + ampl_fcont_uu*p%fcont(:,:,iforcing_cont_uu)
+        endif
       endif
 !
 !  Damp motions in some regions for some time spans if desired.
@@ -4932,6 +4946,13 @@ module Hydro
           call cross(p%uu,p%oo,uxo)
           call dot(p%curlo,uxo,quxo)
           call sum_mn_name(quxo,idiag_quxom)
+        endif
+!
+!  For <2*nu*q.sglnrho>, we need qsglnrhom
+!
+        if (idiag_qsglnrhom/=0) then
+          call dot(p%curlo,p%sglnrho,tmp)
+          call sum_mn_name(tmp,idiag_qsglnrhom)
         endif
 !
 !  <o.(glnr x gdu)>
@@ -7165,6 +7186,7 @@ module Hydro
         idiag_qmax=0
         idiag_qom=0
         idiag_quxom=0
+        idiag_qsglnrhom=0
         idiag_oglnrxgdum=0
         idiag_qezxum=0
         idiag_quysm=0
@@ -7451,6 +7473,7 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'qmax',idiag_qmax)
         call parse_name(iname,cname(iname),cform(iname),'qom',idiag_qom)
         call parse_name(iname,cname(iname),cform(iname),'quxom',idiag_quxom)
+        call parse_name(iname,cname(iname),cform(iname),'qsglnrhom',idiag_qsglnrhom)
         call parse_name(iname,cname(iname),cform(iname),'oglnrxgdum',idiag_oglnrxgdum)
         call parse_name(iname,cname(iname),cform(iname),'qezxum',idiag_qezxum)
         call parse_name(iname,cname(iname),cform(iname),'quysm',idiag_quysm)

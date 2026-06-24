@@ -1551,6 +1551,7 @@ module Viscosity
 !  [AB: this may not correspond to a symmetric stress tensor]
 !  PJK: 21-09-13 modified to include the missing term
 !  viscous force: mu/sqrt(rho)*(del2u+graddivu/3+S.glnrho)
+!  Is there a factor 2 missing in front of sglnrho?
 !
       if (lvisc_sqrtrho_nu_const) then
         murho1=nu*sqrt(p%rho1)
