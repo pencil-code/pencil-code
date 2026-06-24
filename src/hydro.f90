@@ -9372,6 +9372,7 @@ module Hydro
     call keep_compiler_quiet(x2_ff_uu)
 
     call copy_addr(idiag_coriolis_number,p_par(133)) ! int
+    call copy_addr(lforcing_cont_uu_diff,p_par(134)) ! bool
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Hydro
