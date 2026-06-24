@@ -575,6 +575,7 @@ module Hydro
   integer :: idiag_qmax=0       ! DIAG_DOC: $\max(|\qv|)$
   integer :: idiag_qom=0        ! DIAG_DOC: $\left<\qv\cdot\omv\right>$
   integer :: idiag_quxom=0      ! DIAG_DOC: $\left<\qv\cdot(\uv\times\omv)\right>$
+  integer :: idiag_oglnrxgdum=0 ! DIAG_DOC: $\left<\boldsymbol{\omega}\cdot(\ln\varrho)\times\nabla\nablacdot\uv\right>$
   integer :: idiag_qezxum=0     ! DIAG_DOC: $\left< (\boldsymbol{e_z} \times \mathbf{u}) \cdot \mathbf{q} \right>$
   integer :: idiag_quysm=0      ! DIAG_DOC: $\left< \frac{1}{\tau} (u_y^S - u_y) \mathbf{\hat{y}} \cdot \mathbf{q} \right>$
   integer :: idiag_jxbrqm=0     ! DIAG_DOC: $\left<(\Jv\times\Bv/\rho)\cdot\mathbf{q}\right>$
@@ -3090,8 +3091,9 @@ module Hydro
           idiag_oxm /=0 .or. idiag_oym /=0 .or. idiag_ozm /=0 .or. &
           idiag_oxoym/=0 .or. idiag_oxozm/=0 .or. idiag_oyozm/=0 .or. &
           idiag_oxuzxm/=0 .or. idiag_oyuzym/=0 .or. idiag_pvzm /=0 .or. &
-          idiag_quxom/=0 .or. idiag_qezxum/=0 .or. idiag_quysm/=0 .or. idiag_jxbrqm/=0) &
-          lpenc_diagnos(i_oo)=.true.
+          idiag_quxom/=0 .or. idiag_qezxum/=0 .or. idiag_quysm/=0 .or. &
+          idiag_jxbrqm/=0 .or. idiag_oglnrxgdum/=0) lpenc_diagnos(i_oo)=.true.
+      if (idiag_oglnrxgdum/=0) lpenc_diagnos(i_glnrho)=.true.
       if (idiag_orms/=0 .or. idiag_omax/=0 .or. idiag_o2m/=0 .or. idiag_o2u2m/=0 .or. idiag_o2sphm/=0 .or. &
           idiag_ormsh/=0 .or. idiag_o2mz/=0 ) lpenc_diagnos(i_o2)=.true.
       if (idiag_q2m/=0 .or. idiag_qrms/=0 .or. idiag_qmax/=0 .or. idiag_qfm/=0 .or. &
@@ -3103,7 +3105,9 @@ module Hydro
           lpenc_diagnos(i_rho)=.true.
       if (idiag_ruxupmxy/=0 .or. idiag_ruxdownmxy/=0) &
           lpenc_diagnos2d(i_rho)=.true.
-      if (idiag_gdivu2m/=0) lpenc_diagnos(i_graddivu)=.true.
+      if (idiag_gdivu2m/=0 .or. idiag_oglnrxgdum/=0) lpenc_diagnos(i_graddivu)=.true.
+!AB: need this line because of missing pencil complaint
+      if (idiag_gdivu2m/=0 .or. idiag_oglnrxgdum/=0) lpenc_diagnos(i_curlo)=.true.
       if (idiag_oum/=0 .or. idiag_ourms/=0 .or. idiag_oumx/=0 .or. idiag_oumy/=0 .or. &
            idiag_oumz/=0 .or. idiag_oumh/=0 .or. idiag_ou_int/=0 ) lpenc_diagnos(i_ou)=.true.
       if (idiag_oxum/=0) lpenc_diagnos(i_oxu)=.true.
@@ -4561,9 +4565,9 @@ module Hydro
       real, dimension(:,:,:,:) :: f
       type(pencil_case), intent(in) :: p
 !
-      real, dimension (nx,3) :: uxo
+      real, dimension (nx,3) :: uxo, tmpv
       real, dimension (nx) :: space_part_re,space_part_im,u2t,uot,out,fu
-      real, dimension (nx) :: odel2um,uref,curlo2,qo,quxo,graddivu2
+      real, dimension (nx) :: odel2um, uref, curlo2, qo, quxo, graddivu2, tmp
       real, dimension (nx,Nmodes_SH) :: urlm
       real, dimension (nx) :: rmask, lorr
       real :: kx,cs201=1.
@@ -4928,6 +4932,14 @@ module Hydro
           call cross(p%uu,p%oo,uxo)
           call dot(p%curlo,uxo,quxo)
           call sum_mn_name(quxo,idiag_quxom)
+        endif
+!
+!  <o.(glnr x gdu)>
+!
+        if (idiag_oglnrxgdum/=0) then
+          call cross(p%glnrho,p%graddivu,tmpv)
+          call dot(p%curlo,tmpv,tmp)
+          call sum_mn_name(tmp,idiag_oglnrxgdum)
         endif
 
         if (idiag_qezxum/=0) then
@@ -7153,6 +7165,7 @@ module Hydro
         idiag_qmax=0
         idiag_qom=0
         idiag_quxom=0
+        idiag_oglnrxgdum=0
         idiag_qezxum=0
         idiag_quysm=0
         idiag_jxbrqm=0
@@ -7438,6 +7451,7 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'qmax',idiag_qmax)
         call parse_name(iname,cname(iname),cform(iname),'qom',idiag_qom)
         call parse_name(iname,cname(iname),cform(iname),'quxom',idiag_quxom)
+        call parse_name(iname,cname(iname),cform(iname),'oglnrxgdum',idiag_oglnrxgdum)
         call parse_name(iname,cname(iname),cform(iname),'qezxum',idiag_qezxum)
         call parse_name(iname,cname(iname),cform(iname),'quysm',idiag_quysm)
         call parse_name(iname,cname(iname),cform(iname),'jxbrqm',idiag_jxbrqm)
