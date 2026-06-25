@@ -3605,7 +3605,6 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
     call keep_compiler_quiet(lno_transverse_part)
     call keep_compiler_quiet(aux_stress)
 
-
     endsubroutine pushpars2c
 !***********************************************************************
 !***********************************************************************

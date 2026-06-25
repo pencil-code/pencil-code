@@ -375,7 +375,7 @@ module File_io
       !if (.not. find_namelist (trim(name)//trim(type)//trim(suffix))) then
       lfound=.true.
 
-      if (n_special_modules==1) &   ! multiple special modules -> check existence in reader!
+      if (name/='special' .or. n_special_modules==1) &   ! multiple special modules -> check existence in reader!
           call find_namelist(trim(name)//trim(type), lfound, lnamelist_optional)
 
       if (.not. lfound) then
@@ -391,9 +391,9 @@ module File_io
 !
       if (msg /= "") then
         lnamelist_error = .true.
-        if (n_special_modules>1) then
+        if (name=='special' .and. n_special_modules>1) then
           call warning('read_namelist','namelist(s) "'//trim(name)//trim(type)//'" have an error: '//trim(msg))
-          if (lroot.and.(index(msg,'end-of-file')/=0 .or. index(msg,'end of file')/=0)) &
+          if (lroot.and.(index(msg,'nd-of-file')/=0 .or. index(msg,'nd of file')/=0)) &
               print*,'             something like "past end of file" indicates missing namelist.'
         else
           call warning('read_namelist','namelist "'//trim(name)//trim(type)//'" has an error: '//trim(msg))

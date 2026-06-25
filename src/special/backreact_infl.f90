@@ -1895,7 +1895,7 @@ print*,'AXEL9: lheating_always=',lheating_always
     use Syscalls, only: copy_addr
     use General , only: string_to_enum
 
-    integer, parameter :: n_pars=50
+    integer, parameter :: n_pars=60
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call string_to_enum(enum_hscript_choice,hscript_choice)
@@ -1963,6 +1963,7 @@ print*,'AXEL9: lheating_always=',lheating_always
     call copy_addr(ascale_heat,p_par(49))
     call copy_addr(ascale_heat_width,p_par(50))
     call copy_addr(lsmooth_gamma_phi,p_par(51)) ! bool
+
     endsubroutine pushpars2c
 !********************************************************************
 !********************************************************************
