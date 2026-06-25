@@ -22,7 +22,6 @@ import time
 import re
 import sys
 
-
 #from scipy.io import FortranFile
 from .fortran_file import FortranFileExt
 
@@ -194,14 +193,16 @@ class DataCube(object):
         if timing:
             start_time = time.time()
 
+        param1 = var_file=='VAR0' or var_file=='VAR0.h5'
+
         if sim is None:
             datadir = os.path.expanduser(datadir)
-            dim = read.dim(datadir, proc)
-            param = read.param(datadir=datadir, quiet=quiet, conflicts_quiet=True)
-            index = read.index(datadir=datadir)
+            param = read.param(datadir=datadir, param1=param1, quiet=quiet, conflicts_quiet=True)
+            dim = read.dim(datadir, proc, param=param)
+            index = read.index(datadir=datadir, param=param)
 
             try:
-                grid = read.grid(datadir=datadir, quiet=True, proc=proc)
+                grid = read.grid(datadir=datadir, quiet=True, proc=proc, param=param)
             except FileNotFoundError:
                 # KG: Handling this case because there is no grid.dat in `tests/input/serial-1/proc0` and we don't want the test to fail. Should we just drop this and add a grid.dat in the test input?
                 warnings.warn("Grid.dat not found. Assuming the grid is uniform.")
@@ -209,19 +210,17 @@ class DataCube(object):
         else:
             datadir = os.path.expanduser(sim.datadir)
             dim = sim.dim
-            param = read.param(datadir=datadir, quiet=True, conflicts_quiet=True)
-            index = read.index(datadir=datadir)
-            grid = read.grid(datadir=datadir, quiet=True) # we can't use sim.grid because we want the untrimmed one
+            param = read.param(datadir=datadir, param1=param1, quiet=True, conflicts_quiet=True)
+            index = read.index(datadir=datadir,param=param)
+            grid = read.grid(datadir=datadir, quiet=True, param=param) # we can't use sim.grid because we want the untrimmed one
 
         if param.io_strategy[-1] == '/': param.io_strategy = param.io_strategy[:-1]    # because of Python 3.10.10 bug!
 
         if var_file[0:2].lower() == "og":
             dim = read.ogdim(datadir, proc)
         elif var_file[0:4] == "VARd":
-            dim = read.dim(datadir, proc, down=True)
-            warnings.warn(
-                "Reading downsampled grid is currently not implemented. Assuming the grid is uniform."
-            )
+            dim = read.dim(datadir, proc, down=True, param=param)
+            warnings.warn("Reading downsampled grid is currently not implemented. Assuming uniform grid.")
             grid = None
 
         if var_list is not None:
@@ -777,9 +776,9 @@ class DataCube(object):
                     procdim = read.ogdim(datadir, proc)
                 else:
                     if var_file[0:4] == "VARd":
-                        procdim = read.dim(datadir, proc, down=True)
+                        procdim = read.dim(datadir, proc, down=True, param=param)
                     else:
-                        procdim = read.dim(datadir, proc)
+                        procdim = read.dim(datadir, proc, param=param)
                 if not quiet:
                     print(  "Reading data from processor"
                             + " {0} of {1} ...".format(proc, len(proc_dirs)))

@@ -80,7 +80,7 @@ class Grid(object):
         if param.io_strategy == "HDF5":
             import h5py
 
-            dim = read.dim(datadir, proc)
+            dim = read.dim(datadir, proc, param=param)
 
             if os.path.exists(os.path.join(datadir, "grid.h5")):
                 filename = os.path.join(datadir, "grid.h5")
@@ -107,8 +107,9 @@ class Grid(object):
                 t = dtype(0.0)
         else:
             datadir = os.path.expanduser(datadir)
-            dim = read.dim(datadir, proc)
-            param = read.param(datadir=datadir, quiet=True, conflicts_quiet=True)
+            dim = read.dim(datadir, proc, param=param)
+            if not param:
+                param = read.param(datadir=datadir, quiet=True, conflicts_quiet=True)
             if dim.precision == "D":
                 read_precision = "d"
             else:
@@ -143,7 +144,7 @@ class Grid(object):
             for directory in proc_dirs:
                 if not param.lcollective_io:
                     proc = int(directory[4:])
-                    procdim = read.dim(datadir, proc)
+                    procdim = read.dim(datadir, proc, param=param)
                     if not quiet:
                         print(
                             "reading grid data from processor"

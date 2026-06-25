@@ -81,7 +81,7 @@ class Index(object):
         if param is None:
             param = read.param(datadir=datadir, quiet=True)
         if dim is None:
-            dim = read.dim(datadir=datadir)
+            dim = read.dim(datadir=datadir, param=param)
 
         if not filename:
             filename = "index.pro"

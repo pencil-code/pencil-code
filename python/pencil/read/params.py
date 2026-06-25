@@ -110,11 +110,11 @@ class Param(_Foo):
                 raise ValueError("read.params: no such file {0}.".format(filen))
 
         # Read the parameters into a dictionary.
-        param_list = dict()
+        param_list = dict()              # dict for paramter values with key=name
         # Construct object from dictionary with Python
         if asdict:
-            super_name_list = list()
-            name_list = list()
+            super_name_list = list()     # list of namelist names
+            name_list = list()           # list of parameter names
             param_conflicts = dict()
             # If nest_dict is False, parameters which share names will be overwritten by the last value
             for filen in files:
@@ -131,8 +131,7 @@ class Param(_Foo):
                     super_name_list,
                     nest = nest_dict,
                 )
-
-            subkey_list = list() #list of conflicting keys
+            subkey_list = list()               #list of conflicting parameter names
             for super_name in super_name_list:
                 if super_name in param_conflicts:
                     for subkey in param_conflicts[super_name]:
@@ -161,19 +160,22 @@ class Param(_Foo):
 
             if not conflicts_quiet:
                 # report conflicts and record nests to retain
+                seen_list=list()
                 for key in param_conflicts:
-                    for subkey in param_conflicts[key]:
-                        print(
-                            subkey,
-                            "as",
-                            param_conflicts[key][subkey][0],
-                            "in",
-                            key,
-                            "conflicts with",
-                            param_conflicts[key][subkey][2],
-                            "in",
-                            param_conflicts[key][subkey][1],
-                        )
+                    if not key in seen_list:                        #avoid double report
+                        for subkey in param_conflicts[key]:
+                            print( subkey,                          #parameter name
+                                   "as",
+                                   param_conflicts[key][subkey][0], #value 1
+                                   "in",
+                                   key,                             #namelist 1
+                                   "conflicts with",
+                                   param_conflicts[key][subkey][2], #value 2
+                                   "in",
+                                   param_conflicts[key][subkey][1], #namelist 2
+                                   "\n"
+                                 )
+                            seen_list.append(param_conflicts[key][subkey][1])
 
             # Construct class Params object attributes
             for key in param_list:
@@ -188,6 +190,7 @@ class Param(_Foo):
                 else:
                     # Unique parameters saved unnested
                     setattr(self, key, param_list[key])
+
             if not quiet:
                 print(param_list)
         # Construct object by calling external perl script
@@ -396,8 +399,11 @@ class Param(_Foo):
 
     def _clean_namelist_name(self, namelist):
         name = namelist.removesuffix("_pars")
-        for s in ["_init", "_run"]:
+        for s in ["init", "run"]:
             name = name.removesuffix(s)
+        name = name.removesuffix("_")
+        if name=="&":
+            name = "&cdata"      # as namelists init_pars and run_pars belong to the same module: cdata
         return name
 
 @copy_docstring(Param.read)
