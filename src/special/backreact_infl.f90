@@ -284,9 +284,9 @@ module Special
       call put_shared_variable('e2m_all',e2m_all)
       call put_shared_variable('b2m_all',b2m_all)
       call put_shared_variable('lsigE_const',lsigE_const)
-      call put_shared_variable('sigEm_all',sigEm_all,caller='register_backreact_infl')
-      call put_shared_variable('sigBm_all',sigBm_all,caller='register_backreact_infl')
-      call put_shared_variable('echarge',echarge,caller='register_backreact_infl')
+      call put_shared_variable('sigEm_all',sigEm_all)
+      call put_shared_variable('sigBm_all',sigBm_all)
+      call put_shared_variable('echarge',echarge)
       call put_shared_variable('lrho_chi',lrho_chi)
 print*,'AXEL1: lheating_always=',lheating_always
 !

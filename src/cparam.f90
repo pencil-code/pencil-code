@@ -57,6 +57,7 @@ module Cparam
   integer, parameter :: mx=nx+2*nghost,l1=1+nghost
   integer, parameter :: my=ny+2*nghost,m1=1+nghost
   integer, parameter :: mz=nz+2*nghost,n1=1+nghost
+
   integer, parameter :: mxgrid=nxgrid+2*nghost
   integer, parameter :: mygrid=nygrid+2*nghost
   integer, parameter :: mzgrid=nzgrid+2*nghost
@@ -71,7 +72,6 @@ module Cparam
   integer, parameter :: l1i=l1+nghost-1
   integer, parameter :: m1i=m1+nghost-1
   integer, parameter :: n1i=n1+nghost-1
-
 
   integer, parameter :: nrcyl=nxgrid/2
   integer, parameter :: nrcylrun=max(nx/20,1)

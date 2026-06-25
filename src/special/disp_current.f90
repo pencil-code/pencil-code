@@ -1750,20 +1750,21 @@ module Special
       call copy_addr(je_heating_factor,p_par(46))
       call copy_addr(va_limit,p_par(47))
 
-    call copy_addr(lohmic_heating_ee,p_par(48)) ! bool
-    call copy_addr(ladvance_ee,p_par(49)) ! bool
-    call copy_addr(lohmic_heating_justee,p_par(50)) ! bool
-    call copy_addr(eta_given,p_par(51))
-    call copy_addr(cdt_sige,p_par(52))
-    call copy_addr(ldt_disp_current,p_par(53)) ! bool
-    call copy_addr(sige_ceiling,p_par(54))
-    call copy_addr(sige_const_value,p_par(55))
-    call copy_addr(lresistive_gauge_ee,p_par(56)) ! bool
-    call copy_addr(etaschw_max,p_par(57))
-    call copy_addr(lresistive_gauge_disp,p_par(58)) ! bool
-    call copy_addr(llate_reset_el_pencil,p_par(59)) ! bool
-    call copy_addr(linclude_dphib_in_mhd,p_par(60)) ! bool
-    call copy_addr(linclude_gphixe_in_mhd,p_par(61)) ! bool
+      call copy_addr(lohmic_heating_ee,p_par(48)) ! bool
+      call copy_addr(ladvance_ee,p_par(49)) ! bool
+      call copy_addr(lohmic_heating_justee,p_par(50)) ! bool
+      call copy_addr(eta_given,p_par(51))
+      call copy_addr(cdt_sige,p_par(52))
+      call copy_addr(ldt_disp_current,p_par(53)) ! bool
+      call copy_addr(sige_ceiling,p_par(54))
+      call copy_addr(sige_const_value,p_par(55))
+      call copy_addr(lresistive_gauge_ee,p_par(56)) ! bool
+      call copy_addr(etaschw_max,p_par(57))
+      call copy_addr(lresistive_gauge_disp,p_par(58)) ! bool
+      call copy_addr(llate_reset_el_pencil,p_par(59)) ! bool
+      call copy_addr(linclude_dphib_in_mhd,p_par(60)) ! bool
+      call copy_addr(linclude_gphixe_in_mhd,p_par(61)) ! bool
+
     endsubroutine pushpars2c
 !***********************************************************************
 !
