@@ -1148,12 +1148,11 @@ print*,'AXEL9: lheating_always=',lheating_always
 !
       select case (id)
         case (id_record_LHEATING_ALWAYS)
-          read (lun_input) lheating_always
-          done = .false.
+          done = read_persist ('LHEATING_ALWAYS', lheating_always)
         case (id_record_LSOLVE_FOR_PHI)
-          read (lun_input) lsolve_for_phi
-          done = .false.
+          done = read_persist ('LSOLVE_FOR_PHI', lsolve_for_phi)
       endselect
+print*,'AXEL2: id, done=',id, done
 !
     endsubroutine input_persist_special_id
 !*****************************************************************************
