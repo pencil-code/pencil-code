@@ -33,10 +33,11 @@ module InitialCondition
 ! nsteps is the desired resolution in the radial direction
 !
   double precision :: xmin=1.e-5, xmax=10.d0, rhoc=10.,cs=1.
+  logical          :: lpretend_rho_is_lnrho=.true.  !PAR_DOC: set lpretend_rho_is_lnrho=F for correct BE-sphere
   integer          :: nsteps = 100
   
   namelist /initial_condition_pars/ &
-       xmin,xmax,nsteps,rhoc,cs
+       xmin,xmax,nsteps,rhoc,cs, lpretend_rho_is_lnrho
 !
   contains
 !***********************************************************************
@@ -90,7 +91,7 @@ module InitialCondition
       use Sub, only: interp1
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f      
-      real :: lnrho_r, rgrid, Gnewton
+      real :: lnrho_r, rho_r, rgrid, Gnewton
       real, pointer :: Gnewton_ptr
       !real, allocatable, intent(inout) :: rr(:), rho_be(:)
       real, allocatable :: rr(:), rho_be(:)
@@ -107,16 +108,24 @@ module InitialCondition
       call bonnor_ebert_sphere(xmin,xmax,nsteps,rr,rho_be)
       do iz=1,mz
         do iy=1,my
-           do ix=1,mx
-             rgrid = sqrt(x(ix)**2+y(iy)**2+z(iz)**2)
-             if (rgrid.le.xmax*sqrt(4.*pi*Gnewton*rhoc)/cs) then
-               ! linear interpolation of rho to rgrid position
-               lnrho_r=interp1(rr,rho_be,nsteps,rgrid)
-             else
-               lnrho_r=rho_be(nsteps)
-             endif
-             f(ix,iy,iz,ilnrho)=f(ix,iy,iz,ilnrho)+lnrho_r
-           enddo
+          do ix=1,mx
+            rgrid = sqrt(x(ix)**2+y(iy)**2+z(iz)**2)
+            if (rgrid.le.xmax*sqrt(4.*pi*Gnewton*rhoc)/cs) then
+              ! linear interpolation of rho to rgrid position
+              rho_r=interp1(rr,rho_be,nsteps,rgrid)
+            else
+              rho_r=rho_be(nsteps)
+            endif
+!
+!  The Bonnor-Ebert sphere is coded for rho, so we need to
+!  take the log, unless we set lpretend_rho_is_lnrho=T.
+!
+            if (lpretend_rho_is_lnrho) then
+              f(ix,iy,iz,ilnrho)=f(ix,iy,iz,ilnrho)+rho_r
+            else
+              f(ix,iy,iz,ilnrho)=f(ix,iy,iz,ilnrho)+alog(rho_r)
+            endif
+          enddo
         enddo
       enddo
 
@@ -198,8 +207,7 @@ module InitialCondition
     !if (.not.allocated(rho)) allocate(rho (1:nsteps))
     !if (.not.allocated(rr)) allocate(rr (1:nsteps))
     dx = ((xmax-xmin)/real(nsteps))
-
-    xs     = xmin
+    xs = xmin
 
     ! The initial values of ys for given x0 and alpha:
     call initial_condition(xs,ys)
