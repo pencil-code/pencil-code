@@ -11,7 +11,7 @@
   module Special
 
     use Cparam
-    use Cdata, only: lroot, n_special_modules
+    use Cdata, only: lroot, n_special_modules, special_modules
 
     implicit none
 
@@ -110,7 +110,6 @@
                    /)
 
     integer(KIND=ikind8) :: libhandle
-    character(LEN=40), dimension(n_special_modules) :: special_modules
     integer(KIND=ikind8), dimension(n_special_modules,n_subroutines) :: special_sub_handles
     character(LEN=80) :: specific_subroutine
 

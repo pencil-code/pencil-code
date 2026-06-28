@@ -646,6 +646,7 @@ module Cdata
 !  Pars for multiple special modules.
 !
   integer :: special_module_index=1
+  character(LEN=40), dimension(n_special_modules) :: special_modules
 !
 !  Variables for substepping in time
 !

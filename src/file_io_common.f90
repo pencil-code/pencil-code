@@ -336,7 +336,8 @@ module File_io
 !  18-aug-15/PABourdin: reworked to simplify code and display all errors at once
 !  19-aug-15/PABourdin: renamed from 'read_pars' to 'read_namelist'
 !
-      use Cdata, only: lnamelist_error, lparam_nml, lstart, lroot, iomsglen, n_special_modules
+      use Cdata, only: lnamelist_error, lparam_nml, lstart, lroot, iomsglen, n_special_modules, &
+                       special_modules
       use General, only: loptest, itoa, ioptest
       use Messages, only: warning
 !
@@ -351,8 +352,9 @@ module File_io
       logical, optional, intent(in) :: lactive
       logical, optional, intent(in) :: loptional
 !
+      integer :: i
       character(len=n_special_modules*iomsglen) :: msg
-      logical :: lfound
+      logical :: lfound,lfound_special
       logical :: lnamelist_optional
       character(len=12) :: type
       character(len=4) :: run_type
@@ -375,8 +377,20 @@ module File_io
       !if (.not. find_namelist (trim(name)//trim(type)//trim(suffix))) then
       lfound=.true.
 
-      if (name/='special' .or. n_special_modules==1) &   ! multiple special modules -> check existence in reader!
+      if (name/='special' .or. n_special_modules==1) then 
           call find_namelist(trim(name)//trim(type), lfound, lnamelist_optional)
+      else if (lnamelist_optional) then
+          lfound = .false.
+          do i=1,n_special_modules
+            call find_namelist(trim(special_modules(i))//trim(type), lfound_special, lnamelist_optional)
+            !If a single special module namelist is found then "special_[run|init]_pars" is considered as found.
+            !This means one has to give all possible special modules a namelist in global_run.in or none.
+            !Othewise one would run to the risk of not checking incorrect namelists.
+            !Not a perfect solution but better than requiring all special modules to be present in global_run.in.
+            lfound = lfound .or. lfound_special
+            call parallel_rewind
+          enddo
+      endif
 
       if (.not. lfound) then
         if (.not.lnamelist_optional) then
