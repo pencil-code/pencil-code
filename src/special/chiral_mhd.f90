@@ -99,7 +99,7 @@ module Special
    real :: source5_input=0., t1_source5=0., t2_source5=0.
    real :: source5_expt=0., source5_expt2=0.
    real :: muS_const=0., coef_muS=0., coef_mu5=0., Cw=0.
-   real :: muSdrag=0.
+   real :: muSdrag=0., lcme = 1.
    real, dimension(1) :: meanmu5=0.
    !real :: flucmu5=0., meanB2=0., Brms=0.
    real :: initpower_mu5=0., cutoff_mu5=0.
@@ -152,7 +152,7 @@ module Special
       diffmu5_hyper3, diffmuS_hyper3, &
       ldiffmu5_hyper3_simplified, ldiffmuS_hyper3_simplified, &
       coef_muS, coef_mu5, Cw, lmuS, lCVE, lmu5adv, &
-      muSdrag, &
+      muSdrag, lcme, &
       lmu5divu_term, lmuSdivu_term, &
       reinitialize_mu5, rescale_mu5, gammaf5_tdep, t1_gammaf5, t2_gammaf5, &
       source5_tdep, t1_source5, t2_source5, source5_expt, source5_expt2, &
@@ -506,7 +506,7 @@ module Special
 !  25-noc-18/jenny: added diffusion term to muS equation
 !  11-jun-20/jenny: added hyperdiffusion (hyper2)
 !  28-aug-21/jenny: added hyperdiffusion (hyper3)
-!  29-jun-26/deepen: added muSdrag
+!  29-jun-26/deepen: added muSdrag and lcme
 !
       use Sub, only: multsv, dot_mn, dot2_mn, dot_mn_vm_trans, dot, curl_mn, gij
 !
@@ -559,7 +559,7 @@ module Special
       if (lmu5divu_term) dmu5 = dmu5 - p%mu5*p%divu
 !
 !  E.B terms: J.B and CME term
-      dmu5 = dmu5 + lambda5*eta*(p%jb-p%mu5*p%b2)
+      dmu5 = dmu5 + lambda5*eta*(p%jb-lcme*p%mu5*p%b2)
 !
 !  muS-independent part of AVE term
       if (lCVE) then
@@ -653,7 +653,7 @@ module Special
 !
       if (lmagnetic) then
         call multsv(p%mu5,p%bb,mu5bb)
-        df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + eta*mu5bb 
+        df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + lcme*eta*mu5bb 
         if (lmuS) then
           if (lCVE) then   
             call multsv(muSmu5,p%oo,muSmu5oo)
