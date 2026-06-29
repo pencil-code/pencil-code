@@ -1116,6 +1116,9 @@ module Special
     
     call keep_compiler_quiet(diffmuSmax)
 
+    call copy_addr(cflow,p_par(37))
+    call copy_addr(musdrag,p_par(38))
+    call copy_addr(lcme,p_par(39))
     endsubroutine pushpars2c
 !***********************************************************************
 !********************************************************************
