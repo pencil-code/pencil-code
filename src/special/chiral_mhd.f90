@@ -99,6 +99,7 @@ module Special
    real :: source5_input=0., t1_source5=0., t2_source5=0.
    real :: source5_expt=0., source5_expt2=0.
    real :: muS_const=0., coef_muS=0., coef_mu5=0., Cw=0.
+   real :: muSdrag=0.
    real, dimension(1) :: meanmu5=0.
    !real :: flucmu5=0., meanB2=0., Brms=0.
    real :: initpower_mu5=0., cutoff_mu5=0.
@@ -151,6 +152,7 @@ module Special
       diffmu5_hyper3, diffmuS_hyper3, &
       ldiffmu5_hyper3_simplified, ldiffmuS_hyper3_simplified, &
       coef_muS, coef_mu5, Cw, lmuS, lCVE, lmu5adv, &
+      muSdrag, &
       lmu5divu_term, lmuSdivu_term, &
       reinitialize_mu5, rescale_mu5, gammaf5_tdep, t1_gammaf5, t2_gammaf5, &
       source5_tdep, t1_source5, t2_source5, source5_expt, source5_expt2, &
@@ -504,6 +506,7 @@ module Special
 !  25-noc-18/jenny: added diffusion term to muS equation
 !  11-jun-20/jenny: added hyperdiffusion (hyper2)
 !  28-aug-21/jenny: added hyperdiffusion (hyper3)
+!  29-jun-26/deepen: added muSdrag
 !
       use Sub, only: multsv, dot_mn, dot2_mn, dot_mn_vm_trans, dot, curl_mn, gij
 !
@@ -605,7 +608,10 @@ module Special
 !
 !  CME term
         dmuS = dmuS - coef_muS*bdotgmu5
-! 
+!
+!  muSdrag term
+        dmuS = dmuS - muSdrag*(p%muS)/eta  
+!
 !
 !  Update df array 
         df(l1:l2,m,n,imuS) = df(l1:l2,m,n,imuS) + dmuS
@@ -629,7 +635,9 @@ module Special
 !  Contributions to timestep from mu5 equation
       dt1_lambda5 = lambda5*eta*p%b2
       if (lmuS) then
-         dt1_CVE2 = abs(p%muS)*lambda5*eta*p%b2
+        if (lCVE) then
+          dt1_CVE2 = abs(p%muS)*lambda5*eta*p%b2
+        endif
       endif
       if (ldiffmu5_hyper2_simplified) then
          dt1_D5 = diffmu5_hyper2*dxyz_4
