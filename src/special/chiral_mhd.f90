@@ -627,7 +627,7 @@ module Special
 !  Contributions to timestep from mu5 equation
       dt1_lambda5 = lambda5*eta*p%b2
       if (lmuS) then
-         dt1_CVE2 = p%muS*lambda5*eta*p%b2
+         dt1_CVE2 = abs(p%muS)*lambda5*eta*p%b2
       endif
       if (ldiffmu5_hyper2_simplified) then
          dt1_D5 = diffmu5_hyper2*dxyz_4
@@ -648,8 +648,8 @@ module Special
         endif
       endif
 !  Contributions to timestep from bb equation
-      dt1_vmu = eta*p%mu5*sqrt(dxyz_2)
-      if (lCVE) dt1_CVE1 = eta*p%muS*p%mu5*sqrt(dxyz_2)
+      dt1_vmu = eta*abs(p%mu5)*sqrt(dxyz_2)
+      if (lCVE) dt1_CVE1 = eta*abs(p%muS*p%mu5)*sqrt(dxyz_2)
 !
 !  Additions to the test-field equations
 !
