@@ -577,7 +577,7 @@ module Hydro
   integer :: idiag_qom=0        ! DIAG_DOC: $\left<\qv\cdot\omv\right>$
   integer :: idiag_quxom=0      ! DIAG_DOC: $\left<\qv\cdot(\uv\times\omv)\right>$
   integer :: idiag_qsglnrhom=0  ! DIAG_DOC: $\left<\qv\cdot\bm{G}\right>$
-  integer :: idiag_oglnrxgdum=0 ! DIAG_DOC: $\left<\boldsymbol{\omega}\cdot(\ln\varrho)\times\nabla\nablacdot\uv\right>$
+  integer :: idiag_oglnrxgdum=0 ! DIAG_DOC: $\left<\boldsymbol{\omega}\cdot(\ln\varrho)\times\nabla\nabla\cdot\uv\right>$
   integer :: idiag_qezxum=0     ! DIAG_DOC: $\left< (\boldsymbol{e_z} \times \mathbf{u}) \cdot \mathbf{q} \right>$
   integer :: idiag_quysm=0      ! DIAG_DOC: $\left< \frac{1}{\tau} (u_y^S - u_y) \mathbf{\hat{y}} \cdot \mathbf{q} \right>$
   integer :: idiag_jxbrqm=0     ! DIAG_DOC: $\left<(\Jv\times\Bv/\rho)\cdot\mathbf{q}\right>$
