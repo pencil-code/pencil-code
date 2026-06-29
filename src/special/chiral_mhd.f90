@@ -615,6 +615,8 @@ module Special
         dt1_CMW = sqrt(coef_mu5*coef_muS)*sqrt(p%b2)*sqrt(dxyz_2)
         if (ldiffmuS_hyper2_simplified) then
           dt1_Dmu = diffmuS_hyper2*dxyz_4
+        else if (ldiffmuS_hyper3_simplified) then
+          dt1_Dmu = diffmuS_hyper3*dxyz_6
         else
           dt1_Dmu = diffmuS*dxyz_2
         endif
@@ -631,6 +633,8 @@ module Special
       endif
       if (ldiffmu5_hyper2_simplified) then
          dt1_D5 = diffmu5_hyper2*dxyz_4
+      else if (ldiffmu5_hyper3_simplified) then
+         dt1_D5 = diffmu5_hyper3*dxyz_6
       else
          dt1_D5 = diffmu5*dxyz_2
       endif
@@ -642,9 +646,11 @@ module Special
       if (lmagnetic) then
         call multsv(p%mu5,p%bb,mu5bb)
         df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + eta*mu5bb 
-        if (lCVE) then   
-          call multsv(muSmu5,p%oo,muSmu5oo)
-          df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + eta*muSmu5oo
+        if (lmuS) then
+          if (lCVE) then   
+            call multsv(muSmu5,p%oo,muSmu5oo)
+            df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + eta*muSmu5oo
+          endif
         endif
       endif
 !  Contributions to timestep from bb equation
