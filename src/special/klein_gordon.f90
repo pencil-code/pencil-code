@@ -126,6 +126,9 @@ module Special
   real, pointer :: sigE_prefactor, sigB_prefactor, mass_chi
   real, dimension (nx) :: dt1_special
   real, dimension (nx, 4, 3) :: dfdxs=0.
+  real :: bubble_size       = impossible
+  real :: bubble_wall_width = impossible
+  logical :: lspeed_of_light_dt = .false.
   !Whether the sums needed for the ODE and rhs advancement are done in the together in the same kernel as the rhs
   !advancement. Benchmarks seem to suggest that combining them is indeed more performant.
   !This approach is however strictly approximative since we effectively take the value of Hscript from the preceeding substep
@@ -144,11 +147,12 @@ module Special
   character (len=labellen) :: Vprime_choice='quadratic', Hscript_choice='set'
   character (len=labellen), dimension(ninit) :: initspecial='nothing'
   character (len=50) :: echarge_type='const', init_rho_chi='zero'
+  logical :: lphi_normalized_units = .false.
 !
   namelist /special_init_pars/ &
       initspecial, phi0, dphi0, phimass, eps, ascale_ini, &
       lcompute_dphi0, lem_backreact, &
-      c_phi, lambda_phi, Vprime_choice, amplphi, ampldphi, lno_noise_phi, lno_noise_dphi, &
+      c_phi, delta_phi, lambda_phi, Vprime_choice, amplphi, ampldphi, lno_noise_phi, lno_noise_dphi, &
       kx_phi, ky_phi, kz_phi, phase_phi, width_phi, offset, &
       initpower_phi, initpower2_phi, cutoff_phi, kgaussian_phi, kpeak_phi, &
       initpower_dphi, initpower2_dphi, cutoff_dphi, kpeak_dphi, &
@@ -157,15 +161,15 @@ module Special
       echarge_type, init_rho_chi, rho_chi_init, eta_phi, lphi_doublet, &
       lphi_weakcharge, lphi_hypercharge, lhiggs_friction, higgs_friction, &
       lwaterfall, lambda_psi, coupl_phipsi, c_psi, amplpsi, ampldpsi, psimass, &
-      V0_usr, v_usr, alpha_usr, beta_usr
+      V0_usr, v_usr, alpha_usr, beta_usr, lphi_normalized_units
 !
   namelist /special_run_pars/ &
       initspecial, phi0, dphi0, phimass, eps, ascale_ini, &
-      lem_backreact, c_phi, lambda_phi, Vprime_choice, &
+      lem_backreact, c_phi, delta_phi, lambda_phi, Vprime_choice, &
       ldt_klein_gordon, Ndiv, Hscript0, Hscript_choice, &
       lflrw, lrho_chi, scale_rho_chi_Heqn, echarge_type, cdt_rho_chi, &
       phi_v, lhiggs_friction, higgs_friction, lwaterfall, lambda_psi, &
-      coupl_phipsi, c_psi
+      coupl_phipsi, c_psi, lspeed_of_light_dt
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -271,6 +275,23 @@ module Special
 !
     endsubroutine register_special
 !***********************************************************************
+    subroutine nucleate_a_bubble(f,pos)
+!
+!  Adds a bubble of phi in the broken phase
+!
+!  30-jun-26/TP: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (3) :: pos
+      integer :: l,m,n
+      real :: r
+!
+      do l = l1,l2; do m = m1,m2; do n = n1,n2
+        r = sqrt((x(l)-pos(1))**2+(y(m)-pos(2))**2+(z(n)-pos(3))**2)
+        f(l,m,n,iphi) = f(l,m,n,iphi) + 0.5*(1-tanh((r-bubble_size)/bubble_wall_width))
+      enddo; enddo; enddo
+    endsubroutine nucleate_a_bubble
+!***********************************************************************
     subroutine initialize_special(f)
 !
 !  Called after reading parameters, but before the time loop.
@@ -282,10 +303,21 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: iLCDM_lna
+      real :: broken_mass,phi_tilde
 !
       if (lflrw) then
         iLCDM_lna=farray_index_by_name_ode('iLCDM_lna')
         if (iLCDM_lna>0) call fatal_error('initialize_special', 'there is a conflict with iLCDM_lna')
+      endif
+!
+      if(lphi_normalized_units) then
+              phimass = 1.0
+              phi_tilde = (-delta_phi + sqrt(delta_phi**2 - 4*lambda_phi)) / (2*lambda_phi)
+              delta_phi_prefactor = phi_tilde
+              lambda_phi_prefactor = phi_tilde**2
+              broken_mass = sqrt(-delta_phi - 2/phi_tilde)
+              bubble_size = 12.0/(broken_mass**4*phi_tilde**2-1)
+              bubble_wall_width = 2/sqrt(1+2*delta_phi*phi_tilde+3*lambda_phi*phi_tilde**2)
       endif
 !
 !  set phimass**2
@@ -377,7 +409,7 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       real :: Vpotential, Hubble_ini, phi_gam, amplphi_BD, amplee_BD, deriv_prefactor
       integer :: j
-      real :: lnascale
+      real :: lnascale, r
 !
       intent(inout) :: f
 !
@@ -498,6 +530,9 @@ module Special
               +spread(spread(amplphi*sin(kx_phi*x),2,my),3,mz)
             f(:,:,:,iphi_down_re)=f(:,:,:,iphi_down_re) &
               +spread(spread(amplphi*sin(kx_phi*x),2,my),3,mz)
+          case ('bubble')
+            if (lroot) print*,'init_special: bubble'
+            call nucleate_a_bubble(f,(/0.,0.,0./))
           case default
             call fatal_error("init_special: No such initspecial: ", trim(initspecial(j)))
         endselect
@@ -1031,8 +1066,11 @@ module Special
 !  If Ndiv=0 is set, we compute instead an advective timestep based on the Alfven speed.
 !  vA=B/sqrt(rho_chi), so dt=C_M*dx/vA. In practice, C_M (=cdt_rho_chi) can be 20.
 !
-      if (lfirst.and.ldt.and.ldt_klein_gordon) then
-        if (Ndiv==0.) then
+      if (lfirst.and.lcourant_dt.and.ldt_klein_gordon) then
+        if(lspeed_of_light_dt) then
+          dt1_special = 0.
+          maxadvec=max(maxadvec,maxval(dline_1,2))
+        else if (Ndiv==0.) then
           if (lrho_chi) then
             advec2=advec2+(b2m_all/f_ode(iinfl_rho_chi))*dxyz_2/cdt_rho_chi**2
           else
