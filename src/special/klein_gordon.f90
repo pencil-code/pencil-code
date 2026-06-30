@@ -1757,6 +1757,9 @@ module Special
     call keep_compiler_quiet(eps)
     call keep_compiler_quiet(phase_phi)
 
+    call copy_addr(delta_phi,p_par(59))
+    call copy_addr(delta_phi_prefactor,p_par(60))
+    call copy_addr(lambda_phi_prefactor,p_par(61))
     endsubroutine pushpars2c
 !********************************************************************
 !********************************************************************
