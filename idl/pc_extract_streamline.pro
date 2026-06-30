@@ -85,6 +85,10 @@ function pc_extract_streamline, data, streamlines, name=name, label=label, preci
 		num_points = n_elements (streamlines[0,*])
 		streamlines = { num:1L, set_1:{ indices:streamlines, num_points:num_points, num_lines:1L, first:[ 0L ], last:[ num_points-1L ] } }
 	end
+	if (has_tag (streamlines, 'indices')) then begin
+		num_points = n_elements (streamlines[0,*])
+		streamlines = { num:{ sets:1 }, set_1:streamlines }
+	end
 	if (not has_tag (streamlines.(1), 'indices')) then message, "ERROR: no indices in given streamlines structure."
 	if (not keyword_set (name)) then name = default_name
 	if (size (name, /type) ne 7) then name = default_name
