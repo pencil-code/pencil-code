@@ -98,7 +98,8 @@ module Special
   real :: ncutoff_phi=1., phi_v=.1
   real :: phimass=1.06e-6, phimass2, ascale_ini=1.
   real :: psimass=1., psimass2
-  real :: phi0=.44, dphi0=-1.69e-7, c_phi=1., lambda_phi=0., eps=.01
+  real :: phi0=.44, dphi0=-1.69e-7, c_phi=1., delta_phi=0.,lambda_phi=0., eps=.01
+  real :: delta_phi_prefactor=1.0,lambda_phi_prefactor = 1.0/6.0
   real :: lambda_psi=0., coupl_phipsi=0., c_psi=1.
   real :: amplphi=.1, ampldphi=.0, kx_phi=1., ky_phi=0., kz_phi=0., phase_phi=0., width_phi=.1, offset=0.
   real :: amplpsi=0., ampldpsi=0.
@@ -744,7 +745,8 @@ module Special
 !
       select case (Vprime_choice)
         case ('quadratic'); p%Vprime=phimass2*p%phi
-        case ('quartic'); p%Vprime=phimass2*p%phi+(lambda_phi/6.)*p%phi**3
+        case ('quartic'); p%Vprime=phimass2*p%phi+delta_phi_prefactor*delta_phi*p%phi**2&
+                                   +lambda_phi_prefactor*lambda_phi*p%phi**3
         case ('cos-profile'); p%Vprime=phimass2*lambda_phi*sin(lambda_phi*p%phi)
         ! option for ultra-slow-roll (USR) potential based on arxiv:2008.12202
         case ('ultra_slow_roll1')
@@ -1545,7 +1547,8 @@ module Special
 !
       select case (Vprime_choice)
         case ('quadratic')  ; Vpotential=.5*phimass2*phi**2
-        case ('quartic')    ; Vpotential=phimass2*phi+(lambda_phi/6.)*phi**3  !(to be corrected)
+        case ('quartic')    ; Vpotential=.5*phimass2*phi**2+(1.0/3.0)*delta_phi_prefactor*delta_phi*phi**3&
+                                          +.25*lambda_phi_prefactor*lambda_phi*phi**4
         case ('cos-profile'); Vpotential=phimass2*lambda_phi*sin(lambda_phi*phi)  !(to be corrected)
         case ('ultra_slow_roll1')
           Vpotential=V0_usr*(6*(phi/v_usr)**2 + 3.*(phi/v_usr)**4 - 4.*alpha_usr*(phi/v_usr)**3)
