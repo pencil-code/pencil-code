@@ -6,7 +6,7 @@
 !  This file is included by cparam.f90
 !
 ! MVAR CONTRIBUTION 0
-! MAUX CONTRIBUTION 0
+! MAUX CONTRIBUTION 2
 !
 integer, parameter :: ncpus=8,nprocx=2,nprocy=2,nprocz=2
 integer, parameter :: nxgrid=256,nygrid=256,nzgrid=256

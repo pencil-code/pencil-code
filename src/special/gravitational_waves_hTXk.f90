@@ -459,6 +459,7 @@ module Special
 !
       select case (cstress_prefactor)
         case ('1'); stress_prefactor=1.; EGWpref=8.*pi
+        case ('2'); stress_prefactor=2.; EGWpref=1./2.
         case ('6'); stress_prefactor=6.; EGWpref=1./6.
         case ('24'); stress_prefactor=24.; EGWpref=1./6.
         case ('6old'); stress_prefactor=6.; EGWpref=1./(32.*pi)
@@ -939,7 +940,7 @@ module Special
 !
 !  gradient of scalar field (phi) needed for stress
 !
-      if (lscalar) then
+      if (lscalar_phi) then
         lpenc_requested(i_gphi)=.true.
 !        lpenc_requested(i_infl_a2)=.true.
         if (lwaterfall) lpenc_requested(i_gpsi)=.true.
@@ -3413,6 +3414,7 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
       if (lwrite_slices) then
         where(cnamev=='hhT'.or.cnamev=='hhX'.or.cnamev=='ggT'.or.cnamev=='ggX'.or. &
               cnamev=='hhTre'.or.cnamev=='hhTim'.or. &
+              cnamev=='hhXre'.or.cnamev=='hhXim' .or. &
               cnamev=='StTre'.or.cnamev=='StTim' &
              ) cformv='DEFINED'
       endif
@@ -3466,6 +3468,17 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
           else
             call assign_slices_scal(slices,f,ihhX)
           endif
+!
+!  hhXre
+!
+        case ('hhXre')
+          call assign_slices_scal(slices,f,ihhX)
+
+!
+!  hhXim
+!
+        case ('hhXim')
+          call assign_slices_scal(slices,f,ihhXim)
 !
 !  ggT
 !

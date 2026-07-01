@@ -175,7 +175,8 @@ module Special
       ldt_klein_gordon, Ndiv, Hscript0, Hscript_choice, &
       lflrw, lrho_chi, scale_rho_chi_Heqn, echarge_type, cdt_rho_chi, &
       phi_v, lhiggs_friction, higgs_friction, lwaterfall, lambda_psi, &
-      coupl_phipsi, c_psi, lspeed_of_light_dt,lnucleate_bubbles, bubble_size_factor
+      coupl_phipsi, c_psi, lspeed_of_light_dt,lnucleate_bubbles, bubble_size_factor,&
+      max_bubble_nucleation_rate
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !

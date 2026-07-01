@@ -11,9 +11,12 @@
   lwrite_aux=T
   lread_aux=T
 /
-&special_init_pars
+&klein_gordon_init_pars
   initspecial='nothing'
   lambda_phi=.5
   delta_phi =-1.6305
   lphi_normalized_units=T
+  bubble_size_factor=1.7
+/
+&gravitational_waves_hTXk_init_pars
 /
