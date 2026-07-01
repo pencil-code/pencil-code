@@ -291,13 +291,28 @@ module Special
       real,  dimension (mx,my,mz,mfarray) :: f
       real, dimension (3) :: pos
       integer :: l,m,n
+      real :: x_local, y_local, z_local
       real :: r
 !
       if(iphi == 0) then
               call fatal_error("nucleate_a_bubble: ","Cannot nucleate a bubble without phi!")
       endif
       do l = l1,l2; do m = m1,m2; do n = n1,n2
-        r = sqrt((x(l)-pos(1))**2+(y(m)-pos(2))**2+(z(n)-pos(3))**2)
+        if(lcartesian_coords) then
+          x_local = x(l)
+          y_local = y(m)
+          z_local = z(n)
+        else if(lspherical_coords) then
+          x_local = x(l)*sin(y(m))*cos(z(n))
+          y_local = x(l)*sin(y(m))*sin(z(n))
+          z_local = x(l)*cos(y(m))
+        else
+          x_local = x(l)*cos(y(m))
+          y_local = x(l)*sin(y(m))
+          z_local = z(n)
+        endif
+        r = sqrt((x_local-pos(1))**2+(y_local-pos(2))**2+(z_local-pos(3))**2)
+        f(l,m,n,iphi) = max(f(l,m,n,iphi),0.5*(1-tanh((r-bubble_size)/bubble_wall_width)))
         f(l,m,n,iphi) = max(f(l,m,n,iphi),0.5*(1-tanh((r-bubble_size_factor*critical_bubble_size)/bubble_wall_width)))
       enddo; enddo; enddo
     endsubroutine nucleate_a_bubble
