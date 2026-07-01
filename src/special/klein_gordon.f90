@@ -126,7 +126,8 @@ module Special
   real, pointer :: sigE_prefactor, sigB_prefactor, mass_chi
   real, dimension (nx) :: dt1_special
   real, dimension (nx, 4, 3) :: dfdxs=0.
-  real :: bubble_size       = impossible
+  real :: bubble_size_factor = 1.0
+  real :: critical_bubble_size       = impossible
   real :: bubble_wall_width = impossible
   logical :: lspeed_of_light_dt = .false.
   !Whether the sums needed for the ODE and rhs advancement are done in the together in the same kernel as the rhs
@@ -166,7 +167,7 @@ module Special
       echarge_type, init_rho_chi, rho_chi_init, eta_phi, lphi_doublet, &
       lphi_weakcharge, lphi_hypercharge, lhiggs_friction, higgs_friction, &
       lwaterfall, lambda_psi, coupl_phipsi, c_psi, amplpsi, ampldpsi, psimass, &
-      V0_usr, v_usr, alpha_usr, beta_usr, lphi_normalized_units
+      V0_usr, v_usr, alpha_usr, beta_usr, lphi_normalized_units, bubble_size_factor
 !
   namelist /special_run_pars/ &
       initspecial, phi0, dphi0, phimass, eps, ascale_ini, &
@@ -174,7 +175,7 @@ module Special
       ldt_klein_gordon, Ndiv, Hscript0, Hscript_choice, &
       lflrw, lrho_chi, scale_rho_chi_Heqn, echarge_type, cdt_rho_chi, &
       phi_v, lhiggs_friction, higgs_friction, lwaterfall, lambda_psi, &
-      coupl_phipsi, c_psi, lspeed_of_light_dt,lnucleate_bubbles
+      coupl_phipsi, c_psi, lspeed_of_light_dt,lnucleate_bubbles, bubble_size_factor
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -286,14 +287,17 @@ module Special
 !
 !  30-jun-26/TP: coded
 !
-      real, contiguous, dimension (:,:,:,:) :: f
+      real,  dimension (mx,my,mz,mfarray) :: f
       real, dimension (3) :: pos
       integer :: l,m,n
       real :: r
 !
+      if(iphi == 0) then
+              call fatal_error("nucleate_a_bubble: ","Cannot nucleate a bubble without phi!")
+      endif
       do l = l1,l2; do m = m1,m2; do n = n1,n2
         r = sqrt((x(l)-pos(1))**2+(y(m)-pos(2))**2+(z(n)-pos(3))**2)
-        f(l,m,n,iphi) = max(f(l,m,n,iphi),0.5*(1-tanh((r-bubble_size)/bubble_wall_width)))
+        f(l,m,n,iphi) = max(f(l,m,n,iphi),0.5*(1-tanh((r-bubble_size_factor*critical_bubble_size)/bubble_wall_width)))
       enddo; enddo; enddo
     endsubroutine nucleate_a_bubble
 !***********************************************************************
@@ -306,7 +310,7 @@ module Special
       use SharedVariables, only: get_shared_variable, put_shared_variable
       use FArrayManager, only: farray_index_by_name_ode, farray_index_by_name
 !
-      real, contiguous, dimension (:,:,:,:) :: f
+      real,  dimension (mx,my,mz,mfarray) :: f
       integer :: iLCDM_lna
       real :: broken_mass,phi_tilde
 !
@@ -321,7 +325,7 @@ module Special
               delta_phi_prefactor = phi_tilde
               lambda_phi_prefactor = phi_tilde**2
               broken_mass = sqrt(-delta_phi - 2/phi_tilde)
-              bubble_size = 12.0/(broken_mass**4*phi_tilde**2-1)
+              critical_bubble_size = 12.0/(broken_mass**4*phi_tilde**2-1)
               bubble_wall_width = 2/sqrt(1+2*delta_phi*phi_tilde+3*lambda_phi*phi_tilde**2)
       endif
 !
@@ -411,7 +415,7 @@ module Special
       use Initcond, only: gaunoise, sinwave_phase, hat, power_randomphase_hel, power_randomphase, bunch_davies
       use Mpicomm, only: mpibcast_real
 !
-      real, contiguous, dimension (:,:,:,:) :: f
+      real,  dimension (mx,my,mz,mfarray) :: f
       real :: Vpotential, Hubble_ini, phi_gam, amplphi_BD, amplee_BD, deriv_prefactor
       integer :: j
       real :: lnascale, r
@@ -627,7 +631,7 @@ module Special
       use Sub, only: grad, div
       use Deriv, only: der
 !
-      real, contiguous, dimension (:,:,:,:) :: f
+      real,  dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
       intent(in) :: f
@@ -855,8 +859,8 @@ module Special
       use Sub, only: dot_mn, del2, div
       use Deriv, only: der
 !
-      real, contiguous, dimension (:,:,:,:) :: f
-      real, contiguous, dimension (:,:,:,:) :: df
+      real,  dimension (mx,my,mz,mfarray) :: f
+      real,  dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: Vprime_aux, total_fric
       real, dimension (nx, 4) :: del2phi_doublet=0.
       real, dimension (nx) :: tmp, del2phi, del2psi
@@ -1162,7 +1166,7 @@ module Special
     subroutine calc_diagnostics_special(f,p)
 
       use Diagnostics
-      real, contiguous, dimension(:,:,:,:) :: f
+      real,  dimension(mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
 
       call keep_compiler_quiet(f)
@@ -1436,7 +1440,7 @@ module Special
     function get_random_pos(f) result(pos)
       use General, only: random_number_wrapper, find_proc
       use Mpicomm, only: ipx,ipy,ipz, mpibcast
-      real, contiguous, dimension(:,:,:,:) :: f
+      real,  dimension(mx,my,mz,mfarray) :: f
 
       real, dimension(3) :: pos
       real :: u
@@ -1483,7 +1487,7 @@ module Special
 !
 !
 !
-      real, contiguous, dimension (:,:,:,:), intent(in) :: f
+      real,  dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension(3) :: pos
       real :: acceptance_ran, acceptance_probability
 
@@ -1517,7 +1521,7 @@ module Special
       use Mpicomm, only: mpireduce_sum, mpiallreduce_sum, mpibcast_real
       use Sub, only: dot2_mn, grad, curl, dot_mn
 !
-      real, contiguous, dimension (:,:,:,:), intent(in) :: f
+      real,  dimension (mx,my,mz,mfarray), intent(in) :: f
       real :: sigE1m,sigB1m
 !
 !  If requested, calculate here <dphi**2+gphi**2+(4./3.)*(E^2+B^2)/a^2>.
@@ -1604,7 +1608,7 @@ module Special
 !
       use Sub, only: dot2_mn, grad, curl, dot_mn
 !
-      real, contiguous, dimension (:,:,:,:), intent(in) :: f
+      real,  dimension (mx,my,mz,mfarray), intent(in) :: f
       real, intent(inout) :: sigE1m,sigB1m
       real, dimension (nx,3) :: el, bb, gphi, gpsi
       real, dimension (nx) :: e2, b2, gphi2, dphi, a2rhop, a2rho
