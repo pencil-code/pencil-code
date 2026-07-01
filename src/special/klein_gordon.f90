@@ -312,7 +312,6 @@ module Special
           z_local = z(n)
         endif
         r = sqrt((x_local-pos(1))**2+(y_local-pos(2))**2+(z_local-pos(3))**2)
-        f(l,m,n,iphi) = max(f(l,m,n,iphi),0.5*(1-tanh((r-bubble_size)/bubble_wall_width)))
         f(l,m,n,iphi) = max(f(l,m,n,iphi),0.5*(1-tanh((r-bubble_size_factor*critical_bubble_size)/bubble_wall_width)))
       enddo; enddo; enddo
     endsubroutine nucleate_a_bubble
