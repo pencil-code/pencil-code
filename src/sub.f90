@@ -121,6 +121,8 @@ module Sub
   public :: calc_scl_factor
   public :: get_dxyzs
   public :: get_random_vec
+  public :: sample_poisson_waiting_time
+
 !
   interface poly                ! Overload the `poly' function
     module procedure poly_0
@@ -9550,5 +9552,24 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
       if (present(ampl)) a = ampl * a
 !
     endsubroutine
+!***********************************************************************
+  function sample_poisson_waiting_time(rate) result(interval)
+!
+! Samples how much till the next event following a Poisson process of constant rate.
+! Can be used as a building block to sample non-uniform Poisson processes as well:
+! see special/klein_gordon.f90
+!
+!  30-jun-26/TP: carved from interstellar
+!
+      use General, only:  random_number_wrapper
+
+      real, intent(IN) :: rate
+      real :: interval
+
+      real :: u
+      call random_number_wrapper(u)
+      interval = -log(u)*(1/rate)
+
+  endfunction sample_poisson_waiting_time
 !***********************************************************************
 endmodule Sub

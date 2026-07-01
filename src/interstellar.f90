@@ -2424,9 +2424,10 @@ module Interstellar
 !***********************************************************************
     subroutine set_next_SNI(scaled_interval)
 !
-      use General, only:  random_seed_wrapper, random_number_wrapper
+      use General, only:  random_seed_wrapper
+      use Sub, only: sample_poisson_waiting_time
 !
-      real :: franSN, scaled_interval
+      real :: scaled_interval
 !
       intent(out) :: scaled_interval
 !
@@ -2448,12 +2449,10 @@ module Interstellar
       !if (lSN_mass_rate) then
       !  call set_interval(f,t_interval(SNI),SNI)
       !endif
-      call random_number_wrapper(franSN)
 !
 !  Time interval follows Poisson process with rate 1/interval_SNI
 !
-      scaled_interval=-log(franSN)*t_interval(SNI)
-!
+      scaled_interval = sample_poisson_waiting_time(1.0/t_interval(SNI))
       t_next_SNI=t+scaled_interval
       if (lroot) then
         open(1,file=trim(datadir)//'/sn_history.dat',position='append')

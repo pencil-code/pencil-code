@@ -4,9 +4,9 @@
 !
 &run_pars
   cvsid='$Id: run.in,v 1.3 2024/05/11 11:52:38 brandenb Exp $'
-  nt=8000, it1=100, isave=1001, itorder=3
+  nt=8000, it1=500, isave=1001, itorder=3
   cdt=0.22
-  dsnap=4e-1, dvid=4e-1, tmax=7e8 !, dtmin=-1e-12
+  dsnap=2e+0, dvid=2e-2, tmax=7e8 !, dtmin=-1e-12
   lwrite_aux=T
   lpencil_check=F
   lpencil_check_small=F
@@ -14,4 +14,5 @@
 &special_run_pars
   Vprime_choice='quartic'
   lspeed_of_light_dt=T
+  lnucleate_bubbles=T
 /

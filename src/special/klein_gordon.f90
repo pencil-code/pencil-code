@@ -148,6 +148,11 @@ module Special
   character (len=labellen), dimension(ninit) :: initspecial='nothing'
   character (len=50) :: echarge_type='const', init_rho_chi='zero'
   logical :: lphi_normalized_units = .false.
+  real :: t_next_bubble = 0.0
+  real :: max_bubble_nucleation_rate = 1.0
+  logical :: lnucleate_bubbles = .false.
+  real :: nucleation_threshold = 0.5
+  character (len=50) :: nucleation_rate_choice='constant'
 !
   namelist /special_init_pars/ &
       initspecial, phi0, dphi0, phimass, eps, ascale_ini, &
@@ -169,7 +174,7 @@ module Special
       ldt_klein_gordon, Ndiv, Hscript0, Hscript_choice, &
       lflrw, lrho_chi, scale_rho_chi_Heqn, echarge_type, cdt_rho_chi, &
       phi_v, lhiggs_friction, higgs_friction, lwaterfall, lambda_psi, &
-      coupl_phipsi, c_psi, lspeed_of_light_dt
+      coupl_phipsi, c_psi, lspeed_of_light_dt,lnucleate_bubbles
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -281,14 +286,14 @@ module Special
 !
 !  30-jun-26/TP: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension (:,:,:,:) :: f
       real, dimension (3) :: pos
       integer :: l,m,n
       real :: r
 !
       do l = l1,l2; do m = m1,m2; do n = n1,n2
         r = sqrt((x(l)-pos(1))**2+(y(m)-pos(2))**2+(z(n)-pos(3))**2)
-        f(l,m,n,iphi) = f(l,m,n,iphi) + 0.5*(1-tanh((r-bubble_size)/bubble_wall_width))
+        f(l,m,n,iphi) = max(f(l,m,n,iphi),0.5*(1-tanh((r-bubble_size)/bubble_wall_width)))
       enddo; enddo; enddo
     endsubroutine nucleate_a_bubble
 !***********************************************************************
@@ -301,7 +306,7 @@ module Special
       use SharedVariables, only: get_shared_variable, put_shared_variable
       use FArrayManager, only: farray_index_by_name_ode, farray_index_by_name
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension (:,:,:,:) :: f
       integer :: iLCDM_lna
       real :: broken_mass,phi_tilde
 !
@@ -406,7 +411,7 @@ module Special
       use Initcond, only: gaunoise, sinwave_phase, hat, power_randomphase_hel, power_randomphase, bunch_davies
       use Mpicomm, only: mpibcast_real
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension (:,:,:,:) :: f
       real :: Vpotential, Hubble_ini, phi_gam, amplphi_BD, amplee_BD, deriv_prefactor
       integer :: j
       real :: lnascale, r
@@ -622,7 +627,7 @@ module Special
       use Sub, only: grad, div
       use Deriv, only: der
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension (:,:,:,:) :: f
       type (pencil_case) :: p
 !
       intent(in) :: f
@@ -850,8 +855,8 @@ module Special
       use Sub, only: dot_mn, del2, div
       use Deriv, only: der
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension (:,:,:,:) :: f
+      real, contiguous, dimension (:,:,:,:) :: df
       real, dimension (nx) :: Vprime_aux, total_fric
       real, dimension (nx, 4) :: del2phi_doublet=0.
       real, dimension (nx) :: tmp, del2phi, del2psi
@@ -1157,7 +1162,7 @@ module Special
     subroutine calc_diagnostics_special(f,p)
 
       use Diagnostics
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
 
       call keep_compiler_quiet(f)
@@ -1417,6 +1422,91 @@ module Special
 
     endsubroutine get_a2
 !***********************************************************************
+    function get_bubble_nucleation_rate() result(rate)
+
+      real :: rate
+      select case (nucleation_rate_choice)
+        case ('constant')
+          rate = max_bubble_nucleation_rate
+        case default
+          call fatal_error("get_bubble_nucleation-rate: No such nucleation rate: ",trim(nucleation_rate_choice))
+      endselect
+    endfunction  get_bubble_nucleation_rate
+!***********************************************************************
+    function get_random_pos(f) result(pos)
+      use General, only: random_number_wrapper, find_proc
+      use Mpicomm, only: ipx,ipy,ipz, mpibcast
+      real, contiguous, dimension(:,:,:,:) :: f
+
+      real, dimension(3) :: pos
+      real :: u
+      integer(kind=ikind8) :: idx
+      integer :: ix,iy,iz
+      integer :: px,py,pz
+      integer :: local_ix, local_iy, local_iz
+      logical :: found
+      integer :: broadcaster
+
+      found = .false.
+      do while(.not. found)
+        call random_number_wrapper(u)
+        idx = int(nwgrid*u)
+        ix = mod(idx,int(nxgrid,8))
+        iy = mod(idx/nxgrid,int(nygrid,8))
+        iz = idx/(nxgrid*nygrid)
+
+        px = ix/nx
+        py = iy/ny
+        pz = iz/nz
+
+        local_ix = mod(ix, nx)
+        local_iy = mod(iy, ny)
+        local_iz = mod(iz, nz)
+
+        !The +1 in indexing is because the sampling samples points in C-indexing i.e. starting from 0
+        !which needs to be translated to Fortran indexes
+        if(px /= ipx .or. py /= ipy .or. pz /= ipz) then
+          broadcaster = find_proc(px,py,pz)
+          call mpibcast(found,broadcaster)
+        else
+          found = f(local_ix+nghost+1,local_iy+nghost+1,local_iz+nghost+1,iphi) < nucleation_threshold
+          call mpibcast(found,iproc)
+        endif
+      enddo
+      pos = (/xgrid(ix+1), ygrid(iy+1), zgrid(iz+1)/)
+
+    endfunction get_random_pos
+!***********************************************************************
+    subroutine special_before_boundary(f)
+      use General, only: random_number_wrapper
+      use Sub, only: sample_poisson_waiting_time 
+!
+!
+!
+      real, contiguous, dimension (:,:,:,:), intent(in) :: f
+      real, dimension(3) :: pos
+      real :: acceptance_ran, acceptance_probability
+
+      if(lnucleate_bubbles) then
+        if(get_bubble_nucleation_rate() > max_bubble_nucleation_rate) then
+          call fatal_error("special_before_boundary",&
+                           "Rate rose over prescribed max rate! Means that sampling in time is not anymore accurate")
+        endif
+        !TP: could be more precise taking substeps into account
+        if(t+dt >= t_next_bubble) then
+          call random_number_wrapper(acceptance_ran)
+          acceptance_probability = get_bubble_nucleation_rate()/max_bubble_nucleation_rate
+          if(acceptance_probability >= acceptance_ran) then
+            t_next_bubble = t+sample_poisson_waiting_time(max_bubble_nucleation_rate)
+            pos = get_random_pos(f)
+            call nucleate_a_bubble(f,pos)
+          endif
+        endif
+      endif
+!
+!
+    endsubroutine special_before_boundary
+!***********************************************************************
     subroutine special_after_boundary(f)
 !
 !  Possibility to modify the f array after the boundaries are
@@ -1427,7 +1517,7 @@ module Special
       use Mpicomm, only: mpireduce_sum, mpiallreduce_sum, mpibcast_real
       use Sub, only: dot2_mn, grad, curl, dot_mn
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous, dimension (:,:,:,:), intent(in) :: f
       real :: sigE1m,sigB1m
 !
 !  If requested, calculate here <dphi**2+gphi**2+(4./3.)*(E^2+B^2)/a^2>.
@@ -1514,7 +1604,7 @@ module Special
 !
       use Sub, only: dot2_mn, grad, curl, dot_mn
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous, dimension (:,:,:,:), intent(in) :: f
       real, intent(inout) :: sigE1m,sigB1m
       real, dimension (nx,3) :: el, bb, gphi, gpsi
       real, dimension (nx) :: e2, b2, gphi2, dphi, a2rhop, a2rho
