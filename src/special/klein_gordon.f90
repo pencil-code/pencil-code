@@ -154,6 +154,7 @@ module Special
   logical :: lphi_normalized_units = .false.
   real :: t_next_bubble = 0.0
   real :: max_bubble_nucleation_rate = 1.0
+  real :: tf = 0.0
   logical :: lnucleate_bubbles = .false.
   character (len=50) :: nucleation_method='cutting'
   character (len=50) :: bubble_position_criteria='cutting'
@@ -190,7 +191,7 @@ module Special
       phi_v, lhiggs_friction, higgs_friction, lwaterfall, lambda_psi, &
       coupl_phipsi, c_psi, lspeed_of_light_dt,lnucleate_bubbles, bubble_size_factor,&
       max_bubble_nucleation_rate, bubble_wall_width_factor,number_of_bubbles,&
-      lgenerate_bubble_times,beta
+      lgenerate_bubble_times,beta,nucleation_rate_choice,bubble_position_criteria,tf
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -1516,6 +1517,8 @@ module Special
       select case (nucleation_rate_choice)
         case ('constant')
           rate = max_bubble_nucleation_rate
+        case ('exponential')
+          rate = exp(beta*(t-tf))
         case default
           call fatal_error("get_bubble_nucleation-rate: No such nucleation rate: ",trim(nucleation_rate_choice))
       endselect
@@ -1574,6 +1577,8 @@ module Special
                       found = .false.
               endif
             enddo
+          case('all-valid')
+            found = .true.
           case default
             call fatal_error("get_random_bubble_pos: No such bubble position criteria: ", trim(bubble_position_criteria))
           end select
@@ -1596,7 +1601,7 @@ module Special
 
       if(lnucleate_bubbles) then
         !TP: could be more precise taking substeps into account
-        if(t+dt >= t_next_bubble) then
+        do while(t+dt >= t_next_bubble)
           call random_number_wrapper(acceptance_ran)
           acceptance_probability = get_bubble_nucleation_rate()/max_bubble_nucleation_rate
           if(acceptance_probability >= acceptance_ran) then
@@ -1606,6 +1611,10 @@ module Special
               t_next_bubble = bubble_times(bubble_counter)
             else if(.not. lgenerate_bubble_times) then
               if(get_bubble_nucleation_rate() > max_bubble_nucleation_rate) then
+                if(lroot) then
+                  print*,"Rate: ",get_bubble_nucleation_rate()
+                  print*,"Max rate: ",max_bubble_nucleation_rate
+                endif
                 call fatal_error("special_before_boundary",&
                                  "Rate rose over prescribed max rate! Means that sampling in time is not anymore accurate")
                endif
@@ -1615,7 +1624,7 @@ module Special
               t_next_bubble = tmax+1.0
             endif
           endif
-        endif
+        enddo
       endif
 !
 !
