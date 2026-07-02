@@ -127,9 +127,12 @@ module Special
   real, dimension (nx) :: dt1_special
   real, dimension (nx, 4, 3) :: dfdxs=0.
   real :: bubble_size_factor = 1.0
-  real :: critical_bubble_size       = impossible
+  real :: bubble_size = impossible
   real :: bubble_wall_width = impossible
+  real :: bubble_wall_width_factor = 1.0
+  integer :: number_of_bubbles = 1
   logical :: lspeed_of_light_dt = .false.
+  integer :: seed_reset=1963
   !Whether the sums needed for the ODE and rhs advancement are done in the together in the same kernel as the rhs
   !advancement. Benchmarks seem to suggest that combining them is indeed more performant.
   !This approach is however strictly approximative since we effectively take the value of Hscript from the preceeding substep
@@ -152,8 +155,14 @@ module Special
   real :: t_next_bubble = 0.0
   real :: max_bubble_nucleation_rate = 1.0
   logical :: lnucleate_bubbles = .false.
-  real :: nucleation_threshold = 0.5
+  character (len=50) :: nucleation_method='cutting'
+  character (len=50) :: bubble_position_criteria='cutting'
+  real :: nucleation_threshold = 1e-4
   character (len=50) :: nucleation_rate_choice='constant'
+  integer, parameter :: max_bubbles = 10000
+  real, dimension(max_bubbles,3) :: bubble_positions=impossible
+  real, dimension(max_bubbles)   :: bubble_times
+  integer :: bubble_counter = 1
 !
   namelist /special_init_pars/ &
       initspecial, phi0, dphi0, phimass, eps, ascale_ini, &
@@ -167,7 +176,8 @@ module Special
       echarge_type, init_rho_chi, rho_chi_init, eta_phi, lphi_doublet, &
       lphi_weakcharge, lphi_hypercharge, lhiggs_friction, higgs_friction, &
       lwaterfall, lambda_psi, coupl_phipsi, c_psi, amplpsi, ampldpsi, psimass, &
-      V0_usr, v_usr, alpha_usr, beta_usr, lphi_normalized_units, bubble_size_factor
+      V0_usr, v_usr, alpha_usr, beta_usr, lphi_normalized_units, bubble_size_factor, &
+      bubble_wall_width_factor,number_of_bubbles,bubble_positions
 !
   namelist /special_run_pars/ &
       initspecial, phi0, dphi0, phimass, eps, ascale_ini, &
@@ -176,7 +186,7 @@ module Special
       lflrw, lrho_chi, scale_rho_chi_Heqn, echarge_type, cdt_rho_chi, &
       phi_v, lhiggs_friction, higgs_friction, lwaterfall, lambda_psi, &
       coupl_phipsi, c_psi, lspeed_of_light_dt,lnucleate_bubbles, bubble_size_factor,&
-      max_bubble_nucleation_rate
+      max_bubble_nucleation_rate, bubble_wall_width_factor,number_of_bubbles
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -292,7 +302,7 @@ module Special
       real, dimension (3) :: pos
       integer :: l,m,n
       real :: x_local, y_local, z_local
-      real :: r
+      real :: r,bubble_profile
 !
       if(iphi == 0) then
               call fatal_error("nucleate_a_bubble: ","Cannot nucleate a bubble without phi!")
@@ -312,8 +322,20 @@ module Special
           z_local = z(n)
         endif
         r = sqrt((x_local-pos(1))**2+(y_local-pos(2))**2+(z_local-pos(3))**2)
-        f(l,m,n,iphi) = max(f(l,m,n,iphi),0.5*(1-tanh((r-bubble_size_factor*critical_bubble_size)/bubble_wall_width)))
+        bubble_profile = 0.5*(1-tanh((r-bubble_size_factor*bubble_size)/bubble_wall_width))
+        select case (nucleation_method)
+        case ('max')
+          f(l,m,n,iphi) = max(f(l,m,n,iphi),bubble_profile)
+        !Cutting method refers to the method used in this paper: https://arxiv.org/pdf/1802.05712
+        case ('cutting')
+          f(l,m,n,iphi) = sqrt(f(l,m,n,iphi)**2 + bubble_profile**2)
+        case default
+          call fatal_error("nucleate_a_bubble: No such nucleation method: ", trim(nucleation_method))
+        endselect
       enddo; enddo; enddo
+      bubble_positions(bubble_counter,:) = pos
+      bubble_times(bubble_counter)       = t
+      bubble_counter = bubble_counter + 1
     endsubroutine nucleate_a_bubble
 !***********************************************************************
     subroutine initialize_special(f)
@@ -328,6 +350,9 @@ module Special
       real,  dimension (mx,my,mz,mfarray) :: f
       integer :: iLCDM_lna
       real :: broken_mass,phi_tilde
+      real :: critical_bubble_size
+      real :: thin_bubble_wall_width
+
 !
       if (lflrw) then
         iLCDM_lna=farray_index_by_name_ode('iLCDM_lna')
@@ -341,7 +366,9 @@ module Special
               lambda_phi_prefactor = phi_tilde**2
               broken_mass = sqrt(-delta_phi - 2/phi_tilde)
               critical_bubble_size = 12.0/(broken_mass**4*phi_tilde**2-1)
-              bubble_wall_width = 2/sqrt(1+2*delta_phi*phi_tilde+3*lambda_phi*phi_tilde**2)
+              bubble_size = bubble_size_factor*critical_bubble_size
+              thin_bubble_wall_width = 2/sqrt(1+2*delta_phi*phi_tilde+3*lambda_phi*phi_tilde**2)
+              bubble_wall_width = bubble_wall_width_factor*thin_bubble_wall_width
       endif
 !
 !  set phimass**2
@@ -429,13 +456,24 @@ module Special
 !
       use Initcond, only: gaunoise, sinwave_phase, hat, power_randomphase_hel, power_randomphase, bunch_davies
       use Mpicomm, only: mpibcast_real
+      use General, only: random_seed_wrapper, random_number_wrapper
+!
+!  TP:   The random numbers must be synchronized on all processors or
+!        else the treatment of bubbles shall diverge and the MPI will
+!        break or worse hang. The same as in interstellar and supernova explosions
+!
 !
       real,  dimension (mx,my,mz,mfarray) :: f
       real :: Vpotential, Hubble_ini, phi_gam, amplphi_BD, amplee_BD, deriv_prefactor
-      integer :: j
-      real :: lnascale, r
+      integer :: i,j
+      real :: lnascale, r, u
+      real, dimension(3) :: pos
 !
       intent(inout) :: f
+
+      seed(1)=seed_reset
+      call random_seed_wrapper(PUT=seed)
+      call random_number_wrapper(u)
 !
 !  SAMPLE IMPLEMENTATION
 !
@@ -554,9 +592,17 @@ module Special
               +spread(spread(amplphi*sin(kx_phi*x),2,my),3,mz)
             f(:,:,:,iphi_down_re)=f(:,:,:,iphi_down_re) &
               +spread(spread(amplphi*sin(kx_phi*x),2,my),3,mz)
-          case ('bubble')
-            if (lroot) print*,'init_special: bubble'
-            call nucleate_a_bubble(f,(/0.,0.,0./))
+          case ('bubbles')
+            if (lroot) print*,'init_special: bubbles'
+            do i = 1,number_of_bubbles
+              !The initial bubble positions have been given
+              if(bubble_positions(i,1) /= impossible) then
+                pos = bubble_positions(i,:)
+              else
+                pos = get_random_bubble_pos(f)
+              endif
+              call nucleate_a_bubble(f,pos)
+            enddo
           case default
             call fatal_error("init_special: No such initspecial: ", trim(initspecial(j)))
         endselect
@@ -1452,18 +1498,19 @@ module Special
       endselect
     endfunction  get_bubble_nucleation_rate
 !***********************************************************************
-    function get_random_pos(f) result(pos)
+    function get_random_bubble_pos(f) result(pos)
       use General, only: random_number_wrapper, find_proc
       use Mpicomm, only: ipx,ipy,ipz, mpibcast
       real,  dimension(mx,my,mz,mfarray) :: f
 
       real, dimension(3) :: pos
-      real :: u
+      real :: u,distance
       integer(kind=ikind8) :: idx
       integer :: ix,iy,iz
       integer :: px,py,pz
       integer :: local_ix, local_iy, local_iz
       logical :: found
+      integer :: i
       integer :: broadcaster
 
       found = .false.
@@ -1478,9 +1525,11 @@ module Special
         py = iy/ny
         pz = iz/nz
 
+
         local_ix = mod(ix, nx)
         local_iy = mod(iy, ny)
         local_iz = mod(iz, nz)
+        
 
         !The +1 in indexing is because the sampling samples points in C-indexing i.e. starting from 0
         !which needs to be translated to Fortran indexes
@@ -1488,13 +1537,29 @@ module Special
           broadcaster = find_proc(px,py,pz)
           call mpibcast(found,broadcaster)
         else
-          found = f(local_ix+nghost+1,local_iy+nghost+1,local_iz+nghost+1,iphi) < nucleation_threshold
+          select case(bubble_position_criteria)
+          case('threshold')
+            found = f(local_ix+nghost+1,local_iy+nghost+1,local_iz+nghost+1,iphi) < nucleation_threshold
+          !Cutting method refers to the method used in this paper: https://arxiv.org/pdf/1802.05712
+          case('cutting')
+            found = .true.
+            pos = (/xgrid(ix+1), ygrid(iy+1), zgrid(iz+1)/)
+            do i=bubble_counter-1,1,-1
+              distance = sqrt((pos(1)-bubble_positions(i,1))**2 + (pos(2)-bubble_positions(i,2))**2&
+                                + (pos(3)-bubble_positions(i,3))**2)
+              if(distance <= bubble_size + sqrt(bubble_size + (t-bubble_times(i))**2)) then
+                      found = .false.
+              endif
+            enddo
+          case default
+            call fatal_error("get_random_bubble_pos: No such bubble position criteria: ", trim(bubble_position_criteria))
+          end select
           call mpibcast(found,iproc)
         endif
       enddo
       pos = (/xgrid(ix+1), ygrid(iy+1), zgrid(iz+1)/)
 
-    endfunction get_random_pos
+    endfunction get_random_bubble_pos
 !***********************************************************************
     subroutine special_before_boundary(f)
       use General, only: random_number_wrapper
@@ -1517,7 +1582,7 @@ module Special
           acceptance_probability = get_bubble_nucleation_rate()/max_bubble_nucleation_rate
           if(acceptance_probability >= acceptance_ran) then
             t_next_bubble = t+sample_poisson_waiting_time(max_bubble_nucleation_rate)
-            pos = get_random_pos(f)
+            pos = get_random_bubble_pos(f)
             call nucleate_a_bubble(f,pos)
           endif
         endif
