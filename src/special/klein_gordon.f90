@@ -161,7 +161,9 @@ module Special
   character (len=50) :: nucleation_rate_choice='constant'
   integer, parameter :: max_bubbles = 10000
   real, dimension(max_bubbles,3) :: bubble_positions=impossible
-  real, dimension(max_bubbles)   :: bubble_times
+  real, dimension(max_bubbles)   :: bubble_times=impossible
+  real :: beta = impossible
+  logical :: lgenerate_bubble_times = .false.
   integer :: bubble_counter = 1
 !
   namelist /special_init_pars/ &
@@ -177,7 +179,8 @@ module Special
       lphi_weakcharge, lphi_hypercharge, lhiggs_friction, higgs_friction, &
       lwaterfall, lambda_psi, coupl_phipsi, c_psi, amplpsi, ampldpsi, psimass, &
       V0_usr, v_usr, alpha_usr, beta_usr, lphi_normalized_units, bubble_size_factor, &
-      bubble_wall_width_factor,number_of_bubbles,bubble_positions
+      bubble_wall_width_factor,number_of_bubbles,bubble_positions, &
+      beta
 !
   namelist /special_run_pars/ &
       initspecial, phi0, dphi0, phimass, eps, ascale_ini, &
@@ -186,7 +189,8 @@ module Special
       lflrw, lrho_chi, scale_rho_chi_Heqn, echarge_type, cdt_rho_chi, &
       phi_v, lhiggs_friction, higgs_friction, lwaterfall, lambda_psi, &
       coupl_phipsi, c_psi, lspeed_of_light_dt,lnucleate_bubbles, bubble_size_factor,&
-      max_bubble_nucleation_rate, bubble_wall_width_factor,number_of_bubbles
+      max_bubble_nucleation_rate, bubble_wall_width_factor,number_of_bubbles,&
+      lgenerate_bubble_times,beta
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -346,14 +350,24 @@ module Special
 !
       use SharedVariables, only: get_shared_variable, put_shared_variable
       use FArrayManager, only: farray_index_by_name_ode, farray_index_by_name
+      use General, only: random_seed_wrapper, random_number_wrapper
 !
       real,  dimension (mx,my,mz,mfarray) :: f
-      integer :: iLCDM_lna
-      real :: broken_mass,phi_tilde
+      integer :: iLCDM_lna,i
+      real :: broken_mass,phi_tilde,u
       real :: critical_bubble_size
       real :: thin_bubble_wall_width
 
 !
+!
+!  TP:   The random numbers must be synchronized on all processors or
+!        else the treatment of bubbles shall diverge and the MPI will
+!        break or worse hang. The same as in interstellar and supernova explosions
+!
+!
+
+      seed(1)=seed_reset
+      call random_seed_wrapper(PUT=seed)
       if (lflrw) then
         iLCDM_lna=farray_index_by_name_ode('iLCDM_lna')
         if (iLCDM_lna>0) call fatal_error('initialize_special', 'there is a conflict with iLCDM_lna')
@@ -446,6 +460,15 @@ module Special
       if (lphi_weakcharge) then
         iW0 = farray_index_by_name('W0')
       endif
+
+      !Generates bubble times in advance
+      if(lgenerate_bubble_times) then
+        do i = 1,number_of_bubbles
+          call random_number_wrapper(u)
+          bubble_times(i) = (1/beta)*log(exp(beta*tstart) + u*(exp(beta*tmax) - exp(beta*tstart)))
+        enddo
+        t_next_bubble = bubble_times(1)
+      endif
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -473,7 +496,6 @@ module Special
 
       seed(1)=seed_reset
       call random_seed_wrapper(PUT=seed)
-      call random_number_wrapper(u)
 !
 !  SAMPLE IMPLEMENTATION
 !
@@ -607,6 +629,7 @@ module Special
             call fatal_error("init_special: No such initspecial: ", trim(initspecial(j)))
         endselect
       enddo
+
 !
 !  initial condition for energy density of charged particles
 !
@@ -1572,18 +1595,25 @@ module Special
       real :: acceptance_ran, acceptance_probability
 
       if(lnucleate_bubbles) then
-        if(get_bubble_nucleation_rate() > max_bubble_nucleation_rate) then
-          call fatal_error("special_before_boundary",&
-                           "Rate rose over prescribed max rate! Means that sampling in time is not anymore accurate")
-        endif
         !TP: could be more precise taking substeps into account
         if(t+dt >= t_next_bubble) then
           call random_number_wrapper(acceptance_ran)
           acceptance_probability = get_bubble_nucleation_rate()/max_bubble_nucleation_rate
           if(acceptance_probability >= acceptance_ran) then
-            t_next_bubble = t+sample_poisson_waiting_time(max_bubble_nucleation_rate)
             pos = get_random_bubble_pos(f)
             call nucleate_a_bubble(f,pos)
+            if(bubble_times(bubble_counter) /= impossible) then
+              t_next_bubble = bubble_times(bubble_counter)
+            else if(.not. lgenerate_bubble_times) then
+              if(get_bubble_nucleation_rate() > max_bubble_nucleation_rate) then
+                call fatal_error("special_before_boundary",&
+                                 "Rate rose over prescribed max rate! Means that sampling in time is not anymore accurate")
+               endif
+               t_next_bubble = t+sample_poisson_waiting_time(max_bubble_nucleation_rate)
+            !Used up all bubbles so set next bubble after the end of the simulation
+            else
+              t_next_bubble = tmax+1.0
+            endif
           endif
         endif
       endif
