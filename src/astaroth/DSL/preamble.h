@@ -138,6 +138,10 @@ maxval(real[] arr)
 	}
 	return res
 }
+maxval(real3 vec)
+{
+	return max(vec)
+}
 minval(real x) {return x}
 
 #define notanumber(x) (false)
