@@ -181,7 +181,7 @@ module Special
       lwaterfall, lambda_psi, coupl_phipsi, c_psi, amplpsi, ampldpsi, psimass, &
       V0_usr, v_usr, alpha_usr, beta_usr, lphi_normalized_units, bubble_size_factor, &
       bubble_wall_width_factor,number_of_bubbles,bubble_positions, &
-      beta
+      beta,bubble_size,bubble_wall_width
 !
   namelist /special_run_pars/ &
       initspecial, phi0, dphi0, phimass, eps, ascale_ini, &
@@ -191,7 +191,8 @@ module Special
       phi_v, lhiggs_friction, higgs_friction, lwaterfall, lambda_psi, &
       coupl_phipsi, c_psi, lspeed_of_light_dt,lnucleate_bubbles, bubble_size_factor,&
       max_bubble_nucleation_rate, bubble_wall_width_factor,number_of_bubbles,&
-      lgenerate_bubble_times,beta,nucleation_rate_choice,bubble_position_criteria,tf
+      lgenerate_bubble_times,beta,nucleation_rate_choice,bubble_position_criteria,tf,&
+      bubble_size,bubble_wall_width
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -380,10 +381,14 @@ module Special
               delta_phi_prefactor = phi_tilde
               lambda_phi_prefactor = phi_tilde**2
               broken_mass = sqrt(-delta_phi - 2/phi_tilde)
-              critical_bubble_size = 12.0/(broken_mass**4*phi_tilde**2-1)
-              bubble_size = bubble_size_factor*critical_bubble_size
-              thin_bubble_wall_width = 2/sqrt(1+2*delta_phi*phi_tilde+3*lambda_phi*phi_tilde**2)
-              bubble_wall_width = bubble_wall_width_factor*thin_bubble_wall_width
+              if(bubble_size == impossible) then
+                critical_bubble_size = 12.0/(broken_mass**4*phi_tilde**2-1)
+                bubble_size = bubble_size_factor*critical_bubble_size
+              endif
+              if(bubble_wall_width == impossible) then
+                thin_bubble_wall_width = 2/sqrt(1+2*delta_phi*phi_tilde+3*lambda_phi*phi_tilde**2)
+                bubble_wall_width = bubble_wall_width_factor*thin_bubble_wall_width
+              endif
       endif
 !
 !  set phimass**2
