@@ -299,6 +299,9 @@ outer:do ikz=1,nz
 !   2026-May-09/Kishore: seem to be used anywhere as of now (or even in that commit)
     call keep_compiler_quiet(pdfy_max_logscale)
     call keep_compiler_quiet(pdfy_min_logscale)
+
+!   2026-Jul-02/TP: Now always writing krms out instead of it being embedded in other power routines
+    call write_krms
 !
   endsubroutine initialize_power_spectrum
 !***********************************************************************
@@ -1488,6 +1491,54 @@ outer:do ikz=1,nz
   !
   endsubroutine power_xy
 !***********************************************************************
+  subroutine write_krms
+!
+!  TP: Refactored the writing of krms into this single subroutine.
+!      It was before done at all different power subroutines, why?
+!      No we output it at the start of the simulation always
+!
+    use Mpicomm, only: mpireduce_sum
+
+    real, dimension(:), save, allocatable :: nks, nks_sum, k2m, k2m_sum, krms, km1
+    integer :: ikx,iky,ikz,k
+    integer, parameter :: nk=nxgrid/2
+    real :: k2
+
+    allocate(nks(nk), nks_sum(nk))
+    allocate(k2m(nk), k2m_sum(nk))
+    allocate(krms(nk), km1(nk))
+
+    krms=0.
+    nks =0.
+
+    do ikz=1,nz
+      do iky=1,ny
+        do ikx=1,nx
+          k2=get_k2(ikx+ipx*nx,iky+ipy*ny,ikz+ipz*nz)
+          k=nint(sqrt(k2))
+          if (k>=1e-150 .and. k<=(nk-1)) then
+            k2m(k+1)=k2m(k+1)+k2
+            nks(k+1)=nks(k+1)+1.
+          endif
+        enddo
+      enddo
+    enddo
+    call mpireduce_sum(k2m,k2m_sum,nk)
+    call mpireduce_sum(nks,nks_sum,nk)
+
+    if (lroot) then
+      where(nks_sum/=0)
+        krms=sqrt(k2m_sum/nks_sum)
+      elsewhere
+        krms=0.
+      endwhere
+      open(1,file=trim(datadir)//'/power_krms.dat',position='append')
+      write(1,power_format) krms
+      close(1)
+    endif
+
+  endsubroutine write_krms
+!***********************************************************************
   subroutine powerhel(f,sp,lfirstcall,sumspec,lnowrite)
 !
 !  Calculate power and helicity spectra (on spherical shells) of the
@@ -1518,7 +1569,7 @@ outer:do ikz=1,nz
     complex, save, allocatable, dimension(:,:,:) :: phi
     real, dimension(:), save, allocatable :: spectrum,spectrum_sum
     real, dimension(:), save, allocatable :: spectrumhel,spectrumhel_sum
-    real, dimension(:), save, allocatable :: nks, nks_sum, k2m, k2m_sum, krms, km1
+    real, dimension(:), save, allocatable :: km1
     real, allocatable, dimension(:,:), save :: cyl_spectrum, cyl_spectrum_sum
     real, allocatable, dimension(:,:), save :: cyl_spectrumhel, cyl_spectrumhel_sum
     character (len=3) :: sp
@@ -1531,15 +1582,9 @@ outer:do ikz=1,nz
     if (.not.allocated(spectrum)) then
       allocate(spectrum(nk),spectrum_sum(nk))
       allocate(spectrumhel(nk),spectrumhel_sum(nk))
+      allocate(km1(nk))
 !
-      allocate(nks(nk), nks_sum(nk))
-      allocate(k2m(nk), k2m_sum(nk))
-      allocate(krms(nk), km1(nk))
 !
-      nks = 0.
-      nks_sum = 0.
-      k2m = 0.
-      k2m_sum = 0.
     endif
 !
     if (lcylindrical_spectra) then
@@ -1569,8 +1614,6 @@ outer:do ikz=1,nz
 !  For vectors, this is done only once, namely for the first component.
 !
     !$omp workshare
-    k2m=0.
-    nks=0.
     spectrum=0.
     spectrumhel=0.
     !$omp end workshare
@@ -2000,7 +2043,7 @@ outer:do ikz=1,nz
 !  integration over shells
 !
       if (ip<10) call information('powerhel','fft done; now integrate over shells')
-      !$omp do collapse(3) reduction(+:spectrum,spectrumhel,k2m,nks)
+      !$omp do collapse(3) reduction(+:spectrum,spectrumhel)
       do ikz=1,nz
         do iky=1,ny
           do ikx=1,nx
@@ -2016,13 +2059,6 @@ outer:do ikz=1,nz
               spectrumhel(k+1)=spectrumhel(k+1) &
                  +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
                  +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
-!
-!  compute krms only once
-!
-              if (lwrite_krms) then
-                k2m(k+1)=k2m(k+1)+k2
-                nks(k+1)=nks(k+1)+1.
-              endif
 !
 !  end of loop through all points
 !
@@ -2171,24 +2207,6 @@ outer:do ikz=1,nz
       endif
     endif  !  if (lroot)
 !
-!  compute krms only once
-!
-    if (lwrite_krms) then
-      call mpireduce_sum(k2m,k2m_sum,nk)
-      call mpireduce_sum(nks,nks_sum,nk)
-      if (lroot) then
-        where(nks_sum/=0)
-          krms=sqrt(k2m_sum/nks_sum)
-        elsewhere
-          krms=0.
-        endwhere
-        open(1,file=trim(datadir)//'/power_krms.dat',position='append')
-        write(1,power_format) krms
-        close(1)
-      endif
-      lwrite_krms=.false.
-    endif
-!
   endsubroutine powerhel
 !***********************************************************************
   subroutine powerLor(f,sp)
@@ -2220,7 +2238,6 @@ outer:do ikz=1,nz
     real, dimension(nk) :: spectrum, spectrum_sum, spectrum2, spectrum2_sum
     real, dimension(nk) :: spectrumhel, spectrumhel_sum, spectrum2hel, spectrum2hel_sum
     character (len=3) :: sp
-    logical, save :: lwrite_krms=.true.
 !
 !  identify version
 !
@@ -2363,13 +2380,6 @@ outer:do ikz=1,nz
              +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
              +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
 !
-!  compute krms only once
-!
-          if (lwrite_krms) then
-            k2m(k+1)=k2m(k+1)+k2
-            nks(k+1)=nks(k+1)+1.
-          endif
-!
 !  end of loop through all points
 !
         endif
@@ -2386,14 +2396,6 @@ outer:do ikz=1,nz
     call mpireduce_sum(spectrumhel,spectrumhel_sum,nk)
     call mpireduce_sum(spectrum2,spectrum2_sum,nk)
     call mpireduce_sum(spectrum2hel,spectrum2hel_sum,nk)
-!
-!  compute krms only once
-!
-    if (lwrite_krms) then
-      call mpireduce_sum(k2m,k2m_sum,nk)
-      call mpireduce_sum(nks,nks_sum,nk)
-      if (iproc/=root) lwrite_krms=.false.
-    endif
 !
 !  on root processor, write global result to file
 !  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>
@@ -2455,13 +2457,6 @@ outer:do ikz=1,nz
       endif
       close(1)
 !
-      if (lwrite_krms) then
-        krms=sqrt(k2m_sum/nks_sum)
-        open(1,file=trim(datadir)//'/power_krms.dat',position='append')
-        write(1,power_format) krms
-        close(1)
-        lwrite_krms=.false.
-      endif
     endif
 !
     if (allocated(tmpv)) deallocate(tmpv)
@@ -2493,7 +2488,6 @@ outer:do ikz=1,nz
     real, dimension(nk) :: spectrum, spectrum_sum, spectrum2, spectrum2_sum
     real, dimension(nk) :: spectrumhel, spectrumhel_sum, spectrum2hel, spectrum2hel_sum
     character (len=3) :: sp
-    logical, save :: lwrite_krms=.true.
 !
 !  identify version
 !
@@ -2579,13 +2573,6 @@ outer:do ikz=1,nz
              +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
              +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
 !
-!  compute krms only once
-!
-          if (lwrite_krms) then
-            k2m(k+1)=k2m(k+1)+k2
-            nks(k+1)=nks(k+1)+1.
-          endif
-!
 !  end of loop through all points
 !
         endif
@@ -2602,14 +2589,6 @@ outer:do ikz=1,nz
     call mpireduce_sum(spectrumhel,spectrumhel_sum,nk)
     call mpireduce_sum(spectrum2,spectrum2_sum,nk)
     call mpireduce_sum(spectrum2hel,spectrum2hel_sum,nk)
-!
-!  compute krms only once
-!
-    if (lwrite_krms) then
-      call mpireduce_sum(k2m,k2m_sum,nk)
-      call mpireduce_sum(nks,nks_sum,nk)
-      if (iproc/=root) lwrite_krms=.false.
-    endif
 !
 !  on root processor, write global result to file
 !  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>
@@ -2670,14 +2649,6 @@ outer:do ikz=1,nz
         write(1,power_format) spectrum2hel_sum
       endif
       close(1)
-!
-      if (lwrite_krms) then
-        krms=sqrt(k2m_sum/nks_sum)
-        open(1,file=trim(datadir)//'/power_krms.dat',position='append')
-        write(1,power_format) krms
-        close(1)
-        lwrite_krms=.false.
-      endif
     endif
 !
   endsubroutine powerOmU
@@ -2709,7 +2680,6 @@ outer:do ikz=1,nz
     real, dimension(nk) :: spectrum,spectrum_sum
     real, dimension(nk) :: spectrumhel,spectrumhel_sum
     character (len=3) :: sp
-    logical, save :: lwrite_krms=.true.
   
 !
 !  identify version
@@ -2806,13 +2776,6 @@ outer:do ikz=1,nz
                  +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
                  +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
 !
-!  compute krms only once
-!
-              if (lwrite_krms) then
-                k2m(k+1)=k2m(k+1)+k2
-                nks(k+1)=nks(k+1)+1.
-              endif
-!
 !  end of loop through all points
 !
             endif
@@ -2828,14 +2791,6 @@ outer:do ikz=1,nz
 !
     call mpireduce_sum(spectrum,spectrum_sum,nk)
     call mpireduce_sum(spectrumhel,spectrumhel_sum,nk)
-!
-!  compute krms only once
-!
-    if (lwrite_krms) then
-      call mpireduce_sum(k2m,k2m_sum,nk)
-      call mpireduce_sum(nks,nks_sum,nk)
-      if (iproc/=root) lwrite_krms=.false.
-    endif
 !
 !  on root processor, write global result to file
 !  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>
@@ -2870,13 +2825,6 @@ outer:do ikz=1,nz
       endif
       close(1)
 !
-      if (lwrite_krms) then
-        krms=sqrt(k2m_sum/nks_sum)
-        open(1,file=trim(datadir)//'/power_krms.dat',position='append')
-        write(1,power_format) krms
-        close(1)
-        lwrite_krms=.false.
-      endif
     endif
 !
   endsubroutine powerEMF
@@ -2904,7 +2852,6 @@ outer:do ikz=1,nz
     real, dimension(nk) :: spectrum,spectrum_sum
     real, dimension(nk) :: spectrumhel,spectrumhel_sum
     character (len=3) :: sp
-    logical, save :: lwrite_krms=.true.
 !
 !  identify version
 !
@@ -3016,13 +2963,6 @@ outer:do ikz=1,nz
                  +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
                  +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
 !
-!  compute krms only once
-!
-              if (lwrite_krms) then
-                k2m(k+1)=k2m(k+1)+k2
-                nks(k+1)=nks(k+1)+1.
-              endif
-!
 !  end of loop through all points
 !
             endif
@@ -3038,14 +2978,6 @@ outer:do ikz=1,nz
 !
     call mpireduce_sum(spectrum,spectrum_sum,nk)
     call mpireduce_sum(spectrumhel,spectrumhel_sum,nk)
-!
-!  compute krms only once
-!
-    if (lwrite_krms) then
-      call mpireduce_sum(k2m,k2m_sum,nk)
-      call mpireduce_sum(nks,nks_sum,nk)
-      if (iproc/=root) lwrite_krms=.false.
-    endif
 !
 !  on root processor, write global result to file
 !  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>
@@ -3080,13 +3012,6 @@ outer:do ikz=1,nz
       endif
       close(1)
 !
-      if (lwrite_krms) then
-        krms=sqrt(k2m_sum/nks_sum)
-        open(1,file=trim(datadir)//'/power_krms.dat',position='append')
-        write(1,power_format) krms
-        close(1)
-        lwrite_krms=.false.
-      endif
     endif
 !
   endsubroutine poweraBE
@@ -3118,7 +3043,6 @@ outer:do ikz=1,nz
     real, dimension(nk) :: spectrum,spectrum_sum
     real, dimension(nk) :: spectrumhel,spectrumhel_sum
     character (len=3) :: sp
-    logical, save :: lwrite_krms=.true.
 
     if (.not. allocated(Adv)) allocate(Adv(mx,my,mz,3))
     if (.not. allocated(Str)) allocate(Str(mx,my,mz,3))
@@ -3213,13 +3137,7 @@ outer:do ikz=1,nz
               spectrumhel(k+1)=spectrumhel(k+1) &
                  +a_re(ikx,iky,ikz)*c_re(ikx,iky,ikz) &
                  +a_im(ikx,iky,ikz)*c_im(ikx,iky,ikz)
-!
-!  compute krms only once
-!
-              if (lwrite_krms) then
-                k2m(k+1)=k2m(k+1)+k2
-                nks(k+1)=nks(k+1)+1.
-              endif
+
 !
 !  end of loop through all points
 !
@@ -3235,14 +3153,6 @@ outer:do ikz=1,nz
 !
     call mpireduce_sum(spectrum,spectrum_sum,nk)
     call mpireduce_sum(spectrumhel,spectrumhel_sum,nk)
-!
-!  compute krms only once
-!
-    if (lwrite_krms) then
-      call mpireduce_sum(k2m,k2m_sum,nk)
-      call mpireduce_sum(nks,nks_sum,nk)
-      if (iproc/=root) lwrite_krms=.false.
-    endif
 !
 !  on root processor, write global result to file
 !  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>
@@ -3277,13 +3187,6 @@ outer:do ikz=1,nz
       endif
       close(1)
 !
-      if (lwrite_krms) then
-        krms=sqrt(k2m_sum/nks_sum)
-        open(1,file=trim(datadir)//'/power_krms.dat',position='append')
-        write(1,power_format) krms
-        close(1)
-        lwrite_krms=.false.
-      endif
     endif
 !
   endsubroutine powerTra
