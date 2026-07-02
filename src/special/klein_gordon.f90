@@ -342,6 +342,9 @@ module Special
       bubble_positions(bubble_counter,:) = pos
       bubble_times(bubble_counter)       = t
       bubble_counter = bubble_counter + 1
+      if(bubble_counter > max_bubbles) then
+        call fatal_error('nucleate_a_bubble', 'Too many bubbles!')
+      endif
     endsubroutine nucleate_a_bubble
 !***********************************************************************
     subroutine initialize_special(f)
