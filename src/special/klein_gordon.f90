@@ -166,6 +166,8 @@ module Special
   real :: beta = impossible
   logical :: lgenerate_bubble_times = .false.
   integer :: bubble_counter = 1
+  !TP: for backwards compatibility the setting of the random seed can be suppressed
+  logical :: linitialize_seed=.true.
 !
   namelist /special_init_pars/ &
       initspecial, phi0, dphi0, phimass, eps, ascale_ini, &
@@ -181,7 +183,7 @@ module Special
       lwaterfall, lambda_psi, coupl_phipsi, c_psi, amplpsi, ampldpsi, psimass, &
       V0_usr, v_usr, alpha_usr, beta_usr, lphi_normalized_units, bubble_size_factor, &
       bubble_wall_width_factor,number_of_bubbles,bubble_positions, &
-      beta,bubble_size,bubble_wall_width
+      beta,bubble_size,bubble_wall_width,linitialize_seed
 !
   namelist /special_run_pars/ &
       initspecial, phi0, dphi0, phimass, eps, ascale_ini, &
@@ -347,6 +349,20 @@ module Special
       endif
     endsubroutine nucleate_a_bubble
 !***********************************************************************
+    subroutine initialize_seed
+      use General, only: random_seed_wrapper
+!
+!  TP:   The random numbers must be synchronized on all processors or
+!        else the treatment of bubbles shall diverge and the MPI will
+!        break or worse hang. The same as in interstellar and supernova explosions
+!
+!
+      if(linitialize_seed) then
+        seed(1)=seed_reset
+        call random_seed_wrapper(PUT=seed)
+      endif
+    endsubroutine initialize_seed
+!***********************************************************************
     subroutine initialize_special(f)
 !
 !  Called after reading parameters, but before the time loop.
@@ -355,7 +371,7 @@ module Special
 !
       use SharedVariables, only: get_shared_variable, put_shared_variable
       use FArrayManager, only: farray_index_by_name_ode, farray_index_by_name
-      use General, only: random_seed_wrapper, random_number_wrapper
+      use General, only: random_number_wrapper
 !
       real,  dimension (mx,my,mz,mfarray) :: f
       integer :: iLCDM_lna,i
@@ -363,16 +379,9 @@ module Special
       real :: critical_bubble_size
       real :: thin_bubble_wall_width
 
-!
-!
-!  TP:   The random numbers must be synchronized on all processors or
-!        else the treatment of bubbles shall diverge and the MPI will
-!        break or worse hang. The same as in interstellar and supernova explosions
-!
-!
 
-      seed(1)=seed_reset
-      call random_seed_wrapper(PUT=seed)
+      call initialize_seed
+
       if (lflrw) then
         iLCDM_lna=farray_index_by_name_ode('iLCDM_lna')
         if (iLCDM_lna>0) call fatal_error('initialize_special', 'there is a conflict with iLCDM_lna')
@@ -488,13 +497,7 @@ module Special
 !
       use Initcond, only: gaunoise, sinwave_phase, hat, power_randomphase_hel, power_randomphase, bunch_davies
       use Mpicomm, only: mpibcast_real
-      use General, only: random_seed_wrapper, random_number_wrapper
-!
-!  TP:   The random numbers must be synchronized on all processors or
-!        else the treatment of bubbles shall diverge and the MPI will
-!        break or worse hang. The same as in interstellar and supernova explosions
-!
-!
+      use General, only: random_number_wrapper
       real,  dimension (mx,my,mz,mfarray) :: f
       real :: Vpotential, Hubble_ini, phi_gam, amplphi_BD, amplee_BD, deriv_prefactor
       integer :: i,j
@@ -503,8 +506,7 @@ module Special
 !
       intent(inout) :: f
 
-      seed(1)=seed_reset
-      call random_seed_wrapper(PUT=seed)
+      call initialize_seed
 !
 !  SAMPLE IMPLEMENTATION
 !

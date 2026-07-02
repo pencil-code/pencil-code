@@ -23,6 +23,7 @@
   initpower2_dphi=-3.
   lscale_tobox=F
   lflrw=T, lem_backreact=T, phimass=1.06e-6
+  linitialize_seed=F
 /
 &disp_current_init_pars
   initee='power_randomphase_hel', amplee=1.58e-10, kpeak_ee=50e-6
