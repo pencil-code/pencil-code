@@ -1907,6 +1907,7 @@ module Special
     call copy_addr(delta_phi,p_par(59))
     call copy_addr(delta_phi_prefactor,p_par(60))
     call copy_addr(lambda_phi_prefactor,p_par(61))
+    call copy_addr(lspeed_of_light_dt,p_par(62)) ! bool
     endsubroutine pushpars2c
 !********************************************************************
 !********************************************************************
