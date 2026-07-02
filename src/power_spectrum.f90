@@ -1499,16 +1499,16 @@ outer:do ikz=1,nz
 !
     use Mpicomm, only: mpireduce_sum
 
-    real, dimension(:), save, allocatable :: nks, nks_sum, k2m, k2m_sum, krms, km1
+    real, dimension(:), allocatable :: nks, nks_sum, k2m, k2m_sum, krms
     integer :: ikx,iky,ikz,k
     integer, parameter :: nk=nxgrid/2
     real :: k2
 
     allocate(nks(nk), nks_sum(nk))
     allocate(k2m(nk), k2m_sum(nk))
-    allocate(krms(nk), km1(nk))
+    allocate(krms(nk))
 
-    krms=0.
+    k2m =0.
     nks =0.
 
     do ikz=1,nz
@@ -1516,7 +1516,7 @@ outer:do ikz=1,nz
         do ikx=1,nx
           k2=get_k2(ikx+ipx*nx,iky+ipy*ny,ikz+ipz*nz)
           k=nint(sqrt(k2))
-          if (k>=1e-150 .and. k<=(nk-1)) then
+          if (k>=0 .and. k<=(nk-1)) then
             k2m(k+1)=k2m(k+1)+k2
             nks(k+1)=nks(k+1)+1.
           endif
