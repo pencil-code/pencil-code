@@ -1777,6 +1777,8 @@ module Special
       call copy_addr(linclude_dphib_in_mhd,p_par(60)) ! bool
       call copy_addr(linclude_gphixe_in_mhd,p_par(61)) ! bool
 
+    call copy_addr(lcorrect_sign_adphib_term,p_par(62)) ! bool
+    call copy_addr(lignore_adphib_term_in_mhd_current,p_par(63)) ! bool
     endsubroutine pushpars2c
 !***********************************************************************
 !
