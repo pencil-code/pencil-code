@@ -707,7 +707,7 @@ print*,'AXEL1: lheating_always=',lheating_always
 !  to rename lheating -> lheating_phi. The switch lheating_always is false by default
 !  and set to true after the first time lheating is true and if lheating_keep_on is true.
 !
-print*,'AXEL9: lheating_always=',lheating_always
+if (ip<16) print*,'AXEL9: lheating_always=',lheating_always
       if (lheating .or. lheating_always) then
         if (lsmooth_Gamma_phi) then
           Gamma_phi=Gamma_phi0*.5*(1.+tanh((ascale-ascale_heat)/ascale_heat_width))

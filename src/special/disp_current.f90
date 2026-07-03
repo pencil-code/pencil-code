@@ -78,6 +78,8 @@ module Special
   logical :: lrandom_ampl_ee=.false., lfixed_phase_ee=.false., lallow_bprime_zero=.true.
   logical :: lswitch_off_divJ=.false., lswitch_off_Gamma=.false., lmass_suppression=.false.
   logical :: loverride_c_light=.false., ldensity_add_je_heating=.false., llorentzforce_ee=.false.
+  logical :: lcorrect_sign_adphiB_term=.false. !PAR_DOC: correct sign adphiB_term
+  logical :: lignore_adphiB_term_in_MHD_current=.true. !PAR_DOC: correct sign adphiB_term
   character(len=labellen) :: inita0='zero'
   character (len=labellen), dimension(ninit) :: initee='nothing'
   character (len=labellen) :: power_filename='power_profile.dat'
@@ -132,7 +134,8 @@ module Special
     lohmic_heating_ee, lohmic_heating_justee, sigE_const_value, &
     ladvance_ee, eta_given, ldt_disp_current, cdt_sigE, &
     lresistive_gauge_disp, etaSchw_max, llate_reset_el_pencil, &
-    linclude_dphiB_in_MHD, linclude_gphixE_in_MHD
+    linclude_dphiB_in_MHD, linclude_gphixE_in_MHD, &
+    lcorrect_sign_adphiB_term, lignore_adphiB_term_in_MHD_current
 !
 ! Declare any index variables necessary for main or
 !
@@ -731,6 +734,15 @@ module Special
           p%sigB=0.
         endif
 !
+!  Compute magnetic diffusivity from 1/sigE, unless given.
+!  These 5 lines used to come after "if (ijx/=0)", but it should be done even if lohm_evolve=T
+!
+        if (eta_given==impossible) then
+          etaSchw=1./p%sigE
+        else
+          etaSchw=eta_given
+        endif
+!
 !  Now compute current, using any of the 4 expressions above.
 !  This also sets the auxiliary array (l1:l2,m,n,ijx:ijz), if needed.
 !
@@ -749,20 +761,16 @@ module Special
 !
 !  0 = curlB - mu0*J, but ignore mu0 for now.
 !
-            p%jj_ohm=p%curlb
+            if (lignore_adphiB_term_in_MHD_current) then
+              p%jj_ohm=p%curlb
+            else
+              call multsv_add(p%curlb,-alpf*p%infl_dphi,p%bb,p%jj_ohm)
+            endif
           endif
 !
 !  This would overwrite f(l1:l2,m,n,ijx:ijz)
 !
           if (ijx/=0) f(l1:l2,m,n,ijx:ijz) = p%jj_ohm
-!
-!  Compute magnetic diffusivity from 1/sigE, unless given.
-!
-          if (eta_given==impossible) then
-            etaSchw=1./p%sigE
-          else
-            etaSchw=eta_given
-          endif
 !
 !  If no time advance of E, we add here the expression without dispacement
 !  current based on Ohm's law, i.e., E = -uxb + J/sigE.
@@ -781,7 +789,11 @@ module Special
               endif
               E_MHD=-p%uxb+tmpv
               if (linclude_dphiB_in_MHD) then
-                call multsv_add(E_MHD,alpf*etaSchw*p%infl_dphi,p%bb,E_MHD)
+                if (lcorrect_sign_adphiB_term) then
+                  call multsv_add(E_MHD,-alpf*etaSchw*p%infl_dphi,p%bb,E_MHD)
+                else
+                  call multsv_add(E_MHD,alpf*etaSchw*p%infl_dphi,p%bb,E_MHD)
+                endif
                 if (linclude_gphixE_in_MHD) then
                   call dot2_mn(p%gphi,gphi2)
                   prefactor=alpf*etaSchw
