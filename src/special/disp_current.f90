@@ -1793,6 +1793,7 @@ module Special
 
     call copy_addr(lcorrect_sign_adphib_term,p_par(62)) ! bool
     call copy_addr(lignore_adphib_term_in_mhd_current,p_par(63)) ! bool
+    call copy_addr(idiag_bcurlbm,p_par(64)) ! int
     endsubroutine pushpars2c
 !***********************************************************************
 !
