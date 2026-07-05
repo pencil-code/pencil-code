@@ -827,7 +827,12 @@ module Snapshot
 !  t*.dat file did not yet exist. This is important if trigger_spec is not the code_time.
 !
         if (lfirst_call) then
-          if (.not. existed) tspec_next=t_trigger
+          if (.not. existed) then 
+            tspec_next = t_trigger
+            if(trigger_spec == 'code_time') then
+              tspec_next=tspec_next + dspec
+            endif
+          endif
           lfirst_call=.false.
         endif
         call update_snaptime(file,tspec_next,nspec,dspec,dble(t_trigger),lspec)
