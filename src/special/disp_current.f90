@@ -14,7 +14,7 @@
 ! MVAR CONTRIBUTION 4
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED e2; edot2; el(3); a0; ga0(3); del2ee(3); curlE(3); BcurlE
+! PENCILS PROVIDED e2; edot2; el(3); a0; ga0(3); del2ee(3); curlE(3); BcurlE; BcurlB
 ! PENCILS PROVIDED rhoe, divJ, divE, gGamma(3); sigE, sigB; eb; count_eb0
 ! PENCILS PROVIDED boost; gam_EB; eprime; bprime; jprime; GammaY
 ! PENCILS PROVIDED jj_higgsY(3); rhoe_higgsY
@@ -156,6 +156,7 @@ module Special
   integer :: idiag_grms=0       ! DIAG_DOC: $\left<C-\nabla\cdot\Av\right>^{1/2}$
   integer :: idiag_da0rms=0     ! DIAG_DOC: $\left<C-\nabla\cdot\Av\right>^{1/2}$
   integer :: idiag_BcurlEm=0    ! DIAG_DOC: $\left<\Bv\cdot\nabla\times\Ev\right>$
+  integer :: idiag_BcurlBm=0    ! DIAG_DOC: $\left<\Bv\cdot\nabla\times\Bv\right>$
   integer :: idiag_divJrms=0    ! DIAG_DOC: $\left<\nab\Jv^2\right>^{1/2}$
   integer :: idiag_divErms=0    ! DIAG_DOC: $\left<\nab\Ev^2\right>^{1/2}$
   integer :: idiag_rhoerms=0    ! DIAG_DOC: $\left<\rho_e^2\right>^{1/2}$
@@ -562,6 +563,11 @@ module Special
         lpenc_diagnos(i_BcurlE)=.true.
       endif
 !
+      if (idiag_BcurlBm/=0) then
+        lpenc_diagnos(i_bb)=.true.
+        lpenc_diagnos(i_curlb)=.true.
+      endif
+!
       if (idiag_ebm/=0) lpenc_diagnos(i_eb)=.true.
       if (idiag_a0rms/=0) lpenc_diagnos(i_a0)=.true.
       if (idiag_grms/=0) lpenc_diagnos(i_diva)=.true.
@@ -863,6 +869,12 @@ module Special
       if (idiag_BcurlEm/=0) then
         call curl(f,iex,p%curle)
         call dot(p%bb,p%curle,p%BcurlE)
+      endif
+!
+!  curlb
+!
+      if (idiag_BcurlBm/=0) then
+        call dot(p%bb,p%curlb,p%BcurlB)
       endif
 ! !
 ! !  del2ee
@@ -1419,6 +1431,7 @@ module Special
       if (idiag_boostprms/=0) call sum_mn_name(p%boost**2 ,idiag_boostprms,lsqrt=.true.)
       if (idiag_a0rms/=0) call sum_mn_name(p%a0**2,idiag_a0rms,lsqrt=.true.)
       call sum_mn_name(p%BcurlE,idiag_BcurlEm)
+      call sum_mn_name(p%BcurlB,idiag_BcurlBm)
   !   if (lsolve_chargedensity) then
       call sum_mn_name(p%rhoe,idiag_rhoem)
       call sum_mn_name(p%count_eb0,idiag_count_eb0)
@@ -1528,7 +1541,7 @@ module Special
 !
       if (lreset) then
         idiag_EEEM=0; idiag_erms=0; idiag_exm=0;idiag_eym=0;  idiag_ezm=0; idiag_emax=0
-        idiag_edotrms=0; idiag_a0rms=0; idiag_grms=0; idiag_da0rms=0; idiag_BcurlEm=0
+        idiag_edotrms=0; idiag_a0rms=0; idiag_grms=0; idiag_da0rms=0; idiag_BcurlEm=0; idiag_BcurlBm=0
         idiag_mfpf=0; idiag_fppf=0; idiag_afact=0
         idiag_rhoerms=0; idiag_divErms=0; idiag_divJrms=0
         idiag_rhoem=0; idiag_count_eb0=0; idiag_divEm=0; idiag_divJm=0; idiag_constrainteqn=0
@@ -1561,6 +1574,7 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'grms',idiag_grms)
         call parse_name(iname,cname(iname),cform(iname),'da0rms',idiag_da0rms)
         call parse_name(iname,cname(iname),cform(iname),'BcurlEm',idiag_BcurlEm)
+        call parse_name(iname,cname(iname),cform(iname),'BcurlBm',idiag_BcurlBm)
         call parse_name(iname,cname(iname),cform(iname),'divErms',idiag_divErms)
         call parse_name(iname,cname(iname),cform(iname),'divJrms',idiag_divJrms)
         call parse_name(iname,cname(iname),cform(iname),'rhoerms',idiag_rhoerms)

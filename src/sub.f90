@@ -3868,7 +3868,7 @@ module Sub
 !
     endsubroutine rdim
 !***********************************************************************
-    subroutine read_snaptime(file,tout,nout,dtout,t_temp)
+    subroutine read_snaptime(file,tout,nout,dtout,t_temp,existed)
 !
 !  Read in output time for next snapshot (or similar) from control file.
 !
@@ -3887,6 +3887,7 @@ module Sub
 !
       integer, parameter :: lun = 31
       logical :: exist, exist1
+      logical, optional, intent(OUT) :: existed
       integer, parameter :: nbcast_array=2
       real, dimension(nbcast_array) :: bcast_array
       real(KIND=rkind8) :: t0
@@ -3955,6 +3956,11 @@ module Sub
           close(lun)
         endif
 !
+!  For correctly initializing tinit, we need to know in the calling routine
+!  whether the file existed. If it did, tinit would not be touched.
+!
+        if (present(existed)) existed=exist
+!
 !  Broadcast tout and nout in one go.
 !
         bcast_array(1) = tout
@@ -3996,10 +4002,12 @@ module Sub
       integer, parameter :: lun = 31
       integer ::  ntsnap=0, jtsnap=0
       logical :: lwrite, litsnap = .false.
-      real :: t_sp   ! t in single precision for backwards compatibility
+      real :: t_sp   ! t in single precision (=sp) for backwards compatibility
       logical, save :: lfirstcall=.true.
       real, save :: deltat_threshold
       real, dimension(:), allocatable :: tsnap_list
+!
+!  Never do output if the time is NaN.
 !
       if (notanumber(real (t))) then
         lout=.false.
@@ -4011,6 +4019,7 @@ module Sub
       t_sp=real(t)
 !
 !  Check if no writing tout is requested.
+!  If nowrite=T (which is F by default) is set in src/param_io.f90, then lwrite=F.
 !
       lwrite = .true.
       if (present(nowrite)) lwrite = .not. nowrite
@@ -4054,6 +4063,9 @@ module Sub
         endif
       endif
 !
+!  Consider output when t_sp >= tout. Note that these may not
+!  be code time, if t_trigger is not the code_time.
+!
       if ((t_sp >= tout) .or. &
 !      if (lout.or.t_sp    >= tout             .or. &
           (abs(t_sp-tout) <  deltat_threshold) .or. &
@@ -4077,13 +4089,11 @@ module Sub
 !  When toutoff=1., the output times would be 1.1, 1.2, 1.5, etc.
 !
           if (dtout<0.0) then
-            !tout=toutoff+(tout-toutoff)*10.**onethird
             tout=real(toutoff+(tout-toutoff)*10.**onesixth)
           elseif (itsnap/=impossible_int) then
             tout=huge_real
           else
             tout=tout+abs(dtout)
-!           if (.not.lout) tout=tout+abs(dtout)
           endif
         endif
 !
@@ -7486,6 +7496,8 @@ nameloop: do
       if (present(mask)) then
         if ( mask>=1 .and. mask <=3 ) msk=mask
       endif
+!
+!  Note that this currently only works for 6th order, not for 10th order.
 !
       call calc_del6_for_upwind(f,k,uu,del6f_upwind,msk)
 !
