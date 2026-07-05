@@ -118,6 +118,9 @@ module Special
   real :: wstate_prev=0.          !PAR_DOC: value of wstate in the previous iteration.
   real :: a4rhophim_crit=0.       !PAR_DOC: critical value of a4rhophim below lsolve_phi=F is set.
   real :: lna_switch_toMHD=4.17   !PAR_DOC: critical value when to switch to MHD (if lswitch_toMHD_at_lna=T)
+  real :: lnascale_reheating=impossible !PAR_DOC: value of lna when reheating has started
+  real :: dlnascale_reheating=0.  !PAR_DOC: width in lna over which reheating should occur
+  real :: lg_Gamma_phi_fraction_firststep=1e-3  !PAR_DOC: lg of Gamma phi fraction at firststep
   real, pointer :: sigE_ceiling   !PAR_DOC: sigE ceiling
   real, pointer :: sigE_const_value !PAR_DOC: constant value for sigE
 !
@@ -215,7 +218,8 @@ module Special
       lit1_reset_if_lsolve_for_phi, it1_reset_value, &
       lsigE_const_ifnot_lsolve_for_phi, lsigE_const, lsigE_const_if_lsolve_for_phi, &
       lold_lrho_chi_dtconstraint, linclude_rhokin_in_a2rho, linclude_rho_EBK_in_wstate, &
-      lswitch_toMHD_at_lna, lna_switch_toMHD
+      lswitch_toMHD_at_lna, lna_switch_toMHD, &
+      dlnascale_reheating, lg_Gamma_phi_fraction_firststep
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -710,7 +714,18 @@ print*,'AXEL1: lheating_always=',lheating_always
 if (ip<16) print*,'AXEL9: lheating_always=',lheating_always
       if (lheating .or. lheating_always) then
         if (lsmooth_Gamma_phi) then
-          Gamma_phi=Gamma_phi0*.5*(1.+tanh((ascale-ascale_heat)/ascale_heat_width))
+          if (dlnascale_reheating==0.) then
+            Gamma_phi=Gamma_phi0*.5*(1.+tanh((ascale-ascale_heat)/ascale_heat_width))
+          else
+!
+!  When dlnascale_reheating /= 0, then we use the following formula, where Gamma_phi jumps
+!  to a fraction 10^lg_Gamma_phi_fraction_firststeplg_Gamma_phi_fraction_firststep of the
+!  final Gamma_phi value within the first time step, and then its log growth linearly
+!  in lna within the interval dlnascale_reheating.
+!
+            Gamma_phi=Gamma_phi0*10.**(lg_Gamma_phi_fraction_firststep*(1.- &
+              min(max(log(ascale)-lnascale_reheating,0.)/dlnascale_reheating,1.)))
+          endif
         else
           Gamma_phi=Gamma_phi0
         endif
@@ -1524,6 +1539,7 @@ print*,'AXEL2: id, done=',id, done
             lheating=Hscript<Hscript_prev
             Hscript_prev=Hscript
             lheating_always=lheating .and. lheating_keep_on
+            lnascale_reheating=alog(ascale)
             !if (lroot .and. lheating .and. lheating_keep_on) then
             if (lheating .and. lheating_keep_on) then
               if (lroot) then
