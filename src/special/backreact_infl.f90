@@ -1979,6 +1979,9 @@ print*,'AXEL2: id, done=',id, done
     call copy_addr(ascale_heat_width,p_par(50))
     call copy_addr(lsmooth_gamma_phi,p_par(51)) ! bool
 
+    call copy_addr(lnascale_reheating,p_par(52))
+    call copy_addr(dlnascale_reheating,p_par(53))
+    call copy_addr(lg_gamma_phi_fraction_firststep,p_par(54))
     endsubroutine pushpars2c
 !********************************************************************
 !********************************************************************
