@@ -6,7 +6,7 @@
 !  This file is included by cparam.f90
 !
 ! MAUX CONTRIBUTION 11
-! COMMUNICATED AUXILIARIES 8
+! COMMUNICATED AUXILIARIES 11
 !
 integer, parameter :: ncpus=1,nprocy=1,nprocz=1,nprocx=ncpus/(nprocy*nprocz)
 integer, parameter :: nxgrid=16,nygrid=nxgrid,nzgrid=nxgrid
