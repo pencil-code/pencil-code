@@ -57,6 +57,7 @@ module Magnetic_meanfield
   character (len=labellen) :: Omega_profile='nothing', alpha_profile='const'
   character (len=labellen) :: EMF_profile='nothing', delta_profile='const'
   character (len=labellen) :: shear_current_profile='nothing',fluc_alp_profile='gaussian'
+  character (len=labellen) :: alpha_tdep_type      !PAR_DOC: type of temporal modulation of alpha effect
   character (len=labellen), dimension(ninit) :: init_mf='nothing'
 !
 ! Input parameters
@@ -105,6 +106,7 @@ module Magnetic_meanfield
   real :: GWfac1=1., GWfac2=1., GWfac3=1.
   real :: fluc_alp_m=1.0, sigma_alpha=1.0
   real :: b2_to_u2=0.0, shear_current_sh=0.0
+  real :: XXX=0.0
   integer :: npatches=1, npatches_actual, seed_magn_mf2=5555, nmultipole=1
   real, dimension(3) :: alpha_aniso=0.
   real, dimension(3,3) :: alpha_tensor=0., eta_tensor=0.
@@ -128,6 +130,8 @@ module Magnetic_meanfield
   logical :: lshear_current_effect=.false., lalphass_disk=.false.
   logical :: ltest_patches=.false., lOmega_effect_meanfield=.false.
   real :: ampluu_kinematic=0., roty0=0., b0=0., r0=1.
+  real :: alpha_tdep_t1=0., alpha_tdep_t2=0. !PAR_DOC: start and end time of temporal modulation of alpha effect
+  logical :: lalpha_tdep=.false.             !PAR_DOC: true if temporal modulation of alpha effect is invoked
   real, dimension(:), allocatable :: xcenter, ycenter, zcenter, roty, cy, sy
 !
   namelist /magn_mf_run_pars/ &
@@ -168,7 +172,8 @@ module Magnetic_meanfield
       Omega_rmax, Omega_rwidth, lread_alpha_tensor_z, lread_eta_tensor_z, &
       lread_alpha_tensor_z_as_y, lread_eta_tensor_z_as_y, &
       x1_alp, x2_alp, y1_alp, y2_alp, roty0, r0, b0, &
-      lGW_tensor, kx_hij, relhel_hij, hij_ampl, GWfac1, GWfac2, GWfac3
+      lGW_tensor, kx_hij, relhel_hij, hij_ampl, GWfac1, GWfac2, GWfac3, &
+      lalpha_tdep, alpha_tdep_type, alpha_tdep_t1, alpha_tdep_t2
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -1215,7 +1220,7 @@ module Magnetic_meanfield
 !
       if (lpencil(i_mf_EMF)) then
 !
-!  compute alpha profile (alpha_tmp)
+!  compute alpha profile (=alpha_tmp, spatial and temporal)
 !
         if (nxgrid/=1) kx=2*pi/Lx
         select case (alpha_profile)
@@ -1553,6 +1558,23 @@ module Magnetic_meanfield
               meanfield_getat_tmp(:,3)=tmp*z(n)*meanfield_etat_rmax/meanfield_etat_height
             endif
           endif
+        endif
+!
+!  Added possibility of a time modulation on top of alpha_tmp.
+!
+        if (lalpha_tdep) then
+          select case (alpha_tdep_type)
+!
+!  Set alpha_tmp=0 when 
+!
+          case ('step')
+            if (t<=alpha_tdep_t1 .or. t>alpha_tdep_t2) alpha_tmp=0.
+!
+!  Default -> error
+!
+          case default;
+            call fatal_error('calc_pencils_magn_mf','Invalid alpha_time_modulation value')
+          endselect
         endif
 !
 !  Here we initialize alpha_total.
@@ -1954,7 +1976,7 @@ module Magnetic_meanfield
 !***********************************************************************
     subroutine daa_dt_meanfield(f,df,p)
 !
-!  Add mean-field evolution to magnetic field.
+!  Add mean-field evolution (p%mf_EMF) to magnetic field.
 !  Note that this routine is not called when ldisp_current=T.
 !
 !  27-jul-10/axel: coded

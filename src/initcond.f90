@@ -46,7 +46,7 @@ module Initcond
   public :: htube2_x
   public :: Gaussian_By_z
   public :: wave_uu, wave, parabola, linprof
-  public :: sinxsinz, cosx_cosy_cosz, cosx_coscosy_cosz
+  public :: sinxsinz, cosx_cosy_cosz, cosx_coscosy_cosz, sinx_cosy_ey
   public :: x_siny_cosz, x1_siny_cosz, x32_siny_cosz, x1_cosy_cosz, lnx_cosy_cosz
   public :: sinx_siny_sinz, sinx_cosy_cosz, cosx_siny_cosz, sinx_siny_cosz
   public :: sin2x_sin2y_cosz, cos2x_cos2y_cos2z, x3_cosy_cosz, x3_siny_cosz
@@ -221,6 +221,37 @@ module Initcond
       endif
 !
     endsubroutine sinx_siny_cosz
+!***********************************************************************
+    subroutine sinx_cosy_ey(ampl,f,i,kx,ky,kz)
+!
+!  sinusoidal wave, adapted from sinx_cosy_ey (that routine was already doing
+!  this, but under a different name)
+!
+!  22-jun-26/axel: coded
+!
+      integer :: i
+      real, contiguous, dimension(:,:,:,:) :: f
+      real,optional :: kx,ky,kz
+      real :: ampl,kx1=pi/2.,ky1=0.,kz1=pi/2.
+!
+!  wavenumber k, helicity H=ampl (can be either sign)
+!
+!  (0, sinx(kx*x)*cos(ky*y), 0)
+!
+      if (present(kx)) kx1=kx
+      if (present(ky)) ky1=ky
+      if (present(kz)) kz1=kz
+      if (ampl==0) then
+        if (lroot) print*,'sinx_cosy_ey: ampl=0'
+      else
+        if (lroot) write(*,wave_fmt1) 'sinx_cosy_ey: ampl,kx,ky,kz=', &
+                                      ampl,kx1,ky1,kz1
+        f(:,:,:,i)=f(:,:,:,i)+ampl*(spread(spread(sin(kx1*x),2,my),3,mz)&
+                                   *spread(spread(cos(ky1*y),1,mx),3,mz)&
+                                   *spread(spread(cos(kz1*z),1,mx),2,my))
+      endif
+!
+    endsubroutine sinx_cosy_ey
 !***********************************************************************
     subroutine x3_siny_cosz(ampl,f,i,x1,x2,ky,kz)
 !

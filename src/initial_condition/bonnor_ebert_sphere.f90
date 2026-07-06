@@ -91,7 +91,7 @@ module InitialCondition
       use Sub, only: interp1
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f      
-      real :: lnrho_r, rho_r, rgrid, Gnewton
+      real :: rho_r, rgrid, Gnewton
       real, pointer :: Gnewton_ptr
       !real, allocatable, intent(inout) :: rr(:), rho_be(:)
       real, allocatable :: rr(:), rho_be(:)
