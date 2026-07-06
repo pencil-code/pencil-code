@@ -3497,7 +3497,7 @@ module Hydro
       use Sub, only: multsv_mn, del2v_etc, gij_etc, u_dot_grad, del6v, &
         dot2_mn, gij, div_mn, traceless_strain, curl_mn, multm2_sym_mn, &
         dot_mn, cross, del4v, del4graddiv, d2fi_dxj, del2fi_dxjk, h_dot_grad, &
-        invmat_DB, multmv, dot_mn_sv_pencil, gij_v_times_s
+        multmv, dot_mn_sv_pencil, gij_v_times_s
       use WENO_transport, only: weno_transp
 !
       real, contiguous, dimension(:,:,:,:) :: f
@@ -3760,7 +3760,7 @@ module Hydro
     subroutine calc_uu(f,p)
 
       use EquationOfState, only: cs20
-      use Sub, only: multsv_mn
+      use Sub, only: multsv_mn,invmat_DB,multmv
 
       real, contiguous, dimension(:,:,:,:) :: f
       type (pencil_case) :: p
