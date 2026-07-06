@@ -84,7 +84,7 @@ module Special
 !
   use Cdata
   use General, only: keep_compiler_quiet
-  use Messages, only: svn_id, fatal_error
+  use Messages, only: svn_id, fatal_error, warning
 !
   implicit none
 !
@@ -98,10 +98,11 @@ module Special
   integer :: iphi_up_re=0, iphi_up_im=0, iphi_down_re=0, iphi_down_im=0
   integer :: idphi_up_re=0, idphi_up_im=0, idphi_down_re=0, idphi_down_im=0
   real :: ncutoff_phi=1., phi_v=.1
-  real :: phimass=1.06e-6, phimass2, ascale_ini=1.
+  real :: phimass=1.06e-6, phimass2=impossible, ascale_ini=1.
   real :: psimass=1., psimass2
   real :: phi0=.44, dphi0=-1.69e-7, c_phi=1., delta_phi=0.,lambda_phi=0., eps=.01
-  real :: delta_phi_prefactor=1.0,lambda_phi_prefactor = 1.0/6.0
+  real :: delta_phi_prefactor=1.0,lambda_phi_prefactor=1.0
+  real :: chi_quartic = impossible   ! normalized variable for quartic potential
   real :: lambda_psi=0., coupl_phipsi=0., c_psi=1.
   real :: amplphi=.1, ampldphi=.0, kx_phi=1., ky_phi=0., kz_phi=0., phase_phi=0., width_phi=.1, offset=0.
   real :: amplpsi=0., ampldpsi=0.
@@ -172,7 +173,7 @@ module Special
   logical :: linitialize_seed=.true.
 !
   namelist /special_init_pars/ &
-      initspecial, phi0, dphi0, phimass, eps, ascale_ini, &
+      initspecial, phi0, dphi0, phimass, phimass2, eps, ascale_ini, &
       lcompute_dphi0, lem_backreact, &
       c_phi, delta_phi, lambda_phi, Vprime_choice, amplphi, ampldphi, lno_noise_phi, lno_noise_dphi, &
       kx_phi, ky_phi, kz_phi, phase_phi, width_phi, offset, &
@@ -185,10 +186,11 @@ module Special
       lwaterfall, lambda_psi, coupl_phipsi, c_psi, amplpsi, ampldpsi, psimass, &
       V0_usr, v_usr, alpha_usr, beta_usr, lphi_normalized_units, bubble_size_factor, &
       bubble_wall_width_factor,number_of_bubbles,bubble_positions, &
-      beta,bubble_size,bubble_wall_width,linitialize_seed
+      beta,bubble_size,bubble_wall_width,linitialize_seed, &
+      chi_quartic
 !
   namelist /special_run_pars/ &
-      initspecial, phi0, dphi0, phimass, eps, ascale_ini, &
+      initspecial, phi0, dphi0, phimass, phimass2, eps, ascale_ini, &
       lem_backreact, c_phi, delta_phi, lambda_phi, Vprime_choice, &
       ldt_klein_gordon, Ndiv, Hscript0, Hscript_choice, &
       lflrw, lrho_chi, scale_rho_chi_Heqn, echarge_type, cdt_rho_chi, &
@@ -315,7 +317,7 @@ module Special
       real :: r,bubble_profile
 !
       if(iphi == 0) then
-              call fatal_error("nucleate_a_bubble: ","Cannot nucleate a bubble without phi!")
+        call fatal_error("nucleate_a_bubble: ","Cannot nucleate a bubble without phi!")
       endif
       do l = l1,l2; do m = m1,m2; do n = n1,n2
         if(lcartesian_coords) then
@@ -379,7 +381,7 @@ module Special
       integer :: iLCDM_lna,i
       real :: broken_mass,phi_tilde,u
       real :: critical_bubble_size
-      real :: thin_bubble_wall_width
+      real :: thin_bubble_wall_width,sign_m2
 
 
       call initialize_seed
@@ -389,26 +391,53 @@ module Special
         if (iLCDM_lna>0) call fatal_error('initialize_special', 'there is a conflict with iLCDM_lna')
       endif
 !
-      if(lphi_normalized_units) then
-              phimass = 1.0
-              phi_tilde = (-delta_phi + sqrt(delta_phi**2 - 4*lambda_phi)) / (2*lambda_phi)
-              delta_phi_prefactor = phi_tilde
-              lambda_phi_prefactor = phi_tilde**2
-              broken_mass = sqrt(-delta_phi - 2/phi_tilde)
-              if(bubble_size == impossible) then
-                critical_bubble_size = 12.0/(broken_mass**4*phi_tilde**2-1)
-                bubble_size = bubble_size_factor*critical_bubble_size
-              endif
-              if(bubble_wall_width == impossible) then
-                thin_bubble_wall_width = 2/sqrt(1+2*delta_phi*phi_tilde+3*lambda_phi*phi_tilde**2)
-                bubble_wall_width = bubble_wall_width_factor*thin_bubble_wall_width
-              endif
-      endif
-!
 !  set phimass**2
 !
-      phimass2=phimass**2
+      if (phimass2 == impossible) phimass2=phimass**2
       if (lwaterfall) psimass2=psimass**2
+!
+!     alberto: lphi_normalized_units seems too generic, should we call it lphi_normalized_quartic or similar?
+      if(lphi_normalized_units .and. Vprime_choice=='quartic') then
+        ! phimass = 1.0
+        sign_m2 = sign(1.0, phimass2)
+        phimass2 = sign_m2
+        ! alberto: we can allow phimass2 to be positive or negative (or zero)
+        ! phi_tilde = (-delta_phi + sqrt(delta_phi**2 - 4*lambda_phi)) / (2*lambda_phi)
+        ! alberto: we can use chi variable (see updated notes)
+        if (chi_quartic == impossible) then
+          if (lambda_phi <= 0) then
+            call fatal_error('initialize_special',&
+                      'choose lambda_phi > 0 for quartic potential with lphi_normalized_units')
+          endif
+          chi_quartic = (-delta_phi + sqrt(delta_phi**2 - sign_m2*4*lambda_phi)) / (2*lambda_phi)
+          chi_quartic = chi_quartic**2 - 1
+        endif
+        if (chi_quartic <= 0) then
+          call fatal_error('initialize_special',&
+                    'choose chi_quartic > 0 for quartic potential with lphi_normalized_units')
+        elseif (chi_quartic < 1 .and. sign_m2 > 0) then
+          call warning('initialize_special',&
+                    'chi_quartic < 1 and sign_m2 > 0: potential does not present a broken phase')
+        endif
+        phi_tilde = sqrt(1 + chi_quartic)
+        ! delta_phi_prefactor = phi_tilde
+        ! lambda_phi_prefactor = phi_tilde**2 / 6.
+        ! alberto: we can directly give delta and lambda in normalized unit chi
+        delta_phi = - 1 - chi_quartic - sign_m2
+        lambda_phi = 1 + chi_quartic
+        ! broken_mass = sqrt(-delta_phi - 2/phi_tilde)
+        broken_mass = sqrt(1 + chi_quartic - sign_m2)
+        if(bubble_size == impossible) then
+          ! critical_bubble_size = 12.0/(broken_mass**4*phi_tilde**2-1)
+          critical_bubble_size = 12.0/(broken_mass**4-1)
+          bubble_size = bubble_size_factor*critical_bubble_size
+        endif
+        if(bubble_wall_width == impossible) then
+          ! thin_bubble_wall_width = 2/sqrt(1+2*delta_phi*phi_tilde+3*lambda_phi*phi_tilde**2)
+          thin_bubble_wall_width = 2/sqrt(broken_mass)
+          bubble_wall_width = bubble_wall_width_factor*thin_bubble_wall_width
+        endif
+      endif
 !
       if (lmagnetic .and. lem_backreact) then
         call get_shared_variable('alpf',alpf,caller='initialize_klein_gordon')
@@ -908,6 +937,7 @@ module Special
       p%Vthermal_prime=0.0
       select case (Vprime_choice)
         case ('quadratic'); p%Vprime=phimass2*p%phi
+        ! alberto: do we need the prefactor variables lambda_phi_prefactor and delta_phi_prefactor?
         case ('quartic'); p%Vprime=phimass2*p%phi+delta_phi_prefactor*delta_phi*p%phi**2&
                                    +lambda_phi_prefactor*lambda_phi*p%phi**3
         case ('cos-profile'); p%Vprime=phimass2*lambda_phi*sin(lambda_phi*p%phi)
