@@ -98,11 +98,11 @@ module Special
   integer :: iphi_up_re=0, iphi_up_im=0, iphi_down_re=0, iphi_down_im=0
   integer :: idphi_up_re=0, idphi_up_im=0, idphi_down_re=0, idphi_down_im=0
   real :: ncutoff_phi=1., phi_v=.1
-  real :: phimass=1.06e-6, phimass2=impossible, ascale_ini=1.
+  real :: phimass=1.06e-6, phimass2, ascale_ini=1., sign_phimass2=1.
   real :: psimass=1., psimass2
   real :: phi0=.44, dphi0=-1.69e-7, c_phi=1., delta_phi=0.,lambda_phi=0., eps=.01
   real :: delta_phi_prefactor=1.0,lambda_phi_prefactor=1.0
-  real :: chi_quartic = impossible   ! normalized variable for quartic potential
+  real :: chi_quartic=impossible   ! normalized variable for quartic potential
   real :: lambda_psi=0., coupl_phipsi=0., c_psi=1.
   real :: amplphi=.1, ampldphi=.0, kx_phi=1., ky_phi=0., kz_phi=0., phase_phi=0., width_phi=.1, offset=0.
   real :: amplpsi=0., ampldpsi=0.
@@ -173,7 +173,7 @@ module Special
   logical :: linitialize_seed=.true.
 !
   namelist /special_init_pars/ &
-      initspecial, phi0, dphi0, phimass, phimass2, eps, ascale_ini, &
+      initspecial, phi0, dphi0, phimass, sign_phimass2, eps, ascale_ini, &
       lcompute_dphi0, lem_backreact, &
       c_phi, delta_phi, lambda_phi, Vprime_choice, amplphi, ampldphi, lno_noise_phi, lno_noise_dphi, &
       kx_phi, ky_phi, kz_phi, phase_phi, width_phi, offset, &
@@ -190,7 +190,7 @@ module Special
       chi_quartic
 !
   namelist /special_run_pars/ &
-      initspecial, phi0, dphi0, phimass, phimass2, eps, ascale_ini, &
+      initspecial, phi0, dphi0, phimass, sign_phimass2, eps, ascale_ini, &
       lem_backreact, c_phi, delta_phi, lambda_phi, Vprime_choice, &
       ldt_klein_gordon, Ndiv, Hscript0, Hscript_choice, &
       lflrw, lrho_chi, scale_rho_chi_Heqn, echarge_type, cdt_rho_chi, &
@@ -393,7 +393,7 @@ module Special
 !
 !  set phimass**2
 !
-      if (phimass2 == impossible) phimass2=phimass**2
+      phimass2=phimass**2*sign_phimass2
       if (lwaterfall) psimass2=psimass**2
 !
 !     alberto: lphi_normalized_units seems too generic, should we call it lphi_normalized_quartic or similar?
