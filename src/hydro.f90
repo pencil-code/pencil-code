@@ -3734,7 +3734,7 @@ module Hydro
         if(ldensity_nolog) then
           p%T00 = f(l1:l2,m,n,irho)
         else
-          p%T00 = exp(f(l1:l2,m,n,irho))
+          p%T00 = exp(f(l1:l2,m,n,ilnrho))
         endif
       endif
 
