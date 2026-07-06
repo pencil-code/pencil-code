@@ -3725,6 +3725,131 @@ module Hydro
       endif
     endsubroutine calc_pencils_hydro_nonlinear_from_f
 !***********************************************************************
+    subroutine calc_Tij(f,p,lpenc_loc)
+      real, contiguous, dimension(:,:,:,:) :: f
+      type (pencil_case) :: p
+      logical, dimension(npencils) :: lpenc_loc
+
+      if (lpenc_loc(i_T00)) p%T00 = f(l1:l2,m,n,irho)
+
+      if (lconservative) then
+        if (lpenc_loc(i_T0i)) p%T0i=f(l1:l2,m,n,iux:iuz)
+        if (lpenc_loc(i_Tij)) then
+          p%Tij(:,1) = f(l1:l2,m,n,iTij)
+          p%Tij(:,2) = f(l1:l2,m,n,iTij+1)
+          p%Tij(:,3) = f(l1:l2,m,n,iTij+2)
+          p%Tij(:,4) = f(l1:l2,m,n,iTij+3)
+          p%Tij(:,5) = f(l1:l2,m,n,iTij+4)
+          p%Tij(:,6) = f(l1:l2,m,n,iTij+5)
+        endif
+      endif
+    endsubroutine calc_Tij
+!***********************************************************************
+    function get_cs201() result(cs201)
+
+      use EquationOfState, only: cs20
+
+      real :: cs201
+      if(lrelativistic_eos) then
+        cs201 = 1.+cs20
+      else             
+        cs201 = 1.
+      endif
+    endfunction get_cs201
+!***********************************************************************
+    subroutine calc_uu(f,p)
+
+      use EquationOfState, only: cs20
+      use Sub, only: multsv_mn
+
+      real, contiguous, dimension(:,:,:,:) :: f
+      type (pencil_case) :: p
+      real :: cs201, cs2011
+      real, dimension (nx) :: tmp,DD,tmp_rho
+      real, dimension (nx,3) :: tmp3, tmp3g
+      real, dimension (nx,3,3) :: tmp33
+      
+      cs201 =get_cs201()
+      cs2011=1./cs201
+
+      if (lconservative) then
+        if (lvv_as_aux .or. lvv_as_comaux) then
+          p%uu=f(l1:l2,m,n,ivx:ivz)
+        else
+          tmp3=f(l1:l2,m,n,iux:iuz)
+!
+!  alberto: tmp_rho is required to be reconstructed for higgsless.
+!  Unless the p%uu pencil is taken from the ivv chunk of the farray, the
+!  following smoothing is only used for diagnostics.
+!
+          if (.not.lhiggsless_old.and.lhiggsless) then
+            if (width_hless==0.) then
+              where(real(t) < f(l1:l2,m,n,ihless)) tmp_rho=tmp_rho-eps_hless
+            else
+              tmp_rho=real(tmp_rho-eps_hless &
+                *max(0.d0, min(1.d0, (f(l1:l2,m,n,ihless)+0.5d0*width_hless_absolute-t)/width_hless_absolute)))
+!print*,'AXEL1'
+!AB: this is never accessed
+            endif
+          else
+            if (lhiggsless_old) call warning('calc_pencils_hydro', &
+                          'pencil u is not correctly computed for lhiggsless_old')
+          endif
+          if (lrelativistic) then
+!
+!  In the relativistic case, which must also be conservative, cs201=4/3, if cs2=1/3.
+!  At this point, the Lorentz factor gamma^2 is already available.
+!  We solve here Eq. (39) of the notes.
+!
+            !cs201=cs20+1.
+            ! tmp_rho=f(l1:l2,m,n,irho)
+            !if (.not.lhiggsless_old.and.lhiggsless) then
+            !  where(real(t) < f(l1:l2,m,n,ihless)) tmp_rho=tmp_rho-eps_hless
+            !endif
+            if (.not.llorentz_as_aux) then
+              call fatal_error('calc_pencils_hydro_nonlinear', &
+                                'llorentz_as_aux should be True to reconstruct p%uu')
+            endif
+            if (lmagnetic) then
+!
+              if (full_3D) then
+                DD=(f(l1:l2,m,n,irho)-.5*B_ext2)/(1.-.25/f(l1:l2,m,n,ilorentz))+B_ext2
+!AB: not yet calculated
+                call invmat_DB(DD,p%bb,tmp33)
+                call multmv(tmp33,tmp3,p%uu)
+              else
+                tmp=1./((f(l1:l2,m,n,irho)-.5*B_ext2)/(1.-.25/f(l1:l2,m,n,ilorentz))+B_ext2)
+                call multsv_mn(tmp,tmp3,p%uu)
+              endif
+            else
+              ! alberto: when llorentz_as_aux is not chosen this will not
+              !          be correct
+              !tmp=1./(tmp_rho/(1.-.25/f(l1:l2,m,n,ilorentz)))
+              tmp=1.-cs20*cs2011/f(l1:l2,m,n,ilorentz)
+              tmp=tmp/tmp_rho
+              call multsv_mn(tmp,tmp3,p%uu)
+              ! alberto: added p%rho1 for conservative and relativistic case
+              p%rho1=(cs201*f(l1:l2,m,n,ilorentz)-cs20)/tmp_rho
+            endif
+!print*,'AXEL7: used B_ext2'
+!
+!  In the non-relativisitic (but conservative) case, f(:,:,:,iuu) is the momentum,
+!  so to get the velocity, we have to divide by it.
+!
+          else
+            p%rho1=1./tmp_rho
+            call multsv_mn(p%rho1,tmp3,p%uu)
+            ! alberto: I commented the line below by mistake, recovered
+            p%uu=p%uu*cs2011
+          endif    !  if (lrelativistic)
+
+        endif   !    if (lvv_as_aux .or. lvv_as_comaux) ... else
+
+      else
+        p%uu=f(l1:l2,m,n,iux:iuz)
+      endif  !  if (lconservative) ... else
+    endsubroutine calc_uu
+!***********************************************************************
     subroutine calc_pencils_hydro_nonlinear(f,p,lpenc_loc)
 !
 !  Calculate Hydro pencils.
@@ -3750,10 +3875,9 @@ module Hydro
       type (pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc
 !
-      real, dimension (nx) :: tmp,DD,tmp_rho
-      real, dimension (nx,3) :: tmp3, tmp3g
-      real, dimension (nx,3,3) :: tmp33
-      real :: cs201=1., cs2011, outest
+      real, dimension (nx) :: DD
+      real, dimension (nx,3) :: tmp3g
+      real :: outest
       integer :: j
 !
       intent(in)   :: lpenc_loc
@@ -3762,98 +3886,11 @@ module Hydro
 !  uu is directly p%uu=f(l1:l2,m,n,iux:iuz), but with lconservative
 !  it is the momentum, or T^{0i} in the relativistic case.
 !
-      if (lrelativistic_eos) cs201=1.+cs20
-      cs2011=1./cs201
-
       if (lpenc_loc(i_uu)) then
-        if (lconservative) then
-          tmp_rho=f(l1:l2,m,n,irho)
-          if (lpenc_loc(i_T00)) p%T00=tmp_rho
-          if (lvv_as_aux .or. lvv_as_comaux) then
-            p%uu=f(l1:l2,m,n,ivx:ivz)
-          else
-            tmp3=f(l1:l2,m,n,iux:iuz)
-!
-!  alberto: tmp_rho is required to be reconstructed for higgsless.
-!  Unless the p%uu pencil is taken from the ivv chunk of the farray, the
-!  following smoothing is only used for diagnostics.
-!
-            if (.not.lhiggsless_old.and.lhiggsless) then
-              if (width_hless==0.) then
-                where(real(t) < f(l1:l2,m,n,ihless)) tmp_rho=tmp_rho-eps_hless
-              else
-                tmp_rho=real(tmp_rho-eps_hless &
-                  *max(0.d0, min(1.d0, (f(l1:l2,m,n,ihless)+0.5d0*width_hless_absolute-t)/width_hless_absolute)))
-!print*,'AXEL1'
-!AB: this is never accessed
-              endif
-            else
-              if (lhiggsless_old) call warning('calc_pencils_hydro', &
-                            'pencil u is not correctly computed for lhiggsless_old')
-            endif
-            if (lrelativistic) then
-!
-!  In the relativistic case, which must also be conservative, cs201=4/3, if cs2=1/3.
-!  At this point, the Lorentz factor gamma^2 is already available.
-!  We solve here Eq. (39) of the notes.
-!
-              !cs201=cs20+1.
-              ! tmp_rho=f(l1:l2,m,n,irho)
-              !if (.not.lhiggsless_old.and.lhiggsless) then
-              !  where(real(t) < f(l1:l2,m,n,ihless)) tmp_rho=tmp_rho-eps_hless
-              !endif
-              if (.not.llorentz_as_aux) then
-                call fatal_error('calc_pencils_hydro_nonlinear', &
-                                  'llorentz_as_aux should be True to reconstruct p%uu')
-              endif
-              if (lmagnetic) then
-!
-                if (full_3D) then
-                  DD=(f(l1:l2,m,n,irho)-.5*B_ext2)/(1.-.25/f(l1:l2,m,n,ilorentz))+B_ext2
-!AB: not yet calculated
-                  call invmat_DB(DD,p%bb,tmp33)
-                  call multmv(tmp33,tmp3,p%uu)
-                else
-                  tmp=1./((f(l1:l2,m,n,irho)-.5*B_ext2)/(1.-.25/f(l1:l2,m,n,ilorentz))+B_ext2)
-                  call multsv_mn(tmp,tmp3,p%uu)
-                endif
-              else
-                ! alberto: when llorentz_as_aux is not chosen this will not
-                !          be correct
-                !tmp=1./(tmp_rho/(1.-.25/f(l1:l2,m,n,ilorentz)))
-                tmp=1.-cs20*cs2011/f(l1:l2,m,n,ilorentz)
-                tmp=tmp/tmp_rho
-                call multsv_mn(tmp,tmp3,p%uu)
-                ! alberto: added p%rho1 for conservative and relativistic case
-                p%rho1=(cs201*f(l1:l2,m,n,ilorentz)-cs20)/tmp_rho
-              endif
-!print*,'AXEL7: used B_ext2'
-!
-!  In the non-relativisitic (but conservative) case, f(:,:,:,iuu) is the momentum,
-!  so to get the velocity, we have to divide by it.
-!
-            else
-              p%rho1=1./tmp_rho
-              call multsv_mn(p%rho1,tmp3,p%uu)
-              ! alberto: I commented the line below by mistake, recovered
-              p%uu=p%uu*cs2011
-            endif    !  if (lrelativistic)
-
-          endif   !    if (lvv_as_aux .or. lvv_as_comaux) ... else
-
-          if (lpenc_loc(i_T0i)) p%T0i=f(l1:l2,m,n,iux:iuz)
-          if (lpenc_loc(i_Tij)) then
-            p%Tij(:,1) = f(l1:l2,m,n,iTij)
-            p%Tij(:,2) = f(l1:l2,m,n,iTij+1)
-            p%Tij(:,3) = f(l1:l2,m,n,iTij+2)
-            p%Tij(:,4) = f(l1:l2,m,n,iTij+3)
-            p%Tij(:,5) = f(l1:l2,m,n,iTij+4)
-            p%Tij(:,6) = f(l1:l2,m,n,iTij+5)
-          endif
-        else
-          p%uu=f(l1:l2,m,n,iux:iuz)
-        endif  !  if (lconservative) ... else
+        call calc_uu(f,p)
       endif    !  if (lpenc_loc(i_uu))
+! Tij
+      call calc_Tij(f,p,lpenc_loc)
 ! u2
       if (lpenc_loc(i_u2)) call dot2_mn(p%uu,p%u2)
 
@@ -3946,7 +3983,7 @@ module Hydro
         endif
       endif
       if (lpenc_loc(i_velx).and.ldensity) then
-        call dot_mn_sv_pencil(p%uu,sqrt(abs(p%rho*cs201)),tmp3g)
+        call dot_mn_sv_pencil(p%uu,sqrt(abs(p%rho*get_cs201())),tmp3g)
         call dot_mn_sv_pencil(tmp3g,sqrt(abs(p%lorentz)),p%velx)
       endif
       ! alberto: we might want to consider higgsless also for non-conservative
