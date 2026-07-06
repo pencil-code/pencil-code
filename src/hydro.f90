@@ -25,8 +25,9 @@
 ! PENCILS PROVIDED uu_advec(3); uuadvec_guu(3)
 ! PENCILS PROVIDED del6u_strict(3); del4graddivu(3); uu_sph(3)
 ! PENCILS PROVIDED der6u_res(3,3); uij6(3,3)
-! PENCILS PROVIDED lorentz; hless; advec_uu
+! PENCILS PROVIDED lorentz; lorentz_gamma; hless; advec_uu
 ! PENCILS PROVIDED T00; T0i(3); Tij(6); velx(3)
+! PENCILS PROVIDED ext_force(4); 
 !
 !** AUTOMATIC REFERENCE-LINK.TEX GENERATION ********************
 ! Declare relevant citations from pencil-code/doc/citations/ref.bib for this module.
@@ -314,6 +315,8 @@ module Hydro
   real :: cdt_tauf=1.0, ulev=impossible
   logical :: lcdt_tauf=.false.
   logical, target :: lcalc_uuavg=.false.
+  real, pointer :: Hscript
+  logical, target :: lext_force=.false.
 !
   namelist /hydro_run_pars/ &
       Omega, theta, tdamp, dampu, dampuext, dampuint, rdampext, rdampint, &
@@ -349,7 +352,8 @@ module Hydro
       limpose_only_horizontal_uumz, luu_fluc_as_aux, Om_inner, luu_sph_as_aux, &
       ltime_integrals_always, dtcor, lvart_in_shear_frame, lSchur_3D3D1D_uu, &
       lSchur_2D2D3D_uu, lSchur_2D2D1D_uu, &
-      lhiggsless, vwall, alpha_hless, width_hless, qshear, zdampint, zdampext
+      lhiggsless, vwall, alpha_hless, width_hless, qshear, zdampint, zdampext, &
+      lext_force
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -1178,6 +1182,9 @@ module Hydro
 !
       if (lparticles_grad) lgradu_as_aux=.true.
       if (lSGS_hydro) call register_SGS_hydro      
+
+      call put_shared_variable('lext_force',lext_force)
+
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -1752,6 +1759,10 @@ module Hydro
         call mpibcast(xhless,nhless)
         call mpibcast(yhless,nhless)
         call mpibcast(zhless,nhless)
+      endif
+
+      if(lext_force) then
+        call get_shared_variable('Hscript',Hscript)
       endif
 
       endsubroutine initialize_hydro
@@ -3506,6 +3517,8 @@ module Hydro
       integer :: iuu
 !
       real, dimension (nx) :: tmp 
+
+
       integer :: i, j, ju
 !
       intent(in)   :: lpenc_loc
@@ -3987,6 +4000,7 @@ module Hydro
           ! tini is tiny(1.0), added to avoid division by zero
           p%lorentz = 1./max(1.-min(p%u2,1.-tini), tini)
         endif
+        p%lorentz_gamma = sqrt(p%lorentz)
       endif
       if (lpenc_loc(i_velx).and.ldensity) then
         call dot_mn_sv_pencil(p%uu,sqrt(abs(p%rho*get_cs201())),tmp3g)
@@ -4264,6 +4278,135 @@ module Hydro
 !
     endsubroutine update_char_vel_hydro
 !***********************************************************************
+    subroutine ext_force_rhs(df,p)
+
+      use Sub, only: dot_mn
+      real, contiguous, dimension(:,:,:,:) :: df
+      type (pencil_case) :: p
+      real, parameter :: omega = 1./3.
+      real, dimension (nx) :: u_dot_ext_force,prefactor
+      real, dimension (nx) :: rhs
+      integer :: i
+
+      call dot_mn(p%uu,p%ext_force(:,2:4),u_dot_ext_force)
+      prefactor = p%lorentz/(1-omega*p%u2)
+      prefactor = prefactor*(omega*p%divu + (omega*(1-omega)/(1+omega))*p%uglnrho &
+                             - p%rho1*(p%ext_force(:,1) - ((2*omega)/(1+omega))*u_dot_ext_force))
+      do i=1,3
+        rhs = prefactor*p%uu(:,i)
+        rhs = rhs -(p%lorentz/(1+omega))*(omega*p%glnrho(:,i) -p%rho1*p%ext_force(:,i+1))
+        rhs = rhs + (p%lorentz/(1-omega*p%u2))*(3*omega-1)*Hscript*p%uu(:,i)
+        df(l1:l2,m,n,iux+i-1) = df(l1:l2,m,n,iux+i-1) + rhs
+        !print*,"RHS SUM: ",sum(rhs),sum(p%ext_force(:,i+1))
+      enddo
+    endsubroutine ext_force_rhs
+!***********************************************************************
+    subroutine advec_uu(f,df,p)
+
+      use Sub, only: dot, dot2
+      use Deriv, only: der
+
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type (pencil_case) :: p
+
+      integer :: i,j
+      real, dimension (nx) :: tmp, ugu_Schur_x, ugu_Schur_y, ugu_Schur_z
+      real, dimension (nx,3,3) :: puij_Schur
+
+      if (.not. lconservative .and. .not. lweno_transport .and. &
+          .not. lno_meridional_flow .and. .not. lfargo_advection) then
+        if (lSchur_3D3D1D_uu) then
+          call dot(p%uu,p%uij(:,1,:),ugu_Schur_x)
+          call dot(p%uu,p%uij(:,2,:),ugu_Schur_y)
+          ugu_Schur_z=p%uu(:,3)*p%uij(:,3,3)
+          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-ugu_Schur_x
+          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-ugu_Schur_y
+          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-ugu_Schur_z
+        elseif (lSchur_2D2D3D_uu) then
+          do j=1,3
+          do i=1,3
+            puij_Schur(:,i,j) = p%uij(:,i,j)
+          enddo
+          enddo
+          puij_Schur(:,1,3) = 0
+          puij_Schur(:,2,3) = 0
+          call dot(p%uu,puij_Schur(:,1,:),ugu_Schur_x)
+          call dot(p%uu,puij_Schur(:,2,:),ugu_Schur_y)
+          call dot(p%uu,puij_Schur(:,3,:),ugu_Schur_z)
+          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-ugu_Schur_x
+          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-ugu_Schur_y
+          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-ugu_Schur_z
+        elseif (lSchur_2D2D1D_uu) then
+          do j=1,3
+          do i=1,3
+            puij_Schur(:,i,j) = p%uij(:,i,j)
+          enddo
+          enddo
+          puij_Schur(:,1,3) = 0
+          puij_Schur(:,2,3) = 0
+          call dot(p%uu,puij_Schur(:,1,:),ugu_Schur_x)
+          call dot(p%uu,puij_Schur(:,2,:),ugu_Schur_y)
+          ugu_Schur_z=p%uu(:,3)*p%uij(:,3,3)
+          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-ugu_Schur_x
+          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-ugu_Schur_y
+          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-ugu_Schur_z
+        else
+          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%ugu
+        endif
+      endif
+!
+      if (ldensity.and.lconservative) then
+!
+!  diagonals first
+!
+        call der(f,iTij+0,tmp,1) ; df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tmp
+        call der(f,iTij+1,tmp,2) ; df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tmp
+        call der(f,iTij+2,tmp,3) ; df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tmp
+!
+!  "Tij4" = T12
+!  "Tij5" = T23
+!  "Tij6" = T31
+!  next the off-diagonals
+!  T_11,1 + T_12,2 + T_13,3 = (0,1) + (3,2) + (5,3); (T23=T32 does not enter)
+!
+        call der(f,iTij+3,tmp,2) ; df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tmp
+        call der(f,iTij+5,tmp,3) ; df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tmp
+!
+!  T_21,1 + T_22,2 + T_23,3 = (1,2) + (3,1) + (4,3); (T13=T31 does not enter)
+!
+        call der(f,iTij+3,tmp,1) ; df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tmp
+        call der(f,iTij+4,tmp,3) ; df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tmp
+!
+!  T_31,1 + T_32,2 + T_33,3 = (2,3) + (5,1) + (4,2); (T12=T21 does not enter)
+!
+        call der(f,iTij+5,tmp,1) ; df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tmp
+        call der(f,iTij+4,tmp,2) ; df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tmp
+!
+      endif
+!
+!  WENO transport.
+!
+      if (lweno_transport) then
+        do j=1,3
+          df(l1:l2,m,n,iux-1+j)=df(l1:l2,m,n,iux-1+j)-(p%transpurho(:,j)-p%uu(:,j)*p%transprho)*p%rho1
+        enddo
+      endif
+!
+!  No meridional flow : turn off the meridional flow (in spherical)
+!  useful for debugging.
+!
+!  18-Mar-2010/AJ: this should probably go in a special module.
+!  12-Mar-2017/WL: Agree, looks very specific.
+!
+      if (lno_meridional_flow) then
+        f(l1:l2,m,n,iux:iuy)=0.
+        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-p%ugu(:,3)
+      endif
+!
+      if (lfargo_advection) df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%uuadvec_guu
+    endsubroutine advec_uu
+!***********************************************************************
     subroutine duu_dt(f,df,p)
 !
 !  velocity evolution
@@ -4292,9 +4435,8 @@ module Hydro
       intent(inout) :: f,df
 
       real, dimension (nx,3) :: uu1, tmpv
-      real, dimension (nx) :: tmp, ftot, ugu_Schur_x, ugu_Schur_y, ugu_Schur_z
+      real, dimension (nx) :: tmp, ftot
       real, dimension (nx) :: arad_normal, pradrc2
-      real, dimension (nx,3,3) :: puij_Schur
       real :: hubble_factor
       integer :: i,j
 !
@@ -4318,100 +4460,7 @@ module Hydro
 !  but that is currently done in noentropy.
 !
       if (ladvection_velocity) then
-        if (.not. lconservative .and. .not. lweno_transport .and. &
-            .not. lno_meridional_flow .and. .not. lfargo_advection) then
-          if (lSchur_3D3D1D_uu) then
-            call dot(p%uu,p%uij(:,1,:),ugu_Schur_x)
-            call dot(p%uu,p%uij(:,2,:),ugu_Schur_y)
-            ugu_Schur_z=p%uu(:,3)*p%uij(:,3,3)
-            df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-ugu_Schur_x
-            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-ugu_Schur_y
-            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-ugu_Schur_z
-          elseif (lSchur_2D2D3D_uu) then
-            do j=1,3
-            do i=1,3
-              puij_Schur(:,i,j) = p%uij(:,i,j)
-            enddo
-            enddo
-            puij_Schur(:,1,3) = 0
-            puij_Schur(:,2,3) = 0
-            call dot(p%uu,puij_Schur(:,1,:),ugu_Schur_x)
-            call dot(p%uu,puij_Schur(:,2,:),ugu_Schur_y)
-            call dot(p%uu,puij_Schur(:,3,:),ugu_Schur_z)
-            df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-ugu_Schur_x
-            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-ugu_Schur_y
-            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-ugu_Schur_z
-          elseif (lSchur_2D2D1D_uu) then
-            do j=1,3
-            do i=1,3
-              puij_Schur(:,i,j) = p%uij(:,i,j)
-            enddo
-            enddo
-            puij_Schur(:,1,3) = 0
-            puij_Schur(:,2,3) = 0
-            call dot(p%uu,puij_Schur(:,1,:),ugu_Schur_x)
-            call dot(p%uu,puij_Schur(:,2,:),ugu_Schur_y)
-            ugu_Schur_z=p%uu(:,3)*p%uij(:,3,3)
-            df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-ugu_Schur_x
-            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-ugu_Schur_y
-            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-ugu_Schur_z
-          else
-            df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%ugu
-          endif
-        endif
-!
-        if (ldensity.and.lconservative) then
-!
-!  diagonals first
-!
-          call der(f,iTij+0,tmp,1) ; df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tmp
-          call der(f,iTij+1,tmp,2) ; df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tmp
-          call der(f,iTij+2,tmp,3) ; df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tmp
-!
-!  "Tij4" = T12
-!  "Tij5" = T23
-!  "Tij6" = T31
-!  next the off-diagonals
-!  T_11,1 + T_12,2 + T_13,3 = (0,1) + (3,2) + (5,3); (T23=T32 does not enter)
-!
-          call der(f,iTij+3,tmp,2) ; df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tmp
-          call der(f,iTij+5,tmp,3) ; df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tmp
-!
-!  T_21,1 + T_22,2 + T_23,3 = (1,2) + (3,1) + (4,3); (T13=T31 does not enter)
-!
-          call der(f,iTij+3,tmp,1) ; df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tmp
-          call der(f,iTij+4,tmp,3) ; df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tmp
-!
-!  T_31,1 + T_32,2 + T_33,3 = (2,3) + (5,1) + (4,2); (T12=T21 does not enter)
-!
-          call der(f,iTij+5,tmp,1) ; df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tmp
-          call der(f,iTij+4,tmp,2) ; df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tmp
-!
-        endif
-!
-!  WENO transport.
-!
-        if (lweno_transport) then
-          do j=1,3
-            df(l1:l2,m,n,iux-1+j)=df(l1:l2,m,n,iux-1+j)-(p%transpurho(:,j)-p%uu(:,j)*p%transprho)*p%rho1
-          enddo
-        endif
-!
-!  No meridional flow : turn off the meridional flow (in spherical)
-!  useful for debugging.
-!
-!  18-Mar-2010/AJ: this should probably go in a special module.
-!  12-Mar-2017/WL: Agree, looks very specific.
-!
-        if (lno_meridional_flow) then
-          f(l1:l2,m,n,iux:iuy)=0.
-          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-p%ugu(:,3)
-        endif
-!
-        if (lfargo_advection) df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%uuadvec_guu
-!
-!  endif from ladvection_velocity
-!
+       call advec_uu(f,df,p)
       endif
 !
 !  Coriolis force, -2*Omega x u (unless lprecession=T)
@@ -4581,6 +4630,8 @@ module Hydro
       if (tau_damp_ruxm/=0.) df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-ruxm*p%rho1*tau_damp_ruxm1
       if (tau_damp_ruym/=0.) df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-ruym*p%rho1*tau_damp_ruym1
       if (tau_damp_ruzm/=0.) df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-ruzm*p%rho1*tau_damp_ruzm1
+
+      if(lext_force) call ext_force_rhs(df,p)
 !
 !  Apply border profiles
 !

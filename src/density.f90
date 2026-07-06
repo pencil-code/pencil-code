@@ -338,6 +338,9 @@ module Density
   real, dimension(nx) :: diffus_diffrho3
   real :: density_floor_log, density_ceiling_log, wdamp_rho
   integer :: ihless
+  logical, pointer :: lext_force
+  real, pointer :: Hscript
+
 !
   integer :: enum_ieos_profile = 0
   integer :: enum_mass_source_profile = 0
@@ -1112,6 +1115,12 @@ module Density
       reference_state_padded(l1:l2,:) = reference_state
       lpositive_total_mass = total_mass > 0.0
 
+      if(lhydro) then
+        call get_shared_variable('lext_force',lext_force)
+        if(associated(lext_force) .and. lext_force) then
+          call get_shared_variable('Hscript',Hscript)
+        endif
+      endif
     endsubroutine initialize_density
 !***********************************************************************
     subroutine init_lnrho(f)
@@ -2824,194 +2833,164 @@ module Density
 
     endsubroutine calc_sld_fdiff
 !***********************************************************************
-    subroutine dlnrho_dt(f,df,p)
-!
-!  Continuity equation.
-!  Calculate dlnrho/dt = - u.gradlnrho - divu
-!
-!   7-jun-02/axel: incorporated from subroutine pde
-!  21-oct-15/MR: changes for slope-limited diffusion
-!   4-aug-17/axel: implemented terms for ultrarelativistic EoS
-!  25-may-18/fred: updated mass diffusion correction and set default
-!                  not default for hyperdiff, but correction applies
-!                  to all fdiff if lmassdiff_fix=T
-!  03-apr-20/joern: restructured and fixed slope-limited diffusion
-!  06-mar-25/alberto: added corrections in the subrelativistic limit
-!
-      use Deriv, only: der6
-      use Special, only: special_calc_density
-      use EquationOfState, only: get_gamma_etc
-      use Sub
-!
-      real, contiguous, dimension(:,:,:,:) :: f
+    subroutine continuity_eq(df,p)
+
+      use Sub, only: multvs, multmv
+
       real, contiguous, dimension(:,:,:,:) :: df
       type (pencil_case) :: p
-!
-      intent(in)  :: p
-      intent(inout) :: df,f
-!
-      real, dimension (nx) :: fdiff
-      real :: gamma
-      real, dimension (nx) :: tmp
-      real, dimension (nx,3) :: tmpv
-      real, dimension (nx) :: density_rhs, density_rhs_tmp
-      integer :: j
-      logical :: ldt_up
+
       real :: cs201=1., cs20_corr=1.
-!
-!  Identify module and boundary conditions.
-!
-      call timing('dlnrho_dt','entered',mnloop=.true.)
-      if (headtt.or.ldebug) print*,'dlnrho_dt: SOLVE'
-      if (headtt) call identify_bcs('lnrho',ilnrho)
-!
-      if (lSchur_3D3D1D) then
-!
-!  Accumulatively calculate the RHS of Schur flow equations, but only finalize after the mn loop.
-!
-        density_rhs=p%uglnrho+p%divu
-        call accumulate_Schur_averages(density_rhs)
-!
-      else
+      real, dimension (nx) :: density_rhs, density_rhs_tmp
+      real, dimension (nx,3) :: tmpv
 !
 !  Continuity equation.
 !
-      if (lcontinuity_gas) then
-        if (.not. lweno_transport .and. .not. lffree .and. .not. lreduced_sound_speed .and. &
-            ieos_profile=='nothing' .and. .not. lfargo_advection) then
+      if (.not. lweno_transport .and. .not. lffree .and. .not. lreduced_sound_speed .and. &
+          ieos_profile=='nothing' .and. .not. lfargo_advection) then
 !
 !  alberto: added subrelativistic correction when relativistic_eos is used
 !
-          if (lrelativistic_eos) cs201=1.+cs20
-          if (lrelativistic_eos_corr) cs20_corr=(1.-cs20)/cs201
+        if (lrelativistic_eos) cs201=1.+cs20
+        if (lrelativistic_eos_corr) cs20_corr=(1.-cs20)/cs201
 !
 !  Evolution of rho; set and initiate density_rhs
 !
-          if (ldensity_nolog) then
-            if (lconservative) then
-              density_rhs=-p%divss
-            else
-              density_rhs=-p%rho*p%divu
-              !if (ladvection_density) density_rhs = density_rhs - p%ugrho
-              !if (lrelativistic_eos) density_rhs=fourthird*density_rhs
-              if (ladvection_density) density_rhs = density_rhs - cs20_corr*p%ugrho
-              density_rhs=cs201*density_rhs
-              if (lrelativistic_eos) &
-                 call not_implemented('dlnrho_dt','lrelativistic_eos with linear rho and lconservative=F')
-              ! alberto: to be implemented
-            endif
+        if (ldensity_nolog) then
+          if (lconservative) then
+            density_rhs=-p%divss
+          else
+            density_rhs=-p%rho*p%divu
+            !if (ladvection_density) density_rhs = density_rhs - p%ugrho
+            !if (lrelativistic_eos) density_rhs=fourthird*density_rhs
+            if (ladvection_density) density_rhs = density_rhs - cs20_corr*p%ugrho
+            density_rhs=cs201*density_rhs
+            if (lrelativistic_eos) &
+               call not_implemented('dlnrho_dt','lrelativistic_eos with linear rho and lconservative=F')
+            ! alberto: to be implemented
+          endif
 !
 !  Evolution of lnrho: set here density_rhs
 !
-          else
-            density_rhs= - p%divu
-            if (ladvection_density) density_rhs = density_rhs - cs20_corr*p%uglnrho
+        else
+          density_rhs= - p%divu
+          if (ladvection_density) density_rhs = density_rhs - cs20_corr*p%uglnrho
 !
 !  The following few lines only enter without lconservative,
 !  and also only without ldensity_nolog, but with lrelativistic_eos.
 !
-            if (lrelativistic_eos .and. .not.lconservative) then
-              if (lhydro) then
-                if (lrelativistic_eos_term1 .and. lrelativistic_eos_term2) then
-                  call multvs(p%uu,density_rhs,tmpv)
-                else
-                  density_rhs_tmp=0.
-                  if (lrelativistic_eos_term1) density_rhs_tmp=density_rhs_tmp-p%divu
-                  if (lrelativistic_eos_term2) density_rhs_tmp=density_rhs_tmp-p%uglnrho
-                  call multvs(p%uu,density_rhs_tmp,tmpv)
-                endif
-                !df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-onethird*tmpv
-                df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-cs20*tmpv
+          if (lrelativistic_eos .and. .not.lconservative) then
+            if (lhydro) then
+              if (lrelativistic_eos_term1 .and. lrelativistic_eos_term2) then
+                call multvs(p%uu,density_rhs,tmpv)
+              else
+                density_rhs_tmp=0.
+                if (lrelativistic_eos_term1) density_rhs_tmp=density_rhs_tmp-p%divu
+                if (lrelativistic_eos_term2) density_rhs_tmp=density_rhs_tmp-p%uglnrho
+                call multvs(p%uu,density_rhs_tmp,tmpv)
               endif
-              !density_rhs=fourthird*density_rhs
-              density_rhs=cs201*density_rhs
+              !df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-onethird*tmpv
+              df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-cs20*tmpv
             endif
+            !density_rhs=fourthird*density_rhs
+            density_rhs=cs201*density_rhs
           endif
-
-        else
-          density_rhs=0.
         endif
+
+      else
+        density_rhs=0.
+      endif
 !
 !  WENO transport.
 !
-        if (lweno_transport) density_rhs= density_rhs - p%transprho
+      if (lweno_transport) density_rhs= density_rhs - p%transprho
 !
 !  Choice of vertical profile in front of density evolution.
 !  Default is off. This is useful to simulate outer halo regions.
 !  There is an additional option of doing this by obeying mass
 !  conservation, which is not currently the default.
 !
-        if (ieos_profile=='surface_z') then
-          if (ldensity_nolog) then
-            density_rhs= density_rhs - profz_eos(n)*(p%ugrho + p%rho*p%divu)
-            if (ldensity_profile_masscons) density_rhs = density_rhs-dprofz_eos(n)*p%rho*p%uu(:,3)
-          else
-            density_rhs= density_rhs - profz_eos(n)*(p%uglnrho + p%divu)
-            if (ldensity_profile_masscons) density_rhs = density_rhs -dprofz_eos(n)*p%uu(:,3)
-          endif
+      if (ieos_profile=='surface_z') then
+        if (ldensity_nolog) then
+          density_rhs= density_rhs - profz_eos(n)*(p%ugrho + p%rho*p%divu)
+          if (ldensity_profile_masscons) density_rhs = density_rhs-dprofz_eos(n)*p%rho*p%uu(:,3)
+        else
+          density_rhs= density_rhs - profz_eos(n)*(p%uglnrho + p%divu)
+          if (ldensity_profile_masscons) density_rhs = density_rhs -dprofz_eos(n)*p%uu(:,3)
         endif
+      endif
 !
 !  If we are solving the force-free equation in parts of our domain.
 !
-        if (lffree) then
-          if (ldensity_nolog) then
-            density_rhs= density_rhs - profx_ffree*profy_ffree(m)*profz_ffree(n)*(p%ugrho + p%rho*p%divu)
-            if (ldensity_profile_masscons) density_rhs=density_rhs - p%rho*( dprofx_ffree   *p%uu(:,1) &
-                                                                            +dprofy_ffree(m)*p%uu(:,2) &
-                                                                            +dprofz_ffree(n)*p%uu(:,3))
-          else
-            density_rhs= density_rhs - profx_ffree*(profy_ffree(m)*profz_ffree(n))*(p%uglnrho + p%divu)
-            if (ldensity_profile_masscons) density_rhs=density_rhs-dprofx_ffree   *p%uu(:,1) &
-                                                                  -dprofy_ffree(m)*p%uu(:,2) &
-                                                                  -dprofz_ffree(n)*p%uu(:,3)
-          endif
+      if (lffree) then
+        if (ldensity_nolog) then
+          density_rhs= density_rhs - profx_ffree*profy_ffree(m)*profz_ffree(n)*(p%ugrho + p%rho*p%divu)
+          if (ldensity_profile_masscons) density_rhs=density_rhs - p%rho*( dprofx_ffree   *p%uu(:,1) &
+                                                                          +dprofy_ffree(m)*p%uu(:,2) &
+                                                                          +dprofz_ffree(n)*p%uu(:,3))
+        else
+          density_rhs= density_rhs - profx_ffree*(profy_ffree(m)*profz_ffree(n))*(p%uglnrho + p%divu)
+          if (ldensity_profile_masscons) density_rhs=density_rhs-dprofx_ffree   *p%uu(:,1) &
+                                                                -dprofy_ffree(m)*p%uu(:,2) &
+                                                                -dprofz_ffree(n)*p%uu(:,3)
         endif
+      endif
 !
 !  Use reduced sound speed according to Rempel (2005), ApJ, 622, 1320;
 !  see also Hotta et al. (2012), A&A, 539, A30.
 !
-        if (lreduced_sound_speed) then
-          if (ldensity_nolog) then
-            density_rhs = density_rhs - reduce_cs2_profx*reduce_cs2_profz(n)*(p%ugrho + p%rho*p%divu)
-          else
-            density_rhs = density_rhs - reduce_cs2_profx*reduce_cs2_profz(n)*(p%uglnrho + p%divu)
-          endif
+      if (lreduced_sound_speed) then
+        if (ldensity_nolog) then
+          density_rhs = density_rhs - reduce_cs2_profx*reduce_cs2_profz(n)*(p%ugrho + p%rho*p%divu)
+        else
+          density_rhs = density_rhs - reduce_cs2_profx*reduce_cs2_profz(n)*(p%uglnrho + p%divu)
         endif
+      endif
 !
-        if (lfargo_advection) then
-          if (ldensity_nolog) then
-            density_rhs = density_rhs - p%uuadvec_grho   - p%rho*p%divu
-          else
-            density_rhs = density_rhs - p%uuadvec_glnrho - p%divu
-          endif
+      if (lfargo_advection) then
+        if (ldensity_nolog) then
+          density_rhs = density_rhs - p%uuadvec_grho   - p%rho*p%divu
+        else
+          density_rhs = density_rhs - p%uuadvec_glnrho - p%divu
         endif
+      endif
 !
 !  Add the continuity equation terms to the RHS of the density df.
 !
-        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + density_rhs
-!
-      endif
-!
-!  Hubble parameter
-!
-        if (lhubble_density) then
-          if (ldensity_nolog) then
-            df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) - 3.*Hubble*ascale**1.5*p%rho
-          else
-            df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - 3.*cs201*Hubble*ascale**nconformal
-          endif
-        endif
-!
-!  Mass sources and sinks.
-!
-      if (lupdate_mass_source) call mass_source(f,df,p)
+      df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + density_rhs
+    endsubroutine continuity_eq 
+!***********************************************************************
+    subroutine ext_force_rhs(df,p)
+            
+      use Sub, only: dot_mn
+
+      real, contiguous, dimension(:,:,:,:) :: df
+      type (pencil_case) :: p
+      real, dimension (nx) :: rhs
+      real, parameter :: omega=1./3.
+      real, dimension (nx) :: u_dot_ext_force
+
+      call dot_mn(p%uu,p%ext_force(:,2:4),u_dot_ext_force)
+      rhs = -(1+omega)*p%divu - (1-omega)*p%uglnrho &
+            + p%rho1*((p%ext_force(:,1) + (1-3*omega)*p%rho*Hscript)*(1+p%u2) -2*u_dot_ext_force)
+      df(l1:l2,m,n,ilnrho) = rhs/(1-omega*p%u2)
+    endsubroutine ext_force_rhs
+!***********************************************************************
+    subroutine mass_diffusion(f,p,fdiff)
+
+      use Sub, only: dot_mn
+      real, contiguous, dimension(:,:,:,:) :: f
+      type (pencil_case) :: p
+      real, dimension (nx) :: fdiff
+
+      integer :: j
+      real, dimension (nx) :: tmp
 !
 !  Mass diffusion.
 !
       diffus_diffrho=0.; diffus_diffrho3=0.
       fdiff=0.0
 !
-      ldt_up = lupdate_courant_dt
 !
 !  Constant diffusivity (constant in space and time).
 !
@@ -3025,7 +3004,7 @@ module Density
             fdiff = fdiff + diffrho*(p%del2lnrho+p%glnrho2)
           endif
         endif
-        if (ldt_up) diffus_diffrho=diffus_diffrho+diffrho
+        if (lupdate_courant_dt) diffus_diffrho=diffus_diffrho+diffrho
         if (headtt) print*,'dlnrho_dt: diffrho=', diffrho
       endif
 !
@@ -3041,7 +3020,7 @@ module Density
             fdiff = fdiff + kap_tdep*(p%del2lnrho+p%glnrho2)
           endif
         endif
-        if (ldt_up) diffus_diffrho=diffus_diffrho+kap_tdep
+        if (lupdate_courant_dt) diffus_diffrho=diffus_diffrho+kap_tdep
         if (headtt) print*,'dlnrho_dt: kap-tdep=', kap_tdep
       endif
 !
@@ -3082,7 +3061,7 @@ module Density
                       p%gshock(:,3)*dlnrhodz_init_z(n) )
           endif
         endif
-        if (ldt_up) diffus_diffrho=diffus_diffrho+diffrho_shock*p%shock
+        if (lupdate_courant_dt) diffus_diffrho=diffus_diffrho+diffrho_shock*p%shock
         if (headtt) print*,'dlnrho_dt: diffrho_shock=', diffrho_shock
       endif
 !
@@ -3091,53 +3070,67 @@ module Density
       if (ldensity_slope_limited.and.llast) then
         call calc_sld_fdiff(f,p,fdiff)
       endif
-!
-!  Interface for your personal subroutines calls
-!
-      if (lspecial) call special_calc_density(f,df,p)
-!
-!  Improve energy and momentum conservation by compensating for mass diffusion
-!
-      if (lmassdiff_fix.and..not.lconservative) then
-        if (ldensity_nolog) then
-          tmp = fdiff*p%rho1
-        else
-          tmp = fdiff
-        endif
-        if (lhydro.and.(.not.lhydro_potential)) then
-          !  when using lhydro_potential, df doesn't have iux:iuz entries
-          df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - p%uu(:,1) * tmp;
-          df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - p%uu(:,2) * tmp;
-          df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) - p%uu(:,3) * tmp;
-        endif
-        if (lentropy.and.(.not.pretend_lnTT)) then
-          if (lgamma_is_1) then
-            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%cv*tmp
-          else
-            !Fred: reference Piyali - missing gamma from correction
-            call get_gamma_etc(gamma)
-            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - gamma*p%cv*tmp
-          endif
-        elseif (lentropy.and.pretend_lnTT) then
-          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - tmp
-        elseif (ltemperature.and.(.not. ltemperature_nolog)) then
-          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - tmp
-        elseif (ltemperature.and.ltemperature_nolog) then
-          df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - tmp*p%TT
-        elseif (lthermal_energy) then
-          df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + 0.5 * fdiff * p%u2
-        endif
+    endsubroutine mass_diffusion
+!***********************************************************************
+    subroutine massdiff_fix(df,p)
+
+      use EquationOfState, only: get_gamma_etc
+      real, contiguous, dimension(:,:,:,:) :: df
+      type (pencil_case) :: p
+      real, dimension (nx) :: fdiff
+      real, dimension (nx) :: tmp
+      real :: gamma
+
+      if (ldensity_nolog) then
+        tmp = fdiff*p%rho1
+      else
+        tmp = fdiff
       endif
-!
-!  Hyper diffusion.
-!
+      if (lhydro.and.(.not.lhydro_potential)) then
+        !  when using lhydro_potential, df doesn't have iux:iuz entries
+        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - p%uu(:,1) * tmp;
+        df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - p%uu(:,2) * tmp;
+        df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) - p%uu(:,3) * tmp;
+      endif
+      if (lentropy.and.(.not.pretend_lnTT)) then
+        if (lgamma_is_1) then
+          df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%cv*tmp
+        else
+          !Fred: reference Piyali - missing gamma from correction
+          call get_gamma_etc(gamma)
+          df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - gamma*p%cv*tmp
+        endif
+      elseif (lentropy.and.pretend_lnTT) then
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - tmp
+      elseif (ltemperature.and.(.not. ltemperature_nolog)) then
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - tmp
+      elseif (ltemperature.and.ltemperature_nolog) then
+        df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - tmp*p%TT
+      elseif (lthermal_energy) then
+        df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + 0.5 * fdiff * p%u2
+      endif
+
+    endsubroutine massdiff_fix
+!***********************************************************************
+    subroutine hyper_diffusion(f,p,fdiff)
+
+      use Deriv, only: der6
+      use Sub, only: del6fj
+      use EquationOfState, only: get_gamma_etc
+      real, contiguous, dimension (:,:,:,:) :: f
+      type(pencil_case) :: p
+      real, dimension (nx) :: fdiff
+      real, dimension (nx) :: tmp
+      real :: gamma
+      integer :: j
+
       if (ldiff_hyper3.or.ldiff_hyper3_strict) then
         if (ldensity_nolog) then
           fdiff = fdiff + diffrho_hyper3*p%del6rho
         else
           if (ldiffusion_nolog) fdiff = fdiff + diffrho_hyper3*p%rho1*p%del6rho
         endif
-        if (ldt_up) diffus_diffrho3=diffus_diffrho3+diffrho_hyper3
+        if (lupdate_courant_dt) diffus_diffrho3=diffus_diffrho3+diffrho_hyper3
         if (headtt) print*,'dlnrho_dt: diffrho_hyper3=', diffrho_hyper3
       endif
 !
@@ -3156,7 +3149,7 @@ module Density
 !AB: should not just add it to the previous diffus_diffrho3.
           !fdiff = fdiff + diffrho_hyper3*pi5_1*tmp*dline_1(:,j)**5
         enddo
-        if (ldt_up) diffus_diffrho3=diffus_diffrho3+diffrho_hyper3*pi4_1*dxmin_pencil**4
+        if (lupdate_courant_dt) diffus_diffrho3=diffus_diffrho3+diffrho_hyper3*pi4_1*dxmin_pencil**4
         if (headtt) print*,'dlnrho_dt: diffrho_hyper3=', diffrho_hyper3
       endif
 !
@@ -3197,7 +3190,7 @@ module Density
           fdiff = fdiff - tmp
         endif
 !  Must divide by dxyz_6 here, because it is multiplied on later.
-        if (ldt_up) diffus_diffrho3=diffus_diffrho3 + &
+        if (lupdate_courant_dt) diffus_diffrho3=diffus_diffrho3 + &
                  (diffrho_hyper3_aniso(1)*dline_1(:,1)**6 + &
                   diffrho_hyper3_aniso(2)*dline_1(:,2)**6 + &
                   diffrho_hyper3_aniso(3)*dline_1(:,3)**6)/dxyz_6
@@ -3206,11 +3199,92 @@ module Density
 !
       if (ldiff_hyper3lnrho .or. ldiff_hyper3lnrho_strict) then
         if (.not. ldensity_nolog) fdiff = fdiff + diffrho_hyper3*p%del6lnrho
-        if (ldt_up) diffus_diffrho3=diffus_diffrho3+diffrho_hyper3
+        if (lupdate_courant_dt) diffus_diffrho3=diffus_diffrho3+diffrho_hyper3
         if (headtt .and. ldiff_hyper3lnrho ) print*,'dlnrho_dt: diffrho_hyper3=', diffrho_hyper3
         if (headtt .and. ldiff_hyper3lnrho_strict ) print*, &
            'dlnrho_dt: diffrho_hyper3_strict=', diffrho_hyper3
       endif
+    endsubroutine hyper_diffusion
+!***********************************************************************
+    subroutine dlnrho_dt(f,df,p)
+!
+!  Continuity equation.
+!  Calculate dlnrho/dt = - u.gradlnrho - divu
+!
+!   7-jun-02/axel: incorporated from subroutine pde
+!  21-oct-15/MR: changes for slope-limited diffusion
+!   4-aug-17/axel: implemented terms for ultrarelativistic EoS
+!  25-may-18/fred: updated mass diffusion correction and set default
+!                  not default for hyperdiff, but correction applies
+!                  to all fdiff if lmassdiff_fix=T
+!  03-apr-20/joern: restructured and fixed slope-limited diffusion
+!  06-mar-25/alberto: added corrections in the subrelativistic limit
+!
+      use Deriv, only: der6
+      use Special, only: special_calc_density
+      use Sub
+!
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type (pencil_case) :: p
+!
+      intent(in)  :: p
+      intent(inout) :: df,f
+!
+      real, dimension (nx) :: fdiff
+      real :: gamma
+      real, dimension (nx) :: tmp
+      integer :: j
+      real, dimension (nx) :: density_rhs
+      real :: cs201=1., cs20_corr=1.
+!
+!  Identify module and boundary conditions.
+!
+      call timing('dlnrho_dt','entered',mnloop=.true.)
+      if (headtt.or.ldebug) print*,'dlnrho_dt: SOLVE'
+      if (headtt) call identify_bcs('lnrho',ilnrho)
+!
+      if (lrelativistic_eos) cs201=1.+cs20
+
+      if (lSchur_3D3D1D) then
+!
+!  Accumulatively calculate the RHS of Schur flow equations, but only finalize after the mn loop.
+!
+        density_rhs=p%uglnrho+p%divu
+        call accumulate_Schur_averages(density_rhs)
+!
+      else
+              
+      if(lcontinuity_gas) call continuity_eq(df,p)
+!
+!  Hubble parameter
+!
+      if (lhubble_density) then
+        if (ldensity_nolog) then
+          df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) - 3.*Hubble*ascale**1.5*p%rho
+        else
+          df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - 3.*cs201*Hubble*ascale**nconformal
+        endif
+      endif
+!
+!  Mass sources and sinks.
+!
+      if (lupdate_mass_source) call mass_source(f,df,p)
+      call mass_diffusion(f,p,fdiff)
+!
+!  Interface for your personal subroutines calls
+!
+      if (lspecial) call special_calc_density(f,df,p)
+!
+!  Improve energy and momentum conservation by compensating for mass diffusion
+!
+      if (lmassdiff_fix.and..not.lconservative) then
+        call massdiff_fix(df,p)
+      endif
+!
+!  Hyper diffusion.
+!
+      call hyper_diffusion(f,p,fdiff)
 !
 !  Add diffusion term to continuity equation
 !
@@ -3222,7 +3296,7 @@ module Density
 !
 !  Multiply diffusion coefficient by Nyquist scale.
 !
-      if (ldt_up) then
+      if (lupdate_courant_dt) then
         diffus_diffrho = diffus_diffrho*dxyz_2
         if (ldynamical_diffusion .and. ldiff_hyper3_mesh) then
           diffus_diffrho3 = diffus_diffrho3 * sum(abs(dline_1),2)
@@ -3236,6 +3310,8 @@ module Density
         maxdiffus=max(maxdiffus,diffus_diffrho)
         maxdiffus3=max(maxdiffus3,diffus_diffrho3)
       endif
+
+      if(lext_force) call ext_force_rhs(df,p)
 !
 !  Apply border profile
 !

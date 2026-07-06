@@ -15,6 +15,8 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED e2; edot2; el(3); a0; ga0(3); del2ee(3); curlE(3); BcurlE; BcurlB
+! PENCILS PROVIDED udotE;
+! PENCILS PROVIDED ExB(3);
 ! PENCILS PROVIDED rhoe, divJ, divE, gGamma(3); sigE, sigB; eb; count_eb0
 ! PENCILS PROVIDED boost; gam_EB; eprime; bprime; jprime; GammaY
 ! PENCILS PROVIDED jj_higgsY(3); rhoe_higgsY
@@ -201,6 +203,7 @@ module Special
 ! yz averaged diagnostics given in yzaver.in
 !
   integer :: idiag_e2mx = 0     ! YZAVG_DOC: $\langle E^2\rangle_{yz}$
+  logical, pointer :: lext_force
 !
   contains
 !
@@ -300,7 +303,7 @@ module Special
           "use unit_system='set' or put loverride_c_light=T")
       c_light2=c_light**2
 !
-      if (lmagnetic .and. .not.lswitch_off_divJ) &
+      if (lmagnetic .and. (.not.lswitch_off_divJ .or. lext_force)) &
         call get_shared_variable('eta',eta,caller='initialize_special')
 !
 !  The following are only obtained when luse_scale_factor_in_sigma=T
@@ -364,6 +367,10 @@ module Special
       endif
 !
       call keep_compiler_quiet(f)
+
+      if(lhydro) then
+        call get_shared_variable("lext_force",lext_force)
+      endif
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -601,9 +608,11 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
+      real :: conductivity
 !
       real, dimension (nx,3) :: tmpv, E_MHD
       real, dimension (nx) :: tmp, mass_suppression_fact, gphi2, prefactor
+      real, dimension (nx) :: uExB
       integer :: i,j,k
 !
       intent(inout) :: f
@@ -611,7 +620,11 @@ module Special
 !
 !  Pencil for charge density.
 !
-      if (lsolve_chargedensity) p%rhoe=f(l1:l2,m,n,irhoe)
+      if (lsolve_chargedensity) then
+        p%rhoe=f(l1:l2,m,n,irhoe)
+      else
+        p%rhoe = 0.0
+      endif
 !
 !  Terms for Gamma evolution.
 !
@@ -925,6 +938,20 @@ module Special
         endif
       endif
       if (alpf/=0.and..not.lklein_gordon) p%dphi=p%infl_dphi
+      
+      if(lpenc_requested(i_ExB)) then
+       call curl_mn(p%el,p%ExB,p%ExB)
+      endif
+
+      if(lext_force) then
+       call dot_mn(p%uu,p%ExB,uExB)
+       conductivity = 1./eta
+       p%ext_force(:,1) = p%ext_force(:,1) -p%lorentz_gamma*(p%rhoe*p%udotE-conductivity*uExB-conductivity*p%e2)
+       do i=1,3
+         p%ext_force(:,i+1) = p%ext_force(:,i+1) -p%lorentz_gamma*((p%rhoe-conductivity*p%udotE)*p%el(:,i) &
+                               -p%rhoe*p%uxb(:,i) + conductivity*(p%ExB(:,i)-p%ub*p%bb(:,i) + p%b2*p%uu(:,i)))
+       enddo
+      endif
 !
 !  Total contribution to the timestep
 !

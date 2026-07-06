@@ -42,10 +42,12 @@
 !
 ! PENCILS PROVIDED phi; dphi; gphi(3); cov_der(4,4)
 ! PENCILS PROVIDED phi_doublet(3); dphi_doublet(3); phi_doublet_mod
-! PENCILS PROVIDED Vprime
+! PENCILS PROVIDED Vprime; Vthermal_prime
+! PENCILS PROVIDED plasma_friction;
+! PENCILS PROVIDED psi; dpsi; gpsi(3); Vprimepsi
 ! PENCILS EXPECTED GammaY, GammaW1, GammaW2, GammaW3
 ! PENCILS EXPECTED W1(3); W2(3); W3(3), aa(3)
-! PENCILS PROVIDED psi; dpsi; gpsi(3); Vprimepsi
+! PENCILS EXPECTED lorentz, ext_force(4);
 !
 !***************************************************************
 !
@@ -713,6 +715,12 @@ module Special
         lpenc_requested(i_dpsi)=.true.
         lpenc_requested(i_Vprimepsi)=.true.
       endif
+
+      if (lhydro) then
+        lpenc_requested(i_lorentz)=.true.
+        lpenc_requested(i_plasma_friction)= .true.
+        lpenc_requested(i_ext_force) = .true.
+      endif
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -723,7 +731,7 @@ module Special
 !
 !  24-nov-04/tony: coded
 !
-      use Sub, only: grad, div
+      use Sub, only: grad, div, dot_mn
       use Deriv, only: der
 !
       real,  dimension (mx,my,mz,mfarray) :: f
@@ -732,6 +740,9 @@ module Special
       intent(in) :: f
       intent(inout) :: p
       integer ::  i, j
+      real, dimension(nx) :: friction_coeff
+      real, dimension(nx) :: u_dot_gphi
+      real, parameter :: plasma_coupling_coeff=1.,T=1.
 
 ! phi
       if (lpencil(i_phi)) p%phi = f(l1:l2,m,n,iphi)
@@ -878,10 +889,23 @@ module Special
         ! p%cov_der = cov_der
       endif
 
+      if(lpencil(i_plasma_friction)) then
+        friction_coeff = plasma_coupling_coeff*p%phi**2/T
+        !Assuming mostly minus metric
+        call dot_mn(p%uu,p%gphi,u_dot_gphi)
+        p%plasma_friction = friction_coeff*p%lorentz_gamma*(p%dphi - u_dot_gphi)
+      endif
+
+      if(lpencil(i_ext_force)) then
+        p%ext_force(:,1)   = p%dphi*p%Vthermal_prime+p%plasma_friction
+        p%ext_force(:,2:4) = p%gphi*spread(p%Vthermal_prime+p%plasma_friction,2,3)
+      endif
+
 ! Vprime and Vprimepsi pencils
 !  Choice of different potentials.
 !  For the 1-cos profile, -Vprime (on the rhs) enters with -sin().
 !
+      p%Vthermal_prime=0.0
       select case (Vprime_choice)
         case ('quadratic'); p%Vprime=phimass2*p%phi
         case ('quartic'); p%Vprime=phimass2*p%phi+delta_phi_prefactor*delta_phi*p%phi**2&
@@ -1123,6 +1147,9 @@ module Special
         df(l1:l2,m,n,iphi)=df(l1:l2,m,n,iphi)+p%dphi
         df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi) - &
               pref_Hubble*Hscript*p%dphi-pref_Vprime*p%Vprime
+        if(lhydro) then
+          df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi)-p%plasma_friction
+        endif
         if (c_phi/=0 .and. .not. lphi_hom) then
           call del2(f, iphi, del2phi)
           df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi) + c_phi**2*pref_del2*del2phi
@@ -1916,6 +1943,7 @@ module Special
       endif
 !
     endsubroutine prep_ode_right
+!***********************************************************************
 !********************************************************************
 ! Subroutines below needed only for GPUs, if you do not care about GPUs don't worry about them
 !***********************************************************************
