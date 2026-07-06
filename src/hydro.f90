@@ -3730,7 +3730,13 @@ module Hydro
       type (pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc
 
-      if (lpenc_loc(i_T00)) p%T00 = f(l1:l2,m,n,irho)
+      if (lpenc_loc(i_T00) .and. ldensity) then
+        if(ldensity_nolog) then
+          p%T00 = f(l1:l2,m,n,irho)
+        else
+          p%T00 = exp(f(l1:l2,m,n,irho))
+        endif
+      endif
 
       if (lconservative) then
         if (lpenc_loc(i_T0i)) p%T0i=f(l1:l2,m,n,iux:iuz)
