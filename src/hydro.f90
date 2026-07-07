@@ -3805,6 +3805,7 @@ module Hydro
 !  Unless the p%uu pencil is taken from the ivv chunk of the farray, the
 !  following smoothing is only used for diagnostics.
 !
+          tmp_rho=f(l1:l2,m,n,irho)
           if (.not.lhiggsless_old.and.lhiggsless) then
             if (width_hless==0.) then
               where(real(t) < f(l1:l2,m,n,ihless)) tmp_rho=tmp_rho-eps_hless
@@ -3911,7 +3912,7 @@ module Hydro
 !
       if (lpenc_loc(i_uu)) then
         call calc_uu(f,p)
-      endif    !  if (lpenc_loc(i_uu))
+      endif 
 ! Tij
       call calc_Tij(f,p,lpenc_loc)
 ! u2
