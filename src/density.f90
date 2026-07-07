@@ -3075,12 +3075,12 @@ module Density
       endif
     endsubroutine mass_diffusion
 !***********************************************************************
-    subroutine massdiff_fix(df,p)
+    subroutine massdiff_fix(df,p,fdiff)
 
       use EquationOfState, only: get_gamma_etc
       real, contiguous, dimension(:,:,:,:) :: df
       type (pencil_case) :: p
-      real, dimension (nx) :: fdiff
+      real, dimension (nx), intent(IN) :: fdiff
       real, dimension (nx) :: tmp
       real :: gamma
 
@@ -3282,7 +3282,7 @@ module Density
 !  Improve energy and momentum conservation by compensating for mass diffusion
 !
       if (lmassdiff_fix.and..not.lconservative) then
-        call massdiff_fix(df,p)
+        call massdiff_fix(df,p,fdiff)
       endif
 !
 !  Hyper diffusion.
