@@ -22,7 +22,7 @@
 ! PENCILS PROVIDED jj_higgsY(3); rhoe_higgsY
 ! PENCILS EXPECTED phi, infl_phi, dphi, infl_dphi, gphi(3); cov_der(4,4)
 ! PENCILS EXPECTED curlb(3), jj_ohm(3), phi_doublet(3)
-! PENCILS EXPECTED gpsi(3), dpsi
+! PENCILS EXPECTED gpsi(3), dpsi, ext_force(4)
 !***************************************************************
 !
 module Special
@@ -303,8 +303,19 @@ module Special
           "use unit_system='set' or put loverride_c_light=T")
       c_light2=c_light**2
 !
-      if (lmagnetic .and. (.not.lswitch_off_divJ .or. lext_force)) &
+      if(lhydro) then
+        call get_shared_variable("lext_force",lext_force)
+      else
+       allocate(lext_force)
+       lext_force=.false.
+      endif
+!
+      if (lmagnetic .and. (.not.lswitch_off_divJ .or. lext_force)) then
         call get_shared_variable('eta',eta,caller='initialize_special')
+      else
+       allocate(eta)
+       eta=impossible
+      endif
 !
 !  The following are only obtained when luse_scale_factor_in_sigma=T
 !  (luse_scale_factor_in_sigma=F by default, because they are defined
@@ -368,9 +379,6 @@ module Special
 !
       call keep_compiler_quiet(f)
 
-      if(lhydro) then
-        call get_shared_variable("lext_force",lext_force)
-      endif
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -604,7 +612,8 @@ module Special
 !
 !   24-nov-04/tony: coded
 !
-      use Sub, only: grad, div, curl, del2v, dot2_mn, dot, levi_civita, del2v_etc, cross_mn, multsv_mn, multsv_add
+      use Sub, only: grad, div, curl, del2v, dot2_mn, dot, levi_civita,&
+                     del2v_etc, cross_mn, multsv_mn, multsv_add, dot_mn
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -1526,7 +1535,6 @@ module Special
 !
       character(LEN=iomsglen), intent(out) :: iomsg
       integer :: iostat
-      character(LEN=iomsglen) :: msg
 !
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat, IOMSG=iomsg)
       if (iostat==0) iomsg=""
@@ -1547,7 +1555,6 @@ module Special
 !
       character(LEN=iomsglen), intent(out) :: iomsg
       integer :: iostat
-      character(LEN=iomsglen) :: msg
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
       if (iostat==0) iomsg=""
