@@ -12,6 +12,7 @@
   !nghost_read_fewer=0, luse_oldgrid=T
 /
 &hydro_run_pars
+  lconservative=F
   kinematic_flow='roberts'
   kx_uukin=8.0
   ky_uukin=8.0

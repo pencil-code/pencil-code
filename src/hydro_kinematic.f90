@@ -113,6 +113,8 @@ module Hydro
   logical :: lkinflow_as_comaux=.false.
   logical :: lrandom_ampl=.false.
   logical :: ltime_old_kinflow=.false.
+  ! SG: need to have it here as a dummy boolean
+  logical :: lconservative=.false.
 !
   namelist /hydro_init_pars/ &
       lkinflow_as_comaux, lkinflow_as_uudat
@@ -140,7 +142,7 @@ module Hydro
       binary_radius, radius_kinflow, width_kinflow, &
       power1_kinflow, power2_kinflow, kpeak_kinflow, &
       cs21_kinflow, diff_rot_a2, diff_rot_a4, alpha_damping, &
-      ltime_old_kinflow
+      ltime_old_kinflow, lconservative
 !
   integer :: idiag_u2m=0,idiag_um2=0,idiag_oum=0,idiag_o2m=0
   integer :: idiag_uxpt=0,idiag_uypt=0,idiag_uzpt=0
@@ -4167,6 +4169,8 @@ module Hydro
 
     call copy_addr(qvec_gb,p_par(78)) ! real3 dconst
     call copy_addr(avec_gb,p_par(79)) ! real3 dconst
+    ! SG: need to have it here as a dummy boolean
+    call copy_addr(lconservative,p_par(80)) ! bool
 
     call keep_compiler_quiet(uphi_at_rzero)
     call keep_compiler_quiet(uphi_at_rmax)
