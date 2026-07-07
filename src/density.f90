@@ -2423,17 +2423,15 @@ module Density
       if (idiag_inertiaxx_car/=0 .or. idiag_inertiayy_car/=0 .or. &
           idiag_inertiazz_car/=0 .or. idiag_sphmass/=0) lpenc_diagnos(i_r_mn)=.true.
 !
-      !if (lconservative) then
-      !  lpenc_requested(i_lorentz)=.true.
-      !  if (lhiggsless)  lpenc_requested(i_hless)=.true.
-      !endif
-      !
-      ! higgsless does not require conservative and lorentz
-      ! should be requested when lrelativistic, independently of
-      ! conservative or not
-      !
       if (lrelativistic) lpenc_requested(i_lorentz)=.true.
       if (lhiggsless)  lpenc_requested(i_hless)=.true.
+
+      if(lext_force) then
+        lpenc_requested(i_rho) =.true.
+        lpenc_requested(i_rho1)=.true.
+        lpenc_requested(i_glnrho)=.true.
+        lpenc_requested(i_uglnrho)=.true.
+      endif
 !
     endsubroutine pencil_criteria_density
 !***********************************************************************
@@ -2721,6 +2719,7 @@ module Density
           enddo
         endif
       endif
+
 ! uglnrho
       if (lpenc_loc(i_uglnrho)) then
         if (lupw_lnrho) then
@@ -2729,6 +2728,8 @@ module Density
           call dot(p%uu,p%glnrho,p%uglnrho)
         endif
       endif
+
+
 ! ugrho
       if (lpenc_loc(i_ugrho)) call not_implemented('calc_pencils_density', &
           'ugrho for logarithmic mass density')
@@ -2965,18 +2966,17 @@ module Density
 !***********************************************************************
     subroutine ext_force_rhs(df,p)
             
-      use Sub, only: dot_mn
-
       real, contiguous, dimension(:,:,:,:) :: df
       type (pencil_case) :: p
       real, dimension (nx) :: rhs
       real, parameter :: omega=1./3.
       real, dimension (nx) :: u_dot_ext_force
 
-      !call dot_mn(p%uu,p%ext_force(:,2:4),u_dot_ext_force)
-      !rhs = -(1+omega)*p%divu - (1-omega)*p%uglnrho &
-      !      + p%rho1*((p%ext_force(:,1) + (1-3*omega)*p%rho*Hscript)*(1+p%u2) -2*u_dot_ext_force)
-      !df(l1:l2,m,n,ilnrho) = rhs/(1-omega*p%u2)
+
+      u_dot_ext_force = p%uu(:,1)*p%ext_force(:,2) + p%uu(:,2)*p%ext_force(:,3) + p%uu(:,3)*p%ext_force(:,4) 
+      rhs = -(1+omega)*p%divu - (1-omega)*p%uglnrho &
+            + p%rho1*((p%ext_force(:,1) + (1-3*omega)*p%rho*Hscript)*(1+p%u2) -2*(+u_dot_ext_force))
+      df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + rhs/(1-omega*p%u2)
     endsubroutine ext_force_rhs
 !***********************************************************************
     subroutine mass_diffusion(f,p,fdiff)
@@ -3325,6 +3325,7 @@ module Density
       call timing('dlnrho_dt','before calc_diagnostics',mnloop=.true.)
       call calc_diagnostics_density(f,p)
       call timing('dlnrho_dt','finished',mnloop=.true.)
+
 !
     endsubroutine dlnrho_dt
 !***********************************************************************

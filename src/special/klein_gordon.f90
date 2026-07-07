@@ -171,6 +171,7 @@ module Special
   integer :: bubble_counter = 1
   !TP: for backwards compatibility the setting of the random seed can be suppressed
   logical :: linitialize_seed=.true.
+  real :: plasma_coupling_coeff=1.0
 !
   namelist /special_init_pars/ &
       initspecial, phi0, dphi0, phimass, sign_phimass2, eps, ascale_ini, &
@@ -198,7 +199,7 @@ module Special
       coupl_phipsi, c_psi, lspeed_of_light_dt,lnucleate_bubbles, bubble_size_factor,&
       max_bubble_nucleation_rate, bubble_wall_width_factor,number_of_bubbles,&
       lgenerate_bubble_times,beta,nucleation_rate_choice,bubble_position_criteria,tf,&
-      bubble_size,bubble_wall_width
+      bubble_size,bubble_wall_width,plasma_coupling_coeff
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -214,6 +215,7 @@ module Special
   integer :: idiag_dpsim=0      ! DIAG_DOC: $\left<\psi'\right>$
   integer :: idiag_dpsi2m=0     ! DIAG_DOC: $\left<(\psi')^2\right>$
   integer :: idiag_dpsirms=0    ! DIAG_DOC: $\left<(\psi')^2\right>^{1/2}$
+  integer :: idiag_gphirms =0       ! DIAG_DOC: $\left<\ |\partial phi| \right>$
   integer :: idiag_Hscriptm=0   ! DIAG_DOC: $\left<{\cal a*H}\right>$
   integer :: idiag_lnam=0       ! DIAG_DOC: $\left<\ln a\right>$
   integer :: idiag_Vprimem=0    ! DIAG_DOC: $\left<V_{,\phi}\right>$
@@ -229,6 +231,10 @@ module Special
   integer :: idiag_sigEma=0     ! DIAG_DOC: $\rho_\chi$
   integer :: idiag_sigBma=0     ! DIAG_DOC: $\rho_\chi$
   integer :: idiag_count_eb0a=0 ! DIAG_DOC: $f_\mathrm{EB0}$
+  integer :: idiag_plasma_frictm=0 ! DIAG_DOC: $\left<\eta_{\phi}U_{\nu}\partial^{\nu}\phi\right>$
+  integer :: idiag_wall_vel = 0 ! DIAG_DOC: $v_{w}$
+  integer :: idiag_wall_pos = 0 ! DIAG_DOC: $r_{w}$
+  integer :: idiag_wall_lorentz = 0 ! DIAG_DOC: $\frac{1}{\sqrt{1-v_{w}^2}}$
 !
   integer :: enum_hscript_choice = 0
   integer :: enum_vprime_choice = 0
@@ -709,6 +715,7 @@ module Special
         ! if (lrho_chi .or. lnoncollinear_EB .or. lnoncollinear_EB_aver .or. &
         !   lcollinear_EB .or. lcollinear_EB_aver) lpenc_requested(i_e2)=.true.
       endif
+      
 !
 !  Call pencils phi and dphi
 !
@@ -750,6 +757,10 @@ module Special
         lpenc_requested(i_plasma_friction)= .true.
         lpenc_requested(i_ext_force) = .true.
       endif
+
+      if(lpenc_requested(i_ext_force)) then
+        lpenc_requested(i_gphi) = .true.
+      endif
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -771,7 +782,8 @@ module Special
       integer ::  i, j
       real, dimension(nx) :: friction_coeff
       real, dimension(nx) :: u_dot_gphi
-      real, parameter :: plasma_coupling_coeff=1.,T=1.
+      real, dimension(nx) :: S
+      real, parameter :: T=1.
 
 ! phi
       if (lpencil(i_phi)) p%phi = f(l1:l2,m,n,iphi)
@@ -918,18 +930,6 @@ module Special
         ! p%cov_der = cov_der
       endif
 
-      if(lpencil(i_plasma_friction)) then
-        friction_coeff = plasma_coupling_coeff*p%phi**2/T
-        !Assuming mostly minus metric
-        call dot_mn(p%uu,p%gphi,u_dot_gphi)
-        p%plasma_friction = friction_coeff*p%lorentz_gamma*(p%dphi - u_dot_gphi)
-      endif
-
-      if(lpencil(i_ext_force)) then
-        p%ext_force(:,1)   = p%dphi*p%Vthermal_prime+p%plasma_friction
-        p%ext_force(:,2:4) = p%gphi*spread(p%Vthermal_prime+p%plasma_friction,2,3)
-      endif
-
 ! Vprime and Vprimepsi pencils
 !  Choice of different potentials.
 !  For the 1-cos profile, -Vprime (on the rhs) enters with -sin().
@@ -960,6 +960,19 @@ module Special
         case default
           call fatal_error("dspecial_dt: No such Vprime_choice: ", trim(Vprime_choice))
       endselect
+
+      if(lpencil(i_plasma_friction)) then
+        friction_coeff = plasma_coupling_coeff*p%phi**2/T
+        !Assuming mostly minus metric
+        call dot_mn(p%uu,p%gphi,u_dot_gphi)
+        p%plasma_friction = friction_coeff*p%lorentz_gamma*(p%dphi - u_dot_gphi)
+      endif
+
+      if(lpencil(i_ext_force)) then
+        S = p%Vthermal_prime+p%plasma_friction
+        p%ext_force(:,1)   = p%dphi*(S)
+        p%ext_force(:,2:4) = p%gphi*spread(S,2,3)
+      endif
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -1317,9 +1330,13 @@ module Special
 !***********************************************************************
     subroutine calc_diagnostics_special(f,p)
 
+      use Sub, only: dot2_mn
       use Diagnostics
       real,  dimension(mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
+      integer :: l
+      real, dimension (nx) :: gphi2
+      real :: v
 
       call keep_compiler_quiet(f)
       if (ldiagnos) then
@@ -1338,6 +1355,23 @@ module Special
           if (idiag_dpsi2m/=0) call sum_mn_name(p%dpsi**2,idiag_dpsi2m)
           if (idiag_dpsirms/=0) call sum_mn_name(p%dpsi**2,idiag_dpsirms,lsqrt=.true.)
           if (idiag_Vprimepsim/=0) call sum_mn_name(p%Vprimepsi,idiag_Vprimepsim)
+        endif
+        if (idiag_plasma_frictm/=0) call sum_mn_name(p%plasma_friction,idiag_plasma_frictm)
+
+        if(idiag_gphirms/=0) then
+          call dot2_mn(p%gphi,gphi2)
+          call sum_mn_name(gphi2,idiag_gphirms,lsqrt=.true.)
+        endif
+
+        if(lspherical_coords) then
+          do l=l1,l2
+           if(abs(0.5-f(l,m,n,iphi))<1e-2) then
+             v= -f(l,m,n,idphi)/p%gphi(l-nghost,1)
+             if (idiag_wall_vel/=0)     call save_name(v,idiag_wall_vel)
+             if (idiag_wall_pos/=0)     call save_name(x(l),idiag_wall_pos)
+             if (idiag_wall_lorentz/=0) call save_name(1/sqrt(1-v**2),idiag_wall_lorentz)
+           endif
+          enddo
         endif
       endif
 
@@ -1418,6 +1452,7 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'dphim',idiag_dphim)
         call parse_name(iname,cname(iname),cform(iname),'dphi2m',idiag_dphi2m)
         call parse_name(iname,cname(iname),cform(iname),'dphirms',idiag_dphirms)
+        call parse_name(iname,cname(iname),cform(iname),'gphirms',idiag_gphirms)
         call parse_name(iname,cname(iname),cform(iname),'Hscriptm',idiag_Hscriptm)
         call parse_name(iname,cname(iname),cform(iname),'lnam',idiag_lnam)
         call parse_name(iname,cname(iname),cform(iname),'ddotam',idiag_ddotam)
@@ -1439,6 +1474,10 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'a2rhogpsim',idiag_a2rhogpsim)
         call parse_name(iname,cname(iname),cform(iname),'Vprimem',idiag_Vprimem)
         call parse_name(iname,cname(iname),cform(iname),'Vprimepsim',idiag_Vprimepsim)
+        call parse_name(iname,cname(iname),cform(iname),'plasma_frictm',idiag_plasma_frictm)
+        call parse_name(iname,cname(iname),cform(iname),'wall_vel',idiag_wall_vel)
+        call parse_name(iname,cname(iname),cform(iname),'wall_lorentz',idiag_wall_lorentz)
+        call parse_name(iname,cname(iname),cform(iname),'wall_pos',idiag_wall_pos)
       enddo
 !
 !  check for those quantities for which we want video slices

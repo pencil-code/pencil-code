@@ -54,6 +54,16 @@ module Hydro
   real, target, dimension (:,:,:), allocatable :: uu_sph_xy,uu_sph_xy2,uu_sph_xy3,uu_sph_xy4
   real, target, dimension (:,:,:), allocatable :: uu_sph_xz,uu_sph_yz,uu_sph_xz2
   real, target, dimension (:,:), allocatable :: divu_xy,u2_xy,o2_xy,mach_xy
+
+  real, target, dimension (:,:), allocatable :: Ft_xy,Fx_xy,Fy_xy,Fz_xy
+  real, target, dimension (:,:), allocatable :: Ft_xz,Fx_xz,Fy_xz,Fz_xz
+  real, target, dimension (:,:), allocatable :: Ft_yz,Fx_yz,Fy_yz,Fz_yz
+  real, target, dimension (:,:), allocatable :: Ft_xy2,Fx_xy2,Fy_xy2,Fz_xy2
+  real, target, dimension (:,:), allocatable :: Ft_xz2,Fx_xz2,Fy_xz2,Fz_xz2
+  real, target, dimension (:,:), allocatable :: Ft_yz2,Fx_yz2,Fy_yz2,Fz_yz2
+  real, target, dimension (:,:), allocatable :: Ft_xy3,Fx_xy3,Fy_xy3,Fz_xy3
+  real, target, dimension (:,:), allocatable :: Ft_xy4,Fx_xy4,Fy_xy4,Fz_xy4
+
   real, target, dimension (:,:), allocatable :: divu_xy2,u2_xy2,o2_xy2,mach_xy2
   real, target, dimension (:,:), allocatable :: divu_xy3,divu_xy4,u2_xy3,u2_xy4,mach_xy4
   real, target, dimension (:,:), allocatable :: o2_xy3,o2_xy4,mach_xy3
@@ -63,6 +73,7 @@ module Hydro
   real, target, dimension (:,:), allocatable :: ou_xy,ou_xy2,ou_xy3,ou_xy4
   real, target, dimension (:,:), allocatable :: ou_xz,ou_yz,ou_xz2
   real, target, dimension (:,:,:,:,:), allocatable :: divu_r,u2_r,o2_r,mach_r,ou_r
+  real, target, dimension (:,:,:,:,:), allocatable :: Ft_r,Fx_r,Fy_r,Fz_r
   real, target, dimension (:,:,:,:,:,:), allocatable :: oo_r,uu_sph_r
 
   real, dimension (mz,3) :: uumz=0.0, ruumz=0.0
@@ -953,7 +964,7 @@ module Hydro
 !  Video data.
 !
   integer :: ivid_oo=0, ivid_o2=0, ivid_divu=0, ivid_u2=0, ivid_Ma2=0, ivid_uu_sph=0
-  integer :: ivid_ou=0
+  integer :: ivid_ou=0, ivid_Ft=0, ivid_Fx=0, ivid_Fy=0, ivid_Fz=0
 !
 !  Auxiliary variables
 !
@@ -1053,6 +1064,8 @@ module Hydro
         igu21=iguij+3; igu22=iguij+4; igu23=iguij+5
         igu31=iguij+6; igu32=iguij+7; igu33=iguij+8
       endif
+       
+
 !!
 !!  Fourier transformed uu as aux
 !!
@@ -1687,6 +1700,11 @@ module Hydro
       if (ivid_Ma2/=0) call alloc_slice_buffers(mach_xy,mach_xz,mach_yz,mach_xy2,mach_xy3,mach_xy4,mach_xz2,mach_r)
       if (ivid_uu_sph/=0) &
         call alloc_slice_buffers(uu_sph_xy,uu_sph_xz,uu_sph_yz,uu_sph_xy2,uu_sph_xy3,uu_sph_xy4,uu_sph_xz2,uu_sph_r)
+
+      if (ivid_Ft/=0) call alloc_slice_buffers(Ft_xy,Ft_xz,Ft_yz,Ft_xy2,Ft_xy3,Ft_xy4,Ft_xz2,Ft_r)
+      if (ivid_Fx/=0) call alloc_slice_buffers(Fx_xy,Fx_xz,Fx_yz,Fx_xy2,Fx_xy3,Fx_xy4,Fx_xz2,Fx_r)
+      if (ivid_Fy/=0) call alloc_slice_buffers(Fy_xy,Fy_xz,Fy_yz,Fy_xy2,Fy_xy3,Fy_xy4,Fy_xz2,Fy_r)
+      if (ivid_Fz/=0) call alloc_slice_buffers(Fz_xy,Fz_xz,Fz_yz,Fz_xy2,Fz_xy3,Fz_xy4,Fz_xz2,Fz_r)
 !
 !  Warn if orms is not set in print.in
 !
@@ -3090,6 +3108,7 @@ module Hydro
         if (ivid_u2  /=0) lpenc_video(i_u2)=.true.
         if (ivid_Ma2 /=0) lpenc_video(i_Ma2)=.true.
         if (ivid_uu_sph/=0) lpenc_video(i_uu_sph)=.true.
+        if (ivid_Ft/=0) lpenc_video(i_ext_force)=.true.
       endif
 !
 !  diagnostic pencils
@@ -3311,7 +3330,9 @@ module Hydro
       endif
 
       if(lext_force) then
-        lpenc_requested(i_glnrho)=.true.
+        lpenc_requested(i_divu)=.true.
+        lpenc_requested(i_uu)=.true.
+        lpenc_requested(i_u2)=.true.
       endif
 !
     endsubroutine pencil_criteria_hydro
@@ -4285,24 +4306,26 @@ module Hydro
 !***********************************************************************
     subroutine ext_force_rhs(df,p)
 
-      use Sub, only: dot_mn
       real, contiguous, dimension(:,:,:,:) :: df
       type (pencil_case) :: p
       real, parameter :: omega = 1./3.
       real, dimension (nx) :: u_dot_ext_force,prefactor
       real, dimension (nx) :: rhs
+      real, dimension (nx) :: lorentz_gamma_inv2
       integer :: i
 
-      !call dot_mn(p%uu,p%ext_force(:,2:4),u_dot_ext_force)
-      !prefactor = p%lorentz/(1-omega*p%u2)
-      !prefactor = prefactor*(omega*p%divu + (omega*(1-omega)/(1+omega))*p%uglnrho &
-      !                       - p%rho1*(p%ext_force(:,1) - ((2*omega)/(1+omega))*u_dot_ext_force))
-      !do i=1,3
-      !  rhs = prefactor*p%uu(:,i)
-      !  rhs = rhs -(p%lorentz/(1+omega))*(omega*p%glnrho(:,i) -p%rho1*p%ext_force(:,i+1))
-      !  rhs = rhs + (p%lorentz/(1-omega*p%u2))*(3*omega-1)*Hscript*p%uu(:,i)
-      !  df(l1:l2,m,n,iux+i-1) = df(l1:l2,m,n,iux+i-1) + rhs
-      !enddo
+      lorentz_gamma_inv2 = 1.-p%u2
+      u_dot_ext_force = p%uu(:,1)*p%ext_force(:,2) + p%uu(:,2)*p%ext_force(:,3) + p%uu(:,3)*p%ext_force(:,4) 
+
+      prefactor = lorentz_gamma_inv2/(1-omega*p%u2)
+      prefactor = prefactor*(omega*p%divu + (omega*(1-omega)/(1+omega))*p%uglnrho &
+                             - p%rho1*(p%ext_force(:,1) - ((2*omega)/(1+omega))*(+u_dot_ext_force)))
+      do i=1,3
+        rhs = prefactor*p%uu(:,i)
+        rhs = rhs -(lorentz_gamma_inv2/(1+omega))*(omega*p%glnrho(:,i) -p%rho1*p%ext_force(:,i+1))
+        rhs = rhs + (lorentz_gamma_inv2/(1-omega*p%u2))*(3*omega-1)*Hscript*p%uu(:,i)
+        df(l1:l2,m,n,iux+i-1) = df(l1:l2,m,n,iux+i-1) + rhs
+      enddo
     endsubroutine ext_force_rhs
 !***********************************************************************
     subroutine advec_uu(f,df,p)
@@ -4636,6 +4659,7 @@ module Hydro
       if (tau_damp_ruzm/=0.) df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-ruzm*p%rho1*tau_damp_ruzm1
 
       if(lext_force) call ext_force_rhs(df,p)
+
 !
 !  Apply border profiles
 !
@@ -5693,6 +5717,10 @@ module Hydro
         if (ivid_Ma2 /=0) call store_slices(p%Ma2,mach_xy,mach_xz,mach_yz,mach_xy2,mach_xy3,mach_xy4,mach_xz2,mach_r)
         if (ivid_uu_sph/=0) call store_slices(p%uu_sph,uu_sph_xy,uu_sph_xz,uu_sph_yz,uu_sph_xy2, &
                                                        uu_sph_xy3,uu_sph_xy4,uu_sph_xz2,uu_sph_r)
+        if (ivid_Ft  /=0) call store_slices(p%ext_force(:,1),Ft_xy,Ft_xz,Ft_yz,Ft_xy2,Ft_xy3,Ft_xy4,Ft_xz2,Ft_r)
+        if (ivid_Fx  /=0) call store_slices(p%ext_force(:,2),Fx_xy,Fx_xz,Fx_yz,Fx_xy2,Fx_xy3,Fx_xy4,Fx_xz2,Fx_r)
+        if (ivid_Fy  /=0) call store_slices(p%ext_force(:,3),Fy_xy,Fy_xz,Fy_yz,Fy_xy2,Fy_xy3,Fy_xy4,Fy_xz2,Fy_r)
+        if (ivid_Fz  /=0) call store_slices(p%ext_force(:,4),Fz_xy,Fz_xz,Fz_yz,Fz_xy2,Fz_xy3,Fz_xy4,Fz_xz2,Fz_r)
       endif
 
       if (lSGS_hydro) call calc_diagnostics_SGS_hydro(p)
@@ -7389,6 +7417,7 @@ module Hydro
         idiag_nshift=0
         idiag_frict=0; idiag_pradrc2=0
         ivid_oo=0; ivid_o2=0; ivid_ou=0; ivid_divu=0; ivid_u2=0; ivid_Ma2=0; ivid_uu_sph=0
+        ivid_Ft=0; ivid_Fx=0; ivid_Fy=0; ivid_Fz=0;
         idiag_ruxph1mz=0
         idiag_ruxph2mz=0
         idiag_ruxph3mz=0
@@ -8048,6 +8077,10 @@ module Hydro
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'u2',  ivid_u2)
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'Ma2', ivid_Ma2)
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'uu_sph',ivid_uu_sph)
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'Ft',ivid_Ft)
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'Fx',ivid_Fx)
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'Fy',ivid_Fy)
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'Fz',ivid_Fz)
       enddo
 !
 !  write column where which hydro variable is stored
@@ -8110,6 +8143,18 @@ module Hydro
 !
         case ('Ma2')
           call assign_slices_scal(slices,mach_xy,mach_xz,mach_yz,mach_xy2,mach_xy3,mach_xy4,mach_xz2,mach_r)
+         
+        case ('Ft')
+          call assign_slices_scal(slices,Ft_xy,Ft_xz,Ft_yz,Ft_xy2,Ft_xy3,Ft_xy4,Ft_xz2,Ft_r)
+
+        case ('Fx')
+          call assign_slices_scal(slices,Fx_xy,Fx_xz,Fx_yz,Fx_xy2,Fx_xy3,Fx_xy4,Fx_xz2,Fx_r)
+
+        case ('Fy')
+          call assign_slices_scal(slices,Fy_xy,Fy_xz,Fy_yz,Fy_xy2,Fy_xy3,Fy_xy4,Fy_xz2,Fy_r)
+
+        case ('Fz')
+          call assign_slices_scal(slices,Fz_xy,Fz_xz,Fz_yz,Fz_xy2,Fz_xy3,Fz_xy4,Fz_xz2,Fz_r)
 !
 !  Velocity in spherical coordinates
 !
