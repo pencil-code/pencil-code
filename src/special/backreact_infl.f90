@@ -86,7 +86,7 @@ module Special
 ! Declare index of new variables in f array (if any).
 !
 !  integer :: iinfl_phi=0, iinfl_dphi=0, iinfl_hubble=0, iinfl_lna=0, Ndiv=100
-  integer :: iinfl_phi=0, iinfl_dphi=0, iinfl_lna=0, Ndiv=100
+  integer :: iinfl_phi=0, iinfl_dphi=0, iinfl_lna=0, iinfl_tph=0, Ndiv=100
   integer :: iinfl_rho_chi=0, iinfl_rho_rad=0
   integer :: it1_reset_value=0  !PAR_DOC: new it1 value after lit1_reset
   real :: ncutoff_phi=1., infl_v=.1
@@ -252,6 +252,7 @@ module Special
   integer :: idiag_Gamma_phi=0  ! DIAG_DOC: $\langle w_\mathrm{state}\rangle$
   integer :: idiag_Gam_phi=0    ! DIAG_DOC: $\langle w_\mathrm{state}\rangle$
   integer :: idiag_dtGphirho=0  ! DIAG_DOC: dtGphirho
+  integer :: idiag_tph=0  ! DIAG_DOC: dtGphirho
 !
   integer :: enum_hscript_choice = 0
   integer :: enum_vprime_choice = 0
@@ -277,7 +278,11 @@ module Special
       call farray_register_pde('infl_phi',iinfl_phi)
       call farray_register_pde('infl_dphi',iinfl_dphi)
 !
-     if (lflrw) call farray_register_ode('infl_lna',iinfl_lna)
+     if (lflrw) then
+       call farray_register_ode('infl_lna',iinfl_lna)
+       call farray_register_ode('infl_tph',iinfl_tph)
+     endif
+!
      if (lrho_chi) call farray_register_ode('infl_rho_chi',iinfl_rho_chi)
      if (lrho_rad) call farray_register_ode('infl_rho_rad',iinfl_rho_rad)
 !
@@ -443,7 +448,13 @@ print*,'AXEL1: lheating_always=',lheating_always
             t=tstart
             Hubble_ini=sqrt(8.*pi/3.*(.5*dphi0**2+.5*axionmass2*phi0**2*ascale_ini**2))
             lnascale=log(ascale_ini)
-            if (lflrw) f_ode(iinfl_lna)=lnascale
+!
+!  ODE variables
+!
+            if (lflrw) then
+              f_ode(iinfl_lna)=lnascale
+              f_ode(iinfl_tph)=0.
+            endif
 !
           case ('default')
             Vpotential=.5*axionmass2*phi0**2
@@ -939,7 +950,13 @@ if (ip<16) print*,'AXEL9: lheating_always=',lheating_always
 !
       if (lgpu) call read_sums_from_GPU
       call get_Hscript_and_a2(Hscript,a2rhom_all)
-      if (lflrw) df_ode(iinfl_lna)=df_ode(iinfl_lna)+Hscript
+!
+!  Integrate ODEs
+!
+      if (lflrw) then
+        df_ode(iinfl_lna)=df_ode(iinfl_lna)+Hscript
+        df_ode(iinfl_tph)=df_ode(iinfl_tph)+ascale
+      endif
 !
 !  Energy density of the charged particles.
 !  This is currently only done for <sigE>*<E^2>, and not for <sigE*E^2>.
@@ -1000,7 +1017,7 @@ if (ip<16) print*,'AXEL9: lheating_always=',lheating_always
       use Diagnostics 
       
       real, dimension(n_odevars), intent(in) :: f_ode
-      real :: rho_chi, rho_rad, lnascale
+      real :: rho_chi, rho_rad, lnascale, tph=0.
       real :: Hscript_diagnos
 !
 !  Set rho_chi for diagnostics
@@ -1021,10 +1038,14 @@ if (ip<16) print*,'AXEL9: lheating_always=',lheating_always
 !
       if (ldiagnos) then
         call get_Hscript_and_a2(Hscript_diagnos,a2rhom_all_diagnos)
-        if (lflrw) lnascale=f_ode(iinfl_lna)
+        if (lflrw) then
+          lnascale=f_ode(iinfl_lna)
+          tph=f_ode(iinfl_tph)
+        endif
         call save_name(Hscript_diagnos,idiag_Hscriptm)
         call save_name(ddotam_all_diagnos,idiag_ddotam)
         call save_name(lnascale,idiag_lnam)
+        call save_name(tph,idiag_tph)
         call save_name(ascale,idiag_ascale)
         call save_name(a2rhopm_all_diagnos,idiag_a2rhopm)
         call save_name(a2rhom_all_diagnos,idiag_a2rhom)
@@ -1138,7 +1159,8 @@ if (ip<16) print*,'AXEL9: lheating_always=',lheating_always
         idiag_a2rhopm=0; idiag_a2rhom=0; idiag_a4rhophim=0; idiag_a2rhophim=0
         idiag_a2rhogphim=0; idiag_rho_chi=0; idiag_rho_rad=0; idiag_sigEma=0
         idiag_sigBma=0; idiag_count_eb0a=0; idiag_heating=0; idiag_wstate=0
-        idiag_wstate_aver=0; idiag_Gamma_phi=0; idiag_Gam_phi=0; idiag_dtGphirho=0
+        idiag_Gamma_phi=0; idiag_Gam_phi=0; idiag_dtGphirho=0
+        idiag_wstate_aver=0; idiag_tph=0 
       endif
 !
       do iname=1,nname
@@ -1169,6 +1191,7 @@ if (ip<16) print*,'AXEL9: lheating_always=',lheating_always
         call parse_name(iname,cname(iname),cform(iname),'Gamma_phi',idiag_Gamma_phi)
         call parse_name(iname,cname(iname),cform(iname),'Gam_phi',idiag_Gam_phi)
         call parse_name(iname,cname(iname),cform(iname),'dtGphirho',idiag_dtGphirho)
+        call parse_name(iname,cname(iname),cform(iname),'tph',idiag_tph)
       enddo
 !
     endsubroutine rprint_special
