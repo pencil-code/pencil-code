@@ -1120,6 +1120,9 @@ module Density
         if(associated(lext_force) .and. lext_force) then
           call get_shared_variable('Hscript',Hscript)
         endif
+      else
+        allocate(lext_force)
+        lext_force = .false.
       endif
     endsubroutine initialize_density
 !***********************************************************************
