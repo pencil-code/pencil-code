@@ -58,7 +58,7 @@ module Streamlines
 !***********************************************************************
     subroutine read_streamlines_init_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 !
       iomsg=""
 !
@@ -74,7 +74,7 @@ module Streamlines
 !***********************************************************************
     subroutine read_streamlines_run_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 !
       iomsg=""
 !

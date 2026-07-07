@@ -74,7 +74,7 @@ contains
 !
       use General, only: keep_compiler_quiet
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 !
       call keep_compiler_quiet(iomsg)
     endsubroutine read_ppersist_init_pars
@@ -92,7 +92,7 @@ contains
 !
       use General, only: keep_compiler_quiet
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 !
       call keep_compiler_quiet(iomsg)
 !

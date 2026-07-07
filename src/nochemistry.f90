@@ -155,7 +155,7 @@ module Chemistry
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 !
       iomsg=""
 
@@ -172,7 +172,7 @@ module Chemistry
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 !
       iomsg=""
 

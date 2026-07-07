@@ -66,7 +66,7 @@ module Particles_diagnos_state
 !***********************************************************************
     subroutine read_pars_diag_state_run_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 !
       iomsg=""
 !

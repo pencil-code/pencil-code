@@ -357,7 +357,7 @@
 !
       use File_io, only: parallel_rewind
 
-      character(LEN=n_special_modules*iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 !
       integer :: i
       character(LEN=iomsglen) :: msg
@@ -389,7 +389,7 @@
 !
       use File_io, only: parallel_rewind
 
-      character(LEN=n_special_modules*iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 !
       integer :: i
       character(LEN=iomsglen) :: msg

@@ -58,7 +58,7 @@ module Particles_adaptation
 !***********************************************************************
     subroutine read_particles_adapt_run_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 !
       iomsg=""
 !

@@ -123,7 +123,7 @@ module Heatflux
 !***********************************************************************
     subroutine read_heatflux_run_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 !
       iomsg=""
 !

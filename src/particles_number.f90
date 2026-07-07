@@ -414,7 +414,7 @@ module Particles_number
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=particles_number_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -434,7 +434,7 @@ module Particles_number
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=particles_number_run_pars, IOSTAT=iostat, IOMSG=iomsg)

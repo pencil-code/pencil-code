@@ -313,7 +313,7 @@ outer:do ikz=1,nz
     use File_io, only: parallel_unit
     use General, only : parser, read_range, merge_ranges, quick_sort
 !
-    character(LEN=iomsglen), intent(out) :: iomsg
+    character(LEN=*), intent(out) :: iomsg
     integer :: iostat
 !
     integer :: i, iend_zrange

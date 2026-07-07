@@ -129,7 +129,7 @@ module Selfgravity
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 
       integer :: iostat
 !
@@ -150,7 +150,7 @@ module Selfgravity
 !***********************************************************************
     subroutine read_selfgravity_run_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 !
       iomsg=""
 !

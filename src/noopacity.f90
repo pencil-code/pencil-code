@@ -30,7 +30,7 @@ module Opacity
 !
       use Cparam, only: iomsglen
 
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 !
       call keep_compiler_quiet(iomsg)
 

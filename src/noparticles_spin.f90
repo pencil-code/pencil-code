@@ -127,7 +127,7 @@ module Particles_spin
 !***********************************************************************
     subroutine read_particles_spin_init_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 !
       iomsg=""
 !
@@ -143,7 +143,7 @@ module Particles_spin
 !***********************************************************************
     subroutine read_particles_spin_run_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 !
       iomsg=""
 !

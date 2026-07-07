@@ -452,7 +452,7 @@ module EquationOfState
 !***********************************************************************
     subroutine read_eos_init_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 !
       iomsg=""
 !
@@ -468,7 +468,7 @@ module EquationOfState
 !***********************************************************************
     subroutine read_eos_run_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 !
       iomsg=""
 !

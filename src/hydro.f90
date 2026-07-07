@@ -3309,6 +3309,10 @@ module Hydro
         endif
       else
       endif
+
+      if(lext_force) then
+        lpenc_requested(i_glnrho)=.true.
+      endif
 !
     endsubroutine pencil_criteria_hydro
 !***********************************************************************
@@ -4297,7 +4301,6 @@ module Hydro
         rhs = rhs -(p%lorentz/(1+omega))*(omega*p%glnrho(:,i) -p%rho1*p%ext_force(:,i+1))
         rhs = rhs + (p%lorentz/(1-omega*p%u2))*(3*omega-1)*Hscript*p%uu(:,i)
         df(l1:l2,m,n,iux+i-1) = df(l1:l2,m,n,iux+i-1) + rhs
-        !print*,"RHS SUM: ",sum(rhs),sum(p%ext_force(:,i+1))
       enddo
     endsubroutine ext_force_rhs
 !***********************************************************************
@@ -6858,7 +6861,7 @@ module Hydro
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=hydro_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -6878,7 +6881,7 @@ module Hydro
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=hydro_run_pars, IOSTAT=iostat, IOMSG=iomsg)

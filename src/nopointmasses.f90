@@ -121,7 +121,7 @@ module PointMasses
 !***********************************************************************         
     subroutine read_pointmasses_init_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
       iomsg=""
 !
     endsubroutine read_pointmasses_init_pars
@@ -136,7 +136,7 @@ module PointMasses
 !***********************************************************************
     subroutine read_pointmasses_run_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
       iomsg=""
 !
     endsubroutine read_pointmasses_run_pars

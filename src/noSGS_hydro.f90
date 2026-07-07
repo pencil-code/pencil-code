@@ -48,7 +48,7 @@ module SGS_hydro
 !***********************************************************************
     subroutine read_SGS_hydro_run_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 !
       iomsg=""
 !

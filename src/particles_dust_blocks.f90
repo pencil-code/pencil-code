@@ -2706,7 +2706,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=particles_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -2726,7 +2726,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=particles_run_pars, IOSTAT=iostat, IOMSG=iomsg)

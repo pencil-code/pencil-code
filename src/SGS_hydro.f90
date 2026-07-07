@@ -126,7 +126,7 @@ print*, 'aasmooth=', iaasmooth
       character(LEN=*), intent(inout) :: iomsg
 
       integer :: iostat
-      character(LEN=iomsglen) :: msg
+      character(LEN=*) :: msg
 !
       read(parallel_unit, NML=SGS_hydro_run_pars, IOSTAT=iostat, IOMSG=iomsg)
       if (iostat/=0) iomsg=trim(iomsg)//"; "//trim(msg)

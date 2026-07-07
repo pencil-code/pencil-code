@@ -73,7 +73,7 @@ module Particles_coagulation
 !***********************************************************************
     subroutine read_particles_coag_run_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 !
       iomsg=""
 !

@@ -53,7 +53,7 @@ module Shock
 !***********************************************************************
     subroutine read_shock_run_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 !
       iomsg=""
 !

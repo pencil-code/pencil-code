@@ -8486,7 +8486,7 @@ print*,'AXEL2: should not be here (eta) ... '
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=magnetic_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -8514,7 +8514,7 @@ print*,'AXEL2: should not be here (eta) ... '
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=magnetic_run_pars, IOSTAT=iostat, IOMSG=iomsg)

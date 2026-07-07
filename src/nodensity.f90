@@ -243,7 +243,7 @@ module Density
 !***********************************************************************
     subroutine read_density_init_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 !
       iomsg=""
 !
@@ -259,7 +259,7 @@ module Density
 !***********************************************************************
     subroutine read_density_run_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(LEN=*), intent(out) :: iomsg
 !
       iomsg=""
 !
