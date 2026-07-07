@@ -222,7 +222,7 @@ class FNO(nn.Module):
         x_sampled = self.q(x_sampled)
         x_sampled = x_sampled.permute(0, 1, 2, 3, 4) # pad the domain if input is non-periodic
         
-
+        """
         if self.counter % 50 == 0:
             #very hacky need wont work with different node
             rank = int(str(x.device).split(":")[1])
@@ -231,5 +231,6 @@ class FNO(nn.Module):
                 "acc_sum": self.normalizer.acc_sum, "acc_sum_squared": self.normalizer.acc_sum_squared},
                 f"all_stats/stats_current_input_rank_{rank}.pt"
             )
+        """
         self.counter += 1
         return x_sampled.double()

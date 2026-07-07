@@ -1,9 +1,15 @@
 #if LTRAINING
 communicated FieldSymmetricTensor tau_hydro
 communicated Field3 uumean
-
-FieldSymmetricTensor bb_tensor_product
 communicated Field3 bbmean
+
+communicated FieldSymmetricTensor viscous_sgs
+communicated FieldSymmetricTensor viscous_sgs_mean
+communicated Field3 mom_mean
+communicated Field rho_mean
+
+communicated FieldSymmetricTensor momentum_sgs
+FieldSymmetricTensor bb_tensor_product
 //communicated Field3 grad_lnrho_mean
 //communicated Field3 gradupwd_lnrho_mean
 
@@ -123,6 +129,15 @@ write_tensor_product(FieldSymmetricTensor T, real3 uu)
 }
 
 
+write_symmetricTensor_matrix(FieldSymmetricTensor T, AcMatrix Aij)
+{
+	write(T.xx, Aij[0][0])	
+	write(T.yy, Aij[1][1])	
+	write(T.zz, Aij[2][2])	
+	write(T.xy, Aij[0][1])	
+	write(T.yz, Aij[1][2])	
+	write(T.xz, Aij[0][2])
+}
 
 
 
@@ -136,28 +151,52 @@ Kernel get_bfield(){
 
 
 
-Kernel fluctutation_terms_and_means(){
+Kernel fluctutation_terms_and_means()
+{
 	if(!AC_ltrained__mod__training){
+		write(uumean,gaussian_smooth_inplace(UU))
 		if(lhydro) 
 		{
-		  write_tensor_product(tau_hydro,UU)
-		  write(uumean,gaussian_smooth_inplace(UU))
+		    if(AC_lconservative__mod__hydro)
+            {
+		      uij = gradient_tensor(MOM,RHO)
+		      Sij = traceless_strain(uij)
+              write_symmetricTensor_matrix(viscous_sgs, Sij)
+              write(mom_mean, gaussian_smooth_inplace(MOM))
+              write(rho_mean, gaussian_smooth_inplace(RHO))
+            }
+            else
+            {
+		      write_tensor_product(tau_hydro,UU)
+            }
 		}
 		if(AC_ltrain_mag__mod__training)
 		{
-			write(sgs_emf,cross(UU,bbmean))
-			write(bb_tensor_product,tensor_product(bbmean))
-			write(bbmean,gaussian_smooth_inplace(bbmean))
+		    write(sgs_emf,cross(UU,bbmean))
+		    write(bb_tensor_product,tensor_product(bbmean))
+		    write(bbmean,gaussian_smooth_inplace(bbmean))
 		}
 	}
 }
 
 Kernel smooth_fluctuation_terms(){
 	if(!AC_ltrained__mod__training){
-	  if(lhydro) write(tau_hydro,gaussian_smooth_inplace(tau_hydro))
+	  if(lhydro) 
+      {
+          
+		  if(AC_lconservative__mod__hydro)
+          {
+              write(viscous_sgs, gaussian_smooth_inplace(viscous_sgs))
+          }
+          else
+          {
+              write(tau_hydro,gaussian_smooth_inplace(tau_hydro))
+          }
+      } 
+
 	  if(AC_ltrain_mag__mod__training)
 	  {
-             write(sgs_emf,gaussian_smooth_inplace(sgs_emf))
+         write(sgs_emf,gaussian_smooth_inplace(sgs_emf))
 	     write(bb_tensor_product,gaussian_smooth_inplace(bb_tensor_product))
 	  }
 	}
@@ -166,7 +205,17 @@ Kernel smooth_fluctuation_terms(){
 
 Kernel compute_taus(){
 	if(!AC_ltrained__mod__training){
-          if(lhydro) write(tau_hydro,tau_hydro - tensor_product(uumean))
+		  if(AC_lconservative__mod__hydro)
+          {
+            uij_mean = gradient_tensor(mom_mean, rho_mean)
+            Sij_mean = traceless_strain(uij_mean)
+            write_symmetricTensor_matrix(viscous_sgs_mean, Sij_mean)
+            write(viscous_sgs, viscous_sgs - viscous_sgs_mean)
+          }
+          else
+          {
+              write(tau_hydro,tau_hydro - tensor_product(uumean))
+          }
 	  if(AC_ltrain_mag__mod__training)
 	  {
             write(bb_tensor_product,-(bb_tensor_product-tensor_product(bbmean)))

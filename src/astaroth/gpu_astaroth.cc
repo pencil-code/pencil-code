@@ -52,6 +52,8 @@ const bool performance_logs = false;
 #define EXTERN
 #define FINT int
 
+
+
 #if DOUBLE_PRECISION
   #define REAL_MAX DBL_MAX
 #else
@@ -1077,15 +1079,23 @@ extern "C" void torch_train_c_api(AcReal *loss_val, int itsub, double t) {
   *loss_val=DBL_MAX;
   if(lhydro){
     AcReal* out = NULL;
-    AcReal* uumean_ptr = NULL;
-    AcReal* TAU_ptr = NULL;
+    AcReal* feature = NULL;
+    AcReal* label = NULL;
     *loss_val = 0.1;
     
-    acDeviceGetVertexBufferPtrs(acGridGetDevice(), tau_hydro.xx, &TAU_ptr, &out);
-    acDeviceGetVertexBufferPtrs(acGridGetDevice(), uumean.x, &uumean_ptr, &out);
+
+    if(AC_lconservative__mod__hydro){
+        // dynamic field handel acGetmomentum_sgs_Xx()
+        acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetviscous_sgs_Xx(), &label, &out);
+        acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetmom_mean_X(), &feature, &out);
+    }
+    else {
+        acDeviceGetVertexBufferPtrs(acGridGetDevice(), tau_hydro.xx, &label, &out);
+        acDeviceGetVertexBufferPtrs(acGridGetDevice(), uumean.x, &feature, &out);
+    }
  
     acGridHaloExchange();
-    torch_train_CAPI((int[]){mx,my,mz}, uumean_ptr, TAU_ptr, loss_val,input_channels,output_channels,"stationary");
+    torch_train_CAPI((int[]){mx,my,mz}, feature, label, loss_val,6,6,"stationary");
     train_loss.push_back(*loss_val);
     train_nts.push_back(it);
   }
