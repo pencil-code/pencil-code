@@ -1163,6 +1163,7 @@ module Equ
 !
         if (lupdate_courant_dt.and.(.not.ldt_paronly).and.ldiagnos) then
           if (idiag_dtv/=0) call max_mn_name(maxadvec/cdt,idiag_dtv,l_dt=.true.)
+          if (idiag_dtsrc/=0) call max_mn_name(maxsrc/cdtsrc,idiag_dtsrc,l_dt=.true.)
           if (idiag_dtdiffus/=0) call max_mn_name(maxdiffus/cdtv,idiag_dtdiffus,l_dt=.true.)
           if (idiag_dtdiffus2/=0) call max_mn_name(maxdiffus2/cdtv2,idiag_dtdiffus2,l_dt=.true.)
           if (idiag_dtdiffus3/=0) call max_mn_name(maxdiffus3/cdtv3,idiag_dtdiffus3,l_dt=.true.)
@@ -1177,7 +1178,7 @@ module Equ
 !
           call xymax_mn_name_z(maxadvec/cdt,idiag_dtvmaxz,l_dt=.true.)
         endif
-
+!
     endsubroutine timestep_diagnostics
 !***********************************************************************
     subroutine calc_time_integrals(f,p)
@@ -1901,6 +1902,7 @@ module Equ
         dt1_src = maxsrc/cdtsrc
 !
 !  Timestep combination from advection, diffusion and "source".
+!  Alternatively, we could use the maxima of all three contributions.
 !
         dt1_max_loc = sqrt(dt1_advec**2 + dt1_diffus**2 + dt1_src**2)
 !

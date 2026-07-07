@@ -380,6 +380,13 @@ endsubroutine helper_loop
     if (.not.(lit1_logspacing.and.real(t)<tmax_logspacing)) &
       lout = (mod(it-1,it1) == 0) .and. (it > it1start)
 !
+!  Enable possibility of a more detailed and free-format output
+!  about time step constraints directly onto the command line.
+!
+    if (it1_ldt_report>0) ldt_report = (mod(it-1,it1_ldt_report) == 0) .and. (it > it1start)
+!
+!  Other time step criteria.
+!
     if (lspec_tcrit) call check_tspec_crit_log_interval
     if (lsnap_tcrit) call check_tsnap_crit_log_interval
     if (lvid_tcrit) call check_tvid_crit_log_interval

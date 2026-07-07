@@ -4159,7 +4159,9 @@ module Sub
     endsubroutine set_next_dt
 !***********************************************************************
     subroutine set_dt(dt1_)
-
+!
+!  This routine is called from src/equ.f90 and sets the actual time step.
+!
       use Mpicomm, only: mpiallreduce_max, MPI_COMM_PENCIL
 
       real :: dt1_
@@ -4186,7 +4188,7 @@ module Sub
       if (loutput_varn_at_exact_tsnap) call shift_dt(dt)
       ! Timestep growth limiter
       if (ddt > 0.) dt1_last=dt1_local/ddt
-
+!
     endsubroutine set_dt
 !***********************************************************************
     subroutine vecout(lun,file,vv,thresh,nvec)

@@ -217,6 +217,7 @@ module Cdata
   real :: Area_xy=1., Area_yz=1., Area_xz=1.
   logical :: lfirst=.false.,llast=.false.,ldt_paronly=.false.
   logical :: ldt=.true.
+  logical :: ldt_report=.false.  !PAR_DOC: possibility for time step reports onto command line
   logical :: lupdate_courant_dt=.false.
 !
 !  Time integration parameters.
@@ -663,6 +664,7 @@ module Cdata
 !
   character :: comment_char='#'
   integer :: it1=10,it1start=0,it1d=impossible_int,itspec=impossible_int
+  integer :: it1_ldt_report=0     !PAR_DOC: interval for time step constraint reports onto command line
   integer :: itsnap=impossible_int
   integer :: nname=0,nnamev=0,nnamexy=0,nnamexz=0,nnamerz=0
   integer :: nnamez=0,nnamey=0,nnamex=0,nnamer=0
@@ -775,6 +777,8 @@ module Cdata
                                 ! PHIAVG_DOC: $r=\sqrt{\varpi^2+z^2}$
                                 ! PHIAVG_DOC: (useful for debugging)
   integer :: idiag_dtv=0        ! DIAG_DOC: advective timestep as a
+                                ! DIAG_DOC:   fraction of the actual one
+  integer :: idiag_dtsrc=0      ! DIAG_DOC: timestep from a source term,
                                 ! DIAG_DOC:   fraction of the actual one
   integer :: idiag_dtdiffus=0   ! DIAG_DOC: diffusive timestep as a
                                 ! DIAG_DOC:   fraction of the actual one

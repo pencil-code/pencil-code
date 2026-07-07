@@ -38,7 +38,7 @@ module Special
 ! input parameters
 !
   real, dimension (ninit) :: amplee=0.0 !, kx_aa=1.0, ky_aa=1.0, kz_aa=1.0
-  real, dimension (nx) :: etaSchw, diffus_etaSchw=0.
+  real, dimension (nx) :: etaSchw, diffus_etaSchw=0., dtsrc_sigE=0.
   real :: alpf=0., alpfpsi=0.
   real :: ampl_ex=0.0, ampl_ey=0.0, ampl_ez=0.0, ampl_a0=0.0
   real :: kx_ex=0.0, kx_ey=0.0, kx_ez=0.0
@@ -953,14 +953,26 @@ module Special
        enddo
       endif
 !
-!  Total contribution to the timestep
+!  Total contribution to the timestep. Define here the array dtsrc_sigE
+!  which is used below for outputting the timestep constraint.
 !
       if (lfirst.and.ldt.and.ldt_disp_current) then
         if (ladvance_ee) then
-          dt1_max=max(dt1_max,p%sigE/cdt_sigE)
+          dtsrc_sigE=p%sigE/cdt_sigE
+          dt1_max=max(dt1_max,dtsrc_sigE)
         else
+          dtsrc_sigE=0.
           diffus_etaSchw=etaSchw*dxyz_2
           maxdiffus=max(maxdiffus,diffus_etaSchw)
+        endif
+!
+!  Detailed time step report.
+!
+        if (ldt_report) then
+          print*,'Time step report from disp_current: minval(1/dt1_max)=',minval(1./dt1_max)
+          print*,'Time step report from disp_current: minval(1/maxdiffus)=',minval(1./maxdiffus)
+          if (minval(diffus_etaSchw)>0.) &
+            print*,'Time step report from disp_current: minval(1/diffus_etaSchw)=',minval(1./diffus_etaSchw)
         endif
       endif
 !
@@ -1370,6 +1382,12 @@ module Special
 !
       if (lfirst.and.ldt) advec_cs2=max(advec_cs2,c_light2*dxyz_2)
 !
+!  Detailed time step report.
+!
+      if (ldt_report) then
+        print*,'Time step report from disp_current.: minval(1/sqrt(advec_cs2))=',minval(1./sqrt(advec_cs2))
+      endif
+!
 !  diagnostics
 !
       if (ldiagnos) call calc_diagnostics_special(f,p)
@@ -1473,7 +1491,7 @@ module Special
 !
 !  Fractional timestep constraints.
 !
-      call max_mn_name(p%sigE/cdt_sigE,idiag_dtsigE,l_dt=.true.)
+      call max_mn_name(dtsrc_sigE,idiag_dtsigE,l_dt=.true.)
       call max_mn_name(diffus_etaSchw/cdtv,idiag_dteta,l_dt=.true.)
 !
 !  Diagnostics.

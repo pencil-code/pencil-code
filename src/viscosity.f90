@@ -2567,8 +2567,11 @@ module Viscosity
             nu_tdep=cs_t/nu_tdep_kcs
           endif
         case ('PrM_sigEm')
-          nu_tdep=min(nu,PrM/sigEm_all)
-          !nu_tdep=nu
+          if (sigEm_all>0.) then
+            nu_tdep=min(nu,PrM/sigEm_all)
+          else
+            nu_tdep=nu
+          endif
 !
 !  Viscosity for recombination. Allow for a value of ascale below which nu is constant.
 !

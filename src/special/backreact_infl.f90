@@ -101,7 +101,8 @@ module Special
   real :: rhom, rhom_all, rhokinm, rhokinm_all
   real :: edotbm, edotbm_all, e2m, e2m_all, b2m, b2m_all, a2rhophim, a4rhophim, a2rhophim_all, a4rhophim_all
   real :: a2rhopphim, a2rhopphim_all
-  real :: sigE1m_all_nonaver, sigB1m_all_nonaver,sigEm_all,sigBm_all,sigEm_all_diagnos,sigBm_all_diagnos
+  real :: sigE1m_all_nonaver=0., sigB1m_all_nonaver=0., sigEm_all=0., sigBm_all=0.
+  real :: sigEm_all_diagnos,sigBm_all_diagnos
   real :: a2rhogphim, a2rhogphim_all
   real :: a2, a21, Hscript
   real :: Hscript0=0., scale_rho_chi_Heqn=1., scale_rho_rad_Heqn=1., rho_chi_init=0.
@@ -127,7 +128,8 @@ module Special
   real, target :: ddotam_all
   real, pointer :: alpf, eta
   real, pointer :: sigE_prefactor, sigB_prefactor, mass_chi
-  real, dimension (nx) :: dt1_special
+  real, dimension (nx) :: dt1_special    !PARDOC: total timestep constraint from this module
+  real, dimension (nx) :: dtsrc_Gphirho  !PARDOC: specific timestep constraint from the Gphirho term
   logical :: lcompute_dphi0=.true.
   logical :: lbackreact_infl=.true., lem_backreact=.true., lzeroHubble=.false.
   logical :: lscale_tobox=.true., ldt_backreact_infl=.true., lconf_time=.true.
@@ -249,6 +251,7 @@ module Special
   integer :: idiag_wstate_aver=0 ! DIAG_DOC: $\langle w_\mathrm{state}\rangle$
   integer :: idiag_Gamma_phi=0  ! DIAG_DOC: $\langle w_\mathrm{state}\rangle$
   integer :: idiag_Gam_phi=0    ! DIAG_DOC: $\langle w_\mathrm{state}\rangle$
+  integer :: idiag_dtGphirho=0  ! DIAG_DOC: dtGphirho
 !
   integer :: enum_hscript_choice = 0
   integer :: enum_vprime_choice = 0
@@ -859,6 +862,7 @@ if (ip<16) print*,'AXEL9: lheating_always=',lheating_always
 !  vA=B/sqrt(rho_chi), so dt=C_M*dx/vA. In practice, C_M (=cdt_rho_chi) can be 20.
 !  This timestep constraint should not be used if hydrodynamics is evolved.
 !  If it is used, it should be based on cobformal time using comoving B and rho.
+!  ldt_backreact_infl=T by default; can be used to prevent automatic time step control.
 !
       if (lfirst .and. ldt .and. ldt_backreact_infl) then
         if (Ndiv==0.) then
@@ -879,11 +883,18 @@ if (ip<16) print*,'AXEL9: lheating_always=',lheating_always
               advec2=max(advec2,dxyz_2/cdt_phi**2)
             endif
 !
-!  Time step constraint from Gam_phi
+!  Time step constraint from Gam_phi. Need to compenate here for the
 !
             if (ldt_Gamma_phi .and. lrho_chi_inhom .and. lheating) then
-              dt1_special=max(dt1_special,Gamma_phi_rho_rhs*p%rho1/cdt_Gamma_phi)
+              ! 7-jul-26/axel: neither of the two expressions below seems to be correct.
+              !dtsrc_Gphirho=Gamma_phi_rho_rhs*p%rho1*cdt_phi/cdt_Gamma_phi
+              dtsrc_Gphirho=Gamma_phi_rho_rhs*p%rho1/cdt_Gamma_phi
+              dt1_special=max(dt1_special,dtsrc_Gphirho)
+            else
+              dtsrc_Gphirho=0.
             endif
+          else
+            dt1_special=0.
           endif
 !
 !  Additional constraint from vA=B/sqrt(rho_chi), but this is only relevant
@@ -900,6 +911,15 @@ if (ip<16) print*,'AXEL9: lheating_always=',lheating_always
           dt1_special = Ndiv*abs(Hscript)
         endif
         dt1_max=max(dt1_max,dt1_special)
+! 7-jul-2026/axel: perhaps better via dt1_src
+        !maxsrc=max(maxsrc,dt1_special)
+!
+!  Detailed time step report.
+!
+        if (ldt_report) then
+          print*,'Time step report from backreact_infl: minval(1/dt1_max)=',minval(1./dt1_max)
+          print*,'Time step report from backreact_infl: minval(1/sqrt(advec2))=',minval(1./sqrt(advec2))
+        endif
       endif
 !
 !  Diagnostics
@@ -1023,6 +1043,10 @@ if (ip<16) print*,'AXEL9: lheating_always=',lheating_always
         call save_name(Gamma_phi,idiag_Gamma_phi)
         call save_name(Gamma_phi,idiag_Gam_phi) !(shorter name for Gamma_phi)
 !
+!  Fractional timestep constraints.
+!
+      call max_mn_name(dtsrc_Gphirho,idiag_dtGphirho,l_dt=.true.)
+!
       endif
 !
     endsubroutine calc_ode_diagnostics_special
@@ -1046,7 +1070,7 @@ if (ip<16) print*,'AXEL9: lheating_always=',lheating_always
 !
 !  Fractional timestep constraints.
 !
-        call max_mn_name(spread(axionmass*ascale/cdt_phi,1,nx),idiag_dtphi,l_dt=.true.)
+        call max_mn_name(dt1_special,idiag_dtphi,l_dt=.true.)
       endif
 !
     endsubroutine calc_diagnostics_special
@@ -1114,7 +1138,7 @@ if (ip<16) print*,'AXEL9: lheating_always=',lheating_always
         idiag_a2rhopm=0; idiag_a2rhom=0; idiag_a4rhophim=0; idiag_a2rhophim=0
         idiag_a2rhogphim=0; idiag_rho_chi=0; idiag_rho_rad=0; idiag_sigEma=0
         idiag_sigBma=0; idiag_count_eb0a=0; idiag_heating=0; idiag_wstate=0
-        idiag_wstate_aver=0; idiag_Gamma_phi=0; idiag_Gam_phi=0
+        idiag_wstate_aver=0; idiag_Gamma_phi=0; idiag_Gam_phi=0; idiag_dtGphirho=0
       endif
 !
       do iname=1,nname
@@ -1144,6 +1168,7 @@ if (ip<16) print*,'AXEL9: lheating_always=',lheating_always
         call parse_name(iname,cname(iname),cform(iname),'wstate_aver',idiag_wstate_aver)
         call parse_name(iname,cname(iname),cform(iname),'Gamma_phi',idiag_Gamma_phi)
         call parse_name(iname,cname(iname),cform(iname),'Gam_phi',idiag_Gam_phi)
+        call parse_name(iname,cname(iname),cform(iname),'dtGphirho',idiag_dtGphirho)
       enddo
 !
     endsubroutine rprint_special
@@ -1572,6 +1597,7 @@ print*,'AXEL2: id, done=',id, done
         if (f_ode(iinfl_lna)>lna_switch_toMHD) then
           ladvance_ee=.false.
           if (lroot) then
+            print*,'lswitch_toMHD_at_lna criterion activated'
             open (1,file=trim(datadir)//'/pc_constants.pro',position="append")
             write (1,*) 'ascale_noadvance_ee=',ascale,';(lswitch_toMHD_at_lna criterion activated)'
             write (1,*) 't_noadvance_ee=',t
