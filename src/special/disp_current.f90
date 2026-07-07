@@ -940,7 +940,7 @@ module Special
       if (alpf/=0.and..not.lklein_gordon) p%dphi=p%infl_dphi
       
       if(lpenc_requested(i_ExB)) then
-       call curl_mn(p%el,p%ExB,p%ExB)
+       call cross_mn(p%el,p%ExB,p%ExB)
       endif
 
       if(lext_force) then
