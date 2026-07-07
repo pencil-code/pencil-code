@@ -2970,10 +2970,10 @@ module Density
       real, parameter :: omega=1./3.
       real, dimension (nx) :: u_dot_ext_force
 
-      call dot_mn(p%uu,p%ext_force(:,2:4),u_dot_ext_force)
-      rhs = -(1+omega)*p%divu - (1-omega)*p%uglnrho &
-            + p%rho1*((p%ext_force(:,1) + (1-3*omega)*p%rho*Hscript)*(1+p%u2) -2*u_dot_ext_force)
-      df(l1:l2,m,n,ilnrho) = rhs/(1-omega*p%u2)
+      !call dot_mn(p%uu,p%ext_force(:,2:4),u_dot_ext_force)
+      !rhs = -(1+omega)*p%divu - (1-omega)*p%uglnrho &
+      !      + p%rho1*((p%ext_force(:,1) + (1-3*omega)*p%rho*Hscript)*(1+p%u2) -2*u_dot_ext_force)
+      !df(l1:l2,m,n,ilnrho) = rhs/(1-omega*p%u2)
     endsubroutine ext_force_rhs
 !***********************************************************************
     subroutine mass_diffusion(f,p,fdiff)

@@ -4293,16 +4293,16 @@ module Hydro
       real, dimension (nx) :: rhs
       integer :: i
 
-      call dot_mn(p%uu,p%ext_force(:,2:4),u_dot_ext_force)
-      prefactor = p%lorentz/(1-omega*p%u2)
-      prefactor = prefactor*(omega*p%divu + (omega*(1-omega)/(1+omega))*p%uglnrho &
-                             - p%rho1*(p%ext_force(:,1) - ((2*omega)/(1+omega))*u_dot_ext_force))
-      do i=1,3
-        rhs = prefactor*p%uu(:,i)
-        rhs = rhs -(p%lorentz/(1+omega))*(omega*p%glnrho(:,i) -p%rho1*p%ext_force(:,i+1))
-        rhs = rhs + (p%lorentz/(1-omega*p%u2))*(3*omega-1)*Hscript*p%uu(:,i)
-        df(l1:l2,m,n,iux+i-1) = df(l1:l2,m,n,iux+i-1) + rhs
-      enddo
+      !call dot_mn(p%uu,p%ext_force(:,2:4),u_dot_ext_force)
+      !prefactor = p%lorentz/(1-omega*p%u2)
+      !prefactor = prefactor*(omega*p%divu + (omega*(1-omega)/(1+omega))*p%uglnrho &
+      !                       - p%rho1*(p%ext_force(:,1) - ((2*omega)/(1+omega))*u_dot_ext_force))
+      !do i=1,3
+      !  rhs = prefactor*p%uu(:,i)
+      !  rhs = rhs -(p%lorentz/(1+omega))*(omega*p%glnrho(:,i) -p%rho1*p%ext_force(:,i+1))
+      !  rhs = rhs + (p%lorentz/(1-omega*p%u2))*(3*omega-1)*Hscript*p%uu(:,i)
+      !  df(l1:l2,m,n,iux+i-1) = df(l1:l2,m,n,iux+i-1) + rhs
+      !enddo
     endsubroutine ext_force_rhs
 !***********************************************************************
     subroutine advec_uu(f,df,p)
