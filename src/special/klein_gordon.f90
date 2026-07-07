@@ -340,7 +340,7 @@ module Special
           z_local = z(n)
         endif
         r = sqrt((x_local-pos(1))**2+(y_local-pos(2))**2+(z_local-pos(3))**2)
-        bubble_profile = 0.5*(1-tanh((r-bubble_size_factor*bubble_size)/bubble_wall_width))
+        bubble_profile = 0.5*(1-tanh((r-bubble_size)/bubble_wall_width))
         select case (nucleation_method)
         case ('max')
           f(l,m,n,iphi) = max(f(l,m,n,iphi),bubble_profile)
