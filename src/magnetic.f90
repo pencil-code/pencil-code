@@ -265,6 +265,7 @@ module Magnetic
   logical :: lax_ext_global=.false.,lay_ext_global=.false.,&
              laz_ext_global=.false.
   logical :: lambipolar_diffusion=.false.
+  real    :: ad_exp = 0.5
   logical :: lpower_profile_file=.false.
   logical :: lskip_projection_aa=.false.
   logical :: lscale_tobox=.true., lsquash_aa=.false.
@@ -461,7 +462,7 @@ module Magnetic
       lbext_moving_layer, zbot_moving_layer, ztop_moving_layer, speed_moving_layer, edge_moving_layer, &
       luse_bgb_as_jxb, lno_eta_tdep, luse_scale_factor_in_sigma, ell_jj, tau_jj, lhubble_magnetic, &
       scl_uxb_in_ohm, eta_tdep_ascale_power,r_dip, epsi_dip, angle_dip, lreset_vart_only_at_start, &
-      llimiter, limiter_fact
+      llimiter, limiter_fact, ad_exp
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -3169,6 +3170,7 @@ module Magnetic
         lpenc_requested(i_jxbr2)=.true.
         lpenc_requested(i_jxbr)=.true.
         if (ambipolar_diffusion=="ionization-equilibrium") lpenc_requested(i_rho1)=.true.
+        if (ambipolar_diffusion=="power-law") lpenc_requested(i_rho1)=.true.
         if (ambipolar_diffusion=="ionization-yH") then
           lpenc_requested(i_yH)=.true.
           lpenc_requested(i_rho1)=.true.
@@ -5241,6 +5243,7 @@ module Magnetic
 !
       case('constant'); p%nu_ni1=nu_ni1
       case('ionization-equilibrium'); p%nu_ni1=nu_ni1*sqrt(p%rho1)
+      case('power-law'); p%nu_ni1=nu_ni1*p%rho1**ad_exp
       case('ionization-yH'); p%nu_ni1=nu_ni1*sqrt(p%rho1)*(1.-p%yH)/p%yH
       case default
         call fatal_error('set_ambipolar_diffusion','no such ambipolar_diffusion: '//trim(ambipolar_diffusion))
