@@ -45,6 +45,7 @@
 ! PENCILS PROVIDED Vprime; Vthermal_prime
 ! PENCILS PROVIDED plasma_friction;
 ! PENCILS PROVIDED psi; dpsi; gpsi(3); Vprimepsi
+! PENCILS PROVIDED Fphi
 ! PENCILS EXPECTED GammaY, GammaW1, GammaW2, GammaW3
 ! PENCILS EXPECTED W1(3); W2(3); W3(3), aa(3)
 ! PENCILS EXPECTED lorentz, ext_force(4);
@@ -969,9 +970,9 @@ module Special
       endif
 
       if(lpencil(i_ext_force)) then
-        S = p%Vthermal_prime+p%plasma_friction
-        p%ext_force(:,1)   = p%dphi*(S)
-        p%ext_force(:,2:4) = p%gphi*spread(S,2,3)
+        p%Fphi = -p%Vthermal_prime-p%plasma_friction
+        p%ext_force(:,1)   = p%dphi*(p%Fphi)
+        p%ext_force(:,2:4) = p%gphi*spread(p%Fphi,2,3)
       endif
 !
     endsubroutine calc_pencils_special
@@ -1190,8 +1191,9 @@ module Special
         df(l1:l2,m,n,iphi)=df(l1:l2,m,n,iphi)+p%dphi
         df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi) - &
               pref_Hubble*Hscript*p%dphi-pref_Vprime*p%Vprime
+
         if(lhydro) then
-          df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi)-p%plasma_friction
+          df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi)+p%Fphi
         endif
         if (c_phi/=0 .and. .not. lphi_hom) then
           call del2(f, iphi, del2phi)
