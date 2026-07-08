@@ -415,7 +415,7 @@ module Special
             call fatal_error('initialize_special',&
                       'choose lambda_phi > 0 for quartic potential with lphi_normalized_units')
           endif
-          chi_quartic = (-delta_phi + sqrt(delta_phi**2 - sign_m2*4*lambda_phi)) / (2*lambda_phi)
+          chi_quartic = (-delta_phi + sqrt(delta_phi**2 - sign_m2*4*lambda_phi)) / (2*sqrt(lambda_phi))
           chi_quartic = chi_quartic**2 - 1
         endif
         if (chi_quartic <= 0) then
@@ -440,7 +440,7 @@ module Special
         endif
         if(bubble_wall_width == impossible) then
           ! thin_bubble_wall_width = 2/sqrt(1+2*delta_phi*phi_tilde+3*lambda_phi*phi_tilde**2)
-          thin_bubble_wall_width = 2/sqrt(broken_mass)
+          thin_bubble_wall_width = 2/broken_mass
           bubble_wall_width = bubble_wall_width_factor*thin_bubble_wall_width
         endif
       endif
