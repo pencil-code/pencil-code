@@ -45,7 +45,7 @@
 ! PENCILS PROVIDED Vprime; Vthermal_prime
 ! PENCILS PROVIDED plasma_friction;
 ! PENCILS PROVIDED psi; dpsi; gpsi(3); Vprimepsi
-! PENCILS PROVIDED Fphi
+! PENCILS PROVIDED omega_phi
 ! PENCILS EXPECTED GammaY, GammaW1, GammaW2, GammaW3
 ! PENCILS EXPECTED W1(3); W2(3); W3(3), aa(3)
 ! PENCILS EXPECTED lorentz, ext_force(4);
@@ -964,15 +964,14 @@ module Special
 
       if(lpencil(i_plasma_friction)) then
         friction_coeff = plasma_coupling_coeff*p%phi**2/T
-        !Assuming mostly minus metric
         call dot_mn(p%uu,p%gphi,u_dot_gphi)
-        p%plasma_friction = friction_coeff*p%lorentz_gamma*(p%dphi - u_dot_gphi)
+        p%plasma_friction = friction_coeff*p%lorentz_gamma*(p%dphi + u_dot_gphi)
       endif
 
       if(lpencil(i_ext_force)) then
-        p%Fphi = -p%Vthermal_prime-p%plasma_friction
-        p%ext_force(:,1)   = p%dphi*(p%Fphi)
-        p%ext_force(:,2:4) = p%gphi*spread(p%Fphi,2,3)
+        p%omega_phi = -p%Vthermal_prime-p%plasma_friction
+        p%ext_force(:,1)   = -p%dphi*(p%omega_phi)
+        p%ext_force(:,2:4) =  p%gphi*spread(p%omega_phi,2,3)
       endif
 !
     endsubroutine calc_pencils_special
@@ -1193,7 +1192,7 @@ module Special
               pref_Hubble*Hscript*p%dphi-pref_Vprime*p%Vprime
 
         if(lhydro) then
-          df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi)+p%Fphi
+          df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi)+p%omega_phi
         endif
         if (c_phi/=0 .and. .not. lphi_hom) then
           call del2(f, iphi, del2phi)
