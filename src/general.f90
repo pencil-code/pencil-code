@@ -7344,6 +7344,8 @@ iloop:do i=1,size(list2)
         dst = enum_hp09_string
       case('sx')
         dst = enum_sx_string
+      case('power-law')
+        dst = enum_powerZlaw_string
       case('solar_dc99')
         dst = enum_solar_dc99_string
       case('vertical_shear')

@@ -950,3 +950,4 @@ integer, parameter :: enum_gilbertZbayly_string = 940
 integer, parameter :: enum_diffrot_from_expansion_string = 941
 integer, parameter :: enum_globalZheat_string = 942
 integer, parameter :: enum_stepZlocalZpatches = 943
+integer, parameter :: enum_powerZlaw_string = 944
