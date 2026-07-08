@@ -172,7 +172,7 @@ module Special
   integer :: bubble_counter = 1
   !TP: for backwards compatibility the setting of the random seed can be suppressed
   logical :: linitialize_seed=.true.
-  real :: plasma_coupling_coeff=1.0
+  real :: plasma_coupling_coeff=0.0
 !
   namelist /special_init_pars/ &
       initspecial, phi0, dphi0, phimass, sign_phimass2, eps, ascale_ini, &
