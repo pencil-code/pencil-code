@@ -143,7 +143,10 @@
       ltrain_mag  = ltrain_mag  .and. lmagnetic
       ltrain_dens = ltrain_dens .and. ldensity
 !
-      call farray_register_auxiliary('tau_hydro',itau_hydro,vector=6,rhs=.true.,communicated=.true.)
+      if(lhydro) then
+        call farray_register_auxiliary('tau_hydro',itau_hydro,vector=6,rhs=.true.,communicated=.true.)
+      endif
+
       if (ltrain_mag) then 
        call farray_register_auxiliary('sgs_emf',isgs_emf,vector=3,rhs=.true.,communicated=.true.)
        call farray_register_auxiliary('tau_bb',itau_bb,vector=6,rhs=.true.,communicated=.true.)
