@@ -182,8 +182,10 @@ module Special
   integer :: idiag_sigBrms=0    ! DIAG_DOC: $\left<\sigma_\mathrm{B}^2\right>^{1/2}$
   integer :: idiag_sigEE2m=0    ! DIAG_DOC: $\left<\sigma_\mathrm{E}\Ev^2\right>$
   integer :: idiag_sigBBEm=0    ! DIAG_DOC: $\left<\sigma_\mathrm{E}\Bv\cdot\Ev\right>$
+  integer :: idiag_BdEdtm=0     ! DIAG_DOC: $\left<\Bv\cdot\partial\Ev/\partial t\right>$
   integer :: idiag_adphiBm=0    ! DIAG_DOC: $\left<(\alpha/f)<\phi'\Bv\cdot\Ev\right>$
-  integer :: idiag_adphiB2m=0   ! DIAG_DOC: $\left<(\alpha/f)<\phi'\Bv^2/\sigma_E\right>$
+  integer :: idiag_adphiB2m=0   ! DIAG_DOC: $\left<(\alpha/f)<\phi'\Bv^2/\sigma_E+\nabla\phi'\times\Ev\right>$
+  integer :: idiag_adphiB21m=0  ! DIAG_DOC: $\left<(\alpha/f)<\phi'\Bv^2/\sigma_E\right>$
   integer :: idiag_adphiJBm=0   ! DIAG_DOC: $\left<(\alpha/f)<\phi'\Jv\cdot\Bv/\sigma_E\right>$
   integer :: idiag_adphiBrms=0  ! DIAG_DOC: $\left<[(\alpha/f)<\phi'\Bv]\right>^{1/2}$
   integer :: idiag_Johmrms=0    ! DIAG_DOC: $\left<\Jv^2\right>^{1/2}$
@@ -1106,7 +1108,7 @@ module Special
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx,3) :: gtmp, dJdt
+      real, dimension (nx,3) :: gtmp, dJdt, dEdt
       real, dimension (nx) :: tmp, tmp2, del2a0
       real :: inflation_factor=0., mfpf=0., fppf=0.
       integer :: j
@@ -1169,9 +1171,11 @@ module Special
 !  Solve: dE/dt = curlB - mu*J
 !
         if (ladvance_ee) then
-          df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)+c_light2*(p%curlb-mu0*p%jj_ohm)
+          !df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)+c_light2*(p%curlb-mu0*p%jj_ohm)
+          dEdt=c_light2*(p%curlb-mu0*p%jj_ohm)
         else
           df(l1:l2,m,n,iex:iez)=0.
+          dEdt=0.
         endif
 !
 !  Solve for charge density
@@ -1198,10 +1202,12 @@ module Special
 !
           if (lcurlyA) then
             inflation_factor=fppf
-            df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-c_light2*inflation_factor*p%aa
+            !df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-c_light2*inflation_factor*p%aa
+            dEdt=dEdt-c_light2*inflation_factor*p%aa
           else
             inflation_factor=-2.*mfpf
-            df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-c_light2*inflation_factor*p%el
+            !df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-c_light2*inflation_factor*p%el
+            dEdt=dEdt-c_light2*inflation_factor*p%el
           endif
           if (ip<14.and.lroot.and.lfirst) print*,'t, inflation_factor=',t, inflation_factor
         endif
@@ -1231,7 +1237,8 @@ module Special
               tmp=1./(1.+p%b2*p%rho1/vA_limit**2)
               call multsv(tmp,gtmp,gtmp)
             endif
-            df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-alpf*gtmp
+            !df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-alpf*gtmp
+            dEdt=dEdt-alpf*gtmp
 !
             if (llorenz_gauge_disp) then
               ! if (lphi_hom) then
@@ -1245,7 +1252,8 @@ module Special
           endif
           if (lwaterfall .and. alpfpsi/=0.) then
             call calc_helical_term(p,gtmp,p%dpsi,p%gpsi,lpsi_hom)
-            df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-alpfpsi*gtmp
+            !df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)-alpfpsi*gtmp
+            dEdt=dEdt-alpfpsi*gtmp
             if (llorenz_gauge_disp) then
               if (.not. lpsi_hom) then
                 call dot(p%gpsi,p%bb,tmp)
@@ -1270,7 +1278,8 @@ module Special
           df(l1:l2,m,n,ia0)=df(l1:l2,m,n,ia0)+f(l1:l2,m,n,idiva_name)
           df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+p%ga0
         endif
-        if (eta_ee/=0.) df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)+c_light2*eta_ee*p%del2ee
+        !if (eta_ee/=0.) df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)+c_light2*eta_ee*p%del2ee
+        if (eta_ee/=0.) dEdt=dEdt+c_light2*eta_ee*p%del2ee
 !
 !  If Higgs doublet, add current from Higgs U(1) hypercharge.
 !
@@ -1290,8 +1299,15 @@ module Special
           !         p%phi_doublet(:,2)*p%cov_der(:,i+1,4) - &
           !         p%phi_doublet(:,3)*p%cov_der(:,i+1,3))
           ! enddo
-          df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez) - p%jj_higgsY
+          !df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez) - p%jj_higgsY
+          dEdt=dEdt-p%jj_higgsY
         endif
+      endif
+!
+!  Add here dEdt to df(l1:l2,m,n,iex:iez)
+!
+      if (ladvance_ee) then
+        df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)+dEdt
       endif
 !
 !  Compute eedot_as_aux; currently ignore alpf/=0.
@@ -1399,7 +1415,14 @@ module Special
 !
 !  diagnostics
 !
-      if (ldiagnos) call calc_diagnostics_special(f,p)
+      !if (ldiagnos) call calc_diagnostics_special(f,p)
+      if (ldiagnos) then
+        call calc_diagnostics_special(f,p)
+        if (idiag_BdEdtm/=0) then
+          call dot(p%bb(:,2),dEdt,tmp)
+          call sum_mn_name(tmp,idiag_BdEdtm)
+        endif
+      endif
 !
     endsubroutine dspecial_dt
 !***********************************************************************
@@ -1456,6 +1479,7 @@ module Special
           call sum_mn_name(tmp,idiag_adphiBrms,lsqrt=.true.)
         endif
       endif
+      call sum_mn_name(etaSchw*alpf*p%dphi*p%b2,idiag_adphiB21m)
 !
       if (idiag_Johmrms/=0 .or. idiag_J2sigEm/=0) then
         call dot2_mn(p%jj_ohm,tmp)
@@ -1599,9 +1623,9 @@ module Special
         idiag_rhoem=0; idiag_count_eb0=0; idiag_divEm=0; idiag_divJm=0; idiag_constrainteqn=0
         idiag_dteta=0; idiag_dtsigE=0; idiag_etaSchw=0
         idiag_sigEm=0; idiag_sigBm=0; idiag_sigErms=0; idiag_sigBrms=0
-        idiag_ebm=0; idiag_Johmrms=0; idiag_J2sigEm=0; idiag_curlBrms=0
-        idiag_adphiBm=0; idiag_adphiB2m=0; idiag_adphiJBm=0; idiag_adphiBrms=0; idiag_ujxb1m=0
-        idiag_sigEE2m=0; idiag_sigBBEm=0
+        idiag_ebm=0; idiag_Johmrms=0; idiag_J2sigEm=0; idiag_curlBrms=0; idiag_BdEdtm=0
+        idiag_adphiBm=0; idiag_adphiB2m=0; idiag_adphiB21m=0; idiag_adphiJBm=0;
+        idiag_adphiBrms=0; idiag_ujxb1m=0; idiag_sigEE2m=0; idiag_sigBBEm=0
         idiag_eprimerms=0; idiag_bprimerms=0; idiag_jprimerms=0; idiag_gam_EBrms=0; 
         idiag_boostprms=0; idiag_echarge=0; idiag_e2mx=0; idiag_e2mz=0
         cformv=''
@@ -1644,8 +1668,10 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'sigBrms',idiag_sigBrms)
         call parse_name(iname,cname(iname),cform(iname),'sigEE2m',idiag_sigEE2m)
         call parse_name(iname,cname(iname),cform(iname),'sigBBEm',idiag_sigBBEm)
+        call parse_name(iname,cname(iname),cform(iname),'BdEdtm',idiag_BdEdtm)
         call parse_name(iname,cname(iname),cform(iname),'adphiBm',idiag_adphiBm)
         call parse_name(iname,cname(iname),cform(iname),'adphiB2m',idiag_adphiB2m)
+        call parse_name(iname,cname(iname),cform(iname),'adphiB21m',idiag_adphiB21m)
         call parse_name(iname,cname(iname),cform(iname),'adphiJBm',idiag_adphiJBm)
         call parse_name(iname,cname(iname),cform(iname),'ujxb1m',idiag_ujxb1m)
         call parse_name(iname,cname(iname),cform(iname),'adphiBrms',idiag_adphiBrms)
