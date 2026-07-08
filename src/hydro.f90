@@ -9516,6 +9516,7 @@ module Hydro
 
     call copy_addr(idiag_coriolis_number,p_par(133)) ! int
     call copy_addr(lforcing_cont_uu_diff,p_par(134)) ! bool
+    call copy_addr(lext_force,p_par(135)) ! bool
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Hydro
