@@ -36,7 +36,7 @@
   config_file='config_torchfort.yaml'
   it_train_end=20000
   lrun_epoch=T
-  ltrain_mag=F
+  ltrain_mag=T
   ltrain_dens=F
   dt_train= 1.7248442881e-01
   !t_train_start=6.8e-3

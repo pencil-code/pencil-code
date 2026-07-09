@@ -1081,7 +1081,6 @@ extern "C" void torch_train_c_api(AcReal *loss_val, int itsub, double t) {
     AcReal* out = NULL;
     AcReal* feature = NULL;
     AcReal* label = NULL;
-    *loss_val = 0.1;
     
 
     if(AC_lconservative__mod__hydro){
@@ -1093,9 +1092,23 @@ extern "C" void torch_train_c_api(AcReal *loss_val, int itsub, double t) {
         acDeviceGetVertexBufferPtrs(acGridGetDevice(), tau_hydro.xx, &label, &out);
         acDeviceGetVertexBufferPtrs(acGridGetDevice(), uumean.x, &feature, &out);
     }
- 
+
     acGridHaloExchange();
-    torch_train_CAPI((int[]){mx,my,mz}, feature, label, loss_val,6,6,"stationary");
+    torch_train_CAPI((int[]){mx,my,mz}, feature, label, loss_val,3,6,"stationary");
+    train_loss.push_back(*loss_val);
+    train_nts.push_back(it);
+  }
+  else if(AC_ltrain_mag__mod__training){
+    AcReal* out = NULL;
+    AcReal* feature = NULL;
+    AcReal* label = NULL;
+
+    
+    acDeviceGetVertexBufferPtrs(acGridGetDevice(), F_SGS_EMFVEC.x, &label, &out);
+    acDeviceGetVertexBufferPtrs(acGridGetDevice(), uumean.x, &feature, &out);
+
+    acGridHaloExchange();
+    torch_train_CAPI((int[]){mx,my,mz}, feature, label, loss_val,3,3,"stationary");
     train_loss.push_back(*loss_val);
     train_nts.push_back(it);
   }

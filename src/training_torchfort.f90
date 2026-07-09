@@ -2,8 +2,8 @@
 !
 ! CPARAM logical, parameter :: ltraining = .true.
 !
-! MAUX CONTRIBUTION 6
-! COMMUNICATED AUXILIARIES 6
+! MAUX CONTRIBUTION 0
+! COMMUNICATED AUXILIARIES 0
 !
 !***************************************************************
 !
