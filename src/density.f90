@@ -471,7 +471,7 @@ module Density
       use FArrayManager
       use Gravity, only: lnumerical_equilibrium
       use Sub, only: stepdown,der_stepdown, erfunc,step
-      use SharedVariables, only: put_shared_variable, get_shared_variable
+      use SharedVariables, only: put_shared_variable, get_shared_variable, iSHVAR_ERR_NOSUCHVAR
       use InitialCondition, only: initial_condition_all
       use Mpicomm, only: mpiallreduce_sum
 !
@@ -480,7 +480,7 @@ module Density
       real, dimension (nzgrid) :: tmpz
       real, dimension (nghost) :: dummy
 !
-      integer :: i,j,m,n, stat
+      integer :: i,j,m,n, stat, Hscript_avail
       logical :: lnothing, exist, opend
       character(LEN=11) :: formtd
       real :: rho_bot,sref
@@ -1118,7 +1118,11 @@ module Density
       if(lhydro) then
         call get_shared_variable('lext_force',lext_force)
         if(associated(lext_force) .and. lext_force) then
-          call get_shared_variable('Hscript',Hscript)
+          call get_shared_variable('Hscript',Hscript,Hscript_avail)
+          if (Hscript_avail == iSHVAR_ERR_NOSUCHVAR) then
+            allocate(Hscript)
+            Hscript=0.
+          endif
         endif
       else
         allocate(lext_force)
@@ -2844,8 +2848,9 @@ module Density
       real, contiguous, dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 
-      real :: cs201=1., cs20_corr=1.
-      real, dimension (nx) :: density_rhs, density_rhs_tmp
+      real :: cs201=1., cs20_corr=1., prefactor=1.
+      real :: lorentz_gamma_inv2=1., prefactor2=1.
+      real, dimension (nx) :: density_rhs, density_hydro_rhs, u_dot_ext_force
       real, dimension (nx,3) :: tmpv
 !
 !  Continuity equation.
@@ -2857,12 +2862,21 @@ module Density
 !
         if (lrelativistic_eos) cs201=1.+cs20
         if (lrelativistic_eos_corr) cs20_corr=(1.-cs20)/cs201
+!  alberto: added relativistic prefactors for density and hydro equations
+        if (lrelativistic) then
+          prefactor=1./(1-cs20*p%u2)
+          lorentz_gamma_inv2=1.-p%u2
+          prefactor2=1.+p%u2
+        endif
 !
 !  Evolution of rho; set and initiate density_rhs
 !
         if (ldensity_nolog) then
           if (lconservative) then
             density_rhs=-p%divss
+            if (lext_force) then
+              density_rhs=density_rhs + p%ext_force(:,1)
+            endif
           else
             density_rhs=-p%rho*p%divu
             !if (ladvection_density) density_rhs = density_rhs - p%ugrho
@@ -2883,24 +2897,51 @@ module Density
 !  The following few lines only enter without lconservative,
 !  and also only without ldensity_nolog, but with lrelativistic_eos.
 !
+          if (lext_force) then
+            call dot_mn(p%uu,p%ext_force(:,2:4),u_dot_ext_force)
+            !u_dot_ext_force = p%uu(:,1)*p%ext_force(:,2) + p%uu(:,2)*p%ext_force(:,3) &
+            !              + p%uu(:,3)*p%ext_force(:,4)
+          endif
           if (lrelativistic_eos .and. .not.lconservative) then
             if (lhydro) then
               if (lrelativistic_eos_term1 .and. lrelativistic_eos_term2) then
-                call multvs(p%uu,density_rhs,tmpv)
+                ! call multvs(p%uu,density_rhs,tmpv)
+                density_hydro_rhs=density_rhs
               else
-                density_rhs_tmp=0.
-                if (lrelativistic_eos_term1) density_rhs_tmp=density_rhs_tmp-p%divu
-                if (lrelativistic_eos_term2) density_rhs_tmp=density_rhs_tmp-p%uglnrho
-                call multvs(p%uu,density_rhs_tmp,tmpv)
+                density_hydro_rhs=0.
+                if (lrelativistic_eos_term1) density_hydro_rhs=density_hydro_rhs-p%divu
+                if (lrelativistic_eos_term2) density_hydro_rhs=density_hydro_rhs-cs20_corr*p%uglnrho
               endif
+              density_hydro_rhs=cs20*density_hydro_rhs
               !df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-onethird*tmpv
-              df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-cs20*tmpv
+              if (lext_force) then
+                density_hydro_rhs=density_hydro_rhs - p%rho1 * (p%ext_force(:,1) - &
+                                          2*cs20/cs201 * u_dot_ext_force)
+                ! Hubble forcing if Hscript is given
+                ! alberto: for now only available if lext_force is true, but it can be generalized
+                if (Hscript /= 0.)
+                  density_hydro_rhs=density_hydro_rhs + (3*cs20 - 1) * Hscript
+                endif
+              endif
+              density_hydro_rhs=density_hydro_rhs*prefactor*lorentz_gamma_inv2
+              call multvs(p%uu,density_hydro_rhs,tmpv)
+              ! call multvs(p%uu,density_hydro_rhs,tmpv)
+              df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-tmpv
+              ! add external force (could be moved to hydro)
+              if (lext_force) then
+                call multvs(p%ext_force(:,2:4),p%rho1*lorentz_gamma_inv2/cs201,tmpv)
+                df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+tmpv
+              endif
             endif
             !density_rhs=fourthird*density_rhs
             density_rhs=cs201*density_rhs
+            if (lext_force) then
+              density_rhs=density_rhs + p%rho1 * (p%ext_force(:,1)*prefactor2 - 2*u_dot_ext_force)
+              if (Hscript /= 0.) density_rhs=density_rhs - (3*cs20 - 1) * Hscript * prefactor2
+            endif
+            density_rhs=density_rhs*prefactor
           endif
         endif
-
       else
         density_rhs=0.
       endif
@@ -2963,21 +3004,6 @@ module Density
 !
       df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + density_rhs
     endsubroutine continuity_eq 
-!***********************************************************************
-    subroutine ext_force_rhs(df,p)
-            
-      real, contiguous, dimension(:,:,:,:) :: df
-      type (pencil_case) :: p
-      real, dimension (nx) :: rhs
-      real, parameter :: omega=1./3.
-      real, dimension (nx) :: u_dot_ext_force
-
-
-      u_dot_ext_force = p%uu(:,1)*p%ext_force(:,2) + p%uu(:,2)*p%ext_force(:,3) + p%uu(:,3)*p%ext_force(:,4) 
-      rhs = -(1+omega)*p%divu - (1-omega)*p%uglnrho &
-            + p%rho1*((p%ext_force(:,1) + (1-3*omega)*p%rho*Hscript)*(1+p%u2) -2*(+u_dot_ext_force))
-      df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + rhs/(1-omega*p%u2)
-    endsubroutine ext_force_rhs
 !***********************************************************************
     subroutine mass_diffusion(f,p,fdiff)
 
@@ -3313,8 +3339,6 @@ module Density
         maxdiffus=max(maxdiffus,diffus_diffrho)
         maxdiffus3=max(maxdiffus3,diffus_diffrho3)
       endif
-
-      if(lext_force) call ext_force_rhs(df,p)
 !
 !  Apply border profile
 !
