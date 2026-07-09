@@ -2844,7 +2844,7 @@ module Density
 !***********************************************************************
     subroutine continuity_eq(df,p)
 
-      use Sub, only: multvs, multmv
+      use Sub, only: multvs, multmv, dot_mn
 
       real, contiguous, dimension(:,:,:,:) :: df
       type (pencil_case) :: p
