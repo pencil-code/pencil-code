@@ -19,6 +19,7 @@
 ! PENCILS PROVIDED ekin, uuadvec_glnrho; uuadvec_grho
 ! PENCILS PROVIDED rhos1; glnrhos(3)
 ! PENCILS PROVIDED totenergy_rel; divss
+! PENCILS EXPECTED ext_force(4)
 !
 !***************************************************************
 module Density
@@ -2848,9 +2849,9 @@ module Density
       real, contiguous, dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 
-      real :: cs201=1., cs20_corr=1., prefactor=1.
-      real :: lorentz_gamma_inv2=1., prefactor2=1.
+      real :: cs201=1., cs20_corr=1.
       real, dimension (nx) :: density_rhs, density_hydro_rhs, u_dot_ext_force
+      real, dimension (nx) :: prefactor=1., prefactor2=1., lorentz_gamma_inv2=1.
       real, dimension (nx,3) :: tmpv
 !
 !  Continuity equation.
@@ -2919,7 +2920,7 @@ module Density
                                           2*cs20/cs201 * u_dot_ext_force)
                 ! Hubble forcing if Hscript is given
                 ! alberto: for now only available if lext_force is true, but it can be generalized
-                if (Hscript /= 0.)
+                if (Hscript /= 0.) then
                   density_hydro_rhs=density_hydro_rhs + (3*cs20 - 1) * Hscript
                 endif
               endif
