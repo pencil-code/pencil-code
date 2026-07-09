@@ -173,6 +173,7 @@ module Special
   !TP: for backwards compatibility the setting of the random seed can be suppressed
   logical :: linitialize_seed=.true.
   real :: plasma_coupling_coeff=0.0
+  logical :: lplasma_coupling=.false.
 !
   namelist /special_init_pars/ &
       initspecial, phi0, dphi0, phimass, sign_phimass2, eps, ascale_ini, &
@@ -200,7 +201,7 @@ module Special
       coupl_phipsi, c_psi, lspeed_of_light_dt,lnucleate_bubbles, bubble_size_factor,&
       max_bubble_nucleation_rate, bubble_wall_width_factor,number_of_bubbles,&
       lgenerate_bubble_times,beta,nucleation_rate_choice,bubble_position_criteria,tf,&
-      bubble_size,bubble_wall_width,plasma_coupling_coeff
+      bubble_size,bubble_wall_width,plasma_coupling_coeff,lplasma_coupling
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -525,6 +526,10 @@ module Special
         enddo
         t_next_bubble = bubble_times(1)
       endif
+
+      if (plasma_coupling_coeff /= 0.0) then
+        lplasma_coupling = .true.
+      endif
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -753,9 +758,11 @@ module Special
         lpenc_requested(i_Vprimepsi)=.true.
       endif
 
-      if (lhydro) then
+      if (lhydro .and. lplasma_coupling) then
         lpenc_requested(i_lorentz)=.true.
-        lpenc_requested(i_plasma_friction)= .true.
+        if (plasma_coupling_coeff /= 0.0) then
+          lpenc_requested(i_plasma_friction)= .true.
+        endif
         lpenc_requested(i_ext_force) = .true.
       endif
 
@@ -968,10 +975,10 @@ module Special
         p%plasma_friction = friction_coeff*p%lorentz_gamma*(p%dphi + u_dot_gphi)
       endif
 
-      if(lpencil(i_ext_force)) then
+      if(lpencil(i_ext_force) .and. lplasma_coupling) then
         p%omega_phi = -p%Vthermal_prime-p%plasma_friction
-        p%ext_force(:,1)   = -p%dphi*(p%omega_phi)
-        p%ext_force(:,2:4) =  p%gphi*spread(p%omega_phi,2,3)
+        p%ext_force(:,1)   = p%ext_force(:,1) -p%dphi*(p%omega_phi)
+        p%ext_force(:,2:4) = p%ext_force(:,2:4) + p%gphi*spread(p%omega_phi,2,3)
       endif
 !
     endsubroutine calc_pencils_special
@@ -1016,6 +1023,7 @@ module Special
 !   4-sep-25/alberto: adapted from backreact_infl
 !   6-sep-25/alberto: added Higgs doublet case
 !   14-sep-25/alberto: added second scalar field psi for waterfall potential
+!   jul-26/touko/alberto: added plasma friction
 !
       use Diagnostics, only: sum_mn_name, max_mn_name, save_name
       use Sub, only: dot_mn, del2, div
@@ -1190,10 +1198,12 @@ module Special
         df(l1:l2,m,n,iphi)=df(l1:l2,m,n,iphi)+p%dphi
         df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi) - &
               pref_Hubble*Hscript*p%dphi-pref_Vprime*p%Vprime
-
-        if(lhydro) then
+!
+!       added coupling with plasma
+        if (lplasma_coupling) then
           df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi)+p%omega_phi
         endif
+!
         if (c_phi/=0 .and. .not. lphi_hom) then
           call del2(f, iphi, del2phi)
           df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi) + c_phi**2*pref_del2*del2phi
