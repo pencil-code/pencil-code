@@ -31,6 +31,7 @@ module Energy
   logical, pointer :: lpressuregradient_gas
   logical :: lviscosity_heat=.false.
   logical, pointer :: lffree, lrelativistic_eos, lconservative
+  logical, pointer :: lrelativistic
   logical, pointer :: lconservative_pressure_on_rhs
   real, pointer :: profx_ffree(:),profy_ffree(:),profz_ffree(:)
 !
@@ -142,9 +143,12 @@ module Energy
       if (lhydro.and..not.lhydro_potential.and.iphiuu==0) then
         call get_shared_variable('lconservative', lconservative)
         call get_shared_variable('lconservative_pressure_on_rhs', lconservative_pressure_on_rhs)
+        call get_shared_variable('lrelativistic', lrelativistic)
       else
         allocate(lconservative)
         lconservative=.false.
+        allocate(lrelativistic)
+        lrelativistic=.false.
       endif
 !
       TT_spec=.false.; ss_spec=.false.
@@ -262,6 +266,7 @@ module Energy
 !
       intent(in) :: f
       intent(inout) :: p
+      real, dimension (nx) :: lorentz_gamma_inv2=1.
 ! Ma2
       if (lpencil(i_Ma2)) p%Ma2=p%u2/p%cs2
 !
@@ -271,6 +276,7 @@ module Energy
         if (lstratz) then
           p%fpres = -spread(p%cs2,2,3) * p%glnrhos
         else
+          if (lrelativistic) lorentz_gamma_inv2 = 1. - p%u2
           do j=1,3
             if (llocal_iso) then
               p%fpres(:,j)=-p%cs2*(p%glnrho(:,j)+p%glnTT(:,j))
@@ -281,7 +287,9 @@ module Energy
 !
               if (ldensity.and.lrelativistic_eos) then
                 !if (.not.lconservative) p%fpres(:,j)=-.75*p%cs2*p%glnrho(:,j)
-                if (.not.lconservative) p%fpres(:,j)=-p%cs2/(1 + p%cs2)*p%glnrho(:,j)
+                if (.not.lconservative) then
+                  p%fpres(:,j)=-p%cs2/(1 + p%cs2)*p%glnrho(:,j)*lorentz_gamma_inv2
+                endif
               else if(lconservative) then
                 p%fpres(:,j)=-p%cs2*p%grho(:,j)
               else
