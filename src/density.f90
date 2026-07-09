@@ -105,6 +105,7 @@ module Density
   real :: kgaussian_lnrho=0., initpower_lnrho=2, kpeak_lnrho=1., cutoff_lnrho=0.
   real :: Sc=0.0     !PAR_DOC: given value to compute kap_tdep (~diffrho) based on nu_tdep
   real, target :: reduce_cs2 = 1.0
+  real :: cs201=1., cs20_corr=1.
   complex :: coeflnrho=0.0
   integer, parameter :: ndiff_max=4
   integer :: iglobal_gg=0
@@ -487,6 +488,11 @@ module Density
       real :: rho_bot,sref
       real, dimension(:), pointer :: gravx_xpencil
       real :: gamma, gamma_m1
+!
+!   Set values 1 + cs2 for relativistic_eos and (1 - cs2)/(1 + cs2) for relativistic_eos_corr
+!
+      if (lrelativistic_eos) cs201=1.+cs20
+      if (lrelativistic_eos_corr) cs20_corr=(1.-cs20)/cs201
 !
 !  Prevent this module when background stratification is on.
 !
@@ -2503,7 +2509,7 @@ module Density
       logical, dimension(:), intent(IN) :: lpenc_loc
       intent(in) :: f
       intent(inout) :: p
-      real :: cs201=1.
+      ! real :: cs201=1.
 !
 !  Differentiate between log density and linear density.
 !
@@ -2517,7 +2523,7 @@ module Density
         !if (lconservative) then
         if (lrelativistic) then
           !p%ekin=fourthird*p%rho*p%lorentz*p%u2
-          if (lrelativistic_eos) cs201=1.+cs20
+          ! if (lrelativistic_eos) cs201=1.+cs20
           p%ekin=cs201*p%rho*p%lorentz*p%u2
         else
           p%ekin=0.5*p%rho*p%u2
@@ -2678,6 +2684,7 @@ module Density
             !p%rho=p%rho-eps_hless*max(0.d0, min(1.d0, (f(l1:l2,m,n,ihless)+0.5d0*width_hless_absolute-t)/width_hless_absolute))
           endif
         endif
+        ! if (lrelativistic) p%rho=p%rho/(fourthird*p%lorentz*(1.-.25/p%lorentz))
         if (lrelativistic) p%rho=p%rho/(fourthird*p%lorentz*(1.-.25/p%lorentz))
       endif
 !
@@ -2849,7 +2856,7 @@ module Density
       real, contiguous, dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 
-      real :: cs201=1., cs20_corr=1.
+      ! real :: cs201=1., cs20_corr=1.
       real, dimension (nx) :: density_rhs, density_hydro_rhs, u_dot_ext_force
       real, dimension (nx) :: prefactor=1., prefactor2=1., lorentz_gamma_inv2=1.
       real, dimension (nx,3) :: tmpv
@@ -2861,8 +2868,8 @@ module Density
 !
 !  alberto: added subrelativistic correction when relativistic_eos is used
 !
-        if (lrelativistic_eos) cs201=1.+cs20
-        if (lrelativistic_eos_corr) cs20_corr=(1.-cs20)/cs201
+        ! if (lrelativistic_eos) cs201=1.+cs20
+        ! if (lrelativistic_eos_corr) cs20_corr=(1.-cs20)/cs201
 !  alberto: added relativistic prefactors for density and hydro equations
         if (lrelativistic) then
           prefactor=1./(1-cs20*p%u2)
@@ -3266,7 +3273,7 @@ module Density
       real, dimension (nx) :: tmp
       integer :: j
       real, dimension (nx) :: density_rhs
-      real :: cs201=1., cs20_corr=1.
+      ! real :: cs201=1., cs20_corr=1.
 !
 !  Identify module and boundary conditions.
 !
@@ -3274,7 +3281,7 @@ module Density
       if (headtt.or.ldebug) print*,'dlnrho_dt: SOLVE'
       if (headtt) call identify_bcs('lnrho',ilnrho)
 !
-      if (lrelativistic_eos) cs201=1.+cs20
+      ! if (lrelativistic_eos) cs201=1.+cs20
 
       if (lSchur_3D3D1D) then
 !
