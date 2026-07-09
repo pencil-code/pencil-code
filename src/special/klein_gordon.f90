@@ -530,7 +530,7 @@ module Special
       if (plasma_coupling_coeff /= 0.0) then
         lplasma_coupling = .true.
       endif
-
+!
       if (.not.lhydro .and. lplasma_coupling) then
         call warning('initialize_special', &
                 'setting lplasma_coupling to False; call hydro module to use plasma coupling')
