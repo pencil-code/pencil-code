@@ -326,7 +326,6 @@ module Hydro
   real :: cdt_tauf=1.0, ulev=impossible
   logical :: lcdt_tauf=.false.
   logical, target :: lcalc_uuavg=.false.
-  real, pointer :: Hscript
   logical, target :: lext_force=.false.
 !
   namelist /hydro_run_pars/ &
@@ -1195,9 +1194,8 @@ module Hydro
 !
       if (lparticles_grad) lgradu_as_aux=.true.
       if (lSGS_hydro) call register_SGS_hydro      
-
+!
       call put_shared_variable('lext_force',lext_force)
-
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -1777,10 +1775,6 @@ module Hydro
         call mpibcast(xhless,nhless)
         call mpibcast(yhless,nhless)
         call mpibcast(zhless,nhless)
-      endif
-
-      if(lext_force) then
-        call get_shared_variable('Hscript',Hscript)
       endif
 
       endsubroutine initialize_hydro
@@ -3333,6 +3327,7 @@ module Hydro
         lpenc_requested(i_divu)=.true.
         lpenc_requested(i_uu)=.true.
         lpenc_requested(i_u2)=.true.
+        lpenc_requested(i_ext_force)=.true.
       endif
 !
     endsubroutine pencil_criteria_hydro
@@ -3504,6 +3499,10 @@ module Hydro
           coriolis_force(:,1) =  2*Omega*p%uu(:,2)
           coriolis_force(:,2) = -2*Omega*p%uu(:,1)
         endif
+      endif
+
+      if (lext_force) then
+        p%ext_force = 0.
       endif
 !
       endsubroutine calc_pencils_hydro_pencpar
@@ -4304,30 +4303,6 @@ module Hydro
 !
     endsubroutine update_char_vel_hydro
 !***********************************************************************
-    subroutine ext_force_rhs(df,p)
-
-      real, contiguous, dimension(:,:,:,:) :: df
-      type (pencil_case) :: p
-      real, parameter :: omega = 1./3.
-      real, dimension (nx) :: u_dot_ext_force,prefactor
-      real, dimension (nx) :: rhs
-      real, dimension (nx) :: lorentz_gamma_inv2
-      integer :: i
-
-      lorentz_gamma_inv2 = 1.-p%u2
-      u_dot_ext_force = p%uu(:,1)*p%ext_force(:,2) + p%uu(:,2)*p%ext_force(:,3) + p%uu(:,3)*p%ext_force(:,4) 
-
-      prefactor = lorentz_gamma_inv2/(1-omega*p%u2)
-      prefactor = prefactor*(omega*p%divu + (omega*(1-omega)/(1+omega))*p%uglnrho &
-                             - p%rho1*(p%ext_force(:,1) - ((2*omega)/(1+omega))*(+u_dot_ext_force)))
-      do i=1,3
-        rhs = prefactor*p%uu(:,i)
-        rhs = rhs -(lorentz_gamma_inv2/(1+omega))*(omega*p%glnrho(:,i) -p%rho1*p%ext_force(:,i+1))
-        rhs = rhs + (lorentz_gamma_inv2/(1-omega*p%u2))*(3*omega-1)*Hscript*p%uu(:,i)
-        df(l1:l2,m,n,iux+i-1) = df(l1:l2,m,n,iux+i-1) + rhs
-      enddo
-    endsubroutine ext_force_rhs
-!***********************************************************************
     subroutine advec_uu(f,df,p)
 
       use Sub, only: dot, dot2
@@ -4409,6 +4384,12 @@ module Hydro
 !
         call der(f,iTij+5,tmp,1) ; df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tmp
         call der(f,iTij+4,tmp,2) ; df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tmp
+
+        if (lext_force) then
+          do i=0,2
+            df(l1:l2,m,n,iuu+i)=df(l1:l2,m,n,iuu+i)+p%ext_force(:,2+i)
+          enddo
+        endif
 !
       endif
 !
@@ -4657,8 +4638,6 @@ module Hydro
       if (tau_damp_ruxm/=0.) df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-ruxm*p%rho1*tau_damp_ruxm1
       if (tau_damp_ruym/=0.) df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-ruym*p%rho1*tau_damp_ruym1
       if (tau_damp_ruzm/=0.) df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-ruzm*p%rho1*tau_damp_ruzm1
-
-      if(lext_force) call ext_force_rhs(df,p)
 
 !
 !  Apply border profiles
