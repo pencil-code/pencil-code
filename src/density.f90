@@ -2331,6 +2331,7 @@ module Density
               if (lconservative_pressure_on_rhs) lpenc_requested(i_grho) = .true.
             else
               lpenc_requested(i_ugrho)=.true.
+              if (lhydro .and. lrelativistic_eos) lpenc_requested(i_rho1)=.true.
 !            lpenc_requested(i_uglnrho)=.false.
             endif
           else
@@ -2685,7 +2686,7 @@ module Density
           endif
         endif
         ! if (lrelativistic) p%rho=p%rho/(fourthird*p%lorentz*(1.-.25/p%lorentz))
-        if (lrelativistic) p%rho=p%rho/(fourthird*p%lorentz*(1.-.25/p%lorentz))
+        if (lrelativistic) p%rho=p%rho/(cs201*p%lorentz-cs20)
       endif
 !
     endsubroutine calc_pencils_linear_density_pnc
@@ -2870,58 +2871,51 @@ module Density
 !
         ! if (lrelativistic_eos) cs201=1.+cs20
         ! if (lrelativistic_eos_corr) cs20_corr=(1.-cs20)/cs201
-!  alberto: added relativistic prefactors for density and hydro equations
-        if (lrelativistic) then
-          prefactor=1./(1-cs20*p%u2)
-          lorentz_gamma_inv2=1.-p%u2
-          prefactor2=1.+p%u2
-        endif
 !
 !  Evolution of rho; set and initiate density_rhs
 !
-        if (ldensity_nolog) then
-          if (lconservative) then
-            density_rhs=-p%divss
-            if (lext_force) then
-              density_rhs=density_rhs + p%ext_force(:,1)
-            endif
-          else
-            density_rhs=-p%rho*p%divu
-            !if (ladvection_density) density_rhs = density_rhs - p%ugrho
-            !if (lrelativistic_eos) density_rhs=fourthird*density_rhs
-            if (ladvection_density) density_rhs = density_rhs - cs20_corr*p%ugrho
-            density_rhs=cs201*density_rhs
-            if (lrelativistic_eos) &
-               call not_implemented('dlnrho_dt','lrelativistic_eos with linear rho and lconservative=F')
-            ! alberto: to be implemented
-          endif
-!
-!  Evolution of lnrho: set here density_rhs
-!
+        if (lconservative) then
+          density_rhs=-p%divss
+          if (lext_force) density_rhs=density_rhs + p%ext_force(:,1)
         else
-          density_rhs= - p%divu
-          if (ladvection_density) density_rhs = density_rhs - cs20_corr*p%uglnrho
 !
-!  The following few lines only enter without lconservative,
-!  and also only without ldensity_nolog, but with lrelativistic_eos.
+!  alberto: added relativistic prefactors for density and hydro equations (non conservative form)
 !
-          if (lext_force) then
-            call dot_mn(p%uu,p%ext_force(:,2:4),u_dot_ext_force)
-            !u_dot_ext_force = p%uu(:,1)*p%ext_force(:,2) + p%uu(:,2)*p%ext_force(:,3) &
-            !              + p%uu(:,3)*p%ext_force(:,4)
+          if (lrelativistic) then
+            prefactor=1./(1-cs20*p%u2)
+            lorentz_gamma_inv2=1.-p%u2
+            prefactor2=1.+p%u2
           endif
-          if (lrelativistic_eos .and. .not.lconservative) then
+          if (ldensity_nolog) then
+            density_rhs=-p%rho*p%divu
+            if (ladvection_density) density_rhs = density_rhs - cs20_corr*p%ugrho
+          else
+            density_rhs= - p%divu
+            if (ladvection_density) density_rhs = density_rhs - cs20_corr*p%uglnrho
+          endif
+          if (lext_force) call dot_mn(p%uu,p%ext_force(:,2:4),u_dot_ext_force)
+          if (lrelativistic_eos) then
             if (lhydro) then
               if (lrelativistic_eos_term1 .and. lrelativistic_eos_term2) then
                 ! call multvs(p%uu,density_rhs,tmpv)
                 density_hydro_rhs=density_rhs
+                ! if (ldensity_nolog) density_hydro_rhs=density_hydro_rhs*p%rho1
+              ! for testing, adding only one of the two terms in hydro equation
               else
                 density_hydro_rhs=0.
-                if (lrelativistic_eos_term1) density_hydro_rhs=density_hydro_rhs-p%divu
-                if (lrelativistic_eos_term2) density_hydro_rhs=density_hydro_rhs-cs20_corr*p%uglnrho
+                if (ldensity_nolog) then
+                  if (lrelativistic_eos_term1) density_hydro_rhs=density_hydro_rhs-p%rho*p%divu
+                  if (lrelativistic_eos_term2) density_hydro_rhs=density_hydro_rhs-cs20_corr*p%ugrho
+                else
+                  if (lrelativistic_eos_term1) density_hydro_rhs=density_hydro_rhs-p%divu
+                  if (lrelativistic_eos_term2) density_hydro_rhs=density_hydro_rhs-cs20_corr*p%uglnrho
+                endif
               endif
-              density_hydro_rhs=cs20*density_hydro_rhs
-              !df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-onethird*tmpv
+              if (ldensity_nolog) then
+                density_hydro_rhs=cs20*density_hydro_rhs*p%rho1
+              else
+                density_hydro_rhs=cs20*density_hydro_rhs
+              endif
               if (lext_force) then
                 density_hydro_rhs=density_hydro_rhs - p%rho1 * (p%ext_force(:,1) - &
                                           2*cs20/cs201 * u_dot_ext_force)
@@ -2935,20 +2929,22 @@ module Density
               call multvs(p%uu,density_hydro_rhs,tmpv)
               ! call multvs(p%uu,density_hydro_rhs,tmpv)
               df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-tmpv
-              ! add external force (could be moved to hydro)
-              if (lext_force) then
-                call multvs(p%ext_force(:,2:4),p%rho1*lorentz_gamma_inv2/cs201,tmpv)
-                df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+tmpv
-              endif
             endif
-            !density_rhs=fourthird*density_rhs
-            density_rhs=cs201*density_rhs
-            if (lext_force) then
-              density_rhs=density_rhs + p%rho1 * (p%ext_force(:,1)*prefactor2 - 2*u_dot_ext_force)
-              if (Hscript /= 0.) density_rhs=density_rhs - (3*cs20 - 1) * Hscript * prefactor2
-            endif
-            density_rhs=density_rhs*prefactor
           endif
+          density_rhs=cs201*density_rhs
+          if (lext_force) then
+            ! reuse u_dot_ext_force from above, but with prefactor2
+            u_dot_ext_force = p%ext_force(:,1)*prefactor2 - 2*u_dot_ext_force
+            if (Hscript /= 0.) then
+              u_dot_ext_force = u_dot_ext_force + (1.0 - 3*cs20)*p%rho*Hscript*prefactor2
+            endif
+            if (ldensity_nolog) then
+              density_rhs=density_rhs + u_dot_ext_force
+            else
+              density_rhs=density_rhs + p%rho1 * u_dot_ext_force
+            endif
+          endif
+          density_rhs=density_rhs*prefactor
         endif
       else
         density_rhs=0.
