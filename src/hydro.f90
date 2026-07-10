@@ -174,6 +174,7 @@ module Hydro
   integer :: iTij=0, ihless=0, nhless=0
   real, dimension(:), allocatable :: thless, xhless, yhless, zhless
   real, dimension(:), allocatable :: Bsquared
+  real :: cs201=1., cs20_corr=1., cs2011=impossible
 !
 ! variables for expansion into spherical harmonics
 !
@@ -1214,6 +1215,7 @@ module Hydro
 !   7-jun.16/MR: modifications for calculation of z average on Yin-Yang grid, not yet operational
 !
       use BorderProfiles, only: request_border_driving
+      use EquationOfState, only: cs20
       use Forcing, only: n_forcing_cont
       use Initcond
       use Mpicomm, only: mpibcast
@@ -1729,6 +1731,12 @@ module Hydro
         allocate(lrelativistic_eos)
         lrelativistic_eos=.false.
       endif
+!
+!   Set values 1 + cs2 for relativistic_eos and (1 - cs2)/(1 + cs2) for relativistic_eos_corr
+!
+      if (lrelativistic_eos) cs201=1.+cs20
+      if (lrelativistic_eos_corr) cs20_corr=(1.-cs20)/cs201
+      cs2011=1.0/cs201
 !
       if (ltime_integrals) then
         if (.not.(ltime_integrals_always .or. dtcor<=0.)) call put_shared_variable('t_cor',t_cor)
@@ -3804,18 +3812,6 @@ module Hydro
       endif
     endsubroutine calc_Tij
 !***********************************************************************
-    function get_cs201() result(cs201)
-
-      use EquationOfState, only: cs20
-
-      real :: cs201
-      if(lrelativistic_eos) then
-        cs201 = 1.+cs20
-      else             
-        cs201 = 1.
-      endif
-    endfunction get_cs201
-!***********************************************************************
     subroutine calc_uu(f,p)
 
       use EquationOfState, only: cs20
@@ -3823,14 +3819,10 @@ module Hydro
 
       real, contiguous, dimension(:,:,:,:) :: f
       type (pencil_case) :: p
-      real :: cs201, cs2011
       real, dimension (nx) :: tmp,DD,tmp_rho
       real, dimension (nx,3) :: tmp3, tmp3g
       real, dimension (nx,3,3) :: tmp33
       
-      cs201 =get_cs201()
-      cs2011=1./cs201
-
       if (lconservative) then
         if (lvv_as_aux .or. lvv_as_comaux) then
           p%uu=f(l1:l2,m,n,ivx:ivz)
@@ -4044,7 +4036,7 @@ module Hydro
         p%lorentz_gamma = sqrt(p%lorentz)
       endif
       if (lpenc_loc(i_velx).and.ldensity) then
-        call dot_mn_sv_pencil(p%uu,sqrt(abs(p%rho*get_cs201())),tmp3g)
+        call dot_mn_sv_pencil(p%uu,sqrt(abs(p%rho*cs201)),tmp3g)
         call dot_mn_sv_pencil(tmp3g,sqrt(abs(p%lorentz)),p%velx)
       endif
       ! alberto: we might want to consider higgsless also for non-conservative
@@ -4701,7 +4693,7 @@ module Hydro
       real, dimension (nx) :: odel2um, uref, curlo2, qo, quxo, graddivu2, tmp
       real, dimension (nx,Nmodes_SH) :: urlm
       real, dimension (nx) :: rmask, lorr
-      real :: kx,cs201=1.
+      real :: kx
       integer :: k
 !
 !  Calculate maxima and rms values for diagnostic purposes
@@ -5838,7 +5830,6 @@ module Hydro
       use EquationOfState, only: cs20
       real, contiguous, dimension(:,:,:,:) :: f
       intent(inout) :: f
-      real :: cs201=1., cs2011
       real, dimension (mx) :: delx
       real, dimension (mx) :: rho, rho1, press, rho_gam21, rho_gam20, lorentz_gamma2=1.
       real, dimension (mx) :: ss2, hydro_energy, hydro_energy1, rat, rat0, vA2_pseudo
@@ -5846,8 +5837,6 @@ module Hydro
       integer ::  iter_relB,j,jhless
       real, dimension (mx,3) :: ss
 
-      if (lrelativistic_eos) cs201=1.+cs20
-      cs2011=1./cs201
       if (iTij==0) call fatal_error("hydro_after_boundary","must compute Tij for lconservative")
 
       do n=1,mz
@@ -9521,6 +9510,10 @@ module Hydro
     call copy_addr(idiag_coriolis_number,p_par(133)) ! int
     call copy_addr(lforcing_cont_uu_diff,p_par(134)) ! bool
     call copy_addr(lext_force,p_par(135)) ! bool
+    call copy_addr(cs201,p_par(136))
+    call copy_addr(cs20_corr,p_par(137))
+    call copy_addr(cs2011,p_par(138))
+
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Hydro

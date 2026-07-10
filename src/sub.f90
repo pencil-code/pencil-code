@@ -122,6 +122,7 @@ module Sub
   public :: get_dxyzs
   public :: get_random_vec
   public :: sample_poisson_waiting_time
+  public :: solve3x3
 
 !
   interface poly                ! Overload the `poly' function
@@ -9586,4 +9587,90 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
 
   endfunction sample_poisson_waiting_time
 !***********************************************************************
+subroutine solve3x3(A, b, x)
+  implicit none
+
+  real, intent(in)  :: A(3,3)
+  real, intent(in)  :: b(3)
+  real, intent(out) :: x(3)
+
+  real :: M(3,3)
+  real :: rhs(3)
+  real :: factor
+  real :: temp
+  real, parameter :: eps = 1d-14
+  real :: maxval
+  integer :: i, j, k, pivot
+
+  M = A
+  rhs = b
+
+  !--------------------------
+  ! Forward elimination
+  !--------------------------
+  do k = 1,2
+
+     pivot = k
+     maxval = abs(M(k,k))
+
+     do i = k+1,3
+        if (abs(M(i,k)) > maxval) then
+           maxval = abs(M(i,k))
+           pivot = i
+        endif
+     enddo
+
+     if (maxval < eps) then
+        return
+     endif
+
+     if (pivot /= k) then
+
+        do j = 1,3
+           temp = M(k,j)
+           M(k,j) = M(pivot,j)
+           M(pivot,j) = temp
+        enddo
+
+        temp = rhs(k)
+        rhs(k) = rhs(pivot)
+        rhs(pivot) = temp
+
+     endif
+
+     do i = k+1,3
+
+        factor = M(i,k)/M(k,k)
+
+        do j = k,3
+           M(i,j) = M(i,j) - factor*M(k,j)
+        enddo
+
+        rhs(i) = rhs(i) - factor*rhs(k)
+
+     enddo
+
+  enddo
+
+  if (abs(M(3,3)) < eps) then
+     return
+  endif
+
+  !--------------------------
+  ! Back substitution
+  !--------------------------
+
+  x(3) = rhs(3)/M(3,3)
+
+  do i = 2,1,-1
+     x(i) = rhs(i)
+     do j = i+1,3
+        x(i) = x(i) - M(i,j)*x(j)
+     enddo
+     x(i) = x(i)/M(i,i)
+  enddo
+
+end subroutine solve3x3
+!***********************************************************************
+
 endmodule Sub

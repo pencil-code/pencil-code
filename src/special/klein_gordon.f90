@@ -176,6 +176,7 @@ module Special
   logical :: linitialize_seed=.true.
   real :: plasma_coupling_coeff=0.0
   logical :: lplasma_coupling=.false.
+  integer :: continuation_offset = 0
 
 ! Video data
  integer :: ivid_del2phi=0,ivid_Vprime=0,ivid_gphi1=0,ivid_g2phi1=0,ivid_V=0
@@ -206,7 +207,7 @@ module Special
       V0_usr, v_usr, alpha_usr, beta_usr, lphi_normalized_units, bubble_size_factor, &
       bubble_wall_width_factor,number_of_bubbles,bubble_positions, &
       beta,bubble_size,bubble_wall_width,linitialize_seed, &
-      chi_quartic
+      chi_quartic, continuation_offset
 !
   namelist /special_run_pars/ &
       initspecial, phi0, dphi0, phimass, sign_phimass2, eps, ascale_ini, &
@@ -334,15 +335,47 @@ module Special
 !
 !  30-jun-26/TP: coded
 !
+      use Sub, only: solve3x3
       real,  dimension (mx,my,mz,mfarray) :: f
       real, dimension (3) :: pos
       integer :: l,m,n
       real :: x_local, y_local, z_local
       real :: r,bubble_profile
+      real, dimension(3,3) :: A
+      real, dimension(3) :: b, c
+      integer :: offset
+      real :: tanh_val, sech2
 !
+
       if(iphi == 0) then
         call fatal_error("nucleate_a_bubble: ","Cannot nucleate a bubble without phi!")
       endif
+
+      offset = 0
+      if(lspherical_coords .and. ny==1 .and. nz==1) then
+        offset = continuation_offset
+        r = x(l1+offset)
+
+        A(1,1) = r**2
+        A(1,2) = r**3
+        A(1,3) = r**4
+
+        A(2,1) = 2*r
+        A(2,2) = 3*r**2
+        A(2,3) = 4*r**3
+
+        A(3,1) = 2
+        A(3,2) = 6*r
+        A(3,3) = 12*r**2
+
+        tanh_val = tanh((r-bubble_size)/bubble_wall_width)
+        b(1) = 0.5*(1-tanh_val)-1
+        sech2 = 1-tanh_val**2
+        b(2) = -(0.5/bubble_wall_width)*sech2
+        b(3) = (1/bubble_wall_width**2)*sech2*tanh_val
+        call solve3x3(A,b,c)
+      endif
+
       do l = l1,l2; do m = m1,m2; do n = n1,n2
         if(lcartesian_coords) then
           x_local = x(l)
@@ -359,6 +392,10 @@ module Special
         endif
         r = sqrt((x_local-pos(1))**2+(y_local-pos(2))**2+(z_local-pos(3))**2)
         bubble_profile = 0.5*(1-tanh((r-bubble_size)/bubble_wall_width))
+        if(l < l1+offset) then
+          bubble_profile = 1 + c(1)*r**2 + c(2)*r**3 + c(3)*r**4
+        endif
+
         select case (nucleation_method)
         case ('max')
           f(l,m,n,iphi) = max(f(l,m,n,iphi),bubble_profile)
@@ -1452,7 +1489,6 @@ module Special
         if (ivid_Vprime/=0) call store_slices(p%Vprime,Vprime_xy,Vprime_xz,&
                             Vprime_yz,Vprime_xy2,Vprime_xy3,Vprime_xy4,Vprime_xz2,Vprime_r)
         if (ivid_V/=0) then
-                print*,"Vpotential: ",Vpotential
                 call get_Vpotential(f,Vpotential)
                 call store_slices(Vpotential,V_xy,V_xz,&
                             V_yz,V_xy2,V_xy3,V_xy4,V_xz2,V_r)
