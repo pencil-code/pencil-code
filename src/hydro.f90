@@ -1729,7 +1729,9 @@ module Hydro
         call get_shared_variable('lrelativistic_eos_corr', lrelativistic_eos_corr)
       else
         allocate(lrelativistic_eos)
+        allocate(lrelativistic_eos_corr)
         lrelativistic_eos=.false.
+        lrelativistic_eos_corr=.false.
       endif
 !
 !   Set values 1 + cs2 for relativistic_eos and (1 - cs2)/(1 + cs2) for relativistic_eos_corr
