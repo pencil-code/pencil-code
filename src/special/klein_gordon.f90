@@ -178,12 +178,13 @@ module Special
   logical :: lplasma_coupling=.false.
 
 ! Video data
- integer :: ivid_del2phi=0,ivid_Vprime=0,ivid_gphi1=0,ivid_g2phi1=0
+ integer :: ivid_del2phi=0,ivid_Vprime=0,ivid_gphi1=0,ivid_g2phi1=0,ivid_V=0
  real, dimension(:,:), allocatable :: del2phi_xy,del2phi_xz,del2phi_yz,del2phi_xy2,del2phi_xy3,del2phi_xy4,del2phi_xz2
  real, dimension(:,:), allocatable :: gphi1_xy,gphi1_xz,gphi1_yz,gphi1_xy2,gphi1_xy3,gphi1_xy4,gphi1_xz2
  real, dimension(:,:), allocatable :: g2phi1_xy,g2phi1_xz,g2phi1_yz,g2phi1_xy2,g2phi1_xy3,g2phi1_xy4,g2phi1_xz2
  real, dimension(:,:), allocatable :: Vprime_xy,Vprime_xz,Vprime_yz,Vprime_xy2,Vprime_xy3,Vprime_xy4,Vprime_xz2
- real, dimension(:,:,:,:,:), allocatable :: del2phi_r,Vprime_r, gphi1_r, g2phi1_r
+ real, dimension(:,:), allocatable :: V_xy,V_xz,V_yz,V_xy2,V_xy3,V_xy4,V_xz2
+ real, dimension(:,:,:,:,:), allocatable :: del2phi_r,V_r,Vprime_r, gphi1_r, g2phi1_r
 !
 !
 
@@ -436,6 +437,7 @@ module Special
           chi_quartic = (-delta_phi + sqrt(delta_phi**2 - sign_m2*4*lambda_phi)) / (2*sqrt(lambda_phi))
           chi_quartic = chi_quartic**2 - 1
         endif
+        print*,"Chi quartic: ",chi_quartic
         if (chi_quartic <= 0) then
           call fatal_error('initialize_special',&
                     'choose chi_quartic > 0 for quartic potential with lphi_normalized_units')
@@ -555,7 +557,7 @@ module Special
       if (lhydro) then
         call get_shared_variable('lconservative',lconservative,caller='initialize_klein_gordon')
       else
-        call allocate(lconservative)
+        allocate(lconservative)
         lconservative=.false.
       endif
 
@@ -567,6 +569,8 @@ module Special
                                   g2phi1_xy2,g2phi1_xy3,g2phi1_xy4,g2phi1_xz2,g2phi1_r)
       if (ivid_Vprime/=0) call alloc_slice_buffers(Vprime_xy,Vprime_xz,Vprime_yz,&
                                    Vprime_xy2,Vprime_xy3,Vprime_xy4,Vprime_xz2,Vprime_r)
+      if (ivid_V/=0) call alloc_slice_buffers(V_xy,V_xz,V_yz,&
+                                   V_xy2,V_xy3,V_xy4,V_xz2,V_r)
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -1396,7 +1400,7 @@ module Special
       type(pencil_case) :: p
       integer :: l
       real, dimension (nx) :: gphi2
-      real, dimension (nx) :: g2phi1
+      real, dimension (nx) :: g2phi1, Vpotential
       real :: v
 
       call keep_compiler_quiet(f)
@@ -1447,6 +1451,12 @@ module Special
         endif
         if (ivid_Vprime/=0) call store_slices(p%Vprime,Vprime_xy,Vprime_xz,&
                             Vprime_yz,Vprime_xy2,Vprime_xy3,Vprime_xy4,Vprime_xz2,Vprime_r)
+        if (ivid_V/=0) then
+                print*,"Vpotential: ",Vpotential
+                call get_Vpotential(f,Vpotential)
+                call store_slices(Vpotential,V_xy,V_xz,&
+                            V_yz,V_xy2,V_xy3,V_xy4,V_xz2,V_r)
+        endif
       endif
 
     endsubroutine calc_diagnostics_special
@@ -1517,7 +1527,7 @@ module Special
         idiag_dpsim=0; idiag_dpsi2m=0; idiag_dpsirms=0
         idiag_a2rhogpsim=0; idiag_a2rhopsim=0
         idiag_Vprimem=0; idiag_Vprimepsim=0
-        ivid_del2phi=0; ivid_Vprime=0; ivid_gphi1=0; ivid_g2phi1=0
+        ivid_del2phi=0; ivid_Vprime=0; ivid_gphi1=0; ivid_g2phi1=0; ivid_V=0
       endif
 !
       do iname=1,nname
@@ -1562,6 +1572,7 @@ module Special
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'gphi1',  ivid_gphi1)
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'g2phi1',  ivid_g2phi1)
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'Vprime',  ivid_Vprime)
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'V',  ivid_V)
       enddo
 !
 !  check for those quantities for which we want video slices
@@ -1569,6 +1580,7 @@ module Special
       if (lwrite_slices) then
         where(cnamev=='phi'.or.cnamev=='dphi') cformv='DEFINED'
         where(cnamev=='del2phi'.or.cnamev=='Vprime') cformv='DEFINED'
+        where(cnamev=='V') cformv='DEFINED'
         where(cnamev=='gphi1') cformv='DEFINED'
         where(cnamev=='g2phi1') cformv='DEFINED'
       endif
@@ -1605,6 +1617,8 @@ module Special
                                  g2phi1_xy2,g2phi1_xy3,g2phi1_xy4,g2phi1_xz2,g2phi1_r)
       case ('Vprime')
           call assign_slices_scal(slices,Vprime_xy,Vprime_xz,Vprime_yz,Vprime_xy2,Vprime_xy3,Vprime_xy4,Vprime_xz2,Vprime_r)
+      case ('V')
+          call assign_slices_scal(slices,V_xy,V_xz,V_yz,V_xy2,V_xy3,V_xy4,V_xz2,V_r)
 !
       endselect
 !
@@ -1926,6 +1940,34 @@ module Special
 
     endsubroutine special_after_boundary
 !***********************************************************************
+    subroutine get_Vpotential(f,Vpotential)
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(nx), intent(out) :: Vpotential
+      real, dimension(nx) :: psi, phi
+!
+!  Choice of different potentials
+!
+      phi=f(l1:l2,m,n,iphi)
+      select case (Vprime_choice)
+        case ('quadratic')  ; Vpotential=.5*phimass2*phi**2
+        case ('quartic')    ; Vpotential=.5*phimass2*phi**2+(1.0/3.0)*delta_phi_prefactor*delta_phi*phi**3&
+                                          +.25*lambda_phi_prefactor*lambda_phi*phi**4
+        case ('cos-profile'); Vpotential=phimass2*lambda_phi*sin(lambda_phi*phi)  !(to be corrected)
+        case ('ultra_slow_roll1')
+          Vpotential=V0_usr*(6*(phi/v_usr)**2 + 3.*(phi/v_usr)**4 - 4.*alpha_usr*(phi/v_usr)**3)
+          Vpotential=Vpotential/(1.+(phi/v_usr)**2*beta_usr**2)**2
+        case ('waterfall')
+          psi=f(l1:l2,m,n,ipsi)
+          Vpotential=0.5*phimass2*phi**2 + .25*lambda_psi*psi**4
+          if (lambda_psi /= 0.) then
+            Vpotential=Vpotential+.25*psimass2**2/lambda_psi
+          endif
+          Vpotential=Vpotential-0.5*psimass2*psi**2+.5*coupl_phipsi**2*phi**2*psi**2
+        case default
+          call fatal_error("special_after_boundary: No such Vprime_choice: ",trim(Vprime_choice))
+      endselect
+    endsubroutine get_Vpotential
+!***********************************************************************
     subroutine prep_ode_right(f,sigE1m,sigB1m)
 !
       use Sub, only: dot2_mn, grad, curl, dot_mn
@@ -1996,26 +2038,7 @@ module Special
       endif
 !
       a2rhopm=a2rhopm+sum(a2rhop)
-!
-!  Choice of different potentials
-!
-      select case (Vprime_choice)
-        case ('quadratic')  ; Vpotential=.5*phimass2*phi**2
-        case ('quartic')    ; Vpotential=.5*phimass2*phi**2+(1.0/3.0)*delta_phi_prefactor*delta_phi*phi**3&
-                                          +.25*lambda_phi_prefactor*lambda_phi*phi**4
-        case ('cos-profile'); Vpotential=phimass2*lambda_phi*sin(lambda_phi*phi)  !(to be corrected)
-        case ('ultra_slow_roll1')
-          Vpotential=V0_usr*(6*(phi/v_usr)**2 + 3.*(phi/v_usr)**4 - 4.*alpha_usr*(phi/v_usr)**3)
-          Vpotential=Vpotential/(1.+(phi/v_usr)**2*beta_usr**2)**2
-        case ('waterfall')
-          Vpotential=0.5*phimass2*phi**2 + .25*lambda_psi*psi**4
-          if (lambda_psi /= 0.) then
-            Vpotential=Vpotential+.25*psimass2**2/lambda_psi
-          endif
-          Vpotential=Vpotential-0.5*psimass2*psi**2+.5*coupl_phipsi**2*phi**2*psi**2
-        case default
-          call fatal_error("special_after_boundary: No such Vprime_choice: ",trim(Vprime_choice))
-      endselect
+      call get_Vpotential(f,Vpotential)
 !
 !  compute ddotam = a"/a (needed for GW module)
 !
