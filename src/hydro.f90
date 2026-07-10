@@ -162,6 +162,7 @@ module Hydro
   real, dimension(2) :: hydro_zaver_range=(/-max_real,max_real/)
   real, dimension(3,3) :: uij_0D_test=0.
   real :: u_out_kep=0.0, velocity_ceiling=.0, w_sldchar_hyd=1.0
+  real :: velocity_floor=impossible
   real :: mu_omega=0., gap=0., r_omega=0., w_omega=0.
   real :: z1_uu=0., z2_uu=0.
   real :: ABC_A=1., ABC_B=1., ABC_C=1.
@@ -348,7 +349,7 @@ module Hydro
       loo_as_aux, luut_as_aux, luust_as_aux, loot_as_aux, loost_as_aux, &
       luij_test, luij_as_aux, llorentz_as_aux, loutest, ldiffrot_test, &
       interior_bc_hydro_profile, lhydro_bc_interior, z1_interior_bc_hydro, &
-      velocity_ceiling, ampl_Omega, lcoriolis_xdep, &
+      velocity_ceiling, velocity_floor, ampl_Omega, lcoriolis_xdep, &
       ekman_friction, friction_tdep, friction_tdep_toffset, friction_tdep_tau0, &
       t1_ekman, t2_ekman, lhubble_hydro, &
       ampl_forc, k_forc, w_forc, x_forc, dx_forc, ampl_fcont_uu, Sbaro0, &
@@ -9214,6 +9215,10 @@ module Hydro
         where (f(l1:l2,m,n,iux)<-velocity_ceiling) f(l1:l2,m,n,iux)=-velocity_ceiling
         where (f(l1:l2,m,n,iuy)<-velocity_ceiling) f(l1:l2,m,n,iuy)=-velocity_ceiling
         where (f(l1:l2,m,n,iuz)<-velocity_ceiling) f(l1:l2,m,n,iuz)=-velocity_ceiling
+      endif
+
+      if (velocity_floor/=impossible) then
+        f(l1:l2,m,n,iux:iuz) = max(f(l1:l2,m,n,iux:iuz),velocity_floor)
       endif
 !
     endsubroutine impose_velocity_ceiling
