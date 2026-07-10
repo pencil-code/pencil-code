@@ -41,6 +41,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED phi; dphi; gphi(3); cov_der(4,4)
+! PENCILS PROVIDED del2phi;
 ! PENCILS PROVIDED phi_doublet(3); dphi_doublet(3); phi_doublet_mod
 ! PENCILS PROVIDED Vprime; Vthermal_prime
 ! PENCILS PROVIDED plasma_friction;
@@ -149,6 +150,7 @@ module Special
   logical, pointer :: lphi_linear_regime, lnoncollinear_EB, lnoncollinear_EB_aver
   logical, pointer :: lcollinear_EB, lcollinear_EB_aver, lmass_suppression
   logical, pointer :: lallow_bprime_zero
+  logical, pointer :: lconservative
   logical :: lhiggs_friction=.false., lwaterfall=.false.
   real :: higgs_friction=0.
   logical :: lphi_doublet=.false., lphi_weakcharge=.false., lphi_hypercharge=.false.
@@ -174,7 +176,20 @@ module Special
   logical :: linitialize_seed=.true.
   real :: plasma_coupling_coeff=0.0
   logical :: lplasma_coupling=.false.
+
+! Video data
+ integer :: ivid_del2phi=0,ivid_Vprime=0,ivid_gphi1=0,ivid_g2phi1=0
+ real, dimension(:,:), allocatable :: del2phi_xy,del2phi_xz,del2phi_yz,del2phi_xy2,del2phi_xy3,del2phi_xy4,del2phi_xz2
+ real, dimension(:,:), allocatable :: gphi1_xy,gphi1_xz,gphi1_yz,gphi1_xy2,gphi1_xy3,gphi1_xy4,gphi1_xz2
+ real, dimension(:,:), allocatable :: g2phi1_xy,g2phi1_xz,g2phi1_yz,g2phi1_xy2,g2phi1_xy3,g2phi1_xy4,g2phi1_xz2
+ real, dimension(:,:), allocatable :: Vprime_xy,Vprime_xz,Vprime_yz,Vprime_xy2,Vprime_xy3,Vprime_xy4,Vprime_xz2
+ real, dimension(:,:,:,:,:), allocatable :: del2phi_r,Vprime_r, gphi1_r, g2phi1_r
 !
+!
+
+  real, dimension(nx) :: del2phi
+  !$omp threadprivate(del2phi)
+
   namelist /special_init_pars/ &
       initspecial, phi0, dphi0, phimass, sign_phimass2, eps, ascale_ini, &
       lcompute_dphi0, lem_backreact, &
@@ -384,6 +399,7 @@ module Special
       use SharedVariables, only: get_shared_variable, put_shared_variable
       use FArrayManager, only: farray_index_by_name_ode, farray_index_by_name
       use General, only: random_number_wrapper
+      use Slices_methods, only: alloc_slice_buffers
 !
       real,  dimension (mx,my,mz,mfarray) :: f
       integer :: iLCDM_lna,i
@@ -536,6 +552,21 @@ module Special
                 'setting lplasma_coupling to False; call hydro module to use plasma coupling')
         lplasma_coupling = .false.
       endif
+      if (lhydro) then
+        call get_shared_variable('lconservative',lconservative,caller='initialize_klein_gordon')
+      else
+        call allocate(lconservative)
+        lconservative=.false.
+      endif
+
+      if (ivid_del2phi/=0) call alloc_slice_buffers(del2phi_xy,del2phi_xz,del2phi_yz,&
+                                  del2phi_xy2,del2phi_xy3,del2phi_xy4,del2phi_xz2,del2phi_r)
+      if (ivid_gphi1/=0) call alloc_slice_buffers(gphi1_xy,gphi1_xz,gphi1_yz,&
+                                  gphi1_xy2,gphi1_xy3,gphi1_xy4,gphi1_xz2,gphi1_r)
+      if (ivid_g2phi1/=0) call alloc_slice_buffers(g2phi1_xy,g2phi1_xz,g2phi1_yz,&
+                                  g2phi1_xy2,g2phi1_xy3,g2phi1_xy4,g2phi1_xz2,g2phi1_r)
+      if (ivid_Vprime/=0) call alloc_slice_buffers(Vprime_xy,Vprime_xz,Vprime_yz,&
+                                   Vprime_xy2,Vprime_xy3,Vprime_xy4,Vprime_xz2,Vprime_r)
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -785,7 +816,7 @@ module Special
 !
 !  24-nov-04/tony: coded
 !
-      use Sub, only: grad, div, dot_mn
+      use Sub, only: grad, div, dot_mn,u_dot_grad
       use Deriv, only: der
 !
       real,  dimension (mx,my,mz,mfarray) :: f
@@ -978,6 +1009,15 @@ module Special
       if(lpencil(i_plasma_friction)) then
         friction_coeff = plasma_coupling_coeff*p%phi**2/T
         call dot_mn(p%uu,p%gphi,u_dot_gphi)
+        if(lconservative) then
+          if(ivv /= 0) then
+            call u_dot_grad(f,ivv,p%gphi,f(l1:l2,m,n,ivx:ivz),u_dot_gphi,UPWIND=.true.)
+          else
+            call fatal_error("dspecial_dt: ","Need velocity for u_dot_grad")
+          endif
+        else
+          call u_dot_grad(f,iuu,p%uij,p%uu,p%ugu,UPWIND=.true.)
+        endif
         p%plasma_friction = friction_coeff*p%lorentz_gamma*(p%dphi + u_dot_gphi)
       endif
 
@@ -1039,7 +1079,7 @@ module Special
       real,  dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: Vprime_aux, total_fric
       real, dimension (nx, 4) :: del2phi_doublet=0.
-      real, dimension (nx) :: tmp, del2phi, del2psi
+      real, dimension (nx) :: tmp, del2psi
       real :: pref_Vprime=1., pref_Hubble=2., pref_del2=1., pref_alpf
       type (pencil_case) :: p
       integer :: i
@@ -1349,10 +1389,14 @@ module Special
 
       use Sub, only: dot2_mn
       use Diagnostics
+      use Deriv, only: der2
+      use Slices_methods, only: store_slices
+
       real,  dimension(mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
       integer :: l
       real, dimension (nx) :: gphi2
+      real, dimension (nx) :: g2phi1
       real :: v
 
       call keep_compiler_quiet(f)
@@ -1390,6 +1434,19 @@ module Special
            endif
           enddo
         endif
+      endif
+      if(lvideo .and. lfirst) then
+        if (ivid_del2phi /=0) call store_slices(del2phi,del2phi_xy,del2phi_xz,&
+                            del2phi_yz,del2phi_xy2,del2phi_xy3,del2phi_xy4,del2phi_xz2,del2phi_r)
+        if (ivid_gphi1 /=0) call store_slices(p%gphi(:,1),gphi1_xy,gphi1_xz,&
+                            gphi1_yz,gphi1_xy2,gphi1_xy3,gphi1_xy4,gphi1_xz2,gphi1_r)
+        if (ivid_g2phi1 /=0) then
+           call der2(f,iphi,g2phi1,1)
+           call store_slices(g2phi1,g2phi1_xy,g2phi1_xz,&
+           g2phi1_yz,g2phi1_xy2,g2phi1_xy3,g2phi1_xy4,g2phi1_xz2,g2phi1_r)
+        endif
+        if (ivid_Vprime/=0) call store_slices(p%Vprime,Vprime_xy,Vprime_xz,&
+                            Vprime_yz,Vprime_xy2,Vprime_xy3,Vprime_xy4,Vprime_xz2,Vprime_r)
       endif
 
     endsubroutine calc_diagnostics_special
@@ -1442,7 +1499,7 @@ module Special
 !
       use Diagnostics, only: parse_name
 !
-      integer :: iname
+      integer :: iname,inamev
       logical :: lreset,lwrite
 !
 !  reset everything in case of reset
@@ -1460,6 +1517,7 @@ module Special
         idiag_dpsim=0; idiag_dpsi2m=0; idiag_dpsirms=0
         idiag_a2rhogpsim=0; idiag_a2rhopsim=0
         idiag_Vprimem=0; idiag_Vprimepsim=0
+        ivid_del2phi=0; ivid_Vprime=0; ivid_gphi1=0; ivid_g2phi1=0
       endif
 !
       do iname=1,nname
@@ -1499,8 +1557,20 @@ module Special
 !
 !  check for those quantities for which we want video slices
 !
+      do inamev=1,nnamev
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'del2phi',  ivid_del2phi)
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'gphi1',  ivid_gphi1)
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'g2phi1',  ivid_g2phi1)
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'Vprime',  ivid_Vprime)
+      enddo
+!
+!  check for those quantities for which we want video slices
+!
       if (lwrite_slices) then
         where(cnamev=='phi'.or.cnamev=='dphi') cformv='DEFINED'
+        where(cnamev=='del2phi'.or.cnamev=='Vprime') cformv='DEFINED'
+        where(cnamev=='gphi1') cformv='DEFINED'
+        where(cnamev=='g2phi1') cformv='DEFINED'
       endif
 !
     endsubroutine rprint_special
@@ -1525,6 +1595,16 @@ module Special
 !
       case ('phi');  call assign_slices_scal (slices,f,iphi)
       case ('dphi'); call assign_slices_scal (slices,f,idphi)
+      case ('del2phi')
+          call assign_slices_scal(slices,del2phi_xy,del2phi_xz,del2phi_yz,del2phi_xy2,del2phi_xy3,del2phi_xy4,del2phi_xz2,del2phi_r)
+      case ('gphi1')
+          call assign_slices_scal(slices,gphi1_xy,gphi1_xz,gphi1_yz,&
+                                 gphi1_xy2,gphi1_xy3,gphi1_xy4,gphi1_xz2,gphi1_r)
+      case ('g2phi1')
+          call assign_slices_scal(slices,g2phi1_xy,g2phi1_xz,g2phi1_yz,&
+                                 g2phi1_xy2,g2phi1_xy3,g2phi1_xy4,g2phi1_xz2,g2phi1_r)
+      case ('Vprime')
+          call assign_slices_scal(slices,Vprime_xy,Vprime_xz,Vprime_yz,Vprime_xy2,Vprime_xy3,Vprime_xy4,Vprime_xz2,Vprime_r)
 !
       endselect
 !

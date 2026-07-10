@@ -53,7 +53,7 @@ module Hydro
   real, target, dimension (:,:,:), allocatable :: oo_xz,oo_yz,oo_xz2
   real, target, dimension (:,:,:), allocatable :: uu_sph_xy,uu_sph_xy2,uu_sph_xy3,uu_sph_xy4
   real, target, dimension (:,:,:), allocatable :: uu_sph_xz,uu_sph_yz,uu_sph_xz2
-  real, target, dimension (:,:), allocatable :: divu_xy,u2_xy,o2_xy,mach_xy
+  real, target, dimension (:,:), allocatable :: divu_xy,u2_xy,o2_xy,mach_xy,hless_xy
 
   real, target, dimension (:,:), allocatable :: Ft_xy,Fx_xy,Fy_xy,Fz_xy
   real, target, dimension (:,:), allocatable :: Ft_xz,Fx_xz,Fy_xz,Fz_xz
@@ -64,15 +64,15 @@ module Hydro
   real, target, dimension (:,:), allocatable :: Ft_xy3,Fx_xy3,Fy_xy3,Fz_xy3
   real, target, dimension (:,:), allocatable :: Ft_xy4,Fx_xy4,Fy_xy4,Fz_xy4
 
-  real, target, dimension (:,:), allocatable :: divu_xy2,u2_xy2,o2_xy2,mach_xy2
-  real, target, dimension (:,:), allocatable :: divu_xy3,divu_xy4,u2_xy3,u2_xy4,mach_xy4
-  real, target, dimension (:,:), allocatable :: o2_xy3,o2_xy4,mach_xy3
-  real, target, dimension (:,:), allocatable :: divu_xz,u2_xz,o2_xz,mach_xz
-  real, target, dimension (:,:), allocatable :: divu_xz2,u2_xz2,o2_xz2,mach_xz2
-  real, target, dimension (:,:), allocatable :: divu_yz,u2_yz,o2_yz,mach_yz
+  real, target, dimension (:,:), allocatable :: divu_xy2,u2_xy2,o2_xy2,mach_xy2,hless_xy2
+  real, target, dimension (:,:), allocatable :: divu_xy3,divu_xy4,u2_xy3,u2_xy4,mach_xy4,hless_xy4
+  real, target, dimension (:,:), allocatable :: o2_xy3,o2_xy4,mach_xy3,hless_xy3
+  real, target, dimension (:,:), allocatable :: divu_xz,u2_xz,o2_xz,mach_xz,hless_xz
+  real, target, dimension (:,:), allocatable :: divu_xz2,u2_xz2,o2_xz2,mach_xz2,hless_xz2
+  real, target, dimension (:,:), allocatable :: divu_yz,u2_yz,o2_yz,mach_yz,hless_yz
   real, target, dimension (:,:), allocatable :: ou_xy,ou_xy2,ou_xy3,ou_xy4
   real, target, dimension (:,:), allocatable :: ou_xz,ou_yz,ou_xz2
-  real, target, dimension (:,:,:,:,:), allocatable :: divu_r,u2_r,o2_r,mach_r,ou_r
+  real, target, dimension (:,:,:,:,:), allocatable :: divu_r,u2_r,o2_r,mach_r,ou_r,hless_r
   real, target, dimension (:,:,:,:,:), allocatable :: Ft_r,Fx_r,Fy_r,Fz_r
   real, target, dimension (:,:,:,:,:,:), allocatable :: oo_r,uu_sph_r
 
@@ -963,6 +963,7 @@ module Hydro
 !  Video data.
 !
   integer :: ivid_oo=0, ivid_o2=0, ivid_divu=0, ivid_u2=0, ivid_Ma2=0, ivid_uu_sph=0
+  integer :: ivid_hless=0
   integer :: ivid_ou=0, ivid_Ft=0, ivid_Fx=0, ivid_Fy=0, ivid_Fz=0
 !
 !  Auxiliary variables
@@ -1696,6 +1697,7 @@ module Hydro
       if (ivid_u2/=0) call alloc_slice_buffers(u2_xy,u2_xz,u2_yz,u2_xy2,u2_xy3,u2_xy4,u2_xz2,u2_r)
       if (ivid_divu/=0) call alloc_slice_buffers(divu_xy,divu_xz,divu_yz,divu_xy2,divu_xy3,divu_xy4,divu_xz2,divu_r)
       if (ivid_Ma2/=0) call alloc_slice_buffers(mach_xy,mach_xz,mach_yz,mach_xy2,mach_xy3,mach_xy4,mach_xz2,mach_r)
+      if (ivid_hless/=0) call alloc_slice_buffers(hless_xy,hless_xz,hless_yz,hless_xy2,hless_xy3,hless_xy4,hless_xz2,hless_r)
       if (ivid_uu_sph/=0) &
         call alloc_slice_buffers(uu_sph_xy,uu_sph_xz,uu_sph_yz,uu_sph_xy2,uu_sph_xy3,uu_sph_xy4,uu_sph_xz2,uu_sph_r)
 
@@ -1986,6 +1988,7 @@ module Hydro
       real, dimension (3) :: tmpvec,xhhless
 !
       real, dimension (nx,3) :: tmp_nx3
+      real, dimension (mx) :: distance
       real, dimension (mx,3) :: ss
       real, dimension (mx) :: tmpmx, ss2, delx, tau_hless
       real, dimension (nx) :: r,p1,tmp,prof,xc0,yc0,ur,lnrhor
@@ -3001,7 +3004,8 @@ module Hydro
                 delx=(Lxyz(1)/pi)*atan(tan(pi/Lxyz(1)*(x   -xhhless(1))))
                 dely=(Lxyz(2)/pi)*atan(tan(pi/Lxyz(2)*(y(m)-xhhless(2))))
                 delz=(Lxyz(3)/pi)*atan(tan(pi/Lxyz(3)*(z(n)-xhhless(3))))
-                tau_hless=thless(jhless)+sqrt(delx**2+dely**2+delz**2)/vwall
+                distance = sqrt(delx**2+dely**2+delz**2)
+                tau_hless=thless(jhless)+distance/vwall
                 where(tau_hless<f(:,m,n,ihless)) f(:,m,n,ihless)=tau_hless
               enddo
               enddo
@@ -3101,6 +3105,7 @@ module Hydro
         if (ivid_divu/=0) lpenc_video(i_divu)=.true.
         if (ivid_u2  /=0) lpenc_video(i_u2)=.true.
         if (ivid_Ma2 /=0) lpenc_video(i_Ma2)=.true.
+        if (ivid_hless /=0) lpenc_video(i_hless)=.true.
         if (ivid_uu_sph/=0) lpenc_video(i_uu_sph)=.true.
         if (ivid_Ft/=0) lpenc_video(i_ext_force)=.true.
       endif
@@ -3478,6 +3483,10 @@ module Hydro
         if (notanumber(p%advec_uu)) then
           if (lproc_print) then
             if (ip<15) print*, 'calc_pencils_hydro: p%advec_uu =',p%advec_uu
+            if (ip<15) print*, 'calc_pencils_hydro: p%uu =',p%uu
+            if(.not. lpenc_loc(i_uu)) then
+               call fatal_error('calc_pencils_hydro', 'advec_uu needs uu!')
+            endif
             if (.not.allproc_print) lproc_print=.false.
           endif
         endif
@@ -3541,6 +3550,7 @@ module Hydro
       integer :: iuu
 !
       real, dimension (nx) :: tmp 
+      real, dimension (nx,3,3) :: T0ij
 
 
       integer :: i, j, ju
@@ -3706,7 +3716,12 @@ module Hydro
        if (.not. lconservative) then
           call fatal_error('calc_pencils_hydro_nonlinear', 'del2T implemented only for lconservative')
        endif
-       call del2v_etc(f,iuu,DEL2=p%del2T)
+       if(lcartesian_coords) then
+         call del2v_etc(f,iuu,DEL2=p%del2T)
+       else
+         call gij(f,iuu,T0ij,1)
+         call gij_etc(f,iuu,f(l1:l2,m,n,iux:iuz),T0ij,del2=p%del2T)
+       endif
      endif
 !
 !
@@ -5694,6 +5709,7 @@ module Hydro
         if (ivid_o2  /=0) call store_slices(p%o2,o2_xy,o2_xz,o2_yz,o2_xy2,o2_xy3,o2_xy4,o2_xz2,o2_r)
         if (ivid_ou  /=0) call store_slices(p%ou,ou_xy,ou_xz,ou_yz,ou_xy2,ou_xy3,ou_xy4,ou_xz2,ou_r)
         if (ivid_Ma2 /=0) call store_slices(p%Ma2,mach_xy,mach_xz,mach_yz,mach_xy2,mach_xy3,mach_xy4,mach_xz2,mach_r)
+        if (ivid_hless/=0) call store_slices(p%hless,hless_xy,hless_xz,hless_yz,hless_xy2,hless_xy3,hless_xy4,hless_xz2,hless_r)
         if (ivid_uu_sph/=0) call store_slices(p%uu_sph,uu_sph_xy,uu_sph_xz,uu_sph_yz,uu_sph_xy2, &
                                                        uu_sph_xy3,uu_sph_xy4,uu_sph_xz2,uu_sph_r)
         if (ivid_Ft  /=0) call store_slices(p%ext_force(:,1),Ft_xy,Ft_xz,Ft_yz,Ft_xy2,Ft_xy3,Ft_xy4,Ft_xz2,Ft_r)
@@ -7396,7 +7412,7 @@ module Hydro
         idiag_nshift=0
         idiag_frict=0; idiag_pradrc2=0
         ivid_oo=0; ivid_o2=0; ivid_ou=0; ivid_divu=0; ivid_u2=0; ivid_Ma2=0; ivid_uu_sph=0
-        ivid_Ft=0; ivid_Fx=0; ivid_Fy=0; ivid_Fz=0;
+        ivid_Ft=0; ivid_Fx=0; ivid_Fy=0; ivid_Fz=0; ivid_hless=0;
         idiag_ruxph1mz=0
         idiag_ruxph2mz=0
         idiag_ruxph3mz=0
@@ -8055,6 +8071,7 @@ module Hydro
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'divu',ivid_divu)
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'u2',  ivid_u2)
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'Ma2', ivid_Ma2)
+        call parse_name(inamev,cnamev(inamev),cformv(inamev),'hless', ivid_hless)
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'uu_sph',ivid_uu_sph)
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'Ft',ivid_Ft)
         call parse_name(inamev,cnamev(inamev),cformv(inamev),'Fx',ivid_Fx)
@@ -8122,6 +8139,9 @@ module Hydro
 !
         case ('Ma2')
           call assign_slices_scal(slices,mach_xy,mach_xz,mach_yz,mach_xy2,mach_xy3,mach_xy4,mach_xz2,mach_r)
+
+        case ('hless')
+          call assign_slices_scal(slices,hless_xy,hless_xz,hless_yz,hless_xy2,hless_xy3,hless_xy4,hless_xz2,hless_r)
          
         case ('Ft')
           call assign_slices_scal(slices,Ft_xy,Ft_xz,Ft_yz,Ft_xy2,Ft_xy3,Ft_xy4,Ft_xz2,Ft_r)

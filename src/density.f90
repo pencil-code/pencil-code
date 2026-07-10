@@ -2442,7 +2442,9 @@ module Density
         lpenc_requested(i_rho) =.true.
         lpenc_requested(i_rho1)=.true.
         lpenc_requested(i_glnrho)=.true.
-        lpenc_requested(i_uglnrho)=.true.
+        if(.not. lconservative) then
+          lpenc_requested(i_uglnrho)=.true.
+        endif
       endif
 !
     endsubroutine pencil_criteria_density
@@ -2861,6 +2863,7 @@ module Density
       real, dimension (nx) :: density_rhs, density_hydro_rhs, u_dot_ext_force
       real, dimension (nx) :: prefactor=1., prefactor2=1., lorentz_gamma_inv2=1.
       real, dimension (nx,3) :: tmpv
+      integer :: i
 !
 !  Continuity equation.
 !
@@ -2893,7 +2896,11 @@ module Density
             density_rhs= - p%divu
             if (ladvection_density) density_rhs = density_rhs - cs20_corr*p%uglnrho
           endif
-          if (lext_force) call dot_mn(p%uu,p%ext_force(:,2:4),u_dot_ext_force)
+          if (lext_force) then
+            do i=1,3
+              u_dot_ext_force = p%uu(:,i)*p%ext_force(:,i+1)
+            enddo
+          endif
           if (lrelativistic_eos) then
             if (lhydro) then
               if (lrelativistic_eos_term1 .and. lrelativistic_eos_term2) then
