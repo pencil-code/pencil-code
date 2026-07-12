@@ -58,6 +58,7 @@ module Magnetic_meanfield
   character (len=labellen) :: EMF_profile='nothing', delta_profile='const'
   character (len=labellen) :: shear_current_profile='nothing',fluc_alp_profile='gaussian'
   character (len=labellen) :: alpha_tdep_type      !PAR_DOC: type of temporal modulation of alpha effect
+  character (len=labellen) :: etat_tdep_type       !PAR_DOC: type of temporal modulation of turbulent diffusivity
   character (len=labellen), dimension(ninit) :: init_mf='nothing'
 !
 ! Input parameters
@@ -131,7 +132,9 @@ module Magnetic_meanfield
   logical :: ltest_patches=.false., lOmega_effect_meanfield=.false.
   real :: ampluu_kinematic=0., roty0=0., b0=0., r0=1.
   real :: alpha_tdep_t1=0., alpha_tdep_t2=0. !PAR_DOC: start and end time of temporal modulation of alpha effect
+  real :: etat_tdep_t1=0., etat_tdep_t2=0.   !PAR_DOC: start and end time of temporal modulation of turbulent diffusivity
   logical :: lalpha_tdep=.false.             !PAR_DOC: true if temporal modulation of alpha effect is invoked
+  logical :: letat_tdep=.false.              !PAR_DOC: true if temporal modulation of turbulent diffusivity is invoked
   real, dimension(:), allocatable :: xcenter, ycenter, zcenter, roty, cy, sy
 !
   namelist /magn_mf_run_pars/ &
@@ -173,7 +176,8 @@ module Magnetic_meanfield
       lread_alpha_tensor_z_as_y, lread_eta_tensor_z_as_y, &
       x1_alp, x2_alp, y1_alp, y2_alp, roty0, r0, b0, &
       lGW_tensor, kx_hij, relhel_hij, hij_ampl, GWfac1, GWfac2, GWfac3, &
-      lalpha_tdep, alpha_tdep_type, alpha_tdep_t1, alpha_tdep_t2
+      lalpha_tdep, alpha_tdep_type, alpha_tdep_t1, alpha_tdep_t2, &
+      letat_tdep, etat_tdep_type, etat_tdep_t1, etat_tdep_t2
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -1011,6 +1015,7 @@ module Magnetic_meanfield
 !  Most basic pencils should come first, as others may depend on them.
 !
 !  28-jul-10/axel: adapted from magnetic
+!  11-jul-26/axel: added various temporal modulations of alpha effect and turbulent diffusivity
 !
       use Sub
       use General, only: bessj
@@ -1560,7 +1565,7 @@ module Magnetic_meanfield
           endif
         endif
 !
-!  Added possibility of a time modulation on top of alpha_tmp.
+!  Add possibility of a time modulation on top of alpha_tmp.
 !
         if (lalpha_tdep) then
           select case (alpha_tdep_type)
@@ -1751,6 +1756,23 @@ module Magnetic_meanfield
             p%mf_EMF(:,1)=p%mf_EMF(:,1)-delta_effect*delta_tmp*p%jj(:,2)
             p%mf_EMF(:,2)=p%mf_EMF(:,2)+delta_effect*delta_tmp*p%jj(:,1)
           endif
+        endif
+!
+!  Add possibility of a time modulation on top of meanfield_etat_tmp.
+!
+        if (letat_tdep) then
+          select case (etat_tdep_type)
+!
+!  Set meanfield_etat_tmp=0 when t is before etat_tdep_t1 or after etat_tdep_t2.
+!
+          case ('step')
+            if (t<=etat_tdep_t1 .or. t>etat_tdep_t2) meanfield_etat_tmp=0.
+!
+!  Default -> error
+!
+          case default;
+            call fatal_error('calc_pencils_magn_mf','Invalid etat_tdep_type value')
+          endselect
         endif
 !
 !  Apply diffusion term: simple in Weyl gauge, which is not the default!

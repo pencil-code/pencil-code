@@ -2423,6 +2423,7 @@ module Magnetic
         case ('cosxcosy'); call cosx_cosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
         case ('Bzcosxcosy'); call cosx_cosy_cosz(amplaa(j),f,iay,kx_aa(j),ky_aa(j),0.)
         case ('sinxsiny'); call sinx_siny_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
+        case ('sinx_cosy_ey'); call sinx_cosy_ey(amplaa(j),f,iay,kx_aa(j),ky_aa(j),0.)
         !!!case ('xsiny'); call x_siny_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.,xbot=x0aa,nexp=nexp_aa)
         case ('x1siny'); call x1_siny_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.,phasey_aa(j))
         case ('x32siny'); call x32_siny_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.,phasey_aa(j))
