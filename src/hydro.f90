@@ -9515,6 +9515,15 @@ module Hydro
 
     call copy_addr(velocity_floor,p_par(139))
 
+    call copy_addr(it11,p_par(140)) ! int
+    call copy_addr(it12,p_par(141)) ! int
+    call copy_addr(it13,p_par(142)) ! int
+    call copy_addr(it21,p_par(143)) ! int
+    call copy_addr(it22,p_par(144)) ! int
+    call copy_addr(it23,p_par(145)) ! int
+    call copy_addr(it31,p_par(146)) ! int
+    call copy_addr(it32,p_par(147)) ! int
+    call copy_addr(it33,p_par(148)) ! int
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Hydro
