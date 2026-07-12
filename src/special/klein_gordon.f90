@@ -353,6 +353,10 @@ module Special
 
       offset = 0
       if(lspherical_coords .and. ny==1 .and. nz==1) then
+        !This is for simulating the expansion of a single bubble in 1d radial,
+        !where tanh is not a proper solution since dphi/dr at r=0 is not 0.
+        !Thus we smoothly (continuos second derivative) connect a polynomial from l1 to continuation_offset
+        !that has dphi/dr 0 at r=0 to not produce any possible numerical problems
         offset = continuation_offset
         r = x(l1+offset)
 
@@ -622,7 +626,6 @@ module Special
       real,  dimension (mx,my,mz,mfarray) :: f
       real :: Vpotential, Hubble_ini, phi_gam, amplphi_BD, amplee_BD, deriv_prefactor
       integer :: i,j
-      real :: lnascale, r, u
       real, dimension(3) :: pos
 !
       intent(inout) :: f
@@ -868,7 +871,6 @@ module Special
       integer ::  i, j
       real, dimension(nx) :: friction_coeff
       real, dimension(nx) :: u_dot_gphi
-      real, dimension(nx) :: S
       real, parameter :: T=1.
 
 ! phi
