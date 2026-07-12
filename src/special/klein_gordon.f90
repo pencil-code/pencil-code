@@ -1065,7 +1065,9 @@ module Special
       if(lpencil(i_ext_force) .and. lplasma_coupling) then
         p%omega_phi = -p%Vthermal_prime-p%plasma_friction
         p%ext_force(:,1)   = p%ext_force(:,1) -p%dphi*(p%omega_phi)
-        p%ext_force(:,2:4) = p%ext_force(:,2:4) + p%gphi*spread(p%omega_phi,2,3)
+        do i=1,3
+          p%ext_force(:,i+1) = p%ext_force(:,i+1) + p%gphi(:,i)*p%omega_phi
+        enddo
       endif
 !
     endsubroutine calc_pencils_special
@@ -2275,6 +2277,8 @@ module Special
     call copy_addr(delta_phi_prefactor,p_par(60))
     call copy_addr(lambda_phi_prefactor,p_par(61))
     call copy_addr(lspeed_of_light_dt,p_par(62)) ! bool
+    call copy_addr(plasma_coupling_coeff,p_par(63))
+    call copy_addr(lplasma_coupling,p_par(64)) ! bool
     endsubroutine pushpars2c
 !********************************************************************
 !********************************************************************
