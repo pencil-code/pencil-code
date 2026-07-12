@@ -1560,6 +1560,15 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #CFLAGS=-O2 -DFUNDERSC=1 #(tetralith*)
 #LD_MPI= #(tetralith*)
 ##
+## Axel on Arrhenius (ifc 7.1)
+##
+#FC=mpif90 #(arrhenius*)
+#FFLAGS=-O2 #(arrhenius*)
+#FFLAGS_DOUBLE=-autodouble #(arrhenius*)
+#CC=mpicc #(arrhenius*)
+#CFLAGS=-O2 -DFUNDERSC=1 #(arrhenius*)
+#LD_MPI= #(arrhenius*)
+##
 ## Axel on Hexagon (ftn using pgf90)
 ##
 #FC=ftn #(nid00*)
