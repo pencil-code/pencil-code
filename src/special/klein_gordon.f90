@@ -626,6 +626,7 @@ module Special
       real,  dimension (mx,my,mz,mfarray) :: f
       real :: Vpotential, Hubble_ini, phi_gam, amplphi_BD, amplee_BD, deriv_prefactor
       integer :: i,j
+      real :: lnascale
       real, dimension(3) :: pos
 !
       intent(inout) :: f
