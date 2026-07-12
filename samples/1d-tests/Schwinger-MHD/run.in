@@ -32,11 +32,17 @@
   lcorrect_integer_kcalc=T
 /
 &backreact_infl_run_pars
-  lbackreact_infl=T, ldt_backreact_infl=T, Ndiv=0, cdt_phi=1e-2
+  lbackreact_infl=T, ldt_backreact_infl=T, Ndiv=0, cdt_phi=1e-2, lold_ldt_phi=T !(should change to lold_ldt_phi=F, and could relax cdt_phi=.1)
   echarge_type='erun'
-  lrho_chi_inhom=T, wstate_tolerance=1e-10
+  lrho_chi_inhom=T, wstate_tolerance=1e-10  !(should omit wstate_tolerance, which changes the result)
   Gamma_phi0=1e-7, lrho_rad_apply2=F
-  lheating_keep_on=T, lwstate_crit=T, Gamma_phi_exp=-5.
+  lheating_keep_on=T, lwstate_crit=T, Gamma_phi_exp=-5.  !(should Gamma_phi_exp, but then it crashes with the current resolution or nu values)
+  !solve_phi_criterion='rhophi', a4rhophim_crit=1e-30   !(should be uncommented, but this changes currently the results)
+  !lold_lrho_chi_dtconstraint=F  !(should be uncommented, but this changes currently the results)
+  lrho_chi=T
+  !lswitch_toMHD_when_heating=F, lswitch_toMHD_when_nophi=F  !(should be uncommented, but this changes currently the results)
+  !lswitch_toMHD_at_lna=T, lna_switch_toMHD=4.17  !(should be uncommented, but this changes currently the results)
+  !lsmooth_Gamma_phi=T, dlnascale_reheating=1., lg_Gamma_phi_fraction_firststep=-8.  !(should be uncommented, but this changes currently the results)
 /
 &disp_current_run_pars
   luse_scale_factor_in_sigma=T
@@ -48,4 +54,8 @@
   alpf=90.
   llorentzforce_ee=T
   cdt_sigE=1.
+  lresistive_gauge_ee=T
+  !llate_reset_el_pencil=T
+  linclude_dphiB_in_MHD=T, linclude_gphixE_in_MHD=T
+  lcorrect_sign_adphiB_term=T, lignore_adphiB_term_in_MHD_current=F
 /

@@ -110,6 +110,9 @@ Y 4e-6  1.757715853E-09   1.42285E-09
 Y 2e-6  4.961255698E-09   3.68848E-09
 Y 1e-6  9.564738555E-09   5.15715E-09  (clipped)
 
+updated to match settings in data/oksana/plasma/2D/Hbdn1024alpf90_rho28_ampl1_Gam9o8
+updated to minimize result from: pc_diffruns . ~/data/oksana/plasma/2D/Hbdn1024alpf90_rho28_ampl1_Gam9o8 | m
+
 in preparation
 
 ## Links:
