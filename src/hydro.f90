@@ -172,6 +172,8 @@ module Hydro
   integer :: nb_rings=0
   integer :: neddy=0
   integer :: iTij=0, ihless=0, nhless=0
+  integer :: iT11=0,iT12=0,iT13=0,iT21=0,iT22=0,iT23=0,iT31=0,iT32=0,iT33=0
+  integer :: i11=1,i22=2,i33=3,i12=4,i23=5,i13=6,i31=6
   real, dimension(:), allocatable :: thless, xhless, yhless, zhless
   real, dimension(:), allocatable :: Bsquared
   real :: cs201=1., cs20_corr=1., cs2011=impossible
@@ -1079,6 +1081,17 @@ module Hydro
       if (lconservative) then
         call farray_register_auxiliary('Tij',iTij,vector=6,communicated=.true.,rhs=.true.)
         if (llorentz_as_aux) call register_report_aux('lorentz', ilorentz,communicated=.true.,rhs=.true.)
+        iT11 = iTij-1+i11
+        iT22 = iTij-1+i22
+        iT33 = iTij-1+i33
+        iT12 = iTij-1+i12
+        iT23 = iTij-1+i23
+        iT13 = iTij-1+i13
+
+        iT21=iT12
+        iT32=iT23
+        iT31=iT13
+
       ! else
       !   if (lrelativistic) then
       !     call fatal_error('register_hydro','no lrelativistic without lconservative')
@@ -1755,8 +1768,6 @@ module Hydro
 !
       if (lconservative) then
         ! alberto: is this needed? if so, why not do it for f(..., ivv)?
-        f(:,:,:,iTij:iTij+5)=0.
-        if (llorentz_as_aux) f(:,:,:,ilorentz)=0.
         if (lmagnetic) then
           if (ibx==0) call fatal_error("initialize_hydro","must use lbb_as_comaux=T for lconservative=T")
           if (allocated(Bsquared)) deallocate(Bsquared)
@@ -3792,6 +3803,7 @@ module Hydro
       real, contiguous, dimension(:,:,:,:) :: f
       type (pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc
+      integer :: i
 
       if (lpenc_loc(i_T00) .and. ldensity) then
         if(ldensity_nolog) then
@@ -3804,12 +3816,9 @@ module Hydro
       if (lconservative) then
         if (lpenc_loc(i_T0i)) p%T0i=f(l1:l2,m,n,iux:iuz)
         if (lpenc_loc(i_Tij)) then
-          p%Tij(:,1) = f(l1:l2,m,n,iTij)
-          p%Tij(:,2) = f(l1:l2,m,n,iTij+1)
-          p%Tij(:,3) = f(l1:l2,m,n,iTij+2)
-          p%Tij(:,4) = f(l1:l2,m,n,iTij+3)
-          p%Tij(:,5) = f(l1:l2,m,n,iTij+4)
-          p%Tij(:,6) = f(l1:l2,m,n,iTij+5)
+          do i=1,6
+           p%Tij(:,i) = f(l1:l2,m,n,iTij-1+i)
+          enddo
         endif
       endif
     endsubroutine calc_Tij
@@ -4372,9 +4381,9 @@ module Hydro
 !
 !  diagonals first
 !
-        call der(f,iTij+0,tmp,1) ; df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tmp
-        call der(f,iTij+1,tmp,2) ; df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tmp
-        call der(f,iTij+2,tmp,3) ; df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tmp
+        call der(f,iT11,tmp,1) ; df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tmp
+        call der(f,iT22,tmp,2) ; df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tmp
+        call der(f,iT33,tmp,3) ; df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tmp
 !
 !  "Tij4" = T12
 !  "Tij5" = T23
@@ -4382,18 +4391,18 @@ module Hydro
 !  next the off-diagonals
 !  T_11,1 + T_12,2 + T_13,3 = (0,1) + (3,2) + (5,3); (T23=T32 does not enter)
 !
-        call der(f,iTij+3,tmp,2) ; df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tmp
-        call der(f,iTij+5,tmp,3) ; df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tmp
+        call der(f,iT12,tmp,2) ; df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tmp
+        call der(f,iT13,tmp,3) ; df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tmp
 !
 !  T_21,1 + T_22,2 + T_23,3 = (1,2) + (3,1) + (4,3); (T13=T31 does not enter)
 !
-        call der(f,iTij+3,tmp,1) ; df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tmp
-        call der(f,iTij+4,tmp,3) ; df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tmp
+        call der(f,iT21,tmp,1) ; df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tmp
+        call der(f,iT23,tmp,3) ; df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tmp
 !
 !  T_31,1 + T_32,2 + T_33,3 = (2,3) + (5,1) + (4,2); (T12=T21 does not enter)
 !
-        call der(f,iTij+5,tmp,1) ; df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tmp
-        call der(f,iTij+4,tmp,2) ; df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tmp
+        call der(f,iT31,tmp,1) ; df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tmp
+        call der(f,iT32,tmp,2) ; df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tmp
 
         if (lext_force) then
           do i=0,2
@@ -4842,26 +4851,17 @@ module Hydro
         if (idiag_T0z2m/=0) call sum_mn_name(p%T0i(:,3)**2,idiag_T0z2m)
         if (idiag_T0irms/=0) call sum_mn_name(p%T0i(:,1)**2 + p%T0i(:,2)**2 + &
                                               p%T0i(:,3)**2,idiag_T0irms,lsqrt=.true.)
-        if (idiag_Txxm/=0) call sum_mn_name(p%Tij(:,1),idiag_Txxm)
-        if (idiag_Tyym/=0) call sum_mn_name(p%Tij(:,2),idiag_Tyym)
-        if (idiag_Tzzm/=0) call sum_mn_name(p%Tij(:,3),idiag_Tzzm)
-        if (idiag_Txym/=0) call sum_mn_name(p%Tij(:,4),idiag_Txym)
-        if (idiag_Tyzm/=0) call sum_mn_name(p%Tij(:,5),idiag_Tyzm)
-        if (idiag_Tzxm/=0) call sum_mn_name(p%Tij(:,6),idiag_Tzxm)
+        if (idiag_Txxm/=0) call sum_mn_name(p%Tij(:,i11),idiag_Txxm)
+        if (idiag_Tyym/=0) call sum_mn_name(p%Tij(:,i22),idiag_Tyym)
+        if (idiag_Tzzm/=0) call sum_mn_name(p%Tij(:,i33),idiag_Tzzm)
+        if (idiag_Txym/=0) call sum_mn_name(p%Tij(:,i12),idiag_Txym)
+        if (idiag_Tyzm/=0) call sum_mn_name(p%Tij(:,i23),idiag_Tyzm)
+        if (idiag_Tzxm/=0) call sum_mn_name(p%Tij(:,i31),idiag_Tzxm)
         if (idiag_velxrms/=0) call sum_mn_name(p%velx(:,1)**2 + p%velx(:,2)**2 + p%velx(:,3)**2,&
                                                idiag_velxrms,lsqrt=.true.)
         if (idiag_velxx2m/=0) call sum_mn_name(p%velx(:,1)**2,idiag_velxx2m)
         if (idiag_velxy2m/=0) call sum_mn_name(p%velx(:,2)**2,idiag_velxy2m)
         if (idiag_velxz2m/=0) call sum_mn_name(p%velx(:,3)**2,idiag_velxz2m)
-        ! if (iTij/=0) then
-        !   !Kishore: if iTij==0, we will end up doing an out of bounds access. Ideally, the quantities below would be pencils, but I am just doing a quick fix for now.
-        !   call sum_mn_name(f(l1:l2,m,n,iTij+0),idiag_Txxm)
-        !   call sum_mn_name(f(l1:l2,m,n,iTij+1),idiag_Tyym)
-        !   call sum_mn_name(f(l1:l2,m,n,iTij+2),idiag_Tzzm)
-        !   call sum_mn_name(f(l1:l2,m,n,iTij+3),idiag_Txym)
-        !   call sum_mn_name(f(l1:l2,m,n,iTij+4),idiag_Tyzm)
-        !   call sum_mn_name(f(l1:l2,m,n,iTij+5),idiag_Tzxm)
-        ! endif
         call sum_mn_name(p%ekin,idiag_ekin)
         call sum_mn_name(p%ekin,idiag_EEK)
         if (idiag_EEK2/=0) call sum_mn_name(p%ekin**2,idiag_EEK2)
@@ -5981,13 +5981,10 @@ module Hydro
         enddo
 !
 !  off-diagonal terms:
-!  "Tij4" = T12
-!  "Tij5" = T23
-!  "Tij6" = T31
 !
-        f(:,m,n,iTij+3+0)=rho_gam21*f(:,m,n,iuu+0)*f(:,m,n,iuu+1)
-        f(:,m,n,iTij+3+1)=rho_gam21*f(:,m,n,iuu+1)*f(:,m,n,iuu+2)
-        f(:,m,n,iTij+3+2)=rho_gam21*f(:,m,n,iuu+2)*f(:,m,n,iuu+0)
+        f(:,m,n,iT12)=rho_gam21*f(:,m,n,iux)*f(:,m,n,iuy)
+        f(:,m,n,iT23)=rho_gam21*f(:,m,n,iuy)*f(:,m,n,iuz)
+        f(:,m,n,iT31)=rho_gam21*f(:,m,n,iuz)*f(:,m,n,iux)
 !
 !  compute velocity, if as comaux
 !
@@ -9517,6 +9514,7 @@ module Hydro
     call copy_addr(cs2011,p_par(138))
 
     call copy_addr(velocity_floor,p_par(139))
+
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Hydro
