@@ -28,6 +28,7 @@
 
     integer :: itau_bb, itau_bbxx, itau_bbxy, itau_bbxz, itau_bbyy, itau_bbyz, itau_bbzz
     integer :: itau_hydro, itau_hydroxx, itau_hydroxy, itau_hydroxz, itau_hydroyy, itau_hydroyz, itau_hydrozz
+    integer :: itau_strain, itau_strainxx, itau_strainxy, itau_strainxz, itau_strainyy, itau_strainyz, itau_strainzz
     integer :: isgs_emf, isgs_emfx, isgs_emfy, isgs_emfz
 
     character(LEN=fnlen) :: model='model', config_file="config_mlp_native.yaml", model_file
@@ -42,7 +43,7 @@
     namelist /training_run_pars/ config_file, model, it_train, it_train_start, it_train_chkpt, &
                                  luse_trained_tau, lscale, lwrite_sample, max_loss, lroute_via_cpu,&
                                  it_train_end, lrun_epoch, dt_train, t_train_start, t_train_end, t_train_chkpt,&
-                                 ltrain_mag,ltrain_dens, start_infer,max_loss, smoothing_radius
+                                 ltrain_mag,ltrain_dens, start_infer,max_loss, lconservative, smoothing_radius
 !
     character(LEN=fnlen) :: model_output_dir, checkpoint_output_dir
     integer :: istat, train_step_ckpt, val_step_ckpt
@@ -57,6 +58,7 @@
     !TP: these are by default false now
     logical :: ltrain_mag  = .false.
     logical :: ltrain_dens = .false.
+    logical :: lconservative = .false.
 
     contains
 !***************************************************************
@@ -115,6 +117,9 @@
 !
       if(lhydro) then
         f(:,:,:,itau_hydroxx:itau_hydroyz)   = 0.0
+        if(lconservative) then
+            f(:,:,:,itau_strainxx:itau_strainyz) = 0.0
+        endif
       endif
 !
 !
@@ -146,6 +151,9 @@
 !
       if(lhydro) then
         call farray_register_auxiliary('tau_hydro',itau_hydro,vector=6,rhs=.true.,communicated=.true.)
+        if(lconservative) then
+            call farray_register_auxiliary('tau_hydro_strain',itau_strain,vector=6,rhs=.true.,communicated=.true.)
+        endif
       endif
 
       if (ltrain_mag) then 
@@ -157,6 +165,10 @@
 !
       if (lhydro) then
         itau_hydroxx=itau_hydro; itau_hydroyy=itau_hydro+1; itau_hydrozz=itau_hydro+2; itau_hydroxy=itau_hydro+3; itau_hydroxz=itau_hydro+4; itau_hydroyz=itau_hydro+5
+        if(lconservative) then
+            itau_strainxx=itau_strain; itau_strainyy=itau_strain+1; itau_strainzz=itau_strain+2; itau_strainxy=itau_strain+3;
+            itau_strainxz=itau_strain+4; itau_strainyz=itau_strain+5
+        endif
       endif
 
       if (ltrain_mag) then
@@ -448,14 +460,22 @@
       real, contiguous,dimension(:,:,:,:) :: df
 
       real, dimension(nx,3) :: div_hydro_sgs
+      real, dimension(nx,3) :: div_hydro_strain_sgs
       real, dimension(nx,3) :: div_mag_sgs
+      
 
 
       if (ltrained) then 
-        if (lhydro)     call div_tensor(f,div_hydro_sgs,itau_hydro)
+        if (lhydro) then   
+            call div_tensor(f,div_hydro_sgs,itau_hydro)
+            if (lconservative) call div_tensor(f,div_hydro_strain_sgs,itau_strain)
+        endif
         if (ltrain_mag) call div_tensor(f,div_mag_sgs,itau_bb)
         if (t >= start_infer) then
-          if (lhydro) df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - div_hydro_sgs
+          if (lhydro) then 
+              df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - div_hydro_sgs
+              if (lconservative) df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - div_hydro_strain_sgs
+          endif
           if (ltrain_mag) then
             if(lhydro) df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - div_mag_sgs
             df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) - f(l1:l2,m,n,isgs_emfx:isgs_emfz)

@@ -43,6 +43,8 @@
   t_train_start=0
   t_train_end=69.752
   t_train_chkpt=6.8
+  ! This is kind of stupid, there should be a way to get this logical parameter from hydro module
+  lconservative=F
 /
 
 &gpu_run_pars
