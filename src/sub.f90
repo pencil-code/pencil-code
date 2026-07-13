@@ -1751,27 +1751,84 @@ module Sub
 !
     endsubroutine div
 !***********************************************************************
-    subroutine div_tensor(f,divergence,itensor)
+    subroutine div_tensor(f,divergence,itensor,lyz_first)
       !Calculates the divergence of a symmetric tensor
       !Assumes the tensor is symmetric and that indices are in the following increasing order:
-      !itensor=xx,yy,zz,xy,xz,yz
+      !itensor=xx,yy,zz,xy,xz,yz or optionally xx,yy,zz,xy,yz,xz
+
+      use Deriv, only: der
+      use General, only: loptest
 
       real, contiguous, dimension(:,:,:,:), intent(in) :: f
       real, dimension(nx,3), intent(out) :: divergence
       integer, intent(in) :: itensor
-      integer :: itensor_xx,itensor_yy,itensor_zz
-      integer :: itensor_xy,itensor_xz,itensor_yz
+      logical, intent(in), optional :: lyz_first
+      integer :: i11,i22,i33
+      integer :: i12,i13,i23
+      real, dimension(nx) :: d11_1, d12_2, d13_3
+      real, dimension(nx) :: d12_1, d22_2, d23_3
+      real, dimension(nx) :: d13_1, d23_2, d33_3
+      real, dimension(nx) :: f11,f12,f13,f22,f23,f33
 
-      itensor_xx = itensor
-      itensor_yy = itensor+1
-      itensor_zz = itensor+2
-      itensor_xy = itensor+3
-      itensor_xz = itensor+4
-      itensor_yz = itensor+5
+      i11 = itensor
+      i22 = itensor+1
+      i33 = itensor+2
+      i12 = itensor+3
 
-      call div(f,0,divergence(:,1),inds=(/itensor_xx,itensor_xy,itensor_xz/))
-      call div(f,0,divergence(:,2),inds=(/itensor_xy,itensor_yy,itensor_yz/))
-      call div(f,0,divergence(:,3),inds=(/itensor_xz,itensor_yz,itensor_zz/))
+      if(loptest(lyz_first)) then
+        i23 = itensor+4
+        i13 = itensor+5
+      else
+        i13 = itensor+4
+        i23 = itensor+5
+      endif
+
+      call der(f,i11,d11_1,1)
+      call der(f,i12,d12_2,2)
+      call der(f,i13,d13_3,3)
+
+      call der(f,i12,d12_1,1)
+      call der(f,i22,d22_2,2)
+      call der(f,i23,d23_3,3)
+
+      call der(f,i13,d13_1,1)
+      call der(f,i23,d23_2,2)
+      call der(f,i33,d33_3,3)
+
+
+      divergence(:,1) = d11_1 + d12_2 + d13_3
+      divergence(:,2) = d12_1 + d22_2 + d23_3
+      divergence(:,3) = d13_1 + d23_2 + d33_3
+
+
+      if (lspherical_coords) then
+        f11 = f(l1:l2,m,n,i11)
+        f12 = f(l1:l2,m,n,i12)
+        f13 = f(l1:l2,m,n,i13)
+
+        f22 = f(l1:l2,m,n,i22)
+        f23 = f(l1:l2,m,n,i23)
+        f33 = f(l1:l2,m,n,i33)
+
+        divergence(:,1)=divergence(:,1) &
+             +r1_mn*(2.0*f11-f22-f33) &
+             +r1_mn*cotth(m)*f12
+        
+        divergence(:,2)=divergence(:,2) +&
+                3*r1_mn*f12 + cotth(m)*r1_mn*(f22-f33)
+      
+        divergence(:,3)=divergence(:,3) &
+             +3*r1_mn*f13 &
+             +2.0*r1_mn*cotth(m)*f23
+      endif
+      if (lcylindrical_coords) then
+         divergence(:,1) = divergence(:,1) &
+                 + rcyl_mn1*(f11-f22)
+         divergence(:,2) = divergence(:,2) &
+                 + 2*rcyl_mn1*(f12)
+         divergence(:,3) = divergence(:,2) &
+                 + 1*rcyl_mn1*f13
+      endif
 
     endsubroutine div_tensor
 !***********************************************************************

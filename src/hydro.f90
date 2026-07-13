@@ -173,7 +173,9 @@ module Hydro
   integer :: neddy=0
   integer :: iTij=0, ihless=0, nhless=0
   integer :: iT11=0,iT12=0,iT13=0,iT21=0,iT22=0,iT23=0,iT31=0,iT32=0,iT33=0
-  integer :: i11=1,i22=2,i33=3,i12=4,i23=5,i13=6,i31=6
+  integer :: i11=1,i22=2,i33=3,i12=4,i23=5,i13=6
+  !integer :: i11=1,i22=2,i33=3,i12=4,i13=5,i23=6
+  integer :: i31=-1
   real, dimension(:), allocatable :: thless, xhless, yhless, zhless
   real, dimension(:), allocatable :: Bsquared
   real :: cs201=1., cs20_corr=1., cs2011=impossible
@@ -1068,7 +1070,7 @@ module Hydro
         igu21=iguij+3; igu22=iguij+4; igu23=iguij+5
         igu31=iguij+6; igu32=iguij+7; igu33=iguij+8
       endif
-       
+
 
 !!
 !!  Fourier transformed uu as aux
@@ -1078,6 +1080,8 @@ module Hydro
 !
 !  Tij and possibly relativistic Lorentz factor as aux
 !
+
+      i31 = i13
       if (lconservative) then
         call farray_register_auxiliary('Tij',iTij,vector=6,communicated=.true.,rhs=.true.)
         if (llorentz_as_aux) call register_report_aux('lorentz', ilorentz,communicated=.true.,rhs=.true.)
@@ -4324,7 +4328,7 @@ module Hydro
 !***********************************************************************
     subroutine advec_uu(f,df,p)
 
-      use Sub, only: dot, dot2
+      use Sub, only: dot, dot2,div_tensor
       use Deriv, only: der
 
       real, contiguous, dimension(:,:,:,:) :: f
@@ -4333,6 +4337,7 @@ module Hydro
 
       integer :: i,j
       real, dimension (nx) :: tmp, ugu_Schur_x, ugu_Schur_y, ugu_Schur_z
+      real, dimension (nx,3) :: divTij
       real, dimension (nx,3,3) :: puij_Schur
 
       if (.not. lconservative .and. .not. lweno_transport .and. &
@@ -4378,32 +4383,8 @@ module Hydro
       endif
 !
       if (ldensity.and.lconservative) then
-!
-!  diagonals first
-!
-        call der(f,iT11,tmp,1) ; df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tmp
-        call der(f,iT22,tmp,2) ; df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tmp
-        call der(f,iT33,tmp,3) ; df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tmp
-!
-!  "Tij4" = T12
-!  "Tij5" = T23
-!  "Tij6" = T31
-!  next the off-diagonals
-!  T_11,1 + T_12,2 + T_13,3 = (0,1) + (3,2) + (5,3); (T23=T32 does not enter)
-!
-        call der(f,iT12,tmp,2) ; df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tmp
-        call der(f,iT13,tmp,3) ; df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tmp
-!
-!  T_21,1 + T_22,2 + T_23,3 = (1,2) + (3,1) + (4,3); (T13=T31 does not enter)
-!
-        call der(f,iT21,tmp,1) ; df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tmp
-        call der(f,iT23,tmp,3) ; df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tmp
-!
-!  T_31,1 + T_32,2 + T_33,3 = (2,3) + (5,1) + (4,2); (T12=T21 does not enter)
-!
-        call der(f,iT31,tmp,1) ; df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tmp
-        call der(f,iT32,tmp,2) ; df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tmp
-
+        call div_tensor(f,divTij,iTij,lyz_first=.true.)
+        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz)- divTij
         if (lext_force) then
           do i=0,2
             df(l1:l2,m,n,iuu+i)=df(l1:l2,m,n,iuu+i)+p%ext_force(:,2+i)

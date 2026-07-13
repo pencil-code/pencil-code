@@ -2438,14 +2438,6 @@ module Density
       if (lrelativistic) lpenc_requested(i_lorentz)=.true.
       if (lhiggsless)  lpenc_requested(i_hless)=.true.
 
-      if(lext_force) then
-        lpenc_requested(i_rho) =.true.
-        lpenc_requested(i_rho1)=.true.
-        lpenc_requested(i_glnrho)=.true.
-        if(.not. lconservative) then
-          lpenc_requested(i_uglnrho)=.true.
-        endif
-      endif
 !
     endsubroutine pencil_criteria_density
 !***********************************************************************
