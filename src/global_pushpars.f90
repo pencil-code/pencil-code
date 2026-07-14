@@ -476,6 +476,10 @@ contains
     call copy_addr(lbaryons,p_par(1421)) ! bool
     call copy_addr(density_scale_factor,p_par(1422))
 
+    call copy_addr(lperturbative_reheating,p_par(1423)) ! bool
+    call copy_addr(phi,p_par(1424))
+    call copy_addr(lreheating_hom,p_par(1425)) ! bool
+    call copy_addr(ilnrho_phi,p_par(1426)) ! int
   endsubroutine pushpars2c
 !***********************************************************************
 endmodule Global_pushpars

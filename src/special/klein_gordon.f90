@@ -2371,6 +2371,8 @@ module Special
     call copy_addr(lspeed_of_light_dt,p_par(62)) ! bool
     call copy_addr(plasma_coupling_coeff,p_par(63))
     call copy_addr(lplasma_coupling,p_par(64)) ! bool
+    call copy_addr(w_phi,p_par(65))
+    call copy_addr(g_phi,p_par(66))
     endsubroutine pushpars2c
 !********************************************************************
 !********************************************************************
