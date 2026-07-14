@@ -24,7 +24,7 @@ module Initcond
   public :: hatwave
   public :: acosy
   public :: sph_constb,tanh_hyperbola,sech2x,coalesce_tubes,coalesce_tubes_pe
-  public :: gaunoise, posnoise, posnoise_rel
+  public :: gaunoise, gaunoise_lnrho, posnoise, posnoise_rel
   public :: gaunoise_rprof
   public :: gaussian, gaussian3d, gaussianpos
   public :: ABC_field, beltrami, bessel_x, bessel_az_x
@@ -5026,6 +5026,62 @@ module Initcond
 !
 !
     endsubroutine gaunoise_scal
+!***********************************************************************
+!! subroutine gaunoise_lnrho(ampl,f,i)
+!!
+!!  Add Gaussian (= normally distributed) white noise for variable i for lnrho
+!!
+!!      real :: ampl
+!!      real, dimension (mx,my,mz,mfarray) :: f
+!!      integer :: i
+!!
+!!      real, dimension (mx) :: r,p,tmp
+!!
+!!      intent(in)    :: ampl,i
+!!      intent(inout) :: f
+!!
+!!      if (ampl==0) then
+!!        if (lroot) print*,'gaunoise_lnrho: ampl=0 for i=',i
+!!      else
+!!        if ((ip<=8).and.lroot) print*,'gaunoise_lnrho: i=',i
+!!        if (lroot) print*,'gaunoise_lnrho: variable i=',i
+!!        do n=1,mz; do m=1,my!
+!!          call random_number_wrapper(r)
+!!          call random_number_wrapper(p)
+!!          tmp=sqrt(-2*log(r))*sin(2*pi*p)
+!!          f(:,m,n,i)=f(:,m,n,i)+ampl+tmp
+!!        enddo; enddo
+!!      endif
+!!
+!!    endsubroutine gaunoise_lnrho
+!***********************************************************************
+  subroutine gaunoise_lnrho(ampl,f,i)
+!
+!  Add Gaussian (= normally distributed) white noise for variable i for rho
+!
+      real :: ampl
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: i
+!
+      real, dimension (mx) :: r,p,tmp
+!
+      intent(in)    :: ampl,i
+      intent(inout) :: f
+!
+      if (ampl==0) then
+        if (lroot) print*,'gaunoise_lnrho: ampl=0 for i=',i
+      else
+        if ((ip<=8).and.lroot) print*,'gaunoise_lnrho: i=',i
+        if (lroot) print*,'gaunoise_lnrho: variable i=',i
+        do n=1,mz; do m=1,my
+          call random_number_wrapper(r)
+          call random_number_wrapper(p)
+          tmp=sqrt(-2*log(r))*sin(2*pi*p)
+          f(:,m,n,i)=f(:,m,n,i)+log(exp(ampl)*exp(1.0d5*exp(ampl)*tmp))
+        enddo; enddo
+      endif
+!
+    endsubroutine gaunoise_lnrho
 !***********************************************************************
     subroutine gaunoise_prof_vect(ampl,f,i1,i2)
 !

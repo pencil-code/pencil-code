@@ -499,6 +499,7 @@ module Cdata
   logical :: lshock_heat = .true.
   logical :: lklein_gordon = .false.
   logical :: ldisp_current = .false.
+  logical :: lperturbative_reheating=.false., lreheating_vacuum=.false., lreheating_hom=.false. ! Sovan
   real :: density_scale_factor=impossible
 !
 !  Used together with entropy, turns iss into ilntt (i.e., entropy
@@ -520,6 +521,7 @@ module Cdata
 !  Variable indices (default zero, set later by relevant physics modules).
 !
   integer :: ilnrho=0, irho=0
+  integer :: ilnrho_phi=0 !, ilna=0 ! Sovan
   integer :: irho_b=0, iss_b=0 ! Anelastic auxiliary variables (base state)
   integer, dimension(ndustrad) :: iapn=0
   integer :: ipp,irhs=0,iTTold=0,irhsx=0,irhsy=0,irhsz=0

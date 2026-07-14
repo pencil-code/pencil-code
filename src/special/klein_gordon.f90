@@ -177,6 +177,12 @@ module Special
   real :: plasma_coupling_coeff=0.0
   logical :: lplasma_coupling=.false.
   integer :: continuation_offset = 0
+  
+! Sovan : Perturbative Reheating
+!
+  real :: w_phi=0.0, G_phi=0.0, lnrho_phi0=0.0, rho_phi
+!  logical :: lperturbative_reheating=.false., lreheating_vacuum=.false., lreheating_hom=.false.
+
 
 ! Video data
  integer :: ivid_del2phi=0,ivid_Vprime=0,ivid_gphi1=0,ivid_g2phi1=0,ivid_V=0
@@ -207,7 +213,7 @@ module Special
       V0_usr, v_usr, alpha_usr, beta_usr, lphi_normalized_units, bubble_size_factor, &
       bubble_wall_width_factor,number_of_bubbles,bubble_positions, &
       beta,bubble_size,bubble_wall_width,linitialize_seed, &
-      chi_quartic, continuation_offset
+      chi_quartic, continuation_offset, rho_phi, w_phi, G_phi, lnrho_phi0
 !
   namelist /special_run_pars/ &
       initspecial, phi0, dphi0, phimass, sign_phimass2, eps, ascale_ini, &
@@ -218,7 +224,8 @@ module Special
       coupl_phipsi, c_psi, lspeed_of_light_dt,lnucleate_bubbles, bubble_size_factor,&
       max_bubble_nucleation_rate, bubble_wall_width_factor,number_of_bubbles,&
       lgenerate_bubble_times,beta,nucleation_rate_choice,bubble_position_criteria,tf,&
-      bubble_size,bubble_wall_width,plasma_coupling_coeff,lplasma_coupling
+      bubble_size,bubble_wall_width,plasma_coupling_coeff,lplasma_coupling, &
+      rho_phi, w_phi, G_phi, lnrho_phi0
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -239,6 +246,8 @@ module Special
   integer :: idiag_lnam=0       ! DIAG_DOC: $\left<\ln a\right>$
   integer :: idiag_Vprimem=0    ! DIAG_DOC: $\left<V_{,\phi}\right>$
   integer :: idiag_Vprimepsim=0 ! DIAG_DOC: $\left<V_{,\psi}\right>$
+  integer :: idiag_rho_phi=0   ! DIAG_DOC: $\left<\rho phi\right>$
+  integer :: idiag_a=0    ! DIAG_DOC: $\left<\ascale\right>$ !Sovan
   integer :: idiag_ddotam=0     ! DIAG_DOC: $a''/a$
   integer :: idiag_a2rhopm=0    ! DIAG_DOC: $a^2 (rho+p)$
   integer :: idiag_a2rhom=0     ! DIAG_DOC: $a^2 rho$
@@ -306,6 +315,9 @@ module Special
       endif
 !
       if (lflrw) call farray_register_ode('lna',ilna)
+      if (lperturbative_reheating.and.lreheating_hom) then ! Sovan
+        call farray_register_ode('ilnrho_phi',ilnrho_phi)
+      endif
       if (lrho_chi) call farray_register_ode('infl_rho_chi',iinfl_rho_chi)
 !
 !  for power spectra, it is convenient to use ispecialvar and
@@ -326,6 +338,21 @@ module Special
       call put_shared_variable('lphi_hypercharge',lphi_hypercharge)
       call put_shared_variable('lwaterfall',lwaterfall)
       call put_shared_variable('lflrw',lflrw)
+!
+! Sovan
+      if (ldensity.and.lperturbative_reheating) then
+        call put_shared_variable('w_phi',w_phi)
+        call put_shared_variable('G_phi',G_phi)
+        call put_shared_variable('rho_phi',rho_phi)
+        call put_shared_variable('a2',a2)
+        call put_shared_variable('a21',a21)
+      endif
+!
+!      if (ldensity) then
+!        call put_shared_variable('lperturbative_reheating',lperturbative_reheating)
+!        call put_shared_variable('lreheating_hom',lreheating_hom)
+!        call put_shared_variable('lreheating_vacuum',lreheating_vacuum)
+!      endif
 !
     endsubroutine register_special
 !***********************************************************************
@@ -540,6 +567,14 @@ module Special
         lpsi_hom=.false.
         lallow_bprime_zero=.false.
         mass_chi=0.
+      endif
+! Sovan :
+      if (lperturbative_reheating) then
+!        if (lhydro.and.lconservative)
+!        if (lhydro) call fatal_error('initialize_density', & ! added the lhydro flag with lconservative ! Sovan
+!                           'choose lconservative=F to run perturbative reheating')
+        ! give initial condition for ODE when using homogeneous reheating
+        if (ilnrho_phi /= 0) f_ode(ilnrho_phi)=lnrho_phi0
       endif
 
       ! if iee = 0 then disp_current module is not called
@@ -852,6 +887,11 @@ module Special
         lpenc_requested(i_gphi) = .true.
       endif
 !
+      if (ldensity.and.lperturbative_reheating) then ! Sovan
+        lpenc_requested(i_rho)=.true.
+!        lpenc_requested(i_lnrhon)=.true.
+      endif
+!
     endsubroutine pencil_criteria_special
 !***********************************************************************
     subroutine calc_pencils_special(f,p)
@@ -1092,6 +1132,8 @@ module Special
         case ('friedmann')
           Hscript=sqrt((8.*pi/3.)*a2rhom_all)
           if (lgpu) call get_a2
+        case ('perturbative_reheating') ! Sovan
+          Hscript=sqrt(a2rhom_all/3.0)
         case default
           call fatal_error("dspecial_dt: No such Hscript_choice: ", trim(Hscript_choice))
       endselect
@@ -1373,6 +1415,11 @@ module Special
       call get_Hscript_and_a2(Hscript,a2rhom_all)
       if (lflrw) df_ode(ilna)=df_ode(ilna)+Hscript
 !
+      if (lperturbative_reheating.and.lreheating_hom) then ! Sovan
+        rho_phi=exp(f_ode(ilnrho_phi))
+        df_ode(ilnrho_phi)=df_ode(ilnrho_phi)-ascale*(1 + w_phi)*G_phi!*rho_phi
+      endif
+!
 !  Energy density of the charged particles.
 !  This is currently only done for <sigE>*<E^2>, and not for <sigE*E^2>.
 !
@@ -1415,6 +1462,7 @@ module Special
         if (lflrw) lnascale=f_ode(ilna)
         call save_name(Hscript_diagnos,idiag_Hscriptm)
         call save_name(lnascale,idiag_lnam)
+        call save_name(ascale,idiag_a) ! Sovan
         call save_name(ddotam_all_diagnos,idiag_ddotam)
         call save_name(a2rhopm_all_diagnos,idiag_a2rhopm)
         call save_name(a2rhom_all_diagnos,idiag_a2rhom)
@@ -1422,6 +1470,7 @@ module Special
         call save_name(a2rhogphim_all_diagnos,idiag_a2rhogphim)
         call save_name(a2rhopsim_all_diagnos,idiag_a2rhopsim)
         call save_name(a2rhogpsim_all_diagnos,idiag_a2rhogpsim)
+        call save_name(rho_phi,idiag_rho_phi) ! Sovan
         call save_name(rho_chi,idiag_rho_chi)
         call save_name(sigEm_all_diagnos,idiag_sigEma)
         call save_name(sigBm_all_diagnos,idiag_sigBma)
@@ -1569,6 +1618,7 @@ module Special
         idiag_a2rhogpsim=0; idiag_a2rhopsim=0
         idiag_Vprimem=0; idiag_Vprimepsim=0
         ivid_del2phi=0; ivid_Vprime=0; ivid_gphi1=0; ivid_g2phi1=0; ivid_V=0
+        idiag_a=0; idiag_rho_phi=0 !Sovan
       endif
 !
       do iname=1,nname
@@ -1581,11 +1631,13 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'gphirms',idiag_gphirms)
         call parse_name(iname,cname(iname),cform(iname),'Hscriptm',idiag_Hscriptm)
         call parse_name(iname,cname(iname),cform(iname),'lnam',idiag_lnam)
+        call parse_name(iname,cname(iname),cform(iname),'ascale',idiag_a) !Sovan
         call parse_name(iname,cname(iname),cform(iname),'ddotam',idiag_ddotam)
         call parse_name(iname,cname(iname),cform(iname),'a2rhopm',idiag_a2rhopm)
         call parse_name(iname,cname(iname),cform(iname),'a2rhom',idiag_a2rhom)
         call parse_name(iname,cname(iname),cform(iname),'a2rhophim',idiag_a2rhophim)
         call parse_name(iname,cname(iname),cform(iname),'a2rhogphim',idiag_a2rhogphim)
+        call parse_name(iname,cname(iname),cform(iname),'rho_phi',idiag_rho_phi) !Sovan
         call parse_name(iname,cname(iname),cform(iname),'rho_chi',idiag_rho_chi)
         call parse_name(iname,cname(iname),cform(iname),'sigEma',idiag_sigEma)
         call parse_name(iname,cname(iname),cform(iname),'sigBma',idiag_sigBma)
@@ -1763,6 +1815,9 @@ module Special
       if (lflrw) then
         lnascale=f_ode(ilna)
         ascale=exp(lnascale)
+        if (lperturbative_reheating.and.lreheating_hom) then ! Sovan
+          rho_phi=exp(f_ode(ilnrho_phi))
+        endif
       endif
       a2=ascale**2
       a21=1./a2
@@ -1899,6 +1954,7 @@ module Special
       use Sub, only: dot2_mn, grad, curl, dot_mn
 !
       real,  dimension (mx,my,mz,mfarray), intent(in) :: f
+      real :: w_r, w_p, Gamma_E
       real :: sigE1m,sigB1m
 !
 !  If requested, calculate here <dphi**2+gphi**2+(4./3.)*(E^2+B^2)/a^2>.
@@ -1908,6 +1964,7 @@ module Special
       call get_a2
       call mpibcast_real(a2)
       call mpibcast_real(a21)
+      call mpibcast_real(rho_phi) ! Sovan
 !
 !  In the following loop, go through all penciles and add up results to get e2m, etc.
 !
@@ -1969,7 +2026,32 @@ module Special
       a2rhogphim_all_diagnos = a2rhogphim_all
       a2rhogpsim_all_diagnos = a2rhogpsim_all
       ddotam_all_diagnos     = ddotam_all
-
+!
+! alberto: for homogeneous reheating, contribution from phi added after adding over nx
+!
+      if (lperturbative_reheating) then
+        w_p = 0.5 * (1.0+3.0*w_phi)
+        if (ilnrho_phi /= 0) then
+          rho_phi=exp(f_ode(ilnrho_phi)) ! Sovan :
+        else
+          if (lreheating_hom) then
+            call fatal_error("special prep_ode_right", &
+                      'set flrw=T and run backreact_infl to use lreheating_hom')
+          else
+            if (lreheating_vacuum) then
+              w_r=1.+3.*w_phi
+              Gamma_E = G_phi*w_r/3.
+!              ascale = t**(2./w_r)
+              rho_phi = exp(-Gamma_E*(a21**w_p - 1.))
+            else
+              call fatal_error("backreact_infl prep_ode_right", &
+                      'set lreheating_hom=T or lreheating_vacuum=T to run with lperturbative_reheating=T')
+            endif
+          endif
+        endif
+        a2rhom_all=a2rhom_all+rho_phi*a21**w_p
+        ddotam_all = ddotam_all - (1 - 3*w_phi)*rho_phi*a21**w_p
+      endif
       if (lflrw) call get_Hscript_and_a2(Hscript,a2rhom_all)
 !
 !  Broadcast to other processors, and each processor uses put_shared_variable
@@ -2020,6 +2102,7 @@ module Special
       real, dimension (nx) :: ddota, phi, Vpotential, edotb, sigE1, sigB1
       real, dimension (nx) :: boost, gam_EB, eprime, bprime, jprime1
       real, dimension (nx) :: psi, dpsi, gpsi2, a2rhopsi_tmp
+      real, dimension (nx) :: rho_rad !, rho_phi
 !
 !  if requested, calculate here <dphi**2+gphi**2+(4./3.)*(E^2+B^2)/a^2>
 !  rhop is purely an output quantity
@@ -2063,6 +2146,12 @@ module Special
         a2rho=a2rho+a2rhopsi_tmp
       endif
 !
+      rho_rad=exp(f(l1:l2,m,n,ilnrho)) ! Sovan
+! alberto: added contribution from fluid for reheating
+! only for radiation domination (cs2 = 1/3)
+      if (ldensity.and.lperturbative_reheating) then
+        a2rho=a2rho+rho_rad*a21
+      endif
 !  Note the .5*fourthird factor in front of (e2+b2)*a21, but that is
 !  just for rhop, which is output quantity.
 !

@@ -139,7 +139,8 @@ module Param_IO
       lpoint, mpoint, npoint, lpoint2, mpoint2, npoint2, &
       lfatal_num_vector_369, density_scale_factor, &
       lsmooth_farray,farray_smooth_width, radius_diag, offset_min_calc, lread_oldsnap_nocoolprof, &
-      lswap_init_lnrho_uu, thetamin, lsymmgrid, lbaryons
+      lswap_init_lnrho_uu, thetamin, lsymmgrid, lbaryons, &
+      lperturbative_reheating, lreheating_vacuum, lreheating_hom
 !
   namelist /run_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lpole, ncoarse, &
@@ -238,6 +239,7 @@ module Param_IO
       Em_specflux, Hm_specflux, Hc_specflux, density_scale_factor, radius_diag, offset_min_calc, &
       lmorton_curve, lsuppress_parallel_reductions, &
       shared_mem_name, lupdate_cvs, lread_oldsnap_nocoolprof,thetamin, &
+      lperturbative_reheating, lreheating_vacuum, lreheating_hom, &
       lspec_tcrit, tspec_crit_log_interval, &
       lsnap_tcrit, tsnap_crit_log_interval, &
       lvid_tcrit, tvid_crit_log_interval

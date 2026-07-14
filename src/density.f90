@@ -63,6 +63,9 @@ module Density
   character(LEN=labellen) :: ireference_state='nothing', ieos_profile='nothing', tdep_kap_type='Sc'
   real :: reference_state_mass=0.
 !
+!  logical, pointer :: lperturbative_reheating, lreheating_vacuum, lreheating_hom
+  real, pointer :: G_phi, w_phi, rho_phi, a2, a21 ! Sovan
+!
 !  Schur flow quantities
 !
   real, dimension(1) :: Schur_dlnrho_RHS_xyzaver
@@ -559,6 +562,11 @@ module Density
       if (.not.lhydro .and. .not.lhydro_kinematic) then
         lcontinuity_gas=.false.
         if (lroot) print*, 'initialize_density: no hydro, turned off continuity equation'
+      endif
+!
+      if (.not.lhydro .and. lperturbative_reheating) then ! Sovan
+        lcontinuity_gas=.true.
+        if (lroot) print*, 'initialize_density: no hydro, turned on continuity equation'
       endif
 !
 !  Turn off continuity equation term for 0-D runs.  (MR: What about Schur?)
@@ -1065,6 +1073,21 @@ module Density
         if (lreference_state) total_mass = total_mass + reference_state_mass
       endif
 !
+!      if (ldensity) then
+!        call get_shared_variable('lperturbative_reheating',lperturbative_reheating)
+!        call get_shared_variable('lreheating_vacuum',lreheating_vacuum)
+!        call get_shared_variable('lreheating_hom',lreheating_hom)
+!      endif
+!
+!      if (lspecial.and.lperturbative_reheating) then
+      if (lperturbative_reheating) then ! Sovan
+        call get_shared_variable('G_phi',G_phi)
+        call get_shared_variable('w_phi',w_phi)
+        call get_shared_variable('rho_phi',rho_phi)
+        call get_shared_variable('a2',a2)
+        call get_shared_variable('a21',a21)
+      endif
+!
 !  Check if we are solving for relativistic bulk motions, not just EoS.
 !
       if (lhydro.and..not.lhydro_potential.and.iphiuu==0) then
@@ -1382,6 +1405,12 @@ module Density
         case ('gaussian-noise')
           if (lnrho_left(j) /= 0.) f(:,:,:,ilnrho)=lnrho_left(j)
           call gaunoise(ampllnrho(j),f,ilnrho,ilnrho)
+!!        case ('gaussian-noise-log')
+!!          if (lnrho_left(j) /= 0.) f(:,:,:,ilnrho)=lnrho_left(j)
+!!          call gaunoise_log(ampllnrho(j),f,ilnrho) ! Sovan
+        case ('gaussian-noise-log')
+          if (lnrho_left(j) /= 0.) f(:,:,:,ilnrho)=lnrho_left(j)
+          call gaunoise_lnrho(ampllnrho(j),f,ilnrho) ! Sahel
         case ('gaussian-noise-rprof')
           call gaunoise_rprof(ampllnrho(j),f,ilnrho,rnoise_int,rnoise_ext)
 !
@@ -2337,6 +2366,10 @@ module Density
           else
             lpenc_requested(i_uglnrho)=.true.
 !            lpenc_requested(i_ugrho)=.false.
+            if (lperturbative_reheating) then ! Sovan
+              lpenc_requested(i_rho1)=.true.
+!              lpenc_requested(i_lnrhon)=.true.
+            endif
           endif
         endif
       endif
@@ -2855,6 +2888,7 @@ module Density
       real, dimension (nx) :: density_rhs, density_hydro_rhs, u_dot_ext_force
       real, dimension (nx) :: prefactor=1., prefactor2=1., lorentz_gamma_inv2=1.
       real, dimension (nx,3) :: tmpv
+      real :: w_eos, Gamma_R, int_source
       integer :: i
 !
 !  Continuity equation.
@@ -2931,6 +2965,16 @@ module Density
             endif
           endif
           density_rhs=cs201*density_rhs
+          if (lperturbative_reheating) then
+            w_eos=0.5 * (2.-3.*w_phi)
+            Gamma_R=G_phi*(1.+w_phi)
+            int_source = Gamma_R*rho_phi*a2**w_eos
+            if (ldensity_nolog) then
+              density_rhs = density_rhs + int_source
+            else
+              density_rhs = density_rhs + p%rho1 * int_source
+            endif
+          endif
           if (lext_force) then
             ! reuse u_dot_ext_force from above, but with prefactor2
             u_dot_ext_force = p%ext_force(:,1)*prefactor2 - 2*u_dot_ext_force
