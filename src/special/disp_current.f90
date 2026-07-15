@@ -207,6 +207,8 @@ module Special
   integer :: idiag_e2mx = 0     ! YZAVG_DOC: $\langle E^2\rangle_{yz}$
   logical, pointer :: lext_force
 !
+  real, dimension (nx,3) :: dEdt
+  !$omp threadprivate(dEdt)
   contains
 !
 !***********************************************************************
@@ -1108,7 +1110,7 @@ module Special
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx,3) :: gtmp, dJdt, dEdt
+      real, dimension (nx,3) :: gtmp, dJdt
       real, dimension (nx) :: tmp, tmp2, del2a0
       real :: inflation_factor=0., mfpf=0., fppf=0.
       integer :: j
@@ -1418,10 +1420,6 @@ module Special
       !if (ldiagnos) call calc_diagnostics_special(f,p)
       if (ldiagnos) then
         call calc_diagnostics_special(f,p)
-        if (idiag_BdEdtm/=0) then
-          call dot(p%bb(:,2),dEdt,tmp)
-          call sum_mn_name(tmp,idiag_BdEdtm)
-        endif
       endif
 !
     endsubroutine dspecial_dt
@@ -1522,6 +1520,11 @@ module Special
         call calc_axion_term(p,tmp,p%gphi,alpf,lphi_hom)
         call calc_constrainteqn(p,tmp,constrainteqn)
         call sum_mn_name(constrainteqn,idiag_constrainteqn)
+      endif
+
+      if (idiag_BdEdtm/=0) then
+        call dot(p%bb(:,2),dEdt,tmp)
+        call sum_mn_name(tmp,idiag_BdEdtm)
       endif
 !
 !  Fractional timestep constraints.
