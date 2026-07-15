@@ -307,8 +307,8 @@ module Special
           "use unit_system='set' or put loverride_c_light=T")
       c_light2=c_light**2
 !
-      if(lhydro) then
-        call get_shared_variable("lext_force",lext_force)
+      if (lhydro) then
+        call get_shared_variable("lext_force",lext_force,caller='initialize_special')
       else
        allocate(lext_force)
        lext_force=.false.
@@ -382,7 +382,6 @@ module Special
       endif
 !
       call keep_compiler_quiet(f)
-
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -952,18 +951,18 @@ module Special
       endif
       if (alpf/=0.and..not.lklein_gordon) p%dphi=p%infl_dphi
       
-      if(lpenc_requested(i_ExB)) then
-       call cross_mn(p%el,p%ExB,p%ExB)
+      if (lpenc_requested(i_ExB)) then
+        call cross_mn(p%el,p%ExB,p%ExB)
       endif
 
-      if(lext_force) then
-       call dot_mn(p%uu,p%ExB,uExB)
-       conductivity = 1./eta
-       p%ext_force(:,1) = p%ext_force(:,1) -p%lorentz_gamma*(p%rhoe*p%udotE-conductivity*uExB-conductivity*p%e2)
-       do i=1,3
-         p%ext_force(:,i+1) = p%ext_force(:,i+1) -p%lorentz_gamma*((p%rhoe-conductivity*p%udotE)*p%el(:,i) &
-                               -p%rhoe*p%uxb(:,i) + conductivity*(p%ExB(:,i)-p%ub*p%bb(:,i) + p%b2*p%uu(:,i)))
-       enddo
+      if (lext_force) then
+        call dot_mn(p%uu,p%ExB,uExB)
+        conductivity = 1./eta
+        p%ext_force(:,1) = p%ext_force(:,1) -p%lorentz_gamma*(p%rhoe*p%udotE-conductivity*uExB-conductivity*p%e2)
+        do i=1,3
+          p%ext_force(:,i+1) = p%ext_force(:,i+1) -p%lorentz_gamma*((p%rhoe-conductivity*p%udotE)*p%el(:,i) &
+                              -p%rhoe*p%uxb(:,i) + conductivity*(p%ExB(:,i)-p%ub*p%bb(:,i) + p%b2*p%uu(:,i)))
+        enddo
       endif
 !
 !  Total contribution to the timestep. Define here the array dtsrc_sigE
@@ -1308,9 +1307,7 @@ module Special
 !
 !  Add here dEdt to df(l1:l2,m,n,iex:iez)
 !
-      if (ladvance_ee) then
-        df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)+dEdt
-      endif
+      if (ladvance_ee) df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)+dEdt
 !
 !  Compute eedot_as_aux; currently ignore alpf/=0.
 !  28-feb-26/axel: this should be removed; it is not used.
@@ -1411,16 +1408,12 @@ module Special
 !
 !  Detailed time step report.
 !
-      if (ldt_report) then
+      if (ldt_report) &
         print*,'Time step report from disp_current.: minval(1/sqrt(advec_cs2))=',minval(1./sqrt(advec_cs2))
-      endif
 !
 !  diagnostics
 !
-      !if (ldiagnos) call calc_diagnostics_special(f,p)
-      if (ldiagnos) then
-        call calc_diagnostics_special(f,p)
-      endif
+      if (ldiagnos) call calc_diagnostics_special(f,p)
 !
     endsubroutine dspecial_dt
 !***********************************************************************
@@ -1874,13 +1867,12 @@ module Special
       call copy_addr(linclude_dphib_in_mhd,p_par(60)) ! bool
       call copy_addr(linclude_gphixe_in_mhd,p_par(61)) ! bool
 
-    call copy_addr(lcorrect_sign_adphib_term,p_par(62)) ! bool
-    call copy_addr(lignore_adphib_term_in_mhd_current,p_par(63)) ! bool
-    call copy_addr(idiag_bcurlbm,p_par(64)) ! int
-    call copy_addr(idiag_bdedtm,p_par(65)) ! int
+      call copy_addr(lcorrect_sign_adphib_term,p_par(62)) ! bool
+      call copy_addr(lignore_adphib_term_in_mhd_current,p_par(63)) ! bool
+      call copy_addr(idiag_bcurlbm,p_par(64)) ! int
+
     endsubroutine pushpars2c
 !***********************************************************************
-!
 !********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
@@ -1890,5 +1882,4 @@ module Special
 !**                                                                **
     include '../special_dummies.inc'
 !********************************************************************
-!
 endmodule Special
