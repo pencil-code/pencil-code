@@ -88,6 +88,38 @@ module Special
 !
     endsubroutine register_special
 !***********************************************************************
+    subroutine read_special_init_pars(iomsg)
+!
+      character(LEN=iomsglen), intent(out) :: iomsg
+!
+      iomsg=""
+!
+    endsubroutine read_special_init_pars
+!***********************************************************************
+    subroutine write_special_init_pars(unit)
+!
+      integer, intent(in) :: unit
+!
+      call keep_compiler_quiet(unit)
+!
+    endsubroutine write_special_init_pars
+!***********************************************************************
+    subroutine read_special_run_pars(iomsg)
+!
+      character(LEN=iomsglen), intent(out) :: iomsg
+!
+      iomsg=""
+!
+    endsubroutine read_special_run_pars
+!***********************************************************************
+    subroutine write_special_run_pars(unit)
+!
+      integer, intent(in) :: unit
+!
+      call keep_compiler_quiet(unit)
+!
+    endsubroutine write_special_run_pars
+!***********************************************************************
     subroutine initialize_special(f)
 !
 !  called by run.f90 after reading parameters, but before the time loop
