@@ -180,7 +180,7 @@ module Special
   
 ! Sovan : Perturbative Reheating
 !
-  real :: w_phi=0.0, G_phi=0.0, lnrho_phi0=0.0, rho_phi
+  real :: w_phi=0.0, G_phi=0.0, lnrho_phi0=0.0, rho_phi=impossible
 !  logical :: lperturbative_reheating=.false., lreheating_vacuum=.false., lreheating_hom=.false.
 
 
@@ -2146,10 +2146,10 @@ module Special
         a2rho=a2rho+a2rhopsi_tmp
       endif
 !
-      rho_rad=exp(f(l1:l2,m,n,ilnrho)) ! Sovan
 ! alberto: added contribution from fluid for reheating
 ! only for radiation domination (cs2 = 1/3)
       if (ldensity.and.lperturbative_reheating) then
+        rho_rad=exp(f(l1:l2,m,n,ilnrho)) ! Sovan
         a2rho=a2rho+rho_rad*a21
       endif
 !  Note the .5*fourthird factor in front of (e2+b2)*a21, but that is
