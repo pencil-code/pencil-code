@@ -34,6 +34,7 @@
 
     logical :: lroute_via_cpu=.false., lfortran_launched, luse_trained_tau, lwrite_sample=.false., lscale=.true.
     real :: max_loss=1.e-4, dt_train=1.e-10
+    integer :: smoothing_radius=3
 
     integer :: idiag_loss=0            ! DIAG_DOC: torchfort training loss
     integer :: idiag_tauerror=0        ! DIAG_DOC: $\sqrt{\left<(\sum_{i,j} u_i*u_j - tau_{ij})^2\right>}$
@@ -41,7 +42,7 @@
     namelist /training_run_pars/ config_file, model, it_train, it_train_start, it_train_chkpt, &
                                  luse_trained_tau, lscale, lwrite_sample, max_loss, lroute_via_cpu,&
                                  it_train_end, lrun_epoch, dt_train, t_train_start, t_train_end, t_train_chkpt,&
-                                 ltrain_mag,ltrain_dens, start_infer
+                                 ltrain_mag,ltrain_dens, start_infer,max_loss, smoothing_radius
 !
     character(LEN=fnlen) :: model_output_dir, checkpoint_output_dir
     integer :: istat, train_step_ckpt, val_step_ckpt
@@ -643,6 +644,7 @@
     call copy_addr(input_channels,p_par(23)) ! int
     call copy_addr(output_channels,p_par(24)) ! int
     call copy_addr(start_infer,p_par(25)) ! real dconst
+    call copy_addr(smoothing_radius,p_par(26)) ! int
 
     endsubroutine pushpars2c
 !***********************************************************************
