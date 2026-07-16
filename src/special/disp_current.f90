@@ -1516,7 +1516,7 @@ module Special
       endif
 
       if (idiag_BdEdtm/=0) then
-        call dot(p%bb(:,2),dEdt,tmp)
+        call dot(p%bb,dEdt,tmp)
         call sum_mn_name(tmp,idiag_BdEdtm)
       endif
 !
