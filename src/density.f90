@@ -106,6 +106,7 @@ module Density
   real :: rescale_rho=1.0
   real :: xjump_mid=0.0,yjump_mid=0.0,zjump_mid=0.0
   real :: kgaussian_lnrho=0., initpower_lnrho=2, kpeak_lnrho=1., cutoff_lnrho=0.
+  real :: ncutoff_lnrho=1.0, initpower2_lnrho=2
   real :: Sc=0.0     !PAR_DOC: given value to compute kap_tdep (~diffrho) based on nu_tdep
   real, target :: reduce_cs2 = 1.0
   real :: cs201=1., cs20_corr=1.
@@ -144,6 +145,7 @@ module Density
   logical :: lreinitialize_lnrho=.false., lreinitialize_rho=.false.
   logical :: lsubtract_init_stratification=.false., lwrite_stratification=.false.
   logical :: lpress_equil_uu=.false.   !PAR_DOC: adjust lnrho so that .5*u2+cs2*lnrho=const.
+  logical :: lskip_projection=.false.
   real, dimension(:), allocatable :: rhobar
   character (len=fnlen) :: rhobar_file
   character (len=labellen), dimension(ninit) :: initlnrho='nothing' !PAR_DOC:
@@ -210,6 +212,7 @@ module Density
       lreduced_sound_speed, lrelativistic_eos, lrelativistic_eos_corr,  &
       lscale_to_cs2top, density_zaver_range, &
       ieos_profile, width_eos_prof, kpeak_lnrho, initpower_lnrho, cutoff_lnrho, &
+      ncutoff_lnrho, initpower2_lnrho, lskip_projection, &
       lconserve_total_mass, total_mass, ireference_state, lrho_flucz_as_aux,&
       ldensity_linearstart, xjump_mid, yjump_mid, zjump_mid, lscale_tobox_lnrho, &
       lrelativistic_eos_term1, lrelativistic_eos_term2, lpress_equil_uu
@@ -1177,6 +1180,7 @@ module Density
       real, dimension (nx) :: pot, prof, tmp
       real, dimension (ninit) :: lnrho_left,lnrho_right
       real :: lnrhoint,cs2int,pot0
+      real :: relhel_rho=0.
       real :: pot_ext,lnrho_ext,cs2_ext,tmp1,k_j2
       real :: zbot,ztop,haut
       real, dimension (nx) :: r_mn,TT
@@ -1188,7 +1192,7 @@ module Density
       real :: gamma, gamma_m1, dummy
       real, pointer :: gravitational_const
       real, dimension(:), allocatable :: theta_rhobar,rhobar_,A_rhobar_
-      logical :: lrhobar_exists
+      logical :: lrhobar_exists, lvectorpotential=.false.
       integer :: l,m,n
 !
       intent(inout) :: f
@@ -1891,6 +1895,11 @@ module Density
         case ('power_randomphase')
           call power_randomphase(ampllnrho(j),initpower_lnrho,kgaussian_lnrho,kpeak_lnrho,cutoff_lnrho, &
             f,ilnrho,ilnrho,lscale_tobox=.false.)
+
+        case ('power_randomphase_hel')
+          call power_randomphase_hel(ampllnrho(j),initpower_lnrho,initpower2_lnrho,cutoff_lnrho,&
+                                 ncutoff_lnrho,kpeak_lnrho,f,ilnrho,ilnrho,relhel_rho, &
+                                 kgaussian_lnrho,lskip_projection,lvectorpotential,lscale_tobox=lscale_tobox_lnrho)
 !
 !  Catch unknown values
 !
