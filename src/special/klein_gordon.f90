@@ -274,6 +274,13 @@ module Special
 
   integer :: ia0 = 0, iW0 = 0
 
+  integer :: ivel = 0
+  real :: previous_wall_vel = impossible
+  real :: min_distance = impossible
+  real :: next_wall_vel = 0.
+  real :: wall_gamma = impossible
+  logical :: lwall_friction = .false.
+
   contains
 !****************************************************************************
     subroutine register_special
@@ -467,8 +474,9 @@ module Special
 !
       use SharedVariables, only: get_shared_variable, put_shared_variable
       use FArrayManager, only: farray_index_by_name_ode, farray_index_by_name
-      use General, only: random_number_wrapper
+      use General, only: random_number_wrapper, itoa
       use Slices_methods, only: alloc_slice_buffers
+      use MpiComm, only: nprocs
 !
       real,  dimension (mx,my,mz,mfarray) :: f
       integer :: iLCDM_lna,i
@@ -621,8 +629,15 @@ module Special
         t_next_bubble = bubble_times(1)
       endif
 
-      if (plasma_coupling_coeff /= 0.0) then
+      if (lhydro .and. plasma_coupling_coeff /= 0.0) then
         lplasma_coupling = .true.
+      else
+        lwall_friction = .true.
+      endif
+
+      if(lwall_friction .and. nprocs > 1)  then
+        call fatal_error("initialize_special: lwall_friction only implemented for single proc but used='", &
+                                 itoa(nprocs))
       endif
 !
       if (.not.lhydro .and. lplasma_coupling) then
@@ -635,6 +650,12 @@ module Special
       else
         allocate(lconservative)
         lconservative=.false.
+      endif
+
+      if(lconservative) then
+        ivel = ivv
+      else
+        ivel = iuu
       endif
 
       if (ivid_del2phi/=0) call alloc_slice_buffers(del2phi_xy,del2phi_xz,del2phi_yz,&
@@ -883,9 +904,11 @@ module Special
         lpenc_requested(i_ext_force) = .true.
       endif
 
-      if(lpenc_requested(i_ext_force)) then
-        lpenc_requested(i_gphi) = .true.
+      if(lwall_friction) then
+        lpenc_requested(i_omega_phi)=.true.
+        lpenc_requested(i_plasma_friction)=.true.
       endif
+
 !
       if (ldensity.and.lperturbative_reheating) then ! Sovan
         lpenc_requested(i_rho)=.true.
@@ -893,6 +916,20 @@ module Special
       endif
 !
     endsubroutine pencil_criteria_special
+!***********************************************************************
+    subroutine pencil_interdep_special(lpencil_in)
+!
+!  Interdependency among pencils provided by this module are specified here.
+!
+!  18-07-06/tony: coded
+!
+      logical, dimension(npencils), intent(inout) :: lpencil_in
+!
+        if(lpencil_in(i_plasma_friction)) then
+          lpencil_in(i_gphi) = .true.
+        endif
+!
+    endsubroutine pencil_interdep_special
 !***********************************************************************
     subroutine calc_pencils_special(f,p)
 !
@@ -909,10 +946,11 @@ module Special
 !
       intent(in) :: f
       intent(inout) :: p
-      integer ::  i, j
+      integer ::  i, j, l
       real, dimension(nx) :: friction_coeff
       real, dimension(nx) :: u_dot_gphi
       real, parameter :: T=1.
+      real :: distance
 
 ! phi
       if (lpencil(i_phi)) p%phi = f(l1:l2,m,n,iphi)
@@ -1096,25 +1134,37 @@ module Special
           call fatal_error("dspecial_dt: No such Vprime_choice: ", trim(Vprime_choice))
       endselect
 
-      if(lpencil(i_plasma_friction)) then
-        friction_coeff = plasma_coupling_coeff*p%phi**2/T
-        if(lplasma_coupling) then
-          call dot_mn(p%uu,p%gphi,u_dot_gphi)
-          if(lconservative) then
-            if(ivv /= 0) then
-              call u_dot_grad(f,ivv,p%gphi,f(l1:l2,m,n,ivx:ivz),u_dot_gphi,UPWIND=.true.)
-            else
-              call fatal_error("dspecial_dt: ","Need velocity for u_dot_grad")
-            endif
-          else
-            call u_dot_grad(f,iuu,p%uij,p%uu,p%ugu,UPWIND=.true.)
+      if(lwall_friction) then
+        if(lfirst) then
+          previous_wall_vel = next_wall_vel
+          wall_gamma = 1./sqrt(1-previous_wall_vel**2)
+          min_distance = 1e100
+        endif
+        do l=l1,l2
+          distance = abs(0.5-f(l,m,n,iphi))
+          if(distance < min_distance) then
+            min_distance = distance
+            next_wall_vel = -f(l,m,n,idphi)/p%gphi(l-nghost,1)
           endif
+        enddo
+      endif
+
+      if(lpencil(i_plasma_friction)) then
+        if(lplasma_coupling) then
+          friction_coeff = plasma_coupling_coeff*p%phi**2/T
+          call u_dot_grad(f,ivel,p%gphi,p%uu,u_dot_gphi,UPWIND=.true.)
           p%plasma_friction = friction_coeff*p%lorentz_gamma*(p%dphi + u_dot_gphi)
+        else if(lwall_friction) then
+          friction_coeff = plasma_coupling_coeff
+          p%plasma_friction = friction_coeff*wall_gamma*(p%dphi + (-previous_wall_vel)*p%gphi(:,1))
         endif
       endif
 
-      if(lpencil(i_ext_force) .and. lplasma_coupling) then
+      if(lpencil(i_omega_phi)) then
         p%omega_phi = -p%Vthermal_prime-p%plasma_friction
+      endif
+
+      if(lpencil(i_ext_force) .and. lplasma_coupling) then
         p%ext_force(:,1)   = p%ext_force(:,1) -p%dphi*(p%omega_phi)
         do i=1,3
           p%ext_force(:,i+1) = p%ext_force(:,i+1) + p%gphi(:,i)*p%omega_phi
@@ -1342,7 +1392,7 @@ module Special
               pref_Hubble*Hscript*p%dphi-pref_Vprime*p%Vprime
 !
 !       added coupling with plasma
-        if (lplasma_coupling) then
+        if (lplasma_coupling .or. lwall_friction) then
           df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi)+p%omega_phi
         endif
 !
