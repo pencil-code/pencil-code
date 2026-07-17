@@ -328,7 +328,7 @@ module Special
       if (luse_scale_factor_in_sigma) then
         call get_shared_variable('Hscript', Hscript ,caller='initialize_special')
         call get_shared_variable('echarge', echarge)
-        call get_shared_variable('lsigE_const', lsigE_const)
+        call get_shared_variable('lsigE_const', lsigE_const,default_val=.false.)
         call get_shared_variable('sigEm_all', sigEm_all)
         call get_shared_variable('sigBm_all', sigBm_all)
         call get_shared_variable('lohm_evolve', lohm_evolve)

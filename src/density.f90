@@ -476,7 +476,7 @@ module Density
       use FArrayManager
       use Gravity, only: lnumerical_equilibrium
       use Sub, only: stepdown,der_stepdown, erfunc,step
-      use SharedVariables, only: put_shared_variable, get_shared_variable, iSHVAR_ERR_NOSUCHVAR
+      use SharedVariables, only: put_shared_variable, get_shared_variable 
       use InitialCondition, only: initial_condition_all
       use Mpicomm, only: mpiallreduce_sum
 !
@@ -485,7 +485,7 @@ module Density
       real, dimension (nzgrid) :: tmpz
       real, dimension (nghost) :: dummy
 !
-      integer :: i,j,m,n, stat, Hscript_avail
+      integer :: i,j,m,n, stat
       logical :: lnothing, exist, opend
       character(LEN=11) :: formtd
       real :: rho_bot,sref
@@ -1148,11 +1148,7 @@ module Density
       if(lhydro) then
         call get_shared_variable('lext_force',lext_force)
         if(associated(lext_force) .and. lext_force) then
-          call get_shared_variable('Hscript',Hscript,Hscript_avail)
-          if (Hscript_avail == iSHVAR_ERR_NOSUCHVAR) then
-            allocate(Hscript)
-            Hscript=0.
-          endif
+          call get_shared_variable('Hscript',Hscript,default_val=0.)
         endif
       else
         allocate(lext_force)

@@ -248,7 +248,7 @@ module SharedVariables
 
     endfunction find_item
 !***********************************************************************
-    subroutine get_variable_real0d(varname,variable,ierr,caller)
+    subroutine get_variable_real0d(varname,variable,ierr,caller,default_val)
 !
 !  Comment me.
 !
@@ -258,16 +258,28 @@ module SharedVariables
       real, pointer :: variable
       integer, optional :: ierr
       character (len=*), optional :: caller
+      real, optional :: default_val
 !
       intent(in)  :: varname,caller
       intent(out) :: ierr           !,variable
+      logical :: lfound
+      integer :: ierr_local
 !
       type (shared_variable_list), pointer :: item
 
-      if (find_item(varname,iSHVAR_TYPE_REAL0D,item,ierr,caller)) then
+      if(present(default_val)) then
+        lfound = find_item(varname,iSHVAR_TYPE_REAL0D,item,ierr_local,caller)
+      else
+        lfound = find_item(varname,iSHVAR_TYPE_REAL0D,item,ierr,caller)
+      endif
+      if (lfound) then
         variable=>item%real0D
       else
         nullify(variable)
+        if(present(default_val)) then
+          allocate(variable)
+          variable=default_val
+        endif
       endif
 !
     endsubroutine get_variable_real0d
@@ -474,7 +486,7 @@ module SharedVariables
 !
     endsubroutine get_variable_int1d
 !***********************************************************************
-    subroutine get_variable_logical0d(varname,variable,ierr,caller)
+    subroutine get_variable_logical0d(varname,variable,ierr,caller,default_val)
 !
 !  Comment me.
 !
@@ -484,16 +496,28 @@ module SharedVariables
       logical, pointer :: variable
       integer, optional :: ierr
       character (len=*), optional :: caller
+      logical, optional :: default_val
 !
       intent(in)  :: varname,caller
       intent(out) :: ierr           !,variable
+      integer :: ierr_local
+      logical :: lfound
 !
       type (shared_variable_list), pointer :: item
 
-      if (find_item(varname,iSHVAR_TYPE_LOG0D,item,ierr,caller)) then
+      if(present(default_val)) then
+        lfound = find_item(varname,iSHVAR_TYPE_LOG0D,item,ierr_local,caller)
+      else
+        lfound = find_item(varname,iSHVAR_TYPE_LOG0D,item,ierr,caller)
+      endif
+      if (lfound) then
         variable=>item%log0D
       else
         nullify(variable)
+        if(present(default_val)) then
+         allocate(variable)
+         variable = default_val
+        endif
       endif
 !
     endsubroutine get_variable_logical0d
