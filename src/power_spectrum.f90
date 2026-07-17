@@ -1574,7 +1574,6 @@ outer:do ikz=1,nz
     real, allocatable, dimension(:,:), save :: cyl_spectrumhel, cyl_spectrumhel_sum
     character (len=3) :: sp
     logical, optional :: lnowrite
-    logical, save :: lwrite_krms=.true.
     logical :: lfirstcall
 !
     nk = nk_xyz
@@ -2233,8 +2232,8 @@ outer:do ikz=1,nz
     real, dimension(:,:,:), allocatable :: c_re, c_im
     real, dimension(nx,3) :: aa,bb,jj,jxb
     real, dimension(nx,3,3) :: aij,bij
-    real, dimension(nk) :: nks,nks_sum
-    real, dimension(nk) :: k2m,k2m_sum,krms
+    real, dimension(nk) :: nks
+    real, dimension(nk) :: k2m
     real, dimension(nk) :: spectrum, spectrum_sum, spectrum2, spectrum2_sum
     real, dimension(nk) :: spectrumhel, spectrumhel_sum, spectrum2hel, spectrum2hel_sum
     character (len=3) :: sp
@@ -2483,8 +2482,8 @@ outer:do ikz=1,nz
     real, contiguous,dimension(:,:,:,:) :: f
     real, dimension(nx,3) :: uu,oo,oxu
     real, dimension(nx,3,3) :: uij
-    real, dimension(nk) :: nks,nks_sum
-    real, dimension(nk) :: k2m,k2m_sum,krms
+    real, dimension(nk) :: nks
+    real, dimension(nk) :: k2m
     real, dimension(nk) :: spectrum, spectrum_sum, spectrum2, spectrum2_sum
     real, dimension(nk) :: spectrumhel, spectrumhel_sum, spectrum2hel, spectrum2hel_sum
     character (len=3) :: sp
@@ -2675,8 +2674,8 @@ outer:do ikz=1,nz
     real, save, allocatable, dimension (:,:,:,:) :: EMF,JJJ,EMB,BBB
     real, dimension(nx,3) :: uu,aa,bb,jj,uxb,uxj
     real, dimension(nx,3,3) :: aij,bij
-    real, dimension(nk) :: nks,nks_sum
-    real, dimension(nk) :: k2m,k2m_sum,krms
+    real, dimension(nk) :: nks
+    real, dimension(nk) :: k2m
     real, dimension(nk) :: spectrum,spectrum_sum
     real, dimension(nk) :: spectrumhel,spectrumhel_sum
     character (len=3) :: sp
@@ -2847,8 +2846,8 @@ outer:do ikz=1,nz
     real, dimension(nx,3) :: aa,bb
     real, dimension(nx,3,3) :: aij
     real, dimension(nx) :: dphi
-    real, dimension(nk) :: nks,nks_sum
-    real, dimension(nk) :: k2m,k2m_sum,krms
+    real, dimension(nk) :: nks
+    real, dimension(nk) :: k2m
     real, dimension(nk) :: spectrum,spectrum_sum
     real, dimension(nk) :: spectrumhel,spectrumhel_sum
     character (len=3) :: sp
@@ -3038,8 +3037,8 @@ outer:do ikz=1,nz
     real, allocatable, dimension(:,:,:,:) :: Adv, Str, BBB
     real, dimension(nx,3) :: uu, aa, bb, divu, bbdivu, bgradu, ugradb
     real, dimension(nx,3,3) :: uij, aij, bij
-    real, dimension(nk) :: nks,nks_sum
-    real, dimension(nk) :: k2m,k2m_sum,krms
+    real, dimension(nk) :: nks
+    real, dimension(nk) :: k2m
     real, dimension(nk) :: spectrum,spectrum_sum
     real, dimension(nk) :: spectrumhel,spectrumhel_sum
     character (len=3) :: sp
