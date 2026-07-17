@@ -205,6 +205,7 @@ my %tests = (
                          meanfield_special_e_tensor_GCD
                          dust-accretion
                          superparticle_condensation
+                         mdwarf-ss-running-aver
                          mdwarf-ss-running-aver-gpu
 			 star-in-a-box-giant-Kprof
 			 cartesian-convection-entropy-rain
@@ -215,7 +216,6 @@ my %tests = (
              4 => [qw(
                          superparticle-coagulation
                          superparticle-condensation-coagulation
-                         mdwarf-ss-running-aver
                          Schwinger2
                      )],
              # Level 5 for now contains overlong tests (e.g. test that
