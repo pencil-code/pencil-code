@@ -74,3 +74,5 @@ integer, parameter :: id_record_DT_GW            = 350
 ! special/backreact_infl.f90
 integer, parameter :: id_record_LHEATING_ALWAYS  = 360
 integer, parameter :: id_record_LSOLVE_FOR_PHI   = 361
+! special/klein_gordon.f90
+integer, parameter :: id_record_WALL_VEL         = 370

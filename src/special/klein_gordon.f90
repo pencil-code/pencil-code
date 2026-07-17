@@ -91,6 +91,7 @@ module Special
   implicit none
 !
   include '../special.h'
+  include '../record_types.h'
 !
 !
 ! Declare index of new variables in f array (if any).
@@ -1648,6 +1649,43 @@ module Special
       write(unit, NML=special_run_pars)
 !
     endsubroutine write_special_run_pars
+!***********************************************************************
+    subroutine input_persist_special_id(id,done)
+!
+!  Read in the parameters of the next SNI
+!
+!  13-Dec-2011/Bourdin.KIS: reworked
+!  14-jul-2015/fred: removed obsolete Remnant persistant variable from current
+!  read and added new cluster variables. All now consistent with any io
+!
+      use IO, only: read_persist, lun_input
+!
+      integer, intent(in) :: id
+      logical, intent(inout) :: done
+!
+      select case (id)
+        case (id_record_WALL_VEL)
+          done = read_persist ('WALL_VEL', next_wall_vel)
+      endselect
+!
+    endsubroutine input_persist_special_id
+!*****************************************************************************
+    logical function output_persistent_special()
+!
+!  Writes out the time of the next SNI
+!
+!  13-Dec-2011/Bourdin.KIS: reworked
+!  15-jun-2015/axel: adapted from interstellar during office hours
+!
+      use IO, only: write_persist
+!
+      output_persistent_special = .true.
+!
+      if (write_persist ('WALL_VEL', id_record_WALL_VEL, next_wall_vel)) return
+!
+      output_persistent_special = .false.
+!
+    endfunction output_persistent_special
 !***********************************************************************
     subroutine rprint_special(lreset,lwrite)
 !
