@@ -918,12 +918,15 @@ module Special
       if (lpencil(i_phi)) p%phi = f(l1:l2,m,n,iphi)
 ! dphi
       if (lpencil(i_dphi)) p%dphi=f(l1:l2,m,n,idphi)
+
+      if(lwaterfall) then
 ! psi
-      if (lpencil(i_psi)) p%psi = f(l1:l2,m,n,ipsi)
+        if (lpencil(i_psi)) p%psi = f(l1:l2,m,n,ipsi)
 ! dpsi
-      if (lpencil(i_dpsi)) p%dpsi=f(l1:l2,m,n,idpsi)
+        if (lpencil(i_dpsi)) p%dpsi=f(l1:l2,m,n,idpsi)
+      endif
 ! phi_doublet (only computes the 3 remaining components, the first is in p%phi)
-      if (lpencil(i_phi_doublet_mod)) then
+      if (lphi_doublet .and. lpencil(i_phi_doublet_mod)) then
         do i=1,3
           p%phi_doublet(:,i)=f(l1:l2,m,n,iphi+i)
           p%dphi_doublet(:,i)=f(l1:l2,m,n,idphi+i)
@@ -935,8 +938,11 @@ module Special
       endif
 ! gphi
       if (lpencil(i_gphi)) call grad(f,iphi,p%gphi)
+
+      if(lwaterfall) then
 ! gpsi
-      if (lpencil(i_gpsi)) call grad(f,ipsi,p%gpsi)
+        if (lpencil(i_gpsi)) call grad(f,ipsi,p%gpsi)
+      endif
 !
 ! cov_der computation for Higgs doublet with weak and/or hypercharge
 ! covariant derivative is D_mu = partial_mu - i g W_mu^a tau^a/2 - i g' Y B_mu/2
@@ -949,7 +955,7 @@ module Special
           if (.not. lphi_hom) then
             do j=1,3
               call der(f, iphi+i, dfdxs(:, i+1, j), j)
-              p%cov_der(:, j+1, i+1) = dfdxs(:, i, j)
+              p%cov_der(:, j+1, i+1) = dfdxs(:, i+1, j)
             enddo
           endif
         enddo
@@ -1092,17 +1098,19 @@ module Special
 
       if(lpencil(i_plasma_friction)) then
         friction_coeff = plasma_coupling_coeff*p%phi**2/T
-        call dot_mn(p%uu,p%gphi,u_dot_gphi)
-        if(lconservative) then
-          if(ivv /= 0) then
-            call u_dot_grad(f,ivv,p%gphi,f(l1:l2,m,n,ivx:ivz),u_dot_gphi,UPWIND=.true.)
+        if(lplasma_coupling) then
+          call dot_mn(p%uu,p%gphi,u_dot_gphi)
+          if(lconservative) then
+            if(ivv /= 0) then
+              call u_dot_grad(f,ivv,p%gphi,f(l1:l2,m,n,ivx:ivz),u_dot_gphi,UPWIND=.true.)
+            else
+              call fatal_error("dspecial_dt: ","Need velocity for u_dot_grad")
+            endif
           else
-            call fatal_error("dspecial_dt: ","Need velocity for u_dot_grad")
+            call u_dot_grad(f,iuu,p%uij,p%uu,p%ugu,UPWIND=.true.)
           endif
-        else
-          call u_dot_grad(f,iuu,p%uij,p%uu,p%ugu,UPWIND=.true.)
+          p%plasma_friction = friction_coeff*p%lorentz_gamma*(p%dphi + u_dot_gphi)
         endif
-        p%plasma_friction = friction_coeff*p%lorentz_gamma*(p%dphi + u_dot_gphi)
       endif
 
       if(lpencil(i_ext_force) .and. lplasma_coupling) then
