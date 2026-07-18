@@ -630,10 +630,12 @@ module Special
         t_next_bubble = bubble_times(1)
       endif
 
-      if (lhydro .and. plasma_coupling_coeff /= 0.0) then
-        lplasma_coupling = .true.
-      else
-        lwall_friction = .true.
+      if (plasma_coupling_coeff /= 0.0) then
+        if(lhydro) then
+          lplasma_coupling = .true.
+        else
+          lwall_friction = .true.
+        endif
       endif
 
       if(lwall_friction .and. nprocs > 1)  then
