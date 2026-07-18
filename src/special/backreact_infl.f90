@@ -167,6 +167,7 @@ module Special
   logical :: lBD_scaling_wHubble=.true.            !PAR_DOC: Bunch-Davies scaling with Hubble (true for backward compatibility, but should be false to be correct)
   logical :: lold_lrho_chi_dtconstraint=.true.     !PAR_DOC: old lrho_chi dt constraint (use false for new and correct version)
   logical :: linclude_rhokin_in_a2rho=.false.      !PAR_DOC: include rhokin in a2rho
+  logical :: linclude_rho_EB_in_wstate=.false.     !PAR_DOC: include rhoE and rhoB, but not rhokin in wstate
   logical :: linclude_rho_EBK_in_wstate=.false.    !PAR_DOC: include rhoE, rhoB, and rhokin in wstate
   logical :: lswitch_toMHD_at_lna=.false.          !PAR_DOC: option to use lna as criterion for switching to MHD
   logical :: lsmooth_Gamma_phi=.false.             !PAR_DOC: smooth increase of Gamma_phi
@@ -219,7 +220,8 @@ module Special
       Gamma_phi_exp, a4rhophim_crit, solve_phi_criterion, &
       lit1_reset_if_lsolve_for_phi, it1_reset_value, &
       lsigE_const_ifnot_lsolve_for_phi, lsigE_const, lsigE_const_if_lsolve_for_phi, &
-      lold_lrho_chi_dtconstraint, linclude_rhokin_in_a2rho, linclude_rho_EBK_in_wstate, &
+      lold_lrho_chi_dtconstraint, linclude_rhokin_in_a2rho, &
+      linclude_rho_EB_in_wstate, linclude_rho_EBK_in_wstate, &
       lswitch_toMHD_at_lna, lna_switch_toMHD, &
       dlnascale_reheating, lg_Gamma_phi_fraction_firststep
 !
@@ -693,6 +695,7 @@ print*,'AXEL1: lheating_always=',lheating_always
       real, dimension (nx,3) :: gphi
       real, dimension (nx) :: Vprime, Vpotential, a2rhophi, a4rhophi
       real, dimension (nx) :: tmp, del2phi, gphi2, Gamma_phi_rho_rhs
+!AB: gphi2 should be pencil (to check)
       real :: pref_Vprime=1., pref_Hubble=2., pref_del2=1., pref_alpf, pref_Gamma=impossible
       type (pencil_case) :: p
 !
@@ -1500,6 +1503,9 @@ print*,'AXEL2: id, done=',id, done
       if (ldensity) then
         if (linclude_rho_EBK_in_wstate) then
           tmp=rhom_all+.5*(e2m_all+b2m_all)+rhokinm_all
+          wstate=(a2rhopphim_all+onethird*a21*tmp)/a2rhom_all
+        elseif (linclude_rho_EB_in_wstate) then
+          tmp=rhom_all+.5*(e2m_all+b2m_all)
           wstate=(a2rhopphim_all+onethird*a21*tmp)/a2rhom_all
         else
           wstate=(a2rhopphim_all*a21+onethird*rhom)/(a2rhophim_all*a21+rhom)
