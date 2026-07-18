@@ -1141,13 +1141,13 @@ module Special
         if(lfirst) then
           previous_wall_vel = next_wall_vel
           wall_gamma = 1./sqrt(1-previous_wall_vel**2)
-          min_distance = 1e100
+          min_distance = 1e10 
         endif
-        do l=l1,l2
-          distance = abs(0.5-f(l,m,n,iphi))
+        do l=1,nx
+          distance = abs(0.5-f(l+nghost,m,n,iphi))
           if(distance < min_distance) then
             min_distance = distance
-            next_wall_vel = -f(l,m,n,idphi)/p%gphi(l-nghost,1)
+            next_wall_vel = -f(l+nghost,m,n,idphi)/p%gphi(l,1)
           endif
         enddo
       endif
@@ -2471,6 +2471,8 @@ module Special
     call copy_addr(lplasma_coupling,p_par(64)) ! bool
     call copy_addr(w_phi,p_par(65))
     call copy_addr(g_phi,p_par(66))
+    call copy_addr(ivel,p_par(67)) ! int
+    call copy_addr(lwall_friction,p_par(68)) ! bool
     endsubroutine pushpars2c
 !********************************************************************
 !********************************************************************
