@@ -797,7 +797,9 @@ module Snapshot
 !  because tspec_next would, in general, be wrong unless trigger_spec='code_time'.
 !
       if (lfirst_call) then
-        call read_snaptime(file,tspec_next,nspec,dspec,t,existed=existed)
+        !call read_snaptime(file,tspec_next,nspec,dspec,t,existed=existed)
+! 2026-jul-19/axel: the line above causes restart problems. Disable for now.
+        call read_snaptime(file,tspec_next,nspec,dspec,t)
       endif
 !
 !  The output time for spectra was always too late by dt, so therefore,
