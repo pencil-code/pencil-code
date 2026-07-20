@@ -402,8 +402,9 @@ class Param(_Foo):
         for s in ["init", "run"]:
             name = name.removesuffix(s)
         name = name.removesuffix("_")
-        if name=="&":
-            name = "&cdata"      # as namelists init_pars and run_pars belong to the same module: cdata
+        if name == "":
+            # as namelists init_pars and run_pars belong to the same module: cdata
+            name = "cdata"
         return name
 
 @copy_docstring(Param.read)
