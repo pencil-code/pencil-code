@@ -139,7 +139,7 @@ class Param(_Foo):
 
             if not keep_nested:
                 #Remove namelists with no conflicting keys
-                for super_name in super_name_list:
+                for super_name in super_name_list.copy():
                     if not super_name in param_conflicts:
                         if super_name in param_list:
                             del param_list[super_name]
