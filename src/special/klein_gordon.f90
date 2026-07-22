@@ -248,7 +248,8 @@ module Special
   integer :: idiag_Vprimem=0    ! DIAG_DOC: $\left<V_{,\phi}\right>$
   integer :: idiag_Vprimepsim=0 ! DIAG_DOC: $\left<V_{,\psi}\right>$
   integer :: idiag_rho_phi=0   ! DIAG_DOC: $\left<\rho phi\right>$
-  integer :: idiag_a=0    ! DIAG_DOC: $\left<\ascale\right>$ !Sovan
+  !Kishore: changed below from $\left<\ascale\right>$ to fix compilation of the manual.
+  integer :: idiag_a=0    ! DIAG_DOC: $\left<a\right>$ !Sovan
   integer :: idiag_ddotam=0     ! DIAG_DOC: $a''/a$
   integer :: idiag_a2rhopm=0    ! DIAG_DOC: $a^2 (rho+p)$
   integer :: idiag_a2rhom=0     ! DIAG_DOC: $a^2 rho$
