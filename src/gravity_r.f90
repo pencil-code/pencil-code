@@ -223,6 +223,11 @@ module Gravity
             if (lroot) print*, 'initialize_gravity: RGB-1Msun-11.7 gravity potential'
             cpot(:,j) = (/ 4.529, -41.132, 108.616, 10.219,-49.586 /)
 !
+         case ('RGB-1Msun-11.7-ns') ! 11.7bn yr old 1 Msun star, no smoothing
+            if (lroot) print*, 'initialize_gravity: RGB-1Msun-11.7 gravity potential'
+            cpot(:,j) = (/ 3.4062559216071556e1, 1.0016968486352738e5, -6.9842471292246351e4, &
+                           1.2414504780188610e4, 1.0355117693754031e5 /)
+!
           case ('PMS-2Msun-star') ! Two solar mass pre-main sequence star
             if (lroot) print*, 'initialize_gravity: 2 solar mass PMS gravity potential'
             cpot(:,j) = (/ 1.3896, -1.7048, 0.3128, 1.0999, 0.1114 /)
