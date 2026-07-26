@@ -158,6 +158,10 @@ module Special
   character (len=labellen) :: Vprime_choice='quadratic', Hscript_choice='set'
   character (len=labellen), dimension(ninit) :: initspecial='nothing'
   character (len=50) :: echarge_type='const', init_rho_chi='zero'
+  logical :: linv_BD=.true.              !PAR_DOC: apply forward transform in the Bunch-Davies initial condition.
+
+
+
   logical :: lphi_normalized_units = .false.
   real :: t_next_bubble = 0.0
   real :: max_bubble_nucleation_rate = 1.0
@@ -794,11 +798,11 @@ module Special
             amplphi_BD=amplphi*Hubble_ini
             deriv_prefactor=1.
             call bunch_davies(f,iphi,iphi,idphi,idphi, &
-                              amplphi_BD,kpeak_phi,deriv_prefactor)
+                              amplphi_BD,kpeak_phi,deriv_prefactor,linv=linv_BD)
             if (amplee_BD_prefactor/=0.) then
               deriv_prefactor=deriv_prefactor_ee
               amplee_BD=amplee_BD_prefactor*Hubble_ini
-              call bunch_davies(f,iax,iaz,iex,iez,amplee_BD,kpeak_phi,deriv_prefactor)
+              call bunch_davies(f,iax,iaz,iex,iez,amplee_BD,kpeak_phi,deriv_prefactor,linv=linv_BD)
             endif
           case ('phi_doublet')
             if (.not.lphi_doublet) &
@@ -1829,7 +1833,7 @@ module Special
             echarge=echarge_const
           case ('erun')
             energy_scale=(.5*e2m_all+.5*b2m_all)**.25/ascale
-            echarge=1./sqrt(1./.35**2+41./(48.*pi**2)*log(real(mass_zboson/energy_scale)))
+            echarge=1./sqrt(1./.35**2+41./(48.*pi**2)*log(mass_zboson/energy_scale))
         endselect
       else
         echarge=echarge_const

@@ -18,6 +18,8 @@
   amplphi=5.0210121e-05, amplee_BD_prefactor=8.3775398e-05, kpeak_phi=50e-6
   phi0=0.7, ascale_ini=1., Hscript_choice='friedmann'
   echarge_type='erun'
+  lem_backreact=T
+  linitialize_seed=F
 /
 &disp_current_init_pars
   lsigE_as_aux=T, lsigB_as_aux=T

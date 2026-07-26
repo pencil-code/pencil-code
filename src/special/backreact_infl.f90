@@ -302,7 +302,7 @@ module Special
       call put_shared_variable('sigBm_all',sigBm_all)
       call put_shared_variable('echarge',echarge)
       call put_shared_variable('lrho_chi',lrho_chi)
-print*,'AXEL1: lheating_always=',lheating_always
+      !print*,'AXEL1: lheating_always=',lheating_always
 !
     endsubroutine register_special
 !***********************************************************************
@@ -728,7 +728,7 @@ print*,'AXEL1: lheating_always=',lheating_always
 !  to rename lheating -> lheating_phi. The switch lheating_always is false by default
 !  and set to true after the first time lheating is true and if lheating_keep_on is true.
 !
-if (ip<16) print*,'AXEL9: lheating_always=',lheating_always
+      if (ip<10) print*,'AXEL9: lheating_always=',lheating_always
       if (lheating .or. lheating_always) then
         if (lsmooth_Gamma_phi) then
           if (dlnascale_reheating==0.) then
@@ -1218,7 +1218,7 @@ if (ip<16) print*,'AXEL9: lheating_always=',lheating_always
         case (id_record_LSOLVE_FOR_PHI)
           done = read_persist ('LSOLVE_FOR_PHI', lsolve_for_phi)
       endselect
-print*,'AXEL2: id, done=',id, done
+      !print*,'AXEL2: id, done=',id, done
 !
     endsubroutine input_persist_special_id
 !*****************************************************************************

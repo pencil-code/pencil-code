@@ -11,7 +11,7 @@ Alberto Roper Pol <alberto[dot]roperpol/unige[dot]ch>
 
 ## Status:
 
-fails, should imitate Schwinger
+succeeds, should imitate Schwinger
 
 ## Recommended resolution:
 

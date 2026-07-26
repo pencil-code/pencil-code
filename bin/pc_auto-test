@@ -146,6 +146,7 @@ my %tests = (
                          backreact_infl
                          backreact_infl2
                          Schwinger
+                         Schwinger2
                      )],
              # Level 3 for now contains all non-canonical tests that run
              # successfully
@@ -216,7 +217,6 @@ my %tests = (
              4 => [qw(
                          superparticle-coagulation
                          superparticle-condensation-coagulation
-                         Schwinger2
                      )],
              # Level 5 for now contains overlong tests (e.g. test that
              # compile, start and then run -- but take too long time)
@@ -267,7 +267,8 @@ my %tests = (
 # ---------------------------------------------------------------------- #
 # list of GPU-capable samples:
 	    # Those on comment do work but we run only a subset to not overload
-	    # the test machine
+	    # the test machine. This list is not exhaustive and most samples using the 
+	    # same modules as these samples should also work.
 my @gpu_tests = qw(
                          1d-tests/sine-Gordon_doublet
                          decay-reconnection
@@ -280,7 +281,7 @@ my @gpu_tests = qw(
 			 #1d-tests/rel-shock
 			 #1d-tests/ambipolar_diffusion
 			 cosmicray
-			 #1d-tests/inflationary-B-genesis #Has to be excluded until the weird start issue is resolved (Can't reproduce it by running auto-test locally on norlx51)
+			 1d-tests/inflationary-B-genesis #Has to be excluded until the weird start issue is resolved (Can't reproduce it by running auto-test locally on norlx51)
                          1d-tests/jeans-x
 			 #1d-tests/toomre-x
 			 #2d-tests/bubble

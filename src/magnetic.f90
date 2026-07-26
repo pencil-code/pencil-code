@@ -2308,7 +2308,7 @@ module Magnetic
 !
         select case (initaa(j))
         case ('nothing'); if (lroot .and. j==1) print*,'init_aa: nothing'
-        case ('zero', '0'); f(:,:,:,iax:iaz) = 0.0
+        case ('zero', '0'); f(:,:,:,iax:iaz) = 0.0; if (lroot .and. j==1) print*,'init_aa: zero'
         case ('rescale'); f(:,:,:,iax:iaz)=amplaa(j)*f(:,:,:,iax:iaz)
         case ('tanhxy'); call tanh_hyperbola(amplaa(j),f,iaa,sheet_position,sheet_thickness,sheet_hyp)
         case ('sech2x'); call sech2x(amplaa(j),f,iaa,sheet_thickness)
