@@ -84,20 +84,19 @@ module InitialCondition
       real, dimension (mx,my,mz,mfarray), intent(inout):: f
       real, dimension (nx,*),             optional, intent(out)  :: profiles
 !
-      real, dimension (2*nxgrid) :: rr_sph, npoly, gnpoly, gg_r, dTdr_global, dlnTdr_global, prof
-      real, dimension (2*nxgrid) :: rho_global, TT_global, heat, lumi
+      real, dimension (2*nxgrid) :: rr_sph, npoly, gg_r, dTdr_global, dlnTdr_global 
+      real, dimension (2*nxgrid) :: TT_global, heat, lumi
       real, dimension (2*nxgrid) :: hcond_global, ghcond_global
       real, dimension (2*nxgrid) :: FF, GG, FF_prime, GG_prime, ggg_r
       real, dimension (2*nxgrid) :: lnrho_global, dlnrhodr_global, cs2_global, ss_global
-      real, dimension (2*nxgrid) :: tmp1, tmp2, trans, K_env
-      real :: rmax, drr, rr_tmp, delr=0.01, gamma, cv
+      real :: rmax, drr, rr_tmp, gamma, cv
       real :: hcond_tmp, ghcond_tmp, q, rr1
       real, target :: cs2cool=0.0
       real, dimension (:,:), pointer :: cpot
       real, dimension (:,:), pointer :: cpot2
       real, dimension (:), pointer :: g_r
       real, pointer :: r1_pot1, r0_pot, n_pot, g0
-      integer :: ir, i, j, n, m, ix, ierr, nr, jr
+      integer :: ir, j, ix, nr, jr
       integer, parameter :: unit=1
       logical, pointer :: lss_running_aver, lhcond_global, lcool_prof_as_var
 !      character (len=labellen), dimension(:), pointer :: ipotential

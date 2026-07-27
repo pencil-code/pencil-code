@@ -3835,7 +3835,7 @@ module Hydro
       real, contiguous, dimension(:,:,:,:) :: f
       type (pencil_case) :: p
       real, dimension (nx) :: tmp,DD,tmp_rho
-      real, dimension (nx,3) :: tmp3, tmp3g
+      real, dimension (nx,3) :: tmp3
       real, dimension (nx,3,3) :: tmp33
       
       if (lconservative) then
@@ -3936,13 +3936,11 @@ module Hydro
         dot_mn, cross, del4v, del4graddiv, d2fi_dxj, del2fi_dxjk, h_dot_grad, &
         invmat_DB, multmv, dot_mn_sv_pencil, gij_v_times_s
       use WENO_transport, only: weno_transp
-      use EquationOfState, only: cs20
 !
       real, contiguous, dimension(:,:,:,:) :: f
       type (pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc
 !
-      real, dimension (nx) :: DD
       real, dimension (nx,3) :: tmp3g
       real :: outest
       integer :: j
@@ -4336,7 +4334,7 @@ module Hydro
       type (pencil_case) :: p
 
       integer :: i,j
-      real, dimension (nx) :: tmp, ugu_Schur_x, ugu_Schur_y, ugu_Schur_z
+      real, dimension (nx) :: ugu_Schur_x, ugu_Schur_y, ugu_Schur_z
       real, dimension (nx,3) :: divTij
       real, dimension (nx,3,3) :: puij_Schur
 
@@ -4443,10 +4441,10 @@ module Hydro
       intent(inout) :: f,df
 
       real, dimension (nx,3) :: uu1, tmpv
-      real, dimension (nx) :: tmp, ftot
+      real, dimension (nx) :: ftot
       real, dimension (nx) :: arad_normal, pradrc2
       real :: hubble_factor
-      integer :: i,j
+      integer :: j
 !
       Fmax=1./impossible
       if (lfirstpoint) lproc_print=.true.
