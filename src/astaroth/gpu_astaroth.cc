@@ -169,6 +169,8 @@ static MPI_Comm comm_pencil = MPI_COMM_NULL;
 static AcMesh mesh = acInitMesh();
 //static AcMesh test_mesh;
 
+bool initialize_torch();
+
 bool torch_train_CAPI(int sub_dims[3], AcReal* input, AcReal* label, AcReal* loss_val,
 		     const int input_fields, const int output_fields, const char* model_name);
 bool torch_infer_CAPI(int sub_dims[3], AcReal* input, AcReal* label, 
@@ -1973,7 +1975,9 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_,
 			acHaloExchangeBoundary(AA_fields,3,BOUNDARY_Z_TOP)
 			});
   }
-
+#if LTRAINING
+  initialize_torch();
+#endif
 		
   if (ltest_bcs) testBCs();
   //This is for autotuning
