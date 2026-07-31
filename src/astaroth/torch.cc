@@ -36,7 +36,7 @@ bool torch_train_CAPI(int sub_dims[3], AcReal* input, AcReal* label, AcReal* los
 bool torch_infer_CAPI(int sub_dims[3], AcReal* input, AcReal* label, 
 		     const int input_fields, const int output_fields, const char* model_name, bool subsample){
 
-	const torchfort_result_t res = torchfort_set_manual_seed(943442);
+	torchfort_result_t res = torchfort_set_manual_seed(943442);
 
 	int64_t input_shape[5] = {1, input_fields, sub_dims[2], sub_dims[1], sub_dims[0]};
 	
@@ -55,7 +55,7 @@ bool torch_infer_CAPI(int sub_dims[3], AcReal* input, AcReal* label,
 /***********************************************************************************************/
 bool torch_create_model_CAPI(const char* name, const char* config_fname, int device){
 	
-	const torchfort_result res = torchfort_create_model(name, config_fname, device);
+	const torchfort_result_t res = torchfort_create_model(name, config_fname, device);
 	return res == TORCHFORT_RESULT_SUCCESS;
 }
 
