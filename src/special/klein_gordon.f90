@@ -276,6 +276,7 @@ module Special
   integer :: idiag_plasma_frictm=0 ! DIAG_DOC: $\left<\eta_{\phi}U_{\nu}\partial^{\nu}\phi\right>$
   integer :: idiag_Rddot = 0
   integer :: idiag_pressure= 0
+  integer :: idiag_curvature= 0
   integer :: idiag_wall_vel = 0 ! DIAG_DOC: $v_{w}$
   integer :: idiag_wall_pos = 0 ! DIAG_DOC: $r_{w}$
   integer :: idiag_wall_lorentz = 0 ! DIAG_DOC: $\frac{1}{\sqrt{1-v_{w}^2}}$
@@ -1543,7 +1544,6 @@ module Special
         curvature = -2./(R*gammaR**2)
         pressure = deltaV/(bubble_surface_tension*gammaR**3)
         Rddot =  curvature + pressure + friction
-        Rddot = Rddot/(1+plasma_coupling_coeff*Rdot*gammaR**2*R)
         df_ode(iRdot) = df_ode(iRdot) + Rddot
       endif
 !
@@ -1554,6 +1554,7 @@ module Special
         sigBm_all_diagnos = sigBm_all
         call save_name(Rddot,idiag_Rddot)
         call save_name(pressure,idiag_pressure)
+        call save_name(curvature,idiag_curvature)
         call calc_ode_diagnostics_special(f_ode)
       endif
 
@@ -1819,6 +1820,7 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'plasma_frictm',idiag_plasma_frictm)
         call parse_name(iname,cname(iname),cform(iname),'Rddot',idiag_Rddot)
         call parse_name(iname,cname(iname),cform(iname),'pressure',idiag_pressure)
+        call parse_name(iname,cname(iname),cform(iname),'curvature',idiag_curvature)
         call parse_name(iname,cname(iname),cform(iname),'wall_vel',idiag_wall_vel)
         call parse_name(iname,cname(iname),cform(iname),'wall_lorentz',idiag_wall_lorentz)
         call parse_name(iname,cname(iname),cform(iname),'wall_pos',idiag_wall_pos)
