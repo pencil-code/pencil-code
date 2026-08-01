@@ -100,12 +100,14 @@ module Special
   integer :: ipsi=0, idpsi=0
   integer :: iphi_up_re=0, iphi_up_im=0, iphi_down_re=0, iphi_down_im=0
   integer :: idphi_up_re=0, idphi_up_im=0, idphi_down_re=0, idphi_down_im=0
+  integer :: iR=0,iRdot=0
   real :: ncutoff_phi=1., phi_v=.1
   real :: phimass=1.06e-6, phimass2, ascale_ini=1., sign_phimass2=1.
   real :: psimass=1., psimass2
   real :: phi0=.44, dphi0=-1.69e-7, c_phi=1., delta_phi=0.,lambda_phi=0., eps=.01
   real :: delta_phi_prefactor=1.0,lambda_phi_prefactor=1.0
   real :: chi_quartic=impossible   ! normalized variable for quartic potential
+  real :: deltaV !Difference between the potential at the false and true vacuum
   real :: lambda_psi=0., coupl_phipsi=0., c_psi=1.
   real :: amplphi=.1, ampldphi=.0, kx_phi=1., ky_phi=0., kz_phi=0., phase_phi=0., width_phi=.1, offset=0.
   real :: amplpsi=0., ampldpsi=0.
@@ -133,8 +135,10 @@ module Special
   real, dimension (nx) :: dt1_special
   real, dimension (nx, 4, 3) :: dfdxs=0.
   real :: bubble_size_factor = 1.0
+  real :: bubble_tension_coeff = 1.0
   real :: bubble_size = impossible
   real :: bubble_wall_width = impossible
+  real :: bubble_surface_tension = impossible
   real :: bubble_wall_width_factor = 1.0
   integer :: number_of_bubbles = 1
   logical :: lspeed_of_light_dt = .false.
@@ -156,6 +160,8 @@ module Special
   real :: higgs_friction=0.
   logical :: lphi_doublet=.false., lphi_weakcharge=.false., lphi_hypercharge=.false.
   character (len=labellen) :: Vprime_choice='quadratic', Hscript_choice='set'
+  character (len=labellen) :: bounce_action='O3'
+  character (len=labellen) :: surface_tension_type='wall_thickness'
   character (len=labellen), dimension(ninit) :: initspecial='nothing'
   character (len=50) :: echarge_type='const', init_rho_chi='zero'
   logical :: linv_BD=.true.              !PAR_DOC: apply forward transform in the Bunch-Davies initial condition.
@@ -182,6 +188,7 @@ module Special
   real :: plasma_coupling_coeff=0.0
   logical :: lplasma_coupling=.false.
   integer :: continuation_offset = 0
+  logical :: lbubble_size_ode = .false.
   
 ! Sovan : Perturbative Reheating
 !
@@ -218,7 +225,8 @@ module Special
       V0_usr, v_usr, alpha_usr, beta_usr, lphi_normalized_units, bubble_size_factor, &
       bubble_wall_width_factor,number_of_bubbles,bubble_positions, &
       beta,bubble_size,bubble_wall_width,linitialize_seed, &
-      chi_quartic, continuation_offset, rho_phi, w_phi, G_phi, lnrho_phi0
+      chi_quartic, continuation_offset, rho_phi, w_phi, G_phi, lnrho_phi0, &
+      lbubble_size_ode,bounce_action,surface_tension_type
 !
   namelist /special_run_pars/ &
       initspecial, phi0, dphi0, phimass, sign_phimass2, eps, ascale_ini, &
@@ -266,6 +274,8 @@ module Special
   integer :: idiag_sigBma=0     ! DIAG_DOC: $\rho_\chi$
   integer :: idiag_count_eb0a=0 ! DIAG_DOC: $f_\mathrm{EB0}$
   integer :: idiag_plasma_frictm=0 ! DIAG_DOC: $\left<\eta_{\phi}U_{\nu}\partial^{\nu}\phi\right>$
+  integer :: idiag_Rddot = 0
+  integer :: idiag_pressure= 0
   integer :: idiag_wall_vel = 0 ! DIAG_DOC: $v_{w}$
   integer :: idiag_wall_pos = 0 ! DIAG_DOC: $r_{w}$
   integer :: idiag_wall_lorentz = 0 ! DIAG_DOC: $\frac{1}{\sqrt{1-v_{w}^2}}$
@@ -359,6 +369,11 @@ module Special
         call put_shared_variable('rho_phi',rho_phi)
         call put_shared_variable('a2',a2)
         call put_shared_variable('a21',a21)
+      endif
+
+      if(lbubble_size_ode) then
+        call farray_register_ode('R',iR)
+        call farray_register_ode('Rdot',iRdot)
       endif
 !
 !      if (ldensity) then
@@ -535,15 +550,27 @@ module Special
         lambda_phi = 1 + chi_quartic
         ! broken_mass = sqrt(-delta_phi - 2/phi_tilde)
         broken_mass = sqrt(1 + chi_quartic - sign_m2)
-        if(bubble_size == impossible) then
-          ! critical_bubble_size = 12.0/(broken_mass**4*phi_tilde**2-1)
-          critical_bubble_size = 12.0/(broken_mass**4-1)
-          bubble_size = bubble_size_factor*critical_bubble_size
-        endif
+        deltaV = (1./12.)*(chi_quartic-1)
+        thin_bubble_wall_width = 2/broken_mass
         if(bubble_wall_width == impossible) then
           ! thin_bubble_wall_width = 2/sqrt(1+2*delta_phi*phi_tilde+3*lambda_phi*phi_tilde**2)
-          thin_bubble_wall_width = 2/broken_mass
           bubble_wall_width = bubble_wall_width_factor*thin_bubble_wall_width
+        endif
+        if(surface_tension_type == 'wall_thickness') then
+          bubble_surface_tension = bubble_tension_coeff*1./(3.*thin_bubble_wall_width)
+        else if (surface_tension_type == 'cutting') then
+          bubble_surface_tension = 1./(3.*(chi_quartic+1))
+        endif
+
+        if(bounce_action == 'O3') then
+          critical_bubble_size = 2*bubble_surface_tension/deltaV
+        else if(bounce_action == 'O4') then
+          critical_bubble_size = 3*bubble_surface_tension/deltaV
+        endif
+
+        if(bubble_size == impossible) then
+          ! critical_bubble_size = 12.0/(broken_mass**4*phi_tilde**2-1)
+          bubble_size = bubble_size_factor*critical_bubble_size
         endif
       endif
 !
@@ -638,7 +665,7 @@ module Special
       if (plasma_coupling_coeff /= 0.0) then
         if(lhydro) then
           lplasma_coupling = .true.
-        else
+        else if(.not. lbubble_size_ode) then
           lwall_friction = .true.
         endif
       endif
@@ -840,6 +867,11 @@ module Special
           case default
             call fatal_error("init_special: No such init_rho_chi: ", trim(init_rho_chi))
         endselect
+      endif
+
+      if(lbubble_size_ode) then
+        f_ode(iR) = bubble_size
+        f_ode(iRdot) = 0.
       endif
 !
       call mpibcast_real(a2)
@@ -1476,6 +1508,10 @@ module Special
     subroutine dspecial_dt_ode
 !
       use SharedVariables, only: get_shared_variable
+      use Diagnostics, only: save_name
+
+      real :: R,Rdot,gammaR,Rddot,friction
+      real :: curvature,pressure
 !
       if (lgpu) call read_sums_from_GPU
       call get_Hscript_and_a2(Hscript,a2rhom_all)
@@ -1498,12 +1534,26 @@ module Special
           df_ode(iinfl_rho_chi)=df_ode(iinfl_rho_chi)-4.*Hscript*f_ode(iinfl_rho_chi)
         endif
       endif
+      if (lbubble_size_ode) then
+        df_ode(iR) = df_ode(iR) + f_ode(iRdot)
+        R = f_ode(iR)
+        Rdot = f_ode(iRdot)
+        gammaR = sqrt(1/(1.-Rdot**2))
+        friction = -2*plasma_coupling_coeff*Rdot/gammaR
+        curvature = -2./(R*gammaR**2)
+        pressure = deltaV/(bubble_surface_tension*gammaR**3)
+        Rddot =  curvature + pressure + friction
+        Rddot = Rddot/(1+plasma_coupling_coeff*Rdot*gammaR**2*R)
+        df_ode(iRdot) = df_ode(iRdot) + Rddot
+      endif
 !
 !  Diagnostics
 !
       if (.not. lmultithread) then
         sigEm_all_diagnos = sigEm_all
         sigBm_all_diagnos = sigBm_all
+        call save_name(Rddot,idiag_Rddot)
+        call save_name(pressure,idiag_pressure)
         call calc_ode_diagnostics_special(f_ode)
       endif
 
@@ -1516,6 +1566,7 @@ module Special
       real, dimension(n_odevars), intent(in) :: f_ode
       real :: rho_chi, lnascale
       real :: Hscript_diagnos
+      real :: gammaR, friction
 
       if (lrho_chi) then
         rho_chi=f_ode(iinfl_rho_chi)
@@ -1542,6 +1593,16 @@ module Special
         call save_name(sigBm_all_diagnos,idiag_sigBma)
         if (lnoncollinear_EB_aver .or. lcollinear_EB_aver) &
           call save_name(count_eb0_all,idiag_count_eb0a)
+        if(lbubble_size_ode) then
+          call save_name(f_ode(iR),idiag_wall_pos)
+          call save_name(f_ode(iRdot),idiag_wall_vel)
+          gammaR = 1/sqrt(1-f_ode(iRdot)**2)
+          call save_name(gammaR,idiag_wall_lorentz)
+          if(idiag_plasma_frictm  /= 0) then
+            friction = 2*plasma_coupling_coeff*f_ode(iRdot)/gammaR
+            call save_name(friction,idiag_plasma_frictm)
+          endif
+        endif
       endif
 
     endsubroutine calc_ode_diagnostics_special
@@ -1578,7 +1639,7 @@ module Special
           if (idiag_dpsirms/=0) call sum_mn_name(p%dpsi**2,idiag_dpsirms,lsqrt=.true.)
           if (idiag_Vprimepsim/=0) call sum_mn_name(p%Vprimepsi,idiag_Vprimepsim)
         endif
-        if (idiag_plasma_frictm/=0) call sum_mn_name(p%plasma_friction,idiag_plasma_frictm)
+        if (idiag_plasma_frictm/=0 .and. .not. lbubble_size_ode) call sum_mn_name(p%plasma_friction,idiag_plasma_frictm)
 
         if(idiag_gphirms/=0) then
           call dot2_mn(p%gphi,gphi2)
@@ -1756,6 +1817,8 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'Vprimem',idiag_Vprimem)
         call parse_name(iname,cname(iname),cform(iname),'Vprimepsim',idiag_Vprimepsim)
         call parse_name(iname,cname(iname),cform(iname),'plasma_frictm',idiag_plasma_frictm)
+        call parse_name(iname,cname(iname),cform(iname),'Rddot',idiag_Rddot)
+        call parse_name(iname,cname(iname),cform(iname),'pressure',idiag_pressure)
         call parse_name(iname,cname(iname),cform(iname),'wall_vel',idiag_wall_vel)
         call parse_name(iname,cname(iname),cform(iname),'wall_lorentz',idiag_wall_lorentz)
         call parse_name(iname,cname(iname),cform(iname),'wall_pos',idiag_wall_pos)
