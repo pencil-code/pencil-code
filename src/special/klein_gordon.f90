@@ -260,6 +260,7 @@ module Special
   integer :: idiag_Vprimem=0    ! DIAG_DOC: $\left<V_{,\phi}\right>$
   integer :: idiag_Vprimepsim=0 ! DIAG_DOC: $\left<V_{,\psi}\right>$
   integer :: idiag_rho_phi=0   ! DIAG_DOC: $\left<\rho phi\right>$
+  integer :: idiag_tension = 0 ! DIAG_DOC: $\sigma$
   !Kishore: changed below from $\left<\ascale\right>$ to fix compilation of the manual.
   integer :: idiag_a=0    ! DIAG_DOC: $\left<a\right>$ !Sovan
   integer :: idiag_ddotam=0     ! DIAG_DOC: $a''/a$
@@ -1176,11 +1177,6 @@ module Special
       endselect
 
       if(lwall_friction) then
-        if(lfirst) then
-          previous_wall_vel = next_wall_vel
-          wall_gamma = 1./sqrt(1-previous_wall_vel**2)
-          min_distance = 1e10 
-        endif
         do l=1,nx
           distance = abs(0.5-f(l+nghost,m,n,iphi))
           if(distance < min_distance) then
@@ -1646,6 +1642,11 @@ module Special
           call dot2_mn(p%gphi,gphi2)
           call sum_mn_name(gphi2,idiag_gphirms,lsqrt=.true.)
         endif
+        if(lspherical_coords) then
+          if(idiag_tension /= 0) then
+            call sum_mn_name(dx*p%gphi(:,1)**2/wall_gamma,idiag_tension,lplain=.true.)
+          endif
+        endif
 
         if(lspherical_coords) then
           do l=l1,l2
@@ -1824,6 +1825,7 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'wall_vel',idiag_wall_vel)
         call parse_name(iname,cname(iname),cform(iname),'wall_lorentz',idiag_wall_lorentz)
         call parse_name(iname,cname(iname),cform(iname),'wall_pos',idiag_wall_pos)
+        call parse_name(iname,cname(iname),cform(iname),'tension',idiag_tension)
       enddo
 !
 !  check for those quantities for which we want video slices
@@ -1973,6 +1975,11 @@ module Special
       call get_Hscript_and_a2(Hscript,a2rhom_all)
       call get_echarge
       call get_sigE_and_B
+      if(lwall_friction) then
+        previous_wall_vel = next_wall_vel
+        wall_gamma = 1./sqrt(1-previous_wall_vel**2)
+        min_distance = 1e10 
+      endif
 
     endsubroutine prep_rhs_special
 !***********************************************************************
