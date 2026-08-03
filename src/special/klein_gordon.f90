@@ -107,7 +107,8 @@ module Special
   real :: phi0=.44, dphi0=-1.69e-7, c_phi=1., delta_phi=0.,lambda_phi=0., eps=.01
   real :: delta_phi_prefactor=1.0,lambda_phi_prefactor=1.0
   real :: chi_quartic=impossible   ! normalized variable for quartic potential
-  real :: deltaV !Difference between the potential at the false and true vacuum
+  real :: chi_sextic=impossible ! normalized variable for sextic potential wihtout a cubic term
+  real :: deltaV=impossible !Difference between the potential at the false and true vacuum
   real :: lambda_psi=0., coupl_phipsi=0., c_psi=1.
   real :: amplphi=.1, ampldphi=.0, kx_phi=1., ky_phi=0., kz_phi=0., phase_phi=0., width_phi=.1, offset=0.
   real :: amplpsi=0., ampldpsi=0.
@@ -226,7 +227,7 @@ module Special
       bubble_wall_width_factor,number_of_bubbles,bubble_positions, &
       beta,bubble_size,bubble_wall_width,linitialize_seed, &
       chi_quartic, continuation_offset, rho_phi, w_phi, G_phi, lnrho_phi0, &
-      lbubble_size_ode,bounce_action,surface_tension_type
+      lbubble_size_ode,bounce_action,surface_tension_type,chi_sextic
 !
   namelist /special_run_pars/ &
       initspecial, phi0, dphi0, phimass, sign_phimass2, eps, ascale_ini, &
@@ -503,9 +504,9 @@ module Special
 !
       real,  dimension (mx,my,mz,mfarray) :: f
       integer :: iLCDM_lna,i
-      real :: broken_mass,phi_tilde,u
+      real :: broken_mass=impossible,phi_tilde,u
       real :: critical_bubble_size
-      real :: thin_bubble_wall_width,sign_m2
+      real :: thin_bubble_wall_width=impossible,sign_m2
 
 
       call initialize_seed
@@ -553,27 +554,48 @@ module Special
         ! broken_mass = sqrt(-delta_phi - 2/phi_tilde)
         broken_mass = sqrt(1 + chi_quartic - sign_m2)
         deltaV = (1./12.)*(chi_quartic-1)
-        thin_bubble_wall_width = 2/broken_mass
-        if(bubble_wall_width == impossible) then
-          ! thin_bubble_wall_width = 2/sqrt(1+2*delta_phi*phi_tilde+3*lambda_phi*phi_tilde**2)
-          bubble_wall_width = bubble_wall_width_factor*thin_bubble_wall_width
-        endif
-        if(surface_tension_type == 'wall_thickness') then
-          bubble_surface_tension = bubble_tension_coeff*1./(3.*thin_bubble_wall_width)
-        else if (surface_tension_type == 'cutting') then
+        if (surface_tension_type == 'cutting') then
           bubble_surface_tension = 1./(3.*(chi_quartic+1))
         endif
+      endif
 
-        if(bounce_action == 'O3') then
-          critical_bubble_size = 2*bubble_surface_tension/deltaV
-        else if(bounce_action == 'O4') then
-          critical_bubble_size = 3*bubble_surface_tension/deltaV
+      if(lphi_normalized_units .and. Vprime_choice=='sextic_wo_cubic') then
+        ! phimass = 1.0
+        sign_m2 = sign(1.0, phimass2)
+        phimass2 = sign_m2
+        ! alberto: we can allow phimass2 to be positive or negative (or zero)
+        ! phi_tilde = (-delta_phi + sqrt(delta_phi**2 - 4*lambda_phi)) / (2*lambda_phi)
+        ! alberto: we can use chi variable (see updated notes)
+        if (chi_sextic== impossible) then
+          call fatal_error('initialize_special',&
+                           'need chi for the sextic potential without cubic term!') 
         endif
+        print*,"Chi sextic: ",chi_sextic
+        lambda_phi = chi_sextic+3
+        c_phi = chi_sextic+2
+        broken_mass = sqrt(2*(chi_sextic+1))
+        deltaV = (1./12.)*(chi_sextic-1)
+        if (surface_tension_type == 'cutting') then
+          call fatal_error("initialize_special","Only wall_thickness for sextic without cubic term!")
+        endif
+      endif
+      
+      thin_bubble_wall_width = 2/broken_mass
+      if(bubble_wall_width == impossible) then
+        bubble_wall_width = bubble_wall_width_factor*thin_bubble_wall_width
+      endif
+      if(surface_tension_type == 'wall_thickness') then
+        bubble_surface_tension = bubble_tension_coeff*1./(3.*thin_bubble_wall_width)
+      endif
 
-        if(bubble_size == impossible) then
-          ! critical_bubble_size = 12.0/(broken_mass**4*phi_tilde**2-1)
-          bubble_size = bubble_size_factor*critical_bubble_size
-        endif
+      if(bounce_action == 'O3') then
+        critical_bubble_size = 2*bubble_surface_tension/deltaV
+      else if(bounce_action == 'O4') then
+        critical_bubble_size = 3*bubble_surface_tension/deltaV
+      endif
+
+      if(bubble_size == impossible) then
+        bubble_size = bubble_size_factor*critical_bubble_size
       endif
 !
       if (lmagnetic .and. lem_backreact) then
@@ -1153,8 +1175,10 @@ module Special
       select case (Vprime_choice)
         case ('quadratic'); p%Vprime=phimass2*p%phi
         ! alberto: do we need the prefactor variables lambda_phi_prefactor and delta_phi_prefactor?
+        ! TP: 
         case ('quartic'); p%Vprime=phimass2*p%phi+delta_phi_prefactor*delta_phi*p%phi**2&
                                    +lambda_phi_prefactor*lambda_phi*p%phi**3
+        case ('sextic_wo_cubic'); p%Vprime= phimass2*p%phi + lambda_phi*p%phi**3 + c_phi*p%phi**5
         case ('cos-profile'); p%Vprime=phimass2*lambda_phi*sin(lambda_phi*p%phi)
         ! option for ultra-slow-roll (USR) potential based on arxiv:2008.12202
         case ('ultra_slow_roll1')
@@ -2253,6 +2277,7 @@ module Special
         case ('quadratic')  ; Vpotential=.5*phimass2*phi**2
         case ('quartic')    ; Vpotential=.5*phimass2*phi**2+(1.0/3.0)*delta_phi_prefactor*delta_phi*phi**3&
                                           +.25*lambda_phi_prefactor*lambda_phi*phi**4
+        case ('sextic_wo_cubic'); Vpotential = .5*phimass2*phi**2 + .25*lambda_phi*phi**4 + (1./6.)*c_phi*phi**6
         case ('cos-profile'); Vpotential=phimass2*lambda_phi*sin(lambda_phi*phi)  !(to be corrected)
         case ('ultra_slow_roll1')
           Vpotential=V0_usr*(6*(phi/v_usr)**2 + 3.*(phi/v_usr)**4 - 4.*alpha_usr*(phi/v_usr)**3)
