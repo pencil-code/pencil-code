@@ -537,7 +537,7 @@ module Special
           chi_quartic = (-delta_phi + sqrt(delta_phi**2 - sign_m2*4*lambda_phi)) / (2*sqrt(lambda_phi))
           chi_quartic = chi_quartic**2 - 1
         endif
-        print*,"Chi quartic: ",chi_quartic
+        if(lroot) print*,"Chi quartic: ",chi_quartic
         if (chi_quartic <= 0) then
           call fatal_error('initialize_special',&
                     'choose chi_quartic > 0 for quartic potential with lphi_normalized_units')
@@ -570,7 +570,7 @@ module Special
           call fatal_error('initialize_special',&
                            'need chi for the sextic potential without cubic term!') 
         endif
-        print*,"Chi sextic: ",chi_sextic
+        if(lroot) print*,"Chi sextic: ",chi_sextic
         lambda_phi = -(chi_sextic+3)
         c_phi = chi_sextic+2
         broken_mass = sqrt(2*(chi_sextic+1))
@@ -596,6 +596,12 @@ module Special
 
       if(bubble_size == impossible) then
         bubble_size = bubble_size_factor*critical_bubble_size
+      endif
+
+      if(lphi_normalized_units) then
+        if(lroot) print*,"Bubble tension: ",bubble_surface_tension
+        if(lroot) print*,"Wall width: ",bubble_wall_width
+        if(lroot .and. lspherical_coords) print*,"dr is: ",dx
       endif
 !
       if (lmagnetic .and. lem_backreact) then
@@ -973,6 +979,10 @@ module Special
         lpenc_requested(i_plasma_friction)=.true.
       endif
 
+      if(idiag_wall_vel /= 0 .or. idiag_tension /= 0) then
+        lpenc_requested(i_gphi) = .true.
+      endif
+
 !
       if (ldensity.and.lperturbative_reheating) then ! Sovan
         lpenc_requested(i_rho)=.true.
@@ -1200,7 +1210,7 @@ module Special
           call fatal_error("dspecial_dt: No such Vprime_choice: ", trim(Vprime_choice))
       endselect
 
-      if(lwall_friction) then
+      if(lwall_friction .or. idiag_tension /= 0) then
         do l=1,nx
           distance = abs(0.5-f(l+nghost,m,n,iphi))
           if(distance < min_distance) then
@@ -2002,7 +2012,7 @@ module Special
       call get_Hscript_and_a2(Hscript,a2rhom_all)
       call get_echarge
       call get_sigE_and_B
-      if(lwall_friction) then
+      if(lwall_friction .or. idiag_tension /= 0) then
         previous_wall_vel = next_wall_vel
         wall_gamma = 1./sqrt(1-previous_wall_vel**2)
         min_distance = 1e10 
