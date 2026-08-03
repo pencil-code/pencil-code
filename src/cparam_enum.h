@@ -952,3 +952,4 @@ integer, parameter :: enum_globalZheat_string = 942
 integer, parameter :: enum_stepZlocalZpatches = 943
 integer, parameter :: enum_powerZlaw_string = 944
 integer, parameter :: enum_perturbative_reheating_string = 945
+integer, parameter :: enum_sextic_wo_cubic_string = 946
