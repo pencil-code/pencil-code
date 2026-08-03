@@ -1548,9 +1548,12 @@ module Special
       if (.not. lmultithread) then
         sigEm_all_diagnos = sigEm_all
         sigBm_all_diagnos = sigBm_all
-        call save_name(Rddot,idiag_Rddot)
-        call save_name(pressure,idiag_pressure)
-        call save_name(curvature,idiag_curvature)
+        if(lbubble_size_ode) then
+          call save_name(Rddot,idiag_Rddot)
+          call save_name(pressure,idiag_pressure)
+          call save_name(curvature,idiag_curvature)
+          call save_name(bubble_surface_tension,idiag_tension)
+        endif
         call calc_ode_diagnostics_special(f_ode)
       endif
 
