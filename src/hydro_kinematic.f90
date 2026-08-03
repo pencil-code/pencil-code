@@ -193,6 +193,7 @@ module Hydro
           "$Id$")
 !
       call put_shared_variable('lpressuregradient_gas',lpressuregradient_gas,caller='register_hydro')
+      call put_shared_variable('lconservative',lconservative)
 !
 !  Register extra aux slots for uu if requested by lkinflow_as_aux or lkinflow_as_comaux
 !  (e.g. for writing uu to snapshots for later analysis). For this to work you
