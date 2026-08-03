@@ -571,7 +571,7 @@ module Special
                            'need chi for the sextic potential without cubic term!') 
         endif
         print*,"Chi sextic: ",chi_sextic
-        lambda_phi = chi_sextic+3
+        lambda_phi = -(chi_sextic+3)
         c_phi = chi_sextic+2
         broken_mass = sqrt(2*(chi_sextic+1))
         deltaV = (1./12.)*(chi_sextic-1)
