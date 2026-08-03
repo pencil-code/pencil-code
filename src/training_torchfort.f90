@@ -68,14 +68,12 @@
       use Mpicomm, only: mpibcast, MPI_COMM_PENCIL
       use Syscalls, only: system_cmd
       use Gpu, only: TF_create_model, TF_load_model, TF_load_model_checkpoint
-      use SharedVariables, only: put_shared_variable, get_shared_variable
 
       real, contiguous,dimension(:,:,:,:) :: f
 
       character(LEN=fnlen) :: modelfn
       integer :: ndevs
 
-      call get_shared_variable('lconservative',lconservative)
       lfortran_launched = .not. lgpu .or. lroute_via_cpu
       if (lreloading) return
 
@@ -120,7 +118,7 @@
       if(lhydro) then
         f(:,:,:,itau_hydroxx:itau_hydroyz)   = 0.0
         if(lconservative) then
-            !f(:,:,:,itau_strainxx:itau_strainyz) = 0.0
+            f(:,:,:,itau_strainxx:itau_strainyz) = 0.0
         endif
       endif
 !
@@ -142,6 +140,7 @@
 !  Register slots in f-array for the six independent components of the Reynolds stress tensor tau.
 !
       use FArrayManager
+      use SharedVariables, only: put_shared_variable, get_shared_variable
 !
 !  Identify version number (generated automatically by SVN).
 !
@@ -151,6 +150,7 @@
       ltrain_mag  = ltrain_mag  .and. lmagnetic
       ltrain_dens = ltrain_dens .and. ldensity
 !
+      call get_shared_variable('lconservative',lconservative)
       if(lhydro) then
         call farray_register_auxiliary('tau_hydro',itau_hydro,vector=6,rhs=.true.,communicated=.true.)
         if(lconservative) then
@@ -168,7 +168,7 @@
       if (lhydro) then
         itau_hydroxx=itau_hydro; itau_hydroyy=itau_hydro+1; itau_hydrozz=itau_hydro+2; itau_hydroxy=itau_hydro+3; itau_hydroxz=itau_hydro+4; itau_hydroyz=itau_hydro+5
         if(lconservative) then
-           ! itau_strainxx=itau_strain; itau_strainyy=itau_strain+1; itau_strainzz=itau_strain+2; itau_strainxy=itau_strain+3; itau_strainxz=itau_strain+4; itau_strainyz=itau_strain+5
+            itau_strainxx=itau_strain; itau_strainyy=itau_strain+1; itau_strainzz=itau_strain+2; itau_strainxy=itau_strain+3; itau_strainxz=itau_strain+4; itau_strainyz=itau_strain+5
         endif
       endif
 

@@ -1,13 +1,13 @@
 #!/bin/bash
 #SBATCH --job-name=torch
 #SBATCH --account=project_2016901
-#SBATCH --partition=gputest
+#SBATCH --partition=gpumedium
 #SBATCH --time=00:15:00
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --cpus-per-task=7
+#SBATCH --cpus-per-task=72
 #SBATCH --gres=gpu:gh200:1
-#SBATCH --mem=128G
+####SBATCH --mem=12G
 #SBATCH -o slurm-%x_%J.out
 ####SBATCH --mail-type=ALL
 #SBATCH --output=train.out
@@ -43,8 +43,8 @@ export LD_LIBRARY_PATH="$:$LD_LIBRARY_PATH:$HDF5_PATH/lib:$TORCHFORT_PATH/lib:$L
 
 export NVCC_PREPEND_FLAGS="--expt-relaxed-constexpr ${NVCC_PREPEND_FLAGS}"
 
-export OMP_NUM_THREADS=8
-export OMP_PROC_BIND=close,spread
+export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK:-1}
+export OMP_PROC_BIND=spread
 export OMP_MAX_ACTIVE_LEVELS=2
 export OMP_WAIT_POLICY=PASSIVE
 
