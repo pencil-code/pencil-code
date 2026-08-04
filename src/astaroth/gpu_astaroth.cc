@@ -1087,7 +1087,7 @@ extern "C" void torch_train_c_api(AcReal *loss_val, int itsub, double t) {
 
     if(AC_lconservative__mod__hydro){
         // dynamic field handel acGetmomentum_sgs_Xx()
-        acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetviscous_sgs_Xx(), &label, &out);
+        acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetstrain_sgs_Xx(), &label, &out);
         acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetmom_mean_X(), &feature, &out);
     }
     else {

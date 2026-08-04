@@ -22,8 +22,8 @@ const Field3 bbmean =
 	bbmean_Z
 }
 
-communicated FieldSymmetricTensor viscous_sgs
-communicated FieldSymmetricTensor viscous_sgs_mean
+communicated FieldSymmetricTensor strain_sgs
+communicated FieldSymmetricTensor strain_sgs_mean
 communicated Field3 mom_mean
 communicated Field rho_mean
 
@@ -78,6 +78,27 @@ const Field3 TAU_DENSITY_INFERRED =
 	TAU_DENSITY_INFERRED_Z
 }
 
+
+
+field_order(AC_itau_strainxx__mod__training-1) communicated Field TAU_STRAIN_INFERRED_XX
+field_order(AC_itau_strainyy__mod__training-1) communicated Field TAU_STRAIN_INFERRED_YY
+field_order(AC_itau_strainzz__mod__training-1) communicated Field TAU_STRAIN_INFERRED_ZZ
+field_order(AC_itau_strainxy__mod__training-1) communicated Field TAU_STRAIN_INFERRED_XY
+field_order(AC_itau_strainxz__mod__training-1) communicated Field TAU_STRAIN_INFERRED_XZ
+field_order(AC_itau_strainyz__mod__training-1) communicated Field TAU_STRAIN_INFERRED_YZ
+
+
+const FieldSymmetricTensor TAU_STRAIN_INFERRED=
+{
+    TAU_STRAIN_INFERRED_XX,
+    TAU_STRAIN_INFERRED_YY,
+    TAU_STRAIN_INFERRED_ZZ,
+    TAU_STRAIN_INFERRED_XY,
+    TAU_STRAIN_INFERRED_XZ,
+    TAU_STRAIN_INFERRED_YZ
+
+}
+
 global input int AC_ranNum
 
 real_symmetric_tensor AC_tau_hydro_means
@@ -85,46 +106,6 @@ real_symmetric_tensor AC_tau_hydro_stds
 
 
 
-Stencil avgr1
-{
-	[-1][-1][-1] = 1/27,
-	[-1][-1][0] = 1/27,
-	[-1][-1][1] = 1/27,
-
-	[-1][0][-1] = 1/27,
-	[-1][0][0] = 1/27,
-	[-1][0][1] = 1/27,
-
-	[-1][1][-1] = 1/27,
-	[-1][1][0] = 1/27,
-	[-1][1][1] = 1/27,
-
-
-	[0][-1][-1] = 1/27,
-	[0][-1][0] = 1/27,
-	[0][-1][1] = 1/27,
-
-	[0][0][-1] = 1/27,
-	[0][0][0] = 1/27,
-	[0][0][1] = 1/27,
-
-	[0][1][-1] = 1/27,
-	[0][1][0] = 1/27,
-	[0][1][1] = 1/27,
-
-	
-	[1][-1][-1] = 1/27,
-	[1][-1][0] = 1/27,
-	[1][-1][1] = 1/27,
-
-	[1][0][-1] = 1/27,
-	[1][0][0] = 1/27,
-	[1][0][1] = 1/27,
-	
-	[1][1][-1] = 1/27,
-	[1][1][0] = 1/27,
-	[1][1][1] = 1/27,
-}
 tensor_product(real3 uu)
 {
 	real_symmetric_tensor T
@@ -158,7 +139,43 @@ write_symmetricTensor_matrix(FieldSymmetricTensor T, AcMatrix Aij)
 	write(T.xz, Aij[0][2])
 }
 
+global output real in_acc_sum[3]
+global output real in_acc_sum_squared[3]
 
+
+global output real out_acc_sum[6]
+global output real out_acc_sum_squared[6]
+
+
+accumulate_norm_sum(Field F, sum_dst, sum_squared_dst){
+	reduce_sum(F, sum_dst)
+	reduce_sum(F*F, sum_squared_dst)
+}
+
+accumulate_norm_sum_add(Field F, sum_dst, sum_squared_dst){
+	reduce_sum_add(F, sum_dst)
+	reduce_sum_add(F*F, sum_squared_dst)
+}
+
+normalize_field(Field F, acc_sum, acc_sum_squared, count){
+        real num_acc = (real)count*AC_ngrid.x*AC_ngrid.y*AC_ngrid.z
+		real mean = acc_sum/num_acc
+		real std_squared=(acc_sum_squared /num_acc) - (mean*mean)
+		real std = sqrt(std_squared)
+        real std = max(std, 1e-8)
+		return (F - mean)/std
+}
+
+// This is an old function that does not work anymore
+descale_tensor(FieldSymmetricTensor T, real_symmetric_tensor stds, real_symmetric_tensor means)
+{
+	write(T.xx, (T.xx*stds.xx) + means.xx)
+	write(T.yy, (T.yy*stds.yy) + means.yy)
+	write(T.zz, (T.zz*stds.zz) + means.zz)
+	write(T.xy, (T.xy*stds.xy) + means.xy)
+	write(T.xz, (T.xz*stds.xz) + means.xz)
+	write(T.yz, (T.yz*stds.yz) + means.yz)
+}
 
 Kernel get_bfield(){
 
@@ -193,7 +210,7 @@ Kernel fluctutation_terms_and_means()
             {
 		      uij = gradient_tensor(MOM,RHO)
 		      Sij = traceless_strain(uij)
-              write_symmetricTensor_matrix(viscous_sgs, Sij)
+              write_symmetricTensor_matrix(strain_sgs, Sij)
               write(mom_mean, gsmooth(MOM))
               write(rho_mean, gsmooth(RHO))
             }
@@ -218,7 +235,7 @@ Kernel smooth_fluctuation_terms(){
             
             if(AC_lconservative__mod__hydro)
             {
-                write(viscous_sgs, gsmooth(viscous_sgs))
+                write(strain_sgs, gsmooth(strain_sgs))
             }
             else
             {
@@ -241,8 +258,8 @@ Kernel compute_taus(){
           {
             uij_mean = gradient_tensor(mom_mean, rho_mean)
             Sij_mean = traceless_strain(uij_mean)
-            write_symmetricTensor_matrix(viscous_sgs_mean, Sij_mean)
-            write(viscous_sgs, viscous_sgs - viscous_sgs_mean)
+            write_symmetricTensor_matrix(strain_sgs_mean, Sij_mean)
+            write(strain_sgs, strain_sgs - strain_sgs_mean)
           }
           else
           {
@@ -259,134 +276,6 @@ Kernel compute_taus(){
 
 Kernel smooth_uumean(){
 	if(lhydro) write(uumean,UU)
-}
-
-
-
-global output real minTAU
-global output real maxTAU
-
-global output real minUUMEAN
-global output real maxUUMEAN
-
-Kernel reduce_uumean_tau(){
-	if(lhydro)
-	{
-	  real minimumTAU = min(tau_hydro)
-	  reduce_min(minimumTAU, minTAU)
-
-	  real maximumTAU = max(tau_hydro)
-	  reduce_max(maximumTAU, maxTAU)
-
-	  real minimumUUMEAN = min(uumean)
-	  reduce_min(minimumUUMEAN, minUUMEAN)
-
-	  real maximumUUMEAN = max(uumean)
-	  reduce_max(maximumUUMEAN, maxUUMEAN)
-	}
-}
-
-global output real minTAUxx, minTAUyy, minTAUzz, minTAUxy, minTAUyz, minTAUxz
-global output real maxTAUxx, maxTAUyy, maxTAUzz, maxTAUxy, maxTAUyz, maxTAUxz
-
-global output real minUUMEANx, minUUMEANy, minUUMEANz
-global output real maxUUMEANx, maxUUMEANy, maxUUMEANz
-
-Kernel component_wise_reduce(FieldSymmetricTensor TAU, Field3 UUMEAN){
-	if(lhydro)
-	{
-	  reduce_min(TAU.xx, minTAUxx)
-	  reduce_min(TAU.yy, minTAUyy)
-	  reduce_min(TAU.zz, minTAUzz)
-	  reduce_min(TAU.xy, minTAUxy)
-	  reduce_min(TAU.yz, minTAUyz)
-	  reduce_min(TAU.xz, minTAUxz)
-	  
-
-	  reduce_max(TAU.xx, maxTAUxx)
-	  reduce_max(TAU.yy, maxTAUyy)
-	  reduce_max(TAU.zz, maxTAUzz)
-	  reduce_max(TAU.xy, maxTAUxy)
-	  reduce_max(TAU.yz, maxTAUyz)
-	  reduce_max(TAU.xz, maxTAUxz)
-
-
-	  reduce_min(UUMEAN.x, minUUMEANx)
-	  reduce_min(UUMEAN.y, minUUMEANy)
-	  reduce_min(UUMEAN.z, minUUMEANz)
-
-	  reduce_max(UUMEAN.x, maxUUMEANx)
-	  reduce_max(UUMEAN.y, maxUUMEANy)
-	  reduce_max(UUMEAN.z, maxUUMEANz)
-	}
-}
-
-train_descale(FieldSymmetricTensor f, real minv, real maxv)
-{	
-	real max_min = maxv-minv
-	return real_symmetric_tensor((value(f.xx) * max_min) + minv, (value(f.yy) * max_min) + minv, (value(f.zz) * max_min) + minv, (value(f.xy) * max_min) + minv,(value(f.yz) * max_min) + minv, (value(f.xz) * max_min) + minv)	
-}
-
-train_descale(Field3 f, real minv, real maxv)
-{	
-	real max_min = maxv-minv
-	return real3((value(f.x) * max_min) + minv, (value(f.y) * max_min) + minv, (value(f.z) * max_min ) + minv)
-}
-
-train_scale(FieldSymmetricTensor f, real minv,  real maxv)
-{
-	real max_min = maxv-minv
-	return real_symmetric_tensor((value(f.xx) - minv)/max_min, (value(f.yy) - minv)/max_min, (value(f.zz) - minv)/max_min, (value(f.xy) - minv)/max_min, (value(f.yz) - minv)/max_min, (value(f.xz) - minv)/max_min)
-}
-
-train_scale(Field3 f, real minv,  real maxv)
-{
-	real max_min = maxv-minv
-	return real3((value(f.x) - minv) / max_min, (value(f.y) - minv) / max_min, (value(f.z) - minv) / max_min) 
-}
-
-component_wise_scale_tau(FieldSymmetricTensor f, real minxx, real minyy, real minzz, real minxy, real minyz, real minxz, real maxxx, real maxyy, real maxzz, real maxxy, real maxyz, real maxxz)
-{
-	real scaled_xx = (value(f.xx) - minxx) / (maxxx - minxx) 
-	real scaled_yy = (value(f.yy) - minyy) / (maxyy - minyy) 
-	real scaled_zz = (value(f.zz) - minzz) / (maxzz - minzz) 
-	real scaled_xy = (value(f.xy) - minxy) / (maxxy - minxy) 
-	real scaled_yz = (value(f.yz) - minyz) / (maxyz - minyz) 
-	real scaled_xz = (value(f.xz) - minxz) / (maxxz - minxz) 
-
-	return real_symmetric_tensor(scaled_xx, scaled_yy, scaled_zz, scaled_xy, scaled_yz, scaled_xz)
-}
-
-component_wise_descale_tau(FieldSymmetricTensor f, real minxx, real minyy, real minzz, real minxy, real minyz, real minxz, real maxxx, real maxyy, real maxzz, real maxxy, real maxyz, real maxxz)
-{
-	real descaled_xx = (value(f.xx) * (maxxx - minxx)) + minxx 
-	real descaled_yy = (value(f.yy) * (maxyy - minyy)) + minyy 
-	real descaled_zz = (value(f.zz) * (maxzz - minzz)) + minzz 
-	real descaled_xy = (value(f.xy) * (maxxy - minxy)) + minxy 
-	real descaled_yz = (value(f.yz) * (maxyz - minyz)) + minyz 
-	real descaled_xz = (value(f.xz) * (maxxz - minxz)) + minxz 
-
-	return real_symmetric_tensor(descaled_xx, descaled_yy, descaled_zz, descaled_xy, descaled_yz, descaled_xz)
-}
-
-component_wise_scale_uumean(Field3 f, real minx, real miny, real minz, real maxx, real maxy, real maxz)
-{
-
-	real scaled_x = (value(f.x) - minx) / (maxx- minx)
-	real scaled_y = (value(f.y) - miny) / (maxy- miny)
-	real scaled_z = (value(f.z) - minz) / (maxz- minz)
-
-	return real3(scaled_x, scaled_y, scaled_z)
-}
-
-component_wise_descale_uumean(Field3 f, real minx, real miny, real minz, real maxx, real maxy, real maxz)
-{
-
-	real descaled_x = (value(f.x) * (maxx- minx)) + minx
-	real descaled_y = (value(f.y) * (maxy- miny)) + miny
-	real descaled_z = (value(f.z) * (maxz- minz)) + minz
-
-	return real3(descaled_x, descaled_y, descaled_z)
 }
 
 global output real AC_l2_sum
@@ -407,77 +296,6 @@ Kernel l2_sum(){
 
 
 
-
-
-
-
-Kernel scale_kernel(FieldSymmetricTensor TAU, Field3 UUMEAN){
-	if(lhydro)
-	{
-	  write(TAU, train_scale(TAU, minTAU, maxTAU))
-	  write(UUMEAN, train_scale(UUMEAN, minUUMEAN, maxUUMEAN))
-	}
-}
-
-Kernel scale_kernel_new(){
-	if(lhydro)
-	{
-	  write(tau_hydro, train_scale(tau_hydro, minTAU, maxTAU))
-	  write(uumean, train_scale(uumean, minUUMEAN, maxUUMEAN))
-	}
-}
-
-
-Kernel descale_kernel(FieldSymmetricTensor TAU, Field3 UUMEAN){
-	if(lhydro)
-	{
-	  write(TAU, train_descale(TAU, minTAU, maxTAU))
-	  write(TAU_HYDRO_INFERRED, train_descale(TAU_HYDRO_INFERRED, minTAU, maxTAU))
-	  write(UUMEAN, train_descale(UUMEAN, minUUMEAN, maxUUMEAN))
-	}
-}
-
-
-Kernel descale_kernel_new(){
-
-	if(lhydro)
-	{
-	  write(tau_hydro, train_descale(tau_hydro, minTAU, maxTAU))
-	  write(uumean, train_descale(uumean, minUUMEAN, maxUUMEAN))
-	  write(TAU_HYDRO_INFERRED, train_descale(TAU_HYDRO_INFERRED, minTAU, maxTAU))
-	}
-
-}
-
-Kernel copyTauBatch(FieldSymmetricTensor TAU_out, Field3 UUMEAN_out){
-	if(lhydro)
-	{
-	  FieldSymmetricTensor TAU_in = tau_hydro	
-	  Field3 UUMEAN_in = uumean
-
-	  write(TAU_out.xx, value(TAU_in.xx))
-	  write(TAU_out.xx, value(TAU_in.yy))
-	  write(TAU_out.xx, value(TAU_in.zz))
-	  write(TAU_out.xx, value(TAU_in.xy))
-	  write(TAU_out.xx, value(TAU_in.yz))
-	  write(TAU_out.xx, value(TAU_in.xz))
-
-	  write(UUMEAN_out.x, value(UUMEAN_in.x))
-	  write(UUMEAN_out.x, value(UUMEAN_in.y))
-	  write(UUMEAN_out.x, value(UUMEAN_in.z))
-	}
-}
-
-descale_tensor(FieldSymmetricTensor T, real_symmetric_tensor stds, real_symmetric_tensor means)
-{
-	write(T.xx, (T.xx*stds.xx) + means.xx)
-	write(T.yy, (T.yy*stds.yy) + means.yy)
-	write(T.zz, (T.zz*stds.zz) + means.zz)
-	write(T.xy, (T.xy*stds.xy) + means.xy)
-	write(T.xz, (T.xz*stds.xz) + means.xz)
-	write(T.yz, (T.yz*stds.yz) + means.yz)
-}
-
 Kernel descale_inferred_taus_kernel()
 {
 	if(lhydro)
@@ -486,36 +304,10 @@ Kernel descale_inferred_taus_kernel()
 	}
 }
 
-global output real in_acc_sum[3]
-global output real in_acc_sum_squared[3]
-
-
-global output real out_acc_sum[6]
-global output real out_acc_sum_squared[6]
-
-
-accumulate_norm_sum(Field F, sum_dst, sum_squared_dst){
-	reduce_sum(F, sum_dst)
-	reduce_sum(F*F, sum_squared_dst)
-}
-
-accumulate_norm_sum_add(Field F, sum_dst, sum_squared_dst){
-	reduce_sum_add(F, sum_dst)
-	reduce_sum_add(F*F, sum_squared_dst)
-}
-
-normalize_field(Field F, acc_sum, acc_sum_squared, count){
-        real num_acc = (real)count*AC_ngrid.x*AC_ngrid.y*AC_ngrid.z
-		real mean = acc_sum/num_acc
-		real std_squared=(acc_sum_squared /num_acc) - (mean*mean)
-		real std = sqrt(std_squared)
-        real std = max(std, 1e-8)
-		return (F - mean)/std
-}
 
 
 
-Kernel compute_norm_sums()
+Kernel compute_normalize_sums()
 {
 	if(lhydro)
 	{
@@ -565,7 +357,7 @@ Kernel normalize_fields(int count)
 
 input int AC_count
 ComputeSteps normalize(boundconds){
-  compute_norm_sums()
+  compute_normalize_sums()
   normalize_fields(AC_count)
 }
 
@@ -579,11 +371,6 @@ ComputeSteps calc_validation_loss(boundconds){
 	l2_sum()
 }
 
-ComputeSteps calc_scaling(boundconds){
-	reduce_uumean_tau()
-	//component_wise_reduce()
-}
-
 ComputeSteps initialize_uumean(boundconds){
 	smooth_uumean()
 }
@@ -593,16 +380,5 @@ ComputeSteps get_taus(boundconds){
 	fluctutation_terms_and_means()
 	smooth_fluctuation_terms()
 	compute_taus()	
-}
-
-
-
-ComputeSteps scale(boundconds){
-	scale_kernel_new()
-}
-
-
-ComputeSteps descale(boundconds){
-	descale_kernel_new()
 }
 #endif
