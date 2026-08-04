@@ -262,6 +262,7 @@ module Special
   integer :: idiag_Vprimepsim=0 ! DIAG_DOC: $\left<V_{,\psi}\right>$
   integer :: idiag_rho_phi=0   ! DIAG_DOC: $\left<\rho phi\right>$
   integer :: idiag_tension = 0 ! DIAG_DOC: $\sigma$
+  integer :: idiag_terminal_vel= 0 ! DIAG_DOC: $\v_{\w_{\infty}}$
   !Kishore: changed below from $\left<\ascale\right>$ to fix compilation of the manual.
   integer :: idiag_a=0    ! DIAG_DOC: $\left<a\right>$ !Sovan
   integer :: idiag_ddotam=0     ! DIAG_DOC: $a''/a$
@@ -1587,6 +1588,10 @@ module Special
           call save_name(pressure,idiag_pressure)
           call save_name(curvature,idiag_curvature)
           call save_name(bubble_surface_tension,idiag_tension)
+          if(idiag_terminal_vel /= 0) then
+            r = deltaV/(plasma_coupling_coeff*bubble_surface_tension)
+            call save_name(r/(1+sqrt(1+r**2)),idiag_terminal_vel)
+          endif
         endif
         call calc_ode_diagnostics_special(f_ode)
       endif
@@ -1863,6 +1868,7 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'wall_lorentz',idiag_wall_lorentz)
         call parse_name(iname,cname(iname),cform(iname),'wall_pos',idiag_wall_pos)
         call parse_name(iname,cname(iname),cform(iname),'tension',idiag_tension)
+        call parse_name(iname,cname(iname),cform(iname),'terminal_vel',idiag_terminal_vel)
       enddo
 !
 !  check for those quantities for which we want video slices
