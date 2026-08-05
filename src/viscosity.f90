@@ -132,7 +132,7 @@ module Viscosity
   real :: ascale_visc=1.  !PAR_DOC: value of ascale below which nu for recombination is constant
   logical :: lvisc_const_below_ascale=.false.  !PAR_DOC: visc=const for ascale below ascale_visc
   logical :: lrate_of_strain_as_aux = .false.
-  integer :: iSij=0
+  integer :: iSij=0, ioffset_table1=8, ioffset_table2=10
 !
   namelist /viscosity_run_pars/ &
       limplicit_viscosity, nu, mu, nu_tdep_exponent, &
@@ -152,7 +152,7 @@ module Viscosity
       no_visc_heat_z0,no_visc_heat_zwidth, div_sld_visc ,lvisc_forc_as_aux, &
       lvisc_rho_nu_const_prefact, nu_rcyl_min, nu_r_reduce, &
       tdep_nu_type, nu_tdep_ascale_power,lrate_of_strain_as_aux, &
-      ascale_visc, lvisc_const_below_ascale
+      ascale_visc, lvisc_const_below_ascale, ioffset_table1, ioffset_table2
 !
 ! diagnostic variable markers (needs to be consistent with reset list below)
 !
@@ -2586,6 +2586,13 @@ module Viscosity
           nu_tdep=c_light*ell_gam
           if (lroot) call save_name(ell_gam,idiag_ell_gam)
           if (lroot .and. ip<6) print*,'AXEL: m_p, sigma_Thomson, c_light=',m_p, sigma_Thomson, c_light
+!
+!  Viscosity for recombination from a file.
+!
+        case ('read_ell_from_table')
+          call read_ell_from_table(ascale,ell_gam)
+          nu_tdep=c_light*ell_gam
+          if (lroot) call save_name(ell_gam,idiag_ell_gam)
         case default
           call fatal_error('viscosity_after_boundary','unknown value of tdep_nu_type')
         endselect
@@ -2684,6 +2691,56 @@ module Viscosity
 !      endif
 
     endsubroutine viscosity_after_boundary
+!***********************************************************************
+    subroutine read_ell_from_table(ascale,ell_gam)
+!
+!  read ell_gam from table
+!
+!   4-aug-26/axel: coded
+!
+      logical, save :: lread_data_file=.true.
+      integer :: iline
+      integer, parameter :: nline=1200
+      character (len=labellen) :: header
+      real, dimension(nline) :: T_table, z_table
+      real, save, dimension(nline) :: lna_table, ell_table
+      real, save :: lna_table_min, lna_table_max, dlna
+      real :: ascale, lna, lna1, lna2, lna_fit, weight, ell_gam, ell1, ell2
+!
+!  Read data file when this is accessed for the first time.
+!
+      if (lread_data_file) then
+        open(9,file='../profiles/ell_gamma_lna.csv',status='old')
+        read(9,*) header
+        do iline=1,nline
+          read(9,1000) lna_table(iline), z_table(iline), T_table(iline), ell_table(iline)
+        enddo
+        close(9)
+        lread_data_file=.false.
+        lna_table_min=minval(lna_table)
+        lna_table_max=maxval(lna_table)
+        dlna=(lna_table_max-lna_table_min)/(nline-1)
+      endif
+!
+!  Compute current redshift and check whether it is in the table range.
+!
+      lna=alog(ascale)
+      iline=1+nint((lna-lna_table_min)/dlna)
+      lna2=lna_table(iline-ioffset_table2)
+      lna1=lna_table(iline-ioffset_table1)
+      ell2=ell_table(iline-ioffset_table2)
+      ell1=ell_table(iline-ioffset_table1)
+      weight=(lna-lna1)/(lna2-lna1)
+      lna_fit=weight*lna2+(1.-weight)*lna1
+      ell_gam=weight*ell2+(1.-weight)*ell1
+!
+!  Debug output
+!
+      if (lroot .and. ip<14) write(6,1001) 'AXEL: iline, lna1, lna, lna2, ell_gam=', iline, lna1, lna, lna2, ell_gam
+!
+1000  format(1p,e15.8,3(1x,e14.8))
+1001  format(1p,a,i6,4(1x,e10.2))
+    endsubroutine 
 !***********************************************************************
     subroutine getnu_non_newtonian(gdotsqr,nu_effective,gradnu_effective)
 !
