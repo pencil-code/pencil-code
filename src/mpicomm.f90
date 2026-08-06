@@ -11832,6 +11832,19 @@ goto 125!!!
 
     endsubroutine set_rslice_communicator
 !***********************************************************************
+    subroutine mpi_min_keyval(key,val,dst)
+      real, intent(IN) :: key,val
+      real, intent(OUT) :: dst
+      real, dimension(2) :: sendbuf,recvbuf
+
+      sendbuf(1) = key
+      sendbuf(2) = val
+
+      call MPI_ALLREDUCE(sendbuf,recvbuf,1,MPI_2FLOAT,MPI_MINLOC,MPI_COMM_GRID,mpierr)
+      dst = recvbuf(2)
+
+    endsubroutine mpi_min_keyval
+!***********************************************************************
     subroutine mpiallreduce_merge(list,len,comm)
 !
 !  Merges an integer list across all processors.

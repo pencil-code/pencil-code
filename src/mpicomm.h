@@ -69,6 +69,7 @@
 
   public :: report_clean_output
   public :: mpiwait
+  public :: mpi_min_keyval
   
 ! Radiation ray routines
   public :: radboundary_xy_recv, radboundary_xy_send

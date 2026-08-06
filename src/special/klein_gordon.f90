@@ -298,6 +298,8 @@ module Special
   real :: previous_wall_vel = impossible
   real :: min_distance = impossible
   real :: next_wall_vel = 0.
+  real :: previous_wall_pos = impossible
+  real :: next_wall_pos = 0.
   real :: wall_gamma = impossible
   logical :: lwall_friction = .false.
 
@@ -501,7 +503,6 @@ module Special
       use FArrayManager, only: farray_index_by_name_ode, farray_index_by_name
       use General, only: random_number_wrapper, itoa
       use Slices_methods, only: alloc_slice_buffers
-      use MpiComm, only: nprocs
 !
       real,  dimension (mx,my,mz,mfarray) :: f
       integer :: iLCDM_lna,i
@@ -598,6 +599,8 @@ module Special
       if(bubble_size == impossible) then
         bubble_size = bubble_size_factor*critical_bubble_size
       endif
+      
+      next_wall_pos = bubble_size
 
       if(lphi_normalized_units) then
         if(lroot) print*,"Bubble tension: ",bubble_surface_tension
@@ -701,10 +704,6 @@ module Special
         endif
       endif
 
-      if(lwall_friction .and. nprocs > 1)  then
-        call fatal_error("initialize_special: lwall_friction only implemented for single proc but used='", &
-                                 itoa(nprocs))
-      endif
 !
       if (.not.lhydro .and. lplasma_coupling) then
         call warning('initialize_special', &
@@ -1186,7 +1185,6 @@ module Special
       select case (Vprime_choice)
         case ('quadratic'); p%Vprime=phimass2*p%phi
         ! alberto: do we need the prefactor variables lambda_phi_prefactor and delta_phi_prefactor?
-        ! TP: 
         case ('quartic'); p%Vprime=phimass2*p%phi+delta_phi_prefactor*delta_phi*p%phi**2&
                                    +lambda_phi_prefactor*lambda_phi*p%phi**3
         case ('sextic_wo_cubic'); p%Vprime= phimass2*p%phi + lambda_phi*p%phi**3 + c_phi*p%phi**5
@@ -1217,6 +1215,7 @@ module Special
           if(distance < min_distance) then
             min_distance = distance
             next_wall_vel = -f(l+nghost,m,n,idphi)/p%gphi(l,1)
+            next_wall_pos = x(l)
           endif
         enddo
       endif
@@ -1292,6 +1291,8 @@ module Special
       use Diagnostics, only: sum_mn_name, max_mn_name, save_name
       use Sub, only: dot_mn, del2, div
       use Deriv, only: der
+      use General, only: notanumber
+      use Messages, only: fatal_error_local
 !
       real,  dimension (mx,my,mz,mfarray) :: f
       real,  dimension (mx,my,mz,mvar) :: df
@@ -1463,6 +1464,12 @@ module Special
         df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi) - &
               pref_Hubble*Hscript*p%dphi-pref_Vprime*p%Vprime
 !
+        if(ip < 13) then
+          if(notanumber(p%Vprime)) then
+            call fatal_error_local('dspecial_dt',"NaNs in V'(phi)")
+          endif
+        endif
+
 !       added coupling with plasma
         if (lplasma_coupling .or. lwall_friction) then
           df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi)+p%omega_phi
@@ -1471,7 +1478,14 @@ module Special
         if (c_phi/=0 .and. .not. lphi_hom) then
           call del2(f, iphi, del2phi)
           df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi) + c_phi**2*pref_del2*del2phi
+          if(ip < 13) then
+            if(notanumber(del2phi)) then
+              call fatal_error_local('dspecial_dt',"NaNs in p%del2phi")
+            endif
+          endif
         endif
+        
+
         ! second scalar if lwaterfall
         if (lwaterfall) then
           df(l1:l2,m,n,ipsi)=df(l1:l2,m,n,ipsi)+p%dpsi
@@ -1482,6 +1496,7 @@ module Special
             df(l1:l2,m,n,idpsi)=df(l1:l2,m,n,idpsi) + c_psi**2*pref_del2*del2psi
           endif
         endif
+
 !
 !  magnetic terms, add (alpf/a^2)*(E.B) to dphi'/dt equation
 !  only if no lphi_doublet
@@ -1691,6 +1706,11 @@ module Special
         endif
 
         if(lspherical_coords) then
+          if(lwall_friction .or. idiag_tension /= 0) then
+           call save_name(previous_wall_vel,idiag_wall_vel)
+           call save_name(previous_wall_pos,idiag_wall_pos)
+           call save_name(wall_gamma,idiag_wall_lorentz)
+          endif
           do l=l1,l2
            if(abs(0.5-f(l,m,n,iphi))<1e-2) then
              v= -f(l,m,n,idphi)/p%gphi(l-nghost,1)
@@ -2015,11 +2035,16 @@ module Special
 !
 !  1-aug-25/TP: coded
 !
+      use Mpicomm, only: mpi_min_keyval
+      
       call get_Hscript_and_a2(Hscript,a2rhom_all)
       call get_echarge
       call get_sigE_and_B
       if(lwall_friction .or. idiag_tension /= 0) then
-        previous_wall_vel = next_wall_vel
+        call mpi_min_keyval(min_distance,next_wall_vel,previous_wall_vel)
+        if(idiag_wall_pos /= 0) then
+          call mpi_min_keyval(min_distance,next_wall_pos,previous_wall_pos)
+        endif
         wall_gamma = 1./sqrt(1-previous_wall_vel**2)
         min_distance = 1e10 
       endif

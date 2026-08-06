@@ -3168,6 +3168,12 @@ module Mpicomm
 !    
     endsubroutine set_rslice_communicator
  !***********************************************************************
+    subroutine mpi_min_keyval(key,val,dst)
+      real :: key,val,dst
+      call keep_compiler_quiet(key,val,dst)
+
+    endsubroutine mpi_min_keyval
+!***********************************************************************
     subroutine mpiallreduce_merge(list,len)
 !
 ! 20-oct-22/MR: coded
