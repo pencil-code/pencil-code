@@ -6350,7 +6350,7 @@ module Initcond
 !
                 !r(ikx,iky,ikz)=(1.-2.*qirro1) * (kx(ikx+ipx*nx)*u_re(ikx,iky,ikz,1) &
                 r(ikx,iky,ikz)=p2 * (kx(ikx+ipx*nx)*u_re(ikx,iky,ikz,1) &
-                                                +ky(iky+ipy*ny)*u_re(ikx,iky,ikz,2))/k2(ikx,iky,ikz)
+                                    +ky(iky+ipy*ny)*u_re(ikx,iky,ikz,2))/k2(ikx,iky,ikz)
                 u_re(ikx,iky,ikz,1)=p*u_re(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
                 u_re(ikx,iky,ikz,2)=p*u_re(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
                 u_re(ikx,iky,ikz,3)=p*u_re(ikx,iky,ikz,3)
@@ -6360,7 +6360,7 @@ module Initcond
 !
                 !r(ikx,iky,ikz)=(1.-2.*qirro1) * (kx(ikx+ipx*nx)*u_im(ikx,iky,ikz,1) &
                 r(ikx,iky,ikz)=p2 * (kx(ikx+ipx*nx)*u_im(ikx,iky,ikz,1) &
-                                                +ky(iky+ipy*ny)*u_im(ikx,iky,ikz,2))/k2(ikx,iky,ikz)
+                                    +ky(iky+ipy*ny)*u_im(ikx,iky,ikz,2))/k2(ikx,iky,ikz)
                 u_im(ikx,iky,ikz,1)=p*u_im(ikx,iky,ikz,1)-kx(ikx+ipx*nx)*r(ikx,iky,ikz)
                 u_im(ikx,iky,ikz,2)=p*u_im(ikx,iky,ikz,2)-ky(iky+ipy*ny)*r(ikx,iky,ikz)
                 u_im(ikx,iky,ikz,3)=p*u_im(ikx,iky,ikz,3)

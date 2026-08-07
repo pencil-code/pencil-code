@@ -6881,7 +6881,7 @@ outer:do ikz=1,nz
     if (specflux_dq>0.) then
       nlk_q = floor((nk-1.)/specflux_dq)+1
     elseif (specflux_dq<0.) then
-      nlk_q = floor(alog(nk-1.)/alog(-specflux_dq))+1
+      nlk_q = floor(alog(max(nk-1.,1.))/alog(-specflux_dq))+1
     else
       call fatal_error('power_transfer_mag','specflux_dq must be non-zero')
     endif

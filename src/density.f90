@@ -2454,6 +2454,13 @@ module Density
            idiag_rho2downmz/=0 .or. idiag_rhof2mz/=0 .or. idiag_rhof2upmz/=0 .or. &
            idiag_rhof2downmz/=0 .or. idiag_sphmass/=0) &
            lpenc_diagnos(i_rho)=.true.
+!
+!  Axel: did this ever work for the first time step?
+!  I'm having a case where the rhom diagnostics is wrong at the first time step.
+!  (I noticed this because of another mistake in that no rho pencil was requested.)
+!
+      if (idiag_rhom/=0) lpenc_requested(i_rho)=.true.
+!
       if (idiag_rhoph1mz/=0 .or. idiag_rhoph2mz/=0 .or. idiag_rhoph3mz/=0) lpenc_diagnos(i_ss)=.true.
       if (idiag_rho2ph1mz/=0 .or. idiag_rho2ph2mz/=0 .or. idiag_rho2ph3mz/=0) lpenc_diagnos(i_ss)=.true.
       if (idiag_rhomxy/=0 .or. idiag_rho2mxy/=0) lpenc_diagnos2d(i_rho)=.true.
@@ -2748,7 +2755,8 @@ module Density
 ! rho1
       if (lpenc_loc(i_rho1)) p%rho1=exp(-f(l1:l2,m,n,ilnrho))
 ! rho
-      if (lpenc_loc(i_rho)) p%rho=1.0/p%rho1
+      !if (lpenc_loc(i_rho)) p%rho=1.0/p%rho1
+      if (lpenc_loc(i_rho)) p%rho=exp(f(l1:l2,m,n,ilnrho))
 ! glnrho and grho
       if (lpenc_loc(i_glnrho).or.lpenc_loc(i_grho)) then
         call grad(f,ilnrho,p%glnrho)

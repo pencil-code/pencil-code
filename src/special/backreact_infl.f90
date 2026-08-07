@@ -106,7 +106,7 @@ module Special
   real :: a2rhogphim, a2rhogphim_all
   real :: a2, a21, Hscript
   real :: Hscript0=0., scale_rho_chi_Heqn=1., scale_rho_rad_Heqn=1., rho_chi_init=0.
-  real :: cdt_rho_chi=1., cdt_phi=1e-2, cdt_Gamma_phi=1.
+  real :: cdt_rho_chi=1., cdt_phi=1e-2, cdt_Gamma_phi=1., cdt_Hscript=.1
   real :: amplee_BD_prefactor=0., deriv_prefactor_ee=-1.
   real :: echarge=.0, echarge_const=.303
   real :: count_eb0_all=0., rad_heating=0., ascale_heat=0., ascale_heat_width=0., ascale_heat_off=0., heating
@@ -208,7 +208,7 @@ module Special
       lzeroHubble, lold_ldt_phi, ldt_backreact_infl, ldt_Gamma_phi, Ndiv, &
       Hscript0, Hscript_choice, infl_v, &
       lflrw, lrho_chi, scale_rho_chi_Heqn, scale_rho_rad_Heqn, echarge_type, &
-      cdt_rho_chi, cdt_phi, cdt_Gamma_phi, &
+      cdt_rho_chi, cdt_phi, cdt_Gamma_phi, cdt_Hscript, &
       lrho_rad, lrho_rad_apply, lrho_rad_apply2, lrho_chi_corrected, &
       lrho_chi_inhom, ldefine_a2rhophi_with_Vpotential, rad_heating, &
       lsmooth_Gamma_phi, ascale_heat, ascale_heat_width, ascale_heat_off, &
@@ -602,6 +602,11 @@ module Special
       lpenc_requested(i_infl_phi)=.true.
       lpenc_requested(i_infl_dphi)=.true.
 !
+!  Density pencil needed for perturbative reheating.
+!
+      if (lrho_chi_inhom .and. lheating .and. ldensity .and. .not. ldensity_nolog) &
+        lpenc_requested(i_rho1)=.true.
+!
     endsubroutine pencil_criteria_special
 !***********************************************************************
     subroutine calc_pencils_special(f,p)
@@ -925,7 +930,7 @@ module Special
           dt1_special = Ndiv*abs(Hscript)
         endif
         dt1_max=max(dt1_max,dt1_special)
-! 7-jul-2026/axel: perhaps better via dt1_src
+! 7-jul-2026/axel: perhaps better via dt1_src; see the use of maxsrc 10 lines below.
         !maxsrc=max(maxsrc,dt1_special)
 !
 !  Detailed time step report.
@@ -935,6 +940,23 @@ module Special
           print*,'Time step report from backreact_infl: minval(1/sqrt(advec2))=',minval(1./sqrt(advec2))
         endif
       endif
+!
+!  Timestep constraint on the density equation.
+!  In practice, this is only important in 0-D runs.
+!
+      if (lrho_chi_inhom .and. lheating .and. ldensity) then
+        if (ldensity_nolog) then
+          maxsrc=maxsrc+maxval(Gamma_phi_rho_rhs)
+        else
+          maxsrc=maxsrc+maxval(Gamma_phi_rho_rhs*p%rho1)
+        endif
+      endif
+!
+!  Timestep constraint on the density equation.
+!  In practice, this is only important in 0-D runs.
+!  Currently, the ODE timestep constraints need to be applied in the PDF routine.
+!
+      maxsrc=maxsrc+Hscript/cdt_Hscript
 !
 !  Diagnostics
 !
@@ -1004,6 +1026,12 @@ module Special
         endif
         df_ode(iinfl_rho_rad)=df_ode(iinfl_rho_rad)-4.*Hscript*f_ode(iinfl_rho_rad)+heating
       endif
+!
+!  Timestep constraint on the density equation.
+!  In practice, this is only important in 0-D runs.
+!  Currently, the ODE timestep constraints need to be applied in the PDF routine.
+!
+  !   maxsrc=maxsrc+Hscript/cdt_Hscript
 !
 !  Diagnostics
 !
@@ -1196,6 +1224,12 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'dtGphirho',idiag_dtGphirho)
         call parse_name(iname,cname(iname),cform(iname),'tph',idiag_tph)
       enddo
+!
+!  check for those quantities for which we want video slices
+!
+      if (lwrite_slices) then
+        where(cnamev=='infl_phi') cformv='DEFINED'
+      endif
 !
     endsubroutine rprint_special
 !*****************************************************************************
@@ -1636,6 +1670,29 @@ module Special
       endif
 !
     endsubroutine special_after_boundary
+!***********************************************************************
+    subroutine get_slices_special(f,slices)
+!
+!  Write slices for animation of pseudo-scalar field
+!
+!  18-jul-26/axel: adapted from src/special/disp_current.f90
+!
+      use Slices_methods, only: assign_slices_vec
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (slice_data) :: slices
+!
+!  Loop over slices
+!
+      select case (trim(slices%name))
+!
+!  Electric field.
+!
+      case ('infl_phi');   call assign_slices_vec (slices,f,iee)
+!
+      endselect
+!
+    endsubroutine get_slices_special
 !***********************************************************************
     subroutine prep_ode_right(f,sigE1m,sigB1m)
 !
