@@ -2094,6 +2094,7 @@ module Special
     call copy_addr(lnascale_reheating,p_par(52))
     call copy_addr(dlnascale_reheating,p_par(53))
     call copy_addr(lg_gamma_phi_fraction_firststep,p_par(54))
+    call copy_addr(cdt_hscript,p_par(55))
     endsubroutine pushpars2c
 !********************************************************************
 !********************************************************************
