@@ -190,6 +190,10 @@ module Special
   logical :: lplasma_coupling=.false.
   integer :: continuation_offset = 0
   logical :: lbubble_size_ode = .false.
+  logical :: lthermal_noise = .false.
+  real    :: noise_strength = impossible
+  real    :: noise_start = 0.0
+  logical :: ldR_for_wall_vel = .false.
   
 ! Sovan : Perturbative Reheating
 !
@@ -239,7 +243,8 @@ module Special
       max_bubble_nucleation_rate, bubble_wall_width_factor,number_of_bubbles,&
       lgenerate_bubble_times,beta,nucleation_rate_choice,bubble_position_criteria,tf,&
       bubble_size,bubble_wall_width,plasma_coupling_coeff,lplasma_coupling, &
-      rho_phi, w_phi, G_phi, lnrho_phi0
+      rho_phi, w_phi, G_phi, lnrho_phi0, lthermal_noise, noise_strength, noise_start, &
+      ldR_for_wall_vel
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -716,6 +721,7 @@ module Special
         allocate(lconservative)
         lconservative=.false.
       endif
+      !if(lthermal_noise) ldR_for_wall_vel = .true.
 
       if(lconservative) then
         ivel = ivv
@@ -1214,7 +1220,7 @@ module Special
           distance = abs(0.5-f(l+nghost,m,n,iphi))
           if(distance < min_distance) then
             min_distance = distance
-            next_wall_vel = -f(l+nghost,m,n,idphi)/p%gphi(l,1)
+            next_wall_vel = -f(l+nghost,m,n,idphi)/(p%gphi(l,1))
             next_wall_pos = x(l)
           endif
         enddo
@@ -1465,6 +1471,9 @@ module Special
               pref_Hubble*Hscript*p%dphi-pref_Vprime*p%Vprime
 !
         if(ip < 13) then
+          if(notanumber(p%phi)) then
+            call fatal_error_local('dspecial_dt',"NaNs in phi")
+          endif
           if(notanumber(p%Vprime)) then
             call fatal_error_local('dspecial_dt',"NaNs in V'(phi)")
           endif
@@ -1798,6 +1807,8 @@ module Special
       select case (id)
         case (id_record_WALL_VEL)
           done = read_persist ('WALL_VEL', next_wall_vel)
+        case (id_record_WALL_POS)
+          done = read_persist ('WALL_POS', next_wall_pos)
       endselect
 !
     endsubroutine input_persist_special_id
@@ -1814,6 +1825,7 @@ module Special
       output_persistent_special = .true.
 !
       if (write_persist ('WALL_VEL', id_record_WALL_VEL, next_wall_vel)) return
+      if (write_persist ('WALL_POS', id_record_WALL_POS, next_wall_pos)) return
 !
       output_persistent_special = .false.
 !
@@ -2036,17 +2048,47 @@ module Special
 !  1-aug-25/TP: coded
 !
       use Mpicomm, only: mpi_min_keyval
+      use Messages, only: fatal_error_local
+      use General, only: notanumber
+      real :: prev_R
       
       call get_Hscript_and_a2(Hscript,a2rhom_all)
       call get_echarge
       call get_sigE_and_B
       if(lwall_friction .or. idiag_tension /= 0) then
-        call mpi_min_keyval(min_distance,next_wall_vel,previous_wall_vel)
-        if(idiag_wall_pos /= 0) then
+        prev_R = previous_wall_pos
+        if(prev_R == impossible) then
+          prev_R = bubble_size
+        endif
+
+        if(idiag_wall_pos /= 0 .or. ldR_for_wall_vel) then
           call mpi_min_keyval(min_distance,next_wall_pos,previous_wall_pos)
         endif
+
+        if(ldR_for_wall_vel) then
+          if(t == 0) then
+            previous_wall_vel = 0.
+          else
+            previous_wall_vel = (previous_wall_pos-prev_R)/dt
+          endif
+        else
+          call mpi_min_keyval(min_distance,next_wall_vel,previous_wall_vel)
+        endif
+
         wall_gamma = 1./sqrt(1-previous_wall_vel**2)
         min_distance = 1e10 
+        if(abs(previous_wall_vel) >= 1.0) then
+          call fatal_error_local('prep_rhs_special',"Superluminal wall velocity")
+        endif
+
+        if(notanumber(previous_wall_vel)) then
+          call fatal_error_local('prep_rhs_special',"NaN for wall velocity")
+        endif
+
+        if(notanumber(wall_gamma)) then
+          print*,"Wall velocity was: ",previous_wall_vel
+          call fatal_error_local('prep_rhs_special',"NaN for gamma wall")
+        endif
       endif
 
     endsubroutine prep_rhs_special
@@ -2305,6 +2347,44 @@ module Special
       call mpibcast_real(b2m_all)
 
     endsubroutine special_after_boundary
+!***********************************************************************
+    subroutine special_after_timestep(f,df,dt_,llast)
+!
+!  Possibility to modify the f and df after df is updated.
+!
+!  7-aug-26/TP: coded
+!
+      use Sub, only: box_muller_transform
+      use Grid, only: get_grid_mn
+      use General, only: notanumber
+
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension(mx,my,mz,mvar), intent(inout) :: df
+      real, intent(in) :: dt_
+      logical, intent(in) :: llast
+      real, dimension(nx) :: zeta
+
+      if(llast) then  
+        do m=m1,m2
+        do n=n1,n2
+! Adds thermal white noise term, making the PDE a Langevin equation
+          if(lthermal_noise .and. t > noise_start) then
+            !Done to compute dVol
+            call get_grid_mn
+            call box_muller_transform(sqrt(2*plasma_coupling_coeff*noise_strength),zeta)
+            zeta = zeta/sqrt(dt*dVol+tini)
+            if(ip < 13) then
+             if(notanumber(zeta)) then
+                     print*,"NaNs in Zeta!!"
+             endif
+            endif
+            f(l1:l2,m,n,idphi) = f(l1:l2,m,n,idphi) + dt_*zeta
+          endif
+        enddo
+        enddo
+      endif
+!
+    endsubroutine special_after_timestep
 !***********************************************************************
     subroutine get_Vpotential(f,Vpotential)
       real, dimension(mx,my,mz,mfarray), intent(in) :: f

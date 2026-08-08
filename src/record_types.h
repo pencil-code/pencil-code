@@ -76,3 +76,4 @@ integer, parameter :: id_record_LHEATING_ALWAYS  = 360
 integer, parameter :: id_record_LSOLVE_FOR_PHI   = 361
 ! special/klein_gordon.f90
 integer, parameter :: id_record_WALL_VEL         = 370
+integer, parameter :: id_record_WALL_POS         = 371

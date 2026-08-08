@@ -123,6 +123,8 @@ module Sub
   public :: get_random_vec
   public :: sample_poisson_waiting_time
   public :: solve3x3
+  public :: box_muller_transform
+
 
 !
   interface poly                ! Overload the `poly' function
@@ -9649,7 +9651,10 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
   endfunction sample_poisson_waiting_time
 !***********************************************************************
 subroutine solve3x3(A, b, x)
-  implicit none
+!
+! Solves a 3x3 matrix.
+! 28-jul-26/TP: Coded
+!
 
   real, intent(in)  :: A(3,3)
   real, intent(in)  :: b(3)
@@ -9733,5 +9738,30 @@ subroutine solve3x3(A, b, x)
 
 end subroutine solve3x3
 !***********************************************************************
+subroutine box_muller_transform(ampl,res)
+!
+!  Generates sequence of Gaussian noise i.e.
+!  normally distributed white noise with zero mean and unit variance
+!  scaled by ampl
+!
+!  7-aug-26/TP: Coded
+!
+  use General, only: random_number_wrapper
 
+  real, intent(IN) :: ampl
+  real, dimension(:), intent(INOUT) :: res
+  real :: u1,u2,r
+  integer :: i,n
+
+  n = size(res)
+  do i = 1,size(res),2
+    call random_number_wrapper(u1)
+    call random_number_wrapper(u2)
+    r = sqrt(-2*log(u1))
+    res(i)   = ampl*r*sin(2*pi*u2)
+    if(i+1 <= n) res(i+1) = ampl*r*cos(2*pi*u2)
+  enddo
+endsubroutine box_muller_transform
+!***********************************************************************
+!
 endmodule Sub

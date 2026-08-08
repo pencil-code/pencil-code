@@ -4956,6 +4956,8 @@ module Initcond
 !  23-may-02/axel: coded
 !  10-sep-03/axel: result only *added* to whatever f array had before
 !
+      use Sub, only: box_muller_transform
+
       real :: ampl
       real, contiguous, dimension(:,:,:,:) :: f
       integer :: i1,i2
@@ -4975,13 +4977,7 @@ module Initcond
         do n=1,mz; do m=1,my
           do i=i1,i2
             if (lroot.and.m==1.and.n==1) print*,'gaunoise_vect: variable i=',i
-            if (modulo(i-i1,2)==0) then
-              call random_number_wrapper(r)
-              call random_number_wrapper(p)
-              tmp=sqrt(-2*log(r))*sin(2*pi*p)
-            else
-              tmp=sqrt(-2*log(r))*cos(2*pi*p)
-            endif
+            call box_muller_transform(ampl,tmp)
             f(:,m,n,i)=f(:,m,n,i)+ampl*tmp
           enddo
         enddo; enddo
@@ -4996,11 +4992,12 @@ module Initcond
 !  23-may-02/axel: coded
 !  10-sep-03/axel: result only *added* to whatever f array had before
 !
+      use Sub, only: box_muller_transform
       real :: ampl
       real, contiguous, dimension(:,:,:,:) :: f
       integer :: i
 !
-      real, dimension (mx) :: r,p,tmp
+      real, dimension (mx) :: tmp
 !
       intent(in)    :: ampl,i
       intent(inout) :: f
@@ -5013,9 +5010,7 @@ module Initcond
         if ((ip<=8).and.lroot) print*,'gaunoise_scal: i=',i
         if (lroot) print*,'gaunoise_scal: variable i=',i
         do n=1,mz; do m=1,my
-          call random_number_wrapper(r)
-          call random_number_wrapper(p)
-          tmp=sqrt(-2*log(r))*sin(2*pi*p)
+          call box_muller_transform(ampl,tmp)
           f(:,m,n,i)=f(:,m,n,i)+ampl*tmp
         enddo; enddo
       endif
