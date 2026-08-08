@@ -91,6 +91,19 @@ class SliceSeries(object):
         - Use the attribute keys to get a list of attributes
         - self.coordinate is the 1-based index of the slice including ghost zones at each output time
         - self.position is the coordinate value of the slice at each output time
+        - Each plane attribute (self.xy, self.xy2, self.xy3, self.xy4, self.xz,
+          self.yz, self.r, ...) holds one array per field, of shape
+          (nt, vsize, hsize):
+            - xy, xy2, xy3, xy4: (nt, ny, nx)
+            - xz:                (nt, nz, nx)
+            - yz:                (nt, nz, ny)
+            - r:                 (nt, vsize, hsize), sizes as stored in
+                                  slice_position.dat
+          i.e. of the two spatial axes in the plane, the one that comes
+          later in the extension name (e.g. "y" in "xy", "z" in "xz"/"yz")
+          is the outer/slower-varying one and comes first, matching the
+          [..., z, y, x] axis order used throughout pencil.read (e.g.
+          read.var).
 
         Examples
         --------
@@ -217,6 +230,10 @@ class SliceSeries(object):
                             print("iter_list, start", iter_list, istart)
                         if downsample > 1:
                             downsample = max(1, int(downsample))
+                        # On-disk HDF5 slice data is already stored as
+                        # [slow, fast] (e.g. [y,x] for xy); shape here
+                        # follows the same (nt, vsize, hsize) convention
+                        # as the Fortran-file branch below.
                         vsize = int(ceil(ds["1/data"].shape[0]/float(downsample)))
                         hsize = int(ceil(ds["1/data"].shape[1]/float(downsample)))
                         slice_series = np.zeros([nt, vsize, hsize], dtype=precision)
@@ -380,7 +397,9 @@ class SliceSeries(object):
                     else:
                         read_precision = "f"
 
-                    # Set up slice plane.
+                    # Set up slice plane. hsize/vsize become the fast/slow
+                    # (x-like/y-or-z-like) axis lengths of the returned
+                    # (nt, vsize, hsize) array -- see Notes in read().
                     if extension == "xy" or extension == "Xy" or extension == "xy2" or extension == "xy3" or extension == "xy4":
                         hsize = dim.nx
                         vsize = dim.ny
@@ -478,6 +497,7 @@ class SliceSeries(object):
 
                     self.t = np.array(self.t, dtype=precision)[:, 0]
                     slice_series = np.array(slice_series, dtype=precision)
+                    # Resulting shape is (nt, vsize, hsize), i.e. [t, slow, fast].
                     slice_series = slice_series.reshape(islice, vsize, hsize)
                     if downsample > 1:
                         downsample = int(downsample)
