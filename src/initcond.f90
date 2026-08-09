@@ -4977,7 +4977,7 @@ module Initcond
         do n=1,mz; do m=1,my
           do i=i1,i2
             if (lroot.and.m==1.and.n==1) print*,'gaunoise_vect: variable i=',i
-            call box_muller_transform(ampl,tmp)
+            call box_muller_transform(tmp)
             f(:,m,n,i)=f(:,m,n,i)+ampl*tmp
           enddo
         enddo; enddo
@@ -5010,7 +5010,7 @@ module Initcond
         if ((ip<=8).and.lroot) print*,'gaunoise_scal: i=',i
         if (lroot) print*,'gaunoise_scal: variable i=',i
         do n=1,mz; do m=1,my
-          call box_muller_transform(ampl,tmp)
+          call box_muller_transform(tmp)
           f(:,m,n,i)=f(:,m,n,i)+ampl*tmp
         enddo; enddo
       endif
