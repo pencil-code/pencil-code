@@ -9738,17 +9738,15 @@ subroutine solve3x3(A, b, x)
 
 end subroutine solve3x3
 !***********************************************************************
-subroutine box_muller_transform(ampl,res)
+subroutine box_muller_transform(res)
 !
 !  Generates sequence of Gaussian noise i.e.
 !  normally distributed white noise with zero mean and unit variance
-!  scaled by ampl
 !
 !  7-aug-26/TP: Coded
 !
   use General, only: random_number_wrapper
 
-  real, intent(IN) :: ampl
   real, dimension(:), intent(INOUT) :: res
   real :: u1,u2,r
   integer :: i,n
@@ -9758,8 +9756,8 @@ subroutine box_muller_transform(ampl,res)
     call random_number_wrapper(u1)
     call random_number_wrapper(u2)
     r = sqrt(-2*log(u1))
-    res(i)   = ampl*r*sin(2*pi*u2)
-    if(i+1 <= n) res(i+1) = ampl*r*cos(2*pi*u2)
+    res(i)   = r*sin(2*pi*u2)
+    if(i+1 <= n) res(i+1) = r*cos(2*pi*u2)
   enddo
 endsubroutine box_muller_transform
 !***********************************************************************

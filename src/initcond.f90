@@ -4977,7 +4977,15 @@ module Initcond
         do n=1,mz; do m=1,my
           do i=i1,i2
             if (lroot.and.m==1.and.n==1) print*,'gaunoise_vect: variable i=',i
-            call box_muller_transform(tmp)
+            !call box_muller_transform(tmp)
+            !TP: done in this old way to recreate reference.dat
+            if (modulo(i-i1,2)==0) then
+              call random_number_wrapper(r)
+              call random_number_wrapper(p)
+              tmp=sqrt(-2*log(r))*sin(2*pi*p)
+            else
+              tmp=sqrt(-2*log(r))*cos(2*pi*p)
+            endif
             f(:,m,n,i)=f(:,m,n,i)+ampl*tmp
           enddo
         enddo; enddo

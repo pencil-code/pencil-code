@@ -2371,8 +2371,8 @@ module Special
           if(lthermal_noise .and. t > noise_start) then
             !Done to compute dVol
             call get_grid_mn
-            call box_muller_transform(sqrt(2*plasma_coupling_coeff*noise_strength),zeta)
-            zeta = zeta/sqrt(dt*dVol+tini)
+            call box_muller_transform(zeta)
+            zeta = zeta*sqrt(2*plasma_coupling_coeff*noise_strength)/sqrt(dt*dVol+tini)
             if(ip < 13) then
              if(notanumber(zeta)) then
                      print*,"NaNs in Zeta!!"
