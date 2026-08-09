@@ -5018,7 +5018,12 @@ module Initcond
         if ((ip<=8).and.lroot) print*,'gaunoise_scal: i=',i
         if (lroot) print*,'gaunoise_scal: variable i=',i
         do n=1,mz; do m=1,my
-          call box_muller_transform(tmp)
+          !TP: done in in old way to keep random
+          !numbers backwards compatible
+          !call box_muller_transform(tmp)
+          call random_number_wrapper(r)
+          call random_number_wrapper(p)
+          tmp=sqrt(-2*log(r))*sin(2*pi*p)
           f(:,m,n,i)=f(:,m,n,i)+ampl*tmp
         enddo; enddo
       endif
