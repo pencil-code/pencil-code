@@ -1142,6 +1142,7 @@ module Special
     endsubroutine read_Hp_and_appa_target
 !***********************************************************************
     subroutine read_scl_factor
+
       real :: lgt1, lgt2, lgf1, lgf2, lgf, lgt_current
       integer :: it_file
 !
@@ -1160,6 +1161,7 @@ module Special
         lgf=lgf1+(lgt_current-lgt1)*(lgf2-lgf1)/(lgt2-lgt1)
         scl_factor_target=10**lgf/a_ini
         scale_factor=10**lgf/a_ini
+
     endsubroutine read_scl_factor
 !***********************************************************************
     subroutine dspecial_dt(f,df,p)
@@ -2273,6 +2275,7 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
       real :: hhTre, hhTim, hhXre, hhXim
       real, dimension (6) :: e_T, e_X
       intent(inout) :: f
+
         do ikz=1,nz
           do iky=1,ny
             do ikx=1,nx
@@ -2469,35 +2472,37 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
            enddo
          enddo
        enddo
+!
     endsubroutine compute_hij
 !***********************************************************************
-!TP: potential helper functions if we would bother to take advantage of conjugate symmetry
 !    function has_negative_frequency(ik,ngrid) result(res)
+!
+!!  Potential helper functions if we would bother to take advantage of conjugate symmetry
+!
 !      integer :: ik,ngrid,nyquist_frequency
 !      logical :: res
+!
 !      nyquist_frequency = (ngrid/2)+1
-!      if (ik > nyquist_frequency) then
-!              res = .true.
-!      else
-!              res = .false.
-!      endif
+!      res = ik > nyquist_frequency
+!
 !    endfunction has_negative_frequency
 !***********************************************************************
 !    function below_nyquist_frequency(ik,ngrid) result(res)
+!
 !      integer :: ik,ngrid,nyquist_frequency
 !      logical :: res
+!
 !      nyquist_frequency = (ngrid/2)+1
-!      if (ik < nyquist_frequency) then
-!              res = .true.
-!      else
-!              res = .false.
-!      endif
+!      res = ik < nyquist_frequency
+!
 !    endfunction below_nyquist_frequency
 !!***********************************************************************
 !    subroutine get_conjugate_pair_index(ik_src,ik_dst,ngrid)
+!
 !      integer :: ik_src,ik_dst,ngrid
 !      integer :: offset_from_nyquist
 !      integer :: nyquist_frequency 
+!
 !      nyquist_frequency = (ngrid/2)+1
 !      if (ik_src == 1 .or. ik_src == nyquist_frequency) then
 !        ik_dst = ik_src
@@ -2508,9 +2513,11 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
 !        offset_from_nyquist = nyquist_frequency - ik_src
 !        ik_dst = nyquist_frequency+offset_from_nyquist
 !      endif
+!
 !    endsubroutine get_conjugate_pair_index
 !!***********************************************************************
 !    subroutine get_conjugate_pair_indexes(ikx_src,iky_src,ikz_src,ikx_dst,iky_dst,ikz_dst)
+!
 !      integer :: ikx_src,iky_src,ikz_src
 !      integer :: ikx_dst,iky_dst,ikz_dst
 !
@@ -2521,6 +2528,7 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
 !    endsubroutine get_conjugate_pair_indexes
 !***********************************************************************
     subroutine solve_and_stress(f,S_T_re,S_T_im,S_X_re,S_X_im,dt)
+!
 !   TODO: The name is simply a placeholder since could not come up with a better name
 !
 !  6-jul-25/TP: carved from compute_gT_and_gX_from_gij
@@ -2569,12 +2577,13 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
 ! alberto (sep 8 2023), added option to solve for \xi in Horndeski theories
 !
       if (lgpu) then
-              if (lread_scl_factor_file) then
-                      call read_scl_factor
-              else
-                      call compute_scl_factor
-              endif
+        if (lread_scl_factor_file) then
+          call read_scl_factor
+        else
+          call compute_scl_factor
+        endif
       endif
+
       if (lhorndeski.or.lhorndeski_xi) then
         select case (ihorndeski_time)
           case ('const')
@@ -3081,6 +3090,7 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
           enddo
         enddo
       enddo
+
     endsubroutine solve_and_stress
 !***********************************************************************
     subroutine compute_gT_and_gX_from_gij(f,label,dt)

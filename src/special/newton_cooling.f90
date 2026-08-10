@@ -148,12 +148,13 @@ module Special
 !
       use EquationOfState, only: cs20,rho0
       use Sub, only: grad,dot
+
+      real, dimension(mx,my,mz,mfarray) :: f
+!
       real, dimension(nx) :: rho,TT
       real :: TT0,rho01,lnTT0,kappa_cgs,TTdim,rhodim
       integer :: i
 
-      real, dimension(mx,my,mz,mfarray) :: f
-!
       lnTT0=log(cs20*cp1/gamma_m1)
       TT0=exp(lnTT0)
       rho01=1./rho0
@@ -171,15 +172,15 @@ module Special
 ! TT_csg = exp(lnTT) * temperature_unit_cgs
 !
         do i=1,nx 
-           ! spits out opacity in cgs units
-           TTdim=TT(i)*unit_temperature
-           rhodim=rho(i)*unit_density
-           call calc_opacity(TTdim,rhodim,kappa_cgs)
+          ! spits out opacity in cgs units
+          TTdim=TT(i)*unit_temperature
+          rhodim=rho(i)*unit_density
+          call calc_opacity(TTdim,rhodim,kappa_cgs)
 !
 ! kappa_code = kappa_cgs/ unit_kappa
 ! unit_kappa = 1/(unit_density*unit_length)
 !
-           f(i+nghost,m,n,ikappar) = kappa_cgs * (unit_density*unit_length)
+          f(i+nghost,m,n,ikappar) = kappa_cgs * (unit_density*unit_length)
 !
         enddo
 !
@@ -188,6 +189,7 @@ module Special
         dtau(:,m-nghost,n-nghost) = f(l1:l2,m,n,ikappar)*rho*x(l1:l2)/dy_1(m)
 !
       enddo;enddo
+
      endsubroutine calc_kappar_and_dtau
 !***********************************************************************
     subroutine special_before_boundary(f)
@@ -195,7 +197,6 @@ module Special
 !  This subroutine calculates the full potential due to the turbulence.
 !
 !  03-oct-12/wlad: coded
-!
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 !
@@ -212,6 +213,7 @@ module Special
     subroutine integrate_optical_depth(f)
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+
       real, dimension(my) :: tau_below_local,tau_above_local
       real, dimension(my) :: tau_below,tau_above
       real :: tau_above_sum,tau_below_sum
@@ -219,7 +221,7 @@ module Special
 !
       if (lmpicomm) call calc_column_tau(f)
 !
-!  For every point, get stuff above and below -- assume meriodional to start with
+!  For every point, get stuff above and below -- assume meridional to start with
 !
       do n=n1,n2; do i=l1,l2
           !if tht < 90, gas parcel is above midplane. Sum stuff that is above is (lower thetas)
@@ -329,14 +331,12 @@ module Special
 !***********************************************************************
     subroutine calc_cooling_time(f,p,taucool,taucool1)
 !
-!
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       real, dimension(nx) :: tmp,tau_eff,Rd,OOK1
       real, dimension(nx), intent(out) :: taucool,taucool1
 
       call keep_compiler_quiet(f)
-!
 !
       tmp=p%cp**1.5 * gamma1 * sqrt(gamma_m1) / (3.*sigmaSB) * p%rho * p%TT**(-2.5)
       tau_eff = 0.375*q%tau + .25*sqrt(3.) + .25/q%tau
@@ -389,7 +389,6 @@ module Special
                          T5=580. , T6=680. , T7=960. , T8=1570. , T9=3730.,&
                          T10=1e4, T11=1e5
 !
-!
       if (TT < 0.0)        call inevitably_fatal_error("calc_opacity", "Negative temperature",.true.)
       if (rho < 0.0)       call inevitably_fatal_error("calc_opacity", "Negative density",.true.)
       if (notanumber(TT))  call inevitably_fatal_error("calc_opacity", "notanumber in temperature",.true.)
@@ -417,14 +416,14 @@ module Special
         k=1d-8 ; a=2./3 ; b=3.
         kk = k * rho**a * TT**b
       else if ((TT > T9) .and. (TT <= T10)) then
-         logk=-36. ; a=1./3 ; b=10.
-         logkk = logk + a*alog10(rho) + b*alog10(TT)
-         kk=10**(logkk)
+        logk=-36. ; a=1./3 ; b=10.
+        logkk = logk + a*alog10(rho) + b*alog10(TT)
+        kk=10**(logkk)
       else if ((TT > T10) .and. (TT <= T11)) then
-         k=1.5d20 ; a=1. ; b=-2.5
-         kk = k * rho**a * TT**b
+        k=1.5d20 ; a=1. ; b=-2.5
+        kk = k * rho**a * TT**b
       else if (TT > T11) then 
-         kk=0.348
+        kk=0.348
       endif
 ! 
     endsubroutine calc_opacity
@@ -442,6 +441,7 @@ module Special
     endsubroutine read_special_init_pars
 !***********************************************************************
     subroutine write_special_init_pars(unit)
+
       integer, intent(in) :: unit
 
       write(unit,NML=special_init_pars)
@@ -461,6 +461,7 @@ module Special
     endsubroutine read_special_run_pars
 !***********************************************************************
     subroutine write_special_run_pars(unit)
+!
       integer, intent(in) :: unit
 !
       write(unit,NML=special_run_pars)
@@ -529,11 +530,11 @@ module Special
 !***********************************************************************
     subroutine special_calc_energy(f,df,p)
 !
-!   calculate a additional 'special' term on the right hand side of the 
+!   Calculate an additional 'special' term on the right hand side of the 
 !   momentum equation.
 !
 !   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
+!   others may be calculated directly from the f array.
 !
       use EquationOfState, only: cs20
 !      
@@ -593,17 +594,17 @@ module Special
     use Syscalls, only: copy_addr
     use General , only: string_to_enum
 
-    integer, parameter :: n_pars=10
-    integer(KIND=ikind8), dimension(n_pars) :: p_par
+      integer, parameter :: n_pars=10
+      integer(KIND=ikind8), dimension(n_pars) :: p_par
 
-    call copy_addr(taucool_floor,p_par(1))
-    call copy_addr(laddheatingrate,p_par(2)) ! bool
-    call copy_addr(ikappar,p_par(3)) ! int
-    call copy_addr(itau,p_par(4)) ! int
-    call copy_addr(gamma1,p_par(5))
-    call copy_addr(gamma_m1,p_par(6))
-    call copy_addr(cp1,p_par(7))
-    call copy_addr(cv1,p_par(8))
+      call copy_addr(taucool_floor,p_par(1))
+      call copy_addr(laddheatingrate,p_par(2)) ! bool
+      call copy_addr(ikappar,p_par(3)) ! int
+      call copy_addr(itau,p_par(4)) ! int
+      call copy_addr(gamma1,p_par(5))
+      call copy_addr(gamma_m1,p_par(6))
+      call copy_addr(cp1,p_par(7))
+      call copy_addr(cv1,p_par(8))
 
     endsubroutine pushpars2c
 !***********************************************************************

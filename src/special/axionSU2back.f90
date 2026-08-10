@@ -969,6 +969,7 @@ module Special
         call sum_mn_name(psiddot,idiag_psiddot)
         call sum_mn_name(TRddot,idiag_TRddot)
       endif
+
     endsubroutine dspecial_dt
 !***********************************************************************
     subroutine calc_diagnostics_special(f,p)
@@ -1087,7 +1088,6 @@ module Special
       endif
 
       mQ=get_mQ(Q)
-
 !
 !  Set other parameters
 !
@@ -1135,7 +1135,7 @@ module Special
             Vprime=alpha*m_alpha*n_alpha*beta*tanh(beta*phi/2)*(1./cosh(beta*phi/2)**2)
           case ('quadratic') ; Vprime=m_phi**2*phi
           case default
-            call fatal_error("special_dspecial_dt_ode: No such V_choice: ", trim(V_choice))
+            call fatal_error("calc_ode_dt", "no such V_choice: "//trim(V_choice))
         endselect
           phiddot=-3.*H*phidot-Vprime
         endif
@@ -1165,6 +1165,7 @@ module Special
           chiddot=chiddot-sbackreact_chi*fact*dgrant_sum
         endif
       endif
+
     endsubroutine calc_ode_dt
 !***********************************************************************
     subroutine dspecial_dt_ode
@@ -1176,7 +1177,7 @@ module Special
 !   2-dec-2022/axel: coded
 !   1-sep-2023/axel: implemented lwith_eps with conformal time.
 !
-      real ::  Qddot, chiddot, phiddot
+      real :: Qddot, chiddot, phiddot
 !
 !  identify module and boundary conditions
 !
@@ -1209,9 +1210,7 @@ module Special
 !
 !  diagnostics
 !
-      if (ldiagnos .and. .not. lgpu) then
-        call calc_ode_diagnostics_special(f_ode)
-      endif
+      if (ldiagnos .and. .not. lgpu) call calc_ode_diagnostics_special(f_ode)
 !
     endsubroutine dspecial_dt_ode
 !***********************************************************************
@@ -1443,6 +1442,7 @@ module Special
           endif
         endif
       endif
+
     endsubroutine write_backreact
 !***********************************************************************
     function get_a() result(a)
@@ -1468,13 +1468,14 @@ module Special
           a = exp(H*t)
         endif
       endif
+
     endfunction get_a
 !***********************************************************************
     subroutine calc_integrand(f,TRpsim,TRpsikm,TRpsidotm,TRdotpsim, &
-                            TRdoteff2km,TRdoteff2m,TReff2km,TReff2m, &
-                            TLdoteff2km,TLdoteff2m,TLeff2km,TLeff2m, &
-                            uReff2km,uReff2m, &
-                            uLeff2km,uLeff2m)
+                              TRdoteff2km,TRdoteff2m,TReff2km,TReff2m, &
+                              TLdoteff2km,TLdoteff2m,TLeff2km,TLeff2m, &
+                              uReff2km,uReff2m, &
+                              uLeff2km,uLeff2m)
 !
 !  29-jul-25/TP: carved from special_after_boundary
 !
@@ -1716,6 +1717,7 @@ module Special
           )/twopi**3
         endif
       endif
+
     endsubroutine calc_integrand
 !***********************************************************************
     subroutine special_after_boundary(f)
@@ -1774,7 +1776,6 @@ module Special
       endif
 
       a = get_a()
-
 !
 !  decide about revising the k array
 !  a=exp(N), N=H*t (=lna).

@@ -562,9 +562,7 @@ module Special
           if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_chi/0.01)
       endif
 !
-      if (lfirst.and.ldt) then
-         maxdiffus=max(maxdiffus,diffus_chi)
-      endif
+      if (lfirst.and.ldt) maxdiffus=max(maxdiffus,diffus_chi)
 !
     endsubroutine special_calc_energy
 !***********************************************************************
@@ -1364,13 +1362,13 @@ module Special
       endif
 !
 ! ANISOTROPIC PART NOT INCLUDED IN THE TIMESTEP CALCULATION
+!
       if (lfirst .and. ldt) then
-         advec_cs2 = max(advec_cs2,chi_aniso*maxval(dxyz_2))
+         maxdiffus = max(maxdiffus,chi_aniso*dxyz_2)
          fdiff = gamma * chi_aniso * dxyz_2
          diffus_chi = diffus_chi+fdiff
-         if (ldiagnos .and. (idiag_dtchi2 /= 0)) then
+         if (ldiagnos .and. (idiag_dtchi2 /= 0)) &
             call max_mn_name(fdiff/cdtv,idiag_dtchi2,l_dt=.true.)
-         endif
       endif
 !
     endsubroutine calc_heatcond_constchi
