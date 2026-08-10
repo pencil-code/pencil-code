@@ -3202,6 +3202,42 @@ module Mpicomm
 
     endsubroutine scatter_snapshot
 !***********************************************************************
+    function mpiallreduce_maxloc(local_val,global_val,comm) result(max_rank)
+!
+!  Global maximum and rank where it ocurs as return value.
+!
+!  19-jan-26/MR: coded
+
+      real :: local_val,global_val
+      integer :: max_rank
+      integer, optional :: comm
+
+      intent(IN) :: local_val
+      intent(OUT):: global_val
+
+      global_val = local_val
+      max_rank = iproc
+
+    endfunction mpiallreduce_maxloc
+!***********************************************************************
+    function mpiallreduce_minloc(local_val,global_val,comm) result(min_rank)
+!
+!  Global maximum and rank where it ocurs as return value.
+!
+!  19-jan-26/MR: coded
+
+      real :: local_val,global_val
+      integer :: min_rank
+      integer, optional :: comm
+
+      intent(IN) :: local_val
+      intent(OUT):: global_val
+
+      global_val = local_val
+      min_rank = iproc
+
+    endfunction mpiallreduce_minloc
+!***********************************************************************
     subroutine fetch_to_process_masked(array,size,mask,ranks,irank)
 
       integer, intent(in) :: size
