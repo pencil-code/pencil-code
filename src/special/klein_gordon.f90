@@ -2720,6 +2720,7 @@ module Special
     call copy_addr(bubble_size,p_par(71))
     call copy_addr(ldr_for_wall_vel,p_par(72)) ! bool
     call copy_addr(previous_wall_pos,p_par(73))
+    call copy_addr(friction_start,p_par(74))
     endsubroutine pushpars2c
 !********************************************************************
 !********************************************************************
