@@ -273,8 +273,8 @@ module Mpicomm
         if (linterstellar) call stop_it('using single precision: stop and recompile')
       else
         mpi_precision = MPI_DOUBLE_PRECISION
-        MPI_CMPLX = MPI_DOUBLE_COMPLEX
         MPI_2FLOAT = MPI_2DOUBLE_PRECISION
+        MPI_CMPLX = MPI_DOUBLE_COMPLEX
       endif
 
       call MPI_COMM_DUP(MPI_COMM_PENCIL,MPI_COMM_GRID,mpierr)
@@ -11880,5 +11880,51 @@ goto 125!!!
       call mpibcast_int(list,len,root,comm)
 
     endsubroutine mpiallreduce_merge
+!***********************************************************************
+    function mpiallreduce_maxloc(local_val,global_val,comm) result(max_rank)
+!
+!  Global maximum and rank where it ocurrs as return value.
+!
+!  19-jan-26/MR: coded
+
+     real :: local_val,global_val
+     integer :: max_rank
+     integer, optional :: comm
+
+     intent(IN) :: local_val
+     intent(OUT):: global_val
+
+     real, dimension(2) :: ret
+
+     call MPI_Allreduce((/ local_val, real(iproc) /), ret, 1, MPI_2FLOAT, &
+                        MPI_MAXLOC, ioptest(comm,MPI_COMM_PENCIL), mpierr)
+
+     global_val=ret(1)
+     max_rank=ret(2)
+
+    endfunction mpiallreduce_maxloc
+!***********************************************************************
+    function mpiallreduce_minloc(local_val,global_val,comm) result(min_rank)
+!
+!  Global maximum and rank where it ocurrs as return value.
+!
+!  19-jan-26/MR: coded
+
+     real :: local_val,global_val
+     integer :: min_rank
+     integer, optional :: comm
+
+     intent(IN) :: local_val
+     intent(OUT):: global_val
+
+     real, dimension(2) :: ret
+
+     call MPI_Allreduce((/ local_val, real(iproc) /), ret, 1, MPI_2FLOAT, &
+                        MPI_MINLOC, ioptest(comm,MPI_COMM_PENCIL), mpierr)
+
+     global_val=ret(1)
+     min_rank=ret(2)
+
+    endfunction mpiallreduce_minloc
 !***********************************************************************
   endmodule Mpicomm
