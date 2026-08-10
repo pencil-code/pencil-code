@@ -487,7 +487,7 @@ module Special
       if (prof_type == 'lnrho_lnTT') then
         allocate (prof_lnTT(nzgrid), prof_lnrho(nzgrid), prof_z(nzgrid), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('setup_profiles', &
-            'Could not allocate memory for stratification variables', .true.)
+            'Could not allocate stratification variables', .true.)
 !
         ! read stratification file only on the MPI root rank
         if (lroot) then
@@ -617,7 +617,7 @@ module Special
       ! allocate memory
       allocate (data(n_data), data_z(n_data), stat=alloc_err)
       if (alloc_err > 0) call fatal_error ('read_profile', &
-          'Could not allocate memory for data and its z coordinate', .true.)
+          'Could not allocate data and its z coordinate', .true.)
 !
       if (lroot) then
         ! read profile
@@ -1240,7 +1240,7 @@ module Special
         if (lfirst_proc_z .and. .not. allocated (BB2_local)) then
           allocate (BB2_local(nx,ny), stat=alloc_err)
           if (alloc_err > 0) call fatal_error ('special_before_boundary', &
-              'Could not allocate memory for BB2', .true.)
+              'Could not allocate BB2', .true.)
         endif
         ! Compute magnetic energy BB2 for granulation driver.
         call set_BB2 (f, BB2_local, Bz_total_flux)
@@ -1258,7 +1258,7 @@ module Special
         if (.not. allocated (vel_x_l)) then
           allocate (vel_x_l(nx,ny), vel_y_l(nx,ny), vel_x_r(nx,ny), vel_y_r(nx,ny), stat=alloc_err)
           if (alloc_err > 0) call fatal_error ('special_before_boundary', &
-              'Could not allocate memory for velocity frames', .true.)
+              'Could not allocate velocity frames', .true.)
         endif
         call update_vel_field (vel_time_offset, vel_times_dat, vel_field_dat, &
             time_vel_l, time_vel_r, vel_x_l, vel_y_l, vel_x_r, vel_y_r)
@@ -1272,7 +1272,7 @@ module Special
         if (.not. allocated (mag_x_l)) then
           allocate (mag_x_l(nx,ny), mag_y_l(nx,ny), mag_x_r(nx,ny), mag_y_r(nx,ny), stat=alloc_err)
           if (alloc_err > 0) call fatal_error ('special_before_boundary', &
-              'Could not allocate memory for magnetic velocity frames', .true.)
+              'Could not allocate magnetic velocity frames', .true.)
         endif
         call update_vel_field (mag_time_offset, mag_times_dat, mag_vel_field_dat, &
             time_mag_vel_l, time_mag_vel_r, mag_x_l, mag_y_l, mag_x_r, mag_y_r)
@@ -1283,7 +1283,7 @@ module Special
         if (.not. allocated (gran_x)) then
           allocate (gran_x(nx,ny), gran_y(nx,ny), stat=alloc_err)
           if (alloc_err > 0) call fatal_error ('special_before_boundary', &
-              'Could not allocate memory for gran_x/y', .true.)
+              'Could not allocate gran_x/y', .true.)
         endif
         call gran_driver (f, gran_x, gran_y)
         Ux_local = Ux_local + gran_x
@@ -1746,12 +1746,12 @@ module Special
       if (.not. allocated (A_l)) then
         allocate (A_l(nx,ny,1,2), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('update_mag_field', &
-            'Could not allocate memory for A_l', .true.)
+            'Could not allocate A_l', .true.)
       endif
       if (.not. allocated (A_r) .and. luse_timedep_magnetogram) then
         allocate (A_r(nx,ny,1,2), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('update_mag_field', &
-            'Could not allocate memory for A_r', .true.)
+            'Could not allocate A_r', .true.)
       endif
 !
       if (present (lfinalize)) then
@@ -1828,7 +1828,7 @@ module Special
       if (lfirst_proc_xy) then
         allocate (tmp_x(nxgrid,nygrid), tmp_y(nxgrid,nygrid), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('read_vel_field', &
-            'Could not allocate memory for tmp variables.', .true.)
+            'Could not allocate tmp variables.', .true.)
 !
         ! Read 2D vector field from file
         inquire (IOLENGTH=rec_len) 1.0d0
@@ -1893,7 +1893,7 @@ module Special
 !
       allocate (Bz(bnx,bny), stat=alloc_err)
       if (alloc_err > 0) call fatal_error ('read_mag_field', &
-          'Could not allocate memory for Bz', .true.)
+          'Could not allocate Bz', .true.)
 !
       if (lfirst_proc_xy) then
         ! Read Bz field from file and send to remote processors
@@ -1919,7 +1919,7 @@ module Special
         ! Setup exponential factor for bottom boundary
         allocate (fact(enx,eny,1), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('read_mag_field', &
-            'Could not allocate memory for fact', .true.)
+            'Could not allocate fact', .true.)
         call setup_extrapol_fact (z(n1:n1), z(n1), fact)
       endif
 !
@@ -2258,7 +2258,7 @@ module Special
           call find_ref_temp (p%lnrho, lnTT_ref)
           lnTT_ref = 0.5 * (lnTT_ref + lnTT_init_z(n))
         else
-          ! Height dependant refernece temperaure profile
+          ! Height dependent reference temperaure profile
           lnTT_ref = lnTT_init_z(n)
         endif
         ! Calculate newton cooling factor to reference temperature
@@ -2278,8 +2278,8 @@ module Special
         if (nc_z_min /= 0.0) &
             tmp_tau = tmp_tau *  (sine_step (z(n), nc_z_min, 0.5*nc_z_min_trans_width, 1.0))
         ! Add newton cooling term to entropy
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + newton * tmp_tau
-        endif
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + newton * tmp_tau  !MR: log/nolog distinction=?
+      endif
 !
       ! Newton cooling that keeps the intrinsic energy constant
       if ((nc_tau /= 0.0) .and. lnc_intrin_energy_depend) then
@@ -2293,8 +2293,8 @@ module Special
         ! Calculate newton cooling factor to reference density
         newton_rho = exp (lnrho_init_z(n)*lnTT_init_z(n)/p%lnTT - p%lnrho) - 1.0
         ! Add newton cooling term to entropy and density
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + newton * tmp_tau
-        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + newton_rho * tmp_tau
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + newton * tmp_tau   !MR: log/nolog distinction=?
+        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + newton_rho * tmp_tau    !MR: log/nolog distinction=?
       endif
 !
       if (lfirst .and. ldt) then
@@ -2437,7 +2437,7 @@ module Special
       if (lfirst_call) then
         allocate (lnrho_global_z(mzgrid), lnTT_global_z(mzgrid), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('find_ref_temp', &
-            'Could not allocate memory for lnrho_/lnTT_global_z', .true.)
+            'Could not allocate lnrho_/lnTT_global_z', .true.)
         call globalize_z (lnrho_init_z, lnrho_global_z)
         call globalize_z (lnTT_init_z, lnTT_global_z)
         call mpibcast_real (lnrho_global_z, mzgrid)
@@ -2627,12 +2627,10 @@ module Special
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + rhs
 !
       if (lfirst .and. ldt) then
-        advec_cs2 = max(advec_cs2,chi*maxval(dxyz_2))
+        maxdiffus=max(maxdiffus,chi*dxyz_2)
         fdiff = gamma*chi * dxyz_2
         diffus_chi = diffus_chi+fdiff
-        if (ldiagnos .and. (idiag_dtchi2 /= 0)) then
-          call max_mn_name(fdiff/cdtv,idiag_dtchi2,l_dt=.true.)
-        endif
+        if (ldiagnos .and. (idiag_dtchi2 /= 0)) call max_mn_name(fdiff/cdtv,idiag_dtchi2,l_dt=.true.)
       endif
 !
     endsubroutine calc_heatcond_constchi
@@ -3525,7 +3523,7 @@ module Special
           allocate(avoid_gran(nxgrid,nygrid),stat=alloc_err)
       alloc_err_sum = alloc_err_sum + abs(alloc_err)
       if (alloc_err_sum > 0) call fatal_error ('set_gran_params', &
-          'Could not allocate memory for the driver', .true.)
+          'Could not allocate the driver', .true.)
 !
     endsubroutine set_gran_params
 !***********************************************************************
@@ -3557,8 +3555,20 @@ module Special
       if (lwrite_driver .and. (nzgrid == 1)) then
         ! Stabilize 2D-runs
         f(:,:,:,iuz) = 0.0
-        f(:,:,:,ilnTT) = lnTT_init_z(irefz)
-        f(:,:,:,ilnrho) = lnrho_init_z(irefz)
+        if (ltemperature) then
+          if (ltemperature_nolog) then
+            f(:,:,:,iTT) = exp(lnTT_init_z(irefz))
+          else
+            f(:,:,:,ilnTT) = lnTT_init_z(irefz)
+          endif
+        endif
+        if (ldensity) then
+          if (ldensity_nolog) then
+            f(:,:,:,ilnrho) = exp(lnrho_init_z(irefz))
+          else
+            f(:,:,:,ilnrho) = lnrho_init_z(irefz)
+          endif
+        endif
       endif
 !
 ! Update velocity field only every dt_gran after the first iteration
@@ -3597,7 +3607,7 @@ module Special
         if (lroot) then
           allocate (buffer(nxgrid,nygrid), stat=alloc_err)
           if (alloc_err > 0) call fatal_error ('gran_driver', &
-              'could not allocate memory for buffer', .true.)
+              'could not allocate buffer', .true.)
           Ux = 0.0
           Uy = 0.0
           do level = 1, nglevel
@@ -4232,14 +4242,14 @@ module Special
       if (.not. allocated (BB2) .and. (lroot .or. lgran_proc)) then
         allocate (BB2(nxgrid,nygrid), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('set_BB2', &
-            'Could not allocate memory for BB2', .true.)
+            'Could not allocate BB2', .true.)
       endif
 !
       if (lfirst_proc_z) then
 !
         allocate (fac(nx,ny), bbx(nx,ny), bby(nx,ny), bbz(nx,ny), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('set_BB2', &
-            'Could not allocate memory for fac and bbx/bby/bbz', .true.)
+            'Could not allocate fac and bbx/bby/bbz', .true.)
 !
         if (lbfield) then
           bbx = f(l1:l2,m1:m2,irefz,ibx)
