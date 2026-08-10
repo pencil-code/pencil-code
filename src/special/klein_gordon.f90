@@ -193,6 +193,7 @@ module Special
   logical :: lthermal_noise = .false.
   real    :: noise_strength = impossible
   real    :: noise_start = 0.0
+  real    :: friction_start = 0.0
   logical :: ldR_for_wall_vel = .false.
   
 ! Sovan : Perturbative Reheating
@@ -244,7 +245,7 @@ module Special
       lgenerate_bubble_times,beta,nucleation_rate_choice,bubble_position_criteria,tf,&
       bubble_size,bubble_wall_width,plasma_coupling_coeff,lplasma_coupling, &
       rho_phi, w_phi, G_phi, lnrho_phi0, lthermal_noise, noise_strength, noise_start, &
-      ldR_for_wall_vel
+      ldR_for_wall_vel,friction_start
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -1227,7 +1228,9 @@ module Special
       endif
 
       if(lpencil(i_plasma_friction)) then
-        if(lplasma_coupling) then
+        if(t < friction_start) then
+          p%plasma_friction = 0.
+        else if(lplasma_coupling) then
           friction_coeff = plasma_coupling_coeff*p%phi**2/T
           call u_dot_grad(f,ivel,p%gphi,p%uu,u_dot_gphi,UPWIND=.true.)
           p%plasma_friction = friction_coeff*p%lorentz_gamma*(p%dphi + u_dot_gphi)
@@ -2050,26 +2053,37 @@ module Special
       use Mpicomm, only: mpi_min_keyval
       use Messages, only: fatal_error_local
       use General, only: notanumber
-      real :: prev_R
+      real, save :: R_prev=impossible,R_curr
+      real, save :: t_current,t_prev
       
       call get_Hscript_and_a2(Hscript,a2rhom_all)
       call get_echarge
       call get_sigE_and_B
       if(lwall_friction .or. idiag_tension /= 0) then
-        prev_R = previous_wall_pos
-        if(prev_R == impossible) then
-          prev_R = bubble_size
+        if(R_prev == impossible) then
+          R_prev= bubble_size
+          R_curr = bubble_size
+          t_current = t
+          t_prev = t
         endif
 
         if(idiag_wall_pos /= 0 .or. ldR_for_wall_vel) then
           call mpi_min_keyval(min_distance,next_wall_pos,previous_wall_pos)
         endif
 
+        if(R_curr /= previous_wall_pos) then
+          R_prev = R_curr
+          t_prev = t_current
+
+          t_current = t
+          R_curr = previous_wall_pos
+        endif
+
         if(ldR_for_wall_vel) then
           if(t == 0) then
             previous_wall_vel = 0.
           else
-            previous_wall_vel = (previous_wall_pos-prev_R)/dt
+            previous_wall_vel = (R_curr-R_prev)/(t_current-t_prev)
           endif
         else
           call mpi_min_keyval(min_distance,next_wall_vel,previous_wall_vel)
@@ -2077,17 +2091,19 @@ module Special
 
         wall_gamma = 1./sqrt(1-previous_wall_vel**2)
         min_distance = 1e10 
-        if(abs(previous_wall_vel) >= 1.0) then
-          call fatal_error_local('prep_rhs_special',"Superluminal wall velocity")
-        endif
+        if(ip < 13) then
+          if(abs(previous_wall_vel) >= 1.0) then
+            call fatal_error_local('prep_rhs_special',"Superluminal wall velocity")
+          endif
 
-        if(notanumber(previous_wall_vel)) then
-          call fatal_error_local('prep_rhs_special',"NaN for wall velocity")
-        endif
+          if(notanumber(previous_wall_vel)) then
+            call fatal_error_local('prep_rhs_special',"NaN for wall velocity")
+          endif
 
-        if(notanumber(wall_gamma)) then
-          print*,"Wall velocity was: ",previous_wall_vel
-          call fatal_error_local('prep_rhs_special',"NaN for gamma wall")
+          if(notanumber(wall_gamma)) then
+            print*,"Wall velocity was: ",previous_wall_vel
+            call fatal_error_local('prep_rhs_special',"NaN for gamma wall")
+          endif
         endif
       endif
 
