@@ -1,7 +1,26 @@
 #if LTRAINING
 communicated FieldSymmetricTensor tau_hydro
-communicated Field3 uumean
-communicated Field3 bbmean
+
+field_order(AC_iuumean__mod__training != 0 ? AC_iuumean__mod__training+0-1 : -1) communicated Field uumean_X 
+field_order(AC_iuumean__mod__training != 0 ? AC_iuumean__mod__training+1-1 : -1) communicated Field uumean_Y
+field_order(AC_iuumean__mod__training != 0 ? AC_iuumean__mod__training+2-1 : -1) communicated Field uumean_Z
+
+const Field3 uumean = 
+{
+	uumean_X,
+	uumean_Y,
+	uumean_Z
+}
+field_order(AC_ibbmean__mod__training != 0 ? AC_ibbmean__mod__training+0-1 : -1) communicated Field bbmean_X 
+field_order(AC_ibbmean__mod__training != 0 ? AC_ibbmean__mod__training+1-1 : -1) communicated Field bbmean_Y
+field_order(AC_ibbmean__mod__training != 0 ? AC_ibbmean__mod__training+2-1 : -1) communicated Field bbmean_Z
+
+const Field3 bbmean = 
+{
+	bbmean_X,
+	bbmean_Y,
+	bbmean_Z
+}
 
 communicated FieldSymmetricTensor viscous_sgs
 communicated FieldSymmetricTensor viscous_sgs_mean

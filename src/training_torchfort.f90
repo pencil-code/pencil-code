@@ -30,6 +30,7 @@
     integer :: itau_hydro, itau_hydroxx, itau_hydroxy, itau_hydroxz, itau_hydroyy, itau_hydroyz, itau_hydrozz
     integer :: itau_strain, itau_strainxx, itau_strainxy, itau_strainxz, itau_strainyy, itau_strainyz, itau_strainzz
     integer :: isgs_emf, isgs_emfx, isgs_emfy, isgs_emfz
+    integer :: iuumean=0,ibbmean=0
 
     character(LEN=fnlen) :: model='model', config_file="config_mlp_native.yaml", model_file
 
@@ -150,6 +151,7 @@
       ltrain_mag  = ltrain_mag  .and. lmagnetic
       ltrain_dens = ltrain_dens .and. ldensity
 !
+      call farray_register_auxiliary('uumean',iuumean,vector=3,communicated=.true.)
       call get_shared_variable('lconservative',lconservative)
       if(lhydro) then
         call farray_register_auxiliary('tau_hydro',itau_hydro,vector=6,rhs=.true.,communicated=.true.)
@@ -161,6 +163,7 @@
       if (ltrain_mag) then 
        call farray_register_auxiliary('sgs_emf',isgs_emf,vector=3,rhs=.true.,communicated=.true.)
        call farray_register_auxiliary('tau_bb',itau_bb,vector=6,rhs=.true.,communicated=.true.)
+       call farray_register_auxiliary('bbmean',ibbmean,vector=3,communicated=.true.)
       endif
 !
 !  Indices to access taus and emf.
@@ -668,6 +671,8 @@
     call copy_addr(output_channels,p_par(24)) ! int
     call copy_addr(start_infer,p_par(25)) ! real dconst
     call copy_addr(smoothing_radius,p_par(26)) ! int
+    call copy_addr(iuumean,p_par(27)) ! int
+    call copy_addr(ibbmean,p_par(28)) ! int
 
     endsubroutine pushpars2c
 !***********************************************************************
