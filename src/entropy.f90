@@ -136,7 +136,7 @@ module Energy
   logical :: ladvection_entropy=.true.
   logical, pointer :: lpressuregradient_gas
   logical :: reinitialize_ss=.false.
-  logical :: lviscosity_heat=.true.
+  logical, target :: lviscosity_heat=.true.
   logical :: lfreeze_sint=.false.,lfreeze_sext=.false.
   logical :: lchit_aniso_simplified=.false.
   logical, target :: lhcond_global=.false.

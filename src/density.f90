@@ -135,7 +135,7 @@ module Density
   logical :: lcheck_negative_density=.false.
   logical :: lcalc_lnrhomean=.false.
   logical :: ldensity_profile_masscons=.false.
-  logical :: lffree=.false.
+  logical, target :: lffree=.false.
   logical :: lSchur_3D3D1D=.false.
   logical :: lscale_tobox_lnrho=.false.
   logical, target :: lreduced_sound_speed=.false.

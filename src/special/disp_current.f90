@@ -68,17 +68,19 @@ module Special
   logical :: lscale_tobox=.true., lskip_projection_a0=.false.
   logical :: lpower_profile_file=.false.
   logical :: lvectorpotential=.false.
-  logical :: lphi_hom=.false., lphi_linear_regime=.false.   !AB: these variables should have been defined in backreaction.
-  logical :: lpsi_hom=.false.
+  logical, target :: lphi_hom=.false., lphi_linear_regime=.false.   !AB: these variables should have been defined in backreaction.
+  logical, target :: lpsi_hom=.false.
   logical :: ladvance_ee=.true.         !PAR_DOC: can turn off time advance of E.
   logical :: lohmic_heating_ee=.true.   !PAR_DOC: positive definite part of heating with $J^2/sigE$.
   logical :: lohmic_heating_justee=.false. !PAR_DOC: positive definite heating with just $E^2*sigE$.
-  logical :: lno_noise_ee=.false., lnoncollinear_EB=.false., lnoncollinear_EB_aver=.false.
+  logical :: lno_noise_ee=.false.
+  logical, target :: lnoncollinear_EB=.false., lnoncollinear_EB_aver=.false.
   logical :: lcollinear_EB=.false., lcollinear_EB_aver=.false.
   logical :: leedot_as_aux=.false., lcurlyA=.true., lsolve_chargedensity=.false.
   logical :: ldivE_as_aux=.false., lsigE_as_aux=.false., lsigB_as_aux=.false.
   logical :: lrandom_ampl_ee=.false., lfixed_phase_ee=.false., lallow_bprime_zero=.true.
-  logical :: lswitch_off_divJ=.false., lswitch_off_Gamma=.false., lmass_suppression=.false.
+  logical :: lswitch_off_divJ=.false., lswitch_off_Gamma=.false.
+  logical, target :: lmass_suppression=.false.
   logical :: loverride_c_light=.false., ldensity_add_je_heating=.false., llorentzforce_ee=.false.
   logical :: lcorrect_sign_adphiB_term=.false. !PAR_DOC: correct sign adphiB_term
   logical :: lignore_adphiB_term_in_MHD_current=.true. !PAR_DOC: correct sign adphiB_term

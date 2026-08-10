@@ -211,8 +211,8 @@ module Hydro
   logical, pointer :: lffree
   logical :: lreflecteddy=.false.,louinit=.false.
   logical :: lskip_projection=.false.
-  logical :: lconservative=.false., lrelativistic=.false.
-  logical :: lconservative_pressure_on_rhs=.false.
+  logical, target :: lconservative=.false., lrelativistic=.false.
+  logical, target :: lconservative_pressure_on_rhs=.false.
   logical, pointer :: lrelativistic_eos, lrelativistic_eos_corr
   logical :: lno_noise_uu=.false., lrho_nonuni_uu=.false.
   logical :: llorentz_limiter=.false., full_3D=.false.
