@@ -5000,12 +5000,12 @@ module Initcond
 !  23-may-02/axel: coded
 !  10-sep-03/axel: result only *added* to whatever f array had before
 !
-      use Sub, only: box_muller_transform
+      !use Sub, only: box_muller_transform
       real :: ampl
       real, contiguous, dimension(:,:,:,:) :: f
       integer :: i
 !
-      real, dimension (mx) :: tmp
+      real, dimension (mx) :: r,p,tmp
 !
       intent(in)    :: ampl,i
       intent(inout) :: f
