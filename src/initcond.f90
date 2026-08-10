@@ -1488,7 +1488,6 @@ module Initcond
       real :: xmid,ymid,zmid
       character(len=*) :: dir
       integer :: l,m,n
-
 !
 !  jump; check direction
 !
@@ -5032,7 +5031,6 @@ module Initcond
 !
 !  call gaunoise_vect(ampl,f,i,i)
 !
-!
     endsubroutine gaunoise_scal
 !***********************************************************************
 !! subroutine gaunoise_lnrho(ampl,f,i)
@@ -5573,26 +5571,23 @@ module Initcond
 !  Allocate memory for arrays.
 !
       allocate(k2(nx,ny,nz),stat=stat)
-      if (stat>0) call fatal_error('powern','Could not allocate memory for k2')
+      if (stat>0) call fatal_error('powern','Could not allocate k2')
       if (kgaussian /= 0.) then
          allocate(k2mkpeak(nx,ny,nz),stat=stat)
-         if (stat>0) call fatal_error('powern','Could not allocate memory for k2mkpeak')
+         if (stat>0) call fatal_error('powern','Could not allocate k2mkpeak')
       endif
       allocate(u_re(nx,ny,nz),stat=stat)
-      if (stat>0) call fatal_error('powern','Could not allocate memory for u_re')
+      if (stat>0) call fatal_error('powern','Could not allocate u_re')
       allocate(u_im(nx,ny,nz),stat=stat)
-      if (stat>0) call fatal_error('powern','Could not allocate memory for u_im')
+      if (stat>0) call fatal_error('powern','Could not allocate u_im')
       allocate(r(nx,ny,nz),stat=stat)
-      if (stat>0) call fatal_error('powern','Could not allocate memory for r')
+      if (stat>0) call fatal_error('powern','Could not allocate r')
       allocate(kx(nxgrid),stat=stat)
-      if (stat>0) call fatal_error('powern', &
-          'Could not allocate memory for kx')
+      if (stat>0) call fatal_error('powern','Could not allocate kx')
       allocate(ky(nygrid),stat=stat)
-      if (stat>0) call fatal_error('powern', &
-          'Could not allocate memory for ky')
+      if (stat>0) call fatal_error('powern','Could not allocate ky')
       allocate(kz(nzgrid),stat=stat)
-      if (stat>0) call fatal_error('powern', &
-          'Could not allocate memory for kz')
+      if (stat>0) call fatal_error('powern','Could not allocate kz')
 !
       if (ampl==0) then
         if (lroot) print*,'power_randomphase: zero, nothing added to variables i1,i2=',i1,i2
@@ -7111,7 +7106,7 @@ module Initcond
       allocate(A_i(nxinit,nyinit),stat=stat);    iostat=max(stat,iostat)
 !
       call stop_it_if_any((iostat>0),'mdi_init: '// &
-          'Could not allocate memory for variables, please check')
+          'Could not allocate variables, please check')
 !
 !  Auxiliary quantities:
 !
@@ -7398,12 +7393,12 @@ module Initcond
       if (lroot) then
         allocate (A_global(nxgrid,nygrid), stat=alloc_err)
         if (alloc_err > 0) call fatal_error('mag_Az_init', &
-            'Could not allocate memory for A_global', .true.)
+            'Could not allocate A_global', .true.)
       endif
       if (lfirst_proc_z) then
         allocate (A_local(nx,ny), stat=alloc_err)
         if (alloc_err > 0) call fatal_error('mag_Az_init', &
-            'Could not allocate memory for A_local', .true.)
+            'Could not allocate A_local', .true.)
       endif
 !
       call mag_init(f)
@@ -7457,11 +7452,11 @@ module Initcond
       if (lfirst_proc_xy) then
         allocate (A_global(nxgrid,nygrid,nz), stat=alloc_err)
         if (alloc_err > 0) call fatal_error('file_init', &
-            'Could not allocate memory for A_global', .true.)
+            'Could not allocate A_global', .true.)
       endif
       allocate (A_local(nx,ny,nz), stat=alloc_err)
       if (alloc_err > 0) call fatal_error('file_init', &
-          'Could not allocate memory for A_local', .true.)
+          'Could not allocate A_local', .true.)
 !
       if (lroot) then
         inquire (file=A_init_dat, exist=exists)
