@@ -17,11 +17,6 @@ module GPU
   implicit none
 
   include 'gpu.h'
-
-!$  interface
-!$    subroutine random_initial_condition() bind(C)
-!$    endsubroutine random_initial_condition
-!$  end interface
   
   external initialize_gpu_c
   external register_gpu_c
@@ -53,112 +48,143 @@ module GPU
   external tf_save_model_c
   external tf_save_checkpoint_c
 
-
   integer, external :: update_on_gpu_arr_by_name_c
   integer, external :: update_on_gpu_scal_by_name_c
   integer, external :: update_on_gpu_vec_by_name_c
 
   type(C_PTR) :: pFarr_GPU_in, pFarr_GPU_out
-  ! Since on the GPU calculation of df and update of f happen without synchronization
-  ! of the decomposed portions of the subdomains (or different processes) we can't compute
-  ! dt 'on the fly' but take it from the previous timestep (calculated at the moment on
-  ! the first substep but the last would make more sense). This means to calculate rhs an extra time
-  ! on the first substep to compute dt as is done normally on the CPUs
+
   logical :: lcpu_timestep_on_gpu=.false.
-  ! Whether we compute the timestep in single precision regardless of the precision of real or not.
-  ! We are a bit brave and do it by default in single since the exact value of the timestep
-  ! Should never be that important: your safety factors and other controls are surely more important
-  ! Then the neglibeble amount of round-off.
-  ! Anyways one is supposed to be able to turn it off for testing
+  !PAR-DOC: Since on the GPU, calculation of df and update of f happen without synchronization
+  !PAR-DOC: of the decomposed portions of the subdomains (or different processes) we can't compute
+  !PAR-DOC: dt 'on the fly' but take it from the previous timestep (calculated at the moment on
+  !PAR-DOC: the first substep but the last would make more sense). 
+  !PAR-DOC: lcpu_timestep_on_gpu=T means to calculate the rhs an extra time
+  !PAR-DOC: on the first substep to compute dt as is done normally on the CPUs
+
   logical :: lsingle_precision_timestep =.true.
-  ! Astaroth empirically finds the best kernel configuration parameters by running them with different 
-  ! options and picking the best one. Sparser autotuning means prune the parameter space more than 
-  ! usual by picking only the most likely ones (empirically gives for large grids the same as the 
-  ! larger search, but is considerably faster).
+  !PAR-DOC: Whether we compute the timestep in single precision regardless of the precision of real.
+  !PAR-DOC: We are a bit brave and do it by default in single since the exact value of the timestep
+  !PAR-DOC: Should never be that important: safety factors and other controls are surely more important
+  !PAR-DOC: than the negligible amount of round-off.
+  !PAR-DOC: Anyways one is supposed to be able to turn it off for testing.
+  !MR: Why is single for dt relevant?
+
   logical :: lac_sparse_autotuning=.true.
+  !PAR-DOC: Astaroth empirically finds the best configuration parameters of the kernels by running them with different 
+  !PAR-DOC: options and picking the best one. Sparse autotuning means to prune the parameter space more than 
+  !PAR-DOC: usual by picking only the most likely ones (empirically gives for large grids the same as the 
+  !PAR-DOC: larger search, but is considerably faster).
+
   logical :: lac_sparse_autotuning_always=.false.
-  ! Whether df is 0 or the accumulated value at the start of the kernel.
-  ! For simplicity df is zero and then accumulated to the buffer, but sometimes you need to be careful like with
-  ! short stopping time approximation in dustvelocity (the only case we are aware at the moment where the difference matter
+
   logical :: lcumulative_df_on_gpu=.false.
-  ! Placeholder
-  logical :: lskip_rtime_compilation=.false.
-  ! By default only pde variables and those aux variables that are registered to be always read are read from the device.
-  ! If this is true all variables are always read
+  !PAR-DOC: Whether df is 0 or the accumulated value at the start of the kernel.  MR: don't understand this: which kernel?
+  !PAR-DOC: For simplicity df is zero and then accumulated to the buffer, but sometimes you need to be careful like with
+  !PAR-DOC: short stopping time approximation in dustvelocity (the only case we are aware at the moment where the difference matters).
+
+  logical :: lskip_rtime_compilation=.false.    !PAR-DOC: Placeholder
+
   logical :: lread_all_vars_from_device = .false.
-  ! Whether to test the agreement of bcs on GPU and CPU
-  logical :: ltest_bcs =.false.
-  ! Whether to test the agreement of RHS on GPU and CPU
-  ! Will run both versions and compare the differences
+  !PAR-DOC: By default only pde variables and those aux variables that are registered to be always read are read from the device.
+  !PAR-DOC: If this is true all (Field) variables are always read.
+
+  logical :: lcuda_aware_mpi=.true.
+  !PAR-DOC: Whether to use CUDA-aware MPI (faster). If you have it you should always want to use it, but sometimes you do not have it or using
+  !PAR-DOC: it is more unstable than routing the communication via the host yourself.
+
+  logical :: ltest_bcs =.false.    !PAR-DOC: Whether to test the agreement of bcs on GPU and CPU.
+
   logical :: ltest_rhs =.false.
-  ! At which timestep to perform the comparison
-  ! It is useful to be able to vary this in case some samples need some
-  ! integration time for some of the fields to have meaningful values
+  !PAR_DOC: Whether to test the agreement of RHS on GPU and CPU
+  !PAR-DOC: Will run both versions and compare the differences.
+
   integer :: it_test_rhs = 1
-  ! How should reduction kernels decompose the subdomain into smaller chunks.
-  ! The decomposition allows to do partial reductions before the global reduction.
-  ! This saves memory and work.
+  !PAR-DOC: At which timestep to perform the comparison. It is useful to be able to vary this in case some samples need some
+  !PAR-DOC: integration time for some of the fields to have meaningful values.
+
   integer, dimension(3) :: thread_block_loop_factors = (/1,1,1/)
-  ! This saves memory at the cost of potential performance by not creating streams
-  ! which take surprisingly large amount of memory. Mainly needed for the autotest in norlx51
+  !PAR-DOC: How should reduction kernels decompose the subdomain into smaller chunks.
+  !PAR-DOC: The decomposition allows to do partial reductions before the global reduction. Saves memory and work.
+
   logical :: lonly_default_stream_for_taskgraphs = .false.
+  !PAR-DOC: Saves memory at the potential cost of performance by not creating streams,
+  !PAR-DOC: which take surprisingly large amount of memory. Mainly needed for the autotest in norlx51
 
   namelist /gpu_run_pars/ &
-     ltest_bcs,lac_sparse_autotuning,lac_sparse_autotuning_always,&
-     lcpu_timestep_on_gpu,lsingle_precision_timestep,lcumulative_df_on_gpu,&
+     ltest_bcs,lac_sparse_autotuning,lac_sparse_autotuning_always,lcuda_aware_mpi, &
+     lcpu_timestep_on_gpu,lsingle_precision_timestep,lcumulative_df_on_gpu, &
      lread_all_vars_from_device,ltest_rhs,it_test_rhs,thread_block_loop_factors,lonly_default_stream_for_taskgraphs
 
 contains
 !***********************************************************************
-  subroutine train_gpu(loss, itsub, t)
-
-    real :: loss
-    integer :: itsub 
-    real(KIND=rkind8), intent(IN) :: t
-
-    call torchtrain_c(loss, itsub, t)
-
-  endsubroutine train_gpu 
+    subroutine train_gpu(loss, itsub, t)
+  
+      real :: loss
+      integer :: itsub 
+      real(KIND=rkind8), intent(IN) :: t
+  
+      call torchtrain_c(loss, itsub, t)
+  
+    endsubroutine train_gpu 
 !***********************************************************************
-  subroutine infer_gpu(flag)
-
-    integer :: flag
-    call torchinfer_c(flag)
-
-  endsubroutine infer_gpu
+    subroutine infer_gpu(flag)
+  
+      integer :: flag
+      call torchinfer_c(flag)
+  
+    endsubroutine infer_gpu
 !***********************************************************************
-  subroutine TF_create_model(model_name, config_file_path, lmpicomm)
-    use Mpicomm, only: MPI_COMM_PENCIL
-    integer :: lmpicomm_int
-    logical :: lmpicomm
-    character(len=*), intent(in) :: model_name, config_file_path
-    lmpicomm_int = merge(1,0,lmpicomm)
-    call tf_create_model_c(trim(model_name) // c_null_char, trim(config_file_path) // c_null_char, MPI_COMM_PENCIL, lmpicomm_int)
-  endsubroutine TF_create_model
+    subroutine TF_create_model(model_name, config_file_path, lmpicomm)
+  
+      use Mpicomm, only: MPI_COMM_PENCIL
+  
+      integer :: lmpicomm_int
+      logical :: lmpicomm
+      character(len=*), intent(in) :: model_name, config_file_path
+  
+      lmpicomm_int = merge(1,0,lmpicomm)
+      call tf_create_model_c(trim(model_name)//c_null_char, trim(config_file_path)//c_null_char, MPI_COMM_PENCIL, lmpicomm_int)
+  
+    endsubroutine TF_create_model
 !***********************************************************************
-  subroutine tau_snapshots()
-    call print_snapshot_c()
-  endsubroutine tau_snapshots
+    subroutine tau_snapshots()
+  
+      call print_snapshot_c()
+  
+    endsubroutine tau_snapshots
 !***********************************************************************
-  subroutine TF_load_model(model_name, fname)
-    character(len=*), intent(in) :: model_name, fname
-    call tf_load_model_c(trim(model_name) // c_null_char, trim(fname) // c_null_char)
-  endsubroutine TF_load_model
+    subroutine TF_load_model(model_name, fname)
+  
+      character(len=*), intent(in) :: model_name, fname
+  
+      call tf_load_model_c(trim(model_name)//c_null_char, trim(fname)//c_null_char)
+  
+    endsubroutine TF_load_model
 !***********************************************************************
-  subroutine TF_load_model_checkpoint(model_name, checkpoint_dir)
-    character(len=*), intent(in) :: model_name, checkpoint_dir
-    call tf_load_model_checkpoint_c(trim(model_name) // c_null_char, trim(checkpoint_dir) // c_null_char)
-  endsubroutine TF_load_model_checkpoint
+    subroutine TF_load_model_checkpoint(model_name, checkpoint_dir)
+  
+      character(len=*), intent(in) :: model_name, checkpoint_dir
+  
+      call tf_load_model_checkpoint_c(trim(model_name)//c_null_char, trim(checkpoint_dir)//c_null_char)
+  
+    endsubroutine TF_load_model_checkpoint
 !***********************************************************************
-  subroutine TF_save_model(model_name, fname)
-    character(len=*), intent(in) :: model_name, fname
-    call tf_save_model_c(trim(model_name) // c_null_char, trim(fname) // c_null_char)
-  endsubroutine TF_save_model
+    subroutine TF_save_model(model_name, fname)
+  
+      character(len=*), intent(in) :: model_name, fname
+  
+      call tf_save_model_c(trim(model_name)//c_null_char, trim(fname)//c_null_char)
+  
+    endsubroutine TF_save_model
 !***********************************************************************
-  subroutine TF_save_checkpoint(model_name, checkpoint_dir)
-    character(len=*), intent(in) :: model_name, checkpoint_dir
-    call tf_save_checkpoint_c(trim(model_name) // c_null_char, trim(checkpoint_dir) // c_null_char)
-  endsubroutine TF_save_checkpoint
+    subroutine TF_save_checkpoint(model_name, checkpoint_dir)
+  
+      character(len=*), intent(in) :: model_name, checkpoint_dir
+  
+      call tf_save_checkpoint_c(trim(model_name)//c_null_char, trim(checkpoint_dir)//c_null_char)
+  
+    endsubroutine TF_save_checkpoint
 !***********************************************************************
     subroutine initialize_GPU(f)
 !
@@ -169,16 +195,14 @@ contains
       integer :: lcpu_timestep_on_gpu_int
       integer :: lac_sparse_autotuning_int
 
-
-
       character(LEN=512) :: str
 !
-      if(ltest_rhs) lread_all_vars_from_device = .true.
+      if (ltest_rhs) lread_all_vars_from_device = .true.
       !If there are enough GPUs we can distribute the autotuning between them
       !and it won't take too long
-      if(ncpus >= 8) lac_sparse_autotuning = .false.
+      if (ncpus >= 8) lac_sparse_autotuning = .false.
 
-      if(lac_sparse_autotuning_always) lac_sparse_autotuning = .true.
+      if (lac_sparse_autotuning_always) lac_sparse_autotuning = .true.
 
       str=''
       !List of unsupported modules
@@ -302,8 +326,7 @@ contains
 !  Fetches the address of the f-array counterpart on the GPU for slots from ind1 to ind2
 !  and transforms it to a Fortran pointer.
 !
-      integer, optional :: ind1
-      integer, optional :: ind2
+      integer, optional :: ind1,ind2
       logical, optional :: lout
 
       real, dimension(:,:,:,:), pointer :: pFarr
@@ -318,12 +341,9 @@ contains
         endfunction
       endinterface
 
-      if (present(ind1)) then
-        i1 = ind1
-        i2 = ioptest(ind2,ind1)
-      else
-        i1=1; i2=mfarray
-      endif
+      i1 = ioptest(ind1)
+      i2 = ioptest(ind2,ind1)
+
       if (loptest(lout)) then
         call c_f_pointer(pos_real_ptr_c(pFarr_GPU_out,i1-1),pFarr,(/mx,my,mz,i2-i1+1/))
       else
@@ -405,11 +425,12 @@ contains
 !**************************************************************************
     subroutine update_on_gpu_vec(index, varname, value)
 !
-!  Updates an element of the Astaroth configuration, identified by name or index, on the GPU.
+!  Updates a 3-vector element of the Astaroth configuration, identified by name or index, on the GPU.
 !
       integer, intent(inout) :: index
       character(LEN=*),optional :: varname
       real, dimension(3), optional :: value
+
       if (index>=0) then
         if (present(value)) then
           call update_on_gpu_vec_by_ind_c(index,value)
@@ -420,6 +441,7 @@ contains
         endif
         if (index<0) call fatal_error('update_on_gpu','variable "'//trim(varname)//'" not found')
       endif
+
     endsubroutine update_on_gpu_vec
 !**************************************************************************
     subroutine update_on_gpu(index, varname, value)
@@ -456,6 +478,7 @@ contains
     subroutine get_gpu_reduced_vars(dst)
 
       real, dimension(10) :: dst
+
       call get_gpu_reduced_vars_c(dst)
 
     endsubroutine get_gpu_reduced_vars
@@ -469,6 +492,7 @@ contains
     subroutine split_update_gpu(f)
 
       real, dimension (mx,my,mz,mfarray), intent(INOUT) :: f
+
       call split_update_gpu_c(f)
 
     endsubroutine split_update_gpu
@@ -476,9 +500,8 @@ contains
     subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
-    use General , only: pos_in_array, string_to_enum
 
-    integer, parameter :: n_pars=50
+    integer, parameter :: n_pars=20
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(lskip_rtime_compilation,p_par(3)) ! bool
@@ -487,6 +510,7 @@ contains
     call copy_addr(lsingle_precision_timestep,p_par(8)) ! bool
     call copy_addr(thread_block_loop_factors,p_par(9)) ! int3 dconst
     call copy_addr(lonly_default_stream_for_taskgraphs,p_par(10)) ! bool dconst
+    call copy_addr(lcuda_aware_mpi,p_par(11)) ! bool dconst
 
     endsubroutine pushpars2c
 !**************************************************************************
