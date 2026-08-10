@@ -2700,7 +2700,10 @@ module Special
     call copy_addr(ivel,p_par(67)) ! int
     call copy_addr(lwall_friction,p_par(68)) ! bool
     call copy_addr(idiag_tension,p_par(69)) ! int
-    call copy_addr(previous_wall_vel,p_par(70))
+    !call copy_addr(previous_wall_vel,p_par(70))
+    call copy_addr(bubble_size,p_par(71))
+    call copy_addr(ldr_for_wall_vel,p_par(72)) ! bool
+    call copy_addr(previous_wall_pos,p_par(73))
     endsubroutine pushpars2c
 !********************************************************************
 !********************************************************************
