@@ -800,6 +800,8 @@ module Snapshot
         !call read_snaptime(file,tspec_next,nspec,dspec,t,existed=existed)
 ! 2026-jul-19/axel: the line above causes restart problems. Disable for now.
         call read_snaptime(file,tspec_next,nspec,dspec,t)
+! 2026-aug-11/axel: the negative lspec etc don't currently work unless wer put lset_lfirst_call_early=T
+        if (lset_lfirst_call_early) lfirst_call=.false.
       endif
 !
 !  The output time for spectra was always too late by dt, so therefore,

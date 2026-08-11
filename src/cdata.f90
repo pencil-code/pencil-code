@@ -472,6 +472,7 @@ module Cdata
                               !PAR_DOC: the code and, in particular, when the
                               !PAR_DOC: \file{var.dat} files will be overwritten
                               !PAR_DOC: by \file{remesh.csh}.
+  logical :: lset_lfirst_call_early=.false.  !PAR_DOC: lset_lfirst_call_early (related to negative dspec)
   logical :: lserial_io=.false.
   logical :: lmodify=.false.
   logical :: lroot=.true.,lcaproot=.false.,ldebug=.false.,lfft=.true.
