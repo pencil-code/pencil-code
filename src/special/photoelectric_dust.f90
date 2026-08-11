@@ -95,13 +95,10 @@ module Special
 !
   contains
 !***********************************************************************
-    subroutine register_special()
+    subroutine register_special
 !
 !  Configure pre-initialised (i.e. before parameter read) variables 
 !  which should be know to be able to evaluate
-!
-!  14-jul-09/wlad: coded
-!
 !
     endsubroutine register_special
 !***********************************************************************
@@ -111,7 +108,6 @@ module Special
 !
 !  14-jul-09/wlad: coded
 !
-      use Cdata 
       use EquationOfState, only: cs20, get_gamma_etc
       use Mpicomm
       use SharedVariables
@@ -129,7 +125,7 @@ module Special
       const2=factor_photoelectric * cs20 * gamma1
       const3=factor_localiso
 !
-      call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas)
+      call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,caller='initialize_special')
       if (lrun) then 
         if (lpressuregradient_gas) &
           call fatal_error('initialize_special','switch lpressuregradient_gas=F in hydro_run_pars') 
@@ -140,8 +136,6 @@ module Special
     endsubroutine initialize_special
 !***********************************************************************
     subroutine pencil_criteria_special()
-!
-      use Mpicomm
 !
       if (const1 /= 0.0) then 
         lpenc_requested(i_rho)=.true.
@@ -331,22 +325,20 @@ module Special
 !***********************************************************************
     subroutine special_calc_hydro(f,df,p)
 !
-!   calculate a additional 'special' term on the right hand side of the 
+!   Calculate an additional 'special' term on the right hand side of the 
 !   momentum equation.
 !
 !   Some precalculated pencils of data are passed in for efficiency
-!   others may be calculated directly from the f array
+!   others may be calculated directly from the f array.
 !
-      use Cdata
       use Diagnostics
 !      
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
+
       integer :: j,k
-!
-      if (lfirst.and.ldt) advec_cs2 = (const3*p%cs2 + const2*gamma1 + const1) * dxyz_2
-      if (headtt.or.ldebug) print*, 'dss_dt: max(advec_cs2) =', maxval(advec_cs2)
+      real, dimension(nx) :: adv_cs2
 !
 !  Modified momentum equation
 !
@@ -357,24 +349,29 @@ module Special
       endif
 !
       if (lradiation_PRdrag) then
-         do k=1,ndustspec 
-            df(l1:l2,m,n,iudx(k)) = df(l1:l2,m,n,iudx(k)) - 2*const_pr(k)*p%uud(:,1,k)
-            df(l1:l2,m,n,iudy(k)) = df(l1:l2,m,n,iudy(k)) -   const_pr(k)*p%uud(:,2,k)
-         enddo
+        do k=1,ndustspec 
+          df(l1:l2,m,n,iudx(k)) = df(l1:l2,m,n,iudx(k)) - 2*const_pr(k)*p%uud(:,1,k)
+          df(l1:l2,m,n,iudy(k)) = df(l1:l2,m,n,iudy(k)) -   const_pr(k)*p%uud(:,2,k)
+        enddo
       endif
+!
+      if (lfirst.and.ldt .or. ldiagnos.and.idiag_dtcp/=0 ) &
+          adv_cs2 = (const3*p%cs2 + const2*gamma1 + const1) * dxyz_2
 !
       if (ldiagnos) then 
-        if (idiag_photom/=0)   call sum_mn_name( q%fpres_photoelectric(:,1),idiag_photom)
-        if (idiag_photomax/=0) call max_mn_name( q%fpres_photoelectric,idiag_photomax)
+        call sum_mn_name( q%fpres_photoelectric(:,1),idiag_photom)
+        call max_mn_name( q%fpres_photoelectric,idiag_photomax)
         if (idiag_photomin/=0) call max_mn_name(-q%fpres_photoelectric,idiag_photomin,lneg=.true.)
-        if (idiag_polym/=0)    call sum_mn_name( q%fpres_polytropic(:,1),idiag_polym)
-        if (idiag_polymax/=0)  call max_mn_name( q%fpres_polytropic,idiag_polymax)
-        if (idiag_polymin/=0)  call max_mn_name(-q%fpres_polytropic,idiag_polymin,lneg=.true.)
-        if (idiag_dtcp/=0)     call max_mn_name(sqrt(advec_cs2)/cdt,idiag_dtcp,l_dt=.true.)
+        call sum_mn_name( q%fpres_polytropic(:,1),idiag_polym)
+        call max_mn_name( q%fpres_polytropic,idiag_polymax)
+        if (idiag_polymin/=0) call max_mn_name(-q%fpres_polytropic,idiag_polymin,lneg=.true.)
+        if (idiag_dtcp/=0) call max_mn_name(sqrt(adv_cs2)/cdt,idiag_dtcp,l_dt=.true.)
       endif
+
+      if (lfirst.and.ldt) advec_cs2 = max(advec_cs2,adv_cs2)
+      if (headtt.or.ldebug) print*, 'special_calc_hydro: max(advec_cs2) =', maxval(advec_cs2)
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(p)
 !
     endsubroutine special_calc_hydro
 !***********************************************************************
