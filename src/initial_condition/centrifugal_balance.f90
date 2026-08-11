@@ -1125,17 +1125,15 @@ module InitialCondition
 !  05-apr-08/wlad : coded
 !
          if (.not.lcylindrical_coords) &
-              call fatal_error("initial_condition_aa",&
+             call fatal_error("initial_condition_aa",&
               "this IC assumes cylindrical coordinates")
 !
-         do i=1,mx
-           if ((rcyl_mn(i)>=rm_int).and.(rcyl_mn(i)<=rm_ext)) then
-             kr = 2*pi*rmode_mag/(rm_ext-rm_int)
-             bz(i)=Bz_const/rcyl_mn(i) * sin(kr*(rcyl_mn(i)-rm_int))
-           else
-             bz(i)=0.
-           endif
-         enddo
+         kr = 2*pi*rmode_mag/(rm_ext-rm_int)
+         where ( x>=rm_int .and. x<=rm_ext ) 
+           bz=Bz_const/x * sin(kr*(x-rm_int))
+         elsewhere
+           bz=0.
+         endwhere
 !
          call integrate_field(bz,aphi_mx)
          do m=1,my; do n=1,mz

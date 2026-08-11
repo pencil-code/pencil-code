@@ -318,13 +318,9 @@ module Special
 !
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dSPECIAL_dt'
 !
-      if (ldiagnos) then
-              call calc_diagnostics_special(f,p)
-      endif
+      if (ldiagnos) call calc_diagnostics_special(f,p)
 !
-      call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
-      call keep_compiler_quiet(p)
 !
     endsubroutine dspecial_dt
 !***********************************************************************
@@ -336,21 +332,16 @@ module Special
       real,dimension(mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
 
-
       call keep_compiler_quiet(f)
-      if (idiag_dtgh/=0) &
-           call max_mn_name(sqrt(advec_cg2)/cdt,idiag_dtgh,l_dt=.true.)
+      if (idiag_dtgh/=0) call max_mn_name(sqrt(advec_cg2)/cdt,idiag_dtgh,l_dt=.true.)
 !  
 ! Added a KE energy diagnostic for domain-summed values following Brueshaber et al., 2019 
 !  
-      if (idiag_totKE/=0) &
-           call integrate_mn_name(0.5 * (c0 + p%rho) * p%u2 , idiag_totKE)
-      !if (idiag_pstratm/=0) &
-      !     call sum_mn_name(strat,idiag_pstratm)
-      !if (idiag_pstratmax/=0) &
-      !     call max_mn_name(strat,idiag_pstratmax)
-      !if (idiag_pstratmin/=0) &
-      !     call max_mn_name(-strat,idiag_pstratmin,lneg=.true.)
+      if (idiag_totKE/=0) call integrate_mn_name(0.5*(c0 + p%rho)*p%u2,idiag_totKE)
+      !if (idiag_pstratm/=0) call sum_mn_name(strat,idiag_pstratm)
+      !if (idiag_pstratmax/=0) call max_mn_name(strat,idiag_pstratmax)
+      !if (idiag_pstratmin/=0) call max_mn_name(-strat,idiag_pstratmin,lneg=.true.)
+
     endsubroutine calc_diagnostics_special
 !***********************************************************************
     subroutine read_special_run_pars(iomsg)
@@ -490,7 +481,6 @@ module Special
       df(l1:l2,m,n,iux) =  df(l1:l2,m,n,iux) - (p%uu(:,1) - q%uu_jet(:,1))*tau_jet1
       df(l1:l2,m,n,iuy) =  df(l1:l2,m,n,iuy) - (p%uu(:,2) - q%uu_jet(:,2))*tau_jet1       
     endif
-!    
 !
     call keep_compiler_quiet(f)
 !
