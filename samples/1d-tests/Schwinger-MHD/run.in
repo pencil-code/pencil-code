@@ -43,6 +43,7 @@
   !lswitch_toMHD_when_heating=F, lswitch_toMHD_when_nophi=F  !(should be uncommented, but this changes currently the results)
   !lswitch_toMHD_at_lna=T, lna_switch_toMHD=4.17  !(should be uncommented, but this changes currently the results)
   !lsmooth_Gamma_phi=T, dlnascale_reheating=1., lg_Gamma_phi_fraction_firststep=-8.  !(should be uncommented, but this changes currently the results)
+  cdt_Hscript=1e3
 /
 &disp_current_run_pars
   luse_scale_factor_in_sigma=T

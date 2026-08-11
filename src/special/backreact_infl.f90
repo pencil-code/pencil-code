@@ -106,7 +106,7 @@ module Special
   real :: a2rhogphim, a2rhogphim_all
   real :: a2, a21, Hscript
   real :: Hscript0=0., scale_rho_chi_Heqn=1., scale_rho_rad_Heqn=1., rho_chi_init=0.
-  real :: cdt_rho_chi=1., cdt_phi=1e-2, cdt_Gamma_phi=1., cdt_Hscript=.1
+  real :: cdt_rho_chi=1., cdt_phi=1e-2, cdt_Gamma_phi=1., cdt_Gamma_phi2=0., cdt_Hscript=.1
   real :: amplee_BD_prefactor=0., deriv_prefactor_ee=-1.
   real :: echarge=.0, echarge_const=.303
   real :: count_eb0_all=0., rad_heating=0., ascale_heat=0., ascale_heat_width=0., ascale_heat_off=0., heating
@@ -208,7 +208,7 @@ module Special
       lzeroHubble, lold_ldt_phi, ldt_backreact_infl, ldt_Gamma_phi, Ndiv, &
       Hscript0, Hscript_choice, infl_v, &
       lflrw, lrho_chi, scale_rho_chi_Heqn, scale_rho_rad_Heqn, echarge_type, &
-      cdt_rho_chi, cdt_phi, cdt_Gamma_phi, cdt_Hscript, &
+      cdt_rho_chi, cdt_phi, cdt_Gamma_phi, cdt_Gamma_phi2, cdt_Hscript, &
       lrho_rad, lrho_rad_apply, lrho_rad_apply2, lrho_chi_corrected, &
       lrho_chi_inhom, ldefine_a2rhophi_with_Vpotential, rad_heating, &
       lsmooth_Gamma_phi, ascale_heat, ascale_heat_width, ascale_heat_off, &
@@ -944,11 +944,11 @@ module Special
 !  Timestep constraint on the density equation.
 !  In practice, this is only important in 0-D runs.
 !
-      if (lrho_chi_inhom .and. lheating .and. ldensity) then
+      if (lrho_chi_inhom .and. lheating .and. ldensity .and. cdt_Gamma_phi2/=0.) then
         if (ldensity_nolog) then
-          maxsrc=maxsrc+maxval(Gamma_phi_rho_rhs)
+          maxsrc=maxsrc+maxval(Gamma_phi_rho_rhs)/cdt_Gamma_phi2
         else
-          maxsrc=maxsrc+maxval(Gamma_phi_rho_rhs*p%rho1)
+          maxsrc=maxsrc+maxval(Gamma_phi_rho_rhs*p%rho1)/cdt_Gamma_phi2
         endif
       endif
 !
