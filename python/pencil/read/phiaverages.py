@@ -6,7 +6,7 @@ Contains the classes and methods to read phi-averaged files.
 """
 
 import sys
-from pencil.util import copy_docstring
+from pencil.util import copy_docstring, PencilArray
 
 
 class Averages(object):
@@ -61,6 +61,12 @@ class Averages(object):
 
         param     : Param object
             Param object belonging to the simulation.
+
+        Notes
+        -----
+        Each returned array (e.g. self.phiavg.rho) is a
+        pencil.util.PencilArray with axis_order ('t', 'z', 'r'); its
+        .reorder(...) method returns a view with axes permuted by label.
         """
 
         import os
@@ -108,7 +114,10 @@ class Averages(object):
         nu = glob_dim.nx / 2
         nv = glob_dim.nz
         t_list = np.zeros(shape=(len(aver_file_name_list)))
-        raw_data_list = np.zeros(shape=(len(aver_file_name_list),naverages,int(nv),int(nu)))
+        raw_data_list = PencilArray(
+            np.zeros(shape=(len(aver_file_name_list),naverages,int(nv),int(nu))),
+            axis_order=("t", "var", "z", "r"),
+        )
 
         ii=0
         for in_file_name, aver_file_name in zip(in_file_name_list, aver_file_name_list):

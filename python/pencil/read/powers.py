@@ -10,7 +10,7 @@ from collections.abc import Iterable
 import os
 import numpy as np
 from pencil import read
-from pencil.util import ffloat, copy_docstring
+from pencil.util import ffloat, copy_docstring, PencilArray
 import re
 import warnings
 import functools
@@ -74,6 +74,12 @@ class Power(object):
         Notes
         -----
         Use the attribute keys to get a list of attributes
+
+        Each power-spectrum array (e.g. pw.kin) is a pencil.util.PencilArray
+        (or, if lazy=True, a lazily-read container exposing the same
+        .axis_order attribute but no .reorder()); .axis_order names the axes
+        (e.g. ('t', 'k') or ('t', 'z', 'ky', 'kx')), and .reorder(...) on the
+        non-lazy arrays returns a view with axes permuted by label.
 
         Examples
         --------
@@ -261,12 +267,14 @@ class Power(object):
 
         if param.lintegrate_shell or (dim.nxgrid == 1 or dim.nygrid == 1):
             power_array = power_array.reshape([len(time), nzpos, nk])
+            axis_order = ("t", "z", "k")
         else:
             power_array = power_array.reshape([len(time), nzpos, nky, nkx])
+            axis_order = ("t", "z", "ky", "kx")
 
         self.t = time.astype(np.single)
         self.nzpos = nzpos
-        setattr(self, power_name, power_array)
+        setattr(self, power_name, PencilArray(power_array, axis_order=axis_order))
 
     def _read_power2d_hdf5(self, power_name, file_name, datadir):
         """
@@ -310,7 +318,10 @@ class Power(object):
         power_array = power_re + 1j*power_im
         if power_array.shape[1] == 1:
             power_array = np.squeeze(power_array, axis=1)
-        setattr(self, power_name, power_array)
+            axis_order = ("t", "z", "ky", "kx")
+        else:
+            axis_order = ("t", "ivec", "z", "ky", "kx")
+        setattr(self, power_name, PencilArray(power_array, axis_order=axis_order))
 
     def _read_power2d_hdf5_lazy(self, power_name, file_name, datadir):
         """
@@ -410,7 +421,7 @@ class Power(object):
         time = np.array(time)
         power_array = np.array(power_array).reshape([len(time), int(dim.nxgrid / 2)])
         self.t = time
-        setattr(self, power_name, power_array)
+        setattr(self, power_name, PencilArray(power_array, axis_order=("t", "k")))
 
     def _read_power_krms(self, power_name, file_name, datadir):
         """
@@ -429,7 +440,7 @@ class Power(object):
         power_array = (
             np.array(power_array).reshape([nk]).astype(np.float32)
         )
-        setattr(self, power_name, power_array)
+        setattr(self, power_name, PencilArray(power_array, axis_order=("k",)))
 
     def _read_power(self, power_name, file_name, datadir):
         """
@@ -456,7 +467,7 @@ class Power(object):
             .astype(np.float32)
         )
         self.t = time.astype(np.float32)
-        setattr(self, power_name, power_array)
+        setattr(self, power_name, PencilArray(power_array, axis_order=("t", "k")))
 
     def _read_power_cyl(self, power_name, file_name, datadir):
         """
@@ -484,7 +495,7 @@ class Power(object):
             .astype(np.float32)
         )
         self.t = time.astype(np.float32)
-        setattr(self, power_name, power_array)
+        setattr(self, power_name, PencilArray(power_array, axis_order=("t", "z", "k")))
 
     @functools.lru_cache(maxsize=128)
     def _get_nk_xyz(self, datadir):
@@ -596,6 +607,22 @@ class _m_LazyPowerArray:
     @property
     def dtype(self):
         return np.cdouble
+
+    @property
+    def axis_order(self):
+        """
+        Axis labels, analogous to PencilArray.axis_order (see pencil.util).
+        No .reorder() is provided here: this container is lazy specifically
+        to avoid pulling potentially huge datasets into memory, and
+        reordering axes would require materializing the whole array. Index
+        it down to a manageable size first (self.power_name[...]), then wrap
+        the result in a pencil.util.PencilArray if you need to reorder it.
+        """
+        if self.ndim == 5:
+            return ("t", "ivec", "z", "ky", "kx")
+        if self.ndim == 4:
+            return ("t", "z", "ky", "kx")
+        return None
 
 class _LazyPowerArrayVD(_m_LazyPowerArray):
     """

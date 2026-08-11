@@ -29,7 +29,7 @@ from pencil.math import natural_sort
 from pencil.math.derivatives import curl, curl2
 from pencil import read
 from pencil.sim import Simulation
-from pencil.util import copy_docstring
+from pencil.util import copy_docstring, PencilArray
 
 class DataCube(object):
     """
@@ -59,6 +59,20 @@ class DataCube(object):
 
     def keys(self):
         return list(self.__dict__.keys())
+
+    @staticmethod
+    def _f_axis_order(dim, run2D):
+        """
+        axis_order for self.f, given the dim object and whether this is a 2D
+        run (see pencil.util.PencilArray).
+        """
+        if not run2D:
+            return ("var", "z", "y", "x")
+        if dim.ny == 1:
+            return ("var", "z", "x")
+        if dim.nz == 1:
+            return ("var", "y", "x")
+        return ("var", "z", "y")
 
     def read(
         self,
@@ -175,6 +189,11 @@ class DataCube(object):
         DataCube
             Instance of the pencil.read.var.DataCube class.
             All of the computed fields are imported as class members.
+            self.f and the derived fields (e.g. self.uu, self.bb, self.lnrho)
+            are pencil.util.PencilArray instances; their .axis_order
+            attribute names the axes (e.g. ('var', 'z', 'y', 'x') for self.f,
+            ('z', 'y', 'x') for self.lnrho), and .reorder(...) returns a view
+            with axes permuted by label, e.g. var.uu.reorder('var','x','y','z').
 
         Examples
         --------
@@ -305,7 +324,8 @@ class DataCube(object):
             if "bb" in magic:
                 # Compute the magnetic field before doing trimall.
                 aa = self.f[self._index['ax'] - 1 : self._index['az'], ...]
-                self.bb = curl(
+                self.bb = PencilArray(
+                    curl(
                         aa,
                         dx=self.dx,
                         dy=self.dy,
@@ -315,6 +335,8 @@ class DataCube(object):
                         run2D=run2D,
                         coordinate_system=param.coord_system,
                         grid=grid,
+                    ),
+                    axis_order=aa.axis_order,
                 )
                 if trimall:
                     self.bb = self._trim(self.bb, dim, run2D)
@@ -328,7 +350,8 @@ class DataCube(object):
                         key = aatest[j*3][:-1]
                         value = self._index[aatest[j*3]]
                         aa = self.f[value - 1 : value + 2, ...]
-                        bb = curl(
+                        bb = PencilArray(
+                            curl(
                                 aa,
                                 dx=self.dx,
                                 dy=self.dy,
@@ -338,6 +361,8 @@ class DataCube(object):
                                 run2D=run2D,
                                 coordinate_system=param.coord_system,
                                 grid=grid,
+                            ),
+                            axis_order=aa.axis_order,
                         )
                         if trimall:
                             setattr(
@@ -354,7 +379,8 @@ class DataCube(object):
                             key = "aatest" + str(np.mod(j + 1, naatest))
                             value = self._index["aatest1"] + 3 * j
                             aa = self.f[value - 1 : value + 2, ...]
-                            bb = curl(
+                            bb = PencilArray(
+                                curl(
                                     aa,
                                     dx=self.dx,
                                     dy=self.dy,
@@ -364,6 +390,8 @@ class DataCube(object):
                                     run2D=run2D,
                                     coordinate_system=param.coord_system,
                                     grid=grid,
+                                ),
+                                axis_order=aa.axis_order,
                             )
                             if trimall:
                                 setattr(
@@ -376,7 +404,8 @@ class DataCube(object):
             if "jj" in magic:
                 # Compute the electric current field before doing trimall.
                 aa = self.f[self._index['ax'] - 1 : self._index['az'], ...]
-                self.jj = curl2(
+                self.jj = PencilArray(
+                    curl2(
                         aa,
                         dx=self.dx,
                         dy=self.dy,
@@ -385,6 +414,8 @@ class DataCube(object):
                         y=self.y,
                         coordinate_system=param.coord_system,
                         grid=grid,
+                    ),
+                    axis_order=aa.axis_order,
                 )
                 if trimall:
                     self.jj = self._trim(self.jj, dim, run2D)
@@ -393,7 +424,8 @@ class DataCube(object):
             if "vort" in magic:
                 # Compute the vorticity field before doing trimall.
                 uu = self.f[self._index['ux'] - 1 : self._index['uz'], ...]
-                self.vort = curl(
+                self.vort = PencilArray(
+                    curl(
                         uu,
                         dx=self.dx,
                         dy=self.dy,
@@ -403,6 +435,8 @@ class DataCube(object):
                         run2D=run2D,
                         coordinate_system=param.coord_system,
                         grid=grid,
+                    ),
+                    axis_order=uu.axis_order,
                 )
                 if trimall:
                     self.vort = self._trim(self.vort, dim, run2D)
@@ -692,6 +726,7 @@ class DataCube(object):
                     self.f[self._index[key] - 1, :, :, :] = dtype(
                         tmp["data/" + key][irange_z, irange_y, irange_x]
                     )
+            self.f = PencilArray(self.f, axis_order=self._f_axis_order(dim, run2D))
             t = (tmp["time"][()]).astype(precision)
             dx = (tmp["grid/dx"][()]).astype(precision)
             dy = (tmp["grid/dy"][()]).astype(precision)
@@ -903,6 +938,7 @@ class DataCube(object):
                 y = y_loc
                 z = z_loc
 
+        self.f = PencilArray(self.f, axis_order=self._f_axis_order(dim, run2D))
         self.x = x
         self.y = y
         self.z = z
@@ -1040,8 +1076,8 @@ class DataCube(object):
 
             # Inverse FFT
             arr_unsheared[:, :, :, ix] = ifft(plane_ky, axis=2).real
-            
-        return arr_unsheared
+
+        return PencilArray(arr_unsheared, axis_order=getattr(arr, "axis_order", None))
 
 
         

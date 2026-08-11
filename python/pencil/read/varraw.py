@@ -74,6 +74,10 @@ def varraw(*args, **kwargs):
     -------
     Varraw
         Class instance containing the varfile information.
+        self.f and the derived fields (e.g. self.uu, self.aa) are
+        pencil.util.PencilArray instances; their .axis_order attribute
+        names the axes (e.g. ('x', 'y', 'z', 'var') for self.f), and
+        .reorder(...) returns a view with axes permuted by label.
 
     Examples
     --------
@@ -222,6 +226,7 @@ class Varraw(object):
         import os
         from scipy.io import FortranFile
         from pencil import read
+        from pencil.util import PencilArray
         from collections import defaultdict
 
         if var_list is None:
@@ -632,7 +637,13 @@ class Varraw(object):
                 # leave out the last dimension before squeezing f
                 squeeze_axes = tuple(i for i in range(
                     3) if sliced_f.shape[i] == 1)
-                self.f = np.squeeze(sliced_f, axis=squeeze_axes)
+                kept_labels = tuple(
+                    lbl for i, lbl in enumerate(("x", "y", "z")) if i not in squeeze_axes
+                )
+                self.f = PencilArray(
+                    np.squeeze(sliced_f, axis=squeeze_axes),
+                    axis_order=kept_labels + ("var",),
+                )
 
             else:
                 self.l1 = l1
@@ -641,6 +652,8 @@ class Varraw(object):
                 self.m2 = m2
                 self.n1 = n1
                 self.n2 = n2
+
+                self.f = PencilArray(self.f, axis_order=("x", "y", "z", "var"))
 
             tags = {name: pos for pos, (name, _) in enumerate(indices)}
 
@@ -662,6 +675,14 @@ class Varraw(object):
                         # gather and concatenate explicitly
                         parts = [self.f[..., p][..., np.newaxis]
                                  for p in pos_in_f]
-                        setattr(self, vec_name, np.concatenate(parts, axis=-1))
+                        concatenated = np.concatenate(parts, axis=-1)
+                        setattr(
+                            self,
+                            vec_name,
+                            PencilArray(
+                                concatenated,
+                                axis_order=self.f.axis_order[:-1] + ("var",),
+                            ),
+                        )
 
             self.tags = tags

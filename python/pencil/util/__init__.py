@@ -13,6 +13,7 @@ import re
 import warnings
 import pathlib
 import functools
+import numpy as np
 
 MARKER_FILES = ["run.in", "start.in", "src/cparam.local", "src/Makefile.local"]
 
@@ -160,3 +161,121 @@ class DotDict(dict):
             del self[key]
         except KeyError:
             raise AttributeError(key)
+
+
+class PencilArray(np.ndarray):
+    """
+    A numpy.ndarray subclass carrying an `axis_order` attribute: a tuple of
+    strings naming what each array axis represents, e.g. ('t', 'z', 'y', 'x').
+
+    This is used by the pencil.read routines to make the (historically
+    inconsistent) axis ordering of the returned arrays self-documenting, and
+    to let users reorder axes by name instead of remembering numeric axis
+    positions.
+
+    axis_order is tracked automatically through basic indexing/slicing
+    (integer indices drop the corresponding label, slices/Ellipsis keep it,
+    np.newaxis inserts an unnamed axis). It is NOT tracked through fancy
+    indexing, boolean masks, .transpose(), .reshape(), or ufuncs -- in those
+    cases the result's axis_order falls back to None. Use `.reorder()` to
+    permute axes by label; it updates axis_order correctly.
+
+    KG (2026-08-08): added
+    """
+
+    def __new__(cls, input_array, axis_order=None):
+        obj = np.asarray(input_array).view(cls)
+        if axis_order is None:
+            axis_order = getattr(input_array, "axis_order", None)
+        obj.axis_order = None if axis_order is None else tuple(axis_order)
+        return obj
+
+    def __array_finalize__(self, obj):
+        if obj is None:
+            return
+        self.axis_order = getattr(obj, "axis_order", None)
+
+    def __getitem__(self, key):
+        result = super().__getitem__(key)
+        if isinstance(result, PencilArray) and self.axis_order is not None:
+            result.axis_order = self._reindex_axis_order(key)
+        return result
+
+    def _reindex_axis_order(self, key):
+        """
+        Best-effort computation of the axis_order after applying `key` to an
+        array whose axis_order is self.axis_order. Falls back to None
+        whenever the effect of `key` on axis identity is not straightforward
+        to determine (fancy/boolean indexing).
+        """
+
+        if not isinstance(key, tuple):
+            key = (key,)
+
+        # Bail out on anything where axis-dropping is not simply
+        # "int drops, slice/ellipsis keeps, newaxis inserts".
+        for entry in key:
+            if entry is Ellipsis or entry is None or entry is np.newaxis:
+                continue
+            if isinstance(entry, (int, np.integer, slice)):
+                continue
+            return None
+
+        if sum(1 for entry in key if entry is Ellipsis) > 1:
+            return None
+
+        old_order = list(self.axis_order)
+
+        # Expand Ellipsis into explicit full slices so the rest of the logic
+        # only has to deal with int / slice / None.
+        n_explicit = sum(
+            1 for entry in key if isinstance(entry, (int, np.integer, slice))
+        )
+        n_fill = len(old_order) - n_explicit
+        if n_fill < 0:
+            return None
+        expanded_key = []
+        for entry in key:
+            if entry is Ellipsis:
+                expanded_key.extend([slice(None)] * n_fill)
+            else:
+                expanded_key.append(entry)
+
+        new_order = []
+        old_pos = 0
+        for entry in expanded_key:
+            if entry is None or entry is np.newaxis:
+                new_order.append(None)
+            elif isinstance(entry, (int, np.integer)):
+                old_pos += 1
+            else:  # slice
+                new_order.append(old_order[old_pos])
+                old_pos += 1
+        new_order.extend(old_order[old_pos:])
+        return tuple(new_order)
+
+    def reorder(self, *order):
+        """
+        Return a view of this array with axes permuted to match `order`,
+        a sequence of axis labels (e.g. `arr.reorder('x', 'y', 'z')` or
+        `arr.reorder(['t', 'x', 'y', 'z'])`). `order` must contain exactly
+        the labels in self.axis_order, in the desired new order.
+        """
+
+        if len(order) == 1 and not isinstance(order[0], str):
+            order = tuple(order[0])
+
+        if self.axis_order is None:
+            raise ValueError(
+                "This array has no axis_order set; cannot reorder by label."
+            )
+        if len(order) != len(self.axis_order) or set(order) != set(self.axis_order):
+            raise ValueError(
+                "Requested order {} does not contain the same labels as "
+                "the current axis_order {}.".format(order, self.axis_order)
+            )
+
+        permutation = [self.axis_order.index(label) for label in order]
+        result = np.transpose(self, axes=permutation).view(PencilArray)
+        result.axis_order = tuple(order)
+        return result

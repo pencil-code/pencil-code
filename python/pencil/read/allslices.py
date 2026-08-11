@@ -8,7 +8,7 @@ Contains the classes and methods to read slice files.
 import numpy as np
 from math import ceil
 import warnings
-from pencil.util import copy_docstring
+from pencil.util import copy_docstring, PencilArray
 
 
 class SliceSeries(object):
@@ -25,6 +25,24 @@ class SliceSeries(object):
 
     def keys(self):
         return list(self.__dict__.keys())
+
+    @staticmethod
+    def _plane_axis_order(extension):
+        """
+        axis_order for the (nt, vsize, hsize) array of a given slice plane
+        extension (see pencil.util.PencilArray). 'v'/'h' are used for the 'r'
+        (spherical-shell) plane, whose two spatial axes are not clearly
+        established here (see hsize/vsize computation above).
+        """
+        if extension in ("xy", "Xy", "xy2", "xy3", "xy4"):
+            return ("t", "y", "x")
+        if extension == "xz":
+            return ("t", "z", "x")
+        if extension == "yz":
+            return ("t", "z", "y")
+        if extension == "r":
+            return ("t", "v", "h")
+        return None
 
     def read(
         self,
@@ -104,6 +122,10 @@ class SliceSeries(object):
           is the outer/slower-varying one and comes first, matching the
           [..., z, y, x] axis order used throughout pencil.read (e.g.
           read.var).
+        - Each such array is a pencil.util.PencilArray; its .axis_order
+          attribute names the axes (e.g. ('t', 'y', 'x') for vsl.xy.rho),
+          and .reorder(...) returns a view with axes permuted by label, e.g.
+          vsl.xy.rho.reorder('x', 'y', 't').
 
         Examples
         --------
@@ -236,7 +258,10 @@ class SliceSeries(object):
                         # as the Fortran-file branch below.
                         vsize = int(ceil(ds["1/data"].shape[0]/float(downsample)))
                         hsize = int(ceil(ds["1/data"].shape[1]/float(downsample)))
-                        slice_series = np.zeros([nt, vsize, hsize], dtype=precision)
+                        slice_series = PencilArray(
+                            np.zeros([nt, vsize, hsize], dtype=precision),
+                            axis_order=self._plane_axis_order(extension),
+                        )
                         for it in iter_list:
                             if ds.__contains__(str(it)):
                                 try:
@@ -505,6 +530,9 @@ class SliceSeries(object):
                         for iislice in range(islice):
                             tmp_series.append(slice_series[iislice, ::downsample, ::downsample])
                         slice_series = np.array(tmp_series)
+                    slice_series = PencilArray(
+                        slice_series, axis_order=self._plane_axis_order(extension)
+                    )
                     setattr(ext_object, field, slice_series)
                 setattr(pos_object, extension, np.array(pos_list))
                 setattr(ind_object, extension, np.array(ind_list))

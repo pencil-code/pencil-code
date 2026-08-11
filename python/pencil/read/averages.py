@@ -11,7 +11,7 @@ import sys
 import numpy as np
 from pencil import read
 from pencil.math import natural_sort
-from pencil.util import copy_docstring
+from pencil.util import copy_docstring, PencilArray
 import glob
 import time
 import os
@@ -44,6 +44,24 @@ class Averages(object):
         ks.remove("_t")
         ks.append("t")
         return ks
+
+    @staticmethod
+    def _1d_aver_spatial_labels(plane):
+        """
+        Axis labels (excluding 't' and 'var') for the 2D-plane data returned
+        by y/z-averaging (i.e. averaging over one direction), after the
+        x-first swap applied in _read_1d_aver/_read_h5_aver. Returns None
+        for planes (e.g. 'phi') whose axis order is not established here.
+        """
+        return {"y": ("x", "z"), "z": ("x", "y")}.get(plane)
+
+    @staticmethod
+    def _2d_aver_spatial_label(plane):
+        """
+        Axis label for the single remaining spatial axis of the 1D profile
+        returned by xy/xz/yz-averaging (i.e. averaging over two directions).
+        """
+        return {"xy": "z", "xz": "y", "yz": "x"}.get(plane)
 
     def read(
         self,
@@ -140,6 +158,10 @@ class Averages(object):
         Notes
         -----
         The axis ordering of the 2D averages (yaver and zaver) is [t,x,z] or [t,x,y]
+
+        Each returned array (e.g. aver.xy.rho, aver.y.uz) is a
+        pencil.util.PencilArray; its .axis_order attribute names the axes,
+        and .reorder(...) returns a view with axes permuted by label.
         """
 
         from os.path import join, abspath
@@ -523,12 +545,13 @@ class Averages(object):
         for k in ext_object.__dict__.keys():
             if k != "t":
                 val = getattr(ext_object, k)
+                axis_order = None
                 if val.ndim == 3:
                     """
                     To be consistent with what happens with io_dist.
                     Axis ordering is now [t,x,z] for yaver, or [t,x,y] for zaver.
                     """
-                    setattr(ext_object, k, val.swapaxes(1,2))
+                    val = val.swapaxes(1,2)
 
                     # 2025-Nov-28/Kishore: I suppose we can remove this warning
                     # after a year or so.
@@ -536,6 +559,12 @@ class Averages(object):
                         "Axis ordering for yaver and zaver has recently been changed;"
                         "it is now [t,x,z] for yaver, or [t,x,y] for zaver."
                         )
+                    spatial_labels = self._1d_aver_spatial_labels(plane)
+                    axis_order = ("t",) + spatial_labels if spatial_labels else None
+                elif val.ndim == 2:
+                    spatial_label = self._2d_aver_spatial_label(plane)
+                    axis_order = ("t", spatial_label) if spatial_label else None
+                setattr(ext_object, k, PencilArray(val, axis_order=axis_order))
 
         return t, ext_object
 
@@ -680,7 +709,13 @@ class Averages(object):
                     proc_data = proc_data.reshape([len(t), len(vindex), pnv, pnu])
 
             if not all_procs:
-                return np.array(t, dtype=precision), proc_data.swapaxes(2, 3)
+                spatial_labels = self._1d_aver_spatial_labels(plane)
+                axis_order = (
+                    ("t", "var") + spatial_labels if spatial_labels else None
+                )
+                return np.array(t, dtype=precision), PencilArray(
+                    proc_data.swapaxes(2, 3), axis_order=axis_order
+                )
 
             # Add the proc_data (one proc) to the raw_data (all procs)
             if plane == "y":
@@ -714,7 +749,9 @@ class Averages(object):
         t = np.array(t, dtype=precision)
         raw_data = np.swapaxes(raw_data, 2, 3)
 
-        return t, raw_data
+        spatial_labels = self._1d_aver_spatial_labels(plane)
+        axis_order = ("t", "var") + spatial_labels if spatial_labels else None
+        return t, PencilArray(raw_data, axis_order=axis_order)
 
     def _read_2d_aver(
         self,
@@ -776,7 +813,9 @@ class Averages(object):
         # Restructure the raw data and add it to the Averages object.
         raw_data = np.reshape(raw_data, [n_times, n_vars, nw])
 
-        return t, raw_data
+        spatial_label = self._2d_aver_spatial_label(plane)
+        axis_order = ("t", "var", spatial_label) if spatial_label else None
+        return t, PencilArray(raw_data, axis_order=axis_order)
 
     def __natural_sort(self, l):
         """
