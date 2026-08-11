@@ -9573,6 +9573,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
       use Mpicomm, only: mpireduce_max_int,mpiabort
       use General, only: notanumber
       use FarrayManager,  only: farray_get_name
+      use, intrinsic :: iso_fortran_env, only: output_unit
 
 
       real, contiguous, dimension(:,:,:,:) :: f
@@ -9599,6 +9600,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
           ncomponents = farray_get_name(i,name)
           if (any(f(:,:,:,i) > huge_real .or. f(:,:,:,i) /= f(:,:,:,i))) &
               print*,"check_for_nans_globally: nan in Field: ",name
+          flush(output_unit)
         enddo
         call mpiabort
       endif

@@ -203,21 +203,23 @@ elemental gsmooth(Field f)
 Kernel fluctutation_terms_and_means()
 {
 	if(!AC_ltrained__mod__training){
-		write(uumean,gsmooth(UU))
 		if(lhydro) 
 		{
-		    if(AC_lconservative__mod__hydro)
-            {
-		      uij = gradient_tensor(MOM,RHO)
-		      Sij = traceless_strain(uij)
-              write_symmetricTensor_matrix(strain_sgs, Sij)
-              write(mom_mean, gsmooth(MOM))
-              write(rho_mean, gsmooth(RHO))
-            }
-            else
-            {
-		      write_tensor_product(tau_hydro,UU)
-            }
+		  if(AC_lconservative__mod__hydro)
+      {
+		    uij = gradient_tensor(MOM,RHO)
+		    Sij = traceless_strain(uij)
+        write_symmetricTensor_matrix(strain_sgs, Sij)
+        write(mom_mean, gsmooth(MOM))
+        write(rho_mean, gsmooth(RHO))
+        write_tensor_product(tau_hydro,MOM)
+        write(tau_hydro, tau_hydro/RHO)
+      }
+      else
+      {
+        write(uumean,gsmooth(UU))
+		    write_tensor_product(tau_hydro,UU)
+      }
 		}
 		if(AC_ltrain_mag__mod__training)
 		{
@@ -232,14 +234,14 @@ Kernel smooth_fluctuation_terms(){
       if(!AC_ltrained__mod__training){
         if(lhydro) 
         {
-            
             if(AC_lconservative__mod__hydro)
             {
                 write(strain_sgs, gsmooth(strain_sgs))
+                write(tau_hydro, gsmooth(tau_hydro))
             }
             else
             {
-                write(tau_hydro,gsmooth(tau_hydro))
+                write(tau_hydro, gsmooth(tau_hydro))
             }
         } 
 
@@ -260,6 +262,7 @@ Kernel compute_taus(){
             Sij_mean = traceless_strain(uij_mean)
             write_symmetricTensor_matrix(strain_sgs_mean, Sij_mean)
             write(strain_sgs, strain_sgs - strain_sgs_mean)
+            write(tau_hydro, tau_hydro - tensor_product(mom_mean))
           }
           else
           {

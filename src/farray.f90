@@ -230,6 +230,7 @@ module FArrayManager
 ! 16-jan-17/MR: avoid fatal error due to try of re-registering of an already existing variable at reloading.
 !
       use General, only: ioptest
+      use Cdata, only: ip
 !
       character (len=*), intent(in) :: varname
       integer, target, intent(out)  :: ivar
@@ -240,6 +241,7 @@ module FArrayManager
       type (farray_contents_list), pointer :: item, new
       integer :: ncomponents, narray, nvars
 !
+      if(ip<13 .and. lroot) print*,"Registering: ",varname
       if (vartype==iFARRAY_TYPE_SCRATCH) then
         call fatal_error("farray_register_variable", &
           "Registering "//trim(varname)//" as scratch variable fails. Use the"// &

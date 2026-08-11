@@ -1,5 +1,7 @@
 #include "torchfort.h"
 #include <iostream>
+#include <vector>
+#include <utility>
 #include <string>
 #include <fstream>
 #include <stdio.h>
@@ -31,7 +33,40 @@ bool torch_train_CAPI(int sub_dims[3], AcReal* input, AcReal* label, AcReal* los
   	const torchfort_result_t res = torchfort_train(model_name, input, 5, input_shape, label, 5, label_shape, loss_val, TORCH_PRECISION, 0);
 	return res != TORCHFORT_RESULT_SUCCESS;
 }
+/***********************************************************************************************/
+bool torch_train_multiarg_CAPI(int sub_dims[3], const std::vector<std::pair<AcReal*, int>>& inputs, 
+        const std::vector<std::pair<AcReal*, int>>& outputs, AcReal* loss_val,  const char* model_name){
+    
 
+    torchfort_tensor_list_t inputs_tensor;
+    torchfort_tensor_list_create(&inputs_tensor);
+
+    torchfort_tensor_list_t outputs_tensor;
+    torchfort_tensor_list_create(&outputs_tensor);
+
+    for(std::size_t i = 0; i < inputs.size(); ++i) {
+      if (inputs[i].first == NULL) {
+        fprintf(stderr, "ERROR: ASTAROTH device pointers are NULL! (input: %p), %d\n", (void*)inputs[i].first, i);
+        fflush(stderr);
+      }
+	    int64_t input_shape[5] = {1, inputs[i].second,  sub_dims[2], sub_dims[1], sub_dims[0]};
+        torchfort_tensor_list_add_tensor(inputs_tensor, inputs[i].first, 5, input_shape, TORCH_PRECISION);
+    }
+    
+    for(std::size_t i = 0; i < outputs.size(); ++i) {
+      if (outputs[i].first == NULL) {
+        fprintf(stderr, "ERROR: ASTAROTH device pointers are NULL! (outputs: %p), %d\n", (void*)outputs[i].first, i);
+        fflush(stderr);
+      }
+	    int64_t output_shape[5] = {1, outputs[i].second,  sub_dims[2], sub_dims[1], sub_dims[0]};
+        torchfort_tensor_list_add_tensor(outputs_tensor, outputs[i].first, 5, output_shape, TORCH_PRECISION);
+    }
+
+    const torchfort_result_t res = torchfort_train_multiarg(model_name, inputs_tensor, outputs_tensor, loss_val, nullptr, 0);
+    torchfort_result_t res_destroy = torchfort_tensor_list_destroy(inputs_tensor);
+    res_destroy = torchfort_tensor_list_destroy(outputs_tensor);
+    return res == TORCHFORT_RESULT_SUCCESS;
+}
 /***********************************************************************************************/
 bool torch_infer_CAPI(int sub_dims[3], AcReal* input, AcReal* label, 
 		     const int input_fields, const int output_fields, const char* model_name, bool subsample){

@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <chrono>
 #include <iostream>
+#include <utility>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -175,6 +176,8 @@ bool torch_train_CAPI(int sub_dims[3], AcReal* input, AcReal* label, AcReal* los
 		     const int input_fields, const int output_fields, const char* model_name);
 bool torch_infer_CAPI(int sub_dims[3], AcReal* input, AcReal* label, 
 		     const int input_fields, const int output_fields, const char* model_name, bool subsample);
+bool torch_train_multiarg_CAPI(int sub_dims[3], const std::vector<std::pair<AcReal*, int>>& inputs, 
+        const std::vector<std::pair<AcReal*, int>>& outputs, AcReal* loss_val,  const char* model_name);
 bool torch_create_model_CAPI(const char* name, const char* config_fname, int device);
 bool torch_create_distributed_model_CAPI(const char* name, const char* config_fname, MPI_Comm mpi_comm, int device);
 bool torch_load_CAPI(const char* name, const char* fname);
@@ -1066,6 +1069,7 @@ extern "C" void torch_train_c_api(AcReal *loss_val, int itsub, double t) {
   
   called_training=true;
   calling_train = true;
+
   acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(get_taus),1);
 
   auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
@@ -1076,44 +1080,50 @@ extern "C" void torch_train_c_api(AcReal *loss_val, int itsub, double t) {
   train_counter++;
   acDeviceSetInput(acGridGetDevice(), AC_count, train_counter);
 
-  acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(normalize),1);
+  //acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(normalize),1);
   acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(boundconds),1);
   *loss_val=DBL_MAX;
+
+  int input_size = 0;
+  int output_size = 0;
+  std::vector<std::pair<AcReal*, int>> inputs;
+  std::vector<std::pair<AcReal*, int>> outputs;
+
+  AcReal* out = NULL;
+  AcReal* input = NULL;
+  AcReal* output = NULL;
+
   if(lhydro){
-    AcReal* out = NULL;
-    AcReal* feature = NULL;
-    AcReal* label = NULL;
-    
 
     if(AC_lconservative__mod__hydro){
         // dynamic field handel acGetmomentum_sgs_Xx()
-        acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetstrain_sgs_Xx(), &label, &out);
-        acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetmom_mean_X(), &feature, &out);
-    }
-    else {
-        acDeviceGetVertexBufferPtrs(acGridGetDevice(), tau_hydro.xx, &label, &out);
-        acDeviceGetVertexBufferPtrs(acGridGetDevice(), uumean.x, &feature, &out);
-    }
+        acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetmom_mean_X(), &input, &out);
+        inputs.emplace_back(input, 3);
+        acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetrho_mean(), &input, &out);
+        inputs.emplace_back(input, 1);
 
-    acGridHaloExchange();
-    torch_train_CAPI((int[]){mx,my,mz}, feature, label, loss_val,3,6,"stationary");
-    train_loss.push_back(*loss_val);
-    train_nts.push_back(it);
+        acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetstrain_sgs_Xx(), &output, &out);
+        outputs.emplace_back(output, 6);
+    }
+        acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGettau_hydro_Xx(), &output, &out);
+        outputs.emplace_back(output, 6);
+
   }
   else if(AC_ltrain_mag__mod__training){
-    AcReal* out = NULL;
-    AcReal* feature = NULL;
-    AcReal* label = NULL;
-
     
-    acDeviceGetVertexBufferPtrs(acGridGetDevice(), F_SGS_EMFVEC.x, &label, &out);
-    acDeviceGetVertexBufferPtrs(acGridGetDevice(), uumean.x, &feature, &out);
+    acDeviceGetVertexBufferPtrs(acGridGetDevice(), F_SGS_EMFVEC.x, &output, &out);
+    outputs.emplace_back(output, 3);
+    acDeviceGetVertexBufferPtrs(acGridGetDevice(), uumean.x, &input, &out);
+    inputs.emplace_back(input, 3);
+    acDeviceGetVertexBufferPtrs(acGridGetDevice(), bbmean.x, &input, &out);
+    inputs.emplace_back(input, 3);
 
-    acGridHaloExchange();
-    torch_train_CAPI((int[]){mx,my,mz}, feature, label, loss_val,3,3,"stationary");
-    train_loss.push_back(*loss_val);
-    train_nts.push_back(it);
   }
+  acGridHaloExchange();
+  torch_train_multiarg_CAPI((int[]){mx, my, mz}, inputs, outputs, loss_val,"stationary");
+  train_loss.push_back(*loss_val);
+  train_nts.push_back(it);  
+
   //print_debug();
   if (it==nt){
   	std::ofstream myFile;
