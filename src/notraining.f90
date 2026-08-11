@@ -101,4 +101,10 @@
 
     endsubroutine pushpars2c
 !***********************************************************************
+    subroutine training_save_diagnostic_controls
+    endsubroutine training_save_diagnostic_controls
+!***********************************************************************
+    subroutine training_restore_diagnostic_controls
+    endsubroutine training_restore_diagnostic_controls
+!***********************************************************************
   end module Training

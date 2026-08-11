@@ -25,6 +25,8 @@
     !real(KIND=rkind4), dimension(:,:,:,:,:), allocatable, device :: input, label, output
     real, dimension(:,:,:,:,:), allocatable, device :: input, label, output
     real :: train_loss   !(KIND=rkind4) :: train_loss
+    !$omp threadprivate(train_loss)
+    real :: train_loss_save
 
     integer :: itau_bb, itau_bbxx, itau_bbxy, itau_bbxz, itau_bbyy, itau_bbyz, itau_bbzz
     integer :: itau_hydro, itau_hydroxx, itau_hydroxy, itau_hydroxz, itau_hydroyy, itau_hydroyz, itau_hydrozz
@@ -635,6 +637,14 @@
 
     endsubroutine write_sample
 !***************************************************************
+    subroutine training_save_diagnostic_controls
+            train_loss_save = train_loss
+    endsubroutine hydro_save_diagnostic_controls
+!***********************************************************************
+    subroutine training_restore_diagnostic_controls
+            train_loss = train_loss_save
+    endsubroutine hydro_restore_diagnostic_controls
+!***********************************************************************
     subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr

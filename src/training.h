@@ -14,4 +14,6 @@
     public :: pushpars2c
     real, public :: training_time = 0
     real, public :: inference_time = 0
+    public :: training_save_diagnostic_controls
+    public :: training_restore_diagnostic_controls
   private

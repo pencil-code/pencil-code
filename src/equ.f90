@@ -81,6 +81,7 @@ module Equ
       use Testfield
       use Testflow
       use Testscalar
+      use Training, only: training_save_diagnostic_controls
       use Grid, only: coarsegrid_interp
 !$    use OMP_lib
       use Mpicomm
@@ -320,6 +321,7 @@ module Equ
 !$      if (ldiagnostic_output) then 
 !$        call save_diagnostic_controls
 !$        call hydro_save_diagnostic_controls
+!$        call training_save_diagnostic_controls
 !$      endif 
         end_time = real(mpiwtime())
         rhs_sum_time = rhs_sum_time + end_time-start_time
@@ -601,6 +603,7 @@ module Equ
       use Magnetic,only: calc_diagnostic_auxiliaries_magnetic
       use Diagnostics
       use Hydro, only: hydro_restore_diagnostic_controls
+      use Training, only: training_restore_diagnostic_controls
 !$    use OMP_lib
 !$    use General, only: get_cpu, set_cpu
 
@@ -615,6 +618,7 @@ module Equ
 !$omp copyin(t,dxmax_pencil,fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
 !$    call restore_diagnostic_controls
 !$    call hydro_restore_diagnostic_controls
+!$    call training_restore_diagnostic_controls
 
       !$omp do
       do imn=1,nyz
@@ -671,7 +675,7 @@ module Equ
       use Selfgravity, only: calc_diagnostics_selfgrav
       use Shear, only: calc_diagnostics_shear
       use Shock, only: calc_diagnostics_shock
-      use Training, only: calc_diagnostics_training
+      use Training, only: calc_diagnostics_training, training_restore_diagnostic_controls
       use Viscosity, only: calc_diagnostics_viscosity
       use Special, only: calc_diagnostics_special
       use Diagnostics
@@ -695,6 +699,7 @@ module Equ
 !$omp copyin(t,dxmax_pencil,fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
 !$    call restore_diagnostic_controls
 !$    call hydro_restore_diagnostic_controls
+!$    call training_restore_diagnostic_controls
 !      
 !     TP: on some nvfortan compilers copyin does not seem to be enough to ensure diagnostic arrays are allocated
 !         not sure was the copyin ever sufficient, but not that important since we can always explicitly check
