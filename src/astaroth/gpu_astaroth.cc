@@ -186,6 +186,25 @@ bool torch_save_model_CAPI(const char* name, const char* fname);
 bool torch_save_checkpoint_CAPI(const char* name, const char* checkpoint_dir);
 void read_stats();
 
+// variables used for training
+bool training_from_checkpoint=false;
+// used as a flag to check if we need to calcualte the taus & uumean again
+bool called_training = false;
+
+// flags for printing if we are training or infering
+bool calling_train = false;
+bool calling_infer = false;
+
+int randomNumber;
+std::vector<float>val_loss;
+std::vector<float>train_loss;
+std::vector<double>train_time;
+std::vector<double>val_time;
+std::vector<int>train_nts;
+
+bool loaded_stats = false;
+bool snap_print = false;
+
 void scaling();
 extern "C" void print_debug();
 float MSE();
@@ -659,7 +678,39 @@ void save_stats(std::string fileName){
 
     // Headers
         if (lhydro){
-            myFile << "in_acc_sum_x,in_acc_sum_y,in_acc_sum_z,in_acc_sum_squared_x,in_acc_sum_squared_y,in_acc_sum_squared_z,out_acc_sum_xx,out_acc_sum_yy,out_acc_sum_zz,out_acc_sum_xy,out_acc_sum_yz,out_acc_sum_xz,out_acc_sum_squared_xx,out_acc_sum_squared_yy,out_acc_sum_squared_zz,out_acc_sum_squared_xy,out_acc_sum_squared_yz,out_acc_sum_squared_xz\n";
+          if(AC_lconservative__mod__hydro){
+            // input sum
+            myFile << "in_acc_sum_rho,in_acc_sum_mom_x,in_acc_sum_mom_y,in_acc_sum_mom_z,";
+
+            // input sum squared 
+            myFile << "in_acc_sum_sq_rho,in_acc_sum_sq_mom_x,in_acc_sum_sq_mom_y,in_acc_sum_sq_mom_z,";
+
+            // output sum strain
+            myFile << "out_acc_sum_strain_xx,out_acc_sum_strain_yy,out_acc_sum_strain_zz,out_acc_sum_strain_xy,out_acc_sum_strain_yz,out_acc_sum_strain_xz,";
+
+            // output sum squared strain
+            myFile << "out_acc_sum_sq_strain_xx,out_acc_sum_sq_strain_yy,out_acc_sum_sq_strain_zz,out_acc_sum_sq_strain_xy,out_acc_sum_sq_strain_yz,out_acc_sum_sq_strain_xz,";
+
+            // output sum tau_hydro
+            myFile << "out_acc_sum_tau_xx,out_acc_sum_tau_yy,out_acc_sum_tau_zz,out_acc_sum_tau_xy,out_acc_sum_tau_yz,out_acc_sum_tau_xz,";
+
+            // output sum squared tau
+            myFile << "out_acc_sum_sq_tau_xx,out_acc_sum_sq_tau_yy,out_acc_sum_sq_tau_zz,out_acc_sum_sq_tau_xy,out_acc_sum_sq_tau_yz,out_acc_sum_sq_tau_xz\n";
+          }
+
+          else {
+            // input sum
+            myFile << "in_acc_sum_uu_x,in_acc_sum_uu_y,in_acc_sum_uu_z,";
+
+            // input sum squared
+            myFile << "in_acc_sum_sq_uu_x,in_acc_sum_sq_uu_y,in_acc_sum_sq_uu_z,";
+
+            // output sum tau_hydro
+            myFile << "out_acc_sum_tau_xx,out_acc_sum_tau_yy,out_acc_sum_tau_zz,out_acc_sum_tau_xy,out_acc_sum_tau_yz,out_acc_sum_tau_xz,";
+
+            // output sum squared tau_hydro
+            myFile << "out_acc_sum_sq_tau_xx,out_acc_sum_sq_tau_yy,out_acc_sum_sq_tau_zz,out_acc_sum_sq_tau_xy,out_acc_sum_sq_tau_yz,out_acc_sum_sq_tau_xz,";
+          }
         }
 
         myFile << train_counter << "," << nxgrid*nygrid*nzgrid << ",";
@@ -667,13 +718,73 @@ void save_stats(std::string fileName){
 
     // Hydro statistics
         if (lhydro){
+
+          if(AC_lconservative__mod__hydro){
+            
+            // input sum
+            auto in_acc_sum_rho_   = acDeviceGetOutput(acGridGetDevice(), in_acc_sum_rho); 
+            auto in_acc_sum_mom_x = acDeviceGetOutput(acGridGetDevice(), in_acc_sum[0]); 
+            auto in_acc_sum_mom_y = acDeviceGetOutput(acGridGetDevice(), in_acc_sum[1]); 
+            auto in_acc_sum_mom_z = acDeviceGetOutput(acGridGetDevice(), in_acc_sum[2]);
+
+            myFile << in_acc_sum_rho_ << "," << in_acc_sum_mom_x << "," << in_acc_sum_mom_y << "," << in_acc_sum_mom_z << ",";
+          
+            // input sum squared
+            auto in_acc_sum_sq_rho_   = acDeviceGetOutput(acGridGetDevice(), in_acc_sum_sq_rho); 
+            auto in_acc_sum_sq_mom_x = acDeviceGetOutput(acGridGetDevice(), in_acc_sum_sq[0]); 
+            auto in_acc_sum_sq_mom_y = acDeviceGetOutput(acGridGetDevice(), in_acc_sum_sq[1]); 
+            auto in_acc_sum_sq_mom_z = acDeviceGetOutput(acGridGetDevice(), in_acc_sum_sq[2]);
+
+            myFile << in_acc_sum_sq_rho_ << "," << in_acc_sum_sq_mom_x << "," << in_acc_sum_sq_mom_y << "," << in_acc_sum_sq_mom_z << ",";
+
+            // output sum strain
+            auto out_acc_sum_strain_xx = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_strain[0]);
+            auto out_acc_sum_strain_yy = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_strain[1]);
+            auto out_acc_sum_strain_zz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_strain[2]);
+            auto out_acc_sum_strain_xy = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_strain[3]);
+            auto out_acc_sum_strain_yz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_strain[4]);
+            auto out_acc_sum_strain_xz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_strain[5]);
+
+            myFile << out_acc_sum_strain_xx << "," << out_acc_sum_strain_yy << "," << out_acc_sum_strain_zz << "," << out_acc_sum_strain_xy << "," << out_acc_sum_strain_yz << "," << out_acc_sum_strain_xz << ",";
+
+            // output sum squared strain
+            auto out_acc_sum_sq_strain_xx = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_sq_strain[0]);
+            auto out_acc_sum_sq_strain_yy = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_sq_strain[1]);
+            auto out_acc_sum_sq_strain_zz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_sq_strain[2]);
+            auto out_acc_sum_sq_strain_xy = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_sq_strain[3]);
+            auto out_acc_sum_sq_strain_yz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_sq_strain[4]);
+            auto out_acc_sum_sq_strain_xz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_sq_strain[5]);
+            
+            myFile << out_acc_sum_sq_strain_xx << "," << out_acc_sum_sq_strain_yy << "," << out_acc_sum_sq_strain_zz << "," << out_acc_sum_sq_strain_xy << "," << out_acc_sum_sq_strain_yz << "," << out_acc_sum_sq_strain_xz << ",";
+
+            // output sum tau_hydro
+            auto out_acc_sum_tau_xx = acDeviceGetOutput(acGridGetDevice(), out_acc_sum[0]);
+            auto out_acc_sum_tau_yy = acDeviceGetOutput(acGridGetDevice(), out_acc_sum[1]);
+            auto out_acc_sum_tau_zz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum[2]);
+            auto out_acc_sum_tau_xy = acDeviceGetOutput(acGridGetDevice(), out_acc_sum[3]);
+            auto out_acc_sum_tau_yz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum[4]);
+            auto out_acc_sum_tau_xz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum[5]);
+
+            myFile << out_acc_sum_tau_xx << "," << out_acc_sum_tau_yy << "," << out_acc_sum_tau_zz << "," << out_acc_sum_tau_xy << "," << out_acc_sum_tau_yz << "," << out_acc_sum_tau_xz << ",";
+
+            // output sum squared tau_hydro
+            auto out_acc_sum_sq_tau_xx = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_sq[0]);
+            auto out_acc_sum_sq_tau_yy = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_sq[1]);
+            auto out_acc_sum_sq_tau_zz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_sq[2]);
+            auto out_acc_sum_sq_tau_xy = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_sq[3]);
+            auto out_acc_sum_sq_tau_yz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_sq[4]);
+            auto out_acc_sum_sq_tau_xz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_sq[5]);
+
+            myFile << out_acc_sum_sq_tau_xx << "," << out_acc_sum_sq_tau_yy << "," << out_acc_sum_sq_tau_zz << "," << out_acc_sum_sq_tau_xy << "," << out_acc_sum_sq_tau_yz << "," << out_acc_sum_sq_tau_xz << "\n";
+          }
+          else {
             auto in_acc_sum_x = acDeviceGetOutput(acGridGetDevice(), in_acc_sum[0]);
             auto in_acc_sum_y = acDeviceGetOutput(acGridGetDevice(), in_acc_sum[1]);
             auto in_acc_sum_z = acDeviceGetOutput(acGridGetDevice(), in_acc_sum[2]);
 
-            auto in_acc_sum_squared_x = acDeviceGetOutput(acGridGetDevice(), in_acc_sum_squared[0]);
-            auto in_acc_sum_squared_y = acDeviceGetOutput(acGridGetDevice(), in_acc_sum_squared[1]);
-            auto in_acc_sum_squared_z = acDeviceGetOutput(acGridGetDevice(), in_acc_sum_squared[2]);
+            auto in_acc_sum_sq_x = acDeviceGetOutput(acGridGetDevice(), in_acc_sum_sq[0]);
+            auto in_acc_sum_sq_y = acDeviceGetOutput(acGridGetDevice(), in_acc_sum_sq[1]);
+            auto in_acc_sum_sq_z = acDeviceGetOutput(acGridGetDevice(), in_acc_sum_sq[2]);
 
             auto out_acc_sum_xx = acDeviceGetOutput(acGridGetDevice(), out_acc_sum[0]);
             auto out_acc_sum_yy = acDeviceGetOutput(acGridGetDevice(), out_acc_sum[1]);
@@ -682,19 +793,49 @@ void save_stats(std::string fileName){
             auto out_acc_sum_yz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum[4]);
             auto out_acc_sum_xz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum[5]);
 
-            auto out_acc_sum_squared_xx = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_squared[0]);
-            auto out_acc_sum_squared_yy = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_squared[1]);
-            auto out_acc_sum_squared_zz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_squared[2]);
-            auto out_acc_sum_squared_xy = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_squared[3]);
-            auto out_acc_sum_squared_yz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_squared[4]);
-            auto out_acc_sum_squared_xz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_squared[5]);
+            auto out_acc_sum_sq_xx = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_sq[0]);
+            auto out_acc_sum_sq_yy = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_sq[1]);
+            auto out_acc_sum_sq_zz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_sq[2]);
+            auto out_acc_sum_sq_xy = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_sq[3]);
+            auto out_acc_sum_sq_yz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_sq[4]);
+            auto out_acc_sum_sq_xz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_sq[5]);
 
-            myFile << in_acc_sum_x << "," << in_acc_sum_y << "," << in_acc_sum_z << "," << in_acc_sum_squared_x << "," << in_acc_sum_squared_y << "," << in_acc_sum_squared_z << "," <<  out_acc_sum_xx << "," <<  out_acc_sum_yy << "," <<  out_acc_sum_zz << "," <<  out_acc_sum_xy << "," << out_acc_sum_yz << "," << out_acc_sum_xz << "," << out_acc_sum_squared_xx << "," << out_acc_sum_squared_yy << "," << out_acc_sum_squared_zz << "," << out_acc_sum_squared_xy << "," << out_acc_sum_squared_yz << "," << out_acc_sum_squared_xz << "\n";
+            myFile << in_acc_sum_x << "," << in_acc_sum_y << "," << in_acc_sum_z << "," << in_acc_sum_sq_x << "," << in_acc_sum_sq_y << "," << in_acc_sum_sq_z << "," <<  out_acc_sum_xx << "," <<  out_acc_sum_yy << "," <<  out_acc_sum_zz << "," <<  out_acc_sum_xy << "," << out_acc_sum_yz << "," << out_acc_sum_xz << "," << out_acc_sum_sq_xx << "," << out_acc_sum_sq_yy << "," << out_acc_sum_sq_zz << "," << out_acc_sum_sq_xy << "," << out_acc_sum_sq_yz << "," << out_acc_sum_sq_xz << "\n";
+          }
         }
-
         myFile.close();
     }
 #endif
+}
+/***********************************************************************************************/
+void save_training_losses(){
+
+  std::ofstream myFile;
+  std::string fileString = "train_loss_" + std::to_string(my_rank)  + ".csv";	
+  if(training_from_checkpoint){
+    myFile.open(fileString, std::ios::app);
+  }
+  else {
+    myFile.open(fileString);
+    myFile << "epoch,train_loss\n";
+  }
+  for (int i=0;i<train_loss.size();i++){
+  	myFile << i << "," << train_loss[i] << "\n";
+  }
+  myFile.close();
+	
+	std::string train_sample = "train_sample_" + std::to_string(my_rank) + ".csv";
+  if(training_from_checkpoint){
+    myFile.open(fileString, std::ios::app);
+  }
+  else {
+    myFile.open(train_sample);
+    myFile << "train_sample_nts\n";
+  }
+  for (int i=0;i<train_nts.size();i++){
+  	myFile << train_nts[i] << "\n";
+  }
+  myFile.close();
 }
 /***********************************************************************************************/
 void read_stats(){
@@ -742,9 +883,9 @@ void read_stats(){
                     fflush(stderr);
                 }
 
-                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_squared[0], std::stod(row[5]));
-                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_squared[1], std::stod(row[6]));
-                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_squared[2], std::stod(row[7]));
+                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_sq[0], std::stod(row[5]));
+                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_sq[1], std::stod(row[6]));
+                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_sq[2], std::stod(row[7]));
 
 
                 acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum[0], std::stod(row[8]));
@@ -754,12 +895,12 @@ void read_stats(){
                 acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum[4], std::stod(row[12]));
                 acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum[5], std::stod(row[13]));
 
-                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_squared[0], std::stod(row[14]));
-                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_squared[1], std::stod(row[15]));
-                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_squared[2], std::stod(row[16]));
-                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_squared[3], std::stod(row[17]));
-                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_squared[4], std::stod(row[18]));
-                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_squared[5], std::stod(row[19]));
+                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq[0], std::stod(row[14]));
+                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq[1], std::stod(row[15]));
+                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq[2], std::stod(row[16]));
+                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq[3], std::stod(row[17]));
+                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq[4], std::stod(row[18]));
+                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq[5], std::stod(row[19]));
             }
         }
     }
@@ -840,7 +981,7 @@ extern "C" void tf_load_model_checkpoint_c_api(const char* name, const char* che
 		acLogFromRootProc(rank, "Torchfort model %s loaded succesfully\n", name);
 	}
     
-
+  training_from_checkpoint=true;
 	fflush(stdout);
 	fflush(stderr);
 #endif
@@ -855,6 +996,8 @@ extern "C" void tf_save_model_c_api(const char* name, const char* fname){
 	else{
         save_stats("data/training/running_statistics.csv");
 		acLogFromRootProc(rank, "save_model: Saving ML model to: %s\n", fname);
+    save_training_losses();
+
 	}
 	fflush(stdout);
 	fflush(stderr);
@@ -870,28 +1013,13 @@ extern "C" void tf_save_checkpoint_c_api(const char* name, const char* checkpoin
 	else{
         save_stats("data/training/running_statistics.csv");
 		acLogFromRootProc(rank, "save_checkpoint: Checkpoint ML model to: %s\n", checkpoint_dir);
+  save_training_losses();
 	}
 	fflush(stdout);
 	fflush(stderr);
 #endif
 }
 /***********************************************************************************************/
-// used as a flag to check if we need to calcualte the taus & uumean again
-bool called_training = false;
-
-// flags for printing if we are training or infering
-bool calling_train = false;
-bool calling_infer = false;
-
-int randomNumber;
-std::vector<float>val_loss;
-std::vector<float>train_loss;
-std::vector<double>train_time;
-std::vector<double>val_time;
-std::vector<int>train_nts;
-
-bool loaded_stats = false;
-bool snap_print = false;
 /***********************************************************************************************/
 void denormalize(std::string filename, AcRealSymmetricTensor &tau_means, AcRealSymmetricTensor &tau_stds)
 {
@@ -1084,16 +1212,17 @@ extern "C" void torch_train_c_api(AcReal *loss_val, int itsub, double t) {
   acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(boundconds),1);
   *loss_val=DBL_MAX;
 
-  int input_size = 0;
-  int output_size = 0;
-  std::vector<std::pair<AcReal*, int>> inputs;
-  std::vector<std::pair<AcReal*, int>> outputs;
-
-  AcReal* out = NULL;
-  AcReal* input = NULL;
-  AcReal* output = NULL;
 
   if(lhydro){
+  
+    int input_size = 0;
+    int output_size = 0;
+    std::vector<std::pair<AcReal*, int>> inputs;
+    std::vector<std::pair<AcReal*, int>> outputs;
+
+    AcReal* out = NULL;
+    AcReal* input = NULL;
+    AcReal* output = NULL;
 
     if(AC_lconservative__mod__hydro){
         // dynamic field handel acGetmomentum_sgs_Xx()
@@ -1108,41 +1237,27 @@ extern "C" void torch_train_c_api(AcReal *loss_val, int itsub, double t) {
         acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGettau_hydro_Xx(), &output, &out);
         outputs.emplace_back(output, 6);
 
+    acGridHaloExchange();
+    torch_train_multiarg_CAPI((int[]){mx, my, mz}, inputs, outputs, loss_val,"stationary");
+    train_loss.push_back(*loss_val);
+    train_nts.push_back(it);  
   }
   else if(AC_ltrain_mag__mod__training){
-    
+    /*
+    AcReal* out = NULL;
+    AcReal* input = NULL;
+    AcReal* output = NULL;
+
     acDeviceGetVertexBufferPtrs(acGridGetDevice(), F_SGS_EMFVEC.x, &output, &out);
     outputs.emplace_back(output, 3);
     acDeviceGetVertexBufferPtrs(acGridGetDevice(), uumean.x, &input, &out);
     inputs.emplace_back(input, 3);
     acDeviceGetVertexBufferPtrs(acGridGetDevice(), bbmean.x, &input, &out);
     inputs.emplace_back(input, 3);
-
+    */
   }
-  acGridHaloExchange();
-  torch_train_multiarg_CAPI((int[]){mx, my, mz}, inputs, outputs, loss_val,"stationary");
-  train_loss.push_back(*loss_val);
-  train_nts.push_back(it);  
 
   //print_debug();
-  if (it==nt){
-  	std::ofstream myFile;
-  	std::string fileString = "train_loss_" + std::to_string(my_rank)  + ".csv";	
-  	myFile.open(fileString);
-  	myFile << "epoch,train_loss\n";
-  	for (int i=0;i<train_loss.size();i++){
-  		myFile << i << "," << train_loss[i] << "\n";
-  	}
-  	myFile.close();
-		
-		std::string train_sample = "train_sample_" + std::to_string(my_rank) + ".csv";
-  	myFile.open(train_sample);
-  	myFile << "train_sample_nts\n";
-  	for (int i=0;i<train_nts.size();i++){
-  		myFile << train_nts[i] << "\n";
-  	}
-  	myFile.close();
-  }
 #endif
 }
 /***********************************************************************************************/
