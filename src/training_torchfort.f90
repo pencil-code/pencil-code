@@ -98,7 +98,6 @@
 !
 ! TorchFort create model
 !
-
       call TF_create_model(trim(model), trim(model_output_dir)//trim(config_file), lmpicomm)
 !need this to be false for now but should be ltrained
       if (ltrained.and..not.lrun_epoch) then
@@ -118,13 +117,10 @@
         allocate(label (mx, my, mz, 6, 1))
       endif
 !
-      if(lhydro) then
+      if (lhydro) then
         f(:,:,:,itau_hydroxx:itau_hydroyz)   = 0.0
-        if(lconservative) then
-            f(:,:,:,itau_strainxx:itau_strainyz) = 0.0
-        endif
+        if (lconservative) f(:,:,:,itau_strainxx:itau_strainyz) = 0.0
       endif
-!
 !
       if (ltrain_mag) then
         f(:,:,:,isgs_emfx:isgs_emfz)       = 0.0
@@ -155,9 +151,9 @@
 !
       call farray_register_auxiliary('uumean',iuumean,vector=3,communicated=.true.)
       call get_shared_variable('lconservative',lconservative)
-      if(lhydro) then
+      if (lhydro) then
         call farray_register_auxiliary('tau_hydro',itau_hydro,vector=6,rhs=.true.,communicated=.true.)
-        if(lconservative) then
+        if (lconservative) then
             call farray_register_auxiliary('tau_hydro_strain',itau_strain,vector=6,rhs=.true.,communicated=.true.)
         endif
       endif
@@ -172,7 +168,7 @@
 !
       if (lhydro) then
         itau_hydroxx=itau_hydro; itau_hydroyy=itau_hydro+1; itau_hydrozz=itau_hydro+2; itau_hydroxy=itau_hydro+3; itau_hydroxz=itau_hydro+4; itau_hydroyz=itau_hydro+5
-        if(lconservative) then
+        if (lconservative) then
             itau_strainxx=itau_strain; itau_strainyy=itau_strain+1; itau_strainzz=itau_strain+2; itau_strainxy=itau_strain+3; itau_strainxz=itau_strain+4; itau_strainyz=itau_strain+5
         endif
       endif
@@ -229,7 +225,7 @@
           endif
           tauerror = sum(f(l1:l2,m1:m2,n1:n2,itau_hydroxx:itau_hydrozz)**2)/nx
         else
-          if(lhydro) then
+          if (lhydro) then
             f(:,:,:,itau_hydroxx:itau_hydrozz) = output(:,:,:,:,1)
           endif
         endif
@@ -253,7 +249,7 @@
         if (lscale) call descale(tau_pred, output_min, output_max)
 
         if (lwrite_sample .and. mod(it, 50)==0) then
-          if(lhydro) then
+          if (lhydro) then
             call write_sample(f(:,:,:,itau_hydroxx), mx, my, mz, "target_"//trim(itoa(iproc))//".hdf5")
             call write_sample(tau_pred(:,:,:,1), mx, my, mz, "pred_"//trim(itoa(iproc))//".hdf5")
           endif
@@ -294,7 +290,6 @@
         inference_time = inference_time + end_time-start_time
 
       endif
-
 
     endsubroutine infer
 !***************************************************************
@@ -390,18 +385,18 @@
 ! outp scaling.
 !
           if (it == it_train_start) then
-            if(lhydro) then
+            if (lhydro) then
               output_min = minval(f(:,:,:,itau_hydroxx:itau_hydrozz))
               output_max = maxval(f(:,:,:,itau_hydroxx:itau_hydrozz))
             endif
           endif
-          if(lhydro) then
+          if (lhydro) then
             call scale(f(:,:,:,itau_hydroxx:itau_hydrozz), output_min, output_max)
           endif
         endif
 
         ! print*, output_min, output_max, input_min, input_max
-        if(lhydro) then
+        if (lhydro) then
           input(:,:,:,:,1) = uumean                    ! host to device    !sngl(uumean)
           label(:,:,:,:,1) = f(:,:,:,itau_hydroxx:itau_hydrozz)    ! host to device
         endif
@@ -410,7 +405,6 @@
 !print 'TRAIN', it, train_loss
 
       endif
-
 
       if (train_loss <= max_loss) ltrained=.true.
       if ((it_train_end >= 0) .and. it >= it_train_end) ltrained=.true.
@@ -429,7 +423,7 @@
 
       real, contiguous,dimension(:,:,:,:) :: f
 
-      if(.not. lhydro) return
+      if (.not. lhydro) return
 !
 !  Smooth velocity.
 !
@@ -469,23 +463,19 @@
       real, dimension(nx,3) :: div_hydro_strain_sgs
       real, dimension(nx,3) :: div_mag_sgs
       
-
-
       if (ltrained) then 
         if (lhydro) then   
-            call div_tensor(f,div_hydro_sgs,itau_hydro)
-            if (lconservative) then
-!                call div_tensor(f,div_hydro_strain_sgs,itau_strain)
-            endif
+          call div_tensor(f,div_hydro_sgs,itau_hydro)
+          !if (lconservative) call div_tensor(f,div_hydro_strain_sgs,itau_strain)
         endif
         if (ltrain_mag) call div_tensor(f,div_mag_sgs,itau_bb)
         if (t >= start_infer) then
           if (lhydro) then 
-              df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - div_hydro_sgs
-              if (lconservative) df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - div_hydro_strain_sgs
+            df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - div_hydro_sgs
+            if (lconservative) df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - div_hydro_strain_sgs
           endif
           if (ltrain_mag) then
-            if(lhydro) df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - div_mag_sgs
+            if (lhydro) df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - div_mag_sgs
             df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) - f(l1:l2,m,n,isgs_emfx:isgs_emfz)
           endif
         endif
@@ -638,12 +628,16 @@
     endsubroutine write_sample
 !***************************************************************
     subroutine training_save_diagnostic_controls
-            train_loss_save = train_loss
-    endsubroutine hydro_save_diagnostic_controls
+
+      train_loss_save = train_loss
+
+    endsubroutine training_save_diagnostic_controls
 !***********************************************************************
     subroutine training_restore_diagnostic_controls
-            train_loss = train_loss_save
-    endsubroutine hydro_restore_diagnostic_controls
+
+      train_loss = train_loss_save
+
+    endsubroutine training_restore_diagnostic_controls
 !***********************************************************************
     subroutine pushpars2c(p_par)
 

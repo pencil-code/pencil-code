@@ -552,7 +552,8 @@ ifneq ($(TORCHFORT_PATH),)
   endif
   ifneq ($(MODULE_CMD),)
     CUDA_LOADED := $(shell (module list |& grep -i cuda) )
-    ifeq ($(CUDA_LOADED),)
+    NVHPC_LOADED := $(shell (module list |& grep -i nvhpc) )
+    ifeq ($(CUDA_LOADED)$(NVHPC_LOADED),)
       ifeq ($(findstring clean,$(target)),)
         $(warning  No CUDA module seems to be loaded (needed for training)!)
         $(info Try (one of) the following: $(shell (module spider |& grep -i cuda | sed -e's/^.* \([^ ]*[Cc][Uu][Dd][Aa][^ ]*\) .*$$/\1/') ) )
@@ -571,7 +572,7 @@ ifneq ($(TORCHFORT_PATH),)
     $(info nvfortran not available! Exit.)
   endif
   ifeq ($(TORCHFORT_PATH),)
-    $(info TORCHFORT_PATH  not set)
+    $(info TORCHFORT_PATH not set)
   else
     override FFLAGS+=-cuda -noswitcherror -I$(TORCHFORT_PATH)/include/
     override LDFLAGS+=-L$(TORCHFORT_PATH)/lib/ -ltorchfort_fort -ltorchfort -cuda
@@ -582,7 +583,7 @@ ifneq ($(GPU),nogpu)
   ifneq ($(MODULE_CMD),)
     CUDA_LOADED := $(shell (module list |& grep -i cuda) )
     ROCM_LOADED := $(shell (module list |& grep -i rocm) )
-    ifeq ($(CUDA_LOADED)$(ROCM_LOADED),)
+    ifeq ($(CUDA_LOADED)$(ROCM_LOADED)$(NVHPC_LOADED),)
       ifeq ($(findstring clean,$(target)),)
         $(info )
         $(warning  No CUDA or ROCM module seems to be loaded!)
@@ -735,7 +736,7 @@ ifneq ($(filter $(SPECIAL) $(IO) $(IO_IN) $(IO_OUT) $(TRAINING), $(HDF5_MODULES)
     endif
   endif
   ifeq ($(HDF5_PATH),)
-    $(info HDF5_PATH  not set)
+    $(info HDF5_PATH not set)
   else
     override FFLAGS+= -I$(HDF5_PATH)/include/
     override LDFLAGS+=-L$(HDF5_PATH)/lib/ -lhdf5_fortran
