@@ -346,7 +346,9 @@ module Selfgravity
 !
         if (ldensity.and.lselfgravity_gas) then
           if (lstratz) then
-            forall(k = n1:n2) rhs_poisson(:,:,k-nghost) = rho0z(k) * (1.0 + f(l1:l2,m1:m2,k,irho))
+            do concurrent (k = n1:n2)
+              rhs_poisson(:,:,k-nghost) = rho0z(k) * (1.0 + f(l1:l2,m1:m2,k,irho))
+            enddo
           elseif (ldensity_nolog) then
             rhs_poisson = f(l1:l2,m1:m2,n1:n2,irho)
           else
