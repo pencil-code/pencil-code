@@ -2049,6 +2049,10 @@ module Special
     subroutine prep_rhs_special
 !
 !  1-aug-25/TP: coded
+!  Calculates values that are uniform across all grid points.
+!  On CPUs the values are stored into global variables so computed only once,
+!  on GPUs no global variables exist so the values are recomputed at each gridpoint.
+!
 !
       use Mpicomm, only: mpi_min_keyval
       use Messages, only: fatal_error_local
@@ -2110,7 +2114,12 @@ module Special
     endsubroutine prep_rhs_special
 !***********************************************************************
     subroutine get_a2
-
+!
+! get_a2 is called on the rhs with lgpu since normally the 
+! a2 would be stored into the global variable in after_boundary.
+! On GPUs such global variable do not exist so we recompute a2
+! at each grid point.
+!
       real :: lnascale
   
       if (lflrw) then
