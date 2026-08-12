@@ -171,6 +171,7 @@ module Special
   logical :: linclude_rho_EBK_in_wstate=.false.    !PAR_DOC: include rhoE, rhoB, and rhokin in wstate
   logical :: lswitch_toMHD_at_lna=.false.          !PAR_DOC: option to use lna as criterion for switching to MHD
   logical :: lsmooth_Gamma_phi=.false.             !PAR_DOC: smooth increase of Gamma_phi
+  logical :: lGamma_phi_damping=.false.            !PAR_DOC: to include Gamma phi damping
   logical, pointer :: lphi_hom, lphi_linear_regime, lnoncollinear_EB, lnoncollinear_EB_aver
   logical, pointer :: lcollinear_EB, lcollinear_EB_aver, lmass_suppression
   logical, pointer :: lallow_bprime_zero
@@ -222,7 +223,7 @@ module Special
       lsigE_const_ifnot_lsolve_for_phi, lsigE_const, lsigE_const_if_lsolve_for_phi, &
       lold_lrho_chi_dtconstraint, linclude_rhokin_in_a2rho, &
       linclude_rho_EB_in_wstate, linclude_rho_EBK_in_wstate, &
-      lswitch_toMHD_at_lna, lna_switch_toMHD, &
+      lswitch_toMHD_at_lna, lna_switch_toMHD, lGamma_phi_damping, &
       dlnascale_reheating, lg_Gamma_phi_fraction_firststep
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
@@ -693,11 +694,11 @@ module Special
 !  13-jun-26/axel: corrected: lphi_hom --> lphi_linear_regime (for E.B feedback)
 !
       use Diagnostics, only: sum_mn_name, max_mn_name, save_name
-      use Sub, only: dot_mn, dot2_mn, del2, grad
+      use Sub, only: dot_mn, dot2_mn, del2, grad, multvs
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: gphi
+      real, dimension (nx,3) :: gphi, tmpv
       real, dimension (nx) :: Vprime, Vpotential, a2rhophi, a4rhophi
       real, dimension (nx) :: tmp, del2phi, gphi2, Gamma_phi_rho_rhs
 !AB: gphi2 should be pencil (to check)
@@ -815,6 +816,10 @@ module Special
             df(l1:l2,m,n,irho)=df(l1:l2,m,n,irho)+Gamma_phi_rho_rhs
           else
             df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+Gamma_phi_rho_rhs*p%rho1
+          endif
+          if (lhydro .and. lGamma_phi_damping) then
+            call multvs(p%uu,Gamma_phi_rho_rhs,tmpv)
+            df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-tmpv
           endif
         else
           call fatal_error("dspecial_dt: ","density must be true")
