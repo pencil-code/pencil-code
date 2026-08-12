@@ -21,6 +21,6 @@ GRAVITY   = nogravity
 FORCING   = noforcing
 SHEAR     = noshear
 
-SPECIAL   = special/alphadisk
+SPECIAL   = special/alphadisk special/photoelectric_dust
 
 REAL_PRECISION = double
