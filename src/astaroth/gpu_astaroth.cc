@@ -184,6 +184,7 @@ bool torch_load_CAPI(const char* name, const char* fname);
 bool torch_load_checkpoint_CAPI(const char* name, const char* checkpoint_dir, int64_t* step_train, int64_t* step_inference);
 bool torch_save_model_CAPI(const char* name, const char* fname);
 bool torch_save_checkpoint_CAPI(const char* name, const char* checkpoint_dir);
+bool torch_wandb_log_double(const char* name, const char* metric_name, int64_t step, double value);
 void read_stats();
 
 // variables used for training
@@ -1240,7 +1241,8 @@ extern "C" void torch_train_c_api(AcReal *loss_val, int itsub, double t) {
     acGridHaloExchange();
     torch_train_multiarg_CAPI((int[]){mx, my, mz}, inputs, outputs, loss_val,"stationary");
     train_loss.push_back(*loss_val);
-    train_nts.push_back(it);  
+    train_nts.push_back(it); 
+    torch_wandb_log_double("stationary", "training_loss", it, *loss_val);
   }
   else if(AC_ltrain_mag__mod__training){
     /*

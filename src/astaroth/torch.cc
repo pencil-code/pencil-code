@@ -24,6 +24,10 @@ initialize_torch()
 	return res != TORCHFORT_RESULT_SUCCESS;
 }
 /***********************************************************************************************/
+bool torch_wandb_log_double(const char* name, const char* metric_name, int64_t step, double value){
+  const torchfort_result_t res = torchfort_wandb_log_double(name, metric_name, step, value);
+}
+/***********************************************************************************************/
 bool torch_train_CAPI(int sub_dims[3], AcReal* input, AcReal* label, AcReal* loss_val,
 		     const int input_fields, const int output_fields, const char* model_name){
 
