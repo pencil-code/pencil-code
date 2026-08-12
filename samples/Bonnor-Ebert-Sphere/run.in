@@ -1,0 +1,33 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  Runtime parameters for shocktube problem
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2026/07/27 06:55:39 brandenb Exp $'
+  !nt=20000, it1=10, cdt=0.8, cdtv=0.1, isave=1000, itorder=3
+  nt=200, it1=10, cdt=0.8, cdtv=0.1, isave=1000, itorder=3
+  dsnap=0.1, dvid=0.1
+  dspec=0.1, ou_spec=T, ro_spec=T, lr_spec=T, oo_spec=T
+  lspec_start=T
+  lpencil_check=F
+  lpencil_check_small=F
+/
+&eos_run_pars
+/
+&hydro_run_pars
+  lupw_uu=T
+/
+&density_run_pars
+  lupw_lnrho=T
+/
+&selfgrav_run_pars
+/
+&poisson_run_pars
+/
+&viscosity_run_pars
+  nu=5e-3
+/
+&shock_run_pars
+/
+&power_spectrum_run_pars
+/
