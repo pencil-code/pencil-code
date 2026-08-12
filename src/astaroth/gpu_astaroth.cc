@@ -1208,7 +1208,7 @@ extern "C" void torch_train_c_api(AcReal *loss_val, int itsub, double t) {
   train_counter++;
   acDeviceSetInput(acGridGetDevice(), AC_count, train_counter);
 
-  //acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(normalize),1);
+  acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(normalize),1);
   acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(boundconds),1);
   *loss_val=DBL_MAX;
 
