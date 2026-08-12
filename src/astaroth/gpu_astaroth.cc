@@ -1314,6 +1314,25 @@ reload_dynamically_changing_variables(bool lrmv, int isubstep, double t, bool ls
  	acDeviceSetInput(acGridGetDevice(), AC_lsubstepping_in_time, lsubstepping_in_time);
 }
 /***********************************************************************************************/
+void
+calc_poisson()
+{
+		acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_calc_selfgravity_rhs),1);
+		acDeviceFFTR2C(acGridGetDevice(),acGetRHS_POISSON(),RHS_POISSON_COMPLEX);                     // FFT of rhs of Poisson eq.
+    		AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
+  		acGridLaunchKernel(STREAM_DEFAULT, selfgravity_poisson_solve, dims.n0, dims.n1);
+		acGridSynchronizeStream(STREAM_ALL);
+		acDeviceFFTC2R(acGridGetDevice(),SELFGRAVITY_POTENTIAL_COMPLEX,acGetSELFGRAVITY_POTENTIAL()); // FFT backtransform. of solution
+		//TP: A placeholder for iterative solvers, in the future choose the number of solving steps based on the norm of the residual
+		/**
+		for (int i = 0; i < 100; ++i)
+		{
+			acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_sor_step),1);
+		}
+		**/
+		acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_calc_final_potential),1);
+}
+/***********************************************************************************************/
 extern "C" void beforeBoundaryGPU(bool lrmv, int isubstep, double t, bool lsubstepping_in_time)
 {
 	reload_dynamically_changing_variables(lrmv,isubstep,t,lsubstepping_in_time);
@@ -1339,20 +1358,7 @@ extern "C" void beforeBoundaryGPU(bool lrmv, int isubstep, double t, bool lsubst
 #if LSELFGRAVITY
 	if (t>=tstart_selfgrav)
 	{
-		acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_calc_selfgravity_rhs),1);
-		acDeviceFFTR2C(acGridGetDevice(),acGetRHS_POISSON(),RHS_POISSON_COMPLEX);                     // FFT of rhs of Poisson eq.
-    		AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
-  		acGridLaunchKernel(STREAM_DEFAULT, selfgravity_poisson_solve, dims.n0, dims.n1);
-		acGridSynchronizeStream(STREAM_ALL);
-		acDeviceFFTC2R(acGridGetDevice(),SELFGRAVITY_POTENTIAL_COMPLEX,acGetSELFGRAVITY_POTENTIAL()); // FFT backtransform. of solution
-		//TP: A placeholder for iterative solvers, in the future choose the number of solving steps based on the norm of the residual
-		/**
-		for (int i = 0; i < 100; ++i)
-		{
-			acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_sor_step),1);
-		}
-		**/
-		acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_calc_final_potential),1);
+		calc_poisson();
 	}
 
 #endif
@@ -2476,6 +2482,10 @@ extern "C" void prepareForFirstSubstep(double t)
         acDeviceSwapBuffers(acGridGetDevice());
 	//Not strictly needed but for extra safety
 	loadFarray();
+#if LSELFGRAVITY
+	calc_poisson();
+        copyFarray(NULL);
+#endif
 }
 /***********************************************************************************************/
 //Reads the results of reductions and copies them to the host.

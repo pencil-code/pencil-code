@@ -2043,7 +2043,9 @@ module Equ
         !    that update the comp domain so to emulate the behaviour (which I think is generally better)
         !    we call update_ghosts here
         call update_ghosts(f_copy)
+        !$omp parallel num_threads(1)
         call before_boundary_cpu(f_copy)
+        !$omp end parallel
         call update_ghosts(f_copy)
         call after_boundary_cpu(f_copy,df_copy)
         !if (itsub == 1) then
