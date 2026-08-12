@@ -704,7 +704,7 @@ module Cdata
   logical :: lwrite_slice_xy2=.false.,lwrite_slice_xy=.false.,lwrite_slice_xz=.false.,lwrite_slice_yz=.false.
   logical :: lwrite_slice_xy3=.false.,lwrite_slice_xy4=.false.,lwrite_slice_xz2=.false., lwrite_slice_r=.false.
 
-  logical :: lout=.false.,headt=.false.,headtt=.true.,lrmv=.false.
+  logical :: lout=.true.,headt=.false.,headtt=.true.,lrmv=.false.
   logical :: ldiagnos=.false.,lvideo=.false.,lwrite_prof=.true.,lout_sound=.false.
   logical :: ldiagnostic_output=.false.
   logical :: ltracers=.false.,lfixed_points=.false.
