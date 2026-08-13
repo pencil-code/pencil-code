@@ -1317,6 +1317,7 @@ reload_dynamically_changing_variables(bool lrmv, int isubstep, double t, bool ls
 void
 calc_poisson()
 {
+#if LSELFGRAVITY
 		acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_calc_selfgravity_rhs),1);
 		acDeviceFFTR2C(acGridGetDevice(),acGetRHS_POISSON(),RHS_POISSON_COMPLEX);                     // FFT of rhs of Poisson eq.
     		AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
@@ -1331,6 +1332,7 @@ calc_poisson()
 		}
 		**/
 		acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_calc_final_potential),1);
+#endif
 }
 /***********************************************************************************************/
 extern "C" void beforeBoundaryGPU(bool lrmv, int isubstep, double t, bool lsubstepping_in_time)
