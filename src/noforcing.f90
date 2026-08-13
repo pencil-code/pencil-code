@@ -175,8 +175,6 @@ module Forcing
 !***********************************************************************
     subroutine forcing_pars_hel(force_fact,kkx,kky,kkz,nk,kav,coef1,coef2,coef3,kk,phase,fact,fda)
 !
-      use General, only: keep_compiler_quiet
-!
       real,                   intent(in ) :: force_fact,kav
       integer,                intent(in ) :: nk
       real,    dimension (nk),intent(in ) :: kkx,kky,kkz

@@ -17,9 +17,6 @@ module Particles_condensation
   use Cdata
   use Messages
   use Particles_cdata
-  use Particles_map
-  use Particles_mpicomm
-  use Particles_sub
   use General, only: keep_compiler_quiet
 !
   implicit none
@@ -102,8 +99,6 @@ module Particles_condensation
     subroutine read_particles_cond_run_pars(iomsg)
 !
 !  18-jun-17/anders: coded
-!
-      use File_io, only: parallel_unit
 !
       character(LEN=*), intent(out) :: iomsg
 !

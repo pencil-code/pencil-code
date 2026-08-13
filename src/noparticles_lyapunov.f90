@@ -15,10 +15,8 @@ module Particles_lyapunov
 !
   use Cdata
   use Messages
-  use General
+  use General, only: keep_compiler_quiet
   use Particles_cdata
-  use Particles_map
-  use Particles_mpicomm
 !
   implicit none
 !
@@ -44,8 +42,6 @@ module Particles_lyapunov
 !
 !  May-16/dhruba+nishant+akshay: coded
 !
-      use FArrayManager
-!
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)
@@ -55,9 +51,6 @@ module Particles_lyapunov
 !    subroutine init_particles_lyapunov(f,fp)
     subroutine init_particles_lyapunov(fp)
 !
-!      use Sub, only: kronecker_delta
-!      use General, only: keep_compiler_quiet,random_number_wrapper
-!      use Mpicomm, only: mpiallreduce_sum
 !      real, dimension (mx,my,mz,mfarray), intent (in) :: f
       real, dimension (mpar_loc,mparray), intent (out) :: fp
 !
@@ -67,8 +60,6 @@ module Particles_lyapunov
     endsubroutine init_particles_lyapunov
 !***********************************************************************
     subroutine dlyapunov_dt(f,df,fp,dfp,ineargrid)
-!
-      use Diagnostics
 !
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       real, dimension (mx,my,mz,mvar), intent (inout) :: df
@@ -85,8 +76,6 @@ module Particles_lyapunov
     endsubroutine dlyapunov_dt
 !***********************************************************************
     subroutine dlyapunov_dt_pencil(f,df,fp,dfp,p,ineargrid)
-!
-      use Sub, only: linarray2matrix,matrix2linarray
 !
       real, dimension (mx,my,mz,mfarray),intent(in) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -107,8 +96,6 @@ module Particles_lyapunov
 !***********************************************************************
     subroutine read_plyapunov_init_pars(iomsg)
 !
-      use File_io, only: parallel_unit
-!
       character(LEN=*), intent(out) :: iomsg
 
       iomsg=""
@@ -123,8 +110,6 @@ module Particles_lyapunov
     endsubroutine write_plyapunov_init_pars
 !***********************************************************************
     subroutine read_plyapunov_run_pars(iomsg)
-!
-      use File_io, only: parallel_unit
 !
       character(LEN=*), intent(out) :: iomsg
 
@@ -161,8 +146,6 @@ module Particles_lyapunov
     endsubroutine rprint_particles_lyapunov
 !***********************************************************************
     subroutine calc_pencils_par_lyapunov(f,p)
-!
-      use Sub, only: grad
 !
 !  This calculates the bbf data to a pencil.
 !  Most basic pencils should come first, as others may depend on them.

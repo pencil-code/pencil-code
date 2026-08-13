@@ -28,8 +28,6 @@ module Opacity
 !***********************************************************************
       subroutine read_opacity_run_pars(iomsg)
 !
-      use Cparam, only: iomsglen
-
       character(LEN=*), intent(out) :: iomsg
 !
       call keep_compiler_quiet(iomsg)

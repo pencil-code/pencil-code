@@ -53,8 +53,6 @@ module Timeavg
 !***********************************************************************
     subroutine pushpars2c(p_par)
 
-      use Syscalls, only: copy_addr
-
       integer, parameter :: n_pars=0
       integer(KIND=ikind8), dimension(n_pars) :: p_par
 

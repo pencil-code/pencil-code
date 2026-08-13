@@ -15,10 +15,8 @@ module Particles_caustics
 !
   use Cdata
   use Messages
-  use General
   use Particles_cdata
-  use Particles_map
-  use Particles_mpicomm
+  use General, only: keep_compiler_quiet
 !
   implicit none
 !
@@ -44,9 +42,6 @@ module Particles_caustics
 !
 !  May-16/dhruba+nishant+akshay: coded
 !
-      use General, only: keep_compiler_quiet
-      use FArrayManager
-!
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)
@@ -67,8 +62,6 @@ module Particles_caustics
 !***********************************************************************
     subroutine dcaustics_dt(f,df,fp,dfp,ineargrid)
 !
-      use Diagnostics
-!
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       real, dimension (mx,my,mz,mvar), intent (inout) :: df
       real, dimension (mpar_loc,mparray), intent (in) :: fp
@@ -84,8 +77,6 @@ module Particles_caustics
     endsubroutine dcaustics_dt
 !***********************************************************************
     subroutine dcaustics_dt_pencil(f,df,fp,dfp,p,ineargrid,k,taup1)
-!
-      use Sub, only: linarray2matrix,matrix2linarray
 !
       real, dimension (mx,my,mz,mfarray),intent(in) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -109,8 +100,6 @@ module Particles_caustics
 !***********************************************************************
     subroutine read_pcaustics_init_pars(iomsg)
 !
-      use File_io, only: parallel_unit
-!
       character(LEN=*), intent(out) :: iomsg
 
       iomsg=""
@@ -125,8 +114,6 @@ module Particles_caustics
     endsubroutine write_pcaustics_init_pars
 !***********************************************************************
     subroutine read_pcaustics_run_pars(iomsg)
-!
-      use File_io, only: parallel_unit
 !
       character(LEN=*), intent(out) :: iomsg
 
@@ -155,11 +142,14 @@ module Particles_caustics
     endsubroutine rprint_particles_caustics
 !***********************************************************************
     subroutine reset_caustics(fp)
+
       real, dimension (mpar_loc,mparray), intent (out) :: fp
       call keep_compiler_quiet(fp)
+
     endsubroutine reset_caustics
 !***********************************************************************
     subroutine reinitialize_caustics(fp)
+
       real, dimension (mpar_loc,mparray), intent (out) :: fp
       call keep_compiler_quiet(fp)
 

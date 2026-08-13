@@ -16,10 +16,8 @@
 module Particles_persistence
 !
   use Cdata
-  use Messages
+  use General, only: keep_compiler_quiet
   use Particles_cdata
-  use Particles_map
-  use Particles_mpicomm
 !
   implicit none
 !
@@ -37,8 +35,6 @@ contains
 !
 !  Dummy.
 !
-      use General, only: keep_compiler_quiet
-
       real, dimension (mpar_loc,mparray), intent (in) :: fp
 !
       call keep_compiler_quiet(fp)
@@ -47,8 +43,6 @@ contains
 !***********************************************************************
     subroutine init_particles_persistence(fp)
 !
-      use General, only: keep_compiler_quiet
-!
       real, dimension (mpar_loc,mparray), intent (out) :: fp
 !
       call keep_compiler_quiet(fp)
@@ -56,8 +50,6 @@ contains
     endsubroutine init_particles_persistence
 !***********************************************************************
     subroutine dpersist_dt(f,df,fp,dfp,ineargrid)
-!
-      use General, only: keep_compiler_quiet
 !
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       real, dimension (mx,my,mz,mvar), intent (inout) :: df
@@ -68,29 +60,26 @@ contains
       call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(fp,dfp)
       call keep_compiler_quiet(ineargrid)
+!
     endsubroutine dpersist_dt
 !***********************************************************************
     subroutine read_ppersist_init_pars(iomsg)
 !
-      use General, only: keep_compiler_quiet
-!
       character(LEN=*), intent(out) :: iomsg
 !
       call keep_compiler_quiet(iomsg)
+!
     endsubroutine read_ppersist_init_pars
 !***********************************************************************
     subroutine write_ppersist_init_pars(unit)
 !
-      use General, only: keep_compiler_quiet
-!
       integer, intent(in) :: unit
 !
       call keep_compiler_quiet(unit)
+!
     endsubroutine write_ppersist_init_pars
 !***********************************************************************
     subroutine read_ppersist_run_pars(iomsg)
-!
-      use General, only: keep_compiler_quiet
 !
       character(LEN=*), intent(out) :: iomsg
 !
@@ -100,16 +89,13 @@ contains
 !***********************************************************************
     subroutine write_ppersist_run_pars(unit)
 !
-      use General, only: keep_compiler_quiet
-!
       integer, intent(in) :: unit
 !
       call keep_compiler_quiet(unit)
+!
     endsubroutine write_ppersist_run_pars
 !***********************************************************************
     subroutine rprint_particles_persist(lreset,lwrite)
-!
-      use General, only: keep_compiler_quiet
 !
       logical :: lreset
       logical, optional :: lwrite

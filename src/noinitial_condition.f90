@@ -375,8 +375,6 @@ module InitialCondition
 !***********************************************************************
     subroutine read_initial_condition_pars(iomsg)
 !
-      use File_io, only: parallel_unit
-!
       character(LEN=*), intent(out) :: iomsg
 !
       iomsg=""

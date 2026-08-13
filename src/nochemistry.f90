@@ -153,8 +153,6 @@ module Chemistry
 !***********************************************************************
     subroutine read_chemistry_init_pars(iomsg)
 !
-      use File_io, only: parallel_unit
-!
       character(LEN=*), intent(out) :: iomsg
 !
       iomsg=""
@@ -169,8 +167,6 @@ module Chemistry
     endsubroutine write_chemistry_init_pars
 !***********************************************************************
     subroutine read_chemistry_run_pars(iomsg)
-!
-      use File_io, only: parallel_unit
 !
       character(LEN=*), intent(out) :: iomsg
 !
@@ -465,7 +461,7 @@ module Chemistry
 
       use Syscalls, only: copy_addr
 
-      integer, parameter :: n_pars=100
+      integer, parameter :: n_pars=10
       integer(KIND=ikind8), dimension(n_pars) :: p_par
 
       call copy_addr(rgas,p_par(1))

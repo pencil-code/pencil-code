@@ -242,8 +242,6 @@ module DensityMethods
 !
 !  30-sep-16/MR: coded
 !
-      use Deriv, only: der
-
       integer,                             intent(in) :: iz
       real, dimension(:,:,:,:),            intent(in) :: f
       real, dimension(size(f,1),size(f,2)),intent(out):: derlnrho

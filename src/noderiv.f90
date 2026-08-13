@@ -123,14 +123,12 @@ module Deriv
 !
 !  Dummy routine
 !
-      use General, only: loptest
-
       real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (nx) :: df2,fac,df
       integer :: j,k
       logical, optional :: lwo_line_elem
 !
-      intent(in)  :: f,df2,k,j,lwo_line_elem
+      intent(in) :: f,df2,k,j,lwo_line_elem
 !
     endsubroutine der2_main
 !***********************************************************************
@@ -142,7 +140,7 @@ module Deriv
       real, dimension (nx) :: df2,fac,df
       integer :: j
 !
-      intent(in)  :: f,df2,j
+      intent(in) :: f,df2,j
 !
     endsubroutine der2_other
 !***********************************************************************
@@ -270,8 +268,6 @@ module Deriv
     subroutine derij_main(f,k,df,i,j,lwo_line_elem)
 !
 !  Dummy routine
-!
-      use General, only: loptest
 !
       real, contiguous,dimension(:,:,:,:) :: f
       real, dimension (nx) :: df,fac

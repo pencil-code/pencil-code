@@ -79,10 +79,6 @@ module PointMasses
 !
 !  17-nov-05/anders+wlad: adapted
 !
-      use General, only: random_number_wrapper
-      use Sub
-      use Mpicomm, only: mpibcast_real
-!
       real, dimension (mx,my,mz,mfarray) :: f
 !
       intent (in) :: f

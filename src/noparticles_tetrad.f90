@@ -13,10 +13,8 @@ module Particles_tetrad
 !
   use Cdata
   use Messages
-  use General
+  use General, only: keep_compiler_quiet
   use Particles_cdata
-  use Particles_map
-  use Particles_mpicomm
 !
   implicit none
 !
@@ -42,9 +40,6 @@ module Particles_tetrad
 !
 !  May-16/dhruba+nishant+akshay: coded
 !
-      use General, only: keep_compiler_quiet
-      use FArrayManager
-!
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)
@@ -65,8 +60,6 @@ module Particles_tetrad
 !***********************************************************************
     subroutine dtetrad_dt(f,df,fp,dfp,ineargrid)
 !
-      use Diagnostics
-!
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       real, dimension (mx,my,mz,mvar), intent (inout) :: df
       real, dimension (mpar_loc,mparray), intent (in) :: fp
@@ -82,8 +75,6 @@ module Particles_tetrad
     endsubroutine dtetrad_dt
 !***********************************************************************
     subroutine dtetrad_dt_pencil(f,df,fp,dfp,p,ineargrid,k,taup1)
-!
-      use Sub, only: linarray2matrix,matrix2linarray
 !
       real, dimension (mx,my,mz,mfarray),intent(in) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -107,8 +98,6 @@ module Particles_tetrad
 !***********************************************************************
     subroutine read_ptetrad_init_pars(iomsg)
 !
-      use File_io, only: parallel_unit
-!
       character(LEN=*), intent(out) :: iomsg
 
       iomsg=""
@@ -123,8 +112,6 @@ module Particles_tetrad
     endsubroutine write_ptetrad_init_pars
 !***********************************************************************
     subroutine read_ptetrad_run_pars(iomsg)
-!
-      use File_io, only: parallel_unit
 !
       character(LEN=*), intent(out) :: iomsg
 

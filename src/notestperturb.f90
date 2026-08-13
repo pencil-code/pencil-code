@@ -33,8 +33,6 @@ module TestPerturb
 !***********************************************************************
     subroutine read_testperturb_run_pars(iomsg)
 !
-      use Cparam, only: iomsglen
-!
       character(LEN=*), intent(out) :: iomsg
 !
       iomsg=""

@@ -463,8 +463,6 @@ module Mpicomm
 !***********************************************************************
     subroutine mpisendrecv_int_arr(send_array,sendcnt,proc_dest,sendtag, &
                                    recv_array,proc_src,recvtag,comm)
-      use General, only: ioptest
-
       integer :: sendcnt
       integer, dimension(sendcnt) :: send_array, recv_array
       integer :: proc_src, proc_dest, sendtag, recvtag
@@ -1269,8 +1267,6 @@ module Mpicomm
 !
 !  Calculate total maximum for each array element and return to root.
 !
-      use General, only: ioptest
-
       integer :: nreduce
       integer, dimension(nreduce) :: fmax_tmp,fmax
       integer, optional :: comm
@@ -1353,8 +1349,6 @@ module Mpicomm
 !
 !  14-feb-14/ccyang: coded
 !
-      use General, only: ioptest
-
       logical, intent(in) :: fland_tmp
       logical, intent(out):: fland
       integer, intent(in), optional :: comm
@@ -3072,8 +3066,6 @@ module Mpicomm
     endfunction report_clean_output
 !***********************************************************************
     subroutine mpiscatterv_real_plain(src,counts,dspls,dest,nlocal,comm)
-
-      use General, only: ioptest
 
       real, dimension(:) :: src, dest
       integer, dimension(:) :: counts,dspls

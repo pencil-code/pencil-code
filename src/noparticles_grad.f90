@@ -60,8 +60,6 @@ module Particles_grad
 !
 !  18-sep-15/dhruba: dummy
 !
-      use General, only: random_number_wrapper
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray) :: fp
       integer :: npar_low,npar_high
@@ -109,8 +107,6 @@ module Particles_grad
 ! variables on particles because the actual evolution is calculated in a pencilized manner )
 !
 !  17-sep-15/dhruba: coded
-!
-      use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -163,8 +159,6 @@ module Particles_grad
 !  Read and register print parameters relevant for particles grad.
 !
 !  22-aug-05/anders: coded
-!
-      use Diagnostics, only: parse_name
 !
       logical :: lreset
       logical, optional :: lwrite

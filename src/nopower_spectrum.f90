@@ -62,8 +62,6 @@ module power_spectrum
 !***********************************************************************
     subroutine crossspec(f,sp1,sp2,lvec)
 !
-      use General, only: ioptest
-!
       real, contiguous,dimension(:,:,:,:) :: f
       character (len=1) :: sp1,sp2
       logical :: lvec

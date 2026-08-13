@@ -131,8 +131,6 @@ module Particles_sink
 !
 !  11-aug-12/anders: dummy
 !
-      use Diagnostics, only: parse_name
-!
       logical :: lreset
       logical, optional :: lwrite
 !

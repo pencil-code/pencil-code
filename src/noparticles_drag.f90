@@ -44,8 +44,6 @@ module Particles_drag
 !
 !  14-feb-15/ccyang: dummy.
 !
-      use General, only: keep_compiler_quiet
-!
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(mpar_loc,mparray), intent(in) :: fp
 !
