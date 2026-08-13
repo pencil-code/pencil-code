@@ -4,5 +4,6 @@
 !  Local settings concerning grid size and number of CPUs.
 !  This file is included by cparam.f90
 !
-integer, parameter :: ncpus=4,nprocx=2,nprocy=2,nprocz=ncpus/(nprocx*nprocy)
-integer, parameter :: nxgrid=128,nygrid=128,nzgrid=128
+integer, parameter :: ncpus=1,nprocx=1,nprocy=1,nprocz=ncpus/(nprocx*nprocy)
+integer, parameter :: nxgrid=32,nygrid=32,nzgrid=32
+!integer, parameter :: nxgrid=128,nygrid=128,nzgrid=128

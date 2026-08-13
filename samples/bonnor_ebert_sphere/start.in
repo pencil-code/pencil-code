@@ -3,6 +3,10 @@
 ! Initialisation parameters for MRI turbulence
 !
 &init_pars
+  !Box size for auto-test
+  !Comment out for the recommended resolution
+  xyz0  = -0.62831853, -0.62831853, -0.62831853   ! first corner of box
+  xyz1  =  0.62831853,  0.62831853,  0.62831853   ! last corner of box
 /
 &initial_condition_pars
  xmin=1.e-5,xmax=1.,nsteps=1000,rhoc=5.0,cs=1.0

@@ -18,7 +18,7 @@ POISSON  = poisson
 POWER = power_spectrum
 FORCING   = noforcing
 
-INITIAL_CONDITION = bonnor_ebert_sphere
+INITIAL_CONDITION  =   initial_condition/bonnor_ebert_sphere
 
 REAL_PRECISION = double
 FOURIER = fourier_fftpack

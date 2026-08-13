@@ -6,11 +6,11 @@
 ! set ou_spec=T and ab_spec=T for kinetic and magnetic helicity spectra
 !
 &run_pars
-  nt=500, it1=10, cdt=0.3, cdtv=0.3, isave=10, itorder=3,
+  nt=51, it1=10, cdt=0.3, cdtv=0.3, isave=10, itorder=3,
   dsnap=0.1,dspec=0.1, dtmin=1.0e-7, dvid=1.0
-  tmax=6300.,dvid=0.05,slice_position=m
-/
-&eos_run_pars
+  tmax=6300.,dvid=0.05,slice_position='m'
+  lpencil_check=F
+  lpencil_check_small=F
 /
 &hydro_run_pars
 /
