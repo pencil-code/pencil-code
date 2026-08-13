@@ -1,4 +1,4 @@
-Collapse of Bonnor-Ebert sphere
+Collapse of Bonnor-Ebert sphere in collapsing coordinates
 =============================================================
 
 ## Maintainer:
@@ -11,7 +11,7 @@ Touko Puro <touko[dot]puro@aalto[dot].fi>
 
 ## Status:
 
-succeeds
+succeeds,TODO: to be written in collapsing coordinates.
 
 ## Recommended resolution:
 
