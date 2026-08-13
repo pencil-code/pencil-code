@@ -94,6 +94,10 @@ CPU_BUILD                ?= off
 OPTIMIZE_INPUT_PARAMS    ?= on
 USE_ONLY_OPTIMIZED_KERNELS ?= on
 
+ifneq ($(RUNTIME_COMPILATION),on) 
+  $(error Only compilation with RUNTIME_COMPILATION=on supported at the moment)
+endif
+
 ifeq ($(RUNTIME_COMPILATION),on) 
 	CMAKE_BUILD_TYPE ?= RelWithDebInfo
 endif
