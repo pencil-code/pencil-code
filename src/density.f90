@@ -3072,7 +3072,6 @@ module Density
       type (pencil_case) :: p
       real, dimension (nx) :: fdiff
 
-      integer :: j
       real, dimension (nx) :: tmp
 !
 !  Mass diffusion.
@@ -3210,7 +3209,6 @@ module Density
       type(pencil_case) :: p
       real, dimension (nx) :: fdiff
       real, dimension (nx) :: tmp
-      real :: gamma
       integer :: j
 
       if (ldiff_hyper3.or.ldiff_hyper3_strict) then
@@ -3321,9 +3319,6 @@ module Density
       intent(inout) :: df,f
 !
       real, dimension (nx) :: fdiff
-      real :: gamma
-      real, dimension (nx) :: tmp
-      integer :: j
       real, dimension (nx) :: density_rhs
       ! real :: cs201=1., cs20_corr=1.
 !
