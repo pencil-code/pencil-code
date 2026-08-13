@@ -109,20 +109,14 @@ endif
 ifeq ($(TRAINING),training_torchfort) 
 	CMAKE_TRAINING_VALUE = on
   SOURCES += torch.cc
+  override CC = mpicc
+  override CXX = mpic++
 endif
 
 CMAKE_BUILD_TYPE          ?= Debug
 SUPPRESS_COMPILER_WARNINGS ?= off
 CUDA_AWARE_MPI ?= ON
 
-#TP: mpicc does not work nicely with CMake.
-#    Better to let CMake choose the compiler itself
-ifeq ($(CC),mpicc)
-  override CC = 
-endif
-ifeq ($(CXX),mpicc)
-  override CXX = 
-endif
 
 astaroth_$(PREC).so: $(SOURCES) forcing.h $(PC_HEADERS) $(CHEADERS) astaroth_libs
 	mkdir -p build && \
