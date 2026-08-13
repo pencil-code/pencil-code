@@ -9750,16 +9750,17 @@ subroutine box_muller_transform(res)
   use General, only: random_number_wrapper
 
   real, dimension(:), intent(INOUT) :: res
-  real :: u1,u2,r
-  integer :: i,n
+  real, dimension(size(res)/2+1) :: u1,u2,r
+  integer :: i,n,j
 
+  call random_number_wrapper(u1)
+  call random_number_wrapper(u2)
+  r = sqrt(-2*log(u1))
   n = size(res)
   do i = 1,size(res),2
-    call random_number_wrapper(u1)
-    call random_number_wrapper(u2)
-    r = sqrt(-2*log(u1))
-    res(i)   = r*sin(2*pi*u2)
-    if(i+1 <= n) res(i+1) = r*cos(2*pi*u2)
+    j = (i+1)/2
+    res(i)   = r(j)*sin(2*pi*u2(j))
+    if(i+1 <= n) res(i+1) = r(j+1)*cos(2*pi*u2(j+1))
   enddo
 endsubroutine box_muller_transform
 !***********************************************************************
