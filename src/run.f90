@@ -1429,8 +1429,12 @@ endsubroutine helper_loop
 !  dvar is written for analysis and debugging purposes only.
 !
       if (ip<=11 .or. lwrite_dvar) then
-        call wsnap('dvar.dat',df,mvar,ENUM=.false.,noghost=.true.)
-        call particles_write_dsnapshot('dpvar.dat',f)
+        if(lgpu) then
+          call warning('run',"df is not written out when using GPUs, since it is not allocated on the CPUs!")
+        else
+          call wsnap('dvar.dat',df,mvar,ENUM=.false.,noghost=.true.)
+          call particles_write_dsnapshot('dpvar.dat',f)
+        endif
       endif
 !
 !  Write crash files before exiting if we haven't written var.dat already
