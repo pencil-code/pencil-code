@@ -140,6 +140,7 @@ module Special
   real :: bubble_size = impossible
   real :: bubble_wall_width = impossible
   real :: bubble_surface_tension = impossible
+  real :: bubble_surface_tension_diag = impossible
   real :: bubble_wall_width_factor = 1.0
   integer :: number_of_bubbles = 1
   logical :: lspeed_of_light_dt = .false.
@@ -1574,13 +1575,36 @@ module Special
 !
     endsubroutine dspecial_dt
 !***********************************************************************
+     subroutine get_Rddot(f_ode,Rddot)
+      use Diagnostics, only: save_name
+
+      real, dimension(n_odevars), intent(in) :: f_ode
+      real :: R,Rdot,gammaR,Rddot,friction
+      real :: pressure,curvature
+
+      R = f_ode(iR)
+      Rdot = f_ode(iRdot)
+      gammaR = sqrt(1/(1.-Rdot**2))
+      friction = -2*plasma_coupling_coeff*Rdot/gammaR
+      curvature = -2./(R*gammaR**2)
+      pressure = deltaV/(bubble_surface_tension*gammaR**3)
+      Rddot =  curvature + pressure + friction
+      if(lthermal_noise) then
+        Rddot = Rddot + int_zeta
+      endif
+
+      if(.not. lmultithread) then
+        call save_name(pressure,idiag_pressure)
+        call save_name(curvature,idiag_curvature)
+      endif
+     endsubroutine
+!***********************************************************************
     subroutine dspecial_dt_ode
 !
       use SharedVariables, only: get_shared_variable
       use Diagnostics, only: save_name
 
-      real :: R,Rdot,gammaR,Rddot,friction
-      real :: curvature,pressure
+      real :: Rddot
 !
       if (lgpu) call read_sums_from_GPU
       call get_Hscript_and_a2(Hscript,a2rhom_all)
@@ -1605,17 +1629,8 @@ module Special
       endif
       if (lbubble_size_ode) then
         df_ode(iR) = df_ode(iR) + f_ode(iRdot)
-        R = f_ode(iR)
-        Rdot = f_ode(iRdot)
-        gammaR = sqrt(1/(1.-Rdot**2))
-        friction = -2*plasma_coupling_coeff*Rdot/gammaR
-        curvature = -2./(R*gammaR**2)
-        pressure = deltaV/(bubble_surface_tension*gammaR**3)
-        Rddot =  curvature + pressure + friction
+        call get_Rddot(f_ode,Rddot)
         df_ode(iRdot) = df_ode(iRdot) + Rddot
-        if(lthermal_noise) then
-          df_ode(iRdot) = df_ode(iRdot) + int_zeta
-        endif
       endif
 !
 !  Diagnostics
@@ -1623,17 +1638,7 @@ module Special
       if (.not. lmultithread) then
         sigEm_all_diagnos = sigEm_all
         sigBm_all_diagnos = sigBm_all
-        if(lbubble_size_ode) then
-          call save_name(Rddot,idiag_Rddot)
-          call save_name(pressure,idiag_pressure)
-          call save_name(curvature,idiag_curvature)
-          call save_name(bubble_surface_tension,idiag_tension)
-          call save_name(int_zeta,idiag_zeta_int)
-          if(idiag_terminal_vel /= 0) then
-            r = deltaV/(plasma_coupling_coeff*bubble_surface_tension)
-            call save_name(r/(1+sqrt(1+r**2)),idiag_terminal_vel)
-          endif
-        endif
+        bubble_surface_tension_diag = bubble_surface_tension
         call calc_ode_diagnostics_special(f_ode)
       endif
 
@@ -1647,6 +1652,7 @@ module Special
       real :: rho_chi, lnascale
       real :: Hscript_diagnos
       real :: gammaR, friction
+      real :: Rddot,r
 
       if (lrho_chi) then
         rho_chi=f_ode(iinfl_rho_chi)
@@ -1682,6 +1688,19 @@ module Special
             friction = 2*plasma_coupling_coeff*f_ode(iRdot)/gammaR
             call save_name(friction,idiag_plasma_frictm)
           endif
+          if(idiag_Rddot /= 0) then
+            call get_Rddot(f_ode,Rddot)
+            call save_name(Rddot,idiag_Rddot)
+            call save_name(int_zeta,idiag_zeta_int)
+          endif
+          if(idiag_terminal_vel /= 0) then
+            r = deltaV/(plasma_coupling_coeff*bubble_surface_tension_diag)
+            call save_name(r/(1+sqrt(1+r**2)),idiag_terminal_vel)
+          endif
+          call save_name(bubble_surface_tension_diag,idiag_tension)
+        endif
+
+        if(lbubble_size_ode) then
         endif
       endif
 
@@ -2659,7 +2678,7 @@ module Special
 !  Then we need them back on the host to advance the ODEs which this function does.
 !
       use GPU, only: get_gpu_reduced_vars
-      real, dimension(10) :: tmp
+      real, dimension(20) :: tmp
 
       call get_gpu_reduced_vars(tmp)
       a2rhom_all     = tmp(1)
@@ -2671,6 +2690,10 @@ module Special
       ddotam_all         = tmp(7)
       e2m_all            = tmp(8)
       b2m_all            = tmp(9)
+      if(lbubble_size_ODE) then
+        bubble_surface_tension   = tmp(10)
+      endif
+
       call get_Hscript_and_a2(Hscript,a2rhom_all)
       call get_echarge
       call get_sigE_and_B
@@ -2682,6 +2705,7 @@ module Special
         ddotam_all_diagnos     = ddotam_all
         sigEm_all_diagnos      = sigEm_all
         sigBm_all_diagnos      = sigBm_all
+        bubble_surface_tension_diag = bubble_surface_tension
       endif
 
     endsubroutine read_sums_from_GPU
@@ -2768,6 +2792,12 @@ module Special
     call copy_addr(ldr_for_wall_vel,p_par(72)) ! bool
     call copy_addr(previous_wall_pos,p_par(73))
     call copy_addr(friction_start,p_par(74))
+    call copy_addr(continuation_offset,p_par(75)) ! int dconst
+    call copy_addr(lbubble_size_ODE,p_par(76)) ! bool
+    call copy_addr(iRdot,p_par(77)) ! int
+    call copy_addr(lthermal_noise,p_par(78)) ! bool
+    call copy_addr(noise_strength,p_par(79)) ! real dconst
+
     endsubroutine pushpars2c
 !********************************************************************
 !********************************************************************

@@ -145,6 +145,12 @@
 
           if(AC_ipsi__mod__klein_gordon != 0)  write(F_PSI ,rk_intermediate(F_PSI ,DF_PSI ,step_num,AC_dt__mod__cdata))
           if(AC_idpsi__mod__klein_gordon != 0) write(F_DPSI,rk_intermediate(F_DPSI,DF_DPSI,step_num,AC_dt__mod__cdata))
+          if(AC_lbubble_size_ode__mod__klein_gordon)
+	  {
+		v = AC_f_ode__mod__cdata[AC_irdot__mod__klein_gordon]
+		gamma = 1./sqrt(1-v*v)
+		reduce_sum(AC_dx__mod__cdata*ac_transformed_pencil_gphi[0]*ac_transformed_pencil_gphi[0]/gamma,AC_bubble_tension)
+	  }
 #  endif
 
 #  if LDISP_CURRENT

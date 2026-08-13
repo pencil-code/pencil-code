@@ -182,6 +182,8 @@ output global real AC_a2rhophim_all__mod__klein_gordon
 output global real AC_a2rhogphim_all__mod__klein_gordon
 output global real AC_edotbm_all__mod__klein_gordon
 output global real AC_ddotam_all__mod__klein_gordon
+output global real AC_bubble_tension
+output global real AC_int_zeta
 
 field_order(AC_iphi__mod__klein_gordon-1)  Field F_PHI
 field_order(AC_idphi__mod__klein_gordon-1) Field F_DPHI
@@ -198,7 +200,8 @@ field_order(AC_idphi_down_im__mod__klein_gordon-1) Field F_DPHI_DOWN_IM
 field_order(AC_ipsi__mod__klein_gordon-1)  Field F_PSI
 field_order(AC_idpsi__mod__klein_gordon-1) Field F_DPSI
 
-prep_ode_right(){
+prep_ode_right()
+{
   real AC_a21__mod__klein_gordon
   real AC_a2__mod__klein_gordon
   if(AC_lflrw__mod__klein_gordon)

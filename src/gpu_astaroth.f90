@@ -477,7 +477,7 @@ contains
 !**************************************************************************
     subroutine get_gpu_reduced_vars(dst)
 
-      real, dimension(10) :: dst
+      real, dimension(20) :: dst
 
       call get_gpu_reduced_vars_c(dst)
 

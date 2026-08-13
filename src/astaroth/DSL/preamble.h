@@ -285,3 +285,6 @@ const real teta1 = teta/(teta+tini)
 #if LTRAINING
 #include "../training/train.h"
 #endif
+
+//No-op
+sum(real x) {return x}

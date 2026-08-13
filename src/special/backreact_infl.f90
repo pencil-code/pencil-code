@@ -2002,7 +2002,7 @@ module Special
 !
       use GPU, only: get_gpu_reduced_vars
 
-      real, dimension(10) :: tmp
+      real, dimension(20) :: tmp
 
       call get_gpu_reduced_vars(tmp)
 
