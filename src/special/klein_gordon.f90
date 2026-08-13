@@ -268,6 +268,7 @@ module Special
   integer :: idiag_Vprimepsim=0 ! DIAG_DOC: $\left<V_{,\psi}\right>$
   integer :: idiag_rho_phi=0   ! DIAG_DOC: $\left<\rho phi\right>$
   integer :: idiag_tension = 0 ! DIAG_DOC: $\sigma$
+  integer :: idiag_zeta_int = 0 ! DIAG_DOC: $\int{\zeta*(\partial_r \phi)^2}$
   integer :: idiag_terminal_vel= 0 ! DIAG_DOC: $\v_{\w_{\infty}}$
   !Kishore: changed below from $\left<\ascale\right>$ to fix compilation of the manual.
   integer :: idiag_a=0    ! DIAG_DOC: $\left<a\right>$ !Sovan
@@ -308,6 +309,8 @@ module Special
   real :: next_wall_pos = 0.
   real :: wall_gamma = impossible
   logical :: lwall_friction = .false.
+  real :: tension_next = 0.
+  real :: int_zeta
 
   contains
 !****************************************************************************
@@ -419,7 +422,7 @@ module Special
       endif
 
       offset = 0
-      if(lspherical_coords .and. ny==1 .and. nz==1) then
+      if(lroot .and. lspherical_coords .and. ny==1 .and. nz==1) then
         !This is for simulating the expansion of a single bubble in 1d radial,
         !where tanh is not a proper solution since dphi/dr at r=0 is not 0.
         !Thus we smoothly (continuos second derivative) connect a polynomial from l1 to continuation_offset
@@ -702,10 +705,13 @@ module Special
         t_next_bubble = bubble_times(1)
       endif
 
+      if(noise_strength /= impossible) then
+        lthermal_noise = .true.
+      endif
       if (plasma_coupling_coeff /= 0.0) then
         if(lhydro) then
           lplasma_coupling = .true.
-        else if(.not. lbubble_size_ode) then
+        else if(nx > 1) then
           lwall_friction = .true.
         endif
       endif
@@ -1216,7 +1222,7 @@ module Special
           call fatal_error("dspecial_dt: No such Vprime_choice: ", trim(Vprime_choice))
       endselect
 
-      if(lwall_friction .or. idiag_tension /= 0) then
+      if(.not. lbubble_size_ODE .and. (lwall_friction .or. idiag_tension /= 0)) then
         do l=1,nx
           distance = abs(0.5-f(l+nghost,m,n,iphi))
           if(distance < min_distance) then
@@ -1557,6 +1563,10 @@ module Special
         endif
         dt1_max=max(dt1_max,dt1_special)
       endif
+
+      if(lbubble_size_ODE .and. nx > 1) then
+        tension_next = tension_next + sum(dx*p%gphi(:,1)**2/wall_gamma)
+      endif
 !
 !  Diagnostics
 !
@@ -1603,6 +1613,9 @@ module Special
         pressure = deltaV/(bubble_surface_tension*gammaR**3)
         Rddot =  curvature + pressure + friction
         df_ode(iRdot) = df_ode(iRdot) + Rddot
+        if(lthermal_noise) then
+          df_ode(iRdot) = df_ode(iRdot) + int_zeta
+        endif
       endif
 !
 !  Diagnostics
@@ -1615,6 +1628,7 @@ module Special
           call save_name(pressure,idiag_pressure)
           call save_name(curvature,idiag_curvature)
           call save_name(bubble_surface_tension,idiag_tension)
+          call save_name(int_zeta,idiag_zeta_int)
           if(idiag_terminal_vel /= 0) then
             r = deltaV/(plasma_coupling_coeff*bubble_surface_tension)
             call save_name(r/(1+sqrt(1+r**2)),idiag_terminal_vel)
@@ -1718,7 +1732,7 @@ module Special
         endif
 
         if(lspherical_coords) then
-          if(lwall_friction .or. idiag_tension /= 0) then
+          if(.not. lbubble_size_ODE .and. (lwall_friction .or. idiag_tension /= 0)) then
            call save_name(previous_wall_vel,idiag_wall_vel)
            call save_name(previous_wall_pos,idiag_wall_pos)
            call save_name(wall_gamma,idiag_wall_lorentz)
@@ -1903,6 +1917,7 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'wall_lorentz',idiag_wall_lorentz)
         call parse_name(iname,cname(iname),cform(iname),'wall_pos',idiag_wall_pos)
         call parse_name(iname,cname(iname),cform(iname),'tension',idiag_tension)
+        call parse_name(iname,cname(iname),cform(iname),'zeta_int',idiag_zeta_int)
         call parse_name(iname,cname(iname),cform(iname),'terminal_vel',idiag_terminal_vel)
       enddo
 !
@@ -2083,7 +2098,9 @@ module Special
           R_curr = previous_wall_pos
         endif
 
-        if(ldR_for_wall_vel) then
+        if(lbubble_size_ODE) then
+          previous_wall_vel = f_ode(iRdot)
+        else if(ldR_for_wall_vel) then
           if(t == 0) then
             previous_wall_vel = 0.
           else
@@ -2382,14 +2399,18 @@ module Special
       use Sub, only: box_muller_transform
       use Grid, only: get_grid_mn
       use General, only: notanumber
+      use Mpicomm, only: mpireduce_sum
+      use Deriv, only: der
 
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       real, intent(in) :: dt_
       logical, intent(in) :: llast
-      real, dimension(nx) :: zeta
+      real, dimension(nx) :: zeta, drphi
+      real :: zeta_sum = 0.
 
       if(llast) then  
+        zeta_sum = 0.
         do m=m1,m2
         do n=n1,n2
 ! Adds thermal white noise term, making the PDE a Langevin equation
@@ -2398,16 +2419,33 @@ module Special
             call get_grid_mn
             call box_muller_transform(zeta)
             zeta = zeta*sqrt(2*plasma_coupling_coeff*noise_strength)/sqrt(dt*dVol+tini)
+            !TP: fluctuations close to the origin seem to make \int (dr_dphi)^2 explode
+            if(lroot .and. lspherical_coords .and. continuation_offset /= 0) then
+              zeta(1:continuation_offset+1) = 0.
+            endif
             if(ip < 13) then
              if(notanumber(zeta)) then
                      print*,"NaNs in Zeta!!"
              endif
             endif
             f(l1:l2,m,n,idphi) = f(l1:l2,m,n,idphi) + dt_*zeta
+            if(lbubble_size_ODE .and. nx > 1) then
+              call der(f,iphi,drphi,1)
+              zeta_sum = zeta_sum + sum(zeta*dx*drphi**2/wall_gamma)
+            endif
           endif
         enddo
         enddo
       endif
+
+      if(lbubble_size_ODE .and. nx > 1) then
+        call mpireduce_sum(tension_next,bubble_surface_tension)
+        tension_next = 0.
+        if(lthermal_noise) then
+          call mpireduce_sum(zeta_sum,int_zeta)
+        endif
+      endif
+
 !
     endsubroutine special_after_timestep
 !***********************************************************************
