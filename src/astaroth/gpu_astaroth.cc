@@ -508,6 +508,7 @@ void setupConfig(AcMeshInfo& config)
   //TP: not needed anymore since we are not using the container
   //Redirect the runtime compilation log to a log file
   //if (!ltraining) config.runtime_compilation_log_dst = "ac_compilation.log";
+  config.runtime_compilation_log_dst = "ac_compilation.log";
   //
   char build_path[18000];
   sprintf(build_path,"%s/src/astaroth/submodule/build",get_cwd());
