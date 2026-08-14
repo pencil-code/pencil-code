@@ -140,7 +140,8 @@ module Param_IO
       lfatal_num_vector_369, density_scale_factor, &
       lsmooth_farray,farray_smooth_width, radius_diag, offset_min_calc, lread_oldsnap_nocoolprof, &
       lswap_init_lnrho_uu, thetamin, lsymmgrid, lbaryons, &
-      lperturbative_reheating, lreheating_vacuum, lreheating_hom
+      lperturbative_reheating, lreheating_vacuum, lreheating_hom, &
+      refinement_centers,refinement_n_centers
 !
   namelist /run_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lpole, ncoarse, &

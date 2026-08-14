@@ -2307,89 +2307,118 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
 !***********************************************************************
     subroutine sus_map_1D(xi,param2,g,gder1,gder2)
 
-      real, dimension(:)                    :: xi
-      real, dimension(size(xi,1))           :: g
-      real, dimension(size(xi,1)), optional :: gder1,gder2
-      real, dimension(3) :: param2
-      
+      real, dimension(:), intent(in)           :: xi
+      real, dimension(size(xi,1)), intent(out) :: g
+      real, dimension(size(xi,1)), optional    :: gder1,gder2
+      real, dimension(3), intent(in)           :: param2
+
       real :: ampl,width_cells,delta_cells
-      integer :: i
-!      
-      real :: alpha, w
-      real :: xa          ! local shifted coordinate      
-      real :: sa, sb, sc  ! SUS cubic transition variables 
-      real :: g_mw, g_pw, g_wd ! mapping values at boundaries for continuity
-!
-      intent(in)  :: xi,param2
-      intent(out) :: g,gder1,gder2
-      
-      ampl         = param2(1) ! refinement amplitude
-      width_cells  = param2(2) ! band width (in cells)  
-      delta_cells  = param2(3) ! edge smoothness (in cells)
+      real :: alpha,w
+      real :: xa,sa,sb,sc
+      real :: g_mw,g_pw,g_wd
+      real :: g_local,dg_local,d2g_local
+      real :: core_left,core_right
+      integer :: i,j
 
-      w     = 0.5 * width_cells
-      alpha = 1.0 - 1.0 / ampl
+      ampl        = param2(1) ! refinement amplitude
+      width_cells = param2(2) ! band width (in cells)
+      delta_cells = param2(3) ! edge smoothness (in cells)
 
-      ! initialize outputs
+      w     = 0.5*width_cells
+      alpha = 1.0 - 1.0/ampl
 
+      ! Mapping constants for one refinement region centered at zero.
+      ! These are the same constants as in the original SUS mapping.
+      g_mw = -w - alpha*delta_cells*0.5
+      g_pw = g_mw + (1.0/ampl)*(2.0*w)
+      g_wd = g_pw + (1.0/ampl)*delta_cells &
+                  + alpha*delta_cells*0.5
+
+      ! Initialize
       g = xi
+
       if (present(gder1)) gder1 = 1.0
       if (present(gder2)) gder2 = 0.0
 
-      ! Precompute constants
-      g_mw = (-w) - alpha*delta_cells*(1.0 - 0.5)
-      g_pw = g_mw + (1.0/ampl)*(2.0*w)
-      g_wd = g_pw + (1.0/ampl)*delta_cells + alpha*delta_cells*0.5
-      
-      ! loop over xi
-      do i = 1, size(xi)
+      ! Loop over grid points
+      do i = 1,size(xi)
+
          xa = xi(i)
-         ! ---- LEFT OUTER ----
-         if (xa < -w - delta_cells) then
-            g(i) = xa
-            if (present(gder1)) gder1(i) = 1.0
-            if (present(gder2)) gder2(i) = 0.0
 
-         ! ---- LEFT TRANSITION ----
-         else if (xa < -w) then
-            sa = (xa + w + delta_cells)/delta_cells
-            g(i) = xa - alpha*delta_cells*(sa**3 - 0.5*sa**4)
+         ! Start with identity mapping
+         g(i) = xa
+
+         if (present(gder1)) gder1(i) = 1.0
+         if (present(gder2)) gder2(i) = 0.0
+
+         ! Loop over all refinement centers
+         do j = 1,refinement_n_centers
+
+            ! Shift coordinate so that this refinement region
+            ! is centered at zero.
+            sa = xa - refinement_centers(j)
+            core_left  = -w
+            core_right =  w
+
+            ! ----------------------------------------------------------
+            ! Calculate the SUS mapping associated with this center.
+            !
+            ! g_local is the mapping in the local coordinate system.
+            ! We add only its displacement from the identity:
+            !
+            !     g_local - sa
+            !
+            ! ----------------------------------------------------------
+            ! ---- LEFT OUTER ----
+            if (sa < core_left-delta_cells) then
+               g_local = sa
+               dg_local = 1.0
+               d2g_local = 0.0
+            ! ---- LEFT TRANSITION ----
+            else if (sa < core_left) then
+               sc = (sa + w + delta_cells)/delta_cells
+               g_local = sa - alpha*delta_cells * &
+                         (sc**3 - 0.5*sc**4)
+               sb = 3.0*sc**2 - 2.0*sc**3
+               dg_local = 1.0 - alpha*sb
+               sc = 6.0*sc - 6.0*sc**2
+               d2g_local = -alpha*sc/delta_cells
+            ! ---- CORE ----
+            else if (sa <= core_right) then
+               g_local = g_mw + (1.0/ampl)*(sa+w)
+               dg_local = 1.0/ampl
+               d2g_local = 0.0
+            ! ---- RIGHT TRANSITION ----
+            else if (sa <= core_right+delta_cells) then
+               sc = (sa-w)/delta_cells
+               g_local = g_pw + (1.0/ampl)*(sa-w) &
+                         + alpha*delta_cells * &
+                           (sc**3 - 0.5*sc**4)
+               sb = 3.0*sc**2 - 2.0*sc**3
+               dg_local = 1.0/ampl + alpha*sb
+               sc = 6.0*sc - 6.0*sc**2
+               d2g_local = alpha*sc/delta_cells
+            ! ---- RIGHT OUTER ----
+            else
+               dg_local = 1.0
+               d2g_local = 0.0
+            endif
+            ! Add displacement produced by this refinement region.
+            !
+            ! Since g_local is expressed relative to the center,
+            ! we only need g_local-sa.
+            !
+            ! For non-overlapping regions only one center contributes
+            ! at any given xi.
+            g(i) = g(i) + (g_local-sa)
             if (present(gder1)) then
-               sb  = 3.0*sa**2 - 2.0*sa**3
-               gder1(i) = 1.0 - alpha*sb
+               gder1(i) = gder1(i) + (dg_local-1.0)
             endif
             if (present(gder2)) then
-               sc = 6.0*sa - 6.0*sa**2
-               gder2(i) = -alpha*sc/delta_cells
+               gder2(i) = gder2(i) + d2g_local
             endif
-
-         ! ---- CORE ----
-         else if (xa <= w) then
-            g(i) = g_mw + (1.0/ampl)*(xa + w)
-            if (present(gder1)) gder1(i) = 1.0/ampl
-            if (present(gder2)) gder2(i) = 0.0
-            
-         ! ---- RIGHT TRANSITION ----
-         else if (xa <= w + delta_cells) then
-            sa = (xa - w)/delta_cells
-            g(i) = g_pw + (1.0/ampl)*(xa - w) + alpha*delta_cells*(sa**3 - 0.5*sa**4)
-            if (present(gder1)) then
-               sb  = 3.0*sa**2 - 2.0*sa**3
-               gder1(i) = 1.0/ampl + alpha*sb
-            endif
-            if (present(gder2)) then
-               sc = 6.0*sa - 6.0*sa**2
-               gder2(i) = alpha*sc/delta_cells
-            endif
-
-         ! ---- RIGHT OUTER ----
-         else
-            g(i)  = g_wd + (xa - (w + delta_cells))
-            if (present(gder1)) gder1(i) = 1.0
-            if (present(gder2)) gder2(i) = 0.0
-         end if
-      end do
-!
+         enddo
+      enddo
     endsubroutine sus_map_1D
 !***********************************************************************
     subroutine sus_map_0D(xi,param2,g,gder1,gder2)

@@ -189,6 +189,8 @@ module Cdata
   logical :: lignore_nonequi=.false., lcart_equi=.true.
   character (len=labellen), dimension(3) :: grid_func='linear'
   character (len=labellen) :: pipe_func='error_function'
+  real, dimension(5) :: refinement_centers = 0.
+  integer :: refinement_n_centers = 1
   integer :: nghost_read_fewer=0
 !
 ! Processor related
