@@ -76,7 +76,7 @@ python -u ${TORCHFORT_INSTALL_DIR}/bin/python/wandb_helper.py \
       --wandb_project="torchfort" \
       --wandb_entity="girishreyas2000" \
       --run_tag="job-${SLURM_JOB_ID}" \
-      --timeout=1 > wandb_helper.log 2>&1 &
+      --timeout=100 > wandb_helper.log 2>&1 &
 WANDB_PID=$!
 
 pc_run start

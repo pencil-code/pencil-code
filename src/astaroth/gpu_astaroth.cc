@@ -178,17 +178,23 @@ bool torch_infer_CAPI(int sub_dims[3], AcReal* input, AcReal* label,
 		     const int input_fields, const int output_fields, const char* model_name, bool subsample);
 bool torch_train_multiarg_CAPI(int sub_dims[3], const std::vector<std::pair<AcReal*, int>>& inputs, 
         const std::vector<std::pair<AcReal*, int>>& outputs, AcReal* loss_val,  const char* model_name);
+bool torch_infer_multiarg_CAPI(int sub_dims[3], const std::vector<std::pair<AcReal*, int>>& inputs, 
+        const std::vector<std::pair<AcReal*, int>>& outputs,  const char* model_name);
 bool torch_create_model_CAPI(const char* name, const char* config_fname, int device);
 bool torch_create_distributed_model_CAPI(const char* name, const char* config_fname, MPI_Comm mpi_comm, int device);
 bool torch_load_CAPI(const char* name, const char* fname);
 bool torch_load_checkpoint_CAPI(const char* name, const char* checkpoint_dir, int64_t* step_train, int64_t* step_inference);
 bool torch_save_model_CAPI(const char* name, const char* fname);
 bool torch_save_checkpoint_CAPI(const char* name, const char* checkpoint_dir);
-bool torch_wandb_log_double(const char* name, const char* metric_name, int64_t step, double value);
-void read_stats();
+
+bool torch_wandb_log(const char* name, const char* metric_name, int64_t step, int value);
+bool torch_wandb_log(const char* name, const char* metric_name, int64_t step, float value);
+bool torch_wandb_log(const char* name, const char* metric_name, int64_t step, double value);
+void load_train_stats();
 
 // variables used for training
 bool training_from_checkpoint=false;
+bool new_run=true;
 // used as a flag to check if we need to calcualte the taus & uumean again
 bool called_training = false;
 
@@ -489,7 +495,7 @@ void setupConfig(AcMeshInfo& config)
   AcRealSymmetricTensor tau_hydro_stds{};
 	
   //The statistics for doing the inverse are only needed when using the trained tau
-  if (ltrained) denormalize("data/training/normalizer.bin", tau_hydro_means, tau_hydro_stds);
+  //if (ltrained) denormalize("data/training/normalizer.bin", tau_hydro_means, tau_hydro_stds);
 
   PCLoad(config,AC_tau_hydro_means,tau_hydro_means);
   PCLoad(config,AC_tau_hydro_stds ,tau_hydro_stds);
@@ -499,8 +505,10 @@ void setupConfig(AcMeshInfo& config)
   //Calculate derived variable values based on the assignments in the initializations
   acHostUpdateParams(&config); 
 
+  //TP: not needed anymore since we are not using the container
   //Redirect the runtime compilation log to a log file
-  if (!ltraining) config.runtime_compilation_log_dst = "ac_compilation.log";
+  //if (!ltraining) config.runtime_compilation_log_dst = "ac_compilation.log";
+  //
   char build_path[18000];
   sprintf(build_path,"%s/src/astaroth/submodule/build",get_cwd());
   //Tell Astaroth that we want the runtime build to end up under this folder
@@ -839,7 +847,7 @@ void save_training_losses(){
   myFile.close();
 }
 /***********************************************************************************************/
-void read_stats(){
+void load_train_stats(){
 #if LTRAINING
 	#include "user_constants.h"
     if(rank==0){
@@ -873,35 +881,75 @@ void read_stats(){
             
             train_counter = std::stoi(row[0]);
             domain = std::stoi(row[1]);
+            acDeviceSetInput(acGridGetDevice(), AC_count, train_counter);
 
             if (lhydro){
-                auto res = acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum[0], (AcReal)std::stod(row[2]));
-                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum[1], std::stod(row[3]));
-                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum[2], std::stod(row[4]));
-                if (res == AC_SUCCESS) { 
-                
-                    fprintf(stderr, "Result\n");
-                    fflush(stderr);
+                if(AC_lconservative__mod__hydro){
+                  
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_rho, (AcReal)std::stod(row[2]));
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum[0], (AcReal)std::stod(row[3]));
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum[1], (AcReal)std::stod(row[4]));
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum[2], (AcReal)std::stod(row[5]));
+                  
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_sq_rho, (AcReal)std::stod(row[6]));
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_sq[0], (AcReal)std::stod(row[7]));
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_sq[1], (AcReal)std::stod(row[8]));
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_sq[2], (AcReal)std::stod(row[9]));
+
+        
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_strain[0], (AcReal)std::stod(row[10]));
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_strain[1], (AcReal)std::stod(row[11]));
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_strain[2], (AcReal)std::stod(row[12]));
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_strain[3], (AcReal)std::stod(row[13]));
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_strain[4], (AcReal)std::stod(row[14]));
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_strain[5], (AcReal)std::stod(row[15]));
+                 
+
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum[0], (AcReal)std::stod(row[16]));
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum[1], (AcReal)std::stod(row[17]));
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum[2], (AcReal)std::stod(row[18]));
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum[3], (AcReal)std::stod(row[19]));
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum[4], (AcReal)std::stod(row[20]));
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum[5], (AcReal)std::stod(row[21]));
+
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq_strain[0], (AcReal)std::stod(row[22]));
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq_strain[1], (AcReal)std::stod(row[23]));
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq_strain[2], (AcReal)std::stod(row[24]));
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq_strain[3], (AcReal)std::stod(row[25]));
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq_strain[4], (AcReal)std::stod(row[26]));
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq_strain[5], (AcReal)std::stod(row[27]));
+
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq[0], (AcReal)std::stod(row[28]));
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq[1], (AcReal)std::stod(row[29]));
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq[2], (AcReal)std::stod(row[30]));
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq[3], (AcReal)std::stod(row[31]));
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq[4], (AcReal)std::stod(row[32]));
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq[5], (AcReal)std::stod(row[33]));
+                }  
+                else {             
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum[0], (AcReal)std::stod(row[2]));
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum[1], std::stod(row[3]));
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum[2], std::stod(row[4]));
+
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_sq[0], std::stod(row[5]));
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_sq[1], std::stod(row[6]));
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_sq[2], std::stod(row[7]));
+
+
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum[0], std::stod(row[8]));
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum[1], std::stod(row[9]));
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum[2], std::stod(row[10]));
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum[3], std::stod(row[11]));
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum[4], std::stod(row[12]));
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum[5], std::stod(row[13]));
+
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq[0], std::stod(row[14]));
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq[1], std::stod(row[15]));
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq[2], std::stod(row[16]));
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq[3], std::stod(row[17]));
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq[4], std::stod(row[18]));
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq[5], std::stod(row[19]));
                 }
-
-                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_sq[0], std::stod(row[5]));
-                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_sq[1], std::stod(row[6]));
-                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_sq[2], std::stod(row[7]));
-
-
-                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum[0], std::stod(row[8]));
-                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum[1], std::stod(row[9]));
-                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum[2], std::stod(row[10]));
-                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum[3], std::stod(row[11]));
-                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum[4], std::stod(row[12]));
-                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum[5], std::stod(row[13]));
-
-                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq[0], std::stod(row[14]));
-                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq[1], std::stod(row[15]));
-                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq[2], std::stod(row[16]));
-                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq[3], std::stod(row[17]));
-                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq[4], std::stod(row[18]));
-                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq[5], std::stod(row[19]));
             }
         }
     }
@@ -964,6 +1012,7 @@ extern "C" void tf_load_model_c_api(const char* name, const char* fname){
 	else{
 		acLogFromRootProc(rank, "Torchfort model %s loaded succesfully", name);
 	}
+  new_run=false;
 	fflush(stdout);
 	fflush(stderr);
 #endif
@@ -974,7 +1023,6 @@ extern "C" void tf_load_model_checkpoint_c_api(const char* name, const char* che
 	int64_t step_train=0;
 	int64_t step_inference=0;
 	bool success = torch_load_checkpoint_CAPI(name, checkpoint_dir, &step_train, &step_inference);
-    read_stats();
 	if (success != 0){
 		acLogFromRootProc(rank, "Error when loading model %s\n", name);
 	}
@@ -983,6 +1031,7 @@ extern "C" void tf_load_model_checkpoint_c_api(const char* name, const char* che
 	}
     
   training_from_checkpoint=true;
+  new_run=false;
 	fflush(stdout);
 	fflush(stderr);
 #endif
@@ -1020,7 +1069,6 @@ extern "C" void tf_save_checkpoint_c_api(const char* name, const char* checkpoin
 	fflush(stderr);
 #endif
 }
-/***********************************************************************************************/
 /***********************************************************************************************/
 void denormalize(std::string filename, AcRealSymmetricTensor &tau_means, AcRealSymmetricTensor &tau_stds)
 {
@@ -1132,53 +1180,54 @@ extern "C" void torch_infer_c_api(int itsub)
 	#include "user_constants.h"
 	if (!ltrained) return;
 	if (!calling_infer){
-		AcRealSymmetricTensor tau_means = mesh.info[AC_tau_hydro_means];
-		AcRealSymmetricTensor tau_stds  = mesh.info[AC_tau_hydro_stds];
     acLogFromRootProc(rank,"Doing inference\n");
-		fprintf(stderr,"means xx: %f, yy: %f, zz: %f, xy: %f, yz: %f, xz: %f\n", tau_means.xx, tau_means.yy, tau_means.zz, tau_means.xy, tau_means.yz, tau_means.xz);
-		fprintf(stderr,"stds xx: %f, yy: %f, zz: %f, xy: %f, yz: %f, xz: %f\n", tau_stds.xx, tau_stds.yy, tau_stds.zz, tau_stds.xy, tau_stds.yz, tau_stds.xz);
 		fflush(stderr);
 		fflush(stdout);
+	  calling_infer = true;
 	}
-	calling_infer = true;
+  auto initialize_fields = acGetOptimizedDSLTaskGraph(get_inference_fields);
+	acGridExecuteTaskGraph(initialize_fields, 1);
 
-	auto calc_uumean_tau = acGetOptimizedDSLTaskGraph(initialize_uumean);
-	acGridExecuteTaskGraph(calc_uumean_tau, 1);
-
-        auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+  auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
 	acGridExecuteTaskGraph(bcs,1);
 
-
 	AcReal* out = NULL;
+	AcReal* input = NULL;
+	AcReal* output = NULL;
 
-	AcReal* uumean_ptr = NULL;
-	AcReal* tau_infer_ptr = NULL;
-	
-	/*
-	if (randomNumber == 0) acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEANBatch[0].x, &uumean_ptr, &out);
-	if (randomNumber == 1) acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEANBatch[1].x, &uumean_ptr, &out);
-	if (randomNumber == 2) acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEANBatch[2].x, &uumean_ptr, &out);
-	if (randomNumber == 3) acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEANBatch[3].x, &uumean_ptr, &out);
-	if (randomNumber == 4) acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEANBatch[4].x, &uumean_ptr, &out);
-	if (randomNumber == 5) acDeviceGetVertexBufferPtrs(acGridGetDevice(), UUMEANBatch[5].x, &uumean_ptr, &out);
-	*/
-	
+  std::vector<std::pair<AcReal*, int>> inputs;
+  std::vector<std::pair<AcReal*, int>> outputs;
 
-	//
-	//check if trained on same grid size and do not smooth the averaged out vals
-	//
-	//
-	acDeviceGetVertexBufferPtrs(acGridGetDevice(), uumean.x, &uumean_ptr, &out);
-	acDeviceGetVertexBufferPtrs(acGridGetDevice(), TAU_HYDRO_INFERRED.xx, &tau_infer_ptr, &out);
+  if(lhydro){
 
-	acGridHaloExchange();
+   if(AC_lconservative__mod__hydro){
+    acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetmom_mean_X(), &input, &out);
+    inputs.emplace_back(input, 3);
+    acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetrho_mean(), &input, &out);
+    inputs.emplace_back(input, 1);
+
+    acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetTAU_STRAIN_XX(), &output, &out);
+    outputs.emplace_back(output, 6);
+   } 
+   else{
+	  //todo: check if trained on same grid size and do not smooth the averaged out vals
+    acDeviceGetVertexBufferPtrs(acGridGetDevice(), uumean.x, &input, &out);
+    inputs.emplace_back(input, 3);
+   }
+
+   acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetTAU_HYDRO_XX(), &output, &out);
+   outputs.emplace_back(output, 6);
+
+	 acGridHaloExchange();
+
+   torch_infer_multiarg_CAPI((int[]){mx, my, mz}, inputs, outputs,"stationary");
+  }
+
 	
-	torch_infer_CAPI((int[]){mx,my,mz}, uumean_ptr, tau_infer_ptr,input_channels,output_channels,"stationary",calling_train);
-	
-	auto descale_inf = acGetOptimizedDSLTaskGraph(descale_inferred_taus);
+	auto descale_inf = acGetOptimizedDSLTaskGraph(descale_inferred_values);
 	acGridExecuteTaskGraph(descale_inf, 1);
 
-        bcs = acGetOptimizedDSLTaskGraph(boundconds);	
+  bcs = acGetOptimizedDSLTaskGraph(boundconds);	
 	acGridExecuteTaskGraph(bcs,1);
 #endif
 }
@@ -1216,8 +1265,6 @@ extern "C" void torch_train_c_api(AcReal *loss_val, int itsub, double t) {
 
   if(lhydro){
   
-    int input_size = 0;
-    int output_size = 0;
     std::vector<std::pair<AcReal*, int>> inputs;
     std::vector<std::pair<AcReal*, int>> outputs;
 
@@ -1232,17 +1279,22 @@ extern "C" void torch_train_c_api(AcReal *loss_val, int itsub, double t) {
         acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetrho_mean(), &input, &out);
         inputs.emplace_back(input, 1);
 
-        acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetstrain_sgs_Xx(), &output, &out);
+        acDeviceGetVertexBufferPtrs(acGridGetDevice(), TAU_STRAIN.xx, &output, &out);
         outputs.emplace_back(output, 6);
     }
-        acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGettau_hydro_Xx(), &output, &out);
-        outputs.emplace_back(output, 6);
+    else{
+    
+      acDeviceGetVertexBufferPtrs(acGridGetDevice(), uumean.x, &input, &out);
+      inputs.emplace_back(input, 3);
+    }
+    acDeviceGetVertexBufferPtrs(acGridGetDevice(), TAU_HYDRO.xx, &output, &out);
+    outputs.emplace_back(output, 6);
 
     acGridHaloExchange();
     torch_train_multiarg_CAPI((int[]){mx, my, mz}, inputs, outputs, loss_val,"stationary");
     train_loss.push_back(*loss_val);
     train_nts.push_back(it); 
-    torch_wandb_log_double("stationary", "training_loss", it, *loss_val);
+    torch_wandb_log("stationary", "training_loss", it, *loss_val);
   }
   else if(AC_ltrain_mag__mod__training){
     /*
@@ -1435,18 +1487,18 @@ extern "C" void print_debug() {
 		
 		buffer.clear();
 
-    const AcReal* tau_xx_buf = mesh.vertex_buffer[tau_hydro.xx];
-    const AcReal* tau_inferred_xx_buf = mesh.vertex_buffer[TAU_HYDRO_INFERRED.xx];
-    const AcReal* tau_yy_buf = mesh.vertex_buffer[tau_hydro.yy];
-    const AcReal* tau_inferred_yy_buf = mesh.vertex_buffer[TAU_HYDRO_INFERRED.yy];
-    const AcReal* tau_zz_buf = mesh.vertex_buffer[tau_hydro.zz];
-    const AcReal* tau_inferred_zz_buf = mesh.vertex_buffer[TAU_HYDRO_INFERRED.zz];
-    const AcReal* tau_xy_buf = mesh.vertex_buffer[tau_hydro.xy];
-    const AcReal* tau_inferred_xy_buf = mesh.vertex_buffer[TAU_HYDRO_INFERRED.xy];
-    const AcReal* tau_yz_buf = mesh.vertex_buffer[tau_hydro.yz];
-    const AcReal* tau_inferred_yz_buf = mesh.vertex_buffer[TAU_HYDRO_INFERRED.yz];
-    const AcReal* tau_xz_buf = mesh.vertex_buffer[tau_hydro.xz];
-    const AcReal* tau_inferred_xz_buf = mesh.vertex_buffer[TAU_HYDRO_INFERRED.xz];
+    const AcReal* tau_xx_buf = mesh.vertex_buffer[TAU_HYDRO.xx];
+    const AcReal* tau_inferred_xx_buf = mesh.vertex_buffer[TAU_HYDRO.xx];
+    const AcReal* tau_yy_buf = mesh.vertex_buffer[TAU_HYDRO.yy];
+    const AcReal* tau_inferred_yy_buf = mesh.vertex_buffer[TAU_HYDRO.yy];
+    const AcReal* tau_zz_buf = mesh.vertex_buffer[TAU_HYDRO.zz];
+    const AcReal* tau_inferred_zz_buf = mesh.vertex_buffer[TAU_HYDRO.zz];
+    const AcReal* tau_xy_buf = mesh.vertex_buffer[TAU_HYDRO.xy];
+    const AcReal* tau_inferred_xy_buf = mesh.vertex_buffer[TAU_HYDRO.xy];
+    const AcReal* tau_yz_buf = mesh.vertex_buffer[TAU_HYDRO.yz];
+    const AcReal* tau_inferred_yz_buf = mesh.vertex_buffer[TAU_HYDRO.yz];
+    const AcReal* tau_xz_buf = mesh.vertex_buffer[TAU_HYDRO.xz];
+    const AcReal* tau_inferred_xz_buf = mesh.vertex_buffer[TAU_HYDRO.xz];
     const AcReal* uumean_x_buf = mesh.vertex_buffer[uumean.x];
     const AcReal* uumean_y_buf = mesh.vertex_buffer[uumean.y];
     const AcReal* uumean_z_buf = mesh.vertex_buffer[uumean.z];
@@ -2131,6 +2183,9 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_,
 
   constexpr AcReal unit = 1.0;
   dt1_interface = unit/dt;
+
+  //Loads training statistics to the device
+  if(!new_run) load_train_stats();
 }
 /***********************************************************************************************/
 extern "C" void reloadConfig()

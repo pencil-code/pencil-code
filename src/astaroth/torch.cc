@@ -24,8 +24,33 @@ initialize_torch()
 	return res != TORCHFORT_RESULT_SUCCESS;
 }
 /***********************************************************************************************/
-bool torch_wandb_log_double(const char* name, const char* metric_name, int64_t step, double value){
-  const torchfort_result_t res = torchfort_wandb_log_double(name, metric_name, step, value);
+template <typename T>
+bool torch_wandb_log_base(const char* name, const char* metric_name, int64_t step, T value){
+  if constexpr (std::is_same_v<T,int>)
+  {
+     return torchfort_wandb_log_int(name, metric_name, step, static_cast<int>(value)) != TORCHFORT_RESULT_SUCCESS;
+  }  
+  if constexpr (std::is_same_v<T,double>)
+  {
+     return torchfort_wandb_log_double(name, metric_name, step, static_cast<double>(value)) != TORCHFORT_RESULT_SUCCESS;
+  }  
+  if constexpr (std::is_same_v<T,float>)
+  {
+     return torchfort_wandb_log_float(name, metric_name, step, static_cast<float>(value)) != TORCHFORT_RESULT_SUCCESS;
+  }  
+  return true;
+}
+/***********************************************************************************************/
+bool torch_wandb_log(const char* name, const char* metric_name, int64_t step, double value){
+  return torch_wandb_log_base(name,metric_name,step,value);
+}
+/***********************************************************************************************/
+bool torch_wandb_log(const char* name, const char* metric_name, int64_t step, int value){
+  return torch_wandb_log_base(name,metric_name,step,value);
+}
+/***********************************************************************************************/
+bool torch_wandb_log(const char* name, const char* metric_name, int64_t step, float value){
+  return torch_wandb_log_base(name,metric_name,step,value);
 }
 /***********************************************************************************************/
 bool torch_train_CAPI(int sub_dims[3], AcReal* input, AcReal* label, AcReal* loss_val,
@@ -70,6 +95,39 @@ bool torch_train_multiarg_CAPI(int sub_dims[3], const std::vector<std::pair<AcRe
     torchfort_result_t res_destroy = torchfort_tensor_list_destroy(inputs_tensor);
     res_destroy = torchfort_tensor_list_destroy(outputs_tensor);
     return res == TORCHFORT_RESULT_SUCCESS;
+}
+/***********************************************************************************************/
+bool torch_infer_multiarg_CAPI(int sub_dims[3], const std::vector<std::pair<AcReal*, int>>& inputs, 
+        const std::vector<std::pair<AcReal*, int>>& outputs,  const char* model_name){
+  
+    torchfort_tensor_list_t inputs_tensor;
+    torchfort_tensor_list_create(&inputs_tensor);
+
+    torchfort_tensor_list_t outputs_tensor;
+    torchfort_tensor_list_create(&outputs_tensor);
+
+    for(std::size_t i = 0; i < inputs.size(); ++i) {
+      if (inputs[i].first == NULL) {
+        fprintf(stderr, "ERROR: ASTAROTH device pointers are NULL! (input: %p), %d\n", (void*)inputs[i].first, i);
+        fflush(stderr);
+      }
+	    int64_t input_shape[5] = {1, inputs[i].second,  sub_dims[2], sub_dims[1], sub_dims[0]};
+      torchfort_tensor_list_add_tensor(inputs_tensor, inputs[i].first, 5, input_shape, TORCH_PRECISION);
+    }
+    
+    for(std::size_t i = 0; i < outputs.size(); ++i) {
+      if (outputs[i].first == NULL) {
+        fprintf(stderr, "ERROR: ASTAROTH device pointers are NULL! (outputs: %p), %d\n", (void*)outputs[i].first, i);
+        fflush(stderr);
+      }
+	    int64_t output_shape[5] = {1, outputs[i].second,  sub_dims[2], sub_dims[1], sub_dims[0]};
+      torchfort_tensor_list_add_tensor(outputs_tensor, outputs[i].first, 5, output_shape, TORCH_PRECISION);
+    }
+
+    const torchfort_result_t res = torchfort_inference_multiarg(model_name, inputs_tensor, outputs_tensor, 0);
+    torchfort_result_t res_destroy = torchfort_tensor_list_destroy(inputs_tensor);
+    res_destroy = torchfort_tensor_list_destroy(outputs_tensor);
+    return res != TORCHFORT_RESULT_SUCCESS;
 }
 /***********************************************************************************************/
 bool torch_infer_CAPI(int sub_dims[3], AcReal* input, AcReal* label, 
