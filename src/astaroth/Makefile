@@ -113,8 +113,11 @@ endif
 ifeq ($(TRAINING),training_torchfort) 
 	CMAKE_TRAINING_VALUE = on
   SOURCES += torch.cc
-  override CC = mpicc
   override CXX = mpic++
+endif
+
+ifeq ($(CC),mpicc)
+  override CC =
 endif
 
 CMAKE_BUILD_TYPE          ?= Debug
