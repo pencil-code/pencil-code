@@ -369,7 +369,7 @@ module Special
 
       use Diagnostics
 
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       type (pencil_case) :: p
 !
       real, dimension(nx) :: adv_cs2
