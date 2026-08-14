@@ -7,7 +7,7 @@ versionsuffix = '-rocm'
 homepage = 'https://icl.utk.edu/fft'
 description = "Highly Efficient FFT for Exascale (HeFFTe) library"
 
-toolchain = {'name': 'cpeCray', 'version': '24.03'}
+toolchain = {'name': 'cpeCray', 'version': '25.03'}
 
 sources = {
         'download_filename': 'v%(version)s.tar.gz',
