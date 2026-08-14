@@ -355,8 +355,24 @@ module Special
         enddo
       endif
 !
-      if (lfirst.and.ldt .or. ldiagnos.and.idiag_dtcp/=0 ) &
-          adv_cs2 = (const3*p%cs2 + const2*gamma1 + const1) * dxyz_2
+      if (lfirst.and.ldt) then
+        adv_cs2 = (const3*p%cs2 + const2*gamma1 + const1) * dxyz_2
+        advec_cs2 = max(advec_cs2,adv_cs2)
+      endif
+      if (headtt.or.ldebug) print*, 'special_calc_hydro: max(advec_cs2) =', maxval(advec_cs2)
+!
+      call calc_diagnostics_special(f,p)
+!
+    endsubroutine special_calc_hydro
+!***********************************************************************
+    subroutine calc_diagnostics_special(f,p)
+
+      use Diagnostics
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+!
+      real, dimension(nx) :: adv_cs2
 !
       if (ldiagnos) then 
         call sum_mn_name( q%fpres_photoelectric(:,1),idiag_photom)
@@ -365,15 +381,13 @@ module Special
         call sum_mn_name( q%fpres_polytropic(:,1),idiag_polym)
         call max_mn_name( q%fpres_polytropic,idiag_polymax)
         if (idiag_polymin/=0) call max_mn_name(-q%fpres_polytropic,idiag_polymin,lneg=.true.)
-        if (idiag_dtcp/=0) call max_mn_name(sqrt(adv_cs2)/cdt,idiag_dtcp,l_dt=.true.)
+        if (idiag_dtcp/=0) then
+          adv_cs2 = (const3*p%cs2 + const2*gamma1 + const1) * dxyz_2
+          call max_mn_name(sqrt(adv_cs2)/cdt,idiag_dtcp,l_dt=.true.)
+        endif
       endif
 
-      if (lfirst.and.ldt) advec_cs2 = max(advec_cs2,adv_cs2)
-      if (headtt.or.ldebug) print*, 'special_calc_hydro: max(advec_cs2) =', maxval(advec_cs2)
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine special_calc_hydro
+    endsubroutine calc_diagnostics_special
 !***********************************************************************
     subroutine dspecial_dt_ode
 
