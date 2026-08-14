@@ -1,0 +1,43 @@
+easyblock = 'CMakeMake'
+
+name = 'HeFFTe'
+version = '2.4.0'
+versionsuffix = '-rocm'
+
+homepage = 'https://icl.utk.edu/fft'
+description = "Highly Efficient FFT for Exascale (HeFFTe) library"
+
+toolchain = {'name': 'cpeCray', 'version': '24.03'}
+
+sources = {
+        'download_filename': 'v%(version)s.tar.gz',
+        'filename':          SOURCELOWER_TAR_GZ,
+        'source_urls':       ['https://github.com/icl-utk-edu/heffte/archive/refs/tags/']
+}
+
+builddependencies = [
+    ('buildtools', '%(toolchain_version)s', '', True), 
+]
+
+dependencies = [
+    ('cray-python', EXTERNAL_MODULE),
+    ('rocm', EXTERNAL_MODULE),
+]
+
+build_shared_libs = True
+
+configopts  = '-D CMAKE_BUILD_TYPE=Release '
+configopts += '-D Heffte_ENABLE_AVX=ON '
+configopts += '-D Heffte_ENABLE_ROCM=ON '
+configopts += '-D Heffte_ROCM_ROOT=$ROCM_PATH '
+configopts += '-D CMAKE_CXX_COMPILER=hipcc '
+configopts += '-D CMAKE_CXX_FLAGS="--offload-arch=gfx90a" '
+configopts += '-D MPI_CXX_COMPILER=CC '
+
+sanity_check_paths = {
+    'files': ['lib/libheffte.%s' % SHLIB_EXT],
+    'dirs': ['include', 'lib/cmake/Heffte', 'share/heffte/examples'],
+}
+
+moduleclass = 'lib'
+
