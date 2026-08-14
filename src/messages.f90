@@ -413,6 +413,8 @@ module Messages
       integer, parameter :: unit=1
       integer :: wd1
       logical, save :: lfirstcall = .true.
+
+      if (.not.lroot) return
 !
 !  Write string to screen and to 'svnid.dat' file.
 !
@@ -420,11 +422,7 @@ module Messages
         !if (.not. file_exists (datadir)) call fatal_error ('svn_id','missing data directory "'//trim(datadir)//'"')
         if (.not. directory_exists (datadir)) &
           call fatal_error ('svn_id','missing data directory: "'//trim(datadir)//'"')
-        if (lstart) then
-          open(unit, file=trim(datadir)//'/svnid.dat', status='replace')
-        else
-          open(unit, file=trim(datadir)//'/svnid.dat', status='replace')
-        endif
+        open(unit, file=trim(datadir)//'/svnid.dat', status='replace')
         lfirstcall = .false.
       else
         open(unit, file=trim(datadir)//'/svnid.dat', status='old', position='append')
