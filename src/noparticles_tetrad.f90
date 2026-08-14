@@ -11,10 +11,9 @@
 !***************************************************************
 module Particles_tetrad
 !
-  use Cdata
-  use Messages
+  use Cparam
+  use Messages, only: svn_id
   use General, only: keep_compiler_quiet
-  use Particles_cdata
 !
   implicit none
 !
@@ -28,7 +27,7 @@ module Particles_tetrad
 !
 !  May-16/dhruba: coded
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id$")
 !
     endsubroutine register_particles_tetrad
@@ -140,11 +139,14 @@ module Particles_tetrad
     endsubroutine rprint_particles_tetrad
 !***********************************************************************
     subroutine reset_tetrad(fp)
+
       real, dimension (mpar_loc,mparray), intent (out) :: fp
       call keep_compiler_quiet(fp)
+
     endsubroutine reset_tetrad
 !***********************************************************************
     subroutine reinitialize_tetrad(fp)
+
       real, dimension (mpar_loc,mparray), intent (out) :: fp
       call keep_compiler_quiet(fp)
 

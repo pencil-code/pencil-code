@@ -6,7 +6,7 @@
 module Particles_kmeans
 !
   use General
-  use Messages
+  use Messages, only: svn_id
 !
   contains
 !***********************************************************************

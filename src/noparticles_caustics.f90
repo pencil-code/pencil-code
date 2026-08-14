@@ -13,9 +13,8 @@
 !***************************************************************
 module Particles_caustics
 !
-  use Cdata
-  use Messages
-  use Particles_cdata
+  use Cparam
+  use Messages, only: svn_id
   use General, only: keep_compiler_quiet
 !
   implicit none
@@ -30,7 +29,7 @@ module Particles_caustics
 !
 !  May-16/dhruba: coded
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id$")
 !
     endsubroutine register_particles_caustics

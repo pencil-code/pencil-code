@@ -223,7 +223,7 @@ module Particles
 !***********************************************************************
     subroutine remove_particles_sink_simple(f,fp,dfp,ineargrid)
 !
-      real,    dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray) :: fp
       real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3)       :: ineargrid
@@ -237,7 +237,7 @@ module Particles
 !***********************************************************************
     subroutine create_particles_sink_simple(f,fp,dfp,ineargrid)
 !
-      real,    dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray) :: fp
       real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3)       :: ineargrid

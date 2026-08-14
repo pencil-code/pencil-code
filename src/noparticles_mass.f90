@@ -16,10 +16,9 @@
 !***************************************************************
 module Particles_mass
 !
-  use Cdata
+  use Cparam
   use General, only: keep_compiler_quiet
-  use Messages
-  use Particles_cdata
+  use Messages, only: svn_id
 !
   implicit none
 !
@@ -27,7 +26,7 @@ module Particles_mass
 !
   contains
 !***********************************************************************
-    subroutine register_particles_mass()
+    subroutine register_particles_mass
 !
 !  Set up indices for access to the fp and dfp arrays.
 !
@@ -62,7 +61,7 @@ module Particles_mass
 !
     endsubroutine init_particles_mass
 !***********************************************************************
-    subroutine pencil_criteria_par_mass()
+    subroutine pencil_criteria_par_mass
 !
 !  All pencils that the Particles_mass module depends on are specified
 !  here.

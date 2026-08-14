@@ -12,9 +12,8 @@
 !***************************************************************
 module Particles_radius
 !
-  use Cdata
+  use Cparam
   use General, only: keep_compiler_quiet
-  use Particles_cdata
 !
   implicit none
 !
@@ -22,7 +21,7 @@ module Particles_radius
 !
   contains
 !***********************************************************************
-    subroutine register_particles_radius()
+    subroutine register_particles_radius
 !
 !  Set up indices for access to the fp and dfp arrays
 !
@@ -65,7 +64,7 @@ module Particles_radius
 !
     endsubroutine set_particle_radius
 !***********************************************************************
-    subroutine pencil_criteria_par_radius()
+    subroutine pencil_criteria_par_radius
 !
 !  All pencils that the Particles_radius module depends on are specified here.
 !

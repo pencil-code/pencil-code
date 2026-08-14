@@ -18,7 +18,7 @@ module Particles_adaptation
 !
   use Cdata
   use General, only: keep_compiler_quiet
-  use Messages
+  use Messages, only: svn_id
 !
   implicit none
 !

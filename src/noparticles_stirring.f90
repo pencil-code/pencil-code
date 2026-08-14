@@ -14,9 +14,8 @@
 !***************************************************************
 module Particles_stirring
 !
-  use Cdata
+  use Cparam
   use General, only: keep_compiler_quiet
-  use Particles_cdata
 !
   implicit none
 !
@@ -24,7 +23,7 @@ module Particles_stirring
 !
   contains
 !***********************************************************************
-    subroutine register_particles_stirring()
+    subroutine register_particles_stirring
 !
     endsubroutine register_particles_stirring
 !***********************************************************************

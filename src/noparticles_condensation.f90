@@ -14,9 +14,8 @@
 !***************************************************************
 module Particles_condensation
 !
-  use Cdata
-  use Messages
-  use Particles_cdata
+  use Cparam
+  use Messages, only: svn_id
   use General, only: keep_compiler_quiet
 !
   implicit none
@@ -30,8 +29,6 @@ module Particles_condensation
 !  18-jun-17/anders: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-!
-!  Fatal error if Particle_radius module not used.
 !
       call keep_compiler_quiet(f)
 !
