@@ -6064,16 +6064,14 @@ if (notanumber(source(:,is,js))) print*, 'source(:,is,js): iproc,j=', iproc, ipr
 !  Check if argument is invalid (sNaN, qNaN, +Inf, or -Inf).
 !
 !  21-Oct-2025/PABourdin: coded
+!  15-Aug-2026/TP: changed to use functions rather than eq comparisons
+!                  since was broken on LUMI after latest system update.
 !
-      use ieee_arithmetic
-!
+      use ieee_arithmetic, only: ieee_is_nan, ieee_is_finite
+
       real, intent(in) :: data
-!
-      type(ieee_class_type) :: state
-!
-      state = ieee_class(data)
-      is_invalid = (state == IEEE_NEGATIVE_INF) .or. (state == IEEE_POSITIVE_INF) &
-          .or. (state == IEEE_SIGNALING_NAN) .or. (state == IEEE_QUIET_NAN)
+
+      is_invalid = ieee_is_nan(data) .or. .not. ieee_is_finite(data)
 !
     endfunction is_invalid
 !***********************************************************************
