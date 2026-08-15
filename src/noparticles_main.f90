@@ -5,8 +5,7 @@
 !***********************************************************************
 module Particles_main
 !
-  use Cparam
-  use General, only: keep_compiler_quiet
+  use Quiet
 !
   implicit none
 !

@@ -13,8 +13,7 @@
 !***************************************************************
 module Particles_adsorbed
 
-  use Cparam
-  use General, only: keep_compiler_quiet
+  use Quiet
 
   implicit none
 
@@ -26,7 +25,7 @@ module Particles_adsorbed
 !
 !  28-aug-14/jonas+nils: coded
 
-  subroutine register_particles_ads()
+  subroutine register_particles_ads
   endsubroutine register_particles_ads
 ! ******************************************************************************
 !  Perform any post-parameter-read initialization i.e. calculate derived
@@ -59,7 +58,7 @@ module Particles_adsorbed
 !
 !  28-aug-14/jonas+nils: coded
 
-  subroutine pencil_criteria_par_ads()
+  subroutine pencil_criteria_par_ads
   endsubroutine pencil_criteria_par_ads
 ! ******************************************************************************
   subroutine dpads_dt_pencil(f,df,fp,dfp,p,ineargrid)
@@ -149,7 +148,7 @@ module Particles_adsorbed
     call keep_compiler_quiet(f)
   endsubroutine particles_ads_prepencil_calc
 ! ******************************************************************************
-  subroutine particles_adsorbed_clean_up()
+  subroutine particles_adsorbed_clean_up
   endsubroutine particles_adsorbed_clean_up
 ! ******************************************************************************
 endmodule Particles_adsorbed

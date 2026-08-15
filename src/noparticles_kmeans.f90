@@ -5,8 +5,8 @@
 !
 module Particles_kmeans
 !
-  use General
-  use Messages, only: svn_id
+  use Quiet
+  use Messages, only: fatal_error
 !
   contains
 !***********************************************************************

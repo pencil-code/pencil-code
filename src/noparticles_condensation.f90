@@ -1,3 +1,4 @@
+! $Id$
 !
 !  This modules takes care of condensation / evaporation or deposition /
 !  sublimation of superparticles
@@ -14,9 +15,7 @@
 !***************************************************************
 module Particles_condensation
 !
-  use Cparam
-  use Messages, only: svn_id
-  use General, only: keep_compiler_quiet
+  use Quiet
 !
   implicit none
 !

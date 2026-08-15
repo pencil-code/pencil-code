@@ -15,9 +15,7 @@
 !***************************************************************
 module Particles_collisions
 !
-  use Cparam
-  use General, only: keep_compiler_quiet
-  use Messages, only: svn_id
+  use Quiet
 !
   implicit none
 !

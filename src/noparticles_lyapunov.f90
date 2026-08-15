@@ -13,9 +13,7 @@
 !***************************************************************
 module Particles_lyapunov
 !
-  use Cparam
-  use Messages, only: svn_id
-  use General, only: keep_compiler_quiet
+  use Quiet
 !
   implicit none
 !
@@ -28,9 +26,6 @@ module Particles_lyapunov
 !  Set up indices for access to the fp and dfp arrays
 !
 !  May-16/dhruba: coded
-!
-      call svn_id( &
-          "$Id$")
 !
     endsubroutine register_particles_lyapunov
 !***********************************************************************

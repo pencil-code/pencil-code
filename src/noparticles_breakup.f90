@@ -12,8 +12,7 @@
 !***************************************************************
 module Particles_breakup
 !
-  use Cparam
-  use General, only: keep_compiler_quiet
+  use Quiet
 !
   implicit none
 !
@@ -21,7 +20,7 @@ module Particles_breakup
 !
 contains
 !***********************************************************************
-    subroutine register_particles_breakup()
+    subroutine register_particles_breakup
     endsubroutine register_particles_breakup
 !***********************************************************************
     subroutine initialize_particles_breakup(f)

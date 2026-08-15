@@ -9,8 +9,7 @@
 !***************************************************************
 module Particles_sink
 !
-  use Cparam
-  use General, only: keep_compiler_quiet
+  use Quiet
 !
   implicit none
 !

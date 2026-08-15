@@ -1,6 +1,5 @@
 ! $Id$
 !
-!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 !
 ! Declare (for generation of cparam.inc) the number of f array
@@ -11,9 +10,7 @@
 !***************************************************************
 module Particles_tetrad
 !
-  use Cparam
-  use Messages, only: svn_id
-  use General, only: keep_compiler_quiet
+  use Quiet
 !
   implicit none
 !
@@ -26,9 +23,6 @@ module Particles_tetrad
 !  Set up indices for access to the fp and dfp arrays
 !
 !  May-16/dhruba: coded
-!
-      call svn_id( &
-          "$Id$")
 !
     endsubroutine register_particles_tetrad
 !***********************************************************************

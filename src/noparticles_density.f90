@@ -13,9 +13,7 @@
 !***************************************************************
 module Particles_density
 !
-  use Cparam
-  use General, only: keep_compiler_quiet
-  use Messages, only: svn_id
+  use Quiet
 !
   implicit none
 !

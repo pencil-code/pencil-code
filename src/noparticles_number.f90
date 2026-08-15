@@ -12,8 +12,7 @@
 !***************************************************************
 module Particles_number
 !
-  use Cparam
-  use General, only: keep_compiler_quiet
+  use Quiet
 !
   implicit none
 !

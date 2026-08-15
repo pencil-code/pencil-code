@@ -13,8 +13,7 @@
 !***************************************************************
 module Particles_surfspec
 
-  use Cparam
-  use General, only: keep_compiler_quiet
+  use Quiet
 
   implicit none
 
