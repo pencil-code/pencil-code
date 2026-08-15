@@ -99,7 +99,8 @@ module Special
   real :: relhel_phi=0.
   real :: ddotam, a2rhopm, a2rhopm_all, a2rhom, a4rhom, a2rhom_all, a4rhom_all
   real :: rhom, rhom_all, rhokinm, rhokinm_all
-  real :: edotbm, edotbm_all, e2m, e2m_all, b2m, b2m_all, a2rhophim, a4rhophim, a2rhophim_all, a4rhophim_all
+  real :: edotbm, edotbm_all, e2m, e2m_all, b2m, b2m_all
+  real :: a2rhophim, a4rhophim, a4rhophi2m, a2rhophim_all, a4rhophim_all, a4rhophi2m_all
   real :: a2rhopphim, a2rhopphim_all
   real :: sigE1m_all_nonaver=0., sigB1m_all_nonaver=0., sigEm_all=0., sigBm_all=0.
   real :: sigEm_all_diagnos,sigBm_all_diagnos
@@ -122,6 +123,7 @@ module Special
   real :: lnascale_reheating=impossible !PAR_DOC: value of lna when reheating has started
   real :: dlnascale_reheating=0.  !PAR_DOC: width in lna over which reheating should occur
   real :: lg_Gamma_phi_fraction_firststep=1e-3  !PAR_DOC: lg of Gamma phi fraction at firststep
+  real :: Gamma_phi_damping_prefactor=1.  !PAR_DOC: Gamma phi damping prefactor
   real, pointer :: sigE_ceiling   !PAR_DOC: sigE ceiling
   real, pointer :: sigE_const_value !PAR_DOC: constant value for sigE
 !
@@ -223,7 +225,8 @@ module Special
       lsigE_const_ifnot_lsolve_for_phi, lsigE_const, lsigE_const_if_lsolve_for_phi, &
       lold_lrho_chi_dtconstraint, linclude_rhokin_in_a2rho, &
       linclude_rho_EB_in_wstate, linclude_rho_EBK_in_wstate, &
-      lswitch_toMHD_at_lna, lna_switch_toMHD, lGamma_phi_damping, &
+      lswitch_toMHD_at_lna, lna_switch_toMHD, &
+      lGamma_phi_damping, Gamma_phi_damping_prefactor, &
       dlnascale_reheating, lg_Gamma_phi_fraction_firststep
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
@@ -243,6 +246,7 @@ module Special
   integer :: idiag_a2rhom=0     ! DIAG_DOC: $a^2 \rho$
   integer :: idiag_a2rhophim=0  ! DIAG_DOC: $a^2 \rho_\phi$
   integer :: idiag_a4rhophim=0  ! DIAG_DOC: $a^4 \rho_\phi$
+  integer :: idiag_a4rhophi2m=0 ! DIAG_DOC: $a^4\left<\rho_\phi^2\right>$
   integer :: idiag_a2rhogphim=0 ! DIAG_DOC: $0.5 <grad \phi^2>$
   integer :: idiag_rho_chi=0    ! DIAG_DOC: $\rho_\chi$
   integer :: idiag_rho_rad=0    ! DIAG_DOC: $\rho_\mathrm{rad}$
@@ -261,7 +265,8 @@ module Special
   integer :: enum_vprime_choice = 0
   integer :: enum_echarge_type = 0
 
-  real :: a2rhom_all_diagnos, a2rhopm_all_diagnos, a2rhophim_all_diagnos, a4rhophim_all_diagnos
+  real :: a2rhom_all_diagnos, a2rhopm_all_diagnos, a2rhophim_all_diagnos
+  real :: a4rhophim_all_diagnos, a4rhophi2m_all_diagnos
   real :: a2rhogphim_all_diagnos, ddotam_all_diagnos
 
   contains
@@ -605,8 +610,8 @@ module Special
 !
 !  Density pencil needed for perturbative reheating.
 !
-      if (lrho_chi_inhom .and. lheating .and. ldensity .and. .not. ldensity_nolog) &
-        lpenc_requested(i_rho1)=.true.
+   !  if (lrho_chi_inhom .and. lheating .and. ldensity .and. .not. ldensity_nolog) &
+   !    lpenc_requested(i_rho1)=.true.
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -818,7 +823,8 @@ module Special
             df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+Gamma_phi_rho_rhs*p%rho1
           endif
           if (lhydro .and. lGamma_phi_damping) then
-            call multvs(p%uu,Gamma_phi_rho_rhs,tmpv)
+            call multvs(p%uu,Gamma_phi_damping_prefactor*Gamma_phi_rho_rhs,tmpv)
+            !call multvs(p%uu,Gamma_phi_rho_rhs,tmpv)
             df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-tmpv
           endif
         else
@@ -1087,6 +1093,7 @@ module Special
         call save_name(a2rhom_all_diagnos,idiag_a2rhom)
         call save_name(a2rhophim_all_diagnos,idiag_a2rhophim)
         call save_name(a4rhophim_all_diagnos,idiag_a4rhophim)
+        call save_name(a4rhophi2m_all_diagnos,idiag_a4rhophi2m)
         call save_name(a2rhogphim_all_diagnos,idiag_a2rhogphim)
         call save_name(rho_chi,idiag_rho_chi)
         call save_name(rho_rad,idiag_rho_rad)
@@ -1192,7 +1199,7 @@ module Special
         idiag_phim=0; idiag_phi2m=0; idiag_phirms=0
         idiag_dphim=0; idiag_dphi2m=0; idiag_dphirms=0; idiag_dtphi=0
         idiag_Hscriptm=0; idiag_lnam=0; idiag_ascale=0; idiag_ddotam=0
-        idiag_a2rhopm=0; idiag_a2rhom=0; idiag_a4rhophim=0; idiag_a2rhophim=0
+        idiag_a2rhopm=0; idiag_a2rhom=0; idiag_a4rhophim=0; idiag_a4rhophi2m=0; idiag_a2rhophim=0
         idiag_a2rhogphim=0; idiag_rho_chi=0; idiag_rho_rad=0; idiag_sigEma=0
         idiag_sigBma=0; idiag_count_eb0a=0; idiag_heating=0; idiag_wstate=0
         idiag_Gamma_phi=0; idiag_Gam_phi=0; idiag_dtGphirho=0
@@ -1215,6 +1222,7 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'a2rhom',idiag_a2rhom)
         call parse_name(iname,cname(iname),cform(iname),'a2rhophim',idiag_a2rhophim)
         call parse_name(iname,cname(iname),cform(iname),'a4rhophim',idiag_a4rhophim)
+        call parse_name(iname,cname(iname),cform(iname),'a4rhophi2m',idiag_a4rhophi2m)
         call parse_name(iname,cname(iname),cform(iname),'a2rhogphim',idiag_a2rhogphim)
         call parse_name(iname,cname(iname),cform(iname),'rho_chi',idiag_rho_chi)
         call parse_name(iname,cname(iname),cform(iname),'rho_rad',idiag_rho_rad)
@@ -1451,7 +1459,7 @@ module Special
 !  In the following loop, go through all penciles and add up results to get e2m, etc.
 !
       ddotam=0.; a2rhopm=0.; a2rhom=0.; rhom=0; rhokinm=0; e2m=0; b2m=0; edotbm=0
-      a2rhophim=0.; a4rhophim=0.; a2rhopphim=0.; a2rhogphim=0.; sigE1m=0.; sigB1m=0.
+      a2rhophim=0.; a4rhophim=0.; a4rhophi2m=0.; a2rhopphim=0.; a2rhogphim=0.; sigE1m=0.; sigB1m=0.
 !
 !  In the following, sum over all mn pencils.
 !
@@ -1466,6 +1474,7 @@ module Special
       a2rhom=a2rhom/nwgrid
       a2rhophim=a2rhophim/nwgrid
       a4rhophim=a4rhophim/nwgrid
+      a4rhophi2m=a4rhophi2m/nwgrid
       a2rhopphim=a2rhopphim/nwgrid
       a2rhogphim=a2rhogphim/nwgrid
       ddotam=(four_pi_over_three/nwgrid)*ddotam
@@ -1510,6 +1519,7 @@ module Special
       call mpiallreduce_sum(a2rhom,a2rhom_all)
       call mpireduce_sum(a2rhophim,a2rhophim_all)
       call mpireduce_sum(a4rhophim,a4rhophim_all)
+      call mpireduce_sum(a4rhophi2m,a4rhophi2m_all)
       call mpireduce_sum(a2rhopphim,a2rhopphim_all)
       call mpireduce_sum(a2rhogphim,a2rhogphim_all)
       call mpiallreduce_sum(ddotam,ddotam_all)
@@ -1517,6 +1527,7 @@ module Special
       a2rhopm_all_diagnos    = a2rhopm_all
       a2rhophim_all_diagnos  = a2rhophim_all
       a4rhophim_all_diagnos  = a4rhophim_all
+      a4rhophi2m_all_diagnos = a4rhophi2m_all
       a2rhogphim_all_diagnos = a2rhogphim_all
       ddotam_all_diagnos     = ddotam_all
 !
@@ -1540,6 +1551,7 @@ module Special
       call mpibcast_real(b2m_all)
       call mpibcast_real(a2rhophim_all)
       call mpibcast_real(a4rhophim_all)
+      call mpibcast_real(a4rhophi2m_all)
       call mpibcast_real(a2rhopphim_all)
 !
 !  Compute rhom, which is needed for wstate.
@@ -1912,6 +1924,7 @@ module Special
         a2rhopm=a2rhopm+sum(a2rhop)
       a2rhophim=a2rhophim+sum(a2rhophi)
       a4rhophim=a4rhophim+sum(a4rhophi)
+      a4rhophi2m=a4rhophi2m+sum(a4rhophi**2)
       a2rhopphim=a2rhopphim+sum(a2rhopphi)
 !
 !  Compute electromagnetic averages.
