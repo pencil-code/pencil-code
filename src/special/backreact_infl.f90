@@ -2123,6 +2123,7 @@ module Special
     call copy_addr(cdt_gamma_phi2,p_par(56))
 
     call copy_addr(lgamma_phi_damping,p_par(57)) ! bool
+    call copy_addr(gamma_phi_damping_prefactor,p_par(58))
     endsubroutine pushpars2c
 !********************************************************************
 !********************************************************************
