@@ -9,5 +9,5 @@
             pushpars2c,ltest_bcs,ltest_rhs,it_test_rhs, &
             train_gpu, infer_gpu, TF_create_model, tau_snapshots, TF_load_model, TF_load_model_checkpoint, &
             TF_save_model, TF_save_checkpoint
-
+  integer, public, parameter :: n_gpu_reduced_vars = 20
   private

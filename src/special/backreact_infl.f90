@@ -2000,9 +2000,8 @@ module Special
 !  The sums needed for ODE and PDE advancement are computed on the GPUs in before_boundary.
 !  Then we need them back on the host to advance the ODEs which this function does.
 !
-      use GPU, only: get_gpu_reduced_vars
-
-      real, dimension(20) :: tmp
+      use GPU, only: get_gpu_reduced_vars,n_gpu_reduced_vars
+      real, dimension(n_gpu_reduced_vars) :: tmp
 
       call get_gpu_reduced_vars(tmp)
 

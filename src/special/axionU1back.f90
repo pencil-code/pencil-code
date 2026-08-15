@@ -855,8 +855,8 @@ module Special
 ! Subroutines below needed only for GPUs, if you do not care about GPUs don't worry about them
 !***********************************************************************
     subroutine read_sums_from_GPU
-      use GPU, only: get_gpu_reduced_vars
-      real, dimension(20) :: tmp
+      use GPU, only: get_gpu_reduced_vars,n_gpu_reduced_vars
+      real, dimension(n_gpu_reduced_vars) :: tmp
       call get_gpu_reduced_vars(tmp)
       edotb_sum = tmp(1)
       rhoe      = tmp(2)

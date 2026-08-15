@@ -2037,8 +2037,9 @@ module Special
 !      that no one would bother. 
 !      If you think the GPU stuff is annoying and gets in the way for no benefit I can remove it.
 
-      use GPU, only: get_gpu_reduced_vars
-      real, dimension(20) :: tmp
+      use GPU, only: get_gpu_reduced_vars,n_gpu_reduced_vars
+      real, dimension(n_gpu_reduced_vars) :: tmp
+
       call get_gpu_reduced_vars(tmp)
       grand_sum  = tmp(1)
       dgrant_sum = tmp(2)
