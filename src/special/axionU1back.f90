@@ -856,7 +856,7 @@ module Special
 !***********************************************************************
     subroutine read_sums_from_GPU
       use GPU, only: get_gpu_reduced_vars
-      real, dimension(12) :: tmp
+      real, dimension(20) :: tmp
       call get_gpu_reduced_vars(tmp)
       edotb_sum = tmp(1)
       rhoe      = tmp(2)
