@@ -38,7 +38,7 @@ module Special
 ! input parameters
 !
   real, dimension (ninit) :: amplee=0.0 !, kx_aa=1.0, ky_aa=1.0, kz_aa=1.0
-  real, dimension (nx) :: etaSchw=0., diffus_etaSchw=0., dtsrc_sigE=0.
+  real, dimension (nx) :: etaSchw=0., etaArn=0., diffus_etaSchw=0., dtsrc_sigE=0.
   real :: alpf=0., alpfpsi=0.
   real :: ampl_ex=0.0, ampl_ey=0.0, ampl_ez=0.0, ampl_a0=0.0
   real :: kx_ex=0.0, kx_ey=0.0, kx_ez=0.0
@@ -52,7 +52,7 @@ module Special
   real :: ampla0=0.0, initpower_a0=0.0, initpower2_a0=0.0
   real :: cutoff_a0=0.0, ncutoff_a0=0.0, kpeak_a0=0.0
   real :: relhel_a0=0.0, kgaussian_a0=0.0, eta_ee=0.0
-  real :: sigE_prefactor=1., sigB_prefactor=1.
+  real :: sigE_prefactor=1., sigB_prefactor=1., sigE_Arnold_prefactor=0.
   real :: weight_longitudinalE=2.0, mass_chi=0.
   real :: coupl_gy=.345 ! electroweak SU(2) x U(1) coupling of Higgs to U(1)
   real :: je_heating_factor=1.
@@ -61,6 +61,7 @@ module Special
   logical, pointer :: lwaterfall
   logical, pointer :: lrelativistic_eos
   logical, pointer :: lsigE_const
+  logical, pointer :: lsolve_for_phi
   real, pointer :: eta, Hscript, echarge, sigEm_all, sigBm_all
   integer :: iGamma=0, ia0=0, idiva_name=0, ieedot=0, iedotx=0, iedoty=0, iedotz=0
   integer :: idivE=0, isigE=0, isigB=0
@@ -122,6 +123,7 @@ module Special
   logical :: llate_reset_el_pencil=.false.  !PAR_DOC: late reset of el pencil, should probably be true in future.
   logical :: linclude_dphiB_in_MHD=.false.  !PAR_DOC: include dphi*B in MHD approximation
   logical :: linclude_gphixE_in_MHD=.false.  !PAR_DOC: include gphixE in MHD approximation
+  logical :: lreplace_Schwinger_by_Arnold=.false.  !PAR_DOC: replace Schwinger by Arnold conductivity
   character (len=labellen) :: aderiv_scaling='table'
 !
   namelist /special_run_pars/ &
@@ -130,7 +132,7 @@ module Special
     eta_ee, lcurlyA, beta_inflation, sigEmax, sigE_ceiling, &
     weight_longitudinalE, lswitch_off_divJ, lswitch_off_Gamma, &
     lnoncollinear_EB, lnoncollinear_EB_aver, luse_scale_factor_in_sigma, &
-    lcollinear_EB, lcollinear_EB_aver, sigE_prefactor, sigB_prefactor, &
+    lcollinear_EB, lcollinear_EB_aver, sigE_prefactor, sigB_prefactor, sigE_Arnold_prefactor, &
     reinitialize_ee, initee, rescale_ee, lmass_suppression, mass_chi, &
     lallow_bprime_zero, lapply_Gamma_corr, coupl_gy, lpsi_hom, alpfpsi, &
     loverride_c_light, ldensity_add_je_heating, je_heating_factor, &
@@ -138,7 +140,7 @@ module Special
     lohmic_heating_ee, lohmic_heating_justee, sigE_const_value, &
     ladvance_ee, eta_given, ldt_disp_current, cdt_sigE, &
     lresistive_gauge_disp, etaSchw_max, llate_reset_el_pencil, &
-    linclude_dphiB_in_MHD, linclude_gphixE_in_MHD, &
+    linclude_dphiB_in_MHD, linclude_gphixE_in_MHD, lreplace_Schwinger_by_Arnold, &
     lcorrect_sign_adphiB_term, lignore_adphiB_term_in_MHD_current
 !
 ! Declare any index variables necessary for main or
@@ -176,6 +178,7 @@ module Special
   integer :: idiag_eym=0        ! DIAG_DOC: $\left<E_y\right>$
   integer :: idiag_ezm=0        ! DIAG_DOC: $\left<E_z\right>$
   integer :: idiag_etaSchw=0    ! DIAG_DOC: $1/\left<\sigma_\mathrm{E}\right>$
+  integer :: idiag_etaArn=0     ! DIAG_DOC: $1/\left<\sigma_\mathrm{E}\right>_\mathrm{Arnold}$
   integer :: idiag_dteta=0      ! DIAG_DOC: $dt/cdtv$
   integer :: idiag_dtsigE=0     ! DIAG_DOC: $dt/cdt\_sigE$
   integer :: idiag_sigEm=0      ! DIAG_DOC: $\left<\sigma_\mathrm{E}\right>$
@@ -334,6 +337,7 @@ module Special
         call get_shared_variable('sigEm_all', sigEm_all)
         call get_shared_variable('sigBm_all', sigBm_all)
         call get_shared_variable('lohm_evolve', lohm_evolve)
+        call get_shared_variable('lsolve_for_phi', lsolve_for_phi)
       else
         if (.not.associated(Hscript)) allocate(Hscript,echarge,sigEm_all,sigBm_all)
         Hscript=0.
@@ -623,6 +627,8 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       real :: conductivity
+      real :: H_arnold, T_arnold, sigE_arnold
+      real, parameter :: C_arnold=12., e_arnold=0.303, g_e_arnold=106.75
 !
       real, dimension (nx,3) :: tmpv, E_MHD
       real, dimension (nx) :: tmp, mass_suppression_fact, gphi2, prefactor
@@ -776,6 +782,29 @@ module Special
           etaSchw=eta_given
         endif
 !
+!  Compute Arnold conductivity, comoving, so multiply by ascale.
+!
+        H_arnold=Hscript/ascale
+        T_arnold=(3*H_arnold**2/((8.*pi)*(pi**2/30.)*g_e_arnold))**.25
+        sigE_arnold=ascale*C_arnold*T_arnold/(e_arnold**2*log(1./e_arnold))
+        if (eta_given==impossible) then
+          etaArn=1./sigE_arnold
+        else
+          etaArn=eta_given
+        endif
+!
+!  Possibility to replace Schwinger expression by Arnold expression.
+!
+        if (lreplace_Schwinger_by_Arnold .and. .not. lsolve_for_phi) then
+          if (sigE_Arnold_prefactor==0.) then
+            p%sigE=sigE_arnold
+            etaSchw=etaArn
+          else
+            p%sigE=sigE_arnold*sigE_Arnold_prefactor
+            etaSchw=etaArn/sigE_Arnold_prefactor
+          endif
+        endif
+!
 !  Now compute current, using any of the 4 expressions above.
 !  This also sets the auxiliary array (l1:l2,m,n,ijx:ijz), if needed.
 !
@@ -793,6 +822,8 @@ module Special
           else
 !
 !  0 = curlB - mu0*J, but ignore mu0 for now.
+!  Usually, lignore_adphiB_term_in_MHD_current=F, so -alpf*p%infl_dphi,p%bb is included.
+!  Note that the current density does not explicitly depend on sigE or sigB.
 !
             if (lignore_adphiB_term_in_MHD_current) then
               p%jj_ohm=p%curlb
@@ -813,7 +844,7 @@ module Special
 !
           if (.not. ladvance_ee) then
             if (lnoncollinear_EB .or. lnoncollinear_EB_aver) then
-              call fatal_error('calc_pencils_special','MHD works only for collinear case')
+              call fatal_error('calc_pencils_special','MHD currently works only for the collinear case')
             else
               if (lresistive_gauge_ee) then
                 call multsv_mn(-etaSchw,p%del2a,tmpv)
@@ -1439,6 +1470,7 @@ module Special
       call sum_mn_name(p%el(:,2),idiag_eym)
       call sum_mn_name(p%el(:,3),idiag_ezm)
       call sum_mn_name(etaSchw,idiag_etaSchw)
+      call sum_mn_name(etaArn,idiag_etaArn)
       call sum_mn_name(p%sigE,idiag_sigEm)
       call sum_mn_name(p%sigB,idiag_sigBm)
       call sum_mn_name(p%eb,idiag_ebm)
@@ -1621,7 +1653,7 @@ module Special
         idiag_mfpf=0; idiag_fppf=0; idiag_afact=0
         idiag_rhoerms=0; idiag_divErms=0; idiag_divJrms=0
         idiag_rhoem=0; idiag_count_eb0=0; idiag_divEm=0; idiag_divJm=0; idiag_constrainteqn=0
-        idiag_dteta=0; idiag_dtsigE=0; idiag_etaSchw=0
+        idiag_dteta=0; idiag_dtsigE=0; idiag_etaSchw=0; idiag_etaArn=0
         idiag_sigEm=0; idiag_sigBm=0; idiag_sigErms=0; idiag_sigBrms=0
         idiag_ebm=0; idiag_Johmrms=0; idiag_J2sigEm=0; idiag_curlBrms=0; idiag_BdEdtm=0
         idiag_adphiBm=0; idiag_adphiB2m=0; idiag_adphiB21m=0; idiag_adphiJBm=0;
@@ -1659,6 +1691,7 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'rhoem',idiag_rhoem)
         call parse_name(iname,cname(iname),cform(iname),'count_eb0',idiag_count_eb0)
         call parse_name(iname,cname(iname),cform(iname),'etaSchw',idiag_etaSchw)
+        call parse_name(iname,cname(iname),cform(iname),'etaArn',idiag_etaArn)
         call parse_name(iname,cname(iname),cform(iname),'dtsigE',idiag_dtsigE)
         call parse_name(iname,cname(iname),cform(iname),'dteta',idiag_dteta)
         call parse_name(iname,cname(iname),cform(iname),'sigEm',idiag_sigEm)

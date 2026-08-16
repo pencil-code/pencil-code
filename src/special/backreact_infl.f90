@@ -308,6 +308,7 @@ module Special
       call put_shared_variable('sigBm_all',sigBm_all)
       call put_shared_variable('echarge',echarge)
       call put_shared_variable('lrho_chi',lrho_chi)
+      call put_shared_variable('lsolve_for_phi',lsolve_for_phi)
       !print*,'AXEL1: lheating_always=',lheating_always
 !
     endsubroutine register_special
