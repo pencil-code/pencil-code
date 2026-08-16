@@ -1906,6 +1906,8 @@ module Special
       call copy_addr(lignore_adphib_term_in_mhd_current,p_par(63)) ! bool
       call copy_addr(idiag_bcurlbm,p_par(64)) ! int
 
+    call copy_addr(sige_arnold_prefactor,p_par(65))
+    call copy_addr(lreplace_schwinger_by_arnold,p_par(66)) ! bool
     endsubroutine pushpars2c
 !***********************************************************************
 !********************************************************************
