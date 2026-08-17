@@ -50,8 +50,8 @@ void tf_save_model_c_api(const char*, const char*);
 void tf_load_model_c_api(const char*, const char*);
 void tf_load_model_checkpoint_c_api(const char*, const char*);
 void tf_create_model_c_api(const char*, const char*, FINT, bool);
-void torch_train_c_api(REAL*, int, double); 
-void torch_infer_c_api(int);
+void torch_train_c_api(const char*, REAL*, int, double); 
+void torch_infer_c_api(const char*, int);
 void print_debug();
 
 
@@ -69,14 +69,14 @@ typedef struct int3{
 } int3;
 
 /* ---------------------------------------------------------------------- */
-void FTNIZE(torchtrain_c)(REAL* loss_val, FINT* itsub, double* t)
+void FTNIZE(tf_train_c)(const char *model_name, REAL* loss_val, FINT* itsub, double* t)
 {
-	torch_train_c_api(loss_val, *itsub, *t);
+	tf_train_c_api(model_name, loss_val, *itsub, *t);
 }
 /* ---------------------------------------------------------------------- */
-void FTNIZE(torchinfer_c)(FINT* itsub)
+void FTNIZE(tf_infer_c)(const char *model_name, FINT* itsub)
 {
-	torch_infer_c_api(*itsub);
+	tf_infer_c_api(model_name, *itsub);
 }
 /* ---------------------------------------------------------------------- */
 void FTNIZE(tf_create_model_c)(const char *model_name, const char *config_file_path, FINT* comm_fint, FINT* lmpicomm){

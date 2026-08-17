@@ -1104,7 +1104,7 @@ void denormalize(std::string filename, AcRealSymmetricTensor &tau_means, AcRealS
 	}
 }
 /***********************************************************************************************/
-extern "C" void torch_infer_c_api(int itsub)
+extern "C" void tf_infer_c_api(const char* name, int itsub)
 {	
 #if LTRAINING
 	#include "user_constants.h"
@@ -1150,7 +1150,7 @@ extern "C" void torch_infer_c_api(int itsub)
 
 	 acGridHaloExchange();
 
-   torch_infer_multiarg_CAPI((int[]){mz, my, mx}, inputs, outputs,"stationary");
+   torch_infer_multiarg_CAPI((int[]){mz, my, mx}, inputs, outputs, name);
   }
 
 	
@@ -1162,7 +1162,7 @@ extern "C" void torch_infer_c_api(int itsub)
 #endif
 }
 /***********************************************************************************************/
-extern "C" void torch_train_c_api(AcReal *loss_val, int itsub, double t) {
+extern "C" void tf_train_c_api(const char* name, AcReal *loss_val, int itsub, double t) {
 #if LTRAINING
   #include "user_constants.h"
   #include <stdlib.h>
@@ -1221,10 +1221,10 @@ extern "C" void torch_train_c_api(AcReal *loss_val, int itsub, double t) {
     outputs.emplace_back(output, 6);
 
     acGridHaloExchange();
-    torch_train_multiarg_CAPI((int[]){mz, my, mx}, inputs, outputs, loss_val,"stationary");
+    torch_train_multiarg_CAPI((int[]){mz, my, mx}, inputs, outputs, loss_val,name);
     train_loss.push_back(*loss_val);
     train_nts.push_back(it); 
-    torch_wandb_log("stationary", "training_loss", it, *loss_val);
+    torch_wandb_log(name, "training_loss", it, *loss_val);
   }
   else if(AC_ltrain_mag__mod__training){
     /*

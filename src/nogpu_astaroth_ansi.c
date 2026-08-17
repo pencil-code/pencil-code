@@ -81,11 +81,11 @@ void FTNIZE(gpu_prepare_for_first_substep_c)(double* t)
 {
 }
 /* ------------------------------------------------------------------- */
-void FTNIZE(torchinfer_c)(FINT* itsub)
+void FTNIZE(tf_infer_c)(const char *model_name, FINT* itsub)
 {
 }
 /* ------------------------------------------------------------------- */
-void FTNIZE(torchtrain_c)(REAL *loss, FINT* itsub, double *t)
+void FTNIZE(tf_train_c)(const char *model_name, REAL *loss, FINT* itsub, double *t)
 {
 }
 /* ------------------------------------------------------------------- */

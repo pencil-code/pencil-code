@@ -39,8 +39,8 @@ module GPU
   external split_update_gpu_c
 
   ! Torchfort
-  external torchtrain_c 
-  external torchinfer_c
+  external tf_train_c 
+  external tf_infer_c
   external tf_create_model_c
   external print_snapshot_c
   external tf_load_model_c
@@ -118,22 +118,25 @@ module GPU
 
 contains
 !***********************************************************************
-    subroutine train_gpu(loss, itsub, t)
+    subroutine TF_train_gpu(model_name, loss, itsub, t)
   
       real :: loss
       integer :: itsub 
       real(KIND=rkind8), intent(IN) :: t
+      character(len=*), intent(in) :: model_name
   
-      call torchtrain_c(loss, itsub, t)
+      call tf_train_c(trim(model_name)//c_null_char, loss, itsub, t)
   
-    endsubroutine train_gpu 
+    endsubroutine TF_train_gpu 
 !***********************************************************************
-    subroutine infer_gpu(flag)
+    subroutine TF_infer_gpu(model_name, flag)
   
       integer :: flag
-      call torchinfer_c(flag)
+      character(len=*), intent(in) :: model_name
+
+      call tf_infer_c(trim(model_name)//c_null_char, flag)
   
-    endsubroutine infer_gpu
+    endsubroutine TF_infer_gpu
 !***********************************************************************
     subroutine TF_create_model(model_name, config_file_path, lmpicomm)
   

@@ -261,7 +261,7 @@
 !***************************************************************
     subroutine infer(f)
     
-      use Gpu, only: get_ptr_gpu_training, infer_gpu
+      use Gpu, only: get_ptr_gpu_training, TF_infer_gpu
       use Sub, only: smooth
       use Mpicomm, only: mpiwtime
 
@@ -285,7 +285,7 @@
         !                                   get_ptr_gpu_training(itau_hydroxx,itau_hydrozz))
 
         start_time = mpiwtime()
-        call infer_gpu(itsub)
+        call TF_infer_gpu(trim(model), itsub)
         end_time = mpiwtime()
         inference_time = inference_time + end_time-start_time
 
@@ -347,7 +347,7 @@
 !***************************************************************
     subroutine train(f)
    
-      use Gpu, only: get_ptr_gpu_training, train_gpu
+      use Gpu, only: get_ptr_gpu_training, TF_train_gpu
       use Mpicomm, only: mpiwtime
 
       real, contiguous,dimension(:,:,:,:) :: f
@@ -366,7 +366,7 @@
         !istat = torchfort_train(model, get_ptr_gpu_training(iux,iuz), &
         !                               get_ptr_gpu_training(itau_hydroxx,itau_hydrozz), train_loss)
         start_time = mpiwtime()
-        call train_gpu(train_loss, itsub, t)
+        call TF_train_gpu(trim(model), train_loss, itsub, t)
         end_time = mpiwtime()
         training_time = training_time + end_time-start_time
       else
