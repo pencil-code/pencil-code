@@ -19,7 +19,7 @@
 module Particles_diagnos_state
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
   use Particles_cdata
   use Particles_mpicomm
@@ -44,7 +44,7 @@ module Particles_diagnos_state
 !
 !  Set up indices for access to the fp and dfp arrays
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
       call append_npvar('ipss',ipss)  ! particle state

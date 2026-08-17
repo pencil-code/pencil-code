@@ -19,7 +19,7 @@
 module Particles_adaptation
 !
   use Cdata
-  use General, only: keep_compiler_quiet, notanumber
+  use Quiet
   use Messages
   use Particles_cdata
   use Particles_map
@@ -487,7 +487,7 @@ module Particles_adaptation
 !
 !  14-may-13/ccyang: coded
 !
-      use General, only: random_number_wrapper
+      use General, only: random_number_wrapper, notanumber
 !
       real, intent(in) :: mean, width
       real, dimension(:), intent(out) :: a

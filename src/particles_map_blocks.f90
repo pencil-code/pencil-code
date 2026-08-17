@@ -32,7 +32,7 @@
 module Particles_map
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Mpicomm
   use Messages
   use Particles_cdata

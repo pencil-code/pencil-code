@@ -11,7 +11,7 @@
 module Particles_potential
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
   use Particles_cdata
   use Particles_sub
@@ -82,7 +82,7 @@ module Particles_potential
 !
 !  Set up indices for access to the fp and dfp arrays
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 
     endsubroutine register_particles_potential

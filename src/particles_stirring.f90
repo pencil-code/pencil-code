@@ -15,7 +15,7 @@
 module Particles_stirring
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
   use Particles_cdata
   use Particles_sub
@@ -41,7 +41,7 @@ module Particles_stirring
 !
 !  30-dec-10/anders+michiel: coded
 !
-      use General
+      use General, only: random_number_wrapper
 !
       real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid

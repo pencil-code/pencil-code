@@ -17,6 +17,7 @@
 module Particles_persistence
 !
   use Cdata
+  use Quiet
   use Messages
   use Particles_cdata
   use Particles_map
@@ -46,7 +47,7 @@ contains
 !
 !  May-16/dhruba: coded
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id$")
 !
 !  Indices to keep track of persistence particle positions
@@ -78,7 +79,6 @@ contains
 !
 !  13-nov-07/anders: coded
 !
-      use General, only: keep_compiler_quiet
       use FArrayManager
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -90,8 +90,8 @@ contains
     subroutine init_particles_persistence(fp)
 !
       use Sub, only: kronecker_delta
-      use General, only: keep_compiler_quiet,random_number_wrapper
       use Mpicomm, only:  mpiallreduce_sum_int
+
       real, dimension (mpar_loc,mparray), intent (out) :: fp
       real, dimension(nx,3:3) :: uij 
       integer, dimension (ncpus) :: my_particles=0,all_particles=0
@@ -111,7 +111,6 @@ contains
     endsubroutine init_particles_persistence
 !***********************************************************************
     subroutine dpersist_dt(f,df,fp,dfp,ineargrid)
-!
 !
       use Diagnostics
       use Particles_sub, only: sum_par_name
@@ -214,7 +213,6 @@ contains
 !  may-2016/dhruba+akshay: coded
 !
       use Diagnostics
-      use General, only: itoa
 !
       logical :: lreset
       logical, optional :: lwrite

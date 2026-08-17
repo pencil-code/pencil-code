@@ -68,7 +68,7 @@ module Particles_stalker
 !
 !  13-nov-07/anders: coded
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
       use FArrayManager
 !
       real, dimension (mx,my,mz,mfarray) :: f

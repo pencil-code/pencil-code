@@ -16,7 +16,7 @@
 module Particles_mass
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
   use Particles_cdata
   use Particles_mpicomm
@@ -66,7 +66,7 @@ module Particles_mass
 !
       use FArrayManager, only: farray_register_auxiliary
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id: particles_mass.f90 20849 2013-08-06 18:45:43Z anders@astro.lu.se $")
 !
       ! Index for particle mass.

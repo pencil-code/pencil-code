@@ -66,7 +66,7 @@ module Particles_drag
 !
       use SharedVariables, only: put_shared_variable
 !
-      if (lroot) call svn_id("$Id$")
+      call svn_id("$Id$")
 !
       call put_shared_variable("ldrag_on_gas", ldrag_on_gas, caller="register_particles_drag")
       call put_shared_variable("taus", taus, caller="register_particles_drag")

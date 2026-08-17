@@ -49,7 +49,7 @@ module Particles_lyapunov
 !
       use FArrayManager, only: farray_register_auxiliary
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id$")
 !
 !  Indices for velocity gradient matrix (Wij) at particle positions
@@ -98,7 +98,7 @@ module Particles_lyapunov
 !
 !  13-nov-07/anders: coded
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
       use FArrayManager
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -115,7 +115,7 @@ module Particles_lyapunov
     subroutine init_particles_lyapunov(fp)
 !
       use Sub, only: kronecker_delta
-      use General, only: keep_compiler_quiet,random_number_wrapper
+      use General, only: random_number_wrapper
       use Mpicomm, only:  mpiallreduce_sum_int
       real, dimension (mpar_loc,mparray), intent (out) :: fp
       real, dimension(nx,3:3) :: uij 
@@ -286,7 +286,9 @@ module Particles_lyapunov
     endsubroutine write_plyapunov_run_pars
 !***********************************************************************
     subroutine particles_stochastic_lyapunov(fp)
+
       use General,only : gaunoise_number
+
       real, dimension (mpar_loc,mparray), intent(inout) :: fp
       integer :: ip,ik
       real,dimension(2) :: grandom

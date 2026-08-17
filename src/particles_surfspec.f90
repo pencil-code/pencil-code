@@ -14,7 +14,7 @@
 module Particles_surfspec
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
   use Particles_cdata
   use Particles_mpicomm
@@ -87,7 +87,7 @@ module Particles_surfspec
       character(len=11) :: chemspecaux
       integer :: i
 !
-!      if (lroot) call svn_id( &
+!      call svn_id( &
 !          "$Id: particles_surfspec.f90 20849 2014-10-06 18:45:43Z jonas.kruger $")
 !
       call register_indep_psurfspec

@@ -14,7 +14,7 @@
 module Particles_number
 !
   use Cdata
-  use General, only: keep_compiler_quiet, itoa
+  use Quiet
   use Messages
   use Particles_cdata
   use Particles_sub
@@ -59,7 +59,7 @@ module Particles_number
 !
 !  24-nov-05/anders: adapted
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id$")
 !
 !  Index for particle internal number.
@@ -457,6 +457,7 @@ module Particles_number
 !  24-aug-05/anders: adapted
 !
       use Diagnostics
+      use General, only: itoa
 !
       logical :: lreset
       logical, optional :: lwrite

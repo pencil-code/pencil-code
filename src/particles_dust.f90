@@ -25,7 +25,7 @@
 module Particles
 !
   use Cdata
-  use General, only: keep_compiler_quiet, indgen
+  use Quiet
   use Messages
   use Particles_cdata
   use Particles_map
@@ -367,6 +367,7 @@ module Particles
 !  29-dec-04/anders: coded
 !
       use FArrayManager, only: farray_register_auxiliary, farray_index_append
+      use General, only: indgen
       use Particles_caustics, only: register_particles_caustics
       use Particles_tetrad, only: register_particles_tetrad
       use Particles_potential, only: register_particles_potential
@@ -374,7 +375,7 @@ module Particles
 !
       integer ind_tmp
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id: particles_dust.f90,v 1.1 2018/08/24 15:48:10 wlyra Exp $")
 !
 !  Indices for particle position.
@@ -2570,7 +2571,6 @@ module Particles
 ! that corresponds to the nucleated mass is above a certain threshold
 ! in a grid cell.
 !
-      use General, only: random_number_wrapper, normal_deviate
       use Particles_diagnos_state, only: insert_particles_diagnos_state
       use Mpicomm, only: mpireduce_sum_int, mpibarrier, mpisend_int, mpirecv_int
       use Particles_number, only: set_particle_number

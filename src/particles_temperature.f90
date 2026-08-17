@@ -16,7 +16,7 @@
 module Particles_temperature
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
   use Particles_cdata
   use Particles_map
@@ -69,7 +69,7 @@ module Particles_temperature
       use FArrayManager, only: farray_register_auxiliary
       use SharedVariables, only: put_shared_variable
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id: particles_temperature.f90 21950 2014-07-08 08:53:00Z jonas.kruger $")
 !
 !  Indices for particle position.

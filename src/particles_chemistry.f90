@@ -25,7 +25,7 @@
 module Particles_chemistry
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
   use Particles_cdata
   use Particles_mpicomm
@@ -171,7 +171,7 @@ module Particles_chemistry
 !
     subroutine register_particles_chem
       integer :: ierr
-!      if (lroot) call svn_id( &
+!      call svn_id( &
 !          "$Id: particles_chemistry.f90 20843 2014-10-06 18:45:43Z jonas.kruger $")
 !
       call register_unit_system

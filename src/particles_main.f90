@@ -5,7 +5,7 @@
 module Particles_main
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
   use Particles
   use Particles_adaptation

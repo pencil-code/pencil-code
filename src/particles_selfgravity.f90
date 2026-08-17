@@ -18,7 +18,7 @@
 module Particles_selfgravity
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
   use Particles_cdata
   use Particles_map
@@ -53,7 +53,7 @@ module Particles_selfgravity
       use FArrayManager
       use Messages, only: svn_id
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
 !  Index for gradient for the self-potential and for the smooth particle

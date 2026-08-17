@@ -5,7 +5,7 @@
 module Particles_mpicomm
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
   use Particles_cdata
 !

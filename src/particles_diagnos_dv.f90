@@ -16,7 +16,7 @@
 module Particles_diagnos_dv
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
   use Particles_cdata
   use Particles_mpicomm
@@ -418,6 +418,7 @@ module Particles_diagnos_dv
         call collisions(fp)
         print*,'count=',count
       enddo
+
     endsubroutine repeated_init
 !***********************************************************************
     subroutine map_fake_grid(fp, ineargrid_c, dx_c, n_c)

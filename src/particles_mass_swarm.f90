@@ -15,7 +15,7 @@
 module Particles_mass
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
   use Particles_cdata
   use Particles_sub
@@ -38,7 +38,7 @@ module Particles_mass
 !
 ! 18-jun-17/ccyang: coded
 !
-      if (lroot) call svn_id("$Id$")
+      call svn_id("$Id$")
 !
 ! Index for particle mass.
 !

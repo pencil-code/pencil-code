@@ -59,7 +59,7 @@ contains
 !
       use FArrayManager, only: farray_register_auxiliary
 !
-      if (lroot) call svn_id("particles_tetrad")
+      call svn_id("particles_tetrad")
 !
 !  Indices for first particle
 !
@@ -113,7 +113,7 @@ contains
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -128,7 +128,7 @@ contains
 !***********************************************************************
     subroutine init_particles_tetrad(f,fp,ineargrid)
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
 !
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       real, dimension (mpar_loc,mparray), intent (out) :: fp

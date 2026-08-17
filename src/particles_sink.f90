@@ -15,7 +15,7 @@
 module Particles_sink
 !
   use Cdata
-  use General, only: keep_compiler_quiet,find_proc,itoa
+  use Quiet
   use Messages
   use Particles_cdata
   use Particles_map
@@ -69,7 +69,7 @@ module Particles_sink
 !
 !  07-aug-12/anders: coded
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id: particles_dust.f90 19206 2012-06-30 21:40:24Z sven.bingert $")
 !
 !  Index for sink particle radius.

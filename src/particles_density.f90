@@ -15,7 +15,7 @@
 module Particles_density
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
   use Particles_cdata
   use Particles_sub
@@ -41,7 +41,7 @@ module Particles_density
 !
 !  22-nov-10/anders+michiel: adapted
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id: particles_density.f90 20849 2013-08-06 18:45:43Z anders@astro.lu.se $")
 !
 !  Index for particle density.

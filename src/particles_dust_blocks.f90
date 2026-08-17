@@ -27,7 +27,7 @@
 module Particles
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
   use Particles_cdata
   use Particles_map
@@ -190,7 +190,7 @@ module Particles
       use FArrayManager
       use SharedVariables, only: put_shared_variable
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
 !  Indices for particle position.
@@ -1469,8 +1469,6 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Evolution of dust particle position.
 !
 !  02-jan-05/anders: coded
-!
-      use General, only: random_number_wrapper, random_seed_wrapper
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df

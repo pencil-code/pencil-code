@@ -21,7 +21,7 @@ module Particles_coagulation
   use Particles_map
   use Particles_mpicomm
   use Particles_sub
-  use General, only: keep_compiler_quiet
+  use Quiet
 !
   implicit none
 !

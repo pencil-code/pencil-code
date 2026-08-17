@@ -19,7 +19,7 @@
 module Particles
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
   use Particles_cdata
   use Particles_map
@@ -72,7 +72,7 @@ module Particles
 !
       use FArrayManager
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id$")
 !
 !  Indices for particle position.
@@ -769,7 +769,6 @@ module Particles
 !
 ! Works only for particles_dust - add neccessary variable
 ! declarations in particles_tracers to make it work here.
-!
 !
       use General, only: random_number_wrapper
 !

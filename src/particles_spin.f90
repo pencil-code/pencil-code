@@ -50,7 +50,7 @@ module Particles_spin
 !
 !      use FArrayManager
 !
-      if (lroot) call svn_id("$Id$")
+      call svn_id("$Id$")
 !
 !  Indices for particle spin
 !
@@ -68,7 +68,7 @@ module Particles_spin
 !  21-jul-08/kapelrud: coded
 !  22-oct-15/ccyang: continued.
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
 !
@@ -103,7 +103,7 @@ module Particles_spin
 !  21-jul-08/kapelrud: coded.
 !  07-oct-15/ccyang: continued.
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(mpar_loc,mparray), intent(inout) :: fp
@@ -157,7 +157,7 @@ module Particles_spin
 !
 !  06-oct-15/ccyang: stub.
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
 !      use Viscosity, only: getnu
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
@@ -466,7 +466,7 @@ module Particles_spin
 !
 !  07-oct-15/ccyang: adapted from gaunoise_vect in Initcond.
 !
-      use General, only: random_number_wrapper
+      use Quiet
 !
       real, intent(in) :: ampl
       real, dimension(mpar_loc,mparray), intent(inout) :: fp

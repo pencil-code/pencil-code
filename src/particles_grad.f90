@@ -15,7 +15,7 @@
 module Particles_grad
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
   use Particles_cdata
   use Particles_sub
@@ -45,7 +45,7 @@ module Particles_grad
 !
       use FArrayManager, only: farray_register_auxiliary
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id$")
 !
 !  Indices for particle gradients.
@@ -98,8 +98,6 @@ module Particles_grad
 !  Set radius of new particles.
 !
 !  18-sep-09/nils: adapted from init_particles_radius
-!
-      use General, only: random_number_wrapper
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray) :: fp

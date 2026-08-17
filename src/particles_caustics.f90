@@ -58,7 +58,7 @@ contains
 !
       use FArrayManager, only: farray_register_auxiliary
 !
-      if (lroot) call svn_id("particles_caustics")
+      call svn_id("particles_caustics")
 !
 !  Indices for 9 elements of the sigmap matrix
 !
@@ -98,8 +98,7 @@ contains
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
-!
-      use General, only: keep_compiler_quiet
+      use Quiet
       use FArrayManager
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -115,9 +114,6 @@ contains
 !***********************************************************************
     subroutine init_particles_caustics(f,fp,ineargrid)
 !
-      use General, only: keep_compiler_quiet,random_number_wrapper
-      use Mpicomm, only:  mpiallreduce_sum_int
-      use Hydro, only: calc_gradu
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       real, dimension (mpar_loc,mparray), intent (out) :: fp
       integer, dimension (mpar_loc,3), intent (in) :: ineargrid
@@ -282,7 +278,7 @@ contains
 !
       use Diagnostics
       use FArrayManager, only: farray_index_append
-      use General,   only: itoa
+      use General, only: itoa
 !
       logical :: lreset
       logical, optional :: lwrite

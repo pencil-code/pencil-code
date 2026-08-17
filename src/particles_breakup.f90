@@ -49,7 +49,7 @@
 module Particles_breakup
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
   use Particles_cdata
   use Particles_map, only: interpolate_linear

@@ -18,7 +18,7 @@
 module Particles_adsorbed
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
   use Particles_cdata
   use Particles_mpicomm
@@ -66,7 +66,7 @@ module Particles_adsorbed
 !  this is a wrapper function for registering particle number
 !  in- and independent variables
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id: particles_adsorbed.f90 20849 2014-10-06 18:45:43Z jonas.kruger $")
 !
       call register_indep_ads
