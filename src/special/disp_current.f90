@@ -52,7 +52,7 @@ module Special
   real :: ampla0=0.0, initpower_a0=0.0, initpower2_a0=0.0
   real :: cutoff_a0=0.0, ncutoff_a0=0.0, kpeak_a0=0.0
   real :: relhel_a0=0.0, kgaussian_a0=0.0, eta_ee=0.0
-  real :: sigE_prefactor=1., sigB_prefactor=1., sigE_Arnold_prefactor=0.
+  real :: sigE_prefactor=1., sigB_prefactor=1., sigE_Arnold_prefactor=1.
   real :: weight_longitudinalE=2.0, mass_chi=0.
   real :: coupl_gy=.345 ! electroweak SU(2) x U(1) coupling of Higgs to U(1)
   real :: je_heating_factor=1.
@@ -85,9 +85,10 @@ module Special
   logical :: loverride_c_light=.false., ldensity_add_je_heating=.false., llorentzforce_ee=.false.
   logical :: lcorrect_sign_adphiB_term=.false. !PAR_DOC: correct sign adphiB_term
   logical :: lignore_adphiB_term_in_MHD_current=.true. !PAR_DOC: correct sign adphiB_term
-  character(len=labellen) :: inita0='zero'
+  character (len=labellen) :: inita0='zero'
   character (len=labellen), dimension(ninit) :: initee='nothing'
   character (len=labellen) :: power_filename='power_profile.dat'
+  character (len=labellen) :: replace_Schwinger_by_Arnold='replace_at_end_of_reheating'
 !
   namelist /special_init_pars/ &
     initee, inita0, alpf, &
@@ -116,6 +117,8 @@ module Special
   real :: sigE_ceiling=impossible  !PAR_DOC: ceiling
   real :: sigE_const_value=impossible  !PAR_DOC: constant value if set
   real :: etaSchw_max=impossible   !PAR_DOC: constant value if set
+  real :: lna1_switch_toArnold=impossible  !PAR_DOC: lna value for interpolating to Arnold conductivity
+  real :: lna2_switch_toArnold=impossible  !PAR_DOC: lna value for only using Arnold conductivity
   logical :: reinitialize_ee=.false.
   logical :: lresistive_gauge_ee=.false.   !PAR_DOC: possibility of resistive gauge when ladvance_ee=F.
   logical :: lresistive_gauge_disp=.false. !PAR_DOC: resitive gauge when displacement current is solved for.
@@ -141,6 +144,7 @@ module Special
     ladvance_ee, eta_given, ldt_disp_current, cdt_sigE, &
     lresistive_gauge_disp, etaSchw_max, llate_reset_el_pencil, &
     linclude_dphiB_in_MHD, linclude_gphixE_in_MHD, lreplace_Schwinger_by_Arnold, &
+    lna1_switch_toArnold, lna2_switch_toArnold, replace_Schwinger_by_Arnold, &
     lcorrect_sign_adphiB_term, lignore_adphiB_term_in_MHD_current
 !
 ! Declare any index variables necessary for main or
@@ -347,6 +351,17 @@ module Special
         allocate(lohm_evolve,lsigE_const)
         lohm_evolve=.false.
         lsigE_const=.false.
+      endif
+!
+!  Check validity of lna1_switch_toArnold and lna2_switch_toArnold
+!
+      if (lreplace_Schwinger_by_Arnold .and. &
+          replace_Schwinger_by_Arnold=='interpol_from_lna1_to_lna2') then
+        if (lna1_switch_toArnold==impossible .or. &
+            lna2_switch_toArnold==impossible) then
+              call fatal_error('calc_pencils_special (disp_current)', &
+                  'both lna1_switch_toArnold and lna2_switch_toArnold must be given')
+        endif
       endif
 !
 !  Reinitialize magnetic field using a small selection of perturbations
@@ -627,7 +642,7 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       real :: conductivity
-      real :: H_arnold, T_arnold, sigE_arnold
+      real :: H_arnold, T_arnold, sigE_arnold, weight_arnold, lna
       real, parameter :: C_arnold=12., e_arnold=0.303, g_e_arnold=106.75
 !
       real, dimension (nx,3) :: tmpv, E_MHD
@@ -773,6 +788,34 @@ module Special
           p%sigB=0.
         endif
 !
+!  Compute Arnold conductivity, comoving, so multiply by ascale;
+!  used either as diagnostics or to replace the Schwinger value with this.
+!
+        if (lreplace_Schwinger_by_Arnold .or. idiag_etaArn>0) then
+          H_arnold=Hscript/ascale
+          T_arnold=(3*H_arnold**2/((8.*pi)*(pi**2/30.)*g_e_arnold))**.25
+          sigE_arnold=ascale*C_arnold*T_arnold/(e_arnold**2*log(1./e_arnold))
+          etaArn=1./sigE_arnold
+        endif
+!
+!  Possibility to replace Schwinger expression by Arnold expression,
+!  either by switch at the end of reheating or in a given lna interval.
+!
+        if (lreplace_Schwinger_by_Arnold) then
+          select case (replace_Schwinger_by_Arnold)
+          case ('replace_at_end_of_reheating')
+            if (.not. lsolve_for_phi) p%sigE=sigE_arnold*sigE_Arnold_prefactor
+          case ('interpol_from_lna1_to_lna2')
+            lna=log(ascale)
+            weight_arnold=max(0.,min(1., &
+               (lna-lna1_switch_toArnold)/(lna2_switch_toArnold-lna1_switch_toArnold)))
+            p%sigE=p%sigE**(1.-weight_arnold)*(sigE_arnold*sigE_Arnold_prefactor)**weight_arnold
+          case default
+            call fatal_error('calc_pencils_special (disp_current)', &
+              'no such replace_Schwinger_by_Arnold: "'//trim(replace_Schwinger_by_Arnold)//'"')
+          endselect
+        endif
+!
 !  Compute magnetic diffusivity from 1/sigE, unless given.
 !  These 5 lines used to come after "if (ijx/=0)", but it should be done even if lohm_evolve=T
 !
@@ -780,29 +823,6 @@ module Special
           etaSchw=1./p%sigE
         else
           etaSchw=eta_given
-        endif
-!
-!  Compute Arnold conductivity, comoving, so multiply by ascale.
-!
-        H_arnold=Hscript/ascale
-        T_arnold=(3*H_arnold**2/((8.*pi)*(pi**2/30.)*g_e_arnold))**.25
-        sigE_arnold=ascale*C_arnold*T_arnold/(e_arnold**2*log(1./e_arnold))
-        if (eta_given==impossible) then
-          etaArn=1./sigE_arnold
-        else
-          etaArn=eta_given
-        endif
-!
-!  Possibility to replace Schwinger expression by Arnold expression.
-!
-        if (lreplace_Schwinger_by_Arnold .and. .not. lsolve_for_phi) then
-          if (sigE_Arnold_prefactor==0.) then
-            p%sigE=sigE_arnold
-            etaSchw=etaArn
-          else
-            p%sigE=sigE_arnold*sigE_Arnold_prefactor
-            etaSchw=etaArn/sigE_Arnold_prefactor
-          endif
         endif
 !
 !  Now compute current, using any of the 4 expressions above.
