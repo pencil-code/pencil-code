@@ -57,8 +57,8 @@ bool torch_train_CAPI(int sub_dims[3], AcReal* input, AcReal* label, AcReal* los
 		     const int input_fields, const int output_fields, const char* model_name){
 
 
-	int64_t input_shape[5] = {1, input_fields,  sub_dims[2], sub_dims[1], sub_dims[0]};
-	int64_t label_shape[5] = {1, output_fields, sub_dims[2], sub_dims[1], sub_dims[0]};
+	int64_t input_shape[5] = {1, input_fields,  sub_dims[0], sub_dims[1], sub_dims[2]};
+	int64_t label_shape[5] = {1, output_fields, sub_dims[0], sub_dims[1], sub_dims[2]};
   	const torchfort_result_t res = torchfort_train(model_name, input, 5, input_shape, label, 5, label_shape, loss_val, TORCH_PRECISION, 0);
 	return res != TORCHFORT_RESULT_SUCCESS;
 }
@@ -78,7 +78,7 @@ bool torch_train_multiarg_CAPI(int sub_dims[3], const std::vector<std::pair<AcRe
         fprintf(stderr, "ERROR: ASTAROTH device pointers are NULL! (input: %p), %d\n", (void*)inputs[i].first, i);
         fflush(stderr);
       }
-	    int64_t input_shape[5] = {1, inputs[i].second,  sub_dims[2], sub_dims[1], sub_dims[0]};
+	    int64_t input_shape[5] = {1, inputs[i].second,  sub_dims[0], sub_dims[1], sub_dims[1]};
         torchfort_tensor_list_add_tensor(inputs_tensor, inputs[i].first, 5, input_shape, TORCH_PRECISION);
     }
     
@@ -87,7 +87,7 @@ bool torch_train_multiarg_CAPI(int sub_dims[3], const std::vector<std::pair<AcRe
         fprintf(stderr, "ERROR: ASTAROTH device pointers are NULL! (outputs: %p), %d\n", (void*)outputs[i].first, i);
         fflush(stderr);
       }
-	    int64_t output_shape[5] = {1, outputs[i].second,  sub_dims[2], sub_dims[1], sub_dims[0]};
+	    int64_t output_shape[5] = {1, outputs[i].second,  sub_dims[0], sub_dims[1], sub_dims[2]};
         torchfort_tensor_list_add_tensor(outputs_tensor, outputs[i].first, 5, output_shape, TORCH_PRECISION);
     }
 
@@ -111,7 +111,7 @@ bool torch_infer_multiarg_CAPI(int sub_dims[3], const std::vector<std::pair<AcRe
         fprintf(stderr, "ERROR: ASTAROTH device pointers are NULL! (input: %p), %d\n", (void*)inputs[i].first, i);
         fflush(stderr);
       }
-	    int64_t input_shape[5] = {1, inputs[i].second,  sub_dims[2], sub_dims[1], sub_dims[0]};
+	    int64_t input_shape[5] = {1, inputs[i].second,  sub_dims[0], sub_dims[1], sub_dims[2]};
       torchfort_tensor_list_add_tensor(inputs_tensor, inputs[i].first, 5, input_shape, TORCH_PRECISION);
     }
     
@@ -120,7 +120,7 @@ bool torch_infer_multiarg_CAPI(int sub_dims[3], const std::vector<std::pair<AcRe
         fprintf(stderr, "ERROR: ASTAROTH device pointers are NULL! (outputs: %p), %d\n", (void*)outputs[i].first, i);
         fflush(stderr);
       }
-	    int64_t output_shape[5] = {1, outputs[i].second,  sub_dims[2], sub_dims[1], sub_dims[0]};
+	    int64_t output_shape[5] = {1, outputs[i].second,  sub_dims[0], sub_dims[1], sub_dims[2]};
       torchfort_tensor_list_add_tensor(outputs_tensor, outputs[i].first, 5, output_shape, TORCH_PRECISION);
     }
 
@@ -135,9 +135,9 @@ bool torch_infer_CAPI(int sub_dims[3], AcReal* input, AcReal* label,
 
 	torchfort_result_t res = torchfort_set_manual_seed(943442);
 
-	int64_t input_shape[5] = {1, input_fields, sub_dims[2], sub_dims[1], sub_dims[0]};
+	int64_t input_shape[5] = {1, input_fields, sub_dims[0], sub_dims[1], sub_dims[2]};
 	
-	int64_t label_shape[5] = {1, output_fields, sub_dims[2], sub_dims[1], sub_dims[0]};
+	int64_t label_shape[5] = {1, output_fields, sub_dims[0], sub_dims[1], sub_dims[2]};
 
 /*
 	if (subsample) {

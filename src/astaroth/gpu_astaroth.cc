@@ -680,139 +680,85 @@ void save_stats(std::string fileName){
 #if LTRAINING
 	#include "user_constants.h"
     if (rank==0){
-        std::ofstream myFile;
-        std::string fileString = fileName;	
-        myFile.open(fileString);
-        myFile << "count,acc_count,";
-        
+      std::ofstream myFile;
+      std::string fileString = fileName;	
+      myFile.open(fileString);
+       
+      const std::vector<std::string> vec_suffix = {"_x", "_y", "_z"};
+      const std::vector<std::string> tensor_suffix = {"_xx", "_yy", "_zz", "_xy", "_yz", "_xz"}; 
 
-    // Headers
-        if (lhydro){
-          if(AC_lconservative__mod__hydro){
-            // input sum
-            myFile << "in_acc_sum_rho,in_acc_sum_mom_x,in_acc_sum_mom_y,in_acc_sum_mom_z,";
+      myFile << "count,acc_count";
 
-            // input sum squared 
-            myFile << "in_acc_sum_sq_rho,in_acc_sum_sq_mom_x,in_acc_sum_sq_mom_y,in_acc_sum_sq_mom_z,";
+      // Headers
+      if (lhydro){
+        if(AC_lconservative__mod__hydro){
+          myFile << ",in_acc_sum_rho";
 
-            // output sum strain
-            myFile << "out_acc_sum_strain_xx,out_acc_sum_strain_yy,out_acc_sum_strain_zz,out_acc_sum_strain_xy,out_acc_sum_strain_yz,out_acc_sum_strain_xz,";
+          for (const auto& s : vec_suffix) myFile << ",in_acc_sum_mom" << s;
 
-            // output sum squared strain
-            myFile << "out_acc_sum_sq_strain_xx,out_acc_sum_sq_strain_yy,out_acc_sum_sq_strain_zz,out_acc_sum_sq_strain_xy,out_acc_sum_sq_strain_yz,out_acc_sum_sq_strain_xz,";
+          myFile << ",in_acc_sum_sq_rho";
 
-            // output sum tau_hydro
-            myFile << "out_acc_sum_tau_xx,out_acc_sum_tau_yy,out_acc_sum_tau_zz,out_acc_sum_tau_xy,out_acc_sum_tau_yz,out_acc_sum_tau_xz,";
+          for (const auto& s : vec_suffix) myFile << ",in_acc_sum_sq_mom" << s;
 
-            // output sum squared tau
-            myFile << "out_acc_sum_sq_tau_xx,out_acc_sum_sq_tau_yy,out_acc_sum_sq_tau_zz,out_acc_sum_sq_tau_xy,out_acc_sum_sq_tau_yz,out_acc_sum_sq_tau_xz\n";
-          }
-
-          else {
-            // input sum
-            myFile << "in_acc_sum_uu_x,in_acc_sum_uu_y,in_acc_sum_uu_z,";
-
-            // input sum squared
-            myFile << "in_acc_sum_sq_uu_x,in_acc_sum_sq_uu_y,in_acc_sum_sq_uu_z,";
-
-            // output sum tau_hydro
-            myFile << "out_acc_sum_tau_xx,out_acc_sum_tau_yy,out_acc_sum_tau_zz,out_acc_sum_tau_xy,out_acc_sum_tau_yz,out_acc_sum_tau_xz,";
-
-            // output sum squared tau_hydro
-            myFile << "out_acc_sum_sq_tau_xx,out_acc_sum_sq_tau_yy,out_acc_sum_sq_tau_zz,out_acc_sum_sq_tau_xy,out_acc_sum_sq_tau_yz,out_acc_sum_sq_tau_xz,";
-          }
+          for (const auto& s : tensor_suffix) myFile << ",out_acc_sum_strain" << s;
+          for (const auto& s : tensor_suffix) myFile << ",out_acc_sum_sq_strain" << s;
+          for (const auto& s : tensor_suffix) myFile << ",out_acc_sum_tau" << s;
+          for (const auto& s : tensor_suffix) myFile << ",out_acc_sum_sq_tau" << s;
         }
+        else {
+          for (const auto& s : vec_suffix) myFile << ",in_acc_sum_uu" << s;
+          for (const auto& s : vec_suffix) myFile << ",in_acc_sum_sq_uu" << s;
+          for (const auto& s : tensor_suffix) myFile << ",out_acc_sum_tau" << s;
+          for (const auto& s : tensor_suffix) myFile << ",out_acc_sum_sq_tau" << s;
+        }
+      }
+      myFile << "\n";
+    
 
-        myFile << train_counter << "," << nxgrid*nygrid*nzgrid << ",";
-        
+      myFile << train_counter << "," << nxgrid*nygrid*nzgrid;
+      
+      auto write_fields = [&](auto* name, size_t size) {
+        for (size_t i = 0; i < size; ++i) {
+            myFile << "," << acDeviceGetOutput(acGridGetDevice(), name[i]);
+        }
+      };
 
     // Hydro statistics
         if (lhydro){
-
           if(AC_lconservative__mod__hydro){
+            myFile << "," << acDeviceGetOutput(acGridGetDevice(), in_acc_sum_rho);
             
-            // input sum
-            auto in_acc_sum_rho_   = acDeviceGetOutput(acGridGetDevice(), in_acc_sum_rho); 
-            auto in_acc_sum_mom_x = acDeviceGetOutput(acGridGetDevice(), in_acc_sum[0]); 
-            auto in_acc_sum_mom_y = acDeviceGetOutput(acGridGetDevice(), in_acc_sum[1]); 
-            auto in_acc_sum_mom_z = acDeviceGetOutput(acGridGetDevice(), in_acc_sum[2]);
+            // momentum
+            write_fields(in_acc_sum, 3);
 
-            myFile << in_acc_sum_rho_ << "," << in_acc_sum_mom_x << "," << in_acc_sum_mom_y << "," << in_acc_sum_mom_z << ",";
-          
-            // input sum squared
-            auto in_acc_sum_sq_rho_   = acDeviceGetOutput(acGridGetDevice(), in_acc_sum_sq_rho); 
-            auto in_acc_sum_sq_mom_x = acDeviceGetOutput(acGridGetDevice(), in_acc_sum_sq[0]); 
-            auto in_acc_sum_sq_mom_y = acDeviceGetOutput(acGridGetDevice(), in_acc_sum_sq[1]); 
-            auto in_acc_sum_sq_mom_z = acDeviceGetOutput(acGridGetDevice(), in_acc_sum_sq[2]);
+            myFile << "," << acDeviceGetOutput(acGridGetDevice(), in_acc_sum_sq_rho);
 
-            myFile << in_acc_sum_sq_rho_ << "," << in_acc_sum_sq_mom_x << "," << in_acc_sum_sq_mom_y << "," << in_acc_sum_sq_mom_z << ",";
-
-            // output sum strain
-            auto out_acc_sum_strain_xx = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_strain[0]);
-            auto out_acc_sum_strain_yy = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_strain[1]);
-            auto out_acc_sum_strain_zz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_strain[2]);
-            auto out_acc_sum_strain_xy = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_strain[3]);
-            auto out_acc_sum_strain_yz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_strain[4]);
-            auto out_acc_sum_strain_xz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_strain[5]);
-
-            myFile << out_acc_sum_strain_xx << "," << out_acc_sum_strain_yy << "," << out_acc_sum_strain_zz << "," << out_acc_sum_strain_xy << "," << out_acc_sum_strain_yz << "," << out_acc_sum_strain_xz << ",";
-
-            // output sum squared strain
-            auto out_acc_sum_sq_strain_xx = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_sq_strain[0]);
-            auto out_acc_sum_sq_strain_yy = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_sq_strain[1]);
-            auto out_acc_sum_sq_strain_zz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_sq_strain[2]);
-            auto out_acc_sum_sq_strain_xy = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_sq_strain[3]);
-            auto out_acc_sum_sq_strain_yz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_sq_strain[4]);
-            auto out_acc_sum_sq_strain_xz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_sq_strain[5]);
+            // momentum
+            write_fields(in_acc_sum_sq, 3);
             
-            myFile << out_acc_sum_sq_strain_xx << "," << out_acc_sum_sq_strain_yy << "," << out_acc_sum_sq_strain_zz << "," << out_acc_sum_sq_strain_xy << "," << out_acc_sum_sq_strain_yz << "," << out_acc_sum_sq_strain_xz << ",";
+            write_fields(out_acc_sum_strain, 6);
+            write_fields(out_acc_sum_sq_strain, 6);
 
-            // output sum tau_hydro
-            auto out_acc_sum_tau_xx = acDeviceGetOutput(acGridGetDevice(), out_acc_sum[0]);
-            auto out_acc_sum_tau_yy = acDeviceGetOutput(acGridGetDevice(), out_acc_sum[1]);
-            auto out_acc_sum_tau_zz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum[2]);
-            auto out_acc_sum_tau_xy = acDeviceGetOutput(acGridGetDevice(), out_acc_sum[3]);
-            auto out_acc_sum_tau_yz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum[4]);
-            auto out_acc_sum_tau_xz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum[5]);
-
-            myFile << out_acc_sum_tau_xx << "," << out_acc_sum_tau_yy << "," << out_acc_sum_tau_zz << "," << out_acc_sum_tau_xy << "," << out_acc_sum_tau_yz << "," << out_acc_sum_tau_xz << ",";
-
-            // output sum squared tau_hydro
-            auto out_acc_sum_sq_tau_xx = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_sq[0]);
-            auto out_acc_sum_sq_tau_yy = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_sq[1]);
-            auto out_acc_sum_sq_tau_zz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_sq[2]);
-            auto out_acc_sum_sq_tau_xy = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_sq[3]);
-            auto out_acc_sum_sq_tau_yz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_sq[4]);
-            auto out_acc_sum_sq_tau_xz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_sq[5]);
-
-            myFile << out_acc_sum_sq_tau_xx << "," << out_acc_sum_sq_tau_yy << "," << out_acc_sum_sq_tau_zz << "," << out_acc_sum_sq_tau_xy << "," << out_acc_sum_sq_tau_yz << "," << out_acc_sum_sq_tau_xz << "\n";
+            // tau hydro
+            write_fields(out_acc_sum, 6);
+            write_fields(out_acc_sum_sq, 6);
+            
           }
           else {
-            auto in_acc_sum_x = acDeviceGetOutput(acGridGetDevice(), in_acc_sum[0]);
-            auto in_acc_sum_y = acDeviceGetOutput(acGridGetDevice(), in_acc_sum[1]);
-            auto in_acc_sum_z = acDeviceGetOutput(acGridGetDevice(), in_acc_sum[2]);
+            // uumean 
+            write_fields(in_acc_sum, 3);
 
-            auto in_acc_sum_sq_x = acDeviceGetOutput(acGridGetDevice(), in_acc_sum_sq[0]);
-            auto in_acc_sum_sq_y = acDeviceGetOutput(acGridGetDevice(), in_acc_sum_sq[1]);
-            auto in_acc_sum_sq_z = acDeviceGetOutput(acGridGetDevice(), in_acc_sum_sq[2]);
+            // tau hydro
+            write_fields(in_acc_sum_sq, 6);
 
-            auto out_acc_sum_xx = acDeviceGetOutput(acGridGetDevice(), out_acc_sum[0]);
-            auto out_acc_sum_yy = acDeviceGetOutput(acGridGetDevice(), out_acc_sum[1]);
-            auto out_acc_sum_zz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum[2]);
-            auto out_acc_sum_xy = acDeviceGetOutput(acGridGetDevice(), out_acc_sum[3]);
-            auto out_acc_sum_yz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum[4]);
-            auto out_acc_sum_xz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum[5]);
+            // uumean squared
+            write_fields(out_acc_sum, 3);
 
-            auto out_acc_sum_sq_xx = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_sq[0]);
-            auto out_acc_sum_sq_yy = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_sq[1]);
-            auto out_acc_sum_sq_zz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_sq[2]);
-            auto out_acc_sum_sq_xy = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_sq[3]);
-            auto out_acc_sum_sq_yz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_sq[4]);
-            auto out_acc_sum_sq_xz = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_sq[5]);
-
-            myFile << in_acc_sum_x << "," << in_acc_sum_y << "," << in_acc_sum_z << "," << in_acc_sum_sq_x << "," << in_acc_sum_sq_y << "," << in_acc_sum_sq_z << "," <<  out_acc_sum_xx << "," <<  out_acc_sum_yy << "," <<  out_acc_sum_zz << "," <<  out_acc_sum_xy << "," << out_acc_sum_yz << "," << out_acc_sum_xz << "," << out_acc_sum_sq_xx << "," << out_acc_sum_sq_yy << "," << out_acc_sum_sq_zz << "," << out_acc_sum_sq_xy << "," << out_acc_sum_sq_yz << "," << out_acc_sum_sq_xz << "\n";
+            // tay_hydro
+            write_fields(out_acc_sum_sq, 6);
           }
         }
+        myFile << "\n";
         myFile.close();
     }
 #endif
@@ -886,70 +832,53 @@ void load_train_stats(){
 
             if (lhydro){
                 if(AC_lconservative__mod__hydro){
-                  
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_rho, (AcReal)std::stod(row[2]));
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum[0], (AcReal)std::stod(row[3]));
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum[1], (AcReal)std::stod(row[4]));
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum[2], (AcReal)std::stod(row[5]));
-                  
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_sq_rho, (AcReal)std::stod(row[6]));
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_sq[0], (AcReal)std::stod(row[7]));
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_sq[1], (AcReal)std::stod(row[8]));
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_sq[2], (AcReal)std::stod(row[9]));
+                  size_t i_count=2;
 
-        
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_strain[0], (AcReal)std::stod(row[10]));
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_strain[1], (AcReal)std::stod(row[11]));
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_strain[2], (AcReal)std::stod(row[12]));
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_strain[3], (AcReal)std::stod(row[13]));
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_strain[4], (AcReal)std::stod(row[14]));
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_strain[5], (AcReal)std::stod(row[15]));
-                 
 
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum[0], (AcReal)std::stod(row[16]));
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum[1], (AcReal)std::stod(row[17]));
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum[2], (AcReal)std::stod(row[18]));
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum[3], (AcReal)std::stod(row[19]));
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum[4], (AcReal)std::stod(row[20]));
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum[5], (AcReal)std::stod(row[21]));
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_rho, (AcReal)std::stod(row[i_count++]));
 
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq_strain[0], (AcReal)std::stod(row[22]));
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq_strain[1], (AcReal)std::stod(row[23]));
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq_strain[2], (AcReal)std::stod(row[24]));
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq_strain[3], (AcReal)std::stod(row[25]));
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq_strain[4], (AcReal)std::stod(row[26]));
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq_strain[5], (AcReal)std::stod(row[27]));
+                  for (size_t i = 0; i < 3; ++i) {
+                    acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum[i], (AcReal)std::stod(row[i_count++]));
+                  }
 
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq[0], (AcReal)std::stod(row[28]));
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq[1], (AcReal)std::stod(row[29]));
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq[2], (AcReal)std::stod(row[30]));
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq[3], (AcReal)std::stod(row[31]));
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq[4], (AcReal)std::stod(row[32]));
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq[5], (AcReal)std::stod(row[33]));
+                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_sq_rho, (AcReal)std::stod(row[i_count++]));
+
+                  for (size_t i = 0; i < 3; ++i) {
+                    acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_sq[i], (AcReal)std::stod(row[i_count++]));
+                  }
+
+                  for (size_t i = 0; i < 6; ++i) {
+                    acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_strain[i], (AcReal)std::stod(row[i_count++]));
+                  }
+                  for (size_t i = 0; i < 6; ++i) {
+                    acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq_strain[i], (AcReal)std::stod(row[i_count++]));
+                  }
+
+                  for (size_t i = 0; i < 6; ++i) {
+                    acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum[i], (AcReal)std::stod(row[i_count++]));
+                  }
+                  for (size_t i = 0; i < 6; ++i) {
+                    acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq[i], (AcReal)std::stod(row[i_count++]));
+                  }
                 }  
                 else {             
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum[0], (AcReal)std::stod(row[2]));
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum[1], std::stod(row[3]));
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum[2], std::stod(row[4]));
+                  size_t i_count=2;
 
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_sq[0], std::stod(row[5]));
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_sq[1], std::stod(row[6]));
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_sq[2], std::stod(row[7]));
+                  for (size_t i = 0; i < 3; ++i) {
+                    acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum[i], (AcReal)std::stod(row[i_count++]));
+                  }
 
+                  for (size_t i = 0; i < 3; ++i) {
+                    acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_sq[i], (AcReal)std::stod(row[i_count++]));
+                  }
 
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum[0], std::stod(row[8]));
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum[1], std::stod(row[9]));
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum[2], std::stod(row[10]));
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum[3], std::stod(row[11]));
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum[4], std::stod(row[12]));
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum[5], std::stod(row[13]));
+                  for (size_t i = 0; i < 6; ++i) {
+                    acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum[i], (AcReal)std::stod(row[i_count++]));
+                  }
 
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq[0], std::stod(row[14]));
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq[1], std::stod(row[15]));
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq[2], std::stod(row[16]));
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq[3], std::stod(row[17]));
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq[4], std::stod(row[18]));
-                  acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq[5], std::stod(row[19]));
+                  for (size_t i = 0; i <6; ++i) {
+                    acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq[i], (AcReal)std::stod(row[i_count++]));
+                  }
                 }
             }
         }
@@ -1221,7 +1150,7 @@ extern "C" void torch_infer_c_api(int itsub)
 
 	 acGridHaloExchange();
 
-   torch_infer_multiarg_CAPI((int[]){mx, my, mz}, inputs, outputs,"stationary");
+   torch_infer_multiarg_CAPI((int[]){mz, my, mx}, inputs, outputs,"stationary");
   }
 
 	
@@ -1280,19 +1209,19 @@ extern "C" void torch_train_c_api(AcReal *loss_val, int itsub, double t) {
         acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetrho_mean(), &input, &out);
         inputs.emplace_back(input, 1);
 
-        acDeviceGetVertexBufferPtrs(acGridGetDevice(), TAU_STRAIN.xx, &output, &out);
+        acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetTAU_STRAIN_XX(), &output, &out);
         outputs.emplace_back(output, 6);
     }
     else{
     
-      acDeviceGetVertexBufferPtrs(acGridGetDevice(), uumean.x, &input, &out);
+      acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetuumean_X(), &input, &out);
       inputs.emplace_back(input, 3);
     }
-    acDeviceGetVertexBufferPtrs(acGridGetDevice(), TAU_HYDRO.xx, &output, &out);
+    acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetTAU_HYDRO_XX(), &output, &out);
     outputs.emplace_back(output, 6);
 
     acGridHaloExchange();
-    torch_train_multiarg_CAPI((int[]){mx, my, mz}, inputs, outputs, loss_val,"stationary");
+    torch_train_multiarg_CAPI((int[]){mz, my, mx}, inputs, outputs, loss_val,"stationary");
     train_loss.push_back(*loss_val);
     train_nts.push_back(it); 
     torch_wandb_log("stationary", "training_loss", it, *loss_val);
@@ -2180,13 +2109,16 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_,
   acGridSynchronizeStream(STREAM_ALL);
   if (rank==0 && ldebug) printf("memusage after store synchronize stream= %f MBytes\n", acMemUsage()/1024.);
   acLogFromRootProc(rank, "DONE initializeGPU\n");
-  fflush(stdout);
 
   constexpr AcReal unit = 1.0;
   dt1_interface = unit/dt;
 
   //Loads training statistics to the device
-  if(!new_run) load_train_stats();
+  if(!new_run){ 
+    acLogFromRootProc(rank, "Loaded previous statistics\n");
+    load_train_stats();
+  }
+  fflush(stdout);
 }
 /***********************************************************************************************/
 extern "C" void reloadConfig()

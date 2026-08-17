@@ -344,6 +344,7 @@ Kernel compute_normalize_sums()
     
     if(AC_lconservative__mod__hydro){
       reduce_sum_add(rho_mean,in_acc_sum_rho)
+      reduce_sum_add(rho_mean,in_acc_sum_sq_rho)
     
 	    reduce_sum_add(mom_mean.x,in_acc_sum[0])
 	    reduce_sum_add(mom_mean.y,in_acc_sum[1])
