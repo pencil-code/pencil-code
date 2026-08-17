@@ -477,6 +477,8 @@ module Particles_sink
       use Mpicomm, only: mpisend_int, mpirecv_int, mpisend_real, mpirecv_real, &
           mpibcast_int, mpibcast_real, mpireduce_sum
 !
+      use General, only: find_proc, itoa
+
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray) :: fp
       real, dimension (mpar_loc,mpvar) :: dfp
