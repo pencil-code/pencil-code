@@ -158,15 +158,15 @@ contains
 
     endsubroutine gpu_prepare_for_first_substep
 !**************************************************************************
-    subroutine infer_gpu(flag)
+    subroutine TF_infer_gpu(flag)
 
     integer :: flag
 
     call keep_compiler_quiet(flag)
 
-    endsubroutine infer_gpu
+    endsubroutine TF_infer_gpu
 !**************************************************************************
-    subroutine train_gpu(f, itsub, t)
+    subroutine TF_train_gpu(f, itsub, t)
 
     real :: f
     real :: itsub
@@ -176,7 +176,7 @@ contains
     call keep_compiler_quiet(itsub)
     call keep_compiler_quiet_dble(t)
 
-    endsubroutine train_gpu
+    endsubroutine TF_train_gpu
 !**************************************************************************
     subroutine radtransfer_gpu
     endsubroutine
