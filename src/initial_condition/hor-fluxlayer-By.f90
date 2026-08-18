@@ -18,9 +18,8 @@
 !
 module InitialCondition
 !
-  use Cparam
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
   use EquationOfState
   use Sub, only: step, der_step
@@ -45,7 +44,7 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id: hor-fluxlayer-By.f90 23094 2015-02-10 17:54:43Z mreinhardt@nordita.org $")
 !
     endsubroutine register_initial_condition

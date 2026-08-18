@@ -10,9 +10,8 @@
 !***************************************************************
 module InitialCondition
 !
-  use Cparam
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Mpicomm
   use Messages
 !
@@ -64,7 +63,7 @@ module InitialCondition
 !
 !  Identify CVS/SVN version information.
 !
-    if (lroot) call svn_id( &
+    call svn_id( &
         "$Id: vortex_braid.f90,v 1.0 2017-05-31 16:43:18 iomsn Exp $")
 !
   endsubroutine register_initial_condition

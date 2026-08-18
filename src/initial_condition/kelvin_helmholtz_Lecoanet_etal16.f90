@@ -73,9 +73,8 @@
 module InitialCondition
 !
   use Cdata
-  use Cparam
   use Messages
-  use General, only: keep_compiler_quiet
+  use Quiet
   use EquationOfState
 !
   implicit none
@@ -95,7 +94,7 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
          "$Id: khi_colin.f90,v 1.1 2011-02-02 20:47:30 wlyra Exp $")
 !
     endsubroutine register_initial_condition

@@ -16,9 +16,8 @@
 !***************************************************************
 module InitialCondition
 !
-  use Cparam
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
   use Particles_cdata
   use Particles_sub, only: assign_species, dragforce_equi_multispecies 

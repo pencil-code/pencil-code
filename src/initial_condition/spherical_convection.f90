@@ -19,7 +19,7 @@
 module InitialCondition
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
   use EquationOfState
   use Sub, only: step, der_step
@@ -50,7 +50,7 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 
       call keep_compiler_quiet(npoly_exp)

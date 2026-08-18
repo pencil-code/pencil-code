@@ -10,7 +10,7 @@
 module InitialCondition
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none
@@ -44,7 +44,7 @@ contains
 !
 !  04-sep-10/bing: coded
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id$")
 !
     endsubroutine register_initial_condition

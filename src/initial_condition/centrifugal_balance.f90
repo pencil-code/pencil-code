@@ -71,7 +71,7 @@
 module InitialCondition
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
   !use EquationOfState
 !
@@ -153,7 +153,7 @@ module InitialCondition
 !
       use SharedVariables, only: put_shared_variable
 
-      if (lroot) call svn_id( &
+      call svn_id( &
          "$Id$")
 !
       if (llocal_iso.and.lparticles_blocks) &

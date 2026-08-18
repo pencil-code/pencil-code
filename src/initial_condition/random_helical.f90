@@ -21,9 +21,8 @@
 !
 module InitialCondition
 !
-  use Cparam
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none
@@ -51,7 +50,7 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
          "$Id$")
 !
     endsubroutine register_initial_condition
@@ -360,6 +359,7 @@ module InitialCondition
 !
       use Sub
       use General, only : random_number_wrapper
+!
       real, dimension (mx,my,mz,mfarray) :: f
       integer, intent(in) :: ivar
       real, intent (in) :: amp

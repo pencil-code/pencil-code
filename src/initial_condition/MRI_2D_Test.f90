@@ -16,9 +16,8 @@
 !***************************************************************
 module InitialCondition
 !
-  use Cparam
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
   use Sub, only: erfunc
 !
@@ -42,7 +41,7 @@ module InitialCondition
 !
 !  Identify CVS/SVN version information.
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id: fluxring_cylindrical.f90 19341 2012-08-01 12:11:20Z AxelBrandenburg $")
 !
     endsubroutine register_initial_condition

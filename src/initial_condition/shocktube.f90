@@ -12,9 +12,8 @@
 !***************************************************************
 module InitialCondition
 !
-  use Cparam
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none
@@ -38,7 +37,7 @@ module InitialCondition
 !
 !  20-nov-13/ccyang: coded
 !
-      if (lroot) call svn_id("$Id$")
+      call svn_id("$Id$")
 !
     endsubroutine register_initial_condition
 !***********************************************************************

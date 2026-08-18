@@ -10,20 +10,17 @@
 !
 !***************************************************************
 !
-!
 !!!!!!!
 !! Should work now, but need further testing.
 !! dhruba+ joern: work still in progress. 
 !!
 !!!!!!!
-
+!
 module InitialCondition
 !
-  use Cparam
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
-
 !
   implicit none
 !
@@ -44,7 +41,7 @@ module InitialCondition
 !
 !  26-jan-12/joern: coded
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id")
 !
     endsubroutine register_initial_condition

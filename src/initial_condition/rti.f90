@@ -11,8 +11,7 @@
 module InitialCondition
 !
   use Cdata
-  use Cparam
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none

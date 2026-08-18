@@ -10,9 +10,8 @@
 !***************************************************************
 module InitialCondition
 !
-  use Cparam
   use Cdata
-  use General, only: keep_compiler_quiet  
+  use Quiet
   use Mpicomm
   use Messages
   use Boundcond ! for the core boundary communication

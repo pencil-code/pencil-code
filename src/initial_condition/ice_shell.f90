@@ -70,9 +70,8 @@
 !
 module InitialCondition
 !
-  use Cparam
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
   use EquationOfState
 !
@@ -100,7 +99,7 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
          "$Id: centrifugal_balance.f90 19193 2012-06-30 12:55:46Z wdobler $")
 !
     endsubroutine register_initial_condition

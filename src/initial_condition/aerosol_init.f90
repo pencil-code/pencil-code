@@ -31,9 +31,8 @@
 !***************************************************************
 module InitialCondition
 !
-  use Cparam
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
   use EquationOfState
 !
@@ -79,7 +78,7 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
          "$Id$")
 !
     endsubroutine register_initial_condition
@@ -257,9 +256,6 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-
-     use General, only:  polynomial_interpolation
-
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       integer :: i_spline, k, i
       real, dimension (4) :: ary, arx
@@ -267,7 +263,6 @@ module InitialCondition
       real, dimension (ndustspec) :: nd_tmp 
       real :: tmp2, ddsize
       real, dimension(ndustspec)    :: lnds, dsize
-      
 !
       call keep_compiler_quiet(f)
 !

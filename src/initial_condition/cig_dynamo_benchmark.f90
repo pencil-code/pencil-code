@@ -19,9 +19,8 @@
 !
 module InitialCondition
 !
-  use Cparam
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
   use EquationOfState
   use Sub, only: step, der_step
@@ -45,7 +44,7 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id: cig_dynamo_benchmark.f90 21304 2013-11-15 22:10:55Z pkapyla $")
 !
     endsubroutine register_initial_condition

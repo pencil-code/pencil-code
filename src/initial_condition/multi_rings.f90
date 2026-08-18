@@ -12,9 +12,8 @@
 !***************************************************************
 module InitialCondition
 !
-  use Cparam
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none
@@ -45,7 +44,7 @@ module InitialCondition
 !
 !  Identify CVS/SVN version information.
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id: multi_rings.f90 19193 2012-06-30 12:55:46Z iomsn $")
 !
     endsubroutine register_initial_condition

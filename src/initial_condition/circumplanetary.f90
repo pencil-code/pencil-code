@@ -71,7 +71,7 @@
 module InitialCondition
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
   use EquationOfState
   use Particles_cdata
@@ -140,7 +140,7 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
          "$Id: circumplanetary.f90,v 1.1 2014/03/13 16:33:54 wlyra Exp $")
 !
     endsubroutine register_initial_condition

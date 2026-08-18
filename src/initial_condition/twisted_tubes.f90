@@ -10,9 +10,8 @@
 !***************************************************************
 module InitialCondition
 !
-  use Cparam
   use Cdata
-  use General, only: keep_compiler_quiet  
+  use Quiet
   use Mpicomm
   use Messages
   use Boundcond ! for the core boundary communication
@@ -49,7 +48,7 @@ module InitialCondition
 !
 !  Identify CVS/SVN version information.
 !
-    if (lroot) call svn_id( &
+    call svn_id( &
         "$Id: braids.f90,v 1.9 2011-08-02 16:43:18 iomsn Exp $")
 !
   endsubroutine register_initial_condition
