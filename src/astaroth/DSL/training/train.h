@@ -171,6 +171,21 @@ normalize_field(Field F, acc_sum, acc_sum_squared, count){
 		return (F - mean)/std
 }
 
+write_normalize(FieldSymmetricTensor T, acc_sum, acc_sum_sq, count){
+  write(T.xx,normalize_field(T.xx,out_acc_sum[0],out_acc_sum_sq[0],max(1,count)))
+  write(T.yy,normalize_field(T.yy,out_acc_sum[0],out_acc_sum_sq[0],max(1,count)))
+  write(T.zz,normalize_field(T.zz,out_acc_sum[0],out_acc_sum_sq[0],max(1,count)))
+  write(T.xy,normalize_field(T.xy,out_acc_sum[0],out_acc_sum_sq[0],max(1,count)))
+  write(T.yz,normalize_field(T.yz,out_acc_sum[0],out_acc_sum_sq[0],max(1,count)))
+  write(T.xz,normalize_field(T.xz,out_acc_sum[0],out_acc_sum_sq[0],max(1,count)))
+}
+
+write_normalize(Field3 T, acc_sum, acc_sum_sq, count){
+  write(T.x,normalize_field(T.x,out_acc_sum[0],out_acc_sum_sq[0],max(1,count)))
+  write(T.y,normalize_field(T.y,out_acc_sum[0],out_acc_sum_sq[0],max(1,count)))
+  write(T.z,normalize_field(T.z,out_acc_sum[0],out_acc_sum_sq[0],max(1,count)))
+}
+
 denormalize_field(Field F, acc_sum, acc_sum_squared, count)
 {
   real num_acc = (real)count*AC_ngrid.x*AC_ngrid.y*AC_ngrid.z
@@ -400,19 +415,23 @@ Kernel compute_normalize_sums()
 
 Kernel normalize_fields(int count)
 {
-	if(lhydro)
-	{
-	 write(uumean.x,normalize_field(uumean.x,in_acc_sum[0],in_acc_sum_sq[0],max(1,count)))
-	 write(uumean.y,normalize_field(uumean.y,in_acc_sum[1],in_acc_sum_sq[1],max(1,count)))
-	 write(uumean.z,normalize_field(uumean.z,in_acc_sum[2],in_acc_sum_sq[2],max(1,count)))
-     
+	if(lhydro){
+	  if(AC_lconservative__mod__hydro){
+      
+      write_normalize(mom_mean, in_acc_sum, in_acc_sum_sq, count)
 
-	 write(TAU_HYDRO.xx,normalize_field(TAU_HYDRO.xx,out_acc_sum[0],out_acc_sum_sq[0],max(1,count)))
-	 write(TAU_HYDRO.yy,normalize_field(TAU_HYDRO.yy,out_acc_sum[1],out_acc_sum_sq[1],max(1,count)))
-	 write(TAU_HYDRO.zz,normalize_field(TAU_HYDRO.zz,out_acc_sum[2],out_acc_sum_sq[2],max(1,count)))
-	 write(TAU_HYDRO.xy,normalize_field(TAU_HYDRO.xy,out_acc_sum[3],out_acc_sum_sq[3],max(1,count)))
-	 write(TAU_HYDRO.yz,normalize_field(TAU_HYDRO.yz,out_acc_sum[4],out_acc_sum_sq[4],max(1,count)))
-	 write(TAU_HYDRO.xz,normalize_field(TAU_HYDRO.xz,out_acc_sum[5],out_acc_sum_sq[5],max(1,count)))
+	    write(rho_mean,normalize_field(rho_mean,in_acc_sum_rho,in_acc_sum_sq_rho,max(1,count)))
+
+      write_normalize(TAU_STRAIN, out_acc_sum_strain, out_acc_sum_sq_strain, count)
+    
+      write_normalize(TAU_HYDRO, out_acc_sum, out_acc_sum_sq, count)
+
+    }
+    else{
+      write_normalize(uumean, in_acc_sum, in_acc_sum_sq, count)
+
+      write_normalize(TAU_HYDRO, out_acc_sum, out_acc_sum_sq, count)
+    }
 	}
 }
 

@@ -78,7 +78,7 @@ bool torch_train_multiarg_CAPI(int sub_dims[3], const std::vector<std::pair<AcRe
         fprintf(stderr, "ERROR: ASTAROTH device pointers are NULL! (input: %p), %d\n", (void*)inputs[i].first, i);
         fflush(stderr);
       }
-	    int64_t input_shape[5] = {1, inputs[i].second,  sub_dims[0], sub_dims[1], sub_dims[1]};
+	    int64_t input_shape[5] = {1, inputs[i].second,  sub_dims[0], sub_dims[1], sub_dims[2]};
         torchfort_tensor_list_add_tensor(inputs_tensor, inputs[i].first, 5, input_shape, TORCH_PRECISION);
     }
     
