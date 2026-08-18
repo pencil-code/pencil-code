@@ -32,6 +32,7 @@ module Special
 !
   use Cdata
   use Diagnostics
+  use General, only: itoa
   use Quiet
   use Messages, only: svn_id, fatal_error, fatal_error_local, warning
   use Mpicomm, only: mpibarrier,MPI_COMM_WORLD,MPI_INFO_NULL,mpireduce_min, mpireduce_max,mpibarrier
@@ -2149,8 +2150,6 @@ endif
 
       ! Load a chunk of data for a vector, beginning at loadstart
 
-      use General, only: itoa
-
       real, dimension(:,:,:,:,:), intent(inout) :: dataarray
       logical, dimension(3), intent(in) :: datamask
       integer, intent(in) :: tensor_id
@@ -2226,8 +2225,6 @@ endif
     subroutine loadDataset_rank2(dataarray, datamask, tensor_id, loadstart,name)
 
       ! Load a chunk of data for a 2-rank tensor, beginning at loadstart
-
-      use General, only: itoa
 
       real, dimension(:,:,:,:,:,:), intent(inout) :: dataarray
       logical, dimension(3,3), intent(in) :: datamask
