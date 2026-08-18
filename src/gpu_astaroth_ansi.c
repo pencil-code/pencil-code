@@ -50,8 +50,8 @@ void tf_save_model_c_api(const char*, const char*);
 void tf_load_model_c_api(const char*, const char*);
 void tf_load_model_checkpoint_c_api(const char*, const char*);
 void tf_create_model_c_api(const char*, const char*, FINT, bool);
-void torch_train_c_api(const char*, REAL*, int, double); 
-void torch_infer_c_api(const char*, int);
+void tf_train_c_api(const char*, REAL*, int, double); 
+void tf_infer_c_api(const char*, int);
 void print_debug();
 
 
