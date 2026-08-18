@@ -124,6 +124,7 @@ module Sub
   public :: sample_poisson_waiting_time
   public :: solve3x3
   public :: box_muller_transform
+  public :: get_astaroth_field_name
 
 
 !
@@ -9763,6 +9764,34 @@ subroutine box_muller_transform(res)
     if(i+1 <= n) res(i+1) = r(j+1)*cos(2*pi*u2(j+1))
   enddo
 endsubroutine box_muller_transform
+!***********************************************************************
+subroutine get_astaroth_field_name(j,vnm,nc)
+
+  use FArrayManager, only: farray_get_name
+  use General, only: upper_case
+
+  integer, intent(in) :: j
+  character (len=30), intent(out) :: vnm
+  integer, intent(in) :: nc
+  character (len=30) :: vname 
+
+  integer :: ncomps
+
+  ncomps=farray_get_name(j,vname)
+  if (ncomps==3) then
+    vnm=trim(vname)//trim(compnames(nc))
+  elseif (ncomps==6) then
+    vnm=trim(vname)//compnames(compinds_6(nc))
+  elseif (ncomps==9) then
+    vnm=trim(vname)//compnames(nc+3)
+  else
+    vnm=vname
+  endif
+  if (trim(vnm)=='aax') vnm='ax'
+  if (trim(vnm)=='aay') vnm='ay'
+  if (trim(vnm)=='aaz') vnm='az'
+  vnm = trim(upper_case(vnm))
+endsubroutine get_astaroth_field_name
 !***********************************************************************
 !
 endmodule Sub

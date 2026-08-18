@@ -186,6 +186,7 @@ module Param_IO
       lread_oldsnap_notestfield, lread_oldsnap_notestscalar, lread_oldsnap_noshear, lrepair_snap, linterpol_on_repair, &
       lread_oldsnap_nohydro, lread_oldsnap_nohydro_efield, lread_oldsnap_nohydro_ekfield, &
       lread_oldsnap_noisothmhd, lread_oldsnap_onlyA, lastaroth_output, astaroth_dest, lbackup_snap, &
+      lastaroth_input, astaroth_src, &
       nsnap_backups, &
       lread_oldsnap_rho2lnrho, lread_oldsnap_nosink, lwrite_dim_again, lwrite_last_powersnap, &
       lread_aux, comment_char, ix, iy, iy2, iz, iz2, iz3, iz4, slice_position, &

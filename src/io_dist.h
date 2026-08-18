@@ -13,6 +13,34 @@
       integer, parameter :: lun_input1=89
       integer :: l,m,n,ll
 
+      if (lastaroth_input) then
+        call safe_character_assign(file2,'-segment-'// &
+             trim(itoa(ipx*nx))//'-'//trim(itoa(ipy*ny))//'-'// &
+             trim(itoa(ipz*nz))//'-0.mesh')
+      
+        j=1
+        do while(j<=mvar)
+          ncomps=farray_get_name(j,vnm)
+          do nc=1,ncomps
+            call get_astaroth_field_name(j,vnm,nc)
+      
+            open(lun_output+1, &
+                 file=trim(astaroth_src)//vnm//trim(file2), &
+                 form='unformatted', &
+                 access='stream', &
+                 status='old', &
+                 action='read')
+      
+            read(lun_output+1) a(l1:l2,m1:m2,n1:n2,j)
+      
+            close(lun_output+1)
+      
+            j = j + 1
+          enddo
+        enddo
+	return
+      endif
+
       if (lserial_io) call start_serialize
 
       readdir = directory_snap

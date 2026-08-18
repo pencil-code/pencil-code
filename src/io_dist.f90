@@ -115,7 +115,8 @@ module Io
 !                  moved donwsampling stuff to snapshot
 !
       use Mpicomm, only: start_serialize, end_serialize
-      use General, only: get_range_no, ioptest, safe_character_assign, itoa, upper_case
+      use General, only: get_range_no, ioptest, safe_character_assign, itoa 
+      use Sub, only: get_astaroth_field_name
       use FArrayManager, only: farray_get_name
 !
       real, dimension (:,:,:,:),  intent(IN) :: a
@@ -166,30 +167,16 @@ module Io
 
           j=1
           do while(j<=mvar)
-
-            ncomps=farray_get_name(j,vname)
+            ncomps=farray_get_name(j,vnm)
             do nc=1,ncomps
-
-              if (ncomps==3) then
-                vnm=trim(vname)//trim(compnames(nc))
-              elseif (ncomps==6) then
-                vnm=trim(vname)//compnames(compinds_6(nc))
-              elseif (ncomps==9) then
-                vnm=trim(vname)//compnames(nc+3)
-              else
-                vnm=vname
-              endif
-              if (trim(vnm)=='aax') vnm='ax'
-              if (trim(vnm)=='aay') vnm='ay'
-              if (trim(vnm)=='aaz') vnm='az'
-!if (lroot) print*, 'rank,j,file=', iproc,j,nc,trim(file1)//trim(upper_case(vnm))//trim(file2)
-              open(lun_output+1,file=trim(file1)//trim(upper_case(vnm))//trim(file2),form='unformatted', &
+              call get_astaroth_field_name(j,vnm,nc)
+              !if (lroot) print*, 'rank,j,file=', iproc,j,nc,trim(file1)//trim(upper_case(vnm))//trim(file2)
+              open(lun_output+1,file=trim(file1)//vnm//trim(file2),form='unformatted', &
                    access='direct',recl=out_size)
               write(lun_output+1,rec=1) a(l1:l2,m1:m2,n1:n2,j)
               close(lun_output+1)
-
+              j = j + 1
             enddo
-            j = j+ncomps
           enddo
         endif
         write (lun_output) a(:,:,:,na:ne)
@@ -732,6 +719,9 @@ module Io
                          mpisend_char, mpirecv_char, mpiallreduce_and
       use Syscalls, only: islink, system_cmd, readlink, extract_str
       use General, only: itoa, find_proc, atoi
+      use Sub, only: get_astaroth_field_name
+      use FArrayManager, only: farray_get_name
+      use General, only: safe_character_assign
 !
       character (len=*), intent(in) :: file
       integer, intent(in) :: nv, mode
@@ -745,6 +735,9 @@ module Io
       real(KIND=rkind4), dimension (mz), intent(out) :: z
 
       real(KIND=rkind4), dimension(:,:,:,:), allocatable :: tmp_omit,tmp
+      integer :: j,nc,ncomps
+      character (len=30) :: vnm
+      character (len=fnlen) :: file2
 !
       include 'io_dist.h'
 !
@@ -769,6 +762,9 @@ module Io
                          mpisend_char, mpirecv_char,mpiallreduce_and
       use Syscalls, only: islink, system_cmd, readlink, extract_str
       use General, only: itoa, find_proc, atoi
+      use Sub, only: get_astaroth_field_name
+      use FArrayManager, only: farray_get_name
+      use General, only: safe_character_assign
 !
       character (len=*), intent(in) :: file
       integer, intent(in) :: nv, mode
@@ -782,6 +778,9 @@ module Io
       real(KIND=rkind8), dimension (mz), intent(out) :: z
 
       real(KIND=rkind8), dimension(:,:,:,:), allocatable :: tmp_omit,tmp
+      integer :: j,nc,ncomps
+      character (len=30)  :: vnm
+      character (len=fnlen) :: file2
 
       include 'io_dist.h'
 !
