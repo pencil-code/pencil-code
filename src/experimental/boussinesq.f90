@@ -28,9 +28,8 @@
 !***************************************************************
 module Density
 !
-  use Cparam
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none
@@ -61,7 +60,7 @@ module Density
       use FArrayManager, only: farray_register_auxiliary
       use SharedVariables, only: put_shared_variable
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id$")
 !
       call farray_register_auxiliary('pp',ipp,communicated=.true.)

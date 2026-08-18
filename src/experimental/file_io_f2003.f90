@@ -6,7 +6,6 @@
 module File_io
 !
   use Cdata
-  use Cparam
   use Mpicomm
 !
   implicit none

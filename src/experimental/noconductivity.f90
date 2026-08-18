@@ -16,9 +16,8 @@
 !***************************************************************
 module Conductivity
 !
-  use Cdata
   use Cparam
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none
@@ -31,7 +30,7 @@ module Conductivity
 !
 !  Identify version number. 
 !
-      if (lroot) call svn_id("$Id$")
+      call svn_id("$Id$")
 !
     endsubroutine register_conductivity
 !***********************************************************************

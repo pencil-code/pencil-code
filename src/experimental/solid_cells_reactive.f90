@@ -12,9 +12,8 @@
 !***************************************************************
 module Solid_Cells
 !
-  use Cparam
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
   use Chemistry
   use EquationOfState
@@ -110,7 +109,7 @@ module Solid_Cells
 !
     integer :: isvar, kchem
 !
-!    if (lroot) call svn_id("$Id: solid_cells.f90 zhuangzhenya@126.com $")
+!    call svn_id("$Id: solid_cells.f90 zhuangzhenya@126.com $")
 !
 !  Indices for solid_cells position.
 !

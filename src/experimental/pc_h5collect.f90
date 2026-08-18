@@ -3,11 +3,9 @@
 ! $Id: pc_h5collect.f90 23201 2015-04-06 02:11:37Z st.tuomisto@gmail.com $
 !***********************************************************************
 
-
 program pc_h5collect
 !
   use Cdata
-  use Cparam
   !use Diagnostics
   !use Filter
   use Grid, only: initialize_grid
@@ -51,11 +49,8 @@ program pc_h5collect
   integer(HID_T) :: hdf_file_plist
                     
   integer(HSIZE_T) , dimension(4) :: hdf_stride, hdf_count, hdf_block, hdf_offsets
-
-  
   
   logical :: hdf_exists
-  
   
   ! Internal parameters
   integer, parameter            :: len_datagroups = 30, len_fields = 100, &

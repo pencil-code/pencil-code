@@ -24,7 +24,7 @@
 module Particles
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
   use Particles_cdata
   use Particles_map
@@ -297,7 +297,7 @@ module Particles
       use FArrayManager, only: farray_register_auxiliary
       use SharedVariables, only: put_shared_variable
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id$")
 !
 !  Indices for particle position.

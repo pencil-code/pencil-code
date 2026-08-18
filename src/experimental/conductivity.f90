@@ -17,7 +17,7 @@
 module Conductivity
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none
@@ -62,7 +62,7 @@ module Conductivity
 !
 !  18-jun-13/wlad: coded
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id$")
 !
     endsubroutine register_conductivity

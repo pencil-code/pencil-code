@@ -16,9 +16,8 @@
 !***************************************************************
 module Cosmicrayflux
 !
-  use Cparam
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none
@@ -58,7 +57,7 @@ module Cosmicrayflux
 !
 !  Identify version number.
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id: cosmicrayflux.f90 19193 2012-06-30 12:55:46Z wdobler $")
 !
 !  Writing files for use with IDL

@@ -21,7 +21,6 @@
 module Poisson
 !
   use Cdata
-  use Cparam
   use Fourier
   use Messages
 !
@@ -79,7 +78,7 @@ module Poisson
 !
 !  17-jul-2007/wolf: coded wrapper
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
 !
       real, dimension (nx,ny,nz) :: phi
 !
@@ -652,7 +651,7 @@ module Poisson
 !
 !  15-may-2006/anders+jeff: dummy
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,ny,nz) :: phi
@@ -666,7 +665,7 @@ module Poisson
 !
 !  15-may-2006/anders+jeff: dummy
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
 !
       real, dimension(nx,ny,nz), intent(in) :: phi
 !
@@ -678,7 +677,7 @@ module Poisson
 !
 !  15-may-2006/anders+jeff: dummy
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
 !
       real, dimension(:,:,:,:), intent(in) :: f
 !
@@ -688,7 +687,7 @@ module Poisson
 !***********************************************************************
     subroutine get_acceleration(acceleration)
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
 !
       real, dimension(nx,ny,nz,3), intent(out) :: acceleration           !should I (CAN I?) make this allocatable?
 !

@@ -22,9 +22,8 @@
 !***************************************************************
 module EquationOfState
 !
-  use Cparam
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none
@@ -99,7 +98,7 @@ module EquationOfState
 !
 !  Identify version number.
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           '$Id$')
 !
 !  fvap, mumol1, and cp as auxiliary variables.

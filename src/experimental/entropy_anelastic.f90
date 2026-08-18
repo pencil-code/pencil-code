@@ -22,7 +22,7 @@
 module Energy
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use EquationOfState, only: cs20, cs2top, cs2bot
   use Interstellar
   use Messages
@@ -234,7 +234,7 @@ module Energy
 !
 !  identify version number
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id$")
 !
 ! Shared variables

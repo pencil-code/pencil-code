@@ -6,7 +6,6 @@
 !
 module Timestep
 !
-  use Cparam
   use Cdata
 !
   implicit none

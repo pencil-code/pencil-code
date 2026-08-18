@@ -6,7 +6,6 @@
 module Mpicomm
 !
   use Cdata
-  use Cparam
 !
   implicit none
 !

@@ -20,7 +20,7 @@
 module Forcing
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none
@@ -142,7 +142,7 @@ module Forcing
 !
 !  identify version number
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
     endsubroutine register_forcing
@@ -781,7 +781,6 @@ module Forcing
 !               Spotted bug: for old_forcing_evector=T, kk and ee remain undefined - nees to be fixed
 !
       use EquationOfState, only: cs0
-      use General, only: random_number_wrapper
       use Sub
       use Mpicomm, only: stop_it
 !
@@ -3988,7 +3987,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !***********************************************************************
     subroutine forcing_pars_hel(force_fact,kkx,kky,kkz,nk,kav,coef1,coef2,coef3,kk,phase,fact,fda)
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
 !
       real,                   intent(in ) :: force_fact,kav
       integer,                intent(in ) :: nk

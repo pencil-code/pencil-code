@@ -24,9 +24,8 @@
 !***************************************************************
 module EquationOfState
 !
-  use Cparam
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none
@@ -89,7 +88,7 @@ module EquationOfState
 !
 !  Identify version number.
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           '$Id$')
 !
     endsubroutine register_eos
@@ -1655,7 +1654,7 @@ module EquationOfState
 !
 !  06-mar-08/nils: coded
 !
-      use General
+      use General, only:itoa
 !
       character (len=fnlen) :: input_file="./data/chem.out"
       character (len=intlen) :: ispec

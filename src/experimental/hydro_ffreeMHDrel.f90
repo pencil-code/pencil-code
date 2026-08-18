@@ -17,7 +17,7 @@ module Hydro
 
   use Cparam
   use Messages
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Viscosity
 
   implicit none
@@ -82,7 +82,7 @@ module Hydro
 !
 !  Identify version number (generated automatically by CVS).
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id$")
 !
 !  Writing files for use with IDL

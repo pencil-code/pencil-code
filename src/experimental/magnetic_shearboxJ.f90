@@ -32,7 +32,7 @@
 module Magnetic
 !
   use Cdata
-  use General, only: keep_compiler_quiet, loptest
+  use Quiet
   use Magnetic_meanfield
   use Messages, only: fatal_error,inevitably_fatal_error,warning,svn_id,timing
   use SharedVariables, only: get_shared_variable  
@@ -834,7 +834,7 @@ module Magnetic
 !
 !  Identify version number.
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id$")
 !
 !  Writing files for use with IDL
@@ -7185,6 +7185,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
 !
       use Diagnostics
       use FArrayManager, only: farray_index_append
+      use General, only: loptest
       use Messages, only: warning
 !
       integer :: iname,inamex,inamey,inamez,inamev,ixy,ixz,irz,inamer,iname_half,iname_sound,idum

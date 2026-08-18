@@ -18,7 +18,7 @@
 module Gravity
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none
@@ -90,7 +90,7 @@ module Gravity
 !
       use FArrayManager, only: farray_register_global
 
-      if (lroot) call svn_id("$Id$")
+      call svn_id("$Id$")
 !
       lgravr=.true.
 !

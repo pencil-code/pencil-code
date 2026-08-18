@@ -26,7 +26,6 @@
 !
 module Shock
 !
-  use Cparam
   use Cdata
   use Messages
 !
@@ -94,7 +93,7 @@ module Shock
 !
 !  identify version number
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
     endsubroutine register_shock

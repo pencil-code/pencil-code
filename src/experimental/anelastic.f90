@@ -28,7 +28,7 @@ module Density
   use Cdata
   use EquationOfState, only: cs0, cs20, cs2top, cs2bot, get_gamma_etc, rho0, lnrho0, &
                              get_average_pressure, select_eos_variable
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
   use Sub
   use Diagnostics
@@ -155,7 +155,7 @@ module Density
 !
 !  Identify version number (generated automatically by CVS).
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id$")
 !
     endsubroutine register_density

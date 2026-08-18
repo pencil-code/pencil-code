@@ -28,9 +28,8 @@
 !***************************************************************
 module Chemistry
 !
-  use Cparam
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use EquationOfState
   use Messages, only: svn_id, timing, fatal_error, inevitably_fatal_error
   use Mpicomm, only: stop_it
@@ -314,7 +313,7 @@ real, dimension(mx,my,mz,nchemspec) :: cp_spec_glo
 !
 !  Identify version number (generated automatically by SVN).
 !
-      if (lroot) call svn_id( "$Id$")
+      call svn_id( "$Id$")
 !
     endsubroutine register_chemistry
 !***********************************************************************

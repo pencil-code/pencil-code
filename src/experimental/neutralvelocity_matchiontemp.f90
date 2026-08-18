@@ -17,7 +17,6 @@
 !***************************************************************
 module NeutralVelocity
 !
-  use Cparam
   use Cdata
   use Messages
 !
@@ -108,7 +107,7 @@ module NeutralVelocity
 !
 !  Identify version number (generated automatically by SVN).
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id$")
 !
 !  Writing files for use with IDL.

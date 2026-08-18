@@ -29,7 +29,6 @@
 module Poisson
 
   use Cdata
-  use Cparam
   use Fourier
   use Messages
 
@@ -1257,7 +1256,7 @@ module Poisson
 !***********************************************************************
     subroutine get_acceleration(acceleration)
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
 !
       real, dimension(nx,ny,nz,3), intent(out) :: acceleration           !should I (CAN I?) make this allocatable?
 !
