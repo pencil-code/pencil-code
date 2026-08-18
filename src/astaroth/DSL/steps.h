@@ -86,6 +86,9 @@ ComputeSteps AC_before_boundary_steps(boundconds)
 ComputeSteps AC_initialize_sums(boundconds)
 {
 	initial_prep_ode()
+#if LKLEIN_GORDON
+	initial_bubbles()
+#endif
 }
 
 

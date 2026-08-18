@@ -162,19 +162,18 @@ fixed_boundary Kernel twopass_solve_final(PC_SUB_STEP_NUMBER step_num, real dt)
 			dphi = rk_final(F_DPHI,step_num,dt)
 			if(AC_llast__mod__cdata && AC_lthermal_noise__mod__klein_gordon)
 			{
-				inv_dvol = AC_inv_r[vertexIdx.x-NGHOST]/(4*AC_REAL_PI)
+				inv_r = AC_inv_r[vertexIdx.x-NGHOST]
+				inv_dvol = inv_r*inv_r/(4*AC_REAL_PI*AC_dx__mod__cdata)
 				zeta = box_muller_transform()*sqrt(2.0*AC_plasma_coupling_coeff__mod__klein_gordon*AC_noise_strength__mod__klein_gordon*inv_dvol/dt)
 				if(AC_domain_coordinates == (int3){0,0,0} && vertexIdx.x < AC_continuation_offset__mod__klein_gordon+NGHOST)
 				{
 					zeta = 0.
 				}
-				dphi += zeta
+				dphi += dt*zeta
 				if(AC_lbubble_size_ode__mod__klein_gordon)
 				{
-					v = AC_f_ode__mod__cdata[AC_irdot__mod__klein_gordon]
-					gamma = 1./sqrt(1-v*v)
 					drdphi = derx(F_PHI)
-					real integrand = AC_dx__mod__cdata*zeta*drdphi*drdphi/gamma
+					real integrand = AC_dx__mod__cdata*zeta*drdphi
 					reduce_sum(integrand,AC_int_zeta)
 				}
 			}

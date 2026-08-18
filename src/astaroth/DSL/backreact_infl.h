@@ -93,7 +93,9 @@ prep_ode_right()
   else {
     ddota=-(dphi*dphi)-gphi2+4.*AC_a2__mod__backreact_infl*vpotential
   }
+  #if LGRAVITATIONAL_WAVES_HTXK
   reduce_sum(ddota*(four_pi_over_three/nwgrid),AC_ddotam_all__mod__backreact_infl)
+  #endif
   a2rho=a2rho+AC_a2__mod__backreact_infl*vpotential
   a2rhom__mod__backreact_infl=a2rho
   if (lmagnetic &&  AC_lem_backreact__mod__backreact_infl) {
@@ -243,7 +245,10 @@ prep_ode_right()
     gphi = gradient(Field(AC_iphi__mod__klein_gordon-1))
     gphi2 = dot(gphi,gphi)
     a2rhogphim__mod__klein_gordon=0.5*gphi2
-    reduce_sum(a2rhogphim__mod__klein_gordon/nwgrid,AC_a2rhogphim_all__mod__klein_gordon)
+    if(AC_idiag_a2rhogphim__mod__klein_gordon != 0) 
+    {
+      reduce_sum(a2rhogphim__mod__klein_gordon/nwgrid,AC_a2rhogphim_all__mod__klein_gordon)
+    }
     a2rhop=(dphi*dphi)+onethird*gphi2
     a2rho=0.5*((dphi*dphi)+gphi2)
     a2rhophim__mod__klein_gordon=a2rho
@@ -279,7 +284,9 @@ prep_ode_right()
   else {
     ddota=-(dphi*dphi)-gphi2+4.*AC_a2__mod__klein_gordon*vpotential
   }
+  #if LGRAVITATIONAL_WAVES_HTXK
   reduce_sum(ddota*(four_pi_over_three/nwgrid),AC_ddotam_all__mod__klein_gordon)
+  #endif
   a2rho=a2rho+AC_a2__mod__klein_gordon*vpotential
   a2rhom__mod__klein_gordon=a2rho
   if (lmagnetic &&  AC_lem_backreact__mod__klein_gordon) {
@@ -350,9 +357,31 @@ prep_ode_right()
   a2rhom__mod__klein_gordon    /= nwgrid
   a2rhopm__mod__klein_gordon   /= nwgrid
   a2rhophim__mod__klein_gordon /= nwgrid
-  reduce_sum(a2rhom__mod__klein_gordon,AC_a2rhom_all__mod__klein_gordon)
-  reduce_sum(a2rhopm__mod__klein_gordon,AC_a2rhopm_all__mod__klein_gordon)
-  reduce_sum(a2rhophim__mod__klein_gordon,AC_a2rhophim_all__mod__klein_gordon)
+  if(AC_enum_hscript_choice__mod__klein_gordon != enum_set_string)
+  {
+    reduce_sum(a2rhom__mod__klein_gordon,AC_a2rhom_all__mod__klein_gordon)
+  }
+  //TP: not optimal for diagnostics since computed every iteration
+  if(AC_idiag_a2rhopm__mod__klein_gordon != 0) 
+  {
+    reduce_sum(a2rhopm__mod__klein_gordon,AC_a2rhopm_all__mod__klein_gordon)
+  }
+  if(AC_idiag_a2rhophim__mod__klein_gordon != 0) 
+  {
+    reduce_sum(a2rhophim__mod__klein_gordon,AC_a2rhophim_all__mod__klein_gordon)
+  }
+}
+
+Kernel
+initial_bubbles()
+{
+  v = AC_f_ode__mod__cdata[AC_irdot__mod__klein_gordon-1]
+  gamma = 1./sqrt(1-v*v)
+  drdphi = derx(F_PHI)
+  reduce_sum(AC_dx__mod__cdata*drdphi*drdphi/gamma,AC_bubble_tension)
+  phi_val = value(F_PHI)
+  //TP: to make sure AC_int_zeta has a well defined value
+  reduce_sum(0.,AC_int_zeta)
 }
 
 #else

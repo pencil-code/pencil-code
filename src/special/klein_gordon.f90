@@ -311,7 +311,8 @@ module Special
   real :: wall_gamma = impossible
   logical :: lwall_friction = .false.
   real :: tension_next = 0.
-  real :: int_zeta
+  real :: int_zeta = 0.
+  real :: int_zeta_diag
 
   contains
 !****************************************************************************
@@ -1639,6 +1640,7 @@ module Special
         sigEm_all_diagnos = sigEm_all
         sigBm_all_diagnos = sigBm_all
         bubble_surface_tension_diag = bubble_surface_tension
+        int_zeta_diag = int_zeta
         call calc_ode_diagnostics_special(f_ode)
       endif
 
@@ -1691,8 +1693,8 @@ module Special
           if(idiag_Rddot /= 0) then
             call get_Rddot(f_ode,Rddot)
             call save_name(Rddot,idiag_Rddot)
-            call save_name(int_zeta,idiag_zeta_int)
           endif
+          call save_name(int_zeta_diag,idiag_zeta_int)
           if(idiag_terminal_vel /= 0) then
             r = deltaV/(plasma_coupling_coeff*bubble_surface_tension_diag)
             call save_name(r/(1+sqrt(1+r**2)),idiag_terminal_vel)
@@ -2358,18 +2360,29 @@ module Special
         endif
       endif
 !
-      call mpireduce_sum(a2rhopm,a2rhopm_all)
-      call mpiallreduce_sum(a2rhom,a2rhom_all)
-      call mpireduce_sum(a2rhophim,a2rhophim_all)
-      call mpireduce_sum(a2rhogphim,a2rhogphim_all)
+      if(idiag_a2rhopm /= 0) then
+        call mpireduce_sum(a2rhopm,a2rhopm_all)
+        a2rhopm_all_diagnos    = a2rhopm_all
+      endif
+      if(idiag_a2rhophim /= 0) then
+        call mpireduce_sum(a2rhophim,a2rhophim_all)
+        a2rhophim_all_diagnos  = a2rhophim_all
+      endif
+
+      if(Hscript_choice /= 'set' .or. idiag_a2rhom /= 0) then
+        call mpiallreduce_sum(a2rhom,a2rhom_all)
+        a2rhom_all_diagnos     = a2rhom_all
+      endif
+
+      if(idiag_a2rhogphim /= 0) then
+        call mpireduce_sum(a2rhogphim,a2rhogphim_all)
+        a2rhogphim_all_diagnos = a2rhogphim_all
+      endif
+
       call mpireduce_sum(a2rhopsim,a2rhopsim_all)
       call mpireduce_sum(a2rhogpsim,a2rhogpsim_all)
       call mpiallreduce_sum(ddotam,ddotam_all)
-      a2rhom_all_diagnos     = a2rhom_all
-      a2rhopm_all_diagnos    = a2rhopm_all
-      a2rhophim_all_diagnos  = a2rhophim_all
       a2rhopsim_all_diagnos  = a2rhopsim_all
-      a2rhogphim_all_diagnos = a2rhogphim_all
       a2rhogpsim_all_diagnos = a2rhogpsim_all
       ddotam_all_diagnos     = ddotam_all
 !
@@ -2395,7 +2408,9 @@ module Special
             endif
           endif
         endif
-        a2rhom_all=a2rhom_all+rho_phi*a21**w_p
+        if(Hscript_choice /= 'set' .or. idiag_a2rhom /= 0) then
+          a2rhom_all=a2rhom_all+rho_phi*a21**w_p
+        endif
         ddotam_all = ddotam_all - (1 - 3*w_phi)*rho_phi*a21**w_p
       endif
       if (lflrw) call get_Hscript_and_a2(Hscript,a2rhom_all)
@@ -2450,7 +2465,7 @@ module Special
             f(l1:l2,m,n,idphi) = f(l1:l2,m,n,idphi) + dt_*zeta
             if(lbubble_size_ODE .and. nx > 1) then
               call der(f,iphi,drphi,1)
-              zeta_sum = zeta_sum + sum(zeta*dx*drphi**2/wall_gamma)
+              zeta_sum = zeta_sum + sum(zeta*dx*drphi)
             endif
           endif
         enddo
@@ -2681,7 +2696,9 @@ module Special
       real, dimension(n_gpu_reduced_vars) :: tmp
 
       call get_gpu_reduced_vars(tmp)
-      a2rhom_all     = tmp(1)
+      if(Hscript_choice /= 'set') then
+        a2rhom_all     = tmp(1)
+      endif
       a2rhopm_all    = tmp(2)
       a2rhophim_all  = tmp(3)
       a2rhogphim_all = tmp(4)
@@ -2692,6 +2709,9 @@ module Special
       b2m_all            = tmp(9)
       if(lbubble_size_ODE) then
         bubble_surface_tension   = tmp(10)
+        if(lthermal_noise) then
+          int_zeta = tmp(11)
+        endif
       endif
 
       call get_Hscript_and_a2(Hscript,a2rhom_all)
@@ -2706,6 +2726,7 @@ module Special
         sigEm_all_diagnos      = sigEm_all
         sigBm_all_diagnos      = sigBm_all
         bubble_surface_tension_diag = bubble_surface_tension
+        int_zeta_diag = int_zeta
       endif
 
     endsubroutine read_sums_from_GPU
@@ -2797,6 +2818,9 @@ module Special
     call copy_addr(iRdot,p_par(77)) ! int
     call copy_addr(lthermal_noise,p_par(78)) ! bool
     call copy_addr(noise_strength,p_par(79)) ! real dconst
+    call copy_addr(idiag_a2rhopm,p_par(80)) ! int
+    call copy_addr(idiag_a2rhophim,p_par(81)) ! int
+    call copy_addr(idiag_a2rhogphim,p_par(82)) ! int
 
     endsubroutine pushpars2c
 !********************************************************************

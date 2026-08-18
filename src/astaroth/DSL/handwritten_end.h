@@ -133,7 +133,10 @@
 
 #  if LKLEIN_GORDON
           if(AC_iphi__mod__klein_gordon != 0)  write(F_PHI ,rk_intermediate(F_PHI ,DF_PHI ,step_num,AC_dt__mod__cdata))
-          if(AC_idphi__mod__klein_gordon != 0) write(F_DPHI,rk_intermediate(F_DPHI,DF_DPHI,step_num,AC_dt__mod__cdata))
+          if(AC_idphi__mod__klein_gordon != 0) 
+	  {
+	     write(F_DPHI,rk_intermediate(F_DPHI,DF_DPHI,step_num,AC_dt__mod__cdata))
+	  }
 
           if(AC_iphi_up_im__mod__klein_gordon != 0)   write(F_PHI_UP_IM,rk_intermediate(F_PHI_UP_IM,DF_PHI_UP_IM,step_num,AC_dt__mod__cdata))
           if(AC_iphi_down_re__mod__klein_gordon != 0) write(F_PHI_DOWN_RE,rk_intermediate(F_PHI_DOWN_RE,DF_PHI_DOWN_RE,step_num,AC_dt__mod__cdata))
@@ -147,9 +150,9 @@
           if(AC_idpsi__mod__klein_gordon != 0) write(F_DPSI,rk_intermediate(F_DPSI,DF_DPSI,step_num,AC_dt__mod__cdata))
           if(AC_lbubble_size_ode__mod__klein_gordon)
 	  {
-		v = AC_f_ode__mod__cdata[AC_irdot__mod__klein_gordon]
+		v = AC_f_ode__mod__cdata[AC_irdot__mod__klein_gordon-1]
 		gamma = 1./sqrt(1-v*v)
-		reduce_sum(AC_dx__mod__cdata*ac_transformed_pencil_gphi[0]*ac_transformed_pencil_gphi[0]/gamma,AC_bubble_tension)
+		reduce_sum(AC_dx__mod__cdata*ac_transformed_pencil_gphi.x*ac_transformed_pencil_gphi.x/gamma,AC_bubble_tension)
 	  }
 #  endif
 
