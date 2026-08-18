@@ -218,6 +218,7 @@ module Special
 !
   real, dimension (nx,3) :: dEdt
   !$omp threadprivate(dEdt)
+  integer :: enum_replace_schwinger_by_arnold = 0
   contains
 !
 !***********************************************************************
@@ -1930,6 +1931,11 @@ module Special
 
     call copy_addr(sige_arnold_prefactor,p_par(65))
     call copy_addr(lreplace_schwinger_by_arnold,p_par(66)) ! bool
+    call copy_addr(lna1_switch_toarnold,p_par(67))
+    call copy_addr(lna2_switch_toarnold,p_par(68))
+    call copy_addr(idiag_etaarn,p_par(69)) ! int
+    call string_to_enum(enum_replace_schwinger_by_arnold,replace_schwinger_by_arnold)
+    call copy_addr(enum_replace_schwinger_by_arnold,p_par(70)) ! int
     endsubroutine pushpars2c
 !***********************************************************************
 !********************************************************************

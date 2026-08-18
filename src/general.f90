@@ -7713,6 +7713,10 @@ iloop:do i=1,size(list2)
         dst = enum_perturbative_reheating_string
       case('sextic_wo_cubic')
         dst = enum_sextic_wo_cubic_string
+      case('replace_at_end_of_reheating')
+        dst = enum_replace_at_end_of_reheating_string
+      case('interpol_from_lna1_to_lna2')
+        dst = enum_interpol_from_lna1_to_lna2_string
       case('waterfall')
         dst = enum_waterfall_string
       case('imposed-cs2-core')
