@@ -341,7 +341,9 @@ module Special
         call get_shared_variable('sigEm_all', sigEm_all)
         call get_shared_variable('sigBm_all', sigBm_all)
         call get_shared_variable('lohm_evolve', lohm_evolve)
-        call get_shared_variable('lsolve_for_phi', lsolve_for_phi)
+        if (lreplace_Schwinger_by_Arnold .and. &
+          replace_Schwinger_by_Arnold=='replace_at_end_of_reheating') &
+          call get_shared_variable('lsolve_for_phi', lsolve_for_phi)
       else
         if (.not.associated(Hscript)) allocate(Hscript,echarge,sigEm_all,sigBm_all)
         Hscript=0.
