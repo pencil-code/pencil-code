@@ -17,7 +17,7 @@
 module Special
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none
@@ -67,7 +67,7 @@ module Special
       call farray_register_pde('am',iam,vector=3)
       iamx=iam; iamy=iamx+1; iamz=iamx+2
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
     endsubroutine register_special

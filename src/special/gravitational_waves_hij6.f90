@@ -76,7 +76,7 @@ module Special
 !
   use Cdata
   use Initcond
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages, only: svn_id, fatal_error
 !
   implicit none
@@ -170,7 +170,7 @@ module Special
       use Sub, only: register_report_aux
       use FArrayManager
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
       call farray_register_pde('hij',ihij,array=6,lsubstepped=lsubstepped_in_time)
@@ -194,9 +194,6 @@ module Special
         call farray_register_auxiliary('StX',iStressX)
         call farray_register_auxiliary('Str',iStress_ij,array=6)
       endif
-!
-      if (lroot) call svn_id( &
-           "$Id$")
 !
     endsubroutine register_special
 !***********************************************************************

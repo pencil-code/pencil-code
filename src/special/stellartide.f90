@@ -55,7 +55,7 @@
 module Special
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
   use Particles_cdata
 !
@@ -90,7 +90,7 @@ module Special
       use Cdata
       use FArrayManager, only: farray_register_auxiliary
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id: stellartide.f90,v 1.1 2014/03/13 16:31:16 wlyra Exp $")
 !
     endsubroutine register_special

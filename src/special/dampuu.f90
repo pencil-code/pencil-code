@@ -21,7 +21,7 @@ module Special
 !
   use Cdata
   use Sub, only: step
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages, only: svn_id, fatal_error, not_implemented
 !
   implicit none

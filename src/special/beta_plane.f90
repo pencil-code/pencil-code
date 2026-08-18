@@ -20,7 +20,7 @@
 module Special
 !
   use Cdata, Omega_fplane => Omega
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages, only: svn_id, fatal_error
 !
   implicit none

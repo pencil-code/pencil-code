@@ -61,7 +61,7 @@
 module Special
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none
@@ -92,7 +92,7 @@ module Special
 !
       use Cdata
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
     endsubroutine register_special
@@ -429,7 +429,6 @@ module Special
     subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
-    use General , only: string_to_enum
 
     integer, parameter :: n_pars=10
     integer(KIND=ikind8), dimension(n_pars) :: p_par

@@ -14,7 +14,7 @@
 module Special
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none
@@ -74,7 +74,7 @@ module Special
 !
 !  6-oct-03/tony: coded
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id$")
 !
     endsubroutine register_special

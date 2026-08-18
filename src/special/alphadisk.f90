@@ -22,7 +22,7 @@
 module Special
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages, only: svn_id, fatal_error
   use Deriv
 !
@@ -135,7 +135,7 @@ module Special
 !
       use FArrayManager, only: farray_register_pde,farray_register_auxiliary
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id$")
 !
 !  Register variables needed for alpha disk.

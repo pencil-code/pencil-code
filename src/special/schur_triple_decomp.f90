@@ -80,7 +80,7 @@
 module Special
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages, only: svn_id, fatal_error
 !
   implicit none
@@ -164,7 +164,7 @@ end function selct
       use Sub, only: register_report_aux
       use SharedVariables, only: put_shared_variable
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
       if (luschur2_as_aux) &
@@ -272,9 +272,6 @@ end function selct
 !
       intent(inout) :: f
       intent(inout) :: p
-!
-!
-
 !
 !  Possibility of applying triple decomposition of uij
 !  Do only when output onto command line.
@@ -434,7 +431,7 @@ end function selct
 !
         if (luschurm_as_aux) then
           if (luse_complex_schur) then
-            call fatal_error('calc_pencils_special','no p%uRRm with luse_complex_schur=T')
+            call fatal_error('calc_diagnostic_pencils','no p%uRRm with luse_complex_schur=T')
           else
             f(l1:l2,m,n,iuschurm_RR)=p%uRRm
           endif
@@ -544,14 +541,14 @@ end function selct
 !
         if (lbschurm_as_aux) then
           if (luse_complex_schur) then
-            call fatal_error('calc_pencils_special','no p%bRRm with luse_complex_schur=T')
+            call fatal_error('calc_diagnostic_pencils','no p%bRRm with luse_complex_schur=T')
           else
             f(l1:l2,m,n,ibschurm_RR)=p%bRRm
           endif
         endif
       endif
 !
-    endsubroutine
+    endsubroutine calc_diagnostic_pencils
 !***********************************************************************
     subroutine calc_pencils_special(f,p)
 !
@@ -562,7 +559,6 @@ end function selct
 !  27-jan-26/axel: Since -r42600, redefined mixed term as the sum of mixed and original term
 !
       use Sub, only: grad
-      use General, only: eigvec3
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -775,11 +771,13 @@ end function selct
     endsubroutine schur_standardized_complex
 !***********************************************************************
     subroutine calc_diagnostics_special(f,p)
+!
       use Diagnostics, only: sum_mn_name
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
       intent(in) :: f,p
+!
       if (ldiagnos .or. ldiagnos_always) then
         call sum_mn_name(p%uSH2,idiag_uSH2)
         call sum_mn_name(p%uRR2,idiag_uRR2)
@@ -790,6 +788,7 @@ end function selct
         call sum_mn_name(p%bEL2,idiag_bEL2)
         call sum_mn_name(p%bRRm,idiag_bRRm)
       endif
+!
     endsubroutine calc_diagnostics_special
 !***********************************************************************
     subroutine dspecial_dt(f,df,p)

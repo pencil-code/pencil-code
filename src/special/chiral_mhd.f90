@@ -80,7 +80,7 @@
 module Special
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages, only: svn_id, fatal_error
 !
   implicit none
@@ -211,7 +211,7 @@ module Special
 !
       use FArrayManager, only: farray_register_pde
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
       call farray_register_pde('mu5',imu5)
@@ -1072,7 +1072,6 @@ module Special
     subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
-    use General , only: string_to_enum
 
     integer, parameter :: n_pars=50
     integer(KIND=ikind8), dimension(n_pars) :: p_par
@@ -1119,6 +1118,7 @@ module Special
     call copy_addr(cflow,p_par(37))
     call copy_addr(musdrag,p_par(38))
     call copy_addr(lcme,p_par(39))
+
     endsubroutine pushpars2c
 !***********************************************************************
 !********************************************************************

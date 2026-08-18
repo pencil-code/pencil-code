@@ -20,14 +20,13 @@ module Special
 !
   use Cparam
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none
 !
   include '../special.h'
   include '../record_types.h'
-!
 !
 ! Declare index of variables
 !
@@ -111,7 +110,7 @@ module Special
 !
 !  Identify CVS/SVN version information.
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
 !  Set iaxionU1back to consecutive numbers
@@ -389,8 +388,6 @@ module Special
 !  several precalculated Pencils of information are passed if for
 !  efficiency.
 !
-!
-      use General, only: random_number_wrapper
       use Diagnostics
       use Sub
 !
@@ -489,7 +486,6 @@ module Special
 !***********************************************************************
     subroutine calc_ode_dt(f_ode,phi,phidot,phiddot,H)
 !
-      use General, only: random_number_wrapper
       use Mpicomm
       use Sub
 
@@ -855,12 +851,16 @@ module Special
 ! Subroutines below needed only for GPUs, if you do not care about GPUs don't worry about them
 !***********************************************************************
     subroutine read_sums_from_GPU
+
       use GPU, only: get_gpu_reduced_vars,n_gpu_reduced_vars
+
       real, dimension(n_gpu_reduced_vars) :: tmp
+
       call get_gpu_reduced_vars(tmp)
       edotb_sum = tmp(1)
       rhoe      = tmp(2)
       rhob      = tmp(3)
+
     endsubroutine read_sums_from_GPU
 !***********************************************************************
     subroutine pushpars2c(p_par)
@@ -905,7 +905,6 @@ module Special
     call copy_addr(lbackreact,p_par(64)) ! bool
     call copy_addr(lquant_filter,p_par(65)) ! bool
     call copy_addr(horizon_factor,p_par(65)) ! bool
-
 
     endsubroutine pushpars2c
 !***********************************************************************

@@ -13,6 +13,8 @@
 ! MVAR CONTRIBUTION 21
 ! MAUX CONTRIBUTION 0
 !
+!  compulsory pencils
+!
 ! PENCILS PROVIDED W1(3); W2(3); W3(3)
 ! PENCILS PROVIDED dW1(3); dW2(3); dW3(3)
 ! PENCILS PROVIDED GammaW1; GammaW2; GammaW3
@@ -35,14 +37,10 @@
 ! PENCILS EXPECTED phi, dphi, cov_der(4,4), phi_doublet(3)
 !***************************************************************
 !
-!
-!  compulsory pencils
-!
-!
 module Special
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none
@@ -246,7 +244,7 @@ module Special
       call put_shared_variable('coupl_gw',coupl_gw,caller='register_electroweaksu2')
       call put_shared_variable('llongitudinalW',llongitudinalW)
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
     endsubroutine register_special

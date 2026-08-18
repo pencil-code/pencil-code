@@ -15,7 +15,7 @@
 module Special
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages, only: svn_id, fatal_error
 !
   implicit none
@@ -32,7 +32,7 @@ module Special
 !
 !  20-jul-15/ccyang: coded.
 !
-      if (lroot) call svn_id("$Id$")
+      call svn_id("$Id$")
 !
     endsubroutine register_special
 !***********************************************************************
@@ -86,13 +86,13 @@ module Special
 !
 !  Apply the boundary conditions.
 !
-      ghost: do k = 1, nghost
+      do k = 1, nghost
         if (bc%location < 0) then
           f(:,:,k,irho) = bot(k) * f(:,:,n1,irho)
         else
           f(:,:,n2+k,irho) = top(k) * f(:,:,n2,irho)
         endif
-      enddo ghost
+      enddo
       bc%done = .true.
 !
     endsubroutine special_boundconds

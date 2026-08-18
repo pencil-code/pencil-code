@@ -16,7 +16,7 @@
 module Special
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages, only: fatal_error, warning, svn_id
   use Slices_methods, only: assign_slices_scal, store_slices
 !
@@ -172,7 +172,7 @@ module Special
 !
 !  10-sep-10/bing: coded
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id$")
 !
     endsubroutine register_special
@@ -2026,7 +2026,6 @@ module Special
              (exp(p%lnrho)*unit_density)**(1./8.) !*&
 !             LoopLength(:,m,n)**(-3./4.) <- should be added later
 !
-!
         case ('full')
           if (headtt) then
             print*,'Full heating function'
@@ -3172,7 +3171,7 @@ module Special
 !***********************************************************************
     subroutine make_new_point(level)
 !
-      use General, only: random_number_wrapper,notanumber
+      use General, only: random_number_wrapper
 !
       integer, intent(in) :: level
       integer :: kfind,count,ipos,jpos,i,j
@@ -4030,7 +4029,7 @@ module Special
     subroutine mark_boundary(f)
 !
       use Mpicomm, only: mpisend_real,mpirecv_real
-      use General, only: itoa, safe_character_assign,notanumber
+      use General, only: itoa, safe_character_assign
       use Sub, only: cubic_step
 !
       real, dimension(mx,my,mz,mfarray), intent(inout):: f
@@ -4683,7 +4682,6 @@ module Special
     subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
-    use General , only: string_to_enum
 
     integer, parameter :: n_pars=70
     integer(KIND=ikind8), dimension(n_pars) :: p_par

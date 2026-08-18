@@ -14,7 +14,7 @@
 module Special
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none
@@ -185,7 +185,7 @@ module Special
 !
       use FArrayManager
 !
-      if (lroot) call svn_id("$Id$")
+      call svn_id("$Id$")
 !
     endsubroutine register_special
 !***********************************************************************
@@ -662,7 +662,6 @@ module Special
       real, dimension(mz), intent(out) :: profile
 !
       integer :: i, j, num_over, num_below
-!
 !
       ! linear interpolation of data
       num_below = 0

@@ -82,13 +82,12 @@
 module Special
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages, only: svn_id, fatal_error
 !
   implicit none
 !
   include '../special.h'
-!
 !
 ! Declare index of new variables in f array (if any).
 !
@@ -122,7 +121,7 @@ module Special
       use FArrayManager
       use SharedVariables, only: put_shared_variable
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
       call farray_register_ode('LLCDM_lna',iLCDM_lna)

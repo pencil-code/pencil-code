@@ -71,7 +71,7 @@
 module Special
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none
@@ -185,7 +185,7 @@ module Special
 !
 !  Identify CVS/SVN version information.
 !
-      if (lroot) call svn_id( "$Id$")
+      call svn_id( "$Id$")
 !
     endsubroutine register_special
 !***********************************************************************
@@ -280,7 +280,7 @@ module Special
 !
       use Initcond
       use Mpicomm
-      use General, only: random_number_wrapper
+      use Quiet
       use Sub
 !
       integer, parameter :: mvortices=100

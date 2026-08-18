@@ -85,7 +85,7 @@
 module Special
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages, only: svn_id, fatal_error, warning
 !
   implicit none
@@ -325,7 +325,7 @@ module Special
       use FArrayManager
       use SharedVariables, only: put_shared_variable
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
       lklein_gordon=.true.
@@ -388,7 +388,7 @@ module Special
         call put_shared_variable('a21',a21)
       endif
 
-      if(lbubble_size_ode) then
+      if (lbubble_size_ode) then
         call farray_register_ode('R',iR)
         call farray_register_ode('Rdot',iRdot)
       endif
@@ -419,12 +419,12 @@ module Special
       real :: tanh_val, sech2
 !
 
-      if(iphi == 0) then
+      if (iphi == 0) then
         call fatal_error("nucleate_a_bubble: ","Cannot nucleate a bubble without phi!")
       endif
 
       offset = 0
-      if(lroot .and. lspherical_coords .and. ny==1 .and. nz==1) then
+      if (lroot .and. lspherical_coords .and. ny==1 .and. nz==1) then
         !This is for simulating the expansion of a single bubble in 1d radial,
         !where tanh is not a proper solution since dphi/dr at r=0 is not 0.
         !Thus we smoothly (continuos second derivative) connect a polynomial from l1 to continuation_offset
@@ -453,11 +453,11 @@ module Special
       endif
 
       do l = l1,l2; do m = m1,m2; do n = n1,n2
-        if(lcartesian_coords) then
+        if (lcartesian_coords) then
           x_local = x(l)
           y_local = y(m)
           z_local = z(n)
-        else if(lspherical_coords) then
+        else if (lspherical_coords) then
           x_local = x(l)*sin(y(m))*cos(z(n))
           y_local = x(l)*sin(y(m))*sin(z(n))
           z_local = x(l)*cos(y(m))
@@ -468,7 +468,7 @@ module Special
         endif
         r = sqrt((x_local-pos(1))**2+(y_local-pos(2))**2+(z_local-pos(3))**2)
         bubble_profile = 0.5*(1-tanh((r-bubble_size)/bubble_wall_width))
-        if(l < l1+offset) then
+        if (l < l1+offset) then
           bubble_profile = 1 + c(1)*r**2 + c(2)*r**3 + c(3)*r**4
         endif
 
@@ -485,12 +485,13 @@ module Special
       bubble_positions(bubble_counter,:) = pos
       bubble_times(bubble_counter)       = t
       bubble_counter = bubble_counter + 1
-      if(bubble_counter > max_bubbles) then
+      if (bubble_counter > max_bubbles) then
         call fatal_error('nucleate_a_bubble', 'Too many bubbles!')
       endif
     endsubroutine nucleate_a_bubble
 !***********************************************************************
     subroutine initialize_seed
+!
       use General, only: random_seed_wrapper
 !
 !  TP:   The random numbers must be synchronized on all processors or
@@ -498,10 +499,11 @@ module Special
 !        break or worse hang. The same as in interstellar and supernova explosions
 !
 !
-      if(linitialize_seed) then
+      if (linitialize_seed) then
         seed(1)=seed_reset
         call random_seed_wrapper(PUT=seed)
       endif
+!
     endsubroutine initialize_seed
 !***********************************************************************
     subroutine initialize_special(f)
@@ -535,7 +537,7 @@ module Special
       if (lwaterfall) psimass2=psimass**2
 !
 !     alberto: lphi_normalized_units seems too generic, should we call it lphi_normalized_quartic or similar?
-      if(lphi_normalized_units .and. Vprime_choice=='quartic') then
+      if (lphi_normalized_units .and. Vprime_choice=='quartic') then
         ! phimass = 1.0
         sign_m2 = sign(1.0, phimass2)
         phimass2 = sign_m2
@@ -550,7 +552,7 @@ module Special
           chi_quartic = (-delta_phi + sqrt(delta_phi**2 - sign_m2*4*lambda_phi)) / (2*sqrt(lambda_phi))
           chi_quartic = chi_quartic**2 - 1
         endif
-        if(lroot) print*,"Chi quartic: ",chi_quartic
+        if (lroot) print*,"Chi quartic: ",chi_quartic
         if (chi_quartic <= 0) then
           call fatal_error('initialize_special',&
                     'choose chi_quartic > 0 for quartic potential with lphi_normalized_units')
@@ -572,7 +574,7 @@ module Special
         endif
       endif
 
-      if(lphi_normalized_units .and. Vprime_choice=='sextic_wo_cubic') then
+      if (lphi_normalized_units .and. Vprime_choice=='sextic_wo_cubic') then
         ! phimass = 1.0
         sign_m2 = sign(1.0, phimass2)
         phimass2 = sign_m2
@@ -583,7 +585,7 @@ module Special
           call fatal_error('initialize_special',&
                            'need chi for the sextic potential without cubic term!') 
         endif
-        if(lroot) print*,"Chi sextic: ",chi_sextic
+        if (lroot) print*,"Chi sextic: ",chi_sextic
         lambda_phi = -(chi_sextic+3)
         c_phi = chi_sextic+2
         broken_mass = sqrt(2*(chi_sextic+1))
@@ -594,29 +596,29 @@ module Special
       endif
       
       thin_bubble_wall_width = 2/broken_mass
-      if(bubble_wall_width == impossible) then
+      if (bubble_wall_width == impossible) then
         bubble_wall_width = bubble_wall_width_factor*thin_bubble_wall_width
       endif
-      if(surface_tension_type == 'wall_thickness') then
+      if (surface_tension_type == 'wall_thickness') then
         bubble_surface_tension = bubble_tension_coeff*1./(3.*thin_bubble_wall_width)
       endif
 
-      if(bounce_action == 'O3') then
+      if (bounce_action == 'O3') then
         critical_bubble_size = 2*bubble_surface_tension/deltaV
-      else if(bounce_action == 'O4') then
+      else if (bounce_action == 'O4') then
         critical_bubble_size = 3*bubble_surface_tension/deltaV
       endif
 
-      if(bubble_size == impossible) then
+      if (bubble_size == impossible) then
         bubble_size = bubble_size_factor*critical_bubble_size
       endif
       
       next_wall_pos = bubble_size
 
-      if(lphi_normalized_units) then
-        if(lroot) print*,"Bubble tension: ",bubble_surface_tension
-        if(lroot) print*,"Wall width: ",bubble_wall_width
-        if(lroot .and. lspherical_coords) print*,"dr is: ",dx
+      if (lphi_normalized_units) then
+        if (lroot) print*,"Bubble tension: ",bubble_surface_tension
+        if (lroot) print*,"Wall width: ",bubble_wall_width
+        if (lroot .and. lspherical_coords) print*,"dr is: ",dx
       endif
 !
       if (lmagnetic .and. lem_backreact) then
@@ -699,7 +701,7 @@ module Special
       endif
 
       !Generates bubble times in advance
-      if(lgenerate_bubble_times) then
+      if (lgenerate_bubble_times) then
         do i = 1,number_of_bubbles
           call random_number_wrapper(u)
           bubble_times(i) = (1/beta)*log(exp(beta*tstart) + u*(exp(beta*tmax) - exp(beta*tstart)))
@@ -707,13 +709,13 @@ module Special
         t_next_bubble = bubble_times(1)
       endif
 
-      if(noise_strength /= impossible) then
+      if (noise_strength /= impossible) then
         lthermal_noise = .true.
       endif
       if (plasma_coupling_coeff /= 0.0) then
-        if(lhydro) then
+        if (lhydro) then
           lplasma_coupling = .true.
-        else if(nx > 1) then
+        else if (nx > 1) then
           lwall_friction = .true.
         endif
       endif
@@ -730,9 +732,9 @@ module Special
         allocate(lconservative)
         lconservative=.false.
       endif
-      !if(lthermal_noise) ldR_for_wall_vel = .true.
+      !if (lthermal_noise) ldR_for_wall_vel = .true.
 
-      if(lconservative) then
+      if (lconservative) then
         ivel = ivv
       else
         ivel = iuu
@@ -758,7 +760,6 @@ module Special
 !
       use Initcond, only: gaunoise, sinwave_phase, hat, power_randomphase_hel, power_randomphase, bunch_davies
       use Mpicomm, only: mpibcast_real
-      use General, only: random_number_wrapper
       real,  dimension (mx,my,mz,mfarray) :: f
       real :: Vpotential, Hubble_ini, phi_gam, amplphi_BD, amplee_BD, deriv_prefactor
       integer :: i,j
@@ -890,7 +891,7 @@ module Special
             if (lroot) print*,'init_special: bubbles'
             do i = 1,number_of_bubbles
               !The initial bubble positions have been given
-              if(bubble_positions(i,1) /= impossible) then
+              if (bubble_positions(i,1) /= impossible) then
                 pos = bubble_positions(i,:)
               else
                 pos = get_random_bubble_pos(f)
@@ -914,7 +915,7 @@ module Special
         endselect
       endif
 
-      if(lbubble_size_ode) then
+      if (lbubble_size_ode) then
         f_ode(iR) = bubble_size
         f_ode(iRdot) = 0.
       endif
@@ -989,12 +990,12 @@ module Special
         lpenc_requested(i_ext_force) = .true.
       endif
 
-      if(lwall_friction) then
+      if (lwall_friction) then
         lpenc_requested(i_omega_phi)=.true.
         lpenc_requested(i_plasma_friction)=.true.
       endif
 
-      if(idiag_wall_vel /= 0 .or. idiag_tension /= 0) then
+      if (idiag_wall_vel /= 0 .or. idiag_tension /= 0) then
         lpenc_requested(i_gphi) = .true.
       endif
 
@@ -1014,7 +1015,7 @@ module Special
 !
       logical, dimension(npencils), intent(inout) :: lpencil_in
 !
-        if(lpencil_in(i_plasma_friction)) then
+        if (lpencil_in(i_plasma_friction)) then
           lpencil_in(i_gphi) = .true.
         endif
 !
@@ -1046,7 +1047,7 @@ module Special
 ! dphi
       if (lpencil(i_dphi)) p%dphi=f(l1:l2,m,n,idphi)
 
-      if(lwaterfall) then
+      if (lwaterfall) then
 ! psi
         if (lpencil(i_psi)) p%psi = f(l1:l2,m,n,ipsi)
 ! dpsi
@@ -1066,7 +1067,7 @@ module Special
 ! gphi
       if (lpencil(i_gphi)) call grad(f,iphi,p%gphi)
 
-      if(lwaterfall) then
+      if (lwaterfall) then
 ! gpsi
         if (lpencil(i_gpsi)) call grad(f,ipsi,p%gpsi)
       endif
@@ -1224,10 +1225,10 @@ module Special
           call fatal_error("dspecial_dt: No such Vprime_choice: ", trim(Vprime_choice))
       endselect
 
-      if(.not. lbubble_size_ODE .and. (lwall_friction .or. idiag_tension /= 0)) then
+      if (.not. lbubble_size_ODE .and. (lwall_friction .or. idiag_tension /= 0)) then
         do l=1,nx
           distance = abs(0.5-f(l+nghost,m,n,iphi))
-          if(distance < min_distance) then
+          if (distance < min_distance) then
             min_distance = distance
             next_wall_vel = -f(l+nghost,m,n,idphi)/(p%gphi(l,1))
             next_wall_pos = x(l)
@@ -1235,24 +1236,24 @@ module Special
         enddo
       endif
 
-      if(lpencil(i_plasma_friction)) then
-        if(t < friction_start) then
+      if (lpencil(i_plasma_friction)) then
+        if (t < friction_start) then
           p%plasma_friction = 0.
-        else if(lplasma_coupling) then
+        else if (lplasma_coupling) then
           friction_coeff = plasma_coupling_coeff*p%phi**2/T
           call u_dot_grad(f,ivel,p%gphi,p%uu,u_dot_gphi,UPWIND=.true.)
           p%plasma_friction = friction_coeff*p%lorentz_gamma*(p%dphi + u_dot_gphi)
-        else if(lwall_friction) then
+        else if (lwall_friction) then
           friction_coeff = plasma_coupling_coeff
           p%plasma_friction = friction_coeff*wall_gamma*(p%dphi + (-previous_wall_vel)*p%gphi(:,1))
         endif
       endif
 
-      if(lpencil(i_omega_phi)) then
+      if (lpencil(i_omega_phi)) then
         p%omega_phi = -p%Vthermal_prime-p%plasma_friction
       endif
 
-      if(lpencil(i_ext_force) .and. lplasma_coupling) then
+      if (lpencil(i_ext_force) .and. lplasma_coupling) then
         p%ext_force(:,1)   = p%ext_force(:,1) -p%dphi*(p%omega_phi)
         do i=1,3
           p%ext_force(:,i+1) = p%ext_force(:,i+1) + p%gphi(:,i)*p%omega_phi
@@ -1481,11 +1482,11 @@ module Special
         df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi) - &
               pref_Hubble*Hscript*p%dphi-pref_Vprime*p%Vprime
 !
-        if(ip < 13) then
-          if(notanumber(p%phi)) then
+        if (ip < 13) then
+          if (notanumber(p%phi)) then
             call fatal_error_local('dspecial_dt',"NaNs in phi")
           endif
-          if(notanumber(p%Vprime)) then
+          if (notanumber(p%Vprime)) then
             call fatal_error_local('dspecial_dt',"NaNs in V'(phi)")
           endif
         endif
@@ -1498,8 +1499,8 @@ module Special
         if (c_phi/=0 .and. .not. lphi_hom) then
           call del2(f, iphi, del2phi)
           df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi) + c_phi**2*pref_del2*del2phi
-          if(ip < 13) then
-            if(notanumber(del2phi)) then
+          if (ip < 13) then
+            if (notanumber(del2phi)) then
               call fatal_error_local('dspecial_dt',"NaNs in p%del2phi")
             endif
           endif
@@ -1551,7 +1552,7 @@ module Special
 !  vA=B/sqrt(rho_chi), so dt=C_M*dx/vA. In practice, C_M (=cdt_rho_chi) can be 20.
 !
       if (lfirst.and.lcourant_dt.and.ldt_klein_gordon) then
-        if(lspeed_of_light_dt) then
+        if (lspeed_of_light_dt) then
           dt1_special = 0.
           maxadvec=max(maxadvec,maxval(dline_1,2))
         else if (Ndiv==0.) then
@@ -1566,7 +1567,7 @@ module Special
         dt1_max=max(dt1_max,dt1_special)
       endif
 
-      if(lbubble_size_ODE .and. nx > 1) then
+      if (lbubble_size_ODE .and. nx > 1) then
         tension_next = tension_next + sum(dx*p%gphi(:,1)**2/wall_gamma)
       endif
 !
@@ -1590,11 +1591,11 @@ module Special
       curvature = -2./(R*gammaR**2)
       pressure = deltaV/(bubble_surface_tension*gammaR**3)
       Rddot =  curvature + pressure + friction
-      if(lthermal_noise) then
+      if (lthermal_noise) then
         Rddot = Rddot + int_zeta
       endif
 
-      if(.not. lmultithread) then
+      if (.not. lmultithread) then
         call save_name(pressure,idiag_pressure)
         call save_name(curvature,idiag_curvature)
       endif
@@ -1681,28 +1682,30 @@ module Special
         call save_name(sigBm_all_diagnos,idiag_sigBma)
         if (lnoncollinear_EB_aver .or. lcollinear_EB_aver) &
           call save_name(count_eb0_all,idiag_count_eb0a)
-        if(lbubble_size_ode) then
+
+        if (lbubble_size_ode) then
           call save_name(f_ode(iR),idiag_wall_pos)
           call save_name(f_ode(iRdot),idiag_wall_vel)
           gammaR = 1/sqrt(1-f_ode(iRdot)**2)
           call save_name(gammaR,idiag_wall_lorentz)
-          if(idiag_plasma_frictm  /= 0) then
+          if (idiag_plasma_frictm  /= 0) then
             friction = 2*plasma_coupling_coeff*f_ode(iRdot)/gammaR
             call save_name(friction,idiag_plasma_frictm)
           endif
-          if(idiag_Rddot /= 0) then
+          if (idiag_Rddot /= 0) then
             call get_Rddot(f_ode,Rddot)
             call save_name(Rddot,idiag_Rddot)
           endif
+
           call save_name(int_zeta_diag,idiag_zeta_int)
-          if(idiag_terminal_vel /= 0) then
+          if (idiag_terminal_vel /= 0) then
             r = deltaV/(plasma_coupling_coeff*bubble_surface_tension_diag)
             call save_name(r/(1+sqrt(1+r**2)),idiag_terminal_vel)
           endif
           call save_name(bubble_surface_tension_diag,idiag_tension)
         endif
 
-        if(lbubble_size_ode) then
+        if (lbubble_size_ode) then
         endif
       endif
 
@@ -1742,24 +1745,24 @@ module Special
         endif
         if (idiag_plasma_frictm/=0 .and. .not. lbubble_size_ode) call sum_mn_name(p%plasma_friction,idiag_plasma_frictm)
 
-        if(idiag_gphirms/=0) then
+        if (idiag_gphirms/=0) then
           call dot2_mn(p%gphi,gphi2)
           call sum_mn_name(gphi2,idiag_gphirms,lsqrt=.true.)
         endif
-        if(lspherical_coords) then
-          if(idiag_tension /= 0) then
+        if (lspherical_coords) then
+          if (idiag_tension /= 0) then
             call sum_mn_name(dx*p%gphi(:,1)**2/wall_gamma,idiag_tension,lplain=.true.)
           endif
         endif
 
-        if(lspherical_coords) then
-          if(.not. lbubble_size_ODE .and. (lwall_friction .or. idiag_tension /= 0)) then
+        if (lspherical_coords) then
+          if (.not. lbubble_size_ODE .and. (lwall_friction .or. idiag_tension /= 0)) then
            call save_name(previous_wall_vel,idiag_wall_vel)
            call save_name(previous_wall_pos,idiag_wall_pos)
            call save_name(wall_gamma,idiag_wall_lorentz)
           endif
           do l=l1,l2
-           if(abs(0.5-f(l,m,n,iphi))<1e-2) then
+           if (abs(0.5-f(l,m,n,iphi))<1e-2) then
              v= -f(l,m,n,idphi)/p%gphi(l-nghost,1)
              if (idiag_wall_vel/=0)     call save_name(v,idiag_wall_vel)
              if (idiag_wall_pos/=0)     call save_name(x(l),idiag_wall_pos)
@@ -1768,7 +1771,7 @@ module Special
           enddo
         endif
       endif
-      if(lvideo .and. lfirst) then
+      if (lvideo .and. lfirst) then
         if (ivid_del2phi /=0) call store_slices(del2phi,del2phi_xy,del2phi_xz,&
                             del2phi_yz,del2phi_xy2,del2phi_xy3,del2phi_xy4,del2phi_xz2,del2phi_r)
         if (ivid_gphi1 /=0) call store_slices(p%gphi(:,1),gphi1_xy,gphi1_xz,&
@@ -2099,19 +2102,19 @@ module Special
       call get_Hscript_and_a2(Hscript,a2rhom_all)
       call get_echarge
       call get_sigE_and_B
-      if(lwall_friction .or. idiag_tension /= 0) then
-        if(R_prev == impossible) then
+      if (lwall_friction .or. idiag_tension /= 0) then
+        if (R_prev == impossible) then
           R_prev= bubble_size
           R_curr = bubble_size
           t_current = t
           t_prev = t
         endif
 
-        if(idiag_wall_pos /= 0 .or. ldR_for_wall_vel) then
+        if (idiag_wall_pos /= 0 .or. ldR_for_wall_vel) then
           call mpi_min_keyval(min_distance,next_wall_pos,previous_wall_pos)
         endif
 
-        if(R_curr /= previous_wall_pos) then
+        if (R_curr /= previous_wall_pos) then
           R_prev = R_curr
           t_prev = t_current
 
@@ -2119,10 +2122,10 @@ module Special
           R_curr = previous_wall_pos
         endif
 
-        if(lbubble_size_ODE) then
+        if (lbubble_size_ODE) then
           previous_wall_vel = f_ode(iRdot)
-        else if(ldR_for_wall_vel) then
-          if(t == 0) then
+        else if (ldR_for_wall_vel) then
+          if (t == 0) then
             previous_wall_vel = 0.
           else
             previous_wall_vel = (R_curr-R_prev)/(t_current-t_prev)
@@ -2133,16 +2136,16 @@ module Special
 
         wall_gamma = 1./sqrt(1-previous_wall_vel**2)
         min_distance = 1e10 
-        if(ip < 13) then
-          if(abs(previous_wall_vel) >= 1.0) then
+        if (ip < 13) then
+          if (abs(previous_wall_vel) >= 1.0) then
             call fatal_error_local('prep_rhs_special',"Superluminal wall velocity")
           endif
 
-          if(notanumber(previous_wall_vel)) then
+          if (notanumber(previous_wall_vel)) then
             call fatal_error_local('prep_rhs_special',"NaN for wall velocity")
           endif
 
-          if(notanumber(wall_gamma)) then
+          if (notanumber(wall_gamma)) then
             print*,"Wall velocity was: ",previous_wall_vel
             call fatal_error_local('prep_rhs_special',"NaN for gamma wall")
           endif
@@ -2186,8 +2189,10 @@ module Special
     endfunction  get_bubble_nucleation_rate
 !***********************************************************************
     function get_random_bubble_pos(f) result(pos)
+
       use General, only: random_number_wrapper, find_proc
       use Mpicomm, only: ipx,ipy,ipz, mpibcast
+
       real,  dimension(mx,my,mz,mfarray) :: f
 
       real, dimension(3) :: pos
@@ -2217,10 +2222,9 @@ module Special
         local_iy = mod(iy, ny)
         local_iz = mod(iz, nz)
         
-
         !The +1 in indexing is because the sampling samples points in C-indexing i.e. starting from 0
         !which needs to be translated to Fortran indexes
-        if(px /= ipx .or. py /= ipy .or. pz /= ipz) then
+        if (px /= ipx .or. py /= ipy .or. pz /= ipz) then
           broadcaster = find_proc(px,py,pz)
           call mpibcast(found,broadcaster)
         else
@@ -2234,7 +2238,7 @@ module Special
             do i=bubble_counter-1,1,-1
               distance = sqrt((pos(1)-bubble_positions(i,1))**2 + (pos(2)-bubble_positions(i,2))**2&
                                 + (pos(3)-bubble_positions(i,3))**2)
-              if(distance <= bubble_size + sqrt(bubble_size + (t-bubble_times(i))**2)) then
+              if (distance <= bubble_size + sqrt(bubble_size + (t-bubble_times(i))**2)) then
                       found = .false.
               endif
             enddo
@@ -2251,28 +2255,27 @@ module Special
     endfunction get_random_bubble_pos
 !***********************************************************************
     subroutine special_before_boundary(f)
+!
       use General, only: random_number_wrapper
       use Sub, only: sample_poisson_waiting_time 
-!
-!
 !
       real,  dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension(3) :: pos
       real :: acceptance_ran, acceptance_probability
 
-      if(lnucleate_bubbles) then
+      if (lnucleate_bubbles) then
         !TP: could be more precise taking substeps into account
         do while(t+dt >= t_next_bubble)
           call random_number_wrapper(acceptance_ran)
           acceptance_probability = get_bubble_nucleation_rate()/max_bubble_nucleation_rate
-          if(acceptance_probability >= acceptance_ran) then
+          if (acceptance_probability >= acceptance_ran) then
             pos = get_random_bubble_pos(f)
             call nucleate_a_bubble(f,pos)
-            if(bubble_times(bubble_counter) /= impossible) then
+            if (bubble_times(bubble_counter) /= impossible) then
               t_next_bubble = bubble_times(bubble_counter)
-            else if(.not. lgenerate_bubble_times) then
-              if(get_bubble_nucleation_rate() > max_bubble_nucleation_rate) then
-                if(lroot) then
+            else if (.not. lgenerate_bubble_times) then
+              if (get_bubble_nucleation_rate() > max_bubble_nucleation_rate) then
+                if (lroot) then
                   print*,"Rate: ",get_bubble_nucleation_rate()
                   print*,"Max rate: ",max_bubble_nucleation_rate
                 endif
@@ -2287,7 +2290,6 @@ module Special
           endif
         enddo
       endif
-!
 !
     endsubroutine special_before_boundary
 !***********************************************************************
@@ -2443,27 +2445,27 @@ module Special
       real, dimension(nx) :: zeta, drphi
       real :: zeta_sum = 0.
 
-      if(llast) then  
+      if (llast) then  
         zeta_sum = 0.
         do m=m1,m2
         do n=n1,n2
 ! Adds thermal white noise term, making the PDE a Langevin equation
-          if(lthermal_noise .and. t > noise_start) then
+          if (lthermal_noise .and. t > noise_start) then
             !Done to compute dVol
             call get_grid_mn
             call box_muller_transform(zeta)
             zeta = zeta*sqrt(2*plasma_coupling_coeff*noise_strength)/sqrt(dt*dVol+tini)
             !TP: fluctuations close to the origin seem to make \int (dr_dphi)^2 explode
-            if(lroot .and. lspherical_coords .and. continuation_offset /= 0) then
+            if (lroot .and. lspherical_coords .and. continuation_offset /= 0) then
               zeta(1:continuation_offset+1) = 0.
             endif
-            if(ip < 13) then
-             if(notanumber(zeta)) then
+            if (ip < 13) then
+             if (notanumber(zeta)) then
                      print*,"NaNs in Zeta!!"
              endif
             endif
             f(l1:l2,m,n,idphi) = f(l1:l2,m,n,idphi) + dt_*zeta
-            if(lbubble_size_ODE .and. nx > 1) then
+            if (lbubble_size_ODE .and. nx > 1) then
               call der(f,iphi,drphi,1)
               zeta_sum = zeta_sum + sum(zeta*dx*drphi)
             endif
@@ -2472,10 +2474,10 @@ module Special
         enddo
       endif
 
-      if(lbubble_size_ODE .and. nx > 1) then
+      if (lbubble_size_ODE .and. nx > 1) then
         call mpireduce_sum(tension_next,bubble_surface_tension)
         tension_next = 0.
-        if(lthermal_noise) then
+        if (lthermal_noise) then
           call mpireduce_sum(zeta_sum,int_zeta)
         endif
       endif
@@ -2707,7 +2709,7 @@ module Special
       ddotam_all         = tmp(7)
       e2m_all            = tmp(8)
       b2m_all            = tmp(9)
-      if(lbubble_size_ODE) then
+      if (lbubble_size_ODE) then
         bubble_surface_tension   = tmp(10)
         if(lthermal_noise) then
           int_zeta = tmp(11)

@@ -14,16 +14,15 @@
 module Special
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none
 !
   include '../special.h'
 !
-  !
-  ! Slice precalculation buffers
-  !
+! Slice precalculation buffers
+!
   real, target, dimension(:,:,:), allocatable :: oo_xy_meanx,oo_xy2_meanx,oo_xy3_meanx,oo_xy4_meanx
   real, target, dimension(:,:,:), allocatable :: oo_xz_meanx,oo_xz2_meanx,oo_yz_meanx
   real, target, dimension(:,:,:,:,:,:), allocatable :: oo_r_meanx
@@ -56,7 +55,7 @@ module Special
 !
 !  6-oct-03/tony: coded
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
     endsubroutine register_special

@@ -32,7 +32,7 @@ module Special
 !
   use Cdata
   use Diagnostics
-  use General, only: keep_compiler_quiet,numeric_precision,itoa
+  use Quiet
   use Messages, only: svn_id, fatal_error, fatal_error_local, warning
   use Mpicomm, only: mpibarrier,MPI_COMM_WORLD,MPI_INFO_NULL,mpireduce_min, mpireduce_max,mpibarrier
 
@@ -299,10 +299,12 @@ module Special
 !
 !  6-oct-03/tony: coded
 !
+      use General, only: numeric_precision,itoa
+!
       integer :: i
       logical :: hdf_exists
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
       if (lrun) then

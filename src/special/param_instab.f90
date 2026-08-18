@@ -18,7 +18,7 @@
 module Special
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none
@@ -55,7 +55,7 @@ module Special
 !
 !  Identify CVS/SVN version information.
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
       call farray_register_pde('ispecial',ispecial,array=2)

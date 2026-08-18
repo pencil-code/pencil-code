@@ -18,7 +18,7 @@
 module Special
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none
@@ -94,7 +94,7 @@ module Special
 !
 !  Identify CVS/SVN version information.
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
 !  Set ichemistry to consecutive numbers nvar+1, nvar+2, ..., nvar+nchemspec.

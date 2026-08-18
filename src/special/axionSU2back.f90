@@ -25,7 +25,7 @@
 module Special
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none
@@ -171,7 +171,7 @@ module Special
 !
 !  Identify CVS/SVN version information.
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
 !  Set iaxionSU2back to consecutive numbers
@@ -579,7 +579,6 @@ module Special
 !   2-dec-2022/axel: coded
 !   1-sep-2023/axel: implemented lwith_eps with conformal time.
 !
-      use General, only: random_number_wrapper
       use Diagnostics
       use Sub
 !
@@ -1059,7 +1058,6 @@ module Special
 !
 !  29-jul-25/TP: carved from dspecial_dt_ode
 !
-      use General, only: random_number_wrapper
       use Mpicomm
       use Sub
 
@@ -2031,7 +2029,6 @@ module Special
 !
 !  16-dec-2025/axel: added JJ_R etc
 !
-
 !  AB: Is anyone going to run this with GPUs?
 !  TP: I don't know. I see the point that these simulations inexpensive enough
 !      that no one would bother. 
@@ -2046,19 +2043,20 @@ module Special
       JJ_R_sum = tmp(11)
       JJ_L_sum = tmp(12)
       if (ldiagnos) then
-              grand_sum_diagnos = grand_sum
-              dgrant_sum_diagnos = dgrant_sum
-              JJ_R_sum_diagnos = JJ_R_sum 
-              JJ_L_sum_diagnos = JJ_L_sum 
-              TRdoteff2km_sum = tmp(3)
-              TRdoteff2m_sum =  tmp(4)
-              TReff2km_sum = tmp(5)
-              TReff2m_sum =  tmp(6)
-              TLdoteff2km_sum = tmp(7)
-              TLdoteff2m_sum =  tmp(8)
-              TLeff2km_sum = tmp(9)
-              TLeff2m_sum =  tmp(10)
+        grand_sum_diagnos = grand_sum
+        dgrant_sum_diagnos = dgrant_sum
+        JJ_R_sum_diagnos = JJ_R_sum 
+        JJ_L_sum_diagnos = JJ_L_sum 
+        TRdoteff2km_sum = tmp(3)
+        TRdoteff2m_sum =  tmp(4)
+        TReff2km_sum = tmp(5)
+        TReff2m_sum =  tmp(6)
+        TLdoteff2km_sum = tmp(7)
+        TLdoteff2m_sum =  tmp(8)
+        TLeff2km_sum = tmp(9)
+        TLeff2m_sum =  tmp(10)
       endif
+
     endsubroutine read_sums_from_GPU
 !***********************************************************************
     subroutine pushpars2c(p_par)
@@ -2139,6 +2137,7 @@ module Special
     call copy_addr(lschwinger_scalar,p_par(66)) ! bool
 
     call keep_compiler_quiet(lvariable_k)
+
     endsubroutine pushpars2c
 !***********************************************************************
 !***********************************************************************

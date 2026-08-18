@@ -49,7 +49,7 @@
 module Special
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
   use EquationOfState
   use Dustdensity
@@ -143,7 +143,7 @@ module Special
 !
 !  identify SVN version
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't

@@ -50,7 +50,7 @@
 module Special
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none
@@ -94,7 +94,7 @@ module Special
 !
       use FArrayManager, only: farray_register_auxiliary
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id: newton_cooling.f90,v 1.2 2015/12/11 02:56:37 wlyra Exp $")
 !
       call farray_register_auxiliary('tau',itau,rhs=.true.)
@@ -592,7 +592,6 @@ module Special
     subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
-    use General , only: string_to_enum
 
       integer, parameter :: n_pars=10
       integer(KIND=ikind8), dimension(n_pars) :: p_par

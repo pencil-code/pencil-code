@@ -21,7 +21,7 @@
 module Special
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages, only: svn_id, fatal_error
 !
   implicit none
@@ -107,7 +107,7 @@ module Special
 !
 !  6-oct-03/tony: coded
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
     endsubroutine register_special
@@ -116,7 +116,6 @@ module Special
 !
 !  called by run.f90 after reading parameters, but before the time loop
 !
-      use General
       use Sub, only: cross
       use SharedVariables, only: get_shared_variable
 !
@@ -261,7 +260,7 @@ module Special
 !
 !  initialise special condition; called from start.f90
 !
-      Use General
+      use General, only: random_number_wrapper
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(nshell) :: random_phase_uu_init
@@ -690,7 +689,7 @@ module Special
 !***********************************************************************
     subroutine wsnap_GOY(snapbase,enum,lsnap,flist, snapnum)
 !
-      use General
+      use General, only: itoa, safe_character_assign
       use Io
       use Sub
 !
@@ -943,7 +942,7 @@ module Special
 !***********************************************************************
     subroutine get_plane_filename(filename)
 !
-      use General, only: itoa, safe_character_assign
+      use General, only: safe_character_assign
 !
       character (len=*) :: filename
       integer :: iord

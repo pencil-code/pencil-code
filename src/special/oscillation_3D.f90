@@ -74,7 +74,7 @@
 module oscillation_3D
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages, only: svn_id, fatal_error
 !
   implicit none
@@ -116,7 +116,7 @@ module oscillation_3D
 !
 !  6-oct-03/tony: coded
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
       call farray_register_pde('ispecial',ispecialvar,array=2)
@@ -134,7 +134,7 @@ module oscillation_3D
 !
       integer :: npvar
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
       call farray_register_pde('ispecial',ispecialvar,array=2)

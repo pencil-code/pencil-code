@@ -75,7 +75,7 @@
 module rel_1d
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages, only: svn_id, fatal_error
 !
   implicit none
@@ -116,7 +116,7 @@ module rel_1d
 !
   use FArrayManager
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
       call farray_register_pde('eee',ieee)

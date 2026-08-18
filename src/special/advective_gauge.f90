@@ -20,7 +20,7 @@
 module Special
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none
@@ -93,7 +93,7 @@ module Special
 !
       if (laa_adv_as_aux) call register_report_aux('aadv',iaadv,iaadvx,iaadvy,iaadvz)
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
     endsubroutine register_special
@@ -550,9 +550,7 @@ module Special
 !***********************************************************************
     subroutine pushpars2c(p_par)
 
-
     use Syscalls, only: copy_addr
-    use General , only: string_to_enum
 
     integer, parameter :: n_pars=100
     integer(KIND=ikind8), dimension(n_pars) :: p_par

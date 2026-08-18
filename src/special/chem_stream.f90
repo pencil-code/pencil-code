@@ -53,7 +53,7 @@
 module Special
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !  use Density, only: rho_up
   use EquationOfState
@@ -142,7 +142,7 @@ module Special
 !
 !  identify CVS/SVN version information:
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
 !

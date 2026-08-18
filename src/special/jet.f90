@@ -14,16 +14,14 @@
 module Special
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none
 !
   include '../special.h'
 !
-  !
-  ! Slice precalculation buffers
-  !
+! Slice precalculation buffers
 !
   character(len=24) :: initspecial='nothing'
   logical :: first_time=.true.
@@ -58,9 +56,6 @@ module Special
   real, dimension(2) :: jet_center=(/0.,0./)
   real :: u_t=5.,velocity_ratio=3.3
 !
-!
-!
-!
 !!  character, len(50) :: initcustom
 !
 ! input parameters
@@ -81,7 +76,7 @@ module Special
 !
 !  6-oct-03/tony: coded
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
     endsubroutine register_special

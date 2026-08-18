@@ -75,7 +75,7 @@
 module Special
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages, only: svn_id, fatal_error
 !
   implicit none
@@ -280,7 +280,7 @@ module Special
       use FArrayManager
       use SharedVariables, only: put_shared_variable
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id$")
 !
       call farray_register_pde('infl_phi',iinfl_phi)
@@ -2031,6 +2031,7 @@ module Special
       call get_Hscript_and_a2(Hscript,a2rhom_all)
       call get_echarge
       call get_sigE_and_B
+
       if (lfirst .and. lout) then
         a2rhom_all_diagnos     = a2rhom_all 
         a2rhopm_all_diagnos    = a2rhopm_all 

@@ -46,7 +46,7 @@
 module Special
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none
@@ -141,7 +141,7 @@ module Special
 !
       use Cdata
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
     endsubroutine register_special
@@ -154,7 +154,6 @@ module Special
 !
       use Cdata
       use Mpicomm
-      use General, only: random_number_wrapper
       !use EquationOfState, only: rho0,cs20
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -705,6 +704,7 @@ module Special
   subroutine get_storm(istorm)
 !
     use General, only: random_number_wrapper
+!
     real :: r,p,srand,trand
     real, dimension(6) :: smax_values=(/ -5.0 , -2.5 , -1.0 , 1.0 , 2.5 , 5.0 /)
     integer :: ismax
@@ -875,7 +875,6 @@ module Special
     subroutine pushpars2c(p_par)
 
       use Syscalls, only: copy_addr
-      use General , only: string_to_enum
 
       integer, parameter :: n_pars=20
       integer(KIND=ikind8), dimension(n_pars) :: p_par

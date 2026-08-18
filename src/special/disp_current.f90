@@ -28,7 +28,7 @@
 module Special
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none
@@ -291,7 +291,7 @@ module Special
       call put_shared_variable('llongitudinalE',llongitudinalE)
       call put_shared_variable('coupl_gy',coupl_gy)
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
     endsubroutine register_special

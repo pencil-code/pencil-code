@@ -47,7 +47,7 @@
 module Special
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
   implicit none
 !
@@ -112,7 +112,7 @@ module Special
 !
 !  6-oct-03/tony: coded
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
     endsubroutine register_special
@@ -385,6 +385,7 @@ module Special
     endsubroutine rprint_special
 !***********************************************************************
     subroutine calc_pencils_special(f,p)
+!
 !   06-oct-03/tony: coded
 !   called on main loop - the average must be calculated BEFORE
 !

@@ -83,7 +83,7 @@ module Special
 !
   use Cdata
   use Initcond
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages, only: svn_id, fatal_error, warning
 !
   implicit none
@@ -308,7 +308,7 @@ module Special
       use Sub, only: register_report_aux
       use FArrayManager
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
 !  Register ggT and ggX as auxiliary arrays

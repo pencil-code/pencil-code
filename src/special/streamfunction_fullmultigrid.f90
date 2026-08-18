@@ -16,7 +16,7 @@
 module Special
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages, only: svn_id, fatal_error
   use Deriv
 !
@@ -149,7 +149,7 @@ module Special
 !
       use FArrayManager, only: farray_register_pde,farray_register_auxiliary
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id: alphadisk.f90 19193 2012-06-30 12:55:46Z wdobler $")
 !
 !  Register the streamfunction. The streamfunction needs to be a pde so it
