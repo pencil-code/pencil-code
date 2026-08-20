@@ -191,6 +191,8 @@ module Magnetic
   real :: r_inner=0., r_outer=0.
   real :: eta_tdep_loverride_ee=0.
   real :: r_dip=1 , epsi_dip=0.1, angle_dip=0., je_heating_factor=1.
+  real :: j2m_all=0.
+  real, dimension(1) :: j2m=0.
   integer, target :: va2power_jxb = 5
   integer :: nbvec, nbvecmax=nx*ny*nz/4, iua=0, iLam=0, idiva=0
   integer :: N_modes_aa=1, naareset
@@ -1392,8 +1394,7 @@ module Magnetic
       if (lspecial) then
         call put_shared_variable('B0_ext_z', B0_ext_z)
         call put_shared_variable('Bz_stratified', Bz_stratified)
-   !    if (iex==0) &
-   !      call put_shared_variable('alpf_MHD',alpf_MHD,caller='register_magnetic')
+        call put_shared_variable('j2m_all', j2m_all)
       endif
 
     endsubroutine register_magnetic
@@ -4770,6 +4771,12 @@ module Magnetic
       endif
 ! j2
       if (lpenc_loc(i_j2)) call dot2_mn(p%jj,p%j2)
+!
+!  preparations for computing the volume average of j2
+!
+      if (imn==1) j2m=0.
+      j2m=j2m+sum(p%j2)
+!
 ! jb
       if (lpenc_loc(i_jb)) call dot_mn(p%jj,p%bbb,p%jb)
 !
@@ -11698,8 +11705,10 @@ print*,'AXEL2: should not be here (eta) ... '
 !***********************************************************************
    subroutine magnetic_after_timestep(f,df,dtsub)
 !
+!  Shuld have been called after substep...
+!
       use Mpicomm, only: mpibcast_real
-      use Sub, only: vecout_finalize, remove_mean
+      use Sub, only: vecout_finalize, remove_mean, finalize_aver
 !
       real, contiguous, dimension(:,:,:,:) :: f
       real, contiguous, dimension(:,:,:,:) :: df
@@ -11721,7 +11730,12 @@ print*,'AXEL2: should not be here (eta) ... '
         call vecout_finalize(41,trim(directory)//'/bvec',nbvec)
         call calc_bthresh
       endif
-
+!
+!  j2m(1)
+!
+      call finalize_aver(ncpus,123,j2m)
+      j2m_all=j2m(1)/nwgrid
+!
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(dtsub)
 !

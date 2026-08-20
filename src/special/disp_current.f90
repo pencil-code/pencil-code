@@ -62,7 +62,7 @@ module Special
   logical, pointer :: lrelativistic_eos
   logical, pointer :: lsigE_const
   logical, pointer :: lsolve_for_phi
-  real, pointer :: eta, Hscript, echarge, sigEm_all, sigBm_all
+  real, pointer :: eta, Hscript, echarge, sigEm_all, sigBm_all, e2m_all, j2m_all
   integer :: iGamma=0, ia0=0, idiva_name=0, ieedot=0, iedotx=0, iedoty=0, iedotz=0
   integer :: idivE=0, isigE=0, isigB=0
   logical :: llongitudinalE=.true., llorenz_gauge_disp=.false., lskip_projection_ee=.false.
@@ -126,6 +126,7 @@ module Special
   logical :: llate_reset_el_pencil=.false.  !PAR_DOC: late reset of el pencil, should probably be true in future.
   logical :: linclude_dphiB_in_MHD=.false.  !PAR_DOC: include dphi*B in MHD approximation
   logical :: linclude_gphixE_in_MHD=.false.  !PAR_DOC: include gphixE in MHD approximation
+  logical :: lheating_averaged=.false.       !PAR_DOC: compute heating based on averaged electromagnetic fields
   logical :: lreplace_Schwinger_by_Arnold=.false.  !PAR_DOC: replace Schwinger by Arnold conductivity
   character (len=labellen) :: aderiv_scaling='table'
 !
@@ -141,7 +142,7 @@ module Special
     loverride_c_light, ldensity_add_je_heating, je_heating_factor, &
     lresistive_gauge_ee, llorentzforce_ee, aderiv_scaling, vA_limit, &
     lohmic_heating_ee, lohmic_heating_justee, sigE_const_value, &
-    ladvance_ee, eta_given, ldt_disp_current, cdt_sigE, &
+    ladvance_ee, eta_given, ldt_disp_current, cdt_sigE, lheating_averaged, &
     lresistive_gauge_disp, etaSchw_max, llate_reset_el_pencil, &
     linclude_dphiB_in_MHD, linclude_gphixE_in_MHD, lreplace_Schwinger_by_Arnold, &
     lna1_switch_toArnold, lna2_switch_toArnold, replace_Schwinger_by_Arnold, &
@@ -342,6 +343,8 @@ module Special
         call get_shared_variable('sigEm_all', sigEm_all)
         call get_shared_variable('sigBm_all', sigBm_all)
         call get_shared_variable('lohm_evolve', lohm_evolve)
+        call get_shared_variable('e2m_all', e2m_all)
+        call get_shared_variable('j2m_all', j2m_all)
         if (lreplace_Schwinger_by_Arnold .and. &
           replace_Schwinger_by_Arnold=='replace_at_end_of_reheating') &
           call get_shared_variable('lsolve_for_phi', lsolve_for_phi)
@@ -1421,7 +1424,11 @@ module Special
         if (ladvance_ee) then
           if (lohmic_heating_ee) then
             if (lohmic_heating_justee) then
-              call dot2_mn(p%el,tmp)
+              if (lheating_averaged) then
+                tmp=e2m_all
+              else
+                call dot2_mn(p%el,tmp)
+              endif
               tmp=tmp*p%sigE
             else
               call dot2_mn(p%jj,tmp)
@@ -1432,7 +1439,11 @@ module Special
           endif
         else
           if (lohmic_heating_ee) then
-            call dot2_mn(p%jj,tmp)
+            if (lheating_averaged) then
+              tmp=j2m_all
+            else
+              call dot2_mn(p%jj,tmp)
+            endif
             tmp=tmp/p%sigE
           else
             call dot(p%jj,p%el,tmp)
