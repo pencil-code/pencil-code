@@ -150,7 +150,7 @@ module Density
 !
 !  Identify version number (generated automatically by CVS).
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id$")
 !
     endsubroutine register_density

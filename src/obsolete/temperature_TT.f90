@@ -100,7 +100,7 @@ module Entropy
 !
 !  Identify version number.
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
 !  Writing files for use with IDL

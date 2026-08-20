@@ -90,7 +90,7 @@ module Particles_nbody
 !
 !  27-aug-06/wlad: adapted
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id$")
 !
 !  Set up mass as particle index. Plus seven, since the other 6 are
