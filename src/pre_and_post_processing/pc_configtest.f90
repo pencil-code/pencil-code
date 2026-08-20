@@ -38,7 +38,7 @@ program pc_configtest
 !
   lstart = .false.
   lrun = .true.
-  if (lroot) call svn_id('$Id$')
+  call svn_id('$Id$')
 !
 !  Initialize the message subsystem, eg. color setting etc.
 !

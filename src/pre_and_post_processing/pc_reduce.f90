@@ -81,7 +81,7 @@ program pc_reduce
 !
 !  Identify version.
 !
-  if (lroot) call svn_id( &
+  call svn_id( &
       '$Id$')
 !
 !  Initialize the message subsystem, eg. color setting etc.

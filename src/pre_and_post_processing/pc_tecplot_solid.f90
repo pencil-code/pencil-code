@@ -61,8 +61,7 @@ program pc_tecplot_solid
 !
 !  Identify version.
 !
-  if (lroot) call svn_id( &
-      '$Id: pc_tecplot.f90 18690 2014-04-16 22:12:50Z Zhuang $')
+  call svn_id('$Id: pc_tecplot.f90 18690 2014-04-16 22:12:50Z Zhuang $')
 !
 !  Initialize the message subsystem, eg. color setting etc.
 !

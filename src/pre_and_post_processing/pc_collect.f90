@@ -52,7 +52,7 @@ program pc_collect
 !
 !  Identify version.
 !
-  if (lroot) call svn_id('$Id$')
+  call svn_id('$Id$')
 !
 !  Initialize the message subsystem, eg. color setting etc.
 !
