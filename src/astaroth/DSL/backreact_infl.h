@@ -375,13 +375,16 @@ prep_ode_right()
 Kernel
 initial_bubbles()
 {
-  v = AC_f_ode__mod__cdata[AC_irdot__mod__klein_gordon-1]
-  gamma = 1./sqrt(1-v*v)
-  drdphi = derx(F_PHI)
-  reduce_sum(AC_dx__mod__cdata*drdphi*drdphi/gamma,AC_bubble_tension)
-  phi_val = value(F_PHI)
-  //TP: to make sure AC_int_zeta has a well defined value
-  reduce_sum(0.,AC_int_zeta)
+  if(AC_lbubble_size_ode__mod__klein_gordon)
+  {
+  	v = AC_f_ode__mod__cdata[AC_irdot__mod__klein_gordon-1]
+  	gamma = 1./sqrt(1-v*v)
+  	drdphi = derx(F_PHI)
+  	reduce_sum(AC_dx__mod__cdata*drdphi*drdphi/gamma,AC_bubble_tension)
+  	phi_val = value(F_PHI)
+  	//TP: to make sure AC_int_zeta has a well defined value
+  	reduce_sum(0.,AC_int_zeta)
+  }
 }
 
 #else
