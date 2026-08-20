@@ -4,8 +4,7 @@
 !
 module Fourier
 !
-  use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages, only: fatal_error
 !
   implicit none
@@ -53,7 +52,7 @@ module Fourier
 !
 !***********************************************************************
     subroutine initialize_fourier
-      include 'fourier_common.h'
+      include 'fourier_common.h'    !MR: needed?
     endsubroutine initialize_fourier
 !***********************************************************************
     subroutine fourier_transform(a_re,a_im,linv)
@@ -64,7 +63,7 @@ module Fourier
       logical, optional :: linv
 !
       call fatal_error('fourier_transform', &
-          'this sub is not available in nofourier.f90!')
+          'this sub is not available in nofourier.f90')
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -80,7 +79,7 @@ module Fourier
       logical, optional :: linv
 !
       call fatal_error('fourier_transform_xy', &
-          'this sub is not available in nofourier.f90!')
+          'this sub is not available in nofourier.f90')
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -96,7 +95,7 @@ module Fourier
       logical, optional :: linv
 !
       call fatal_error('fourier_transform_xz', &
-          'this sub is not available in nofourier.f90!')
+          'this sub is not available in nofourier.f90')
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -112,7 +111,7 @@ module Fourier
       logical, optional :: linv
 !
       call fatal_error('fourier_transform_x', &
-          'this sub is not available in nofourier.f90!')
+          'this sub is not available in nofourier.f90')
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -128,7 +127,7 @@ module Fourier
       logical, optional :: linv
 !
       call fatal_error('fourier_transform_y', &
-          'this sub is not available in nofourier.f90!')
+          'this sub is not available in nofourier.f90')
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -144,7 +143,7 @@ module Fourier
       logical, optional :: linv
 !
       call fatal_error('fourier_transform_shear', &
-          'this sub is not available in nofourier.f90!')
+          'this sub is not available in nofourier.f90')
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -161,7 +160,7 @@ module Fourier
       logical, optional :: linv
 !
       call fatal_error('fourier_transform_shear_xy', &
-          'this sub is not available in nofourier.f90!')
+          'this sub is not available in nofourier.f90')
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -177,7 +176,7 @@ module Fourier
       logical, optional :: linv
 !
       call fatal_error('fourier_transform_other_1', &
-          'this sub is not available in nofourier.f90!')
+          'this sub is not available in nofourier.f90')
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -193,7 +192,7 @@ module Fourier
       logical, optional :: linv
 !
       call fatal_error('fourier_transform_other_2', &
-          'this sub is not available in nofourier.f90!')
+          'this sub is not available in nofourier.f90')
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -209,7 +208,7 @@ module Fourier
       logical, optional, intent(in) :: linv,lneed_im
 !
       call fatal_error('fourier_transform_xy_xy', &
-          'this sub is not available in nofourier.f90!')
+          'this sub is not available in nofourier.f90')
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -226,7 +225,7 @@ module Fourier
       logical, optional :: linv
 !
       call fatal_error('fourier_transform_xy_xy', &
-          'this sub is not available in nofourier.f90!')
+          'this sub is not available in nofourier.f90')
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -242,7 +241,7 @@ module Fourier
       logical, optional, intent(in) :: linv, lneed_im
 !
       call fatal_error('fft_x_parallel_1D', &
-          'this sub is not available in nofourier.f90!')
+          'this sub is not available in nofourier.f90')
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -259,7 +258,7 @@ module Fourier
       logical, optional, intent(in) :: linv, lneed_im
 !
       call fatal_error('fft_x_parallel_2D', &
-          'this sub is not available in nofourier.f90!')
+          'this sub is not available in nofourier.f90')
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -276,7 +275,7 @@ module Fourier
       logical, optional, intent(in) :: linv, lneed_im
 !
       call fatal_error('fft_x_parallel_3D', &
-          'this sub is not available in nofourier.f90!')
+          'this sub is not available in nofourier.f90')
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -293,7 +292,7 @@ module Fourier
       logical, optional, intent(in) :: linv, lneed_im
 !
       call fatal_error('fft_x_parallel_4D', &
-          'this sub is not available in nofourier.f90!')
+          'this sub is not available in nofourier.f90')
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -310,7 +309,7 @@ module Fourier
       logical, optional, intent(in) :: linv, lneed_im
 !
       call fatal_error('fft_y_parallel_1D', &
-          'this sub is not available in nofourier.f90!')
+          'this sub is not available in nofourier.f90')
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -328,7 +327,7 @@ module Fourier
       real, dimension(nx), optional :: shift_y
 !
       call fatal_error('fft_y_parallel_2D', &
-          'this sub is not available in nofourier.f90!')
+          'this sub is not available in nofourier.f90')
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -347,7 +346,7 @@ module Fourier
       real, dimension(nx), optional :: shift_y
 !
       call fatal_error('fft_y_parallel_3D', &
-          'this sub is not available in nofourier.f90!')
+          'this sub is not available in nofourier.f90')
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -365,7 +364,7 @@ module Fourier
       logical, optional, intent(in) :: linv, lneed_im
 !
       call fatal_error('fft_y_parallel_4D', &
-          'this sub is not available in nofourier.f90!')
+          'this sub is not available in nofourier.f90')
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -383,7 +382,7 @@ module Fourier
       real, optional :: shift_z
 !
       call fatal_error('fft_z_parallel_1D', &
-          'this sub is not available in nofourier.f90!')
+          'this sub is not available in nofourier.f90')
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -402,7 +401,7 @@ module Fourier
       real, dimension (:), optional :: shift_z
 !
       call fatal_error('fft_z_parallel_2D', &
-          'this sub is not available in nofourier.f90!')
+          'this sub is not available in nofourier.f90')
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -420,7 +419,7 @@ module Fourier
       logical, optional, intent(in) :: linv, lneed_im
 !
       call fatal_error('fft_z_parallel_3D', &
-          'this sub is not available in nofourier.f90!')
+          'this sub is not available in nofourier.f90')
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -437,7 +436,7 @@ module Fourier
       logical, optional, intent(in) :: linv, lneed_im
 !
       call fatal_error('fft_z_parallel_4D', &
-          'this sub is not available in nofourier.f90!')
+          'this sub is not available in nofourier.f90')
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -454,7 +453,7 @@ module Fourier
       logical, optional, intent(in) :: linv, lneed_im
 !
       call fatal_error('fft_xy_parallel_2D', &
-          'this sub is not available in nofourier.f90!')
+          'this sub is not available in nofourier.f90')
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -471,7 +470,7 @@ module Fourier
       logical, optional, intent(in) :: linv
 !
       call fatal_error('fft_xy_parallel_2D_other', &
-          'this sub is not available in nofourier.f90!')
+          'this sub is not available in nofourier.f90')
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -487,7 +486,7 @@ module Fourier
       logical, optional, intent(in) :: linv, lneed_im
 !
       call fatal_error('fft_xy_parallel_3D', &
-          'this sub is not available in nofourier.f90!')
+          'this sub is not available in nofourier.f90')
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -504,7 +503,7 @@ module Fourier
       logical, optional, intent(in) :: linv, lneed_im
 !
       call fatal_error('fft_xy_parallel_4D', &
-          'this sub is not available in nofourier.f90!')
+          'this sub is not available in nofourier.f90')
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -521,7 +520,7 @@ module Fourier
       logical, optional, intent(in) :: linv, lneed_im
 !
       call fatal_error('fft_xyz_parallel_3D', &
-          'this sub is not available in nofourier.f90!')
+          'this sub is not available in nofourier.f90')
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -538,7 +537,7 @@ module Fourier
       logical, optional, intent(in) :: linv, lneed_im
 !
       call fatal_error('fft_xyz_parallel_4D', &
-          'this sub is not available in nofourier.f90!')
+          'this sub is not available in nofourier.f90')
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -559,7 +558,7 @@ module Fourier
       real, intent(in), optional :: reduce
 !
       call fatal_error('setup_extrapol_fact', &
-          'this sub is not available in nofourier.f90!', lfirst_proc_xy)
+          'this sub is not available in nofourier.f90')
 !
       call keep_compiler_quiet(z)
       call keep_compiler_quiet(ref_z)
@@ -578,7 +577,7 @@ module Fourier
       real, dimension(:,:,:), intent(in) :: factor
 !
       call fatal_error('vect_pot_extrapol_z_parallel', &
-          'this sub is not available in nofourier.f90!')
+          'this sub is not available in nofourier.f90')
 !
       call keep_compiler_quiet(in)
       call keep_compiler_quiet(out)
@@ -596,7 +595,7 @@ module Fourier
       real, dimension(:,:,:), intent(in) :: factor
 !
       call fatal_error('field_extrapol_z_parallel', &
-          'this sub is not available in nofourier.f90!')
+          'this sub is not available in nofourier.f90')
 !
       call keep_compiler_quiet(in)
       call keep_compiler_quiet(out)
@@ -612,7 +611,7 @@ module Fourier
       logical, optional :: linv
 !
       call fatal_error('fourier_transform_y_y', &
-          'this sub is not available in nofourier.f90!')
+          'this sub is not available in nofourier.f90')
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(a_im)
@@ -631,7 +630,7 @@ module Fourier
       real :: shift_y
 !
       call fatal_error('fourier_shift_yz_y', &
-          'this sub is not available in nofourier.f90!')
+          'this sub is not available in nofourier.f90')
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(shift_y)
@@ -648,7 +647,7 @@ module Fourier
       real, dimension (nx) :: shift_y
 !
       call fatal_error('fourier_shift_y', &
-          'this sub is not available in nofourier.f90!')
+          'this sub is not available in nofourier.f90')
 !
       call keep_compiler_quiet(a_re)
       call keep_compiler_quiet(shift_y)
@@ -666,7 +665,7 @@ module Fourier
       real, dimension(2*na+15), optional :: wsavex_temp
 !
       call fatal_error('fourier_transform_real_1', &
-          'this sub is not available in nofourier.f90!')
+          'this sub is not available in nofourier.f90')
 !
       call keep_compiler_quiet(a)
       call keep_compiler_quiet(na)

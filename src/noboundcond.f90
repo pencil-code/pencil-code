@@ -6,9 +6,7 @@
 !
 module Boundcond
 !
-  use Cdata
-  use General, only: keep_compiler_quiet
-  use Messages
+  use Quiet
 !
   implicit none
 !

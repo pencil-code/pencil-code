@@ -12,7 +12,7 @@
 !***************************************************************
 module Signal_handling
 !
-  use General, only: keep_compiler_quiet
+  use Quiet
 !
   implicit none
 !
@@ -24,7 +24,7 @@ module Signal_handling
 !
   contains
 !***********************************************************************
-    subroutine signal_prepare()
+    subroutine signal_prepare
 !
 !  dummy routine
 !

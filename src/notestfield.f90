@@ -20,8 +20,7 @@
 !***************************************************************
 module Testfield
 !
-  use Cparam
-  use General, only: keep_compiler_quiet
+  use Quiet
 !
   implicit none
 !

@@ -16,9 +16,7 @@
 !***************************************************************
 module Dustdensity
 !
-  use Cparam
-  use General, only: keep_compiler_quiet
-  use Messages
+  use Quiet
 !
   implicit none
 !
@@ -27,11 +25,6 @@ module Dustdensity
   contains
 !***********************************************************************
     subroutine register_dustdensity
-!
-      use Cdata, only: lroot
-
-      if (lroot) call svn_id( &
-           "$Id$")
 !
     endsubroutine register_dustdensity
 !***********************************************************************
@@ -174,14 +167,8 @@ module Dustdensity
 !***********************************************************************
     subroutine pushpars2c(p_par)
 
-    use Syscalls, only: copy_addr
-
-    integer, parameter :: n_pars=1
+    integer, parameter :: n_pars=0
     integer(KIND=ikind8), dimension(n_pars) :: p_par
-
-    logical, save :: lcondensing_species=.false.
-
-     call copy_addr(lcondensing_species,p_par(1)) ! bool
 
     endsubroutine pushpars2c
 !***********************************************************************

@@ -16,9 +16,7 @@
 !***************************************************************
 module Dustvelocity
 !
-  use Cdata
-  use General, only: keep_compiler_quiet
-  use Messages
+  use Quiet
 !
   implicit none
 !
@@ -41,15 +39,19 @@ module Dustvelocity
 !
   contains
 !***********************************************************************
-    subroutine register_dustvelocity()
+    subroutine register_dustvelocity
 !
-      if (lroot) call svn_id( &
+      use Messages, only: svn_id
+
+      call svn_id( &
           "$Id$")
 !
     endsubroutine register_dustvelocity
 !***********************************************************************
     subroutine initialize_dustvelocity(f)
 !
+      use Cdata, only: ud_spec
+
       real, contiguous,dimension(:,:,:,:) :: f
 !
       ud_spec=.false.
@@ -69,7 +71,7 @@ module Dustvelocity
 !
     endsubroutine init_uud
 !***********************************************************************
-    subroutine pencil_criteria_dustvelocity()
+    subroutine pencil_criteria_dustvelocity
 !
     endsubroutine pencil_criteria_dustvelocity
 !***********************************************************************
@@ -166,7 +168,7 @@ module Dustvelocity
 !***********************************************************************
     subroutine pushpars2c(p_par)
 
-    integer, parameter :: n_pars=1
+    integer, parameter :: n_pars=0
     integer(KIND=ikind8), dimension(n_pars) :: p_par
       
     call keep_compiler_quiet(p_par)

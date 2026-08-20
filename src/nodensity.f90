@@ -20,8 +20,7 @@
 !***************************************************************
 module Density
 !
-  use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none
@@ -44,7 +43,7 @@ module Density
 !
       use SharedVariables, only: put_shared_variable
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id$")
 !
       call put_shared_variable('beta_glnrho_scaled',beta_glnrho_scaled,caller='register_density')
@@ -59,6 +58,7 @@ module Density
 !
 !  24-nov-02/tony: coded
 !
+      use Cdata
       use EquationOfState, only: select_eos_variable, cs0
       use DensityMethods, only: initialize_density_methods
       use SharedVariables, only: get_shared_variable
@@ -134,6 +134,8 @@ module Density
 ! lpenc_loc=lpencil
 !
 ! 21-sep-13/MR: coded
+!
+      use Cdata
 !
       real, contiguous,dimension(:,:,:,:),intent(IN) :: f
       type (pencil_case),                intent(OUT):: p
@@ -374,12 +376,14 @@ module Density
 !
 !  21-oct-15/MR: coded
 !
-      use EquationOfState, only: rho0
+!!      use EquationOfState, only: rho0
 !
       real, contiguous,dimension(:,:,:,:), intent(INOUT) :: f
 !
-      if (lslope_limit_diff) f(2:mx-2,2:my-2,2:mz-2,iFF_char_c) &
-                            =f(2:mx-2,2:my-2,2:mz-2,iFF_char_c) + rho0**2
+      call keep_compiler_quiet(f)
+
+!!      if (lslope_limit_diff) f(2:mx-2,2:my-2,2:mz-2,iFF_char_c) &
+!!                            =f(2:mx-2,2:my-2,2:mz-2,iFF_char_c) + rho0**2
 !
     endsubroutine update_char_vel_density
 !***********************************************************************s

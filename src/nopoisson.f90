@@ -14,8 +14,7 @@
 !***************************************************************
 module Poisson
 !
-  use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages, only: fatal_error
 !
   implicit none
@@ -24,7 +23,7 @@ module Poisson
 !
   contains
 !***********************************************************************
-    subroutine initialize_poisson()
+    subroutine initialize_poisson
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.

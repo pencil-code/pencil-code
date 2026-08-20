@@ -1,10 +1,8 @@
 ! $Id$
-
 !
 !  This module applies a sixth order hyperviscosity to the equation
 !  of motion (following Haugen & Brandenburg 2004).
 !
-
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -17,14 +15,13 @@
 !***************************************************************
 module Hypervisc_strict
 !
-  use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
 !
   implicit none
 !
   contains
 !***********************************************************************
-    subroutine register_hypervisc_strict()
+    subroutine register_hypervisc_strict
 !
 !  Set up indices for hyperviscosity auxiliary slots.
 !

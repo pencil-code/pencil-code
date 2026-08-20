@@ -17,8 +17,7 @@ module WENO_transport
 !
 !  29-dec-09/evghenii+anders: dummy
 !
-      use Cparam, only: impossible
-      use General, only: keep_compiler_quiet
+      use Quiet
 !
       real, dimension(:,:,:,:), intent(in ) :: fq
       integer, intent(in) :: m, n

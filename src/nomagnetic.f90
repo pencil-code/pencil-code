@@ -18,7 +18,7 @@
 module Magnetic
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages, only: svn_id, fatal_error, not_implemented
 !
   implicit none
@@ -32,7 +32,6 @@ module Magnetic
   logical :: lcoulomb=.false.
   integer :: iLam=0
   integer, parameter :: idiag_axmz=0, idiag_aymz=0, idiag_bxmz=0, idiag_bymz=0
-  real :: b_ext2 = 0.0
 
   contains
 !***********************************************************************
@@ -45,7 +44,7 @@ module Magnetic
 !
 !  identify version number
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
     endsubroutine register_magnetic
@@ -440,12 +439,8 @@ module Magnetic
 !***********************************************************************
     subroutine pushpars2c(p_par)
 
-    use Syscalls, only: copy_addr
-
-    integer, parameter :: n_pars=1
+    integer, parameter :: n_pars=0
     integer(KIND=ikind8), dimension(n_pars) :: p_par
-
-    call copy_addr(b_ext2,p_par(1))
 
     endsubroutine pushpars2c
 !***********************************************************************

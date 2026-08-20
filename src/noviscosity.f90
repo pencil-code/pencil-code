@@ -19,8 +19,7 @@
 !***************************************************************
 module Viscosity
 !
-  use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
 !
   implicit none
 !
@@ -30,20 +29,18 @@ module Viscosity
 !
   contains
 !***********************************************************************
-    subroutine register_viscosity()
+    subroutine register_viscosity
 !
 !  19-nov-02/tony: coded
 !
       use Messages, only: svn_id
-!
-!  Identify version number.
-!
-      if (lroot) call svn_id( &
+
+      call svn_id( &
            "$Id$")
-!
+
     endsubroutine register_viscosity
 !***********************************************************************
-    subroutine initialize_viscosity()
+    subroutine initialize_viscosity
 !
     endsubroutine initialize_viscosity
 !***********************************************************************
@@ -72,7 +69,7 @@ module Viscosity
 !
     endsubroutine rprint_viscosity
 !***********************************************************************
-    subroutine pencil_criteria_viscosity()
+    subroutine pencil_criteria_viscosity
 !
 !  All pencils that the Viscosity module depends on are specified here.
 !
@@ -99,6 +96,8 @@ module Viscosity
 !
 !  20-11-04/anders: coded
 !
+      use Cdata, only: lpencil
+
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !

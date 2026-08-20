@@ -16,9 +16,7 @@
 !***************************************************************
 module Chemistry
 !
-  use Cdata
-  use General, only: keep_compiler_quiet
-  use Messages
+  use Quiet
 !
   implicit none
 !
@@ -34,9 +32,15 @@ module Chemistry
 !***********************************************************************
     subroutine register_chemistry
 !
+      use Messages, only: svn_id
+!
+      call svn_id("$Id")
+
     endsubroutine register_chemistry
 !***********************************************************************
     subroutine initialize_chemistry(f)
+!
+      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -48,6 +52,7 @@ module Chemistry
     endsubroutine initialize_chemistry
 !*********************************************************************** 
     subroutine chemistry_allocate_rhs_arrays
+!
     endsubroutine chemistry_allocate_rhs_arrays
 !***********************************************************************
     subroutine init_chemistry(f)
@@ -162,6 +167,7 @@ module Chemistry
     subroutine write_chemistry_init_pars(unit)
 !
       integer, intent(in) :: unit
+!
       call keep_compiler_quiet(unit)
 !
     endsubroutine write_chemistry_init_pars
@@ -261,6 +267,7 @@ module Chemistry
     endsubroutine get_RHS_Y_full
 !***********************************************************************
     subroutine  write_net_reaction
+!
     endsubroutine  write_net_reaction
 !***********************************************************************
     subroutine get_reac_rate(f,p)
@@ -387,7 +394,6 @@ module Chemistry
       real :: Lmass
 !
       Lmass = 0.
-      call keep_compiler_quiet(Lmass)
 !
     end subroutine cond_spec_Lmass
 !***********************************************************************
@@ -398,7 +404,6 @@ module Chemistry
 !
       cv_cond = 0.; cv_absorb = 0.
       call keep_compiler_quiet(ix0)
-      call keep_compiler_quiet(cv_cond,cv_absorb)
 !
     end subroutine cond_spec_transfer_cv
 !***********************************************************************
@@ -441,7 +446,6 @@ module Chemistry
       real :: Lsol
 !
       Lsol = 0.
-      call keep_compiler_quiet(Lsol)
 !
     end subroutine absorb_spec_Lsol
 !***********************************************************************

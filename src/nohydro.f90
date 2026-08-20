@@ -32,7 +32,7 @@
 module Hydro
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none
@@ -81,7 +81,7 @@ module Hydro
 !
 !  Identify version number (generated automatically by SVN).
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
 !  Share lpressuregradient_gas so Entropy module knows whether to apply
@@ -245,7 +245,6 @@ module Hydro
 !   08-nov-04/tony: coded
 !
       use Diagnostics, only: sum_mn_name, max_mn_name, integrate_mn_name
-      use General, only: random_number_wrapper
       use Sub, only: quintic_step, quintic_der_step, dot_mn, dot2_mn
 !
       real, contiguous,dimension(:,:,:,:) :: f
@@ -1070,7 +1069,6 @@ module Hydro
     subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
-    use General , only: string_to_enum
 
     integer, parameter :: n_pars=1
     integer(KIND=ikind8), dimension(n_pars) :: p_par
@@ -1081,7 +1079,6 @@ module Hydro
 !***********************************************************************
     subroutine load_variables_to_gpu_hydro
     endsubroutine load_variables_to_gpu_hydro
-!***********************************************************************
 !***********************************************************************
     subroutine hydro_save_diagnostic_controls
     endsubroutine hydro_save_diagnostic_controls

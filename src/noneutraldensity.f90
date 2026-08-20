@@ -15,9 +15,7 @@
 !***************************************************************
 module Neutraldensity
 !
-  use Cdata
-  use General, only: keep_compiler_quiet
-  use Messages
+  use Quiet
 !
   implicit none
 !
@@ -31,11 +29,6 @@ module Neutraldensity
 !  compressible hydro equations: ilnrhon; increase nvar accordingly.
 !
 !  18-mar-03/axel: adapted from neutraldensity
-!
-!  Identify version number (generated automatically by SVN).
-!
-      if (lroot) call svn_id( &
-          "$Id$")
 !
     endsubroutine register_neutraldensity
 !***********************************************************************

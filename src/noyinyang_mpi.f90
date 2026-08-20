@@ -6,7 +6,7 @@
 !
 module Yinyang_mpi
 !
-  use Cparam
+  use Quiet
 
   include 'yinyang_mpi.h'
 
@@ -39,8 +39,6 @@ contains
 !***********************************************************************
     subroutine zsum_yy(fnamexy,iname,m,n,a)
 
-      use General, only: keep_compiler_quiet
-
       real, dimension(:,:,:), intent(INOUT) :: fnamexy
       integer,                intent(IN)    :: iname,m,n
       real, dimension(:),     intent(IN)    :: a
@@ -52,8 +50,6 @@ contains
     endsubroutine zsum_yy
 !***********************************************************************
     subroutine initialize_zaver_yy(nlines,nycap_)
-
-      use General, only: keep_compiler_quiet
 
       integer :: nlines,nycap_
 

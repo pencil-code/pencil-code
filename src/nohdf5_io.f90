@@ -6,8 +6,9 @@
 module HDF5_IO
 !
   use Cdata
-  use General, only: keep_compiler_quiet, itoa, numeric_precision
-  use Messages, only: fatal_error
+  use Quiet
+  use General, only: itoa, numeric_precision
+  use Messages, only: svn_id,fatal_error
 !
   implicit none
 !
@@ -62,6 +63,7 @@ module HDF5_IO
       integer, optional :: mvar_,maux_
 
 ! nothing to do
+      call svn_id("$Id")
 
       call keep_compiler_quiet(nxyz)
       call keep_compiler_quiet(ngrid)

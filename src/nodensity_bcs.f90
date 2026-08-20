@@ -1,8 +1,7 @@
   module DensityBcs
 
-    use Cdata
-    use General, only: keep_compiler_quiet
-    use Messages
+    use Quiet
+    use Messages, only: not_implemented
 
     include 'density_bcs.h'
 

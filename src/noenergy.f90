@@ -18,9 +18,7 @@
 !***************************************************************
 module Energy
 !
-  use Cdata
-  use General, only: keep_compiler_quiet
-  use Messages
+  use Quiet
 !
   implicit none
   integer :: pushpars2c  ! should be procedure pointer (F2003)
@@ -30,10 +28,6 @@ module Energy
   contains
 !***********************************************************************
     subroutine register_energy
-!
-!  Identify version number.
-!
-      if (lroot) call svn_id("$Id$")
 !
     endsubroutine register_energy
 !***********************************************************************

@@ -7,8 +7,7 @@
 !***************************************************************
 module Fixed_point
 !
-  use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
 !
   implicit none
 !
@@ -18,7 +17,7 @@ module Fixed_point
   contains
 !
 !***********************************************************************
-    subroutine fixed_points_prepare()
+    subroutine fixed_points_prepare
 !
 !    dummy
 !

@@ -15,8 +15,7 @@
 !
 module power_spectrum
 !
-  use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
 !
   implicit none
 !
@@ -48,15 +47,13 @@ module power_spectrum
 !***********************************************************************
     subroutine power(f,sp,iapn_index)
 !
-      use General, only: ioptest
-!
       real, contiguous,dimension(:,:,:,:) :: f
       character (len=1) :: sp
       integer, optional :: iapn_index
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(sp)
-      call keep_compiler_quiet(ioptest(iapn_index))
+      if (present(iapn_index)) call keep_compiler_quiet(iapn_index)
 !
     endsubroutine power
 !***********************************************************************
@@ -175,8 +172,6 @@ module power_spectrum
 !***********************************************************************
     subroutine powerscl(f,sp,iapn_index,lsqrt)
 !
-      use General, only: ioptest
-
       logical, intent(in), optional :: lsqrt
       real, contiguous,dimension(:,:,:,:) :: f
       character (len=2) :: sp
@@ -185,7 +180,7 @@ module power_spectrum
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(sp)
       call keep_compiler_quiet(lsqrt)
-      call keep_compiler_quiet(ioptest(iapn_index))
+      if (present(iapn_index)) call keep_compiler_quiet(iapn_index)
 !
     endsubroutine powerscl
 !***********************************************************************
@@ -195,8 +190,6 @@ module power_spectrum
       character (len=1) :: sp
       integer :: ivec
       integer, optional :: ivar
-!
-      if (ip<=15) print*,'Use POWER=power_spectrum in Makefile.local'
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(sp)

@@ -13,8 +13,7 @@
 !
 module Heatflux
 !
-  use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
 !
   implicit none
 !
@@ -23,13 +22,6 @@ module Heatflux
   contains
 !***********************************************************************
     subroutine register_heatflux
-!
-!  6-oct-03/tony: coded
-!
-      use Messages, only: svn_id
-
-      if (lroot) call svn_id( &
-           "$Id$")
 !
     endsubroutine register_heatflux
 !***********************************************************************
@@ -166,7 +158,7 @@ module Heatflux
 !***********************************************************************
     subroutine pushpars2c(p_par)
 
-    integer, parameter :: n_pars=1
+    integer, parameter :: n_pars=0
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call keep_compiler_quiet(p_par)

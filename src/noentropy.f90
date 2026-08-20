@@ -21,7 +21,7 @@
 module Energy
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none
@@ -64,7 +64,7 @@ module Energy
 !
 !  Identify version number.
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id$")
 !
       call put_shared_variable('lviscosity_heat',lviscosity_heat,caller='register_energy')
@@ -87,9 +87,7 @@ module Energy
 !
 !  The following only makes sense if leos=.true.
 !
-      if (leos) then
-        call get_gamma_etc(gamma,cp)
-      endif
+      if (leos) call get_gamma_etc(gamma,cp)
 !
 !  Tell the equation of state that we're here and what f variable we use.
 !
@@ -107,8 +105,7 @@ module Energy
 !
 !  Logical variable lpressuregradient_gas shared with hydro modules.
 !
-      call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas)
-!
+      call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,caller='initialize_energy')
       call get_shared_variable('beta_glnrho_scaled',beta_glnrho_scaled)
 !
       if (ldensity) then
@@ -188,7 +185,7 @@ module Energy
 !
 !  20-11-04/anders: coded
 !
-      if (lhydro.and.lpressuregradient_gas.and..not.(lconservative.and. .not. lconservative_pressure_on_rhs))& 
+      if (lhydro.and.lpressuregradient_gas.and..not.(lconservative.and. .not. lconservative_pressure_on_rhs)) & 
               lpenc_requested(i_fpres)=.true.
       if (leos.and.ldensity.and.lhydro.and.ldt) lpenc_requested(i_cs2)=.true.
       if (any(beta_glnrho_scaled /= 0.)) lpenc_requested(i_cs2)=.true.
@@ -290,7 +287,7 @@ module Energy
                 if (.not.lconservative) then
                   p%fpres(:,j)=-p%cs2/(1 + p%cs2)*p%glnrho(:,j)*lorentz_gamma_inv2
                 endif
-              else if(lconservative) then
+              else if (lconservative) then
                 p%fpres(:,j)=-p%cs2*p%grho(:,j)
               else
                 p%fpres(:,j)=-p%cs2*p%glnrho(:,j)
@@ -396,8 +393,7 @@ module Energy
       endif
       !    Have to do this here since important for some modules like photoelectric_dust
       !    (this overwrites the setting there)
-      if (lupdate_courant_dt .and. leos.and.ldensity.and.lhydro) advec_cs2=p%advec_cs2
-
+      if (lupdate_courant_dt .and. leos.and.ldensity.and.lhydro) advec_cs2=max(advec_cs2,p%advec_cs2)
 
       call calc_diagnostics_energy(f,p)
 !

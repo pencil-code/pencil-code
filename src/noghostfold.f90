@@ -2,8 +2,7 @@
 !
 module GhostFold
 !
-  use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
 !
   implicit none
 !
@@ -50,7 +49,7 @@ module GhostFold
 !
     endsubroutine fold_df_3points
 !*******************************************************************************
-subroutine reverse_fold_f_3points(f,ivar1,ivar2)
+    subroutine reverse_fold_f_3points(f,ivar1,ivar2)
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: ivar1, ivar2
@@ -60,7 +59,7 @@ subroutine reverse_fold_f_3points(f,ivar1,ivar2)
 !
     endsubroutine reverse_fold_f_3points
 !***********************************************************************
-subroutine reverse_fold_df_3points(f,ivar1,ivar2)
+    subroutine reverse_fold_df_3points(f,ivar1,ivar2)
 !
       real, dimension (mx,my,mz,mvar) :: f
       integer :: ivar1, ivar2

@@ -2,9 +2,8 @@ module DensityMethods
 !
 !  11-mar-15/MR:  Created to avoid circular dependencies with EquationOfState.
 !
-  use Cdata
-  use General, only: keep_compiler_quiet
-  use Messages, only: fatal_error
+  use Quiet
+  use Messages, only: not_implemented
 
   include 'density_methods.h'
 !
@@ -56,7 +55,6 @@ module DensityMethods
 !
 !   4-oct-17/MR: derived from getrho_1d.
 !
-
       real, dimension(mx), intent(in) :: f
       real, dimension(nx), intent(out):: rho1
 
@@ -208,7 +206,7 @@ module DensityMethods
       real, dimension(mx), intent(out):: f
       real, dimension(nx), intent(in) :: rho
 
-      call fatal_error('putrho', 'not implemented in nodensity.')
+      call not_implemented('putrho', 'not implemented in nodensity_methods')
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(rho)
 !
@@ -219,7 +217,7 @@ module DensityMethods
       real, dimension(mx), intent(out):: f
       real, dimension(nx), intent(in) :: lnrho
 
-      call fatal_error('putlnrho', 'not implemented in nodensity.')
+      call not_implemented('putlnrho', 'not implemented in nodensity_methods')
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lnrho)
 !
@@ -230,7 +228,7 @@ module DensityMethods
       real, dimension(mx,my), intent(out):: f
       real,                   intent(in ):: lnrho
 
-      call fatal_error('putlnrho', 'not implemented in nodensity.')
+      call not_implemented('putlnrho', 'not implemented in nodensity_methods')
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lnrho)
 !
@@ -246,7 +244,7 @@ module DensityMethods
       real, dimension(:,:,:,:),            intent(in) :: f
       real, dimension(size(f,1),size(f,2)),intent(out):: derlnrho
 
-      call fatal_error('getderlnrho_z', 'not implemented in nodensity.')
+      call not_implemented('getderlnrho_z', 'not implemented in nodensity_methods')
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(iz)
       call keep_compiler_quiet(derlnrho)

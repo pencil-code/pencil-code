@@ -6,6 +6,8 @@
 !
   module Python
 
+    use Quiet
+
     implicit none
 !
     contains
@@ -18,9 +20,6 @@
 !***************************************************************
     subroutine read_python_run_pars(iomsg)
 !
-      use Cparam, only: iomsglen
-      use General, only: keep_compiler_quiet
-
       character(LEN=*), intent(out) :: iomsg
       
       call keep_compiler_quiet(iomsg)
@@ -29,7 +28,6 @@
 !***************************************************************
     subroutine write_python_run_pars(unit)
 !
-      use General, only: keep_compiler_quiet
       integer, intent(in) :: unit
 
       call keep_compiler_quiet(unit)

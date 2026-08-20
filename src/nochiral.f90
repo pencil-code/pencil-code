@@ -16,8 +16,7 @@
 !***************************************************************
 module Chiral
 !
-  use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
 !
   implicit none
 !
@@ -30,13 +29,6 @@ module Chiral
     subroutine register_chiral
 !
 !  28-may-04/axel: adapted from pscalar
-!
-      use Messages, only: svn_id
-!
-!  Identify version number.
-!
-      if (lroot) call svn_id( &
-          "$Id$")
 !
     endsubroutine register_chiral
 !***********************************************************************

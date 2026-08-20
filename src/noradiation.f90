@@ -13,9 +13,7 @@
 !
 module Radiation
 !
-  use Cdata
-  use General, only: keep_compiler_quiet
-  use Messages
+  use Quiet
 !
   implicit none
 !
@@ -28,11 +26,6 @@ module Radiation
     subroutine register_radiation
 !
 !  15-jul-2002/nils: dummy routine
-!
-!  identify version number
-!
-      if (lroot) call svn_id( &
-           "$Id$")
 !
     endsubroutine register_radiation
 !***********************************************************************

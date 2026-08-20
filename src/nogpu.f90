@@ -8,13 +8,11 @@
 !
 module GPU
 !
-  use Cparam
-  use General, only: keep_compiler_quiet, lpointer, keep_compiler_quiet_dble
-  use iso_c_binding
+  use Quiet
 
   implicit none
 
-  logical :: ltest_bcs,ltest_rhs
+  logical :: ltest_bcs=.false.,ltest_rhs=.false.
   integer :: it_test_rhs
 
   include 'gpu.h'
@@ -144,6 +142,7 @@ contains
     endsubroutine update_on_gpu
 !**************************************************************************
     subroutine update_on_gpu_vec(index, varname, value)
+      
       integer, intent(inout) :: index
       character(LEN=*),optional :: varname
       real, dimension(3), optional :: value
@@ -154,7 +153,7 @@ contains
 
     endsubroutine update_on_gpu_vec
 !**************************************************************************
-    subroutine gpu_prepare_for_first_substep()
+    subroutine gpu_prepare_for_first_substep
 
     endsubroutine gpu_prepare_for_first_substep
 !**************************************************************************
@@ -218,7 +217,7 @@ contains
 
     endsubroutine TF_create_model
 !**************************************************************************
-    subroutine tau_snapshots()
+    subroutine tau_snapshots
     endsubroutine tau_snapshots
 !**************************************************************************
   subroutine TF_load_model(model_name, fname)
@@ -254,6 +253,7 @@ contains
 
     call keep_compiler_quiet(model_name)
     call keep_compiler_quiet(checkpoint_dir)
+
   endsubroutine TF_save_checkpoint
 !***********************************************************************
 endmodule GPU

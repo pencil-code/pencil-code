@@ -10,7 +10,7 @@
 subroutine output_penciled_vect_c(filename,pencil,ndim,i,iy,iz,t,nx,ny,nz,nghost,fnlen)
 !
   use Cdata, only: mx,headtt
-  use General, only: keep_compiler_quiet
+  use Quiet, only: keep_compiler_quiet
 !
   implicit none
 !
@@ -38,7 +38,7 @@ endsubroutine output_penciled_vect_c
 subroutine output_penciled_scal_c(filename,pencil,ndim,i,iy,iz,t,nx,ny,nz,nghost,fnlen)
 !
   use Cdata, only: mx,headtt
-  use General, only: keep_compiler_quiet
+  use Quiet, only: keep_compiler_quiet
 !
   real,dimension(mx) :: pencil
   real :: t

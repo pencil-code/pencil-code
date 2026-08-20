@@ -16,9 +16,7 @@
 !***************************************************************
 module Ascalar
 !
-  use Cdata
-  use General, only: keep_compiler_quiet
-  use Messages
+  use Quiet
 !
   implicit none
 !
@@ -27,16 +25,6 @@ module Ascalar
   contains
 !***********************************************************************
     subroutine register_ascalar
-!
-!  Initialise variables which should know that we solve for passive
-!  scalar: iacc; increase nvar accordingly.
-!
-!  6-jul-02/axel: coded
-!
-!  Identify version number.
-!
-      if (lroot) call svn_id( &
-          "$Id$")
 !
     endsubroutine register_ascalar
 !***********************************************************************
@@ -93,7 +81,7 @@ module Ascalar
 !***********************************************************************
     subroutine init_acc(f)
 !
-!  Initialise energy; called from start.f90.
+!  Initialise scalars; called from start.f90.
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !

@@ -1,9 +1,7 @@
 module solid_cells_ogrid_chemistry
 !
-  use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Solid_cells_ogrid_cdata
-  use Chemistry, only: species_constants
 !
 implicit none
 !
@@ -75,5 +73,4 @@ implicit none
 !
     endsubroutine calc_heatcond_chemistry_ogrid
 !***********************************************************************
-!
-end module solid_cells_ogrid_chemistry
+endmodule Solid_cells_ogrid_chemistry

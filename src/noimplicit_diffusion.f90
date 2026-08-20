@@ -11,9 +11,7 @@
 !***************************************************************
 module ImplicitDiffusion
 !
-  use Cdata
-  use General, only: keep_compiler_quiet
-  use Messages, only: fatal_error
+  use Quiet
 !
   implicit none
 !
@@ -48,12 +46,10 @@ module ImplicitDiffusion
 
       external get_diffus_coeff
 
-      call fatal_error('integrate_diffusion', 'ImplicitDiffusion module is not plugged in. ')
-
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(ivar1,ivar2)
       !Poor man's keep_compiler_quiet
-      if(.false.) call get_diffus_coeff()
+      if (.false.) call get_diffus_coeff()
 !
     endsubroutine integrate_diffusion
 !***********************************************************************

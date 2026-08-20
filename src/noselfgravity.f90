@@ -14,8 +14,7 @@
 !***************************************************************
 module Selfgravity
 !
-  use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
 !
   implicit none
 !
@@ -23,6 +22,7 @@ module Selfgravity
 !
   real :: rhs_poisson_const=0.
   real :: gravitational_const=real(G_Newton_cgs)
+
   namelist /selfgrav_init_pars/ &
       gravitational_const
 !
@@ -34,7 +34,10 @@ module Selfgravity
 !
 !  15-may-06/anders+jeff: dummy
 !
+      use Messages, only: svn_id
       use SharedVariables, only: put_shared_variable
+
+      call svn_id("$Id")
 
       call put_shared_variable('rhs_poisson_const',rhs_poisson_const, caller='register_selfgravity')
       call put_shared_variable('gravitational_const',gravitational_const)
@@ -48,6 +51,8 @@ module Selfgravity
 !
 !  15-may-06/anders+jeff: dummy
 !
+      use Cdata
+
       real, dimension (mx,my,mz,mfarray) :: f
 !
       pot_spec=.false.
@@ -179,7 +184,7 @@ module Selfgravity
 !***********************************************************************
     subroutine pushpars2c(p_par)
 
-    integer, parameter :: n_pars=1
+    integer, parameter :: n_pars=0
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call keep_compiler_quiet(p_par)

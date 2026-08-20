@@ -11,7 +11,7 @@
 !***************************************************************
 module TestPerturb
 !
-  use General, only: keep_compiler_quiet
+  use Quiet
 !
   implicit none
 !
@@ -51,8 +51,6 @@ module TestPerturb
 !
 !  Dummy routine
 !
-      use Cparam, only: mx,my,mz,mfarray,mvar
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
 !
@@ -63,8 +61,6 @@ module TestPerturb
     subroutine testperturb_finalize(f)
 !
 !  Dummy routine
-!
-      use Cparam, only: mx,my,mz,mfarray,mvar
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !

@@ -18,9 +18,7 @@
 !***************************************************************
 module Forcing
 !
-  use Cdata
-  use General, only: keep_compiler_quiet
-  use Messages
+  use Quiet
 !
   implicit none
 !
@@ -34,14 +32,6 @@ module Forcing
   contains
 !***********************************************************************
     subroutine register_forcing
-!
-!  add forcing in timestep()
-!  11-may-2002/wolf: coded
-!
-!  identify version number
-!
-      if (lroot) call svn_id( &
-           "$Id$")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -96,9 +86,6 @@ module Forcing
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-!
-      if (lpencil(i_fcont)) p%fcont=0.
-      if (lpencil(i_curlfcont)) p%curlfcont=0.
 !
       call keep_compiler_quiet(f)
 !

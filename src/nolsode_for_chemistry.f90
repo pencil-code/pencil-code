@@ -5,8 +5,7 @@
 !
 module LsodeForChemistry
 !
-  use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
 !
   implicit none
 !

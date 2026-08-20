@@ -9,8 +9,7 @@
 !***************************************************************
 module BorderProfiles
 !
-  use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
 !
   implicit none
 !
@@ -27,6 +26,7 @@ module BorderProfiles
 !  border_frac_[xyz] is a 2-D array, separately for all three directions.
 !  border_frac_[xyz]=1 would affect everything between center and border.
 !
+      use Cdata
       use Messages, only: fatal_error
 !
       character(LEN=128) :: msg
@@ -114,7 +114,7 @@ module BorderProfiles
 !***********************************************************************
    subroutine pushpars2c(p_par)
 
-    integer, parameter :: n_pars=1
+    integer, parameter :: n_pars=0
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call keep_compiler_quiet(p_par)

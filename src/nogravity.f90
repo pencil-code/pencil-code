@@ -15,7 +15,7 @@
 module Gravity
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none
@@ -52,9 +52,8 @@ module Gravity
 !
 !  Identify version number (generated automatically by SVN).
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id$")
-!
 !
     endsubroutine register_gravity
 !***********************************************************************

@@ -10,8 +10,7 @@
 !***************************************************************
 module Deriv
 !
-  use Messages, only: fatal_error, warning
-  use Cdata
+  use Cparam
 !
   implicit none
 !
@@ -32,6 +31,8 @@ module Deriv
 !
 !  dummy
 ! 
+!      use Messages, only: fatal_error
+!
       !real, dimension(-2:3), intent(in ) :: grid
       !real, dimension(-3:3), intent(out) :: coeffs
       real, dimension(1:0), intent(in ) :: grid

@@ -13,9 +13,7 @@
 !***************************************************************
 module Interstellar
 !
-  use Cdata
-  use General, only: keep_compiler_quiet
-  use Messages
+  use Quiet
 !
   implicit none
 !
@@ -24,13 +22,6 @@ module Interstellar
   contains
 !***********************************************************************
     subroutine register_interstellar
-!
-!  19-nov-02/tony: coded
-!
-!  identify version number
-!
-      if (lroot) call svn_id( &
-           "$Id$")
 !
     endsubroutine register_interstellar
 !***********************************************************************
@@ -167,7 +158,6 @@ module Interstellar
 !
 !  Calculate Interstellar pencils.
 !  Most basic pencils should come first, as others may depend on them.
-!
 !
       real, dimension(mx,my,mz,mfarray), intent(IN)   :: f
       type(pencil_case),                 intent(INOUT):: p

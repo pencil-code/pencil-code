@@ -73,9 +73,7 @@
 !
 module Special
 !
-  use Cdata
-  use General, only: keep_compiler_quiet
-  use Messages, only: svn_id, fatal_error
+  use Quiet
 !
   implicit none
 !
@@ -104,9 +102,6 @@ module Special
 !
 !  6-oct-03/tony: coded
 !
-      if (lroot) call svn_id( &
-           "$Id$")
-!
 !!      call farray_register_pde('special',ispecial)
 !!      call farray_register_auxiliary('specaux',ispecaux)
 !!      call farray_register_auxiliary('specaux',ispecaux,communicated=.true.)
@@ -121,8 +116,6 @@ module Special
 !
       integer :: npvar
 !
-      if (lroot) call svn_id( &
-           "$Id$")
       call keep_compiler_quiet(npvar)
 !
 !
@@ -243,7 +236,7 @@ module Special
 !
 !  Identify module and boundary conditions.
 !
-      if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dspecial_dt'
+!      if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dspecial_dt'
 !!      if (headtt) call identify_bcs('special',ispecial)
 !
 !!
@@ -672,7 +665,7 @@ module Special
       call keep_compiler_quiet(dsize,init_distr,init_distr2)
       call keep_compiler_quiet(Ntot)
 !
-    endsubroutine  set_init_parameters
+    endsubroutine set_init_parameters
 !***********************************************************************
     subroutine input_persist_special_id(id,done)
 !
@@ -710,7 +703,7 @@ module Special
 
       call keep_compiler_quiet(f_ode)
 
-    endsubroutine     calc_ode_diagnostics_special 
+    endsubroutine calc_ode_diagnostics_special 
 !***********************************************************************
     subroutine load_variables_to_gpu_special
     endsubroutine load_variables_to_gpu_special

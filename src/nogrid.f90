@@ -14,8 +14,7 @@
 module Grid
 !
   use Cdata
-  use General, only: keep_compiler_quiet
-  use Messages
+  use Quiet
 !
   implicit none
 !
@@ -189,7 +188,7 @@ module Grid
       !ogical :: lreturn
       !nteger :: it
 !
-    !ndfunction find_star
+!    endfunction find_star
 !***********************************************************************
     subroutine real_to_index(n, x, xi)
 !

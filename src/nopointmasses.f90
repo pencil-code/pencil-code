@@ -12,9 +12,7 @@
 !***************************************************************
 module PointMasses
 !
-  use Cdata
-  use General, only: keep_compiler_quiet
-  use Messages, only: svn_id
+  use Quiet
 !
   implicit none
 !
@@ -27,9 +25,6 @@ module PointMasses
 !  Set up indices for access to the f and fq.
 !
 !  27-aug-06/wlad: adapted
-!
-      if (lroot) call svn_id( &
-          "$Id$")
 !
     endsubroutine register_pointmasses
 !***********************************************************************

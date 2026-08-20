@@ -1,9 +1,7 @@
   module EnergyBcs
 
-    use Cdata
-    use DensityMethods
-    use EquationOfState, only: get_gamma_etc, cs20, lnrho0, cs2bot, cs2top
-    use General, only: keep_compiler_quiet
+    use EquationOfState, only: get_gamma_etc, cs2bot, cs2top
+    use Quiet
     use Messages
 !
     include 'energy_bcs.h'
@@ -16,6 +14,7 @@
 !**************************************************************************************************
     subroutine initialize_energy_bcs
 
+      use Cdata
       use SharedVariables, only: get_shared_variable
 
       call get_gamma_etc(gamma)
@@ -55,8 +54,6 @@
 !
 !   4-may-2009/axel: dummy
 !
-      use General, only: keep_compiler_quiet
-
       integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
@@ -71,8 +68,6 @@
 !
 !   31-may-2010/pete: dummy
 !
-      use General, only: keep_compiler_quiet
-
       integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
@@ -87,8 +82,6 @@
 !
 !   23-apr-2014/pete: dummy
 !
-      use General, only: keep_compiler_quiet
-
       integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -103,8 +96,6 @@
 !
 !   07-jan-2015/pete: dummy
 !
-      use General, only: keep_compiler_quiet
-
       integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -119,8 +110,6 @@
 !
 !   15-jul-2014/pete: dummy
 !
-      use General, only: keep_compiler_quiet
-
       integer, intent(IN) :: topbot
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -135,8 +124,6 @@
 !
 !  boundary condition for entropy: constant temperature
 !
-      use General, only: keep_compiler_quiet
-
       real, dimension (:,:,:,:), intent(inout) :: f
       integer, intent(IN) :: topbot
 !
@@ -336,10 +323,6 @@
 !***********************************************************************
     subroutine bc_ss_temp3_z(f,topbot)
 !
-!  31-jan-2013/axel: coded to impose cs2bot and dcs2bot at bottom
-!
-      use General, only: keep_compiler_quiet
-
       integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
@@ -659,8 +642,6 @@
 !***********************************************************************
     subroutine bc_stellar_surface(f,topbot)
 !
-      use General, only: keep_compiler_quiet
-
       integer, intent(IN) :: topbot
       real, dimension (:,:,:,:) :: f
 !
@@ -673,8 +654,6 @@
 !***********************************************************************
     subroutine bc_lnrho_cfb_r_iso(f,topbot)
 !
-      use General, only: keep_compiler_quiet
-
       real, dimension (:,:,:,:) :: f
       integer, intent(IN) :: topbot
 !
@@ -687,8 +666,6 @@
 !***********************************************************************
     subroutine bc_lnrho_hds_z_iso(f,topbot)
 !
-      use General, only: keep_compiler_quiet
-
       real, dimension (:,:,:,:) :: f
       integer, intent(IN) :: topbot
 !
@@ -701,8 +678,6 @@
 !***********************************************************************
     subroutine bc_lnrho_hdss_z_iso(f,topbot)
 !
-      use General, only: keep_compiler_quiet
-
       real, dimension (:,:,:,:) :: f
       integer, intent(IN) :: topbot
 !

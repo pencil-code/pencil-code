@@ -21,9 +21,7 @@
 !***************************************************************
 module Shock
 !
-  use Cdata
-  use General, only: keep_compiler_quiet
-  use Messages
+  use Quiet
 !
   implicit none
 !
@@ -34,13 +32,12 @@ module Shock
     subroutine register_shock
 !
 !  19-nov-02/tony: coded
-!  24-jan-05/tony: modified from visc_shock.f90
 !
-!  identify version number
-!
-      if (lroot) call svn_id( &
-           "$Id$")
-!
+      use Messages, only: svn_id
+
+      call svn_id( &
+            "$Id$")
+
     endsubroutine register_shock
 !***********************************************************************
     subroutine initialize_shock(f)
@@ -97,7 +94,6 @@ module Shock
 !  20-11-04/anders: coded
 !  24-jan-05/tony: modified from visc_shock.f90
 !
-!
     endsubroutine pencil_criteria_shock
 !***********************************************************************
     subroutine pencil_interdep_shock(lpencil_in)
@@ -121,6 +117,8 @@ module Shock
 !  20-11-04/anders: coded
 !  24-jan-05/tony: modified from visc_shock.f90
 !
+      use Cdata
+
       real, contiguous, dimension(:,:,:,:) :: f
       type (pencil_case) :: p
 !

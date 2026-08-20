@@ -14,13 +14,10 @@
 !***************************************************************
 module Polymer
 !
-  use Cdata
-  use General, only: keep_compiler_quiet
-  use Messages
+  use Quiet
 !
   implicit none
 !
-  include 'record_types.h'
   include 'polymer.h'
 !
   contains
@@ -31,9 +28,7 @@ module Polymer
 !  potential: ipoly, etc; increase nvar accordingly.
 !
 !  14-Aug-08 : Dhruba
-!
-      if (lroot) call svn_id("$Id$")
-!
+
     endsubroutine register_polymer
 !***********************************************************************
     subroutine initialize_polymer(f)
@@ -181,7 +176,7 @@ module Polymer
 !***********************************************************************
     subroutine pushpars2c(p_par)
 
-    integer, parameter :: n_pars=10
+    integer, parameter :: n_pars=0
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call keep_compiler_quiet(p_par)

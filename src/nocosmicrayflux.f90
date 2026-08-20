@@ -13,9 +13,7 @@
 !***************************************************************
 module Cosmicrayflux
 !
-  use Cdata
-  use General, only: keep_compiler_quiet
-  use Messages
+  use Quiet
 !
   implicit none
 !
@@ -24,9 +22,6 @@ module Cosmicrayflux
   contains
 !***********************************************************************
     subroutine register_cosmicrayflux
-!
-      if (lroot) call svn_id( &
-           "$Id$")
 !
     endsubroutine register_cosmicrayflux
 !***********************************************************************

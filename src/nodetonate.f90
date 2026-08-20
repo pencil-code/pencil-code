@@ -11,9 +11,7 @@
 !***************************************************************
 module Detonate
 !
-  use Cdata
-  use General, only: keep_compiler_quiet
-  use Messages, only: svn_id
+  use Quiet
 !
   implicit none
 !
@@ -22,12 +20,6 @@ module Detonate
   contains
 !***********************************************************************
     subroutine register_detonate
-!
-!  Set up indices for variables.
-!
-!  13-feb-14/ccyang: coded
-!
-      if (lroot) call svn_id("$Id$")
 !
     endsubroutine register_detonate
 !***********************************************************************

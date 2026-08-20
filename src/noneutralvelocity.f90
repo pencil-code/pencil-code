@@ -16,9 +16,7 @@
 !***************************************************************
 module NeutralVelocity
 !
-  use Cdata
-  use General, only: keep_compiler_quiet
-  use Messages
+  use Quiet
 !
   implicit none
 !
@@ -33,11 +31,10 @@ module NeutralVelocity
 !
 !  18-mar-03/axel: dummy routine
 !
-!  Identify version number (generated automatically by SVN).
-!
-      if (lroot) call svn_id( &
+      use Messages
+      call svn_id( &
           "$Id$")
-!
+
     endsubroutine register_neutralvelocity
 !***********************************************************************
     subroutine initialize_neutralvelocity
@@ -47,6 +44,8 @@ module NeutralVelocity
 !
 !  18-mar-03/axel: dummy routine
 !
+      use Cdata
+
       oun_spec=.false.
 !
     endsubroutine initialize_neutralvelocity
@@ -177,6 +176,7 @@ module NeutralVelocity
 
     integer, parameter :: n_pars=1
     integer(KIND=ikind8), dimension(n_pars) :: p_par
+
     call keep_compiler_quiet(p_par)
 
     endsubroutine pushpars2c

@@ -1,6 +1,6 @@
 module Solid_Cells_Mpicomm
 
-  use Cparam
+  use Quiet
 
   implicit none
 
@@ -43,11 +43,12 @@ module Solid_Cells_Mpicomm
     endsubroutine finalize_isend_init_interpol
 !***********************************************************************
     subroutine initialize_mpicomm_ogrid(lf)
+!
       logical, intent(in) :: lf
 !
 !  Dummy
 !
-      if(ALWAYS_FALSE) print*, lf
+      if (ALWAYS_FALSE) print*, lf
 !
     endsubroutine initialize_mpicomm_ogrid
 !***********************************************************************
@@ -60,7 +61,7 @@ module Solid_Cells_Mpicomm
       real, dimension(n) :: x
       real :: alpha,beta
 
-      if(ALWAYS_FALSE) print*, a,b,c,alpha,beta,r,x,n
+      if (ALWAYS_FALSE) print*, a,b,c,alpha,beta,r,x,n
 
     endsubroutine cyclic_parallel_y
 !***********************************************************************
@@ -69,7 +70,7 @@ module Solid_Cells_Mpicomm
       real, dimension (:,:,:,:) ::  f_og
       integer :: Hsize
 !
-      if(ALWAYS_FALSE) print*, f_og,Hsize
+      if (ALWAYS_FALSE) print*, f_og,Hsize
 
     endsubroutine initiate_isendrcv_bdry_filter
 !***********************************************************************
@@ -78,16 +79,16 @@ module Solid_Cells_Mpicomm
       integer, intent(in) :: Hsize
       real, dimension (:,:,:,:) ::  f_Hlox,f_Hupx,f_Hloy,f_Hupy
 
-      if(ALWAYS_FALSE) print*, f_Hlox,f_Hupx,f_Hloy,f_Hupy,Hsize
+      if (ALWAYS_FALSE) print*, f_Hlox,f_Hupx,f_Hloy,f_Hupy,Hsize
     endsubroutine finalize_isendrcv_bdry_filter
 !***********************************************************************
     subroutine tridag_parallel_x(a,b,c,r,u,n)
 !
-!
       integer, intent(in) :: n
       real, dimension(n) :: a,b,c,r,u
 !
-      if(ALWAYS_FALSE) print*, n,a,b,c,r,u
+      if (ALWAYS_FALSE) print*, n,a,b,c,r,u
+!
     endsubroutine tridag_parallel_x
 !***********************************************************************
 end module Solid_Cells_Mpicomm

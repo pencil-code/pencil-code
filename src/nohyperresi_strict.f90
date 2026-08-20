@@ -16,8 +16,7 @@
 !***************************************************************
 module Hyperresi_strict
 !
-  use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
 !
   implicit none
 !
@@ -25,7 +24,7 @@ module Hyperresi_strict
 !
   contains
 !***********************************************************************
-    subroutine register_hyperresi_strict()
+    subroutine register_hyperresi_strict
 !
 !  Set up indices for hyperresistivity auxiliary slots.
 !

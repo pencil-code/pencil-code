@@ -14,8 +14,7 @@
 !***************************************************************
 module Cosmicray
 !
-  use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
 !
   implicit none
 !
@@ -32,9 +31,9 @@ module Cosmicray
 !
 !  Identify version number.
 !
-      use Messages
+      use Messages, only: svn_id
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id$")
 !
     endsubroutine register_cosmicray
@@ -46,6 +45,7 @@ module Cosmicray
 !
 !  09-oct-03/tony: coded
 !
+      use Cdata, only: cr_spec
       real, dimension (mx,my,mz,mfarray) :: f
 !
       cr_spec=.false.

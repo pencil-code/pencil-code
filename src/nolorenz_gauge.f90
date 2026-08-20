@@ -15,9 +15,7 @@
 !***************************************************************
 module Lorenz_gauge
 
-  use Cdata
-  use General, only: keep_compiler_quiet
-  use Messages
+  use Quiet
 
   implicit none
 
@@ -26,14 +24,6 @@ module Lorenz_gauge
   contains
 !***********************************************************************
     subroutine register_lorenz_gauge
-!
-!  Configure pre-initialised (i.e. before parameter read) variables
-!  which should be know to be able to evaluate
-!
-!  6-oct-03/tony: coded
-!
-      if (lroot) call svn_id( &
-           "$Id$")
 !
     endsubroutine register_lorenz_gauge
 !***********************************************************************
@@ -176,8 +166,6 @@ module Lorenz_gauge
 !  reads and registers print parameters relevant to lorenz_gauge
 !
 !   06-oct-03/tony: coded
-!
-!   define counters
 !
       logical :: lreset
       logical, optional :: lwrite

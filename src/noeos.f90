@@ -22,7 +22,7 @@
 module EquationOfState
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none
@@ -51,7 +51,7 @@ module EquationOfState
 !
 !  Identify version number.
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           '$Id$')
 
       call put_shared_variable('gamma',gamma,caller='register_eos')
@@ -1968,6 +1968,7 @@ module EquationOfState
 
     call copy_addr(cs0,p_par(10))
     call copy_addr(cs2top,p_par(11))
+
     endsubroutine pushpars2c
 !***********************************************************************
     subroutine eos_before_boundary(f)

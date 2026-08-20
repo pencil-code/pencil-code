@@ -15,9 +15,7 @@
 !***************************************************************
 module Pscalar
 !
-  use Cdata
-  use General, only: keep_compiler_quiet
-  use Messages
+  use Quiet
 !
   implicit none
 !
@@ -35,11 +33,11 @@ module Pscalar
 !
 !  6-jul-02/axel: coded
 !
-!  Identify version number.
-!
-      if (lroot) call svn_id( &
+      use Messages
+
+      call svn_id( &
           "$Id$")
-!
+
     endsubroutine register_pscalar
 !***********************************************************************
     subroutine initialize_pscalar(f)
@@ -94,6 +92,8 @@ module Pscalar
 !
 !  20-11-04/anders: coded
 !
+      use Cdata
+
       real, contiguous,dimension(:,:,:,:) :: f
       type (pencil_case) :: p
 !

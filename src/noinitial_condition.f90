@@ -73,9 +73,7 @@
 !
 module InitialCondition
 !
-  use Cdata
-  use General, only: keep_compiler_quiet
-  use Messages
+  use Quiet
 !
   implicit none
 !
@@ -89,9 +87,11 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      if (lroot) call svn_id( &
-         "$Id$")
-!
+      use Messages, only: svn_id
+
+      call svn_id( &
+           "$Id$")
+
     endsubroutine register_initial_condition
 !***********************************************************************
     subroutine initialize_initial_condition(f)
@@ -114,7 +114,7 @@ module InitialCondition
 !  15-feb-15/MR: optional parameter 'profiles' added
 !
       use Messages, only: fatal_error
-!
+
       real, dimension (mx,my,mz,mfarray), optional, intent(inout):: f
       real, dimension (:,:),              optional, intent(out)  :: profiles
 !

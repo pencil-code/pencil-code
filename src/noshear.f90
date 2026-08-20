@@ -14,9 +14,7 @@
 !***************************************************************
 module Shear
 !
-  use Cdata
-  use General, only: keep_compiler_quiet
-  use Messages
+  use Quiet
 !
   implicit none
 !
@@ -26,13 +24,11 @@ module Shear
 !***********************************************************************
     subroutine register_shear
 !
-!  Initialise variables.
-!
-!  2-july-02/nils: coded
-!
-      if (lroot) call svn_id( &
+      use Messages, only: svn_id
+
+      call svn_id( &
            "$Id$")
-!
+
     endsubroutine register_shear
 !***********************************************************************
     subroutine initialize_shear
@@ -40,6 +36,8 @@ module Shear
 !  21-nov-02/tony: coded
 !  17-jul-04/axel: Sshear=0 is needed for forcing_hel to work correctly.
 !
+      use Cdata
+
       Sshear=0.0
 !
     endsubroutine initialize_shear
@@ -159,10 +157,6 @@ module Shear
       real, dimension (mx,my,mz,mvar) :: df
       real :: dt_shear
 !
-!  Print identifier.
-!
-      if (headtt.or.ldebug) print*,'advance_shear: deltay=const=',deltay
-!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(dt_shear)
@@ -210,8 +204,6 @@ module Shear
       integer,                           intent(in)           :: nvars, jstart
       integer,                           intent(in), optional :: jstep
       logical,                           intent(in), optional :: shear1
-!
-      df = df+0.
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
@@ -278,7 +270,7 @@ module Shear
 !***********************************************************************
     subroutine pushpars2c(p_par)
 
-    integer, parameter :: n_pars=1
+    integer, parameter :: n_pars=0
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call keep_compiler_quiet(p_par)
