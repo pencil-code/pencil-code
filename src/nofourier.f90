@@ -52,6 +52,7 @@ module Fourier
 !
 !***********************************************************************
     subroutine initialize_fourier
+      use Cdata
       include 'fourier_common.h'    !MR: needed?
     endsubroutine initialize_fourier
 !***********************************************************************
