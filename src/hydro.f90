@@ -4430,7 +4430,7 @@ module Hydro
 !
       use Diagnostics
       use Special, only: special_calc_hydro
-      use Sub, only: dot, dot2, identify_bcs, cross, multsv, multsv_mn_add, multsv_mn
+      use Sub, only: dot, dot2, identify_bcs, cross, multsv, multsv_mn_add, multsv_mn, read_ell_from_table
       use General, only: transform_thph_yy, notanumber
       use Deriv, only: der
 !
@@ -4444,7 +4444,7 @@ module Hydro
       real, dimension (nx,3) :: uu1, tmpv
       real, dimension (nx) :: ftot
       real, dimension (nx) :: arad_normal, pradrc2
-      real :: hubble_factor
+      real :: hubble_factor, ell_gam
       integer :: j
 !
       Fmax=1./impossible
@@ -4536,6 +4536,16 @@ module Hydro
             else
               call fatal_error("duu_dt","lmagnetic must be true")
             endif
+!
+!  Viscosity for recombination from a file.
+!
+          case ('read_ell_from_table')
+            call read_ell_from_table(ascale,ell_gam)
+            frict=ekman_friction/ell_gam
+            !if (lroot) call save_name(ell_gam,idiag_ell_gam)
+!
+!  Step profile
+!
           case ('step', 'cs-step')
             if (t<=t1_ekman) then
               frict=0.

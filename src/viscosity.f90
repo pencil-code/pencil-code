@@ -132,7 +132,7 @@ module Viscosity
   real :: ascale_visc=1.  !PAR_DOC: value of ascale below which nu for recombination is constant
   logical :: lvisc_const_below_ascale=.false.  !PAR_DOC: visc=const for ascale below ascale_visc
   logical :: lrate_of_strain_as_aux = .false.
-  integer :: iSij=0, ioffset_table1=-1, ioffset_table2=0
+  integer :: iSij=0
 !
   namelist /viscosity_run_pars/ &
       limplicit_viscosity, nu, mu, nu_tdep_exponent, &
@@ -152,7 +152,7 @@ module Viscosity
       no_visc_heat_z0,no_visc_heat_zwidth, div_sld_visc ,lvisc_forc_as_aux, &
       lvisc_rho_nu_const_prefact, nu_rcyl_min, nu_r_reduce, &
       tdep_nu_type, nu_tdep_ascale_power,lrate_of_strain_as_aux, &
-      ascale_visc, lvisc_const_below_ascale, ioffset_table1, ioffset_table2
+      ascale_visc, lvisc_const_below_ascale
 !
 ! diagnostic variable markers (needs to be consistent with reset list below)
 !
@@ -2474,7 +2474,7 @@ module Viscosity
 !
       use Sub, only: div, calc_all_diff_fluxes, grad, dot_mn, calc_sij2, &
                      stagger_to_base_interp_1st, stagger_to_base_interp_3rd, &
-                     gij_v_times_s, gij, traceless_strain
+                     gij_v_times_s, gij, traceless_strain, read_ell_from_table
       use General, only: reduce_grad_dim,notanumber
       use DensityMethods, only: getrho
       use Boundcond, only: update_ghosts
@@ -2691,63 +2691,6 @@ module Viscosity
 !      endif
 
     endsubroutine viscosity_after_boundary
-!***********************************************************************
-    subroutine read_ell_from_table(ascale,ell_gam)
-!
-!  read ell_gam from table
-!
-!   4-aug-26/axel: coded
-!
-      use General, only: itoa
-!
-      logical, save :: lread_data_file=.true.
-      integer :: iline
-      integer, parameter :: nline=1200
-      character (len=labellen) :: header
-      real, dimension(nline) :: T_table, z_table
-      real, save, dimension(nline) :: lna_table, ell_table
-      real, save :: lna_table_min, lna_table_max, dlna
-      real :: ascale, lna, lna1, lna2, lna_fit, weight, ell_gam, ell1, ell2
-!
-!  Read data file when this is accessed for the first time.
-!
-      if (lread_data_file) then
-        open(9,file='../profiles/ell_gamma_lna.csv',status='old')
-        read(9,*) header
-        do iline=1,nline
-          read(9,1000) lna_table(iline), z_table(iline), T_table(iline), ell_table(iline)
-        enddo
-        close(9)
-        lread_data_file=.false.
-        lna_table_min=minval(lna_table)
-        lna_table_max=maxval(lna_table)
-        dlna=(lna_table_max-lna_table_min)/(nline-1)
-      endif
-!
-!  Compute current redshift and check whether it is in the table range.
-!  Check whether the requested values are in the range of the table.
-!
-      lna=alog(ascale)
-      iline=1+int((lna-lna_table_min)/dlna)
-      if (iline-ioffset_table1<1 .or. iline-ioffset_table2>nline) then
-        call fatal_error('read_ell_from_table','iline='//trim(itoa(iline))//' is out of range')
-      else
-        lna2=lna_table(iline-ioffset_table2)
-        lna1=lna_table(iline-ioffset_table1)
-        ell2=ell_table(iline-ioffset_table2)
-        ell1=ell_table(iline-ioffset_table1)
-        weight=(lna-lna1)/(lna2-lna1)
-        lna_fit=weight*lna2+(1.-weight)*lna1
-        ell_gam=weight*ell2+(1.-weight)*ell1
-      endif
-!
-!  Debug output
-!
-      if (lroot .and. ip<14) write(6,1001) 'iline, lna1, lna, lna2, ell_gam=', iline, lna1, lna, lna2, ell_gam
-!
-1000  format(1p,e19.12,3(1x,e18.12))
-1001  format(1p,a,i6,4(1x,e14.6))
-    endsubroutine read_ell_from_table
 !***********************************************************************
     subroutine getnu_non_newtonian(gdotsqr,nu_effective,gradnu_effective)
 !

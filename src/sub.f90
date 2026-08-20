@@ -118,7 +118,7 @@ module Sub
   public :: stagger_to_base_interp_1st, stagger_to_base_interp_3rd
   public :: vortex
   public :: find_index_by_bisection
-  public :: calc_scl_factor
+  public :: calc_scl_factor, read_ell_from_table
   public :: get_dxyzs
   public :: get_random_vec
   public :: sample_poisson_waiting_time
@@ -9557,6 +9557,63 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
       endif
 !
     endsubroutine calc_scl_factor
+!***********************************************************************
+    subroutine read_ell_from_table(ascale,ell_gam)
+!
+!  read ell_gam from table
+!
+!   4-aug-26/axel: coded
+!
+      use General, only: itoa
+!
+      logical, save :: lread_data_file=.true.
+      integer :: iline, ioffset_table1=-1, ioffset_table2=0
+      integer, parameter :: nline=1200
+      character (len=labellen) :: header
+      real, dimension(nline) :: T_table, z_table
+      real, save, dimension(nline) :: lna_table, ell_table
+      real, save :: lna_table_min, lna_table_max, dlna
+      real :: ascale, lna, lna1, lna2, lna_fit, weight, ell_gam, ell1, ell2
+!
+!  Read data file when this is accessed for the first time.
+!
+      if (lread_data_file) then
+        open(9,file='../profiles/ell_gamma_lna.csv',status='old')
+        read(9,*) header
+        do iline=1,nline
+          read(9,1000) lna_table(iline), z_table(iline), T_table(iline), ell_table(iline)
+        enddo
+        close(9)
+        lread_data_file=.false.
+        lna_table_min=minval(lna_table)
+        lna_table_max=maxval(lna_table)
+        dlna=(lna_table_max-lna_table_min)/(nline-1)
+      endif
+!
+!  Compute current redshift and check whether it is in the table range.
+!  Check whether the requested values are in the range of the table.
+!
+      lna=alog(ascale)
+      iline=1+int((lna-lna_table_min)/dlna)
+      if (iline-ioffset_table1<1 .or. iline-ioffset_table2>nline) then
+        call fatal_error('read_ell_from_table','iline='//trim(itoa(iline))//' is out of range')
+      else
+        lna2=lna_table(iline-ioffset_table2)
+        lna1=lna_table(iline-ioffset_table1)
+        ell2=ell_table(iline-ioffset_table2)
+        ell1=ell_table(iline-ioffset_table1)
+        weight=(lna-lna1)/(lna2-lna1)
+        lna_fit=weight*lna2+(1.-weight)*lna1
+        ell_gam=weight*ell2+(1.-weight)*ell1
+      endif
+!
+!  Debug output
+!
+      if (lroot .and. ip<14) write(6,1001) 'iline, lna1, lna, lna2, ell_gam=', iline, lna1, lna, lna2, ell_gam
+!
+1000  format(1p,e19.12,3(1x,e18.12))
+1001  format(1p,a,i6,4(1x,e14.6))
+    endsubroutine read_ell_from_table
 !***********************************************************************    
     function get_dxyzs() result(res)
   
