@@ -171,7 +171,7 @@ module Io
             do nc=1,ncomps
               call get_astaroth_field_name(j,vnm,nc)
               !if (lroot) print*, 'rank,j,file=', iproc,j,nc,trim(file1)//trim(upper_case(vnm))//trim(file2)
-              open(lun_output+1,file=trim(file1)//vnm//trim(file2),form='unformatted', &
+              open(lun_output+1,file=trim(file1)//trim(vnm)//trim(file2),form='unformatted', &
                    access='direct',recl=out_size)
               write(lun_output+1,rec=1) a(l1:l2,m1:m2,n1:n2,j)
               close(lun_output+1)
@@ -737,7 +737,7 @@ module Io
       real(KIND=rkind4), dimension(:,:,:,:), allocatable :: tmp_omit,tmp
       integer :: j,nc,ncomps
       character (len=30) :: vnm
-      character (len=fnlen) :: file2
+      character (len=fnlen) :: file2_base,file2
 !
       include 'io_dist.h'
 !
@@ -780,7 +780,7 @@ module Io
       real(KIND=rkind8), dimension(:,:,:,:), allocatable :: tmp_omit,tmp
       integer :: j,nc,ncomps
       character (len=30)  :: vnm
-      character (len=fnlen) :: file2
+      character (len=fnlen) :: file2_base,file2
 
       include 'io_dist.h'
 !

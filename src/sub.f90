@@ -9831,7 +9831,7 @@ subroutine get_astaroth_field_name(j,vnm,nc)
 
   integer :: ncomps
 
-  ncomps=farray_get_name(j,vname)
+  ncomps=farray_get_name(j-nc+1,vname)
   if (ncomps==3) then
     vnm=trim(vname)//trim(compnames(nc))
   elseif (ncomps==6) then
@@ -9844,7 +9844,8 @@ subroutine get_astaroth_field_name(j,vnm,nc)
   if (trim(vnm)=='aax') vnm='ax'
   if (trim(vnm)=='aay') vnm='ay'
   if (trim(vnm)=='aaz') vnm='az'
-  vnm = trim(upper_case(vnm))
+  vnm = 'VTXBUF_'//upper_case(vnm)
+  vnm = trim(vnm)
 endsubroutine get_astaroth_field_name
 !***********************************************************************
 !

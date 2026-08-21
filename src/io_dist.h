@@ -14,7 +14,7 @@
       integer :: l,m,n,ll
 
       if (lastaroth_input) then
-        call safe_character_assign(file2,'-segment-'// &
+        call safe_character_assign(file2_base,'-segment-'// &
              trim(itoa(ipx*nx))//'-'//trim(itoa(ipy*ny))//'-'// &
              trim(itoa(ipz*nz))//'-0.mesh')
       
@@ -24,8 +24,9 @@
           do nc=1,ncomps
             call get_astaroth_field_name(j,vnm,nc)
       
+	    file2 = trim(astaroth_src)//trim(vnm)//trim(file2_base)
             open(lun_output+1, &
-                 file=trim(astaroth_src)//vnm//trim(file2), &
+                 file=file2, &
                  form='unformatted', &
                  access='stream', &
                  status='old', &
