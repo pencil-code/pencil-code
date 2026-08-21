@@ -11,7 +11,6 @@
 module Deriv
 !
   use Cparam
-  use Cdata,only: lroot
 !
   implicit none
 !
@@ -33,6 +32,7 @@ module Deriv
 !  dummy
 ! 
 !      use Messages, only: fatal_error
+      use Cdata,only: lroot
 !
       !real, dimension(-2:3), intent(in ) :: grid
       !real, dimension(-3:3), intent(out) :: coeffs
