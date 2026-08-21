@@ -1237,7 +1237,7 @@ module Hydro
       use Initcond
       use Mpicomm, only: mpibcast
       use SharedVariables, only: put_shared_variable, get_shared_variable
-      use Sub, only: step, erfunc, register_report_aux
+      use Sub, only: step, erfunc, register_report_aux,read_ell_file_to_table
       use Slices_methods, only: alloc_slice_buffers
       use Yinyang_mpi, only: initialize_zaver_yy
 !
@@ -1803,6 +1803,10 @@ module Hydro
         call mpibcast(xhless,nhless)
         call mpibcast(yhless,nhless)
         call mpibcast(zhless,nhless)
+      endif
+
+      if (ekman_friction/=0 .and. friction_tdep == 'read_ell_from_table') then
+        call read_ell_file_to_table
       endif
 
       endsubroutine initialize_hydro

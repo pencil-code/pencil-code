@@ -433,6 +433,12 @@ module Cdata
   character(LEN=fnlen) :: ascale_type='default'
   integer :: enum_ascale_type = 0
 !
+! For reading viscosity for recombination from a file.
+!
+  integer, parameter :: nline=1200
+  real, save, dimension(nline) :: lna_table, ell_table
+  real :: lna_table_min,dlna
+!
 ! Debugging
 !
   integer :: ip=14 !PAR_DOC: (anti-)verbosity level: \code{ip=1} produces lots of

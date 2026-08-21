@@ -118,7 +118,7 @@ module Sub
   public :: stagger_to_base_interp_1st, stagger_to_base_interp_3rd
   public :: vortex
   public :: find_index_by_bisection
-  public :: calc_scl_factor, read_ell_from_table
+  public :: calc_scl_factor, read_ell_file_to_table,read_ell_from_table
   public :: get_dxyzs
   public :: get_random_vec
   public :: sample_poisson_waiting_time
@@ -296,6 +296,7 @@ module Sub
 
   public :: set_next_dt
   public :: check_for_nans_globally
+
 !
 !  extended intrinsic operators to do some scalar/vector pencil arithmetic
 !  Tobi: Array valued functions do seem to be slower than subroutines,
@@ -9558,6 +9559,25 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
 !
     endsubroutine calc_scl_factor
 !***********************************************************************
+    subroutine read_ell_file_to_table
+
+      real, dimension(nline) :: T_table, z_table
+      character (len=labellen) :: header
+      real, save :: lna_table_max 
+      integer :: iline
+
+      open(9,file='../profiles/ell_gamma_lna.csv',status='old')
+      read(9,*) header
+      do iline=1,nline
+        read(9,1000) lna_table(iline), z_table(iline), T_table(iline), ell_table(iline)
+      enddo
+      close(9)
+      lna_table_min=minval(lna_table)
+      lna_table_max=maxval(lna_table)
+      dlna=(lna_table_max-lna_table_min)/(nline-1)
+1000  format(1p,e19.12,3(1x,e18.12))
+    endsubroutine read_ell_file_to_table
+!***********************************************************************
     subroutine read_ell_from_table(ascale,ell_gam)
 !
 !  read ell_gam from table
@@ -9566,29 +9586,9 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
 !
       use General, only: itoa
 !
-      logical, save :: lread_data_file=.true.
-      integer :: iline, ioffset_table1=-1, ioffset_table2=0
-      integer, parameter :: nline=1200
-      character (len=labellen) :: header
-      real, dimension(nline) :: T_table, z_table
-      real, save, dimension(nline) :: lna_table, ell_table
-      real, save :: lna_table_min, lna_table_max, dlna
+      integer, parameter :: ioffset_table1=-1, ioffset_table2=0
+      integer :: iline
       real :: ascale, lna, lna1, lna2, lna_fit, weight, ell_gam, ell1, ell2
-!
-!  Read data file when this is accessed for the first time.
-!
-      if (lread_data_file) then
-        open(9,file='../profiles/ell_gamma_lna.csv',status='old')
-        read(9,*) header
-        do iline=1,nline
-          read(9,1000) lna_table(iline), z_table(iline), T_table(iline), ell_table(iline)
-        enddo
-        close(9)
-        lread_data_file=.false.
-        lna_table_min=minval(lna_table)
-        lna_table_max=maxval(lna_table)
-        dlna=(lna_table_max-lna_table_min)/(nline-1)
-      endif
 !
 !  Compute current redshift and check whether it is in the table range.
 !  Check whether the requested values are in the range of the table.
@@ -9611,7 +9611,6 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
 !
       if (lroot .and. ip<14) write(6,1001) 'iline, lna1, lna, lna2, ell_gam=', iline, lna1, lna, lna2, ell_gam
 !
-1000  format(1p,e19.12,3(1x,e18.12))
 1001  format(1p,a,i6,4(1x,e14.6))
     endsubroutine read_ell_from_table
 !***********************************************************************    
