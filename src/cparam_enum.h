@@ -955,3 +955,4 @@ integer, parameter :: enum_perturbative_reheating_string = 945
 integer, parameter :: enum_sextic_wo_cubic_string = 946
 integer, parameter :: enum_replace_at_end_of_reheating_string = 947
 integer, parameter :: enum_interpol_from_lna1_to_lna2_string = 948
+integer, parameter :: enum_read_ell_from_table_string = 949

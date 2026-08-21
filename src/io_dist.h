@@ -38,7 +38,7 @@
             j = j + 1
           enddo
         enddo
-	return
+        return
       endif
 
       if (lserial_io) call start_serialize
