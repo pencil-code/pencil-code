@@ -9609,9 +9609,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
 !
 !  Debug output
 !
-      if (lroot .and. ip<14) write(6,1001) 'iline, lna1, lna, lna2, ell_gam=', iline, lna1, lna, lna2, ell_gam
-!
-1001  format(1p,a,i6,4(1x,e14.6))
+      if (lroot .and. ip<14) write(6,'1p,a,i6,4(1x,e14.6)') 'iline, lna1, lna, lna2, ell_gam=', iline, lna1, lna, lna2, ell_gam
     endsubroutine read_ell_from_table
 !***********************************************************************    
     function get_dxyzs() result(res)
