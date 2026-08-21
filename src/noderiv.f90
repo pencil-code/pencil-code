@@ -11,6 +11,7 @@
 module Deriv
 !
   use Cparam
+  use Cdata,only: lroot
 !
   implicit none
 !
