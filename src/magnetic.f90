@@ -192,7 +192,7 @@ module Magnetic
   real :: eta_tdep_loverride_ee=0.
   real :: r_dip=1 , epsi_dip=0.1, angle_dip=0., je_heating_factor=1.
   real :: j2m_all=0.
-  real, dimension(1) :: j2m=0.
+  real :: j2m=0.
   integer, target :: va2power_jxb = 5
   integer :: nbvec, nbvecmax=nx*ny*nz/4, iua=0, iLam=0, idiva=0
   integer :: N_modes_aa=1, naareset
@@ -11734,7 +11734,7 @@ print*,'AXEL2: should not be here (eta) ... '
 !  j2m(1)
 !
       call finalize_aver(ncpus,123,j2m)
-      j2m_all=j2m(1)/nwgrid
+      j2m_all=j2m/nwgrid
 !
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(dtsub)

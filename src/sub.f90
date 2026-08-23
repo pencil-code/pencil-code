@@ -283,6 +283,7 @@ module Sub
   endinterface
 !
   interface finalize_aver
+    module procedure finalize_aver_0D
     module procedure finalize_aver_1D
     module procedure finalize_aver_2D
     module procedure finalize_aver_3D
@@ -7871,6 +7872,15 @@ nameloop: do
         endif
 !
     endsubroutine finalize_aver_3D
+!***********************************************************************
+    subroutine finalize_aver_0D(nproc,idir,arrm)
+      integer,            intent(IN)   :: nproc,idir
+      real, intent(INOUT):: arrm
+      real, dimension(1) :: tmp
+      tmp(1) = arrm
+      call finalize_aver_1D(nproc,idir,tmp)
+      arrm = tmp(1)
+    endsubroutine finalize_aver_0D
 !***********************************************************************
     subroutine finalize_aver_1D(nproc,idir,arrm)
 !
