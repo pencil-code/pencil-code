@@ -26,7 +26,7 @@ module Initcond
   public :: acosy
   public :: sph_constb,tanh_hyperbola,sech2x,coalesce_tubes,coalesce_tubes_pe
   public :: gaunoise, gaunoise_lnrho, posnoise, posnoise_rel
-  public :: gaunoise_rprof
+  public :: gaunoise_rprof, gaunoise_nolog
   public :: gaussian, gaussian3d, gaussianpos
   public :: ABC_field, beltrami, bessel_x, bessel_az_x
   public :: beltramik_general, beltrami_general, beltrami_complex
@@ -1663,13 +1663,13 @@ module Initcond
           if (lroot) print*,'beltrami_old: ampl=0; kx=',k
         elseif (ampl>0) then
           if (lroot) print*,'beltrami_old: Beltrami field (pos-hel): kx,i=',k,i
-          j=i+1 
+          j=i+1
           do m=1,my
           do n=1,mz
                 f(:,m,n,j)=f(:,m,n,j)+sfuncx
           enddo
           enddo
-          j=i+2 
+          j=i+2
           do m=1,my
           do n=1,mz
                 f(:,m,n,j)=f(:,m,n,j)+cfuncx
@@ -1677,13 +1677,13 @@ module Initcond
           enddo
         elseif (ampl<0) then
           if (lroot) print*,'beltrami_old: Beltrami field (neg-hel): kx,i=',k,i
-          j=i+1 
+          j=i+1
           do m=1,my
           do n=1,mz
             f(:,m,n,j)=f(:,m,n,j)+cfuncx
           enddo
           enddo
-          j=i+2 
+          j=i+2
           do m=1,my
           do n=1,mz
             f(:,m,n,j)=f(:,m,n,j)+sfuncx
@@ -1704,13 +1704,13 @@ module Initcond
           if (lroot) print*,'beltrami_old: ampl=0; ky=',k
         elseif (ampl>0) then
           if (lroot) print*,'beltrami_old: Beltrami field (pos-hel): ky,i=',k,i
-          j=i   
+          j=i
           do l=1,mx
           do n=1,mz
             f(l,:,n,j)=f(l,:,n,j)+cfuncy
           enddo
           enddo
-          j=i+2 
+          j=i+2
           do l=1,mx
           do n=1,mz
             f(l,:,n,j)=f(l,:,n,j)+sfuncy
@@ -1718,7 +1718,7 @@ module Initcond
           enddo
         elseif (ampl<0) then
           if (lroot) print*,'beltrami_old: Beltrami field (neg-hel): ky,i=',k,i
-          j=i  
+          j=i
           do l=1,mx
           do n=1,mz
             f(l,:,n,j)=f(l,:,n,j)+sfuncy
@@ -1751,7 +1751,7 @@ module Initcond
             f(l,m,:,j)=f(l,m,:,j)+sfuncz
           enddo
           enddo
-          j=i+1 
+          j=i+1
           do l=1,mx
           do m=1,my
             f(l,m,:,j)=f(l,m,:,j)+cfuncz
@@ -1759,13 +1759,13 @@ module Initcond
           enddo
         elseif (ampl<0) then
           if (lroot) print*,'beltrami_old: Beltrami field (neg-hel): kz,i=',k,i
-          j=i;   
+          j=i;
           do l=1,mx
           do m=1,my
             f(l,m,:,j)=f(l,m,:,j)+cfuncz
           enddo
           enddo
-          j=i+1 
+          j=i+1
           do l=1,mx
           do m=1,my
             f(l,m,:,j)=f(l,m,:,j)+sfuncz
@@ -1923,14 +1923,14 @@ module Initcond
           if (lroot) print*,'beltrami: ampl=0; kx=',k
         elseif (ampl>0) then
           if (lroot) print*,'beltrami: Beltrami field (pos-hel): kx,i=',k,i
-          j=i+1 
+          j=i+1
           do m=1,my
           do n=1,mz
             f(:,m,n,j)=f(:,m,n,j)+sfuncx*sig
           enddo
           enddo
 
-          j=i+2 
+          j=i+2
           do m=1,my
           do n=1,mz
             f(:,m,n,j)=f(:,m,n,j)+cfuncx
@@ -1965,13 +1965,13 @@ module Initcond
           if (lroot) print*,'beltrami: ampl=0; ky=',k
         elseif (ampl>0) then
           if (lroot) print*,'beltrami: Beltrami field (pos-hel): ky,i=',k,i
-          j=i   
+          j=i
           do l=1,mx
           do n=1,mz
             f(l,:,n,j)=f(l,:,n,j)+cfuncy
           enddo
           enddo
-          j=i+2 
+          j=i+2
           do l=1,mx
           do n=1,mz
             f(l,:,n,j)=f(l,:,n,j)+sfuncy*sig
@@ -2006,7 +2006,7 @@ module Initcond
           if (lroot) print*,'beltrami: ampl=0; kz=',k
         elseif (ampl>0) then
           if (lroot) print*,'beltrami: Beltrami field (pos-hel): kz,i=',k,i
-          j=i   
+          j=i
           do l=1,mx
           do m=1,my
             f(l,m,:,j)=f(l,m,:,j)+sfuncz*sig
@@ -2184,7 +2184,7 @@ module Initcond
             f(:,m,n,j)=f(:,m,n,j)+cfuncx
           enddo
           enddo
-          j=i+2 
+          j=i+2
           do m=1,my
           do n=1,mz
             f(:,m,n,j)=f(:,m,n,j)+sfuncx
@@ -2258,7 +2258,7 @@ module Initcond
           if (lroot) print*,'bihelical: ampl=0; kz=',k
         elseif (ampl>0) then
           if (lroot) print*,'bihelical: Bihelical field (pos-hel): kz,i=',k,i
-          j=i  
+          j=i
           do l=1,mx
           do m=1,my
             f(l,m,:,j)=f(l,m,:,j)+sfuncz
@@ -2367,7 +2367,7 @@ module Initcond
           if (lroot) print*,'beltrami: ampl=0; kx=',k
         elseif (ampl>0) then
           if (lroot) print*,'beltrami: Beltrami field (pos-hel): kx,i=',k,i
-          j=i+1; 
+          j=i+1;
           do m=1,my
           do n=1,mz
             f(:,m,n,j)=f(:,m,n,j)+sfuncx
@@ -2473,7 +2473,7 @@ module Initcond
             f(l,m,:,j)=f(l,m,:,j)+cfuncz
           enddo
           enddo
-          j=i+1 
+          j=i+1
           do l=1,mx
           do m=1,my
             f(l,m,:,j)=f(l,m,:,j)+sfuncz
@@ -3619,7 +3619,7 @@ module Initcond
       logical :: exist
       integer :: stat
       character (len=labellen) :: strati_type
-      
+
       allocate(slice(nxgrid,nzgrid,mvar))
 !
 !  read mean stratification and write into array
@@ -5087,6 +5087,42 @@ module Initcond
 !  call gaunoise_vect(ampl,f,i,i)
 !
     endsubroutine gaunoise_scal
+!***********************************************************************
+    subroutine gaunoise_nolog(ampl,f,i)
+!
+!  Add positive definte Gaussian (= normally distributed) white noise
+!  for scalar variable i
+!
+!  26-aug-26/fred: coded, from gaunoise_scal non-zero e.g. cosmic rays
+!
+      real :: ampl
+      real, contiguous, dimension(:,:,:,:) :: f
+      integer :: i
+!
+      real, dimension (mx) :: r,p,tmp
+!
+      intent(in)    :: ampl,i
+      intent(inout) :: f
+!
+!  set gaussian random noise vector
+!
+      if (ampl<=0) then
+        if (lroot) print*,'gaunoise_nolog: ampl<=0 for i=',i
+      else
+        if ((ip<=8).and.lroot) print*,'gaunoise_nolog: i=',i
+        if (lroot) print*,'gaunoise_nolog: variable i=',i
+        do n=1,mz; do m=1,my
+          !TP: done in in old way to keep random
+          !numbers backwards compatible
+          !call box_muller_transform(tmp)
+          call random_number_wrapper(r)
+          call random_number_wrapper(p)
+          tmp=sqrt(-2*log(r))*sin(2*pi*p)
+          f(:,m,n,i)=f(:,m,n,i)+exp(alog(ampl)+ampl*tmp)
+        enddo; enddo
+      endif
+!
+    endsubroutine gaunoise_nolog
 !***********************************************************************
 !! subroutine gaunoise_lnrho(ampl,f,i)
 !!
@@ -6700,7 +6736,7 @@ module Initcond
       allocate(r(nx,ny,nz),stat=stat)
       if (stat>0) call fatal_error('bunch_davies','Could not allocate r')
 !
-!  Complex auxiliary arrary (u_re,u_im) and (v_re,v_im) 
+!  Complex auxiliary arrary (u_re,u_im) and (v_re,v_im)
 !
       ndim_u=i1b-i1a+1
       ndim_v=i2b-i2a+1
@@ -8361,8 +8397,8 @@ module Initcond
 
     integer :: m,l
 
-    do m = m1,m2 
-      do l = l1,l2 
+    do m = m1,m2
+      do l = l1,l2
         xx = x(l)*2*pi/Lx
         yy = y(m)*2*pi/Ly
         width_r = width*2*pi/Lx
@@ -8372,12 +8408,12 @@ module Initcond
         f(l,m,:,ix+2) = amp/(2*pi) * tanh(xx/width_r) * cos(yy/2) * sin(xx)
         By(l,m) = amp/(2*pi)/width_r/cosh(xx/width_r)**2  * cos(yy/2) * sin(xx) + &
                       amp/(2*pi) * tanh(xx/width_r) * cos(yy/2) * cos(xx)
-        By0(l,m)= amp/(2*pi) * cos(xx) * cos(yy/2)        
+        By0(l,m)= amp/(2*pi) * cos(xx) * cos(yy/2)
         f(l,m,:,ilnrho) = log(exp(f(l,m,:,ilnrho)) &
                           +(2*pi/Lx)*(2*pi/Ly)*(1/cs20)*5/8*(amp/(2*pi)*cos(yy/2)*sin(xx))**2 &
                           +(By0(l,m)**2 - By(l,m)**2)/(2.*cs20))
       enddo
-    enddo 
+    enddo
 
   end subroutine
 
@@ -8398,8 +8434,8 @@ module Initcond
     integer :: m,l
 
     call keep_compiler_quiet(cs20)
-    do m = m1,m2 
-      do l = l1,l2 
+    do m = m1,m2
+      do l = l1,l2
         xx = x(l)*2*pi/Lx
         yy = y(m)*2*pi/Ly
         width_r = width*2*pi/Lx
@@ -8408,16 +8444,16 @@ module Initcond
         f(l,m,:,ix+2) = amp/(2*pi) * tanh(xx/width_r) * cos(yy/2) * sin(xx)
         By(l,m) = amp/(2*pi)/width_r/cosh(xx/width_r)**2  * cos(yy/2) * sin(xx) + &
                         amp/(2*pi) * tanh(xx/width_r) * cos(yy/2) * cos(xx)
-        By0(l,m)= amp/(2*pi) * cos(xx) * cos(yy/2)             
+        By0(l,m)= amp/(2*pi) * cos(xx) * cos(yy/2)
         !f(l,m,:,ilnrho) = log(exp(f(l,m,:,ilnrho)) &
         !                  +(2*pi/Lx)*(2*pi/Ly)*(1/cs20)*5/8*(amp/(2*pi)*cos(yy/2)*sin(xx))**2 &
         !                  +(By0(l,m)**2 - By(l,m)**2)/(2.*cs20))
-        
-        
+
+
         !    set pressure equilibrium in start.in
       enddo
-    enddo 
-    
+    enddo
+
       end subroutine
 !***********************************************************************
     subroutine pre_stellar_cloud(f, datafile, mass_cloud,  &

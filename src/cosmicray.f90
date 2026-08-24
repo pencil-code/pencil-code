@@ -145,7 +145,7 @@ module Cosmicray
         case ('parabola-x'); call parabola(amplecr,f,iecr,kx=kx_ecr)
         case ('parabola-y'); call parabola(amplecr,f,iecr,ky=ky_ecr)
         case ('parabola-z'); call parabola(amplecr,f,iecr,kz=kz_ecr)
-        case ('gaussian-noise'); call gaunoise(amplecr,f,iecr,iecr)
+        case ('gaussian-noise'); call gaunoise_nolog(amplecr,f,iecr,iecr)
         case ('wave-x'); call wave(amplecr,f,iecr,kx=kx_ecr)
         case ('wave-y'); call wave(amplecr,f,iecr,ky=ky_ecr)
         case ('wave-z'); call wave(amplecr,f,iecr,kz=kz_ecr)
