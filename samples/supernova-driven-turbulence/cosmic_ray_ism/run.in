@@ -1,0 +1,93 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  run parameters for interstellar
+!
+&run_pars
+  cvsid="8cc7b1488"
+  nt=10, it1=2, isave=5, itorder=4, tmax=0.05
+  dt_epsi=5e-6, dtdec=0.5, dtinc=0.5, dt_ratio=1e-4, dtmin=1e-12, dt0=0.
+  leps_fixed=T
+  dtlimit=1e-9
+  eps_rkf0=0.001
+  lreiterate=F
+  dsnap=.01, dvid=.00005, slice_position='m', d1davg=5e-4
+  timestep_scaling="rel_err","rel_err","rel_err","rel_err","rel_err","rel_err","rel_err","rel_err","rel_err","rel_err","rel_err","rel_err"
+  bcz = 's','s','s','ism','ism','s','s','s','s','s','s','s','cop'
+  !timestep_scaling="rel_err","rel_err","rel_err","rel_err","rel_err","rel_err","rel_err","rel_err"
+  !bcz = 's','s','s','ism','ism','s','s','s','cop'
+  lpencil_check=F
+  lpencil_check_small=F
+  lbidiagonal_derij=F  !(use the slightly more accurate formulation for derij)
+  dspec=2.5e-4, lsfu=T, lsfb=T, lpdfu=T, lpdfb=T, lphase=T!, nr_directions=3
+  !dspec=.001, ou_spec=T, lr_spec=T, ss_spec=T
+  !oned=T
+  lwrite_aux=T
+  lshock_heat=T
+  lwrite_ts_hdf5=F
+  lbidiagonal_derij=F  !(use the slightly more accurate formulation for derij)
+  max_walltime=126000
+/
+&eos_run_pars
+/
+&grav_run_pars
+  Rgal=8.5
+/
+&hydro_run_pars
+  Omega=25.0
+/
+&viscosity_run_pars
+  ivisc='nu-shock', 'nu-const', 'hyper3-nu-const'
+  nu_shock=1.0
+  nu=1.5e-3
+  nu_hyper3=8.5e-13
+/
+&magnetic_run_pars
+  iresistivity='hyper3','eta-const'
+  eta_hyper3=8.5e-13
+  eta=7.5e-4
+/
+&density_run_pars
+  idiff='shock',''
+  diffrho_shock=1.0
+  lmassdiff_fix=T
+  total_mass=0.11195817619913271
+  lconserve_total_mass=T
+/
+&entropy_run_pars
+  iheatcond='shock','hyper3'
+  chi_hyper3=8.5e-13
+  chi_shock=1.0
+/
+&interstellar_run_pars
+  lSN_ecr=T
+  lSN_fcr=F
+  frac_ecr=0.03
+  lSN_scale_rad=T
+  ltrim_profile=T
+  N_mass=75.0
+  rfactor_SN=5.
+  lh_SNII_adjust=T
+  lSN_autofrackin=F
+/
+&shear_run_pars
+  qshear=1.0
+/
+&shock_run_pars
+  ishock_max=1
+  lmax_shock=F
+  lgaussian_smooth=T
+  lconvergence_only=F
+  shock_div_pow=3.
+  dtfactor=0.02
+  con_bias=0.05
+/
+&power_spectrum_run_pars
+/
+&cosmicray_run_pars
+  K_para=100.
+  K_perp=10.
+  ecr_floor=1e-8
+/
+&cosmicrayflux_run_pars
+  tau=0.01
+/
