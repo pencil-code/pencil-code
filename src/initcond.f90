@@ -10,6 +10,7 @@ module Initcond
 !
   use Cdata
   use General
+  use Quiet
   use Messages
   use Mpicomm, only : ipx, ipy, ipz
 !
@@ -8389,7 +8390,6 @@ module Initcond
 !
 !  7 Apr 2026/vinay.kumar
 !
-    
     real, contiguous, dimension(:,:,:,:) :: f
     real, dimension (mx,my) :: By0, By
     real, intent(in) :: amp, width, cs20

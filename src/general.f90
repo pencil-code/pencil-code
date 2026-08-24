@@ -5,14 +5,10 @@
 module General
 !
   use Cparam
-  use Quiet
 !
   implicit none
 !
   private
-!
-  public :: keep_compiler_quiet
-  public :: keep_compiler_quiet_dble
 !
   public :: gaunoise_number
   public :: safe_character_assign, safe_character_append, safe_character_prepend, safe_string_replace
@@ -341,8 +337,8 @@ module General
 !
   integer, parameter :: DIAG_COND = 1
 !
-  include 'general.h'
-  !include 'general_f2003.h'
+  !include 'general.h'
+  include 'general_f2003.h'
 !
 !***********************************************************************
     pure integer function find_proc(ipx, ipy, ipz)
@@ -4545,6 +4541,8 @@ endfunction
 !
 ! 5-feb-14/MR: coded
 !
+      use Quiet
+
       integer, intent(in) :: start, end
       integer, intent(in), optional :: step
 

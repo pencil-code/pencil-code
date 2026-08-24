@@ -102,7 +102,7 @@
 !***********************************************************************
    subroutine store_scattered_array4(ind3,layer,src,dest,time)
 
-     use Cdata, only: iproc
+     !use Cdata, only: iproc
 
      integer :: ind3,layer
      real, dimension(:,:) :: src
@@ -158,7 +158,8 @@
 !***********************************************************************
    subroutine get_scattered_array4(ivar,layer,src,dest,timediff,ahead)
 
-     use Cdata, only:ldiagnos, iproc
+     !use Cdata, only: ldiagnos, iproc
+
      integer :: ivar,layer
      real, dimension(:,:) :: dest
      real, dimension(:,:), optional :: ahead
