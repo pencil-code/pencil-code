@@ -13,7 +13,7 @@
 module InitialCondition
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
 !
   implicit none
 !
@@ -29,7 +29,7 @@ module InitialCondition
 !
       use Messages, only: svn_id
 !
-      if (lroot) call svn_id("$Id$")
+      call svn_id("$Id$")
 !
     endsubroutine register_initial_condition
 !***********************************************************************
