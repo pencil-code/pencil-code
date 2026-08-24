@@ -32,6 +32,7 @@ module Magnetic
   logical :: lcoulomb=.false.
   integer :: iLam=0
   integer, parameter :: idiag_axmz=0, idiag_aymz=0, idiag_bxmz=0, idiag_bymz=0
+  real, target :: B_ext2=0.
 
   contains
 !***********************************************************************
@@ -55,6 +56,7 @@ module Magnetic
 !
 !  24-nov-2002/tony: dummy routine
 !
+      use SharedVariables, only: put_shared_variable
       real, contiguous,dimension(:,:,:,:) :: f
 !
 !  Precalculate 1/mu (moved here from register.f90)
@@ -71,6 +73,7 @@ module Magnetic
       bb2_spec=.false.; jj2_spec=.false.; ele_spec=.false.
 
       call keep_compiler_quiet(f)
+      call put_shared_variable('B_ext2',B_ext2,caller='register_magnetic')
 !
     endsubroutine initialize_magnetic
 !***********************************************************************
@@ -439,8 +442,11 @@ module Magnetic
 !***********************************************************************
     subroutine pushpars2c(p_par)
 
-    integer, parameter :: n_pars=0
+    use Syscalls, only: copy_addr
+
+    integer, parameter :: n_pars=1
     integer(KIND=ikind8), dimension(n_pars) :: p_par
+    call copy_addr(B_ext2,p_par(1))
 
     endsubroutine pushpars2c
 !***********************************************************************
