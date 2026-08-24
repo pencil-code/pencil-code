@@ -131,7 +131,11 @@ module Timestep
       ldt = (dt==0.)
       if (ldt) then
         if (dt0==0.) then
-          dt = dt_epsi
+          if (dtlimit>0.) then
+            dt = min(dt_epsi, dtlimit)
+          else
+            dt = dt_epsi
+          endif
         else
           dt = dt0
         endif
@@ -338,6 +342,8 @@ module Timestep
                    "to ",dt_temp,"at errmax",errmax
               ! Don't decrease the time step by more than a factor of ten
               dt_next = sign(max(abs(dt_temp), 0.1*abs(dt)), dt)
+              ! Prevent dt below dtlimit to exclude runnign too slow at the expense of lower accuracy
+              if (dtlimit>0.) dt_next=max(dt_next,dtlimit)
             else
               if (lroot.and.ip==6787) print*,"time_step increased: it",it,"dt",dt,&
                    "to ",dt*errmax**dt_increase,"at errmax",errmax

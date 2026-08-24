@@ -30,7 +30,7 @@ module Cdata
   integer, dimension(:), allocatable :: nphis
   real, dimension(:), allocatable :: nphis1, nphis2
   real(KIND=rkind8) :: t=0., toutoff=0.
-  real :: tslice, eps_rkf=1e-5, eps_stiff=1e-6, eps_rkf0=0.
+  real :: tslice, eps_rkf=1e-5, eps_stiff=1e-6, eps_rkf0=0., dtlimit=0.
   real :: dsound=0., tsound=0., soundeps=1.e-4
 !
 !  Units (need to be in real(KIND=rkind8)).
@@ -444,7 +444,7 @@ module Cdata
 !
 ! User-defined way to cap theta for specific computations
 !
-  real :: thetamin = 0.0 
+  real :: thetamin = 0.0
 !
 !  Rotation and shear parameters.
 !
@@ -1047,7 +1047,7 @@ module Cdata
 !
 ! Swap order in which init_uu and init_lnrho are called in start.f90
 ! The default is lnrho first, but for geostrophic initial condition
-! one needs to know the density before setting the velocity. It can 
+! one needs to know the density before setting the velocity. It can
 ! also be done with an initial condition, but this is simpler since it
 ! can use the control flow already in place for lanelastic.
 !
