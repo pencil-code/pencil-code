@@ -113,7 +113,7 @@ module InitialCondition
 !  Diffusivities propto sqrt(T)
 !
   real, parameter :: amplaa_cgs=1e-9 ! 1 nano Gauss dx
-  real :: amplaa=impossible
+  real, dimension (ninit) :: amplaa=impossible
   real :: ybias_aa = 1.0 ! adjust angle of field default 45deg
 !
   character (len=labellen), dimension(ninit) :: initaa='nothing'
@@ -304,8 +304,8 @@ module InitialCondition
 !
         call keep_compiler_quiet(f)
       else
-        if (amplaa==impossible) amplaa = amplaa_cgs/unit_magnetic*dx
         do j=1,ninit
+          if (amplaa(j)==impossible) amplaa(j) = amplaa_cgs/unit_magnetic*dx
 !
           select case (initaa(j))
           case ('nothing'); if (lroot .and. j==1) print*,'init_aa: nothing'
@@ -315,21 +315,21 @@ module InitialCondition
             do m=m1,m2
             do n=n1,n2
               call random_number_wrapper(nxran)
-              f(l1:l2,m,n,iaz) = amplaa * nxran * sqrt(rho(n))
+              f(l1:l2,m,n,iaz) = amplaa(j) * nxran * sqrt(rho(n))
             enddo
             enddo
           case ('uniform-x')
             f(:,:,:,iax:iay) = 0.0
             do l=l1,l2
             do n=n1,n2
-              f(l,m1:m2,n,iaz) = amplaa * y(m1:m2) * sqrt(rho(n))
+              f(l,m1:m2,n,iaz) = amplaa(j) * y(m1:m2) * sqrt(rho(n))
             enddo
             enddo
           case ('uniform-y')
             f(:,:,:,iax:iay) = 0.0
             do m=m1,m2
             do n=n1,n2
-              f(l1:l2,m,n,iaz) = -amplaa * x(l1:l2) * sqrt(rho(n))
+              f(l1:l2,m,n,iaz) = -amplaa(j) * x(l1:l2) * sqrt(rho(n))
             enddo
             enddo
           case ('uniform-x+y')
@@ -337,7 +337,7 @@ module InitialCondition
             do l=l1,l2
             do m=m1,m2
             do n=n1,n2
-              f(l,m,n,iaz) = amplaa * (-x(l) + ybias_aa*y(m)) * sqrt(rho(n)) / &
+              f(l,m,n,iaz) = amplaa(j) * (-x(l) + ybias_aa*y(m)) * sqrt(rho(n)) / &
                              sqrt(1 + ybias_aa**2)
             enddo
             enddo
