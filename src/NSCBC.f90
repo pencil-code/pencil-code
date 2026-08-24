@@ -1251,7 +1251,7 @@ module NSCBC
 !  2010.07.26/Julien Savre: coded
 !
       use Chemistry, only: find_species_index
-      use Quiet
+      use Quiet, only: keep_compiler_quiet
 !
       real, dimension(:,:,:), intent(inout) :: YYi_full
       real, dimension(:), intent(in) :: YYi
