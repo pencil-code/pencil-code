@@ -1,0 +1,24 @@
+##                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+
+MPICOMM      =   mpicomm
+IO           =   io_hdf5
+TIMESTEP     =   timestep_rkf_lowsto
+
+INITIAL_CONDITION = initial_condition/ths_equilibrium_ism
+HYDRO        =   hydro
+SHOCK        =   shock_highorder
+DENSITY      =   density
+ENTROPY      =   entropy
+MAGNETIC     =   magnetic
+COSMICRAY    =   cosmicray_nolog
+COSMICRAYFLUX=   cosmicrayflux
+INTERSTELLAR =   interstellar
+EOS          =   eos_idealgas
+
+GRAVITY      =   gravity_simple
+FORCING      = noforcing
+SHEAR        =   shear
+REAL_PRECISION = double
