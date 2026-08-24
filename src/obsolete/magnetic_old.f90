@@ -28,9 +28,8 @@
 !***************************************************************
 module Magnetic
 !
-  use Cparam
   use Cdata
-  use General, only: keep_compiler_quiet, loptest
+  use General, only: loptest
   use Magnetic_meanfield
   use Messages, only: fatal_error,inevitably_fatal_error,warning,svn_id,timing
 !

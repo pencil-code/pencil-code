@@ -17,9 +17,8 @@
 !***************************************************************
 module Radiation
 !
-  use Cparam
   use Messages
-  use General, only: keep_compiler_quiet
+  use Quiet
 !
   implicit none
 !

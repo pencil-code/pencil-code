@@ -446,7 +446,7 @@ module Param_IO
 !
 !  Print SVN id from first line.
 !
-      if (lroot) call svn_id(cvsid)
+      call svn_id(cvsid)
 !
 !  Give online feedback if called with the PRINT optional argument.
 !
@@ -518,7 +518,7 @@ module Param_IO
 !
 !  Print SVN id from first line.
 !
-      if (lroot) call svn_id(cvsid)
+      call svn_id(cvsid)
 !
 !  Set debug logical (easier to use than the combination of ip and lroot).
 !

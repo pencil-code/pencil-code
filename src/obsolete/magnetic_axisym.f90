@@ -27,9 +27,8 @@
 !***************************************************************
 module Magnetic
 !
-  use Cparam
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none

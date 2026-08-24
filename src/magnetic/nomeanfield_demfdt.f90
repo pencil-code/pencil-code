@@ -16,8 +16,7 @@
 !***************************************************************
 module Magnetic_meanfield_demfdt
 !
-  use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
 !
   implicit none
 !
@@ -25,7 +24,7 @@ module Magnetic_meanfield_demfdt
 !
   contains
 !***********************************************************************
-    subroutine register_magn_mf_demfdt()
+    subroutine register_magn_mf_demfdt
 !
 !  Dummy routine
 !

@@ -21,7 +21,7 @@
 module SGS_hydro
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages, only: fatal_error
 !
   implicit none
@@ -51,7 +51,7 @@ module SGS_hydro
 !
 !  Identify version number.
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
 !  Register SGS Reynolds stress as auxilliary variable.

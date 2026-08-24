@@ -110,7 +110,6 @@ module Cdata
   real, dimension (mxgrid) :: xglobal
   real, dimension (mygrid) :: yglobal
   real, dimension (mzgrid) :: zglobal
-  real :: kx_nyq,ky_nyq,kz_nyq
 !
 !  Exact coefficients for non-equidistant grid at boundaries
 !

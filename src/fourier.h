@@ -18,10 +18,11 @@
   public :: fft_xy_parallel_2D_other
   public :: pushpars2c
 !  
-  public :: kx_fft, kx_fft2
-  public :: ky_fft, ky_fft2
-  public :: kz_fft, kz_fft2
+  public :: kx_fft, kx_fft2, kx_nyq
+  public :: ky_fft, ky_fft2, ky_nyq
+  public :: kz_fft, kz_fft2, kz_nyq
 !
   real, dimension (nxgrid) :: kx_fft, kx_fft2
   real, dimension (nygrid) :: ky_fft, ky_fft2
   real, dimension (nzgrid) :: kz_fft, kz_fft2
+  real :: kx_nyq,ky_nyq,kz_nyq

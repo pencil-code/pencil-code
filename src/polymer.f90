@@ -19,7 +19,8 @@
 module Polymer
 !
   use Cdata
-  use General, only: keep_compiler_quiet, transpose_mn
+  use General, only: transpose_mn
+  use Quiet
   use Messages
   use Sub
 !
@@ -76,7 +77,7 @@ module Polymer
       ip31 = ip13   ; ip32 = ip23    ; ip33 = ipoly+5
       call farray_register_auxiliary('polyfr',ipoly_fr,rhs=.true.)
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id$")
 !
     endsubroutine register_polymer

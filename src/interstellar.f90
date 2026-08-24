@@ -18,7 +18,7 @@
 module Interstellar
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !$ use OMP_lib
 !
@@ -498,7 +498,7 @@ module Interstellar
 !
 !  identify version number
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
               "$Id$")
 !
 !  Invalidate all SNRs
@@ -3433,7 +3433,7 @@ mn_loop:do n=n1,n2
 !
       use EquationOfState, only: eoscalc
       use Mpicomm, only: mpiallreduce_max, mpiallreduce_sum
-      use General, only: keep_compiler_quiet
+      use Quiet
       use Gpu, only: copy_farray_from_GPU
       use Grid, only: get_dVol
 !

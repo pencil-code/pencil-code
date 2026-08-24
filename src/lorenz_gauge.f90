@@ -21,7 +21,7 @@
 module Lorenz_gauge
 
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 
   implicit none
@@ -70,7 +70,7 @@ module Lorenz_gauge
 !
       call farray_register_pde('phi',iphi)
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
     endsubroutine register_lorenz_gauge

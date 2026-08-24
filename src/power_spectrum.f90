@@ -126,7 +126,8 @@ module Power_spectrum
   subroutine initialize_power_spectrum
 !
     use Messages
-    use General, only: binomial, pos_in_array, quick_sort, get_range_no, keep_compiler_quiet
+    use General, only: binomial, pos_in_array, quick_sort, get_range_no
+    use Quiet
     use Mpicomm, only: mpiallreduce_merge,mpimerge_1d
 
     integer :: ikr, ikmu, ind, ikx, iky, ikz, len, k

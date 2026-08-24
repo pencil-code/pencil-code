@@ -81,10 +81,9 @@
 !
 module Magnetic
 !
-  use Cparam
   use Cdata
   use Initcond
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages, only: svn_id, fatal_error, warning
 !
   implicit none
@@ -194,7 +193,7 @@ module Magnetic
       use Sub, only: register_report_aux
       use FArrayManager
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
 !  Register aak and eek as auxiliary arrays

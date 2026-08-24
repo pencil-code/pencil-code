@@ -16,7 +16,7 @@
 module Viscosity
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Density
   use Messages
 !
@@ -143,8 +143,6 @@ module Viscosity
 !  Most basic pencils should come first, as others may depend on them.
 !
 !  21-11-04/anders: coded
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p

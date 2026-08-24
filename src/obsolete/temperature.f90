@@ -16,9 +16,8 @@
 
 module Entropy
 
-  use Cparam
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
   use Hydro
   use Interstellar

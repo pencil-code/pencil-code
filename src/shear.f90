@@ -25,7 +25,7 @@
 module Shear
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages, only: svn_id, fatal_error, warning, not_implemented, information
 !
   implicit none
@@ -79,7 +79,7 @@ module Shear
 !
       use SharedVariables, only: put_shared_variable
 !
-      if (lroot) call svn_id("$Id$")
+      call svn_id("$Id$")
 !
 !  Share lshearadvection_as_shift.
 !

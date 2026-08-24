@@ -33,7 +33,8 @@ module Poisson
   use Cdata
   use Fourier
   use Messages
-  use General, only: keep_compiler_quiet,linspace,meshgrid
+  use General, only: linspace,meshgrid
+  use Quiet
   use Mpicomm, only: mpisend_real,mpirecv_real
 !
   implicit none

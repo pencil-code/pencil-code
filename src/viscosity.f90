@@ -19,7 +19,7 @@
 module Viscosity
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none
@@ -265,7 +265,7 @@ module Viscosity
 !
 !  Identify version number.
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id$")
 !
 !  Register characteristic speed: sld_char as auxilliary variable

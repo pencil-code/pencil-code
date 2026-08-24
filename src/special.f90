@@ -737,7 +737,7 @@
 !***********************************************************************
     subroutine special_calc_spectra(f,spec,spec_hel,spec_2d,spec_2d_hel,lfirstcall,kind)
 
-      use General, only: keep_compiler_quiet
+      use Quiet
 
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (:) :: spec,spec_hel
@@ -760,7 +760,7 @@
 !***********************************************************************
     subroutine special_calc_spectra_byte(f,spec,spec_hel,lfirstcall,kind,len)
 
-      use General, only: keep_compiler_quiet
+      use Quiet
 
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (:) :: spec,spec_hel
@@ -867,7 +867,7 @@
     subroutine pushpars2c(p_par)
 
       use Messages, only: fatal_error 
-      use General, only: keep_compiler_quiet
+      use Quiet
 
       integer, parameter :: n_pars=0
       integer(KIND=ikind8), dimension(n_pars) :: p_par

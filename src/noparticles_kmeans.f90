@@ -6,7 +6,6 @@
 module Particles_kmeans
 !
   use Quiet
-  use Messages, only: fatal_error
 !
   contains
 !***********************************************************************
@@ -14,6 +13,8 @@ module Particles_kmeans
         cb_size, codebk, codew, do_split, do_norm, do_detail)
 !
 !  08-aug-13/anders+chao-chin: dummy
+!
+      use Messages, only: fatal_error
 !
       integer :: measure, dims, dim1, dim2, no_tr_vec
       real, dimension(dims,no_tr_vec) :: trainv

@@ -17,10 +17,10 @@
 
 module Viscosity
 
-  use Cparam
   use Cdata
   use Messages
   use Density
+  use Quiet
 
   implicit none
 

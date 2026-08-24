@@ -15,9 +15,8 @@
 !*****************************************************************************
 module Interstellar
 !
-  use Cparam
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none
@@ -412,7 +411,7 @@ module Interstellar
 !
 !  identify version number
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
 !  Invalidate all SNRs
@@ -2799,7 +2798,7 @@ module Interstellar
                                  ilnrho_ss, irho_ss
       use Mpicomm, only: mpireduce_max, mpibcast_real, &
                          mpireduce_sum, mpibcast_int
-      use General, only: keep_compiler_quiet
+      use Quiet
 !
       real, intent(inout), dimension(mx,my,mz,mfarray) :: f
       type (SNRemnant), intent(inout) :: SNR

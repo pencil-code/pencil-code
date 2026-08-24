@@ -9,7 +9,8 @@ module Slices
   use Cdata
   use Messages
   use Sub, only: xlocation, zlocation, update_snaptime, read_snaptime, position
-  use General, only: keep_compiler_quiet, idiv
+  use General, only: idiv
+  use Quiet
 !
   implicit none
 !

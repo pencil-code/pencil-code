@@ -20,9 +20,8 @@
 !***************************************************************
 module Entropy
 
-  use Cparam
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
   use EquationOfState, only: mpoly0,mpoly1
   use Interstellar

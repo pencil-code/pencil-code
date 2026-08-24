@@ -115,7 +115,7 @@ module NeutralVelocity
 !
 !  Identify version number (generated automatically by SVN).
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id$")
 !
 !  Writing files for use with IDL.
@@ -1067,7 +1067,8 @@ module NeutralVelocity
     subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
-    use General , only: string_to_enum,keep_compiler_quiet
+    use General , only: string_to_enum
+    use Quiet
 
     integer, parameter :: n_pars=20
     integer(KIND=ikind8), dimension(n_pars) :: p_par

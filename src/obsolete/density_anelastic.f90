@@ -23,7 +23,6 @@
 !***************************************************************
 module Density
 !
-  use Cparam
   use Cdata
   use Messages
   use EquationOfState

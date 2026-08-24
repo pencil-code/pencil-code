@@ -29,8 +29,7 @@ module Radiation
 !  simplistic way a cold disk that is illuminated by a star 
 !  in visible wavelengths and re-radiates all the energy in infrared.
 !
-  use Cparam
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none
@@ -1807,8 +1806,6 @@ module Radiation
 !  initialise radiation; called from start.f90
 !
 !  15-jul-2002/nils: dummy routine
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !

@@ -3993,7 +3993,7 @@ module Special
 !
 ! 12-aug-10/bing: coded
 !
-      use Fourier, only: fourier_transform_other, kx_fft, ky_fft
+      use Fourier, only: fourier_transform_other, kx_fft, ky_fft, kx_nyq
 !
       real, dimension(nxgrid,nygrid) :: kx, ky, k2, filter
       real, dimension(nxgrid,nygrid) :: fvx_r, fvy_r, fvx_i, fvy_i

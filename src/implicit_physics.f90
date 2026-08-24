@@ -57,7 +57,7 @@ module ImplicitPhysics
 !
 !  Identify version number (generated automatically by SVN).
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
        "$Id$")
 !
       call put_shared_variable('hcondADI', hcondADI)

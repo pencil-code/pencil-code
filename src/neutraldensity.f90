@@ -103,7 +103,7 @@ module NeutralDensity
 !
 !  Identify version number (generated automatically by SVN).
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
     endsubroutine register_neutraldensity
@@ -601,7 +601,7 @@ module NeutralDensity
 !***********************************************************************
     subroutine neutraldensity_after_boundary(f)
 
-      use General, only: keep_compiler_quiet
+      use Quiet
 
       real, contiguous,dimension(:,:,:,:) :: f
       real :: ramping_period
@@ -630,7 +630,7 @@ module NeutralDensity
 !Unused functions are on comment to suppress compiler warnings
 !    subroutine neutraldensity_before_boundary(f)
 !
-!      use General, only: keep_compiler_quiet
+!      use Quiet
 !
 !      real, contiguous,dimension(:,:,:,:) :: f
 !!
@@ -960,11 +960,11 @@ module NeutralDensity
     subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
-    use General , only: string_to_enum,keep_compiler_quiet
+    use General , only: string_to_enum
+    use Quiet
 
     integer, parameter :: n_pars=30
     integer(KIND=ikind8), dimension(n_pars) :: p_par
-
 
     call copy_addr(diffrhon,p_par(1))
     call copy_addr(diffrhon_hyper3,p_par(2))

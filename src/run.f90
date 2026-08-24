@@ -952,7 +952,7 @@ endsubroutine helper_loop
 !
 !  Identify version.
 !
-  if (lroot) call svn_id('$Id$')
+  call svn_id('$Id$')
 !
 !  Initialize use of multiple special modules if relevant.
 !

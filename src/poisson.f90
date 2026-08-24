@@ -750,7 +750,7 @@ print*, 'nach fourier(div)'
 !***********************************************************************
     subroutine get_acceleration(acceleration)
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
 !
       real, dimension(nx,ny,nz,3), intent(out) :: acceleration           !should I (CAN I?) make this allocatable?
 !

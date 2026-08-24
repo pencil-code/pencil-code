@@ -38,7 +38,8 @@
 module Magnetic
 !
   use Cdata
-  use General, only: keep_compiler_quiet, loptest, itoa
+  use General, only: loptest, itoa
+  use Quiet
   use Magnetic_meanfield, pushpars2c_mf => pushpars2c
   use Messages, only: fatal_error,inevitably_fatal_error,warning,svn_id,timing,not_implemented,information
 !
@@ -1219,7 +1220,7 @@ module Magnetic
 !
 !  Identify version number.
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id$")
 !
 !  Writing files for use with IDL
@@ -3519,7 +3520,7 @@ module Magnetic
           idiag_jxph2mz/=0 .or. idiag_jyph2mz/=0 .or. idiag_jzph2mz/=0 .or. &
           idiag_jxph3mz/=0 .or. idiag_jyph3mz/=0 .or. idiag_jzph3mz/=0 .or. &
           idiag_abph1mz/=0 .or. idiag_abph2mz/=0 .or. idiag_abph3mz/=0) lpenc_diagnos(i_ss)=.true.
-      if (idiag_bcurlfmz/=0) lpenc_diagnos(i_curlfcont)=.true.
+      if (lforcing_cont.and.idiag_bcurlfmz/=0) lpenc_diagnos(i_curlfcont)=.true.
 !
 !  For Coulomb gauge. The diagnostics results depend on whether or
 !  not also laa_cou_as_aux or lcoulomb_apply are true.

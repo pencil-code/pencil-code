@@ -51,7 +51,6 @@ module Timestep
       use BorderProfiles, only: border_quenching
       use Equ, only: pde
       use Mpicomm, only: mpiallreduce_max
-      use Shear, only: advance_shear
       use Sub, only: shift_dt
       use Energy
       use Special

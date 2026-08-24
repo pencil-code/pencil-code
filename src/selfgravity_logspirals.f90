@@ -20,7 +20,7 @@
 module Selfgravity
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none
@@ -95,7 +95,7 @@ module Selfgravity
 !
 !  Identify version number (generated automatically by SVN).
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id$")
 !
 !  Share the variable tstart_selfgrav so that it can be used by other

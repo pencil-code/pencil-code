@@ -467,7 +467,7 @@ module Snapshot
 !!
 !!  Yet a stub.
 !!
-!      use General, only: keep_compiler_quiet
+!      use Quiet
 !
 !      character(LEN=fnlen) :: file
 !      real, dimension(:), intent(OUT) :: snaptimes   ! allocatable

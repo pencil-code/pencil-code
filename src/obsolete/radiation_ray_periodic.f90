@@ -19,9 +19,8 @@
 !***************************************************************
 module Radiation
 !
-  use Cparam
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none
@@ -1145,8 +1144,6 @@ module Radiation
 !  initialise radiation; called from start.f90
 !
 !  15-jul-2002/nils: dummy routine
-!
-      use Cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !

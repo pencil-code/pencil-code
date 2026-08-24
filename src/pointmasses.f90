@@ -17,7 +17,8 @@ module PointMasses
 !
   use Cdata
   use Messages
-  use General, only: keep_compiler_quiet, find_proc
+  use General, only: find_proc
+  use Quiet
 !
   implicit none
 !
@@ -124,7 +125,7 @@ module PointMasses
 !      
       integer :: iqvar
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id: pointmasses.f90,v 1.1 2019/02/02 03:54:41 wlyra Exp $")
 !
 !  No need to solve the N-body equations for non-N-body problems.

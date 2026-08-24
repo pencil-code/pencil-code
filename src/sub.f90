@@ -4260,7 +4260,7 @@ module Sub
 !
 !  22-jul-03/axel: coded
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
 
       character (len=*) :: file
       real, dimension(nx,3) :: vv
@@ -8047,7 +8047,7 @@ nameloop: do
 !
 !  13-03-2020/Joern: coded, based on similar routine in special/solar_corona.f90
 
-      use General, only: keep_compiler_quiet
+      use Quiet
 
       intent(in) :: f,j,h_slope_limited,nlf,div_type
       intent(out) :: div_flux

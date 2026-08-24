@@ -3811,7 +3811,7 @@ module Special
 !
 ! 16-sep-10/bing: coded
 !
-      use Fourier, only: fft_xy_parallel, fft_x_parallel, kx_fft, ky_fft
+      use Fourier, only: fft_xy_parallel, fft_x_parallel, kx_fft, ky_fft, kx_nyq
 !
       real, dimension(nx,ny), intent(out) :: frx_r,fry_r
       real, dimension(nx,ny) :: kx,ky,k2,filter

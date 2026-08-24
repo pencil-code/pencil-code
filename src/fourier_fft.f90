@@ -54,7 +54,9 @@ module Fourier
 !
 !***********************************************************************
     subroutine initialize_fourier
+
       include 'fourier_common.h'
+
     endsubroutine initialize_fourier
 !***********************************************************************
     subroutine fourier_transform(a_re,a_im,linv)

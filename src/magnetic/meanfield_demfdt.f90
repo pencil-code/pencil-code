@@ -17,9 +17,8 @@
 !***************************************************************
 module Magnetic_meanfield_demfdt
 !
-  use Cparam
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages, only: fatal_error,inevitably_fatal_error,warning,svn_id,timing
 !
   implicit none
@@ -75,7 +74,7 @@ module Magnetic_meanfield_demfdt
 !
 !  Identify version number.
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id$")
 !
 !  Writing files for use with IDL

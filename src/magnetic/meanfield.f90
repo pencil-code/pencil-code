@@ -18,9 +18,8 @@
 !***************************************************************
 module Magnetic_meanfield
 !
-  use Cparam
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages, only: fatal_error,inevitably_fatal_error,svn_id
   use Magnetic_meanfield_demfdt
 !
@@ -216,7 +215,7 @@ module Magnetic_meanfield
 !
       use SharedVariables, only: put_shared_variable
 
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id$")
 !
 !  Register secondary mean-field modules.
@@ -289,8 +288,13 @@ module Magnetic_meanfield
 !
 !  Get B_ext2 and eta from magnetic module.
 !
-      call get_shared_variable('B_ext2',B_ext2)
-      call get_shared_variable('eta',eta)
+      if (lmagnetic) then
+        call get_shared_variable('B_ext2',B_ext2)
+        call get_shared_variable('eta',eta)
+      else
+        allocate(B_ext2); B_ext2=0.
+        allocate(eta); eta=0.
+      endif
 !
 !  Possibility of giving Calp=alpha_effect/[(eta+etat)*k1]
 !
@@ -664,7 +668,6 @@ module Magnetic_meanfield
       if (lrun) then
         call get_shared_variable('lweyl_gauge',lweyl_gauge)
         if (lroot) print*,'initialize_magn_mf: lweyl_gauge=',lweyl_gauge
-!       if (.not.lweyl_gauge) call get_shared_variable('eta',eta)
       endif
 !
       if (lmagn_mf_demfdt .or. lalpm .or. lalpm_alternate) call initialize_magn_mf_demfdt(f)

@@ -1,4 +1,5 @@
       use General, only: idiv
+
       integer :: i
 
       if (nxgrid/=1) then
@@ -28,4 +29,3 @@
       kx_fft2=kx_fft**2
       ky_fft2=ky_fft**2
       kz_fft2=kz_fft**2
-

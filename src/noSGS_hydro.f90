@@ -20,8 +20,7 @@
 !***************************************************************
 module SGS_hydro
 !
-  use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
 !
   implicit none
 !
@@ -32,13 +31,6 @@ module SGS_hydro
     subroutine register_SGS_hydro
 !
 !  19-nov-02/tony: coded
-!
-      use Messages, only: svn_id
-!
-!  Identify version number.
-!
-      if (lroot) call svn_id( &
-           "$Id$")
 !
     endsubroutine register_SGS_hydro
 !***********************************************************************
