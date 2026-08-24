@@ -14,7 +14,7 @@ module Particles_kmeans
 !
 !  08-aug-13/anders+chao-chin: dummy
 !
-      use Messages, only: fatal_error
+!      use Messages, only: fatal_error
 !
       integer :: measure, dims, dim1, dim2, no_tr_vec
       real, dimension(dims,no_tr_vec) :: trainv
@@ -24,7 +24,7 @@ module Particles_kmeans
       real, dimension(cb_size) :: codew
       logical :: do_split, do_norm, do_detail
 !
-      call fatal_error('ppcvq','you need to use the k-means module')
+!      call fatal_error('ppcvq','you need to use the k-means module')
 !
       call keep_compiler_quiet(measure,dims,dim1,dim2)
       call keep_compiler_quiet(no_tr_vec)

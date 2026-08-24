@@ -185,10 +185,11 @@ module Particles_adaptation
               call new_population_interpolated(ix, iy, iz, np(ix), fp1(k1_l(ix):k2_l(ix),:), npar_adapted, fp2, f)
 !
             case ('k-means') merge
-              call ppcvq(1, 6, 1, 6, np(ix), transpose(fp1(k1_l(ix):k2_l(ix),ixp:ivpz)), &
-                  fp1(k1_l(ix):k2_l(ix),iparmass), npar_adapted, fp3(ixp:ivpz,:), fp3(iparmass,:), &
-                  np(ix) < npar_min, .false., .false.)
-              fp2(1:npar_adapted,:) = transpose(fp3)
+               call not_implemented('particles_adaptation_pencils','adaptation method "k-means"')
+!              call ppcvq(1, 6, 1, 6, np(ix), transpose(fp1(k1_l(ix):k2_l(ix),ixp:ivpz)), &
+!                  fp1(k1_l(ix):k2_l(ix),iparmass), npar_adapted, fp3(ixp:ivpz,:), fp3(iparmass,:), &
+!                  np(ix) < npar_min, .false., .false.)
+!              fp2(1:npar_adapted,:) = transpose(fp3)
 !
             case default merge
               call fatal_error('particles_adaptation_pencils','unknown adaptation method')
