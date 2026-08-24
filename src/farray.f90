@@ -1006,7 +1006,7 @@ module FArrayManager
 !***********************************************************************
     function farray_index_by_name_ode(varname,component) result(indx)
 
-      use General, only: keep_compiler_quiet
+      use Quiet
 
       integer :: indx
       character (len=*), intent(IN) :: varname

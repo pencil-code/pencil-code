@@ -15,7 +15,7 @@
 module Cosmicrayflux
 
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 
   implicit none
@@ -70,7 +70,7 @@ module Cosmicrayflux
       ifcrz = ifcr+2
 
       ! Identify version number.
-      if (lroot) call svn_id("$Id$")
+      call svn_id("$Id$")
 
       ! Writing files for use with IDL
       if (lroot) then

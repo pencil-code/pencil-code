@@ -107,7 +107,7 @@ module Ascalar
 !
 !  Identify version number.
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id$")
 !
 !      if (lcondensation_rate) then

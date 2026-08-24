@@ -22,7 +22,7 @@
 module Heatflux
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages, only: svn_id, fatal_error, not_implemented
 !
   implicit none
@@ -84,7 +84,7 @@ module Heatflux
     call farray_register_pde('qq',iqq,vector=3)
     iqx=iqq; iqy=iqq+1; iqz=iqq+2
 !
-    if (lroot) call svn_id( &
+    call svn_id( &
         "$Id$")
 !
 !  Writing files for use with IDL

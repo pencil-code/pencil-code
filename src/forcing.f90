@@ -19,7 +19,7 @@
 module Forcing
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
   use Geometrical_types
 !
@@ -241,7 +241,7 @@ module Forcing
 !
 !  identify version number
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 
       if (iforce=='spherical_radial') then

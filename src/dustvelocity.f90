@@ -29,7 +29,7 @@
 module Dustvelocity
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none
@@ -159,7 +159,7 @@ module Dustvelocity
 !
 !  Identify version number (generated automatically by SVN).
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id$")
 !
       call farray_register_pde('uud',iuud_tmp,vector=3,array=ndustspec)

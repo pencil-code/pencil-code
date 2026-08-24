@@ -56,7 +56,7 @@ module Detonate
 !
       use FArrayManager, only: farray_register_auxiliary
 !
-      if (lroot) call svn_id("$Id$")
+      call svn_id("$Id$")
 !
       call farray_register_auxiliary('detonate', idet, communicated=.true.)
 !
@@ -68,7 +68,7 @@ module Detonate
 !
 !  14-feb-14/ccyang: coded
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
       use EquationOfState, only: cs20, get_gamma_etc
       use SharedVariables, only: get_shared_variable
 !
@@ -175,7 +175,7 @@ module Detonate
 !  06-feb-14/ccyang: dummy
 !
       use Diagnostics, only: parse_name
-      use General, only: keep_compiler_quiet
+      use Quiet
 !
       logical, intent(in) :: lreset
       logical, intent(in), optional :: lwrite

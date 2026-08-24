@@ -20,7 +20,7 @@
 module Energy
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use EquationOfState, only: rho0, lnrho0, cs0, cs20, cs2top, cs2bot
   use DensityMethods, only: putrho, putlnrho, getlnrho, getrho_s
   use Messages
@@ -569,7 +569,7 @@ module Energy
 !
 !  Identify version number.
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id$")
 !
       if (any(iheatcond=='entropy-slope-limited')) then

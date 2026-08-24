@@ -11,7 +11,6 @@
 module Debug_IO
 !
   use Cdata
-  use Cparam
   use HDF5_IO
   use File_io, only: parallel_file_exists
 !

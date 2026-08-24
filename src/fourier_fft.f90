@@ -4,9 +4,8 @@
 !
 module Fourier
 !
-  use Cparam
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Mpicomm, only: transp
   use Messages, only: fatal_error
 !

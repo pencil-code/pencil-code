@@ -108,7 +108,6 @@ module Equ
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call svn_id( &
            "$Id$")
-
 !
 !  Load the values of the dynamically changing parameters to the device
 !

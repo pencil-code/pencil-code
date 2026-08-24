@@ -334,7 +334,7 @@ module BorderProfiles
 !***********************************************************************
     subroutine calc_pencils_borderprofiles(f,p)
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -346,7 +346,7 @@ module BorderProfiles
 !***********************************************************************
     subroutine set_border_initcond(f,ivar,fborder)
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
 !
       real, dimension (mx,my,mz,mfarray),intent(in) :: f
       real, dimension (nx), intent(out) :: fborder

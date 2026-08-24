@@ -14,7 +14,8 @@
 module HDF5_IO
 !
   use Cdata
-  use General, only: loptest, itoa, numeric_precision, keep_compiler_quiet
+  use General, only: loptest, itoa, numeric_precision
+  use Quiet
   use HDF5
   use Messages, only: fatal_error, warning
   use Mpicomm, only: mpiscan_int, mpibcast_int

@@ -34,7 +34,7 @@
 module Hydro
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
   use Viscosity, only: calc_viscous_force
 !
@@ -644,7 +644,7 @@ module Hydro
 !
 !  Identify version number (generated automatically by SVN).
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
 !  Writing files for use with IDL.

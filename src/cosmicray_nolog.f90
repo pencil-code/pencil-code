@@ -19,7 +19,7 @@
 module Cosmicray
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none
@@ -87,7 +87,7 @@ module Cosmicray
 !
 !  Identify version number.
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id$")
 !
 !  Writing files for use with IDL

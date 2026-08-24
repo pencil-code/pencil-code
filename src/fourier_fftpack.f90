@@ -7,7 +7,8 @@ module Fourier
   use Cdata
   use Messages
   use Mpicomm, only: transp,transp_other 
-  use General, only: ioptest, keep_compiler_quiet
+  use General, only: ioptest
+  use Quiet
 !$ use OMP_LIB
 !
   implicit none

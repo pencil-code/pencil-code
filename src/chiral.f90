@@ -24,7 +24,7 @@
 module Chiral
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none
@@ -122,7 +122,7 @@ module Chiral
 !
 !  Identify version number.
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id$")
 !
     endsubroutine register_chiral

@@ -9,7 +9,8 @@
 module GPU
 !
   use Cdata
-  use General, only: keep_compiler_quiet, lpointer, ioptest, loptest
+  use General, only: lpointer, ioptest, loptest
+  use Quiet
   use Messages
 !$ use, intrinsic :: iso_c_binding
   use iso_c_binding
@@ -480,7 +481,7 @@ contains
 !**************************************************************************
     subroutine get_gpu_reduced_vars(dst)
 
-      real, dimension(20) :: dst
+      real, dimension(10) :: dst
 
       call get_gpu_reduced_vars_c(dst)
 

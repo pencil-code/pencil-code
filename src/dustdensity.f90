@@ -36,7 +36,7 @@ module Dustdensity
                           ad, scolld, ustcst, tausd1, tausd,&
                           unit_md, dust_chemistry, mumon, mmon, md
 
-  use General, only : keep_compiler_quiet
+  use Quiet
   use Messages
   use EquationOfState, only: getmu
 !
@@ -266,7 +266,7 @@ module Dustdensity
 !
 !  Identify version number (generated automatically by CVS).
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id$")
 !
     endsubroutine register_dustdensity
@@ -2681,7 +2681,7 @@ module Dustdensity
 !***********************************************************************
     subroutine dustdensity_after_boundary(f)
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
 
       real, contiguous,dimension(:,:,:,:) :: f
 !

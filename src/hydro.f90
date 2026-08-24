@@ -38,7 +38,7 @@
 module Hydro
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
   use Viscosity, only: calc_viscous_force
   use SGS_hydro
@@ -1009,7 +1009,7 @@ module Hydro
 !
 !  Identify version number (generated automatically by SVN).
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
 !  indices to access uu
@@ -1777,6 +1777,8 @@ module Hydro
           if (allocated(Bsquared)) deallocate(Bsquared)
           allocate(Bsquared(mx))
           call get_shared_variable('B_ext2',B_ext2)
+        else
+          allocate(B_ext2); B_ext2=0.
         endif
       endif
 !
@@ -3276,7 +3278,7 @@ module Hydro
           idiag_ruyuzmxy/=0 .or. idiag_ffdownmxy/=0) then
         lpenc_diagnos2d(i_uu)=.true.
       endif
-      if (idiag_rufmz/=0) then
+      if (lforcing_cont_uu.and.idiag_rufmz/=0) then
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_uu)=.true.
         lpenc_diagnos(i_fcont)=.true.

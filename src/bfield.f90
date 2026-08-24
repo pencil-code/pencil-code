@@ -30,7 +30,7 @@
 module Magnetic
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages, only: svn_id, fatal_error, not_implemented
 !
   implicit none
@@ -189,7 +189,7 @@ module Magnetic
 !
 !  Identify version number.
 !
-      if (lroot) call svn_id("$Id$")
+      call svn_id("$Id$")
 !
 !  Request variable for the magnetic field.
 !

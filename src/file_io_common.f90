@@ -33,7 +33,8 @@ module File_io
 !
 !  20-Feb-2012/PABourdin: coded
 !
-      use General, only: itoa, keep_compiler_quiet
+      use General, only: itoa
+      use Quiet
       use Messages, only: fatal_error
 !
       integer, intent(in) :: unit
@@ -258,7 +259,8 @@ module File_io
 !
 ! 20-may-18/MR: coded
 !
-      use General, only: coptest, keep_compiler_quiet
+      use General, only: coptest
+      use Quiet
       use Syscalls, only: system_cmd
 
       integer :: num

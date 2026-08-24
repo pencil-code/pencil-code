@@ -31,7 +31,8 @@
 module Chemistry
 !
   use Cdata
-  use General, only: keep_compiler_quiet, itoa
+  use General, only: itoa
+  use Quiet
   use EquationOfState, only: cp_const,lpres_grad,imass,&
                              getdensity,gettemperature,getpressure
 
@@ -419,7 +420,7 @@ module Chemistry
 !
 !  Identify version number (generated automatically by SVN).
 !
-      if (lroot) call svn_id( "$Id$")
+      call svn_id( "$Id$")
 !
       call put_shared_variable('species_constants',species_constants,caller='register_chemistry')
       if (lparticles) then
@@ -574,6 +575,8 @@ module Chemistry
               endif
             endif
           endif
+        else
+          allocate(lcondensing_species); lcondensing_species=.false.
         endif
 
         if (lfix_Sc .and. any(idiag_diffm/=0)) then

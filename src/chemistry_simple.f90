@@ -26,7 +26,7 @@
 module Chemistry
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use EquationOfState, pushpars2c_eos => pushpars2c
   use Messages
 !
@@ -305,7 +305,7 @@ module Chemistry
 !
 !  Identify version number (generated automatically by SVN).
 !
-      if (lroot) call svn_id( "$Id$")
+      call svn_id( "$Id$")
 !
 !  Needed by ogrid_chemistry
 !

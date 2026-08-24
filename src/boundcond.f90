@@ -2687,7 +2687,7 @@ module Boundcond
 !  11-nov-02/wolf: coded
 !  18-feb-24/axel: adapted from bc_sym_x to model Comisso+15; use -cos instead of +cos(ky).
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
 
       integer, intent(IN) :: topbot
       real, contiguous, dimension (:,:,:,:) :: f
@@ -2745,7 +2745,7 @@ module Boundcond
   !  11-nov-02/wolf: coded
   !  18-feb-24/axel: adapted from bc_sym_x to model Comisso+15; use -cos instead of +cos(ky).
   !
-        use General, only: keep_compiler_quiet
+        use Quiet
         integer, intent(IN) :: topbot
         real, contiguous, dimension (:,:,:,:) :: f
         real, optional :: val
@@ -8675,7 +8675,7 @@ module Boundcond
 !
 ! 15-aug-2011/Bourdin.KIS: adapted from finalize_modules
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
 !
       real, contiguous, dimension(:,:,:,:) :: f
 !

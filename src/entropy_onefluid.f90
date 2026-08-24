@@ -23,7 +23,7 @@
 module Energy
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Interstellar
   use Messages
 !
@@ -72,7 +72,7 @@ module Energy
 !
 !  Identify version number.
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id$")
 !
       call put_shared_variable('lviscosity_heat',lviscosity_heat,caller='register_energy')

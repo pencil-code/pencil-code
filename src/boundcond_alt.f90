@@ -7,7 +7,6 @@
 module Boundcond
 !
   use Cdata
-  use Cparam
   use Messages
   use Mpicomm
 !
@@ -6800,7 +6799,7 @@ module Boundcond
 !
 ! 15-aug-2011/Bourdin.KIS: adapted from finalize_modules
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !

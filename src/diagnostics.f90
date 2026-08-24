@@ -1527,7 +1527,8 @@ module Diagnostics
 !  27-aug-13/MR  : reinstated 0p
 !  10-jan-17/MR  : added correction of floating-point formats if not sufficient to hold sign
 !
-      use General, only: safe_character_assign, itoa, keep_compiler_quiet
+      use General, only: safe_character_assign, itoa
+      use Quiet
 !
       character (len=*) :: cname, cform
       character (len=*) :: ctest

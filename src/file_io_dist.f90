@@ -146,7 +146,7 @@ module File_io
 !***********************************************************************
     subroutine flush_file(unit)
 
-      use General, only: keep_compiler_quiet
+      use Quiet
 
       integer, intent(IN) :: unit
 

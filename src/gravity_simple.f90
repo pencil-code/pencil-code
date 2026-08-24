@@ -21,7 +21,7 @@
 module Gravity
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none
@@ -248,7 +248,7 @@ module Gravity
 !
       use SharedVariables, only: put_shared_variable
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           '$Id$')
 !
       call put_shared_variable('nu_epicycle',nu_epicycle,caller='register_gravity')

@@ -28,9 +28,8 @@
 !
 module Energy
 !
-  use Cparam
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none
@@ -78,7 +77,7 @@ module Energy
 !
       use SharedVariables, only: put_shared_variable
 
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
       if (.not.ldensity.or.lboussinesq) call put_shared_variable('beta_glnrho_global',beta_glnrho_global)

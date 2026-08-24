@@ -18,7 +18,7 @@
 module Gravity
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   implicit none
@@ -107,7 +107,7 @@ module Gravity
 !  Identify version number.
 !
       use FArrayManager
-      if (lroot) call svn_id("$Id: gravity_r.f90,v 1.1 2018/08/24 15:48:10 wlyra Exp $")
+      call svn_id("$Id: gravity_r.f90,v 1.1 2018/08/24 15:48:10 wlyra Exp $")
 !
       lgravr=.true.
 !

@@ -9,7 +9,6 @@
 module Fixed_point
 !
   use Cdata
-  use Cparam
 !  use Mpicomm
   use Messages
   use Streamlines, only: ntracers, l_max, trace_sub, trace_single, send_vec
@@ -518,7 +517,7 @@ module Fixed_point
 !   14-mar-12/simon: coded
 !
     use Sub
-    use General, only: keep_compiler_quiet
+    use Quiet
 !
     real, dimension (mx,my,mz,mfarray) :: f
     character(len=*) :: path
