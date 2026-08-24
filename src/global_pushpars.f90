@@ -480,8 +480,8 @@ contains
     call copy_addr(phi,p_par(1424))
     call copy_addr(lreheating_hom,p_par(1425)) ! bool
     call copy_addr(ilnrho_phi,p_par(1426)) ! int
-    call copy_addr(lna_table,p_par(1428)) ! (nline__mod__cdata) gmem
-    call copy_addr(ell_table,p_par(1429)) ! (nline__mod__cdata) gmem
+    call copy_addr(lna_table,p_par(1428)) ! (nline) gmem
+    call copy_addr(ell_table,p_par(1429)) ! (nline) gmem
     call copy_addr(lna_table_min,p_par(1430)) 
     call copy_addr(dlna,p_par(1431)) 
 

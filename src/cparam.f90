@@ -294,6 +294,8 @@ module Cparam
   integer, parameter :: mname=100
   integer, parameter :: mname_half=20
 
+  integer, parameter :: nline=1200
+
   include 'cparam_enum.h'
 
 endmodule Cparam

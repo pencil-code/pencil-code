@@ -435,7 +435,6 @@ module Cdata
 !
 ! For reading viscosity for recombination from a file.
 !
-  integer, parameter :: nline=1200
   real, save, dimension(nline) :: lna_table, ell_table
   real :: lna_table_min,dlna
 !
