@@ -524,6 +524,9 @@ To ensure this, add at the beginning of your \code{sbatch} script
 source src/.moduleinfo
 \end{verbatim}
 
+Similarly, this is incorporated inside \code{pc\_start/pc\_run} and you do not need to remember to source the modules when using them.
+
+
 Example SLURM batch script (CRAY machines):
 \begin{verbatim}
 #!/bin/bash -l

@@ -2415,6 +2415,9 @@ To ensure this, add the following to your sbatch script:
 source src/.moduleinfo
 \end{verbatim}
 
+All of these settings are incorporated inside \cmd{pc_run}, so when using it
+there is no difference in running the GPU version, except the slurm settings.
+
 Note that not all of Pencil Code can run on GPUs. 
 %This is most predominant when regarding the particles either in the Particle-in-Cell (PIC) method or with the N-body solver of Pencil Code, neither of which are GPU accelerated.
 %AB: modified
