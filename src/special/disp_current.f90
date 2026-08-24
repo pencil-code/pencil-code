@@ -829,6 +829,7 @@ module Special
           etaSchw=1./p%sigE
         else
           etaSchw=eta_given
+          p%sigE=1./eta_given
         endif
 !
 !  Now compute current, using any of the 4 expressions above.

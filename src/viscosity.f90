@@ -2566,6 +2566,10 @@ module Viscosity
           else
             nu_tdep=cs_t/nu_tdep_kcs
           endif
+!
+!  Take nu_tdep=min(nu,PrM/sigEm_all), i.e., when sigEm_all is small (early times),
+!  nu_tdep is being replaced by nu. 
+!
         case ('PrM_sigEm')
           if (sigEm_all>0.) then
             nu_tdep=min(nu,PrM/sigEm_all)

@@ -174,6 +174,9 @@ module Special
   logical :: lswitch_toMHD_at_lna=.false.          !PAR_DOC: option to use lna as criterion for switching to MHD
   logical :: lsmooth_Gamma_phi=.false.             !PAR_DOC: smooth increase of Gamma_phi
   logical :: lGamma_phi_damping=.false.            !PAR_DOC: to include Gamma phi damping
+  logical :: lmanual_initializing=.false.          !PAR_DOC: manual initializing at restart
+  logical :: lsolve_for_phi_ini=.false.            !PAR_DOC: manual initializing
+  logical :: ladvance_ee_ini=.false.               !PAR_DOC: manual initializing
   logical, pointer :: lphi_hom, lphi_linear_regime, lnoncollinear_EB, lnoncollinear_EB_aver
   logical, pointer :: lcollinear_EB, lcollinear_EB_aver, lmass_suppression
   logical, pointer :: lallow_bprime_zero
@@ -227,7 +230,8 @@ module Special
       linclude_rho_EB_in_wstate, linclude_rho_EBK_in_wstate, &
       lswitch_toMHD_at_lna, lna_switch_toMHD, &
       lGamma_phi_damping, Gamma_phi_damping_prefactor, &
-      dlnascale_reheating, lg_Gamma_phi_fraction_firststep
+      dlnascale_reheating, lg_Gamma_phi_fraction_firststep, &
+      lmanual_initializing, lsolve_for_phi_ini, ladvance_ee_ini
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -403,6 +407,13 @@ module Special
       else
         allocate(lrelativistic_eos)
         lrelativistic_eos=.false.
+      endif
+!
+!  manual initializing
+!
+      if (lmanual_initializing) then
+        lsolve_for_phi=lsolve_for_phi_ini
+        ladvance_ee=ladvance_ee_ini
       endif
 !
 !  Redundancy checks. To be removed when these logicals are removed.
