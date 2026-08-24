@@ -1950,6 +1950,7 @@ module Special
       call string_to_enum(enum_replace_schwinger_by_arnold,replace_schwinger_by_arnold)
       call copy_addr(enum_replace_schwinger_by_arnold,p_par(70)) ! int
 
+    call copy_addr(lheating_averaged,p_par(71)) ! bool
     endsubroutine pushpars2c
 !***********************************************************************
 !********************************************************************
