@@ -430,7 +430,7 @@ module Io
 !
 !  01-dec-2022/ccyang: stub
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
       use Messages, only: fatal_error
 !
       integer, intent(in) :: nc

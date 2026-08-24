@@ -3,8 +3,7 @@ module DensityMethods
 !  Dummy module for density_stratified, with which all density queries
 !  should be done in EquationOfState.
 !
-  use Cparam
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages, only: fatal_error
 !
   include 'density_methods.h'

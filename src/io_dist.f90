@@ -19,7 +19,7 @@ module Io
   use Cdata
   use File_io, only: delete_file, file_exists
   use Messages, only: fatal_error, warning, svn_id
-  use General, only: keep_compiler_quiet
+  use Quiet
 !
   implicit none
 !
@@ -74,7 +74,7 @@ module Io
 !
 !  identify version number
 !
-      if (lroot) call svn_id("$Id$")
+      call svn_id("$Id$")
 !
     endsubroutine register_io
 !***********************************************************************
@@ -127,7 +127,7 @@ module Io
       integer :: na, ne, bytes, j, nc, ncomps
       integer(KIND=ikind8) :: out_size
       character (len=fnlen) :: file1, file2
-      character (len=30) :: vname, vnm
+      character (len=30) :: vnm
       logical, save :: lcalled_ast=.false.
 !
       t_sp = real(t)

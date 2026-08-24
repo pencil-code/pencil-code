@@ -15,10 +15,9 @@ module Testfield_general
 !                 and no longer in the individual testfield modules as it is used
 !                 already in testfield_general
 !
-  use Cparam
   use Cdata, only: ninit, labellen
   use Messages
-  use General, only: keep_compiler_quiet
+  use Quiet
 
   implicit none
 !
@@ -397,7 +396,7 @@ module Testfield_general
 !
 !  Identify version number.
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id: testfield_general.f90 19193 2013-06-27 12:55:46Z wdobler $")
 !
 !  Writing files for use with IDL

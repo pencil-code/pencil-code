@@ -11,7 +11,8 @@ module Deriv
 !
   use Messages
   use Cdata
-  use General, only: keep_compiler_quiet,loptest
+  use General, only: loptest
+  use Quiet
   use Cparam, only: lactive_dimension, nxgrid, nygrid, nzgrid
 !
   implicit none
@@ -1701,7 +1702,7 @@ module Deriv
 !
 !  02-apr-17/wlyra: coded
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
 !
       real, dimension (mx,my,mz,mfarray),intent(in) :: f
       real, dimension (nx) :: fac
@@ -1715,7 +1716,7 @@ module Deriv
 !***********************************************************************
     subroutine der3i3j(f,k,df,i,j)
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx), intent(out) :: df
@@ -1729,7 +1730,7 @@ module Deriv
 !***********************************************************************          
     subroutine der3i2j1k(f,ik,df,i,j,k)
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx), intent(out) :: df
@@ -1743,7 +1744,7 @@ module Deriv
 !***********************************************************************
     subroutine der4i1j1k(f,ik,df,i,j,k)
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx), intent(out) :: df
@@ -1961,7 +1962,7 @@ module Deriv
 !
 !  15-oct-09/Natalia: coded.
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
 
       real, dimension (mx,my,mz,mfarray) :: f
       real  :: df
@@ -1984,7 +1985,7 @@ module Deriv
 !  15-oct-09/Natalia: coded.
 !  15-oct-09/axel: changed file name to shorter version
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
 
       real, dimension (mx,my,mz) :: f
       real :: df
@@ -2133,7 +2134,7 @@ module Deriv
 !
 !  26-mar-12/MR: coded
 !
-!      use General, only: keep_compiler_quiet
+!      use Quiet
 
       real, dimension (mx,my,mz)          :: f
       real, dimension (nx)                :: df

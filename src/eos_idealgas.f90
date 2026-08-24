@@ -22,7 +22,7 @@
 module EquationOfState
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
   use DensityMethods, only: getlnrho,getrho,getrho_s
   use SharedVariables, only: get_shared_variable
@@ -119,7 +119,7 @@ module EquationOfState
 !
 !  Identify version number.
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           '$Id$')
 !
 ! Shared variables

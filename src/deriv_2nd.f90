@@ -11,7 +11,8 @@ module Deriv
 !
   use Messages
   use Cdata
-  use General, only: keep_compiler_quiet,loptest
+  use General, only: loptest
+  use Quiet
 !
   implicit none
 !

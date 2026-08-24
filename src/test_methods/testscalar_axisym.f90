@@ -20,9 +20,8 @@
 !***************************************************************
 module Testscalar
 !
-  use Cparam
   use Messages
-  use General, only: keep_compiler_quiet
+  use Quiet
 !
   implicit none
 !
@@ -200,7 +199,7 @@ module Testscalar
 !
 !  identify version number
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
       if (nvar > mvar) then

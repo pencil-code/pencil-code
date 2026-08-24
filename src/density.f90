@@ -25,7 +25,8 @@
 module Density
 !
   use Cdata
-  use General, only: keep_compiler_quiet, itoa
+  use General, only: itoa
+  use Quiet
   use Messages
   use EquationOfState, only: cs0, cs20, cs2bot, cs2top, rho0, lnrho0
   use DensityMethods
@@ -406,7 +407,7 @@ module Density
 !
 !  Identify version number (generated automatically by SVN).
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
           "$Id$")
 !
 ! mpoly needs to be put here as in initialize_density it were

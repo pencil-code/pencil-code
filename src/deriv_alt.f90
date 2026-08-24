@@ -15,7 +15,7 @@ module Deriv
 ! 26-Mar-12/MR: derived from deriv.f90
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages, only: fatal_error, warning, not_implemented
 !
   implicit none

@@ -47,7 +47,7 @@ module Io
 !
       character(LEN=5) :: locking
 
-      if (lroot) call svn_id ("$Id$")
+      call svn_id ("$Id$")
 !
       if (lread_from_other_prec) &
           call warning ('register_io', 'Reading from other precision not implemented')
@@ -376,7 +376,7 @@ module Io
 !
 !  21-jan-24/ccyang: stub
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
 !
       integer, dimension(:), intent(in) :: ipar_rmv, ipar_sink
       real, dimension(:,:), intent(in) :: fp_rmv, fp_sink
@@ -398,7 +398,8 @@ module Io
 !
 !  02-May-2019/PABourdin: coded
 !
-      use General, only: itoa, keep_compiler_quiet
+      use General, only: itoa
+      use Quiet
 !
       integer, intent(in) :: num, nv, snap
       integer, dimension(nv), intent(in) :: ID
@@ -434,7 +435,7 @@ module Io
 !
 !  02-May-2019/PABourdin: coded
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
       character (len=*), intent(in) :: label
       integer, intent(in) :: mv, nv
       real, dimension (mv), intent(in) :: data
@@ -899,7 +900,7 @@ contains
 !
 !  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
 !
@@ -1269,7 +1270,7 @@ contains
 !  16-May-2020/MR: coded
 !
       use Geometrical_types
-      use General, only: keep_compiler_quiet
+      use Quiet
 
       character (len=*), intent(in) :: label
       type(torus_rect) :: value    !, intent(out) :: value
@@ -1360,7 +1361,8 @@ contains
 !  27-Oct-2018/PABourdin: coded
 !
       use File_io, only: file_exists
-      use General, only: loptest,keep_compiler_quiet
+      use General, only: loptest
+      use Quiet
 !
       character (len=*), intent(in) :: file
       integer, intent(in), optional :: mxout,myout,mzout
@@ -1392,7 +1394,7 @@ contains
 !  27-Oct-2018/PABourdin: coded
 !
       use Mpicomm, only: mpibcast_real, MPI_COMM_PENCIL
-      use General, only: keep_compiler_quiet
+      use Quiet
 !
       character (len=*) :: file         ! not used
 !

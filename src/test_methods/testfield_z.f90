@@ -1321,7 +1321,7 @@ module Testfield
 !
 !  12-sep-09/axel: adapted from the corresponding magnetic routine
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices

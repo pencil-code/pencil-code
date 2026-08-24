@@ -29,9 +29,8 @@
 !***************************************************************
 module Density
 !
-  use Cparam
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
 !
   use DensityMethods
@@ -152,7 +151,7 @@ module Density
 !
 !  Identify version number.
 !
-      if (lroot) call svn_id("$Id$")
+      call svn_id("$Id$")
 !
     endsubroutine register_density
 !***********************************************************************

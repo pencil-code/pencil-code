@@ -2740,7 +2740,7 @@ module Deriv
 !
 !  17-apr-12/MR: coded
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
 !
       real, dimension(mx,my,mz,mfarray), intent(IN):: f
       real, dimension(my,mz)           , intent(IN):: inh

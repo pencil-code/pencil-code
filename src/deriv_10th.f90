@@ -12,7 +12,8 @@ module Deriv
   use Cdata
   use Messages, only: fatal_error, warning,not_implemented
   use Cparam, only: lactive_dimension, nxgrid, nygrid, nzgrid
-  use General, only: keep_compiler_quiet, loptest
+  use General, only: loptest
+  use QUiet
 !
   implicit none
 !
@@ -2077,7 +2078,7 @@ module Deriv
 !
 !  26-mar-12/MR: coded
 !
-!      use General, only: keep_compiler_quiet
+!      use Quiet
 
       real, dimension (mx,my,mz)          :: f
       real, dimension (nx)                :: df

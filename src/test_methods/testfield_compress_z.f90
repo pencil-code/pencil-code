@@ -27,7 +27,6 @@
 
 module Testfield
 
-  use Cparam
   use Cdata
   use Messages
 
@@ -308,7 +307,7 @@ module Testfield
 !
 !  Identify version number.
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
 !  Writing files for use with IDL
@@ -709,7 +708,7 @@ module Testfield
 !
 !  26-jun-05/anders: adapted from magnetic
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
 !
       logical, dimension(npencils) :: lpencil_in
 !
@@ -1546,7 +1545,7 @@ module Testfield
 !
 !  12-sep-09/axel: adapted from the corresponding magnetic routine
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
       use Slices_methods, only: assign_slices_vec
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1573,7 +1572,7 @@ module Testfield
 !
 !    4-oct-18/axel+nishant: adapted from testflow
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
 
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !

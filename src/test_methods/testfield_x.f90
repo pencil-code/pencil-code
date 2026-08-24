@@ -201,7 +201,7 @@ module Testfield
 !
 !  identify version number
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
 !  Writing files for use with IDL
@@ -828,7 +828,7 @@ module Testfield
 !
 !    4-oct-18/axel+nishant: adapted from testflow
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !

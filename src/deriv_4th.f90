@@ -11,7 +11,7 @@ module Deriv
 !
   use Messages, only: fatal_error, warning, not_implemented
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
 !
   implicit none
 !

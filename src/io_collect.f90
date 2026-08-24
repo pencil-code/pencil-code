@@ -59,7 +59,7 @@ module Io
 !
 !  identify version number
 !
-      if (lroot) call svn_id ("$Id$")
+      call svn_id ("$Id$")
       if (ldistribute_persist .and. .not. lseparate_persist) &
           call fatal_error ('io_collect', "For distibuted persistent variables, this module needs lseparate_persist=T")
       if (lread_from_other_prec) &
@@ -312,7 +312,7 @@ module Io
 !
 !  01-dec-2022/ccyang: stub
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
 !
       integer, intent(in) :: nc
       character(len=fmtlen), dimension(nc), intent(in) :: name
@@ -371,7 +371,7 @@ module Io
 !
 !  23-Oct-2018/PABourdin: adapted from output_snap
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
 
       integer, intent(in) :: mv, nv
       integer, dimension (mv), intent(in) :: ipar
@@ -398,7 +398,7 @@ module Io
 !
 !  21-jan-24/ccyang: stub
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
       use Messages, only: not_implemented
 !
       integer, dimension(:), intent(in) :: ipar_rmv, ipar_sink
@@ -421,7 +421,7 @@ module Io
 !
 !  03-May-2019/PABourdin: coded
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
       integer, intent(in) :: num, nv, snap
       integer, dimension(nv), intent(in) :: ID
 
@@ -440,7 +440,7 @@ module Io
 !
 !  03-May-2019/PABourdin: coded
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
       character (len=*), intent(in) :: label
       integer, intent(in) :: mv, nv
       real, dimension (mv), intent(in) :: data
@@ -474,7 +474,7 @@ module Io
 !
 !  26-Oct-2018/PABourdin: adapted from output_snap
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
       character (len=*), intent(in) :: file
       integer, intent(in) :: mv, nc
       character (len=*), dimension (mqarray), intent(in) :: labels
@@ -647,7 +647,7 @@ module Io
 !
 !  25-Oct-2018/PABourdin: apadpted and moved to IO module
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
       integer, intent(in) :: mv
       integer, dimension (mv), intent(out) :: ipar
       real, dimension (mv,mparray), intent(out) :: ap
@@ -668,7 +668,7 @@ module Io
 !
 !  26-Oct-2018/PABourdin: coded
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
       character (len=*), intent(in) :: file
       integer, intent(in) :: mv, nc
       character (len=*), dimension (nc), intent(in) :: labels
@@ -1068,7 +1068,7 @@ module Io
 !
 !  16-May-2020/MR: coded
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
       use Geometrical_types
 
       character (len=*), intent(in) :: label
@@ -1126,7 +1126,7 @@ module Io
 !
 !  12-Oct-2019/PABourdin: coded
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
       character (len=*), intent(in) :: label
 !
       call keep_compiler_quiet(label)
@@ -1459,7 +1459,7 @@ module Io
 !
 !  16-May-2020/MR: coded
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
       use Geometrical_types
 
       character (len=*), intent(in) :: label
@@ -1477,7 +1477,7 @@ module Io
 !
 !  10-Feb-2012/PABourdin: coded
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
       character (len=*) :: file
       integer :: nv
       real, dimension (mx,my,mz,nv) :: a
@@ -1543,7 +1543,8 @@ module Io
 !  10-Feb-2012/PABourdin: adapted for collective IO
 !
       use Mpicomm, only: collect_grid
-      use General, only: loptest,keep_compiler_quiet
+      use General, only: loptest
+      use Quiet
 !
       character (len=*) :: file
       integer, optional :: mxout,myout,mzout

@@ -27,7 +27,7 @@
 module solid_cells_ogrid_chemistry
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use EquationOfState
   use Chemistry, only: Rgas, lreactions, find_species_index, species_constants
   use Messages, only: svn_id, timing, fatal_error, inevitably_fatal_error, not_implemented

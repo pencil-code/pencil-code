@@ -219,7 +219,7 @@ module Testflow
 !
 !  Identify version number.
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
       if (nvar > mvar) then

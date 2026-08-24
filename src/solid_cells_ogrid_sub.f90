@@ -1,7 +1,7 @@
 module solid_cells_ogrid_sub
 !
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
   use solid_cells_ogrid_cdata
 !

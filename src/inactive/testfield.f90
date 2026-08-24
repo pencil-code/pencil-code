@@ -26,7 +26,7 @@
 module Testfield
 
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
   implicit none
 
@@ -108,7 +108,7 @@ module Testfield
 !
 !  Identify version number.
 !
-      if (lroot) call svn_id( &
+      call svn_id( &
            "$Id$")
 !
 !  Writing files for use with IDL.

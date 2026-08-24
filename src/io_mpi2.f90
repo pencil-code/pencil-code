@@ -66,7 +66,7 @@ module Io
 !
       integer :: alloc_err
 !
-      if (lroot) call svn_id ("$Id$")
+      call svn_id ("$Id$")
       if (ldistribute_persist) call fatal_error ('io_mpi2', "Distributed persistent variables not allowed with MPI-IO.")
 !
       lmonolithic_io = .true.
@@ -474,7 +474,7 @@ module Io
 !  18-dec-2022/ccyang: coded
 !
       use Cparam, only: root
-      use General, only: keep_compiler_quiet
+      use Quiet
       use Mpicomm, only: size_of_real
 !
       integer, intent(in) :: navg
@@ -617,7 +617,7 @@ module Io
 !
 !  15-nov-20/ccyang: coded
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
       use Mpicomm, only: mpiallreduce_or, size_of_real
 !
       real, dimension(:,:), pointer :: data
@@ -755,7 +755,7 @@ module Io
 !
 !  NOTE: The optional argument ltruncate is required by IO=io_hdf5.
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
       use Mpicomm, only: mpiallreduce_sum_int, size_of_int, size_of_real
 !
       integer, intent(in) :: mv, nv
@@ -863,7 +863,7 @@ module Io
 !
 !  27-jan-24/ccyang: coded
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
       use Messages, only: not_implemented
       use Mpicomm, only: size_of_int, size_of_real
 !
@@ -987,7 +987,7 @@ module Io
 !
 !  03-May-2019/PABourdin: coded
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
 !
       integer, intent(in) :: num, nv, snap
       integer, dimension(nv), intent(in) :: ID
@@ -1004,7 +1004,7 @@ module Io
 !
 !  03-May-2019/PABourdin: coded
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: mv, nv
@@ -1037,7 +1037,7 @@ module Io
 !
 !  26-Oct-2018/PABourdin: adapted from output_snap
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
 !
       character (len=*), intent(in) :: file
       integer, intent(in) :: mv, nc
@@ -1170,7 +1170,7 @@ module Io
 !
 !  14-nov-20/ccyang: stub
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
       use Messages, only: not_implemented
 !
       real, dimension(:,:,:), intent(out):: data
@@ -1190,8 +1190,9 @@ module Io
 !
 !  14-nov-20/ccyang: stub
 !
-      use General, only: keep_compiler_quiet, scattered_array
+      use General, only: scattered_array
       use Messages, only: not_implemented
+      use Quiet
 !
       type(scattered_array), pointer :: data   !intent(inout)
       character(len=*), intent(in) :: file
@@ -1214,7 +1215,7 @@ module Io
 !  24-Oct-2018/PABourdin: stub
 !  12-nov-20/ccyang: coded
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
       use Particles_cdata, only: ixp
       use Mpicomm, only: size_of_int, size_of_real
 !
@@ -1398,7 +1399,7 @@ module Io
 !
 !  26-Oct-2018/PABourdin: coded
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
 !
       character (len=*), intent(in) :: file
       integer, intent(in) :: mv, nc

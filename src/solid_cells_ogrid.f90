@@ -22,7 +22,7 @@
 module Solid_Cells
 
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
   use Messages
   use Solid_cells_ogrid_sub
   use Solid_cells_ogrid_cdata

@@ -5,8 +5,7 @@
 
 module Solid_Cells_Mpicomm
 
-  use Cparam
-  use General, only: keep_compiler_quiet
+  use Quiet
 
   implicit none
 

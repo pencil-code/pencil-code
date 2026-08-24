@@ -58,7 +58,7 @@ module Io
 !
 !  identify version number
 !
-      if (lroot) call svn_id ("$Id$")
+      call svn_id ("$Id$")
       if (ldistribute_persist .and. .not. lseparate_persist) &
           call fatal_error ('io_collect_xy', "For distibuted persistent variables, this module needs lseparate_persist=T")
       if (lread_from_other_prec) &
@@ -227,7 +227,7 @@ module Io
 !
 !  01-dec-2022/ccyang: stub
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
 !
       integer, intent(in) :: nc
       character(len=fmtlen), dimension(nc), intent(in) :: name
@@ -303,7 +303,7 @@ module Io
 !
 !  21-jan-24/ccyang: stub
 !
-      use General, only: keep_compiler_quiet
+      use Quiet
       use Messages, only: not_implemented
 !
       integer, dimension(:), intent(in) :: ipar_rmv, ipar_sink

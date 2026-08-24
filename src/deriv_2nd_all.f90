@@ -16,7 +16,7 @@ module Deriv
 !
   use Messages
   use Cdata
-  use General, only: keep_compiler_quiet
+  use Quiet
 !
   implicit none
 !
