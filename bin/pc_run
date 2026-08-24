@@ -4,6 +4,11 @@
 # Work in submit directory (SGE):
 #$ -cwd -V
 #======================================================================#
+# Make sure the same modules which were used for compilation are used for running.
+if [[ -f src/.moduleinfo ]]; then
+    source src/.moduleinfo || true
+fi
+#======================================================================#
 # Run the right perl version:
 if [ -x /usr/local/bin/perl ]; then
   perl=/usr/local/bin/perl
