@@ -3831,7 +3831,9 @@ module Energy
 !     Slope-limited diffusion
 !
       if (lenergy_slope_limited.and.llast) then
-        call calc_energy_slope_limited(f,df)
+        if(lsld_every_step .or. lrmv) then
+          call calc_energy_slope_limited(f,df)
+        endif
       endif
 !
 !  Explicit heating/cooling terms.
