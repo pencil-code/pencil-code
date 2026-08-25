@@ -3151,7 +3151,9 @@ module Density
 !   Slope limited diffusion for density
 !
       if (ldensity_slope_limited.and.llast) then
-        call calc_sld_fdiff(f,p,fdiff)
+        if(lsld_every_step .or. lrmv) then
+          call calc_sld_fdiff(f,p,fdiff)
+        endif
       endif
     endsubroutine mass_diffusion
 !***********************************************************************

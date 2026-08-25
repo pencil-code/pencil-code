@@ -2350,7 +2350,9 @@ module Viscosity
 !  following Rempel (2014). Here the divergence of the flux is used.
 !
       if (lvisc_slope_limited .and. llast) then
-        call calc_visc_slope_limited(f,p)
+        if(lsld_every_step .or. lrmv) then
+          call calc_visc_slope_limited(f,p)
+        endif
       endif
 !
 !  viscous force: in Schur-223 flow we use

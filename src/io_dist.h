@@ -24,7 +24,7 @@
           do nc=1,ncomps
             call get_astaroth_field_name(j,vnm,nc)
       
-	    file2 = trim(astaroth_src)//trim(vnm)//trim(file2_base)
+            file2 = trim(astaroth_src)//trim(vnm)//trim(file2_base)
             open(lun_output+1, &
                  file=file2, &
                  form='unformatted', &

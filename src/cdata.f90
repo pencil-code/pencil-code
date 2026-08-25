@@ -725,6 +725,7 @@ module Cdata
   logical :: ldiagnos_need_zaverages=.false.
   logical :: ltime_integrals=.false.
   logical :: lreset_seed=.false.
+  logical :: lsld_every_step=.true.
   logical :: lproper_averages=.false.
   logical :: lappend_pc_constants=.false.   !PAR_DOC: always append when true to preserve history
   character (len=1) :: slice_position='p'

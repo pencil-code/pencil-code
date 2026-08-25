@@ -6116,7 +6116,9 @@ module Magnetic
 !   Slope limited diffusion for magnetic field
 !
       if (lmagnetic_slope_limited.and.llast) then
-        call calc_magnetic_slope_limited(f,df,p)
+        if(lsld_every_step .or. lrmv) then
+         call calc_magnetic_slope_limited(f,df,p)
+        endif
       endif
 !
 !  Special contributions to this module are called here.
