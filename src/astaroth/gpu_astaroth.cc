@@ -2006,6 +2006,24 @@ void generate_bcs()
 /***********************************************************************************************/
 extern "C" void testBCs();     // forward declaration
 /***********************************************************************************************/
+#include "cmake_options.h"
+void
+ac_compile()
+{
+  if (acCompile(cmake_options,mesh.info) != AC_SUCCESS)
+  {
+	  if (rank == 0) 
+	  {
+		  fprintf(stderr,"Was not able to compile Astaroth!\n");
+		  int err = system("touch ERROR");
+		  if (err)
+		    fprintf(stderr,"Unable to create ERROR file!\n");
+	  }
+  	  MPI_Barrier(MPI_COMM_WORLD);
+	  exit(EXIT_FAILURE);
+  }
+}
+/***********************************************************************************************/
 extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_,
 				int lread_all_vars_from_device_,
 				int lcpu_timestep_on_gpu_,
@@ -2021,13 +2039,12 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_,
 
   if (rank==0 && ldebug) printf("memusage after pointer assign= %f MBytes\n", acMemUsage()/1024.);
 #if AC_RUNTIME_COMPILATION
-#include "cmake_options.h"
 
   //Not worth it to get this working inside the container
   const bool inside_container = ltraining;
   if (!inside_container) generate_bcs();
   MPI_Barrier(MPI_COMM_WORLD);
-  acCompile(cmake_options,mesh.info);
+  ac_compile();
   acLoadLibrary(rank == 0 ? stderr : NULL,mesh.info);
   acCheckDeviceAvailability();
   acLogFromRootProc(rank, "Done setupConfig && acCompile\n");
@@ -2144,18 +2161,7 @@ extern "C" void reloadConfig()
 #include "cmake_options.h"
   generate_bcs();
   MPI_Barrier(MPI_COMM_WORLD);
-  if (acCompile(cmake_options,mesh.info) != AC_SUCCESS)
-  {
-	  if (rank == 0) 
-	  {
-		  fprintf(stderr,"Was not able to compile Astaroth!\n");
-		  int err = system("touch ERROR");
-		  if (err)
-		    fprintf(stderr,"Unable to create ERROR file!\n");
-	  }
-  	  MPI_Barrier(MPI_COMM_WORLD);
-	  exit(EXIT_FAILURE);
-  }
+  ac_compile();
   acLoadLibrary(rank == 0 ? stderr : NULL,mesh.info);
   acGridInit(mesh);
   acLogFromRootProc(rank, "Done setupConfig && acCompile\n");
