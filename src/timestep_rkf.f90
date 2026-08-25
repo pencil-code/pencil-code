@@ -227,7 +227,7 @@ module Timestep
 ! Note: The tmp array will not use more memory than the temporary
 !   array that would be implicitly created with calls like
 !   call pde(f + b21*k(:,:,:,:,1), k(:,:,:,:,2), p)
-      real, contiguous,dimension(:,:,:,:) :: tmp
+      real, dimension(mx,my,mz,mfarray) :: tmp
       real, dimension(nx) :: scal, err
       real :: errmax, errmaxs, dtsub, told
       integer :: j
@@ -444,7 +444,7 @@ module Timestep
 ! Note: The tmp array will not use more memory than the temporary
 !   array that would be implicitly created with calls like
 !   call pde(f + b21*k(:,:,:,:,1), k(:,:,:,:,2), p)
-      real, contiguous,dimension(:,:,:,:) :: tmp
+      real, dimension(mx,my,mz,mfarray) :: tmp
       real, dimension(nx) :: scal, err
       real :: errmax, errmaxs, dtsub, told
       integer :: j
