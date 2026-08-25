@@ -484,6 +484,7 @@ contains
     call copy_addr(ell_table,p_par(1429)) ! (nline) gmem
     call copy_addr(lna_table_min,p_par(1430)) 
     call copy_addr(dlna,p_par(1431)) 
+    call copy_addr(lsld_every_step,p_par(1432)) ! bool
 
   endsubroutine pushpars2c
 !***********************************************************************
