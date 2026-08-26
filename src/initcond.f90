@@ -5118,7 +5118,7 @@ module Initcond
           call random_number_wrapper(r)
           call random_number_wrapper(p)
           tmp=sqrt(-2*log(r))*sin(2*pi*p)
-          f(:,m,n,i)=f(:,m,n,i)+exp(alog(ampl)+ampl*tmp)
+          f(:,m,n,i)=f(:,m,n,i)+exp(alog(ampl)+tmp)
         enddo; enddo
       endif
 !
