@@ -86,7 +86,7 @@
 &cosmicray_run_pars
   K_para=100.
   K_perp=10.
-  ecr_floor=1e-8
+  ecr_floor=1e-9
 /
 &cosmicrayflux_run_pars
   tau=0.01

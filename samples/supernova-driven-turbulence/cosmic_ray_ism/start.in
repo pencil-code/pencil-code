@@ -57,7 +57,7 @@
   K_perp=10
   cosmicray_diff=0.04
   initecr='gaussian-noise'
-  amplecr=1e-10
+  amplecr=1e-7
 /
 &cosmicrayflux_init_pars
   tau=0.01
