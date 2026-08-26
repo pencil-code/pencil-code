@@ -211,7 +211,7 @@ my %tests = (
                          mdwarf-ss-running-aver-gpu
 			 star-in-a-box-giant-Kprof
 			 cartesian-convection-entropy-rain
-			 
+
                      )],
              # Level 4 for now contains all non-canonical tests that run,
              # but produce wrong results - and need immediate action (fixme)
@@ -268,7 +268,7 @@ my %tests = (
 # ---------------------------------------------------------------------- #
 # list of GPU-capable samples:
 	    # Those on comment do work but we run only a subset to not overload
-	    # the test machine. This list is not exhaustive and most samples using the 
+	    # the test machine. This list is not exhaustive and most samples using the
 	    # same modules as these samples should also work.
 my @gpu_tests = qw(
                          1d-tests/sine-Gordon_doublet
@@ -305,7 +305,7 @@ my @gpu_tests = qw(
                          #1d-tests/conduction/cTrho
                          mdwarf
                          polymer/forced_3dturbulence
-			 #kin-dynamo 
+			 #kin-dynamo
 			 2d-tests/shallow-water
 			 #1d-tests/alphadisk
 			 #1d-tests/hyperdiffusion
@@ -414,6 +414,7 @@ Options:
                            \ttheir default interpreters
        --time-limit=limit  \tLimit time for each phase
        --auto-clean        \tAutomatic clean & recompile, if compilation fails
+       --dist-clean        \tAutomatic distclean after run to reduce file count on clusters
        --config-files=<files>
                            \tUse the given <files> (a comma-separated list) as
                            \tconfiguration files, rather than trying to find a
@@ -504,6 +505,7 @@ GetOptions(\%opts,
                     --script-tests=s
                     --time-limit=s
                     --auto-clean
+                    --dist-clean
                     --config-files=s
                     --host-id=s
                     --env=s
@@ -559,6 +561,7 @@ my $max_level   = (              $opts{'max-level'}               );
 my $script_tests = (             $opts{'script-tests'}            );
 my $time_limit  = (              $opts{'time-limit'}      || ''   );
 my $auto_clean  = (              $opts{'auto-clean'}      || 0    );
+my $dist_clean  = (              $opts{'dist-clean'}      || 0    );
 my $config_files = (             $opts{'config-files'}    || ''   );
 my $host_id     = (              $opts{'host-id'}         || ''   );
 my $env         = (              $opts{'env'}             || ''   );
@@ -1853,6 +1856,9 @@ sub test_rundir {
         if ($created_datadir) {
             system("rm", "data");
             system("rm", "-r", "$tmpdir");
+        }
+        if ($dist_clean) {
+          test_shell_cmd("make distclean", QUIET);
         }
         system("rm", "-f", "pc_commands.log");
         system("rm", "-f", "src/.build-history");
