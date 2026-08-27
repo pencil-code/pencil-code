@@ -51,9 +51,8 @@ module Dustvelocity
 
       call svn_id( &
           "$Id$")
-      if(ldustdensity) then
-       call put_shared_variable('deltamd',deltamd,caller="register_dustvelocity")
-      endif
+      if (ldustdensity) &
+        call put_shared_variable('deltamd',deltamd,caller="register_dustvelocity")
 !
     endsubroutine register_dustvelocity
 !***********************************************************************
