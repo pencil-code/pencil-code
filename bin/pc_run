@@ -5,7 +5,7 @@
 #$ -cwd -V
 #======================================================================#
 # Make sure the same modules which were used for compilation are used for running.
-if [[ -f src/.moduleinfo ]]; then
+if [ -f src/.moduleinfo ]; then
     source src/.moduleinfo || true
 fi
 #======================================================================#
