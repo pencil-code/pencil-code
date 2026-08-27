@@ -88,6 +88,7 @@ module Forcing
       type (pencil_case) :: p
 !
       call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 !
     endsubroutine calc_pencils_forcing
 !***********************************************************************
