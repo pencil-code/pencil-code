@@ -71,7 +71,7 @@ module Selfgravity
 !
   contains
 !***********************************************************************
-    subroutine register_selfgravity()
+    subroutine register_selfgravity
 !
 !  Initialise self gravity variables.
 !
@@ -300,7 +300,7 @@ module Selfgravity
 !
     endsubroutine initialize_selfgravity
 !***********************************************************************
-    subroutine pencil_criteria_selfgravity()
+    subroutine pencil_criteria_selfgravity
 !
 !  All pencils that the Selfgravity module depends on are specified here.
 !
@@ -330,8 +330,6 @@ module Selfgravity
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_cs2)=.true.
       endif
-!
-      !if (idiag_potselfmxy/=0) lpenc_diagnos2d(i_potself)=.true.
 !
     endsubroutine pencil_criteria_selfgravity
 !***********************************************************************
@@ -417,15 +415,15 @@ module Selfgravity
         if (ldustdensity.and.lselfgravity_dust) then
           if (ldustdensity_log) then
             if (lselfgravity_gas) then  ! No need to zero rhs
-              rhs_poisson = rhs_poisson + exp(f(l1:l2,m1:m2,n1:n2,ind(1)))
+              rhs_poisson = rhs_poisson + sum(exp(f(l1:l2,m1:m2,n1:n2,ind)),4)
             else                        ! Must zero rhs
-              rhs_poisson = exp(f(l1:l2,m1:m2,n1:n2,ind(1)))
+              rhs_poisson = sum(exp(f(l1:l2,m1:m2,n1:n2,ind)),4)
             endif
           else
             if (lselfgravity_gas) then  ! No need to zero rhs
-              rhs_poisson = rhs_poisson + f(l1:l2,m1:m2,n1:n2,ind(1))
+              rhs_poisson = rhs_poisson + sum(f(l1:l2,m1:m2,n1:n2,ind),4)
             else                        ! Must zero rhs
-              rhs_poisson = f(l1:l2,m1:m2,n1:n2,ind(1))
+              rhs_poisson = sum(f(l1:l2,m1:m2,n1:n2,ind),4)
             endif
           endif
         endif
@@ -724,7 +722,6 @@ module Selfgravity
     subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
-    use General , only: string_to_enum
 
     integer, parameter :: n_pars=0
     integer(KIND=ikind8), dimension(n_pars) :: p_par

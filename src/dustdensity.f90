@@ -1991,7 +1991,7 @@ module Dustdensity
              case default
                call fatal_error('register_dustvelocity','no valid dust_binning')
              endselect
-             if (kk_vec(i) .gt. ndustspec) call fatal_error('dndmd_dt','kk is too large')
+             if (kk_vec(i) > ndustspec) call fatal_error('dndmd_dt','kk is too large')
              df(l1+i-1,m,n,ind(kk_vec(i)))=df(l1+i-1,m,n,ind(kk_vec(i)))+p%nucl_rate(i)/dustbin_width
            else
              kk_vec(i)=0

@@ -255,12 +255,8 @@ module Selfgravity
       endif
 !
       if (idiag_rugpotselfm/=0) then
-        lpenc_requested(i_rho)=.true.
-        lpenc_requested(i_uu)=.true.
-      endif
-!
-      if (idiag_gpotself2m/=0) then
-        lpenc_requested(i_gpotself)=.true.
+        lpenc_diagnos(i_rho)=.true.
+        lpenc_diagnos(i_uu)=.true.
       endif
 !
       if (idiag_potselfmxy/=0) lpenc_diagnos2d(i_potself)=.true.
@@ -342,7 +338,7 @@ module Selfgravity
       if (t>=tstart_selfgrav) then
 !
 !  Consider self-gravity from gas and dust density or from either one.
-!  Set rhs_poisson based on the gas density. The particle contribution is added below.
+!  Set rhs_poisson based on the gas/dust/neutrals density. The particle contribution is added below.
 !
         if (ldensity.and.lselfgravity_gas) then
           if (lstratz) then
@@ -363,15 +359,15 @@ module Selfgravity
         if (ldustdensity.and.lselfgravity_dust) then
           if (ldustdensity_log) then
             if (lselfgravity_gas) then  ! No need to zero rhs
-              rhs_poisson = rhs_poisson + exp(f(l1:l2,m1:m2,n1:n2,ind(1)))
+              rhs_poisson = rhs_poisson + sum(exp(f(l1:l2,m1:m2,n1:n2,ind)),4)
             else                        ! Must zero rhs
-              rhs_poisson = exp(f(l1:l2,m1:m2,n1:n2,ind(1)))
+              rhs_poisson = sum(exp(f(l1:l2,m1:m2,n1:n2,ind)),4)
             endif
           else
             if (lselfgravity_gas) then  ! No need to zero rhs
-              rhs_poisson = rhs_poisson + f(l1:l2,m1:m2,n1:n2,ind(1))
+              rhs_poisson = rhs_poisson + sum(f(l1:l2,m1:m2,n1:n2,ind),4)
             else                        ! Must zero rhs
-              rhs_poisson = f(l1:l2,m1:m2,n1:n2,ind(1))
+              rhs_poisson = sum(f(l1:l2,m1:m2,n1:n2,ind),4)
             endif
           endif
         endif
@@ -452,13 +448,18 @@ module Selfgravity
 !
       intent(in) :: p
       intent(inout) :: df
+
+      integer :: k
 !
-!  Add self-gravity acceleration on the gas and on the dust.
+!  Add self-gravity acceleration on the gas, dust, and neutrals.
 !
       if (t>=tstart_selfgrav) then
         if (lhydro.and.lselfgravity_gas) df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - p%gpotself
-        if (ldustvelocity.and.lselfgravity_dust) &
-            df(l1:l2,m,n,iudx(1):iudz(1)) = df(l1:l2,m,n,iudx(1):iudz(1)) - p%gpotself
+        if (ldustvelocity.and.lselfgravity_dust) then
+          do k=1,ndustspec
+            df(l1:l2,m,n,iudx(k):iudz(k)) = df(l1:l2,m,n,iudx(k):iudz(k)) - p%gpotself
+          enddo
+        endif
         if (lneutralvelocity.and.lselfgravity_neutrals) &
             df(l1:l2,m,n,iunx:iunz) = df(l1:l2,m,n,iunx:iunz) - p%gpotself
       endif
@@ -685,7 +686,6 @@ module Selfgravity
     subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
-    use General , only: string_to_enum
 
     integer, parameter :: n_pars=20
     integer(KIND=ikind8), dimension(n_pars) :: p_par
@@ -698,15 +698,9 @@ module Selfgravity
     call copy_addr(ljeans_stiffening,p_par(6)) ! bool
     call copy_addr(nj_stiff,p_par(7)) ! int
     call copy_addr(stiff_gamma,p_par(8))
-    call copy_addr(idiag_grgpm,p_par(9)) ! int
-    call copy_addr(idiag_grgzm,p_par(10)) ! int
-    call copy_addr(idiag_gpgzm,p_par(11)) ! int
-    call copy_addr(idiag_rugpotselfm,p_par(12)) ! int
-    call copy_addr(idiag_gpotself2m,p_par(13)) ! int
-    call copy_addr(rho0z,p_par(14)) ! (mz)
-    call copy_addr(rhs_poisson_const,p_par(15))
-    call copy_addr(tselfgrav_gentle,p_par(16)) 
-
+    call copy_addr(rho0z,p_par(9)) ! (mz)
+    call copy_addr(rhs_poisson_const,p_par(10))
+    call copy_addr(tselfgrav_gentle,p_par(11))
 
     endsubroutine pushpars2c
 !***********************************************************************
