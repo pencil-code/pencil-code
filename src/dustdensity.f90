@@ -298,9 +298,9 @@ module Dustdensity
 !
 !  Need deltamd for computing the radius differential in dustdensity.
 !
+      call get_shared_variable('deltamd',deltamd)
       if (ldustvelocity) then
         call get_shared_variable('dustbin_width',dustbin_width)
-        call get_shared_variable('deltamd',deltamd)
         call get_shared_variable('llin_radiusbins',llin_radiusbins)
         call get_shared_variable('llog_massbins',llog_massbins)
         if (llin_radiusbins.and..not.lradius_binning) call fatal_error('initialize_dustdensity', &
@@ -669,6 +669,11 @@ module Dustdensity
           if (lroot) print*,'init_nd: zero nd'
         case ('const_nd')
           f(:,:,:,ind) = f(:,:,:,ind) + nd_const
+          if (lroot) print*, 'init_nd: Constant dust number density'
+        case ('exp_decay')
+          do k=1,ndustspec
+            f(:,:,:,ind(k)) = -exp(-mdplus(k))+exp(-mdminus(k))
+          enddo
           if (lroot) print*, 'init_nd: Constant dust number density'
         case ('sinwave-phase')
           do k=1,ndustspec
@@ -2744,6 +2749,11 @@ module Dustdensity
             dkern = dkern_cst
           else
             dkern = dkern_cst
+            !TP: multiply be 0.5 here since I believe based on the code,
+            !self-coagulation would be otherwise overcounted.
+            do i=1,ndustspec
+              dkern(:,i,i) = dkern(:,i,i)*0.5
+            enddo
           endif
         else
 !
