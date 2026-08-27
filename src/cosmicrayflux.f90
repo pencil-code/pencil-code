@@ -263,7 +263,7 @@ module Cosmicrayflux
       if (ladvect_fcr) then
         call gij(f,ifcr,gfcr,1)
         call u_dot_grad(f,ifcr,gfcr,p%uu,ugfcr,UPWIND=lupw_fcr)
-        df(l1:l2,m,n,ifcrx:ifcrz) = df(l1:l2,m,n,ifcrx:ifcrz) - ugfcr(1:nx,1:3)
+        df(l1:l2,m,n,ifcrx:ifcrz) = df(l1:l2,m,n,ifcrx:ifcrz) - ugfcr
       endif
 
       ! For the timestep calculation, needs maximum diffusion or advection.
