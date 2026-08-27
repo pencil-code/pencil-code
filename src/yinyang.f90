@@ -716,9 +716,9 @@ if (abs(sum-1.) > 1.e-5) print*, 'iproc_world, sum=', iproc_world, sum
 !                exist in which two processors contribute to interpoland.
 !
       use General, only: find_index_range_hill, notanumber, itoa
-      use Cdata,   only: ny, nz, y, z, dy, dz, lfirst_proc_y, lfirst_proc_z, nghost, &
+      use Cdata,   only: m2,n2,ny, nz, y, z, dy, dz, lfirst_proc_y, lfirst_proc_z, nghost, &
                          llast_proc_y, llast_proc_z, lroot, iproc, lyang, lstart
-      use Cparam,  only: m1,m2,n1,n2, BILIN, BIQUAD, BICUB, QUADSPLINE, BIQUIN
+      use Cparam,  only: m1,n1,BILIN, BIQUAD, BICUB, QUADSPLINE, BIQUIN
 
       real, dimension(:,:,:),          intent(IN)   :: thphprime
       type(ind_coeffs),                intent(OUT)  :: indcoeffs
@@ -1078,8 +1078,8 @@ print*, 'DOUBLE GAP: iproc=', iproc
 !   20-mar-16/MR: coded
 !
       use General, only: pos_in_array, itoa
-      use Cparam , only: m1,m2,n1,n2
-      use Cdata, only: lroot
+      use Cparam , only: m1,n1
+      use Cdata, only: lroot,m2,n2
       !use Messages, only: warning
 
       type(ind_coeffs), intent(IN) :: intcoeffs

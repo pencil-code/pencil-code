@@ -248,7 +248,7 @@ ifneq ($(PARTICLES),noparticles)
     PARTICLES_MPICOMM =   particles_mpicomm
   endif
 endif
-ifeq ($(PARTICLES_DRAG), particles_drag)
+ifeq ($(PARTICLES_DRAG),particles_drag)
   PARTICLES_MAP = particles_map_index
 endif
 ifeq ($(PARTICLES_MAP),particles_map_blocks)
@@ -3090,10 +3090,22 @@ endef
 #
 .f.o:
 	$(F77) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F77FLAGS) -o $*.o -c $*.f
-.f90.o:
-	$(FC) $(ALL_COMP_FLAGS) $(FSTD) -o $*.o -c $*.f90
-	@sed -f links.sed $*.f90 >> ../reference_link.txt.tmp
-
+#
+#quiet.o: quiet.f90 $(CPARAM_OBJ)
+#	$(FC) $(ALL_COMP_FLAGS) $(FSTD) -o quiet.o -c quiet.f90
+#
+no%.o: no%.f90 %.h quiet.o
+	$(FC) $(ALL_COMP_FLAGS) $(FSTD) -o no$*.o -c no$*.f90
+#
+no%.o: no%.f90 quiet.o
+	$(FC) $(ALL_COMP_FLAGS) $(FSTD) -o no$*.o -c no$*.f90
+#
+%.o: %.f90
+	$(FC) $(ALL_COMP_FLAGS) $(FSTD) -o $@ -c $<
+#
+magnetic/no%.o: magnetic/no%.f90 magnetic/%.h quiet.o
+	$(FC) $(ALL_COMP_FLAGS) $(FSTD) -o magnetic/no$*.o -c magnetic/no$*.f90
+#
 special/%.o: special/%.f90
 ifeq ($(USE_SPECIAL_DISPATCHER),yes)
 	$(FC) $(ALL_COMP_FLAGS) $(FSTD) $(DLL_FFLAGS) -o special/$*.o -c special/$*.f90

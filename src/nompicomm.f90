@@ -1726,7 +1726,7 @@ module Mpicomm
 !  6-nov-01/wolf: coded
 !  4-nov-11/MR: optional parameter for error code added
 !
-      use general, only: itoa
+      use General, only: itoa
 !
       character (len=*) :: msg
       integer, optional :: code
