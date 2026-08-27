@@ -31,20 +31,29 @@ module Dustvelocity
   real, dimension(ndustspec) :: md=1.0, mdplus=0.0, mdminus=0.0, surfd=0.0
   real, dimension(ndustspec) :: ad=1.0, tausd=0.0
   character (len=labellen) :: dust_binning='log_mass'
-  real :: dimd1=0.0, rhods=0.0, ustcst=0.0, unit_md=0.0
+  real :: dimd1=0.0, rhods=0.0, ustcst=0.0, unit_md=1.0
   real :: mumon=0.0, mmon=0.0
+  real,target :: deltamd=1.0
   !! SHOULDN'T REALLY BE PUBLIC!!
   real :: nd0=1.,rhod0=1.
   logical :: ldustcoagulation=.false., ldustcondensation=.false.
+  namelist /dustvelocity_init_pars/ &
+          deltamd
+  namelist /dustvelocity_run_pars/ &
+          ldustcoagulation
 !
   contains
 !***********************************************************************
     subroutine register_dustvelocity
 !
       use Messages, only: svn_id
+      use SharedVariables, only: put_shared_variable
 
       call svn_id( &
           "$Id$")
+      if(ldustdensity) then
+       call put_shared_variable('deltamd',deltamd,caller="register_dustvelocity")
+      endif
 !
     endsubroutine register_dustvelocity
 !***********************************************************************
@@ -117,9 +126,13 @@ module Dustvelocity
 !***********************************************************************
     subroutine read_dustvelocity_init_pars(iomsg)
 !
-      character(LEN=*), intent(out) :: iomsg
+      use File_io, only: parallel_unit
 !
-      iomsg=""
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
+!
+      read(parallel_unit, NML=dustvelocity_init_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_dustvelocity_init_pars
 !***********************************************************************
@@ -133,9 +146,13 @@ module Dustvelocity
 !***********************************************************************
     subroutine read_dustvelocity_run_pars(iomsg)
 !
-      character(LEN=*), intent(out) :: iomsg
+      use File_io, only: parallel_unit
 !
-      iomsg=""
+      character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
+!
+      read(parallel_unit, NML=dustvelocity_run_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
     endsubroutine read_dustvelocity_run_pars
 !***********************************************************************

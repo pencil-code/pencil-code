@@ -40,6 +40,10 @@ module EquationOfState
   real :: Pr_number=0.7
   real :: lnTT0=impossible
   logical :: lpres_grad=.false.
+  real :: TT=impossible
+
+  namelist /eos_run_pars/ &
+          TT
 
   contains
 !***********************************************************************
@@ -190,6 +194,9 @@ module EquationOfState
       if (lpenc_loc(i_gTT)) p%gTT=0.0
       if (lpenc_loc(i_mu1)) p%mu1=0.0
       if (lpenc_loc(i_glnmu)) p%glnmu=1.
+
+      if (lpenc_loc(i_TT)) p%TT=TT
+      if (lpenc_loc(i_TT1)) p%TT1=1.0/TT
 !
       call keep_compiler_quiet(f)
 !
@@ -468,7 +475,13 @@ module EquationOfState
 !***********************************************************************
     subroutine read_eos_run_pars(iomsg)
 !
+      use File_io, only: parallel_unit
+!
       character(LEN=*), intent(out) :: iomsg
+      integer :: iostat
+!
+      read(parallel_unit, NML=eos_run_pars, IOSTAT=iostat, IOMSG=iomsg)
+      if (iostat==0) iomsg=""
 !
       iomsg=""
 !
