@@ -1982,6 +1982,7 @@ module EquationOfState
     call copy_addr(cs0,p_par(10))
     call copy_addr(cs2top,p_par(11))
 
+    call copy_addr(tt,p_par(12))
     endsubroutine pushpars2c
 !***********************************************************************
     subroutine eos_before_boundary(f)
