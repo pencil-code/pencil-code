@@ -3743,7 +3743,7 @@ $(PARTICLES_MPICOMM_OBJ): $(PARTICLES_MPICOMM_SRC)
 fftpack.o: fftpack.f90
 	$(FC) $(ALL_COMP_FLAGS) $(CONVERSION_RELAXED) $(ALLOW_ARG_MISMATCH) -o fftpack.o -c fftpack.f90
 file_io_f95.o: file_io_f95.f90
-	$(FC) $(ALL_COMP_FLAGS) $(FSTD_95) -o file_io_f95.o -c file_io_f95.f90
+	$(FC) $(ALL_COMP_FLAGS) $(FSTD) -o file_io_f95.o -c file_io_f95.f90
 special.o: special.f90
 	$(FC) $(ALL_COMP_FLAGS) $(FSTD) $(ALLOW_ARG_MISMATCH) -o special.o -c special.f90
 #
