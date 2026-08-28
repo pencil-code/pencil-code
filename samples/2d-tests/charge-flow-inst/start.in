@@ -1,0 +1,26 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Initialisation parameters for a kinematic dynamo run
+!
+&init_pars
+  cvsid="b560ac25c"
+/
+&eos_init_pars
+  gamma=1., cs0=0.577350269189625764509148780501958e0
+/
+&hydro_init_pars
+  inituu='gaussian-noise', ampluu=4e-6
+/
+&density_init_pars
+/
+&magnetic_init_pars
+  initaa='gaussian-noise', amplaa=4e-6
+/
+&special_init_pars
+  initspecial='mu5const-muSsin', amplmu5=0, amplmuS=80., kx_mu5=5.,kx_muS=5.
+  ! initspecial='const', mu5_const=0., muS_const=80.,
+  ! initspecial='power_randomphase'
+  ! amplmu5=4.72, initpower_mu5=-2., cutoff_mu5=0., amplmuS=amplmu5, initpower_muS=initpower_mu5, cutoff_muS=cutoff_mu5
+  lmuS=.true.,lCVE = .false.
+
+/

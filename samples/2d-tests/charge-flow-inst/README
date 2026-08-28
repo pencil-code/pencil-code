@@ -1,0 +1,34 @@
+Directory:
+    ${PENCIL_HOME}/samples/2d-tests/chiral_dynamo
+SVN Id:
+    $Id$
+Maintainer:
+    Jennifer Schober <schober[dot]jen/gmail[dot]com>
+Added:
+    28-Jul-2020
+Status:
+    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+Recommended resolution:
+    32x32x1 for nu=eta=1e-2 is fine.
+Comments:
+    This is a chiral MHD run with an initial seed magnetic field
+    and an initial chiral asymmetry (mu5). 
+    The nonzero mu5 leads to an instability in the magnetic field,
+    that has a maximum growth rate of eta*mu5^2/4 rate which is attained
+    on the wavenumber k=mu5/2. Therefore, to have this chiral dynamo 
+    instability within the box, the initial value of mu5 should be 
+    between 1 and approximately less than 16 (for a resolution of 32). 
+References:
+    Brandenburg, A.; Schober, J.; Rogachevskii, I.;Kahniashvili, T.; 
+    Boyarsky, A.; Fröhlich, J.; Ruchayskiy, O.; Kleeorin, N.: 2017, 
+    ``The Turbulent Chiral Magnetic Cascade in the Early Universe'', 
+    The Astrophysical Journal Letters, Volume 845, Issue 2, article id. 
+    L21
+    Schober, J.; Rogachevskii, I.; Brandenburg, A.; Boyarsky, A.; 
+    Fröhlich, J.; Ruchayskiy, O.; Kleeorin, N.: 2018, ``Laminar and 
+    Turbulent Dynamos in Chiral Magnetohydrodynamics. II. Simulations'',
+    The Astrophysical Journal, Volume 858, Issue 2, article id. 124
+    Schober, J.; Brandenburg, A.; Rogachevskii, I.: 2020, ``Chiral 
+    fermion asymmetry in high-energy plasma simulations'', Geophysical 
+    & Astrophysical Fluid Dynamics, Volume 114, Issue 1-2, p.106-129
+

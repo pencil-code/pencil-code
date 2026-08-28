@@ -2487,6 +2487,13 @@ samples/2d-tests/cellular-flame/src/cparam.local -text
 samples/2d-tests/cellular-flame/start.in -text
 samples/2d-tests/cellular-flame/tran.dat -text
 samples/2d-tests/cellular-flame/video.in -text
+samples/2d-tests/charge-flow-inst/Makefile.local -text
+samples/2d-tests/charge-flow-inst/README -text
+samples/2d-tests/charge-flow-inst/cparam.local -text
+samples/2d-tests/charge-flow-inst/print.in -text
+samples/2d-tests/charge-flow-inst/reference.out -text
+samples/2d-tests/charge-flow-inst/run.in -text
+samples/2d-tests/charge-flow-inst/start.in -text
 samples/2d-tests/chemistry_GrayScott/NEVERLOCK -text
 samples/2d-tests/chemistry_GrayScott/README -text
 samples/2d-tests/chemistry_GrayScott/chemistry_m.dat -text

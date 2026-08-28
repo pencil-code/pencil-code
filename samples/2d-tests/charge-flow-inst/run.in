@@ -1,0 +1,42 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  run parameters for kinematic dynamo run with Glen Roberts flow
+!
+! nt: total no. of time steps
+! it1: no. of time steps per entry in timeseries and stdout 
+! isave: update current snapshot ‘var.dat’ every isave time steps.
+! tmax: max time to run
+! dsnap: save permanent snapshot every dsnap time units to files ‘VARN ’
+! dspec: The power spectra is calculated every dspec time units
+&run_pars
+  cvsid="b560ac25c"
+  nt=200, it1=10, isave=1600, itorder=3
+  dsnap=12.0, dvid=1000
+  random_gen='nr_f90'
+  cdt=0.4
+  dspec=0.1, ou_spec=T, ab_spec=T, ub_spec=T, jb_spec = T
+  lpencil_check_small=T
+  ! lpencil_check=T
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+/
+&magnetic_run_pars
+  B_ext=1.e-2, 0., 0.
+  eta=5e-2
+/
+&special_run_pars
+  lambda5=1000,
+  diffmu5_hyper2 = 4.8e-5, diffmuS_hyper2=4.8e-5,
+  ldiffmu5_hyper2_simplified = .true., ldiffmuS_hyper2_simplified=.true.,
+  coef_muS=0, coef_mu5=0, Cflow=26.8, cdtchiral=0.4
+  Cw=0, gammaf5 = 0, muSdrag=0, lmuSdivu_term=.true., lcme = 0
+/
+&viscosity_run_pars
+  nu=5e-2
+/
+&power_spectrum_run_pars
+/

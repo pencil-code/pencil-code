@@ -707,3 +707,14 @@ doc/readthedocs/pencil-docker/.env
 !samples/1d-tests/Schwinger-MHD/idl/.run_directories.log
 !samples/1d-tests/Schwinger-MHD/idl/pc_build_tmp_*
 !samples/1d-tests/Schwinger-MHD/idl/.pc_build_history
+!samples/2d-tests/charge-flow-inst/.DS_Store
+!samples/2d-tests/charge-flow-inst/*.directory
+!samples/2d-tests/charge-flow-inst/*.pyc
+!samples/2d-tests/charge-flow-inst/*~
+!samples/2d-tests/charge-flow-inst/.*.swp
+!samples/2d-tests/charge-flow-inst/host-ID
+!samples/2d-tests/charge-flow-inst/revision.txt
+!samples/2d-tests/charge-flow-inst/*-eps-converted-to.pdf
+!samples/2d-tests/charge-flow-inst/.run_directories.log
+!samples/2d-tests/charge-flow-inst/pc_build_tmp_*
+!samples/2d-tests/charge-flow-inst/.pc_build_history
