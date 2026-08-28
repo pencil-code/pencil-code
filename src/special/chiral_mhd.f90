@@ -112,9 +112,9 @@ module Special
    real, dimension (nx,3,3) :: aijtest
    real, pointer :: eta
    real :: cdtchiral=0.4
-   real, dimension (nx) :: dt1_lambda5, dt1_D5, dt1_gammaf5
-   real, dimension (nx) :: dt1_CMW, dt1_Dmu, dt1_vmu, dt1_special
-   real, dimension (nx) :: dt1_CVE1, dt1_CVE2, dt1_Cflow1, dt1_Cflow2
+   real, dimension (nx) :: dt1_lambda5=impossible, dt1_D5=impossible, dt1_gammaf5=impossible
+   real, dimension (nx) :: dt1_CMW=impossible, dt1_Dmu=impossible, dt1_vmu=impossible, dt1_special=impossible
+   real, dimension (nx) :: dt1_CVE1=impossible, dt1_CVE2=impossible, dt1_Cflow1=impossible, dt1_Cflow2=impossible
    integer :: imu5, imuS
    logical :: lmuS=.false., lCVE=.false.
    logical :: ldiffmu5_hyper2_simplified=.false.
@@ -699,8 +699,9 @@ module Special
         if (lmuS) then
           dt1_special = max(dt1_lambda5, dt1_D5, &
                             dt1_gammaf5, dt1_vmu, &
-                            dt1_CVE1, dt1_CVE2, &
-                            dt1_CMW, dt1_Dmu, dt1_Cflow2, dt1_Cflow1)/cdtchiral
+                            dt1_CMW, dt1_Dmu, dt1_Cflow2, dt1_Cflow1)
+          if(lCVE) dt1_special = max(dt1_special,dt1_CVE1,dt1_CVE2)
+          dt1_special = dt1_special/cdtchiral
         else
           dt1_special = max(dt1_lambda5, dt1_D5, dt1_gammaf5, dt1_vmu)/cdtchiral
         endif
