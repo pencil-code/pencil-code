@@ -289,6 +289,15 @@ const Field3 F_GLOBAL_EXT_AVEC = {F_GLOBAL_EXT_AX, F_GLOBAL_EXT_AY, F_GLOBAL_EXT
 Field3 F_VVEC
 Field3 F_FVEC
 field_order(AC_iecr__mod__cdata-1) Field F_ECR
+field_order(AC_ifcr__mod__cdata == 0 ? -1 : AC_ifcr__mod__cdata+0-1) Field F_FCR_X
+field_order(AC_ifcr__mod__cdata == 0 ? -1 : AC_ifcr__mod__cdata+1-1) Field F_FCR_Y
+field_order(AC_ifcr__mod__cdata == 0 ? -1 : AC_ifcr__mod__cdata+2-1) Field F_FCR_Z
+
+const Field3 F_FCRVEC = {
+	F_FCR_X,
+	F_FCR_Y,
+	F_FCR_Z
+}
 
 field_order(AC_ixx_chiral__mod__chiral-1) Field F_XX_CHIRAL
 field_order(AC_iyy_chiral__mod__chiral-1) Field F_YY_CHIRAL

@@ -66,6 +66,8 @@ if(lchemistry)
 }
 real DF_CHEMISTRY_REACTIONS[nchemspec]
 real DF_ECR = rk_intermediate_split_first(F_ECR,step_num)
+real3 DF_FCRVEC = rk_intermediate_split_first(F_FCRVEC,step_num)
+#define DF_IFCRX__MOD__CDATA DF_FCRVEC
 real DF_XX_CHIRAL = rk_intermediate_split_first(F_XX_CHIRAL,step_num)
 real DF_YY_CHIRAL = rk_intermediate_split_first(F_YY_CHIRAL,step_num)
 real DF_ZZ_CHIRAL = rk_intermediate_split_first(F_ZZ_CHIRAL,step_num)

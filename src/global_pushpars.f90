@@ -486,6 +486,7 @@ contains
     call copy_addr(dlna,p_par(1431)) 
     call copy_addr(lsld_every_step,p_par(1432)) ! bool
 
+    call copy_addr(ifcrx,p_par(1433)) ! int
   endsubroutine pushpars2c
 !***********************************************************************
 endmodule Global_pushpars

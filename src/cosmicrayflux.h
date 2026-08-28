@@ -9,4 +9,5 @@
 
   public :: pencil_criteria_cosmicrayflux, pencil_interdep_cosmicrayflux
   public :: calc_pencils_cosmicrayflux
+  public :: pushpars2c
 

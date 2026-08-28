@@ -356,4 +356,28 @@ module Cosmicrayflux
       enddo
     endsubroutine rprint_cosmicrayflux
 !*******************************************************************************
+    subroutine pushpars2c(p_par)
+
+    use Syscalls, only: copy_addr
+    use General , only: string_to_enum
+
+    integer, parameter :: n_pars=100
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr(kpara_t,p_par(1))
+    call copy_addr(kperp_t,p_par(2))
+    call copy_addr(tau,p_par(3))
+    call copy_addr(tau1,p_par(4))
+    call copy_addr(subgrid_c1,p_par(5))
+    call copy_addr(subgrid_c2,p_par(6))
+    call copy_addr(subgrid_brms,p_par(7))
+    call copy_addr(subgrid_s,p_par(8))
+    call copy_addr(subgrid_k,p_par(9))
+    call copy_addr(ratio_kpara_kperp,p_par(10))
+    call copy_addr(lsubgrid_cr,p_par(11)) ! bool
+    call copy_addr(lcosmicrayflux_diffus_dt,p_par(12)) ! bool
+    call copy_addr(ladvect_fcr,p_par(13)) ! bool
+    call copy_addr(lupw_fcr,p_par(14)) ! bool
+    endsubroutine pushpars2c
+!***********************************************************************
 endmodule Cosmicrayflux

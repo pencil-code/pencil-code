@@ -80,6 +80,7 @@ fixed_boundary Kernel twopass_solve_final(PC_SUB_STEP_NUMBER step_num, real dt)
   	        if (AC_izz_chiral__mod__chiral != 0) write(F_ZZ_CHIRAL,rk_final(F_ZZ_CHIRAL,step_num,dt))
 #endif
 	        if (AC_iecr__mod__cdata != 0) write(F_ECR,rk_final(F_ECR,step_num,dt))
+	        if (AC_ifcr__mod__cdata != 0) write(F_FCRVEC,rk_final(F_FCRVEC,step_num,dt))
 	        if(lchemistry)
 	        {
 	        	for i in 0:nchemspec
