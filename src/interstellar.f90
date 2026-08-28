@@ -2946,7 +2946,9 @@ module Interstellar
               indrhomax=maxloc(rhotot(nzgrid:1:-1),dim=1); rhomax=rhotot(indrhomax)
             endif
             mpizspan(1)=zgrid(indrhomax)
-            if (lh_SNII_adjust) mpizspan(2) = rhomax*dz_1(indrhomax)/(Lxyz(1)*Lxyz(2))
+            !TP: Fixed this Aug-28-2026. Noted it down in case one cannot reproduce old results
+            !if (lh_SNII_adjust) mpizspan(2) = rhomax*dz1(indrhomax)/(Lxyz(1)*Lxyz(2))
+            if (lh_SNII_adjust) mpizspan(2) = rhomax*dz1grid(indrhomax)/(Lxyz(1)*Lxyz(2))
           endif
         endif
         call mpibcast_real(mpizspan,2)
