@@ -4279,7 +4279,7 @@ bc_ism(AcBoundary boundary,AC_TOP_BOT topbot,Field j)
   }
   density_scale1=1./density_scale
   if(topbot == AC_bot) {
-    if (j==AC_irho__mod__cdata  ||  j==AC_ilnrho__mod__cdata) {
+    if (j==AC_irho__mod__cdata-1  ||  j==AC_ilnrho__mod__cdata-1) {
       if (AC_ldensity_nolog__mod__cdata) {
         j[vertexIdx.x][vertexIdx.y][1-1]=j[vertexIdx.x][vertexIdx.y][n1-1]*exp(-(AC_z__mod__cdata[n1-1]-AC_z__mod__cdata[1-1])*density_scale1)
       }
@@ -4287,7 +4287,7 @@ bc_ism(AcBoundary boundary,AC_TOP_BOT topbot,Field j)
         j[vertexIdx.x][vertexIdx.y][1-1]=j[vertexIdx.x][vertexIdx.y][n1-1] - (AC_z__mod__cdata[n1-1]-AC_z__mod__cdata[1-1])*density_scale1
       }
     }
-    else if (j==AC_iss__mod__cdata)   {
+    else if (j==AC_iss__mod__cdata-1)   {
       if (AC_ldensity_nolog__mod__cdata) {
         j[vertexIdx.x][vertexIdx.y][n1-1-1]=j[vertexIdx.x][vertexIdx.y][n1-1]+(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(log(RHO[vertexIdx.x][vertexIdx.y][n1-1])-log(RHO[vertexIdx.x][vertexIdx.y][n1-1-1])) +  AC_cv__mod__equationofstate*log((AC_z__mod__cdata[n1-1]-AC_z__mod__cdata[n1-1-1])*density_scale+1.)
       }
@@ -4297,7 +4297,7 @@ bc_ism(AcBoundary boundary,AC_TOP_BOT topbot,Field j)
     }
     else {
     }
-    if (j==AC_irho__mod__cdata  ||  j==AC_ilnrho__mod__cdata) {
+    if (j==AC_irho__mod__cdata-1  ||  j==AC_ilnrho__mod__cdata-1) {
       if (AC_ldensity_nolog__mod__cdata) {
         j[vertexIdx.x][vertexIdx.y][2-1]=j[vertexIdx.x][vertexIdx.y][n1-1]*exp(-(AC_z__mod__cdata[n1-1]-AC_z__mod__cdata[2-1])*density_scale1)
       }
@@ -4305,7 +4305,7 @@ bc_ism(AcBoundary boundary,AC_TOP_BOT topbot,Field j)
         j[vertexIdx.x][vertexIdx.y][2-1]=j[vertexIdx.x][vertexIdx.y][n1-1] - (AC_z__mod__cdata[n1-1]-AC_z__mod__cdata[2-1])*density_scale1
       }
     }
-    else if (j==AC_iss__mod__cdata)   {
+    else if (j==AC_iss__mod__cdata-1)   {
       if (AC_ldensity_nolog__mod__cdata) {
         j[vertexIdx.x][vertexIdx.y][n1-2-1]=j[vertexIdx.x][vertexIdx.y][n1-1]+(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(log(RHO[vertexIdx.x][vertexIdx.y][n1-1])-log(RHO[vertexIdx.x][vertexIdx.y][n1-2-1])) +  AC_cv__mod__equationofstate*log((AC_z__mod__cdata[n1-1]-AC_z__mod__cdata[n1-2-1])*density_scale+1.)
       }
@@ -4315,7 +4315,7 @@ bc_ism(AcBoundary boundary,AC_TOP_BOT topbot,Field j)
     }
     else {
     }
-    if (j==AC_irho__mod__cdata  ||  j==AC_ilnrho__mod__cdata) {
+    if (j==AC_irho__mod__cdata-1  ||  j==AC_ilnrho__mod__cdata-1) {
       if (AC_ldensity_nolog__mod__cdata) {
         j[vertexIdx.x][vertexIdx.y][3-1]=j[vertexIdx.x][vertexIdx.y][n1-1]*exp(-(AC_z__mod__cdata[n1-1]-AC_z__mod__cdata[3-1])*density_scale1)
       }
@@ -4323,7 +4323,7 @@ bc_ism(AcBoundary boundary,AC_TOP_BOT topbot,Field j)
         j[vertexIdx.x][vertexIdx.y][3-1]=j[vertexIdx.x][vertexIdx.y][n1-1] - (AC_z__mod__cdata[n1-1]-AC_z__mod__cdata[3-1])*density_scale1
       }
     }
-    else if (j==AC_iss__mod__cdata)   {
+    else if (j==AC_iss__mod__cdata-1)   {
       if (AC_ldensity_nolog__mod__cdata) {
         j[vertexIdx.x][vertexIdx.y][n1-3-1]=j[vertexIdx.x][vertexIdx.y][n1-1]+(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(log(RHO[vertexIdx.x][vertexIdx.y][n1-1])-log(RHO[vertexIdx.x][vertexIdx.y][n1-3-1])) +  AC_cv__mod__equationofstate*log((AC_z__mod__cdata[n1-1]-AC_z__mod__cdata[n1-3-1])*density_scale+1.)
       }
@@ -4335,7 +4335,7 @@ bc_ism(AcBoundary boundary,AC_TOP_BOT topbot,Field j)
     }
   }
   else if(topbot == AC_top)   {
-    if (j==AC_irho__mod__cdata  ||  j==AC_ilnrho__mod__cdata) {
+    if (j==AC_irho__mod__cdata-1  ||  j==AC_ilnrho__mod__cdata-1) {
       if (AC_ldensity_nolog__mod__cdata) {
         j[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1]=j[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]*exp(-(AC_z__mod__cdata[1+AC_n2__mod__cdata-1]-AC_z__mod__cdata[AC_n2__mod__cdata-1])*density_scale1)
       }
@@ -4343,7 +4343,7 @@ bc_ism(AcBoundary boundary,AC_TOP_BOT topbot,Field j)
         j[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1]=j[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1] - (AC_z__mod__cdata[1+AC_n2__mod__cdata-1]-AC_z__mod__cdata[AC_n2__mod__cdata-1])*density_scale1
       }
     }
-    else if (j==AC_iss__mod__cdata)   {
+    else if (j==AC_iss__mod__cdata-1)   {
       if (AC_ldensity_nolog__mod__cdata) {
         j[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1]=j[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]+(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(log(RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1])-log(RHO[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1]))+  AC_cv__mod__equationofstate*log((AC_z__mod__cdata[1+AC_n2__mod__cdata-1]-AC_z__mod__cdata[AC_n2__mod__cdata-1])*density_scale+1.)
       }
@@ -4353,7 +4353,7 @@ bc_ism(AcBoundary boundary,AC_TOP_BOT topbot,Field j)
     }
     else {
     }
-    if (j==AC_irho__mod__cdata  ||  j==AC_ilnrho__mod__cdata) {
+    if (j==AC_irho__mod__cdata-1  ||  j==AC_ilnrho__mod__cdata-1) {
       if (AC_ldensity_nolog__mod__cdata) {
         j[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1]=j[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]*exp(-(AC_z__mod__cdata[2+AC_n2__mod__cdata-1]-AC_z__mod__cdata[AC_n2__mod__cdata-1])*density_scale1)
       }
@@ -4361,7 +4361,7 @@ bc_ism(AcBoundary boundary,AC_TOP_BOT topbot,Field j)
         j[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1]=j[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1] - (AC_z__mod__cdata[2+AC_n2__mod__cdata-1]-AC_z__mod__cdata[AC_n2__mod__cdata-1])*density_scale1
       }
     }
-    else if (j==AC_iss__mod__cdata)   {
+    else if (j==AC_iss__mod__cdata-1)   {
       if (AC_ldensity_nolog__mod__cdata) {
         j[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1]=j[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]+(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(log(RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1])-log(RHO[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1]))+  AC_cv__mod__equationofstate*log((AC_z__mod__cdata[2+AC_n2__mod__cdata-1]-AC_z__mod__cdata[AC_n2__mod__cdata-1])*density_scale+1.)
       }
@@ -4371,7 +4371,7 @@ bc_ism(AcBoundary boundary,AC_TOP_BOT topbot,Field j)
     }
     else {
     }
-    if (j==AC_irho__mod__cdata  ||  j==AC_ilnrho__mod__cdata) {
+    if (j==AC_irho__mod__cdata-1  ||  j==AC_ilnrho__mod__cdata-1) {
       if (AC_ldensity_nolog__mod__cdata) {
         j[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1]=j[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]*exp(-(AC_z__mod__cdata[3+AC_n2__mod__cdata-1]-AC_z__mod__cdata[AC_n2__mod__cdata-1])*density_scale1)
       }
@@ -4379,7 +4379,7 @@ bc_ism(AcBoundary boundary,AC_TOP_BOT topbot,Field j)
         j[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1]=j[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1] - (AC_z__mod__cdata[3+AC_n2__mod__cdata-1]-AC_z__mod__cdata[AC_n2__mod__cdata-1])*density_scale1
       }
     }
-    else if (j==AC_iss__mod__cdata)   {
+    else if (j==AC_iss__mod__cdata-1)   {
       if (AC_ldensity_nolog__mod__cdata) {
         j[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1]=j[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]+(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(log(RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1])-log(RHO[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1]))+  AC_cv__mod__equationofstate*log((AC_z__mod__cdata[3+AC_n2__mod__cdata-1]-AC_z__mod__cdata[AC_n2__mod__cdata-1])*density_scale+1.)
       }

@@ -5,10 +5,22 @@ if(lshear)
   if(!AC_lshearadvection_as_shift__mod__shear)
   {
         const real uy0 = AC_uy0__mod__shear[vertexIdx.x-AC_nmin.x]
-	DF_UU  -= uy0*dery(UU)
-	DF_AA  -= uy0*dery(AA)
-	DF_SS  -= uy0*dery(SS)
-	DF_RHO -= uy0*dery(RHO)
+	if(AC_iuu__mod__cdata != 0)
+	{
+	  DF_UU  -= uy0*dery(UU)
+	}
+	if(AC_iaa__mod__cdata != 0)
+	{
+	  DF_AA  -= uy0*dery(AA)
+	}
+	if(AC_iss__mod__cdata != 0)
+	{
+	  DF_SS  -= uy0*dery(SS)
+	}
+	if(AC_ilnrho__mod__cdata + AC_irho__mod__cdata != 0)
+	{
+	  DF_RHO -= uy0*dery(RHO)
+	}
 	#if LDUSTDENSITY
 	for k in 0:ndustspec
 	{
@@ -16,6 +28,14 @@ if(lshear)
 	      DF_DUST_DENSITY[k]   -= uy0*dery(F_DUST_DENSITY[k])
 	}
 	#endif
+	if(AC_iecr__mod__cdata != 0)
+	{
+	  DF_ECR    -=uy0*dery(F_ECR)
+	}
+	if(AC_ifcr__mod__cdata != 0)
+	{
+	  DF_FCRVEC -=uy0*dery(F_FCRVEC)
+	}
   }
   if (lhydro && AC_lshear_acceleration__mod__shear) DF_UU.y  -= AC_sshear1__mod__shear * UU.x
   if(AC_lhyper3x_mesh__mod__shear)
