@@ -187,8 +187,8 @@ contains
     call copy_addr(ldebug,p_par(300)) ! bool
     call copy_addr(lmorton_curve,p_par(338)) ! bool
     call copy_addr(itorder,p_par(343)) ! int
-    call copy_addr(dtinc,p_par(344))
-    call copy_addr(dtdec,p_par(345))
+    call copy_addr(dtinc,p_par(344)) ! real dconst
+    call copy_addr(dtdec,p_par(345)) ! real dconst
     call copy_addr(maux_vtxbuf_index,p_par(346)) ! int (mfarray)
     call copy_addr(num_substeps,p_par(347)) ! int
     
