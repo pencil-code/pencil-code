@@ -76,7 +76,7 @@ module Special
   contains
 !
 !***********************************************************************
-    subroutine register_special()
+    subroutine register_special
 !
 !  Configure pre-initialised (i.e. before parameter read) variables
 !  which should be know to be able to evaluate
@@ -109,18 +109,15 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: ierr
 !
+      if (.not.(lhydro.or.lhydro_kinematic)) &
+        call fatal_error('dspecial_dt','need hydro or hydro_kinematic for advective gauge')
+!
 !  Initialize module variables which are parameter dependent
 !  wave speed of gauge potential
 !
       if (lrun) then
-        call get_shared_variable('lweyl_gauge',lweyl_gauge,ierr)
-        if (ierr/=0) &
-            call fatal_error("initialize_special: ", "cannot get lweyl_gauge")
-        if (.not.lweyl_gauge) then
-          call get_shared_variable('eta',eta,ierr)
-          if (ierr/=0) &
-              call fatal_error("initialize_special: ", "cannot get shared eta")
-        endif
+        call get_shared_variable('lweyl_gauge',lweyl_gauge,caller='initialize_special')
+        if (.not.lweyl_gauge) call get_shared_variable('eta',eta)
       endif
 !
       call keep_compiler_quiet(f)
@@ -140,8 +137,6 @@ module Special
 !
       intent(inout) :: f
 !
-!  SAMPLE IMPLEMENTATION
-!
       select case (init)
         case ('nothing'); if (lroot) print*,'init_special: nothing'
         case ('zero'); f(:,:,:,iLamRA)=0.
@@ -150,18 +145,17 @@ module Special
         case ('sinwave-z'); call sinwave(ampl,f,iLamRA,kz=kz)
 !
         case default
-          !
-          !  Catch unknown values
-          !
-          if (lroot) print*,'init_special: No such value for init: ', trim(init)
-          call stop_it("")
+!
+!  Catch unknown values
+!
+          call stop_it('init_special: No such init: '//trim(init))
       endselect
 !
       call keep_compiler_quiet(f)
 !
     endsubroutine init_special
 !***********************************************************************
-    subroutine pencil_criteria_special()
+    subroutine pencil_criteria_special
 !
 !  All pencils that this special module depends on are specified here.
 !
@@ -216,11 +210,7 @@ module Special
 !
       call grad(f,iLamRA,p%gLamRA)
       if (lhydro.or.lhydro_kinematic) then
-        if (ladvecto_resistive) then
-          call del2(f,iLamRA,del2LamRA)
-        endif
-      else
-        call fatal_error('calc_pencils_special','need hydro or hydro_kinematic for advective gauge')
+        if (ladvecto_resistive) call del2(f,iLamRA,del2LamRA)
       endif
 !
     endsubroutine calc_pencils_special
@@ -229,7 +219,6 @@ module Special
 !
 !   11-mar-26/TP: carved from dspecial_dt
 !
-
       use Diagnostics
       use Sub
 
@@ -258,15 +247,15 @@ module Special
         if (idiag_jxarms/=0) then
           call cross(p%jj,p%aa,jxa)
           call dot2(jxa,jxa2)
-          if (idiag_jxarms/=0) call sum_mn_name(jxa2,idiag_jxarms,lsqrt=.true.)
+          call sum_mn_name(jxa2,idiag_jxarms,lsqrt=.true.)
         endif
 !
 !  (JxA^ar)_rms
 !
-        if (idiag_jxarms/=0) then
+        if (idiag_jxaprms/=0) then
           call cross(p%jj,p%aa+p%gLamRA,jxa)
           call dot2(jxa,jxa2)
-          if (idiag_jxaprms/=0) call sum_mn_name(jxa2,idiag_jxaprms,lsqrt=.true.)
+          call sum_mn_name(jxa2,idiag_jxaprms,lsqrt=.true.)
         endif
 !
 !  (JxgLamRA)_rms
@@ -274,14 +263,14 @@ module Special
         if (idiag_jxgLamRArms/=0) then
           call cross(p%jj,p%gLamRA,jxa)
           call dot2(jxa,jxa2)
-          if (idiag_jxgLamRArms/=0) call sum_mn_name(jxa2,idiag_jxgLamRArms,lsqrt=.true.)
+          call sum_mn_name(jxa2,idiag_jxgLamRArms,lsqrt=.true.)
         endif
 !
 !  (gLamRA)_rms
 !
-        if (idiag_jxgLamRArms/=0) then
+        if (idiag_gLamRArms/=0) then
           call dot2(p%gLamRA,jxa2)
-          if (idiag_gLamRArms/=0) call sum_mn_name(jxa2,idiag_gLamRArms,lsqrt=.true.)
+          call sum_mn_name(jxa2,idiag_gLamRArms,lsqrt=.true.)
         endif
 !
 !  [(divA^r)*B]_rms
@@ -289,7 +278,7 @@ module Special
         if (idiag_divabrms/=0) then
           call multsv(p%diva,p%bb,divab)
           call dot2(divab,divab2)
-          if (idiag_divabrms/=0) call sum_mn_name(divab2,idiag_divabrms,lsqrt=.true.)
+          call sum_mn_name(divab2,idiag_divabrms,lsqrt=.true.)
         endif
 !
 !  [(divA^ar)*B]_rms
@@ -297,7 +286,7 @@ module Special
         if (idiag_divapbrms/=0) then
           call multsv(p%diva+del2LamRA,p%bb,divab)
           call dot2(divab,divab2)
-          if (idiag_divapbrms/=0) call sum_mn_name(divab2,idiag_divapbrms,lsqrt=.true.)
+          call sum_mn_name(divab2,idiag_divapbrms,lsqrt=.true.)
         endif
 !
 !  (del2LamRA*B)_rms
@@ -305,14 +294,12 @@ module Special
         if (idiag_d2LamRAbrms/=0) then
           call multsv(del2LamRA,p%bb,divab)
           call dot2(divab,divab2)
-          if (idiag_d2LamRAbrms/=0) call sum_mn_name(divab2,idiag_d2LamRAbrms,lsqrt=.true.)
+          call sum_mn_name(divab2,idiag_d2LamRAbrms,lsqrt=.true.)
         endif
 !
 !  (del2LamRA)_rms
 !
-        if (idiag_d2LamRArms/=0) then
-          if (idiag_d2LamRArms/=0) call sum_mn_name(del2LamRA**2,idiag_d2LamRArms,lsqrt=.true.)
-        endif
+        if (idiag_d2LamRArms/=0) call sum_mn_name(del2LamRA**2,idiag_d2LamRArms,lsqrt=.true.)
 !
 !  check for point 1
 !
@@ -329,7 +316,7 @@ module Special
       endif
 !
       if (l1davgfirst .or. (ldiagnos .and. ldiagnos_need_zaverages)) then
-        if (idiag_LamRAbzmz/=0)   call xysum_mn_name_z(p%bb(:,3),idiag_LamRAbzmz)
+        if (idiag_LamRAbzmz/=0) call xysum_mn_name_z(p%bb(:,3),idiag_LamRAbzmz)
       endif
 
     endsubroutine calc_diagnostics_special
@@ -387,8 +374,6 @@ module Special
         else
           df(l1:l2,m,n,iLamRA)=df(l1:l2,m,n,iLamRA)-ugLamRA-ua-eta*p%diva
         endif
-      else
-        call fatal_error('dspecial_dt','need hydro or hydro_kinematic for advective gauge')
       endif
 !
 !  Possibility of vector potential in advective gauge as auxiliary output.
@@ -552,21 +537,13 @@ module Special
 
     use Syscalls, only: copy_addr
 
-    integer, parameter :: n_pars=100
+    integer, parameter :: n_pars=10
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(ladvecto_resistive,p_par(1)) ! bool
     call copy_addr(laa_adv_as_aux,p_par(2)) ! bool
     call copy_addr(ilamra,p_par(3)) ! int
-    call copy_addr(idiag_glamrabm,p_par(4)) ! int
-    call copy_addr(idiag_apbrms,p_par(5)) ! int
-    call copy_addr(idiag_jxarms,p_par(6)) ! int
-    call copy_addr(idiag_jxglamrarms,p_par(7)) ! int
-    call copy_addr(idiag_divabrms,p_par(8)) ! int
-    call copy_addr(idiag_divapbrms,p_par(9)) ! int
-    call copy_addr(idiag_d2lamrabrms,p_par(10)) ! int
-    call copy_addr(idiag_aabm,p_par(11)) ! int
-    call copy_addr(iaadv,p_par(12)) ! int
+    call copy_addr(iaadv,p_par(4)) ! int
 
     endsubroutine pushpars2c
 !***********************************************************************

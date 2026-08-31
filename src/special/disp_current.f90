@@ -14,7 +14,7 @@
 ! MVAR CONTRIBUTION 4
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED e2; edot2; el(3); a0; ga0(3); del2ee(3); curlE(3); BcurlE; BcurlB
+! PENCILS PROVIDED e2; edot2; el(3); a0; ga0(3); del2ee(3); curlE(3)
 ! PENCILS PROVIDED udotE;
 ! PENCILS PROVIDED ExB(3);
 ! PENCILS PROVIDED rhoe, divJ, divE, gGamma(3); sigE, sigB; eb; count_eb0
@@ -365,7 +365,7 @@ module Special
           replace_Schwinger_by_Arnold=='interpol_from_lna1_to_lna2') then
         if (lna1_switch_toArnold==impossible .or. &
             lna2_switch_toArnold==impossible) then
-              call fatal_error('calc_pencils_special (disp_current)', &
+              call fatal_error('initialize_special', &
                   'both lna1_switch_toArnold and lna2_switch_toArnold must be given')
         endif
       endif
@@ -603,10 +603,7 @@ module Special
       ! if (eta_ee/=0.) lpenc_requested(i_del2ee)=.true.
       ! if (eta_ee/=0.) lpenc_requested(i_del2ee)=.true.
 
-      if (idiag_BcurlEm/=0) then
-        lpenc_diagnos(i_curlE)=.true.
-        lpenc_diagnos(i_BcurlE)=.true.
-      endif
+      if (idiag_BcurlEm/=0) lpenc_diagnos(i_curlE)=.true.
 !
       if (idiag_BcurlBm/=0) then
         lpenc_diagnos(i_bb)=.true.
@@ -710,9 +707,7 @@ module Special
 !
 !  eb pencil
 !
-      if (lpenc_requested(i_eb)) then
-        call dot(p%el,p%bb,p%eb)
-      endif
+      if (lpenc_requested(i_eb)) call dot(p%el,p%bb,p%eb)
 !
 !  Compute fully non-collinear expression for the current density.
 !  This is for the *spatially dependent* sigE and sigB.
@@ -951,16 +946,11 @@ module Special
 !
 !  curle
 !
-      if (idiag_BcurlEm/=0) then
-        call curl(f,iex,p%curle)
-        call dot(p%bb,p%curle,p%BcurlE)
-      endif
+      if (lpencil(i_curlE)) call curl(f,iex,p%curlE)
 !
 !  curlb
 !
-      if (idiag_BcurlBm/=0) then
-        call dot(p%bb,p%curlb,p%BcurlB)
-      endif
+!!! no implementation for p%curlb if lmagnetic=.false., also no for p%bb
 ! !
 ! !  del2ee
 ! !
@@ -1570,8 +1560,14 @@ module Special
       if (idiag_gam_EBrms/=0) call sum_mn_name(p%gam_EB**2,idiag_gam_EBrms,lsqrt=.true.)
       if (idiag_boostprms/=0) call sum_mn_name(p%boost**2 ,idiag_boostprms,lsqrt=.true.)
       if (idiag_a0rms/=0) call sum_mn_name(p%a0**2,idiag_a0rms,lsqrt=.true.)
-      call sum_mn_name(p%BcurlE,idiag_BcurlEm)
-      call sum_mn_name(p%BcurlB,idiag_BcurlBm)
+      if (idiag_BcurlEm/=0) then
+        call dot(p%bb,p%curlE,tmp)
+        call sum_mn_name(tmp,idiag_BcurlEm)
+      endif
+      if (idiag_BcurlBm/=0) then
+        call dot(p%bb,p%curlb,tmp)
+        call sum_mn_name(tmp,idiag_BcurlBm)
+      endif
   !   if (lsolve_chargedensity) then
       call sum_mn_name(p%rhoe,idiag_rhoem)
       call sum_mn_name(p%count_eb0,idiag_count_eb0)
@@ -1905,9 +1901,6 @@ module Special
       call copy_addr(lmass_suppression,p_par(25)) ! bool
       call copy_addr(beta_inflation,p_par(26))
       call copy_addr(c_light2,p_par(27))
-      call copy_addr(idiag_BcurlEm,p_par(28)) ! int
-      call copy_addr(idiag_adphibm,p_par(29)) ! int
-      call copy_addr(idiag_johmrms,p_par(30)) ! int
       call copy_addr(lapply_gamma_corr,p_par(31)) ! bool
       call copy_addr(lphi_linear_regime,p_par(32)) ! bool
       call copy_addr(weight_longitudinale,p_par(33))
@@ -1940,7 +1933,6 @@ module Special
 
       call copy_addr(lcorrect_sign_adphib_term,p_par(62)) ! bool
       call copy_addr(lignore_adphib_term_in_mhd_current,p_par(63)) ! bool
-      call copy_addr(idiag_bcurlbm,p_par(64)) ! int
 
       call copy_addr(sige_arnold_prefactor,p_par(65))
       call copy_addr(lreplace_schwinger_by_arnold,p_par(66)) ! bool

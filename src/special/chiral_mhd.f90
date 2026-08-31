@@ -710,8 +710,8 @@ module Special
 !
 !  Diagnostics
 !
-!
       call calc_diagnostics_special(f,p)
+!
     endsubroutine dspecial_dt
 !***********************************************************************
     subroutine calc_diagnostics_special(f,p)
@@ -1106,19 +1106,12 @@ module Special
     call copy_addr(ldt_chiral_mhd,p_par(27)) ! bool
     call copy_addr(lupw_mu5,p_par(28)) ! bool
     call copy_addr(lupw_mus,p_par(29)) ! bool
-    call copy_addr(idiag_gmu5rms,p_par(30)) ! int
-    call copy_addr(idiag_gmusrms,p_par(31)) ! int
-    call copy_addr(idiag_bgmu5rms,p_par(32)) ! int
-    call copy_addr(idiag_bgmusrms,p_par(33)) ! int
-    call copy_addr(idiag_mu5bjm,p_par(34)) ! int
-    call copy_addr(idiag_mu5bjrms,p_par(35)) ! int
     call copy_addr(meanmu5,p_par(36)) ! (1)
-    
-    call keep_compiler_quiet(diffmuSmax)
-
     call copy_addr(cflow,p_par(37))
     call copy_addr(musdrag,p_par(38))
     call copy_addr(lcme,p_par(39))
+
+    call keep_compiler_quiet(diffmuSmax)
 
     endsubroutine pushpars2c
 !***********************************************************************

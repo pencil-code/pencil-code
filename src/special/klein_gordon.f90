@@ -2092,7 +2092,6 @@ module Special
 !  On CPUs the values are stored into global variables so computed only once,
 !  on GPUs no global variables exist so the values are recomputed at each gridpoint.
 !
-!
       use Mpicomm, only: mpi_min_keyval
       use Messages, only: fatal_error_local
       use General, only: notanumber
