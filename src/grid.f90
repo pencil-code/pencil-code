@@ -2400,6 +2400,7 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
                d2g_local = alpha*sc/delta_cells
             ! ---- RIGHT OUTER ----
             else
+               g_local = g_wd + (sa-(w+delta_cells))
                dg_local = 1.0
                d2g_local = 0.0
             endif
@@ -2422,73 +2423,25 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
     endsubroutine sus_map_1D
 !***********************************************************************
     subroutine sus_map_0D(xi,param2,g,gder1,gder2)
+      real, intent(in)                    :: xi
+      real, dimension(3), intent(in)      :: param2
+      real, intent(out)                   :: g
+      real, optional, intent(out)         :: gder1,gder2
 
-      real, intent(in)  :: xi
-      real  :: ampl,width_cells,delta_cells
-      real, intent(out) :: g
-      real, optional, intent(out) :: gder1,gder2
-      real, dimension(3) :: param2
-      real :: w, alpha
-      real :: xa, sa, sb, sc
-      real :: g_mw, g_pw, g_wd
+      real, dimension(1) :: xi_tmp
+      real, dimension(1) :: g_tmp
+      real, dimension(1) :: gder1_tmp
+      real, dimension(1) :: gder2_tmp
 
-      ampl         = param2(1) ! refinement amplitude
-      width_cells  = param2(2) ! band width (in cells)      
-      delta_cells  = param2(3) ! edge smoothness (in cells)
-      
-      w     = 0.5*width_cells
-      alpha = 1.0 - 1.0/ampl
-      xa    = xi
+      ! Scalar SUS evaluation must use exactly the same multi-region
 
-      g_mw = (-w) - alpha*delta_cells*(1.0 - 0.5)
-      g_pw = g_mw + (1.0/ampl)*(2.0*w)
-      g_wd = g_pw + (1.0/ampl)*delta_cells + alpha*delta_cells*0.5
-      
-      ! ---- LEFT OUTER ----
-      if (xa < -w - delta_cells) then
-         g = xa
-         if (present(gder1)) gder1 = 1.0
-         if (present(gder2)) gder2 = 0.0
-         
-      ! ---- LEFT TRANSITION ----
-      else if (xa < -w) then
-         sa = (xa + w + delta_cells)/delta_cells
-         g  = xa - alpha*delta_cells*(sa**3 - 0.5*sa**4)
-         if (present(gder1)) then
-            sb = 3.0*sa**2 - 2.0*sa**3
-            gder1 = 1.0 - alpha*sb
-         endif
-         if (present(gder2)) then
-            sc = 6.0*sa - 6.0*sa**2
-            gder2 = -alpha*sc/delta_cells
-         endif
-         
-      ! ---- CORE ----
-      else if (xa <= w) then
-         g = g_mw + (1.0/ampl)*(xa + w)
-         if (present(gder1)) gder1 = 1.0/ampl
-         if (present(gder2)) gder2 = 0.0
+      ! mapping as the vector evaluation.
 
-      ! ---- RIGHT TRANSITION ----
-      else if (xa <= w + delta_cells) then
-         sa = (xa - w)/delta_cells
-
-         g = g_pw + (1.0/ampl)*(xa - w) + alpha*delta_cells*(sa**3 - 0.5*sa**4)
-         if (present(gder1)) then
-            sb = 3.0*sa**2 - 2.0*sa**3
-            gder1 = 1.0/ampl + alpha*sb
-         endif
-         if (present(gder2)) then
-            sc = 6.0*sa - 6.0*sa**2
-            gder2 = alpha*sc/delta_cells
-         endif
-
-      ! ---- RIGHT OUTER ----
-      else
-         g = g_wd + (xa - (w + delta_cells))
-         if (present(gder1)) gder1 = 1.0
-         if (present(gder2)) gder2 = 0.0
-      end if
+      xi_tmp(1) = xi
+      call sus_map_1D(xi_tmp,param2,g_tmp,gder1_tmp,gder2_tmp
+      g = g_tmp(1)
+      if (present(gder1)) gder1 = gder1_tmp(1)
+      if (present(gder2)) gder2 = gder2_tmp(1)
 
     end subroutine sus_map_0D
 !***********************************************************************
