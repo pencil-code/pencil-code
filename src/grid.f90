@@ -2420,9 +2420,11 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
             endif
          enddo
       enddo
+
     endsubroutine sus_map_1D
 !***********************************************************************
     subroutine sus_map_0D(xi,param2,g,gder1,gder2)
+
       real, intent(in)                    :: xi
       real, dimension(3), intent(in)      :: param2
       real, intent(out)                   :: g
@@ -2438,7 +2440,7 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
       ! mapping as the vector evaluation.
 
       xi_tmp(1) = xi
-      call sus_map_1D(xi_tmp,param2,g_tmp,gder1_tmp,gder2_tmp
+      call sus_map_1D(xi_tmp,param2,g_tmp,gder1_tmp,gder2_tmp)
       g = g_tmp(1)
       if (present(gder1)) gder1 = gder1_tmp(1)
       if (present(gder2)) gder2 = gder2_tmp(1)
@@ -2565,15 +2567,15 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
 !
 !  Work on each direction.
 !
-      nonzero: if (n > 0) then
-        dir: do i = 1, 3
+      if (n > 0) then
+        do i = 1, 3
           if (lactive_dimension(i)) then
             call inverse_grid(i, x(:,i), xi(:,i), local=.true.)
           else
             xi(:,i) = ngp1
           endif
-        enddo dir
-      endif nonzero
+        enddo
+      endif
 !
     endsubroutine real_to_index
 !***********************************************************************
