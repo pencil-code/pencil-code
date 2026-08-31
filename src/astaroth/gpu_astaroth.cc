@@ -1687,7 +1687,11 @@ extern "C" void substepGPU(int isubstep, double t)
 #if LGRAVITATIONAL_WAVES_HTXK
     if (lsplit_gw_rhs_from_rest_on_gpu)
     {
-          acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_GW_rhs),1);
+
+	  if ((it+1) % ntimesteps_per_gw_step__mod__gravitational_waves_htxk == 0)
+	  {
+            acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_GW_rhs),1);
+	  }
     }
 #endif
   }
