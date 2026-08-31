@@ -911,7 +911,9 @@ module Snapshot
       else
         if (ldiagnos) then
           lfirstcall_powerhel=.true.
-          call powerhel(f,'mag',lfirstcall_powerhel, sumspec=sumspec, lnowrite=.true.)
+!AB: the following doesn't work in hydro:
+          !call powerhel(f,'mag',lfirstcall_powerhel, sumspec=sumspec, lnowrite=.true.)
+          call powerhel(f,'kin',lfirstcall_powerhel, sumspec=sumspec, lnowrite=.true.)
           km0EM=sumspec(1)
           km1EM=sumspec(2)
         endif
