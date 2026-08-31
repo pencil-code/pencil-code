@@ -1786,9 +1786,12 @@ module Interstellar
 !
       use Gpu, only: update_on_gpu
 
+!$    use General, only: signal_send
       real, contiguous,dimension(:,:,:,:), intent(inout) :: f
+!$    logical :: lfarray_copied_before
       !integer, save :: ind_scale=-1
 !
+!$    lfarray_copied_before = lfarray_copied
       if (lfirst) then
         if (.not.lpencil_check_at_work) call check_SN(f)
 
@@ -1803,6 +1806,10 @@ module Interstellar
           !if (lgpu) call update_on_gpu(ind_scale,'AC_heatingfunction_scale')   ! returns index ind_scale at first call!
         endif
       endif
+!$    if(.not. lfarray_copied_before .and. lfarray_copied) then
+!$      call signal_send(lhelper_perf,.false.)
+!$      lfarray_copied=.false.
+!$    endif
 
     endsubroutine interstellar_before_boundary
 !***********************************************************************

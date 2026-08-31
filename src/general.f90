@@ -7807,7 +7807,7 @@ iloop:do i=1,size(list2)
 !***********************************************************************
 !$  subroutine signal_send(lflag, lvalue)
 !
-!  Sets lflag that some thread is waiting on to lvalue and unlocks thread.
+!  Sets lflag that some thread is waiting on to lvalue and unlocks lock.
 !
 ! 14-Mar-24/TP: coded
 !
