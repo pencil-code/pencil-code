@@ -2436,7 +2436,6 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
       real, dimension(1) :: gder2_tmp
 
       ! Scalar SUS evaluation must use exactly the same multi-region
-
       ! mapping as the vector evaluation.
 
       xi_tmp(1) = xi
