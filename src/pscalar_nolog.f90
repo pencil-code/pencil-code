@@ -470,8 +470,8 @@ module Pscalar
       if (idiag_ccglnrm/=0) lpenc_diagnos(i_glnrho)=.true.
       if (idiag_ccugum/=0) lpenc_diagnos(i_ugu)=.true.
       if (idiag_gcguzm/=0) then
-       lpenc_diagnos(i_uij)=.true.
-       lpenc_diagnos(i_gcc)=.true.
+        lpenc_diagnos(i_uij)=.true.
+        lpenc_diagnos(i_gcc)=.true.
       endif
       if (idiag_cluz_uzlcm/=0) then
         lpenc_diagnos(i_del2u)=.true.
@@ -1187,7 +1187,7 @@ module Pscalar
     use Syscalls, only: copy_addr
     use Quiet
 
-    integer, parameter :: n_pars=100
+    integer, parameter :: n_pars=50
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(pscalar_diff,p_par(1))
@@ -1216,12 +1216,11 @@ module Pscalar
     call copy_addr(lnotpassive,p_par(24)) ! bool
     call copy_addr(lupw_cc,p_par(25)) ! bool
     call copy_addr(lmean_friction_cc,p_par(26)) ! bool
-    call copy_addr(idiag_gcguzm,p_par(27)) ! int
-    call copy_addr(gradc0,p_par(28)) ! real3
-    call copy_addr(spharm,p_par(29)) ! (ny) (nz)
-    call copy_addr(bunit,p_par(30)) ! (nx) (ny) (nz) (3)
-    call copy_addr(hhh,p_par(31)) ! (nx) (ny) (nz) (3)
-    call copy_addr(cc_xyaver,p_par(32)) ! (mz) (npscalar)
+    call copy_addr(gradc0,p_par(27)) ! real3
+    call copy_addr(spharm,p_par(28)) ! (ny) (nz)
+    call copy_addr(bunit,p_par(29)) ! (nx) (ny) (nz) (3)
+    call copy_addr(hhh,p_par(30)) ! (nx) (ny) (nz) (3)
+    call copy_addr(cc_xyaver,p_par(31)) ! (mz) (npscalar)
 
     call keep_compiler_quiet(reinitialize_lncc)
 

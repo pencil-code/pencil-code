@@ -11,7 +11,7 @@
       character(LEN=1024) :: mailstr
       character(LEN=20) :: cjobid
       integer, parameter :: lun_input1=89
-      integer :: l,m,n,ll
+      integer :: l,m,n,ll,len_omit
 
       if (lastaroth_input) then
         call safe_character_assign(file2_base,'-segment-'// &
@@ -20,7 +20,7 @@
       
         j=1
         do while(j<=mvar)
-          ncomps=farray_get_name(j,vnm)
+          vnm=farray_get_name(j,ncomps)
           do nc=1,ncomps
             call get_astaroth_field_name(j,vnm,nc)
       
@@ -127,25 +127,26 @@
 !
                 if (nghost_read_fewer==0) then
 
+		  len_omit=0
                   if (lzaver_on_input) then
 !
 !  Read data from all processors in z direction in source directory and average them.
 !
                     allocate(tmp(mx,my,mz_src,nv))
-                    if (ivar_omit(1)>0) allocate(tmp_omit(mx,my,mz_src,ivar_omit(1):ivar_omit(2)))
-                    iosr=read_part(lun_input,tmp,tmp_omit)
+	            if (ivar_omit(1)>0) len_omit=mx*my*mz_src*(ivar_omit(2)-ivar_omit(1)+1)
+                    iosr=read_part(lun_input,tmp,len_omit)
                     a(:,:,nghost+1,:)=sum(tmp(:,:,nghost+1:mz_src-nghost,:),3)
                     do ipz_src=1,nprocz_src-1
                       open(lun_input1,FILE=trim(srcdir)//'/data/proc'//trim(itoa(iproc+ipz_src*nprocxy))// &
                                       '/'//trim(file), FORM='unformatted', status='old', iostat=ios)
-                      iosr=read_part(lun_input1,tmp,tmp_omit)
+                      iosr=read_part(lun_input1,tmp,len_omit)
                       a(:,:,nghost+1,:)=a(:,:,nghost+1,:)+sum(tmp(:,:,nghost+1:mz_src-nghost,:),3)
                       close(lun_input1)
                     enddo
                     a(:,:,nghost+1,:)=a(:,:,nghost+1,:)/nzgrid_src
                   else
-                    if (ivar_omit(1)>0) allocate(tmp_omit(mx,my,mz,ivar_omit(1):ivar_omit(2)))
-                    iosr=read_part(lun_input,a,tmp_omit)
+                    if (ivar_omit(1)>0) len_omit=mx*my*mz*(ivar_omit(2)-ivar_omit(1)+1)
+                    iosr=read_part(lun_input,a,len_omit)
                   endif
 !
                 elseif (nghost_read_fewer>0) then

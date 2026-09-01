@@ -773,7 +773,7 @@ module Sub
 !
     endsubroutine dot_mn_sv
 !***********************************************************************
-    subroutine dot_mn_sv_pencil(a,b,c)
+subroutine dot_mn_sv_pencil(a,b,c)
 !
 !  Dot product, c=a.b, between pencilized vector and pencil scalar.
 !
@@ -7437,8 +7437,7 @@ nameloop: do
         if (vec >= 3) ind_aux3 = index + 2
       else
         if (lroot) print *, 'register_report_aux: i'//trim(name)//' =', index
-        call farray_index_append ('i'//trim(name), index, vec)
-        !call farray_index_append (name, index, lroot, vec)
+        call farray_index_append (name, index, vector=vec)
       endif
 !
     endsubroutine register_report_aux
@@ -9644,7 +9643,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
       real, contiguous, dimension(:,:,:,:) :: f
       character (len=*), optional :: caller
       integer :: has_nan_local
-      integer :: i,ncomponents
+      integer :: i
       character(len=30) :: name
 
       !isnan is written out since we cannot always depend on it
@@ -9662,9 +9661,9 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
         endif
 
         do i=1,mfarray
-          ncomponents = farray_get_name(i,name)
+          name = farray_get_name(i)
           if (any(f(:,:,:,i) > huge_real .or. f(:,:,:,i) /= f(:,:,:,i))) &
-              print*,"check_for_nans_globally: nan in Field: ",name
+              print*,"check_for_nans_globally: nan in Field: ",trim(name)
           flush(output_unit)
         enddo
         call mpiabort
@@ -9841,7 +9840,7 @@ subroutine get_astaroth_field_name(j,vnm,nc)
 
   integer :: ncomps
 
-  ncomps=farray_get_name(j-nc+1,vname)
+  vname=farray_get_name(j-nc+1,ncomps)
   if (ncomps==3) then
     vnm=trim(vname)//trim(compnames(nc))
   elseif (ncomps==6) then
@@ -9851,11 +9850,13 @@ subroutine get_astaroth_field_name(j,vnm,nc)
   else
     vnm=vname
   endif
+
   if (trim(vnm)=='aax') vnm='ax'
   if (trim(vnm)=='aay') vnm='ay'
   if (trim(vnm)=='aaz') vnm='az'
   vnm = 'VTXBUF_'//upper_case(vnm)
   vnm = trim(vnm)
+
 endsubroutine get_astaroth_field_name
 !***********************************************************************
 !

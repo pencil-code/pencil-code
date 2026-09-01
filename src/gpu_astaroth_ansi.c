@@ -280,10 +280,3 @@ void FTNIZE(split_update_gpu_c)(void)
 	splitUpdate(1e-15,1000000);
 }
 /* ------------------------------------------------------------------- */
-/*                                                                        
-void FTNIZE(torchfort_save_model)(const char* model_name, const char* fil ename)
-{                                                                         
-	torchFortSaveModel(model_name, filename);                               
-}                                                                         
-*/                                                                        
-/* ------------------------------------------------------------------- */ 

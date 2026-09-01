@@ -3061,7 +3061,7 @@ module Hydro
             'calculating ' // pencil_name // ' correctly for lconservative=T requires velocity as an auxiliary ' &
              // ACHAR(10) // '                              i.e. lvv_as_aux = lvv_as_comaux = T.'&
              // ACHAR(10) // 'If the pencil only needs 1st or 2nd order derivatives you could consider '&
-             // 'to write out the product rules and lift this restriction.')
+             // 'to write out the product rules and lift this restriction')
 
     endsubroutine pencil_needs_ivv
 !***********************************************************************
@@ -3128,7 +3128,8 @@ module Hydro
         if (friction_tdep=='current') lpenc_requested(i_j2)=.true.
         if (friction_tdep=='Thomson') then
           lpenc_requested(i_TT)=.true.
-          lpenc_requested(i_rho)=.true.
+          lpenc_requested(i_yH)=.true.
+          if (idiag_pradrc2/=0) lpenc_diagnos(i_rho)=.true.
         endif
       endif
 !
@@ -3546,9 +3547,7 @@ module Hydro
         endif
       endif
 
-      if (lext_force) then
-        p%ext_force = 0.
-      endif
+      if (lext_force) p%ext_force = 0.
 !
       endsubroutine calc_pencils_hydro_pencpar
 !***********************************************************************
@@ -4421,6 +4420,7 @@ module Hydro
       endif
 !
       if (lfargo_advection) df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%uuadvec_guu
+
     endsubroutine advec_uu
 !***********************************************************************
     subroutine duu_dt(f,df,p)
@@ -4452,8 +4452,8 @@ module Hydro
 
       real, dimension (nx,3) :: uu1, tmpv
       real, dimension (nx) :: ftot
-      real, dimension (nx) :: arad_normal, pradrc2
-      real :: hubble_factor, ell_gam
+      real, dimension (nx) :: pradrc2
+      real :: hubble_factor, ell_gam, arad_normal
       integer :: j
 !
       Fmax=1./impossible
@@ -4537,7 +4537,6 @@ module Hydro
             frict=ekman_friction/max(real(t),friction_tdep_toffset)
           case ('Thomson')
             arad_normal=real(4*sigmaSB/c_light)
-            pradrc2=real(onethird*arad_normal*p%TT**4/(p%rho*c_light**2))
             frict=real(ekman_friction*fourthird*p%yH*sigma_Thomson*arad_normal*p%TT**4/(m_p*c_light))
           case ('current')
             if (lmagnetic) then
@@ -4568,7 +4567,7 @@ module Hydro
               frict=0.
             endif
           case default
-            call fatal_error('duu_dt','unknown value of friction_tdep')
+            call fatal_error('duu_dt','no such friction_tdep: '//trim(friction_tdep))
         endselect
 !
 !  Timestep constraint and apply damping term to momentum equation.
@@ -4682,7 +4681,6 @@ module Hydro
       endif
 
       call calc_diagnostics_hydro(f,p)
-      call sum_mn_name(pradrc2,idiag_pradrc2)
 !
       call timing('duu_dt','finished',mnloop=.true.)
 !
@@ -4703,7 +4701,8 @@ module Hydro
       real, dimension (nx) :: odel2um, uref, curlo2, qo, quxo, graddivu2, tmp
       real, dimension (nx,Nmodes_SH) :: urlm
       real, dimension (nx) :: rmask, lorr
-      real :: kx
+      real, dimension (nx) :: pradrc2
+      real :: kx,arad_normal
       integer :: k
 !
 !  Calculate maxima and rms values for diagnostic purposes
@@ -4836,6 +4835,11 @@ module Hydro
         if (idiag_ruy2m/=0) call sum_mn_name(p%rho*p%uu(:,2)**2,idiag_ruy2m)
         if (idiag_ruz2m/=0) call sum_mn_name(p%rho*p%uu(:,3)**2,idiag_ruz2m)
 
+        if (ekman_friction/=0 .and. friction_tdep=='Thomson' .and. idiag_pradrc2/=0) then
+          arad_normal=real(4*sigmaSB/c_light)
+          pradrc2=real(onethird*arad_normal*p%TT**4/(p%rho*c_light**2))
+          call sum_mn_name(pradrc2,idiag_pradrc2)
+        endif
 
         ! alberto: needs to be changed as p%rho and p%uu
         !          contain physical rho and uu (instead of T00 and T0i)
@@ -9332,6 +9336,7 @@ module Hydro
     subroutine calc_gradu(f)
 !
     use Sub, only : gij
+!
     real, contiguous, dimension(:,:,:,:) :: f
     integer :: imn,jk,jj,kk
     real, dimension(nx,3,3) :: gradu
@@ -9450,7 +9455,6 @@ module Hydro
     call copy_addr(pr,p_par(75))
     call copy_addr(cdt_tauf,p_par(76))
     call copy_addr(lcdt_tauf,p_par(77)) ! bool
-    call copy_addr(idiag_uduum,p_par(78)) ! int
     call copy_addr(idiag_taufmin,p_par(79)) ! int
     call copy_addr(idiag_dtf,p_par(80)) ! int
     call copy_addr(fade_fact,p_par(81)) ! real dconst

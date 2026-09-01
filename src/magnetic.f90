@@ -3547,6 +3547,11 @@ module Magnetic
       endif
 
       if (idiag_dteta/=0) ltimestep_diagnostics=.true.
+
+      if (idiag_uxbdotm/=0) then
+        lpenc_diagnos(i_uij)=.true.
+        lpenc_diagnos(i_divu)=.true.
+      endif
 !
 !  check for pencil_criteria_magn_mf
 !
@@ -12276,8 +12281,6 @@ print*,'AXEL2: should not be here (eta) ... '
     call copy_addr(ztop_moving_layer,p_par(213))
     call copy_addr(speed_moving_layer,p_par(214))
     call copy_addr(edge_moving_layer,p_par(215))
-    call copy_addr(idiag_udotxbm,p_par(216)) ! int
-    call copy_addr(idiag_uxbdotm,p_par(217)) ! int
     call copy_addr(eta_shock_jump1,p_par(218))
     call copy_addr(r2,p_par(220))
     call copy_addr(r12,p_par(221))

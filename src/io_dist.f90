@@ -167,7 +167,7 @@ module Io
 
           j=1
           do while(j<=mvar)
-            ncomps=farray_get_name(j,vnm)
+            vnm=farray_get_name(j,ncomps=ncomps)
             do nc=1,ncomps
               call get_astaroth_field_name(j,vnm,nc)
               !if (lroot) print*, 'rank,j,file=', iproc,j,nc,trim(file1)//trim(upper_case(vnm))//trim(file2)
@@ -1487,7 +1487,7 @@ module Io
 !
     endsubroutine rgrid
 !***********************************************************************
-    function read_part_double(lun,a,omit) result (ios)
+    function read_part_double(lun,a,len_omit) result (ios)
 !
 !  Reads part of array, stored on disk, defined by range of variable indices ivar_omit(1):ivar_omit(2)
 !  into array a. Uses dummy buffer omit of size (:,:,:,1:ivar_omit(2)-ivar_omit(1)+1).
@@ -1495,21 +1495,33 @@ module Io
 !   31-mar-21/MR: coded
 !   17-Dec-2025/Kishore: fixed apparent indexing bug
 !
-      integer, intent(IN) :: lun
-      real(KIND=rkind8), dimension(:,:,:,:), intent(OUT) :: a, omit
+      integer, intent(IN) :: lun,len_omit
+      real(KIND=rkind8), dimension(:,:,:,:), intent(OUT) :: a
       integer :: ios
 
+      integer :: chunk_size 
+      real(KIND=rkind8), dimension(:),allocatable :: dummy
+      integer :: total_chunks,remainder,i
+
+      if (len_omit>0) then
+        chunk_size = min(len_omit,1000000)
+        total_chunks = len_omit/chunk_size
+        remainder    = modulo(len_omit,chunk_size)
+        allocate(dummy(chunk_size))
+      endif
+
       if (ivar_omit(1)==1) then
-        read (lun,iostat=ios) omit,a
+        read (lun,iostat=ios) (dummy,i=1,total_chunks),(dummy(i),i=1,remainder),a
       elseif (ivar_omit(1)>1) then
-        read (lun,iostat=ios) a(:,:,:,:ivar_omit(1)-1),omit,a(:,:,:,ivar_omit(2)+1:)
+        read (lun,iostat=ios) a(:,:,:,:ivar_omit(1)-1),(dummy,i=1,total_chunks),(dummy(i),i=1,remainder), &
+                              a(:,:,:,ivar_omit(2)+1:)
       else
         read (lun,iostat=ios) a
       endif
 
     endfunction read_part_double
 !***********************************************************************
-    function read_part_single(lun,a,omit) result (ios)
+    function read_part_single(lun,a,len_omit) result (ios)
 !
 !  Reads part of array, stored on disk, defined by range of variable indices ivar_omit(1):ivar_omit(2)
 !  into array a. Uses dummy buffer omit of size (:,:,:,1:ivar_omit(2)-ivar_omit(1)+1).
@@ -1517,14 +1529,26 @@ module Io
 !   31-mar-21/MR: coded
 !   17-Dec-2025/Kishore: fixed apparent indexing bug
 !
-      integer, intent(IN) :: lun
-      real(KIND=rkind4), dimension(:,:,:,:), intent(OUT) :: a, omit
+      integer, intent(IN) :: lun,len_omit
+      real(KIND=rkind4), dimension(:,:,:,:), intent(OUT) :: a
       integer :: ios
 
+      integer :: chunk_size
+      real(KIND=rkind4), dimension(:),allocatable :: dummy
+      integer :: total_chunks,remainder,i
+
+      if (len_omit>0) then
+        chunk_size = min(len_omit,1000000)
+        total_chunks = len_omit/chunk_size
+        remainder    = modulo(len_omit,chunk_size)
+        allocate(dummy(chunk_size))
+      endif
+
       if (ivar_omit(1)==1) then
-        read (lun,iostat=ios) omit,a
+        read (lun,iostat=ios) (dummy,i=1,total_chunks),(dummy(i),i=1,remainder),a
       elseif (ivar_omit(1)>1) then
-        read (lun,iostat=ios) a(:,:,:,:ivar_omit(1)-1),omit,a(:,:,:,ivar_omit(2)+1:)
+        read (lun,iostat=ios) a(:,:,:,:ivar_omit(1)-1),(dummy,i=1,total_chunks),(dummy(i),i=1,remainder), &
+                              a(:,:,:,ivar_omit(2)+1:)
       else
         read (lun,iostat=ios) a
       endif

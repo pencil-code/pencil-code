@@ -120,9 +120,8 @@ module FArrayManager
 ! Keep track of which spaces are currently in use.
 !
   logical, dimension(mscratch+1) :: scratch_used
-!
-  contains
 
+  contains
 !***********************************************************************
     subroutine farray_register_pde(varname,ivar,vector,array,ierr,lsubstepped)
 
@@ -137,16 +136,12 @@ module FArrayManager
       logical, optional, intent(in) :: lsubstepped
 !
       integer, parameter :: vartype = iFARRAY_TYPE_PDE
-      integer :: i
 !
       call farray_register_variable(varname,ivar,vartype,vector=vector,array=array,ierr=ierr)
-      if(loptest(lsubstepped)) then
+!
+      if (loptest(lsubstepped)) then
         variable_substepped(ivar) = .true.
-        if (present(array)) then
-          do i = 1,array-1
-            variable_substepped(ivar+i) = .true.
-          enddo
-        endif
+        if (present(array)) variable_substepped(ivar+1:ivar+array-1) = .true.
       endif
 !
     endsubroutine farray_register_pde
@@ -229,6 +224,7 @@ module FArrayManager
 !               variable not written into var.dat
 ! 16-jan-17/MR: avoid fatal error due to try of re-registering of an already existing variable at reloading.
 !
+      use Cdata, only: ldownsampl
       use General, only: ioptest
       use Cdata, only: ip
 !
@@ -240,6 +236,7 @@ module FArrayManager
 !
       type (farray_contents_list), pointer :: item, new
       integer :: ncomponents, narray, nvars
+      logical :: lwr
 !
       if(ip<13 .and. lroot) print*,"Registering: ",varname
       if (vartype==iFARRAY_TYPE_SCRATCH) then
@@ -393,10 +390,13 @@ module FArrayManager
 !  write varname and index into index.pro file (for idl)
 !  except for auxiliary variables which are not written into var.dat
 !
-        if (.not. lwrite_aux .and. (vartype==iFARRAY_TYPE_COMM_AUXILIARY .or. &
-                                    vartype==iFARRAY_TYPE_AUXILIARY )) return
+        lwr=lroot.and.(lwrite_aux .or. .not.(vartype==iFARRAY_TYPE_COMM_AUXILIARY .or. &
+                                             vartype==iFARRAY_TYPE_AUXILIARY ))
 !
-        call farray_index_append('i'//varname,ivar,vector=vector,array=array)
+        if (lwr) call farray_index_append(varname,ivar,vector=vector,array=array)
+
+        if (ldownsampl) &
+            call farray_index_append(varname,ivar,vector=vector,array=array,ldown=.true.)
 !
       endif
 !
@@ -453,16 +453,17 @@ module FArrayManager
 
     endsubroutine farray_finalize_ode
 !***********************************************************************
-    subroutine farray_index_append(varname,ivar,vector,array)
+    subroutine farray_index_append(varname,ivar,vector,array,ldown)
 !
 ! 14-Oct-2018/PAB: coded
 ! 09-Jul-2020/PAB: reworked
 !
-      use General, only: ioptest
+      use General, only: ioptest,loptest
       use Cdata, only: lfatal_num_vector_369
 !
       character (len=*), intent(in) :: varname
       integer, intent(in) :: ivar
+      logical, optional :: ldown
       integer, optional, intent(in) :: vector, array
 !
       integer :: num_vector, num_array
@@ -474,7 +475,7 @@ module FArrayManager
       if ((num_vector /= 0) .and. (num_vector /= 3) .and. (num_vector /= 6) .and. (num_vector /= 9) &
           .and. lfatal_num_vector_369) &
           call fatal_error ("farray_index_append", "vector (or tensor) '"//trim(varname)//"' must have 3, 6, or 9 components!")
-      call index_append (trim (varname), ivar, num_vector, num_array)
+      call index_append('i'//trim(varname), ivar, lroot, num_vector, num_array, ldown=ldown)
 !
     endsubroutine farray_index_append
 !***********************************************************************
@@ -841,18 +842,18 @@ module FArrayManager
 !
     endfunction variable_exists
 !***********************************************************************
-    function farray_get_name(indx,name) result(ncomps)
+    function farray_get_name(indx,ncomps) result(name)
      
       integer :: indx 
       character(len=30) :: name
-      integer :: ncomps
+      integer, optional :: ncomps
 
       type (farray_contents_list), pointer :: item
 
       item=>thelist
       do while (associated(item))
         if (item%ivar(1)%p==indx) then
-          ncomps=item%ncomponents
+          if (present(ncomps)) ncomps=item%ncomponents
           name=item%varname
           return
         endif

@@ -299,8 +299,8 @@ module NeutralVelocity
 !
 !  28-feb-07/wlad: adapted
 !
+      lpenc_requested(i_uun)=.true.
       if (ladvection_velocity) lpenc_requested(i_ungun)=.true.
-      if (ldt) lpenc_requested(i_uun)=.true.
 !
       lpenc_requested(i_uu)   =.true.
       lpenc_requested(i_rho)  =.true.
@@ -1086,13 +1086,11 @@ module NeutralVelocity
     call copy_addr(csn20,p_par(10))
     call copy_addr(nun_hyper3,p_par(11))
     call copy_addr(lupw_uun,p_par(12)) ! bool
-    call copy_addr(idiag_fricneut,p_par(13)) ! int
-    call copy_addr(idiag_fricions,p_par(14)) ! int
-    call copy_addr(uun_const,p_par(15)) ! real3
+    call copy_addr(uun_const,p_par(13)) ! real3
     do i = 1,ninit; call string_to_enum(enum_iviscn(i),iviscn(i)); enddo
-    call copy_addr(enum_iviscn,p_par(16)) ! int (ninit)
+    call copy_addr(enum_iviscn,p_par(14)) ! int (ninit)
     call string_to_enum(enum_borderuun,borderuun)
-    call copy_addr(enum_borderuun,p_par(17)) ! int
+    call copy_addr(enum_borderuun,p_par(15)) ! int
        
     call keep_compiler_quiet(ampl_unx)
     call keep_compiler_quiet(ampl_uny)

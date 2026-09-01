@@ -4,7 +4,7 @@
     function gen_in_snapname(stem,ext) result(filename)
 !
 !  Constructs filename for snapshot to be read from stem and extension ext. Appends '.bck'
-!  in order to read the backup file in case the wanted file is absent, but the backup file exists.
+!  in order to read a backup file in case the wanted file is absent, but the backup file exists.
 !  Fatal error if neither exists.
 !
 !  12-apr-26/MR: coded
@@ -21,12 +21,15 @@
       endif
 
       if (.not.file_exists(trim(directory_snap)//'/'//trim(filename))) then
-        if (lbackup_snap) then
-          if (.not.file_exists(trim(directory_snap)//'/'//trim(filename)//'.bck')) then
-            call fatal_error('gen_in_snapname','neither snapshot file '//trim(filename)//' nor '// trim(filename)//'.bck exists')
-          else
-            filename=trim(filename)//'.bck'
+        if (.not.file_exists(trim(directory_snap)//'/'//trim(filename)//'.bck')) then
+          if (.not.file_exists(trim(directory_snap)//'/'//trim(filename)//'.bck.1')) then
+            call fatal_error('gen_filename','neither snapshot file '//trim(filename)// &
+		             ' nor backup file '//trim(filename)//'.bck[.1] exists')
+	  else
+            filename=trim(filename)//'.bck.1'
           endif
+	else
+          filename=trim(filename)//'.bck'
         endif
       endif
 
@@ -62,7 +65,7 @@
 !
     endsubroutine wdim_default
 !***********************************************************************
-    subroutine wdim(file, mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out, mvar_out, maux_out)
+    subroutine wdim(file, mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out, mvar_out, maux_out,mglobal_out)
 !
 !  Write dimension to file.
 !
@@ -71,11 +74,14 @@
 !  02-Nov-2018/PABourdin: redesigned, moved to IO modules
 !
       use HDF5_IO, only: output_dim
+      use General, only: ioptest
 
       character (len=*), intent(in) :: file
       integer, intent(in) :: mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out, mvar_out, maux_out
+      integer, intent(in), optional :: mglobal_out
 !
-      call output_dim (file, mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out, mvar_out, maux_out, mglobal)
+      call output_dim (file, mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out, mvar_out, maux_out, &
+	               ioptest(mglobal_out,mglobal))
 !
     endsubroutine wdim
 !***********************************************************************
@@ -92,15 +98,10 @@
 
       integer ::  mx_in,my_in,mz_in,mvar_in,maux_in,mglobal_in,nghost_in,nprocx_in,nprocy_in,nprocz_in
 !
-!  Root reads global dim.dat.
-!
-!     2026-May-04/Kishore: added local below to fix samples/backwards-compatible.
-!     2026-May-04/Kishore: which has only `data/proc0/dim.dat`. I haven't tested
-!     2026-May-04/Kishore: the effect with, e.g., io_collect.
+!  Root reads global dim.dat (or proc0/dim.dat if global one doesn't exist).
 !
       call input_dim('.', mx_in, my_in, mz_in, mvar_in, maux_in, mglobal_in, &
-                     res, nghost_in, nprocx_in, nprocy_in, nprocz_in, &
-                     local=.not.lcollective_IO)
+                     res, nghost_in, nprocx_in, nprocy_in, nprocz_in)
 
       call mpibcast(res)
 
