@@ -240,8 +240,8 @@ module Particles_selfgravity
       real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      integer, dimension (3) :: fp_xyz_part, ineargrid_part
-      real, dimension (3) :: gpotself
+      integer, dimension (3) :: ineargrid_part
+      real, dimension (3) :: gpotself, fp_xyz_part
       real, dimension (1) :: potself
       real :: rhop_swarm_par
       integer :: k
@@ -273,16 +273,16 @@ module Particles_selfgravity
                       fp_xyz_part,gpotself,ineargrid_part,inearblock(k),ipar(k))
                 else
                   call interpolate_linear(f,igpotselfx,igpotselfz, &
-                      ineargrid_part,gpotself,ineargrid_part,0,ipar(k))
+                      fp_xyz_part,gpotself,ineargrid_part,0,ipar(k))
                 endif
               elseif (lparticlemesh_tsc) then
                 if (linterpolate_spline) then
                   if (lparticles_blocks) then
                     call interpolate_quadratic_spline(f,igpotselfx,igpotselfz, &
-                        ineargrid_part,gpotself,ineargrid_part,inearblock(k),ipar(k))
+                        fp_xyz_part,gpotself,ineargrid_part,inearblock(k),ipar(k))
                   else
                     call interpolate_quadratic_spline(f,igpotselfx,igpotselfz, &
-                        ineargrid_part,gpotself,ineargrid_part,0,ipar(k))
+                        fp_xyz_part,gpotself,ineargrid_part,0,ipar(k))
                   endif
                 else
 !
