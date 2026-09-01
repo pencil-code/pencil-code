@@ -2954,7 +2954,7 @@ module HDF5_IO
 !
     endsubroutine input_profile
 !***********************************************************************
-    subroutine index_append(varname,ivar,vector,array)
+    subroutine index_append(varname,ivar,vector,array,ldown)
 !
 ! 14-Oct-2018/PABourdin: coded
 ! 09-Jul-2020/PAB: reworked
@@ -2963,6 +2963,7 @@ module HDF5_IO
       integer, intent(in) :: ivar
       integer, intent(in) :: vector
       integer, intent(in) :: array
+      logical, intent(in), optional :: ldown
 !
       integer, parameter :: lun_output = 92
       character(len=len(varname)) :: quantity
