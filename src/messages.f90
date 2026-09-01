@@ -442,8 +442,26 @@ module Messages
            // ', " v. ", A, T' // trim(adjustl(tmp3)) &
            // ', " (", A, T' // trim(adjustl(tmp4)) &
            // ', ") ", A)'
-      if ((len(svnid) >= 4) .and. (svnid(1:1) == "$") .and. (svnid(2:4) == "Id:")) then
-      ! starts with `$...' --> SVN Id: line
+!
+      if (len(svnid) < 4) then
+        ! not a SVN line; maybe `[No ID given]'
+        wd1 = min(wd, len(svnid))
+        write(*,fmt) "SVN: ", &
+            '-------', &
+            '', &
+            '', &
+            svnid(1:wd1)
+        write(unit,fmt) "SVN: ", &
+            '-------', &
+            '', &
+            '', &
+            svnid(1:wd1)
+        close(unit)
+        return
+      endif
+!
+      if (svnid(1:4) == "$Id:") then
+        ! starts with `$Id:' --> SVN Id: line
 !
 !  file name
 !
