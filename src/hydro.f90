@@ -2099,7 +2099,9 @@ module Hydro
           enddo
         case ('random_isotropic_shell')
           call random_isotropic_shell(f,iux,ampluu(j),z1_uu,z2_uu)
-        case ('gaussian-noise'); call gaunoise(ampluu(j),f,iux,iuz)
+        case ('gaussian-noise') 
+          if (lroot) print*, 'init_uu: gaussian noise, ampluu=', ampluu(j)
+          call gaunoise(ampluu(j),f,iux,iuz)
         case ('gaussian-noise-x'); call gaunoise(ampluu(j),f,iux)
         case ('gaussian-noise-y'); call gaunoise(ampluu(j),f,iuy)
         case ('gaussian-noise-z'); call gaunoise(ampluu(j),f,iuz)

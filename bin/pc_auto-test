@@ -192,6 +192,7 @@ my %tests = (
 			 fcont_TG
                          helical-MHDturb_HDF5
                          helical-MHDturb-noncube
+			 supernova-driven-turbulence/cosmic_ray_ism
                          power_xy/complex
                          power_xy/complex_iodist
                          power_xy/complex_lpowerxyhdf5/nprocx_2
@@ -286,6 +287,7 @@ my @gpu_tests = qw(
 			 1d-tests/inflationary-B-genesis #Has to be excluded until the weird start issue is resolved (Can't reproduce it by running auto-test locally on norlx51)
                          1d-tests/jeans-x
 			 bonnor_ebert_sphere
+			 supernova-driven-turbulence/cosmic_ray_ism
 			 #1d-tests/toomre-x
 			 #2d-tests/bubble
                          conv-slab-noequi

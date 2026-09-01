@@ -117,12 +117,13 @@ module InitialCondition
   real :: ybias_aa = 1.0 ! adjust angle of field default 45deg
 !
   character (len=labellen), dimension(ninit) :: initaa='nothing'
+  character (len=labellen), dimension(ninit) :: inituu='nothing'
 !
 !  start parameters
 !
   namelist /initial_condition_pars/ &
       T_init, amplaa, cooling_select, rhox, &
-      heating_select, initaa, &
+      heating_select, initaa, inituu, &
       ybias_aa
 !
   contains
@@ -185,10 +186,14 @@ module InitialCondition
 !  07-may-09/wlad: coded
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      integer :: j
 !
-      f(:,:,:,iuu:iuu+2) = 0.
-!
-      call keep_compiler_quiet(f)
+      do j=1,ninit
+        select case (inituu(j))
+          case ('nothing'); if (lroot .and. j==1) print*,'init_uu: nothing'
+          case ('zero', '0'); f(:,:,:,iux:iuz) = 0.0
+        endselect
+      enddo
 !
     endsubroutine initial_condition_uu
 !***********************************************************************
@@ -522,6 +527,9 @@ module InitialCondition
       character(LEN=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
+      !TP: done to keep old default of zero
+      inituu(1) = 'zero'
+
       read(parallel_unit, NML=initial_condition_pars, IOSTAT=iostat, IOMSG=iomsg)
       if (iostat==0) iomsg=""
 !

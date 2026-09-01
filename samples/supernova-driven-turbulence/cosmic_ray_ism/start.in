@@ -16,13 +16,15 @@
 /
 &initial_condition_pars
   initaa='uniform-x','gaussian-noise'
+  inituu='nothing'
   amplaa=1e-4,1e-8
 /
 &eos_init_pars
   mu=0.531
 /
 &hydro_init_pars
-  inituu='nothing'
+  inituu='gaussian-noise'
+  ampluu=1e-1
   Omega=25.0
 /
 &density_init_pars
