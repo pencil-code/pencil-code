@@ -442,7 +442,7 @@ module Messages
            // ', " v. ", A, T' // trim(adjustl(tmp3)) &
            // ', " (", A, T' // trim(adjustl(tmp4)) &
            // ', ") ", A)'
-      if ((svnid(1:1) == "$") .and. (svnid(2:4) == "Id:")) then
+      if ((len(svnid) >= 4) .and. (svnid(1:1) == "$") .and. (svnid(2:4) == "Id:")) then
       ! starts with `$...' --> SVN Id: line
 !
 !  file name
