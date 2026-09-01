@@ -507,7 +507,7 @@ config/hosts/surf/surf.csun.edu.conf -text
 config/hosts/sven/cip.physik.lokal.conf -text
 config/hosts/sven/host-bingert-tlm0-GNU_Linux-Ubuntu.conf -text
 config/hosts/sven/host-nbbingert-GNU_Linux-Ubuntu.conf -text
-config/hosts/travis-ci/wdobler/travis-ci.conf -text
+config/hosts/travis-ci/travis-ci.conf -text
 config/hosts/ubelix/submit01-new.ubelix.unibe.ch.conf -text
 config/hosts/ubelix/submit02-new.ubelix.unibe.ch.conf -text
 config/hosts/wdobler/host-frenesi-GNU_Linux-Ubuntu.conf -text
