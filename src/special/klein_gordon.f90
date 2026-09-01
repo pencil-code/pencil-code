@@ -313,6 +313,8 @@ module Special
   real :: tension_next = 0.
   real :: int_zeta = 0.
   real :: int_zeta_diag
+  logical :: lbubble_vel_on_grid=.false.
+  logical :: lbubble_pos_on_grid=.false.
 
   contains
 !****************************************************************************
@@ -750,6 +752,9 @@ module Special
                                    Vprime_xy2,Vprime_xy3,Vprime_xy4,Vprime_xz2,Vprime_r)
       if (ivid_V/=0) call alloc_slice_buffers(V_xy,V_xz,V_yz,&
                                    V_xy2,V_xy3,V_xy4,V_xz2,V_r)
+
+      lbubble_vel_on_grid = .not. lbubble_size_ODE .and. (lwall_friction .or. idiag_tension /= 0)
+      lbubble_pos_on_grid = .not. lbubble_size_ODE .and. (ldR_for_wall_vel .or. idiag_tension /= 0)
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -1225,7 +1230,7 @@ module Special
           call fatal_error("dspecial_dt: No such Vprime_choice: ", trim(Vprime_choice))
       endselect
 
-      if (.not. lbubble_size_ODE .and. (lwall_friction .or. idiag_tension /= 0)) then
+      if (lbubble_vel_on_grid) then
         do l=1,nx
           distance = abs(0.5-f(l+nghost,m,n,iphi))
           if (distance < min_distance) then
@@ -1756,7 +1761,7 @@ module Special
         endif
 
         if (lspherical_coords) then
-          if (.not. lbubble_size_ODE .and. (lwall_friction .or. idiag_tension /= 0)) then
+          if (lbubble_vel_on_grid) then
            call save_name(previous_wall_vel,idiag_wall_vel)
            call save_name(previous_wall_pos,idiag_wall_pos)
            call save_name(wall_gamma,idiag_wall_lorentz)
@@ -2101,7 +2106,7 @@ module Special
       call get_Hscript_and_a2(Hscript,a2rhom_all)
       call get_echarge
       call get_sigE_and_B
-      if (lwall_friction .or. idiag_tension /= 0) then
+      if (lbubble_vel_on_grid) then
         if (R_prev == impossible) then
           R_prev= bubble_size
           R_curr = bubble_size
@@ -2109,7 +2114,7 @@ module Special
           t_prev = t
         endif
 
-        if (idiag_wall_pos /= 0 .or. ldR_for_wall_vel) then
+        if (lbubble_pos_on_grid) then
           call mpi_min_keyval(min_distance,next_wall_pos,previous_wall_pos)
         endif
 
@@ -2808,7 +2813,6 @@ module Special
     call copy_addr(g_phi,p_par(66))
     call copy_addr(ivel,p_par(67)) ! int
     call copy_addr(lwall_friction,p_par(68)) ! bool
-    call copy_addr(idiag_tension,p_par(69)) ! int
     !call copy_addr(previous_wall_vel,p_par(70))
     call copy_addr(bubble_size,p_par(71))
     call copy_addr(ldr_for_wall_vel,p_par(72)) ! bool
@@ -2822,6 +2826,8 @@ module Special
     call copy_addr(idiag_a2rhopm,p_par(80)) ! int
     call copy_addr(idiag_a2rhophim,p_par(81)) ! int
     call copy_addr(idiag_a2rhogphim,p_par(82)) ! int
+    call copy_addr(lbubble_vel_on_grid,p_par(83)) ! bool
+    call copy_addr(lbubble_pos_on_grid,p_par(84)) ! bool
 
     endsubroutine pushpars2c
 !********************************************************************
