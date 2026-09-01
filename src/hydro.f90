@@ -5835,7 +5835,7 @@ module Hydro
       real, dimension (mx) :: rho, rho1, press, rho_gam21, rho_gam20, lorentz_gamma2=1.
       real, dimension (mx) :: ss2, hydro_energy, hydro_energy1, rat, rat0, vA2_pseudo
       real :: dely, delz
-      integer ::  iter_relB,j,jhless
+      integer ::  iter_relB,j,jhless,my_ind
       real, dimension (mx,3) :: ss
 
       if (iTij==0) call fatal_error("hydro_after_boundary","must compute Tij for lconservative")
