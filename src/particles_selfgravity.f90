@@ -240,6 +240,7 @@ module Particles_selfgravity
       real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
+      integer, dimension (3) :: fp_xyz_part, ineargrid_part
       real, dimension (3) :: gpotself
       real, dimension (1) :: potself
       real :: rhop_swarm_par
@@ -263,23 +264,25 @@ module Particles_selfgravity
 !
         if (lselfgravity_particles) then
           do k=1,npar_loc
-            
+            fp_xyz_part(:) = fp(k,ixp:izp)
+            ineargrid_part(:) = ineargrid(k,:)
+
               if (lparticlemesh_cic) then
                 if (lparticles_blocks) then
                   call interpolate_linear(f,igpotselfx,igpotselfz, &
-                      fp(k,ixp:izp),gpotself,ineargrid(k,:),inearblock(k),ipar(k))
+                      fp_xyz_part,gpotself,ineargrid_part,inearblock(k),ipar(k))
                 else
                   call interpolate_linear(f,igpotselfx,igpotselfz, &
-                      fp(k,ixp:izp),gpotself,ineargrid(k,:),0,ipar(k))
+                      ineargrid_part,gpotself,ineargrid_part,0,ipar(k))
                 endif
               elseif (lparticlemesh_tsc) then
                 if (linterpolate_spline) then
                   if (lparticles_blocks) then
                     call interpolate_quadratic_spline(f,igpotselfx,igpotselfz, &
-                        fp(k,ixp:izp),gpotself,ineargrid(k,:),inearblock(k),ipar(k))
+                        ineargrid_part,gpotself,ineargrid_part,inearblock(k),ipar(k))
                   else
                     call interpolate_quadratic_spline(f,igpotselfx,igpotselfz, &
-                        fp(k,ixp:izp),gpotself,ineargrid(k,:),0,ipar(k))
+                        ineargrid_part,gpotself,ineargrid_part,0,ipar(k))
                   endif
                 else
 !
@@ -290,7 +293,7 @@ module Particles_selfgravity
                                    'for interpolating self-gravity')
                 endif
               else
-                gpotself=f(ineargrid(k,1),ineargrid(k,2),ineargrid(k,3),igpotselfx:igpotselfz)
+                gpotself=f(ineargrid_part(1),ineargrid_part(2),ineargrid_part(3),igpotselfx:igpotselfz)
               endif
 !
 !  Add gravitational acceleration to particles
@@ -303,25 +306,25 @@ module Particles_selfgravity
 !
             if (lupdate_courant_dt) then
               if (lparticles_blocks) then
-                dt1_max(ineargrid(k,1)-nghostb)= &
-                    max(dt1_max(ineargrid(k,1)-nghostb), &
-                    sqrt(0.5*abs(gpotself(1))*dx_1(ineargrid(k,1)))/cdtpg)
-                dt1_max(ineargrid(k,1)-nghostb)= &
-                    max(dt1_max(ineargrid(k,1)-nghostb), &
-                    sqrt(0.5*abs(gpotself(2))*dy_1(ineargrid(k,2)))/cdtpg)
-                dt1_max(ineargrid(k,1)-nghostb)= &
-                    max(dt1_max(ineargrid(k,1)-nghostb), &
-                    sqrt(0.5*abs(gpotself(3))*dz_1(ineargrid(k,3)))/cdtpg)
+                dt1_max(ineargrid_part(1)-nghostb)= &
+                    max(dt1_max(ineargrid_part(1)-nghostb), &
+                    sqrt(0.5*abs(gpotself(1))*dx_1(ineargrid_part(1)))/cdtpg)
+                dt1_max(ineargrid_part(1)-nghostb)= &
+                    max(dt1_max(ineargrid_part(1)-nghostb), &
+                    sqrt(0.5*abs(gpotself(2))*dy_1(ineargrid_part(2)))/cdtpg)
+                dt1_max(ineargrid_part(1)-nghostb)= &
+                    max(dt1_max(ineargrid_part(1)-nghostb), &
+                    sqrt(0.5*abs(gpotself(3))*dz_1(ineargrid_part(3)))/cdtpg)
               else
-                dt1_max(ineargrid(k,1)-nghost)= &
-                    max(dt1_max(ineargrid(k,1)-nghost), &
-                    sqrt(0.5*abs(gpotself(1))*dx_1(ineargrid(k,1)))/cdtpg)
-                dt1_max(ineargrid(k,1)-nghost)= &
-                    max(dt1_max(ineargrid(k,1)-nghost), &
-                    sqrt(0.5*abs(gpotself(2))*dy_1(ineargrid(k,2)))/cdtpg)
-                dt1_max(ineargrid(k,1)-nghost)= &
-                    max(dt1_max(ineargrid(k,1)-nghost), &
-                    sqrt(0.5*abs(gpotself(3))*dz_1(ineargrid(k,3)))/cdtpg)
+                dt1_max(ineargrid_part(1)-nghost)= &
+                    max(dt1_max(ineargrid_part(1)-nghost), &
+                    sqrt(0.5*abs(gpotself(1))*dx_1(ineargrid_part(1)))/cdtpg)
+                dt1_max(ineargrid_part(1)-nghost)= &
+                    max(dt1_max(ineargrid_part(1)-nghost), &
+                    sqrt(0.5*abs(gpotself(2))*dy_1(ineargrid_part(2)))/cdtpg)
+                dt1_max(ineargrid_part(1)-nghost)= &
+                    max(dt1_max(ineargrid_part(1)-nghost), &
+                    sqrt(0.5*abs(gpotself(3))*dz_1(ineargrid_part(3)))/cdtpg)
               endif
             endif
 !
@@ -329,17 +332,17 @@ module Particles_selfgravity
               if (idiag_potselfpm/=0) then
                 if (lparticlemesh_cic) then
                   call interpolate_linear(f,ipotself,ipotself, &
-                      fp(k,ixp:izp),potself,ineargrid(k,:),0,ipar(k))
+                      fp_xyz_part,potself,ineargrid_part,0,ipar(k))
                 elseif (lparticlemesh_tsc) then
                   call interpolate_quadratic_spline(f,ipotself,ipotself, &
-                      fp(k,ixp:izp),potself,ineargrid(k,:),0,ipar(k))
+                      fp_xyz_part,potself,ineargrid_part,0,ipar(k))
                 else
-                  potself=f(ineargrid(k,1),ineargrid(k,2),ineargrid(k,3),ipotself)
+                  potself=f(ineargrid_part(1),ineargrid_part(2),ineargrid_part(3),ipotself)
                 endif
                 if (lparticles_density) then
                   call sum_par_name(potself*fp(k,irhopswarm),idiag_potselfpm)
                 else
-                  call get_rhopswarm(mp_swarm,fp,k,ineargrid(k,:),rhop_swarm_par)
+                  call get_rhopswarm(mp_swarm,fp,k,ineargrid_part,rhop_swarm_par)
                   call sum_par_name(potself*rhop_swarm_par,idiag_potselfpm)
                 endif
               endif
