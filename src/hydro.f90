@@ -326,6 +326,7 @@ module Hydro
   real :: Shearx=0., rescale_uu=0.
   real :: Ra=0.0, Pr=0.0 ! Boussinesq approximation
   real :: Om_inner=0.
+  real :: rat_limiter=0.99 ! PAR_DOC: limiter for the ratio to compute lorentz gamma
 !
 !  Option to constrain time for large df.
 !
@@ -369,7 +370,7 @@ module Hydro
       ltime_integrals_always, dtcor, lvart_in_shear_frame, lSchur_3D3D1D_uu, &
       lSchur_2D2D3D_uu, lSchur_2D2D1D_uu, &
       lhiggsless, vwall, alpha_hless, width_hless, qshear, zdampint, zdampext, &
-      lext_force
+      lext_force, rat_limiter
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -5898,6 +5899,11 @@ module Hydro
           else
             rat=rat0
           endif
+          do my_ind = l1, l2
+            if (rat(my_ind)>rat_limiter) then 
+              rat=rat_limiter
+            endif
+          enddo
           lorentz_gamma2=1./(1.-rat)
           if (lrelativistic_eos) &
                 lorentz_gamma2=lorentz_gamma2*(.5-rat*cs20*cs2011 + &
