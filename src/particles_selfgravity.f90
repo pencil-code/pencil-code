@@ -267,34 +267,34 @@ module Particles_selfgravity
             fp_xyz_part(:) = fp(k,ixp:izp)
             ineargrid_part(:) = ineargrid(k,:)
 
-              if (lparticlemesh_cic) then
+            if (lparticlemesh_cic) then
+              if (lparticles_blocks) then
+                call interpolate_linear(f,igpotselfx,igpotselfz, &
+                    fp_xyz_part,gpotself,ineargrid_part,inearblock(k),ipar(k))
+              else
+                call interpolate_linear(f,igpotselfx,igpotselfz, &
+                    fp_xyz_part,gpotself,ineargrid_part,0,ipar(k))
+              endif
+            elseif (lparticlemesh_tsc) then
+              if (linterpolate_spline) then
                 if (lparticles_blocks) then
-                  call interpolate_linear(f,igpotselfx,igpotselfz, &
+                  call interpolate_quadratic_spline(f,igpotselfx,igpotselfz, &
                       fp_xyz_part,gpotself,ineargrid_part,inearblock(k),ipar(k))
                 else
-                  call interpolate_linear(f,igpotselfx,igpotselfz, &
+                  call interpolate_quadratic_spline(f,igpotselfx,igpotselfz, &
                       fp_xyz_part,gpotself,ineargrid_part,0,ipar(k))
                 endif
-              elseif (lparticlemesh_tsc) then
-                if (linterpolate_spline) then
-                  if (lparticles_blocks) then
-                    call interpolate_quadratic_spline(f,igpotselfx,igpotselfz, &
-                        fp_xyz_part,gpotself,ineargrid_part,inearblock(k),ipar(k))
-                  else
-                    call interpolate_quadratic_spline(f,igpotselfx,igpotselfz, &
-                        fp_xyz_part,gpotself,ineargrid_part,0,ipar(k))
-                  endif
-                else
+              else
 !
 !  Polynomial interpolation can lead to self acceleration of isolated particle,
 !  since one must use the same assignment and interpolation function.
 !
-                  call fatal_error('dvvp_dt_selfgrav','polynomial interpolation not allowed'// &
-                                   'for interpolating self-gravity')
-                endif
-              else
-                gpotself=f(ineargrid_part(1),ineargrid_part(2),ineargrid_part(3),igpotselfx:igpotselfz)
+                call fatal_error('dvvp_dt_selfgrav','polynomial interpolation not allowed'// &
+                                 'for interpolating self-gravity')
               endif
+            else
+              gpotself=f(ineargrid_part(1),ineargrid_part(2),ineargrid_part(3),igpotselfx:igpotselfz)
+            endif
 !
 !  Add gravitational acceleration to particles
 !
@@ -349,7 +349,7 @@ module Particles_selfgravity
             endif
 !
           enddo
-!         
+!
 !  Patch to call sum_par_name from every processor
 !  (even those that do not have any particle). 
 !
