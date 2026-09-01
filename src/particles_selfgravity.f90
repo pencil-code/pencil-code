@@ -264,8 +264,8 @@ module Particles_selfgravity
 !
         if (lselfgravity_particles) then
           do k=1,npar_loc
-            fp_xyz_part(:) = fp(k,ixp:izp)
-            ineargrid_part(:) = ineargrid(k,:)
+            fp_xyz_part = fp(k,ixp:izp)
+            ineargrid_part = ineargrid(k,:)
 
             if (lparticlemesh_cic) then
               if (lparticles_blocks) then
