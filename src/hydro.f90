@@ -4452,7 +4452,6 @@ module Hydro
 
       real, dimension (nx,3) :: uu1, tmpv
       real, dimension (nx) :: ftot
-      real, dimension (nx) :: pradrc2
       real :: hubble_factor, ell_gam, arad_normal
       integer :: j
 !
