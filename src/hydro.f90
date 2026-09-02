@@ -41,6 +41,7 @@ module Hydro
   use Quiet
   use Messages
   use Viscosity, only: calc_viscous_force
+  use KT_transport, only: kt_init, kt_transp
   use SGS_hydro
 !
   implicit none
@@ -217,6 +218,9 @@ module Hydro
   logical :: lno_noise_uu=.false., lrho_nonuni_uu=.false.
   logical :: llorentz_limiter=.false., full_3D=.false.
   logical :: lhiggsless=.false., lhiggsless_old=.false.
+!  Kurganov-Tadmor flux-limited transport (see kt_transport.f90); runtime-off by default.
+  logical :: lkt_transport=.false.
+  real :: kt_theta=2.0
   logical :: lsqrt_qirro_uu=.false., lset_uz_zero=.false.
   logical :: lnorm_vw_hless=.false.
   logical :: lampluu_adjust_ascale=.false.   !PAR_DOC: automatically adjust initial u-amplitude
@@ -370,7 +374,7 @@ module Hydro
       ltime_integrals_always, dtcor, lvart_in_shear_frame, lSchur_3D3D1D_uu, &
       lSchur_2D2D3D_uu, lSchur_2D2D1D_uu, &
       lhiggsless, vwall, alpha_hless, width_hless, qshear, zdampint, zdampext, &
-      lext_force, rat_limiter
+      lext_force, rat_limiter, lkt_transport, kt_theta
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -1185,6 +1189,7 @@ module Hydro
       call put_shared_variable('lconservative',lconservative)
       call put_shared_variable('lconservative_pressure_on_rhs',lconservative_pressure_on_rhs)
       call put_shared_variable('lhiggsless',lhiggsless)
+      call put_shared_variable('lkt_transport',lkt_transport)
       call put_shared_variable('lrelativistic',lrelativistic)
 
       call put_shared_variable ('tdamp', tdamp)
@@ -1208,6 +1213,10 @@ module Hydro
         ! width_hless is the smoothing in units of grid points
         width_hless_absolute=width_hless*dx/vwall
         call put_shared_variable ('width_hless_absolute',width_hless_absolute)
+!
+!  Initialize the KT flux-limited transport (Higgsless application only).
+!
+        if (lkt_transport) call kt_init(irho,iux,ihless,eps_hless,width_hless_absolute,kt_theta)
       endif
 !
 ! If we are to solve for gradient of dust particle velocity, we must store gradient
@@ -4390,8 +4399,20 @@ module Hydro
       endif
 !
       if (ldensity.and.lconservative) then
-        call div_tensor(f,divTij,iTij,lyz_first=.true.)
-        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz)- divTij
+        if (lkt_transport) then
+!
+!  KT flux-limited momentum flux divergence (kt_transport.f90) instead of the
+!  central-difference divergence of the stored T^ij (div_tensor). Reuses divTij(:,j)
+!  as the per-direction scratch, then subtracts as in the central branch.
+!
+          do j=1,3
+            call kt_transp(f,m,n,1+j,real(t),divTij(:,j))
+          enddo
+          df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz)- divTij
+        else
+          call div_tensor(f,divTij,iTij,lyz_first=.true.)
+          df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz)- divTij
+        endif
         if (lext_force) then
           do i=0,2
             df(l1:l2,m,n,iuu+i)=df(l1:l2,m,n,iuu+i)+p%ext_force(:,2+i)

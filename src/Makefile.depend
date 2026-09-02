@@ -11,6 +11,13 @@ debug.o: debug_c.c headers_c.h
 #
 nodebug.o: nodebug.f90 $(CDATA_OBJ) quiet.o
 #
+#  KT flux-limited transport (Higgsless): explicit deps so the dummy/real module
+#  never races ahead of its base modules under parallel make.
+#
+kt_transport.o: kt_transport.f90 $(CDATA_OBJ) $(CPARAM_OBJ) quiet.o
+#
+nokt_transport.o: nokt_transport.f90 $(CPARAM_OBJ) quiet.o
+#
 io_dist.o: io_dist.h
 #
 # Explicit dependencies for the different infrastructure modules.

@@ -30,6 +30,7 @@ module Density
   use Messages
   use EquationOfState, only: cs0, cs20, cs2bot, cs2top, rho0, lnrho0
   use DensityMethods
+  use KT_transport, only: kt_transp
 !
   implicit none
 !
@@ -54,6 +55,7 @@ module Density
   real, dimension(mz) :: profz_eos=1.0,dprofz_eos=0.0
   real, target :: mpoly=impossible
   real, pointer :: mpoly0, mpoly1, mpoly2, eps_hless, width_hless_absolute, nu_tdep
+  logical, pointer :: lkt_transport   ! shared from Hydro; selects KT energy flux
   real, dimension(nx) :: xmask_den
   real, dimension(nx) :: fprofile_x=1.
   real, dimension(nz) :: fprofile_z=1.
@@ -1119,6 +1121,7 @@ module Density
 
       if (lhydro.and.lhiggsless) then
         call get_shared_variable('eps_hless',eps_hless)
+        call get_shared_variable('lkt_transport',lkt_transport)
         if (lrun) call get_shared_variable('width_hless_absolute',width_hless_absolute)
       endif
 !
@@ -2890,11 +2893,11 @@ module Density
 
     endsubroutine calc_sld_fdiff
 !***********************************************************************
-    subroutine continuity_eq(df,p)
+    subroutine continuity_eq(f,df,p)
 
       use Sub, only: multvs, multmv, dot_mn
 
-      real, contiguous, dimension(:,:,:,:) :: df
+      real, contiguous, dimension(:,:,:,:) :: f, df
       type (pencil_case) :: p
 
       ! real :: cs201=1., cs20_corr=1.
@@ -2917,7 +2920,16 @@ module Density
 !  Evolution of rho; set and initiate density_rhs
 !
         if (lconservative) then
-          density_rhs=-p%divss
+          if (lkt_transport) then
+!
+!  KT flux-limited energy flux divergence (kt_transport.f90) instead of the
+!  central-difference div S; density_rhs itself is the scratch (mirrors -p%divss).
+!
+            call kt_transp(f,m,n,1,real(t),density_rhs)
+            density_rhs=-density_rhs
+          else
+            density_rhs=-p%divss
+          endif
           if (lext_force) density_rhs=density_rhs + p%ext_force(:,1)
         else
 !
@@ -3341,7 +3353,7 @@ module Density
 !
       else
               
-      if(lcontinuity_gas) call continuity_eq(df,p)
+      if(lcontinuity_gas) call continuity_eq(f,df,p)
 !
 !  Hubble parameter
 !
