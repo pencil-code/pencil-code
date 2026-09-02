@@ -675,13 +675,14 @@ module HDF5_IO
 !
     endsubroutine hdf5_output_slice
 !***********************************************************************
-    subroutine index_append(varname,ivar,vector,array,ldown)
+    subroutine index_append(varname,ivar,lwr,vector,array,ldown)
 !
 ! 14-oct-18/PAB: coded
 ! 09-Jul-2020/PAB: reworked
 !
       character (len=*), intent(in) :: varname
       integer, intent(in) :: ivar
+      logical, intent(in) :: lwr
       integer, intent(in) :: vector
       integer, intent(in) :: array
       logical, intent(in), optional :: ldown
