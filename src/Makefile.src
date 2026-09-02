@@ -3097,6 +3097,9 @@ endef
 #quiet.o: quiet.f90 $(CPARAM_OBJ)
 #	$(FC) $(ALL_COMP_FLAGS) $(FSTD) -o quiet.o -c quiet.f90
 #
+magnetic/no%.o: magnetic/no%.f90 magnetic/%.h quiet.o
+	$(FC) $(ALL_COMP_FLAGS) $(FSTD) -o magnetic/no$*.o -c magnetic/no$*.f90
+#
 no%.o: no%.f90 %.h quiet.o
 	$(FC) $(ALL_COMP_FLAGS) $(FSTD) -o no$*.o -c no$*.f90
 #
@@ -3105,9 +3108,6 @@ no%.o: no%.f90 quiet.o
 #
 %.o: %.f90
 	$(FC) $(ALL_COMP_FLAGS) $(FSTD) -o $@ -c $<
-#
-magnetic/no%.o: magnetic/no%.f90 magnetic/%.h quiet.o
-	$(FC) $(ALL_COMP_FLAGS) $(FSTD) -o magnetic/no$*.o -c magnetic/no$*.f90
 #
 special/%.o: special/%.f90
 ifeq ($(USE_SPECIAL_DISPATCHER),yes)
