@@ -9530,6 +9530,7 @@ module Hydro
     call copy_addr(it32,p_par(147)) ! int
     call copy_addr(it33,p_par(148)) ! int
 
+    call copy_addr(idiag_uduum,p_par(149)) ! int
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Hydro

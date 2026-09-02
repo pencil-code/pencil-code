@@ -1224,6 +1224,7 @@ module Pscalar
 
     call keep_compiler_quiet(reinitialize_lncc)
 
+    call copy_addr(idiag_gcguzm,p_par(32)) ! int
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Pscalar
