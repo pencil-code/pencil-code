@@ -934,13 +934,18 @@ sub cd_to_wordir {
                  $ENV{LOADL_STEP_INITDIR} # IBM Loadleveler
                 ) {
         if (defined $dir) {
-            if (-d $dir) {
-                chdir $dir or die "Cannot chdir to $dir: $!\n";
-                return;
-            } else {
-                warn "No such directory: $dir\n";
-            }
-       }
+	     #TP: On ASIAA cluster for one of the students had
+	     #the submodule in PBS_O_WORKDIR.
+	     #Don't understand how but we should naturally never cd there
+             if($dir =~ "src/astaroth/submodule") {
+             }
+             elsif (-d $dir) {
+                 chdir $dir or die "Cannot chdir to $dir: $!\n";
+                 return;
+             } else {
+                 warn "No such directory: $dir\n";
+             }
+        }
     }
 }
 # ---------------------------------------------------------------------- #
