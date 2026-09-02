@@ -216,7 +216,7 @@ module Hydro
   logical, target :: lconservative_pressure_on_rhs=.false.
   logical, pointer :: lrelativistic_eos, lrelativistic_eos_corr
   logical :: lno_noise_uu=.false., lrho_nonuni_uu=.false.
-  logical :: llorentz_limiter=.false., full_3D=.false.
+  logical :: llorentz_limiter=.false., lrat_limiter=.false., full_3D=.false.
   logical :: lhiggsless=.false., lhiggsless_old=.false.
 !  Kurganov-Tadmor flux-limited transport (see kt_transport.f90); runtime-off by default.
   logical :: lkt_transport=.false.
@@ -263,7 +263,7 @@ module Hydro
       lvv_as_aux, lvv_as_comaux, uij_0D_test, &
       lfactors_uu, qirro_uu, lsqrt_qirro_uu, lset_uz_zero, &
       lno_noise_uu, lrho_nonuni_uu, lpower_profile_file_uu, &
-      llorentz_limiter, lhiggsless, lhiggsless_old, vwall, alpha_hless, width_hless, &
+      llorentz_limiter, lrat_limiter, lhiggsless, lhiggsless_old, vwall, alpha_hless, width_hless, &
       xjump_mid, yjump_mid, zjump_mid, qini, lnorm_vw_hless, &
       qshear, lampluu_adjust_ascale
 !
@@ -5928,11 +5928,13 @@ module Hydro
           else
             rat=rat0
           endif
-          do my_ind = l1, l2
-            if (rat(my_ind)>rat_limiter) then 
-              rat=rat_limiter
-            endif
-          enddo
+          if (lrat_limiter) then
+            do my_ind = l1, l2
+              if (rat(my_ind)>rat_limiter) then 
+                rat=rat_limiter
+              endif
+            enddo
+          endif
           lorentz_gamma2=1./(1.-rat)
           if (lrelativistic_eos) &
                 lorentz_gamma2=lorentz_gamma2*(.5-rat*cs20*cs2011 + &
