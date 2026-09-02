@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#define OMPI_SKIP_MPICXX
 #include <mpi.h>
 #include <sys/resource.h>
 #include <fstream>
