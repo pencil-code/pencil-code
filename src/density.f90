@@ -455,6 +455,10 @@ module Density
         call put_shared_variable('reference_state_mass',reference_state_mass)
       endif
 
+      if (density_scale_factor==impossible) then
+        density_scale_factor=density_scale_cgs/unit_length
+      endif
+
     endsubroutine register_density
 !***********************************************************************
     subroutine initialize_density(f)
@@ -1158,6 +1162,7 @@ module Density
         allocate(lext_force)
         lext_force = .false.
       endif
+
     endsubroutine initialize_density
 !***********************************************************************
     subroutine init_lnrho(f)

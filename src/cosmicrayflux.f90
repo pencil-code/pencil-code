@@ -33,7 +33,6 @@ module Cosmicrayflux
   real :: subgrid_k=0.
   real :: ratio_kpara_kperp=0.
   real, dimension(nx) :: vKperp, vKpara
-  real, dimension(nx) :: b_exp
   logical :: lsubgrid_cr = .false.
   logical :: lcosmicrayflux_diffus_dt = .false.
   logical :: ladvect_fcr=.false., lupw_fcr=.false.
@@ -363,6 +362,9 @@ module Cosmicrayflux
 
     integer, parameter :: n_pars=100
     integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+
+    call keep_compiler_quiet(subgrid_bmin)
 
     call copy_addr(kpara_t,p_par(1))
     call copy_addr(kperp_t,p_par(2))

@@ -2005,11 +2005,7 @@ module EquationOfState
       real :: density_scale1, density_scale
       real, dimension (mx,my) :: cv,cp
 !
-      if (density_scale_factor==impossible) then
-        density_scale=density_scale_cgs/unit_length
-      else
-        density_scale=density_scale_factor
-      endif
+      density_scale=density_scale_factor
       density_scale1=1./density_scale
 !
       select case (topbot)

@@ -4269,14 +4269,7 @@ bc_van3rd_z(AcBoundary boundary,AC_TOP_BOT topbot,Field j)
 bc_ism(AcBoundary boundary,AC_TOP_BOT topbot,Field j)
 {
   suppress_unused_warning(boundary)
-  real density_scale1
-  real density_scale
-  if (AC_density_scale_factor__mod__cdata==impossible) {
-    density_scale=density_scale_cgs/AC_unit_length__mod__cdata
-  }
-  else {
-    density_scale=AC_density_scale_factor__mod__cdata
-  }
+  density_scale  = AC_density_scale_factor__mod__cdata
   density_scale1=1./density_scale
   if(topbot == AC_bot) {
     if (j==AC_irho__mod__cdata-1  ||  j==AC_ilnrho__mod__cdata-1) {

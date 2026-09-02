@@ -2248,11 +2248,7 @@ module EquationOfState
       real :: density_scale1, density_scale
       real, dimension (:,:), allocatable :: cv,cp
 !
-      if (density_scale_factor==impossible) then
-        density_scale=real(density_scale_cgs/unit_length)
-      else
-        density_scale=density_scale_factor
-      endif
+      density_scale=density_scale_factor
       density_scale1=1./density_scale
 !
       if (j==iss.and..not.ltemperature) then
