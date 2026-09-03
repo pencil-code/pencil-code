@@ -16,6 +16,7 @@ module Deriv
 !
   use Messages
   use Cdata
+  use General, only: loptest
   use Quiet
 !
   implicit none
@@ -549,7 +550,7 @@ module Deriv
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (nx), intent(out) :: df
-      integer, intent(in) :: j,k
+      integer, intent(in) :: j, k
       logical, intent(in), optional :: ignoredx
 !
       logical :: igndx
@@ -626,7 +627,7 @@ module Deriv
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (nx), intent(out) :: df
-      integer, intent(in) :: j,k
+      integer, intent(in) :: j, k
       logical, intent(in), optional :: ignoredx, upwind
 !
       logical :: igndx, upwnd
@@ -646,7 +647,7 @@ module Deriv
       if (j==1) then
         if (nxgrid/=1) then
           if (igndx) then
-            facx=1.
+            facx=1.0
           else if (upwnd) then
             facx=(1.0/60)*dx_1(l1:l2)
           else
@@ -662,7 +663,7 @@ module Deriv
       elseif (j==2) then
         if (nygrid/=1) then
           if (igndx) then
-            fac=1.
+            fac=1.0
           else if (upwnd) then
             fac=(1.0/60)*dy_1(m)
           else
@@ -864,7 +865,6 @@ module Deriv
                   + 15.0*(pencil(m1+1:m2+1)+pencil(m1-1:m2-1)) &
                   -  6.0*(pencil(m1+2:m2+2)+pencil(m1-2:m2-2)) &
                   +      (pencil(m1+3:m2+3)+pencil(m1-3:m2-3)))
-!MR: no spherical/cylindrical
       else if (j==3) then
 !
 !  z-derivative
@@ -882,7 +882,6 @@ module Deriv
                   + 15.0*(pencil(n1+1:n2+1)+pencil(n1-1:n2-1)) &
                   -  6.0*(pencil(n1+2:n2+2)+pencil(n1-2:n2-2)) &
                   +      (pencil(n1+3:n2+3)+pencil(n1-3:n2-3)))
-!MR: no spherical/coarse
       else
         if (lroot) print*, 'der6_pencil: no such direction j=', j
         call fatal_error('der6_pencil','')
@@ -1042,11 +1041,14 @@ module Deriv
 !  14-nov-06/wolf: implemented bidiagonal scheme
 !  25-aug-09/axel: added fatal_error, because it is not adapted yet
 !
-      real, dimension (mx,my,mz) :: f
-      real, dimension (nx) :: df,fac
-      integer :: i,j
+      real, dimension (mx,my,mz), intent(in) :: f
+      real, dimension (nx), intent(out) :: df
+      integer, intent(in) :: i, j
+!
+      real, dimension (nx) :: fac
 !
       call fatal_error('deriv_2nd','derij_other not implemented yet')
+      call keep_compiler_quiet(df)
 !
     endsubroutine derij_other
 !***********************************************************************
@@ -1107,7 +1109,7 @@ module Deriv
       call keep_compiler_quiet(df)
 !
     endsubroutine der3i3j
-!***********************************************************************          
+!***********************************************************************
     subroutine der3i2j1k(f,ik,df,i,j,k)
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
