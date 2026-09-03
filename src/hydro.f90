@@ -9552,6 +9552,7 @@ module Hydro
     call copy_addr(it33,p_par(148)) ! int
 
     call copy_addr(idiag_uduum,p_par(149)) ! int
+    call copy_addr(lkt_transport,p_par(150)) ! bool
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Hydro
