@@ -47,6 +47,9 @@
   public :: prep_rhs_special
   public :: load_variables_to_gpu_special
 
+  public :: scale_height_init_z
+  real, dimension(:), allocatable :: scale_height_init_z
+
   interface input_persistent_special
      module procedure input_persist_special_id
      module procedure input_persist_special

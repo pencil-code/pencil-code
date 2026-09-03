@@ -171,7 +171,6 @@ module Special
   integer :: alloc_err
   real, dimension(nx) :: diffus_chi, diffus_chi3
   real :: gamma, gamma1, gamma_m1, cp1
-  real, dimension(:), allocatable :: scale_height_init_z
 !
   contains
 !
