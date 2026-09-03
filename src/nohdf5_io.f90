@@ -424,6 +424,7 @@ module HDF5_IO
 !  Default: local=.false.
 !
       use General, only: loptest,itoa
+      use File_io, only: file_exists
 
       character (len=*), intent(in) :: wrkdir
       integer, intent(out) :: mx_in, my_in, mz_in, mvar_in, maux_in, mglobal_in
@@ -433,28 +434,32 @@ module HDF5_IO
       character (len=fnlen) :: filename
       character :: prec_in
       integer :: iprocz_slowest, ipx_in, ipy_in, ipz_in
-      logical :: lread
+      logical :: lexist
 !
         ! local or global dimension file
         if (loptest(local)) then
           filename = trim(wrkdir)//'/data/proc'//trim(itoa(iproc_world))//'/dim.dat'
-          lread=.true.
+          lexist=.true.
         else
           filename = trim(wrkdir)//'/data/dim.dat'
-          lread=lroot
+          lexist=file_exists(filename)
         endif
-        if (lread) then
-          open(lun_input,file=filename)
-          read(lun_input,'(3i7,3i7)') mx_in, my_in, mz_in, mvar_in, maux_in, mglobal_in
-          read(lun_input,'(a)') prec_in
-          read(lun_input,'(3i5)') nghost_in
-          if (loptest(local)) then
-            read(lun_input,'(4i5)') ipx_in, ipy_in, ipz_in
-            nprocx_in=ipx_in; nprocy_in=ipy_in; nprocz_in=ipz_in
-          else
-            read(lun_input,'(4i5)') nprocx_in, nprocy_in, nprocz_in, iprocz_slowest
+        if (lexist) then
+          if (lroot) then
+            open(lun_input,file=filename)
+            read(lun_input,'(3i7,3i7)') mx_in, my_in, mz_in, mvar_in, maux_in, mglobal_in
+            read(lun_input,'(a)') prec_in
+            read(lun_input,'(3i5)') nghost_in
+            if (loptest(local)) then
+              read(lun_input,'(4i5)') ipx_in, ipy_in, ipz_in
+              nprocx_in=ipx_in; nprocy_in=ipy_in; nprocz_in=ipz_in
+            else
+              read(lun_input,'(4i5)') nprocx_in, nprocy_in, nprocz_in, iprocz_slowest
+            endif
+            close(lun_input)
           endif
-          close(lun_input)
+        else
+          mx_in=0
         endif
 
     endsubroutine input_dim
