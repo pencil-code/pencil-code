@@ -35,6 +35,7 @@ module Special
   real :: lntt0=0., wlntt=0., bmdi=0., hcond1=0., heatexp=0., heatamp=0., Ksat=0., Kc=0.
   real :: T_crit=0., deltaT_crit=0.
   real :: diffrho_hyper3=0., chi_hyper3=0., chi_hyper2=0., K_iso=0., b_tau=0., flux_tau=0.
+  real :: z_mass_insert=0., mass_input_width=0., mass_input_rate=0.
   real :: Bavoid=0., vorticity_factor=5., tau_inv=1., Bz_flux=0., q0=1., qw=1., dq=0.1, dt_gran=0.
   logical :: lgranulation=.false., lgran_proc=.false., lgran_parallel=.false.
   logical :: luse_vel_field=.false., lquench=.false., lmassflux=.false.
@@ -74,7 +75,7 @@ module Special
   real, dimension(mz) :: uu_init_z, lnrho_init_z, lnTT_init_z
   real, dimension(3) :: uu_emerg=0.0, bb_emerg=0.0, uu_drive=0.0
   real, dimension(:), allocatable :: deltaT_init_z, deltaE_init_z, E_init_z, deltarho_init_z, deltaH_part_init_z, &
-                                     deltaH_vol_init_z
+                                     deltaH_vol_init_z, mass_prof
   logical :: linit_uu=.false., linit_lnrho=.false., linit_lnTT=.false.
   logical :: lheatcond_cutoff=.false.
 !
@@ -108,7 +109,7 @@ module Special
       lflux_emerg_bottom, uu_emerg, bb_emerg, uu_drive,flux_type,lslope_limited_special, &
       lemerg_profx,lheatcond_cutoff,nwave,w_ff,z_ff,lset_boundary_emf,uu_tau1_quench, &
       lset_hotplate_lnTT,lnTT_hotplate_tau,lconv_vel_set_to_zero,ldispersion_acoustic, &
-      lnrho_max
+      lnrho_max, z_mass_insert, mass_input_width, mass_input_rate
 !
   integer :: ispecaux=0
   integer :: idiag_dtvel=0     ! DIAG_DOC: Velocity driver time step
@@ -284,6 +285,8 @@ module Special
         if (lroot .or. lgran_proc) call set_gran_params()
       endif
 !
+      if (mass_input_rate /= 0.0) allocate (mass_prof(mz))
+!
       ! Setup atmosphere stratification for later use
       call setup_profiles
 !
@@ -381,6 +384,7 @@ module Special
       if (allocated (BB2)) deallocate (BB2)
       if (allocated (Ux_ext)) deallocate (Ux_ext)
       if (allocated (Uy_ext)) deallocate (Uy_ext)
+      if (allocated (mass_prof)) deallocate (mass_prof)
 !
       call special_before_boundary (f, .true.)
 !
@@ -399,6 +403,7 @@ module Special
 !
       use EquationOfState, only: lnrho0, rho0
       use Mpicomm, only: mpibcast_real
+      use Sub, only: cubic_step
 !
       logical :: lnewton_cooling=.false.
 !
@@ -437,6 +442,17 @@ module Special
         endif
         call mpibcast_real(lnrho0)
         call mpibcast_real (rho0)
+      endif
+!
+      if (mass_input_rate /= 0.0) then
+        ! Adding density at height 'z_mass_insert' using two cubic step functions
+        ! from (z_mass_insert - mass_input_width) to (z_mass_insert + mass_input_width)
+!
+        mass_prof = cubic_step (z, z_mass_insert, mass_input_width, shift=-1.0) &
+                   * (1 - cubic_step (z, z_mass_insert, mass_input_width, shift= 1.0))
+!
+        mass_prof = (mass_input_rate * mass_prof) / 6 * mass_input_width
+        ! 2*(3*width) = area under mass_prof calculated analytically-for normlaising to 1
       endif
 !
     endsubroutine setup_profiles
@@ -1043,6 +1059,11 @@ module Special
             diffrho_hyper3
       endif
 !
+      if (mass_input_rate /= 0.0) then
+        if (.not. allocated(mass_prof)) call fatal_error ('ERROR: not "mass_prof" allocated!')
+        df(l1:l2,m,n,ilnrho) = alog (exp (df(l1:l2,m,n,ilnrho)) + mass_prof(n))
+      endif
+!
       if (swamp_diffrho > 0.0) call calc_swamp_density(df,p)
 !
       if (lnrho_min > -max_real) then
@@ -1092,7 +1113,7 @@ module Special
           endif
         endif
       endif
-!    
+!
     endsubroutine special_calc_density
 !***********************************************************************
     subroutine special_calc_energy(f,df,p)
