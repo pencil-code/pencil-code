@@ -234,6 +234,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		ln_rho:'ln density', $
 		log_rho:'log density', $
 		n_rho:'particle density',$
+		Mass_input:'mass-input stratification',$
 		Heat_cool_compression: 'Heating / cooling due to compression', $
 		Heat_cool_visc: 'Heating / cooling due to viscous heating', $
 		Heat_cool_conduction: 'Heating / cooling due to heat conduction', $
@@ -483,6 +484,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		origin_x:'', $
 		origin_y:'', $
 		origin_z:'' ,$
+		Mass_input:'z',$
 		Heat_cool_compression:'uu',$
 		Heat_cool_visc:['Temp', 'uu'],$
 		Heat_cool_conduction:['Temp', 'rho'],$

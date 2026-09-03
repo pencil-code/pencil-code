@@ -852,6 +852,15 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		if (n_elements (grad_P_mag) eq 0) then grad_P_mag = pc_compute_quantity (vars, index, 'grad_P_mag')
 		return, sqrt (dot2 (grad_P_mag))
 	end
+	if (strcmp (quantity, 'Mass_input', /fold_case)) then begin
+		; Mass input stratification (19-Sep-2024/vpandey)
+		z_SI = pc_compute_quantity (vars, index, 'z', ghost=ghost)
+		z_mass_insert = pc_get_parameter ('z_mass_insert', label=quantity) * unit.length
+		mass_input_width = pc_get_parameter ('mass_input_width', label=quantity) * unit.length
+		mass_input_rate = pc_get_parameter ('mass_input_rate', label=quantity) * (unit.mass/unit.time)
+		mass_input = cubic_step (z_SI, z_mass_insert, mass_input_width, -1.0) * (1 - cubic_step (z_SI, z_mass_insert, mass_input_width, 1.0))
+		return, (mass_input_rate * mass_input) / 6 * mass_input_width
+	end
 	if (any (strcmp (quantity, ['A', 'A_contour'], /fold_case))) then begin
 		; Magnetic vector potential [T * m]
 		return, vars[gl1:gl2,gm1:gm2,gn1:gn2,index.aa] * (unit.magnetic_field*unit.length)
