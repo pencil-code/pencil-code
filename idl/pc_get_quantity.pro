@@ -117,7 +117,7 @@
 function pc_compute_quantity, vars, index, quantity, ghost=ghost
 
 	common quantity_cache, uu, rho, grad_rho, n_rho, Temp, grad_Temp, P_therm, grad_P_therm, bb, B_2, jj, EMF, Poynting, Poynting_j, Poynting_u, F_Lorentz
-	common quantity_params, sources, l1, l2, m1, m2, n1, n2, nx, ny, nz, unit, start_par, run_par, alias
+	common quantity_params, sources, l1, l2, m1, m2, n1, n2, nx, ny, nz, unit, start_par, run_par, alias, datadir
 	common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
 	common cdat_grid, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated
 
@@ -781,7 +781,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		; Heating/cooling per particle  ;[J/m^3]
 		z_SI               = pc_compute_quantity (vars, index, 'z')
 		lnTT               = pc_compute_quantity (vars, index, 'ln_Temp')
-		deltaH_part_init_z = spread (read_profile('prof_deltaH_part.dat', z_SI), [0,1], [nx,ny])
+		deltaH_part_init_z = spread (read_profile('prof_deltaH_part.dat', z_SI, datadir=datadir), [0,1], [nx,ny])
 		heat_cool          = pc_get_parameter ('heat_cool', label=quantity)
 		cp_SI              = pc_get_parameter ('cp_SI', label=quantity)
 		gamma              = pc_get_parameter ('isentropic_exponent', label=quantity)
@@ -806,7 +806,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		lnTT                 = pc_compute_quantity (vars, index, 'ln_Temp')
 		lnrho0               = alog(rho[0,0,0])
 		print, "Routine Heat_cool_newton_cool is only correct if lnrho dosen't change at lower boundary."
-		lnTT_init_z          = spread (read_profile('prof_lnT.dat', z_SI), [0,1], [nx,ny])
+		lnTT_init_z          = spread (read_profile('prof_lnT.dat', z_SI, datadir=datadir), [0,1], [nx,ny])
 		newton               = exp (lnTT_init_z - lnTT) - 1.0 
 		tmp_tau              = nc_tau * sine_step (lnrho , lnrho0-nc_lnrho_num_magn , 0.5 *  nc_lnrho_trans_width,  shift = -1.0)
 		tmp_tau              = tmp_tau * spread (1.0 - sine_step (z_SI, nc_z_max , 0.5 * nc_z_trans_width, shift = -1.0), [0,1], [nx,ny])
@@ -844,7 +844,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		;External magnetic_field with scale-height added
 		z_SI               = pc_compute_quantity (vars, index, 'z', ghost=ghost)
 		B0_ext_z           = pc_get_parameter ('B0_ext_z', label=quantity) * unit.magnetic_field
-		scale_height	   = spread (read_profile('prof_scale_height.dat', z_SI), [0,1], [nx,ny])
+		scale_height	   = spread (read_profile('prof_scale_height.dat', z_SI, datadir=datadir), [0,1], [nx,ny])
 		return, B0_ext_z * exp(-z_SI / scale_height)
 	end
 	if (strcmp (quantity, 'grad_P_mag_abs', /fold_case)) then begin
@@ -1428,7 +1428,7 @@ end
 pro pc_quantity_cache_cleanup
 
 	common quantity_cache, uu, rho, grad_rho, n_rho, Temp, grad_Temp, P_therm, grad_P_therm, bb, B_2, jj, EMF, Poynting, Poynting_j, Poynting_u, F_Lorentz
-	common quantity_params, sources, l1, l2, m1, m2, n1, n2, nx, ny, nz, unit, start_par, run_par, alias
+	common quantity_params, sources, l1, l2, m1, m2, n1, n2, nx, ny, nz, unit, start_par, run_par, alias, datadir
 
 	undefine, uu
 	undefine, rho
@@ -1466,9 +1466,9 @@ end
 
 
 ; Calculation of physical quantities.
-function pc_get_quantity, quantity, vars, index, varfile=varfile, units=units, dim=dim, grid=grid, start_param=start_param, run_param=run_param, datadir=datadir, ghost=ghost, cache=cache, cleanup=cleanup, verbose=verbose
+function pc_get_quantity, quantity, vars, index, varfile=varfile, units=units, dim=dim, grid=grid, start_param=start_param, run_param=run_param, datadir=datadir_path, ghost=ghost, cache=cache, cleanup=cleanup, verbose=verbose
 
-	common quantity_params, sources, l1, l2, m1, m2, n1, n2, nx, ny, nz, unit, start_par, run_par, alias
+	common quantity_params, sources, l1, l2, m1, m2, n1, n2, nx, ny, nz, unit, start_par, run_par, alias, datadir
 	common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
 	common cdat_grid, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated
 
@@ -1478,6 +1478,7 @@ function pc_get_quantity, quantity, vars, index, varfile=varfile, units=units, d
 		pc_quantity_cache_cleanup
 		if (size (quantity, /type) eq 0) then return, !Values.D_NaN
 	end
+	if (keyword_set (datadir_path)) then datadir = datadir_path
 
 	if (n_elements (quantity) eq 0) then quantity = ""
 	if (not any (quantity ne "") or ((n_elements (vars) eq 0) and (n_elements (varfile) eq 0)) or ((n_elements (index) eq 0) and (size (vars, /type) ne 8) and (size (vars, /type) ne 7) and (size (varfile, /type) ne 7))) then begin
