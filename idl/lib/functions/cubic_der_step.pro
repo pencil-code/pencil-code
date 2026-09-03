@@ -12,9 +12,9 @@
 ;;;   This routine returns the first derivative of the
 ;;;   cubic_step function
 
-function cubic_der_step,x,x0,width
+function cubic_der_step,x,x0,width,shift
 
-xi = (x-x0)/width
+xi = (x-x0)/width-shift
 xi = xi > (-1.)
 xi = xi < (+1.)
 
