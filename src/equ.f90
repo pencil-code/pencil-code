@@ -809,6 +809,7 @@ module Equ
 !  Called by the helper to perform the diagnostics when asked for them
 !
 
+      use Boundcond, only: update_ghosts 
 !$    use General, only: signal_send
       use Special, only: calc_ode_diagnostics_special
       use EquationofState, only: ioncalc
@@ -819,7 +820,10 @@ module Equ
 
         if (lmultithread .and. (leos_ionization.or.leos_temperature_ionization)) call ioncalc(f)
         !TP: have to recompute shock field in before boundary for correct diagnostics
-        if (lshock)        call shock_before_boundary(f)
+        if (lshock) then
+          call shock_before_boundary(f)
+          call update_ghosts(f,ishock)
+        endif
         call calc_all_before_boundary_diagnostics(f)
         call calc_all_module_diagnostics(f,p)     ! by all helper threads
         if (lode) call calc_ode_diagnostics_special(f_ode_diagnostics)
