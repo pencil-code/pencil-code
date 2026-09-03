@@ -383,7 +383,7 @@ module Snapshot
         if (.not.lstart .and. lgpu .and. nt>0) call copy_farray_from_GPU(a)
         !If multithreading we update ghosts on the helper
         !so no need to update ghosts here
-        if(.not. lmultithread) then
+        if (.not. lmultithread) then
           if (msnap==mfarray) then
             if (.not. loptest(noghost)) call update_ghosts(a)
             call update_auxiliaries(a) ! Not if e.g. dvar.dat.
@@ -396,7 +396,7 @@ module Snapshot
           tmpfile=merge('var.h5 ','var.dat',IO_strategy=='HDF5')
           base_file = trim(directory_snap)//'/'//trim(tmpfile)
           backup_file = base_file // '.bck'
-          if(nsnap_backups > 1) then
+          if (nsnap_backups > 1) then
             do i = nsnap_backups,2,-1
               call system_cmd('mv -f '// backup_file // '.' // trim(itoa(i-1)) // ' ' // &
                                          backup_file // '.' // trim(itoa(i)) // ' > /dev/null 2>&1')

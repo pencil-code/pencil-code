@@ -393,10 +393,10 @@ module FArrayManager
         lwr=lroot.and.(lwrite_aux .or. .not.(vartype==iFARRAY_TYPE_COMM_AUXILIARY .or. &
                                              vartype==iFARRAY_TYPE_AUXILIARY ))
 !
-        if (lwr) call farray_index_append(varname,ivar,vector=vector,array=array)
+        call farray_index_append('i'//varname,ivar,vector=vector,array=array,lwr=lwr)
 
         if (ldownsampl) &
-            call farray_index_append(varname,ivar,vector=vector,array=array,ldown=.true.)
+            call farray_index_append('i'//varname,ivar,vector=vector,array=array,ldown=.true.)
 !
       endif
 !
@@ -453,7 +453,7 @@ module FArrayManager
 
     endsubroutine farray_finalize_ode
 !***********************************************************************
-    subroutine farray_index_append(varname,ivar,vector,array,ldown)
+    subroutine farray_index_append(varname,ivar,vector,array,ldown,lwr)
 !
 ! 14-Oct-2018/PAB: coded
 ! 09-Jul-2020/PAB: reworked
@@ -463,7 +463,7 @@ module FArrayManager
 !
       character (len=*), intent(in) :: varname
       integer, intent(in) :: ivar
-      logical, optional :: ldown
+      logical, optional :: ldown,lwr
       integer, optional, intent(in) :: vector, array
 !
       integer :: num_vector, num_array
@@ -475,7 +475,7 @@ module FArrayManager
       if ((num_vector /= 0) .and. (num_vector /= 3) .and. (num_vector /= 6) .and. (num_vector /= 9) &
           .and. lfatal_num_vector_369) &
           call fatal_error ("farray_index_append", "vector (or tensor) '"//trim(varname)//"' must have 3, 6, or 9 components!")
-      call index_append('i'//trim(varname), ivar, lroot, num_vector, num_array, ldown=ldown)
+      call index_append(trim(varname), ivar, loptest(lwr,lroot), num_vector, num_array, ldown=ldown)
 !
     endsubroutine farray_index_append
 !***********************************************************************
