@@ -20,9 +20,7 @@ module KT_transport
 !
   implicit none
 !
-  private
-!
-  public :: kt_init, kt_transp
+  include "kt_transport.h"
 !
   contains
 !***********************************************************************

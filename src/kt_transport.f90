@@ -39,9 +39,7 @@ module KT_transport
 !
   implicit none
 !
-  private
-!
-  public :: kt_init, kt_transp
+  include "kt_transport.h"
 !
 !  Configuration, set once by hydro's initialize via kt_init.
 !
