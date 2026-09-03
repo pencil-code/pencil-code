@@ -2110,6 +2110,15 @@ samples/1d-tests/photo_stratification/start.in -text
 samples/1d-tests/photo_stratification/stratification.dat -text
 samples/1d-tests/photo_stratification/video.in -text
 samples/1d-tests/photo_stratification/xyaver.in -text
+samples/1d-tests/profiles/ell_gamma_lna.csv -text
+samples/1d-tests/read_ell_from_table/README -text
+samples/1d-tests/read_ell_from_table/print.in -text
+samples/1d-tests/read_ell_from_table/reference.out -text
+samples/1d-tests/read_ell_from_table/run.in -text
+samples/1d-tests/read_ell_from_table/src/Makefile.local -text
+samples/1d-tests/read_ell_from_table/src/cparam.local -text
+samples/1d-tests/read_ell_from_table/start.in -text
+samples/1d-tests/read_ell_from_table/video.in -text
 samples/1d-tests/rel-shock/.log -text
 samples/1d-tests/rel-shock/README -text
 samples/1d-tests/rel-shock/parameters.pro -text
