@@ -195,18 +195,20 @@
    	if (AC_iaa__mod__cdata != 0) maximum_error = rkf4_update(DF_AA,step_num,AC_dt__mod__cdata,ERROR_AA,BETA_AA,F_AA,aax_initial_max,aay_initial_max,aaz_initial_max,maximum_error,AC_dt_ratio__mod__cdata,AC_dt_epsi__mod__cdata)
    	if ((AC_ilnrho__mod__cdata + AC_irho__mod__cdata) != 0) maximum_error = rkf4_update(DF_RHO,step_num,AC_dt__mod__cdata,ERROR_RHO,BETA_RHO,F_RHO,rho_initial_max,maximum_error,AC_dt_ratio__mod__cdata,AC_dt_epsi__mod__cdata)
    	if (AC_iss__mod__cdata != 0) maximum_error = rkf4_update(DF_SS,step_num,AC_dt__mod__cdata,ERROR_SS,BETA_SS,F_SS,ss_initial_max,maximum_error,AC_dt_ratio__mod__cdata,AC_dt_epsi__mod__cdata)
+        if (AC_iecr__mod__cdata != 0) maximum_error = rkf4_update(DF_ECR,step_num,AC_dt__mod__cdata,ERROR_ECR,BETA_ECR,F_ECR,ecr_initial_max,maximum_error,AC_dt_ratio__mod__cdata,AC_dt_epsi__mod__cdata)
+        if (AC_ifcr__mod__cdata != 0) maximum_error = rkf4_update(DF_FCRVEC,step_num,AC_dt__mod__cdata,ERROR_FCR,BETA_FCR,F_FCRVEC,fcrx_initial_max,fcry_initial_max,fcrz_initial_max,maximum_error,AC_dt_ratio__mod__cdata,AC_dt_epsi__mod__cdata)
    	if(step_num == 4) 
-          {
-          	if(AC_lsingle_precision_timestep__mod__gpu)
-          	{
-          		reduce_max((float)maximum_error,AC_maximum_error_single_precision)
-          	}
-          	else
-          	{
-          		reduce_max(maximum_error,AC_maximum_error)
-          	}
+        {
+        	if(AC_lsingle_precision_timestep__mod__gpu)
+        	{
+        		reduce_max((float)maximum_error,AC_maximum_error_single_precision)
+        	}
+        	else
+        	{
+        		reduce_max(maximum_error,AC_maximum_error)
+        	}
 
-          }
+        }
    }
 //This is done either together with the rhss here or if this flag is false then in before boundary
 #if LBACKREACT_INFL || LKLEIN_GORODON

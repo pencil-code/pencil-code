@@ -384,12 +384,17 @@ Field3 BETA_UU
 Field3 BETA_AA
 Field  BETA_RHO
 Field  BETA_SS
+Field  BETA_ECR
+Field3 BETA_FCR
+
 
 run_const AcPrecision AC_error_buffer_precision = AC_REAL_PRECISION
 precision(AC_error_buffer_precision) Field3 ERROR_UU
 precision(AC_error_buffer_precision) Field3 ERROR_AA
 precision(AC_error_buffer_precision) Field  ERROR_RHO
 precision(AC_error_buffer_precision) Field  ERROR_SS
+precision(AC_error_buffer_precision) Field  ERROR_ECR
+precision(AC_error_buffer_precision) Field3 ERROR_FCR
 
 Field SPLIT_DIFFUSION_UPDATE_BUFFER_REAL
 Field SPLIT_DIFFUSION_UPDATE_BUFFER_IMAG

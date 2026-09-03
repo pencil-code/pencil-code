@@ -169,6 +169,11 @@ output real aaz_initial_max
 output real rho_initial_max
 output real ss_initial_max
 
+output real ecr_initial_max
+output real fcrx_initial_max
+output real fcry_initial_max
+output real fcrz_initial_max
+
 
 ac_unused_real_array_1d(index) {suppress_unused_warning(index); return 0.0}
 ac_unused_real_array_2d(index1,index2) {suppress_unused_warning(index1); suppress_unused_warning(index2); return 0.0}

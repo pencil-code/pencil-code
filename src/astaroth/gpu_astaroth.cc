@@ -1655,6 +1655,7 @@ calc_timestep(double t)
     	// Don't decrease the time step by more than a factor of ten
         constexpr AcReal decrease_factor = (AcReal)0.1;
     	dt_ = sign(max(abs(dt_temp), decrease_factor*abs(dt)), dt);
+        if(dtlimit__mod__cdata > 0.) dt_ = std::max(dt_,dtlimit__mod__cdata);
     } 
     else
     {
