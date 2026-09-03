@@ -437,29 +437,27 @@ module HDF5_IO
       logical :: lexist
 !
         ! local or global dimension file
-        if (loptest(local)) then
-          filename = trim(wrkdir)//'/data/proc'//trim(itoa(iproc_world))//'/dim.dat'
-          lexist=.true.
-        else
+        if (.not.loptest(local)) then
           filename = trim(wrkdir)//'/data/dim.dat'
           lexist=file_exists(filename)
-        endif
-        if (lexist) then
-          if (lroot) then
-            open(lun_input,file=filename)
-            read(lun_input,'(3i7,3i7)') mx_in, my_in, mz_in, mvar_in, maux_in, mglobal_in
-            read(lun_input,'(a)') prec_in
-            read(lun_input,'(3i5)') nghost_in
-            if (loptest(local)) then
-              read(lun_input,'(4i5)') ipx_in, ipy_in, ipz_in
-              nprocx_in=ipx_in; nprocy_in=ipy_in; nprocz_in=ipz_in
-            else
-              read(lun_input,'(4i5)') nprocx_in, nprocy_in, nprocz_in, iprocz_slowest
-            endif
-            close(lun_input)
-          endif
         else
-          mx_in=0
+          lexist=.true.
+        endif
+        if (.not.lexist .or. loptest(local)) &
+          filename = trim(wrkdir)//'/data/proc'//trim(itoa(iproc_world))//'/dim.dat'
+
+        if (lroot) then
+          open(lun_input,file=filename)
+          read(lun_input,'(3i7,3i7)') mx_in, my_in, mz_in, mvar_in, maux_in, mglobal_in
+          read(lun_input,'(a)') prec_in
+          read(lun_input,'(3i5)') nghost_in
+          if (loptest(local)) then
+            read(lun_input,'(4i5)') ipx_in, ipy_in, ipz_in
+            nprocx_in=ipx_in; nprocy_in=ipy_in; nprocz_in=ipz_in
+          else
+            read(lun_input,'(4i5)') nprocx_in, nprocy_in, nprocz_in, iprocz_slowest
+          endif
+          close(lun_input)
         endif
 
     endsubroutine input_dim
