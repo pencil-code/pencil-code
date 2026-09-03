@@ -1060,7 +1060,7 @@ module Special
       endif
 !
       if (mass_input_rate /= 0.0) then
-        if (.not. allocated(mass_prof)) call fatal_error ('ERROR: not "mass_prof" allocated!')
+        if (.not. allocated(mass_prof)) call fatal_error ('special_calc_density', 'ERROR: not "mass_prof" allocated!')
         df(l1:l2,m,n,ilnrho) = alog (exp (df(l1:l2,m,n,ilnrho)) + mass_prof(n))
       endif
 !
