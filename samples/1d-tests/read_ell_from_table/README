@@ -9,6 +9,7 @@ Added:
 Status:
     worked since r44521 (2026-08-07 18:37:27 +0200)
     doesn't work since r44635 (2026-08-21 15:00:51 +0200)
+    added with r44765 (2026-09-04 01:31:53 +0200)
 Comments:
     is used for viscosity and for photon damping
     uses data from ../profiles/ell_gamma_lna.csv
