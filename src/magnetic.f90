@@ -12041,6 +12041,38 @@ print*,'AXEL2: should not be here (eta) ... '
 !
     endsubroutine get_bext
 !***********************************************************************
+    real function get_B0_ext_z(pz)
+!
+!  Get the external magnetic field stratification along z.
+!
+!  02-Jul-2025/vpandey: coded
+!
+      use Special, only: scale_height_init_z
+!
+      integer, intent(in) :: pz
+!
+      integer :: iz
+      real, dimension(mz), save :: Bz_stratified
+      logical, save :: lfirst_call = .true.
+!
+      if (lfirst_call) then
+        if (allocated (scale_height_init_z)) then
+          ! set up z-stratification
+          do iz = 1, mz
+            Bz_stratified(iz) = B0_ext_z * exp(-z(iz) / scale_height_init_z(iz))
+          enddo
+        else
+          do iz = 1, mz
+            Bz_stratified(iz) = B0_ext_z * exp(-z(iz) / B0_ext_z_H)
+          enddo
+        endif
+        lfirst_call = .false.
+      endif
+!
+      get_B0_ext_z = Bz_stratified(pz)
+!
+    endfunction get_B0_ext_z
+!***********************************************************************
     real function beltrami_phase()
 
       use Mpicomm, only: mpibcast_real
