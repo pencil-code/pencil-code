@@ -19,9 +19,9 @@
 ;;;   provides a smooth transition from 0 to 1 between
 ;;;   the coordinates x0-width/2 (=0) to x0+width/2 (=1)
 
-function cubic_step,x,x0,width
+function cubic_step,x,x0,width,shift
 
-xi = (x-x0)/width
+xi = (x-x0)/width - shift
 xi = xi > (-1.)
 xi = xi < (+1.)
 
