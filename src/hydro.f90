@@ -222,13 +222,17 @@ module Hydro
   logical :: lkt_transport=.false.
   real :: kt_theta=2.0
 !  Cell-level admissibility projection of the conserved (K0,K^i) state (opt-in,
-!  off by default). Ports jax project_admissible (cf. kt_transport.f90): floor
-!  K0-eps to a positive fluid energy and rescale the momentum so |K^i| <=
-!  (1-margin)(K0-eps) (subluminal). Identity on already-admissible states.
+!  off by default; cf. project_admissible in kt_transport.f90): floor K0-eps to
+!  a positive fluid energy and rescale the momentum so |K^i| <=
+!  (1-hless_proj_margin)*(K0-eps). Identity on already-admissible states.
 !  Fixes the multibubble superluminal blow-up (the gamma-clip in
 !  hydro_after_boundary_conservative caps gamma but never rescales K^i).
+!  hless_proj_margin is the CAUSALITY margin: |K^i|=K0-eps corresponds to |v|=1
+!  in the bag EOS, so the default 1e-2 caps the representable fluid speed at
+!  v~0.98 (gamma~5); lower it (e.g. 1e-3 -> v~0.994, gamma~9) to admit higher
+!  Lorentz factors. The positivity floor is internal (scale-aware, see below).
   logical :: lhiggsless_project=.false.
-  real :: hless_proj_safety=1e-8, hless_proj_margin=1e-2
+  real :: hless_proj_margin=1e-2
   logical :: lsqrt_qirro_uu=.false., lset_uz_zero=.false.
   logical :: lnorm_vw_hless=.false.
   logical :: lampluu_adjust_ascale=.false.   !PAR_DOC: automatically adjust initial u-amplitude
@@ -383,7 +387,7 @@ module Hydro
       lSchur_2D2D3D_uu, lSchur_2D2D1D_uu, &
       lhiggsless, vwall, alpha_hless, width_hless, qshear, zdampint, zdampext, &
       lext_force, rat_limiter, lkt_transport, kt_theta, &
-      lhiggsless_project, hless_proj_safety, hless_proj_margin
+      lhiggsless_project, hless_proj_margin
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -5907,10 +5911,21 @@ module Hydro
             eps_loc=real(eps_hless*max(0.d0, min(1.d0, &
               (f(:,m,n,ihless)+0.5d0*width_hless_absolute-t)/width_hless_absolute)))
           endif
-          floor_proj=max(hless_proj_safety, 1e-6*(1.0+abs(eps_loc)))
+!
+!  Internal positivity floor for the fluid energy K0-eps: purely a guard against
+!  division by (near-)zero in the subsequent cons2prim on essentially-vacuum
+!  cells, not a tunable. Scale-aware (relative to 1+|eps|) so that it remains
+!  representable next to an O(1) eps in floating point.
+!
+          floor_proj=1e-6*(1.0+abs(eps_loc))
           k0e_proj=max(f(:,m,n,irho)-eps_loc, floor_proj)
           f(:,m,n,irho)=k0e_proj+eps_loc
           call dot2_mx(f(:,m,n,iux:iuz),ss2)
+!
+!  Causality rescale: cap |K^i| at (1-hless_proj_margin)*(K0-eps), i.e. just
+!  inside the light cone (|K^i|=K0-eps <=> v=1); min(1,...) makes this the
+!  identity on admissible cells. tini only guards sqrt(0) at |K|=0.
+!
           scal_proj=min(1.0, (1.0-hless_proj_margin)*k0e_proj/sqrt(max(ss2,tini)))
           do j=0,2
             f(:,m,n,iux+j)=f(:,m,n,iux+j)*scal_proj
