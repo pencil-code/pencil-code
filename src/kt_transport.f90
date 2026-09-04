@@ -34,7 +34,6 @@
 !
 module KT_transport
 !
-  use Cparam
   use Cdata
 !
   implicit none

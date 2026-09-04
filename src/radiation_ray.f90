@@ -2913,8 +2913,6 @@ module Radiation
     call copy_addr(dtau_thresh_min, p_par(73))
     call copy_addr(dtau_thresh_max, p_par(74))
 
-    call copy_addr(idiag_qradrms,p_par(75)) ! int
-    call copy_addr(idiag_qradmax,p_par(76)) ! int
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Radiation

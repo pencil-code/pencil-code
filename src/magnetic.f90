@@ -12415,8 +12415,6 @@ print*,'AXEL2: should not be here (eta) ... '
     call keep_compiler_quiet(brms_target)
     call keep_compiler_quiet(k1y_ff)
 
-    call copy_addr(idiag_udotxbm,p_par(298)) ! int
-    call copy_addr(idiag_uxbdotm,p_par(299)) ! int
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Magnetic

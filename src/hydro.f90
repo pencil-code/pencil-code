@@ -1089,8 +1089,6 @@ module Hydro
         igu21=iguij+3; igu22=iguij+4; igu23=iguij+5
         igu31=iguij+6; igu32=iguij+7; igu33=iguij+8
       endif
-
-
 !!
 !!  Fourier transformed uu as aux
 !!
@@ -1099,7 +1097,6 @@ module Hydro
 !
 !  Tij and possibly relativistic Lorentz factor as aux
 !
-
       i31 = i13
       if (lconservative) then
         call farray_register_auxiliary('Tij',iTij,vector=6,communicated=.true.,rhs=.true.)
@@ -9616,8 +9613,8 @@ module Hydro
     call copy_addr(it32,p_par(147)) ! int
     call copy_addr(it33,p_par(148)) ! int
 
-    call copy_addr(idiag_uduum,p_par(149)) ! int
     call copy_addr(lkt_transport,p_par(150)) ! bool
+
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Hydro
