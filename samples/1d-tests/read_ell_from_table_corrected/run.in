@@ -1,0 +1,31 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!
+&run_pars
+  nt=2800, it1=200, isave=1000, itorder=3
+  dspec=2e-7, lspec_start=T,ou_spec=T, ab_spec=T
+  dsnap=1e-6, dvid=1e-5, d1davg=1e-4, d2davg=1e-4
+  lpencil_check_small=F
+  cdtsrc=1., cdtv=.10
+  dtmin=1e-20
+  ip=15
+/
+&eos_run_pars
+/
+&hydro_run_pars
+  lupw_uu=T
+/
+&density_run_pars
+  lupw_lnrho=T
+/
+&magnetic_run_pars
+  eta=1e-11
+  lupw_aa=T
+/
+&special_run_pars
+/
+&viscosity_run_pars
+  ivisc='nu-tdep', tdep_nu_type='read_ell_from_table'
+/
+&power_spectrum_run_pars
+/

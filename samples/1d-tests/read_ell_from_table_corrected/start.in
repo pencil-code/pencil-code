@@ -1,0 +1,31 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!
+&init_pars
+  unit_length=3.09e21, unit_velocity=1e5, unit_density=1e0, unit_magnetic=1e0, unit_temperature=1e0
+  lwrite_aux=T
+  tstart=0.
+  wav1=1e4
+  lbaryons=F
+/
+&eos_init_pars
+  gamma=1., cs0=1.7308526e2
+/
+&hydro_init_pars
+/
+&density_init_pars
+  lrelativistic_eos=F
+  initlnrho='const_rho', rho_const=4.645e-34  !(present-day value)
+/
+&magnetic_init_pars
+  initaa='power_randomphase_hel', amplaa=3e-13, relhel_aa=0.
+  initpower_aa=2., kpeak_aa=30.
+  lcoulomb=F, l2d_aa=T
+/
+&poisson_init_pars
+/
+&special_init_pars
+  ascale_type='general', nconformal=1.0
+  redshift0=5e8
+  lcorrect_ordering_for_a=T
+/

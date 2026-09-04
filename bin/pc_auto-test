@@ -213,7 +213,7 @@ my %tests = (
                          mdwarf-ss-running-aver-gpu
 			 star-in-a-box-giant-Kprof
 			 cartesian-convection-entropy-rain
-
+			 read_ell_from_table_corrected
                      )],
              # Level 4 for now contains all non-canonical tests that run,
              # but produce wrong results - and need immediate action (fixme)
@@ -330,6 +330,7 @@ my @gpu_tests = qw(
 			 1d-tests/axionU1back
 			 #1d-tests/axionSU2back
 			 star-in-a-box-giant-Kprof
+			 read_ell_from_table_corrected
 			 cartesian-convection-entropy-rain
                    );
 
