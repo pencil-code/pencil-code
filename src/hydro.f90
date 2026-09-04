@@ -1207,6 +1207,16 @@ module Hydro
 
       call put_shared_variable('lshear_rateofstrain',lshear_rateofstrain)
       if (lviscosity) call put_shared_variable ('lcalc_uuavg',lcalc_uuavg)
+!
+!  KT flux-limited transport is implemented only for the conservative relativistic
+!  (Higgsless) formulation: the KT hooks in the momentum and energy equations are
+!  gated on lconservative, and the KT solver is initialised only under lhiggsless.
+!  Fail loudly rather than silently ignoring a misconfigured lkt_transport.
+!
+      if (lkt_transport .and. .not. (lconservative .and. lhiggsless)) &
+          call fatal_error('initialize_hydro', &
+              'lkt_transport=T requires lconservative=T and lhiggsless=T')
+!
       if (lhiggsless) then
         ! normalization with T00 at initial time gives bar epsilon = alpha/(1 + alpha)
         eps_hless = alpha_hless/(1.+alpha_hless)
