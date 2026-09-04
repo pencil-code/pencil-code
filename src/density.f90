@@ -1119,9 +1119,10 @@ module Density
 !
       if (lhiggsless.and.lconservative) ihless=farray_index_by_name('ihless')
 
+
+      call get_shared_variable('lkt_transport',lkt_transport,default_val=.false.)
       if (lhydro.and.lhiggsless) then
         call get_shared_variable('eps_hless',eps_hless)
-        call get_shared_variable('lkt_transport',lkt_transport)
         if (lrun) call get_shared_variable('width_hless_absolute',width_hless_absolute)
       endif
 !
