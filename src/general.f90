@@ -7715,6 +7715,14 @@ iloop:do i=1,size(list2)
         dst = enum_replace_at_end_of_reheating_string
       case('interpol_from_lna1_to_lna2')
         dst = enum_interpol_from_lna1_to_lna2_string
+      case('powerlaw')
+        dst = enum_powerlaw_string
+      case('ascale_power_cs-step')
+        dst = enum_ascale_power_csZstep_string
+      case('prm_sigem')
+        dst = enum_prm_sigem_string
+      case('recombination')
+        dst = enum_recombination_string
       case('waterfall')
         dst = enum_waterfall_string
       case('imposed-cs2-core')

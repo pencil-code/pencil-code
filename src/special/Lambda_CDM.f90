@@ -357,7 +357,7 @@ module Special
 !
     endsubroutine rprint_special
 !***********************************************************************
-    subroutine special_after_boundary(f)
+    subroutine prep_rhs_special
 !
 !  Possibility to modify the f array after the boundaries are
 !  communicated.
@@ -367,8 +367,6 @@ module Special
 !     use Mpicomm, only: mpireduce_sum, mpiallreduce_sum, mpibcast_real
 !     use Sub, only: dot2_mn, grad, curl, dot_mn
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-!
 !  Compute terms routinely used during this time substep.
 !
       lna=f_ode(iLCDM_lna)
@@ -376,7 +374,22 @@ module Special
       sqrt_ascale=sqrt(ascale)
       Hubble=Hubble0*sqrt(Omega_mat/ascale**3+Omega_Lam+Omega_rad/ascale**4)
 !
-    endsubroutine special_after_boundary
+    endsubroutine prep_rhs_special
+!********************************************************************
+    subroutine pushpars2c(p_par)
+
+      use General, only: string_to_enum
+      use Syscalls, only: copy_addr
+
+      integer, parameter :: n_pars=100
+      integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr(ilcdm_lna,p_par(1)) ! int
+    call copy_addr(omega_lam,p_par(2))
+    call copy_addr(omega_rad,p_par(3))
+    call copy_addr(omega_mat,p_par(4))
+    call copy_addr(hubble0,p_par(5))
+    endsubroutine pushpars2c
 !********************************************************************
 !********************************************************************
 !************        DO NOT DELETE THE FOLLOWING        *************

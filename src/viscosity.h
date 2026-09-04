@@ -12,4 +12,5 @@
   public :: calc_visc_heat_ppd, getnu
   public :: dynamical_viscosity
   public :: split_update_viscosity
+  public :: prep_rhs_viscosity
   public :: pushpars2c

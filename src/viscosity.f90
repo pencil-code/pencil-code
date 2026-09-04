@@ -252,6 +252,7 @@ module Viscosity
   integer :: enum_div_sld_visc = 0
   character (len=labellen) :: ivis_res
 !
+  integer :: enum_tdep_nu_type = 0
   contains
 !***********************************************************************
     subroutine register_viscosity
@@ -2478,18 +2479,22 @@ module Viscosity
 !
       use Sub, only: div, calc_all_diff_fluxes, grad, dot_mn, calc_sij2, &
                      stagger_to_base_interp_1st, stagger_to_base_interp_3rd, &
-                     gij_v_times_s, gij, traceless_strain, read_ell_from_table
+                     gij_v_times_s, gij, traceless_strain
       use General, only: reduce_grad_dim,notanumber
       use DensityMethods, only: getrho
       use Boundcond, only: update_ghosts
       use Diagnostics, only: save_name
+
+      use Sub, only: read_ell_from_table
+      use Diagnostics, only: save_name
+
+      real :: n_ele, ell_gam, xH, rhob
 
       real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx,3,3) :: uij,Sij
       real, dimension (nx) :: divu
 
       real, dimension(nx) :: rho, tmp
-      real :: n_ele, ell_gam, xH, rhob
 
       if (lnusmag_as_aux) then
 !
@@ -2572,7 +2577,7 @@ module Viscosity
           endif
 !
 !  Take nu_tdep=min(nu,PrM/sigEm_all), i.e., when sigEm_all is small (early times),
-!  nu_tdep is being replaced by nu. 
+!  nu_tdep is being replaced by nu.
 !
         case ('PrM_sigEm')
           if (sigEm_all>0.) then
@@ -2699,6 +2704,72 @@ module Viscosity
 !      endif
 
     endsubroutine viscosity_after_boundary
+!***********************************************************************
+    subroutine prep_rhs_viscosity
+
+      use Sub, only: read_ell_from_table
+      use Diagnostics, only: save_name
+
+      real :: n_ele, ell_gam, xH, rhob
+!
+!  The following allows us to let nu change with time, t-nu_tdep_toffset.
+!  The nu_tdep_toffset is used in cosmology where time starts at t=1.
+!  lresi_nu_tdep_t0_norm is not the default because of backward compatbility.
+!  The default is problematic because then nu_tdep /= nu for t < nu_tdep_t0.
+!
+      if (lvisc_nu_tdep .or. lvisc_hyper3_simplified_tdep) then
+        select case (tdep_nu_type)
+        case ('powerlaw')
+          if (lvisc_nu_tdep_t0_norm) then
+            nu_tdep=nu*max(real(t-nu_tdep_toffset)/nu_tdep_t0,1.)**nu_tdep_exponent
+          else
+            nu_tdep=nu*max(real(t-nu_tdep_toffset),nu_tdep_t0)**nu_tdep_exponent
+          endif
+        case ('ascale_power')
+          nu_tdep=nu*ascale**nu_tdep_ascale_power
+        case ('ascale_power_cs-step')
+          if (t<=nu_tdep_t1 .or. t>nu_tdep_t2) then
+            nu_tdep=nu*ascale**nu_tdep_ascale_power
+          else
+            nu_tdep=cs_t/nu_tdep_kcs
+          endif
+!
+!  Take nu_tdep=min(nu,PrM/sigEm_all), i.e., when sigEm_all is small (early times),
+!  nu_tdep is being replaced by nu.
+!
+        case ('PrM_sigEm')
+          if (sigEm_all>0.) then
+            nu_tdep=min(nu,PrM/sigEm_all)
+          else
+            nu_tdep=nu
+          endif
+!
+!  Viscosity for recombination. Allow for a value of ascale below which nu is constant.
+!
+        case ('recombination')
+          xH=.7546
+          rhob=4.21e-31/ascale**3
+          n_ele=xH*rhob/m_p
+          ell_gam=1./(ascale*n_ele*sigma_Thomson)
+          if (lvisc_const_below_ascale) then
+            ell_gam=ell_gam/min(ascale/ascale_visc,1.)**2
+          endif
+          nu_tdep=c_light*ell_gam
+          if (lroot) call save_name(ell_gam,idiag_ell_gam)
+          if (lroot .and. ip<6) print*,'AXEL: m_p, sigma_Thomson, c_light=',m_p, sigma_Thomson, c_light
+!
+!  Viscosity for recombination from a file.
+!
+        case ('read_ell_from_table')
+          call read_ell_from_table(ascale,ell_gam)
+          nu_tdep=c_light*ell_gam
+          if (lroot) call save_name(ell_gam,idiag_ell_gam)
+        case default
+          call fatal_error('viscosity_after_boundary','unknown value of tdep_nu_type')
+        endselect
+      endif
+
+    endsubroutine prep_rhs_viscosity
 !***********************************************************************
     subroutine getnu_non_newtonian(gdotsqr,nu_effective,gradnu_effective)
 !
@@ -3265,7 +3336,6 @@ module Viscosity
     call copy_addr(nu_hyper2,p_par(8))
     call copy_addr(lvisc_rho_nu_const_bulk,p_par(9)) ! int
     call copy_addr(nu_cspeed,p_par(10))
-    call copy_addr(nu_tdep,p_par(11))
     call copy_addr(nu_hyper3_mesh,p_par(12))
     call copy_addr(nu_spitzer,p_par(13))
     call copy_addr(nu_spitzer_max,p_par(14))
@@ -3384,6 +3454,19 @@ module Viscosity
     call keep_compiler_quiet(r1_lambda)
     call keep_compiler_quiet(r2_lambda)
 
+    call copy_addr(nu_tdep_exponent,p_par(121))
+    call copy_addr(nu_tdep_t0,p_par(122))
+    call copy_addr(nu_tdep_toffset,p_par(123))
+    call copy_addr(nu_tdep_t1,p_par(124))
+    call copy_addr(nu_tdep_t2,p_par(125))
+    call copy_addr(nu_tdep_kcs,p_par(126))
+    call copy_addr(prm,p_par(127))
+    call copy_addr(lvisc_nu_tdep_t0_norm,p_par(128)) ! bool
+    call copy_addr(nu_tdep_ascale_power,p_par(129))
+    call copy_addr(ascale_visc,p_par(130))
+    call copy_addr(lvisc_const_below_ascale,p_par(131)) ! bool
+    call string_to_enum(enum_tdep_nu_type,tdep_nu_type)
+    call copy_addr(enum_tdep_nu_type,p_par(132)) ! int
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Viscosity

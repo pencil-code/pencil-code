@@ -265,7 +265,6 @@ contains
     
     call copy_addr_dble(sigma_thomson,p_par(1185))
     call copy_addr_dble(c_light,p_par(1188))
-    call copy_addr(hubble,p_par(1192))
     call copy_addr(iey,p_par(1194)) ! int
     call copy_addr(iez,p_par(1195)) ! int
     call copy_addr(icool_prof,p_par(1196)) ! int
@@ -293,7 +292,6 @@ contains
     call copy_addr_dble(unit_flux,p_par(1201))
     call copy_addr(iyh,p_par(1202)) ! int
     call copy_addr_dble(kappa_es,p_par(1209))
-    call copy_addr(sqrt_ascale,p_par(1215))
     call copy_addr(iqrad,p_par(1217)) ! int
     call copy_addr(ikapparho,p_par(1218)) ! int
     call copy_addr(ikr_frad,p_par(1219)) ! int

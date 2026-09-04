@@ -1159,9 +1159,16 @@ module Equ
     subroutine prep_rhs
 
       use Special, only: prep_rhs_special
+      use Viscosity, only: prep_rhs_viscosity
 !
 !  The updating of parameters that should be updated both on the CPU and GPU should happen here.
 !
+      !TP: make sure sqrt_ascale and Hubble always have valid values on the GPU even when we have no module calculating them
+      if(lgpu) then
+       sqrt_ascale=0.
+       Hubble=0.
+      endif
+      if (lviscosity) call prep_rhs_viscosity
       if (lspecial) call prep_rhs_special
 
     endsubroutine prep_rhs

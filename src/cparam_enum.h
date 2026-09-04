@@ -956,3 +956,7 @@ integer, parameter :: enum_sextic_wo_cubic_string = 946
 integer, parameter :: enum_replace_at_end_of_reheating_string = 947
 integer, parameter :: enum_interpol_from_lna1_to_lna2_string = 948
 integer, parameter :: enum_read_ell_from_table_string = 949
+integer, parameter :: enum_powerlaw_string = 950
+integer, parameter :: enum_ascale_power_csZstep_string = 951
+integer, parameter :: enum_prm_sigem_string = 952
+integer, parameter :: enum_recombination_string = 953

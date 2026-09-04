@@ -203,4 +203,7 @@ module Viscosity
 !
     endsubroutine split_update_viscosity
 !***********************************************************************
+    subroutine prep_rhs_viscosity
+    endsubroutine prep_rhs_viscosity
+!***********************************************************************
 endmodule Viscosity
