@@ -2137,6 +2137,10 @@ module Special
 
     call copy_addr(lgamma_phi_damping,p_par(57)) ! bool
     call copy_addr(gamma_phi_damping_prefactor,p_par(58))
+    call copy_addr(idiag_a2rhopm,p_par(59)) ! int
+    call copy_addr(idiag_a2rhogphim,p_par(60)) ! int
+    call copy_addr(idiag_a2rhophim,p_par(61)) ! int
+
     endsubroutine pushpars2c
 !********************************************************************
 !********************************************************************

@@ -57,7 +57,10 @@ prep_ode_right()
     gphi = gradient(Field(AC_iinfl_phi__mod__backreact_infl-1))
     gphi2 = dot(gphi,gphi)
     a2rhogphim__mod__backreact_infl=0.5*gphi2
-    reduce_sum(a2rhogphim__mod__backreact_infl/nwgrid,AC_a2rhogphim_all__mod__backreact_infl)
+    if(AC_idiag_a2rhogphim__mod__backreact_infl != 0)
+    {
+      reduce_sum(a2rhogphim__mod__backreact_infl/nwgrid,AC_a2rhogphim_all__mod__backreact_infl)
+    }
     a2rhop=(dphi*dphi)+onethird*gphi2
     a2rho=0.5*((dphi*dphi)+gphi2)
     a2rhophim__mod__backreact_infl=a2rho
@@ -167,8 +170,14 @@ prep_ode_right()
   a2rhopm__mod__backreact_infl   /= nwgrid
   a2rhophim__mod__backreact_infl /= nwgrid
   reduce_sum(a2rhom__mod__backreact_infl,AC_a2rhom_all__mod__backreact_infl)
-  reduce_sum(a2rhopm__mod__backreact_infl,AC_a2rhopm_all__mod__backreact_infl)
-  reduce_sum(a2rhophim__mod__backreact_infl,AC_a2rhophim_all__mod__backreact_infl)
+  if(AC_idiag_a2rhopm__mod__backreact_infl != 0) 
+  {
+    reduce_sum(a2rhopm__mod__backreact_infl,AC_a2rhopm_all__mod__backreact_infl)
+  }
+  if(AC_lrho_rad__mod__backreact_infl || AC_idiag_a2rhophim__mod__backreact_infl != 0)
+  {
+    reduce_sum(a2rhophim__mod__backreact_infl,AC_a2rhophim_all__mod__backreact_infl)
+  }
 }
 #else
 
