@@ -268,7 +268,7 @@ module Testfield
 !
       if (luxb_as_aux) then
         if (iuxbtest==0) then
-          call farray_register_auxiliary('uxb',iuxbtest,vector=3*njtest)
+          call farray_register_auxiliary('uxb',iuxbtest,vector=3,array=njtest)
           if (lroot.and.iuxbtest/=0) print*, 'register_testfield: iuxbtest = ', iuxbtest
         endif
       endif
@@ -277,7 +277,7 @@ module Testfield
 !
       if (ljxb_as_aux) then
         if (ijxbtest==0) then
-          call farray_register_auxiliary('jxb',ijxbtest,vector=3*njtest)
+          call farray_register_auxiliary('jxb',ijxbtest,vector=3,array=njtest)
           if (lroot.and.iuxbtest/=0) print*, 'register_testfield: ijxbtest = ', ijxbtest
         endif
       endif
@@ -287,7 +287,7 @@ module Testfield
       if (lugu) then
         if (lugu_as_aux) then
           if (iugutest==0) then
-            call farray_register_auxiliary('ugu',iugutest,vector=3*njtest)
+            call farray_register_auxiliary('ugu',iugutest,vector=3,array=njtest)
             if (lroot.and.iugutest/=0) print*, 'register_testfield: iugutest = ', iugutest
           endif
         else

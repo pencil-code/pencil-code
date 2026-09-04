@@ -472,9 +472,14 @@ module FArrayManager
       num_array = ioptest (array, 0)
 !
       if (num_vector == 1) num_vector = 0
-      if ((num_vector /= 0) .and. (num_vector /= 3) .and. (num_vector /= 6) .and. (num_vector /= 9) &
+      if (num_vector /= 0 .and. num_vector /= 3 .and. num_vector /= 6 .and. num_vector /= 9 &
           .and. lfatal_num_vector_369) &
           call fatal_error ("farray_index_append", "vector (or tensor) '"//trim(varname)//"' must have 3, 6, or 9 components!")
+
+      if (num_vector>0 .and. num_array>0) then
+        num_array=num_array*num_vector
+        num_vector=0
+      endif
       call index_append(trim(varname), ivar, loptest(lwr,lroot), num_vector, num_array, ldown=ldown)
 !
     endsubroutine farray_index_append
