@@ -221,6 +221,14 @@ module Hydro
 !  Kurganov-Tadmor flux-limited transport (see kt_transport.f90); runtime-off by default.
   logical :: lkt_transport=.false.
   real :: kt_theta=2.0
+!  Cell-level admissibility projection of the conserved (K0,K^i) state (opt-in,
+!  off by default). Ports jax project_admissible (cf. kt_transport.f90): floor
+!  K0-eps to a positive fluid energy and rescale the momentum so |K^i| <=
+!  (1-margin)(K0-eps) (subluminal). Identity on already-admissible states.
+!  Fixes the multibubble superluminal blow-up (the gamma-clip in
+!  hydro_after_boundary_conservative caps gamma but never rescales K^i).
+  logical :: lhiggsless_project=.false.
+  real :: hless_proj_safety=1e-8, hless_proj_margin=1e-2
   logical :: lsqrt_qirro_uu=.false., lset_uz_zero=.false.
   logical :: lnorm_vw_hless=.false.
   logical :: lampluu_adjust_ascale=.false.   !PAR_DOC: automatically adjust initial u-amplitude
@@ -374,7 +382,8 @@ module Hydro
       ltime_integrals_always, dtcor, lvart_in_shear_frame, lSchur_3D3D1D_uu, &
       lSchur_2D2D3D_uu, lSchur_2D2D1D_uu, &
       lhiggsless, vwall, alpha_hless, width_hless, qshear, zdampint, zdampext, &
-      lext_force, rat_limiter, lkt_transport, kt_theta
+      lext_force, rat_limiter, lkt_transport, kt_theta, &
+      lhiggsless_project, hless_proj_safety, hless_proj_margin
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -5876,11 +5885,37 @@ module Hydro
       real :: dely, delz
       integer ::  iter_relB,j,jhless
       real, dimension (mx,3) :: ss
+      real, dimension (mx) :: eps_loc, k0e_proj, floor_proj, scal_proj
 
       if (iTij==0) call fatal_error("hydro_after_boundary","must compute Tij for lconservative")
 
       do n=1,mz
       do m=1,my
+!
+!  Cell-level admissibility projection of the conserved (K0,K^i) state (opt-in).
+!  Port of jax project_admissible applied to the CELL state each substep, using
+!  the local, space-time-dependent eps(t,x) (eps_hless outside a bubble wall,
+!  0 inside, smoothed over width_hless_absolute). Floors K0-eps positive and
+!  rescales the momentum so |K^i| <= (1-margin)(K0-eps) (v<1). Identity on
+!  admissible states; without it, strong multibubble collisions drive the cell
+!  state superluminal (|K^i|>K0-eps) until it NaNs.
+        if (lhiggsless .and. lhiggsless_project) then
+          if (width_hless==0.) then
+            eps_loc=0.
+            where(real(t) < f(:,m,n,ihless)) eps_loc=eps_hless
+          else
+            eps_loc=real(eps_hless*max(0.d0, min(1.d0, &
+              (f(:,m,n,ihless)+0.5d0*width_hless_absolute-t)/width_hless_absolute)))
+          endif
+          floor_proj=max(hless_proj_safety, 1e-6*(1.0+abs(eps_loc)))
+          k0e_proj=max(f(:,m,n,irho)-eps_loc, floor_proj)
+          f(:,m,n,irho)=k0e_proj+eps_loc
+          call dot2_mx(f(:,m,n,iux:iuz),ss2)
+          scal_proj=min(1.0, (1.0-hless_proj_margin)*k0e_proj/sqrt(max(ss2,tini)))
+          do j=0,2
+            f(:,m,n,iux+j)=f(:,m,n,iux+j)*scal_proj
+          enddo
+        endif
         if (ldensity) then
           if (lmagnetic) then
             if (ibx==0) call fatal_error("hydro_after_boundary","must use lbb_as_comaux=T")
