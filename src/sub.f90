@@ -9572,8 +9572,11 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
 
       real, dimension(nline) :: T_table, z_table
       character (len=labellen) :: header
-      real, save :: lna_table_max 
+      real :: lna_table_max 
+      logical :: lread=.false.
       integer :: iline
+
+      if(lread) return
 
       open(9,file='../profiles/ell_gamma_lna.csv',status='old')
       read(9,*) header
@@ -9584,6 +9587,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
       lna_table_min=minval(lna_table)
       lna_table_max=maxval(lna_table)
       dlna=(lna_table_max-lna_table_min)/(nline-1)
+      lread = .true.
 1000  format(1p,e19.12,3(1x,e18.12))
     endsubroutine read_ell_file_to_table
 !***********************************************************************

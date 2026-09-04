@@ -352,7 +352,7 @@ module Viscosity
       use EquationOfState, only: get_stratz
       use Mpicomm, only: stop_it
       use SharedVariables, only: get_shared_variable
-      use Sub, only: write_zprof, write_yprof, step, der_step
+      use Sub, only: write_zprof, write_yprof, step, der_step,read_ell_file_to_table
       use General, only: itoa
 !
       integer :: i
@@ -816,7 +816,9 @@ module Viscosity
         endif
       enddo
 
-
+      if(tdep_nu_type == 'read_ell_from_table') then
+        call read_ell_file_to_table
+      endif
     endsubroutine initialize_viscosity
 !***********************************************************************
     subroutine initialize_lambda
