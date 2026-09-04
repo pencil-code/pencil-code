@@ -5864,7 +5864,7 @@ module Hydro
       real, dimension (mx) :: rho, rho1, press, rho_gam21, rho_gam20, lorentz_gamma2=1.
       real, dimension (mx) :: ss2, hydro_energy, hydro_energy1, rat, rat0, vA2_pseudo
       real :: dely, delz
-      integer ::  iter_relB,j,jhless,my_ind
+      integer ::  iter_relB,j,jhless
       real, dimension (mx,3) :: ss
 
       if (iTij==0) call fatal_error("hydro_after_boundary","must compute Tij for lconservative")
@@ -5929,11 +5929,7 @@ module Hydro
             rat=rat0
           endif
           if (lrat_limiter) then
-            do my_ind = l1, l2
-              if (rat(my_ind)>rat_limiter) then 
-                rat=rat_limiter
-              endif
-            enddo
+            rat = min(rat,rat_limiter)
           endif
           lorentz_gamma2=1./(1.-rat)
           if (lrelativistic_eos) &
