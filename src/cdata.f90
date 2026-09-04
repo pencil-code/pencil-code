@@ -429,6 +429,9 @@ module Cdata
   real :: scl_factor_target, Hp_target, appa_target, wweos_target
   !$omp threadprivate(scl_factor_target,Hp_target,appa_target)
   real :: Hubble=0., ascale=1., sqrt_ascale=1., nconformal=1.5, tphys=0.
+  !TP: do we set ascale before reading time-dependent viscosity.
+  !TP: for correctness should be true, but Axel wanted to keep the wrong behaviour as default
+  logical :: lcorrect_ordering_for_a = .false.
   character(LEN=fnlen) :: ascale_type='default'
   integer :: enum_ascale_type = 0
 !

@@ -1168,8 +1168,14 @@ module Equ
        sqrt_ascale=0.
        Hubble=0.
       endif
-      if (lviscosity) call prep_rhs_viscosity
-      if (lspecial) call prep_rhs_special
+      if(lcorrect_ordering_for_a) then
+        if (lspecial) call prep_rhs_special
+        if (lviscosity) call prep_rhs_viscosity
+      else
+        if (lviscosity) call prep_rhs_viscosity
+        if (lspecial) call prep_rhs_special
+      endif
+
 
     endsubroutine prep_rhs
 !***********************************************************************

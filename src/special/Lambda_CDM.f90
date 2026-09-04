@@ -90,7 +90,8 @@ module Special
   real :: lna, tph, redshift0=4500.
 !
   namelist /special_init_pars/ &
-      Omega_Lam, Omega_rad, Hubble0, redshift0, nconformal, ascale_type
+      Omega_Lam, Omega_rad, Hubble0, redshift0, nconformal, ascale_type, &
+      lcorrect_ordering_for_a
 !
   namelist /special_run_pars/ &
       Omega_Lam, Omega_rad, Hubble0, ascale_type
