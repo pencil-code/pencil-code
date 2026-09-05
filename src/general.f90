@@ -7723,6 +7723,8 @@ iloop:do i=1,size(list2)
         dst = enum_prm_sigem_string
       case('recombination')
         dst = enum_recombination_string
+      case('radius_range')
+        dst = enum_radius_range_string
       case('waterfall')
         dst = enum_waterfall_string
       case('imposed-cs2-core')

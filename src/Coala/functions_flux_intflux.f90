@@ -83,13 +83,16 @@ subroutine compute_flux_k0(nbins,arr_gij,tabflux_coag,flux)
    real(wp), intent(in)   :: tabflux_coag(nbins,nbins,nbins)
    real(wp), intent(out)  :: flux(nbins)
 
-   integer  :: j
+   integer  :: i,j,k
 
    flux = 0._wp
 
-   do j=1,nbins-1
-      flux(j) = sum(tabflux_coag(j,:,:)*arr_gij(:,:))
-
+   do i=1,nbins-1
+   do j=1,nbins
+   do k=1,nbins
+      flux(i) = flux(i) + tabflux_coag(i,j,k)*arr_gij(j,k)
+   enddo
+   enddo
    enddo
 
 end subroutine compute_flux_k0
@@ -173,13 +176,20 @@ subroutine compute_flux(nbins,kpol,arr_gij,tabflux_coag,flux)
    real(wp), intent(in)  :: tabflux_coag(nbins,nbins,nbins,kpol+1,kpol+1)
    real(wp), intent(out) :: flux(nbins)
 
-   integer :: j
+   integer :: i,j,k,h,g
 
    flux = 0._wp
 
-   do j=1,nbins-1
-      flux(j) =  sum(tabflux_coag(j,:,:,:,:)*arr_gij(:,:,:,:))
-
+   do i=1,nbins-1
+   do j=1,nbins
+   do k=1,nbins
+   do h=1,kpol+1
+   do g=1,kpol+1
+      flux(i) =  flux(i) + tabflux_coag(i,j,k,h,g)*arr_gij(j,k,h,g)
+   enddo
+   enddo
+   enddo
+   enddo
    enddo
 
 end subroutine compute_flux

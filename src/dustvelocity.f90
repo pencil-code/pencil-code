@@ -1946,6 +1946,7 @@ module Dustvelocity
      call copy_addr(nud_shock,p_par(57)) ! (ndustspec)
      call copy_addr(nud_hyper3_mesh,p_par(58)) ! (ndustspec)
      call copy_addr(md,p_par(59)) ! (ndustspec)
+     call copy_addr(rhograin,p_par(60))
 
    endsubroutine pushpars2c
 !***********************************************************************

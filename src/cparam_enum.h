@@ -960,3 +960,4 @@ integer, parameter :: enum_powerlaw_string = 950
 integer, parameter :: enum_ascale_power_csZstep_string = 951
 integer, parameter :: enum_prm_sigem_string = 952
 integer, parameter :: enum_recombination_string = 953
+integer, parameter :: enum_radius_range_string = 954

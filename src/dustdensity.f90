@@ -26,6 +26,8 @@
 ! PENCILS PROVIDED ppsf(ndustspec); mu1; udropav(3)
 ! PENCILS PROVIDED glnrhod(3,ndustspec);
 ! PENCILS PROVIDED rhodsum; rhodsum1; grhodsum(3); glnrhodsum(3)
+! TP: this is a hack, sorry
+! PENCILS PROVIDED old_uud(3,ndustspec)
 !
 !***************************************************************
 module Dustdensity
@@ -198,7 +200,7 @@ module Dustdensity
   integer :: enum_self_collisions = 0
   integer :: enum_bordernd = 0
   real :: rhodust_floor = 1e-30
-
+  
   contains
 !***********************************************************************
     subroutine register_dustdensity
@@ -2850,25 +2852,25 @@ module Dustdensity
                     select case (self_collisions)
                     case ('average')
                       fact=.5*self_collision_factor
-                      call dot2(fact*(p%uud(l,j,:)+p%uud(l,i,:)),deltavd_drift2)
+                      call dot2(fact*(p%uud(l,:,j)+p%uud(l,:,i)),deltavd_drift2)
                     case ('neighbor')
                       fact=self_collision_factor
                       if (i==1) then
-                        call dot2(fact*(p%uud(l,i+1,:)-p%uud(l,i,:)),deltavd_drift2)
+                        call dot2(fact*(p%uud(l,:,i+1)-p%uud(l,:,i)),deltavd_drift2)
                       elseif (i==ndustspec) then
-                        call dot2(fact*(p%uud(l,i-1,:)-p%uud(l,i,:)),deltavd_drift2)
+                        call dot2(fact*(p%uud(l,:,i-1)-p%uud(l,:,i)),deltavd_drift2)
                       else
                         fact=.5*self_collision_factor
-                        call dot2(fact*(p%uud(l,i+1,:)-p%uud(l,i,:)),deltavd_drift2a)
-                        call dot2(fact*(p%uud(l,i-1,:)-p%uud(l,i,:)),deltavd_drift2a)
+                        call dot2(fact*(p%uud(l,:,i+1)-p%uud(l,:,i)),deltavd_drift2a)
+                        call dot2(fact*(p%uud(l,:,i-1)-p%uud(l,:,i)),deltavd_drift2a)
                         deltavd_drift2=deltavd_drift2a+deltavd_drift2b
                       endif
                     case ('neighbor_asymmetric')
                       fact=self_collision_factor
                       if (i==ndustspec) then
-                        call dot2(fact*(p%uud(l,i-1,:)-p%uud(l,i,:)),deltavd_drift2)
+                        call dot2(fact*(p%uud(l,:,i-1)-p%uud(l,:,i)),deltavd_drift2)
                       else
-                        call dot2(fact*(p%uud(l,i+1,:)-p%uud(l,i,:)),deltavd_drift2)
+                        call dot2(fact*(p%uud(l,:,i+1)-p%uud(l,:,i)),deltavd_drift2)
                       endif
                     case default
                       call fatal_error('dustdensity:coag_kernel','no such self_collisions: '// &
@@ -2878,7 +2880,7 @@ module Dustdensity
                     deltavd_drift2=0.
                   endif
                 else
-                  call dot2(fact*(p%uud(l,i,:)-p%uud(l,j,:)),deltavd_drift2)
+                  call dot2(fact*(p%uud(l,:,i)-p%uud(l,:,j)),deltavd_drift2)
                 endif
 !
 !  Relative thermal speed is only important for very light particles
@@ -3223,27 +3225,30 @@ module Dustdensity
       type (pencil_case) :: p
       integer :: i,j,l,lgh
       real, dimension(ndustspec) :: updated_nd,updated_rho
-      real, dimension(3,ndustspec) :: old_uud
-      real, dimension(ndustspec,ndustspec) :: dv
       real, dimension(ndustspec) :: new_rhod,new_nd
+      real :: deltav(ndustspec,ndustspec)
 
       if(llast) then
         do l=1,nx
           lgh=l+nghost
-          updated_nd = p%nd(l,:) + dt_beta_ts(itsub)*df(lgh,m,n,ind)
-          updated_rho = updated_nd*md
-          old_uud = p%uud(l,:,:)
           do i=1,ndustspec
+            updated_nd(i) = p%nd(l,i) + dt_beta_ts(itsub)*df(lgh,m,n,ind(i))
+            updated_rho(i) = updated_nd(i)*md(i)
+            p%old_uud(l,:,i) = p%uud(l,:,i)
             p%uud(l,:,i) = p%uud(l,:,i) + dt_beta_ts(itsub)*df(lgh,m,n,iudx(i):iudz(i))
+          enddo
+          do i=1,ndustspec
             do j=i,ndustspec
-              call get_deltavd(l,i,j,dv(i,j),p)
-              dv(j,i) = dv(i,j)
+              call get_deltavd(l,i,j,deltav(i,j),p)
+              deltav(j,i) = deltav(i,j)
             enddo
           enddo
-          call coala_advance(updated_rho,rhodust_floor,dv,new_rhod)
-          new_nd = new_rhod/md
-          df(lgh,m,n,ind) = 1/dt_beta_ts(itsub)*(new_nd-p%nd(l,:))
-          p%uud(l,:,:) = old_uud
+          call coala_advance(updated_rho,rhodust_floor,deltav,new_rhod)
+          do i=1,ndustspec
+            new_nd(i) = new_rhod(i)/md(i)
+            df(lgh,m,n,ind(i)) = 1/dt_beta_ts(itsub)*(new_nd(i)-p%nd(l,i))
+            p%uud(l,:,i) = p%old_uud(l,:,i)
+          enddo
         enddo
       endif
     endsubroutine coala_coagulation
@@ -3887,6 +3892,10 @@ module Dustdensity
       call copy_addr(diffnd_anisotropic,p_par(72)) ! real3
       call copy_addr(kernel_mean,p_par(73)) ! (ndustspec) (ndustspec)
       call copy_addr(lcondensing_species,p_par(74)) ! bool
+      call copy_addr(ldeltavd_turbulent_ormel,p_par(75)) ! bool
+      call copy_addr(gamma,p_par(76))
+      call copy_addr(alpha_turb,p_par(77)) ! real dconst
+      call copy_addr(rhodust_floor,p_par(78)) ! real dconst
 
       call keep_compiler_quiet(supsatfac)
       call keep_compiler_quiet(lkeepinitnd)

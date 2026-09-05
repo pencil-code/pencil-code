@@ -19,6 +19,15 @@ module solver_DG
 
 contains
 
+real(wp) function minval_positive(tabdtCFL) result(CFL)
+         real(wp) :: tabdtCFL(:)
+         integer :: j
+         CFL = 1e+30
+         do j=1,size(tabdtCFL)
+           CFL = min(CFL,tabdtCFL(j))
+         enddo
+         endfunction
+
 !-----------------------------------------------------
 ! Original version to compute functions for DG scheme
 !-----------------------------------------------------
@@ -71,7 +80,7 @@ real(wp) function compute_CFL_k0(eps,nbins,massgrid,gij,tabflux_coag) result(CFL
 
    enddo
       
-   CFL = minval(tabdtCFL,tabdtCFL > 0._wp)
+   CFL = minval_positive(tabdtCFL)
 
    ! for debug
    ! do j=1,nbins
@@ -146,7 +155,7 @@ real(wp) function compute_CFL_k0_kdv(eps,nbins,massgrid,gij,tabflux_coag,dv) res
 
    enddo
       
-   CFL = minval(tabdtCFL,tabdtCFL > 0._wp)
+   CFL = minval_positive(tabdtCFL)
 
    ! for debug
    ! do j=1,nbins
@@ -530,7 +539,7 @@ real(wp) function compute_CFL(eps,nbins,kpol,massgrid,gij,tabflux_coag) result(C
 
    enddo
       
-   CFL = minval(tabdtCFL,tabdtCFL > 0._wp)
+   CFL = minval_positive(tabdtCFL)
 
    ! check CFL value
    if ( CFL == 0._wp) then
@@ -597,7 +606,7 @@ real(wp) function compute_CFL_kdv(eps,nbins,kpol,massgrid,gij,tabflux_coag,dv) r
 
    enddo
       
-   CFL = minval(tabdtCFL,tabdtCFL > 0._wp)
+   CFL = minval_positive(tabdtCFL)
 
    ! check CFL value
    if ( CFL == 0._wp) then

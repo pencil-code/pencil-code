@@ -46,7 +46,9 @@ subroutine coala_coag_k0(nbins,massgrid,tabflux_coag,rhodust,eps_rhodust,dv,dthy
    real(wp) :: gij(nbins),gijnew(nbins),coeff_CFL,eps_gij
    real(wp) :: massbins(nbins)
 
-   massbins = 0.5_wp * (massgrid(2:)+massgrid(1:nbins))
+   do j = 1,nbins
+     massbins(j) = 0.5_wp * (massgrid(j+1)+massgrid(j))
+   enddo
 
    eps_gij =  eps_rhodust/massgrid(nbins+1)
    ! print*,"eps_gij=",eps_gij

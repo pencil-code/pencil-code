@@ -143,6 +143,15 @@ maxval(real3 vec)
 	return max(vec)
 }
 minval(real x) {return x}
+minval_positive(real[] x) 
+{
+  res = 1e+30
+  for i in 0:size(x)
+  {
+    if(x[i] > 0) res = min(res,x[i])
+  }
+  return res
+}
 
 #define notanumber(x) (false)
 
