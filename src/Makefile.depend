@@ -552,7 +552,7 @@ ifneq ($(GPU),nogpu)
 $(GPU_OBJ): $(GPU_INTERFACE) gpu.h $(GPU_SRC) $(CPARAM_OBJ) $(CDATA_OBJ) $(GENERAL_OBJ) $(MPICOMM_OBJ) $(MESSAGES_OBJ) $(FILE_IO_OBJ) quiet.o
 endif
 #
-ifneq ($(COALA),nogpu)
+ifneq ($(COALA),nocoala)
 $(COALA_OBJ): LIB_COALA $(CDATA_OBJ) $(DUSTVELOCITY_OBJ)
 endif
 #

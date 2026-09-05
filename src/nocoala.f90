@@ -22,7 +22,7 @@ module Coala
 
    character(len=30) :: kernel
    real          :: rhograin
-   integer :: Q
+   integer :: Q,kpol
 
    real, allocatable :: mat_coeffs_leg(:,:),vecnodes(:),vecweights(:)
 
