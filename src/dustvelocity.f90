@@ -47,7 +47,6 @@ module Dustvelocity
   real, dimension(ndustspec,ndustspec) :: scolld
   real, dimension(nx,ndustspec) :: tausd1
   real, dimension(ndustspec) :: md=1.0, mdplus, mdminus, ad=0.,adminus,adplus
-  !$omp threadprivate(md)
   real, dimension(ndustspec) :: surfd, rhodsad1
   real, dimension(ndustspec) :: tausd=1.0, betad=0.0
   real :: betad0=0.

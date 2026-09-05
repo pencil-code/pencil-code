@@ -2354,6 +2354,7 @@ module Dustdensity
       real, dimension (nx,ndustspec) :: nd
       real, dimension (ndustspec) :: ndnew,mdnew,minew
       integer :: j,k,i_targ,l,lgh
+      real, dimension(ndustspec) :: md
 !
 !  Loop over pencil
 !
