@@ -24,7 +24,9 @@ real(wp) function minval_positive(tabdtCFL) result(CFL)
          integer :: j
          CFL = 1e+30
          do j=1,size(tabdtCFL)
-           CFL = min(CFL,tabdtCFL(j))
+           if(tabdtCFL(j) > 0.) then
+             CFL = min(CFL,tabdtCFL(j))
+           endif
          enddo
          endfunction
 
