@@ -38,7 +38,7 @@ module Dustvelocity
 !ajwm SHOULDN'T REALLY BE SHARED
 !ajwm but are used consistently with the Dustdensity module
 !ajwm - not good but for reasons of dust density / velocity interaction
-  public :: rhods, surfd, mdplus, mdminus
+  public :: rhods, surfd, mdplus, mdminus, adminus,adplus
   public :: ad, scolld, ustcst, tausd1, tausd
   public :: unit_md, dust_chemistry, mumon, mmon, md
 !
@@ -46,7 +46,7 @@ module Dustvelocity
   complex, dimension (7) :: coeff=0.
   real, dimension(ndustspec,ndustspec) :: scolld
   real, dimension(nx,ndustspec) :: tausd1
-  real, dimension(ndustspec) :: md=1.0, mdplus, mdminus, ad=0.
+  real, dimension(ndustspec) :: md=1.0, mdplus, mdminus, ad=0.,adminus,adplus
   !$omp threadprivate(md)
   real, dimension(ndustspec) :: surfd, rhodsad1
   real, dimension(ndustspec) :: tausd=1.0, betad=0.0
@@ -89,6 +89,8 @@ module Dustvelocity
   character (len=labellen) :: draglaw='epstein_cst', viscd_law='const'
   character (len=labellen) :: dust_geometry='sphere', dust_chemistry='nothing'
   character (len=labellen) :: iefficiency_type='nothing', dust_binning='log_mass'
+  real, target :: rhograin=impossible
+  real :: smax=impossible,smin=impossible
 !
   namelist /dustvelocity_init_pars/ &
       uudx0, uudy0, uudz0, ampl_udx, ampl_udy, ampl_udz, &
@@ -101,7 +103,8 @@ module Dustvelocity
       llin_radiusbins, llog_massbins, &
       lvshear_dust_global_eps, cdtd, &
       ldustvelocity_shorttausd, scaleHtaus, z0taus, betad0,&
-      lstokes_highspeed_corr, iefficiency_type, dust_binning
+      lstokes_highspeed_corr, iefficiency_type, dust_binning, &
+      rhograin,smin,smax
 !
   namelist /dustvelocity_run_pars/ &
       nud, nud_all, iviscd, betad, betad_all, tausd, tausd_all, draglaw, &
@@ -185,6 +188,10 @@ module Dustvelocity
         llog_massbins=.true.
         dustbin_width=alog(deltamd)
 
+      case ('radius_range')
+        llog_massbins=.true.
+        dustbin_width=(smax/smin)**(1./ndustspec)
+
       case default
         call fatal_error('register_dustvelocity','no valid dust_binning')
       endselect
@@ -195,6 +202,8 @@ module Dustvelocity
         call put_shared_variable('deltamd',deltamd)
         call put_shared_variable('dustbin_width',dustbin_width)
       endif
+
+      call put_shared_variable('rhograin',rhograin)
 !
     endsubroutine register_dustvelocity
 !***********************************************************************
@@ -213,6 +222,7 @@ module Dustvelocity
       integer :: i, j, k
       real :: gsurften, Eyoung, nu_Poisson, Eyoungred
       real :: lnad
+      real :: r
 !
 !  Copy boundary condition on first dust species to all others.
 !
@@ -335,7 +345,19 @@ module Dustvelocity
         enddo
         ad=(0.75*md*unit_md/(pi*rhods))**onethird
         llin_radiusbins=.false.
-
+      case ('radius_range')
+        r=(smax/smin)**(1./ndustspec)
+        adminus(1) = smin
+        do j=2,ndustspec+1
+           adplus(j-1) = r*adminus(j-1)
+           if(j <= ndustspec) adminus(j)  = adplus(j-1)
+        enddo
+        mdminus = 4.*pi*rhograin*adminus**3/3.
+        mdplus  = 4.*pi*rhograin*adplus**3/3.
+        do j=1,ndustspec
+           ad(j) = sqrt(adplus(j)*adminus(j))
+           md(j) = sqrt(mdplus(j)*mdminus(j))
+        enddo
       case default
         call fatal_error('initialize_dustvelocity','no such dust_binning: '//trim(dust_binning))
       endselect

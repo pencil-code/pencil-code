@@ -1,0 +1,26 @@
+!                          -*-f90-*- (for Emacs)
+!
+!  Run parameters for MRI turbulence
+!
+&run_pars
+  cvsid='$Id$',
+  nt=2, it1=1, cdt=0.4, cdtv=0.4, isave=100, itorder=3,
+  dsnap=6.2831853, dtmin=1.0e-6
+  lbidiagonal_derij=F
+  lpencil_check=F, lpencil_check_small=F
+  dt=664504088827.92444
+/
+&eos_run_pars
+  TT=10.0
+/
+&hydro_run_pars
+/
+&density_run_pars
+/
+&dustvelocity_run_pars
+  tausd=1.0e-6, ldustvelocity_shorttausd=F
+  ldragforce_dust=F, ldragforce_gas=F
+/
+&dustdensity_run_pars
+  alpha_turb  = 1.5
+/

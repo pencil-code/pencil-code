@@ -1,0 +1,37 @@
+!                              -*-f90-*-     (for emacs)
+!
+! Initialisation parameters for MRI turbulence
+!
+&init_pars
+  cvsid='$Id$',
+  xyz0  =  -0.66,  -0.66,  -0.66
+  Lxyz  =   1.32,   1.32,   1.32
+  lperi =      T,      T,      T
+  ip=14, lwrite_ic=T
+/
+&eos_init_pars
+/
+&density_init_pars
+  ldensity_nolog=T
+  initlnrho='const_rho'
+  rho_const=1e-15
+/
+&dustvelocity_init_pars
+  inituud='zero'
+  dust_binning='radius_range'
+  smin=5e-7
+  smax=1.0
+  rhograin=2.3
+  ldustcoagulation=T
+  llin_radiusbins=T
+/
+&dustdensity_init_pars
+  initnd='floor','power-law'
+  ldustdensity_log=F
+  coeff_pl=-3.5
+  dtg0=1e-2
+  ldeltavd_thermal=T
+  ldeltavd_turbulent_ormel=T
+  scut        = 250e-7
+  lradius_binning=T
+/

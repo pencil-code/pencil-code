@@ -33,7 +33,7 @@ module Dustdensity
   use Cdata
   use Dustvelocity, only: nd0,rhod0,ldustcoagulation,ldustcondensation,dust_binning,&
                           rhods, surfd, mdplus, mdminus,&
-                          ad, scolld, ustcst, tausd1, tausd,&
+                          ad, adminus,adplus, scolld, ustcst, tausd1, tausd,&
                           unit_md, dust_chemistry, mumon, mmon, md
 
   use Quiet
@@ -95,7 +95,7 @@ module Dustdensity
   logical :: ludstickmax=.false., lno_deltavd=.false., ldustnucleation=.false.
   logical :: lcalcdkern=.true., lkeepinitnd=.false., ldustcontinuity=.true.
   logical :: ldustnulling=.false., lupw_ndmdmi=.false.
-  logical :: ldeltavd_thermal=.false., ldeltavd_turbulent=.false.
+  logical :: ldeltavd_thermal=.false., ldeltavd_turbulent=.false.,ldeltavd_turbulent_ormel=.false.
   logical :: ldust_cdtc=.false.
   logical :: ldiffd_simplified=.false., ldiffd_dusttogasratio=.false.
   logical :: ldiffd_hyper3=.false., ldiffd_hyper3lnnd=.false.
@@ -123,7 +123,13 @@ module Dustdensity
   real    :: r_lucky=0., r_collected=0., f_lucky=0.
   real :: tstart_droplet_coagulation=impossible
   real :: nd0_luck=0.
-  !
+  character(len=30) :: coala_kernel="k_cross_section"
+  integer :: coala_order=0
+  integer :: coala_Q=15
+  real :: alpha_turb=impossible
+  real :: coeff_pl=impossible
+  real :: dtg0=impossible
+  real :: scut=impossible
   namelist /dustdensity_init_pars/ &
       rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd0,  mdave0, Hnd, &
       adpeak, amplnd, amplnd_rel, phase_nd, kx_nd, ky_nd, kz_nd, &
@@ -131,6 +137,7 @@ module Dustdensity
       radius_nd, xblob_nd, yblob_nd, zblob_nd, &
       lcalcdkern, supsatfac, lkeepinitnd, ldustcontinuity, lupw_ndmdmi, &
       ldeltavd_thermal, ldeltavd_turbulent, ldustdensity_log, Ri0, &
+      ldeltavd_turbulent_ormel,&
       coeff_smooth, z0_smooth, z1_smooth, epsz1_smooth, deltavd_imposed, &
       latm_chemistry, spot_number, lnoaerosol, &
       lmdvar, lmice, ldcore, ndmin_for_mdvar, &
@@ -138,7 +145,7 @@ module Dustdensity
       advec_ddensity, dustdensity_floor, init_x1, init_x2, lsubstep, a0, a1, &
       ldustcondensation_simplified, ldustcoagulation_simplified,lradius_binning, &
       lzero_upper_kern, rotat_position, dt_substep, &
-      r_lucky, r_collected, f_lucky, nd0_luck, ldustnucleation
+      r_lucky, r_collected, f_lucky, nd0_luck, ldustnucleation,coeff_pl,dtg0,scut
 !
   namelist /dustdensity_run_pars/ &
       rhod0, diffnd, diffnd_hyper3, diffnd_hyper3_mesh, diffmd, diffmi, lno_deltavd, initnd, &
@@ -154,7 +161,8 @@ module Dustdensity
       lsemi_chemistry, lradius_binning, dkern_cst, lzero_upper_kern, &
       llog10_for_admom_above10,lmomcons, lmomconsb, lmomcons2, lmomcons3, lmomcons3b, &
       lkernel_mean, lpiecewise_constant_kernel, momcons_term_frac, &
-      tstart_droplet_coagulation, lfree_molecule, ldustnucleation
+      tstart_droplet_coagulation, lfree_molecule, ldustnucleation, &
+      alpha_turb
 !
   integer :: idiag_KKm=0     ! DIAG_DOC: $\sum {\cal T}_k^{\rm coag}$
   integer :: idiag_KK2m=0    ! DIAG_DOC: $\sum {\cal T}_k^{\rm coag}$
@@ -182,12 +190,14 @@ module Dustdensity
   real :: gamma
 !
   real :: dustdensity_floor_log
+  real, pointer :: rhograin
 
 !
 !For strings to enums
 !
   integer :: enum_self_collisions = 0
   integer :: enum_bordernd = 0
+  real :: rhodust_floor = 1e-30
 
   contains
 !***********************************************************************
@@ -263,6 +273,7 @@ module Dustdensity
         if (dust_chemistry == "condensing_species") lcondensing_species=.true.
         call put_shared_variable('lcondensing_species',lcondensing_species,caller='register_particles_radius')
       endif
+
 !
 !  Identify version number (generated automatically by CVS).
 !
@@ -285,6 +296,7 @@ module Dustdensity
       use General, only: spline_integral, itoa
       use Mpicomm, only: mpibcast
       use Special, only: set_init_parameters
+      use Coala, only: initialize_coala
 !
       real, contiguous,dimension(:,:,:,:) :: f
 
@@ -294,6 +306,7 @@ module Dustdensity
       logical :: lnothing
 !
       call get_shared_variable('beta_glnrho_scaled',beta_glnrho_scaled, caller='initialize_dustdensity')
+      call get_shared_variable('rhograin',rhograin,default_val=impossible)
       call get_gamma_etc(gamma)
 !
 !  Need deltamd for computing the radius differential in dustdensity.
@@ -581,7 +594,7 @@ module Dustdensity
         call fatal_error('initialize_dustdensity','module works only with cgs units')
       endif
 
-      if (ldustcoagulation.and.lradius_binning.and..not.lmdvar) &
+      if (ldustcoagulation.and.lradius_binning.and..not.lmdvar.and..not. lcoala) &
         call fatal_error('initialize_dustdensity', &
                          'coagulation with lradius_binning=T is not working well') 
 !
@@ -629,6 +642,10 @@ module Dustdensity
       if (dimensionality==0) ldustcontinuity=.false.
 !
       if (dustdensity_floor>0.) dustdensity_floor_log=alog(dustdensity_floor)
+
+      if(lcoala) then
+       call initialize_coala(coala_kernel,rhograin,coala_Q,coala_order)
+      endif
 !
     endsubroutine initialize_dustdensity
 !***********************************************************************
@@ -651,8 +668,9 @@ module Dustdensity
       real, dimension (nx) :: eps
       real :: lnrho_z, Hrho, rho00, rhod00, mdpeak, rhodmt, del, fac
       real, pointer :: rhs_poisson_const
-      integer :: j, k, l, i, i2
+      integer :: j, k, l, i, i2,bin_scut
       logical :: lnothing
+      real :: coeff_norm,rhodust,hj,mean_mass
 !
 !  Different initializations of nd.
 !
@@ -674,7 +692,34 @@ module Dustdensity
           do k=1,ndustspec
             f(:,:,:,ind(k)) = -exp(-mdplus(k))+exp(-mdminus(k))
           enddo
-          if (lroot) print*, 'init_nd: Constant dust number density'
+          if (lroot) print*, 'init_nd: Exp(-m) dust number density'
+        !Initial flooring for number density
+        case ('floor')
+          do k=1,ndustspec
+            f(:,:,:,ind(k)) = rhodust_floor/md(k)
+          enddo
+        !Power-law distribution up to a cut-off
+        case ('power-law')
+          do k=1,ndustspec
+             if ((adminus(k) < scut) .and. (scut <= adplus(k))) then
+                bin_scut = k
+             endif
+          enddo
+          do k=1,bin_scut
+            mean_mass    = 0.5*(mdplus(k)+mdminus(k))
+            hj = mdplus(k) - mdminus(k)
+            do l=l1,l2; do m=m1,m2; do n=n1,n2
+              if(ldensity_nolog) then
+                coeff_norm = dtg0*f(l,m,n,irho)
+              else
+                coeff_norm = dtg0*exp(f(l,m,n,ilnrho))
+              endif
+              coeff_norm = coeff_norm*((4.+coeff_pl)/3.)/(mdplus(bin_scut)**((4.+coeff_pl)/3.) - mdminus(1)**((4.+coeff_pl)/3.))
+
+              rhodust = coeff_norm * hj * mean_mass**((1.+ coeff_pl)/3.)
+              f(l,m,n,ind(k)) =  rhodust/md(k)
+            enddo; enddo; enddo
+          enddo
         case ('sinwave-phase')
           do k=1,ndustspec
             call sinwave_phase(f,ind(k),amplnd,kx_nd,ky_nd,kz_nd,phase_nd)
@@ -1164,6 +1209,9 @@ module Dustdensity
       endif
       if (ldustcoagulation .or. ldustcoagulation_simplified) then
         lpenc_requested(i_TT1)=.true.
+      endif
+      if (ldeltavd_turbulent_ormel) then
+        lpenc_requested(i_TT)=.true.
       endif
       if (ldustcondensation) then
         lpenc_requested(i_cc)=.true.
@@ -1955,7 +2003,7 @@ module Dustdensity
 !
 !  Calculate kernel of coagulation equation
 !
-        if (ldustcoagulation) then
+        if (ldustcoagulation .and. .not. lcoala) then
           call coag_kernel(f,p)
 !
 !  Dust coagulation due to sticking
@@ -2135,6 +2183,10 @@ module Dustdensity
       endif
 
       if (lspecial) call special_calc_dustdensity(f,df,p)
+
+      if (ldustcoagulation .and. lcoala) then
+        call coala_coagulation(f,df,p)
+      endif
 !
       call calc_diagnostics_dustdensity(f,p)
 
@@ -2721,11 +2773,151 @@ module Dustdensity
 !
     endsubroutine get_deltavd_turbu
 !***********************************************************************
+    subroutine get_deltavd_turbu_ormel(deltavd_turbu,l,i,j,p)
+!
+      real, intent(OUT) :: deltavd_turbu
+      integer, intent(IN) :: l,i,j
+      type(pencil_case) :: p
+
+      real, parameter :: yr        = 31556926.
+      real, parameter :: u         = 1660538921e-33
+      real, parameter :: mu_gas    = 23e-1
+      real, parameter :: mh        = 100749e-5*1660538921e-33
+
+      real :: nh,cs,Re,t_eta
+      real :: ts_i,ts_j,ts_1,St_1,St_2,x_St,beta_St
+      real :: res
+      real :: t_dyn
+
+      t_dyn = sqrt(3.*pi/(32.*G_newton_cgs*p%rho(l)))
+      nh = p%rho(l)/(mu_gas*mh)
+      cs = sqrt(gamma*k_B*p%TT(l)/(mu_gas*mh))        !sound speed
+      Re = 62e6*sqrt(nh/1e5)*sqrt(p%TT(l)/10.)  !Reynolds number
+      t_eta = t_dyn/sqrt(Re)
+
+      !stopping times
+      ts_i = sqrt(pi*gamma/8) * rhograin*ad(i)/(p%rho(l)*cs)
+      ts_j = sqrt(pi*gamma/8) * rhograin*ad(j)/(p%rho(l)*cs)
+      ts_1 = ts_i
+
+      !stokes numbers
+      St_1    = ts_i/t_dyn
+      St_2    = ts_j/t_dyn
+
+
+      !to symmetrize dv
+      if (j > i) then
+         ts_1    = ts_j
+         St_1    = ts_j/t_dyn
+         St_2    = ts_i/t_dyn
+      endif
+
+      x_St    = St_2/St_1
+
+      beta_St = 3.2 - (1. + x_St) + 2./(1. + x_St) * (1./2.6 + x_St**3/(1.6 + x_St))
+
+
+      if (ts_1 < t_eta) then
+         if (abs(St_1 - St_2) < epsilon(St_1)) then
+            res = 0.
+         else
+            res = alpha_turb * cs**2 * (St_1 - St_2)/(St_1 + St_2) * (St_1**2/(St_1 + 1./sqrt(Re)) + St_2**2/(St_2 + 1./sqrt(Re)))
+         endif
+      else if ( (t_eta <= ts_1) .and. (ts_1 < t_dyn) ) then
+         res = alpha_turb * cs**2 * beta_St * St_1
+      else
+         res = alpha_turb * cs**2 * (1./(St_1 + 1.) + 1./(St_2 + 1.))
+      endif
+      deltavd_turbu = sqrt(res)
+!
+    endsubroutine get_deltavd_turbu_ormel
+!***********************************************************************
+     subroutine get_deltavd(l,i,j,deltavd,p)
+      use Sub, only: dot2
+      type(pencil_case) :: p
+      integer :: l,i,j,lgh
+      real :: deltavd,deltavd_therm
+      real :: deltavd_turbu, fact
+      real :: deltavd_drift2, deltavd_drift2a, deltavd_drift2b
+      real :: ust,mu_air,rho_air, Rik 
+!
+!  Relative macroscopic speed; allow for possibility of finite kernel
+!  even for i=j if self-collisions are turned on (lself_collisions=T).
+!
+                lgh=l+nghost
+                if (i==j) then
+                  if (lself_collisions) then
+                    select case (self_collisions)
+                    case ('average')
+                      fact=.5*self_collision_factor
+                      call dot2(fact*(p%uud(l,j,:)+p%uud(l,i,:)),deltavd_drift2)
+                    case ('neighbor')
+                      fact=self_collision_factor
+                      if (i==1) then
+                        call dot2(fact*(p%uud(l,i+1,:)-p%uud(l,i,:)),deltavd_drift2)
+                      elseif (i==ndustspec) then
+                        call dot2(fact*(p%uud(l,i-1,:)-p%uud(l,i,:)),deltavd_drift2)
+                      else
+                        fact=.5*self_collision_factor
+                        call dot2(fact*(p%uud(l,i+1,:)-p%uud(l,i,:)),deltavd_drift2a)
+                        call dot2(fact*(p%uud(l,i-1,:)-p%uud(l,i,:)),deltavd_drift2a)
+                        deltavd_drift2=deltavd_drift2a+deltavd_drift2b
+                      endif
+                    case ('neighbor_asymmetric')
+                      fact=self_collision_factor
+                      if (i==ndustspec) then
+                        call dot2(fact*(p%uud(l,i-1,:)-p%uud(l,i,:)),deltavd_drift2)
+                      else
+                        call dot2(fact*(p%uud(l,i+1,:)-p%uud(l,i,:)),deltavd_drift2)
+                      endif
+                    case default
+                      call fatal_error('dustdensity:coag_kernel','no such self_collisions: '// &
+                                       trim(self_collisions))
+                    endselect
+                  else
+                    deltavd_drift2=0.
+                  endif
+                else
+                  call dot2(fact*(p%uud(l,i,:)-p%uud(l,j,:)),deltavd_drift2)
+                endif
+!
+!  Relative thermal speed is only important for very light particles
+!  urms^2 = 8*kB*T/(pi*m_red)
+!
+                if (ldeltavd_thermal) then
+                  deltavd_therm = real(sqrt( 8*k_B/(pi*p%TT1(l))*(p%md(l,i)+p%md(l,j))/(p%md(l,i)*p%md(l,j)*unit_md) ))
+                else
+                  deltavd_therm=0.
+                endif
+!
+!  Relative turbulent speed depends on stopping time regimes
+!
+                if (ldeltavd_turbulent) then
+                  call get_deltavd_turbu(deltavd_turbu,l,i,j)
+                elseif(ldeltavd_turbulent_ormel) then
+                  call get_deltavd_turbu_ormel(deltavd_turbu,l,i,j,p)
+                else
+                  deltavd_turbu = 0.
+                endif
+!
+!  Add all speed contributions quadratically
+!
+                deltavd = sqrt(deltavd_drift2+deltavd_therm**2+deltavd_turbu**2+deltavd_imposed**2)
+
+!
+!  Stick only when relative speed is below sticking speed
+!
+                if (ludstickmax) then
+                  ust = ustcst * (ad(i)*ad(j)/(ad(i)+ad(j)))**(2/3.) * &
+                        ((p%md(l,i)+p%md(l,j))/(p%md(l,i)*p%md(l,j)*unit_md))**(1/2.)
+                  if (deltavd > ust) deltavd = 0.
+                endif
+    endsubroutine get_deltavd
+!***********************************************************************
     subroutine coag_kernel(f,p)
 !
 !  Calculate kernel of coagulation equation; collision rate = ni*nj*kernel
 !
-      use Sub, only: dot2
 !
       real, contiguous,dimension(:,:,:,:) :: f
       type(pencil_case) :: p
@@ -2737,7 +2929,6 @@ module Dustdensity
       real :: deltavd_turbu, fact
       real :: deltavd_drift2, deltavd_drift2a, deltavd_drift2b
       real :: ust,mu_air,rho_air, Rik 
-      real, parameter :: kB=1.38e-16
       integer :: i,j,l,k,lgh
 !
       if (ldustcoagulation) then
@@ -2761,82 +2952,7 @@ module Dustdensity
             lgh=l+nghost
             do i=1,ndustspec
               do j=i,ndustspec
-!
-!  Relative macroscopic speed; allow for possibility of finite kernel
-!  even for i=j if self-collisions are turned on (lself_collisions=T).
-!
-                if (i==j) then
-                  if (lself_collisions) then
-                    select case (self_collisions)
-                    case ('average')
-                      fact=.5*self_collision_factor
-                      call dot2(fact*(f(lgh,m,n,iudx(j):iudz(j))+ &
-                                      f(lgh,m,n,iudx(i):iudz(i))),deltavd_drift2)
-                    case ('neighbor')
-                      fact=self_collision_factor
-                      if (i==1) then
-                        call dot2(fact*(f(lgh,m,n,iudx(i+1):iudz(i+1))- &
-                                        f(lgh,m,n,iudx(i):iudz(i))),deltavd_drift2)
-                      elseif (i==ndustspec) then
-                        call dot2(fact*(f(lgh,m,n,iudx(i-1):iudz(i-1))- &
-                                        f(lgh,m,n,iudx(i):iudz(i))),deltavd_drift2)
-                      else
-                        fact=.5*self_collision_factor
-                        call dot2(fact*(f(lgh,m,n,iudx(i+1):iudz(i+1))- &
-                                        f(lgh,m,n,iudx(i):iudz(i))),deltavd_drift2a)
-                        call dot2(fact*(f(lgh,m,n,iudx(i-1):iudz(i-1))- &
-                                        f(lgh,m,n,iudx(i):iudz(i))),deltavd_drift2b)
-                        deltavd_drift2=deltavd_drift2a+deltavd_drift2b
-                      endif
-                    case ('neighbor_asymmetric')
-                      fact=self_collision_factor
-                      if (i==ndustspec) then
-                        call dot2(fact*(f(lgh,m,n,iudx(i-1):iudz(i-1))- &
-                                        f(lgh,m,n,iudx(i):iudz(i))),deltavd_drift2)
-                      else
-                        call dot2(fact*(f(lgh,m,n,iudx(i+1):iudz(i+1))- &
-                                        f(lgh,m,n,iudx(i):iudz(i))),deltavd_drift2)
-                      endif
-                    case default
-                      call fatal_error('dustdensity:coag_kernel','no such self_collisions: '// &
-                                       trim(self_collisions))
-                    endselect
-                  else
-                    deltavd_drift2=0.
-                  endif
-                else
-                  call dot2(f(lgh,m,n,iudx(j):iudz(j))- &
-                            f(lgh,m,n,iudx(i):iudz(i)),deltavd_drift2)
-                endif
-!
-!  Relative thermal speed is only important for very light particles
-!  urms^2 = 8*kB*T/(pi*m_red)
-!
-                if (ldeltavd_thermal) then
-                  deltavd_therm = real(sqrt( 8*k_B/(pi*p%TT1(l))*(p%md(l,i)+p%md(l,j))/(p%md(l,i)*p%md(l,j)*unit_md) ))
-                else
-                  deltavd_therm=0.
-                endif
-!
-!  Relative turbulent speed depends on stopping time regimes
-!
-                if (ldeltavd_turbulent) then
-                  call get_deltavd_turbu(deltavd_turbu,l,i,j)
-                else
-                  deltavd_turbu = 0.
-                endif
-!
-!  Add all speed contributions quadratically
-!
-                deltavd = sqrt(deltavd_drift2+deltavd_therm**2+deltavd_turbu**2+deltavd_imposed**2)
-!
-!  Stick only when relative speed is below sticking speed
-!
-                if (ludstickmax) then
-                  ust = ustcst * (ad(i)*ad(j)/(ad(i)+ad(j)))**(2/3.) * &
-                        ((p%md(l,i)+p%md(l,j))/(p%md(l,i)*p%md(l,j)*unit_md))**(1/2.)
-                  if (deltavd > ust) deltavd = 0.
-                endif
+               call get_deltavd(l,i,j,deltavd,p)
 !
 !  Calculate kernel
 !
@@ -2883,19 +2999,19 @@ module Dustdensity
 !        
 !     Knudsen number Kn 
 !
-          Kn=2.*mu_air/rho_air*sqrt(pi*2e-24/(2.8*kB*TT))/(Rik/2.)
+          Kn=2.*mu_air/rho_air*sqrt(pi*2e-24/(2.8*k_B*TT))/(Rik/2.)
 !
 !     Cunningham correction factor cor_factor
 !
           cor_factor=1.+Kn*(1.142+0.558*exp(-0.999/Kn))
 
-          D_coeff=kB*cor_factor*TT/(6.*pi*mu_air) 
+          D_coeff=k_B*cor_factor*TT/(6.*pi*mu_air) 
           Di=D_coeff/dsize(i)
           Dk=D_coeff/dsize(k)
           Dik=(Di+Dk)
           KBC=4*pi*(dsize(i)+dsize(k))*(Di+Dk)
-          vmean_i=sqrt(8.*kB*TT/pi/(4./3*pi*dsize(i)**3))
-          vmean_k=sqrt(8.*kB*TT/pi/(4./3*pi*dsize(k)**3))
+          vmean_i=sqrt(8.*k_B*TT/pi/(4./3*pi*dsize(i)**3))
+          vmean_k=sqrt(8.*k_B*TT/pi/(4./3*pi*dsize(k)**3))
           vmean_ik=sqrt(vmean_i**2+vmean_k**2)
           gamma_i=8.*Di/pi/vmean_i
           gamma_k=8.*Dk/pi/vmean_k
@@ -3096,6 +3212,41 @@ module Dustdensity
       enddo
 !
     endsubroutine dust_coagulation
+!***********************************************************************
+    subroutine coala_coagulation(f,df,p)
+!
+!
+!
+      use Coala, only: coala_advance
+      real, contiguous,dimension(:,:,:,:) :: f
+      real, contiguous,dimension(:,:,:,:) :: df
+      type (pencil_case) :: p
+      integer :: i,j,l,lgh
+      real, dimension(ndustspec) :: updated_nd,updated_rho
+      real, dimension(3,ndustspec) :: old_uud
+      real, dimension(ndustspec,ndustspec) :: dv
+      real, dimension(ndustspec) :: new_rhod,new_nd
+
+      if(llast) then
+        do l=1,nx
+          lgh=l+nghost
+          updated_nd = p%nd(l,:) + dt_beta_ts(itsub)*df(lgh,m,n,ind)
+          updated_rho = updated_nd*md
+          old_uud = p%uud(l,:,:)
+          do i=1,ndustspec
+            p%uud(l,:,i) = p%uud(l,:,i) + dt_beta_ts(itsub)*df(lgh,m,n,iudx(i):iudz(i))
+            do j=i,ndustspec
+              call get_deltavd(l,i,j,dv(i,j),p)
+              dv(j,i) = dv(i,j)
+            enddo
+          enddo
+          call coala_advance(updated_rho,rhodust_floor,dv,new_rhod)
+          new_nd = new_rhod/md
+          df(lgh,m,n,ind) = 1/dt_beta_ts(itsub)*(new_nd-p%nd(l,:))
+          p%uud(l,:,:) = old_uud
+        enddo
+      endif
+    endsubroutine coala_coagulation
 !***********************************************************************
     subroutine read_dustdensity_init_pars(iomsg)
 !

@@ -25,10 +25,10 @@
           if (.not.file_exists(trim(directory_snap)//'/'//trim(filename)//'.bck.1')) then
             call fatal_error('gen_filename','neither snapshot file '//trim(filename)// &
 		             ' nor backup file '//trim(filename)//'.bck[.1] exists')
-	  else
+          else
             filename=trim(filename)//'.bck.1'
           endif
-	else
+        else
           filename=trim(filename)//'.bck'
         endif
       endif
@@ -81,7 +81,7 @@
       integer, intent(in), optional :: mglobal_out
 !
       call output_dim (file, mx_out, my_out, mz_out, mxgrid_out, mygrid_out, mzgrid_out, mvar_out, maux_out, &
-	               ioptest(mglobal_out,mglobal))
+                       ioptest(mglobal_out,mglobal))
 !
     endsubroutine wdim
 !***********************************************************************

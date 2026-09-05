@@ -214,6 +214,7 @@ my %tests = (
 			 star-in-a-box-giant-Kprof
 			 cartesian-convection-entropy-rain
 			 read_ell_from_table_corrected
+			 0d-tests/coala
                      )],
              # Level 4 for now contains all non-canonical tests that run,
              # but produce wrong results - and need immediate action (fixme)

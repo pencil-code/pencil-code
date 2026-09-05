@@ -67,6 +67,14 @@ module EquationOfState
     endsubroutine register_eos
 !***********************************************************************
     subroutine units_eos
+      if (unit_temperature==impossible) then
+        if (lfix_unit_std) then
+          unit_temperature=unit_density*unit_velocity**2/k_B_cgs*13.6
+        else
+          unit_temperature=1.
+        endif
+      endif
+      if (lroot) print*,'unit temperature',unit_temperature
 !
     endsubroutine units_eos
 !***********************************************************************

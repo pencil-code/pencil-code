@@ -127,13 +127,13 @@
 !
                 if (nghost_read_fewer==0) then
 
-		  len_omit=0
+                  len_omit=0
                   if (lzaver_on_input) then
 !
 !  Read data from all processors in z direction in source directory and average them.
 !
                     allocate(tmp(mx,my,mz_src,nv))
-	            if (ivar_omit(1)>0) len_omit=mx*my*mz_src*(ivar_omit(2)-ivar_omit(1)+1)
+                    if (ivar_omit(1)>0) len_omit=mx*my*mz_src*(ivar_omit(2)-ivar_omit(1)+1)
                     iosr=read_part(lun_input,tmp,len_omit)
                     a(:,:,nghost+1,:)=sum(tmp(:,:,nghost+1:mz_src-nghost,:),3)
                     do ipz_src=1,nprocz_src-1
