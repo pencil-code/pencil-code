@@ -1375,12 +1375,17 @@ module Dustvelocity
 !  Loop over all x is needed as condition for short stopping time approximation depends on position.
 !
         do iix=1,nx
-          if (ldustvelocity_shorttausd .and. tausd1(iix,k)>=shorttaus1limit) then
+          !TP: rewrote the two conditions separately to eliminate more GPU code
+          if (ldustvelocity_shorttausd) then
+            if(tausd1(iix,k)>=shorttaus1limit) then
 !
 !  Short stopping time approximation.
 !  Calculated from master equation d(wx-ux)/dt = A + B*(wx-ux) = 0.
 !
-            call short_stopping_time_approximation(f,df,p,k,iix)
+              call short_stopping_time_approximation(f,df,p,k,iix)
+            else
+              call direct_integration_of_motion(df,p,k,iix)
+            endif
             !p%advec_uud(iix,k)=0.   !MR: this should be done, as there is no advection where this appr. is applied
           else                       !    changes results, though
             call direct_integration_of_motion(df,p,k,iix)
