@@ -3205,8 +3205,9 @@ $(LIBGPU): $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/Makefile.vendor FORCE
 LIB_COALA:
 	[ -e Coala ] || [ -L Coala ] || ln -s "$(PENCIL_HOME)/src/Coala" Coala
 	cd "$(PENCIL_HOME)/lib/Coala" && \
-	    cmake -S . -B build && \
-	    cmake --build build
+	    $(MAKE) -C "$(PENCIL_HOME)/lib/Coala"
+	    #cmake -S . -B build && \
+	    #cmake --build build
 special_preps:
 ifeq ($(USE_SPECIAL_DISPATCHER),no)
 	@sed -e '/module  *procedure/ ! s/^\( *module  *\)[a-zA-Z0-9_]* */\1Special/' \
