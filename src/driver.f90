@@ -192,7 +192,7 @@ module Boundcond
         call read_frame (pos_r, frames_dat, frame_r)
       endif
 !
-      ! Add interpolated values to local data frame
+      ! Interpolate between data frames in time
       call interpolate_time_2D (time, time_l, time_r, frame_l, frame_r, data_local)
 !
     endsubroutine update_frame
