@@ -123,6 +123,30 @@ module Boundcond
 !
     endsubroutine write_driver_run_pars
 !***********************************************************************
+    subroutine interpolate_time_2D (time, time_l, time_r, data_l, data_r, data)
+!
+!  Interpolate 2D data frame in time.
+!
+!  06-Sep-2026/PABourdin: adapted from the "solar_corona" module
+!
+      real, intent(in) :: time, time_l, time_r
+      real, dimension(:,:), intent(in) :: data_l, data_r
+      real, dimension(:,:), intent(inout) :: data
+!
+      real :: factor
+!
+      if (time <= time_l) then
+        data = data_l
+      elseif (time >= time_r) then
+        data = data_r
+      else
+        ! Interpolate data
+        factor = (time - time_l) / (time_r - time_l)
+        data = data_l * (1.0 - factor) + data_r * factor
+      endif
+!
+    endsubroutine interpolate_time_2D
+!***********************************************************************
     subroutine update_frame (t_offset, times_dat, frames_dat, time_l, time_r, n_dim_1, n_dim_2, frame_l, frame_r, data_local)
 !
 !  Check if an update of the data frame is needed and load frame from file.
@@ -169,7 +193,7 @@ module Boundcond
       endif
 !
       ! Add interpolated values to local data frame
-      call add_interpolated (time, time_l, time_r, frame_l, frame_r, data_local)
+      call interpolate_time_2D (time, time_l, time_r, frame_l, frame_r, data_local)
 !
     endsubroutine update_frame
 !***********************************************************************
