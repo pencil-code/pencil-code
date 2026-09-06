@@ -189,14 +189,14 @@ module Boundcond
 !
       if (lfirst_call) then
         ! Load previous (l) frame and store it in (r), will be shifted later
-        call find_frame (time, times_dat, 'l', pos_l, time_l)
+        call find_frame (time, times_dat, 'l', pos_l, time_l, plane, lreader)
         if (pos_l == 0) then
           ! The simulation started before the first frame of the time series
           ! start from zero velocities
           frame_r = 0.0
           time_l = -t_offset
         else
-          call read_frame (pos_l, frames_dat, plane, dim_1, dim_2, frame_r, lreader, f_index)
+          call read_frame (pos_l, frames_dat, f_index, plane, dim_1, dim_2, frame_r, lreader)
         endif
         ! Make sure that the following (r) frame will get loaded:
         time_r = time_l
@@ -208,13 +208,13 @@ module Boundcond
         frame_l = frame_r
         time_l = time_r
         ! Read new following (r) frame
-        call find_frame (time, times_dat, 'r', pos_r, time_r)
-        call read_frame (pos_r, frames_dat, plane, dim_1, dim_2, frame_r, lreader, f_index)
+        call find_frame (time, times_dat, 'r', pos_r, time_r, plane, lreader)
+        call read_frame (pos_r, frames_dat, f_index, plane, dim_1, dim_2, frame_r, lreader)
       endif
 !
     endsubroutine update_frame
 !***********************************************************************
-    subroutine read_frame (frame, filename, plane, dim_1, dim_2, data, lreader)
+    subroutine read_frame (frame, filename, f_index, plane, dim_1, dim_2, data, lreader)
 !
 !  Reads one data frame from a given file at a given frame position
 !  and distributes the results in the respective plane.
@@ -226,6 +226,7 @@ module Boundcond
 !
       integer, intent(in) :: frame
       character(len=*), intent(in) :: filename
+      integer, intent(in) :: f_index
       character(len=2), intent(in) :: plane
       integer, intent(in) :: dim_1, dim_2
       real, dimension(dim_1,dim_2), intent(out) :: data
@@ -252,7 +253,7 @@ module Boundcond
 !
         ! read data frame from file
         inquire (IOLENGTH=rec_len) 1.0d0
-        rec_len = rec_len * n_dim_1 * n_dim_2
+        rec_len = rec_len * dim_1 * dim_2
         open (unit, file=filename, form='unformatted', recl=rec_len, access='direct')
         read (unit, rec=frame) buffer
 !
