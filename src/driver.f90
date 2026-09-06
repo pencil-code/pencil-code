@@ -192,9 +192,6 @@ module Boundcond
         call read_frame (pos_r, frames_dat, frame_r)
       endif
 !
-      ! Interpolate between data frames in time
-      call interpolate_time_2D (time, time_l, time_r, frame_l, frame_r, data_local)
-!
     endsubroutine update_frame
 !***********************************************************************
     subroutine read_frame (frame, filename, n_dim_1, n_dim_2, data, plane, lreader, unit_data)
@@ -384,23 +381,23 @@ module Boundcond
 !
       if (ldrive_xy) then
         ! check if driver data needs to be updated from file
-        
+        call update_frame (t_offset, times_dat, frames_dat, time_l, time_r, n_dim_1, n_dim_2, frame_l, frame_r, data_local)
         ! interpolate driver data in time
-        
+        call interpolate_time_2D (time, time_l, time_r, frame_l, frame_r, data_local)
       endif
 !
       if (ldrive_xz) then
         ! check if driver data needs to be updated from file
-        
+        call update_frame (t_offset, times_dat, frames_dat, time_l, time_r, n_dim_1, n_dim_2, frame_l, frame_r, data_local)
         ! interpolate driver data in time
-        
+        call interpolate_time_2D (time, time_l, time_r, frame_l, frame_r, data_local)
       endif
 !
       if (ldrive_yz) then
         ! check if driver data needs to be updated from file
-        
+        call update_frame (t_offset, times_dat, frames_dat, time_l, time_r, n_dim_1, n_dim_2, frame_l, frame_r, data_local)
         ! interpolate driver data in time
-        
+        call interpolate_time_2D (time, time_l, time_r, frame_l, frame_r, data_local)
       endif
 !
     endsubroutine driver_update
