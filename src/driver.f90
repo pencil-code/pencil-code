@@ -178,7 +178,7 @@ module Boundcond
       ! convert SI to PC units
       data = data / unit_data
 !
-    endsubroutine read_vel_field
+    endsubroutine read_frame
 !***********************************************************************
     subroutine find_frame (time, filename, frame_type, frame_pos, frame_time, plane, lreader)
 !
