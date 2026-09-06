@@ -47,7 +47,7 @@ module Boundcond
 !
       use Messages, only: svn_id
 !
-      integer :: f_index
+      integer :: f_index, alloc_err
 !
 !  Identify version number (generated automatically by SVN).
 !
@@ -70,25 +70,25 @@ module Boundcond
 !
         if (ldrive_xy) then
           if (not associated (data_slots_xy(f_index)%frame)) then
-            allocate (data_slots_xy(f_index)%frame(nx,ny))
-            allocate (data_slots_xy(f_index)%frame_l(nx,ny))
-            allocate (data_slots_xy(f_index)%frame_r(nx,ny))
+            allocate (data_slots_xy(f_index)%frame(nx,ny), data_slots_xy(f_index)%frame_l(nx,ny), &
+                data_slots_xy(f_index)%frame_r(nx,ny), stat=alloc_err)
+            if (alloc_err > 0) call fatal_error ('initialize_driver', 'Could not allocate "data_slots_xy".', .true.)
           endif
         endif
 !
         if (ldrive_xz) then
           if (not associated (data_slots_xz(f_index)%frame)) then
-            allocate (data_slots_xz(f_index)%frame(nx,ny))
-            allocate (data_slots_xz(f_index)%frame_l(nx,ny))
-            allocate (data_slots_xz(f_index)%frame_r(nx,ny))
+            allocate (data_slots_xz(f_index)%frame(nx,ny), data_slots_xz(f_index)%frame_l(nx,ny), &
+                data_slots_xz(f_index)%frame_r(nx,ny), stat=alloc_err)
+            if (alloc_err > 0) call fatal_error ('initialize_driver', 'Could not allocate "data_slots_xz".', .true.)
           endif
         endif
 !
         if (ldrive_yz) then
           if (not associated (data_slots_yz(f_index)%frame)) then
-            allocate (data_slots_yz(f_index)%frame(nx,ny))
-            allocate (data_slots_yz(f_index)%frame_l(nx,ny))
-            allocate (data_slots_yz(f_index)%frame_r(nx,ny))
+            allocate (data_slots_yz(f_index)%frame(nx,ny), data_slots_yz(f_index)%frame_l(nx,ny), &
+                data_slots_yz(f_index)%frame_r(nx,ny), stat=alloc_err)
+            if (alloc_err > 0) call fatal_error ('initialize_driver', 'Could not allocate "data_slots_yz".', .true.)
           endif
         endif
       enddo
@@ -158,7 +158,8 @@ module Boundcond
 !
     endsubroutine interpolate_time_2D
 !***********************************************************************
-    subroutine update_frame (t_offset, times_dat, frames_dat, time_l, time_r, n_dim_1, n_dim_2, frame_l, frame_r, data_local)
+    subroutine update_frame (t_offset, times_dat, frames_dat, time_l, time_r, f_index, plane, dim_1, dim_2, frame_l, frame_r, &
+        data_local)
 !
 !  Check if an update of the data frame is needed and load frame from file.
 !  An interpolated data frame will be added to the given local frame.
@@ -169,14 +170,22 @@ module Boundcond
       real, intent(in) :: t_offset
       character(len=*), intent(in) :: times_dat, field_dat
       real, intent(inout) :: time_l, time_r
-      integer, intent(in) :: n_dim_1, n_dim_2
-      real, dimension(n_dim_1,n_dim_2), intent(inout) :: frame_l, frame_r, data_local
+      integer, intent(in) :: f_index
+      character(len=2), intent(in) :: plane
+      integer, intent(in) :: dim_1, dim_2
+      real, dimension(dim_1,dim_2), intent(inout) :: frame_l, frame_r, data_local
 !
       real :: time
       integer :: pos_l, pos_r
+      logical :: lreader
       logical, save :: lfirst_call=.true.
 !
       time = t - t_offset
+!
+      lreader = &
+          (ldrive_xy .and. (plane == "xy") .and. lfirst_proc_xy) .or. &
+          (ldrive_xz .and. (plane == "xz") .and. lfirst_proc_xz) .or. &
+          (ldrive_yz .and. (plane == "yz") .and. lfirst_proc_yz)
 !
       if (lfirst_call) then
         ! Load previous (l) frame and store it in (r), will be shifted later
@@ -187,7 +196,7 @@ module Boundcond
           frame_r = 0.0
           time_l = -t_offset
         else
-          call read_frame (pos_l, frames_dat, frame_r)
+          call read_frame (pos_l, frames_dat, plane, dim_1, dim_2, frame_r, lreader, f_index)
         endif
         ! Make sure that the following (r) frame will get loaded:
         time_r = time_l
@@ -200,12 +209,12 @@ module Boundcond
         time_l = time_r
         ! Read new following (r) frame
         call find_frame (time, times_dat, 'r', pos_r, time_r)
-        call read_frame (pos_r, frames_dat, frame_r)
+        call read_frame (pos_r, frames_dat, plane, dim_1, dim_2, frame_r, lreader, f_index)
       endif
 !
     endsubroutine update_frame
 !***********************************************************************
-    subroutine read_frame (frame, filename, n_dim_1, n_dim_2, data, plane, lreader, unit_data)
+    subroutine read_frame (frame, filename, plane, dim_1, dim_2, data, lreader)
 !
 !  Reads one data frame from a given file at a given frame position
 !  and distributes the results in the respective plane.
@@ -217,18 +226,28 @@ module Boundcond
 !
       integer, intent(in) :: frame
       character(len=*), intent(in) :: filename
-      integer, intent(in) :: n_dim_1, n_dim_2
-      real, dimension(n_dim_1,n_dim_2), intent(out) :: data
       character(len=2), intent(in) :: plane
+      integer, intent(in) :: dim_1, dim_2
+      real, dimension(dim_1,dim_2), intent(out) :: data
       logical, intent(in) :: lreader
-      real, intent(in) :: unit_data
 !
       integer, parameter :: unit=12
-      real, dimension(:,:), allocatable :: tmp_x, tmp_y
-      integer :: rec_len
+      real, dimension(:,:), allocatable :: buffer
+      integer, intent(in) :: buffer_dim_1, buffer_dim_2
+      integer :: rec_len, alloc_err
 !
       if (lreader) then
-        allocate (buffer(n_dim_1,n_dim_2), stat=alloc_err)
+        if (plane == "xy") then
+          buffer_dim_1 = dim_1 * nprocx
+          buffer_dim_2 = dim_2 * nprocy
+        elseif (plane == "xz") then
+          buffer_dim_1 = dim_1 * nprocx
+          buffer_dim_2 = dim_2 * nprocz
+        elseif (plane == "yz") then
+          buffer_dim_1 = dim_1 * nprocy
+          buffer_dim_2 = dim_2 * nprocz
+        endif
+        allocate (buffer(buffer_dim_1,buffer_dim_2), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('read_frame', 'Could not allocate buffer.', .true.)
 !
         ! read data frame from file
@@ -390,21 +409,21 @@ module Boundcond
 !
       if (ldrive_xy) then
         ! check if driver data needs to be updated from file
-        call update_frame (t_offset, times_dat, frames_dat, time_l, time_r, n_dim_1, n_dim_2, frame_l, frame_r, data_local)
+        call update_frame (t_offset, times_dat, frames_dat, time_l, time_r, "xy", nx, ny, frame_l, frame_r, data_local)
         ! interpolate driver data in time
         call interpolate_time_2D (time, time_l, time_r, frame_l, frame_r, data_local)
       endif
 !
       if (ldrive_xz) then
         ! check if driver data needs to be updated from file
-        call update_frame (t_offset, times_dat, frames_dat, time_l, time_r, n_dim_1, n_dim_2, frame_l, frame_r, data_local)
+        call update_frame (t_offset, times_dat, frames_dat, time_l, time_r, "xz", nx, nz, frame_l, frame_r, data_local)
         ! interpolate driver data in time
         call interpolate_time_2D (time, time_l, time_r, frame_l, frame_r, data_local)
       endif
 !
       if (ldrive_yz) then
         ! check if driver data needs to be updated from file
-        call update_frame (t_offset, times_dat, frames_dat, time_l, time_r, n_dim_1, n_dim_2, frame_l, frame_r, data_local)
+        call update_frame (t_offset, times_dat, frames_dat, time_l, time_r, "yz", ny, nz, frame_l, frame_r, data_local)
         ! interpolate driver data in time
         call interpolate_time_2D (time, time_l, time_r, frame_l, frame_r, data_local)
       endif
