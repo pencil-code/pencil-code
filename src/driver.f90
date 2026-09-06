@@ -19,7 +19,9 @@ module Boundcond
   integer, dimension (mcom) :: target_proc_x=-1, target_proc_y=-1, target_proc_z=-1
 !
   type :: data_array
-    real, pointer, dimension(:,:) :: ptr => null()
+    real, pointer, dimension(:,:) :: frame => null()
+    real, pointer, dimension(:,:) :: frame_l => null()
+    real, pointer, dimension(:,:) :: frame_r => null()
   end type data_array
   type(data_array), dimension(mcom) :: data_slots_xy => null(), data_slots_xz => null(), data_slots_yz => null()
 !
@@ -41,7 +43,7 @@ module Boundcond
 !
 !  Initialize the driver.
 !
-! 05-Sep-2026/PABourdin: coded
+! 06-Sep-2026/PABourdin: coded
 !
       use Messages, only: svn_id
 !
@@ -67,20 +69,26 @@ module Boundcond
             call fatal_error ('initialize_driver', "Trying to use driving without setting the corresponding 'data_unit'.", .true.)
 !
         if (ldrive_xy) then
-          if (not associated (data_slots_xy(f_index)%ptr)) then
-            allocate (data_slots_xy(f_index)%ptr(nx,ny))
+          if (not associated (data_slots_xy(f_index)%frame)) then
+            allocate (data_slots_xy(f_index)%frame(nx,ny))
+            allocate (data_slots_xy(f_index)%frame_l(nx,ny))
+            allocate (data_slots_xy(f_index)%frame_r(nx,ny))
           endif
         endif
 !
         if (ldrive_xz) then
-          if (not associated (data_slots_xz(f_index)%ptr)) then
-            allocate (data_slots_xz(f_index)%ptr(nx,nz))
+          if (not associated (data_slots_xz(f_index)%frame)) then
+            allocate (data_slots_xz(f_index)%frame(nx,ny))
+            allocate (data_slots_xz(f_index)%frame_l(nx,ny))
+            allocate (data_slots_xz(f_index)%frame_r(nx,ny))
           endif
         endif
 !
         if (ldrive_yz) then
-          if (not associated (data_slots_yz(f_index)%ptr)) then
-            allocate (data_slots_yz(f_index)%ptr(ny,nz))
+          if (not associated (data_slots_yz(f_index)%frame)) then
+            allocate (data_slots_yz(f_index)%frame(nx,ny))
+            allocate (data_slots_yz(f_index)%frame_l(nx,ny))
+            allocate (data_slots_yz(f_index)%frame_r(nx,ny))
           endif
         endif
       enddo
@@ -89,16 +97,19 @@ module Boundcond
 !***********************************************************************
     subroutine finalize_driver
 !
-!  Initialize the driver.
+!  Finalize the driver.
 !
-! 05-Sep-2026/PABourdin: coded
+! 06-Sep-2026/PABourdin: coded
 !
       integer :: f_index
 !
       do f_index = 1, mcom
-        if (associated (data_slots_xy(f_index)%ptr)) deallocate (data_slots_xy(f_index)%ptr)
-        if (associated (data_slots_xz(f_index)%ptr)) deallocate (data_slots_xz(f_index)%ptr)
-        if (associated (data_slots_yz(f_index)%ptr)) deallocate (data_slots_yz(f_index)%ptr)
+        if (associated (data_slots_xy(f_index)%frame)) &
+            deallocate (data_slots_xy(f_index)%frame, data_slots_xy(f_index)%frame_l, data_slots_xy(f_index)%frame_r)
+        if (associated (data_slots_xz(f_index)%frame)) &
+            deallocate (data_slots_xz(f_index)%frame, data_slots_xz(f_index)%frame_l, data_slots_xz(f_index)%frame_r)
+        if (associated (data_slots_yz(f_index)%frame)) &
+            deallocate (data_slots_yz(f_index)%frame, data_slots_yz(f_index)%frame_l, data_slots_yz(f_index)%frame_r)
       enddo
 !
     endsubroutine finalize_driver
@@ -369,15 +380,13 @@ module Boundcond
 !
     endsubroutine find_frame
 !***********************************************************************
-    subroutine driver_update(f, df, f_index)
+    subroutine driver_update(f_index)
 !
 !  Update the driving data, if needed, including time-interpolation.
 !
 ! 05-Sep-2026/PABourdin: coded
 !
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      real, dimension(mx,my,mz,mvar), intent(inout) :: df
-      integer, intent(in) :: f_index, grid_pos
+      integer, intent(in) :: f_index
 !
       if (ldrive_xy) then
         ! check if driver data needs to be updated from file
@@ -402,7 +411,7 @@ module Boundcond
 !
     endsubroutine driver_update
 !***********************************************************************
-    subroutine driver_apply(f, df, f_index, grid_pos)
+    subroutine driver_apply(f, df)
 !
 !  Apply the driving in the specified f-array component at specified positions.
 !
@@ -410,25 +419,29 @@ module Boundcond
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
-      integer, intent(in) :: f_index, grid_pos
 !
       integer, save :: px
+      integer :: f_index
 !
-      if (ldrive_xy) then
-        ! apply driving in xy-plane at desired z position
-        df(l1:l2,m,n,f_index) = df(l1:l2,m,n,f_index) - tau_inv * (f(l1:l2,m,n,f_index) - data_xy(:,m-nghost))
-      endif
+      do f_index = 1, mcom
+        call driver_update(f_index)
 !
-      if (ldrive_xz) then
-        ! apply driving in xz-plane at desired y position
-        df(l1:l2,m,n,f_index) = df(l1:l2,m,n,f_index) - tau_inv * (f(l1:l2,m,n,f_index) - data_xz(:,n-nghost))
-      endif
+        if (ldrive_xy) then
+          ! apply driving in xy-plane at desired z position
+          df(l1:l2,m,n,f_index) = df(l1:l2,m,n,f_index) - tau_inv * (f(l1:l2,m,n,f_index) - data_xy(:,m-nghost))
+        endif
 !
-      if (ldrive_yz) then
-        ! apply driving in yz-plane at desired x position
-        pos_l = driver_pos_x(f_index) + nghost
-        df(pos_l,m,n,f_index) = df(pos_l,m,n,f_index) - tau_inv * (f(pos_l,m,n,f_index) - data_yz(m-nghost,n-nghost))
-      endif
+        if (ldrive_xz) then
+          ! apply driving in xz-plane at desired y position
+          df(l1:l2,m,n,f_index) = df(l1:l2,m,n,f_index) - tau_inv * (f(l1:l2,m,n,f_index) - data_xz(:,n-nghost))
+        endif
+!
+        if (ldrive_yz) then
+          ! apply driving in yz-plane at desired x position
+          pos_l = driver_pos_x(f_index) + nghost
+          df(pos_l,m,n,f_index) = df(pos_l,m,n,f_index) - tau_inv * (f(pos_l,m,n,f_index) - data_yz(m-nghost,n-nghost))
+        endif
+      enddo
 !
     endsubroutine driver_apply
 !***********************************************************************
