@@ -26,6 +26,7 @@ module Boundcond
 !  Run parameters.
 !
   character (len=fnlen), dimension(mcom) :: driver_xy="", driver_xz="", driver_yz=""
+  logical dimension(mcom) :: ldrive_xy=.false., ldrive_xz=.false., ldrive_yz=.false.
   integer, dimension (mcom) :: driver_pos_x=0, driver_pos_y=0, driver_pos_z=0
   real, dimension (mcom) :: decay_time=0.0
 !
@@ -57,21 +58,25 @@ module Boundcond
       target_proc_y = (driver_pos_y-1) / ny
       target_proc_z = (driver_pos_z-1) / nz
 !
+      ldrive_xy = (driver_xy(f_index) /= "") .and. (target_proc_z == ipz)
+      ldrive_xz = (driver_xz(f_index) /= "") .and. (target_proc_y == ipy)
+      ldrive_yz = (driver_yz(f_index) /= "") .and. (target_proc_x == ipx)
+!
       do f_index = 1, mcom
 !
-        if ((driver_xy(f_index) /= "") .and. (target_proc_z == ipz)) then
+        if (ldrive_xy) then
           if (not associated (data_slots_xy(f_index)%ptr)) then
             allocate (data_slots_xy(f_index)%ptr(nx,ny))
           endif
         endif
 !
-        if ((driver_xz(f_index) /= "") .and. (target_proc_y == ipy)) then
+        if (ldrive_xz) then
           if (not associated (data_slots_xz(f_index)%ptr)) then
             allocate (data_slots_xz(f_index)%ptr(nx,nz))
           endif
         endif
 !
-        if ((driver_yz(f_index) /= "") .and. (target_proc_x == ipx)) then
+        if (ldrive_yz) then
           if (not associated (data_slots_yz(f_index)%ptr)) then
             allocate (data_slots_yz(f_index)%ptr(ny,nz))
           endif
@@ -129,10 +134,10 @@ module Boundcond
 !  'frame_pos' is set to the position (record number) of the desired frame.
 !  'frame_time' is set to the time of the corresponding frame.
 !
-!  07-jan-2011/Bourdin.KIS: coded
+!  06-Sep-2026/PABourdin: adapted from the solar_corona module
 !
       use File_io, only: file_exists
-      use Mpicomm, only: mpisend_int, mpirecv_int, mpisend_real, mpirecv_real
+      use Mpicomm, only: distribute_xy, distribute_xz, distribute_yz
 !
       real, intent(in) :: time
       character(len=*), intent(in) :: filename
@@ -142,13 +147,14 @@ module Boundcond
       character(len=2), intent(in) :: plane
       logical, intent(in) :: lreader
 !
-      integer :: px, py, pz, partner, rec_len, io_error
+      integer :: rec_len, io_error
       real :: time_l, delta_t
       integer, parameter :: unit=17
-      integer, parameter :: tag_pos_xy=471, tag_time_xy=472, tag_pos_xz=473, tag_time_xz=474, tag_pos_yz=475, tag_time_yz=476
+!
+      if ((.not. ldrive_xy) .and. (.not. ldrive_xz) .and. (.not. ldrive_yz)) return
 !
       if (lreader) then
-!
+        ! read time and frame number from "_times.dat" file, if it exists
         if (.not. file_exists (filename)) then
           ! No time series => use only first frame, forever
           call warning ('driver', '"'//trim (filename)//'" not found, using only first frame, forever!')
@@ -201,49 +207,34 @@ module Boundcond
             frame_time = time_l
           endif
         endif
+      endif
 !
-        if (plane == "xy") then
-          ! Distribute results in the xy-plane
-          do px = 0, nprocx-1
-            do py = 0, nprocy-1
-              partner = px + py*nprocx + ipz*nprocxy
-              if (partner == iproc) cycle
-              call mpisend_int (frame_pos, partner, tag_pos)
-              call mpisend_real (frame_time, partner, tag_time)
-            enddo
-          enddo
-        elseif (plane == "xz") then
-          ! Distribute results in the xz-plane
-          do px = 0, nprocx-1
-            do pz = 0, nprocz-1
-              partner = px + ipy*nprocx + pz*nprocxy
-              if (partner == iproc) cycle
-              call mpisend_int (frame_pos, partner, tag_pos)
-              call mpisend_real (frame_time, partner, tag_time)
-            enddo
-          enddo
-        elseif (plane == "yz") then
-          ! Distribute results in the yz-plane
-          do py = 0, nprocy-1
-            do pz = 0, nprocz-1
-              partner = ipx + py*nprocx + pz*nprocxy
-              if (partner == iproc) cycle
-              call mpisend_int (frame_pos, partner, tag_pos)
-              call mpisend_real (frame_time, partner, tag_time)
-            enddo
-          enddo
+      if (plane == "xy") then
+        ! Distribute results in the xy-plane
+        if (lreader) then
+          call distribute_xy (frame_pos, frame_pos)
+          call distribute_xy (frame_time, frame_time)
+        else
+          call distribute_xy (frame_pos)
+          call distribute_xy (frame_time)
         endif
-      else
-        ! Receive results
-        if (plane == "xy") then
-          call mpirecv_int (frame_pos, ipz*nprocxy, tag_pos_xy)
-          call mpirecv_real (frame_time, ipz*nprocxy, tag_time_xy)
-        elseif (plane == "xz") then
-          call mpirecv_int (frame_pos, ipy*nprocxz, tag_pos_xz)
-          call mpirecv_real (frame_time, ipy*nprocxz, tag_time_xz)
-        elseif (plane == "yz") then
-          call mpirecv_int (frame_pos, ipx*nprocyz, tag_pos_yz)
-          call mpirecv_real (frame_time, ipx*nprocyz, tag_time_yz)
+      elseif (plane == "xz") then
+        ! Distribute results in the xz-plane
+        if (lreader) then
+          call distribute_xz (frame_pos, frame_pos)
+          call distribute_xz (frame_time, frame_time)
+        else
+          call distribute_xz (frame_pos)
+          call distribute_xz (frame_time)
+        endif
+      elseif (plane == "yz") then
+        ! Distribute results in the yz-plane
+        if (lreader) then
+          call distribute_yz (frame_pos, frame_pos)
+          call distribute_yz (frame_time, frame_time)
+        else
+          call distribute_yz (frame_pos)
+          call distribute_yz (frame_time)
         endif
       endif
 !
@@ -259,21 +250,21 @@ module Boundcond
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       integer, intent(in) :: f_index, grid_pos
 !
-      if ((driver_xy(f_index) /= "") .and. (target_proc_z == ipz)) then
+      if (ldrive_xy) then
         ! check if driver data needs to be updated from file
         
         ! interpolate driver data in time
         
       endif
 !
-      if ((driver_xz(f_index) /= "") .and. (target_proc_y == ipy)) then
+      if (ldrive_xz) then
         ! check if driver data needs to be updated from file
         
         ! interpolate driver data in time
         
       endif
 !
-      if ((driver_yz(f_index) /= "") .and. (target_proc_x == ipx)) then
+      if (ldrive_yz) then
         ! check if driver data needs to be updated from file
         
         ! interpolate driver data in time
@@ -294,17 +285,17 @@ module Boundcond
 !
       integer, save :: px
 !
-      if ((driver_xy(f_index) /= "") .and. (target_proc_z == ipz)) then
+      if (ldrive_xy) then
         ! apply driving in xy-plane at desired z position
         df(l1:l2,m,n,f_index) = df(l1:l2,m,n,f_index) - tau_inv * (f(l1:l2,m,n,f_index) - data_xy(:,m-nghost))
       endif
 !
-      if ((driver_xz(f_index) /= "") .and. (target_proc_y == ipy)) then
+      if (ldrive_xz) then
         ! apply driving in xz-plane at desired y position
         df(l1:l2,m,n,f_index) = df(l1:l2,m,n,f_index) - tau_inv * (f(l1:l2,m,n,f_index) - data_xz(:,n-nghost))
       endif
 !
-      if ((driver_yz(f_index) /= "") .and. (target_proc_x == ipx)) then
+      if (ldrive_yz) then
         ! apply driving in yz-plane at desired x position
         pos_l = driver_pos_x(f_index) + nghost
         df(pos_l,m,n,f_index) = df(pos_l,m,n,f_index) - tau_inv * (f(pos_l,m,n,f_index) - data_yz(m-nghost,n-nghost))
