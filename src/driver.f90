@@ -26,14 +26,14 @@ module Boundcond
 !  Run parameters.
 !
   character (len=fnlen), dimension(mcom) :: driver_xy="", driver_xz="", driver_yz=""
-  logical dimension(mcom) :: ldrive_xy=.false., ldrive_xz=.false., ldrive_yz=.false.
+  logical, dimension(mcom) :: ldrive_xy=.false., ldrive_xz=.false., ldrive_yz=.false.
   integer, dimension (mcom) :: driver_pos_x=0, driver_pos_y=0, driver_pos_z=0
-  real, dimension (mcom) :: decay_time=0.0
+  real, dimension (mcom) :: data_unit=0.0, decay_time=0.0
 !
   namelist /driver_run_pars/ &
       driver_xy, driver_xz, driver_yz, &
       driver_pos_x, driver_pos_y, driver_pos_z, &
-      decay_time
+      data_unit, decay_time
 !
   contains
 !***********************************************************************
@@ -54,15 +54,17 @@ module Boundcond
 !
       tau_inv(:) = decay_time(:)
 !
-      target_proc_x = (driver_pos_x-1) / nx
-      target_proc_y = (driver_pos_y-1) / ny
-      target_proc_z = (driver_pos_z-1) / nz
-!
-      ldrive_xy = (driver_xy(f_index) /= "") .and. (target_proc_z == ipz)
-      ldrive_xz = (driver_xz(f_index) /= "") .and. (target_proc_y == ipy)
-      ldrive_yz = (driver_yz(f_index) /= "") .and. (target_proc_x == ipx)
+      target_proc_x(:) = (driver_pos_x(:)-1) / nx
+      target_proc_y(:) = (driver_pos_y(:)-1) / ny
+      target_proc_z(:) = (driver_pos_z(:)-1) / nz
 !
       do f_index = 1, mcom
+        ldrive_xy(f_index) = (driver_xy(f_index) /= "") .and. (target_proc_z(f_index) == ipz)
+        ldrive_xz(f_index) = (driver_xz(f_index) /= "") .and. (target_proc_y(f_index) == ipy)
+        ldrive_yz(f_index) = (driver_yz(f_index) /= "") .and. (target_proc_x(f_index) == ipx)
+!
+        if (ldrive_xy(f_index) .and. (data_unit(f_index)) &
+            call fatal_error ('initialize_driver', "Trying to use driving without setting the corresponding 'data_unit'.", .true.)
 !
         if (ldrive_xy) then
           if (not associated (data_slots_xy(f_index)%ptr)) then
@@ -81,7 +83,6 @@ module Boundcond
             allocate (data_slots_yz(f_index)%ptr(ny,nz))
           endif
         endif
-!
       enddo
 !
     endsubroutine initialize_driver
@@ -134,7 +135,7 @@ module Boundcond
 !  'frame_pos' is set to the position (record number) of the desired frame.
 !  'frame_time' is set to the time of the corresponding frame.
 !
-!  06-Sep-2026/PABourdin: adapted from the solar_corona module
+!  06-Sep-2026/PABourdin: adapted from the "solar_corona" module
 !
       use File_io, only: file_exists
       use Mpicomm, only: distribute_xy, distribute_xz, distribute_yz
