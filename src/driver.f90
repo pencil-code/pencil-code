@@ -28,12 +28,12 @@ module Boundcond
   character (len=fnlen), dimension(mcom) :: driver_xy="", driver_xz="", driver_yz=""
   logical, dimension(mcom) :: ldrive_xy=.false., ldrive_xz=.false., ldrive_yz=.false.
   integer, dimension (mcom) :: driver_pos_x=0, driver_pos_y=0, driver_pos_z=0
-  real, dimension (mcom) :: data_unit=0.0, decay_time=0.0
+  real, dimension (mcom) :: data_unit=0.0, decay_time=0.0, time_offset=0.0
 !
   namelist /driver_run_pars/ &
       driver_xy, driver_xz, driver_yz, &
       driver_pos_x, driver_pos_y, driver_pos_z, &
-      data_unit, decay_time
+      data_unit, decay_time, time_offset
 !
   contains
 !***********************************************************************
@@ -123,7 +123,7 @@ module Boundcond
 !
     endsubroutine write_driver_run_pars
 !***********************************************************************
-    subroutine update_frame (time_offset, times_dat, frames_dat, time_l, time_r, n_dim_1, n_dim_2, frame_l, frame_r, data_local)
+    subroutine update_frame (t_offset, times_dat, frames_dat, time_l, time_r, n_dim_1, n_dim_2, frame_l, frame_r, data_local)
 !
 !  Check if an update of the data frame is needed and load frame from file.
 !  An interpolated data frame will be added to the given local frame.
@@ -131,7 +131,7 @@ module Boundcond
 !
 !  06-Sep-2026/PABourdin: adapted from the "solar_corona" module
 !
-      real, intent(in) :: time_offset
+      real, intent(in) :: t_offset
       character(len=*), intent(in) :: times_dat, field_dat
       real, intent(inout) :: time_l, time_r
       integer, intent(in) :: n_dim_1, n_dim_2
@@ -141,7 +141,7 @@ module Boundcond
       integer :: pos_l, pos_r
       logical, save :: lfirst_call=.true.
 !
-      time = t - time_offset
+      time = t - t_offset
 !
       if (lfirst_call) then
         ! Load previous (l) frame and store it in (r), will be shifted later
@@ -150,7 +150,7 @@ module Boundcond
           ! The simulation started before the first frame of the time series
           ! start from zero velocities
           frame_r = 0.0
-          time_l = -time_offset
+          time_l = -t_offset
         else
           call read_frame (pos_l, frames_dat, frame_r)
         endif
