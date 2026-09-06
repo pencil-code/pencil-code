@@ -2199,7 +2199,7 @@ module Special
 !***********************************************************************
     subroutine add_interpolated_3D (time, time_l, time_r, data_l, data_r, data)
 !
-!  Adds interpolated 2D data to a given field.
+!  Adds interpolated 3D data to a given field.
 !
 !  24-jan-2011/Bourdin.KIS: coded
 !
