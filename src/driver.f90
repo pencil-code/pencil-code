@@ -123,6 +123,56 @@ module Boundcond
 !
     endsubroutine write_driver_run_pars
 !***********************************************************************
+    subroutine update_frame (time_offset, times_dat, frames_dat, time_l, time_r, n_dim_1, n_dim_2, frame_l, frame_r, data_local)
+!
+!  Check if an update of the data frame is needed and load frame from file.
+!  An interpolated data frame will be added to the given local frame.
+!  The previous frame (l) and following frame (r) are updated.
+!
+!  06-Sep-2026/PABourdin: adapted from the "solar_corona" module
+!
+      real, intent(in) :: time_offset
+      character(len=*), intent(in) :: times_dat, field_dat
+      real, intent(inout) :: time_l, time_r
+      integer, intent(in) :: n_dim_1, n_dim_2
+      real, dimension(n_dim_1,n_dim_2), intent(inout) :: frame_l, frame_r, data_local
+!
+      real :: time
+      integer :: pos_l, pos_r
+      logical, save :: lfirst_call=.true.
+!
+      time = t - time_offset
+!
+      if (lfirst_call) then
+        ! Load previous (l) frame and store it in (r), will be shifted later
+        call find_frame (time, times_dat, 'l', pos_l, time_l)
+        if (pos_l == 0) then
+          ! The simulation started before the first frame of the time series
+          ! start from zero velocities
+          frame_r = 0.0
+          time_l = -time_offset
+        else
+          call read_frame (pos_l, frames_dat, frame_r)
+        endif
+        ! Make sure that the following (r) frame will get loaded:
+        time_r = time_l
+        lfirst_call = .false.
+      endif
+!
+      if (time >= time_r) then
+        ! Shift data from following (r) to previous (l) frame
+        frame_l = frame_r
+        time_l = time_r
+        ! Read new following (r) frame
+        call find_frame (time, times_dat, 'r', pos_r, time_r)
+        call read_frame (pos_r, frames_dat, frame_r)
+      endif
+!
+      ! Add interpolated values to local data frame
+      call add_interpolated (time, time_l, time_r, frame_l, frame_r, data_local)
+!
+    endsubroutine update_frame
+!***********************************************************************
     subroutine read_frame (frame, filename, n_dim_1, n_dim_2, data, plane, lreader, unit_data)
 !
 !  Reads one data frame from a given file at a given frame position
