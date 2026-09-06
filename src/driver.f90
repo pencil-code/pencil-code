@@ -123,6 +123,63 @@ module Boundcond
 !
     endsubroutine write_driver_run_pars
 !***********************************************************************
+    subroutine read_frame (frame, filename, n_dim_1, n_dim_2, data, plane, lreader, unit_data)
+!
+!  Reads one data frame from a given file at a given frame position
+!  and distributes the results in the respective plane.
+!  The data is expected to be in SI units, not using F77 record markers.
+!
+!  06-Sep-2026/PABourdin: adapted from the "solar_corona" module
+!
+      use Mpicomm, only: distribute_xy, distribute_xz, distribute_yz
+!
+      integer, intent(in) :: frame
+      character(len=*), intent(in) :: filename
+      integer, intent(in) :: n_dim_1, n_dim_2
+      real, dimension(n_dim_1,n_dim_2), intent(out) :: data
+      character(len=2), intent(in) :: plane
+      logical, intent(in) :: lreader
+      real, intent(in) :: unit_data
+!
+      integer, parameter :: unit=12
+      real, dimension(:,:), allocatable :: tmp_x, tmp_y
+      integer :: rec_len
+!
+      if (lreader) then
+        allocate (buffer(n_dim_1,n_dim_2), stat=alloc_err)
+        if (alloc_err > 0) call fatal_error ('read_frame', 'Could not allocate buffer.', .true.)
+!
+        ! read data frame from file
+        inquire (IOLENGTH=rec_len) 1.0d0
+        rec_len = rec_len * n_dim_1 * n_dim_2
+        open (unit, file=filename, form='unformatted', recl=rec_len, access='direct')
+        read (unit, rec=frame) buffer
+!
+        ! distribute data along plane
+        if (plane == "xy") then
+          call distribute_xy (data, buffer)
+        elseif (plane == "xz") then
+          call distribute_xz (data, buffer)
+        elseif (plane == "yz") then
+          call distribute_yz (data, buffer)
+        endif
+        deallocate (buffer)
+      else
+        ! receive local portion of data
+        if (plane == "xy") then
+          call distribute_xy (data)
+        elseif (plane == "xz") then
+          call distribute_xz (data)
+        elseif (plane == "yz") then
+          call distribute_yz (data)
+        endif
+      endif
+!
+      ! convert SI to PC units
+      data = data / unit_data
+!
+    endsubroutine read_vel_field
+!***********************************************************************
     subroutine find_frame (time, filename, frame_type, frame_pos, frame_time, plane, lreader)
 !
 !  Finds the position of the frame before/at (l) or after (r) the given time.
