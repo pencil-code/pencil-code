@@ -203,6 +203,7 @@ module Dustvelocity
       endif
 
       call put_shared_variable('rhograin',rhograin)
+      call put_shared_variable('ldustvelocity_shorttausd',ldustvelocity_shorttausd)
 !
     endsubroutine register_dustvelocity
 !***********************************************************************

@@ -333,6 +333,7 @@ my @gpu_tests = qw(
 			 star-in-a-box-giant-Kprof
 			 read_ell_from_table_corrected
 			 cartesian-convection-entropy-rain
+			 0d-tests/coala
                    );
 
 		   #Was tested to work but need multi-gpu Fourier 1d-tests/horndeski_choiceIII

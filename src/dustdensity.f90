@@ -2847,74 +2847,74 @@ module Dustdensity
 !  Relative macroscopic speed; allow for possibility of finite kernel
 !  even for i=j if self-collisions are turned on (lself_collisions=T).
 !
-                lgh=l+nghost
-                if (i==j) then
-                  if (lself_collisions) then
-                    select case (self_collisions)
-                    case ('average')
-                      fact=.5*self_collision_factor
-                      call dot2(fact*(p%uud(l,:,j)+p%uud(l,:,i)),deltavd_drift2)
-                    case ('neighbor')
-                      fact=self_collision_factor
-                      if (i==1) then
-                        call dot2(fact*(p%uud(l,:,i+1)-p%uud(l,:,i)),deltavd_drift2)
-                      elseif (i==ndustspec) then
-                        call dot2(fact*(p%uud(l,:,i-1)-p%uud(l,:,i)),deltavd_drift2)
-                      else
-                        fact=.5*self_collision_factor
-                        call dot2(fact*(p%uud(l,:,i+1)-p%uud(l,:,i)),deltavd_drift2a)
-                        call dot2(fact*(p%uud(l,:,i-1)-p%uud(l,:,i)),deltavd_drift2a)
-                        deltavd_drift2=deltavd_drift2a+deltavd_drift2b
-                      endif
-                    case ('neighbor_asymmetric')
-                      fact=self_collision_factor
-                      if (i==ndustspec) then
-                        call dot2(fact*(p%uud(l,:,i-1)-p%uud(l,:,i)),deltavd_drift2)
-                      else
-                        call dot2(fact*(p%uud(l,:,i+1)-p%uud(l,:,i)),deltavd_drift2)
-                      endif
-                    case default
-                      call fatal_error('dustdensity:coag_kernel','no such self_collisions: '// &
-                                       trim(self_collisions))
-                    endselect
-                  else
-                    deltavd_drift2=0.
-                  endif
-                else
-                  call dot2(fact*(p%uud(l,:,i)-p%uud(l,:,j)),deltavd_drift2)
-                endif
+      lgh=l+nghost
+      if (lself_collisions) then
+        if (i==j) then
+          select case (self_collisions)
+          case ('average')
+            fact=.5*self_collision_factor
+            call dot2(fact*(p%uud(l,:,j)+p%uud(l,:,i)),deltavd_drift2)
+          case ('neighbor')
+            fact=self_collision_factor
+            if (i==1) then
+              call dot2(fact*(p%uud(l,:,i+1)-p%uud(l,:,i)),deltavd_drift2)
+            elseif (i==ndustspec) then
+              call dot2(fact*(p%uud(l,:,i-1)-p%uud(l,:,i)),deltavd_drift2)
+            else
+              fact=.5*self_collision_factor
+              call dot2(fact*(p%uud(l,:,i+1)-p%uud(l,:,i)),deltavd_drift2a)
+              call dot2(fact*(p%uud(l,:,i-1)-p%uud(l,:,i)),deltavd_drift2a)
+              deltavd_drift2=deltavd_drift2a+deltavd_drift2b
+            endif
+          case ('neighbor_asymmetric')
+            fact=self_collision_factor
+            if (i==ndustspec) then
+              call dot2(fact*(p%uud(l,:,i-1)-p%uud(l,:,i)),deltavd_drift2)
+            else
+              call dot2(fact*(p%uud(l,:,i+1)-p%uud(l,:,i)),deltavd_drift2)
+            endif
+          case default
+            call fatal_error('dustdensity:coag_kernel','no such self_collisions: '// &
+                             trim(self_collisions))
+          endselect
+        else
+          call dot2(p%uud(l,:,i)-p%uud(l,:,j),deltavd_drift2)
+        endif
+      else
+        call dot2(p%uud(l,:,i)-p%uud(l,:,j),deltavd_drift2)
+      endif
 !
 !  Relative thermal speed is only important for very light particles
 !  urms^2 = 8*kB*T/(pi*m_red)
 !
-                if (ldeltavd_thermal) then
-                  deltavd_therm = real(sqrt( 8*k_B/(pi*p%TT1(l))*(p%md(l,i)+p%md(l,j))/(p%md(l,i)*p%md(l,j)*unit_md) ))
-                else
-                  deltavd_therm=0.
-                endif
+      if (ldeltavd_thermal) then
+        deltavd_therm = real(sqrt( 8*k_B/(pi*p%TT1(l))*(p%md(l,i)+p%md(l,j))/(p%md(l,i)*p%md(l,j)*unit_md) ))
+      else
+        deltavd_therm=0.
+      endif
 !
 !  Relative turbulent speed depends on stopping time regimes
 !
-                if (ldeltavd_turbulent) then
-                  call get_deltavd_turbu(deltavd_turbu,l,i,j)
-                elseif(ldeltavd_turbulent_ormel) then
-                  call get_deltavd_turbu_ormel(deltavd_turbu,l,i,j,p)
-                else
-                  deltavd_turbu = 0.
-                endif
+      if (ldeltavd_turbulent) then
+        call get_deltavd_turbu(deltavd_turbu,l,i,j)
+      elseif(ldeltavd_turbulent_ormel) then
+        call get_deltavd_turbu_ormel(deltavd_turbu,l,i,j,p)
+      else
+        deltavd_turbu = 0.
+      endif
 !
 !  Add all speed contributions quadratically
 !
-                deltavd = sqrt(deltavd_drift2+deltavd_therm**2+deltavd_turbu**2+deltavd_imposed**2)
+      deltavd = sqrt(deltavd_drift2+deltavd_therm**2+deltavd_turbu**2+deltavd_imposed**2)
 
 !
 !  Stick only when relative speed is below sticking speed
 !
-                if (ludstickmax) then
-                  ust = ustcst * (ad(i)*ad(j)/(ad(i)+ad(j)))**(2/3.) * &
-                        ((p%md(l,i)+p%md(l,j))/(p%md(l,i)*p%md(l,j)*unit_md))**(1/2.)
-                  if (deltavd > ust) deltavd = 0.
-                endif
+      if (ludstickmax) then
+        ust = ustcst * (ad(i)*ad(j)/(ad(i)+ad(j)))**(2/3.) * &
+              ((p%md(l,i)+p%md(l,j))/(p%md(l,i)*p%md(l,j)*unit_md))**(1/2.)
+        if (deltavd > ust) deltavd = 0.
+      endif
     endsubroutine get_deltavd
 !***********************************************************************
     subroutine coag_kernel(f,p)

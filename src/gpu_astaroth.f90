@@ -193,13 +193,20 @@ contains
     subroutine initialize_GPU(f)
 !
       use Mpicomm, only: MPI_COMM_PENCIL
+      use SharedVariables, only: get_shared_variable
 
       real, dimension(:,:,:,:), intent(IN) :: f
       integer :: lread_all_vars_from_device_int
       integer :: lcpu_timestep_on_gpu_int
       integer :: lac_sparse_autotuning_int
+      logical, pointer :: ldustvelocity_shorttausd
 
       character(LEN=512) :: str
+
+      !TP: Need to be cumulative when df is used to write directly to f.
+      !    At the moment this is only done in dust
+      call get_shared_variable('ldustvelocity_shorttausd',ldustvelocity_shorttausd,default_val=.false.)
+      if(ldustvelocity_shorttausd .or. lcoala) lcumulative_df_on_gpu = .true.
 !
       if (ltest_rhs) lread_all_vars_from_device = .true.
       !If there are enough GPUs we can distribute the autotuning between them
