@@ -100,20 +100,20 @@ module Timestep
       real, optional :: dt_
       real :: dt_used
 
-      do itsub=1,itorder
-        lfirst=(itsub==1 .and. n_advancement == 1)
-        llast=(itsub==itorder)
+      do itsub = 1, itorder
+        lfirst = (itsub == 1) .and. (n_advancement == 1)
+        llast = (itsub == itorder)
 
         headtt = headt .and. lfirst .and. lroot
 
-          if (lfirst) then
-            if (.not. lgpu) df=0.0
-            ds=0.0
-          else
-            if (.not. lgpu) df=alpha_ts(itsub)*df !(could be subsumed into pde, but is dangerous!)
-            ds=alpha_ts(itsub)*ds
-            if (it_rmv>0) lrmv=.false.
-          endif
+        if (lfirst) then
+          if (.not. lgpu) df = 0.0
+          ds = 0.0
+        else
+          if (.not. lgpu) df = alpha_ts(itsub) * df   ! could be subsumed into pde, but it is dangerous! => [PABourdin]: why?
+          ds = alpha_ts(itsub) * ds
+          if (it_rmv > 0) lrmv = .false.
+        endif
 !
 !  Set up particle derivative array (including df because of insert_nucleii in particles_dust.f90).
 !
@@ -151,22 +151,27 @@ module Timestep
         if (ip<=6) print*, 'time_step: iproc, dt=', iproc_world, dt_used  !(all have same dt?)
         dtsub = ds * dt_beta_ts(itsub)
 !
+!  CPU time integration, main part:
+!
+        if (.not. lgpu) then
+!
 !  Apply border quenching.
 !
-        if (lborder_profiles .and. .not. lgpu) call border_quenching(f,df,dt_beta_ts(itsub))
+          if (lborder_profiles) call border_quenching(f,df,dt_beta_ts(itsub))
 !
 !  Time evolution of grid variables.
 !
-        if (.not. lgpu) f(l1:l2,m1:m2,n1:n2,1:mvar) =  f(l1:l2,m1:m2,n1:n2,1:mvar) &
-                                                     + dt_beta_ts(itsub)*df(l1:l2,m1:m2,n1:n2,1:mvar)
+          f(l1:l2,m1:m2,n1:n2,1:mvar) =  f(l1:l2,m1:m2,n1:n2,1:mvar) + dt_beta_ts(itsub)*df(l1:l2,m1:m2,n1:n2,1:mvar)
 !
 !  Time evolution of point masses.
 !
-        if (lpointmasses .and. .not. lgpu) call pointmasses_timestep_second(f)
+          if (lpointmasses) call pointmasses_timestep_second(f)
 !
 !  Time evolution of particle variables.
 !
-        if (lparticles .and. .not. lgpu) call particles_timestep_second(f)
+          if (lparticles) call particles_timestep_second(f)
+!
+        endif
 !
 ! Time evolution of ODE variables.
 !
@@ -186,8 +191,10 @@ module Timestep
         endif
 !
         start_time = real(mpiwtime())
-        if (lgpu) then; call update_after_substep_gpu
-        else;           call update_after_substep(f,df,dtsub,llast)
+        if (lgpu) then
+          call update_after_substep_gpu
+        else
+          call update_after_substep(f,df,dtsub,llast)
         endif
         after_substep_sum_time = after_substep_sum_time + real(mpiwtime())-start_time
 !
