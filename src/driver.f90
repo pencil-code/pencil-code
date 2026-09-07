@@ -21,7 +21,7 @@ module Driver
     real, pointer, dimension(:,:) :: frame_l => null()
     real, pointer, dimension(:,:) :: frame_r => null()
   end type data_array
-  type(data_array), dimension(mcom) :: data_slots_xy => null(), data_slots_xz => null(), data_slots_yz => null()
+  type(data_array), dimension(mcom) :: data_xy => null(), data_xz => null(), data_yz => null()
 !
 !  Run parameters.
 !
@@ -63,30 +63,30 @@ module Driver
         ldrive_xz(f_index) = (driver_xz(f_index) /= "") .and. (target_proc_y(f_index) == ipy)
         ldrive_yz(f_index) = (driver_yz(f_index) /= "") .and. (target_proc_x(f_index) == ipx)
 !
-        if (ldrive_xy(f_index) .and. (data_unit(f_index)) &
+        if (ldrive_xy(f_index) .and. (data_unit(f_index) /= 0.0)) &
             call fatal_error ('initialize_driver', "Trying to use driving without setting the corresponding 'data_unit'.", .true.)
 !
         if (ldrive_xy) then
-          if (not associated (data_slots_xy(f_index)%frame)) then
-            allocate (data_slots_xy(f_index)%frame(nx,ny), data_slots_xy(f_index)%frame_l(nx,ny), &
-                data_slots_xy(f_index)%frame_r(nx,ny), stat=alloc_err)
-            if (alloc_err > 0) call fatal_error ('initialize_driver', 'Could not allocate "data_slots_xy".', .true.)
+          if (not associated (data_xy(f_index)%frame)) then
+            allocate (data_xy(f_index)%frame(nx,ny), data_xy(f_index)%frame_l(nx,ny), &
+                data_xy(f_index)%frame_r(nx,ny), stat=alloc_err)
+            if (alloc_err > 0) call fatal_error ('initialize_driver', 'Could not allocate "data_xy".', .true.)
           endif
         endif
 !
         if (ldrive_xz) then
-          if (not associated (data_slots_xz(f_index)%frame)) then
-            allocate (data_slots_xz(f_index)%frame(nx,ny), data_slots_xz(f_index)%frame_l(nx,ny), &
-                data_slots_xz(f_index)%frame_r(nx,ny), stat=alloc_err)
-            if (alloc_err > 0) call fatal_error ('initialize_driver', 'Could not allocate "data_slots_xz".', .true.)
+          if (not associated (data_xz(f_index)%frame)) then
+            allocate (data_xz(f_index)%frame(nx,ny), data_xz(f_index)%frame_l(nx,ny), &
+                data_xz(f_index)%frame_r(nx,ny), stat=alloc_err)
+            if (alloc_err > 0) call fatal_error ('initialize_driver', 'Could not allocate "data_xz".', .true.)
           endif
         endif
 !
         if (ldrive_yz) then
-          if (not associated (data_slots_yz(f_index)%frame)) then
-            allocate (data_slots_yz(f_index)%frame(nx,ny), data_slots_yz(f_index)%frame_l(nx,ny), &
-                data_slots_yz(f_index)%frame_r(nx,ny), stat=alloc_err)
-            if (alloc_err > 0) call fatal_error ('initialize_driver', 'Could not allocate "data_slots_yz".', .true.)
+          if (not associated (data_yz(f_index)%frame)) then
+            allocate (data_yz(f_index)%frame(nx,ny), data_yz(f_index)%frame_l(nx,ny), &
+                data_yz(f_index)%frame_r(nx,ny), stat=alloc_err)
+            if (alloc_err > 0) call fatal_error ('initialize_driver', 'Could not allocate "data_yz".', .true.)
           endif
         endif
       enddo
@@ -102,12 +102,12 @@ module Driver
       integer :: f_index
 !
       do f_index = 1, mcom
-        if (associated (data_slots_xy(f_index)%frame)) &
-            deallocate (data_slots_xy(f_index)%frame, data_slots_xy(f_index)%frame_l, data_slots_xy(f_index)%frame_r)
-        if (associated (data_slots_xz(f_index)%frame)) &
-            deallocate (data_slots_xz(f_index)%frame, data_slots_xz(f_index)%frame_l, data_slots_xz(f_index)%frame_r)
-        if (associated (data_slots_yz(f_index)%frame)) &
-            deallocate (data_slots_yz(f_index)%frame, data_slots_yz(f_index)%frame_l, data_slots_yz(f_index)%frame_r)
+        if (associated (data_xy(f_index)%frame)) &
+            deallocate (data_xy(f_index)%frame, data_xy(f_index)%frame_l, data_xy(f_index)%frame_r)
+        if (associated (data_xz(f_index)%frame)) &
+            deallocate (data_xz(f_index)%frame, data_xz(f_index)%frame_l, data_xz(f_index)%frame_r)
+        if (associated (data_yz(f_index)%frame)) &
+            deallocate (data_yz(f_index)%frame, data_yz(f_index)%frame_l, data_yz(f_index)%frame_r)
       enddo
 !
     endsubroutine finalize_driver
