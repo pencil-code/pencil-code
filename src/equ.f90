@@ -186,7 +186,7 @@ module Equ
 !
       call before_boundary_shared(f)
  !
- ! If asked test that the CPU implementation is correctly executed on the GPUs
+ ! If asked, test that the CPU implementation is correctly executed on the GPUs
  !
       if (lgpu .and. ltest_rhs .and. it == it_test_rhs) then
         call test_rhs_gpu(f,p,mass_per_proc,early_finalize,rhs_cpu)
