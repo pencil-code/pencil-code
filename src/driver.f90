@@ -20,6 +20,7 @@ module Driver
     real, pointer, dimension(:,:) :: frame => null()
     real, pointer, dimension(:,:) :: frame_l => null()
     real, pointer, dimension(:,:) :: frame_r => null()
+    real :: time_l, time_r
   end type data_array
   type(data_array), dimension(mcom) :: data_xy, data_xz, data_yz
 !
@@ -43,7 +44,7 @@ module Driver
 !
 ! 06-Sep-2026/PABourdin: coded
 !
-      use Messages, only: svn_id
+      use Messages, only: svn_id, fatal_error
 !
       integer :: f_index, alloc_err
 !
@@ -52,7 +53,7 @@ module Driver
       call svn_id( &
            "$Id$")
 !
-      tau_inv(:) = decay_time(:)
+      tau_inv(:) = 1.0 / decay_time(:)
 !
       target_proc_x(:) = (driver_pos_x(:)-1) / nx
       target_proc_y(:) = (driver_pos_y(:)-1) / ny
@@ -76,16 +77,16 @@ module Driver
 !
         if (ldrive_xz(f_index)) then
           if (.not. associated (data_xz(f_index)%frame)) then
-            allocate (data_xz(f_index)%frame(nx,ny), data_xz(f_index)%frame_l(nx,ny), &
-                data_xz(f_index)%frame_r(nx,ny), stat=alloc_err)
+            allocate (data_xz(f_index)%frame(nx,nz), data_xz(f_index)%frame_l(nx,nz), &
+                data_xz(f_index)%frame_r(nx,nz), stat=alloc_err)
             if (alloc_err > 0) call fatal_error ('initialize_driver', 'Could not allocate "data_xz".', .true.)
           endif
         endif
 !
         if (ldrive_yz(f_index)) then
           if (.not. associated (data_yz(f_index)%frame)) then
-            allocate (data_yz(f_index)%frame(nx,ny), data_yz(f_index)%frame_l(nx,ny), &
-                data_yz(f_index)%frame_r(nx,ny), stat=alloc_err)
+            allocate (data_yz(f_index)%frame(ny,nz), data_yz(f_index)%frame_l(ny,nz), &
+                data_yz(f_index)%frame_r(ny,nz), stat=alloc_err)
             if (alloc_err > 0) call fatal_error ('initialize_driver', 'Could not allocate "data_yz".', .true.)
           endif
         endif
@@ -156,8 +157,7 @@ module Driver
 !
     endsubroutine interpolate_time_2D
 !***********************************************************************
-    subroutine update_frame (t_offset, times_dat, frames_dat, time_l, time_r, f_index, plane, dim_1, dim_2, frame_l, frame_r, &
-        data_local)
+    subroutine update_frame (time, time_l, time_r, f_index, plane, dim_1, dim_2, frame_l, frame_r, data_local)
 !
 !  Check if an update of the data frame is needed and load frame from file.
 !  An interpolated data frame will be added to the given local frame.
@@ -165,36 +165,38 @@ module Driver
 !
 !  06-Sep-2026/PABourdin: adapted from the "solar_corona" module
 !
-      real, intent(in) :: t_offset
-      character(len=*), intent(in) :: times_dat, field_dat
+      real, intent(in) :: time
       real, intent(inout) :: time_l, time_r
       integer, intent(in) :: f_index
       character(len=2), intent(in) :: plane
       integer, intent(in) :: dim_1, dim_2
       real, dimension(dim_1,dim_2), intent(inout) :: frame_l, frame_r, data_local
 !
-      real :: time
+      character (len=fnlen), save :: filename=""
       integer :: pos_l, pos_r
       logical :: lreader
       logical, save :: lfirst_call=.true.
 !
-      time = t - t_offset
-!
-      lreader = &
-          (ldrive_xy .and. (plane == "xy") .and. lfirst_proc_xy) .or. &
-          (ldrive_xz .and. (plane == "xz") .and. lfirst_proc_xz) .or. &
-          (ldrive_yz .and. (plane == "yz") .and. lfirst_proc_yz)
+      if (plane == "xy") then
+        lreader = ldrive_xy(f_index) .and. lfirst_proc_xy
+      elseif (plane == "xz") then
+        lreader = ldrive_xz(f_index) .and. lfirst_proc_xz
+      elseif (plane == "yz") then
+        lreader = ldrive_yz(f_index) .and. lfirst_proc_yz
+      endif
 !
       if (lfirst_call) then
         ! Load previous (l) frame and store it in (r), will be shifted later
-        call find_frame (time, times_dat, 'l', pos_l, time_l, plane, lreader)
+        filename = trim (driver_xy(f_index))//"_"//trim (plane)//"_times.dat"
+        call find_frame (time, filename, 'l', pos_l, time_l, f_index, plane, lreader)
         if (pos_l == 0) then
           ! The simulation started before the first frame of the time series
           ! start from zero velocities
           frame_r = 0.0
-          time_l = -t_offset
+          time_l = -time_offset(f_index)
         else
-          call read_frame (pos_l, frames_dat, f_index, plane, dim_1, dim_2, frame_r, lreader)
+          filename = trim (driver_xy(f_index))//"_"//trim (plane)//".dat"
+          call read_frame (pos_l, filename, f_index, plane, dim_1, dim_2, frame_r, lreader)
         endif
         ! Make sure that the following (r) frame will get loaded:
         time_r = time_l
@@ -206,8 +208,10 @@ module Driver
         frame_l = frame_r
         time_l = time_r
         ! Read new following (r) frame
-        call find_frame (time, times_dat, 'r', pos_r, time_r, plane, lreader)
-        call read_frame (pos_r, frames_dat, f_index, plane, dim_1, dim_2, frame_r, lreader)
+        filename = trim (driver_xy(f_index))//"_"//trim (plane)//"_times.dat"
+        call find_frame (time, filename, 'r', pos_r, time_r, f_index, plane, lreader)
+        filename = trim (driver_xy(f_index))//"_"//trim (plane)//".dat"
+        call read_frame (pos_r, filename, f_index, plane, dim_1, dim_2, frame_r, lreader)
       endif
 !
     endsubroutine update_frame
@@ -220,6 +224,7 @@ module Driver
 !
 !  06-Sep-2026/PABourdin: adapted from the "solar_corona" module
 !
+      use Messages, only: fatal_error
       use Mpicomm, only: distribute_xy, distribute_xz, distribute_yz
 !
       integer, intent(in) :: frame
@@ -232,7 +237,7 @@ module Driver
 !
       integer, parameter :: unit=12
       real, dimension(:,:), allocatable :: buffer
-      integer, intent(in) :: buffer_dim_1, buffer_dim_2
+      integer :: buffer_dim_1, buffer_dim_2
       integer :: rec_len, alloc_err
 !
       if (lreader) then
@@ -276,11 +281,11 @@ module Driver
       endif
 !
       ! convert SI to PC units
-      data = data / unit_data
+      data = data / data_unit(f_index)
 !
     endsubroutine read_frame
 !***********************************************************************
-    subroutine find_frame (time, filename, frame_type, frame_pos, frame_time, plane, lreader)
+    subroutine find_frame (time, filename, frame_type, frame_pos, frame_time, f_index, plane, lreader)
 !
 !  Finds the position of the frame before/at (l) or after (r) the given time.
 !  If a frame matches 'time', this frame is considered to be (l).
@@ -295,6 +300,7 @@ module Driver
 !  06-Sep-2026/PABourdin: adapted from the "solar_corona" module
 !
       use File_io, only: file_exists
+      use Messages, only: warning, fatal_error
       use Mpicomm, only: distribute_xy, distribute_xz, distribute_yz
 !
       real, intent(in) :: time
@@ -302,14 +308,17 @@ module Driver
       character(len=*), intent(in) :: frame_type
       integer, intent(out) :: frame_pos
       real, intent(out) :: frame_time
+      integer, intent(in) :: f_index
       character(len=2), intent(in) :: plane
       logical, intent(in) :: lreader
 !
-      integer :: rec_len, io_error
-      real :: time_l, delta_t
+      integer :: out_int, rec_len, io_error
+      real :: out_real, time_l, delta_t
       integer, parameter :: unit=17
 !
-      if ((.not. ldrive_xy) .and. (.not. ldrive_xz) .and. (.not. ldrive_yz)) return
+      if ((.not. ldrive_xy(f_index)) .and. (plane == "xy")) return
+      if ((.not. ldrive_xz(f_index)) .and. (plane == "xz")) return
+      if ((.not. ldrive_yz(f_index)) .and. (plane == "yz")) return
 !
       if (lreader) then
         ! read time and frame number from "_times.dat" file, if it exists
@@ -370,8 +379,8 @@ module Driver
       if (plane == "xy") then
         ! Distribute results in the xy-plane
         if (lreader) then
-          call distribute_xy (frame_pos, frame_pos)
-          call distribute_xy (frame_time, frame_time)
+          call distribute_xy (out_int, frame_pos)
+          call distribute_xy (out_real, frame_time)
         else
           call distribute_xy (frame_pos)
           call distribute_xy (frame_time)
@@ -379,8 +388,8 @@ module Driver
       elseif (plane == "xz") then
         ! Distribute results in the xz-plane
         if (lreader) then
-          call distribute_xz (frame_pos, frame_pos)
-          call distribute_xz (frame_time, frame_time)
+          call distribute_xz (out_int, frame_pos)
+          call distribute_xz (out_real, frame_time)
         else
           call distribute_xz (frame_pos)
           call distribute_xz (frame_time)
@@ -388,8 +397,8 @@ module Driver
       elseif (plane == "yz") then
         ! Distribute results in the yz-plane
         if (lreader) then
-          call distribute_yz (frame_pos, frame_pos)
-          call distribute_yz (frame_time, frame_time)
+          call distribute_yz (out_int, frame_pos)
+          call distribute_yz (out_real, frame_time)
         else
           call distribute_yz (frame_pos)
           call distribute_yz (frame_time)
@@ -406,25 +415,39 @@ module Driver
 !
       integer, intent(in) :: f_index
 !
-      if (ldrive_xy) then
+      real :: time
+      real, dimension(:,:), pointer :: frame_l, frame_r, data_local
+!
+      time = t - time_offset(f_index)
+!
+      if (ldrive_xy(f_index)) then
+        frame_l = data_xy(f_index)%frame_l
+        frame_r = data_xy(f_index)%frame_r
         ! check if driver data needs to be updated from file
-        call update_frame (t_offset, times_dat, frames_dat, time_l, time_r, "xy", nx, ny, frame_l, frame_r, data_local)
+        call update_frame (time, data_xy(f_index)%time_l, data_xy(f_index)%time_r, f_index, &
+            "xy", nx, ny, frame_l, frame_r, data_xy(f_index)%frame)
         ! interpolate driver data in time
-        call interpolate_time_2D (time, time_l, time_r, frame_l, frame_r, data_local)
+        call interpolate_time_2D (time, data_xy(f_index)%time_l, data_xy(f_index)%time_r, frame_l, frame_r, data_xy(f_index)%frame)
       endif
 !
-      if (ldrive_xz) then
+      if (ldrive_xz(f_index)) then
+        frame_l = data_xz(f_index)%frame_l
+        frame_r = data_xz(f_index)%frame_r
         ! check if driver data needs to be updated from file
-        call update_frame (t_offset, times_dat, frames_dat, time_l, time_r, "xz", nx, nz, frame_l, frame_r, data_local)
+        call update_frame (time, data_xz(f_index)%time_l, data_xz(f_index)%time_r, f_index, &
+            "xz", nx, nz, frame_l, frame_r, data_xz(f_index)%frame)
         ! interpolate driver data in time
-        call interpolate_time_2D (time, time_l, time_r, frame_l, frame_r, data_local)
+        call interpolate_time_2D (time, data_yz(f_index)%time_l, data_yz(f_index)%time_r, frame_l, frame_r, data_xz(f_index)%frame)
       endif
 !
-      if (ldrive_yz) then
+      if (ldrive_yz(f_index)) then
+        frame_l = data_yz(f_index)%frame_l
+        frame_r = data_yz(f_index)%frame_r
         ! check if driver data needs to be updated from file
-        call update_frame (t_offset, times_dat, frames_dat, time_l, time_r, "yz", ny, nz, frame_l, frame_r, data_local)
+        call update_frame (time, data_yz(f_index)%time_l, data_yz(f_index)%time_r, f_index, &
+            "yz", ny, nz, frame_l, frame_r, data_yz(f_index)%frame)
         ! interpolate driver data in time
-        call interpolate_time_2D (time, time_l, time_r, frame_l, frame_r, data_local)
+        call interpolate_time_2D (time, data_yz(f_index)%time_l, data_yz(f_index)%time_r, frame_l, frame_r, data_yz(f_index)%frame)
       endif
 !
     endsubroutine driver_update
@@ -438,26 +461,30 @@ module Driver
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
 !
-      integer, save :: px
+      integer :: l, m, n
       integer :: f_index
+      real :: tau_invers
 !
       do f_index = 1, mcom
         call driver_update(f_index)
+        tau_invers = tau_inv(f_index)
 !
-        if (ldrive_xy) then
+        if (ldrive_xy(f_index)) then
           ! apply driving in xy-plane at desired z position
-          df(l1:l2,m,n,f_index) = df(l1:l2,m,n,f_index) - tau_inv * (f(l1:l2,m,n,f_index) - data_xy(:,m-nghost))
+          n = driver_pos_z(f_index) + nghost
+          df(l1:l2,m1:m2,n,f_index) = df(l1:l2,m1:m2,n,f_index) - tau_invers * (f(l1:l2,m1:m2,n,f_index) - data_xy(f_index)%frame)
         endif
 !
-        if (ldrive_xz) then
+        if (ldrive_xz(f_index)) then
           ! apply driving in xz-plane at desired y position
-          df(l1:l2,m,n,f_index) = df(l1:l2,m,n,f_index) - tau_inv * (f(l1:l2,m,n,f_index) - data_xz(:,n-nghost))
+          m = driver_pos_y(f_index) + nghost
+          df(l1:l2,m,n1:n2,f_index) = df(l1:l2,m,n1:n2,f_index) - tau_invers * (f(l1:l2,m,n1:n2,f_index) - data_xz(f_index)%frame)
         endif
 !
-        if (ldrive_yz) then
+        if (ldrive_yz(f_index)) then
           ! apply driving in yz-plane at desired x position
-          pos_l = driver_pos_x(f_index) + nghost
-          df(pos_l,m,n,f_index) = df(pos_l,m,n,f_index) - tau_inv * (f(pos_l,m,n,f_index) - data_yz(m-nghost,n-nghost))
+          l = driver_pos_x(f_index) + nghost
+          df(l,m1:m2,n1:n2,f_index) = df(l,m1:m2,n1:n2,f_index) - tau_invers * (f(l,m1:m2,n1:n2,f_index) - data_yz(f_index)%frame)
         endif
       enddo
 !
