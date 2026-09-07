@@ -1,10 +1,8 @@
 ! $Id$
 !
-!  Module for boundary conditions. Extracted from (no)mpicomm, since
-!  all non-periodic (external) boundary conditions require the same
-!  code for serial and parallel runs.
+!  Module for boundary driving from external files for any f-array component(s).
 !
-module Boundcond
+module Driver
 !
   use Cdata
   use Mpicomm
@@ -13,7 +11,7 @@ module Boundcond
 !
   private
 !
-  public :: driving
+  public :: driver_apply
 !
   real, dimension (mcom) :: tau_inv=0.0
   integer, dimension (mcom) :: target_proc_x=-1, target_proc_y=-1, target_proc_z=-1
@@ -465,4 +463,4 @@ module Boundcond
 !
     endsubroutine driver_apply
 !***********************************************************************
-
+endmodule Driver
