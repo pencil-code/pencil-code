@@ -2050,7 +2050,7 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_,
   const bool inside_container = ltraining;
   if (!inside_container) generate_bcs();
   MPI_Barrier(MPI_COMM_WORLD);
-  acStoreConfig(acDeviceGetLocalConfig(acGridGetDevice()), "PC-AC.conf");
+  acStoreConfig(mesh.info, "PC-AC.conf");
   ac_compile();
   acLoadLibrary(rank == 0 ? stderr : NULL,mesh.info);
   acCheckDeviceAvailability();
