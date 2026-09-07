@@ -1064,7 +1064,7 @@ module Equ
 !
       if (ldustdensity)  call dustdensity_before_boundary(f)
       if (ldensity .and. ldiagnos) call density_before_boundary_diagnostics(f)
-      if (ldensity.or.lboussinesq) call density_before_boundary(f)
+      if (ldensity .or. lboussinesq) call density_before_boundary(f)
       if (lhydro)        call hydro_before_boundary(f)
       if (lmagnetic)     call magnetic_before_boundary(f)
                          call energy_before_boundary(f)
@@ -1076,7 +1076,7 @@ module Equ
       if (lpscalar)      call pscalar_before_boundary(f)
       if (ldetonate)     call detonate_before_boundary(f)
       if (lchemistry)    call chemistry_before_boundary(f)
-      if (lparticles.and.lspecial) call particles_special_bfre_bdary(f)
+      if (lparticles .and. lspecial) call particles_special_bfre_bdary(f)
       if (lshock)        call shock_before_boundary(f)
 
     endsubroutine before_boundary_cpu
