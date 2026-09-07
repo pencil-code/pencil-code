@@ -307,8 +307,8 @@
 !  endinterface
 !
   interface distribute_yz
-!    module procedure distribute_yz_0D
-!    module procedure distribute_yz_2D
+    module procedure distribute_yz_0D
+    module procedure distribute_yz_2D
     module procedure distribute_yz_3D
     module procedure distribute_yz_4D
   endinterface
