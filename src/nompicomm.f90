@@ -3145,7 +3145,7 @@ module Mpicomm
       integer, dimension(:) :: counts,dspls
       integer :: nlocal
       integer, optional :: comm
-      
+
       call keep_compiler_quiet(counts)
       call keep_compiler_quiet(dspls)
       call keep_compiler_quiet(nlocal,comm)
@@ -3218,10 +3218,10 @@ module Mpicomm
     logical function update_foreign_data(t,dt_foreign)
 !
 ! 20-oct-21/MR: coded
-! 
+!
       real(KIND=rkind8) :: t
       real :: dt_foreign
-      
+
       update_foreign_data=.false.
       call keep_compiler_quiet(dt_foreign)
       call keep_compiler_quiet_dble(t)
@@ -3229,9 +3229,9 @@ module Mpicomm
     endfunction update_foreign_data
 !***********************************************************************
     subroutine set_rslice_communicator
-! 
+!
 !  Dummy routine.
-!    
+!
     endsubroutine set_rslice_communicator
  !***********************************************************************
     subroutine mpi_min_keyval(key,val,dst)
@@ -3243,10 +3243,10 @@ module Mpicomm
     subroutine mpiallreduce_merge(list,len)
 !
 ! 20-oct-22/MR: coded
-! 
+!
       integer, dimension(*) :: list
       integer :: len
-     
+
       call keep_compiler_quiet(list(len))
       call keep_compiler_quiet(len)
 
