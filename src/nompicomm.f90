@@ -2133,17 +2133,90 @@ module Mpicomm
 !
     endsubroutine distribute_xy_4D
 !***********************************************************************
+    subroutine distribute_xz_0D(out, in)
+!
+!  Dummy.
+!
+      real, intent(out) :: out
+      real, intent(in), optional :: in
+      integer, intent(in), optional :: source_proc
+!
+      if (present (in) .or. present (source_proc)) out = in
+!
+    endsubroutine distribute_xz_0D
+!***********************************************************************
+    subroutine distribute_xz_2D(out, in)
+!
+!  Dummy.
+!
+      real, dimension(:,:), intent(out) :: out
+      real, dimension(:,:), intent(in), optional :: in
+      integer, intent(in), optional :: source_proc
+!
+      if (present (in) .or. present (source_proc)) out = in
+!
+    endsubroutine distribute_xz_2D
+!***********************************************************************
+    subroutine distribute_xz_3D(out, in)
+!
+!  Dummy.
+!
+      real, dimension(:,:,:), intent(out) :: out
+      real, dimension(:,:,:), intent(in), optional :: in
+      integer, intent(in), optional :: source_proc
+!
+      if (present (in) .or. present (source_proc)) out = in
+!
+    endsubroutine distribute_xz_3D
+!***********************************************************************
+    subroutine distribute_xz_4D(out, in)
+!
+!  Dummy.
+!
+      real, dimension(:,:,:,:), intent(out) :: out
+      real, dimension(:,:,:,:), intent(in), optional :: in
+      integer, intent(in), optional :: source_proc
+!
+      if (present (in) .or. present (source_proc)) out = in
+!
+    endsubroutine distribute_xz_4D
+!***********************************************************************
+    subroutine distribute_yz_0D(out, in)
+!
+!  Dummy.
+!
+      real, intent(out) :: out
+      real, intent(in), optional :: in
+      integer, intent(in), optional :: source_proc
+!
+      if (present (in) .or. present (source_proc)) out = in
+!
+    endsubroutine distribute_yz_0D
+!***********************************************************************
+    subroutine distribute_yz_2D(out, in)
+!
+!  Dummy.
+!
+      real, dimension(:,:), intent(out) :: out
+      real, dimension(:,:), intent(in), optional :: in
+      integer, intent(in), optional :: source_proc
+!
+      if (present (in) .or. present (source_proc)) out = in
+!
+    endsubroutine distribute_yz_2D
+!***********************************************************************
     subroutine distribute_yz_3D(out, in)
 !
 !  Dummy.
 !
 !  07-oct-2021/MR: coded
 !
-      real, dimension(:,:,:), intent(out):: out
-      real, dimension(:,:,:), intent(in) :: in
-
-      out=in
-
+      real, dimension(:,:,:), intent(out) :: out
+      real, dimension(:,:,:), intent(in), optional :: in
+      integer, intent(in), optional :: source_proc
+!
+      if (present (in) .or. present (source_proc)) out = in
+!
     endsubroutine distribute_yz_3D
 !***********************************************************************
     subroutine distribute_yz_4D(out, in)
@@ -2152,11 +2225,12 @@ module Mpicomm
 !
 !  07-oct-2021/MR: coded
 !
-      real, dimension(:,:,:,:), intent(out):: out
-      real, dimension(:,:,:,:), intent(in) :: in
-
-      out=in
-
+      real, dimension(:,:,:,:), intent(out) :: out
+      real, dimension(:,:,:,:), intent(in), optional :: in
+      integer, intent(in), optional :: source_proc
+!
+      if (present (in) .or. present (source_proc)) out = in
+!
     endsubroutine distribute_yz_4D
 !***********************************************************************
     subroutine collect_xy_0D(in, out, dest_proc)
