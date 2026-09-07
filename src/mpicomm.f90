@@ -6839,6 +6839,119 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine distribute_xy_2D
 !***********************************************************************
+    subroutine distribute_xy_3D(out, in, source_proc, comm)
+!
+!  This routine divides a large array of 3D data on the source processor
+!  and distributes it to all processors in the xy-plane.
+!  'source_proc' is the iproc number relative to the first processor
+!  in the corresponding xy-plane (Default: 0, equals lfirst_proc_xy).
+!
+!  08-jan-2011/Bourdin.KIS: coded
+!
+      real, dimension(:,:,:), intent(out) :: out
+      real, dimension(:,:,:), intent(in), optional :: in
+      integer, intent(in), optional :: source_proc
+!
+      integer :: bnx, bny, bnz ! transfer box sizes
+      integer :: px, py, broadcaster, partner, nbox
+      integer, parameter :: ytag=115
+      integer, optional :: comm
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      bnx = size (out, 1)
+      bny = size (out, 2)
+      bnz = size (out, 3)
+      nbox = bnx*bny*bnz
+!
+      broadcaster = find_proc(ioptest(source_proc,0),0,ipz)
+!
+      if (iproc == broadcaster) then
+        ! distribute the data
+        if (bnx * nprocx /= size (in, 1)) &
+            call stop_fatal ('distribute_xy_3D: input x dim must be nprocx*output', .true.)
+        if (bny * nprocy /= size (in, 2)) &
+            call stop_fatal ('distribute_xy_3D: input y dim must be nprocy*output', .true.)
+        if (bnz /= size (in, 3)) &
+            call stop_fatal ('distribute_xy_3D: z dim must equal between in and out', .true.)
+!
+        do px = 0, nprocx-1
+          do py = 0, nprocy-1
+            partner = find_proc(px,py,ipz)
+            if (iproc == partner) then
+              ! data is local
+              out = in(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny,:)
+            else
+              ! send to partner
+              call MPI_SEND (in(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny,:), &
+                  nbox, mpi_precision, partner, ytag, ioptest(comm,MPI_COMM_GRID), mpierr)
+            endif
+          enddo
+        enddo
+      else
+        ! receive from broadcaster
+        call MPI_RECV (out, nbox, mpi_precision, broadcaster, ytag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
+      endif
+!
+    endsubroutine distribute_xy_3D
+!***********************************************************************
+    subroutine distribute_xy_4D(out, in, source_proc, comm)
+!
+!  This routine divides a large array of 4D data on the source processor
+!  and distributes it to all processors in the xy-plane.
+!  'source_proc' is the iproc number relative to the first processor
+!  in the corresponding xy-plane (Default: 0, equals lfirst_proc_xy).
+!
+!  08-jan-2011/Bourdin.KIS: coded
+!
+      real, dimension(:,:,:,:), intent(out) :: out
+      real, dimension(:,:,:,:), intent(in), optional :: in
+      integer, intent(in), optional :: source_proc
+      integer, optional :: comm
+!
+      integer :: bnx, bny, bnz, bna ! transfer box sizes
+      integer :: px, py, broadcaster, partner, nbox
+      integer, parameter :: ytag=115
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      bnx = size (out, 1)
+      bny = size (out, 2)
+      bnz = size (out, 3)
+      bna = size (out, 4)
+      nbox = bnx*bny*bnz*bna
+!
+      broadcaster = find_proc(ioptest(source_proc,0),0,ipz)
+!
+      if (iproc == broadcaster) then
+        ! distribute the data
+        if (bnx * nprocx /= size (in, 1)) &
+            call stop_fatal ('distribute_xy_4D: input x dim must be nprocx*output', .true.)
+        if (bny * nprocy /= size (in, 2)) &
+            call stop_fatal ('distribute_xy_4D: input y dim must be nprocy*output', .true.)
+        if (bnz /= size (in, 3)) &
+            call stop_fatal ('distribute_xy_4D: z dim must equal between in and out', .true.)
+        if (bna /= size (in, 4)) &
+            call stop_fatal ('distribute_xy_4D: 4th dim must equal between in and out', .true.)
+!
+        do px = 0, nprocx-1
+          do py = 0, nprocy-1
+            partner = find_proc(px,py,ipz)
+            if (iproc == partner) then
+              ! data is local
+              out = in(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny,:,:)
+            else
+              ! send to partner
+              call MPI_SEND (in(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny,:,:), &
+                  nbox, mpi_precision, partner, ytag, ioptest(comm,MPI_COMM_GRID), mpierr)
+            endif
+          enddo
+        enddo
+      else
+        ! receive from broadcaster
+        call MPI_RECV (out, nbox, mpi_precision, broadcaster, ytag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
+      endif
+!
+    endsubroutine distribute_xy_4D
+!***********************************************************************
     subroutine distribute_yz_3D(out, in, comm_)
 !
 !  This routine divides a large array of 3D data on the source processor
@@ -6955,119 +7068,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       endif
 !
     endsubroutine distribute_yz_4D
-!***********************************************************************
-    subroutine distribute_xy_3D(out, in, source_proc, comm)
-!
-!  This routine divides a large array of 3D data on the source processor
-!  and distributes it to all processors in the xy-plane.
-!  'source_proc' is the iproc number relative to the first processor
-!  in the corresponding xy-plane (Default: 0, equals lfirst_proc_xy).
-!
-!  08-jan-2011/Bourdin.KIS: coded
-!
-      real, dimension(:,:,:), intent(out) :: out
-      real, dimension(:,:,:), intent(in), optional :: in
-      integer, intent(in), optional :: source_proc
-!
-      integer :: bnx, bny, bnz ! transfer box sizes
-      integer :: px, py, broadcaster, partner, nbox
-      integer, parameter :: ytag=115
-      integer, optional :: comm
-      integer, dimension(MPI_STATUS_SIZE) :: stat
-!
-      bnx = size (out, 1)
-      bny = size (out, 2)
-      bnz = size (out, 3)
-      nbox = bnx*bny*bnz
-!
-      broadcaster = find_proc(ioptest(source_proc,0),0,ipz)
-!
-      if (iproc == broadcaster) then
-        ! distribute the data
-        if (bnx * nprocx /= size (in, 1)) &
-            call stop_fatal ('distribute_xy_3D: input x dim must be nprocx*output', .true.)
-        if (bny * nprocy /= size (in, 2)) &
-            call stop_fatal ('distribute_xy_3D: input y dim must be nprocy*output', .true.)
-        if (bnz /= size (in, 3)) &
-            call stop_fatal ('distribute_xy_3D: z dim must equal between in and out', .true.)
-!
-        do px = 0, nprocx-1
-          do py = 0, nprocy-1
-            partner = find_proc(px,py,ipz)
-            if (iproc == partner) then
-              ! data is local
-              out = in(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny,:)
-            else
-              ! send to partner
-              call MPI_SEND (in(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny,:), &
-                  nbox, mpi_precision, partner, ytag, ioptest(comm,MPI_COMM_GRID), mpierr)
-            endif
-          enddo
-        enddo
-      else
-        ! receive from broadcaster
-        call MPI_RECV (out, nbox, mpi_precision, broadcaster, ytag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
-      endif
-!
-    endsubroutine distribute_xy_3D
-!***********************************************************************
-    subroutine distribute_xy_4D(out, in, source_proc, comm)
-!
-!  This routine divides a large array of 4D data on the source processor
-!  and distributes it to all processors in the xy-plane.
-!  'source_proc' is the iproc number relative to the first processor
-!  in the corresponding xy-plane (Default: 0, equals lfirst_proc_xy).
-!
-!  08-jan-2011/Bourdin.KIS: coded
-!
-      real, dimension(:,:,:,:), intent(out) :: out
-      real, dimension(:,:,:,:), intent(in), optional :: in
-      integer, intent(in), optional :: source_proc
-      integer, optional :: comm
-!
-      integer :: bnx, bny, bnz, bna ! transfer box sizes
-      integer :: px, py, broadcaster, partner, nbox
-      integer, parameter :: ytag=115
-      integer, dimension(MPI_STATUS_SIZE) :: stat
-!
-      bnx = size (out, 1)
-      bny = size (out, 2)
-      bnz = size (out, 3)
-      bna = size (out, 4)
-      nbox = bnx*bny*bnz*bna
-!
-      broadcaster = find_proc(ioptest(source_proc,0),0,ipz)
-!
-      if (iproc == broadcaster) then
-        ! distribute the data
-        if (bnx * nprocx /= size (in, 1)) &
-            call stop_fatal ('distribute_xy_4D: input x dim must be nprocx*output', .true.)
-        if (bny * nprocy /= size (in, 2)) &
-            call stop_fatal ('distribute_xy_4D: input y dim must be nprocy*output', .true.)
-        if (bnz /= size (in, 3)) &
-            call stop_fatal ('distribute_xy_4D: z dim must equal between in and out', .true.)
-        if (bna /= size (in, 4)) &
-            call stop_fatal ('distribute_xy_4D: 4th dim must equal between in and out', .true.)
-!
-        do px = 0, nprocx-1
-          do py = 0, nprocy-1
-            partner = find_proc(px,py,ipz)
-            if (iproc == partner) then
-              ! data is local
-              out = in(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny,:,:)
-            else
-              ! send to partner
-              call MPI_SEND (in(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny,:,:), &
-                  nbox, mpi_precision, partner, ytag, ioptest(comm,MPI_COMM_GRID), mpierr)
-            endif
-          enddo
-        enddo
-      else
-        ! receive from broadcaster
-        call MPI_RECV (out, nbox, mpi_precision, broadcaster, ytag, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
-      endif
-!
-    endsubroutine distribute_xy_4D
 !***********************************************************************
     subroutine collect_xy_0D(in, out, dest_proc, comm)
 !
