@@ -6909,6 +6909,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       bnx = size (out, 1)
       bny = size (out, 2)
       bnz = size (out, 3)
+      nbox = bnx*bny*bnz
 
       if (present (source_proc)) then
         broadcaster = find_proc(mod (ioptest(source_proc,0), nprocx), ipy, ioptest(source_proc,0) / nprocxy)
@@ -6927,7 +6928,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  Distribute the data.
 !
-        nbox = bnx*bny*bnz
         do pz = 0, nprocz-1
           do py = 0, nprocy-1
             partner = find_proc(ipx,py,pz)
@@ -6967,6 +6967,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       bny = size (out, 2)
       bnz = size (out, 3)
       bnv = size (out, 4)
+      nbox = bnx*bny*bnz*bnv
 !
       if (present (source_proc)) then
         broadcaster = find_proc(mod (ioptest(source_proc,0), nprocx), ipy, ioptest(source_proc,0) / nprocxy)
@@ -6987,7 +6988,6 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  Distribute the data.
 !
-        nbox = bnx*bny*bnz*bnv
         do pz = 0, nprocz-1
           do py = 0, nprocy-1
             partner = find_proc(ipx,py,pz)
