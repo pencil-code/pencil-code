@@ -6908,9 +6908,9 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       if (present (source_proc)) then
-        broadcaster = find_proc(mod (ioptest(source_proc,0), nprocx), ioptest(source_proc,0) / nprocx, ipz)
+        broadcaster = find_proc(ipx, mod (source_proc, nprocxy) / nprocx, source_proc / nprocxy)
       else
-        broadcaster = 0
+        broadcaster = find_proc(ipx, 0, 0)
       endif
 !
       if (iproc == broadcaster) then
@@ -6956,9 +6956,9 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       nbox = bny*bnz
 
       if (present (source_proc)) then
-        broadcaster = find_proc(mod (ioptest(source_proc,0), nprocx), ipy, ioptest(source_proc,0) / nprocxy)
+        broadcaster = find_proc(ipx, mod (source_proc, nprocxy) / nprocx, source_proc / nprocxy)
       else
-        broadcaster = 0
+        broadcaster = find_proc(ipx, 0, 0)
       endif
 !
       if (iproc == broadcaster) then
@@ -7001,7 +7001,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, intent(in), optional :: source_proc
 !
       integer :: bnx, bny, bnz ! transfer box sizes
-      integer :: pz, py, broadcaster, partner, nbox
+      integer :: py, pz, broadcaster, partner, nbox
       integer, parameter :: ytag=115
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
@@ -7011,9 +7011,9 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       nbox = bnx*bny*bnz
 
       if (present (source_proc)) then
-        broadcaster = find_proc(mod (ioptest(source_proc,0), nprocx), ipy, ioptest(source_proc,0) / nprocxy)
+        broadcaster = find_proc(ipx, mod (source_proc, nprocxy) / nprocx, source_proc / nprocxy)
       else
-        broadcaster = 0
+        broadcaster = find_proc(ipx, 0, 0)
       endif
 !
       if (iproc == broadcaster) then
@@ -7058,7 +7058,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer, intent(in), optional :: source_proc
 !
       integer :: bnx, bny, bnz, bnv ! transfer box sizes
-      integer :: pz, py, broadcaster, partner, nbox
+      integer :: py, pz, broadcaster, partner, nbox
       integer, parameter :: ytag=115
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
@@ -7069,9 +7069,9 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       nbox = bnx*bny*bnz*bnv
 !
       if (present (source_proc)) then
-        broadcaster = find_proc(mod (ioptest(source_proc,0), nprocx), ipy, ioptest(source_proc,0) / nprocxy)
+        broadcaster = find_proc(ipx, mod (source_proc, nprocxy) / nprocx, source_proc / nprocxy)
       else
-        broadcaster = 0
+        broadcaster = find_proc(ipx, 0, 0)
       endif
 !
       if (iproc == broadcaster) then
