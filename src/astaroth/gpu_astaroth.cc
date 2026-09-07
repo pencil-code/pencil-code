@@ -2050,6 +2050,7 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_,
   const bool inside_container = ltraining;
   if (!inside_container) generate_bcs();
   MPI_Barrier(MPI_COMM_WORLD);
+  acStoreConfig(acDeviceGetLocalConfig(acGridGetDevice()), "PC-AC.conf");
   ac_compile();
   acLoadLibrary(rank == 0 ? stderr : NULL,mesh.info);
   acCheckDeviceAvailability();
@@ -2127,7 +2128,6 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_,
   afterSubStepGPU();
   autotune_all_integration_substeps();
   if (rank==0 && ldebug) printf("memusage before store config= %f MBytes\n", acMemUsage()/1024.);
-  acStoreConfig(acDeviceGetLocalConfig(acGridGetDevice()), "PC-AC.conf");
   if (rank==0 && ldebug) printf("memusage after store config= %f MBytes\n", acMemUsage()/1024.);
   acGridSynchronizeStream(STREAM_ALL);
   if (rank==0 && ldebug) printf("memusage after store synchronize stream= %f MBytes\n", acMemUsage()/1024.);
