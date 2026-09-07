@@ -6676,6 +6676,49 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine sum_xy
 !***********************************************************************
+    subroutine distribute_xy_0D_int(out, in, source_proc)
+!
+!  This routine distributes a scalar on the source processor
+!  to all processors in the xy-plane.
+!  'source_proc' is the iproc number relative to the first processor
+!  in the corresponding xy-plane (Default: 0, equals lfirst_proc_xy).
+!
+!  25-jan-2012/Bourdin.KIS: coded
+!
+      integer, intent(out) :: out
+      integer, intent(in), optional :: in
+      integer, intent(in), optional :: source_proc
+!
+      integer :: px, py, broadcaster, partner
+      integer, parameter :: ytag=115
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      if (present (source_proc)) then
+        broadcaster = find_proc(mod (source_proc, nprocx), mod (source_proc, nprocxy) / nprocx, ipz)
+      else
+        broadcaster = find_proc(0, 0, ipz)
+      endif
+!
+      if (iproc == broadcaster) then
+        ! distribute the data
+        do px = 0, nprocx-1
+          do py = 0, nprocy-1
+            partner = find_proc(px,py,ipz)
+            if (iproc /= partner) then
+              ! send to partner
+              call MPI_SEND (in, 1, MPI_INTEGER, partner, ytag, MPI_COMM_XYPLANE, mpierr)
+            endif
+          enddo
+        enddo
+        ! copy local data
+        out = in
+      else
+        ! receive from broadcaster
+        call MPI_RECV (out, 1, MPI_INTEGER, broadcaster, ytag, MPI_COMM_XYPLANE, stat, mpierr)
+      endif
+!
+    endsubroutine distribute_xy_0D_int
+!***********************************************************************
     subroutine distribute_xy_0D(out, in, source_proc)
 !
 !  This routine distributes a scalar on the source processor
@@ -6890,6 +6933,49 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine distribute_xy_4D
 !***********************************************************************
+    subroutine distribute_xz_0D_int(out, in, source_proc)
+!
+!  This routine distributes a scalar on the source processor
+!  to all processors in the xz-plane.
+!  'source_proc' is the iproc number relative to the first processor
+!  in the corresponding xz-plane (Default: 0, equals lfirst_proc_xz).
+!
+!  07-Sep-2026/PABourdin: adapted from distribute_xy_0D
+!
+      integer, intent(out) :: out
+      integer, intent(in), optional :: in
+      integer, intent(in), optional :: source_proc
+!
+      integer :: px, pz, broadcaster, partner
+      integer, parameter :: ytag=115
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      if (present (source_proc)) then
+        broadcaster = find_proc (mod (source_proc, nprocx), ipy, source_proc / nprocxy)
+      else
+        broadcaster = find_proc (0, ipy, 0)
+      endif
+!
+      if (iproc == broadcaster) then
+        ! distribute the data
+        do px = 0, nprocx-1
+          do pz = 0, nprocz-1
+            partner = find_proc(px,ipy,pz)
+            if (iproc /= partner) then
+              ! send to partner
+              call MPI_SEND (in, 1, MPI_INTEGER, partner, ytag, MPI_COMM_XZPLANE, mpierr)
+            endif
+          enddo
+        enddo
+        ! copy local data
+        out = in
+      else
+        ! receive from broadcaster
+        call MPI_RECV (out, 1, MPI_INTEGER, broadcaster, ytag, MPI_COMM_XZPLANE, stat, mpierr)
+      endif
+!
+    endsubroutine distribute_xz_0D_int
+!***********************************************************************
     subroutine distribute_xz_0D(out, in, source_proc)
 !
 !  This routine distributes a scalar on the source processor
@@ -7103,6 +7189,49 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       endif
 !
     endsubroutine distribute_xz_4D
+!***********************************************************************
+    subroutine distribute_yz_0D_int(out, in, source_proc)
+!
+!  This routine distributes a scalar on the source processor
+!  to all processors in the yz-plane.
+!  'source_proc' is the iproc number relative to the first processor
+!  in the corresponding yz-plane (Default: 0, equals lfirst_proc_yz).
+!
+!  07-Sep-2026/PABourdin: adapted from distribute_xy_0D
+!
+      integer, intent(out) :: out
+      integer, intent(in), optional :: in
+      integer, intent(in), optional :: source_proc
+!
+      integer :: py, pz, broadcaster, partner
+      integer, parameter :: ytag=115
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      if (present (source_proc)) then
+        broadcaster = find_proc(ipx, mod (source_proc, nprocxy) / nprocx, source_proc / nprocxy)
+      else
+        broadcaster = find_proc(ipx, 0, 0)
+      endif
+!
+      if (iproc == broadcaster) then
+        ! distribute the data
+        do py = 0, nprocy-1
+          do pz = 0, nprocz-1
+            partner = find_proc(ipx,py,pz)
+            if (iproc /= partner) then
+              ! send to partner
+              call MPI_SEND (in, 1, MPI_INTEGER, partner, ytag, MPI_COMM_YZPLANE, mpierr)
+            endif
+          enddo
+        enddo
+        ! copy local data
+        out = in
+      else
+        ! receive from broadcaster
+        call MPI_RECV (out, 1, MPI_INTEGER, broadcaster, ytag, MPI_COMM_YZPLANE, stat, mpierr)
+      endif
+!
+    endsubroutine distribute_yz_0D_int
 !***********************************************************************
     subroutine distribute_yz_0D(out, in, source_proc)
 !

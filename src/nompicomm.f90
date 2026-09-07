@@ -2073,6 +2073,21 @@ module Mpicomm
 !
     endsubroutine sum_xy
 !***********************************************************************
+    subroutine distribute_xy_0D_int(out, in, source_proc)
+!
+!  This routine distributes a scalar on the source processor
+!  to all processors in the xy-plane.
+!
+!  25-jan-2012/Bourdin.KIS: coded
+!
+      integer, intent(out) :: out
+      integer, intent(in), optional :: in
+      integer, intent(in), optional :: source_proc
+!
+      if (present (in) .or. present (source_proc)) out = in
+!
+    endsubroutine distribute_xy_0D_int
+!***********************************************************************
     subroutine distribute_xy_0D(out, in, source_proc)
 !
 !  This routine distributes a scalar on the source processor
@@ -2133,6 +2148,18 @@ module Mpicomm
 !
     endsubroutine distribute_xy_4D
 !***********************************************************************
+    subroutine distribute_xz_0D_int(out, in, source_proc)
+!
+!  Dummy.
+!
+      integer, intent(out) :: out
+      integer, intent(in), optional :: in
+      integer, intent(in), optional :: source_proc
+!
+      if (present (in) .or. present (source_proc)) out = in
+!
+    endsubroutine distribute_xz_0D_int
+!***********************************************************************
     subroutine distribute_xz_0D(out, in, source_proc)
 !
 !  Dummy.
@@ -2180,6 +2207,18 @@ module Mpicomm
       if (present (in) .or. present (source_proc)) out = in
 !
     endsubroutine distribute_xz_4D
+!***********************************************************************
+    subroutine distribute_yz_0D_int(out, in, source_proc)
+!
+!  Dummy.
+!
+      integer, intent(out) :: out
+      integer, intent(in), optional :: in
+      integer, intent(in), optional :: source_proc
+!
+      if (present (in) .or. present (source_proc)) out = in
+!
+    endsubroutine distribute_yz_0D_int
 !***********************************************************************
     subroutine distribute_yz_0D(out, in, source_proc)
 !

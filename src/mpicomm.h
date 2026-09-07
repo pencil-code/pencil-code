@@ -292,6 +292,7 @@
   endinterface
 !
   interface distribute_xy
+    module procedure distribute_xy_0D_int
     module procedure distribute_xy_0D
     module procedure distribute_xy_2D
     module procedure distribute_xy_3D
@@ -299,6 +300,7 @@
   endinterface
 !
   interface distribute_xz
+    module procedure distribute_xz_0D_int
     module procedure distribute_xz_0D
     module procedure distribute_xz_2D
     module procedure distribute_xz_3D
@@ -306,6 +308,7 @@
   endinterface
 !
   interface distribute_yz
+    module procedure distribute_yz_0D_int
     module procedure distribute_yz_0D
     module procedure distribute_yz_2D
     module procedure distribute_yz_3D
