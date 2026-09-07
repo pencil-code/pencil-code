@@ -53,7 +53,9 @@
   public :: communicate_vect_field_ghosts, communicate_xy_ghosts
   public :: fill_zghostzones_3vec, fetch_to_process_masked
 
-  public :: sum_xy, distribute_xy, collect_xy, distribute_yz
+  public :: sum_xy, collect_xy
+  public :: distribute_xy, distribute_yz
+!  public :: distribute_xy, distribute_xz, distribute_yz
   public :: distribute_z, collect_z
   public :: globalize_xy, localize_xy
   public :: globalize_z, localize_z
@@ -297,7 +299,16 @@
     module procedure distribute_xy_4D
   endinterface
 !
+!  interface distribute_xz
+!    module procedure distribute_xz_0D
+!    module procedure distribute_xz_2D
+!    module procedure distribute_xz_3D
+!    module procedure distribute_xz_4D
+!  endinterface
+!
   interface distribute_yz
+!    module procedure distribute_yz_0D
+!    module procedure distribute_yz_2D
     module procedure distribute_yz_3D
     module procedure distribute_yz_4D
   endinterface
