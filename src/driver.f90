@@ -21,7 +21,7 @@ module Driver
     real, pointer, dimension(:,:) :: frame_l => null()
     real, pointer, dimension(:,:) :: frame_r => null()
   end type data_array
-  type(data_array), dimension(mcom) :: data_xy => null(), data_xz => null(), data_yz => null()
+  type(data_array), dimension(mcom) :: data_xy, data_xz, data_yz
 !
 !  Run parameters.
 !
@@ -66,24 +66,24 @@ module Driver
         if (ldrive_xy(f_index) .and. (data_unit(f_index) /= 0.0)) &
             call fatal_error ('initialize_driver', "Trying to use driving without setting the corresponding 'data_unit'.", .true.)
 !
-        if (ldrive_xy) then
-          if (not associated (data_xy(f_index)%frame)) then
+        if (ldrive_xy(f_index)) then
+          if (.not. associated (data_xy(f_index)%frame)) then
             allocate (data_xy(f_index)%frame(nx,ny), data_xy(f_index)%frame_l(nx,ny), &
                 data_xy(f_index)%frame_r(nx,ny), stat=alloc_err)
             if (alloc_err > 0) call fatal_error ('initialize_driver', 'Could not allocate "data_xy".', .true.)
           endif
         endif
 !
-        if (ldrive_xz) then
-          if (not associated (data_xz(f_index)%frame)) then
+        if (ldrive_xz(f_index)) then
+          if (.not. associated (data_xz(f_index)%frame)) then
             allocate (data_xz(f_index)%frame(nx,ny), data_xz(f_index)%frame_l(nx,ny), &
                 data_xz(f_index)%frame_r(nx,ny), stat=alloc_err)
             if (alloc_err > 0) call fatal_error ('initialize_driver', 'Could not allocate "data_xz".', .true.)
           endif
         endif
 !
-        if (ldrive_yz) then
-          if (not associated (data_yz(f_index)%frame)) then
+        if (ldrive_yz(f_index)) then
+          if (.not. associated (data_yz(f_index)%frame)) then
             allocate (data_yz(f_index)%frame(nx,ny), data_yz(f_index)%frame_l(nx,ny), &
                 data_yz(f_index)%frame_r(nx,ny), stat=alloc_err)
             if (alloc_err > 0) call fatal_error ('initialize_driver', 'Could not allocate "data_yz".', .true.)
