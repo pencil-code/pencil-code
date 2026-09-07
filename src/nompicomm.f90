@@ -2133,7 +2133,7 @@ module Mpicomm
 !
     endsubroutine distribute_xy_4D
 !***********************************************************************
-    subroutine distribute_xz_0D(out, in)
+    subroutine distribute_xz_0D(out, in, source_proc)
 !
 !  Dummy.
 !
@@ -2145,7 +2145,7 @@ module Mpicomm
 !
     endsubroutine distribute_xz_0D
 !***********************************************************************
-    subroutine distribute_xz_2D(out, in)
+    subroutine distribute_xz_2D(out, in, source_proc)
 !
 !  Dummy.
 !
@@ -2157,7 +2157,7 @@ module Mpicomm
 !
     endsubroutine distribute_xz_2D
 !***********************************************************************
-    subroutine distribute_xz_3D(out, in)
+    subroutine distribute_xz_3D(out, in, source_proc)
 !
 !  Dummy.
 !
@@ -2169,7 +2169,7 @@ module Mpicomm
 !
     endsubroutine distribute_xz_3D
 !***********************************************************************
-    subroutine distribute_xz_4D(out, in)
+    subroutine distribute_xz_4D(out, in, source_proc)
 !
 !  Dummy.
 !
@@ -2181,7 +2181,7 @@ module Mpicomm
 !
     endsubroutine distribute_xz_4D
 !***********************************************************************
-    subroutine distribute_yz_0D(out, in)
+    subroutine distribute_yz_0D(out, in, source_proc)
 !
 !  Dummy.
 !
@@ -2193,7 +2193,7 @@ module Mpicomm
 !
     endsubroutine distribute_yz_0D
 !***********************************************************************
-    subroutine distribute_yz_2D(out, in)
+    subroutine distribute_yz_2D(out, in, source_proc)
 !
 !  Dummy.
 !
@@ -2205,7 +2205,7 @@ module Mpicomm
 !
     endsubroutine distribute_yz_2D
 !***********************************************************************
-    subroutine distribute_yz_3D(out, in)
+    subroutine distribute_yz_3D(out, in, source_proc)
 !
 !  Dummy.
 !
@@ -2219,7 +2219,7 @@ module Mpicomm
 !
     endsubroutine distribute_yz_3D
 !***********************************************************************
-    subroutine distribute_yz_4D(out, in)
+    subroutine distribute_yz_4D(out, in, source_proc)
 !
 !  Dummy.
 !
