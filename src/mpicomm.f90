@@ -6920,7 +6920,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
             partner = find_proc(ipx,py,pz)
             if (iproc /= partner) then
               ! send to partner
-              call MPI_SEND (in, 1, mpi_precision, partner, ytag, MPI_COMM_XYPLANE, mpierr)
+              call MPI_SEND (in, 1, mpi_precision, partner, ytag, MPI_COMM_YZPLANE, mpierr)
             endif
           enddo
         enddo
@@ -6928,7 +6928,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
         out = in
       else
         ! receive from broadcaster
-        call MPI_RECV (out, 1, mpi_precision, broadcaster, ytag, MPI_COMM_XYPLANE, stat, mpierr)
+        call MPI_RECV (out, 1, mpi_precision, broadcaster, ytag, MPI_COMM_YZPLANE, stat, mpierr)
       endif
 !
     endsubroutine distribute_yz_0D
