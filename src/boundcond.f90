@@ -727,31 +727,27 @@ module Boundcond
       if (present(ivar2_opt)) ivar2=ivar2_opt
 !
 !if (ldownsampling) print*, 'boundconds_x: mcom,mfarray,ivar1,ivar2=', mcom,mfarray,ivar1,ivar2,maxval(abs(f))
-!flush(6)
-      select case (nxgrid)
 !
-      case (1)
+      if (nxgrid == 1) then
         if (ldebug) print*, 'boundconds_x: no x-boundary'
+        return
+      endif
+!
+      if (all(bcx12(ivar1:ivar2,:)=='she')) then
+        call boundcond_shear(f,ivar1,ivar2)
+        return
+      endif
 !
 !  Boundary conditions in x.
 !
-      case default
-!
-!  Use the following construct to keep compiler from complaining if
-!  we have no variables (and boundconds) at all (samples/no-modules):
-!
-        if (all(bcx12(ivar1:ivar2,:)=='she')) then
-          call boundcond_shear(f,ivar1,ivar2)
+      do topbot = BOT, TOP
+        if (topbot == BOT) then
+          ip_ok = lfirst_proc_x
         else
-          do topbot=BOT,TOP
-            ! loop over 'bot','top'
-            if (topbot==BOT) then
-              ip_ok=lfirst_proc_x
-            else
-              ip_ok=llast_proc_x
-            endif
+          ip_ok = llast_proc_x
+        endif
 !
-            do j=ivar1,ivar2
+        do j = ivar1, ivar2
 !
 ! Natalia: the next line is for the dustdensity case.
 ! If ndustspec is large, it is stupid to set bc for all dust species
@@ -762,294 +758,296 @@ module Boundcond
 !
 !            if ((bcx12(j,topbot)=='p') .and. lchemistry .and. ldustdensity) bcx12(j,topbot)=''
 !
-              if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcx',topbot,'(',j,')=',bcx12(j,topbot)
-              if (bcx12(j,topbot) == 'she') then
-                if (topbot == BOT) call boundcond_shear(f, j, j)
-              elseif (ip_ok) then
-                select case (bcx12(j,topbot))
-                case ('0')
-                  ! BCX_DOC: zero value in ghost zones, free value on boundary
-                  call bc_zero_x(f,topbot,j)
-                case ('p')
-                  ! BCX_DOC: periodic
-                  call bc_per_x(f,topbot,j)
-                case ('s')
-                  ! BCX_DOC: symmetry, $f_{N+i}=f_{N-i}$;
-                  ! BCX_DOC: implies $f'(x_N)=f'''(x_0)=0$
-                  call bc_sym_x(f,topbot,j,+1)
-                case ('sf')
-                  ! BCX_DOC: symmetry with respect to interface
-                  call bc_sf_x(f,topbot,j,+1)
-                case ('ss')
-                  ! BCX_DOC: symmetry, plus function value given
-                  call bc_symset_x(f,topbot,j,+1,VAL=fbcx(j,topbot))
-                case ('sds')
-                  ! BCX_DOC: symmetric-derivative-set
-                  call bc_symderset_x(f,topbot,j,VAL=fbcx(j,topbot))
-                case ('s0d')
-                  ! BCX_DOC: symmetry, function value such that df/dx=0
-                  call bc_symset0der_x(f,topbot,j)
-                case ('a')
-                  ! BCX_DOC: antisymmetry, $f_{N+i}=-f_{N-i}$;
-                  ! BCX_DOC: implies $f(x_N)=f''(x_0)=0$
-                  call bc_sym_x(f,topbot,j,-1)
-                case ('af')
-                  ! BCX_DOC: antisymmetry with respect to interface
-                  call bc_sf_x(f,topbot,j,-1)
-                case ('a2')
-                  ! BCX_DOC: antisymmetry relative to boundary value,
-                  ! BCX_DOC: $f_{N+i}=2 f_{N}-f_{N-i}$;
-                  ! BCX_DOC: implies $f''(x_0)=0$
-                  call bc_sym_x(f,topbot,j,-1,REL=.true.)
-                case ('a2v')
-                  ! BCX_DOC: set boundary value and antisymmetry relative to it
-                  ! BCX_DOC: $f_{N+i}=2 f_{N}-f_{N-i}$;
-                  ! BCX_DOC: implies $f''(x_0)=0$
-                  call bc_sym_x(f,topbot,j,-1,REL=.true.,VAL=fbcx(j,topbot))
-                case ('a2r')
-                  ! BCX_DOC: sets $d^2f/dr^2 +2df/dr- 2f/r^2 = 0$
-                  ! BCX_DOC: This is the replacement of zero second derivative
-                  ! BCX_DOC: in spherical coordinates, in radial direction.
-                  call bc_a2r_x(f,topbot,j)
-                case ('cpc')
-                  ! BCX_DOC: cylindrical perfect conductor
-                  ! BCX_DOC: implies $f''+f'/R=0$
-                  call bc_cpc_x(f,topbot,j)
-                case ('cpp')
-                  ! BCX_DOC: cylindrical perfect conductor for Aphi
-                  ! BCX_DOC: implies $RA''+A'=0$
-                  call bc_cpp_x(f,topbot,j)
-                case ('cpz')
-                  ! BCX_DOC: cylindrical perfect conductor for Az
-                  ! BCX_DOC: implies $R(RA)''-(RA)'=0$
-                  call bc_cpz_x(f,topbot,j)
-                case ('spr')
-                  ! BCX_DOC: spherical perfect conductor
-                  ! BCX_DOC: implies $f''+2f'/R=0$ and $f(x_N)=0$
-                  call bc_spr_x(f,topbot,j)
-                case ('v')
-                  ! BCX_DOC: vanishing third derivative
-                  call bc_van_x(f,topbot,j)
-                case ('cop')
-                  ! BCX_DOC: copy value of last physical point to all ghost cells
-                  call bc_copy_x(f,topbot,j)
-                case ('1s')
-                  ! BCX_DOC: onesided
-                  call set_ghosts_for_onesided_ders(f,topbot,j,1)
-                case ('d1s')
-                  ! BCX_DOC: onesided for 1st/2nd derivative in two first inner points, Dirichlet in boundary point
-                  call bc_d1s_x(f,topbot,j)
-                case ('n1s')
-                  ! BCX_DOC: onesided for 1st/2nd derivative in two first inner points, Neumann in boundary point
-                  call bc_n1s_x(f,topbot,j)
-                case ('1so')
-                  ! BCX_DOC: onesided
-                  call bc_onesided_x_old(f,topbot,j)
-                case ('cT')
-                  ! BCX_DOC: constant temperature (implemented as
-                  ! BCX_DOC: condition for entropy $s$ or temperature $T$)
-                  call bc_ss_temp_x(f,topbot)
-                case ('c1')
-                  ! BCX_DOC: constant conductive flux
-                  call bc_c1_x(f,topbot,j)
-                case ('Fgs')
-                  ! BCX_DOC: black body:
-                  ! BCX_DOC: - chi_t*rho*T*grad(s) - K*grad(T) = sigmaSBt*T**4
-                  call bc_ss_flux_turb_x(f,topbot)
-                case ('Fct')
-                  ! BCX_DOC: Fbot = - K*grad(T) - chi_t*rho*T*grad(s)
-                  call bc_ss_flux_condturb_x(f,topbot)
-                case ('Fcm')
-                  ! BCX_DOC: $Fbot = - K*grad(\overline{T})$
-                  ! BCX_DOC: $       - chi_t*\overline{rho}*\overline{T}*grad(\overline{s})$
-                  call bc_ss_flux_condturb_mean_x(f,topbot)
-                case ('sT')
-                  ! BCX_DOC: symmetric temperature, $T_{N-i}=T_{N+i}$;
-                  ! BCX_DOC: implies $T'(x_N)=T'''(x_0)=0$
-                  call bc_ss_stemp_x(f,topbot)
-                case ('asT')
-                  ! BCX_DOC: select entropy for uniform ghost temperature
-                  ! BCX_DOC: matching fluctuating boundary value,
-                  ! BCX_DOC: $T_{N-i}=T_{N}=$;
-                  ! BCX_DOC: implies $T'(x_N)=T'(x_0)=0$
-                  call bc_ss_a2stemp_x(f,topbot)
-                case ('db')
-                  ! BCX_DOC: low-order one-sided derivatives (``no boundary
-                  ! BCX_DOC: condition'') for density
-                  call bc_db_x(f,topbot,j)
-                case ('f')
-                  ! BCX_DOC: ``freeze'' value, i.e. maintain initial value; antisymm wrt boundary
-                  call bc_freeze_var_x(topbot,j)
-                  call bc_sym_x(f,topbot,j,-1,REL=.true.)
-                case ('fg')
-                  ! BCX_DOC: ``freeze'' value, i.e. maintain initial
-                  ! BCX_DOC: value at boundary, also mantaining the
-                  ! BCX_DOC: ghost zones at the initial coded value, i.e.,
-                  ! BCX_DOC: keep the gradient frozen as well
-                  call bc_freeze_var_x(topbot,j)
-                case ('1')
-                  ! BCX_DOC: $f=1$ (for debugging)
-                  call bc_one_x(f,topbot,j)
-                case ('set')
-                  ! BCX_DOC: set boundary value to \var{fbcx}
-                  call bc_sym_x(f,topbot,j,-1,REL=.true.,VAL=fbcx(j,topbot))
-                case ('st')
-                  ! BCX_DOC: set boundary value to value generated by function bc_st.
-                  ! BCX_DOC: Special time-dependent boundary condition to model temporal changes.
-                  ! The functional form and the functional values should be generalized in function bc_st.
-                  call bc_sym_x_ydep(f,topbot,j,-1,REL=.true.,val=bc_st())
-                case ('st2')
-                  ! BCX_DOC: set boundary value to value generated by function bc_st.
-                  ! BCX_DOC: Special time-dependent boundary condition to model temporal changes.
-                  ! The functional form and the functional values should be generalized in function bc_st.
-                  call bc_sym_x_ydep2(f,topbot,j,-1,REL=.true.,val=bc_st2())
-                case ('der')
-                  ! BCX_DOC: set derivative on boundary to \var{fbcx}
-                  call bc_set_der_x(f,topbot,j,fbcx(j,topbot))
-                case ('slo')
-                  ! BCX_DOC: set slope at the boundary = \var{fbcx}
-                  call bc_slope_x(f,topbot,j,fbcx(j,topbot))
-                case ('slp')
-                  ! BCX_DOC: set slope at the boundary and in ghost cells = \var{fbcx}
-                  call bc_ghost_slope_x(f,topbot,j,fbcx(j,topbot))
-                case ('shx')
-                  ! BCX_DOC: set shearing boundary proportional to x with slope=\var{fbcx} and abscissa=\var{fbcx2}
-                  call bc_shear_x(f,topbot,j,fbcx(j,topbot),fbcx_2(j,topbot))
-                case ('shy')
-                  ! BCX_DOC: set shearing boundary proportional to y with slope=\var{fbcx} and abscissa=\var{fbcx2}
-                  call bc_shear_y(f,topbot,j,fbcx(j,topbot),fbcx_2(j,topbot))
-                case ('shz')
-                  ! BCX_DOC: set shearing boundary proportional to z with slope=\var{fbcx} and abscissa=\var{fbcx2}
-                  call bc_shear_z(f,topbot,j,fbcx(j,topbot),fbcx_2(j,topbot))
-                case ('dr0')
-                  ! BCX_DOC: set boundary value [really??]
-                  call bc_dr0_x(f,topbot,j,fbcx(j,topbot))
-                case ('ovr')
-                  ! BCX_DOC: overshoot boundary condition
-                  ! BCX_DOC:  ie $(d/dx-1/\mathrm{dist}) f = 0.$
-                  call bc_overshoot_x(f,topbot,j,fbcx(j,topbot))
-                case ('out')
-                  ! BCX_DOC: allow outflow, but no inflow
-                  ! BCX_DOC: forces ghost cells and boundary to not point inwards
-                  call bc_outflow_x(f,topbot,j,.true.)
-                case ('in')
-                  ! BCZ_DOC: allow inflow, but no outflow
-                  ! BCZ_DOC: forces ghost cells and boundary to not point outwards
-                  call bc_inflow_x(f,topbot,j,.true.)
-                case ('e1o')
-                  ! BCX_DOC: allow outflow, but no inflow
-                  ! BCX_DOC: uses the e1 extrapolation scheme
-                  call bc_outflow_x_e1(f,topbot,j,.true.)
-                case ('ant')
-                  ! BCX_DOC: stops and prompts for adding documentation
-                  call bc_antis_x(f,topbot,j,fbcx(j,topbot))
-                case ('e1')
-                  ! BCX_DOC: extrapolation [describe]
-                  call bcx_extrap_2_1(f,topbot,j)
-                case ('e2')
-                  ! BCX_DOC: extrapolation [describe]
-                  call bcx_extrap_2_2(f,topbot,j)
-                case ('e2h')
-                  ! BCX_DOC: extrapolation [describe]
-                  call bcx_extrap_frac_2(f,topbot,j)
-                case ('e3')
-                  ! BCX_DOC: extrapolation in log [maintain a power law]
-                  call bcx_extrap_2_3(f,topbot,j)
-                case ('el')
-                  ! BCX_DOC: linear extrapolation from last two active cells
-                  call bcx_extrap_linear(f, topbot, j)
-                case ('pl')
-                  ! BCX_DOC: extrapolate using power law with the power index specified by fbcx
-                  call bcx_extrap_powerlaw(f,topbot,j,fbcx(j,topbot),llog=(j==ilnrho).and..not.ldensity_nolog)
-                case ('hat')
-                  ! BCX_DOC: top hat jet profile in spherical coordinate.
-                  !Defined only for the bottom boundary
-                  call bc_set_jethat_x(f,topbot,j,fbcx(j,topbot),fbcx_2(j,topbot))
-                case ('jet')
-                  ! BCX_DOC: top hat jet profile in cartezian coordinate.
-                  !Defined only for the bottom boundary
-                  call bc_set_jet_x(f,topbot,j,fbcx(j,topbot),fbcx_2(j,topbot))
-                case ('spd')
-                  ! BCX_DOC:  sets $d(rA_{\alpha})/dr = \mathtt{fbcx(j)}$
-                  call bc_set_spder_x(f,topbot,j,fbcx(j,topbot))
-                case ('sfr')
-                  ! BCX_DOC: stress-free boundary condition
-                  ! BCX_DOC: for spherical coordinate system.
-                  call bc_set_sfree_x(f,topbot,j)
-                case ('sr1')
-                  ! BCX_DOC: Stress-free bc for spherical coordinate system.
-                  ! BCX_DOC: Implementation with one-sided derivative.
-                  call bc_set_sr1_x(f,topbot,j)
-                case ('nfr')
-                  ! BCX_DOC: Normal-field bc for spherical coordinate system.
-                  ! BCX_DOC: Some people call this the ``(angry) hedgehog bc''.
-                  call bc_set_nfr_x(f,topbot,j)
-                case ('nr1')
-                  ! BCX_DOC: Normal-field bc for spherical coordinate system.
-                  ! BCX_DOC: Some people call this the ``(angry) hedgehog bc''.
-                  ! BCX_DOC: Implementation with one-sided derivative.
-                  call bc_set_nr1_x(f,topbot,j)
-                case ('sa2')
-                  ! BCX_DOC: $(d/dr)(r B_{\phi}) = 0$ imposes
-                  ! BCX_DOC: boundary condition on 2nd derivative of
-                  ! BCX_DOC: $r A_{\phi}$. Same applies to $\theta$ component.
-                  call bc_set_sa2_x(f,topbot,j)
-                case ('pfc')
-                  ! BCX_DOC: perfect-conductor in spherical
-                  ! BCX_DOC: coordinate: $d/dr( A_r) + 2/r = 0$.
+!
+!  Use the following construct to keep compiler from complaining if
+!  we have no variables (and boundconds) at all (samples/no-modules):
+!
+          if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcx',topbot,'(',j,')=',bcx12(j,topbot)
+          if (bcx12(j,topbot) == 'she') then
+            if (topbot == BOT) call boundcond_shear(f, j, j)
+          elseif (ip_ok) then
+            select case (bcx12(j,topbot))
+            case ('0')
+              ! BCX_DOC: zero value in ghost zones, free value on boundary
+              call bc_zero_x(f,topbot,j)
+            case ('p')
+              ! BCX_DOC: periodic
+              call bc_per_x(f,topbot,j)
+            case ('s')
+              ! BCX_DOC: symmetry, $f_{N+i}=f_{N-i}$;
+              ! BCX_DOC: implies $f'(x_N)=f'''(x_0)=0$
+              call bc_sym_x(f,topbot,j,+1)
+            case ('sf')
+              ! BCX_DOC: symmetry with respect to interface
+              call bc_sf_x(f,topbot,j,+1)
+            case ('ss')
+              ! BCX_DOC: symmetry, plus function value given
+              call bc_symset_x(f,topbot,j,+1,VAL=fbcx(j,topbot))
+            case ('sds')
+              ! BCX_DOC: symmetric-derivative-set
+              call bc_symderset_x(f,topbot,j,VAL=fbcx(j,topbot))
+            case ('s0d')
+              ! BCX_DOC: symmetry, function value such that df/dx=0
+              call bc_symset0der_x(f,topbot,j)
+            case ('a')
+              ! BCX_DOC: antisymmetry, $f_{N+i}=-f_{N-i}$;
+              ! BCX_DOC: implies $f(x_N)=f''(x_0)=0$
+              call bc_sym_x(f,topbot,j,-1)
+            case ('af')
+              ! BCX_DOC: antisymmetry with respect to interface
+              call bc_sf_x(f,topbot,j,-1)
+            case ('a2')
+              ! BCX_DOC: antisymmetry relative to boundary value,
+              ! BCX_DOC: $f_{N+i}=2 f_{N}-f_{N-i}$;
+              ! BCX_DOC: implies $f''(x_0)=0$
+              call bc_sym_x(f,topbot,j,-1,REL=.true.)
+            case ('a2v')
+              ! BCX_DOC: set boundary value and antisymmetry relative to it
+              ! BCX_DOC: $f_{N+i}=2 f_{N}-f_{N-i}$;
+              ! BCX_DOC: implies $f''(x_0)=0$
+              call bc_sym_x(f,topbot,j,-1,REL=.true.,VAL=fbcx(j,topbot))
+            case ('a2r')
+              ! BCX_DOC: sets $d^2f/dr^2 +2df/dr- 2f/r^2 = 0$
+              ! BCX_DOC: This is the replacement of zero second derivative
+              ! BCX_DOC: in spherical coordinates, in radial direction.
+              call bc_a2r_x(f,topbot,j)
+            case ('cpc')
+              ! BCX_DOC: cylindrical perfect conductor
+              ! BCX_DOC: implies $f''+f'/R=0$
+              call bc_cpc_x(f,topbot,j)
+            case ('cpp')
+              ! BCX_DOC: cylindrical perfect conductor for Aphi
+              ! BCX_DOC: implies $RA''+A'=0$
+              call bc_cpp_x(f,topbot,j)
+            case ('cpz')
+              ! BCX_DOC: cylindrical perfect conductor for Az
+              ! BCX_DOC: implies $R(RA)''-(RA)'=0$
+              call bc_cpz_x(f,topbot,j)
+            case ('spr')
+              ! BCX_DOC: spherical perfect conductor
+              ! BCX_DOC: implies $f''+2f'/R=0$ and $f(x_N)=0$
+              call bc_spr_x(f,topbot,j)
+            case ('v')
+              ! BCX_DOC: vanishing third derivative
+              call bc_van_x(f,topbot,j)
+            case ('cop')
+              ! BCX_DOC: copy value of last physical point to all ghost cells
+              call bc_copy_x(f,topbot,j)
+            case ('1s')
+              ! BCX_DOC: onesided
+              call set_ghosts_for_onesided_ders(f,topbot,j,1)
+            case ('d1s')
+              ! BCX_DOC: onesided for 1st/2nd derivative in two first inner points, Dirichlet in boundary point
+              call bc_d1s_x(f,topbot,j)
+            case ('n1s')
+              ! BCX_DOC: onesided for 1st/2nd derivative in two first inner points, Neumann in boundary point
+              call bc_n1s_x(f,topbot,j)
+            case ('1so')
+              ! BCX_DOC: onesided
+              call bc_onesided_x_old(f,topbot,j)
+            case ('cT')
+              ! BCX_DOC: constant temperature (implemented as
+              ! BCX_DOC: condition for entropy $s$ or temperature $T$)
+              call bc_ss_temp_x(f,topbot)
+            case ('c1')
+              ! BCX_DOC: constant conductive flux
+              call bc_c1_x(f,topbot,j)
+            case ('Fgs')
+              ! BCX_DOC: black body:
+              ! BCX_DOC: - chi_t*rho*T*grad(s) - K*grad(T) = sigmaSBt*T**4
+              call bc_ss_flux_turb_x(f,topbot)
+            case ('Fct')
+              ! BCX_DOC: Fbot = - K*grad(T) - chi_t*rho*T*grad(s)
+              call bc_ss_flux_condturb_x(f,topbot)
+            case ('Fcm')
+              ! BCX_DOC: $Fbot = - K*grad(\overline{T})$
+              ! BCX_DOC: $       - chi_t*\overline{rho}*\overline{T}*grad(\overline{s})$
+              call bc_ss_flux_condturb_mean_x(f,topbot)
+            case ('sT')
+              ! BCX_DOC: symmetric temperature, $T_{N-i}=T_{N+i}$;
+              ! BCX_DOC: implies $T'(x_N)=T'''(x_0)=0$
+              call bc_ss_stemp_x(f,topbot)
+            case ('asT')
+              ! BCX_DOC: select entropy for uniform ghost temperature
+              ! BCX_DOC: matching fluctuating boundary value,
+              ! BCX_DOC: $T_{N-i}=T_{N}=$;
+              ! BCX_DOC: implies $T'(x_N)=T'(x_0)=0$
+              call bc_ss_a2stemp_x(f,topbot)
+            case ('db')
+              ! BCX_DOC: low-order one-sided derivatives (``no boundary
+              ! BCX_DOC: condition'') for density
+              call bc_db_x(f,topbot,j)
+            case ('f')
+              ! BCX_DOC: ``freeze'' value, i.e. maintain initial value; antisymm wrt boundary
+              call bc_freeze_var_x(topbot,j)
+              call bc_sym_x(f,topbot,j,-1,REL=.true.)
+            case ('fg')
+              ! BCX_DOC: ``freeze'' value, i.e. maintain initial
+              ! BCX_DOC: value at boundary, also mantaining the
+              ! BCX_DOC: ghost zones at the initial coded value, i.e.,
+              ! BCX_DOC: keep the gradient frozen as well
+              call bc_freeze_var_x(topbot,j)
+            case ('1')
+              ! BCX_DOC: $f=1$ (for debugging)
+              call bc_one_x(f,topbot,j)
+            case ('set')
+              ! BCX_DOC: set boundary value to \var{fbcx}
+              call bc_sym_x(f,topbot,j,-1,REL=.true.,VAL=fbcx(j,topbot))
+            case ('st')
+              ! BCX_DOC: set boundary value to value generated by function bc_st.
+              ! BCX_DOC: Special time-dependent boundary condition to model temporal changes.
+              ! The functional form and the functional values should be generalized in function bc_st.
+              call bc_sym_x_ydep(f,topbot,j,-1,REL=.true.,val=bc_st())
+            case ('st2')
+              ! BCX_DOC: set boundary value to value generated by function bc_st.
+              ! BCX_DOC: Special time-dependent boundary condition to model temporal changes.
+              ! The functional form and the functional values should be generalized in function bc_st.
+              call bc_sym_x_ydep2(f,topbot,j,-1,REL=.true.,val=bc_st2())
+            case ('der')
+              ! BCX_DOC: set derivative on boundary to \var{fbcx}
+              call bc_set_der_x(f,topbot,j,fbcx(j,topbot))
+            case ('slo')
+              ! BCX_DOC: set slope at the boundary = \var{fbcx}
+              call bc_slope_x(f,topbot,j,fbcx(j,topbot))
+            case ('slp')
+              ! BCX_DOC: set slope at the boundary and in ghost cells = \var{fbcx}
+              call bc_ghost_slope_x(f,topbot,j,fbcx(j,topbot))
+            case ('shx')
+              ! BCX_DOC: set shearing boundary proportional to x with slope=\var{fbcx} and abscissa=\var{fbcx2}
+              call bc_shear_x(f,topbot,j,fbcx(j,topbot),fbcx_2(j,topbot))
+            case ('shy')
+              ! BCX_DOC: set shearing boundary proportional to y with slope=\var{fbcx} and abscissa=\var{fbcx2}
+              call bc_shear_y(f,topbot,j,fbcx(j,topbot),fbcx_2(j,topbot))
+            case ('shz')
+              ! BCX_DOC: set shearing boundary proportional to z with slope=\var{fbcx} and abscissa=\var{fbcx2}
+              call bc_shear_z(f,topbot,j,fbcx(j,topbot),fbcx_2(j,topbot))
+            case ('dr0')
+              ! BCX_DOC: set boundary value [really??]
+              call bc_dr0_x(f,topbot,j,fbcx(j,topbot))
+            case ('ovr')
+              ! BCX_DOC: overshoot boundary condition
+              ! BCX_DOC:  ie $(d/dx-1/\mathrm{dist}) f = 0.$
+              call bc_overshoot_x(f,topbot,j,fbcx(j,topbot))
+            case ('out')
+              ! BCX_DOC: allow outflow, but no inflow
+              ! BCX_DOC: forces ghost cells and boundary to not point inwards
+              call bc_outflow_x(f,topbot,j,.true.)
+            case ('in')
+              ! BCZ_DOC: allow inflow, but no outflow
+              ! BCZ_DOC: forces ghost cells and boundary to not point outwards
+              call bc_inflow_x(f,topbot,j,.true.)
+            case ('e1o')
+              ! BCX_DOC: allow outflow, but no inflow
+              ! BCX_DOC: uses the e1 extrapolation scheme
+              call bc_outflow_x_e1(f,topbot,j,.true.)
+            case ('ant')
+              ! BCX_DOC: stops and prompts for adding documentation
+              call bc_antis_x(f,topbot,j,fbcx(j,topbot))
+            case ('e1')
+              ! BCX_DOC: extrapolation [describe]
+              call bcx_extrap_2_1(f,topbot,j)
+            case ('e2')
+              ! BCX_DOC: extrapolation [describe]
+              call bcx_extrap_2_2(f,topbot,j)
+            case ('e2h')
+              ! BCX_DOC: extrapolation [describe]
+              call bcx_extrap_frac_2(f,topbot,j)
+            case ('e3')
+              ! BCX_DOC: extrapolation in log [maintain a power law]
+              call bcx_extrap_2_3(f,topbot,j)
+            case ('el')
+              ! BCX_DOC: linear extrapolation from last two active cells
+              call bcx_extrap_linear(f, topbot, j)
+            case ('pl')
+              ! BCX_DOC: extrapolate using power law with the power index specified by fbcx
+              call bcx_extrap_powerlaw(f,topbot,j,fbcx(j,topbot),llog=(j==ilnrho).and..not.ldensity_nolog)
+            case ('hat')
+              ! BCX_DOC: top hat jet profile in spherical coordinate.
+              !Defined only for the bottom boundary
+              call bc_set_jethat_x(f,topbot,j,fbcx(j,topbot),fbcx_2(j,topbot))
+            case ('jet')
+              ! BCX_DOC: top hat jet profile in cartezian coordinate.
+              !Defined only for the bottom boundary
+              call bc_set_jet_x(f,topbot,j,fbcx(j,topbot),fbcx_2(j,topbot))
+            case ('spd')
+              ! BCX_DOC:  sets $d(rA_{\alpha})/dr = \mathtt{fbcx(j)}$
+              call bc_set_spder_x(f,topbot,j,fbcx(j,topbot))
+            case ('sfr')
+              ! BCX_DOC: stress-free boundary condition
+              ! BCX_DOC: for spherical coordinate system.
+              call bc_set_sfree_x(f,topbot,j)
+            case ('sr1')
+              ! BCX_DOC: Stress-free bc for spherical coordinate system.
+              ! BCX_DOC: Implementation with one-sided derivative.
+              call bc_set_sr1_x(f,topbot,j)
+            case ('nfr')
+              ! BCX_DOC: Normal-field bc for spherical coordinate system.
+              ! BCX_DOC: Some people call this the ``(angry) hedgehog bc''.
+              call bc_set_nfr_x(f,topbot,j)
+            case ('nr1')
+              ! BCX_DOC: Normal-field bc for spherical coordinate system.
+              ! BCX_DOC: Some people call this the ``(angry) hedgehog bc''.
+              ! BCX_DOC: Implementation with one-sided derivative.
+              call bc_set_nr1_x(f,topbot,j)
+            case ('sa2')
+              ! BCX_DOC: $(d/dr)(r B_{\phi}) = 0$ imposes
+              ! BCX_DOC: boundary condition on 2nd derivative of
+              ! BCX_DOC: $r A_{\phi}$. Same applies to $\theta$ component.
+              call bc_set_sa2_x(f,topbot,j)
+            case ('pfc')
+              ! BCX_DOC: perfect-conductor in spherical
+              ! BCX_DOC: coordinate: $d/dr( A_r) + 2/r = 0$.
 !joern: WARNING, this bc will NOT give a perfect-conductor boundary condition
-                  call bc_set_pfc_x(f,topbot,j)
-                case ('fix')
-                  ! BCX_DOC: set boundary value [really??]
-                  call bc_fix_x(f,topbot,j,fbcx(j,topbot))
-                case ('fil')
-                  ! BCX_DOC: set boundary value from a file
-                  call bc_file_x(f,topbot,j)
-                case ('cfb')
-                  ! BCX_DOC: radial centrifugal balance
-                  call bc_lnrho_cfb_r_iso(f,topbot)
-                case ('g')
-                  ! BCX_DOC: set to given value(s) or function
-                  call bc_force_x(f,topbot,j,-1)
-                case ('ioc')
-                  ! BCX_DOC: inlet/outlet on western/eastern hemisphere
-                  ! BCX_DOC: in cylindrical coordinates
-                  call bc_inlet_outlet_cyl(f,topbot,j,fbcx(j,topbot))
-                case ('tay')
-                  call tayler_expansion(f,topbot,j,'x')
-                case ('exp')
-                  ! BCX_DOC: exponentiate x ghost zone of other variable
-                  call bc_expother_x(f,topbot,j,int(fbcx(j,topbot)))
-                case ('slc')
-                  ! BCX_DOC: set x ghost zones from slice.
-                  call set_from_slice_x(f,topbot,j)
-                  call set_ghosts_for_onesided_ders(f,topbot,j,1,.true.)
-                case ('density_wind')
-                  ! BCX_DOC: 'wind' bc for lnrho
-                  call bc_wind_density_x(f,topbot)
-                case ('nil','','no')
-                  ! BCX_DOC: do nothing; assume that everything is set
-                case default
-                  if (lspecial) then
-                    bc%bcname=bcx12(j,topbot)
-                    bc%ivar=j
-                    bc%location=(((topbot-1)*2)-1)   ! -1/1 for x bot/top
-                    bc%value1=fbcx(j,topbot)
-                    bc%value2=fbcx(j,topbot)
-                    bc%done=.false.
+              call bc_set_pfc_x(f,topbot,j)
+            case ('fix')
+              ! BCX_DOC: set boundary value [really??]
+              call bc_fix_x(f,topbot,j,fbcx(j,topbot))
+            case ('fil')
+              ! BCX_DOC: set boundary value from a file
+              call bc_file_x(f,topbot,j)
+            case ('cfb')
+              ! BCX_DOC: radial centrifugal balance
+              call bc_lnrho_cfb_r_iso(f,topbot)
+            case ('g')
+              ! BCX_DOC: set to given value(s) or function
+              call bc_force_x(f,topbot,j,-1)
+            case ('ioc')
+              ! BCX_DOC: inlet/outlet on western/eastern hemisphere
+              ! BCX_DOC: in cylindrical coordinates
+              call bc_inlet_outlet_cyl(f,topbot,j,fbcx(j,topbot))
+            case ('tay')
+              call tayler_expansion(f,topbot,j,'x')
+            case ('exp')
+              ! BCX_DOC: exponentiate x ghost zone of other variable
+              call bc_expother_x(f,topbot,j,int(fbcx(j,topbot)))
+            case ('slc')
+              ! BCX_DOC: set x ghost zones from slice.
+              call set_from_slice_x(f,topbot,j)
+              call set_ghosts_for_onesided_ders(f,topbot,j,1,.true.)
+            case ('density_wind')
+              ! BCX_DOC: 'wind' bc for lnrho
+              call bc_wind_density_x(f,topbot)
+            case ('nil','','no')
+              ! BCX_DOC: do nothing; assume that everything is set
+            case default
+              if (lspecial) then
+                bc%bcname=bcx12(j,topbot)
+                bc%ivar=j
+                bc%location=(((topbot-1)*2)-1)   ! -1/1 for x bot/top
+                bc%value1=fbcx(j,topbot)
+                bc%value2=fbcx(j,topbot)
+                bc%done=.false.
 !
-                    call special_boundconds(f,bc)
-                    if (.not.bc%done) &
-                        call fatal_error('bounconds_x','illegal special BC "'//trim(bcx12(j,topbot))// &
-                                         '" for variable no. '//trim(itoa(j)))
-                  endif
-!
-                endselect
+                call special_boundconds(f,bc)
+                if (.not.bc%done) &
+                    call fatal_error('bounconds_x','illegal special BC "'//trim(bcx12(j,topbot))// &
+                                     '" for variable no. '//trim(itoa(j)))
               endif
-            enddo
-          enddo
-        endif
-      endselect
+!
+            endselect
+          endif
+        enddo
+      enddo
 !
     endsubroutine boundconds_x
 !***********************************************************************
@@ -1176,25 +1174,24 @@ module Boundcond
       if (present(ivar1_opt)) ivar1=ivar1_opt
       if (present(ivar2_opt)) ivar2=ivar2_opt
 !
-      select case (nygrid)
-!
-      case (1)
+      if (nygrid == 1) then
         if (ldebug) print*,'boundconds_y: no y-boundary'
+        return
+      endif
 !
 !  Boundary conditions in y
 !
-      case default
-        do topbot=BOT,TOP              ! loop over 'bot','top'
-          if (topbot==BOT) then
-            ip_ok=lfirst_proc_y
-          else
-            ip_ok=llast_proc_y
-          endif
+      do topbot = BOT, TOP
+        if (topbot == BOT) then
+          ip_ok = lfirst_proc_y
+        else
+          ip_ok = llast_proc_y
+        endif
 !
-          jdone=0
-          if (ip_ok) then
+        jdone = 0
+        if (ip_ok) then
 
-            do j=ivar1,ivar2
+          do j = ivar1, ivar2
 !
 ! Natalia: the next line is for the dustdensity case.
 ! If ndustspec is large, it is stupid to set bc for all dust species
@@ -1207,192 +1204,191 @@ module Boundcond
 !
             if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcy',topbot,'(',j,')=',bcy12(j,topbot)
 
-              is_vec = var_is_vec(j)
-              select case (bcy12(j,topbot))
-              case ('0')
-                ! BCY_DOC: zero value in ghost zones, free value on boundary
-                call bc_zero_y(f,topbot,j)
-              case ('p')
-                ! BCY_DOC: periodic
-                call bc_per_y(f,topbot,j)
-              case ('pp')
-                ! BCY_DOC: periodic across the pole
-                call bc_pper_y(f,topbot,j,+1)
-              case ('yy')
-                ! BCY_DOC: Yin-Yang grid
-                call bc_yy_y(f,topbot,j)
-              case ('ap')
-                ! BCY_DOC: anti-periodic across the pole
-                call bc_pper_y(f,topbot,j,-1)
-              case ('s')
-                ! BCY_DOC: symmetry, $f_{N+i}=f_{N-i}$;
-                ! BCY_DOC: implies $f'(y_N)=f'''(y_0)=0$
-                call bc_sym_y(f,topbot,j,+1)
-              case ('sf')
-                ! BCY_DOC: symmetry with respect to interface
-                call bc_sf_y(f,topbot,j,+1)
-              case ('ss')
-                ! BCY_DOC: symmetry, plus function value given
-                call bc_symset_y(f,topbot,j,+1,VAL=fbcy(j,topbot))
-              case ('sds')
-                ! BCY_DOC: symmetric-derivative-set
-                call bc_symderset_y(f,topbot,j,VAL=fbcy(j,topbot))
-              case ('cds')
-                ! BCY_DOC: complex symmetric-derivative-set
-                call bc_csymderset_y(f,topbot,j,VAL=fbcy(j,topbot))
-              case ('s0d')
-                ! BCY_DOC: symmetry, function value such that df/dy=0
-                call bc_symset0der_y(f,topbot,j)
-              case ('a')
-                ! BCY_DOC: antisymmetry
-                call bc_sym_y(f,topbot,j,-1)
-              case ('af')
-                ! BCY_DOC: antisymmetry with respect to interface
-                call bc_sf_y(f,topbot,j,-1)
-              case ('a2')
-                ! BCY_DOC: antisymmetry relative to boundary value
-                call bc_sym_y(f,topbot,j,-1,REL=.true.)
-              case ('v')
-                ! BCY_DOC: vanishing third derivative
-                call bc_van_y(f,topbot,j)
-              case ('v3')
-                ! BCY_DOC: vanishing third derivative
-                call bc_van3rd_y(f,topbot,j)
-              case ('out')
-                ! BCY_DOC: allow outflow, but no inflow
-                ! BCY_DOC: forces ghost cells and boundary to not point inwards
-                call bc_outflow_y(f,topbot,j,.true.)
-              case ('1s')
-                ! BCY_DOC: onesided
-                call set_ghosts_for_onesided_ders(f,topbot,j,2)
-              case ('d1s')
-                ! BCY_DOC: onesided for 1st and 2nd derivative in two first inner points, Dirichlet in boundary point
-                call bc_d1s_y(f,topbot,j)
-              case ('n1s')
-                ! BCY_DOC: onesided for 1st and 2nd derivative in two first inner points, Neumann in boundary point
-                call bval_from_neumann(f,topbot,j,2,fbcy(j,topbot))
-                call set_ghosts_for_onesided_ders(f,topbot,j,2,.true.)
-              case ('cT')
-                ! BCY_DOC: constant temp.
-                call bc_ss_temp_y(f,topbot)
-              case ('sT')
-                ! BCY_DOC: symmetric temp.
-                call bc_ss_stemp_y(f,topbot)
-              case ('asT')
-                ! BCY_DOC: select entropy for uniform ghost temperature
-                ! BCY_DOC: matching fluctuating boundary value,
-                ! BCY_DOC: $T_{N-i}=T_{N}=$;
-                ! BCY_DOC: implies $T'(x_N)=T'(x_0)=0$
-                call bc_ss_a2stemp_y(f,topbot)
-              case ('f')
-                ! BCY_DOC: freeze value
-                ! tell other modules not to change boundary value
-                call bc_freeze_var_y(topbot,j)
-                call bc_sym_y(f,topbot,j,-1,REL=.true.) ! antisymm wrt boundary
-              case ('s+f')
-                ! BCY_DOC: freeze value
-                ! tell other modules not to change boundary value
-                call bc_freeze_var_y(topbot,j)
-                call bc_sym_y(f,topbot,j,+1) ! symm wrt boundary
-              case ('fg')
-                ! BCY_DOC: ``freeze'' value, i.e. maintain initial
-                !  value at boundary, also mantaining the
-                !  ghost zones at the initial coded value, i.e.,
-                !  keep the gradient frozen as well
-                call bc_freeze_var_y(topbot,j)
-              case ('fBs')
-                ! BCY_DOC: frozen-in B-field (s)
-                call bc_frozen_in_bb(topbot,j)
-                call bc_sym_y(f,topbot,j,+1) ! symmetry
-              case ('fB')
-                ! BCY_DOC: frozen-in B-field (a2)
-                call bc_frozen_in_bb(topbot,j)
-                !call bc_sym_z(f,topbot,j,-1,REL=.true.) ! antisymm wrt boundary
+            is_vec = var_is_vec(j)
+            select case (bcy12(j,topbot))
+            case ('0')
+              ! BCY_DOC: zero value in ghost zones, free value on boundary
+              call bc_zero_y(f,topbot,j)
+            case ('p')
+              ! BCY_DOC: periodic
+              call bc_per_y(f,topbot,j)
+            case ('pp')
+              ! BCY_DOC: periodic across the pole
+              call bc_pper_y(f,topbot,j,+1)
+            case ('yy')
+              ! BCY_DOC: Yin-Yang grid
+              call bc_yy_y(f,topbot,j)
+            case ('ap')
+              ! BCY_DOC: anti-periodic across the pole
+              call bc_pper_y(f,topbot,j,-1)
+            case ('s')
+              ! BCY_DOC: symmetry, $f_{N+i}=f_{N-i}$;
+              ! BCY_DOC: implies $f'(y_N)=f'''(y_0)=0$
+              call bc_sym_y(f,topbot,j,+1)
+            case ('sf')
+              ! BCY_DOC: symmetry with respect to interface
+              call bc_sf_y(f,topbot,j,+1)
+            case ('ss')
+              ! BCY_DOC: symmetry, plus function value given
+              call bc_symset_y(f,topbot,j,+1,VAL=fbcy(j,topbot))
+            case ('sds')
+              ! BCY_DOC: symmetric-derivative-set
+              call bc_symderset_y(f,topbot,j,VAL=fbcy(j,topbot))
+            case ('cds')
+              ! BCY_DOC: complex symmetric-derivative-set
+              call bc_csymderset_y(f,topbot,j,VAL=fbcy(j,topbot))
+            case ('s0d')
+              ! BCY_DOC: symmetry, function value such that df/dy=0
+              call bc_symset0der_y(f,topbot,j)
+            case ('a')
+              ! BCY_DOC: antisymmetry
+              call bc_sym_y(f,topbot,j,-1)
+            case ('af')
+              ! BCY_DOC: antisymmetry with respect to interface
+              call bc_sf_y(f,topbot,j,-1)
+            case ('a2')
+              ! BCY_DOC: antisymmetry relative to boundary value
+              call bc_sym_y(f,topbot,j,-1,REL=.true.)
+            case ('v')
+              ! BCY_DOC: vanishing third derivative
+              call bc_van_y(f,topbot,j)
+            case ('v3')
+              ! BCY_DOC: vanishing third derivative
+              call bc_van3rd_y(f,topbot,j)
+            case ('out')
+              ! BCY_DOC: allow outflow, but no inflow
+              ! BCY_DOC: forces ghost cells and boundary to not point inwards
+              call bc_outflow_y(f,topbot,j,.true.)
+            case ('1s')
+              ! BCY_DOC: onesided
+              call set_ghosts_for_onesided_ders(f,topbot,j,2)
+            case ('d1s')
+              ! BCY_DOC: onesided for 1st and 2nd derivative in two first inner points, Dirichlet in boundary point
+              call bc_d1s_y(f,topbot,j)
+            case ('n1s')
+              ! BCY_DOC: onesided for 1st and 2nd derivative in two first inner points, Neumann in boundary point
+              call bval_from_neumann(f,topbot,j,2,fbcy(j,topbot))
+              call set_ghosts_for_onesided_ders(f,topbot,j,2,.true.)
+            case ('cT')
+              ! BCY_DOC: constant temp.
+              call bc_ss_temp_y(f,topbot)
+            case ('sT')
+              ! BCY_DOC: symmetric temp.
+              call bc_ss_stemp_y(f,topbot)
+            case ('asT')
+              ! BCY_DOC: select entropy for uniform ghost temperature
+              ! BCY_DOC: matching fluctuating boundary value,
+              ! BCY_DOC: $T_{N-i}=T_{N}=$;
+              ! BCY_DOC: implies $T'(x_N)=T'(x_0)=0$
+              call bc_ss_a2stemp_y(f,topbot)
+            case ('f')
+              ! BCY_DOC: freeze value
+              ! tell other modules not to change boundary value
+              call bc_freeze_var_y(topbot,j)
+              call bc_sym_y(f,topbot,j,-1,REL=.true.) ! antisymm wrt boundary
+            case ('s+f')
+              ! BCY_DOC: freeze value
+              ! tell other modules not to change boundary value
+              call bc_freeze_var_y(topbot,j)
+              call bc_sym_y(f,topbot,j,+1) ! symm wrt boundary
+            case ('fg')
+              ! BCY_DOC: ``freeze'' value, i.e. maintain initial
+              !  value at boundary, also mantaining the
+              !  ghost zones at the initial coded value, i.e.,
+              !  keep the gradient frozen as well
+              call bc_freeze_var_y(topbot,j)
+            case ('fBs')
+              ! BCY_DOC: frozen-in B-field (s)
+              call bc_frozen_in_bb(topbot,j)
+              call bc_sym_y(f,topbot,j,+1) ! symmetry
+            case ('fB')
+              ! BCY_DOC: frozen-in B-field (a2)
+              call bc_frozen_in_bb(topbot,j)
+              !call bc_sym_z(f,topbot,j,-1,REL=.true.) ! antisymm wrt boundary
 !AB: wasn't this a mistake??
-                call bc_sym_y(f,topbot,j,-1,REL=.true.) ! antisymm wrt boundary
-              case ('1')
-                ! BCY_DOC: f=1 (for debugging)
-                call bc_one_y(f,topbot,j)
-              case ('set')
-                ! BCY_DOC: set boundary value
-                call bc_sym_y(f,topbot,j,-1,REL=.true.,VAL=fbcy(j,topbot))
-              case ('sse')
-                ! BCY_DOC:  symmetry, set boundary value
-                call bc_sym_y(f,topbot,j,+1,VAL=fbcy(j,topbot))
-              case ('sep')
-                ! BCY_DOC: set boundary value
-                call bc_sym_y(f,topbot,j,-1,REL=.true.,VAL=fbcy(j,topbot),VAL2=fbcy_1(j,topbot),VAL4=fbcy_2(j,topbot))
-              case ('e1')
-                ! BCY_DOC: extrapolation
-                call bcy_extrap_2_1(f,topbot,j)
-              case ('e2')
-                ! BCY_DOC: extrapolation
-                call bcy_extrap_2_2(f,topbot,j)
-              case ('e3')
-                ! BCY_DOC: extrapolation in log [maintain a power law]
-                call bcy_extrap_2_3(f,topbot,j)
-              case ('der')
-                ! BCY_DOC: set derivative on the boundary
-                call bc_set_der_y(f,topbot,j,fbcy(j,topbot))
-              case ('cop')
-                ! BCY_DOC: outflow: copy value of last physical point to
-                ! BCY_DOC: all ghost cells
-                call bc_copy_y(f,topbot,j)
-              case ('c+k')
-                ! BCY_DOC: no-inflow: copy value of last physical point
-                ! BCY_DOC: to all ghost cells, but suppressing any inflow
-                call bc_copy_y_noinflow(f,topbot,j)
-              case ('sfr')
-                ! BCY_DOC: stress-free boundary condition for spherical
-                ! BCY_DOC: coordinate system.
-                call bc_set_sfree_y(f,topbot,j)
-              case ('nfr')
-                ! BCY_DOC: Normal-field bc for spherical coordinate system.
-                ! BCY_DOC: Some people call this the ``(angry) hedgehog bc''.
-                call bc_set_nfr_y(f,topbot,j)
-              case ('spt')
-                ! BCY_DOC: spherical perfect conducting boundary condition
-                ! BCY_DOC: along $\theta$ boundary
-                ! BCY_DOC: $f''+\cot\theta f'=0$ and $f(x_N)=0$
-                call bc_spt_y(f,topbot,j)
-              case ('pfc')
-                ! BCY_DOC: perfect conducting boundary condition
-                ! BCY_DOC: along $\theta$ boundary
+              call bc_sym_y(f,topbot,j,-1,REL=.true.) ! antisymm wrt boundary
+            case ('1')
+              ! BCY_DOC: f=1 (for debugging)
+              call bc_one_y(f,topbot,j)
+            case ('set')
+              ! BCY_DOC: set boundary value
+              call bc_sym_y(f,topbot,j,-1,REL=.true.,VAL=fbcy(j,topbot))
+            case ('sse')
+              ! BCY_DOC:  symmetry, set boundary value
+              call bc_sym_y(f,topbot,j,+1,VAL=fbcy(j,topbot))
+            case ('sep')
+              ! BCY_DOC: set boundary value
+              call bc_sym_y(f,topbot,j,-1,REL=.true.,VAL=fbcy(j,topbot),VAL2=fbcy_1(j,topbot),VAL4=fbcy_2(j,topbot))
+            case ('e1')
+              ! BCY_DOC: extrapolation
+              call bcy_extrap_2_1(f,topbot,j)
+            case ('e2')
+              ! BCY_DOC: extrapolation
+              call bcy_extrap_2_2(f,topbot,j)
+            case ('e3')
+              ! BCY_DOC: extrapolation in log [maintain a power law]
+              call bcy_extrap_2_3(f,topbot,j)
+            case ('der')
+              ! BCY_DOC: set derivative on the boundary
+              call bc_set_der_y(f,topbot,j,fbcy(j,topbot))
+            case ('cop')
+              ! BCY_DOC: outflow: copy value of last physical point to
+              ! BCY_DOC: all ghost cells
+              call bc_copy_y(f,topbot,j)
+            case ('c+k')
+              ! BCY_DOC: no-inflow: copy value of last physical point
+              ! BCY_DOC: to all ghost cells, but suppressing any inflow
+              call bc_copy_y_noinflow(f,topbot,j)
+            case ('sfr')
+              ! BCY_DOC: stress-free boundary condition for spherical
+              ! BCY_DOC: coordinate system.
+              call bc_set_sfree_y(f,topbot,j)
+            case ('nfr')
+              ! BCY_DOC: Normal-field bc for spherical coordinate system.
+              ! BCY_DOC: Some people call this the ``(angry) hedgehog bc''.
+              call bc_set_nfr_y(f,topbot,j)
+            case ('spt')
+              ! BCY_DOC: spherical perfect conducting boundary condition
+              ! BCY_DOC: along $\theta$ boundary
+              ! BCY_DOC: $f''+\cot\theta f'=0$ and $f(x_N)=0$
+              call bc_spt_y(f,topbot,j)
+            case ('pfc')
+              ! BCY_DOC: perfect conducting boundary condition
+              ! BCY_DOC: along $\theta$ boundary
 !joern: WARNING, this bc will NOT give a perfect-conductor boundary condition
-                call bc_set_pfc_y(f,topbot,j)
-              case ('str')
-                call bc_stratified_y(f,topbot,j)
-              case ('tay')
-                call tayler_expansion(f,topbot,j,'y')
-              case ('exp')
-                ! BCY_DOC: exponentiate y ghost zone of other variable
-                call bc_expother_y(f,topbot,j,int(fbcy(j,topbot)))
-              case ('slc')
-                ! BCY_DOC: set x ghost zones from slice.
-                call set_from_slice_y(f,topbot,j)
-                call set_ghosts_for_onesided_ders(f,topbot,j,2,.true.)
-              case ('nil','','no')
-                ! BCY_DOC: do nothing; assume that everything is set
-              case default
-                if (lspecial) then
-                  bc%bcname=bcy12(j,topbot)
-                  bc%ivar=j
-                  bc%value1=fbcy(j,topbot)
-                  bc%value2=fbcy(j,topbot)
-                  bc%location=(((topbot-1)*4)-2)   ! -2/2 for y bot/top
-                  bc%done=.false.
+              call bc_set_pfc_y(f,topbot,j)
+            case ('str')
+              call bc_stratified_y(f,topbot,j)
+            case ('tay')
+              call tayler_expansion(f,topbot,j,'y')
+            case ('exp')
+              ! BCY_DOC: exponentiate y ghost zone of other variable
+              call bc_expother_y(f,topbot,j,int(fbcy(j,topbot)))
+            case ('slc')
+              ! BCY_DOC: set x ghost zones from slice.
+              call set_from_slice_y(f,topbot,j)
+              call set_ghosts_for_onesided_ders(f,topbot,j,2,.true.)
+            case ('nil','','no')
+              ! BCY_DOC: do nothing; assume that everything is set
+            case default
+              if (lspecial) then
+                bc%bcname=bcy12(j,topbot)
+                bc%ivar=j
+                bc%value1=fbcy(j,topbot)
+                bc%value2=fbcy(j,topbot)
+                bc%location=(((topbot-1)*4)-2)   ! -2/2 for y bot/top
+                bc%done=.false.
 !
-                  call special_boundconds(f,bc)
-                  if (.not.bc%done) &
-                      call fatal_error('bounconds_y','illegal special BC "'//trim(bcy12(j,topbot))// &
-                                       '" for variable no. '//trim(itoa(j)))
-                endif
+                call special_boundconds(f,bc)
+                if (.not.bc%done) &
+                    call fatal_error('bounconds_y','illegal special BC "'//trim(bcy12(j,topbot))// &
+                                     '" for variable no. '//trim(itoa(j)))
+              endif
 !
-              endselect
-            enddo
-          endif
-        enddo
-      endselect
+            endselect
+          enddo
+        endif
+      enddo
 !
     endsubroutine boundconds_y
 !***********************************************************************
@@ -1450,339 +1446,336 @@ module Boundcond
       if (present(ivar1_opt)) ivar1=ivar1_opt
       if (present(ivar2_opt)) ivar2=ivar2_opt
 !
-      select case (nzgrid)
-!
-      case (1)
+      if (nzgrid == 1) then
         if (ldebug) print*,'boundconds_z: no z-boundary'
+        return
+      endif
 !
 !  Boundary conditions in z
 !
-      case default
-        do topbot=BOT,TOP                ! loop over 'bot','top'
-          if (topbot==BOT) then
-            ip_ok=lfirst_proc_z
-          else
-            ip_ok=llast_proc_z
-          endif
+      do topbot = BOT, TOP
+        if (topbot == BOT) then
+          ip_ok = lfirst_proc_z
+        else
+          ip_ok = llast_proc_z
+        endif
 !
-          jdone=0
-          if (ip_ok) then
-            do j=ivar1,ivar2
-              if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcz',topbot,'(',j,')=',bcz12(j,topbot)
-
-              is_vec = var_is_vec(j)
-
-
-              select case (bcz12(j,topbot))
-              case ('0')
-                ! BCZ_DOC: zero value in ghost zones, free value on boundary
-                call bc_zero_z(f,topbot,j)
-              case ('p')
-                ! BCZ_DOC: periodic
-                call bc_per_z(f,topbot,j)
-              case ('yy')
-                ! BCZ_DOC: Yin-Yang grid
-                call bc_yy_z(f,topbot,j)
-              case ('s')
-                ! BCZ_DOC: symmetry
-                call bc_sym_z(f,topbot,j,+1)
-              case ('sf')
-                ! BCZ_DOC: symmetry with respect to interface
-                call bc_sf_z(f,topbot,j,+1)
-              case ('s0d')
-                ! BCZ_DOC: symmetry, function value such that df/dz=0
-                call bc_symset0der_z(f,topbot,j)
-              case ('0ds')
-                ! BCZ_DOC: symmetry, function value such that df/dz=0
-                call bc_symset0der_z_v2(f,topbot,j)
-              case ('a')
-                ! BCZ_DOC: antisymmetry
-                call bc_sym_z(f,topbot,j,-1)
-              case ('a2')
-                ! BCZ_DOC: antisymmetry relative to boundary value
-                call bc_sym_z(f,topbot,j,-1,REL=.true.)
-              case ('a2v')
-                ! BCZ_DOC: set boundary value and antisymmetry relative to it
-                call bc_sym_z(f,topbot,j,-1,REL=.true.,VAL=fbcz(j,topbot))
-              case ('af')
-                ! BCZ_DOC: antisymmetry with respect to interface
-                call bc_sf_z(f,topbot,j,-1)
-              case ('a0d')
-                ! BCZ_DOC: antisymmetry with zero derivative
-                call bc_sym_z(f,topbot,j,+1,VAL=0.)
-              case ('v')
-                ! BCZ_DOC: vanishing third derivative
-                call bc_van_z(f,topbot,j)
-              case ('v3')
-                ! BCZ_DOC: vanishing third derivative
-                call bc_van3rd_z(f,topbot,j)
-              case ('1s')
-                ! BCZ_DOC: one-sided
-                call set_ghosts_for_onesided_ders(f,topbot,j,3)
-              case ('d1s')
-                ! BCZ_DOC: onesided for 1st and 2nd derivative in two first inner points, Dirichlet in boundary point
-                call bc_d1s_z(f,topbot,j)
-              case ('n1s')
-                ! BCZ_DOC: onesided for 1st and 2nd derivative in two first inner points, Neumann in boundary point
-                call bc_n1s_z(f,topbot,j)
-              case ('a1s')
-                ! BCZ_DOC: special for perfect conductor with const alpha and etaT when A considered as B; one-sided for 1st and 2nd derivative in two first inner points
-                call bc_a1s_z(f,topbot,j)
-              case ('fg')
-                ! BCZ_DOC: ``freeze'' value, i.e. maintain initial value at boundary, also mantaining the
-                ! BCZ_DOC: ghost zones at the initial coded value, i.e., keep the gradient frozen as well
-                call bc_freeze_var_z(topbot,j)
-              case ('c1')
-                ! BCZ_DOC: special boundary condition for $\ln\rho$ and $s$: constant heat flux through the boundary
-                call bc_c1_z(f,topbot,j)
-              case ('c1s')
-                ! BCZ_DOC: complex
-                call bc_ss_flux(f,topbot,.true.)
-              case ('Fgs')
-                ! BCZ_DOC: black body:
-                ! BCZ_DOC: - chi_t*rho*T*grad(s) - K*grad(T) = sigmaSBt*T**4
-                call bc_ss_flux_turb(f,topbot)
-              case ('Fct')
-                ! BCZ_DOC: Fbot = - K*grad(T) - chi_t*rho*T*grad(s)
-                call bc_ss_flux_condturb_z(f,topbot)
-              case ('c3')
-                ! BCZ_DOC: constant flux at the bottom with a variable hcond
-                call bc_ADI_flux_z(f,topbot)
-              case ('pfe')
-                ! BCZ_DOC: potential field extrapolation
-                call bc_aa_pot_field_extrapol(f,topbot)
-              case ('p1D')
-                ! BCZ_DOC: potential field extrapolation in 1D
-                call bc_aa_pot_1D(f,topbot)
-              case ('pot')
-                ! BCZ_DOC: potential magnetic field
-                call bc_aa_pot2(f,topbot)
-              case ('pwd')
-                ! BCZ_DOC: a variant of 'pot' for nprocx=1
-                call bc_aa_pot3(f,topbot)
-              case ('d2z')
-                ! BCZ_DOC:
-                call bc_del2zero(f,topbot,j)
-              case ('hds')
-                ! BCZ_DOC: hydrostatic equilibrium with a high-frequency filter
-                call bc_lnrho_hdss_z_iso(f,topbot)
-              case ('cT')
-                ! BCZ_DOC: constant temperature.
-                ! BCZ_DOC: If used for lnrho, sets both lnrho and ss (in
-                ! BCZ_DOC: which case the BC for ss should be set to 'nil')
-                ! BCZ_DOC: If used for ss, sets only ss.
-                call bc_cT_z(f,topbot,j)
-              case ('cT1')
-                ! BCZ_DOC: constant temperature using one-sided derivatives
-                call bc_ss_temp_z(f,topbot,.true.)
-              case ('cT2')
-                ! BCZ_DOC: constant temp. (keep lnrho)
-                call bc_ss_temp2_z(f,topbot)
-              case ('cT3')
-                ! BCZ_DOC: constant temp. (keep lnrho)
-                call bc_ss_temp3_z(f,topbot)
-              case ('hs')
-                ! BCZ_DOC: hydrostatic equilibrium
-                call bc_hs_z(f,topbot,j)
-              case ('hse')
-                ! BCZ_DOC: hydrostatic extrapolation
-                ! BCZ_DOC: rho or lnrho is extrapolated linearily and the
-                ! BCZ_DOC: temperature is calculated in hydrostatic equilibrium.
-                call bc_hse_z(f,topbot,j)
-              case ('cp')
-                ! BCZ_DOC: constant pressure
-                ! BCZ_DOC:
-                call bc_lnrho_pressure_z(f,topbot)
-              case ('sT')
-                ! BCZ_DOC: symmetric temp.
-                ! BCZ_DOC:
-                call bc_ss_stemp_z(f,topbot)
-              case ('ctz')
-                ! BCZ_DOC: for interstellar runs copy T
-                call bc_ctz(f,topbot,iss)
-              case ('cdz')
-                ! BCZ_DOC: for interstellar runs limit rho
-                call bc_cdz(f,topbot,j)
-              case ('ism')
-                ! BCZ_DOC: exponential decay/growth in rho/T by scale height
-                call bc_ism(f,topbot,j)
-              case ('asT')
-                ! BCZ_DOC: select entropy for uniform ghost temperature
-                ! BCZ_DOC: matching fluctuating boundary value,
-                ! BCZ_DOC: $T_{N-i}=T_{N}=$;
-                ! BCZ_DOC: implies $T'(x_N)=T'(x_0)=0$
-                call bc_ss_a2stemp_z(f,topbot)
-              case ('c2')
-                ! BCZ_DOC: special boundary condition for s: constant
-                ! BCZ_DOC: temperature at the boundary --- requires
-                ! BCZ_DOC: boundary condition 'a2' for $\ln\rho$
-                call bc_ss_temp_old(f,topbot)
-              case ('db')
-                ! BCZ_DOC: low-order one-sided derivatives (``no boundary
-                ! BCZ_DOC: condition'') for density
-                call bc_db_z(f,topbot,j)
-              case ('ce')
-                ! BCZ_DOC: complex
-                ! BCZ_DOC:
-                call bc_ss_energy(f,topbot)
-              case ('e1')
-                ! BCZ_DOC: extrapolation
-                call bc_extrap_2_1(f,topbot,j)
-              case ('e2')
-                ! BCZ_DOC: extrapolation
-                call bc_extrap_2_2(f,topbot,j)
-              case ('ex')
-                ! BCZ_DOC: simple linear extrapolation in first order
-                call bcz_extrapol(f,topbot,j)
-              case ('exf')
-                ! BCZ_DOC: simple linear extrapolation in first order
-                !  with a fixed value in the first ghost cell
-                call bcz_extrapol_fixed(f,topbot,j)
-              case ('exd')
-                ! BCZ_DOC: simple linear extrapolation in first order
-                !  with an included damping to zero (useful for velocities)
-                call bcz_extrapol_damped(f,topbot,j)
-              case ('exm')
-                ! BCZ_DOC: simple linear extrapolation in first order
-                !  with an included local averaging of a 7x7 array
-                call bcz_extrapol_mean(f,topbot,j)
-              case ('b1')
-                ! BCZ_DOC: extrapolation with zero value (improved 'a')
-                call bc_extrap0_2_0(f,topbot,j)
-              case ('b2')
-                ! BCZ_DOC: extrapolation with zero value (improved 'a')
-                call bc_extrap0_2_1(f,topbot,j)
-              case ('b3')
-                ! BCZ_DOC: extrapolation with zero value (improved 'a')
-                call bc_extrap0_2_2(f,topbot,j)
-              case ('f','fa')
-                ! BCZ_DOC: freeze value + antisymmetry
-                ! tell other modules not to change boundary value
-                call bc_freeze_var_z(topbot,j)
-                call bc_sym_z(f,topbot,j,-1,REL=.true.) ! antisymm wrt boundary
-              case ('fs')
-                ! BCZ_DOC: freeze value + symmetry
-                ! tell other modules not to change boundary value
-                call bc_freeze_var_z(topbot,j)
-                call bc_sym_z(f,topbot,j,+1) ! symmetric wrt boundary
-              case ('fBs')
-                ! BCZ_DOC: frozen-in B-field (s)
-                call bc_frozen_in_bb(topbot,j)
-                call bc_sym_z(f,topbot,j,+1) ! symmetry
-              case ('fB')
-                ! BCZ_DOC: frozen-in B-field (a2)
-                call bc_frozen_in_bb(topbot,j)
-                call bc_sym_z(f,topbot,j,-1,REL=.true.) ! antisymm wrt boundary
-              case ('g')
-                ! BCZ_DOC: set to given value(s) or function
-                 call bc_force_z(f,topbot,j,-1)
-              case ('gs')
-                ! BCZ_DOC:
-                 call bc_force_z(f,topbot,j,+1)
-              case ('1')
-                ! BCZ_DOC: f=1 (for debugging)
-                call bc_one_z(f,topbot,j)
-              case ('StS')
-                ! BCZ_DOC: solar surface boundary conditions
-                call bc_sts(f,topbot,j)
-              case ('set')
-                ! BCZ_DOC: set boundary value
-                call bc_sym_z(f,topbot,j,-1,REL=.true.,VAL=fbcz(j,topbot))
-              case ('sep')
-                ! BCZ_DOC: set boundary value
-                call bc_sym_z(f,topbot,j,-1,REL=.true.,VAL=fbcz(j,topbot),VAL2=fbcz_1(j,topbot),VAL4=fbcz_2(j,topbot))
-              case ('der')
-                ! BCZ_DOC: set derivative on the boundary
-                call bc_set_der_z(f,topbot,j,fbcz(j,topbot))
-              case ('div')
-                ! BCZ_DOC: set the divergence of $\uv$ to a given value
-                ! BCZ_DOC: use bc = 'div' for iuz
-                call bc_set_div_z(f,topbot,j,fbcz(j,topbot))
-              case ('ovr')
-                ! BCZ_DOC: set boundary value
-                call bc_overshoot_z(f,topbot,j,fbcz(j,topbot))
-              case ('inf')
-                ! BCZ_DOC: allow inflow, but no outflow
-                call bc_inflow_z(f,topbot,j)
-              case ('ouf')
-                ! BCZ_DOC: allow outflow, but no inflow
-                call bc_outflow_z(f,topbot,j)
-              case ('in')
-                ! BCZ_DOC: allow inflow, but no outflow
-                ! BCZ_DOC: forces ghost cells and boundary to not point outwards
-                call bc_inflow_z(f,topbot,j,.true.)
-              case ('out')
-                ! BCZ_DOC: allow outflow, but no inflow
-                ! BCZ_DOC: forces ghost cells and boundary to not point inwards
-                call bc_outflow_z(f,topbot,j,.true.)
-              case ('crk')
-                ! BCZ_DOC: no-inflow: copy value of last physical point
-                ! BCZ_DOC: to all ghost cells, but suppressing any inflow
-                call bc_copy_z_noinflow(f,topbot,j)
-              case ('in0')
-                ! BCZ_DOC: allow inflow, but no outflow
-                ! BCZ_DOC: forces ghost cells and boundary to not point outwards
-                ! BCZ_DOC: relaxes to vanishing 1st derivative at boundary
-                call bc_inflow_zero_deriv_z(f,topbot,j)
-              case ('ou0')
-                ! BCZ_DOC: allow outflow, but no inflow
-                ! BCZ_DOC: forces ghost cells and boundary to not point inwards
-                ! BCZ_DOC: relaxes to vanishing 1st derivative at boundary
-                call bc_outflow_zero_deriv_z(f,topbot,j)
-              case ('ind')
-                ! BCZ_DOC: allow inflow, but no outflow
-                ! BCZ_DOC: forces ghost cells and boundary to not point outwards
-                ! BCZ_DOC: creates inwards pointing or zero 1st derivative at boundary
-                call bc_inflow_inwards_deriv_z(f,topbot,j)
-              case ('oud')
-                ! BCZ_DOC: allow outflow, but no inflow
-                ! BCZ_DOC: forces ghost cells and boundary to not point inwards
-                ! BCZ_DOC: creates outwards pointing or zero 1st derivative at boundary
-                call bc_outflow_outwards_deriv_z(f,topbot,j)
-              case ('ubs')
-                ! BCZ_DOC: copy boundary outflow, reduce inflow speed outside the boundary
-                call bc_steady_z(f,topbot,j)
-              case ('win')
-                ! BCZ_DOC: forces massflux given as
-                ! BCZ_DOC: $\Sigma \rho_i ( u_i + u_0)=\textrm{fbcz1/2}(\rho)$
-                call bc_win_z(f,topbot,j)
-              case ('cop')
-                ! BCZ_DOC: copy value of last physical point to all ghost cells
-                call bc_copy_z(f,topbot,j)
-              case ('str')
-                call bc_stratified_z(f,topbot,j)
-              case ('tay')
-                call tayler_expansion(f,topbot,j,'z')
-              case ('exp')
-                ! BCZ_DOC: exponentiate z ghost zone of other variable
-                call bc_expother_z(f,topbot,j,int(fbcz(j,topbot)))
-              case ('slc')
-                ! BCZ_DOC: set z ghost zones from slice.
-                call set_from_slice_z(f,topbot,j)
-                !call set_ghosts_for_onesided_ders(f,topbot,j,3,.true.)
-                call bc_sym_z(f,topbot,j,-1,rel=.true.)
-              case ('nil','','no')
-                ! BCZ_DOC: do nothing; assume that everything is set
-              case default
-                if (lspecial) then
-                  bc%bcname=bcz12(j,topbot)
-                  bc%ivar=j
-                  bc%location=(((topbot-1)*6)-3)   ! -3/3 for z bot/top
-                  bc%value1=fbcz_1(j,topbot)
-                  bc%value2=fbcz_2(j,topbot)
-                  bc%done=.false.
+        jdone = 0
+        if (ip_ok) then
+          do j = ivar1, ivar2
 !
-                  call special_boundconds(f,bc)
-                  if (.not.bc%done) &
-                      call fatal_error('bounconds_z','illegal special BC "'//trim(bcz12(j,topbot))// &
-                                       '" for variable no. '//trim(itoa(j)))
-                endif
+            if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcz',topbot,'(',j,')=',bcz12(j,topbot)
+
+            is_vec = var_is_vec(j)
+            select case (bcz12(j,topbot))
+            case ('0')
+              ! BCZ_DOC: zero value in ghost zones, free value on boundary
+              call bc_zero_z(f,topbot,j)
+            case ('p')
+              ! BCZ_DOC: periodic
+              call bc_per_z(f,topbot,j)
+            case ('yy')
+              ! BCZ_DOC: Yin-Yang grid
+              call bc_yy_z(f,topbot,j)
+            case ('s')
+              ! BCZ_DOC: symmetry
+              call bc_sym_z(f,topbot,j,+1)
+            case ('sf')
+              ! BCZ_DOC: symmetry with respect to interface
+              call bc_sf_z(f,topbot,j,+1)
+            case ('s0d')
+              ! BCZ_DOC: symmetry, function value such that df/dz=0
+              call bc_symset0der_z(f,topbot,j)
+            case ('0ds')
+              ! BCZ_DOC: symmetry, function value such that df/dz=0
+              call bc_symset0der_z_v2(f,topbot,j)
+            case ('a')
+              ! BCZ_DOC: antisymmetry
+              call bc_sym_z(f,topbot,j,-1)
+            case ('a2')
+              ! BCZ_DOC: antisymmetry relative to boundary value
+              call bc_sym_z(f,topbot,j,-1,REL=.true.)
+            case ('a2v')
+              ! BCZ_DOC: set boundary value and antisymmetry relative to it
+              call bc_sym_z(f,topbot,j,-1,REL=.true.,VAL=fbcz(j,topbot))
+            case ('af')
+              ! BCZ_DOC: antisymmetry with respect to interface
+              call bc_sf_z(f,topbot,j,-1)
+            case ('a0d')
+              ! BCZ_DOC: antisymmetry with zero derivative
+              call bc_sym_z(f,topbot,j,+1,VAL=0.)
+            case ('v')
+              ! BCZ_DOC: vanishing third derivative
+              call bc_van_z(f,topbot,j)
+            case ('v3')
+              ! BCZ_DOC: vanishing third derivative
+              call bc_van3rd_z(f,topbot,j)
+            case ('1s')
+              ! BCZ_DOC: one-sided
+              call set_ghosts_for_onesided_ders(f,topbot,j,3)
+            case ('d1s')
+              ! BCZ_DOC: onesided for 1st and 2nd derivative in two first inner points, Dirichlet in boundary point
+              call bc_d1s_z(f,topbot,j)
+            case ('n1s')
+              ! BCZ_DOC: onesided for 1st and 2nd derivative in two first inner points, Neumann in boundary point
+              call bc_n1s_z(f,topbot,j)
+            case ('a1s')
+              ! BCZ_DOC: special for perfect conductor with const alpha and etaT when A considered as B; one-sided for 1st and 2nd derivative in two first inner points
+              call bc_a1s_z(f,topbot,j)
+            case ('fg')
+              ! BCZ_DOC: ``freeze'' value, i.e. maintain initial value at boundary, also mantaining the
+              ! BCZ_DOC: ghost zones at the initial coded value, i.e., keep the gradient frozen as well
+              call bc_freeze_var_z(topbot,j)
+            case ('c1')
+              ! BCZ_DOC: special boundary condition for $\ln\rho$ and $s$: constant heat flux through the boundary
+              call bc_c1_z(f,topbot,j)
+            case ('c1s')
+              ! BCZ_DOC: complex
+              call bc_ss_flux(f,topbot,.true.)
+            case ('Fgs')
+              ! BCZ_DOC: black body:
+              ! BCZ_DOC: - chi_t*rho*T*grad(s) - K*grad(T) = sigmaSBt*T**4
+              call bc_ss_flux_turb(f,topbot)
+            case ('Fct')
+              ! BCZ_DOC: Fbot = - K*grad(T) - chi_t*rho*T*grad(s)
+              call bc_ss_flux_condturb_z(f,topbot)
+            case ('c3')
+              ! BCZ_DOC: constant flux at the bottom with a variable hcond
+              call bc_ADI_flux_z(f,topbot)
+            case ('pfe')
+              ! BCZ_DOC: potential field extrapolation
+              call bc_aa_pot_field_extrapol(f,topbot)
+            case ('p1D')
+              ! BCZ_DOC: potential field extrapolation in 1D
+              call bc_aa_pot_1D(f,topbot)
+            case ('pot')
+              ! BCZ_DOC: potential magnetic field
+              call bc_aa_pot2(f,topbot)
+            case ('pwd')
+              ! BCZ_DOC: a variant of 'pot' for nprocx=1
+              call bc_aa_pot3(f,topbot)
+            case ('d2z')
+              ! BCZ_DOC:
+              call bc_del2zero(f,topbot,j)
+            case ('hds')
+              ! BCZ_DOC: hydrostatic equilibrium with a high-frequency filter
+              call bc_lnrho_hdss_z_iso(f,topbot)
+            case ('cT')
+              ! BCZ_DOC: constant temperature.
+              ! BCZ_DOC: If used for lnrho, sets both lnrho and ss (in
+              ! BCZ_DOC: which case the BC for ss should be set to 'nil')
+              ! BCZ_DOC: If used for ss, sets only ss.
+              call bc_cT_z(f,topbot,j)
+            case ('cT1')
+              ! BCZ_DOC: constant temperature using one-sided derivatives
+              call bc_ss_temp_z(f,topbot,.true.)
+            case ('cT2')
+              ! BCZ_DOC: constant temp. (keep lnrho)
+              call bc_ss_temp2_z(f,topbot)
+            case ('cT3')
+              ! BCZ_DOC: constant temp. (keep lnrho)
+              call bc_ss_temp3_z(f,topbot)
+            case ('hs')
+              ! BCZ_DOC: hydrostatic equilibrium
+              call bc_hs_z(f,topbot,j)
+            case ('hse')
+              ! BCZ_DOC: hydrostatic extrapolation
+              ! BCZ_DOC: rho or lnrho is extrapolated linearily and the
+              ! BCZ_DOC: temperature is calculated in hydrostatic equilibrium.
+              call bc_hse_z(f,topbot,j)
+            case ('cp')
+              ! BCZ_DOC: constant pressure
+              ! BCZ_DOC:
+              call bc_lnrho_pressure_z(f,topbot)
+            case ('sT')
+              ! BCZ_DOC: symmetric temp.
+              ! BCZ_DOC:
+              call bc_ss_stemp_z(f,topbot)
+            case ('ctz')
+              ! BCZ_DOC: for interstellar runs copy T
+              call bc_ctz(f,topbot,iss)
+            case ('cdz')
+              ! BCZ_DOC: for interstellar runs limit rho
+              call bc_cdz(f,topbot,j)
+            case ('ism')
+              ! BCZ_DOC: exponential decay/growth in rho/T by scale height
+              call bc_ism(f,topbot,j)
+            case ('asT')
+              ! BCZ_DOC: select entropy for uniform ghost temperature
+              ! BCZ_DOC: matching fluctuating boundary value,
+              ! BCZ_DOC: $T_{N-i}=T_{N}=$;
+              ! BCZ_DOC: implies $T'(x_N)=T'(x_0)=0$
+              call bc_ss_a2stemp_z(f,topbot)
+            case ('c2')
+              ! BCZ_DOC: special boundary condition for s: constant
+              ! BCZ_DOC: temperature at the boundary --- requires
+              ! BCZ_DOC: boundary condition 'a2' for $\ln\rho$
+              call bc_ss_temp_old(f,topbot)
+            case ('db')
+              ! BCZ_DOC: low-order one-sided derivatives (``no boundary
+              ! BCZ_DOC: condition'') for density
+              call bc_db_z(f,topbot,j)
+            case ('ce')
+              ! BCZ_DOC: complex
+              ! BCZ_DOC:
+              call bc_ss_energy(f,topbot)
+            case ('e1')
+              ! BCZ_DOC: extrapolation
+              call bc_extrap_2_1(f,topbot,j)
+            case ('e2')
+              ! BCZ_DOC: extrapolation
+              call bc_extrap_2_2(f,topbot,j)
+            case ('ex')
+              ! BCZ_DOC: simple linear extrapolation in first order
+              call bcz_extrapol(f,topbot,j)
+            case ('exf')
+              ! BCZ_DOC: simple linear extrapolation in first order
+              !  with a fixed value in the first ghost cell
+              call bcz_extrapol_fixed(f,topbot,j)
+            case ('exd')
+              ! BCZ_DOC: simple linear extrapolation in first order
+              !  with an included damping to zero (useful for velocities)
+              call bcz_extrapol_damped(f,topbot,j)
+            case ('exm')
+              ! BCZ_DOC: simple linear extrapolation in first order
+              !  with an included local averaging of a 7x7 array
+              call bcz_extrapol_mean(f,topbot,j)
+            case ('b1')
+              ! BCZ_DOC: extrapolation with zero value (improved 'a')
+              call bc_extrap0_2_0(f,topbot,j)
+            case ('b2')
+              ! BCZ_DOC: extrapolation with zero value (improved 'a')
+              call bc_extrap0_2_1(f,topbot,j)
+            case ('b3')
+              ! BCZ_DOC: extrapolation with zero value (improved 'a')
+              call bc_extrap0_2_2(f,topbot,j)
+            case ('f','fa')
+              ! BCZ_DOC: freeze value + antisymmetry
+              ! tell other modules not to change boundary value
+              call bc_freeze_var_z(topbot,j)
+              call bc_sym_z(f,topbot,j,-1,REL=.true.) ! antisymm wrt boundary
+            case ('fs')
+              ! BCZ_DOC: freeze value + symmetry
+              ! tell other modules not to change boundary value
+              call bc_freeze_var_z(topbot,j)
+              call bc_sym_z(f,topbot,j,+1) ! symmetric wrt boundary
+            case ('fBs')
+              ! BCZ_DOC: frozen-in B-field (s)
+              call bc_frozen_in_bb(topbot,j)
+              call bc_sym_z(f,topbot,j,+1) ! symmetry
+            case ('fB')
+              ! BCZ_DOC: frozen-in B-field (a2)
+              call bc_frozen_in_bb(topbot,j)
+              call bc_sym_z(f,topbot,j,-1,REL=.true.) ! antisymm wrt boundary
+            case ('g')
+              ! BCZ_DOC: set to given value(s) or function
+               call bc_force_z(f,topbot,j,-1)
+            case ('gs')
+              ! BCZ_DOC:
+               call bc_force_z(f,topbot,j,+1)
+            case ('1')
+              ! BCZ_DOC: f=1 (for debugging)
+              call bc_one_z(f,topbot,j)
+            case ('StS')
+              ! BCZ_DOC: solar surface boundary conditions
+              call bc_sts(f,topbot,j)
+            case ('set')
+              ! BCZ_DOC: set boundary value
+              call bc_sym_z(f,topbot,j,-1,REL=.true.,VAL=fbcz(j,topbot))
+            case ('sep')
+              ! BCZ_DOC: set boundary value
+              call bc_sym_z(f,topbot,j,-1,REL=.true.,VAL=fbcz(j,topbot),VAL2=fbcz_1(j,topbot),VAL4=fbcz_2(j,topbot))
+            case ('der')
+              ! BCZ_DOC: set derivative on the boundary
+              call bc_set_der_z(f,topbot,j,fbcz(j,topbot))
+            case ('div')
+              ! BCZ_DOC: set the divergence of $\uv$ to a given value
+              ! BCZ_DOC: use bc = 'div' for iuz
+              call bc_set_div_z(f,topbot,j,fbcz(j,topbot))
+            case ('ovr')
+              ! BCZ_DOC: set boundary value
+              call bc_overshoot_z(f,topbot,j,fbcz(j,topbot))
+            case ('inf')
+              ! BCZ_DOC: allow inflow, but no outflow
+              call bc_inflow_z(f,topbot,j)
+            case ('ouf')
+              ! BCZ_DOC: allow outflow, but no inflow
+              call bc_outflow_z(f,topbot,j)
+            case ('in')
+              ! BCZ_DOC: allow inflow, but no outflow
+              ! BCZ_DOC: forces ghost cells and boundary to not point outwards
+              call bc_inflow_z(f,topbot,j,.true.)
+            case ('out')
+              ! BCZ_DOC: allow outflow, but no inflow
+              ! BCZ_DOC: forces ghost cells and boundary to not point inwards
+              call bc_outflow_z(f,topbot,j,.true.)
+            case ('crk')
+              ! BCZ_DOC: no-inflow: copy value of last physical point
+              ! BCZ_DOC: to all ghost cells, but suppressing any inflow
+              call bc_copy_z_noinflow(f,topbot,j)
+            case ('in0')
+              ! BCZ_DOC: allow inflow, but no outflow
+              ! BCZ_DOC: forces ghost cells and boundary to not point outwards
+              ! BCZ_DOC: relaxes to vanishing 1st derivative at boundary
+              call bc_inflow_zero_deriv_z(f,topbot,j)
+            case ('ou0')
+              ! BCZ_DOC: allow outflow, but no inflow
+              ! BCZ_DOC: forces ghost cells and boundary to not point inwards
+              ! BCZ_DOC: relaxes to vanishing 1st derivative at boundary
+              call bc_outflow_zero_deriv_z(f,topbot,j)
+            case ('ind')
+              ! BCZ_DOC: allow inflow, but no outflow
+              ! BCZ_DOC: forces ghost cells and boundary to not point outwards
+              ! BCZ_DOC: creates inwards pointing or zero 1st derivative at boundary
+              call bc_inflow_inwards_deriv_z(f,topbot,j)
+            case ('oud')
+              ! BCZ_DOC: allow outflow, but no inflow
+              ! BCZ_DOC: forces ghost cells and boundary to not point inwards
+              ! BCZ_DOC: creates outwards pointing or zero 1st derivative at boundary
+              call bc_outflow_outwards_deriv_z(f,topbot,j)
+            case ('ubs')
+              ! BCZ_DOC: copy boundary outflow, reduce inflow speed outside the boundary
+              call bc_steady_z(f,topbot,j)
+            case ('win')
+              ! BCZ_DOC: forces massflux given as
+              ! BCZ_DOC: $\Sigma \rho_i ( u_i + u_0)=\textrm{fbcz1/2}(\rho)$
+              call bc_win_z(f,topbot,j)
+            case ('cop')
+              ! BCZ_DOC: copy value of last physical point to all ghost cells
+              call bc_copy_z(f,topbot,j)
+            case ('str')
+              call bc_stratified_z(f,topbot,j)
+            case ('tay')
+              call tayler_expansion(f,topbot,j,'z')
+            case ('exp')
+              ! BCZ_DOC: exponentiate z ghost zone of other variable
+              call bc_expother_z(f,topbot,j,int(fbcz(j,topbot)))
+            case ('slc')
+              ! BCZ_DOC: set z ghost zones from slice.
+              call set_from_slice_z(f,topbot,j)
+              !call set_ghosts_for_onesided_ders(f,topbot,j,3,.true.)
+              call bc_sym_z(f,topbot,j,-1,rel=.true.)
+            case ('nil','','no')
+              ! BCZ_DOC: do nothing; assume that everything is set
+            case default
+              if (lspecial) then
+                bc%bcname=bcz12(j,topbot)
+                bc%ivar=j
+                bc%location=(((topbot-1)*6)-3)   ! -3/3 for z bot/top
+                bc%value1=fbcz_1(j,topbot)
+                bc%value2=fbcz_2(j,topbot)
+                bc%done=.false.
 !
-              endselect
-            enddo
-          endif
-        enddo
-      endselect
+                call special_boundconds(f,bc)
+                if (.not.bc%done) &
+                    call fatal_error('bounconds_z','illegal special BC "'//trim(bcz12(j,topbot))// &
+                                     '" for variable no. '//trim(itoa(j)))
+              endif
+!
+            endselect
+          enddo
+        endif
+      enddo
 !
     endsubroutine boundconds_z
 !***********************************************************************
