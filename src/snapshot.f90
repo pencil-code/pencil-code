@@ -350,7 +350,7 @@ module Snapshot
           case default
             call fatal_error('wsnap','no such trigger_snap: '//trim(trigger_snap))
         end select
-        call update_snaptime(file,tsnap,nsnap,dsnap,dble(t_trigger),lsnap,ch)
+        call update_snaptime(file,tsnap,nsnap,dsnap,real(t_trigger,kind=rkind8),lsnap,ch)
 !
 !        if (itsnap/=impossible_int) then
 !          call update_snaptime(file,tsnap,nsnap,dsnap,t,lsnap,ch,itout=itsnap)
@@ -843,7 +843,7 @@ module Snapshot
           endif
           lfirst_call=.false.
         endif
-        call update_snaptime(file,tspec_next,nspec,dspec,dble(t_trigger),lspec)
+        call update_snaptime(file,tspec_next,nspec,dspec,real(t_trigger,kind=rkind8),lspec)
       endif
       if (lspec) tspec=t_trigger
 !
