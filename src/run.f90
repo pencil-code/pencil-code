@@ -1381,12 +1381,21 @@ endsubroutine helper_loop
         it_last_diagnostic=icount
         time_last_diagnostic=real(mpiwtime())
       endif
+!
+!  ==============================
+!  Start the main iteration loop.
+!  ==============================
+!
       if (nt>0) call timeloop(f,df,p)
 !$  else
 !$    if (nt>0) call helper_loop(f,p)
 !$  endif
 !$omp barrier
 !$omp end parallel
+!
+!  ==============================
+!  Main iteration loop has ended.
+!  ==============================
 !
   time2=0.
   if (lroot) then
