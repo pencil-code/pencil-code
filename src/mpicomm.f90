@@ -6890,6 +6890,220 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
     endsubroutine distribute_xy_4D
 !***********************************************************************
+    subroutine distribute_xz_0D(out, in, source_proc)
+!
+!  This routine distributes a scalar on the source processor
+!  to all processors in the xz-plane.
+!  'source_proc' is the iproc number relative to the first processor
+!  in the corresponding xz-plane (Default: 0, equals lfirst_proc_xz).
+!
+!  07-Sep-2026/PABourdin: adapted from distribute_xy_0D
+!
+      real, intent(out) :: out
+      real, intent(in), optional :: in
+      integer, intent(in), optional :: source_proc
+!
+      integer :: px, pz, broadcaster, partner
+      integer, parameter :: ytag=115
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      if (present (source_proc)) then
+        broadcaster = find_proc (mod (source_proc, nprocx), ipy, source_proc / nprocxy)
+      else
+        broadcaster = find_proc (0, ipy, 0)
+      endif
+!
+      if (iproc == broadcaster) then
+        ! distribute the data
+        do px = 0, nprocx-1
+          do pz = 0, nprocz-1
+            partner = find_proc(px,ipy,pz)
+            if (iproc /= partner) then
+              ! send to partner
+              call MPI_SEND (in, 1, mpi_precision, partner, ytag, MPI_COMM_XZPLANE, mpierr)
+            endif
+          enddo
+        enddo
+        ! copy local data
+        out = in
+      else
+        ! receive from broadcaster
+        call MPI_RECV (out, 1, mpi_precision, broadcaster, ytag, MPI_COMM_XZPLANE, stat, mpierr)
+      endif
+!
+    endsubroutine distribute_xz_0D
+!***********************************************************************
+    subroutine distribute_xz_2D(out, in, source_proc)
+!
+!  This routine divides a large array of 2D data on the source processor
+!  and distributes it to all processors in the xz-plane.
+!  'source_proc' is the iproc number relative to the first processor
+!  in the corresponding xz-plane (Default: 0, equals lfirst_proc_xz).
+!
+!  07-Sep-2026/PABourdin: adapted from distribute_xy_2D
+!
+      real, dimension(:,:), intent(out) :: out
+      real, dimension(:,:), intent(in), optional :: in
+      integer, intent(in), optional :: source_proc
+!
+      integer :: bnx, bnz ! transfer box sizes
+      integer :: px, pz, broadcaster, partner, nbox
+      integer, parameter :: ytag=115
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      bnx = size (out, 1)
+      bnz = size (out, 2)
+      nbox = bnx*bnz
+!
+      if (present (source_proc)) then
+        broadcaster = find_proc (mod (source_proc, nprocx), ipy, source_proc / nprocxy)
+      else
+        broadcaster = find_proc (0, ipy, 0)
+      endif
+!
+      if (iproc == broadcaster) then
+        ! distribute the data
+        if (bnx * nprocx /= size (in, 1)) &
+            call stop_fatal ('distribute_xz_2D: input x dim must be nprocx*output', .true.)
+        if (bnz * nprocz /= size (in, 2)) &
+            call stop_fatal ('distribute_xz_2D: input z dim must be nprocz*output', .true.)
+!
+        do px = 0, nprocx-1
+          do pz = 0, nprocz-1
+            partner = find_proc(px,ipy,pz)
+            if (iproc /= partner) then
+              ! send to partner
+              out = in(px*bnx+1:(px+1)*bnx,pz*bnz+1:(pz+1)*bnz)
+              call MPI_SEND (out, nbox, mpi_precision, partner, ytag, MPI_COMM_XZPLANE, mpierr)
+            endif
+          enddo
+        enddo
+        ! copy local data
+        out = in(ipx*bnx+1:(ipx+1)*bnx,ipz*bnz+1:(ipz+1)*bnz)
+      else
+        ! receive from broadcaster
+        call MPI_RECV (out, nbox, mpi_precision, broadcaster, ytag, MPI_COMM_XZPLANE, stat, mpierr)
+      endif
+!
+    endsubroutine distribute_xz_2D
+!***********************************************************************
+    subroutine distribute_xz_3D(out, in, source_proc)
+!
+!  This routine divides a large array of 3D data on the source processor
+!  and distributes it to all processors in the xz-plane.
+!  'source_proc' is the iproc number relative to the first processor
+!  in the corresponding xz-plane (Default: 0, equals lfirst_proc_xz).
+!
+!  07-Sep-2026/PABourdin: adapted from distribute_xy_3D
+!
+      real, dimension(:,:,:), intent(out) :: out
+      real, dimension(:,:,:), intent(in), optional :: in
+      integer, intent(in), optional :: source_proc
+!
+      integer :: bnx, bny, bnz ! transfer box sizes
+      integer :: px, pz, broadcaster, partner, nbox
+      integer, parameter :: ytag=115
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      bnx = size (out, 1)
+      bny = size (out, 2)
+      bnz = size (out, 3)
+      nbox = bnx*bny*bnz
+!
+      if (present (source_proc)) then
+        broadcaster = find_proc (mod (source_proc, nprocx), ipy, source_proc / nprocxy)
+      else
+        broadcaster = find_proc (0, ipy, 0)
+      endif
+!
+      if (iproc == broadcaster) then
+        ! distribute the data
+        if (bnx * nprocx /= size (in, 1)) &
+            call stop_fatal ('distribute_xz_3D: input x dim must be nprocx*output', .true.)
+        if (bny /= size (in, 2)) &
+            call stop_fatal ('distribute_xz_3D: y dim must equal between in and out', .true.)
+        if (bnz * nprocz /= size (in, 3)) &
+            call stop_fatal ('distribute_xz_3D: input z dim must be nprocz*output', .true.)
+!
+        do px = 0, nprocx-1
+          do pz = 0, nprocz-1
+            partner = find_proc(px,ipy,pz)
+            if (iproc /= partner) then
+              ! send to partner
+              out = in(px*bnx+1:(px+1)*bnx,:,pz*bnz+1:(pz+1)*bnz)
+              call MPI_SEND (out, nbox, mpi_precision, partner, ytag, MPI_COMM_XZPLANE, mpierr)
+            endif
+          enddo
+        enddo
+        ! copy local data
+        out = in(ipx*bnx+1:(ipx+1)*bnx,:,ipz*bnz+1:(ipz+1)*bnz)
+      else
+        ! receive from broadcaster
+        call MPI_RECV (out, nbox, mpi_precision, broadcaster, ytag, MPI_COMM_XZPLANE, stat, mpierr)
+      endif
+!
+    endsubroutine distribute_xz_3D
+!***********************************************************************
+    subroutine distribute_xz_4D(out, in, source_proc)
+!
+!  This routine divides a large array of 4D data on the source processor
+!  and distributes it to all processors in the xz-plane.
+!  'source_proc' is the iproc number relative to the first processor
+!  in the corresponding xz-plane (Default: 0, equals lfirst_proc_xz).
+!
+!  07-Sep-2026/PABourdin: adapted from distribute_xy_4D
+!
+      real, dimension(:,:,:,:), intent(out) :: out
+      real, dimension(:,:,:,:), intent(in), optional :: in
+      integer, intent(in), optional :: source_proc
+!
+      integer :: bnx, bny, bnz, bna ! transfer box sizes
+      integer :: px, pz, broadcaster, partner, nbox
+      integer, parameter :: ytag=115
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      bnx = size (out, 1)
+      bny = size (out, 2)
+      bnz = size (out, 3)
+      bna = size (out, 4)
+      nbox = bnx*bny*bnz*bna
+!
+      if (present (source_proc)) then
+        broadcaster = find_proc (mod (source_proc, nprocx), ipy, source_proc / nprocxy)
+      else
+        broadcaster = find_proc (0, ipy, 0)
+      endif
+!
+      if (iproc == broadcaster) then
+        ! distribute the data
+        if (bnx * nprocx /= size (in, 1)) &
+            call stop_fatal ('distribute_xz_4D: input x dim must be nprocx*output', .true.)
+        if (bny /= size (in, 2)) &
+            call stop_fatal ('distribute_xz_4D: y dim must equal between in and out', .true.)
+        if (bnz * nprocz /= size (in, 3)) &
+            call stop_fatal ('distribute_xz_4D: input z dim must be nprocz*output', .true.)
+        if (bna /= size (in, 4)) &
+            call stop_fatal ('distribute_xz_4D: 4th dim must equal between in and out', .true.)
+!
+        do px = 0, nprocx-1
+          do pz = 0, nprocz-1
+            partner = find_proc(px,ipy,pz)
+            if (iproc /= partner) then
+              ! send to partner
+              out = in(px*bnx+1:(px+1)*bnx,:,pz*bnz+1:(pz+1)*bnz,:)
+              call MPI_SEND (out, nbox, mpi_precision, partner, ytag, MPI_COMM_XZPLANE, mpierr)
+            endif
+          enddo
+        enddo
+        ! copy local data
+        out = in(ipx*bnx+1:(ipx+1)*bnx,:,ipz*bnz+1:(ipz+1)*bnz,:)
+      else
+        ! receive from broadcaster
+        call MPI_RECV (out, nbox, mpi_precision, broadcaster, ytag, MPI_COMM_XZPLANE, stat, mpierr)
+      endif
+!
+    endsubroutine distribute_xz_4D
+!***********************************************************************
     subroutine distribute_yz_0D(out, in, source_proc)
 !
 !  This routine distributes a scalar on the source processor
