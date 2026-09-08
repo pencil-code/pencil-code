@@ -9853,7 +9853,8 @@ subroutine get_astaroth_field_name(j,vnm,nc,ncomps,na_)
   na = ioptest(na_,1)
   vname=farray_get_name(j-(nc-1)-ncomps*(na-1),narray=narray)
   if(narray > 1) then
-    counter = itoa(na)
+    !-1 for going from Fortran to C indexing
+    counter = itoa(na-1)
     vnm1 = trim(vname)//'_'//trim(counter)
   else
     vnm1 = trim(vname)
