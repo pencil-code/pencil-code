@@ -3206,7 +3206,7 @@ $(LIBGPU): $(CUDA_INCDIR)/PC_moduleflags.h $(CUDA_MAKEDIR)/Makefile.vendor FORCE
 	cd astaroth && make MPICOMM=$(MPICOMM) RUNTIME_COMPILATION=$(RUNTIME_COMPILATION) TRAINING=$(TRAINING) PRECISION=$(REAL_PRECISION) READ_OVERRIDES=$(READ_OVERRIDES) TRANSPILATION=$(TRANSPILATION) GENERATE_DSL_CODE=$(GENERATE_DSL_CODE) CPU_BUILD=$(ASTAROTH_CPU_BUILD) >& ac_build.log
 #
 
-LIB_COALA:
+$(PENCIL_HOME)/lib/Coala/build/obj/solver_DG.o:
 	[ -e Coala ] || [ -L Coala ] || ln -s "$(PENCIL_HOME)/src/Coala" Coala
 	cd "$(PENCIL_HOME)/lib/Coala" && \
 	    $(MAKE) -C "$(PENCIL_HOME)/lib/Coala"
@@ -3589,9 +3589,21 @@ buildinfo:
 	    -e "PARTICLES_SPIN='$(PARTICLES_SPIN)';PARTICLES_CHEMISTRY='$(PARTICLES_CHEMISTRY)';" > .buildinfo
 #	    -e "PARTICLES_POTENTIAL='$(PARTICLES_POTENTIAL)';" \
 #
-cparam.inc cparam_pencils.inc: Makefile.src Makefile.local cparam.local scripts/mkcparam $(preprocess)
+cparam.inc cparam_pencils.inc: Makefile.src Makefile.local cparam.local scripts/mkcparam #$(preprocess)
+	@mkdir -p .tmp_mkcparam
+	@cp -p cparam.inc .tmp_mkcparam/cparam.inc 2>/dev/null || true
+	@cp -p cparam_pencils.inc .tmp_mkcparam/cparam_pencils.inc 2>/dev/null || true
+
 	scripts/mkcparam -b $(preprocess)
 	@sed -i -e's/\(n_special_modules *= *\)[1-9][0-9]*/\1'$(SPECIAL_MULT)'/' cparam.inc
+
+	@if cmp -s cparam.inc .tmp_mkcparam/cparam.inc; then \
+		touch -r .tmp_mkcparam/cparam.inc cparam.inc; \
+	fi
+
+	@if cmp -s cparam_pencils.inc .tmp_mkcparam/cparam_pencils.inc; then \
+		touch -r .tmp_mkcparam/cparam_pencils.inc cparam_pencils.inc; \
+	fi
 #ifeq ($(FARRAY_ALLOC),farray_alloc)
 #	sed -e'/mvar/,/mqaux/ {s/integer, parameter/integer/; s/= *[A-Za-z0-9_][A-Za-z0-9_+ -]*//g}' -i cparam.inc
 #endif
