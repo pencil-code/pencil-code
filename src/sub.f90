@@ -9734,7 +9734,7 @@ subroutine solve3x3(A, b, x)
   real :: rhs(3)
   real :: factor
   real :: temp
-  real, parameter :: eps = 1d-14
+  real, parameter :: eps = 1e-14
   real :: maxval
   integer :: i, j, k, pivot
 

@@ -6634,7 +6634,7 @@ iloop:do i=1,size(list2)
       real :: res
 
       res = real(nx)*(ny*(indz-1) + indy-1) + indx-1  ! ranges from 0 to nx*ny*nz-1=nw-1
-      if (present(rank)) res = res + nw*rank          ! -> floor(res/nw) = rank
+      if (present(rank)) res = res + real(nw*rank)          ! -> floor(res/nw) = rank
 
     endfunction posindex_to_1Dindex
 !***********************************************************************
@@ -6653,9 +6653,9 @@ iloop:do i=1,size(list2)
 
       ind = int(rindex); resid=ind
       if (present(rank)) resid = modulo(ind,nw)
-      indx = modulo(resid,int(nx,kind=ikind8))
-      indy = modulo(resid/nx,int(ny,kind=ikind8))
-      indz = resid/nxy
+      indx = int(modulo(resid,int(nx,kind=ikind8)))
+      indy = int(modulo(resid/nx,int(ny,kind=ikind8)))
+      indz = int(resid/nxy)
       if (present(rank)) rank=int(ind/nw)
 
       indx=indx+1; indy=indy+1; indz=indz+1

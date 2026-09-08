@@ -3323,6 +3323,8 @@ module Mpicomm
       global_val = local_val
       max_rank = iproc
 
+      call keep_compiler_quiet(comm)
+
     endfunction mpiallreduce_maxloc
 !***********************************************************************
     function mpiallreduce_minloc(local_val,global_val,comm) result(min_rank)
@@ -3340,6 +3342,8 @@ module Mpicomm
 
       global_val = local_val
       min_rank = iproc
+
+      call keep_compiler_quiet(comm)
 
     endfunction mpiallreduce_minloc
 !***********************************************************************

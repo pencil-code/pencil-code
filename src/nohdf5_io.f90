@@ -693,6 +693,7 @@ module HDF5_IO
       character (len=len(varname)) :: component
       integer :: pos, l
 !
+      call keep_compiler_quiet(ldown,lwr)
       if (lroot) then
         open (lun_output, file=trim (datadir)//'/'//trim (index_pro), POSITION='append')
         if ((vector > 0) .and. (array > 0)) then

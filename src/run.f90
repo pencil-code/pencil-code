@@ -735,7 +735,7 @@ endsubroutine helper_loop
     if (it>1) then
       if (lparticles) then
         write(*,'(A,1pG10.3)') ' Wall clock time/timestep/(meshpoint+particle) [microsec] =', &
-                               wall_clock_time/icount/(nw+npar/ncpus)/ncpus/1.0e-6
+                               wall_clock_time/icount/real(nw+npar/ncpus)/ncpus/1.0e-6
       else
         write(*,'(A,1pG14.7)') ' Wall clock time/timestep/meshpoint [microsec] =', &
                                wall_clock_time/icount/nw/ncpus/1.0e-6

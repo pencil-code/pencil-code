@@ -61,7 +61,6 @@ module Hydro
   real, target, dimension (:,:), allocatable :: Ft_yz,Fx_yz,Fy_yz,Fz_yz
   real, target, dimension (:,:), allocatable :: Ft_xy2,Fx_xy2,Fy_xy2,Fz_xy2
   real, target, dimension (:,:), allocatable :: Ft_xz2,Fx_xz2,Fy_xz2,Fz_xz2
-  real, target, dimension (:,:), allocatable :: Ft_yz2,Fx_yz2,Fy_yz2,Fz_yz2
   real, target, dimension (:,:), allocatable :: Ft_xy3,Fx_xy3,Fy_xy3,Fz_xy3
   real, target, dimension (:,:), allocatable :: Ft_xy4,Fx_xy4,Fy_xy4,Fz_xy4
 

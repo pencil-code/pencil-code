@@ -458,7 +458,7 @@ module Density
       endif
 
       if (density_scale_factor==impossible) then
-        density_scale_factor=density_scale_cgs/unit_length
+        density_scale_factor=real(density_scale_cgs/unit_length)
       endif
 
     endsubroutine register_density

@@ -24,7 +24,6 @@ module Coala
    real          :: rhograin
    integer :: Q,kpol
 
-   real, allocatable :: mat_coeffs_leg(:,:),vecnodes(:),vecweights(:)
 
 
    call keep_compiler_quiet(kernel)
