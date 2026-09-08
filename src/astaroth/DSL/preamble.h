@@ -92,21 +92,21 @@ const int prof_nz = 150
 #define AC_n__mod__cdata n__mod__cdata
 #define AC_m__mod__cdata m__mod__cdata
 
-#include "../stdlib/math"
-#include "../stdlib/cg.h"
-#include "../stdlib/general_grid"
-#include "../stdlib/general_derivs.h"
-//#include "../stdlib/pc_derivs.h"
-#include "../stdlib/general_operators.h"
+#include "$AC_HOME/acc-runtime/stdlib/math"
+#include "$AC_HOME/acc-runtime/stdlib/cg.h"
+#include "$AC_HOME/acc-runtime/stdlib/general_grid"
+#include "$AC_HOME/acc-runtime/stdlib/general_derivs.h"
+//#include "$AC_HOME/acc-runtime/stdlib/pc_derivs.h"
+#include "$AC_HOME/acc-runtime/stdlib/general_operators.h"
 #define AC_NGHOST__mod__cparam nghost
 //TP: nphis1 and nphis2 don't actually work. simply declared to compile the code
 //
 #include "PC_modulepardecs.h"
-#include "../stdlib/optimized_integrators.h"
-#include "../stdlib/slope_limited_diffusion.h"
+#include "$AC_HOME/acc-runtime/stdlib/optimized_integrators.h"
+#include "$AC_HOME/acc-runtime/stdlib/slope_limited_diffusion.h"
 
 #include "../fieldecs.h"
-#include "../stdlib/smooth_max.h"
+#include "$AC_HOME/acc-runtime/stdlib/smooth_max.h"
 
 #if Ltimestep_rkf_lowsto_MODULE
 enum PC_SUB_STEP_NUMBER
@@ -248,7 +248,7 @@ const real AC_ascale__mod__cdata = 0.0
 #define ltemperature_nolog AC_ltemperature_nolog__mod__cdata
 #define AC_lread_oldsnap AC_lread_oldsnap__mod__cdata
 
-#include "../stdlib/bc.h"
+#include "$AC_HOME/acc-runtime/stdlib/bc.h"
 #include "../bcs/funcs.h"
 #include "../bcs/funcs_overload.h"
 #include "../hydro/before_boundary.h"
