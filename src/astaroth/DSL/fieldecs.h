@@ -30,8 +30,12 @@ const int dust_density_size = ndustspec
 const int dust_density_size =  0
 #endif
 
-Field3 F_DUST_VELOCITY[dust_velocity_size]
-Field  F_DUST_DENSITY[dust_density_size]
+Field3 VTXBUF_UUD[dust_velocity_size]
+Field  VTXBUF_ND[dust_density_size]
+
+#define F_DUST_VELOCITY VTXBUF_UUD
+#define F_DUST_DENSITY  VTXBUF_ND
+
 Field  F_DUST_MASS[dust_density_size]
 Field  F_DUST_ICE_MASS[dust_density_size]
 
@@ -83,7 +87,8 @@ field_order(AC_icool_prof__mod__cdata-1) Field F_COOL_PROF
 
 
 
-field_order(AC_ilnrho__mod__cdata-1) Field RHO
+field_order(AC_ilnrho__mod__cdata-1) Field VTXBUF_RHO
+#define RHO VTXBUF_RHO
 #define LNRHO RHO
 #define F_RHO  RHO
 #define F_LNRHO F_RHO
