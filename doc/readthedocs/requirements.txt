@@ -6,6 +6,6 @@ rstcloth
 sphinx-autoapi
 sphinx
 six
-bibtexparser 
+bibtexparser==1.4.4
 latexcodec
 matplotlib
