@@ -22,7 +22,7 @@
         do while(j<=mvar)
           vnm=farray_get_name(j,ncomps)
           do nc=1,ncomps
-            call get_astaroth_field_name(j,vnm,nc)
+            call get_astaroth_field_name(j,vnm,nc,ncomps)
       
             file2 = trim(astaroth_src)//trim(vnm)//trim(file2_base)
             open(lun_output+1, &

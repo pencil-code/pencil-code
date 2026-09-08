@@ -124,10 +124,10 @@ module Io
       character (len=*), optional,intent(IN) :: file
 !
       real :: t_sp   ! t in single precision for backwards compatibility
-      integer :: na, ne, bytes, j, nc, ncomps
+      integer :: na, ne, bytes, j, nc, ncomps,narray
       integer(KIND=ikind8) :: out_size
       character (len=fnlen) :: file1, file2
-      character (len=30) :: vnm
+      character (len=1024) :: vnm
       logical, save :: lcalled_ast=.false.
 !
       t_sp = real(t)
@@ -156,9 +156,9 @@ module Io
         if (lastaroth_output .and. (lstart.and..not.lcalled_ast .or. lrun)) then
           lcalled_ast=.true.
           if (astaroth_dest=='') then
-            call safe_character_assign(file1,trim(datadir)//'/allprocs/VTXBUF_')
+            call safe_character_assign(file1,trim(datadir)//'/allprocs/')
           else
-            call safe_character_assign(file1,trim(astaroth_dest)//'/VTXBUF_')
+            call safe_character_assign(file1,trim(astaroth_dest)//'/')
           endif
           call safe_character_assign(file2,'-segment-'// &
                trim(itoa(ipx*nx))//'-'//trim(itoa(ipy*ny))//'-'//trim(itoa(ipz*nz))//'-0.mesh')
@@ -167,15 +167,18 @@ module Io
 
           j=1
           do while(j<=mvar)
-            vnm=farray_get_name(j,ncomps=ncomps)
-            do nc=1,ncomps
-              call get_astaroth_field_name(j,vnm,nc)
-              !if (lroot) print*, 'rank,j,file=', iproc,j,nc,trim(file1)//trim(upper_case(vnm))//trim(file2)
-              open(lun_output+1,file=trim(file1)//trim(vnm)//trim(file2),form='unformatted', &
-                   access='direct',recl=out_size)
-              write(lun_output+1,rec=1) a(l1:l2,m1:m2,n1:n2,j)
-              close(lun_output+1)
-              j = j + 1
+            vnm=farray_get_name(j,ncomps=ncomps,narray=narray)
+            if(narray == 0) narray=1
+            do na=1,narray
+              do nc=1,ncomps
+                call get_astaroth_field_name(j,vnm,nc,ncomps,na)
+                !if (lroot) print*, 'rank,j,file=', iproc,j,nc,trim(file1)//trim(upper_case(vnm))//trim(file2)
+                open(lun_output+1,file=trim(file1)//trim(vnm)//trim(file2),form='unformatted', &
+                     access='direct',recl=out_size)
+                write(lun_output+1,rec=1) a(l1:l2,m1:m2,n1:n2,j)
+                close(lun_output+1)
+                j = j + 1
+              enddo
             enddo
           enddo
         endif
@@ -736,7 +739,7 @@ module Io
 
       real(KIND=rkind4), dimension(:,:,:,:), allocatable :: tmp_omit,tmp
       integer :: j,nc,ncomps
-      character (len=30) :: vnm
+      character (len=1024) :: vnm
       character (len=fnlen) :: file2_base,file2
 !
       include 'io_dist.h'
@@ -779,7 +782,7 @@ module Io
 
       real(KIND=rkind8), dimension(:,:,:,:), allocatable :: tmp_omit,tmp
       integer :: j,nc,ncomps
-      character (len=30)  :: vnm
+      character (len=1024)  :: vnm
       character (len=fnlen) :: file2_base,file2
 
       include 'io_dist.h'

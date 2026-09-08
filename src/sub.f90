@@ -9832,34 +9832,50 @@ subroutine box_muller_transform(res)
   enddo
 endsubroutine box_muller_transform
 !***********************************************************************
-subroutine get_astaroth_field_name(j,vnm,nc)
+subroutine get_astaroth_field_name(j,vnm,nc,ncomps,na_)
 
   use FArrayManager, only: farray_get_name
-  use General, only: upper_case
+  use General, only: upper_case,ioptest,itoa
 
   integer, intent(in) :: j
-  character (len=30), intent(out) :: vnm
+  character (len=1024), intent(out) :: vnm
   integer, intent(in) :: nc
-  character (len=30) :: vname 
+  integer, intent(in) :: ncomps
+  integer, optional, intent(in) :: na_
+  integer :: na
+  character (len=256) :: vname 
+  character (len=512) :: vnm1
+  character (len=30) :: counter
 
-  integer :: ncomps
+  integer :: narray
 
-  vname=farray_get_name(j-nc+1,ncomps)
-  if (ncomps==3) then
-    vnm=trim(vname)//trim(compnames(nc))
-  elseif (ncomps==6) then
-    vnm=trim(vname)//compnames(compinds_6(nc))
-  elseif (ncomps==9) then
-    vnm=trim(vname)//compnames(nc+3)
+  vnm=''
+  na = ioptest(na_,1)
+  vname=farray_get_name(j-(nc-1)-ncomps*(na-1),narray=narray)
+  if(narray > 1) then
+    counter = itoa(na)
+    vnm1 = trim(vname)//'_'//trim(counter)
   else
-    vnm=vname
+    vnm1 = trim(vname)
+  endif
+  
+
+  if (ncomps==3) then
+    vnm=trim(vnm1)//'_'//trim(compnames(nc))
+  elseif (ncomps==6) then
+    vnm=trim(vnm1)//'_'//compnames(compinds_6(nc))
+  elseif (ncomps==9) then
+    vnm=trim(vnm1)//'_'//compnames(nc+3)
+  else
+    vnm=trim(vnm1)
   endif
 
   if (trim(vnm)=='aax') vnm='ax'
   if (trim(vnm)=='aay') vnm='ay'
   if (trim(vnm)=='aaz') vnm='az'
-  vnm = 'VTXBUF_'//upper_case(vnm)
   vnm = trim(vnm)
+  vnm = 'VTXBUF_'//upper_case(vnm)
+  vname = farray_get_name(j)
 
 endsubroutine get_astaroth_field_name
 !***********************************************************************

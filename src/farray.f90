@@ -361,14 +361,6 @@ module FArrayManager
             "Registering "//trim(varname)//" fails: Invalid vartype set")
         endselect
 !
-        call new_item_atstart(thelist,new=new)
-        new%varname     = varname
-        new%vartype     = vartype
-        new%ncomponents = ncomponents
-        new%narray      = narray
-        allocate(new%ivar(nvars))
-        new%ivar(1)%p => ivar
-!
         select case (vartype)
           case (iFARRAY_TYPE_PDE)
             ivar=nvar+1
@@ -384,6 +376,19 @@ module FArrayManager
             ivar=mvar+maux+nglobal+1
             nglobal=nglobal+nvars
         endselect
+!
+        call new_item_atstart(thelist,new=new)
+        new%varname     = varname
+        new%vartype     = vartype
+        new%ncomponents = ncomponents
+        new%narray      = narray
+        allocate(new%ivar(nvars))
+        !TP: before it was a pointer to ivar
+        !but that becomes a dangling reference for example
+        !in dustvelocity and density
+        allocate(new%ivar(1)%p)
+        new%ivar(1)%p = ivar
+
 !
         call save_analysis_info(new)
 !
@@ -847,23 +852,30 @@ module FArrayManager
 !
     endfunction variable_exists
 !***********************************************************************
-    function farray_get_name(indx,ncomps) result(name)
+    function farray_get_name(indx,ncomps,narray,ierr) result(name)
      
       integer :: indx 
       character(len=30) :: name
       integer, optional :: ncomps
+      integer, optional :: narray
+      integer, optional :: ierr
 
       type (farray_contents_list), pointer :: item
 
+      if(present(ierr)) ierr = 0
+      name = ''
       item=>thelist
       do while (associated(item))
         if (item%ivar(1)%p==indx) then
           if (present(ncomps)) ncomps=item%ncomponents
+          if (present(narray)) narray=item%narray
           name=item%varname
           return
         endif
         item=>item%next
       enddo
+      if(present(ierr)) ierr = 1
+
 
     endfunction farray_get_name
 !***********************************************************************
