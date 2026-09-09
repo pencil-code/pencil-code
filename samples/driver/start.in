@@ -3,7 +3,7 @@
 !
 &init_pars
   xyz0 = 0., 0., 0.
-  Lxyz = 11468.8, 11468.8, 7.
+  Lxyz = 1920.0, 1920.0, 640.0
 !
   unit_system  ='SI'
   unit_length   = 10000
