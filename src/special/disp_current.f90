@@ -1952,6 +1952,9 @@ module Special
       call copy_addr(enum_replace_schwinger_by_arnold,p_par(70)) ! int
 
     call copy_addr(lheating_averaged,p_par(71)) ! bool
+    call copy_addr(charge_flow_factor,p_par(72))
+    call copy_addr(charge_flow_limiter,p_par(73))
+    call copy_addr(lcharge_flow,p_par(74)) ! bool
     endsubroutine pushpars2c
 !***********************************************************************
 !********************************************************************
