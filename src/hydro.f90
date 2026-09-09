@@ -178,7 +178,7 @@ module Hydro
   integer :: i31=-1
   real, dimension(:), allocatable :: thless, xhless, yhless, zhless
   real, dimension(:), allocatable :: Bsquared
-  real :: cs201=1., cs20_corr=1., cs2011=impossible
+  real :: cs20p1=1., cs20_corr=1., inv_cs20p1=impossible
 !
 ! variables for expansion into spherical harmonics
 !
@@ -213,10 +213,12 @@ module Hydro
   logical :: lskip_projection=.false.
   logical, target :: lconservative=.false., lrelativistic=.false.
   logical, target :: lconservative_pressure_on_rhs=.false.
+  logical :: lT00_total = .true.
   logical, pointer :: lrelativistic_eos, lrelativistic_eos_corr
   logical :: lno_noise_uu=.false., lrho_nonuni_uu=.false.
   logical :: llorentz_limiter=.false., lrat_limiter=.false., full_3D=.false.
   logical :: lhiggsless=.false., lhiggsless_old=.false.
+  logical :: lalfven_relativistic=.true.
 !  Kurganov-Tadmor flux-limited transport (see kt_transport.f90); runtime-off by default.
   logical :: lkt_transport=.false.
   real :: kt_theta=2.0
@@ -276,7 +278,7 @@ module Hydro
       lno_noise_uu, lrho_nonuni_uu, lpower_profile_file_uu, &
       llorentz_limiter, lrat_limiter, lhiggsless, lhiggsless_old, vwall, alpha_hless, width_hless, &
       xjump_mid, yjump_mid, zjump_mid, qini, lnorm_vw_hless, &
-      qshear, lampluu_adjust_ascale
+      qshear, lampluu_adjust_ascale, lalfven_relativistic
 !
 !  Run parameters.
 !
@@ -363,7 +365,7 @@ module Hydro
       omega_out, omega_in, lprecession, omega_precession, omega_fourier, &
       alpha_precession, lshear_rateofstrain, r_omega, w_omega, &
       lconservative, lrelativistic, niter_relB, lalways_use_gij_etc, amp_centforce, &
-      lconservative_pressure_on_rhs,&
+      lconservative_pressure_on_rhs, lT00_total, &
       lcalc_uumean, lcalc_uumeanx, lcalc_uumeanxy, lcalc_uumeanxz, lcalc_uumeanz, &
       lcalc_ruumeanz, lcalc_ruumeanxy, &
       lforcing_cont_uu, lforcing_cont_uu_diff, width_ff_uu, x1_ff_uu, x2_ff_uu, &
@@ -1783,9 +1785,9 @@ module Hydro
 !
 !   Set values 1 + cs2 for relativistic_eos and (1 - cs2)/(1 + cs2) for relativistic_eos_corr
 !
-      if (lrelativistic_eos) cs201=1.+cs20
-      if (lrelativistic_eos_corr) cs20_corr=(1.-cs20)/cs201
-      cs2011=1.0/cs201
+      if (lrelativistic_eos) cs20p1=1.+cs20
+      if (lrelativistic_eos_corr) cs20_corr=(1.-cs20)/cs20p1
+      inv_cs20p1=1.0/cs20p1
 !
       if (ltime_integrals) then
         if (.not.(ltime_integrals_always .or. dtcor<=0.)) call put_shared_variable('t_cor',t_cor)
@@ -3902,11 +3904,11 @@ module Hydro
           endif
           if (lrelativistic) then
 !
-!  In the relativistic case, which must also be conservative, cs201=4/3, if cs2=1/3.
+!  In the relativistic case, which must also be conservative, cs20p1=4/3, if cs2=1/3.
 !  At this point, the Lorentz factor gamma^2 is already available.
 !  We solve here Eq. (39) of the notes.
 !
-            !cs201=cs20+1.
+            !cs20p1=cs20+1.
             ! tmp_rho=f(l1:l2,m,n,irho)
             !if (.not.lhiggsless_old.and.lhiggsless) then
             !  where(real(t) < f(l1:l2,m,n,ihless)) tmp_rho=tmp_rho-eps_hless
@@ -3915,7 +3917,10 @@ module Hydro
               call fatal_error('calc_pencils_hydro_nonlinear', &
                                 'llorentz_as_aux should be True to reconstruct p%uu')
             endif
-            if (lmagnetic) then
+            ! alberto: added a flag lalfven_relativistic, in general we might want
+            ! to apply Boris correction in magnetic module, also for relativistic case, not
+            ! here, for now we just keep this flag (True by)
+            if (lmagnetic .and. lalfven_relativistic) then
 !
               if (full_3D) then
                 DD=(f(l1:l2,m,n,irho)-.5*B_ext2)/(1.-.25/f(l1:l2,m,n,ilorentz))+B_ext2
@@ -3930,11 +3935,11 @@ module Hydro
               ! alberto: when llorentz_as_aux is not chosen this will not
               !          be correct
               !tmp=1./(tmp_rho/(1.-.25/f(l1:l2,m,n,ilorentz)))
-              tmp=1.-cs20*cs2011/f(l1:l2,m,n,ilorentz)
+              tmp=1.-cs20*inv_cs20p1/f(l1:l2,m,n,ilorentz)
               tmp=tmp/tmp_rho
               call multsv_mn(tmp,tmp3,p%uu)
               ! alberto: added p%rho1 for conservative and relativistic case
-              p%rho1=(cs201*f(l1:l2,m,n,ilorentz)-cs20)/tmp_rho
+              p%rho1=(cs20p1*f(l1:l2,m,n,ilorentz)-cs20)/tmp_rho
             endif
 !print*,'AXEL7: used B_ext2'
 !
@@ -3944,8 +3949,7 @@ module Hydro
           else
             p%rho1=1./tmp_rho
             call multsv_mn(p%rho1,tmp3,p%uu)
-            ! alberto: I commented the line below by mistake, recovered
-            p%uu=p%uu*cs2011
+            p%uu=p%uu*inv_cs20p1
           endif    !  if (lrelativistic)
 
         endif   !    if (lvv_as_aux .or. lvv_as_comaux) ... else
@@ -4087,7 +4091,7 @@ module Hydro
         p%lorentz_gamma = sqrt(p%lorentz)
       endif
       if (lpenc_loc(i_velx).and.ldensity) then
-        call dot_mn_sv_pencil(p%uu,sqrt(abs(p%rho*cs201)),tmp3g)
+        call dot_mn_sv_pencil(p%uu,sqrt(abs(p%rho*cs20p1)),tmp3g)
         call dot_mn_sv_pencil(tmp3g,sqrt(abs(p%lorentz)),p%velx)
       endif
       ! alberto: we might want to consider higgsless also for non-conservative
@@ -4989,10 +4993,10 @@ module Hydro
             else
               lorr = 1./(1. - p%uu(:,1)**2 - p%uu(:,2)**2 - p%uu(:,3)**2)
             endif
-            if (idiag_velxx2m/=0) call sum_mn_name(cs201*p%rho*p%uu(:,1)**2,idiag_velxx2m)
-            if (idiag_velxy2m/=0) call sum_mn_name(cs201*p%rho*p%uu(:,2)**2,idiag_velxy2m)
-            if (idiag_velxz2m/=0) call sum_mn_name(cs201*p%rho*p%uu(:,3)**2,idiag_velxz2m)
-            if (idiag_velxrms/=0) call sum_mn_name(cs201*p%rho*(p%uu(:,1)**2+p%uu(:,2)**2 &
+            if (idiag_velxx2m/=0) call sum_mn_name(cs20p1*p%rho*p%uu(:,1)**2,idiag_velxx2m)
+            if (idiag_velxy2m/=0) call sum_mn_name(cs20p1*p%rho*p%uu(:,2)**2,idiag_velxy2m)
+            if (idiag_velxz2m/=0) call sum_mn_name(cs20p1*p%rho*p%uu(:,3)**2,idiag_velxz2m)
+            if (idiag_velxrms/=0) call sum_mn_name(cs20p1*p%rho*(p%uu(:,1)**2+p%uu(:,2)**2 &
                                      + p%uu(:,3)**2),idiag_velxrms)
           endif
         endif
@@ -5979,7 +5983,7 @@ module Hydro
           call dot2_mx(ss,ss2)
           rat0=ss2*hydro_energy1**2
           if (lmagnetic) then
-            vA2_pseudo=B_ext2*cs2011*hydro_energy1
+            vA2_pseudo=B_ext2*inv_cs20p1*hydro_energy1
             rat=rat0/(1.+vA2_pseudo)**2
           else
             rat=rat0
@@ -5989,9 +5993,9 @@ module Hydro
           endif
           lorentz_gamma2=1./(1.-rat)
           if (lrelativistic_eos) &
-                lorentz_gamma2=lorentz_gamma2*(.5-rat*cs20*cs2011 + &
-                        sqrt(.25-rat*cs20*cs2011**2))
-          !lorentz_gamma2=(.5-rat*cs20*cs2011+sqrt(.25-rat*cs20*cs2011**2))/(1.-rat)
+                lorentz_gamma2=lorentz_gamma2*(.5-rat*cs20*inv_cs20p1 + &
+                        sqrt(.25-rat*cs20*inv_cs20p1**2))
+          !lorentz_gamma2=(.5-rat*cs20*inv_cs20p1+sqrt(.25-rat*cs20*inv_cs20p1**2))/(1.-rat)
         endif
 !
 !  In the magnetic case, we need to solve lorentz_gamma2 iteratively; first initialize it:
@@ -6004,24 +6008,24 @@ module Hydro
         if (lmagnetic) then
           do iter_relB=1,niter_relB
             if (lrelativistic) then
-              rho1=(cs201*lorentz_gamma2-cs20)/hydro_energy
-              rho_gam20=cs2011*rho1/lorentz_gamma2
+              rho1=(cs20p1*lorentz_gamma2-cs20)/hydro_energy
+              rho_gam20=inv_cs20p1*rho1/lorentz_gamma2
               vA2_pseudo=B_ext2*rho_gam20
               rat=rat0/(1.+vA2_pseudo)**2
-              lorentz_gamma2=(.5-rat*cs20*cs2011+sqrt(.25-rat*cs20*cs2011**2))/(1.-rat)
+              lorentz_gamma2=(.5-rat*cs20*inv_cs20p1+sqrt(.25-rat*cs20*inv_cs20p1**2))/(1.-rat)
             else
               if (llorentz_as_aux) lorentz_gamma2=1./(1.-rat)
             endif
           enddo
-          rho=hydro_energy/(cs201*lorentz_gamma2-cs20)
-          rho_gam21=1./(cs201*rho*lorentz_gamma2+B_ext2)
+          rho=hydro_energy/(cs20p1*lorentz_gamma2-cs20)
+          rho_gam21=1./(cs20p1*rho*lorentz_gamma2+B_ext2)
         else
           if (.not. lrelativistic) then
             rho=f(:,m,n,irho)
             rho_gam21=1./rho
           else
-            rho=hydro_energy/(cs201*lorentz_gamma2-cs20)
-            rho_gam21=1./(cs201*rho*lorentz_gamma2)
+            rho=hydro_energy/(cs20p1*lorentz_gamma2-cs20)
+            rho_gam21=1./(cs20p1*rho*lorentz_gamma2)
           endif
 
         endif
@@ -6031,11 +6035,11 @@ module Hydro
 !
           ! else
           !   if (lrelativistic_eos) then
-          !     rho=cs201*hydro_energy
+          !     rho=cs20p1*hydro_energy
           !   else
           !     rho=hydro_energy
           !   endif
-          !   rho_gam21=1./(cs201*rho)
+          !   rho_gam21=1./(cs20p1*rho)
           ! endif
 !if (iproc==1.and.m==m1.and.n==n1) print*,'AXEL: rho_gam2(80:160)=',t,rho_gam2(80:160)
 !
@@ -9598,9 +9602,9 @@ module Hydro
     call copy_addr(idiag_coriolis_number,p_par(133)) ! int
     call copy_addr(lforcing_cont_uu_diff,p_par(134)) ! bool
     call copy_addr(lext_force,p_par(135)) ! bool
-    call copy_addr(cs201,p_par(136))
+    call copy_addr(cs20p1,p_par(136))
     call copy_addr(cs20_corr,p_par(137))
-    call copy_addr(cs2011,p_par(138))
+    call copy_addr(inv_cs20p1,p_par(138))
     call copy_addr(velocity_floor,p_par(139))
     call copy_addr(it11,p_par(140)) ! int
     call copy_addr(it12,p_par(141)) ! int

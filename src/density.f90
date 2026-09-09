@@ -112,7 +112,7 @@ module Density
   real :: ncutoff_lnrho=1.0, initpower2_lnrho=2
   real :: Sc=0.0     !PAR_DOC: given value to compute kap_tdep (~diffrho) based on nu_tdep
   real, target :: reduce_cs2 = 1.0
-  real :: cs201=1., cs20_corr=1.
+  real :: cs20p1=1., cs20_corr=1.
   complex :: coeflnrho=0.0
   integer, parameter :: ndiff_max=4
   integer :: iglobal_gg=0
@@ -504,8 +504,8 @@ module Density
 !
 !   Set values 1 + cs2 for relativistic_eos and (1 - cs2)/(1 + cs2) for relativistic_eos_corr
 !
-      if (lrelativistic_eos) cs201=1.+cs20
-      if (lrelativistic_eos_corr) cs20_corr=(1.-cs20)/cs201
+      if (lrelativistic_eos) cs20p1=1.+cs20
+      if (lrelativistic_eos_corr) cs20_corr=(1.-cs20)/cs20p1
 !
 !  Prevent this module when background stratification is on.
 !
@@ -2553,7 +2553,7 @@ module Density
       logical, dimension(:), intent(IN) :: lpenc_loc
       intent(in) :: f
       intent(inout) :: p
-      ! real :: cs201=1.
+      ! real :: cs20p1=1.
 !
 !  Differentiate between log density and linear density.
 !
@@ -2567,8 +2567,8 @@ module Density
         !if (lconservative) then
         if (lrelativistic) then
           !p%ekin=fourthird*p%rho*p%lorentz*p%u2
-          ! if (lrelativistic_eos) cs201=1.+cs20
-          p%ekin=cs201*p%rho*p%lorentz*p%u2
+          ! if (lrelativistic_eos) cs20p1=1.+cs20
+          p%ekin=cs20p1*p%rho*p%lorentz*p%u2
         else
           p%ekin=0.5*p%rho*p%u2
         endif
@@ -2729,7 +2729,7 @@ module Density
           endif
         endif
         ! if (lrelativistic) p%rho=p%rho/(fourthird*p%lorentz*(1.-.25/p%lorentz))
-        if (lrelativistic) p%rho=p%rho/(cs201*p%lorentz-cs20)
+        if (lrelativistic) p%rho=p%rho/(cs20p1*p%lorentz-cs20)
       endif
 !
     endsubroutine calc_pencils_linear_density_pnc
@@ -2901,7 +2901,7 @@ module Density
       real, contiguous, dimension(:,:,:,:) :: f, df
       type (pencil_case) :: p
 
-      ! real :: cs201=1., cs20_corr=1.
+      ! real :: cs20p1=1., cs20_corr=1.
       real, dimension (nx) :: density_rhs, density_hydro_rhs, u_dot_ext_force
       real, dimension (nx) :: prefactor=1., prefactor2=1., lorentz_gamma_inv2=1.
       real, dimension (nx,3) :: tmpv
@@ -2915,8 +2915,8 @@ module Density
 !
 !  alberto: added subrelativistic correction when relativistic_eos is used
 !
-        ! if (lrelativistic_eos) cs201=1.+cs20
-        ! if (lrelativistic_eos_corr) cs20_corr=(1.-cs20)/cs201
+        ! if (lrelativistic_eos) cs20p1=1.+cs20
+        ! if (lrelativistic_eos_corr) cs20_corr=(1.-cs20)/cs20p1
 !
 !  Evolution of rho; set and initiate density_rhs
 !
@@ -2977,7 +2977,7 @@ module Density
               endif
               if (lext_force) then
                 density_hydro_rhs=density_hydro_rhs - p%rho1 * (p%ext_force(:,1) - &
-                                          2*cs20/cs201 * u_dot_ext_force)
+                                          2*cs20/cs20p1 * u_dot_ext_force)
                 ! Hubble forcing if Hscript is given
                 ! alberto: for now only available if lext_force is true, but it can be generalized
                 if (Hscript /= 0.) then
@@ -2990,7 +2990,7 @@ module Density
               df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-tmpv
             endif
           endif
-          density_rhs=cs201*density_rhs
+          density_rhs=cs20p1*density_rhs
           if (lperturbative_reheating) then
             w_eos=0.5 * (2.-3.*w_phi)
             Gamma_R=G_phi*(1.+w_phi)
@@ -3335,7 +3335,7 @@ module Density
 !
       real, dimension (nx) :: fdiff
       real, dimension (nx) :: density_rhs
-      ! real :: cs201=1., cs20_corr=1.
+      ! real :: cs20p1=1., cs20_corr=1.
 !
 !  Identify module and boundary conditions.
 !
@@ -3343,7 +3343,7 @@ module Density
       if (headtt.or.ldebug) print*,'dlnrho_dt: SOLVE'
       if (headtt) call identify_bcs('lnrho',ilnrho)
 !
-      ! if (lrelativistic_eos) cs201=1.+cs20
+      ! if (lrelativistic_eos) cs20p1=1.+cs20
 
       if (lSchur_3D3D1D) then
 !
@@ -3362,7 +3362,7 @@ module Density
         if (ldensity_nolog) then
           df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) - 3.*Hubble*ascale**1.5*p%rho
         else
-          df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - 3.*cs201*Hubble*ascale**nconformal
+          df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - 3.*cs20p1*Hubble*ascale**nconformal
         endif
       endif
 !
@@ -4711,7 +4711,7 @@ module Density
 
     call copy_addr(kap_tdep,p_par(85))
     call copy_addr(ldiff_kap_tdep,p_par(86)) ! bool
-    call copy_addr(cs201,p_par(87))
+    call copy_addr(cs20p1,p_par(87))
     call copy_addr(cs20_corr,p_par(88))
 
     endsubroutine pushpars2c
