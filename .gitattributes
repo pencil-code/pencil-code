@@ -5241,6 +5241,12 @@ utils/wolf/tests/t/run_tests.pl -text
 utils/xiangyu/restart-new-dir-VAR-PVAR -text
 utils/xiangyu/restart-new-dir-VAR-PVAR-h5 -text
 samples/decay-reconnection/NEVERLOCK -text
+samples/driver/print.in -text
+samples/driver/run.in -text
+samples/driver/src/Makefile.local -text
+samples/driver/src/cparam.local -text
+samples/driver/start.in -text
+samples/driver/video.in -text
 src/driver.f90 -text
 src/nodriver.f90 -text
 utils/philippe/LCT/flow_reb_cube.pro -text

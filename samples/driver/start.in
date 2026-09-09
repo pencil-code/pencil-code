@@ -1,0 +1,17 @@
+!
+! Initialisation parameters for driver_test 256 parallel
+!
+&init_pars
+  xyz0 = 0., 0., 0.
+  Lxyz = 11468.8, 11468.8, 7.
+!
+  unit_system  ='SI'
+  unit_length   = 10000
+  unit_velocity = 10000
+  unit_density  = 1e-8
+!
+  lperi = T,T,T
+!
+/
+&hydro_init_pars
+/
