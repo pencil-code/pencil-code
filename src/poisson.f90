@@ -374,8 +374,9 @@ module Poisson
       integer, save :: ikx0, iky0
 !
       complex, dimension(nzgrid) :: cz
+      real, dimension(nx,nz) :: phi_xz,b1_xz
 !
-      integer :: ix, iy
+      integer :: ix, iy, iz
       real    :: kx2, ky2, a0, a1
 !
 !  Initialize the array wsave and other constants for future use.
@@ -412,8 +413,10 @@ module Poisson
       if (lshear) a0 = deltay / Lx
       do iy = 1, ny
 !
-        call transp_xz(phi(:,iy,:),  phirt)
-        call transp_xz(b1(:,iy,:), b1t)
+        phi_xz = phi(:,iy,:)
+        b1_xz  = b1(:,iy,:)
+        call transp_xz(phi_xz,phirt)
+        call transp_xz(b1_xz, b1t)
 !
         if (lshear) then
           ky2 = ky_fft(iky0+iy)**2
@@ -444,8 +447,15 @@ module Poisson
 !
         enddo
 !
-        call transp_zx(phirt, phi(:,iy,:))
-        call transp_zx(b1t, b1(:,iy,:))
+        call transp_zx(phirt, phi_xz)
+        call transp_zx(b1t, b1_xz)
+        do ix = 1,nx
+          do iz = 1,nz
+            phi(ix,iy,iz) = phi_xz(ix,iz)
+            b1(ix,iy,iz)  = b1_xz(ix,iz)
+          enddo
+        enddo
+
 !
       enddo
 !

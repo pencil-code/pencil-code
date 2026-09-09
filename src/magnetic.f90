@@ -8758,6 +8758,7 @@ print*,'AXEL2: should not be here (eta) ... '
       logical,save :: first=.true.
       real, dimension(nx) :: bymx, bzmx, bmx2
       real, dimension(nx,ny) :: fsumxy
+      real, dimension(size(fnamexy,2),size(fnamexy,3)) :: tmp
       real :: bmx
 !
 !  This only works if bymxy and bzmxy are in zaver.in, so warning if this is not ok.
@@ -8769,9 +8770,11 @@ print*,'AXEL2: should not be here (eta) ... '
         bmx2=0.0
       else
         if (lfirst_proc_z) then
-          call mpireduce_sum(fnamexy(idiag_bymxy,:,:),fsumxy,(/nx,ny/),idir=IYBEAM)
+          tmp = fnamexy(idiag_bymxy,:,:)
+          call mpireduce_sum(tmp,fsumxy,(/nx,ny/),idir=IYBEAM)
           bymx=sum(fsumxy,dim=2)/nygrid
-          call mpireduce_sum(fnamexy(idiag_bzmxy,:,:),fsumxy,(/nx,ny/),idir=IXBEAM)
+          tmp = fnamexy(idiag_bzmxy,:,:)
+          call mpireduce_sum(tmp,fsumxy,(/nx,ny/),idir=IYBEAM)
           bzmx=sum(fsumxy,dim=2)/nygrid
         endif
         if (lfirst_proc_yz) call mpireduce_sum(bymx**2+bzmx**2,bmx2,nx,idir=IXBEAM)
@@ -8803,6 +8806,7 @@ print*,'AXEL2: should not be here (eta) ... '
       logical,save :: first=.true.
       real, dimension(ny) :: bxmy, bzmy, bmy2
       real, dimension(nx,ny) :: fsumxy
+      real, dimension(size(fnamexy,2),size(fnamexy,3)) :: tmp
       real :: bmy
 !
 !  This only works if bxmxy and bzmxy are in zaver, so print warning if this is
@@ -8815,9 +8819,11 @@ print*,'AXEL2: should not be here (eta) ... '
         bmy2=0.0
       else
         if (lfirst_proc_z) then
-          call mpireduce_sum(fnamexy(idiag_bxmxy,:,:),fsumxy,(/nx,ny/),idir=IXBEAM)
+          tmp=fnamexy(idiag_bxmxy,:,:)
+          call mpireduce_sum(tmp,fsumxy,(/nx,ny/),idir=IXBEAM)
           bxmy=sum(fsumxy,dim=1)/nxgrid
-          call mpireduce_sum(fnamexy(idiag_bzmxy,:,:),fsumxy,(/nx,ny/),idir=IXBEAM)
+          tmp=fnamexy(idiag_bzmxy,:,:)
+          call mpireduce_sum(tmp,fsumxy,(/nx,ny/),idir=IXBEAM)
           bzmy=sum(fsumxy,dim=1)/nxgrid
         endif
         if (lfirst_proc_xz) call mpireduce_sum(bxmy**2+bzmy**2,bmy2,ny,idir=IYBEAM)

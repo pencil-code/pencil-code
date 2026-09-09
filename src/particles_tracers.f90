@@ -515,6 +515,8 @@ module Particles
 !
       intent (in) :: f, ineargrid
       intent (inout) :: df, dfp, fp
+      real, dimension(3) :: fp_coords
+      integer, dimension(3) :: ineargrid_point
 !
 !  Identify module and boundary conditions.
 !
@@ -531,17 +533,19 @@ module Particles
 !
       if (npar_imn(imn)/=0) then
         do k=k1_imn(imn),k2_imn(imn)
+          fp_coords = fp(k,ixp:izp)
+          ineargrid_point = ineargrid(k,:)
           if (lparticlemesh_tsc) then
             if (ltrace_dust) then
-              call interpolate_quadratic_spline(f,iudx(1),iudz(1),fp(k,ixp:izp),uu,ineargrid(k,:),0,ipar(k))
+              call interpolate_quadratic_spline(f,iudx(1),iudz(1),fp_coords,uu,ineargrid_point,0,ipar(k))
             else
-              call interpolate_quadratic_spline(f,iux,iuz,fp(k,ixp:izp),uu,ineargrid(k,:),0,ipar(k))
+              call interpolate_quadratic_spline(f,iux,iuz,fp_coords,uu,ineargrid_point,0,ipar(k))
             endif
           else
             if (ltrace_dust) then
-              call interpolate_linear(f,iudx(1),iudz(1),fp(k,ixp:izp),uu,ineargrid(k,:),0,ipar(k))
+              call interpolate_linear(f,iudx(1),iudz(1),fp_coords,uu,ineargrid_point,0,ipar(k))
             else
-              call interpolate_linear(f,iux,iuz,fp(k,ixp:izp),uu,ineargrid(k,:),0,ipar(k))
+              call interpolate_linear(f,iux,iuz,fp_coords,uu,ineargrid_point,0,ipar(k))
             endif
           endif
 !

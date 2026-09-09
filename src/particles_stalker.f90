@@ -468,12 +468,16 @@ module Particles_stalker
 !
       real, dimension (1) :: value_loc
       integer :: i, k, ix0, iy0, iz0, iblock
+      integer, dimension(3) :: ineargrid_point
+      real, dimension(3) :: fp_coords 
 !
       do i=1,npar_stalk_loc
         k=k_stalk(i)
         ix0=ineargrid(k_stalk(i),1)
         iy0=ineargrid(k_stalk(i),2)
         iz0=ineargrid(k_stalk(i),3)
+        ineargrid_point = ineargrid(k,:)
+        fp_coords = fp(k,ixp:izp)
 !
         if (lparticles_blocks) then
           iblock=inearblock(k)
@@ -485,10 +489,10 @@ module Particles_stalker
 !
         if (lparticlemesh_cic) then
           call interpolate_linear( &
-              f,ivar,ivar,fp(k,ixp:izp),value_loc,ineargrid(k,:),iblock,ipar(k))
+              f,ivar,ivar,fp_coords,value_loc,ineargrid_point,iblock,ipar(k))
         elseif (lparticlemesh_tsc) then
           call interpolate_quadratic_spline( &
-              f,ivar,ivar,fp(k,ixp:izp),value_loc,ineargrid(k,:),iblock,ipar(k))
+              f,ivar,ivar,fp_coords,value_loc,ineargrid_point,iblock,ipar(k))
         else
           value_loc=(/f(ix0,iy0,iz0,ivar)/)
         endif
