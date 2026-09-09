@@ -11,6 +11,9 @@ module Driver
 !
   private
 !
+  public :: ldriver = .true.
+  public :: initialize_driver, finalize_driver
+  public :: read_driver_run_pars, write_driver_run_pars
   public :: driver_apply
 !
   real, dimension (mcom) :: tau_inv=0.0
