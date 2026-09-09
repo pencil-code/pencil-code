@@ -1380,6 +1380,7 @@ subroutine dot_mn_sv_pencil(a,b,c)
 !
 !  Vector multiplied with scalar, gives vector.
 !  Unfortunately, this has almost the same name as the next one: multsv_add_mn
+!  This routine is not overloaded with anything.
 !
 !  22-nov-01/nils erland: coded
 !  10-oct-03/axel: a is now the scalar (now consistent with old routines)
