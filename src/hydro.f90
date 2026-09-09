@@ -3880,8 +3880,8 @@ module Hydro
 
       real, contiguous, dimension(:,:,:,:) :: f
       type (pencil_case) :: p
-      real, dimension (nx) :: tmp,DD,tmp_rho,rat0
-      real, dimension (nx,3) :: tmp3
+      real, dimension (nx) :: tmp,DD,tmp_rho
+      real, dimension (nx,3) :: tmp3, rat0
       real, dimension (nx,3,3) :: tmp33
       
       if (lconservative) then
@@ -3937,18 +3937,18 @@ module Hydro
           !
           else
             p%rho1=1./tmp_rho
-            call multsv_mn(p%rho1,tmp3,p%uu)
+            call multsv_mn(p%rho1,tmp3,tmp3)
             if (lrelativistic_eos_corr) then
               rat0=f(l1:l2,m,n,iux:iuz)
-              call dot2_mn(rat0,rat0)
-              p%rho1=p%rho1*(1. + rat0*inv_cs20p1)
+              call dot2_mn(rat0,tmp)
+              p%rho1=p%rho1*(1. + tmp*inv_cs20p1)
               ! 1/rho = 1/T00 * (1 + r^2/(1 + cs2)), otherwise 1/rho = 1/T00
-              rat0=rat0*p%rho1**2*inv_cs20p1 + cs20p1
-              p%uu=p%uu/rat0
+              tmp=1./(p%rho1**2*inv_cs20p1 + cs20p1)/tmp
+              call multsv_mn(tmp,tmp3,p%uu)
               ! ui = T0i / rho / (1 + cs2 + r^2/(1 + cs2))
               ! for lrelativistic_eos_corr, otherwise ui = T0i / rho / (1 + cs2)
             else
-              p%uu=p%uu*inv_cs20p1
+              p%uu=tmp3*inv_cs20p1
             endif
           endif    !  if (lrelativistic)
 !
