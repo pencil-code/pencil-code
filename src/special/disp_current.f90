@@ -52,7 +52,8 @@ module Special
   real :: ampla0=0.0, initpower_a0=0.0, initpower2_a0=0.0
   real :: cutoff_a0=0.0, ncutoff_a0=0.0, kpeak_a0=0.0
   real :: relhel_a0=0.0, kgaussian_a0=0.0, eta_ee=0.0
-  real :: sigE_prefactor=1., sigB_prefactor=1., sigE_Arnold_prefactor=1., charge_flow_factor=1.
+  real :: sigE_prefactor=1., sigB_prefactor=1., sigE_Arnold_prefactor=1.
+  real :: charge_flow_factor=1., charge_flow_limiter=1.
   real :: weight_longitudinalE=2.0, mass_chi=0.
   real :: coupl_gy=.345 ! electroweak SU(2) x U(1) coupling of Higgs to U(1)
   real :: je_heating_factor=1.
@@ -138,7 +139,7 @@ module Special
     weight_longitudinalE, lswitch_off_divJ, lswitch_off_Gamma, &
     lnoncollinear_EB, lnoncollinear_EB_aver, luse_scale_factor_in_sigma, &
     lcollinear_EB, lcollinear_EB_aver, sigE_prefactor, sigB_prefactor, sigE_Arnold_prefactor, &
-    charge_flow_factor, lcharge_flow, reinitialize_ee, initee, rescale_ee, &
+    charge_flow_factor, charge_flow_limiter, lcharge_flow, reinitialize_ee, initee, rescale_ee, &
     lmass_suppression, mass_chi, &
     lallow_bprime_zero, lapply_Gamma_corr, coupl_gy, lpsi_hom, alpfpsi, &
     loverride_c_light, ldensity_add_je_heating, je_heating_factor, &
@@ -841,7 +842,10 @@ module Special
             do j=1,3
               if (lhydro) then
                 p%jj_ohm(:,j)=p%sigE*(p%el(:,j)+p%uxb(:,j))+p%sigB*p%bb(:,j)
-                if (lcharge_flow) call multsv_mn_add(charge_flow_factor*p%divE,p%uu,p%jj_ohm)
+                if (lcharge_flow) then
+                  tmp=charge_flow_factor*p%divE/sqrt(1.+p%u2/charge_flow_limiter**2)
+                  call multsv_mn_add(tmp,p%uu,p%jj_ohm)
+                endif
               else
                 p%jj_ohm(:,j)=p%sigE*p%el(:,j)+p%sigB*p%bb(:,j)
               endif
