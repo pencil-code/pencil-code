@@ -31,7 +31,8 @@ module Viscosity
   character (len=labellen) :: lambda_profile='uniform', tdep_nu_type='powerlaw'
   real :: nu=0.0, nu_cspeed=0.5
   real :: mu=0.0
-  real :: ell_gam=0.0   !PAR_DOC: photon mean-free path in the tight coupling regime
+  !Global ell_gam is not used anymore instead it is a local variable
+  !real :: ell_gam=0.0   !PAR_DOC: photon mean-free path in the tight coupling regime
   real :: nu_tdep=0.0, nu_tdep_exponent=0.0, nu_tdep_t0=0.0, nu_tdep_toffset=0.0
   real :: nu_tdep_t1=0.0, nu_tdep_t2=0.0, nu_tdep_kcs=0.0, nu_r_reduce=0.0
   real :: zeta=0.0, nu_mol=0.0, nu_hyper2=0.0, nu_hyper3=0.0

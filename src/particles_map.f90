@@ -1751,7 +1751,7 @@ module Particles_map
       use SharedVariables, only: get_shared_variable
       integer, intent(in) :: k
       integer, intent(out) :: index
-      integer :: ik,ierr
+      integer :: ik
       real, dimension(mpar_loc,mparray), intent(in) :: fp
       real, pointer :: ap0(:)
 !

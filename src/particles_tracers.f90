@@ -106,6 +106,7 @@ module Particles
 !
       real :: rhom
 !
+      call keep_compiler_quiet(fp)
       if (rhop_swarm==0.0 .or. mp_swarm==0.0) then
 !
 ! For stratification, take into account gas present outside the simulation box.
@@ -408,6 +409,9 @@ module Particles
       real, dimension(mpar_loc,mparray), intent(in) :: fp
       integer, dimension(mpar_loc,3), intent(in) :: ineargrid
       type (pencil_case) :: p
+      
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(ineargrid)
 ! np
       if (lpencil(i_np)) p%np=f(l1:l2,m,n,inp)
 ! rhop
@@ -517,6 +521,8 @@ module Particles
       intent (inout) :: df, dfp, fp
       real, dimension(3) :: fp_coords
       integer, dimension(3) :: ineargrid_point
+
+      call keep_compiler_quiet(df)
 !
 !  Identify module and boundary conditions.
 !

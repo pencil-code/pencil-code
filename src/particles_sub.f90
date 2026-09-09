@@ -758,6 +758,8 @@ module Particles_sub
 !
 !  Allocate memory for large arrays.
 !
+      !TP: does not use f!
+      call keep_compiler_quiet(f)
       allocate(a1(nx,ny,nz),stat=stat)
       if (stat>0) call fatal_error('sharpen_tsc_density', &
           'Could not allocate memory for a1')
@@ -1808,6 +1810,8 @@ module Particles_sub
 !
 !  1D case (x has dimensions)
 !
+      call keep_compiler_quiet(lexp)
+
       if (nxgrid /= 1 .and. nygrid == 1 .and. nzgrid == 1) then
         do l = l1,l2
           smoothed(l-l1+4,4,4) =  sum(kernel_1d*domain(l-3:l+3,4,4))

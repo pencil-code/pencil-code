@@ -222,7 +222,7 @@ module Particles_stalker
       real :: t_sp
 !
       integer, dimension (npar_stalk) :: k_stalk
-      integer :: i, k, npar_stalk_loc, ivalue
+      integer :: i, k, npar_stalk_loc 
 !
 !  Only stalk particles every dstalk.
 !

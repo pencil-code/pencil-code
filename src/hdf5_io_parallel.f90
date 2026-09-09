@@ -1925,6 +1925,8 @@ module HDF5_IO
       character(len=fnlen) :: filename
       integer :: iproc_slowest
       integer :: mxgrid_in, mygrid_in, mzgrid_in, ncpus_in
+
+      call keep_compiler_quiet(local)
 !
       filename = trim(datadir)//'/'//trim(file)//'.h5'
 !
@@ -1963,10 +1965,12 @@ module HDF5_IO
       real, intent(in) :: time
       real, dimension(:,:,:,:), intent(out) :: data
 !
-      integer :: it, nt, comm, slice_root
+      integer :: it, nt, comm 
       real :: tt
       character(len=fnlen) :: group
 !
+      call keep_compiler_quiet(variables)
+      call keep_compiler_quiet(time)
       if (lroot) then
         if (file_exists (filename)) then
           ! find last written average
@@ -2016,6 +2020,9 @@ module HDF5_IO
       character(len=intlen) :: group
       integer :: last, ia
       logical :: lexists
+
+      call keep_compiler_quiet(path)
+      call keep_compiler_quiet(lbinary)
 !
       if (.not. lwrite .or. (nc <= 0)) return
 !
@@ -2062,6 +2069,9 @@ module HDF5_IO
       character(len=intlen) :: group
       integer :: last, ia
       logical :: lexists
+
+      call keep_compiler_quiet(path)
+      call keep_compiler_quiet(lbinary)
 !
       if (.not. lwrite .or. (nc <= 0)) return
 !
@@ -2114,6 +2124,9 @@ module HDF5_IO
       integer :: last, ia
       logical :: lexists
       real, dimension(nr,nzgrid) :: component
+
+      call keep_compiler_quiet(number)
+      call keep_compiler_quiet(path)
 !
       if (.not. lroot .or. (nc <= 0)) return
 !
@@ -2156,6 +2169,8 @@ module HDF5_IO
       character(len=fnlen) :: filename
       real :: time_file, t_sp
       integer :: last, pos
+
+      call keep_compiler_quiet(path)
 !
       if (.not. lroot) return
       if ((ngrid <= 0) .or. (nname <= 0)) return
@@ -2452,6 +2467,8 @@ module HDF5_IO
       character(len=fnlen) :: filename
       integer :: np, ng, ip, np_global, np1, np2
       logical :: lexists, lwrite, lp1, lp2
+
+      call keep_compiler_quiet(lsave_name)
 !
       if (.not. lwrite_prof) return
 !
@@ -2554,7 +2571,9 @@ module HDF5_IO
       integer, parameter :: lun_output = 92
       character(len=len(varname)) :: quantity
       character(len=2), dimension(9) :: components
-      integer :: pos, vec, arr, l
+      integer :: pos, arr, l
+
+      call keep_compiler_quiet(ldown,lwr)
 !
       ! omit all unused variables
       if (ivar <= 0) return
@@ -2808,9 +2827,9 @@ module HDF5_IO
       if (lroot .and. present(time)) call output_hdf5 ('time', time)
       if (loptest(time_only)) return
 !
-      mxgrid_ = global_size(1)
-      mygrid_ = global_size(2)
-      mzgrid_ = global_size(3)
+      mxgrid_ = int(global_size(1))
+      mygrid_ = int(global_size(2))
+      mzgrid_ = int(global_size(3))
 !
       if (lroot) then
         allocate (gx(mxgrid_), gy(mygrid_), gz(mzgrid_), stat=alloc_err)
@@ -2893,6 +2912,7 @@ module HDF5_IO
       integer(HID_T) :: h5_plist
       integer :: h5_err, data_xfer_mode
 
+      call keep_compiler_quiet(data_xfer_mode)
       if (lmpicomm) then
         call h5pset_dxpl_mpio_f (h5_plist, H5FD_MPIO_COLLECTIVE_F, h5_err)
       else
