@@ -328,6 +328,8 @@ module Cosmicrayflux
       logical :: lreset
       logical, optional :: lwrite
 
+      call keep_compiler_quiet(lwrite)
+
       ! Reset everything in case of RELOAD.
       ! (this needs to be consistent with what is defined above!)
       if (lreset) then

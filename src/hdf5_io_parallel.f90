@@ -1951,53 +1951,54 @@ module HDF5_IO
 !
     endsubroutine input_dim
 !***********************************************************************
-    subroutine input_average_2D(filename, time, variables, data)
-!
-!  Read an 2D-average file at a given time.
-!
-!  01-april-21/MR: coded
-!
-      use File_IO, only: file_exists
-      use Mpicomm, only: mpibarrier
-!
-      character(len=*), intent(inout) :: filename
-      character(len=*), dimension(:), intent(in) :: variables
-      real, intent(in) :: time
-      real, dimension(:,:,:,:), intent(out) :: data
-!
-      integer :: it, nt, comm 
-      real :: tt
-      character(len=fnlen) :: group
-!
-      call keep_compiler_quiet(variables)
-      call keep_compiler_quiet(time)
-      if (lroot) then
-        if (file_exists (filename)) then
-          ! find last written average
-          call file_open_hdf5 (filename, global=.false., read_only=.true., write=.false.)
-          if (exists_in_hdf5 ('last')) then
-            call input_hdf5 ('last', nt)
-          else
-            call fatal_error ('input_average_2D', 'no "last" group in HDF5 file '//trim(filename), .true.)
-          endif
-          call file_close_hdf5
-        else
-          call fatal_error ('input_average_2D', 'no HDF5 file '//trim(filename), .true.)
-        endif
-      endif
-!
-      call mpibarrier (comm)
-      call file_open_hdf5 (filename, truncate=.false., read_only=.true., write=.false., comm=comm)
-!
-      do it = 1, nt
-        group = itoa (it)
-        call input_hdf5 (trim(group)//'/time', tt)
-        ! call input_hdf5 (trim(group)//'data', (/ nxgrid, nygrid /), (/ ipx, ipy /), data(:,:,it))
-      enddo
-      data = 0.
-      call file_close_hdf5
-!
-    endsubroutine input_average_2D
+!Not used at the moment so on comment
+!    subroutine input_average_2D(filename, time, variables, data)
+!!
+!!  Read an 2D-average file at a given time.
+!!
+!!  01-april-21/MR: coded
+!!
+!      use File_IO, only: file_exists
+!      use Mpicomm, only: mpibarrier
+!!
+!      character(len=*), intent(inout) :: filename
+!      character(len=*), dimension(:), intent(in) :: variables
+!      real, intent(in) :: time
+!      real, dimension(:,:,:,:), intent(out) :: data
+!!
+!      integer :: it, nt, comm 
+!      real :: tt
+!      character(len=fnlen) :: group
+!!
+!      call keep_compiler_quiet(variables)
+!      call keep_compiler_quiet(time)
+!      if (lroot) then
+!        if (file_exists (filename)) then
+!          ! find last written average
+!          call file_open_hdf5 (filename, global=.false., read_only=.true., write=.false.)
+!          if (exists_in_hdf5 ('last')) then
+!            call input_hdf5 ('last', nt)
+!          else
+!            call fatal_error ('input_average_2D', 'no "last" group in HDF5 file '//trim(filename), .true.)
+!          endif
+!          call file_close_hdf5
+!        else
+!          call fatal_error ('input_average_2D', 'no HDF5 file '//trim(filename), .true.)
+!        endif
+!      endif
+!!
+!      call mpibarrier (comm)
+!      call file_open_hdf5 (filename, truncate=.false., read_only=.true., write=.false., comm=comm)
+!!
+!      do it = 1, nt
+!        group = itoa (it)
+!        call input_hdf5 (trim(group)//'/time', tt)
+!        ! call input_hdf5 (trim(group)//'data', (/ nxgrid, nygrid /), (/ ipx, ipy /), data(:,:,it))
+!      enddo
+!      data = 0.
+!      call file_close_hdf5
+!!
+!    endsubroutine input_average_2D
 !***********************************************************************
     subroutine output_average_1D(path, label, nc, name, data, time, lbinary, lwrite, header)
 !
