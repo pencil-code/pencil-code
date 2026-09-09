@@ -9642,6 +9642,7 @@ module Hydro
 
     call copy_addr(lkt_transport,p_par(150)) ! bool
 
+    call copy_addr(lt0i_total,p_par(151)) ! bool
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Hydro
