@@ -213,7 +213,7 @@ module Hydro
   logical :: lskip_projection=.false.
   logical, target :: lconservative=.false., lrelativistic=.false.
   logical, target :: lconservative_pressure_on_rhs=.false.
-  logical :: lT00_total = .true.
+  logical :: lT00_total = .true., lT0i_total = .true., lT0mu_total = .true.
   logical, pointer :: lrelativistic_eos, lrelativistic_eos_corr
   logical :: lno_noise_uu=.false., lrho_nonuni_uu=.false.
   logical :: llorentz_limiter=.false., lrat_limiter=.false., full_3D=.false.
@@ -365,7 +365,7 @@ module Hydro
       omega_out, omega_in, lprecession, omega_precession, omega_fourier, &
       alpha_precession, lshear_rateofstrain, r_omega, w_omega, &
       lconservative, lrelativistic, niter_relB, lalways_use_gij_etc, amp_centforce, &
-      lconservative_pressure_on_rhs, lT00_total, &
+      lconservative_pressure_on_rhs, lT00_total, lT0i_total, lT0mu_total, &
       lcalc_uumean, lcalc_uumeanx, lcalc_uumeanxy, lcalc_uumeanxz, lcalc_uumeanz, &
       lcalc_ruumeanz, lcalc_ruumeanxy, &
       lforcing_cont_uu, lforcing_cont_uu_diff, width_ff_uu, x1_ff_uu, x2_ff_uu, &
@@ -1841,6 +1841,12 @@ module Hydro
 
       if (ekman_friction/=0 .and. friction_tdep == 'read_ell_from_table') then
         call read_ell_file_to_table
+      endif
+
+      if (lT0mu_total) then
+        lT00_total = .true.
+        lT0i_total = .true.
+        if (ip<14) print*,'lT0mu_total is True so setting T00_total and T0i_total to True'
       endif
 
       endsubroutine initialize_hydro
@@ -3870,11 +3876,11 @@ module Hydro
     subroutine calc_uu(f,p)
 
       use EquationOfState, only: cs20
-      use Sub, only: multsv_mn,invmat_DB,multmv
+      use Sub, only: multsv_mn,invmat_DB,multmv,dot2_mn
 
       real, contiguous, dimension(:,:,:,:) :: f
       type (pencil_case) :: p
-      real, dimension (nx) :: tmp,DD,tmp_rho
+      real, dimension (nx) :: tmp,DD,tmp_rho,rat0
       real, dimension (nx,3) :: tmp3
       real, dimension (nx,3,3) :: tmp33
       
@@ -3917,43 +3923,58 @@ module Hydro
               call fatal_error('calc_pencils_hydro_nonlinear', &
                                 'llorentz_as_aux should be True to reconstruct p%uu')
             endif
-            ! alberto: added a flag lalfven_relativistic, in general we might want
-            ! to apply Boris correction in magnetic module, also for relativistic case, not
-            ! here, for now we just keep this flag (True by)
-            if (lmagnetic .and. lalfven_relativistic) then
-!
-              if (full_3D) then
-                DD=(f(l1:l2,m,n,irho)-.5*B_ext2)/(1.-.25/f(l1:l2,m,n,ilorentz))+B_ext2
-!AB: not yet calculated
-                call invmat_DB(DD,p%bb,tmp33)
-                call multmv(tmp33,tmp3,p%uu)
-              else
-                tmp=1./((f(l1:l2,m,n,irho)-.5*B_ext2)/(1.-.25/f(l1:l2,m,n,ilorentz))+B_ext2)
-                call multsv_mn(tmp,tmp3,p%uu)
-              endif
-            else
-              ! alberto: when llorentz_as_aux is not chosen this will not
-              !          be correct
-              !tmp=1./(tmp_rho/(1.-.25/f(l1:l2,m,n,ilorentz)))
-              tmp=1.-cs20*inv_cs20p1/f(l1:l2,m,n,ilorentz)
-              tmp=tmp/tmp_rho
-              call multsv_mn(tmp,tmp3,p%uu)
-              ! alberto: added p%rho1 for conservative and relativistic case
-              p%rho1=(cs20p1*f(l1:l2,m,n,ilorentz)-cs20)/tmp_rho
-            endif
-!print*,'AXEL7: used B_ext2'
-!
-!  In the non-relativisitic (but conservative) case, f(:,:,:,iuu) is the momentum,
-!  so to get the velocity, we have to divide by it.
-!
+            ! alberto: when llorentz_as_aux is not chosen this will not
+            !          be correct
+            !tmp=1./(tmp_rho/(1.-.25/f(l1:l2,m,n,ilorentz)))
+            tmp=1.-cs20*inv_cs20p1/f(l1:l2,m,n,ilorentz)
+            tmp=tmp/tmp_rho
+            call multsv_mn(tmp,tmp3,p%uu)
+            ! alberto: added p%rho1 for conservative and relativistic case
+            p%rho1=(cs20p1*f(l1:l2,m,n,ilorentz)-cs20)/tmp_rho
+          ! endif
+          !  In the non-relativisitic (but conservative) case, f(:,:,:,iuu) is the momentum,
+          !  so to get the velocity, we have to divide by it.
+          !
           else
             p%rho1=1./tmp_rho
             call multsv_mn(p%rho1,tmp3,p%uu)
-            p%uu=p%uu*inv_cs20p1
+            if (lrelativistic_eos_corr) then
+              rat0=f(l1:l2,m,n,iux:iuz)
+              call dot2_mn(rat0,rat0)
+              p%rho1=p%rho1*(1. + rat0*inv_cs20p1)
+              ! 1/rho = 1/T00 * (1 + r^2/(1 + cs2)), otherwise 1/rho = 1/T00
+              rat0=rat0*p%rho1**2*inv_cs20p1 + cs20p1
+              p%uu=p%uu/rat0
+              ! ui = T0i / rho / (1 + cs2 + r^2/(1 + cs2))
+              ! for lrelativistic_eos_corr, otherwise ui = T0i / rho / (1 + cs2)
+            else
+              p%uu=p%uu*inv_cs20p1
+            endif
           endif    !  if (lrelativistic)
-
+!
+          !
+          ! alberto: this correction is in general needed when running MHD with conservation
+          ! form, independently of lrelativistic, so moved else (no lrelativistic) from below to here
+          !
+!
+          ! alberto: added a flag lT0i_total, in general we might want
+          ! to apply Boris correction in magnetic module, also for relativistic case, not
+          ! here, for now we just keep this flag (True by)
+          if (lmagnetic .and. lT0i_total) then
+!
+            if (full_3D) then
+              DD=(f(l1:l2,m,n,irho)-.5*B_ext2)/(1.-.25/f(l1:l2,m,n,ilorentz))+B_ext2
+!AB: not yet calculated
+              call invmat_DB(DD,p%bb,tmp33)
+              call multmv(tmp33,tmp3,p%uu)
+            else
+              tmp=1./((f(l1:l2,m,n,irho)-.5*B_ext2)/(1.-.25/f(l1:l2,m,n,ilorentz))+B_ext2)
+              call multsv_mn(tmp,tmp3,p%uu)
+            endif
+          ! else
+          endif
+!print*,'AXEL7: used B_ext2'
         endif   !    if (lvv_as_aux .or. lvv_as_comaux) ... else
-
       else
         p%uu=f(l1:l2,m,n,iux:iuz)
       endif  !  if (lconservative) ... else
@@ -4422,6 +4443,7 @@ module Hydro
         endif
       endif
 !
+      ! alberto: why ldensity?
       if (ldensity.and.lconservative) then
         if (lkt_transport) then
 !
@@ -4432,14 +4454,16 @@ module Hydro
           do j=1,3
             call kt_transp(f,m,n,1+j,real(t),divTij(:,j))
           enddo
-          df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz)- divTij
         else
+          ! alberto: kt_transp could be included as an optional argument
+          ! to div_tensor, but for now we keep it separate
           call div_tensor(f,divTij,iTij,lyz_first=.true.)
-          df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz)- divTij
         endif
+        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz)- divTij
         if (lext_force) then
           do i=0,2
             df(l1:l2,m,n,iuu+i)=df(l1:l2,m,n,iuu+i)+p%ext_force(:,2+i)
+            ! 
           enddo
         endif
 !
