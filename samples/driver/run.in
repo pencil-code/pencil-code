@@ -7,7 +7,7 @@
 !  cdt=0.4, cdtv=0.08, cdts=1., itorder=3
   dsnap=1.
   tmax=768.
-  dtmin=1e-7
+  dtmin=1e-5
 !
   lpencil_check=F
   lpencil_check_small=F
@@ -19,4 +19,10 @@
   nu=100.0
 /
 &driver_run_pars
+  ! MHD order  : ux, uy, uz, lnrho, lnT, Ax, Ay, Az
+  driver_xy    = , , 'vel-z', , ,
+  data_unit    = , , 10000.0, , ,
+  driver_pos_z = , ,      12, , ,
+  decay_time   = , ,     4.0, , ,
+  time_offset  = , ,    12.0, , ,
 /
