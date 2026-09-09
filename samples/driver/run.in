@@ -2,21 +2,23 @@
 ! Rrun parameters for driver auto-test
 !
 &run_pars
-  ip=14
-  nt=1000000, it1=100, isave=1000
+  ip = 14
+  nt = 1000000
+  it1 = 10
+  isave = 1000
 !  cdt=0.4, cdtv=0.08, cdts=1., itorder=3
-  dsnap=1.
-  tmax=768.
-  dtmin=1e-5
+  dsnap = 1.0
+  tmax = 768.0
+  dtmin = 1e-5
 !
-  lpencil_check=F
-  lpencil_check_small=F
+  lpencil_check = F
+  lpencil_check_small = F
 /
 &hydro_run_pars
 /
 &viscosity_run_pars
-  ivisc='nu-const'
-  nu=100.0
+  ivisc = 'nu-const'
+  nu = 100.0
 /
 &driver_run_pars
   ! MHD order  : ux, uy, uz, lnrho, lnT, Ax, Ay, Az
