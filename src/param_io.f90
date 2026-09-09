@@ -616,7 +616,7 @@ module Param_IO
         call read_namelist(read_polymer_init_pars        ,'polymer'        ,lpolymer, loptional)
         call read_namelist(read_pointmasses_init_pars    ,'pointmasses'    ,lpointmasses, loptional)
 !
-        call read_all_particles_init_pars
+        call read_all_particles_init_pars(loptional)
 !
       else
 !
@@ -666,7 +666,7 @@ module Param_IO
         call read_namelist(read_training_run_pars       ,'training'          ,ltraining, loptional)
         call read_namelist(read_gpu_run_pars            ,'gpu'               ,lgpu, .true.)
 !
-        call read_all_particles_run_pars
+        call read_all_particles_run_pars(loptional)
 !
       endif
 !

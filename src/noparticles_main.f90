@@ -344,7 +344,11 @@ module Particles_main
 !
     endsubroutine particles_pde_blocks
 !***********************************************************************
-    subroutine read_all_particles_init_pars
+    subroutine read_all_particles_init_pars(loptional)
+
+       logical, optional :: loptional
+
+       call keep_compiler_quiet(loptional)
 !
     endsubroutine read_all_particles_init_pars
 !***********************************************************************
@@ -356,7 +360,10 @@ module Particles_main
 !
     endsubroutine write_all_particles_init_pars
 !***********************************************************************
-    subroutine read_all_particles_run_pars
+    subroutine read_all_particles_run_pars(loptional)
+       logical, optional :: loptional
+
+       call keep_compiler_quiet(loptional)
 !
     endsubroutine read_all_particles_run_pars
 !***********************************************************************
