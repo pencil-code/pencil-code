@@ -59,6 +59,7 @@ module Driver
 ! 06-Sep-2026/PABourdin: coded
 !
       use Messages, only: svn_id, fatal_error
+      use General, only: itoa
 !
       integer :: f_index, alloc_err
 !
@@ -78,8 +79,9 @@ module Driver
         ldrive_xz(f_index) = (driver_xz(f_index) /= "") .and. (target_proc_y(f_index) == ipy)
         ldrive_yz(f_index) = (driver_yz(f_index) /= "") .and. (target_proc_x(f_index) == ipx)
 !
-        if (ldrive_xy(f_index) .and. (data_unit(f_index) /= 0.0)) &
-            call fatal_error ('initialize_driver', "Trying to use driving without setting the corresponding 'data_unit'.", .true.)
+        if (ldrive_xy(f_index) .and. (data_unit(f_index) == 0.0)) &
+            call fatal_error ('initialize_driver', "Trying to use driving in component "//trim(itoa(f_index))// &
+                " without setting the corresponding 'data_unit'.", .true.)
 !
         if (ldrive_xy(f_index)) then
           if (.not. associated (data_xy(f_index)%frame)) then
