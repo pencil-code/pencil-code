@@ -149,31 +149,30 @@ module Driver
 !
     endsubroutine write_driver_run_pars
 !***********************************************************************
-    subroutine interpolate_time_2D (time, time_l, time_r, data_l, data_r, data)
+    subroutine interpolate_time_2D (time, data)
 !
 !  Interpolate 2D data frame in time.
 !
 !  06-Sep-2026/PABourdin: adapted from the "solar_corona" module
 !
-      real, intent(in) :: time, time_l, time_r
-      real, dimension(:,:), intent(in) :: data_l, data_r
-      real, dimension(:,:), intent(inout) :: data
+      real, intent(in) :: time
+      type(data_array), intent(inout) :: data
 !
       real :: factor
 !
-      if (time <= time_l) then
-        data = data_l
-      elseif (time >= time_r) then
-        data = data_r
+      if (time <= data%time_l) then
+        data%frame = data%frame_l
+      elseif (time >= data%time_r) then
+        data%frame = data%frame_r
       else
         ! Interpolate data
-        factor = (time - time_l) / (time_r - time_l)
-        data = data_l * (1.0 - factor) + data_r * factor
+        factor = (time - data%time_l) / (data%time_r - data%time_l)
+        data%frame = data%frame_l * (1.0 - factor) + data%frame_r * factor
       endif
 !
     endsubroutine interpolate_time_2D
 !***********************************************************************
-    subroutine update_frame (time, time_l, time_r, f_index, plane, dim_1, dim_2, frame_l, frame_r, data_local)
+    subroutine update_frame (time, data, f_index, plane, dim_1, dim_2, driver_file)
 !
 !  Check if an update of the data frame is needed and load frame from file.
 !  An interpolated data frame will be added to the given local frame.
@@ -182,11 +181,11 @@ module Driver
 !  06-Sep-2026/PABourdin: adapted from the "solar_corona" module
 !
       real, intent(in) :: time
-      real, intent(inout) :: time_l, time_r
+      type(data_array), intent(inout) :: data
       integer, intent(in) :: f_index
       character(len=2), intent(in) :: plane
       integer, intent(in) :: dim_1, dim_2
-      real, dimension(dim_1,dim_2), intent(inout) :: frame_l, frame_r, data_local
+      character (len=fnlen), intent(in) :: driver_file
 !
       character (len=fnlen), save :: filename=""
       integer :: pos_l, pos_r
@@ -203,31 +202,31 @@ module Driver
 !
       if (lfirst_call) then
         ! Load previous (l) frame and store it in (r), will be shifted later
-        filename = trim (driver_xy(f_index))//"_"//trim (plane)//"_times.dat"
-        call find_frame (time, filename, 'l', pos_l, time_l, f_index, plane, lreader)
+        filename = trim (driver_file)//"_"//trim (plane)//"_times.dat"
+        call find_frame (time, filename, 'l', pos_l, data%time_l, f_index, plane, lreader)
         if (pos_l == 0) then
           ! The simulation started before the first frame of the time series
           ! start from zero velocities
-          frame_r = 0.0
-          time_l = -time_offset(f_index)
+          data%frame_r = 0.0
+          data%time_l = -time_offset(f_index)
         else
-          filename = trim (driver_xy(f_index))//"_"//trim (plane)//".dat"
-          call read_frame (pos_l, filename, f_index, plane, dim_1, dim_2, frame_r, lreader)
+          filename = trim (driver_file)//"_"//trim (plane)//".dat"
+          call read_frame (pos_l, filename, f_index, plane, dim_1, dim_2, data%frame_r, lreader)
         endif
         ! Make sure that the following (r) frame will get loaded:
-        time_r = time_l
+        data%time_r = data%time_l
         lfirst_call = .false.
       endif
 !
-      if (time >= time_r) then
+      if (time >= data%time_r) then
         ! Shift data from following (r) to previous (l) frame
-        frame_l = frame_r
-        time_l = time_r
+        data%frame_l = data%frame_r
+        data%time_l = data%time_r
         ! Read new following (r) frame
-        filename = trim (driver_xy(f_index))//"_"//trim (plane)//"_times.dat"
-        call find_frame (time, filename, 'r', pos_r, time_r, f_index, plane, lreader)
-        filename = trim (driver_xy(f_index))//"_"//trim (plane)//".dat"
-        call read_frame (pos_r, filename, f_index, plane, dim_1, dim_2, frame_r, lreader)
+        filename = trim (driver_file)//"_"//trim (plane)//"_times.dat"
+        call find_frame (time, filename, 'r', pos_r, data%time_r, f_index, plane, lreader)
+        filename = trim (driver_file)//"_"//trim (plane)//".dat"
+        call read_frame (pos_r, filename, f_index, plane, dim_1, dim_2, data%frame_r, lreader)
       endif
 !
     endsubroutine update_frame
@@ -248,7 +247,7 @@ module Driver
       integer, intent(in) :: f_index
       character(len=2), intent(in) :: plane
       integer, intent(in) :: dim_1, dim_2
-      real, dimension(dim_1,dim_2), intent(out) :: data
+      real, dimension(dim_1, dim_2), intent(out) :: data
       logical, intent(in) :: lreader
 !
       integer, parameter :: unit=12
@@ -432,38 +431,28 @@ module Driver
       integer, intent(in) :: f_index
 !
       real :: time
-      real, dimension(:,:), pointer :: frame_l, frame_r
 !
       time = t - time_offset(f_index)
 !
       if (ldrive_xy(f_index)) then
-        frame_l = data_xy(f_index)%frame_l
-        frame_r = data_xy(f_index)%frame_r
         ! check if driver data needs to be updated from file
-        call update_frame (time, data_xy(f_index)%time_l, data_xy(f_index)%time_r, f_index, &
-            "xy", nx, ny, frame_l, frame_r, data_xy(f_index)%frame)
+        call update_frame (time, data_xy(f_index), f_index, "xy", nx, ny, driver_xy(f_index))
         ! interpolate driver data in time
-        call interpolate_time_2D (time, data_xy(f_index)%time_l, data_xy(f_index)%time_r, frame_l, frame_r, data_xy(f_index)%frame)
+        call interpolate_time_2D (time, data_xy(f_index))
       endif
 !
       if (ldrive_xz(f_index)) then
-        frame_l = data_xz(f_index)%frame_l
-        frame_r = data_xz(f_index)%frame_r
         ! check if driver data needs to be updated from file
-        call update_frame (time, data_xz(f_index)%time_l, data_xz(f_index)%time_r, f_index, &
-            "xz", nx, nz, frame_l, frame_r, data_xz(f_index)%frame)
+        call update_frame (time, data_xz(f_index), f_index, "xz", nx, nz, driver_xz(f_index))
         ! interpolate driver data in time
-        call interpolate_time_2D (time, data_yz(f_index)%time_l, data_yz(f_index)%time_r, frame_l, frame_r, data_xz(f_index)%frame)
+        call interpolate_time_2D (time, data_yz(f_index))
       endif
 !
       if (ldrive_yz(f_index)) then
-        frame_l = data_yz(f_index)%frame_l
-        frame_r = data_yz(f_index)%frame_r
         ! check if driver data needs to be updated from file
-        call update_frame (time, data_yz(f_index)%time_l, data_yz(f_index)%time_r, f_index, &
-            "yz", ny, nz, frame_l, frame_r, data_yz(f_index)%frame)
+        call update_frame (time, data_yz(f_index), f_index, "yz", ny, nz, driver_yz(f_index))
         ! interpolate driver data in time
-        call interpolate_time_2D (time, data_yz(f_index)%time_l, data_yz(f_index)%time_r, frame_l, frame_r, data_yz(f_index)%frame)
+        call interpolate_time_2D (time, data_yz(f_index))
       endif
 !
     endsubroutine driver_update
