@@ -67,13 +67,13 @@ module Driver
       call svn_id( &
            "$Id$")
 !
-      tau_inv(:) = 1.0 / decay_time(:)
-!
       target_proc_x(:) = (driver_pos_x(:)-1) / nx
       target_proc_y(:) = (driver_pos_y(:)-1) / ny
       target_proc_z(:) = (driver_pos_z(:)-1) / nz
 !
       do f_index = 1, mcom
+        if (decay_time(:) /= 0.0) then tau_inv(:) = 1.0 / decay_time(:)
+!
         ldrive_xy(f_index) = (driver_xy(f_index) /= "") .and. (target_proc_z(f_index) == ipz)
         ldrive_xz(f_index) = (driver_xz(f_index) /= "") .and. (target_proc_y(f_index) == ipy)
         ldrive_yz(f_index) = (driver_yz(f_index) /= "") .and. (target_proc_x(f_index) == ipx)
