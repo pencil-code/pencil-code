@@ -2,6 +2,18 @@
 !
 !  Dummy module for boundary driving from external files.
 !
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+! Declare (for generation of cparam.inc) the number of f array
+! variables and auxiliary variables added by this module
+!
+! CPARAM logical, parameter :: ldriver = .false.
+!
+! MVAR CONTRIBUTION 0
+! MAUX CONTRIBUTION 0
+!
+! PENCILS PROVIDED
+!
+!***************************************************************
 module Driver
 !
   use Quiet
@@ -10,9 +22,6 @@ module Driver
 !
   private
 !
-  logical :: ldriver = .false.
-!
-  public :: ldriver
   public :: initialize_driver, finalize_driver
   public :: read_driver_run_pars, write_driver_run_pars
   public :: driver_apply

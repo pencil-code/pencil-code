@@ -2,6 +2,18 @@
 !
 !  Module for boundary driving from external files for any f-array component(s).
 !
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+! Declare (for generation of cparam.inc) the number of f array
+! variables and auxiliary variables added by this module
+!
+! CPARAM logical, parameter :: ldriver = .true.
+!
+! MVAR CONTRIBUTION 0
+! MAUX CONTRIBUTION 0
+!
+! PENCILS PROVIDED
+!
+!***************************************************************
 module Driver
 !
   use Cdata
@@ -11,9 +23,6 @@ module Driver
 !
   private
 !
-  logical :: ldriver = .true.
-!
-  public :: ldriver
   public :: initialize_driver, finalize_driver
   public :: read_driver_run_pars, write_driver_run_pars
   public :: driver_apply
