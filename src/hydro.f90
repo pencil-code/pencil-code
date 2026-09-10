@@ -404,6 +404,7 @@ module Hydro
   integer :: idiag_u2max=0      ! DIAG_DOC: $\max(uv^2)$
   integer :: idiag_gamrms=0     ! DIAG_DOC: $\left<\gamma^2\right>^{1/2}$
   integer :: idiag_gammax=0     ! DIAG_DOC: $\max(\gamma)$
+  integer :: idiag_gam2min=0    ! DIAG_DOC: $\min(\gamma^2)$
   integer :: idiag_rat2=0       ! DIAG_DOC: $\sum_{i=1}^{3} \frac{T^{0i}T^{0i}}{(T^{00})^2}$
   integer :: idiag_u2m=0        ! DIAG_DOC: $\left<\uv^2\right>$
   integer :: idiag_u2sphm=0     ! DIAG_DOC: $\int_{r=0}^{r=r_{\rm diag}} \uv^2 dV$,
@@ -5038,7 +5039,8 @@ module Hydro
 !
 !  Things related to Lorentz gamma; remember that ilorentz is already gamma**2
 !
-        if (idiag_gamm/=0.or.idiag_gamrms/=0.or.idiag_gammax/=0.or.idiag_rat2/=0.or.idiag_u2max/=0) then
+        if (idiag_gamm/=0.or.idiag_gamrms/=0.or.idiag_gammax/=0.or.idiag_rat2/=0.or.idiag_u2max/=0&
+                .or.idiag_gam2min/=0) then
           if (lconservative) then
             ratio2 = (f(l1:l2,m,n,iux)**2+f(l1:l2,m,n,iuy)**2+f(l1:l2,m,n,iuz)**2)/f(l1:l2,m,n,irho)**2
           endif
@@ -5057,7 +5059,9 @@ module Hydro
           if (idiag_gamm/=0) call sum_mn_name(sqrt(abs(lorr)),idiag_gamm)
           if (idiag_gamrms/=0) call sum_mn_name(lorr,idiag_gamrms,lsqrt=.true.)
           if (idiag_gammax/=0) call max_mn_name(lorr,idiag_gammax,lsqrt=.true.)
+          if (idiag_gam2min/=0) call max_mn_name(-lorr,idiag_gam2min,lneg=.true.)
         endif
+!
 !
 !  Variable velx = sqrt(w) gamma v_i
 !
@@ -7131,6 +7135,7 @@ module Hydro
         idiag_rat2=0
         idiag_gamrms=0
         idiag_gammax=0
+        idiag_gam2min=0
         idiag_u2m=0
         idiag_u2sphm=0
         idiag_um2=0
@@ -7642,6 +7647,7 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'rat2', idiag_rat2)
         call parse_name(iname,cname(iname),cform(iname),'gamrms',idiag_gamrms)
         call parse_name(iname,cname(iname),cform(iname),'gammax',idiag_gammax)
+        call parse_name(iname,cname(iname),cform(iname),'gam2min',idiag_gam2min)
         call parse_name(iname,cname(iname),cform(iname),'u2tm',idiag_u2tm)
         call parse_name(iname,cname(iname),cform(iname),'uotm',idiag_uotm)
         call parse_name(iname,cname(iname),cform(iname),'outm',idiag_outm)
