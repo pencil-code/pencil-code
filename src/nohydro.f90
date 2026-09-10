@@ -144,6 +144,17 @@ module Hydro
 !
     endsubroutine initialize_hydro
 !***********************************************************************
+    subroutine rescaling_velocity(f)
+!
+!   dummy routine
+!
+      real, contiguous, dimension(:,:,:,:) :: f
+      intent(in) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine rescaling_velocity
+!***********************************************************************
       subroutine calc_means_hydro(f)
 !
 !  dummy routine

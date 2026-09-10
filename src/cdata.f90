@@ -1016,6 +1016,7 @@ module Cdata
   logical :: lrescaling_magnetic=.false.
   logical :: lrescaling_testscalar=.false.
   logical :: lrescaling_testfield=.false.
+  logical :: lrescaling_velocity=.false.
 !
 !  Dynamical diffusion coefficients with fixed mesh Reynolds number.
 !

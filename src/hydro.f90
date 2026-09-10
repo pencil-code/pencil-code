@@ -217,7 +217,7 @@ module Hydro
   logical, pointer :: lrelativistic_eos, lrelativistic_eos_corr
   logical :: lno_noise_uu=.false., lrho_nonuni_uu=.false.
   logical :: llorentz_limiter=.false., lrat_limiter=.false., full_3D=.false.
-  logical :: lhiggsless=.false., lhiggsless_old=.false.
+  logical :: lhiggsless=.false., lhiggsless_old=.false., lvel_limiter=.false.
   logical :: lalfven_relativistic=.true.
 !  Kurganov-Tadmor flux-limited transport (see kt_transport.f90); runtime-off by default.
   logical :: lkt_transport=.false.
@@ -278,7 +278,7 @@ module Hydro
       lno_noise_uu, lrho_nonuni_uu, lpower_profile_file_uu, &
       llorentz_limiter, lrat_limiter, lhiggsless, lhiggsless_old, vwall, alpha_hless, width_hless, &
       xjump_mid, yjump_mid, zjump_mid, qini, lnorm_vw_hless, &
-      qshear, lampluu_adjust_ascale, lalfven_relativistic
+      qshear, lampluu_adjust_ascale, lalfven_relativistic, lvel_limiter
 !
 !  Run parameters.
 !
@@ -344,6 +344,7 @@ module Hydro
   real :: Ra=0.0, Pr=0.0 ! Boussinesq approximation
   real :: Om_inner=0.
   real :: rat_limiter=0.99 ! PAR_DOC: limiter for the ratio to compute lorentz gamma
+  real :: max_vel=1. ! PAR_DOC : limiter for the velocity
 !
 !  Option to constrain time for large df.
 !
@@ -387,8 +388,8 @@ module Hydro
       ltime_integrals_always, dtcor, lvart_in_shear_frame, lSchur_3D3D1D_uu, &
       lSchur_2D2D3D_uu, lSchur_2D2D1D_uu, &
       lhiggsless, vwall, alpha_hless, width_hless, qshear, zdampint, zdampext, &
-      lext_force, rat_limiter, lkt_transport, kt_theta, &
-      lhiggsless_project, hless_proj_margin
+      lext_force, rat_limiter, max_vel, lkt_transport, kt_theta, &
+      lhiggsless_project, hless_proj_margin, lvel_limiter
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -1279,6 +1280,10 @@ module Hydro
       integer :: l,m,n
       real :: slope,uinn,uext,zbot
       logical :: lvectorpotential=.false.
+!
+      if (lvel_limiter) then
+       lrescaling_velocity=.true.
+      endif
 !
 ! set the right point in profile to unity.
 !
@@ -4753,6 +4758,45 @@ module Hydro
       call timing('duu_dt','finished',mnloop=.true.)
 !
     endsubroutine duu_dt
+!*******************************************************************************
+    subroutine rescaling_velocity(f)
+!
+! rescale the velocity field after every timestep to avoid, e.g., superluminal velocities
+!
+! 10-09-26: ASM coded 
+!
+      use Sub, only: dot2_mx
+!
+      real, dimension(:,:,:,:) :: f
+!
+      intent(inout) :: f
+!
+      real, dimension (mx,3) :: ss
+      real, dimension (mx) :: ss2
+      integer :: j, l_ind, m_ind, n_ind
+!
+      if (llorentz_limiter.or.lvel_limiter) then
+         do n_ind=1,mz
+         do m_ind=1,my
+           ss=f(:,m_ind,n_ind,iux:iuz)
+           call dot2_mx(ss,ss2)
+           do j=iux,iuz
+             if (llorentz_limiter) then
+               f(:,m_ind,n_ind,j)=f(:,m_ind,n_ind,j)/sqrt(1.+ss2)
+             endif
+             if (lvel_limiter) then
+               do l_ind=1,mx
+                 if (ss2(l_ind)>max_vel**2) then
+                   f(l_ind,m_ind,n_ind,j)=f(l_ind,m_ind,n_ind,j)*max_vel/sqrt(ss2(l_ind))
+                 endif
+               enddo
+             endif
+           enddo
+       enddo
+       enddo
+      endif
+!
+    endsubroutine rescaling_velocity
 !*******************************************************************************
     subroutine calc_0d_diagnostics_hydro(f,p)
 !

@@ -333,6 +333,7 @@ endsubroutine helper_loop
   use ImplicitPhysics, only: calc_heatcond_ADI
   use IO,              only: output_globals
   use Magnetic,        only: rescaling_magnetic
+  use Hydro,           only: rescaling_velocity
   use Messages,        only: timing, fatal_error_local_collect
   use Mpicomm,         only: mpibcast_logical, mpiwtime, MPI_COMM_PENCIL, mpibarrier
   use Particles_main,  only: particles_rprint_list, particles_initialize_modules, &
@@ -578,6 +579,7 @@ endsubroutine helper_loop
     if (lparticles_lyapunov) call particles_stochastic
 !    if (lspecial) call special_stochastic
     if (lrescaling_magnetic)  call rescaling_magnetic(f)
+    if (lrescaling_velocity) call rescaling_velocity(f)
     if (lrescaling_testfield) call rescaling_testfield(f)
     if (lrescaling_testscalar) call rescaling_testscalar(f)
 !
