@@ -202,7 +202,7 @@ module Driver
 !
       if (lfirst_call) then
         ! Load previous (l) frame and store it in (r), will be shifted later
-        filename = trim (driver_file)//"_"//trim (plane)//"_times.dat"
+        filename = "driver/"//trim (driver_file)//"_"//trim (plane)//"_times.dat"
         call find_frame (time, filename, 'l', pos_l, data%time_l, f_index, plane, lreader)
         if (pos_l == 0) then
           ! The simulation started before the first frame of the time series
@@ -210,7 +210,7 @@ module Driver
           data%frame_r = 0.0
           data%time_l = -time_offset(f_index)
         else
-          filename = trim (driver_file)//"_"//trim (plane)//".dat"
+          filename = "driver/"//trim (driver_file)//"_"//trim (plane)//".dat"
           call read_frame (pos_l, filename, f_index, plane, dim_1, dim_2, data%frame_r, lreader)
         endif
         ! Make sure that the following (r) frame will get loaded:
@@ -223,9 +223,9 @@ module Driver
         data%frame_l = data%frame_r
         data%time_l = data%time_r
         ! Read new following (r) frame
-        filename = trim (driver_file)//"_"//trim (plane)//"_times.dat"
+        filename = "driver/"//trim (driver_file)//"_"//trim (plane)//"_times.dat"
         call find_frame (time, filename, 'r', pos_r, data%time_r, f_index, plane, lreader)
-        filename = trim (driver_file)//"_"//trim (plane)//".dat"
+        filename = "driver/"//trim (driver_file)//"_"//trim (plane)//".dat"
         call read_frame (pos_r, filename, f_index, plane, dim_1, dim_2, data%frame_r, lreader)
       endif
 !
