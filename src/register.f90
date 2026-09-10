@@ -222,6 +222,7 @@ module Register
       use Deriv,            only: initialize_deriv
       use Detonate,         only: initialize_detonate
       use Diagnostics,      only: initialize_diagnostics
+      use Driver,           only: initialize_driver
       use Dustdensity,      only: initialize_dustdensity
       use Dustvelocity,     only: initialize_dustvelocity
       use Energy,           only: initialize_energy
@@ -401,6 +402,7 @@ module Register
       call initialize_selfgravity(f)
       call initialize_poisson
       call initialize_density(f)
+      call initialize_driver()
       call initialize_hydro(f)
       call initialize_forcing
       call initialize_fourier
@@ -464,6 +466,7 @@ module Register
       use Boundcond,      only: finalize_boundcond
       use Cdata
       use Deriv,          only: finalize_deriv
+      use Driver,         only: finalize_driver
       use Gpu,            only: finalize_gpu
       use IO,             only: finalize_io
       use Particles_main, only: particles_finalize
@@ -476,6 +479,7 @@ module Register
       call finalize_special(f)
       call finalize_boundcond(f)
       call finalize_deriv
+      call finalize_driver
       call finalize_io
       if (lrun.and.nt>0) then
         call finalize_training
