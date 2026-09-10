@@ -264,30 +264,32 @@ module Special
 !***********************************************************************
     subroutine dspecial_dt_ode
 !
-      use Diagnostics, only: save_name
-      use SharedVariables, only: get_shared_variable
 !
-      lna=f_ode(iLCDM_lna)
-      tph=f_ode(iLCDM_tph)
-      tphys=tph
 !
 !  dlna/dtph=H, and since dt=dtph/a^nconformal, we have
 !  so dlna/dt=dlna/dtph*dtph/dt=H*dtph/dt=H*a^nconformal.
 !
       df_ode(iLCDM_lna)=df_ode(iLCDM_lna)+ascale**nconformal*Hubble
       df_ode(iLCDM_tph)=df_ode(iLCDM_tph)+ascale**nconformal
+      if(.not. lmultithread) then
+        call calc_ode_diagnostics_special(f_ode)
+      endif
 !
-!  Diagnostics
-!
+    endsubroutine dspecial_dt_ode
+!***********************************************************************
+    subroutine calc_ode_diagnostics_special(f_ode)
+
+      use Diagnostics, only: save_name
+
+      real, dimension(n_odevars) :: f_ode
       if (ldiagnos) then
         call save_name(1./ascale-1.,idiag_redshift)
         call save_name(Hubble,idiag_Hubble)
         call save_name(ascale,idiag_ascale)
-        call save_name(lna,idiag_lna)
-        call save_name(tph,idiag_tph)
+        call save_name(f_ode(iLCDM_lna),idiag_lna)
+        call save_name(f_ode(iLCDM_tph),idiag_tph)
       endif
-!
-    endsubroutine dspecial_dt_ode
+    endsubroutine calc_ode_diagnostics_special
 !***********************************************************************
     subroutine read_special_init_pars(iomsg)
 !
@@ -374,6 +376,10 @@ module Special
       ascale=exp(lna)
       sqrt_ascale=sqrt(ascale)
       Hubble=Hubble0*sqrt(Omega_mat/ascale**3+Omega_Lam+Omega_rad/ascale**4)
+
+!   Physical time is used for deciding when to output slices and snapshots
+      lna   = f_ode(iLCDM_lna)
+      tphys = f_ode(iLCDM_tph)
 !
     endsubroutine prep_rhs_special
 !********************************************************************
