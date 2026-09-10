@@ -1404,6 +1404,8 @@ module Forcing
       endif
       call timing('addforce','finished')
 
+      !Helical forcing can cause superluminal velocities so we restrict it here
+      !Should this always be on when lrelativistic or be incorporated to the forcing function proper?
       if (lhydro_forcing .and. (llorentz_limiter.or.lvel_limiter)) then
          do n_ind=1,mz
          do m_ind=1,my
