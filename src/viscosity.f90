@@ -3471,6 +3471,7 @@ module Viscosity
     call copy_addr(lvisc_const_below_ascale,p_par(131)) ! bool
     call string_to_enum(enum_tdep_nu_type,tdep_nu_type)
     call copy_addr(enum_tdep_nu_type,p_par(132)) ! int
+    call copy_addr(ell_gam_max,p_par(133))
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Viscosity
