@@ -432,7 +432,7 @@ module Driver
       integer, intent(in) :: f_index
 !
       real :: time
-      real, dimension(:,:), pointer :: frame_l, frame_r, data_local
+      real, dimension(:,:), pointer :: frame_l, frame_r
 !
       time = t - time_offset(f_index)
 !
