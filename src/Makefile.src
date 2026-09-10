@@ -3589,7 +3589,7 @@ buildinfo:
 	    -e "PARTICLES_SPIN='$(PARTICLES_SPIN)';PARTICLES_CHEMISTRY='$(PARTICLES_CHEMISTRY)';" > .buildinfo
 #	    -e "PARTICLES_POTENTIAL='$(PARTICLES_POTENTIAL)';" \
 #
-cparam.inc cparam_pencils.inc: Makefile.src Makefile.local cparam.local scripts/mkcparam #$(preprocess)
+cparam.inc cparam_pencils.inc: Makefile.src Makefile.local cparam.local scripts/mkcparam $(preprocess)
 	@mkdir -p .tmp_mkcparam
 	@cp -p cparam.inc .tmp_mkcparam/cparam.inc 2>/dev/null || true
 	@cp -p cparam_pencils.inc .tmp_mkcparam/cparam_pencils.inc 2>/dev/null || true
