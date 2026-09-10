@@ -401,6 +401,7 @@ module Hydro
                                 ! DIAG_DOC:   dt'\right>$
   integer :: idiag_fkinzm=0     ! DIAG_DOC: $\left<{1\over2} \varrho\uv^2 u_z\right>$
   integer :: idiag_gamm=0       ! DIAG_DOC: $\left<gamma\right>$
+  integer :: idiag_gam2m=0      ! DIAG_DOC: $\left<\gamma^2\right>$
   integer :: idiag_u2max=0      ! DIAG_DOC: $\max(uv^2)$
   integer :: idiag_gamrms=0     ! DIAG_DOC: $\left<\gamma^2\right>^{1/2}$
   integer :: idiag_gammax=0     ! DIAG_DOC: $\max(\gamma)$
@@ -5040,7 +5041,7 @@ module Hydro
 !  Things related to Lorentz gamma; remember that ilorentz is already gamma**2
 !
         if (idiag_gamm/=0.or.idiag_gamrms/=0.or.idiag_gammax/=0.or.idiag_rat2/=0.or.idiag_u2max/=0&
-                .or.idiag_gam2min/=0) then
+                .or.idiag_gam2min/=0.or.idiag_gam2m/=0) then
           if (lconservative) then
             ratio2 = (f(l1:l2,m,n,iux)**2+f(l1:l2,m,n,iuy)**2+f(l1:l2,m,n,iuz)**2)/f(l1:l2,m,n,irho)**2
           endif
@@ -5056,6 +5057,7 @@ module Hydro
           endif
 !
           if (idiag_rat2/=0) call max_mn_name(ratio2,idiag_rat2)
+          if (idiag_gam2m/=0) call sum_mn_name(lorr,idiag_gam2m)
           if (idiag_gamm/=0) call sum_mn_name(sqrt(abs(lorr)),idiag_gamm)
           if (idiag_gamrms/=0) call sum_mn_name(lorr,idiag_gamrms,lsqrt=.true.)
           if (idiag_gammax/=0) call max_mn_name(lorr,idiag_gammax,lsqrt=.true.)
@@ -7131,6 +7133,7 @@ module Hydro
         idiag_outm=0
         idiag_fkinzm=0
         idiag_gamm=0
+        idiag_gam2m=0
         idiag_u2max=0
         idiag_rat2=0
         idiag_gamrms=0
@@ -7643,6 +7646,7 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'ekin',idiag_ekin)
         call parse_name(iname,cname(iname),cform(iname),'ekintot',idiag_ekintot)
         call parse_name(iname,cname(iname),cform(iname),'gamm',idiag_gamm)
+        call parse_name(iname,cname(iname),cform(iname),'gam2m',idiag_gam2m)
         call parse_name(iname,cname(iname),cform(iname),'u2max', idiag_u2max)
         call parse_name(iname,cname(iname),cform(iname),'rat2', idiag_rat2)
         call parse_name(iname,cname(iname),cform(iname),'gamrms',idiag_gamrms)
