@@ -343,8 +343,8 @@ module Hydro
   real :: Shearx=0., rescale_uu=0.
   real :: Ra=0.0, Pr=0.0 ! Boussinesq approximation
   real :: Om_inner=0.
-  real :: rat_limiter=0.99 ! PAR_DOC: limiter for the ratio to compute lorentz gamma
-  real :: max_vel=1. ! PAR_DOC : limiter for the velocity
+  real :: rat_limiter=0.999 ! PAR_DOC: limiter for the ratio to compute lorentz gamma
+  real :: max_vel=0.999 ! PAR_DOC : limiter for the velocity
 !
 !  Option to constrain time for large df.
 !
@@ -8355,7 +8355,7 @@ module Hydro
 !  28-mar-17/MR: reinstated update_ghosts.
 !
       use Boundcond, only: update_ghosts
-      use Sub, only: div, vecout_finalize
+      use Sub, only: div, vecout_finalize, dot2_mx
       use Poisson, only: inverse_laplacian, inverse_laplacian_fft_z    !, inverse_laplacian_z_2nd_neumann
 !
       real, contiguous, dimension(:,:,:,:) :: f
@@ -8427,7 +8427,7 @@ module Hydro
         call calc_othresh
       endif
 
-      if (llast .and. (llorentz_limiter.or.lvel_limiter)) then
+      if (llast.and.(llorentz_limiter.or.lvel_limiter)) then
          do n_ind=1,mz
          do m_ind=1,my
            ss=f(:,m_ind,n_ind,iux:iuz)
