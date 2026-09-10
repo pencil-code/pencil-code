@@ -9643,21 +9643,23 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
       use General, only: notanumber
       use FarrayManager,  only: farray_get_name
       use, intrinsic :: iso_fortran_env, only: output_unit
+      use, intrinsic :: ieee_arithmetic,only: ieee_is_nan
 
 
       real, contiguous, dimension(:,:,:,:) :: f
       character (len=*), optional :: caller
-      integer :: has_nan_local
+      logical :: has_nan_local
       integer :: i
       character(len=30) :: name
 
       !isnan is written out since we cannot always depend on it
-      has_nan_local = merge(1,0,any(f > huge_real .or. f /= f))
+      has_nan_local = any(ieee_is_nan(f))
+
       !call mpireduce_max_int(has_nan_local,has_nan_global)
 
       !Might as well check only locally and then call mpiabort to exit globally
       !saves some communication and is maybe a bit simpler
-      if (has_nan_local == 1) then
+      if (has_nan_local) then
 
         if (.not. present(caller)) then
           print*,"check_for_nans_globally: found nans!"
@@ -9667,7 +9669,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
 
         do i=1,mfarray
           name = farray_get_name(i)
-          if (any(f(:,:,:,i) > huge_real .or. f(:,:,:,i) /= f(:,:,:,i))) &
+          if (any(ieee_is_nan(f(:,:,:,i)))) &
               print*,"check_for_nans_globally: nan in Field: ",trim(name)
           flush(output_unit)
         enddo
