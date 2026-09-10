@@ -72,7 +72,7 @@ module Driver
       target_proc_z(:) = (driver_pos_z(:)-1) / nz
 !
       do f_index = 1, mcom
-        if (decay_time(:) /= 0.0) tau_inv(:) = 1.0 / decay_time(:)
+        if (decay_time(f_index) /= 0.0) tau_inv(f_index) = 1.0 / decay_time(f_index)
 !
         ldrive_xy(f_index) = (driver_xy(f_index) /= "") .and. (target_proc_z(f_index) == ipz)
         ldrive_xz(f_index) = (driver_xz(f_index) /= "") .and. (target_proc_y(f_index) == ipy)
