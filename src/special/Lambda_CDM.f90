@@ -87,7 +87,7 @@ module Special
 !
   integer :: iLCDM_lna=0, iLCDM_tph=0
   real :: Omega_Lam=.73, Omega_rad=1e-4, Omega_mat, Hubble0=0.072
-  real :: lna, tph, redshift0=4500.
+  real :: lna, redshift0=4500.
 !
   namelist /special_init_pars/ &
       Omega_Lam, Omega_rad, Hubble0, redshift0, nconformal, ascale_type, &
@@ -172,8 +172,7 @@ module Special
       use Mpicomm, only: mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: Vpotential, tph_init
-      integer :: j
+      real :: tph_init
 !
       intent(inout) :: f
 !
@@ -186,6 +185,8 @@ module Special
 !
       call mpibcast_real(ascale)
       call mpibcast_real(Hubble)
+
+      call keep_compiler_quiet(f)
 !
     endsubroutine init_special
 !***********************************************************************
@@ -225,6 +226,8 @@ module Special
 ! infl_phi
 !     if (lpencil(i_infl_phi)) p%infl_phi=f(l1:l2,m,n,iinfl_phi)
 !
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
     endsubroutine calc_pencils_special
 !***********************************************************************
     subroutine dspecial_dt(f,df,p)
@@ -259,6 +262,9 @@ module Special
 !  Identify module and boundary conditions.
 !
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dspecial_dt'
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
 !
     endsubroutine dspecial_dt
 !***********************************************************************
@@ -370,6 +376,7 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'lna',idiag_lna)
         call parse_name(iname,cname(iname),cform(iname),'tph',idiag_tph)
       enddo
+      call keep_compiler_quiet(lwrite)
 !
     endsubroutine rprint_special
 !***********************************************************************
