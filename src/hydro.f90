@@ -1252,6 +1252,9 @@ module Hydro
       if (lSGS_hydro) call register_SGS_hydro      
 !
       call put_shared_variable('lext_force',lext_force)
+      call put_shared_variable('llorentz_limiter',llorentz_limiter)
+      call put_shared_variable('lvel_limiter',lvel_limiter)
+      call put_shared_variable('max_vel',max_vel)
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -8361,10 +8364,6 @@ module Hydro
       real, contiguous, dimension(:,:,:,:) :: f
       real, contiguous, dimension(:,:,:,:) :: df
       real :: dt_sub
-
-      real, dimension (mx,3) :: ss
-      real, dimension (mx) :: ss2
-      integer :: j, l_ind, m_ind, n_ind
 !
       logical :: lwrite_debug=.false.
       integer :: iorder_z=2
@@ -8425,27 +8424,6 @@ module Hydro
       if (ldiagnos.and.othresh_per_orms/=0.) then
         call vecout_finalize(41,trim(directory)//'/ovec',novec)
         call calc_othresh
-      endif
-
-      if (llast.and.(llorentz_limiter.or.lvel_limiter)) then
-         do n_ind=1,mz
-         do m_ind=1,my
-           ss=f(:,m_ind,n_ind,iux:iuz)
-           call dot2_mx(ss,ss2)
-           do j=iux,iuz
-             if (llorentz_limiter) then
-               f(:,m_ind,n_ind,j)=f(:,m_ind,n_ind,j)/sqrt(1.+ss2)
-             endif
-             if (lvel_limiter) then
-               do l_ind=1,mx
-                 if (ss2(l_ind)>max_vel**2) then
-                   f(l_ind,m_ind,n_ind,j)=f(l_ind,m_ind,n_ind,j)*max_vel/sqrt(ss2(l_ind))
-                 endif
-               enddo
-             endif
-           enddo
-       enddo
-       enddo
       endif
 !
     endsubroutine hydro_after_timestep

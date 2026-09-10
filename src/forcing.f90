@@ -228,6 +228,8 @@ module Forcing
   integer, dimension(n_forcing_cont_max) :: enum_iforcing_cont = 0
   logical, pointer :: lconservative_ptr
   logical :: lconservative_hydro = .false.
+  logical, pointer :: llorentz_limiter,lvel_limiter
+  real, pointer :: max_vel
 
   contains
 !
@@ -238,6 +240,7 @@ module Forcing
 !  11-may-2002/wolf: coded
 
       use FarrayManager, only: farray_register_auxiliary
+      use SharedVariables, only: get_shared_variable
 !
 !  identify version number
 !
@@ -247,6 +250,9 @@ module Forcing
       if (iforce=='spherical_radial') then
         if (lisotropize_SR.and.lfastSR) call farray_register_auxiliary('force',iff_aux)
       endif
+      call get_shared_variable('llorentz_limiter',llorentz_limiter,default_val=.false.)
+      call get_shared_variable('lvel_limiter',lvel_limiter,default_val=.false.)
+      call get_shared_variable('max_vel',max_vel,default_val=.999)
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -1310,10 +1316,16 @@ module Forcing
 !  Since forcing is constant during one time step,
 !  this can be added as an Euler 1st order step
 !
+      use Sub, only: dot2_mx
+
       real, contiguous,dimension(:,:,:,:) :: f
 !
       logical, save :: lfirstforce=.true., lfirstforce2=.true.
       logical, save :: llastforce=.true., llastforce2=.true.
+!
+      real, dimension (mx,3) :: ss
+      real, dimension (mx) :: ss2
+      integer :: j, l_ind, m_ind, n_ind
 !
 !  Turn off forcing if t<tforce_start or t>tforce_stop.
 !  This can be useful for producing good initial conditions
@@ -1391,6 +1403,27 @@ module Forcing
         if (headtt.or.ldebug) print*,'addforce: done addforce'
       endif
       call timing('addforce','finished')
+
+      if (lhydro_forcing .and. (llorentz_limiter.or.lvel_limiter)) then
+         do n_ind=1,mz
+         do m_ind=1,my
+           ss=f(:,m_ind,n_ind,iux:iuz)
+           call dot2_mx(ss,ss2)
+           do j=iux,iuz
+             if (llorentz_limiter) then
+               f(:,m_ind,n_ind,j)=f(:,m_ind,n_ind,j)/sqrt(1.+ss2)
+             endif
+             if (lvel_limiter) then
+               do l_ind=1,mx
+                 if (ss2(l_ind)>max_vel**2) then
+                   f(l_ind,m_ind,n_ind,j)=f(l_ind,m_ind,n_ind,j)*max_vel/sqrt(ss2(l_ind))
+                 endif
+               enddo
+             endif
+           enddo
+       enddo
+       enddo
+      endif
 !
     endsubroutine addforce
 !***********************************************************************
@@ -2278,7 +2311,7 @@ module Forcing
                   forcing_rhs2(:,j) = force_ampl*real(cmplx(0.,coef3(j))*fxyz)*fda(j)
                 endif
 
-                if(lconservative_hydro .and. (jf == iux .or. jf == iuy .or. jf == iuz)) then
+                if(lconservative_hydro .and. (ifff == iux)) then
                   forcing_rhs(:,j) = forcing_rhs(:,j)*f(l1:l2,m,n,irho)
                 endif
 !
