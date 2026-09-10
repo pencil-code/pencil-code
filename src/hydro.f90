@@ -401,6 +401,7 @@ module Hydro
                                 ! DIAG_DOC:   dt'\right>$
   integer :: idiag_fkinzm=0     ! DIAG_DOC: $\left<{1\over2} \varrho\uv^2 u_z\right>$
   integer :: idiag_gamm=0       ! DIAG_DOC: $\left<gamma\right>$
+  integer :: idiag_u2max=0      ! DIAG_DOC: $\max(uv^2)$
   integer :: idiag_gamrms=0     ! DIAG_DOC: $\left<\gamma^2\right>^{1/2}$
   integer :: idiag_gammax=0     ! DIAG_DOC: $\max(\gamma)$
   integer :: idiag_rat2=0       ! DIAG_DOC: $\sum_{i=1}^{3} \frac{T^{0i}T^{0i}}{(T^{00})^2}$
@@ -4812,7 +4813,7 @@ module Hydro
       real, dimension (nx) :: space_part_re,space_part_im,u2t,uot,out,fu
       real, dimension (nx) :: odel2um, uref, curlo2, qo, quxo, graddivu2, tmp
       real, dimension (nx,Nmodes_SH) :: urlm
-      real, dimension (nx) :: rmask, lorr, ratio2
+      real, dimension (nx) :: rmask, lorr, ratio2, u2
       real, dimension (nx) :: pradrc2
       real :: kx,arad_normal
       integer :: k
@@ -5037,7 +5038,7 @@ module Hydro
 !
 !  Things related to Lorentz gamma; remember that ilorentz is already gamma**2
 !
-        if (idiag_gamm/=0.or.idiag_gamrms/=0.or.idiag_gammax/=0.or.idiag_rat2/=0) then
+        if (idiag_gamm/=0.or.idiag_gamrms/=0.or.idiag_gammax/=0.or.idiag_rat2/=0.or.idiag_u2max/=0) then
           if (lconservative) then
             ratio2 = (f(l1:l2,m,n,iux)**2+f(l1:l2,m,n,iuy)**2+f(l1:l2,m,n,iuz)**2)/f(l1:l2,m,n,irho)**2
           endif
@@ -5046,6 +5047,12 @@ module Hydro
           else
             lorr = 1./(1. - p%uu(:,1)**2 - p%uu(:,2)**2 - p%uu(:,3)**2)
           endif
+!
+          if (idiag_u2max/=0) then
+            u2=f(l1:l2,m,n,iux)**2+f(l1:l2,m,n,iuy)**2+f(l1:l2,m,n,iuz)**2
+            call max_mn_name(u2,idiag_u2max)
+          endif
+!
           if (idiag_rat2/=0) call max_mn_name(ratio2,idiag_rat2)
           if (idiag_gamm/=0) call sum_mn_name(sqrt(abs(lorr)),idiag_gamm)
           if (idiag_gamrms/=0) call sum_mn_name(lorr,idiag_gamrms,lsqrt=.true.)
@@ -7120,6 +7127,7 @@ module Hydro
         idiag_outm=0
         idiag_fkinzm=0
         idiag_gamm=0
+        idiag_u2max=0
         idiag_rat2=0
         idiag_gamrms=0
         idiag_gammax=0
@@ -7630,7 +7638,8 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'ekin',idiag_ekin)
         call parse_name(iname,cname(iname),cform(iname),'ekintot',idiag_ekintot)
         call parse_name(iname,cname(iname),cform(iname),'gamm',idiag_gamm)
-        call parse_name(iname,cname(iname),cform(iname), 'rat2', idiag_rat2)
+        call parse_name(iname,cname(iname),cform(iname),'u2max', idiag_u2max)
+        call parse_name(iname,cname(iname),cform(iname),'rat2', idiag_rat2)
         call parse_name(iname,cname(iname),cform(iname),'gamrms',idiag_gamrms)
         call parse_name(iname,cname(iname),cform(iname),'gammax',idiag_gammax)
         call parse_name(iname,cname(iname),cform(iname),'u2tm',idiag_u2tm)
