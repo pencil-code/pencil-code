@@ -2075,7 +2075,7 @@ module Hydro
       real :: a2, rr2, wall_smoothing
       real :: dis, xold,yold,uprof, factx, factz, sph, sph_har_der, der
       real :: dely, delz, ampluu_fact
-      integer :: j,i,l,ixy,ix,iy,iz,iz0,iyz,iter,niter=100,jhless
+      integer :: j,i,l,ixy,ix,iy,iz,iz0,iyz,iter,niter=100,jhless,my_ind
       logical :: lvectorpotential=.false.
 !
       real, dimension(:), pointer :: beta_glnrho_scaled
@@ -2984,17 +2984,27 @@ module Hydro
 !
 !  Possibility of Lorentz limiter: u -> u/sqrt(1+u^2)
 !
-      if (llorentz_limiter) then
+      if (llorentz_limiter.or.lvel_limiter) then
         do n=1,mz
         do m=1,my
           ss=f(:,m,n,iux:iuz)
           call dot2_mx(ss,ss2)
           do j=iux,iuz
-            f(:,m,n,j)=f(:,m,n,j)/sqrt(1.+ss2)
+            if (llorentz_limiter) then
+              f(:,m,n,j)=f(:,m,n,j)/sqrt(1.+ss2)
+            endif
+            if (lvel_limiter) then
+              do my_ind=1,mx
+                if (ss2(my_ind)>max_vel**2) then
+                  f(my_ind,m,n,j)=f(my_ind,m,n,j)*max_vel/sqrt(ss2(my_ind))
+                endif
+              enddo
+            endif 
           enddo
         enddo
         enddo
       endif
+!
 !
 !  Interface for user's own initial condition
 !
