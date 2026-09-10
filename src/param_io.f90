@@ -15,6 +15,7 @@ module Param_IO
 !  use Conductivity
   use Density
   use Detonate
+  use Driver
   use Dustdensity
   use Dustvelocity
   use Energy
@@ -625,6 +626,7 @@ module Param_IO
         call read_namelist(read_eos_run_pars            ,'eos'               ,.true., loptest(loptional).or.(.not.leos))
         call read_namelist(read_hydro_run_pars          ,'hydro'             ,lhydro .or. lhydro_kinematic, loptional)
         call read_namelist(read_density_run_pars        ,'density'           ,ldensity, loptional)
+        call read_namelist(read_driver_run_pars         ,'driver'            ,ldriver, loptional)
         call read_namelist(read_forcing_run_pars        ,'forcing'           ,lforcing, loptional)
         call read_namelist(read_gravity_run_pars        ,'grav'              ,lgrav, loptional)
         call read_namelist(read_selfgravity_run_pars    ,'selfgrav'          ,lselfgravity, loptional)
@@ -794,6 +796,7 @@ module Param_IO
         call write_stub ('pointmasses', lpointmasses)
 !
         if (.not. lstart) then
+          call write_stub ('driver', ldriver)
           call write_stub ('forcing', lforcing)
           call write_stub ('shock', lshock)
           call write_stub ('viscosity', lviscosity)
@@ -999,6 +1002,7 @@ module Param_IO
           call write_eos_run_pars(unit)
           call write_hydro_run_pars(unit)
           call write_density_run_pars(unit)
+          call write_driver_run_pars(unit)
           call write_forcing_run_pars(unit)
           call write_gravity_run_pars(unit)
           call write_selfgravity_run_pars(unit)
@@ -1095,6 +1099,7 @@ module Param_IO
       write(unit,'(A,L1,A)') " lgrav=", lgrav, ","
       write(unit,'(A,L1,A)') " lshock=", lshock, ","
       write(unit,'(A,L1,A)') " lmagnetic=", lmagnetic, ","
+      write(unit,'(A,L1,A)') " ldriver=", ldriver, ","
       write(unit,'(A,L1,A)') " lforcing=", lforcing, ","
       write(unit,'(A,L1,A)') " llorenz_gauge=", llorenz_gauge, ","
       write(unit,'(A,L1,A)') " ldustvelocity=", ldustvelocity, ","
