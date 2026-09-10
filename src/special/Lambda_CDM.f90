@@ -277,14 +277,27 @@ module Special
 !
     endsubroutine dspecial_dt_ode
 !***********************************************************************
+    real function get_Hubble(f_ode) result(Hubble)
+      real, dimension(n_odevars) :: f_ode
+      real :: lna,ascale,sqrt_ascale
+
+      lna=f_ode(iLCDM_lna)
+      ascale=exp(lna)
+      sqrt_ascale=sqrt(ascale)
+      Hubble=Hubble0*sqrt(Omega_mat/ascale**3+Omega_Lam+Omega_rad/ascale**4)
+    endfunction
+!***********************************************************************
     subroutine calc_ode_diagnostics_special(f_ode)
 
       use Diagnostics, only: save_name
 
       real, dimension(n_odevars) :: f_ode
+      real :: ascale
+      
       if (ldiagnos) then
+        ascale = exp(f_ode(iLCDM_lna))
         call save_name(1./ascale-1.,idiag_redshift)
-        call save_name(Hubble,idiag_Hubble)
+        call save_name(get_Hubble(f_ode),idiag_Hubble)
         call save_name(ascale,idiag_ascale)
         call save_name(f_ode(iLCDM_lna),idiag_lna)
         call save_name(f_ode(iLCDM_tph),idiag_tph)
