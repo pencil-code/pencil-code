@@ -149,6 +149,7 @@ endsubroutine helper_loop
     use Solid_cells, only: solid_cells_clean_up
     use Timestep,    only: initialize_timestep
     use HDF5_IO,     only: initialize_hdf5
+    use Driver,      only: initialize_driver
     use Diagnostics, only: report_undefined_diagnostics,diagnostics_clean_up
     use Particles_main,   only: particles_rprint_list, particles_initialize_modules
 !$ use General, only: signal_wait, signal_send
@@ -196,6 +197,7 @@ endsubroutine helper_loop
     call initialize_timestep
     call initialize_modules(f)
     call initialize_boundcond(f)
+    if (ldriver) call initialize_driver()
     if (lparticles) call particles_initialize_modules(f)
     call choose_pencils
     if (lgpu) then
