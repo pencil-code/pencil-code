@@ -1,0 +1,24 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Initialisation parameters for relativistic forced turbulence sample
+!
+&init_pars
+  cvsid="ccf8f11ca"
+  lwrite_aux = T
+  lread_aux = T
+  lwrite_ic = F
+  wav1=0.5
+/
+&eos_init_pars
+  gamma=1., cs0=.57735027
+/
+&hydro_init_pars
+  lconservative=F
+  lrelativistic=T
+  lvel_limiter=T
+/
+&density_init_pars
+  lrelativistic_eos_corr=T
+  lrelativistic_eos=T
+  ldensity_nolog=T
+/
