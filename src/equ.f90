@@ -54,6 +54,7 @@ module Equ
       use Chemistry
       use Density
       use Diagnostics, only: save_diagnostic_controls
+      use Driver, only: driver_apply
       use Energy
       use EquationOfState
 !
@@ -205,6 +206,7 @@ module Equ
 !  AND shock calculation
 !
       if (.not. lgpu) then
+        if (ldriver) call driver_apply (f, df)
         call boundconds_x(f)
 !
 !  Initiate (non-blocking) communication and do boundary conditions.
