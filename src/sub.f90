@@ -9609,7 +9609,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
 !
       lna=alog(ascale)
       iline=1+int((lna-lna_table_min)/dlna)
-      if (iline-ioffset_table1<1 .or. iline-ioffset_table2>nline) then
+      if (.not. lgpu .and. (iline-ioffset_table1<1 .or. iline-ioffset_table2>nline)) then
         call fatal_error('read_ell_from_table','iline='//trim(itoa(iline))//' is out of range')
       else
         lna2=lna_table(iline-ioffset_table2)

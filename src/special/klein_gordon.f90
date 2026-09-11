@@ -2090,7 +2090,7 @@ module Special
 
     endsubroutine get_sigE_and_B
 !***********************************************************************
-    subroutine prep_rhs_special
+    subroutine prep_rhs_special(f_ode)
 !
 !  1-aug-25/TP: coded
 !  Calculates values that are uniform across all grid points.
@@ -2100,6 +2100,8 @@ module Special
       use Mpicomm, only: mpi_min_keyval
       use Messages, only: fatal_error_local
       use General, only: notanumber
+
+      real, dimension(n_odevars) :: f_ode
       real, save :: R_prev=impossible,R_curr
       real, save :: t_current,t_prev
       

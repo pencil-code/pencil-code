@@ -1404,8 +1404,9 @@ module Special
 !
     endsubroutine get_sigE_and_B
 !***********************************************************************
-    subroutine prep_rhs_special
+    subroutine prep_rhs_special(f_ode)
 !
+      real, dimension(n_odevars) :: f_ode
 !  1-aug-25/TP: coded
 !  Calculates values that are uniform across all grid points.
 !  On CPUs the values are stored into global variables so computed only once,
@@ -1414,6 +1415,8 @@ module Special
       call get_Hscript_and_a2(Hscript,a2rhom_all)
       call get_echarge
       call get_sigE_and_B
+
+      call keep_compiler_quiet(f_ode)
 !
     endsubroutine prep_rhs_special
 !***********************************************************************

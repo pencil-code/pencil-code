@@ -271,10 +271,13 @@ module Special
     subroutine dspecial_dt_ode
 !
 !
+      real :: ascale,Hubble
 !
 !  dlna/dtph=H, and since dt=dtph/a^nconformal, we have
 !  so dlna/dt=dlna/dtph*dtph/dt=H*dtph/dt=H*a^nconformal.
 !
+      ascale = exp(f_ode(iLCDM_lna))
+      Hubble = Hubble0*sqrt(Omega_mat/ascale**3+Omega_Lam+Omega_rad/ascale**4)
       df_ode(iLCDM_lna)=df_ode(iLCDM_lna)+ascale**nconformal*Hubble
       df_ode(iLCDM_tph)=df_ode(iLCDM_tph)+ascale**nconformal
       if(.not. lmultithread) then
@@ -283,27 +286,20 @@ module Special
 !
     endsubroutine dspecial_dt_ode
 !***********************************************************************
-    real function get_Hubble(f_ode) result(Hubble)
-      real, dimension(n_odevars) :: f_ode
-      real :: lna,ascale,sqrt_ascale
-
-      lna=f_ode(iLCDM_lna)
-      ascale=exp(lna)
-      sqrt_ascale=sqrt(ascale)
-      Hubble=Hubble0*sqrt(Omega_mat/ascale**3+Omega_Lam+Omega_rad/ascale**4)
-    endfunction
-!***********************************************************************
     subroutine calc_ode_diagnostics_special(f_ode)
 
       use Diagnostics, only: save_name
 
       real, dimension(n_odevars) :: f_ode
-      real :: ascale
+      real :: ascale,Hubble
       
       if (ldiagnos) then
         ascale = exp(f_ode(iLCDM_lna))
         call save_name(1./ascale-1.,idiag_redshift)
-        call save_name(get_Hubble(f_ode),idiag_Hubble)
+        if(idiag_Hubble /= 0) then
+          Hubble = Hubble0*sqrt(Omega_mat/ascale**3+Omega_Lam+Omega_rad/ascale**4)
+          call save_name(Hubble,idiag_Hubble)
+        endif
         call save_name(ascale,idiag_ascale)
         call save_name(f_ode(iLCDM_lna),idiag_lna)
         call save_name(f_ode(iLCDM_tph),idiag_tph)
@@ -380,7 +376,7 @@ module Special
 !
     endsubroutine rprint_special
 !***********************************************************************
-    subroutine prep_rhs_special
+    subroutine prep_rhs_special(f_ode)
 !
 !  Possibility to modify the f array after the boundaries are
 !  communicated.
@@ -389,6 +385,8 @@ module Special
 !
 !     use Mpicomm, only: mpireduce_sum, mpiallreduce_sum, mpibcast_real
 !     use Sub, only: dot2_mn, grad, curl, dot_mn
+!
+      real, dimension(n_odevars) :: f_ode
 !
 !  Compute terms routinely used during this time substep.
 !
@@ -416,6 +414,7 @@ module Special
     call copy_addr(omega_rad,p_par(3))
     call copy_addr(omega_mat,p_par(4))
     call copy_addr(hubble0,p_par(5))
+    call copy_addr(ilcdm_tph,p_par(6)) ! int
     endsubroutine pushpars2c
 !********************************************************************
 !********************************************************************

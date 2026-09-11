@@ -4775,22 +4775,6 @@ module Hydro
 !
     endsubroutine duu_dt
 !*******************************************************************************
-    subroutine rescaling_velocity(f)
-!
-! rescale the velocity field after every timestep to avoid, e.g., superluminal velocities
-!
-! 10-09-26: ASM coded 
-!
-      use Sub, only: dot2_mx
-!
-      real, dimension(:,:,:,:) :: f
-!
-      intent(inout) :: f
-!
-!
-!
-    endsubroutine rescaling_velocity
-!*******************************************************************************
     subroutine calc_0d_diagnostics_hydro(f,p)
 !
 !   6-sep-19/MR: taken out from duu_dt

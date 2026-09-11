@@ -877,12 +877,15 @@
 
     endsubroutine pushpars2c
 !*********************************************************************** 
-    subroutine prep_rhs_special
+    subroutine prep_rhs_special(f_ode)
 
+      use Cdata, only: n_odevars
+
+      real, dimension(n_odevars), intent(IN) :: f_ode
       integer :: i
 
       do i=1,n_special_modules
-        call caller0(special_sub_handles(i,I_PREP_RHS_SPECIAL))
+        call caller1(special_sub_handles(i,I_PREP_RHS_SPECIAL),f_ode)
       enddo
 
     endsubroutine prep_rhs_special

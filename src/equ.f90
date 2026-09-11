@@ -827,6 +827,7 @@ module Equ
           call update_ghosts(f,ishock)
         endif
         call calc_all_before_boundary_diagnostics(f)
+        call prep_rhs(f_ode_diagnostics)
         call calc_all_module_diagnostics(f,p)     ! by all helper threads
         if (lode) call calc_ode_diagnostics_special(f_ode_diagnostics)
         call finalize_diagnostics                 ! by diagmaster (MPI comm.)
@@ -1158,10 +1159,12 @@ module Equ
 
     endsubroutine after_boundary_cpu
 !***********************************************************************
-    subroutine prep_rhs
+    subroutine prep_rhs(f_ode)
 
       use Special, only: prep_rhs_special
       use Viscosity, only: prep_rhs_viscosity
+
+      real, dimension(n_odevars) :: f_ode
 !
 !  The updating of parameters that should be updated both on the CPU and GPU should happen here.
 !
@@ -1171,11 +1174,11 @@ module Equ
        Hubble=0.
       endif
       if(lcorrect_ordering_for_a) then
-        if (lspecial) call prep_rhs_special
+        if (lspecial) call prep_rhs_special(f_ode)
         if (lviscosity) call prep_rhs_viscosity
       else
         if (lviscosity) call prep_rhs_viscosity
-        if (lspecial) call prep_rhs_special
+        if (lspecial) call prep_rhs_special(f_ode)
       endif
 
 
@@ -1459,7 +1462,7 @@ module Equ
 !
 !  This call is included in the GPU kernels by transpilation
 !
-      call prep_rhs
+      call prep_rhs(f_ode)
 
       mn_loop: do imn=1,nyz
 
