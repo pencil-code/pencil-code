@@ -1164,7 +1164,7 @@ module Equ
       use Special, only: prep_rhs_special
       use Viscosity, only: prep_rhs_viscosity
 
-      real, dimension(n_odevars) :: f_ode
+      real, dimension(:) :: f_ode
 !
 !  The updating of parameters that should be updated both on the CPU and GPU should happen here.
 !
