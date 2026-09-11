@@ -717,7 +717,12 @@ module Special
 
     endsubroutine pushpars2c
 !***********************************************************************
-    subroutine prep_rhs_special
+    subroutine prep_rhs_special(f_ode)
+
+      real, dimension(:) :: f_ode
+
+      call keep_compiler_quiet(f_ode)
+
     endsubroutine prep_rhs_special
 !***********************************************************************
 endmodule Special
