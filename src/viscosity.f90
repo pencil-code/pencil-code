@@ -2556,64 +2556,6 @@ module Viscosity
 
       endif
 !
-!  The following allows us to let nu change with time, t-nu_tdep_toffset.
-!  The nu_tdep_toffset is used in cosmology where time starts at t=1.
-!  lresi_nu_tdep_t0_norm is not the default because of backward compatbility.
-!  The default is problematic because then nu_tdep /= nu for t < nu_tdep_t0.
-!
-      if (lvisc_nu_tdep .or. lvisc_hyper3_simplified_tdep) then
-        select case (tdep_nu_type)
-        case ('powerlaw')
-          if (lvisc_nu_tdep_t0_norm) then
-            nu_tdep=nu*max(real(t-nu_tdep_toffset)/nu_tdep_t0,1.)**nu_tdep_exponent
-          else
-            nu_tdep=nu*max(real(t-nu_tdep_toffset),nu_tdep_t0)**nu_tdep_exponent
-          endif
-        case ('ascale_power')
-          nu_tdep=nu*ascale**nu_tdep_ascale_power
-        case ('ascale_power_cs-step')
-          if (t<=nu_tdep_t1 .or. t>nu_tdep_t2) then
-            nu_tdep=nu*ascale**nu_tdep_ascale_power
-          else
-            nu_tdep=cs_t/nu_tdep_kcs
-          endif
-!
-!  Take nu_tdep=min(nu,PrM/sigEm_all), i.e., when sigEm_all is small (early times),
-!  nu_tdep is being replaced by nu.
-!
-        case ('PrM_sigEm')
-          if (sigEm_all>0.) then
-            nu_tdep=min(nu,PrM/sigEm_all)
-          else
-            nu_tdep=nu
-          endif
-!
-!  Viscosity for recombination. Allow for a value of ascale below which nu is constant.
-!
-        case ('recombination')
-          xH=.7546
-          rhob=4.21e-31/ascale**3
-          n_ele=xH*rhob/m_p
-          ell_gam=1./(ascale*n_ele*sigma_Thomson)
-          if (lvisc_const_below_ascale) then
-            ell_gam=ell_gam/min(ascale/ascale_visc,1.)**2
-          endif
-          nu_tdep=c_light*ell_gam
-          if (lroot) call save_name(ell_gam,idiag_ell_gam)
-          if (lroot .and. ip<6) print*,'AXEL: m_p, sigma_Thomson, c_light=',m_p, sigma_Thomson, c_light
-!
-!  Viscosity for recombination from a file.
-!AB: this part seems to be overwritten later
-!
-        case ('read_ell_from_table')
-          call read_ell_from_table(ascale,ell_gam)
-          nu_tdep=c_light*ell_gam
-          if (lroot) call save_name(ell_gam,idiag_ell_gam)
-        case default
-          call fatal_error('viscosity_after_boundary','unknown value of tdep_nu_type')
-        endselect
-      endif
-!
 !  Slope limited diffusion following Rempel (2014).
 !  First calculating the flux in a subroutine below
 !  using a slope limiting procedure then storing in the
@@ -2758,7 +2700,7 @@ module Viscosity
             ell_gam=ell_gam/min(ascale/ascale_visc,1.)**2
           endif
           nu_tdep=c_light*ell_gam
-          if (lroot) call save_name(ell_gam,idiag_ell_gam)
+          if (ldiagnos) call save_name(ell_gam,idiag_ell_gam)
           if (lroot .and. ip<6) print*,'AXEL: m_p, sigma_Thomson, c_light=',m_p, sigma_Thomson, c_light
 !
 !  Viscosity for recombination from a file.
@@ -2767,7 +2709,7 @@ module Viscosity
           call read_ell_from_table(ascale,ell_gam)
           if (ell_gam_max/=0.) ell_gam=min(ell_gam,ell_gam_max)
           nu_tdep=c_light*ell_gam
-          if (lroot) call save_name(ell_gam,idiag_ell_gam)
+          if (ldiagnos) call save_name(ell_gam,idiag_ell_gam)
         case default
           call fatal_error('viscosity_after_boundary','unknown value of tdep_nu_type')
         endselect
