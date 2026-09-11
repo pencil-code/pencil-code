@@ -2490,8 +2490,6 @@ module Viscosity
       use Sub, only: read_ell_from_table
       use Diagnostics, only: save_name
 
-      real :: n_ele, ell_gam, xH, rhob
-
       real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx,3,3) :: uij,Sij
       real, dimension (nx) :: divu
