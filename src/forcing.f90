@@ -1316,15 +1316,15 @@ module Forcing
 !  Since forcing is constant during one time step,
 !  this can be added as an Euler 1st order step
 !
-      use Sub, only: dot2_mx
+      use Sub, only: dot2
 
       real, contiguous,dimension(:,:,:,:) :: f
 !
       logical, save :: lfirstforce=.true., lfirstforce2=.true.
       logical, save :: llastforce=.true., llastforce2=.true.
 !
-      real, dimension (mx,3) :: ss
-      real, dimension (mx) :: ss2
+      real, dimension (nx,3) :: ss
+      real, dimension (nx) :: ss2
       integer :: j, l_ind, m_ind, n_ind
 !
 !  Turn off forcing if t<tforce_start or t>tforce_stop.
@@ -1407,18 +1407,18 @@ module Forcing
       !Helical forcing can cause superluminal velocities so we restrict it here
       !Should this always be on when lrelativistic or be incorporated to the forcing function proper?
       if (lhydro_forcing .and. (llorentz_limiter.or.lvel_limiter)) then
-         do n_ind=1,mz
-         do m_ind=1,my
-           ss=f(:,m_ind,n_ind,iux:iuz)
-           call dot2_mx(ss,ss2)
+         do n_ind=n1,n2
+         do m_ind=m1,m2
+           ss=f(l1:l2,m_ind,n_ind,iux:iuz)
+           call dot2(ss,ss2)
            do j=iux,iuz
              if (llorentz_limiter) then
-               f(:,m_ind,n_ind,j)=f(:,m_ind,n_ind,j)/sqrt(1.+ss2)
+               f(l1:l2,m_ind,n_ind,j)=f(l1:l2,m_ind,n_ind,j)/sqrt(1.+ss2)
              endif
              if (lvel_limiter) then
-               do l_ind=1,mx
-                 if (ss2(l_ind)>max_vel**2) then
-                   f(l_ind,m_ind,n_ind,j)=f(l_ind,m_ind,n_ind,j)*max_vel/sqrt(ss2(l_ind))
+               do l_ind=l1,l2
+                 if (ss2(l_ind-nghost)>max_vel**2) then
+                   f(l_ind,m_ind,n_ind,j)=f(l_ind,m_ind,n_ind,j)*max_vel/sqrt(ss2(l_ind-nghost))
                  endif
                enddo
              endif
