@@ -1540,104 +1540,21 @@ outer:do ikz=1,nz
 
   endsubroutine write_krms
 !***********************************************************************
-  subroutine powerhel(f,sp,lfirstcall,sumspec,lnowrite)
-!
-!  Calculate power and helicity spectra (on spherical shells) of the
-!  variable specified by `sp', i.e. either the spectra of uu and kinetic
-!  helicity, or those of bb and magnetic helicity..
-!  Since this routine is only used at the end of a time step,
-!  one could in principle reuse the df array for memory purposes.
-!
-!   3-oct-10/axel: added compution of krms (for realisability condition)
-!   22-jan-13/axel: corrected for x parallelization
-!   1-may-2026/Kishore: fixed for non-cubical domains (but not when lcylindrical_spectra=T)
-!
-    use Chiral, only: iXX_chiral, iYY_chiral, iXX2_chiral, iYY2_chiral
-    use Fourier, only: fft_xyz_parallel
-    use General, only: loptest
-    use Magnetic, only: magnetic_calc_spectra
-    use Mpicomm, only: mpireduce_sum
-    use Sub, only: del2vi_etc, del2v_etc, cross, grad, curli, curl, dot2
-!
-    integer :: nk
-    integer :: k, ikx, iky, ikz, jkz, im, in, ivec, ivec_jj
-    real :: k2
-    real, contiguous,dimension(:,:,:,:) :: f
-    real, dimension(nx) :: jji, b2, j2
-    real, dimension(nx,3) :: bb, bbEP, hhEP, jj, gtmp1, gtmp2
-    real, save, allocatable, dimension(:,:,:,:) :: bEP, hEP
-    real, dimension(2), optional :: sumspec
-    complex, save, allocatable, dimension(:,:,:) :: phi
-    real, dimension(:), save, allocatable :: spectrum,spectrum_sum
-    real, dimension(:), save, allocatable :: spectrumhel,spectrumhel_sum
-    real, dimension(:), save, allocatable :: km1
-    real, allocatable, dimension(:,:), save :: cyl_spectrum, cyl_spectrum_sum
-    real, allocatable, dimension(:,:), save :: cyl_spectrumhel, cyl_spectrumhel_sum
-    character (len=3) :: sp
-    logical, optional :: lnowrite
-    logical :: lfirstcall
-!
-    nk = nk_xyz
-!
-    if (.not.allocated(spectrum)) then
-      allocate(spectrum(nk),spectrum_sum(nk))
-      allocate(spectrumhel(nk),spectrumhel_sum(nk))
-      allocate(km1(nk))
-!
-!
-    endif
-!
-    if (lcylindrical_spectra) then
-      if (.not. allocated(cyl_spectrum)) &
-        allocate(cyl_spectrum(nk,nzgrid), cyl_spectrum_sum(nk,nzgrid), cyl_spectrumhel(nk,nzgrid), cyl_spectrumhel_sum(nk,nzgrid))
-    endif
-    if(.not.allocated(bEP)) allocate(bEP(nx,ny,nz,3))
-    if(.not.allocated(hEP)) allocate(hEP(nx,ny,nz,3))
-    if(.not.allocated(phi)) allocate(phi(nx,ny,nz))
-!
-!  identify version
-!
-    if (lroot .AND. ip<10) call svn_id("$Id$")
-!
-    if (headt .and. (minval(Lxyz) /= maxval(Lxyz)) .and. lcylindrical_spectra) &
-      call warning("powerhel", "computation of cylindrical wavevector wrong for non-cubical domains")
-!
-! Select cases where spectra are precomputed
-!
-    if (iaakim>0.or.ieekim>0) then
-      call magnetic_calc_spectra(f,spectrum,spectrumhel,lfirstcall,sp)
-    else
-!
-    !$omp parallel num_threads(num_helper_threads)
-!
-!  Initialize power spectrum to zero.
-!  For vectors, this is done only once, namely for the first component.
-!
-    !$omp workshare
-    spectrum=0.
-    spectrumhel=0.
-    !$omp end workshare
-!
-    if (lcylindrical_spectra) then
-      !$omp workshare
-      cyl_spectrum=0.
-      cyl_spectrumhel=0.
-      !$omp end workshare
-    endif
-    !$omp end parallel
-!
-!  loop over all the components
-!
-    do ivec=1,3         !MR: having this loop inside the parallel section makes the code hanging!
-!$omp parallel private(jji,bb,jj,b2,j2,gtmp1,gtmp2,bbEP,hhEP,k2,k,jkz) num_threads(num_helper_threads) &
-!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
-!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
-!$ thread_id = omp_get_thread_num()+1
-!
-!  In fft, real and imaginary parts are handled separately.
-!  For "kin", calculate spectra of <uk^2> and <ok.uk>
-!  For "mag", calculate spectra of <bk^2> and <ak.bk>
-!
+  subroutine powerhel_calculate_inputs(f,sp,ivec,hEP,phi)
+
+      use Chiral, only: iXX_chiral, iYY_chiral, iXX2_chiral, iYY2_chiral
+      use Sub, only: del2vi_etc, del2v_etc, cross, grad, curli, curl, dot2
+
+      real, contiguous,dimension(:,:,:,:), intent(in) :: f
+      character (len=3), intent(in) :: sp
+      integer, intent(in) :: ivec
+      real, dimension(nx,ny,nz,3) :: hEP
+      complex, dimension(nx,ny,nz) :: phi
+
+      real, dimension(nx) :: jji, b2, j2
+      real, dimension(nx,3) :: bb, bbEP, hhEP, jj, gtmp1, gtmp2
+      integer :: im,n_loc,m_loc,in,ivec_jj
+
       if (sp=='kin') then
         if (iuu==0) call fatal_error('powerhel','iuu=0')
         !$omp do collapse(2)
@@ -2034,6 +1951,35 @@ outer:do ikz=1,nz
       else
         call fatal_error('powerhel','no such sp: '//trim(sp))
       endif
+  endsubroutine powerhel_calculate_inputs
+!***********************************************************************
+  subroutine powerhel_body(f,sp,nk,hEP,phi,spectrum,spectrumhel,cyl_spectrum,cyl_spectrumhel)
+
+      use Fourier, only: fft_xyz_parallel
+
+      real, contiguous,dimension(:,:,:,:), intent(in) :: f
+      character (len=3), intent(in) :: sp
+      integer, intent(in) :: nk
+      real, contiguous, dimension(:,:,:,:) :: hEP
+      complex, contiguous, dimension(:,:,:) :: phi
+      real, contiguous, intent(out), dimension(:) :: spectrum, spectrumhel
+      real, contiguous, intent(out), dimension(:,:) :: cyl_spectrum, cyl_spectrumhel
+!
+
+      integer :: ivec
+      integer :: ikx,iky,ikz
+      integer :: jkz,k
+      real :: k2
+!  In fft, real and imaginary parts are handled separately.
+!  For "kin", calculate spectra of <uk^2> and <ok.uk>
+!  For "mag", calculate spectra of <bk^2> and <ak.bk>
+!
+!
+!  loop over all the components
+!
+     do ivec=1,3
+      call powerhel_calculate_inputs(f,sp,ivec,hEP,phi)
+
 !
 !  Doing the Fourier transform
 !
@@ -2097,8 +2043,95 @@ outer:do ikz=1,nz
           enddo
         enddo
       endif
+     enddo
+   endsubroutine powerhel_body
+!***********************************************************************
+  subroutine powerhel(f,sp,lfirstcall,sumspec,lnowrite)
+!
+!  Calculate power and helicity spectra (on spherical shells) of the
+!  variable specified by `sp', i.e. either the spectra of uu and kinetic
+!  helicity, or those of bb and magnetic helicity..
+!  Since this routine is only used at the end of a time step,
+!  one could in principle reuse the df array for memory purposes.
+!
+!   3-oct-10/axel: added compution of krms (for realisability condition)
+!   22-jan-13/axel: corrected for x parallelization
+!   1-may-2026/Kishore: fixed for non-cubical domains (but not when lcylindrical_spectra=T)
+!
+    use General, only: loptest
+    use Magnetic, only: magnetic_calc_spectra
+    use Mpicomm, only: mpireduce_sum
+    use Sub, only: del2vi_etc, del2v_etc, cross, grad, curli, curl, dot2
+!
+    integer :: nk
+    integer :: k,jkz
+    real, contiguous,dimension(:,:,:,:) :: f
+    real, save, allocatable, dimension(:,:,:,:) :: bEP, hEP
+    real, dimension(2), optional :: sumspec
+    complex, save, allocatable, dimension(:,:,:) :: phi
+    real, dimension(:), save, allocatable :: spectrum,spectrum_sum
+    real, dimension(:), save, allocatable :: spectrumhel,spectrumhel_sum
+    real, dimension(:), save, allocatable :: km1
+    real, allocatable, dimension(:,:), save :: cyl_spectrum, cyl_spectrum_sum
+    real, allocatable, dimension(:,:), save :: cyl_spectrumhel, cyl_spectrumhel_sum
+    character (len=3) :: sp
+    logical, optional :: lnowrite
+    logical :: lfirstcall
+!
+    nk = nk_xyz
+!
+    if (.not.allocated(spectrum)) then
+      allocate(spectrum(nk),spectrum_sum(nk))
+      allocate(spectrumhel(nk),spectrumhel_sum(nk))
+      allocate(km1(nk))
+!
+!
+    endif
+!
+    if (lcylindrical_spectra) then
+      if (.not. allocated(cyl_spectrum)) &
+        allocate(cyl_spectrum(nk,nzgrid), cyl_spectrum_sum(nk,nzgrid), cyl_spectrumhel(nk,nzgrid), cyl_spectrumhel_sum(nk,nzgrid))
+    endif
+    if(.not.allocated(bEP)) allocate(bEP(nx,ny,nz,3))
+    if(.not.allocated(hEP)) allocate(hEP(nx,ny,nz,3))
+    if(.not.allocated(phi)) allocate(phi(nx,ny,nz))
+!
+!  identify version
+!
+    if (lroot .AND. ip<10) call svn_id("$Id$")
+!
+    if (headt .and. (minval(Lxyz) /= maxval(Lxyz)) .and. lcylindrical_spectra) &
+      call warning("powerhel", "computation of cylindrical wavevector wrong for non-cubical domains")
+!
+! Select cases where spectra are precomputed
+!
+    if (iaakim>0.or.ieekim>0) then
+      call magnetic_calc_spectra(f,spectrum,spectrumhel,lfirstcall,sp)
+    else
+!
+    !$omp parallel num_threads(num_helper_threads)
+!
+!  Initialize power spectrum to zero.
+!  For vectors, this is done only once, namely for the first component.
+!
+    !$omp workshare
+    spectrum=0.
+    spectrumhel=0.
+    !$omp end workshare
+!
+    if (lcylindrical_spectra) then
+      !$omp workshare
+      cyl_spectrum=0.
+      cyl_spectrumhel=0.
+      !$omp end workshare
+    endif
     !$omp end parallel
-    enddo ! do ivec=1,3
+!$omp parallel private(jji,bb,jj,b2,j2,gtmp1,gtmp2,bbEP,hhEP,k2,k,jkz) num_threads(num_helper_threads) &
+!$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+!$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!$ thread_id = omp_get_thread_num()+1
+!
+    call powerhel_body(f,sp,nk,hEP,phi,spectrum,spectrumhel,cyl_spectrum,cyl_spectrumhel)
 !
 !  end from communicated versus computed spectra (magnetic)
 !
