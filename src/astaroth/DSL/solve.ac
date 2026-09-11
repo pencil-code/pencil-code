@@ -65,7 +65,17 @@ fixed_boundary Kernel twopass_solve_final(PC_SUB_STEP_NUMBER step_num, real dt)
 #if Lhydro_MODULE
 			if(AC_lconservative__mod__hydro) force *= updated_rho
 #endif
-			write(F_UU,  uu_updated + force)
+			uu_updated += force
+			if(AC_lvel_limiter__mod__hydro)
+			{
+				ss2 = dot(uu_updated,uu_updated)
+				if(ss2 >= AC_max_vel__mod__hydro)
+				{
+					uu_updated = uu_updated*(AC_max_vel__mod__hydro/ss2)
+				}
+
+			}
+			write(F_UU,  uu_updated)
 		  }
 		}
 		if(AC_iaa__mod__cdata != 0) write(F_AA, rk_final(F_AA,step_num,dt))

@@ -9680,6 +9680,9 @@ module Hydro
     call copy_addr(lkt_transport,p_par(150)) ! bool
 
     call copy_addr(lt0i_total,p_par(151)) ! bool
+    call copy_addr(lvel_limiter,p_par(152)) ! bool
+    call copy_addr(llorentz_limiter,p_par(153)) ! bool
+    call copy_addr(max_vel,p_par(154)) ! real dconst
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Hydro
