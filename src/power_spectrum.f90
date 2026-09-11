@@ -2126,12 +2126,13 @@ outer:do ikz=1,nz
       !$omp end workshare
     endif
     !$omp end parallel
-!$omp parallel private(jji,bb,jj,b2,j2,gtmp1,gtmp2,bbEP,hhEP,k2,k,jkz) num_threads(num_helper_threads) &
+!$omp parallel num_threads(num_helper_threads) &
 !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
 !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
 !$ thread_id = omp_get_thread_num()+1
 !
     call powerhel_body(f,sp,nk,hEP,phi,spectrum,spectrumhel,cyl_spectrum,cyl_spectrumhel)
+!$omp end parallel
 !
 !  end from communicated versus computed spectra (magnetic)
 !
