@@ -71,7 +71,7 @@ fixed_boundary Kernel twopass_solve_final(PC_SUB_STEP_NUMBER step_num, real dt)
 				ss2 = dot(uu_updated,uu_updated)
 				if(ss2 >= AC_max_vel__mod__hydro)
 				{
-					uu_updated = uu_updated*(AC_max_vel__mod__hydro/ss2)
+					uu_updated = uu_updated*(AC_max_vel__mod__hydro/sqrt(ss2))
 				}
 
 			}
