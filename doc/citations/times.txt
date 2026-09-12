@@ -1,5 +1,5 @@
 ##  yy com w/o  (com=comparison [not elsewere included], w/o=without Brandenburg)
-20 2026  7 15
+38 2026 16 21
 41 2025 17 30
 38 2024 12 31
 39 2023  8 26
