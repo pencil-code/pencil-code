@@ -2098,6 +2098,96 @@ module Forcing
 !
     endsubroutine fxyz_coefs_hel
 !***********************************************************************
+    subroutine get_forcing_rhs(f,j,forcing_rhs,forcing_rhs2,forcing_rhs_old,&
+                               fx,fy,fz,fx_old,fy_old,fz_old,fx2,fy2,fz2,fx2_old,&
+                               fy2_old,fz2_old,force_ampl,pforce,qforce,&
+                               coef1,coef1b,coef3,&
+                               fda,fda2,fda_old,fda2_old,profyz_hel_coef2,&
+                               profyz_hel_coef2b&
+                               )
+      real, contiguous,dimension(:,:,:,:), intent(in) :: f
+      integer, intent(in) :: j
+      real, dimension (nx,3) :: forcing_rhs,forcing_rhs2,forcing_rhs_old
+      complex, dimension (nx) :: fxyz,fxyz_old,fxyz2,fxyz2_old
+      complex, dimension (mx),intent(in) :: fx,fx_old,fx2,fx2_old
+      complex, dimension (my),intent(in) :: fy,fy_old,fy2,fy2_old
+      complex, dimension (mz),intent(in) :: fz,fz_old,fz2,fz2_old
+      real, dimension (3) :: fda, fda2, fda_old, fda2_old
+      real, dimension(nx), intent(in) :: force_ampl
+      real, dimension(3) :: coef1,coef1b,coef3
+      real :: pforce,qforce
+      real, dimension(3) :: profyz_hel_coef2,profyz_hel_coef2b
+
+!
+!  Primary forcing function: assemble here forcing_rhs(:,j) and forcing_rhs_old.
+!  Add here possibility of periodic forcing proportional to cos(om*t).
+!  By default, omega_ff=0, so cos(omega_ff*t)=1.
+!
+                fxyz=fx(l1:l2)*fy(m)*fz(n)
+                fxyz_old=fx_old(l1:l2)*fy_old(m)*fz_old(n)
+!
+!  Do the same for secondary forcing function.
+!
+                if (lforcing_coefs_hel_double.or.lmhd_forcing) then
+                  fxyz2=fx2(l1:l2)*fy2(m)*fz2(n)
+                  fxyz2_old=fx2_old(l1:l2)*fy2_old(m)*fz2_old(n)
+                endif
+
+                forcing_rhs(:,j) = force_ampl*fda(j)*cos(omega_ff*t) &
+                                  *real(cmplx(coef1(j),profx_hel*profyz_hel_coef2(j))*fxyz)
+!
+!  Compressive contributions to forcing when qforce/=0.
+!
+                if (qforce/=0.) &
+                  forcing_rhs_old(:,j) = force_ampl*fda_old(j)*cos(omega_ff*t) &
+                                        *real(cmplx(coef1(j),profx_hel*profyz_hel_coef2(j))*fxyz_old)
+!
+!  Setting here forcing_rhs2 and forcing_rhs2_old (when lmhd_forcing=T).
+!
+                if (lmhd_forcing) then
+                  forcing_rhs2(:,j) = force_ampl*fda2(j)*cos(omega_ff*t) & 
+                                     *real(cmplx(coef1b(j),profx_hel*profyz_hel_coef2b(j))*fxyz2)
+                  !if (qforce/=0.) &
+                  !  forcing_rhs2_old(:,j) = force_ampl*fda2_old(j)*cos(omega_ff*t) &
+                  !                         *real(cmplx(coef1b(j),profx_hel*profyz_hel_coef2b(j))*fxyz2_old)
+                endif
+!
+!  Possibility of adding second forcing function.
+! 
+                if (lforcing_coefs_hel_double) then
+                  forcing_rhs(:,j) = (1.-qdouble_profile(n))*forcing_rhs(:,j) &
+                                    +qdouble_profile(n)*force_ampl*fda2(j)*cos(omega_double_ff*t) &
+                                    *real(cmplx(coef1b(j),profx_hel*profyz_hel_coef2b(j))*fxyz2)
+!
+                  if (qforce/=0.) &
+                    forcing_rhs_old(:,j) = (1.-qdouble_profile(n))*forcing_rhs_old(:,j) &
+                                          +qdouble_profile(n)*force_ampl*fda2_old(j)*cos(omega_double_ff*t) &
+                                          *real(cmplx(coef1b(j),profx_hel*profyz_hel_coef2b(j))*fxyz2_old)
+                endif
+!
+!  Assemble new combination (if qforce/=0).
+!
+                if (qforce/=0.) forcing_rhs(:,j) = pforce*forcing_rhs(:,j) + qforce*forcing_rhs_old(:,j)
+!
+!  Compute additional forcing function (used for velocity if crosshel=1).
+!  It can optionally be the same. Alternatively, one has to set crosshel=1.
+!
+                if (lforcing2_same) then
+                  forcing_rhs2(:,j)=forcing_rhs(:,j)
+                elseif (lforcing2_curl) then
+!
+!  Something seems to be missing here as real(cmplx(0.,coef3(j))) is zero.
+!
+                  forcing_rhs2(:,j) = force_ampl*real(cmplx(0.,coef3(j)))*fda(j) 
+                else
+                  forcing_rhs2(:,j) = force_ampl*real(cmplx(0.,coef3(j))*fxyz)*fda(j)
+                endif
+
+                if(lconservative_hydro .and. (ifff == iux)) then
+                  forcing_rhs(:,j) = forcing_rhs(:,j)*f(l1:l2,m,n,irho)
+                endif
+    endsubroutine get_forcing_rhs
+!***********************************************************************
     subroutine forcing_hel(f)
 !
 !  Add helical forcing function, using a set of precomputed wavevectors.
@@ -2136,7 +2226,7 @@ module Forcing
 
       real, dimension (nx) :: rho1, ruf, rho, force_ampl, bdotf, jdotf
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,forcing_rhs2
-      real, dimension (nx,3) :: forcing_rhs_old,forcing_rhs2_old
+      real, dimension (nx,3) :: forcing_rhs_old!,forcing_rhs2_old
       real, dimension (nx,3) :: force_all, bb, jj
       real, dimension (3), save :: fda, fda2, fda_old, fda2_old
       complex, dimension (mx), save :: fx=0., fx2=0., fx_old=0., fx2_old=0.
@@ -2144,7 +2234,7 @@ module Forcing
       complex, dimension (mz), save :: fz=0., fz2=0., fz_old=0., fz2_old=0.
       real, dimension (3), save :: coef1,coef2,coef3,coef1b,coef2b,coef3b
       integer :: j,jf,j2f
-      complex, dimension (nx) :: fxyz, fxyz2, fxyz_old, fxyz2_old
+      complex, dimension (nx) :: fxyz2, fxyz_old, fxyz2_old
       real :: profyz, pforce, qforce, aforce, tmp
       real, dimension(3) :: profyz_hel_coef2, profyz_hel_coef2b
 !
@@ -2218,8 +2308,6 @@ module Forcing
 !  which is weighted with factor qdouble_profile(n).
 !  qdouble_profile turns on fxyz2 in the upper parts.
 !
-            fxyz=fx(l1:l2)*fy(m)*fz(n)
-            fxyz_old=fx_old(l1:l2)*fy_old(m)*fz_old(n)
             force_ampl=profx_ampl*profyz
 !
 !  Do the same for secondary forcing function.
@@ -2227,7 +2315,6 @@ module Forcing
             if (lforcing_coefs_hel_double.or.lmhd_forcing) then
               profyz_hel_coef2b=profy_hel(m)*profz_hel(n)*coef2b
               fxyz2=fx2(l1:l2)*fy2(m)*fz2(n)
-              fxyz2_old=fx2_old(l1:l2)*fy2_old(m)*fz2_old(n)
             endif
 !
 !  Possibility of compute work done by forcing.
@@ -2252,70 +2339,19 @@ module Forcing
 !
             do j=1,3
               if (lforce_always_all_compomemts .or. lactive_dimension(j)) then
-!
-!  Primary forcing function: assemble here forcing_rhs(:,j) and forcing_rhs_old.
-!  Add here possibility of periodic forcing proportional to cos(om*t).
-!  By default, omega_ff=0, so cos(omega_ff*t)=1.
-!
-                forcing_rhs(:,j) = force_ampl*fda(j)*cos(omega_ff*t) &
-                                  *real(cmplx(coef1(j),profx_hel*profyz_hel_coef2(j))*fxyz)
-!
-!  Compressive contributions to forcing when qforce/=0.
-!
-                if (qforce/=0.) &
-                  forcing_rhs_old(:,j) = force_ampl*fda_old(j)*cos(omega_ff*t) &
-                                        *real(cmplx(coef1(j),profx_hel*profyz_hel_coef2(j))*fxyz_old)
-!
-!  Setting here forcing_rhs2 and forcing_rhs2_old (when lmhd_forcing=T).
-!
-                if (lmhd_forcing) then
-                  forcing_rhs2(:,j) = force_ampl*fda2(j)*cos(omega_ff*t) & 
-                                     *real(cmplx(coef1b(j),profx_hel*profyz_hel_coef2b(j))*fxyz2)
-                  if (qforce/=0.) &
-                    forcing_rhs2_old(:,j) = force_ampl*fda2_old(j)*cos(omega_ff*t) &
-                                           *real(cmplx(coef1b(j),profx_hel*profyz_hel_coef2b(j))*fxyz2_old)
-                endif
-!
-!  Possibility of adding second forcing function.
-! 
-                if (lforcing_coefs_hel_double) then
-                  forcing_rhs(:,j) = (1.-qdouble_profile(n))*forcing_rhs(:,j) &
-                                    +qdouble_profile(n)*force_ampl*fda2(j)*cos(omega_double_ff*t) &
-                                    *real(cmplx(coef1b(j),profx_hel*profyz_hel_coef2b(j))*fxyz2)
-!
-                  if (qforce/=0.) &
-                    forcing_rhs_old(:,j) = (1.-qdouble_profile(n))*forcing_rhs_old(:,j) &
-                                          +qdouble_profile(n)*force_ampl*fda2_old(j)*cos(omega_double_ff*t) &
-                                          *real(cmplx(coef1b(j),profx_hel*profyz_hel_coef2b(j))*fxyz2_old)
-                endif
-!
-!  Assemble new combination (if qforce/=0).
-!
-                if (qforce/=0.) forcing_rhs(:,j) = pforce*forcing_rhs(:,j) + qforce*forcing_rhs_old(:,j)
+                 call get_forcing_rhs(f,j,forcing_rhs,forcing_rhs2,forcing_rhs_old,&
+                               fx,fy,fz,fx_old,fy_old,fz_old,fx2,fy2,fz2,fx2_old,&
+                               fy2_old,fz2_old,force_ampl,pforce,qforce,&
+                               coef1,coef1b,coef3,&
+                               fda,fda2,fda_old,fda2_old,profyz_hel_coef2,&
+                               profyz_hel_coef2b&
+                               )
 !
 !  Put force into auxiliary variable, if requested.
 !  Note: iff is not to be confused with ifff. The latter is the variable
 !  that is to be forced.
 !
                 if (lff_as_aux) f(l1:l2,m,n,iff+j-1) = f(l1:l2,m,n,iff+j-1)+forcing_rhs(:,j)
-!
-!  Compute additional forcing function (used for velocity if crosshel=1).
-!  It can optionally be the same. Alternatively, one has to set crosshel=1.
-!
-                if (lforcing2_same) then
-                  forcing_rhs2(:,j)=forcing_rhs(:,j)
-                elseif (lforcing2_curl) then
-!
-!  Something seems to be missing here as real(cmplx(0.,coef3(j))) is zero.
-!
-                  forcing_rhs2(:,j) = force_ampl*real(cmplx(0.,coef3(j)))*fda(j) 
-                else
-                  forcing_rhs2(:,j) = force_ampl*real(cmplx(0.,coef3(j))*fxyz)*fda(j)
-                endif
-
-                if(lconservative_hydro .and. (ifff == iux)) then
-                  forcing_rhs(:,j) = forcing_rhs(:,j)*f(l1:l2,m,n,irho)
-                endif
 !
 !  Choice of different possibilities.
 !  Here is the decisive step where forcing is applied.
