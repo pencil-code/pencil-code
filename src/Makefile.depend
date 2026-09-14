@@ -555,7 +555,7 @@ noyinyang_mpi.o: yinyang_mpi.h noyinyang_mpi.f90 $(MPICOMM_OBJ) quiet.o
 endif
 #
 ifneq ($(GPU),nogpu)
-$(GPU_OBJ): $(GPU_INTERFACE) gpu.h $(GPU_SRC) $(CPARAM_OBJ) $(CDATA_OBJ) $(GENERAL_OBJ) $(MPICOMM_OBJ) $(MESSAGES_OBJ) $(FILE_IO_OBJ) quiet.o
+$(GPU_OBJ): $(SHARED_VARIABLES_OBJ) $(GPU_INTERFACE) gpu.h $(GPU_SRC) $(CPARAM_OBJ) $(CDATA_OBJ) $(GENERAL_OBJ) $(MPICOMM_OBJ) $(MESSAGES_OBJ) $(FILE_IO_OBJ) quiet.o
 endif
 #
 ifneq ($(COALA),nocoala)
