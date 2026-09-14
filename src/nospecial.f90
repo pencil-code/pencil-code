@@ -699,7 +699,7 @@ module Special
 !***********************************************************************
     subroutine calc_ode_diagnostics_special(f_ode)
 
-      real, dimension(:) :: f_ode
+      real, allocatable, dimension(:) :: f_ode
 
       call keep_compiler_quiet(f_ode)
 
@@ -719,7 +719,7 @@ module Special
 !***********************************************************************
     subroutine prep_rhs_special(f_ode)
 
-      real, dimension(:) :: f_ode
+      real, allocatable, dimension(:) :: f_ode
 
       call keep_compiler_quiet(f_ode)
 
