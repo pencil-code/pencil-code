@@ -449,11 +449,11 @@ module FArrayManager
 !***********************************************************************
     subroutine farray_finalize_ode
 
+      allocate(f_ode(n_odevars),df_ode(n_odevars))
+      if (lgpu) allocate(f_ode_diagnostics(n_odevars))  ! needed for concurrent calcul. of ODE-related diagnostics
       if (n_odevars>0) then
         lode=.true.
-        allocate(f_ode(n_odevars),df_ode(n_odevars))
         f_ode=0.
-        if (lgpu) allocate(f_ode_diagnostics(n_odevars))  ! needed for concurrent calcul. of ODE-related diagnostics
       endif
 
     endsubroutine farray_finalize_ode
