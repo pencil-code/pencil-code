@@ -855,7 +855,7 @@
 
       use Cdata, only: n_odevars
 
-      real, allocatable, dimension(n_odevars), intent(IN) :: f_ode
+      real, dimension(n_odevars), intent(IN) :: f_ode
       integer :: i
 
       do i=1,n_special_modules
@@ -881,7 +881,7 @@
 
       use Cdata, only: n_odevars
 
-      real, allocatable, dimension(n_odevars), intent(IN) :: f_ode
+      real, dimension(n_odevars), intent(IN) :: f_ode
       integer :: i
 
       do i=1,n_special_modules
