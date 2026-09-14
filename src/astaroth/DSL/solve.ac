@@ -66,6 +66,7 @@ fixed_boundary Kernel twopass_solve_final(PC_SUB_STEP_NUMBER step_num, real dt)
 			if(AC_lconservative__mod__hydro) force *= updated_rho
 #endif
 			uu_updated += force
+#if Lhydro_MODULE
 			if(AC_lvel_limiter__mod__hydro)
 			{
 				ss2 = dot(uu_updated,uu_updated)
@@ -75,6 +76,7 @@ fixed_boundary Kernel twopass_solve_final(PC_SUB_STEP_NUMBER step_num, real dt)
 				}
 
 			}
+#endif
 			write(F_UU,  uu_updated)
 		  }
 		}
