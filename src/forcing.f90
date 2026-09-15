@@ -242,6 +242,7 @@ module Forcing
   logical :: lconservative_hydro = .false.
   logical, pointer :: llorentz_limiter,lvel_limiter
   real, pointer :: max_vel
+  logical, pointer :: lext_force
 
   contains
 !
@@ -265,6 +266,7 @@ module Forcing
       call get_shared_variable('llorentz_limiter',llorentz_limiter,default_val=.false.)
       call get_shared_variable('lvel_limiter',lvel_limiter,default_val=.false.)
       call get_shared_variable('max_vel',max_vel,default_val=.999)
+      call get_shared_variable('lext_force',lext_force,default_val=.false.)
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -901,7 +903,7 @@ module Forcing
 
       if (iforce=='2'           .or.iforce=='helical'     .or.iforce=='helical_kprof'.or. &
           iforce=='helical_both'.or.iforce=='irrotational'.or.iforce=='hel_smooth'   .or. &
-          iforce=='noshear') then
+          iforce=='noshear' .or. iforcing_cont(1) == 'helical') then
 
         inquire(FILE="k.dat", EXIST=lk_dot_dat_exists)
 
@@ -1751,7 +1753,7 @@ module Forcing
 !
     endsubroutine forcing_irro
 !***********************************************************************
-    subroutine forcing_coefs_hel(coef1,coef2,coef3,fda,fx,fy,fz)
+    subroutine forcing_coefs_hel(coef1,coef2,coef3,fda,fx,fy,fz,lrhs)
 !
 !  Calculates position-independent and 1D coefficients for helical forcing.
 !
@@ -1759,21 +1761,50 @@ module Forcing
 !               Spotted bug: for old_forcing_evector=T, kk and ee remain undefined
 !                            - needs to be fixed
       use Sub
+      use General, only: loptest
 !
       real,    dimension (3), intent(out) :: coef1,coef2,coef3,fda
       complex, dimension (mx),intent(out) :: fx
       complex, dimension (my),intent(out) :: fy
       complex, dimension (mz),intent(out) :: fz
+      logical, optional :: lrhs
 
       real :: phase, fact 
       real, dimension(3) :: kk
 !
 !  The routine fconst_coefs_hel generates various coefficients, including the phase.
 !
-      call fconst_coefs_hel(force,kkx,kky,kkz,nk,kav,coef1,coef2,coef3,kk,phase,fact,fda)
+      call fconst_coefs_hel(force,kkx,kky,kkz,nk,kav,coef1,coef2,coef3,kk,phase,fact,fda,loptest(lrhs))
       call fxyz_coefs_hel(kk,phase,fact,fx,fy,fz)
 
     endsubroutine forcing_coefs_hel
+!***********************************************************************
+    subroutine forcing_coefs_hel2(coef1,coef2,coef3,fda,fx,fy,fz,lrhs)
+!
+!  Modified copy of forcing_coefs_hel
+!  Calculates position-independent and 1D coefficients for helical forcing.
+!
+!  10-nov-18/axel: adapted from forcing_coefs_hel to read also k_double.dat.
+!
+      use Sub
+      use General, only: loptest
+!
+      real,    dimension (3), intent(out) :: coef1,coef2,coef3,fda
+      complex, dimension (mx),intent(out) :: fx
+      complex, dimension (my),intent(out) :: fy
+      complex, dimension (mz),intent(out) :: fz
+      logical, optional :: lrhs
+!
+      real, dimension (3) :: kk
+      real :: phase, fact 
+!
+!  This one also calculates coefficients, which are new ones, independent
+!  of those in subroutine forcing_coefs_hel
+!
+      call fconst_coefs_hel(force_double,kkx2,kky2,kkz2,nk2,kav2,coef1,coef2,coef3,kk,phase,fact,fda,loptest(lrhs))
+      call fxyz_coefs_hel(kk,phase,fact,fx,fy,fz)
+!
+    endsubroutine forcing_coefs_hel2
 !***********************************************************************
     subroutine forcing_pars_hel(coef1,coef2,coef3,fda,kk,phase,fact)
 !
@@ -1788,36 +1819,11 @@ module Forcing
       real, dimension (3), intent(out) :: coef1,coef2,coef3,fda,kk
       real, intent(out) :: phase, fact 
 !
-      call fconst_coefs_hel(force,kkx,kky,kkz,nk,kav,coef1,coef2,coef3,kk,phase,fact,fda)
+      call fconst_coefs_hel(force,kkx,kky,kkz,nk,kav,coef1,coef2,coef3,kk,phase,fact,fda,.true.)
 
     endsubroutine forcing_pars_hel
 !***********************************************************************
-    subroutine forcing_coefs_hel2(coef1,coef2,coef3,fda,fx,fy,fz)
-!
-!  Modified copy of forcing_coefs_hel
-!  Calculates position-independent and 1D coefficients for helical forcing.
-!
-!  10-nov-18/axel: adapted from forcing_coefs_hel to read also k_double.dat.
-!
-      use Sub
-!
-      real,    dimension (3), intent(out) :: coef1,coef2,coef3,fda
-      complex, dimension (mx),intent(out) :: fx
-      complex, dimension (my),intent(out) :: fy
-      complex, dimension (mz),intent(out) :: fz
-!
-      real, dimension (3) :: kk
-      real :: phase, fact 
-!
-!  This one also calculates coefficients, which are new ones, independent
-!  of those in subroutine forcing_coefs_hel
-!
-      call fconst_coefs_hel(force_double,kkx2,kky2,kkz2,nk2,kav2,coef1,coef2,coef3,kk,phase,fact,fda)
-      call fxyz_coefs_hel(kk,phase,fact,fx,fy,fz)
-!
-    endsubroutine forcing_coefs_hel2
-!***********************************************************************
-    subroutine fconst_coefs_hel(force_fact,kkx,kky,kkz,nk,kav,coef1,coef2,coef3,kk,phase,fact,fda)
+    subroutine fconst_coefs_hel(force_fact,kkx,kky,kkz,nk,kav,coef1,coef2,coef3,kk,phase,fact,fda,lrhs)
 !
 !  This routine can be called with any values of kkx,kky,kkz
 !  to produce coef1,coef2,coef3,kk,phase,fact and fda.
@@ -1833,6 +1839,7 @@ module Forcing
       real,    dimension (nk),intent(in ) :: kkx,kky,kkz
       real,    dimension (3), intent(out) :: coef1,coef2,coef3,kk,fda
       real,                   intent(out) :: phase,fact
+      logical, intent(in) :: lrhs
 !
       real :: ffnorm
       real, dimension (2) :: fran
@@ -2002,7 +2009,12 @@ module Forcing
 !  divided by sqrt(dt), because square of forcing is proportional
 !  to a delta function of the time difference
 !
-      fact=force_fact/ffnorm*sqrt(dt)
+      if(lrhs) then
+        print*,"Not having dt"
+        fact=force_fact/ffnorm
+      else
+        fact=force_fact/ffnorm*sqrt(dt)
+      endif
 !
 !  prefactor; treat real and imaginary parts separately (coef1 and coef2),
 !  so they can be multiplied by different profiles below.
@@ -2110,19 +2122,21 @@ module Forcing
 !
     endsubroutine fxyz_coefs_hel
 !***********************************************************************
-    subroutine get_forcing_hel_rhs(f,j,forcing_rhs,forcing_rhs2,forcing_rhs_old,h)
+    subroutine get_forcing_hel_rhs(f,forcing_rhs,forcing_rhs2,forcing_rhs_old,h)
       real, contiguous,dimension(:,:,:,:), intent(in) :: f
-      integer, intent(in) :: j
       real, dimension (nx,3) :: forcing_rhs,forcing_rhs2,forcing_rhs_old
       type(forcing_coeffs), intent(in) :: h
       real, dimension(nx) :: force_ampl
       real, dimension(3) :: profyz_hel_coef2, profyz_hel_coef2b
       complex, dimension (nx) :: fxyz,fxyz_old,fxyz2,fxyz2_old
+      integer :: j
 !
 !
 !  Compute useful shorthands for primary forcing function.
 !
-                call compute_ampl_and_others(f,h,profyz_hel_coef2,profyz_hel_coef2b,force_ampl)
+            call compute_ampl_and_others(f,h,profyz_hel_coef2,profyz_hel_coef2b,force_ampl)
+            do j=1,3
+              if (lforce_always_all_compomemts .or. lactive_dimension(j)) then
 
 !  Primary forcing function: assemble here forcing_rhs(:,j) and forcing_rhs_old.
 !  Add here possibility of periodic forcing proportional to cos(om*t).
@@ -2191,17 +2205,20 @@ module Forcing
                 if(lconservative_hydro .and. (ifff == iux)) then
                   forcing_rhs(:,j) = forcing_rhs(:,j)*f(l1:l2,m,n,irho)
                 endif
+              endif
+            enddo
     endsubroutine get_forcing_hel_rhs
 !***********************************************************************
-    subroutine compute_forcing_hel_coefficients(c)
+    subroutine compute_forcing_hel_coefficients(c,lrhs)
       type(forcing_coeffs) :: c 
+      logical, optional :: lrhs
 
       if (t>=tsforce) then
         c%fx_old=c%fx
         c%fy_old=c%fy
         c%fz_old=c%fz
         c%fda_old=c%fda
-        call forcing_coefs_hel(c%coef1,c%coef2,c%coef3,c%fda,c%fx,c%fy,c%fz)
+        call forcing_coefs_hel(c%coef1,c%coef2,c%coef3,c%fda,c%fx,c%fy,c%fz,lrhs)
 !
 !  Possibility of reading in data for second forcing function and
 !  computing the relevant coefficients (fx2,fy2,fz2,fda2) here.
@@ -2213,13 +2230,13 @@ module Forcing
           c%fy2_old=c%fy2
           c%fz2_old=c%fz2
           c%fda2_old=c%fda2
-          call forcing_coefs_hel2(c%coef1b,c%coef2b,c%coef3b,c%fda2,c%fx2,c%fy2,c%fz2)
+          call forcing_coefs_hel2(c%coef1b,c%coef2b,c%coef3b,c%fda2,c%fx2,c%fy2,c%fz2,lrhs)
         elseif (lmhd_forcing) then
           c%fx2_old=c%fx2
           c%fy2_old=c%fy2
           c%fz2_old=c%fz2
           c%fda2_old=c%fda2
-          call forcing_coefs_hel(c%coef1b,c%coef2b,c%coef3b,c%fda2,c%fx2,c%fy2,c%fz2)
+          call forcing_coefs_hel(c%coef1b,c%coef2b,c%coef3b,c%fda2,c%fx2,c%fy2,c%fz2,lrhs)
         endif
       endif
 !
@@ -2258,6 +2275,7 @@ module Forcing
 !  qdouble_profile turns on fxyz2 in the upper parts.
 !
       force_ampl=profx_ampl*profyz
+      print*,"FORCE_AMPL: ",force_ampl(1)
 !
 !  Do the same for secondary forcing function.
 !
@@ -2327,7 +2345,7 @@ module Forcing
 
 
 
-     call compute_forcing_hel_coefficients(h)
+     call compute_forcing_hel_coefficients(h,.false.)
 !
 !  By default, dtforce=0, so new forcing is applied at every time step.
 !  Alternatively, it can be set to any other time, so the forcing is
@@ -2350,9 +2368,9 @@ module Forcing
 !  lforce_always_all_compomemts, in which case we apply forcing anyway.
 !  This is the line that is executed by default.
 !
+            call get_forcing_hel_rhs(f,forcing_rhs,forcing_rhs2,forcing_rhs_old,h)
             do j=1,3
               if (lforce_always_all_compomemts .or. lactive_dimension(j)) then
-                 call get_forcing_hel_rhs(f,j,forcing_rhs,forcing_rhs2,forcing_rhs_old,h)
 !
 !  Put force into auxiliary variable, if requested.
 !  Note: iff is not to be confused with ifff. The latter is the variable
@@ -5597,6 +5615,14 @@ module Forcing
         elseif (iforcing_cont(i)=='TG-random-nonhel' .or. &
                 iforcing_cont(i)=='TG-random-hel') then
           call calc_TG_random(i)
+        elseif(iforcing_cont(i) == 'helical') then
+          call compute_forcing_hel_coefficients(h,.true.)
+!
+!  By default, dtforce=0, so new forcing is applied at every time step.
+!  Alternatively, it can be set to any other time, so the forcing is
+!  updated every dtforce.
+!
+          if(t>=tsforce) tsforce=t+dtforce
         endif
       enddo
 !
@@ -5651,7 +5677,7 @@ module Forcing
         if (headtt) print*,'forcing: add continuous forcing'
 
         do i=1,n_forcing_cont
-          call forcing_cont(i,p%fcont(:,:,i),rho1=p%rho1)
+          call forcing_cont(f,i,p%fcont(:,:,i),rho1=p%rho1)
           ! put force into auxiliary variable, if requested
           if (lff_as_aux) then
             if (i == 1) then
@@ -5670,6 +5696,11 @@ module Forcing
 !  MR: better to place it in hydro
 !
           if (i==1 .and. lmomentum_ff) call multsv_mn(p%rho1,p%fcont(:,:,1),p%fcont(:,:,1))
+          if(lext_force) then
+            do j=1,3
+              p%ext_force(:,j+1) = p%ext_force(:,j+1) + p%fcont(:,j,i)
+            enddo
+          endif
         enddo
       endif
 !
@@ -5912,7 +5943,7 @@ module Forcing
 !
     endsubroutine random_isotropic_KS_setup_test
 !***********************************************************************
-    subroutine forcing_cont(i,force,rho1)
+    subroutine forcing_cont(f,i,force,rho1)
 !
 !   9-apr-10/MR: added RobertsFlow_exact forcing, compensates \nu\nabla^2 u
 !                and u.grad u for Roberts geometry
@@ -5928,11 +5959,13 @@ module Forcing
       use Sub, only: quintic_step, quintic_der_step, step, vortex
       use Viscosity, only: getnu
 !
+      real, contiguous, dimension(:,:,:,:) :: f
       integer,                intent(in) :: i
       real, dimension (nx,3), intent(out):: force
       real, dimension (nx), optional, intent(in) :: rho1
 !
       real, dimension (nx) :: tmp
+      real, dimension (nx,3) :: forcing_rhs,forcing_rhs2,forcing_rhs_old
       real :: fact, fact1, fact2, fpara, dfpara, sqrt21k1
       real :: kf, kx, ky, kz, nu, arg, ecost, esint
       integer :: modeN
@@ -6448,10 +6481,17 @@ module Forcing
         force(:,3) = fcont_from_file(:,m-nghost,n-nghost,3)
         force=ampl_ff(i)*force
 !
+! Helical forcing
+!
+      case ('helical')
+        call get_forcing_hel_rhs(f,forcing_rhs,forcing_rhs2,forcing_rhs_old,h)
+        force = forcing_rhs
+!
 !  nothing 
 !
       case ('nothing')
         call warning('forcing_cont',"iforcing_cont='nothing'")
+
 !
       case default
         call fatal_error('forcing_cont','no such iforcing_cont: '//trim(iforcing_cont(i)))

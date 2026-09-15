@@ -4411,6 +4411,7 @@ module Hydro
     subroutine advec_uu(f,df,p)
 
       use Sub, only: dot, dot2,div_tensor
+      use Sub, only: multvs
       use Deriv, only: der
 
       real, contiguous, dimension(:,:,:,:) :: f
@@ -4419,8 +4420,9 @@ module Hydro
 
       integer :: i,j
       real, dimension (nx) :: ugu_Schur_x, ugu_Schur_y, ugu_Schur_z
-      real, dimension (nx,3) :: divTij
+      real, dimension (nx,3) :: divTij,tmpv
       real, dimension (nx,3,3) :: puij_Schur
+      real, dimension (nx) :: lorentz_gamma_inv2=1.
 
       if (.not. lconservative .and. .not. lweno_transport .and. &
           .not. lno_meridional_flow .and. .not. lfargo_advection) then
@@ -4465,29 +4467,36 @@ module Hydro
       endif
 !
       ! alberto: why ldensity?
-      if (ldensity.and.lconservative) then
-        if (lkt_transport) then
+      if (ldensity) then
+        if(lconservative) then
+          if (lkt_transport) then
 !
 !  KT flux-limited momentum flux divergence (kt_transport.f90) instead of the
 !  central-difference divergence of the stored T^ij (div_tensor). Reuses divTij(:,j)
 !  as the per-direction scratch, then subtracts as in the central branch.
 !
-          do j=1,3
-            call kt_transp(f,m,n,1+j,real(t),divTij(:,j))
-          enddo
-        else
-          ! alberto: kt_transp could be included as an optional argument
-          ! to div_tensor, but for now we keep it separate
-          call div_tensor(f,divTij,iTij,lyz_first=.true.)
+            do j=1,3
+              call kt_transp(f,m,n,1+j,real(t),divTij(:,j))
+            enddo
+          else
+            ! alberto: kt_transp could be included as an optional argument
+            ! to div_tensor, but for now we keep it separate
+            call div_tensor(f,divTij,iTij,lyz_first=.true.)
+          endif
+          df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz)- divTij
+          if (lext_force) then
+            do i=0,2
+              df(l1:l2,m,n,iuu+i)=df(l1:l2,m,n,iuu+i)+p%ext_force(:,2+i)
+            enddo
+          endif
+        else if(lext_force) then
+          if (lrelativistic) then
+            lorentz_gamma_inv2=1.-p%u2
+          endif
+          call multvs(p%ext_force(:,2:4),p%rho1*lorentz_gamma_inv2*inv_cs20p1,tmpv)
+          print*,"ADDING FORCE TO VELOCITY!"
+          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+tmpv
         endif
-        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz)- divTij
-        if (lext_force) then
-          do i=0,2
-            df(l1:l2,m,n,iuu+i)=df(l1:l2,m,n,iuu+i)+p%ext_force(:,2+i)
-            ! 
-          enddo
-        endif
-!
       endif
 !
 !  WENO transport.
@@ -4529,7 +4538,7 @@ module Hydro
 !
       use Diagnostics
       use Special, only: special_calc_hydro
-      use Sub, only: dot, dot2, identify_bcs, cross, multsv, multsv_mn_add, multsv_mn, read_ell_from_table
+      use Sub, only: dot, dot2, identify_bcs, cross, multsv_mn_add, multsv_mn, read_ell_from_table
       use General, only: transform_thph_yy, notanumber
       use Deriv, only: der
 !
@@ -4937,7 +4946,14 @@ module Hydro
         ! call sum_mn_name(p%uu(:,2)**2,idiag_T0y2m)
         ! !Kishore: the below was f(l1:l2,m,n,iuy)**2 (so I changed it to p%uu(:,2)), but from the name it seems that it should be using uz. Axel, please check.
         ! call sum_mn_name(p%uu(:,2)**2,idiag_T0z2m)
-        if (idiag_T00m/=0) call sum_mn_name(p%T00,idiag_T00m)
+        if (idiag_T00m/=0) then
+          if(lconservative) then
+            call sum_mn_name(p%T00,idiag_T00m)
+          else
+            call sum_mn_name(p%ekin+p%rho,idiag_T00m)
+          endif
+        endif
+
         if (idiag_T0x2m/=0) call sum_mn_name(p%T0i(:,1)**2,idiag_T0x2m)
         if (idiag_T0y2m/=0) call sum_mn_name(p%T0i(:,2)**2,idiag_T0y2m)
         if (idiag_T0z2m/=0) call sum_mn_name(p%T0i(:,3)**2,idiag_T0z2m)
