@@ -81,8 +81,6 @@ if (! $?_sourceme) then		# called for the fist time?
     else
       setenv PYTHONPATH "${PENCIL_HOME}/python:${PWD}/python"
     endif
-    #  Set library path for linker
-    setenv AC_HOME "${PENCIL_HOME}/src/astaroth/submodule"
     if ($?LD_LIBRARY_PATH) then
       setenv LD_LIBRARY_PATH "${LD_LIBRARY_PATH}:./src:./src/astaroth:./src/astaroth/submodule/build/src/core:./src/astaroth/submodule/build/src/core/kernels:./src/astaroth/submodule/build/src/utils"
     else
@@ -112,6 +110,8 @@ if (! $?_sourceme) then		# called for the fist time?
   alias .. 'set pwd = $cwd ; cd ..'
   # alias local 'cp -p \!:1 tmp.$$; \rm \!:1; mv tmp.$$ \!:1; chmod u+w \!:1'
 endif
+#  Set library path for linker
+setenv AC_HOME "${PENCIL_HOME}/src/astaroth/submodule"
 
 #
 #  Clean up and exit
