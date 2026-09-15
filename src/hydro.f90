@@ -4494,7 +4494,6 @@ module Hydro
             lorentz_gamma_inv2=1.-p%u2
           endif
           call multvs(p%ext_force(:,2:4),p%rho1*lorentz_gamma_inv2*inv_cs20p1,tmpv)
-          print*,"ADDING FORCE TO VELOCITY!"
           df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+tmpv
         endif
       endif
