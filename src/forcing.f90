@@ -2232,6 +2232,51 @@ module Forcing
       endif
     endsubroutine compute_forcing_hel_coefficients
 !***********************************************************************
+    subroutine compute_ampl_and_others(f,h,profyz,profyz_hel_coef2,profyz_hel_coef2b,force_ampl)
+
+      use DensityMethods, only: getrho1
+
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(forcing_coeffs), intent(in) :: h
+      real :: profyz
+      real, dimension(3) :: profyz_hel_coef2, profyz_hel_coef2b
+      real, dimension (nx) :: force_ampl
+      real, dimension (nx) :: rho1
+
+      profyz=profy_ampl(m)*profz_ampl(n)
+      profyz_hel_coef2=profy_hel(m)*profz_hel(n)*h%coef2
+!
+!  Compute the combined complex forcing function fxyz.
+!  If lforcing_coefs_hel_double is set, we also add a
+!  contribution from fxyz2=fx2(l1:l2)*fy2(m)*fz2(n),
+!  which is weighted with factor qdouble_profile(n).
+!  qdouble_profile turns on fxyz2 in the upper parts.
+!
+      force_ampl=profx_ampl*profyz
+!
+!  Do the same for secondary forcing function.
+!
+      if (lforcing_coefs_hel_double.or.lmhd_forcing) then
+        profyz_hel_coef2b=profy_hel(m)*profz_hel(n)*h%coef2b
+      endif
+!
+!  Possibility of compute work done by forcing.
+!
+      if (lwork_ff) &
+        force_ampl=force_ampl*calc_force_ampl(f,h%fx,h%fy,h%fz,profyz*cmplx(h%coef1,profyz_hel_coef2))
+!
+!  In the past we always forced the du/dt, but in some cases
+!  it may be better to force rho*du/dt (if lmomentum_ff=.true.)
+!  For compatibility with earlier results, lmomentum_ff=.false. by default.
+!
+      if (ldensity) then
+        if (lmomentum_ff) then
+          call getrho1(f(:,m,n,ilnrho),rho1)
+          if (lmomentum_ff) force_ampl=force_ampl*rho1
+        endif
+      endif
+    endsubroutine
+!***********************************************************************
     subroutine forcing_hel(f)
 !
 !  Add helical forcing function, using a set of precomputed wavevectors.
@@ -2300,39 +2345,7 @@ module Forcing
 !
 !  Compute useful shorthands for primary forcing function.
 !
-            profyz=profy_ampl(m)*profz_ampl(n)
-            profyz_hel_coef2=profy_hel(m)*profz_hel(n)*h%coef2
-!
-!  Compute the combined complex forcing function fxyz.
-!  If lforcing_coefs_hel_double is set, we also add a
-!  contribution from fxyz2=fx2(l1:l2)*fy2(m)*fz2(n),
-!  which is weighted with factor qdouble_profile(n).
-!  qdouble_profile turns on fxyz2 in the upper parts.
-!
-            force_ampl=profx_ampl*profyz
-!
-!  Do the same for secondary forcing function.
-!
-            if (lforcing_coefs_hel_double.or.lmhd_forcing) then
-              profyz_hel_coef2b=profy_hel(m)*profz_hel(n)*h%coef2b
-              fxyz2=h%fx2(l1:l2)*h%fy2(m)*h%fz2(n)
-            endif
-!
-!  Possibility of compute work done by forcing.
-!
-            if (lwork_ff) &
-              force_ampl=force_ampl*calc_force_ampl(f,h%fx,h%fy,h%fz,profyz*cmplx(h%coef1,profyz_hel_coef2))
-!
-!  In the past we always forced the du/dt, but in some cases
-!  it may be better to force rho*du/dt (if lmomentum_ff=.true.)
-!  For compatibility with earlier results, lmomentum_ff=.false. by default.
-!
-            if (ldensity) then
-              if (lmomentum_ff.or.lout) then
-                call getrho1(f(:,m,n,ilnrho),rho1)
-                if (lmomentum_ff) force_ampl=force_ampl*rho1
-              endif
-            endif
+          call compute_ampl_and_others(f,h,profyz,profyz_hel_coef2,profyz_hel_coef2b,force_ampl)
 !
 !  Apply forcing only into direction of an active dimension, unless we have
 !  lforce_always_all_compomemts, in which case we apply forcing anyway.
@@ -2435,6 +2448,7 @@ module Forcing
 !  Compute density.
 !
                 if (ldensity) then
+                  call getrho1(f(:,m,n,ilnrho),rho1)
                   rho=1./rho1
                 else
                   rho=rho0
