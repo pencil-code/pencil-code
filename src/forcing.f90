@@ -5686,6 +5686,9 @@ module Forcing
         endif
       enddo
     endif
+    if(lforcing_cont) then
+     call calc_diagnostics_forcing(p)
+    endif
 !
     endsubroutine calc_pencils_forcing
 !***********************************************************************
@@ -6468,6 +6471,7 @@ module Forcing
       type (pencil_case), intent(IN) :: p
 
       real, dimension (nx) :: tmp
+      real, dimension (nx) :: ff
 !
 !  diagnostics
 !
@@ -6480,6 +6484,11 @@ module Forcing
         if (idiag_rufint/=0) then
           call dot_mn(p%uu,p%fcont(:,:,1),tmp)
           call integrate_mn_name(p%rho*tmp,idiag_rufint)
+        endif
+
+        if (idiag_ffm/=0) then
+          call dot2(p%fcont(:,:,1),ff)
+          call sum_mn_name(ff,idiag_ffm)
         endif
 !
         if (idiag_ufm/=0) then
