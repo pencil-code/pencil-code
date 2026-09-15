@@ -2110,15 +2110,20 @@ module Forcing
 !
     endsubroutine fxyz_coefs_hel
 !***********************************************************************
-    subroutine get_forcing_hel_rhs(f,j,forcing_rhs,forcing_rhs2,forcing_rhs_old,h,force_ampl,profyz_hel_coef2, profyz_hel_coef2b)
+    subroutine get_forcing_hel_rhs(f,j,forcing_rhs,forcing_rhs2,forcing_rhs_old,h)
       real, contiguous,dimension(:,:,:,:), intent(in) :: f
       integer, intent(in) :: j
       real, dimension (nx,3) :: forcing_rhs,forcing_rhs2,forcing_rhs_old
       type(forcing_coeffs), intent(in) :: h
-      real,dimension(nx), intent(in) :: force_ampl
-      real, dimension(3), intent(in) :: profyz_hel_coef2, profyz_hel_coef2b
+      real, dimension(nx) :: force_ampl
+      real, dimension(3) :: profyz_hel_coef2, profyz_hel_coef2b
       complex, dimension (nx) :: fxyz,fxyz_old,fxyz2,fxyz2_old
 !
+!
+!  Compute useful shorthands for primary forcing function.
+!
+                call compute_ampl_and_others(f,h,profyz_hel_coef2,profyz_hel_coef2b,force_ampl)
+
 !  Primary forcing function: assemble here forcing_rhs(:,j) and forcing_rhs_old.
 !  Add here possibility of periodic forcing proportional to cos(om*t).
 !  By default, omega_ff=0, so cos(omega_ff*t)=1.
@@ -2232,15 +2237,15 @@ module Forcing
       endif
     endsubroutine compute_forcing_hel_coefficients
 !***********************************************************************
-    subroutine compute_ampl_and_others(f,h,profyz,profyz_hel_coef2,profyz_hel_coef2b,force_ampl)
+    subroutine compute_ampl_and_others(f,h,profyz_hel_coef2,profyz_hel_coef2b,force_ampl)
 
       use DensityMethods, only: getrho1
 
       real, contiguous, dimension(:,:,:,:) :: f
       type(forcing_coeffs), intent(in) :: h
-      real :: profyz
       real, dimension(3) :: profyz_hel_coef2, profyz_hel_coef2b
       real, dimension (nx) :: force_ampl
+      real :: profyz
       real, dimension (nx) :: rho1
 
       profyz=profy_ampl(m)*profz_ampl(n)
@@ -2318,9 +2323,7 @@ module Forcing
       real, dimension (nx,3) :: forcing_rhs_old!,forcing_rhs2_old
       real, dimension (nx,3) :: force_all, bb, jj
       integer :: j,jf,j2f
-      real :: profyz,tmp
-      real, dimension(3) :: profyz_hel_coef2, profyz_hel_coef2b
-      real, dimension(nx) :: fxyz,fxyz2
+      real :: tmp
 
 
 
@@ -2343,18 +2346,13 @@ module Forcing
         do n=n1,n2
           do m=m1,m2
 !
-!  Compute useful shorthands for primary forcing function.
-!
-          call compute_ampl_and_others(f,h,profyz,profyz_hel_coef2,profyz_hel_coef2b,force_ampl)
-!
 !  Apply forcing only into direction of an active dimension, unless we have
 !  lforce_always_all_compomemts, in which case we apply forcing anyway.
 !  This is the line that is executed by default.
 !
             do j=1,3
               if (lforce_always_all_compomemts .or. lactive_dimension(j)) then
-                 call get_forcing_hel_rhs(f,j,forcing_rhs,forcing_rhs2,forcing_rhs_old,h,&
-                                          force_ampl,profyz_hel_coef2, profyz_hel_coef2b)
+                 call get_forcing_hel_rhs(f,j,forcing_rhs,forcing_rhs2,forcing_rhs_old,h)
 !
 !  Put force into auxiliary variable, if requested.
 !  Note: iff is not to be confused with ifff. The latter is the variable
