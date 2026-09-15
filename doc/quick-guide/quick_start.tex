@@ -74,7 +74,7 @@ There is some community to run Pencil Code directly under MacOS, but this is not
 
 WARNING: This section is not up-to-date and not tested! Someone needs to fully rewrite this section based on a current MacOS.
 
-Some 5--10 years ago, this was the procedure:
+Some 5--10 years ago, this was the procedure (nowadays you either have gfortran or install it with brew):
 You first need to install \name{Xcode} from the
 website \url{http://developer.apple.com/}, where you have to register as a member.
 In addition to that it might be necessary to install a \name{fortran} \name{open-mpi} compiler which can be done by first installing \name{homebrew} (available at \url{https://brew.sh}) and then through the terminal command:
@@ -100,6 +100,15 @@ before compiling and running the Pencil Code.
 If one needs to reactivate \name{anaconda}, it is done using
 \begin{verbatim}
   conda activate
+\end{verbatim}
+
+If you get complaints about sed at the start of the compilation try installing the gnu version of sed:
+\begin{verbatim}
+  brew install gnu-sed
+\end{verbatim}
+and add it to the path so it takes presedence:
+\begin{verbatim}
+  export PATH="$(brew --prefix gnu-sed)/libexec/gnubin:$PATH"
 \end{verbatim}
 
 \section{Download the Pencil Code}
