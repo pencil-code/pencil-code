@@ -4422,7 +4422,7 @@ module Hydro
       real, dimension (nx) :: ugu_Schur_x, ugu_Schur_y, ugu_Schur_z
       real, dimension (nx,3) :: divTij,tmpv
       real, dimension (nx,3,3) :: puij_Schur
-      real, dimension (nx) :: lorentz_gamma_inv2=1.
+      real, dimension (nx) :: lorentz_gamma_inv2=1.,tmp
 
       if (.not. lconservative .and. .not. lweno_transport .and. &
           .not. lno_meridional_flow .and. .not. lfargo_advection) then
@@ -4493,7 +4493,8 @@ module Hydro
           if (lrelativistic) then
             lorentz_gamma_inv2=1.-p%u2
           endif
-          call multvs(p%ext_force(:,2:4),p%rho1*lorentz_gamma_inv2*inv_cs20p1,tmpv)
+          tmp = p%rho1*lorentz_gamma_inv2*inv_cs20p1
+          call multvs(p%ext_force(:,2:4),tmp,tmpv)
           df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+tmpv
         endif
       endif
