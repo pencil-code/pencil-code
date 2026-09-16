@@ -3668,9 +3668,13 @@ It is used mostly for chemistry application, often together with the
 double precision option.
 In order to make this work, you need to compile with
 \begin{verbatim}
+TIMESTEP  =   timestep_rkf_lowsto
+\end{verbatim}
+or
+\begin{verbatim}
 TIMESTEP  =   timestep_rkf
 \end{verbatim}
-in \file{src/Makefile.local}.
+in \file{src/Makefile.local}. The low-storage version is more up to date and the preferred one.
 In addition, you must put \var[itorder]{itorder=5} in \file{run.in}.
 An example application is
 \file[H2_flamespeed/]{samples/1d-tests/H2_flamespeed}.
