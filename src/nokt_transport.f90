@@ -15,7 +15,7 @@
 !
 module KT_transport
 !
-  use Cparam, only: mx, my, mz, mfarray, impossible
+  use Cparam, only: mx, my, mz, mfarray, impossible, ikind8
   use Quiet, only: keep_compiler_quiet
 !
   implicit none
