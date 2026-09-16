@@ -70,12 +70,9 @@ field_order(AC_isij__mod__viscosity != 0 ? AC_isij__mod__viscosity+5-1 : -1) Fie
 
 field_order(AC_ilamra__mod__advective_gauge-1) Field F_LAMRA
 
-field_order(AC_iunx__mod__cdata-1) Field UUNX
-field_order(AC_iuny__mod__cdata-1) Field UUNY
-field_order(AC_iunz__mod__cdata-1) Field UUNZ
-#define F_UNX UUNX
-#define F_UNY UUNY
-#define F_UNZ UUNZ
+field_order(AC_iunx__mod__cdata-1) Field F_UNX
+field_order(AC_iuny__mod__cdata-1) Field F_UNY
+field_order(AC_iunz__mod__cdata-1) Field F_UNZ
 
 field_order(AC_iglobal_gg__mod__cdata != 0 ? AC_iglobal_gg__mod__cdata-1+0 : -1) Field F_GLOBAL_GX
 field_order(AC_iglobal_gg__mod__cdata != 0 ? AC_iglobal_gg__mod__cdata-1+1 : -1) Field F_GLOBAL_GY
@@ -191,17 +188,8 @@ field_order(AC_ibx__mod__cdata-1) Field F_BX
 field_order(AC_iby__mod__cdata-1) Field F_BY
 field_order(AC_ibz__mod__cdata-1) Field F_BZ
 
-Field F_GLOBAL_EXT_BX, F_GLOBAL_EXT_BY, F_GLOBAL_EXT_BZ
-Field F_GLOBAL_EXT_AX, F_GLOBAL_EXT_AY, F_GLOBAL_EXT_AZ
-
-#define F_GLOBAL_BX_EXT F_GLOBAL_EXT_BX
-#define F_GLOBAL_BY_EXT F_GLOBAL_EXT_BY
-#define F_GLOBAL_BZ_EXT F_GLOBAL_EXT_BZ
-
-#define F_GLOBAL_AX_EXT F_GLOBAL_EXT_AX
-#define F_GLOBAL_AY_EXT F_GLOBAL_EXT_AY
-#define F_GLOBAL_AZ_EXT F_GLOBAL_EXT_AZ
-
+Field F_GLOBAL_BX_EXT, F_GLOBAL_BY_EXT, F_GLOBAL_BZ_EXT
+Field F_GLOBAL_AX_EXT, F_GLOBAL_AY_EXT, F_GLOBAL_AZ_EXT
 
 Field3 F_GLOBAL_EEXTVEC
 Field3 F_GLOBAL_JEXTVEC
@@ -289,7 +277,7 @@ const Field3 F_GLOBAL_GLHVEC = {F_GLOBAL_GLHX,F_GLOBAL_GLHY,F_GLOBAL_GLHZ}
 const Field3 F_JVEC            = {F_JX,F_JY,F_JZ}
 const Field3 F__ADV_DERVEC     = {F_ADV_DERX,F_ADV_DERY,F_ADV_DERZ}
 const Field3 F_HYPREVEC        = {F_HYPREX, F_HYPREY, F_HYPREZ}
-const Field3 F_GLOBAL_EXT_AVEC = {F_GLOBAL_EXT_AX, F_GLOBAL_EXT_AY, F_GLOBAL_EXT_AZ}
+const Field3 F_GLOBAL_EXT_AVEC = {F_GLOBAL_AX_EXT, F_GLOBAL_AY_EXT, F_GLOBAL_AZ_EXT}
 
 Field3 F_VVEC
 Field3 F_FVEC
