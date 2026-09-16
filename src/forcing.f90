@@ -32,11 +32,11 @@ module Forcing
      module procedure input_persist_forcing_id
      module procedure input_persist_forcing
   endinterface
+
   type forcing_coeffs
-    complex, dimension(mx) :: fx,fy,fz
-    complex, dimension(mx) :: fx_old,fy_old,fz_old
-    complex, dimension(mx) :: fx2,fy2,fz2
-    complex, dimension(mx) :: fx2_old,fy2_old,fz2_old
+    complex, dimension(mx) :: fx,fx_old,fx2,fx2_old
+    complex, dimension(my) :: fy,fy_old,fy2,fy2_old
+    complex, dimension(mz) :: fz,fz_old,fz2,fz2_old
     real, dimension (3) :: coef1,coef2,coef3,coef1b,coef2b,coef3b
     real, dimension (3) :: fda, fda2, fda_old, fda2_old
     real  :: pforce,qforce,aforce
@@ -1769,6 +1769,7 @@ module Forcing
       complex, dimension (mz),intent(out) :: fz
       logical, optional :: lrhs
 
+
       real :: phase, fact 
       real, dimension(3) :: kk
 !
@@ -2275,7 +2276,6 @@ module Forcing
 !  qdouble_profile turns on fxyz2 in the upper parts.
 !
       force_ampl=profx_ampl*profyz
-      print*,"FORCE_AMPL: ",force_ampl(1)
 !
 !  Do the same for secondary forcing function.
 !
