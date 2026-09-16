@@ -15,6 +15,7 @@ option(RUNTIME_COMPILATION    "Enables runtime compilation"                     
 option(TRANSPILATION          "Tmp flag to make interface compatible with transpiled code" OFF)
 option(TRAINING	              "Using torchfort"						   OFF)
 option(CPU_BUILD              "CPU-only build"                                             OFF)
+option(SUPPORT_MAJOR_ARCHITECTURES "Compile for all major CUDA architectures supported by the used CUDA SDK" ON)
 
 ## Project settings
 project(astaroth C CXX)
@@ -62,8 +63,15 @@ elseif (NOT USE_HIP AND CUDAToolkit_FOUND)
     ##TP: do not set GPU architectures to speedup debug compilations
     if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     else()
-    	set(CMAKE_CUDA_ARCHITECTURES "60;61;70;80")
+      if(DEFINED GPU_ARCH)
+          set(CMAKE_CUDA_ARCHITECTURES "${GPU_ARCH}")
+      elseif(SUPPORT_MAJOR_ARCHITECTURES)
+          set(CMAKE_CUDA_ARCHITECTURES "all-major")
+      else()
+          set(CMAKE_CUDA_ARCHITECTURES "native")
+      endif()
     endif()
+
     message(STATUS "Enabled CUDA architectures (Astaroth): " ${CMAKE_CUDA_ARCHITECTURES})
 elseif (USE_HIP OR HIP_FOUND)
     set(USE_HIP ON)
