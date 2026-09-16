@@ -82,7 +82,7 @@ module KT_transport
 !
 !  02-sep-2026/Isak Stomberg: coded
 !
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous, dimension(:,:,:,:), intent(in) :: f
       integer, intent(in) :: m, n, mu
       real, intent(in) :: tcur
       real, dimension(nx), intent(out) :: dq
@@ -153,7 +153,7 @@ module KT_transport
 !
 !  Conserved variable at cell offset o along direction dir, for the row (m,n).
 !
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous, dimension(:,:,:,:), intent(in) :: f
       integer, intent(in) :: o, dir, m, n, ind
       real, dimension(nx) :: q
 !
@@ -171,7 +171,7 @@ module KT_transport
 !  hydro.f90's hydro_after_boundary_conservative (linear ramp of temporal
 !  width width_abs_kt centred on the crossing time stored in the hless aux).
 !
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous, dimension(:,:,:,:), intent(in) :: f
       integer, intent(in) :: o, dir, m, n
       real, intent(in) :: tcur
       real, dimension(nx) :: eps, tau
