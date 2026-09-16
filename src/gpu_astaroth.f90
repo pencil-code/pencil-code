@@ -90,10 +90,6 @@ module GPU
   !PAR-DOC: By default only pde variables and those aux variables that are registered to be always read are read from the device.
   !PAR-DOC: If this is true all (Field) variables are always read.
 
-  logical :: lcuda_aware_mpi=.true.
-  !PAR-DOC: Whether to use CUDA-aware MPI (faster). If you have it you should always want to use it, but sometimes you do not have it or using
-  !PAR-DOC: it is more unstable than routing the communication via the host yourself.
-
   logical :: ltest_bcs =.false.    !PAR-DOC: Whether to test the agreement of bcs on GPU and CPU.
 
   logical :: ltest_rhs =.false.
@@ -113,7 +109,7 @@ module GPU
   !PAR-DOC: which take surprisingly large amount of memory. Mainly needed for the autotest in norlx51
 
   namelist /gpu_run_pars/ &
-     ltest_bcs,lac_sparse_autotuning,lac_sparse_autotuning_always,lcuda_aware_mpi, &
+     ltest_bcs,lac_sparse_autotuning,lac_sparse_autotuning_always, &
      lcpu_timestep_on_gpu,lsingle_precision_timestep,lcumulative_df_on_gpu, &
      lread_all_vars_from_device,ltest_rhs,it_test_rhs,thread_block_loop_factors,lonly_default_stream_for_taskgraphs
 
@@ -521,7 +517,6 @@ contains
     call copy_addr(lsingle_precision_timestep,p_par(8)) ! bool
     call copy_addr(thread_block_loop_factors,p_par(9)) ! int3 dconst
     call copy_addr(lonly_default_stream_for_taskgraphs,p_par(10)) ! bool dconst
-    call copy_addr(lcuda_aware_mpi,p_par(11)) ! bool dconst
 
     endsubroutine pushpars2c
 !**************************************************************************
