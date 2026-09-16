@@ -32,7 +32,6 @@ in Makefile.local. At first time, this implies to repeat pc_setupsrc.
 
 Build Pencil Code as usual by make or pc_build
    - when building with make, you need to set the MODULE_[PRE|IN|SUF]FIX environment variables as given in the config file for the chosen compiler on the given machine
-   - when building with pc_build, use the flag -s|--serial for safety 
 
 For gfortran:  the compilation flag  std95 must be set to f2003,
                you must have LDFLAGS_MAIN = -Bdynamic -Wl,--export-dynamic in Makefile.src
