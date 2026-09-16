@@ -302,3 +302,12 @@ const real teta1 = teta/(teta+tini)
 
 //No-op
 sum(real x) {return x}
+
+getcell(Field f, int offset, int idir)
+{
+	int3 target = vertexIdx
+	if(idir == 1) target.x += offset
+	if(idir == 2) target.y += offset
+	if(idir == 3) target.z += offset
+        return f[target.x][target.y][target.z]
+}

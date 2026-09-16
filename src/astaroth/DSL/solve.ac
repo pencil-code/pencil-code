@@ -10,7 +10,7 @@ Kernel kinematic_flow(PC_SUB_STEP_NUMBER step_num, real AC_dt__mod__cdata, real 
   #include "rhs.h"
   if(AC_lkinflow_as_aux__mod__cdata)
   {
-    write( F_UU, ac_transformed_pencil_uu)
+    write( F_UVEC, ac_transformed_pencil_uu)
   }
 #endif
 }
@@ -60,7 +60,7 @@ fixed_boundary Kernel twopass_solve_final(PC_SUB_STEP_NUMBER step_num, real dt)
 		{
 		  if(!AC_lkinflow_as_aux__mod__cdata)
 		  {
-			uu_updated = rk_final(F_UU,step_num,dt)
+			uu_updated = rk_final(F_UVEC,step_num,dt)
 			real3 force = get_deltacorr_force(step_num)
 #if Lhydro_MODULE
 			if(AC_lconservative__mod__hydro) force *= updated_rho
@@ -77,10 +77,10 @@ fixed_boundary Kernel twopass_solve_final(PC_SUB_STEP_NUMBER step_num, real dt)
 
 			}
 #endif
-			write(F_UU,  uu_updated)
+			write(F_UVEC,  uu_updated)
 		  }
 		}
-		if(AC_iaa__mod__cdata != 0) write(F_AA, rk_final(F_AA,step_num,dt))
+		if(AC_iaa__mod__cdata != 0) write(F_AVEC, rk_final(F_AVEC,step_num,dt))
 		if(lbfield) write(F_BVEC, rk_final(F_BVEC,step_num,dt))
   		if (AC_itt__mod__cdata != 0 || AC_ilntt__mod__cdata != 0)  write( F_TT,  rk_final(F_TT, step_num,dt))
   		if (AC_iss__mod__cdata != 0)  write( F_SS,  rk_final(F_SS, step_num,dt))

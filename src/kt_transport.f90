@@ -92,6 +92,7 @@ module KT_transport
       real, dimension(nx,4) :: sdm, sd0, sdp, ul, ur
       real, dimension(nx) :: hph, hmh, dl1
       integer :: dir, comp, o
+      integer :: i
 !
       dq=0.0
       do dir=1,3
@@ -127,14 +128,20 @@ module KT_transport
 !
 !  Face +1/2: left/right MUSCL states and one eps per face.
 !
-        ul=u(:,:,0)+0.5*sd0
-        ur=u(:,:,1)-0.5*sdp
+        do i=1,4
+          ul(:,i)=u(:,i,0)+0.5*sd0
+          ur(:,i)=u(:,i,1)-0.5*sdp
+        enddo
+
         call face_flux(ul,ur,0.5*(epsc(:,0)+epsc(:,1)),dir,mu,hph)
 !
 !  Face -1/2.
 !
-        ul=u(:,:,-1)+0.5*sdm
-        ur=u(:,:,0)-0.5*sd0
+        do i=1,4
+          ul(:,i)=u(:,i,-1)+0.5*sdm
+          ur(:,i)=u(:,i,0)-0.5*sd0
+        enddo
+
         call face_flux(ul,ur,0.5*(epsc(:,-1)+epsc(:,0)),dir,mu,hmh)
 !
 !  Divergence contribution: (H_{+1/2} - H_{-1/2}) / dx_dir.
@@ -278,5 +285,21 @@ module KT_transport
       endif
 !
     endfunction physflux
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    use Syscalls, only: copy_addr
+    use General , only: string_to_enum
+
+    integer, parameter :: n_pars=100
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+    call copy_addr(iux_kt,p_par(1)) ! int
+    call copy_addr(ihless_kt,p_par(2)) ! int
+    call copy_addr(eps_kt,p_par(3))
+    call copy_addr(width_abs_kt,p_par(4))
+    call copy_addr(safety_kt,p_par(5))
+    call copy_addr(theta_kt,p_par(6))
+
+    endsubroutine pushpars2c
 !***********************************************************************
 endmodule KT_transport
