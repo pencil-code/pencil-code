@@ -2777,7 +2777,7 @@ module Initcond
 !  11-aug-26/axel: coded
 !
       integer :: i,j
-      real, dimension(mx,my,mz) :: xx, yy, rr, cosr, mask
+      real, dimension(:,:,:), allocatable :: xx, yy, rr, cosr, mask
       real, contiguous, dimension(:,:,:,:) :: f
       real :: ampl,k=1.,kf,fac1,fac2,relhel
       real, optional :: kx
@@ -2798,10 +2798,14 @@ module Initcond
 !
 !  prepare coefficients
 !
+      allocate(xx(mx,my,mz),yy(mx,my,mz),rr(mx,my,mz),cosr(mx,my,mz),mask(mx,my,mz))
       xx=spread(spread(k*x,2,my),3,mz)
       yy=spread(spread(k*y,1,mx),3,mz)
       rr=sqrt(xx**2+yy**2)
-      cosr=cos(.5*rr)
+!
+!  Divide by r, because we want to multiply by x/r and y/r, respectively.
+!
+      cosr=cos(.5*rr)/rr
 !
       where (rr <= pi)
         mask=1.
@@ -2809,18 +2813,21 @@ module Initcond
         mask=0.
       endwhere
 !
+!  For I, relhel=0 corresponds to rigid rotation.
+!
       fac1=ampl*cos(.5*pi*relhel)
       fac2=ampl*sin(.5*pi*relhel)
 !
       if (flowtype=='I') then
-        j=i+0; f(:,:,:,j)=f(:,:,:,j)-fac1*yy*mask
-        j=i+1; f(:,:,:,j)=f(:,:,:,j)+fac1*xx*mask
+        j=i+0; f(:,:,:,j)=f(:,:,:,j)-fac1*yy*mask-fac2*yy*cosr*mask
+        j=i+1; f(:,:,:,j)=f(:,:,:,j)+fac1*xx*mask+fac2*xx*cosr*mask
       elseif (flowtype=='II') then
         j=i+0; f(:,:,:,j)=f(:,:,:,j)+mask*(-fac1*yy+fac2*xx)*cosr/rr
         j=i+1; f(:,:,:,j)=f(:,:,:,j)+mask*(+fac1*xx+fac2*yy)*cosr/rr
       else
         call fatal_error('robertsflow','no such flowtype')
       endif
+      deallocate(xx,yy,rr,cosr,mask)
 !
     endsubroutine cyl_rot_strain
 !***********************************************************************
