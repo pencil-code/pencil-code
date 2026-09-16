@@ -5,7 +5,7 @@ Kernel get_current_total_mass(bool lrmv)
 {
 	if (lrmv && AC_lconserve_total_mass__mod__density && AC_lpositive_total_mass__mod__density)
 	{
-		rho = (AC_ldensity_nolog__mod__cdata) ? RHO[vertexIdx.x][vertexIdx.y][vertexIdx.z] : exp(LNRHO[vertexIdx.x][vertexIdx.y][vertexIdx.z]);
+		rho = (AC_ldensity_nolog__mod__cdata) ? F_RHO[vertexIdx.x][vertexIdx.y][vertexIdx.z] : exp(F_RHO[vertexIdx.x][vertexIdx.y][vertexIdx.z]);
 		integration_weight =  AC_dvol_x__mod__cdata[vertexIdx.x]
 			            * AC_dvol_y__mod__cdata[vertexIdx.y]
 			            * AC_dvol_z__mod__cdata[vertexIdx.z]
@@ -21,14 +21,14 @@ Kernel fix_mass_drift(bool lrmv)
      	real fact=AC_total_mass__mod__density/AC_current_total_mass
      	if (AC_ldensity_nolog__mod__cdata)
      	{
-		RHO[vertexIdx.x][vertexIdx.y][vertexIdx.z] = fact*RHO[vertexIdx.x][vertexIdx.y][vertexIdx.z]
+		F_RHO[vertexIdx.x][vertexIdx.y][vertexIdx.z] = fact*F_RHO[vertexIdx.x][vertexIdx.y][vertexIdx.z]
      	}
      	else
      	{
-		LNRHO[vertexIdx.x][vertexIdx.y][vertexIdx.z] = LNRHO[vertexIdx.x][vertexIdx.y][vertexIdx.z] + log(fact)
+		F_RHO[vertexIdx.x][vertexIdx.y][vertexIdx.z] = F_RHO[vertexIdx.x][vertexIdx.y][vertexIdx.z] + log(fact)
      	}
 #if LHYDRO
-        UU[vertexIdx.x][vertexIdx.y][vertexIdx.z] = UU[vertexIdx.x][vertexIdx.y][vertexIdx.z]/fact
+        F_UVEC[vertexIdx.x][vertexIdx.y][vertexIdx.z] = F_UVEC[vertexIdx.x][vertexIdx.y][vertexIdx.z]/fact
 #endif
     }
 }

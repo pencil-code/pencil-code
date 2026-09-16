@@ -6,16 +6,16 @@ glnrho = gradient(LNRHO)   // grad(rho) or grad(lnrho)!
 
 #if LHYDRO
   if (ldensity_nolog){
-    rhs += - RHO*divergence(UU)
+    rhs += - F_RHO*divergence(F_UVEC)
   }
   else{
-    rhs += - divergence(UU)
+    rhs += - divergence(F_UVEC)
   }
   if (lupw_lnrho){
-    return rhs - ugrad_upw(LNRHO,UU)
+    return rhs - ugrad_upw(F_RHO,F_UVEC)
   }
   else{
-    return rhs - dot(UU, glnrho)
+    return rhs - dot(F_UVEC, glnrho)
   }
 #else
   return rhs

@@ -179,7 +179,7 @@ real DF_DPHI_DOWN_RE = rk_intermediate_split_first(F_DPHI_DOWN_RE,step_num)
 real DF_DPHI_DOWN_IM = rk_intermediate_split_first(F_DPHI_DOWN_IM,step_num)
 #endif
 
-real3 DF_AXTESTVEC = rk_intermediate_split_first(F_AXTESTVEC,step_num)
+real3 DF_AXTESTVEC = rk_intermediate_split_first(F_AXTESVEC,step_num)
 
 real DF_MU5 = rk_intermediate_split_first(F_MU5,step_num)
 real DF_MUS = rk_intermediate_split_first(F_MUS,step_num)

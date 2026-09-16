@@ -30,21 +30,15 @@ const int dust_density_size = ndustspec
 const int dust_density_size =  0
 #endif
 
-Field3 VTXBUF_UUD[dust_velocity_size]
-Field  VTXBUF_ND[dust_density_size]
-
-#define F_DUST_VELOCITY VTXBUF_UUD
-#define F_DUST_DENSITY  VTXBUF_ND
+Field3 F_DUST_VELOCITY[dust_velocity_size]
+Field  F_DUST_DENSITY[dust_density_size]
 
 Field  F_DUST_MASS[dust_density_size]
 Field  F_DUST_ICE_MASS[dust_density_size]
 
-field_order(AC_iux__mod__cdata-1) Field UUX
-field_order(AC_iuy__mod__cdata-1) Field UUY
-field_order(AC_iuz__mod__cdata-1) Field UUZ
-#define F_UX UUX
-#define F_UY UUY
-#define F_UZ UUZ
+field_order(AC_iux__mod__cdata-1) Field F_UX
+field_order(AC_iuy__mod__cdata-1) Field F_UY
+field_order(AC_iuz__mod__cdata-1) Field F_UZ
 
 field_order(AC_ivx__mod__cdata-1) Field VX
 field_order(AC_ivy__mod__cdata-1) Field VY
@@ -84,21 +78,13 @@ field_order(AC_icool_prof__mod__cdata-1) Field F_COOL_PROF
 
 
 
-field_order(AC_ilnrho__mod__cdata-1) Field VTXBUF_RHO
-#define RHO VTXBUF_RHO
-#define LNRHO RHO
-#define F_RHO  RHO
-#define F_LNRHO F_RHO
-
-field_order(AC_ilnrhon__mod__cdata-1) Field RHON
-#define LNRHON RHON
-#define F_RHON  RHON
-#define F_LNRHON F_RHON
+field_order(AC_ilnrho__mod__cdata-1) Field F_RHO 
+field_order(AC_ilnrhon__mod__cdata-1) Field F_RHON
 
 
-field_order(AC_iax__mod__cdata-1) Field AAX
-field_order(AC_iay__mod__cdata-1) Field AAY
-field_order(AC_iaz__mod__cdata-1) Field AAZ
+field_order(AC_iax__mod__cdata-1) Field F_AX
+field_order(AC_iay__mod__cdata-1) Field F_AY
+field_order(AC_iaz__mod__cdata-1) Field F_AZ
 
 field_order(AC_iss__mod__cdata-1) Field F_SS
 
@@ -143,14 +129,10 @@ const Field F_POLY = [
 
 field_order(AC_ipoly_fr__mod__cdata-1) Field F_POLY_FR
 
-#define F_AX AAX
-#define F_AY AAY
-#define F_AZ AAZ
 
 field_order(AC_ishock__mod__cdata-1) Field SHOCK // shock
 	    //
 
-#define SS F_SS
 
 
 Field F_PHIUU
@@ -221,9 +203,6 @@ field_order(AC_ijz__mod__cdata-1) Field F_JZ
 Field F_LAM
 field_order(AC_itt__mod__cdata != 0 ? AC_itt__mod__cdata-1 : AC_ilntt__mod__cdata-1) Field F_TT
 field_order(AC_iyh__mod__cdata-1) Field F_YH
-#define TT F_TT
-#define LNTT F_TT
-#define F_LNTT F_TT
 field_order(AC_iglobal_hcond__mod__cdata-1) Field F_GLOBAL_HCOND
 field_order(AC_iss_run_aver__mod__cdata-1) Field F_SS_RUN_AVER
 Field F_ADV_DERX
@@ -242,28 +221,20 @@ field_order(AC_iglobal_glntt__mod__cdata == 0 ? -1 : 1+AC_iglobal_glntt__mod__cd
 field_order(AC_iglobal_glntt__mod__cdata == 0 ? -1 : 2+AC_iglobal_glntt__mod__cdata-1) Field F_GLOBAL_GLNTZ
 const Field3 F_GLOBAL_GLNTVEC = {F_GLOBAL_GLNTX,F_GLOBAL_GLNTY,F_GLOBAL_GLNTZ}
 const Field3 F_AVEC    = {F_AX, F_AY, F_AZ}
-#define F_AA F_AVEC
-#define AA F_AVEC
 
 
 Field F_AXTEST
 Field F_AYTEST
 Field F_AZTEST
 
-const Field3 F_AXTESTVEC = {F_AXTEST,F_AYTEST,F_AZTEST}
-#define F_AXTESVEC F_AXTESTVEC
+const Field3 F_AXTESVEC = {F_AXTEST,F_AYTEST,F_AZTEST}
 
 const Field3 F_UVEC    = {F_UX,F_UY,F_UZ}
-const Field3 F_UU      = {F_UX,F_UY,F_UZ}
-#define F_UU F_UVEC
-#define UU F_UU
 //TP: if lconservative iux:iuz correspond to momenta say have this define to write easier to read code
-#define MOM UU  
+#define MOM F_UVEC
 
 const Field3 F_UNVEC    = {F_UNX,F_UNY,F_UNZ}
 const Field3 F_UUN      = {F_UNX,F_UNY,F_UNZ}
-#define F_UUN F_UNVEC
-#define UUN F_UUN
 
 const Field3 F_U0VEC   = {F_U0X, F_U0Y, F_U0Z}
 const Field3 F_OVEC    = {F_OX, F_OY, F_OZ}

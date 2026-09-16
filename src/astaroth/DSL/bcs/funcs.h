@@ -69,12 +69,12 @@ bc_ss_flux(boundary, topbot, bool lone_sided)
   real cs2_xy;
   real rho_xy;
   real lnrho
-  lnrho = LNRHO[vertexIdx.x][vertexIdx.y][AC_n1-1]
+  lnrho = F_RHO[vertexIdx.x][vertexIdx.y][AC_n1-1]
   if (topbot == AC_bot) {
     if (AC_pretend_lnTT) {
-      tmp_xy=-fbotkbot__mod__energy/exp(SS[vertexIdx.x][vertexIdx.y][AC_n1-1]);
+      tmp_xy=-fbotkbot__mod__energy/exp(F_SS[vertexIdx.x][vertexIdx.y][AC_n1-1]);
       for i in 1:NGHOST+1 {
-        SS[vertexIdx.x][vertexIdx.y][AC_n1-i-1]=SS[vertexIdx.x][vertexIdx.y][AC_n1+i-1]-AC_dz2_bound[-i+NGHOST]*tmp_xy;
+        F_SS[vertexIdx.x][vertexIdx.y][AC_n1-i-1]=F_SS[vertexIdx.x][vertexIdx.y][AC_n1+i-1]-AC_dz2_bound[-i+NGHOST]*tmp_xy;
       }
     } 
     else {
@@ -84,7 +84,7 @@ bc_ss_flux(boundary, topbot, bool lone_sided)
       else {
         rho_xy=exp(lnrho);
       }
-      cs2_xy = SS[vertexIdx.x][vertexIdx.y][AC_n1-1];
+      cs2_xy = F_SS[vertexIdx.x][vertexIdx.y][AC_n1-1];
       if (AC_ldensity_nolog) {
         cs2_xy=AC_cs20*exp(AC_gamma_m1*(log(rho_xy)-AC_lnrho0)+AC_cv1*cs2_xy);
       }
@@ -101,34 +101,34 @@ bc_ss_flux(boundary, topbot, bool lone_sided)
         tmp_xy=AC_cp__mod__equationofstate*fbotkbot__mod__energy/cs2_xy;
       }
       for i in 1:NGHOST+1 {
-        rho_xy = LNRHO[vertexIdx.x][vertexIdx.y][AC_n1+i-1]-LNRHO[vertexIdx.x][vertexIdx.y][AC_n1-i-1];
+        rho_xy = F_RHO[vertexIdx.x][vertexIdx.y][AC_n1+i-1]-F_RHO[vertexIdx.x][vertexIdx.y][AC_n1-i-1];
         if (AC_ldensity_nolog) {
             rho_xy = rho_xy/lnrho;
         }
-        SS[vertexIdx.x][vertexIdx.y][AC_n1-i-1]=SS[vertexIdx.x][vertexIdx.y][AC_n1+i-1]+(AC_cp-AC_cv)*(rho_xy+AC_dz2_bound[-i+NGHOST]*tmp_xy);
+        F_SS[vertexIdx.x][vertexIdx.y][AC_n1-i-1]=F_SS[vertexIdx.x][vertexIdx.y][AC_n1+i-1]+(AC_cp-AC_cv)*(rho_xy+AC_dz2_bound[-i+NGHOST]*tmp_xy);
       }
     }
   }
   else if (topbot == AC_top) {
     if (AC_pretend_lnTT) {
-      tmp_xy=-AC_ftopktop__mod__energy/exp(SS[vertexIdx.x][vertexIdx.y][AC_n2-1]);
+      tmp_xy=-AC_ftopktop__mod__energy/exp(F_SS[vertexIdx.x][vertexIdx.y][AC_n2-1]);
       for i in 1:NGHOST+1 {
-        SS[vertexIdx.x][vertexIdx.y][AC_n2-i-1]=SS[vertexIdx.x][vertexIdx.y][AC_n2+i-1]-AC_dz2_bound[i+NGHOST]*tmp_xy;
+        F_SS[vertexIdx.x][vertexIdx.y][AC_n2-i-1]=F_SS[vertexIdx.x][vertexIdx.y][AC_n2+i-1]-AC_dz2_bound[i+NGHOST]*tmp_xy;
       }
     }
     else {
       if (AC_ldensity_nolog) {
-          rho_xy=LNRHO[vertexIdx.x][vertexIdx.y][AC_n2-1];
+          rho_xy=F_RHO[vertexIdx.x][vertexIdx.y][AC_n2-1];
       }
       else {
-        rho_xy=exp(LNRHO[vertexIdx.x][vertexIdx.y][AC_n2-1]);
+        rho_xy=exp(F_RHO[vertexIdx.x][vertexIdx.y][AC_n2-1]);
       }
-      cs2_xy = SS[vertexIdx.x][vertexIdx.y][AC_n2-1];
+      cs2_xy = F_SS[vertexIdx.x][vertexIdx.y][AC_n2-1];
       if (AC_ldensity_nolog) {
         cs2_xy=AC_cs20*exp(AC_gamma_m1*(log(rho_xy)-AC_lnrho0)+AC_cv1*cs2_xy);
       }
       else {
-        cs2_xy=AC_cs20*exp(AC_gamma_m1*(LNRHO[vertexIdx.x][vertexIdx.y][AC_n2-1]-AC_lnrho0)+AC_cv1*cs2_xy);
+        cs2_xy=AC_cs20*exp(AC_gamma_m1*(F_RHO[vertexIdx.x][vertexIdx.y][AC_n2-1]-AC_lnrho0)+AC_cv1*cs2_xy);
       }
       if (AC_lheatc_chiconst) {
         tmp_xy=AC_ftop__mod__energy/(rho_xy*AC_chi*cs2_xy);
@@ -140,11 +140,11 @@ bc_ss_flux(boundary, topbot, bool lone_sided)
         tmp_xy=AC_cp*AC_ftopktop__mod__energy/cs2_xy;
       }
       for i in 1:NGHOST+1 {
-        rho_xy = LNRHO[vertexIdx.x][vertexIdx.y][AC_n2+i-1]-LNRHO[vertexIdx.x][vertexIdx.y][AC_n2-i-1];
+        rho_xy = F_RHO[vertexIdx.x][vertexIdx.y][AC_n2+i-1]-F_RHO[vertexIdx.x][vertexIdx.y][AC_n2-i-1];
         if (AC_ldensity_nolog) {
-            rho_xy = rho_xy/LNRHO[vertexIdx.x][vertexIdx.y][AC_n2-1];
+            rho_xy = rho_xy/F_RHO[vertexIdx.x][vertexIdx.y][AC_n2-1];
         }
-        SS[vertexIdx.x][vertexIdx.y][AC_n2+i-1]=SS[vertexIdx.x][vertexIdx.y][AC_n2-i-1]+(AC_cp-AC_cv)*(-rho_xy-AC_dz2_bound[i+NGHOST]*tmp_xy);
+        F_SS[vertexIdx.x][vertexIdx.y][AC_n2+i-1]=F_SS[vertexIdx.x][vertexIdx.y][AC_n2-i-1]+(AC_cp-AC_cv)*(-rho_xy-AC_dz2_bound[i+NGHOST]*tmp_xy);
       }
     }
   }
@@ -378,13 +378,13 @@ if (AC_ldensity_nolog) {;
 if (AC_lreference_state) {;
 }
 else {
-lnrho_xy=log(LNRHO[vertexIdx.x][vertexIdx.y][AC_n1-1]);
+lnrho_xy=log(F_RHO[vertexIdx.x][vertexIdx.y][AC_n1-1]);
 }
 }
 else {
-lnrho_xy=LNRHO[vertexIdx.x][vertexIdx.y][AC_n1-1];
+lnrho_xy=F_RHO[vertexIdx.x][vertexIdx.y][AC_n1-1];
 }
-SS[vertexIdx.x][vertexIdx.y][AC_n1-1] = 0.5*tmp - (AC_cp-AC_cv)*(lnrho_xy-AC_lnrho0);
+F_SS[vertexIdx.x][vertexIdx.y][AC_n1-1] = 0.5*tmp - (AC_cp-AC_cv)*(lnrho_xy-AC_lnrho0);
 loptest_return_value_1 = false;
 if (present(lone_sided)) {;
 loptest_return_value_1=lone_sided;
@@ -392,23 +392,23 @@ loptest_return_value_1=lone_sided;
 else if (false) {;
 }
 if (loptest_return_value_1) {;
-ac_set_ghosts_for_onesided_derivs(boundary,SS)
+ac_set_ghosts_for_onesided_derivs(boundary,F_SS)
 }
 else {
 if (AC_ldensity_nolog) {;
 for i in 1:NGHOST+1 {
-SS[vertexIdx.x][vertexIdx.y][AC_n1-i-1] = -SS[vertexIdx.x][vertexIdx.y][AC_n1+i-1] + tmp  - 2*(AC_cp-AC_cv)*(lnrho_xy-AC_lnrho0);
+F_SS[vertexIdx.x][vertexIdx.y][AC_n1-i-1] = -F_SS[vertexIdx.x][vertexIdx.y][AC_n1+i-1] + tmp  - 2*(AC_cp-AC_cv)*(lnrho_xy-AC_lnrho0);
 }
 }
 else {
 for i in 1:NGHOST+1 {
-SS[vertexIdx.x][vertexIdx.y][AC_n1-i-1] = -SS[vertexIdx.x][vertexIdx.y][AC_n1+i-1] + tmp  - (AC_cp-AC_cv)*(LNRHO[vertexIdx.x][vertexIdx.y][AC_n1+i-1]+LNRHO[vertexIdx.x][vertexIdx.y][AC_n1-i-1]-2*AC_lnrho0);
+F_SS[vertexIdx.x][vertexIdx.y][AC_n1-i-1] = -F_SS[vertexIdx.x][vertexIdx.y][AC_n1+i-1] + tmp  - (AC_cp-AC_cv)*(F_RHO[vertexIdx.x][vertexIdx.y][AC_n1+i-1]+F_RHO[vertexIdx.x][vertexIdx.y][AC_n1-i-1]-2*AC_lnrho0);
 }
 }
 }
 }
 else if (lentropy  &&  AC_pretend_lntt) {;
-SS[vertexIdx.x][vertexIdx.y][AC_n1-1] = log(AC_cs2bot/AC_gamma_m1);
+F_SS[vertexIdx.x][vertexIdx.y][AC_n1-1] = log(AC_cs2bot/AC_gamma_m1);
 loptest_return_value_2 = false;
 if (present(lone_sided)) {;
 loptest_return_value_2=lone_sided;
@@ -416,20 +416,20 @@ loptest_return_value_2=lone_sided;
 else if (false) {;
 }
 if (loptest_return_value_2) {;
-ac_set_ghosts_for_onesided_derivs(boundary,SS)
+ac_set_ghosts_for_onesided_derivs(boundary,F_SS)
 }
 else {
 for i in 1:NGHOST+1 {
-SS[vertexIdx.x][vertexIdx.y][AC_n1-i-1]=2*SS[vertexIdx.x][vertexIdx.y][AC_n1-1]-SS[vertexIdx.x][vertexIdx.y][AC_n1+i-1];
+F_SS[vertexIdx.x][vertexIdx.y][AC_n1-i-1]=2*F_SS[vertexIdx.x][vertexIdx.y][AC_n1-1]-F_SS[vertexIdx.x][vertexIdx.y][AC_n1+i-1];
 }
 }
 }
 else if (ltemperature) {;
 if (ltemperature_nolog) {;
-TT[vertexIdx.x][vertexIdx.y][AC_n1-1]   = AC_cs2bot/AC_gamma_m1;
+F_TT[vertexIdx.x][vertexIdx.y][AC_n1-1]   = AC_cs2bot/AC_gamma_m1;
 }
 else {
-LNTT[vertexIdx.x][vertexIdx.y][AC_n1-1] = log(AC_cs2bot/AC_gamma_m1);
+F_TT[vertexIdx.x][vertexIdx.y][AC_n1-1] = log(AC_cs2bot/AC_gamma_m1);
 }
 loptest_return_value_3 = false;
 if (present(lone_sided)) {;
@@ -438,11 +438,11 @@ loptest_return_value_3=lone_sided;
 else if (false) {;
 }
 if (loptest_return_value_3) {;
-ac_set_ghosts_for_onesided_derivs(boundary,LNTT)
+ac_set_ghosts_for_onesided_derivs(boundary,F_TT)
 }
 else {
 for i in 1:NGHOST+1 {
-LNTT[vertexIdx.x][vertexIdx.y][AC_n1-i-1]=2*LNTT[vertexIdx.x][vertexIdx.y][AC_n1-1]-LNTT[vertexIdx.x][vertexIdx.y][AC_n1+i-1];
+F_TT[vertexIdx.x][vertexIdx.y][AC_n1-i-1]=2*F_TT[vertexIdx.x][vertexIdx.y][AC_n1-1]-F_TT[vertexIdx.x][vertexIdx.y][AC_n1+i-1];
 }
 }
 }
@@ -450,7 +450,7 @@ LNTT[vertexIdx.x][vertexIdx.y][AC_n1-i-1]=2*LNTT[vertexIdx.x][vertexIdx.y][AC_n1
 else if (topbot == AC_top) {;
 cs2top_loc=cs2top;
 if (AC_lread_oldsnap) {;
-cs2top_loc=AC_cs20*exp(AC_gamma*SS[AC_l2-1][AC_m2-1][AC_n2-1]/AC_cp+AC_gamma_m1*(LNRHO[AC_l2-1][AC_m2-1][AC_n2-1]-AC_lnrho0));
+cs2top_loc=AC_cs20*exp(AC_gamma*F_SS[AC_l2-1][AC_m2-1][AC_n2-1]/AC_cp+AC_gamma_m1*(F_RHO[AC_l2-1][AC_m2-1][AC_n2-1]-AC_lnrho0));
 }
 if (lentropy  &&  ! AC_pretend_lntt) {;
 tmp = 2*AC_cv*log(cs2top_loc/AC_cs20);
@@ -458,13 +458,13 @@ if (AC_ldensity_nolog) {;
 if (AC_lreference_state) {;
 }
 else {
-lnrho_xy=log(LNRHO[vertexIdx.x][vertexIdx.y][AC_n2-1]);
+lnrho_xy=log(F_RHO[vertexIdx.x][vertexIdx.y][AC_n2-1]);
 }
 }
 else {
-lnrho_xy=LNRHO[vertexIdx.x][vertexIdx.y][AC_n2-1];
+lnrho_xy=F_RHO[vertexIdx.x][vertexIdx.y][AC_n2-1];
 }
-SS[vertexIdx.x][vertexIdx.y][AC_n2-1] = 0.5*tmp - (AC_cp-AC_cv)*(lnrho_xy-AC_lnrho0);
+F_SS[vertexIdx.x][vertexIdx.y][AC_n2-1] = 0.5*tmp - (AC_cp-AC_cv)*(lnrho_xy-AC_lnrho0);
 loptest_return_value_5 = false;
 if (present(lone_sided)) {;
 loptest_return_value_5=lone_sided;
@@ -472,23 +472,23 @@ loptest_return_value_5=lone_sided;
 else if (false) {;
 }
 if (loptest_return_value_5) {;
-ac_set_ghosts_for_onesided_derivs(boundary,SS)
+ac_set_ghosts_for_onesided_derivs(boundary,F_SS)
 }
 else {
 if (AC_ldensity_nolog) {;
 for i in 1:NGHOST+1 {
-SS[vertexIdx.x][vertexIdx.y][AC_n2+i-1] = -SS[vertexIdx.x][vertexIdx.y][AC_n2-i-1] + tmp  - 2*(AC_cp-AC_cv)*(lnrho_xy-AC_lnrho0);
+F_SS[vertexIdx.x][vertexIdx.y][AC_n2+i-1] = -F_SS[vertexIdx.x][vertexIdx.y][AC_n2-i-1] + tmp  - 2*(AC_cp-AC_cv)*(lnrho_xy-AC_lnrho0);
 }
 }
 else {
 for i in 1:NGHOST+1 {
-SS[vertexIdx.x][vertexIdx.y][AC_n2+i-1] = -SS[vertexIdx.x][vertexIdx.y][AC_n2-i-1] + tmp  - (AC_cp-AC_cv)*(LNRHO[vertexIdx.x][vertexIdx.y][AC_n2-i-1]+LNRHO[vertexIdx.x][vertexIdx.y][AC_n2+i-1]-2*AC_lnrho0);
+F_SS[vertexIdx.x][vertexIdx.y][AC_n2+i-1] = -F_SS[vertexIdx.x][vertexIdx.y][AC_n2-i-1] + tmp  - (AC_cp-AC_cv)*(F_RHO[vertexIdx.x][vertexIdx.y][AC_n2-i-1]+F_RHO[vertexIdx.x][vertexIdx.y][AC_n2+i-1]-2*AC_lnrho0);
 }
 }
 }
 }
 else if (lentropy  &&  AC_pretend_lntt) {;
-SS[vertexIdx.x][vertexIdx.y][AC_n2-1] = log(cs2top_loc/AC_gamma_m1);
+F_SS[vertexIdx.x][vertexIdx.y][AC_n2-1] = log(cs2top_loc/AC_gamma_m1);
 loptest_return_value_6 = false;
 if (present(lone_sided)) {;
 loptest_return_value_6=lone_sided;
@@ -496,20 +496,20 @@ loptest_return_value_6=lone_sided;
 else if (false) {;
 }
 if (loptest_return_value_6) {;
-ac_set_ghosts_for_onesided_derivs(boundary,SS)
+ac_set_ghosts_for_onesided_derivs(boundary,F_SS)
 }
 else {
 for i in 1:NGHOST+1 {
-SS[vertexIdx.x][vertexIdx.y][AC_n2+i-1]=2*SS[vertexIdx.x][vertexIdx.y][AC_n2-1]-SS[vertexIdx.x][vertexIdx.y][AC_n2-i-1];
+F_SS[vertexIdx.x][vertexIdx.y][AC_n2+i-1]=2*F_SS[vertexIdx.x][vertexIdx.y][AC_n2-1]-F_SS[vertexIdx.x][vertexIdx.y][AC_n2-i-1];
 }
 }
 }
 else if (ltemperature) {;
 if (ltemperature_nolog) {;
-TT[vertexIdx.x][vertexIdx.y][AC_n2-1]   = cs2top_loc/AC_gamma_m1;
+F_TT[vertexIdx.x][vertexIdx.y][AC_n2-1]   = cs2top_loc/AC_gamma_m1;
 }
 else {
-LNTT[vertexIdx.x][vertexIdx.y][AC_n2-1] = log(cs2top_loc/AC_gamma_m1);
+F_TT[vertexIdx.x][vertexIdx.y][AC_n2-1] = log(cs2top_loc/AC_gamma_m1);
 }
 loptest_return_value_7 = false;
 if (present(lone_sided)) {;
@@ -518,11 +518,11 @@ loptest_return_value_7=lone_sided;
 else if (false) {;
 }
 if (loptest_return_value_7) {;
-ac_set_ghosts_for_onesided_derivs(boundary,LNTT)
+ac_set_ghosts_for_onesided_derivs(boundary,F_TT)
 }
 else {
 for i in 1:NGHOST+1 {
-LNTT[vertexIdx.x][vertexIdx.y][AC_n2+i-1]=2*LNTT[vertexIdx.x][vertexIdx.y][AC_n2-1]-LNTT[vertexIdx.x][vertexIdx.y][AC_n2-i-1];
+F_TT[vertexIdx.x][vertexIdx.y][AC_n2+i-1]=2*F_TT[vertexIdx.x][vertexIdx.y][AC_n2-1]-F_TT[vertexIdx.x][vertexIdx.y][AC_n2-i-1];
 }
 }
 }
@@ -903,27 +903,27 @@ bc_ss_flux_x(AcBoundary boundary, AC_TOP_BOT topbot)
   fac=AC_gamma_m1__mod__equationofstate/AC_gamma__mod__equationofstate
   if (topbot == AC_bot) {
     if (AC_pretend_lntt__mod__cdata) {
-      SS[l1-1-1][vertexIdx.y][vertexIdx.z]=SS[1+l1-1][vertexIdx.y][vertexIdx.z]+AC_dx2_bound__mod__cdata[-1+NGHOST+1-1]*AC_fbotkbot__mod__energy/exp(SS[l1-1][vertexIdx.y][vertexIdx.z])
-      SS[l1-2-1][vertexIdx.y][vertexIdx.z]=SS[2+l1-1][vertexIdx.y][vertexIdx.z]+AC_dx2_bound__mod__cdata[-2+NGHOST+1-1]*AC_fbotkbot__mod__energy/exp(SS[l1-1][vertexIdx.y][vertexIdx.z])
-      SS[l1-3-1][vertexIdx.y][vertexIdx.z]=SS[3+l1-1][vertexIdx.y][vertexIdx.z]+AC_dx2_bound__mod__cdata[-3+NGHOST+1-1]*AC_fbotkbot__mod__energy/exp(SS[l1-1][vertexIdx.y][vertexIdx.z])
+      F_SS[l1-1-1][vertexIdx.y][vertexIdx.z]=F_SS[1+l1-1][vertexIdx.y][vertexIdx.z]+AC_dx2_bound__mod__cdata[-1+NGHOST+1-1]*AC_fbotkbot__mod__energy/exp(F_SS[l1-1][vertexIdx.y][vertexIdx.z])
+      F_SS[l1-2-1][vertexIdx.y][vertexIdx.z]=F_SS[2+l1-1][vertexIdx.y][vertexIdx.z]+AC_dx2_bound__mod__cdata[-2+NGHOST+1-1]*AC_fbotkbot__mod__energy/exp(F_SS[l1-1][vertexIdx.y][vertexIdx.z])
+      F_SS[l1-3-1][vertexIdx.y][vertexIdx.z]=F_SS[3+l1-1][vertexIdx.y][vertexIdx.z]+AC_dx2_bound__mod__cdata[-3+NGHOST+1-1]*AC_fbotkbot__mod__energy/exp(F_SS[l1-1][vertexIdx.y][vertexIdx.z])
     }
     else {
       if (AC_ldensity_nolog__mod__cdata) {
         if (AC_lheatc_kramers__mod__energy || AC_lheatc_chiconst__mod__energy) {
-          work_yz=RHO[l1-1][vertexIdx.y][vertexIdx.z]
+          work_yz=F_RHO[l1-1][vertexIdx.y][vertexIdx.z]
         }
         if (AC_lreference_state__mod__cdata) {
-          tmp_yz= AC_cs20__mod__equationofstate*exp(AC_gamma_m1__mod__equationofstate*(log(RHO[l1-1][vertexIdx.y][vertexIdx.z]+AC_reference_state__mod__density[1-1][iref_rho-1])-AC_lnrho0__mod__equationofstate)   +AC_gamma__mod__equationofstate*(SS[l1-1][vertexIdx.y][vertexIdx.z]+AC_reference_state__mod__density[1-1][iref_s-1]))
+          tmp_yz= AC_cs20__mod__equationofstate*exp(AC_gamma_m1__mod__equationofstate*(log(F_RHO[l1-1][vertexIdx.y][vertexIdx.z]+AC_reference_state__mod__density[1-1][iref_rho-1])-AC_lnrho0__mod__equationofstate)   +AC_gamma__mod__equationofstate*(F_SS[l1-1][vertexIdx.y][vertexIdx.z]+AC_reference_state__mod__density[1-1][iref_s-1]))
         }
         else {
-          tmp_yz=AC_cs20__mod__equationofstate*exp(AC_gamma_m1__mod__equationofstate*(log(RHO[l1-1][vertexIdx.y][vertexIdx.z])-AC_lnrho0__mod__equationofstate)+AC_gamma__mod__equationofstate*SS[l1-1][vertexIdx.y][vertexIdx.z])
+          tmp_yz=AC_cs20__mod__equationofstate*exp(AC_gamma_m1__mod__equationofstate*(log(F_RHO[l1-1][vertexIdx.y][vertexIdx.z])-AC_lnrho0__mod__equationofstate)+AC_gamma__mod__equationofstate*F_SS[l1-1][vertexIdx.y][vertexIdx.z])
         }
       }
       else {
         if (AC_lheatc_kramers__mod__energy || AC_lheatc_chiconst__mod__energy) {
-          work_yz=exp(LNRHO[l1-1][vertexIdx.y][vertexIdx.z])
+          work_yz=exp(F_RHO[l1-1][vertexIdx.y][vertexIdx.z])
         }
-        tmp_yz=AC_cs20__mod__equationofstate*exp(AC_gamma_m1__mod__equationofstate*(LNRHO[l1-1][vertexIdx.y][vertexIdx.z]-AC_lnrho0__mod__equationofstate)+AC_gamma__mod__equationofstate*SS[l1-1][vertexIdx.y][vertexIdx.z])
+        tmp_yz=AC_cs20__mod__equationofstate*exp(AC_gamma_m1__mod__equationofstate*(F_RHO[l1-1][vertexIdx.y][vertexIdx.z]-AC_lnrho0__mod__equationofstate)+AC_gamma__mod__equationofstate*F_SS[l1-1][vertexIdx.y][vertexIdx.z])
       }
       if (AC_lheatc_kramers__mod__energy) {
         krho1kr_yz = AC_hcond0_kramers__mod__energy*pow(work_yz,(-2*AC_nkramers__mod__energy-1))*pow((tmp_yz/(cp_loc*AC_gamma_m1__mod__equationofstate)),(6.5*AC_nkramers__mod__energy))
@@ -942,7 +942,7 @@ bc_ss_flux_x(AcBoundary boundary, AC_TOP_BOT topbot)
         tmp_yz=AC_fbotkbot__mod__energy/tmp_yz
       }
       if (AC_lreference_state__mod__cdata) {
-        work_yz= 1./(RHO[l1-1][vertexIdx.y][vertexIdx.z]+AC_reference_state__mod__density[1-1][iref_rho-1])
+        work_yz= 1./(F_RHO[l1-1][vertexIdx.y][vertexIdx.z]+AC_reference_state__mod__density[1-1][iref_rho-1])
         tmp_yz = tmp_yz + AC_reference_state__mod__density[1-1][iref_gs-1]/fac + AC_reference_state__mod__density[1-1][iref_grho-1]*work_yz
         heatflux_deriv_x_return_value_4_5 = true
         if ( AC_lequidist__mod__cdata.x  ||  ! heatflux_deriv_x_return_value_4_5) {
@@ -959,14 +959,14 @@ bc_ss_flux_x(AcBoundary boundary, AC_TOP_BOT topbot)
           for i_5 in ia_5:ie_5+1 {
             if (AC_ldensity_nolog__mod__cdata) {
               if (present(work_yz)) {
-                SS[ll_5-i_5-1][vertexIdx.y][vertexIdx.z]=SS[ll_5+i_5-1][vertexIdx.y][vertexIdx.z]+fac*  ( (RHO[ll_5+i_5-1][vertexIdx.y][vertexIdx.z]-RHO[ll_5-i_5-1][vertexIdx.y][vertexIdx.z])*work_yz + AC_dx2_bound__mod__cdata[-i_5+NGHOST+1-1]*tmp_yz )
+                F_SS[ll_5-i_5-1][vertexIdx.y][vertexIdx.z]=F_SS[ll_5+i_5-1][vertexIdx.y][vertexIdx.z]+fac*  ( (F_RHO[ll_5+i_5-1][vertexIdx.y][vertexIdx.z]-F_RHO[ll_5-i_5-1][vertexIdx.y][vertexIdx.z])*work_yz + AC_dx2_bound__mod__cdata[-i_5+NGHOST+1-1]*tmp_yz )
               }
               else {
-                SS[ll_5-i_5-1][vertexIdx.y][vertexIdx.z]=SS[ll_5+i_5-1][vertexIdx.y][vertexIdx.z]+fac*  (log(RHO[ll_5+i_5-1][vertexIdx.y][vertexIdx.z]/RHO[ll_5-i_5-1][vertexIdx.y][vertexIdx.z]) + AC_dx2_bound__mod__cdata[-i_5+NGHOST+1-1]*tmp_yz)
+                F_SS[ll_5-i_5-1][vertexIdx.y][vertexIdx.z]=F_SS[ll_5+i_5-1][vertexIdx.y][vertexIdx.z]+fac*  (log(F_RHO[ll_5+i_5-1][vertexIdx.y][vertexIdx.z]/F_RHO[ll_5-i_5-1][vertexIdx.y][vertexIdx.z]) + AC_dx2_bound__mod__cdata[-i_5+NGHOST+1-1]*tmp_yz)
               }
             }
             else {
-              SS[ll_5-i_5-1][vertexIdx.y][vertexIdx.z]=SS[ll_5+i_5-1][vertexIdx.y][vertexIdx.z]+fac*  (LNRHO[ll_5+i_5-1][vertexIdx.y][vertexIdx.z]-LNRHO[ll_5-i_5-1][vertexIdx.y][vertexIdx.z] + AC_dx2_bound__mod__cdata[-i_5+NGHOST+1-1]*tmp_yz)
+              F_SS[ll_5-i_5-1][vertexIdx.y][vertexIdx.z]=F_SS[ll_5+i_5-1][vertexIdx.y][vertexIdx.z]+fac*  (F_RHO[ll_5+i_5-1][vertexIdx.y][vertexIdx.z]-F_RHO[ll_5-i_5-1][vertexIdx.y][vertexIdx.z] + AC_dx2_bound__mod__cdata[-i_5+NGHOST+1-1]*tmp_yz)
             }
           }
         }
@@ -989,11 +989,11 @@ bc_ss_flux_x(AcBoundary boundary, AC_TOP_BOT topbot)
               if (false) {
               }
               else {
-                SS[ll_6-i_6-1][vertexIdx.y][vertexIdx.z]=SS[ll_6+i_6-1][vertexIdx.y][vertexIdx.z]+fac*  (log(RHO[ll_6+i_6-1][vertexIdx.y][vertexIdx.z]/RHO[ll_6-i_6-1][vertexIdx.y][vertexIdx.z]) + AC_dx2_bound__mod__cdata[-i_6+NGHOST+1-1]*tmp_yz)
+                F_SS[ll_6-i_6-1][vertexIdx.y][vertexIdx.z]=F_SS[ll_6+i_6-1][vertexIdx.y][vertexIdx.z]+fac*  (log(F_RHO[ll_6+i_6-1][vertexIdx.y][vertexIdx.z]/F_RHO[ll_6-i_6-1][vertexIdx.y][vertexIdx.z]) + AC_dx2_bound__mod__cdata[-i_6+NGHOST+1-1]*tmp_yz)
               }
             }
             else {
-              SS[ll_6-i_6-1][vertexIdx.y][vertexIdx.z]=SS[ll_6+i_6-1][vertexIdx.y][vertexIdx.z]+fac*  (LNRHO[ll_6+i_6-1][vertexIdx.y][vertexIdx.z]-LNRHO[ll_6-i_6-1][vertexIdx.y][vertexIdx.z] + AC_dx2_bound__mod__cdata[-i_6+NGHOST+1-1]*tmp_yz)
+              F_SS[ll_6-i_6-1][vertexIdx.y][vertexIdx.z]=F_SS[ll_6+i_6-1][vertexIdx.y][vertexIdx.z]+fac*  (F_RHO[ll_6+i_6-1][vertexIdx.y][vertexIdx.z]-F_RHO[ll_6-i_6-1][vertexIdx.y][vertexIdx.z] + AC_dx2_bound__mod__cdata[-i_6+NGHOST+1-1]*tmp_yz)
             }
           }
         }
@@ -1002,27 +1002,27 @@ bc_ss_flux_x(AcBoundary boundary, AC_TOP_BOT topbot)
   }
   else if (topbot == AC_top) {
     if (AC_pretend_lntt__mod__cdata) {
-      SS[1+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]=SS[AC_l2__mod__cdata-1-1][vertexIdx.y][vertexIdx.z]-AC_dx2_bound__mod__cdata[2+NGHOST-1]*AC_ftopktop__mod__energy/exp(SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])
-      SS[2+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]=SS[AC_l2__mod__cdata-2-1][vertexIdx.y][vertexIdx.z]-AC_dx2_bound__mod__cdata[3+NGHOST-1]*AC_ftopktop__mod__energy/exp(SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])
-      SS[3+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]=SS[AC_l2__mod__cdata-3-1][vertexIdx.y][vertexIdx.z]-AC_dx2_bound__mod__cdata[4+NGHOST-1]*AC_ftopktop__mod__energy/exp(SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])
+      F_SS[1+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]=F_SS[AC_l2__mod__cdata-1-1][vertexIdx.y][vertexIdx.z]-AC_dx2_bound__mod__cdata[2+NGHOST-1]*AC_ftopktop__mod__energy/exp(F_SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])
+      F_SS[2+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]=F_SS[AC_l2__mod__cdata-2-1][vertexIdx.y][vertexIdx.z]-AC_dx2_bound__mod__cdata[3+NGHOST-1]*AC_ftopktop__mod__energy/exp(F_SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])
+      F_SS[3+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]=F_SS[AC_l2__mod__cdata-3-1][vertexIdx.y][vertexIdx.z]-AC_dx2_bound__mod__cdata[4+NGHOST-1]*AC_ftopktop__mod__energy/exp(F_SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])
     }
     else {
       if (AC_ldensity_nolog__mod__cdata) {
         if (AC_lheatc_kramers__mod__energy || AC_lheatc_chiconst__mod__energy) {
-          work_yz=RHO[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]
+          work_yz=F_RHO[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]
         }
         if (AC_lreference_state__mod__cdata) {
-          tmp_yz=AC_cs20__mod__equationofstate*exp(AC_gamma_m1__mod__equationofstate*(log(RHO[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]+AC_reference_state__mod__density[nx-1][iref_rho-1])-AC_lnrho0__mod__equationofstate)  +AC_gamma__mod__equationofstate*(SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]+AC_reference_state__mod__density[nx-1][iref_s-1]))
+          tmp_yz=AC_cs20__mod__equationofstate*exp(AC_gamma_m1__mod__equationofstate*(log(F_RHO[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]+AC_reference_state__mod__density[nx-1][iref_rho-1])-AC_lnrho0__mod__equationofstate)  +AC_gamma__mod__equationofstate*(F_SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]+AC_reference_state__mod__density[nx-1][iref_s-1]))
         }
         else {
-          tmp_yz=AC_cs20__mod__equationofstate*exp(AC_gamma_m1__mod__equationofstate*(log(RHO[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])-AC_lnrho0__mod__equationofstate)+AC_gamma__mod__equationofstate*SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])
+          tmp_yz=AC_cs20__mod__equationofstate*exp(AC_gamma_m1__mod__equationofstate*(log(F_RHO[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])-AC_lnrho0__mod__equationofstate)+AC_gamma__mod__equationofstate*F_SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])
         }
       }
       else {
         if (AC_lheatc_kramers__mod__energy || AC_lheatc_chiconst__mod__energy) {
-          work_yz=exp(LNRHO[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])
+          work_yz=exp(F_RHO[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])
         }
-        tmp_yz=AC_cs20__mod__equationofstate*exp(AC_gamma_m1__mod__equationofstate*(LNRHO[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]-AC_lnrho0__mod__equationofstate)+AC_gamma__mod__equationofstate*SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])
+        tmp_yz=AC_cs20__mod__equationofstate*exp(AC_gamma_m1__mod__equationofstate*(F_RHO[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]-AC_lnrho0__mod__equationofstate)+AC_gamma__mod__equationofstate*F_SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])
       }
       if (AC_lheatc_kramers__mod__energy) {
         krho1kr_yz = AC_hcond0_kramers__mod__energy*pow(work_yz,(-2*AC_nkramers__mod__energy-1))*pow((tmp_yz/(cp_loc*AC_gamma_m1__mod__equationofstate)),(6.5*AC_nkramers__mod__energy))
@@ -1044,7 +1044,7 @@ bc_ss_flux_x(AcBoundary boundary, AC_TOP_BOT topbot)
         tmp_yz = tmp_yz + AC_reference_state__mod__density[nx-1][iref_gs-1]
       }
       if (AC_lreference_state__mod__cdata) {
-        work_yz= 1./(RHO[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]+AC_reference_state__mod__density[nx-1][iref_rho-1])
+        work_yz= 1./(F_RHO[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]+AC_reference_state__mod__density[nx-1][iref_rho-1])
         tmp_yz = tmp_yz + AC_reference_state__mod__density[nx-1][iref_gs-1]/fac + AC_reference_state__mod__density[nx-1][iref_grho-1]*work_yz
         heatflux_deriv_x_return_value_4_7 = true
         if ( AC_lequidist__mod__cdata.x  ||  ! heatflux_deriv_x_return_value_4_7) {
@@ -1061,14 +1061,14 @@ bc_ss_flux_x(AcBoundary boundary, AC_TOP_BOT topbot)
           for i_7 in ia_7:ie_7+1 {
             if (AC_ldensity_nolog__mod__cdata) {
               if (present(work_yz)) {
-                SS[ll_7-i_7-1][vertexIdx.y][vertexIdx.z]=SS[ll_7+i_7-1][vertexIdx.y][vertexIdx.z]+fac*  ( (RHO[ll_7+i_7-1][vertexIdx.y][vertexIdx.z]-RHO[ll_7-i_7-1][vertexIdx.y][vertexIdx.z])*work_yz + AC_dx2_bound__mod__cdata[-i_7+NGHOST+1-1]*-tmp_yz )
+                F_SS[ll_7-i_7-1][vertexIdx.y][vertexIdx.z]=F_SS[ll_7+i_7-1][vertexIdx.y][vertexIdx.z]+fac*  ( (F_RHO[ll_7+i_7-1][vertexIdx.y][vertexIdx.z]-F_RHO[ll_7-i_7-1][vertexIdx.y][vertexIdx.z])*work_yz + AC_dx2_bound__mod__cdata[-i_7+NGHOST+1-1]*-tmp_yz )
               }
               else {
-                SS[ll_7-i_7-1][vertexIdx.y][vertexIdx.z]=SS[ll_7+i_7-1][vertexIdx.y][vertexIdx.z]+fac*  (log(RHO[ll_7+i_7-1][vertexIdx.y][vertexIdx.z]/RHO[ll_7-i_7-1][vertexIdx.y][vertexIdx.z]) + AC_dx2_bound__mod__cdata[-i_7+NGHOST+1-1]*-tmp_yz)
+                F_SS[ll_7-i_7-1][vertexIdx.y][vertexIdx.z]=F_SS[ll_7+i_7-1][vertexIdx.y][vertexIdx.z]+fac*  (log(F_RHO[ll_7+i_7-1][vertexIdx.y][vertexIdx.z]/F_RHO[ll_7-i_7-1][vertexIdx.y][vertexIdx.z]) + AC_dx2_bound__mod__cdata[-i_7+NGHOST+1-1]*-tmp_yz)
               }
             }
             else {
-              SS[ll_7-i_7-1][vertexIdx.y][vertexIdx.z]=SS[ll_7+i_7-1][vertexIdx.y][vertexIdx.z]+fac*  (LNRHO[ll_7+i_7-1][vertexIdx.y][vertexIdx.z]-LNRHO[ll_7-i_7-1][vertexIdx.y][vertexIdx.z] + AC_dx2_bound__mod__cdata[-i_7+NGHOST+1-1]*-tmp_yz)
+              F_SS[ll_7-i_7-1][vertexIdx.y][vertexIdx.z]=F_SS[ll_7+i_7-1][vertexIdx.y][vertexIdx.z]+fac*  (F_RHO[ll_7+i_7-1][vertexIdx.y][vertexIdx.z]-F_RHO[ll_7-i_7-1][vertexIdx.y][vertexIdx.z] + AC_dx2_bound__mod__cdata[-i_7+NGHOST+1-1]*-tmp_yz)
             }
           }
         }
@@ -1091,11 +1091,11 @@ bc_ss_flux_x(AcBoundary boundary, AC_TOP_BOT topbot)
               if (false) {
               }
               else {
-                SS[ll_8-i_8-1][vertexIdx.y][vertexIdx.z]=SS[ll_8+i_8-1][vertexIdx.y][vertexIdx.z]+fac*  (log(RHO[ll_8+i_8-1][vertexIdx.y][vertexIdx.z]/RHO[ll_8-i_8-1][vertexIdx.y][vertexIdx.z]) + AC_dx2_bound__mod__cdata[-i_8+NGHOST+1-1]*-tmp_yz)
+                F_SS[ll_8-i_8-1][vertexIdx.y][vertexIdx.z]=F_SS[ll_8+i_8-1][vertexIdx.y][vertexIdx.z]+fac*  (log(F_RHO[ll_8+i_8-1][vertexIdx.y][vertexIdx.z]/F_RHO[ll_8-i_8-1][vertexIdx.y][vertexIdx.z]) + AC_dx2_bound__mod__cdata[-i_8+NGHOST+1-1]*-tmp_yz)
               }
             }
             else {
-              SS[ll_8-i_8-1][vertexIdx.y][vertexIdx.z]=SS[ll_8+i_8-1][vertexIdx.y][vertexIdx.z]+fac*  (LNRHO[ll_8+i_8-1][vertexIdx.y][vertexIdx.z]-LNRHO[ll_8-i_8-1][vertexIdx.y][vertexIdx.z] + AC_dx2_bound__mod__cdata[-i_8+NGHOST+1-1]*-tmp_yz)
+              F_SS[ll_8-i_8-1][vertexIdx.y][vertexIdx.z]=F_SS[ll_8+i_8-1][vertexIdx.y][vertexIdx.z]+fac*  (F_RHO[ll_8+i_8-1][vertexIdx.y][vertexIdx.z]-F_RHO[ll_8-i_8-1][vertexIdx.y][vertexIdx.z] + AC_dx2_bound__mod__cdata[-i_8+NGHOST+1-1]*-tmp_yz)
             }
           }
         }
@@ -1115,34 +1115,34 @@ bc_ss_flux_turb_x(AcBoundary boundary, AC_TOP_BOT topbot)
   real tt_yz
   if (topbot == AC_bot) {
     if (AC_pretend_lntt__mod__cdata) {
-      SS[l1-1-1][vertexIdx.y][vertexIdx.z]=SS[1+l1-1][vertexIdx.y][vertexIdx.z] +  AC_dx2_bound__mod__cdata[-1+NGHOST+1-1]*AC_sigmasbt__mod__equationofstate*(exp(SS[l1-1][vertexIdx.y][vertexIdx.z])*exp(SS[l1-1][vertexIdx.y][vertexIdx.z])*exp(SS[l1-1][vertexIdx.y][vertexIdx.z]))/AC_hcondxbot__mod__energy
-      SS[l1-2-1][vertexIdx.y][vertexIdx.z]=SS[2+l1-1][vertexIdx.y][vertexIdx.z] +  AC_dx2_bound__mod__cdata[-2+NGHOST+1-1]*AC_sigmasbt__mod__equationofstate*(exp(SS[l1-1][vertexIdx.y][vertexIdx.z])*exp(SS[l1-1][vertexIdx.y][vertexIdx.z])*exp(SS[l1-1][vertexIdx.y][vertexIdx.z]))/AC_hcondxbot__mod__energy
-      SS[l1-3-1][vertexIdx.y][vertexIdx.z]=SS[3+l1-1][vertexIdx.y][vertexIdx.z] +  AC_dx2_bound__mod__cdata[-3+NGHOST+1-1]*AC_sigmasbt__mod__equationofstate*(exp(SS[l1-1][vertexIdx.y][vertexIdx.z])*exp(SS[l1-1][vertexIdx.y][vertexIdx.z])*exp(SS[l1-1][vertexIdx.y][vertexIdx.z]))/AC_hcondxbot__mod__energy
+      F_SS[l1-1-1][vertexIdx.y][vertexIdx.z]=F_SS[1+l1-1][vertexIdx.y][vertexIdx.z] +  AC_dx2_bound__mod__cdata[-1+NGHOST+1-1]*AC_sigmasbt__mod__equationofstate*(exp(F_SS[l1-1][vertexIdx.y][vertexIdx.z])*exp(F_SS[l1-1][vertexIdx.y][vertexIdx.z])*exp(F_SS[l1-1][vertexIdx.y][vertexIdx.z]))/AC_hcondxbot__mod__energy
+      F_SS[l1-2-1][vertexIdx.y][vertexIdx.z]=F_SS[2+l1-1][vertexIdx.y][vertexIdx.z] +  AC_dx2_bound__mod__cdata[-2+NGHOST+1-1]*AC_sigmasbt__mod__equationofstate*(exp(F_SS[l1-1][vertexIdx.y][vertexIdx.z])*exp(F_SS[l1-1][vertexIdx.y][vertexIdx.z])*exp(F_SS[l1-1][vertexIdx.y][vertexIdx.z]))/AC_hcondxbot__mod__energy
+      F_SS[l1-3-1][vertexIdx.y][vertexIdx.z]=F_SS[3+l1-1][vertexIdx.y][vertexIdx.z] +  AC_dx2_bound__mod__cdata[-3+NGHOST+1-1]*AC_sigmasbt__mod__equationofstate*(exp(F_SS[l1-1][vertexIdx.y][vertexIdx.z])*exp(F_SS[l1-1][vertexIdx.y][vertexIdx.z])*exp(F_SS[l1-1][vertexIdx.y][vertexIdx.z]))/AC_hcondxbot__mod__energy
     }
     else {
       if (AC_ldensity_nolog__mod__cdata) {
         if (AC_lreference_state__mod__cdata) {
-          rho_yz=LNRHO[l1-1][vertexIdx.y][vertexIdx.z]+AC_reference_state__mod__density[1-1][iref_rho-1]
+          rho_yz=F_RHO[l1-1][vertexIdx.y][vertexIdx.z]+AC_reference_state__mod__density[1-1][iref_rho-1]
         }
         else {
-          rho_yz=LNRHO[l1-1][vertexIdx.y][vertexIdx.z]
+          rho_yz=F_RHO[l1-1][vertexIdx.y][vertexIdx.z]
         }
       }
       else {
-        rho_yz=exp(LNRHO[l1-1][vertexIdx.y][vertexIdx.z])
+        rho_yz=exp(F_RHO[l1-1][vertexIdx.y][vertexIdx.z])
       }
       if (AC_ldensity_nolog__mod__cdata) {
-        cs2_yz=SS[l1-1][vertexIdx.y][vertexIdx.z]
+        cs2_yz=F_SS[l1-1][vertexIdx.y][vertexIdx.z]
         if (AC_lreference_state__mod__cdata) {
           cs2_yz = cs2_yz+AC_reference_state__mod__density[1-1][iref_s-1]
         }
         cs2_yz=AC_cs20__mod__equationofstate*exp(AC_gamma_m1__mod__equationofstate*(log(rho_yz)-AC_lnrho0__mod__equationofstate)+AC_cv1__mod__equationofstate*cs2_yz)
       }
       else {
-        cs2_yz=AC_cs20__mod__equationofstate*exp(AC_gamma_m1__mod__equationofstate*(LNRHO[l1-1][vertexIdx.y][vertexIdx.z]-AC_lnrho0__mod__equationofstate)+AC_cv1__mod__equationofstate*SS[l1-1][vertexIdx.y][vertexIdx.z])
+        cs2_yz=AC_cs20__mod__equationofstate*exp(AC_gamma_m1__mod__equationofstate*(F_RHO[l1-1][vertexIdx.y][vertexIdx.z]-AC_lnrho0__mod__equationofstate)+AC_cv1__mod__equationofstate*F_SS[l1-1][vertexIdx.y][vertexIdx.z])
       }
       tt_yz=cs2_yz/(AC_gamma_m1__mod__equationofstate*AC_cp__mod__equationofstate)
-      dlnrhodx_yz= AC_coeffs_1_x__mod__cdata[NGHOST+1-1][1-1]*(LNRHO[1+l1-1][vertexIdx.y][vertexIdx.z]-LNRHO[l1-1-1][vertexIdx.y][vertexIdx.z])  +AC_coeffs_1_x__mod__cdata[NGHOST+2-1][1-1]*(LNRHO[2+l1-1][vertexIdx.y][vertexIdx.z]-LNRHO[l1-2-1][vertexIdx.y][vertexIdx.z])  +AC_coeffs_1_x__mod__cdata[NGHOST+3-1][1-1]*(LNRHO[3+l1-1][vertexIdx.y][vertexIdx.z]-LNRHO[l1-3-1][vertexIdx.y][vertexIdx.z])
+      dlnrhodx_yz= AC_coeffs_1_x__mod__cdata[NGHOST+1-1][1-1]*(F_RHO[1+l1-1][vertexIdx.y][vertexIdx.z]-F_RHO[l1-1-1][vertexIdx.y][vertexIdx.z])  +AC_coeffs_1_x__mod__cdata[NGHOST+2-1][1-1]*(F_RHO[2+l1-1][vertexIdx.y][vertexIdx.z]-F_RHO[l1-2-1][vertexIdx.y][vertexIdx.z])  +AC_coeffs_1_x__mod__cdata[NGHOST+3-1][1-1]*(F_RHO[3+l1-1][vertexIdx.y][vertexIdx.z]-F_RHO[l1-3-1][vertexIdx.y][vertexIdx.z])
       if (AC_ldensity_nolog__mod__cdata) {
         if (AC_lreference_state__mod__cdata) {
           dlnrhodx_yz=dlnrhodx_yz + AC_reference_state__mod__density[1-1][iref_grho-1]
@@ -1161,41 +1161,41 @@ bc_ss_flux_turb_x(AcBoundary boundary, AC_TOP_BOT topbot)
       if (AC_lreference_state__mod__cdata) {
         dsdx_yz = dsdx_yz - AC_reference_state__mod__density[1-1][iref_gs-1]
       }
-      SS[l1-1-1][vertexIdx.y][vertexIdx.z]=SS[1+l1-1][vertexIdx.y][vertexIdx.z]-AC_dx2_bound__mod__cdata[-1+NGHOST+1-1]*dsdx_yz
-      SS[l1-2-1][vertexIdx.y][vertexIdx.z]=SS[2+l1-1][vertexIdx.y][vertexIdx.z]-AC_dx2_bound__mod__cdata[-2+NGHOST+1-1]*dsdx_yz
-      SS[l1-3-1][vertexIdx.y][vertexIdx.z]=SS[3+l1-1][vertexIdx.y][vertexIdx.z]-AC_dx2_bound__mod__cdata[-3+NGHOST+1-1]*dsdx_yz
+      F_SS[l1-1-1][vertexIdx.y][vertexIdx.z]=F_SS[1+l1-1][vertexIdx.y][vertexIdx.z]-AC_dx2_bound__mod__cdata[-1+NGHOST+1-1]*dsdx_yz
+      F_SS[l1-2-1][vertexIdx.y][vertexIdx.z]=F_SS[2+l1-1][vertexIdx.y][vertexIdx.z]-AC_dx2_bound__mod__cdata[-2+NGHOST+1-1]*dsdx_yz
+      F_SS[l1-3-1][vertexIdx.y][vertexIdx.z]=F_SS[3+l1-1][vertexIdx.y][vertexIdx.z]-AC_dx2_bound__mod__cdata[-3+NGHOST+1-1]*dsdx_yz
     }
   }
   else if (topbot == AC_top) {
     if (AC_pretend_lntt__mod__cdata) {
-      SS[1+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]=SS[AC_l2__mod__cdata-1-1][vertexIdx.y][vertexIdx.z] +  AC_dx2_bound__mod__cdata[2+NGHOST-1]*AC_sigmasbt__mod__equationofstate*(exp(SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])*exp(SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])*exp(SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]))/AC_hcondxtop__mod__energy
-      SS[2+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]=SS[AC_l2__mod__cdata-2-1][vertexIdx.y][vertexIdx.z] +  AC_dx2_bound__mod__cdata[3+NGHOST-1]*AC_sigmasbt__mod__equationofstate*(exp(SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])*exp(SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])*exp(SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]))/AC_hcondxtop__mod__energy
-      SS[3+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]=SS[AC_l2__mod__cdata-3-1][vertexIdx.y][vertexIdx.z] +  AC_dx2_bound__mod__cdata[4+NGHOST-1]*AC_sigmasbt__mod__equationofstate*(exp(SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])*exp(SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])*exp(SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]))/AC_hcondxtop__mod__energy
+      F_SS[1+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]=F_SS[AC_l2__mod__cdata-1-1][vertexIdx.y][vertexIdx.z] +  AC_dx2_bound__mod__cdata[2+NGHOST-1]*AC_sigmasbt__mod__equationofstate*(exp(F_SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])*exp(F_SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])*exp(F_SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]))/AC_hcondxtop__mod__energy
+      F_SS[2+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]=F_SS[AC_l2__mod__cdata-2-1][vertexIdx.y][vertexIdx.z] +  AC_dx2_bound__mod__cdata[3+NGHOST-1]*AC_sigmasbt__mod__equationofstate*(exp(F_SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])*exp(F_SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])*exp(F_SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]))/AC_hcondxtop__mod__energy
+      F_SS[3+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]=F_SS[AC_l2__mod__cdata-3-1][vertexIdx.y][vertexIdx.z] +  AC_dx2_bound__mod__cdata[4+NGHOST-1]*AC_sigmasbt__mod__equationofstate*(exp(F_SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])*exp(F_SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])*exp(F_SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]))/AC_hcondxtop__mod__energy
     }
     else {
       if (AC_ldensity_nolog__mod__cdata) {
         if (AC_lreference_state__mod__cdata) {
-          rho_yz=LNRHO[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]+AC_reference_state__mod__density[nx-1][iref_rho-1]
+          rho_yz=F_RHO[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]+AC_reference_state__mod__density[nx-1][iref_rho-1]
         }
         else {
-          rho_yz=LNRHO[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]
+          rho_yz=F_RHO[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]
         }
       }
       else {
-        rho_yz=exp(LNRHO[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])
+        rho_yz=exp(F_RHO[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])
       }
       if (AC_ldensity_nolog__mod__cdata) {
-        cs2_yz=SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]
+        cs2_yz=F_SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]
         if (AC_lreference_state__mod__cdata) {
           cs2_yz = cs2_yz+AC_reference_state__mod__density[nx-1][iref_s-1]
         }
         cs2_yz=AC_cs20__mod__equationofstate*exp(AC_gamma_m1__mod__equationofstate*(log(rho_yz)-AC_lnrho0__mod__equationofstate)+AC_cv1__mod__equationofstate*cs2_yz)
       }
       else {
-        cs2_yz=AC_cs20__mod__equationofstate*exp(AC_gamma_m1__mod__equationofstate*(LNRHO[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]-AC_lnrho0__mod__equationofstate)+AC_cv1__mod__equationofstate*SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])
+        cs2_yz=AC_cs20__mod__equationofstate*exp(AC_gamma_m1__mod__equationofstate*(F_RHO[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]-AC_lnrho0__mod__equationofstate)+AC_cv1__mod__equationofstate*F_SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])
       }
       tt_yz=cs2_yz/(AC_gamma_m1__mod__equationofstate*AC_cp__mod__equationofstate)
-      dlnrhodx_yz= AC_coeffs_1_x__mod__cdata[NGHOST+1][2-1]*(LNRHO[1+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]-LNRHO[AC_l2__mod__cdata-1-1][vertexIdx.y][vertexIdx.z])  +AC_coeffs_1_x__mod__cdata[NGHOST+2][2-1]*(LNRHO[2+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]-LNRHO[AC_l2__mod__cdata-2-1][vertexIdx.y][vertexIdx.z])  +AC_coeffs_1_x__mod__cdata[NGHOST+3][2-1]*(LNRHO[3+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]-LNRHO[AC_l2__mod__cdata-3-1][vertexIdx.y][vertexIdx.z])
+      dlnrhodx_yz= AC_coeffs_1_x__mod__cdata[NGHOST+1][2-1]*(F_RHO[1+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]-F_RHO[AC_l2__mod__cdata-1-1][vertexIdx.y][vertexIdx.z])  +AC_coeffs_1_x__mod__cdata[NGHOST+2][2-1]*(F_RHO[2+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]-F_RHO[AC_l2__mod__cdata-2-1][vertexIdx.y][vertexIdx.z])  +AC_coeffs_1_x__mod__cdata[NGHOST+3][2-1]*(F_RHO[3+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]-F_RHO[AC_l2__mod__cdata-3-1][vertexIdx.y][vertexIdx.z])
       if (AC_ldensity_nolog__mod__cdata) {
         if (AC_lreference_state__mod__cdata) {
           dlnrhodx_yz=dlnrhodx_yz + AC_reference_state__mod__density[nx-1][iref_grho-1]
@@ -1214,9 +1214,9 @@ bc_ss_flux_turb_x(AcBoundary boundary, AC_TOP_BOT topbot)
         if (AC_lreference_state__mod__cdata) {
           dsdx_yz = dsdx_yz - AC_reference_state__mod__density[nx-1][iref_gs-1]
         }
-        SS[1+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]=SS[AC_l2__mod__cdata-1-1][vertexIdx.y][vertexIdx.z]+AC_dx2_bound__mod__cdata[1+NGHOST]*dsdx_yz
-        SS[2+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]=SS[AC_l2__mod__cdata-2-1][vertexIdx.y][vertexIdx.z]+AC_dx2_bound__mod__cdata[2+NGHOST]*dsdx_yz
-        SS[3+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]=SS[AC_l2__mod__cdata-3-1][vertexIdx.y][vertexIdx.z]+AC_dx2_bound__mod__cdata[3+NGHOST]*dsdx_yz
+        F_SS[1+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]=F_SS[AC_l2__mod__cdata-1-1][vertexIdx.y][vertexIdx.z]+AC_dx2_bound__mod__cdata[1+NGHOST]*dsdx_yz
+        F_SS[2+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]=F_SS[AC_l2__mod__cdata-2-1][vertexIdx.y][vertexIdx.z]+AC_dx2_bound__mod__cdata[2+NGHOST]*dsdx_yz
+        F_SS[3+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]=F_SS[AC_l2__mod__cdata-3-1][vertexIdx.y][vertexIdx.z]+AC_dx2_bound__mod__cdata[3+NGHOST]*dsdx_yz
       }
     }
   }
@@ -1232,17 +1232,17 @@ bc_ss_temp_x(AcBoundary boundary, AC_TOP_BOT topbot)
   real tmp
   if (topbot == AC_bot) {
     tmp = 2/AC_gamma__mod__equationofstate*log(AC_cs2bot__mod__equationofstate/AC_cs20__mod__equationofstate)
-    SS[l1-1][vertexIdx.y][vertexIdx.z] = 0.5*tmp - AC_gamma_m1__mod__equationofstate/AC_gamma__mod__equationofstate*(LNRHO[l1-1][vertexIdx.y][vertexIdx.z]-AC_lnrho0__mod__equationofstate)
-    SS[l1-1-1][vertexIdx.y][vertexIdx.z] = -SS[1+l1-1][vertexIdx.y][vertexIdx.z] + tmp  - AC_gamma_m1__mod__equationofstate/AC_gamma__mod__equationofstate*(LNRHO[1+l1-1][vertexIdx.y][vertexIdx.z]+LNRHO[l1-1-1][vertexIdx.y][vertexIdx.z]-2*AC_lnrho0__mod__equationofstate)
-    SS[l1-2-1][vertexIdx.y][vertexIdx.z] = -SS[2+l1-1][vertexIdx.y][vertexIdx.z] + tmp  - AC_gamma_m1__mod__equationofstate/AC_gamma__mod__equationofstate*(LNRHO[2+l1-1][vertexIdx.y][vertexIdx.z]+LNRHO[l1-2-1][vertexIdx.y][vertexIdx.z]-2*AC_lnrho0__mod__equationofstate)
-    SS[l1-3-1][vertexIdx.y][vertexIdx.z] = -SS[3+l1-1][vertexIdx.y][vertexIdx.z] + tmp  - AC_gamma_m1__mod__equationofstate/AC_gamma__mod__equationofstate*(LNRHO[3+l1-1][vertexIdx.y][vertexIdx.z]+LNRHO[l1-3-1][vertexIdx.y][vertexIdx.z]-2*AC_lnrho0__mod__equationofstate)
+    F_SS[l1-1][vertexIdx.y][vertexIdx.z] = 0.5*tmp - AC_gamma_m1__mod__equationofstate/AC_gamma__mod__equationofstate*(F_RHO[l1-1][vertexIdx.y][vertexIdx.z]-AC_lnrho0__mod__equationofstate)
+    F_SS[l1-1-1][vertexIdx.y][vertexIdx.z] = -F_SS[1+l1-1][vertexIdx.y][vertexIdx.z] + tmp  - AC_gamma_m1__mod__equationofstate/AC_gamma__mod__equationofstate*(F_RHO[1+l1-1][vertexIdx.y][vertexIdx.z]+F_RHO[l1-1-1][vertexIdx.y][vertexIdx.z]-2*AC_lnrho0__mod__equationofstate)
+    F_SS[l1-2-1][vertexIdx.y][vertexIdx.z] = -F_SS[2+l1-1][vertexIdx.y][vertexIdx.z] + tmp  - AC_gamma_m1__mod__equationofstate/AC_gamma__mod__equationofstate*(F_RHO[2+l1-1][vertexIdx.y][vertexIdx.z]+F_RHO[l1-2-1][vertexIdx.y][vertexIdx.z]-2*AC_lnrho0__mod__equationofstate)
+    F_SS[l1-3-1][vertexIdx.y][vertexIdx.z] = -F_SS[3+l1-1][vertexIdx.y][vertexIdx.z] + tmp  - AC_gamma_m1__mod__equationofstate/AC_gamma__mod__equationofstate*(F_RHO[3+l1-1][vertexIdx.y][vertexIdx.z]+F_RHO[l1-3-1][vertexIdx.y][vertexIdx.z]-2*AC_lnrho0__mod__equationofstate)
   }
   else if (topbot == AC_top) {
     tmp = 2/AC_gamma__mod__equationofstate*log(AC_cs2top__mod__equationofstate/AC_cs20__mod__equationofstate)
-    SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z] = 0.5*tmp - AC_gamma_m1__mod__equationofstate/AC_gamma__mod__equationofstate*(LNRHO[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]-AC_lnrho0__mod__equationofstate)
-    SS[1+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z] = -SS[AC_l2__mod__cdata-1-1][vertexIdx.y][vertexIdx.z] + tmp  - AC_gamma_m1__mod__equationofstate/AC_gamma__mod__equationofstate*(LNRHO[AC_l2__mod__cdata-1-1][vertexIdx.y][vertexIdx.z]+LNRHO[1+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]-2*AC_lnrho0__mod__equationofstate)
-    SS[2+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z] = -SS[AC_l2__mod__cdata-2-1][vertexIdx.y][vertexIdx.z] + tmp  - AC_gamma_m1__mod__equationofstate/AC_gamma__mod__equationofstate*(LNRHO[AC_l2__mod__cdata-2-1][vertexIdx.y][vertexIdx.z]+LNRHO[2+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]-2*AC_lnrho0__mod__equationofstate)
-    SS[3+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z] = -SS[AC_l2__mod__cdata-3-1][vertexIdx.y][vertexIdx.z] + tmp  - AC_gamma_m1__mod__equationofstate/AC_gamma__mod__equationofstate*(LNRHO[AC_l2__mod__cdata-3-1][vertexIdx.y][vertexIdx.z]+LNRHO[3+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]-2*AC_lnrho0__mod__equationofstate)
+    F_SS[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z] = 0.5*tmp - AC_gamma_m1__mod__equationofstate/AC_gamma__mod__equationofstate*(F_RHO[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]-AC_lnrho0__mod__equationofstate)
+    F_SS[1+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z] = -F_SS[AC_l2__mod__cdata-1-1][vertexIdx.y][vertexIdx.z] + tmp  - AC_gamma_m1__mod__equationofstate/AC_gamma__mod__equationofstate*(F_RHO[AC_l2__mod__cdata-1-1][vertexIdx.y][vertexIdx.z]+F_RHO[1+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]-2*AC_lnrho0__mod__equationofstate)
+    F_SS[2+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z] = -F_SS[AC_l2__mod__cdata-2-1][vertexIdx.y][vertexIdx.z] + tmp  - AC_gamma_m1__mod__equationofstate/AC_gamma__mod__equationofstate*(F_RHO[AC_l2__mod__cdata-2-1][vertexIdx.y][vertexIdx.z]+F_RHO[2+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]-2*AC_lnrho0__mod__equationofstate)
+    F_SS[3+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z] = -F_SS[AC_l2__mod__cdata-3-1][vertexIdx.y][vertexIdx.z] + tmp  - AC_gamma_m1__mod__equationofstate/AC_gamma__mod__equationofstate*(F_RHO[AC_l2__mod__cdata-3-1][vertexIdx.y][vertexIdx.z]+F_RHO[3+AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]-2*AC_lnrho0__mod__equationofstate)
   }
   else {
   }
@@ -1306,51 +1306,51 @@ bc_lnrho_temp_z(AcBoundary boundary, AC_TOP_BOT topbot)
     tmp = AC_cv__mod__equationofstate*log(AC_cs2bot__mod__equationofstate/AC_cs20__mod__equationofstate)
     if (AC_ldensity_nolog__mod__cdata) {
       if (AC_lreference_state__mod__cdata) {
-        lnrho_xy= log(LNRHO[vertexIdx.x][vertexIdx.y][n1-1]  +AC_reference_state_padded__mod__density[vertexIdx.x][iref_rho-1])
+        lnrho_xy= log(F_RHO[vertexIdx.x][vertexIdx.y][n1-1]  +AC_reference_state_padded__mod__density[vertexIdx.x][iref_rho-1])
       }
       else {
-        lnrho_xy=log(LNRHO[vertexIdx.x][vertexIdx.y][n1-1])
+        lnrho_xy=log(F_RHO[vertexIdx.x][vertexIdx.y][n1-1])
       }
     }
     else {
-      lnrho_xy=LNRHO[vertexIdx.x][vertexIdx.y][n1-1]
+      lnrho_xy=F_RHO[vertexIdx.x][vertexIdx.y][n1-1]
     }
-    SS[vertexIdx.x][vertexIdx.y][n1-1] = tmp - (AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(lnrho_xy-AC_lnrho0__mod__equationofstate)
+    F_SS[vertexIdx.x][vertexIdx.y][n1-1] = tmp - (AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(lnrho_xy-AC_lnrho0__mod__equationofstate)
     if (AC_lreference_state__mod__cdata) {
-      SS[vertexIdx.x][vertexIdx.y][n1-1] = SS[vertexIdx.x][vertexIdx.y][n1-1] - AC_reference_state_padded__mod__density[vertexIdx.x][iref_s-1]
+      F_SS[vertexIdx.x][vertexIdx.y][n1-1] = F_SS[vertexIdx.x][vertexIdx.y][n1-1] - AC_reference_state_padded__mod__density[vertexIdx.x][iref_s-1]
     }
-    SS[vertexIdx.x][vertexIdx.y][n1-1-1] = 2*SS[vertexIdx.x][vertexIdx.y][n1-1]-SS[vertexIdx.x][vertexIdx.y][1+n1-1]
-    SS[vertexIdx.x][vertexIdx.y][n1-2-1] = 2*SS[vertexIdx.x][vertexIdx.y][n1-1]-SS[vertexIdx.x][vertexIdx.y][2+n1-1]
-    SS[vertexIdx.x][vertexIdx.y][n1-3-1] = 2*SS[vertexIdx.x][vertexIdx.y][n1-1]-SS[vertexIdx.x][vertexIdx.y][3+n1-1]
+    F_SS[vertexIdx.x][vertexIdx.y][n1-1-1] = 2*F_SS[vertexIdx.x][vertexIdx.y][n1-1]-F_SS[vertexIdx.x][vertexIdx.y][1+n1-1]
+    F_SS[vertexIdx.x][vertexIdx.y][n1-2-1] = 2*F_SS[vertexIdx.x][vertexIdx.y][n1-1]-F_SS[vertexIdx.x][vertexIdx.y][2+n1-1]
+    F_SS[vertexIdx.x][vertexIdx.y][n1-3-1] = 2*F_SS[vertexIdx.x][vertexIdx.y][n1-1]-F_SS[vertexIdx.x][vertexIdx.y][3+n1-1]
     tmp=-AC_gravz__mod__gravity/AC_cs2bot__mod__equationofstate
-    LNRHO[vertexIdx.x][vertexIdx.y][n1-1-1]=LNRHO[vertexIdx.x][vertexIdx.y][1+n1-1] + AC_cp1__mod__equationofstate*(SS[vertexIdx.x][vertexIdx.y][1+n1-1]-SS[vertexIdx.x][vertexIdx.y][n1-1-1])+AC_dz2_bound__mod__cdata[-1+NGHOST+1-1]*tmp
-    LNRHO[vertexIdx.x][vertexIdx.y][n1-2-1]=LNRHO[vertexIdx.x][vertexIdx.y][2+n1-1] + AC_cp1__mod__equationofstate*(SS[vertexIdx.x][vertexIdx.y][2+n1-1]-SS[vertexIdx.x][vertexIdx.y][n1-2-1])+AC_dz2_bound__mod__cdata[-2+NGHOST+1-1]*tmp
-    LNRHO[vertexIdx.x][vertexIdx.y][n1-3-1]=LNRHO[vertexIdx.x][vertexIdx.y][3+n1-1] + AC_cp1__mod__equationofstate*(SS[vertexIdx.x][vertexIdx.y][3+n1-1]-SS[vertexIdx.x][vertexIdx.y][n1-3-1])+AC_dz2_bound__mod__cdata[-3+NGHOST+1-1]*tmp
+    F_RHO[vertexIdx.x][vertexIdx.y][n1-1-1]=F_RHO[vertexIdx.x][vertexIdx.y][1+n1-1] + AC_cp1__mod__equationofstate*(F_SS[vertexIdx.x][vertexIdx.y][1+n1-1]-F_SS[vertexIdx.x][vertexIdx.y][n1-1-1])+AC_dz2_bound__mod__cdata[-1+NGHOST+1-1]*tmp
+    F_RHO[vertexIdx.x][vertexIdx.y][n1-2-1]=F_RHO[vertexIdx.x][vertexIdx.y][2+n1-1] + AC_cp1__mod__equationofstate*(F_SS[vertexIdx.x][vertexIdx.y][2+n1-1]-F_SS[vertexIdx.x][vertexIdx.y][n1-2-1])+AC_dz2_bound__mod__cdata[-2+NGHOST+1-1]*tmp
+    F_RHO[vertexIdx.x][vertexIdx.y][n1-3-1]=F_RHO[vertexIdx.x][vertexIdx.y][3+n1-1] + AC_cp1__mod__equationofstate*(F_SS[vertexIdx.x][vertexIdx.y][3+n1-1]-F_SS[vertexIdx.x][vertexIdx.y][n1-3-1])+AC_dz2_bound__mod__cdata[-3+NGHOST+1-1]*tmp
   }
   else if (topbot == AC_top) {
     tmp = AC_cv__mod__equationofstate*log(AC_cs2top__mod__equationofstate/AC_cs20__mod__equationofstate)
     if (AC_ldensity_nolog__mod__cdata) {
       if (AC_lreference_state__mod__cdata) {
-        lnrho_xy= log(LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]  +AC_reference_state_padded__mod__density[vertexIdx.x][iref_rho-1])
+        lnrho_xy= log(F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]  +AC_reference_state_padded__mod__density[vertexIdx.x][iref_rho-1])
       }
       else {
-        lnrho_xy=log(LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1])
+        lnrho_xy=log(F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1])
       }
     }
     else {
-      lnrho_xy=LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]
+      lnrho_xy=F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]
     }
-    SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1] = tmp - (AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(lnrho_xy-AC_lnrho0__mod__equationofstate)
+    F_SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1] = tmp - (AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(lnrho_xy-AC_lnrho0__mod__equationofstate)
     if (AC_lreference_state__mod__cdata) {
-      SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1] = SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1] - AC_reference_state_padded__mod__density[vertexIdx.x][iref_s-1]
+      F_SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1] = F_SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1] - AC_reference_state_padded__mod__density[vertexIdx.x][iref_s-1]
     }
-    SS[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1] = 2*SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]-SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1-1]
-    SS[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1] = 2*SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]-SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-2-1]
-    SS[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1] = 2*SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]-SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-3-1]
+    F_SS[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1] = 2*F_SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]-F_SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1-1]
+    F_SS[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1] = 2*F_SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]-F_SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-2-1]
+    F_SS[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1] = 2*F_SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]-F_SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-3-1]
     tmp=AC_gravz__mod__gravity/AC_cs2top__mod__equationofstate
-    LNRHO[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1]=LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1-1] + AC_cp1__mod__equationofstate*(SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1-1]-SS[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1])+AC_dz2_bound__mod__cdata[2+NGHOST-1]*tmp
-    LNRHO[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1]=LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-2-1] + AC_cp1__mod__equationofstate*(SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-2-1]-SS[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1])+AC_dz2_bound__mod__cdata[3+NGHOST-1]*tmp
-    LNRHO[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1]=LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-3-1] + AC_cp1__mod__equationofstate*(SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-3-1]-SS[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1])+AC_dz2_bound__mod__cdata[4+NGHOST-1]*tmp
+    F_RHO[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1]=F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1-1] + AC_cp1__mod__equationofstate*(F_SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1-1]-F_SS[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1])+AC_dz2_bound__mod__cdata[2+NGHOST-1]*tmp
+    F_RHO[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1]=F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-2-1] + AC_cp1__mod__equationofstate*(F_SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-2-1]-F_SS[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1])+AC_dz2_bound__mod__cdata[3+NGHOST-1]*tmp
+    F_RHO[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1]=F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-3-1] + AC_cp1__mod__equationofstate*(F_SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-3-1]-F_SS[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1])+AC_dz2_bound__mod__cdata[4+NGHOST-1]*tmp
   }
   else {
   }
@@ -1369,24 +1369,24 @@ bc_ss_flux(AcBoundary boundary, AC_TOP_BOT topbot,bool lone_sided)
   bool loptest_return_value_4
   if (topbot == AC_bot) {
     if (AC_pretend_lntt__mod__cdata) {
-      tmp_xy=-AC_fbotkbot__mod__energy/exp(SS[vertexIdx.x][vertexIdx.y][n1-1])
-      SS[vertexIdx.x][vertexIdx.y][n1-1-1]=SS[vertexIdx.x][vertexIdx.y][1+n1-1]-AC_dz2_bound__mod__cdata[-1+NGHOST+1-1]*tmp_xy
-      SS[vertexIdx.x][vertexIdx.y][n1-2-1]=SS[vertexIdx.x][vertexIdx.y][2+n1-1]-AC_dz2_bound__mod__cdata[-2+NGHOST+1-1]*tmp_xy
-      SS[vertexIdx.x][vertexIdx.y][n1-3-1]=SS[vertexIdx.x][vertexIdx.y][3+n1-1]-AC_dz2_bound__mod__cdata[-3+NGHOST+1-1]*tmp_xy
+      tmp_xy=-AC_fbotkbot__mod__energy/exp(F_SS[vertexIdx.x][vertexIdx.y][n1-1])
+      F_SS[vertexIdx.x][vertexIdx.y][n1-1-1]=F_SS[vertexIdx.x][vertexIdx.y][1+n1-1]-AC_dz2_bound__mod__cdata[-1+NGHOST+1-1]*tmp_xy
+      F_SS[vertexIdx.x][vertexIdx.y][n1-2-1]=F_SS[vertexIdx.x][vertexIdx.y][2+n1-1]-AC_dz2_bound__mod__cdata[-2+NGHOST+1-1]*tmp_xy
+      F_SS[vertexIdx.x][vertexIdx.y][n1-3-1]=F_SS[vertexIdx.x][vertexIdx.y][3+n1-1]-AC_dz2_bound__mod__cdata[-3+NGHOST+1-1]*tmp_xy
     }
     else {
       if (AC_ldensity_nolog__mod__cdata) {
         if (AC_lreference_state__mod__cdata) {
-          rho_xy= LNRHO[vertexIdx.x][vertexIdx.y][n1-1]  +AC_reference_state_padded__mod__density[vertexIdx.x][iref_rho-1]
+          rho_xy= F_RHO[vertexIdx.x][vertexIdx.y][n1-1]  +AC_reference_state_padded__mod__density[vertexIdx.x][iref_rho-1]
         }
         else {
-          rho_xy=LNRHO[vertexIdx.x][vertexIdx.y][n1-1]
+          rho_xy=F_RHO[vertexIdx.x][vertexIdx.y][n1-1]
         }
       }
       else {
-        rho_xy=exp(LNRHO[vertexIdx.x][vertexIdx.y][n1-1])
+        rho_xy=exp(F_RHO[vertexIdx.x][vertexIdx.y][n1-1])
       }
-      cs2_xy = SS[vertexIdx.x][vertexIdx.y][n1-1]
+      cs2_xy = F_SS[vertexIdx.x][vertexIdx.y][n1-1]
       if (AC_lreference_state__mod__cdata) {
         cs2_xy = cs2_xy + AC_reference_state_padded__mod__density[vertexIdx.x][iref_s-1]
       }
@@ -1394,7 +1394,7 @@ bc_ss_flux(AcBoundary boundary, AC_TOP_BOT topbot,bool lone_sided)
         cs2_xy=AC_cs20__mod__equationofstate*exp(AC_gamma_m1__mod__equationofstate*(log(rho_xy)-AC_lnrho0__mod__equationofstate)+AC_cv1__mod__equationofstate*cs2_xy)
       }
       else {
-        cs2_xy=AC_cs20__mod__equationofstate*exp(AC_gamma_m1__mod__equationofstate*(LNRHO[vertexIdx.x][vertexIdx.y][n1-1]-AC_lnrho0__mod__equationofstate)+AC_cv1__mod__equationofstate*cs2_xy)
+        cs2_xy=AC_cs20__mod__equationofstate*exp(AC_gamma_m1__mod__equationofstate*(F_RHO[vertexIdx.x][vertexIdx.y][n1-1]-AC_lnrho0__mod__equationofstate)+AC_cv1__mod__equationofstate*cs2_xy)
       }
       if (AC_lheatc_chiconst__mod__energy) {
         tmp_xy=AC_fbot__mod__energy/(rho_xy*AC_chi__mod__energy*cs2_xy)
@@ -1419,59 +1419,59 @@ bc_ss_flux(AcBoundary boundary, AC_TOP_BOT topbot,bool lone_sided)
         print("not implemented set_ghosts_for_onesided_ders")
       }
       else {
-        rho_xy = LNRHO[vertexIdx.x][vertexIdx.y][1+n1-1]-LNRHO[vertexIdx.x][vertexIdx.y][n1-1-1]
+        rho_xy = F_RHO[vertexIdx.x][vertexIdx.y][1+n1-1]-F_RHO[vertexIdx.x][vertexIdx.y][n1-1-1]
         if (AC_ldensity_nolog__mod__cdata) {
           if (AC_lreference_state__mod__cdata) {
-            rho_xy = rho_xy/(LNRHO[vertexIdx.x][vertexIdx.y][n1-1]  +AC_reference_state_padded__mod__density[vertexIdx.x][iref_rho-1])
+            rho_xy = rho_xy/(F_RHO[vertexIdx.x][vertexIdx.y][n1-1]  +AC_reference_state_padded__mod__density[vertexIdx.x][iref_rho-1])
           }
           else {
-            rho_xy = rho_xy/LNRHO[vertexIdx.x][vertexIdx.y][n1-1]
+            rho_xy = rho_xy/F_RHO[vertexIdx.x][vertexIdx.y][n1-1]
           }
         }
-        SS[vertexIdx.x][vertexIdx.y][n1-1-1]=SS[vertexIdx.x][vertexIdx.y][1+n1-1]+(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(rho_xy+AC_dz2_bound__mod__cdata[-1+NGHOST+1-1]*tmp_xy)
-        rho_xy = LNRHO[vertexIdx.x][vertexIdx.y][2+n1-1]-LNRHO[vertexIdx.x][vertexIdx.y][n1-2-1]
+        F_SS[vertexIdx.x][vertexIdx.y][n1-1-1]=F_SS[vertexIdx.x][vertexIdx.y][1+n1-1]+(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(rho_xy+AC_dz2_bound__mod__cdata[-1+NGHOST+1-1]*tmp_xy)
+        rho_xy = F_RHO[vertexIdx.x][vertexIdx.y][2+n1-1]-F_RHO[vertexIdx.x][vertexIdx.y][n1-2-1]
         if (AC_ldensity_nolog__mod__cdata) {
           if (AC_lreference_state__mod__cdata) {
-            rho_xy = rho_xy/(LNRHO[vertexIdx.x][vertexIdx.y][n1-1]  +AC_reference_state_padded__mod__density[vertexIdx.x][iref_rho-1])
+            rho_xy = rho_xy/(F_RHO[vertexIdx.x][vertexIdx.y][n1-1]  +AC_reference_state_padded__mod__density[vertexIdx.x][iref_rho-1])
           }
           else {
-            rho_xy = rho_xy/LNRHO[vertexIdx.x][vertexIdx.y][n1-1]
+            rho_xy = rho_xy/F_RHO[vertexIdx.x][vertexIdx.y][n1-1]
           }
         }
-        SS[vertexIdx.x][vertexIdx.y][n1-2-1]=SS[vertexIdx.x][vertexIdx.y][2+n1-1]+(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(rho_xy+AC_dz2_bound__mod__cdata[-2+NGHOST+1-1]*tmp_xy)
-        rho_xy = LNRHO[vertexIdx.x][vertexIdx.y][3+n1-1]-LNRHO[vertexIdx.x][vertexIdx.y][n1-3-1]
+        F_SS[vertexIdx.x][vertexIdx.y][n1-2-1]=F_SS[vertexIdx.x][vertexIdx.y][2+n1-1]+(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(rho_xy+AC_dz2_bound__mod__cdata[-2+NGHOST+1-1]*tmp_xy)
+        rho_xy = F_RHO[vertexIdx.x][vertexIdx.y][3+n1-1]-F_RHO[vertexIdx.x][vertexIdx.y][n1-3-1]
         if (AC_ldensity_nolog__mod__cdata) {
           if (AC_lreference_state__mod__cdata) {
-            rho_xy = rho_xy/(LNRHO[vertexIdx.x][vertexIdx.y][n1-1]  +AC_reference_state_padded__mod__density[vertexIdx.x][iref_rho-1])
+            rho_xy = rho_xy/(F_RHO[vertexIdx.x][vertexIdx.y][n1-1]  +AC_reference_state_padded__mod__density[vertexIdx.x][iref_rho-1])
           }
           else {
-            rho_xy = rho_xy/LNRHO[vertexIdx.x][vertexIdx.y][n1-1]
+            rho_xy = rho_xy/F_RHO[vertexIdx.x][vertexIdx.y][n1-1]
           }
         }
-        SS[vertexIdx.x][vertexIdx.y][n1-3-1]=SS[vertexIdx.x][vertexIdx.y][3+n1-1]+(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(rho_xy+AC_dz2_bound__mod__cdata[-3+NGHOST+1-1]*tmp_xy)
+        F_SS[vertexIdx.x][vertexIdx.y][n1-3-1]=F_SS[vertexIdx.x][vertexIdx.y][3+n1-1]+(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(rho_xy+AC_dz2_bound__mod__cdata[-3+NGHOST+1-1]*tmp_xy)
       }
     }
   }
   else if (topbot == AC_top) {
     if (AC_pretend_lntt__mod__cdata) {
-      tmp_xy=-AC_ftopktop__mod__energy/exp(SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1])
-      SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1-1]=SS[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1]-AC_dz2_bound__mod__cdata[2+NGHOST-1]*tmp_xy
-      SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-2-1]=SS[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1]-AC_dz2_bound__mod__cdata[3+NGHOST-1]*tmp_xy
-      SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-3-1]=SS[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1]-AC_dz2_bound__mod__cdata[4+NGHOST-1]*tmp_xy
+      tmp_xy=-AC_ftopktop__mod__energy/exp(F_SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1])
+      F_SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1-1]=F_SS[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1]-AC_dz2_bound__mod__cdata[2+NGHOST-1]*tmp_xy
+      F_SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-2-1]=F_SS[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1]-AC_dz2_bound__mod__cdata[3+NGHOST-1]*tmp_xy
+      F_SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-3-1]=F_SS[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1]-AC_dz2_bound__mod__cdata[4+NGHOST-1]*tmp_xy
     }
     else {
       if (AC_ldensity_nolog__mod__cdata) {
         if (AC_lreference_state__mod__cdata) {
-          rho_xy= LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]  +AC_reference_state_padded__mod__density[vertexIdx.x][iref_rho-1]
+          rho_xy= F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]  +AC_reference_state_padded__mod__density[vertexIdx.x][iref_rho-1]
         }
         else {
-          rho_xy=LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]
+          rho_xy=F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]
         }
       }
       else {
-        rho_xy=exp(LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1])
+        rho_xy=exp(F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1])
       }
-      cs2_xy = SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]
+      cs2_xy = F_SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]
       if (AC_lreference_state__mod__cdata) {
         cs2_xy = cs2_xy + AC_reference_state_padded__mod__density[vertexIdx.x][iref_s-1]
       }
@@ -1479,7 +1479,7 @@ bc_ss_flux(AcBoundary boundary, AC_TOP_BOT topbot,bool lone_sided)
         cs2_xy=AC_cs20__mod__equationofstate*exp(AC_gamma_m1__mod__equationofstate*(log(rho_xy)-AC_lnrho0__mod__equationofstate)+AC_cv1__mod__equationofstate*cs2_xy)
       }
       else {
-        cs2_xy=AC_cs20__mod__equationofstate*exp(AC_gamma_m1__mod__equationofstate*(LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]-AC_lnrho0__mod__equationofstate)+AC_cv1__mod__equationofstate*cs2_xy)
+        cs2_xy=AC_cs20__mod__equationofstate*exp(AC_gamma_m1__mod__equationofstate*(F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]-AC_lnrho0__mod__equationofstate)+AC_cv1__mod__equationofstate*cs2_xy)
       }
       if (AC_lheatc_chiconst__mod__energy) {
         tmp_xy=AC_ftop__mod__energy/(rho_xy*AC_chi__mod__energy*cs2_xy)
@@ -1504,36 +1504,36 @@ bc_ss_flux(AcBoundary boundary, AC_TOP_BOT topbot,bool lone_sided)
         print("not implemented set_ghosts_for_onesided_ders")
       }
       else {
-        rho_xy = LNRHO[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1]-LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1-1]
+        rho_xy = F_RHO[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1]-F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1-1]
         if (AC_ldensity_nolog__mod__cdata) {
           if (AC_lreference_state__mod__cdata) {
-            rho_xy = rho_xy/(LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]  +AC_reference_state_padded__mod__density[vertexIdx.x][iref_rho-1])
+            rho_xy = rho_xy/(F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]  +AC_reference_state_padded__mod__density[vertexIdx.x][iref_rho-1])
           }
           else {
-            rho_xy = rho_xy/LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]
+            rho_xy = rho_xy/F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]
           }
         }
-        SS[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1]=SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1-1]+(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(-rho_xy-AC_dz2_bound__mod__cdata[2+NGHOST-1]*tmp_xy)
-        rho_xy = LNRHO[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1]-LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-2-1]
+        F_SS[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1]=F_SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1-1]+(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(-rho_xy-AC_dz2_bound__mod__cdata[2+NGHOST-1]*tmp_xy)
+        rho_xy = F_RHO[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1]-F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-2-1]
         if (AC_ldensity_nolog__mod__cdata) {
           if (AC_lreference_state__mod__cdata) {
-            rho_xy = rho_xy/(LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]  +AC_reference_state_padded__mod__density[vertexIdx.x][iref_rho-1])
+            rho_xy = rho_xy/(F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]  +AC_reference_state_padded__mod__density[vertexIdx.x][iref_rho-1])
           }
           else {
-            rho_xy = rho_xy/LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]
+            rho_xy = rho_xy/F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]
           }
         }
-        SS[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1]=SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-2-1]+(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(-rho_xy-AC_dz2_bound__mod__cdata[3+NGHOST-1]*tmp_xy)
-        rho_xy = LNRHO[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1]-LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-3-1]
+        F_SS[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1]=F_SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-2-1]+(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(-rho_xy-AC_dz2_bound__mod__cdata[3+NGHOST-1]*tmp_xy)
+        rho_xy = F_RHO[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1]-F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-3-1]
         if (AC_ldensity_nolog__mod__cdata) {
           if (AC_lreference_state__mod__cdata) {
-            rho_xy = rho_xy/(LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]  +AC_reference_state_padded__mod__density[vertexIdx.x][iref_rho-1])
+            rho_xy = rho_xy/(F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]  +AC_reference_state_padded__mod__density[vertexIdx.x][iref_rho-1])
           }
           else {
-            rho_xy = rho_xy/LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]
+            rho_xy = rho_xy/F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]
           }
         }
-        SS[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1]=SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-3-1]+(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(-rho_xy-AC_dz2_bound__mod__cdata[4+NGHOST-1]*tmp_xy)
+        F_SS[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1]=F_SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-3-1]+(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(-rho_xy-AC_dz2_bound__mod__cdata[4+NGHOST-1]*tmp_xy)
       }
     }
   }
@@ -1650,17 +1650,17 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
       if (ldensity) {
         if (AC_ldensity_nolog__mod__cdata) {
           if (AC_lreference_state__mod__cdata) {
-            getrho_s_return_value_0=LNRHO[l1-1][m1-1][n1-1]+AC_reference_state__mod__density[l1-l1+1-1][iref_rho-1]
+            getrho_s_return_value_0=F_RHO[l1-1][m1-1][n1-1]+AC_reference_state__mod__density[l1-l1+1-1][iref_rho-1]
           }
           else {
-            getrho_s_return_value_0=LNRHO[l1-1][m1-1][n1-1]
+            getrho_s_return_value_0=F_RHO[l1-1][m1-1][n1-1]
           }
         }
         else {
-          getrho_s_return_value_0=exp(LNRHO[l1-1][m1-1][n1-1])
+          getrho_s_return_value_0=exp(F_RHO[l1-1][m1-1][n1-1])
         }
         rho=getrho_s_return_value_0
-        ss=SS[l1-1][m1-1][n1-1]
+        ss=F_SS[l1-1][m1-1][n1-1]
         if (AC_lreference_state__mod__cdata) {
           ss=ss+AC_reference_state__mod__density[AC_xbot__mod__equationofstate-1][iref_s-1]
         }
@@ -1806,12 +1806,12 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
           dlnrhodz=dlnrhodz*rho
         }
         dssdz = -AC_gamma_m1__mod__equationofstate*AC_gravz__mod__gravity/cs2_point
-        LNRHO[vertexIdx.x][vertexIdx.y][n1-1-1] = LNRHO[vertexIdx.x][vertexIdx.y][1+n1-1] - AC_dz2_bound__mod__cdata[-1+NGHOST+1-1]*dlnrhodz
-        SS[vertexIdx.x][vertexIdx.y][n1-1-1] = SS[vertexIdx.x][vertexIdx.y][1+n1-1] - AC_dz2_bound__mod__cdata[-1+NGHOST+1-1]*dssdz
-        LNRHO[vertexIdx.x][vertexIdx.y][n1-2-1] = LNRHO[vertexIdx.x][vertexIdx.y][2+n1-1] - AC_dz2_bound__mod__cdata[-2+NGHOST+1-1]*dlnrhodz
-        SS[vertexIdx.x][vertexIdx.y][n1-2-1] = SS[vertexIdx.x][vertexIdx.y][2+n1-1] - AC_dz2_bound__mod__cdata[-2+NGHOST+1-1]*dssdz
-        LNRHO[vertexIdx.x][vertexIdx.y][n1-3-1] = LNRHO[vertexIdx.x][vertexIdx.y][3+n1-1] - AC_dz2_bound__mod__cdata[-3+NGHOST+1-1]*dlnrhodz
-        SS[vertexIdx.x][vertexIdx.y][n1-3-1] = SS[vertexIdx.x][vertexIdx.y][3+n1-1] - AC_dz2_bound__mod__cdata[-3+NGHOST+1-1]*dssdz
+        F_RHO[vertexIdx.x][vertexIdx.y][n1-1-1] = F_RHO[vertexIdx.x][vertexIdx.y][1+n1-1] - AC_dz2_bound__mod__cdata[-1+NGHOST+1-1]*dlnrhodz
+        F_SS[vertexIdx.x][vertexIdx.y][n1-1-1] = F_SS[vertexIdx.x][vertexIdx.y][1+n1-1] - AC_dz2_bound__mod__cdata[-1+NGHOST+1-1]*dssdz
+        F_RHO[vertexIdx.x][vertexIdx.y][n1-2-1] = F_RHO[vertexIdx.x][vertexIdx.y][2+n1-1] - AC_dz2_bound__mod__cdata[-2+NGHOST+1-1]*dlnrhodz
+        F_SS[vertexIdx.x][vertexIdx.y][n1-2-1] = F_SS[vertexIdx.x][vertexIdx.y][2+n1-1] - AC_dz2_bound__mod__cdata[-2+NGHOST+1-1]*dssdz
+        F_RHO[vertexIdx.x][vertexIdx.y][n1-3-1] = F_RHO[vertexIdx.x][vertexIdx.y][3+n1-1] - AC_dz2_bound__mod__cdata[-3+NGHOST+1-1]*dlnrhodz
+        F_SS[vertexIdx.x][vertexIdx.y][n1-3-1] = F_SS[vertexIdx.x][vertexIdx.y][3+n1-1] - AC_dz2_bound__mod__cdata[-3+NGHOST+1-1]*dssdz
       }
       else if (lanelastic) {
         if (AC_ipp_ss__mod__equationofstate == AC_ilnrho_ss__mod__equationofstate || AC_ipp_ss__mod__equationofstate == AC_irho_ss__mod__equationofstate) {
@@ -1969,80 +1969,80 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
           if (AC_lstratz__mod__cdata) {
           }
           else if (AC_ilnrho_tt__mod__equationofstate == AC_ilnrho_ss__mod__equationofstate)  {
-            lnrho__3 = LNRHO[l1-1][m1-1][n1-1]
+            lnrho__3 = F_RHO[l1-1][m1-1][n1-1]
           }
           else {
-            lnrho__3 = log(LNRHO[l1-1][m1-1][n1-1])
+            lnrho__3 = log(F_RHO[l1-1][m1-1][n1-1])
           }
-          ss__3=TT[l1-1][m1-1][n1-1]
+          ss__3=F_TT[l1-1][m1-1][n1-1]
           lntt__3=AC_lntt0__mod__equationofstate+AC_cv1__mod__equationofstate*ss__3+AC_gamma_m1__mod__equationofstate*(lnrho__3-AC_lnrho0__mod__equationofstate)
           ee__3=AC_cv__mod__equationofstate*exp(lntt__3)
           pp__3=(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*exp(lntt__3+lnrho__3)
           cs2__3=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__3
         }
         else if (AC_ilnrho_tt__mod__equationofstate == AC_ilnrho_ee__mod__equationofstate || AC_ilnrho_tt__mod__equationofstate == AC_irho_ee__mod__equationofstate) {
-          ee__3=TT[l1-1][m1-1][n1-1]
+          ee__3=F_TT[l1-1][m1-1][n1-1]
           if (AC_ilnrho_tt__mod__equationofstate==AC_ilnrho_ee__mod__equationofstate) {
-            lnrho__3=LNRHO[l1-1][m1-1][n1-1]
-            pp__3=AC_gamma_m1__mod__equationofstate*ee__3*exp(LNRHO[l1-1][m1-1][n1-1])
+            lnrho__3=F_RHO[l1-1][m1-1][n1-1]
+            pp__3=AC_gamma_m1__mod__equationofstate*ee__3*exp(F_RHO[l1-1][m1-1][n1-1])
           }
           else {
-            lnrho__3=log(LNRHO[l1-1][m1-1][n1-1])
-            pp__3=AC_gamma_m1__mod__equationofstate*ee__3*LNRHO[l1-1][m1-1][n1-1]
+            lnrho__3=log(F_RHO[l1-1][m1-1][n1-1])
+            pp__3=AC_gamma_m1__mod__equationofstate*ee__3*F_RHO[l1-1][m1-1][n1-1]
           }
           lntt__3=log(AC_cv1__mod__equationofstate*ee__3)
           ss__3=AC_cv__mod__equationofstate*(lntt__3-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__3-AC_lnrho0__mod__equationofstate))
           cs2__3=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__3
         }
         else if (AC_ilnrho_tt__mod__equationofstate == AC_ilnrho_pp__mod__equationofstate || AC_ilnrho_tt__mod__equationofstate == AC_irho_pp__mod__equationofstate) {
-          pp__3=TT[l1-1][m1-1][n1-1]
+          pp__3=F_TT[l1-1][m1-1][n1-1]
           if (AC_ilnrho_tt__mod__equationofstate==AC_ilnrho_pp__mod__equationofstate) {
-            lnrho__3=LNRHO[l1-1][m1-1][n1-1]
+            lnrho__3=F_RHO[l1-1][m1-1][n1-1]
             ee__3=pp__3*exp(-lnrho__3)/AC_gamma_m1__mod__equationofstate
             ss__3=AC_cv__mod__equationofstate*(log(pp__3*exp(-lnrho__3)*AC_gamma__mod__equationofstate/AC_cs20__mod__equationofstate)-AC_gamma_m1__mod__equationofstate*(lnrho__3-AC_lnrho0__mod__equationofstate))
           }
           else {
-            lnrho__3=log(LNRHO[l1-1][m1-1][n1-1])
-            ee__3=pp__3/LNRHO[l1-1][m1-1][n1-1]/AC_gamma_m1__mod__equationofstate
-            ss__3=AC_cv__mod__equationofstate*(log(pp__3/LNRHO[l1-1][m1-1][n1-1]*AC_gamma__mod__equationofstate/AC_cs20__mod__equationofstate)-AC_gamma_m1__mod__equationofstate*(lnrho__3-AC_lnrho0__mod__equationofstate))
+            lnrho__3=log(F_RHO[l1-1][m1-1][n1-1])
+            ee__3=pp__3/F_RHO[l1-1][m1-1][n1-1]/AC_gamma_m1__mod__equationofstate
+            ss__3=AC_cv__mod__equationofstate*(log(pp__3/F_RHO[l1-1][m1-1][n1-1]*AC_gamma__mod__equationofstate/AC_cs20__mod__equationofstate)-AC_gamma_m1__mod__equationofstate*(lnrho__3-AC_lnrho0__mod__equationofstate))
           }
           lntt__3=log(AC_cv1__mod__equationofstate*ee__3)
           cs2__3=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__3
         }
         else if (AC_ilnrho_tt__mod__equationofstate == AC_ilnrho_lntt__mod__equationofstate) {
-          lnrho__3=LNRHO[l1-1][m1-1][n1-1]
-          lntt__3=TT[l1-1][m1-1][n1-1]
+          lnrho__3=F_RHO[l1-1][m1-1][n1-1]
+          lntt__3=F_TT[l1-1][m1-1][n1-1]
           ss__3=AC_cv__mod__equationofstate*(lntt__3-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__3-AC_lnrho0__mod__equationofstate))
           ee__3=AC_cv__mod__equationofstate*exp(lntt__3)
           pp__3=ee__3*exp(lnrho__3)*AC_gamma_m1__mod__equationofstate
           cs2__3=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__3
         }
         else if (AC_ilnrho_tt__mod__equationofstate == AC_ilnrho_tt__mod__equationofstate) {
-          lnrho__3=LNRHO[l1-1][m1-1][n1-1]
-          tt__3=TT[l1-1][m1-1][n1-1]
+          lnrho__3=F_RHO[l1-1][m1-1][n1-1]
+          tt__3=F_TT[l1-1][m1-1][n1-1]
           ss__3=AC_cv__mod__equationofstate*(log(tt__3)-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__3-AC_lnrho0__mod__equationofstate))
           ee__3=AC_cv__mod__equationofstate*tt__3
           pp__3=ee__3*exp(lnrho__3)*AC_gamma_m1__mod__equationofstate
           cs2__3=AC_cp__mod__equationofstate*AC_gamma_m1__mod__equationofstate*tt__3
         }
         else if (AC_ilnrho_tt__mod__equationofstate == AC_irho_tt__mod__equationofstate) {
-          lnrho__3=log(LNRHO[l1-1][m1-1][n1-1])
-          tt__3=TT[l1-1][m1-1][n1-1]
+          lnrho__3=log(F_RHO[l1-1][m1-1][n1-1])
+          tt__3=F_TT[l1-1][m1-1][n1-1]
           ss__3=AC_cv__mod__equationofstate*(log(tt__3)-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__3-AC_lnrho0__mod__equationofstate))
           ee__3=AC_cv__mod__equationofstate*tt__3
-          pp__3=ee__3*LNRHO[l1-1][m1-1][n1-1]*AC_gamma_m1__mod__equationofstate
+          pp__3=ee__3*F_RHO[l1-1][m1-1][n1-1]*AC_gamma_m1__mod__equationofstate
           cs2__3=AC_cp__mod__equationofstate*AC_gamma_m1__mod__equationofstate*tt__3
         }
         else if (AC_ilnrho_tt__mod__equationofstate == AC_ipp_cs2__mod__equationofstate) {
           if (lanelastic) {
             if (AC_lanelastic_lin__mod__equationofstate) {
-              lnrho__3=log(LNRHO[l1-1][m1-1][n1-1])
+              lnrho__3=log(F_RHO[l1-1][m1-1][n1-1])
               tt__3=exp(AC_lntt0__mod__equationofstate)
               pp__3=exp(lnrho__3)*AC_cs20__mod__equationofstate/AC_gamma__mod__equationofstate
             }
             else {
               if (AC_leos_isothermal__mod__equationofstate) {
-                pp__3=LNRHO[l1-1][m1-1][n1-1]
+                pp__3=F_RHO[l1-1][m1-1][n1-1]
                 lnrho__3=log(pp__3*AC_cs20__mod__equationofstate)
                 tt__3=exp(AC_lntt0__mod__equationofstate)
               }
@@ -2052,14 +2052,14 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
         else if (AC_ilnrho_tt__mod__equationofstate == AC_ipp_ss__mod__equationofstate) {
           if (lanelastic) {
             if (AC_lanelastic_lin__mod__equationofstate) {
-              lnrho__3=(LNRHO[l1-1][m1-1][n1-1])
-              ss__3=TT[l1-1][m1-1][n1-1]
+              lnrho__3=(F_RHO[l1-1][m1-1][n1-1])
+              ss__3=F_TT[l1-1][m1-1][n1-1]
               cs2__3=exp(AC_gamma__mod__equationofstate*ss__3*AC_cp1__mod__equationofstate+AC_gamma_m1__mod__equationofstate*(lnrho__3-AC_lnrho0__mod__equationofstate))*AC_cs20__mod__equationofstate
               tt__3=cs2__3/(AC_gamma_m1__mod__equationofstate*AC_cp__mod__equationofstate)
             }
             else {
-              pp__3=LNRHO[l1-1][m1-1][n1-1]
-              ss__3=TT[l1-1][m1-1][n1-1]
+              pp__3=F_RHO[l1-1][m1-1][n1-1]
+              ss__3=F_TT[l1-1][m1-1][n1-1]
               cs2__3=exp(ss__3*AC_cp1__mod__equationofstate+AC_gamma1__mod__equationofstate*AC_gamma_m1__mod__equationofstate*log(pp__3/AC_pp0__mod__equationofstate))*AC_cs20__mod__equationofstate
               tt__3=cs2__3/(AC_gamma_m1__mod__equationofstate*AC_cp__mod__equationofstate)
               lnrho__3=log(AC_gamma__mod__equationofstate*pp__3/cs2__3)
@@ -2071,18 +2071,18 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
           }
           else {
             if (AC_ldensity_nolog__mod__cdata) {
-              rho_3 = LNRHO[l1-1][m1-1][n1-1]
+              rho_3 = F_RHO[l1-1][m1-1][n1-1]
               if (false) {
-                lnrho__3 = log(LNRHO[l1-1][m1-1][n1-1])
+                lnrho__3 = log(F_RHO[l1-1][m1-1][n1-1])
               }
             }
             else {
-              rho_3 = exp(LNRHO[l1-1][m1-1][n1-1])
+              rho_3 = exp(F_RHO[l1-1][m1-1][n1-1])
               if (false) {
-                lnrho__3 = LNRHO[l1-1][m1-1][n1-1]
+                lnrho__3 = F_RHO[l1-1][m1-1][n1-1]
               }
             }
-            eth_3 = TT[l1-1][m1-1][n1-1]
+            eth_3 = F_TT[l1-1][m1-1][n1-1]
           }
           if (false) {
             lntt__3 = log(AC_cv1__mod__equationofstate * eth_3/ rho_3)
@@ -2108,80 +2108,80 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
           if (AC_lstratz__mod__cdata) {
           }
           else if (AC_ilnrho_lntt__mod__equationofstate == AC_ilnrho_ss__mod__equationofstate)  {
-            lnrho__4 = LNRHO[l1-1][m1-1][n1-1]
+            lnrho__4 = F_RHO[l1-1][m1-1][n1-1]
           }
           else {
-            lnrho__4 = log(LNRHO[l1-1][m1-1][n1-1])
+            lnrho__4 = log(F_RHO[l1-1][m1-1][n1-1])
           }
-          ss__4=LNTT[l1-1][m1-1][n1-1]
+          ss__4=F_TT[l1-1][m1-1][n1-1]
           lntt__4=AC_lntt0__mod__equationofstate+AC_cv1__mod__equationofstate*ss__4+AC_gamma_m1__mod__equationofstate*(lnrho__4-AC_lnrho0__mod__equationofstate)
           ee__4=AC_cv__mod__equationofstate*exp(lntt__4)
           pp__4=(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*exp(lntt__4+lnrho__4)
           cs2__4=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__4
         }
         else if (AC_ilnrho_lntt__mod__equationofstate == AC_ilnrho_ee__mod__equationofstate || AC_ilnrho_lntt__mod__equationofstate == AC_irho_ee__mod__equationofstate) {
-          ee__4=LNTT[l1-1][m1-1][n1-1]
+          ee__4=F_TT[l1-1][m1-1][n1-1]
           if (AC_ilnrho_lntt__mod__equationofstate==AC_ilnrho_ee__mod__equationofstate) {
-            lnrho__4=LNRHO[l1-1][m1-1][n1-1]
-            pp__4=AC_gamma_m1__mod__equationofstate*ee__4*exp(LNRHO[l1-1][m1-1][n1-1])
+            lnrho__4=F_RHO[l1-1][m1-1][n1-1]
+            pp__4=AC_gamma_m1__mod__equationofstate*ee__4*exp(F_RHO[l1-1][m1-1][n1-1])
           }
           else {
-            lnrho__4=log(LNRHO[l1-1][m1-1][n1-1])
-            pp__4=AC_gamma_m1__mod__equationofstate*ee__4*LNRHO[l1-1][m1-1][n1-1]
+            lnrho__4=log(F_RHO[l1-1][m1-1][n1-1])
+            pp__4=AC_gamma_m1__mod__equationofstate*ee__4*F_RHO[l1-1][m1-1][n1-1]
           }
           lntt__4=log(AC_cv1__mod__equationofstate*ee__4)
           ss__4=AC_cv__mod__equationofstate*(lntt__4-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__4-AC_lnrho0__mod__equationofstate))
           cs2__4=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__4
         }
         else if (AC_ilnrho_lntt__mod__equationofstate == AC_ilnrho_pp__mod__equationofstate || AC_ilnrho_lntt__mod__equationofstate == AC_irho_pp__mod__equationofstate) {
-          pp__4=LNTT[l1-1][m1-1][n1-1]
+          pp__4=F_TT[l1-1][m1-1][n1-1]
           if (AC_ilnrho_lntt__mod__equationofstate==AC_ilnrho_pp__mod__equationofstate) {
-            lnrho__4=LNRHO[l1-1][m1-1][n1-1]
+            lnrho__4=F_RHO[l1-1][m1-1][n1-1]
             ee__4=pp__4*exp(-lnrho__4)/AC_gamma_m1__mod__equationofstate
             ss__4=AC_cv__mod__equationofstate*(log(pp__4*exp(-lnrho__4)*AC_gamma__mod__equationofstate/AC_cs20__mod__equationofstate)-AC_gamma_m1__mod__equationofstate*(lnrho__4-AC_lnrho0__mod__equationofstate))
           }
           else {
-            lnrho__4=log(LNRHO[l1-1][m1-1][n1-1])
-            ee__4=pp__4/LNRHO[l1-1][m1-1][n1-1]/AC_gamma_m1__mod__equationofstate
-            ss__4=AC_cv__mod__equationofstate*(log(pp__4/LNRHO[l1-1][m1-1][n1-1]*AC_gamma__mod__equationofstate/AC_cs20__mod__equationofstate)-AC_gamma_m1__mod__equationofstate*(lnrho__4-AC_lnrho0__mod__equationofstate))
+            lnrho__4=log(F_RHO[l1-1][m1-1][n1-1])
+            ee__4=pp__4/F_RHO[l1-1][m1-1][n1-1]/AC_gamma_m1__mod__equationofstate
+            ss__4=AC_cv__mod__equationofstate*(log(pp__4/F_RHO[l1-1][m1-1][n1-1]*AC_gamma__mod__equationofstate/AC_cs20__mod__equationofstate)-AC_gamma_m1__mod__equationofstate*(lnrho__4-AC_lnrho0__mod__equationofstate))
           }
           lntt__4=log(AC_cv1__mod__equationofstate*ee__4)
           cs2__4=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__4
         }
         else if (AC_ilnrho_lntt__mod__equationofstate == AC_ilnrho_lntt__mod__equationofstate) {
-          lnrho__4=LNRHO[l1-1][m1-1][n1-1]
-          lntt__4=LNTT[l1-1][m1-1][n1-1]
+          lnrho__4=F_RHO[l1-1][m1-1][n1-1]
+          lntt__4=F_TT[l1-1][m1-1][n1-1]
           ss__4=AC_cv__mod__equationofstate*(lntt__4-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__4-AC_lnrho0__mod__equationofstate))
           ee__4=AC_cv__mod__equationofstate*exp(lntt__4)
           pp__4=ee__4*exp(lnrho__4)*AC_gamma_m1__mod__equationofstate
           cs2__4=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__4
         }
         else if (AC_ilnrho_lntt__mod__equationofstate == AC_ilnrho_tt__mod__equationofstate) {
-          lnrho__4=LNRHO[l1-1][m1-1][n1-1]
-          tt__4=LNTT[l1-1][m1-1][n1-1]
+          lnrho__4=F_RHO[l1-1][m1-1][n1-1]
+          tt__4=F_TT[l1-1][m1-1][n1-1]
           ss__4=AC_cv__mod__equationofstate*(log(tt__4)-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__4-AC_lnrho0__mod__equationofstate))
           ee__4=AC_cv__mod__equationofstate*tt__4
           pp__4=ee__4*exp(lnrho__4)*AC_gamma_m1__mod__equationofstate
           cs2__4=AC_cp__mod__equationofstate*AC_gamma_m1__mod__equationofstate*tt__4
         }
         else if (AC_ilnrho_lntt__mod__equationofstate == AC_irho_tt__mod__equationofstate) {
-          lnrho__4=log(LNRHO[l1-1][m1-1][n1-1])
-          tt__4=LNTT[l1-1][m1-1][n1-1]
+          lnrho__4=log(F_RHO[l1-1][m1-1][n1-1])
+          tt__4=F_TT[l1-1][m1-1][n1-1]
           ss__4=AC_cv__mod__equationofstate*(log(tt__4)-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__4-AC_lnrho0__mod__equationofstate))
           ee__4=AC_cv__mod__equationofstate*tt__4
-          pp__4=ee__4*LNRHO[l1-1][m1-1][n1-1]*AC_gamma_m1__mod__equationofstate
+          pp__4=ee__4*F_RHO[l1-1][m1-1][n1-1]*AC_gamma_m1__mod__equationofstate
           cs2__4=AC_cp__mod__equationofstate*AC_gamma_m1__mod__equationofstate*tt__4
         }
         else if (AC_ilnrho_lntt__mod__equationofstate == AC_ipp_cs2__mod__equationofstate) {
           if (lanelastic) {
             if (AC_lanelastic_lin__mod__equationofstate) {
-              lnrho__4=log(LNRHO[l1-1][m1-1][n1-1])
+              lnrho__4=log(F_RHO[l1-1][m1-1][n1-1])
               tt__4=exp(AC_lntt0__mod__equationofstate)
               pp__4=exp(lnrho__4)*AC_cs20__mod__equationofstate/AC_gamma__mod__equationofstate
             }
             else {
               if (AC_leos_isothermal__mod__equationofstate) {
-                pp__4=LNRHO[l1-1][m1-1][n1-1]
+                pp__4=F_RHO[l1-1][m1-1][n1-1]
                 lnrho__4=log(pp__4*AC_cs20__mod__equationofstate)
                 tt__4=exp(AC_lntt0__mod__equationofstate)
               }
@@ -2191,14 +2191,14 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
         else if (AC_ilnrho_lntt__mod__equationofstate == AC_ipp_ss__mod__equationofstate) {
           if (lanelastic) {
             if (AC_lanelastic_lin__mod__equationofstate) {
-              lnrho__4=(LNRHO[l1-1][m1-1][n1-1])
-              ss__4=LNTT[l1-1][m1-1][n1-1]
+              lnrho__4=(F_RHO[l1-1][m1-1][n1-1])
+              ss__4=F_TT[l1-1][m1-1][n1-1]
               cs2__4=exp(AC_gamma__mod__equationofstate*ss__4*AC_cp1__mod__equationofstate+AC_gamma_m1__mod__equationofstate*(lnrho__4-AC_lnrho0__mod__equationofstate))*AC_cs20__mod__equationofstate
               tt__4=cs2__4/(AC_gamma_m1__mod__equationofstate*AC_cp__mod__equationofstate)
             }
             else {
-              pp__4=LNRHO[l1-1][m1-1][n1-1]
-              ss__4=LNTT[l1-1][m1-1][n1-1]
+              pp__4=F_RHO[l1-1][m1-1][n1-1]
+              ss__4=F_TT[l1-1][m1-1][n1-1]
               cs2__4=exp(ss__4*AC_cp1__mod__equationofstate+AC_gamma1__mod__equationofstate*AC_gamma_m1__mod__equationofstate*log(pp__4/AC_pp0__mod__equationofstate))*AC_cs20__mod__equationofstate
               tt__4=cs2__4/(AC_gamma_m1__mod__equationofstate*AC_cp__mod__equationofstate)
               lnrho__4=log(AC_gamma__mod__equationofstate*pp__4/cs2__4)
@@ -2210,18 +2210,18 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
           }
           else {
             if (AC_ldensity_nolog__mod__cdata) {
-              rho_4 = LNRHO[l1-1][m1-1][n1-1]
+              rho_4 = F_RHO[l1-1][m1-1][n1-1]
               if (false) {
-                lnrho__4 = log(LNRHO[l1-1][m1-1][n1-1])
+                lnrho__4 = log(F_RHO[l1-1][m1-1][n1-1])
               }
             }
             else {
-              rho_4 = exp(LNRHO[l1-1][m1-1][n1-1])
+              rho_4 = exp(F_RHO[l1-1][m1-1][n1-1])
               if (false) {
-                lnrho__4 = LNRHO[l1-1][m1-1][n1-1]
+                lnrho__4 = F_RHO[l1-1][m1-1][n1-1]
               }
             }
-            eth_4 = LNTT[l1-1][m1-1][n1-1]
+            eth_4 = F_TT[l1-1][m1-1][n1-1]
           }
           if (false) {
             lntt__4 = log(AC_cv1__mod__equationofstate * eth_4/ rho_4)
@@ -2243,9 +2243,9 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
         }
       }
       dlnrhodz = AC_gamma__mod__equationofstate * AC_gravz__mod__gravity/cs2_point
-      LNRHO[vertexIdx.x][vertexIdx.y][n1-1-1] = LNRHO[vertexIdx.x][vertexIdx.y][1+n1-1] - AC_dz2_bound__mod__cdata[-1+NGHOST+1-1]*dlnrhodz
-      LNRHO[vertexIdx.x][vertexIdx.y][n1-2-1] = LNRHO[vertexIdx.x][vertexIdx.y][2+n1-1] - AC_dz2_bound__mod__cdata[-2+NGHOST+1-1]*dlnrhodz
-      LNRHO[vertexIdx.x][vertexIdx.y][n1-3-1] = LNRHO[vertexIdx.x][vertexIdx.y][3+n1-1] - AC_dz2_bound__mod__cdata[-3+NGHOST+1-1]*dlnrhodz
+      F_RHO[vertexIdx.x][vertexIdx.y][n1-1-1] = F_RHO[vertexIdx.x][vertexIdx.y][1+n1-1] - AC_dz2_bound__mod__cdata[-1+NGHOST+1-1]*dlnrhodz
+      F_RHO[vertexIdx.x][vertexIdx.y][n1-2-1] = F_RHO[vertexIdx.x][vertexIdx.y][2+n1-1] - AC_dz2_bound__mod__cdata[-2+NGHOST+1-1]*dlnrhodz
+      F_RHO[vertexIdx.x][vertexIdx.y][n1-3-1] = F_RHO[vertexIdx.x][vertexIdx.y][3+n1-1] - AC_dz2_bound__mod__cdata[-3+NGHOST+1-1]*dlnrhodz
     }
     else {
       potx_xpoint_5=0.0
@@ -2368,10 +2368,10 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
       potp = potx_xpoint_6 + poty_ypoint_6 + potz_zpoint_6
       cs2 = AC_cs2bot__mod__equationofstate
       if (AC_ldensity_nolog__mod__cdata) {
-        RHO[vertexIdx.x][vertexIdx.y][n1-1-1]   = RHO[vertexIdx.x][vertexIdx.y][1+n1-1]*exp(-(potm-potp)/cs2)
+        F_RHO[vertexIdx.x][vertexIdx.y][n1-1-1]   = F_RHO[vertexIdx.x][vertexIdx.y][1+n1-1]*exp(-(potm-potp)/cs2)
       }
       else {
-        LNRHO[vertexIdx.x][vertexIdx.y][n1-1-1] = LNRHO[vertexIdx.x][vertexIdx.y][1+n1-1] - (potm-potp)/cs2
+        F_RHO[vertexIdx.x][vertexIdx.y][n1-1-1] = F_RHO[vertexIdx.x][vertexIdx.y][1+n1-1] - (potm-potp)/cs2
       }
       potx_xpoint_5=0.0
       poty_ypoint_5=0.0
@@ -2493,10 +2493,10 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
       potp = potx_xpoint_6 + poty_ypoint_6 + potz_zpoint_6
       cs2 = AC_cs2bot__mod__equationofstate
       if (AC_ldensity_nolog__mod__cdata) {
-        RHO[vertexIdx.x][vertexIdx.y][n1-2-1]   = RHO[vertexIdx.x][vertexIdx.y][2+n1-1]*exp(-(potm-potp)/cs2)
+        F_RHO[vertexIdx.x][vertexIdx.y][n1-2-1]   = F_RHO[vertexIdx.x][vertexIdx.y][2+n1-1]*exp(-(potm-potp)/cs2)
       }
       else {
-        LNRHO[vertexIdx.x][vertexIdx.y][n1-2-1] = LNRHO[vertexIdx.x][vertexIdx.y][2+n1-1] - (potm-potp)/cs2
+        F_RHO[vertexIdx.x][vertexIdx.y][n1-2-1] = F_RHO[vertexIdx.x][vertexIdx.y][2+n1-1] - (potm-potp)/cs2
       }
       potx_xpoint_5=0.0
       poty_ypoint_5=0.0
@@ -2618,10 +2618,10 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
       potp = potx_xpoint_6 + poty_ypoint_6 + potz_zpoint_6
       cs2 = AC_cs2bot__mod__equationofstate
       if (AC_ldensity_nolog__mod__cdata) {
-        RHO[vertexIdx.x][vertexIdx.y][n1-3-1]   = RHO[vertexIdx.x][vertexIdx.y][3+n1-1]*exp(-(potm-potp)/cs2)
+        F_RHO[vertexIdx.x][vertexIdx.y][n1-3-1]   = F_RHO[vertexIdx.x][vertexIdx.y][3+n1-1]*exp(-(potm-potp)/cs2)
       }
       else {
-        LNRHO[vertexIdx.x][vertexIdx.y][n1-3-1] = LNRHO[vertexIdx.x][vertexIdx.y][3+n1-1] - (potm-potp)/cs2
+        F_RHO[vertexIdx.x][vertexIdx.y][n1-3-1] = F_RHO[vertexIdx.x][vertexIdx.y][3+n1-1] - (potm-potp)/cs2
       }
     }
   }
@@ -2631,17 +2631,17 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
       if (ldensity) {
         if (AC_ldensity_nolog__mod__cdata) {
           if (AC_lreference_state__mod__cdata) {
-            getrho_s_return_value_7=LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]+AC_reference_state__mod__density[nx-1][iref_rho-1]
+            getrho_s_return_value_7=F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]+AC_reference_state__mod__density[nx-1][iref_rho-1]
           }
           else {
-            getrho_s_return_value_7=LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+            getrho_s_return_value_7=F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
           }
         }
         else {
-          getrho_s_return_value_7=exp(LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
+          getrho_s_return_value_7=exp(F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
         }
         rho=getrho_s_return_value_7
-        ss=SS[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+        ss=F_SS[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
         if (AC_lreference_state__mod__cdata) {
           ss=ss+AC_reference_state__mod__density[AC_xtop__mod__equationofstate-1][iref_s-1]
         }
@@ -2787,12 +2787,12 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
           dlnrhodz=dlnrhodz*rho
         }
         dssdz    = -AC_gamma_m1__mod__equationofstate*AC_gravz__mod__gravity/cs2_point
-        LNRHO[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1] = LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1-1] + AC_dz2_bound__mod__cdata[2+NGHOST-1]*dlnrhodz
-        SS[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1] = SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1-1] + AC_dz2_bound__mod__cdata[2+NGHOST-1]*dssdz
-        LNRHO[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1] = LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-2-1] + AC_dz2_bound__mod__cdata[3+NGHOST-1]*dlnrhodz
-        SS[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1] = SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-2-1] + AC_dz2_bound__mod__cdata[3+NGHOST-1]*dssdz
-        LNRHO[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1] = LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-3-1] + AC_dz2_bound__mod__cdata[4+NGHOST-1]*dlnrhodz
-        SS[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1] = SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-3-1] + AC_dz2_bound__mod__cdata[4+NGHOST-1]*dssdz
+        F_RHO[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1] = F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1-1] + AC_dz2_bound__mod__cdata[2+NGHOST-1]*dlnrhodz
+        F_SS[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1] = F_SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1-1] + AC_dz2_bound__mod__cdata[2+NGHOST-1]*dssdz
+        F_RHO[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1] = F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-2-1] + AC_dz2_bound__mod__cdata[3+NGHOST-1]*dlnrhodz
+        F_SS[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1] = F_SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-2-1] + AC_dz2_bound__mod__cdata[3+NGHOST-1]*dssdz
+        F_RHO[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1] = F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-3-1] + AC_dz2_bound__mod__cdata[4+NGHOST-1]*dlnrhodz
+        F_SS[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1] = F_SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-3-1] + AC_dz2_bound__mod__cdata[4+NGHOST-1]*dssdz
       }
       else {
       }
@@ -2803,80 +2803,80 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
           if (AC_lstratz__mod__cdata) {
           }
           else if (AC_ilnrho_tt__mod__equationofstate == AC_ilnrho_ss__mod__equationofstate)  {
-            lnrho__9 = LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+            lnrho__9 = F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
           }
           else {
-            lnrho__9 = log(LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
+            lnrho__9 = log(F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
           }
-          ss__9=TT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+          ss__9=F_TT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
           lntt__9=AC_lntt0__mod__equationofstate+AC_cv1__mod__equationofstate*ss__9+AC_gamma_m1__mod__equationofstate*(lnrho__9-AC_lnrho0__mod__equationofstate)
           ee__9=AC_cv__mod__equationofstate*exp(lntt__9)
           pp__9=(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*exp(lntt__9+lnrho__9)
           cs2__9=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__9
         }
         else if (AC_ilnrho_tt__mod__equationofstate == AC_ilnrho_ee__mod__equationofstate || AC_ilnrho_tt__mod__equationofstate == AC_irho_ee__mod__equationofstate) {
-          ee__9=TT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+          ee__9=F_TT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
           if (AC_ilnrho_tt__mod__equationofstate==AC_ilnrho_ee__mod__equationofstate) {
-            lnrho__9=LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
-            pp__9=AC_gamma_m1__mod__equationofstate*ee__9*exp(LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
+            lnrho__9=F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+            pp__9=AC_gamma_m1__mod__equationofstate*ee__9*exp(F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
           }
           else {
-            lnrho__9=log(LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
-            pp__9=AC_gamma_m1__mod__equationofstate*ee__9*LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+            lnrho__9=log(F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
+            pp__9=AC_gamma_m1__mod__equationofstate*ee__9*F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
           }
           lntt__9=log(AC_cv1__mod__equationofstate*ee__9)
           ss__9=AC_cv__mod__equationofstate*(lntt__9-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__9-AC_lnrho0__mod__equationofstate))
           cs2__9=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__9
         }
         else if (AC_ilnrho_tt__mod__equationofstate == AC_ilnrho_pp__mod__equationofstate || AC_ilnrho_tt__mod__equationofstate == AC_irho_pp__mod__equationofstate) {
-          pp__9=TT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+          pp__9=F_TT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
           if (AC_ilnrho_tt__mod__equationofstate==AC_ilnrho_pp__mod__equationofstate) {
-            lnrho__9=LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+            lnrho__9=F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
             ee__9=pp__9*exp(-lnrho__9)/AC_gamma_m1__mod__equationofstate
             ss__9=AC_cv__mod__equationofstate*(log(pp__9*exp(-lnrho__9)*AC_gamma__mod__equationofstate/AC_cs20__mod__equationofstate)-AC_gamma_m1__mod__equationofstate*(lnrho__9-AC_lnrho0__mod__equationofstate))
           }
           else {
-            lnrho__9=log(LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
-            ee__9=pp__9/LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]/AC_gamma_m1__mod__equationofstate
-            ss__9=AC_cv__mod__equationofstate*(log(pp__9/LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]*AC_gamma__mod__equationofstate/AC_cs20__mod__equationofstate)-AC_gamma_m1__mod__equationofstate*(lnrho__9-AC_lnrho0__mod__equationofstate))
+            lnrho__9=log(F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
+            ee__9=pp__9/F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]/AC_gamma_m1__mod__equationofstate
+            ss__9=AC_cv__mod__equationofstate*(log(pp__9/F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]*AC_gamma__mod__equationofstate/AC_cs20__mod__equationofstate)-AC_gamma_m1__mod__equationofstate*(lnrho__9-AC_lnrho0__mod__equationofstate))
           }
           lntt__9=log(AC_cv1__mod__equationofstate*ee__9)
           cs2__9=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__9
         }
         else if (AC_ilnrho_tt__mod__equationofstate == AC_ilnrho_lntt__mod__equationofstate) {
-          lnrho__9=LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
-          lntt__9=TT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+          lnrho__9=F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+          lntt__9=F_TT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
           ss__9=AC_cv__mod__equationofstate*(lntt__9-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__9-AC_lnrho0__mod__equationofstate))
           ee__9=AC_cv__mod__equationofstate*exp(lntt__9)
           pp__9=ee__9*exp(lnrho__9)*AC_gamma_m1__mod__equationofstate
           cs2__9=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__9
         }
         else if (AC_ilnrho_tt__mod__equationofstate == AC_ilnrho_tt__mod__equationofstate) {
-          lnrho__9=LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
-          tt__9=TT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+          lnrho__9=F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+          tt__9=F_TT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
           ss__9=AC_cv__mod__equationofstate*(log(tt__9)-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__9-AC_lnrho0__mod__equationofstate))
           ee__9=AC_cv__mod__equationofstate*tt__9
           pp__9=ee__9*exp(lnrho__9)*AC_gamma_m1__mod__equationofstate
           cs2__9=AC_cp__mod__equationofstate*AC_gamma_m1__mod__equationofstate*tt__9
         }
         else if (AC_ilnrho_tt__mod__equationofstate == AC_irho_tt__mod__equationofstate) {
-          lnrho__9=log(LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
-          tt__9=TT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+          lnrho__9=log(F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
+          tt__9=F_TT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
           ss__9=AC_cv__mod__equationofstate*(log(tt__9)-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__9-AC_lnrho0__mod__equationofstate))
           ee__9=AC_cv__mod__equationofstate*tt__9
-          pp__9=ee__9*LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]*AC_gamma_m1__mod__equationofstate
+          pp__9=ee__9*F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]*AC_gamma_m1__mod__equationofstate
           cs2__9=AC_cp__mod__equationofstate*AC_gamma_m1__mod__equationofstate*tt__9
         }
         else if (AC_ilnrho_tt__mod__equationofstate == AC_ipp_cs2__mod__equationofstate) {
           if (lanelastic) {
             if (AC_lanelastic_lin__mod__equationofstate) {
-              lnrho__9=log(LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
+              lnrho__9=log(F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
               tt__9=exp(AC_lntt0__mod__equationofstate)
               pp__9=exp(lnrho__9)*AC_cs20__mod__equationofstate/AC_gamma__mod__equationofstate
             }
             else {
               if (AC_leos_isothermal__mod__equationofstate) {
-                pp__9=LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+                pp__9=F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
                 lnrho__9=log(pp__9*AC_cs20__mod__equationofstate)
                 tt__9=exp(AC_lntt0__mod__equationofstate)
               }
@@ -2886,14 +2886,14 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
         else if (AC_ilnrho_tt__mod__equationofstate == AC_ipp_ss__mod__equationofstate) {
           if (lanelastic) {
             if (AC_lanelastic_lin__mod__equationofstate) {
-              lnrho__9=(LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
-              ss__9=TT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+              lnrho__9=(F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
+              ss__9=F_TT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
               cs2__9=exp(AC_gamma__mod__equationofstate*ss__9*AC_cp1__mod__equationofstate+AC_gamma_m1__mod__equationofstate*(lnrho__9-AC_lnrho0__mod__equationofstate))*AC_cs20__mod__equationofstate
               tt__9=cs2__9/(AC_gamma_m1__mod__equationofstate*AC_cp__mod__equationofstate)
             }
             else {
-              pp__9=LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
-              ss__9=TT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+              pp__9=F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+              ss__9=F_TT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
               cs2__9=exp(ss__9*AC_cp1__mod__equationofstate+AC_gamma1__mod__equationofstate*AC_gamma_m1__mod__equationofstate*log(pp__9/AC_pp0__mod__equationofstate))*AC_cs20__mod__equationofstate
               tt__9=cs2__9/(AC_gamma_m1__mod__equationofstate*AC_cp__mod__equationofstate)
               lnrho__9=log(AC_gamma__mod__equationofstate*pp__9/cs2__9)
@@ -2905,18 +2905,18 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
           }
           else {
             if (AC_ldensity_nolog__mod__cdata) {
-              rho_9 = LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+              rho_9 = F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
               if (false) {
-                lnrho__9 = log(LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
+                lnrho__9 = log(F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
               }
             }
             else {
-              rho_9 = exp(LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
+              rho_9 = exp(F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
               if (false) {
-                lnrho__9 = LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+                lnrho__9 = F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
               }
             }
-            eth_9 = TT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+            eth_9 = F_TT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
           }
           if (false) {
             lntt__9 = log(AC_cv1__mod__equationofstate * eth_9/ rho_9)
@@ -2942,80 +2942,80 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
           if (AC_lstratz__mod__cdata) {
           }
           else if (AC_ilnrho_lntt__mod__equationofstate == AC_ilnrho_ss__mod__equationofstate)  {
-            lnrho__10 = LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+            lnrho__10 = F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
           }
           else {
-            lnrho__10 = log(LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
+            lnrho__10 = log(F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
           }
-          ss__10=LNTT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+          ss__10=F_TT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
           lntt__10=AC_lntt0__mod__equationofstate+AC_cv1__mod__equationofstate*ss__10+AC_gamma_m1__mod__equationofstate*(lnrho__10-AC_lnrho0__mod__equationofstate)
           ee__10=AC_cv__mod__equationofstate*exp(lntt__10)
           pp__10=(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*exp(lntt__10+lnrho__10)
           cs2__10=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__10
         }
         else if (AC_ilnrho_lntt__mod__equationofstate == AC_ilnrho_ee__mod__equationofstate || AC_ilnrho_lntt__mod__equationofstate == AC_irho_ee__mod__equationofstate) {
-          ee__10=LNTT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+          ee__10=F_TT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
           if (AC_ilnrho_lntt__mod__equationofstate==AC_ilnrho_ee__mod__equationofstate) {
-            lnrho__10=LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
-            pp__10=AC_gamma_m1__mod__equationofstate*ee__10*exp(LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
+            lnrho__10=F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+            pp__10=AC_gamma_m1__mod__equationofstate*ee__10*exp(F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
           }
           else {
-            lnrho__10=log(LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
-            pp__10=AC_gamma_m1__mod__equationofstate*ee__10*LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+            lnrho__10=log(F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
+            pp__10=AC_gamma_m1__mod__equationofstate*ee__10*F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
           }
           lntt__10=log(AC_cv1__mod__equationofstate*ee__10)
           ss__10=AC_cv__mod__equationofstate*(lntt__10-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__10-AC_lnrho0__mod__equationofstate))
           cs2__10=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__10
         }
         else if (AC_ilnrho_lntt__mod__equationofstate == AC_ilnrho_pp__mod__equationofstate || AC_ilnrho_lntt__mod__equationofstate == AC_irho_pp__mod__equationofstate) {
-          pp__10=LNTT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+          pp__10=F_TT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
           if (AC_ilnrho_lntt__mod__equationofstate==AC_ilnrho_pp__mod__equationofstate) {
-            lnrho__10=LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+            lnrho__10=F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
             ee__10=pp__10*exp(-lnrho__10)/AC_gamma_m1__mod__equationofstate
             ss__10=AC_cv__mod__equationofstate*(log(pp__10*exp(-lnrho__10)*AC_gamma__mod__equationofstate/AC_cs20__mod__equationofstate)-AC_gamma_m1__mod__equationofstate*(lnrho__10-AC_lnrho0__mod__equationofstate))
           }
           else {
-            lnrho__10=log(LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
-            ee__10=pp__10/LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]/AC_gamma_m1__mod__equationofstate
-            ss__10=AC_cv__mod__equationofstate*(log(pp__10/LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]*AC_gamma__mod__equationofstate/AC_cs20__mod__equationofstate)-AC_gamma_m1__mod__equationofstate*(lnrho__10-AC_lnrho0__mod__equationofstate))
+            lnrho__10=log(F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
+            ee__10=pp__10/F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]/AC_gamma_m1__mod__equationofstate
+            ss__10=AC_cv__mod__equationofstate*(log(pp__10/F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]*AC_gamma__mod__equationofstate/AC_cs20__mod__equationofstate)-AC_gamma_m1__mod__equationofstate*(lnrho__10-AC_lnrho0__mod__equationofstate))
           }
           lntt__10=log(AC_cv1__mod__equationofstate*ee__10)
           cs2__10=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__10
         }
         else if (AC_ilnrho_lntt__mod__equationofstate == AC_ilnrho_lntt__mod__equationofstate) {
-          lnrho__10=LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
-          lntt__10=LNTT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+          lnrho__10=F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+          lntt__10=F_TT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
           ss__10=AC_cv__mod__equationofstate*(lntt__10-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__10-AC_lnrho0__mod__equationofstate))
           ee__10=AC_cv__mod__equationofstate*exp(lntt__10)
           pp__10=ee__10*exp(lnrho__10)*AC_gamma_m1__mod__equationofstate
           cs2__10=AC_gamma__mod__equationofstate*AC_gamma_m1__mod__equationofstate*ee__10
         }
         else if (AC_ilnrho_lntt__mod__equationofstate == AC_ilnrho_tt__mod__equationofstate) {
-          lnrho__10=LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
-          tt__10=LNTT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+          lnrho__10=F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+          tt__10=F_TT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
           ss__10=AC_cv__mod__equationofstate*(log(tt__10)-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__10-AC_lnrho0__mod__equationofstate))
           ee__10=AC_cv__mod__equationofstate*tt__10
           pp__10=ee__10*exp(lnrho__10)*AC_gamma_m1__mod__equationofstate
           cs2__10=AC_cp__mod__equationofstate*AC_gamma_m1__mod__equationofstate*tt__10
         }
         else if (AC_ilnrho_lntt__mod__equationofstate == AC_irho_tt__mod__equationofstate) {
-          lnrho__10=log(LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
-          tt__10=LNTT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+          lnrho__10=log(F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
+          tt__10=F_TT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
           ss__10=AC_cv__mod__equationofstate*(log(tt__10)-AC_lntt0__mod__equationofstate-AC_gamma_m1__mod__equationofstate*(lnrho__10-AC_lnrho0__mod__equationofstate))
           ee__10=AC_cv__mod__equationofstate*tt__10
-          pp__10=ee__10*LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]*AC_gamma_m1__mod__equationofstate
+          pp__10=ee__10*F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]*AC_gamma_m1__mod__equationofstate
           cs2__10=AC_cp__mod__equationofstate*AC_gamma_m1__mod__equationofstate*tt__10
         }
         else if (AC_ilnrho_lntt__mod__equationofstate == AC_ipp_cs2__mod__equationofstate) {
           if (lanelastic) {
             if (AC_lanelastic_lin__mod__equationofstate) {
-              lnrho__10=log(LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
+              lnrho__10=log(F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
               tt__10=exp(AC_lntt0__mod__equationofstate)
               pp__10=exp(lnrho__10)*AC_cs20__mod__equationofstate/AC_gamma__mod__equationofstate
             }
             else {
               if (AC_leos_isothermal__mod__equationofstate) {
-                pp__10=LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+                pp__10=F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
                 lnrho__10=log(pp__10*AC_cs20__mod__equationofstate)
                 tt__10=exp(AC_lntt0__mod__equationofstate)
               }
@@ -3025,14 +3025,14 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
         else if (AC_ilnrho_lntt__mod__equationofstate == AC_ipp_ss__mod__equationofstate) {
           if (lanelastic) {
             if (AC_lanelastic_lin__mod__equationofstate) {
-              lnrho__10=(LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
-              ss__10=LNTT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+              lnrho__10=(F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
+              ss__10=F_TT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
               cs2__10=exp(AC_gamma__mod__equationofstate*ss__10*AC_cp1__mod__equationofstate+AC_gamma_m1__mod__equationofstate*(lnrho__10-AC_lnrho0__mod__equationofstate))*AC_cs20__mod__equationofstate
               tt__10=cs2__10/(AC_gamma_m1__mod__equationofstate*AC_cp__mod__equationofstate)
             }
             else {
-              pp__10=LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
-              ss__10=LNTT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+              pp__10=F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+              ss__10=F_TT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
               cs2__10=exp(ss__10*AC_cp1__mod__equationofstate+AC_gamma1__mod__equationofstate*AC_gamma_m1__mod__equationofstate*log(pp__10/AC_pp0__mod__equationofstate))*AC_cs20__mod__equationofstate
               tt__10=cs2__10/(AC_gamma_m1__mod__equationofstate*AC_cp__mod__equationofstate)
               lnrho__10=log(AC_gamma__mod__equationofstate*pp__10/cs2__10)
@@ -3044,18 +3044,18 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
           }
           else {
             if (AC_ldensity_nolog__mod__cdata) {
-              rho_10 = LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+              rho_10 = F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
               if (false) {
-                lnrho__10 = log(LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
+                lnrho__10 = log(F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
               }
             }
             else {
-              rho_10 = exp(LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
+              rho_10 = exp(F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1])
               if (false) {
-                lnrho__10 = LNRHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+                lnrho__10 = F_RHO[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
               }
             }
-            eth_10 = LNTT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
+            eth_10 = F_TT[AC_l2__mod__cdata-1][AC_m2__mod__cdata-1][AC_n2__mod__cdata-1]
           }
           if (false) {
             lntt__10 = log(AC_cv1__mod__equationofstate * eth_10/ rho_10)
@@ -3077,9 +3077,9 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
         }
       }
       dlnrhodz =  AC_gamma__mod__equationofstate *AC_gravz__mod__gravity/cs2_point
-      LNRHO[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1] = LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1-1] + AC_dz2_bound__mod__cdata[2+NGHOST-1]*dlnrhodz
-      LNRHO[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1] = LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-2-1] + AC_dz2_bound__mod__cdata[3+NGHOST-1]*dlnrhodz
-      LNRHO[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1] = LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-3-1] + AC_dz2_bound__mod__cdata[4+NGHOST-1]*dlnrhodz
+      F_RHO[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1] = F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1-1] + AC_dz2_bound__mod__cdata[2+NGHOST-1]*dlnrhodz
+      F_RHO[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1] = F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-2-1] + AC_dz2_bound__mod__cdata[3+NGHOST-1]*dlnrhodz
+      F_RHO[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1] = F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-3-1] + AC_dz2_bound__mod__cdata[4+NGHOST-1]*dlnrhodz
     }
     else {
       potx_xpoint_11=0.0
@@ -3202,10 +3202,10 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
       potm = potx_xpoint_12 + poty_ypoint_12 + potz_zpoint_12
       cs2 = AC_cs2bot__mod__equationofstate
       if (AC_ldensity_nolog__mod__cdata) {
-        RHO[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1]   = RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1-1]*exp(-(potp-potm)/cs2)
+        F_RHO[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1]   = F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1-1]*exp(-(potp-potm)/cs2)
       }
       else {
-        LNRHO[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1] = LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1-1] - (potp-potm)/cs2
+        F_RHO[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1] = F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1-1] - (potp-potm)/cs2
       }
       potx_xpoint_11=0.0
       poty_ypoint_11=0.0
@@ -3327,10 +3327,10 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
       potm = potx_xpoint_12 + poty_ypoint_12 + potz_zpoint_12
       cs2 = AC_cs2bot__mod__equationofstate
       if (AC_ldensity_nolog__mod__cdata) {
-        RHO[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1]   = RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-2-1]*exp(-(potp-potm)/cs2)
+        F_RHO[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1]   = F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-2-1]*exp(-(potp-potm)/cs2)
       }
       else {
-        LNRHO[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1] = LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-2-1] - (potp-potm)/cs2
+        F_RHO[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1] = F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-2-1] - (potp-potm)/cs2
       }
       potx_xpoint_11=0.0
       poty_ypoint_11=0.0
@@ -3452,10 +3452,10 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
       potm = potx_xpoint_12 + poty_ypoint_12 + potz_zpoint_12
       cs2 = AC_cs2bot__mod__equationofstate
       if (AC_ldensity_nolog__mod__cdata) {
-        RHO[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1]   = RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-3-1]*exp(-(potp-potm)/cs2)
+        F_RHO[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1]   = F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-3-1]*exp(-(potp-potm)/cs2)
       }
       else {
-        LNRHO[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1] = LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-3-1] - (potp-potm)/cs2
+        F_RHO[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1] = F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-3-1] - (potp-potm)/cs2
       }
     }
   }
@@ -3758,20 +3758,20 @@ bc_ss_stemp_x(AcBoundary boundary,AC_TOP_BOT topbot)
     if (AC_lreference_state__mod__cdata) {
       if (AC_ldensity_nolog__mod__cdata) {
         if (AC_lreference_state__mod__cdata) {
-          rho_yz=LNRHO[l1-1][vertexIdx.y][vertexIdx.z]+reference_state__mod__density[AC_xbot__mod__equationofstate-1][iref_rho-1]
+          rho_yz=F_RHO[l1-1][vertexIdx.y][vertexIdx.z]+reference_state__mod__density[AC_xbot__mod__equationofstate-1][iref_rho-1]
         }
         else {
-          rho_yz=LNRHO[l1-1][vertexIdx.y][vertexIdx.z]
+          rho_yz=F_RHO[l1-1][vertexIdx.y][vertexIdx.z]
         }
       }
       else {
-        rho_yz=exp(LNRHO[l1-1][vertexIdx.y][vertexIdx.z])
+        rho_yz=exp(F_RHO[l1-1][vertexIdx.y][vertexIdx.z])
       }
     }
     for i in 1:NGHOST+1 {
       if (AC_ldensity_nolog__mod__cdata) {
         if (AC_lreference_state__mod__cdata) {
-          dlnrho = LNRHO[l1+i-1][vertexIdx.y][vertexIdx.z]-LNRHO[l1-i-1][vertexIdx.y][vertexIdx.z]
+          dlnrho = F_RHO[l1+i-1][vertexIdx.y][vertexIdx.z]-F_RHO[l1-i-1][vertexIdx.y][vertexIdx.z]
           if (AC_ldensity_nolog__mod__cdata) {
             if (AC_lreference_state__mod__cdata) {
               if (l1 <= (nx+1)/2) {
@@ -3784,14 +3784,14 @@ bc_ss_stemp_x(AcBoundary boundary,AC_TOP_BOT topbot)
             }
             dlnrho = dlnrho/rho_yz
           }
-          SS[l1-i-1][vertexIdx.y][vertexIdx.z] =  SS[l1+i-1][vertexIdx.y][vertexIdx.z] + dx2_bound__mod__cdata[-i+NGHOST+1-1]*AC_reference_state__mod__density[AC_xbot__mod__equationofstate-1][iref_gs-1]  + (AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*dlnrho
+          F_SS[l1-i-1][vertexIdx.y][vertexIdx.z] =  F_SS[l1+i-1][vertexIdx.y][vertexIdx.z] + dx2_bound__mod__cdata[-i+NGHOST+1-1]*AC_reference_state__mod__density[AC_xbot__mod__equationofstate-1][iref_gs-1]  + (AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*dlnrho
         }
         else {
-          SS[l1-i-1][vertexIdx.y][vertexIdx.z] =  SS[l1+i-1][vertexIdx.y][vertexIdx.z] + (cp__mod__equationofstate-AC_cv__mod__equationofstate)*(log(RHO[AC_l1+i-1][vertexIdx.y][vertexIdx.z]/RHO[l1-i-1][vertexIdx.y][vertexIdx.z]))
+          F_SS[l1-i-1][vertexIdx.y][vertexIdx.z] =  F_SS[l1+i-1][vertexIdx.y][vertexIdx.z] + (cp__mod__equationofstate-AC_cv__mod__equationofstate)*(log(F_RHO[AC_l1+i-1][vertexIdx.y][vertexIdx.z]/F_RHO[l1-i-1][vertexIdx.y][vertexIdx.z]))
         }
       }
       else {
-        SS[l1-i-1][vertexIdx.y][vertexIdx.z] =  SS[l1+i-1][vertexIdx.y][vertexIdx.z] + (cp__mod__equationofstate-AC_cv__mod__equationofstate)*(LNRHO[AC_l1+i-1][vertexIdx.y][vertexIdx.z]-LNRHO[l1-i-1][vertexIdx.y][vertexIdx.z])
+        F_SS[l1-i-1][vertexIdx.y][vertexIdx.z] =  F_SS[l1+i-1][vertexIdx.y][vertexIdx.z] + (cp__mod__equationofstate-AC_cv__mod__equationofstate)*(F_RHO[AC_l1+i-1][vertexIdx.y][vertexIdx.z]-F_RHO[l1-i-1][vertexIdx.y][vertexIdx.z])
       }
     }
   }
@@ -3799,20 +3799,20 @@ bc_ss_stemp_x(AcBoundary boundary,AC_TOP_BOT topbot)
     if (AC_lreference_state__mod__cdata) {
       if (AC_ldensity_nolog__mod__cdata) {
         if (AC_lreference_state__mod__cdata) {
-          rho_yz=LNRHO[l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]+AC_reference_state__mod__density[AC_xtop__mod__equationofstate-1][iref_rho-1]
+          rho_yz=F_RHO[l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]+AC_reference_state__mod__density[AC_xtop__mod__equationofstate-1][iref_rho-1]
         }
         else {
-          rho_yz=LNRHO[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]
+          rho_yz=F_RHO[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z]
         }
       }
       else {
-        rho_yz=exp(LNRHO[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])
+        rho_yz=exp(F_RHO[AC_l2__mod__cdata-1][vertexIdx.y][vertexIdx.z])
       }
     }
     for i in 1:NGHOST+1 {
       if (AC_ldensity_nolog__mod__cdata) {
         if (AC_lreference_state__mod__cdata) {
-          dlnrho = LNRHO[AC_l2__mod__cdata+i-1][vertexIdx.y][vertexIdx.z]-LNRHO[AC_l2__mod__cdata-i-1][vertexIdx.y][vertexIdx.z]
+          dlnrho = F_RHO[AC_l2__mod__cdata+i-1][vertexIdx.y][vertexIdx.z]-F_RHO[AC_l2__mod__cdata-i-1][vertexIdx.y][vertexIdx.z]
           if (AC_ldensity_nolog__mod__cdata) {
             if (AC_lreference_state__mod__cdata) {
               if (l2__mod__cdata <= (AC_nx+1)/2) {
@@ -3825,14 +3825,14 @@ bc_ss_stemp_x(AcBoundary boundary,AC_TOP_BOT topbot)
             }
             dlnrho = dlnrho/rho_yz
           }
-          SS[l2__mod__cdata+i-1][vertexIdx.y][vertexIdx.z] =  SS[AC_l2__mod__cdata-i-1][vertexIdx.y][vertexIdx.z] - AC_dx2_bound__mod__cdata[i+1+NGHOST-1]*AC_reference_state__mod__density[AC_xtop__mod__equationofstate-1][iref_gs-1]  - (AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*dlnrho
+          F_SS[l2__mod__cdata+i-1][vertexIdx.y][vertexIdx.z] =  F_SS[AC_l2__mod__cdata-i-1][vertexIdx.y][vertexIdx.z] - AC_dx2_bound__mod__cdata[i+1+NGHOST-1]*AC_reference_state__mod__density[AC_xtop__mod__equationofstate-1][iref_gs-1]  - (AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*dlnrho
         }
         else {
-          SS[AC_l2__mod__cdata+i-1][vertexIdx.y][vertexIdx.z] = SS[AC_l2__mod__cdata-i-1][vertexIdx.y][vertexIdx.z] + (AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*log(RHO[AC_l2__mod__cdata-i-1][vertexIdx.y][vertexIdx.z]/RHO[AC_l2__mod__cdata+i-1][vertexIdx.y][vertexIdx.z])
+          F_SS[AC_l2__mod__cdata+i-1][vertexIdx.y][vertexIdx.z] = F_SS[AC_l2__mod__cdata-i-1][vertexIdx.y][vertexIdx.z] + (AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*log(F_RHO[AC_l2__mod__cdata-i-1][vertexIdx.y][vertexIdx.z]/F_RHO[AC_l2__mod__cdata+i-1][vertexIdx.y][vertexIdx.z])
         }
       }
       else {
-        SS[AC_l2__mod__cdata+i-1][vertexIdx.y][vertexIdx.z] = SS[AC_l2__mod__cdata-i-1][vertexIdx.y][vertexIdx.z] + (AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(LNRHO[AC_l2__mod__cdata-i-1][vertexIdx.y][vertexIdx.z]-LNRHO[AC_l2__mod__cdata+i-1][vertexIdx.y][vertexIdx.z])
+        F_SS[AC_l2__mod__cdata+i-1][vertexIdx.y][vertexIdx.z] = F_SS[AC_l2__mod__cdata-i-1][vertexIdx.y][vertexIdx.z] + (AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(F_RHO[AC_l2__mod__cdata-i-1][vertexIdx.y][vertexIdx.z]-F_RHO[AC_l2__mod__cdata+i-1][vertexIdx.y][vertexIdx.z])
       }
     }
   }
@@ -3845,30 +3845,30 @@ bc_ss_stemp_y(AcBoundary boundary,AC_TOP_BOT topbot)
   suppress_unused_warning(boundary)
   if (topbot == AC_bot) {
     for i in 1:NGHOST+1 {
-      dlnrho = LNRHO[vertexIdx.x][m1+i-1][vertexIdx.z]-LNRHO[vertexIdx.x][m1-i-1][vertexIdx.z]
+      dlnrho = F_RHO[vertexIdx.x][m1+i-1][vertexIdx.z]-F_RHO[vertexIdx.x][m1-i-1][vertexIdx.z]
       if (AC_ldensity_nolog__mod__cdata) {
         if (AC_lreference_state__mod__cdata) {
-          dlnrho = dlnrho/(LNRHO[vertexIdx.x][m1-1][vertexIdx.z]  +reference_state_padded__mod__density[vertexIdx.x][iref_rho-1])
+          dlnrho = dlnrho/(F_RHO[vertexIdx.x][m1-1][vertexIdx.z]  +reference_state_padded__mod__density[vertexIdx.x][iref_rho-1])
         }
         else {
-          dlnrho = dlnrho/LNRHO[vertexIdx.x][m1-1][vertexIdx.z]
+          dlnrho = dlnrho/F_RHO[vertexIdx.x][m1-1][vertexIdx.z]
         }
       }
-      SS[vertexIdx.x][m1-i-1][vertexIdx.z] = SS[vertexIdx.x][m1+i-1][vertexIdx.z] + (AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*dlnrho
+      F_SS[vertexIdx.x][m1-i-1][vertexIdx.z] = F_SS[vertexIdx.x][m1+i-1][vertexIdx.z] + (AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*dlnrho
     }
   }
   else if (topbot == AC_top) {
     for i in 1:NGHOST+1 {
-      dlnrho = LNRHO[vertexIdx.x][AC_m2__mod__cdata+i-1][vertexIdx.z]-LNRHO[vertexIdx.x][AC_m2__mod__cdata-i-1][vertexIdx.z]
+      dlnrho = F_RHO[vertexIdx.x][AC_m2__mod__cdata+i-1][vertexIdx.z]-F_RHO[vertexIdx.x][AC_m2__mod__cdata-i-1][vertexIdx.z]
       if (AC_ldensity_nolog__mod__cdata) {
         if (AC_lreference_state__mod__cdata) {
-          dlnrho = dlnrho/(LNRHO[vertexIdx.x][m2__mod__cdata-1][vertexIdx.z]  +AC_reference_state_padded__mod__density[vertexIdx.x][iref_rho-1])
+          dlnrho = dlnrho/(F_RHO[vertexIdx.x][m2__mod__cdata-1][vertexIdx.z]  +AC_reference_state_padded__mod__density[vertexIdx.x][iref_rho-1])
         }
         else {
-          dlnrho = dlnrho/LNRHO[vertexIdx.x][AC_m2__mod__cdata-1][vertexIdx.z]
+          dlnrho = dlnrho/F_RHO[vertexIdx.x][AC_m2__mod__cdata-1][vertexIdx.z]
         }
       }
-      SS[vertexIdx.x][AC_m2__mod__cdata+i-1][vertexIdx.z] = SS[vertexIdx.x][AC_m2__mod__cdata-i-1][vertexIdx.z] - (AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*dlnrho
+      F_SS[vertexIdx.x][AC_m2__mod__cdata+i-1][vertexIdx.z] = F_SS[vertexIdx.x][AC_m2__mod__cdata-i-1][vertexIdx.z] - (AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*dlnrho
     }
   }
   else {
@@ -3881,30 +3881,30 @@ bc_ss_stemp_z(AcBoundary boundary,AC_TOP_BOT topbot)
   real dlnrho
   if (topbot == AC_bot) {
     for i in 1:NGHOST+1 {
-      dlnrho = LNRHO[vertexIdx.x][vertexIdx.y][n1+i-1]-LNRHO[vertexIdx.x][vertexIdx.y][n1-i-1]
+      dlnrho = F_RHO[vertexIdx.x][vertexIdx.y][n1+i-1]-F_RHO[vertexIdx.x][vertexIdx.y][n1-i-1]
       if (AC_ldensity_nolog__mod__cdata) {
         if (AC_lreference_state__mod__cdata) {
-          dlnrho = dlnrho/(LNRHO[vertexIdx.x][vertexIdx.y][n1-1]  +reference_state_padded__mod__density[vertexIdx.x][iref_rho-1])
+          dlnrho = dlnrho/(F_RHO[vertexIdx.x][vertexIdx.y][n1-1]  +reference_state_padded__mod__density[vertexIdx.x][iref_rho-1])
         }
         else {
-          dlnrho = dlnrho/LNRHO[vertexIdx.x][vertexIdx.y][n1-1]
+          dlnrho = dlnrho/F_RHO[vertexIdx.x][vertexIdx.y][n1-1]
         }
       }
-      SS[vertexIdx.x][vertexIdx.y][n1-i-1] = SS[vertexIdx.x][vertexIdx.y][n1+i-1] + (AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*dlnrho
+      F_SS[vertexIdx.x][vertexIdx.y][n1-i-1] = F_SS[vertexIdx.x][vertexIdx.y][n1+i-1] + (AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*dlnrho
     }
   }
   else if (topbot == AC_top) {
     for i in 1:NGHOST+1 {
-      dlnrho = LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata+i-1]-LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-i-1]
+      dlnrho = F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata+i-1]-F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-i-1]
       if (AC_ldensity_nolog__mod__cdata) {
         if (AC_lreference_state__mod__cdata) {
-          dlnrho = dlnrho/(LNRHO[vertexIdx.x][vertexIdx.y][n2__mod__cdata-1]  +AC_reference_state_padded__mod__density[vertexIdx.x][iref_rho-1])
+          dlnrho = dlnrho/(F_RHO[vertexIdx.x][vertexIdx.y][n2__mod__cdata-1]  +AC_reference_state_padded__mod__density[vertexIdx.x][iref_rho-1])
         }
         else {
-          dlnrho = dlnrho/LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]
+          dlnrho = dlnrho/F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]
         }
       }
-      SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata+i-1] = SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-i-1] - (AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*dlnrho
+      F_SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata+i-1] = F_SS[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-i-1] - (AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*dlnrho
     }
   }
   else {
@@ -3945,27 +3945,27 @@ bc_ss_flux_condturb_x(AcBoundary boundary,AC_TOP_BOT topbot)
     else {
       if (AC_ldensity_nolog__mod__cdata) {
         if (AC_lreference_state__mod__cdata) {
-          rho_yz=LNRHO[l1-1][vertexIdx.y][vertexIdx.z]+AC_reference_state__mod__density[AC_xbot__mod__equationofstate-1][iref_rho-1]
+          rho_yz=F_RHO[l1-1][vertexIdx.y][vertexIdx.z]+AC_reference_state__mod__density[AC_xbot__mod__equationofstate-1][iref_rho-1]
         }
         else {
-          rho_yz=LNRHO[l1-1][vertexIdx.y][vertexIdx.z]
+          rho_yz=F_RHO[l1-1][vertexIdx.y][vertexIdx.z]
         }
       }
       else {
-        rho_yz=exp(LNRHO[l1-1][vertexIdx.y][vertexIdx.z])
+        rho_yz=exp(F_RHO[l1-1][vertexIdx.y][vertexIdx.z])
       }
       if (AC_ldensity_nolog__mod__cdata) {
-        tt_yz=SS[l1-1][vertexIdx.y][vertexIdx.z]
+        tt_yz=F_SS[l1-1][vertexIdx.y][vertexIdx.z]
         if (AC_lreference_state__mod__cdata) {
           tt_yz = tt_yz+AC_reference_state__mod__density[AC_xbot__mod__equationofstate-1][iref_s-1]
         }
         tt_yz=AC_cs20__mod__equationofstate*exp(AC_gamma_m1__mod__equationofstate*(log(rho_yz)-AC_lnrho0__mod__equationofstate)+AC_cv1__mod__equationofstate*tt_yz)
       }
       else {
-        tt_yz=cs20__mod__equationofstate*exp(AC_gamma_m1__mod__equationofstate*(LNRHO[AC_l1-1][vertexIdx.y][vertexIdx.z]-lnrho0__mod__equationofstate)+AC_cv1__mod__equationofstate*SS[AC_l1-1][vertexIdx.y][vertexIdx.z])
+        tt_yz=cs20__mod__equationofstate*exp(AC_gamma_m1__mod__equationofstate*(F_RHO[AC_l1-1][vertexIdx.y][vertexIdx.z]-lnrho0__mod__equationofstate)+AC_cv1__mod__equationofstate*F_SS[AC_l1-1][vertexIdx.y][vertexIdx.z])
       }
       tt_yz=tt_yz/(AC_cp__mod__equationofstate*AC_gamma_m1__mod__equationofstate)
-      dlnrhodx_yz= AC_coeffs_1_x__mod__cdata[1-1][1-1]*(LNRHO[1+AC_l1-1][vertexIdx.y][vertexIdx.z]-LNRHO[l1-1-1][vertexIdx.y][vertexIdx.z])  +AC_coeffs_1_x__mod__cdata[2-1][1-1]*(LNRHO[2+AC_l1-1][vertexIdx.y][vertexIdx.z]-LNRHO[l1-2-1][vertexIdx.y][vertexIdx.z])  +AC_coeffs_1_x__mod__cdata[3-1][1-1]*(LNRHO[3+AC_l1-1][vertexIdx.y][vertexIdx.z]-LNRHO[l1-3-1][vertexIdx.y][vertexIdx.z])
+      dlnrhodx_yz= AC_coeffs_1_x__mod__cdata[1-1][1-1]*(F_RHO[1+AC_l1-1][vertexIdx.y][vertexIdx.z]-F_RHO[l1-1-1][vertexIdx.y][vertexIdx.z])  +AC_coeffs_1_x__mod__cdata[2-1][1-1]*(F_RHO[2+AC_l1-1][vertexIdx.y][vertexIdx.z]-F_RHO[l1-2-1][vertexIdx.y][vertexIdx.z])  +AC_coeffs_1_x__mod__cdata[3-1][1-1]*(F_RHO[3+AC_l1-1][vertexIdx.y][vertexIdx.z]-F_RHO[l1-3-1][vertexIdx.y][vertexIdx.z])
       if (AC_ldensity_nolog__mod__cdata) {
         if (AC_lreference_state__mod__cdata) {
           dlnrhodx_yz=dlnrhodx_yz + AC_reference_state__mod__density[AC_xbot__mod__equationofstate-1][iref_grho-1]
@@ -3986,7 +3986,7 @@ bc_ss_flux_condturb_x(AcBoundary boundary,AC_TOP_BOT topbot)
         dsdx_yz = dsdx_yz + AC_reference_state__mod__density[AC_xbot__mod__equationofstate-1][iref_gs-1]
       }
       for i in 1:NGHOST+1 {
-        dlnrhodx_yz = LNRHO[l1+i-1][vertexIdx.y][vertexIdx.z]-LNRHO[l1-i-1][vertexIdx.y][vertexIdx.z]
+        dlnrhodx_yz = F_RHO[l1+i-1][vertexIdx.y][vertexIdx.z]-F_RHO[l1-i-1][vertexIdx.y][vertexIdx.z]
         if (AC_ldensity_nolog__mod__cdata) {
           if (AC_lreference_state__mod__cdata) {
             if (l1 <= (nx+1)/2) {
@@ -3999,7 +3999,7 @@ bc_ss_flux_condturb_x(AcBoundary boundary,AC_TOP_BOT topbot)
           }
           dlnrhodx_yz = dlnrhodx_yz/rho_yz
         }
-        SS[l1-i-1][vertexIdx.y][vertexIdx.z]=SS[l1+i-1][vertexIdx.y][vertexIdx.z] + kxbot*AC_gamma_m1__mod__equationofstate/(kxbot*AC_cv1__mod__equationofstate+AC_chit_prof1__mod__energy*AC_chi_t__mod__energy*rho_yz)*  dlnrhodx_yz + AC_dx2_bound__mod__cdata[-i+NGHOST+1-1]*dsdx_yz
+        F_SS[l1-i-1][vertexIdx.y][vertexIdx.z]=F_SS[l1+i-1][vertexIdx.y][vertexIdx.z] + kxbot*AC_gamma_m1__mod__equationofstate/(kxbot*AC_cv1__mod__equationofstate+AC_chit_prof1__mod__energy*AC_chi_t__mod__energy*rho_yz)*  dlnrhodx_yz + AC_dx2_bound__mod__cdata[-i+NGHOST+1-1]*dsdx_yz
       }
     }
   }
@@ -4062,16 +4062,16 @@ bc_sts(AcBoundary boundary,AC_TOP_BOT topbot,Field j)
     if(topbot == AC_bot) {
       if (AC_ldensity_nolog__mod__cdata) {
         if (AC_lreference_state__mod__cdata) {
-          lnrho_2= log(LNRHO[vertexIdx.x][vertexIdx.y][n1-1]  +AC_reference_state_padded__mod__density[vertexIdx.x][iref_rho-1])
+          lnrho_2= log(F_RHO[vertexIdx.x][vertexIdx.y][n1-1]  +AC_reference_state_padded__mod__density[vertexIdx.x][iref_rho-1])
         }
         else {
-          lnrho_2=log(LNRHO[vertexIdx.x][vertexIdx.y][n1-1])
+          lnrho_2=log(F_RHO[vertexIdx.x][vertexIdx.y][n1-1])
         }
       }
       else {
-        lnrho_2=LNRHO[vertexIdx.x][vertexIdx.y][n1-1]
+        lnrho_2=F_RHO[vertexIdx.x][vertexIdx.y][n1-1]
       }
-      lntt_2 = LNTT[vertexIdx.x][vertexIdx.y][n1-1]
+      lntt_2 = F_TT[vertexIdx.x][vertexIdx.y][n1-1]
       tt1_2 = exp(-lntt_2)
       rhs_2 = exp(AC_lnrho_e__mod__equationofstate-lnrho_2 + 1.5*(lntt_2-AC_lntt_ion__mod__equationofstate) - AC_tt_ion__mod__equationofstate*tt1_2)
       sqrtrhs_2 = sqrt(rhs_2)
@@ -4090,26 +4090,26 @@ bc_sts(AcBoundary boundary,AC_TOP_BOT topbot,Field j)
       nabla_ad_2 = delta_2/cp_2
       dlnrhodz_2 = AC_gravz__mod__gravity/cs2_2
       dlnttdz_2 = (nabla_ad_2/rho1pp_2)*AC_gravz__mod__gravity
-      LNRHO[vertexIdx.x][vertexIdx.y][n1-1-1] = LNRHO[vertexIdx.x][vertexIdx.y][1+n1-1] - AC_dz2_bound__mod__cdata[-1+NGHOST+1-1]*dlnrhodz_2
-      LNTT[vertexIdx.x][vertexIdx.y][n1-1-1]  = LNTT[vertexIdx.x][vertexIdx.y][1+n1-1]  - AC_dz2_bound__mod__cdata[-1+NGHOST+1-1]*dlnttdz_2
-      LNRHO[vertexIdx.x][vertexIdx.y][n1-2-1] = LNRHO[vertexIdx.x][vertexIdx.y][2+n1-1] - AC_dz2_bound__mod__cdata[-2+NGHOST+1-1]*dlnrhodz_2
-      LNTT[vertexIdx.x][vertexIdx.y][n1-2-1]  = LNTT[vertexIdx.x][vertexIdx.y][2+n1-1]  - AC_dz2_bound__mod__cdata[-2+NGHOST+1-1]*dlnttdz_2
-      LNRHO[vertexIdx.x][vertexIdx.y][n1-3-1] = LNRHO[vertexIdx.x][vertexIdx.y][3+n1-1] - AC_dz2_bound__mod__cdata[-3+NGHOST+1-1]*dlnrhodz_2
-      LNTT[vertexIdx.x][vertexIdx.y][n1-3-1]  = LNTT[vertexIdx.x][vertexIdx.y][3+n1-1]  - AC_dz2_bound__mod__cdata[-3+NGHOST+1-1]*dlnttdz_2
+      F_RHO[vertexIdx.x][vertexIdx.y][n1-1-1] = F_RHO[vertexIdx.x][vertexIdx.y][1+n1-1] - AC_dz2_bound__mod__cdata[-1+NGHOST+1-1]*dlnrhodz_2
+      F_TT[vertexIdx.x][vertexIdx.y][n1-1-1]  = F_TT[vertexIdx.x][vertexIdx.y][1+n1-1]  - AC_dz2_bound__mod__cdata[-1+NGHOST+1-1]*dlnttdz_2
+      F_RHO[vertexIdx.x][vertexIdx.y][n1-2-1] = F_RHO[vertexIdx.x][vertexIdx.y][2+n1-1] - AC_dz2_bound__mod__cdata[-2+NGHOST+1-1]*dlnrhodz_2
+      F_TT[vertexIdx.x][vertexIdx.y][n1-2-1]  = F_TT[vertexIdx.x][vertexIdx.y][2+n1-1]  - AC_dz2_bound__mod__cdata[-2+NGHOST+1-1]*dlnttdz_2
+      F_RHO[vertexIdx.x][vertexIdx.y][n1-3-1] = F_RHO[vertexIdx.x][vertexIdx.y][3+n1-1] - AC_dz2_bound__mod__cdata[-3+NGHOST+1-1]*dlnrhodz_2
+      F_TT[vertexIdx.x][vertexIdx.y][n1-3-1]  = F_TT[vertexIdx.x][vertexIdx.y][3+n1-1]  - AC_dz2_bound__mod__cdata[-3+NGHOST+1-1]*dlnttdz_2
     }
     else if(topbot == AC_top)   {
       if (AC_ldensity_nolog__mod__cdata) {
         if (AC_lreference_state__mod__cdata) {
-          lnrho_2= log(LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]  +AC_reference_state_padded__mod__density[vertexIdx.x][iref_rho-1])
+          lnrho_2= log(F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]  +AC_reference_state_padded__mod__density[vertexIdx.x][iref_rho-1])
         }
         else {
-          lnrho_2=log(LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1])
+          lnrho_2=log(F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1])
         }
       }
       else {
-        lnrho_2=LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]
+        lnrho_2=F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]
       }
-      lntt_2 = LNTT[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]
+      lntt_2 = F_TT[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]
       tt1_2 = exp(-lntt_2)
       if (enum_gravz_profile__mod__gravity==enum_reduced_top_string) {
         fac_2 = AC_reduced_top__mod__gravity
@@ -4124,12 +4124,12 @@ bc_sts(AcBoundary boundary,AC_TOP_BOT topbot,Field j)
       rho1pp_2 = AC_rgas__mod__equationofstate*mu1_2/tt1_2
       alpha_2 = ((2-yh_2)*(1+yh_2+AC_xhe__mod__equationofstate))/(2+AC_xhe__mod__equationofstate*(2-yh_2))
       dlnrhodz_2 = fac_2*AC_gravz__mod__gravity*alpha_2/rho1pp_2
-      LNRHO[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1] = LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1-1] + AC_dz2_bound__mod__cdata[2+NGHOST-1]*dlnrhodz_2
-      LNTT[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1] = LNTT[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1-1]
-      LNRHO[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1] = LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-2-1] + AC_dz2_bound__mod__cdata[3+NGHOST-1]*dlnrhodz_2
-      LNTT[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1] = LNTT[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-2-1]
-      LNRHO[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1] = LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-3-1] + AC_dz2_bound__mod__cdata[4+NGHOST-1]*dlnrhodz_2
-      LNTT[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1] = LNTT[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-3-1]
+      F_RHO[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1] = F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1-1] + AC_dz2_bound__mod__cdata[2+NGHOST-1]*dlnrhodz_2
+      F_TT[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1] = F_TT[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1-1]
+      F_RHO[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1] = F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-2-1] + AC_dz2_bound__mod__cdata[3+NGHOST-1]*dlnrhodz_2
+      F_TT[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1] = F_TT[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-2-1]
+      F_RHO[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1] = F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-3-1] + AC_dz2_bound__mod__cdata[4+NGHOST-1]*dlnrhodz_2
+      F_TT[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1] = F_TT[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-3-1]
     }
     else {
     }
@@ -4160,16 +4160,16 @@ Kernel bc_aa_pot_kernel(AcBoundary boundary, AC_TOP_BOT topbot)
 //TP: these are  dummy implementations since we handle the potential bcs out of the task system
 bc_aa_pot2(AcBoundary boundary, AC_TOP_BOT topbot)
 {
-	ac_fixed_bc(boundary,AAX)
-	ac_fixed_bc(boundary,AAY)
-	ac_fixed_bc(boundary,AAZ)
+	ac_fixed_bc(boundary,F_AX)
+	ac_fixed_bc(boundary,F_AY)
+	ac_fixed_bc(boundary,F_AZ)
 }
 
 bc_aa_pwd(AcBoundary boundary, AC_TOP_BOT topbot)
 {
-	ac_fixed_bc(boundary,AAX)
-	ac_fixed_bc(boundary,AAY)
-	ac_fixed_bc(boundary,AAZ)
+	ac_fixed_bc(boundary,F_AX)
+	ac_fixed_bc(boundary,F_AY)
+	ac_fixed_bc(boundary,F_AZ)
 }
 
 ac_fixed_fields(AcBoundary boundary)
@@ -4282,10 +4282,10 @@ bc_ism(AcBoundary boundary,AC_TOP_BOT topbot,Field j)
     }
     else if (j==AC_iss__mod__cdata-1)   {
       if (AC_ldensity_nolog__mod__cdata) {
-        j[vertexIdx.x][vertexIdx.y][n1-1-1]=j[vertexIdx.x][vertexIdx.y][n1-1]+(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(log(RHO[vertexIdx.x][vertexIdx.y][n1-1])-log(RHO[vertexIdx.x][vertexIdx.y][n1-1-1])) +  AC_cv__mod__equationofstate*log((AC_z__mod__cdata[n1-1]-AC_z__mod__cdata[n1-1-1])*density_scale+1.)
+        j[vertexIdx.x][vertexIdx.y][n1-1-1]=j[vertexIdx.x][vertexIdx.y][n1-1]+(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(log(F_RHO[vertexIdx.x][vertexIdx.y][n1-1])-log(F_RHO[vertexIdx.x][vertexIdx.y][n1-1-1])) +  AC_cv__mod__equationofstate*log((AC_z__mod__cdata[n1-1]-AC_z__mod__cdata[n1-1-1])*density_scale+1.)
       }
       else {
-        j[vertexIdx.x][vertexIdx.y][n1-1-1]=j[vertexIdx.x][vertexIdx.y][n1-1]+(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(LNRHO[vertexIdx.x][vertexIdx.y][n1-1]-LNRHO[vertexIdx.x][vertexIdx.y][n1-1-1])+  AC_cv__mod__equationofstate*log((AC_z__mod__cdata[n1-1]-AC_z__mod__cdata[n1-1-1])*density_scale+1.)
+        j[vertexIdx.x][vertexIdx.y][n1-1-1]=j[vertexIdx.x][vertexIdx.y][n1-1]+(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(F_RHO[vertexIdx.x][vertexIdx.y][n1-1]-F_RHO[vertexIdx.x][vertexIdx.y][n1-1-1])+  AC_cv__mod__equationofstate*log((AC_z__mod__cdata[n1-1]-AC_z__mod__cdata[n1-1-1])*density_scale+1.)
       }
     }
     else {
@@ -4300,10 +4300,10 @@ bc_ism(AcBoundary boundary,AC_TOP_BOT topbot,Field j)
     }
     else if (j==AC_iss__mod__cdata-1)   {
       if (AC_ldensity_nolog__mod__cdata) {
-        j[vertexIdx.x][vertexIdx.y][n1-2-1]=j[vertexIdx.x][vertexIdx.y][n1-1]+(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(log(RHO[vertexIdx.x][vertexIdx.y][n1-1])-log(RHO[vertexIdx.x][vertexIdx.y][n1-2-1])) +  AC_cv__mod__equationofstate*log((AC_z__mod__cdata[n1-1]-AC_z__mod__cdata[n1-2-1])*density_scale+1.)
+        j[vertexIdx.x][vertexIdx.y][n1-2-1]=j[vertexIdx.x][vertexIdx.y][n1-1]+(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(log(F_RHO[vertexIdx.x][vertexIdx.y][n1-1])-log(F_RHO[vertexIdx.x][vertexIdx.y][n1-2-1])) +  AC_cv__mod__equationofstate*log((AC_z__mod__cdata[n1-1]-AC_z__mod__cdata[n1-2-1])*density_scale+1.)
       }
       else {
-        j[vertexIdx.x][vertexIdx.y][n1-2-1]=j[vertexIdx.x][vertexIdx.y][n1-1]+(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(LNRHO[vertexIdx.x][vertexIdx.y][n1-1]-LNRHO[vertexIdx.x][vertexIdx.y][n1-2-1])+  AC_cv__mod__equationofstate*log((AC_z__mod__cdata[n1-1]-AC_z__mod__cdata[n1-2-1])*density_scale+1.)
+        j[vertexIdx.x][vertexIdx.y][n1-2-1]=j[vertexIdx.x][vertexIdx.y][n1-1]+(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(F_RHO[vertexIdx.x][vertexIdx.y][n1-1]-F_RHO[vertexIdx.x][vertexIdx.y][n1-2-1])+  AC_cv__mod__equationofstate*log((AC_z__mod__cdata[n1-1]-AC_z__mod__cdata[n1-2-1])*density_scale+1.)
       }
     }
     else {
@@ -4318,10 +4318,10 @@ bc_ism(AcBoundary boundary,AC_TOP_BOT topbot,Field j)
     }
     else if (j==AC_iss__mod__cdata-1)   {
       if (AC_ldensity_nolog__mod__cdata) {
-        j[vertexIdx.x][vertexIdx.y][n1-3-1]=j[vertexIdx.x][vertexIdx.y][n1-1]+(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(log(RHO[vertexIdx.x][vertexIdx.y][n1-1])-log(RHO[vertexIdx.x][vertexIdx.y][n1-3-1])) +  AC_cv__mod__equationofstate*log((AC_z__mod__cdata[n1-1]-AC_z__mod__cdata[n1-3-1])*density_scale+1.)
+        j[vertexIdx.x][vertexIdx.y][n1-3-1]=j[vertexIdx.x][vertexIdx.y][n1-1]+(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(log(F_RHO[vertexIdx.x][vertexIdx.y][n1-1])-log(F_RHO[vertexIdx.x][vertexIdx.y][n1-3-1])) +  AC_cv__mod__equationofstate*log((AC_z__mod__cdata[n1-1]-AC_z__mod__cdata[n1-3-1])*density_scale+1.)
       }
       else {
-        j[vertexIdx.x][vertexIdx.y][n1-3-1]=j[vertexIdx.x][vertexIdx.y][n1-1]+(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(LNRHO[vertexIdx.x][vertexIdx.y][n1-1]-LNRHO[vertexIdx.x][vertexIdx.y][n1-3-1])+  AC_cv__mod__equationofstate*log((AC_z__mod__cdata[n1-1]-AC_z__mod__cdata[n1-3-1])*density_scale+1.)
+        j[vertexIdx.x][vertexIdx.y][n1-3-1]=j[vertexIdx.x][vertexIdx.y][n1-1]+(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(F_RHO[vertexIdx.x][vertexIdx.y][n1-1]-F_RHO[vertexIdx.x][vertexIdx.y][n1-3-1])+  AC_cv__mod__equationofstate*log((AC_z__mod__cdata[n1-1]-AC_z__mod__cdata[n1-3-1])*density_scale+1.)
       }
     }
     else {
@@ -4338,10 +4338,10 @@ bc_ism(AcBoundary boundary,AC_TOP_BOT topbot,Field j)
     }
     else if (j==AC_iss__mod__cdata-1)   {
       if (AC_ldensity_nolog__mod__cdata) {
-        j[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1]=j[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]+(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(log(RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1])-log(RHO[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1]))+  AC_cv__mod__equationofstate*log((AC_z__mod__cdata[1+AC_n2__mod__cdata-1]-AC_z__mod__cdata[AC_n2__mod__cdata-1])*density_scale+1.)
+        j[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1]=j[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]+(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(log(F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1])-log(F_RHO[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1]))+  AC_cv__mod__equationofstate*log((AC_z__mod__cdata[1+AC_n2__mod__cdata-1]-AC_z__mod__cdata[AC_n2__mod__cdata-1])*density_scale+1.)
       }
       else {
-        j[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1]=j[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]+(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]-LNRHO[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1])+  AC_cv__mod__equationofstate*log((AC_z__mod__cdata[1+AC_n2__mod__cdata-1]-AC_z__mod__cdata[AC_n2__mod__cdata-1])*density_scale+1.)
+        j[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1]=j[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]+(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]-F_RHO[vertexIdx.x][vertexIdx.y][1+AC_n2__mod__cdata-1])+  AC_cv__mod__equationofstate*log((AC_z__mod__cdata[1+AC_n2__mod__cdata-1]-AC_z__mod__cdata[AC_n2__mod__cdata-1])*density_scale+1.)
       }
     }
     else {
@@ -4356,10 +4356,10 @@ bc_ism(AcBoundary boundary,AC_TOP_BOT topbot,Field j)
     }
     else if (j==AC_iss__mod__cdata-1)   {
       if (AC_ldensity_nolog__mod__cdata) {
-        j[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1]=j[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]+(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(log(RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1])-log(RHO[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1]))+  AC_cv__mod__equationofstate*log((AC_z__mod__cdata[2+AC_n2__mod__cdata-1]-AC_z__mod__cdata[AC_n2__mod__cdata-1])*density_scale+1.)
+        j[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1]=j[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]+(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(log(F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1])-log(F_RHO[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1]))+  AC_cv__mod__equationofstate*log((AC_z__mod__cdata[2+AC_n2__mod__cdata-1]-AC_z__mod__cdata[AC_n2__mod__cdata-1])*density_scale+1.)
       }
       else {
-        j[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1]=j[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]+(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]-LNRHO[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1])+  AC_cv__mod__equationofstate*log((AC_z__mod__cdata[2+AC_n2__mod__cdata-1]-AC_z__mod__cdata[AC_n2__mod__cdata-1])*density_scale+1.)
+        j[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1]=j[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]+(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]-F_RHO[vertexIdx.x][vertexIdx.y][2+AC_n2__mod__cdata-1])+  AC_cv__mod__equationofstate*log((AC_z__mod__cdata[2+AC_n2__mod__cdata-1]-AC_z__mod__cdata[AC_n2__mod__cdata-1])*density_scale+1.)
       }
     }
     else {
@@ -4374,10 +4374,10 @@ bc_ism(AcBoundary boundary,AC_TOP_BOT topbot,Field j)
     }
     else if (j==AC_iss__mod__cdata-1)   {
       if (AC_ldensity_nolog__mod__cdata) {
-        j[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1]=j[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]+(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(log(RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1])-log(RHO[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1]))+  AC_cv__mod__equationofstate*log((AC_z__mod__cdata[3+AC_n2__mod__cdata-1]-AC_z__mod__cdata[AC_n2__mod__cdata-1])*density_scale+1.)
+        j[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1]=j[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]+(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(log(F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1])-log(F_RHO[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1]))+  AC_cv__mod__equationofstate*log((AC_z__mod__cdata[3+AC_n2__mod__cdata-1]-AC_z__mod__cdata[AC_n2__mod__cdata-1])*density_scale+1.)
       }
       else {
-        j[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1]=j[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]+(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(LNRHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]-LNRHO[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1])+  AC_cv__mod__equationofstate*log((AC_z__mod__cdata[3+AC_n2__mod__cdata-1]-AC_z__mod__cdata[AC_n2__mod__cdata-1])*density_scale+1.)
+        j[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1]=j[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]+(AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*(F_RHO[vertexIdx.x][vertexIdx.y][AC_n2__mod__cdata-1]-F_RHO[vertexIdx.x][vertexIdx.y][3+AC_n2__mod__cdata-1])+  AC_cv__mod__equationofstate*log((AC_z__mod__cdata[3+AC_n2__mod__cdata-1]-AC_z__mod__cdata[AC_n2__mod__cdata-1])*density_scale+1.)
       }
     }
     else {

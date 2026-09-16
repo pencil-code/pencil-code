@@ -18,14 +18,14 @@
 
     	if (AC_iuu__mod__cdata != 0 && !lhydro_kinematic)    
         {
-        	write( F_UU,  rk_intermediate(F_UU , DF_UU,  step_num, AC_dt__mod__cdata) )
+        	write( F_UVEC,  rk_intermediate(F_UVEC , DF_UU,  step_num, AC_dt__mod__cdata) )
         }
         if (AC_iuun__mod__cdata != 0)   write( F_UUN,  rk_intermediate(F_UUN , DF_UUN,  step_num, AC_dt__mod__cdata) )
 
     	if ((AC_ilnrho__mod__cdata + AC_irho__mod__cdata) != 0)  write(F_RHO, rk_intermediate(F_RHO, DF_RHO, step_num, AC_dt__mod__cdata) )
           if ((AC_ilnrhon__mod__cdata + AC_irhon__mod__cdata) != 0)  write(F_RHON, rk_intermediate(F_RHON, DF_RHON, step_num, AC_dt__mod__cdata) )
     	if (AC_iss__mod__cdata != 0)  write( F_SS,  rk_intermediate(F_SS, DF_SS,  step_num, AC_dt__mod__cdata) )
-    	if (AC_iaa__mod__cdata != 0) write( F_AA,  rk_intermediate(F_AA , DF_AA,  step_num, AC_dt__mod__cdata) )
+    	if (AC_iaa__mod__cdata != 0) write( F_AVEC,  rk_intermediate(F_AVEC , DF_AA,  step_num, AC_dt__mod__cdata) )
           if(lbfield) write(F_BVEC, rk_intermediate(F_BVEC, DF_BVEC,step_num,AC_dt__mod__cdata))
 #  if LGRAVITATIONAL_WAVES_HTXK
           if (AC_lfirst__mod__cdata && !AC_lsplit_gw_rhs_from_rest_on_gpu__mod__gravitational_waves_htxk)
@@ -191,8 +191,8 @@
    else
    {
    	maximum_error = 0.0 
-   	if (AC_iuu__mod__cdata != 0) maximum_error = rkf4_update(DF_UU,step_num,AC_dt__mod__cdata,ERROR_UU,BETA_UU,F_UU,uux_initial_max,uuy_initial_max,uuz_initial_max,maximum_error,AC_dt_ratio__mod__cdata,AC_dt_epsi__mod__cdata)
-   	if (AC_iaa__mod__cdata != 0) maximum_error = rkf4_update(DF_AA,step_num,AC_dt__mod__cdata,ERROR_AA,BETA_AA,F_AA,aax_initial_max,aay_initial_max,aaz_initial_max,maximum_error,AC_dt_ratio__mod__cdata,AC_dt_epsi__mod__cdata)
+   	if (AC_iuu__mod__cdata != 0) maximum_error = rkf4_update(DF_UU,step_num,AC_dt__mod__cdata,ERROR_UU,BETA_UU,F_UVEC,uux_initial_max,uuy_initial_max,uuz_initial_max,maximum_error,AC_dt_ratio__mod__cdata,AC_dt_epsi__mod__cdata)
+   	if (AC_iaa__mod__cdata != 0) maximum_error = rkf4_update(DF_AA,step_num,AC_dt__mod__cdata,ERROR_AA,BETA_AA,F_AVEC,aax_initial_max,aay_initial_max,aaz_initial_max,maximum_error,AC_dt_ratio__mod__cdata,AC_dt_epsi__mod__cdata)
    	if ((AC_ilnrho__mod__cdata + AC_irho__mod__cdata) != 0) maximum_error = rkf4_update(DF_RHO,step_num,AC_dt__mod__cdata,ERROR_RHO,BETA_RHO,F_RHO,rho_initial_max,maximum_error,AC_dt_ratio__mod__cdata,AC_dt_epsi__mod__cdata)
    	if (AC_iss__mod__cdata != 0) maximum_error = rkf4_update(DF_SS,step_num,AC_dt__mod__cdata,ERROR_SS,BETA_SS,F_SS,ss_initial_max,maximum_error,AC_dt_ratio__mod__cdata,AC_dt_epsi__mod__cdata)
         if (AC_iecr__mod__cdata != 0) maximum_error = rkf4_update(DF_ECR,step_num,AC_dt__mod__cdata,ERROR_ECR,BETA_ECR,F_ECR,ecr_initial_max,maximum_error,AC_dt_ratio__mod__cdata,AC_dt_epsi__mod__cdata)

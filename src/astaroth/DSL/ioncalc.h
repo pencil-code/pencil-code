@@ -74,7 +74,7 @@ Kernel ioncalc(){
   lntt=(ss/AC_ss_ion__mod__equationofstate+(1-yh)*(log(1-yh+epsi)-AC_lnrho_h__mod__equationofstate)  +yh*(2*log(yh)-AC_lnrho_e__mod__equationofstate-AC_lnrho_h__mod__equationofstate)+AC_xhe_term__mod__equationofstate)/(1+yh+AC_xhe__mod__equationofstate)
   lntt=(2.0/3.0)*(lntt+lnrho-2.5)+AC_lntt_ion__mod__equationofstate
   write(F_YH,yh)
-  write(F_LNTT,lntt)
+  write(F_TT,lntt)
 }
 
 #else

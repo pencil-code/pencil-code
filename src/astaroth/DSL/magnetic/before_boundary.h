@@ -6,23 +6,23 @@ Kernel magnetic_before_boundary_reductions(bool lrmv)
 {
       if (AC_lquench_eta_aniso__mod__magnetic)
       {
-	 reduce_rms(AA,AC_Arms)
+	 reduce_rms(F_AVEC,AC_Arms)
       }
       if (AC_lremove_meanaxy__mod__magnetic && lrmv)
       {
  	 fact=1./AC_nzgrid_eff__mod__cdata
-	 reduce_sum(fact*AA.x,AX_mean_z)
-	 reduce_sum(fact*AA.y,AY_mean_z)
-	 reduce_sum(fact*AA.z,AZ_mean_z)
+	 reduce_sum(fact*F_AVEC.x,AX_mean_z)
+	 reduce_sum(fact*F_AVEC.y,AY_mean_z)
+	 reduce_sum(fact*F_AVEC.z,AZ_mean_z)
       }
 }
 Kernel magnetic_before_boundary(bool lrmv)
 {
       if (AC_lremove_meanaxy__mod__magnetic && lrmv)
       {
-	 AAX[vertexIdx.x][vertexIdx.y][vertexIdx.z] = AAX - AC_tau_remove_meanaxy__mod__magnetic*AX_mean_z
-	 AAY[vertexIdx.x][vertexIdx.y][vertexIdx.z] = AAY - AC_tau_remove_meanaxy__mod__magnetic*AY_mean_z
-	 AAZ[vertexIdx.x][vertexIdx.y][vertexIdx.z] = AAZ - AC_tau_remove_meanaxy__mod__magnetic*AZ_mean_z
+	 F_AX[vertexIdx.x][vertexIdx.y][vertexIdx.z] = F_AX - AC_tau_remove_meanaxy__mod__magnetic*AX_mean_z
+	 F_AY[vertexIdx.x][vertexIdx.y][vertexIdx.z] = F_AY - AC_tau_remove_meanaxy__mod__magnetic*AY_mean_z
+	 F_AZ[vertexIdx.x][vertexIdx.y][vertexIdx.z] = F_AZ - AC_tau_remove_meanaxy__mod__magnetic*AZ_mean_z
       }
 }
 #else
