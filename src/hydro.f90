@@ -223,17 +223,13 @@ module Hydro
   logical :: lkt_transport=.false.
   real :: kt_theta=2.0
 !  Cell-level admissibility projection of the conserved (K0,K^i) state (opt-in,
-!  off by default; cf. project_admissible in kt_transport.f90): floor K0-eps to
-!  a positive fluid energy and rescale the momentum so |K^i| <=
-!  (1-hless_proj_margin)*(K0-eps). Identity on already-admissible states.
+!  off by default; cf. project_admissible in kt_transport.f90): floor the fluid
+!  energy K0-eps to a positive value and rescale the momentum so |K^i| <=
+!  a subluminal value. For non-Higgsless relativistic hydro, eps=0 and the same
+!  projection applies directly to K0.
 !  Fixes the multibubble superluminal blow-up (the gamma-clip in
 !  hydro_after_boundary_conservative caps gamma but never rescales K^i).
-!  hless_proj_margin is the CAUSALITY margin: |K^i|=K0-eps corresponds to |v|=1
-!  in the bag EOS, so the default 1e-2 caps the representable fluid speed at
-!  v~0.98 (gamma~5); lower it (e.g. 1e-3 -> v~0.994, gamma~9) to admit higher
-!  Lorentz factors. The positivity floor is internal (scale-aware, see below).
-  logical :: lhiggsless_project=.false.
-  real :: hless_proj_margin=1e-2
+  logical :: lproject_admissible=.false.
   logical :: lsqrt_qirro_uu=.false., lset_uz_zero=.false.
   logical :: lnorm_vw_hless=.false.
   logical :: lampluu_adjust_ascale=.false.   !PAR_DOC: automatically adjust initial u-amplitude
@@ -389,7 +385,7 @@ module Hydro
       lSchur_2D2D3D_uu, lSchur_2D2D1D_uu, &
       lhiggsless, vwall, alpha_hless, width_hless, qshear, zdampint, zdampext, &
       lext_force, rat_limiter, max_vel, lkt_transport, kt_theta, &
-      lhiggsless_project, hless_proj_margin, lvel_limiter
+      lproject_admissible, lvel_limiter
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -406,6 +402,9 @@ module Hydro
   integer :: idiag_gamrms=0     ! DIAG_DOC: $\left<\gamma^2\right>^{1/2}$
   integer :: idiag_gammax=0     ! DIAG_DOC: $\max(\gamma)$
   integer :: idiag_gam2min=0    ! DIAG_DOC: $\min(\gamma^2)$
+  integer :: idiag_nprojk0=0    ! DIAG_DOC: number of cells whose $K^0$ was floored
+  integer :: idiag_nprojmom=0   ! DIAG_DOC: number of cells whose $K^i$ was rescaled
+  integer :: idiag_projratmax=0 ! DIAG_DOC: $\max|K^i|/(K^0-\epsilon)$ before projection
   integer :: idiag_rat2=0       ! DIAG_DOC: $\sum_{i=1}^{3} \frac{T^{0i}T^{0i}}{(T^{00})^2}$
   integer :: idiag_u2m=0        ! DIAG_DOC: $\left<\uv^2\right>$
   integer :: idiag_u2sphm=0     ! DIAG_DOC: $\int_{r=0}^{r=r_{\rm diag}} \uv^2 dV$,
@@ -1231,6 +1230,21 @@ module Hydro
       if (lkt_transport .and. .not. (lconservative .and. lhiggsless)) &
           call fatal_error('initialize_hydro', &
               'lkt_transport=T requires lconservative=T and lhiggsless=T')
+!
+!  The admissibility projection acts on the relativistic conserved variables
+!  (K0,K^i). Reject configurations where those are not the evolved state.
+!
+      if (lproject_admissible) then
+        if (.not. (lconservative .and. lrelativistic)) &
+            call fatal_error('initialize_hydro', &
+                'lproject_admissible=T requires lconservative=T and lrelativistic=T')
+        if (lhiggsless_old) &
+            call fatal_error('initialize_hydro', &
+                'lproject_admissible=T is not implemented for lhiggsless_old=T')
+        if (lgpu) &
+            call fatal_error('initialize_hydro', &
+                'lproject_admissible=T is not yet available on GPUs')
+      endif
 !
       if (lhiggsless) then
         ! normalization with T00 at initial time gives bar epsilon = alpha/(1 + alpha)
@@ -4330,6 +4344,10 @@ module Hydro
         endif
       endif
 !
+!  Repair the evolved conserved state before boundary filling and MPI exchange.
+!
+      if (lproject_admissible) call project_relativistic_conservative_admissible(f)
+!
 !  Calculate the vorticity field if required.
 !
       if (ioo /= 0) then
@@ -5949,6 +5967,87 @@ module Hydro
 
     endsubroutine update_for_time_integrals_hydro
 !***********************************************************************
+    subroutine project_relativistic_conservative_admissible(f)
+!
+!  Project the relativistic conserved state onto positive fluid energy and a
+!  subluminal momentum ratio before boundary filling and communication.
+!
+!  16-sep-26/Isak: coded, with AI assistance; manually reviewed
+!
+      use Sub, only: dot2_mn
+      use Diagnostics, only: sum_name, max_name
+
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: f
+      real, dimension(nx) :: eps_loc, k0_fluid, momentum_squared
+      real, dimension(nx) :: momentum_magnitude, momentum_limit, momentum_scale
+      real, parameter :: k0_fluid_floor=1e-9, max_momentum_ratio=0.9999
+      real :: projratmax
+      integer :: j, m, n, nprojk0, nprojmom
+!
+      nprojk0=0
+      nprojmom=0
+      projratmax=0.
+!
+      do n=n1,n2
+      do m=m1,m2
+!
+!  For Higgsless hydro, eps_loc is the local, space-time-dependent vacuum
+!  energy; for an ordinary relativistic fluid it remains zero.
+!
+        eps_loc=0.
+        if (lhiggsless) then
+          if (width_hless==0.) then
+            where(real(t) < f(l1:l2,m,n,ihless)) eps_loc=eps_hless
+          else
+            eps_loc=real(eps_hless*max(0.d0, min(1.d0, &
+              (f(l1:l2,m,n,ihless)+0.5d0*width_hless_absolute-t)/width_hless_absolute)))
+          endif
+        endif
+!
+!  Enforce K0 >= eps + k0_fluid_floor, then recover the fluid-only energy.
+!
+        if (ldiagnos) nprojk0=nprojk0+count(f(l1:l2,m,n,irho) < eps_loc+k0_fluid_floor)
+        f(l1:l2,m,n,irho)=max(f(l1:l2,m,n,irho),eps_loc+k0_fluid_floor)
+        k0_fluid=f(l1:l2,m,n,irho)-eps_loc
+!
+!  For the bag EOS, v<1 is equivalent to |K^i|<K0-eps. Preserve the momentum
+!  direction while limiting its magnitude to the configured fraction of K0-eps.
+!
+        call dot2_mn(f(l1:l2,m,n,iux:iuz),momentum_squared)
+        momentum_magnitude=sqrt(max(momentum_squared,tini))
+        momentum_limit=max_momentum_ratio*k0_fluid
+        momentum_scale=min(1.0,momentum_limit/momentum_magnitude)
+        do j=0,2
+          f(l1:l2,m,n,iux+j)=f(l1:l2,m,n,iux+j)*momentum_scale
+        enddo
+!
+!  momentum_scale and momentum_magnitude still hold the pre-rescale
+!  values here, so projratmax is the ratio the scheme itself produced.
+!
+!
+!  Use the raw |K^i| here, not momentum_magnitude: the tini in the latter is only
+!  there to protect the division above, and at rest it would report a ratio of
+!  order sqrt(tini)/k0_fluid ~ 1e-154, which Fortran's E12.4 prints without the
+!  "E" (5.0032-154) and no reader can parse. The raw value is exactly 0 at rest.
+!
+        if (ldiagnos) then
+          nprojmom=nprojmom+count(momentum_scale < 1.0)
+          projratmax=max(projratmax,maxval(sqrt(momentum_squared)/k0_fluid))
+        endif
+      enddo
+      enddo
+!
+!  ldiagnos is true on the FIRST substep of an output step only, so
+!  the counts below are per-substep, not summed over the three RK substeps.
+!
+      if (ldiagnos) then
+        call sum_name(nprojk0,idiag_nprojk0)
+        call sum_name(nprojmom,idiag_nprojmom)
+        call max_name(projratmax,idiag_projratmax)
+      endif
+!
+    endsubroutine project_relativistic_conservative_admissible
+!***********************************************************************
     subroutine hydro_after_boundary_conservative(f)
 !
 !  In the conservative case, we calculate the Lorentz gamma squared and Tij here,
@@ -5976,48 +6075,11 @@ module Hydro
       real :: dely, delz
       integer ::  iter_relB,j,jhless
       real, dimension (mx,3) :: ss
-      real, dimension (mx) :: eps_loc, k0e_proj, floor_proj, scal_proj
 
       if (iTij==0) call fatal_error("hydro_after_boundary","must compute Tij for lconservative")
 
       do n=1,mz
       do m=1,my
-!
-!  Cell-level admissibility projection of the conserved (K0,K^i) state (opt-in).
-!  Port of jax project_admissible applied to the CELL state each substep, using
-!  the local, space-time-dependent eps(t,x) (eps_hless outside a bubble wall,
-!  0 inside, smoothed over width_hless_absolute). Floors K0-eps positive and
-!  rescales the momentum so |K^i| <= (1-margin)(K0-eps) (v<1). Identity on
-!  admissible states; without it, strong multibubble collisions drive the cell
-!  state superluminal (|K^i|>K0-eps) until it NaNs.
-        if (lhiggsless .and. lhiggsless_project) then
-          if (width_hless==0.) then
-            eps_loc=0.
-            where(real(t) < f(:,m,n,ihless)) eps_loc=eps_hless
-          else
-            eps_loc=real(eps_hless*max(0.d0, min(1.d0, &
-              (f(:,m,n,ihless)+0.5d0*width_hless_absolute-t)/width_hless_absolute)))
-          endif
-!
-!  Internal positivity floor for the fluid energy K0-eps: purely a guard against
-!  division by (near-)zero in the subsequent cons2prim on essentially-vacuum
-!  cells, not a tunable. Scale-aware (relative to 1+|eps|) so that it remains
-!  representable next to an O(1) eps in floating point.
-!
-          floor_proj=1e-6*(1.0+abs(eps_loc))
-          k0e_proj=max(f(:,m,n,irho)-eps_loc, floor_proj)
-          f(:,m,n,irho)=k0e_proj+eps_loc
-          call dot2_mx(f(:,m,n,iux:iuz),ss2)
-!
-!  Causality rescale: cap |K^i| at (1-hless_proj_margin)*(K0-eps), i.e. just
-!  inside the light cone (|K^i|=K0-eps <=> v=1); min(1,...) makes this the
-!  identity on admissible cells. tini only guards sqrt(0) at |K|=0.
-!
-          scal_proj=min(1.0, (1.0-hless_proj_margin)*k0e_proj/sqrt(max(ss2,tini)))
-          do j=0,2
-            f(:,m,n,iux+j)=f(:,m,n,iux+j)*scal_proj
-          enddo
-        endif
         if (ldensity) then
           if (lmagnetic) then
             if (ibx==0) call fatal_error("hydro_after_boundary","must use lbb_as_comaux=T")
@@ -7658,6 +7720,9 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'gamrms',idiag_gamrms)
         call parse_name(iname,cname(iname),cform(iname),'gammax',idiag_gammax)
         call parse_name(iname,cname(iname),cform(iname),'gam2min',idiag_gam2min)
+        call parse_name(iname,cname(iname),cform(iname),'nprojk0',idiag_nprojk0)
+        call parse_name(iname,cname(iname),cform(iname),'nprojmom',idiag_nprojmom)
+        call parse_name(iname,cname(iname),cform(iname),'projratmax',idiag_projratmax)
         call parse_name(iname,cname(iname),cform(iname),'u2tm',idiag_u2tm)
         call parse_name(iname,cname(iname),cform(iname),'uotm',idiag_uotm)
         call parse_name(iname,cname(iname),cform(iname),'outm',idiag_outm)
