@@ -962,3 +962,4 @@ integer, parameter :: enum_prm_sigem_string = 952
 integer, parameter :: enum_recombination_string = 953
 integer, parameter :: enum_radius_range_string = 954
 integer, parameter :: enum_helical_string = 955
+integer, parameter :: enum_linear_decrease_string = 956
