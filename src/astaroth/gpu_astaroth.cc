@@ -1833,8 +1833,8 @@ extern "C" void getFArrayIn(AcReal **p_f_in)
     acDeviceGetVertexBufferPtrs(acGridGetDevice(),acGetF_UX(),&uux_ptr,&out);
     acDeviceGetVertexBufferPtrs(acGridGetDevice(),acGetF_UY(),&uuy_ptr,&out);
     acDeviceGetVertexBufferPtrs(acGridGetDevice(),acGetF_UZ(),&uuz_ptr,&out);
-    if (uux_ptr + mw != uuy_ptr) fprintf(stderr, "UU not contiguous\n");
-    if (uuy_ptr + mw != uuz_ptr) fprintf(stderr, "UU not contiguous\n");
+    if (uux_ptr + acVertexBufferSize() != uuy_ptr) fprintf(stderr, "UU not contiguous\n");
+    if (uuy_ptr + acVertexBufferSize() != uuz_ptr) fprintf(stderr, "UU not contiguous\n");
   }
   acDeviceGetVertexBufferPtrs(acGridGetDevice(),VertexBufferHandle(0),p_f_in,&out);
 }
@@ -1850,8 +1850,8 @@ extern "C" void copyVBApointers(AcReal **in, AcReal **out)
     acDeviceGetVertexBufferPtrs(acGridGetDevice(),acGetF_UX(),&uux_ptr,out);
     acDeviceGetVertexBufferPtrs(acGridGetDevice(),acGetF_UY(),&uuy_ptr,out);
     acDeviceGetVertexBufferPtrs(acGridGetDevice(),acGetF_UZ(),&uuz_ptr,out);
-    if (uux_ptr + mw != uuy_ptr) fprintf(stderr, "UU not contiguous\n");
-    if (uuy_ptr + mw != uuz_ptr) fprintf(stderr, "UU not contiguous\n");
+    if (uux_ptr + acVertexBufferSize() != uuy_ptr) fprintf(stderr, "UU not contiguous\n");
+    if (uuy_ptr + acVertexBufferSize() != uuz_ptr) fprintf(stderr, "UU not contiguous\n");
   }
 
   acDeviceGetVertexBufferPtrs(acGridGetDevice(),VertexBufferHandle(0),in,out);
