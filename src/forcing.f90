@@ -42,7 +42,7 @@ module Forcing
     real  :: pforce,qforce,aforce
   endtype forcing_coeffs
 
-  type(forcing_coeffs) :: h 
+  type(forcing_coeffs) :: h_coeffs
 
 !
   real :: force=0.,force2=0., force_double=0., force1_scl=1., force2_scl=1.
@@ -2123,10 +2123,10 @@ module Forcing
 !
     endsubroutine fxyz_coefs_hel
 !***********************************************************************
-    subroutine get_forcing_hel_rhs(f,forcing_rhs,forcing_rhs2,forcing_rhs_old,h)
+    subroutine get_forcing_hel_rhs(f,forcing_rhs,forcing_rhs2,forcing_rhs_old,h_coeffs)
       real, contiguous,dimension(:,:,:,:), intent(in) :: f
       real, dimension (nx,3) :: forcing_rhs,forcing_rhs2,forcing_rhs_old
-      type(forcing_coeffs), intent(in) :: h
+      type(forcing_coeffs), intent(in) :: h_coeffs
       real, dimension(nx) :: force_ampl
       real, dimension(3) :: profyz_hel_coef2, profyz_hel_coef2b
       complex, dimension (nx) :: fxyz,fxyz_old,fxyz2,fxyz2_old
@@ -2135,7 +2135,7 @@ module Forcing
 !
 !  Compute useful shorthands for primary forcing function.
 !
-            call compute_ampl_and_others(f,h,profyz_hel_coef2,profyz_hel_coef2b,force_ampl)
+            call compute_ampl_and_others(f,h_coeffs,profyz_hel_coef2,profyz_hel_coef2b,force_ampl)
             do j=1,3
               if (lforce_always_all_compomemts .or. lactive_dimension(j)) then
 
@@ -2143,30 +2143,30 @@ module Forcing
 !  Add here possibility of periodic forcing proportional to cos(om*t).
 !  By default, omega_ff=0, so cos(omega_ff*t)=1.
 !
-                fxyz=h%fx(l1:l2)*h%fy(m)*h%fz(n)
-                fxyz_old=h%fx_old(l1:l2)*h%fy_old(m)*h%fz_old(n)
+                fxyz=h_coeffs%fx(l1:l2)*h_coeffs%fy(m)*h_coeffs%fz(n)
+                fxyz_old=h_coeffs%fx_old(l1:l2)*h_coeffs%fy_old(m)*h_coeffs%fz_old(n)
 !
 !  Do the same for secondary forcing function.
 !
                 if (lforcing_coefs_hel_double.or.lmhd_forcing) then
-                  fxyz2=h%fx2(l1:l2)*h%fy2(m)*h%fz2(n)
-                  fxyz2_old=h%fx2_old(l1:l2)*h%fy2_old(m)*h%fz2_old(n)
+                  fxyz2=h_coeffs%fx2(l1:l2)*h_coeffs%fy2(m)*h_coeffs%fz2(n)
+                  fxyz2_old=h_coeffs%fx2_old(l1:l2)*h_coeffs%fy2_old(m)*h_coeffs%fz2_old(n)
                 endif
 
-                forcing_rhs(:,j) = force_ampl*h%fda(j)*cos(omega_ff*t) &
-                                  *real(cmplx(h%coef1(j),profx_hel*profyz_hel_coef2(j))*fxyz)
+                forcing_rhs(:,j) = force_ampl*h_coeffs%fda(j)*cos(omega_ff*t) &
+                                  *real(cmplx(h_coeffs%coef1(j),profx_hel*profyz_hel_coef2(j))*fxyz)
 !
 !  Compressive contributions to forcing when qforce/=0.
 !
-                if (h%qforce/=0.) &
-                  forcing_rhs_old(:,j) = force_ampl*h%fda_old(j)*cos(omega_ff*t) &
-                                        *real(cmplx(h%coef1(j),profx_hel*profyz_hel_coef2(j))*fxyz_old)
+                if (h_coeffs%qforce/=0.) &
+                  forcing_rhs_old(:,j) = force_ampl*h_coeffs%fda_old(j)*cos(omega_ff*t) &
+                                        *real(cmplx(h_coeffs%coef1(j),profx_hel*profyz_hel_coef2(j))*fxyz_old)
 !
 !  Setting here forcing_rhs2 and forcing_rhs2_old (when lmhd_forcing=T).
 !
                 if (lmhd_forcing) then
-                  forcing_rhs2(:,j) = force_ampl*h%fda2(j)*cos(omega_ff*t) & 
-                                     *real(cmplx(h%coef1b(j),profx_hel*profyz_hel_coef2b(j))*fxyz2)
+                  forcing_rhs2(:,j) = force_ampl*h_coeffs%fda2(j)*cos(omega_ff*t) & 
+                                     *real(cmplx(h_coeffs%coef1b(j),profx_hel*profyz_hel_coef2b(j))*fxyz2)
                   !if (qforce/=0.) &
                   !  forcing_rhs2_old(:,j) = force_ampl*fda2_old(j)*cos(omega_ff*t) &
                   !                         *real(cmplx(coef1b(j),profx_hel*profyz_hel_coef2b(j))*fxyz2_old)
@@ -2176,18 +2176,18 @@ module Forcing
 ! 
                 if (lforcing_coefs_hel_double) then
                   forcing_rhs(:,j) = (1.-qdouble_profile(n))*forcing_rhs(:,j) &
-                                    +qdouble_profile(n)*force_ampl*h%fda2(j)*cos(omega_double_ff*t) &
-                                    *real(cmplx(h%coef1b(j),profx_hel*profyz_hel_coef2b(j))*fxyz2)
+                                    +qdouble_profile(n)*force_ampl*h_coeffs%fda2(j)*cos(omega_double_ff*t) &
+                                    *real(cmplx(h_coeffs%coef1b(j),profx_hel*profyz_hel_coef2b(j))*fxyz2)
 !
-                  if (h%qforce/=0.) &
+                  if (h_coeffs%qforce/=0.) &
                     forcing_rhs_old(:,j) = (1.-qdouble_profile(n))*forcing_rhs_old(:,j) &
-                                          +qdouble_profile(n)*force_ampl*h%fda2_old(j)*cos(omega_double_ff*t) &
-                                          *real(cmplx(h%coef1b(j),profx_hel*profyz_hel_coef2b(j))*fxyz2_old)
+                                          +qdouble_profile(n)*force_ampl*h_coeffs%fda2_old(j)*cos(omega_double_ff*t) &
+                                          *real(cmplx(h_coeffs%coef1b(j),profx_hel*profyz_hel_coef2b(j))*fxyz2_old)
                 endif
 !
 !  Assemble new combination (if qforce/=0).
 !
-                if (h%qforce/=0.) forcing_rhs(:,j) = h%pforce*forcing_rhs(:,j) + h%qforce*forcing_rhs_old(:,j)
+                if (h_coeffs%qforce/=0.) forcing_rhs(:,j) = h_coeffs%pforce*forcing_rhs(:,j) + h_coeffs%qforce*forcing_rhs_old(:,j)
 !
 !  Compute additional forcing function (used for velocity if crosshel=1).
 !  It can optionally be the same. Alternatively, one has to set crosshel=1.
@@ -2198,9 +2198,9 @@ module Forcing
 !
 !  Something seems to be missing here as real(cmplx(0.,coef3(j))) is zero.
 !
-                  forcing_rhs2(:,j) = force_ampl*real(cmplx(0.,h%coef3(j)))*h%fda(j) 
+                  forcing_rhs2(:,j) = force_ampl*real(cmplx(0.,h_coeffs%coef3(j)))*h_coeffs%fda(j) 
                 else
-                  forcing_rhs2(:,j) = force_ampl*real(cmplx(0.,h%coef3(j))*fxyz)*h%fda(j)
+                  forcing_rhs2(:,j) = force_ampl*real(cmplx(0.,h_coeffs%coef3(j))*fxyz)*h_coeffs%fda(j)
                 endif
 
                 if(lconservative_hydro .and. (ifff == iux)) then
@@ -2255,19 +2255,19 @@ module Forcing
       endif
     endsubroutine compute_forcing_hel_coefficients
 !***********************************************************************
-    subroutine compute_ampl_and_others(f,h,profyz_hel_coef2,profyz_hel_coef2b,force_ampl)
+    subroutine compute_ampl_and_others(f,h_coeffs,profyz_hel_coef2,profyz_hel_coef2b,force_ampl)
 
       use DensityMethods, only: getrho1
 
       real, contiguous, dimension(:,:,:,:) :: f
-      type(forcing_coeffs), intent(in) :: h
+      type(forcing_coeffs), intent(in) :: h_coeffs
       real, dimension(3) :: profyz_hel_coef2, profyz_hel_coef2b
       real, dimension (nx) :: force_ampl
       real :: profyz
       real, dimension (nx) :: rho1
 
       profyz=profy_ampl(m)*profz_ampl(n)
-      profyz_hel_coef2=profy_hel(m)*profz_hel(n)*h%coef2
+      profyz_hel_coef2=profy_hel(m)*profz_hel(n)*h_coeffs%coef2
 !
 !  Compute the combined complex forcing function fxyz.
 !  If lforcing_coefs_hel_double is set, we also add a
@@ -2280,13 +2280,13 @@ module Forcing
 !  Do the same for secondary forcing function.
 !
       if (lforcing_coefs_hel_double.or.lmhd_forcing) then
-        profyz_hel_coef2b=profy_hel(m)*profz_hel(n)*h%coef2b
+        profyz_hel_coef2b=profy_hel(m)*profz_hel(n)*h_coeffs%coef2b
       endif
 !
 !  Possibility of compute work done by forcing.
 !
       if (lwork_ff) &
-        force_ampl=force_ampl*calc_force_ampl(f,h%fx,h%fy,h%fz,profyz*cmplx(h%coef1,profyz_hel_coef2))
+        force_ampl=force_ampl*calc_force_ampl(f,h_coeffs%fx,h_coeffs%fy,h_coeffs%fz,profyz*cmplx(h_coeffs%coef1,profyz_hel_coef2))
 !
 !  In the past we always forced the du/dt, but in some cases
 !  it may be better to force rho*du/dt (if lmomentum_ff=.true.)
@@ -2336,7 +2336,7 @@ module Forcing
 !
       real, contiguous,dimension(:,:,:,:), intent(INOUT) :: f
 
-      real, dimension (nx) :: rho1, ruf, rho, force_ampl, bdotf, jdotf
+      real, dimension (nx) :: rho1, ruf, rho, bdotf, jdotf
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,forcing_rhs2
       real, dimension (nx,3) :: forcing_rhs_old!,forcing_rhs2_old
       real, dimension (nx,3) :: force_all, bb, jj
@@ -2345,7 +2345,7 @@ module Forcing
 
 
 
-     call compute_forcing_hel_coefficients(h,.false.)
+     call compute_forcing_hel_coefficients(h_coeffs,.false.)
 !
 !  By default, dtforce=0, so new forcing is applied at every time step.
 !  Alternatively, it can be set to any other time, so the forcing is
@@ -2368,7 +2368,7 @@ module Forcing
 !  lforce_always_all_compomemts, in which case we apply forcing anyway.
 !  This is the line that is executed by default.
 !
-            call get_forcing_hel_rhs(f,forcing_rhs,forcing_rhs2,forcing_rhs_old,h)
+            call get_forcing_hel_rhs(f,forcing_rhs,forcing_rhs2,forcing_rhs_old,h_coeffs)
             do j=1,3
               if (lforce_always_all_compomemts .or. lactive_dimension(j)) then
 !
@@ -2538,8 +2538,8 @@ module Forcing
                   rho1=1./rho0
                 endif
                 forcing_rhs(:,j) = rho1*profx_ampl*profy_ampl(m)*profz_ampl(n) &
-                                  *real(cmplx(h%coef1(j),profy_hel(m)*profz_k(n)*h%coef2(j)) &
-                                        *h%fx(l1:l2)*h%fy(m)*h%fz(n))
+                                  *real(cmplx(h_coeffs%coef1(j),profy_hel(m)*profz_k(n)*h_coeffs%coef2(j)) &
+                                        *h_coeffs%fx(l1:l2)*h_coeffs%fy(m)*h_coeffs%fz(n))
 
                 if (lhelical_test) then
                   f(l1:l2,m,n,jf)=forcing_rhs(:,j)
@@ -5616,7 +5616,7 @@ module Forcing
                 iforcing_cont(i)=='TG-random-hel') then
           call calc_TG_random(i)
         elseif(iforcing_cont(i) == 'helical') then
-          call compute_forcing_hel_coefficients(h,.true.)
+          call compute_forcing_hel_coefficients(h_coeffs,.true.)
 !
 !  By default, dtforce=0, so new forcing is applied at every time step.
 !  Alternatively, it can be set to any other time, so the forcing is
@@ -6484,7 +6484,7 @@ module Forcing
 ! Helical forcing
 !
       case ('helical')
-        call get_forcing_hel_rhs(f,forcing_rhs,forcing_rhs2,forcing_rhs_old,h)
+        call get_forcing_hel_rhs(f,forcing_rhs,forcing_rhs2,forcing_rhs_old,h_coeffs)
         force = forcing_rhs
 !
 !  nothing 
