@@ -1433,9 +1433,9 @@ extern "C" void print_debug() {
     const AcReal* uumean_x_buf = mesh.vertex_buffer[uumean.x];
     const AcReal* uumean_y_buf = mesh.vertex_buffer[uumean.y];
     const AcReal* uumean_z_buf = mesh.vertex_buffer[uumean.z];
-    const AcReal* uux_buf = mesh.vertex_buffer[UUX];
-    const AcReal* uuy_buf = mesh.vertex_buffer[UUY];
-    const AcReal* uuz_buf = mesh.vertex_buffer[UUZ];
+    const AcReal* uux_buf = mesh.vertex_buffer[F_UX];
+    const AcReal* uuy_buf = mesh.vertex_buffer[F_UY];
+    const AcReal* uuz_buf = mesh.vertex_buffer[F_UZ];
 
     const double it_double = static_cast<double>(it);
     const int yz_size = y_size * z_size;
@@ -1546,9 +1546,9 @@ fourier_boundary_conditions()
 		const size_t boundary_z = (size_t)mesh.info[AC_nlocal_max].z-1;
 		for (int ghost = 1; ghost <= NGHOST; ++ghost)
 		{
-			acDeviceFFTR2PlanarXY(acGridGetDevice(), acGetAAX(), acGetAX_FOURIER_REAL(), acGetAX_FOURIER_IMAG(), boundary_z-ghost);
-			acDeviceFFTR2PlanarXY(acGridGetDevice(), acGetAAY(), acGetAY_FOURIER_REAL(), acGetAY_FOURIER_IMAG(), boundary_z-ghost);
-			acDeviceFFTR2PlanarXY(acGridGetDevice(), acGetAAZ(), acGetAZ_FOURIER_REAL(), acGetAZ_FOURIER_IMAG(), boundary_z-ghost);
+			acDeviceFFTR2PlanarXY(acGridGetDevice(), acGetF_AX(), acGetAX_FOURIER_REAL(), acGetAX_FOURIER_IMAG(), boundary_z-ghost);
+			acDeviceFFTR2PlanarXY(acGridGetDevice(), acGetF_AY(), acGetAY_FOURIER_REAL(), acGetAY_FOURIER_IMAG(), boundary_z-ghost);
+			acDeviceFFTR2PlanarXY(acGridGetDevice(), acGetF_AZ(), acGetAZ_FOURIER_REAL(), acGetAZ_FOURIER_IMAG(), boundary_z-ghost);
 		}
 		acDeviceLaunchKernel(acGridGetDevice(), STREAM_DEFAULT, kernel, (Volume){NGHOST,NGHOST,boundary_z+1}, 
 				(Volume){(size_t)mesh.info[AC_nlocal_max].x,(size_t)mesh.info[AC_nlocal_max].y, boundary_z+2}
@@ -1556,9 +1556,9 @@ fourier_boundary_conditions()
   		acDeviceSynchronizeStream(acGridGetDevice(),STREAM_DEFAULT);
 		for (int ghost = 1; ghost <= NGHOST; ++ghost)
 		{
-			acDeviceFFTBackwardTransformPlanar2RXY(acGridGetDevice(),  acGetAX_FOURIER_REAL(), acGetAX_FOURIER_IMAG(), acGetAAX(), boundary_z+ghost);
-			acDeviceFFTBackwardTransformPlanar2RXY(acGridGetDevice(),  acGetAY_FOURIER_REAL(), acGetAY_FOURIER_IMAG(), acGetAAY(), boundary_z+ghost);
-			acDeviceFFTBackwardTransformPlanar2RXY(acGridGetDevice(),  acGetAZ_FOURIER_REAL(), acGetAZ_FOURIER_IMAG(), acGetAAZ(), boundary_z+ghost);
+			acDeviceFFTBackwardTransformPlanar2RXY(acGridGetDevice(),  acGetAX_FOURIER_REAL(), acGetAX_FOURIER_IMAG(), acGetF_AX(), boundary_z+ghost);
+			acDeviceFFTBackwardTransformPlanar2RXY(acGridGetDevice(),  acGetAY_FOURIER_REAL(), acGetAY_FOURIER_IMAG(), acGetF_AY(), boundary_z+ghost);
+			acDeviceFFTBackwardTransformPlanar2RXY(acGridGetDevice(),  acGetAZ_FOURIER_REAL(), acGetAZ_FOURIER_IMAG(), acGetF_AZ(), boundary_z+ghost);
 		}
 		acGridExecuteTaskGraph(boundary_z_halo_exchange_graph,1);
 	}
@@ -1569,18 +1569,18 @@ fourier_boundary_conditions()
 		params.bc_aa_pot_kernel.topbot  = AC_top;
 		const AcKernel kernel = acGetOptimizedKernel(bc_aa_pot_kernel,params);
 		const size_t boundary_z = (size_t)mesh.info[AC_nlocal_max].z-1;
-		acDeviceFFTR2PlanarXY(acGridGetDevice(), acGetAAX(), acGetAX_FOURIER_REAL(), acGetAX_FOURIER_IMAG(), boundary_z);
-		acDeviceFFTR2PlanarXY(acGridGetDevice(), acGetAAY(), acGetAY_FOURIER_REAL(), acGetAY_FOURIER_IMAG(), boundary_z);
-		acDeviceFFTR2PlanarXY(acGridGetDevice(), acGetAAZ(), acGetAZ_FOURIER_REAL(), acGetAZ_FOURIER_IMAG(), boundary_z);
+		acDeviceFFTR2PlanarXY(acGridGetDevice(), acGetF_AX(), acGetAX_FOURIER_REAL(), acGetAX_FOURIER_IMAG(), boundary_z);
+		acDeviceFFTR2PlanarXY(acGridGetDevice(), acGetF_AY(), acGetAY_FOURIER_REAL(), acGetAY_FOURIER_IMAG(), boundary_z);
+		acDeviceFFTR2PlanarXY(acGridGetDevice(), acGetF_AZ(), acGetAZ_FOURIER_REAL(), acGetAZ_FOURIER_IMAG(), boundary_z);
 		acDeviceLaunchKernel(acGridGetDevice(), STREAM_DEFAULT, kernel, (Volume){NGHOST,NGHOST,boundary_z+1}, 
 				(Volume){(size_t)mesh.info[AC_nlocal_max].x,(size_t)mesh.info[AC_nlocal_max].y, boundary_z+2}
 				);
   		acDeviceSynchronizeStream(acGridGetDevice(),STREAM_DEFAULT);
 		for (int ghost = 1; ghost <= NGHOST; ++ghost)
 		{
-			acDeviceFFTBackwardTransformPlanar2RXY(acGridGetDevice(),  acGetAX_FOURIER_REAL(), acGetAX_FOURIER_IMAG(), acGetAAX(), boundary_z+ghost);
-			acDeviceFFTBackwardTransformPlanar2RXY(acGridGetDevice(),  acGetAY_FOURIER_REAL(), acGetAY_FOURIER_IMAG(), acGetAAY(), boundary_z+ghost);
-			acDeviceFFTBackwardTransformPlanar2RXY(acGridGetDevice(),  acGetAZ_FOURIER_REAL(), acGetAZ_FOURIER_IMAG(), acGetAAZ(), boundary_z+ghost);
+			acDeviceFFTBackwardTransformPlanar2RXY(acGridGetDevice(),  acGetAX_FOURIER_REAL(), acGetAX_FOURIER_IMAG(), acGetF_AX(), boundary_z+ghost);
+			acDeviceFFTBackwardTransformPlanar2RXY(acGridGetDevice(),  acGetAY_FOURIER_REAL(), acGetAY_FOURIER_IMAG(), acGetF_AY(), boundary_z+ghost);
+			acDeviceFFTBackwardTransformPlanar2RXY(acGridGetDevice(),  acGetAZ_FOURIER_REAL(), acGetAZ_FOURIER_IMAG(), acGetF_AZ(), boundary_z+ghost);
 		}
 		acGridExecuteTaskGraph(boundary_z_halo_exchange_graph,1);
 	}
@@ -1828,11 +1828,14 @@ extern "C" void getFArrayIn(AcReal **p_f_in)
   AcReal* uuy_ptr = NULL;
   AcReal* uuz_ptr = NULL;
 
-  acDeviceGetVertexBufferPtrs(acGridGetDevice(),UUX,&uux_ptr,&out);
-  acDeviceGetVertexBufferPtrs(acGridGetDevice(),UUY,&uuy_ptr,&out);
-  acDeviceGetVertexBufferPtrs(acGridGetDevice(),UUZ,&uuz_ptr,&out);
-  if (uux_ptr + mw != uuy_ptr) fprintf(stderr, "UU not contiguous\n");
-  if (uuy_ptr + mw != uuz_ptr) fprintf(stderr, "UU not contiguous\n");
+  if(iuu__mod__cdata != 0)
+  {
+    acDeviceGetVertexBufferPtrs(acGridGetDevice(),acGetF_UX(),&uux_ptr,&out);
+    acDeviceGetVertexBufferPtrs(acGridGetDevice(),acGetF_UY(),&uuy_ptr,&out);
+    acDeviceGetVertexBufferPtrs(acGridGetDevice(),acGetF_UZ(),&uuz_ptr,&out);
+    if (uux_ptr + mw != uuy_ptr) fprintf(stderr, "UU not contiguous\n");
+    if (uuy_ptr + mw != uuz_ptr) fprintf(stderr, "UU not contiguous\n");
+  }
   acDeviceGetVertexBufferPtrs(acGridGetDevice(),VertexBufferHandle(0),p_f_in,&out);
 }
 /***********************************************************************************************/
@@ -1844,9 +1847,9 @@ extern "C" void copyVBApointers(AcReal **in, AcReal **out)
     AcReal* uuy_ptr = NULL;
     AcReal* uuz_ptr = NULL;
 
-    acDeviceGetVertexBufferPtrs(acGridGetDevice(),UUX,&uux_ptr,out);
-    acDeviceGetVertexBufferPtrs(acGridGetDevice(),UUY,&uuy_ptr,out);
-    acDeviceGetVertexBufferPtrs(acGridGetDevice(),UUZ,&uuz_ptr,out);
+    acDeviceGetVertexBufferPtrs(acGridGetDevice(),acGetF_UX(),&uux_ptr,out);
+    acDeviceGetVertexBufferPtrs(acGridGetDevice(),acGetF_UY(),&uuy_ptr,out);
+    acDeviceGetVertexBufferPtrs(acGridGetDevice(),acGetF_UZ(),&uuz_ptr,out);
     if (uux_ptr + mw != uuy_ptr) fprintf(stderr, "UU not contiguous\n");
     if (uuy_ptr + mw != uuz_ptr) fprintf(stderr, "UU not contiguous\n");
   }
@@ -2112,9 +2115,9 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_,
   if (luses_aa_pwd_top || luses_aa_pot2_top)
   {
 	Field AA_fields[3];
-	AA_fields[0] = acGetAAX();
-	AA_fields[1] = acGetAAY();
-	AA_fields[2] = acGetAAZ();
+	AA_fields[0] = acGetF_AX();
+	AA_fields[1] = acGetF_AY();
+	AA_fields[2] = acGetF_AZ();
 	boundary_z_halo_exchange_graph = acGridBuildTaskGraph({
 			acHaloExchangeBoundary(AA_fields,3,BOUNDARY_Z_TOP)
 			});

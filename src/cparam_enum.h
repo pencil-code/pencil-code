@@ -961,3 +961,4 @@ integer, parameter :: enum_ascale_power_csZstep_string = 951
 integer, parameter :: enum_prm_sigem_string = 952
 integer, parameter :: enum_recombination_string = 953
 integer, parameter :: enum_radius_range_string = 954
+integer, parameter :: enum_helical_string = 955
