@@ -9648,31 +9648,40 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
 
       real, contiguous, dimension(:,:,:,:) :: f
       character (len=*), optional :: caller
-      logical :: has_nan_local
+      logical :: has_nan_local,found_nan_in_field
       integer :: i
+      integer :: l,m,n
       character(len=30) :: name
-
-      !isnan is written out since we cannot always depend on it
-      has_nan_local = any(ieee_is_nan(f))
-
-      !call mpireduce_max_int(has_nan_local,has_nan_global)
 
       !Might as well check only locally and then call mpiabort to exit globally
       !saves some communication and is maybe a bit simpler
-      if (has_nan_local) then
+      has_nan_local = .false.
+      do i=1,mfarray
+        name = farray_get_name(i)
+        found_nan_in_field=.false.
+        do l=1,mx
+        do m=1,my
+        do n=1,mz
+          if (ieee_is_nan(f(l,m,n,i))) then
+            found_nan_in_field=.true.
+            has_nan_local = .true.
+          endif
+        enddo
+        enddo
+        enddo
+        if(found_nan_in_field) then
+          print*,"check_for_nans_globally: nan in Field: ",trim(name)
+          flush(output_unit)
+        endif
+      enddo
 
+      if(has_nan_local) then
         if (.not. present(caller)) then
           print*,"check_for_nans_globally: found nans!"
         else
           print*,"check_for_nans_globally: found nans: "//trim(caller)//" !"
         endif
-
-        do i=1,mfarray
-          name = farray_get_name(i)
-          if (any(ieee_is_nan(f(:,:,:,i)))) &
-              print*,"check_for_nans_globally: nan in Field: ",trim(name)
-          flush(output_unit)
-        enddo
+        flush(output_unit)
         call mpiabort
       endif
 
