@@ -84,7 +84,7 @@ Kernel sld_calc_char_speed(PC_SUB_STEP_NUMBER step_num)
 #if Lmagnetic_MODULE && Leos_idealgas_MODULE && Lhydro_MODULE
 	if(AC_lslope_limit_diff__mod__cdata && step_num == AC_num_substeps__mod__cdata-1)
 	{
-		res = calculate_characteristic_speed(AC_w_sldchar_hyd__mod__hydro, UU, 1.0, energy_sld_sound_speed(), AC_w_sldchar_mag__mod__magnetic, curl(F_AVEC), F_RHO, AC_mu0__mod__cdata)
+		res = calculate_characteristic_speed(AC_w_sldchar_hyd__mod__hydro, F_UVEC, 1.0, energy_sld_sound_speed(), AC_w_sldchar_mag__mod__magnetic, curl(F_AVEC), F_RHO, AC_mu0__mod__cdata)
 		write(SLD_CHAR_SPEED,res)
 		if(AC_lsld_bb__mod__magnetic)
 		{
