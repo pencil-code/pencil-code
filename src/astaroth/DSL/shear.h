@@ -7,19 +7,19 @@ if(lshear)
         const real uy0 = AC_uy0__mod__shear[vertexIdx.x-AC_nmin.x]
 	if(AC_iuu__mod__cdata != 0)
 	{
-	  DF_UU  -= uy0*dery(UU)
+	  DF_UU  -= uy0*dery(F_UVEC)
 	}
 	if(AC_iaa__mod__cdata != 0)
 	{
-	  DF_AA  -= uy0*dery(AA)
+	  DF_AA  -= uy0*dery(F_AVEC)
 	}
 	if(AC_iss__mod__cdata != 0)
 	{
-	  DF_SS  -= uy0*dery(SS)
+	  DF_SS  -= uy0*dery(F_SS)
 	}
 	if(AC_ilnrho__mod__cdata + AC_irho__mod__cdata != 0)
 	{
-	  DF_RHO -= uy0*dery(RHO)
+	  DF_RHO -= uy0*dery(F_RHO)
 	}
 	#if LDUSTDENSITY
 	for k in 0:ndustspec
@@ -37,14 +37,14 @@ if(lshear)
 	  DF_FCRVEC -=uy0*dery(F_FCRVEC)
 	}
   }
-  if (lhydro && AC_lshear_acceleration__mod__shear) DF_UU.y  -= AC_sshear1__mod__shear * UU.x
+  if (lhydro && AC_lshear_acceleration__mod__shear) DF_UU.y  -= AC_sshear1__mod__shear * F_UVEC.x
   if(AC_lhyper3x_mesh__mod__shear)
   {
   	const real d = AC_diff_hyper3x_mesh__mod__shear*abs(AC_sshear__mod__cdata)
-	DF_UU  += d*der6x_ignore_spacing(UU)
-	DF_AA  += d*der6x_ignore_spacing(AA)
-	DF_RHO += d*der6x_ignore_spacing(RHO)
-	DF_SS  += d*der6x_ignore_spacing(SS)
+	DF_UU  += d*der6x_ignore_spacing(F_UVEC)
+	DF_AA  += d*der6x_ignore_spacing(F_AVEC)
+	DF_RHO += d*der6x_ignore_spacing(F_RHO)
+	DF_SS  += d*der6x_ignore_spacing(F_SS)
 	#if LDUSTDENSITY
 	for k in 0:ndustspec
 	{
