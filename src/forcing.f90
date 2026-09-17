@@ -1820,7 +1820,7 @@ module Forcing
       real, dimension (3), intent(out) :: coef1,coef2,coef3,fda,kk
       real, intent(out) :: phase, fact 
 !
-      call fconst_coefs_hel(force,kkx,kky,kkz,nk,kav,coef1,coef2,coef3,kk,phase,fact,fda,.true.)
+      call fconst_coefs_hel(force,kkx,kky,kkz,nk,kav,coef1,coef2,coef3,kk,phase,fact,fda,.false.)
 
     endsubroutine forcing_pars_hel
 !***********************************************************************
@@ -2011,7 +2011,6 @@ module Forcing
 !  to a delta function of the time difference
 !
       if(lrhs) then
-        print*,"Not having dt"
         fact=force_fact/ffnorm
       else
         fact=force_fact/ffnorm*sqrt(dt)
