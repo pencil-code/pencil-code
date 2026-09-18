@@ -542,6 +542,19 @@ module Snapshot
           enddo
         endif
         f(:,:,:,iax:iaz)=0.
+
+      else if (lread_oldsnap_noGW) then
+        if (lroot) print*,'read old snapshot file (but without GWs)'
+        call input_snap(file,f,msnap-18,mode)
+        if (lpersist) call input_persistent
+        call input_snap_finalize
+        ! shift the rest of the data
+        if (iStressXim<mvar) then
+          do ivar=iStressXim+1,mvar
+            f(:,:,:,ivar)=f(:,:,:,ivar-18)
+          enddo
+        endif
+        f(:,:,:,msnap-18:msnap)=0.
 !
 !  Read data without passive scalar into new run with passive scalar.
 !

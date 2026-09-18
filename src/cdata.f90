@@ -379,6 +379,7 @@ module Cdata
     !PAR_DOC:  In addition, for \code{idl} to read correctly after the
     !PAR_DOC:  first restarted run, you must adjust the value of \var{mvar}
     !PAR_DOC:  in \file{data/dim.dat}
+  logical :: lread_oldsnap_noGW =.false. 
   logical :: lread_oldsnap_lnrho2rho=.false., lread_oldsnap_noshear=.false.
   logical :: lread_oldsnap_nohydro=.false., lread_oldsnap_nohydro_nomu5=.false.
   logical :: lread_oldsnap_onlyA=.false., lread_oldsnap_mskipvar=.false.

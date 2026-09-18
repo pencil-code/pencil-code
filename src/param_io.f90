@@ -89,7 +89,7 @@ module Param_IO
       unit_velocity, unit_density, unit_temperature, unit_magnetic, c_light, &
       G_Newton, hbar, random_gen, seed0, lseed_global, lseed_procdependent, nfilter, lserial_io, der2_type, &
       lread_oldsnap, lwrite_var_anyway, lwrite_last_powersnap, &
-      lread_oldsnap_nomag, lread_oldsnap_nopscalar, lread_oldsnap_notestflow, lread_oldsnap_noisothmhd, &
+      lread_oldsnap_nomag, lread_oldsnap_noGW, lread_oldsnap_nopscalar, lread_oldsnap_notestflow, lread_oldsnap_noisothmhd, &
       lread_oldsnap_notestfield, lread_oldsnap_notestscalar, lread_oldsnap_noshear, &
       lread_oldsnap_nohydro, lread_oldsnap_nohydro_nomu5, &
       lread_oldsnap_nohydro_efield, lread_oldsnap_nohydro_ekfield, &
@@ -183,7 +183,7 @@ module Param_IO
       random_gen, der2_type, lrmwig_rho, lrmwig_full, lrmwig_xyaverage, &
       lnowrite, noghost_for_isave, nghost_read_fewer, &
       test_nonblocking, lwrite_tracers, lwrite_fsum, lwrite_fixed_points, lwrite_ts_hdf5, &
-      lread_oldsnap_lnrho2rho, lread_oldsnap_nomag, lread_oldsnap_notestflow, lread_oldsnap_nopscalar, &
+      lread_oldsnap_lnrho2rho, lread_oldsnap_nomag, lread_oldsnap_noGW, lread_oldsnap_notestflow, lread_oldsnap_nopscalar, &
       lread_oldsnap_notestfield, lread_oldsnap_notestscalar, lread_oldsnap_noshear, lrepair_snap, linterpol_on_repair, &
       lread_oldsnap_nohydro, lread_oldsnap_nohydro_efield, lread_oldsnap_nohydro_ekfield, &
       lread_oldsnap_noisothmhd, lread_oldsnap_onlyA, lastaroth_output, astaroth_dest, lbackup_snap, &
