@@ -285,6 +285,12 @@ pcDensityPlot[{gridx_,gridy_,data_},opts:OptionsPattern[]]:=Module[{x,y,f,frameL
   ]
 ]
 pcDensityPlot[data_List,opts:OptionsPattern[]]:=pcDensityPlot[Transpose[data],opts]/;Dimensions[data][[-1]]==3
+pcDensityPlot[data_List,opts:OptionsPattern[]]:=Module[{x,y,grid},
+  {y,x}=Range/@Dimensions[data];
+  grid=Outer[List,y,x,1];
+  {y,x}=Transpose@Flatten[grid,1];
+  pcDensityPlot[{x,y,Flatten@data},opts]
+]/;Depth[data]==3
 
 
 (* ::Section:: *)
