@@ -8,7 +8,7 @@ get_deltacorr_force(int step_num) {
 #endif
   if (AC_lforce_ramp_down__mod__forcing)
   {
-    tmp= max(0.0,1.0+min(0.0,(AC_tforce_ramp_down-AC_t__mod__cdata)/AC_tauforce_ramp_down__mod__forcing))
+    tmp= max(0.0,1.0+min(0.0,(AC_tforce_ramp_down__mod__forcing-AC_t__mod__cdata)/AC_tauforce_ramp_down__mod__forcing))
     force *= tmp
   }
   return force
