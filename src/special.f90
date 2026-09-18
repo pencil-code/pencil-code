@@ -67,7 +67,7 @@
     integer, parameter :: n_subroutines=41
 !
     character(LEN=256) :: special_modules_list = ''
-    character(LEN=30), dimension(n_subroutines) :: special_subroutines=(/ &
+    character(LEN=128), dimension(n_subroutines) :: special_subroutines=(/ &
                            'register_special              ', &
                            'register_particles_special    ', &
                            'initialize_special            ', &
@@ -113,7 +113,7 @@
 
     integer(KIND=ikind8) :: libhandle
     integer(KIND=ikind8), dimension(n_special_modules,n_subroutines) :: special_sub_handles
-    character(LEN=80) :: specific_subroutine
+    character(LEN=128) :: specific_subroutine
 
     contains
 !****************************************************************************
