@@ -14,6 +14,7 @@
   lpencil_check=T
   lpencil_check_small=T
   lshock_heat=F
+  lbackup_snap=T
   lbidiagonal_derij=F  !(use the slightly more accurate formulation for derij)
   !! too high diagnostic cadence for auto-test purposes
   d1davg=1e-9, dvid=1e-9, slice_position='m'
