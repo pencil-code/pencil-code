@@ -6725,7 +6725,7 @@ module Forcing
 !***********************************************************************
     subroutine pushpars2c(p_par)
 
-    use Syscalls, only: copy_addr
+    use Syscalls, only: copy_addr, copy_addr_dble
     use General , only: string_to_enum
 
     integer, parameter :: n_pars=100
@@ -6834,8 +6834,8 @@ module Forcing
     call copy_addr(lfcont_as_comaux,p_par(85)) ! bool
     call copy_addr(ifcont_aux,p_par(86)) ! int (n_forcing_cont_max)
     call copy_addr(lforce_ramp_down,p_par(87)) ! bool
-    call copy_addr(tforce_ramp_down,p_par(88)) ! real dconst
-    call copy_addr(tauforce_ramp_down,p_par(89)) ! real dconst
+    call copy_addr_dble(tforce_ramp_down,p_par(88)) ! real dconst
+    call copy_addr_dble(tauforce_ramp_down,p_par(89)) ! real dconst
 
     call keep_compiler_quiet(x1_fcont)
     call keep_compiler_quiet(x2_fcont)
