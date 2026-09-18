@@ -1046,7 +1046,7 @@ module Equ
 !
       use Chiral, only: chiral_before_boundary
       use Chemistry, only: chemistry_before_boundary
-      use Energy, only: energy_before_boundary,energy_before_boundary_diagnostics
+      use Energy, only: energy_before_boundary
       use Density, only: density_before_boundary,density_before_boundary_diagnostics
       use Detonate, only: detonate_before_boundary
       use Dustdensity, only: dustdensity_before_boundary
@@ -1073,7 +1073,6 @@ module Equ
       if (lhydro)        call hydro_before_boundary(f)
       if (lmagnetic)     call magnetic_before_boundary(f)
                          call energy_before_boundary(f)
-                         call energy_before_boundary_diagnostics(f)
       if (lchiral)       call chiral_before_boundary(f)
       if (lspecial)      call special_before_boundary(f)
       if (lspecial)      call special_before_boundary_diagnostics(f)
