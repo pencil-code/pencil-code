@@ -16,8 +16,6 @@ divu_shock()
     {
     	divu = divergence(F_UVEC)
     }
-//if (blockIdx.x==0 && blockIdx.y==0 && threadIdx.x==8 && threadIdx.y==8 && threadIdx.z==8) {print("div= %e \n",divu)}
-
     tmp = 0.
     if (AC_lconvergence_only__mod__shock) {
       tmp = max(0.,-divu)
@@ -29,7 +27,6 @@ divu_shock()
       tmp = abs(divu)
     }
     if (AC_shock_div_pow__mod__shock != 1.) {tmp = AC_dt_div_pow__mod__shock * pow(tmp,AC_shock_div_pow__mod__shock)}
-
     return tmp
 }
 #endif
