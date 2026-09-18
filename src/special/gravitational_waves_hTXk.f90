@@ -3493,7 +3493,7 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
 !  ggT
 !
         case ('ggT')
-          if (lreal_space_hTX_as_aux) then
+          if (lreal_space_gTX_as_aux) then
             call assign_slices_scal(slices,f,iggT_realspace)
           else
             call assign_slices_scal(slices,f,iggT)
@@ -3502,7 +3502,7 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
 !  ggX
 !
         case ('ggX')
-          if (lreal_space_hTX_as_aux) then
+          if (lreal_space_gTX_as_aux) then
             call assign_slices_scal(slices,f,iggX_realspace)
           else
             call assign_slices_scal(slices,f,iggX)
