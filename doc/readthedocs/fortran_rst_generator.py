@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from rstcloth import RstCloth
 import latexcodec
 import bibtexparser
+#TODO: the import below fails with bibtexparser >= 2.0
 from bibtexparser import bibdatabase
 # Patch the months, since our bibtex has entries such as 'august', but bibtexparser expects e.g. 'aug'
 bibdatabase.COMMON_STRINGS.update({it.lower(): it.capitalize() for it in bibdatabase.COMMON_STRINGS.values()})
