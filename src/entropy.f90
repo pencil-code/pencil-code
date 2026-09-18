@@ -92,7 +92,7 @@ module Energy
   real :: xbot_chit1=0.0, xtop_chit1=0.0
   real :: zz1=impossible, zz2=impossible
   real :: zz1_fluct=impossible, zz2_fluct=impossible
-  real :: rescale_TTmeanxy=1.
+  real :: rescale_TTmeanxy=1., rescale_TT=1.
   real :: Pres_cutoff=impossible
   real :: pclaw=0.0, xchit=0.
   real, target :: hcond0_kramers=0.0, nkramers=0.0
@@ -254,7 +254,7 @@ module Energy
       lprestellar_cool_iso, zz1, zz2, lphotoelectric_heating, TT_floor, &
       reinitialize_ss, initss, ampl_ss, radius_ss, radius_ss_x, &
       center1_x, center1_y, center1_z, lsld_char_cslimit, w_sldchar_ene_r0, &
-      lborder_heat_variable, rescale_TTmeanxy, lread_hcond, w_sldchar_ene_p, &
+      lborder_heat_variable, rescale_TTmeanxy, rescale_TT, lread_hcond, w_sldchar_ene_p, &
       Pres_cutoff,lchromospheric_cooling,lchi_shock_density_dep,lhcond0_density_dep,&
       cool_type,ichit,xchit,pclaw,h_sld_ene, nlf_sld_ene, div_sld_ene, &
       zheat_uniform_range, peh_factor, lphotoelectric_heating_radius, &
@@ -1065,6 +1065,8 @@ module Energy
             call blob(ampl_ss(j),f,iss,radius_ss(j),center1_x(j),center1_y(j),center1_z(j),radius_ss_x(j))
           case ('TTrescl')
             call rescale_TT_in_ss(f)
+          case ('rescale-TT-ideal')
+            call rescale_TT_ideal_ss(f)
           case ('zprofile')
             inquire(file='zprof.txt',exist=exist)
             if (exist) then
@@ -1698,6 +1700,32 @@ module Energy
       enddo
 !
     endsubroutine rescale_TT_in_ss
+!***********************************************************************
+    subroutine rescale_TT_ideal_ss(f)
+!
+! rescales implicitly temperature by factor rescale_TT according to ideal gas law
+!
+!  26-feb-13/FAG: coded to conserve pressure when gas density is rescaled by
+!                 factor 1/rescale_TT
+!
+      use EquationOfState, only: get_gamma_etc
+!
+      real, contiguous, dimension(:,:,:,:), intent(INOUT) :: f
+!
+      integer :: n
+      real :: fac
+      real :: cv, cp
+!
+      call get_gamma_etc(cv=cv,cp=cp)
+!
+      if (rescale_TT==1.) return
+      if (rescale_TT<=0.) call fatal_error('rescale_TT_ideal_ss','rescale_TT<=0')
+!
+      fac = alog(rescale_TT)*cv/cp
+!
+      f(:,:,:,iss) = f(:,:,:,iss) + fac
+!
+    endsubroutine rescale_TT_ideal_ss
 !***********************************************************************
     subroutine read_energy_init_pars(iomsg)
 !
