@@ -61,9 +61,10 @@
                           I_CALC_DIAGNOSTICS_SPECIAL=37, &
                           I_CALC_ODE_DIAGNOSTICS_SPECIAL=38, &
                           I_PREP_RHS_SPECIAL=39, &
-                          I_LOAD_VARIABLES_TO_GPU_SPECIAL=40
+                          I_LOAD_VARIABLES_TO_GPU_SPECIAL=40, &
+                          I_SPECIAL_BEFORE_BOUNDARY_DIAGNOSTICS=41
     
-    integer, parameter :: n_subroutines=40
+    integer, parameter :: n_subroutines=41
 !
     character(LEN=256) :: special_modules_list = ''
     character(LEN=30), dimension(n_subroutines) :: special_subroutines=(/ &
@@ -106,7 +107,8 @@
                            'calc_diagnostics_special      ', &
                            'calc_ode_diagnostics_special  ', &
                            'prep_rhs_special              ', &
-                           'load_variables_to_gpu_special '  &
+                           'load_variables_to_gpu_special ', &
+                           'special_before_boundary_diagnostics '  &
                    /)
 
     integer(KIND=ikind8) :: libhandle
@@ -889,5 +891,18 @@
       enddo
 
     endsubroutine prep_rhs_special
+!***********************************************************************
+    subroutine special_before_boundary_diagnostics(f)
+
+      use Cdata, only: n_odevars
+
+      real, dimension (mx,my,mz,mfarray) :: f
+      integer :: i
+
+      do i=1,n_special_modules
+        call caller1(special_sub_handles(i,I_SPECIAL_BEFORE_BOUNDARY_DIAGNOSTICS),f)
+      enddo
+
+    endsubroutine special_before_boundary_diagnostics
 !***********************************************************************
   endmodule Special
