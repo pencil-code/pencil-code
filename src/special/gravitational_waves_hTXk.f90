@@ -3251,33 +3251,6 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
       endif
       call solve_and_stress(f,S_T_re,S_X_re,S_T_im,S_X_im,dt)
 !
-!  back to real space: hTX
-!  re-utilize S_T_re, etc as workspace.
-!
-      if (lreal_space_hTX_as_aux) then
-        S_T_re=f(l1:l2,m1:m2,n1:n2,ihhT  )
-        S_X_re=f(l1:l2,m1:m2,n1:n2,ihhX  )
-        S_T_im=f(l1:l2,m1:m2,n1:n2,ihhTim)
-        S_X_im=f(l1:l2,m1:m2,n1:n2,ihhXim)
-        call fft_xyz_parallel(S_T_re,S_T_im,linv=.true.)
-        call fft_xyz_parallel(S_X_re,S_X_im,linv=.true.)
-        f(l1:l2,m1:m2,n1:n2,ihhT_realspace)=S_T_re
-        f(l1:l2,m1:m2,n1:n2,ihhX_realspace)=S_X_re
-      endif
-!
-!  back to real space: gTX
-!
-      if (lreal_space_gTX_as_aux) then
-        S_T_re=f(l1:l2,m1:m2,n1:n2,iggT  )
-        S_X_re=f(l1:l2,m1:m2,n1:n2,iggX  )
-        S_T_im=f(l1:l2,m1:m2,n1:n2,iggTim)
-        S_X_im=f(l1:l2,m1:m2,n1:n2,iggXim)
-        call fft_xyz_parallel(S_T_re,S_T_im,linv=.true.)
-        call fft_xyz_parallel(S_X_re,S_X_im,linv=.true.)
-        f(l1:l2,m1:m2,n1:n2,iggT_realspace)=S_T_re
-        f(l1:l2,m1:m2,n1:n2,iggX_realspace)=S_X_re
-      endif
-!
 !  back to real space: hij
 !  re-utilize S_T_re, etc as workspace.
 !
@@ -3318,6 +3291,44 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
       endif
 !
     endsubroutine compute_gT_and_gX_from_gij
+!***********************************************************************
+    subroutine special_before_boundary_diagnostics(f)
+      use Fourier, only: fourier_transform, fft_xyz_parallel, kx_fft, ky_fft, kz_fft
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension (:,:,:), allocatable :: S_T_re, S_T_im, S_X_re, S_X_im
+
+      allocate(S_T_re(nx,ny,nz))
+      allocate(S_T_im(nx,ny,nz))
+      allocate(S_X_re(nx,ny,nz))
+      allocate(S_X_im(nx,ny,nz))
+!
+!  back to real space: hTX
+!
+      if (lreal_space_hTX_as_aux) then
+        S_T_re=f(l1:l2,m1:m2,n1:n2,ihhT  )
+        S_X_re=f(l1:l2,m1:m2,n1:n2,ihhX  )
+        S_T_im=f(l1:l2,m1:m2,n1:n2,ihhTim)
+        S_X_im=f(l1:l2,m1:m2,n1:n2,ihhXim)
+        call fft_xyz_parallel(S_T_re,S_T_im,linv=.true.)
+        call fft_xyz_parallel(S_X_re,S_X_im,linv=.true.)
+        f(l1:l2,m1:m2,n1:n2,ihhT_realspace)=S_T_re
+        f(l1:l2,m1:m2,n1:n2,ihhX_realspace)=S_X_re
+      endif
+!
+!  back to real space: gTX
+!
+      if (lreal_space_gTX_as_aux) then
+        S_T_re=f(l1:l2,m1:m2,n1:n2,iggT  )
+        S_X_re=f(l1:l2,m1:m2,n1:n2,iggX  )
+        S_T_im=f(l1:l2,m1:m2,n1:n2,iggTim)
+        S_X_im=f(l1:l2,m1:m2,n1:n2,iggXim)
+        call fft_xyz_parallel(S_T_re,S_T_im,linv=.true.)
+        call fft_xyz_parallel(S_X_re,S_X_im,linv=.true.)
+        f(l1:l2,m1:m2,n1:n2,iggT_realspace)=S_T_re
+        f(l1:l2,m1:m2,n1:n2,iggX_realspace)=S_X_re
+      endif
+
+    endsubroutine special_before_boundary_diagnostics
 !***********************************************************************
     subroutine rprint_special(lreset,lwrite)
 !

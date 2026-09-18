@@ -792,6 +792,7 @@ module Equ
 !  Executed by the helper thread.
 !
         use Density, only: density_before_boundary_diagnostics
+        use Special, only: special_before_boundary_diagnostics
         use Energy,  only: energy_after_boundary_diagnostics
 
         real, contiguous, dimension(:,:,:,:),intent(INOUT) :: f
@@ -801,6 +802,7 @@ module Equ
         !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
 
         call density_before_boundary_diagnostics(f)
+        call special_before_boundary_diagnostics(f)
         call energy_after_boundary_diagnostics(f)
         !$omp end parallel
 
@@ -1044,7 +1046,7 @@ module Equ
 !
       use Chiral, only: chiral_before_boundary
       use Chemistry, only: chemistry_before_boundary
-      use Energy, only: energy_before_boundary
+      use Energy, only: energy_before_boundary,energy_before_boundary_diagnostics
       use Density, only: density_before_boundary,density_before_boundary_diagnostics
       use Detonate, only: detonate_before_boundary
       use Dustdensity, only: dustdensity_before_boundary
@@ -1052,7 +1054,7 @@ module Equ
       use Magnetic, only: magnetic_before_boundary
       use Selfgravity, only: calc_selfpotential
       use Shock, only: shock_before_boundary 
-      use Special, only: special_before_boundary
+      use Special, only: special_before_boundary, special_before_boundary_diagnostics
       use Particles_main, only: particles_before_boundary,particles_special_bfre_bdary
       use Pscalar, only: pscalar_before_boundary
       use Testflow, only: testflow_before_boundary
@@ -1071,8 +1073,10 @@ module Equ
       if (lhydro)        call hydro_before_boundary(f)
       if (lmagnetic)     call magnetic_before_boundary(f)
                          call energy_before_boundary(f)
+                         call energy_before_boundary_diagnostics(f)
       if (lchiral)       call chiral_before_boundary(f)
       if (lspecial)      call special_before_boundary(f)
+      if (lspecial)      call special_before_boundary_diagnostics(f)
       if (ltestflow)     call testflow_before_boundary(f)
       if (ltestfield)    call testfield_before_boundary(f)
       if (lparticles)    call particles_before_boundary(f)
