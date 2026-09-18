@@ -3,11 +3,11 @@ Kernel entropy_reductions()
 {
 	if(AC_lcalc_ssmean__mod__energy)
 	{
-		reduce_sum(SS/nxygrid,AC_ssmz__mod__energy)
+		reduce_sum(F_SS/nxygrid,AC_ssmz__mod__energy)
 	}
 	if(AC_lcalc_ssmeanxy__mod__energy)
 	{
-		reduce_sum(SS/nyzgrid,AC_ssmx__mod__energy)
+		reduce_sum(F_SS/nyzgrid,AC_ssmx__mod__energy)
 	}
 }
 
