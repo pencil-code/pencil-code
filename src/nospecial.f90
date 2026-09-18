@@ -601,7 +601,7 @@ module Special
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine special_before_boundary
+    endsubroutine special_before_boundary_diagnostics
 !***********************************************************************
     subroutine special_after_boundary(f)
 !
