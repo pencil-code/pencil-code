@@ -10,11 +10,11 @@ divu_shock()
     divu = 0.0
     if(AC_low_order_divu__mod__shock)
     {
-	divu = divergence_2nd(UU)
+	divu = divergence_2nd(F_UVEC)
     }
     else
     {
-    	divu = divergence(UU)
+    	divu = divergence(F_UVEC)
     }
 //if (blockIdx.x==0 && blockIdx.y==0 && threadIdx.x==8 && threadIdx.y==8 && threadIdx.z==8) {print("div= %e \n",divu)}
 
