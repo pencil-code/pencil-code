@@ -61,7 +61,7 @@ fixed_boundary Kernel twopass_solve_final(PC_SUB_STEP_NUMBER step_num, real dt)
 		  if(!AC_lkinflow_as_aux__mod__cdata)
 		  {
 			uu_updated = rk_final(F_UVEC,step_num,dt)
-			real3 force = get_deltacorr_force(step_num)
+			real3 force = get_deltacorr_force(step_num,AC_t__mod__cdata)
 #if Lhydro_MODULE
 			if(AC_lconservative__mod__hydro) force *= updated_rho
 #endif
