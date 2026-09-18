@@ -33,7 +33,7 @@ const bool AC_lrmv__mod__cdata = false
   #endif
 }
 
-fixed_boundary Kernel twopass_solve_final(PC_SUB_STEP_NUMBER step_num, real dt)
+fixed_boundary Kernel twopass_solve_final(PC_SUB_STEP_NUMBER step_num, real AC_t__mod__cdata, real dt)
 {
 	if(lcourant_dt)
 	{
