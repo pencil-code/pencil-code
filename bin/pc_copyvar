@@ -179,7 +179,11 @@ if ($execute) then
       if ( ! $quiet ) then
         echo "rm -f $dest/${data}$procdir/$var2; ln -s ${source_data}$procdir/$var1 $dest/${data}$procdir/$var2"
       endif
-      rm -f $dest/${data}$procdir/$var2; ln -s ${source_data}$procdir/$var1 $dest/${data}$procdir/$var2
+      rm -f $dest/${data}$procdir/$var2
+      set lnk = `readlink -f ${source_data}$procdir/$var1`
+      if ("$lnk" != "") then
+          ln -s "$lnk" "$dest/${data}$procdir/$var2"
+      endif
     else
       echo "$cp ${source_data}$procdir/$var1 $dest/${data}$procdir/$var2"
       $cp ${source_data}$procdir/$var1 $dest/${data}$procdir/$var2
