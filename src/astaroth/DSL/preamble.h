@@ -56,7 +56,6 @@ const int prof_nz = 150
 #define mreactions AC_mreactions__mod__chemistry
 #define nreactions AC_nreactions__mod__chemistry
 
-#define LNRHO RHO
 #define ks_modes AC_ks_modes__mod__forcing
 
 #define AC_pretend_lnTT AC_pretend_lntt__mod__cdata

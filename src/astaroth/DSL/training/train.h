@@ -221,33 +221,33 @@ elemental gsmooth(Field f)
 
 Kernel fluctutation_terms_and_means()
 {
-	if(!AC_ltrained__mod__training){
-		if(lhydro) 
-		{
-		  if(AC_lconservative__mod__hydro)
-      {
-		    uij = gradient_tensor(MOM,RHO)
-		    Sij = traceless_strain(uij)
-        write_symmetricTensor_matrix(TAU_STRAIN, Sij)
-        write(mom_mean, gsmooth(MOM))
-        write(rho_mean, gsmooth(RHO))
-        write_tensor_product(TAU_HYDRO,MOM)
-        write(TAU_HYDRO, TAU_HYDRO/RHO)
-      }
-      else
-      {
-        write(uumean,gsmooth(UU))
-		    write_tensor_product(TAU_HYDRO,UU)
-      }
-		}
-		if(AC_ltrain_mag__mod__training)
-		{
-        write(uumean,gsmooth(UU))
-		    write(sgs_emf,cross(UU,bbmean))
-		    write(bb_tensor_product,tensor_product(bbmean))
-		    write(bbmean,gsmooth(bbmean))
-		}
+      if(!AC_ltrained__mod__training){
+        if(lhydro) 
+        {
+           if(AC_lconservative__mod__hydro)
+           {
+             uij = gradient_tensor(MOM,F_RHO)
+             Sij = traceless_strain(uij)
+             write_symmetricTensor_matrix(TAU_STRAIN, Sij)
+             write(mom_mean, gsmooth(MOM))
+             write(rho_mean, gsmooth(F_RHO))
+             write_tensor_product(TAU_HYDRO,MOM)
+             write(TAU_HYDRO, TAU_HYDRO/F_RHO)
+           }
+           else
+           {
+             write(uumean,gsmooth(F_UVEC))
+             write_tensor_product(TAU_HYDRO,F_UVEC)
+           }
 	}
+	if(AC_ltrain_mag__mod__training)
+	{
+            write(uumean,gsmooth(F_UVEC))
+	    write(sgs_emf,cross(F_UVEC,bbmean))
+	    write(bb_tensor_product,tensor_product(bbmean))
+	    write(bbmean,gsmooth(bbmean))
+	}
+     }
 }
 
 Kernel smooth_fluctuation_terms(){
@@ -298,12 +298,12 @@ Kernel compute_taus(){
 
 
 Kernel get_averaged_fields(){
-	if(lhydro) {
-    write(uumean,UU)
+  if(lhydro) {
+    write(uumean,F_UVEC)
   }
   else {
     write(mom_mean, MOM)
-    write(rho_mean, RHO)
+    write(rho_mean, F_RHO)
   }
 }
 

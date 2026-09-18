@@ -71,7 +71,7 @@ bc_ss_flux(AcBoundary boundary, AC_TOP_BOT topbot)
 #if Leos_idealgas_MODULE && Lgravity_simple_MODULE
 bc_hs_z(AcBoundary boundary, AC_TOP_BOT topbot, Field j)
 {
-	if (j == LNRHO || j == F_RHO_B || j == SS)
+	if (j == F_RHO || j == F_RHO_B || j == F_SS)
 	{
 		bc_lnrho_hds_z_iso(boundary,topbot)
 	}

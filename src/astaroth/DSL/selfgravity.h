@@ -14,15 +14,15 @@ Kernel selfgravity_calc_rhs()
 	{
 		if (AC_lstratz__mod__cdata)
 		{
-			rhs_poisson += AC_rho0z__mod__selfgravity[vertexIdx.z] * (1.0 + RHO)
+			rhs_poisson += AC_rho0z__mod__selfgravity[vertexIdx.z] * (1.0 + F_RHO)
 		}
 		else if (AC_ldensity_nolog__mod__cdata)
 		{
-			rhs_poisson += value(RHO)
+			rhs_poisson += value(F_RHO)
 		}
 		else
 		{
-			rhs_poisson += exp(LNRHO)
+			rhs_poisson += exp(F_RHO)
 		}
 	}
 	if (ldustdensity && AC_lselfgravity_dust__mod__selfgravity)
@@ -41,11 +41,11 @@ Kernel selfgravity_calc_rhs()
 	{
 		if (AC_lneutraldensity_nolog__mod__cdata)
 		{
-			rhs_poisson += value(RHO_NEUTRAL)
+			rhs_poisson += value(F_RHON)
 		}
 		else
 		{
-			rhs_poisson += exp(RHO_NEUTRAL)
+			rhs_poisson += exp(F_RHON)
 		}
 	}
 #endif

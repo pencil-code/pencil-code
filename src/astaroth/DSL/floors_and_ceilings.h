@@ -4,7 +4,7 @@ Kernel impose_floors_and_ceilings()
 	{
 		if(AC_enum_density_floor_profile__mod__density == enum_uniform_string)
 		{
-			LNRHO[vertexIdx.x][vertexIdx.y][vertexIdx.z] = max(AC_density_floor_log__mod__density,LNRHO[vertexIdx.x][vertexIdx.y][vertexIdx.z])
+			F_RHO[vertexIdx.x][vertexIdx.y][vertexIdx.z] = max(AC_density_floor_log__mod__density,F_RHO[vertexIdx.x][vertexIdx.y][vertexIdx.z])
 		}
 	}
 }

@@ -104,9 +104,6 @@ global output real AC_Arms
 const int AC_xbot__mod__equationofstate=1
 const int AC_xtop__mod__equationofstate=nx
 
-#ifdef LDENSITY
-  #define LNRHO RHO
-#endif
 #include "../bcs/funcs.h"
 #include "../bcs/funcs_overload.h"
 
