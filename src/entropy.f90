@@ -322,6 +322,9 @@ module Energy
                                 ! DIAG_DOC:   \quad(time step relative to time
                                 ! DIAG_DOC:   step based on heat sources;
                                 ! DIAG_DOC:   see \S~\ref{time-step})
+!
+!  Diagnostic variables for phiaver.in
+!
   integer :: idiag_ssmphi=0     ! PHIAVG_DOC: $\left<s\right>_\varphi$
   integer :: idiag_ss2mphi=0    ! PHIAVG_DOC: $\left<s^2\right>_\varphi$
   integer :: idiag_cs2mphi=0    ! PHIAVG_DOC: $\left<c^2_s\right>_\varphi$
@@ -342,6 +345,8 @@ module Energy
   integer :: idiag_ursphTTmphi=0  ! PHIAVG_DOC: $\left<u_r T \right>_\varphi$
   integer :: idiag_fturbrsphmphi=0  ! PHIAVG_DOC: $F_{\rm SGS}$ ($\varphi$-averaged SGS diffusion
                                     ! PHIAVG_DOC: for star-in-a-box simulations)
+  integer :: idiag_slopelimrsphmphi=0 ! PHIAVG_DOC: $\left<F_{\rm SLD}\right>_\varphi$
+                                     ! PHIAVG_DOC: \quad(slope-limited diffusive flux, radial)
   integer :: idiag_yHm=0        ! DIAG_DOC: mean hydrogen ionization
   integer :: idiag_yHmax=0      ! DIAG_DOC: max of hydrogen ionization
   integer :: idiag_TTm=0        ! DIAG_DOC: $\left<T\right>$
@@ -526,6 +531,8 @@ module Energy
   logical :: lcalc_heat_cool
   real :: tau1_cool,rho01,hcond_Kconst    !,lnrho0,cs20
   real, dimension(:), pointer :: beta_glnrho_scaled
+  real, dimension (mx) :: fact_wsld
+  real :: w_sldrat2
 
   integer :: enum_div_sld_ene = 0
   integer :: enum_cooling_profile = 0
@@ -574,7 +581,7 @@ module Energy
 !
       if (any(iheatcond=='entropy-slope-limited')) then
         lslope_limit_diff = .true.
-        if (dimensionality<3)lisotropic_advection=.true.
+        if (dimensionality<3) lisotropic_advection=.true.
         if (isld_char == 0) then
           call farray_register_auxiliary('sld_char',isld_char,communicated=.true.,rhs=.true.)
           if (lroot) write(15,*) 'sld_char = fltarr(mx,my,mz)*one'
@@ -1555,6 +1562,16 @@ module Energy
       if (chi_t/=0..or.chi_t0/=0.) then
         if (lheatc_chiconst.or.lheatc_Kprof.or.lheatc_kramers.or. &
             (lheatc_chit.and.(lchit_total.or.lchit_mean))) call chit_profile
+      endif
+
+      if (lslope_limit_diff) then
+        if (lsld_char_cslimit) w_sldrat2=w_sldchar_ene2**2./(w_sldchar_ene**2.+tini)
+!
+        if (lsld_char_wprofr) then
+          fact_wsld=1 + (w_sldchar_ene2/w_sldchar_ene -1.)*(x/w_sldchar_ene_r0)**w_sldchar_ene_p
+        else
+          fact_wsld=1.
+        endif
       endif
 !
 !  Compute profiles. Diffusion of total and mean use the same profile.
@@ -3476,6 +3493,7 @@ module Energy
           idiag_gTxgsxmxy/=0 .or. idiag_gTxgsymxy/=0 .or. idiag_gTxgszmxy/=0 .or. &
           idiag_gTxgsx2mxy/=0 .or. idiag_gTxgsy2mxy/=0 .or. idiag_gTxgsz2mxy/=0) &
         lpenc_diagnos2d(i_gss)=.true.
+      if (idiag_slopelimrsphmphi/=0) lpenc_diagnos2d(i_evr)=.true.
 !
 !  Cooling for cold core collapse
 !
@@ -3647,7 +3665,7 @@ module Energy
       if (lcool_prof_as_var) p%cool_prof=f(l1:l2,m,n,icool_prof)
 !
       if (lupdate_courant_dt) then
-        if (lhydro.and.ldensity) advec_cs2=p%advec_cs2
+        if (lhydro.and.ldensity) advec_cs2=max(advec_cs2,p%advec_cs2)
       endif
 !
     endsubroutine calc_pencils_energy
@@ -3664,6 +3682,7 @@ module Energy
       real, dimension(nx) :: tmp
 
       call calc_slope_diff_flux(f,iss,h_sld_ene,nlf_sld_ene,tmp,div_sld_ene)
+
       df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+tmp
 
     endsubroutine calc_energy_slope_limited
@@ -3831,9 +3850,7 @@ module Energy
 !     Slope-limited diffusion
 !
       if (lenergy_slope_limited.and.llast) then
-        if(lsld_every_step .or. lrmv) then
-          call calc_energy_slope_limited(f,df)
-        endif
+        if (lsld_every_step .or. lrmv) call calc_energy_slope_limited(f,df)
       endif
 !
 !  Explicit heating/cooling terms.
@@ -4232,16 +4249,18 @@ module Energy
 !
     endsubroutine calc_1d_diagnostics_energy
 !***********************************************************************
-    subroutine calc_2d_diagnostics_energy(p)
+    subroutine calc_2d_diagnostics_energy(f,p)
 !
 !  2-D averages.
 !
       use Diagnostics
-      use Sub, only: cross
+      use Sub, only: cross, calc_slope_diff_flux
 
       type(pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
 
       real, dimension (nx,3) :: gTxgs, tmpvec
+      real, dimension (nx) :: tmp,sld_flux1,sld_flux2,sld_flux3
 
       if (l2davgfirst) then
 !
@@ -4327,6 +4346,16 @@ module Energy
           if (idiag_gTxgsy2mxy/=0) call zsum_mn_name_xy(gTxgs**2,idiag_gTxgsymxy,(/0,1,0/))
           if (idiag_gTxgsz2mxy/=0) call zsum_mn_name_xy(gTxgs**2,idiag_gTxgszmxy,(/0,0,1/))
         endif
+
+        if (lenergy_slope_limited .and. it>1) then   !!!.and.lgpu) then
+          if (idiag_slopelimrsphmphi/=0) then
+            call calc_slope_diff_flux(f,iss,h_sld_ene,nlf_sld_ene,tmp,div_sld_ene, &
+                                      flux1=sld_flux1,flux2=sld_flux2,flux3=sld_flux3)
+            call phisum_mn_name_rz(sld_flux1*p%evr(:,1)+sld_flux2*p%evr(:,2)+sld_flux3*p%evr(:,3), &
+                                   idiag_slopelimrsphmphi)
+print*, maxval(sld_flux1*p%evr(:,1)+sld_flux2*p%evr(:,2)+sld_flux3*p%evr(:,3))
+          endif
+        endif
       endif
 
     endsubroutine calc_2d_diagnostics_energy
@@ -4359,7 +4388,7 @@ module Energy
         endif
       endif
 
-      call calc_2d_diagnostics_energy(p)
+      call calc_2d_diagnostics_energy(f,p)
       call calc_1d_diagnostics_energy(f,p)
       call calc_0d_diagnostics_energy(f,p)
 
@@ -4399,73 +4428,67 @@ module Energy
       use EquationOfState, only: get_gamma_etc
       use Sub, only : step
 !
-      real, contiguous, dimension(:,:,:,:), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:),target, intent(inout) :: f
       real, dimension (mx) :: cs2, prof_cs, fact_rho, fact_wsld
-      real :: rhotop, lnrhotop, w_sldrat2=1.0
+      real :: rhotop, lnrhotop
       real :: gamma,gamma_m1,cv,cv1
 !
-!    Slope limited diffusion: update characteristic speed
-!    Not staggered yet
+!  Slope limited diffusion: update characteristic speed
+!  Not staggered yet
 !
-     if (lslope_limit_diff .and. llast) then
+      if (lslope_limit_diff .and. llast) then
+!
         call get_gamma_etc(gamma,cv=cv); gamma_m1=gamma-1.; cv1=1./cv
 !
-       if (ldensity_nolog) then
-         rhotop=exp(lnrho0)*((cs2top/cs20)**(1./gamma_m1))
-       else
-         lnrhotop=lnrho0+(1./gamma_m1)*log(cs2top/cs20)
-       endif
-       cs2=0.
-       prof_cs=1.
-       fact_rho=1.
-       fact_wsld=1.
-       if (lsld_char_cslimit) then
-         w_sldrat2=w_sldchar_ene2**2./(w_sldchar_ene**2.+tini)
-       else
-         w_sldrat2=1.0
-       endif
+        if (ldensity_nolog) then
+          rhotop=exp(lnrho0)*((cs2top/cs20)**(1./gamma_m1))
+        else
+          lnrhotop=lnrho0+(1./gamma_m1)*log(cs2top/cs20)
+        endif
+
+        fact_rho=1.
+
+        !!$omp target if (loffload) data map(to: ilnrho,iss,isld_char,w_sldchar_ene,w_sldchar_ene2,lnrho0,ldensity_nolog,gamma_m1,cv1,cs20,rhotop,lsld_char_rholimit,cs2top,lnrhotop,w_sldrat2,fact_wsld) is_device_ptr(cf)
+        !!$omp teams distribute parallel do collapse(2)
+        do n=1,mz
+        do m=1,my
+          if (ldensity_nolog) then
+            cs2 = cs20*exp(gamma_m1*(alog(f(:,m,n,irho))-lnrho0)+cv1*f(:,m,n,iss))
 !
-       if (lsld_char_wprofr) fact_wsld=1 + (w_sldchar_ene2/w_sldchar_ene -1.) &
-                                           *(x/w_sldchar_ene_r0)**w_sldchar_ene_p
-       do m=1,my
-       do n=1,mz
-         if (ldensity_nolog) then
-           cs2 = cs20*exp(gamma_m1*(alog(f(:,m,n,irho))-lnrho0)+cv1*f(:,m,n,iss))
+!  apply density correction, to enhance sld_char in regions of low density
 !
-!  apply density correction, to enhace sld_char in regions of low
-!  density
+            if (lsld_char_rholimit) fact_rho=1.+(rhotop/f(:,m,n,irho))**cs2top/cs2
 !
-           if (lsld_char_rholimit) fact_rho=1.+(rhotop/f(:,m,n,irho))**cs2top/cs2
+          else
+            cs2 = cs20*exp(gamma_m1*(f(:,m,n,ilnrho)-lnrho0)+cv1*f(:,m,n,iss))
 !
-         else
-           cs2 = cs20*exp(gamma_m1*(f(:,m,n,ilnrho)-lnrho0)+cv1*f(:,m,n,iss))
+!  apply density correction, to enhance sld_char in regions of low density
 !
-!  apply density correction, to enhace sld_char in regions of low
-!  density
+            if (lsld_char_rholimit) fact_rho=1.+exp((lnrhotop-f(:,m,n,ilnrho)))*cs2top/cs2
 !
-           if (lsld_char_rholimit) fact_rho=1.+ exp((lnrhotop-f(:,m,n,ilnrho)))*cs2top/cs2
-!
-         endif
+          endif
 !
 !  make sure cs2 contribution is always larger than cs2top
-!  with a continue transition from w_slchar_ene_top*sqrt(cs2top) to
-!  w_sldchar_ene*sqrt(cs2)
+!  with a continuous transition from w_slchar_ene_top*sqrt(cs2top) to w_sldchar_ene*sqrt(cs2)
 !
-         if (lsld_char_cslimit) then
-           if (w_sldchar_ene==0.0) then
-             f(:,m,n,isld_char)=f(:,m,n,isld_char) + w_sldchar_ene2*sqrt(cs2top)
-           else
-             prof_cs=step(cs2,w_sldrat2*cs2top+cs2top/200.,cs2top/200.)
-             f(:,m,n,isld_char) = f(:,m,n,isld_char) + w_sldchar_ene*prof_cs*sqrt(cs2) &
-                                 + (1.-prof_cs)*w_sldchar_ene2*sqrt(cs2top)
-           endif
-         else
-!           f(:,m,n,isld_char)=f(:,m,n,isld_char)+w_sldchar_ene*cs2*fact_rho*fact_cs
-           f(:,m,n,isld_char)=f(:,m,n,isld_char) + w_sldchar_ene*fact_wsld*sqrt(cs2*fact_rho)
-         endif
-       enddo
-       enddo
-     endif
+          if (lsld_char_cslimit) then
+            if (w_sldchar_ene==0.0) then
+              f(:,m,n,isld_char)=f(:,m,n,isld_char) + w_sldchar_ene2*sqrt(cs2top)
+            else
+              prof_cs=step(cs2,w_sldrat2*cs2top+cs2top/200.,cs2top/200.)
+              f(:,m,n,isld_char) = f(:,m,n,isld_char) + w_sldchar_ene*prof_cs*sqrt(cs2) &
+                                  + (1.-prof_cs)*w_sldchar_ene2*sqrt(cs2top)
+            endif
+          else   !MR: makes only sense for lsld_char_rholimit=T, but lsld_char_rholimit and lsld_char_cslimit should 
+                 !    then be mutually exclusive
+!            f(:,m,n,isld_char)=f(:,m,n,isld_char)+w_sldchar_ene*cs2*fact_rho*fact_cs
+            f(:,m,n,isld_char)=f(:,m,n,isld_char) + w_sldchar_ene*fact_wsld*sqrt(cs2*fact_rho)
+          endif
+        enddo
+        enddo
+        !!$omp end target
+
+      endif
 !
     endsubroutine energy_before_boundary
 !***********************************************************************
@@ -7372,6 +7395,7 @@ module Energy
         idiag_Hmax=0; idiag_dtH=0; idiag_tauhmin=0; idiag_ethmz=0
         idiag_fpreszmz=0; idiag_gTT2mz=0; idiag_gss2mz=0; idiag_TT2m=0
         idiag_fturbrsphmphi=0; idiag_fracvph1mz=0; idiag_fracvph2mz=0; idiag_fracvph3mz=0;
+        idiag_slopelimrsphmphi=0
      endif
 !
 !  iname runs through all possible names that may be listed in print.in.
@@ -7585,6 +7609,7 @@ module Energy
         call parse_name(irz,cnamerz(irz),cformrz(irz),'fconvpsphmphi',idiag_fconvpsphmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'ursphTTmphi',idiag_ursphTTmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'fturbrsphmphi',idiag_fturbrsphmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'slopelimrsphmphi',idiag_slopelimrsphmphi)!COR
       enddo
 !
 !  check for those quantities for which we want video slices
@@ -8905,14 +8930,15 @@ module Energy
     call copy_addr(heat_int,p_par(477))
     call copy_addr(coef_cs2,p_par(478)) ! (9)
     call copy_addr(lsmooth_ss_run_aver,p_par(479)) ! bool
-
+    call copy_addr(lcool_prof_as_var,p_par(480)) ! bool
+    call copy_addr(fact_wsld,p_par(481)) ! (mx)
+    call copy_addr(w_sldrat2,p_par(482)) 
 
     call keep_compiler_quiet(nsmooth_kramers)
     call keep_compiler_quiet(patch_fac)
     call keep_compiler_quiet(thermal_background)
     call keep_compiler_quiet(thermal_scaling)
 
-    call copy_addr(lcool_prof_as_var,p_par(480)) ! bool
     endsubroutine pushpars2c
 !***********************************************************************
 !********************************************************************
