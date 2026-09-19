@@ -5,11 +5,11 @@ get_deltacorr_force(int step_num, real t) {
   if ( !AC_lforcing_cont__mod__cdata ) {
     if (step_num==AC_num_substeps__mod__cdata-1) {force = forcing()}
   }
-#endif
   if (AC_lforce_ramp_down__mod__forcing)
   {
     tmp= max(0.0,1.0+min(0.0,(AC_tforce_ramp_down__mod__forcing-t)/AC_tauforce_ramp_down__mod__forcing))
     force *= tmp
   }
+#endif
   return force
 }
