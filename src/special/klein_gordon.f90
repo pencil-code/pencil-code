@@ -270,7 +270,7 @@ module Special
   integer :: idiag_rho_phi=0   ! DIAG_DOC: $\left<\rho phi\right>$
   integer :: idiag_tension = 0 ! DIAG_DOC: $\sigma$
   integer :: idiag_zeta_int = 0 ! DIAG_DOC: $\int{\zeta*(\partial_r \phi)^2}$
-  integer :: idiag_terminal_vel= 0 ! DIAG_DOC: $\v_{\w_{\infty}}$
+  integer :: idiag_terminal_vel= 0 ! DIAG_DOC: $v_{w_{\infty}}$
   !Kishore: changed below from $\left<\ascale\right>$ to fix compilation of the manual.
   integer :: idiag_a=0    ! DIAG_DOC: $\left<a\right>$ !Sovan
   integer :: idiag_ddotam=0     ! DIAG_DOC: $a''/a$
