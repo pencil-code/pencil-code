@@ -1568,7 +1568,7 @@ module Energy
         if (lsld_char_cslimit) w_sldrat2=w_sldchar_ene2**2./(w_sldchar_ene**2.+tini)
 !
         if (lsld_char_wprofr) then
-          fact_wsld=1 + (w_sldchar_ene2/w_sldchar_ene -1.)*(x/w_sldchar_ene_r0)**w_sldchar_ene_p
+          fact_wsld=1 + (w_sldchar_ene2/w_sldchar_ene-1.)*(x/w_sldchar_ene_r0)**w_sldchar_ene_p
         else
           fact_wsld=1.
         endif
@@ -4429,7 +4429,7 @@ print*, maxval(sld_flux1*p%evr(:,1)+sld_flux2*p%evr(:,2)+sld_flux3*p%evr(:,3))
       use Sub, only : step
 !
       real, contiguous, dimension(:,:,:,:),target, intent(inout) :: f
-      real, dimension (mx) :: cs2, prof_cs, fact_rho, fact_wsld
+      real, dimension (mx) :: cs2, prof_cs, fact_rho
       real :: rhotop, lnrhotop
       real :: gamma,gamma_m1,cv,cv1
 !
