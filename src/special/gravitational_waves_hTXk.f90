@@ -31,7 +31,7 @@
 !  Special equation                                | dspecial_dt
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
-! Declare (for generation of gravitational_waves_hTXk_dummies.inc) the number of f array
+! Declare (for generation of special_dummies.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lspecial = .true.
@@ -79,7 +79,7 @@
 ! Where geo_kws it replaced by the filename of your new module
 ! upto and not including the .f90
 !
-module gravitational_waves_hTXk
+module Special
 !
   use Cdata
   use Initcond
@@ -3648,6 +3648,6 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
 !**  copies dummy routines from nospecial.f90 for any Special      **
 !**  routines not implemented in this file                         **
 !**                                                                **
-    include '../gravitational_waves_hTXk_dummies.inc'
+    include '../special_dummies.inc'
 !********************************************************************
-endmodule gravitational_waves_hTXk
+endmodule Special
