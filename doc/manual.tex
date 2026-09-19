@@ -2435,6 +2435,16 @@ As a rule of thumb, if the sample only requires the following features it can be
 	(Cases outside of those already covered require explicit use of code tools to generate the GPU code.)
   \item Fourier transforms (requires handwritten modifications to add new physics).
 \end{itemize}
+
+For Fourier transform by default the vendor versions are used (cufft or rocfft). However, these are not usually configured to be MPI-enabled. Because of this one has to install the HeFFTe library for
+distributed Fourier transforms on the GPUs. At the moment these are needed for advancement of gravitational waves in the hTXk-module and for solving the Poisson equation in periodic domains.
+In `utils/install\_scripts/install\_HeFFTe\_LUMI.sh` you can find an example script for installing HeFFTe for rocm-enabled environment.
+In addition to the installation also add the following to your build config
+\begin{verbatim}
+  GPU_FFT=HEFFTE
+\end{verbatim}, to make the build choose HeFFTe.
+If you installed HeFFTe instead of using an existing module for it, you have to also export the environment variable HEFFTE\_DIR, which should point to a directory that contains the `include` folder of HeFFTe and the built library under `build`.
+
 \subsubsection{Runtime compilation}
 \label{runtime-compilation}
 As stated normal usage of GPUs requires compilation during the running of the setup.
