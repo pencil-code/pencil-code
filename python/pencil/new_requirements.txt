@@ -1,0 +1,20 @@
+h5py
+numpy
+plotly
+retrying
+astropy
+scipy
+matplotlib
+Cython
+dill
+mpi4py
+pen
+pencil
+pexpect
+tqdm
+vtk
+flatdict
+lazy_loader
+f90nml
+#Optional but useful
+pyvista

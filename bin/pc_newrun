@@ -159,6 +159,7 @@ cp *.in $targetdir
 [ -f parameters.pro ] && cp parameters.pro $targetdir
 [ -f stratification.dat ] && cp stratification.dat $targetdir
 [ -f hcond_glhc.dat ] && cp hcond_glhc.dat $targetdir
+[ -f sound.coords ] && cp sound.coords $targetdir
 [ -f chem.inp ] && cp chem.inp $targetdir
 [ -f tran.dat ] && cp tran.dat $targetdir
 [ -f nnu2.dat ] && cp nnu2.dat $targetdir
