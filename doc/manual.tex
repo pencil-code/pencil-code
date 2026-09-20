@@ -4277,6 +4277,7 @@ import numpy as np
 import pylab as plt
 import matplotlib
 from matplotlib import rc
+import os
 
 plt.ion()
 matplotlib.rcParams['savefig.directory'] = ''
@@ -4298,7 +4299,7 @@ import rlcompleter
 try:
     import readline
 except ImportError:
-    print "Module readline not available."
+    print("Module readline not available.")
 else:
     import rlcompleter
     readline.parse_and_bind("tab: complete")
