@@ -1157,11 +1157,9 @@ module Density
       reference_state_padded(l1:l2,:) = reference_state
       lpositive_total_mass = total_mass > 0.0
 
-      if(lhydro) then
-        call get_shared_variable('lext_force',lext_force,default_val=.false.)
-        if(lext_force) then
-          call get_shared_variable('Hscript',Hscript,default_val=0.)
-        endif
+      call get_shared_variable('lext_force',lext_force,default_val=.false.)
+      if(lext_force) then
+        call get_shared_variable('Hscript',Hscript,default_val=0.)
       endif
 
     endsubroutine initialize_density
