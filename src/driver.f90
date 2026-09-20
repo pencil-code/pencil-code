@@ -160,7 +160,7 @@ module Driver
 !
       real :: factor
 !
-      if (time <= data%time_l) then
+      if ((time <= data%time_l) .or. (data%time_r >= huge(0.0))) then
         data%frame = data%frame_l
       elseif (time >= data%time_r) then
         data%frame = data%frame_r
