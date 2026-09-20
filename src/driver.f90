@@ -271,7 +271,7 @@ module Driver
 !
         ! read data frame from file
         inquire (IOLENGTH=rec_len) 1.0d0
-        rec_len = rec_len * dim_1 * dim_2
+        rec_len = rec_len * buffer_dim_1 * buffer_dim_2
         open (unit, file=filename, form='unformatted', recl=rec_len, access='direct')
         read (unit, rec=frame) buffer
 !
