@@ -2017,7 +2017,7 @@ module Special
               if (time_l <= 0.0) call fatal_error ('find_frame', &
                   trim (filename)//' last frame must have time > 0.', .true.)
               ! EOF reached => read from beginning
-              delta_t = delta_t + time_l
+              delta_t = time_l
               frame_pos = 0
               io_error = 0
             endif
