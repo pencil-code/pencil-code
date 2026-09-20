@@ -251,7 +251,7 @@ module Special
   integer :: idiag_a2rhophim=0  ! DIAG_DOC: $a^2 \rho_\phi$
   integer :: idiag_a4rhophim=0  ! DIAG_DOC: $a^4 \rho_\phi$
   integer :: idiag_a4rhophi2m=0 ! DIAG_DOC: $a^4\left<\rho_\phi^2\right>$
-  integer :: idiag_a2rhogphim=0 ! DIAG_DOC: $0.5 <grad \phi^2>$
+  integer :: idiag_a2rhogphim=0 ! DIAG_DOC: $0.5 <\nabla \phi^2>$
   integer :: idiag_rho_chi=0    ! DIAG_DOC: $\rho_\chi$
   integer :: idiag_rho_rad=0    ! DIAG_DOC: $\rho_\mathrm{rad}$
   integer :: idiag_sigEma=0     ! DIAG_DOC: $\rho_\chi$
