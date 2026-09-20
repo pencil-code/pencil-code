@@ -73,6 +73,7 @@ subroutine helper_loop(f,p)
 !
 ! 7-feb-24/TP: coded
     call allocate_fnames(nname)
+    lpencil = lpenc_requested .or. lpenc_diagnos .or. lpenc_diagnos2d .or. lpenc_video
 !
 !$  do while(lhelper_run)
 !$    call signal_wait(lhelper_perf,lhelper_run)

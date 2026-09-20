@@ -616,7 +616,8 @@ module Equ
 !  Parallelization across all helper threads.
 !
 !$omp parallel if (.not. lsuppress_parallel_reductions) private(p) num_threads(num_helper_threads) &
-!$omp copyin(t,dxmax_pencil,fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
+!$omp copyin(t,dxmax_pencil,lpencil,fname,fnamex,fnamey,fnamez,fnamer,&
+!$omp&       fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
 !$    call restore_diagnostic_controls
 !$    call hydro_restore_diagnostic_controls
 !$    call training_restore_diagnostic_controls
