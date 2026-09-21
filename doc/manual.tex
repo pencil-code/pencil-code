@@ -2371,7 +2371,7 @@ This requires you to have the following libraries:
 The Astaroth library and the code translator for it come together with Pencil Code as git submodules.
 To get them and/or update them to the latest versions run:
 \begin{verbatim}
-  git submodule update --init --remote
+  git submodule update --init -recursive
 \end{verbatim}
 
 In \file{src/Makefile.local} add the following options:
@@ -2380,6 +2380,10 @@ In \file{src/Makefile.local} add the following options:
 \end{verbatim}
 
 Compilation and running are done in the same manner as for normal CPU setups.
+
+Note that the mpicc compiler work poorly with CMake, thus it is preferable to have
+set the CC compiler explicity in your compilation config something different from mpicc.
+
 By default the code assumes communication is done with CUDA-aware MPI, which means the GPUs speak directly to each other.
 If you have to ask is your MPI CUDA-aware enabled then it most likely is not.\footnote{
 If Openmpi has been built with CUDA support, you will see \code{cuda} in the output of \command{ompi\_info | grep "MPI extensions"}.
