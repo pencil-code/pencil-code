@@ -2365,13 +2365,13 @@ the compiler can check whether we are out of bounds.
 Pencil Code can also be run on GPUs via automatic code translation to the Astaroth GPU library. 
 This requires you to have the following libraries: 
 \begin{verbatim}
-  cmake version >= 3.21,bison,flex,CUDA or HIP,python
+  cmake version >= 3.23,bison,flex,CUDA or HIP,python
 \end{verbatim}
 
 The Astaroth library and the code translator for it come together with Pencil Code as git submodules.
 To get them and/or update them to the latest versions run:
 \begin{verbatim}
-  git submodule update --init -recursive
+  git submodule update --init --recursive
 \end{verbatim}
 
 In \file{src/Makefile.local} add the following options:
