@@ -106,6 +106,7 @@ module Param_IO
       fbcz1, fbcz2, fbcz1_1, fbcz1_2, fbcz2_1, fbcz2_2, &
       fbcx_bot, fbcx_top, fbcy_bot, fbcy_top, fbcz_bot, fbcz_top, bc_slc_dir, &
       vel_spec, mag_spec, &
+      special_spec, &
       uxy_spec, bxy_spec, jxbxy_spec, xy_spec, oo_spec, relvel_spec, &
       uxj_spec, vec_spec, ou_spec, oun_spec, ab_spec, azbz_spec, uzs_spec, ub_spec, &
       bb2_spec, jj2_spec, ele_spec, a0_spec, pot_spec, &

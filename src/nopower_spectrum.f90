@@ -335,4 +335,12 @@ module power_spectrum
 !
   endsubroutine power_transfer_mag
 !***********************************************************************
+  subroutine power_myspecial_output(f)
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+!
+      call keep_compiler_quiet(f)
+!
+  endsubroutine power_myspecial_output
+!***********************************************************************
 endmodule power_spectrum

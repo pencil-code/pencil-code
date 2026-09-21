@@ -7628,4 +7628,21 @@ outer:do ikz=1,nz
 !
   endsubroutine unpack_range
 !***********************************************************************
+  subroutine power_myspecial_output(f)
+!
+!  Hook for outputs of special/accretion1d.f90
+!
+  use Special, only: special_calc_spectra
+!
+  real, dimension (mx,my,mz,mfarray), intent(in) :: f
+!
+  real, dimension (nxgrid) :: spectrum,spectrumhel
+  real, dimension (nxgrid,nxgrid) :: spectrum_2d,spectrum_2d_hel
+  logical :: lfirstcall
+  character(LEN=3) :: sp
+!
+  call special_calc_spectra(f,spectrum,spectrumhel,spectrum_2d,spectrum_2d_hel,lfirstcall,sp)
+!
+  endsubroutine power_myspecial_output
+!***********************************************************************
 endmodule Power_spectrum

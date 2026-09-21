@@ -1058,6 +1058,7 @@ module Snapshot
         if (har_spec) call powerscl(f,'hr')
         if (hav_spec) call powerscl(f,'ha')
         if (b2_spec)  call powerscl(f,'b2')
+        if (special_spec) call power_myspecial_output(f)
         if (oned) then
           if (vel_spec) call power_1d(f,'u',1)
           if (mag_spec) call power_1d(f,'b',1)
