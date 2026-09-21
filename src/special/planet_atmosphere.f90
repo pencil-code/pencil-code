@@ -222,11 +222,11 @@ module Special
     lpenc_requested(i_rho)=.true.
     lpenc_requested(i_pp)=.true.
     lpenc_requested(i_uu)=.true.
+    if (lmagnetic) lpenc_requested(i_jj)=.true.
 !
     if (lmagnetic .and. iBext/='nothing') then
       lpenc_requested(i_rho1)=.true.
       lpenc_requested(i_bb)=.true.
-      lpenc_requested(i_jj)=.true.
     endif
 !
     if (lmagnetic .and. ieta_PT/='nothing') then
@@ -235,6 +235,7 @@ module Special
       lpenc_requested(i_TT)=.true.
       lpenc_requested(i_j2)=.true.
       lpenc_requested(i_del2a)=.true.
+      lpenc_requested(i_graddiva)=.true.
     endif
 !
     endsubroutine pencil_criteria_special
@@ -292,7 +293,7 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      real, dimension (nx,3) :: jtot,btot,jxbtot,jxbtotr
+      real, dimension (nx,3) :: jtot,btot,jxb1,jxb2,jxbtot,jxbtotr
       integer :: i, j
 !
 !  Add top or bottom sponge layer
@@ -314,7 +315,9 @@ module Special
       if (lmagnetic) then
         jtot = p%jj + Jext(l1:l2,m,n,:)
         btot = p%bb + Bext(l1:l2,m,n,:)
-        call cross_mn(jtot,btot,jxbtot)
+        call cross_mn(jtot,btot,jxb1)
+        call cross_mn(p%jj,p%bb,jxb2)
+        jxbtot = jxb1 - jxb2  !  jxb2 will be calculated in magnetic.f90
         call multsv_mn(p%rho1,jxbtot,jxbtotr)
         df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + jxbtotr
       endif
@@ -410,7 +413,7 @@ module Special
 ! Apply customized eta profile to the induction and heat equations
 !
       if (ieta_PT/='nothing') then
-        df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + spread(eta_x,2,3) * p%del2a
+        df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) - spread(eta_x,2,3) * mu0 * p%jj
         df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT) + p%cv1*p%rho1*mu0 * eta_x * p%j2
         if (lfirst.and.ldt) maxdiffus=max(maxdiffus,eta_x*dxyz_2)
       endif
