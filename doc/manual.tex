@@ -2449,6 +2449,12 @@ In addition to the installation also add the following to your build config
 \end{verbatim}, to make the build choose HeFFTe.
 If you installed HeFFTe instead of using an existing module for it, you have to also export the environment variable HEFFTE\_DIR, which should point to a directory that contains the `include` folder of HeFFTe and the built library under `build`.
 
+\subsubsection{prep rhs subroutines}
+Often time-dependent variables are calculated in before or after boundary.
+To avoid excessive loading of parameters to the GPUs, we would prefer these calculations to be in prep\_rhs functions.
+The functionality will be the same on CPUs (not calculated inside the mn-loop), but on GPUs it is calculated on each thread.
+Since compute is cheap compared to loading of variables, this is preferable, and more importantly less likely to break because of missing load statements.
+
 \subsubsection{Runtime compilation}
 \label{runtime-compilation}
 As stated normal usage of GPUs requires compilation during the running of the setup.
