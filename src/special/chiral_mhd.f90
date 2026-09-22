@@ -115,7 +115,7 @@ module Special
    real, dimension (nx) :: dt1_lambda5=impossible, dt1_D5=impossible, dt1_gammaf5=impossible
    real, dimension (nx) :: dt1_CMW=impossible, dt1_Dmu=impossible, dt1_vmu=impossible, dt1_special=impossible
    real, dimension (nx) :: dt1_CVE1=impossible, dt1_CVE2=impossible, dt1_Cflow1=impossible, dt1_Cflow2=impossible
-   integer :: imu5, imuS
+   integer :: imu5=0, imuS=0
    logical :: lmuS=.false., lCVE=.false.
    logical :: ldiffmu5_hyper2_simplified=.false.
    logical :: ldiffmuS_hyper2_simplified=.false.
