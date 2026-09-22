@@ -67,11 +67,12 @@ subroutine helper_loop(f,p)
 !
   real, contiguous, dimension(:,:,:,:) :: f
   real :: tvar1
-  type (pencil_case) :: p
+  type (pencil_case), allocatable :: p
 
   real :: start_time,end_time
 !
 ! 7-feb-24/TP: coded
+    allocate(p)
     call allocate_fnames(nname)
     lpencil = lpenc_requested .or. lpenc_diagnos .or. lpenc_diagnos2d .or. lpenc_video
 !
