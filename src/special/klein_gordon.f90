@@ -135,20 +135,28 @@ module Special
   real, pointer :: sigE_prefactor, sigB_prefactor, mass_chi
   real, dimension (nx) :: dt1_special
   real, dimension (nx, 4, 3) :: dfdxs=0.
-  real :: bubble_size_factor = 1.0
-  real :: bubble_tension_coeff = 1.0
-  real :: bubble_size = impossible
-  real :: bubble_wall_width = impossible
-  real :: bubble_surface_tension = impossible
+  real :: bubble_size_factor = 1.0 !PAR_DOC: How much larger is the initial bubble size compared to the critical bubble size.
+    !PAR_DOC: bubble_size = bubble_size_factor*critical_bubble_size, where critical bubble size is the smallest bubble that does not
+    !PAR_DOC: collapse
+  real :: bubble_tension_coeff = 1.0 !PAR_DOC: How much larger is the bubble tension compared to the initial value,
+    !PAR_DOC: which is for example given by the thin wall limit. surface_tension *= bubble_tension_coeff.
+  real :: bubble_size = impossible !PAR_DOC: The initial true vacuum bubble size. By default is calculated from the critical bubble size dependent on the potential.
+    !PAR_DOC: Can be also given directly as an input.
+  real :: bubble_wall_width = impossible !PAR_DOC: Width of the true vacuum bubble. By default calculated in the thin-wall limit
+    !PAR_DOC: (possibly multiplied by coefficient), but can also be given directly as an input parameter.
+  real :: bubble_surface_tension = impossible !PAR_DOC: The surface tension of the true vacuum bubble. Computed based on different
+    !PAR_DOC: recipes based on surface_tension_type.
   real :: bubble_surface_tension_diag = impossible
   real :: bubble_wall_width_factor = 1.0
-  integer :: number_of_bubbles = 1
-  logical :: lspeed_of_light_dt = .false.
+  integer :: number_of_bubbles = 1 !PAR_DOC: How many true vacuum bubbles are either in the initial condition or nucleated when the
+    !PAR_DOC: nucleation history is created at the start.
+  logical :: lspeed_of_light_dt = .false. !PAR_DOC: Do we apply the constraint dt <= c/dx. Usually not needed, but important for
+    !PAR_DOC: vacuum EWPT.
   integer :: seed_reset=1963
-  !Whether the sums needed for the ODE and rhs advancement are done in the together in the same kernel as the rhs
-  !advancement. Benchmarks seem to suggest that combining them is indeed more performant.
-  !This approach is however strictly approximative since we effectively take the value of Hscript from the preceeding substep
-  logical :: lcombine_prep_ode_right_with_rhs = .false.
+  logical :: lcombine_prep_ode_right_with_rhs = .false. !PAR_DOC: Whether the sums needed for the ODE and rhs advancement are done in the together in the same kernel as the rhs
+    !PAR_DOC: advancement. Benchmarks seem to suggest that combining them is indeed more performant.
+    !PAR_DOC: This approach is however strictly approximative since we effectively take the value of Hscript from the preceeding
+    !PAR_DOC: substep.
   logical :: lcompute_dphi0=.true., lem_backreact=.false.
   logical :: lscale_tobox=.true., ldt_klein_gordon=.true., lconf_time=.true.
   logical :: lskip_projection_phi=.false., lvectorpotential=.false., lflrw=.false.
@@ -163,7 +171,11 @@ module Special
   logical :: lphi_doublet=.false., lphi_weakcharge=.false., lphi_hypercharge=.false.
   character (len=labellen) :: Vprime_choice='quadratic', Hscript_choice='set'
   character (len=labellen) :: bounce_action='O3'
-  character (len=labellen) :: surface_tension_type='wall_thickness'
+  character (len=labellen) :: surface_tension_type='wall_thickness' !PAR_DOC: Recipe for calculating the surface tension of the true
+    !PAR_DOC: vacuum bubble. Wall_thickness refers to calculating the tension from the wall thickness in the thin wall limit. 
+    !PAR_DOC: Cutting refers to the approximation done in https://arxiv.org/pdf/1802.05712,
+    !PAR_DOC: where the tension is calculated from the degenerate potential close to the true
+    !PAR_DOC: non-degenerate one.
   character (len=labellen), dimension(ninit) :: initspecial='nothing'
   character (len=50) :: echarge_type='const', init_rho_chi='zero'
   logical :: linv_BD=.true.              !PAR_DOC: apply forward transform in the Bunch-Davies initial condition.
@@ -477,7 +489,7 @@ module Special
         select case (nucleation_method)
         case ('max')
           f(l,m,n,iphi) = max(f(l,m,n,iphi),bubble_profile)
-        !Cutting method refers to the method used in this paper: https://arxiv.org/pdf/1802.05712
+        !Cutting method refers to the method used in this paper: https://arxiv.org/pdf/1802.05712.
         case ('cutting')
           f(l,m,n,iphi) = sqrt(f(l,m,n,iphi)**2 + bubble_profile**2)
         case default
@@ -602,8 +614,9 @@ module Special
         bubble_wall_width = bubble_wall_width_factor*thin_bubble_wall_width
       endif
       if (surface_tension_type == 'wall_thickness') then
-        bubble_surface_tension = bubble_tension_coeff*1./(3.*thin_bubble_wall_width)
+        bubble_surface_tension = 1./(3.*thin_bubble_wall_width)
       endif
+      if(bubble_surface_tension /= impossible) bubble_surface_tension = bubble_tension_coeff*bubble_tension
 
       if (bounce_action == 'O3') then
         critical_bubble_size = 2*bubble_surface_tension/deltaV
