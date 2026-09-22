@@ -5296,7 +5296,8 @@ vector potential,
 
 where $\Av$ is the magnetic vector potential\index{Vector potential},
 $\Bv = \curl\Av$ the magnetic
-flux density, $\Phi$ is the scalar potential,
+flux density, $\jv = \mu_0^{-1}\boldsymbol{\nabla}\times\Bv$
+the current density, $\Phi$ is the scalar potential,
 $\eta = 1/(\mu_0\sigma)$ is the magnetic diffusivity
 ($\sigma$ denoting the electrical conductivity), and $\mu_0$ the
 magnetic vacuum permeability.
@@ -5314,11 +5315,13 @@ However, we do not normally use the Weyl gauge, but rather the resistive gauge,
   = \uv\times\Bv + \eta\nabla^2\Av \; .
 \label{resistive-gauge}
 \end{equation}
-In the \name{resistive gauge}, we have $\Phi=\eta\nab\cdot\Av$.
+In the \name{resistive gauge}, we have $\Phi=-\eta\nab\cdot\Av$.
 It has the advantage that the terms $A_{x,xx}$, $A_{y,yy}$, and $A_{z,zz}$
-are present and prevent wiggles the vector potential.
-Although the terms $A_{x,x}$, $A_{y,y}$, and $A_{z,z}$ are absent in $\Bv$,
-the can affect the result if the terms are large compared with $\Bv$.
+are retained, providing direct diffusion of the corresponding components
+of the vector potential and thereby suppressing small-scale numerical
+oscillations. Although the longitudinal derivatives $A_{x,x}$, $A_{y,y}$,
+and $A_{z,z}$ do not contribute directly to $\Bv = \boldsymbol{\nabla}\times\Av$,
+large values of these terms can adversely affect the numerical solution.
 
 % ---------------------------------------------------------------------- %
 
