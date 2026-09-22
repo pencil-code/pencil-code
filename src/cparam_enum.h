@@ -963,3 +963,7 @@ integer, parameter :: enum_recombination_string = 953
 integer, parameter :: enum_radius_range_string = 954
 integer, parameter :: enum_helical_string = 955
 integer, parameter :: enum_linear_decrease_string = 956
+integer, parameter :: enum_step_decay_string = 957
+integer, parameter :: enum_smooth_source_string = 958
+integer, parameter :: enum_smooth_source_new_string = 959
+integer, parameter :: enum_step_decay_linear_ramp_string = 960

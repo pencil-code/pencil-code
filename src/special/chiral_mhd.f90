@@ -201,6 +201,8 @@ module Special
   integer :: idiag_jxm = 0     ! DIAG_DOC: $\langle J_x\rangle$
   integer :: idiag_Dmu5_tdep=0 ! DIAG_DOC: $D(t)$
 !
+  integer :: enum_gammaf5_tdep = 0
+  integer :: enum_source5_tdep = 0
   contains
 !***********************************************************************
     subroutine register_special()
@@ -933,7 +935,7 @@ module Special
 !
     endsubroutine get_slices_special
 !***********************************************************************
-    subroutine special_before_boundary(f)
+    subroutine prep_rhs_special(f_ode)
 !
 !  Possibility to modify the f array before the boundaries are
 !  communicated.
@@ -943,9 +945,9 @@ module Special
 !
 !  22-aug-21/axel: temporal profile for gammaf5
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension(n_odevars) :: f_ode
 
-      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(f_ode)
 !
 !  Choice of gammaf5_tdep profiles.
 !
@@ -1045,7 +1047,7 @@ module Special
         diffmu5_=diffmu5
       endif
 !
-    endsubroutine special_before_boundary
+    endsubroutine prep_rhs_special
 !***********************************************************************
     subroutine special_after_boundary(f)
 !
@@ -1073,23 +1075,20 @@ module Special
     subroutine pushpars2c(p_par)
 
     use Syscalls, only: copy_addr
+    use General , only: string_to_enum
 
-    integer, parameter :: n_pars=50
+    integer, parameter :: n_pars=100
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
-    call copy_addr(diffmu5,p_par(1))
     call copy_addr(diffmus,p_par(2))
     call copy_addr(diffmu5_hyper2,p_par(3))
     call copy_addr(diffmus_hyper2,p_par(4))
     call copy_addr(diffmu5_hyper3,p_par(5))
     call copy_addr(diffmus_hyper3,p_par(6))
-    call copy_addr(gammaf5,p_par(7)) ! real dconst
-    call copy_addr(source5,p_par(8)) ! real dconst
     call copy_addr(t1_gammaf5,p_par(9))
     call copy_addr(coef_mus,p_par(10))
     call copy_addr(coef_mu5,p_par(11))
     call copy_addr(cw,p_par(12))
-    call copy_addr(diffmu5_,p_par(13)) ! real dconst
     call copy_addr(cdtchiral,p_par(14))
     call copy_addr(imu5,p_par(15)) ! int
     call copy_addr(imus,p_par(16)) ! int
@@ -1113,6 +1112,22 @@ module Special
 
     call keep_compiler_quiet(diffmuSmax)
 
+    call copy_addr(gammaf5_input,p_par(40))
+    call copy_addr(t2_gammaf5,p_par(41))
+    call copy_addr(source5_input,p_par(42))
+    call copy_addr(t1_source5,p_par(43))
+    call copy_addr(t2_source5,p_par(44))
+    call copy_addr(source5_expt,p_par(45))
+    call copy_addr(source5_expt2,p_par(46))
+    call copy_addr(diffmu5_tdep_t0,p_par(47))
+    call copy_addr(diffmu5_tdep_toffset,p_par(48))
+    call copy_addr(diffmu5_tdep_exponent,p_par(49))
+    call copy_addr(ldiffmu5_tdep,p_par(50)) ! bool
+    call string_to_enum(enum_gammaf5_tdep,gammaf5_tdep)
+    call copy_addr(enum_gammaf5_tdep,p_par(51)) ! int
+    call string_to_enum(enum_source5_tdep,source5_tdep)
+    call copy_addr(enum_source5_tdep,p_par(52)) ! int
+    call copy_addr(diffmu5,p_par(53)) ! real dconst
     endsubroutine pushpars2c
 !***********************************************************************
 !********************************************************************
