@@ -54,14 +54,14 @@ class SliceSeries(object):
         precision="f",
         iter_list=list(),
         quiet=True,
-        tstart=0,
-        tend=None,
+        tstart=False,
+        tend=False,
         downsample=1,
     ):
         """
         read(field='', extension='', datadir='data', proc=-1, old_file=False,
              precision='f', iter_list=list(), quiet=True,
-             tstart=0, tend=None, downsample=1)
+             tstart=False, tend=False, downsample=1)
 
         Read Pencil Code slice data.
 
@@ -188,13 +188,13 @@ class SliceSeries(object):
 
             if len(iter_list) > 0:
                 nt = len(iter_list)
-                if tstart > 0 or tend:
+                if tstart or tend:
                     print(
                         "read.slices: using iter_list.",
                         "If tstart or tend required set iter_list=None",
                     )
-                tstart = 0
-                tend = None
+                tstart = False
+                tend = False
             else:
                 nt = None
             pos_object = _Foo()
@@ -217,7 +217,7 @@ class SliceSeries(object):
                         if not nt:
                             if not tend:
                                 nt = len(ds.keys()) - 1
-                                if tstart == 0:
+                                if not tstart:
                                     iter_list = list(np.arange(nt) + 1)
                                 else:
                                     it = 1
@@ -356,13 +356,13 @@ class SliceSeries(object):
 
             if len(iter_list) > 0:
                 nt = len(iter_list)
-                if tstart > 0 or tend:
+                if tstart or tend:
                     print(
                         "read.slices: using iter_list.",
                         "If tstart or tend required set iter_list=None",
                     )
-                tstart = 0
-                tend = None
+                tstart = False
+                tend = False
             else:
                 nt = None
             pos_object = _Foo()
@@ -484,7 +484,7 @@ class SliceSeries(object):
                             time = raw_data[-1]
                         else:
                             time = raw_data[-2:-1]
-                        if time >= tstart:
+                        if time >= tstart or not tstart:
                             if tend:
                                 if time <= tend:
                                     self.t.append(time)
