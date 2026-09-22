@@ -894,8 +894,6 @@
 !***********************************************************************
     subroutine special_before_boundary_diagnostics(f)
 
-      use Cdata, only: n_odevars
-
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i
 
