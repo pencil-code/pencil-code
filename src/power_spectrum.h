@@ -12,3 +12,4 @@
  public :: polar_spectrum, power1d_plane, power_cor, quadratic_invariants
  public :: power_fft3d_vec, power_cor_scl, power_transfer_mag
  public :: power_myspecial_output
+ public :: power_perp_xy

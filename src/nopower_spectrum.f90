@@ -343,4 +343,14 @@ module power_spectrum
 !
   endsubroutine power_myspecial_output
 !***********************************************************************
+  subroutine power_perp_xy(f,sp)
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      character (len=*), intent(in) :: sp
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(sp)
+!
+  endsubroutine power_perp_xy
+!***********************************************************************
 endmodule power_spectrum

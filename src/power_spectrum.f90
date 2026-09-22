@@ -7645,4 +7645,142 @@ outer:do ikz=1,nz
 !
   endsubroutine power_myspecial_output
 !***********************************************************************
+  subroutine power_perp_xy(f,sp)
+!
+!  Calculate the perpendicular spectrum: |u|^2(k) where k=norm(kx,ky).
+!  Must have dx=dy.
+!
+!  12-nov-24/hongzhe: coded
+!
+    use Fourier, only: fft_xyz_parallel
+    use Mpicomm, only: mpireduce_sum
+    use Sub, only: del2vi_etc, curli
+!
+    real, dimension (mx,my,mz,mfarray), intent(in) :: f
+    character (len=3), intent(in) :: sp
+!
+    real, dimension(nxgrid) :: kx
+    real, dimension(nygrid) :: ky
+    real, dimension(nzgrid) :: kz
+    real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
+    real, dimension(nx) :: bbi,jji
+    real :: k2
+    integer :: k
+    integer :: i,ivec,ikx,iky,ikz
+!
+    integer, parameter :: nk=nxgrid/2
+    real, dimension(nk) :: spectrum,spectrum_sum
+    real, dimension(nk) :: spectrumhel,spectrumhel_sum
+    !
+    !integer :: i, k, jkz, ivec_jj
+    !
+    !complex, dimension(nx,ny,nz) :: phi
+    !real, dimension(nx) :: b2, j2
+    !real, dimension(nx,3) :: bb, bbEP, hhEP, jj
+!
+    if (lroot .AND. ip<10) call svn_id("$Id$")
+!
+    kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
+    ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
+    kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
+!
+    spectrum=0.
+    spectrum_sum=0.
+    spectrumhel=0.
+    spectrumhel_sum=0.
+!
+    do ivec=1,3
+!
+    if (sp=='kin') then
+      if (iuu==0) call fatal_error('power_perp_xy','iuu=0')
+      do n=n1,n2
+      do m=m1,m2
+        call curli(f,iuu,bbi,ivec)
+        a_re(:,m-nghost,n-nghost)=bbi  ! vorticity
+      enddo
+      enddo
+      b_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)  ! velocity
+      a_im=0.
+      b_im=0.
+    elseif (sp=='ruu') then
+      if (ilnrho==0) call fatal_error('power_perp_xy','ilnrho=0')
+      if (iuu==0) call fatal_error('power_perp_xy','iuu=0')
+      do n=n1,n2
+      do m=m1,m2
+        call curli(f,iuu,bbi,ivec)
+        a_re(:,m-nghost,n-nghost)=bbi  ! vorticity
+      enddo
+      enddo
+      b_re=exp(f(l1:l2,m1:m2,n1:n2,ilnrho)) ! rho
+      b_re=sqrt(b_re) * f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)  ! sqrt(rho)*u
+      a_im=0.
+      b_im=0.
+    elseif (sp=='mag') then
+      if (.not.lmagnetic) call fatal_error('power_perp_xy','iaa=0')
+      do n=n1,n2
+      do m=m1,m2
+        call curli(f,iaa,bbi,ivec)
+        b_re(:,m-nghost,n-nghost)=bbi  ! bb
+      enddo
+      enddo
+      a_re=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1)  ! aa
+      a_im=0.
+      b_im=0.
+    elseif (sp=='j.b') then
+      if (.not.lmagnetic) call fatal_error('power_perp_xy','iaa=0')
+      do n=n1,n2
+      do m=m1,m2
+        call curli(f,iaa,bbi,ivec)
+        call del2vi_etc(f,iaa,ivec,curlcurl=jji)
+        a_re(:,m-nghost,n-nghost)=bbi  ! bb
+        b_re(:,m-nghost,n-nghost)=jji  ! jj
+      enddo
+      enddo
+    else
+      call fatal_error('power_perp_xy','not such sp='//sp)
+    endif
+!
+    a_im=0.
+    b_im=0.
+!
+!  Doing the Fourier transform
+!
+    call fft_xyz_parallel(a_re,a_im)
+    call fft_xyz_parallel(b_re,b_im)
+!
+    do ikz=1,nz
+    do iky=1,ny
+    do ikx=1,nx
+      k2=kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2
+      k=nint(sqrt(k2))
+      if (k>=0 .and. k<=(nk-1)) then
+        spectrum(k+1)    = spectrum(k+1) + b_re(ikx,iky,ikz)**2 + b_im(ikx,iky,ikz)**2
+        spectrumhel(k+1) = spectrumhel(k+1) + a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) + a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
+      endif
+    enddo
+    enddo
+    enddo
+!
+    enddo !(from loop over ivec)
+!
+    call mpireduce_sum(spectrum,spectrum_sum,nk)
+    call mpireduce_sum(spectrumhel,spectrumhel_sum,nk)
+!
+    if (lroot) then
+!
+      spectrum_sum=0.5*spectrum_sum
+      open(1,file=trim(datadir)//'/power_perp_xy_'//trim(sp)//'.dat',position='append')
+      write(1,*) t
+      write(1,power_format) spectrum_sum
+      close(1)
+!
+      open(1,file=trim(datadir)//'/powerhel_perp_xy_'//trim(sp)//'.dat',position='append')
+      write(1,*) t
+      write(1,power_format) spectrumhel_sum
+      close(1)
+!
+    endif
+!
+  endsubroutine power_perp_xy
+!***********************************************************************
 endmodule Power_spectrum

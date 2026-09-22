@@ -846,6 +846,7 @@ module Cdata
   logical :: lr_spec=.false., r2u_spec=.false., r3u_spec=.false., oun_spec=.false.
   logical :: np_spec=.false., np_ap_spec=.false., rhop_spec=.false., ele_spec=.false., pot_spec=.false.
   logical :: ux_spec=.false., uy_spec=.false., uz_spec=.false., a0_spec=.false., ucp_spec=.false.
+  logical :: spec_perp_xy=.false.
   logical :: ou_spec=.false., ab_spec=.false., azbz_spec=.false., uzs_spec=.false.
   logical :: ub_spec=.false., Lor_spec=.false., OmU_spec=.false., EMF_spec=.false., Tra_spec=.false.
   logical :: aBE_spec=.false., ABE2_spec=.false., uBE_spec=.false.

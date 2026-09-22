@@ -960,6 +960,14 @@ module Snapshot
         lsqrt=.true.
         lfirstcall_powerhel=.true.
 
+        if (spec_perp_xy) then
+          call power_perp_xy(f,'kin')
+          call power_perp_xy(f,'ruu')
+          if (lmagnetic) then
+            call power_perp_xy(f,'mag')
+            call power_perp_xy(f,'j.b')
+          endif
+        endif
         if (vel_spec) call power(f,'u')
         if (r2u_spec) call power(f,'r2u')
         if (r3u_spec) call power(f,'r3u')
