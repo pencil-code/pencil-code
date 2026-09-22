@@ -1246,7 +1246,8 @@ module Forcing
         elseif (iforcing_cont(i)=='tidal') then
           if (lroot) print*, 'forcing_cont: tidal'
           sinx(:,i)=sin(2.*pi*x/Lxyz(1))
-          siny(:,i)=sin(2.*pi*y/Lxyz(2))
+          siny(:,i)=sin(2.*pi*y/Lxyz(1))
+          profz_ampl = (z-0.5)/Lxyz(1)
        elseif (iforcing_cont(i)=='from_file') then
           if (allocated(fcont_from_file)) deallocate(fcont_from_file)
           allocate(fcont_from_file(nx,ny,nz,3))
@@ -6453,18 +6454,22 @@ module Forcing
 !  the same as theta of Omega in the hydro module.
 !
       case ('tidal')
-        force(:,1) = ampl_ff(i) * ( &
-            sinx(l1:l2,i) * cos(2.*phi_tidal) * cos(omega_ff*t) + &
-            siny(m,i)     * 2.*cos(phi_tidal) * sin(omega_ff*t) + &
-            z(n)          * 0.5*sin(2.*phi_tidal) * cos(omega_ff*t) )
-        force(:,2) = ampl_ff(i) * ( &
-            sinx(l1:l2,i) * cos(phi_tidal) * sin(omega_ff*t) + &
-            siny(m,i)     * (-2.) * cos(omega_ff*t) + &
-            z(n)          * sin(phi_tidal) * sin(omega_ff*t) )
-        force(:,3) = ampl_ff(i) * ( &
-            sinx(l1:l2,i) * sin(2.*phi_tidal) * cos(omega_ff*t) + &
-            siny(m,i)     * 2.*sin(phi_tidal) * sin(omega_ff*t) + &
-            z(n)          * sin(phi_tidal)**2 * cos(omega_ff*t) )
+        if (z(n)>=0.0 .and. z(n)<=1.0) then
+          force(:,1) = ampl_ff(i) * ( &
+              sinx(l1:l2,i) * cos(2.*phi_tidal) * cos(omega_ff*t) + &
+              siny(m,i)     * 2.*cos(phi_tidal) * sin(omega_ff*t) + &
+              profz_ampl(n) * sin(2.*phi_tidal) * cos(omega_ff*t) )
+          force(:,2) = ampl_ff(i) * ( &
+              sinx(l1:l2,i) * 2.*cos(phi_tidal) * sin(omega_ff*t) + &
+              siny(m,i)     * (-2.)             * cos(omega_ff*t) + &
+              profz_ampl(n) * 2.*sin(phi_tidal) * sin(omega_ff*t) )
+          force(:,3) = ampl_ff(i) * ( &
+              sinx(l1:l2,i) * sin(2.*phi_tidal) * cos(omega_ff*t) + &
+              siny(m,i)     * 2.*sin(phi_tidal) * sin(omega_ff*t) + &
+              profz_ampl(n) * sin(phi_tidal)**2 * cos(omega_ff*t) )
+        else
+          force(:,:) = 0.0
+        endif
 !
 !  possibility of putting zero, e.g., for purely magnetic forcings
 !
