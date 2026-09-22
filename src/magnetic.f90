@@ -317,7 +317,8 @@ module Magnetic
 !
 ! Run parameters
 !
-  real :: eta=0.0, eta1=0.0, eta_hyper2=0.0, eta_hyper3=0.0
+  real, target :: eta=0.0
+  real ::  eta1=0.0, eta_hyper2=0.0, eta_hyper3=0.0
   real :: eta_tdep_exponent=0.0, eta_tdep_t0=0.0, eta_tdep_toffset=0.0
   real :: eta_hyper3_mesh=5.0, eta_spitzer=0., eta_anom=0.0,&
           eta_anom_thresh=0.0, eta_ampl=0.
