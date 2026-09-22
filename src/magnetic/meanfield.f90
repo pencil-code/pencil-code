@@ -105,7 +105,7 @@ module Magnetic_meanfield
   real :: kx_alpha=1., kx_hij=1., relhel_hij=1., hij_ampl=1.
   real :: GWfac1=1., GWfac2=1., GWfac3=1.
   real :: fluc_alp_m=1.0, sigma_alpha=1.0
-  real :: b2_to_u2=0.0, shear_current_sh=0.0
+  real :: b2_to_u2=0.0, shear_current_sh=0.0, fwind=0.0, fhelflux=0.0
   real :: XXX=0.0
   integer :: npatches=1, npatches_actual, seed_magn_mf2=5555, nmultipole=1
   real, dimension(3) :: alpha_aniso=0.
@@ -138,7 +138,7 @@ module Magnetic_meanfield
 !
   namelist /magn_mf_run_pars/ &
       Calp, alpha_effect, alpha_quenching, alpha_rmax, alpha_exp, alpha_zz, &
-      gamma_effect, gamma_quenching, &
+      gamma_effect, gamma_quenching, fwind, fhelflux, &
       alpha_eps, alpha_pom0, alpha_width, alpha_width2, alpha_aniso, &
       alpha_tensor, eta_tensor, &
       lalpha_profile_total, lmeanfield_noalpm, alpha_profile, &
@@ -998,7 +998,10 @@ module Magnetic_meanfield
 !
 !  Quenching prescription using plasma beta
 !
-      if (meanfield_Beq_profile=='alphass') lpenc_requested(i_b2)=.true.
+      if (meanfield_Beq_profile=='alphass') then
+        lpencil_in(i_b2)=.true.
+        lpencil_in(i_beta)=.true.
+      endif
 !
 !  Shear-current effect
 !
@@ -1029,7 +1032,7 @@ module Magnetic_meanfield
       type (pencil_case) :: p
 !
       real, dimension (nx) :: alpha_total, rr, pp, pp0, spiral
-      real, dimension (nx) :: meanfield_etat_tmp
+      real, dimension (nx) :: meanfield_etat_tmp, hel_flux_tmp
       real, dimension (nx) :: alpha_tmp, alpha_quenching_tmp, delta_tmp
       real, dimension (nx) :: kf_tmp, EMF_prof, alpm, prefact, Beq21
       real, dimension (nx) :: meanfield_qs_func, meanfield_qp_func, meanfield_qa_func
@@ -1103,7 +1106,8 @@ module Magnetic_meanfield
 !  thin disk models; meanfield_Beq=alphaSS
 !
           case ('alphass');
-            Beq21=1.0/max(1e-10, 3.*meanfield_Beq**2*mu0*p%pp-p%b2)
+            hel_flux_tmp=meanfield_Beq**2*b2_to_u2*(0.04*b2_to_u2-0.02)*p%beta
+            Beq21=1.0/max(1e-10, 3.*meanfield_Beq**2*mu0*p%pp/(1.+fwind-fhelflux*hel_flux_tmp)-p%b2)
           case ('alphass-algebraic')
             Beq21=mu01/( 3*meanfield_Beq**2*(1.-meanfield_Beq)*p%pp )
           case ('fluc-alpha-disk')
@@ -1631,7 +1635,8 @@ module Magnetic_meanfield
           case ('sqrt(kf_x)');
             Beq21=sqrt(kf_x)/meanfield_Beq**2
           case ('alphass');
-            Beq21=1.0/max(1e-10, 3.*meanfield_Beq**2*mu0*p%pp-p%b2)
+            hel_flux_tmp=meanfield_Beq**2*b2_to_u2*(0.04*b2_to_u2-0.02)*p%beta
+            Beq21=1.0/max(1e-10, 3.*meanfield_Beq**2*mu0*p%pp/(1.+fwind-fhelflux*hel_flux_tmp)-p%b2)
           case ('alphass-algebraic')
             Beq21=mu01/( 3*meanfield_Beq**2*(1.-meanfield_Beq)*p%pp )
           case ('fluc-alpha-disk')
