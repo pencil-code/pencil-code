@@ -1821,10 +1821,10 @@ module Magnetic_meanfield
           select case (shear_current_profile)
           case ('alphass')
 !
-!  thin-disk model. meanfield_Beq=alphaSS
+!  thin-disk model. meanfield_Beq=alphaSS. ref: Zhou & Blackman2021
 !
             shear_current_sh_tmp = shear_current_sh*0.5*(1.0+tanh(4.-2.*abs(z_over_h))) &
-                                     /( 1.0 + 3.0*p%b2/7.0/meanfield_Beq/mu0/p%pp )
+                                       /( 1.0 + (2.*b2_to_u2-1.78)/meanfield_Beq*p%b2/2./mu0/p%pp )
             !
             p%mf_EMF(:,1) = p%mf_EMF(:,1) - meanfield_etat_tmp *          &
                      shear_current_sh_tmp * (0.63-0.26*b2_to_u2) * p%jj(:,3)
