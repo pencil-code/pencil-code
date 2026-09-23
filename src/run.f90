@@ -937,10 +937,12 @@ endsubroutine helper_loop
 !$ integer :: i 
 !
   lrun = .true.
+! The pencil case is allocatable to not have as many arrays on the stack, which becomes a problem with larger
+! subdomain sizes.
+  allocate(p)
 !
 !  Get processor numbers and define whether we are root.
 !
-  allocate(p)
   call mpicomm_init
   if (lroot) then
     time1=real(mpiwtime())
