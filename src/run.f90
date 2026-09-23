@@ -67,12 +67,11 @@ subroutine helper_loop(f,p)
 !
   real, contiguous, dimension(:,:,:,:) :: f
   real :: tvar1
-  type (pencil_case), allocatable :: p
+  type (pencil_case) :: p
 
   real :: start_time,end_time
 !
 ! 7-feb-24/TP: coded
-    allocate(p)
     call allocate_fnames(nname)
     lpencil = lpenc_requested .or. lpenc_diagnos .or. lpenc_diagnos2d .or. lpenc_video
 !
@@ -925,7 +924,7 @@ endsubroutine helper_loop
 !
   implicit none
 
-  type (pencil_case) :: p
+  type (pencil_case), allocatable :: p
 
   character(len=fnlen) :: fproc_bounds
   real(KIND=rkind8) :: time2, tvar1
@@ -941,6 +940,7 @@ endsubroutine helper_loop
 !
 !  Get processor numbers and define whether we are root.
 !
+  allocate(p)
   call mpicomm_init
   if (lroot) then
     time1=real(mpiwtime())
