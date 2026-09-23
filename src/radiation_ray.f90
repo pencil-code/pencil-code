@@ -722,7 +722,7 @@ module Radiation
           if(.not. lno_rays) call radtransfer_gpu
           return
       endif
-      if ((.not.lsingle_ray) .or. (lsingle_ray.and.lvideo.and.lfirst)) then
+      if ((.not.lsingle_ray) .or. (lsingle_ray.and.lvideo_first)) then
 !
 !  Initialize heating rate, radiative flux and radiative pressure.
 !
@@ -785,7 +785,7 @@ module Radiation
 !
 !  Calculate slices of J=S+Q/(4pi).
 !
-          if (lvideo.and.lfirst.and.ivid_Jrad/=0) then
+          if (lvideo_first.and.ivid_Jrad/=0) then
             if (lwrite_slice_yz) Jrad_yz(:,:,inu) =Qrad(ix_loc,m1:m2,n1:n2) +Srad(ix_loc,m1:m2,n1:n2)
             if (lwrite_slice_xz) Jrad_xz(:,:,inu) =Qrad(l1:l2,iy_loc,n1:n2) +Srad(l1:l2,iy_loc,n1:n2)
             if (lwrite_slice_xz2)Jrad_xz2(:,:,inu)=Qrad(l1:l2,iy2_loc,n1:n2)+Srad(l1:l2,iy2_loc,n1:n2)
@@ -796,7 +796,7 @@ module Radiation
           endif
 !
         enddo  !  inu loop
-      endif    !  if ((.not.lsingle_ray) .or. (lsingle_ray.and.lvideo.and.lfirst))
+      endif    !  if ((.not.lsingle_ray) .or. (lsingle_ray.and.lvideo_first))
 !
 ! Upper limit radiative heating by qrad_max
 !
@@ -1539,7 +1539,7 @@ module Radiation
 !
 !  Calculate surface intensity for upward rays.
 !
-      if (lvideo.and.lfirst.and.ivid_Isurf/=0) then
+      if (lvideo_first.and.ivid_Isurf/=0) then
         if (lwrite_slice_xy2 .and. nrad>0) &
           Isurf(idir)%xy2=Qrad(l1:l2,m1:m2,nnstop)+Srad(l1:l2,m1:m2,nnstop)
       endif

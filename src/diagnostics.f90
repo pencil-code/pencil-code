@@ -4273,6 +4273,8 @@ module Diagnostics
     l2davg = l2davg_save
     lout_sound = lout_sound_save
     lvideo = lvideo_save
+    !TP: for mulithreading it is always the first substep
+    lvideo_first = lvideo_save
     t1ddiagnos = t1ddiagnos_save
     t2davgfirst= t2davgfirst_save
     tslice = tslice_save

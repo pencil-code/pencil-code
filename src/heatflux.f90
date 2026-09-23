@@ -337,7 +337,7 @@ module Heatflux
       endif
     endif
 !
-    if (lvideo.and.lfirst) then
+    if (lvideo_first) then
       if (ivid_divq/=0 .and. iheatflux=='noadvection-spitzer') &
           call store_slices(p%divq,divq_xy,divq_xz,divq_yz,divq_xy2,divq_xy3,divq_xy4,divq_xz2)
     endif
@@ -685,7 +685,7 @@ module Heatflux
 !
     endif
 !
-    if (lvideo.and.lfirst) then
+    if (lvideo_first) then
       if (ivid_divq/=0) call store_slices((p%divq - tmp)*exp(-p%lnrho), &
         divq_xy,divq_xz,divq_yz,divq_xy2,divq_xy3,divq_xy4,divq_xz2,divq_r)
     endif
@@ -745,7 +745,7 @@ module Heatflux
 !
     df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%cv1*rhs
 
-    if (lvideo.and.lfirst) then
+    if (lvideo_first) then
       if (ivid_divq/=0) call store_slices(rhs,divq_xy,divq_xz,divq_yz,divq_xy2,divq_xy3,divq_xy4,divq_xz2)
     endif
 !

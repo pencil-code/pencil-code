@@ -624,7 +624,7 @@ module Energy
         call ysum_mn_name_xz(p%TT,idiag_TTmxz)
       endif
 !
-      if (lvideo.and.lfirst) then
+      if (lvideo_first) then
         if (ivid_pp/=0) call store_slices(p%pp,pp_xy,pp_xz,pp_yz,pp_xy2,pp_xy3,pp_xy4,pp_xz2,pp_r)
       endif
 

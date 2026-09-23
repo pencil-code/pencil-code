@@ -2783,7 +2783,7 @@ module Hydro
 !  store slices for output in wvid in run.f90
 !  This must be done outside the diagnostics loop (accessed at different times).
 !
-      if (lvideo.and.lfirst) then
+      if (lvideo_first) then
         if (ivid_uu/=0.and..not.lkinflow_as_aux) call store_slices(p%uu,uu_xy,uu_xz,uu_yz,uu_xy2,uu_xy3,uu_xy4,uu_xz2)
       endif
 !

@@ -6719,7 +6719,7 @@ print*,'AXEL2: should not be here (eta) ... '
       call calc_1d_diagnostics_magnetic(p)
       if (ldiagnos) call calc_0d_diagnostics_magnetic(f,p)
 !
-      if (lvideo.and.lfirst) then
+      if (lvideo_first) then
 !
 !  Possibility of bij as auxiliary array
 !

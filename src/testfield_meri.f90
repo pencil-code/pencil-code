@@ -661,7 +661,7 @@ module Testfield
 !
 !  write B-slices for output in wvid in run.f90
 !
-      if (lvideo.and.lfirst.and.ivid_bb11/=0) &
+      if (lvideo_first.and.ivid_bb11/=0) &
         call store_slices(bpq(:,:,1),bb11_xy,bb11_xz,bb11_yz,bb11_xy2,bb11_xy3,bb11_xy4,bb11_xz2)
 !
     endsubroutine calc_diagnostics_testfield

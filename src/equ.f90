@@ -120,6 +120,7 @@ module Equ
       ldiagnos   =lfirst .and. lout  
       l1davgfirst=lfirst .and. l1davg
       l2davgfirst=lfirst .and. l2davg
+      lvideo_first=lfirst .and. lvideo
 
 !
 !  Derived diagnostics switches.

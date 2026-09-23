@@ -731,7 +731,7 @@ module Testfield
 !  write B-slices for output in wvid in run.f90
 !  Note: ix is the index with respect to array with ghost zones.
 !
-      if (lvideo.and.lfirst.and.ivid_bb1/=0) &
+      if (lvideo_first.and.ivid_bb1/=0) &
         call store_slices(bpq(:,:,1),bb1_xy,bb1_xz,bb1_yz,bb1_xy2,bb1_xy3,bb1_xy4,bb1_xz2,bb1_r)
 !
     endsubroutine calc_diagnostics_testfield
