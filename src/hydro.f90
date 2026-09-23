@@ -4683,9 +4683,7 @@ module Hydro
       if (lviscosity) call calc_viscous_force(df,p)
       if (lSGS_hydro) call calc_SGS_hydro_force(f,df,p)
 !
-      if (ekman_friction/=0) then
-        call apply_ekman_friction(df,p)
-      endif
+      if (ekman_friction/=0) call apply_ekman_friction(df,p)
 !
 !  Hubble friction, here the term for supercomoving coordinates with nconf1p5.
 !  This could be steered later with the ascale_type parameter in cdata.f90.
