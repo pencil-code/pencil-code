@@ -616,7 +616,7 @@ module Special
       if (surface_tension_type == 'wall_thickness') then
         bubble_surface_tension = 1./(3.*thin_bubble_wall_width)
       endif
-      if(bubble_surface_tension /= impossible) bubble_surface_tension = bubble_tension_coeff*bubble_tension
+      if(bubble_surface_tension /= impossible) bubble_surface_tension = bubble_tension_coeff*bubble_surface_tension
 
       if (bounce_action == 'O3') then
         critical_bubble_size = 2*bubble_surface_tension/deltaV
