@@ -4522,6 +4522,68 @@ module Hydro
 
     endsubroutine advec_uu
 !***********************************************************************
+    subroutine apply_ekman_friction(df,p)
+      use Sub, only: read_ell_from_table,multsv_mn
+      real, contiguous, dimension(:,:,:,:), intent(INOUT) :: df
+      type(pencil_case), intent(IN) :: p
+      real :: arad_normal,ell_gam
+      real, dimension(nx,3) :: tmpv
+!
+!  Ekman Friction, used only in two dimensional runs.
+!  But it can also be used as photon drag in 3-D, for example.
+!  In that case, it would be time dependent.
+!
+        select case (friction_tdep)
+          case ('nothing')
+            frict=ekman_friction
+          case ('linear')
+            frict=ekman_friction*max(min(real(t-friction_tdep_toffset)/friction_tdep_tau0,1.),0.)
+          case ('linear_decrease')
+            frict=ekman_friction*max(1.-max(real(t-friction_tdep_toffset)/friction_tdep_tau0,0.),0.)
+          case ('inverse')
+            frict=ekman_friction/max(real(t),friction_tdep_toffset)
+          case ('Thomson')
+            arad_normal=real(4*sigmaSB/c_light)
+            frict=real(ekman_friction*fourthird*p%yH*sigma_Thomson*arad_normal*p%TT**4/(m_p*c_light))
+          case ('current')
+            if (lmagnetic) then
+              frict=ekman_friction*sqrt(p%j2)
+            else
+              call fatal_error("duu_dt","lmagnetic must be true")
+            endif
+!
+!  Viscosity for recombination from a file.
+!
+          case ('read_ell_from_table')
+            call read_ell_from_table(ascale,ell_gam)
+            frict=ekman_friction/ell_gam
+            !if (lroot) call save_name(ell_gam,idiag_ell_gam)
+!
+!  Step profile
+!
+          case ('step', 'cs-step')
+            if (t<=t1_ekman) then
+              frict=0.
+            elseif (t<=t2_ekman) then
+              if (friction_tdep=='cs-step') then
+                frict=ekman_friction*sqrt(p%cs2)
+              else
+                frict=ekman_friction
+              endif
+            else
+              frict=0.
+            endif
+          case default
+            call fatal_error('duu_dt','no such friction_tdep: '//trim(friction_tdep))
+        endselect
+!
+!  Timestep constraint and apply damping term to momentum equation.
+!
+        maxsrc=maxsrc+maxval(frict)
+        call multsv_mn(frict,p%uu,tmpv)
+        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-tmpv
+    endsubroutine apply_ekman_friction
+!***********************************************************************
     subroutine duu_dt(f,df,p)
 !
 !  velocity evolution
@@ -4538,7 +4600,7 @@ module Hydro
 !
       use Diagnostics
       use Special, only: special_calc_hydro
-      use Sub, only: dot, dot2, identify_bcs, cross, multsv_mn_add, multsv_mn, read_ell_from_table
+      use Sub, only: dot, dot2, identify_bcs, cross, multsv_mn
       use General, only: transform_thph_yy, notanumber
       use Deriv, only: der
 !
@@ -4549,9 +4611,9 @@ module Hydro
       intent(inout) :: p
       intent(inout) :: f,df
 
-      real, dimension (nx,3) :: uu1, tmpv
+      real, dimension (nx,3) :: uu1
       real, dimension (nx) :: ftot
-      real :: hubble_factor, ell_gam, arad_normal
+      real :: hubble_factor
       integer :: j
 !
       Fmax=1./impossible
@@ -4621,60 +4683,8 @@ module Hydro
       if (lviscosity) call calc_viscous_force(df,p)
       if (lSGS_hydro) call calc_SGS_hydro_force(f,df,p)
 !
-!  Ekman Friction, used only in two dimensional runs.
-!  But it can also be used as photon drag in 3-D, for example.
-!  In that case, it would be time dependent.
-!
       if (ekman_friction/=0) then
-        select case (friction_tdep)
-          case ('nothing')
-            frict=ekman_friction
-          case ('linear')
-            frict=ekman_friction*max(min(real(t-friction_tdep_toffset)/friction_tdep_tau0,1.),0.)
-          case ('linear_decrease')
-            frict=ekman_friction*max(1.-max(real(t-friction_tdep_toffset)/friction_tdep_tau0,0.),0.)
-          case ('inverse')
-            frict=ekman_friction/max(real(t),friction_tdep_toffset)
-          case ('Thomson')
-            arad_normal=real(4*sigmaSB/c_light)
-            frict=real(ekman_friction*fourthird*p%yH*sigma_Thomson*arad_normal*p%TT**4/(m_p*c_light))
-          case ('current')
-            if (lmagnetic) then
-              frict=ekman_friction*sqrt(p%j2)
-            else
-              call fatal_error("duu_dt","lmagnetic must be true")
-            endif
-!
-!  Viscosity for recombination from a file.
-!
-          case ('read_ell_from_table')
-            call read_ell_from_table(ascale,ell_gam)
-            frict=ekman_friction/ell_gam
-            !if (lroot) call save_name(ell_gam,idiag_ell_gam)
-!
-!  Step profile
-!
-          case ('step', 'cs-step')
-            if (t<=t1_ekman) then
-              frict=0.
-            elseif (t<=t2_ekman) then
-              if (friction_tdep=='cs-step') then
-                frict=ekman_friction*sqrt(p%cs2)
-              else
-                frict=ekman_friction
-              endif
-            else
-              frict=0.
-            endif
-          case default
-            call fatal_error('duu_dt','no such friction_tdep: '//trim(friction_tdep))
-        endselect
-!
-!  Timestep constraint and apply damping term to momentum equation.
-!
-        maxsrc=maxsrc+maxval(frict)
-        call multsv_mn(frict,p%uu,tmpv)
-        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-tmpv
+        call apply_ekman_friction(df,p)
       endif
 !
 !  Hubble friction, here the term for supercomoving coordinates with nconf1p5.
@@ -9694,7 +9704,6 @@ module Hydro
     call copy_addr(it31,p_par(146)) ! int
     call copy_addr(it32,p_par(147)) ! int
     call copy_addr(it33,p_par(148)) ! int
-
     call copy_addr(lkt_transport,p_par(150)) ! bool
 
     call copy_addr(lt0i_total,p_par(151)) ! bool
@@ -9704,3 +9713,4 @@ module Hydro
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Hydro
+
