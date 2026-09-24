@@ -151,6 +151,7 @@ class FortranFileExt(FortranFile):
                 istart=iend
 
         data = []
+        tmparr_offset = 0
         for dtype in dtypes:
             if num_subrecords == 1:
                 first_size = self._read_size(eof_ok=True)
@@ -167,7 +168,15 @@ class FortranFileExt(FortranFile):
                 data.append(r)
             else:
                 #print('DTYPE,NUM_BLOCKS=',dtype,num_blocks)
-                r = np.frombuffer(tmparr, dtype=dtype, count=num_blocks)
+                r = np.frombuffer(tmparr, dtype=dtype, count=num_blocks,
+                                   offset=tmparr_offset)
+                tmparr_offset += dtype.itemsize * num_blocks
+                if dtype.shape != ():
+                    # Squeeze outmost block dimension for array items
+                    if num_blocks == 1:
+                        assert r.shape == (1,) + dtype.shape
+                        r = r[0]
+
                 data.append(r)
 
         self._fp.seek(end_pos)                       # reset file pointer behind original record end
