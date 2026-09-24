@@ -112,12 +112,13 @@ echo FILE=$file:t
   endif
 end
 
-ln -s ../src/Makefile.local .
-ln -s ../src/Makefile.inc .
-ln -s ../src/cparam.local .
-ln -s ../src/cparam.inc .
-ln -s ../src/cparam_pencils.inc .
-ln -s ../src/cparam_enum.h .
+ln -s $PENCIL_HOME/src/Makefile.local .
+ln -s $PENCIL_HOME/src/Makefile.inc .
+ln -s $PENCIL_HOME/src/cparam.local .
+ln -s $PENCIL_HOME/src/cparam.inc .
+ln -s $PENCIL_HOME/src/cparam_pencils.inc .
+ln -s $PENCIL_HOME/src/cparam_enum.h .
+ln -s $PENCIL_HOME/src/general_f2003.h .
 
 #
 if ($n == 1) then
