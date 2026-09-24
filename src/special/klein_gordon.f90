@@ -150,7 +150,7 @@ module Special
   real :: bubble_wall_width_factor = 1.0
   integer :: number_of_bubbles = 1 !PAR_DOC: How many true vacuum bubbles are either in the initial condition or nucleated when the
     !PAR_DOC: nucleation history is created at the start.
-  logical :: lspeed_of_light_dt = .false. !PAR_DOC: Do we apply the constraint dt <= c/dx. Usually not needed, but important for
+  logical :: lspeed_of_light_dt = .false. !PAR_DOC: Do we apply the constraint $dt \le c/dx$. Usually not needed, but important for
     !PAR_DOC: vacuum EWPT.
   integer :: seed_reset=1963
   logical :: lcombine_prep_ode_right_with_rhs = .false. !PAR_DOC: Whether the sums needed for the ODE and rhs advancement are done in the together in the same kernel as the rhs
@@ -208,9 +208,9 @@ module Special
   !TP: for backwards compatibility the setting of the random seed can be suppressed
   logical :: linitialize_seed=.true. !PAR_DOC: Whether we make sure the seed is initialized in Klein-Gordon.
     !PAR_DOC: Done to make sure we get the same random number at each process.
-  real :: plasma_coupling_coeff=0.0 !PAR_DOC: The strength of eta in the friction term eta*U_nu*grad^nu(phi).
+  real :: plasma_coupling_coeff=0.0 !PAR_DOC: The strength of $\eta$ in the friction term $\eta U_\nu \grad^\nu(\phi)$.
   logical :: lplasma_coupling=.false. !PAR_DOC: Is the scalar field coupled to the plasma through the phenomenological or more
-    !PAR_DOC: accurately through the Chapman-Enskog friction term eta*U_nu*grad^nu(phi)
+    !PAR_DOC: accurately through the Chapman-Enskog friction term $\eta U_\nu \grad^\nu(\phi)$
   integer :: continuation_offset = 0 !PAR_DOC: Grid point used for two independent things (not the best). Thin-wall approximation of tanh jump
     !PAR_DOC: does not have dphi/dr = 0 at the origin so we smoothly continue from the grid point to the origin a polynomial having
     !PAR_DOC: a zero derivative at the origin. The other usage is that we do not add Langevin noise at grid points < offset,
