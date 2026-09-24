@@ -187,7 +187,7 @@ module Special
   real :: t_next_bubble = 0.0
   real :: max_bubble_nucleation_rate = 1.0 !PAR_DOC: What is the maximum bubble nucleation rate the run allows.
      !PAR_DOC: Needs to be known throughout the run if we use acceptance sampling for determining nucleation times.
-  real :: tf = 0.0
+  real :: tf = 0.0 !PAR_DOC: Time at which the fraction of the universe in the symmetric phase is 1/e.
   logical :: lnucleate_bubbles = .false. !PAR_DOC: Whether true vacuum bubbles are nucleated during run.
   character (len=50) :: nucleation_method='cutting' !PAR_DOC: which method do we use to put the values 
     !PAR_DOC: of a nucleated bubble. The default Cutting method is phi = sqrt(phi^2+bubble^2)
