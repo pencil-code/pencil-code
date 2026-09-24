@@ -350,7 +350,7 @@ cparam.o:    cparam.f90 cparam.local cparam.inc
 cdata.o:     cdata.f90 cparam.o
 common.o:    common.f90 common.local cdata.o cparam.o
 syscalls_ansi.o:  syscalls_ansi.c
-general.o:   general.f90 cdata.o cparam.o syscalls.o morton_helper.o
+general.o:   general.f90 cdata.o cparam.o syscalls.o morton_helper.o quiet.o
 messages.o:  messages.f90 mpicomm.o
 noyinyang.o:  noyinyang.f90 general.o
 #
