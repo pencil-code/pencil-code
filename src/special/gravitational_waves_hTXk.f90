@@ -408,24 +408,13 @@ module Special
 !
 !  Check if we are solving for relativistic bulk motions, not just EoS.
 !
-      if (lhydro) then
-        call get_shared_variable('lconservative', lconservative, caller='register_special')
-      else
-        if (.not.associated(lconservative)) allocate(lconservative)
-        lconservative=.false.
-      endif
+      
+      call get_shared_variable('lconservative', lconservative, caller='register_special',default_val=.false.)
 !
 !  Check if we are running the klein_gordon module
 !
-      if (lklein_gordon) then
-        call get_shared_variable('lwaterfall', lwaterfall, caller='register_special')
-        call get_shared_variable('lflrw', lflrw, caller='register_special')
-      else
-        if (.not.associated(lwaterfall)) allocate(lwaterfall)
-        lwaterfall=.false.
-        if (.not.associated(lflrw)) allocate(lflrw)
-        lflrw=.false.
-      endif
+      call get_shared_variable('lwaterfall', lwaterfall, caller='register_special',default_val=.false.)
+      call get_shared_variable('lflrw', lflrw, caller='register_special',default_val=.false.)
 !
 !  get a"/a (here called ddotam)
 !
@@ -3297,10 +3286,12 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension (:,:,:), allocatable :: S_T_re, S_T_im, S_X_re, S_X_im
 
-      allocate(S_T_re(nx,ny,nz))
-      allocate(S_T_im(nx,ny,nz))
-      allocate(S_X_re(nx,ny,nz))
-      allocate(S_X_im(nx,ny,nz))
+      if(lreal_space_hTX_as_aux .or. lreal_space_gTX_as_aux ) then
+        allocate(S_T_re(nx,ny,nz))
+        allocate(S_T_im(nx,ny,nz))
+        allocate(S_X_re(nx,ny,nz))
+        allocate(S_X_im(nx,ny,nz))
+      endif
 !
 !  back to real space: hTX
 !
