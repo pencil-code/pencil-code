@@ -182,32 +182,54 @@ module Special
 
 
 
-  logical :: lphi_normalized_units = .false.
+  logical :: lphi_normalized_units = .false. !PAR_DOC: whether use normalized units including the value of phi being 1 at the broken
+    !PAR_DOC: vacuum, where a quartic potential with a constant temperature needs only one parameter: chi.
   real :: t_next_bubble = 0.0
-  real :: max_bubble_nucleation_rate = 1.0
+  real :: max_bubble_nucleation_rate = 1.0 !PAR_DOC: What is the maximum bubble nucleation rate the run allows.
+     !PAR_DOC: Needs to be known throughout the run if we use acceptance sampling for determining nucleation times.
   real :: tf = 0.0
-  logical :: lnucleate_bubbles = .false.
-  character (len=50) :: nucleation_method='cutting'
-  character (len=50) :: bubble_position_criteria='cutting'
-  real :: nucleation_threshold = 1e-4
-  character (len=50) :: nucleation_rate_choice='constant'
+  logical :: lnucleate_bubbles = .false. !PAR_DOC: Whether true vacuum bubbles are nucleated during run.
+  character (len=50) :: nucleation_method='cutting' !PAR_DOC: which method do we use to put the values 
+    !PAR_DOC: of a nucleated bubble. The default Cutting method is phi = sqrt(phi^2+bubble^2)
+  character (len=50) :: bubble_position_criteria='cutting' !PAR_DOC: How do we choose where to nucleate new bubbles.
+    !PAR_DOC: Default checks that no bubble has expanded to the new site, threshold checks that phi < threshold.
+  real :: nucleation_threshold = 1e-4 !PAR_DOC: Threshold used for threshold position criteria.
+  character (len=50) :: nucleation_rate_choice='constant' !PAR_DOC: How does the nucleation rate changes in time.
+    !PAR_DOC: At the moment either constant (default) or exponentially increasing.
   integer, parameter :: max_bubbles = 10000
-  real, dimension(max_bubbles,3) :: bubble_positions=impossible
-  real, dimension(max_bubbles)   :: bubble_times=impossible
-  real :: beta = impossible
-  logical :: lgenerate_bubble_times = .false.
+  real, dimension(max_bubbles,3) :: bubble_positions=impossible !PAR_DOC: At which positions bubbles are nucleated.
+    !PAR_DOC: Usually determined by Pencil itself, but can be also inputted as directly.
+  real, dimension(max_bubbles)   :: bubble_times=impossible  !PAR_DOC: At which times bubbles are nucleated.
+    !PAR_DOC: Usually determined by Pencil itself, but can be also inputted as directly.
+  real :: beta = impossible !PAR_DOC: the inverse timescale of the phase transition. Used for exponential nucleation.
+  logical :: lgenerate_bubble_times = .false. !PAR_DOC: Whether nucleation history is pregenerated at the start of the run instead
+    !PAR_DOC: of e.g. by acceptance sampling.
   integer :: bubble_counter = 1
   !TP: for backwards compatibility the setting of the random seed can be suppressed
-  logical :: linitialize_seed=.true.
-  real :: plasma_coupling_coeff=0.0
-  logical :: lplasma_coupling=.false.
-  integer :: continuation_offset = 0
-  logical :: lbubble_size_ode = .false.
-  logical :: lthermal_noise = .false.
-  real    :: noise_strength = impossible
-  real    :: noise_start = 0.0
-  real    :: friction_start = 0.0
-  logical :: ldR_for_wall_vel = .false.
+  logical :: linitialize_seed=.true. !PAR_DOC: Whether we make sure the seed is initialized in Klein-Gordon.
+    !PAR_DOC: Done to make sure we get the same random number at each process.
+  real :: plasma_coupling_coeff=0.0 !PAR_DOC: The strength of eta in the friction term eta*U_nu*grad^nu(phi).
+  logical :: lplasma_coupling=.false. !PAR_DOC: Is the scalar field coupled to the plasma through the phenomenological or more
+    !PAR_DOC: accurately through the Chapman-Enskog friction term eta*U_nu*grad^nu(phi)
+  integer :: continuation_offset = 0 !PAR_DOC: Grid point used for two independent things (not the best). Thin-wall approximation of tanh jump
+    !PAR_DOC: does not have dphi/dr = 0 at the origin so we smoothly continue from the grid point to the origin a polynomial having
+    !PAR_DOC: a zero derivative at the origin. The other usage is that we do not add Langevin noise at grid points < offset,
+    !PAR_DOC: since the laplacian easily diverges due to the 2/r*dphi/dr term.
+  logical :: lbubble_size_ode = .false. !PAR_DOC: Is an ODE evolved for R and Rdot. Useful for 0d-runs and 1d-runs
+    !PAR_DOC: with noise where getting Rdot can be difficult due to grid effects caused by fluctutations, so the smooth value coming
+    !PAR_DOC: from the ODE is better behaved.
+  logical :: lthermal_noise = .false. !PAR_DOC: Whether Langevin noise corresponding to the noise coming from the friction in
+    !PAR_DOC: according to Fluctuation Dissipation Theorem.
+  real    :: noise_strength = impossible !PAR_DOC: How strong is the Langevin noise added to phi, which is supposed to model
+    !PAR_DOC: interactions with unresolved soft modes. Depends on T and phi at specific point, so easiest to treat it as an
+    !PAR_DOC: independent parameter.
+  real    :: noise_start = 0.0 !PAR_DOC: From which point onwards do we start applying noise to the scalar field.
+  real    :: friction_start = 0.0 !PAR_DOC: From which point onwards do we start to apply friction to the bubble wall.
+    !PAR_DOC: Used to get rid of initial transient behaviour which might not be important but causes numerical problems.
+    !PAR_DOC: For example inwards travelling waves to the center, which would later be damped out, when using 1d radial.
+  logical :: ldR_for_wall_vel = .false. !PAR_DOC: Is the bubble wall velocity computed by tracking the bubble wall position.
+    !PAR_DOC: Quite bad, would not recommend. The original intention was to fix velocity when having Langevin noise, but then
+    !PAR_DOC: it is better to use the ODE to evolve the wall velocity to get rid of grid effects due to fluctuations.
   
 ! Sovan : Perturbative Reheating
 !
