@@ -41,7 +41,7 @@ module Hydro
   use Quiet
   use Messages
   use Viscosity, only: calc_viscous_force
-  use KT_transport, only: kt_init, kt_transp
+  use KT_transport, only: kt_init, kt_div_tensor
   use SGS_hydro
 !
   implicit none
@@ -1227,9 +1227,9 @@ module Hydro
 !  gated on lconservative, and the KT solver is initialised only under lhiggsless.
 !  Fail loudly rather than silently ignoring a misconfigured lkt_transport.
 !
-      if (lkt_transport .and. .not. (lconservative .and. lhiggsless)) &
+      if (lkt_transport .and. .not. (lconservative .and. lrelativistic)) &
           call fatal_error('initialize_hydro', &
-              'lkt_transport=T requires lconservative=T and lhiggsless=T')
+              'lkt_transport=T requires lconservative=T and lrelativistic=T')
 !
 !  The admissibility projection acts on the relativistic conserved variables
 !  (K0,K^i). Reject configurations where those are not the evolved state.
@@ -1256,7 +1256,18 @@ module Hydro
 !
 !  Initialize the KT flux-limited transport (Higgsless application only).
 !
-        if (lkt_transport) call kt_init(irho,iux,ihless,eps_hless,width_hless_absolute,kt_theta)
+      endif
+!
+!  Initialise the KT transport.  Higgsless is one application of it, not a
+!  requirement: without that source there is no vacuum energy and no hless
+!  slot, and the bag closure reduces to the ordinary radiation EOS.
+!
+      if (lkt_transport) then
+        if (lhiggsless) then
+          call kt_init(irho,iux,ihless,eps_hless,width_hless_absolute,kt_theta)
+        else
+          call kt_init(irho,iux,0,0.0,0.0,kt_theta)
+        endif
       endif
 !
 ! If we are to solve for gradient of dust particle velocity, we must store gradient
@@ -4494,17 +4505,8 @@ module Hydro
       if (ldensity) then
         if(lconservative) then
           if (lkt_transport) then
-!
-!  KT flux-limited momentum flux divergence (kt_transport.f90) instead of the
-!  central-difference divergence of the stored T^ij (div_tensor). Reuses divTij(:,j)
-!  as the per-direction scratch, then subtracts as in the central branch.
-!
-            do j=1,3
-              call kt_transp(f,m,n,1+j,real(t),divTij(:,j))
-            enddo
+            call kt_div_tensor(f,divTij)
           else
-            ! alberto: kt_transp could be included as an optional argument
-            ! to div_tensor, but for now we keep it separate
             call div_tensor(f,divTij,iTij,lyz_first=.true.)
           endif
           df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz)- divTij

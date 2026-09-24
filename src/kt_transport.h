@@ -2,4 +2,4 @@
 !
   private
 !
-  public :: kt_init, kt_transp,pushpars2c
+  public :: kt_init, kt_div, kt_div_tensor, pushpars2c

@@ -30,7 +30,7 @@ module Density
   use Messages
   use EquationOfState, only: cs0, cs20, cs2bot, cs2top, rho0, lnrho0
   use DensityMethods
-  use KT_transport, only: kt_transp
+  use KT_transport, only: kt_div
 !
   implicit none
 !
@@ -2917,11 +2917,7 @@ module Density
 !
         if (lconservative) then
           if (lkt_transport) then
-!
-!  KT flux-limited energy flux divergence (kt_transport.f90) instead of the
-!  central-difference div S; density_rhs itself is the scratch (mirrors -p%divss).
-!
-            call kt_transp(f,m,n,1,real(t),density_rhs)
+            call kt_div(f,density_rhs)
             density_rhs=-density_rhs
           else
             density_rhs=-p%divss
