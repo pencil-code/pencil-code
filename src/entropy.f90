@@ -539,6 +539,29 @@ module Energy
   integer :: enum_cooltype = 0
   integer :: enum_heattype = 0
   integer :: enum_borderss = 0
+!
+!  Structure holding the former nx-sized temporary ("tmp") pencil arrays
+!  used across calc_pencils_energy, calc_diagnostics_energy, and the
+!  subroutines they call. Collecting them here avoids re-declaring
+!  automatic arrays of size nx on every call.
+!
+  type :: TmpInternalPencils
+    real, dimension(nx) :: ufpres, glnTT2, Ktmp
+    real, dimension(nx) :: gT2, gs2, gTxgso, gTxgs2, chix
+    real, dimension(nx) :: uzmask, gTT2
+    real, dimension(nx) :: tmp, sld_flux1, sld_flux2, sld_flux3
+    real, dimension(nx) :: thdiff, g2, Krho1
+    real, dimension(nx) :: g2_chi
+    real, dimension(nx) :: del2ss1, glnrhoglnT
+    real, dimension(nx) :: r_mn, r_mn1
+    real, dimension(nx,3) :: gTxgs, tmpvec, dummy
+    real, dimension(nx,3) :: gradchit_prof
+    real, dimension(nx,3) :: glnThcond, glhc
+    real, dimension(nx,3,3) :: tmp33
+  end type TmpInternalPencils
+
+  type(TmpInternalPencils) :: q
+  !$omp threadprivate(q)
 
   contains
 !***********************************************************************
@@ -3905,9 +3928,6 @@ module Energy
       type(pencil_case) :: p
 
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(nx) :: ufpres, glnTT2, Ktmp
-      real, dimension(nx) :: gT2,gs2,gTxgso,gTxgs2,chix
-      real, dimension(nx,3) :: gTxgs
       real :: uT,fradz,TTtop
       integer :: i
       real :: gamma,gamma1
@@ -3944,8 +3964,8 @@ module Energy
         if (idiag_TTmax/=0) call max_mn_name(p%TT*uT,idiag_TTmax,iname_loc=idiag_TTmaxloc)
         if (idiag_TTmin/=0) call max_mn_name(-p%TT*uT,idiag_TTmin,lneg=.true.,iname_loc=idiag_TTminloc)
         if (idiag_gTmax/=0) then
-          call dot2(p%glnTT,glnTT2)
-          call max_mn_name(p%TT*sqrt(glnTT2),idiag_gTmax)
+          call dot2(p%glnTT,q%glnTT2)
+          call max_mn_name(p%TT*sqrt(q%glnTT2),idiag_gTmax)
         endif
         if (idiag_TTm/=0)    call sum_mn_name(p%TT*uT,idiag_TTm)
         if (idiag_pdivum/=0) call sum_mn_name(p%pp*p%divu,idiag_pdivum)
@@ -3976,36 +3996,36 @@ module Energy
         endif
         if (idiag_fconvm/=0) call sum_mn_name(p%cp*p%rho*p%uu(:,3)*p%TT,idiag_fconvm)
         if (idiag_ufpresm/=0) then
-            ufpres=0.
+            q%ufpres=0.
             do i = 1,3
-              ufpres=ufpres+p%uu(:,i)*p%fpres(:,i)
+              q%ufpres=q%ufpres+p%uu(:,i)*p%fpres(:,i)
             enddo
-            call sum_mn_name(ufpres,idiag_ufpresm)
+            call sum_mn_name(q%ufpres,idiag_ufpresm)
         endif
         if (idiag_TT2m/=0) call sum_mn_name(p%TT**2,idiag_TT2m)
 !
 !  Analysis for the baroclinic term.
 !
         if (idiag_gTrms/=0) then
-          call dot2(p%gTT,gT2)
-          call sum_mn_name(gT2,idiag_gTrms,lsqrt=.true.)
+          call dot2(p%gTT,q%gT2)
+          call sum_mn_name(q%gT2,idiag_gTrms,lsqrt=.true.)
         endif
 !
         if (idiag_gsrms/=0) then
-          call dot2(p%gss,gs2)
-          call sum_mn_name(gs2,idiag_gsrms,lsqrt=.true.)
+          call dot2(p%gss,q%gs2)
+          call sum_mn_name(q%gs2,idiag_gsrms,lsqrt=.true.)
         endif
 !
         if (idiag_gTxgsrms/=0) then
-          call cross(p%gTT,p%gss,gTxgs)
-          call dot2(gTxgs,gTxgs2)
-          call sum_mn_name(gTxgs2,idiag_gTxgsrms,lsqrt=.true.)
+          call cross(p%gTT,p%gss,q%gTxgs)
+          call dot2(q%gTxgs,q%gTxgs2)
+          call sum_mn_name(q%gTxgs2,idiag_gTxgsrms,lsqrt=.true.)
         endif
 
         if (idiag_gTxgsom/=0) then
-          call cross(p%gTT,p%gss,gTxgs)
-          call dot(p%oo,gTxgS,gTxgso)
-          call sum_mn_name(gTxgso,idiag_gTxgsom)
+          call cross(p%gTT,p%gss,q%gTxgs)
+          call dot(p%oo,q%gTxgS,q%gTxgso)
+          call sum_mn_name(q%gTxgso,idiag_gTxgsom)
         endif
 !
 !  Radiative heat flux at the bottom (assume here that hcond=hcond0=const).
@@ -4013,11 +4033,11 @@ module Energy
         if (idiag_fradbot/=0) then
           if (n==n1 .and. lfirst_proc_z) then
             if (hcond0==0.) then
-              Ktmp=chi*p%rho*p%cp
+              q%Ktmp=chi*p%rho*p%cp
             else
-              Ktmp=hcond0
+              q%Ktmp=hcond0
             endif
-            fradz=sum(-Ktmp*p%TT*p%glnTT(:,3)*dsurfxy)
+            fradz=sum(-q%Ktmp*p%TT*p%glnTT(:,3)*dsurfxy)
           endif
           call surf_mn_name(fradz,idiag_fradbot,n1,lfirst_proc_z)
         endif
@@ -4027,11 +4047,11 @@ module Energy
         if (idiag_fradtop/=0) then
           if (n==n2 .and. llast_proc_z) then
             if (hcond0==0.) then
-              Ktmp=chi*p%rho*p%cp
+              q%Ktmp=chi*p%rho*p%cp
             else
-              Ktmp=hcond0
+              q%Ktmp=hcond0
             endif
-            fradz=sum(-Ktmp*p%TT*p%glnTT(:,3)*dsurfxy)
+            fradz=sum(-q%Ktmp*p%TT*p%glnTT(:,3)*dsurfxy)
           endif
           call surf_mn_name(fradz,idiag_fradtop,n2,llast_proc_z)
         endif
@@ -4053,9 +4073,9 @@ module Energy
 !from calc_heatcond_kramers
         call sum_mn_name(K_kramers,idiag_Kkramersm)
         if (idiag_chikrammax/=0 .or. idiag_chikrammin/=0) then
-          chix = p%cp1*K_kramers*p%rho1
-          call max_mn_name(chix,idiag_chikrammax)
-          if (idiag_chikrammin/=0) call max_mn_name(-chix,idiag_chikrammin,lneg=.true.)
+          q%chix = p%cp1*K_kramers*p%rho1
+          call max_mn_name(q%chix,idiag_chikrammax)
+          if (idiag_chikrammin/=0) call max_mn_name(-q%chix,idiag_chikrammin,lneg=.true.)
         endif
       endif
 
@@ -4069,8 +4089,6 @@ module Energy
       real, contiguous, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
 !
-      real, dimension (nx,3) :: gTxgs
-      real, dimension (nx) :: uzmask, gTT2
 !
 !  1-D averages.
 !
@@ -4115,12 +4133,12 @@ module Energy
         call phizsum_mn_name_r(p%TT,idiag_TTmr)
         call xysum_mn_name_z(p%fpres(:,3),idiag_fpreszmz)
         if (idiag_gTT2mz/=0) then
-          call dot2(p%gTT,gTT2)
-          call xysum_mn_name_z(gTT2,idiag_gTT2mz)
+          call dot2(p%gTT,q%gTT2)
+          call xysum_mn_name_z(q%gTT2,idiag_gTT2mz)
         endif
         if (idiag_gss2mz/=0) then
-          call dot2(p%gss,gTT2) ! gTT2 now gss^2
-          call xysum_mn_name_z(gTT2,idiag_gss2mz)
+          call dot2(p%gss,q%gTT2) ! gTT2 now gss^2
+          call xysum_mn_name_z(q%gTT2,idiag_gss2mz)
         endif
         if (lFenth_as_aux) call xysum_mn_name_z(f(l1:l2,m,n,iFenth),idiag_Fenthz)
         if (lss_flucz_as_aux) then
@@ -4134,49 +4152,49 @@ module Energy
             idiag_ssf2upmz/=0 .or. idiag_TTupmz/=0 .or. idiag_TT2upmz/=0 .or. &
             idiag_TTf2upmz/=0 .or. idiag_uzTTupmz/=0) then
           where (p%uu(:,3) > 0.)
-            uzmask = 1
+            q%uzmask = 1
           elsewhere
-            uzmask = 0.
+            q%uzmask = 0.
           endwhere
 !
           if (lFenth_as_aux) then
-            if (idiag_Fenthupz/=0) call xysum_mn_name_z(uzmask*f(l1:l2,m,n,iFenth),idiag_Fenthupz)
+            if (idiag_Fenthupz/=0) call xysum_mn_name_z(q%uzmask*f(l1:l2,m,n,iFenth),idiag_Fenthupz)
           endif
-          if (idiag_ssupmz  /=0) call xysum_mn_name_z(uzmask*p%ss,idiag_ssupmz)
-          if (idiag_ss2upmz /=0) call xysum_mn_name_z(uzmask*p%ss**2,idiag_ss2upmz)
+          if (idiag_ssupmz  /=0) call xysum_mn_name_z(q%uzmask*p%ss,idiag_ssupmz)
+          if (idiag_ss2upmz /=0) call xysum_mn_name_z(q%uzmask*p%ss**2,idiag_ss2upmz)
           if (lss_flucz_as_aux) then
-            if (idiag_ssf2upmz/=0) call xysum_mn_name_z(uzmask*f(l1:l2,m,n,iss_flucz)**2,idiag_ssf2upmz)
+            if (idiag_ssf2upmz/=0) call xysum_mn_name_z(q%uzmask*f(l1:l2,m,n,iss_flucz)**2,idiag_ssf2upmz)
           endif
-          if (idiag_TTupmz  /=0) call xysum_mn_name_z(uzmask*p%TT,idiag_TTupmz)
-          if (idiag_TT2upmz /=0) call xysum_mn_name_z(uzmask*p%TT**2,idiag_TT2upmz)
+          if (idiag_TTupmz  /=0) call xysum_mn_name_z(q%uzmask*p%TT,idiag_TTupmz)
+          if (idiag_TT2upmz /=0) call xysum_mn_name_z(q%uzmask*p%TT**2,idiag_TT2upmz)
           if (lTT_flucz_as_aux) then
-            if (idiag_TTf2upmz/=0) call xysum_mn_name_z(uzmask*f(l1:l2,m,n,iTT_flucz)**2,idiag_TTf2upmz)
+            if (idiag_TTf2upmz/=0) call xysum_mn_name_z(q%uzmask*f(l1:l2,m,n,iTT_flucz)**2,idiag_TTf2upmz)
           endif
-          if (idiag_uzTTupmz/=0) call xysum_mn_name_z(uzmask*p%uu(:,3)*p%TT,idiag_uzTTupmz)
+          if (idiag_uzTTupmz/=0) call xysum_mn_name_z(q%uzmask*p%uu(:,3)*p%TT,idiag_uzTTupmz)
         endif
 !
         if (idiag_Fenthdownz/=0 .or. idiag_ssdownmz/=0 .or. idiag_ss2downmz/=0 .or. &
             idiag_ssf2downmz/=0 .or. idiag_TTdownmz/=0 .or. idiag_TT2downmz/=0 .or. &
             idiag_TTf2downmz/=0 .or. idiag_uzTTdownmz/=0) then
           where (p%uu(:,3) < 0.)
-            uzmask = 1
+            q%uzmask = 1
           elsewhere
-            uzmask = 0.
+            q%uzmask = 0.
           endwhere
           if (lFenth_as_aux) then
-            if (idiag_Fenthdownz/=0) call xysum_mn_name_z(uzmask*f(l1:l2,m,n,iFenth),idiag_Fenthdownz)
+            if (idiag_Fenthdownz/=0) call xysum_mn_name_z(q%uzmask*f(l1:l2,m,n,iFenth),idiag_Fenthdownz)
           endif
-          if (idiag_ssdownmz  /=0) call xysum_mn_name_z(uzmask*p%ss,idiag_ssdownmz)
-          if (idiag_ss2downmz /=0) call xysum_mn_name_z(uzmask*p%ss**2,idiag_ss2downmz)
+          if (idiag_ssdownmz  /=0) call xysum_mn_name_z(q%uzmask*p%ss,idiag_ssdownmz)
+          if (idiag_ss2downmz /=0) call xysum_mn_name_z(q%uzmask*p%ss**2,idiag_ss2downmz)
           if (lss_flucz_as_aux) then
-            if (idiag_ssf2downmz/=0) call xysum_mn_name_z(uzmask*f(l1:l2,m,n,iss_flucz)**2,idiag_ssf2downmz)
+            if (idiag_ssf2downmz/=0) call xysum_mn_name_z(q%uzmask*f(l1:l2,m,n,iss_flucz)**2,idiag_ssf2downmz)
           endif
-          if (idiag_TTdownmz  /=0) call xysum_mn_name_z(uzmask*p%TT,idiag_TTdownmz)
-          if (idiag_TT2downmz /=0) call xysum_mn_name_z(uzmask*p%TT**2,idiag_TT2downmz)
+          if (idiag_TTdownmz  /=0) call xysum_mn_name_z(q%uzmask*p%TT,idiag_TTdownmz)
+          if (idiag_TT2downmz /=0) call xysum_mn_name_z(q%uzmask*p%TT**2,idiag_TT2downmz)
           if (lTT_flucz_as_aux) then
-            if (idiag_TTf2downmz/=0) call xysum_mn_name_z(uzmask*f(l1:l2,m,n,iTT_flucz)**2,idiag_TTf2downmz)
+            if (idiag_TTf2downmz/=0) call xysum_mn_name_z(q%uzmask*f(l1:l2,m,n,iTT_flucz)**2,idiag_TTf2downmz)
           endif
-          if (idiag_uzTTdownmz/=0) call xysum_mn_name_z(uzmask*p%uu(:,3)*p%TT,idiag_uzTTdownmz)
+          if (idiag_uzTTdownmz/=0) call xysum_mn_name_z(q%uzmask*p%uu(:,3)*p%TT,idiag_uzTTdownmz)
         endif
         if (idiag_fracvph1mz/=0) call xysum_mn_name_z(penc_ones,idiag_fracvph1mz,MASK=(p%ss <= ssmask1))
         if (idiag_fracvph2mz/=0) call xysum_mn_name_z(penc_ones,idiag_fracvph2mz,MASK=(p%ss > ssmask1 .and. p%ss <= ssmask2))
@@ -4187,13 +4205,13 @@ module Energy
         if (idiag_gTxgsxmz/=0 .or. idiag_gTxgsx2mz/=0 .or. &
             idiag_gTxgsymz/=0 .or. idiag_gTxgsy2mz/=0 .or. &
             idiag_gTxgszmz/=0 .or. idiag_gTxgsz2mz/=0) then
-          call cross(p%gTT,p%gss,gTxgs)
-          call xysum_mn_name_z(gTxgs(:,1),idiag_gTxgsxmz)
-          call xysum_mn_name_z(gTxgs(:,2),idiag_gTxgsymz)
-          call xysum_mn_name_z(gTxgs(:,3),idiag_gTxgszmz)
-          if (idiag_gTxgsx2mz/=0) call xysum_mn_name_z(gTxgs(:,1)**2,idiag_gTxgsx2mz)
-          if (idiag_gTxgsy2mz/=0) call xysum_mn_name_z(gTxgs(:,2)**2,idiag_gTxgsy2mz)
-          if (idiag_gTxgsz2mz/=0) call xysum_mn_name_z(gTxgs(:,3)**2,idiag_gTxgsz2mz)
+          call cross(p%gTT,p%gss,q%gTxgs)
+          call xysum_mn_name_z(q%gTxgs(:,1),idiag_gTxgsxmz)
+          call xysum_mn_name_z(q%gTxgs(:,2),idiag_gTxgsymz)
+          call xysum_mn_name_z(q%gTxgs(:,3),idiag_gTxgszmz)
+          if (idiag_gTxgsx2mz/=0) call xysum_mn_name_z(q%gTxgs(:,1)**2,idiag_gTxgsx2mz)
+          if (idiag_gTxgsy2mz/=0) call xysum_mn_name_z(q%gTxgs(:,2)**2,idiag_gTxgsy2mz)
+          if (idiag_gTxgsz2mz/=0) call xysum_mn_name_z(q%gTxgs(:,3)**2,idiag_gTxgsz2mz)
         endif
 !
         if (idiag_fturbz>0) then
@@ -4259,8 +4277,6 @@ module Energy
       type(pencil_case) :: p
       real, contiguous, dimension(:,:,:,:) :: f
 
-      real, dimension (nx,3) :: gTxgs, tmpvec
-      real, dimension (nx) :: tmp,sld_flux1,sld_flux2,sld_flux3
 
       if (l2davgfirst) then
 !
@@ -4302,9 +4318,9 @@ module Energy
           if (idiag_fturbrxy/=0) call zsum_mn_name_xy(-chit_aniso_prof*p%rho*p%TT* &
                                  (costh(m)**2*p%gss(:,1)-sinth(m)*costh(m)*p%gss(:,2)),idiag_fturbrxy)
           if (idiag_fturbthxy/=0) then
-            tmpvec(:,(/1,3/))=0.
-            tmpvec(:,2)= -chit_aniso_prof*p%rho*p%TT*(-sinth(m)*costh(m)*p%gss(:,1)+sinth(m)**2*p%gss(:,2))
-            call zsum_mn_name_xy(tmpvec,idiag_fturbthxy,(/0,1,0/))   ! not correct for Yin-Yang: phi component in tmpvec missing
+            q%tmpvec(:,(/1,3/))=0.
+            q%tmpvec(:,2)= -chit_aniso_prof*p%rho*p%TT*(-sinth(m)*costh(m)*p%gss(:,1)+sinth(m)**2*p%gss(:,2))
+            call zsum_mn_name_xy(q%tmpvec,idiag_fturbthxy,(/0,1,0/))   ! not correct for Yin-Yang: phi component in tmpvec missing
 
           endif
         endif
@@ -4338,22 +4354,22 @@ module Energy
         if (idiag_gTxgsxmxy/=0 .or. idiag_gTxgsx2mxy/=0 .or. &
             idiag_gTxgsymxy/=0 .or. idiag_gTxgsy2mxy/=0 .or. &
             idiag_gTxgszmxy/=0 .or. idiag_gTxgsz2mxy/=0) then
-          call cross(p%gTT,p%gss,gTxgs)
-          call zsum_mn_name_xy(gTxgs(:,1),idiag_gTxgsxmxy)
-          call zsum_mn_name_xy(gTxgs,idiag_gTxgsymxy,(/0,1,0/))
-          call zsum_mn_name_xy(gTxgs,idiag_gTxgszmxy,(/0,0,1/))
-          if (idiag_gTxgsx2mxy/=0) call zsum_mn_name_xy(gTxgs(:,1)**2,idiag_gTxgsxmxy)
-          if (idiag_gTxgsy2mxy/=0) call zsum_mn_name_xy(gTxgs**2,idiag_gTxgsymxy,(/0,1,0/))
-          if (idiag_gTxgsz2mxy/=0) call zsum_mn_name_xy(gTxgs**2,idiag_gTxgszmxy,(/0,0,1/))
+          call cross(p%gTT,p%gss,q%gTxgs)
+          call zsum_mn_name_xy(q%gTxgs(:,1),idiag_gTxgsxmxy)
+          call zsum_mn_name_xy(q%gTxgs,idiag_gTxgsymxy,(/0,1,0/))
+          call zsum_mn_name_xy(q%gTxgs,idiag_gTxgszmxy,(/0,0,1/))
+          if (idiag_gTxgsx2mxy/=0) call zsum_mn_name_xy(q%gTxgs(:,1)**2,idiag_gTxgsxmxy)
+          if (idiag_gTxgsy2mxy/=0) call zsum_mn_name_xy(q%gTxgs**2,idiag_gTxgsymxy,(/0,1,0/))
+          if (idiag_gTxgsz2mxy/=0) call zsum_mn_name_xy(q%gTxgs**2,idiag_gTxgszmxy,(/0,0,1/))
         endif
 
         if (lenergy_slope_limited .and. it>1) then   !!!.and.lgpu) then
           if (idiag_slopelimrsphmphi/=0) then
-            call calc_slope_diff_flux(f,iss,h_sld_ene,nlf_sld_ene,tmp,div_sld_ene, &
-                                      flux1=sld_flux1,flux2=sld_flux2,flux3=sld_flux3)
-            call phisum_mn_name_rz(sld_flux1*p%evr(:,1)+sld_flux2*p%evr(:,2)+sld_flux3*p%evr(:,3), &
+            call calc_slope_diff_flux(f,iss,h_sld_ene,nlf_sld_ene,q%tmp,div_sld_ene, &
+                                      flux1=q%sld_flux1,flux2=q%sld_flux2,flux3=q%sld_flux3)
+            call phisum_mn_name_rz(q%sld_flux1*p%evr(:,1)+q%sld_flux2*p%evr(:,2)+q%sld_flux3*p%evr(:,3), &
                                    idiag_slopelimrsphmphi)
-print*, maxval(sld_flux1*p%evr(:,1)+sld_flux2*p%evr(:,2)+sld_flux3*p%evr(:,3))
+print*, maxval(q%sld_flux1*p%evr(:,1)+q%sld_flux2*p%evr(:,2)+q%sld_flux3*p%evr(:,3))
           endif
         endif
       endif
@@ -4365,25 +4381,22 @@ print*, maxval(sld_flux1*p%evr(:,1)+sld_flux2*p%evr(:,2)+sld_flux3*p%evr(:,3))
       real, contiguous, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
 
-      real, dimension(nx) :: thdiff
-      real, dimension(nx) :: g2,Krho1
-      real, dimension(nx,3) :: dummy
 !
 ! Done here since with GPU, RHS is not evaluated and thus not diffus_chi.
 !
       if (lmultithread .and. lupdate_courant_dt) then
 
         if (idiag_dtdiffus/=0 .or. idiag_dtchi/=0) diffus_chi = 0.0
-        if (lheatc_Kprof)    call calc_heatcond_arrays(f,p,thdiff)
-        if (lheatc_chiconst) call calc_heatcond_constchi_arr(f,p,thdiff)
-        if (lheatc_Kconst)   call calc_heatcond_constK_arrays(p,thdiff)
+        if (lheatc_Kprof)    call calc_heatcond_arrays(f,p,q%thdiff)
+        if (lheatc_chiconst) call calc_heatcond_constchi_arr(f,p,q%thdiff)
+        if (lheatc_Kconst)   call calc_heatcond_constK_arrays(p,q%thdiff)
         if (lheatc_kramers) then
-          call kramers_get_K(p,g2,Krho1)
-          diffus_chi=diffus_chi+(p%cv1*Krho1+chi_t)*dxyz_2
+          call kramers_get_K(p,q%g2,q%Krho1)
+          diffus_chi=diffus_chi+(p%cv1*q%Krho1+chi_t)*dxyz_2
         endif
         !TP: a bit ugly that we have this so explicitly here but works for now
         if (chi_t1/=0..and.lchit_fluct) then
-          call get_chit_prof_fluct(dummy)
+          call get_chit_prof_fluct(q%dummy)
           diffus_chi=diffus_chi+chit_prof_fluct*dxyz_2
         endif
       endif
@@ -4884,8 +4897,6 @@ print*, maxval(sld_flux1*p%evr(:,1)+sld_flux2*p%evr(:,2)+sld_flux3*p%evr(:,3))
       real, contiguous, dimension(:,:,:,:) :: f
       type (pencil_case) :: p
 !
-      real, dimension(nx) :: g2
-      real, dimension(nx,3) :: gradchit_prof
       real :: gamma
 !
 !  Check that chi is ok.
@@ -4904,21 +4915,21 @@ print*, maxval(sld_flux1*p%evr(:,1)+sld_flux2*p%evr(:,2)+sld_flux3*p%evr(:,3))
 !  rho*T*Ds/Dt = ... + nab.(rho*T*chit*grads)
 !        Ds/Dt = ... + chit*[del2ss+(glnrho+glnTT).gss]
 !
-      call dot(p%glnrho+p%glnTT,p%glnTT,g2)
+      call dot(p%glnrho+p%glnTT,p%glnTT,q%g2)
       if (pretend_lnTT) then
         call get_gamma_etc(gamma)
-        thdiff=gamma*chi*(p%del2lnTT+g2)
+        thdiff=gamma*chi*(p%del2lnTT+q%g2)
       else
-        thdiff=chi*p%cp*(p%del2lnTT+g2)
+        thdiff=chi*p%cp*(p%del2lnTT+q%g2)
       endif
       if (chi_t/=0.) then
-        call get_prof_pencil(chit_prof,gradchit_prof,lsphere_in_a_box,1.,chit_prof1,chit_prof2,xbot,xtop,p,f, &
+        call get_prof_pencil(chit_prof,q%gradchit_prof,lsphere_in_a_box,1.,chit_prof1,chit_prof2,xbot,xtop,p,f, &
                              stored_prof=chit_prof_stored,stored_dprof=dchit_prof_stored)
 
-        call dot(p%glnrho+p%glnTT,p%gss,g2)
-        thdiff=thdiff+chi_t*chit_prof*(p%del2ss+g2)
-        call dot(gradchit_prof,p%gss,g2)
-        thdiff=thdiff+chi_t*g2
+        call dot(p%glnrho+p%glnTT,p%gss,q%g2)
+        thdiff=thdiff+chi_t*chit_prof*(p%del2ss+q%g2)
+        call dot(q%gradchit_prof,p%gss,q%g2)
+        thdiff=thdiff+chi_t*q%g2
 
       endif
 !
@@ -5478,7 +5489,6 @@ print*, maxval(sld_flux1*p%evr(:,1)+sld_flux2*p%evr(:,2)+sld_flux3*p%evr(:,3))
 
       real, dimension (nx) :: thdiff
       real :: gamma
-      real, dimension (nx) :: chix,g2
 !
 !  This particular version assumes a simple polytrope, so mpoly is known.
 !
@@ -5502,18 +5512,18 @@ print*, maxval(sld_flux1*p%evr(:,1)+sld_flux2*p%evr(:,2)+sld_flux3*p%evr(:,3))
 !
 ! NB: chix = K/(cp rho) is needed for diffus_chi calculation
 !
-      chix = p%rho1*hcond_Kconst*p%cp1
+      q%chix = p%rho1*hcond_Kconst*p%cp1
 !
 !  Put empirical heat transport suppression by the B-field.
 !
-      if (chiB/=0.) chix = chix/(1.+chiB*p%b2)
-      call dot(p%glnTT,p%glnTT,g2)
+      if (chiB/=0.) q%chix = q%chix/(1.+chiB*p%b2)
+      call dot(p%glnTT,p%glnTT,q%g2)
 !
       if (pretend_lnTT) then
         call get_gamma_etc(gamma)
-        thdiff = gamma*chix * (p%del2lnTT + g2)
+        thdiff = gamma*q%chix * (p%del2lnTT + q%g2)
       else
-        thdiff = p%rho1*hcond_Kconst * (p%del2lnTT + g2)
+        thdiff = p%rho1*hcond_Kconst * (p%del2lnTT + q%g2)
       endif
 !
 !  Check maximum diffusion from thermal diffusion.
@@ -5522,7 +5532,7 @@ print*, maxval(sld_flux1*p%evr(:,1)+sld_flux2*p%evr(:,2)+sld_flux3*p%evr(:,3))
 !
       if (lupdate_courant_dt) then
         call get_gamma_etc(gamma)
-        diffus_chi=diffus_chi+gamma*chix*dxyz_2
+        diffus_chi=diffus_chi+gamma*q%chix*dxyz_2
       endif
     endsubroutine calc_heatcond_constK_arrays
 !***********************************************************************
@@ -5715,27 +5725,26 @@ print*, maxval(sld_flux1*p%evr(:,1)+sld_flux2*p%evr(:,2)+sld_flux3*p%evr(:,3))
       real, dimension(nx), intent(OUT) :: g2
       real, dimension(nx), intent(OUT) :: Krho1
 
-      real, dimension(nx) :: g2_chi
 !
       K_kramers = hcond0_kramers*p%rho1**(2.*nkramers)*p%TT**(6.5*nkramers)
       Krho1 = K_kramers*p%rho1   ! = K/rho
       call dot(-2.*nkramers*p%glnrho+(6.5*nkramers+1)*p%glnTT,p%glnTT,g2)
 !
       if (chimax_kramers>0. .or. chimin_kramers>0.) &
-        call dot(p%glnrho+p%glnTT, p%glnTT, g2_chi)
+        call dot(p%glnrho+p%glnTT, p%glnTT, q%g2_chi)
 
       if (chimax_kramers>0.) then
         where (Krho1 > chimax_kramers/p%cp1)
           Krho1 = chimax_kramers/p%cp1
           K_kramers = chimax_kramers*p%rho/p%cp1
-          g2 = g2_chi
+          g2 = q%g2_chi
         endwhere
       endif
       if (chimin_kramers>0.) then
         where (Krho1 < chimin_kramers/p%cp1)
           Krho1 = chimin_kramers/p%cp1
           K_kramers = chimin_kramers*p%rho/p%cp1
-          g2 = g2_chi
+          g2 = q%g2_chi
         endwhere
       endif
 
@@ -5949,11 +5958,6 @@ print*, maxval(sld_flux1*p%evr(:,1)+sld_flux2*p%evr(:,2)+sld_flux3*p%evr(:,3))
       type (pencil_case), intent(IN) :: p
       real, contiguous, dimension(:,:,:,:), intent(IN) :: f
       real, dimension (nx), intent(OUT) :: thdiff
-      real, dimension (nx,3) :: glnThcond,glhc
-      real, dimension (nx) :: g2,del2ss1,chix
-      real, dimension (nx) :: glnrhoglnT
-      real, dimension (nx,3) :: gradchit_prof
-      real, dimension (nx,3,3) :: tmp
       !real, save :: z_prev=-1.23e20
       real :: s2,c2,sc
       integer :: j
@@ -5968,7 +5972,7 @@ print*, maxval(sld_flux1*p%evr(:,1)+sld_flux2*p%evr(:,2)+sld_flux3*p%evr(:,3))
           if (lgravz) print*,'calc_heatcond_arrays: Fbot,Ftop=',Fbot,Ftop
         endif
 
-        call get_prof_pencil(hcond,glhc,lsphere_in_a_box.or.lcylinder_in_a_box, &
+        call get_prof_pencil(hcond,q%glhc,lsphere_in_a_box.or.lcylinder_in_a_box, &
                              hcond0,hcond1,hcond2,r_bcz,r_ext,p,f,hcond_prof,dlnhcond_prof,llog=.true.)
 !
 !  Diffusion of the form
@@ -5981,19 +5985,19 @@ print*, maxval(sld_flux1*p%evr(:,1)+sld_flux2*p%evr(:,2)+sld_flux3*p%evr(:,3))
 !
         if (notanumber(p%glnTT)) call fatal_error_local('calc_heatcond', 'NaNs in p%glnTT')
 
-        glnThcond = p%glnTT + glhc    ! grad ln(T*hcond)
-        call dot(p%glnTT,glnThcond,g2)
+        q%glnThcond = p%glnTT + q%glhc    ! grad ln(T*hcond)
+        call dot(p%glnTT,q%glnThcond,q%g2)
         if (pretend_lnTT) then
-          thdiff = p%cv1*p%rho1*hcond * (p%del2lnTT + g2)
-          chix = p%rho1*hcond*p%cv1
+          thdiff = p%cv1*p%rho1*hcond * (p%del2lnTT + q%g2)
+          q%chix = p%rho1*hcond*p%cv1
         else
           if (lhcond0_density_dep) then
-            call dot(p%glnTT,p%glnrho,glnrhoglnT)
-            thdiff = sqrt(p%rho1)*hcond * (p%del2lnTT + g2+0.5*glnrhoglnT)
-            chix = sqrt(p%rho1)*hcond*p%cv1
+            call dot(p%glnTT,p%glnrho,q%glnrhoglnT)
+            thdiff = sqrt(p%rho1)*hcond * (p%del2lnTT + q%g2+0.5*q%glnrhoglnT)
+            q%chix = sqrt(p%rho1)*hcond*p%cv1
           else
-            thdiff = p%rho1*hcond * (p%del2lnTT + g2)
-            chix = p%rho1*hcond*p%cv1
+            thdiff = p%rho1*hcond * (p%del2lnTT + q%g2)
+            q%chix = p%rho1*hcond*p%cv1
           endif
         endif
 !
@@ -6011,7 +6015,7 @@ print*, maxval(sld_flux1*p%evr(:,1)+sld_flux2*p%evr(:,2)+sld_flux3*p%evr(:,3))
 !
       if (chi_t/=0.) then
         if (headtt) print*,'calc_headcond_arrays: "turbulent" entropy diffusion: chi_t=',chi_t
-        call get_prof_pencil(chit_prof,gradchit_prof,lsphere_in_a_box,1.,chit_prof1,chit_prof2,xbot,xtop,p,f, &
+        call get_prof_pencil(chit_prof,q%gradchit_prof,lsphere_in_a_box,1.,chit_prof1,chit_prof2,xbot,xtop,p,f, &
                              stored_prof=chit_prof_stored,stored_dprof=dchit_prof_stored)
 !
 !  'Standard' formulation where the flux contains temperature:
@@ -6027,31 +6031,31 @@ print*, maxval(sld_flux1*p%evr(:,1)+sld_flux2*p%evr(:,2)+sld_flux3*p%evr(:,3))
         if (lcalc_ssmean .or. lcalc_ssmeanxy) then
           if (lcalc_ssmean) then
             do j=1,3; gss1(:,j)=p%gss(:,j)-gssmz(n,j); enddo
-            del2ss1=p%del2ss-del2ssmz(n)
+            q%del2ss1=p%del2ss-del2ssmz(n)
           else if (lcalc_ssmeanxy) then
             do j=1,3; gss1(:,j)=p%gss(:,j)-gssmx(:,j); enddo
-            del2ss1=p%del2ss-del2ssmx
+            q%del2ss1=p%del2ss-del2ssmx
           endif
 !
           if (lchit_noT) then
-            call dot(p%glnrho,gss1,g2)
+            call dot(p%glnrho,gss1,q%g2)
           else
-            call dot(p%glnrho+p%glnTT,gss1,g2)
+            call dot(p%glnrho+p%glnTT,gss1,q%g2)
           endif
 !
-          thdiff=thdiff+chi_t*chit_prof*(del2ss1+g2)
-          call dot(gradchit_prof,gss1,g2)
-          thdiff=thdiff+chi_t*g2
+          thdiff=thdiff+chi_t*chit_prof*(q%del2ss1+q%g2)
+          call dot(q%gradchit_prof,gss1,q%g2)
+          thdiff=thdiff+chi_t*q%g2
         else
           if (lchit_noT) then
-            call dot(p%glnrho,p%gss,g2)
+            call dot(p%glnrho,p%gss,q%g2)
           else
-            call dot(p%glnrho+p%glnTT,p%gss,g2)
+            call dot(p%glnrho+p%glnTT,p%gss,q%g2)
           endif
 !
-          thdiff=thdiff+chi_t*chit_prof*(p%del2ss+g2)
-          call dot(gradchit_prof,p%gss,g2)
-          thdiff=thdiff+chi_t*g2
+          thdiff=thdiff+chi_t*chit_prof*(p%del2ss+q%g2)
+          call dot(q%gradchit_prof,p%gss,q%g2)
+          thdiff=thdiff+chi_t*q%g2
         endif
 !
 !  Turbulent entropy diffusion with rotational anisotropy:
@@ -6074,9 +6078,9 @@ print*, maxval(sld_flux1*p%evr(:,1)+sld_flux2*p%evr(:,2)+sld_flux3*p%evr(:,3))
 !
           if (lchit_aniso_simplified) then
 !
-            call g2ij(f,iss,tmp)
+            call g2ij(f,iss,q%tmp33)
             thdiff = thdiff+chit_aniso_prof*((1.-3.*c2)*r1_mn*p%gss(:,1) + &
-                     (-sc*tmp(:,1,2))+(p%glnrho(:,2)+p%glnTT(:,2))*(-sc*p%gss(:,1)))
+                     (-sc*q%tmp33(:,1,2))+(p%glnrho(:,2)+p%glnTT(:,2))*(-sc*p%gss(:,1)))
           else
 !
 !  Otherwise use the full formulation.
@@ -6084,9 +6088,9 @@ print*, maxval(sld_flux1*p%evr(:,1)+sld_flux2*p%evr(:,2)+sld_flux3*p%evr(:,3))
             thdiff=thdiff + ((dchit_aniso_prof*c2+chit_aniso_prof/x(l1:l2))*p%gss(:,1)+ &
                             sc*(chit_aniso_prof/x(l1:l2)-dchit_aniso_prof)*p%gss(:,2))
 !
-            call g2ij(f,iss,tmp)
+            call g2ij(f,iss,q%tmp33)
             thdiff=thdiff+chit_aniso_prof* &
-                ((-sc*(tmp(:,1,2)+tmp(:,2,1))+c2*tmp(:,1,1)+s2*tmp(:,2,2))+ &
+                ((-sc*(q%tmp33(:,1,2)+q%tmp33(:,2,1))+c2*q%tmp33(:,1,1)+s2*q%tmp33(:,2,2))+ &
                 ((p%glnrho(:,1)+p%glnTT(:,1))*(c2*p%gss(:,1)-sc*p%gss(:,2))+ &
                 ( p%glnrho(:,2)+p%glnTT(:,2))*(s2*p%gss(:,2)-sc*p%gss(:,1))))
           endif
@@ -6098,7 +6102,7 @@ print*, maxval(sld_flux1*p%evr(:,1)+sld_flux2*p%evr(:,2)+sld_flux3*p%evr(:,3))
 !    gamma*chix*del2ss.
 !
       if (lupdate_courant_dt) then
-        if (hcond0/=0..or.lread_hcond.or.lhcond_global) diffus_chi=diffus_chi+chix*dxyz_2
+        if (hcond0/=0..or.lread_hcond.or.lhcond_global) diffus_chi=diffus_chi+q%chix*dxyz_2
         if (chi_t/=0.) diffus_chi=diffus_chi+chi_t*chit_prof*dxyz_2
       endif
 !
@@ -6114,11 +6118,11 @@ print*, maxval(sld_flux1*p%evr(:,1)+sld_flux2*p%evr(:,2)+sld_flux3*p%evr(:,3))
           if (hcond0/=0..or.lread_hcond.or.lhcond_global) then
             if (notanumber(hcond))     print*,'calc_heatcond_arrays: NaNs in hcond'
             if (notanumber(1/hcond))   print*,'calc_heatcond_arrays: NaNs in 1/hcond'
-            if (notanumber(glhc))      print*,'calc_heatcond_arrays: NaNs in glhc'
-            if (notanumber(chix))      print*,'calc_heatcond_arrays: NaNs in chix'
-            if (notanumber(glnThcond)) print*,'calc_heatcond_arrays: NaNs in glnThcond'
+            if (notanumber(q%glhc))      print*,'calc_heatcond_arrays: NaNs in q%glhc'
+            if (notanumber(q%chix))      print*,'calc_heatcond_arrays: NaNs in q%chix'
+            if (notanumber(q%glnThcond)) print*,'calc_heatcond_arrays: NaNs in q%glnThcond'
           endif
-          if (notanumber(g2))        print*,'calc_heatcond_arrays: NaNs in g2'
+          if (notanumber(q%g2))        print*,'calc_heatcond_arrays: NaNs in q%g2'
 !
 !  Most of these should trigger the following trap.
 !
@@ -6132,9 +6136,9 @@ print*, maxval(sld_flux1*p%evr(:,1)+sld_flux2*p%evr(:,2)+sld_flux3*p%evr(:,3))
           endif
         endif
         if ((hcond0/=0..or.lread_hcond.or.lhcond_global).and.lwrite_prof .and. ip<=9) then
-          call output_pencil('chi.dat',chix,1)
+          call output_pencil('chi.dat',q%chix,1)
           call output_pencil('hcond.dat',hcond,1)
-          call output_pencil('glhc.dat',glhc,3)
+          call output_pencil('q%glhc.dat',q%glhc,3)
         endif
 
         if (headt .and. lfirst .and. ip == 13) call output_pencil('heatcond.dat',thdiff,1)
@@ -7946,7 +7950,6 @@ print*, maxval(sld_flux1*p%evr(:,1)+sld_flux2*p%evr(:,2)+sld_flux3*p%evr(:,3))
       real, contiguous, dimension(:,:,:,:), optional, intent(in) :: f
       real, dimension(:),                optional, intent(in) :: stored_prof, stored_dprof
 !
-      real, dimension(nx) :: r_mn, r_mn1
       integer :: j
 !
       if (.not.lmultilayer) then
@@ -7964,26 +7967,26 @@ print*, maxval(sld_flux1*p%evr(:,1)+sld_flux2*p%evr(:,2)+sld_flux3*p%evr(:,3))
           else
 
             if (present(p)) then
-              r_mn=p%r_mn
-              r_mn1=p%r_mn1
+              q%r_mn=p%r_mn
+              q%r_mn1=p%r_mn1
             else
-              r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
-              r_mn1=1./r_mn
+              q%r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
+              q%r_mn1=1./q%r_mn
             endif
 
-            prof =  (amp1-1.)*der_step(r_mn,pos1,-widthss) &
-                   +(amp2-1.)*der_step(r_mn,pos2, widthss)
-            dprof(:,1) = prof*x(l1:l2)*r_mn1
-            dprof(:,2) = prof*y(  m  )*r_mn1
+            prof =  (amp1-1.)*der_step(q%r_mn,pos1,-widthss) &
+                   +(amp2-1.)*der_step(q%r_mn,pos2, widthss)
+            dprof(:,1) = prof*x(l1:l2)*q%r_mn1
+            dprof(:,2) = prof*y(  m  )*q%r_mn1
 
             if (lcylinder_in_a_box) then
               dprof(:,3) = 0.0
             else
-              dprof(:,3) = prof*z(n)*r_mn1
+              dprof(:,3) = prof*z(n)*q%r_mn1
             endif
 
-            prof = 1.+(amp1-1.)*step(r_mn,pos1,-widthss) &
-                     +(amp2-1.)*step(r_mn,pos2, widthss)
+            prof = 1.+(amp1-1.)*step(q%r_mn,pos1,-widthss) &
+                     +(amp2-1.)*step(q%r_mn,pos2, widthss)
 
             if (loptest(llog)) then
               do j=1,3; dprof(:,j)=dprof(:,j)/prof; enddo

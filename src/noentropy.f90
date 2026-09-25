@@ -52,6 +52,19 @@ module Energy
   real, dimension(:), pointer :: beta_glnrho_scaled
   real :: gamma
 !
+!  Structure holding the former nx-sized temporary ("tmp") pencil arrays
+!  used across calc_pencils_energy, calc_diagnostics_energy, and the
+!  subroutines they call. Collecting them here avoids re-declaring
+!  automatic arrays of size nx on every call.
+!
+  type :: TmpInternalPencils
+    real, dimension(nx) :: lorentz_gamma_inv2 = 1.
+    real, dimension(nx) :: ufpres
+  end type TmpInternalPencils
+
+  type(TmpInternalPencils) :: q
+  !$omp threadprivate(q)
+!
   contains
 !***********************************************************************
     subroutine register_energy
@@ -263,7 +276,6 @@ module Energy
 !
       intent(in) :: f
       intent(inout) :: p
-      real, dimension (nx) :: lorentz_gamma_inv2=1.
 ! Ma2
       if (lpencil(i_Ma2)) p%Ma2=p%u2/p%cs2
 !
@@ -273,7 +285,7 @@ module Energy
         if (lstratz) then
           p%fpres = -spread(p%cs2,2,3) * p%glnrhos
         else
-          if (lrelativistic) lorentz_gamma_inv2 = 1. - p%u2
+          if (lrelativistic) q%lorentz_gamma_inv2 = 1. - p%u2
           do j=1,3
             if (llocal_iso) then
               p%fpres(:,j)=-p%cs2*(p%glnrho(:,j)+p%glnTT(:,j))
@@ -285,7 +297,7 @@ module Energy
               if (ldensity.and.lrelativistic_eos) then
                 !if (.not.lconservative) p%fpres(:,j)=-.75*p%cs2*p%glnrho(:,j)
                 if (.not.lconservative) then
-                  p%fpres(:,j)=-p%cs2/(1 + p%cs2)*p%glnrho(:,j)*lorentz_gamma_inv2
+                  p%fpres(:,j)=-p%cs2/(1 + p%cs2)*p%glnrho(:,j)*q%lorentz_gamma_inv2
                 endif
               else if (lconservative) then
                 p%fpres(:,j)=-p%cs2*p%grho(:,j)
@@ -408,7 +420,6 @@ module Energy
       real, contiguous,dimension(:,:,:,:) :: f
       type(pencil_case) :: p
 
-      real, dimension(nx) :: ufpres
       integer :: i
 !
       call keep_compiler_quiet(f)
@@ -425,11 +436,11 @@ module Energy
         if (idiag_pdivum/=0) call sum_mn_name(p%pp*p%divu,idiag_pdivum)
         call sum_mn_name(p%cs2,idiag_csm,lsqrt=.true.)
         if (idiag_ufpresm/=0) then
-          ufpres=0
+          q%ufpres=0
           do i = 1, 3
-            ufpres=ufpres+p%uu(:,i)*p%fpres(:,i)
+            q%ufpres=q%ufpres+p%uu(:,i)*p%fpres(:,i)
           enddo
-          call sum_mn_name(p%rho*ufpres,idiag_ufpresm)
+          call sum_mn_name(p%rho*q%ufpres,idiag_ufpresm)
         endif
 
       endif
