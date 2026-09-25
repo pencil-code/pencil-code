@@ -358,6 +358,20 @@ module Density
   integer :: enum_div_sld_dens = 0
   integer :: enum_borderlnrho = 0
   integer :: enum_density_floor_profile = 0
+!
+!  Structure holding the former nx-sized temporary ("tmp") pencil arrays
+!  used across calc_pencils_density_pnc/_std, calc_diagnostics_density,
+!  and the subroutines they call. Collecting them here avoids re-declaring
+!  automatic arrays of size nx on every call.
+!
+  type :: TmpInternalPencils
+    real, dimension(nx) :: tmp, rmask
+    real, dimension(nx) :: advec_hypermesh_rho
+    real, dimension(nx) :: uzmask
+  end type TmpInternalPencils
+
+  type(TmpInternalPencils) :: q
+  !$omp threadprivate(q)
 
   contains
 !***********************************************************************
@@ -2629,7 +2643,6 @@ module Density
       logical, dimension(:), intent(IN) :: lpenc_loc
       intent(in) :: f
       intent(inout) :: p
-      real, dimension(nx) :: tmp
       integer :: i
 !
 ! set rho pencil, but it is overwritten in the conservative case.
@@ -2702,8 +2715,8 @@ module Density
       if (lpenc_loc(i_uuadvec_grho)) then
         call h_dot_grad(p%uu_advec,p%grho,p%uuadvec_grho)
         if (lupw_rho) then
-          call calc_del6_for_upwind(f,irho,p%uu_advec,tmp)
-          p%uuadvec_grho = p%uuadvec_grho - tmp
+          call calc_del6_for_upwind(f,irho,p%uu_advec,q%tmp)
+          p%uuadvec_grho = p%uuadvec_grho - q%tmp
         endif
       endif
 !
@@ -2853,16 +2866,15 @@ module Density
 !
 !   14-oct-25/TP: carved from dlnrho_dt 
 !
-      real, dimension(nx) :: advec_hypermesh_rho
 !
       if (lupdate_courant_dt) then
         if (ldynamical_diffusion) then
           diffus_diffrho3 = diffus_diffrho3 + diffrho_hyper3_mesh
-          advec_hypermesh_rho=0.
+          q%advec_hypermesh_rho=0.
         else
-          advec_hypermesh_rho=diffrho_hyper3_mesh*pi5_1*sqrt(dxyz_2)
+          q%advec_hypermesh_rho=diffrho_hyper3_mesh*pi5_1*sqrt(dxyz_2)
         endif
-        advec2_hypermesh=advec2_hypermesh+advec_hypermesh_rho**2
+        advec2_hypermesh=advec2_hypermesh+q%advec_hypermesh_rho**2
       endif
 !
     endsubroutine calc_advec_hypermesh
@@ -3454,7 +3466,6 @@ module Density
       real, contiguous, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
 !
-      real, dimension (nx) :: uzmask
 !
       if (l1davgfirst) then
 !
@@ -3480,26 +3491,26 @@ module Density
         endif
         if (idiag_rhoupmz/=0 .or. idiag_rho2upmz/=0 .or. idiag_rhof2upmz/=0) then
           where (p%uu(:,3) > 0.)
-            uzmask = 1
+            q%uzmask = 1
           elsewhere
-            uzmask=0.
+            q%uzmask=0.
           endwhere
-          call xysum_mn_name_z(uzmask*p%rho,idiag_rhoupmz)
-          call xysum_mn_name_z(uzmask*p%rho**2,idiag_rho2upmz)
+          call xysum_mn_name_z(q%uzmask*p%rho,idiag_rhoupmz)
+          call xysum_mn_name_z(q%uzmask*p%rho**2,idiag_rho2upmz)
           if (lrho_flucz_as_aux) then
-            if (idiag_rhof2upmz/=0) call xysum_mn_name_z(uzmask*f(l1:l2,m,n,irho_flucz)**2,idiag_rhof2upmz)
+            if (idiag_rhof2upmz/=0) call xysum_mn_name_z(q%uzmask*f(l1:l2,m,n,irho_flucz)**2,idiag_rhof2upmz)
           endif
         endif
         if (idiag_rhodownmz/=0 .or. idiag_rho2downmz/=0 .or. idiag_rhof2downmz/=0) then
           where (p%uu(:,3) < 0.)
-            uzmask = 1
+            q%uzmask = 1
           elsewhere
-            uzmask=0.
+            q%uzmask=0.
           endwhere
-          call xysum_mn_name_z(uzmask*p%rho,idiag_rhodownmz)
-          call xysum_mn_name_z(uzmask*p%rho**2,idiag_rho2downmz)
+          call xysum_mn_name_z(q%uzmask*p%rho,idiag_rhodownmz)
+          call xysum_mn_name_z(q%uzmask*p%rho**2,idiag_rho2downmz)
           if (lrho_flucz_as_aux) then
-            if (idiag_rhof2downmz/=0) call xysum_mn_name_z(uzmask*f(l1:l2,m,n,irho_flucz)**2,idiag_rhof2downmz)
+            if (idiag_rhof2downmz/=0) call xysum_mn_name_z(q%uzmask*f(l1:l2,m,n,irho_flucz)**2,idiag_rhof2downmz)
           endif
         endif
       endif
@@ -3521,7 +3532,6 @@ module Density
       type(pencil_case) :: p
 !
       real, dimension(nx), parameter :: unitpencil=1.
-      real, dimension(nx) :: tmp, rmask
 !
 !  The inertiaxx - inertiazz terms are needed for computing the star's
 !  quadrupole moment, relevant for the Applegate mechanism; see
@@ -3539,14 +3549,14 @@ module Density
         if (idiag_inertiaxx_car/=0 .or. idiag_inertiayy_car/=0 .or. &
             idiag_inertiazz_car/=0 .or. idiag_sphmass/=0) then
           where (p%r_mn <= radius_diag)
-            rmask = 1.
+            q%rmask = 1.
           elsewhere
-            rmask = 0.
+            q%rmask = 0.
           endwhere
-          if (idiag_inertiaxx_car/=0) call integrate_mn_name(rmask*p%rho*x(l1:l2)**2,idiag_inertiaxx_car)
-          if (idiag_inertiayy_car/=0) call integrate_mn_name(rmask*p%rho*y(m)**2,idiag_inertiayy_car)
-          if (idiag_inertiazz_car/=0) call integrate_mn_name(rmask*p%rho*z(n)**2,idiag_inertiazz_car)
-          if (idiag_sphmass/=0) call integrate_mn_name(rmask*p%rho,idiag_sphmass)
+          if (idiag_inertiaxx_car/=0) call integrate_mn_name(q%rmask*p%rho*x(l1:l2)**2,idiag_inertiaxx_car)
+          if (idiag_inertiayy_car/=0) call integrate_mn_name(q%rmask*p%rho*y(m)**2,idiag_inertiayy_car)
+          if (idiag_inertiazz_car/=0) call integrate_mn_name(q%rmask*p%rho*z(n)**2,idiag_inertiazz_car)
+          if (idiag_sphmass/=0) call integrate_mn_name(q%rmask*p%rho,idiag_sphmass)
         endif
         call integrate_mn_name(unitpencil,idiag_vol)
 
@@ -3573,8 +3583,8 @@ module Density
           if (idiag_dtd3/=0) call max_mn_name(diffus_diffrho3/cdtv3,idiag_dtd3,l_dt=.true.)
         endif
         if (idiag_grhomax/=0) then
-          call dot2(p%grho,tmp); tmp=sqrt(tmp)
-          call max_mn_name(tmp,idiag_grhomax)
+          call dot2(p%grho,q%tmp); q%tmp=sqrt(q%tmp)
+          call max_mn_name(q%tmp,idiag_grhomax)
         endif
         !if (idiag_kap_tdep/=0) call sum_mn_name(spread(kap_tdep,1,nx),idiag_kap_tdep)
         !if (lroot) call save_name(kap_tdep,idiag_kap_tdep)
