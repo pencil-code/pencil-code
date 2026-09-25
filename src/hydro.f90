@@ -211,7 +211,9 @@ module Hydro
   logical, pointer :: lffree
   logical :: lreflecteddy=.false.,louinit=.false.
   logical :: lskip_projection=.false.
-  logical, target :: lconservative=.false., lrelativistic=.false.
+  logical, target :: lconservative=.false., !PAR_DOC: Do we solve the momentum equation in conservative form or not.
+    !PAR_DOC: The primitive variable becomes momentum or in the relativistic case T^{0i}.
+  logical, target: lrelativistic=.false. !PAR_DOC: Do we keep relativistic terms proportional to gamma^2.
   logical, target :: lconservative_pressure_on_rhs=.false.
   logical :: lT00_total = .true., lT0i_total = .true., lT0mu_total = .true.
   logical, pointer :: lrelativistic_eos, lrelativistic_eos_corr
@@ -220,15 +222,15 @@ module Hydro
   logical :: lhiggsless=.false., lhiggsless_old=.false., lvel_limiter=.false.
   logical :: lalfven_relativistic=.true.
 !  Kurganov-Tadmor flux-limited transport (see kt_transport.f90); runtime-off by default.
-  logical :: lkt_transport=.false.
+  logical :: lkt_transport=.false. !PAR_DOC: Do we use Kurganov-Tadmor flux-limited transport.
   real :: kt_theta=2.0
-!  Cell-level admissibility projection of the conserved (K0,K^i) state (opt-in,
-!  off by default; cf. project_admissible in kt_transport.f90): floor the fluid
-!  energy K0-eps to a positive value and rescale the momentum so |K^i| <=
-!  a subluminal value. For non-Higgsless relativistic hydro, eps=0 and the same
-!  projection applies directly to K0.
-!  Fixes the multibubble superluminal blow-up (the gamma-clip in
-!  hydro_after_boundary_conservative caps gamma but never rescales K^i).
+  !PAR_DOC: Cell-level admissibility projection of the conserved (K0,K^i) state (opt-in,
+  !PAR_DOC: off by default; cf. project_admissible in kt_transport.f90): floor the fluid
+  !PAR_DOC: energy K0-eps to a positive value and rescale the momentum so |K^i| <=
+  !PAR_DOC: a subluminal value. For non-Higgsless relativistic hydro, eps=0 and the same
+  !PAR_DOC: projection applies directly to K0.
+  !PAR_DOC: Fixes the multibubble superluminal blow-up (the gamma-clip in
+  !PAR_DOC: hydro_after_boundary_conservative caps gamma but never rescales K^i).
   logical :: lproject_admissible=.false.
   logical :: lsqrt_qirro_uu=.false., lset_uz_zero=.false.
   logical :: lnorm_vw_hless=.false.
