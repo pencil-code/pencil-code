@@ -57,12 +57,12 @@ module Energy
 !  subroutines they call. 
 !  Done to avoid large stack arrays.
 !
-  type :: TmpInternalPencils
+  type :: EneTmpInternalPencils
     real, dimension(nx) :: lorentz_gamma_inv2 = 1.
     real, dimension(nx) :: ufpres
-  end type TmpInternalPencils
+  end type EneTmpInternalPencils
 
-  type(TmpInternalPencils) :: q
+  type(EneTmpInternalPencils) :: q
   !$omp threadprivate(q)
 !
   contains

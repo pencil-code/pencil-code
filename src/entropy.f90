@@ -545,7 +545,7 @@ module Energy
 !  subroutines they call.
 !  Done to avoid large arrays on stack.
 !
-  type :: TmpInternalPencils
+  type :: EneTmpInternalPencils
     real, dimension(nx) :: ufpres, glnTT2, Ktmp
     real, dimension(nx) :: gT2, gs2, gTxgso, gTxgs2, chix
     real, dimension(nx) :: uzmask, gTT2
@@ -558,9 +558,9 @@ module Energy
     real, dimension(nx,3) :: gradchit_prof
     real, dimension(nx,3) :: glnThcond, glhc
     real, dimension(nx,3,3) :: tmp33
-  end type TmpInternalPencils
+  end type EneTmpInternalPencils
 
-  type(TmpInternalPencils) :: q
+  type(EneTmpInternalPencils) :: q
   !$omp threadprivate(q)
 
   contains
