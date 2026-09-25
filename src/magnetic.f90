@@ -1193,6 +1193,38 @@ module Magnetic
 
   logical :: lrelaxprof_glob_scaled
   logical :: lnonzero_eta = .false.
+!
+!  Structure holding the former nx-sized temporary ("tmp") pencil arrays
+!  used across calc_pencils_magnetic_std/_pencpar, calc_diagnostics_magnetic,
+!  and the subroutines they call. 
+!  Done to avoid stack arrays which become too large when using large subdomains with GPUs.
+!
+  type :: TmpInternalPencils
+    real, dimension(nx) :: rho1_jxb, quench, StokesI_ncr, tmp1, bbgb, va2max_beta, sign_jo
+    real, dimension(nx) :: Eabs, Babs
+    real, dimension(nx) :: chi_diamag
+    real, dimension(nx) :: prof, eta_r
+    real, dimension(nx) :: tmp2, prof0, prof1, derprof0, derprof1
+    real, dimension(nx) :: uxj_dotB0, b3b21, b3b12, b1b32, b1b23, b2b13, b2b31
+    real, dimension(nx) :: jxb_dotB0, jxbrq, uxb_dotB0, gLama, gLamb
+    real, dimension(nx) :: oxuxb_dotB0, jxbxb_dotB0, uxDxuxb_dotB0
+    real, dimension(nx) :: aj, tmp0d, fres2
+    real, dimension(nx) :: B1dot_glnrhoxb, fb, fxbx
+    real, dimension(nx) :: b2t, bjt, jbt, ubt, but, ujt, jut
+    real, dimension(nx) :: phi, dub, dob, jdel2a, epsAD
+    real, dimension(nx) :: rmask
+    real, dimension(nx) :: Rmmz, bdel2a
+    real, dimension(nx) :: FHx, FHz, FCz
+    real, dimension(nx,3) :: tmp, gchi_diamag, jj_diamag
+    real, dimension(nx,3) :: uxbxb, poynting
+    real, dimension(nx,3) :: exj, dexb, phib, jxbb, uxDxuxb, tmpv
+    real, dimension(nx,3) :: tmp2_2d
+    real, dimension(nx,3) :: ee
+    real, dimension(nx,3,3) :: bhatij
+  end type TmpInternalPencils
+
+  type(TmpInternalPencils) :: q
+  !$omp threadprivate(q)
 
   contains
 !***********************************************************************
@@ -4181,7 +4213,6 @@ module Magnetic
       real, contiguous, dimension(:,:,:,:), intent(in) :: f
       type(pencil_case), intent(in) :: p
 
-      real, dimension (nx) :: Eabs, Babs
       real :: Eaver, Baver !, b2m
 
       select case (tdep_eta_type)
@@ -4262,21 +4293,21 @@ module Magnetic
 !
         case ('mean-field-local')
           if (iex>0) then
-            Eabs=sqrt(f(l1:l2,m,n,iex)**2+f(l1:l2,m,n,iey)**2+f(l1:l2,m,n,iez)**2)
+            q%Eabs=sqrt(f(l1:l2,m,n,iex)**2+f(l1:l2,m,n,iey)**2+f(l1:l2,m,n,iez)**2)
           else
             call fatal_error('get_eta_t_and_xtdep','electric field must be computed')
           endif
-          Babs=sqrt(p%b2)
+          q%Babs=sqrt(p%b2)
 !
 !  Note that for Babs=0, eta_xtdep=0
 !
-        where (Eabs<tini)
+        where (q%Eabs<tini)
           eta_xtdep=eta_huge
         elsewhere
-          where (Babs<tini)
-            eta_xtdep=6.*pi**3*Hscript/echarge**3/Eabs
+          where (q%Babs<tini)
+            eta_xtdep=6.*pi**3*Hscript/echarge**3/q%Eabs
           elsewhere
-            eta_xtdep=6.*pi**2*Hscript/echarge**3*tanh(pi*Babs/Eabs)/Babs
+            eta_xtdep=6.*pi**2*Hscript/echarge**3*tanh(pi*q%Babs/q%Eabs)/q%Babs
           endwhere
         endwhere
           case default
@@ -4304,10 +4335,7 @@ module Magnetic
       type (pencil_case),                 intent(out)  :: p
       logical, dimension(:),              intent(in)   :: lpenc_loc
 !
-      real, dimension (nx,3) :: tmp ! currently unused: bb_ext_pot
-      real, dimension (nx) :: rho1_jxb, quench, StokesI_ncr, tmp1, bbgb, va2max_beta
       real, dimension(3) :: B_ext, j_ext
-      real, dimension(nx) :: sign_jo
       real :: c,s
       integer :: i, j, ix
 
@@ -4443,14 +4471,14 @@ module Magnetic
       endif
 ! bunit
       if (lpenc_loc(i_bunit)) then
-        quench = 1.0/max(tini,sqrt(p%b2))
+        q%quench = 1.0/max(tini,sqrt(p%b2))
         if (lignore_Bext_in_b2 .or. (.not.luse_Bext_in_b2) ) then
           do j=1,3
-            p%bunit(:,j) = p%bbb(:,j)*quench
+            p%bunit(:,j) = p%bbb(:,j)*q%quench
           enddo
         else
           do j=1,3
-            p%bunit(:,j) = p%bb(:,j)*quench
+            p%bunit(:,j) = p%bb(:,j)*q%quench
           enddo
         endif
       endif
@@ -4476,8 +4504,8 @@ module Magnetic
         do j=1,3
           ! This is calling scalar h_dot_grad, that does not add
           ! the inertial terms. They will be added here.
-          tmp = p%aij(:,j,:)
-          call h_dot_grad(p%uu_advec,tmp,p%uuadvec_gaa(:,j))
+          q%tmp = p%aij(:,j,:)
+          call h_dot_grad(p%uu_advec,q%tmp,p%uuadvec_gaa(:,j))
         enddo
         if (lcylindrical_coords) then
           p%uuadvec_gaa(:,1) = p%uuadvec_gaa(:,1) - rcyl_mn1*p%uu(:,2)*p%aa(:,2)
@@ -4753,9 +4781,9 @@ module Magnetic
 !
           if (lJ_ext) then
             if (J_ext_quench/=0) then
-              quench=1./(1.+J_ext_quench*p%b2)
+              q%quench=1./(1.+J_ext_quench*p%b2)
               do j=1,3
-                p%jj(:,j)=p%jj(:,j)-J_ext(j)*quench
+                p%jj(:,j)=p%jj(:,j)-J_ext(j)*q%quench
               enddo
             else
               do j=1,3
@@ -4772,9 +4800,9 @@ module Magnetic
 ! exatotal
       if (lpenc_loc(i_exatotal)) then
         do j=1,3
-           tmp(:,j) = eta_total*p%jj(:,j)
+           q%tmp(:,j) = eta_total*p%jj(:,j)
         enddo
-        call cross_mn(-p%uxb+tmp,p%aa,p%exatotal)
+        call cross_mn(-p%uxb+q%tmp,p%aa,p%exatotal)
       endif
 ! j2
       if (lpenc_loc(i_j2)) call dot2_mn(p%jj,p%j2)
@@ -4875,24 +4903,24 @@ module Magnetic
       endif
 ! jxbr
       if (lpenc_loc(i_jxbr)) then
-        rho1_jxb=p%rho1
+        q%rho1_jxb=p%rho1
 !
 !  Set rhomin_jxb>0 in order to limit the jxb term at very low densities.
 !  Set va2max_jxb>0 in order to limit the jxb term at very high Alfven speeds.
 !  Set va2power_jxb to an integer value in order to specify the power of the limiting term.
 !  To check whether scale factor is consistently applied at the end.
 !
-        if (rhomin_jxb>0) rho1_jxb=min(rho1_jxb,1/rhomin_jxb)
+        if (rhomin_jxb>0) q%rho1_jxb=min(q%rho1_jxb,1/rhomin_jxb)
         if (va2max_jxb>0 .and. (.not. (betamin_jxb>0))) &
-          rho1_jxb = rho1_jxb * (1+(p%va2/va2max_jxb)**va2power_jxb)**(-1.0/va2power_jxb)
+          q%rho1_jxb = q%rho1_jxb * (1+(p%va2/va2max_jxb)**va2power_jxb)**(-1.0/va2power_jxb)
 
         if (betamin_jxb>0) then
-          va2max_beta = p%cs2/betamin_jxb*2.0*gamma1
-          if (va2max_jxb > 0) va2max_beta=min(va2max_beta,va2max_jxb)
-          rho1_jxb = rho1_jxb * (1.+(p%va2/va2max_beta)**va2power_jxb)**(-1.0/va2power_jxb)
+          q%va2max_beta = p%cs2/betamin_jxb*2.0*gamma1
+          if (va2max_jxb > 0) q%va2max_beta=min(q%va2max_beta,va2max_jxb)
+          q%rho1_jxb = q%rho1_jxb * (1.+(p%va2/q%va2max_beta)**va2power_jxb)**(-1.0/va2power_jxb)
         endif
         !MR: Why no Boris correction here? See calc of advec_va2 below!
-        call multsv_mn(rho1_jxb,p%jxb,p%jxbr)
+        call multsv_mn(q%rho1_jxb,p%jxb,p%jxbr)
       endif
 ! jxbr2
       if (lpenc_loc(i_jxbr2)) call dot2_mn(p%jxbr,p%jxbr2)
@@ -4934,17 +4962,17 @@ module Magnetic
 ! StokesQ, StokesU, StokesQ1, and StokesU1
 !
       if (lncr_correlated) then
-        StokesI_ncr=p%StokesI*p%b2
-        if (lpenc_loc(i_StokesQ)) p%StokesQ=-StokesI_ncr*cos(2.*p%chibp)
-        if (lpenc_loc(i_StokesU)) p%StokesU=-StokesI_ncr*sin(2.*p%chibp)
-        if (lpenc_loc(i_StokesQ1)) p%StokesQ1=+StokesI_ncr*sin(2.*p%chibp)*p%bb(:,3)
-        if (lpenc_loc(i_StokesU1)) p%StokesU1=-StokesI_ncr*cos(2.*p%chibp)*p%bb(:,3)
+        q%StokesI_ncr=p%StokesI*p%b2
+        if (lpenc_loc(i_StokesQ)) p%StokesQ=-q%StokesI_ncr*cos(2.*p%chibp)
+        if (lpenc_loc(i_StokesU)) p%StokesU=-q%StokesI_ncr*sin(2.*p%chibp)
+        if (lpenc_loc(i_StokesQ1)) p%StokesQ1=+q%StokesI_ncr*sin(2.*p%chibp)*p%bb(:,3)
+        if (lpenc_loc(i_StokesU1)) p%StokesU1=-q%StokesI_ncr*cos(2.*p%chibp)*p%bb(:,3)
       elseif (lncr_anticorrelated) then
-        StokesI_ncr=p%StokesI/(1.+ncr_quench*p%b2)
-        if (lpenc_loc(i_StokesQ)) p%StokesQ=-StokesI_ncr*cos(2.*p%chibp)
-        if (lpenc_loc(i_StokesU)) p%StokesU=-StokesI_ncr*sin(2.*p%chibp)
-        if (lpenc_loc(i_StokesQ1)) p%StokesQ1=+StokesI_ncr*sin(2.*p%chibp)*p%bb(:,3)
-        if (lpenc_loc(i_StokesU1)) p%StokesU1=-StokesI_ncr*cos(2.*p%chibp)*p%bb(:,3)
+        q%StokesI_ncr=p%StokesI/(1.+ncr_quench*p%b2)
+        if (lpenc_loc(i_StokesQ)) p%StokesQ=-q%StokesI_ncr*cos(2.*p%chibp)
+        if (lpenc_loc(i_StokesU)) p%StokesU=-q%StokesI_ncr*sin(2.*p%chibp)
+        if (lpenc_loc(i_StokesQ1)) p%StokesQ1=+q%StokesI_ncr*sin(2.*p%chibp)*p%bb(:,3)
+        if (lpenc_loc(i_StokesU1)) p%StokesU1=-q%StokesI_ncr*cos(2.*p%chibp)*p%bb(:,3)
       else
         if (lpenc_loc(i_StokesQ)) p%StokesQ=-p%StokesI*cos(2.*p%chibp)
         if (lpenc_loc(i_StokesU)) p%StokesU=-p%StokesI*sin(2.*p%chibp)
@@ -4987,8 +5015,8 @@ module Magnetic
 ! bgbp
 !
       if (lpenc_loc(i_bgbp)) then
-        call dot_mn(p%bb,p%bgb,bbgb)
-        call multsv(bbgb*p%b21,p%bb,p%bgbp)
+        call dot_mn(p%bb,p%bgb,q%bbgb)
+        call multsv(q%bbgb*p%b21,p%bb,p%bgbp)
       endif
 !
 ! u.(B.gradB)
@@ -5055,9 +5083,9 @@ module Magnetic
       if (lpenc_loc(i_ss12)) p%ss12=sqrt(abs(p%sj))
 ! vmagfric
       if (lpenc_loc(i_vmagfric).and.numag/=0.0) then
-        tmp1=real(mu01/(numag*(B0_magfric/unit_magnetic**2+p%b2)))
+        q%tmp1=real(mu01/(numag*(B0_magfric/unit_magnetic**2+p%b2)))
         do i=1,3
-          p%vmagfric(:,i)=abs(p%jxb(:,i))*tmp1
+          p%vmagfric(:,i)=abs(p%jxb(:,i))*q%tmp1
         enddo
       endif
 ! Lam
@@ -5140,11 +5168,11 @@ module Magnetic
       endif
 
       if (lresi_smagorinsky_cross) then
-        sign_jo=1.
+        q%sign_jo=1.
         do i=1,nx
-          if (p%jo(i) < 0) sign_jo(i)=-1.
+          if (p%jo(i) < 0) q%sign_jo(i)=-1.
         enddo
-        eta_smag=(D_smag*dxmax)**2.*sign_jo*sqrt(p%jo*sign_jo)
+        eta_smag=(D_smag*dxmax)**2.*q%sign_jo*sqrt(p%jo*q%sign_jo)
       endif
 
       if (((lresi_smagorinsky .or. lresi_smagorinsky_nusmag .or. lresi_smagorinsky_cross))) eta_total = eta_total + eta_smag
@@ -5165,28 +5193,28 @@ module Magnetic
 !
       if (lupdate_courant_dt) then
         if (lhydro.and.(.not.lkinematic).and.llorentzforce) then
-          rho1_jxb=p%rho1
-          if (rhomin_jxb>0) rho1_jxb=min(rho1_jxb,1/rhomin_jxb)
+          q%rho1_jxb=p%rho1
+          if (rhomin_jxb>0) q%rho1_jxb=min(q%rho1_jxb,1/rhomin_jxb)
           if (va2max_jxb>0 .and. (.not. (betamin_jxb>0))) &
-            rho1_jxb = rho1_jxb * (1+(p%va2/va2max_jxb)**va2power_jxb)**(-1.0/va2power_jxb)
+            q%rho1_jxb = q%rho1_jxb * (1+(p%va2/va2max_jxb)**va2power_jxb)**(-1.0/va2power_jxb)
 
           if (betamin_jxb>0) then
-            va2max_beta = p%cs2/betamin_jxb*2.0*gamma1
-            if (va2max_jxb > 0) va2max_beta=min(va2max_beta,va2max_jxb)
-            rho1_jxb = rho1_jxb * (1+(p%va2/va2max_beta)**va2power_jxb)**(-1.0/va2power_jxb)
+            q%va2max_beta = p%cs2/betamin_jxb*2.0*gamma1
+            if (va2max_jxb > 0) q%va2max_beta=min(q%va2max_beta,va2max_jxb)
+            q%rho1_jxb = q%rho1_jxb * (1+(p%va2/q%va2max_beta)**va2power_jxb)**(-1.0/va2power_jxb)
           endif
           if (lboris_correction) then
-            if (va2max_boris>0) rho1_jxb = rho1_jxb * (1+(p%va2/va2max_boris)**2.)**(-0.5)
-            if (cmin>0)         rho1_jxb = rho1_jxb * (1+(p%va2/p%clight2)**2.)**(-0.5)
+            if (va2max_boris>0) q%rho1_jxb = q%rho1_jxb * (1+(p%va2/va2max_boris)**2.)**(-0.5)
+            if (cmin>0)         q%rho1_jxb = q%rho1_jxb * (1+(p%va2/p%clight2)**2.)**(-0.5)
           endif
 !
 !  Compute Alfven timestep constraint. Take scale factor (=1 by default) into account.
 !  In general, the ascale factor is given by ascale**(2*nconformal-3).
 !
           if (ascale==1.) then
-            p%advec_va2=sum((p%bb*dline_1)**2,2)*mu01*rho1_jxb
+            p%advec_va2=sum((p%bb*dline_1)**2,2)*mu01*q%rho1_jxb
           else
-            p%advec_va2=ascale**(2.*nconformal-3.)*sum((p%bb*dline_1)**2,2)*mu01*rho1_jxb
+            p%advec_va2=ascale**(2.*nconformal-3.)*sum((p%bb*dline_1)**2,2)*mu01*q%rho1_jxb
           endif
         else
           p%advec_va2=0.
@@ -5223,8 +5251,8 @@ module Magnetic
         endif
         advec2=advec2+p%advec_va2
         if (lmagneto_friction) then
-          call dot2(p%vmagfric,tmp1)
-          advec2=advec2 + tmp1
+          call dot2(p%vmagfric,q%tmp1)
+          advec2=advec2 + q%tmp1
         endif
 !
       endif
@@ -5274,29 +5302,27 @@ module Magnetic
 !
       use Sub
 !
-      real, dimension (nx) :: chi_diamag
-      real, dimension (nx,3) :: gchi_diamag, jj_diamag, tmp
       type (pencil_case) :: p
 !
       intent(inout)  :: p
 !
 !  cmpute chi, and gradchi
 !
-      chi_diamag=B2_diamag/p%b2
+      q%chi_diamag=B2_diamag/p%b2
 !
 !  Add (1/2)*grad[qp*B^2]. This initializes p%jxb_mf.
 !
    !  call multmv_transp(p%bij,p%bb,Bk_Bki) !=1/2 grad B^2
    !  call multsv(-.5*chi_diamag/p%b2,Bk_Bki,gchi_diamag)
    !AB: now outsourced p%gb22 = grad(B^2/2)
-      call multsv(chi_diamag/p%b2,p%gb22,gchi_diamag)
-      call cross(gchi_diamag,p%bb,jj_diamag)
-      call multsv_add(jj_diamag,chi_diamag,p%jj,tmp)
-      jj_diamag=tmp
+      call multsv(q%chi_diamag/p%b2,p%gb22,q%gchi_diamag)
+      call cross(q%gchi_diamag,p%bb,q%jj_diamag)
+      call multsv_add(q%jj_diamag,q%chi_diamag,p%jj,q%tmp)
+      q%jj_diamag=q%tmp
 !
 !  update current density
 !
-      p%jj=p%jj+jj_diamag
+      p%jj=p%jj+q%jj_diamag
 !
     endsubroutine diamagnetism
 !***********************************************************************
@@ -6675,7 +6701,6 @@ print*,'AXEL2: should not be here (eta) ... '
       type(pencil_case) :: p
 
       integer :: isound,lspoint,mspoint,nspoint,j
-      real, dimension (nx,3) :: uxbxb,poynting
 
       call calc_diagnostic_auxiliaries_magnetic(f,p)
 !
@@ -6743,11 +6768,11 @@ print*,'AXEL2: should not be here (eta) ... '
         if (ivid_beta1/=0) call store_slices(p%beta1,beta1_xy,beta1_xz,beta1_yz,beta1_xy2, &
                                              beta1_xy3,beta1_xy4,beta1_xz2,beta1_r)
         if (ivid_poynting/=0) then
-          call cross(p%uxb,p%bb,uxbxb)
+          call cross(p%uxb,p%bb,q%uxbxb)
           do j=1,3
-            poynting(:,j) = eta_total*p%jxb(:,j) - mu01*uxbxb(:,j)
+            q%poynting(:,j) = eta_total*p%jxb(:,j) - mu01*q%uxbxb(:,j)
           enddo
-          call store_slices(poynting,poynting_xy,poynting_xz,poynting_yz, &
+          call store_slices(q%poynting,poynting_xy,poynting_xz,poynting_yz, &
                             poynting_xy2,poynting_xy3,poynting_xy4,poynting_xz2,poynting_r)
         endif
 !
@@ -6769,16 +6794,6 @@ print*,'AXEL2: should not be here (eta) ... '
       real, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
 
-      real, dimension (nx,3,3) :: bhatij
-      real, dimension (nx,3) :: exj, dexb, phib, jxbb, uxDxuxb, tmpv
-      real, dimension (nx) :: uxj_dotB0,b3b21,b3b12,b1b32,b1b23,b2b13,b2b31
-      real, dimension (nx) :: jxb_dotB0,jxbrq,uxb_dotB0, gLama, gLamb
-      real, dimension (nx) :: oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
-      real, dimension (nx) :: aj, tmp, tmp1, fres2
-      real, dimension (nx) :: B1dot_glnrhoxb,fb,fxbx
-      real, dimension (nx) :: b2t,bjt,jbt,ubt,but,ujt,jut
-      real, dimension (nx) :: phi,dub,dob,jdel2a,epsAD
-      real, dimension (nx) :: rmask, quench
 
       call sum_mn_name(p%beta1,idiag_beta1m)
       call max_mn_name(p%beta1,idiag_beta1max)
@@ -6808,59 +6823,59 @@ print*,'AXEL2: should not be here (eta) ... '
         endif
 
         if (idiag_Bresrms/=0 .or. idiag_Rmrms/=0) then
-          call dot2_mn(fres,fres2)
-          call sum_mn_name(fres2,idiag_Bresrms,lsqrt=.true.)
-          if (idiag_Rmrms/=0) call sum_mn_name(p%uxb2/fres2,idiag_Rmrms,lsqrt=.true.)
+          call dot2_mn(fres,q%fres2)
+          call sum_mn_name(q%fres2,idiag_Bresrms,lsqrt=.true.)
+          if (idiag_Rmrms/=0) call sum_mn_name(p%uxb2/q%fres2,idiag_Rmrms,lsqrt=.true.)
         endif
       endif
 !
 !  Integrate velocity in time, to calculate correlation time later.
 !
       if (idiag_b2tm/=0) then
-        call dot(p%bb,f(l1:l2,m,n,ibxt:ibzt),b2t)
-        call sum_mn_name(b2t,idiag_b2tm)
+        call dot(p%bb,f(l1:l2,m,n,ibxt:ibzt),q%b2t)
+        call sum_mn_name(q%b2t,idiag_b2tm)
       endif
 !
 !  Integrate magnetic field in time, dotted with current density, to calculate correlation time later.
 !
       if (idiag_jbtm/=0) then
-        call dot(p%jj,f(l1:l2,m,n,ibxt:ibzt),jbt)
-        call sum_mn_name(jbt,idiag_jbtm)
+        call dot(p%jj,f(l1:l2,m,n,ibxt:ibzt),q%jbt)
+        call sum_mn_name(q%jbt,idiag_jbtm)
       endif
 !
 !  Integrate velocity in time, to calculate correlation time later.
 !
       if (idiag_bjtm/=0) then
-        call dot(p%bb,f(l1:l2,m,n,ijxt:ijzt),bjt)
-        call sum_mn_name(bjt,idiag_bjtm)
+        call dot(p%bb,f(l1:l2,m,n,ijxt:ijzt),q%bjt)
+        call sum_mn_name(q%bjt,idiag_bjtm)
       endif
 !
 !  Integrate velocity in time, to calculate correlation time later.
 !
       if (idiag_jutm/=0) then
-        call dot(p%jj,f(l1:l2,m,n,iuxt:iuzt),jut)
-        call sum_mn_name(jut,idiag_jutm)
+        call dot(p%jj,f(l1:l2,m,n,iuxt:iuzt),q%jut)
+        call sum_mn_name(q%jut,idiag_jutm)
       endif
 !
 !  Integrate velocity in time, to calculate correlation time later.
 !
       if (idiag_ujtm/=0) then
-        call dot(p%uu,f(l1:l2,m,n,ijxt:ijzt),ujt)
-        call sum_mn_name(ujt,idiag_ujtm)
+        call dot(p%uu,f(l1:l2,m,n,ijxt:ijzt),q%ujt)
+        call sum_mn_name(q%ujt,idiag_ujtm)
       endif
 !
 !  Integrate velocity in time, to calculate correlation time later.
 !
       if (idiag_butm/=0) then
-        call dot(p%bb,f(l1:l2,m,n,iuxt:iuzt),but)
-        call sum_mn_name(but,idiag_butm)
+        call dot(p%bb,f(l1:l2,m,n,iuxt:iuzt),q%but)
+        call sum_mn_name(q%but,idiag_butm)
       endif
 !
 !  Integrate velocity in time, to calculate correlation time later.
 !
       if (idiag_ubtm/=0) then
-        call dot(p%uu,f(l1:l2,m,n,ibxt:ibzt),ubt)
-        call sum_mn_name(ubt,idiag_ubtm)
+        call dot(p%uu,f(l1:l2,m,n,ibxt:ibzt),q%ubt)
+        call sum_mn_name(q%ubt,idiag_ubtm)
       endif
 !
 !  Contributions to vertical Poynting vector. Consider them here
@@ -6916,17 +6931,17 @@ print*,'AXEL2: should not be here (eta) ... '
       if (idiag_aybym2/=0) call sum_mn_name(2.*p%aa(:,2)*p%bb(:,2),idiag_aybym2)
       call sum_mn_name(p%ab,idiag_abm)
       if (idiag_acbm/=0) then
-        call dot(f(l1:l2,m,n,iacoux:iacouz),p%bb,tmp)
-        call sum_mn_name(tmp,idiag_acbm)
+        call dot(f(l1:l2,m,n,iacoux:iacouz),p%bb,q%tmp0d)
+        call sum_mn_name(q%tmp0d,idiag_acbm)
       endif
       if (idiag_gLamam/=0) then
-        call dot(p%gLam,p%aa,gLama)
-        call sum_mn_name(gLama,idiag_gLamam)
+        call dot(p%gLam,p%aa,q%gLama)
+        call sum_mn_name(q%gLama,idiag_gLamam)
       endif
       if (idiag_gLambm/=0) then
         if (iLam/=0) then
-          call dot(p%gLam,p%bb,gLamb)
-          call sum_mn_name(gLamb,idiag_gLambm)
+          call dot(p%gLam,p%bb,q%gLamb)
+          call sum_mn_name(q%gLamb,idiag_gLambm)
         else
           call fatal_error('calc_0d_diagnostics_magnetic', 'Coulomb gauge is needed')
         endif
@@ -6939,16 +6954,16 @@ print*,'AXEL2: should not be here (eta) ... '
       if (idiag_abrms/=0) call sum_mn_name(p%ab**2,idiag_abrms,lsqrt=.true.)
       if (idiag_jbrms/=0) call sum_mn_name(p%jb**2,idiag_jbrms,lsqrt=.true.)
       if (idiag_jxbrms/=0) then
-        call dot2(p%jxb,tmp)
-        call sum_mn_name(tmp,idiag_jxbrms,lsqrt=.true.)
+        call dot2(p%jxb,q%tmp0d)
+        call sum_mn_name(q%tmp0d,idiag_jxbrms,lsqrt=.true.)
       endif
       if (idiag_b2sphm/=0) then
         where (p%r_mn <= radius_diag)
-          rmask = 1.
+          q%rmask = 1.
         elsewhere
-          rmask = 0.
+          q%rmask = 0.
         endwhere
-        call integrate_mn_name(rmask*p%b2,idiag_b2sphm)
+        call integrate_mn_name(q%rmask*p%b2,idiag_b2sphm)
       endif
 !
 !  Hemispheric magnetic helicity of total field.
@@ -6978,8 +6993,8 @@ print*,'AXEL2: should not be here (eta) ... '
 !  Mean dot product of forcing and magnetic field, <f.b>.
 !
       if (idiag_fbm/=0.and.lforcing_cont_aa) then
-        call dot(p%fcont(:,:,iforcing_cont_aa),p%bb,fb)
-        call sum_mn_name(fb,idiag_fbm)
+        call dot(p%fcont(:,:,iforcing_cont_aa),p%bb,q%fb)
+        call sum_mn_name(q%fb,idiag_fbm)
       endif
 !
 !         if (lpenc_loc(i_rho1gpp)) then
@@ -6990,8 +7005,8 @@ print*,'AXEL2: should not be here (eta) ... '
 !
       if (idiag_fxbxm/=0) then
         if (iforcing_cont_aa>0) then
-          fxbx=p%fcont(:,1,iforcing_cont_aa)*p%bb(:,1)
-          call sum_mn_name(fxbx,idiag_fxbxm)
+          q%fxbx=p%fcont(:,1,iforcing_cont_aa)*p%bb(:,1)
+          call sum_mn_name(q%fxbx,idiag_fxbxm)
         endif
       endif
 !
@@ -7037,15 +7052,15 @@ print*,'AXEL2: should not be here (eta) ... '
 !  compute rms value of difference between u and b    !!!MR: units?
 !
       if (idiag_dubrms/=0) then
-        call dot2(p%uu-p%bb,dub)
-        call sum_mn_name(dub,idiag_dubrms,lsqrt=.true.)
+        call dot2(p%uu-p%bb,q%dub)
+        call sum_mn_name(q%dub,idiag_dubrms,lsqrt=.true.)
       endif
 !
 !  compute rms value of difference between vorticity and b   !!!MR: units?
 !
       if (idiag_dobrms/=0) then
-        call dot2(p%oo-p%bb,dob)
-        call sum_mn_name(dob,idiag_dobrms,lsqrt=.true.)
+        call dot2(p%oo-p%bb,q%dob)
+        call sum_mn_name(q%dob,idiag_dobrms,lsqrt=.true.)
       endif
 !
 !  Field-velocity cross helicity (linkage between velocity and magnetic tubes).
@@ -7119,8 +7134,8 @@ print*,'AXEL2: should not be here (eta) ... '
       call sum_mn_name(p%jxbr(:,2),idiag_jxbrym)
       call sum_mn_name(p%jxbr(:,3),idiag_jxbrzm)
       if (idiag_jxbrqm/=0) then
-        call dot(p%curlo,p%jxbr,jxbrq)
-        call sum_mn_name(jxbrq,idiag_jxbrqm)
+        call dot(p%curlo,p%jxbr,q%jxbrq)
+        call sum_mn_name(q%jxbrq,idiag_jxbrqm)
       endif
       call sum_mn_name(p%jxbr2,idiag_jxbr2m)
       call max_mn_name(p%jxbr2,idiag_jxbrmax,lsqrt=.true.)
@@ -7128,8 +7143,8 @@ print*,'AXEL2: should not be here (eta) ... '
 !  <J.A> for calculating k_effective, for example.
 !
       if (idiag_ajm/=0) then
-        call dot(p%aa,p%jj,aj)
-        call sum_mn_name(aj,idiag_ajm)
+        call dot(p%aa,p%jj,q%aj)
+        call sum_mn_name(q%aj,idiag_ajm)
       endif
 !
 !  Helicity integrals.
@@ -7185,8 +7200,8 @@ print*,'AXEL2: should not be here (eta) ... '
 !
       if (idiag_epsAD/=0) then
         if (lambipolar_strong_coupling.and.tauAD/=0.0) then
-          call dot(p%jj,p%jxbxb,epsAD)
-          call sum_mn_name(-tauAD*epsAD,idiag_epsAD)
+          call dot(p%jj,p%jxbxb,q%epsAD)
+          call sum_mn_name(-tauAD*q%epsAD,idiag_epsAD)
         else
           call sum_mn_name(p%nu_ni1*p%rho*p%jxbr2,idiag_epsAD)
         endif
@@ -7222,8 +7237,8 @@ print*,'AXEL2: should not be here (eta) ... '
           .or. idiag_uxbcmx/=0 .or. idiag_uxbcmy/=0 &
           .or. idiag_uxbsmx/=0 .or. idiag_uxbsmy/=0 ) then
         if (idiag_uxbm/=0) then
-          call dot(B_ext_inv,p%uxb,uxb_dotB0)
-          call sum_mn_name(uxb_dotB0,idiag_uxbm)
+          call dot(B_ext_inv,p%uxb,q%uxb_dotB0)
+          call sum_mn_name(q%uxb_dotB0,idiag_uxbm)
         endif
         call sum_mn_name(p%uxbb(:,1),idiag_uxbmx)
         call sum_mn_name(p%uxbb(:,2),idiag_uxbmy)
@@ -7262,25 +7277,25 @@ print*,'AXEL2: should not be here (eta) ... '
 !
       if (idiag_phibmx/=0 .or. idiag_phibmy/=0 .or. idiag_phibmz/=0) then
         if (lweyl_gauge) then
-          phi=0.
+          q%phi=0.
         elseif (ladvective_gauge) then
-          phi=p%ua
+          q%phi=p%ua
         else
-          phi=eta*p%diva
+          q%phi=eta*p%diva
         endif
-        call multvs(p%bb,phi,phib)
-        call sum_mn_name(phib(:,1),idiag_phibmx)
-        call sum_mn_name(phib(:,2),idiag_phibmy)
-        call sum_mn_name(phib(:,3),idiag_phibmz)
+        call multvs(p%bb,q%phi,q%phib)
+        call sum_mn_name(q%phib(:,1),idiag_phibmx)
+        call sum_mn_name(q%phib(:,2),idiag_phibmy)
+        call sum_mn_name(q%phib(:,3),idiag_phibmz)
       endif
 !
 !  Calculate part I of current helicity flux (for imposed field).
 !
       if (idiag_exjmx/=0 .or. idiag_exjmy/=0 .or. idiag_exjmz/=0) then
-        call cross_mn(-p%uxb+eta*p%jj,p%jj,exj)
-        call sum_mn_name(exj(:,1),idiag_exjmx)
-        call sum_mn_name(exj(:,2),idiag_exjmy)
-        call sum_mn_name(exj(:,3),idiag_exjmz)
+        call cross_mn(-p%uxb+eta*p%jj,p%jj,q%exj)
+        call sum_mn_name(q%exj(:,1),idiag_exjmx)
+        call sum_mn_name(q%exj(:,2),idiag_exjmy)
+        call sum_mn_name(q%exj(:,3),idiag_exjmz)
       endif
 !
 !  Calculate part II of current helicity flux (for imposed field).
@@ -7288,17 +7303,17 @@ print*,'AXEL2: should not be here (eta) ... '
 !  Use the full B (with B_ext)
 !
       if (idiag_dexbmx/=0 .or. idiag_dexbmy/=0 .or. idiag_dexbmz/=0) then
-        call multmv_transp(p%bij,-p%uxb+eta*p%jj,dexb)
-        call sum_mn_name(dexb(:,1),idiag_dexbmx)
-        call sum_mn_name(dexb(:,2),idiag_dexbmy)
-        call sum_mn_name(dexb(:,3),idiag_dexbmz)
+        call multmv_transp(p%bij,-p%uxb+eta*p%jj,q%dexb)
+        call sum_mn_name(q%dexb(:,1),idiag_dexbmx)
+        call sum_mn_name(q%dexb(:,2),idiag_dexbmy)
+        call sum_mn_name(q%dexb(:,3),idiag_dexbmz)
       endif
 !
 !  Calculate <uxj>.B0/B0^2.
 !
       if (idiag_uxjm/=0) then
-        call dot(B_ext_inv,p%uxj,uxj_dotB0)
-        call sum_mn_name(uxj_dotB0,idiag_uxjm)
+        call dot(B_ext_inv,p%uxj,q%uxj_dotB0)
+        call sum_mn_name(q%uxj_dotB0,idiag_uxjm)
       endif
 !
 !  Calculate <u x B>_rms, <resistive terms>_rms, <ratio ~ Rm>_rms.
@@ -7313,31 +7328,31 @@ print*,'AXEL2: should not be here (eta) ... '
 !  Calculate <J.del2a>.
 !
       if (idiag_jdel2am/=0) then
-        call dot(p%jj,p%del2a,jdel2a)
-        call sum_mn_name(jdel2a,idiag_jdel2am)
+        call dot(p%jj,p%del2a,q%jdel2a)
+        call sum_mn_name(q%jdel2a,idiag_jdel2am)
       endif
 !
 !  Calculate WL2D = <JiujAij>.
 !
       if (idiag_WL2D/=0) then
-        call dot(p%jj,p%uga,tmp)
-        call sum_mn_name(tmp,idiag_WL2D)
+        call dot(p%jj,p%uga,q%tmp0d)
+        call sum_mn_name(q%tmp0d,idiag_WL2D)
       endif
 !
 !  Calculate WL3D = -<JiujAji>.
 !
       if (idiag_WL3D/=0) then
-        call dot_mn_vm_trans(p%uu,p%aij,tmpv)
-        call dot(-p%jj,tmpv,tmp)
-        call sum_mn_name(tmp,idiag_WL3D)
+        call dot_mn_vm_trans(p%uu,p%aij,q%tmpv)
+        call dot(-p%jj,q%tmpv,q%tmp0d)
+        call sum_mn_name(q%tmp0d,idiag_WL3D)
       endif
 !
 !  Calculate WL3D2 = <JiAjaji>.
 !
       if (idiag_WL3D2/=0) then
-        call dot_mn_vm_trans(p%aa,p%uij,tmpv)
-        call dot(p%jj,tmpv,tmp)
-        call sum_mn_name(tmp,idiag_WL3D2)
+        call dot_mn_vm_trans(p%aa,p%uij,q%tmpv)
+        call dot(p%jj,q%tmpv,q%tmp0d)
+        call sum_mn_name(q%tmp0d,idiag_WL3D2)
       endif
 !
 !  <(nabla B)^2>
@@ -7352,32 +7367,32 @@ print*,'AXEL2: should not be here (eta) ... '
 !  Here, bhat_i,j = bij/|B| - Bi*nablaj(B^2/2)/|B|^3.
 !
       if (idiag_bij2m/=0) then
-        quench = 1.0/max(tini,sqrt(p%b2))
-        call multsm_mn(quench,p%bij,bhatij)
-        call multvv_smat_add(-quench**3,p%bb,p%gb22,bhatij)
-        call multm2_mn(bhatij,tmp)
-        call sum_mn_name(tmp,idiag_bij2m)
+        q%quench = 1.0/max(tini,sqrt(p%b2))
+        call multsm_mn(q%quench,p%bij,q%bhatij)
+        call multvv_smat_add(-q%quench**3,p%bb,p%gb22,q%bhatij)
+        call multm2_mn(q%bhatij,q%tmp0d)
+        call sum_mn_name(q%tmp0d,idiag_bij2m)
       endif
 !
 !  Calculate sijbibjm = S_{ij} B_i B_j.
 !
       if (idiag_sijbibjm/=0) then
-        call mult_mat_vv(p%sij,p%bb,p%bb,tmp)
-        call sum_mn_name(tmp,idiag_sijbibjm)
+        call mult_mat_vv(p%sij,p%bb,p%bb,q%tmp0d)
+        call sum_mn_name(q%tmp0d,idiag_sijbibjm)
       endif
 !
 !  Calculate <j.E>.
 !
       if (idiag_jem/=0) then
-        call dot(p%jj,p%el,tmp)
-        call sum_mn_name(tmp,idiag_jem)
+        call dot(p%jj,p%el,q%tmp0d)
+        call sum_mn_name(q%tmp0d,idiag_jem)
       endif
 !
 !  Calculate <A.E>.
 !
       if (idiag_aem/=0) then
-        call dot(p%aa,p%el,tmp)
-        call sum_mn_name(tmp,idiag_aem)
+        call dot(p%aa,p%el,q%tmp0d)
+        call sum_mn_name(q%tmp0d,idiag_aem)
       endif
 !
 !  Calculate <u.(jxb)>.
@@ -7395,19 +7410,19 @@ print*,'AXEL2: should not be here (eta) ... '
 !  Calculate <jxb>.B_0/B_0^2.
 !
       if (idiag_jxbm/=0) then
-        call dot(B_ext_inv,p%jxb,jxb_dotB0)
-        call sum_mn_name(jxb_dotB0,idiag_jxbm)
+        call dot(B_ext_inv,p%jxb,q%jxb_dotB0)
+        call sum_mn_name(q%jxb_dotB0,idiag_jxbm)
       endif
       if (idiag_jxbmx/=0.or.idiag_jxbmy/=0.or.idiag_jxbmz/=0) then
-        call cross_mn(p%jj,p%bbb,jxbb)
-        call sum_mn_name(jxbb(:,1),idiag_jxbmx)
-        call sum_mn_name(jxbb(:,2),idiag_jxbmy)
-        call sum_mn_name(jxbb(:,3),idiag_jxbmz)
+        call cross_mn(p%jj,p%bbb,q%jxbb)
+        call sum_mn_name(q%jxbb(:,1),idiag_jxbmx)
+        call sum_mn_name(q%jxbb(:,2),idiag_jxbmy)
+        call sum_mn_name(q%jxbb(:,3),idiag_jxbmz)
       endif
       if (idiag_vmagfricrms/=0 .or. idiag_vmagfricmax/=0) then
-        call dot2_mn(p%vmagfric,tmp1)
-        call sum_mn_name(tmp1,idiag_vmagfricrms,lsqrt=.true.)
-        call max_mn_name(tmp1,idiag_vmagfricmax)
+        call dot2_mn(p%vmagfric,q%tmp1)
+        call sum_mn_name(q%tmp1,idiag_vmagfricrms,lsqrt=.true.)
+        call max_mn_name(q%tmp1,idiag_vmagfricmax)
       endif
 !
 !  Maximum difference of covariant B_i,j from bij and from bijtilde+bij_cov_corr
@@ -7423,15 +7438,15 @@ print*,'AXEL2: should not be here (eta) ... '
 !  Magnetic triple correlation term (for imposed field).
 !
       if (idiag_jxbxbm/=0) then
-        call dot(B_ext_inv,p%jxbxb,jxbxb_dotB0)
-        call sum_mn_name(jxbxb_dotB0,idiag_jxbxbm)
+        call dot(B_ext_inv,p%jxbxb,q%jxbxb_dotB0)
+        call sum_mn_name(q%jxbxb_dotB0,idiag_jxbxbm)
       endif
 !
 !  Triple correlation from Reynolds tensor (for imposed field).
 !
       if (idiag_oxuxbm/=0) then
-        call dot(B_ext_inv,p%oxuxb,oxuxb_dotB0)
-        call sum_mn_name(oxuxb_dotB0,idiag_oxuxbm)
+        call dot(B_ext_inv,p%oxuxb,q%oxuxb_dotB0)
+        call sum_mn_name(q%oxuxb_dotB0,idiag_oxuxbm)
       endif
 !
 !  Triple correlation from pressure gradient (for imposed field).
@@ -7439,8 +7454,8 @@ print*,'AXEL2: should not be here (eta) ... '
 !  This is ok for all applications currently under consideration.
 !
       if (idiag_gpxbm/=0) then
-        call dot_mn_sv(B1_ext,p%glnrhoxb,B1dot_glnrhoxb)
-        call sum_mn_name(B1dot_glnrhoxb,idiag_gpxbm)
+        call dot_mn_sv(B1_ext,p%glnrhoxb,q%B1dot_glnrhoxb)
+        call sum_mn_name(q%B1dot_glnrhoxb,idiag_gpxbm)
       endif
 !
 !  < u x curl(uxB) > = < E_i u_{j,j} - E_j u_{j,i} >
@@ -7449,53 +7464,53 @@ print*,'AXEL2: should not be here (eta) ... '
 !     < E_3 u1,1 + E3 u2,2 - E1 u3,1 - E2 u2,3 > )
 !
       if (idiag_uxDxuxbm/=0) then
-        uxDxuxb(:,1)=p%uxb(:,1)*(p%uij(:,2,2)+p%uij(:,3,3))-p%uxb(:,2)*p%uij(:,2,1)-p%uxb(:,3)*p%uij(:,3,1)
-        uxDxuxb(:,2)=p%uxb(:,2)*(p%uij(:,1,1)+p%uij(:,3,3))-p%uxb(:,1)*p%uij(:,1,2)-p%uxb(:,3)*p%uij(:,3,2)
-        uxDxuxb(:,3)=p%uxb(:,3)*(p%uij(:,1,1)+p%uij(:,2,2))-p%uxb(:,1)*p%uij(:,1,3)-p%uxb(:,2)*p%uij(:,2,3)
-        call dot(B_ext_inv,uxDxuxb,uxDxuxb_dotB0)
-        call sum_mn_name(uxDxuxb_dotB0,idiag_uxDxuxbm)
+        q%uxDxuxb(:,1)=p%uxb(:,1)*(p%uij(:,2,2)+p%uij(:,3,3))-p%uxb(:,2)*p%uij(:,2,1)-p%uxb(:,3)*p%uij(:,3,1)
+        q%uxDxuxb(:,2)=p%uxb(:,2)*(p%uij(:,1,1)+p%uij(:,3,3))-p%uxb(:,1)*p%uij(:,1,2)-p%uxb(:,3)*p%uij(:,3,2)
+        q%uxDxuxb(:,3)=p%uxb(:,3)*(p%uij(:,1,1)+p%uij(:,2,2))-p%uxb(:,1)*p%uij(:,1,3)-p%uxb(:,2)*p%uij(:,2,3)
+        call dot(B_ext_inv,q%uxDxuxb,q%uxDxuxb_dotB0)
+        call sum_mn_name(q%uxDxuxb_dotB0,idiag_uxDxuxbm)
       endif
 !
 !  alpM11=<b3*b2,1>
 !
       if (idiag_b3b21m/=0) then
-        b3b21=p%bb(:,3)*p%bij(:,2,1)
-        call sum_mn_name(b3b21,idiag_b3b21m)
+        q%b3b21=p%bb(:,3)*p%bij(:,2,1)
+        call sum_mn_name(q%b3b21,idiag_b3b21m)
       endif
 !
 !  alpM11=<b3*b1,2>
 !
       if (idiag_b3b12m/=0) then
-        b3b12=p%bb(:,3)*p%bij(:,1,2)
-        call sum_mn_name(b3b12,idiag_b3b12m)
+        q%b3b12=p%bb(:,3)*p%bij(:,1,2)
+        call sum_mn_name(q%b3b12,idiag_b3b12m)
       endif
 !
 !  alpM22=<b1*b3,2>
 !
       if (idiag_b1b32m/=0) then
-        b1b32=p%bb(:,1)*p%bij(:,3,2)
-        call sum_mn_name(b1b32,idiag_b1b32m)
+        q%b1b32=p%bb(:,1)*p%bij(:,3,2)
+        call sum_mn_name(q%b1b32,idiag_b1b32m)
       endif
 !
 !  alpM22=<b1*b2,3>
 !
       if (idiag_b1b23m/=0) then
-        b1b23=p%bb(:,1)*p%bij(:,2,3)
-        call sum_mn_name(b1b23,idiag_b1b23m)
+        q%b1b23=p%bb(:,1)*p%bij(:,2,3)
+        call sum_mn_name(q%b1b23,idiag_b1b23m)
       endif
 !
 !  alpM33=<b2*b1,3>
 !
       if (idiag_b2b13m/=0) then
-        b2b13=p%bb(:,2)*p%bij(:,1,3)
-        call sum_mn_name(b2b13,idiag_b2b13m)
+        q%b2b13=p%bb(:,2)*p%bij(:,1,3)
+        call sum_mn_name(q%b2b13,idiag_b2b13m)
       endif
 !
 !  alpM33=<b2*b3,1>
 !
       if (idiag_b2b31m/=0) then
-        b2b31=p%bb(:,2)*p%bij(:,3,1)
-        call sum_mn_name(b2b31,idiag_b2b31m)
+        q%b2b31=p%bb(:,2)*p%bij(:,3,1)
+        call sum_mn_name(q%b2b31,idiag_b2b31m)
       endif
 !
 !  eta_tdep as diagnostics:
@@ -7528,8 +7543,8 @@ print*,'AXEL2: should not be here (eta) ... '
 !
       if (lforcing_cont_aa_local) then
         if (idiag_jfm/=0) then
-          call dot_mn(p%jj,forcing_rhs,tmp)
-          call sum_mn_name(tmp,idiag_jfm)
+          call dot_mn(p%jj,forcing_rhs,q%tmp0d)
+          call sum_mn_name(q%tmp0d,idiag_jfm)
         endif
       endif
 !
@@ -7561,7 +7576,6 @@ print*,'AXEL2: should not be here (eta) ... '
 
       type(pencil_case) :: p
 
-      real, dimension(nx) :: fres2, tmp1, Rmmz, bdel2a, jdel2a
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1.
 !
@@ -7679,15 +7693,15 @@ print*,'AXEL2: should not be here (eta) ... '
 !  Calculate <B.del2a>_{xy}.
 !
         if (idiag_bdel2amz/=0) then
-          call dot(p%bb,p%del2a,bdel2a)
-          call xysum_mn_name_z(bdel2a,idiag_bdel2amz)
+          call dot(p%bb,p%del2a,q%bdel2a)
+          call xysum_mn_name_z(q%bdel2a,idiag_bdel2amz)
         endif
 !
 !  Calculate <J.del2a>_{xy}.
 !
         if (idiag_jdel2amz/=0) then
-          call dot(p%jj,p%del2a,jdel2a)
-          call xysum_mn_name_z(jdel2a,idiag_jdel2amz)
+          call dot(p%jj,p%del2a,q%jdel2a)
+          call xysum_mn_name_z(q%jdel2a,idiag_jdel2amz)
         endif
 !
         call xysum_mn_name_z(p%d6ab,idiag_d6abmz)
@@ -7720,8 +7734,8 @@ print*,'AXEL2: should not be here (eta) ... '
           call xysum_mn_name_z(eta_total,idiag_etatotalmz)
         endif
         if (idiag_vmagfricmz/=0) then
-          call dot2_mn(p%vmagfric,tmp1)
-          call xysum_mn_name_z(tmp1,idiag_vmagfricmz)
+          call dot2_mn(p%vmagfric,q%tmp1)
+          call xysum_mn_name_z(q%tmp1,idiag_vmagfricmz)
         endif
 !
 !  Calculate magnetic helicity flux (ExA contribution).
@@ -7766,8 +7780,8 @@ print*,'AXEL2: should not be here (eta) ... '
         call xysum_mn_name_z(p%bf2,idiag_bf2mz)
         call xysum_mn_name_z(p%j2,idiag_j2mz)
         if (lforcing_cont_aa) then
-          call dot(p%bb,p%curlfcont(:,:,iforcing_cont_aa),tmp1)
-          call xysum_mn_name_z(ampl_fcont_aa*mu01*tmp1,idiag_bcurlfmz)
+          call dot(p%bb,p%curlfcont(:,:,iforcing_cont_aa),q%tmp1)
+          call xysum_mn_name_z(ampl_fcont_aa*mu01*q%tmp1,idiag_bcurlfmz)
         endif
         if (.not.lmultithread) then
           if (idiag_poynzmz/=0) call xysum_mn_name_z(eta_total*p%jxb(:,3)-mu01* &
@@ -7789,10 +7803,10 @@ print*,'AXEL2: should not be here (eta) ... '
 !  This diagnostic relies upon mn-dependent quantities which are not in the pencil case.
 !
           if (idiag_Rmmz/=0) then
-            call dot2_mn(fres,fres2)
-            Rmmz=sqrt(p%uxb2/fres2)
-            where (fres2 < tini) Rmmz = 0.
-            call xysum_mn_name_z(Rmmz,idiag_Rmmz)
+            call dot2_mn(fres,q%fres2)
+            q%Rmmz=sqrt(p%uxb2/q%fres2)
+            where (q%fres2 < tini) q%Rmmz = 0.
+            call xysum_mn_name_z(q%Rmmz,idiag_Rmmz)
           endif
         endif
       endif
@@ -7808,7 +7822,6 @@ print*,'AXEL2: should not be here (eta) ... '
 
       type(pencil_case) :: p
 
-      real, dimension(nx,3) :: tmp2
 
       if (l2davgfirst) then
         if (idiag_brmphi/=0) call phisum_mn_name_rz(p%bb(:,1)*p%pomx+p%bb(:,2)*p%pomy,idiag_brmphi)
@@ -7931,11 +7944,11 @@ print*,'AXEL2: should not be here (eta) ... '
               call zsum_mn_name_xy(eta_total*p%jxb(:,1)-mu01* &
               (p%uxb(:,2)*p%bb(:,3)-p%uxb(:,3)*p%bb(:,2)),idiag_poynxmxy)
           if (idiag_poynymxy/=0.or.idiag_poynzmxy/=0) then
-            tmp2(:,1)=0.
-            tmp2(:,2)=eta_total*p%jxb(:,2)-mu01*(p%uxb(:,3)*p%bb(:,1)-p%uxb(:,1)*p%bb(:,3))
-            tmp2(:,3)=eta_total*p%jxb(:,3)-mu01*(p%uxb(:,1)*p%bb(:,2)-p%uxb(:,2)*p%bb(:,1))
-            call zsum_mn_name_xy(tmp2,idiag_poynymxy,(/0,1,0/))
-            call zsum_mn_name_xy(tmp2,idiag_poynzmxy,(/0,0,1/))
+            q%tmp2_2d(:,1)=0.
+            q%tmp2_2d(:,2)=eta_total*p%jxb(:,2)-mu01*(p%uxb(:,3)*p%bb(:,1)-p%uxb(:,1)*p%bb(:,3))
+            q%tmp2_2d(:,3)=eta_total*p%jxb(:,3)-mu01*(p%uxb(:,1)*p%bb(:,2)-p%uxb(:,2)*p%bb(:,1))
+            call zsum_mn_name_xy(q%tmp2_2d,idiag_poynymxy,(/0,1,0/))
+            call zsum_mn_name_xy(q%tmp2_2d,idiag_poynzmxy,(/0,0,1/))
           endif
           call zsum_mn_name_xy(eta_total,idiag_etatotalmxy)
         endif
@@ -8249,10 +8262,9 @@ print*,'AXEL2: should not be here (eta) ... '
       use Sub, only: step, der_step
 !
       type (pencil_case) :: p
-      real, dimension (nx) :: prof,eta_r
       real :: d_int,d_ext
 !
-      eta_r=0.
+      q%eta_r=0.
 !
       if (eta_int > 0.) then
         d_int = eta_int - eta
@@ -8271,34 +8283,34 @@ print*,'AXEL2: should not be here (eta) ... '
 !  (i) lcylinder_in_a_box
 !
       if (lcylinder_in_a_box.or.lcylindrical_coords) then
-        prof=step(p%rcyl_mn,r_int,wresistivity)
-        eta_mn=d_int*(1-prof)
-        prof=step(p%rcyl_mn,r_ext,wresistivity)
-        eta_mn=eta+eta_mn+d_ext*prof
+        q%prof=step(p%rcyl_mn,r_int,wresistivity)
+        eta_mn=d_int*(1-q%prof)
+        q%prof=step(p%rcyl_mn,r_ext,wresistivity)
+        eta_mn=eta+eta_mn+d_ext*q%prof
 !
 !     calculate radial derivative of steps and gradient of eta
 !
-        prof=der_step(p%rcyl_mn,r_int,wresistivity)
-        eta_r=-d_int*prof
-        prof=der_step(p%rcyl_mn,r_ext,wresistivity)
-        eta_r=eta_r+d_ext*prof
-        geta=p%evr*spread(eta_r,2,3)
+        q%prof=der_step(p%rcyl_mn,r_int,wresistivity)
+        q%eta_r=-d_int*q%prof
+        q%prof=der_step(p%rcyl_mn,r_ext,wresistivity)
+        q%eta_r=q%eta_r+d_ext*q%prof
+        geta=p%evr*spread(q%eta_r,2,3)
 !
 !  (ii) lsphere_in_a_box
 !
       elseif (lsphere_in_a_box.or.lspherical_coords) then
-        prof=step(p%r_mn,r_int,wresistivity)
-        eta_mn=d_int*(1-prof)
-        prof=step(p%r_mn,r_ext,wresistivity)
-        eta_mn=eta+eta_mn+d_ext*prof
+        q%prof=step(p%r_mn,r_int,wresistivity)
+        eta_mn=d_int*(1-q%prof)
+        q%prof=step(p%r_mn,r_ext,wresistivity)
+        eta_mn=eta+eta_mn+d_ext*q%prof
 !
 !     calculate radial derivative of steps and gradient of eta
 !
-        prof=der_step(p%r_mn,r_int,wresistivity)
-        eta_r=-d_int*prof
-        prof=der_step(p%r_mn,r_ext,wresistivity)
-        eta_r=eta_r+d_ext*prof
-        geta=p%evr*spread(eta_r,2,3)
+        q%prof=der_step(p%r_mn,r_int,wresistivity)
+        q%eta_r=-d_int*q%prof
+        q%prof=der_step(p%r_mn,r_ext,wresistivity)
+        q%eta_r=q%eta_r+d_ext*q%prof
+        geta=p%evr*spread(q%eta_r,2,3)
 !
 !  (iii) other cases are not implemented yet
 !
@@ -8416,28 +8428,26 @@ print*,'AXEL2: should not be here (eta) ... '
       use Diagnostics
 !
       real, dimension (nx,3), intent(in) :: aa,uxb,jj
-      real, dimension (nx,3) :: ee
-      real, dimension (nx) :: FHx,FHz
       real :: FH
 !
-      ee=eta*jj-uxb
+      q%ee=eta*jj-uxb
 !
 !  calculate magnetic helicity flux in the X and Z directions
 !
-      FHx=-2*ee(:,3)*aa(:,2)*dsurfyz
-      FHz=+2*ee(:,1)*aa(:,2)*dsurfxy
+      q%FHx=-2*q%ee(:,3)*aa(:,2)*dsurfyz
+      q%FHz=+2*q%ee(:,1)*aa(:,2)*dsurfxy
 !
 !  sum up contribution per pencil
 !  and then stuff result into surf_mn_name for summing up all processors.
 !
-      FH=FHx(nx)-FHx(1)
+      FH=q%FHx(nx)-q%FHx(1)
       if (lfirst_proc_z) then
-        if (n==n1) FH=FH-sum(FHz)
+        if (n==n1) FH=FH-sum(q%FHz)
         call surf_mn_name(FH,idiag_exaym2,n1)
       endif
 
       if (llast_proc_z) then
-        if (n==n2) FH=FH+sum(FHz)
+        if (n==n2) FH=FH+sum(q%FHz)
         call surf_mn_name(FH,idiag_exaym2,n2)
       endif
 !
@@ -8489,16 +8499,14 @@ print*,'AXEL2: should not be here (eta) ... '
       use Diagnostics
 !
       real, dimension (nx,3), intent(in) :: uxb,jj
-      real, dimension (nx,3) :: ee
-      real, dimension (nx) :: FCz
 !
-      ee=eta*jj-uxb
+      q%ee=eta*jj-uxb
 !
 !  calculate current helicity flux in the Z direction
 !  exj = e1*j2 - e2*j1
 !
-      FCz=2*(ee(:,1)*jj(:,2)-ee(:,2)*jj(:,1))
-      call sum_mn_name(FCz,idiag_exjm2)
+      q%FCz=2*(q%ee(:,1)*jj(:,2)-q%ee(:,2)*jj(:,1))
+      call sum_mn_name(q%FCz,idiag_exjm2)
 !
     endsubroutine curflux
 !***********************************************************************
@@ -10505,7 +10513,6 @@ print*,'AXEL2: should not be here (eta) ... '
       intent(out) :: eta_r,geta_r
 !
       integer :: l
-      real, dimension(nx) :: tmp1,tmp2,prof0,prof1,derprof0,derprof1
 !
       select case (rdep_profile)
 !
@@ -10514,16 +10521,16 @@ print*,'AXEL2: should not be here (eta) ... '
 !
         case ('step')
 !
-           tmp1=p%r_mn
+           q%tmp1=p%r_mn
 !           tmp1=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
-           eta_r = eta + eta*(eta_jump-1.)*step(tmp1,eta_r0,-eta_rwidth)
+           eta_r = eta + eta*(eta_jump-1.)*step(q%tmp1,eta_r0,-eta_rwidth)
 !
 !  its gradient:
 !
-           tmp2 = eta*(eta_jump-1.)*der_step(tmp1,eta_r0,-eta_rwidth)
-           geta_r(:,1)=tmp2*x(l1:l2)*p%r_mn1
-           geta_r(:,2)=tmp2*y(  m  )*p%r_mn1
-           geta_r(:,3)=tmp2*z(  n  )*p%r_mn1
+           q%tmp2 = eta*(eta_jump-1.)*der_step(q%tmp1,eta_r0,-eta_rwidth)
+           geta_r(:,1)=q%tmp2*x(l1:l2)*p%r_mn1
+           geta_r(:,2)=q%tmp2*y(  m  )*p%r_mn1
+           geta_r(:,3)=q%tmp2*z(  n  )*p%r_mn1
 !
 !  Two-step function
 !
@@ -10534,11 +10541,11 @@ print*,'AXEL2: should not be here (eta) ... '
 !
 !  ... and its gradient.
 !
-           tmp1 = eta*(eta_jump-1.)*( &
+           q%tmp1 = eta*(eta_jump-1.)*( &
              der_step(p%r_mn,eta_r0,eta_rwidth0) - der_step(p%r_mn,eta_r1,eta_rwidth1))
-           geta_r(:,1)=tmp1*x(l1:l2)*p%r_mn1(l1:l2)
-           geta_r(:,2)=tmp1*y(  m  )*p%r_mn1(l1:l2)
-           geta_r(:,3)=tmp1*z(  n  )*p%r_mn1(l1:l2)
+           geta_r(:,1)=q%tmp1*x(l1:l2)*p%r_mn1(l1:l2)
+           geta_r(:,2)=q%tmp1*y(  m  )*p%r_mn1(l1:l2)
+           geta_r(:,3)=q%tmp1*z(  n  )*p%r_mn1(l1:l2)
 !
 !  Two-step function with different step sizes
 !
@@ -10549,19 +10556,19 @@ print*,'AXEL2: should not be here (eta) ... '
 !
 !  Compute eta-profile
 !
-           prof1    = step(p%r_mn,eta_r1,eta_rwidth1)
-           prof0    = step(p%r_mn,eta_r0,eta_rwidth0) - prof1
-           derprof1 = der_step(p%r_mn,eta_r1,eta_rwidth1)
-           derprof0 = der_step(p%r_mn,eta_r0,eta_rwidth0) - derprof1
+           q%prof1    = step(p%r_mn,eta_r1,eta_rwidth1)
+           q%prof0    = step(p%r_mn,eta_r0,eta_rwidth0) - q%prof1
+           q%derprof1 = der_step(p%r_mn,eta_r1,eta_rwidth1)
+           q%derprof0 = der_step(p%r_mn,eta_r0,eta_rwidth0) - q%derprof1
 !
-           eta_r = eta + (eta*(eta_jump0-1.))*prof0 + (eta*(eta_jump1-1.))*prof1
+           eta_r = eta + (eta*(eta_jump0-1.))*q%prof0 + (eta*(eta_jump1-1.))*q%prof1
 !
 !  ... and its gradient.
 !
-           tmp1  = eta + (eta*(eta_jump0-1.))*derprof0 + (eta*(eta_jump1-1.))*derprof1
-           geta_r(:,1)=tmp1*x(l1:l2)*p%r_mn1(l1:l2)
-           geta_r(:,2)=tmp1*y(  m  )*p%r_mn1(l1:l2)
-           geta_r(:,3)=tmp1*z(  n  )*p%r_mn1(l1:l2)
+           q%tmp1  = eta + (eta*(eta_jump0-1.))*q%derprof0 + (eta*(eta_jump1-1.))*q%derprof1
+           geta_r(:,1)=q%tmp1*x(l1:l2)*p%r_mn1(l1:l2)
+           geta_r(:,2)=q%tmp1*y(  m  )*p%r_mn1(l1:l2)
+           geta_r(:,3)=q%tmp1*z(  n  )*p%r_mn1(l1:l2)
 !
       endselect
 !
