@@ -797,7 +797,7 @@ module Snapshot
       use Sub, only: read_snaptime, update_snaptime
 !
       logical, save :: lfirst_call=.true.
-      logical :: existed
+      logical :: existed=.false.
       character (len=fnlen) :: file
       integer, save :: nspec
       real, save :: tspec_next
