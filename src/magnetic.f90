@@ -1199,7 +1199,7 @@ module Magnetic
 !  and the subroutines they call. 
 !  Done to avoid stack arrays which become too large when using large subdomains with GPUs.
 !
-  type :: TmpInternalPencils
+  type :: MagTmpInternalPencils
     real, dimension(nx) :: rho1_jxb, quench, StokesI_ncr, tmp1, bbgb, va2max_beta, sign_jo
     real, dimension(nx) :: Eabs, Babs
     real, dimension(nx) :: chi_diamag
@@ -1221,9 +1221,9 @@ module Magnetic
     real, dimension(nx,3) :: tmp2_2d
     real, dimension(nx,3) :: ee
     real, dimension(nx,3,3) :: bhatij
-  end type TmpInternalPencils
+  end type MagTmpInternalPencils
 
-  type(TmpInternalPencils) :: q
+  type(MagTmpInternalPencils) :: q
   !$omp threadprivate(q)
 
   contains

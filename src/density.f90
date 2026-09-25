@@ -364,13 +364,13 @@ module Density
 !  and the subroutines they call. 
 !  Done to avoid large arrays on stack.
 !
-  type :: TmpInternalPencils
+  type :: DensTmpInternalPencils
     real, dimension(nx) :: tmp, rmask
     real, dimension(nx) :: advec_hypermesh_rho
     real, dimension(nx) :: uzmask
-  end type TmpInternalPencils
+  end type DensTmpInternalPencils
 
-  type(TmpInternalPencils) :: q
+  type(DensTmpInternalPencils) :: q
   !$omp threadprivate(q)
 
   contains

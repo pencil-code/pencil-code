@@ -111,11 +111,11 @@ module EquationOfState
 !  Collecting them here avoids re-declaring automatic arrays of size nx
 !  on every call.
 !
-  type :: TmpInternalPencils
+  type :: EosTmpInternalPencils
     real, dimension(nx) :: tmp
-  end type TmpInternalPencils
+  end type EosTmpInternalPencils
 
-  type(TmpInternalPencils) :: q
+  type(EosTmpInternalPencils) :: q
   !$omp threadprivate(q)
 
   contains

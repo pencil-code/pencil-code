@@ -1024,7 +1024,7 @@ module Hydro
 !  the subroutines they call. 
 !  We do this since with large subdomains the stack arrays become too much.
 !
-  type :: TmpInternalPencils
+  type :: HydroTmpInternalPencils
     real, dimension(nx) :: tmp, DD, tmp_rho
     real, dimension(nx) :: space_part_re, space_part_im, u2t, uot, out, fu
     real, dimension(nx) :: odel2um, uref, curlo2, qo, quxo, graddivu2
@@ -1034,9 +1034,9 @@ module Hydro
     real, dimension(nx,3) :: tmp3g, tmp3, rat0, uxo, tmpv, curlru
     real, dimension(nx,3,3) :: T0ij, tmp33
     real, dimension(nx,Nmodes_SH) :: urlm
-  end type TmpInternalPencils
+  end type HydroTmpInternalPencils
 
-  type(TmpInternalPencils) :: q
+  type(HydroTmpInternalPencils) :: q
   !$omp threadprivate(q)
 
   contains

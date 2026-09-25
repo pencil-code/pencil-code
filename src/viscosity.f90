@@ -261,7 +261,7 @@ module Viscosity
 !  the subroutines they call. 
 !  Done to avoid large stack arrays.
 !
-  type :: TmpInternalPencils
+  type :: ViscTmpInternalPencils
     real, dimension(nx) :: murho1, zetarho1, muTT, tmp3, tmp4, pnu_shock
     real, dimension(nx) :: rr, dlnrhodx, du1dx, du2dx, du3dx, d2u1dx2, d2u2dx2, d2u3dx2
     real, dimension(nx) :: lambda_phi, prof, prof2, derprof, derprof2
@@ -274,9 +274,9 @@ module Viscosity
     real, dimension(nx,3) :: divS
     real, dimension(nx,3) :: nuD2uxb, fluxv
     real, dimension(nx,3,3) :: d_sld_flux
-  end type TmpInternalPencils
+  end type ViscTmpInternalPencils
 
-  type(TmpInternalPencils) :: q
+  type(ViscTmpInternalPencils) :: q
   !$omp threadprivate(q)
 
   contains
