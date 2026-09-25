@@ -377,18 +377,18 @@ module KT_transport
 !
       if (ihless_kt==0) then
         eps=0.0
-        return
-      endif
-!
-      tau=getcell(f,o,dir,m,n,ihless_kt)
-      if (width_abs_kt==0.0) then
-        where (tcur<tau)
-          eps=eps_kt
-        elsewhere
-          eps=0.0
-        endwhere
       else
-        eps=eps_kt*max(0.0,min(1.0,(tau+0.5*width_abs_kt-tcur)/width_abs_kt))
+!
+        tau=getcell(f,o,dir,m,n,ihless_kt)
+        if (width_abs_kt==0.0) then
+          where (tcur<tau)
+            eps=eps_kt
+          elsewhere
+            eps=0.0
+          endwhere
+        else
+          eps=eps_kt*max(0.0,min(1.0,(tau+0.5*width_abs_kt-tcur)/width_abs_kt))
+        endif
       endif
 !
     endfunction epscell

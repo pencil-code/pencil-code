@@ -310,3 +310,5 @@ getcell(Field f, int offset, int idir)
 	if(idir == 3) target.z += offset
         return f[target.x][target.y][target.z]
 }
+const real cs_kt=0.57735026919
+const real tiny_kt=1e-30
