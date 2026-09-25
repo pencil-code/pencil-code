@@ -258,8 +258,8 @@ module Viscosity
 !
 !  Structure holding the former nx-sized temporary ("tmp") pencil arrays
 !  used across calc_pencils_viscosity, calc_diagnostics_viscosity, and
-!  the subroutines they call. Collecting them here avoids re-declaring
-!  automatic arrays of size nx on every call.
+!  the subroutines they call. 
+!  Done to avoid large stack arrays.
 !
   type :: TmpInternalPencils
     real, dimension(nx) :: murho1, zetarho1, muTT, tmp3, tmp4, pnu_shock

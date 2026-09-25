@@ -54,8 +54,8 @@ module Energy
 !
 !  Structure holding the former nx-sized temporary ("tmp") pencil arrays
 !  used across calc_pencils_energy, calc_diagnostics_energy, and the
-!  subroutines they call. Collecting them here avoids re-declaring
-!  automatic arrays of size nx on every call.
+!  subroutines they call. 
+!  Done to avoid large stack arrays.
 !
   type :: TmpInternalPencils
     real, dimension(nx) :: lorentz_gamma_inv2 = 1.
