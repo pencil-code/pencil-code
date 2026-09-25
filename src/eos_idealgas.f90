@@ -105,6 +105,19 @@ module EquationOfState
   real, dimension(:,:), pointer :: reference_state
 !
   integer :: enum_tdep_cs2_type = 0
+!
+!  Structure holding the former nx-sized temporary ("tmp") pencil arrays
+!  used across calc_pencils_eos_std/_pencpar and the subroutines they call.
+!  Collecting them here avoids re-declaring automatic arrays of size nx
+!  on every call.
+!
+  type :: TmpInternalPencils
+    real, dimension(nx) :: tmp
+  end type TmpInternalPencils
+
+  type(TmpInternalPencils) :: q
+  !$omp threadprivate(q)
+
   contains
 !***********************************************************************
     subroutine register_eos
@@ -800,7 +813,6 @@ module EquationOfState
       type (pencil_case),                intent(INOUT):: p
       logical, dimension(:),             intent(IN)   :: lpenc_loc
 !
-      real, dimension(nx) :: tmp
       integer :: i,j
 !
 !  Inverse cv and cp values.
@@ -947,11 +959,11 @@ module EquationOfState
         endif
         if (lpenc_loc(i_del2TT).or.lpenc_loc(i_del2lnTT)) call del2(f,ieosvar2,p%del2TT)
         if (lpenc_loc(i_del2lnTT)) then
-          tmp=0.0
+          q%tmp=0.0
           do i=1,3
-            tmp=tmp+p%glnTT(:,i)**2
+            q%tmp=q%tmp+p%glnTT(:,i)**2
           enddo
-          p%del2lnTT=p%del2TT*p%TT1-tmp
+          p%del2lnTT=p%del2TT*p%TT1-q%tmp
         endif
         if (lpenc_loc(i_hlnTT)) then
           call g2ij(f,iTT,p%hlnTT)
