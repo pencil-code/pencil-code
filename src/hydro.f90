@@ -211,15 +211,17 @@ module Hydro
   logical, pointer :: lffree
   logical :: lreflecteddy=.false.,louinit=.false.
   logical :: lskip_projection=.false.
-  logical, target :: lconservative=.false., !PAR_DOC: Do we solve the momentum equation in conservative form or not.
+  logical, target :: lconservative=.false. !PAR_DOC: Do we solve the momentum equation in conservative form or not.
     !PAR_DOC: The primitive variable becomes momentum or in the relativistic case T^{0i}.
-  logical, target: lrelativistic=.false. !PAR_DOC: Do we keep relativistic terms proportional to gamma^2.
+  logical, target :: lrelativistic=.false. !PAR_DOC: Do we keep relativistic terms proportional to gamma^2.
   logical, target :: lconservative_pressure_on_rhs=.false.
   logical :: lT00_total = .true., lT0i_total = .true., lT0mu_total = .true.
   logical, pointer :: lrelativistic_eos, lrelativistic_eos_corr
   logical :: lno_noise_uu=.false., lrho_nonuni_uu=.false.
   logical :: llorentz_limiter=.false., lrat_limiter=.false., full_3D=.false.
-  logical :: lhiggsless=.false., lhiggsless_old=.false., lvel_limiter=.false.
+  logical :: lhiggsless=.false., lhiggsless_old=.false.
+  logical :: lvel_limiter=.false. !PAR_DOC: Do we clip the velocity to be below a threshold when using forcing.
+    !PAR_DOC: Used to get rid of superluminal velocities.
   logical :: lalfven_relativistic=.true.
 !  Kurganov-Tadmor flux-limited transport (see kt_transport.f90); runtime-off by default.
   logical :: lkt_transport=.false. !PAR_DOC: Do we use Kurganov-Tadmor flux-limited transport.
