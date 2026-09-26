@@ -158,17 +158,17 @@ my $dynamic_aux = $opts{'dynamic-aux'};
 #
 # Cycle through files (later files will overwrite effect of earlier files)
 #
-file: foreach my $infile (@ARGV) {
+foreach my $infile (@ARGV) {
   # Extract `?VAR CONTRIBUTION' info from each file
   unless (open(INPUT,"< $infile")) {
     die "Can't open $infile for reading";
-    next file;
+    next;
   }
 
   # Cycle through all lines up to first non-empty non-comment line in file:
-  line: while (defined($line=<INPUT>)) {
-    next line if ($line =~ /^\s*$/); # ignore empty lines
-    last line if ($line !~ /^\s*!/); # done if non-comment line
+  while (defined ($line = <INPUT>)) {
+    next if ($line =~ /^\s*$/); # ignore empty lines
+    last if ($line !~ /^\s*!/); # done if non-comment line
     extract_decl ($line, $mvar_decl    , \$mvar     );
     extract_decl ($line, $maux_decl    , \$maux     );
     extract_decl ($line, $mogaux_decl  , \$mogaux   );
@@ -186,15 +186,15 @@ file: foreach my $infile (@ARGV) {
     extract_decl_reset ($line, $npartdisp_decl, \$npartdisp);
     # Check for information about number of chemical and dust species
     # and discretization type:
-    if ($line=~ /$chem_decl/) {$chem_string=$1;}
-    if ($line=~ /$dust_decl/) {$dust_string=$1;}
-    if ($line=~ /$cparam_decl/) {unshift @cparam_lines, $1;}
+    if ($line =~ /$chem_decl/) {$chem_string=$1;}
+    if ($line =~ /$dust_decl/) {$dust_string=$1;}
+    if ($line =~ /$cparam_decl/) {unshift @cparam_lines, $1;}
 
     # Extract provided pencils from file headers:
-    if ($line=~ /$pencils_decl/) {
+    if ($line =~ /$pencils_decl/) {
       # my @pencils = split /\s*;\s*/, $2;
       # foreach my $pencil (@pencils) {
-      my $provided=0;
+      my $provided = 0;
       if ($line =~ '^!\ PENCILS\ PROVIDED') {$provided=1};
       while ($line =~ s{
                            ^                          # anchor at start
@@ -472,9 +472,8 @@ foreach my $pencil (@pencil_names) {
 unless (open(INPUT,"< cparam.f90")) {
   die "Can't open cparam.f90 for reading"
 }
-while (defined($line=<INPUT>)) {
-  if ( $line =~ /penc_name_len\s*=\s*[0-9]/ )
-  {
+while (defined ($line = <INPUT>)) {
+  if ($line =~ /penc_name_len\s*=\s*[0-9]/) {
     ($penc_name_len) = $line =~ m/=([0-9]+)/; 
     last;
   }
