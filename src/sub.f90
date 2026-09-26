@@ -362,6 +362,21 @@ module Sub
  2.21580e-07,9.14337e-06,2.69243e-05,9.14337e-06, 2.21580e-07, 9.07894e-11, 5.03438e-15, 9.07894e-11, 1.24384e-08, 5.46411e-08,&
  1.24384e-08,9.07894e-11,5.03438e-15 /), (/ 7, 7, 7 /))
 !
+!  Former nx-sized local ("tmp") arrays of calc_pencils_*, calc_diagnostics_*
+!  and the routines they call. They are kept here instead of on the stack
+!  since with large subdomains the stack arrays become too large.
+!
+  type :: SubTmpInternalPencils
+    real, dimension(nx) :: a_max, tmp, tmp1, tmp2, d2fdx, d2fdy, d2fdz, d2adrdt, d4fdx, d4fdy, d4fdz, d6fdx
+    real, dimension(nx) :: d6fdy, d6fdz, v2, del6f_upwind
+    real, dimension(nx,3) :: bbr1, ff, del6f
+    real, dimension(nx,3,3,3) :: d2a
+    integer, dimension(nx) :: indxs
+  end type SubTmpInternalPencils
+!
+  type(SubTmpInternalPencils) :: q
+  !$omp threadprivate(q)
+!
   contains
 !
 !***********************************************************************
@@ -884,7 +899,7 @@ subroutine dot_mn_sv_pencil(a,b,c)
       use General, only: loptest
 
       real, dimension (nx,3) :: a
-      real, dimension (nx) :: b,a_max
+      real, dimension (nx) :: b
       logical, optional :: fast_sqrt,precise_sqrt
 !
       intent(in) :: a,fast_sqrt,precise_sqrt
@@ -895,9 +910,9 @@ subroutine dot_mn_sv_pencil(a,b,c)
 !  To avoid division by zero when calculating a_max, we add tini.
 !
       if (loptest(precise_sqrt)) then
-        a_max=tini+maxval(abs(a),dim=2)
-        b=(a(:,1)/a_max)**2+(a(:,2)/a_max)**2+(a(:,3)/a_max)**2
-        b=a_max*sqrt(b)
+        q%a_max=tini+maxval(abs(a),dim=2)
+        b=(a(:,1)/q%a_max)**2+(a(:,2)/q%a_max)**2+(a(:,3)/q%a_max)**2
+        b=q%a_max*sqrt(b)
       else
         b=a(:,1)**2+a(:,2)**2+a(:,3)**2
         if (loptest(fast_sqrt)) b=sqrt(b)
@@ -1239,7 +1254,6 @@ subroutine dot_mn_sv_pencil(a,b,c)
 !
       real, dimension (nx,3,3) :: a
       real, dimension (nx,3) :: b,c
-      real, dimension (nx) :: tmp
       integer :: i,j
       logical, optional :: ladd
 !
@@ -1249,15 +1263,15 @@ subroutine dot_mn_sv_pencil(a,b,c)
       do i=1,3
 !
         j=1
-        tmp=a(:,i,j)*b(:,j)
+        q%tmp=a(:,i,j)*b(:,j)
         do j=2,3
-          tmp=tmp+a(:,i,j)*b(:,j)
+          q%tmp=q%tmp+a(:,i,j)*b(:,j)
         enddo
 !
         if (loptest(ladd)) then
-          c(:,i)=c(:,i)+tmp
+          c(:,i)=c(:,i)+q%tmp
         else
-          c(:,i)=tmp
+          c(:,i)=q%tmp
         endif
 !
       enddo
@@ -1308,7 +1322,6 @@ subroutine dot_mn_sv_pencil(a,b,c)
 !
       real, dimension (nx,3,3) :: a
       real, dimension (nx,3) :: b,c
-      real, dimension (nx) :: tmp
       integer :: i,j
       logical, optional :: ladd
 !
@@ -1317,15 +1330,15 @@ subroutine dot_mn_sv_pencil(a,b,c)
 !
       do i=1,3
         j=1
-        tmp=a(:,j,i)*b(:,j)
+        q%tmp=a(:,j,i)*b(:,j)
         do j=2,3
-          tmp=tmp+a(:,j,i)*b(:,j)
+          q%tmp=q%tmp+a(:,j,i)*b(:,j)
         enddo
 !
         if (loptest(ladd)) then
-          c(:,i)=c(:,i)+tmp
+          c(:,i)=c(:,i)+q%tmp
         else
-          c(:,i)=tmp
+          c(:,i)=q%tmp
         endif
 !
       enddo
@@ -1515,7 +1528,6 @@ subroutine dot_mn_sv_pencil(a,b,c)
 !
       real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx,3,3) :: g
-      real, dimension (nx) :: tmp
       integer :: i,j,k,k1,nder
       logical, optional :: ignoredx
 !
@@ -1528,19 +1540,19 @@ subroutine dot_mn_sv_pencil(a,b,c)
       k1=k-1
       do i=1,3; do j=1,3
         if (nder == 1) then
-          call der(f,k1+i,tmp,j)
+          call der(f,k1+i,q%tmp,j)
         elseif (nder == 2) then
-          call der2(f,k1+i,tmp,j)
+          call der2(f,k1+i,q%tmp,j)
         elseif (nder == 3) then
-          call der3(f,k1+i,tmp,j)
+          call der3(f,k1+i,q%tmp,j)
         elseif (nder == 4) then
-          call der4(f,k1+i,tmp,j)
+          call der4(f,k1+i,q%tmp,j)
         elseif (nder == 5) then
-          call der5(f,k1+i,tmp,j)
+          call der5(f,k1+i,q%tmp,j)
         elseif (nder == 6) then
-          call der6(f,k1+i,tmp,j,ignoredx)
+          call der6(f,k1+i,q%tmp,j,ignoredx)
         endif
-        g(:,i,j)=tmp
+        g(:,i,j)=q%tmp
       enddo; enddo
 !
     endsubroutine gij
@@ -1640,16 +1652,15 @@ subroutine dot_mn_sv_pencil(a,b,c)
 !
       real, dimension (mx,my,mz) :: f
       real, dimension (nx,3) :: g
-      real, dimension (nx) :: tmp
 !
       intent(in) :: f
       intent(out) :: g
 !
 !  Uses overloaded der routine.
 !
-      call der(f,tmp,1); g(:,1)=tmp
-      call der(f,tmp,2); g(:,2)=tmp
-      call der(f,tmp,3); g(:,3)=tmp
+      call der(f,q%tmp,1); g(:,1)=q%tmp
+      call der(f,q%tmp,2); g(:,2)=q%tmp
+      call der(f,q%tmp,3); g(:,3)=q%tmp
 !
     endsubroutine grad_other
 !***********************************************************************
@@ -1706,7 +1717,6 @@ subroutine dot_mn_sv_pencil(a,b,c)
 !
       integer :: k1,i
       integer, dimension(3) :: inds_
-      real, dimension(nx) :: tmp
       integer, save :: indr=0, indth=0
       logical, save :: s0=.true.
 !
@@ -1717,9 +1727,9 @@ subroutine dot_mn_sv_pencil(a,b,c)
 !
         g=0.
         do i=1,dimensionality
-          call der_4th_stag(f,k1+i,tmp,dim_mask(i))
+          call der_4th_stag(f,k1+i,q%tmp,dim_mask(i))
 !          call der_2nd_stag(f,k1+i,tmp,dim_mask(i))
-          g=g+tmp
+          g=g+q%tmp
         enddo
 
         if (s0) then
@@ -1743,12 +1753,12 @@ subroutine dot_mn_sv_pencil(a,b,c)
         else
           inds_=(/k,k+1,k+2/)
         endif
-        call der(f,inds_(1),tmp,1)
-        g=tmp
-        call der(f,inds_(2),tmp,2)
-        g=g+tmp
-        call der(f,inds_(3),tmp,3)
-        g=g+tmp
+        call der(f,inds_(1),q%tmp,1)
+        g=q%tmp
+        call der(f,inds_(2),q%tmp,2)
+        g=g+q%tmp
+        call der(f,inds_(3),q%tmp,3)
+        g=g+q%tmp
 
         if (lspherical_coords) g=g+r1_mn*(2.*f(l1:l2,m,n,inds_(1))+cotth(m)*f(l1:l2,m,n,inds_(2)))
         if (lcylindrical_coords) g=g+rcyl_mn1*f(l1:l2,m,n,inds_(1))
@@ -1961,14 +1971,14 @@ subroutine dot_mn_sv_pencil(a,b,c)
       use Deriv, only: der
 !
       real, dimension (mx,my,mz,3) :: f
-      real, dimension (nx) :: g, tmp
+      real, dimension (nx) :: g
 !
-      call der(f(:,:,:,1),tmp,1)
-      g=tmp
-      call der(f(:,:,:,2),tmp,2)
-      g=g+tmp
-      call der(f(:,:,:,3),tmp,3)
-      g=g+tmp
+      call der(f(:,:,:,1),q%tmp,1)
+      g=q%tmp
+      call der(f(:,:,:,2),q%tmp,2)
+      g=g+q%tmp
+      call der(f(:,:,:,3),q%tmp,3)
+      g=g+q%tmp
 !
       if (lspherical_coords) then
         g=g+2.*r1_mn*f(l1:l2,m,n,1)+r1_mn*cotth(m)*f(l1:l2,m,n,2)
@@ -2156,7 +2166,6 @@ subroutine dot_mn_sv_pencil(a,b,c)
       integer, intent(in) :: k
       logical, intent(in), optional :: ignoredx
 !
-      real, dimension(nx) :: tmp1, tmp2
       logical :: igdx
       integer :: k1
 !
@@ -2168,17 +2177,17 @@ subroutine dot_mn_sv_pencil(a,b,c)
 !
       k1=k-1
 !
-      call der(f, k1+3, tmp1, 2, ignoredx=igdx)
-      call der(f, k1+2, tmp2, 3, ignoredx=igdx)
-      g(:,1)=tmp1-tmp2
+      call der(f, k1+3, q%tmp1, 2, ignoredx=igdx)
+      call der(f, k1+2, q%tmp2, 3, ignoredx=igdx)
+      g(:,1)=q%tmp1-q%tmp2
 !
-      call der(f, k1+1, tmp1, 3, ignoredx=igdx)
-      call der(f, k1+3, tmp2, 1, ignoredx=igdx)
-      g(:,2)=tmp1-tmp2
+      call der(f, k1+1, q%tmp1, 3, ignoredx=igdx)
+      call der(f, k1+3, q%tmp2, 1, ignoredx=igdx)
+      g(:,2)=q%tmp1-q%tmp2
 !
-      call der(f, k1+2, tmp1, 1, ignoredx=igdx)
-      call der(f, k1+1, tmp2, 2, ignoredx=igdx)
-      g(:,3)=tmp1-tmp2
+      call der(f, k1+2, q%tmp1, 1, ignoredx=igdx)
+      call der(f, k1+1, q%tmp2, 2, ignoredx=igdx)
+      g(:,3)=q%tmp1-q%tmp2
 !
 !  Adjustments for spherical coordinate system.
 !
@@ -2204,22 +2213,21 @@ subroutine dot_mn_sv_pencil(a,b,c)
 !
       real, dimension (mx,my,mz,3) :: f
       real, dimension (nx,3) :: g
-      real, dimension (nx) :: tmp1,tmp2
 !
       intent(in) :: f
       intent(out) :: g
 !
-      call der(f(:,:,:,3),tmp1,2)
-      call der(f(:,:,:,2),tmp2,3)
-      g(:,1)=tmp1-tmp2
+      call der(f(:,:,:,3),q%tmp1,2)
+      call der(f(:,:,:,2),q%tmp2,3)
+      g(:,1)=q%tmp1-q%tmp2
 !
-      call der(f(:,:,:,1),tmp1,3)
-      call der(f(:,:,:,3),tmp2,1)
-      g(:,2)=tmp1-tmp2
+      call der(f(:,:,:,1),q%tmp1,3)
+      call der(f(:,:,:,3),q%tmp2,1)
+      g(:,2)=q%tmp1-q%tmp2
 !
-      call der(f(:,:,:,2),tmp1,1)
-      call der(f(:,:,:,1),tmp2,2)
-      g(:,3)=tmp1-tmp2
+      call der(f(:,:,:,2),q%tmp1,1)
+      call der(f(:,:,:,1),q%tmp2,2)
+      g(:,3)=q%tmp1-q%tmp2
 !
 !  Adjustments for spherical corrdinate system.
 !
@@ -2316,24 +2324,24 @@ subroutine dot_mn_sv_pencil(a,b,c)
       intent(out) :: del2f
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension (nx) :: del2f,d2fdx,d2fdy,d2fdz,tmp
+      real, dimension (nx) :: del2f
       integer :: k
 !
-      call der2(f,k,d2fdx,1)
-      call der2(f,k,d2fdy,2)
-      call der2(f,k,d2fdz,3)
-      del2f=d2fdx+d2fdy+d2fdz
+      call der2(f,k,q%d2fdx,1)
+      call der2(f,k,q%d2fdy,2)
+      call der2(f,k,q%d2fdz,3)
+      del2f=q%d2fdx+q%d2fdy+q%d2fdz
 !
       if (lcylindrical_coords) then
-        call der(f,k,tmp,1)
-        del2f=del2f+tmp*rcyl_mn1
+        call der(f,k,q%tmp,1)
+        del2f=del2f+q%tmp*rcyl_mn1
       endif
 !
       if (lspherical_coords) then
-        call der(f,k,tmp,1)
-        del2f=del2f+2.*r1_mn*tmp
-        call der(f,k,tmp,2)
-        del2f=del2f+cotth(m)*r1_mn*tmp
+        call der(f,k,q%tmp,1)
+        del2f=del2f+2.*r1_mn*q%tmp
+        call der(f,k,q%tmp,2)
+        del2f=del2f+cotth(m)*r1_mn*q%tmp
       endif
 !
     endsubroutine del2_main
@@ -2349,23 +2357,23 @@ subroutine dot_mn_sv_pencil(a,b,c)
       intent(out) :: del2f
 !
       real, dimension (mx,my,mz) :: f
-      real, dimension (nx) :: del2f,d2fdx,d2fdy,d2fdz,tmp
+      real, dimension (nx) :: del2f
 !
-      call der2(f,d2fdx,1)
-      call der2(f,d2fdy,2)
-      call der2(f,d2fdz,3)
-      del2f=d2fdx+d2fdy+d2fdz
+      call der2(f,q%d2fdx,1)
+      call der2(f,q%d2fdy,2)
+      call der2(f,q%d2fdz,3)
+      del2f=q%d2fdx+q%d2fdy+q%d2fdz
 !
       if (lcylindrical_coords) then
-        call der(f,tmp,1)
-        del2f=del2f+tmp*rcyl_mn1
+        call der(f,q%tmp,1)
+        del2f=del2f+q%tmp*rcyl_mn1
       endif
 !
       if (lspherical_coords) then
-        call der(f,tmp,1)
-        del2f=del2f+2.*r1_mn*tmp
-        call der(f,tmp,2)
-        del2f=del2f+cotth(m)*r1_mn*tmp
+        call der(f,q%tmp,1)
+        del2f=del2f+2.*r1_mn*q%tmp
+        call der(f,q%tmp,2)
+        del2f=del2f+cotth(m)*r1_mn*q%tmp
       endif
 !
     endsubroutine del2_other
@@ -2383,7 +2391,6 @@ subroutine dot_mn_sv_pencil(a,b,c)
       real, optional, dimension(nx,3,3) :: fij
       real, optional, dimension(nx,3) :: pff
       real, dimension (nx,3) :: del2f
-      real, dimension (nx) :: tmp
       integer :: i,k,k1
 !
       intent(in) :: f,k
@@ -2393,16 +2400,15 @@ subroutine dot_mn_sv_pencil(a,b,c)
 !
       k1=k-1
       do i=1,3
-        call del2(f,k1+i,tmp)
-        del2f(:,i)=tmp
+        call del2(f,k1+i,del2f(:,i))
       enddo
 !
       if (lcylindrical_coords) then
         !del2 already contains the extra term 1/r*d(uk)/dt
-        call der(f,k1+2,tmp,2)
-        del2f(:,1)=del2f(:,1) -(2*tmp+f(l1:l2,m,n,k1+1))*rcyl_mn2
-        call der(f,k1+1,tmp,2)
-        del2f(:,2)=del2f(:,2) +(2*tmp-f(l1:l2,m,n,k1+2))*rcyl_mn2
+        call der(f,k1+2,q%tmp,2)
+        del2f(:,1)=del2f(:,1) -(2*q%tmp+f(l1:l2,m,n,k1+1))*rcyl_mn2
+        call der(f,k1+1,q%tmp,2)
+        del2f(:,2)=del2f(:,2) +(2*q%tmp-f(l1:l2,m,n,k1+2))*rcyl_mn2
       endif
 !
       if (lspherical_coords) then
@@ -2811,7 +2817,6 @@ subroutine dot_mn_sv_pencil(a,b,c)
 !
       real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx,3) :: del4f
-      real, dimension (nx) :: tmp
       integer :: i,k,k1
 !
       intent(in) :: f,k
@@ -2827,8 +2832,8 @@ subroutine dot_mn_sv_pencil(a,b,c)
 !
       k1=k-1
       do i=1,3
-        call del4(f,k1+i,tmp)
-        del4f(:,i)=tmp
+        call del4(f,k1+i,q%tmp)
+        del4f(:,i)=q%tmp
       enddo
 !
     endsubroutine del4v
@@ -2844,7 +2849,6 @@ subroutine dot_mn_sv_pencil(a,b,c)
 !
       real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx,3) :: del6f
-      real, dimension (nx) :: tmp
       integer :: i,k,k1
       logical, optional :: lstrict
 !
@@ -2856,11 +2860,10 @@ subroutine dot_mn_sv_pencil(a,b,c)
       k1=k-1
       do i=1,3
         if (loptest(lstrict)) then
-          call del6_strict(f,k1+i,tmp)
+          call del6_strict(f,k1+i,del6f(:,i))
         else
-          call del6(f,k1+i,tmp)
+          call del6(f,k1+i,del6f(:,i))
         endif
-        del6f(:,i)=tmp
       enddo
 !
 !  Exit if this is requested for non-cartesian runs.
@@ -2885,13 +2888,11 @@ subroutine dot_mn_sv_pencil(a,b,c)
       real, dimension (nx,3,*),           intent(out):: bijtilde
       real, dimension (nx,3,3), optional, intent(out):: bij_cov_corr
  
-      real, dimension (nx,3) :: bbr1
       real, dimension (nx,2:3) :: aar2
-      real, dimension (nx) :: d2adrdt,tmp,tmp1
       integer :: i
 
       do i=1,3 
-        bbr1(:,i)=bb(:,i)*r1_mn
+        q%bbr1(:,i)=bb(:,i)*r1_mn
       enddo
 !
 !  d B_r/dr = (1/r) d^2 A_phi/(dr dtheta) - B_r/r - cot(theta)*(B_theta/r + A_phi/r^2)
@@ -2900,46 +2901,46 @@ subroutine dot_mn_sv_pencil(a,b,c)
         aar2(:,i+1)=f(l1:l2,m,n,iaa+i)*r2_mn
       enddo
 !
-      call derij(f,iaz,d2adrdt,1,2)     ! (1/r) d^2 A_phi/dr dtheta
+      call derij(f,iaz,q%d2adrdt,1,2)     ! (1/r) d^2 A_phi/dr dtheta
 
-      bijtilde(:,1,1) = d2adrdt - (bbr1(:,1) + cotth(m)*(bbr1(:,2)+aar2(:,3)))
+      bijtilde(:,1,1) = q%d2adrdt - (q%bbr1(:,1) + cotth(m)*(q%bbr1(:,2)+aar2(:,3)))
 !
 !  (1/r) d B_r/d theta
 !      
-      call der2(f,iaz,tmp,2)            ! (1/r^2) d^2 A_phi/dtheta^2
-      bijtilde(:,1,2) = tmp - aar2(:,3)*(cotth(m)*cotth(m) + sin2th(m)) + cotth(m)*bbr1(:,1)
+      call der2(f,iaz,q%tmp,2)            ! (1/r^2) d^2 A_phi/dtheta^2
+      bijtilde(:,1,2) = q%tmp - aar2(:,3)*(cotth(m)*cotth(m) + sin2th(m)) + cotth(m)*q%bbr1(:,1)
 !
 !  d B_theta/dr
 !      
-      call der2(f,iaz,tmp,1)            ! d^2 A_phi/dr^2
-      bijtilde(:,2,1) = -tmp + (bbr1(:,2)+2.*aar2(:,3))
+      call der2(f,iaz,q%tmp,1)            ! d^2 A_phi/dr^2
+      bijtilde(:,2,1) = -q%tmp + (q%bbr1(:,2)+2.*aar2(:,3))
 !
 !  (1/r) d B_theta/d theta
 !      
-      bijtilde(:,2,2) = -d2adrdt - (bbr1(:,1) - cotth(m)*aar2(:,3))
+      bijtilde(:,2,2) = -q%d2adrdt - (q%bbr1(:,1) - cotth(m)*aar2(:,3))
 !
 !  d B_phi/dr
 !      
-      call der2(f,iay,tmp,1)            ! d^2 A_theta/dr^2
-      call derij(f,iax,d2adrdt,1,2)     ! (1/r) d^2 A_r/dr dtheta
-      call der(f,iax,tmp1,2)            ! (1/r) d A_r/dtheta
-      bijtilde(:,3,1) = tmp - d2adrdt + bbr1(:,3) - 2.*(aar2(:,2)-tmp1*r1_mn)
+      call der2(f,iay,q%tmp,1)            ! d^2 A_theta/dr^2
+      call derij(f,iax,q%d2adrdt,1,2)     ! (1/r) d^2 A_r/dr dtheta
+      call der(f,iax,q%tmp1,2)            ! (1/r) d A_r/dtheta
+      bijtilde(:,3,1) = q%tmp - q%d2adrdt + q%bbr1(:,3) - 2.*(aar2(:,2)-q%tmp1*r1_mn)
 !
 !  (1/r) d B_phi/d theta
 !      
-      call der2(f,iax,tmp,2)            ! (1/r^2) d^2 A_r/dtheta^2
-      call derij(f,iay,d2adrdt,1,2)     ! (1/r) d^2 A_theta/dr dtheta
-      call der(f,iay,tmp1,2)            ! (1/r) d A_theta/dtheta
-      bijtilde(:,3,2) = tmp1*r1_mn - (tmp - d2adrdt)
+      call der2(f,iax,q%tmp,2)            ! (1/r^2) d^2 A_r/dtheta^2
+      call derij(f,iay,q%d2adrdt,1,2)     ! (1/r) d^2 A_theta/dr dtheta
+      call der(f,iay,q%tmp1,2)            ! (1/r) d A_theta/dtheta
+      bijtilde(:,3,2) = q%tmp1*r1_mn - (q%tmp - q%d2adrdt)
  
       bijtilde(:,:,3)=0. 
       if (present(bij_cov_corr)) then
         bij_cov_corr(:,:,1) = 0.; bij_cov_corr(:,3,2)=0.
-        bij_cov_corr(:,1,2) = -bbr1(:,2)
-        bij_cov_corr(:,1,3) = -bbr1(:,3)
-        bij_cov_corr(:,2,2) =  bbr1(:,1)
-        bij_cov_corr(:,2,3) = -cotth(m)*bbr1(:,3)
-        bij_cov_corr(:,3,3) =  cotth(m)*bbr1(:,2)+bbr1(:,1)
+        bij_cov_corr(:,1,2) = -q%bbr1(:,2)
+        bij_cov_corr(:,1,3) = -q%bbr1(:,3)
+        bij_cov_corr(:,2,2) =  q%bbr1(:,1)
+        bij_cov_corr(:,2,3) = -cotth(m)*q%bbr1(:,3)
+        bij_cov_corr(:,3,3) =  cotth(m)*q%bbr1(:,2)+q%bbr1(:,1)
       endif
  
     endsubroutine bij_tilde 
@@ -2968,7 +2969,6 @@ subroutine dot_mn_sv_pencil(a,b,c)
 !
 !  Locally used variables.
 !
-      real, dimension (nx,3,3,3) :: d2A
       integer :: iref1,i,j
 !
 !  Reference point of argument.
@@ -2985,13 +2985,13 @@ subroutine dot_mn_sv_pencil(a,b,c)
 !
       do i=1,3
         do j=1,3
-          call der2(f,iref1+i,d2A(:,j,j,i),j)
+          call der2(f,iref1+i,q%d2a(:,j,j,i),j)
 !if (maxval(abs(d2A(:,j,j,i)))>0) print*, 'd2A:iproc,m,n,i,j,iref1+i=', &
 !iproc,m,n,i,j,iref1+i
         enddo
-        call derij(f,iref1+i,d2A(:,2,3,i),2,3); d2A(:,3,2,i)=d2A(:,2,3,i)
-        call derij(f,iref1+i,d2A(:,3,1,i),3,1); d2A(:,1,3,i)=d2A(:,3,1,i)
-        call derij(f,iref1+i,d2A(:,1,2,i),1,2); d2A(:,2,1,i)=d2A(:,1,2,i)
+        call derij(f,iref1+i,q%d2a(:,2,3,i),2,3); q%d2a(:,3,2,i)=q%d2a(:,2,3,i)
+        call derij(f,iref1+i,q%d2a(:,3,1,i),3,1); q%d2a(:,1,3,i)=q%d2a(:,3,1,i)
+        call derij(f,iref1+i,q%d2a(:,1,2,i),1,2); q%d2a(:,2,1,i)=q%d2a(:,1,2,i)
       enddo
 !
 !  Corrections for spherical polars from swapping mixed derivatives:
@@ -3003,9 +3003,9 @@ subroutine dot_mn_sv_pencil(a,b,c)
         if (.not.present(aij)) &
           call fatal_error('gij_etc', 'aij needed for spherical coordinates')
         do i=1,3
-          d2A(:,2,1,i)=d2A(:,2,1,i)-aij(:,i,2)*r1_mn
-          d2A(:,3,1,i)=d2A(:,3,1,i)-aij(:,i,3)*r1_mn
-          d2A(:,3,2,i)=d2A(:,3,2,i)-aij(:,i,3)*r1_mn*cotth(m)
+          q%d2a(:,2,1,i)=q%d2a(:,2,1,i)-aij(:,i,2)*r1_mn
+          q%d2a(:,3,1,i)=q%d2a(:,3,1,i)-aij(:,i,3)*r1_mn
+          q%d2a(:,3,2,i)=q%d2a(:,3,2,i)-aij(:,i,3)*r1_mn*cotth(m)
         enddo
       endif
 !
@@ -3016,7 +3016,7 @@ subroutine dot_mn_sv_pencil(a,b,c)
         if (.not.present(aij)) &
           call fatal_error('gij_etc', 'aij needed for cylindrical coordinates')
         do i=1,3
-          d2A(:,2,1,i)=d2A(:,2,1,i)-aij(:,i,2)*rcyl_mn1
+          q%d2a(:,2,1,i)=q%d2a(:,2,1,i)-aij(:,i,2)*rcyl_mn1
         enddo
       endif
 !
@@ -3025,9 +3025,9 @@ subroutine dot_mn_sv_pencil(a,b,c)
 !
       if (present(bij)) then
 !
-        bij(:,1,:)=d2A(:,2,:,3)-d2A(:,3,:,2)
-        bij(:,2,:)=d2A(:,3,:,1)-d2A(:,1,:,3)
-        bij(:,3,:)=d2A(:,1,:,2)-d2A(:,2,:,1)
+        bij(:,1,:)=q%d2a(:,2,:,3)-q%d2a(:,3,:,2)
+        bij(:,2,:)=q%d2a(:,3,:,1)-q%d2a(:,1,:,3)
+        bij(:,3,:)=q%d2a(:,1,:,2)-q%d2a(:,2,:,1)
 !
 !  Corrections for spherical coordinates.
 !
@@ -3071,7 +3071,7 @@ subroutine dot_mn_sv_pencil(a,b,c)
 !  Calculate del2 and graddiv, if requested.
 !
       if (present(graddiv)) then
-        graddiv(:,:)=d2A(:,1,:,1)+d2A(:,2,:,2)+d2A(:,3,:,3)
+        graddiv(:,:)=q%d2a(:,1,:,1)+q%d2a(:,2,:,2)+q%d2a(:,3,:,3)
         if (lspherical_coords) then
           if (.not.present(aa)) &
             call fatal_error('gij_etc', 'aa needed for spherical coordinates')
@@ -3085,7 +3085,7 @@ subroutine dot_mn_sv_pencil(a,b,c)
       endif
 !
       if (present(del2)) then
-        del2(:,:)=d2A(:,1,1,:)+d2A(:,2,2,:)+d2A(:,3,3,:)
+        del2(:,:)=q%d2a(:,1,1,:)+q%d2a(:,2,2,:)+q%d2a(:,3,3,:)
         if (lspherical_coords) then
           if (.not.present(aa)) &
             call fatal_error('gij_etc', 'aa needed for spherical coordinates')
@@ -3155,7 +3155,7 @@ subroutine dot_mn_sv_pencil(a,b,c)
       intent(out) :: del4f
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension (nx) :: del4f,d4fdx,d4fdy,d4fdz
+      real, dimension (nx) :: del4f
       integer :: k
       logical, optional :: ignoredx
       logical :: ignore_dx
@@ -3172,10 +3172,10 @@ subroutine dot_mn_sv_pencil(a,b,c)
             'not implemented for non-cartesian coordinates')
       endif
 !
-      call der4(f,k,d4fdx,1,ignore_dx)
-      call der4(f,k,d4fdy,2,ignore_dx)
-      call der4(f,k,d4fdz,3,ignore_dx)
-      del4f = d4fdx + d4fdy + d4fdz
+      call der4(f,k,q%d4fdx,1,ignore_dx)
+      call der4(f,k,q%d4fdy,2,ignore_dx)
+      call der4(f,k,q%d4fdz,3,ignore_dx)
+      del4f = q%d4fdx + q%d4fdy + q%d4fdz
 !
     endsubroutine del4
 !***********************************************************************
@@ -3239,7 +3239,7 @@ subroutine dot_mn_sv_pencil(a,b,c)
       intent(out) :: del6f
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension (nx) :: del6f,d6fdx,d6fdy,d6fdz
+      real, dimension (nx) :: del6f
       integer :: k
       logical, optional :: ignoredx,lexp
       logical :: ignore_dx
@@ -3256,11 +3256,11 @@ subroutine dot_mn_sv_pencil(a,b,c)
 !!!!            'not implemented for non-cartesian coordinates')
       endif
 !
-      call der6(f,k,d6fdx,1,ignore_dx,lexp)
-      call der6(f,k,d6fdy,2,ignore_dx,lexp)
-      call der6(f,k,d6fdz,3,ignore_dx,lexp)
+      call der6(f,k,q%d6fdx,1,ignore_dx,lexp)
+      call der6(f,k,q%d6fdy,2,ignore_dx,lexp)
+      call der6(f,k,q%d6fdz,3,ignore_dx,lexp)
 !
-      del6f = d6fdx + d6fdy + d6fdz
+      del6f = q%d6fdx + q%d6fdy + q%d6fdz
 !
     endsubroutine del6
 !***********************************************************************
@@ -3281,7 +3281,7 @@ subroutine dot_mn_sv_pencil(a,b,c)
       use Deriv, only: der6,der4i2j,der2i2j2k
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(nx) :: del6,tmp
+      real, dimension(nx) :: del6
       integer :: k,i,j
 !      
       intent(in) :: f,k
@@ -3289,17 +3289,17 @@ subroutine dot_mn_sv_pencil(a,b,c)
 !
       del6=0.
       do i=1,3
-        call der6(f,k,tmp,i)
-        del6 = del6 + tmp
+        call der6(f,k,q%tmp,i)
+        del6 = del6 + q%tmp
         do j=1,3
           if (j/=i) then
-            call der4i2j(f,k,tmp,i,j)
-            del6 = del6 + 3*tmp
+            call der4i2j(f,k,q%tmp,i,j)
+            del6 = del6 + 3*q%tmp
           endif
         enddo
       enddo
-      call der2i2j2k(f,k,tmp)
-      del6 = del6 + 6*tmp
+      call der2i2j2k(f,k,q%tmp)
+      del6 = del6 + 6*q%tmp
 !
     endsubroutine del6_strict
 !***********************************************************************
@@ -3496,8 +3496,7 @@ subroutine dot_mn_sv_pencil(a,b,c)
 !
       real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx,3,3) :: gradf
-      real, dimension (nx,3) :: uu,ff,ugradf
-      real, dimension (nx) :: tmp
+      real, dimension (nx,3) :: uu, ugradf
       integer :: j,k
       logical, optional :: upwind,ladd
 !
@@ -3505,12 +3504,12 @@ subroutine dot_mn_sv_pencil(a,b,c)
 !
       do j=1,3
 !
-        ff=gradf(:,j,:)
-        call u_dot_grad_scl(f,k+j-1,ff,uu,tmp,UPWIND=upwind)
+        q%ff=gradf(:,j,:)
+        call u_dot_grad_scl(f,k+j-1,q%ff,uu,q%tmp,UPWIND=upwind)
         if (loptest(ladd)) then
-          ugradf(:,j)=ugradf(:,j)+tmp
+          ugradf(:,j)=ugradf(:,j)+q%tmp
         else
-          ugradf(:,j)=tmp
+          ugradf(:,j)=q%tmp
         endif
 !
       enddo
@@ -3519,18 +3518,18 @@ subroutine dot_mn_sv_pencil(a,b,c)
 !  The following now works for general u.gradA.
 !
       if (lspherical_coords) then
-        ff=f(l1:l2,m,n,k:k+2)
-        ugradf(:,1)=ugradf(:,1)-r1_mn*(uu(:,2)*ff(:,2)+uu(:,3)*ff(:,3))
-        ugradf(:,2)=ugradf(:,2)+r1_mn*(uu(:,2)*ff(:,1)-uu(:,3)*ff(:,3)*cotth(m))
-        ugradf(:,3)=ugradf(:,3)+r1_mn*(uu(:,3)*ff(:,1)+uu(:,3)*ff(:,2)*cotth(m))
+        q%ff=f(l1:l2,m,n,k:k+2)
+        ugradf(:,1)=ugradf(:,1)-r1_mn*(uu(:,2)*q%ff(:,2)+uu(:,3)*q%ff(:,3))
+        ugradf(:,2)=ugradf(:,2)+r1_mn*(uu(:,2)*q%ff(:,1)-uu(:,3)*q%ff(:,3)*cotth(m))
+        ugradf(:,3)=ugradf(:,3)+r1_mn*(uu(:,3)*q%ff(:,1)+uu(:,3)*q%ff(:,2)*cotth(m))
       endif
 !
 !  The following now works for general u.gradA.
 !
       if (lcylindrical_coords) then
-        ff=f(l1:l2,m,n,k:k+2)
-        ugradf(:,1)=ugradf(:,1)-rcyl_mn1*(uu(:,2)*ff(:,2))
-        ugradf(:,2)=ugradf(:,2)+rcyl_mn1*(uu(:,2)*ff(:,1))
+        q%ff=f(l1:l2,m,n,k:k+2)
+        ugradf(:,1)=ugradf(:,1)-rcyl_mn1*(uu(:,2)*q%ff(:,2))
+        ugradf(:,2)=ugradf(:,2)+rcyl_mn1*(uu(:,2)*q%ff(:,1))
       endif
 !
     endsubroutine u_dot_grad_vec
@@ -3844,14 +3843,13 @@ subroutine dot_mn_sv_pencil(a,b,c)
 !
       real, dimension (nx,3,3) :: gradf
       real, dimension (nx,3) :: hh,ff,hgradf
-      real, dimension (nx) :: tmp
       integer :: j
 !
 !  Dot product for each of the three components of gradf .
 !
       do j=1,3
-        call h_dot_grad_scl(hh,gradf(:,j,:),tmp)
-        hgradf(:,j)=tmp
+        call h_dot_grad_scl(hh,gradf(:,j,:),q%tmp)
+        hgradf(:,j)=q%tmp
       enddo
 !
 !  Adjustments for spherical coordinate system.
@@ -4265,7 +4263,6 @@ subroutine dot_mn_sv_pencil(a,b,c)
 
       character (len=*) :: file
       real, dimension(nx,3) :: vv
-      real, dimension(nx) :: v2
       real :: thresh,thresh2
       integer :: l,lun,nvec
       
@@ -4278,9 +4275,9 @@ subroutine dot_mn_sv_pencil(a,b,c)
 !  Write data.
 !
       thresh2=thresh**2
-      v2=sum(vv**2,2)
+      q%v2=sum(vv**2,2)
       do l=1,nx
-        if (v2(l)>=thresh2) then
+        if (q%v2(l)>=thresh2) then
           !$omp critical
           write(lun) l,m-nghost,n-nghost,vv(l,:)
           !$omp end critical
@@ -7497,9 +7494,8 @@ nameloop: do
       use Deriv, only: der6, deri_3d_inds
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(nx,3)             :: del6f, hh
+      real, dimension(nx,3) :: hh
       real, dimension(nx)               :: del6f_upwind
-      integer, dimension(nx)            :: indxs
       integer, intent(in), optional     :: mask
       integer                           :: j, k, msk
 !
@@ -7512,33 +7508,33 @@ nameloop: do
       do j=1,3
 !
         if (j==msk) then
-          del6f(:,j) = 0.
+          q%del6f(:,j) = 0.
         else
 !
           if (lequidist(j) .or. lignore_nonequi) then
-            call der6(f,k,del6f(:,j),j,UPWIND=.true.)
+            call der6(f,k,q%del6f(:,j),j,UPWIND=.true.)
           else
             where(hh(:,j)>=0)
-              indxs = 7
+              q%indxs = 7
             elsewhere
-              indxs = 8
+              q%indxs = 8
             endwhere
-            call deri_3d_inds(f(:,:,:,k),del6f(:,j),indxs,j,lnometric=.true.)
+            call deri_3d_inds(f(:,:,:,k),q%del6f(:,j),q%indxs,j,lnometric=.true.)
           endif
 !
-          del6f(:,j) = abs(hh(:,j))*del6f(:,j)
+          q%del6f(:,j) = abs(hh(:,j))*q%del6f(:,j)
 !
         endif
       enddo
 !
-      if (lcylindrical_coords) del6f(:,2) = rcyl_mn1*del6f(:,2)
+      if (lcylindrical_coords) q%del6f(:,2) = rcyl_mn1*q%del6f(:,2)
 !
       if (lspherical_coords) then
-        del6f(:,2) = r1_mn*del6f(:,2)
-        del6f(:,3) = r1_mn*sin1th(m)*del6f(:,3)
+        q%del6f(:,2) = r1_mn*q%del6f(:,2)
+        q%del6f(:,3) = r1_mn*sin1th(m)*q%del6f(:,3)
       endif
 !
-      del6f_upwind = sum(del6f,2)
+      del6f_upwind = sum(q%del6f,2)
 !
     endsubroutine calc_del6_for_upwind
 !***********************************************************************    
@@ -7557,7 +7553,6 @@ nameloop: do
       real, dimension(nx),              intent(INOUT)       :: ugradf
       integer,                          intent(IN),optional :: mask
 
-      real, dimension(nx) :: del6f_upwind
       integer :: msk
 !
       msk=0
@@ -7567,12 +7562,12 @@ nameloop: do
 !
 !  Note that this currently only works for 6th order, not for 10th order.
 !
-      call calc_del6_for_upwind(f,k,uu,del6f_upwind,msk)
+      call calc_del6_for_upwind(f,k,uu,q%del6f_upwind,msk)
 !
       if (msk>0) then
-        ugradf = ugradf+del6f_upwind
+        ugradf = ugradf+q%del6f_upwind
       else
-        ugradf = ugradf-del6f_upwind
+        ugradf = ugradf-q%del6f_upwind
       endif
 !
     endsubroutine doupwind

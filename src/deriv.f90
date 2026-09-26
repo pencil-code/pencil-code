@@ -20,6 +20,17 @@ module Deriv
 !
   real :: der2_coef0, der2_coef1, der2_coef2, der2_coef3
 !
+!  Former nx-sized local ("tmp") arrays of calc_pencils_*, calc_diagnostics_*
+!  and the routines they call. They are kept here instead of on the stack
+!  since with large subdomains the stack arrays become too large.
+!
+  type :: DerivTmpInternalPencils
+    real, dimension(nx) :: fac
+  end type DerivTmpInternalPencils
+!
+  type(DerivTmpInternalPencils) :: q
+  !$omp threadprivate(q)
+!
   contains
 !
 !***********************************************************************
@@ -864,7 +875,7 @@ module Deriv
 !  29-oct-04/anders: adapted from der6
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension (nx) :: df,fac
+      real, dimension (nx) :: df
       integer :: j,k
       logical, optional :: ignoredx
       logical :: igndx
@@ -890,11 +901,11 @@ module Deriv
       if (j==1) then
         if (nxgrid/=1) then
           if (igndx) then
-            fac=(1.0/2)
+            q%fac=(1.0/2)
           else
-            fac=(1.0/2)*1/dx**5
+            q%fac=(1.0/2)*1/dx**5
           endif
-          df=fac*(+  5.0*(f(l1+1:l2+1,m,n,k)-f(l1-1:l2-1,m,n,k)) &
+          df=q%fac*(+  5.0*(f(l1+1:l2+1,m,n,k)-f(l1-1:l2-1,m,n,k)) &
                   -  4.0*(f(l1+2:l2+2,m,n,k)-f(l1-2:l2-2,m,n,k)) &
                   +      (f(l1+3:l2+3,m,n,k)-f(l1-3:l2-3,m,n,k)))
         else
@@ -903,11 +914,11 @@ module Deriv
       elseif (j==2) then
         if (nygrid/=1) then
           if (igndx) then
-            fac=(1.0/2)
+            q%fac=(1.0/2)
           else
-            fac=(1.0/2)*1/dy**5
+            q%fac=(1.0/2)*1/dy**5
           endif
-          df=fac*(+  5.0*(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k)) &
+          df=q%fac*(+  5.0*(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k)) &
                   -  4.0*(f(l1:l2,m+2,n,k)-f(l1:l2,m-2,n,k)) &
                   +      (f(l1:l2,m+3,n,k)-f(l1:l2,m-3,n,k)))
           if (lcylindrical_coords) df=df*rcyl_mn1**5
@@ -918,11 +929,11 @@ module Deriv
       elseif (j==3) then
         if (nzgrid/=1) then
           if (igndx) then
-            fac=(1.0/2)
+            q%fac=(1.0/2)
           else
-            fac=(1.0/2)*1/dz**5
+            q%fac=(1.0/2)*1/dz**5
           endif
-          df=fac*(+  5.0*(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k)) &
+          df=q%fac*(+  5.0*(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k)) &
                   -  4.0*(f(l1:l2,m,n+2,k)-f(l1:l2,m,n-2,k)) &
                   +      (f(l1:l2,m,n+3,k)-f(l1:l2,m,n-3,k)))
 !MR: spherical/coarse missing
@@ -1988,7 +1999,7 @@ module Deriv
 !  02-apr-17/wlyra: adapted from der5i1j
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension (nx) :: df,fac
+      real, dimension (nx) :: df
       integer :: i,j,k
 !
       intent(in) :: f,k,i,j
@@ -2012,8 +2023,8 @@ module Deriv
         endif
       elseif ((i==1.and.j==2)) then
         if (nxgrid/=1.and.nygrid/=1) then
-          fac=(1./6.0*dx_1(l1:l2)**4) * (1./180.0*dy_1(m)**2)
-          df=fac*( &
+          q%fac=(1./6.0*dx_1(l1:l2)**4) * (1./180.0*dy_1(m)**2)
+          df=q%fac*( &
                56.0*( -490.* f(l1:l2,m  ,n,k)                            &
                       +270.*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k))          &
                        -27.*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k))          &
@@ -2049,8 +2060,8 @@ module Deriv
         endif
       elseif ((i==2.and.j==1)) then
         if (nygrid/=1.and.nxgrid/=1) then
-          fac=(1./6.0*dy_1(m)**4) * (1./180.0*dx_1(l1:l2)**2)
-          df=fac*( &
+          q%fac=(1./6.0*dy_1(m)**4) * (1./180.0*dx_1(l1:l2)**2)
+          df=q%fac*( &
                56.0*( -490.* f(l1  :l2  ,m  ,n,k)                        &
                       +270.*(f(l1+1:l2+1,m  ,n,k)+f(l1-1:l2-1,m  ,n,k))  &
                        -27.*(f(l1+2:l2+2,m  ,n,k)+f(l1-2:l2-2,m  ,n,k))  &
@@ -2086,9 +2097,9 @@ module Deriv
         endif
       elseif ((i==1.and.j==3)) then
         if (nxgrid/=1.and.nzgrid/=1) then
-          fac=(1./6.0*dx_1(l1:l2)**4) * (1./180.0*dz_1(n)**2)
-          if (lspherical_coords) fac = fac*(r1_mn*sin1th(m))**2
-          df=fac*( &
+          q%fac=(1./6.0*dx_1(l1:l2)**4) * (1./180.0*dz_1(n)**2)
+          if (lspherical_coords) q%fac = q%fac*(r1_mn*sin1th(m))**2
+          df=q%fac*( &
                56.0*( -490.* f(l1  :l2  ,m,n  ,k)                        &
                       +270.*(f(l1  :l2  ,m,n+1,k)+f(l1  :l2  ,m,n-1,k))  &
                        -27.*(f(l1  :l2  ,m,n+2,k)+f(l1  :l2  ,m,n-2,k))  &
@@ -2124,9 +2135,9 @@ module Deriv
         endif
       elseif ((i==3.and.j==1)) then
         if (nzgrid/=1.and.nxgrid/=1) then
-          fac=(1./6.0*dz_1(n)**4) * (1./180.0*dx_1(l1:l2)**2)
-          if (lspherical_coords) fac = fac*(r1_mn*sin1th(m))**4
-          df=fac*( &
+          q%fac=(1./6.0*dz_1(n)**4) * (1./180.0*dx_1(l1:l2)**2)
+          if (lspherical_coords) q%fac = q%fac*(r1_mn*sin1th(m))**4
+          df=q%fac*( &
                56.0*( -490.* f(l1  :l2  ,m,n  ,k)                        &
                       +270.*(f(l1+1:l2+1,m,n  ,k)+f(l1-1:l2-1,m,n  ,k))  &
                        -27.*(f(l1+2:l2+2,m,n  ,k)+f(l1-2:l2-2,m,n  ,k))  &
@@ -2162,8 +2173,8 @@ module Deriv
         endif
       elseif ((i==2.and.j==3)) then
         if (nygrid/=1.and.nzgrid/=1) then
-          fac=(1./6.0*dy_1(m)**4) * (1./180.0*dz_1(n)**2)
-          df=fac*( &
+          q%fac=(1./6.0*dy_1(m)**4) * (1./180.0*dz_1(n)**2)
+          df=q%fac*( &
                56.0*( -490.* f(l1:l2,m  ,n  ,k)                      &
                       +270.*(f(l1:l2,m  ,n+1,k)+f(l1:l2,m  ,n-1,k))  &
                        -27.*(f(l1:l2,m  ,n+2,k)+f(l1:l2,m  ,n-2,k))  &
@@ -2199,8 +2210,8 @@ module Deriv
         endif
       elseif ((i==3.and.j==2)) then
         if (nzgrid/=1.and.nygrid/=1) then
-          fac=(1./6.0*dz_1(n)**4) * (1./180.0*dy_1(m)**2)
-          df=fac*( &
+          q%fac=(1./6.0*dz_1(n)**4) * (1./180.0*dy_1(m)**2)
+          df=q%fac*( &
                56.0*( -490.* f(l1:l2,m  ,n  ,k)                      &
                       +270.*(f(l1:l2,m+1,n  ,k)+f(l1:l2,m-1,n  ,k))  &
                        -27.*(f(l1:l2,m+2,n  ,k)+f(l1:l2,m-2,n  ,k))  &
@@ -2249,7 +2260,6 @@ module Deriv
 !  02-apr-17/wlyra: coded
 !
       real, contiguous, dimension(:,:,:,:),intent(in) :: f
-      real, dimension (nx) :: fac
       integer,intent(in) :: k
       real, dimension(nx), intent(out) :: df
 !
@@ -2261,8 +2271,8 @@ module Deriv
 !  MR: cases i=j/=k etc. missing
 !
       if (nxgrid/=1.and.nzgrid/=1.and.nygrid/=1) then
-        fac=1./180.0**3*(dx_1(l1:l2)*dy_1(m)*dz_1(n))**2
-        df = fac*(&
+        q%fac=1./180.0**3*(dx_1(l1:l2)*dy_1(m)*dz_1(n))**2
+        df = q%fac*(&
              ( -117649000.0 * f( l1:l2 , m , n , k ))+&
              ( 64827000.0 * f( l1:l2 , m , n - 1 , k ))+&
              ( -6482700.0 * f( l1:l2 , m , n - 2 , k ))+&

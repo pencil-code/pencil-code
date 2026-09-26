@@ -296,6 +296,18 @@ module Special
 
   integer :: enum_idelkt = 0
   integer :: enum_ihorndeski_time = 0
+!
+!  Former nx-sized local ("tmp") arrays of calc_pencils_*, calc_diagnostics_*
+!  and the routines they call. They are kept here instead of on the stack
+!  since with large subdomains the stack arrays become too large.
+!
+  type :: InternalPencils
+    real, dimension(nx) :: prefactor, ggt, ggtim, ggx, ggxim
+  end type InternalPencils
+!
+  type(InternalPencils) :: q
+  !$omp threadprivate(q)
+!
   contains
 !***********************************************************************
     subroutine register_special
@@ -962,7 +974,6 @@ module Special
       use Sub, only: dot2_mn
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension(nx) :: prefactor
       type (pencil_case) :: p
 !
       intent(in) :: f
@@ -986,9 +997,9 @@ module Special
 !  Construct stress tensor; notice opposite signs for u and b.
 !
         if (lgamma_factor) then
-          prefactor=fourthird_factor/(1.-p%u2)
+          q%prefactor=fourthird_factor/(1.-p%u2)
         else
-          prefactor=fourthird_factor
+          q%prefactor=fourthird_factor
         endif
 !
 !  Construct stress tensor; notice opposite signs for u and b.
@@ -1004,7 +1015,7 @@ module Special
               if (lconservative) then
                 p%stress_ij(:,ij)=p%stress_ij(:,ij)+f(l1:l2,m,n,iTij-1+ij)
               else
-                if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)+p%uu(:,i)*p%uu(:,j)*prefactor*p%rho
+                if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)+p%uu(:,i)*p%uu(:,j)*q%prefactor*p%rho
               endif
               if (luse_mag)  p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%bb(:,i)*p%bb(:,j)
               if (lelectmag) p%stress_ij(:,ij)=p%stress_ij(:,ij)-p%el(:,i)*p%el(:,j)
@@ -1026,7 +1037,7 @@ module Special
               if (lonly_mag) then
                 if (lmagnetic) p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*p%b2
               else
-                if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)-trace_factor*p%u2*prefactor*p%rho
+                if (lreynolds) p%stress_ij(:,ij)=p%stress_ij(:,ij)-trace_factor*p%u2*q%prefactor*p%rho
                 if (luse_mag)  p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*p%b2
                 if (lelectmag) p%stress_ij(:,ij)=p%stress_ij(:,ij)+trace_factor*p%e2
               endif
@@ -1252,20 +1263,19 @@ module Special
       real,dimension(mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
       real :: sign_switch=0
-      real, dimension(nx) :: ggT,ggTim,ggX,ggXim
 
       call keep_compiler_quiet(p)
       if (lggTX_as_aux) then
 
-        ggT   = f(l1:l2,m,n,iggT)
-        ggTim = f(l1:l2,m,n,iggTim)
-        ggX   = f(l1:l2,m,n,iggX)
-        ggXim = f(l1:l2,m,n,iggXim)
-        if (idiag_EEGW/=0) call sum_mn_name((ggT**2+ggTim**2 &
-                                            +ggX**2+ggXim**2 &
+        q%ggt   = f(l1:l2,m,n,iggT)
+        q%ggtim = f(l1:l2,m,n,iggTim)
+        q%ggx   = f(l1:l2,m,n,iggX)
+        q%ggxim = f(l1:l2,m,n,iggXim)
+        if (idiag_EEGW/=0) call sum_mn_name((q%ggt**2+q%ggtim**2 &
+                                            +q%ggx**2+q%ggxim**2 &
                                             )*nwgrid*EGWpref,idiag_EEGW)
-        if (idiag_gg2m/=0) call sum_mn_name((ggT**2+ggTim**2 &
-                                            +ggX**2+ggXim**2 &
+        if (idiag_gg2m/=0) call sum_mn_name((q%ggt**2+q%ggtim**2 &
+                                            +q%ggx**2+q%ggxim**2 &
                                             )*nwgrid,idiag_gg2m)
         if (idiag_Stgm/=0) call sum_mn_name((f(l1:l2,m,n,iStressT  )*f(l1:l2,m,n,iggT  ) &
                                             +f(l1:l2,m,n,iStressTim)*f(l1:l2,m,n,iggTim) &

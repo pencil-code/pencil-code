@@ -302,6 +302,13 @@ const real teta1 = teta/(teta+tini)
 //No-op
 sum(real x) {return x}
 
+//div(phi*B) of special/disp_current (div_phib there).
+//TODO: dummy for now, to be implemented
+div_phib()
+{
+	return 0.0
+}
+
 getcell(Field f, int offset, int idir)
 {
 	int3 target = vertexIdx
