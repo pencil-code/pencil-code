@@ -87,6 +87,7 @@ module Special
 !
 !  integer :: iinfl_phi=0, iinfl_dphi=0, iinfl_hubble=0, iinfl_lna=0, Ndiv=100
   integer :: iinfl_phi=0, iinfl_dphi=0, iinfl_lna=0, iinfl_tph=0, Ndiv=100
+  integer :: iaae=0
   integer :: iinfl_rho_chi=0, iinfl_rho_rad=0
   integer :: it1_reset_value=0  !PAR_DOC: new it1 value after lit1_reset
   real :: ncutoff_phi=1., infl_v=.1
@@ -324,11 +325,14 @@ module Special
 !  06-oct-03/tony: coded
 !
       use SharedVariables, only: get_shared_variable
-      use FArrayManager, only: farray_index_by_name_ode
+      use FArrayManager, only: farray_index_by_name,farray_index_by_name_ode
       use Messages, only: warning
 !
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: iLCDM_lna
+!
+      iaae =farray_index_by_name('aae')
+      if (iaae<0) iaae=0
 !
       if (lflrw) then
         iLCDM_lna=farray_index_by_name_ode('iLCDM_lna')
@@ -1747,6 +1751,7 @@ module Special
       real, dimension (nx) :: a2rhopphi, tmp
       real, dimension (nx) :: ddota, phi, Vpotential, edotb, sigE1, sigB1
       real, dimension (nx) :: boost, gam_EB, eprime, bprime, jprime1
+      integer :: i,j
 !
 !  if requested, calculate here <dphi**2+gphi**2+(4./3.)*(E^2+B^2)/a^2>
 !  rhop is purely an output quantity
@@ -1815,7 +1820,18 @@ module Special
 !  This method is currently not used.
 !
         if (iex/=0) then
-          el=f(l1:l2,m,n,iex:iez)
+!
+!    We solve for A_e, the electric vector potential of Pi = E + alphaf*phi*B.
+!    This way div(Pi) = div(curl(A_e)) = 0, the same we do for the vector potential.
+!
+          if (iaae>0) then
+            call curl(f,iaae,el)
+            do i=1,3
+              el(:,i)=el(:,i)-alpf*f(l1:l2,m,n,iinfl_phi)*bb(:,i)
+            enddo
+          else
+            el=f(l1:l2,m,n,iex:iez)
+          endif
         else
           el=0.
         endif
