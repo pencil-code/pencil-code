@@ -2800,7 +2800,7 @@ buildinfo:
 #	    -e "PARTICLES_POTENTIAL='$(PARTICLES_POTENTIAL)';" \
 #
 cparam.inc cparam_pencils.inc: Makefile.src Makefile.local cparam.local scripts/mkcparam $(preprocess)
-	scripts/mkcparam -b $(preprocess)
+	scripts/mkcparam $(preprocess)
 #
 cparam.o:  cparam.f90 cparam.local cparam.inc cparam_pencils.inc
 	$(FC) $(MOST_COMP_FLAGS) $(FSTD) -o cparam.o -c cparam.f90
