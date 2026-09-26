@@ -34,7 +34,8 @@ module Particles_mpicomm
   real, dimension (myb,0:nblockmax-1) :: yb,dy1b,dVol1yb
   real, dimension (mzb,0:nblockmax-1) :: zb,dz1b,dVol1zb
 !
-  real, dimension (mxb,myb,mzb,mfarray,0:nblockmax-1) :: fb
+  real, dimension (:,:,:,:,:), allocatable :: fb   ! allocated in initialize_particles_mpicomm,
+                                                    ! when mfarray is final
   real, dimension (mxb,myb,mzb,mvar,0:nblockmax-1) :: dfb
 !
   integer, dimension (mpar_loc) :: inearblock
@@ -65,6 +66,8 @@ module Particles_mpicomm
       integer :: iblock, ibrick
 !
       integer :: ibx, iby, ibz
+!
+      if (.not.allocated(fb)) allocate(fb(mxb,myb,mzb,mfarray,0:nblockmax-1))
 !
 !  Check consistency of brick partition.
 !

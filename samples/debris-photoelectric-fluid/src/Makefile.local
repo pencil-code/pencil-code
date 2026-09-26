@@ -20,3 +20,4 @@ REAL_PRECISION = double
 INITIAL_CONDITION = initial_condition/dust-equilibrium
 
 SPECIAL = special/photoelectric_dust
+DYNAMIC_AUX = yes

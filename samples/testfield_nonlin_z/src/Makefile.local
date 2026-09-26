@@ -12,3 +12,4 @@ EOS       = noeos
 DENSITY   = nodensity
 TESTFIELD =   test_methods/testfield_nonlin_z
 REAL_PRECISION = double
+DYNAMIC_AUX = yes
