@@ -1440,6 +1440,22 @@ module Special
       error = read_persist ('DT_GW', dt_GW)
     endsubroutine input_persist_special
 !***********************************************************************
+    logical function output_persistent_special()
+!
+!  Write the accumulated dt for GW update
+!
+!  26-Sep-2026/TP: coded
+!
+      use IO, only: write_persist
+!
+      output_persistent_special = .true.
+!
+      if (write_persist ('DT_GW', id_record_DT_GW, dt_GW)) return
+!
+      output_persistent_special = .false.
+!
+    endfunction output_persistent_special
+!***********************************************************************
     subroutine make_spectra(f)
 !
 !  16-oct-19/MR: carved out from special_calc_spectra

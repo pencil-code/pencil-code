@@ -806,9 +806,12 @@
       integer :: func_int_caller0
       integer :: i
 
-      ret=.true.
+      ret=.false.
       do i=1,n_special_modules
-        ret=ret.and.(func_int_caller0(special_sub_handles(i,I_OUTPUT_PERSISTENT_SPECIAL))==1)
+        if (func_int_caller0(special_sub_handles(i,I_OUTPUT_PERSISTENT_SPECIAL))/=0) then
+          ret=.true.
+          return
+        endif
       enddo
 
     endfunction output_persistent_special        
