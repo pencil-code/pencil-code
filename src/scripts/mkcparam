@@ -152,6 +152,7 @@ die usage() if ((@ARGV == 0) || $opts{h} || $opts{help});
 
 my $outfile  = ($opts{o} || $opts{output}   || "cparam.inc");
 my $backdate = ($opts{b} || $opts{backdate} || "");
+if ($backdate) { warn "Option -b/--backdate will be removed, please remove it."; }
 my $dynamic_aux = $opts{'dynamic-aux'};
 
 #
