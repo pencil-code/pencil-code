@@ -3640,6 +3640,7 @@ ifeq ($(USE_SPECIAL_DISPATCHER),no)
 else
 	@for file in $(SPECIAL_MODULES); do echo "$$file"_dummies.inc; scripts/mkdummyinc -d nospecial.f90 -s "$$file".f90 -o $${file#*/}_dummies.inc; done
 	#Done to not re-compile
+	### WORK HERE: [PABourdin] I think the opposite is true... How would touching a file prevent to recompile?
 	touch special_dummies.inc
 endif
 #
