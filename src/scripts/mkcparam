@@ -63,6 +63,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 #                      This option does not make much sense any more,
 #                      since by now we write at least three files, so all
 #                      of them should just be hard-coded in this script.
+#   --num-special=<n> -- number of special modules to be inserted in "cparam.inc".
 #   --dynamic-aux=<n> -- make maux, maux_com, mfarray and mcom run-time
 #                      variables which grow when more auxiliaries are
 #                      registered than declared by MAUX CONTRIBUTION and
@@ -141,6 +142,7 @@ GetOptions(\%opts,
 	   qw( -h   --help
 	       -o=s --output=s
                -b   --backdate
+                    --num-special=i
                     --dynamic-aux=i
                                ));
 
@@ -149,6 +151,7 @@ die usage() if ((@ARGV == 0) || $opts{h} || $opts{help});
 my $outfile  = ($opts{o} || $opts{output}   || "cparam.inc");
 my $backdate = ($opts{b} || $opts{backdate} || "");
 if ($backdate) { warn "Option -b/--backdate was removed, please remove it."; }
+my $num_special = ($opts{'num-special'} || 1);
 my $dynamic_aux = $opts{'dynamic-aux'};
 
 #
@@ -362,7 +365,7 @@ integer, parameter :: nadsspec=${\($nadsspec+0)}
 integer, parameter :: nsurfreacspec=${\($nsurfreacspec+0)}
 integer, parameter :: ndustrad=${\($ndustrad+0)}
 integer, parameter :: npartdisp=${\($npartdisp+0)}
-integer, parameter :: n_special_modules=1
+integer, parameter :: n_special_modules=${\($num_special+0)}
 
 EOF
 
