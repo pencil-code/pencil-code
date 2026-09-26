@@ -453,8 +453,7 @@ integer, parameter :: npencils=$npencils
 type pencil_case
 EOF
 
-# Define pencils in pencil case together with their indices:
-my $i=0;
+my $i=1;
 my $data_pencil_indices = "";
 foreach my $pencil_name (sort @pencil_names) {
   $data_cparam_pencil .= "  real, dimension $pencil_sizes{$pencil_name} :: $pencil_name\n";
