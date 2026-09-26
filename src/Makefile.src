@@ -3606,9 +3606,7 @@ buildinfo:
 #
 cparam.inc cparam_pencils.inc: Makefile.src Makefile.local cparam.local scripts/mkcparam $(preprocess)
 	rm -rf .tmp_mkcparam
-	scripts/mkcparam $(MKCPARAM_FLAGS) $(preprocess)
-	### WORK HERE: move the following into mkcparam:
-	@sed -i -e's/\(n_special_modules *= *\)[1-9][0-9]*/\1'$(SPECIAL_MULT)'/' cparam.inc
+	scripts/mkcparam $(MKCPARAM_FLAGS) --nspecial=$(SPECIAL_MULT) $(preprocess)
 
 #
 cparam.o:  cparam.f90 cparam.local cparam.inc cparam_pencils.inc
