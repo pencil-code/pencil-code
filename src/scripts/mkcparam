@@ -470,22 +470,10 @@ while (defined ($line = <INPUT>)) {
   }
 }
 
-# Define pencil names:
+# Prepare "cparam_pencils.inc"
 $data_cparam_pencil .= "character (len=penc_name_len), parameter, dimension(npencils) :: pencil_names = &\n  (/ ";
-$i=0;
-foreach my $pencil (@pencil_names){
-  $data_cparam_pencil .= ", " if ($i != 0);
-  $data_cparam_pencil .= "'$pencil" . " " x ($penc_name_len-length($pencil)) . "'";
-  $data_cparam_pencil .= "  &\n   " if (($i % 5) == 3);
-  $i++;
-}
-$data_cparam_pencil .= " /)\n";
-update_file ("cparam_pencils.inc", $data_cparam_pencil);
-#
-# pencil_init.inc
-#
-# Generate pencil_init.inc, for initializing the pencil case:
-#
+
+# Prepare "pencil_init.inc"
 my $data_pencil_init = <<"EOF";
 !  -*-f90-*-  (for emacs)    vim:set filetype=fortran:  (for vim)
 !  pencil_init.inc
@@ -503,11 +491,18 @@ subroutine initialize_pencils(p,penc0)
 
 EOF
 
-#
-foreach my $pencil (@pencil_names) {
+# Generate "cparam_pencils.inc" and "pencil_init.inc"
+$i=0;
+foreach my $pencil (@pencil_names){
+  $data_cparam_pencil .= ", " if ($i != 0);
+  $data_cparam_pencil .= "'$pencil" . " " x ($penc_name_len-length($pencil)) . "'";
+  $data_cparam_pencil .= "  &\n   " if (($i % 5) == 3);
+  $i++;
   $data_pencil_init .= "  p%$pencil = penc0\n";
 }
-#
+$data_cparam_pencil .= " /)\n";
+update_file ("cparam_pencils.inc", $data_cparam_pencil);
+
 $data_pencil_init .= "\nendsubroutine initialize_pencils";
 update_file ("pencil_init.inc", $data_pencil_init);
 #
