@@ -25,7 +25,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 #
 # Description:
 #   Checks the headers (everything before the first non-comment non-empty
-#   line) of input files for lines of the sort
+#   line) of input files for lines of the pattern
 #     ! MVAR CONTRIBUTION 3
 #     ! MAUX CONTRIBUTION 1
 #     ! MGLOBAL CONTRIBUTION 1
@@ -164,8 +164,7 @@ file: foreach my $infile (@ARGV) {
     next file;
   }
 
-  # Cycle through all lines up to first non-empty non-comment line in
-  # file:
+  # Cycle through all lines up to first non-empty non-comment line in file:
   line: while (defined($line=<INPUT>)) {
     next line if ($line =~ /^\s*$/); # ignore empty lines
     last line if ($line !~ /^\s*!/); # done if non-comment line
@@ -424,8 +423,7 @@ add_line_avoid_duplicate ($data_cparam, "integer, parameter :: nbricky=1")      
 add_line_avoid_duplicate ($data_cparam, "integer, parameter :: nbrickz=1")      unless $nbrickz;
 add_line_avoid_duplicate ($data_cparam, "integer, parameter :: nblockmax=1")    unless $nblockmax;
 
-# Insert all CPARAM lines, extracted from the headers of the chosen physics
-# modules:
+# Insert all CPARAM lines, extracted from the headers of the chosen physics modules:
 foreach $line (@cparam_lines) {
     add_line_avoid_duplicate ($data_cparam, $line);
 }
@@ -449,14 +447,13 @@ my $data_cparam_pencil = <<"EOF";
 
 EOF
 
-# Generate cparam_pencils.inc where the pencil case is defined and
-# initialized:
+# Generate cparam_pencils.inc where the pencil case is defined and initialized:
 $data_cparam_pencil .= <<"EOF";
 integer, parameter :: npencils=$npencils
 type pencil_case
 EOF
 
-# Define pencils in pencil case:
+# Define pencils in pencil case together with their indices:
 my $i=0;
 foreach my $pencil_name (@pencil_names) {
   $data_cparam_pencil .= "  real, dimension $pencil_sizes[$i] :: $pencil_name\n";
@@ -678,7 +675,7 @@ sub usage {
     local $/ = '';              # Read paragraphs
     open(FILE, "<$thisfile") or die "Cannot open $thisfile\n";
     while (<FILE>) {
-	# Paragraph _must_ contain `Description:' or `Usage:'
+        # Paragraph _must_ contain `Description:' or `Usage:'
         next unless /^\s*\#\s*(Description|Usage):/m;
         # Drop `Author:', etc. (anything before `Description:' or `Usage:')
         s/.*?\n(\s*\#\s*(Description|Usage):\s*\n.*)/$1/s;
