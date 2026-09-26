@@ -130,7 +130,7 @@ my $npscalar = 0;
 my $nadsspec = 0;
 my $nsurfreacspec = 0;
 my @pencil_names;
-my @pencil_sizes;
+my %pencil_sizes;
 my %pencil_file_map;
 my @cparam_lines;
 (my $cmdname = $0) =~ s{.*/}{};
@@ -246,7 +246,7 @@ foreach my $infile (@ARGV) {
         }
         if ($pencil_already_used eq 0) {
           push @pencil_names, $pencil_name;
-          push @pencil_sizes, $pencil_size;
+          $pencil_sizes{$pencil_name} = "$pencil_size";
         }
       }
     }
@@ -456,18 +456,13 @@ EOF
 
 # Define pencils in pencil case together with their indices:
 my $i=0;
-foreach my $pencil_name (@pencil_names) {
-  $data_cparam_pencil .= "  real, dimension $pencil_sizes[$i] :: $pencil_name\n";
-  $i = $i+1;
-}
-$data_cparam_pencil .= "endtype pencil_case\n\n";
-
-# Define pencil indices:
-$i=1;
-foreach my $pencil (@pencil_names) {
-  $data_cparam_pencil .= "integer, parameter :: i_$pencil=$i\n";
+my $data_pencil_indices = "";
+foreach my $pencil_name (sort @pencil_names) {
+  $data_cparam_pencil .= "  real, dimension $pencil_sizes{$pencil_name} :: $pencil_name\n";
+  $data_pencil_indices .= "integer, parameter :: i_$pencil_name=$i\n";
   $i++;
 }
+$data_cparam_pencil .= "endtype pencil_case\n\n".$data_pencil_indices."\n";
 
 unless (open(INPUT,"< cparam.f90")) {
   die "Can't open cparam.f90 for reading"
