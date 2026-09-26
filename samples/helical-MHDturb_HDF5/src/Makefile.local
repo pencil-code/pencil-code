@@ -20,6 +20,7 @@ POISSON  =   poisson
 
 PARTICLES         =   particles_tracers
 PARTICLES_STALKER =   particles_stalker
+DYNAMIC_AUX = yes
 
 #SIGNAL_HANDLING   =   signal_handling
 
