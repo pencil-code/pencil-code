@@ -98,6 +98,7 @@ module KT_transport
 !
 !  02-sep-2026/Isak Stomberg: coded
 !  16-sep-2026/Isak Stomberg: renamed from kt_transp; m, n, mu and tcur dropped
+!  27-sep-2026/TP: skip inactive dimensions
 !
       real, contiguous, dimension(:,:,:,:), intent(in) :: f
       real, dimension(nx), intent(out) :: divergence
@@ -115,27 +116,29 @@ module KT_transport
 ! Each direction x,y,z below contributes one term: (H_{+1/2} - H_{-1/2}) / dx_dir to divergence.
 !
       do dir=1,3
-        call gather_stencil(f,dir,ucons,epsc,slope_m,slope_0,slope_p)
+        if (lactive_dimension(dir)) then
+          call gather_stencil(f,dir,ucons,epsc,slope_m,slope_0,slope_p)
 !
 !  Face +1/2, then face -1/2: MUSCL states either side, one eps per face.
 !
-        call muscl_faces(ucons,slope_0,slope_p, 0,ul,ur)
-        call face_state(ul,ur,0.5*(epsc(:,0)+epsc(:,1)),pl,pr,aph)
-        hph=flux_component(ul,ur,pl,pr,aph,dir,mu_energy)
+          call muscl_faces(ucons,slope_0,slope_p, 0,ul,ur)
+          call face_state(ul,ur,0.5*(epsc(:,0)+epsc(:,1)),pl,pr,aph)
+          hph=flux_component(ul,ur,pl,pr,aph,dir,mu_energy)
 !
-        call muscl_faces(ucons,slope_m,slope_0,-1,ul,ur)
-        call face_state(ul,ur,0.5*(epsc(:,-1)+epsc(:,0)),pl,pr,amh)
-        hmh=flux_component(ul,ur,pl,pr,amh,dir,mu_energy)
+          call muscl_faces(ucons,slope_m,slope_0,-1,ul,ur)
+          call face_state(ul,ur,0.5*(epsc(:,-1)+epsc(:,0)),pl,pr,amh)
+          hmh=flux_component(ul,ur,pl,pr,amh,dir,mu_energy)
 !
 !  Divergence contribution: (H_{+1/2} - H_{-1/2}) / dx_dir.
 !
-        select case (dir)
-          case (1); dl1=dx_1(l1:l2)
-          case (2); dl1=dy_1(m)
-          case (3); dl1=dz_1(n)
-        endselect
-        divergence=divergence+(hph-hmh)*dl1
-        kt_cfl_rate=kt_cfl_rate+max(aph,amh)*dl1
+          select case (dir)
+            case (1); dl1=dx_1(l1:l2)
+            case (2); dl1=dy_1(m)
+            case (3); dl1=dz_1(n)
+          endselect
+          divergence=divergence+(hph-hmh)*dl1
+          kt_cfl_rate=kt_cfl_rate+max(aph,amh)*dl1
+        endif
       enddo
 !
 !  Register the multidimensional Rusanov CFL rate.  Using the same local face
@@ -177,6 +180,7 @@ module KT_transport
 !
 !  09-sep-2026/Isak Stomberg: coded
 !  14-sep-2026/Isak Stomberg: single-pass (shared reconstruction over mu)
+!  27-sep-2026/TP: skip inactive dimensions
 !
       real, contiguous, dimension(:,:,:,:), intent(in) :: f
       real, dimension(nx,3), intent(out) :: divergence
@@ -190,32 +194,34 @@ module KT_transport
 !
       divergence=0.0
       do dir=1,3
-        call gather_stencil(f,dir,ucons,epsc,slope_m,slope_0,slope_p)
+        if (lactive_dimension(dir)) then
+          call gather_stencil(f,dir,ucons,epsc,slope_m,slope_0,slope_p)
 !
 !  Face +1/2 and face -1/2, each projected and thermodynamically evaluated once.
 !
-        call muscl_faces(ucons,slope_0,slope_p, 0,ul,ur)
-        call face_state(ul,ur,0.5*(epsc(:,0)+epsc(:,1)),pl,pr,a)
-        do mu=2,4
-          hph(:,mu-1)=flux_component(ul,ur,pl,pr,a,dir,mu)
-        enddo
+          call muscl_faces(ucons,slope_0,slope_p, 0,ul,ur)
+          call face_state(ul,ur,0.5*(epsc(:,0)+epsc(:,1)),pl,pr,a)
+          do mu=2,4
+            hph(:,mu-1)=flux_component(ul,ur,pl,pr,a,dir,mu)
+          enddo
 !
-        call muscl_faces(ucons,slope_m,slope_0,-1,ul,ur)
-        call face_state(ul,ur,0.5*(epsc(:,-1)+epsc(:,0)),pl,pr,a)
-        do mu=2,4
-          hmh(:,mu-1)=flux_component(ul,ur,pl,pr,a,dir,mu)
-        enddo
+          call muscl_faces(ucons,slope_m,slope_0,-1,ul,ur)
+          call face_state(ul,ur,0.5*(epsc(:,-1)+epsc(:,0)),pl,pr,a)
+          do mu=2,4
+            hmh(:,mu-1)=flux_component(ul,ur,pl,pr,a,dir,mu)
+          enddo
 !
 !  Divergence contribution: (H_{+1/2} - H_{-1/2}) / dx_dir.
 !
-        select case (dir)
-          case (1); dl1=dx_1(l1:l2)
-          case (2); dl1=dy_1(m)
-          case (3); dl1=dz_1(n)
-        endselect
-        do j=1,3
-          divergence(:,j)=divergence(:,j)+(hph(:,j)-hmh(:,j))*dl1
-        enddo
+          select case (dir)
+            case (1); dl1=dx_1(l1:l2)
+            case (2); dl1=dy_1(m)
+            case (3); dl1=dz_1(n)
+          endselect
+          do j=1,3
+            divergence(:,j)=divergence(:,j)+(hph(:,j)-hmh(:,j))*dl1
+          enddo
+        endif
       enddo
 !
     endsubroutine kt_div_tensor
