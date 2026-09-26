@@ -1558,7 +1558,7 @@ module Special
 !
       real, dimension(mx,my,mz,mfarray) :: f
       type(pencil_case) :: p
-      real, dimension(nx) :: tmp,constrainteqn
+      real, dimension(nx) :: tmp,tmp2,constrainteqn
       real, dimension(nx,3) :: gtmp
 
       call keep_compiler_quiet(f)
@@ -1993,7 +1993,6 @@ module Special
       endfunction keff
     endsubroutine init_aae
 !***********************************************************************
->>>>>>> 5a28d910b (add option to evolve A_e; nabla x A_e = E + alpha/f*phi*B. Thus the Gauss constraint is satisfied in the form div(E) + alpha/f*div(phi*B) == 0)
     subroutine special_after_boundary(f)
 !
 !  Possibility to modify the f array after the boundaries are communicated.
