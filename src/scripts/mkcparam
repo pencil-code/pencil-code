@@ -58,10 +58,6 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 #   local file src/cparam.inc .
 #
 # Options:
-#   -b, --backdate -- when set and any of the generated files looks
-#                     identical to the original file before mkcparam was
-#                     called, revert the timestamp to that of the
-#                     original. This avoids unnecessary recompilations.
 #   -o <file>,
 #   --output=<file> -- write cparam.inc output to the given file name.
 #                      This option does not make much sense any more,
@@ -152,7 +148,7 @@ die usage() if ((@ARGV == 0) || $opts{h} || $opts{help});
 
 my $outfile  = ($opts{o} || $opts{output}   || "cparam.inc");
 my $backdate = ($opts{b} || $opts{backdate} || "");
-if ($backdate) { warn "Option -b/--backdate will be removed, please remove it."; }
+if ($backdate) { warn "Option -b/--backdate was removed, please remove it."; }
 my $dynamic_aux = $opts{'dynamic-aux'};
 
 #
@@ -601,11 +597,6 @@ sub update_file {
         if (join ('', @old_data) eq $data) {
             # file exists and is up-to-date => nothing to be done
             return;
-        }
-
-        if ($backdate) {
-            # create the requested backup
-            rename $file, backup_file ($file);
         }
     }
 
