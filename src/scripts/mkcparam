@@ -328,9 +328,12 @@ integer, parameter :: mglobal=${\($mglobal+0)}
 integer, parameter :: mscratch=${\($mscratch+0)}
 logical, parameter :: ldynamic_aux=.true.
 integer, parameter :: maux_max=maux_decl+${\($dynamic_aux+0)}, maux_com_max=maux_com_decl+${\($dynamic_aux+0)}
-integer :: maux=maux_decl, maux_com=maux_com_decl
-integer :: mfarray=mvar+maux_decl+mglobal+mscratch
-integer :: mcom=mvar+maux_com_decl
+! The C names are used by the GPU host code; "! DSL:" gives the compile-time
+! value for Astaroth's DSL (capacity), see scripts/cparam.sed.
+integer, bind(C,name='pc_maux') :: maux=maux_decl  ! DSL: maux_max
+integer, bind(C,name='pc_maux_com') :: maux_com=maux_com_decl  ! DSL: maux_com_max
+integer, bind(C,name='pc_mfarray') :: mfarray=mvar+maux_decl+mglobal+mscratch  ! DSL: mvar+maux_max+mglobal+mscratch
+integer, bind(C,name='pc_mcom') :: mcom=mvar+maux_com_decl  ! DSL: mvar+maux_com_max
 EOF
 } else {
   $data_cparam .= <<"EOF";

@@ -36,4 +36,14 @@
   #define FTNIZE(name) name##__
 #endif
 
+/* Declaration of a Fortran variable with bind(C) name, usable from C and C++
+   (e.g. the run-time counts maux, mfarray in cparam_c.h with DYNAMIC_AUX=yes). */
+#ifndef EXTERN_C
+  #ifdef __cplusplus
+    #define EXTERN_C extern "C"
+  #else
+    #define EXTERN_C extern
+  #endif
+#endif
+
 /* End of file */

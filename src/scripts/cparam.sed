@@ -1,6 +1,13 @@
 /^ *type *[a-zA-Z0-9_]* *$/,/^ *end *type *[a-zA-Z0-9_]* *$/ d
 /^ *!/ d
 s/.*/\L&/g
+# run-time counts with DYNAMIC_AUX=yes, e.g.
+#   integer, bind(c,name='pc_maux') :: maux=maux_decl  ! dsl: maux_max
+# host code: reference to the Fortran variable; DSL: compile-time capacity
+/^ *integer *, *bind *( *c *, *name *= *'[a-z_]*' *) *::/ {
+s/^ *integer *, *bind *( *c *, *name *= *'\([a-z_]*\)' *) *:: *\([a-z_]*\) *=[^!]*! *dsl: *\(.*[^ ]\) *$/#if IN_DSL\nconst int \2 = \3;\n#else\nEXTERN_C int \1;\n#define \2 \1\n#endif/
+b
+}
 #s/huge *(0)/std::numeric_limits<FINT>::max()/g 
 s/huge *(0)/INT_MAX/g 
 s/huge *(int.*)/INT_MAX/g 

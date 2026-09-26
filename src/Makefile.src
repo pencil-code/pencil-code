@@ -528,9 +528,6 @@ endif
 # Run-time growing auxiliary counts need the dynamically allocated f-array.
 #
 ifeq ($(DYNAMIC_AUX),yes)
-  ifneq ($(findstring gpu_astaroth, $(GPU)),)
-    $(error DYNAMIC_AUX=yes is not supported with GPU=$(GPU): Astaroth needs maux_com at compile time)
-  endif
   override FARRAY_ALLOC=farray_alloc
   MKCPARAM_FLAGS = --dynamic-aux=$(DYNAMIC_AUX_EXTRA)
 endif
