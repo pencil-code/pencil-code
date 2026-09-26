@@ -253,7 +253,11 @@ module Forcing
 !  11-may-2002/wolf: coded
 
       use FarrayManager, only: farray_register_auxiliary
+      use Sub, only: register_report_aux
       use SharedVariables, only: get_shared_variable
+!
+      integer :: i, ncont, ix, iy, iz
+      character(len=1) :: tmp
 !
 !  identify version number
 !
@@ -262,6 +266,21 @@ module Forcing
 
       if (iforce=='spherical_radial') then
         if (lisotropize_SR.and.lfastSR) call farray_register_auxiliary('force',iff_aux)
+      endif
+!
+      if (lff_as_aux .and. ldynamic_aux) call register_report_aux('ff', iff, ifx, ify, ifz)
+      if (lforcing_cont .and. lfcont_as_comaux .and. ldynamic_aux) then
+        ncont=n_forcing_cont_max
+        do i=1,n_forcing_cont_max
+          if (iforcing_cont(i)=='nothing') then
+            ncont=i-1
+            exit
+          endif
+        enddo
+        do i=1,ncont
+          write(tmp,"(I1)") i
+          call register_report_aux('fcont'//trim(tmp), ifcont_aux(i), ix, iy, iz, communicated=.true.)
+        enddo
       endif
       call get_shared_variable('llorentz_limiter',llorentz_limiter,default_val=.false.)
       call get_shared_variable('lvel_limiter',lvel_limiter,default_val=.false.)
@@ -1077,7 +1096,8 @@ module Forcing
         endif
       endif
 
-      if (lff_as_aux) call register_report_aux('ff', iff, ifx, ify, ifz)
+!
+      if (lff_as_aux .and. .not.ldynamic_aux) call register_report_aux('ff', iff, ifx, ify, ifz)
 !
 !  Get reference_state. Requires that density is initialized before forcing.
 !
@@ -1305,12 +1325,8 @@ module Forcing
         endif
       enddo
       if (n_forcing_cont==0) call warning('forcing','no valid continuous iforcing_cont specified')
-!
-!  Note: this must come after the code above that sets n_forcing_cont.
-!
-      if (lfcont_as_comaux) then
+      if (lfcont_as_comaux .and. .not.ldynamic_aux) then
         do i=1,n_forcing_cont
-!  n_forcing_cont_max==2, so a width-1 field should be enough
           write(tmp,"(I1)") i
           call register_report_aux('fcont'//trim(tmp), ifcont_aux(i), ix, iy, iz, communicated=.true.)
         enddo

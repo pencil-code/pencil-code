@@ -216,6 +216,14 @@ module Testfield
         write(15,*) 'aatest = fltarr(mx,my,mz,ntestfield)*one'
       endif
 !
+!  With DYNAMIC_AUX=yes, auxiliaries must be registered before the f-array is
+!  allocated, i.e. here (otherwise in initialize_testfield).
+!
+      if (ldynamic_aux) then
+        if (luxb_as_aux) call farray_register_auxiliary('uxb',iuxbtest,vector=3*njtest)
+        if (ljxb_as_aux) call farray_register_auxiliary('jxb',ijxbtest,vector=3*njtest)
+      endif
+!
     endsubroutine register_testfield
 !***********************************************************************
     subroutine initialize_testfield(f)
@@ -300,7 +308,9 @@ module Testfield
 !  After a reload, we need to rewrite index.pro, but the auxiliary
 !  arrays are already allocated and must not be allocated again.
 !
-      if (luxb_as_aux) then
+!  With DYNAMIC_AUX=yes this is done in register_testfield.
+!
+      if (luxb_as_aux .and. .not.ldynamic_aux) then
         if (iuxbtest==0) then
           call farray_register_auxiliary('uxb',iuxbtest,vector=3*njtest)
         else
@@ -312,7 +322,7 @@ module Testfield
 !  possibility of using jxb as auxiliary array (is intended to be
 !  used in connection with testflow method)
 !
-      if (ljxb_as_aux) then
+      if (ljxb_as_aux .and. .not.ldynamic_aux) then
         if (ijxbtest==0) then
           call farray_register_auxiliary('jxb',ijxbtest,vector=3*njtest)
         else

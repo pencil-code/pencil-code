@@ -127,6 +127,19 @@ module FArrayManager
 !
   integer :: icom_next=mvar+1, iaux_next=mvar+maux_com_decl+1
   logical :: laux_fixed=.false.
+!
+! With DYNAMIC_AUX=yes: global variables sit behind the auxiliaries, so they
+! are moved when maux changes. Their callers' index variables (module
+! variables iglobal_*) are updated through ivar_caller and their entries in
+! index.pro are only written by farray_finalize_registration.
+!
+  type global_reg
+    type (farray_contents_list), pointer :: item
+    integer, pointer :: ivar_caller
+    integer :: vector, array
+  endtype global_reg
+  type (global_reg), dimension(max(mglobal,1)) :: globals_dyn
+  integer :: nglobals_dyn=0
 
   contains
 !***********************************************************************
@@ -407,6 +420,17 @@ module FArrayManager
 !
         call save_analysis_info(new)
 !
+        if (ldynamic_aux .and. vartype==iFARRAY_TYPE_GLOBAL) then
+          nglobals_dyn=nglobals_dyn+1
+          globals_dyn(nglobals_dyn)%item => new
+          globals_dyn(nglobals_dyn)%ivar_caller => ivar
+          globals_dyn(nglobals_dyn)%vector=0
+          globals_dyn(nglobals_dyn)%array=0
+          if (present(vector)) globals_dyn(nglobals_dyn)%vector=vector
+          if (present(array)) globals_dyn(nglobals_dyn)%array=array
+          return
+        endif
+!
 !  write varname and index into index.pro file (for idl)
 !  except for auxiliary variables which are not written into var.dat
 !
@@ -477,31 +501,69 @@ module FArrayManager
           "Registering "//trim(varname)//" fails: the f-array has already been allocated. "// &
           "Register it in register_* instead of initialize_*, or declare it by an "// &
           "MAUX CONTRIBUTION (and COMMUNICATED AUXILIARIES) header in cparam.local.")
-      if (nglobal>0) call fatal_error("farray_register_variable", &
-          "Registering "//trim(varname)//" fails: global variables are already placed behind "// &
-          "the auxiliaries. Declare it by an MAUX CONTRIBUTION (and COMMUNICATED AUXILIARIES) "// &
-          "header in cparam.local.")
       if (maux_new>maux_max .or. maux_com_new>maux_com_max) call fatal_error("farray_register_variable", &
           "Registering "//trim(varname)//" fails: more auxiliaries than maux_max. "// &
           "Increase DYNAMIC_AUX_EXTRA in Makefile.local.")
 !
+      call shift_globals(maux_new-maux)
       call set_aux_counts(maux_new,maux_com_new)
 !
     endsubroutine dynamic_aux_slot
+!***********************************************************************
+    subroutine shift_globals(delta)
+!
+!  Moves the global variables by delta slots when maux changes (DYNAMIC_AUX=yes).
+!
+      integer, intent(in) :: delta
+!
+      integer :: i
+!
+      if (delta==0) return
+      do i=1,nglobals_dyn
+        globals_dyn(i)%item%ivar(1)%p=globals_dyn(i)%item%ivar(1)%p+delta
+        globals_dyn(i)%ivar_caller=globals_dyn(i)%item%ivar(1)%p
+      enddo
+!
+    endsubroutine shift_globals
 !***********************************************************************
     subroutine farray_finalize_registration
 !
 !  To be called after all modules have registered their variables and before
 !  the f-array is allocated. With DYNAMIC_AUX=yes, maux and maux_com are final
-!  now, so the ghost zone buffers allocated in initialize_mpicomm are adapted
-!  to mcom.
+!  now: declared but unused slots at their ends are dropped and the ghost zone
+!  buffers allocated in initialize_mpicomm are adapted to mcom.
 !
       use Cparam, only: mcom
+      use Cdata, only: ldownsampl
       use Mpicomm, only: allocate_comm_buffers
+!
+      type (farray_contents_list), pointer :: item
+      integer :: maux_com_new, i
 !
       if (.not.ldynamic_aux) return
 !
-      if (mcom>mvar+maux_com_decl) call allocate_comm_buffers
+!  Drop unused slots at the end of the communicated and non-communicated ranges.
+!
+      maux_com_new=maux_com
+      if (iaux_next==mvar+maux_com+1) then
+        maux_com_new=icom_next-1-mvar
+        iaux_next=icom_next
+      endif
+      call shift_globals(iaux_next-1-mvar-maux)
+      call set_aux_counts(iaux_next-1-mvar,maux_com_new)
+!
+!  Now the indices of the global variables are final.
+!
+      do i=1,nglobals_dyn
+        item => globals_dyn(i)%item
+        call save_analysis_info(item)
+        call farray_index_append('i'//item%varname,item%ivar(1)%p,vector=globals_dyn(i)%vector, &
+                                 array=globals_dyn(i)%array,lwr=lroot)
+        if (ldownsampl) call farray_index_append('i'//item%varname,item%ivar(1)%p, &
+                                 vector=globals_dyn(i)%vector,array=globals_dyn(i)%array,ldown=.true.)
+      enddo
+!
+      if (mcom/=mvar+maux_com_decl) call allocate_comm_buffers
       laux_fixed=.true.
 !
     endsubroutine farray_finalize_registration
@@ -596,6 +658,7 @@ module FArrayManager
 !
       icom_next=mvar+1
       iaux_next=mvar+maux_com+1
+      nglobals_dyn=0
 !
     endsubroutine farray_index_reset
 !***********************************************************************

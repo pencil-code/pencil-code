@@ -1094,6 +1094,19 @@ module Cdata
 ! For use in offloaded code:
 !!$omp declare target(ldensity_nolog,l2,m2,n2)
 !
+!  Pointer to Boundcond's update_ghosts (for a variable range), set in
+!  initialize_boundcond. For modules which cannot use Boundcond because
+!  Boundcond uses them (e.g. Special).
+!
+  abstract interface
+    subroutine update_ghosts_range_iface(f,ivar1,ivar2_opt)
+      real, contiguous, dimension (:,:,:,:) :: f
+      integer :: ivar1
+      integer, optional :: ivar2_opt
+    endsubroutine update_ghosts_range_iface
+  endinterface
+  procedure(update_ghosts_range_iface), pointer :: update_ghosts_ptr => null()
+!
 !***********************************************************************
 !BEGIN C BINDING
 !END C BINDING

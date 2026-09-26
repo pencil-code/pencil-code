@@ -1932,7 +1932,10 @@ module Special
       real :: k2, kv(3)
       integer :: i, j, ik, iy, iz
 !
-      call update_ghosts(f,iax,iaz)
+!  Boundcond cannot be used here (it uses Special), so update_ghosts is called
+!  through the pointer set in initialize_boundcond.
+!
+      call update_ghosts_ptr(f,iax,iaz)
       allocate(pre(nx,ny,nz,3),pim(nx,ny,nz,3),cre(nx,ny,nz,3),cim(nx,ny,nz,3))
       do n=n1,n2; do m=m1,m2
         call curl(f,iaa,bb)
@@ -1967,7 +1970,7 @@ module Special
       enddo
       deallocate(pre,pim,cre,cim)
 !
-      call update_ghosts(f,iaae,iaae+2)
+      call update_ghosts_ptr(f,iaae,iaae+2)
       do n=n1,n2; do m=m1,m2
         call curl(f,iaa,bb)
         call curl(f,iaae,pp)
@@ -2079,53 +2082,6 @@ module Special
       endif
 
     endsubroutine load_variables_to_gpu_special
-!***********************************************************************
-    subroutine update_ghosts(f,ivar1,ivar2_opt)
-!
-!  TP: copy-paste to get rid of cyclic dependency
-!
-      use General, only: add_merge_range
-      use Grid, only: coarsegrid_interp
-!
-      real, contiguous, dimension (:,:,:,:) :: f
-      integer  :: ivar1,ivar2
-      integer, optional :: ivar2_opt
-!
-      integer :: nact_ranges,i
-!
-      ivar2=ivar1
-      if (present(ivar2_opt)) ivar2=ivar2_opt
-!
-      if (ighosts_updated>=0) then
-!
-!  If registration is activated, figure out which variables out of the range (ivar1,ivar2) have yet to be communicated.
-!  These are appended as a set of ranges to the list of ranges in updated_var_ranges after position ighosts_updated.
-!  The new total number of variable ranges to be communicated is nact_ranges.
-!
-        nact_ranges=add_merge_range( updated_var_ranges, ighosts_updated, (/ivar1,ivar2/) )
-!
-        if (nact_ranges>ighosts_updated) then
-          do i=ighosts_updated+1,nact_ranges
-            call boundconds_x(f,updated_var_ranges(1,i),updated_var_ranges(2,i))
-            call initiate_isendrcv_bdry(f,updated_var_ranges(1,i),updated_var_ranges(2,i))
-            call finalize_isendrcv_bdry(f,updated_var_ranges(1,i),updated_var_ranges(2,i))
-            if (lcoarse) &
-              call coarsegrid_interp(f,updated_var_ranges(1,i),updated_var_ranges(2,i))
-            call boundconds_y(f,updated_var_ranges(1,i),updated_var_ranges(2,i))
-            call boundconds_z(f,updated_var_ranges(1,i),updated_var_ranges(2,i))
-          enddo
-          ighosts_updated=nact_ranges
-        endif
-      else
-        call boundconds_x(f,ivar1,ivar2)
-        call initiate_isendrcv_bdry(f,ivar1,ivar2)
-        call finalize_isendrcv_bdry(f,ivar1,ivar2)
-        if (lcoarse) call coarsegrid_interp(f)
-        call boundconds_y(f,ivar1,ivar2)
-        call boundconds_z(f,ivar1,ivar2)
-      endif
-!
-    endsubroutine update_ghosts
 !***********************************************************************
     subroutine pushpars2c(p_par)
 

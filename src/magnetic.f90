@@ -1362,8 +1362,10 @@ module Magnetic
       if (lbdivu_as_aux) call register_report_aux('bdivu',ibdivu,ibdivux,ibdivuy,ibdivuz)
 !
 !PJK: moved back to initialize_magnetic at least temporarily
-!      if (lbb_sph_as_aux) &
-!        call register_report_aux('bb_sph', ibb_sph, ibb_sphr, ibb_spht, ibb_sphp)
+!TP: Moved back to register so we can dynamically allocated fields.
+      if (lbb_sph_as_aux .and. ldynamic_aux) &
+        call register_report_aux('bb_sph', ibb_sph, ibb_sphr, ibb_spht, ibb_sphp,&
+                                 rhs=.true.,read_from_gpu=.true.)
 !
 !  Register va as auxilliary array if asked for also requires
 !  ! MAUX CONTRIBUTION 1
@@ -1487,8 +1489,11 @@ module Magnetic
       endif
 !
 !PJK: moved from register_magnetic at least temporarily
-      if (lbb_sph_as_aux) call register_report_aux('bb_sph', ibb_sph, ibb_sphr, ibb_spht, ibb_sphp,&
-                                                    rhs=.true.,read_from_gpu=.true.)
+!TP:  With dynamic allocation now in init.
+!
+      if (lbb_sph_as_aux .and. .not.ldynamic_aux) &
+        call register_report_aux('bb_sph', ibb_sph, ibb_sphr, ibb_spht, ibb_sphp,&
+                                 rhs=.true.,read_from_gpu=.true.)
 !
 !  Set ljj_as_comaux=T and get kernels
 !   if lsmooth_jj is used
