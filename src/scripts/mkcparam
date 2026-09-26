@@ -421,7 +421,7 @@ add_line_avoid_duplicate ($data_cparam, "integer, parameter :: nbrickz=1")      
 add_line_avoid_duplicate ($data_cparam, "integer, parameter :: nblockmax=1")    unless $nblockmax;
 
 # Insert all CPARAM lines, extracted from the headers of the chosen physics modules:
-foreach $line (@cparam_lines) {
+foreach $line (sort @cparam_lines) {
     add_line_avoid_duplicate ($data_cparam, $line);
 }
 update_file ($outfile, $data_cparam);
@@ -493,7 +493,7 @@ EOF
 
 # Generate "cparam_pencils.inc" and "pencil_init.inc"
 $i=0;
-foreach my $pencil (@pencil_names){
+foreach my $pencil (sort @pencil_names){
   $data_cparam_pencil .= ", " if ($i != 0);
   $data_cparam_pencil .= "'$pencil" . " " x ($penc_name_len-length($pencil)) . "'";
   $data_cparam_pencil .= "  &\n   " if (($i % 5) == 3);
