@@ -197,7 +197,6 @@ module Boundcond
 !
 !  Make update_ghosts available to modules which Boundcond depends on.
 !
-      update_ghosts_ptr => update_ghosts_range
       real, contiguous, dimension(:,:,:,:) :: f
 
       integer :: ix_bc,ix2_bc,iy_bc,iy2_bc,iz_bc,iz2_bc,idum
@@ -208,6 +207,8 @@ module Boundcond
       logical :: lbcxslc,lbcyslc,lbczslc
       character :: prec_in
       character(LEN=3) :: suff_xy2, suff_xz2, suff_yz2
+      
+      update_ghosts_ptr => update_ghosts_range
 !
 !  The following only makes sense if leos=.true.
 !
