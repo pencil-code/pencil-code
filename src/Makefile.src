@@ -68,6 +68,14 @@ ENERGY            = noentropy
 OPACITY           = noopacity
 EOS               =   eos_idealgas
 FARRAY_ALLOC      = nofarray_alloc
+#
+# DYNAMIC_AUX=yes: maux and maux_com grow at run time when auxiliaries are
+# registered, so MAUX CONTRIBUTION/COMMUNICATED AUXILIARIES need not be
+# declared in cparam.local. DYNAMIC_AUX_EXTRA is the extra capacity of the
+# fixed-size per-variable arrays like bcx (see maux_max in cparam.inc).
+#
+DYNAMIC_AUX       = no
+DYNAMIC_AUX_EXTRA = 64
 FIXED_POINT       = nofixed_point
 FORCING           = noforcing
 GRAVITY           = nogravity
@@ -515,6 +523,16 @@ ifneq ($(findstring gpu_astaroth, $(GPU)),)
     override MPICOMM=mpicomm
     #Needed because of large subdomains
     override FARRAY_ALLOC=farray_alloc
+endif
+#
+# Run-time growing auxiliary counts need the dynamically allocated f-array.
+#
+ifeq ($(DYNAMIC_AUX),yes)
+  ifneq ($(findstring gpu_astaroth, $(GPU)),)
+    $(error DYNAMIC_AUX=yes is not supported with GPU=$(GPU): Astaroth needs maux_com at compile time)
+  endif
+  override FARRAY_ALLOC=farray_alloc
+  MKCPARAM_FLAGS = --dynamic-aux=$(DYNAMIC_AUX_EXTRA)
 endif
 #
 # Add real-time library calls if we need shared memory allocation
@@ -3594,7 +3612,7 @@ cparam.inc cparam_pencils.inc: Makefile.src Makefile.local cparam.local scripts/
 	@cp -p cparam.inc .tmp_mkcparam/cparam.inc 2>/dev/null || true
 	@cp -p cparam_pencils.inc .tmp_mkcparam/cparam_pencils.inc 2>/dev/null || true
 
-	scripts/mkcparam -b $(preprocess)
+	scripts/mkcparam -b $(MKCPARAM_FLAGS) $(preprocess)
 	@sed -i -e's/\(n_special_modules *= *\)[1-9][0-9]*/\1'$(SPECIAL_MULT)'/' cparam.inc
 
 	@if cmp -s cparam.inc .tmp_mkcparam/cparam.inc; then \
@@ -3604,9 +3622,6 @@ cparam.inc cparam_pencils.inc: Makefile.src Makefile.local cparam.local scripts/
 	@if cmp -s cparam_pencils.inc .tmp_mkcparam/cparam_pencils.inc; then \
 		touch -r .tmp_mkcparam/cparam_pencils.inc cparam_pencils.inc; \
 	fi
-#ifeq ($(FARRAY_ALLOC),farray_alloc)
-#	sed -e'/mvar/,/mqaux/ {s/integer, parameter/integer/; s/= *[A-Za-z0-9_][A-Za-z0-9_+ -]*//g}' -i cparam.inc
-#endif
 
 #
 cparam.o:  cparam.f90 cparam.local cparam.inc cparam_pencils.inc
@@ -3618,10 +3633,6 @@ else
 	$(FC) $(MOST_COMP_FLAGS) $(FSTD) -o cparam.o -c cparam.f90
 endif
 
-#ifeq ($(FARRAY_ALLOC),farray_alloc)
-#	@sed -e'/BEGIN CHANGE/,/END CHANGE/ {s/integer, parameter/integer/; s/= *[A-Za-z0-9_][A-Za-z0-9_+ -]*//}' cparam.f90 > cparam_tmp.f90
-#	$(FC) $(MOST_COMP_FLAGS) $(FSTD) -o cparam.o -c cparam_tmp.f90
-#	@rm -f cparam_tmp.f90
 
 cdata.o:  cdata.f90 cparam.local cparam.inc cparam_pencils.inc
 ifneq ($(and $(IS_CRAY), $(filter-out $(GPU),nogpu)),)

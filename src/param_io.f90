@@ -75,7 +75,7 @@ module Param_IO
 !
 ! local quantities
 !
-  real, dimension(mcom) :: fbcx1=0., fbcx2=0., fbcx1_2=0., fbcx2_2=0., &
+  real, dimension(mcom_max) :: fbcx1=0., fbcx2=0., fbcx1_2=0., fbcx2_2=0., &
                            fbcy1=0., fbcy2=0., fbcy1_1=0., fbcy1_2=0., fbcy2_1=0., fbcy2_2=0., &
                            fbcz1=0., fbcz2=0., fbcz1_1=0., fbcz1_2=0., fbcz2_1=0., fbcz2_2=0.
   integer :: niter_poisson  ! dummy

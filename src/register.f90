@@ -74,7 +74,8 @@ module Register
       use ImplicitPhysics,  only: register_implicit_physics
       use Solid_Cells,      only: register_solid_cells
 !
-      integer :: ierr
+      integer :: ierr, iaux
+      character (len=labellen) :: line
 
       if (maux_com > maux) call fatal_error('register_modules', &
         'maux_com > maux: you may have forgotten to set both MAUX and COMMUNICATED AUXILIARIES properly in cparam.local')
@@ -177,6 +178,18 @@ module Register
 !  Writing files for use with IDL.
 !
       if (lroot) then
+!
+!  With DYNAMIC_AUX=yes, maux was not final when the modules decided about
+!  the IDL line continuations ' $', so set them here: all but the last entry.
+!
+        if (ldynamic_aux) then
+          do iaux=1,aux_count-1
+            line=aux_var(iaux)
+            if (line(len_trim(line):len_trim(line))=='$') line=line(1:len_trim(line)-1)
+            aux_var(iaux)=line
+            if (iaux<aux_count-1) aux_var(iaux)=trim(line)//' $'
+          enddo
+        endif
         do aux_count=1,maux
           write(4,'(A)') aux_var(aux_count)
         enddo

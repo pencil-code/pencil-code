@@ -36,7 +36,7 @@ module Shear
   real :: diff_hyper3x_mesh = 0.03
   real, dimension(3) :: u0_advec = 0.0
   character(len=7) :: shear_method = 'fft'
-  logical, dimension(mcom) :: lposdef = .false.
+  logical, dimension(mcom_max) :: lposdef = .false.
   logical, target :: lshearadvection_as_shift = .false.
   logical :: lshear_acceleration = .true.
   logical :: ltvd_advection = .false., lposdef_advection = .false.

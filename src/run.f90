@@ -887,7 +887,7 @@ endsubroutine helper_loop
   use Diagnostics,     only: report_undefined_diagnostics, trim_averages,diagnostics_clean_up
 !$ use Diagnostics,    only: phiavg_norm
   use Equ,             only: initialize_pencils, debug_imn_arrays
-  use FArrayManager,   only: farray_clean_up
+  use FArrayManager,   only: farray_clean_up, farray_finalize_registration
   use Farray_alloc
   use General,         only: random_seed_wrapper, touch_file, itoa
 !$ use General,        only: signal_init
@@ -1061,6 +1061,7 @@ endsubroutine helper_loop
 !
   call register_modules
   if (lparticles) call particles_register_modules
+  call farray_finalize_registration
   call initialize
 !
 !  Inform about verbose level.

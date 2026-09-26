@@ -883,20 +883,20 @@ module Cdata
   logical :: Em_specflux=.false., Hm_specflux=.false., Hc_specflux=.false.
 !
   ! Auxiliary parameters for boundary conditions:
-  real, dimension(mcom,2) :: fbcx=0., fbcx_2=0.
-  real, dimension(mcom,2) :: fbcy=0., fbcy_1=0., fbcy_2=0.
-  real, dimension(mcom,2) :: fbcz=0., fbcz_1=0., fbcz_2=0.
+  real, dimension(mcom_max,2) :: fbcx=0., fbcx_2=0.
+  real, dimension(mcom_max,2) :: fbcy=0., fbcy_1=0., fbcy_2=0.
+  real, dimension(mcom_max,2) :: fbcz=0., fbcz_1=0., fbcz_2=0.
   ! Auxiliary parameters for distinct use only with bottom or top boundary:
-  real, dimension(mcom) :: fbcx_bot=0., fbcx_top=0.
-  real, dimension(mcom) :: fbcy_bot=0., fbcy_top=0.
-  real, dimension(mcom) :: fbcz_bot=0., fbcz_top=0.
+  real, dimension(mcom_max) :: fbcx_bot=0., fbcx_top=0.
+  real, dimension(mcom_max) :: fbcy_bot=0., fbcy_top=0.
+  real, dimension(mcom_max) :: fbcz_bot=0., fbcz_top=0.
   ! Switch, if you wanna reset the boundary conditions
   logical :: lreset_boundary_values=.false.
 !
   real :: Udrift_bc=0.
-  character (len=2*bclen+1), dimension(mcom) :: bcx='p',bcy='p',bcz='p'
-  character (len=bclen), dimension(mcom,2) :: bcx12='', bcy12='', bcz12=''
-  character (len=labellen), dimension(mfarray) :: varname
+  character (len=2*bclen+1), dimension(mcom_max) :: bcx='p',bcy='p',bcz='p'
+  character (len=bclen), dimension(mcom_max,2) :: bcx12='', bcy12='', bcz12=''
+  character (len=labellen), dimension(mfarray_max) :: varname
   character (len=labellen) :: force_lower_bound='',force_upper_bound=''
 !
 !  Parameters for freezing boundary zones.
@@ -915,11 +915,11 @@ module Cdata
                         border_frac_r=0.0
   logical :: lborder_hyper_diff=.true.
   logical :: lfrozen_bcs_x=.false.,lfrozen_bcs_y=.false.,lfrozen_bcs_z=.false.
-  logical, dimension(mcom) :: lfrozen_bot_var_x=.false.,lfrozen_top_var_x=.false.
-  logical, dimension(mcom) :: lfrozen_bot_var_y=.false.,lfrozen_top_var_y=.false.
-  logical, dimension(mcom) :: lfrozen_bot_var_z=.false.,lfrozen_top_var_z=.false.
-  logical, dimension(mcom) :: lfreeze_varsquare=.false.
-  logical, dimension(mcom) :: lfreeze_varint=.false.,lfreeze_varext=.false.
+  logical, dimension(mcom_max) :: lfrozen_bot_var_x=.false.,lfrozen_top_var_x=.false.
+  logical, dimension(mcom_max) :: lfrozen_bot_var_y=.false.,lfrozen_top_var_y=.false.
+  logical, dimension(mcom_max) :: lfrozen_bot_var_z=.false.,lfrozen_top_var_z=.false.
+  logical, dimension(mcom_max) :: lfreeze_varsquare=.false.
+  logical, dimension(mcom_max) :: lfreeze_varint=.false.,lfreeze_varext=.false.
 !
 ! Parameters for reading data for BCs.
 !
@@ -937,7 +937,7 @@ module Cdata
 !
 !  Auxiliary variables.
 !
-  character (len=labellen), dimension(maux) :: aux_var
+  character (len=labellen), dimension(maux_max) :: aux_var
   integer :: aux_count=1
   integer :: mvar_io=0, mvar_down=-1, maux_down=-1, mskipvar=0
 !
@@ -1040,8 +1040,8 @@ module Cdata
 !  The index corresponds to the vertex buffer index on Astaroth
 !  Size of mfarray to make sure we can store the handle (for 1 to mvar -1)
 !
-   integer, dimension(mfarray) :: maux_vtxbuf_index     = -1
-   integer, dimension(mfarray) :: read_vtxbuf_from_gpu  =  0
+   integer, dimension(mfarray_max) :: maux_vtxbuf_index     = -1
+   integer, dimension(mfarray_max) :: read_vtxbuf_from_gpu  =  0
    integer :: enum_unit_system = 0
 !
 !  Define and initialize lambda5, so that it can be used to tell whether

@@ -11,7 +11,7 @@
 !
 module FArrayManager
 !
-  use Cparam, only: mvar,maux,mglobal,maux_com,mscratch,lgpu
+  use Cparam, only: mvar,maux,mglobal,maux_com,mscratch,lgpu,ldynamic_aux,maux_com_decl,set_aux_counts
   use Cdata, only: nvar,naux,nscratch,nglobal,naux_com,datadir,lroot,lwrite_aux,lreloading, &
                    n_odevars,f_ode,df_ode,lode,f_ode_diagnostics,variable_substepped
   use HDF5_IO, only: index_reset, index_append
@@ -41,6 +41,7 @@ module FArrayManager
   public :: farray_get_name
 !
   public :: farray_check_maux
+  public :: farray_finalize_registration
 !
   public :: farray_acquire_scratch_area
   public :: farray_release_scratch_area
@@ -120,6 +121,12 @@ module FArrayManager
 ! Keep track of which spaces are currently in use.
 !
   logical, dimension(mscratch+1) :: scratch_used
+!
+! With DYNAMIC_AUX=yes: next free f-array slots for communicated and
+! non-communicated auxiliaries.
+!
+  integer :: icom_next=mvar+1, iaux_next=mvar+maux_com_decl+1
+  logical :: laux_fixed=.false.
 
   contains
 !***********************************************************************
@@ -314,7 +321,7 @@ module FArrayManager
             "modules or in cparam.local.")
             endif
           case (iFARRAY_TYPE_AUXILIARY)
-            if (naux+nvars>maux) then
+            if (naux+nvars>maux .and. .not.ldynamic_aux) then
               if (present(ierr)) then
                 ierr=iFARRAY_ERR_OUTOFSPACE
                 ivar=0
@@ -328,7 +335,7 @@ module FArrayManager
             "latter try adding an MAUX CONTRIBUTION header to cparam.local.")
             endif
           case (iFARRAY_TYPE_COMM_AUXILIARY)
-            if (naux_com+nvars>maux_com) then
+            if (naux_com+nvars>maux_com .and. .not.ldynamic_aux) then
               if (present(ierr)) then
                 ierr=iFARRAY_ERR_OUTOFSPACE
                 ivar=0
@@ -366,11 +373,19 @@ module FArrayManager
             ivar=nvar+1
             nvar=nvar+nvars
           case (iFARRAY_TYPE_COMM_AUXILIARY)
-            ivar=mvar+naux_com+1
+            if (ldynamic_aux) then
+              call dynamic_aux_slot(varname,nvars,.true.,ivar)
+            else
+              ivar=mvar+naux_com+1
+            endif
             naux=naux+nvars
             naux_com=naux_com+nvars
           case (iFARRAY_TYPE_AUXILIARY)
-            ivar=mvar+maux_com+(naux-naux_com)+1
+            if (ldynamic_aux) then
+              call dynamic_aux_slot(varname,nvars,.false.,ivar)
+            else
+              ivar=mvar+maux_com+(naux-naux_com)+1
+            endif
             naux=naux+nvars
           case (iFARRAY_TYPE_GLOBAL)
             ivar=mvar+maux+nglobal+1
@@ -406,6 +421,90 @@ module FArrayManager
       endif
 !
     endsubroutine farray_register_variable
+!***********************************************************************
+    subroutine dynamic_aux_slot(varname,nvars,lcommunicated,ivar)
+!
+!  Returns the f-array index for nvars new (communicated) auxiliaries and
+!  increases maux and maux_com if they do not fit (DYNAMIC_AUX=yes).
+!
+!  Layout: PDEs | communicated aux. | non-communicated aux. | globals | scratch.
+!  Already assigned indices never change. Hence, if a communicated auxiliary
+!  is registered after non-communicated ones, it is placed behind them and the
+!  communicated range is extended over them, so they are communicated as well.
+!
+      use Cparam, only: maux_com_max, maux_max
+!
+      character (len=*), intent(in) :: varname
+      integer,           intent(in) :: nvars
+      logical,           intent(in) :: lcommunicated
+      integer,           intent(out):: ivar
+!
+      integer :: maux_new, maux_com_new
+!
+      maux_com_new=maux_com
+      if (lcommunicated) then
+        if (icom_next+nvars-1<=mvar+maux_com) then
+          ivar=icom_next
+          icom_next=icom_next+nvars
+        elseif (iaux_next==mvar+maux_com+1) then
+!
+!  No non-communicated auxiliaries yet: extend the communicated range.
+!
+          ivar=icom_next
+          icom_next=icom_next+nvars
+          iaux_next=icom_next
+          maux_com_new=icom_next-1-mvar
+        else
+!
+!  Place it behind the non-communicated auxiliaries, which become communicated.
+!
+          ivar=iaux_next
+          iaux_next=iaux_next+nvars
+          icom_next=iaux_next
+          maux_com_new=icom_next-1-mvar
+          if (lroot) call warning("farray_register_variable", "Registering "//trim(varname)// &
+              ": non-communicated auxiliaries registered before are communicated as well")
+        endif
+      else
+        ivar=iaux_next
+        iaux_next=iaux_next+nvars
+      endif
+      maux_new=max(maux,iaux_next-1-mvar)
+!
+      if (maux_new==maux .and. maux_com_new==maux_com) return
+!
+      if (laux_fixed) call fatal_error("farray_register_variable", &
+          "Registering "//trim(varname)//" fails: the f-array has already been allocated. "// &
+          "Register it in register_* instead of initialize_*, or declare it by an "// &
+          "MAUX CONTRIBUTION (and COMMUNICATED AUXILIARIES) header in cparam.local.")
+      if (nglobal>0) call fatal_error("farray_register_variable", &
+          "Registering "//trim(varname)//" fails: global variables are already placed behind "// &
+          "the auxiliaries. Declare it by an MAUX CONTRIBUTION (and COMMUNICATED AUXILIARIES) "// &
+          "header in cparam.local.")
+      if (maux_new>maux_max .or. maux_com_new>maux_com_max) call fatal_error("farray_register_variable", &
+          "Registering "//trim(varname)//" fails: more auxiliaries than maux_max. "// &
+          "Increase DYNAMIC_AUX_EXTRA in Makefile.local.")
+!
+      call set_aux_counts(maux_new,maux_com_new)
+!
+    endsubroutine dynamic_aux_slot
+!***********************************************************************
+    subroutine farray_finalize_registration
+!
+!  To be called after all modules have registered their variables and before
+!  the f-array is allocated. With DYNAMIC_AUX=yes, maux and maux_com are final
+!  now, so the ghost zone buffers allocated in initialize_mpicomm are adapted
+!  to mcom.
+!
+      use Cparam, only: mcom
+      use Mpicomm, only: allocate_comm_buffers
+!
+      if (.not.ldynamic_aux) return
+!
+      if (mcom>mvar+maux_com_decl) call allocate_comm_buffers
+      laux_fixed=.true.
+!
+    endsubroutine farray_finalize_registration
 !***********************************************************************
     subroutine farray_register_ode(varname,ivar,nvar)
 
@@ -494,6 +593,9 @@ module FArrayManager
 ! 14-oct-18/PAB: coded
 !
       call index_reset
+!
+      icom_next=mvar+1
+      iaux_next=mvar+maux_com+1
 !
     endsubroutine farray_index_reset
 !***********************************************************************

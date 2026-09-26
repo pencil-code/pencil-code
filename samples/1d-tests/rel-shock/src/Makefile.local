@@ -12,4 +12,5 @@ HYDRO    =   hydro
 DENSITY  =   density
 SHOCK    = noshock
 POWER    = nopower_spectrum
+DYNAMIC_AUX = yes
 #REAL_PRECISION=double

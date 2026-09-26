@@ -58,7 +58,7 @@ program start
   use Dustvelocity,     only: init_uud
   use Energy,           only: init_energy
   use EquationOfState,  only: init_eos
-  use FArrayManager,    only: farray_clean_up
+  use FArrayManager,    only: farray_clean_up, farray_finalize_registration
   use Filter
   use General
   use Gravity,          only: init_gg
@@ -135,14 +135,10 @@ program start
 !  limits), but they did and now don't. Also, the present approach runs
 !  up to nx=ny=nz=135, but not for even slightly larger grids.
 !
-  if (.not.lnowrite) then
-    allocate(f(mx,my,mz,mfarray),STAT=stat)
-    if (stat>0) call fatal_error('start','Could not allocate f')
-    f=huge(1.0)
-  endif
-!
 !  Pre-initialize f and df to absurd value (to crash the code should we
 !  later use uninitialized slots of those fields).
+!  f is allocated after the registration of the variables, which may
+!  increase mfarray (DYNAMIC_AUX=yes).
 !
   if (lmodify .or. nfilter/=0) then
     allocate(df(mx,my,mz,mvar),STAT=stat)
@@ -176,6 +172,13 @@ program start
   !allocate(df(mx,my,mz,nvar)   ,STAT=stat)
 
   if (lparticles) call particles_register_modules
+  call farray_finalize_registration
+!
+  if (.not.lnowrite) then
+    allocate(f(mx,my,mz,mfarray),STAT=stat)
+    if (stat>0) call fatal_error('start','Could not allocate f')
+    f=huge(1.0)
+  endif
 !
 !  The logical headtt is sometimes referred to in start.x, even though it is
 !  not yet defined. So we set it simply to lroot here.

@@ -12,6 +12,7 @@ s/\([0-9.]\) *[dD] *\([-0-9]\)/\1E\2/g
 /selected[a-z_]* *(/ d
 /implicit  *none/ d
 /cparam_pencils\.inc/ d
+/cparam_aux\.inc/ d
 /dimension *(/ d
 /integer, *parameter *:: *[ir]kind[0-9]* *=/ d
 s/, *bind *( *c *)//

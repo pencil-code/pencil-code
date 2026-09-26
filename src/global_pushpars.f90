@@ -14,7 +14,7 @@ contains
     integer(KIND=ikind8), dimension(n_pars) :: p_par
     integer, pointer :: iglobal_gg_tmp,iglobal_glnTT_tmp
     integer, save :: iglobal_gg,iglobal_glnTT,ierr
-    integer, save, dimension(mcom,2) :: enum_bcx12,enum_bcy12,enum_bcz12
+    integer, save, dimension(mcom_max,2) :: enum_bcx12,enum_bcy12,enum_bcz12
     logical, save :: lfreeze_var_all = .false.
     logical, save :: luses_aa_pot2_top = .false.
     logical, save :: luses_aa_pwd_top = .false.

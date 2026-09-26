@@ -88,6 +88,10 @@ module Mpicomm
 !
     endsubroutine initialize_mpicomm
 !***********************************************************************
+    subroutine allocate_comm_buffers
+!
+    endsubroutine allocate_comm_buffers
+!***********************************************************************
     subroutine create_communicators
     endsubroutine create_communicators
 !***********************************************************************

@@ -55,10 +55,10 @@ module Pencil_check
       real, dimension (nx) :: dt1_max_ref
       integer :: i,j,k,penc,iv,nite,k_fail,k_fail_allproc
       integer, dimension (mseed) :: iseed_org
-      logical, dimension (mfarray) :: lfound_nan=.false.
-      logical, dimension (mfarray) :: lfound_nan_loc=.false.
+      logical, dimension (mfarray_max) :: lfound_nan=.false.
+      logical, dimension (mfarray_max) :: lfound_nan_loc=.false.
       logical :: lconsistent=.true., lconsistent_allproc=.false.
-      logical, dimension(mfarray) :: lconsistent_var =.true.
+      logical, dimension(mfarray_max) :: lconsistent_var =.true.
       logical, dimension(nname) :: lconsistent_diagnos
       character(len=30) :: name
       logical :: ldie=.false.
