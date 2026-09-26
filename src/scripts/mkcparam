@@ -21,7 +21,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # CVS     : $Id$
 #
 # Usage:
-#   mkcparam [-b] <file1> [<file2> [..]] [-o outfile]\n
+#   mkcparam <file1> [<file2> [..]] [-o outfile]\n
 #
 # Description:
 #   Checks the headers (everything before the first non-comment non-empty
