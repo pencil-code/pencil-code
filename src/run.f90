@@ -55,7 +55,7 @@ module Run_module
 
 contains
 !***********************************************************************
-subroutine helper_loop(f,p)
+subroutine helper_loop(f)
 !
   use Boundcond, only: update_ghosts
   use Equ, only: perform_diagnostics, calc_all_module_diagnostic_auxiliaries
@@ -67,7 +67,6 @@ subroutine helper_loop(f,p)
 !
   real, contiguous, dimension(:,:,:,:) :: f
   real :: tvar1
-  type (pencil_case) :: p
 
   real :: start_time,end_time
 !
@@ -83,13 +82,13 @@ subroutine helper_loop(f,p)
 
 !$    if (lhelper_run) call update_ghosts(f)
 !$    if (lhelper_run .and. lhelperflags(PERF_DIAGS)) then
-        call perform_diagnostics(f,p)
+        call perform_diagnostics(f)
 !$    else
 !$      lhelperflags(PERF_DIAGS) = .false.
 !$    endif
 !$    if (lhelper_run) call restore_diagnostic_controls(lsnap_time=.true.)
 !$    if (lhelper_run .and. lhelperflags(PERF_WSNAP)) then
-!$      call calc_all_module_diagnostic_auxiliaries(f,p)
+!$      call calc_all_module_diagnostic_auxiliaries(f)
         if (ip<=12.and.lroot) tvar1=real(mpiwtime())
         call perform_wsnap_ext(f)
         if (ip<=12.and.lroot) print*,'wsnap: written snapshot var.dat in ', &
@@ -1395,7 +1394,7 @@ endsubroutine helper_loop
 !
       if (nt>0) call timeloop(f,df,p)
 !$  else
-!$    if (nt>0) call helper_loop(f,p)
+!$    if (nt>0) call helper_loop(f)
 !$  endif
 !$omp barrier
 !$omp end parallel
