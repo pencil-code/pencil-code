@@ -689,6 +689,7 @@ module Equ
 !$    use General, only: get_cpu, set_cpu
 
       real, contiguous, dimension(:,:,:,:),intent(INOUT) :: f
+      type(pencil_case), allocatable :: p
 
       integer :: imn
 !
@@ -719,7 +720,6 @@ module Equ
 !  Each thread has its own pencil case on the heap, since on large grids
 !  it does not fit on the thread stacks.
 !
-      type (pencil_case), allocatable :: p
 
       !$omp do
       do imn=1,nyz
