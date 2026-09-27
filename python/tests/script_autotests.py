@@ -15,6 +15,7 @@ samples_with_scripttests = [
     #to mark a failing test, use
     ##pytest.param(path, marks=pytest.mark.xfail)
     "samples/continuous-forcing-from-file",
+    "samples/continuous-forcing-from-file_h5",
     "samples/conv-slab-noequi",
     "samples/helical-MHDturb",
     "samples/helical-MHDturb_HDF5",
