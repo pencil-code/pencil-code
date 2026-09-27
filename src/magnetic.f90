@@ -346,9 +346,9 @@ module Magnetic
   real :: no_ohmic_heat_z0=1.0, no_ohmic_heat_zwidth=0.0
   real :: imp_alpha0=0.0, imp_halpha=0.0, c_light2, c_light21
   real, target :: betamin_jxb = 0.0
-  real, dimension(mx,my) :: eta_xy
+  real, allocatable, dimension(:,:) :: eta_xy
   real, dimension(nx,3) :: geta
-  real, dimension(mx,my,3) :: geta_xy
+  real, allocatable, dimension(:,:,:) :: geta_xy
   real, dimension(nz,3) :: A_relprof
   real, dimension(mz) :: coskz,sinkz,eta_z,geta_z
   real, dimension(mx) :: eta_x,geta_x
@@ -1240,6 +1240,9 @@ module Magnetic
       use Sub, only: register_report_aux
       use FArrayManager, only: farray_register_pde, farray_register_auxiliary
       use SharedVariables, only: put_shared_variable
+
+      if(.not. allocated(eta_xy)) allocate(eta_xy(mx,my))
+      if(.not. allocated(geta_xy)) allocate(geta_xy(mx,my,3))
 !
       call farray_register_pde('aa',iaa,vector=3)
       iax = iaa; iay = iaa+1; iaz = iaa+2
