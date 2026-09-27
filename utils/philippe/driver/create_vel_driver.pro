@@ -4,7 +4,7 @@ switch_on_time = 0.0
 data_size_x = 96
 data_size_y = 96
 image_filename = "../../utils/philippe/driver/KFU-logo.png"
-driver_filename = "vel-z"
+driver_filename = "driver/vel-z_xy"
 
 read_png, image_filename, image
 if (size (image, /n_dimensions) eq 3) then image = reform (image[0,*,*])
