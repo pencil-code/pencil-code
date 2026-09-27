@@ -328,7 +328,7 @@ module Special
       use FArrayManager, only: farray_index_by_name,farray_index_by_name_ode
       use Messages, only: warning
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: iLCDM_lna
 !
       iaae =farray_index_by_name('aae')
@@ -440,12 +440,11 @@ module Special
       use Initcond, only: gaunoise, sinwave_phase, hat, power_randomphase_hel, power_randomphase, bunch_davies
       use Mpicomm, only: mpibcast_real
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: Vpotential, Hubble_ini, infl_gam, amplphi_BD, amplee_BD, deriv_prefactor
       integer :: j
       real :: lnascale
 !
-      intent(inout) :: f
 !
       do j=1,ninit
         select case (initspecial(j))
@@ -640,11 +639,9 @@ module Special
 !
       use Sub, only: grad
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
 !
-      intent(in) :: f
-      intent(inout) :: p
 !
 ! infl_phi
       if (lpencil(i_infl_phi)) p%infl_phi=f(l1:l2,m,n,iinfl_phi)
@@ -717,17 +714,15 @@ module Special
       use Diagnostics, only: sum_mn_name, max_mn_name, save_name
       use Sub, only: dot_mn, dot2_mn, del2, grad, multvs
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
       real, dimension (nx,3) :: gphi, tmpv
       real, dimension (nx) :: Vprime, Vpotential, a2rhophi, a4rhophi
       real, dimension (nx) :: tmp, del2phi, gphi2, Gamma_phi_rho_rhs
 !AB: gphi2 should be pencil (to check)
       real :: pref_Vprime=1., pref_Hubble=2., pref_del2=1., pref_alpf, pref_Gamma=impossible
-      type (pencil_case) :: p
 !
-      intent(in) :: f,p
-      intent(inout) :: df
 !
 !  Identify module and boundary conditions.
 !
@@ -1074,7 +1069,7 @@ module Special
 !
       use Diagnostics 
       
-      real, dimension(n_odevars), intent(in) :: f_ode
+      real, dimension(n_odevars) :: f_ode
       real :: rho_chi, rho_rad, lnascale, tph=0.
       real :: Hscript_diagnos
 !
@@ -1135,7 +1130,7 @@ module Special
 !
       use Diagnostics
 
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
 
       call keep_compiler_quiet(f)
@@ -1159,7 +1154,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -1179,7 +1174,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -1203,8 +1198,9 @@ module Special
 !
       use Diagnostics, only: parse_name
 !
+      logical :: lreset
+      logical, optional :: lwrite
       integer :: iname
-      logical :: lreset,lwrite
 
       call keep_compiler_quiet(lwrite)
 !
@@ -1272,8 +1268,8 @@ module Special
 !
       use IO, only: read_persist, lun_input
 !
-      integer, intent(in) :: id
-      logical, intent(inout) :: done
+      integer :: id
+      logical :: done
 !
       select case (id)
         case (id_record_LHEATING_ALWAYS)
@@ -1452,7 +1448,7 @@ module Special
       use Mpicomm, only: mpireduce_sum, mpiallreduce_sum, mpibcast_real, mpibcast_int
       use Sub, only: dot2_mn, grad, curl, dot_mn
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: tmp, sigE1m, sigB1m, rho_rad, Hscript_prev=0.
 !
 ! TP: to avoid code duplication could this function not be combined with the copy of it in
@@ -1723,8 +1719,8 @@ module Special
 !
       use Slices_methods, only: assign_slices_vec
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      type (slice_data) :: slices
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(slice_data) :: slices
 !
 !  Loop over slices
 !

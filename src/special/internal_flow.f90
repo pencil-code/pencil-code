@@ -67,7 +67,7 @@ module Special
 !  06-oct-03/tony: coded
 !
       use Slices_methods, only: alloc_slice_buffers
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
 !  Initialize any module variables which are parameter dependent
 !
@@ -92,11 +92,10 @@ module Special
       use Sub
       use Initcond
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: i,j
       real :: height,h2
 !
-      intent(inout) :: f
       !
       ! Select case
       !
@@ -159,11 +158,9 @@ module Special
 !
 !   24-nov-04/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
 !
-      intent(in) :: f
-      intent(inout) :: p
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
@@ -191,19 +188,17 @@ module Special
       use Slices_methods, only: store_slices
       use SharedVariables, only: get_shared_variable
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
       real, dimension (nx,3) :: ufluct
       real, dimension (nx) :: ufluct2
       real, dimension (3) :: meanx_uu
-      type (pencil_case) :: p
       integer :: i,j
       real, dimension (my) :: tmp,du_mean_dy
       real :: tau_tmp
       real, pointer :: nu
 !
-      intent(in) :: f,p
-      intent(inout) :: df
 !
       call get_shared_variable('nu',nu,caller='dspecial_dt')
 !
@@ -274,7 +269,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -300,9 +295,10 @@ module Special
       use FArrayManager, only: farray_index_append
       use Sub
 !
-      integer :: iname
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
+      integer :: iname
+      logical :: lwr
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
@@ -348,8 +344,8 @@ module Special
 !
       use Slices_methods, only: assign_slices_vec
 
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (slice_data) :: slices
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(slice_data) :: slices
       !
       !  Loop over slices
       !
@@ -376,7 +372,7 @@ module Special
       use Sub
       use Mpicomm, only: mpireduce_sum, mpibcast_real
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension(nygrid,3) :: mean_u_tmp
       real :: faq
       integer :: j,k
@@ -406,8 +402,8 @@ module Special
 !
 !   2008-06-19/nils: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      type (boundary_condition) :: bc
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(boundary_condition) :: bc
 !
       select case (bc%bcname)
       case ('poi')

@@ -129,7 +129,7 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       real phi1,phi2
       integer i
@@ -171,9 +171,8 @@ module Special
       use EquationOfState, only: cs20
       use FArrayManager, only: farray_use_global
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
-      intent(inout) :: f
 !
       integer, pointer :: iglobal_cs2,iglobal_glnTT
       real :: a2,rr2,pphi,wall_smoothing,rr2_low,rr2_high,shiftx,shifty
@@ -402,11 +401,9 @@ module Special
 !   Manipulate Hydro pencils.
 !   Most basic pencils should come first, as others may depend on them.
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
 !
-      intent(in) :: f
-      intent(inout) :: p
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
@@ -431,12 +428,10 @@ module Special
       use Mpicomm
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
 !
-      intent(inout) :: f,p
-      intent(inout) :: df
 !
 !  identify module and boundary conditions
 !
@@ -450,7 +445,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=flowaroundsphere_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -470,7 +465,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=flowaroundsphere_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -494,9 +489,10 @@ module Special
 !
       use Sub
 !
-      integer :: iname
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
+      integer :: iname
+      logical :: lwr
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite

@@ -103,7 +103,7 @@ module Special
 !
 !  24-nov-02/tony: coded
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
 !  set to zero and then call the same initial condition
 !  that was used in start.csh
@@ -127,7 +127,7 @@ module Special
       use Sub
       use Initcond
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
 !  inititialize alpm and etat. Not that the f-array in ietat only contains
 !  the part not already included in meanfield_etat
@@ -147,11 +147,9 @@ module Special
 !
 !   24-nov-04/tony: coded
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
 !
-      intent(in) :: f
-      intent(inout) :: p
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
@@ -171,16 +169,14 @@ module Special
       use Diagnostics
       use SharedVariables, only : get_shared_variable
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
       real, dimension (nx,3) :: galpm
       real, dimension (nx) :: alpm,etat,ugalpm,EMFdotB,EMFdotJ
       real, dimension (nx) :: divflux,del2alpm,EJ_kfEB
-      type (pencil_case) :: p
       integer :: ierr
 !
-      intent(in)  :: f
-      intent(out) :: df
 !
 !  identify module and boundary conditions
 !
@@ -260,7 +256,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -280,7 +276,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -305,9 +301,10 @@ module Special
       use Diagnostics
       use FArrayManager, only: farray_index_append
 !
-      integer :: iname,inamez
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
+      integer :: iname,inamez
+      logical :: lwr
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite

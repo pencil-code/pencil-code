@@ -111,7 +111,7 @@ module Special
       use General, only: itoa
       use File_io, only: parallel_file_exists
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: TT,rho,zeta,eta,teqm
       integer :: mtable,itable,irho,itemp,izet
       integer :: iitemp,iirho,iizet,stat
@@ -170,9 +170,8 @@ module Special
 !  initialise special condition; called from start.f90
 !  06-oct-2003/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
-      intent(inout) :: f
 !
 !  SAMPLE IMPLEMENTATION
 !
@@ -218,11 +217,9 @@ module Special
 !
 !  24-nov-04/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
 !
-      intent(in) :: f
-      intent(inout) :: p
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
@@ -243,12 +240,10 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
 !
-      intent(in) :: f,p
-      intent(inout) :: df
 !
 !  Identify module and boundary conditions.
 !
@@ -274,7 +269,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -299,9 +294,10 @@ module Special
       use Diagnostics
       use FArrayManager, only: farray_index_append
 !
-      integer :: iname
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
+      integer :: iname
+      logical :: lwr
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
@@ -335,8 +331,8 @@ module Special
 !
 !  26-jun-06/tony: dummy
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (slice_data) :: slices
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(slice_data) :: slices
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(slices%ready)
@@ -355,9 +351,9 @@ module Special
 !
       use Diagnostics
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
       real, dimension(nx) :: eta
       integer :: j,ju
 !
@@ -398,7 +394,7 @@ module Special
 !
 !  06-jul-06/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: TT,rho,zeta
       integer :: it1,it2,ir1,ir2,iz1,iz2
       integer :: i,m,n

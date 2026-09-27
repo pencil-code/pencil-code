@@ -219,7 +219,7 @@ end function selct
 !
       use SharedVariables, only: get_shared_variable
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -230,10 +230,9 @@ end function selct
 !  initialise special condition; called from start.f90
 !  06-oct-2003/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: j
 !
-      intent(inout) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -560,11 +559,9 @@ end function selct
 !
       use Sub, only: grad
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
 !
-      intent(inout) :: f
-      intent(inout) :: p
       
       call calc_diagnostic_pencils(f,p)
 
@@ -773,10 +770,9 @@ end function selct
     subroutine calc_diagnostics_special(f,p)
 !
       use Diagnostics, only: sum_mn_name
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
 !
-      intent(in) :: f,p
 !
       if (ldiagnos .or. ldiagnos_always) then
         call sum_mn_name(p%uSH2,idiag_uSH2)
@@ -808,12 +804,10 @@ end function selct
 !   2-nov-21/axel: first set of equations coded
 !
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
 !
-      intent(in) :: f,p
-      intent(inout) :: df
 !
 !  Identify module and boundary conditions.
 !
@@ -830,7 +824,7 @@ end function selct
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -850,7 +844,7 @@ end function selct
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -874,8 +868,9 @@ end function selct
 !
       use Diagnostics, only: parse_name
 !
+      logical :: lreset
+      logical, optional :: lwrite
       integer :: iname
-      logical :: lreset,lwrite
 !
 !  check for those quantities for which we want video slices
 !
@@ -917,8 +912,8 @@ end function selct
 !
       use Slices_methods, only: assign_slices_scal
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (slice_data) :: slices
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(slice_data) :: slices
 !
 !  Loop over slices.
 !
@@ -951,7 +946,7 @@ end function selct
 !     use Mpicomm, only: mpireduce_sum, mpiallreduce_sum, mpibcast_real
 !     use Sub, only: dot2_mn, grad, curl, dot_mn
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
     endsubroutine special_after_boundary
 !********************************************************************

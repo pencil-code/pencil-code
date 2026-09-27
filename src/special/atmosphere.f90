@@ -167,7 +167,7 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: k,i
       real :: ddsize, Ntot_
       real, dimension (ndustspec) :: lnds,dsize_
@@ -206,9 +206,8 @@ module Special
       use Mpicomm
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
-      intent(inout) :: f
 !
 !      select case (initstream)
 !        case ('flame_spd')
@@ -243,12 +242,10 @@ module Special
       use Mpicomm
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
 !
-      intent(in) :: f,p
-      intent(inout) :: df
 
       real, dimension(nx) :: diffus_chi
 !
@@ -278,7 +275,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -298,7 +295,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -325,9 +322,10 @@ module Special
 !
 !  define diagnostics variable
 !
-      integer :: iname
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
+      integer :: iname
+      logical :: lwr
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
@@ -360,9 +358,9 @@ module Special
 !
       use Sub, only: dot
 !
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
 !
       real :: gg=9.81e2!,  qwater0=9.9e-3
       real :: eps=0.5 !!????????????????????????
@@ -518,9 +516,9 @@ module Special
 !***********************************************************************
     subroutine special_calc_energy(f,df,p)
 !
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
 
       integer :: l_sz, mm1,mm2, sz_y
       real, dimension (mx) :: func_x
@@ -538,9 +536,9 @@ module Special
 !***********************************************************************
     subroutine special_calc_chemistry(f,df,p)
 !
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
 
       integer :: l_sz
       integer :: j,  sz_l_x,sz_r_x,ll1,ll2,lll1,lll2
@@ -620,9 +618,9 @@ module Special
 !
      use General, only: spline_integral
 !
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
 !
       real, dimension (nx,ndustspec) :: f_tmp
       real, dimension (ndustspec) :: ff_tmp,ttt
@@ -655,8 +653,8 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      type (boundary_condition) :: bc
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(boundary_condition) :: bc
 !
       select case (bc%bcname)
         case ('stm')
@@ -719,10 +717,10 @@ module Special
       use General, only: spline_integral, spline
 !      use Dustdensity
 !
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real :: dt_
       logical, intent(in) :: llast
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension(mx,my,mz,mvar), intent(inout) :: df
-      real, intent(in) :: dt_
       integer :: k,i,i1,i2,i3
       integer :: j
       real, dimension (ndustspec) :: S,x2
@@ -1229,8 +1227,10 @@ module Special
 !
       use General, only:  spline, spline_integral
 
-      real, dimension (ndustspec), intent(out) :: dsize, init_distr2
-      real, dimension (mx,ndustspec), intent(out) :: init_distr
+      real :: Ntot_
+      real, dimension(ndustspec) :: dsize
+      real, dimension(ndustspec) :: init_distr
+      real, dimension(ndustspec) :: init_distr2
       real, dimension (ndustspec) ::  lnds, ttt
       real, dimension (9) ::  X,Y
       real, dimension (5) ::  X_tmp, Y_tmp
@@ -1239,7 +1239,6 @@ module Special
       real, dimension (76) :: nd_data,dsize_data
       integer :: i,k
       real :: ddsize, tmp
-      real, intent(out) :: Ntot_
  !
       ddsize=(alog(dsize_max)-alog(dsize_min))/(ndustspec-1)
       do i=0,(ndustspec-1)

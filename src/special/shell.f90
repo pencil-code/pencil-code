@@ -119,7 +119,7 @@ module Special
       use Sub, only: cross
       use SharedVariables, only: get_shared_variable
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: ns, ierr, nk,nk2, ik, ncount, cc_count
       character (len=fnlen) :: filename
       real :: kav
@@ -262,7 +262,7 @@ module Special
 !
       use General, only: random_number_wrapper
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension(nshell) :: random_phase_uu_init
       real(KIND=rkind8), dimension(nshell) ::randomd
       integer :: ns, ncount=1
@@ -352,13 +352,11 @@ module Special
       use Mpicomm
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
       real :: deltm1, minturn, deltmbase
-      type (pencil_case) :: p
 !
-      intent(in) :: f,p
-      intent(inout) :: df
 !
 !  calculate timestep for GOY
 !
@@ -412,7 +410,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -432,7 +430,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -458,9 +456,10 @@ module Special
       use FArrayManager, only: farray_index_append
       use Sub
 !
-      integer :: iname
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
+      integer :: iname
+      logical :: lwr
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
@@ -498,9 +497,10 @@ module Special
 !  Also hijacked to get gas velocity using shared variable.
 !  shared logical vel_call triggers the hijack
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(in) :: df
-      real, dimension (:,:), intent(in) :: fp,dfp
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real, dimension(:,:) :: fp
+      real, dimension(:,:) :: dfp
       integer, dimension(:,:) :: ineargrid
 !
       real, dimension(3) :: xpos
@@ -530,10 +530,10 @@ module Special
 !
       Use Mpicomm, only: mpibcast_cmplx, mpibcast_real
 !
-      logical, intent(in) :: llast
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension(mx,my,mz,mvar) :: df
-      real :: dt_                          !dt_ passed by timestep
+      real :: dt_
+      logical, intent(in) :: llast
       integer :: ncount, advances,ns, trip  !number of GOY timesteps to call
       logical, dimension(nshell) :: shell
       logical :: update_vecs

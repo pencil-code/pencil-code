@@ -553,7 +553,7 @@ module Special
       use General, only: random_number_wrapper, itoa
       use Slices_methods, only: alloc_slice_buffers
 !
-      real,  dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: iLCDM_lna,i
       real :: broken_mass=impossible,phi_tilde,u
       real :: critical_bubble_size
@@ -800,13 +800,12 @@ module Special
 !
       use Initcond, only: gaunoise, sinwave_phase, hat, power_randomphase_hel, power_randomphase, bunch_davies
       use Mpicomm, only: mpibcast_real
-      real,  dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: Vpotential, Hubble_ini, phi_gam, amplphi_BD, amplee_BD, deriv_prefactor
       integer :: i,j
       real :: lnascale
       real, dimension(3) :: pos
 !
-      intent(inout) :: f
 
       call initialize_seed
 !
@@ -1053,7 +1052,7 @@ module Special
 !
 !  18-07-06/tony: coded
 !
-      logical, dimension(npencils), intent(inout) :: lpencil_in
+      logical, dimension(npencils) :: lpencil_in
 !
         if (lpencil_in(i_plasma_friction)) then
           lpencil_in(i_gphi) = .true.
@@ -1071,11 +1070,9 @@ module Special
       use Sub, only: grad, div, dot_mn,u_dot_grad
       use Deriv, only: der
 !
-      real,  dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
 !
-      intent(in) :: f
-      intent(inout) :: p
       integer ::  i, j, l
       real, dimension(nx) :: friction_coeff
       real, dimension(nx) :: u_dot_gphi
@@ -1352,17 +1349,15 @@ module Special
       use General, only: notanumber
       use Messages, only: fatal_error_local
 !
-      real,  dimension (mx,my,mz,mfarray) :: f
-      real,  dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
       real, dimension (nx) :: Vprime_aux, total_fric
       real, dimension (nx, 4) :: del2phi_doublet=0.
       real, dimension (nx) :: tmp, del2psi
       real :: pref_Vprime=1., pref_Hubble=2., pref_del2=1., pref_alpf
-      type (pencil_case) :: p
       integer :: i
 !
-      intent(in) :: f,p
-      intent(inout) :: df
 !
 !  Identify module and boundary conditions.
 !
@@ -1691,7 +1686,7 @@ module Special
   
       use Diagnostics 
       
-      real, dimension(n_odevars), intent(in) :: f_ode
+      real, dimension(n_odevars) :: f_ode
       real :: rho_chi, lnascale
       real :: Hscript_diagnos
       real :: gammaR, friction
@@ -1758,7 +1753,7 @@ module Special
       use Deriv, only: der2
       use Slices_methods, only: store_slices
 
-      real,  dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
       integer :: l
       real, dimension (nx) :: gphi2
@@ -1836,7 +1831,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -1856,7 +1851,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -1882,8 +1877,8 @@ module Special
 !
       use IO, only: read_persist, lun_input
 !
-      integer, intent(in) :: id
-      logical, intent(inout) :: done
+      integer :: id
+      logical :: done
 !
       select case (id)
         case (id_record_WALL_VEL)
@@ -1920,8 +1915,9 @@ module Special
 !
       use Diagnostics, only: parse_name
 !
+      logical :: lreset
+      logical, optional :: lwrite
       integer :: iname,inamev
-      logical :: lreset,lwrite
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
@@ -2015,8 +2011,8 @@ module Special
 !
       use Slices_methods, only: assign_slices_scal
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      type (slice_data) :: slices
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(slice_data) :: slices
 !
 !
 !  Loop over slices
@@ -2300,7 +2296,7 @@ module Special
       use General, only: random_number_wrapper
       use Sub, only: sample_poisson_waiting_time 
 !
-      real,  dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension(3) :: pos
       real :: acceptance_ran, acceptance_probability
 
@@ -2344,7 +2340,7 @@ module Special
       use Mpicomm, only: mpireduce_sum, mpiallreduce_sum, mpibcast_real
       use Sub, only: dot2_mn, grad, curl, dot_mn
 !
-      real,  dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: w_r, w_p, Gamma_E
       real :: sigE1m,sigB1m
 !
@@ -2479,9 +2475,9 @@ module Special
       use Mpicomm, only: mpireduce_sum
       use Deriv, only: der
 
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension(mx,my,mz,mvar), intent(inout) :: df
-      real, intent(in) :: dt_
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real :: dt_
       logical, intent(in) :: llast
       real, dimension(nx) :: zeta, drphi
       real :: zeta_sum = 0.

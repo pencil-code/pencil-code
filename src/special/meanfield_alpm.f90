@@ -111,7 +111,7 @@ module Special
 !
       use SharedVariables, only : get_shared_variable
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: l,ierr
 !
       call keep_compiler_quiet(f)
@@ -180,7 +180,7 @@ module Special
 !
 !   6-jul-2001/axel: coded
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       select case (initalpm)
         case ('zero'); f(:,:,:,ialpm)=0.
@@ -232,11 +232,9 @@ module Special
 !
 !   24-nov-04/tony: coded
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
 !
-      intent(in) :: f
-      intent(inout) :: p
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
@@ -256,18 +254,17 @@ module Special
       use SharedVariables, only : get_shared_variable
       use Deriv, only: der,der2
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
       real, dimension (nx,3) :: galpm
       real, dimension (nx) :: alpm,ugalpm,divflux,del2alpm,alpm_divu
       real, dimension (nx) :: kf_tmp,meanfield_etat_tmp
       real, dimension (nx) :: alpmejec_uu, der_alpmejec_uu
       real, dimension (nx) :: del2alpmx,del2alpmy,del2alpmz,tmp
       real(KIND=rkind8) :: dtalpm_double
-      type (pencil_case) :: p
       integer :: modulot
 !
-      intent(inout) :: df
 !
 !  identify module and boundary conditions
 !
@@ -444,7 +441,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -464,7 +461,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -489,9 +486,10 @@ module Special
       use Diagnostics, only: parse_name
       use FArrayManager, only: farray_index_append
 !
-      integer :: iname,inamez
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
+      integer :: iname,inamez
+      logical :: lwr
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
@@ -543,8 +541,8 @@ module Special
 !
 !  26-jun-06/tony: dummy
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (slice_data) :: slices
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(slice_data) :: slices
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(slices%ready)

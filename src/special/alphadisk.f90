@@ -163,7 +163,7 @@ module Special
 !  06-oct-03/tony: coded
 !  01-aug-11/wlad: adapted
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
 !  Set constants.
 !
@@ -233,7 +233,7 @@ module Special
 !  14-aug-2011/Bourdin.KIS: coded
 !  01-aug-11/wlad: adapted
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -256,7 +256,7 @@ module Special
 !  06-oct-2003/tony: coded
 !  01-aug-11/wlad: adapted
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       integer :: j
 !
@@ -489,7 +489,7 @@ module Special
 !
 !  18-07-06/tony: coded
 !
-      logical, dimension(npencils), intent(inout) :: lpencil_in
+      logical, dimension(npencils) :: lpencil_in
 !
       call keep_compiler_quiet(lpencil_in)
 !
@@ -503,11 +503,9 @@ module Special
 !  24-nov-04/tony: coded
 !  01-aug-11/wlad: adapted
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
 !
-      intent(inout) :: f
-      intent(inout) :: p
 
       real, dimension(nx) :: nu
 !
@@ -550,14 +548,12 @@ module Special
 !
       use Sub, only: grad,del2
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
       real, dimension (nx) :: del2sigmanu,gsigmanu
       real, dimension (nx,3) :: tmp_vec
-      type (pencil_case) :: p
 !
-      intent(in) :: f,p
-      intent(inout) :: df
 !
 !  Identify module and boundary conditions.
 !
@@ -598,8 +594,8 @@ module Special
  !
       use Diagnostics, only: sum_mn_name, max_mn_name, yzsum_mn_name_x, save_name
 
-      real, dimension(mx,my,mz,mfarray), intent(IN) :: f
-      type(pencil_case), intent(IN) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
       real, dimension (nx) :: psigma,nu
 
       call keep_compiler_quiet(p)
@@ -629,7 +625,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -649,7 +645,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -716,8 +712,8 @@ module Special
 !
 !  26-jun-06/tony: dummy
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (slice_data) :: slices
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(slice_data) :: slices
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(slices%ready)
@@ -733,10 +729,10 @@ module Special
 !
 !
       use Diagnostics, only : save_name
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real :: dt_
       logical, intent(in) :: llast
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension(mx,my,mz,mvar), intent(inout) :: df
-      real, intent(in) :: dt_
 !
       select case (temperature_model)
 !

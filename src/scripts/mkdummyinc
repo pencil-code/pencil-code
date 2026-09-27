@@ -38,6 +38,7 @@ my $fortran_routine  = '^\s*(subroutine|function)\s*([^\s(])\s*\(.*?\).*end $1 $
 #
 use strict;
 use Getopt::Long;
+use File::Basename;
 #
 my @implemented;
 #
@@ -196,7 +197,22 @@ sub write_dummies {
 #
 # Go printing...
 #
-          print OUT "$lout\n" if ($write_line);
+          if ($write_line) {
+#
+# Inline files included by the copied routines (e.g. special_interfaces.inc),
+# since in the generated file their names would be resolved relative to the
+# source file including it, i.e. possibly in another directory.
+#
+              if ($line =~ /^\s*include\s*['"]([^'"]+)['"]/i && -f dirname($file)."/$1") {
+                  open(my $inc, "<", dirname($file)."/$1") or die "cannot open $1";
+                  print OUT "! >>> included from $1\n";
+                  print OUT while (<$inc>);
+                  print OUT "! <<< end of $1\n";
+                  close($inc);
+              } else {
+                  print OUT "$lout\n";
+              }
+          }
 #
           if ($write_line && ($line =~ /^\s*interface/i)) {
               $interface_open = 1;

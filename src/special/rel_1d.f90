@@ -135,7 +135,7 @@ module rel_1d
 !
 !  06-oct-03/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       ralp=x**alp
 !
@@ -150,11 +150,10 @@ module rel_1d
 !
       use Initcond, only: gaunoise, sinwave_phase, hat, power_randomphase_hel, power_randomphase
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: Vpotential, eps=.01, Hubble_ini, lnascale
       integer :: j
 !
-      intent(inout) :: f
 !
 !  SAMPLE IMPLEMENTATION
 !
@@ -190,12 +189,10 @@ module rel_1d
 !
 !  24-nov-04/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
       real, dimension (nx) :: rat
-      type (pencil_case) :: p
 !
-      intent(in) :: f
-      intent(inout) :: p
 !
 ! bet
       if (lpencil(i_bet)) then
@@ -227,15 +224,13 @@ module rel_1d
       use Deriv, only: der
       use Sub, only: del2
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
 !
       real, dimension (nx) :: del2eee, del2sss, dbss, dsss, dppp, &
         diffus_special
 !
-      intent(in) :: f,p
-      intent(inout) :: df
 !
 !  Identify module and boundary conditions.
 !
@@ -275,7 +270,7 @@ module rel_1d
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=rel_1d_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -295,7 +290,7 @@ module rel_1d
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=rel_1d_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -319,8 +314,9 @@ module rel_1d
 !
       use Diagnostics, only: parse_name
 !
+      logical :: lreset
+      logical, optional :: lwrite
       integer :: iname
-      logical :: lreset,lwrite
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
@@ -350,8 +346,8 @@ module rel_1d
 !
       use Slices_methods, only: assign_slices_scal
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (slice_data) :: slices
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(slice_data) :: slices
 !
 !  Loop over slices
 !
@@ -382,7 +378,7 @@ module rel_1d
 !
 !  28-dec-21/axel: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (mx) :: bet, bet2, rat
 !
       bet=.75*f(:,m1,n1,isss)/f(:,m1,n1,ieee)

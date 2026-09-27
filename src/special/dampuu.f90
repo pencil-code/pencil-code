@@ -49,7 +49,7 @@ module Special
 ! !***********************************************************************
     subroutine initialize_special(f)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       if (x_1==impossible) x_1=xyz0(1)
       if (y_1==impossible) y_1=xyz0(2)
@@ -93,7 +93,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -111,9 +111,9 @@ module Special
 !***********************************************************************
     subroutine special_calc_hydro(f,df,p)
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
 !
       call keep_compiler_quiet(f)
 !
@@ -125,9 +125,9 @@ module Special
 !***********************************************************************
     subroutine special_calc_density(f,df,p)
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
 !
       call keep_compiler_quiet(f)
 !
@@ -139,9 +139,9 @@ module Special
 !***********************************************************************
     subroutine special_calc_energy(f,df,p)
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
 !
       call keep_compiler_quiet(f)
 !
@@ -169,7 +169,7 @@ module Special
 !
 !     Used in case rho_prof and ss_prof need to be updated every timestep
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       if (.not.lprof_from_initial) then
         call update_profiles(f)

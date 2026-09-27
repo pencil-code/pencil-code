@@ -107,7 +107,7 @@ module Special
 !
 !  19-feb-2019/axel: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
 !  Initialize any module variables which are parameter dependent
 !
@@ -123,8 +123,8 @@ module Special
       use Mpicomm
       use Sub
 !
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (npgrid,npgrid,npgrid) :: np
-      real, dimension (mx,my,mz,mfarray) :: f
       real, parameter :: length=4*pi
       real :: distance, delx2, dely2, delz2
       integer :: ll,mm,nn, i, l, noffset, moffset, loffset, idist, ibin, nnp, mnp, lnp
@@ -134,7 +134,6 @@ module Special
       real, dimension(npgrid) :: zz
       real, dimension(nbin+1) :: rdf, rdf_sum
 !
-      intent(inout) :: f
 !
 !  Initialize arrays
 !
@@ -272,11 +271,9 @@ module Special
 !
 !   24-nov-04/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
 !
-      intent(in) :: f
-      intent(inout) :: p
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
@@ -302,15 +299,13 @@ module Special
       use Mpicomm
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
       real, dimension (nx) :: rrr, tauk, lamk
       real, dimension (nx) :: tt, qq, rad, ttauk
       real :: r, r2, rrunit
-      type (pencil_case) :: p
 !
-      intent(in) :: f,p
-      intent(inout) :: df
 !
       call keep_compiler_quiet(p)
 !
@@ -390,7 +385,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -410,7 +405,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -438,9 +433,10 @@ module Special
 !
 !   SAMPLE IMPLEMENTATION
 !
-      integer :: iname
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
+      integer :: iname
+      logical :: lwr
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite

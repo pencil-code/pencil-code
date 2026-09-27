@@ -150,7 +150,7 @@ module Special
       use EquationOfState, only: get_gamma_etc
       use Sub, only: gij,curl_mn
 
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx,3) :: aa,pbb
       real, dimension(nx,3,3) :: aij
       real, dimension(3) :: tmpv,vv,uu,bb,uxb
@@ -190,7 +190,7 @@ module Special
 !
 !  14-aug-2011/Bourdin.KIS: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -201,9 +201,8 @@ module Special
 !  initialise special condition; called from start.f90
 !  06-oct-2003/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
-      intent(inout) :: f
 !!
 !!  SAMPLE IMPLEMENTATION
 !!
@@ -241,7 +240,7 @@ module Special
 !
 !  18-07-06/tony: coded
 !
-      logical, dimension(npencils), intent(inout) :: lpencil_in
+      logical, dimension(npencils) :: lpencil_in
 !
       call keep_compiler_quiet(lpencil_in)
 !
@@ -254,11 +253,9 @@ module Special
 !
 !  24-nov-04/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
 !
-      intent(in) :: f
-      intent(inout) :: p
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
@@ -279,12 +276,10 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
 !
-      intent(in) :: f,p
-      intent(inout) :: df
 !
 !  Identify module and boundary conditions.
 !
@@ -310,7 +305,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -330,7 +325,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -355,9 +350,10 @@ module Special
       use Diagnostics
       use FArrayManager, only: farray_index_append
 !
-      integer :: iname
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
+      integer :: iname
+      logical :: lwr
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
@@ -394,8 +390,8 @@ module Special
 !
 !  26-jun-06/tony: dummy
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (slice_data) :: slices
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(slice_data) :: slices
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(slices%ready)
@@ -412,13 +408,13 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
       real, dimension (nx) :: fdiff
       real, dimension (nx,3,3) :: flux_sld_ten
       integer :: i
       logical :: luu_nolog=.true.
-      type (pencil_case), intent(in) :: p
 !
 !
       if (lslope_limited_special .and. llast) then
@@ -446,10 +442,10 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
       real, dimension (nx) :: fdiff
-      type (pencil_case), intent(in) :: p
 !
       if (lnrho_min > -max_real) then
         if (dt * lnrho_min_tau > 1.0) then
@@ -498,9 +494,9 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
 !!
 !!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
 !!
@@ -521,10 +517,10 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
       real, dimension (nx) :: fdiff
-      type (pencil_case), intent(in) :: p
 !
       if (lnTT_min > -max_real) then
         if (dt * lnTT_min_tau > 1.0) then
@@ -584,13 +580,13 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
       real, dimension (nx) :: fdiff
       real, dimension (nx,3,3) :: flux_sld_ten
       integer :: i
       logical :: laa_nolog=.true.
-      type (pencil_case), intent(in) :: p
 !
 !
       if (lslope_limited_special .and. llast) then
@@ -618,9 +614,9 @@ module Special
 !
 !  15-jun-09/anders: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
 !!
 !!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
 !!
@@ -631,19 +627,6 @@ module Special
 !
     endsubroutine special_calc_pscalar
 !***********************************************************************
-    subroutine special_calc_particles(fp)
-!
-!  Called before the loop, in case some particle value is needed
-!  for the special density/hydro/magnetic/entropy.
-!
-!  20-nov-08/wlad: coded
-!
-      real, dimension (:,:), intent(in) :: fp
-!
-      call keep_compiler_quiet(fp)
-!
-    endsubroutine special_calc_particles
-!***********************************************************************
     subroutine special_calc_chemistry(f,df,p)
 !
 !  Calculate an additional 'special' term on the right hand side of the
@@ -652,9 +635,9 @@ module Special
 !
 !  15-sep-10/natalia: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
 !!
 !!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
 !!
@@ -679,7 +662,7 @@ module Special
 !
       use Sub, only: gij, gij_etc, curl_mn, dot2_mn
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension(nx,3) :: bb
       real, dimension(nx,3,3) :: aij, bij
 !
@@ -705,8 +688,8 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      type (boundary_condition), intent(inout) :: bc
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(boundary_condition) :: bc
       integer :: j
 !
       select case (bc%bcname)
@@ -760,10 +743,10 @@ module Special
       use Diagnostics, only: save_name
       use Sub, only: cross,gij,curl_mn,step,dot2_mn
 !
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real :: dt_
       logical, intent(in) :: llast
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension(mx,my,mz,mvar), intent(inout) :: df
-      real, intent(in) :: dt_
       real, dimension(mx,my,mz):: rho_tmp
       real, dimension(my,mz,4):: rhob, TTb
       real, dimension(nx) :: dfy,dfz, b2

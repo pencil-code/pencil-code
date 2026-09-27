@@ -110,9 +110,8 @@ subroutine init_special(f)
 !
     use EquationOfState, only: cs20
 
-    real, dimension (mx,my,mz,mfarray) :: f
+    real, contiguous, dimension(:,:,:,:) :: f
 !
-    intent(inout) :: f
     integer :: ix,iy,iz
 !
     if (lroot) print*, '**************** init_special ****************'
@@ -181,9 +180,9 @@ subroutine initialize_special(f)
     use EquationOfState, only: cs20
     use SharedVariables, only: get_shared_variable
 !
+    real, contiguous, dimension(:,:,:,:) :: f
     integer :: j
 !
-    real, dimension (mx,my,mz,mfarray) :: f
     real, dimension (mx,my,mz,mvar) :: df
     type (pencil_case) :: p
 !
@@ -209,14 +208,12 @@ subroutine dspecial_dt(f,df,p)
 !
 !  06-oct-03/tony: coded
 !
+    real, contiguous, dimension(:,:,:,:) :: f
+    real, dimension(mx,my,mz,mvar) :: df
+    type(pencil_case) :: p
     integer :: j
 !
-    real, dimension (mx,my,mz,mfarray) :: f
-    real, dimension (mx,my,mz,mvar) :: df
-    type (pencil_case) :: p
 !
-    intent(in) :: f,p
-    intent(inout) :: df
 !
     ! if (lroot) print*, ''
     ! if (lroot) print*, '**************** dspecial_dt ****************'
@@ -261,11 +258,11 @@ subroutine special_calc_hydro(f,df,p)
 !
 !  06-oct-03/tony: coded
 !
+    real, contiguous, dimension(:,:,:,:) :: f
+    real, dimension(mx,my,mz,mvar) :: df
+    type(pencil_case) :: p
     integer :: j
 !
-    real, dimension (mx,my,mz,mfarray), intent(in) :: f
-    real, dimension (mx,my,mz,mvar), intent(inout) :: df
-    type (pencil_case), intent(in) :: p
 !
     ! if (lroot) print*, ''
     ! if (lroot) print*, '**************** special_calc_hydro ****************'
@@ -275,13 +272,15 @@ subroutine special_calc_hydro(f,df,p)
 !
 endsubroutine special_calc_hydro
 !***********************************************************************
-subroutine read_special_init_pars(iostat)
+subroutine read_special_init_pars(iomsg)
 !
   use File_io, only: parallel_unit
 !
-  integer, intent(out) :: iostat
+  character(len=iomsglen), intent(out) :: iomsg
+  integer :: iostat
 !
-  read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
+  read(parallel_unit, NML=special_init_pars, IOSTAT=iostat, IOMSG=iomsg)
+  if (iostat==0) iomsg=""
 !
 endsubroutine read_special_init_pars
 !***********************************************************************
@@ -293,13 +292,15 @@ subroutine write_special_init_pars(unit)
 !
 endsubroutine write_special_init_pars
 !***********************************************************************
-subroutine read_special_run_pars(iostat)
+subroutine read_special_run_pars(iomsg)
 !
   use File_io, only: parallel_unit
 !
-  integer, intent(out) :: iostat
+  character(len=iomsglen), intent(out) :: iomsg
+  integer :: iostat
 !
-  read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
+  read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
+  if (iostat==0) iomsg=""
 !
 endsubroutine read_special_run_pars
 !***********************************************************************

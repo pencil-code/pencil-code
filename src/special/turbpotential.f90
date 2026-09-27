@@ -149,7 +149,7 @@ module Special
       use EquationOfState, only: cs0
       use SharedVariables, only: get_shared_variable
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension(mx) :: Omega2
       real, pointer :: gsum
       real :: aspect_ratio, amplitude
@@ -223,8 +223,8 @@ module Special
       use Mpicomm
       use Sub, only: grad
 !
-      real, dimension(mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
 !
 !  The turbulence force from the potential, for the momentum equation.
 !
@@ -252,7 +252,7 @@ module Special
 !
       use Mpicomm
 !
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension(mx) :: lambda, time_dependant_amplitude
       real, dimension(mx) :: zed,omega_mode_corot
       real ::  tmode_age,phi
@@ -681,7 +681,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -701,7 +701,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -726,9 +726,10 @@ module Special
 !
 !   14-jul-09/wlad: coded
 !
-      integer :: iname
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
+      integer :: iname
+      logical :: lwr
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
@@ -780,9 +781,9 @@ module Special
       use Cdata
       use Diagnostics
 !      
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
       integer :: j,ju
 !
 !  Modified momentum equation
@@ -811,10 +812,10 @@ module Special
 !***********************************************************************
     subroutine special_after_timestep(f,df,dt_,llast)
 !
-      logical, intent(in) :: llast
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension(mx,my,mz,mvar) :: df
       real :: dt_
+      logical, intent(in) :: llast
 !
       if (lupdate_as_var.and.lroot) call wsnap_mode
 !
@@ -829,8 +830,8 @@ module Special
 !
       use Slices_methods, only: assign_slices_scal
 !
-      real, dimension(mx,my,mz,mfarray) :: f
-      type (slice_data) :: slices
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(slice_data) :: slices
 !
 !  Loop over slices
 !

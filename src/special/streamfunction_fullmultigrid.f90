@@ -180,7 +180,7 @@ module Special
 !  06-oct-03/tony: coded
 !  01-aug-11/wlad: adapted
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: dslab,delta_T,delta
 !
       if (Lxyz(1)/(nxgrid-1) .ne. Lxyz(3)/(nzgrid-1)) then
@@ -296,7 +296,7 @@ module Special
 !
       use Initcond, only: gaunoise
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: amplpsi_
 !
 !  Give an initial guess for psi
@@ -366,7 +366,7 @@ module Special
 !
 !  18-07-06/tony: coded
 !
-      logical, dimension(npencils), intent(inout) :: lpencil_in
+      logical, dimension(npencils) :: lpencil_in
 !
       call keep_compiler_quiet(lpencil_in)
 !
@@ -383,12 +383,10 @@ module Special
       use Deriv, only: der,derij
       use Sub, only: u_dot_grad
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
       real, dimension (nx) :: derxzpsi
 !
-      intent(inout) :: f
-      intent(inout) :: p
 !
       if (ltidal_heating .or. &
           idiag_devsigzz1 /=0 .or. &
@@ -442,7 +440,7 @@ module Special
 !
       !use Boundcond, only: update_ghosts
 !
-      real, dimension (mx,my,mz,mfarray) :: f   
+      real, contiguous, dimension(:,:,:,:) :: f
 !    
       call solve_for_psi(f)
 !
@@ -967,12 +965,12 @@ module Special
 !
       use Diagnostics, only: max_mn_name,sum_mn_name,integrate_mn_name
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
       real, dimension (nx) :: dTdz1,dTdz2,dTdz3,dTdz4,nusselt_num,nusselt_den,TTmin_cline,TTmax_cline
       real, dimension (nx) :: devsigzz1,devsigzz2,devsigzz3,devsigzz4
       real, dimension (nx) :: diffus_special,advec_special
-      type (pencil_case) :: p
 !      
 !  Advection
 !
@@ -1168,7 +1166,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -1188,7 +1186,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -1343,8 +1341,8 @@ module Special
 !
       use Slices_methods, only: assign_slices_scal
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (slice_data) :: slices
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(slice_data) :: slices
 !
 !  Loop over slices
 !

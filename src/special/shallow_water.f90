@@ -156,7 +156,7 @@ module Special
       use Mpicomm
       !use EquationOfState, only: rho0,cs20
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx) :: r2,rr,uphi_jet
 !
       do m=1,my
@@ -221,7 +221,7 @@ module Special
 !***********************************************************************
     subroutine special_before_boundary(f)
 
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx) :: storm_function_mn,subsidence_mn
       logical :: lfirstloop
 !
@@ -276,8 +276,8 @@ module Special
       use General, only: notanumber
       use Mpicomm
 !
-      real, dimension(mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
 !
       if (lgamma_plane)     q%gr2            = gamma_rr2(:,m-m1+1)
       if (lmass_relaxation) q%eta_init       = eta_relaxation(:,m-m1+1)
@@ -306,12 +306,10 @@ module Special
 !  TODO: dtgh is giving a diagnostic timestep not bound between 0 and 1. Check. 
 !      
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
 !
-      intent(in) :: f,p
-      intent(inout) :: df
 !
 !  identify module and boundary conditions
 !
@@ -328,7 +326,7 @@ module Special
 !  28-jun-25/TP: carved from dspecial_dt
 !
       use Diagnostics
-      real,dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
 
       call keep_compiler_quiet(f)
@@ -347,7 +345,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -375,7 +373,7 @@ module Special
 !                                
       use File_io, only: parallel_unit
 !                                
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !                                
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -400,9 +398,9 @@ module Special
 !
 !  04-dec-19/wlad+ali: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
       real, dimension (nx) :: ugh0
 
       call keep_compiler_quiet(f)
@@ -452,10 +450,10 @@ module Special
 !
 !  04-dec-19/wlad+ali: coded
 !
-    real, dimension (mx,my,mz,mfarray), intent(in) :: f
-    real, dimension (mx,my,mz,mvar), intent(inout) :: df
+    real, contiguous, dimension(:,:,:,:) :: f
+    real, dimension(mx,my,mz,mvar) :: df
+    type(pencil_case) :: p
     integer :: i
-    type (pencil_case), intent(in) :: p
 !     
 !
 !  Momentum equation; rho = g*eta  
@@ -809,10 +807,10 @@ module Special
 !***********************************************************************         
     subroutine special_after_timestep(f,df,dt_,llast)
 !
-      logical, intent(in) :: llast
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension(mx,my,mz,mvar) :: df
       real :: dt_
+      logical, intent(in) :: llast
 !
 !  Impose height floor. The fluid height is h=h0+eta, 
 !  where eta is f(:,:,:,irho). Prevent the fluid height
@@ -841,9 +839,10 @@ module Special
 !
 !   14-jul-09/wlad: coded
 !
-      integer :: iname
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
+      integer :: iname
+      logical :: lwr
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite

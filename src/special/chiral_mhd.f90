@@ -237,7 +237,7 @@ module Special
 !  06-oct-03/tony: coded
 !
       use SharedVariables, only : get_shared_variable
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
 !  set gammaf5_input to input value (which was gammaf5)
 !  and similarly for source5_input
@@ -279,9 +279,8 @@ module Special
       use Initcond
       use Sub, only: remove_mean, blob
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
-      intent(inout) :: f
 !
 !  initial conditions
 !
@@ -435,7 +434,7 @@ module Special
 !
 !  18-07-06/tony: coded
 !
-      logical, dimension(npencils), intent(inout) :: lpencil_in
+      logical, dimension(npencils) :: lpencil_in
 !
       call keep_compiler_quiet(lpencil_in)
 !
@@ -451,11 +450,9 @@ module Special
       use Sub, only: del2, del4, del6, dot2_mn, del2v_etc, grad, dot
       use Sub, only: u_dot_grad, gij, multsv, curl, curl_mn
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
 !
-      intent(in) :: f
-      intent(inout) :: p
 !
       if (lmuS) then
         if (lpencil(i_muS)) p%muS=f(l1:l2,m,n,imuS)
@@ -517,12 +514,10 @@ module Special
 !
       use Sub, only: multsv, dot_mn, dot2_mn, dot_mn_vm_trans, dot, curl_mn, gij
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
 !
-      intent(in) :: f,p
-      intent(inout) :: df
 !
       real, dimension (nx) :: dmu5, dmuS, bdotgmuS, bdotgmu5
       real, dimension (nx) :: muSmu5, oobb, oogmuS, oogmu5
@@ -721,10 +716,10 @@ module Special
       use Sub, only: dot_mn, dot2_mn
       use Diagnostics, only: sum_mn_name, max_mn_name, save_name
 
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
       real, dimension (nx) :: bbjj, bgmuS,bgmu5,gmu52,gmuS2,unity=1.
       real, dimension (nx) :: oogmuS,oogmu5
-      real,dimension(mx,my,mz,mfarray) :: f
-      type(pencil_case) :: p
 
       call keep_compiler_quiet(f)
 
@@ -799,7 +794,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -819,7 +814,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -843,8 +838,9 @@ module Special
 !
       use Diagnostics, only: parse_name
 !
+      logical :: lreset
+      logical, optional :: lwrite
       integer :: iname
-      logical :: lreset,lwrite
 
       call keep_compiler_quiet(lwrite)
 !
@@ -923,8 +919,8 @@ module Special
 !
       use Slices_methods, only: assign_slices_scal
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (slice_data) :: slices
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(slice_data) :: slices
 !
 !  Loop over slices.
 !
@@ -1057,9 +1053,8 @@ module Special
 !
       use Sub, only: global_mean
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       !real :: meanB2_tmp
-      intent(inout) :: f
 !
 !  compute meanmu5 and meanB2
 !

@@ -109,7 +109,7 @@ module Special
 !
 !  19-feb-2019/axel: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
 !  Cannot have kp+km+kX > 1.
 !
@@ -138,9 +138,8 @@ module Special
       use Mpicomm
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
-      intent(inout) :: f
 !
 !  Initial condition; same for every population.
 !
@@ -189,11 +188,9 @@ module Special
 !
 !   24-nov-04/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
 !
-      intent(in) :: f
-      intent(inout) :: p
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
@@ -219,9 +216,10 @@ module Special
       use Mpicomm
       use Sub
 !
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
       character(len=50) :: form='(i10,3i5)'
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: rrr
       real, dimension (nx) ::     d1, d2, d3, d4, d5, d6, d7, d8, d9
       real, dimension (nx) :: r0, r1, r2, r3, r4, r5, r6, r7, r8, r9
@@ -229,11 +227,8 @@ module Special
       real, dimension (nx) :: dqA, dqD, dqL
       real, dimension (nx) :: ee, ee1, ee10, ee50, ee90, ee99
       real, dimension (nx) :: autocat_correct, del2j
-      type (pencil_case) :: p
       integer :: j
 !
-      intent(in) :: f,p
-      intent(inout) :: df
 !
       call keep_compiler_quiet(p)
 !
@@ -420,7 +415,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -440,7 +435,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -468,9 +463,10 @@ module Special
 !
 !   SAMPLE IMPLEMENTATION
 !
-      integer :: iname
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
+      integer :: iname
+      logical :: lwr
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
@@ -536,8 +532,8 @@ module Special
 !
       use Slices_methods, only: assign_slices_vec
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (slice_data) :: slices
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(slice_data) :: slices
 !
 !  Loop over slices
 !

@@ -164,7 +164,7 @@ module Special
 !
       use EquationOfState, only: get_gamma_etc
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
 !  Initialize any module variables which are parameter dependent
 !
@@ -190,9 +190,8 @@ module Special
       use Mpicomm
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
-      intent(inout) :: f
 !
 !
       select case (initnstar)
@@ -254,13 +253,11 @@ module Special
       use Mpicomm
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
 !
 !
-      intent(in) :: f,p
-      intent(inout) :: df
 !
       real, dimension(nx) :: diffus_chi
 !
@@ -288,7 +285,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=neutron_star_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -308,7 +305,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=neutron_star_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -336,9 +333,10 @@ module Special
 !
 !  define diagnostics variable
 !
-      integer :: iname
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
+      integer :: iname
+      logical :: lwr
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
@@ -370,10 +368,10 @@ module Special
 !
       use EquationOfState
 !
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
       real, dimension (mx) :: rho_prf
-      type (pencil_case), intent(in) :: p
       real, dimension (nx) :: cs2_new
       integer :: i, l_sz, tmp_int,n_tmp
       real :: cs2_star, p_gas,p_rad, Sigma_rho, grad_rho
@@ -517,9 +515,9 @@ module Special
 !
 !   16-jul-06/natalia: coded
 !
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
 !
       integer :: j,l_sz, n_tmp
 !
@@ -702,10 +700,10 @@ module Special
 !***********************************************************************
     subroutine special_calc_energy(f,df,p)
 !
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
       real, dimension (nx) ::T_disk_ref
-      type (pencil_case), intent(in) :: p
       integer :: j, l_sz, l_sz_1, li,n_tmp
       real :: dT_dx_i1
 !
@@ -856,8 +854,8 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      type (boundary_condition) :: bc
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(boundary_condition) :: bc
 !
       select case (bc%bcname)
        case ('stp')

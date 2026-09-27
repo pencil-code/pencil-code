@@ -90,7 +90,7 @@ module Special
 !***********************************************************************
     subroutine read_special_init_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
 !
       iomsg=""
 !
@@ -106,7 +106,7 @@ module Special
 !***********************************************************************
     subroutine read_special_run_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
 !
       iomsg=""
 !
@@ -133,7 +133,7 @@ module Special
       use EquationOfState, only: cs20
       use Sub,             only: get_radial_distance,grad
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (mx,my,mz) :: potential
       real, dimension (mx) :: rr_sph,rr_cyl,z_mn
       real, dimension (nx,3) :: grav
@@ -192,8 +192,8 @@ module Special
       use Mpicomm
       use Gravity, only: potential
 !
-      real, dimension(mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
@@ -204,12 +204,10 @@ module Special
 !
       use Diagnostics
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
 !
-      intent(in) :: f,p
-      intent(inout) :: df
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
@@ -219,9 +217,9 @@ module Special
 !***********************************************************************
     subroutine special_calc_hydro(f,df,p)
 !      
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
 !
       df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) & 
            + gravity(:,m-m1+1,n-n1+1,:)
@@ -241,7 +239,7 @@ module Special
 !   14-jul-09/wlad: coded
 !
       !integer :: iname
-      logical :: lreset!,lwr
+      logical :: lreset
       logical, optional :: lwrite
 !
 !  Write information to index.pro

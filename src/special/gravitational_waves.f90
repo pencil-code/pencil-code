@@ -151,7 +151,7 @@ module Special
 !
       use SharedVariables, only: get_shared_variable
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       logical, pointer :: lbb_as_comaux
 !
 !  Check whether diffgg=diffhh (which  is the default)
@@ -188,7 +188,7 @@ module Special
 !
 !  14-aug-2011/Bourdin.KIS: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -199,9 +199,8 @@ module Special
 !  initialise special condition; called from start.f90
 !  06-oct-2003/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
-      intent(inout) :: f
 !
 !  initial condition for hhT
 !
@@ -240,7 +239,7 @@ module Special
 !
 !  18-07-06/tony: coded
 !
-      logical, dimension(npencils), intent(inout) :: lpencil_in
+      logical, dimension(npencils) :: lpencil_in
 !
       call keep_compiler_quiet(lpencil_in)
 !
@@ -253,11 +252,9 @@ module Special
 !
 !  24-nov-04/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
 !
-      intent(in) :: f
-      intent(inout) :: p
 !
 !  The following construct when lno_transverse_part=T applies only
 !  to the case of a Beltrami field with z variation.
@@ -301,14 +298,12 @@ module Special
       use Diagnostics
       use Sub, only: del2, del6
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
       real, dimension (nx) :: del2hhT,del2hhX,del2ggT,del2ggX
       real, dimension (nx) :: del6hhT,del6hhX,del6ggT,del6ggX
-      type (pencil_case) :: p
 !
-      intent(in) :: f,p
-      intent(inout) :: df
 !
 !  Identify module and boundary conditions.
 !
@@ -371,7 +366,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -391,7 +386,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -419,7 +414,7 @@ module Special
 !
       !use Boundcond, only: zero_ghosts, update_ghosts
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
     endsubroutine special_before_boundary
 !***********************************************************************
@@ -431,13 +426,12 @@ module Special
 !
       use Fourier, only: fourier_transform
 !
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (:,:,:), allocatable :: S11_re, S11_im, S12_re, S12_im, T_re, T_im, one_over_k2
       real, dimension (:), allocatable :: kx, ky, kz
-      real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,ikx,iky,ikz,stat
       logical :: lscale_tobox1=.true.
       real :: scale_factor, fact, P11, P22, P33, P12, P13, P23
-      intent(inout) :: f
 !
 !  For testing purposes, if lno_transverse_part=T, we would not need to
 !  compute the Fourier transform, so we would skip the rest.
@@ -1214,8 +1208,9 @@ module Special
       use Diagnostics
 !!      use FArrayManager, only: farray_index_append
 !
+      logical :: lreset
+      logical, optional :: lwrite
       integer :: iname
-      logical :: lreset,lwrite
 !!!
 !!!  reset everything in case of reset
 !!!  (this needs to be consistent with what is defined above!)

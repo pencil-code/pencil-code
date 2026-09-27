@@ -238,7 +238,7 @@ module Special
 !  19-feb-2019/axel: coded
 !
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: lnH, lna, a
       real :: phidot
       real :: V, beta
@@ -340,13 +340,12 @@ module Special
 !
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx) :: psi, psidot, TR, TRdot, uR, uRdot
       real, dimension (nx) :: impsi, impsidot, imTR, imTRdot, imuR, imuRdot
       real :: chi0, V, Uprime0, beta, fourier_factor
       real :: a
 !
-      intent(inout) :: f
 !
 !  Initial condition; depends on k, which is here set to x.
 !
@@ -504,11 +503,9 @@ module Special
 !
 !   24-nov-04/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
 !
-      intent(in) :: f
-      intent(inout) :: p
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
@@ -582,8 +579,9 @@ module Special
       use Diagnostics
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
       real, dimension (nx) :: psi , psidot , psiddot , TR, TRdot, TRddot, uR, uRdot, uRddot
       real, dimension (nx) :: psiL, psiLdot, psiLddot, TL, TLdot, TLddot, uL, uLdot, uLddot
       real, dimension (nx) :: psi_anal, psidot_anal, TR_anal, TRdot_anal
@@ -595,11 +593,7 @@ module Special
       real :: sign_swap=1.
       real, parameter :: fact=1.
       real :: epsilon_sr,inflaton
-      type (pencil_case) :: p
 !
-      intent(in) :: p
-      intent(inout) :: f
-      intent(inout) :: df
 !
       call keep_compiler_quiet(p)
 !
@@ -977,10 +971,10 @@ module Special
 !
       use Diagnostics
 
-      real, dimension (nx) :: psi_anal, psidot_anal, TR_anal, TRdot_anal
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, parameter :: fact=1.
+      real, contiguous, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
+      real, dimension (nx) :: psi_anal, psidot_anal, TR_anal, TRdot_anal
+      real, parameter :: fact=1.
 
       call keep_compiler_quiet(p)
 
@@ -1218,7 +1212,7 @@ module Special
 !
       use Diagnostics
 
-      real, dimension(n_odevars), intent(IN) :: f_ode
+      real, dimension(n_odevars) :: f_ode
       real :: Qddot,chiddot,phiddot
 !
 !  Call calc_ode_dt for dianostics at each step, but this happens even if there is no diagnostics.
@@ -1244,7 +1238,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -1265,7 +1259,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -1336,7 +1330,7 @@ module Special
 !
 !  13-may-18/axel: added remove_mean_value for hij and gij
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       call keep_compiler_quiet(f)
 !
     endsubroutine special_before_boundary
@@ -1727,7 +1721,7 @@ module Special
 
       use Mpicomm, only: mpiallreduce_sum, mpibcast
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension(nx) :: TRpsim, TRpsikm, TRpsidotm, TRdotpsim
       real, dimension(nx) :: TRdoteff2km, TRdoteff2m, TReff2km, TReff2m
       real, dimension(nx) :: TLdoteff2km, TLdoteff2m, TLeff2km, TLeff2m
@@ -1930,9 +1924,10 @@ module Special
 !
 !   SAMPLE IMPLEMENTATION
 !
-      integer :: iname, inamexy
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
+      integer :: iname, inamexy
+      logical :: lwr
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite

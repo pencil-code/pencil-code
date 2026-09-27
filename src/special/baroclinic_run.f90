@@ -107,7 +107,7 @@ module Special
       use Mpicomm
       use EquationOfState, only: rho0,cs20,get_gamma_etc
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: cv
 !
 !  Define if we want stratification
@@ -160,8 +160,8 @@ module Special
       use Mpicomm
       use Gravity, only: potential
 !
-      real, dimension(mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
 !
       real, dimension (nx) :: pot
 !
@@ -192,12 +192,10 @@ module Special
 !
       use Diagnostics
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
 !
-      intent(in) :: f,p
-      intent(inout) :: df
 !
 !  identify module and boundary conditions
 !
@@ -237,7 +235,7 @@ module Special
       use EquationOfState, only: cs20,lnrho0,rho0
       use Gravity
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx) :: cs2,rho,lnrho,ss
       real, dimension (nx,nz) :: pp_tmp,pp_sumy
       real, dimension (nz) :: pp_sum
@@ -305,7 +303,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -330,9 +328,10 @@ module Special
 !
 !   14-jul-09/wlad: coded
 !
-      integer :: iname
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
+      integer :: iname
+      logical :: lwr
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
@@ -368,9 +367,9 @@ module Special
       use Cdata
       use Messages, only: fatal_error
 !
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
       real, dimension (nx) :: rho1
 !
 !  Modified momentum equation
@@ -396,9 +395,9 @@ module Special
       use Cdata
       use Messages, only: fatal_error
 !
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
       real, dimension (nx) :: rhs
 !
 !  Right hand side on the energy equation - background energy gradient

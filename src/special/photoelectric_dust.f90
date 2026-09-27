@@ -112,7 +112,7 @@ module Special
       use Mpicomm
       use SharedVariables
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       if (lentropy) call fatal_error('initialize_special','This code should be used with noentropy')
 !
@@ -177,10 +177,10 @@ module Special
 !  For the photoelectric pressure, P=cs20/(gamma*/rho0) * rho*rhod
 !
       !use Particles_sub, only: find_grid_volume
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
       real, dimension(nx) :: areas, rhop_tmp
       real, dimension(nx,3) :: grhop_tmp
-      type (pencil_case) :: p
       integer :: j
 !
       if (ldivrhop_by_vol) then
@@ -230,7 +230,7 @@ module Special
 !
 !  03-oct-12/wlad: coded
 !
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -240,7 +240,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -260,7 +260,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -286,9 +286,10 @@ module Special
 !
       use FArrayManager, only: farray_index_append
 !
-      integer :: iname
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
+      integer :: iname
+      logical :: lwr
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
@@ -333,9 +334,9 @@ module Special
 !
       use Diagnostics
 !      
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
 
       integer :: j,k
       real, dimension(nx) :: adv_cs2
@@ -370,7 +371,7 @@ module Special
       use Diagnostics
 
       real, contiguous, dimension(:,:,:,:) :: f
-      type (pencil_case) :: p
+      type(pencil_case) :: p
 !
       real, dimension(nx) :: adv_cs2
 !

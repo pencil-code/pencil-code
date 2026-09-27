@@ -188,9 +188,9 @@ module Special
       use SharedVariables, only: get_shared_variable
       use Slices_methods, only: alloc_slice_buffers
 !
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: ierr
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mz) :: ztmp
       character (len=*), parameter :: filename='/strat.dat'
       integer :: lend,unit=12
@@ -336,8 +336,7 @@ module Special
 !
 !  initialise special condition; called from start.f90
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -352,7 +351,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -373,7 +372,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=iomsglen), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -498,7 +497,7 @@ module Special
 !***********************************************************************
     subroutine pencil_interdep_special(lpencil_in)
 !
-      logical, dimension (npencils) :: lpencil_in
+      logical, dimension(npencils) :: lpencil_in
 !
       if (lpencil_in(i_cVTrho1)) then
         lpencil_in(i_lnrho)=.true.
@@ -510,8 +509,8 @@ module Special
 !***********************************************************************
     subroutine calc_pencils_special(f,p)
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      type (pencil_case), intent(inout) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
 !
       call keep_compiler_quiet(f)
 !
@@ -528,11 +527,11 @@ module Special
       use Diagnostics, only: parse_name
       use FArrayManager, only: farray_index_append
 !
-      integer :: iname
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
+      integer :: iname
+      logical :: lwr
 !
-      intent(in) :: lreset, lwrite
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
@@ -595,12 +594,10 @@ module Special
       use Diagnostics, only: max_mn_name, sum_mn_name
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
 !
-      intent(in) :: p
-      intent(inout) :: f,df
 !
        call keep_compiler_quiet(p)
 !
@@ -622,8 +619,8 @@ module Special
 !
 !  204-sep-10/bing: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      type (slice_data), intent(inout) :: slices
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(slice_data) :: slices
 !
       call keep_compiler_quiet(f)
 !
@@ -656,7 +653,7 @@ module Special
 !
       use Mpicomm, only: mpisend_real, mpirecv_real
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: i,j,ipt
       logical :: lcompute_gran
       real :: tmp
@@ -762,10 +759,10 @@ module Special
 !
 !  10-oct-12/bing: coded
 !
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real :: dt_
       logical, intent(in) :: llast
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension(mx,my,mz,mvar), intent(inout) :: df
-      real, intent(in) :: dt_
       integer,save :: j=35
       real :: lnTT_SI,dt_step,dt_rad,ln_coeff,one_m_alpha,lnTT_res
       integer :: l
@@ -871,9 +868,9 @@ module Special
 !
       use Sub, only: del6
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
 !
       real, dimension (nx) :: hc,tmp
       integer :: itemp
@@ -940,9 +937,9 @@ module Special
 !
       use Sub, only: del6,cubic_step
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
 !
       real, dimension (nx) :: hc, uu_tmp, uu_floor, tmp
       integer :: i
@@ -1006,10 +1003,10 @@ module Special
 !
       use Sub, only: del6,dot2
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
       real, dimension (nx) :: tmp
-      type (pencil_case), intent(in) :: p
 !
       real, dimension (nx) :: hc,lnrho_floor
 !
@@ -1073,9 +1070,9 @@ module Special
 !
       use Sub, only: del6
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
 !
       real, dimension (nx) :: hc,hyper3_heat,tmp
       integer :: i
@@ -4671,7 +4668,7 @@ module Special
 !
 !  14-aug-2011/Bourdin.KIS: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       close (77+iproc)
 !
