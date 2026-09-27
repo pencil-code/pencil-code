@@ -73,7 +73,7 @@ module Density
 !
   real, dimension(1) :: Schur_dlnrho_RHS_xyzaver
   real, dimension (nz) :: Schur_dlnrho_RHS_xyaver_z
-  real, dimension (nx,ny) :: Schur_dlnrho_RHS_zaver_xy
+  real, dimension(:,:), allocatable :: Schur_dlnrho_RHS_zaver_xy
 !
 ! reference state, components:  1       2          3              4            5      6     7         8            9
 !                              rho, d rho/d z, d^2 rho/d z^2, d^6 rho/d z^6, d p/d z, s, d s/d z, d^2 s/d z^2, d^6 s/d z^6
@@ -515,6 +515,8 @@ module Density
       real :: rho_bot,sref
       real, dimension(:), pointer :: gravx_xpencil
       real :: gamma, gamma_m1
+
+      if (.not.allocated(Schur_dlnrho_RHS_zaver_xy)) allocate(Schur_dlnrho_RHS_zaver_xy(nx,ny))
 !
 !   Set values 1 + cs2 for relativistic_eos and (1 - cs2)/(1 + cs2) for relativistic_eos_corr
 !
