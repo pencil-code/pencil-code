@@ -5253,4 +5253,6 @@ src/driver.f90 -text
 src/nodriver.f90 -text
 utils/philippe/LCT/flow_reb_cube.pro -text
 utils/philippe/LCT/velocity_field_lct.pro -text
+utils/philippe/driver/KFU-logo.png -text
+utils/philippe/driver/create_vel_driver.pro -text
 utils/philippe/extras/signum.pro -text
