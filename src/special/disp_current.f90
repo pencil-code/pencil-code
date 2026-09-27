@@ -2171,6 +2171,9 @@ module Special
     call copy_addr(charge_flow_factor,p_par(72))
     call copy_addr(charge_flow_limiter,p_par(73))
     call copy_addr(lcharge_flow,p_par(74)) ! bool
+    call copy_addr(lpi_vecpot,p_par(75)) ! bool
+    call copy_addr(iaae,p_par(76)) ! int
+    call copy_addr(iphi_f,p_par(77)) ! int
     endsubroutine pushpars2c
 !***********************************************************************
 !********************************************************************

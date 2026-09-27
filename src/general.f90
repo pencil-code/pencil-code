@@ -7737,6 +7737,8 @@ iloop:do i=1,size(list2)
         dst = enum_smooth_source_new_string
       case('step_decay_linear_ramp')
         dst = enum_step_decay_linear_ramp_string
+      case('q%glhc.dat')
+        dst = enum_qZglhcZdat_string
       case('waterfall')
         dst = enum_waterfall_string
       case('imposed-cs2-core')
