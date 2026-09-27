@@ -43,10 +43,10 @@ Early Universe Cosmology:
   gravitational_waves_hTXk.f90
 
 to clean up modifications due to use of multiple special models, do:
-  pc_mkspecial.sh backreact_infl.f90
-  pc_mkspecial.sh chiral_mhd.f90
-  pc_mkspecial.sh disp_current.f90
-  pc_mkspecial.sh gravitational_waves_hTXk.f90
+  pc_restore_special backreact_infl.f90
+  pc_restore_special chiral_mhd.f90
+  pc_restore_special disp_current.f90
+  pc_restore_special gravitational_waves_hTXk.f90
 
 Meanfield MHD:
   meanfield_alpm_alternate.f90

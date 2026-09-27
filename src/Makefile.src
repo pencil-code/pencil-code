@@ -3250,11 +3250,11 @@ endif
 special.so: $(CPARAM_OBJ) $(CDATA_OBJ) $(SPECIAL_OBJ) special_dummies.inc $(SPECIAL_MODULES:=.o)  $(LIBGPU)
 	@$(LD) $(SPECIAL_MODULES:=.o) $(LIBFLAGS) $(DLL_LDFLAGS) -o special.so ;\
         ld_status=$$? ;\
-        pc_mkspecial.sh "$(SPECIAL_MODULES:=.f90)" ;\
+        pc_restore_special "$(SPECIAL_MODULES:=.f90)" ;\
         exit $$ld_status
 
-# pc_mkspecial should run regardless of whether ld succeeds; if ld fails,
-# we want make to fail AFTER running pc_mkspecial. The backslashes and
+# pc_restore_special should run regardless of whether ld succeeds; if ld fails,
+# we want make to fail AFTER running pc_restore_special. The backslashes and
 # semicolons above are essential for this.
 #
 #  comment out the 3 lines ifneq, @, endif below if one gets an error message
