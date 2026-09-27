@@ -74,7 +74,9 @@ module InitialCondition
 !   9-aug-12/axel: coded
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (mx) :: argum,term1,term2,press,del_lnrho
+      real, allocatable, dimension (:) :: argum,term1,term2,press,del_lnrho
+
+      allocate(argum,term1,term2,press,del_lnrho)
 !
 !  constant density, following convention of
 !  http://www.astro.princeton.edu/~jstone/Athena/tests/orszag-tang/pagesource.html
