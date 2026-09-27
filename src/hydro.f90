@@ -85,7 +85,7 @@ module Hydro
 !  phi-averaged arrays for orbital advection
 !
   real, dimension (mx,mz) :: uu_average_cyl=0.
-  real, dimension (mx,my) :: uu_average_sph=0.
+  real, dimension(:,:), allocatable :: uu_average_sph
 !
 !  Cosine and sine function for setting test fields and analysis.
 !
@@ -1011,7 +1011,7 @@ module Hydro
   real, dimension (my) :: prof_amp4
   real, dimension (nz,3) :: uumz_prof
   real, dimension (nx,3) :: fint,fext
-  real, dimension (nx,ny) :: omega_prof
+  real, dimension(:,:), allocatable :: omega_prof
   real, dimension (nx,3) :: coriolis_force = 0.0
   !$omp threadprivate(coriolis_force)
 
@@ -1335,6 +1335,11 @@ module Hydro
       integer :: l,m,n
       real :: slope,uinn,uext,zbot
       logical :: lvectorpotential=.false.
+
+      if (.not.allocated(uu_average_sph)) then
+        allocate(uu_average_sph(mx,my), omega_prof(nx,ny))
+        uu_average_sph=0.
+      endif
 !
       if (lvel_limiter) then
        lrescaling_velocity=.true.
