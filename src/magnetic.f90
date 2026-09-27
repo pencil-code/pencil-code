@@ -346,9 +346,9 @@ module Magnetic
   real :: no_ohmic_heat_z0=1.0, no_ohmic_heat_zwidth=0.0
   real :: imp_alpha0=0.0, imp_halpha=0.0, c_light2, c_light21
   real, target :: betamin_jxb = 0.0
-  real, allocatable, dimension(:,:) :: eta_xy
+  real, allocatable, dimension(:,:), target :: eta_xy
   real, dimension(nx,3) :: geta
-  real, allocatable, dimension(:,:,:) :: geta_xy
+  real, allocatable, dimension(:,:,:), target :: geta_xy
   real, dimension(nz,3) :: A_relprof
   real, dimension(mz) :: coskz,sinkz,eta_z,geta_z
   real, dimension(mx) :: eta_x,geta_x
@@ -2336,7 +2336,7 @@ module Magnetic
       real, dimension (nx,3) :: bb
       real, dimension (nx) :: b2,fact,cs2,lnrho_old,ssold,cs2old,x1,x2
       real, dimension (nx) :: beq2_pencil, prof, tmpx
-      real, dimension (nx,ny) :: ax, ay
+      real, dimension(:,:), allocatable, save :: ax, ay
       real, dimension(3) :: B_ext
       real, dimension (:,:,:,:), allocatable :: ap
       real, dimension (:,:), allocatable :: yz
@@ -2346,6 +2346,7 @@ module Magnetic
       real :: cosalp, sinalp
       integer :: j, iyz, llp1, l
       logical :: lvectorpotential=.true.
+      if (.not.allocated(ax)) allocate(ax(nx,ny), ay(nx,ny))
 !
       do j=1,ninit
 !
@@ -8774,9 +8775,10 @@ print*,'AXEL2: should not be here (eta) ... '
 !
       logical,save :: first=.true.
       real, dimension(nx) :: bymx, bzmx, bmx2
-      real, dimension(nx,ny) :: fsumxy
+      real, dimension(:,:), allocatable, save :: fsumxy
       real, dimension(size(fnamexy,2),size(fnamexy,3)) :: tmp
       real :: bmx
+      if (.not.allocated(fsumxy)) allocate(fsumxy(nx,ny))
 !
 !  This only works if bymxy and bzmxy are in zaver.in, so warning if this is not ok.
 !
@@ -8822,9 +8824,10 @@ print*,'AXEL2: should not be here (eta) ... '
 !
       logical,save :: first=.true.
       real, dimension(ny) :: bxmy, bzmy, bmy2
-      real, dimension(nx,ny) :: fsumxy
+      real, dimension(:,:), allocatable, save :: fsumxy
       real, dimension(size(fnamexy,2),size(fnamexy,3)) :: tmp
       real :: bmy
+      if (.not.allocated(fsumxy)) allocate(fsumxy(nx,ny))
 !
 !  This only works if bxmxy and bzmxy are in zaver, so print warning if this is
 !  not ok.
@@ -8981,8 +8984,9 @@ print*,'AXEL2: should not be here (eta) ... '
 !
       logical,save :: first=.true.
       real, dimension(nx) :: jymx,jzmx,jmx2
-      real, dimension(nx,ny) :: fsumxy
+      real, dimension(:,:), allocatable, save :: fsumxy
       real :: jmx
+      if (.not.allocated(fsumxy)) allocate(fsumxy(nx,ny))
 !
 !  This only works if jymxy and jzmxy are in zaver, so print warning if this is
 !  not ok.
@@ -9026,8 +9030,9 @@ print*,'AXEL2: should not be here (eta) ... '
 !
       logical,save :: first=.true.
       real, dimension(ny) :: jxmy,jzmy,jmy2
-      real, dimension(nx,ny) :: fsumxy
+      real, dimension(:,:), allocatable, save :: fsumxy
       real :: jmy
+      if (.not.allocated(fsumxy)) allocate(fsumxy(nx,ny))
 !
 !  This only works if jxmxy and jzmxy are in zaver, so print warning if this is
 !  not ok.
@@ -10086,13 +10091,15 @@ print*,'AXEL2: should not be here (eta) ... '
 !   2-jul-2009/koen: creates an xy-dependent resistivity (for RFP studies)
 !   (under reconstruction)
 !
-      real, dimension(mx,my) :: eta_xy,r2,gradr_eta_xy
+      real, dimension(mx,my) :: eta_xy
+      real, dimension(:,:), allocatable, save :: r2, gradr_eta_xy
       real, dimension(mx,my,3)  :: geta_xy
       character (len=labellen) :: eta_xy_profile
       real :: rmax2,a,w
       integer :: i,j
 !
       intent(out) :: eta_xy,geta_xy
+      if (.not.allocated(r2)) allocate(r2(mx,my), gradr_eta_xy(mx,my))
 !
       select case (eta_xy_profile)
       case ('schnack89')

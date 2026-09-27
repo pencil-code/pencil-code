@@ -5782,13 +5782,14 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(nx,ny,nz) :: a
       character :: var
 !
-      real, dimension(ny,ny,nz) :: send_buf_y, recv_buf_y
+      real, dimension(:,:,:), allocatable, save :: send_buf_y, recv_buf_y
       real, dimension(nz,ny,nz) :: send_buf_z, recv_buf_z
       real, dimension(:,:), allocatable :: tmp
       integer, dimension(MPI_STATUS_SIZE) :: stat
       integer :: sendc_y,recvc_y,sendc_z,recvc_z,px
       integer :: ystag=111,yrtag=112,zstag=113,zrtag=114,partner
       integer :: m,n,ibox,ix
+      if (.not.allocated(send_buf_y)) allocate(send_buf_y(ny,ny,nz), recv_buf_y(ny,ny,nz))
 !
 !  Doing x-y transpose if var='y'
 !
@@ -5957,11 +5958,12 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(nx,ny), intent(inout) :: a
 !
-      real, dimension(ny,ny) :: send_buf_y, recv_buf_y, tmp
+      real, dimension(:,:), allocatable, save :: send_buf_y, recv_buf_y, tmp
       integer, dimension(MPI_STATUS_SIZE) :: stat
       integer :: sendc_y,recvc_y,px
       integer :: ytag=101,partner
       integer :: ibox,iy
+      if (.not.allocated(send_buf_y)) allocate(send_buf_y(ny,ny), recv_buf_y(ny,ny), tmp(ny,ny))
 !
       !$omp single
       if (nprocx>1) then
@@ -8505,7 +8507,8 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: ibox, partner, nbox
       integer, parameter :: ltag=102, utag=103
       integer, dimension(MPI_STATUS_SIZE) :: stat
-      real, dimension(nx,ny) :: recv_buf
+      real, dimension(:,:), allocatable, save :: recv_buf
+      if (.not.allocated(recv_buf)) allocate(recv_buf(nx,ny))
 !
       !$omp single
       nbox = nx*ny

@@ -2751,10 +2751,11 @@ module EquationOfState
 !
       integer, intent(IN) :: topbot
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension (mx,my) :: dsdz_xy, TT_xy, rho_xy
+      real, dimension(:,:), allocatable, save :: dsdz_xy, TT_xy, rho_xy
       integer :: i
       real, pointer :: hcond0_kramers, nkramers
       logical, pointer :: lheatc_kramers
+      if (.not.allocated(dsdz_xy)) allocate(dsdz_xy(mx,my), TT_xy(mx,my), rho_xy(mx,my))
 !
 !  Get the shared variables
 !
@@ -3141,7 +3142,8 @@ module EquationOfState
 !
       real :: tmp, cs2top_loc
       integer :: i
-      real, dimension(mx,my) :: lnrho_xy
+      real, dimension(:,:), allocatable, save :: lnrho_xy
+      if (.not.allocated(lnrho_xy)) allocate(lnrho_xy(mx,my))
 !
       if (ldebug) print*,'bc_ss_temp_z: cs20,cs0=',cs20,cs0
 !
@@ -3296,7 +3298,8 @@ module EquationOfState
       real, contiguous, dimension (:,:,:,:) :: f
       real :: tmp
       integer :: i
-      real, dimension(mx,my) :: lnrho_xy
+      real, dimension(:,:), allocatable, save :: lnrho_xy
+      if (.not.allocated(lnrho_xy)) allocate(lnrho_xy(mx,my))
 !
       if (ldebug) print*,'bc_lnrho_temp_z: cs20,cs0=',cs20,cs0
 !
@@ -3483,8 +3486,9 @@ module EquationOfState
       real, contiguous, dimension (:,:,:,:) :: f
 !
       real :: tmp
-      real, dimension(mx,my) :: lnrho_xy
+      real, dimension(:,:), allocatable, save :: lnrho_xy
       integer :: i
+      if (.not.allocated(lnrho_xy)) allocate(lnrho_xy(mx,my))
 !
       if (ldebug) print*,'bc_ss_temp2_z: cs20,cs0=',cs20,cs0
 !
@@ -3539,7 +3543,8 @@ module EquationOfState
 !
       real :: tmp,dcs2bot
       integer :: i
-      real, dimension(mx,my) :: lnrho_xy
+      real, dimension(:,:), allocatable, save :: lnrho_xy
+      if (.not.allocated(lnrho_xy)) allocate(lnrho_xy(mx,my))
 !
       if (ldensity.and..not.lstratz) then
         call get_shared_variable('mpoly',mpoly)
@@ -3728,7 +3733,8 @@ module EquationOfState
       integer, intent(IN) :: topbot
       real, contiguous, dimension (:,:,:,:) :: f
       integer :: i
-      real, dimension(mx,my) :: dlnrho
+      real, dimension(:,:), allocatable, save :: dlnrho
+      if (.not.allocated(dlnrho)) allocate(dlnrho(mx,my))
 !
       if (ldebug) print*,'bc_ss_stemp_z: cs20,cs0=',cs20,cs0
 !
@@ -4341,10 +4347,12 @@ module EquationOfState
       real, contiguous, dimension(:,:,:,:), intent (inout) :: f
       integer, intent(IN) :: topbot
 !
-      real, dimension (nx,ny) :: kx,ky,kappa,exp_fact
-      real, dimension (nx,ny) :: tmp_re,tmp_im
+      real, dimension(:,:), allocatable, save :: kx, ky, kappa, exp_fact
+      real, dimension(:,:), allocatable, save :: tmp_re, tmp_im
       real :: pot
       integer :: i
+      if (.not.allocated(kx)) allocate(kx(nx,ny), ky(nx,ny), kappa(nx,ny), exp_fact(nx,ny))
+      if (.not.allocated(tmp_re)) allocate(tmp_re(nx,ny), tmp_im(nx,ny))
 !
 !  Get local wave numbers
 !

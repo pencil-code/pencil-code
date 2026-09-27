@@ -4363,7 +4363,7 @@ module Hydro
       real, dimension(nx,3) :: pv
 !
       real, dimension (mx,mz) :: fsum_tmp_cyl
-      real, dimension (mx,my) :: fsum_tmp_sph
+      real, dimension(:,:), allocatable, save :: fsum_tmp_sph
       real, dimension (mx) :: uphi
 !
 !  Remove mean momenta or mean flows if desired.
@@ -4432,6 +4432,7 @@ module Hydro
           !idir=2 is equal to old LSUMY=.true.
 !
         elseif (lspherical_coords) then
+          if (.not.allocated(fsum_tmp_sph)) allocate(fsum_tmp_sph(mx,my))
           fsum_tmp_sph=0.
           do n=n1,n2
             do m=1,my
@@ -8539,11 +8540,12 @@ module Hydro
 !
       real, contiguous, dimension(:,:,:,:) :: f
       real, contiguous, dimension(:,:,:,:) :: df
-      real, dimension (nx,ny) :: acyl_re,acyl_im
+      real, dimension(:,:), allocatable, save :: acyl_re, acyl_im
       real, dimension (nz) :: asph_re,asph_im
       real, dimension (nx) :: phidot
       integer :: ivar,ig,i
       real :: dt_
+      if (.not.allocated(acyl_re)) allocate(acyl_re(nx,ny), acyl_im(nx,ny))
 !
 !  Pencil uses linear velocity. Fargo will shift based on
 !  angular velocity. Get phidot from uphi.
@@ -8633,10 +8635,11 @@ module Hydro
       use Mpicomm, only: mpibcast_real, mpireduce_sum, IXBEAM, IYBEAM
 !
       logical,save :: first=.true.
-      real, dimension (nx,ny) :: fsumxy
+      real, dimension(:,:), allocatable, save :: fsumxy
       real, dimension (nx) :: uxmx,uymx,uzmx,umx2
       real, dimension (ny) :: uxmy,uymy,uzmy,umy2
       real :: umx,umy,umz
+      if (.not.allocated(fsumxy)) allocate(fsumxy(nx,ny))
 !
 !  Magnetic energy in vertically averaged field. The uymxy and uzmxy must
 !  have been calculated, so they are present on the z-root processors.
