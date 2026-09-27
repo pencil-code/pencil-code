@@ -716,7 +716,7 @@ void save_stats(std::string fileName){
       myFile << "\n";
     
 
-      myFile << train_counter << "," << nxgrid*nygrid*nzgrid;
+      myFile << train_counter << "," << (size_t)nxgrid*nygrid*nzgrid;
       
       auto write_fields = [&](auto* name, size_t size) {
         for (size_t i = 0; i < size; ++i) {
@@ -1257,7 +1257,7 @@ float MSE(){
 	acGridExecuteTaskGraph(bcs,1);
 
 	calculated_coeff_scales = true;
-	return (acDeviceGetOutput(acGridGetDevice(), AC_l2_sum))/(6*nxgrid*nygrid*nzgrid);
+	return (acDeviceGetOutput(acGridGetDevice(), AC_l2_sum))/(6.0*nxgrid*nygrid*nzgrid);
 #else
         return 0;
 #endif
@@ -1371,7 +1371,7 @@ extern "C" void print_debug() {
 #if LTRAINING
     #include "user_constants.h"
 		
-		std::string fname = "snapshots/snapshot_multi_normalized_"+ std::to_string(nxgrid*nygrid*nzgrid)  +"_rank_" + std::to_string(rank) + "_it_" + std::to_string(it) + ".bin";
+		std::string fname = "snapshots/snapshot_multi_normalized_"+ std::to_string((size_t)nxgrid*nygrid*nzgrid)  +"_rank_" + std::to_string(rank) + "_it_" + std::to_string(it) + ".bin";
 		std::ifstream infile(fname, std::ios::binary);
 		if (infile.good()) return;
 		
@@ -1399,7 +1399,7 @@ extern "C" void print_debug() {
 		int y_size = (dims.m1.y - dims.m0.y);
 		int z_size = (dims.m1.z - dims.m0.z);
 
-		const size_t n_points =  x_size * y_size * z_size;
+		const size_t n_points =  (size_t)x_size * y_size * z_size;
 		const int n_fields = 22;
 		
 		if (!idx_init){
