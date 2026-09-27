@@ -1481,7 +1481,7 @@ module Initcond
 !
       integer :: i
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension (mx,my) :: profxy
+      real, dimension(:,:), allocatable :: profxy
       real, dimension (mx) :: profx
       real, dimension (my) :: profy
       real, dimension (mz) :: profz
@@ -1489,6 +1489,7 @@ module Initcond
       real :: xmid,ymid,zmid
       character(len=*) :: dir
       integer :: l,m,n
+      allocate(profxy(mx,my))
 !
 !  jump; check direction
 !
@@ -8397,12 +8398,13 @@ module Initcond
 !
 
     real, contiguous, dimension(:,:,:,:) :: f
-    real, dimension (mx,my) :: By0, By
+    real, dimension(:,:), allocatable :: By0, By
     real, intent(in) :: amp, width, cs20
     integer, intent(in) :: ix
     real :: xx, yy, width_r
 
     integer :: m,l
+    allocate(By0(mx,my), By(mx,my))
 
     do m = m1,m2
       do l = l1,l2
@@ -8434,11 +8436,12 @@ module Initcond
 !  7 Apr 2026/vinay.kumar
 !
     real, contiguous, dimension(:,:,:,:) :: f
-    real, dimension (mx,my) :: By0, By
+    real, dimension(:,:), allocatable :: By0, By
     real, intent(in) :: amp, width, cs20
     integer, intent(in) :: ix
     real :: xx, yy, width_r
     integer :: m,l
+    allocate(By0(mx,my), By(mx,my))
 
     call keep_compiler_quiet(cs20)
     do m = m1,m2
