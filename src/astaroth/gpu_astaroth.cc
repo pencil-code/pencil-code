@@ -2068,7 +2068,7 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_,
     const size_t z_offset  = (dimensionality == 2 && nzgrid == 1) ? NGHOST*mx*my : 0;
     for (int i = 0; i < mvar; ++i)
     {
-      mesh.vertex_buffer[VertexBufferHandle(i)] = &farr[mw*i+ z_offset];
+      mesh.vertex_buffer[VertexBufferHandle(i)] = &farr[(size_t)mw*i+ z_offset];
     }
 
     int n_aux_on_gpu = 0;
@@ -2077,12 +2077,12 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_,
       if (maux_vtxbuf_index[i] != -1)
       {
 	++n_aux_on_gpu;
-        mesh.vertex_buffer[maux_vtxbuf_index[i]] = &farr[mw*i + z_offset];
+        mesh.vertex_buffer[maux_vtxbuf_index[i]] = &farr[(size_t)mw*i + z_offset];
       }
     }
     for (int i = 0; i < mfarray-mvar-maux; ++i)
     {
-        mesh.vertex_buffer[mvar+n_aux_on_gpu+i] = &farr[mw*(mvar+maux+i) + z_offset];
+        mesh.vertex_buffer[mvar+n_aux_on_gpu+i] = &farr[(size_t)mw*(mvar+maux+i) + z_offset];
     }
     //TP: for now for training we have all slots filled since we might want to read TAU components to the host for calculating validation error
     if (ltraining)
