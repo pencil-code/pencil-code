@@ -319,3 +319,10 @@ getcell(Field f, int offset, int idir)
 }
 const real cs_kt=0.57735026919
 const real tiny_kt=1e-30
+
+run_const bool3 lactive_dimension = (bool3)
+		{
+	          nxgrid > 1,
+		  nygrid > 1,
+		  nzgrid > 1
+		}
