@@ -117,6 +117,7 @@ ln -s $PENCIL_HOME/src/Makefile.inc .
 ln -s $PENCIL_HOME/src/cparam.local .
 ln -s $PENCIL_HOME/src/cparam.inc .
 ln -s $PENCIL_HOME/src/cparam_pencils.inc .
+ln -s $PENCIL_HOME/src/cparam_aux.inc .
 ln -s $PENCIL_HOME/src/cparam_enum.h .
 ln -s $PENCIL_HOME/src/general_f2003.h .
 

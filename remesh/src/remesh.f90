@@ -69,6 +69,8 @@ program remesh
   integer :: i,j,k,itx=1,ity=1,itz=1
   integer :: kk,jj,ii,cpu
   integer :: dummy,ipxx,ipyy,ipzz
+  integer :: maux_run
+  integer, dimension(6) :: dims_run
   integer :: mxout_grid,myout_grid,mzout_grid
   integer :: addx, addy, addz
   integer :: iproc_new, cpu_count=1
@@ -231,17 +233,21 @@ program remesh
   endif
 9 if ( overwrite == 'yes') then
 !
-! Read global dim.dat in order to find precision
+! Read global dim.dat in order to find precision and the number of
+! auxiliaries of the run. The latter is not known at compile time with
+! DYNAMIC_AUX=yes, where maux is only the declared initial value.
 !
     if (lroot) then
       call safe_character_assign(dimfile,trim(datadir)//'/dim.dat')
       if (ip<8) print*,'Reading '//trim(dimfile)
       open(1,FILE=dimfile,FORM='formatted')
-      read(1,*) dummy
+      read(1,*) dims_run        ! mx,my,mz,mvar,maux,mglobal
       read(1,*) prec
       close(1)
+      maux_run=dims_run(5)
     endif
     call mpibcast(prec)
+    call mpibcast(maux_run)
 !
 !  Determine proc layouts
 !
@@ -285,7 +291,7 @@ program remesh
       call safe_character_assign(dimfile, trim(destination)//'/'//trim(datadir)//'/dim.dat')
       if (ip<8) print*,'Writing '//trim(dimfile)
       open(1,file=dimfile)
-      write(1,'(6i7)') mxout_grid,myout_grid,mzout_grid,mvar,maux,mglobal
+      write(1,'(6i7)') mxout_grid,myout_grid,mzout_grid,mvar,maux_run,mglobal
       write(1,'(a)') prec
       write(1,'(3i3)') nghost, nghost, nghost
 !
@@ -814,7 +820,7 @@ yinyang_loop: &
         call safe_character_assign(dimfile2_loc,trim(destination)//'/'//trim(dimfile_loc))
         if (ip<8) print*,'Writing ',dimfile2_loc
         open(1,file=dimfile2_loc)
-        write(1,'(6i7)') mmx,mmy,mmz,mvar,maux,mglobal
+        write(1,'(6i7)') mmx,mmy,mmz,mvar,maux_run,mglobal
         write(1,'(a)') prec
         write(1,'(3i3)') nghost, nghost, nghost
 ! SC: Added iprocz_slowest = 1 in order to solve an issue with the reading 
