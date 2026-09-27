@@ -371,6 +371,9 @@ Field AY_FOURIER_IMAG
 Field AZ_FOURIER_REAL
 Field AZ_FOURIER_IMAG
 
-Field AC_mu1_full__mod__equationofstate
+field_order(AC_iaae__mod__disp__current != 0 ? AC_iaae__mod__disp_current+0-1 : -1) Field F_AAEX
+field_order(AC_iaae__mod__disp__current != 0 ? AC_iaae__mod__disp_current+1-1 : -1) Field F_AAEY
+field_order(AC_iaae__mod__disp__current != 0 ? AC_iaae__mod__disp_current+2-1 : -1) Field F_AAEZ
+const Field3 F_AAE = {F_AAEX, F_AAEY, F_AAEZ}
 
 #include "$AC_HOME/acc-runtime/stdlib/map.h"
