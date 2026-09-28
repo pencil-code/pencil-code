@@ -6,7 +6,7 @@
 
 LDMPI=-lmpi
 
-MPICOMM   = nompicomm
+MPICOMM   = mpicomm
 GLOBAL    = noglobal
 IO        =   io_dist
 FFT       = nofft
@@ -290,6 +290,8 @@ ifneq (,$(filter mpif%,$(COMPILER)))
   COMPILER = $(notdir $(firstword $(shell $(FC) -show)))
 endif
 
+MPICOMM   = mpicomm
+
 ALLOW_ARG_MISMATCH =
 $(info Compiler: $(COMPILER))
 # If the compiler is from GCC, determine its version.
@@ -329,7 +331,7 @@ code:
 	make remesh.x
 #	make remesh.x remesh_ext.x
 
-technical=cparam.o cdata.o common.o messages.o syscalls.o syscalls_ansi.o general.o $(MPICOMM).o noyinyang.o geometrical_types.o morton_helper.o
+technical=cparam.o cdata.o common.o messages.o syscalls.o syscalls_ansi.o general.o $(MPICOMM).o noyinyang.o geometrical_types.o morton_helper.o quiet.o
 remesh=remesh.o $(technical)
 #remesh_ext=remesh_ext.o $(technical)
 
@@ -350,6 +352,7 @@ cparam.o:    cparam.f90 cparam.local cparam.inc
 cdata.o:     cdata.f90 cparam.o
 common.o:    common.f90 common.local cdata.o cparam.o
 syscalls_ansi.o:  syscalls_ansi.c
+quiet.o:   quiet.f90
 general.o:   general.f90 cdata.o cparam.o syscalls.o morton_helper.o quiet.o
 messages.o:  messages.f90 mpicomm.o
 noyinyang.o:  noyinyang.f90 general.o
@@ -358,8 +361,10 @@ noyinyang.o:  noyinyang.f90 general.o
 
 syscalls.o: syscalls.f90 syscalls_ansi.o cparam.o geometrical_types.o
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(ALLOW_ARG_MISMATCH) -o syscalls.o -c syscalls.f90
-$(MPICOMM).o: mpicomm.h $(MPICOMM).f90 noyinyang.o cdata.o
+$(MPICOMM).o: mpicomm.h $(MPICOMM).f90 noyinyang.o cdata.o general.o
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(ALLOW_ARG_MISMATCH) -o $(MPICOMM).o -c $(MPICOMM).f90
+mpicomm.o: mpicomm.h mpicomm.f90 noyinyang.o cdata.o general.o
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(ALLOW_ARG_MISMATCH) -o mpicomm.o -c mpicomm.f90
 
 # Clean up, but leave makefile and TAGS
 clean:
