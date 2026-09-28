@@ -11,4 +11,6 @@ EOS       =   eos_idealgas
 FORCING   =   forcing
 
 REAL_PRECISION = double
-DYNAMIC_AUX = yes
+
+#Kishore: with the following, the forcing is not written into snapshots even when lff_as_aux=T; not sure what it is a bug in. To test, run `pc_auto-test --script-tests=python -C $PENCIL_HOME/samples/continuous-forcing-from_file_h5`
+# DYNAMIC_AUX = yes
