@@ -968,3 +968,4 @@ integer, parameter :: enum_smooth_source_string = 958
 integer, parameter :: enum_smooth_source_new_string = 959
 integer, parameter :: enum_step_decay_linear_ramp_string = 960
 integer, parameter :: enum_qZglhcZdat_string = 961
+integer, parameter :: enum_fixed_k_alpha_string = 962
