@@ -3,7 +3,7 @@
 ### Included by `Makefile'
 ###
 
-#IO        =   io_hdf5
+IO        =   io_hdf5
 MPICOMM   =   mpicomm
 HYDRO     =   hydro
 DENSITY   =   density
