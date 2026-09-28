@@ -7755,6 +7755,8 @@ iloop:do i=1,size(list2)
         dst = enum_stepZlocalZpatches
       case ('read_ell_from_table')
         dst = enum_read_ell_from_table_string
+      case('fixed_k_alpha')
+        dst = enum_fixed_k_alpha_string
       case default
         dst = enum_unknown_string_string
         if (lroot) print*, 'No string enum for: ', src

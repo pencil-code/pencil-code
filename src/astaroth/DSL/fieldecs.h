@@ -333,6 +333,7 @@ field_order(AC_ikapparho__mod__radiation-1) Field F_KAPPARHO
 field_order(AC_iqrad__mod__radiation-1) Field F_QRAD
 
 Field AC_cp_full__mod__equationofstate
+Field AC_mu1_full__mod__equationofstate
 
 field_order(AC_imu5__mod__chiral_mhd-1) Field F_MU5
 field_order(AC_imus__mod__chiral_mhd-1) Field F_MUS
