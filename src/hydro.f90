@@ -224,7 +224,7 @@ module Hydro
     !PAR_DOC: Used to get rid of superluminal velocities.
   logical :: lalfven_relativistic=.true.
 !  Kurganov-Tadmor flux-limited transport (see kt_transport.f90); runtime-off by default.
-  logical :: lkt_transport=.false. !PAR_DOC: Do we use Kurganov-Tadmor flux-limited transport.
+  logical, target :: lkt_transport=.false. !PAR_DOC: Do we use Kurganov-Tadmor flux-limited transport.
   real :: kt_theta=2.0
   !PAR_DOC: Cell-level admissibility projection of the conserved (K0,$K^i$) state (opt-in,
   !PAR_DOC: off by default; cf. project_admissible in kt\_transport.f90): floor the fluid
