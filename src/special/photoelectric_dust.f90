@@ -336,7 +336,7 @@ module Special
 !      
       real, contiguous, dimension(:,:,:,:) :: f
       real, dimension(mx,my,mz,mvar) :: df
-      type(pencil_case) :: p
+      type(pencil_case), intent(in) :: p
 
       integer :: j,k
       real, dimension(nx) :: adv_cs2

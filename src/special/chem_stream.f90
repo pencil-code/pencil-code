@@ -378,7 +378,7 @@ module Special
 !
       real, contiguous, dimension(:,:,:,:) :: f
       real, dimension(mx,my,mz,mvar) :: df
-      type(pencil_case) :: p
+      type(pencil_case), intent(in) :: p
       integer :: i, l_sz,l_sz_1
 !
 !      do i=1,3

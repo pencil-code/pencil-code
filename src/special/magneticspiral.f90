@@ -210,7 +210,7 @@ contains
 !      
       real, contiguous, dimension(:,:,:,:) :: f
       real, dimension(mx,my,mz,mvar) :: df
-      type(pencil_case) :: p
+      type(pencil_case), intent(in) :: p
 !
       real, dimension (nx) :: beta
       integer :: j,ju

@@ -75,7 +75,16 @@
       logical, dimension(npencils) :: lpencil_in
     endsubroutine iface_pencil_interdep_special
 !
-!  special_calc_hydro, _density, _dustdensity, _energy, _magnetic, _pscalar,
+!  special_calc_hydro (only reads the pencil case):
+!
+    subroutine iface_special_calc_hydro(f,df,p)
+      import :: mx, my, mz, mvar, pencil_case
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case), intent(in) :: p
+    endsubroutine iface_special_calc_hydro
+!
+!  special_calc_density, _dustdensity, _energy, _magnetic, _pscalar,
 !  _chemistry, and calc_diagnostics_special (without df):
 !
     subroutine iface_special_calc_rhs(f,df,p)

@@ -219,7 +219,7 @@ module Special
 !      
       real, contiguous, dimension(:,:,:,:) :: f
       real, dimension(mx,my,mz,mvar) :: df
-      type(pencil_case) :: p
+      type(pencil_case), intent(in) :: p
 !
       df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) & 
            + gravity(:,m-m1+1,n-n1+1,:)

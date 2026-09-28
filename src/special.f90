@@ -138,7 +138,7 @@
       procedure(iface_calc_pencils_special),           pointer, nopass :: calc_pencils_special
       procedure(iface_special_noargs),                 pointer, nopass :: pencil_criteria_special
       procedure(iface_pencil_interdep_special),        pointer, nopass :: pencil_interdep_special
-      procedure(iface_special_calc_rhs),               pointer, nopass :: special_calc_hydro
+      procedure(iface_special_calc_hydro),             pointer, nopass :: special_calc_hydro
       procedure(iface_special_calc_rhs),               pointer, nopass :: special_calc_density
       procedure(iface_special_calc_rhs),               pointer, nopass :: special_calc_dustdensity
       procedure(iface_special_calc_rhs),               pointer, nopass :: special_calc_energy
@@ -561,7 +561,7 @@
 !
       real, contiguous, dimension(:,:,:,:) :: f
       real, dimension(mx,my,mz,mvar) :: df
-      type(pencil_case) :: p
+      type(pencil_case), intent(in) :: p
 !
       integer :: i
 !

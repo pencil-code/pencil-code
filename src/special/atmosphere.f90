@@ -360,7 +360,7 @@ module Special
 !
       real, contiguous, dimension(:,:,:,:) :: f
       real, dimension(mx,my,mz,mvar) :: df
-      type(pencil_case) :: p
+      type(pencil_case), intent(in) :: p
 !
       real :: gg=9.81e2!,  qwater0=9.9e-3
       real :: eps=0.5 !!????????????????????????

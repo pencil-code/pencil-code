@@ -173,7 +173,7 @@ module Special
 !
       real, contiguous, dimension(:,:,:,:) :: f
       real, dimension(mx,my,mz,mvar) :: df
-      type(pencil_case) :: p
+      type(pencil_case), intent(in) :: p
 !
       ! Apply driving of velocity field.
       if (.not. lpencil_check_at_work) &
