@@ -309,13 +309,44 @@ div_phib()
 	return 0.0
 }
 
+//Unit-weight shift stencils for getcell (Kurganov-Tadmor). Going through stencils,
+//rather than indexing the field directly, lets the compiler see the accesses,
+//so the halos are communicated correctly.
+Stencil getcell_xm2 {[0][0][-2] = 1.0}
+Stencil getcell_xm1 {[0][0][-1] = 1.0}
+Stencil getcell_xp1 {[0][0][ 1] = 1.0}
+Stencil getcell_xp2 {[0][0][ 2] = 1.0}
+Stencil getcell_ym2 {[0][-2][0] = 1.0}
+Stencil getcell_ym1 {[0][-1][0] = 1.0}
+Stencil getcell_yp1 {[0][ 1][0] = 1.0}
+Stencil getcell_yp2 {[0][ 2][0] = 1.0}
+Stencil getcell_zm2 {[-2][0][0] = 1.0}
+Stencil getcell_zm1 {[-1][0][0] = 1.0}
+Stencil getcell_zp1 {[ 1][0][0] = 1.0}
+Stencil getcell_zp2 {[ 2][0][0] = 1.0}
+
+//Value of f at offset (-2..2) cells from the current vertex along direction idir (1,2,3)
 getcell(Field f, int offset, int idir)
 {
-	int3 target = vertexIdx
-	if(idir == 1) target.x += offset
-	if(idir == 2) target.y += offset
-	if(idir == 3) target.z += offset
-        return f[target.x][target.y][target.z]
+	if(offset == 0) return value(f)
+	if(idir == 1)
+	{
+		if(offset == -2) return getcell_xm2(f)
+		if(offset == -1) return getcell_xm1(f)
+		if(offset ==  1) return getcell_xp1(f)
+		return getcell_xp2(f)
+	}
+	if(idir == 2)
+	{
+		if(offset == -2) return getcell_ym2(f)
+		if(offset == -1) return getcell_ym1(f)
+		if(offset ==  1) return getcell_yp1(f)
+		return getcell_yp2(f)
+	}
+	if(offset == -2) return getcell_zm2(f)
+	if(offset == -1) return getcell_zm1(f)
+	if(offset ==  1) return getcell_zp1(f)
+	return getcell_zp2(f)
 }
 const real cs_kt=0.57735026919
 const real tiny_kt=1e-30
