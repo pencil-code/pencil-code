@@ -196,8 +196,8 @@ module Special
   integer :: idiag_gausscrms=0  ! DIAG_DOC: rms $\nab\cdot(\Ev+\alpha_f\phi\Bv)$ (needs lbb_as_comaux)
   integer :: idiag_gaussprms=0  ! DIAG_DOC: rms $(\nab\cdot\Ev+\alpha_f\Bv\cdot\nab\phi)$
   integer :: idiag_gaussnrms=0  ! DIAG_DOC: rms $\alpha_f\Bv\cdot\nab\phi$
-  integer :: idiag_aaerms=0     ! DIAG_DOC: rms $\A_e$
-  integer :: idiag_divphib=0    ! DIAG_DOC: \<left<\<nab \cdot (phiB) \right>$
+  integer :: idiag_aaerms=0     ! DIAG_DOC: rms $A_e$
+  integer :: idiag_divphib=0    ! DIAG_DOC: $\left<\nab \cdot (phiB) \right>$
   integer :: idiag_exm=0        ! DIAG_DOC: $\left<E_x\right>$
   integer :: idiag_eym=0        ! DIAG_DOC: $\left<E_y\right>$
   integer :: idiag_ezm=0        ! DIAG_DOC: $\left<E_z\right>$
