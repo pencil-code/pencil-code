@@ -126,20 +126,6 @@ module Diagnostics
   real ::  dt_save,eps_rkf_save
   integer :: it_save
 
-!
-!  Former nx-sized local ("tmp") arrays of calc_pencils_*, calc_diagnostics_*
-!  and the routines they call. They are kept here instead of on the stack
-!  since with large subdomains the stack arrays become too large.
-!
-  type :: DiagTmpInternalPencils
-    real, dimension(nx) :: aux, rlim, tmp, quan
-    logical, dimension(nx) :: lmask
-    real, dimension(nx,3) :: work
-  end type DiagTmpInternalPencils
-!
-  type(DiagTmpInternalPencils) :: q
-  !$omp threadprivate(q)
-!
   contains
 !***********************************************************************
     subroutine initialize_diagnostics
@@ -2368,7 +2354,7 @@ module Diagnostics
 !
 !   2-nov-05/wlad: adapted from sum_mn_name
 !
-      real, dimension (nx) :: a
+      real, dimension (nx) :: a,aux,rlim
       type (pencil_case) :: p
       real :: dv
       integer :: iname
@@ -2377,9 +2363,9 @@ module Diagnostics
       if (iname /= 0) then
 !
         if (lcylinder_in_a_box) then
-          q%rlim=p%rcyl_mn
+          rlim=p%rcyl_mn
         elseif (lsphere_in_a_box) then
-          q%rlim=p%r_mn
+          rlim=p%r_mn
         ! elseif (lfirsttime) then
           call warning("sum_lim_mn_name","no reason to call it when "// &
                "not using a cylinder or"//achar(10)//"a sphere embedded in a Cartesian grid")
@@ -2391,23 +2377,23 @@ module Diagnostics
         if (nygrid/=1) dv=dv*dy
         if (nzgrid/=1) dv=dv*dz
 !
-        where ((q%rlim <= r_ext).and.(q%rlim >= r_int))
-          q%aux = a
+        where ((rlim <= r_ext).and.(rlim >= r_int))
+          aux = a
         elsewhere
-          q%aux = 0.
+          aux = 0.
         endwhere
 !
         if (lfirstpoint) then
           if (lspherical_coords)then
-            fname(iname)=sinth(m)*sum(x(l1:l2)*x(l1:l2)*q%aux)*dv
+            fname(iname)=sinth(m)*sum(x(l1:l2)*x(l1:l2)*aux)*dv
           else
-            fname(iname)=sum(q%aux)*dv
+            fname(iname)=sum(aux)*dv
           endif
         else
           if (lspherical_coords)then
-            fname(iname)=fname(iname)+sinth(m)*sum(x(l1:l2)*x(l1:l2)*q%aux)*dv
+            fname(iname)=fname(iname)+sinth(m)*sum(x(l1:l2)*x(l1:l2)*aux)*dv
           else
-            fname(iname)=fname(iname)+sum(q%aux)*dv
+            fname(iname)=fname(iname)+sum(aux)*dv
           endif
         endif
 !
@@ -2526,19 +2512,20 @@ module Diagnostics
       integer,             intent(IN) :: iname
       logical, optional, dimension(nx), intent(IN) :: mask
 !
+      logical, dimension(nx) :: lmask
 !
         if (present(mask)) then
-          q%lmask=mask
+          lmask=mask
         else
-          q%lmask=.true.
+          lmask=.true.
         endif
 !
       if (lproper_averages) then
-        if (.not.all(q%lmask)) call fatal_error('xysum_mn_name_z', &
+        if (.not.all(lmask)) call fatal_error('xysum_mn_name_z', &
           'masking not implemented with lproper_averages=T')
         call xyintegrate_mn_name_z(a,iname)
       else
-        call xysum_mn_name_z_npar(a,n,iname,MASK=q%lmask)
+        call xysum_mn_name_z_npar(a,n,iname,MASK=lmask)
       endif
 !
       if (iname/=0) itype_name_z(iname) = ilabel_sum
@@ -2742,7 +2729,7 @@ module Diagnostics
 !
 !   18-jun-07/tobi: adapted from xysum_mn_name_z
 !
-      real, dimension (nx) :: a
+      real, dimension (nx) :: a, tmp
       integer :: iname
       real :: fac,suma
       integer :: nl
@@ -2761,15 +2748,15 @@ module Diagnostics
       endif
 !
       if (lproper_averages) then
-        q%tmp = a*dAxy_x(l1:l2)*dAxy_y(m)
+        tmp = a*dAxy_x(l1:l2)*dAxy_y(m)
       else
-        q%tmp  = a
+        tmp  = a
       endif
 !
       if (lperi(1)) then
-        suma = fac*sum(q%tmp)
+        suma = fac*sum(tmp)
       else
-        suma = fac*(sum(q%tmp(2:nx-1))+.5*(q%tmp(1)+q%tmp(nx)))
+        suma = fac*(sum(tmp(2:nx-1))+.5*(tmp(1)+tmp(nx)))
       endif
 !
 !  n starts with nghost=4, so the correct index is n-nghost.
@@ -2786,7 +2773,7 @@ module Diagnostics
 !
 !   18-jun-07/tobi: adapted from xzsum_mn_name_y
 !
-      real, dimension (nx) :: a
+      real, dimension (nx) :: a, tmp
       integer :: iname
       real :: fac,suma
 !
@@ -2804,15 +2791,15 @@ module Diagnostics
       endif
 !
       if (lproper_averages) then
-        q%tmp = a*dAxz_x(l1:l2)*dAxz_z(n)
+        tmp = a*dAxz_x(l1:l2)*dAxz_z(n)
       else
-        q%tmp  = a
+        tmp  = a
       endif
 !
       if (lperi(1)) then
-        suma = fac*sum(q%tmp)
+        suma = fac*sum(tmp)
       else
-        suma = fac*(sum(q%tmp(2:nx-1))+.5*(q%tmp(1)+q%tmp(nx)))
+        suma = fac*(sum(tmp(2:nx-1))+.5*(tmp(1)+tmp(nx)))
       endif
 !
 !  m starts with mghost+1=4, so the correct index is m-nghost.
@@ -2828,7 +2815,7 @@ module Diagnostics
 !
 !   18-jun-07/tobi: adapted from yzsum_mn_name_x
 !
-      real, dimension (nx) :: a
+      real, dimension (nx) :: a, tmp
       integer :: iname
       real :: fac
 !
@@ -2850,12 +2837,12 @@ module Diagnostics
 !
 !
       if (lproper_averages) then
-        q%tmp = a*dAyz_y(m)*dAyz_z(n)
+        tmp = a*dAyz_y(m)*dAyz_z(n)
       else
-        q%tmp  = a
+        tmp  = a
       endif
 !
-      fnamex(:,ipx+1,iname) = fnamex(:,ipx+1,iname) + fac*q%tmp
+      fnamex(:,ipx+1,iname) = fnamex(:,ipx+1,iname) + fac*tmp
 !
     endsubroutine yzintegrate_mn_name_x
 !***********************************************************************
@@ -2938,7 +2925,7 @@ module Diagnostics
 !
 !   19-nov-2024/Kishore: adapted from xyintegrate_mn_name_z
 !
-      real, dimension (nx) :: a
+      real, dimension (nx) :: a, tmp
       integer :: iname, nl
       real :: fac
 !
@@ -2956,15 +2943,15 @@ module Diagnostics
       endif
 !
       if (lproper_averages) then
-        q%tmp = fac*a*yprim(m)
+        tmp = fac*a*yprim(m)
       else
-        q%tmp = fac*a
+        tmp = fac*a
       endif
 !
 !  n starts with nghost=4, so the correct index is n-nghost.
 !
       nl=n-nghost
-      fnamexz(:,nl,iname) = fnamexz(:,nl,iname) + q%tmp
+      fnamexz(:,nl,iname) = fnamexz(:,nl,iname) + tmp
 !
     endsubroutine yintegrate_mn_name_xz
 !***********************************************************************
@@ -3099,6 +3086,8 @@ module Diagnostics
       integer, dimension(3),        intent(in) :: powers
       real, dimension(:), optional, intent(in) :: scal
 !
+      real, dimension(nx,3) :: work
+      real, dimension(nx) :: quan
       integer :: i
       logical :: lfirst
 
@@ -3108,9 +3097,9 @@ module Diagnostics
 !
 ! On Yang procs: transform theta and phi components if necessary.
 !
-        call transform_thph_yy(avec,powers,q%work)
+        call transform_thph_yy(avec,powers,work)
       else
-        q%work=avec
+        work=avec
       endif
 !
 !  Perform product of powers of vector components..
@@ -3121,15 +3110,15 @@ module Diagnostics
           if (lfirst) then
             lfirst=.false.
             if (powers(i)==1) then
-              q%quan=q%work(:,i)
+              quan=work(:,i)
             else
-              q%quan=q%work(:,i)**powers(i)
+              quan=work(:,i)**powers(i)
             endif
           else
             if (powers(i)==1) then
-              q%quan=q%quan*q%work(:,i)
+              quan=quan*work(:,i)
             else
-              q%quan=q%quan*q%work(:,i)**powers(i)
+              quan=quan*work(:,i)**powers(i)
             endif
           endif
         endif
@@ -3139,15 +3128,15 @@ module Diagnostics
 !
       if (present(scal)) then
         if (size(scal)==1) then
-          q%quan=q%quan*scal(1)
+          quan=quan*scal(1)
         else
-          q%quan=q%quan*scal
+          quan=quan*scal
         endif
       endif
 !
 !  Sum up result like a scalar.
 !
-      call zsum_mn_name_xy_mpar(q%quan,m,iname)
+      call zsum_mn_name_xy_mpar(quan,m,iname)
 !
     endsubroutine zsum_mn_name_xy_mpar_vec
 !***********************************************************************

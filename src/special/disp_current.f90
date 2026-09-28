@@ -239,20 +239,6 @@ module Special
   real, dimension (nx,3) :: dEdt
   !$omp threadprivate(dEdt)
   integer :: enum_replace_schwinger_by_arnold = 0
-!
-!  Former nx-sized local ("tmp") arrays of calc_pencils_*, calc_diagnostics_*
-!  and the routines they call. They are kept here instead of on the stack
-!  since with large subdomains the stack arrays become too large.
-!
-  type :: InternalPencils
-    real, dimension(nx,3) :: tmpv, e_mhd, gtmp
-    real, dimension(nx) :: tmp, mass_suppression_fact, gphi2, prefactor, uexb, constrainteqn1, tmp2
-    real, dimension(nx) :: constrainteqn
-  end type InternalPencils
-!
-  type(InternalPencils) :: q
-  !$omp threadprivate(q)
-!
   contains
 !
 !***********************************************************************
@@ -701,6 +687,9 @@ module Special
       real :: H_arnold, T_arnold, sigE_arnold, weight_arnold, lna
       real, parameter :: C_arnold=12., e_arnold=0.303, g_e_arnold=106.75
 !
+      real, dimension (nx,3) :: tmpv, E_MHD
+      real, dimension (nx) :: tmp, mass_suppression_fact, gphi2, prefactor
+      real, dimension (nx) :: uExB
       integer :: i,j,k
 !
 !
@@ -715,9 +704,9 @@ module Special
 !  Terms for Gamma evolution.
 !
       if (lpi_vecpot) then
-        call curl(f,iaae,q%tmpv)
+        call curl(f,iaae,tmpv)
         do i=1,3
-          p%el(:,i)=q%tmpv(:,i)-alpf*f(l1:l2,m,n,iphi_f)*p%bb(:,i)
+          p%el(:,i)=tmpv(:,i)-alpf*f(l1:l2,m,n,iphi_f)*p%bb(:,i)
         enddo
       endif
       if (lpenc_requested(i_divE)) then
@@ -727,11 +716,11 @@ module Special
 !  (lbb_as_comaux=T); otherwise the product-rule form alpf*gphi.B is used, which
 !  differs by the discrete Leibniz error.
           if (lbb_as_comaux) then
-            call div_phib(f,q%tmp)
+            call div_phib(f,tmp)
           else
-            call dot(p%gphi,p%bb,q%tmp)
+            call dot(p%gphi,p%bb,tmp)
           endif
-          p%divE=-alpf*q%tmp
+          p%divE=-alpf*tmp
         else
           call div(f,iee,p%divE)
         endif
@@ -831,8 +820,8 @@ module Special
             p%count_eb0=1.
           endwhere
           if (lmass_suppression) then
-            q%mass_suppression_fact=exp(-pi*mass_chi**2/(Chypercharge**onethird*echarge*sqrt(p%e2)))
-            p%sigE=p%sigE*q%mass_suppression_fact
+            mass_suppression_fact=exp(-pi*mass_chi**2/(Chypercharge**onethird*echarge*sqrt(p%e2)))
+            p%sigE=p%sigE*mass_suppression_fact
           endif
           p%sigB=0.
         elseif (lnoncollinear_EB_aver .or. lcollinear_EB_aver) then
@@ -908,8 +897,8 @@ module Special
               if (lhydro) then
                 p%jj_ohm(:,j)=p%sigE*(p%el(:,j)+p%uxb(:,j))+p%sigB*p%bb(:,j)
                 if (lcharge_flow) then
-                  q%tmp=charge_flow_factor*p%divE/sqrt(1.+p%u2/charge_flow_limiter**2)
-                  call multsv_mn_add(q%tmp,p%uu,p%jj_ohm)
+                  tmp=charge_flow_factor*p%divE/sqrt(1.+p%u2/charge_flow_limiter**2)
+                  call multsv_mn_add(tmp,p%uu,p%jj_ohm)
                 endif
               else
                 p%jj_ohm(:,j)=p%sigE*p%el(:,j)+p%sigB*p%bb(:,j)
@@ -943,50 +932,50 @@ module Special
               call fatal_error('calc_pencils_special','MHD currently works only for the collinear case')
             else
               if (lresistive_gauge_ee) then
-                call multsv_mn(-etaSchw,p%del2a,q%tmpv)
+                call multsv_mn(-etaSchw,p%del2a,tmpv)
               else
-                call multsv_mn(etaSchw,p%jj_ohm,q%tmpv)
+                call multsv_mn(etaSchw,p%jj_ohm,tmpv)
               endif
-              q%e_mhd=-p%uxb+q%tmpv
+              E_MHD=-p%uxb+tmpv
               if (linclude_dphiB_in_MHD) then
                 if (lcorrect_sign_adphiB_term) then
-                  call multsv_add(q%e_mhd,-alpf*etaSchw*p%infl_dphi,p%bb,q%e_mhd)
+                  call multsv_add(E_MHD,-alpf*etaSchw*p%infl_dphi,p%bb,E_MHD)
                 else
-                  call multsv_add(q%e_mhd,alpf*etaSchw*p%infl_dphi,p%bb,q%e_mhd)
+                  call multsv_add(E_MHD,alpf*etaSchw*p%infl_dphi,p%bb,E_MHD)
                 endif
                 if (linclude_gphixE_in_MHD) then
-                  call dot2_mn(p%gphi,q%gphi2)
-                  q%prefactor=alpf*etaSchw
-                  q%tmp=1./(1.+q%prefactor*q%gphi2)
+                  call dot2_mn(p%gphi,gphi2)
+                  prefactor=alpf*etaSchw
+                  tmp=1./(1.+prefactor*gphi2)
 !
 !  eps_123*EMHD(2)
 !  eps_132*EMHD(3)
 !
-                  f(l1:l2,m,n,iex)=q%tmp*( &
-                    (1.+q%prefactor*p%gphi(:,1)**2)*q%e_mhd(:,1) &
-                       +q%prefactor*p%gphi(:,3)    *q%e_mhd(:,2) &
-                       -q%prefactor*p%gphi(:,2)    *q%e_mhd(:,3))
+                  f(l1:l2,m,n,iex)=tmp*( &
+                    (1.+prefactor*p%gphi(:,1)**2)*E_MHD(:,1) &
+                       +prefactor*p%gphi(:,3)    *E_MHD(:,2) &
+                       -prefactor*p%gphi(:,2)    *E_MHD(:,3))
 !
 !  eps_231*EMHD(3)
 !  eps_213*EMHD(1)
 !
-                  f(l1:l2,m,n,iey)=q%tmp*( &
-                       -q%prefactor*p%gphi(:,3)    *q%e_mhd(:,1) &
-                   +(1.+q%prefactor*p%gphi(:,2)**2)*q%e_mhd(:,2) &
-                       +q%prefactor*p%gphi(:,1)    *q%e_mhd(:,3))
+                  f(l1:l2,m,n,iey)=tmp*( &
+                       -prefactor*p%gphi(:,3)    *E_MHD(:,1) &
+                   +(1.+prefactor*p%gphi(:,2)**2)*E_MHD(:,2) &
+                       +prefactor*p%gphi(:,1)    *E_MHD(:,3))
 !
 !  eps_312*EMHD(1)
 !  eps_321*EMHD(2)
 !
-                  f(l1:l2,m,n,iez)=q%tmp*( &
-                       +q%prefactor*p%gphi(:,2)    *q%e_mhd(:,1) &
-                       -q%prefactor*p%gphi(:,1)    *q%e_mhd(:,2) &
-                   +(1.+q%prefactor*p%gphi(:,3)**2)*q%e_mhd(:,3))
+                  f(l1:l2,m,n,iez)=tmp*( &
+                       +prefactor*p%gphi(:,2)    *E_MHD(:,1) &
+                       -prefactor*p%gphi(:,1)    *E_MHD(:,2) &
+                   +(1.+prefactor*p%gphi(:,3)**2)*E_MHD(:,3))
                 else
-                  f(l1:l2,m,n,iex:iez)=q%e_mhd
+                  f(l1:l2,m,n,iex:iez)=E_MHD
                 endif
               else
-                f(l1:l2,m,n,iex:iez)=q%e_mhd
+                f(l1:l2,m,n,iex:iez)=E_MHD
               endif
               if (llate_reset_el_pencil) p%el=f(l1:l2,m,n,iex:iez)
             endif
@@ -1042,11 +1031,11 @@ module Special
 !  The use if eta may be suspect and should be checked.
 !
       if (lpenc_requested(i_divJ)) then
-        q%tmp=0.
+        tmp=0.
         do i=1,3
         do j=1,3
         do k=1,3
-          q%tmp=q%tmp+levi_civita(i,j,k)*(p%uij(:,j,i)*p%bb(:,k)+p%uu(:,j)*p%bij(:,k,i))
+          tmp=tmp+levi_civita(i,j,k)*(p%uij(:,j,i)*p%bb(:,k)+p%uu(:,j)*p%bij(:,k,i))
         enddo
         enddo
         enddo
@@ -1058,9 +1047,9 @@ module Special
 !  The following expression ignores gradients of p%sigE
 !
             !call fatal_error('disp_current/calc_pencils_special', "eta=0 not ok here")
-            p%divJ=(p%divE+q%tmp)*p%sigE
+            p%divJ=(p%divE+tmp)*p%sigE
           else
-            p%divJ=(p%divE+q%tmp)/(mu0*eta)
+            p%divJ=(p%divE+tmp)/(mu0*eta)
           endif
         endif
       endif
@@ -1080,9 +1069,9 @@ module Special
       endif
 
       if (lext_force) then
-        call dot_mn(p%uu,p%ExB,q%uexb)
+        call dot_mn(p%uu,p%ExB,uExB)
         conductivity = 1./eta
-        p%ext_force(:,1) = p%ext_force(:,1) -p%lorentz_gamma*(p%rhoe*p%udotE-conductivity*q%uexb-conductivity*p%e2)
+        p%ext_force(:,1) = p%ext_force(:,1) -p%lorentz_gamma*(p%rhoe*p%udotE-conductivity*uExB-conductivity*p%e2)
         do i=1,3
           p%ext_force(:,i+1) = p%ext_force(:,i+1) -p%lorentz_gamma*((p%rhoe-conductivity*p%udotE)*p%el(:,i) &
                               -p%rhoe*p%uxb(:,i) + conductivity*(p%ExB(:,i)-p%ub*p%bb(:,i) + p%b2*p%uu(:,i)))
@@ -1120,15 +1109,16 @@ module Special
       real, dimension(nx),intent(IN) :: tmp
       real, dimension(nx), intent(OUT) :: constrainteqn
 
+      real, dimension(nx) :: constrainteqn1
       !constrainteqn1=sqrt(p%divE**2+tmp**2)
 !
 !  in the following, should use "where"
 !
-      q%constrainteqn1=sqrt(p%divE**2+tmp**2)
-      if (any(q%constrainteqn1 == 0.)) then
+      constrainteqn1=sqrt(p%divE**2+tmp**2)
+      if (any(constrainteqn1 == 0.)) then
         constrainteqn=0.
       else
-        constrainteqn=(p%divE-tmp)/q%constrainteqn1
+        constrainteqn=(p%divE-tmp)/constrainteqn1
       endif
 
     endsubroutine calc_constrainteqn
@@ -1563,6 +1553,8 @@ module Special
 !
       real, contiguous, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
+      real, dimension(nx) :: tmp,tmp2,constrainteqn
+      real, dimension(nx,3) :: gtmp
 
       call keep_compiler_quiet(f)
 
@@ -1590,22 +1582,22 @@ module Special
 !
       if (idiag_adphiBm/=0 .or. idiag_adphiBrms/=0 .or. &
           idiag_adphiB2m/=0 .or. idiag_adphiJBm/=0) then
-        if (alpf/=0.) call calc_helical_term(p,q%gtmp,p%dphi,p%gphi,lphi_hom)
+        if (alpf/=0.) call calc_helical_term(p,gtmp,p%dphi,p%gphi,lphi_hom)
         if (idiag_adphiBm/=0) then
-          call dot(alpf*q%gtmp,p%el,q%tmp)
-          call sum_mn_name(q%tmp,idiag_adphiBm)
+          call dot(alpf*gtmp,p%el,tmp)
+          call sum_mn_name(tmp,idiag_adphiBm)
         endif
         if (idiag_adphiB2m/=0) then
-          call dot(alpf*q%gtmp,p%bb,q%tmp)
-          call sum_mn_name(etaSchw*q%tmp,idiag_adphiB2m)
+          call dot(alpf*gtmp,p%bb,tmp)
+          call sum_mn_name(etaSchw*tmp,idiag_adphiB2m)
         endif
         if (idiag_adphiJBm/=0) then
-          call dot(alpf*q%gtmp,p%jj,q%tmp)
-          call sum_mn_name(etaSchw*q%tmp,idiag_adphiJBm)
+          call dot(alpf*gtmp,p%jj,tmp)
+          call sum_mn_name(etaSchw*tmp,idiag_adphiJBm)
         endif
         if (idiag_adphiBrms/=0) then
-          call dot2_mn(alpf*q%gtmp,q%tmp)
-          call sum_mn_name(q%tmp,idiag_adphiBrms,lsqrt=.true.)
+          call dot2_mn(alpf*gtmp,tmp)
+          call sum_mn_name(tmp,idiag_adphiBrms,lsqrt=.true.)
         endif
       endif
 !
@@ -1613,20 +1605,20 @@ module Special
         call sum_mn_name(etaSchw*alpf*p%dphi*p%b2,idiag_adphiB21m)
 !
       if (idiag_Johmrms/=0 .or. idiag_J2sigEm/=0) then
-        call dot2_mn(p%jj_ohm,q%tmp)
-        call sum_mn_name(q%tmp,idiag_Johmrms,lsqrt=.true.)
-        call sum_mn_name(etaSchw*q%tmp,idiag_J2sigEm)
+        call dot2_mn(p%jj_ohm,tmp)
+        call sum_mn_name(tmp,idiag_Johmrms,lsqrt=.true.)
+        call sum_mn_name(etaSchw*tmp,idiag_J2sigEm)
       endif
       if (idiag_curlBrms/=0) then
-        call dot2_mn(p%curlb,q%tmp)
-        call sum_mn_name(q%tmp,idiag_curlBrms,lsqrt=.true.)
+        call dot2_mn(p%curlb,tmp)
+        call sum_mn_name(tmp,idiag_curlBrms,lsqrt=.true.)
       endif
 !
 !  Calculate <u.(jxb)>.
 !
       if (idiag_ujxb1m/=0) then
-        call dot(p%uu,p%jxb,q%tmp)
-        call sum_mn_name(q%tmp,idiag_ujxb1m)
+        call dot(p%uu,p%jxb,tmp)
+        call sum_mn_name(tmp,idiag_ujxb1m)
       endif
 !
       call save_name(echarge,idiag_echarge)
@@ -1640,12 +1632,12 @@ module Special
       if (idiag_boostprms/=0) call sum_mn_name(p%boost**2 ,idiag_boostprms,lsqrt=.true.)
       if (idiag_a0rms/=0) call sum_mn_name(p%a0**2,idiag_a0rms,lsqrt=.true.)
       if (idiag_BcurlEm/=0) then
-        call dot(p%bb,p%curlE,q%tmp)
-        call sum_mn_name(q%tmp,idiag_BcurlEm)
+        call dot(p%bb,p%curlE,tmp)
+        call sum_mn_name(tmp,idiag_BcurlEm)
       endif
       if (idiag_BcurlBm/=0) then
-        call dot(p%bb,p%curlb,q%tmp)
-        call sum_mn_name(q%tmp,idiag_BcurlBm)
+        call dot(p%bb,p%curlb,tmp)
+        call sum_mn_name(tmp,idiag_BcurlBm)
       endif
   !   if (lsolve_chargedensity) then
       call sum_mn_name(p%rhoe,idiag_rhoem)
@@ -1654,25 +1646,25 @@ module Special
   !   endif
       if (idiag_divErms/=0) call sum_mn_name(p%divE**2,idiag_divErms,lsqrt=.true.)
       if (idiag_constrainteqn > 0) then
-        call calc_axion_term(p,q%tmp,p%gphi,alpf,lphi_hom)
-        call calc_constrainteqn(p,q%tmp,q%constrainteqn)
-        call sum_mn_name(q%constrainteqn,idiag_constrainteqn)
+        call calc_axion_term(p,tmp,p%gphi,alpf,lphi_hom)
+        call calc_constrainteqn(p,tmp,constrainteqn)
+        call sum_mn_name(constrainteqn,idiag_constrainteqn)
       endif
       if (idiag_constrainteqnrms > 0) then
-        call calc_axion_term(p,q%tmp,p%gphi,alpf,lphi_hom)
-        call calc_constrainteqn(p,q%tmp,q%constrainteqn)
-        call sum_mn_name(q%constrainteqn**2,idiag_constrainteqnrms,lsqrt=.true.)
+        call calc_axion_term(p,tmp,p%gphi,alpf,lphi_hom)
+        call calc_constrainteqn(p,tmp,constrainteqn)
+        call sum_mn_name(constrainteqn**2,idiag_constrainteqnrms,lsqrt=.true.)
       endif
       if (idiag_gausscrms/=0 .or. idiag_gaussprms/=0 .or. idiag_gaussnrms/=0) then
-        call dot(p%gphi,p%bb,q%tmp)
-        q%tmp=alpf*q%tmp
-        if (idiag_gaussnrms/=0) call sum_mn_name(q%tmp**2,idiag_gaussnrms,lsqrt=.true.)
-        if (idiag_gaussprms/=0) call sum_mn_name((p%divE+q%tmp)**2,idiag_gaussprms,lsqrt=.true.)
+        call dot(p%gphi,p%bb,tmp)
+        tmp=alpf*tmp
+        if (idiag_gaussnrms/=0) call sum_mn_name(tmp**2,idiag_gaussnrms,lsqrt=.true.)
+        if (idiag_gaussprms/=0) call sum_mn_name((p%divE+tmp)**2,idiag_gaussprms,lsqrt=.true.)
         if (idiag_gausscrms/=0 .and. lbb_as_comaux .and. iphi_f>0) then
-          call div_phib(f,q%tmp2)
-          call sum_mn_name((p%divE+alpf*q%tmp2)**2,idiag_gausscrms,lsqrt=.true.)
+          call div_phib(f,tmp2)
+          call sum_mn_name((p%divE+alpf*tmp2)**2,idiag_gausscrms,lsqrt=.true.)
           if(idiag_divphib/=0) then
-            call sum_mn_name(q%tmp2**2,idiag_divphib,lsqrt=.true.)
+            call sum_mn_name(tmp2**2,idiag_divphib,lsqrt=.true.)
           endif
         else
           call sum_mn_name(spread(impossible,1,nx),idiag_gausscrms,lsqrt=.true.)
@@ -1683,8 +1675,8 @@ module Special
       endif
 
       if (idiag_BdEdtm/=0) then
-        call dot(p%bb,dEdt,q%tmp)
-        call sum_mn_name(q%tmp,idiag_BdEdtm)
+        call dot(p%bb,dEdt,tmp)
+        call sum_mn_name(tmp,idiag_BdEdtm)
       endif
 !
 !  Fractional timestep constraints.
