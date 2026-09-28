@@ -112,7 +112,7 @@ module Special
     subroutine special_calc_hydro(f,df,p)
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type(pencil_case), intent(in) :: p
 !
       call keep_compiler_quiet(f)
@@ -126,8 +126,8 @@ module Special
     subroutine special_calc_density(f,df,p)
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      type(pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 !
       call keep_compiler_quiet(f)
 !
@@ -140,8 +140,8 @@ module Special
     subroutine special_calc_energy(f,df,p)
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      type(pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 !
       call keep_compiler_quiet(f)
 !

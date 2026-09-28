@@ -259,7 +259,7 @@ subroutine special_calc_hydro(f,df,p)
 !  06-oct-03/tony: coded
 !
     real, contiguous, dimension(:,:,:,:) :: f
-    real, dimension(mx,my,mz,mvar) :: df
+    real, contiguous, dimension(:,:,:,:) :: df
     type(pencil_case), intent(in) :: p
     integer :: j
 !

@@ -966,8 +966,8 @@ module Special
       use Diagnostics, only: max_mn_name,sum_mn_name,integrate_mn_name
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      type(pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
       real, dimension (nx) :: dTdz1,dTdz2,dTdz3,dTdz4,nusselt_num,nusselt_den,TTmin_cline,TTmax_cline
       real, dimension (nx) :: devsigzz1,devsigzz2,devsigzz3,devsigzz4
       real, dimension (nx) :: diffus_special,advec_special

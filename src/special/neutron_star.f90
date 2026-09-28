@@ -369,8 +369,8 @@ module Special
       use EquationOfState
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      type(pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
       real, dimension (mx) :: rho_prf
       real, dimension (nx) :: cs2_new
       integer :: i, l_sz, tmp_int,n_tmp
@@ -516,7 +516,7 @@ module Special
 !   16-jul-06/natalia: coded
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type(pencil_case), intent(in) :: p
 !
       integer :: j,l_sz, n_tmp
@@ -701,8 +701,8 @@ module Special
     subroutine special_calc_energy(f,df,p)
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      type(pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
       real, dimension (nx) ::T_disk_ref
       integer :: j, l_sz, l_sz_1, li,n_tmp
       real :: dT_dx_i1

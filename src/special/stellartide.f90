@@ -223,7 +223,7 @@ module Special
       use Diagnostics
 !      
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type(pencil_case), intent(in) :: p
       integer :: j,ju
 !

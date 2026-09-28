@@ -368,7 +368,7 @@ module Special
       use Messages, only: fatal_error
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type(pencil_case), intent(in) :: p
       real, dimension (nx) :: rho1
 !
@@ -396,8 +396,8 @@ module Special
       use Messages, only: fatal_error
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      type(pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
       real, dimension (nx) :: rhs
 !
 !  Right hand side on the energy equation - background energy gradient

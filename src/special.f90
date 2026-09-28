@@ -138,7 +138,7 @@
       procedure(iface_calc_pencils_special),           pointer, nopass :: calc_pencils_special
       procedure(iface_special_noargs),                 pointer, nopass :: pencil_criteria_special
       procedure(iface_pencil_interdep_special),        pointer, nopass :: pencil_interdep_special
-      procedure(iface_special_calc_hydro),             pointer, nopass :: special_calc_hydro
+      procedure(iface_special_calc_rhs),               pointer, nopass :: special_calc_hydro
       procedure(iface_special_calc_rhs),               pointer, nopass :: special_calc_density
       procedure(iface_special_calc_rhs),               pointer, nopass :: special_calc_dustdensity
       procedure(iface_special_calc_rhs),               pointer, nopass :: special_calc_energy
@@ -560,7 +560,7 @@
 !  momentum equation.
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type(pencil_case), intent(in) :: p
 !
       integer :: i
@@ -577,8 +577,8 @@
 !  continuity equation.
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      type(pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 !
       integer :: i
 !
@@ -594,8 +594,8 @@
 !  dust continuity equation.
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      type(pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 !
       integer :: i
 !
@@ -611,8 +611,8 @@
 !  energy equation.
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      type(pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 !
       integer :: i
 !
@@ -628,8 +628,8 @@
 !  induction equation.
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      type(pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 !
       integer :: i
 !
@@ -645,8 +645,8 @@
 !  passive scalar equation.
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      type(pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 !
       integer :: i
 !
@@ -662,8 +662,8 @@
 !  chemistry equation.
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      type(pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 !
       integer :: i
 !

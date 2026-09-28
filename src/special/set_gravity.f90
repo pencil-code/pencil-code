@@ -218,7 +218,7 @@ module Special
     subroutine special_calc_hydro(f,df,p)
 !      
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type(pencil_case), intent(in) :: p
 !
       df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) & 

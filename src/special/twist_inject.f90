@@ -409,7 +409,7 @@ module Special
 !  06-oct-03/tony: coded
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type(pencil_case), intent(in) :: p
       real, dimension (nx) :: fdiff
       real, dimension (nx,3,3) :: flux_sld_ten
@@ -443,8 +443,8 @@ module Special
 !  06-oct-03/tony: coded
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      type(pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
       real, dimension (nx) :: fdiff
 !
       if (lnrho_min > -max_real) then
@@ -495,8 +495,8 @@ module Special
 !  06-oct-03/tony: coded
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      type(pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 !!
 !!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
 !!
@@ -518,8 +518,8 @@ module Special
 !  06-oct-03/tony: coded
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      type(pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
       real, dimension (nx) :: fdiff
 !
       if (lnTT_min > -max_real) then
@@ -581,8 +581,8 @@ module Special
 !  06-oct-03/tony: coded
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      type(pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
       real, dimension (nx) :: fdiff
       real, dimension (nx,3,3) :: flux_sld_ten
       integer :: i
@@ -615,8 +615,8 @@ module Special
 !  15-jun-09/anders: coded
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      type(pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 !!
 !!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
 !!
@@ -636,8 +636,8 @@ module Special
 !  15-sep-10/natalia: coded
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      type(pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 !!
 !!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
 !!

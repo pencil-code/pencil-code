@@ -869,8 +869,8 @@ module Special
       use Sub, only: del6
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      type(pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 !
       real, dimension (nx) :: hc,tmp
       integer :: itemp
@@ -938,7 +938,7 @@ module Special
       use Sub, only: del6,cubic_step
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type(pencil_case), intent(in) :: p
 !
       real, dimension (nx) :: hc, uu_tmp, uu_floor, tmp
@@ -1004,8 +1004,8 @@ module Special
       use Sub, only: del6,dot2
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      type(pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
       real, dimension (nx) :: tmp
 !
       real, dimension (nx) :: hc,lnrho_floor
@@ -1071,8 +1071,8 @@ module Special
       use Sub, only: del6
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      type(pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 !
       real, dimension (nx) :: hc,hyper3_heat,tmp
       integer :: i

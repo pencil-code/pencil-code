@@ -359,7 +359,7 @@ module Special
       use Sub, only: dot
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type(pencil_case), intent(in) :: p
 !
       real :: gg=9.81e2!,  qwater0=9.9e-3
@@ -517,8 +517,8 @@ module Special
     subroutine special_calc_energy(f,df,p)
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      type(pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 
       integer :: l_sz, mm1,mm2, sz_y
       real, dimension (mx) :: func_x
@@ -537,8 +537,8 @@ module Special
     subroutine special_calc_chemistry(f,df,p)
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      type(pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 
       integer :: l_sz
       integer :: j,  sz_l_x,sz_r_x,ll1,ll2,lll1,lll2
@@ -619,8 +619,8 @@ module Special
      use General, only: spline_integral
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      type(pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 !
       real, dimension (nx,ndustspec) :: f_tmp
       real, dimension (ndustspec) :: ff_tmp,ttt

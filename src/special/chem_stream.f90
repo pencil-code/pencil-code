@@ -355,8 +355,8 @@ module Special
       use EquationOfState
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      type(pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
       real, dimension (mx) :: rho_prf
       integer :: l_sz
 !
@@ -377,7 +377,7 @@ module Special
       use Cdata
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type(pencil_case), intent(in) :: p
       integer :: i, l_sz,l_sz_1
 !

@@ -167,8 +167,8 @@ f(ll,m1,nn,ilnTT)*unit_temperature,rho_prof(nn)*unit_density,CKAPPA, CKAPPAT, CK
       use Deriv, only: der
 
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      type(pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 !
 
       real, dimension(nx) :: thdiff, ckappa, ckappat, heatcap_Fe

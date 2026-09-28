@@ -540,8 +540,8 @@ module Special
       use EquationOfState, only: cs20
 !      
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      type(pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
       real, dimension(nx) :: rr_cyl,TT_init,heating_rate
 !
 !  Modified entropy equation.

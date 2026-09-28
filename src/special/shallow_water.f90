@@ -399,8 +399,8 @@ module Special
 !  04-dec-19/wlad+ali: coded
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      type(pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
       real, dimension (nx) :: ugh0
 
       call keep_compiler_quiet(f)
@@ -451,7 +451,7 @@ module Special
 !  04-dec-19/wlad+ali: coded
 !
     real, contiguous, dimension(:,:,:,:) :: f
-    real, dimension(mx,my,mz,mvar) :: df
+    real, contiguous, dimension(:,:,:,:) :: df
     type(pencil_case), intent(in) :: p
     integer :: i
 !     

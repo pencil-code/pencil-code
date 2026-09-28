@@ -408,8 +408,8 @@ module Special
       use Diagnostics
 !      
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      type(pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 !
 !  Modified momentum equation
 !

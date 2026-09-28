@@ -436,7 +436,7 @@ module Special
       use Diagnostics
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type(pencil_case), intent(in) :: p
       real, dimension (nx) :: ur,up,uz,urad,uphi
       real :: fac
@@ -483,8 +483,8 @@ module Special
      use Mpicomm
 !
      real, contiguous, dimension(:,:,:,:) :: f
-     real, dimension(mx,my,mz,mvar) :: df
-     type(pencil_case) :: p
+     real, contiguous, dimension(:,:,:,:) :: df
+     type(pencil_case), intent(in) :: p
      real, dimension (nx) :: br,bp,bz
      real, dimension(nx,3) :: puxb
      integer :: i

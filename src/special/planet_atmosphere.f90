@@ -289,7 +289,7 @@ module Special
       use Sub, only: cross_mn,multsv_mn
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type(pencil_case), intent(in) :: p
 !
       real, dimension (nx,3) :: jtot,btot,jxb1,jxb2,jxbtot,jxbtotr
@@ -331,8 +331,8 @@ module Special
 !  26-feb-24/kuan: Possibility of slowly turning on the heating term
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      type(pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 !
       real, dimension(nx) :: Teq_x,tau_rad_x
       real :: f_slow_heating
@@ -363,8 +363,8 @@ module Special
       use Mpicomm, only: mpiallreduce_sum
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      type(pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 !
       real, dimension (nx,3) :: uxb_ext
       real, dimension (nx) :: eta_x
