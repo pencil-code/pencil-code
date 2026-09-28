@@ -66,6 +66,7 @@ subroutine helper_loop(f)
   use Sub, only: check_for_nans_globally
 !
   real, contiguous, dimension(:,:,:,:) :: f
+  type(pencil_case) :: p
   real :: tvar1
 
   real :: start_time,end_time
@@ -82,13 +83,13 @@ subroutine helper_loop(f)
 
 !$    if (lhelper_run) call update_ghosts(f)
 !$    if (lhelper_run .and. lhelperflags(PERF_DIAGS)) then
-        call perform_diagnostics(f)
+        call perform_diagnostics(f,p)
 !$    else
 !$      lhelperflags(PERF_DIAGS) = .false.
 !$    endif
 !$    if (lhelper_run) call restore_diagnostic_controls(lsnap_time=.true.)
 !$    if (lhelper_run .and. lhelperflags(PERF_WSNAP)) then
-!$      call calc_all_module_diagnostic_auxiliaries(f)
+!$      call calc_all_module_diagnostic_auxiliaries(f,p)
         if (ip<=12.and.lroot) tvar1=real(mpiwtime())
         call perform_wsnap_ext(f)
         if (ip<=12.and.lroot) print*,'wsnap: written snapshot var.dat in ', &

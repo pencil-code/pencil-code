@@ -588,7 +588,7 @@ module Equ
 !$
 !$    endsubroutine diagnostics_reductions
 !***********************************************************************
-    subroutine calc_all_module_diagnostic_auxiliaries(f)
+    subroutine calc_all_module_diagnostic_auxiliaries(f,p)
 !
 !  Candidate implementation for the new concern of auxiliaries in snapshots.
 !  Subject to change.
@@ -610,21 +610,19 @@ module Equ
 !$    use General, only: get_cpu, set_cpu
 
       real, contiguous, dimension(:,:,:,:),intent(INOUT) :: f
-      type (pencil_case), allocatable :: p
+      type (pencil_case) :: p
 
       integer :: imn
 !
 !  Parallelization across all helper threads.
 !
-!$omp parallel if (.not. lsuppress_parallel_reductions) num_threads(num_helper_threads) &
+!$omp parallel if (.not. lsuppress_parallel_reductions) private(p) num_threads(num_helper_threads) &
 !$omp copyin(t,dxmax_pencil,lpencil,fname,fnamex,fnamey,fnamez,fnamer,&
 !$omp&       fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
 !$    call restore_diagnostic_controls
 !$    call hydro_restore_diagnostic_controls
 !$    call training_restore_diagnostic_controls
 !
-!  Each thread allocates p to make sure it is on the heap
-      allocate(p)
 
       !$omp do
       do imn=1,nyz
@@ -649,7 +647,7 @@ module Equ
 
       endsubroutine calc_all_module_diagnostic_auxiliaries
 !*****************************************************************************
-    subroutine calc_all_module_diagnostics(f)
+    subroutine calc_all_module_diagnostics(f,p)
 !
 !  Calculates most module diagnostics.
 !  This subroutine is only used for GPU runs.
@@ -689,7 +687,7 @@ module Equ
 !$    use General, only: get_cpu, set_cpu
 
       real, contiguous, dimension(:,:,:,:),intent(INOUT) :: f
-      type(pencil_case), allocatable :: p
+      type(pencil_case) :: p
 
       integer :: imn
 !
@@ -701,7 +699,7 @@ module Equ
 !
       if (lgpu) lupdate_courant_dt = lcourant_dt .and. ltimestep_diagnostics
 
-!$omp parallel if (.not. lsuppress_parallel_reductions) num_threads(num_helper_threads) &
+!$omp parallel if (.not. lsuppress_parallel_reductions) private(p) num_threads(num_helper_threads) &
 !$omp copyin(t,dxmax_pencil,fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
 !$    call restore_diagnostic_controls
 !$    call hydro_restore_diagnostic_controls
@@ -712,8 +710,6 @@ module Equ
 !$    if (.not. allocated(fname)) call allocate_diagnostic_arrays
       if (lchemistry) call chemistry_allocate_rhs_arrays
       lfirstpoint=.true.
-! Each thread allocates p, to make sure it goes on the heap
-      allocate(p)
 
       !call restrict_cores
 !
@@ -819,7 +815,7 @@ module Equ
 
       endsubroutine calc_all_before_boundary_diagnostics
 !*****************************************************************************
-      subroutine perform_diagnostics(f)
+      subroutine perform_diagnostics(f,p)
 !
 !  Called by the helper to perform the diagnostics when asked for them
 !
@@ -831,6 +827,7 @@ module Equ
       use Shock, only: shock_before_boundary 
 
       real, contiguous, dimension(:,:,:,:),intent(INOUT) :: f
+      type(pencil_case) :: p
 
         if (lmultithread .and. (leos_ionization.or.leos_temperature_ionization)) call ioncalc(f)
         !TP: have to recompute shock field in before boundary for correct diagnostics
@@ -840,7 +837,7 @@ module Equ
         endif
         call calc_all_before_boundary_diagnostics(f)
         call prep_rhs(f_ode_diagnostics)
-        call calc_all_module_diagnostics(f)     ! by all helper threads
+        call calc_all_module_diagnostics(f,p)     ! by all helper threads
         if (lode) call calc_ode_diagnostics_special(f_ode_diagnostics)
         call finalize_diagnostics                 ! by diagmaster (MPI comm.)
         call write_diagnostics(f)                 !       ~
