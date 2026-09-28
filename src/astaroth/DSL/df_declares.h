@@ -29,6 +29,7 @@ real3 DF_DUST_VELOCITY[ndustspec]
 real  DF_DUST_DENSITY[ndustspec]
 real  DF_DUST_MASS[ndustspec]
 real  DF_DUST_ICE_MASS[ndustspec]
+real3 DF_IAAE__MOD__DISP_CURRENT = rk_intermediate_split_first(F_AAE,step_num)
 
 real DF_LAMRA = rk_intermediate_split_first(F_LAMRA,step_num)
 if(ldustvelocity)
