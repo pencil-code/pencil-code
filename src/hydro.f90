@@ -3238,6 +3238,7 @@ module Hydro
 !
       if (ekman_friction/=0) then
         if (friction_tdep=='current') lpenc_requested(i_j2)=.true.
+        if (friction_tdep=='fixed_k_alpha') lpenc_requested(i_u2)=.true.
         if (friction_tdep=='Thomson') then
           lpenc_requested(i_TT)=.true.
           lpenc_requested(i_yH)=.true.
@@ -4595,6 +4596,14 @@ module Hydro
           case ('Thomson')
             arad_normal=real(4*sigmaSB/c_light)
             frict=real(ekman_friction*fourthird*p%yH*sigma_Thomson*arad_normal*p%TT**4/(m_p*c_light))
+!
+!  trie alpha (=frict) to urms, with alpha=urms*k_alpha.
+!
+          case ('fixed_k_alpha')
+            frict=ekman_friction*sqrt(p%u2)
+!
+!  use alpha = jrms
+!
           case ('current')
             if (lmagnetic) then
               frict=ekman_friction*sqrt(p%j2)

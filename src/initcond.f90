@@ -6542,12 +6542,17 @@ module Initcond
 !  (vx, vy, vz) -> ux, but put ux=uy=0 then l2d=T. This option only
 !  makes sense for the nagnetic vector potential, but the same effect
 !  can there be achieved by setting lset_AxAy_zero=T in magnetic.
-!  In hydro, we would instead put lset_uz_zero=T.
+!  In hydro, we could instead put lset_uz_zero=T, but l2d=T would also work.
 !
               v_re = u_re(ikx,iky,ikz,:); v_im = u_im(ikx,iky,ikz,:)
               if (l2d1) then
-                u_re(ikx,iky,ikz,1:2)=0.
-                u_im(ikx,iky,ikz,1:2)=0.
+                if (lvectorpotential) then
+                  u_re(ikx,iky,ikz,1:2)=0.
+                  u_im(ikx,iky,ikz,1:2)=0.
+                else
+                  u_re(ikx,iky,ikz,3)=0.
+                  u_im(ikx,iky,ikz,3)=0.
+                endif
               else
 !
                 u_re(ikx,iky,ikz,1)=v_re(1) - ky(iky+ipy*ny)*v_im(3)*r(ikx,iky,ikz)
