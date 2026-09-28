@@ -10,11 +10,11 @@ divu_shock()
     divu = 0.0
     if(AC_low_order_divu__mod__shock)
     {
-	divu = divergence_2nd(F_UVEC)
+	divu = divergence_2nd(UU)
     }
     else
     {
-    	divu = divergence(F_UVEC)
+    	divu = divergence(UU)
     }
     tmp = 0.
     if (AC_lconvergence_only__mod__shock) {
