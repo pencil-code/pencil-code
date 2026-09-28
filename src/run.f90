@@ -984,10 +984,6 @@ endsubroutine helper_loop
 !
   call init_hdf5
 !
-!  Initialize HDF_IO module.
-!
-  call initialize_hdf5
-!
 !  Check whether quad precision is supported
 !
   if (rkind16<0) call warning('run','quad precision not supported, switch to double')
@@ -1062,6 +1058,10 @@ endsubroutine helper_loop
   call register_modules
   if (lparticles) call particles_register_modules
   call farray_finalize_registration
+!
+! Initialization dependent on mvar should come after registeration
+!
+  call initialize_hdf5
   call initialize
 !
 !  Inform about verbose level.
@@ -1279,7 +1279,11 @@ endsubroutine helper_loop
 !  file with the correct number of variables.
 !  No IO-module-controlled reading operations allowed beyond this point!
 !
-  call wgrid("grid.dat", lwrite=.not.(lprocbounds_exist .and. luse_oldgrid))
+!  Due to dynamic allocations the number of maux may differ from what is only described in start.in
+!  due to additions in run.in. So for safety grid is also written out here.
+!  Maybe this can be improved.
+!
+  call wgrid("grid.dat", lwrite=.not.(lprocbounds_exist .and. luse_oldgrid) .or. ldynamic_aux)
   if (.not.lprocbounds_exist) call wproc_bounds(fproc_bounds)
 
   if (.not.luse_oldgrid .or. lwrite_dim_again) then

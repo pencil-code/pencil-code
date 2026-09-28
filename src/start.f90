@@ -163,7 +163,6 @@ program start
 !  Initialise HDF5 communication.
 !
   call init_hdf5
-  call initialize_hdf5
 !
 !  Register variables in the f array.
 !
@@ -173,6 +172,10 @@ program start
 
   if (lparticles) call particles_register_modules
   call farray_finalize_registration
+!
+! Initialization dependent on mvar should come after registeration
+!
+  call initialize_hdf5
 !
   if (.not.lnowrite) then
     allocate(f(mx,my,mz,mfarray),STAT=stat)
