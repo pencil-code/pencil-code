@@ -2474,6 +2474,12 @@ module Magnetic
              f(l1:l2,m,n,iay)=0.
              f(l1:l2,m,n,iaz)=2*amplaa(j)*step(x(l1:l2),xyz0(1)+Lxyz(1)/2.,widthaa(1)) - amplaa(j)
           enddo; enddo
+        case ('Br_cosz')
+          do n=n1,n2; do m=m1,m2
+             f(l1:l2,m,n,iax)=0.
+             f(l1:l2,m,n,iay)=-((amplaa(j)*Lxyz(3))/pi) * sin((pi*z(n))/(Lxyz(3)))
+             f(l1:l2,m,n,iaz)=0.
+          enddo; enddo          
         case ('By_tanh')
           do n=n1,n2; do m=m1,m2
              f(l1:l2,m,n,iax)=0.
@@ -2934,6 +2940,14 @@ module Magnetic
           lpenc_requested(i_uga)=.true.
         endif
       endif
+!
+!  Background Velocity pencils
+!
+      if (lhydro .and. lu_background) then
+        lpenc_requested(i_uutot) = .true.
+        lpenc_requested(i_divutot) = .true.
+        lpenc_requested(i_utotij) = .true.
+      endif      
 !
       if (tauAD/=0.0) then
         lpenc_requested(i_jxb)=.true.
@@ -3622,6 +3636,7 @@ module Magnetic
 !
       if (lpencil_in(i_ua)) then
         lpencil_in(i_uu)=.true.
+        if (lu_background) lpencil_in(i_uutot)=.true.        
         lpencil_in(i_aa)=.true.
       endif
 !
@@ -3651,6 +3666,7 @@ module Magnetic
 !
       if (lpencil_in(i_uxj)) then
         lpencil_in(i_uu)=.true.
+        if (lu_background) lpencil_in(i_uutot)=.true.        
         lpencil_in(i_jj)=.true.
       endif
 !
@@ -3679,12 +3695,14 @@ module Magnetic
       if (lpencil_in(i_ujxb)) then
         lpencil_in(i_jxb)=.true.
         lpencil_in(i_uu)=.true.
+        if (lu_background) lpencil_in(i_uutot)=.true.        
       endif
 !
       if (lpencil_in(i_uxb2)) lpencil_in(i_uxb)=.true.
 !
       if (lpencil_in(i_uxb)) then
         lpencil_in(i_uu)=.true.
+        if (lu_background) lpencil_in(i_uutot)=.true.        
         lpencil_in(i_bb)=.true.
       endif
 !
@@ -3696,6 +3714,7 @@ module Magnetic
 !
       if (lpencil_in(i_ub)) then
         lpencil_in(i_uu)=.true.
+        if (lu_background) lpencil_in(i_uutot)=.true.        
         lpencil_in(i_bb)=.true.
       endif
 !
@@ -3706,6 +3725,7 @@ module Magnetic
 !
       if (lpencil_in(i_uj)) then
         lpencil_in(i_uu)=.true.
+        if (lu_background) lpencil_in(i_uutot)=.true.        
         lpencil_in(i_jj)=.true.
       endif
 !
@@ -3737,6 +3757,7 @@ module Magnetic
 !
       if (lpencil_in(i_djuidjbi)) then
         lpencil_in(i_uij)=.true.
+        if (lu_background) lpencil_in(i_utotij)=.true.        
         lpencil_in(i_bij)=.true.
       endif
 !
@@ -3749,16 +3770,19 @@ module Magnetic
 !
       if (lpencil_in(i_ujxb)) then
         lpencil_in(i_uu)=.true.
+        if (lu_background) lpencil_in(i_uutot)=.true.        
         lpencil_in(i_jxb)=.true.
       endif
 !
       if (lpencil_in(i_ugb22)) then
         lpencil_in(i_uu)=.true.
+        if (lu_background) lpencil_in(i_uutot)=.true.        
         lpencil_in(i_gb22)=.true.
       endif
 !
       if (lpencil_in(i_ubgbp)) then
         lpencil_in(i_uu)=.true.
+        if (lu_background) lpencil_in(i_uutot)=.true.        
         lpencil_in(i_bgbp)=.true.
       endif
 !
@@ -3822,12 +3846,14 @@ module Magnetic
       if (lpencil_in(i_uga)) then
         lpencil_in(i_aij)=.true.
         lpencil_in(i_uu)=.true.
+        if (lu_background) lpencil_in(i_uutot)=.true.        
       endif
 !
       if (lpencil_in(i_uuadvec_gaa)) then
         lpencil_in(i_uu_advec)=.true.
         lpencil_in(i_aij)=.true.
         lpencil_in(i_uu)=.true.
+        if (lu_background) lpencil_in(i_uutot)=.true.        
         lpencil_in(i_aa)=.true.
       endif
 !
@@ -4317,6 +4343,7 @@ module Magnetic
       real, dimension (nx) :: rho1_jxb, quench, StokesI_ncr, tmp1, bbgb, va2max_beta
       real, dimension(3) :: B_ext, j_ext
       real, dimension(nx) :: sign_jo
+      real, dimension (nx) :: utot2      
       real :: c,s
       integer :: i, j, ix
 
@@ -4465,23 +4492,49 @@ module Magnetic
       endif
 ! ab
       if (lpenc_loc(i_ab)) call dot_mn(p%aa,p%bbb,p%ab)
-      if (lpenc_loc(i_ua)) call dot_mn(p%uu,p%aa,p%ua)
+! ua    
+      if (lpenc_loc(i_ua)) then
+        if (lu_background) then
+          call dot_mn(p%uutot,p%aa,p%ua)
+        else
+          call dot_mn(p%uu,p%aa,p%ua)
+        endif
+      endif      
 ! uxb
       if (lpenc_loc(i_uxb)) then
-        call cross_mn(p%uu,p%bb,p%uxb)
+        if (lu_background) then
+          call cross_mn(p%uutot,p%bb,p%uxb)
+        else
+          call cross_mn(p%uu,p%bb,p%uxb)
+        endif
 !  add external e-field.
         do j=1,3
           if (iglobal_eext(j)/=0) p%uxb(:,j)=p%uxb(:,j)+f(l1:l2,m,n,iglobal_eext(j))
         enddo
       endif
 ! u x bbb
-      if (lpenc_loc(i_uxbb)) call cross(p%uu,p%bbb,p%uxbb)
+      if (lpenc_loc(i_uxbb)) then
+        if (lu_background) then
+          call cross(p%uutot,p%bbb,p%uxbb)
+        else
+          call cross(p%uu,p%bbb,p%uxbb)
+        endif
+      endif
 ! uga
-      if (lpenc_loc(i_uga)) call u_dot_grad(f,iaa,p%aij,p%uu,p%uga,UPWIND=lupw_aa)
+      if (lpenc_loc(i_uga)) then
+        if (lu_background) then
+          call u_dot_grad(f,iaa,p%aij,p%uutot,p%uga,UPWIND=lupw_aa)
+        else
+          call u_dot_grad(f,iaa,p%aij,p%uu,p%uga,UPWIND=lupw_aa)
+        endif
+      endif
 !
 ! uga for fargo
 !
       if (lpenc_loc(i_uuadvec_gaa)) then
+        if (lu_background) then
+          call not_implemented('calc_pencils_magnetic_pencpar',"uuadvec_gaa with background flow")
+        endif          
         do j=1,3
           ! This is calling scalar h_dot_grad, that does not add
           ! the inertial terms. They will be added here.
@@ -4906,18 +4959,39 @@ module Magnetic
 ! jxbr2
       if (lpenc_loc(i_jxbr2)) call dot2_mn(p%jxbr,p%jxbr2)
 ! ub
-      if (lpenc_loc(i_ub)) call dot_mn(p%uu,p%bb,p%ub)
+      if (lpenc_loc(i_ub)) then
+        if (lu_background) then
+          call dot_mn(p%uutot,p%bb,p%ub)
+       else
+          call dot_mn(p%uu,p%bb,p%ub)
+       endif
+      endif
 ! ob
       if (lpenc_loc(i_ob)) call dot_mn(p%oo,p%bb,p%ob)
 ! uj
-      if (lpenc_loc(i_uj)) call dot_mn(p%uu,p%jj,p%uj)
+      if (lpenc_loc(i_uj)) then
+        if (lu_background) then
+          call dot_mn(p%uutot,p%jj,p%uj)
+        else
+          call dot_mn(p%uu,p%jj,p%uj)
+        endif
+      endif      
 ! cosub
       if (lpenc_loc(i_cosub)) then
         do ix=1,nx
-          if ((abs(p%u2(ix))<=tini).or.(abs(p%b2(ix))<=tini)) then
-            p%cosub(ix)=0.
+          if (lu_background) then
+            call dot2_mn(p%uutot,utot2)
+            if ((abs(utot2(ix))<=tini).or.(abs(p%b2(ix))<=tini)) then
+              p%cosub(ix)=0.
+            else
+              p%cosub(ix)=p%ub(ix)/sqrt(utot2(ix)*p%b2(ix))
+            endif
           else
-            p%cosub(ix)=p%ub(ix)/sqrt(p%u2(ix)*p%b2(ix))
+            if ((abs(p%u2(ix))<=tini).or.(abs(p%b2(ix))<=tini)) then
+              p%cosub(ix)=0.
+            else
+              p%cosub(ix)=p%ub(ix)/sqrt(p%u2(ix)*p%b2(ix))
+            endif
           endif
         enddo
         if (lpencil_check) then
@@ -4928,7 +5002,13 @@ module Magnetic
 ! uxb2
       if (lpenc_loc(i_uxb2)) call dot2_mn(p%uxb,p%uxb2)
 ! uxj
-      if (lpenc_loc(i_uxj)) call cross_mn(p%uu,p%jj,p%uxj)
+      if (lpenc_loc(i_uxj)) then
+        if (lu_background) then
+          call cross_mn(p%uutot,p%jj,p%uxj)
+        else
+          call cross_mn(p%uu,p%jj,p%uxj)
+        endif
+      endif
 ! chibp
 !  FG: 23-05-24 GNU Fortran (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0
 !  FG: 27-02-25 GNU Fortran (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0
@@ -4966,26 +5046,62 @@ module Magnetic
 ! beta
       if (lpenc_loc(i_beta)) p%beta = 2.0 * mu0 * p%pp / max(p%b2, epsilon(1.0))
 ! djuidjbi
-      if (lpenc_loc(i_djuidjbi)) call multmm_sc(p%uij,p%bij,p%djuidjbi)
+      if (lpenc_loc(i_djuidjbi)) then
+        if (lu_background) then
+          call multmm_sc(p%utotij,p%bij,p%djuidjbi)
+        else
+          call multmm_sc(p%uij,p%bij,p%djuidjbi)
+        endif
+      endif
 ! jo
       if (lpenc_loc(i_jo)) call dot(p%jj,p%oo,p%jo)
 ! ujxb
-      if (lpenc_loc(i_ujxb)) call dot_mn(p%uu,p%jxb,p%ujxb)
+      if (lpenc_loc(i_ujxb)) then
+        if (lu_background) then
+          call dot_mn(p%uutot,p%jxb,p%ujxb)
+        else
+          call dot_mn(p%uu,p%jxb,p%ujxb)
+        endif
+      endif
 ! Bk*Bk,i = grad(b^2/2)
       if (lpenc_loc(i_gb22)) call multmv_transp(p%bij,p%bb,p%gb22)
 ! u.grad(b)
-      if (lpenc_loc(i_ugb)) call multmv(p%bij,p%uu,p%ugb)
+      if (lpenc_loc(i_ugb)) then
+        if (lu_background) then
+          call multmv(p%bij,p%uutot,p%ugb)
+        else
+          call multmv(p%bij,p%uu,p%ugb)
+        endif
+      endif
 ! u.grad(b^2)
-      if (lpenc_loc(i_ugb22)) call dot_mn(p%uu,p%gb22,p%ugb22)
+      if (lpenc_loc(i_ugb22)) then
+        if (lu_background) then
+          call dot_mn(p%uutot,p%gb22,p%ugb22)
+        else
+          call dot_mn(p%uu,p%gb22,p%ugb22)
+        endif
+      endif
 !
 ! div(u)*b
       if (lpenc_loc(i_bdivu)) then
-        do i=1,3
-          p%bdivu(:,i)=p%bb(:,i)*p%divu
-        enddo
+        if (lu_background) then
+          do i=1,3
+            p%bdivu(:,i)=p%bb(:,i)*p%divutot
+          enddo
+        else
+          do i=1,3
+            p%bdivu(:,i)=p%bb(:,i)*p%divu
+          enddo
+        endif
       endif
 ! b.grad(u)
-      if (lpenc_loc(i_bgu)) call multmv(p%uij,p%bb,p%bgu)
+      if (lpenc_loc(i_bgu)) then
+        if (lu_background) then
+          call multmv(p%utotij,p%bb,p%bgu)
+        else
+          call multmv(p%uij,p%bb,p%bgu)
+        endif
+      endif
 !
 ! bgb = B_{i,j} B_j = B.gradB
 !
@@ -5001,7 +5117,13 @@ module Magnetic
       endif
 !
 ! u.(B.gradB)
-      if (lpenc_loc(i_ubgbp)) call dot_mn(p%uu,p%bgbp,p%ubgbp)
+      if (lpenc_loc(i_ubgbp)) then
+        if (lu_background) then
+          call dot_mn(p%uutot,p%bgbp,p%ubgbp)
+        else
+          call dot_mn(p%uu,p%bgbp,p%ubgbp)
+        endif
+      endif
 ! oxu
 !AB   if (lpenc_loc(i_oxu)) call cross_mn(p%oo,p%uu,p%oxu)
 ! oxuxb

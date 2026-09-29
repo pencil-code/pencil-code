@@ -142,7 +142,7 @@ module Param_IO
       lsmooth_farray,farray_smooth_width, radius_diag, offset_min_calc, lread_oldsnap_nocoolprof, &
       lswap_init_lnrho_uu, thetamin, lsymmgrid, lbaryons, &
       lperturbative_reheating, lreheating_vacuum, lreheating_hom, &
-      refinement_centers,refinement_n_centers
+      refinement_centers,refinement_n_centers, lu_background, lism_rotation
 !
   namelist /run_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lpole, ncoarse, &

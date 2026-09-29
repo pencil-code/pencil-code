@@ -28,6 +28,7 @@
 ! PENCILS PROVIDED lorentz; lorentz_gamma; hless; advec_uu
 ! PENCILS PROVIDED T00; T0i(3); Tij(6); velx(3)
 ! PENCILS PROVIDED ext_force(4); 
+! PENCILS PROVIDED uutot(3); divutot; utotij(3,3) 
 !
 !** AUTOMATIC REFERENCE-LINK.TEX GENERATION ********************
 ! Declare relevant citations from pencil-code/doc/citations/ref.bib for this module.
@@ -253,6 +254,12 @@ module Hydro
   real :: amp_factor=0.,kx_uu_perturb=0.
   real :: qirro_uu=0., qini=0.
   integer, dimension(ninit) :: ll_sh=0, mm_sh=0, n_xprof=-1
+! Parameters for the background profile 
+  character (len=labellen) :: uuprof='nothing'
+  logical :: lub_x=.false., lub_y=.false., lub_z=.false.
+  real :: vertical_gradient=0
+  real, dimension(nx,3) :: ubgu=0, ugub=0
+  real, dimension(nx,3,3) :: ubij=0
 !
   namelist /hydro_init_pars/ &
       ampluu, ampl_ux, ampl_uy, ampl_uz, phase_ux, phase_uy, phase_uz, &
@@ -278,7 +285,8 @@ module Hydro
       lno_noise_uu, lrho_nonuni_uu, lpower_profile_file_uu, &
       llorentz_limiter, lrat_limiter, lhiggsless, lhiggsless_old, vwall, alpha_hless, width_hless, &
       xjump_mid, yjump_mid, zjump_mid, qini, lnorm_vw_hless, &
-      qshear, lampluu_adjust_ascale, lalfven_relativistic, lvel_limiter
+      qshear, lampluu_adjust_ascale, lalfven_relativistic, lvel_limiter,&
+      uuprof, vertical_gradient, lism_rotation, Omega, lu_background      
 !
 !  Run parameters.
 !
@@ -333,7 +341,7 @@ module Hydro
   logical :: lSchur_2D2D3D_uu=.false.
   logical :: lSchur_2D2D1D_uu=.false.
   real :: dtcor=0., t_cor=0.
-  character (len=labellen) :: uuprof='nothing', friction_tdep='nothing'
+  character (len=labellen) :: friction_tdep='nothing'
 !
 !  Parameters for interior boundary conditions.
 !
@@ -1079,6 +1087,12 @@ module Hydro
       if (lvv_as_aux .or. lvv_as_comaux) then
         call register_report_aux('vv', ivv, ivx, ivy, ivz, communicated=.true.,rhs=.true.,read_from_gpu=.true.)
       endif
+!     
+!   Register background profile
+!     
+      if (lu_background) then     
+        call register_report_aux('uub', iuub, iuubx, iuuby, iuubz)
+      endif      
 !
 !  omega as aux
 !
@@ -1597,196 +1611,21 @@ module Hydro
         uumxy=0.0
         ruumxy=0.0
       endif
-!
-!  Preparations for adding/removing mean flows.
-!  Set profiles for forcing differential rotation.
-!
-      select case (uuprof)
+!     
+!  Sets an auxiliary variable for a background flow
+!     
+     if (lu_background) then
+       !Sets the actual profile
+       call background_profile(f,uuprof)
+       !Also calculates the component for the gradient ubij
+       !It only calculates ubij along one x, however if the profile doesn't depend on y and z
+       !We do not need to change it again. We set these flags within the routine to decide
+       call calc_ubij(uuprof,ubij,0,0)
+     endif        
 
-      case ('BS04')
-        if (wdamp/=0.) then
-          prof_amp1=1.-step(x(l1:l2),rdampint,wdamp)
-        else
-          prof_amp1=1.
-        endif
-        prof_amp1=ampl1_diffrot*prof_amp1*cos(kx_diffrot*x(l1:l2))**xexp_diffrot
-        prof_amp3=cos(z)
-
-      case ('BS04c','BS04c1','HP09')
-
-        if (wdamp/=0.) then
-          prof_amp3=ampl1_diffrot*0.5*(1.+tanh((z-rdampint)/(wdamp)))
-        else
-          prof_amp3=ampl1_diffrot
-        endif
-
-        if (uuprof=='BS04c') then
-          prof_amp1=sin(0.5*pi*((x(l1:l2))-x0)/Lx)**xexp_diffrot
-        elseif (uuprof=='BS04c1') then
-          prof_amp1=sin(pi*((x(l1:l2))-x0)/Lx)**xexp_diffrot
-        elseif (uuprof=='HP09') then
-          prof_amp1=cos(kx_diffrot*x(l1:l2))
-!or       prof_amp1=cos(2.*pi*kx_diffrot*(x(l1:l2)-x0)/Lx)
-        endif
-
-      case ('BS04m')
-        if (wdamp/=0.) then
-          prof_amp1=1.-step(x(l1:l2),rdampint,wdamp)
-        else
-          prof_amp1=1.
-        endif
-        prof_amp1=ampl1_diffrot*prof_amp1*sin((pi/(2.*x(l2)))*x(l1:l2))
-        prof_amp4=cos(pi/(2.*y(m2))*y)
-
-      case ('solar_DC99')
-        prof_amp1=(1.-ampl1_diffrot*step(x(l1:l2),rdampext,wdamp))*step(x(l1:l2),rdampint,wdamp)*x(l1:l2)
-        prof_amp4=ampl2_diffrot*(1.064-0.145*costh**2-0.155*costh**4-1.)*sinth
-
-      case ('vertical_shear')
-        zbot=xyz0(3)
-        prof_amp3=ampl1_diffrot*cos(kz_diffrot*(z-zbot)-phase_diffrot)
-
-      case ('vertical_compression','vertical_shear_x')
-        zbot=xyz0(3)
-        prof_amp3=ampl1_diffrot*cos(kz_diffrot*(z-zbot))
-
-      case ('remove_vertical_shear')
-        if (.not.lcalc_uumean) &
-          call fatal_error("initialize_hydro","you need to set lcalc_uumean=T for uuprof='remove_vertical_shear'")
-
-      case ('damp_mean_uz_prof_bdr')
-        if (.not.lcalc_uumeanz) &
-          call fatal_error("initialize_hydro","you need to set lcalc_uumeanz=T for uuprof='remove_mean_uz_prof'")
-        prof_amp3=1.-tanh((z-zdampint)/width_ff_uu)
-
-      case ('vertical_shear_x_sinz')
-        zbot=xyz0(3)
-        where (z <= 0.)
-          prof_amp3=ampl1_diffrot*sin(.5*pi/abs(zbot)*z)
-        elsewhere
-          prof_amp3=0.
-        endwhere
-
-      case ('vertical_shear_z')
-        prof_amp3=ampl1_diffrot*tanh((z-rdampint)/width_ff_uu)
-
-      case ('vertical_shear_z2')
-        if (.not.lcalc_uumeanxz) &
-          call fatal_error("initialize_hydro","you need to set lcalc_uumeanxz=T for uuprof='vertical_shear_z2'")
-        prof_amp3=ampl1_diffrot*tanh((z-rdampint)/width_ff_uu)
-
-      case ('vertical_shear_linear')
-        if (.not.lcalc_uumeanxz) &
-          call fatal_error("initialize_hydro","you need to set lcalc_uumeanxz=T for uuprof='vertical_shear_linear'")
-        prof_amp3=ampl1_diffrot*z
-
-      case ('tachocline')
-        if (wdamp/=0.) then
-          prof_amp1=1.-step(x(l1:l2),rdampint,wdamp)
-        else
-          prof_amp1=1.
-        endif
-      case ('solar_simple')
-        if (lspherical_coords) then
-          prof_amp1=ampl1_diffrot*step(x(l1:l2),x1_ff_uu,width_ff_uu)
-          prof_amp4=1.5-7.5*costh*costh
-        elseif (lcartesian_coords) then
-          prof_amp1=ampl1_diffrot*cos(x(l1:l2))
-          prof_amp4=cos(y)*cos(y)
-        !prof_amp2=1.-step(x(l1:l2),x2_ff_uu,width_ff_uu)
-        else
-          call not_implemented("initialize_hydro", &
-                          "uuprof='solar_simple' for other than spherical or Cartesian coordinates")
-        endif
-      case ('radial_uniform_shear')
-        uinn = omega_in*x(l1)
-        uext = omega_out*x(l2)
-        slope = (uext - uinn)/(x(l2)-x(l1))
-        prof_amp1=slope*x(l1:l2)+(uinn*x(l2)- uext*x(l1))/(x(l2)-x(l1))
-
-      case ('breeze')
-        prof_amp3=ampl_wind*z/(2.*pi)
-
-      case ('slow_wind')
-        prof_amp3=ampl_wind*(1.+tanh((z-rdampext)/wdamp))
-
-      case ('radial_shear')
-        if (.not.lcalc_uumeanxy) &
-          call fatal_error("initialize_hydro","you need to set lcalc_uumeanxy=T for uuprof='radial_shear'")
-        prof_amp1=ampl1_diffrot*cos(2*pi*k_diffrot*(x(l1:l2)-x0)/Lx)
-
-      case ('radial_shear_damp')
-        if (.not.lcalc_uumeanxy) &
-          call fatal_error("initialize_hydro","you need to set lcalc_uumeanxy=T for uuprof='radial_shear_damp'")
-        prof_amp1=ampl1_diffrot*tanh((x(l1:l2)-rdampint)/wdamp)
-
-      case ('damp_corona')
-        if (lspherical_coords) then
-          if (.not.lcalc_uumeanxy) &
-            call fatal_error("initialize_hydro","you need to set lcalc_uumeanxy=T for uuprof='damp_corona'")
-          prof_amp1=0.5*(tanh((x(l1:l2)-rdampext)/wdamp)+1.)
-        elseif (lcartesian_coords) then
-          prof_amp3=0.5*(tanh((z-rdampext)/wdamp)+1.)
-        endif
-
-      case ('damp_horiz_vel')
-        prof_amp3=0.5*(tanh((z-rdampext)/wdamp)+1.)
-
-      case ('latitudinal_shear')
-        if (.not.lcalc_uumeanxy) &
-          call fatal_error("initialize_hydro","you need to set lcalc_uumeanxy=T for uuprof='latitudinal_shear'")
-        prof_amp4=ampl1_diffrot*cos(2.*pi*k_diffrot*(y-y0)/Ly)
-
-      case ('damp_jets')
-        if (.not.lcalc_uumeanxy) &
-          call fatal_error("initialize_hydro","you need to set lcalc_uumeanxy=T for uuprof='damp_jets'")
-        prof_amp4=1.-0.5*(1.+tanh((y-(y0+ydampint))/wdamp)-(1.+tanh((y-(y0+Lxyz(2)-ydampext))/wdamp)))
-
-      case ('spoke-like-NSSL')
-        if (.not.lspherical_coords) call warning("initialize_hydro", &
-                       "uuprof='spoke-like-NSSL' only meningful for spherical coordinates")
-        if (.not.lcalc_uumeanxy) &
-          call fatal_error("initialize_hydro","you need lcalc_uumeanxy=T for uuprof='spoke-like-NSSL'")
-
-        prof_amp1=ampl1_diffrot*x(l1:l2)
-        profx_diffrot1=+0.5*(1.+erfunc(((x(l1:l2)-uphi_rbot)/uphi_step_width)))
-        profx_diffrot2=+0.5*(1.-erfunc(((x(l1:l2)-uphi_rtop)/uphi_step_width)))
-        profx_diffrot3=+0.5*(1.+erfunc(((x(l1:l2)-uphi_rtop)/uphi_step_width)))
-        profx_diffrot2=(x(l1:l2)-uphi_rbot)*profx_diffrot1*profx_diffrot2 !(redefined)
-        profy_diffrot1=-1.5*(5.*costh**2-1.)
-        profy_diffrot2=-1.0*(4.*costh**2-3.)
-        profy_diffrot3=-1.0
-        profz_diffrot1=+1.
-!
-      case ('galactic-Brandt-curve')
-        if (.not.lspherical_coords) call warning("initialize_hydro", &
-                       "uuprof='galactic-Brandt-curve' currently only for spherical coordinates")
-        if (.not.lcalc_uumeanxy) &
-          call fatal_error("initialize_hydro","you need lcalc_uumeanxy=T for uuprof='galactic-Brandt-curve'")
-!
-        prof_amp1=ampl1_diffrot*x(l1:l2)/(1.+(x(l1:l2)/uphi_step_width)**3)**onethird
-!
-      case ('uumz_profile')
-        if (.not.lcalc_uumeanz) then
-          call fatal_error("initialize_hydro","you need to set lcalc_uumean=T for uuprof='uumz_profile'")
-        else
-          if (.not.lgravz) &
-            call fatal_error("initialize_hydro","gravitation in z-direction (lgravz=T) needed for uuprof='uumz_profile'")
-          call read_uumz_profile(uumz_prof)
-        endif
-
-      case ('omega_profile')
-        if (.not.lspherical_coords) call warning("initialize_hydro", &
-                       "uuprof='omega_profile' only meaningful for spherical coordinates")
-        if (.not.lcalc_uumeanxy) &
-          call fatal_error("initialize_hydro","you need to set lcalc_uumeanxy=T for uuprof='omega_profile'")
-        call read_omega_profile(omega_prof)
-
-      case ('nothing')
-
-      case default
-         call fatal_error("initialize_hydro","no such profile of mean flow: "//trim(uuprof))
-      endselect
+!  Jamie 28 Sep 26: Moved this to a separate subroutine
+!  Sets prof_amp1 to prof_amp4 to be called later
+     if (tau_diffrot1/=0.) call set_profile_diffrot(uuprof)
 !
       if (ivid_oo/=0) call alloc_slice_buffers(oo_xy,oo_xz,oo_yz,oo_xy2,oo_xy3,oo_xy4,oo_xz2,oo_r)
       if (ivid_o2/=0) call alloc_slice_buffers(o2_xy,o2_xz,o2_yz,o2_xy2,o2_xy3,o2_xy4,o2_xz2,o2_r)
@@ -3177,6 +3016,13 @@ module Hydro
         endif
       endif
       if (lprecession) lpenc_requested(i_rr)=.true.
+!     
+!  Pencils if background velocity is present
+!     
+      if (lu_background) then
+        lpenc_requested(i_uutot) = .true.
+        lpenc_requested(i_divutot) = .true.
+      endif      
 !
 !  Damping terms for lcylinder_in_a_box
 !
@@ -4089,7 +3935,18 @@ module Hydro
       else
         call calc_pencils_hydro_nonlinear_from_f(f,p,lpenc_loc,iuu)
       endif
-
+!
+! New pencils if there is a background velocity profile        
+! uutot
+      if  (lpenc_loc(i_uutot) .and. lu_background) p%uutot = f(l1:l2,m,n,iux:iuz) + f(l1:l2,m,n,iuubx:iuubz)
+! utotij
+      if  (lpenc_loc(i_utotij)) then
+        if (lub_y .or. lub_z) call calc_ubij(uuprof,ubij,m,n)
+        p%utotij = p%uij + ubij
+      endif
+! divutot
+      if (lpenc_loc(i_divutot)) call div_mn(p%utotij,p%divutot,p%uutot)
+!      
 ! divu
       if (lpenc_loc(i_divu)) then
         call div_mn(p%uij,p%divu,p%uu)
@@ -4457,7 +4314,7 @@ module Hydro
     subroutine advec_uu(f,df,p)
 
       use Sub, only: dot, dot2,div_tensor
-      use Sub, only: multvs
+      use Sub, only: multvs, u_dot_grad
       use Deriv, only: der
 
       real, contiguous, dimension(:,:,:,:) :: f
@@ -4507,6 +4364,16 @@ module Hydro
           df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-ugu_Schur_x
           df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-ugu_Schur_y
           df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-ugu_Schur_z
+        elseif (lu_background) then
+          !uhat dot grad u'
+          !call u_dot_grad(f,iuu,p%uij,p%uub,ubgu)
+          call u_dot_grad(f,iuu,p%uij,f(l1:l2,m,n,iuubx:iuubz),ubgu)
+          !u' dot grad uhat
+          !if the background profile depends on y or z, we need to update it here
+          !Otherwise, it can remain at the value calculated during initialisation
+          if (lub_y .or. lub_z) call calc_ubij(uuprof,ubij,m,n)
+          call u_dot_grad(f,iuub,ubij,p%uu,ugub)
+          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%ugu - ubgu - ugub          
         else
           df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%ugu
         endif
@@ -9090,6 +8957,206 @@ module Hydro
       endselect
 !
     endsubroutine interior_bc_hydro
+!***********************************************************************    
+    subroutine set_profile_diffrot(uuprof)
+!
+!  28 Sep 26 Jamie: Carved out from init_hydro
+!  Preparations for adding/removing mean flows.
+!  Set profiles for forcing differential rotation.
+!
+    Use Sub, only: erfunc, step
+!    
+    real :: slope,uinn,uext,zbot
+    character :: uuprof
+!
+      select case (uuprof)
+
+      case ('BS04')
+        if (wdamp/=0.) then
+          prof_amp1=1.-step(x(l1:l2),rdampint,wdamp)
+        else
+          prof_amp1=1.
+        endif
+        prof_amp1=ampl1_diffrot*prof_amp1*cos(kx_diffrot*x(l1:l2))**xexp_diffrot
+        prof_amp3=cos(z)
+
+      case ('BS04c','BS04c1','HP09')
+
+        if (wdamp/=0.) then
+          prof_amp3=ampl1_diffrot*0.5*(1.+tanh((z-rdampint)/(wdamp)))
+        else
+          prof_amp3=ampl1_diffrot
+        endif
+
+        if (uuprof=='BS04c') then
+          prof_amp1=sin(0.5*pi*((x(l1:l2))-x0)/Lx)**xexp_diffrot
+        elseif (uuprof=='BS04c1') then
+          prof_amp1=sin(pi*((x(l1:l2))-x0)/Lx)**xexp_diffrot
+        elseif (uuprof=='HP09') then
+          prof_amp1=cos(kx_diffrot*x(l1:l2))
+!or       prof_amp1=cos(2.*pi*kx_diffrot*(x(l1:l2)-x0)/Lx)
+        endif
+
+      case ('BS04m')
+        if (wdamp/=0.) then
+          prof_amp1=1.-step(x(l1:l2),rdampint,wdamp)
+        else
+          prof_amp1=1.
+        endif
+        prof_amp1=ampl1_diffrot*prof_amp1*sin((pi/(2.*x(l2)))*x(l1:l2))
+        prof_amp4=cos(pi/(2.*y(m2))*y)
+
+      case ('solar_DC99')
+        prof_amp1=(1.-ampl1_diffrot*step(x(l1:l2),rdampext,wdamp))*step(x(l1:l2),rdampint,wdamp)*x(l1:l2)
+        prof_amp4=ampl2_diffrot*(1.064-0.145*costh**2-0.155*costh**4-1.)*sinth
+
+      case ('vertical_shear')
+        zbot=xyz0(3)
+        prof_amp3=ampl1_diffrot*cos(kz_diffrot*(z-zbot)-phase_diffrot)
+
+      case ('vertical_compression','vertical_shear_x')
+        zbot=xyz0(3)
+        prof_amp3=ampl1_diffrot*cos(kz_diffrot*(z-zbot))
+
+      case ('remove_vertical_shear')
+        if (.not.lcalc_uumean) &
+          call fatal_error("initialize_hydro","you need to set lcalc_uumean=T for uuprof='remove_vertical_shear'")
+
+      case ('damp_mean_uz_prof_bdr')
+        if (.not.lcalc_uumeanz) &
+          call fatal_error("initialize_hydro","you need to set lcalc_uumeanz=T for uuprof='remove_mean_uz_prof'")
+        prof_amp3=1.-tanh((z-zdampint)/width_ff_uu)
+
+      case ('vertical_shear_x_sinz')
+        zbot=xyz0(3)
+        where (z <= 0.)
+          prof_amp3=ampl1_diffrot*sin(.5*pi/abs(zbot)*z)
+        elsewhere
+          prof_amp3=0.
+        endwhere
+
+      case ('vertical_shear_z')
+        prof_amp3=ampl1_diffrot*tanh((z-rdampint)/width_ff_uu)
+
+      case ('vertical_shear_z2')
+        if (.not.lcalc_uumeanxz) &
+          call fatal_error("initialize_hydro","you need to set lcalc_uumeanxz=T for uuprof='vertical_shear_z2'")
+        prof_amp3=ampl1_diffrot*tanh((z-rdampint)/width_ff_uu)
+
+      case ('vertical_shear_linear')
+        if (.not.lcalc_uumeanxz) &
+          call fatal_error("initialize_hydro","you need to set lcalc_uumeanxz=T for uuprof='vertical_shear_linear'")
+        prof_amp3=ampl1_diffrot*z
+
+      case ('tachocline')
+        if (wdamp/=0.) then
+          prof_amp1=1.-step(x(l1:l2),rdampint,wdamp)
+        else
+          prof_amp1=1.
+        endif
+      case ('solar_simple')
+        if (lspherical_coords) then
+          prof_amp1=ampl1_diffrot*step(x(l1:l2),x1_ff_uu,width_ff_uu)
+          prof_amp4=1.5-7.5*costh*costh
+        elseif (lcartesian_coords) then
+          prof_amp1=ampl1_diffrot*cos(x(l1:l2))
+          prof_amp4=cos(y)*cos(y)
+        !prof_amp2=1.-step(x(l1:l2),x2_ff_uu,width_ff_uu)
+        else
+          call not_implemented("initialize_hydro", &
+                          "uuprof='solar_simple' for other than spherical or Cartesian coordinates")
+        endif
+      case ('radial_uniform_shear')
+        uinn = omega_in*x(l1)
+        uext = omega_out*x(l2)
+        slope = (uext - uinn)/(x(l2)-x(l1))
+        prof_amp1=slope*x(l1:l2)+(uinn*x(l2)- uext*x(l1))/(x(l2)-x(l1))
+
+      case ('breeze')
+        prof_amp3=ampl_wind*z/(2.*pi)
+
+      case ('slow_wind')
+        prof_amp3=ampl_wind*(1.+tanh((z-rdampext)/wdamp))
+
+      case ('radial_shear')
+        if (.not.lcalc_uumeanxy) &
+          call fatal_error("initialize_hydro","you need to set lcalc_uumeanxy=T for uuprof='radial_shear'")
+        prof_amp1=ampl1_diffrot*cos(2*pi*k_diffrot*(x(l1:l2)-x0)/Lx)
+
+      case ('radial_shear_damp')
+        if (.not.lcalc_uumeanxy) &
+          call fatal_error("initialize_hydro","you need to set lcalc_uumeanxy=T for uuprof='radial_shear_damp'")
+        prof_amp1=ampl1_diffrot*tanh((x(l1:l2)-rdampint)/wdamp)
+
+      case ('damp_corona')
+        if (lspherical_coords) then
+          if (.not.lcalc_uumeanxy) &
+            call fatal_error("initialize_hydro","you need to set lcalc_uumeanxy=T for uuprof='damp_corona'")
+          prof_amp1=0.5*(tanh((x(l1:l2)-rdampext)/wdamp)+1.)
+        elseif (lcartesian_coords) then
+          prof_amp3=0.5*(tanh((z-rdampext)/wdamp)+1.)
+        endif
+
+      case ('damp_horiz_vel')
+        prof_amp3=0.5*(tanh((z-rdampext)/wdamp)+1.)
+
+      case ('latitudinal_shear')
+        if (.not.lcalc_uumeanxy) &
+          call fatal_error("initialize_hydro","you need to set lcalc_uumeanxy=T for uuprof='latitudinal_shear'")
+        prof_amp4=ampl1_diffrot*cos(2.*pi*k_diffrot*(y-y0)/Ly)
+
+      case ('damp_jets')
+        if (.not.lcalc_uumeanxy) &
+          call fatal_error("initialize_hydro","you need to set lcalc_uumeanxy=T for uuprof='damp_jets'")
+        prof_amp4=1.-0.5*(1.+tanh((y-(y0+ydampint))/wdamp)-(1.+tanh((y-(y0+Lxyz(2)-ydampext))/wdamp)))
+
+      case ('spoke-like-NSSL')
+        if (.not.lspherical_coords) call warning("initialize_hydro", &
+                       "uuprof='spoke-like-NSSL' only meningful for spherical coordinates")
+        if (.not.lcalc_uumeanxy) &
+          call fatal_error("initialize_hydro","you need lcalc_uumeanxy=T for uuprof='spoke-like-NSSL'")
+
+        prof_amp1=ampl1_diffrot*x(l1:l2)
+        profx_diffrot1=+0.5*(1.+erfunc(((x(l1:l2)-uphi_rbot)/uphi_step_width)))
+        profx_diffrot2=+0.5*(1.-erfunc(((x(l1:l2)-uphi_rtop)/uphi_step_width)))
+        profx_diffrot3=+0.5*(1.+erfunc(((x(l1:l2)-uphi_rtop)/uphi_step_width)))
+        profx_diffrot2=(x(l1:l2)-uphi_rbot)*profx_diffrot1*profx_diffrot2 !(redefined)
+        profy_diffrot1=-1.5*(5.*costh**2-1.)
+        profy_diffrot2=-1.0*(4.*costh**2-3.)
+        profy_diffrot3=-1.0
+        profz_diffrot1=+1.
+!
+      case ('galactic-Brandt-curve')
+        if (.not.lspherical_coords) call warning("initialize_hydro", &
+                       "uuprof='galactic-Brandt-curve' currently only for spherical coordinates")
+        if (.not.lcalc_uumeanxy) &
+          call fatal_error("initialize_hydro","you need lcalc_uumeanxy=T for uuprof='galactic-Brandt-curve'")
+!
+        prof_amp1=ampl1_diffrot*x(l1:l2)/(1.+(x(l1:l2)/uphi_step_width)**3)**onethird
+!
+      case ('uumz_profile')
+        if (.not.lcalc_uumeanz) then
+          call fatal_error("initialize_hydro","you need to set lcalc_uumean=T for uuprof='uumz_profile'")
+        else
+          if (.not.lgravz) &
+            call fatal_error("initialize_hydro","gravitation in z-direction (lgravz=T) needed for uuprof='uumz_profile'")
+          call read_uumz_profile(uumz_prof)
+        endif
+
+      case ('omega_profile')
+        if (.not.lspherical_coords) call warning("initialize_hydro", &
+                       "uuprof='omega_profile' only meaningful for spherical coordinates")
+        if (.not.lcalc_uumeanxy) &
+          call fatal_error("initialize_hydro","you need to set lcalc_uumeanxy=T for uuprof='omega_profile'")
+        call read_omega_profile(omega_prof)
+
+      case ('nothing')
+
+      case default
+         call fatal_error("initialize_hydro","no such profile of mean flow: "//trim(uuprof))
+      endselect
+
+    endsubroutine set_profile_diffrot
 !***********************************************************************
     subroutine impose_profile_diffrot(f,df,prof_diffrot,ldiffrot_test)
 !
@@ -9344,6 +9411,190 @@ module Hydro
       endselect
 !
     endsubroutine impose_profile_diffrot
+
+!***********************************************************************
+    subroutine background_profile(f,uuprof)
+!
+!Sets the f-array index iuubx:iuubz accoding to the relevant profile
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      character (len=labellen)           :: uuprof
+!
+      integer :: l, n, m
+      real    :: sigma_z2, xmid
+!
+      !Make sure that the vertical gradient is positive as it is subtracted below
+      vertical_gradient = -abs(vertical_gradient)
+      !Centre of the frame xmid, corresponds to r_f
+      xmid = xyz0(1)+lxyz(1)/2
+      !We also define the standard deviation in terms of the input parameter vertical_gradient
+      sigma_z2 = ((Omega*xmid)/vertical_gradient)*(1.0 - exp(-1.0))
+!
+      !Omega_f is the value of Omega x r at r=r_f, z=0
+      !If the frame is rotating (lism_rotation=T) the frame is rotating at rate Omega_f
+      do m=m1-nghost,m2+nghost; do n=n1-nghost,n2+nghost
+        !Initialises the uprof to zero
+        f(:,m,n,iuubx:iuubz) = 0
+        select case (uuprof)
+        !Omega(r) = Omega_0 const.
+        case('solid_body')
+          if (lroot .and. m==m1-nghost .and. n==n1-nghost) print*, 'background profile: solid body'
+          if (.not.lism_rotation) then
+            lub_x = .true.
+            f(:,m,n,iuuby) = Omega*x(:)
+          !If lism_rotation, the frame is moving with rate Omega so the background profile is 0
+          endif
+        case('solid_body_linear_z')
+          if (lroot .and. m==m1-nghost .and. n==n1-nghost) print*, 'background profile: solid body, linear z decay', &
+                 'gradient =', vertical_gradient
+          lub_z = .true.
+          if (lism_rotation) then
+            f(:,m,n,iuuby) = -vertical_gradient*abs(z(n))
+          else
+            lub_x = .true.
+            f(:,m,n,iuuby) = Omega*x(:)-vertical_gradient*abs(z(n))
+          endif
+        case('solid_body_exp_z')
+          if (lroot .and. m==m1-nghost .and. n==n1-nghost) print*, 'background profile: solid body, Gaussian z decay', &
+                  'sigma =', sqrt(sigma_z2)
+          lub_z = .true.
+          lub_x = .true.
+          if (lism_rotation) then
+            f(:,m,n,iuuby) = x(:)*Omega * (exp(-(z(n)**2)/sigma_z2) - 1)
+          else
+            f(:,m,n,iuuby) = x(:)*Omega * exp(-(z(n)**2)/sigma_z2)
+          endif
+        !Omega(r) = v_0/r
+        case('radial_uniform_shear')
+          if (lroot .and. m==m1-nghost .and. n==n1-nghost) print*, 'background profile: radial uniform shear'
+          if (lism_rotation) then
+            lub_x = .true.
+            f(:,m,n,iuuby) = Omega*(xmid-x(:))
+          else
+            f(:,m,n,iuuby) = Omega*xmid
+          endif
+        case('radial_uniform_shear_linear_z','RUS_linear_z') !RUS = radial uniform shear
+          lub_z = .true.
+          if (lroot .and. m==m1-nghost .and. n==n1-nghost) print*, 'background profile: solid body, linear z decay', &
+                 'gradient =', vertical_gradient
+          if (lism_rotation) then
+            lub_x = .true.
+            f(:,m,n,iuuby) = Omega*(xmid-x(:)) - vertical_gradient*abs(z(n))
+          else
+            f(:,m,n,iuuby) = Omega*xmid - vertical_gradient*abs(z(n))
+          endif
+        case('radial_uniform_shear_exp_z','RUS_exp_z') !RUS = radial uniform shear
+          lub_z = .true.
+          if (lroot .and. m==m1-nghost .and. n==n1-nghost) print*, 'background profile: solid body, Gaussian z decay', &
+                  'sigma =', sqrt(sigma_z2)
+          if (lism_rotation) then
+            lub_x = .true.
+            f(:,m,n,iuuby) = Omega*(xmid*exp(-(z(n)**2)/sigma_z2) -x(:))
+          else
+            f(:,m,n,iuuby) = Omega*xmid*exp(-(z(n)**2)/sigma_z2)
+          endif
+        case ('const_shear')
+        !This gives a constant shear r d Omega/d r
+        !The constant shear is Omega, no sense making a new constant
+          if (lism_rotation) then
+            f(:,m,n,iuuby) = x(:) * Omega * log(x(:)/xmid)
+          else
+            f(:,m,n,iuuby) = x(:) * Omega * log(x(:))
+          endif
+        case ('nothing')
+          if (lroot .and. m==m1-nghost .and. n==n1-nghost) print*, 'background profile: nothing'
+        !Leave uub = zero, essentially equivalent to the frame not rotating at all
+        case ('test1')
+        !A rotating frame over a stationary fluid to give
+          lub_z = .true.
+          f(:,m,n,iuubx) = -vertical_gradient * abs(z(n))
+        !Raise error if no uuprof specified
+        case default
+           call fatal_error("initialize_hydro","no such profile of mean flow: "//trim(uuprof))
+        endselect
+      enddo; enddo
+!
+    endsubroutine background_profile
+!***********************************************************************
+    subroutine calc_ubij(uuprof,ubij,m,n)
+!
+!Calculates the gradient of the background flow
+!If the profile only depends on x, this is called once at start up
+!Otherwise, it is called within the m, n loop every time it is required
+!This is NOT the full gradient in non-cartesian coordinates, this is du_i/dx_j
+!
+      character (len=labellen)           :: uuprof
+      real, dimension(nx,3,3)            :: ubij
+!
+      integer :: l, n, m
+      real    :: sigma_z2, xmid
+!
+      !Centre of the frame xmid, corresponds to r_f
+      xmid = xyz0(1)+lxyz(1)/2
+      !We also define the standard deviation in terms of the input parameter vertical_gradient
+      sigma_z2 = ((Omega*xmid)/vertical_gradient)*(1.0 - exp(-1.0))
+!
+      !Omega_f is the value of Omega x r at r=r_f, z=0
+      !If the frame is rotating (lism_rotation=T) the frame is rotating at rate Omega_f
+      select case (uuprof)
+      !Omega(r) = Omega_0 const.
+      case('solid_body')
+        if (.not.lism_rotation) then
+          ubij(:,2,1) = Omega
+        !If lism_rotation, the frame is moving with rate Omega so the background profile is 0
+        endif
+      case('solid_body_linear_z')
+        if (lism_rotation) then
+          ubij(:,2,3) = -vertical_gradient*sign(1.0,z(n))
+        else
+          ubij(:,2,1) = Omega
+          ubij(:,2,3) = -vertical_gradient*sign(1.0,z(n))
+        endif
+      case('solid_body_exp_z')
+        if (lism_rotation) then
+          ubij(:,2,1) = Omega * (exp(-(z(n)**2)/sigma_z2) - 1)
+          ubij(:,2,3) = (2*x(l1:l2)*Omega*z(n)*exp(-(z(n)**2)/sigma_z2))/sigma_z2
+        else
+          ubij(:,2,1) = Omega * exp(-(z(n)**2)/sigma_z2)
+          ubij(:,2,3) = (2*x(l1:l2)*Omega*z(n)*exp(-(z(n)**2)/sigma_z2))/sigma_z2
+        endif
+      !Omega(r) = v_0/r
+      case('radial_uniform_shear')
+        if (lism_rotation) then
+          ubij(:,2,1) = -Omega
+        !In the inertial frame uphi is constant so its gradient is zero
+        endif
+      case('radial_uniform_shear_linear_z','RUS_linear_z') !RUS = radial uniform shear
+        if (lism_rotation) then
+          ubij(:,2,1) = -Omega
+          ubij(:,2,3) = -vertical_gradient*sign(1.0,z(n))
+        else
+          ubij(:,2,3) = -vertical_gradient*sign(1.0,z(n))
+        endif
+      case('radial_uniform_shear_exp_z','RUS_exp_z') !RUS = radial uniform shear
+        if (lism_rotation) then
+          ubij(:,2,1)    = -Omega
+          ubij(:,2,3)    = (2*xmid*Omega*z(n)*exp(-(z(n)**2)/sigma_z2))/sigma_z2
+        else
+          ubij(:,2,3) = (2*xmid*Omega*z(n)*exp(-(z(n)**2)/sigma_z2))/sigma_z2
+        endif
+      case ('const_shear')
+        if (lism_rotation) then
+          ubij(:,2,1) = Omega*(log(x(l1:l2)/xmid) + 1)
+        else
+          ubij(:,2,1) = Omega*(log(x(l1:l2)) + 1)
+        endif
+      case ('nothing')
+      !Leave uub = zero, essentially equivalent to the frame not rotating at all
+      case ('test1')
+      !A rotating frame over a stationary fluid to give
+        ubij(:,2,1) = -Omega
+      !Raise error if no uuprof specified
+      case default
+         call fatal_error("initialize_hydro","no such profile of mean flow: "//trim(uuprof))
+      endselect
+!
+    endsubroutine calc_ubij
 !***********************************************************************
     subroutine read_uumz_profile(uumz_prof)
 !

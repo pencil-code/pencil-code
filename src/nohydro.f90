@@ -27,6 +27,7 @@
 ! PENCILS PROVIDED lorentz; hless
 ! PENCILS PROVIDED lorentz_gamma2; lorentz_gamma; ss_rel2; ss_rel(3)
 ! PENCILS PROVIDED ss_rel_ij(3,3); ss_rel_factor; divss_rel
+! PENCILS PROVIDED uutot(3); divutot; utotij(3,3)
 !
 !***************************************************************
 module Hydro

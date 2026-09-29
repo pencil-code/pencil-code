@@ -467,6 +467,8 @@ module Cdata
              lreference_state=.false., lfullvar_in_slices=.false., &
              lsubstract_reference_state=.false., ldensity_linearstart=.false.
   logical :: lforcing_cont=.false.
+  logical :: lu_background=.false.
+  logical :: lism_rotation=.false.
   logical :: lgravx=.false.,lgravy=.false.,lgravz=.false.
   logical :: lgravx_gas=.true.,lgravy_gas=.true.,lgravz_gas=.true.
   logical :: lgravx_dust=.true.,lgravy_dust=.true.,lgravz_dust=.true.
@@ -533,6 +535,7 @@ module Cdata
 !
 !  Variable indices (default zero, set later by relevant physics modules).
 !
+  integer :: iuub=0, iuubx=0, iuuby=0, iuubz=0
   integer :: ilnrho=0, irho=0
   integer :: ilnrho_phi=0 !, ilna=0 ! Sovan
   integer :: irho_b=0, iss_b=0 ! Anelastic auxiliary variables (base state)

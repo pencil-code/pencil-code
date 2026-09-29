@@ -2445,6 +2445,12 @@ module Density
       if (lreference_state) lpenc_requested(i_rho1) = .true.
       lpenc_diagnos2d(i_lnrho)=.true.
       lpenc_diagnos2d(i_rho)=.true.
+!  Background Profile
+      if (lhydro .and. lu_background) then
+        lpenc_requested(i_uutot) = .true.
+        lpenc_requested(i_divutot) = .true.
+      endif
+
 !
 !  Diagnostic pencils.
 !
@@ -2508,10 +2514,12 @@ module Density
       endif
       if (lpencil_in(i_uglnrho)) then
         lpencil_in(i_uu)=.true.
+        if (lu_background) lpencil_in(i_uutot)=.true.
         lpencil_in(i_glnrho)=.true.
       endif
       if (lpencil_in(i_ugrho)) then
         lpencil_in(i_uu)=.true.
+        if (lu_background) lpencil_in(i_uutot)=.true.
         lpencil_in(i_grho)=.true.
       endif
       if (lpencil_in(i_glnrho2)) lpencil_in(i_glnrho)=.true.
@@ -2544,11 +2552,13 @@ module Density
 !  Most basic pencils should come first, as others may depend on them.
 !
 !  19-11-04/anders: coded
+use Sub, only: dot2_mn
 !
       real, contiguous, dimension(:,:,:,:) :: f
       type (pencil_case) :: p
       logical, dimension(:), intent(IN) :: lpenc_loc
       intent(in) :: f
+      real, dimension (nx) :: utot2      
       intent(inout) :: p
       ! real :: cs20p1=1.
 !
@@ -2566,6 +2576,9 @@ module Density
           !p%ekin=fourthird*p%rho*p%lorentz*p%u2
           ! if (lrelativistic_eos) cs20p1=1.+cs20
           p%ekin=cs20p1*p%rho*p%lorentz*p%u2
+        elseif (lu_background) then
+          call dot2_mn(p%uutot,utot2)
+          p%ekin=0.5*p%rho*utot2          
         else
           p%ekin=0.5*p%rho*p%u2
         endif
@@ -2658,7 +2671,13 @@ module Density
       if (lpenc_loc(i_uglnrho)) call fatal_error('calc_pencils_density', &
           'uglnrho not available for linear mass density')   ! Why not implementing it?
 ! ugrho
-      if (lpenc_loc(i_ugrho)) call u_dot_grad(f,ilnrho,p%grho,p%uu,p%ugrho,UPWIND=lupw_rho)
+      if (lpenc_loc(i_ugrho)) then
+        if (lu_background) then
+          call u_dot_grad(f,ilnrho,p%grho,p%uutot,p%ugrho,UPWIND=lupw_rho)
+        else
+          call u_dot_grad(f,ilnrho,p%grho,p%uu,p%ugrho,UPWIND=lupw_rho)
+        endif
+      endif
 ! glnrho2
       if (lpenc_loc(i_glnrho2)) call dot2(p%glnrho,p%glnrho2)
 ! del2rho
@@ -2776,14 +2795,20 @@ module Density
 
 ! uglnrho
       if (lpenc_loc(i_uglnrho)) then
-        if (lupw_lnrho) then
-          call u_dot_grad(f,ilnrho,p%glnrho,p%uu,p%uglnrho,UPWIND=lupw_lnrho)
+        if (lu_background) then
+          if (lupw_lnrho) then
+            call u_dot_grad(f,ilnrho,p%glnrho,p%uutot,p%uglnrho,UPWIND=lupw_lnrho)
+          else
+            call dot(p%uutot,p%glnrho,p%uglnrho)
+          endif
         else
-          call dot(p%uu,p%glnrho,p%uglnrho)
+          if (lupw_lnrho) then
+            call u_dot_grad(f,ilnrho,p%glnrho,p%uu,p%uglnrho,UPWIND=lupw_lnrho)
+          else
+            call dot(p%uu,p%glnrho,p%uglnrho)
+          endif
         endif
       endif
-
-
 ! ugrho
       if (lpenc_loc(i_ugrho)) call not_implemented('calc_pencils_density', &
           'ugrho for logarithmic mass density')
@@ -2935,15 +2960,28 @@ module Density
             prefactor2=1.+p%u2
           endif
           if (ldensity_nolog) then
-            density_rhs=-p%rho*p%divu
+            if (lu_background) then
+              density_rhs=-p%rho*p%divutot
+            else 
+              density_rhs=-p%rho*p%divu
+            endif              
             if (ladvection_density) density_rhs = density_rhs - cs20_corr*p%ugrho
           else
+            if (lu_background) then
+              density_rhs= - p%divutot
+            else
+              density_rhs= - p%divu
+            endif              
             density_rhs= - p%divu
             if (ladvection_density) density_rhs = density_rhs - cs20_corr*p%uglnrho
           endif
           if (lext_force) then
             do i=1,3
-              u_dot_ext_force = p%uu(:,i)*p%ext_force(:,i+1)
+              if (lu_background) then
+                u_dot_ext_force = p%uutot(:,i)*p%ext_force(:,i+1)
+              else
+                u_dot_ext_force = p%uu(:,i)*p%ext_force(:,i+1)
+              endif
             enddo
           endif
           if (lrelativistic_eos) then
@@ -2956,10 +2994,18 @@ module Density
               else
                 density_hydro_rhs=0.
                 if (ldensity_nolog) then
-                  if (lrelativistic_eos_term1) density_hydro_rhs=density_hydro_rhs-p%rho*p%divu
+                    if (lu_background) then
+                      density_hydro_rhs=density_hydro_rhs-p%rho*p%divutot
+                    else
+                      density_hydro_rhs=density_hydro_rhs-p%rho*p%divu
+                    endif                    
                   if (lrelativistic_eos_term2) density_hydro_rhs=density_hydro_rhs-cs20_corr*p%ugrho
                 else
-                  if (lrelativistic_eos_term1) density_hydro_rhs=density_hydro_rhs-p%divu
+                    if (lu_background) then
+                      density_hydro_rhs=density_hydro_rhs-p%divutot
+                    else
+                      density_hydro_rhs=density_hydro_rhs-p%divu
+                    endif
                   if (lrelativistic_eos_term2) density_hydro_rhs=density_hydro_rhs-cs20_corr*p%uglnrho
                 endif
               endif
@@ -2978,7 +3024,11 @@ module Density
                 endif
               endif
               density_hydro_rhs=density_hydro_rhs*prefactor*lorentz_gamma_inv2
-              call multvs(p%uu,density_hydro_rhs,tmpv)
+              if (lu_background) then
+                call multvs(p%uutot,density_hydro_rhs,tmpv)
+              else
+                call multvs(p%uu,density_hydro_rhs,tmpv)
+              endif              
               ! call multvs(p%uu,density_hydro_rhs,tmpv)
               df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-tmpv
             endif
@@ -3021,29 +3071,53 @@ module Density
 !  There is an additional option of doing this by obeying mass
 !  conservation, which is not currently the default.
 !
-      if (ieos_profile=='surface_z') then
-        if (ldensity_nolog) then
-          density_rhs= density_rhs - profz_eos(n)*(p%ugrho + p%rho*p%divu)
-          if (ldensity_profile_masscons) density_rhs = density_rhs-dprofz_eos(n)*p%rho*p%uu(:,3)
-        else
-          density_rhs= density_rhs - profz_eos(n)*(p%uglnrho + p%divu)
-          if (ldensity_profile_masscons) density_rhs = density_rhs -dprofz_eos(n)*p%uu(:,3)
+        if (ieos_profile=='surface_z') then
+          if (ldensity_nolog) then
+            if (lu_background) then
+              density_rhs= density_rhs - profz_eos(n)*(p%ugrho + p%rho*p%divutot)
+              if (ldensity_profile_masscons) density_rhs = density_rhs-dprofz_eos(n)*p%rho*p%uutot(:,3)
+            else
+              density_rhs= density_rhs - profz_eos(n)*(p%ugrho + p%rho*p%divu)
+              if (ldensity_profile_masscons) density_rhs = density_rhs-dprofz_eos(n)*p%rho*p%uu(:,3)
+            endif
+          else
+            if (lu_background) then
+              density_rhs= density_rhs - profz_eos(n)*(p%uglnrho + p%divutot)
+              if (ldensity_profile_masscons) density_rhs = density_rhs -dprofz_eos(n)*p%uutot(:,3)
+            else
+              density_rhs= density_rhs - profz_eos(n)*(p%uglnrho + p%divu)
+              if (ldensity_profile_masscons) density_rhs = density_rhs -dprofz_eos(n)*p%uu(:,3)
+            endif
+          endif
         endif
-      endif
 !
 !  If we are solving the force-free equation in parts of our domain.
 !
       if (lffree) then
-        if (ldensity_nolog) then
-          density_rhs= density_rhs - profx_ffree*profy_ffree(m)*profz_ffree(n)*(p%ugrho + p%rho*p%divu)
-          if (ldensity_profile_masscons) density_rhs=density_rhs - p%rho*( dprofx_ffree   *p%uu(:,1) &
-                                                                          +dprofy_ffree(m)*p%uu(:,2) &
-                                                                          +dprofz_ffree(n)*p%uu(:,3))
+        if (lu_background) then
+          if (ldensity_nolog) then
+            density_rhs= density_rhs - profx_ffree*profy_ffree(m)*profz_ffree(n)*(p%ugrho + p%rho*p%divutot)
+            if (ldensity_profile_masscons) density_rhs=density_rhs - p%rho*( dprofx_ffree   *p%uutot(:,1) &
+                                                                            +dprofy_ffree(m)*p%uutot(:,2) &
+                                                                            +dprofz_ffree(n)*p%uutot(:,3))
+          else
+            density_rhs= density_rhs - profx_ffree*(profy_ffree(m)*profz_ffree(n))*(p%uglnrho + p%divutot)
+            if (ldensity_profile_masscons) density_rhs=density_rhs-dprofx_ffree   *p%uutot(:,1) &
+                                                                  -dprofy_ffree(m)*p%uutot(:,2) &
+                                                                  -dprofz_ffree(n)*p%uutot(:,3)
+          endif
         else
-          density_rhs= density_rhs - profx_ffree*(profy_ffree(m)*profz_ffree(n))*(p%uglnrho + p%divu)
-          if (ldensity_profile_masscons) density_rhs=density_rhs-dprofx_ffree   *p%uu(:,1) &
-                                                                -dprofy_ffree(m)*p%uu(:,2) &
-                                                                -dprofz_ffree(n)*p%uu(:,3)
+          if (ldensity_nolog) then
+            density_rhs= density_rhs - profx_ffree*profy_ffree(m)*profz_ffree(n)*(p%ugrho + p%rho*p%divu)
+            if (ldensity_profile_masscons) density_rhs=density_rhs - p%rho*( dprofx_ffree   *p%uu(:,1) &
+                                                                            +dprofy_ffree(m)*p%uu(:,2) &
+                                                                            +dprofz_ffree(n)*p%uu(:,3))
+          else
+            density_rhs= density_rhs - profx_ffree*(profy_ffree(m)*profz_ffree(n))*(p%uglnrho + p%divu)
+            if (ldensity_profile_masscons) density_rhs=density_rhs-dprofx_ffree   *p%uu(:,1) &
+                                                                  -dprofy_ffree(m)*p%uu(:,2) &
+                                                                  -dprofz_ffree(n)*p%uu(:,3)
+          endif
         endif
       endif
 !
