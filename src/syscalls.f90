@@ -411,7 +411,7 @@ module Syscalls
 
     tmp = 0
     do i = 1,size(var)
-        if(var(i)) tmp(i) = 1
+        if (var(i)) tmp(i) = 1
     enddo
 
     call copy_addr_c_bool(tmp,caddr,size(var))
@@ -505,9 +505,7 @@ module Syscalls
     character(LEN=strlen), dimension(arrlen), intent(IN) :: strarr
 
     !TP: poor man's version of keep_compiler_quiet
-    if(.false.) then
-            print*,strlen,arrlen,strarr
-    endif
+    if (.false.) print*,strlen,arrlen,strarr
     !call get_char_arr_c(strarr,strlen,arrlen)
 
     endsubroutine get_char_arr

@@ -21,11 +21,7 @@ module Driver
 !
   implicit none
 !
-  private
-!
-  public :: initialize_driver, finalize_driver
-  public :: read_driver_run_pars, write_driver_run_pars
-  public :: driver_apply
+  include "driver.h"
 !
   real, dimension (mcom_max) :: tau_inv=0.0
   integer, dimension (mcom_max) :: target_proc_x=-1, target_proc_y=-1, target_proc_z=-1

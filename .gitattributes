@@ -5250,6 +5250,7 @@ samples/driver/src/cparam.local -text
 samples/driver/start.in -text
 samples/driver/video.in -text
 src/driver.f90 -text
+src/driver.h -text
 src/nodriver.f90 -text
 utils/philippe/LCT/flow_reb_cube.pro -text
 utils/philippe/LCT/velocity_field_lct.pro -text

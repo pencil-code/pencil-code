@@ -235,7 +235,7 @@ module Energy
         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-cs2*(glnrho(:,3))
       endif
 
-      if (lupdate_courant_dt) advec_cs2 = p%advec_cs2
+      if (lupdate_courant_dt) advec_cs2 = max(advec_cs2,p%advec_cs2)
 
       call calc_diagnostics_energy(f,p)
 

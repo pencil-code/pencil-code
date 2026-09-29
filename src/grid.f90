@@ -3109,7 +3109,6 @@ if (abs(sum(ws)-1.)>1e-7) write(iproc+40,'(6(e12.5,1x), e12.5)') ws, sum(ws)
         call mpiallreduce_max(tmp,dz2_bound,2*nghost+1)
       endif
 !
-
     endsubroutine grid_bound_data
 !***********************************************************************
     subroutine generate_halfgrid

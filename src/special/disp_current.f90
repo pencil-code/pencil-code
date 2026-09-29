@@ -528,9 +528,7 @@ module Special
       if (lsigE_as_aux) f(:,:,:,isigE)=0.
       if (lsigB_as_aux) f(:,:,:,isigB)=0.
 !
-      if (lpi_vecpot) then
-        call init_aae(f)
-      endif
+      if (lpi_vecpot) call init_aae(f)
 !
     endsubroutine init_special
 !***********************************************************************
@@ -1663,7 +1661,7 @@ module Special
         if (idiag_gausscrms/=0 .and. lbb_as_comaux .and. iphi_f>0) then
           call div_phib(f,tmp2)
           call sum_mn_name((p%divE+alpf*tmp2)**2,idiag_gausscrms,lsqrt=.true.)
-          if(idiag_divphib/=0) then
+          if (idiag_divphib/=0) then
             call sum_mn_name(tmp2**2,idiag_divphib,lsqrt=.true.)
           endif
         else
@@ -1928,30 +1926,32 @@ module Special
       real :: k2, kv(3)
       integer :: i, j, ik, iy, iz
 !
-!  Boundcond cannot be used here (it uses Special), so update_ghosts is called
-!  through the pointer set in initialize_boundcond.
-!
-      call update_ghosts_ptr(f,iax,iaz)
       allocate(pre(nx,ny,nz,3),pim(nx,ny,nz,3),cre(nx,ny,nz,3),cim(nx,ny,nz,3))
+!
       do n=n1,n2; do m=m1,m2
         call curl(f,iaa,bb)
         do j=1,3
           pre(:,m-m1+1,n-n1+1,j)=f(l1:l2,m,n,iex+j-1)+alpf*f(l1:l2,m,n,iphi_f)*bb(:,j)
         enddo
       enddo; enddo
+
       pim=0.
       do j=1,3
         call fft_xyz_parallel(pre(:,:,:,j),pim(:,:,:,j))
       enddo
+
       do i=1,nx; ik=ipx*nx+i-1; if (ik>nxgrid/2) ik=ik-nxgrid; kex(i)=keff(ik,nxgrid,dx); enddo
       do i=1,ny; ik=ipy*ny+i-1; if (ik>nygrid/2) ik=ik-nygrid; key(i)=keff(ik,nygrid,dy); enddo
       do i=1,nz; ik=ipz*nz+i-1; if (ik>nzgrid/2) ik=ik-nzgrid; kez(i)=keff(ik,nzgrid,dz); enddo
+
       cre=0.; cim=0.
       do iz=1,nz; do iy=1,ny; do i=1,nx
         kv=(/kex(i),key(iy),kez(iz)/)
         k2=sum(kv**2)
         if (k2>0.) then
+!
 !  A_e = i k x P / k^2  ->  A_e_re = -(k x P_im)/k^2,  A_e_im = (k x P_re)/k^2
+!
           cre(i,iy,iz,1)=-(kv(2)*pim(i,iy,iz,3)-kv(3)*pim(i,iy,iz,2))/k2
           cre(i,iy,iz,2)=-(kv(3)*pim(i,iy,iz,1)-kv(1)*pim(i,iy,iz,3))/k2
           cre(i,iy,iz,3)=-(kv(1)*pim(i,iy,iz,2)-kv(2)*pim(i,iy,iz,1))/k2
@@ -1960,11 +1960,15 @@ module Special
           cim(i,iy,iz,3)= (kv(1)*pre(i,iy,iz,2)-kv(2)*pre(i,iy,iz,1))/k2
         endif
       enddo; enddo; enddo
+!
       do j=1,3
         call fft_xyz_parallel(cre(:,:,:,j),cim(:,:,:,j),linv=.true.)
         f(l1:l2,m1:m2,n1:n2,iaae+j-1)=cre(:,:,:,j)
       enddo
       deallocate(pre,pim,cre,cim)
+!
+!  Boundcond cannot be used here (it uses Special), so update_ghosts is called
+!  through the pointer set in initialize_boundcond.
 !
       call update_ghosts_ptr(f,iaae,iaae+2)
       do n=n1,n2; do m=m1,m2
@@ -1976,19 +1980,26 @@ module Special
       enddo; enddo
 !
     contains
+!------------------------------------------------------------------------
       real function keff(ik,ngrid,dxx)
+!
 !  Effective wavenumber of the 2nd/4th/6th-order centred first derivative.
+!
         integer, intent(in) :: ik, ngrid
         real, intent(in) :: dxx
         real :: th
+!
         if (ngrid==1) then; keff=0.; return; endif
         th=2.*pi*ik/ngrid
+
         select case (nghost)
-        case (1); keff=sin(th)/dxx
-        case (2); keff=(4./3.*sin(th)-1./6.*sin(2*th))/dxx
-        case default; keff=(1.5*sin(th)-0.3*sin(2*th)+sin(3*th)/30.)/dxx
+          case (1); keff=sin(th)/dxx
+          case (2); keff=(4./3.*sin(th)-1./6.*sin(2*th))/dxx
+          case default; keff=(1.5*sin(th)-0.3*sin(2*th)+sin(3*th)/30.)/dxx
         endselect
+
       endfunction keff
+
     endsubroutine init_aae
 !***********************************************************************
     subroutine special_after_boundary(f)
