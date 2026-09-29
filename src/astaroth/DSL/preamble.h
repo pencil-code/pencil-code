@@ -309,6 +309,7 @@ div_phib()
 	return 0.0
 }
 
+#if STENCIL_ORDER > 2
 //Unit-weight shift stencils for getcell (Kurganov-Tadmor). Going through stencils,
 //rather than indexing the field directly, lets the compiler see the accesses,
 //so the halos are communicated correctly.
@@ -348,6 +349,16 @@ getcell(Field f, int offset, int idir)
 	if(offset ==  1) return getcell_zp1(f)
 	return getcell_zp2(f)
 }
+#else
+getcell(Field f, int offset, int idir)
+{
+	suppress_unused_warning(f)
+	suppress_unused_warning(offset)
+	suppress_unused_warning(idir)
+	fatal_error_message(true,"getcell needs at least STENCIL_ORDER >= 4!\n");
+	return 0.0
+}
+#endif
 const real cs_kt=0.57735026919
 const real tiny_kt=1e-30
 
