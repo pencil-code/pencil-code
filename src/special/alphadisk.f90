@@ -257,7 +257,7 @@ module Special
 !  06-oct-2003/tony: coded
 !  01-aug-11/wlad: adapted
 !
-      real, contiguous, dimension(:,:,:,:), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:) :: f   !intent(IN)
 !
       integer :: j
 !
@@ -501,8 +501,8 @@ module Special
       real, contiguous, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
 !
-      intent(in) :: f
-      intent(in) :: p
+      !intent(in) :: f
+      !intent(in) :: p
 
       real, dimension(nx) :: nu
 !
@@ -553,8 +553,8 @@ module Special
       real, dimension (nx) :: del2sigmanu,gsigmanu
       real, dimension (nx,3) :: tmp_vec
 !
-      intent(in) :: f,p
-      intent(inout) :: df
+      !intent(in) :: f,p
+      !intent(inout) :: df
 !
 !  Identify module and boundary conditions.
 !
@@ -592,7 +592,7 @@ module Special
  !
       use Diagnostics, only: sum_mn_name, max_mn_name, yzsum_mn_name_x, save_name
 
-      real, contiguous, dimension(:,:,:,:), intent(IN) :: f
+      real, contiguous, dimension(:,:,:,:) :: f  !intent(IN)
       type(pencil_case) :: p
       real, dimension (nx) :: psigma,nu
 
@@ -722,9 +722,9 @@ module Special
 !
 !  27-nov-08/wlad: coded
 !
-      real, contiguous, dimension(:,:,:,:), intent(INOUT) :: f
-      real, dimension(mx,my,mz,mvar), intent(INOUT) :: df
-      real, intent(IN) :: dt_
+      real, contiguous, dimension(:,:,:,:) :: f  !, intent(INOUT)
+      real, dimension(mx,my,mz,mvar) :: df  !, intent(INOUT)
+      real :: dt_   !, intent(IN)
       logical, intent(in) :: llast
 !
       select case (temperature_model)
