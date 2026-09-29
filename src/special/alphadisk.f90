@@ -87,7 +87,7 @@ module Special
       r0_gaussian, width_gaussian, temperature_model, nut_constant, &
       lambda_nut, ampl_nut, &
       temperature_background, temperature_precision, nsigma_table, &
-      sigma_middle, sigma_floor, tmid_table_buffer,&
+      sigma_middle, sigma_floor, tmid_table_buffer, &
       temperature_star,radius_star, dlnHdlnR
 !
   namelist /special_run_pars/ &
@@ -124,6 +124,7 @@ module Special
   real :: minsigma,maxsigma,dsig,dsig1
   real :: minlnsigma,maxlnsigma,dlnsig,dlnsig1
   integer :: enum_temperature_model = 0
+
   contains
 !***********************************************************************
     subroutine register_special
@@ -256,7 +257,7 @@ module Special
 !  06-oct-2003/tony: coded
 !  01-aug-11/wlad: adapted
 !
-      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: f
 !
       integer :: j
 !
@@ -280,21 +281,21 @@ module Special
 !  Gaussian column density.
 !
           case('gaussian')
-            do m=m1,m2; do n=n1,n2
+            do n=n1,n2; do m=m1,m2
               f(l1:l2,m,n,isigma) = sigma0*exp(-(x(l1:l2)-r0_gaussian)**2/(2*width_gaussian**2))
             enddo;enddo
 !
 !  Power law column density profile.
 !
           case('power-law')
-            do m=m1,m2; do n=n1,n2
+            do n=n1,n2; do m=m1,m2
               f(l1:l2,m,n,isigma) = sigma0*(x(l1:l2)/plaw_r0)**(-plaw_density)
             enddo;enddo
 !
 !  Set the column density from the initial mass accretion rate.
 !
           case('mdot-constant')
-            do m=m1,m2; do n=n1,n2
+            do n=n1,n2; do m=m1,m2
               f(l1:l2,m,n,imdot) = mdot_input*(msun_cgs/yr_cgs)
               call mdot_to_sigma(f(l1:l2,m,n,imdot),f(l1:l2,m,n,isigma))
             enddo;enddo
@@ -302,17 +303,15 @@ module Special
 !  Catch unknown initial conditions.
 !
           case default
-            call fatal_error('init_special','no such initial condition: '//trim(initsigma(j)))
+            call fatal_error('init_special','no such initsigma: '//trim(initsigma(j)))
           endselect
 !
         enddo
 !
       endif
 !
-      if (lroot) then
-        print*,'minmax sigma= ',minval(f(l1:l2,m1:m2,n1:n2,isigma)),&
-                                maxval(f(l1:l2,m1:m2,n1:n2,isigma))
-      endif
+      if (lroot) print*,'minmax sigma= ',minval(f(l1:l2,m1:m2,n1:n2,isigma)), &
+                         maxval(f(l1:l2,m1:m2,n1:n2,isigma))
 !
 !  Initialize the gas temperature.
 !
@@ -327,7 +326,7 @@ module Special
 !  Power law temperature profile.
 !
         case('power-law')
-          do m=m1,m2; do n=n1,n2
+          do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,itmid) = temperature0*(x(l1:l2)/plaw_r0)**(-plaw_temperature)
           enddo;enddo
 !
@@ -339,17 +338,13 @@ module Special
 !  Constant turbulent viscosity (for testing).
 !
         case('nut-constant')
-          do m=m1,m2; do n=n1,n2
-            f(l1:l2,m,n,itmid) = 0.0
-          enddo;enddo
+          f(l1:l2,m1:m2,n1:n2,itmid) = 0.0
           nut_global=nut_constant
 !
 !  Sinusoidal turbulent viscosity (for testing).
 !
         case('nut-sinusoidal')
-          do m=m1,m2; do n=n1,n2
-            f(l1:l2,m,n,itmid) = 0.0
-          enddo;enddo
+          f(l1:l2,m1:m2,n1:n2,itmid) = 0.0
           nut_global=nut_constant*(1.0+ampl_nut*sin((2*pi/lambda_nut)*x(l1:l2)))
 !
 !  Temperature from radiative model.
@@ -363,7 +358,7 @@ module Special
 !  Set the temperature via linear interpolation between the
 !  pre-calculated values.
 !
-          do m=m1,m2; do n=n1,n2
+          do n=n1,n2; do m=m1,m2
             call get_tmid(f(l1:l2,m,n,isigma),f(l1:l2,m,n,itmid))
           enddo; enddo
 !
@@ -377,7 +372,7 @@ module Special
 !
 !  Calculate Mdot from column density (and temperature).
 !
-      do m=m1,m2; do n=n1,n2
+      do n=n1,n2; do m=m1,m2
         call sigma_to_mdot(f(l1:l2,m,n,isigma),f(l1:l2,m,n,imdot))
       enddo; enddo
 !
@@ -388,11 +383,12 @@ module Special
 !***********************************************************************
     subroutine precalc_interpolation_parameters
 
-      minsigma=minval(sigma_table) ; maxsigma=maxval(sigma_table)
-      dsig = (maxsigma-minsigma)/(nsigma_table-1) ; dsig1=1./dsig
+      minsigma=minval(sigma_table); maxsigma=maxval(sigma_table)
+      dsig = (maxsigma-minsigma)/(nsigma_table-1); dsig1=1./dsig
 !
-      minlnsigma =minval(lnsigma_table) ; maxlnsigma =maxval(lnsigma_table)
-      dlnsig = (maxlnsigma-minlnsigma)/(nsigma_table-1) ; dlnsig1=1./dlnsig
+      minlnsigma =minval(lnsigma_table); maxlnsigma =maxval(lnsigma_table)
+      dlnsig = (maxlnsigma-minlnsigma)/(nsigma_table-1); dlnsig1=1./dlnsig
+
     endsubroutine precalc_interpolation_parameters
 !***********************************************************************
     subroutine precalc_temperatures(f)
@@ -467,7 +463,6 @@ module Special
         print*,'minmax temperature table 1',minval(tmid1_table),maxval(tmid1_table)
         print*,'minmax temperature table 2',minval(tmid2_table),maxval(tmid2_table)
       endif
-
 !
 !  Pre-calculate the parameters needed for the linear interpolation.
 !
@@ -506,6 +501,8 @@ module Special
       real, contiguous, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
 !
+      intent(in) :: f
+      intent(in) :: p
 
       real, dimension(nx) :: nu
 !
@@ -528,7 +525,9 @@ module Special
 !
       real, dimension(mx,my,mz,mfarray), intent(IN) :: f
       real, dimension(nx), intent(OUT) :: nu
+
       nu=f(l1:l2,m,n,imdot)*one_over_three_pi/f(l1:l2,m,n,isigma)
+
     endsubroutine get_nu
 !***********************************************************************
     subroutine dspecial_dt(f,df,p)
@@ -554,6 +553,8 @@ module Special
       real, dimension (nx) :: del2sigmanu,gsigmanu
       real, dimension (nx,3) :: tmp_vec
 !
+      intent(in) :: f,p
+      intent(inout) :: df
 !
 !  Identify module and boundary conditions.
 !
@@ -578,13 +579,10 @@ module Special
         endif
         df(l1:l2,m,n,isigma) = df(l1:l2,m,n,isigma) - swind
       endif
-
 !
 !  Diagnostics.
 !
       call calc_diagnostics_special(f,p)
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(p)
 !
     endsubroutine dspecial_dt
 !***********************************************************************
@@ -594,21 +592,23 @@ module Special
  !
       use Diagnostics, only: sum_mn_name, max_mn_name, yzsum_mn_name_x, save_name
 
-      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:), intent(IN) :: f
       type(pencil_case) :: p
       real, dimension (nx) :: psigma,nu
 
       call keep_compiler_quiet(p)
-      if(ldiagnos .or. l1davgfirst) psigma = f(l1:l2,m,n,isigma)
+
+      if (ldiagnos .or. l1davgfirst) psigma = f(l1:l2,m,n,isigma)
       if (ldiagnos) then
 
         if (idiag_dtyear/=0) then 
-                call get_nu(f,nu)
-                call sum_mn_name(.4*dx**2/(3*nu),idiag_dtyear)
+          call get_nu(f,nu)
+          call sum_mn_name(.4*dx**2/(3*nu),idiag_dtyear)
         endif
         call sum_mn_name(psigma,idiag_sigmam)
         call max_mn_name(psigma,idiag_sigmamax)
         if (idiag_sigmamin/=0) call max_mn_name(-psigma,idiag_sigmamin,lneg=.true.)
+        if (lroot .and. idiag_tmyr/=0) call save_name(merge(tdiagnos,t,lmultithread)/myr,idiag_tmyr)
       endif
 !
 !  1-D averages.
@@ -616,8 +616,7 @@ module Special
       if (l1davgfirst) then
         call yzsum_mn_name_x(psigma,idiag_sigmamx)
       endif
-      !TP: correct place to do it for GPU
-      if (lgpu .and. lroot.and.ldiagnos.and.idiag_tmyr/=0) call save_name(tdiagnos/myr,idiag_tmyr)
+
     endsubroutine calc_diagnostics_special
 !***********************************************************************
 !
@@ -672,11 +671,7 @@ module Special
       logical :: lreset
       logical, optional :: lwrite
 !
-      logical :: lwr
       integer :: iname, inamex
-!
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
 !
 !  Reset everything in case of reset.
 !  (this needs to be consistent with what is defined above!)
@@ -727,17 +722,15 @@ module Special
 !
 !  27-nov-08/wlad: coded
 !
-!
-      use Diagnostics, only : save_name
-      real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      real :: dt_
+      real, contiguous, dimension(:,:,:,:), intent(INOUT) :: f
+      real, dimension(mx,my,mz,mvar), intent(INOUT) :: df
+      real, intent(IN) :: dt_
       logical, intent(in) :: llast
 !
       select case (temperature_model)
 !
       case ('Hayashi')
-        do m=m1,m2 ; do n=n1,n2
+        do n=n1,n2; do m=m1,m2
           call sigma_to_mdot(f(l1:l2,m,n,isigma),f(l1:l2,m,n,imdot))
         enddo; enddo
 !
@@ -748,20 +741,18 @@ module Special
 !  is calculated on the fly, the temperature should be calculated
 !  at this frequency.
 !
-        do m=m1,m2 ; do n=n1,n2
+        do n=n1,n2; do m=m1,m2
           call get_tmid(f(l1:l2,m,n,isigma),f(l1:l2,m,n,itmid))
           call sigma_to_mdot(f(l1:l2,m,n,isigma),f(l1:l2,m,n,imdot))
         enddo; enddo
 !
       endselect
 !
-!
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(dt_)
       call keep_compiler_quiet(llast)
-      if (lroot.and.ldiagnos.and.idiag_tmyr/=0) call save_name(tdiagnos/myr,idiag_tmyr)
 !
-    endsubroutine  special_after_timestep
+    endsubroutine special_after_timestep
 !***********************************************************************
     subroutine get_coeff(alpha_)
 !
@@ -810,7 +801,7 @@ module Special
       case('radiative')
         do i=1,nx
 !
-          lgmdot=alog10(mdot(i))
+          lgmdot  = alog10(mdot(i))
           lgmdot1 = (3.1*c1(i) - cprime)/2.1
           lgmdot2 = (2*c3(i)-1.1*c2(i))/0.9
 !
@@ -822,7 +813,7 @@ module Special
             !optimization will take care of this division
             lgsigma = (lgmdot - c3(i))/1.1
           else
-            print*,'mdot=',mdot(i)
+            if (lroot) print*,'mdot=',mdot(i)
             call fatal_error("mdot_to_sigma","NaN in log(mdot)")
           endif
 !
@@ -968,7 +959,6 @@ module Special
       integer :: isig_do,isig_up
       integer :: i
 !
-!
       do i=1,nx
 !
 !  Check which table brackets the density.
@@ -1009,7 +999,7 @@ module Special
 !
 !  Linear interpolation.
 !
-          temperature(i) = dsig1*(tmid1_table(isig_do,i)*(sup-sig)+&
+          temperature(i) = dsig1*(tmid1_table(isig_do,i)*(sup-sig)+ &
                                   tmid1_table(isig_up,i)*(sig-sdo))
 !
         else if ((sig>=sigma_floor).and.(sig<=sigma_middle)) then
@@ -1021,7 +1011,7 @@ module Special
           lnsdo=minlnsigma+(isig_do-1)*dlnsig
           lnsup=minlnsigma+(isig_up-1)*dlnsig
 !
-          temperature(i) = dlnsig1*(tmid2_table(isig_do,i)*(lnsup-lnsig)+&
+          temperature(i) = dlnsig1*(tmid2_table(isig_do,i)*(lnsup-lnsig)+ &
                                     tmid2_table(isig_up,i)*(lnsig-lnsdo))
 !
         else
@@ -1063,10 +1053,8 @@ module Special
       right=temperature
       left=temperature_background
 !
-      x1=left ; x2=right
-      if (x1==x2) then
-        call fatal_error('calc_tmid','bad initial condition for newton-raphson: left=right')
-      endif
+      x1=left; x2=right
+      if (x1==x2) call fatal_error('calc_tmid','bad initial condition for newton-raphson: left=right')
 !
 !  Phi is the LHS of the equation. When it is zero, the root
 !  is found. To bracket the root, we make sure that the LHS
@@ -1143,7 +1131,7 @@ module Special
 !
 ! The effective optical depth
 !
-!      taueff = 3*tau/8 + sqrt(3)/4 + 1/(4*tau),
+!     taueff = 3*tau/8 + sqrt(3)/4 + 1/(4*tau),
 !
 ! handles both optically thin and thick regions.
 !
@@ -1159,24 +1147,22 @@ module Special
       H=sqrt(temp*cp*(gamma-1))/omega
 !
       grazing_irradiation = 2./(3*pi) * (radius_star/rr)**3
-      flaring_term       = .5*( (radius_star/rr)**2 * (H/rr) * (dlnHdlnR - 1))
+      flaring_term        = .5*( (radius_star/rr)**2 * (H/rr) * (dlnHdlnR - 1))
 !
       temperature_irradiation = temperature_star * (max(grazing_irradiation + flaring_term,0.0))**0.25
 !
 ! Phi is the left-hand-side of the equation to solve.
 !
-      phi  = 2*stbz*(temp**4-temperature_background**4-temperature_irradiation**4)-taueff*edot
+      phi = 2*stbz*(temp**4-temperature_background**4-temperature_irradiation**4)-taueff*edot
 !
 ! First and second analytical derivatives of Phi, to speed
 ! up the iterations.
 !
       if (present(dphi).or.present(d2phi)) then
         temp1=1./temp
+        dtaudt=(b_exp-.5*a_exp)*tau*temp1
 
-        if (present(dphi)) then
-          dtaudt=(b_exp-.5*a_exp)*tau*temp1
-          dphi  =  8*stbz*temp**3 - .25*edot*dtaudt*(1.5-tau1**2)
-        endif
+        if (present(dphi)) dphi = 8*stbz*temp**3 - .25*edot*dtaudt*(1.5-tau1**2)
 !
         if (present(d2phi)) then
           dtau2dt=(b_exp-.5*a_exp)*(b_exp-.5*a_exp-1)*tau*temp1**2
@@ -1335,28 +1321,28 @@ module Special
 !
       if (tt < 0.0) call fatal_error("calc_opacity", "negative temperature")
       if (TT <= T1) then
-        k=real(2d-4) ; a=0 ; b= 2.1  ; kk=k*tt**b
+        k=2e-4; a=0; b= 2.1 ; kk=k*tt**b
       else if ((TT > T1) .and. (TT <= T2)) then
-        k=3.   ; a=0 ; b=-0.01 ; kk=k*tt**b
+        k=3.  ; a=0; b=-0.01; kk=k*tt**b
       else if ((TT > T2) .and. (TT <= T3)) then
-        k=0.01 ; a=0 ; b= 1.1  ; kk=k*tt**b
+        k=0.01; a=0; b= 1.1 ; kk=k*tt**b
       else if ((TT > T3) .and. (TT <= T4)) then
-        k=real(5d4)  ; a=0 ; b=-1.5  ; kk=k*tt**b
+        k=5e4 ; a=0; b=-1.5 ; kk=k*tt**b
       else if ((TT > T4) .and. (TT <= T5)) then
-        k=0.1  ; a=0 ;  b= 0.7 ; kk=k*tt**b
+        k=0.1 ; a=0;  b= 0.7; kk=k*tt**b
       else if ((TT > T5) .and. (TT <= T6)) then
-        k=real(2d15) ; a=0 ; b=-5.2  ; kk=k*tt**b
+        k=2e15; a=0; b=-5.2 ; kk=k*tt**b
       else if ((TT > T6) .and. (TT <= T7)) then
-        k=0.02 ; a=0 ; b= 0.8  ; kk=k*tt**b
+        k=0.02; a=0; b= 0.8 ; kk=k*tt**b
       else if ((TT > T7) .and. (TT <= T8)) then
-        logk=81.3010 ; a=1. ; b=-24.
+        logk=81.3010; a=1.; b=-24.
         H=sqrt(TT*cp*(gamma-1))/omega
         rho=sigma/(2*H)
         logkk=logk+a*alog10(rho)+b*alog10(TT)
         kk=10**(logkk)
-        k=real(1d33)
+        k=1e33
       else if ((TT > T8) .and. (TT <= T9)) then
-        k=real(1d-8) ; a=2./3 ; b=3.
+        k=1e-8; a=2./3; b=3.
         H=sqrt(TT*cp*(gamma-1))/omega
         rho=sigma/(2*H)
         kk=k*rho**a*tt**b
@@ -1378,35 +1364,36 @@ module Special
     integer, parameter :: n_pars=35
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
-     call copy_addr(one_over_three_pi,p_par(1))
-     call copy_addr(lwind,p_par(2)) ! bool
-     call copy_addr(isigma,p_par(3)) ! int
-     call copy_addr(imdot,p_par(4)) ! int
-     call copy_addr(rr1,p_par(5)) ! (nx)
-     call copy_addr(swind,p_par(6)) ! (nx)
-     call copy_addr(sigma_middle,p_par(7))
-     call copy_addr(sigma_floor,p_par(8))
-     call copy_addr(nsigma_table,p_par(9)) ! int
-     call copy_addr(cprime,p_par(10))
-     call copy_addr(c1,p_par(11)) ! (nx)
-     call copy_addr(c2,p_par(12)) ! (nx)
-     call copy_addr(c3,p_par(13)) ! (nx)
-     call copy_addr(nut_global,p_par(14)) ! (nx)
-     call copy_addr(itmid,p_par(15)) ! int
-     call string_to_enum(enum_temperature_model,temperature_model)
-     call copy_addr(enum_temperature_model,p_par(18)) ! int
-     call copy_addr(sigma_table,p_par(20)) !  (nsigma_table__mod__alphadisk)
-     call copy_addr(lnsigma_table,p_par(21)) !  (nsigma_table__mod__alphadisk)
-     call copy_addr(tmid1_table,p_par(22)) ! (nsigma_table__mod__alphadisk) (nx)
-     call copy_addr(tmid2_table,p_par(23)) ! (nsigma_table__mod__alphadisk) (nx)
-     call copy_addr(maxsigma,p_par(24)) 
-     call copy_addr(minsigma,p_par(25)) 
-     call copy_addr(dsig,p_par(26)) 
-     call copy_addr(dsig1,p_par(27)) 
-     call copy_addr(maxlnsigma,p_par(28)) 
-     call copy_addr(minlnsigma,p_par(29)) 
-     call copy_addr(dlnsig,p_par(30)) 
-     call copy_addr(dlnsig1,p_par(31)) 
+      call copy_addr(one_over_three_pi,p_par(1))
+      call copy_addr(lwind,p_par(2)) ! bool
+      call copy_addr(isigma,p_par(3)) ! int
+      call copy_addr(imdot,p_par(4)) ! int
+      call copy_addr(rr1,p_par(5)) ! (nx)
+      call copy_addr(swind,p_par(6)) ! (nx)
+      call copy_addr(sigma_middle,p_par(7))
+      call copy_addr(sigma_floor,p_par(8))
+      call copy_addr(nsigma_table,p_par(9)) ! int
+      call copy_addr(cprime,p_par(10))
+      call copy_addr(c1,p_par(11)) ! (nx)
+      call copy_addr(c2,p_par(12)) ! (nx)
+      call copy_addr(c3,p_par(13)) ! (nx)
+      call copy_addr(nut_global,p_par(14)) ! (nx)
+      call copy_addr(itmid,p_par(15)) ! int
+      call string_to_enum(enum_temperature_model,temperature_model)
+      call copy_addr(enum_temperature_model,p_par(18)) ! int
+      call copy_addr(sigma_table,p_par(20)) !  (nsigma_table__mod__alphadisk)
+      call copy_addr(lnsigma_table,p_par(21)) !  (nsigma_table__mod__alphadisk)
+      call copy_addr(tmid1_table,p_par(22)) ! (nsigma_table__mod__alphadisk) (nx)
+      call copy_addr(tmid2_table,p_par(23)) ! (nsigma_table__mod__alphadisk) (nx)
+      call copy_addr(maxsigma,p_par(24)) 
+      call copy_addr(minsigma,p_par(25)) 
+      call copy_addr(dsig,p_par(26)) 
+      call copy_addr(dsig1,p_par(27)) 
+      call copy_addr(maxlnsigma,p_par(28)) 
+      call copy_addr(minlnsigma,p_par(29)) 
+      call copy_addr(dlnsig,p_par(30)) 
+      call copy_addr(dlnsig1,p_par(31)) 
+
     endsubroutine pushpars2c
 !***********************************************************************
 !********************************************************************
