@@ -1,0 +1,55 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+&run_pars
+  it1=10
+  nt=100
+!   tmax=5
+  
+  cdt=0.6
+  
+  isave=200
+  dsnap=100000.
+  
+  d1davg=0.4
+  d2davg=0.4
+  dvid=0.4
+  
+  slice_position='m'
+  
+  !For uxpt etc
+  lpoint=36
+  mpoint=5
+  npoint=5
+/
+&eos_run_pars
+/
+&hydro_run_pars
+  lupw_uu=T
+/
+&density_run_pars
+  lupw_lnrho=T
+/
+&grav_run_pars
+/
+&entropy_run_pars
+  lupw_ss=T
+  
+  iheatcond='chi-const'
+  chi=1e-2
+/
+&viscosity_run_pars
+  ivisc='nu-const'
+  nu=1e-2
+/
+&special_run_pars
+  x_1=-5, x_2=5
+  y_1=-5, y_2=5
+  z_1 = -5
+  z_2 = 20
+  w = 1e-2
+  tau = 1e-1
+  
+  ldamp_rho=T
+  ldamp_ss=T
+/
+

@@ -1,0 +1,21 @@
+Directory:
+    ${PENCIL_HOME}/samples/falling_thermal
+SVN Id:
+    $Id$
+Maintainer:
+    Kishore G <kishore96[dot]work/gmail[dot]com>
+Added:
+    29-Sep-2026
+Status:
+    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+Recommended resolution:
+    This resolution
+Comments:
+    A cool blob of material falling in a stratified background. Gravity points in the direction of increasing depth. Stratification is controlled by cs0.
+    
+    The thermal should reach the bottom of the box at about t=40.
+    
+    The main purpose of this sample is to test special/dampuu.f90. When the damping is turned off (e.g. set tau>>1) and one runs till, say, t=5, one sees clear horizontal stripes in contour plots of the pressure perturbation (plot_pressure_pert.py). These striations are well developed even at t=5
+
+References:
+    
