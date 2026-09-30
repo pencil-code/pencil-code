@@ -4,7 +4,7 @@ PRO power,var1,var2,last,w,v1=v1,v2=v2,v3=v3,all=all,wait=wait,k=k,qk=k2s,$
           tot=tot,lin=lin,png=png,yrange=yrange,norm=norm,helicity2=helicity2, $
           compensate1=compensate1,compensate2=compensate2, $
           compensate3=compensate3,datatopdir=datatopdir,double=double, $
-          lkscale=lkscale,cyl=cyl,zwav=zwav,dimcyl=dimcyl,no_tcode=no_tcode
+          lkscale=lkscale,cyl=cyl,zwav=zwav,dimcyl=dimcyl
 ;
 ;  $Id$
 ;
@@ -207,11 +207,9 @@ openr, unit, datatopdir+'/'+file1, /get_lun
   end
 
   while ~eof(unit) do begin
-    if keyword_set(no_tcode) then begin
-      readf,unit,time
-    endif else begin
-      readf,unit,time,tcode
-    endelse
+
+    time=read_incomp_time_line(unit, tcode)
+
     readf,unit,spectrum1
     ;if (max(spectrum1(1:*)) gt globalmax) then globalmax=max(spectrum1(1:*))
     ;if (min(spectrum1(1:*)) lt globalmin) then globalmin=min(spectrum1(1:*))
@@ -320,14 +318,10 @@ openr, unit_1, datatopdir+'/'+file1, /get_lun
     endif
 
     while ~eof(unit_1) do begin
-        if keyword_set(no_tcode) then begin
-      	  readf,unit_1,time
-        endif else begin
-      	  readf,unit_1,time,tcode1
-	  tcode[i-1]=tcode1
-        endelse
+    
+        tt[i-1]=read_incomp_time_line(unit_1, tcode1)
+	tcode[i-1]=tcode1
        	readf,unit_1,spectrum1
-	tt[i-1]=time
   ;if keyword_set(cyl) then begin
   ;endif else begin
   ;endelse
@@ -346,11 +340,7 @@ openr, unit_1, datatopdir+'/'+file1, /get_lun
        	if unit_2__open then begin
 
           on_ioerror, filend2
-          if keyword_set(no_tcode) then begin
-	    readf,unit_2,time
-          endif else begin
-	    readf,unit_2,time,tcode2
-          endelse
+          time=read_incomp_time_line(unit_2, tcode2)
 	  readf,unit_2,spectrum2
           if keyword_set(cyl) then $
             spec2(*,*,i-1)=spectrum2 $
@@ -386,18 +376,13 @@ cont2:
         ;
        	if unit_3__open then begin
           on_ioerror, filend3
-          if keyword_set(no_tcode) then begin
-	    readf,unit_3,time
-          endif else begin
-	    readf,unit_3,time,tcode3
-          endelse
+          time=read_incomp_time_line(unit_3, tcode3)
 	  readf,unit_3,spectrum3
           if keyword_set(cyl) then $
             spec3(*,*,i-1)=spectrum3 $
           else $
             spec3(*,i-1)=spectrum3
 
-          ;
           ;if (max(spectrum3(1:*)) gt maxy) then maxy=max(spectrum3(1:*))
           ;if (min(spectrum3(1:*)) lt miny) then miny=min(spectrum3(1:*))
           if (max(spectrum3) gt maxy) then maxy=max(spectrum3)
@@ -531,3 +516,22 @@ endif
 !x.range=''
 !y.range=''
 END
+;*****************************************
+function read_incomp_time_line, unit, tcode
+
+    time=0.
+    on_ioerror, incomplete
+    incomp=1
+    point_lun, -unit, fpos   ; store file position
+    readf,unit,time,tcode
+    incomp=0
+incomplete:
+    if incomp then begin 
+      point_lun, unit, fpos  ; rewind
+      readf,unit,time
+      tcode=0
+    endif
+    return, time
+
+end
+;*****************************************
