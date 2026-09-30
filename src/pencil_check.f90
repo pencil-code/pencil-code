@@ -55,16 +55,19 @@ module Pencil_check
       real, dimension (nx) :: dt1_max_ref
       integer :: i,j,k,penc,iv,nite,k_fail,k_fail_allproc
       integer, dimension (mseed) :: iseed_org
-      logical, dimension (mfarray) :: lfound_nan=.false.
-      logical, dimension (mfarray) :: lfound_nan_loc=.false.
+      logical, dimension (mfarray) :: lfound_nan
+      logical, dimension (mfarray) :: lfound_nan_loc
       logical :: lconsistent=.true., lconsistent_allproc=.false.
-      logical, dimension(mfarray) :: lconsistent_var =.true.
+      logical, dimension(mfarray) :: lconsistent_var
       logical, dimension(nname) :: lconsistent_diagnos
       character(len=30) :: name
       logical :: ldie=.false.
       integer :: mem_stat1, mem_stat2
       real :: save_dt
 !
+      lconsistent_var = .true.
+      lfound_nan = .false.
+      lfound_nan_loc = .false.
       if (lroot) print*, 'pencil_consistency_check: checking pencil case'
       lpencil_check_at_work=.true.
       !TP: save dt to be able to load it after the pencil check has been done

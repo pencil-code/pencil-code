@@ -352,6 +352,7 @@ module Density
   integer :: ihless
   logical, pointer :: lext_force
   real, pointer :: Hscript
+  logical, pointer :: lu_background
 
 !
   integer :: enum_ieos_profile = 0
