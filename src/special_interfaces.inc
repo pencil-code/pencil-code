@@ -34,8 +34,7 @@
     endsubroutine iface_finalize_special
 !
     subroutine iface_read_special_pars(iomsg)
-      import :: iomsglen
-      character(len=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
     endsubroutine iface_read_special_pars
 !
     subroutine iface_write_special_pars(unit)
