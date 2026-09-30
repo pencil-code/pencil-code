@@ -81,6 +81,7 @@ program pc_configtest
 !
   call register_modules
   if (lparticles) call particles_register_modules
+  call parse_bc_pars
 !
 !  Will we write all slots of f?
 !

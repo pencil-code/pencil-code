@@ -5456,17 +5456,14 @@ subroutine dot_mn_sv_pencil(a,b,c)
 !
 !  24-jan-02/wolf: coded
 !
-!  All entries up to mcom_max are parsed, as with DYNAMIC_AUX=yes mcom is not
-!  yet final when the parameters are read.
-!
-      character (len=2*bclen+1), dimension(mcom_max) :: bc
-      character (len=bclen), dimension(mcom_max,2) :: bc12
+      character (len=2*bclen+1), dimension(mcom) :: bc
+      character (len=bclen), dimension(mcom,2) :: bc12
       integer :: j,isep
 !
       intent(in) :: bc
       intent(out) :: bc12
 !
-      do j=1,mcom_max
+      do j=1,mcom
         if (bc(j) == '') then ! will probably never happen due to default='p'
           if (lroot) print*, 'Empty boundary condition No. ', &
               j, 'in (x, y, or z)'

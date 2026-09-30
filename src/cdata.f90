@@ -884,9 +884,10 @@ module Cdata
   logical :: Em_specflux=.false., Hm_specflux=.false., Hc_specflux=.false.
 !
   ! Auxiliary parameters for boundary conditions:
-  real, dimension(mcom_max,2) :: fbcx=0., fbcx_2=0.
-  real, dimension(mcom_max,2) :: fbcy=0., fbcy_1=0., fbcy_2=0.
-  real, dimension(mcom_max,2) :: fbcz=0., fbcz_1=0., fbcz_2=0.
+  ! Allocated to mcom in parse_bc_pars after the registration of the variables.
+  real, dimension(:,:), allocatable :: fbcx, fbcx_2
+  real, dimension(:,:), allocatable :: fbcy, fbcy_1, fbcy_2
+  real, dimension(:,:), allocatable :: fbcz, fbcz_1, fbcz_2
   ! Auxiliary parameters for distinct use only with bottom or top boundary:
   real, dimension(mcom_max) :: fbcx_bot=0., fbcx_top=0.
   real, dimension(mcom_max) :: fbcy_bot=0., fbcy_top=0.
@@ -896,7 +897,7 @@ module Cdata
 !
   real :: Udrift_bc=0.
   character (len=2*bclen+1), dimension(mcom_max) :: bcx='p',bcy='p',bcz='p'
-  character (len=bclen), dimension(mcom_max,2) :: bcx12='', bcy12='', bcz12=''
+  character (len=bclen), dimension(:,:), allocatable :: bcx12, bcy12, bcz12
   ! Names of the f-array slots
   character (len=labellen), dimension(:), allocatable :: varname
   character (len=labellen) :: force_lower_bound='',force_upper_bound=''
@@ -917,9 +918,10 @@ module Cdata
                         border_frac_r=0.0
   logical :: lborder_hyper_diff=.true.
   logical :: lfrozen_bcs_x=.false.,lfrozen_bcs_y=.false.,lfrozen_bcs_z=.false.
-  logical, dimension(mcom_max) :: lfrozen_bot_var_x=.false.,lfrozen_top_var_x=.false.
-  logical, dimension(mcom_max) :: lfrozen_bot_var_y=.false.,lfrozen_top_var_y=.false.
-  logical, dimension(mcom_max) :: lfrozen_bot_var_z=.false.,lfrozen_top_var_z=.false.
+  ! Allocated to mcom in parse_bc_pars after the registration of the variables.
+  logical, dimension(:), allocatable :: lfrozen_bot_var_x, lfrozen_top_var_x
+  logical, dimension(:), allocatable :: lfrozen_bot_var_y, lfrozen_top_var_y
+  logical, dimension(:), allocatable :: lfrozen_bot_var_z, lfrozen_top_var_z
   logical, dimension(mcom_max) :: lfreeze_varsquare=.false.
   logical, dimension(mcom_max) :: lfreeze_varint=.false.,lfreeze_varext=.false.
 !

@@ -902,7 +902,8 @@ endsubroutine helper_loop
   use Messages
   use Mpicomm
   use NSCBC,           only: NSCBC_clean_up
-  use Param_IO,        only: read_all_init_pars, read_all_run_pars, write_all_run_pars, write_pencil_info, get_downpars
+  use Param_IO,        only: read_all_init_pars, read_all_run_pars, write_all_run_pars, write_pencil_info, get_downpars, &
+                             parse_bc_pars
   use Particles_main
   use Pencil_check,    only: pencil_consistency_check
   use PointMasses,     only: pointmasses_read_snapshot, pointmasses_write_snapshot
@@ -1058,6 +1059,7 @@ endsubroutine helper_loop
   call register_modules
   if (lparticles) call particles_register_modules
   call farray_finalize_registration
+  call parse_bc_pars
 !
 ! Initialization dependent on mvar should come after registeration
 !

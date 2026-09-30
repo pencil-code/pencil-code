@@ -88,6 +88,7 @@ program pc_tecplot_solid
 !  Register physics modules.
 !
   call register_modules
+  call parse_bc_pars
 !
   if (lwrite_aux .and. .not. lread_aux) then
     if (lroot) then
