@@ -55,7 +55,8 @@ def fit_power(t, sigma, L0):
     """Fit for 2nd order structure function, Eq. 5 DOI 10.3847/1538-4357/aa93e7
     correlation length = L0
     """
-    return sigma + L0*np.log10(t)
+    #return sigma + L0*np.log10(t)
+    return sigma * t**L0
 
 # ------------------------------------------------------------------------------
 # standard linear fit
