@@ -199,6 +199,7 @@ module Magnetic
   integer :: N_modes_aa=1, naareset
   integer :: ibij=0
   logical, pointer :: lrelativistic_eos, lconservative, lrho_chi
+  logical, pointer :: lu_background  ! shared from Hydro; selects external flow
   logical :: lpress_equil=.false. !PAR_DOC: flag for pressure equilibrium (can
     !PAR_DOC: be used in connection with all initial fields)
   logical :: lpress_equil_via_ss=.false.

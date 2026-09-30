@@ -399,7 +399,7 @@ module Hydro
       lSchur_2D2D3D_uu, lSchur_2D2D1D_uu, &
       lhiggsless, vwall, alpha_hless, width_hless, qshear, zdampint, zdampext, &
       lext_force, rat_limiter, max_vel, lkt_transport, kt_theta, &
-      lproject_admissible, lvel_limiter‚ lu_background
+      lproject_admissible, lvel_limiter, lu_background
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -10059,6 +10059,8 @@ module Hydro
     call copy_addr(lub_y,p_par(155)) ! bool
     call copy_addr(lub_z,p_par(156)) ! bool
     call copy_addr(vertical_gradient,p_par(157))
+    call copy_addr(lu_background,p_par(158)) ! bool
+    call copy_addr(lism_rotation,p_par(158)) ! bool
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Hydro

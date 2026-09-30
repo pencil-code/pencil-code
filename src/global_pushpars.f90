@@ -487,7 +487,6 @@ contains
     call copy_addr(ifcrx,p_par(1433)) ! int
     call copy_addr(dtlimit,p_par(1434)) ! real dconst
     call copy_addr(lcorrect_ordering_for_a,p_par(1435)) ! bool
-    call copy_addr(lu_background,p_par(1436)) ! bool
 
     call copy_addr(iuub,p_par(1438)) ! int
     call copy_addr(iuubx,p_par(1439)) ! int

@@ -55,7 +55,8 @@ module Density
   real, dimension(mz) :: profz_eos=1.0,dprofz_eos=0.0
   real, target :: mpoly=impossible
   real, pointer :: mpoly0, mpoly1, mpoly2, eps_hless, width_hless_absolute, nu_tdep
-  logical, pointer :: lkt_transport   ! shared from Hydro; selects KT energy flux
+  logical, pointer :: lkt_transport  ! shared from Hydro; selects KT energy flux
+  logical, pointer :: lu_background  ! shared from Hydro; selects external flow
   real, dimension(nx) :: xmask_den
   real, dimension(nx) :: fprofile_x=1.
   real, dimension(nz) :: fprofile_z=1.
