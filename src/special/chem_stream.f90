@@ -289,7 +289,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(len=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=chem_stream_init_pars, IOSTAT=iostat, IOMSG=iomsg)

@@ -127,7 +127,7 @@ module Special
 !  6-oct-03/tony: coded
 !
       use Sub, only: register_report_aux
-      use FArrayManager, only: farray_register_pde,farray_register_auxiliary
+      use FArrayManager, only: farray_register_pde,farray_register_auxiliary,farray_append_aux_var
       call svn_id( &
            "$Id$")
 !
@@ -135,8 +135,7 @@ module Special
         call register_report_aux('specaux',ispecaux,ispecauxx,ispecauxy, &
             ispecauxz,communicated=.true.)
         if (lroot) print*, 'naux=',naux,'naux_com=', naux_com, 'maux=', maux,'maux_com=', maux_com
-        if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
-        aux_count=aux_count+3
+        call farray_append_aux_var('',naux+naux_com < maux+maux_com,3)
       endif
 !
     endsubroutine register_special
@@ -305,7 +304,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(len=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -325,7 +324,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(len=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)

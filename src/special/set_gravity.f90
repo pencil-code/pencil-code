@@ -90,7 +90,7 @@ module Special
 !***********************************************************************
     subroutine read_special_init_pars(iomsg)
 !
-      character(len=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
 !
       iomsg=""
 !
@@ -106,7 +106,7 @@ module Special
 !***********************************************************************
     subroutine read_special_run_pars(iomsg)
 !
-      character(len=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
 !
       iomsg=""
 !

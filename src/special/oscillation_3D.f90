@@ -280,7 +280,7 @@ module oscillation_3D
 !
       use File_io, only: parallel_unit
 !
-      character(len=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=oscillation_3D_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -300,7 +300,7 @@ module oscillation_3D
 !
       use File_io, only: parallel_unit
 !
-      character(len=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=oscillation_3D_run_pars, IOSTAT=iostat, IOMSG=iomsg)

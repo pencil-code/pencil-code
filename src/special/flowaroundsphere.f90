@@ -445,7 +445,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(len=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=flowaroundsphere_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -465,7 +465,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(len=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=flowaroundsphere_run_pars, IOSTAT=iostat, IOMSG=iomsg)

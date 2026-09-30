@@ -117,7 +117,7 @@ contains
 !
       use File_io, only: parallel_unit
 !
-      character(len=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -136,7 +136,7 @@ contains
 !
       use File_io, only: parallel_unit
 !
-      character(len=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
