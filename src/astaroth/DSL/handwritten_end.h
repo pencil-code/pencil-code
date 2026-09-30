@@ -188,6 +188,8 @@
           	}
           }
 	  if(AC_iss_run_aver__mod__cdata != 0) write(F_SS_RUN_AVER,rk_intermediate(F_SS_RUN_AVER,DF_SS_RUN_AVER,step_num,AC_dt__mod__cdata))
+          if(AC_ilncc__mod__cdata != 0) write(F_LNCC, rk_intermediate(F_LNCC,DF_LNCC,step_num,AC_dt__mod__cdata))
+// @auto-field-declarations: fortran-parser adds missing fields above this line
    }
    else
    {

@@ -489,6 +489,10 @@ contains
     call copy_addr(lcorrect_ordering_for_a,p_par(1435)) ! bool
     call copy_addr(lu_background,p_par(1436)) ! bool
 
+    call copy_addr(iuub,p_par(1438)) ! int
+    call copy_addr(iuubx,p_par(1439)) ! int
+    call copy_addr(iuuby,p_par(1440)) ! int
+    call copy_addr(iuubz,p_par(1441)) ! int
   endsubroutine pushpars2c
 !***********************************************************************
 endmodule Global_pushpars

@@ -10053,6 +10053,9 @@ module Hydro
     call copy_addr(lvel_limiter,p_par(152)) ! bool
     call copy_addr(llorentz_limiter,p_par(153)) ! bool
     call copy_addr(max_vel,p_par(154)) ! real dconst
+    call copy_addr(lub_y,p_par(155)) ! bool
+    call copy_addr(lub_z,p_par(156)) ! bool
+    call copy_addr(vertical_gradient,p_par(157))
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Hydro
