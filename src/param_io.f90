@@ -145,7 +145,7 @@ module Param_IO
       refinement_centers,refinement_n_centers, lu_background, lism_rotation
 !
   namelist /run_pars/ &
-      cvsid, ip, xyz0, xyz1, Lxyz, lperi, lpole, ncoarse, &
+      cvsid, ip, xyz0, xyz1, Lxyz, lperi, lpole, ncoarse, lu_background, &
       lshift_origin, lshift_origin_lower, coord_system, lconcurrent, &
       nt, it1, it1_ldt_report, it1start, it1d, itspec, itsnap, it_rmv, &
       dt, dt0, dt_epsi, dt_ratio, cdt, ddt, dt_incr, &

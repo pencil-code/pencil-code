@@ -27,8 +27,8 @@
 ! PENCILS PROVIDED der6u_res(3,3); uij6(3,3)
 ! PENCILS PROVIDED lorentz; lorentz_gamma; hless; advec_uu
 ! PENCILS PROVIDED T00; T0i(3); Tij(6); velx(3)
-! PENCILS PROVIDED ext_force(4); 
-! PENCILS PROVIDED uutot(3); divutot; utotij(3,3) 
+! PENCILS PROVIDED ext_force(4);
+! PENCILS PROVIDED uutot(3); divutot; utotij(3,3)
 !
 !** AUTOMATIC REFERENCE-LINK.TEX GENERATION ********************
 ! Declare relevant citations from pencil-code/doc/citations/ref.bib for this module.
@@ -254,7 +254,7 @@ module Hydro
   real :: amp_factor=0.,kx_uu_perturb=0.
   real :: qirro_uu=0., qini=0.
   integer, dimension(ninit) :: ll_sh=0, mm_sh=0, n_xprof=-1
-! Parameters for the background profile 
+! Parameters for the background profile
   character (len=labellen) :: uuprof='nothing'
   logical :: lub_x=.false., lub_y=.false., lub_z=.false.
   real :: vertical_gradient=0
@@ -286,7 +286,7 @@ module Hydro
       llorentz_limiter, lrat_limiter, lhiggsless, lhiggsless_old, vwall, alpha_hless, width_hless, &
       xjump_mid, yjump_mid, zjump_mid, qini, lnorm_vw_hless, &
       qshear, lampluu_adjust_ascale, lalfven_relativistic, lvel_limiter,&
-      uuprof, vertical_gradient, lism_rotation, Omega, lu_background      
+      uuprof, vertical_gradient, lism_rotation, Omega
 !
 !  Run parameters.
 !
@@ -1087,12 +1087,12 @@ module Hydro
       if (lvv_as_aux .or. lvv_as_comaux) then
         call register_report_aux('vv', ivv, ivx, ivy, ivz, communicated=.true.,rhs=.true.,read_from_gpu=.true.)
       endif
-!     
+!
 !   Register background profile
-!     
-      if (lu_background) then     
+!
+      if (lu_background) then
         call register_report_aux('uub', iuub, iuubx, iuuby, iuubz)
-      endif      
+      endif
 !
 !  omega as aux
 !
@@ -1292,7 +1292,7 @@ module Hydro
 ! of gas velocity as auxiliary
 !
       if (lparticles_grad) lgradu_as_aux=.true.
-      if (lSGS_hydro) call register_SGS_hydro      
+      if (lSGS_hydro) call register_SGS_hydro
 !
       call put_shared_variable('lext_force',lext_force)
       call put_shared_variable('llorentz_limiter',llorentz_limiter)
@@ -1383,7 +1383,7 @@ module Hydro
           case ('flip-ux'); f(:,:,:,iux)=-f(:,:,:,iux)
           case ('flip-uy'); f(:,:,:,iuy)=-f(:,:,:,iuy)
           case ('mult-uz-lower-xbdry'); if (ipx==0) f(1:l1,:,:,iuz)=rescale_uu*f(1:l1,:,:,iuz)
-          case ('Om_inner'); 
+          case ('Om_inner');
             do l=1,mx; do m=1,my; do n=1,mz;
               f(l,m,n,iuz)=Om_inner*(xyz0(1)**2/x(l))*sin(y(m))
             enddo; enddo; enddo
@@ -1611,9 +1611,9 @@ module Hydro
         uumxy=0.0
         ruumxy=0.0
       endif
-!     
+!
 !  Sets an auxiliary variable for a background flow
-!     
+!
      if (lu_background) then
        !Sets the actual profile
        call background_profile(f,uuprof)
@@ -1621,7 +1621,7 @@ module Hydro
        !It only calculates ubij along one x, however if the profile doesn't depend on y and z
        !We do not need to change it again. We set these flags within the routine to decide
        call calc_ubij(uuprof,ubij,0,0)
-     endif        
+     endif
 
 !  Jamie 28 Sep 26: Moved this to a separate subroutine
 !  Sets prof_amp1 to prof_amp4 to be called later
@@ -1979,7 +1979,7 @@ module Hydro
           ! Ensure really is zero, as may have used lread_oldsnap
           f(:,:,:,iux:iuz)=0.
         case ('const_uu','const-uu'); do i=1,3; f(:,:,:,iuu+i-1) = uu_const(i); enddo
-        case ('shear'); 
+        case ('shear');
           do l=1,mx; do m=1,my; do n=1,mz;
             f(l,m,n,iuz)=-qshear*Omega*x(l)
           enddo; enddo; enddo
@@ -2021,7 +2021,7 @@ module Hydro
           enddo
         case ('random_isotropic_shell')
           call random_isotropic_shell(f,iux,ampluu(j),z1_uu,z2_uu)
-        case ('gaussian-noise') 
+        case ('gaussian-noise')
           if (lroot) print*, 'init_uu: gaussian noise, ampluu=', ampluu(j)
           call gaunoise(ampluu(j),f,iux,iuz)
         case ('gaussian-noise-x'); call gaunoise(ampluu(j),f,iux)
@@ -2875,7 +2875,7 @@ module Hydro
                   f(my_ind,m,n,j)=f(my_ind,m,n,j)*max_vel/sqrt(ss2(my_ind))
                 endif
               enddo
-            endif 
+            endif
           enddo
         enddo
         enddo
@@ -3016,13 +3016,13 @@ module Hydro
         endif
       endif
       if (lprecession) lpenc_requested(i_rr)=.true.
-!     
+!
 !  Pencils if background velocity is present
-!     
+!
       if (lu_background) then
         lpenc_requested(i_uutot) = .true.
         lpenc_requested(i_divutot) = .true.
-      endif      
+      endif
 !
 !  Damping terms for lcylinder_in_a_box
 !
@@ -3523,7 +3523,7 @@ module Hydro
       logical, dimension(npencils) :: lpenc_loc
       integer :: iuu
 !
-      real, dimension (nx) :: tmp 
+      real, dimension (nx) :: tmp
       real, dimension (nx,3,3) :: T0ij
 
 
@@ -3880,7 +3880,7 @@ module Hydro
 
       real, contiguous, dimension(:,:,:,:) :: f
       type (pencil_case) :: p
-      
+
       if (lconservative) then
         call calc_uu_conservative(f,p)
       else
@@ -3924,7 +3924,7 @@ module Hydro
 !
       if (lpenc_loc(i_uu)) then
         call calc_uu(f,p)
-      endif 
+      endif
 ! Tij
       call calc_Tij(f,p,lpenc_loc)
 ! u2
@@ -3936,7 +3936,7 @@ module Hydro
         call calc_pencils_hydro_nonlinear_from_f(f,p,lpenc_loc,iuu)
       endif
 !
-! New pencils if there is a background velocity profile        
+! New pencils if there is a background velocity profile
 ! uutot
       if  (lpenc_loc(i_uutot) .and. lu_background) p%uutot = f(l1:l2,m,n,iux:iuz) + f(l1:l2,m,n,iuubx:iuubz)
 ! utotij
@@ -3946,7 +3946,7 @@ module Hydro
       endif
 ! divutot
       if (lpenc_loc(i_divutot)) call div_mn(p%utotij,p%divutot,p%uutot)
-!      
+!
 ! divu
       if (lpenc_loc(i_divu)) then
         call div_mn(p%uij,p%divu,p%uu)
@@ -4373,7 +4373,7 @@ module Hydro
           !Otherwise, it can remain at the value calculated during initialisation
           if (lub_y .or. lub_z) call calc_ubij(uuprof,ubij,m,n)
           call u_dot_grad(f,iuub,ubij,p%uu,ugub)
-          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%ugu - ubgu - ugub          
+          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%ugu - ubgu - ugub
         else
           df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%ugu
         endif
@@ -6282,7 +6282,7 @@ module Hydro
           do j=1,3
             do n=1,mz
               f(:,:,n,iuu+j-1) = f(:,:,n,iuu+j-1)-uumz(n,j)
-! PC: The line commented below is for damping box modes of convection. 
+! PC: The line commented below is for damping box modes of convection.
 !              if (z(n) .lt. 0.0) f(:,:,n,iuu+j-1) = f(:,:,n,iuu+j-1)-rescale_uu*uumz(n,j)
             enddo
           enddo
@@ -7028,7 +7028,7 @@ module Hydro
       read(parallel_unit, NML=hydro_run_pars, IOSTAT=iostat, IOMSG=iomsg)
       if (iostat==0) iomsg=""
 !
-      if (lSGS_hydro) call read_SGS_hydro_run_pars(iomsg)      
+      if (lSGS_hydro) call read_SGS_hydro_run_pars(iomsg)
 !
     endsubroutine read_hydro_run_pars
 !***********************************************************************
@@ -8270,7 +8270,7 @@ module Hydro
 
         case ('hless')
           call assign_slices_scal(slices,hless_xy,hless_xz,hless_yz,hless_xy2,hless_xy3,hless_xy4,hless_xz2,hless_r)
-         
+
         case ('Ft')
           call assign_slices_scal(slices,Ft_xy,Ft_xz,Ft_yz,Ft_xy2,Ft_xy3,Ft_xy4,Ft_xz2,Ft_r)
 
@@ -8829,7 +8829,7 @@ module Hydro
 !
 !  Compute inverse density, rho1.
 !
-        !!$omp target if (loffload) data map(to: rum) has_device_addr(f) 
+        !!$omp target if (loffload) data map(to: rum) has_device_addr(f)
         !shared: lref, indrhol
         !!$omp teams distribute parallel do collapse(2) private(rho1)
         do n = n1,n2
@@ -8957,7 +8957,7 @@ module Hydro
       endselect
 !
     endsubroutine interior_bc_hydro
-!***********************************************************************    
+!***********************************************************************
     subroutine set_profile_diffrot(uuprof)
 !
 !  28 Sep 26 Jamie: Carved out from init_hydro
@@ -8965,7 +8965,7 @@ module Hydro
 !  Set profiles for forcing differential rotation.
 !
     Use Sub, only: erfunc, step
-!    
+!
     real :: slope,uinn,uext,zbot
     character :: uuprof
 !
