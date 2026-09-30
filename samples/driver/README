@@ -17,7 +17,7 @@ Comments:
     and "driver/vel-z_times.dat" indicates the times of the target.
     The driver files use SI units. To run this sample:
     1) Create the driver files, open IDL in this directory and type:
-       IDL> .r ../../utils/philippe/driver/create_vel_driver.pro
+       IDL> .r ../../utils/philippe/driver/create_vel_driver
     2) Compile and run the sample.
     3) Data analysis is done with the PC-GUI in IDL again:
        IDL> .r pc_gui
