@@ -26,11 +26,11 @@ contains
     call copy_addr(lcoarse,p_par(2)) ! bool
     call copy_addr_dble(unit_magnetic,p_par(4))
     call copy_addr_dble(k_b,p_par(5))
-    
+
     call copy_addr(m2,p_par(7)) ! int
     call copy_addr(n2,p_par(8)) ! int
     call copy_addr(l2,p_par(356)) ! int
-    
+
     call copy_addr(dxmax,p_par(10))
     call copy_addr(lcartesian_coords,p_par(11)) ! bool
     call copy_addr(lspherical_coords,p_par(12)) ! bool
@@ -131,7 +131,7 @@ contains
     call copy_addr(lisotropic_advection,p_par(116)) ! bool
     call copy_addr(ldynamical_diffusion,p_par(117)) ! bool
     call copy_addr(lstratz,p_par(118)) ! bool
-    
+
     call copy_addr(x,p_par(119)) ! (mx)
     call copy_addr(dx_1,p_par(120)) ! (mx)
     call copy_addr(dvol_x,p_par(121)) ! (mx)
@@ -141,7 +141,7 @@ contains
     call copy_addr(z,p_par(125)) ! (mz)
     call copy_addr(dz_1,p_par(126)) ! (mz)
     call copy_addr(dvol_z,p_par(127)) ! (mz)
-    
+
     call copy_addr(r1_mn,p_par(128)) ! (nx)
     call copy_addr(sinth,p_par(129)) ! (my)
     call copy_addr(sin1th,p_par(130)) ! (my)
@@ -150,7 +150,7 @@ contains
     call copy_addr(sinph,p_par(133)) ! (mz)
     call copy_addr(cosph,p_par(134)) ! (mz)
     call copy_addr(rcyl_mn1,p_par(135)) ! (nx)
-    
+
     call copy_addr(lpole,p_par(136)) ! bool3
     call copy_addr(lequidist,p_par(137)) ! bool3
     call copy_addr(xyz0,p_par(138)) ! real3
@@ -162,12 +162,12 @@ contains
     call copy_addr(lfreeze_varsquare,p_par(152)) ! bool (mcom_max)
     call copy_addr(lfreeze_varint,p_par(153)) ! bool (mcom_max)
     call copy_addr(lfreeze_varext,p_par(154)) ! bool (mcom_max)
-    
+
     call copy_addr(iuud,p_par(155)) ! int (ndustspec)
     call copy_addr(iudx,p_par(156)) ! int (ndustspec)
     call copy_addr(iudy,p_par(157)) ! int (ndustspec)
     call copy_addr(iudz,p_par(158)) ! int (ndustspec)
-    
+
     call copy_addr(ilnnd,p_par(159)) ! int (ndustspec)
     call copy_addr(ind,p_par(160)) ! int (ndustspec)
     call copy_addr(imd,p_par(161)) ! int (ndustspec)
@@ -183,7 +183,7 @@ contains
     call copy_addr(y12,p_par(171))      !  (my)
     call copy_addr(sinth12,p_par(172))  !  (my)
     call copy_addr(z12,p_par(173))      !  (mz)
-    
+
     call copy_addr(ldebug,p_par(300)) ! bool
     call copy_addr(lmorton_curve,p_par(338)) ! bool
     call copy_addr(itorder,p_par(343)) ! int
@@ -191,7 +191,7 @@ contains
     call copy_addr(dtdec,p_par(345)) ! real dconst
     call copy_addr(maux_vtxbuf_index,p_par(346)) ! int (mfarray_max)
     call copy_addr(num_substeps,p_par(347)) ! int
-    
+
     call copy_addr_dble(unit_length,p_par(349))
     call copy_addr_dble(unit_temperature,p_par(350))
     call copy_addr_dble(unit_mass,p_par(351))
@@ -228,7 +228,7 @@ contains
     call copy_addr(ibz,p_par(388)) ! int
     call copy_addr(ishock,p_par(389)) ! int
     call copy_addr(ishock_perp,p_par(390)) ! int
-    
+
     call copy_addr(fbcx_bot,p_par(391)) ! (mcom_max)
     call copy_addr(fbcx_top,p_par(392)) ! (mcom_max)
     call copy_addr(fbcy_bot,p_par(393)) ! (mcom_max)
@@ -237,24 +237,24 @@ contains
     call copy_addr(fbcz_top,p_par(396)) ! (mcom_max)
     call copy_addr(lcoarse_mn,p_par(400)) ! bool
     call copy_addr(ltime_integrals,p_par(401)) ! bool
-    
+
     call copy_addr(dx2_bound,p_par(1164)) ! (2*nghost+1)
     call copy_addr(dy2_bound,p_par(1165)) ! (2*nghost+1)
     call copy_addr(dz2_bound,p_par(1166)) ! (2*nghost+1)
-    
+
     call copy_addr(fbcx,p_par(1155)) ! (mcom_max) (2)
     call copy_addr(fbcy,p_par(1156)) ! (mcom_max) (2)
     call copy_addr(fbcz,p_par(1157)) ! (mcom_max) (2)
-    
+
     call copy_addr(fbcy_1,p_par(1159)) ! (mcom_max) (2)
     call copy_addr(fbcz_1,p_par(1160)) ! (mcom_max) (2)
-    
+
     call copy_addr(fbcx_2,p_par(1161)) ! (mcom_max) (2)
     call copy_addr(fbcy_2,p_par(1162)) ! (mcom_max) (2)
     call copy_addr(fbcz_2,p_par(1163)) ! (mcom_max) (2)
-    
+
     call copy_addr(cdtf,p_par(1170))
-    
+
     call copy_addr(dx_tilde,p_par(1171)) ! (mx)
     call copy_addr(dy_tilde,p_par(1172)) ! (my)
     call copy_addr(dz_tilde,p_par(1173)) ! (mz)
@@ -262,7 +262,7 @@ contains
     call copy_addr(lroot,p_par(1175)) ! bool
     call copy_addr(lperi,p_par(1176)) ! bool3
 
-    
+
     call copy_addr_dble(sigma_thomson,p_par(1185))
     call copy_addr_dble(c_light,p_par(1188))
     call copy_addr(iey,p_par(1194)) ! int
@@ -273,12 +273,12 @@ contains
     call copy_addr(eps_rkf,p_par(1199)) ! real dconst
     call copy_addr(dt_ratio,p_par(1120)) ! real dconst
     call copy_addr(ntestflow,p_par(1121)) ! int
-    
+
     call copy_addr(iam,p_par(1122)) ! int
     call copy_addr(iamx,p_par(1123)) ! int
     call copy_addr(iamy,p_par(1124)) ! int
     call copy_addr(iamz,p_par(1125)) ! int
-    
+
     call copy_addr(iaatest,p_par(1126)) ! int
     call copy_addr(iaztestpq,p_par(1127)) ! int
     call copy_addr(iaxtest,p_par(1128)) ! int
@@ -286,7 +286,7 @@ contains
     call copy_addr(iaztest,p_par(1130)) ! int
     call copy_addr(iuztestpq,p_par(1132)) ! int
     call copy_addr(ihhtestpq,p_par(1133)) ! int
-    
+
     call string_to_enum(enum_ascale_type,ascale_type)
     call copy_addr(enum_ascale_type,p_par(1135)) ! int
     call copy_addr_dble(unit_flux,p_par(1201))
@@ -335,41 +335,41 @@ contains
     call copy_addr(lambda5,p_par(1284))
     call copy_addr(ipotself,p_par(1285)) ! int
     call copy_addr(igpotselfx,p_par(1286)) ! int
-    
+
     call copy_addr(iggt,p_par(1290)) ! int
     call copy_addr(iggx,p_par(1291)) ! int
     call copy_addr(iggtim,p_par(1297)) ! int
     call copy_addr(iggxim,p_par(1298)) ! int
-    
+
     call copy_addr(ihht,p_par(1287)) ! int
     call copy_addr(ihhx,p_par(1288)) ! int
     call copy_addr(ihhtim,p_par(1295)) ! int
     call copy_addr(ihhxim,p_par(1296)) ! int
-    
+
     call copy_addr(istress_ij,p_par(1294)) ! int
     call copy_addr(istresst,p_par(1292)) ! int
     call copy_addr(istressx,p_par(1293)) ! int
     call copy_addr(istresstim,p_par(1299)) ! int
     call copy_addr(istressxim,p_par(1300)) ! int
-    
+
     call copy_addr(tstart,p_par(1302)) ! real dconst
     call copy_addr(iunx,p_par(1303)) ! int
     call copy_addr(iuny,p_par(1304)) ! int
     call copy_addr(iunz,p_par(1305)) ! int
     call copy_addr(ilnrhon,p_par(1306)) ! int
-    
+
     call farray_use_global('global_gg',iglobal_gg_tmp,ierr=ierr)
     if (ierr /= 0) then
       iglobal_gg = 0
     else
       iglobal_gg = iglobal_gg_tmp
     endif
-    
+
     call copy_addr(iglobal_gg,p_par(1307)) ! int
     call copy_addr(coeffs_1_x,p_par(1308)) ! (2*nghost+1) (2)
     call copy_addr(coeffs_1_y,p_par(1309)) ! (2*nghost+1) (2)
     call copy_addr(coeffs_1_z,p_par(1310)) ! (2*nghost+1) (2)
-    
+
     call farray_use_global('glnTT',iglobal_glnTT_tmp,ierr=ierr)
     if (ierr /= 0) then
       iglobal_glnTT = 0
@@ -378,12 +378,12 @@ contains
     endif
     call copy_addr(iglobal_glnTT,p_par(1311)) ! int
     call copy_addr(lbidiagonal_derij,p_par(1312)) ! bool
-    
+
     call copy_addr(n_odevars,p_par(1313)) ! int
     if (allocated(f_ode)) call copy_addr(f_ode,p_par(1314)) ! (n_odevars__mod__cdata) dconst
-    
+
     call copy_addr(lread_scl_factor_file,p_par(1315)) ! bool
-    
+
     !TP: not using these at the moment so no need for the warnings
     !call string_to_enum(enum_bcx12, bcx12)
     !call string_to_enum(enum_bcy12, bcy12)
@@ -470,7 +470,7 @@ contains
     call copy_addr(ivx,p_par(1417)) ! int
     call copy_addr(ivy,p_par(1418)) ! int
     call copy_addr(ivz,p_par(1419)) ! int
-    call copy_addr(tau_aver1,p_par(1420)) 
+    call copy_addr(tau_aver1,p_par(1420))
     call copy_addr(lbaryons,p_par(1421)) ! bool
     call copy_addr(density_scale_factor,p_par(1422))
 
@@ -480,8 +480,8 @@ contains
     call copy_addr(ilnrho_phi,p_par(1426)) ! int
     call copy_addr(lna_table,p_par(1428)) ! (nline) gmem
     call copy_addr(ell_table,p_par(1429)) ! (nline) gmem
-    call copy_addr(lna_table_min,p_par(1430)) 
-    call copy_addr(dlna,p_par(1431)) 
+    call copy_addr(lna_table_min,p_par(1430))
+    call copy_addr(dlna,p_par(1431))
     call copy_addr(lsld_every_step,p_par(1432)) ! bool
 
     call copy_addr(ifcrx,p_par(1433)) ! int
