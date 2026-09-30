@@ -221,6 +221,8 @@ module Hydro
   logical :: lno_noise_uu=.false., lrho_nonuni_uu=.false.
   logical :: llorentz_limiter=.false., lrat_limiter=.false., full_3D=.false.
   logical :: lhiggsless=.false., lhiggsless_old=.false.
+  logical, target :: lu_background=.false.
+  logical :: lism_rotation=.false.
   logical :: lvel_limiter=.false. !PAR_DOC: Do we clip the velocity to be below a threshold when using forcing.
     !PAR_DOC: Used to get rid of superluminal velocities.
   logical :: lalfven_relativistic=.true.
@@ -286,7 +288,7 @@ module Hydro
       llorentz_limiter, lrat_limiter, lhiggsless, lhiggsless_old, vwall, alpha_hless, width_hless, &
       xjump_mid, yjump_mid, zjump_mid, qini, lnorm_vw_hless, &
       qshear, lampluu_adjust_ascale, lalfven_relativistic, lvel_limiter,&
-      uuprof, vertical_gradient, lism_rotation, Omega
+      uuprof, vertical_gradient, lism_rotation, Omega, lu_background, lism_rotation
 !
 !  Run parameters.
 !
@@ -397,7 +399,7 @@ module Hydro
       lSchur_2D2D3D_uu, lSchur_2D2D1D_uu, &
       lhiggsless, vwall, alpha_hless, width_hless, qshear, zdampint, zdampext, &
       lext_force, rat_limiter, max_vel, lkt_transport, kt_theta, &
-      lproject_admissible, lvel_limiter
+      lproject_admissible, lvel_limiter‚ lu_background
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -1224,6 +1226,7 @@ module Hydro
       call put_shared_variable('lhiggsless',lhiggsless)
       call put_shared_variable('lkt_transport',lkt_transport)
       call put_shared_variable('lrelativistic',lrelativistic)
+      call put_shared_variable('lu_background',lu_background)
 
       call put_shared_variable ('tdamp', tdamp)
       call put_shared_variable ('ldamp_fade', ldamp_fade)
