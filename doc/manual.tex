@@ -2478,7 +2478,7 @@ As stated normal usage of GPUs requires compilation during the running of the se
 This is because the code as is with its large number of conditionals would not be performant on the GPUs because for performance Astaroth needs to know at compile-time which stencils are used. Compiling after the parameters have been chosen fixes the problem. 
 
 However it is inconvenient if you want to run a spectrum of runs while varying some numerical parameters if each choice requires separate runtime compilation. Because of this it is possible to tell via code comments does a parameter need recompilation or not.
-The relevant subroutines are called \code{pushpars2c}. The following has examples for boolean and real variables where the former would force recompilation and the latter not.
+The relevant subroutines are called \code{pushpars2c}. The following has examples for boolean and real variables where the first two would force recompilation and the last two would not.
 \begin{verbatim}
   call copy_addr(lklein_gordon,p_par(1)) ! bool
   call copy_addr(wfreeze,p_par(2))
