@@ -199,7 +199,7 @@ denormalize_field(Field F, acc_sum, acc_sum_squared, count)
 Kernel get_bfield(){
 
 	if(!AC_ltrained__mod__training && AC_ltrain_mag__mod__training){
-		write(bbmean,curl(AA))
+		write(bbmean,curl(F_AVEC))
 	}
 }
 
