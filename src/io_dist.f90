@@ -800,6 +800,7 @@ module Io
       use Syscalls, only: system_cmd
 !
       close (lun_input)
+!
       if (snaplink/='') then
         call system_cmd('rm -f '//snaplink)
         snaplink=''

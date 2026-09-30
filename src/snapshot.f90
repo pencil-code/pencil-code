@@ -307,8 +307,8 @@ module Snapshot
 !
 ! Prepare auxilliaries that are used only for later visualization
 !
-      if (iFlameInd .gt. 0) call make_flame_index(a)
-      if (iMixFrac .gt. 0) call make_mixture_fraction(a)
+      if (iFlameInd > 0) call make_flame_index(a)
+      if (iMixFrac  > 0) call make_mixture_fraction(a)
 !
 !  Output snapshot with label in 'tsnap' time intervals.
 !  File keeps the information about number and time of last snapshot.
@@ -729,7 +729,7 @@ module Snapshot
 !
       elseif (lread_oldsnap_nocoolprof) then
         if (lroot) print*,'read old snapshot file (but without cooling profile)'
-        call input_snap('var',f,msnap-1,mode)
+        call input_snap(file,f,msnap-1,mode)
         if (lpersist) call input_persistent
         call input_snap_finalize
         ! shift the rest of the data

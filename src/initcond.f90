@@ -8700,6 +8700,7 @@ module Initcond
 !   13-may-13/mvaisala: created
 !
       use IO, only: input_snap, input_snap_finalize
+
       real, contiguous, dimension(:,:,:,:), intent(inout) :: f
       real, allocatable, dimension (:,:,:,:) :: apot
       logical :: exfile, lbin=.false.
@@ -8719,7 +8720,7 @@ module Initcond
       else
         if (lbin) then
           call input_snap(datafile,apot,3,0)
-          call input_snap_finalize()
+          call input_snap_finalize
 !          apot(:,:,:,1)=0.0
 !          apot(:,:,:,2)=spread(spread(0.1*(alog(exp((x+2)/0.2)+exp(-(x+2)/0.2))-&
 !                       alog(exp((x+1)/0.2)+exp(-(x+1)/0.2))),2,my),3,mz)-&

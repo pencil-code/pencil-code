@@ -694,6 +694,8 @@ COMPILE_OPT IDL2,HIDDEN
       endif else begin
         readu, file, t, x, y, z, dx, dy, dz
       endelse
+      ;id=0L & readu, file, id & print, 'ID=', id  ; for checking persistent var id
+
     endif else begin
       if (allprocs eq 2) then begin
         ; xy-collectively written files for each ipz-layer
