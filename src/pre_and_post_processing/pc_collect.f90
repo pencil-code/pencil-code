@@ -84,6 +84,7 @@ program pc_collect
 !
   call register_modules
   if (lparticles) call particles_register_modules()
+  call parse_bc_pars
 !
   if (lwrite_aux .and. .not. lread_aux) then
     if (lroot) then

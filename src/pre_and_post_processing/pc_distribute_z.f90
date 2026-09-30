@@ -77,6 +77,7 @@ program pc_distribute_z
 !  Register physics modules.
 !
   call register_modules
+  call parse_bc_pars
 !
   if (lwrite_aux .and. .not. lread_aux) then
     print *, ''

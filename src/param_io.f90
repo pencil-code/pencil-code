@@ -66,7 +66,7 @@ module Param_IO
   private
 !
   public :: get_datadir, get_snapdir
-  public :: read_all_init_pars, read_all_run_pars
+  public :: read_all_init_pars, read_all_run_pars, parse_bc_pars
   public :: write_all_init_pars, write_all_run_pars
   public :: write_pencil_info
   public :: get_downpars
@@ -412,31 +412,11 @@ module Param_IO
         lyinyang=.false.
       endif
 !
-!  Parse boundary conditions; compound conditions of the form `a:s' allow
-!  to have different variables at the lower and upper boundaries.
+!  Parse boundary conditions. Before the registration of the variables mcom is
+!  not final, then this is done later by calling parse_bc_pars.
 !
-      bcx=adjustl(bcx); bcy=adjustl(bcy); bcz=adjustl(bcz)
-      call parse_bc(bcx,bcx12)
-      call parse_bc(bcy,bcy12)
-      call parse_bc(bcz,bcz12)
-!
-      fbcx  (:,1) = fbcx1;   fbcx  (:,2) = fbcx2
-      fbcx_2(:,1) = fbcx1_2; fbcx_2(:,2) = fbcx2_2
-
-      fbcy  (:,1) = fbcy1;   fbcy  (:,2) = fbcy2
-      fbcy_1(:,1) = fbcy1_1; fbcy_1(:,2) = fbcy2_1
-      fbcy_2(:,1) = fbcy1_2; fbcy_2(:,2) = fbcy2_2
-
-      fbcz  (:,1) = fbcz1;   fbcz  (:,2) = fbcz2
-      fbcz_1(:,1) = fbcz1_1; fbcz_1(:,2) = fbcz2_1
-      fbcz_2(:,1) = fbcz1_2; fbcz_2(:,2) = fbcz2_2
-!
-      if (lroot.and.ip<14) then
-        print*, 'bcx1,bcx2= ', bcx12(:,1)," : ",bcx12(:,2)
-        print*, 'bcy1,bcy2= ', bcy12(:,1)," : ",bcy12(:,2)
-        print*, 'bcz1,bcz2= ', bcz12(:,1)," : ",bcz12(:,2)
-        print*, 'lperi= ', lperi
-      endif
+      if (allocated(bcx12)) call parse_bc_pars
+      if (lroot.and.ip<14) print*, 'lperi= ', lperi
 !
 !  Option to use maximal rather than total distance for courant time
 !
@@ -478,7 +458,6 @@ module Param_IO
       use General, only: loptest
       use Mpicomm, only: stop_it_if_any
       use Particles_main, only: read_all_particles_run_pars
-      use Sub, only: parse_bc
       use Syscalls, only: get_env_var
 !
       character(len=fnlen) :: file = 'run.in', home, user, host
@@ -526,30 +505,10 @@ module Param_IO
 !
       ldebug = lroot .and. (ip < 7)
 !
-!  Parse boundary conditions; compound conditions of the form `a:s' allow
-!  to have different variables at the lower and upper boundaries.
+!  Parse boundary conditions. Before the registration of the variables mcom is
+!  not final, then this is done later by calling parse_bc_pars.
 !
-      bcx=adjustl(bcx); bcy=adjustl(bcy); bcz=adjustl(bcz)
-      call parse_bc(bcx,bcx12)
-      call parse_bc(bcy,bcy12)
-      call parse_bc(bcz,bcz12)
-!
-      fbcx  (:,1) = fbcx1;   fbcx  (:,2) = fbcx2
-      fbcx_2(:,1) = fbcx1_2; fbcx_2(:,2) = fbcx2_2
-
-      fbcy  (:,1) = fbcy1;   fbcy  (:,2) = fbcy2
-      fbcy_1(:,1) = fbcy1_1; fbcy_1(:,2) = fbcy2_1
-      fbcy_2(:,1) = fbcy1_2; fbcy_2(:,2) = fbcy2_2
-
-      fbcz  (:,1) = fbcz1;   fbcz  (:,2) = fbcz2
-      fbcz_1(:,1) = fbcz1_1; fbcz_1(:,2) = fbcz2_1
-      fbcz_2(:,1) = fbcz1_2; fbcz_2(:,2) = fbcz2_2
-!
-      if (lroot.and.ip<14) then
-        print*, 'bcx1,bcx2= ', bcx12(:,1)," : ",bcx12(:,2)
-        print*, 'bcy1,bcy2= ', bcy12(:,1)," : ",bcy12(:,2)
-        print*, 'bcz1,bcz2= ', bcz12(:,1)," : ",bcz12(:,2)
-      endif
+      if (allocated(bcx12)) call parse_bc_pars
 !
 !  Ensure that right precision information is written in dim.dat.
 !
@@ -568,6 +527,53 @@ module Param_IO
       it_rmv=max(it_rmv,0)
 
     endsubroutine read_all_run_pars
+!***********************************************************************
+    subroutine parse_bc_pars
+!
+!  Parse boundary conditions; compound conditions of the form `a:s' allow
+!  to have different variables at the lower and upper boundaries.
+!  Needs the final mcom, hence to be called after the registration of the
+!  variables; allocates the per-variable boundary condition arrays at the
+!  first call.
+!
+      use Sub, only: parse_bc
+!
+      if (.not.allocated(bcx12)) then
+        allocate(bcx12(mcom,2),bcy12(mcom,2),bcz12(mcom,2))
+        allocate(fbcx(mcom,2),fbcx_2(mcom,2))
+        allocate(fbcy(mcom,2),fbcy_1(mcom,2),fbcy_2(mcom,2))
+        allocate(fbcz(mcom,2),fbcz_1(mcom,2),fbcz_2(mcom,2))
+        allocate(lfrozen_bot_var_x(mcom),lfrozen_top_var_x(mcom))
+        allocate(lfrozen_bot_var_y(mcom),lfrozen_top_var_y(mcom))
+        allocate(lfrozen_bot_var_z(mcom),lfrozen_top_var_z(mcom))
+        lfrozen_bot_var_x=.false.; lfrozen_top_var_x=.false.
+        lfrozen_bot_var_y=.false.; lfrozen_top_var_y=.false.
+        lfrozen_bot_var_z=.false.; lfrozen_top_var_z=.false.
+      endif
+!
+      bcx=adjustl(bcx); bcy=adjustl(bcy); bcz=adjustl(bcz)
+      call parse_bc(bcx,bcx12)
+      call parse_bc(bcy,bcy12)
+      call parse_bc(bcz,bcz12)
+!
+      fbcx  (:,1) = fbcx1(:mcom);   fbcx  (:,2) = fbcx2(:mcom)
+      fbcx_2(:,1) = fbcx1_2(:mcom); fbcx_2(:,2) = fbcx2_2(:mcom)
+
+      fbcy  (:,1) = fbcy1(:mcom);   fbcy  (:,2) = fbcy2(:mcom)
+      fbcy_1(:,1) = fbcy1_1(:mcom); fbcy_1(:,2) = fbcy2_1(:mcom)
+      fbcy_2(:,1) = fbcy1_2(:mcom); fbcy_2(:,2) = fbcy2_2(:mcom)
+
+      fbcz  (:,1) = fbcz1(:mcom);   fbcz  (:,2) = fbcz2(:mcom)
+      fbcz_1(:,1) = fbcz1_1(:mcom); fbcz_1(:,2) = fbcz2_1(:mcom)
+      fbcz_2(:,1) = fbcz1_2(:mcom); fbcz_2(:,2) = fbcz2_2(:mcom)
+!
+      if (lroot.and.ip<14) then
+        print*, 'bcx1,bcx2= ', bcx12(:,1)," : ",bcx12(:,2)
+        print*, 'bcy1,bcy2= ', bcy12(:,1)," : ",bcy12(:,2)
+        print*, 'bcz1,bcz2= ', bcz12(:,1)," : ",bcz12(:,2)
+      endif
+!
+    endsubroutine parse_bc_pars
 !***********************************************************************
     subroutine read_all_namelists(linit_pars,loptional)
 !

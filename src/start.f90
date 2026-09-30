@@ -172,6 +172,7 @@ program start
 
   if (lparticles) call particles_register_modules
   call farray_finalize_registration
+  call parse_bc_pars
 !
 ! Initialization dependent on mvar should come after registeration
 !

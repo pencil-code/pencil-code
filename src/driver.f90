@@ -23,8 +23,9 @@ module Driver
 !
   include "driver.h"
 !
-  real, dimension (mcom_max) :: tau_inv=0.0
-  integer, dimension (mcom_max) :: target_proc_x=-1, target_proc_y=-1, target_proc_z=-1
+!  Allocated to mcom in initialize_driver.
+  real, dimension (:), allocatable :: tau_inv
+  integer, dimension (:), allocatable :: target_proc_x, target_proc_y, target_proc_z
 !
   type :: data_array
     real, pointer, dimension(:,:) :: frame => null()
@@ -32,12 +33,12 @@ module Driver
     real, pointer, dimension(:,:) :: frame_r => null()
     real :: time_l, time_r
   end type data_array
-  type(data_array), dimension (mcom_max) :: data_xy, data_xz, data_yz
+  type(data_array), dimension (:), allocatable :: data_xy, data_xz, data_yz
+  logical, dimension (:), allocatable :: ldrive_xy, ldrive_xz, ldrive_yz
 !
 !  Run parameters.
 !
   character (len=fnlen), dimension (mcom_max) :: driver_xy="", driver_xz="", driver_yz=""
-  logical, dimension (mcom_max) :: ldrive_xy=.false., ldrive_xz=.false., ldrive_yz=.false.
   integer, dimension (mcom_max) :: driver_pos_x=0, driver_pos_y=0, driver_pos_z=0
   real, dimension (mcom_max) :: data_unit=0.0, decay_time=0.0, time_offset=0.0
 !
@@ -64,9 +65,16 @@ module Driver
       call svn_id( &
            "$Id$")
 !
-      target_proc_x(:) = (driver_pos_x(:)-1) / nx
-      target_proc_y(:) = (driver_pos_y(:)-1) / ny
-      target_proc_z(:) = (driver_pos_z(:)-1) / nz
+      if (.not.allocated(tau_inv)) then
+        allocate(tau_inv(mcom),target_proc_x(mcom),target_proc_y(mcom),target_proc_z(mcom))
+        allocate(data_xy(mcom),data_xz(mcom),data_yz(mcom))
+        allocate(ldrive_xy(mcom),ldrive_xz(mcom),ldrive_yz(mcom))
+        tau_inv=0.0
+      endif
+!
+      target_proc_x(:) = (driver_pos_x(:mcom)-1) / nx
+      target_proc_y(:) = (driver_pos_y(:mcom)-1) / ny
+      target_proc_z(:) = (driver_pos_z(:mcom)-1) / nz
 !
       do f_index = 1, mcom
         if (decay_time(f_index) /= 0.0) tau_inv(f_index) = 1.0 / decay_time(f_index)

@@ -53,5 +53,7 @@ POISSON               =   poisson
 FOURIER               =   fourier_fftpack
 POWER                 =   power_spectrum
 STRUCT_FUNC           =   struct_func
+DRIVER                =  driver
+KT_TRANSPORT          =  kt_transport
 
 REAL_PRECISION = single
