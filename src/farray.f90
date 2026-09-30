@@ -40,6 +40,8 @@ module FArrayManager
   public :: farray_index_by_name_ode
   public :: farray_get_name
   public :: farray_varname_resize
+  public :: farray_vtxbuf_resize
+  public :: farray_append_aux_var
 !
   public :: farray_check_maux
   public :: farray_finalize_registration
@@ -199,7 +201,7 @@ module FArrayManager
       logical, optional, intent(in) :: read_from_gpu
 !
       integer :: vartype
-      integer :: vtxbuf_index,i
+      integer :: vtxbuf_index,i,nvars
 !
       if (loptest(communicated)) then
         vartype = iFARRAY_TYPE_COMM_AUXILIARY
@@ -211,6 +213,14 @@ module FArrayManager
 
       if (loptest(rhs) .and. lgpu) then
 
+        if (present(array)) then
+          nvars = array
+        elseif (present(vector)) then
+          nvars = vector
+        else
+          nvars = 1
+        endif
+        call farray_vtxbuf_resize(ivar+nvars-1)
         !TP: first we get the largest non zero index in the index array
         vtxbuf_index = maxval(maux_vtxbuf_index)
         !TP: if the largest one is -1 this is the first one and then we know its index to be 
@@ -534,13 +544,16 @@ module FArrayManager
 !  now: declared but unused slots at their ends are dropped and the ghost zone
 !  buffers allocated in initialize_mpicomm are adapted to mcom.
 !
-      use Cparam, only: mcom
+      use Cparam, only: mcom, mfarray
       use Cdata, only: ldownsampl
       use Mpicomm, only: allocate_comm_buffers
 !
       type (farray_contents_list), pointer :: item
       integer :: maux_com_new, i
 !
+!  The GPU code loops over all f-array slots of these.
+!
+      if (lgpu .and. .not.ldynamic_aux) call farray_vtxbuf_resize(mfarray)
       if (.not.ldynamic_aux) return
 !
 !  Drop unused slots at the end of the communicated and non-communicated ranges.
@@ -565,6 +578,7 @@ module FArrayManager
       enddo
 !
       if (mcom/=mvar+maux_com_decl) call allocate_comm_buffers
+      if (lgpu) call farray_vtxbuf_resize(mfarray)
       laux_fixed=.true.
 !
     endsubroutine farray_finalize_registration
@@ -864,6 +878,65 @@ module FArrayManager
       call move_alloc(tmp,varname)
 !
     endsubroutine farray_varname_resize
+!***********************************************************************
+    subroutine farray_vtxbuf_resize(n)
+!
+!  Grows maux_vtxbuf_index and read_vtxbuf_from_gpu such that they have at least n entries,
+!  keeping the existing ones. New entries are -1 (not on the GPU) and 0 (not read from the GPU).
+!
+      use Cdata, only: maux_vtxbuf_index, read_vtxbuf_from_gpu
+!
+      integer, intent(in) :: n
+!
+      integer, dimension(:), allocatable :: tmp
+      integer :: nold
+!
+      nold=0
+      if (allocated(maux_vtxbuf_index)) nold=size(maux_vtxbuf_index)
+      if (nold>=n .and. allocated(maux_vtxbuf_index)) return
+!
+      allocate(tmp(n))
+      tmp=-1
+      if (nold>0) tmp(:nold)=maux_vtxbuf_index
+      call move_alloc(tmp,maux_vtxbuf_index)
+!
+      allocate(tmp(n))
+      tmp=0
+      if (nold>0) tmp(:nold)=read_vtxbuf_from_gpu
+      call move_alloc(tmp,read_vtxbuf_from_gpu)
+!
+    endsubroutine farray_vtxbuf_resize
+!***********************************************************************
+    subroutine farray_append_aux_var(name,lcontinue,ncomponents)
+!
+!  Puts name into aux_var(aux_count) for the IDL files, with ' $' appended if lcontinue,
+!  and advances aux_count by ncomponents (default 1). aux_var is grown as needed.
+!
+      use Cdata, only: aux_var, aux_count
+      use General, only: ioptest, loptest
+!
+      character (len=*), intent(in) :: name
+      logical, optional, intent(in) :: lcontinue
+      integer, optional, intent(in) :: ncomponents
+!
+      character (len=len(aux_var)), dimension(:), allocatable :: tmp
+      integer :: n, nold
+!
+      n=aux_count+ioptest(ncomponents,1)-1
+      nold=0
+      if (allocated(aux_var)) nold=size(aux_var)
+      if (nold<n .or. .not.allocated(aux_var)) then
+        allocate(tmp(n))
+        tmp=''
+        if (nold>0) tmp(:nold)=aux_var
+        call move_alloc(tmp,aux_var)
+      endif
+!
+      aux_var(aux_count)=name
+      if (loptest(lcontinue)) aux_var(aux_count)=trim(name)//' $'
+      aux_count=aux_count+ioptest(ncomponents,1)
+!
+    endsubroutine farray_append_aux_var
 !***********************************************************************
     subroutine farray_use_pde(varname,ivar,vector,ierr)
 !

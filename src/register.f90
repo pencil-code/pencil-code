@@ -190,8 +190,13 @@ module Register
             if (iaux<aux_count-1) aux_var(iaux)=trim(line)//' $'
           enddo
         endif
-        do aux_count=1,maux
-          write(4,'(A)') aux_var(aux_count)
+!  Slots after the last entry appended by farray_append_aux_var are empty lines.
+        do iaux=1,maux
+          if (iaux<aux_count) then
+            write(4,'(A)') aux_var(iaux)
+          else
+            write(4,'(A)') ''
+          endif
         enddo
         close(4)
         close(15)

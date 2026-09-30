@@ -386,9 +386,7 @@ module Density
         if (isld_char == 0) then
           call farray_register_auxiliary('sld_char',isld_char,communicated=.true.,rhs=.true.)
           if (lroot) write(15,*) 'sld_char = fltarr(mx,my,mz)*one'
-          aux_var(aux_count)=',sld_char'
-          if (naux+naux_com < maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
-          aux_count=aux_count+1
+          call farray_append_aux_var(',sld_char',naux+naux_com < maux+maux_com)
         endif
       endif
 !
@@ -402,9 +400,7 @@ module Density
           call farray_index_append('irho_flucz',irho_flucz)
         endif
         if (lroot) write(15,*) 'rho_flucz = fltarr(mx,my,mz)*one'
-        aux_var(aux_count)=',rho_flucz'
-        if (naux+naux_com < maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
-        aux_count=aux_count+1
+        call farray_append_aux_var(',rho_flucz',naux+naux_com < maux+maux_com)
       endif
 !
 !  Identify version number (generated automatically by SVN).

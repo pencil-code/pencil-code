@@ -259,7 +259,7 @@ module Viscosity
 !***********************************************************************
     subroutine register_viscosity
 
-    use FArrayManager, only: farray_register_auxiliary
+    use FArrayManager, only: farray_register_auxiliary, farray_append_aux_var
     use SharedVariables, only: put_shared_variable
 !
 !  19-nov-02/tony: coded
@@ -280,9 +280,7 @@ module Viscosity
         if (isld_char == 0) then
           call farray_register_auxiliary('sld_char',isld_char,communicated=.true.,rhs=.true.)
           if (lroot) write(15,*) 'sld_char = fltarr(mx,my,mz)*one'
-          aux_var(aux_count)=',sld_char'
-          if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
-          aux_count=aux_count+1
+          call farray_append_aux_var(',sld_char',naux+naux_com < maux+maux_com)
         endif
       endif
 !
@@ -291,9 +289,7 @@ module Viscosity
       if (lnusmag_as_aux.and.any(ivisc=='smagorinsky')) then
         call farray_register_auxiliary('nusmag',inusmag,communicated=.true.)
         if (lroot) write(15,*) 'nusmag = fltarr(mx,my,mz)*one'
-        aux_var(aux_count)=',nusmag'
-        if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
-        aux_count=aux_count+1
+        call farray_append_aux_var(',nusmag',naux+naux_com < maux+maux_com)
       endif
 !
 !  Register an extra aux slot for dissipation rate if requested (so
@@ -302,9 +298,7 @@ module Viscosity
       if (lvisc_heat_as_aux) then
         call farray_register_auxiliary('visc_heat',ivisc_heat)
         if (lroot) write(15,*) 'visc_heat = fltarr(mx,my,mz)*one'
-        aux_var(aux_count)=',visc_heat'
-        if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
-        aux_count=aux_count+1
+        call farray_append_aux_var(',visc_heat',naux+naux_com < maux+maux_com)
       endif
 !
 !  Register an 3 extra aux slot for viscouse force (accelaration) if requested (so
@@ -313,9 +307,7 @@ module Viscosity
       if (lvisc_forc_as_aux) then
         call farray_register_auxiliary('visc_forc',ivisc_forc,vector=3)
         if (lroot) write(15,*) 'visc_forc = fltarr(mx,my,mz,3)*one'
-        aux_var(aux_count)=',visc_forc'
-        if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
-        aux_count=aux_count+3
+        call farray_append_aux_var(',visc_forc',naux+naux_com < maux+maux_com,3)
         ivisc_forcx=ivisc_forc;ivisc_forcy=ivisc_forc+1;ivisc_forcz=ivisc_forc+2
       endif
 

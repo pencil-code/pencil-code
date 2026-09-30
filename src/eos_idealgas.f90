@@ -332,15 +332,13 @@ module EquationOfState
 !
 !  Writing files for use with IDL
 !
-        aux_count = aux_count+1
-        aux_var(aux_count)=',gpx $'
+        call farray_append_aux_var(',gpx',.true.)
 !
         call farray_register_auxiliary('gpy',igpy)
 !
 !  Writing files for use with IDL
 !
-        aux_count = aux_count+1
-        aux_var(aux_count)=',gpy $'
+        call farray_append_aux_var(',gpy',.true.)
 
       endif
 !

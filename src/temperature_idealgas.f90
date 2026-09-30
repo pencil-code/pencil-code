@@ -267,7 +267,7 @@ module Energy
 !  03-apr-20/joern: restructured and fixed slope-limited diffusion
 !
       use FArrayManager, only: farray_register_pde, farray_index_append, &
-                               farray_register_auxiliary
+                               farray_register_auxiliary, farray_append_aux_var
       use SharedVariables, only: put_shared_variable
 !
 !  Register TT or lnTT, depending on whether or not ltemperature_nolog
@@ -291,9 +291,7 @@ module Energy
         if (isld_char == 0) then
           call farray_register_auxiliary('sld_char',isld_char,communicated=.true.,rhs=.true.)
           if (lroot) write(15,*) 'sld_char = fltarr(mx,my,mz)*one'
-          aux_var(aux_count)=',sld_char'
-          if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
-          aux_count=aux_count+1
+          call farray_append_aux_var(',sld_char',naux+naux_com < maux+maux_com)
         endif
       endif
 !

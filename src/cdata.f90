@@ -939,7 +939,8 @@ module Cdata
 !
 !  Auxiliary variables.
 !
-  character (len=labellen), dimension(maux_max) :: aux_var
+  ! Grown by farray_append_aux_var, aux_count is the next free entry.
+  character (len=labellen), dimension(:), allocatable :: aux_var
   integer :: aux_count=1
   integer :: mvar_io=0, mvar_down=-1, maux_down=-1, mskipvar=0
 !
@@ -1040,10 +1041,11 @@ module Cdata
 !  Info whether maux is needed and used on the GPU
 !  Index for var is not -1 iff var is used on the GPU
 !  The index corresponds to the vertex buffer index on Astaroth
-!  Size of mfarray to make sure we can store the handle (for 1 to mvar -1)
+!  Grown by farray_vtxbuf_resize when auxiliaries are registered, missing entries are -1 and 0.
+!  Passed to the GPU code in initialize_gpu, which keeps pointers to them.
 !
-   integer, dimension(mfarray_max) :: maux_vtxbuf_index     = -1
-   integer, dimension(mfarray_max) :: read_vtxbuf_from_gpu  =  0
+   integer, dimension(:), allocatable, target :: maux_vtxbuf_index
+   integer, dimension(:), allocatable, target :: read_vtxbuf_from_gpu
    integer :: enum_unit_system = 0
 !
 !  Define and initialize lambda5, so that it can be used to tell whether

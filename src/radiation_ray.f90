@@ -240,17 +240,13 @@ module Radiation
 !
 !  Writing files for use with IDL.
 !
-      aux_var(aux_count)=',Qrad $'
-      aux_count=aux_count+1
-      aux_var(aux_count)=',kapparho $'
-      aux_count=aux_count+1
+      call farray_append_aux_var(',Qrad',.true.)
+      call farray_append_aux_var(',kapparho',.true.)
 !
 !  Frad is used only if lradflux=.true.
 !
       if (lradflux) then
-        if (naux < maux) aux_var(aux_count)=',KR_Frad $'
-        if (naux == maux) aux_var(aux_count)=',KR_Frad'
-        aux_count=aux_count+3
+        call farray_append_aux_var(',KR_Frad',naux < maux,3)
       endif
 
       call put_shared_variable('z_cutoff',z_cutoff,caller='register_radiation')

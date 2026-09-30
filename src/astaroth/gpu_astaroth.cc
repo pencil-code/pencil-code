@@ -93,8 +93,6 @@ const bool performance_logs = false;
   #define lmorton_curve lmorton_curve__mod__cdata
   #define ltest_bcs     ltest_bcs__mod__gpu
   #define num_substeps  num_substeps__mod__cdata
-  #define maux_vtxbuf_index maux_vtxbuf_index__mod__cdata
-  #define read_vtxbuf_from_gpu read_vtxbuf_from_gpu__mod__cdata 
   #define ldt ldt__mod__cdata
   #define dt dt__mod__cdata
   #define it it__mod__cdata
@@ -391,6 +389,9 @@ int same_path(const char *p1, const char *p2) {
     return strcmp(r1, r2) == 0;
 }
 static int lac_sparse_autotuning = 0;
+//Point to maux_vtxbuf_index and read_vtxbuf_from_gpu of Cdata (size >= mfarray), set in initializeGPU
+static int* maux_vtxbuf_index = NULL;
+static int* read_vtxbuf_from_gpu = NULL;
 /***********************************************************************************************/
 void
 sortMaux()
@@ -2036,8 +2037,12 @@ ac_compile()
 extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_,
 				int lread_all_vars_from_device_,
 				int lcpu_timestep_on_gpu_,
-				int lac_sparse_autotuning_)  // MPI_Fint comm_fint
+				int lac_sparse_autotuning_,
+				int* maux_vtxbuf_index_,
+				int* read_vtxbuf_from_gpu_)  // MPI_Fint comm_fint
 {
+  maux_vtxbuf_index    = maux_vtxbuf_index_;
+  read_vtxbuf_from_gpu = read_vtxbuf_from_gpu_;
   lac_sparse_autotuning = lac_sparse_autotuning_;
   if (lread_all_vars_from_device_) lread_all_vars_from_device = true;
   if (lcpu_timestep_on_gpu_) lcpu_timestep_on_gpu = true;

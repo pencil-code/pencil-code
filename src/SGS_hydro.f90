@@ -47,7 +47,7 @@ module SGS_hydro
 !  19-nov-02/tony: coded
 !
       use Messages, only: svn_id
-      use FArrayManager, only: farray_register_auxiliary
+      use FArrayManager, only: farray_register_auxiliary, farray_append_aux_var
 !
 !  Identify version number.
 !
@@ -73,9 +73,7 @@ print*, 'aasmooth=', iaasmooth
 !
       if (lSGS_heat_as_aux) then
         call farray_register_auxiliary('SGS_heat',iSGS_heat)
-        aux_var(aux_count)=',SGS_heat'
-        if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
-        aux_count=aux_count+1
+        call farray_append_aux_var(',SGS_heat',naux+naux_com < maux+maux_com)
       endif
 !
 !  Register an 3 extra aux slot for SGS force (accelaration) if requested (so
@@ -83,9 +81,7 @@ print*, 'aasmooth=', iaasmooth
 !
       if (lSGS_forc_as_aux) then
         call farray_register_auxiliary('SGS_force',iSGS_force,vector=3)
-        aux_var(aux_count)=',SGS_force'
-        if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
-        aux_count=aux_count+3
+        call farray_append_aux_var(',SGS_force',naux+naux_com < maux+maux_com,3)
       endif
 !
     endsubroutine register_SGS_hydro

@@ -236,7 +236,8 @@ contains
       lcpu_timestep_on_gpu_int       = merge(1,0,lcpu_timestep_on_gpu)
       lac_sparse_autotuning_int      = merge(1,0,lac_sparse_autotuning)
       call initialize_gpu_c(f,MPI_COMM_PENCIL,t,nt,lread_all_vars_from_device_int,&
-                            lcpu_timestep_on_gpu_int,lac_sparse_autotuning_int)
+                            lcpu_timestep_on_gpu_int,lac_sparse_autotuning_int, &
+                            maux_vtxbuf_index,read_vtxbuf_from_gpu)
 !
 ! Load farray to gpu
 !

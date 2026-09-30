@@ -189,7 +189,6 @@ contains
     call copy_addr(itorder,p_par(343)) ! int
     call copy_addr(dtinc,p_par(344)) ! real dconst
     call copy_addr(dtdec,p_par(345)) ! real dconst
-    call copy_addr(maux_vtxbuf_index,p_par(346)) ! int (mfarray_max)
     call copy_addr(num_substeps,p_par(347)) ! int
 
     call copy_addr_dble(unit_length,p_par(349))
@@ -439,7 +438,6 @@ contains
     call copy_addr(ibxt,p_par(1392)) ! int
     call copy_addr(ijjt,p_par(1393)) ! int
     call copy_addr(ijxt,p_par(1394)) ! int
-    call copy_addr(read_vtxbuf_from_gpu,p_par(1395)) ! int (mfarray_max)
     call copy_addr(iby,p_par(1396)) ! int
     call copy_addr(ibb,p_par(1397)) ! int
     do j = 1,mvar

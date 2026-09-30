@@ -389,9 +389,7 @@ module Chemistry
 !
 !  Writing files for use with IDL
 !
-      if (naux+naux_com <  maux+maux_com) aux_var(aux_count) = ',viscosity $'
-      if (naux+naux_com == maux+maux_com) aux_var(aux_count) = ',viscosity'
-      aux_count = aux_count+1
+      call farray_append_aux_var(',viscosity',naux+naux_com < maux+maux_com)
       if (lroot) write (4,*) ',visocsity $'
       if (lroot) write (15,*) 'viscosity = fltarr(mx,my,mz)*one'
 !

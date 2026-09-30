@@ -1207,7 +1207,7 @@ module Magnetic
 !  03-apr-20/joern: restructured and fixed slope-limited diffusion
 !
       use Sub, only: register_report_aux
-      use FArrayManager, only: farray_register_pde, farray_register_auxiliary
+      use FArrayManager, only: farray_register_pde, farray_register_auxiliary, farray_append_aux_var
       use SharedVariables, only: put_shared_variable
 
       if(.not. allocated(eta_xy)) allocate(eta_xy(mx,my))
@@ -1273,9 +1273,7 @@ module Magnetic
           if (isld_char == 0) then
             call farray_register_auxiliary('sld_char',isld_char,communicated=.true.,rhs=.true.)
             if (lroot) write(15,*) 'sld_char= fltarr(mx,my,mz)*one'
-            aux_var(aux_count)=',sld_char'
-            if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
-            aux_count=aux_count+1
+            call farray_append_aux_var(',sld_char',naux+naux_com < maux+maux_com)
           endif
         endif
       endif
@@ -1352,9 +1350,7 @@ module Magnetic
       if (letasmag_as_aux.and.any(iresistivity=='smagorinsky')) then
         call farray_register_auxiliary('etasmag',ietasmag,communicated=.true.)
         if (lroot) write(15,*) 'etasmag = fltarr(mx,my,mz)*one'
-        aux_var(aux_count)=',etasmag'
-        if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
-        aux_count=aux_count+1
+        call farray_append_aux_var(',etasmag',naux+naux_com < maux+maux_com)
       endif
 !
 !  register the mean-field module

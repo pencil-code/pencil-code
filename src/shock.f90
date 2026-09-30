@@ -94,9 +94,7 @@ module Shock
 !
 !  Writing files for use with IDL
 !
-      if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=',shock $'
-      if (naux+naux_com  == maux+maux_com) aux_var(aux_count)=',shock'
-      aux_count=aux_count+1
+      call farray_append_aux_var(',shock',naux+naux_com < maux+maux_com)
       if (lroot) write(15,*) 'shock = fltarr(mx,my,mz)*one'
 !
     endsubroutine register_shock

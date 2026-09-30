@@ -460,7 +460,7 @@
 !
       use File_io, only: parallel_rewind
 !
-      character(len=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
 !
       integer :: i
       character(len=iomsglen) :: msg
@@ -492,7 +492,7 @@
 !
       use File_io, only: parallel_rewind
 !
-      character(len=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
 !
       integer :: i
       character(len=iomsglen) :: msg
