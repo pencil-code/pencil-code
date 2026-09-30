@@ -45,7 +45,6 @@ module Cparam
 !  variables which grow together with maux and maux_com. The *_max values
 !  are upper bounds for fixed-size arrays with one entry per variable.
 !
-  integer, parameter :: mfarray_max=mvar+maux_max+mglobal+mscratch
   integer, parameter :: mcom_max=mvar+maux_com_max
 !
 ! BEGIN CHANGE FOR DYNAMICAL ALLOCATION
