@@ -1194,7 +1194,6 @@ module Magnetic
 
   logical :: lrelaxprof_glob_scaled
   logical :: lnonzero_eta = .false.
-  logical, pointer :: lu_background
 
   contains
 !***********************************************************************
