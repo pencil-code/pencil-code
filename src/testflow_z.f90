@@ -193,6 +193,7 @@ module Testflow
 !   3-jun-05/axel: adapted from register_magnetic
 !
       use Cdata
+      use FArrayManager, only: farray_varname_resize
       use Mpicomm, only: stop_it
       use Sub
 !
@@ -213,6 +214,7 @@ module Testflow
 !
 !  Put variable names in array
 !
+      call farray_varname_resize(nvar)
       do j=iuutest,nvar
         varname(j) = 'uutest'
       enddo

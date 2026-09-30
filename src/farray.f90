@@ -39,6 +39,7 @@ module FArrayManager
   public :: farray_index_by_name
   public :: farray_index_by_name_ode
   public :: farray_get_name
+  public :: farray_varname_resize
 !
   public :: farray_check_maux
   public :: farray_finalize_registration
@@ -829,6 +830,7 @@ module FArrayManager
 !  Put variable name in array for use by analysis tool output.
 !
       nvars=item%ncomponents*item%narray
+      call farray_varname_resize(item%ivar(1)%p+nvars-1)
       if (nvars>1) then
         do i=0,nvars-1
           varname(item%ivar(1)%p+i) = trim(item%varname)//trim(itoa(i+1))
@@ -838,6 +840,30 @@ module FArrayManager
       endif
 !
     endsubroutine save_analysis_info
+!***********************************************************************
+    subroutine farray_varname_resize(n)
+!
+!  Grows varname such that it has at least n entries, keeping the existing names.
+!
+      use Cdata, only: varname
+!
+      integer, intent(in) :: n
+!
+      character (len=len(varname)), dimension(:), allocatable :: tmp
+!
+      if (.not.allocated(varname)) then
+        allocate(varname(n))
+        varname=''
+        return
+      endif
+      if (size(varname)>=n) return
+!
+      allocate(tmp(n))
+      tmp=''
+      tmp(:size(varname))=varname
+      call move_alloc(tmp,varname)
+!
+    endsubroutine farray_varname_resize
 !***********************************************************************
     subroutine farray_use_pde(varname,ivar,vector,ierr)
 !

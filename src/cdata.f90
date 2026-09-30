@@ -897,7 +897,8 @@ module Cdata
   real :: Udrift_bc=0.
   character (len=2*bclen+1), dimension(mcom_max) :: bcx='p',bcy='p',bcz='p'
   character (len=bclen), dimension(mcom_max,2) :: bcx12='', bcy12='', bcz12=''
-  character (len=labellen), dimension(mfarray_max) :: varname
+  ! Names of the f-array slots
+  character (len=labellen), dimension(:), allocatable :: varname
   character (len=labellen) :: force_lower_bound='',force_upper_bound=''
 !
 !  Parameters for freezing boundary zones.

@@ -1,4 +1,4 @@
-! $Id$
+
 !
 !  A module for setting up the f-array and related variables (`register' the
 !  velocity, energy, magnetic, etc modules).
@@ -1200,10 +1200,14 @@ module Register
 !
 !  19-feb-15/ccyang: coded.
 !
+      use FArrayManager, only: farray_varname_resize
+!
       integer, parameter :: unit = 3
       integer :: ivar
 !
       if (lroot) then
+!  Slots without registered variables have empty names.
+        call farray_varname_resize(nvar+naux)
         open(unit, file=trim(datadir)//'/varname.dat', status='replace')
         10 format (i4, 2x, a)
         do ivar = 1, nvar

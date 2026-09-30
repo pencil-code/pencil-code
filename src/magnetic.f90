@@ -1453,9 +1453,9 @@ module Magnetic
 !
 !  Check if we are solving for relativistic bulk motions, not just EoS.
 !
+      call get_shared_variable('lu_background', lu_background,default_val=.false.)
       if (lhydro.and..not.lhydro_potential) then
         call get_shared_variable('lconservative', lconservative, caller='initialize_magnetic')
-        call get_shared_variable('lu_background', lu_background)
       else
         allocate(lconservative)
         lconservative=.false.

@@ -1113,9 +1113,9 @@ module Density
         lrelativistic=.false.
       endif
 !
+      call get_shared_variable('lu_background', lu_background,default_val=.false.)
       if (lhydro.and..not.lhydro_potential) then
         call get_shared_variable('lhiggsless', lhiggsless)
-        call get_shared_variable('lu_background', lu_background)
       else
         allocate(lhiggsless)
         lhiggsless=.false.
