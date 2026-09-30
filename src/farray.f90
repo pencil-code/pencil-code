@@ -467,7 +467,7 @@ module FArrayManager
 !  is registered after non-communicated ones, it is placed behind them and the
 !  communicated range is extended over them, so they are communicated as well.
 !
-      use Cparam, only: maux_com_max, maux_max
+      use Cparam, only: maux_com_max 
 !
       character (len=*), intent(in) :: varname
       integer,           intent(in) :: nvars
@@ -512,9 +512,6 @@ module FArrayManager
           "Registering "//trim(varname)//" fails: the f-array has already been allocated. "// &
           "Register it in register_* instead of initialize_*, or declare it by an "// &
           "MAUX CONTRIBUTION (and COMMUNICATED AUXILIARIES) header in cparam.local.")
-      if (maux_new>maux_max .or. maux_com_new>maux_com_max) call fatal_error("farray_register_variable", &
-          "Registering "//trim(varname)//" fails: more auxiliaries than maux_max. "// &
-          "Increase DYNAMIC_AUX_EXTRA in Makefile.local.")
 !
       call shift_globals(maux_new-maux)
       call set_aux_counts(maux_new,maux_com_new)
