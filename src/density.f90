@@ -486,7 +486,7 @@ module Density
       use FArrayManager
       use Gravity, only: lnumerical_equilibrium
       use Sub, only: stepdown,der_stepdown, erfunc,step
-      use SharedVariables, only: put_shared_variable, get_shared_variable 
+      use SharedVariables, only: put_shared_variable, get_shared_variable
       use InitialCondition, only: initial_condition_all
       use Mpicomm, only: mpiallreduce_sum
 !
@@ -1114,6 +1114,7 @@ module Density
 !
       if (lhydro.and..not.lhydro_potential) then
         call get_shared_variable('lhiggsless', lhiggsless)
+        call get_shared_variable('lu_background', lu_background)
       else
         allocate(lhiggsless)
         lhiggsless=.false.
@@ -1280,7 +1281,7 @@ module Density
           enddo
           enddo
           enddo
-        case ('exp_zbot'); 
+        case ('exp_zbot');
           do l=1,mx
           do m=1,my
           do n=1,mz
@@ -1288,7 +1289,7 @@ module Density
           enddo
           enddo
           enddo
-        case ('exp_rbot'); 
+        case ('exp_rbot');
           do l=1,mx
           do m=1,my
           do n=1,mz
@@ -1793,7 +1794,7 @@ module Density
                  sin(kx_lnrho(j)*x(l1:l2)+phase_lnrho(j) + complex_phase(omega_jeans*ampllnrho(j)))
           enddo; enddo
         case ('rhobar')
-          if (lroot) then 
+          if (lroot) then
             inquire(file=rhobar_file,exist=lrhobar_exists)
             if (lrhobar_exists) then
               print*,"Init lrho: reading rhobar from rhobar.dat"
@@ -1977,7 +1978,7 @@ module Density
 !                 Observed that irho_flucz is only calculated for diagnostics purposes.
 !                 So having this function serves two purposes: saving unnecessary computation
 !                 and more importantly enabling to reuse diagnostic code when using the GPU.
-!    
+!
       use Sub, only: finalize_aver
 !
       real, contiguous, dimension(:,:,:,:) :: f
@@ -2558,7 +2559,7 @@ use Sub, only: dot2_mn
       type (pencil_case) :: p
       logical, dimension(:), intent(IN) :: lpenc_loc
       intent(in) :: f
-      real, dimension (nx) :: utot2      
+      real, dimension (nx) :: utot2
       intent(inout) :: p
       ! real :: cs20p1=1.
 !
@@ -2578,7 +2579,7 @@ use Sub, only: dot2_mn
           p%ekin=cs20p1*p%rho*p%lorentz*p%u2
         elseif (lu_background) then
           call dot2_mn(p%uutot,utot2)
-          p%ekin=0.5*p%rho*utot2          
+          p%ekin=0.5*p%rho*utot2
         else
           p%ekin=0.5*p%rho*p%u2
         endif
@@ -2878,7 +2879,7 @@ use Sub, only: dot2_mn
 !***********************************************************************
     subroutine calc_advec_hypermesh
 !
-!   14-oct-25/TP: carved from dlnrho_dt 
+!   14-oct-25/TP: carved from dlnrho_dt
 !
       real, dimension(nx) :: advec_hypermesh_rho
 !
@@ -2896,10 +2897,10 @@ use Sub, only: dot2_mn
 !***********************************************************************
     subroutine calc_sld_fdiff(f,p,fdiff)
 !
-!   16-apr-26/TP: carved from dlnrho_dt 
+!   16-apr-26/TP: carved from dlnrho_dt
 !
       use Sub, only: calc_slope_diff_flux
-      
+
       real, intent(in), contiguous, dimension(:,:,:,:) :: f
       type(pencil_case), intent(in) :: p
       real, intent(inout),  dimension(nx) :: fdiff
@@ -2962,16 +2963,16 @@ use Sub, only: dot2_mn
           if (ldensity_nolog) then
             if (lu_background) then
               density_rhs=-p%rho*p%divutot
-            else 
+            else
               density_rhs=-p%rho*p%divu
-            endif              
+            endif
             if (ladvection_density) density_rhs = density_rhs - cs20_corr*p%ugrho
           else
             if (lu_background) then
               density_rhs= - p%divutot
             else
               density_rhs= - p%divu
-            endif              
+            endif
             density_rhs= - p%divu
             if (ladvection_density) density_rhs = density_rhs - cs20_corr*p%uglnrho
           endif
@@ -2998,7 +2999,7 @@ use Sub, only: dot2_mn
                       density_hydro_rhs=density_hydro_rhs-p%rho*p%divutot
                     else
                       density_hydro_rhs=density_hydro_rhs-p%rho*p%divu
-                    endif                    
+                    endif
                   if (lrelativistic_eos_term2) density_hydro_rhs=density_hydro_rhs-cs20_corr*p%ugrho
                 else
                     if (lu_background) then
@@ -3028,7 +3029,7 @@ use Sub, only: dot2_mn
                 call multvs(p%uutot,density_hydro_rhs,tmpv)
               else
                 call multvs(p%uu,density_hydro_rhs,tmpv)
-              endif              
+              endif
               ! call multvs(p%uu,density_hydro_rhs,tmpv)
               df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-tmpv
             endif
@@ -3143,7 +3144,7 @@ use Sub, only: dot2_mn
 !  Add the continuity equation terms to the RHS of the density df.
 !
       df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + density_rhs
-    endsubroutine continuity_eq 
+    endsubroutine continuity_eq
 !***********************************************************************
     subroutine mass_diffusion(f,p,fdiff)
 
@@ -3420,7 +3421,7 @@ use Sub, only: dot2_mn
         call accumulate_Schur_averages(density_rhs)
 !
       else
-              
+
       if(lcontinuity_gas) call continuity_eq(f,df,p)
 !
 !  Hubble parameter

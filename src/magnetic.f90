@@ -1454,6 +1454,7 @@ module Magnetic
 !
       if (lhydro.and..not.lhydro_potential) then
         call get_shared_variable('lconservative', lconservative, caller='initialize_magnetic')
+        call get_shared_variable('lu_background', lu_background)
       else
         allocate(lconservative)
         lconservative=.false.
@@ -1652,7 +1653,7 @@ module Magnetic
           case ('cosxcosy'); call cosx_cosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),kz_aa(j))
           case ('coswave-Ay-kx'); call coswave(amplaa(j),f,iay,kx=kx_aa(j))
           case ('sinwave-Ax-kz'); call sinwave(amplaa(j),f,iax,kz=kz_aa(j))
-          case ('toroidal'); 
+          case ('toroidal');
             do l=1,mx; do m=1,my; do n=1,mz;
               f(l,m,n,iax)=-amplaa(j)*(1.0/x(l))*y(m)
             enddo; enddo; enddo
@@ -2479,7 +2480,7 @@ module Magnetic
              f(l1:l2,m,n,iax)=0.
              f(l1:l2,m,n,iay)=-((amplaa(j)*Lxyz(3))/pi) * sin((pi*z(n))/(Lxyz(3)))
              f(l1:l2,m,n,iaz)=0.
-          enddo; enddo          
+          enddo; enddo
         case ('By_tanh')
           do n=n1,n2; do m=m1,m2
              f(l1:l2,m,n,iax)=0.
@@ -2947,7 +2948,7 @@ module Magnetic
         lpenc_requested(i_uutot) = .true.
         lpenc_requested(i_divutot) = .true.
         lpenc_requested(i_utotij) = .true.
-      endif      
+      endif
 !
       if (tauAD/=0.0) then
         lpenc_requested(i_jxb)=.true.
@@ -3636,7 +3637,7 @@ module Magnetic
 !
       if (lpencil_in(i_ua)) then
         lpencil_in(i_uu)=.true.
-        if (lu_background) lpencil_in(i_uutot)=.true.        
+        if (lu_background) lpencil_in(i_uutot)=.true.
         lpencil_in(i_aa)=.true.
       endif
 !
@@ -3666,7 +3667,7 @@ module Magnetic
 !
       if (lpencil_in(i_uxj)) then
         lpencil_in(i_uu)=.true.
-        if (lu_background) lpencil_in(i_uutot)=.true.        
+        if (lu_background) lpencil_in(i_uutot)=.true.
         lpencil_in(i_jj)=.true.
       endif
 !
@@ -3695,14 +3696,14 @@ module Magnetic
       if (lpencil_in(i_ujxb)) then
         lpencil_in(i_jxb)=.true.
         lpencil_in(i_uu)=.true.
-        if (lu_background) lpencil_in(i_uutot)=.true.        
+        if (lu_background) lpencil_in(i_uutot)=.true.
       endif
 !
       if (lpencil_in(i_uxb2)) lpencil_in(i_uxb)=.true.
 !
       if (lpencil_in(i_uxb)) then
         lpencil_in(i_uu)=.true.
-        if (lu_background) lpencil_in(i_uutot)=.true.        
+        if (lu_background) lpencil_in(i_uutot)=.true.
         lpencil_in(i_bb)=.true.
       endif
 !
@@ -3714,7 +3715,7 @@ module Magnetic
 !
       if (lpencil_in(i_ub)) then
         lpencil_in(i_uu)=.true.
-        if (lu_background) lpencil_in(i_uutot)=.true.        
+        if (lu_background) lpencil_in(i_uutot)=.true.
         lpencil_in(i_bb)=.true.
       endif
 !
@@ -3725,7 +3726,7 @@ module Magnetic
 !
       if (lpencil_in(i_uj)) then
         lpencil_in(i_uu)=.true.
-        if (lu_background) lpencil_in(i_uutot)=.true.        
+        if (lu_background) lpencil_in(i_uutot)=.true.
         lpencil_in(i_jj)=.true.
       endif
 !
@@ -3757,7 +3758,7 @@ module Magnetic
 !
       if (lpencil_in(i_djuidjbi)) then
         lpencil_in(i_uij)=.true.
-        if (lu_background) lpencil_in(i_utotij)=.true.        
+        if (lu_background) lpencil_in(i_utotij)=.true.
         lpencil_in(i_bij)=.true.
       endif
 !
@@ -3770,19 +3771,19 @@ module Magnetic
 !
       if (lpencil_in(i_ujxb)) then
         lpencil_in(i_uu)=.true.
-        if (lu_background) lpencil_in(i_uutot)=.true.        
+        if (lu_background) lpencil_in(i_uutot)=.true.
         lpencil_in(i_jxb)=.true.
       endif
 !
       if (lpencil_in(i_ugb22)) then
         lpencil_in(i_uu)=.true.
-        if (lu_background) lpencil_in(i_uutot)=.true.        
+        if (lu_background) lpencil_in(i_uutot)=.true.
         lpencil_in(i_gb22)=.true.
       endif
 !
       if (lpencil_in(i_ubgbp)) then
         lpencil_in(i_uu)=.true.
-        if (lu_background) lpencil_in(i_uutot)=.true.        
+        if (lu_background) lpencil_in(i_uutot)=.true.
         lpencil_in(i_bgbp)=.true.
       endif
 !
@@ -3846,14 +3847,14 @@ module Magnetic
       if (lpencil_in(i_uga)) then
         lpencil_in(i_aij)=.true.
         lpencil_in(i_uu)=.true.
-        if (lu_background) lpencil_in(i_uutot)=.true.        
+        if (lu_background) lpencil_in(i_uutot)=.true.
       endif
 !
       if (lpencil_in(i_uuadvec_gaa)) then
         lpencil_in(i_uu_advec)=.true.
         lpencil_in(i_aij)=.true.
         lpencil_in(i_uu)=.true.
-        if (lu_background) lpencil_in(i_uutot)=.true.        
+        if (lu_background) lpencil_in(i_uutot)=.true.
         lpencil_in(i_aa)=.true.
       endif
 !
@@ -4343,7 +4344,7 @@ module Magnetic
       real, dimension (nx) :: rho1_jxb, quench, StokesI_ncr, tmp1, bbgb, va2max_beta
       real, dimension(3) :: B_ext, j_ext
       real, dimension(nx) :: sign_jo
-      real, dimension (nx) :: utot2      
+      real, dimension (nx) :: utot2
       real :: c,s
       integer :: i, j, ix
 
@@ -4492,14 +4493,14 @@ module Magnetic
       endif
 ! ab
       if (lpenc_loc(i_ab)) call dot_mn(p%aa,p%bbb,p%ab)
-! ua    
+! ua
       if (lpenc_loc(i_ua)) then
         if (lu_background) then
           call dot_mn(p%uutot,p%aa,p%ua)
         else
           call dot_mn(p%uu,p%aa,p%ua)
         endif
-      endif      
+      endif
 ! uxb
       if (lpenc_loc(i_uxb)) then
         if (lu_background) then
@@ -4534,7 +4535,7 @@ module Magnetic
       if (lpenc_loc(i_uuadvec_gaa)) then
         if (lu_background) then
           call not_implemented('calc_pencils_magnetic_pencpar',"uuadvec_gaa with background flow")
-        endif          
+        endif
         do j=1,3
           ! This is calling scalar h_dot_grad, that does not add
           ! the inertial terms. They will be added here.
@@ -4975,7 +4976,7 @@ module Magnetic
         else
           call dot_mn(p%uu,p%jj,p%uj)
         endif
-      endif      
+      endif
 ! cosub
       if (lpenc_loc(i_cosub)) then
         do ix=1,nx
@@ -10599,7 +10600,7 @@ print*,'AXEL2: should not be here (eta) ... '
 !
           geta_x = eta_power_x*eta_x/eta_x0
 !
-!  Powerlaw-x3: 
+!  Powerlaw-x3:
 !
         case ('powerlaw-x3','powerlaw_x3')
 !
@@ -11992,7 +11993,7 @@ print*,'AXEL2: should not be here (eta) ... '
     endsubroutine keplerian_gauge
 !********************************************************************
 !NOT USED SO ON COMMENT
-! 
+!
 !    subroutine remove_volume_average(f)
 !!
 !      use Mpicomm , only: mpiallreduce_sum
