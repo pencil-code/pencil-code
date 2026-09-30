@@ -12,3 +12,4 @@ EOS       = noeos
 #DERIV     =   deriv_2nd
 #DERIV     =   deriv_8th
 DERIV     =   deriv_10th
+DYNAMIC_AUX = yes

@@ -9,7 +9,9 @@
 void FTNIZE(initialize_gpu_c)(REAL* f, FINT* comm_fint, double* t, int* nt, 
 				FINT* lreads_all_vars_from_device_,
 				FINT* lcpu_timestep_on_gpu_,
-				FINT* lac_sparse_autotuning_
+				FINT* lac_sparse_autotuning_,
+				FINT* maux_vtxbuf_index_,
+				FINT* read_vtxbuf_from_gpu_
 				)
 {
 }

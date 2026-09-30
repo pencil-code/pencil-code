@@ -111,7 +111,7 @@ module Special
 !
       use Sub, only: register_report_aux
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       if (.not.ltemperature_nolog) call fatal_error('initialize_special', &
           'special/planet_atmosphere is formulated in TT only')
@@ -176,8 +176,7 @@ module Special
 !
       use Gravity, only: g0
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       real :: p_tmp,dp,rhoeq_tmp,Teq_tmp,tau_tmp
       integer, parameter :: nsub=24
@@ -244,7 +243,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -264,7 +263,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -289,9 +288,9 @@ module Special
 !
       use Sub, only: cross_mn,multsv_mn
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 !
       real, dimension (nx,3) :: jtot,btot,jxb1,jxb2,jxbtot,jxbtotr
       integer :: i, j
@@ -331,9 +330,9 @@ module Special
 !  27-sep-23/hongzhe: outsourced from temperature_idealgas.f90
 !  26-feb-24/kuan: Possibility of slowly turning on the heating term
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 !
       real, dimension(nx) :: Teq_x,tau_rad_x
       real :: f_slow_heating
@@ -363,9 +362,9 @@ module Special
       use Sub, only: cross_mn
       use Mpicomm, only: mpiallreduce_sum
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 !
       real, dimension (nx,3) :: uxb_ext
       real, dimension (nx) :: eta_x
@@ -427,7 +426,7 @@ module Special
 !
 !  06-jul-06/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
 !  compute cos(angle between the substellar point)
 !  could be time-dependent

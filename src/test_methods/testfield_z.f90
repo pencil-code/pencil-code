@@ -28,7 +28,7 @@ module Testfield
 
   use Cparam
   use Messages
-  use Testfield_general
+  use Testfield_general, register_testfield_general => register_testfield
 
   implicit none
 
@@ -215,6 +215,34 @@ module Testfield
   real, dimension(nz,3,njtest) :: uxbtestm,jxbtestm    ! TB improved: declare smaller (njtestl) if possible, requires tb allocatable
 
   contains
+!***********************************************************************
+    subroutine register_testfield
+!
+!  Registers the test fields (in Testfield_general) and, with DYNAMIC_AUX=yes,
+!  uxbtest and jxbtest, which must be registered before the f-array is
+!  allocated (otherwise this is done in initialize_testfield).
+!
+      use Cdata, only: iuxbtest, ijxbtest
+      use FArrayManager, only: farray_register_auxiliary
+!
+      integer :: njtest_aux
+!
+      call register_testfield_general
+!
+      if (ldynamic_aux .and. (luxb_as_aux .or. ljxb_as_aux)) then
+!
+!  Number of test problems as njtestl in initialize_testfield.
+!
+        if (kdamp_2ndord==0. .and. dt_iter==0.) then
+          njtest_aux=njtest
+        else
+          njtest_aux=njtest/2
+        endif
+        if (luxb_as_aux) call farray_register_auxiliary('uxbtest',iuxbtest,vector=3,array=-njtest_aux)
+        if (ljxb_as_aux) call farray_register_auxiliary('jxbtest',ijxbtest,vector=3,array=-njtest_aux)
+      endif
+!
+    endsubroutine register_testfield
 !
 !***********************************************************************
     subroutine initialize_testfield(f)
@@ -378,7 +406,8 @@ module Testfield
 !  After a reload, we need to rewrite index.pro, but the auxiliary
 !  arrays are already allocated and must not be allocated again.
 !
-      if (luxb_as_aux) then
+!
+      if (luxb_as_aux .and. .not.ldynamic_aux) then
         if (iuxbtest==0) then
           call farray_register_auxiliary('uxbtest',iuxbtest,vector=3,array=-njtestl)
         else
@@ -390,7 +419,7 @@ module Testfield
 !  possibility of using jxb as auxiliary array (is intended to be
 !  used in connection with testflow method)
 !
-      if (ljxb_as_aux) then
+      if (ljxb_as_aux .and. .not.ldynamic_aux) then
         if (ijxbtest==0) then
           call farray_register_auxiliary('jxbtest',ijxbtest,vector=3,array=-njtestl)
         else

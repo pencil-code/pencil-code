@@ -343,8 +343,8 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real, contiguous, dimension(:,:,:,:), intent(in) :: f
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
       real, dimension(nx,3) :: SOME_NEW_TERM
@@ -374,8 +374,8 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real, contiguous, dimension(:,:,:,:), intent(in) :: f
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !!
 !!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
@@ -420,8 +420,8 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real, contiguous, dimension(:,:,:,:), intent(in) :: f
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !!
 !!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
@@ -445,8 +445,8 @@ module Special
 !
 !  15-jun-09/anders: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real, contiguous, dimension(:,:,:,:), intent(in) :: f
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !!
 !!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).

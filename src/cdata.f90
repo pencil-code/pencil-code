@@ -379,7 +379,7 @@ module Cdata
     !PAR_DOC:  In addition, for \code{idl} to read correctly after the
     !PAR_DOC:  first restarted run, you must adjust the value of \var{mvar}
     !PAR_DOC:  in \file{data/dim.dat}
-  logical :: lread_oldsnap_noGW =.false. 
+  logical :: lread_oldsnap_noGW =.false.
   logical :: lread_oldsnap_lnrho2rho=.false., lread_oldsnap_noshear=.false.
   logical :: lread_oldsnap_nohydro=.false., lread_oldsnap_nohydro_nomu5=.false.
   logical :: lread_oldsnap_onlyA=.false., lread_oldsnap_mskipvar=.false.
@@ -533,6 +533,7 @@ module Cdata
 !
 !  Variable indices (default zero, set later by relevant physics modules).
 !
+  integer :: iuub=0, iuubx=0, iuuby=0, iuubz=0
   integer :: ilnrho=0, irho=0
   integer :: ilnrho_phi=0 !, ilna=0 ! Sovan
   integer :: irho_b=0, iss_b=0 ! Anelastic auxiliary variables (base state)
@@ -718,6 +719,7 @@ module Cdata
 
   logical :: lout=.true.,headt=.false.,headtt=.true.,lrmv=.false.
   logical :: ldiagnos=.false.,lvideo=.false.,lwrite_prof=.true.,lout_sound=.false.
+  logical :: lvideo_first=.false.
   logical :: ldiagnostic_output=.false.
   logical :: ltracers=.false.,lfixed_points=.false.
   logical :: l2davg=.false.,l2davgfirst=.false.
@@ -882,20 +884,21 @@ module Cdata
   logical :: Em_specflux=.false., Hm_specflux=.false., Hc_specflux=.false.
 !
   ! Auxiliary parameters for boundary conditions:
-  real, dimension(mcom,2) :: fbcx=0., fbcx_2=0.
-  real, dimension(mcom,2) :: fbcy=0., fbcy_1=0., fbcy_2=0.
-  real, dimension(mcom,2) :: fbcz=0., fbcz_1=0., fbcz_2=0.
+  real, dimension(mcom_max,2) :: fbcx=0., fbcx_2=0.
+  real, dimension(mcom_max,2) :: fbcy=0., fbcy_1=0., fbcy_2=0.
+  real, dimension(mcom_max,2) :: fbcz=0., fbcz_1=0., fbcz_2=0.
   ! Auxiliary parameters for distinct use only with bottom or top boundary:
-  real, dimension(mcom) :: fbcx_bot=0., fbcx_top=0.
-  real, dimension(mcom) :: fbcy_bot=0., fbcy_top=0.
-  real, dimension(mcom) :: fbcz_bot=0., fbcz_top=0.
+  real, dimension(mcom_max) :: fbcx_bot=0., fbcx_top=0.
+  real, dimension(mcom_max) :: fbcy_bot=0., fbcy_top=0.
+  real, dimension(mcom_max) :: fbcz_bot=0., fbcz_top=0.
   ! Switch, if you wanna reset the boundary conditions
   logical :: lreset_boundary_values=.false.
 !
   real :: Udrift_bc=0.
-  character (len=2*bclen+1), dimension(mcom) :: bcx='p',bcy='p',bcz='p'
-  character (len=bclen), dimension(mcom,2) :: bcx12='', bcy12='', bcz12=''
-  character (len=labellen), dimension(mfarray) :: varname
+  character (len=2*bclen+1), dimension(mcom_max) :: bcx='p',bcy='p',bcz='p'
+  character (len=bclen), dimension(mcom_max,2) :: bcx12='', bcy12='', bcz12=''
+  ! Names of the f-array slots
+  character (len=labellen), dimension(:), allocatable :: varname
   character (len=labellen) :: force_lower_bound='',force_upper_bound=''
 !
 !  Parameters for freezing boundary zones.
@@ -914,11 +917,11 @@ module Cdata
                         border_frac_r=0.0
   logical :: lborder_hyper_diff=.true.
   logical :: lfrozen_bcs_x=.false.,lfrozen_bcs_y=.false.,lfrozen_bcs_z=.false.
-  logical, dimension(mcom) :: lfrozen_bot_var_x=.false.,lfrozen_top_var_x=.false.
-  logical, dimension(mcom) :: lfrozen_bot_var_y=.false.,lfrozen_top_var_y=.false.
-  logical, dimension(mcom) :: lfrozen_bot_var_z=.false.,lfrozen_top_var_z=.false.
-  logical, dimension(mcom) :: lfreeze_varsquare=.false.
-  logical, dimension(mcom) :: lfreeze_varint=.false.,lfreeze_varext=.false.
+  logical, dimension(mcom_max) :: lfrozen_bot_var_x=.false.,lfrozen_top_var_x=.false.
+  logical, dimension(mcom_max) :: lfrozen_bot_var_y=.false.,lfrozen_top_var_y=.false.
+  logical, dimension(mcom_max) :: lfrozen_bot_var_z=.false.,lfrozen_top_var_z=.false.
+  logical, dimension(mcom_max) :: lfreeze_varsquare=.false.
+  logical, dimension(mcom_max) :: lfreeze_varint=.false.,lfreeze_varext=.false.
 !
 ! Parameters for reading data for BCs.
 !
@@ -936,7 +939,8 @@ module Cdata
 !
 !  Auxiliary variables.
 !
-  character (len=labellen), dimension(maux) :: aux_var
+  ! Grown by farray_append_aux_var, aux_count is the next free entry.
+  character (len=labellen), dimension(:), allocatable :: aux_var
   integer :: aux_count=1
   integer :: mvar_io=0, mvar_down=-1, maux_down=-1, mskipvar=0
 !
@@ -1037,10 +1041,11 @@ module Cdata
 !  Info whether maux is needed and used on the GPU
 !  Index for var is not -1 iff var is used on the GPU
 !  The index corresponds to the vertex buffer index on Astaroth
-!  Size of mfarray to make sure we can store the handle (for 1 to mvar -1)
+!  Grown by farray_vtxbuf_resize when auxiliaries are registered, missing entries are -1 and 0.
+!  Passed to the GPU code in initialize_gpu, which keeps pointers to them.
 !
-   integer, dimension(mfarray) :: maux_vtxbuf_index     = -1
-   integer, dimension(mfarray) :: read_vtxbuf_from_gpu  =  0
+   integer, dimension(:), allocatable, target :: maux_vtxbuf_index
+   integer, dimension(:), allocatable, target :: read_vtxbuf_from_gpu
    integer :: enum_unit_system = 0
 !
 !  Define and initialize lambda5, so that it can be used to tell whether
@@ -1086,12 +1091,25 @@ module Cdata
 !$omp threadprivate(dxyz_2,dxyz_4,dxyz_6,dvol,dxmax_pencil,dxmin_pencil,dline_1,lcoarse_mn, seed, m, n)
 !$omp threadprivate(lfirstpoint,thread_id)
 !$omp threadprivate(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz)
-!$omp threadprivate(l1dphiavg, l1davgfirst, l2davgfirst, ldiagnos,lout, l1davg, l2davg, lout_sound, lvideo)
+!$omp threadprivate(l1dphiavg, l1davgfirst, l2davgfirst, ldiagnos,lout, l1davg, l2davg, lout_sound, lvideo,lvideo_first)
 !$omp threadprivate(t,tspec,tdiagnos,t1ddiagnos,t2davgfirst,tslice,tsound,itdiagnos,dtdiagnos,eps_rkf_diagnos)
 !$omp threadprivate(maxdiffus,maxadvec,advec2,advec_cs2)
 !
 ! For use in offloaded code:
 !!$omp declare target(ldensity_nolog,l2,m2,n2)
+!
+!  Pointer to Boundcond's update_ghosts (for a variable range), set in
+!  initialize_boundcond. For modules which cannot use Boundcond because
+!  Boundcond uses them (e.g. Special).
+!
+  abstract interface
+    subroutine update_ghosts_range_iface(f,ivar1,ivar2_opt)
+      real, contiguous, dimension (:,:,:,:) :: f
+      integer :: ivar1
+      integer, optional :: ivar2_opt
+    endsubroutine update_ghosts_range_iface
+  endinterface
+  procedure(update_ghosts_range_iface), pointer :: update_ghosts_ptr => null()
 !
 !***********************************************************************
 !BEGIN C BINDING

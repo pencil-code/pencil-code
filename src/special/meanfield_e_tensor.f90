@@ -372,7 +372,7 @@ module Special
       use Messages, only: information
       use SharedVariables, only: get_shared_variable
 
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: i,j
       integer(HID_T) :: datatype_id
       logical :: flag
@@ -775,7 +775,7 @@ module Special
 !
 !    14-aug-2011/Bourdin.KIS: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
 
@@ -844,7 +844,7 @@ module Special
       use PolynomialRoots, only: cubicroots
       use Sub, only: dyadic2_other
 
-      real, dimension (mx,my,mz,mfarray), intent(INOUT) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       real :: delt,minbeta,minbeta_,thmin,thmax,rmin,rmax,trmin,det,oldtrace,newtrace
       integer :: i,j,k,numzeros,numcomplex,numzeros_,mm,ll,iv,iv0,ik,icheck
@@ -1231,11 +1231,9 @@ enddo; enddo
 !
 !  24-nov-04/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
 !
-      intent(in) :: f
-      intent(inout) :: p
 !
       integer :: i,j,k,iii,nind
       real, dimension(nx) :: jrt,jtr
@@ -1457,12 +1455,10 @@ endif
 !
 !  06-oct-03/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
 !
-      intent(in) :: f,p
-      intent(inout) :: df
 
       integer :: i, j
 !
@@ -1488,7 +1484,7 @@ endif
     endsubroutine dspecial_dt
 !***********************************************************************
     subroutine calc_diagnostics_special(f,p)
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
 
       real, dimension(nx,3)   :: tmppencil
@@ -1634,7 +1630,7 @@ endif
 !***********************************************************************
     subroutine read_special_init_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       iostat = 0
@@ -1657,7 +1653,7 @@ endif
 !***********************************************************************
     subroutine read_special_run_pars(iomsg)
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       iostat = 0
@@ -1687,9 +1683,10 @@ endif
 !
 !!      use FArrayManager, only: farray_index_append
 !
-      integer :: iname
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
+      integer :: iname
+      logical :: lwr
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
@@ -1877,10 +1874,10 @@ endif
 !
 !  06-oct-03/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
       real :: diffus_tmp
-      type (pencil_case), intent(in) :: p
       integer :: i,j,k
       real, dimension(nx,3)   :: tmppencil
       real, dimension(nx)     :: tmpline

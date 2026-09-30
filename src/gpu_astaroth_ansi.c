@@ -21,7 +21,7 @@
 #include "headers_c.h"
 
 void registerGPU();
-void initializeGPU(REAL*, FINT, double, FINT, FINT, FINT, FINT);
+void initializeGPU(REAL*, FINT, double, FINT, FINT, FINT, FINT, FINT*, FINT*);
 void finalizeGPU();
 void getFArrayIn(REAL **);
 void substepGPU(int, double);
@@ -110,7 +110,9 @@ void FTNIZE(tf_save_checkpoint_c)(const char* model_name, const char* checkpoint
 void FTNIZE(initialize_gpu_c)(REAL* f, FINT* comm_fint, double* t, FINT* nt,
 				FINT* lread_all_vars_from_device_,
 				FINT* lcpu_timestep_on_gpu_,
-				FINT* lac_sparse_autotuning_
+				FINT* lac_sparse_autotuning_,
+				FINT* maux_vtxbuf_index_,
+				FINT* read_vtxbuf_from_gpu_
 				)
 {
 // Initializes GPU.  
@@ -126,7 +128,8 @@ void FTNIZE(initialize_gpu_c)(REAL* f, FINT* comm_fint, double* t, FINT* nt,
   //printf("dz = %f\n", __cdata_MOD_dz);
 
   initializeGPU(f, *comm_fint,*t,*nt,*lread_all_vars_from_device_,
-		  *lcpu_timestep_on_gpu_,*lac_sparse_autotuning_);
+		  *lcpu_timestep_on_gpu_,*lac_sparse_autotuning_,
+		  maux_vtxbuf_index_,read_vtxbuf_from_gpu_);
 /*
   printf("xmin = %e\n", x[4]);
   printf("xmax = %e\n", x[nx-1+3]);

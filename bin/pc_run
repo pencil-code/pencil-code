@@ -9,6 +9,9 @@ if [ -f src/.moduleinfo ]; then
     source src/.moduleinfo || true
 fi
 #======================================================================#
+#TP: Done to make sure we don't run out of stack space with large subdomains.
+ulimit -s unlimited
+#======================================================================#
 # Run the right perl version:
 if [ -x /usr/local/bin/perl ]; then
   perl=/usr/local/bin/perl
@@ -464,6 +467,7 @@ sub setup_environment {
           chomp($ncpus = `nproc`);
       }
       $ENV{OMP_NUM_THREADS}    = $ncpus;
+      $ENV{OMP_STACKSIZE} = "512M";
       $ENV{SRUN_CPUS_PER_TASK} = $ncpus;
     #}
     if ($settings{'mpich'}) {

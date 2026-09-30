@@ -5,9 +5,7 @@
 !  Local settings concerning grid size and number of CPUs.
 !  This file is included by cparam.f90
 !
-! MAUX CONTRIBUTION 7
 ! MVAR CONTRIBUTION 1
-! COMMUNICATED AUXILIARIES 1
 !
 integer, parameter :: ncpus=8,nprocy=2,nprocz=2,nprocx=2
 integer, parameter :: nxgrid=64,nygrid=nxgrid,nzgrid=nxgrid

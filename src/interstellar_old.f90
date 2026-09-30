@@ -421,9 +421,7 @@ module Interstellar
 !
 !  Writing files for use with IDL
 !
-      if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=',netcool $'
-      if (naux+naux_com == maux+maux_com) aux_var(aux_count)=',netcool'
-      aux_count=aux_count+1
+      call farray_append_aux_var(',netcool',naux+naux_com < maux+maux_com)
       if (lroot) write(15,*) 'netcool = fltarr(mx,my,mz)*one'
 !
     endsubroutine register_interstellar

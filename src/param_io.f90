@@ -75,7 +75,7 @@ module Param_IO
 !
 ! local quantities
 !
-  real, dimension(mcom) :: fbcx1=0., fbcx2=0., fbcx1_2=0., fbcx2_2=0., &
+  real, dimension(mcom_max) :: fbcx1=0., fbcx2=0., fbcx1_2=0., fbcx2_2=0., &
                            fbcy1=0., fbcy2=0., fbcy1_1=0., fbcy1_2=0., fbcy2_1=0., fbcy2_2=0., &
                            fbcz1=0., fbcz2=0., fbcz1_1=0., fbcz1_2=0., fbcz2_1=0., fbcz2_2=0.
   integer :: niter_poisson  ! dummy
@@ -933,7 +933,8 @@ module Param_IO
 !  This is to have one item per line in the file param.nml (Cray compiler denies it).
 !
           call system_cmd( &
-          "sed -i -e's/\(&[a-zA-Z0-9_]*\) \( *[^ ].*\)/\1\n\2/' -e's/,\([^,]*=\)/,\n\1/g' data/param.nml > /dev/null 2>&1")
+          "sed -i.bck -e's/\(&[a-zA-Z0-9_]*\) \( *[^ ].*\)/\1\n\2/' -e's/,\([^,]*=\)/,\n\1/g' data/param.nml" &
+          //" > /dev/null 2>&1 && rm -f param.nml.bck")
         endif
       endif
 !
@@ -1054,7 +1055,8 @@ module Param_IO
 !  This is to have one item per line in the file param2.nml (Cray compiler denies it).
 !
             call system_cmd( &
-            "sed -i -e's/\(&[a-zA-Z0-9_]*\) \( *[^ ].*\)/\1\n\2/' -e's/,\([^,]*=\)/,\n\1/g' data/param2.nml > /dev/null 2>&1")
+            "sed -i.bck -e's/\(&[a-zA-Z0-9_]*\) \( *[^ ].*\)/\1\n\2/' -e's/,\([^,]*=\)/,\n\1/g' data/param2.nml" &
+            //" > /dev/null 2>&1  && rm -f param2.nml.bck")
           endif
 
         else                                    ! output in params.log, stdout or other file

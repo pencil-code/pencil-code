@@ -195,7 +195,7 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: rr, r2, bdry_depth, inner_radius, proximity
       real, dimension(3) :: xxp, dr
       integer :: l
@@ -283,12 +283,11 @@ module Special
       use Quiet
       use Sub
 !
+      real, contiguous, dimension(:,:,:,:) :: f
       integer, parameter :: mvortices=100
-      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (4*mvortices) :: tmp
       integer :: j, ivortices, jvortices
 !
-      intent(inout) :: f
 !
       type (line_param), parameter :: vl0 = line_param( 0.0, 0.0,0.,33.0, 1.0)
       type (line_param) :: vl1
@@ -436,11 +435,9 @@ module Special
 !
 !   24-nov-04/tony: coded
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
 !
-      intent(in) :: f
-      intent(inout) :: p
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
@@ -466,19 +463,17 @@ module Special
       use Sub
       use Deriv
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
       real, dimension (nx,3) :: gpreal, gpimag
       real, dimension (nx) :: pimag, preal, diss, psi2, pot_gpe, pot_tot
       real, dimension (nx) :: del2real, del2imag, gpreal2, gpimag2
       real, dimension (nx) :: drealdx, dimagdx
       real, dimension (nx) :: boundaries
       real :: a, b, c
-      type (pencil_case) :: p
 !
 !
-      intent(in) :: f,p
-      intent(inout) :: df
 !
 !  identify module and boundary conditions
 !
@@ -628,7 +623,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -648,7 +643,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -674,9 +669,10 @@ module Special
       use FArrayManager, only: farray_index_append
       use Sub
 !
-      integer :: iname
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
+      integer :: iname
+      logical :: lwr
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
@@ -718,8 +714,8 @@ module Special
 !
 !  26-jul-06/tony: coded
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      type (slice_data) :: slices
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(slice_data) :: slices
 !
       integer :: inamev
 !
@@ -1128,7 +1124,7 @@ module Special
 !
 !   06-jul-06/tony: coded
 !
-      real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (2)  :: bdry_value
       integer :: i
 !

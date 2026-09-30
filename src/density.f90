@@ -30,7 +30,7 @@ module Density
   use Messages
   use EquationOfState, only: cs0, cs20, cs2bot, cs2top, rho0, lnrho0
   use DensityMethods
-  use KT_transport, only: kt_transp
+  use KT_transport, only: kt_div
 !
   implicit none
 !
@@ -55,7 +55,8 @@ module Density
   real, dimension(mz) :: profz_eos=1.0,dprofz_eos=0.0
   real, target :: mpoly=impossible
   real, pointer :: mpoly0, mpoly1, mpoly2, eps_hless, width_hless_absolute, nu_tdep
-  logical, pointer :: lkt_transport   ! shared from Hydro; selects KT energy flux
+  logical, pointer :: lkt_transport  ! shared from Hydro; selects KT energy flux
+  logical, pointer :: lu_background  ! shared from Hydro; selects external flow
   real, dimension(nx) :: xmask_den
   real, dimension(nx) :: fprofile_x=1.
   real, dimension(nz) :: fprofile_z=1.
@@ -73,7 +74,7 @@ module Density
 !
   real, dimension(1) :: Schur_dlnrho_RHS_xyzaver
   real, dimension (nz) :: Schur_dlnrho_RHS_xyaver_z
-  real, dimension (nx,ny) :: Schur_dlnrho_RHS_zaver_xy
+  real, dimension(:,:), allocatable :: Schur_dlnrho_RHS_zaver_xy
 !
 ! reference state, components:  1       2          3              4            5      6     7         8            9
 !                              rho, d rho/d z, d^2 rho/d z^2, d^6 rho/d z^6, d p/d z, s, d s/d z, d^2 s/d z^2, d^6 s/d z^6
@@ -351,7 +352,6 @@ module Density
   integer :: ihless
   logical, pointer :: lext_force
   real, pointer :: Hscript
-
 !
   integer :: enum_ieos_profile = 0
   integer :: enum_mass_source_profile = 0
@@ -386,9 +386,7 @@ module Density
         if (isld_char == 0) then
           call farray_register_auxiliary('sld_char',isld_char,communicated=.true.,rhs=.true.)
           if (lroot) write(15,*) 'sld_char = fltarr(mx,my,mz)*one'
-          aux_var(aux_count)=',sld_char'
-          if (naux+naux_com < maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
-          aux_count=aux_count+1
+          call farray_append_aux_var(',sld_char',naux+naux_com < maux+maux_com)
         endif
       endif
 !
@@ -402,9 +400,7 @@ module Density
           call farray_index_append('irho_flucz',irho_flucz)
         endif
         if (lroot) write(15,*) 'rho_flucz = fltarr(mx,my,mz)*one'
-        aux_var(aux_count)=',rho_flucz'
-        if (naux+naux_com < maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
-        aux_count=aux_count+1
+        call farray_append_aux_var(',rho_flucz',naux+naux_com < maux+maux_com)
       endif
 !
 !  Identify version number (generated automatically by SVN).
@@ -486,7 +482,7 @@ module Density
       use FArrayManager
       use Gravity, only: lnumerical_equilibrium
       use Sub, only: stepdown,der_stepdown, erfunc,step
-      use SharedVariables, only: put_shared_variable, get_shared_variable 
+      use SharedVariables, only: put_shared_variable, get_shared_variable
       use InitialCondition, only: initial_condition_all
       use Mpicomm, only: mpiallreduce_sum
 !
@@ -501,6 +497,8 @@ module Density
       real :: rho_bot,sref
       real, dimension(:), pointer :: gravx_xpencil
       real :: gamma, gamma_m1
+
+      if (.not.allocated(Schur_dlnrho_RHS_zaver_xy)) allocate(Schur_dlnrho_RHS_zaver_xy(nx,ny))
 !
 !   Set values 1 + cs2 for relativistic_eos and (1 - cs2)/(1 + cs2) for relativistic_eos_corr
 !
@@ -1111,14 +1109,15 @@ module Density
       endif
 !
       if (lhydro.and..not.lhydro_potential) then
-        call get_shared_variable('lhiggsless', lhiggsless)
+        call get_shared_variable('lhiggsless', lhiggsless,default_val=.false.)
+        call get_shared_variable('lu_background',lu_background,default_val=.false.)
       else
-        allocate(lhiggsless)
+        allocate(lhiggsless,lu_background)
         lhiggsless=.false.
+        lu_background=.false.
       endif
 !
       if (lhiggsless.and.lconservative) ihless=farray_index_by_name('ihless')
-
 
       call get_shared_variable('lkt_transport',lkt_transport,default_val=.false.)
       if (lhydro.and.lhiggsless) then
@@ -1278,7 +1277,7 @@ module Density
           enddo
           enddo
           enddo
-        case ('exp_zbot'); 
+        case ('exp_zbot');
           do l=1,mx
           do m=1,my
           do n=1,mz
@@ -1286,7 +1285,7 @@ module Density
           enddo
           enddo
           enddo
-        case ('exp_rbot'); 
+        case ('exp_rbot');
           do l=1,mx
           do m=1,my
           do n=1,mz
@@ -1791,7 +1790,7 @@ module Density
                  sin(kx_lnrho(j)*x(l1:l2)+phase_lnrho(j) + complex_phase(omega_jeans*ampllnrho(j)))
           enddo; enddo
         case ('rhobar')
-          if (lroot) then 
+          if (lroot) then
             inquire(file=rhobar_file,exist=lrhobar_exists)
             if (lrhobar_exists) then
               print*,"Init lrho: reading rhobar from rhobar.dat"
@@ -1975,7 +1974,7 @@ module Density
 !                 Observed that irho_flucz is only calculated for diagnostics purposes.
 !                 So having this function serves two purposes: saving unnecessary computation
 !                 and more importantly enabling to reuse diagnostic code when using the GPU.
-!    
+!
       use Sub, only: finalize_aver
 !
       real, contiguous, dimension(:,:,:,:) :: f
@@ -2443,6 +2442,12 @@ module Density
       if (lreference_state) lpenc_requested(i_rho1) = .true.
       lpenc_diagnos2d(i_lnrho)=.true.
       lpenc_diagnos2d(i_rho)=.true.
+!  Background Profile
+      if (lhydro .and. lu_background) then
+        lpenc_requested(i_uutot) = .true.
+        lpenc_requested(i_divutot) = .true.
+      endif
+
 !
 !  Diagnostic pencils.
 !
@@ -2506,10 +2511,12 @@ module Density
       endif
       if (lpencil_in(i_uglnrho)) then
         lpencil_in(i_uu)=.true.
+        if (lu_background) lpencil_in(i_uutot)=.true.
         lpencil_in(i_glnrho)=.true.
       endif
       if (lpencil_in(i_ugrho)) then
         lpencil_in(i_uu)=.true.
+        if (lu_background) lpencil_in(i_uutot)=.true.
         lpencil_in(i_grho)=.true.
       endif
       if (lpencil_in(i_glnrho2)) lpencil_in(i_glnrho)=.true.
@@ -2542,11 +2549,13 @@ module Density
 !  Most basic pencils should come first, as others may depend on them.
 !
 !  19-11-04/anders: coded
+use Sub, only: dot2_mn
 !
       real, contiguous, dimension(:,:,:,:) :: f
       type (pencil_case) :: p
       logical, dimension(:), intent(IN) :: lpenc_loc
       intent(in) :: f
+      real, dimension (nx) :: utot2
       intent(inout) :: p
       ! real :: cs20p1=1.
 !
@@ -2564,6 +2573,9 @@ module Density
           !p%ekin=fourthird*p%rho*p%lorentz*p%u2
           ! if (lrelativistic_eos) cs20p1=1.+cs20
           p%ekin=cs20p1*p%rho*p%lorentz*p%u2
+        elseif (lu_background) then
+          call dot2_mn(p%uutot,utot2)
+          p%ekin=0.5*p%rho*utot2
         else
           p%ekin=0.5*p%rho*p%u2
         endif
@@ -2656,7 +2668,13 @@ module Density
       if (lpenc_loc(i_uglnrho)) call fatal_error('calc_pencils_density', &
           'uglnrho not available for linear mass density')   ! Why not implementing it?
 ! ugrho
-      if (lpenc_loc(i_ugrho)) call u_dot_grad(f,ilnrho,p%grho,p%uu,p%ugrho,UPWIND=lupw_rho)
+      if (lpenc_loc(i_ugrho)) then
+        if (lu_background) then
+          call u_dot_grad(f,ilnrho,p%grho,p%uutot,p%ugrho,UPWIND=lupw_rho)
+        else
+          call u_dot_grad(f,ilnrho,p%grho,p%uu,p%ugrho,UPWIND=lupw_rho)
+        endif
+      endif
 ! glnrho2
       if (lpenc_loc(i_glnrho2)) call dot2(p%glnrho,p%glnrho2)
 ! del2rho
@@ -2774,14 +2792,20 @@ module Density
 
 ! uglnrho
       if (lpenc_loc(i_uglnrho)) then
-        if (lupw_lnrho) then
-          call u_dot_grad(f,ilnrho,p%glnrho,p%uu,p%uglnrho,UPWIND=lupw_lnrho)
+        if (lu_background) then
+          if (lupw_lnrho) then
+            call u_dot_grad(f,ilnrho,p%glnrho,p%uutot,p%uglnrho,UPWIND=lupw_lnrho)
+          else
+            call dot(p%uutot,p%glnrho,p%uglnrho)
+          endif
         else
-          call dot(p%uu,p%glnrho,p%uglnrho)
+          if (lupw_lnrho) then
+            call u_dot_grad(f,ilnrho,p%glnrho,p%uu,p%uglnrho,UPWIND=lupw_lnrho)
+          else
+            call dot(p%uu,p%glnrho,p%uglnrho)
+          endif
         endif
       endif
-
-
 ! ugrho
       if (lpenc_loc(i_ugrho)) call not_implemented('calc_pencils_density', &
           'ugrho for logarithmic mass density')
@@ -2851,7 +2875,7 @@ module Density
 !***********************************************************************
     subroutine calc_advec_hypermesh
 !
-!   14-oct-25/TP: carved from dlnrho_dt 
+!   14-oct-25/TP: carved from dlnrho_dt
 !
       real, dimension(nx) :: advec_hypermesh_rho
 !
@@ -2869,10 +2893,10 @@ module Density
 !***********************************************************************
     subroutine calc_sld_fdiff(f,p,fdiff)
 !
-!   16-apr-26/TP: carved from dlnrho_dt 
+!   16-apr-26/TP: carved from dlnrho_dt
 !
       use Sub, only: calc_slope_diff_flux
-      
+
       real, intent(in), contiguous, dimension(:,:,:,:) :: f
       type(pencil_case), intent(in) :: p
       real, intent(inout),  dimension(nx) :: fdiff
@@ -2917,11 +2941,7 @@ module Density
 !
         if (lconservative) then
           if (lkt_transport) then
-!
-!  KT flux-limited energy flux divergence (kt_transport.f90) instead of the
-!  central-difference div S; density_rhs itself is the scratch (mirrors -p%divss).
-!
-            call kt_transp(f,m,n,1,real(t),density_rhs)
+            call kt_div(f,density_rhs)
             density_rhs=-density_rhs
           else
             density_rhs=-p%divss
@@ -2937,15 +2957,28 @@ module Density
             prefactor2=1.+p%u2
           endif
           if (ldensity_nolog) then
-            density_rhs=-p%rho*p%divu
+            if (lu_background) then
+              density_rhs=-p%rho*p%divutot
+            else
+              density_rhs=-p%rho*p%divu
+            endif
             if (ladvection_density) density_rhs = density_rhs - cs20_corr*p%ugrho
           else
+            if (lu_background) then
+              density_rhs= - p%divutot
+            else
+              density_rhs= - p%divu
+            endif
             density_rhs= - p%divu
             if (ladvection_density) density_rhs = density_rhs - cs20_corr*p%uglnrho
           endif
           if (lext_force) then
             do i=1,3
-              u_dot_ext_force = p%uu(:,i)*p%ext_force(:,i+1)
+              if (lu_background) then
+                u_dot_ext_force = p%uutot(:,i)*p%ext_force(:,i+1)
+              else
+                u_dot_ext_force = p%uu(:,i)*p%ext_force(:,i+1)
+              endif
             enddo
           endif
           if (lrelativistic_eos) then
@@ -2958,10 +2991,18 @@ module Density
               else
                 density_hydro_rhs=0.
                 if (ldensity_nolog) then
-                  if (lrelativistic_eos_term1) density_hydro_rhs=density_hydro_rhs-p%rho*p%divu
+                    if (lu_background) then
+                      density_hydro_rhs=density_hydro_rhs-p%rho*p%divutot
+                    else
+                      density_hydro_rhs=density_hydro_rhs-p%rho*p%divu
+                    endif
                   if (lrelativistic_eos_term2) density_hydro_rhs=density_hydro_rhs-cs20_corr*p%ugrho
                 else
-                  if (lrelativistic_eos_term1) density_hydro_rhs=density_hydro_rhs-p%divu
+                    if (lu_background) then
+                      density_hydro_rhs=density_hydro_rhs-p%divutot
+                    else
+                      density_hydro_rhs=density_hydro_rhs-p%divu
+                    endif
                   if (lrelativistic_eos_term2) density_hydro_rhs=density_hydro_rhs-cs20_corr*p%uglnrho
                 endif
               endif
@@ -2980,7 +3021,11 @@ module Density
                 endif
               endif
               density_hydro_rhs=density_hydro_rhs*prefactor*lorentz_gamma_inv2
-              call multvs(p%uu,density_hydro_rhs,tmpv)
+              if (lu_background) then
+                call multvs(p%uutot,density_hydro_rhs,tmpv)
+              else
+                call multvs(p%uu,density_hydro_rhs,tmpv)
+              endif
               ! call multvs(p%uu,density_hydro_rhs,tmpv)
               df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-tmpv
             endif
@@ -3023,29 +3068,53 @@ module Density
 !  There is an additional option of doing this by obeying mass
 !  conservation, which is not currently the default.
 !
-      if (ieos_profile=='surface_z') then
-        if (ldensity_nolog) then
-          density_rhs= density_rhs - profz_eos(n)*(p%ugrho + p%rho*p%divu)
-          if (ldensity_profile_masscons) density_rhs = density_rhs-dprofz_eos(n)*p%rho*p%uu(:,3)
-        else
-          density_rhs= density_rhs - profz_eos(n)*(p%uglnrho + p%divu)
-          if (ldensity_profile_masscons) density_rhs = density_rhs -dprofz_eos(n)*p%uu(:,3)
+        if (ieos_profile=='surface_z') then
+          if (ldensity_nolog) then
+            if (lu_background) then
+              density_rhs= density_rhs - profz_eos(n)*(p%ugrho + p%rho*p%divutot)
+              if (ldensity_profile_masscons) density_rhs = density_rhs-dprofz_eos(n)*p%rho*p%uutot(:,3)
+            else
+              density_rhs= density_rhs - profz_eos(n)*(p%ugrho + p%rho*p%divu)
+              if (ldensity_profile_masscons) density_rhs = density_rhs-dprofz_eos(n)*p%rho*p%uu(:,3)
+            endif
+          else
+            if (lu_background) then
+              density_rhs= density_rhs - profz_eos(n)*(p%uglnrho + p%divutot)
+              if (ldensity_profile_masscons) density_rhs = density_rhs -dprofz_eos(n)*p%uutot(:,3)
+            else
+              density_rhs= density_rhs - profz_eos(n)*(p%uglnrho + p%divu)
+              if (ldensity_profile_masscons) density_rhs = density_rhs -dprofz_eos(n)*p%uu(:,3)
+            endif
+          endif
         endif
-      endif
 !
 !  If we are solving the force-free equation in parts of our domain.
 !
       if (lffree) then
-        if (ldensity_nolog) then
-          density_rhs= density_rhs - profx_ffree*profy_ffree(m)*profz_ffree(n)*(p%ugrho + p%rho*p%divu)
-          if (ldensity_profile_masscons) density_rhs=density_rhs - p%rho*( dprofx_ffree   *p%uu(:,1) &
-                                                                          +dprofy_ffree(m)*p%uu(:,2) &
-                                                                          +dprofz_ffree(n)*p%uu(:,3))
+        if (lu_background) then
+          if (ldensity_nolog) then
+            density_rhs= density_rhs - profx_ffree*profy_ffree(m)*profz_ffree(n)*(p%ugrho + p%rho*p%divutot)
+            if (ldensity_profile_masscons) density_rhs=density_rhs - p%rho*( dprofx_ffree   *p%uutot(:,1) &
+                                                                            +dprofy_ffree(m)*p%uutot(:,2) &
+                                                                            +dprofz_ffree(n)*p%uutot(:,3))
+          else
+            density_rhs= density_rhs - profx_ffree*(profy_ffree(m)*profz_ffree(n))*(p%uglnrho + p%divutot)
+            if (ldensity_profile_masscons) density_rhs=density_rhs-dprofx_ffree   *p%uutot(:,1) &
+                                                                  -dprofy_ffree(m)*p%uutot(:,2) &
+                                                                  -dprofz_ffree(n)*p%uutot(:,3)
+          endif
         else
-          density_rhs= density_rhs - profx_ffree*(profy_ffree(m)*profz_ffree(n))*(p%uglnrho + p%divu)
-          if (ldensity_profile_masscons) density_rhs=density_rhs-dprofx_ffree   *p%uu(:,1) &
-                                                                -dprofy_ffree(m)*p%uu(:,2) &
-                                                                -dprofz_ffree(n)*p%uu(:,3)
+          if (ldensity_nolog) then
+            density_rhs= density_rhs - profx_ffree*profy_ffree(m)*profz_ffree(n)*(p%ugrho + p%rho*p%divu)
+            if (ldensity_profile_masscons) density_rhs=density_rhs - p%rho*( dprofx_ffree   *p%uu(:,1) &
+                                                                            +dprofy_ffree(m)*p%uu(:,2) &
+                                                                            +dprofz_ffree(n)*p%uu(:,3))
+          else
+            density_rhs= density_rhs - profx_ffree*(profy_ffree(m)*profz_ffree(n))*(p%uglnrho + p%divu)
+            if (ldensity_profile_masscons) density_rhs=density_rhs-dprofx_ffree   *p%uu(:,1) &
+                                                                  -dprofy_ffree(m)*p%uu(:,2) &
+                                                                  -dprofz_ffree(n)*p%uu(:,3)
+          endif
         endif
       endif
 !
@@ -3071,7 +3140,7 @@ module Density
 !  Add the continuity equation terms to the RHS of the density df.
 !
       df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + density_rhs
-    endsubroutine continuity_eq 
+    endsubroutine continuity_eq
 !***********************************************************************
     subroutine mass_diffusion(f,p,fdiff)
 
@@ -3348,7 +3417,7 @@ module Density
         call accumulate_Schur_averages(density_rhs)
 !
       else
-              
+
       if(lcontinuity_gas) call continuity_eq(f,df,p)
 !
 !  Hubble parameter

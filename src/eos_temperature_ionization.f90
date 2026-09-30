@@ -110,9 +110,7 @@ module EquationOfState
 !
 !  Writing files for use with IDL
 !
-      if (naux < maux)  aux_var(aux_count)=',yH $'
-      if (naux == maux) aux_var(aux_count)=',yH'
-      aux_count=aux_count+1
+      call farray_append_aux_var(',yH',naux < maux)
       if (lroot) write(15,*) 'yH = fltarr(mx,my,mz)*one'
 !
 !  Identify version number.

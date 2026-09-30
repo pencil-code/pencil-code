@@ -120,6 +120,7 @@ module Equ
       ldiagnos   =lfirst .and. lout  
       l1davgfirst=lfirst .and. l1davg
       l2davgfirst=lfirst .and. l2davg
+      lvideo_first=lfirst .and. lvideo
 
 !
 !  Derived diagnostics switches.
@@ -621,6 +622,7 @@ module Equ
 !$    call restore_diagnostic_controls
 !$    call hydro_restore_diagnostic_controls
 !$    call training_restore_diagnostic_controls
+!
 
       !$omp do
       do imn=1,nyz
@@ -685,7 +687,7 @@ module Equ
 !$    use General, only: get_cpu, set_cpu
 
       real, contiguous, dimension(:,:,:,:),intent(INOUT) :: f
-      type (pencil_case) :: p
+      type(pencil_case) :: p
 
       integer :: imn
 !
@@ -710,6 +712,10 @@ module Equ
       lfirstpoint=.true.
 
       !call restrict_cores
+!
+!  Each thread has its own pencil case on the heap, since on large grids
+!  it does not fit on the thread stacks.
+!
 
       !$omp do
       do imn=1,nyz
@@ -821,7 +827,7 @@ module Equ
       use Shock, only: shock_before_boundary 
 
       real, contiguous, dimension(:,:,:,:),intent(INOUT) :: f
-      type (pencil_case) :: p
+      type(pencil_case) :: p
 
         if (lmultithread .and. (leos_ionization.or.leos_temperature_ionization)) call ioncalc(f)
         !TP: have to recompute shock field in before boundary for correct diagnostics

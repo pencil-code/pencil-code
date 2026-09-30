@@ -21,14 +21,10 @@ module Driver
 !
   implicit none
 !
-  private
+  include "driver.h"
 !
-  public :: initialize_driver, finalize_driver
-  public :: read_driver_run_pars, write_driver_run_pars
-  public :: driver_apply
-!
-  real, dimension (mcom) :: tau_inv=0.0
-  integer, dimension (mcom) :: target_proc_x=-1, target_proc_y=-1, target_proc_z=-1
+  real, dimension (mcom_max) :: tau_inv=0.0
+  integer, dimension (mcom_max) :: target_proc_x=-1, target_proc_y=-1, target_proc_z=-1
 !
   type :: data_array
     real, pointer, dimension(:,:) :: frame => null()
@@ -36,14 +32,14 @@ module Driver
     real, pointer, dimension(:,:) :: frame_r => null()
     real :: time_l, time_r
   end type data_array
-  type(data_array), dimension(mcom) :: data_xy, data_xz, data_yz
+  type(data_array), dimension (mcom_max) :: data_xy, data_xz, data_yz
 !
 !  Run parameters.
 !
-  character (len=fnlen), dimension(mcom) :: driver_xy="", driver_xz="", driver_yz=""
-  logical, dimension(mcom) :: ldrive_xy=.false., ldrive_xz=.false., ldrive_yz=.false.
-  integer, dimension (mcom) :: driver_pos_x=0, driver_pos_y=0, driver_pos_z=0
-  real, dimension (mcom) :: data_unit=0.0, decay_time=0.0, time_offset=0.0
+  character (len=fnlen), dimension (mcom_max) :: driver_xy="", driver_xz="", driver_yz=""
+  logical, dimension (mcom_max) :: ldrive_xy=.false., ldrive_xz=.false., ldrive_yz=.false.
+  integer, dimension (mcom_max) :: driver_pos_x=0, driver_pos_y=0, driver_pos_z=0
+  real, dimension (mcom_max) :: data_unit=0.0, decay_time=0.0, time_offset=0.0
 !
   namelist /driver_run_pars/ &
       driver_xy, driver_xz, driver_yz, &

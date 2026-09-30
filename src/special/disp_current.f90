@@ -87,11 +87,21 @@ module Special
   logical :: lcorrect_sign_adphiB_term=.false. !PAR_DOC: correct sign adphiB_term
   logical :: lignore_adphiB_term_in_MHD_current=.true. !PAR_DOC: correct sign adphiB_term
   character (len=labellen) :: inita0='zero'
+  logical :: lpi_vecpot=.false.
+!
+!  PAR_DOC: Gauss-law preserving formulation (at the moment without J) evolving A_e.
+!  PAR_DOC: Pi = E + alpf*phi*B = curl A_e.
+!  PAR_DOC: dA_e/dt =  B - alpf*phi*E,   E = curl A_e - alpf*phi*curl A,   dA/dt = -E,
+!  PAR_DOC: so div(Pi) = div(curl C) = 0 
+!
+  integer :: iaae=0, iphi_f=0
+  logical, pointer :: lbb_as_comaux
   character (len=labellen), dimension(ninit) :: initee='nothing'
   character (len=labellen) :: power_filename='power_profile.dat'
   character (len=labellen) :: replace_Schwinger_by_Arnold='replace_at_end_of_reheating'
 !
   namelist /special_init_pars/ &
+    lpi_vecpot, &
     initee, inita0, alpf, &
     ampl_ex, ampl_ey, ampl_ez, ampl_a0, &
     kx_ex, kx_ey, kx_ez, &
@@ -182,6 +192,12 @@ module Special
   integer :: idiag_fppf=0       ! DIAG_DOC: $f''/f$
   integer :: idiag_afact=0      ! DIAG_DOC: $a$ (scale factor)
   integer :: idiag_constrainteqn=0  ! DIAG_DOC: $<deldotE+>$
+  integer :: idiag_constrainteqnrms=0 ! DIAG_DOC: rms of the pointwise ratio used in constrainteqn
+  integer :: idiag_gausscrms=0  ! DIAG_DOC: rms $\nab\cdot(\Ev+\alpha_f\phi\Bv)$ (needs lbb_as_comaux)
+  integer :: idiag_gaussprms=0  ! DIAG_DOC: rms $(\nab\cdot\Ev+\alpha_f\Bv\cdot\nab\phi)$
+  integer :: idiag_gaussnrms=0  ! DIAG_DOC: rms $\alpha_f\Bv\cdot\nab\phi$
+  integer :: idiag_aaerms=0     ! DIAG_DOC: rms $A_e$
+  integer :: idiag_divphib=0    ! DIAG_DOC: $\left<\nab \cdot (phiB) \right>$
   integer :: idiag_exm=0        ! DIAG_DOC: $\left<E_x\right>$
   integer :: idiag_eym=0        ! DIAG_DOC: $\left<E_y\right>$
   integer :: idiag_ezm=0        ! DIAG_DOC: $\left<E_z\right>$
@@ -273,6 +289,10 @@ module Special
 !
       if (llongitudinalE) call farray_register_pde('Gamma',iGamma)
 !
+!  Vector potential A_e of Pi = E + alphaf*phi*B = curl A_e.
+!
+      if (lpi_vecpot) call farray_register_pde('iaae',iaae,vector=3)
+!
 !  The following variables are also used in special/backreact_infl.f90
 !
       call put_shared_variable('alpf',alpf,caller='register_disp_current')
@@ -310,7 +330,7 @@ module Special
       use SharedVariables, only: get_shared_variable
       use Initcond, only: gaunoise
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: j
 !
 !  Initialize module variables which are parameter dependent
@@ -320,6 +340,13 @@ module Special
       if (c_light/=1. .and. .not. loverride_c_light) call fatal_error('disp_current', &
           "use unit_system='set' or put loverride_c_light=T")
       c_light2=c_light**2
+!
+      iphi_f=farray_index_by_name('infl_phi')
+      if (iphi_f<=0) iphi_f=farray_index_by_name('phi')
+      call get_shared_variable('lbb_as_comaux',lbb_as_comaux,default_val=.false.)
+      if (lpi_vecpot) then
+        if (iphi_f<=0) call fatal_error('initialize_special','lpi_vecpot needs an axion field')
+      endif
 !
       if (lhydro) then
         call get_shared_variable("lext_force",lext_force,caller='initialize_special')
@@ -412,7 +439,6 @@ module Special
       endif
 !
       call keep_compiler_quiet(f)
-!
     endsubroutine initialize_special
 !***********************************************************************
     subroutine init_special(f)
@@ -424,11 +450,10 @@ module Special
       use Mpicomm
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx) :: divA, divE
       integer :: j
 !
-      intent(inout) :: f
 !
 !  SAMPLE IMPLEMENTATION
 !
@@ -503,6 +528,8 @@ module Special
       if (lsigE_as_aux) f(:,:,:,isigE)=0.
       if (lsigB_as_aux) f(:,:,:,isigB)=0.
 !
+      if (lpi_vecpot) call init_aae(f)
+!
     endsubroutine init_special
 !***********************************************************************
     subroutine pencil_criteria_special()
@@ -574,6 +601,12 @@ module Special
         ! alberto: gGamma is always requested, as curlb depends on it
       endif
 !
+      if (idiag_constrainteqn/=0 .or. idiag_constrainteqnrms/=0 .or. idiag_gausscrms/=0 &
+          .or. idiag_gaussprms/=0 .or. idiag_gaussnrms/=0) then
+        lpenc_diagnos(i_divE)=.true.
+        lpenc_diagnos(i_gphi)=.true.
+        lpenc_diagnos(i_bb)=.true.
+      endif
       if (idiag_divEm/=0. .or. idiag_divErms/=0.) then
         lpenc_requested(i_divE)=.true.
       endif
@@ -646,8 +679,8 @@ module Special
                      del2v_etc, cross_mn, multsv_mn, multsv_add, dot_mn, &
                      multsv_mn_add
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
       real :: conductivity
       real :: H_arnold, T_arnold, sigE_arnold, weight_arnold, lna
       real, parameter :: C_arnold=12., e_arnold=0.303, g_e_arnold=106.75
@@ -657,8 +690,6 @@ module Special
       real, dimension (nx) :: uExB
       integer :: i,j,k
 !
-      intent(inout) :: f
-      intent(inout) :: p
 !
 !  Pencil for charge density.
 !
@@ -670,7 +701,28 @@ module Special
 !
 !  Terms for Gamma evolution.
 !
-      if (lpenc_requested(i_divE)) call div(f,iee,p%divE)
+      if (lpi_vecpot) then
+        call curl(f,iaae,tmpv)
+        do i=1,3
+          p%el(:,i)=tmpv(:,i)-alpf*f(l1:l2,m,n,iphi_f)*p%bb(:,i)
+        enddo
+      endif
+      if (lpenc_requested(i_divE)) then
+        if (lpi_vecpot) then
+!  div E = div(curl C) - alpf*div(phi B), and div(curl C) = 0 identically for the
+!  commuting der stencils. div(phi B) needs B at neighbouring points
+!  (lbb_as_comaux=T); otherwise the product-rule form alpf*gphi.B is used, which
+!  differs by the discrete Leibniz error.
+          if (lbb_as_comaux) then
+            call div_phib(f,tmp)
+          else
+            call dot(p%gphi,p%bb,tmp)
+          endif
+          p%divE=-alpf*tmp
+        else
+          call div(f,iee,p%divE)
+        endif
+      endif
       if (lpenc_requested(i_gGamma)) then
         if (llongitudinalE) then
           call grad(f,iGamma,p%gGamma)
@@ -706,7 +758,7 @@ module Special
 !
 ! el and e2 (note that this is called after magnetic, where sigma is computed)
 !
-      p%el=f(l1:l2,m,n,iex:iez)
+      if (.not.lpi_vecpot) p%el=f(l1:l2,m,n,iex:iez)
       call dot2_mn(p%el,p%e2)
 !
 !  eb pencil
@@ -1164,17 +1216,15 @@ module Special
       use Mpicomm
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
 !
       real, dimension (nx,3) :: gtmp, dJdt
       real, dimension (nx) :: tmp, tmp2, del2a0
       real :: inflation_factor=0., mfpf=0., fppf=0.
       integer :: j
 !
-      intent(inout) :: p
-      intent(inout) :: f, df
       integer :: i
 !
 !  identify module and boundary conditions
@@ -1366,7 +1416,17 @@ module Special
 !
 !  Add here dEdt to df(l1:l2,m,n,iex:iez)
 !
-      if (ladvance_ee) df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)+dEdt
+      if (lpi_vecpot) then
+        if (ladvance_ee) then
+          do i=1,3
+            df(l1:l2,m,n,iaae+i-1)=df(l1:l2,m,n,iaae+i-1) &
+              +c_light2*p%bb(:,i)-alpf*f(l1:l2,m,n,iphi_f)*p%el(:,i)
+          enddo
+        endif
+        f(l1:l2,m,n,iex:iez)=p%el
+      else
+        if (ladvance_ee) df(l1:l2,m,n,iex:iez)=df(l1:l2,m,n,iex:iez)+dEdt
+      endif
 !
 !  Compute eedot_as_aux; currently ignore alpf/=0.
 !  28-feb-26/axel: this should be removed; it is not used.
@@ -1489,9 +1549,9 @@ module Special
       use Sub
       use Diagnostics
 !
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
-      real, dimension(nx) :: tmp,constrainteqn
+      real, dimension(nx) :: tmp,tmp2,constrainteqn
       real, dimension(nx,3) :: gtmp
 
       call keep_compiler_quiet(f)
@@ -1588,6 +1648,29 @@ module Special
         call calc_constrainteqn(p,tmp,constrainteqn)
         call sum_mn_name(constrainteqn,idiag_constrainteqn)
       endif
+      if (idiag_constrainteqnrms > 0) then
+        call calc_axion_term(p,tmp,p%gphi,alpf,lphi_hom)
+        call calc_constrainteqn(p,tmp,constrainteqn)
+        call sum_mn_name(constrainteqn**2,idiag_constrainteqnrms,lsqrt=.true.)
+      endif
+      if (idiag_gausscrms/=0 .or. idiag_gaussprms/=0 .or. idiag_gaussnrms/=0) then
+        call dot(p%gphi,p%bb,tmp)
+        tmp=alpf*tmp
+        if (idiag_gaussnrms/=0) call sum_mn_name(tmp**2,idiag_gaussnrms,lsqrt=.true.)
+        if (idiag_gaussprms/=0) call sum_mn_name((p%divE+tmp)**2,idiag_gaussprms,lsqrt=.true.)
+        if (idiag_gausscrms/=0 .and. lbb_as_comaux .and. iphi_f>0) then
+          call div_phib(f,tmp2)
+          call sum_mn_name((p%divE+alpf*tmp2)**2,idiag_gausscrms,lsqrt=.true.)
+          if (idiag_divphib/=0) then
+            call sum_mn_name(tmp2**2,idiag_divphib,lsqrt=.true.)
+          endif
+        else
+          call sum_mn_name(spread(impossible,1,nx),idiag_gausscrms,lsqrt=.true.)
+        endif
+      endif
+      if (iaae>0) then
+        if (idiag_aaerms/=0) call sum_mn_name(sum(f(l1:l2,m,n,iaae:iaae+2)**2,2),idiag_aaerms,lsqrt=.true.)
+      endif
 
       if (idiag_BdEdtm/=0) then
         call dot(p%bb,dEdt,tmp)
@@ -1629,7 +1712,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -1649,7 +1732,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -1677,9 +1760,10 @@ module Special
 !
 !  define counters
 !
-      integer :: iname,inamex,inamez
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
+      integer :: iname,inamex,inamez
+      logical :: lwr
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
@@ -1693,6 +1777,8 @@ module Special
         idiag_mfpf=0; idiag_fppf=0; idiag_afact=0
         idiag_rhoerms=0; idiag_divErms=0; idiag_divJrms=0
         idiag_rhoem=0; idiag_count_eb0=0; idiag_divEm=0; idiag_divJm=0; idiag_constrainteqn=0
+        idiag_constrainteqnrms=0; idiag_gausscrms=0; idiag_gaussprms=0; idiag_gaussnrms=0
+        idiag_aaerms=0; idiag_divphib=0;
         idiag_dteta=0; idiag_dtsigE=0; idiag_etaSchw=0; idiag_etaArn=0
         idiag_sigEm=0; idiag_sigBm=0; idiag_sigErms=0; idiag_sigBrms=0
         idiag_ebm=0; idiag_Johmrms=0; idiag_J2sigEm=0; idiag_curlBrms=0; idiag_BdEdtm=0
@@ -1756,6 +1842,12 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'fppf',idiag_fppf)
         call parse_name(iname,cname(iname),cform(iname),'afact',idiag_afact)
         call parse_name(iname,cname(iname),cform(iname),'constrainteqn',idiag_constrainteqn)
+        call parse_name(iname,cname(iname),cform(iname),'constrainteqnrms',idiag_constrainteqnrms)
+        call parse_name(iname,cname(iname),cform(iname),'gausscrms',idiag_gausscrms)
+        call parse_name(iname,cname(iname),cform(iname),'gaussprms',idiag_gaussprms)
+        call parse_name(iname,cname(iname),cform(iname),'gaussnrms',idiag_gaussnrms)
+        call parse_name(iname,cname(iname),cform(iname),'aaerms',idiag_aaerms)
+        call parse_name(iname,cname(iname),cform(iname),'divphib',idiag_divphib)
       enddo
 !
 !  Check for those quantities for which we want yz-averages.
@@ -1787,6 +1879,129 @@ module Special
 !
     endsubroutine rprint_special
 !***********************************************************************
+    subroutine div_phib(f,d)
+!
+!  div(phi*B) with the der stencil applied to phi*B evaluated at the stencil
+!  points. Needed for checking the constraint since no product rule exists for discrete
+!  derivatives.
+!
+!  26-sep-26/TP: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (nx), intent(out) :: d
+      real, parameter :: a=1.0/60.0, c(3)=(/45.0,-9.0,1.0/)
+      integer :: s
+!
+      d=0.
+      do s=1,3
+        if (nxgrid>1) d=d+a*dx_1(l1:l2)*c(s)*( &
+          f(l1+s:l2+s,m,n,iphi_f)*f(l1+s:l2+s,m,n,ibx)-f(l1-s:l2-s,m,n,iphi_f)*f(l1-s:l2-s,m,n,ibx))
+        if (nygrid>1) d=d+a*dy_1(m)*c(s)*( &
+          f(l1:l2,m+s,n,iphi_f)*f(l1:l2,m+s,n,iby)-f(l1:l2,m-s,n,iphi_f)*f(l1:l2,m-s,n,iby))
+        if (nzgrid>1) d=d+a*dz_1(n)*c(s)*( &
+          f(l1:l2,m,n+s,iphi_f)*f(l1:l2,m,n+s,ibz)-f(l1:l2,m,n-s,iphi_f)*f(l1:l2,m,n-s,ibz))
+      enddo
+!
+    endsubroutine div_phib
+!***********************************************************************
+    subroutine init_aae(f)
+!
+!  A_e from Pi0 = E + alpf*phi*curl A by a discrete inverse curl in Fourier space,
+!  using the effective wavenumber of the der stencil:
+!     A_e_k = i k_eff x Pi_k / |k_eff|^2   =>   curl A_e = transverse part of Pi0.
+!  Modes with k_eff = 0 (k=0 and Nyquist-only) cannot be represented and are dropped.
+!  Then E = curl A_e - alpf*phi*curl A is stored in the 'ee' slot.
+!
+!  26-sep-26/TP: coded
+!
+      use Fourier, only: fft_xyz_parallel
+      use Sub, only: curl
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (:,:,:,:), allocatable :: pre, pim, cre, cim
+      real, dimension (nx,3) :: bb, pp
+      real, dimension (nx) :: kex
+      real, dimension (ny) :: key
+      real, dimension (nz) :: kez
+      real :: k2, kv(3)
+      integer :: i, j, ik, iy, iz
+!
+      allocate(pre(nx,ny,nz,3),pim(nx,ny,nz,3),cre(nx,ny,nz,3),cim(nx,ny,nz,3))
+!
+      do n=n1,n2; do m=m1,m2
+        call curl(f,iaa,bb)
+        do j=1,3
+          pre(:,m-m1+1,n-n1+1,j)=f(l1:l2,m,n,iex+j-1)+alpf*f(l1:l2,m,n,iphi_f)*bb(:,j)
+        enddo
+      enddo; enddo
+
+      pim=0.
+      do j=1,3
+        call fft_xyz_parallel(pre(:,:,:,j),pim(:,:,:,j))
+      enddo
+
+      do i=1,nx; ik=ipx*nx+i-1; if (ik>nxgrid/2) ik=ik-nxgrid; kex(i)=keff(ik,nxgrid,dx); enddo
+      do i=1,ny; ik=ipy*ny+i-1; if (ik>nygrid/2) ik=ik-nygrid; key(i)=keff(ik,nygrid,dy); enddo
+      do i=1,nz; ik=ipz*nz+i-1; if (ik>nzgrid/2) ik=ik-nzgrid; kez(i)=keff(ik,nzgrid,dz); enddo
+
+      cre=0.; cim=0.
+      do iz=1,nz; do iy=1,ny; do i=1,nx
+        kv=(/kex(i),key(iy),kez(iz)/)
+        k2=sum(kv**2)
+        if (k2>0.) then
+!
+!  A_e = i k x P / k^2  ->  A_e_re = -(k x P_im)/k^2,  A_e_im = (k x P_re)/k^2
+!
+          cre(i,iy,iz,1)=-(kv(2)*pim(i,iy,iz,3)-kv(3)*pim(i,iy,iz,2))/k2
+          cre(i,iy,iz,2)=-(kv(3)*pim(i,iy,iz,1)-kv(1)*pim(i,iy,iz,3))/k2
+          cre(i,iy,iz,3)=-(kv(1)*pim(i,iy,iz,2)-kv(2)*pim(i,iy,iz,1))/k2
+          cim(i,iy,iz,1)= (kv(2)*pre(i,iy,iz,3)-kv(3)*pre(i,iy,iz,2))/k2
+          cim(i,iy,iz,2)= (kv(3)*pre(i,iy,iz,1)-kv(1)*pre(i,iy,iz,3))/k2
+          cim(i,iy,iz,3)= (kv(1)*pre(i,iy,iz,2)-kv(2)*pre(i,iy,iz,1))/k2
+        endif
+      enddo; enddo; enddo
+!
+      do j=1,3
+        call fft_xyz_parallel(cre(:,:,:,j),cim(:,:,:,j),linv=.true.)
+        f(l1:l2,m1:m2,n1:n2,iaae+j-1)=cre(:,:,:,j)
+      enddo
+      deallocate(pre,pim,cre,cim)
+!
+!  Boundcond cannot be used here (it uses Special), so update_ghosts is called
+!  through the pointer set in initialize_boundcond.
+!
+      call update_ghosts_ptr(f,iaae,iaae+2)
+      do n=n1,n2; do m=m1,m2
+        call curl(f,iaa,bb)
+        call curl(f,iaae,pp)
+        do j=1,3
+          f(l1:l2,m,n,iex+j-1)=pp(:,j)-alpf*f(l1:l2,m,n,iphi_f)*bb(:,j)
+        enddo
+      enddo; enddo
+!
+    contains
+!------------------------------------------------------------------------
+      real function keff(ik,ngrid,dxx)
+!
+!  Effective wavenumber of the 2nd/4th/6th-order centred first derivative.
+!
+        integer, intent(in) :: ik, ngrid
+        real, intent(in) :: dxx
+        real :: th
+!
+        if (ngrid==1) then; keff=0.; return; endif
+        th=2.*pi*ik/ngrid
+
+        select case (nghost)
+          case (1); keff=sin(th)/dxx
+          case (2); keff=(4./3.*sin(th)-1./6.*sin(2*th))/dxx
+          case default; keff=(1.5*sin(th)-0.3*sin(2*th)+sin(3*th)/30.)/dxx
+        endselect
+
+      endfunction keff
+
+    endsubroutine init_aae
+!***********************************************************************
     subroutine special_after_boundary(f)
 !
 !  Possibility to modify the f array after the boundaries are communicated.
@@ -1795,7 +2010,7 @@ module Special
 !
       use Mpicomm, only: mpibcast_real
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       logical :: lmessage_sigE_quenching_activated=.true.
 !
 !  Possibility of limiting sigE by reducing the prefactor
@@ -1821,8 +2036,8 @@ module Special
 !
       use Slices_methods, only: assign_slices_vec
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      type (slice_data) :: slices
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(slice_data) :: slices
 !
 !  Loop over slices
 !
@@ -1955,6 +2170,9 @@ module Special
     call copy_addr(charge_flow_factor,p_par(72))
     call copy_addr(charge_flow_limiter,p_par(73))
     call copy_addr(lcharge_flow,p_par(74)) ! bool
+    call copy_addr(lpi_vecpot,p_par(75)) ! bool
+    call copy_addr(iaae,p_par(76)) ! int
+    call copy_addr(iphi_f,p_par(77)) ! int
     endsubroutine pushpars2c
 !***********************************************************************
 !********************************************************************

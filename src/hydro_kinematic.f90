@@ -23,6 +23,7 @@
 ! PENCILS PROVIDED lorentz_gamma2; lorentz_gamma; ss_rel2; ss_rel(3)
 ! PENCILS PROVIDED ss_rel_ij(3,3); ss_rel_factor; divss_rel
 ! PENCILS PROVIDED lorentz; hless
+! PENCILS PROVIDED uutot(3); divutot; utotij(3,3)
 !***********************************************************************
 module Hydro
 !
@@ -2783,7 +2784,7 @@ module Hydro
 !  store slices for output in wvid in run.f90
 !  This must be done outside the diagnostics loop (accessed at different times).
 !
-      if (lvideo.and.lfirst) then
+      if (lvideo_first) then
         if (ivid_uu/=0.and..not.lkinflow_as_aux) call store_slices(p%uu,uu_xy,uu_xz,uu_yz,uu_xy2,uu_xy3,uu_xy4,uu_xz2)
       endif
 !

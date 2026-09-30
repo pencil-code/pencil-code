@@ -55,7 +55,7 @@ module Run_module
 
 contains
 !***********************************************************************
-subroutine helper_loop(f,p)
+subroutine helper_loop(f)
 !
   use Boundcond, only: update_ghosts
   use Equ, only: perform_diagnostics, calc_all_module_diagnostic_auxiliaries
@@ -66,8 +66,8 @@ subroutine helper_loop(f,p)
   use Sub, only: check_for_nans_globally
 !
   real, contiguous, dimension(:,:,:,:) :: f
+  type(pencil_case) :: p
   real :: tvar1
-  type (pencil_case) :: p
 
   real :: start_time,end_time
 !
@@ -887,7 +887,7 @@ endsubroutine helper_loop
   use Diagnostics,     only: report_undefined_diagnostics, trim_averages,diagnostics_clean_up
 !$ use Diagnostics,    only: phiavg_norm
   use Equ,             only: initialize_pencils, debug_imn_arrays
-  use FArrayManager,   only: farray_clean_up
+  use FArrayManager,   only: farray_clean_up, farray_finalize_registration
   use Farray_alloc
   use General,         only: random_seed_wrapper, touch_file, itoa
 !$ use General,        only: signal_init
@@ -924,7 +924,7 @@ endsubroutine helper_loop
 !
   implicit none
 
-  type (pencil_case) :: p
+  type (pencil_case), allocatable :: p
 
   character(len=fnlen) :: fproc_bounds
   real(KIND=rkind8) :: time2, tvar1
@@ -937,6 +937,9 @@ endsubroutine helper_loop
 !$ integer :: i 
 !
   lrun = .true.
+! The pencil case is allocatable to not have as many arrays on the stack, which becomes a problem with larger
+! subdomain sizes.
+  allocate(p)
 !
 !  Get processor numbers and define whether we are root.
 !
@@ -980,10 +983,6 @@ endsubroutine helper_loop
 !  Initialise HDF5 library.
 !
   call init_hdf5
-!
-!  Initialize HDF_IO module.
-!
-  call initialize_hdf5
 !
 !  Check whether quad precision is supported
 !
@@ -1058,6 +1057,11 @@ endsubroutine helper_loop
 !
   call register_modules
   if (lparticles) call particles_register_modules
+  call farray_finalize_registration
+!
+! Initialization dependent on mvar should come after registeration
+!
+  call initialize_hdf5
   call initialize
 !
 !  Inform about verbose level.
@@ -1275,7 +1279,11 @@ endsubroutine helper_loop
 !  file with the correct number of variables.
 !  No IO-module-controlled reading operations allowed beyond this point!
 !
-  call wgrid("grid.dat", lwrite=.not.(lprocbounds_exist .and. luse_oldgrid))
+!  Due to dynamic allocations the number of maux may differ from what is only described in start.in
+!  due to additions in run.in. So for safety grid is also written out here.
+!  Maybe this can be improved.
+!
+  call wgrid("grid.dat", lwrite=.not.(lprocbounds_exist .and. luse_oldgrid) .or. ldynamic_aux)
   if (.not.lprocbounds_exist) call wproc_bounds(fproc_bounds)
 
   if (.not.luse_oldgrid .or. lwrite_dim_again) then
@@ -1391,7 +1399,7 @@ endsubroutine helper_loop
 !
       if (nt>0) call timeloop(f,df,p)
 !$  else
-!$    if (nt>0) call helper_loop(f,p)
+!$    if (nt>0) call helper_loop(f)
 !$  endif
 !$omp barrier
 !$omp end parallel

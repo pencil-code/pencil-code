@@ -105,7 +105,7 @@ module Special
       use Mpicomm
       use EquationOfState, only: cs0
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: mu,mu13,mu23,ym
       real, dimension (nx) :: rr_cyl,rr2_cyl,rr3_cyl
       integer :: mm1
@@ -150,7 +150,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -169,7 +169,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -198,8 +198,8 @@ module Special
 !
       use Sub, only: grad
 !
-      real, dimension(mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
 !
       fgravity(:,1) = gravity(:,m-m1+1,1)
       fgravity(:,2) = gravity(:,m-m1+1,2)
@@ -222,9 +222,9 @@ module Special
       use Cdata
       use Diagnostics
 !      
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
       integer :: j,ju
 !
 !  Modified momentum equation

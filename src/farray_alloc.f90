@@ -25,7 +25,7 @@
 
   integer :: stat
   integer(KIND=int64), parameter  :: mxyz=mx*my*mz
-  integer(KIND=int64), parameter  :: nelems=mxyz*mfarray
+  integer(KIND=int64) :: nelems
   type(C_PTR) :: fp
 
   interface
@@ -43,8 +43,7 @@
     !if (stat>0) call fatal_error('farray_alloc','Could not allocate memory for df')
     !!print*, 'stat,mfarry,nfarray=',stat,mvar,maux,mscratch,mglobal,nvar,naux,nscratch,nglobal
 
-    !mvar=nvar; maux=naux; maux_com=naux_com; mscratch=nscratch; mglobal=nglobal
-
+    nelems=mxyz*mfarray
     if (shared_mem_name/='') then
       fp = allocate_shm(nelems,shared_mem_name//char(0))
       call c_f_pointer(fp,f,(/mx,my,mz,mfarray/))

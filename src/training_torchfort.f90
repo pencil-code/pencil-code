@@ -248,12 +248,13 @@
         tau_pred = output(:,:,:,:,1)                 ! device to host
         if (lscale) call descale(tau_pred, output_min, output_max)
 
-        if (lwrite_sample .and. mod(it, 50)==0) then
-          if (lhydro) then
-            call write_sample(f(:,:,:,itau_hydroxx), mx, my, mz, "target_"//trim(itoa(iproc))//".hdf5")
-            call write_sample(tau_pred(:,:,:,1), mx, my, mz, "pred_"//trim(itoa(iproc))//".hdf5")
-          endif
-        endif
+        !TP: removed the HDF5 dependency for now
+        !if (lwrite_sample .and. mod(it, 50)==0) then
+        !  if (lhydro) then
+        !    call write_sample(f(:,:,:,itau_hydroxx), mx, my, mz, "target_"//trim(itoa(iproc))//".hdf5")
+        !    call write_sample(tau_pred(:,:,:,1), mx, my, mz, "pred_"//trim(itoa(iproc))//".hdf5")
+        !  endif
+        !endif
 
       endif
 
@@ -598,35 +599,36 @@
 
     endsubroutine finalize_training
 !***************************************************************
-    subroutine write_sample(sample, mx, my, mz, fname)
-
-      use HDF5
-
-      character(len=*) :: fname
-      integer, intent(in) :: mx, my, mz
-      real, intent(in) :: sample(mx, my, mz)
-      integer(HID_T) :: in_file_id
-      integer(HID_T) :: out_file_id
-      integer(HID_T) :: dset_id
-      integer(HID_T) :: dspace_id
-      integer(HSIZE_T) :: dims(size(shape(sample)))
-      integer :: err
-    
-      call h5open_f(err)
-      call h5fcreate_f (fname, H5F_ACC_TRUNC_F, out_file_id, err)
-    
-      dims = shape(sample)
-      call h5screate_simple_f(size(shape(sample)), dims, dspace_id, err)
-      call h5dcreate_f(out_file_id, "data", H5T_NATIVE_REAL, dspace_id, dset_id, err)
-      call h5dwrite_f(dset_id, H5T_NATIVE_REAL, sample, dims, err)
-      call h5dclose_f(dset_id, err)
-      call h5sclose_f(dspace_id, err)
-    
-      call h5fclose_f(out_file_id, err)
-      call h5close_f(err)
-
-    endsubroutine write_sample
-!***************************************************************
+!TP: not used for the moment to be independent of HDF5
+!    subroutine write_sample(sample, mx, my, mz, fname)
+!
+!      use HDF5
+!
+!      character(len=*) :: fname
+!      integer, intent(in) :: mx, my, mz
+!      real, intent(in) :: sample(mx, my, mz)
+!      integer(HID_T) :: in_file_id
+!      integer(HID_T) :: out_file_id
+!      integer(HID_T) :: dset_id
+!      integer(HID_T) :: dspace_id
+!      integer(HSIZE_T) :: dims(size(shape(sample)))
+!      integer :: err
+!    
+!      call h5open_f(err)
+!      call h5fcreate_f (fname, H5F_ACC_TRUNC_F, out_file_id, err)
+!    
+!      dims = shape(sample)
+!      call h5screate_simple_f(size(shape(sample)), dims, dspace_id, err)
+!      call h5dcreate_f(out_file_id, "data", H5T_NATIVE_REAL, dspace_id, dset_id, err)
+!      call h5dwrite_f(dset_id, H5T_NATIVE_REAL, sample, dims, err)
+!      call h5dclose_f(dset_id, err)
+!      call h5sclose_f(dspace_id, err)
+!    
+!      call h5fclose_f(out_file_id, err)
+!      call h5close_f(err)
+!
+!    endsubroutine write_sample
+!!***************************************************************
     subroutine training_save_diagnostic_controls
 
       train_loss_save = train_loss

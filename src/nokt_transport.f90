@@ -7,7 +7,7 @@
 !  Kept intentionally minimal (Cparam + General only, no Messages) so it is
 !  trivially compilable regardless of module build order, matching the
 !  noweno_transport dummy contract.  If lkt_transport=T is set without
-!  compiling the real module, kt_transp returns `impossible`, which surfaces
+!  compiling the real module, kt_div returns `impossible`, which surfaces
 !  immediately as a non-finite state -- the same fail-loud behaviour as the
 !  other noXXX transport dummies.
 !
@@ -36,28 +36,30 @@ module KT_transport
 !
     endsubroutine kt_init
 !***********************************************************************
-    subroutine kt_transp(f,m,n,mu,tcur,dq)
+    subroutine kt_div(f,divergence)
 !
 !  02-sep-2026/Isak Stomberg: dummy
+!  16-sep-2026/Isak Stomberg: renamed from kt_transp
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      integer, intent(in) :: m, n, mu
-      real, intent(in) :: tcur
-      real, dimension(:), intent(out) :: dq
+      real, dimension(:), intent(out) :: divergence
 !
-      dq=impossible
+      divergence=impossible
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(m,n,mu)
-      call keep_compiler_quiet(tcur)
 !
-    endsubroutine kt_transp
+    endsubroutine kt_div
+!***********************************************************************
+    subroutine kt_div_tensor(f,divergence)
+!  09-sep-2026/Isak Stomberg: dummy
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(:,:), intent(out) :: divergence
+      divergence=impossible
+      call keep_compiler_quiet(f)
+    endsubroutine kt_div_tensor
 !***********************************************************************
     subroutine pushpars2c(p_par)
 
-    use Syscalls, only: copy_addr
-    use General , only: string_to_enum
-
-    integer, parameter :: n_pars=100
+    integer, parameter :: n_pars=0
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     endsubroutine pushpars2c

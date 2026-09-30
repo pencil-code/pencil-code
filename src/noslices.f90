@@ -12,27 +12,19 @@ module Slices
 !
   public :: wvid, wvid_prepare, setup_slices, wslice
 !
-  real, public :: tvid=0.0
-  integer, public :: nvid=0
-  real :: tslice=0.0
-!
   contains
 !***********************************************************************
     subroutine wvid_prepare
 !
-!  23-nov-09/anders: dummy
-!
     endsubroutine wvid_prepare
 !***********************************************************************
-    subroutine wvid(f,path)
+    subroutine wvid(f)
 !
 !  23-nov-09/anders: dummy
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      character(len=*) :: path
 !
       call keep_compiler_quiet(f)
-      call keep_compiler_quiet(path)
 !
     endsubroutine wvid
 !***********************************************************************
@@ -42,6 +34,7 @@ module Slices
 !
       integer :: ndim1,ndim2
       character (len=*) :: filename
+
       real, dimension (ndim1,ndim2) :: a
       real, intent(in) :: pos
 !
@@ -53,9 +46,7 @@ module Slices
 !
     endsubroutine wslice
 !***********************************************************************
-    subroutine setup_slices()
-!
-!  23-nov-09/anders: dummy
+    subroutine setup_slices
 !
     endsubroutine setup_slices
 !***********************************************************************

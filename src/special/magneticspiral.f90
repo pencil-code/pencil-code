@@ -100,7 +100,7 @@ contains
       use Mpicomm
       use EquationOfState, only: cs0
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       do n=1,mz
         do m=1,my
@@ -117,7 +117,7 @@ contains
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -136,7 +136,7 @@ contains
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -167,8 +167,8 @@ contains
       use Sub, only: curl_mn,cross_mn,multsv_mn
       use Deriv, only: der
 !
-      real, dimension(mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
       real, dimension (nx,3,3) :: bij
       real, dimension (nx,3) :: bb,jj,jxb
       real, dimension (nx) :: tmp
@@ -208,9 +208,9 @@ contains
       use Cdata
       use Diagnostics
 !      
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 !
       real, dimension (nx) :: beta
       integer :: j,ju

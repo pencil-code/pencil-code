@@ -74,6 +74,7 @@
 module Special
 !
   use Quiet
+  use Cdata, only: n_odevars   ! for the interfaces of the ODE hooks
 !
   implicit none
 !
@@ -130,7 +131,7 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -142,7 +143,7 @@ module Special
 !
 !  14-aug-2011/Bourdin.KIS: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -153,9 +154,8 @@ module Special
 !  initialise special condition; called from start.f90
 !  06-oct-2003/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
-      intent(inout) :: f
 !!
 !!  SAMPLE IMPLEMENTATION
 !!
@@ -185,7 +185,7 @@ module Special
 !
 !  18-07-06/tony: coded
 !
-      logical, dimension(npencils), intent(inout) :: lpencil_in
+      logical, dimension(npencils) :: lpencil_in
 !
       call keep_compiler_quiet(lpencil_in)
 !
@@ -198,11 +198,9 @@ module Special
 !
 !  24-nov-04/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
 !
-      intent(in) :: f
-      intent(inout) :: p
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
@@ -227,12 +225,10 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
 !
-      intent(in) :: f,p
-      intent(inout) :: df
 !
 !  Identify module and boundary conditions.
 !
@@ -261,7 +257,7 @@ module Special
 !***********************************************************************
     subroutine read_special_init_pars(iomsg)
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
 !
       iomsg=""
 !
@@ -277,7 +273,7 @@ module Special
 !***********************************************************************
     subroutine read_special_run_pars(iomsg)
 !
-      character(LEN=*), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
 !
       iomsg=""
 !
@@ -300,7 +296,8 @@ module Special
 !!      use FArrayManager, only: farray_index_append
 !
 !!      integer :: iname
-      logical :: lreset,lwrite
+      logical :: lreset
+      logical, optional :: lwrite
 
       call keep_compiler_quiet(lwrite)
 !!!
@@ -329,8 +326,8 @@ module Special
 !
 !  26-jun-06/tony: dummy
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (slice_data) :: slices
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(slice_data) :: slices
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(slices%ready)
@@ -347,9 +344,9 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 !!
 !!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
 !!
@@ -372,9 +369,9 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 !!
 !!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
 !!
@@ -395,9 +392,9 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 !!
 !!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
 !!
@@ -418,9 +415,9 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 !!
 !!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
 !!
@@ -441,9 +438,9 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 !!
 !!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
 !!
@@ -466,9 +463,9 @@ module Special
 !
 !  15-jun-09/anders: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 !!
 !!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
 !!
@@ -486,8 +483,8 @@ module Special
 !
 !  20-nov-08/wlad: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (:,:), intent(in) :: fp
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(:,:) :: fp
       integer, dimension(:,:) :: ineargrid
 !
       call keep_compiler_quiet(f)
@@ -503,9 +500,10 @@ module Special
 !
 !  20-nov-08/wlad: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(in) :: df
-      real, dimension (:,:), intent(in) :: fp,dfp
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real, dimension(:,:) :: fp
+      real, dimension(:,:) :: dfp
       integer, dimension(:,:) :: ineargrid
 !
       call keep_compiler_quiet(f,df)
@@ -522,9 +520,9 @@ module Special
 !
 !  15-sep-10/natalia: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 !!
 !!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
 !!
@@ -541,11 +539,13 @@ module Special
       spectrum_2d,spectrum_2d_hel,&
       lfirstcall,kind)
 
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (:) :: spectrum,spectrumhel
-      real, dimension (:,:) :: spectrum_2d,spectrum_2d_hel
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(:) :: spectrum
+      real, dimension(:) :: spectrumhel
+      real, dimension(:,:) :: spectrum_2d
+      real, dimension(:,:) :: spectrum_2d_hel
       logical :: lfirstcall
-      character(LEN=3) :: kind
+      character(len=3) :: kind
 
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(spectrum,spectrumhel)
@@ -557,10 +557,11 @@ module Special
 !***********************************************************************
     subroutine special_calc_spectra_byte(f,spectrum,spectrumhel,lfirstcall,kind,len)
 
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (:) :: spectrum,spectrumhel
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(:) :: spectrum
+      real, dimension(:) :: spectrumhel
       logical :: lfirstcall
-      integer(KIND=ikind1), dimension(3) :: kind
+      character, dimension(3) :: kind
       integer :: len
 
       call keep_compiler_quiet(len)
@@ -581,7 +582,7 @@ module Special
 !
 !  06-jul-06/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -597,7 +598,7 @@ module Special
 !
 !  06-jul-06/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -610,7 +611,7 @@ module Special
 !
 !  06-jul-06/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -623,8 +624,8 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      type (boundary_condition), intent(inout) :: bc
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(boundary_condition) :: bc
 !
       call keep_compiler_quiet(f)
       bc%done=.true.
@@ -638,10 +639,10 @@ module Special
 !
 !  27-nov-08/wlad: coded
 !
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real :: dt_
       logical, intent(in) :: llast
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension(mx,my,mz,mvar), intent(inout) :: df
-      real, intent(in) :: dt_
 !
       call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(dt_)
@@ -655,10 +656,11 @@ module Special
 !
 !  28-aug-18/ccyang: coded
 !
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      real, intent(in) :: dtsub
-      real, dimension(:,:), intent(in) :: fp, dfp
-      integer, dimension(:,:), intent(in) :: ineargrid
+      real, contiguous, dimension(:,:,:,:) :: f
+      real :: dtsub
+      real, dimension(:,:) :: fp
+      real, dimension(:,:) :: dfp
+      integer, dimension(:,:) :: ineargrid
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(dtsub)
@@ -675,8 +677,10 @@ module Special
 !
 !  27-nov-08/wlad: coded
 !
-      real, dimension(ndustspec) :: dsize,init_distr,init_distr2
       real :: Ntot
+      real, dimension(ndustspec) :: dsize
+      real, dimension(ndustspec) :: init_distr
+      real, dimension(ndustspec) :: init_distr2
 !
       call keep_compiler_quiet(dsize,init_distr,init_distr2)
       call keep_compiler_quiet(Ntot)
@@ -705,8 +709,8 @@ module Special
 !***********************************************************************
     subroutine calc_diagnostics_special(f,p)
 
-      real, dimension(mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
 
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
@@ -715,7 +719,7 @@ module Special
 !***********************************************************************
     subroutine calc_ode_diagnostics_special(f_ode)
 
-      real, allocatable, dimension(:) :: f_ode
+      real, dimension(n_odevars) :: f_ode
 
       call keep_compiler_quiet(f_ode)
 
@@ -735,10 +739,93 @@ module Special
 !***********************************************************************
     subroutine prep_rhs_special(f_ode)
 
-      real, allocatable, dimension(:) :: f_ode
+      real, dimension(n_odevars) :: f_ode
 
       call keep_compiler_quiet(f_ode)
 
     endsubroutine prep_rhs_special
+!***********************************************************************
+    subroutine check_special_hook_interfaces
+!
+!  Never called. The procedure pointer assignments below let the compiler
+!  check that the hooks of this module have exactly the interfaces in
+!  special_interfaces.inc, through which the special module dispatcher calls
+!  them. Copied into every special module by mkdummyinc (*_dummies.inc).
+!
+!  27-sep-26/TP: coded
+!
+      include 'special_interfaces.inc'
+!
+      procedure(iface_register_special), pointer :: p0
+      procedure(iface_register_particles_special), pointer :: p1
+      procedure(iface_initialize_special), pointer :: p2
+      procedure(iface_finalize_special), pointer :: p3
+      procedure(iface_read_special_pars), pointer :: p4
+      procedure(iface_write_special_pars), pointer :: p5
+      procedure(iface_rprint_special), pointer :: p6
+      procedure(iface_get_slices_special), pointer :: p7
+      procedure(iface_init_special), pointer :: p8
+      procedure(iface_dspecial_dt), pointer :: p9
+      procedure(iface_calc_pencils_special), pointer :: p10
+      procedure(iface_pencil_interdep_special), pointer :: p11
+      procedure(iface_special_calc_rhs), pointer :: p12
+      procedure(iface_calc_diagnostics_special), pointer :: p13
+      procedure(iface_special_calc_particles), pointer :: p14
+      procedure(iface_special_particles_bfre_bdary), pointer :: p15
+      procedure(iface_special_particles_after_dtsub), pointer :: p16
+      procedure(iface_special_boundary), pointer :: p17
+      procedure(iface_special_boundconds), pointer :: p18
+      procedure(iface_special_after_timestep), pointer :: p19
+      procedure(iface_set_init_parameters), pointer :: p20
+      procedure(iface_special_calc_spectra), pointer :: p21
+      procedure(iface_special_calc_spectra_byte), pointer :: p22
+      procedure(iface_special_noargs), pointer :: p23
+      procedure(iface_input_persist_special_id), pointer :: p24
+      procedure(iface_output_persistent_special), pointer :: p25
+      procedure(iface_special_ode), pointer :: p26
+!
+      p0 => register_special
+      p1 => register_particles_special
+      p2 => initialize_special
+      p3 => finalize_special
+      p4 => read_special_init_pars
+      p4 => read_special_run_pars
+      p5 => write_special_init_pars
+      p5 => write_special_run_pars
+      p6 => rprint_special
+      p7 => get_slices_special
+      p8 => init_special
+      p9 => dspecial_dt
+      p10 => calc_pencils_special
+      p11 => pencil_interdep_special
+      p12 => special_calc_hydro
+      p12 => special_calc_density
+      p12 => special_calc_dustdensity
+      p12 => special_calc_energy
+      p12 => special_calc_magnetic
+      p12 => special_calc_pscalar
+      p12 => special_calc_chemistry
+      p13 => calc_diagnostics_special
+      p14 => special_calc_particles
+      p15 => special_particles_bfre_bdary
+      p16 => special_particles_after_dtsub
+      p17 => special_before_boundary
+      p17 => special_before_boundary_diagnostics
+      p17 => special_after_boundary
+      p18 => special_boundconds
+      p19 => special_after_timestep
+      p20 => set_init_parameters
+      p21 => special_calc_spectra
+      p22 => special_calc_spectra_byte
+      p23 => dspecial_dt_ode
+      p23 => pencil_criteria_special
+      p23 => input_persist_special
+      p23 => load_variables_to_gpu_special
+      p24 => input_persist_special_id
+      p25 => output_persistent_special
+      p26 => calc_ode_diagnostics_special
+      p26 => prep_rhs_special
+!
+    endsubroutine check_special_hook_interfaces
 !***********************************************************************
 endmodule Special

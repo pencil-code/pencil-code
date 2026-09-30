@@ -141,7 +141,7 @@ module Special
 !
       use EquationOfState, only: get_gamma_etc
 
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
 !  Initialize any module variables which are parameter dependent
 !
@@ -162,9 +162,8 @@ module Special
       use Sub
       use SharedVariables, only: get_shared_variable
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
-      intent(inout) :: f
 !
       select case (initnstar)
         case ('default')
@@ -229,13 +228,11 @@ module Special
       use Mpicomm
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
 !
 !
-      intent(in) :: f,p
-      intent(inout) :: df
 !
 !  identify module and boundary conditions
 !
@@ -263,7 +260,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=neutron_star_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -283,7 +280,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=neutron_star_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -310,9 +307,10 @@ module Special
 !
 !  define diagnostics variable
 !
-      integer :: iname
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
+      integer :: iname
+      logical :: lwr
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
@@ -350,9 +348,9 @@ module Special
 !
       use EquationOfState
 !
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
       integer :: i, l_sz, tmp_int
       real :: cs2_star
 !
@@ -389,9 +387,9 @@ module Special
 !
 !   16-jul-06/natalia: coded
 !
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 !
       integer :: j,l_sz
 !
@@ -431,9 +429,9 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
       integer :: j, l_sz, l_sz_1
 !
         if (lraddif_local) call raddif_local(f,df,p)
@@ -468,8 +466,8 @@ module Special
 !***********************************************************************
     subroutine special_boundconds(f,bc)
 !
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      type (boundary_condition) :: bc
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(boundary_condition) :: bc
 !
       select case (bc%bcname)
        case ('stp')

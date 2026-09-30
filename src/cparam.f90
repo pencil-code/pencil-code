@@ -41,9 +41,13 @@ module Cparam
 !
 !  Derived and fixed parameters.
 !
+!  mfarray and mcom are defined in cparam.inc: with DYNAMIC_AUX=yes they are
+!  variables which grow together with maux and maux_com. The *_max values
+!  are upper bounds for fixed-size arrays with one entry per variable.
+!
+  integer, parameter :: mcom_max=mvar+maux_com_max
+!
 ! BEGIN CHANGE FOR DYNAMICAL ALLOCATION
-  integer, parameter :: mfarray=mvar+maux+mglobal+mscratch
-  integer, parameter :: mcom=mvar+maux_com
   integer, parameter :: mparray=mpvar+mpaux
   integer, parameter :: mpcom=mpvar+mpaux
   integer, parameter :: mqarray=mqvar+mqaux
@@ -297,5 +301,9 @@ module Cparam
   integer, parameter :: nline=1200
 
   include 'cparam_enum.h'
+!
+!  With DYNAMIC_AUX=yes: setter for maux, maux_com, mfarray and mcom.
+!
+  include 'cparam_aux.inc'
 
 endmodule Cparam

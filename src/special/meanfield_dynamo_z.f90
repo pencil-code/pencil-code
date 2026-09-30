@@ -78,7 +78,7 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
 !  Initialize module variables which are parameter dependent
 !  set cosine and sine function for setting test fields and analysis
@@ -108,9 +108,8 @@ module Special
       use Mpicomm
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
-      intent(inout) :: f
 !
 !  SAMPLE IMPLEMENTATION
 !
@@ -165,11 +164,9 @@ module Special
 !
 !   24-nov-04/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
 !
-      intent(in) :: f
-      intent(inout) :: p
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
@@ -196,16 +193,14 @@ module Special
       use Sub
       use Deriv
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
 !
       real, dimension (nx) :: damx,damy,d2amx,d2amy
       real, dimension (nx,2) :: emf,bm,jm
       integer :: i,j
 !
-      intent(in) :: f,p
-      intent(inout) :: df
 !
 !  identify module and boundary conditions
 !
@@ -286,7 +281,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -306,7 +301,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -334,9 +329,10 @@ module Special
 !!
 !!!   SAMPLE IMPLEMENTATION
 !!
-      integer :: iname
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
+      integer :: iname
+      logical :: lwr
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
@@ -390,8 +386,8 @@ module Special
       use Cdata
       use Slices_methods, only: assign_slices_scal
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      type (slice_data) :: slices
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(slice_data) :: slices
 !
       integer :: inamev
 !
@@ -416,14 +412,13 @@ module Special
       use Cdata
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       real, dimension(mz,2,2) :: eta_ij3
       real, dimension (mz,3,njtest) :: Eipq
       integer :: jtest,j,nxy=nxgrid*nygrid,juxb
       real :: fac
 !
-      intent(inout) :: f
 !
       if (.not.ltestfield) then
         alp_ij(:,:,:)=0.

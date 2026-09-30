@@ -4,7 +4,8 @@
 !  Useful in cases where you do not want waves reflected from the boundary to
 !  interfere with the interior of the domain.
 !
-!  22-Oct-2024: Kishore G. Added.
+!  22-Oct-2024/Kishore: Added.
+!  29-Sep-2026/Kishore: ported to GPU
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of special_dummies.inc) the number of f array
@@ -13,7 +14,7 @@
 ! CPARAM logical, parameter :: lspecial = .true.
 !
 ! MVAR CONTRIBUTION 0
-! MAUX CONTRIBUTION 0
+! MAUX CONTRIBUTION 1
 !
 !***************************************************************
 !
@@ -37,7 +38,7 @@ module Special
   logical :: ldamp_ss=.false. !whether to damp the entropy to its initial profile
   character (len=labellen) :: far_field_type='initial' !how to determine the profiles to which rho and ss are damped.
 !
-  real, dimension (mx,my,mz) :: tauinv_prof
+  integer :: itauinv=0
   real, dimension (mz) :: rho_prof, ss_prof
   logical :: lprof_from_initial=.true.
 !
@@ -46,10 +47,20 @@ module Special
     x_1, x_2, y_1, y_2, z_1, z_2, tau, w, ldamp_rho, ldamp_ss, far_field_type
 !
   contains
-! !***********************************************************************
+!***********************************************************************
+    subroutine register_special
+!
+      use FArrayManager, only: farray_register_auxiliary
+!
+      call farray_register_auxiliary('tauinv',itauinv)
+!
+      if (itauinv==0) call fatal_error('register_special', 'failed to allocate aux slot for tauinv')
+!
+    endsubroutine register_special
+!***********************************************************************
     subroutine initialize_special(f)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       if (x_1==impossible) x_1=xyz0(1)
       if (y_1==impossible) y_1=xyz0(2)
@@ -57,12 +68,6 @@ module Special
       if (x_2==impossible) x_2=xyz1(1)
       if (y_2==impossible) y_2=xyz1(2)
       if (z_2==impossible) z_2=xyz1(3)
-!
-      tauinv_prof = spread(spread(step(x,x_1,-w)+step(x,x_2,w),2,my),3,mz) &
-                   +spread(spread(step(y,y_1,-w)+step(y,y_2,w),1,mx),3,mz) &
-                   +spread(spread(step(z,z_1,-w)+step(z,z_2,w),1,mx),2,my)
-      where (tauinv_prof>1) tauinv_prof = 1 !avoid damping being too strong in the corners
-      tauinv_prof = tauinv_prof/tau
 !
       select case (far_field_type)
         case ('initial')
@@ -79,7 +84,30 @@ module Special
           call fatal_error('initialize_special', 'Unknown far_field_type = '//trim(far_field_type))
       endselect
 !
+!     Need to call init_special again since it calculates an auxiliary variable.
+!
+      if (lrun) call init_special(f)
+!
     endsubroutine initialize_special
+!***********************************************************************
+    subroutine init_special(f)
+!
+!     While the earlier CPU version of this module simply defined tauinv_prof
+!     as a global array, that seems to cause problems for transpilation (as of
+!     Pencil git commit 1109640). As a workaround, we store tauinv_prof in the
+!     f-array.
+!
+      real, contiguous, dimension(:,:,:,:) :: f
+!
+      f(:,:,:,itauinv) = spread(spread(step(x,x_1,-w)+step(x,x_2,w),2,my),3,mz) &
+                       + spread(spread(step(y,y_1,-w)+step(y,y_2,w),1,mx),3,mz) &
+                       + spread(spread(step(z,z_1,-w)+step(z,z_2,w),1,mx),2,my)
+!
+      where (f(:,:,:,itauinv)>1) f(:,:,:,itauinv) = 1 !avoid damping being too strong in the corners
+!
+      f(:,:,:,itauinv) = f(:,:,:,itauinv)/tau
+!
+    endsubroutine init_special
 !***********************************************************************
     subroutine pencil_criteria_special
 !
@@ -93,7 +121,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -111,42 +139,48 @@ module Special
 !***********************************************************************
     subroutine special_calc_hydro(f,df,p)
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 !
-      call keep_compiler_quiet(f)
+      real, dimension(nx) :: tauinv
 !
-      df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - tauinv_prof(l1:l2,m,n)*p%uu(:,1)
-      df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - tauinv_prof(l1:l2,m,n)*p%uu(:,2)
-      df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) - tauinv_prof(l1:l2,m,n)*p%uu(:,3)
+      tauinv = f(l1:l2,m,n,itauinv)
+!
+      df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - tauinv*p%uu(:,1)
+      df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - tauinv*p%uu(:,2)
+      df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) - tauinv*p%uu(:,3)
 !
     endsubroutine special_calc_hydro
 !***********************************************************************
     subroutine special_calc_density(f,df,p)
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 !
-      call keep_compiler_quiet(f)
+      real, dimension(nx) :: tauinv
 !
       if (ldamp_rho) then
-        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - tauinv_prof(l1:l2,m,n)*(p%rho/rho_prof(n) - 1)
+        tauinv = f(l1:l2,m,n,itauinv)
+!
+        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - tauinv*(p%rho/rho_prof(n) - 1)
       endif
 !
     endsubroutine special_calc_density
 !***********************************************************************
     subroutine special_calc_energy(f,df,p)
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 !
-      call keep_compiler_quiet(f)
+      real, dimension(nx) :: tauinv
 !
       if (ldamp_ss) then
-        df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - tauinv_prof(l1:l2,m,n)*(p%ss - ss_prof(n))
+        tauinv = f(l1:l2,m,n,itauinv)
+!
+        df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - tauinv*(p%ss - ss_prof(n))
       endif
 !
     endsubroutine special_calc_energy
@@ -169,14 +203,13 @@ module Special
 !
 !     Used in case rho_prof and ss_prof need to be updated every timestep
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       if (.not.lprof_from_initial) then
         call update_profiles(f)
       endif
 !
     endsubroutine special_after_boundary
-!***********************************************************************
 !***********************************************************************
     subroutine update_profiles(f)
 !
@@ -200,6 +233,24 @@ module Special
       endif
 !
     endsubroutine update_profiles
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+!
+      use Syscalls, only: copy_addr
+      use General , only: string_to_enum
+!
+      integer, parameter :: n_pars=100
+      integer(KIND=ikind8), dimension(n_pars) :: p_par
+!
+      call copy_addr(itauinv,p_par(1)) ! int
+      call copy_addr(rho_prof,p_par(2)) ! (mz)
+      call copy_addr(ss_prof,p_par(3)) ! (mz)
+      call copy_addr(ldamp_rho,p_par(4)) ! bool
+      call copy_addr(ldamp_ss,p_par(5)) ! bool
+      call copy_addr(lprof_from_initial,p_par(6)) ! bool
+!
+    endsubroutine pushpars2c
+!***********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
 !**  This is an automatically generated include file that creates  **

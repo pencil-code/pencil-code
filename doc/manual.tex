@@ -1367,6 +1367,23 @@ To your \File{~/.bashrc}, add
 If you now open a new shell and run \code{module avail}, you will find the \code{pencil-local} module created above listed as an option.
 This requires version 4.6 of the \code{modules} program.
 
+Some clusters use Lua modules\footnote{
+\url{https://lmod.readthedocs.io/en/latest/index.html}
+} instead of the usual Tcl modules;\footnote{
+\url{https://modules.readthedocs.io/en/stable/modulefile.html}
+} in that case, the syntax for the module file (the name of which must end in \code{.lua}) is
+\begin{verbatim}
+whatis("Environment setup for the Pencil code")
+
+-- change the following line according to the location of your local copy of Pencil
+local pencil_home = os.getenv("HOME") .. "/.software/pencil"
+
+setenv("PENCIL_HOME", pencil_home)
+setenv("_sourceme_quiet", "1")
+source_sh("bash", pencil_home .. "/sourceme.sh")
+unsetenv("_sourceme_quiet")
+\end{verbatim}
+
 
 \subsubsection{Linking scripts and source files}
 
@@ -2461,7 +2478,7 @@ As stated normal usage of GPUs requires compilation during the running of the se
 This is because the code as is with its large number of conditionals would not be performant on the GPUs because for performance Astaroth needs to know at compile-time which stencils are used. Compiling after the parameters have been chosen fixes the problem. 
 
 However it is inconvenient if you want to run a spectrum of runs while varying some numerical parameters if each choice requires separate runtime compilation. Because of this it is possible to tell via code comments does a parameter need recompilation or not.
-The relevant subroutines are called \code{pushpars2c}. The following has examples for boolean and real variables where the former would force recompilation and the latter not.
+The relevant subroutines are called \code{pushpars2c}. The following has examples for boolean and real variables where the first two would force recompilation and the last two would not.
 \begin{verbatim}
   call copy_addr(lklein_gordon,p_par(1)) ! bool
   call copy_addr(wfreeze,p_par(2))
@@ -8597,7 +8614,7 @@ Internally, a number of \textit{automatic} replacements occur in the code.
 Code that is automatically modified in this way is also automatically
 unmodified while checking in changes to the repository.
 But to facility comparison with the original code, one can do the unmodification
-also oneself using the {\tt pencil-code/utils/axel/pc\_mkspecial.sh} command.
+also oneself using the {\tt pc\_restore\_special} command.
 %AB.
 
 \subsection{Adding switchable modules}

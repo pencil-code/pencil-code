@@ -27,7 +27,8 @@
 ! PENCILS PROVIDED der6u_res(3,3); uij6(3,3)
 ! PENCILS PROVIDED lorentz; lorentz_gamma; hless; advec_uu
 ! PENCILS PROVIDED T00; T0i(3); Tij(6); velx(3)
-! PENCILS PROVIDED ext_force(4); 
+! PENCILS PROVIDED ext_force(4);
+! PENCILS PROVIDED uutot(3); divutot; utotij(3,3)
 !
 !** AUTOMATIC REFERENCE-LINK.TEX GENERATION ********************
 ! Declare relevant citations from pencil-code/doc/citations/ref.bib for this module.
@@ -41,7 +42,7 @@ module Hydro
   use Quiet
   use Messages
   use Viscosity, only: calc_viscous_force
-  use KT_transport, only: kt_init, kt_transp
+  use KT_transport, only: kt_init, kt_div_tensor
   use SGS_hydro
 !
   implicit none
@@ -85,7 +86,7 @@ module Hydro
 !  phi-averaged arrays for orbital advection
 !
   real, dimension (mx,mz) :: uu_average_cyl=0.
-  real, dimension (mx,my) :: uu_average_sph=0.
+  real, dimension(:,:), allocatable :: uu_average_sph
 !
 !  Cosine and sine function for setting test fields and analysis.
 !
@@ -211,29 +212,31 @@ module Hydro
   logical, pointer :: lffree
   logical :: lreflecteddy=.false.,louinit=.false.
   logical :: lskip_projection=.false.
-  logical, target :: lconservative=.false., lrelativistic=.false.
+  logical, target :: lconservative=.false. !PAR_DOC: Do we solve the momentum equation in conservative form or not.
+    !PAR_DOC: The primitive variable becomes momentum or in the relativistic case $T^{0i}$.
+  logical, target :: lrelativistic=.false. !PAR_DOC: Do we keep relativistic terms proportional to $gamma^2$.
   logical, target :: lconservative_pressure_on_rhs=.false.
   logical :: lT00_total = .true., lT0i_total = .true., lT0mu_total = .true.
   logical, pointer :: lrelativistic_eos, lrelativistic_eos_corr
   logical :: lno_noise_uu=.false., lrho_nonuni_uu=.false.
   logical :: llorentz_limiter=.false., lrat_limiter=.false., full_3D=.false.
-  logical :: lhiggsless=.false., lhiggsless_old=.false., lvel_limiter=.false.
+  logical :: lhiggsless=.false., lhiggsless_old=.false.
+  logical, target :: lu_background=.false.
+  logical :: lism_rotation=.false.
+  logical :: lvel_limiter=.false. !PAR_DOC: Do we clip the velocity to be below a threshold when using forcing.
+    !PAR_DOC: Used to get rid of superluminal velocities.
   logical :: lalfven_relativistic=.true.
 !  Kurganov-Tadmor flux-limited transport (see kt_transport.f90); runtime-off by default.
-  logical :: lkt_transport=.false.
+  logical, target :: lkt_transport=.false. !PAR_DOC: Do we use Kurganov-Tadmor flux-limited transport.
   real :: kt_theta=2.0
-!  Cell-level admissibility projection of the conserved (K0,K^i) state (opt-in,
-!  off by default; cf. project_admissible in kt_transport.f90): floor K0-eps to
-!  a positive fluid energy and rescale the momentum so |K^i| <=
-!  (1-hless_proj_margin)*(K0-eps). Identity on already-admissible states.
-!  Fixes the multibubble superluminal blow-up (the gamma-clip in
-!  hydro_after_boundary_conservative caps gamma but never rescales K^i).
-!  hless_proj_margin is the CAUSALITY margin: |K^i|=K0-eps corresponds to |v|=1
-!  in the bag EOS, so the default 1e-2 caps the representable fluid speed at
-!  v~0.98 (gamma~5); lower it (e.g. 1e-3 -> v~0.994, gamma~9) to admit higher
-!  Lorentz factors. The positivity floor is internal (scale-aware, see below).
-  logical :: lhiggsless_project=.false.
-  real :: hless_proj_margin=1e-2
+  !PAR_DOC: Cell-level admissibility projection of the conserved (K0,$K^i$) state (opt-in,
+  !PAR_DOC: off by default; cf. project_admissible in kt\_transport.f90): floor the fluid
+  !PAR_DOC: energy K0-eps to a positive value and rescale the momentum so $|K^i|$ <=
+  !PAR_DOC: a subluminal value. For non-Higgsless relativistic hydro, eps=0 and the same
+  !PAR_DOC: projection applies directly to K0.
+  !PAR_DOC: Fixes the multibubble superluminal blow-up (the gamma-clip in
+  !PAR_DOC: hydro_after_boundary_conservative caps gamma but never rescales $K^i$).
+  logical :: lproject_admissible=.false.
   logical :: lsqrt_qirro_uu=.false., lset_uz_zero=.false.
   logical :: lnorm_vw_hless=.false.
   logical :: lampluu_adjust_ascale=.false.   !PAR_DOC: automatically adjust initial u-amplitude
@@ -253,6 +256,12 @@ module Hydro
   real :: amp_factor=0.,kx_uu_perturb=0.
   real :: qirro_uu=0., qini=0.
   integer, dimension(ninit) :: ll_sh=0, mm_sh=0, n_xprof=-1
+! Parameters for the background profile
+  character (len=labellen) :: uuprof='nothing'
+  logical :: lub_x=.false., lub_y=.false., lub_z=.false.
+  real :: vertical_gradient=0
+  real, dimension(nx,3) :: ubgu=0, ugub=0
+  real, dimension(nx,3,3) :: ubij=0
 !
   namelist /hydro_init_pars/ &
       ampluu, ampl_ux, ampl_uy, ampl_uz, phase_ux, phase_uy, phase_uz, &
@@ -278,7 +287,8 @@ module Hydro
       lno_noise_uu, lrho_nonuni_uu, lpower_profile_file_uu, &
       llorentz_limiter, lrat_limiter, lhiggsless, lhiggsless_old, vwall, alpha_hless, width_hless, &
       xjump_mid, yjump_mid, zjump_mid, qini, lnorm_vw_hless, &
-      qshear, lampluu_adjust_ascale, lalfven_relativistic, lvel_limiter
+      qshear, lampluu_adjust_ascale, lalfven_relativistic, lvel_limiter,&
+      uuprof, vertical_gradient, lism_rotation, Omega, lu_background, lism_rotation
 !
 !  Run parameters.
 !
@@ -333,7 +343,7 @@ module Hydro
   logical :: lSchur_2D2D3D_uu=.false.
   logical :: lSchur_2D2D1D_uu=.false.
   real :: dtcor=0., t_cor=0.
-  character (len=labellen) :: uuprof='nothing', friction_tdep='nothing'
+  character (len=labellen) :: friction_tdep='nothing'
 !
 !  Parameters for interior boundary conditions.
 !
@@ -389,7 +399,7 @@ module Hydro
       lSchur_2D2D3D_uu, lSchur_2D2D1D_uu, &
       lhiggsless, vwall, alpha_hless, width_hless, qshear, zdampint, zdampext, &
       lext_force, rat_limiter, max_vel, lkt_transport, kt_theta, &
-      lhiggsless_project, hless_proj_margin, lvel_limiter
+      lproject_admissible, lvel_limiter, lu_background
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -406,6 +416,9 @@ module Hydro
   integer :: idiag_gamrms=0     ! DIAG_DOC: $\left<\gamma^2\right>^{1/2}$
   integer :: idiag_gammax=0     ! DIAG_DOC: $\max(\gamma)$
   integer :: idiag_gam2min=0    ! DIAG_DOC: $\min(\gamma^2)$
+  integer :: idiag_nprojk0=0    ! DIAG_DOC: number of cells whose $K^0$ was floored
+  integer :: idiag_nprojmom=0   ! DIAG_DOC: number of cells whose $K^i$ was rescaled
+  integer :: idiag_projratmax=0 ! DIAG_DOC: $\max|K^i|/(K^0-\epsilon)$ before projection
   integer :: idiag_rat2=0       ! DIAG_DOC: $\sum_{i=1}^{3} \frac{T^{0i}T^{0i}}{(T^{00})^2}$
   integer :: idiag_u2m=0        ! DIAG_DOC: $\left<\uv^2\right>$
   integer :: idiag_u2sphm=0     ! DIAG_DOC: $\int_{r=0}^{r=r_{\rm diag}} \uv^2 dV$,
@@ -1008,7 +1021,7 @@ module Hydro
   real, dimension (my) :: prof_amp4
   real, dimension (nz,3) :: uumz_prof
   real, dimension (nx,3) :: fint,fext
-  real, dimension (nx,ny) :: omega_prof
+  real, dimension(:,:), allocatable :: omega_prof
   real, dimension (nx,3) :: coriolis_force = 0.0
   !$omp threadprivate(coriolis_force)
 
@@ -1075,6 +1088,12 @@ module Hydro
 !
       if (lvv_as_aux .or. lvv_as_comaux) then
         call register_report_aux('vv', ivv, ivx, ivy, ivz, communicated=.true.,rhs=.true.,read_from_gpu=.true.)
+      endif
+!
+!   Register background profile
+!
+      if (lu_background) then
+        call register_report_aux('uub', iuub, iuubx, iuuby, iuubz)
       endif
 !
 !  omega as aux
@@ -1207,6 +1226,7 @@ module Hydro
       call put_shared_variable('lhiggsless',lhiggsless)
       call put_shared_variable('lkt_transport',lkt_transport)
       call put_shared_variable('lrelativistic',lrelativistic)
+      call put_shared_variable('lu_background',lu_background)
 
       call put_shared_variable ('tdamp', tdamp)
       call put_shared_variable ('ldamp_fade', ldamp_fade)
@@ -1228,9 +1248,24 @@ module Hydro
 !  gated on lconservative, and the KT solver is initialised only under lhiggsless.
 !  Fail loudly rather than silently ignoring a misconfigured lkt_transport.
 !
-      if (lkt_transport .and. .not. (lconservative .and. lhiggsless)) &
+      if (lkt_transport .and. .not. (lconservative .and. lrelativistic)) &
           call fatal_error('initialize_hydro', &
-              'lkt_transport=T requires lconservative=T and lhiggsless=T')
+              'lkt_transport=T requires lconservative=T and lrelativistic=T')
+!
+!  The admissibility projection acts on the relativistic conserved variables
+!  (K0,K^i). Reject configurations where those are not the evolved state.
+!
+      if (lproject_admissible) then
+        if (.not. (lconservative .and. lrelativistic)) &
+            call fatal_error('initialize_hydro', &
+                'lproject_admissible=T requires lconservative=T and lrelativistic=T')
+        if (lhiggsless_old) &
+            call fatal_error('initialize_hydro', &
+                'lproject_admissible=T is not implemented for lhiggsless_old=T')
+        if (lgpu) &
+            call fatal_error('initialize_hydro', &
+                'lproject_admissible=T is not yet available on GPUs')
+      endif
 !
       if (lhiggsless) then
         ! normalization with T00 at initial time gives bar epsilon = alpha/(1 + alpha)
@@ -1242,14 +1277,25 @@ module Hydro
 !
 !  Initialize the KT flux-limited transport (Higgsless application only).
 !
-        if (lkt_transport) call kt_init(irho,iux,ihless,eps_hless,width_hless_absolute,kt_theta)
+      endif
+!
+!  Initialise the KT transport.  Higgsless is one application of it, not a
+!  requirement: without that source there is no vacuum energy and no hless
+!  slot, and the bag closure reduces to the ordinary radiation EOS.
+!
+      if (lkt_transport) then
+        if (lhiggsless) then
+          call kt_init(irho,iux,ihless,eps_hless,width_hless_absolute,kt_theta)
+        else
+          call kt_init(irho,iux,0,0.0,0.0,kt_theta)
+        endif
       endif
 !
 ! If we are to solve for gradient of dust particle velocity, we must store gradient
 ! of gas velocity as auxiliary
 !
       if (lparticles_grad) lgradu_as_aux=.true.
-      if (lSGS_hydro) call register_SGS_hydro      
+      if (lSGS_hydro) call register_SGS_hydro
 !
       call put_shared_variable('lext_force',lext_force)
       call put_shared_variable('llorentz_limiter',llorentz_limiter)
@@ -1286,6 +1332,11 @@ module Hydro
       integer :: l,m,n
       real :: slope,uinn,uext,zbot
       logical :: lvectorpotential=.false.
+
+      if (.not.allocated(uu_average_sph)) then
+        allocate(uu_average_sph(mx,my), omega_prof(nx,ny))
+        uu_average_sph=0.
+      endif
 !
       if (lvel_limiter) then
        lrescaling_velocity=.true.
@@ -1335,7 +1386,7 @@ module Hydro
           case ('flip-ux'); f(:,:,:,iux)=-f(:,:,:,iux)
           case ('flip-uy'); f(:,:,:,iuy)=-f(:,:,:,iuy)
           case ('mult-uz-lower-xbdry'); if (ipx==0) f(1:l1,:,:,iuz)=rescale_uu*f(1:l1,:,:,iuz)
-          case ('Om_inner'); 
+          case ('Om_inner');
             do l=1,mx; do m=1,my; do n=1,mz;
               f(l,m,n,iuz)=Om_inner*(xyz0(1)**2/x(l))*sin(y(m))
             enddo; enddo; enddo
@@ -1564,195 +1615,20 @@ module Hydro
         ruumxy=0.0
       endif
 !
-!  Preparations for adding/removing mean flows.
-!  Set profiles for forcing differential rotation.
+!  Sets an auxiliary variable for a background flow
 !
-      select case (uuprof)
+     if (lu_background) then
+       !Sets the actual profile
+       call background_profile(f,uuprof)
+       !Also calculates the component for the gradient ubij
+       !It only calculates ubij along one x, however if the profile doesn't depend on y and z
+       !We do not need to change it again. We set these flags within the routine to decide
+       call calc_ubij(uuprof,ubij,0,0)
+     endif
 
-      case ('BS04')
-        if (wdamp/=0.) then
-          prof_amp1=1.-step(x(l1:l2),rdampint,wdamp)
-        else
-          prof_amp1=1.
-        endif
-        prof_amp1=ampl1_diffrot*prof_amp1*cos(kx_diffrot*x(l1:l2))**xexp_diffrot
-        prof_amp3=cos(z)
-
-      case ('BS04c','BS04c1','HP09')
-
-        if (wdamp/=0.) then
-          prof_amp3=ampl1_diffrot*0.5*(1.+tanh((z-rdampint)/(wdamp)))
-        else
-          prof_amp3=ampl1_diffrot
-        endif
-
-        if (uuprof=='BS04c') then
-          prof_amp1=sin(0.5*pi*((x(l1:l2))-x0)/Lx)**xexp_diffrot
-        elseif (uuprof=='BS04c1') then
-          prof_amp1=sin(pi*((x(l1:l2))-x0)/Lx)**xexp_diffrot
-        elseif (uuprof=='HP09') then
-          prof_amp1=cos(kx_diffrot*x(l1:l2))
-!or       prof_amp1=cos(2.*pi*kx_diffrot*(x(l1:l2)-x0)/Lx)
-        endif
-
-      case ('BS04m')
-        if (wdamp/=0.) then
-          prof_amp1=1.-step(x(l1:l2),rdampint,wdamp)
-        else
-          prof_amp1=1.
-        endif
-        prof_amp1=ampl1_diffrot*prof_amp1*sin((pi/(2.*x(l2)))*x(l1:l2))
-        prof_amp4=cos(pi/(2.*y(m2))*y)
-
-      case ('solar_DC99')
-        prof_amp1=(1.-ampl1_diffrot*step(x(l1:l2),rdampext,wdamp))*step(x(l1:l2),rdampint,wdamp)*x(l1:l2)
-        prof_amp4=ampl2_diffrot*(1.064-0.145*costh**2-0.155*costh**4-1.)*sinth
-
-      case ('vertical_shear')
-        zbot=xyz0(3)
-        prof_amp3=ampl1_diffrot*cos(kz_diffrot*(z-zbot)-phase_diffrot)
-
-      case ('vertical_compression','vertical_shear_x')
-        zbot=xyz0(3)
-        prof_amp3=ampl1_diffrot*cos(kz_diffrot*(z-zbot))
-
-      case ('remove_vertical_shear')
-        if (.not.lcalc_uumean) &
-          call fatal_error("initialize_hydro","you need to set lcalc_uumean=T for uuprof='remove_vertical_shear'")
-
-      case ('damp_mean_uz_prof_bdr')
-        if (.not.lcalc_uumeanz) &
-          call fatal_error("initialize_hydro","you need to set lcalc_uumeanz=T for uuprof='remove_mean_uz_prof'")
-        prof_amp3=1.-tanh((z-zdampint)/width_ff_uu)
-
-      case ('vertical_shear_x_sinz')
-        zbot=xyz0(3)
-        where (z <= 0.)
-          prof_amp3=ampl1_diffrot*sin(.5*pi/abs(zbot)*z)
-        elsewhere
-          prof_amp3=0.
-        endwhere
-
-      case ('vertical_shear_z')
-        prof_amp3=ampl1_diffrot*tanh((z-rdampint)/width_ff_uu)
-
-      case ('vertical_shear_z2')
-        if (.not.lcalc_uumeanxz) &
-          call fatal_error("initialize_hydro","you need to set lcalc_uumeanxz=T for uuprof='vertical_shear_z2'")
-        prof_amp3=ampl1_diffrot*tanh((z-rdampint)/width_ff_uu)
-
-      case ('vertical_shear_linear')
-        if (.not.lcalc_uumeanxz) &
-          call fatal_error("initialize_hydro","you need to set lcalc_uumeanxz=T for uuprof='vertical_shear_linear'")
-        prof_amp3=ampl1_diffrot*z
-
-      case ('tachocline')
-        if (wdamp/=0.) then
-          prof_amp1=1.-step(x(l1:l2),rdampint,wdamp)
-        else
-          prof_amp1=1.
-        endif
-      case ('solar_simple')
-        if (lspherical_coords) then
-          prof_amp1=ampl1_diffrot*step(x(l1:l2),x1_ff_uu,width_ff_uu)
-          prof_amp4=1.5-7.5*costh*costh
-        elseif (lcartesian_coords) then
-          prof_amp1=ampl1_diffrot*cos(x(l1:l2))
-          prof_amp4=cos(y)*cos(y)
-        !prof_amp2=1.-step(x(l1:l2),x2_ff_uu,width_ff_uu)
-        else
-          call not_implemented("initialize_hydro", &
-                          "uuprof='solar_simple' for other than spherical or Cartesian coordinates")
-        endif
-      case ('radial_uniform_shear')
-        uinn = omega_in*x(l1)
-        uext = omega_out*x(l2)
-        slope = (uext - uinn)/(x(l2)-x(l1))
-        prof_amp1=slope*x(l1:l2)+(uinn*x(l2)- uext*x(l1))/(x(l2)-x(l1))
-
-      case ('breeze')
-        prof_amp3=ampl_wind*z/(2.*pi)
-
-      case ('slow_wind')
-        prof_amp3=ampl_wind*(1.+tanh((z-rdampext)/wdamp))
-
-      case ('radial_shear')
-        if (.not.lcalc_uumeanxy) &
-          call fatal_error("initialize_hydro","you need to set lcalc_uumeanxy=T for uuprof='radial_shear'")
-        prof_amp1=ampl1_diffrot*cos(2*pi*k_diffrot*(x(l1:l2)-x0)/Lx)
-
-      case ('radial_shear_damp')
-        if (.not.lcalc_uumeanxy) &
-          call fatal_error("initialize_hydro","you need to set lcalc_uumeanxy=T for uuprof='radial_shear_damp'")
-        prof_amp1=ampl1_diffrot*tanh((x(l1:l2)-rdampint)/wdamp)
-
-      case ('damp_corona')
-        if (lspherical_coords) then
-          if (.not.lcalc_uumeanxy) &
-            call fatal_error("initialize_hydro","you need to set lcalc_uumeanxy=T for uuprof='damp_corona'")
-          prof_amp1=0.5*(tanh((x(l1:l2)-rdampext)/wdamp)+1.)
-        elseif (lcartesian_coords) then
-          prof_amp3=0.5*(tanh((z-rdampext)/wdamp)+1.)
-        endif
-
-      case ('damp_horiz_vel')
-        prof_amp3=0.5*(tanh((z-rdampext)/wdamp)+1.)
-
-      case ('latitudinal_shear')
-        if (.not.lcalc_uumeanxy) &
-          call fatal_error("initialize_hydro","you need to set lcalc_uumeanxy=T for uuprof='latitudinal_shear'")
-        prof_amp4=ampl1_diffrot*cos(2.*pi*k_diffrot*(y-y0)/Ly)
-
-      case ('damp_jets')
-        if (.not.lcalc_uumeanxy) &
-          call fatal_error("initialize_hydro","you need to set lcalc_uumeanxy=T for uuprof='damp_jets'")
-        prof_amp4=1.-0.5*(1.+tanh((y-(y0+ydampint))/wdamp)-(1.+tanh((y-(y0+Lxyz(2)-ydampext))/wdamp)))
-
-      case ('spoke-like-NSSL')
-        if (.not.lspherical_coords) call warning("initialize_hydro", &
-                       "uuprof='spoke-like-NSSL' only meningful for spherical coordinates")
-        if (.not.lcalc_uumeanxy) &
-          call fatal_error("initialize_hydro","you need lcalc_uumeanxy=T for uuprof='spoke-like-NSSL'")
-
-        prof_amp1=ampl1_diffrot*x(l1:l2)
-        profx_diffrot1=+0.5*(1.+erfunc(((x(l1:l2)-uphi_rbot)/uphi_step_width)))
-        profx_diffrot2=+0.5*(1.-erfunc(((x(l1:l2)-uphi_rtop)/uphi_step_width)))
-        profx_diffrot3=+0.5*(1.+erfunc(((x(l1:l2)-uphi_rtop)/uphi_step_width)))
-        profx_diffrot2=(x(l1:l2)-uphi_rbot)*profx_diffrot1*profx_diffrot2 !(redefined)
-        profy_diffrot1=-1.5*(5.*costh**2-1.)
-        profy_diffrot2=-1.0*(4.*costh**2-3.)
-        profy_diffrot3=-1.0
-        profz_diffrot1=+1.
-!
-      case ('galactic-Brandt-curve')
-        if (.not.lspherical_coords) call warning("initialize_hydro", &
-                       "uuprof='galactic-Brandt-curve' currently only for spherical coordinates")
-        if (.not.lcalc_uumeanxy) &
-          call fatal_error("initialize_hydro","you need lcalc_uumeanxy=T for uuprof='galactic-Brandt-curve'")
-!
-        prof_amp1=ampl1_diffrot*x(l1:l2)/(1.+(x(l1:l2)/uphi_step_width)**3)**onethird
-!
-      case ('uumz_profile')
-        if (.not.lcalc_uumeanz) then
-          call fatal_error("initialize_hydro","you need to set lcalc_uumean=T for uuprof='uumz_profile'")
-        else
-          if (.not.lgravz) &
-            call fatal_error("initialize_hydro","gravitation in z-direction (lgravz=T) needed for uuprof='uumz_profile'")
-          call read_uumz_profile(uumz_prof)
-        endif
-
-      case ('omega_profile')
-        if (.not.lspherical_coords) call warning("initialize_hydro", &
-                       "uuprof='omega_profile' only meaningful for spherical coordinates")
-        if (.not.lcalc_uumeanxy) &
-          call fatal_error("initialize_hydro","you need to set lcalc_uumeanxy=T for uuprof='omega_profile'")
-        call read_omega_profile(omega_prof)
-
-      case ('nothing')
-
-      case default
-         call fatal_error("initialize_hydro","no such profile of mean flow: "//trim(uuprof))
-      endselect
+!  Jamie 28 Sep 26: Moved this to a separate subroutine
+!  Sets prof_amp1 to prof_amp4 to be called later
+     if (tau_diffrot1/=0.) call set_profile_diffrot(uuprof)
 !
       if (ivid_oo/=0) call alloc_slice_buffers(oo_xy,oo_xz,oo_yz,oo_xy2,oo_xy3,oo_xy4,oo_xz2,oo_r)
       if (ivid_o2/=0) call alloc_slice_buffers(o2_xy,o2_xz,o2_yz,o2_xy2,o2_xy3,o2_xy4,o2_xz2,o2_r)
@@ -2106,7 +1982,7 @@ module Hydro
           ! Ensure really is zero, as may have used lread_oldsnap
           f(:,:,:,iux:iuz)=0.
         case ('const_uu','const-uu'); do i=1,3; f(:,:,:,iuu+i-1) = uu_const(i); enddo
-        case ('shear'); 
+        case ('shear');
           do l=1,mx; do m=1,my; do n=1,mz;
             f(l,m,n,iuz)=-qshear*Omega*x(l)
           enddo; enddo; enddo
@@ -2148,7 +2024,7 @@ module Hydro
           enddo
         case ('random_isotropic_shell')
           call random_isotropic_shell(f,iux,ampluu(j),z1_uu,z2_uu)
-        case ('gaussian-noise') 
+        case ('gaussian-noise')
           if (lroot) print*, 'init_uu: gaussian noise, ampluu=', ampluu(j)
           call gaunoise(ampluu(j),f,iux,iuz)
         case ('gaussian-noise-x'); call gaunoise(ampluu(j),f,iux)
@@ -3002,7 +2878,7 @@ module Hydro
                   f(my_ind,m,n,j)=f(my_ind,m,n,j)*max_vel/sqrt(ss2(my_ind))
                 endif
               enddo
-            endif 
+            endif
           enddo
         enddo
         enddo
@@ -3144,6 +3020,13 @@ module Hydro
       endif
       if (lprecession) lpenc_requested(i_rr)=.true.
 !
+!  Pencils if background velocity is present
+!
+      if (lu_background) then
+        lpenc_requested(i_uutot) = .true.
+        lpenc_requested(i_divutot) = .true.
+      endif
+!
 !  Damping terms for lcylinder_in_a_box
 !
       if (tdamp/=0.or.dampuext/=0.or.dampuint/=0) then
@@ -3184,6 +3067,7 @@ module Hydro
 !
       if (ekman_friction/=0) then
         if (friction_tdep=='current') lpenc_requested(i_j2)=.true.
+        if (friction_tdep=='fixed_k_alpha') lpenc_requested(i_u2)=.true.
         if (friction_tdep=='Thomson') then
           lpenc_requested(i_TT)=.true.
           lpenc_requested(i_yH)=.true.
@@ -3642,7 +3526,7 @@ module Hydro
       logical, dimension(npencils) :: lpenc_loc
       integer :: iuu
 !
-      real, dimension (nx) :: tmp 
+      real, dimension (nx) :: tmp
       real, dimension (nx,3,3) :: T0ij
 
 
@@ -3894,111 +3778,117 @@ module Hydro
       endif
     endsubroutine calc_Tij
 !***********************************************************************
-    subroutine calc_uu(f,p)
-
+    subroutine calc_uu_conservative(f,p)
       use EquationOfState, only: cs20
       use Sub, only: multsv_mn,invmat_DB,multmv,dot2_mn
-
       real, contiguous, dimension(:,:,:,:) :: f
       type (pencil_case) :: p
       real, dimension (nx) :: tmp,DD,tmp_rho
       real, dimension (nx,3) :: tmp3, rat0
       real, dimension (nx,3,3) :: tmp33
-      
-      if (lconservative) then
-        if (lvv_as_aux .or. lvv_as_comaux) then
-          p%uu=f(l1:l2,m,n,ivx:ivz)
-        else
-          tmp3=f(l1:l2,m,n,iux:iuz)
+
+      if (lvv_as_aux .or. lvv_as_comaux) then
+        p%uu=f(l1:l2,m,n,ivx:ivz)
+      else
+        tmp3=f(l1:l2,m,n,iux:iuz)
 !
 !  alberto: tmp_rho is required to be reconstructed for higgsless.
 !  Unless the p%uu pencil is taken from the ivv chunk of the farray, the
 !  following smoothing is only used for diagnostics.
 !
-          tmp_rho=f(l1:l2,m,n,irho)
-          if (.not.lhiggsless_old.and.lhiggsless) then
-            if (width_hless==0.) then
-              where(real(t) < f(l1:l2,m,n,ihless)) tmp_rho=tmp_rho-eps_hless
-            else
-              tmp_rho=real(tmp_rho-eps_hless &
-                *max(0.d0, min(1.d0, (f(l1:l2,m,n,ihless)+0.5d0*width_hless_absolute-t)/width_hless_absolute)))
+        tmp_rho=f(l1:l2,m,n,irho)
+        if (.not.lhiggsless_old.and.lhiggsless) then
+          if (width_hless==0.) then
+            where(real(t) < f(l1:l2,m,n,ihless)) tmp_rho=tmp_rho-eps_hless
+          else
+            tmp_rho=real(tmp_rho-eps_hless &
+              *max(0.d0, min(1.d0, (f(l1:l2,m,n,ihless)+0.5d0*width_hless_absolute-t)/width_hless_absolute)))
 !print*,'AXEL1'
 !AB: this is never accessed
-            endif
-          else
-            if (lhiggsless_old) call warning('calc_pencils_hydro', &
-                          'pencil u is not correctly computed for lhiggsless_old')
           endif
-          if (lrelativistic) then
+        else
+          if (lhiggsless_old) call warning('calc_pencils_hydro', &
+                        'pencil u is not correctly computed for lhiggsless_old')
+        endif
+        if (lrelativistic) then
 !
 !  In the relativistic case, which must also be conservative, cs20p1=4/3, if cs2=1/3.
 !  At this point, the Lorentz factor gamma^2 is already available.
 !  We solve here Eq. (39) of the notes.
 !
-            !cs20p1=cs20+1.
-            ! tmp_rho=f(l1:l2,m,n,irho)
-            !if (.not.lhiggsless_old.and.lhiggsless) then
-            !  where(real(t) < f(l1:l2,m,n,ihless)) tmp_rho=tmp_rho-eps_hless
-            !endif
-            if (.not.llorentz_as_aux) then
-              call fatal_error('calc_pencils_hydro_nonlinear', &
-                                'llorentz_as_aux should be True to reconstruct p%uu')
-            endif
-            ! alberto: when llorentz_as_aux is not chosen this will not
-            !          be correct
-            !tmp=1./(tmp_rho/(1.-.25/f(l1:l2,m,n,ilorentz)))
-            tmp=1.-cs20*inv_cs20p1/f(l1:l2,m,n,ilorentz)
-            tmp=tmp/tmp_rho
-            call multsv_mn(tmp,tmp3,p%uu)
-            ! alberto: added p%rho1 for conservative and relativistic case
-            p%rho1=(cs20p1*f(l1:l2,m,n,ilorentz)-cs20)/tmp_rho
-          ! endif
-          !  In the non-relativisitic (but conservative) case, f(:,:,:,iuu) is the momentum,
-          !  so to get the velocity, we have to divide by it.
-          !
-          else
-            p%rho1=1./tmp_rho
-            call multsv_mn(p%rho1,tmp3,tmp3)
-            if (lrelativistic_eos_corr) then
-              rat0=f(l1:l2,m,n,iux:iuz)
-              call dot2_mn(rat0,tmp)
-              p%rho1=p%rho1*(1. + tmp*inv_cs20p1)
-              ! 1/rho = 1/T00 * (1 + r^2/(1 + cs2)), otherwise 1/rho = 1/T00
-              tmp=1./(p%rho1**2*inv_cs20p1 + cs20p1)/tmp
-              call multsv_mn(tmp,tmp3,p%uu)
-              ! ui = T0i / rho / (1 + cs2 + r^2/(1 + cs2))
-              ! for lrelativistic_eos_corr, otherwise ui = T0i / rho / (1 + cs2)
-            else
-              p%uu=tmp3*inv_cs20p1
-            endif
-          endif    !  if (lrelativistic)
-!
-          !
-          ! alberto: this correction is in general needed when running MHD with conservation
-          ! form, independently of lrelativistic, so moved else (no lrelativistic) from below to here
-          !
-!
-          ! alberto: added a flag lT0i_total, in general we might want
-          ! to apply Boris correction in magnetic module, also for relativistic case, not
-          ! here, for now we just keep this flag (True by)
-          if (lmagnetic .and. lT0i_total) then
-!
-            if (full_3D) then
-              DD=(f(l1:l2,m,n,irho)-.5*B_ext2)/(1.-.25/f(l1:l2,m,n,ilorentz))+B_ext2
-!AB: not yet calculated
-              call invmat_DB(DD,p%bb,tmp33)
-              call multmv(tmp33,tmp3,p%uu)
-            else
-              tmp=1./((f(l1:l2,m,n,irho)-.5*B_ext2)/(1.-.25/f(l1:l2,m,n,ilorentz))+B_ext2)
-              call multsv_mn(tmp,tmp3,p%uu)
-            endif
-          ! else
+          !cs20p1=cs20+1.
+          ! tmp_rho=f(l1:l2,m,n,irho)
+          !if (.not.lhiggsless_old.and.lhiggsless) then
+          !  where(real(t) < f(l1:l2,m,n,ihless)) tmp_rho=tmp_rho-eps_hless
+          !endif
+          if (.not.llorentz_as_aux) then
+            call fatal_error('calc_pencils_hydro_nonlinear', &
+                              'llorentz_as_aux should be True to reconstruct p%uu')
           endif
+          ! alberto: when llorentz_as_aux is not chosen this will not
+          !          be correct
+          !tmp=1./(tmp_rho/(1.-.25/f(l1:l2,m,n,ilorentz)))
+          tmp=1.-cs20*inv_cs20p1/f(l1:l2,m,n,ilorentz)
+          tmp=tmp/tmp_rho
+          call multsv_mn(tmp,tmp3,p%uu)
+          ! alberto: added p%rho1 for conservative and relativistic case
+          p%rho1=(cs20p1*f(l1:l2,m,n,ilorentz)-cs20)/tmp_rho
+        ! endif
+        !  In the non-relativisitic (but conservative) case, f(:,:,:,iuu) is the momentum,
+        !  so to get the velocity, we have to divide by it.
+        !
+        else
+          p%rho1=1./tmp_rho
+          call multsv_mn(p%rho1,tmp3,tmp3)
+          if (lrelativistic_eos_corr) then
+            rat0=f(l1:l2,m,n,iux:iuz)
+            call dot2_mn(rat0,tmp)
+            p%rho1=p%rho1*(1. + tmp*inv_cs20p1)
+            ! 1/rho = 1/T00 * (1 + r^2/(1 + cs2)), otherwise 1/rho = 1/T00
+            tmp=1./(p%rho1**2*inv_cs20p1 + cs20p1)/tmp
+            call multsv_mn(tmp,tmp3,p%uu)
+            ! ui = T0i / rho / (1 + cs2 + r^2/(1 + cs2))
+            ! for lrelativistic_eos_corr, otherwise ui = T0i / rho / (1 + cs2)
+          else
+            p%uu=tmp3*inv_cs20p1
+          endif
+        endif    !  if (lrelativistic)
+!
+        !
+        ! alberto: this correction is in general needed when running MHD with conservation
+        ! form, independently of lrelativistic, so moved else (no lrelativistic) from below to here
+        !
+!
+        ! alberto: added a flag lT0i_total, in general we might want
+        ! to apply Boris correction in magnetic module, also for relativistic case, not
+        ! here, for now we just keep this flag (True by)
+        if (lmagnetic .and. lT0i_total) then
+!
+          if (full_3D) then
+            DD=(f(l1:l2,m,n,irho)-.5*B_ext2)/(1.-.25/f(l1:l2,m,n,ilorentz))+B_ext2
+!AB: not yet calculated
+            call invmat_DB(DD,p%bb,tmp33)
+            call multmv(tmp33,tmp3,p%uu)
+          else
+            tmp=1./((f(l1:l2,m,n,irho)-.5*B_ext2)/(1.-.25/f(l1:l2,m,n,ilorentz))+B_ext2)
+            call multsv_mn(tmp,tmp3,p%uu)
+          endif
+        ! else
+        endif
 !print*,'AXEL7: used B_ext2'
-        endif   !    if (lvv_as_aux .or. lvv_as_comaux) ... else
+      endif   !    if (lvv_as_aux .or. lvv_as_comaux) ... else
+    endsubroutine calc_uu_conservative
+!***********************************************************************
+    subroutine calc_uu(f,p)
+
+      real, contiguous, dimension(:,:,:,:) :: f
+      type (pencil_case) :: p
+
+      if (lconservative) then
+        call calc_uu_conservative(f,p)
       else
         p%uu=f(l1:l2,m,n,iux:iuz)
-      endif  !  if (lconservative) ... else
+      endif
     endsubroutine calc_uu
 !***********************************************************************
     subroutine calc_pencils_hydro_nonlinear(f,p,lpenc_loc)
@@ -4037,7 +3927,7 @@ module Hydro
 !
       if (lpenc_loc(i_uu)) then
         call calc_uu(f,p)
-      endif 
+      endif
 ! Tij
       call calc_Tij(f,p,lpenc_loc)
 ! u2
@@ -4048,7 +3938,18 @@ module Hydro
       else
         call calc_pencils_hydro_nonlinear_from_f(f,p,lpenc_loc,iuu)
       endif
-
+!
+! New pencils if there is a background velocity profile
+! uutot
+      if  (lpenc_loc(i_uutot) .and. lu_background) p%uutot = f(l1:l2,m,n,iux:iuz) + f(l1:l2,m,n,iuubx:iuubz)
+! utotij
+      if  (lpenc_loc(i_utotij)) then
+        if (lub_y .or. lub_z) call calc_ubij(uuprof,ubij,m,n)
+        p%utotij = p%uij + ubij
+      endif
+! divutot
+      if (lpenc_loc(i_divutot)) call div_mn(p%utotij,p%divutot,p%uutot)
+!
 ! divu
       if (lpenc_loc(i_divu)) then
         call div_mn(p%uij,p%divu,p%uu)
@@ -4309,7 +4210,7 @@ module Hydro
       real, dimension(nx,3) :: pv
 !
       real, dimension (mx,mz) :: fsum_tmp_cyl
-      real, dimension (mx,my) :: fsum_tmp_sph
+      real, dimension(:,:), allocatable, save :: fsum_tmp_sph
       real, dimension (mx) :: uphi
 !
 !  Remove mean momenta or mean flows if desired.
@@ -4323,6 +4224,10 @@ module Hydro
           if (lremove_mean_angmom) call remove_mean_angmom(f,iuz)
         endif
       endif
+!
+!  Repair the evolved conserved state before boundary filling and MPI exchange.
+!
+      if (lproject_admissible) call project_relativistic_conservative_admissible(f)
 !
 !  Calculate the vorticity field if required.
 !
@@ -4374,6 +4279,7 @@ module Hydro
           !idir=2 is equal to old LSUMY=.true.
 !
         elseif (lspherical_coords) then
+          if (.not.allocated(fsum_tmp_sph)) allocate(fsum_tmp_sph(mx,my))
           fsum_tmp_sph=0.
           do n=n1,n2
             do m=1,my
@@ -4411,7 +4317,7 @@ module Hydro
     subroutine advec_uu(f,df,p)
 
       use Sub, only: dot, dot2,div_tensor
-      use Sub, only: multvs
+      use Sub, only: multvs, u_dot_grad
       use Deriv, only: der
 
       real, contiguous, dimension(:,:,:,:) :: f
@@ -4461,6 +4367,16 @@ module Hydro
           df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-ugu_Schur_x
           df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-ugu_Schur_y
           df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-ugu_Schur_z
+        elseif (lu_background) then
+          !uhat dot grad u'
+          !call u_dot_grad(f,iuu,p%uij,p%uub,ubgu)
+          call u_dot_grad(f,iuu,p%uij,f(l1:l2,m,n,iuubx:iuubz),ubgu)
+          !u' dot grad uhat
+          !if the background profile depends on y or z, we need to update it here
+          !Otherwise, it can remain at the value calculated during initialisation
+          if (lub_y .or. lub_z) call calc_ubij(uuprof,ubij,m,n)
+          call u_dot_grad(f,iuub,ubij,p%uu,ugub)
+          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%ugu - ubgu - ugub
         else
           df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%ugu
         endif
@@ -4470,17 +4386,8 @@ module Hydro
       if (ldensity) then
         if(lconservative) then
           if (lkt_transport) then
-!
-!  KT flux-limited momentum flux divergence (kt_transport.f90) instead of the
-!  central-difference divergence of the stored T^ij (div_tensor). Reuses divTij(:,j)
-!  as the per-direction scratch, then subtracts as in the central branch.
-!
-            do j=1,3
-              call kt_transp(f,m,n,1+j,real(t),divTij(:,j))
-            enddo
+            call kt_div_tensor(f,divTij)
           else
-            ! alberto: kt_transp could be included as an optional argument
-            ! to div_tensor, but for now we keep it separate
             call div_tensor(f,divTij,iTij,lyz_first=.true.)
           endif
           df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz)- divTij
@@ -4522,6 +4429,76 @@ module Hydro
 
     endsubroutine advec_uu
 !***********************************************************************
+    subroutine apply_ekman_friction(df,p)
+      use Sub, only: read_ell_from_table,multsv_mn
+      real, contiguous, dimension(:,:,:,:), intent(INOUT) :: df
+      type(pencil_case), intent(IN) :: p
+      real :: arad_normal,ell_gam
+      real, dimension(nx,3) :: tmpv
+!
+!  Ekman Friction, used only in two dimensional runs.
+!  But it can also be used as photon drag in 3-D, for example.
+!  In that case, it would be time dependent.
+!
+        select case (friction_tdep)
+          case ('nothing')
+            frict=ekman_friction
+          case ('linear')
+            frict=ekman_friction*max(min(real(t-friction_tdep_toffset)/friction_tdep_tau0,1.),0.)
+          case ('linear_decrease')
+            frict=ekman_friction*max(1.-max(real(t-friction_tdep_toffset)/friction_tdep_tau0,0.),0.)
+          case ('inverse')
+            frict=ekman_friction/max(real(t),friction_tdep_toffset)
+          case ('Thomson')
+            arad_normal=real(4*sigmaSB/c_light)
+            frict=real(ekman_friction*fourthird*p%yH*sigma_Thomson*arad_normal*p%TT**4/(m_p*c_light))
+!
+!  trie alpha (=frict) to urms, with alpha=urms*k_alpha.
+!
+          case ('fixed_k_alpha')
+            frict=ekman_friction*sqrt(p%u2)
+!
+!  use alpha = jrms
+!
+          case ('current')
+            if (lmagnetic) then
+              frict=ekman_friction*sqrt(p%j2)
+            else
+              call fatal_error("duu_dt","lmagnetic must be true")
+            endif
+!
+!  Viscosity for recombination from a file.
+!
+          case ('read_ell_from_table')
+            call read_ell_from_table(ascale,ell_gam)
+            frict=ekman_friction/ell_gam
+            !if (lroot) call save_name(ell_gam,idiag_ell_gam)
+!
+!  Step profile
+!
+          case ('step', 'cs-step')
+            if (t<=t1_ekman) then
+              frict=0.
+            elseif (t<=t2_ekman) then
+              if (friction_tdep=='cs-step') then
+                frict=ekman_friction*sqrt(p%cs2)
+              else
+                frict=ekman_friction
+              endif
+            else
+              frict=0.
+            endif
+          case default
+            call fatal_error('duu_dt','no such friction_tdep: '//trim(friction_tdep))
+        endselect
+!
+!  Timestep constraint and apply damping term to momentum equation.
+!
+        maxsrc=maxsrc+maxval(frict)
+        call multsv_mn(frict,p%uu,tmpv)
+        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-tmpv
+    endsubroutine apply_ekman_friction
+!***********************************************************************
     subroutine duu_dt(f,df,p)
 !
 !  velocity evolution
@@ -4538,7 +4515,7 @@ module Hydro
 !
       use Diagnostics
       use Special, only: special_calc_hydro
-      use Sub, only: dot, dot2, identify_bcs, cross, multsv_mn_add, multsv_mn, read_ell_from_table
+      use Sub, only: dot, dot2, identify_bcs, cross, multsv_mn
       use General, only: transform_thph_yy, notanumber
       use Deriv, only: der
 !
@@ -4549,9 +4526,9 @@ module Hydro
       intent(inout) :: p
       intent(inout) :: f,df
 
-      real, dimension (nx,3) :: uu1, tmpv
+      real, dimension (nx,3) :: uu1
       real, dimension (nx) :: ftot
-      real :: hubble_factor, ell_gam, arad_normal
+      real :: hubble_factor
       integer :: j
 !
       Fmax=1./impossible
@@ -4621,61 +4598,7 @@ module Hydro
       if (lviscosity) call calc_viscous_force(df,p)
       if (lSGS_hydro) call calc_SGS_hydro_force(f,df,p)
 !
-!  Ekman Friction, used only in two dimensional runs.
-!  But it can also be used as photon drag in 3-D, for example.
-!  In that case, it would be time dependent.
-!
-      if (ekman_friction/=0) then
-        select case (friction_tdep)
-          case ('nothing')
-            frict=ekman_friction
-          case ('linear')
-            frict=ekman_friction*max(min(real(t-friction_tdep_toffset)/friction_tdep_tau0,1.),0.)
-          case ('linear_decrease')
-            frict=ekman_friction*max(1.-max(real(t-friction_tdep_toffset)/friction_tdep_tau0,0.),0.)
-          case ('inverse')
-            frict=ekman_friction/max(real(t),friction_tdep_toffset)
-          case ('Thomson')
-            arad_normal=real(4*sigmaSB/c_light)
-            frict=real(ekman_friction*fourthird*p%yH*sigma_Thomson*arad_normal*p%TT**4/(m_p*c_light))
-          case ('current')
-            if (lmagnetic) then
-              frict=ekman_friction*sqrt(p%j2)
-            else
-              call fatal_error("duu_dt","lmagnetic must be true")
-            endif
-!
-!  Viscosity for recombination from a file.
-!
-          case ('read_ell_from_table')
-            call read_ell_from_table(ascale,ell_gam)
-            frict=ekman_friction/ell_gam
-            !if (lroot) call save_name(ell_gam,idiag_ell_gam)
-!
-!  Step profile
-!
-          case ('step', 'cs-step')
-            if (t<=t1_ekman) then
-              frict=0.
-            elseif (t<=t2_ekman) then
-              if (friction_tdep=='cs-step') then
-                frict=ekman_friction*sqrt(p%cs2)
-              else
-                frict=ekman_friction
-              endif
-            else
-              frict=0.
-            endif
-          case default
-            call fatal_error('duu_dt','no such friction_tdep: '//trim(friction_tdep))
-        endselect
-!
-!  Timestep constraint and apply damping term to momentum equation.
-!
-        maxsrc=maxsrc+maxval(frict)
-        call multsv_mn(frict,p%uu,tmpv)
-        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-tmpv
-      endif
+      if (ekman_friction/=0) call apply_ekman_friction(df,p)
 !
 !  Hubble friction, here the term for supercomoving coordinates with nconf1p5.
 !  This could be steered later with the ascale_type parameter in cdata.f90.
@@ -5821,7 +5744,7 @@ module Hydro
 !  store slices for output in wvid in run.f90
 !  This must be done outside the diagnostics loop (accessed at different times).
 !
-      if (lvideo.and.lfirst) then
+      if (lvideo_first) then
         if (ivid_divu/=0) call store_slices(p%divu,divu_xy,divu_xz,divu_yz,divu_xy2,divu_xy3,divu_xy4,divu_xz2,divu_r)
         if (ivid_oo  /=0) call store_slices(p%oo,oo_xy,oo_xz,oo_yz,oo_xy2,oo_xy3,oo_xy4,oo_xz2,oo_r)
         if (ivid_u2  /=0) call store_slices(p%u2,u2_xy,u2_xz,u2_yz,u2_xy2,u2_xy3,u2_xy4,u2_xz2,u2_r)
@@ -5935,6 +5858,87 @@ module Hydro
 
     endsubroutine update_for_time_integrals_hydro
 !***********************************************************************
+    subroutine project_relativistic_conservative_admissible(f)
+!
+!  Project the relativistic conserved state onto positive fluid energy and a
+!  subluminal momentum ratio before boundary filling and communication.
+!
+!  16-sep-26/Isak: coded, with AI assistance; manually reviewed
+!
+      use Sub, only: dot2_mn
+      use Diagnostics, only: sum_name, max_name
+
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: f
+      real, dimension(nx) :: eps_loc, k0_fluid, momentum_squared
+      real, dimension(nx) :: momentum_magnitude, momentum_limit, momentum_scale
+      real, parameter :: k0_fluid_floor=1e-9, max_momentum_ratio=0.9999
+      real :: projratmax
+      integer :: j, m, n, nprojk0, nprojmom
+!
+      nprojk0=0
+      nprojmom=0
+      projratmax=0.
+!
+      do n=n1,n2
+      do m=m1,m2
+!
+!  For Higgsless hydro, eps_loc is the local, space-time-dependent vacuum
+!  energy; for an ordinary relativistic fluid it remains zero.
+!
+        eps_loc=0.
+        if (lhiggsless) then
+          if (width_hless==0.) then
+            where(real(t) < f(l1:l2,m,n,ihless)) eps_loc=eps_hless
+          else
+            eps_loc=real(eps_hless*max(0.d0, min(1.d0, &
+              (f(l1:l2,m,n,ihless)+0.5d0*width_hless_absolute-t)/width_hless_absolute)))
+          endif
+        endif
+!
+!  Enforce K0 >= eps + k0_fluid_floor, then recover the fluid-only energy.
+!
+        if (ldiagnos) nprojk0=nprojk0+count(f(l1:l2,m,n,irho) < eps_loc+k0_fluid_floor)
+        f(l1:l2,m,n,irho)=max(f(l1:l2,m,n,irho),eps_loc+k0_fluid_floor)
+        k0_fluid=f(l1:l2,m,n,irho)-eps_loc
+!
+!  For the bag EOS, v<1 is equivalent to |K^i|<K0-eps. Preserve the momentum
+!  direction while limiting its magnitude to the configured fraction of K0-eps.
+!
+        call dot2_mn(f(l1:l2,m,n,iux:iuz),momentum_squared)
+        momentum_magnitude=sqrt(max(momentum_squared,tini))
+        momentum_limit=max_momentum_ratio*k0_fluid
+        momentum_scale=min(1.0,momentum_limit/momentum_magnitude)
+        do j=0,2
+          f(l1:l2,m,n,iux+j)=f(l1:l2,m,n,iux+j)*momentum_scale
+        enddo
+!
+!  momentum_scale and momentum_magnitude still hold the pre-rescale
+!  values here, so projratmax is the ratio the scheme itself produced.
+!
+!
+!  Use the raw |K^i| here, not momentum_magnitude: the tini in the latter is only
+!  there to protect the division above, and at rest it would report a ratio of
+!  order sqrt(tini)/k0_fluid ~ 1e-154, which Fortran's E12.4 prints without the
+!  "E" (5.0032-154) and no reader can parse. The raw value is exactly 0 at rest.
+!
+        if (ldiagnos) then
+          nprojmom=nprojmom+count(momentum_scale < 1.0)
+          projratmax=max(projratmax,maxval(sqrt(momentum_squared)/k0_fluid))
+        endif
+      enddo
+      enddo
+!
+!  ldiagnos is true on the FIRST substep of an output step only, so
+!  the counts below are per-substep, not summed over the three RK substeps.
+!
+      if (ldiagnos) then
+        call sum_name(nprojk0,idiag_nprojk0)
+        call sum_name(nprojmom,idiag_nprojmom)
+        call max_name(projratmax,idiag_projratmax)
+      endif
+!
+    endsubroutine project_relativistic_conservative_admissible
+!***********************************************************************
     subroutine hydro_after_boundary_conservative(f)
 !
 !  In the conservative case, we calculate the Lorentz gamma squared and Tij here,
@@ -5962,48 +5966,11 @@ module Hydro
       real :: dely, delz
       integer ::  iter_relB,j,jhless
       real, dimension (mx,3) :: ss
-      real, dimension (mx) :: eps_loc, k0e_proj, floor_proj, scal_proj
 
       if (iTij==0) call fatal_error("hydro_after_boundary","must compute Tij for lconservative")
 
       do n=1,mz
       do m=1,my
-!
-!  Cell-level admissibility projection of the conserved (K0,K^i) state (opt-in).
-!  Port of jax project_admissible applied to the CELL state each substep, using
-!  the local, space-time-dependent eps(t,x) (eps_hless outside a bubble wall,
-!  0 inside, smoothed over width_hless_absolute). Floors K0-eps positive and
-!  rescales the momentum so |K^i| <= (1-margin)(K0-eps) (v<1). Identity on
-!  admissible states; without it, strong multibubble collisions drive the cell
-!  state superluminal (|K^i|>K0-eps) until it NaNs.
-        if (lhiggsless .and. lhiggsless_project) then
-          if (width_hless==0.) then
-            eps_loc=0.
-            where(real(t) < f(:,m,n,ihless)) eps_loc=eps_hless
-          else
-            eps_loc=real(eps_hless*max(0.d0, min(1.d0, &
-              (f(:,m,n,ihless)+0.5d0*width_hless_absolute-t)/width_hless_absolute)))
-          endif
-!
-!  Internal positivity floor for the fluid energy K0-eps: purely a guard against
-!  division by (near-)zero in the subsequent cons2prim on essentially-vacuum
-!  cells, not a tunable. Scale-aware (relative to 1+|eps|) so that it remains
-!  representable next to an O(1) eps in floating point.
-!
-          floor_proj=1e-6*(1.0+abs(eps_loc))
-          k0e_proj=max(f(:,m,n,irho)-eps_loc, floor_proj)
-          f(:,m,n,irho)=k0e_proj+eps_loc
-          call dot2_mx(f(:,m,n,iux:iuz),ss2)
-!
-!  Causality rescale: cap |K^i| at (1-hless_proj_margin)*(K0-eps), i.e. just
-!  inside the light cone (|K^i|=K0-eps <=> v=1); min(1,...) makes this the
-!  identity on admissible cells. tini only guards sqrt(0) at |K|=0.
-!
-          scal_proj=min(1.0, (1.0-hless_proj_margin)*k0e_proj/sqrt(max(ss2,tini)))
-          do j=0,2
-            f(:,m,n,iux+j)=f(:,m,n,iux+j)*scal_proj
-          enddo
-        endif
         if (ldensity) then
           if (lmagnetic) then
             if (ibx==0) call fatal_error("hydro_after_boundary","must use lbb_as_comaux=T")
@@ -6318,7 +6285,7 @@ module Hydro
           do j=1,3
             do n=1,mz
               f(:,:,n,iuu+j-1) = f(:,:,n,iuu+j-1)-uumz(n,j)
-! PC: The line commented below is for damping box modes of convection. 
+! PC: The line commented below is for damping box modes of convection.
 !              if (z(n) .lt. 0.0) f(:,:,n,iuu+j-1) = f(:,:,n,iuu+j-1)-rescale_uu*uumz(n,j)
             enddo
           enddo
@@ -7064,7 +7031,7 @@ module Hydro
       read(parallel_unit, NML=hydro_run_pars, IOSTAT=iostat, IOMSG=iomsg)
       if (iostat==0) iomsg=""
 !
-      if (lSGS_hydro) call read_SGS_hydro_run_pars(iomsg)      
+      if (lSGS_hydro) call read_SGS_hydro_run_pars(iomsg)
 !
     endsubroutine read_hydro_run_pars
 !***********************************************************************
@@ -7644,6 +7611,9 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'gamrms',idiag_gamrms)
         call parse_name(iname,cname(iname),cform(iname),'gammax',idiag_gammax)
         call parse_name(iname,cname(iname),cform(iname),'gam2min',idiag_gam2min)
+        call parse_name(iname,cname(iname),cform(iname),'nprojk0',idiag_nprojk0)
+        call parse_name(iname,cname(iname),cform(iname),'nprojmom',idiag_nprojmom)
+        call parse_name(iname,cname(iname),cform(iname),'projratmax',idiag_projratmax)
         call parse_name(iname,cname(iname),cform(iname),'u2tm',idiag_u2tm)
         call parse_name(iname,cname(iname),cform(iname),'uotm',idiag_uotm)
         call parse_name(iname,cname(iname),cform(iname),'outm',idiag_outm)
@@ -8303,7 +8273,7 @@ module Hydro
 
         case ('hless')
           call assign_slices_scal(slices,hless_xy,hless_xz,hless_yz,hless_xy2,hless_xy3,hless_xy4,hless_xz2,hless_r)
-         
+
         case ('Ft')
           call assign_slices_scal(slices,Ft_xy,Ft_xz,Ft_yz,Ft_xy2,Ft_xy3,Ft_xy4,Ft_xz2,Ft_r)
 
@@ -8444,11 +8414,12 @@ module Hydro
 !
       real, contiguous, dimension(:,:,:,:) :: f
       real, contiguous, dimension(:,:,:,:) :: df
-      real, dimension (nx,ny) :: acyl_re,acyl_im
+      real, dimension(:,:), allocatable, save :: acyl_re, acyl_im
       real, dimension (nz) :: asph_re,asph_im
       real, dimension (nx) :: phidot
       integer :: ivar,ig,i
       real :: dt_
+      if (.not.allocated(acyl_re)) allocate(acyl_re(nx,ny), acyl_im(nx,ny))
 !
 !  Pencil uses linear velocity. Fargo will shift based on
 !  angular velocity. Get phidot from uphi.
@@ -8538,10 +8509,11 @@ module Hydro
       use Mpicomm, only: mpibcast_real, mpireduce_sum, IXBEAM, IYBEAM
 !
       logical,save :: first=.true.
-      real, dimension (nx,ny) :: fsumxy
+      real, dimension(:,:), allocatable, save :: fsumxy
       real, dimension (nx) :: uxmx,uymx,uzmx,umx2
       real, dimension (ny) :: uxmy,uymy,uzmy,umy2
       real :: umx,umy,umz
+      if (.not.allocated(fsumxy)) allocate(fsumxy(nx,ny))
 !
 !  Magnetic energy in vertically averaged field. The uymxy and uzmxy must
 !  have been calculated, so they are present on the z-root processors.
@@ -8860,7 +8832,7 @@ module Hydro
 !
 !  Compute inverse density, rho1.
 !
-        !!$omp target if (loffload) data map(to: rum) has_device_addr(f) 
+        !!$omp target if (loffload) data map(to: rum) has_device_addr(f)
         !shared: lref, indrhol
         !!$omp teams distribute parallel do collapse(2) private(rho1)
         do n = n1,n2
@@ -8988,6 +8960,206 @@ module Hydro
       endselect
 !
     endsubroutine interior_bc_hydro
+!***********************************************************************
+    subroutine set_profile_diffrot(uuprof)
+!
+!  28 Sep 26 Jamie: Carved out from init_hydro
+!  Preparations for adding/removing mean flows.
+!  Set profiles for forcing differential rotation.
+!
+    Use Sub, only: erfunc, step
+!
+    real :: slope,uinn,uext,zbot
+    character :: uuprof
+!
+      select case (uuprof)
+
+      case ('BS04')
+        if (wdamp/=0.) then
+          prof_amp1=1.-step(x(l1:l2),rdampint,wdamp)
+        else
+          prof_amp1=1.
+        endif
+        prof_amp1=ampl1_diffrot*prof_amp1*cos(kx_diffrot*x(l1:l2))**xexp_diffrot
+        prof_amp3=cos(z)
+
+      case ('BS04c','BS04c1','HP09')
+
+        if (wdamp/=0.) then
+          prof_amp3=ampl1_diffrot*0.5*(1.+tanh((z-rdampint)/(wdamp)))
+        else
+          prof_amp3=ampl1_diffrot
+        endif
+
+        if (uuprof=='BS04c') then
+          prof_amp1=sin(0.5*pi*((x(l1:l2))-x0)/Lx)**xexp_diffrot
+        elseif (uuprof=='BS04c1') then
+          prof_amp1=sin(pi*((x(l1:l2))-x0)/Lx)**xexp_diffrot
+        elseif (uuprof=='HP09') then
+          prof_amp1=cos(kx_diffrot*x(l1:l2))
+!or       prof_amp1=cos(2.*pi*kx_diffrot*(x(l1:l2)-x0)/Lx)
+        endif
+
+      case ('BS04m')
+        if (wdamp/=0.) then
+          prof_amp1=1.-step(x(l1:l2),rdampint,wdamp)
+        else
+          prof_amp1=1.
+        endif
+        prof_amp1=ampl1_diffrot*prof_amp1*sin((pi/(2.*x(l2)))*x(l1:l2))
+        prof_amp4=cos(pi/(2.*y(m2))*y)
+
+      case ('solar_DC99')
+        prof_amp1=(1.-ampl1_diffrot*step(x(l1:l2),rdampext,wdamp))*step(x(l1:l2),rdampint,wdamp)*x(l1:l2)
+        prof_amp4=ampl2_diffrot*(1.064-0.145*costh**2-0.155*costh**4-1.)*sinth
+
+      case ('vertical_shear')
+        zbot=xyz0(3)
+        prof_amp3=ampl1_diffrot*cos(kz_diffrot*(z-zbot)-phase_diffrot)
+
+      case ('vertical_compression','vertical_shear_x')
+        zbot=xyz0(3)
+        prof_amp3=ampl1_diffrot*cos(kz_diffrot*(z-zbot))
+
+      case ('remove_vertical_shear')
+        if (.not.lcalc_uumean) &
+          call fatal_error("initialize_hydro","you need to set lcalc_uumean=T for uuprof='remove_vertical_shear'")
+
+      case ('damp_mean_uz_prof_bdr')
+        if (.not.lcalc_uumeanz) &
+          call fatal_error("initialize_hydro","you need to set lcalc_uumeanz=T for uuprof='remove_mean_uz_prof'")
+        prof_amp3=1.-tanh((z-zdampint)/width_ff_uu)
+
+      case ('vertical_shear_x_sinz')
+        zbot=xyz0(3)
+        where (z <= 0.)
+          prof_amp3=ampl1_diffrot*sin(.5*pi/abs(zbot)*z)
+        elsewhere
+          prof_amp3=0.
+        endwhere
+
+      case ('vertical_shear_z')
+        prof_amp3=ampl1_diffrot*tanh((z-rdampint)/width_ff_uu)
+
+      case ('vertical_shear_z2')
+        if (.not.lcalc_uumeanxz) &
+          call fatal_error("initialize_hydro","you need to set lcalc_uumeanxz=T for uuprof='vertical_shear_z2'")
+        prof_amp3=ampl1_diffrot*tanh((z-rdampint)/width_ff_uu)
+
+      case ('vertical_shear_linear')
+        if (.not.lcalc_uumeanxz) &
+          call fatal_error("initialize_hydro","you need to set lcalc_uumeanxz=T for uuprof='vertical_shear_linear'")
+        prof_amp3=ampl1_diffrot*z
+
+      case ('tachocline')
+        if (wdamp/=0.) then
+          prof_amp1=1.-step(x(l1:l2),rdampint,wdamp)
+        else
+          prof_amp1=1.
+        endif
+      case ('solar_simple')
+        if (lspherical_coords) then
+          prof_amp1=ampl1_diffrot*step(x(l1:l2),x1_ff_uu,width_ff_uu)
+          prof_amp4=1.5-7.5*costh*costh
+        elseif (lcartesian_coords) then
+          prof_amp1=ampl1_diffrot*cos(x(l1:l2))
+          prof_amp4=cos(y)*cos(y)
+        !prof_amp2=1.-step(x(l1:l2),x2_ff_uu,width_ff_uu)
+        else
+          call not_implemented("initialize_hydro", &
+                          "uuprof='solar_simple' for other than spherical or Cartesian coordinates")
+        endif
+      case ('radial_uniform_shear')
+        uinn = omega_in*x(l1)
+        uext = omega_out*x(l2)
+        slope = (uext - uinn)/(x(l2)-x(l1))
+        prof_amp1=slope*x(l1:l2)+(uinn*x(l2)- uext*x(l1))/(x(l2)-x(l1))
+
+      case ('breeze')
+        prof_amp3=ampl_wind*z/(2.*pi)
+
+      case ('slow_wind')
+        prof_amp3=ampl_wind*(1.+tanh((z-rdampext)/wdamp))
+
+      case ('radial_shear')
+        if (.not.lcalc_uumeanxy) &
+          call fatal_error("initialize_hydro","you need to set lcalc_uumeanxy=T for uuprof='radial_shear'")
+        prof_amp1=ampl1_diffrot*cos(2*pi*k_diffrot*(x(l1:l2)-x0)/Lx)
+
+      case ('radial_shear_damp')
+        if (.not.lcalc_uumeanxy) &
+          call fatal_error("initialize_hydro","you need to set lcalc_uumeanxy=T for uuprof='radial_shear_damp'")
+        prof_amp1=ampl1_diffrot*tanh((x(l1:l2)-rdampint)/wdamp)
+
+      case ('damp_corona')
+        if (lspherical_coords) then
+          if (.not.lcalc_uumeanxy) &
+            call fatal_error("initialize_hydro","you need to set lcalc_uumeanxy=T for uuprof='damp_corona'")
+          prof_amp1=0.5*(tanh((x(l1:l2)-rdampext)/wdamp)+1.)
+        elseif (lcartesian_coords) then
+          prof_amp3=0.5*(tanh((z-rdampext)/wdamp)+1.)
+        endif
+
+      case ('damp_horiz_vel')
+        prof_amp3=0.5*(tanh((z-rdampext)/wdamp)+1.)
+
+      case ('latitudinal_shear')
+        if (.not.lcalc_uumeanxy) &
+          call fatal_error("initialize_hydro","you need to set lcalc_uumeanxy=T for uuprof='latitudinal_shear'")
+        prof_amp4=ampl1_diffrot*cos(2.*pi*k_diffrot*(y-y0)/Ly)
+
+      case ('damp_jets')
+        if (.not.lcalc_uumeanxy) &
+          call fatal_error("initialize_hydro","you need to set lcalc_uumeanxy=T for uuprof='damp_jets'")
+        prof_amp4=1.-0.5*(1.+tanh((y-(y0+ydampint))/wdamp)-(1.+tanh((y-(y0+Lxyz(2)-ydampext))/wdamp)))
+
+      case ('spoke-like-NSSL')
+        if (.not.lspherical_coords) call warning("initialize_hydro", &
+                       "uuprof='spoke-like-NSSL' only meningful for spherical coordinates")
+        if (.not.lcalc_uumeanxy) &
+          call fatal_error("initialize_hydro","you need lcalc_uumeanxy=T for uuprof='spoke-like-NSSL'")
+
+        prof_amp1=ampl1_diffrot*x(l1:l2)
+        profx_diffrot1=+0.5*(1.+erfunc(((x(l1:l2)-uphi_rbot)/uphi_step_width)))
+        profx_diffrot2=+0.5*(1.-erfunc(((x(l1:l2)-uphi_rtop)/uphi_step_width)))
+        profx_diffrot3=+0.5*(1.+erfunc(((x(l1:l2)-uphi_rtop)/uphi_step_width)))
+        profx_diffrot2=(x(l1:l2)-uphi_rbot)*profx_diffrot1*profx_diffrot2 !(redefined)
+        profy_diffrot1=-1.5*(5.*costh**2-1.)
+        profy_diffrot2=-1.0*(4.*costh**2-3.)
+        profy_diffrot3=-1.0
+        profz_diffrot1=+1.
+!
+      case ('galactic-Brandt-curve')
+        if (.not.lspherical_coords) call warning("initialize_hydro", &
+                       "uuprof='galactic-Brandt-curve' currently only for spherical coordinates")
+        if (.not.lcalc_uumeanxy) &
+          call fatal_error("initialize_hydro","you need lcalc_uumeanxy=T for uuprof='galactic-Brandt-curve'")
+!
+        prof_amp1=ampl1_diffrot*x(l1:l2)/(1.+(x(l1:l2)/uphi_step_width)**3)**onethird
+!
+      case ('uumz_profile')
+        if (.not.lcalc_uumeanz) then
+          call fatal_error("initialize_hydro","you need to set lcalc_uumean=T for uuprof='uumz_profile'")
+        else
+          if (.not.lgravz) &
+            call fatal_error("initialize_hydro","gravitation in z-direction (lgravz=T) needed for uuprof='uumz_profile'")
+          call read_uumz_profile(uumz_prof)
+        endif
+
+      case ('omega_profile')
+        if (.not.lspherical_coords) call warning("initialize_hydro", &
+                       "uuprof='omega_profile' only meaningful for spherical coordinates")
+        if (.not.lcalc_uumeanxy) &
+          call fatal_error("initialize_hydro","you need to set lcalc_uumeanxy=T for uuprof='omega_profile'")
+        call read_omega_profile(omega_prof)
+
+      case ('nothing')
+
+      case default
+         call fatal_error("initialize_hydro","no such profile of mean flow: "//trim(uuprof))
+      endselect
+
+    endsubroutine set_profile_diffrot
 !***********************************************************************
     subroutine impose_profile_diffrot(f,df,prof_diffrot,ldiffrot_test)
 !
@@ -9242,6 +9414,190 @@ module Hydro
       endselect
 !
     endsubroutine impose_profile_diffrot
+
+!***********************************************************************
+    subroutine background_profile(f,uuprof)
+!
+!Sets the f-array index iuubx:iuubz accoding to the relevant profile
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      character (len=labellen)           :: uuprof
+!
+      integer :: l, n, m
+      real    :: sigma_z2, xmid
+!
+      !Make sure that the vertical gradient is positive as it is subtracted below
+      vertical_gradient = -abs(vertical_gradient)
+      !Centre of the frame xmid, corresponds to r_f
+      xmid = xyz0(1)+lxyz(1)/2
+      !We also define the standard deviation in terms of the input parameter vertical_gradient
+      sigma_z2 = ((Omega*xmid)/vertical_gradient)*(1.0 - exp(-1.0))
+!
+      !Omega_f is the value of Omega x r at r=r_f, z=0
+      !If the frame is rotating (lism_rotation=T) the frame is rotating at rate Omega_f
+      do m=m1-nghost,m2+nghost; do n=n1-nghost,n2+nghost
+        !Initialises the uprof to zero
+        f(:,m,n,iuubx:iuubz) = 0
+        select case (uuprof)
+        !Omega(r) = Omega_0 const.
+        case('solid_body')
+          if (lroot .and. m==m1-nghost .and. n==n1-nghost) print*, 'background profile: solid body'
+          if (.not.lism_rotation) then
+            lub_x = .true.
+            f(:,m,n,iuuby) = Omega*x(:)
+          !If lism_rotation, the frame is moving with rate Omega so the background profile is 0
+          endif
+        case('solid_body_linear_z')
+          if (lroot .and. m==m1-nghost .and. n==n1-nghost) print*, 'background profile: solid body, linear z decay', &
+                 'gradient =', vertical_gradient
+          lub_z = .true.
+          if (lism_rotation) then
+            f(:,m,n,iuuby) = -vertical_gradient*abs(z(n))
+          else
+            lub_x = .true.
+            f(:,m,n,iuuby) = Omega*x(:)-vertical_gradient*abs(z(n))
+          endif
+        case('solid_body_exp_z')
+          if (lroot .and. m==m1-nghost .and. n==n1-nghost) print*, 'background profile: solid body, Gaussian z decay', &
+                  'sigma =', sqrt(sigma_z2)
+          lub_z = .true.
+          lub_x = .true.
+          if (lism_rotation) then
+            f(:,m,n,iuuby) = x(:)*Omega * (exp(-(z(n)**2)/sigma_z2) - 1)
+          else
+            f(:,m,n,iuuby) = x(:)*Omega * exp(-(z(n)**2)/sigma_z2)
+          endif
+        !Omega(r) = v_0/r
+        case('radial_uniform_shear')
+          if (lroot .and. m==m1-nghost .and. n==n1-nghost) print*, 'background profile: radial uniform shear'
+          if (lism_rotation) then
+            lub_x = .true.
+            f(:,m,n,iuuby) = Omega*(xmid-x(:))
+          else
+            f(:,m,n,iuuby) = Omega*xmid
+          endif
+        case('radial_uniform_shear_linear_z','RUS_linear_z') !RUS = radial uniform shear
+          lub_z = .true.
+          if (lroot .and. m==m1-nghost .and. n==n1-nghost) print*, 'background profile: solid body, linear z decay', &
+                 'gradient =', vertical_gradient
+          if (lism_rotation) then
+            lub_x = .true.
+            f(:,m,n,iuuby) = Omega*(xmid-x(:)) - vertical_gradient*abs(z(n))
+          else
+            f(:,m,n,iuuby) = Omega*xmid - vertical_gradient*abs(z(n))
+          endif
+        case('radial_uniform_shear_exp_z','RUS_exp_z') !RUS = radial uniform shear
+          lub_z = .true.
+          if (lroot .and. m==m1-nghost .and. n==n1-nghost) print*, 'background profile: solid body, Gaussian z decay', &
+                  'sigma =', sqrt(sigma_z2)
+          if (lism_rotation) then
+            lub_x = .true.
+            f(:,m,n,iuuby) = Omega*(xmid*exp(-(z(n)**2)/sigma_z2) -x(:))
+          else
+            f(:,m,n,iuuby) = Omega*xmid*exp(-(z(n)**2)/sigma_z2)
+          endif
+        case ('const_shear')
+        !This gives a constant shear r d Omega/d r
+        !The constant shear is Omega, no sense making a new constant
+          if (lism_rotation) then
+            f(:,m,n,iuuby) = x(:) * Omega * log(x(:)/xmid)
+          else
+            f(:,m,n,iuuby) = x(:) * Omega * log(x(:))
+          endif
+        case ('nothing')
+          if (lroot .and. m==m1-nghost .and. n==n1-nghost) print*, 'background profile: nothing'
+        !Leave uub = zero, essentially equivalent to the frame not rotating at all
+        case ('test1')
+        !A rotating frame over a stationary fluid to give
+          lub_z = .true.
+          f(:,m,n,iuubx) = -vertical_gradient * abs(z(n))
+        !Raise error if no uuprof specified
+        case default
+           call fatal_error("initialize_hydro","no such profile of mean flow: "//trim(uuprof))
+        endselect
+      enddo; enddo
+!
+    endsubroutine background_profile
+!***********************************************************************
+    subroutine calc_ubij(uuprof,ubij,m,n)
+!
+!Calculates the gradient of the background flow
+!If the profile only depends on x, this is called once at start up
+!Otherwise, it is called within the m, n loop every time it is required
+!This is NOT the full gradient in non-cartesian coordinates, this is du_i/dx_j
+!
+      character (len=labellen)           :: uuprof
+      real, dimension(nx,3,3)            :: ubij
+!
+      integer :: l, n, m
+      real    :: sigma_z2, xmid
+!
+      !Centre of the frame xmid, corresponds to r_f
+      xmid = xyz0(1)+lxyz(1)/2
+      !We also define the standard deviation in terms of the input parameter vertical_gradient
+      sigma_z2 = ((Omega*xmid)/vertical_gradient)*(1.0 - exp(-1.0))
+!
+      !Omega_f is the value of Omega x r at r=r_f, z=0
+      !If the frame is rotating (lism_rotation=T) the frame is rotating at rate Omega_f
+      select case (uuprof)
+      !Omega(r) = Omega_0 const.
+      case('solid_body')
+        if (.not.lism_rotation) then
+          ubij(:,2,1) = Omega
+        !If lism_rotation, the frame is moving with rate Omega so the background profile is 0
+        endif
+      case('solid_body_linear_z')
+        if (lism_rotation) then
+          ubij(:,2,3) = -vertical_gradient*sign(1.0,z(n))
+        else
+          ubij(:,2,1) = Omega
+          ubij(:,2,3) = -vertical_gradient*sign(1.0,z(n))
+        endif
+      case('solid_body_exp_z')
+        if (lism_rotation) then
+          ubij(:,2,1) = Omega * (exp(-(z(n)**2)/sigma_z2) - 1)
+          ubij(:,2,3) = (2*x(l1:l2)*Omega*z(n)*exp(-(z(n)**2)/sigma_z2))/sigma_z2
+        else
+          ubij(:,2,1) = Omega * exp(-(z(n)**2)/sigma_z2)
+          ubij(:,2,3) = (2*x(l1:l2)*Omega*z(n)*exp(-(z(n)**2)/sigma_z2))/sigma_z2
+        endif
+      !Omega(r) = v_0/r
+      case('radial_uniform_shear')
+        if (lism_rotation) then
+          ubij(:,2,1) = -Omega
+        !In the inertial frame uphi is constant so its gradient is zero
+        endif
+      case('radial_uniform_shear_linear_z','RUS_linear_z') !RUS = radial uniform shear
+        if (lism_rotation) then
+          ubij(:,2,1) = -Omega
+          ubij(:,2,3) = -vertical_gradient*sign(1.0,z(n))
+        else
+          ubij(:,2,3) = -vertical_gradient*sign(1.0,z(n))
+        endif
+      case('radial_uniform_shear_exp_z','RUS_exp_z') !RUS = radial uniform shear
+        if (lism_rotation) then
+          ubij(:,2,1)    = -Omega
+          ubij(:,2,3)    = (2*xmid*Omega*z(n)*exp(-(z(n)**2)/sigma_z2))/sigma_z2
+        else
+          ubij(:,2,3) = (2*xmid*Omega*z(n)*exp(-(z(n)**2)/sigma_z2))/sigma_z2
+        endif
+      case ('const_shear')
+        if (lism_rotation) then
+          ubij(:,2,1) = Omega*(log(x(l1:l2)/xmid) + 1)
+        else
+          ubij(:,2,1) = Omega*(log(x(l1:l2)) + 1)
+        endif
+      case ('nothing')
+      !Leave uub = zero, essentially equivalent to the frame not rotating at all
+      case ('test1')
+      !A rotating frame over a stationary fluid to give
+        ubij(:,2,1) = -Omega
+      !Raise error if no uuprof specified
+      case default
+         call fatal_error("initialize_hydro","no such profile of mean flow: "//trim(uuprof))
+      endselect
+!
+    endsubroutine calc_ubij
 !***********************************************************************
     subroutine read_uumz_profile(uumz_prof)
 !
@@ -9694,13 +10050,18 @@ module Hydro
     call copy_addr(it31,p_par(146)) ! int
     call copy_addr(it32,p_par(147)) ! int
     call copy_addr(it33,p_par(148)) ! int
-
     call copy_addr(lkt_transport,p_par(150)) ! bool
 
     call copy_addr(lt0i_total,p_par(151)) ! bool
     call copy_addr(lvel_limiter,p_par(152)) ! bool
     call copy_addr(llorentz_limiter,p_par(153)) ! bool
     call copy_addr(max_vel,p_par(154)) ! real dconst
+    call copy_addr(lub_y,p_par(155)) ! bool
+    call copy_addr(lub_z,p_par(156)) ! bool
+    call copy_addr(vertical_gradient,p_par(157))
+    call copy_addr(lu_background,p_par(158)) ! bool
+    call copy_addr(lism_rotation,p_par(158)) ! bool
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Hydro
+

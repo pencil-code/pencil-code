@@ -16,3 +16,4 @@ POWER    =   power_spectrum
 #SPECIAL  =   special/gravitational_waves_hij6
 SPECIAL  =   special/gravitational_waves_hTXk
 #REAL_PRECISION=double
+DYNAMIC_AUX = yes

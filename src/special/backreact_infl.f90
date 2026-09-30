@@ -87,6 +87,7 @@ module Special
 !
 !  integer :: iinfl_phi=0, iinfl_dphi=0, iinfl_hubble=0, iinfl_lna=0, Ndiv=100
   integer :: iinfl_phi=0, iinfl_dphi=0, iinfl_lna=0, iinfl_tph=0, Ndiv=100
+  integer :: iaae=0
   integer :: iinfl_rho_chi=0, iinfl_rho_rad=0
   integer :: it1_reset_value=0  !PAR_DOC: new it1 value after lit1_reset
   real :: ncutoff_phi=1., infl_v=.1
@@ -324,11 +325,14 @@ module Special
 !  06-oct-03/tony: coded
 !
       use SharedVariables, only: get_shared_variable
-      use FArrayManager, only: farray_index_by_name_ode
+      use FArrayManager, only: farray_index_by_name,farray_index_by_name_ode
       use Messages, only: warning
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: iLCDM_lna
+!
+      iaae =farray_index_by_name('aae')
+      if (iaae<0) iaae=0
 !
       if (lflrw) then
         iLCDM_lna=farray_index_by_name_ode('iLCDM_lna')
@@ -436,12 +440,11 @@ module Special
       use Initcond, only: gaunoise, sinwave_phase, hat, power_randomphase_hel, power_randomphase, bunch_davies
       use Mpicomm, only: mpibcast_real
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: Vpotential, Hubble_ini, infl_gam, amplphi_BD, amplee_BD, deriv_prefactor
       integer :: j
       real :: lnascale
 !
-      intent(inout) :: f
 !
       do j=1,ninit
         select case (initspecial(j))
@@ -636,11 +639,9 @@ module Special
 !
       use Sub, only: grad
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
 !
-      intent(in) :: f
-      intent(inout) :: p
 !
 ! infl_phi
       if (lpencil(i_infl_phi)) p%infl_phi=f(l1:l2,m,n,iinfl_phi)
@@ -713,17 +714,15 @@ module Special
       use Diagnostics, only: sum_mn_name, max_mn_name, save_name
       use Sub, only: dot_mn, dot2_mn, del2, grad, multvs
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
       real, dimension (nx,3) :: gphi, tmpv
       real, dimension (nx) :: Vprime, Vpotential, a2rhophi, a4rhophi
       real, dimension (nx) :: tmp, del2phi, gphi2, Gamma_phi_rho_rhs
 !AB: gphi2 should be pencil (to check)
       real :: pref_Vprime=1., pref_Hubble=2., pref_del2=1., pref_alpf, pref_Gamma=impossible
-      type (pencil_case) :: p
 !
-      intent(in) :: f,p
-      intent(inout) :: df
 !
 !  Identify module and boundary conditions.
 !
@@ -1070,7 +1069,7 @@ module Special
 !
       use Diagnostics 
       
-      real, dimension(n_odevars), intent(in) :: f_ode
+      real, dimension(n_odevars) :: f_ode
       real :: rho_chi, rho_rad, lnascale, tph=0.
       real :: Hscript_diagnos
 !
@@ -1131,7 +1130,7 @@ module Special
 !
       use Diagnostics
 
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
 
       call keep_compiler_quiet(f)
@@ -1155,7 +1154,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -1175,7 +1174,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -1199,8 +1198,9 @@ module Special
 !
       use Diagnostics, only: parse_name
 !
+      logical :: lreset
+      logical, optional :: lwrite
       integer :: iname
-      logical :: lreset,lwrite
 
       call keep_compiler_quiet(lwrite)
 !
@@ -1268,8 +1268,8 @@ module Special
 !
       use IO, only: read_persist, lun_input
 !
-      integer, intent(in) :: id
-      logical, intent(inout) :: done
+      integer :: id
+      logical :: done
 !
       select case (id)
         case (id_record_LHEATING_ALWAYS)
@@ -1448,7 +1448,7 @@ module Special
       use Mpicomm, only: mpireduce_sum, mpiallreduce_sum, mpibcast_real, mpibcast_int
       use Sub, only: dot2_mn, grad, curl, dot_mn
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: tmp, sigE1m, sigB1m, rho_rad, Hscript_prev=0.
 !
 ! TP: to avoid code duplication could this function not be combined with the copy of it in
@@ -1719,8 +1719,8 @@ module Special
 !
       use Slices_methods, only: assign_slices_vec
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      type (slice_data) :: slices
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(slice_data) :: slices
 !
 !  Loop over slices
 !
@@ -1747,6 +1747,7 @@ module Special
       real, dimension (nx) :: a2rhopphi, tmp
       real, dimension (nx) :: ddota, phi, Vpotential, edotb, sigE1, sigB1
       real, dimension (nx) :: boost, gam_EB, eprime, bprime, jprime1
+      integer :: i,j
 !
 !  if requested, calculate here <dphi**2+gphi**2+(4./3.)*(E^2+B^2)/a^2>
 !  rhop is purely an output quantity
@@ -1815,7 +1816,18 @@ module Special
 !  This method is currently not used.
 !
         if (iex/=0) then
-          el=f(l1:l2,m,n,iex:iez)
+!
+!    We solve for A_e, the electric vector potential of Pi = E + alphaf*phi*B.
+!    This way div(Pi) = div(curl(A_e)) = 0, the same we do for the vector potential.
+!
+          if (iaae>0) then
+            call curl(f,iaae,el)
+            do i=1,3
+              el(:,i)=el(:,i)-alpf*f(l1:l2,m,n,iinfl_phi)*bb(:,i)
+            enddo
+          else
+            el=f(l1:l2,m,n,iex:iez)
+          endif
         else
           el=0.
         endif

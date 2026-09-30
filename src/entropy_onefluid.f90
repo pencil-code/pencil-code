@@ -451,7 +451,7 @@ module Energy
 !
       if (lspecial) call special_calc_energy(f,df,p)
 !
-      if (lhydro.and.ldensity.and.lupdate_courant_dt) advec_cs2=p%advec_cs2
+      if (lhydro.and.ldensity.and.lupdate_courant_dt) advec_cs2=max(advec_cs2,p%advec_cs2)
 !
       call calc_diagnostics_energy(f,p)
 

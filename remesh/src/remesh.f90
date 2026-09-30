@@ -69,6 +69,8 @@ program remesh
   integer :: i,j,k,itx=1,ity=1,itz=1
   integer :: kk,jj,ii,cpu
   integer :: dummy,ipxx,ipyy,ipzz
+  integer :: maux_run
+  integer, dimension(6) :: dims_run
   integer :: mxout_grid,myout_grid,mzout_grid
   integer :: addx, addy, addz
   integer :: iproc_new, cpu_count=1
@@ -85,6 +87,13 @@ program remesh
   real, dimension (mmx_grid) :: rx,rdx_1,rdx_tilde
   real, dimension (mmy_grid) :: ry,rdy_1,rdy_tilde
   real, dimension (mmz_grid) :: rz,rdz_1,rdz_tilde
+!
+!  Common extents of the collected and the new grid. They are equal when the
+!  resolution is not changed in that direction (remesh_par[xyz]=1), which is
+!  the only case in which the arrays are copied; using them keeps the copies
+!  conformable at compile time also when remesh_par[xyz]>1.
+!
+  integer, parameter :: mxc=min(mmx_grid,mxcoll), myc=min(mmy_grid,mycoll), mzc=min(mmz_grid,mzcoll)
   real, dimension (mmx,mprocs) :: rrx,rrdx_1,rrdx_tilde
   real, dimension (mmy,mprocs) :: rry,rrdy_1,rrdy_tilde
   real, dimension (mmz,mprocs) :: rrz,rrdz_1,rrdz_tilde
@@ -231,17 +240,21 @@ program remesh
   endif
 9 if ( overwrite == 'yes') then
 !
-! Read global dim.dat in order to find precision
+! Read global dim.dat in order to find precision and the number of
+! auxiliaries of the run. The latter is not known at compile time with
+! DYNAMIC_AUX=yes, where maux is only the declared initial value.
 !
     if (lroot) then
       call safe_character_assign(dimfile,trim(datadir)//'/dim.dat')
       if (ip<8) print*,'Reading '//trim(dimfile)
       open(1,FILE=dimfile,FORM='formatted')
-      read(1,*) dummy
+      read(1,*) dims_run        ! mx,my,mz,mvar,maux,mglobal
       read(1,*) prec
       close(1)
+      maux_run=dims_run(5)
     endif
     call mpibcast(prec)
+    call mpibcast(maux_run)
 !
 !  Determine proc layouts
 !
@@ -285,7 +298,7 @@ program remesh
       call safe_character_assign(dimfile, trim(destination)//'/'//trim(datadir)//'/dim.dat')
       if (ip<8) print*,'Writing '//trim(dimfile)
       open(1,file=dimfile)
-      write(1,'(6i7)') mxout_grid,myout_grid,mzout_grid,mvar,maux,mglobal
+      write(1,'(6i7)') mxout_grid,myout_grid,mzout_grid,mvar,maux_run,mglobal
       write(1,'(a)') prec
       write(1,'(3i3)') nghost, nghost, nghost
 !
@@ -527,7 +540,7 @@ yinyang_loop: &
           rx(ll2+i)=rx(ll2)+i*dx
         enddo
       else
-        rx=xcoll; rdx_1=dxcoll_1; rdx_tilde=dxcoll_tilde
+        rx(:mxc)=xcoll(:mxc); rdx_1(:mxc)=dxcoll_1(:mxc); rdx_tilde(:mxc)=dxcoll_tilde(:mxc)
       endif
 !     
       if (remesh_pary/=1.) then
@@ -555,7 +568,7 @@ yinyang_loop: &
           ry(mm2+i)=ry(mm2)+i*dy
         enddo
       else
-        ry=ycoll; rdy_1=dycoll_1; rdy_tilde=dycoll_tilde
+        ry(:myc)=ycoll(:myc); rdy_1(:myc)=dycoll_1(:myc); rdy_tilde(:myc)=dycoll_tilde(:myc)
       endif
 !
       if (remesh_parz/=1.) then
@@ -583,7 +596,7 @@ yinyang_loop: &
           rz(nn2+i)=rz(nn2)+i*dz
         enddo
       else
-        rz=zcoll; rdz_1=dzcoll_1; rdz_tilde=dzcoll_tilde
+        rz(:mzc)=zcoll(:mzc); rdz_1(:mzc)=dzcoll_1(:mzc); rdz_tilde(:mzc)=dzcoll_tilde(:mzc)
       endif
 !
 !  Interpolating f-array to increased number of mesh points if only one
@@ -814,7 +827,7 @@ yinyang_loop: &
         call safe_character_assign(dimfile2_loc,trim(destination)//'/'//trim(dimfile_loc))
         if (ip<8) print*,'Writing ',dimfile2_loc
         open(1,file=dimfile2_loc)
-        write(1,'(6i7)') mmx,mmy,mmz,mvar,maux,mglobal
+        write(1,'(6i7)') mmx,mmy,mmz,mvar,maux_run,mglobal
         write(1,'(a)') prec
         write(1,'(3i3)') nghost, nghost, nghost
 ! SC: Added iprocz_slowest = 1 in order to solve an issue with the reading 

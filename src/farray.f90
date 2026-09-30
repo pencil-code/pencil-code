@@ -11,7 +11,7 @@
 !
 module FArrayManager
 !
-  use Cparam, only: mvar,maux,mglobal,maux_com,mscratch,lgpu
+  use Cparam, only: mvar,maux,mglobal,maux_com,mscratch,lgpu,ldynamic_aux,maux_com_decl,set_aux_counts
   use Cdata, only: nvar,naux,nscratch,nglobal,naux_com,datadir,lroot,lwrite_aux,lreloading, &
                    n_odevars,f_ode,df_ode,lode,f_ode_diagnostics,variable_substepped
   use HDF5_IO, only: index_reset, index_append
@@ -39,8 +39,12 @@ module FArrayManager
   public :: farray_index_by_name
   public :: farray_index_by_name_ode
   public :: farray_get_name
+  public :: farray_varname_resize
+  public :: farray_vtxbuf_resize
+  public :: farray_append_aux_var
 !
   public :: farray_check_maux
+  public :: farray_finalize_registration
 !
   public :: farray_acquire_scratch_area
   public :: farray_release_scratch_area
@@ -120,6 +124,25 @@ module FArrayManager
 ! Keep track of which spaces are currently in use.
 !
   logical, dimension(mscratch+1) :: scratch_used
+!
+! With DYNAMIC_AUX=yes: next free f-array slots for communicated and
+! non-communicated auxiliaries.
+!
+  integer :: icom_next=mvar+1, iaux_next=mvar+maux_com_decl+1
+  logical :: laux_fixed=.false.
+!
+! With DYNAMIC_AUX=yes: global variables sit behind the auxiliaries, so they
+! are moved when maux changes. Their callers' index variables (module
+! variables iglobal_*) are updated through ivar_caller and their entries in
+! index.pro are only written by farray_finalize_registration.
+!
+  type global_reg
+    type (farray_contents_list), pointer :: item
+    integer, pointer :: ivar_caller
+    integer :: vector, array
+  endtype global_reg
+  type (global_reg), dimension(max(mglobal,1)) :: globals_dyn
+  integer :: nglobals_dyn=0
 
   contains
 !***********************************************************************
@@ -178,7 +201,7 @@ module FArrayManager
       logical, optional, intent(in) :: read_from_gpu
 !
       integer :: vartype
-      integer :: vtxbuf_index,i
+      integer :: vtxbuf_index,i,nvars
 !
       if (loptest(communicated)) then
         vartype = iFARRAY_TYPE_COMM_AUXILIARY
@@ -190,6 +213,14 @@ module FArrayManager
 
       if (loptest(rhs) .and. lgpu) then
 
+        if (present(array)) then
+          nvars = array
+        elseif (present(vector)) then
+          nvars = vector
+        else
+          nvars = 1
+        endif
+        call farray_vtxbuf_resize(ivar+nvars-1)
         !TP: first we get the largest non zero index in the index array
         vtxbuf_index = maxval(maux_vtxbuf_index)
         !TP: if the largest one is -1 this is the first one and then we know its index to be 
@@ -314,7 +345,7 @@ module FArrayManager
             "modules or in cparam.local.")
             endif
           case (iFARRAY_TYPE_AUXILIARY)
-            if (naux+nvars>maux) then
+            if (naux+nvars>maux .and. .not.ldynamic_aux) then
               if (present(ierr)) then
                 ierr=iFARRAY_ERR_OUTOFSPACE
                 ivar=0
@@ -328,7 +359,7 @@ module FArrayManager
             "latter try adding an MAUX CONTRIBUTION header to cparam.local.")
             endif
           case (iFARRAY_TYPE_COMM_AUXILIARY)
-            if (naux_com+nvars>maux_com) then
+            if (naux_com+nvars>maux_com .and. .not.ldynamic_aux) then
               if (present(ierr)) then
                 ierr=iFARRAY_ERR_OUTOFSPACE
                 ivar=0
@@ -366,11 +397,19 @@ module FArrayManager
             ivar=nvar+1
             nvar=nvar+nvars
           case (iFARRAY_TYPE_COMM_AUXILIARY)
-            ivar=mvar+naux_com+1
+            if (ldynamic_aux) then
+              call dynamic_aux_slot(varname,nvars,.true.,ivar)
+            else
+              ivar=mvar+naux_com+1
+            endif
             naux=naux+nvars
             naux_com=naux_com+nvars
           case (iFARRAY_TYPE_AUXILIARY)
-            ivar=mvar+maux_com+(naux-naux_com)+1
+            if (ldynamic_aux) then
+              call dynamic_aux_slot(varname,nvars,.false.,ivar)
+            else
+              ivar=mvar+maux_com+(naux-naux_com)+1
+            endif
             naux=naux+nvars
           case (iFARRAY_TYPE_GLOBAL)
             ivar=mvar+maux+nglobal+1
@@ -392,6 +431,17 @@ module FArrayManager
 !
         call save_analysis_info(new)
 !
+        if (ldynamic_aux .and. vartype==iFARRAY_TYPE_GLOBAL) then
+          nglobals_dyn=nglobals_dyn+1
+          globals_dyn(nglobals_dyn)%item => new
+          globals_dyn(nglobals_dyn)%ivar_caller => ivar
+          globals_dyn(nglobals_dyn)%vector=0
+          globals_dyn(nglobals_dyn)%array=0
+          if (present(vector)) globals_dyn(nglobals_dyn)%vector=vector
+          if (present(array)) globals_dyn(nglobals_dyn)%array=array
+          return
+        endif
+!
 !  write varname and index into index.pro file (for idl)
 !  except for auxiliary variables which are not written into var.dat
 !
@@ -406,6 +456,129 @@ module FArrayManager
       endif
 !
     endsubroutine farray_register_variable
+!***********************************************************************
+    subroutine dynamic_aux_slot(varname,nvars,lcommunicated,ivar)
+!
+!  Returns the f-array index for nvars new (communicated) auxiliaries and
+!  increases maux and maux_com if they do not fit (DYNAMIC_AUX=yes).
+!
+!  Layout: PDEs | communicated aux. | non-communicated aux. | globals | scratch.
+!  Already assigned indices never change. Hence, if a communicated auxiliary
+!  is registered after non-communicated ones, it is placed behind them and the
+!  communicated range is extended over them, so they are communicated as well.
+!
+      use Cparam, only: maux_com_max 
+!
+      character (len=*), intent(in) :: varname
+      integer,           intent(in) :: nvars
+      logical,           intent(in) :: lcommunicated
+      integer,           intent(out):: ivar
+!
+      integer :: maux_new, maux_com_new
+!
+      maux_com_new=maux_com
+      if (lcommunicated) then
+        if (icom_next+nvars-1<=mvar+maux_com) then
+          ivar=icom_next
+          icom_next=icom_next+nvars
+        elseif (iaux_next==mvar+maux_com+1) then
+!
+!  No non-communicated auxiliaries yet: extend the communicated range.
+!
+          ivar=icom_next
+          icom_next=icom_next+nvars
+          iaux_next=icom_next
+          maux_com_new=icom_next-1-mvar
+        else
+!
+!  Place it behind the non-communicated auxiliaries, which become communicated.
+!
+          ivar=iaux_next
+          iaux_next=iaux_next+nvars
+          icom_next=iaux_next
+          maux_com_new=icom_next-1-mvar
+          if (lroot) call warning("farray_register_variable", "Registering "//trim(varname)// &
+              ": non-communicated auxiliaries registered before are communicated as well")
+        endif
+      else
+        ivar=iaux_next
+        iaux_next=iaux_next+nvars
+      endif
+      maux_new=max(maux,iaux_next-1-mvar)
+!
+      if (maux_new==maux .and. maux_com_new==maux_com) return
+!
+      if (laux_fixed) call fatal_error("farray_register_variable", &
+          "Registering "//trim(varname)//" fails: the f-array has already been allocated. "// &
+          "Register it in register_* instead of initialize_*, or declare it by an "// &
+          "MAUX CONTRIBUTION (and COMMUNICATED AUXILIARIES) header in cparam.local.")
+!
+      call shift_globals(maux_new-maux)
+      call set_aux_counts(maux_new,maux_com_new)
+!
+    endsubroutine dynamic_aux_slot
+!***********************************************************************
+    subroutine shift_globals(delta)
+!
+!  Moves the global variables by delta slots when maux changes (DYNAMIC_AUX=yes).
+!
+      integer, intent(in) :: delta
+!
+      integer :: i
+!
+      if (delta==0) return
+      do i=1,nglobals_dyn
+        globals_dyn(i)%item%ivar(1)%p=globals_dyn(i)%item%ivar(1)%p+delta
+        globals_dyn(i)%ivar_caller=globals_dyn(i)%item%ivar(1)%p
+      enddo
+!
+    endsubroutine shift_globals
+!***********************************************************************
+    subroutine farray_finalize_registration
+!
+!  To be called after all modules have registered their variables and before
+!  the f-array is allocated. With DYNAMIC_AUX=yes, maux and maux_com are final
+!  now: declared but unused slots at their ends are dropped and the ghost zone
+!  buffers allocated in initialize_mpicomm are adapted to mcom.
+!
+      use Cparam, only: mcom, mfarray
+      use Cdata, only: ldownsampl
+      use Mpicomm, only: allocate_comm_buffers
+!
+      type (farray_contents_list), pointer :: item
+      integer :: maux_com_new, i
+!
+!  The GPU code loops over all f-array slots of these.
+!
+      if (lgpu .and. .not.ldynamic_aux) call farray_vtxbuf_resize(mfarray)
+      if (.not.ldynamic_aux) return
+!
+!  Drop unused slots at the end of the communicated and non-communicated ranges.
+!
+      maux_com_new=maux_com
+      if (iaux_next==mvar+maux_com+1) then
+        maux_com_new=icom_next-1-mvar
+        iaux_next=icom_next
+      endif
+      call shift_globals(iaux_next-1-mvar-maux)
+      call set_aux_counts(iaux_next-1-mvar,maux_com_new)
+!
+!  Now the indices of the global variables are final.
+!
+      do i=1,nglobals_dyn
+        item => globals_dyn(i)%item
+        call save_analysis_info(item)
+        call farray_index_append('i'//item%varname,item%ivar(1)%p,vector=globals_dyn(i)%vector, &
+                                 array=globals_dyn(i)%array,lwr=lroot)
+        if (ldownsampl) call farray_index_append('i'//item%varname,item%ivar(1)%p, &
+                                 vector=globals_dyn(i)%vector,array=globals_dyn(i)%array,ldown=.true.)
+      enddo
+!
+      if (mcom/=mvar+maux_com_decl) call allocate_comm_buffers
+      if (lgpu) call farray_vtxbuf_resize(mfarray)
+      laux_fixed=.true.
+!
+    endsubroutine farray_finalize_registration
 !***********************************************************************
     subroutine farray_register_ode(varname,ivar,nvar)
 
@@ -494,6 +667,10 @@ module FArrayManager
 ! 14-oct-18/PAB: coded
 !
       call index_reset
+!
+      icom_next=mvar+1
+      iaux_next=mvar+maux_com+1
+      nglobals_dyn=0
 !
     endsubroutine farray_index_reset
 !***********************************************************************
@@ -664,6 +841,7 @@ module FArrayManager
 !  Put variable name in array for use by analysis tool output.
 !
       nvars=item%ncomponents*item%narray
+      call farray_varname_resize(item%ivar(1)%p+nvars-1)
       if (nvars>1) then
         do i=0,nvars-1
           varname(item%ivar(1)%p+i) = trim(item%varname)//trim(itoa(i+1))
@@ -673,6 +851,89 @@ module FArrayManager
       endif
 !
     endsubroutine save_analysis_info
+!***********************************************************************
+    subroutine farray_varname_resize(n)
+!
+!  Grows varname such that it has at least n entries, keeping the existing names.
+!
+      use Cdata, only: varname
+!
+      integer, intent(in) :: n
+!
+      character (len=len(varname)), dimension(:), allocatable :: tmp
+!
+      if (.not.allocated(varname)) then
+        allocate(varname(n))
+        varname=''
+        return
+      endif
+      if (size(varname)>=n) return
+!
+      allocate(tmp(n))
+      tmp=''
+      tmp(:size(varname))=varname
+      call move_alloc(tmp,varname)
+!
+    endsubroutine farray_varname_resize
+!***********************************************************************
+    subroutine farray_vtxbuf_resize(n)
+!
+!  Grows maux_vtxbuf_index and read_vtxbuf_from_gpu such that they have at least n entries,
+!  keeping the existing ones. New entries are -1 (not on the GPU) and 0 (not read from the GPU).
+!
+      use Cdata, only: maux_vtxbuf_index, read_vtxbuf_from_gpu
+!
+      integer, intent(in) :: n
+!
+      integer, dimension(:), allocatable :: tmp
+      integer :: nold
+!
+      nold=0
+      if (allocated(maux_vtxbuf_index)) nold=size(maux_vtxbuf_index)
+      if (nold>=n .and. allocated(maux_vtxbuf_index)) return
+!
+      allocate(tmp(n))
+      tmp=-1
+      if (nold>0) tmp(:nold)=maux_vtxbuf_index
+      call move_alloc(tmp,maux_vtxbuf_index)
+!
+      allocate(tmp(n))
+      tmp=0
+      if (nold>0) tmp(:nold)=read_vtxbuf_from_gpu
+      call move_alloc(tmp,read_vtxbuf_from_gpu)
+!
+    endsubroutine farray_vtxbuf_resize
+!***********************************************************************
+    subroutine farray_append_aux_var(name,lcontinue,ncomponents)
+!
+!  Puts name into aux_var(aux_count) for the IDL files, with ' $' appended if lcontinue,
+!  and advances aux_count by ncomponents (default 1). aux_var is grown as needed.
+!
+      use Cdata, only: aux_var, aux_count
+      use General, only: ioptest, loptest
+!
+      character (len=*), intent(in) :: name
+      logical, optional, intent(in) :: lcontinue
+      integer, optional, intent(in) :: ncomponents
+!
+      character (len=len(aux_var)), dimension(:), allocatable :: tmp
+      integer :: n, nold
+!
+      n=aux_count+ioptest(ncomponents,1)-1
+      nold=0
+      if (allocated(aux_var)) nold=size(aux_var)
+      if (nold<n .or. .not.allocated(aux_var)) then
+        allocate(tmp(n))
+        tmp=''
+        if (nold>0) tmp(:nold)=aux_var
+        call move_alloc(tmp,aux_var)
+      endif
+!
+      aux_var(aux_count)=name
+      if (loptest(lcontinue)) aux_var(aux_count)=trim(name)//' $'
+      aux_count=aux_count+ioptest(ncomponents,1)
+!
+    endsubroutine farray_append_aux_var
 !***********************************************************************
     subroutine farray_use_pde(varname,ivar,vector,ierr)
 !

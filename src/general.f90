@@ -7737,6 +7737,26 @@ iloop:do i=1,size(list2)
         dst = enum_smooth_source_new_string
       case('step_decay_linear_ramp')
         dst = enum_step_decay_linear_ramp_string
+      case('q%glhc.dat')
+        dst = enum_qZglhcZdat_string
+      case('solid_body')
+        dst = enum_solid_body_string
+      case('solid_body_linear_z')
+        dst = enum_solid_body_linear_z_string
+      case('solid_body_exp_z')
+        dst = enum_solid_body_exp_z_string
+      case('radial_uniform_shear_linear_z')
+        dst = enum_radial_uniform_shear_linear_z_string
+      case('rus_linear_z')
+        dst = enum_rus_linear_z_string
+      case('radial_uniform_shear_exp_z')
+        dst = enum_radial_uniform_shear_exp_z_string
+      case('rus_exp_z')
+        dst = enum_rus_exp_z_string
+      case('const_shear')
+        dst = enum_const_shear_string
+      case('test1')
+        dst = enum_test1_string
       case('waterfall')
         dst = enum_waterfall_string
       case('imposed-cs2-core')
@@ -7753,6 +7773,8 @@ iloop:do i=1,size(list2)
         dst = enum_stepZlocalZpatches
       case ('read_ell_from_table')
         dst = enum_read_ell_from_table_string
+      case('fixed_k_alpha')
+        dst = enum_fixed_k_alpha_string
       case default
         dst = enum_unknown_string_string
         if (lroot) print*, 'No string enum for: ', src

@@ -126,7 +126,7 @@ module Special
       use EquationOfState
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: rloop_int,rloop_ext,tmp,drc1
       integer :: ir
 !
@@ -164,7 +164,7 @@ module Special
       use Mpicomm
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -230,13 +230,11 @@ module Special
       use Mpicomm
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
 !
 !
-      intent(in) :: f,p
-      intent(inout) :: df
 !
 !  identify module and boundary conditions
 !
@@ -266,8 +264,8 @@ module Special
 !
 !  26-jun-06/tony: dummy
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (slice_data) :: slices
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(slice_data) :: slices
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(slices%ready)
@@ -278,7 +276,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -305,9 +303,10 @@ module Special
 !
 !  define diagnostics variable
 !
-      integer :: iname,inamer
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
+      integer :: iname,inamer
+      logical :: lwr
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
@@ -392,8 +391,8 @@ module Special
       use Mpicomm
       use General, only: spline
 !
-      real, dimension(mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
       integer :: i,j
       logical :: err
 !
@@ -436,9 +435,9 @@ module Special
 !
       use Diagnostics
 !
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
       real, dimension (nx) :: ur,up,uz,urad,uphi
       real :: fac
 !
@@ -483,9 +482,9 @@ module Special
      use Diagnostics
      use Mpicomm
 !
-     real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-     real, dimension (mx,my,mz,mvar), intent(inout) :: df
-     type (pencil_case), intent(in) :: p
+     real, contiguous, dimension(:,:,:,:) :: f
+     real, contiguous, dimension(:,:,:,:) :: df
+     type(pencil_case), intent(in) :: p
      real, dimension (nx) :: br,bp,bz
      real, dimension(nx,3) :: puxb
      integer :: i
@@ -562,7 +561,7 @@ module Special
       use Mpicomm
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension(nrcylrun) :: ktot1,s_rho,rho_sum
       real, dimension(nrcylrun,3) :: s_u,s_b,u_sum,b_sum
       real, dimension(nx,3) :: uuf,bbf,pbb

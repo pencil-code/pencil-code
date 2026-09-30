@@ -91,11 +91,8 @@ module EquationOfState
 !
 !  Writing files for use with IDL.
 !
-      aux_var(aux_count)=',yh $'
-      aux_count=aux_count+1
-      if (naux < maux)  aux_var(aux_count)=',lnTT $'
-      if (naux == maux) aux_var(aux_count)=',lnTT'
-      aux_count=aux_count+1
+      call farray_append_aux_var(',yh',.true.)
+      call farray_append_aux_var(',lnTT',naux < maux)
       if (lroot) then
         write(15,*) 'yH = fltarr(mx,my,mz)*one'
         write(15,*) 'lnTT = fltarr(mx,my,mz)*one'

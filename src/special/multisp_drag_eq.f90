@@ -74,7 +74,7 @@ module Special
 !
       use Mpicomm, only: mpibcast
 !
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       if (lstart) return
       call keep_compiler_quiet(f)
@@ -137,9 +137,9 @@ module Special
       use EquationOfState, only: rho0
       use Particles_cdata, only: eps_dtog
 !
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      real, dimension(mx,my,mz,mvar), intent(in) :: df
-      type(pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
 !
       real, dimension(nx) :: dux, duy, drhop
 !
@@ -199,10 +199,11 @@ module Special
       use Particles_sub, only: assign_species, sum_par_name
       use Particles_cdata, only: ipar, npar_loc, ivpx, ivpy, ivpz, irhopswarm
 !
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      real, dimension(mx,my,mz,mvar), intent(in) :: df
-      real, dimension(:,:), intent(in) :: fp, dfp
-      integer, dimension(:,:), intent(in) :: ineargrid
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real, dimension(:,:) :: fp
+      real, dimension(:,:) :: dfp
+      integer, dimension(:,:) :: ineargrid
 !
       real, dimension(npar_loc) :: dvpx, dvpy
       integer :: k, jspec
@@ -244,8 +245,8 @@ module Special
       use Diagnostics, only: parse_name
       use FArrayManager, only: farray_index_append
 !
-      logical, intent(in) :: lreset
-      logical, intent(in), optional :: lwrite
+      logical :: lreset
+      logical, optional :: lwrite
 !
       logical :: lwr
       integer :: iname, inamex

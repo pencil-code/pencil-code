@@ -48,9 +48,18 @@ sub find_config_file {
 # If no config file is found, return undef.
 #
     my $config_file;
+    my @host_ids = get_host_ids();
 
-    for my $host_id (get_host_ids()) {
+    for my $host_id (@host_ids) {
         $config_file = find_config_file_for_host($host_id);
+        return $config_file if defined($config_file);
+    }
+
+    # Fall back on host config files with `#' standing for any number,
+    # e.g. host-n#-GNU_Linux-AlmaLinux.conf for host ID
+    # host-n67-GNU_Linux-AlmaLinux
+    for my $host_id (@host_ids) {
+        $config_file = find_config_file_for_host_pattern($host_id);
         return $config_file if defined($config_file);
     }
 
@@ -124,6 +133,39 @@ sub find_config_file_for_host {
 
 # ---------------------------------------------------------------------- #
 
+sub find_config_file_for_host_pattern {
+#
+# Return a host config file whose name matches the given host ID, with
+# each `#' in the file name standing for a sequence of digits, or undef.
+#
+    my ($host_id) = @_;
+
+    return undef unless (defined $host_id && $host_id);
+
+    $host_id =~ s{(\s|/)+}{_}g;
+    $host_id =~ s/\.conf$//is;
+
+    for my $dir (@config_path) {
+        for my $subdir (find_subdirs("${dir}/hosts")) {
+            opendir(my $dh, $subdir) or next;
+            my @files = sort grep { /#.*\.conf$/ && -f "${subdir}/$_" } readdir($dh);
+            closedir($dh);
+            for my $file (@files) {
+                (my $name = $file) =~ s/\.conf$//;
+                my $pattern = join('\d+', map { quotemeta } split(/#/, $name, -1));
+                if ($host_id =~ /^${pattern}$/) {
+                    debug("Host ID <$host_id> matches <${subdir}/$file>");
+                    return "${subdir}/$file";
+                }
+            }
+        }
+    }
+
+    return undef;               # no file found
+}
+
+# ---------------------------------------------------------------------- #
+
 sub find_config_file_for_os {
 #
 # Return config file for the given os name, or undef.
@@ -181,10 +223,7 @@ sub locate_config_file {
 
     # Recursive
     if ($recurse) {
-        # Todo: recode this using File::Find
-        my @dirs = split("\0",
-                         `find $root -name .svn -prune -o -name CVS -prune -o -name _darcs -o -name .git -prune -o -name .hg -prune -o -type d -print0`);
-        for my $dir (@dirs) {
+        for my $dir (find_subdirs($root)) {
             my $file = locate_config_file($dir, $id, 0);
             return $file if (defined $file);
         }
@@ -203,6 +242,21 @@ sub locate_config_file {
         debug("No such file: <$file>\n");
     }
     return undef;
+}
+
+# ---------------------------------------------------------------------- #
+
+sub find_subdirs {
+#
+# Return $root and all directories below it, skipping version control
+# directories.
+#
+    my ($root) = @_;
+    return () unless (-d $root);
+
+    # Todo: recode this using File::Find
+    return split("\0",
+                 `find $root -name .svn -prune -o -name CVS -prune -o -name _darcs -o -name .git -prune -o -name .hg -prune -o -type d -print0`);
 }
 
 # ---------------------------------------------------------------------- #
@@ -590,11 +644,19 @@ C<${PENCIL_HOME}/config>
 If such a file is found, C<find_config_file()> exits and returns its
 file name.
 
-If no file was found, two fallbacks are tried:
+If no file was found, three fallbacks are tried:
 
 =over 4
 
 =item 1.
+
+For each host ID, a host config file whose name contains `C<#>' is
+searched for, where each `C<#>' stands for a sequence of digits, e.g.
+C<host-n#-GNU_Linux-AlmaLinux.conf> for host ID
+`host-n67-GNU_Linux-AlmaLinux'. This allows one config file to serve all
+nodes of a cluster.
+
+=item 2.
 
 The output from `C<uname -o>' (the operationg system) or `C<uname -s>'
 is tried as host ID in the directories
@@ -609,7 +671,7 @@ ${PENCIL_HOME}/config/os
 
 =back
 
-=item 2.
+=item 3.
 
 If still no configuration file for that host ID is found, the host ID
 `C<default>' is tried.

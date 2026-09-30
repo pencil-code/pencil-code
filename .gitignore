@@ -784,3 +784,14 @@ doc/readthedocs/pencil-docker/.env
 !samples/driver/.run_directories.log
 !samples/driver/pc_build_tmp_*
 !samples/driver/.pc_build_history
+!utils/philippe/driver/.DS_Store
+!utils/philippe/driver/*.directory
+!utils/philippe/driver/*.pyc
+!utils/philippe/driver/*~
+!utils/philippe/driver/.*.swp
+!utils/philippe/driver/host-ID
+!utils/philippe/driver/revision.txt
+!utils/philippe/driver/*-eps-converted-to.pdf
+!utils/philippe/driver/.pc_build_history
+!utils/philippe/driver/.run_directories.log
+!utils/philippe/driver/pc_build_tmp_*

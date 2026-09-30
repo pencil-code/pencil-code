@@ -150,7 +150,7 @@ module Special
   real :: bubble_wall_width_factor = 1.0
   integer :: number_of_bubbles = 1 !PAR_DOC: How many true vacuum bubbles are either in the initial condition or nucleated when the
     !PAR_DOC: nucleation history is created at the start.
-  logical :: lspeed_of_light_dt = .false. !PAR_DOC: Do we apply the constraint dt <= c/dx. Usually not needed, but important for
+  logical :: lspeed_of_light_dt = .false. !PAR_DOC: Do we apply the constraint $dt \le c/dx$. Usually not needed, but important for
     !PAR_DOC: vacuum EWPT.
   integer :: seed_reset=1963
   logical :: lcombine_prep_ode_right_with_rhs = .false. !PAR_DOC: Whether the sums needed for the ODE and rhs advancement are done in the together in the same kernel as the rhs
@@ -182,32 +182,54 @@ module Special
 
 
 
-  logical :: lphi_normalized_units = .false.
+  logical :: lphi_normalized_units = .false. !PAR_DOC: whether use normalized units including the value of phi being 1 at the broken
+    !PAR_DOC: vacuum, where a quartic potential with a constant temperature needs only one parameter: chi.
   real :: t_next_bubble = 0.0
-  real :: max_bubble_nucleation_rate = 1.0
-  real :: tf = 0.0
-  logical :: lnucleate_bubbles = .false.
-  character (len=50) :: nucleation_method='cutting'
-  character (len=50) :: bubble_position_criteria='cutting'
-  real :: nucleation_threshold = 1e-4
-  character (len=50) :: nucleation_rate_choice='constant'
+  real :: max_bubble_nucleation_rate = 1.0 !PAR_DOC: What is the maximum bubble nucleation rate the run allows.
+     !PAR_DOC: Needs to be known throughout the run if we use acceptance sampling for determining nucleation times.
+  real :: tf = 0.0 !PAR_DOC: Time at which the fraction of the universe in the symmetric phase is 1/e.
+  logical :: lnucleate_bubbles = .false. !PAR_DOC: Whether true vacuum bubbles are nucleated during run.
+  character (len=50) :: nucleation_method='cutting' !PAR_DOC: which method do we use to put the values 
+    !PAR_DOC: of a nucleated bubble. The default Cutting method is phi = sqrt(phi^2+bubble^2)
+  character (len=50) :: bubble_position_criteria='cutting' !PAR_DOC: How do we choose where to nucleate new bubbles.
+    !PAR_DOC: Default checks that no bubble has expanded to the new site, threshold checks that phi < threshold.
+  real :: nucleation_threshold = 1e-4 !PAR_DOC: Threshold used for threshold position criteria.
+  character (len=50) :: nucleation_rate_choice='constant' !PAR_DOC: How does the nucleation rate changes in time.
+    !PAR_DOC: At the moment either constant (default) or exponentially increasing.
   integer, parameter :: max_bubbles = 10000
-  real, dimension(max_bubbles,3) :: bubble_positions=impossible
-  real, dimension(max_bubbles)   :: bubble_times=impossible
-  real :: beta = impossible
-  logical :: lgenerate_bubble_times = .false.
+  real, dimension(max_bubbles,3) :: bubble_positions=impossible !PAR_DOC: At which positions bubbles are nucleated.
+    !PAR_DOC: Usually determined by Pencil itself, but can be also inputted as directly.
+  real, dimension(max_bubbles)   :: bubble_times=impossible  !PAR_DOC: At which times bubbles are nucleated.
+    !PAR_DOC: Usually determined by Pencil itself, but can be also inputted as directly.
+  real :: beta = impossible !PAR_DOC: the inverse timescale of the phase transition. Used for exponential nucleation.
+  logical :: lgenerate_bubble_times = .false. !PAR_DOC: Whether nucleation history is pregenerated at the start of the run instead
+    !PAR_DOC: of e.g. by acceptance sampling.
   integer :: bubble_counter = 1
   !TP: for backwards compatibility the setting of the random seed can be suppressed
-  logical :: linitialize_seed=.true.
-  real :: plasma_coupling_coeff=0.0
-  logical :: lplasma_coupling=.false.
-  integer :: continuation_offset = 0
-  logical :: lbubble_size_ode = .false.
-  logical :: lthermal_noise = .false.
-  real    :: noise_strength = impossible
-  real    :: noise_start = 0.0
-  real    :: friction_start = 0.0
-  logical :: ldR_for_wall_vel = .false.
+  logical :: linitialize_seed=.true. !PAR_DOC: Whether we make sure the seed is initialized in Klein-Gordon.
+    !PAR_DOC: Done to make sure we get the same random number at each process.
+  real :: plasma_coupling_coeff=0.0 !PAR_DOC: The strength of $\eta$ in the friction term $\eta U_\nu \grad^\nu(\phi)$.
+  logical :: lplasma_coupling=.false. !PAR_DOC: Is the scalar field coupled to the plasma through the phenomenological or more
+    !PAR_DOC: accurately through the Chapman-Enskog friction term $\eta U_\nu \grad^\nu(\phi)$
+  integer :: continuation_offset = 0 !PAR_DOC: Grid point used for two independent things (not the best). Thin-wall approximation of tanh jump
+    !PAR_DOC: does not have dphi/dr = 0 at the origin so we smoothly continue from the grid point to the origin a polynomial having
+    !PAR_DOC: a zero derivative at the origin. The other usage is that we do not add Langevin noise at grid points < offset,
+    !PAR_DOC: since the laplacian easily diverges due to the 2/r*dphi/dr term.
+  logical :: lbubble_size_ode = .false. !PAR_DOC: Is an ODE evolved for R and Rdot. Useful for 0d-runs and 1d-runs
+    !PAR_DOC: with noise where getting Rdot can be difficult due to grid effects caused by fluctutations, so the smooth value coming
+    !PAR_DOC: from the ODE is better behaved.
+  logical :: lthermal_noise = .false. !PAR_DOC: Whether Langevin noise corresponding to the noise coming from the friction in
+    !PAR_DOC: according to Fluctuation Dissipation Theorem.
+  real    :: noise_strength = impossible !PAR_DOC: How strong is the Langevin noise added to phi, which is supposed to model
+    !PAR_DOC: interactions with unresolved soft modes. Depends on T and phi at specific point, so easiest to treat it as an
+    !PAR_DOC: independent parameter.
+  real    :: noise_start = 0.0 !PAR_DOC: From which point onwards do we start applying noise to the scalar field.
+  real    :: friction_start = 0.0 !PAR_DOC: From which point onwards do we start to apply friction to the bubble wall.
+    !PAR_DOC: Used to get rid of initial transient behaviour which might not be important but causes numerical problems.
+    !PAR_DOC: For example inwards travelling waves to the center, which would later be damped out, when using 1d radial.
+  logical :: ldR_for_wall_vel = .false. !PAR_DOC: Is the bubble wall velocity computed by tracking the bubble wall position.
+    !PAR_DOC: Quite bad, would not recommend. The original intention was to fix velocity when having Langevin noise, but then
+    !PAR_DOC: it is better to use the ODE to evolve the wall velocity to get rid of grid effects due to fluctuations.
   
 ! Sovan : Perturbative Reheating
 !
@@ -531,7 +553,7 @@ module Special
       use General, only: random_number_wrapper, itoa
       use Slices_methods, only: alloc_slice_buffers
 !
-      real,  dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: iLCDM_lna,i
       real :: broken_mass=impossible,phi_tilde,u
       real :: critical_bubble_size
@@ -616,7 +638,7 @@ module Special
       if (surface_tension_type == 'wall_thickness') then
         bubble_surface_tension = 1./(3.*thin_bubble_wall_width)
       endif
-      if(bubble_surface_tension /= impossible) bubble_surface_tension = bubble_tension_coeff*bubble_tension
+      if(bubble_surface_tension /= impossible) bubble_surface_tension = bubble_tension_coeff*bubble_surface_tension
 
       if (bounce_action == 'O3') then
         critical_bubble_size = 2*bubble_surface_tension/deltaV
@@ -778,13 +800,12 @@ module Special
 !
       use Initcond, only: gaunoise, sinwave_phase, hat, power_randomphase_hel, power_randomphase, bunch_davies
       use Mpicomm, only: mpibcast_real
-      real,  dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: Vpotential, Hubble_ini, phi_gam, amplphi_BD, amplee_BD, deriv_prefactor
       integer :: i,j
       real :: lnascale
       real, dimension(3) :: pos
 !
-      intent(inout) :: f
 
       call initialize_seed
 !
@@ -1031,7 +1052,7 @@ module Special
 !
 !  18-07-06/tony: coded
 !
-      logical, dimension(npencils), intent(inout) :: lpencil_in
+      logical, dimension(npencils) :: lpencil_in
 !
         if (lpencil_in(i_plasma_friction)) then
           lpencil_in(i_gphi) = .true.
@@ -1049,11 +1070,9 @@ module Special
       use Sub, only: grad, div, dot_mn,u_dot_grad
       use Deriv, only: der
 !
-      real,  dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
 !
-      intent(in) :: f
-      intent(inout) :: p
       integer ::  i, j, l
       real, dimension(nx) :: friction_coeff
       real, dimension(nx) :: u_dot_gphi
@@ -1330,17 +1349,15 @@ module Special
       use General, only: notanumber
       use Messages, only: fatal_error_local
 !
-      real,  dimension (mx,my,mz,mfarray) :: f
-      real,  dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
       real, dimension (nx) :: Vprime_aux, total_fric
       real, dimension (nx, 4) :: del2phi_doublet=0.
       real, dimension (nx) :: tmp, del2psi
       real :: pref_Vprime=1., pref_Hubble=2., pref_del2=1., pref_alpf
-      type (pencil_case) :: p
       integer :: i
 !
-      intent(in) :: f,p
-      intent(inout) :: df
 !
 !  Identify module and boundary conditions.
 !
@@ -1669,7 +1686,7 @@ module Special
   
       use Diagnostics 
       
-      real, dimension(n_odevars), intent(in) :: f_ode
+      real, dimension(n_odevars) :: f_ode
       real :: rho_chi, lnascale
       real :: Hscript_diagnos
       real :: gammaR, friction
@@ -1736,7 +1753,7 @@ module Special
       use Deriv, only: der2
       use Slices_methods, only: store_slices
 
-      real,  dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
       integer :: l
       real, dimension (nx) :: gphi2
@@ -1814,7 +1831,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -1834,7 +1851,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -1860,8 +1877,8 @@ module Special
 !
       use IO, only: read_persist, lun_input
 !
-      integer, intent(in) :: id
-      logical, intent(inout) :: done
+      integer :: id
+      logical :: done
 !
       select case (id)
         case (id_record_WALL_VEL)
@@ -1898,8 +1915,9 @@ module Special
 !
       use Diagnostics, only: parse_name
 !
+      logical :: lreset
+      logical, optional :: lwrite
       integer :: iname,inamev
-      logical :: lreset,lwrite
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
@@ -1993,8 +2011,8 @@ module Special
 !
       use Slices_methods, only: assign_slices_scal
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      type (slice_data) :: slices
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(slice_data) :: slices
 !
 !
 !  Loop over slices
@@ -2278,7 +2296,7 @@ module Special
       use General, only: random_number_wrapper
       use Sub, only: sample_poisson_waiting_time 
 !
-      real,  dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension(3) :: pos
       real :: acceptance_ran, acceptance_probability
 
@@ -2322,7 +2340,7 @@ module Special
       use Mpicomm, only: mpireduce_sum, mpiallreduce_sum, mpibcast_real
       use Sub, only: dot2_mn, grad, curl, dot_mn
 !
-      real,  dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: w_r, w_p, Gamma_E
       real :: sigE1m,sigB1m
 !
@@ -2457,9 +2475,9 @@ module Special
       use Mpicomm, only: mpireduce_sum
       use Deriv, only: der
 
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension(mx,my,mz,mvar), intent(inout) :: df
-      real, intent(in) :: dt_
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real :: dt_
       logical, intent(in) :: llast
       real, dimension(nx) :: zeta, drphi
       real :: zeta_sum = 0.

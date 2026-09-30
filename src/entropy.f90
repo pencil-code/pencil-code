@@ -550,7 +550,7 @@ module Energy
 !  6-nov-01/wolf: coded
 !
       use FArrayManager, only: farray_register_pde, farray_register_auxiliary, farray_index_append, &
-                               farray_register_global
+                               farray_register_global, farray_append_aux_var
       use SharedVariables, only: put_shared_variable
 !
       call farray_register_pde('ss',iss)
@@ -585,9 +585,7 @@ module Energy
         if (isld_char == 0) then
           call farray_register_auxiliary('sld_char',isld_char,communicated=.true.,rhs=.true.)
           if (lroot) write(15,*) 'sld_char = fltarr(mx,my,mz)*one'
-          aux_var(aux_count)=',sld_char'
-          if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
-          aux_count=aux_count+1
+          call farray_append_aux_var(',sld_char',naux+naux_com < maux+maux_com)
         endif
       endif
 !
@@ -618,9 +616,7 @@ module Energy
           call farray_index_append('iss_run_aver',iss_run_aver)
         endif
         if (lroot) write(15,*) 'ss_run_aver = fltarr(mx,my,mz)*one'
-        aux_var(aux_count)=',ss_run_aver'
-        if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
-        aux_count=aux_count+1
+        call farray_append_aux_var(',ss_run_aver',naux+naux_com < maux+maux_com)
         lss_running_aver=.true.
       endif
 !
@@ -634,9 +630,7 @@ module Energy
           call farray_index_append('iFenth',iFenth)
         endif
         if (lroot) write(15,*) 'Fenth = fltarr(mx,my,mz)*one'
-        aux_var(aux_count)=',Fenth'
-        if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
-        aux_count=aux_count+1
+        call farray_append_aux_var(',Fenth',naux+naux_com < maux+maux_com)
       endif
 !
 !  Fluctuating entropy = s - \mean_xy(s)
@@ -649,9 +643,7 @@ module Energy
           call farray_index_append('iss_flucz',iss_flucz)
         endif
         if (lroot) write(15,*) 'ss_flucz = fltarr(mx,my,mz)*one'
-        aux_var(aux_count)=',ss_flucz'
-        if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
-        aux_count=aux_count+1
+        call farray_append_aux_var(',ss_flucz',naux+naux_com < maux+maux_com)
       endif
 !
 !  Fluctuating squared sound speed = TT - \mean_xy(TT)
@@ -664,9 +656,7 @@ module Energy
           call farray_index_append('iTT_flucz',iTT_flucz)
         endif
         if (lroot) write(15,*) 'TT_flucz = fltarr(mx,my,mz)*one'
-        aux_var(aux_count)=',TT_flucz'
-        if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
-        aux_count=aux_count+1
+        call farray_append_aux_var(',TT_flucz',naux+naux_com < maux+maux_com)
       endif
 !
 !  Shared variables.

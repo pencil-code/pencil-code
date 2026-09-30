@@ -36,3 +36,4 @@ PARTICLES_COAGULATION =   particles_coagulation
 PARTICLES_STALKER     =   particles_stalker
 
 REAL_PRECISION = double
+DYNAMIC_AUX = yes

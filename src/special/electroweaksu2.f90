@@ -259,7 +259,7 @@ module Special
       use SharedVariables, only: get_shared_variable
       use Initcond, only: gaunoise
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       integer :: i, j
 !
 !  Initialize module variables which are parameter dependent
@@ -359,11 +359,10 @@ module Special
       use Mpicomm
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx) :: divW, divE
       integer :: j, i
 !
-      intent(inout) :: f
 !
 !  SAMPLE IMPLEMENTATION
 !
@@ -617,8 +616,8 @@ module Special
       !                del2v_etc, dot_mn_sv_pencil
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
 
       real, dimension (nx,3) :: tmp1, tmp2
       real, dimension (nx) :: tmp0
@@ -626,8 +625,6 @@ module Special
       ! real, dimension (nx) :: tmp
       integer :: i,j,k
 !
-      intent(inout) :: f
-      intent(inout) :: p
 !
 !  Pencil for charge density.
 !
@@ -969,17 +966,15 @@ module Special
       use Mpicomm
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
 !
       ! real, dimension (nx,3,3) :: gtmp, dJdt, del2JJ
       real, dimension (nx,3) :: tmp=0. ! del2a0 !constrainteqn, constrainteqn1
       ! real :: inflation_factor=0. ! mfpf=0., fppf=0.
       integer :: j
 !
-      intent(inout) :: p
-      intent(inout) :: f, df
 !
 !  identify module and boundary conditions
 !
@@ -1161,7 +1156,7 @@ module Special
       use Sub
       use Diagnostics
 
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
       real, dimension(nx,3) :: tmp, constrainteqn
       ! real :: mfpf=0.,fppf=0.
@@ -1253,7 +1248,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -1273,7 +1268,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -1301,9 +1296,10 @@ module Special
 !
 !  define counters
 !
-      integer :: iname,inamez
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
+      integer :: iname,inamez
+      logical :: lwr
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
@@ -1386,7 +1382,7 @@ module Special
 !
 !  06-jul-06/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx) :: tmp
 !
       call keep_compiler_quiet(f)
@@ -1401,8 +1397,8 @@ module Special
 !
       use Slices_methods, only: assign_slices_vec
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      type (slice_data) :: slices
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(slice_data) :: slices
 !
       integer :: inamev
 !

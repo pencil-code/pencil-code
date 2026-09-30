@@ -302,11 +302,69 @@ const real teta1 = teta/(teta+tini)
 //No-op
 sum(real x) {return x}
 
+//div(phi*B) of special/disp_current (div_phib there).
+//TODO: dummy for now, to be implemented
+div_phib()
+{
+	return 0.0
+}
+
+#if STENCIL_ORDER > 2
+//Unit-weight shift stencils for getcell (Kurganov-Tadmor). Going through stencils,
+//rather than indexing the field directly, lets the compiler see the accesses,
+//so the halos are communicated correctly.
+Stencil getcell_xm2 {[0][0][-2] = 1.0}
+Stencil getcell_xm1 {[0][0][-1] = 1.0}
+Stencil getcell_xp1 {[0][0][ 1] = 1.0}
+Stencil getcell_xp2 {[0][0][ 2] = 1.0}
+Stencil getcell_ym2 {[0][-2][0] = 1.0}
+Stencil getcell_ym1 {[0][-1][0] = 1.0}
+Stencil getcell_yp1 {[0][ 1][0] = 1.0}
+Stencil getcell_yp2 {[0][ 2][0] = 1.0}
+Stencil getcell_zm2 {[-2][0][0] = 1.0}
+Stencil getcell_zm1 {[-1][0][0] = 1.0}
+Stencil getcell_zp1 {[ 1][0][0] = 1.0}
+Stencil getcell_zp2 {[ 2][0][0] = 1.0}
+
+//Value of f at offset (-2..2) cells from the current vertex along direction idir (1,2,3)
 getcell(Field f, int offset, int idir)
 {
-	int3 target = vertexIdx
-	if(idir == 1) target.x += offset
-	if(idir == 2) target.y += offset
-	if(idir == 3) target.z += offset
-        return f[target.x][target.y][target.z]
+	if(offset == 0) return value(f)
+	if(idir == 1)
+	{
+		if(offset == -2) return getcell_xm2(f)
+		if(offset == -1) return getcell_xm1(f)
+		if(offset ==  1) return getcell_xp1(f)
+		return getcell_xp2(f)
+	}
+	if(idir == 2)
+	{
+		if(offset == -2) return getcell_ym2(f)
+		if(offset == -1) return getcell_ym1(f)
+		if(offset ==  1) return getcell_yp1(f)
+		return getcell_yp2(f)
+	}
+	if(offset == -2) return getcell_zm2(f)
+	if(offset == -1) return getcell_zm1(f)
+	if(offset ==  1) return getcell_zp1(f)
+	return getcell_zp2(f)
 }
+#else
+getcell(Field f, int offset, int idir)
+{
+	suppress_unused_warning(f)
+	suppress_unused_warning(offset)
+	suppress_unused_warning(idir)
+	fatal_error_message(true,"getcell needs at least STENCIL_ORDER >= 4!\n");
+	return 0.0
+}
+#endif
+const real cs_kt=0.57735026919
+const real tiny_kt=1e-30
+
+run_const bool3 lactive_dimension = (bool3)
+		{
+	          nxgrid > 1,
+		  nygrid > 1,
+		  nzgrid > 1
+		}

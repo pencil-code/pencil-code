@@ -32,6 +32,7 @@
 /GENERATE_DSL_CODE/ b end
 /LIBRARIES/ b end
 /FARRAY/ b end
+/DYNAMIC_AUX/ b end
 /^ *[A-Z0-9_]* *= *no/ b end
 s/^ *REAL_PRECISION *= *double *$/PRECISION=DOUBLE/
 s/^ *REAL_PRECISION *= *8 *$/PRECISION=DOUBLE/

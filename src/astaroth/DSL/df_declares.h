@@ -29,6 +29,7 @@ real3 DF_DUST_VELOCITY[ndustspec]
 real  DF_DUST_DENSITY[ndustspec]
 real  DF_DUST_MASS[ndustspec]
 real  DF_DUST_ICE_MASS[ndustspec]
+real3 DF_IAAE__MOD__DISP_CURRENT = rk_intermediate_split_first(F_AAE,step_num)
 
 real DF_LAMRA = rk_intermediate_split_first(F_LAMRA,step_num)
 if(ldustvelocity)
@@ -215,3 +216,5 @@ real  DF_UU_SPHP       = 0.0
 real  DF_BB_SPHR       = 0.0
 real  DF_BB_SPHT       = 0.0
 real  DF_BB_SPHP       = 0.0
+real DF_LNCC = rk_intermediate_split_first(F_LNCC,step_num)
+// @auto-field-declarations: fortran-parser adds missing fields above this line

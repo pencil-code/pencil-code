@@ -1,0 +1,28 @@
+Directory:
+    ${PENCIL_HOME}/samples/driver
+SVN Id:
+    $Id$
+Maintainer:
+    Philippe Bourdin <pc/bourdin[dot]ch>
+Added:
+    20-Sep-2026
+Status:
+    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+Recommended resolution:
+    96x96x96 (nu = 100·10^8 m²/s)
+Comments:
+    Test run to perform a velocity driving in the vertical velocity.
+    The xy-plane at z-grid point 11 is driven towards the target.
+    The target values are saved within the file "driver/vel-z.dat",
+    and "driver/vel-z_times.dat" indicates the times of the target.
+    The driver files use SI units. To run this sample:
+    1) Create the driver files, open IDL in this directory and type:
+       IDL> .r ../../utils/philippe/driver/create_vel_driver
+    2) Compile and run the sample.
+    3) Data analysis is done with the PC-GUI in IDL again:
+       IDL> .r pc_gui
+       Select the vertical velocity component and enjoy.
+References:
+    Bourdin: 2020, GAFD 114 (1-2), 235--260,
+    DOI: 10.1080/03091929.2019.1643849,
+    https://adsabs.harvard.edu/abs/2020GApFD.114..235B

@@ -180,7 +180,7 @@ module Particles_breakup
 !
 contains
 !***********************************************************************
-    subroutine register_particles_breakup()
+    subroutine register_particles_breakup
 !
 !  Register particle-local breakup state.
 !  imskh - KH stripped-mass accumulator (Aguerre-Nigro Eq. 3.20)
@@ -847,6 +847,7 @@ contains
     endsubroutine particles_breakup_pencils
 !***********************************************************************
     subroutine get_local_gas_density(f,xxp,inear,ipid,rho_gas,lnrho_gas)
+
       use EquationOfState, only: rho0
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
@@ -872,6 +873,7 @@ contains
     endsubroutine get_local_gas_density
 !***********************************************************************
     subroutine get_local_gas_kinematic_viscosity(rho_gas,nu_gas)
+
       use Viscosity, only: getnu
 !
       real, intent(in) :: rho_gas
@@ -903,6 +905,7 @@ contains
     endsubroutine get_local_gas_kinematic_viscosity
 !***********************************************************************
     subroutine compute_kh_scales(dp,rho_gas,nu_gas,urmag,we_g,we_p,rep,oh,tay,lambda_kh,omega_kh,tau_kh)
+
       real, intent(in) :: dp, rho_gas, nu_gas, urmag
       real, intent(out) :: we_g, we_p, rep, oh, tay, lambda_kh, omega_kh, tau_kh
       real :: denom, rep_liq

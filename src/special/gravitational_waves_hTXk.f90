@@ -386,7 +386,7 @@ module Special
       !use EquationOfState, only: cs0
       use SharedVariables, only: get_shared_variable
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       !logical :: lread_scl_factor_file_exists
       !integer :: stat, i, nt_file, it_file
       real :: lgt1, lgt2, lgf1, lgf2, lgf, lgt_current
@@ -408,24 +408,13 @@ module Special
 !
 !  Check if we are solving for relativistic bulk motions, not just EoS.
 !
-      if (lhydro) then
-        call get_shared_variable('lconservative', lconservative, caller='register_special')
-      else
-        if (.not.associated(lconservative)) allocate(lconservative)
-        lconservative=.false.
-      endif
+      
+      call get_shared_variable('lconservative', lconservative, caller='register_special',default_val=.false.)
 !
 !  Check if we are running the klein_gordon module
 !
-      if (lklein_gordon) then
-        call get_shared_variable('lwaterfall', lwaterfall, caller='register_special')
-        call get_shared_variable('lflrw', lflrw, caller='register_special')
-      else
-        if (.not.associated(lwaterfall)) allocate(lwaterfall)
-        lwaterfall=.false.
-        if (.not.associated(lflrw)) allocate(lflrw)
-        lflrw=.false.
-      endif
+      call get_shared_variable('lwaterfall', lwaterfall, caller='register_special',default_val=.false.)
+      call get_shared_variable('lflrw', lflrw, caller='register_special',default_val=.false.)
 !
 !  get a"/a (here called ddotam)
 !
@@ -706,7 +695,7 @@ module Special
 !
 !  14-aug-2011/Bourdin.KIS: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -718,14 +707,13 @@ module Special
 !  06-oct-2003/tony: coded
 !
       use Fourier, only: kx_fft, ky_fft, kz_fft      
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: initpower_GWs,initpower2_GWs,initpower_med_GWs,compks,compkh,amplGWs
       real :: ksqr, k1, k2, k3, k1sqr, k2sqr, k3sqr, om, om2
       real :: hhTre, hhTim
       integer :: ikx,iky,ikz
       complex :: om_cmplx, gcomplex_new
 !
-      intent(inout) :: f
 !
 !  initialize everything to zero
 !
@@ -954,7 +942,7 @@ module Special
 !
 !  18-jul-06/tony: coded
 !
-      logical, dimension(npencils), intent(inout) :: lpencil_in
+      logical, dimension(npencils) :: lpencil_in
 !
       call keep_compiler_quiet(lpencil_in)
 !
@@ -972,12 +960,10 @@ module Special
       use Deriv, only: derij
       use Sub, only: dot2_mn
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension(nx) :: prefactor
-      type (pencil_case) :: p
+      type(pencil_case) :: p
 !
-      intent(in) :: f
-      intent(inout) :: p
       integer :: i, j, ij
       real :: fact, a2=1.
 !
@@ -1186,15 +1172,13 @@ module Special
 !
       use Diagnostics
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
       real :: stress_prefactor2, fac_stress_comp
-      type (pencil_case) :: p
 !
       integer :: ij
 !
-      intent(in) :: p
-      intent(inout) :: f,df
 !
 !  Identify module and boundary conditions.
 !
@@ -1260,7 +1244,7 @@ module Special
     subroutine calc_diagnostics_special(f,p)
 
       use Diagnostics
-      real,dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
       real :: sign_switch=0
       real, dimension(nx) :: ggT,ggTim,ggX,ggXim
@@ -1321,7 +1305,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -1341,7 +1325,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -1369,7 +1353,7 @@ module Special
 !
       !use Sub, only: remove_mean
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lremove_mean_hij)
       call keep_compiler_quiet(lremove_mean_gij)
@@ -1383,7 +1367,7 @@ module Special
 !
 !  07-aug-17/axel: coded
 
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 
       call keep_compiler_quiet(f)
 !
@@ -1396,9 +1380,9 @@ module Special
 !
 !  27-nov-08/wlad: coded
 !
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension(mx,my,mz,mvar), intent(inout) :: df
-      real, intent(in) :: dt_
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real :: dt_
       logical, intent(in) :: llast
 !
 !  Compute the transverse part of the stress tensor by going into Fourier space.
@@ -1450,6 +1434,22 @@ module Special
 !
       error = read_persist ('DT_GW', dt_GW)
     endsubroutine input_persist_special
+!***********************************************************************
+    logical function output_persistent_special()
+!
+!  Write the accumulated dt for GW update
+!
+!  26-Sep-2026/TP: coded
+!
+      use IO, only: write_persist
+!
+      output_persistent_special = .true.
+!
+      if (write_persist ('DT_GW', id_record_DT_GW, dt_GW)) return
+!
+      output_persistent_special = .false.
+!
+    endfunction output_persistent_special
 !***********************************************************************
     subroutine make_spectra(f)
 !
@@ -2186,11 +2186,13 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
 !
 !  16-oct-19/MR: carved out from compute_gT_and_gX_from_gij
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (:) :: spectrum,spectrum_hel
-      real, dimension (:,:) :: spectrum_2d,spectrum_2d_hel
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(:) :: spectrum
+      real, dimension(:) :: spectrum_hel
+      real, dimension(:,:) :: spectrum_2d
+      real, dimension(:,:) :: spectrum_2d_hel
       logical :: lfirstcall
-      character(LEN=3) :: kind
+      character(len=3) :: kind
 
       if (lfirstcall) then
         call make_spectra(f)
@@ -2228,8 +2230,9 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
 !
 !  16-oct-19/MR: carved out from compute_gT_and_gX_from_gij
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nk) :: spectrum,spectrum_hel
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(:) :: spectrum
+      real, dimension(:) :: spectrum_hel
       logical :: lfirstcall
       character, dimension(3) :: kind
       integer :: len
@@ -3294,13 +3297,15 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
 !***********************************************************************
     subroutine special_before_boundary_diagnostics(f)
       use Fourier, only: fourier_transform, fft_xyz_parallel, kx_fft, ky_fft, kz_fft
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (:,:,:), allocatable :: S_T_re, S_T_im, S_X_re, S_X_im
 
-      allocate(S_T_re(nx,ny,nz))
-      allocate(S_T_im(nx,ny,nz))
-      allocate(S_X_re(nx,ny,nz))
-      allocate(S_X_im(nx,ny,nz))
+      if(lreal_space_hTX_as_aux .or. lreal_space_gTX_as_aux ) then
+        allocate(S_T_re(nx,ny,nz))
+        allocate(S_T_im(nx,ny,nz))
+        allocate(S_X_re(nx,ny,nz))
+        allocate(S_X_im(nx,ny,nz))
+      endif
 !
 !  back to real space: hTX
 !
@@ -3339,8 +3344,9 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
       use Diagnostics
 !!      use FArrayManager, only: farray_index_append
 !
+      logical :: lreset
+      logical, optional :: lwrite
       integer :: iname
-      logical :: lreset,lwrite
 
       call keep_compiler_quiet(lwrite)
 !!!
@@ -3455,8 +3461,8 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
 !
       use Slices_methods, only: assign_slices_scal
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (slice_data) :: slices
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(slice_data) :: slices
 !
 !  Loop over slices
 !

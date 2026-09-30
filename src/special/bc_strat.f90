@@ -45,7 +45,7 @@ module Special
       use EquationOfState, only: cs20, get_gamma_etc
       use Gravity, only: potential
 !
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       real, dimension(mz) :: rho0z
       integer :: k
@@ -75,8 +75,8 @@ module Special
 !
 !  20-jul-15/ccyang: coded
 !
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      type(boundary_condition), intent(inout) :: bc
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(boundary_condition) :: bc
 !
       integer :: k
 !

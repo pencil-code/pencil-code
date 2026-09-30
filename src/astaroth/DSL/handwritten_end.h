@@ -163,6 +163,7 @@
           if(AC_irhoe__mod__disp_current  != 0) write(F_RHOE ,rk_intermediate(F_RHOE ,DF_RHOE ,step_num,AC_dt__mod__cdata))
           if(AC_idiva_name__mod__disp_current  != 0) write(F_DIVA_NAME,rk_intermediate(F_DIVA_NAME,DF_DIVA_NAME,step_num,AC_dt__mod__cdata))
           if(AC_iex__mod__cdata != 0)    write(F_EVEC   ,rk_intermediate(F_EVEC   ,DF_EVEC   ,step_num,AC_dt__mod__cdata)) 
+          if(AC_iaae__mod__disp_current != 0)    write(F_AAE,rk_intermediate(F_AAE,DF_IAAE__MOD__DISP_CURRENT ,step_num,AC_dt__mod__cdata)) 
 #  endif
 #  if LCHIRAL_MHD
           if(AC_imu5__mod__chiral_mhd != 0) write(F_MU5, rk_intermediate(F_MU5, DF_MU5, step_num,AC_dt__mod__cdata))
@@ -187,6 +188,8 @@
           	}
           }
 	  if(AC_iss_run_aver__mod__cdata != 0) write(F_SS_RUN_AVER,rk_intermediate(F_SS_RUN_AVER,DF_SS_RUN_AVER,step_num,AC_dt__mod__cdata))
+          if(AC_ilncc__mod__cdata != 0) write(F_LNCC, rk_intermediate(F_LNCC,DF_LNCC,step_num,AC_dt__mod__cdata))
+// @auto-field-declarations: fortran-parser adds missing fields above this line
    }
    else
    {

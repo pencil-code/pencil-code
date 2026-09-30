@@ -22,3 +22,4 @@ GRAVITY   =   gravity_simple
 FORCING   = noforcing
 SHEAR     = noshear
 REAL_PRECISION = double
+DYNAMIC_AUX = yes

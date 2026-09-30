@@ -26,3 +26,4 @@ STRUCT_FUNC = struct_func
 REAL_PRECISION = double
 
 DERIV_3SEC_INSTEADOF_14MIN_COMPILETIME = deriv_3sec_insteadof_14min_compiletime
+DYNAMIC_AUX = yes

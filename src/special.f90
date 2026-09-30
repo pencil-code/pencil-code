@@ -11,14 +11,18 @@
   module Special
 
     use Cparam
-    use Cdata, only: lroot, n_special_modules, special_modules
+    use Cdata, only: lroot, n_special_modules, special_modules, n_odevars
+    use, intrinsic :: iso_c_binding, only: c_funptr, c_f_procpointer
 
     implicit none
 
     include 'special.h'
+!
+!  Interfaces of the hooks of the special modules; the check that the modules
+!  implement them exactly is in check_special_hook_interfaces (nospecial.f90).
+!
+    include 'special_interfaces.inc'
 
-    external caller, caller0, caller1, caller2, caller3, caller4, caller5, caller5_str5, caller6, &
-             caller_str, func_int_caller0
     integer(KIND=ikind8), external :: dlopen_c, dlsym_c
     external dlclose_c
 !
@@ -113,6 +117,53 @@
 
     integer(KIND=ikind8) :: libhandle
     integer(KIND=ikind8), dimension(n_special_modules,n_subroutines) :: special_sub_handles
+!
+!  The hooks of each special module as procedure pointers with explicit
+!  interfaces, so that all calls below are checked by the compiler.
+!
+    type special_hooks
+      procedure(iface_register_special),               pointer, nopass :: register_special
+      procedure(iface_register_particles_special),     pointer, nopass :: register_particles_special
+      procedure(iface_initialize_special),             pointer, nopass :: initialize_special
+      procedure(iface_finalize_special),               pointer, nopass :: finalize_special
+      procedure(iface_read_special_pars),              pointer, nopass :: read_special_init_pars
+      procedure(iface_write_special_pars),             pointer, nopass :: write_special_init_pars
+      procedure(iface_read_special_pars),              pointer, nopass :: read_special_run_pars
+      procedure(iface_write_special_pars),             pointer, nopass :: write_special_run_pars
+      procedure(iface_rprint_special),                 pointer, nopass :: rprint_special
+      procedure(iface_get_slices_special),             pointer, nopass :: get_slices_special
+      procedure(iface_init_special),                   pointer, nopass :: init_special
+      procedure(iface_dspecial_dt),                    pointer, nopass :: dspecial_dt
+      procedure(iface_special_noargs),                 pointer, nopass :: dspecial_dt_ode
+      procedure(iface_calc_pencils_special),           pointer, nopass :: calc_pencils_special
+      procedure(iface_special_noargs),                 pointer, nopass :: pencil_criteria_special
+      procedure(iface_pencil_interdep_special),        pointer, nopass :: pencil_interdep_special
+      procedure(iface_special_calc_rhs),               pointer, nopass :: special_calc_hydro
+      procedure(iface_special_calc_rhs),               pointer, nopass :: special_calc_density
+      procedure(iface_special_calc_rhs),               pointer, nopass :: special_calc_dustdensity
+      procedure(iface_special_calc_rhs),               pointer, nopass :: special_calc_energy
+      procedure(iface_special_calc_rhs),               pointer, nopass :: special_calc_magnetic
+      procedure(iface_special_calc_rhs),               pointer, nopass :: special_calc_pscalar
+      procedure(iface_special_calc_particles),         pointer, nopass :: special_calc_particles
+      procedure(iface_special_calc_rhs),               pointer, nopass :: special_calc_chemistry
+      procedure(iface_special_boundconds),             pointer, nopass :: special_boundconds
+      procedure(iface_special_boundary),               pointer, nopass :: special_before_boundary
+      procedure(iface_special_particles_bfre_bdary),   pointer, nopass :: special_particles_bfre_bdary
+      procedure(iface_special_boundary),               pointer, nopass :: special_after_boundary
+      procedure(iface_special_after_timestep),         pointer, nopass :: special_after_timestep
+      procedure(iface_set_init_parameters),            pointer, nopass :: set_init_parameters
+      procedure(iface_special_calc_spectra),           pointer, nopass :: special_calc_spectra
+      procedure(iface_special_noargs),                 pointer, nopass :: input_persist_special
+      procedure(iface_input_persist_special_id),       pointer, nopass :: input_persist_special_id
+      procedure(iface_output_persistent_special),      pointer, nopass :: output_persistent_special
+      procedure(iface_special_particles_after_dtsub),  pointer, nopass :: special_particles_after_dtsub
+      procedure(iface_calc_diagnostics_special),       pointer, nopass :: calc_diagnostics_special
+      procedure(iface_special_ode),                    pointer, nopass :: calc_ode_diagnostics_special
+      procedure(iface_special_ode),                    pointer, nopass :: prep_rhs_special
+      procedure(iface_special_noargs),                 pointer, nopass :: load_variables_to_gpu_special
+      procedure(iface_special_boundary),               pointer, nopass :: special_before_boundary_diagnostics
+    endtype special_hooks
+    type(special_hooks), dimension(n_special_modules) :: hooks
     character(LEN=128) :: specific_subroutine
 
     contains
@@ -176,7 +227,66 @@
       enddo
     enddo
 
+!
+!  Make the looked-up addresses callable through the typed procedure pointers.
+!
+    do i=1,n_special_modules
+      call c_f_procpointer(hook(i,I_REGISTER_SPECIAL),             hooks(i)%register_special)
+      call c_f_procpointer(hook(i,I_REGISTER_PARTICLES_SPECIAL),   hooks(i)%register_particles_special)
+      call c_f_procpointer(hook(i,I_INITIALIZE_SPECIAL),           hooks(i)%initialize_special)
+      call c_f_procpointer(hook(i,I_FINALIZE_SPECIAL),             hooks(i)%finalize_special)
+      call c_f_procpointer(hook(i,I_READ_SPECIAL_INIT_PARS),       hooks(i)%read_special_init_pars)
+      call c_f_procpointer(hook(i,I_WRITE_SPECIAL_INIT_PARS),      hooks(i)%write_special_init_pars)
+      call c_f_procpointer(hook(i,I_READ_SPECIAL_RUN_PARS),        hooks(i)%read_special_run_pars)
+      call c_f_procpointer(hook(i,I_WRITE_SPECIAL_RUN_PARS),       hooks(i)%write_special_run_pars)
+      call c_f_procpointer(hook(i,I_RPRINT_SPECIAL),               hooks(i)%rprint_special)
+      call c_f_procpointer(hook(i,I_GET_SLICES_SPECIAL),           hooks(i)%get_slices_special)
+      call c_f_procpointer(hook(i,I_INIT_SPECIAL),                 hooks(i)%init_special)
+      call c_f_procpointer(hook(i,I_DSPECIAL_DT),                  hooks(i)%dspecial_dt)
+      call c_f_procpointer(hook(i,I_DSPECIAL_DT_ODE),              hooks(i)%dspecial_dt_ode)
+      call c_f_procpointer(hook(i,I_CALC_PENCILS_SPECIAL),         hooks(i)%calc_pencils_special)
+      call c_f_procpointer(hook(i,I_PENCIL_CRITERIA_SPECIAL),      hooks(i)%pencil_criteria_special)
+      call c_f_procpointer(hook(i,I_PENCIL_INTERDEP_SPECIAL),      hooks(i)%pencil_interdep_special)
+      call c_f_procpointer(hook(i,I_SPECIAL_CALC_HYDRO),           hooks(i)%special_calc_hydro)
+      call c_f_procpointer(hook(i,I_SPECIAL_CALC_DENSITY),         hooks(i)%special_calc_density)
+      call c_f_procpointer(hook(i,I_SPECIAL_CALC_DUSTDENSITY),     hooks(i)%special_calc_dustdensity)
+      call c_f_procpointer(hook(i,I_SPECIAL_CALC_ENERGY),          hooks(i)%special_calc_energy)
+      call c_f_procpointer(hook(i,I_SPECIAL_CALC_MAGNETIC),        hooks(i)%special_calc_magnetic)
+      call c_f_procpointer(hook(i,I_SPECIAL_CALC_PSCALAR),         hooks(i)%special_calc_pscalar)
+      call c_f_procpointer(hook(i,I_SPECIAL_CALC_PARTICLES),       hooks(i)%special_calc_particles)
+      call c_f_procpointer(hook(i,I_SPECIAL_CALC_CHEMISTRY),       hooks(i)%special_calc_chemistry)
+      call c_f_procpointer(hook(i,I_SPECIAL_BOUNDCONDS),           hooks(i)%special_boundconds)
+      call c_f_procpointer(hook(i,I_SPECIAL_BEFORE_BOUNDARY),      hooks(i)%special_before_boundary)
+      call c_f_procpointer(hook(i,I_SPECIAL_PARTICLES_BFRE_BDARY), hooks(i)%special_particles_bfre_bdary)
+      call c_f_procpointer(hook(i,I_SPECIAL_AFTER_BOUNDARY),       hooks(i)%special_after_boundary)
+      call c_f_procpointer(hook(i,I_SPECIAL_AFTER_TIMESTEP),       hooks(i)%special_after_timestep)
+      call c_f_procpointer(hook(i,I_SET_INIT_PARAMETERS),          hooks(i)%set_init_parameters)
+      call c_f_procpointer(hook(i,I_SPECIAL_CALC_SPECTRA),         hooks(i)%special_calc_spectra)
+      call c_f_procpointer(hook(i,I_INPUT_PERSIST_SPECIAL),        hooks(i)%input_persist_special)
+      call c_f_procpointer(hook(i,I_INPUT_PERSIST_SPECIAL_ID),     hooks(i)%input_persist_special_id)
+      call c_f_procpointer(hook(i,I_OUTPUT_PERSISTENT_SPECIAL),    hooks(i)%output_persistent_special)
+      call c_f_procpointer(hook(i,I_SPECIAL_PARTICLES_AFTER_DTSUB),hooks(i)%special_particles_after_dtsub)
+      call c_f_procpointer(hook(i,I_CALC_DIAGNOSTICS_SPECIAL),     hooks(i)%calc_diagnostics_special)
+      call c_f_procpointer(hook(i,I_CALC_ODE_DIAGNOSTICS_SPECIAL), hooks(i)%calc_ode_diagnostics_special)
+      call c_f_procpointer(hook(i,I_PREP_RHS_SPECIAL),             hooks(i)%prep_rhs_special)
+      call c_f_procpointer(hook(i,I_LOAD_VARIABLES_TO_GPU_SPECIAL),hooks(i)%load_variables_to_gpu_special)
+      call c_f_procpointer(hook(i,I_SPECIAL_BEFORE_BOUNDARY_DIAGNOSTICS), &
+                                                                   hooks(i)%special_before_boundary_diagnostics)
+    enddo
   endsubroutine initialize_mult_special
+!***********************************************************************
+  function hook(imod,isub)
+!
+!  Address of subroutine isub of special module imod, as looked up with dlsym.
+!
+    use, intrinsic :: iso_c_binding, only: c_null_funptr
+!
+    integer, intent(in) :: imod, isub
+    type(c_funptr) :: hook
+!
+    hook=transfer(special_sub_handles(imod,isub),c_null_funptr)
+!
+  endfunction hook
 !***********************************************************************
     subroutine register_special
 !
@@ -187,7 +297,7 @@
       integer :: i
 !
       do i=1,n_special_modules
-        call caller0(special_sub_handles(i,I_REGISTER_SPECIAL))
+        call hooks(i)%register_special()
       enddo
 !
     endsubroutine register_special
@@ -199,13 +309,14 @@
 !  06-oct-03/tony: coded
 !
       use Cdata, only: special_module_index
-      real, dimension (mx,my,mz,mfarray) :: f
+!
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       integer :: i
 !
       do i=1,n_special_modules
-         special_module_index=i
-        call caller1(special_sub_handles(i,I_INITIALIZE_SPECIAL),f)
+        special_module_index=i
+        call hooks(i)%initialize_special(f)
       enddo
 !
     endsubroutine initialize_special
@@ -216,12 +327,12 @@
 !
 !  14-aug-2011/Bourdin.KIS: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       integer :: i
 !
       do i=1,n_special_modules
-        call caller1(special_sub_handles(i,I_FINALIZE_SPECIAL),f)
+        call hooks(i)%finalize_special(f)
       enddo
 
       call dlclose_c(libhandle)
@@ -233,14 +344,12 @@
 !  initialise special condition; called from start.f90
 !  06-oct-2003/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       integer :: i
 !
       do i=1,n_special_modules
-        call caller1(special_sub_handles(i,I_INIT_SPECIAL),f)
+        call hooks(i)%init_special(f)
       enddo
 !
     endsubroutine init_special
@@ -254,7 +363,7 @@
       integer :: i
 !
       do i=1,n_special_modules
-        call caller0(special_sub_handles(i,I_PENCIL_CRITERIA_SPECIAL))
+        call hooks(i)%pencil_criteria_special()
       enddo
 
     endsubroutine pencil_criteria_special
@@ -265,12 +374,12 @@
 !
 !  18-07-06/tony: coded
 !
-      logical, dimension(npencils), intent(inout) :: lpencil_in
+      logical, dimension(npencils) :: lpencil_in
 !
       integer :: i
 !
       do i=1,n_special_modules
-        call caller1(special_sub_handles(i,I_PENCIL_INTERDEP_SPECIAL),lpencil_in)
+        call hooks(i)%pencil_interdep_special(lpencil_in)
       enddo
 !
     endsubroutine pencil_interdep_special
@@ -282,17 +391,13 @@
 !
 !  24-nov-04/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
-!
-      intent(in) :: f
-      intent(inout) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
 !
       integer :: i
 !
       do i=1,n_special_modules
-        !call caller(special_sub_handles(i,I_CALC_PENCILS_SPECIAL),2,f,p)
-        call caller2(special_sub_handles(i,I_CALC_PENCILS_SPECIAL),f,p)
+        call hooks(i)%calc_pencils_special(f,p)
       enddo
 !
     endsubroutine calc_pencils_special
@@ -306,7 +411,7 @@
       integer :: i
 !
       do i=1,n_special_modules
-        call caller0(special_sub_handles(i,I_DSPECIAL_DT_ODE))
+        call hooks(i)%dspecial_dt_ode()
       enddo
 !
     endsubroutine dspecial_dt_ode
@@ -320,20 +425,16 @@
 !  06-oct-03/tony: coded
 !
       use Cdata, only: lspecial_substepped, lsubstepping_in_time
-
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
 !
-      intent(in) :: f,p
-      intent(inout) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
 !
       integer :: i
 !
-!
       do i=1,n_special_modules
-        if(lsubstepping_in_time .eqv. lspecial_substepped(i)) then
-          call caller3(special_sub_handles(i,I_DSPECIAL_DT),f,df,p)
+        if (lsubstepping_in_time .eqv. lspecial_substepped(i)) then
+          call hooks(i)%dspecial_dt(f,df,p)
         endif
       enddo
 !
@@ -350,23 +451,23 @@
       integer :: i
 !
       do i=1,n_special_modules
-        call caller1(special_sub_handles(i,I_REGISTER_PARTICLES_SPECIAL),npvar)
+        call hooks(i)%register_particles_special(npvar)
       enddo
 !
     endsubroutine register_particles_special
-!*********************************************************************** 
+!***********************************************************************
     subroutine read_special_init_pars(iomsg)
 !
       use File_io, only: parallel_rewind
-
-      character(LEN=*), intent(out) :: iomsg
+!
+      character(len=*), intent(out) :: iomsg
 !
       integer :: i
-      character(LEN=iomsglen) :: msg
-
+      character(len=iomsglen) :: msg
+!
       iomsg=''
       do i=1,n_special_modules
-        call caller2(special_sub_handles(i,I_READ_SPECIAL_INIT_PARS),msg,iomsglen)
+        call hooks(i)%read_special_init_pars(msg)
         if (msg/='') then
           iomsg=trim(iomsg)//new_line('a')//trim(special_modules(i))//': '//trim(msg)
           call parallel_rewind
@@ -374,7 +475,7 @@
       enddo
 !
     endsubroutine read_special_init_pars
-!*********************************************************************** 
+!***********************************************************************
     subroutine write_special_init_pars(unit)
 !
       integer, intent(in) :: unit
@@ -382,7 +483,7 @@
       integer :: i
 !
       do i=1,n_special_modules
-        call caller1(special_sub_handles(i,I_WRITE_SPECIAL_INIT_PARS),unit)
+        call hooks(i)%write_special_init_pars(unit)
       enddo
 !
     endsubroutine write_special_init_pars
@@ -390,15 +491,15 @@
     subroutine read_special_run_pars(iomsg)
 !
       use File_io, only: parallel_rewind
-
-      character(LEN=*), intent(out) :: iomsg
+!
+      character(len=*), intent(out) :: iomsg
 !
       integer :: i
-      character(LEN=iomsglen) :: msg
+      character(len=iomsglen) :: msg
 !
       iomsg=''
       do i=1,n_special_modules
-        call caller2(special_sub_handles(i,I_READ_SPECIAL_RUN_PARS),msg,iomsglen)
+        call hooks(i)%read_special_run_pars(msg)
         if (msg/='') then
           iomsg=trim(iomsg)//new_line('a')//trim(special_modules(i))//': '//trim(msg)
           call parallel_rewind
@@ -414,7 +515,7 @@
       integer :: i
 !
       do i=1,n_special_modules
-        call caller1(special_sub_handles(i,I_WRITE_SPECIAL_RUN_PARS),unit)
+        call hooks(i)%write_special_run_pars(unit)
       enddo
 !
     endsubroutine write_special_run_pars
@@ -425,12 +526,13 @@
 !
 !  06-oct-03/tony: coded
 !
-      logical :: lreset,lwrite
+      logical :: lreset
+      logical, optional :: lwrite
+!
       integer :: i
 !
       do i=1,n_special_modules
-        !call caller(special_sub_handles(i,I_RPRINT_SPECIAL),2,lreset,lwrite)
-        call caller2(special_sub_handles(i,I_RPRINT_SPECIAL),lreset,lwrite)
+        call hooks(i)%rprint_special(lreset,lwrite)
       enddo
 !
     endsubroutine rprint_special
@@ -441,56 +543,32 @@
 !
 !  26-jun-06/tony: dummy
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (slice_data) :: slices
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(slice_data) :: slices
 !
       integer :: i
 !
       do i=1,n_special_modules
-        !call caller(special_sub_handles(i,I_GET_SLICES_SPECIAL),2,f,slices)
-        call caller2(special_sub_handles(i,I_GET_SLICES_SPECIAL),f,slices)
+        call hooks(i)%get_slices_special(f,slices)
       enddo
 !
     endsubroutine get_slices_special
-!*********************************************************************** 
-    subroutine special_calc_3par(f,df,p,modind)
-!
-!  Calculate an additional 'special' term on the right hand side of the
-!  momentum equation.
-!
-!  Some precalculated pencils of data are passed in for efficiency
-!  others may be calculated directly from the f array.
-!
-!  06-oct-03/tony: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-      integer, intent(in) :: modind
-!
-      integer :: i
-!
-      do i=1,n_special_modules
-        !call caller(special_sub_handles(i,modind),3,f,df,p)
-        call caller3(special_sub_handles(i,modind),f,df,p)
-      enddo
-!
-    endsubroutine special_calc_3par
-!*********************************************************************** 
+!***********************************************************************
     subroutine special_calc_hydro(f,df,p)
 !
 !  Calculate an additional 'special' term on the right hand side of the
 !  momentum equation.
 !
-!  Some precalculated pencils of data are passed in for efficiency
-!  others may be calculated directly from the f array.
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-
-      call special_calc_3par(f,df,p,I_SPECIAL_CALC_HYDRO)
-
+      integer :: i
+!
+      do i=1,n_special_modules
+        call hooks(i)%special_calc_hydro(f,df,p)
+      enddo
+!
     endsubroutine special_calc_hydro
 !***********************************************************************
     subroutine special_calc_density(f,df,p)
@@ -498,32 +576,32 @@
 !  Calculate an additional 'special' term on the right hand side of the
 !  continuity equation.
 !
-!  Some precalculated pencils of data are passed in for efficiency
-!  06-oct-03/tony: coded
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      integer :: i
 !
-      call special_calc_3par(f,df,p,I_SPECIAL_CALC_DENSITY)
+      do i=1,n_special_modules
+        call hooks(i)%special_calc_density(f,df,p)
+      enddo
 !
     endsubroutine special_calc_density
-!*********************************************************************** 
+!***********************************************************************
     subroutine special_calc_dustdensity(f,df,p)
 !
 !  Calculate an additional 'special' term on the right hand side of the
-!  continuity equation.
+!  dust continuity equation.
 !
-!  Some precalculated pencils of data are passed in for efficiency
-!  others may be calculated directly from the f array
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 !
-!  06-oct-03/tony: coded
+      integer :: i
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-!
-      call special_calc_3par(f,df,p,I_SPECIAL_CALC_DUSTDENSITY)
+      do i=1,n_special_modules
+        call hooks(i)%special_calc_dustdensity(f,df,p)
+      enddo
 !
     endsubroutine special_calc_dustdensity
 !***********************************************************************
@@ -532,16 +610,15 @@
 !  Calculate an additional 'special' term on the right hand side of the
 !  energy equation.
 !
-!  Some precalculated pencils of data are passed in for efficiency
-!  others may be calculated directly from the f array
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 !
-!  06-oct-03/tony: coded
+      integer :: i
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-!
-      call special_calc_3par(f,df,p,I_SPECIAL_CALC_ENERGY)
+      do i=1,n_special_modules
+        call hooks(i)%special_calc_energy(f,df,p)
+      enddo
 !
     endsubroutine special_calc_energy
 !***********************************************************************
@@ -550,37 +627,52 @@
 !  Calculate an additional 'special' term on the right hand side of the
 !  induction equation.
 !
-!  Some precalculated pencils of data are passed in for efficiency
-!  others may be calculated directly from the f array.
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 !
-!  06-oct-03/tony: coded
+      integer :: i
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-!
-      call special_calc_3par(f,df,p,I_SPECIAL_CALC_MAGNETIC)
+      do i=1,n_special_modules
+        call hooks(i)%special_calc_magnetic(f,df,p)
+      enddo
 !
     endsubroutine special_calc_magnetic
-!*********************************************************************** 
+!***********************************************************************
     subroutine special_calc_pscalar(f,df,p)
 !
 !  Calculate an additional 'special' term on the right hand side of the
 !  passive scalar equation.
 !
-!  Some precalculated pencils of data are passed in for efficiency
-!  others may be calculated directly from the f array.
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 !
-!  15-jun-09/anders: coded
+      integer :: i
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-!
-      call special_calc_3par(f,df,p,I_SPECIAL_CALC_PSCALAR)
+      do i=1,n_special_modules
+        call hooks(i)%special_calc_pscalar(f,df,p)
+      enddo
 !
     endsubroutine special_calc_pscalar
-!*********************************************************************** 
+!***********************************************************************
+    subroutine special_calc_chemistry(f,df,p)
+!
+!  Calculate an additional 'special' term on the right hand side of the
+!  chemistry equation.
+!
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
+!
+      integer :: i
+!
+      do i=1,n_special_modules
+        call hooks(i)%special_calc_chemistry(f,df,p)
+      enddo
+!
+    endsubroutine special_calc_chemistry
+!***********************************************************************
     subroutine special_calc_particles(f,df,fp,dfp,ineargrid)
 !
 !  Called before the loop, in case some particle value is needed
@@ -588,21 +680,19 @@
 !
 !  20-nov-08/wlad: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (:,:) :: fp
-      real, dimension (:,:) :: dfp
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real, dimension(:,:) :: fp, dfp
       integer, dimension(:,:) :: ineargrid
 !
       integer :: i
 !
       do i=1,n_special_modules
-        !call caller(special_sub_handles(i,I_SPECIAL_CALC_PARTICLES),5,f,df,fp,dfp,ineargrid)
-        call caller5(special_sub_handles(i,I_SPECIAL_CALC_PARTICLES),f,df,fp,dfp,ineargrid)
+        call hooks(i)%special_calc_particles(f,df,fp,dfp,ineargrid)
       enddo
 !
     endsubroutine special_calc_particles
-!*********************************************************************** 
+!***********************************************************************
     subroutine special_particles_bfre_bdary(f,fp,ineargrid)
 !
 !  Called before the loop, in case some particle value is needed
@@ -610,55 +700,35 @@
 !
 !  20-nov-08/wlad: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (:,:), intent(in) :: fp
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(:,:) :: fp
       integer, dimension(:,:) :: ineargrid
 !
       integer :: i
 !
       do i=1,n_special_modules
-        !call caller(special_sub_handles(i,I_SPECIAL_PARTICLES_BFRE_BDARY),3,f,fp,ineargrid)
-        call caller3(special_sub_handles(i,I_SPECIAL_PARTICLES_BFRE_BDARY),f,fp,ineargrid)
+        call hooks(i)%special_particles_bfre_bdary(f,fp,ineargrid)
       enddo
 !
     endsubroutine special_particles_bfre_bdary
-!***********************************************************************
-    subroutine special_calc_chemistry(f,df,p)
-!
-!  Calculate an additional 'special' term on the right hand side of the
-!  induction equation.
-!
-!
-!  15-sep-10/natalia: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
-!
-      call special_calc_3par(f,df,p,I_SPECIAL_CALC_CHEMISTRY)
-!
-    endsubroutine special_calc_chemistry
 !***********************************************************************
     subroutine special_before_boundary(f)
 !
 !  Possibility to modify the f array before the boundaries are
 !  communicated.
 !
-!  Some precalculated pencils of data are passed in for efficiency
-!  others may be calculated directly from the f array
-!
 !  06-jul-06/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       integer :: i
 !
       do i=1,n_special_modules
-        call caller1(special_sub_handles(i,I_SPECIAL_BEFORE_BOUNDARY),f)
+        call hooks(i)%special_before_boundary(f)
       enddo
 !
     endsubroutine special_before_boundary
-!*********************************************************************** 
+!***********************************************************************
     subroutine special_after_boundary(f)
 !
 !  Possibility to modify the f array after the boundaries are
@@ -666,16 +736,16 @@
 !
 !  06-jul-06/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       integer :: i
 !
       do i=1,n_special_modules
-        call caller1(special_sub_handles(i,I_SPECIAL_AFTER_BOUNDARY),f)
+        call hooks(i)%special_after_boundary(f)
       enddo
 !
     endsubroutine special_after_boundary
-!*********************************************************************** 
+!***********************************************************************
     subroutine special_boundconds(f,bc)
 !
 !  Some precalculated pencils of data are passed in for efficiency,
@@ -683,14 +753,13 @@
 !
 !  06-oct-03/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      type (boundary_condition), intent(in) :: bc
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(boundary_condition) :: bc
 !
       integer :: i
 !
       do i=1,n_special_modules
-        !call caller(special_sub_handles(i,I_SPECIAL_BOUNDCONDS),2,f,bc)
-        call caller2(special_sub_handles(i,I_SPECIAL_BOUNDCONDS),f,bc)
+        call hooks(i)%special_boundconds(f,bc)
       enddo
 !
     endsubroutine special_boundconds
@@ -702,22 +771,19 @@
 !
 !  27-nov-08/wlad: coded
 !
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension(mx,my,mz,mvar), intent(inout) :: df
-      real, intent(in) :: dt_
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real :: dt_
       logical, intent(in) :: llast
 !
       integer :: i
 !
       do i=1,n_special_modules
-        !call caller(special_sub_handles(i,I_SPECIAL_AFTER_TIMESTEP), &
-        !            4,f,df,dt_,llast)
-        call caller4(special_sub_handles(i,I_SPECIAL_AFTER_TIMESTEP), &
-                    f,df,dt_,llast)
+        call hooks(i)%special_after_timestep(f,df,dt_,llast)
       enddo
 !
     endsubroutine special_after_timestep
-!*********************************************************************** 
+!***********************************************************************
     subroutine set_init_parameters(Ntot,dsize,init_distr,init_distr2)
 !
 !  Possibility to modify the f and df after df is updated.
@@ -725,182 +791,180 @@
 !
 !  27-nov-08/wlad: coded
 !
-      real, dimension(ndustspec) :: dsize,init_distr,init_distr2
       real :: Ntot
+      real, dimension(ndustspec) :: dsize, init_distr, init_distr2
 !
       integer :: i
 !
       do i=1,n_special_modules
-        !call caller(special_sub_handles(i,I_SET_INIT_PARAMETERS),4,Ntot,dsize,init_distr,init_distr2)
-        call caller4(special_sub_handles(i,I_SET_INIT_PARAMETERS),Ntot,dsize,init_distr,init_distr2)
+        call hooks(i)%set_init_parameters(Ntot,dsize,init_distr,init_distr2)
       enddo
 !
     endsubroutine set_init_parameters
 !***********************************************************************
     subroutine special_calc_spectra(f,spec,spec_hel,spec_2d,spec_2d_hel,lfirstcall,kind)
-
-      use Quiet
-
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (:) :: spec,spec_hel
-      real, dimension (:,:) :: spec_2d,spec_2d_hel
+!
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(:) :: spec, spec_hel
+      real, dimension(:,:) :: spec_2d, spec_2d_hel
       logical :: lfirstcall
-      character(LEN=3) :: kind
+      character(len=3) :: kind
 !
       integer :: i
+!
       do i=1,n_special_modules
-        call caller6(special_sub_handles(i,I_SPECIAL_CALC_SPECTRA_BYTE),f, &
-                     spec,spec_hel,lfirstcall,kind,3)
-!                    spec,spec_hel,spec_2d,spec_2d_hel,lfirstcall,kind,3)
-!        call caller5_str5(special_sub_handles(i,I_SPECIAL_CALC_SPECTRA),f, &
-!                         spec, spec_hel, lfirstcall, kind)
+        call hooks(i)%special_calc_spectra(f,spec,spec_hel,spec_2d,spec_2d_hel,lfirstcall,kind)
       enddo
-
-      call keep_compiler_quiet(spec_2d,spec_2d_hel)
-
+!
     endsubroutine special_calc_spectra
 !***********************************************************************
     subroutine special_calc_spectra_byte(f,spec,spec_hel,lfirstcall,kind,len)
-
+!
+!  Not dispatched: the special modules are called through special_calc_spectra
+!  (the byte variant was needed only by the former C trampolines).
+!
       use Quiet
-
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (:) :: spec,spec_hel
+!
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(:) :: spec, spec_hel
       logical :: lfirstcall
+      character, dimension(3) :: kind
       integer :: len
-      character, dimension(len) :: kind
-
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(spec)
       call keep_compiler_quiet(spec_hel)
       call keep_compiler_quiet(lfirstcall)
-      call keep_compiler_quiet(kind)
       call keep_compiler_quiet(len)
-
+!
     endsubroutine special_calc_spectra_byte
-!*********************************************************************** 
+!***********************************************************************
     subroutine input_persist_special_id(id,done)
 !
       integer :: id
       logical :: done
-
+!
       integer :: i
+!
       do i=1,n_special_modules
-        call caller2(special_sub_handles(i,I_INPUT_PERSIST_SPECIAL_ID),id,done)
+        call hooks(i)%input_persist_special_id(id,done)
       enddo
-
+!
     endsubroutine input_persist_special_id
-!*********************************************************************** 
+!***********************************************************************
     subroutine input_persist_special
 !
       integer :: i
+!
       do i=1,n_special_modules
-        call caller0(special_sub_handles(i,I_INPUT_PERSIST_SPECIAL))
+        call hooks(i)%input_persist_special()
       enddo
-
+!
     endsubroutine input_persist_special
-!*********************************************************************** 
-    function output_persistent_special() result(ret)
-
-      logical :: ret
-      integer :: func_int_caller0
-      integer :: i
-
-      ret=.true.
-      do i=1,n_special_modules
-        ret=ret.and.(func_int_caller0(special_sub_handles(i,I_OUTPUT_PERSISTENT_SPECIAL))==1)
-      enddo
-
-    endfunction output_persistent_special        
 !***********************************************************************
-    subroutine special_particles_after_dtsub(f, dtsub, fp, dfp, ineargrid)
+    logical function output_persistent_special()
+!
+      integer :: i
+!
+      output_persistent_special=.false.
+      do i=1,n_special_modules
+        if (hooks(i)%output_persistent_special()) then
+          output_persistent_special=.true.
+          return
+        endif
+      enddo
+!
+    endfunction output_persistent_special
+!***********************************************************************
+    subroutine special_particles_after_dtsub(f,dtsub,fp,dfp,ineargrid)
 !
 !  Possibility to modify fp in the end of a sub-time-step.
 !
 !  28-aug-18/ccyang: coded
 !
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      real, intent(in) :: dtsub
-      real, dimension(:,:), intent(in) :: fp, dfp
-      integer, dimension(:,:), intent(in) :: ineargrid
+      real, contiguous, dimension(:,:,:,:) :: f
+      real :: dtsub
+      real, dimension(:,:) :: fp, dfp
+      integer, dimension(:,:) :: ineargrid
 !
       integer :: i
+!
       do i=1,n_special_modules
-        call caller5(special_sub_handles(i,I_SPECIAL_PARTICLES_AFTER_DTSUB),f,dtsub,fp,dfp,ineargrid)
+        call hooks(i)%special_particles_after_dtsub(f,dtsub,fp,dfp,ineargrid)
       enddo
 !
     endsubroutine special_particles_after_dtsub
 !***********************************************************************
     subroutine calc_diagnostics_special(f,p)
-
-      real, dimension(mx,my,mz,mfarray) :: f
+!
+      real, contiguous, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
+!
       integer :: i
-
+!
       do i=1,n_special_modules
-        call caller2(special_sub_handles(i,I_CALC_DIAGNOSTICS_SPECIAL),f,p)
+        call hooks(i)%calc_diagnostics_special(f,p)
       enddo
-
+!
     endsubroutine calc_diagnostics_special
 !***********************************************************************
     subroutine load_variables_to_gpu_special
-
+!
       integer :: i
-
+!
       do i=1,n_special_modules
-        call caller0(special_sub_handles(i,I_LOAD_VARIABLES_TO_GPU_SPECIAL))
+        call hooks(i)%load_variables_to_gpu_special()
       enddo
-
+!
     endsubroutine load_variables_to_gpu_special
 !***********************************************************************
     subroutine calc_ode_diagnostics_special(f_ode)
-
-      use Cdata, only: n_odevars
-
-      real, dimension(n_odevars), intent(IN) :: f_ode
+!
+      real, dimension(n_odevars) :: f_ode
+!
       integer :: i
-
+!
       do i=1,n_special_modules
-        call caller1(special_sub_handles(i,I_CALC_ODE_DIAGNOSTICS_SPECIAL),f_ode)
+        call hooks(i)%calc_ode_diagnostics_special(f_ode)
       enddo
-
+!
     endsubroutine calc_ode_diagnostics_special
 !***********************************************************************
     subroutine pushpars2c(p_par)
-
-      use Messages, only: fatal_error 
+!
+      use Messages, only: fatal_error
       use Quiet
-
+!
       integer, parameter :: n_pars=0
       integer(KIND=ikind8), dimension(n_pars) :: p_par
-
+!
       call fatal_error('pushpars2c_special','This function should not be called!')
       call keep_compiler_quiet(p_par)
-
+!
     endsubroutine pushpars2c
-!*********************************************************************** 
+!***********************************************************************
     subroutine prep_rhs_special(f_ode)
-
-      use Cdata, only: n_odevars
-
-      real, dimension(n_odevars), intent(IN) :: f_ode
+!
+      real, dimension(n_odevars) :: f_ode
+!
       integer :: i
-
+!
       do i=1,n_special_modules
-        call caller1(special_sub_handles(i,I_PREP_RHS_SPECIAL),f_ode)
+        call hooks(i)%prep_rhs_special(f_ode)
       enddo
-
+!
     endsubroutine prep_rhs_special
 !***********************************************************************
     subroutine special_before_boundary_diagnostics(f)
-
-      real, dimension (mx,my,mz,mfarray) :: f
+!
+      real, contiguous, dimension(:,:,:,:) :: f
+!
       integer :: i
-
+!
       do i=1,n_special_modules
-        call caller1(special_sub_handles(i,I_SPECIAL_BEFORE_BOUNDARY_DIAGNOSTICS),f)
+        call hooks(i)%special_before_boundary_diagnostics(f)
       enddo
-
+!
     endsubroutine special_before_boundary_diagnostics
 !***********************************************************************
   endmodule Special

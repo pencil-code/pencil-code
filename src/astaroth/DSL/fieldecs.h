@@ -333,6 +333,7 @@ field_order(AC_ikapparho__mod__radiation-1) Field F_KAPPARHO
 field_order(AC_iqrad__mod__radiation-1) Field F_QRAD
 
 Field AC_cp_full__mod__equationofstate
+Field AC_mu1_full__mod__equationofstate
 
 field_order(AC_imu5__mod__chiral_mhd-1) Field F_MU5
 field_order(AC_imus__mod__chiral_mhd-1) Field F_MUS
@@ -371,6 +372,15 @@ Field AY_FOURIER_IMAG
 Field AZ_FOURIER_REAL
 Field AZ_FOURIER_IMAG
 
-Field AC_mu1_full__mod__equationofstate
+field_order(AC_iaae__mod__disp__current != 0 ? AC_iaae__mod__disp_current+0-1 : -1) Field F_AAEX
+field_order(AC_iaae__mod__disp__current != 0 ? AC_iaae__mod__disp_current+1-1 : -1) Field F_AAEY
+field_order(AC_iaae__mod__disp__current != 0 ? AC_iaae__mod__disp_current+2-1 : -1) Field F_AAEZ
+const Field3 F_AAE = {F_AAEX, F_AAEY, F_AAEZ}
 
+field_order(AC_iuub__mod__cdata != 0 ? AC_iuub__mod__cdata+0-1 : -1) Field F_UUBX
+field_order(AC_iuub__mod__cdata != 0 ? AC_iuub__mod__cdata+1-1 : -1) Field F_UUBY
+field_order(AC_iuub__mod__cdata != 0 ? AC_iuub__mod__cdata+2-1 : -1) Field F_UUBZ
+const Field3 F_UUBVEC = {F_UUBX, F_UUBY, F_UUBZ}
+field_order(AC_ilncc__mod__cdata-1) Field F_LNCC
+// @auto-field-declarations: fortran-parser adds missing fields above this line
 #include "$AC_HOME/acc-runtime/stdlib/map.h"

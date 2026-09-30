@@ -149,11 +149,10 @@ module oscillation_3D
 !
       use Initcond, only: power_randomphase_hel
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: kx
       integer :: j
 !
-      intent(inout) :: f
 !
 !  initial condition
 !
@@ -209,13 +208,11 @@ module oscillation_3D
 !
 !  05-jan-25/axel: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
       real, dimension (nx) :: tmp
-      type (pencil_case) :: p
 !
-      intent(in) :: f,p
-      intent(inout) :: df
 !
       integer :: ih11_realspace, ih22_realspace, ih33_realspace
       integer :: ih12_realspace, ih23_realspace, ih31_realspace
@@ -283,7 +280,7 @@ module oscillation_3D
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=oscillation_3D_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -303,7 +300,7 @@ module oscillation_3D
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=oscillation_3D_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -329,9 +326,10 @@ module oscillation_3D
       use FArrayManager, only: farray_index_append
       use Sub
 !
-      integer :: iname
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
+      integer :: iname
+      logical :: lwr
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite

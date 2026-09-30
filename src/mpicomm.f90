@@ -91,9 +91,9 @@ module Mpicomm
   integer, parameter :: INUU=1, INLU=2, INLL=3, INUL=4
   integer, parameter :: IRCV=1, ISND=2
 !
-  real, dimension (nghost,my-2*nghost,mz,mcom) :: fahi,falo,fbhi,fblo         ! For shear
-  real, dimension (nghost,my-2*nghost,mz,mcom) :: fahihi,falolo,fbhihi,fblolo ! For shear
-  real, dimension (nghost,my-2*nghost,mz,mcom) :: fao,fbo                     ! For shear
+  real, dimension (:,:,:,:), allocatable :: fahi,falo,fbhi,fblo         ! For shear
+  real, dimension (:,:,:,:), allocatable :: fahihi,falolo,fbhihi,fblolo ! For shear
+  real, dimension (:,:,:,:), allocatable :: fao,fbo                     ! For shear
   integer :: ipx_partner, displs                                              ! For shear
   integer :: nextnextya, nextya, lastya, lastlastya ! For shear
   integer :: nextnextyb, nextyb, lastyb, lastlastyb ! For shear
@@ -502,32 +502,7 @@ module Mpicomm
 
       lcommunicate_y = (nprocz>1 .and. lpole(2))
 
-      if (.not.lyinyang) then
-!
-!  Allocations for Yin-Yang grid are done later in yyinit.
-!
-        if (nprocx>1) &
-          allocate( lbufxi(nghost,ny,nz,mcom),ubufxi(nghost,ny,nz,mcom), &
-                    lbufxo(nghost,ny,nz,mcom),ubufxo(nghost,ny,nz,mcom))
-
-        if (nprocy>1 .or. lcommunicate_y .or. lyinyang) &
-          allocate( lbufyi(mx,nghost,bufsizes_yz(INYL,IRCV),mcom),ubufyi(mx,nghost,bufsizes_yz(INYU,IRCV),mcom), &
-                    lbufyo(mx,nghost,bufsizes_yz(INYL,ISND),mcom),ubufyo(mx,nghost,bufsizes_yz(INYU,ISND),mcom))
-
-        if (nprocz>1) &
-          allocate( lbufzi(mx,bufsizes_yz(INZL,IRCV),nghost,mcom),ubufzi(mx,bufsizes_yz(INZU,IRCV),nghost,mcom), &
-                    lbufzo(mx,bufsizes_yz(INZL,ISND),nghost,mcom),ubufzo(mx,bufsizes_yz(INZU,ISND),nghost,mcom))
-
-        if ((nprocy>1 .or. lcommunicate_y .or. lyinyang).and.nprocz>1) &
-          allocate( llbufi(mx,bufsizes_yz_corn(1,INLL,IRCV),bufsizes_yz_corn(2,INLL,IRCV),mcom), &
-                    llbufo(mx,bufsizes_yz_corn(1,INLL,ISND),bufsizes_yz_corn(2,INLL,ISND),mcom), &
-                    lubufi(mx,bufsizes_yz_corn(1,INLU,IRCV),bufsizes_yz_corn(2,INLU,IRCV),mcom), &
-                    lubufo(mx,bufsizes_yz_corn(1,INLU,ISND),bufsizes_yz_corn(2,INLU,ISND),mcom), &
-                    ulbufi(mx,bufsizes_yz_corn(1,INUL,IRCV),bufsizes_yz_corn(2,INUL,IRCV),mcom), &
-                    ulbufo(mx,bufsizes_yz_corn(1,INUL,ISND),bufsizes_yz_corn(2,INUL,ISND),mcom), &
-                    uubufi(mx,bufsizes_yz_corn(1,INUU,IRCV),bufsizes_yz_corn(2,INUU,IRCV),mcom), &
-                    uubufo(mx,bufsizes_yz_corn(1,INUU,ISND),bufsizes_yz_corn(2,INUU,ISND),mcom)   )
-      endif
+      call allocate_comm_buffers
 !
 !  Set standard processor ids
 !
@@ -576,6 +551,53 @@ module Mpicomm
                           MPI_COMM_YZPLANE, mpierr)
 !
     endsubroutine initialize_mpicomm
+!***********************************************************************
+    subroutine allocate_comm_buffers
+!
+!  (Re)allocates the ghost zone communication buffers for mcom variables.
+!  Called again after registration of the variables if maux_com has grown
+!  at run time (DYNAMIC_AUX=yes).
+!
+!  Allocations for Yin-Yang grid are done later in yyinit.
+!
+      if (lyinyang) return
+!
+      if (allocated(lbufxi)) deallocate(lbufxi,ubufxi,lbufxo,ubufxo)
+      if (allocated(lbufyi)) deallocate(lbufyi,ubufyi,lbufyo,ubufyo)
+      if (allocated(lbufzi)) deallocate(lbufzi,ubufzi,lbufzo,ubufzo)
+      if (allocated(llbufi)) deallocate(llbufi,llbufo,lubufi,lubufo,ulbufi,ulbufo,uubufi,uubufo)
+      if (allocated(fao)) deallocate(fahi,falo,fbhi,fblo,fahihi,falolo,fbhihi,fblolo,fao,fbo)
+!
+      if (nprocx>1) &
+        allocate( lbufxi(nghost,ny,nz,mcom),ubufxi(nghost,ny,nz,mcom), &
+                  lbufxo(nghost,ny,nz,mcom),ubufxo(nghost,ny,nz,mcom))
+
+      if (nprocy>1 .or. lcommunicate_y .or. lyinyang) &
+        allocate( lbufyi(mx,nghost,bufsizes_yz(INYL,IRCV),mcom),ubufyi(mx,nghost,bufsizes_yz(INYU,IRCV),mcom), &
+                  lbufyo(mx,nghost,bufsizes_yz(INYL,ISND),mcom),ubufyo(mx,nghost,bufsizes_yz(INYU,ISND),mcom))
+
+      if (nprocz>1) &
+        allocate( lbufzi(mx,bufsizes_yz(INZL,IRCV),nghost,mcom),ubufzi(mx,bufsizes_yz(INZU,IRCV),nghost,mcom), &
+                  lbufzo(mx,bufsizes_yz(INZL,ISND),nghost,mcom),ubufzo(mx,bufsizes_yz(INZU,ISND),nghost,mcom))
+
+      if ((nprocy>1 .or. lcommunicate_y .or. lyinyang).and.nprocz>1) &
+        allocate( llbufi(mx,bufsizes_yz_corn(1,INLL,IRCV),bufsizes_yz_corn(2,INLL,IRCV),mcom), &
+                  llbufo(mx,bufsizes_yz_corn(1,INLL,ISND),bufsizes_yz_corn(2,INLL,ISND),mcom), &
+                  lubufi(mx,bufsizes_yz_corn(1,INLU,IRCV),bufsizes_yz_corn(2,INLU,IRCV),mcom), &
+                  lubufo(mx,bufsizes_yz_corn(1,INLU,ISND),bufsizes_yz_corn(2,INLU,ISND),mcom), &
+                  ulbufi(mx,bufsizes_yz_corn(1,INUL,IRCV),bufsizes_yz_corn(2,INUL,IRCV),mcom), &
+                  ulbufo(mx,bufsizes_yz_corn(1,INUL,ISND),bufsizes_yz_corn(2,INUL,ISND),mcom), &
+                  uubufi(mx,bufsizes_yz_corn(1,INUU,IRCV),bufsizes_yz_corn(2,INUU,IRCV),mcom), &
+                  uubufo(mx,bufsizes_yz_corn(1,INUU,ISND),bufsizes_yz_corn(2,INUU,ISND),mcom)   )
+
+      if (lshear) &
+        allocate(fahi  (nghost,ny,mz,mcom),falo  (nghost,ny,mz,mcom), &
+                 fbhi  (nghost,ny,mz,mcom),fblo  (nghost,ny,mz,mcom), &
+                 fahihi(nghost,ny,mz,mcom),falolo(nghost,ny,mz,mcom), &
+                 fbhihi(nghost,ny,mz,mcom),fblolo(nghost,ny,mz,mcom), &
+                 fao   (nghost,ny,mz,mcom),fbo   (nghost,ny,mz,mcom))
+!
+    endsubroutine allocate_comm_buffers
 !***********************************************************************
     subroutine create_communicators()
 
@@ -5760,13 +5782,14 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       real, dimension(nx,ny,nz) :: a
       character :: var
 !
-      real, dimension(ny,ny,nz) :: send_buf_y, recv_buf_y
+      real, dimension(:,:,:), allocatable, save :: send_buf_y, recv_buf_y
       real, dimension(nz,ny,nz) :: send_buf_z, recv_buf_z
       real, dimension(:,:), allocatable :: tmp
       integer, dimension(MPI_STATUS_SIZE) :: stat
       integer :: sendc_y,recvc_y,sendc_z,recvc_z,px
       integer :: ystag=111,yrtag=112,zstag=113,zrtag=114,partner
       integer :: m,n,ibox,ix
+      if (.not.allocated(send_buf_y)) allocate(send_buf_y(ny,ny,nz), recv_buf_y(ny,ny,nz))
 !
 !  Doing x-y transpose if var='y'
 !
@@ -5935,11 +5958,12 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
       real, dimension(nx,ny), intent(inout) :: a
 !
-      real, dimension(ny,ny) :: send_buf_y, recv_buf_y, tmp
+      real, dimension(:,:), allocatable, save :: send_buf_y, recv_buf_y, tmp
       integer, dimension(MPI_STATUS_SIZE) :: stat
       integer :: sendc_y,recvc_y,px
       integer :: ytag=101,partner
       integer :: ibox,iy
+      if (.not.allocated(send_buf_y)) allocate(send_buf_y(ny,ny), recv_buf_y(ny,ny), tmp(ny,ny))
 !
       !$omp single
       if (nprocx>1) then
@@ -8483,7 +8507,8 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: ibox, partner, nbox
       integer, parameter :: ltag=102, utag=103
       integer, dimension(MPI_STATUS_SIZE) :: stat
-      real, dimension(nx,ny) :: recv_buf
+      real, dimension(:,:), allocatable, save :: recv_buf
+      if (.not.allocated(recv_buf)) allocate(recv_buf(nx,ny))
 !
       !$omp single
       nbox = nx*ny

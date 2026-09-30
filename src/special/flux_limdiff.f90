@@ -108,7 +108,7 @@ module Special
 !
       use EquationOfState, only: get_gamma_etc
 
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: cp, cv
 !
       call get_gamma_etc(gamma,cp,cv)
@@ -121,7 +121,7 @@ module Special
 !***********************************************************************
     subroutine init_special(f)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       call special_before_boundary(f)
 !
@@ -139,7 +139,7 @@ module Special
       use Sub, only: grad,dot
       !use Boundcond, only: update_ghosts
 !
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real, dimension(nx,3) :: grho,gss,glnrho,glnTT
       real, dimension(nx) :: rho,TT,modglnTT,tmp,RR,rho1
       real :: TT0,rho01,lnTT0,kappa_cgs
@@ -252,8 +252,8 @@ module Special
 !
       use Sub, only: grad,dot
 !
-      real, dimension(mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
       integer :: j,i
 !
       q%kappa=f(l1:l2,m,n,ikappar)
@@ -345,9 +345,10 @@ module Special
 !
 !   14-jul-09/wlad: coded
 !
-      integer :: iname
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
+      integer :: iname
+      logical :: lwr
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
@@ -406,9 +407,9 @@ module Special
       use Cdata
       use Diagnostics
 !      
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 !
 !  Modified momentum equation
 !

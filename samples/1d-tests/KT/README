@@ -1,0 +1,18 @@
+Directory:
+    ${PENCIL_HOME}/samples/1d-tests/rel-shock
+SVN Id:
+    $Id$
+Maintainer:
+    Touko Puro/Isak Stomber <touko.puro@aalto.fi>
+Added:
+     28-sept-2026
+Status:
+    succeeds 
+Recommended resolution:
+    ?
+References:
+    $PENCIL_HOME/doc/implementation/relativistic/
+Comments:
+    Some as rel-shock but this uses the Kurganov-Tadmore slope limiter so less grid points are needed
+    to resolve the shock.
+

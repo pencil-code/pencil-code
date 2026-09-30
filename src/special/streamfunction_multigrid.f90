@@ -180,7 +180,7 @@ contains
 !  06-oct-03/tony: coded
 !  01-aug-11/wlad: adapted
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: dslab,delta_T,delta
       integer :: nx_grid,nc_grid,nz_grid,nw_grid
 !
@@ -333,7 +333,7 @@ contains
 !
       use Initcond, only: gaunoise
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: amplpsi_
 !
 !  Give an initial guess for psi
@@ -400,7 +400,7 @@ contains
 !
 !  18-07-06/tony: coded
 !
-      logical, dimension(npencils), intent(inout) :: lpencil_in
+      logical, dimension(npencils) :: lpencil_in
 !
       call keep_compiler_quiet(lpencil_in)
 !
@@ -417,12 +417,10 @@ contains
       use Deriv, only: der,derij
       use Sub, only: u_dot_grad
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
       real, dimension (nx) :: derxzpsi
 !
-      intent(inout) :: f
-      intent(inout) :: p
 !
       if (ltidal_heating .or. &
           idiag_devsigzz1 /=0 .or. &
@@ -476,7 +474,7 @@ contains
 !
       !use Boundcond, only: update_ghosts
 !
-      real, dimension (mx,my,mz,mfarray) :: f   
+      real, contiguous, dimension(:,:,:,:) :: f
 !     
       call solve_for_psi(f)
 !
@@ -1111,12 +1109,12 @@ contains
 !
       use Diagnostics, only: max_mn_name,sum_mn_name,integrate_mn_name
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
       real, dimension (nx) :: dTdz1,dTdz2,dTdz3,dTdz4,nusselt_num,nusselt_den,TTmin_cline,TTmax_cline
       real, dimension (nx) :: devsigzz1,devsigzz2,devsigzz3,devsigzz4
       real, dimension (nx) :: diffus_special,advec_special
-      type (pencil_case) :: p
 !      
 !  Advection
 !
@@ -1312,7 +1310,7 @@ contains
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -1332,7 +1330,7 @@ contains
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -1478,8 +1476,8 @@ contains
 !
 !  26-jun-06/tony: dummy
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (slice_data) :: slices
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(slice_data) :: slices
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(slices%ready)

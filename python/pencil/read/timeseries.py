@@ -87,28 +87,54 @@ class TimeSeries(object):
         with open(os.path.join(datadir, file_name), "r") as infile:
             lines = infile.readlines()
 
-        nlines_init = len(lines)
-        data = np.zeros((nlines_init, len(self.keys)),dtype=precision)
-        nlines = 0
+        # The pencil code writes a new "#--key1--key2--..." header line
+        # whenever the set of diagnostic variables changes (variables
+        # added, removed or reordered). Split the file into segments
+        # between headers, each with its own fixed column layout, so
+        # that a later merge can match columns by name rather than by
+        # position.
+        segments = []
+        keys = None
+        rows = None
         for i, line in enumerate(lines):
             if re.search("^%s--" % comment_char, line):
-                # Read header and create keys for dictionary.
-                line = line.strip("{0}-\n".format(comment_char))
-                keys_new = re.split("-+", line)
-                if keys_new != self.keys:
-                    n_newrows = abs(len(keys_new) - len(self.keys))
-                    data = np.append(data, np.zeros((nlines_init, n_newrows), dtype=precision), axis=1)
-                    self.keys = keys_new
-            else:
-                try:
-                    row = np.array(re.split(" +", line.strip(" \n")), dtype=precision)
-                    data[nlines, :] = row
-                    nlines += 1
-                except ValueError:
-                    print(f"Invalid data on line {i}. Skipping.")
+                keys_new = re.split("-+", line.strip("{0}-\n".format(comment_char)))
+                if keys_new != keys:
+                    if keys is not None and rows:
+                        segments.append((keys, rows))
+                    keys = keys_new
+                    rows = []
+                continue
+            if keys is None:
+                # Data lines before the first header cannot be interpreted.
+                continue
+            fields = re.split(" +", line.strip(" \n"))
+            if len(fields) != len(keys):
+                print(f"Invalid data on line {i}. Skipping.")
+                continue
+            try:
+                rows.append(np.array(fields, dtype=precision))
+            except ValueError:
+                print(f"Invalid data on line {i}. Skipping.")
+        if keys is not None and rows:
+            segments.append((keys, rows))
 
-        # Clean up data.
-        data = np.resize(data, (nlines, len(self.keys)))
+        # Union of all keys across segments, in order of first appearance.
+        self.keys = []
+        for seg_keys, _ in segments:
+            for key in seg_keys:
+                if key not in self.keys:
+                    self.keys.append(key)
+
+        nlines = sum(len(seg_rows) for _, seg_rows in segments)
+        data = np.full((nlines, len(self.keys)), np.nan, dtype=precision)
+
+        irow = 0
+        for seg_keys, seg_rows in segments:
+            icols = [self.keys.index(key) for key in seg_keys]
+            for row in seg_rows:
+                data[irow, icols] = row
+                irow += 1
 
         if not quiet:
             print("Read {0} lines.".format(nlines))

@@ -85,7 +85,7 @@ module Special
 !
 !  07-may-2015/iomsn (Simon Candelaresi): coded
 !
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -97,7 +97,7 @@ module Special
 !
 !  07-may-2015/iomsn (Simon Candelaresi): coded
 !      
-      real, dimension(mx,my,mz,mfarray), intent(out) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 
       call keep_compiler_quiet(f)
 !
@@ -109,7 +109,7 @@ module Special
 !
 !  07-may-2015/iomsn (Simon Candelaresi): coded
 !
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -119,7 +119,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -139,7 +139,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -171,9 +171,9 @@ module Special
 !***********************************************************************
     subroutine special_calc_hydro(f,df,p)
 !
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension(mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 !
       ! Apply driving of velocity field.
       if (.not. lpencil_check_at_work) &

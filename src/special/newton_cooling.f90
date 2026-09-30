@@ -117,7 +117,7 @@ module Special
 !
       use EquationOfState, only: get_gamma_etc
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: cp, cv
 !
       if (.not.lentropy) &
@@ -134,7 +134,7 @@ module Special
 !***********************************************************************
     subroutine init_special(f)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       if (lroot) print*,'calling special before boundary'
 !MR: should be needed on start only if kappar is written in snapshot.
@@ -198,7 +198,7 @@ module Special
 !
 !  03-oct-12/wlad: coded
 !
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       call calc_kappar_and_dtau(f)
 !
@@ -364,8 +364,8 @@ module Special
 !
 !   14-jul-09/wlad: coded
 !
-      real, dimension(mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
 !
       q%tau=f(l1:l2,m,n,itau)
 !
@@ -432,7 +432,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -452,7 +452,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -477,9 +477,10 @@ module Special
 !
 !   14-jul-09/wlad: coded
 !
-      integer :: iname
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
+      integer :: iname
+      logical :: lwr
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
@@ -538,9 +539,9 @@ module Special
 !
       use EquationOfState, only: cs20
 !      
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
       real, dimension(nx) :: rr_cyl,TT_init,heating_rate
 !
 !  Modified entropy equation.
@@ -562,8 +563,8 @@ module Special
 
       use Diagnostics
 !
-      real, dimension (mx,my,mz,mfarray), intent(in) :: f
-      type(pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
 !
       real, dimension (nx) :: kappa
 !

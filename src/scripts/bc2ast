@@ -82,15 +82,30 @@ fi
 #echo FIELDS=${fields[0]}, ${fields[5]}
 #echo FIELDS=$nfields
 
-mvar=(`grep 'mvar' cparam.inc | sed -e's/.*mvar *= *\([0-9][0-9]*\).*$/\1/'`)
-maux_com=(`grep 'maux_com' cparam.inc | sed -e's/.*maux_com *= *\([0-9][0-9]*\).*$/\1/'`)
+mvar=(`grep -m 1 'parameter *:: *mvar *=' cparam.inc | sed -e's/.*mvar *= *\([0-9][0-9]*\).*$/\1/'`)
+if grep -q 'ldynamic_aux *= *\.true\.' cparam.inc; then
+#
+#  DYNAMIC_AUX=yes: maux_com is only known at run time. Use the declared number
+#  or, if larger, the number of boundary conditions given (per direction below).
+#
+  maux_com=(`grep -m 1 'maux_com_decl *=' cparam.inc | sed -e's/.*maux_com_decl *= *\([0-9][0-9]*\).*$/\1/'`)
+  ldynamic_aux=T
+else
+  maux_com=(`grep -m 1 'parameter *:: *maux_com *=' cparam.inc | sed -e's/.*maux_com *= *\([0-9][0-9]*\).*$/\1/'`)
+  ldynamic_aux=F
+fi
 mcom=$(($mvar + $maux_com))
+#
+function ncom()
+{
+  if [[ $ldynamic_aux == T && ${#bot[@]} -gt $mcom ]]; then echo ${#bot[@]}; else echo $mcom; fi
+}
 
 if [[ ${lperi[0]} == 'T' ]]; then
   echo 'periodic(BOUNDARY_X)'
 else
   boundcond_sed x
-  for (( i=0; i<$mcom; i++ )); do 
+  for (( i=0; i<$(ncom); i++ )); do 
     make_ac_bound_cond ${bot[$i]} Field\(${i}\) X BOT
     make_ac_bound_cond ${top[$i]} Field\(${i}\) X TOP
   done
@@ -101,7 +116,7 @@ if [[ ${lperi[1]} == 'T' ]]; then
   echo 'periodic(BOUNDARY_Y)'
 else
   boundcond_sed y
-  for (( i=0; i<$mcom; i++ )); do 
+  for (( i=0; i<$(ncom); i++ )); do 
     make_ac_bound_cond ${bot[$i]} Field\(${i}\) Y BOT
     make_ac_bound_cond ${top[$i]} Field\(${i}\) Y TOP
   done
@@ -112,7 +127,7 @@ if [[ ${lperi[2]} == 'T' ]]; then
   echo 'periodic(BOUNDARY_Z)'
 else
   boundcond_sed z
-  for (( i=0; i<$mcom; i++ )); do 
+  for (( i=0; i<$(ncom); i++ )); do 
     make_ac_bound_cond ${bot[$i]} Field\(${i}\) Z BOT
     make_ac_bound_cond ${top[$i]} Field\(${i}\) Z TOP
   done

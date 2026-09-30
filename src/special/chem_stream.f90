@@ -169,7 +169,7 @@ module Special
 !
       use EquationOfState
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
 !  Initialize any module variables which are parameter dependent
 !
@@ -193,9 +193,8 @@ module Special
       use Mpicomm
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
-      intent(inout) :: f
 !
 !!
       select case (initstream)
@@ -255,13 +254,11 @@ module Special
       use Sub
    !   use Global
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
 !
 !
-      intent(in) :: f,p
-      intent(inout) :: df
 !
       real, dimension(nx) :: diffus_chi
 !
@@ -292,7 +289,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=chem_stream_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -319,9 +316,10 @@ module Special
 !
 !  define diagnostics variable
 !
-      integer :: iname
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
+      integer :: iname
+      logical :: lwr
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
@@ -356,10 +354,10 @@ module Special
       ! use Viscosity
       use EquationOfState
 !
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
       real, dimension (mx) :: rho_prf
-      type (pencil_case), intent(in) :: p
       integer :: l_sz
 !
 
@@ -378,9 +376,9 @@ module Special
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
       integer :: i, l_sz,l_sz_1
 !
 !      do i=1,3
@@ -407,8 +405,8 @@ module Special
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      type (boundary_condition) :: bc
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(boundary_condition) :: bc
 !
       select case (bc%bcname)
          case ('stm')
@@ -1116,7 +1114,7 @@ endsubroutine flame_spd_test
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
 !

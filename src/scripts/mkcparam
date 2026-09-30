@@ -21,11 +21,11 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # CVS     : $Id$
 #
 # Usage:
-#   mkcparam [-b] <file1> [<file2> [..]] [-o outfile]\n
+#   mkcparam <file1> [<file2> [..]] [-o outfile]\n
 #
 # Description:
 #   Checks the headers (everything before the first non-comment non-empty
-#   line) of input files for lines of the sort
+#   line) of input files for lines of the pattern
 #     ! MVAR CONTRIBUTION 3
 #     ! MAUX CONTRIBUTION 1
 #     ! MGLOBAL CONTRIBUTION 1
@@ -58,15 +58,18 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 #   local file src/cparam.inc .
 #
 # Options:
-#   -b, --backdate -- when set and any of the generated files looks
-#                     identical to the original file before mkcparam was
-#                     called, revert the timestamp to that of the
-#                     original. This avoids unnecessary recompilations.
 #   -o <file>,
 #   --output=<file> -- write cparam.inc output to the given file name.
 #                      This option does not make much sense any more,
 #                      since by now we write at least three files, so all
-#                      of them should just be hard-coded in this script. 
+#                      of them should just be hard-coded in this script.
+#   --num-special=<n> -- number of special modules to be inserted in "cparam.inc".
+#   --dynamic-aux=<n> -- make maux, maux_com, mfarray and mcom run-time
+#                      variables which grow when more auxiliaries are
+#                      registered than declared by MAUX CONTRIBUTION and
+#                      COMMUNICATED AUXILIARIES. <n> is the extra capacity
+#                      of the fixed-size per-variable arrays (bcx, ...),
+#                      see maux_max, maux_com_max.
 # Example:
 #     mkcparam entropy.f90 nomagnetic.f90 hydro.f90 > src/cparam.inc
 #
@@ -124,7 +127,7 @@ my $npscalar = 0;
 my $nadsspec = 0;
 my $nsurfreacspec = 0;
 my @pencil_names;
-my @pencil_sizes;
+my %pencil_sizes;
 my %pencil_file_map;
 my @cparam_lines;
 (my $cmdname = $0) =~ s{.*/}{};
@@ -139,28 +142,32 @@ GetOptions(\%opts,
 	   qw( -h   --help
 	       -o=s --output=s
                -b   --backdate
+                    --num-special=i
+                    --dynamic-aux=i
                                ));
 
 die usage() if ((@ARGV == 0) || $opts{h} || $opts{help});
 
 my $outfile  = ($opts{o} || $opts{output}   || "cparam.inc");
 my $backdate = ($opts{b} || $opts{backdate} || "");
+if ($backdate) { warn "Option -b/--backdate was removed, please remove it."; }
+my $num_special = ($opts{'num-special'} || 1);
+my $dynamic_aux = $opts{'dynamic-aux'};
 
 #
 # Cycle through files (later files will overwrite effect of earlier files)
 #
-file: foreach my $infile (@ARGV) {
+foreach my $infile (@ARGV) {
   # Extract `?VAR CONTRIBUTION' info from each file
   unless (open(INPUT,"< $infile")) {
     die "Can't open $infile for reading";
-    next file;
+    next;
   }
 
-  # Cycle through all lines up to first non-empty non-comment line in
-  # file:
-  line: while (defined($line=<INPUT>)) {
-    next line if ($line =~ /^\s*$/); # ignore empty lines
-    last line if ($line !~ /^\s*!/); # done if non-comment line
+  # Cycle through all lines up to first non-empty non-comment line in file:
+  while (defined ($line = <INPUT>)) {
+    next if ($line =~ /^\s*$/); # ignore empty lines
+    last if ($line !~ /^\s*!/); # done if non-comment line
     extract_decl ($line, $mvar_decl    , \$mvar     );
     extract_decl ($line, $maux_decl    , \$maux     );
     extract_decl ($line, $mogaux_decl  , \$mogaux   );
@@ -178,15 +185,15 @@ file: foreach my $infile (@ARGV) {
     extract_decl_reset ($line, $npartdisp_decl, \$npartdisp);
     # Check for information about number of chemical and dust species
     # and discretization type:
-    if ($line=~ /$chem_decl/) {$chem_string=$1;}
-    if ($line=~ /$dust_decl/) {$dust_string=$1;}
-    if ($line=~ /$cparam_decl/) {unshift @cparam_lines, $1;}
+    if ($line =~ /$chem_decl/) {$chem_string=$1;}
+    if ($line =~ /$dust_decl/) {$dust_string=$1;}
+    if ($line =~ /$cparam_decl/) {unshift @cparam_lines, $1;}
 
     # Extract provided pencils from file headers:
-    if ($line=~ /$pencils_decl/) {
+    if ($line =~ /$pencils_decl/) {
       # my @pencils = split /\s*;\s*/, $2;
       # foreach my $pencil (@pencils) {
-      my $provided=0;
+      my $provided = 0;
       if ($line =~ '^!\ PENCILS\ PROVIDED') {$provided=1};
       while ($line =~ s{
                            ^                          # anchor at start
@@ -238,7 +245,7 @@ file: foreach my $infile (@ARGV) {
         }
         if ($pencil_already_used eq 0) {
           push @pencil_names, $pencil_name;
-          push @pencil_sizes, $pencil_size;
+          $pencil_sizes{$pencil_name} = "$pencil_size";
         }
       }
     }
@@ -311,11 +318,42 @@ my $data_cparam = <<"EOF";
 ! settings in Makefile.local
 !
 
+EOF
+
+if (defined $dynamic_aux) {
+  # Auxiliary counts are run-time variables, which FArrayManager increases
+  # when more auxiliaries are registered than declared.
+  $data_cparam .= <<"EOF";
+integer, parameter :: mvar=${\($mvar+0)}
+integer, parameter :: maux_decl=${\($maux+0)}, maux_com_decl=${\($maux_com+0)}
+integer, parameter :: mogaux=${\($mogaux+0)}
+integer, parameter :: mglobal=${\($mglobal+0)}
+integer, parameter :: mscratch=${\($mscratch+0)}
+logical, parameter :: ldynamic_aux=.true.
+integer, parameter :: maux_max=maux_decl+${\($dynamic_aux+0)}, maux_com_max=maux_com_decl+${\($dynamic_aux+0)}
+! The C names are used by the GPU host code; "! DSL:" gives the compile-time
+! value for Astaroth's DSL (capacity), see scripts/cparam.sed.
+integer, bind(C,name='pc_maux') :: maux=maux_decl  ! DSL: maux_max
+integer, bind(C,name='pc_maux_com') :: maux_com=maux_com_decl  ! DSL: maux_com_max
+integer, bind(C,name='pc_mfarray') :: mfarray=mvar+maux_decl+mglobal+mscratch  ! DSL: mvar+maux_max+mglobal+mscratch
+integer, bind(C,name='pc_mcom') :: mcom=mvar+maux_com_decl  ! DSL: mvar+maux_com_max
+EOF
+} else {
+  $data_cparam .= <<"EOF";
 integer, parameter :: mvar=${\($mvar+0)}, maux=${\($maux+0)}
 integer, parameter :: maux_com=${\($maux_com+0)}
 integer, parameter :: mogaux=${\($mogaux+0)}
 integer, parameter :: mglobal=${\($mglobal+0)}
 integer, parameter :: mscratch=${\($mscratch+0)}
+logical, parameter :: ldynamic_aux=.false.
+integer, parameter :: maux_decl=maux, maux_com_decl=maux_com
+integer, parameter :: maux_max=maux, maux_com_max=maux_com
+integer, parameter :: mfarray=mvar+maux+mglobal+mscratch
+integer, parameter :: mcom=mvar+maux_com
+EOF
+}
+
+$data_cparam .= <<"EOF";
 integer, parameter :: mpvar=${\($mpvar+0)}
 integer, parameter :: mpaux=${\($mpaux+0)}
 integer, parameter :: mqvar=${\($mqvar+0)}
@@ -327,7 +365,7 @@ integer, parameter :: nadsspec=${\($nadsspec+0)}
 integer, parameter :: nsurfreacspec=${\($nsurfreacspec+0)}
 integer, parameter :: ndustrad=${\($ndustrad+0)}
 integer, parameter :: npartdisp=${\($npartdisp+0)}
-integer, parameter :: n_special_modules=1
+integer, parameter :: n_special_modules=${\($num_special+0)}
 
 EOF
 
@@ -388,9 +426,8 @@ add_line_avoid_duplicate ($data_cparam, "integer, parameter :: nbricky=1")      
 add_line_avoid_duplicate ($data_cparam, "integer, parameter :: nbrickz=1")      unless $nbrickz;
 add_line_avoid_duplicate ($data_cparam, "integer, parameter :: nblockmax=1")    unless $nblockmax;
 
-# Insert all CPARAM lines, extracted from the headers of the chosen physics
-# modules:
-foreach $line (@cparam_lines) {
+# Insert all CPARAM lines, extracted from the headers of the chosen physics modules:
+foreach $line (sort @cparam_lines) {
     add_line_avoid_duplicate ($data_cparam, $line);
 }
 update_file ($outfile, $data_cparam);
@@ -413,55 +450,35 @@ my $data_cparam_pencil = <<"EOF";
 
 EOF
 
-# Generate cparam_pencils.inc where the pencil case is defined and
-# initialized:
+# Generate cparam_pencils.inc where the pencil case is defined and initialized:
 $data_cparam_pencil .= <<"EOF";
 integer, parameter :: npencils=$npencils
 type pencil_case
 EOF
 
-# Define pencils in pencil case:
-my $i=0;
-foreach my $pencil_name (@pencil_names) {
-  $data_cparam_pencil .= "  real, dimension $pencil_sizes[$i] :: $pencil_name\n";
-  $i = $i+1;
-}
-$data_cparam_pencil .= "endtype pencil_case\n\n";
-
-# Define pencil indices:
-$i=1;
-foreach my $pencil (@pencil_names) {
-  $data_cparam_pencil .= "integer, parameter :: i_$pencil=$i\n";
+my $i=1;
+my $data_pencil_indices = "";
+foreach my $pencil_name (sort @pencil_names) {
+  $data_cparam_pencil .= "  real, dimension $pencil_sizes{$pencil_name} :: $pencil_name\n";
+  $data_pencil_indices .= "integer, parameter :: i_$pencil_name=$i\n";
   $i++;
 }
+$data_cparam_pencil .= "endtype pencil_case\n\n".$data_pencil_indices."\n";
 
 unless (open(INPUT,"< cparam.f90")) {
   die "Can't open cparam.f90 for reading"
 }
-while (defined($line=<INPUT>)) {
-  if ( $line =~ /penc_name_len\s*=\s*[0-9]/ )
-  {
+while (defined ($line = <INPUT>)) {
+  if ($line =~ /penc_name_len\s*=\s*[0-9]/) {
     ($penc_name_len) = $line =~ m/=([0-9]+)/; 
     last;
   }
 }
 
-# Define pencil names:
+# Prepare "cparam_pencils.inc"
 $data_cparam_pencil .= "character (len=penc_name_len), parameter, dimension(npencils) :: pencil_names = &\n  (/ ";
-$i=0;
-foreach my $pencil (@pencil_names){
-  $data_cparam_pencil .= ", " if ($i != 0);
-  $data_cparam_pencil .= "'$pencil" . " " x ($penc_name_len-length($pencil)) . "'";
-  $data_cparam_pencil .= "  &\n   " if (($i % 5) == 3);
-  $i++;
-}
-$data_cparam_pencil .= " /)\n";
-update_file ("cparam_pencils.inc", $data_cparam_pencil);
-#
-# pencil_init.inc
-#
-# Generate pencil_init.inc, for initializing the pencil case:
-#
+
+# Prepare "pencil_init.inc"
 my $data_pencil_init = <<"EOF";
 !  -*-f90-*-  (for emacs)    vim:set filetype=fortran:  (for vim)
 !  pencil_init.inc
@@ -479,13 +496,69 @@ subroutine initialize_pencils(p,penc0)
 
 EOF
 
-#
-foreach my $pencil (@pencil_names) {
+# Generate "cparam_pencils.inc" and "pencil_init.inc"
+$i=0;
+foreach my $pencil (sort @pencil_names){
+  $data_cparam_pencil .= ", " if ($i != 0);
+  $data_cparam_pencil .= "'$pencil" . " " x ($penc_name_len-length($pencil)) . "'";
+  $data_cparam_pencil .= "  &\n   " if (($i % 5) == 3);
+  $i++;
   $data_pencil_init .= "  p%$pencil = penc0\n";
 }
-#
+$data_cparam_pencil .= " /)\n";
+update_file ("cparam_pencils.inc", $data_cparam_pencil);
+
 $data_pencil_init .= "\nendsubroutine initialize_pencils";
 update_file ("pencil_init.inc", $data_pencil_init);
+#
+# cparam_aux.inc
+#
+# Generate cparam_aux.inc, included at the end of module Cparam. With
+# --dynamic-aux it provides the setter for the run-time auxiliary counts,
+# which cannot be compiled when they are parameters (then it is a dummy).
+#
+my $data_cparam_aux = <<"EOF";
+!  -*-f90-*-  (for emacs)    vim:set filetype=fortran:  (for vim)
+!  cparam_aux.inc
+!
+! This file was automatically generated by $cmdname, so think twice before
+! you modify it.
+!
+! It is included at the end of cparam.f90.
+!
+EOF
+if (defined $dynamic_aux) {
+  $data_cparam_aux .= <<"EOF";
+contains
+!***********************************************************************
+  subroutine set_aux_counts(maux_new,maux_com_new)
+!
+!  Sets the numbers of (communicated) auxiliaries and the derived sizes.
+!  Only to be called by FArrayManager.
+!
+    integer, intent(in) :: maux_new, maux_com_new
+!
+    maux=maux_new
+    maux_com=maux_com_new
+    mfarray=mvar+maux+mglobal+mscratch
+    mcom=mvar+maux_com
+!
+  endsubroutine set_aux_counts
+EOF
+} else {
+  $data_cparam_aux .= <<"EOF";
+contains
+!***********************************************************************
+  subroutine set_aux_counts(maux_new,maux_com_new)
+!
+!  Dummy: without --dynamic-aux the auxiliary counts are parameters.
+!
+    integer, intent(in) :: maux_new, maux_com_new
+!
+  endsubroutine set_aux_counts
+EOF
+}
+update_file ("cparam_aux.inc", $data_cparam_aux);
 
 
 # ---------------------------------------------------------------------- #
@@ -524,11 +597,6 @@ sub update_file {
         if (join ('', @old_data) eq $data) {
             # file exists and is up-to-date => nothing to be done
             return;
-        }
-
-        if ($backdate) {
-            # create the requested backup
-            rename $file, backup_file ($file);
         }
     }
 
@@ -593,7 +661,7 @@ sub usage {
     local $/ = '';              # Read paragraphs
     open(FILE, "<$thisfile") or die "Cannot open $thisfile\n";
     while (<FILE>) {
-	# Paragraph _must_ contain `Description:' or `Usage:'
+        # Paragraph _must_ contain `Description:' or `Usage:'
         next unless /^\s*\#\s*(Description|Usage):/m;
         # Drop `Author:', etc. (anything before `Description:' or `Usage:')
         s/.*?\n(\s*\#\s*(Description|Usage):\s*\n.*)/$1/s;

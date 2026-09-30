@@ -56,7 +56,7 @@ module Special
       use Deriv, only: der_z
       use Sub, only: step
 
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       real :: T_bottom
 
@@ -115,7 +115,7 @@ module Special
 !***********************************************************************
     subroutine special_before_boundary(f)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       integer :: ll, nn
       real, dimension(nx) :: Krad, g2
@@ -156,11 +156,9 @@ f(ll,m1,nn,ilnTT)*unit_temperature,rho_prof(nn)*unit_density,CKAPPA, CKAPPAT, CK
 !  Calculate Special pencils.
 !  Most basic pencils should come first, as others may depend on them.
 
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
 !
-      intent(in) :: f
-      intent(inout) :: p
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -168,12 +166,10 @@ f(ll,m1,nn,ilnTT)*unit_temperature,rho_prof(nn)*unit_density,CKAPPA, CKAPPAT, CK
 
       use Deriv, only: der
 
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 !
-      intent(in) :: f
-      intent(inout) :: df,p
 
       real, dimension(nx) :: thdiff, ckappa, ckappat, heatcap_Fe
       real, dimension(nx) :: gckappa_z, gckappat_x
@@ -228,8 +224,8 @@ f(ll,m1,nn,ilnTT)*unit_temperature,rho_prof(nn)*unit_density,CKAPPA, CKAPPAT, CK
 !***********************************************************************
     subroutine special_boundconds(f,bc)
 
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (boundary_condition) :: bc
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(boundary_condition) :: bc
 
       real, dimension(nx) :: TT,flux,Kheat
       integer :: i
@@ -280,7 +276,7 @@ f(ll,m1,nn,ilnTT)*unit_temperature,rho_prof(nn)*unit_density,CKAPPA, CKAPPAT, CK
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -292,7 +288,7 @@ f(ll,m1,nn,ilnTT)*unit_temperature,rho_prof(nn)*unit_density,CKAPPA, CKAPPAT, CK
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       iostat=0

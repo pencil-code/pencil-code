@@ -68,6 +68,14 @@ ENERGY            = noentropy
 OPACITY           = noopacity
 EOS               =   eos_idealgas
 FARRAY_ALLOC      = nofarray_alloc
+#
+# DYNAMIC_AUX=yes: maux and maux_com grow at run time when auxiliaries are
+# registered, so MAUX CONTRIBUTION/COMMUNICATED AUXILIARIES need not be
+# declared in cparam.local. DYNAMIC_AUX_EXTRA is the extra capacity of the
+# fixed-size per-variable arrays like bcx (see maux_max in cparam.inc).
+#
+DYNAMIC_AUX       = no
+DYNAMIC_AUX_EXTRA = 64
 FIXED_POINT       = nofixed_point
 FORCING           = noforcing
 GRAVITY           = nogravity
@@ -515,6 +523,13 @@ ifneq ($(findstring gpu_astaroth, $(GPU)),)
     override MPICOMM=mpicomm
     #Needed because of large subdomains
     override FARRAY_ALLOC=farray_alloc
+endif
+#
+# Run-time growing auxiliary counts need the dynamically allocated f-array.
+#
+ifeq ($(DYNAMIC_AUX),yes)
+  override FARRAY_ALLOC=farray_alloc
+  MKCPARAM_FLAGS = --dynamic-aux=$(DYNAMIC_AUX_EXTRA)
 endif
 #
 # Add real-time library calls if we need shared memory allocation
@@ -3221,25 +3236,17 @@ ifeq ($(USE_SPECIAL_DISPATCHER),no)
              -e "s/NML *= *[a-zA-Z0-9_]*_\([a-z][a-z]*_pars\)/NML=special_\1/"< $(SPECIAL_MODULES).f90 > special.tmp
 	@if ! cmp -s special.tmp $(SPECIAL_MODULES).f90; then mv -f special.tmp $(PENCIL_HOME)/src/$(SPECIAL_MODULES).f90; else rm -f special.tmp; fi
 else
-	@for file in $(SPECIAL_MODULES); do sed -e"/module  *procedure/ ! s/^\( *module  *\)[Ss]pecial/\1$${file#*/}/" \
-	                                        -e"s/^\( *endmodule  *\)[Ss]pecial/\1$${file#*/}/" \
-						-e"s/special_dummies\.inc/$${file#*/}_dummies.inc/" \
-					 < $$file.f90 > special.tmp; if ! cmp -s special.tmp $(PENCIL_HOME)/src/$$file.f90; then mv -f special.tmp $(PENCIL_HOME)/src/$$file.f90; else rm -f special.tmp; fi ; done
-        ifneq ($(SPECIAL_MULT),1)
-	  @for file in $(SPECIAL_MODULES); do sed -e "s/namelist *\/special_\([ir][a-z]*_pars\)/namelist \/$${file#*/}_\1/" \
-                                                  -e"s/NML *= *special_\([ir][a-z]*_pars\)/NML=$${file#*/}_\1/" < $$file.f90 > special.tmp; if ! cmp -s special.tmp $(PENCIL_HOME)/src/$$file.f90; then mv -f special.tmp $(PENCIL_HOME)/src/$$file.f90; else rm -f special.tmp; fi ;\
-	  done
-        endif
+	scripts/modify-special $(SPECIAL_MODULES)
 endif
 
 special.so: $(CPARAM_OBJ) $(CDATA_OBJ) $(SPECIAL_OBJ) special_dummies.inc $(SPECIAL_MODULES:=.o)  $(LIBGPU)
 	@$(LD) $(SPECIAL_MODULES:=.o) $(LIBFLAGS) $(DLL_LDFLAGS) -o special.so ;\
         ld_status=$$? ;\
-        pc_mkspecial.sh "$(SPECIAL_MODULES:=.f90)" ;\
+        pc_restore_special "$(SPECIAL_MODULES:=.f90)" ;\
         exit $$ld_status
 
-# pc_mkspecial should run regardless of whether ld succeeds; if ld fails,
-# we want make to fail AFTER running pc_mkspecial. The backslashes and
+# pc_restore_special should run regardless of whether ld succeeds; if ld fails,
+# we want make to fail AFTER running pc_restore_special. The backslashes and
 # semicolons above are essential for this.
 #
 #  comment out the 3 lines ifneq, @, endif below if one gets an error message
@@ -3590,23 +3597,8 @@ buildinfo:
 #	    -e "PARTICLES_POTENTIAL='$(PARTICLES_POTENTIAL)';" \
 #
 cparam.inc cparam_pencils.inc: Makefile.src Makefile.local cparam.local scripts/mkcparam $(preprocess)
-	@mkdir -p .tmp_mkcparam
-	@cp -p cparam.inc .tmp_mkcparam/cparam.inc 2>/dev/null || true
-	@cp -p cparam_pencils.inc .tmp_mkcparam/cparam_pencils.inc 2>/dev/null || true
-
-	scripts/mkcparam -b $(preprocess)
-	@sed -i -e's/\(n_special_modules *= *\)[1-9][0-9]*/\1'$(SPECIAL_MULT)'/' cparam.inc
-
-	@if cmp -s cparam.inc .tmp_mkcparam/cparam.inc; then \
-		touch -r .tmp_mkcparam/cparam.inc cparam.inc; \
-	fi
-
-	@if cmp -s cparam_pencils.inc .tmp_mkcparam/cparam_pencils.inc; then \
-		touch -r .tmp_mkcparam/cparam_pencils.inc cparam_pencils.inc; \
-	fi
-#ifeq ($(FARRAY_ALLOC),farray_alloc)
-#	sed -e'/mvar/,/mqaux/ {s/integer, parameter/integer/; s/= *[A-Za-z0-9_][A-Za-z0-9_+ -]*//g}' -i cparam.inc
-#endif
+	rm -rf .tmp_mkcparam
+	scripts/mkcparam $(MKCPARAM_FLAGS) --num-special=$(SPECIAL_MULT) $(preprocess)
 
 #
 cparam.o:  cparam.f90 cparam.local cparam.inc cparam_pencils.inc
@@ -3618,10 +3610,6 @@ else
 	$(FC) $(MOST_COMP_FLAGS) $(FSTD) -o cparam.o -c cparam.f90
 endif
 
-#ifeq ($(FARRAY_ALLOC),farray_alloc)
-#	@sed -e'/BEGIN CHANGE/,/END CHANGE/ {s/integer, parameter/integer/; s/= *[A-Za-z0-9_][A-Za-z0-9_+ -]*//}' cparam.f90 > cparam_tmp.f90
-#	$(FC) $(MOST_COMP_FLAGS) $(FSTD) -o cparam.o -c cparam_tmp.f90
-#	@rm -f cparam_tmp.f90
 
 cdata.o:  cdata.f90 cparam.local cparam.inc cparam_pencils.inc
 ifneq ($(and $(IS_CRAY), $(filter-out $(GPU),nogpu)),)
@@ -3633,12 +3621,18 @@ else
 	$(FC) $(MOST_COMP_FLAGS) $(FSTD) -o cdata.o -c cdata.f90
 endif
 
-special_dummies.inc:  nospecial.f90 $(SPECIAL_MODULES:=.f90) Makefile.local
+special_dummies.inc:  nospecial.f90 special_interfaces.inc $(SPECIAL_MODULES:=.f90) Makefile.local
 ifeq ($(USE_SPECIAL_DISPATCHER),no)
 	scripts/mkdummyinc -d nospecial.f90 -s $(SPECIAL).f90 -o special_dummies.inc
 else
 	@for file in $(SPECIAL_MODULES); do echo "$$file"_dummies.inc; scripts/mkdummyinc -d nospecial.f90 -s "$$file".f90 -o $${file#*/}_dummies.inc; done
 	#Done to not re-compile
+	### WORK HERE: [PABourdin] I think the opposite is true... How would touching a file prevent to recompile?
+	#TP: I think what was meant here was that if the special_dummies.inc is never produced this recipe will always run since the target is missing.
+	#    Touching the file then creates the target and prevents infinite compilations.
+	#    The true problem with special modules is that now we revert the renaming at the end of the compilation
+	#    but do not do this in a way that retains the timestamp, or at least that is my understanding why specials
+	#    keep recompiling.
 	touch special_dummies.inc
 endif
 #
@@ -3852,11 +3846,19 @@ cleanall: cleann
 #
 #  Try to remove everything generated by pc_setupsrc, compilation, etc.
 #
+#  Only links created by pc_setupsrc are removed, i.e. those pointing into
+#  PENCIL_HOME (or AC_HOME) and the links src/{Makefile,cparam}.local -> ../,
+#  so that links made by the user (e.g. data -> scratch) are kept.
+#
+SETUPSRC_LINKS = -lname '$(PENCIL_HOME)/*' -o -lname '$(realpath $(PENCIL_HOME))/*' \
+                 $(if $(AC_HOME),-o -lname '$(AC_HOME)/*') \
+                 -o -lname ../Makefile.local -o -lname ../cparam.local
 distclean: cleanall
-	find . -type l -print0 | xargs -0 rm -f
+	@if [ -z "$(PENCIL_HOME)" ]; then echo "distclean: PENCIL_HOME not set" >&2; exit 1; fi
+	find . -type l \( $(SETUPSRC_LINKS) \) -print0 | xargs -0 rm -f
 	rm -rf inactive magnetic special test_methods pre_and_post_processing initial_condition Makefile Makefile.inc Makefile.depend
 	rm -rf semiauto-conf* *.log history *.h nprocs.inc
-	find .. -type l -print0 | xargs -0 rm -f
+	find .. -maxdepth 1 -type l \( $(SETUPSRC_LINKS) \) -print0 | xargs -0 rm -f
 #
 $(CUDA_MAKEDIR)/Makefile.vendor: Makefile.local
 	@echo GPU_VENDOR=$(GPU_VENDOR) > $(CUDA_MAKEDIR)/Makefile.vendor

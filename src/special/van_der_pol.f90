@@ -75,7 +75,7 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
 !  Initialize any module variables which are parameter dependent
 !
@@ -90,8 +90,7 @@ module Special
 !
       use Mpicomm, only: stop_it
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
 !  initial condition
 !
@@ -128,13 +127,11 @@ module Special
       use Mpicomm
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
       real, dimension (nx) :: u1,u2
-      type (pencil_case) :: p
 !
-      intent(in) :: f,p
-      intent(inout) :: df
 !
 !  identify module and boundary conditions
 !
@@ -166,7 +163,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -186,7 +183,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -212,9 +209,10 @@ module Special
       use FArrayManager, only: farray_index_append
       use Sub
 !
-      integer :: iname
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
+      integer :: iname
+      logical :: lwr
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite

@@ -205,7 +205,7 @@ module Special
 !
       use EquationOfState, only: cs0
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
 !  Check whether diffgg=diffhh (which  is the default)
 !
@@ -300,7 +300,7 @@ module Special
 !
 !  14-aug-2011/Bourdin.KIS: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       call keep_compiler_quiet(f)
 !
@@ -311,9 +311,8 @@ module Special
 !  initialise special condition; called from start.f90
 !  06-oct-2003/tony: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
-      intent(inout) :: f
 !
 !  initial condition for hij
 !
@@ -371,7 +370,7 @@ module Special
 !
 !  18-jul-06/tony: coded
 !
-      logical, dimension(npencils), intent(inout) :: lpencil_in
+      logical, dimension(npencils) :: lpencil_in
 !
       call keep_compiler_quiet(lpencil_in)
 !
@@ -387,12 +386,10 @@ module Special
 !
       use Deriv, only: derij
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
       real, dimension (nx) :: tmp
-      type (pencil_case) :: p
 !
-      intent(in) :: f
-      intent(inout) :: p
       integer :: i, j, ij
 !
 !  Construct stress tensor; notice opposite signs for u and b.
@@ -453,10 +450,9 @@ module Special
 
       use Diagnostics
 
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
 !
-      intent(in) :: f,p
 !
       if (ldiagnos) then
         if (idiag_hijij2m/=0) call sum_mn_name(p%hijij**2,idiag_hijij2m)
@@ -622,13 +618,11 @@ module Special
 !  07-feb-18/axel: added nscale_factor=0 (no expansion), =.5 (radiation era)
 !
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      type(pencil_case) :: p
 !
 !
-      intent(in) :: p
-      intent(inout) :: f,df
 !
 !  Identify module and boundary conditions.
 !
@@ -648,7 +642,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -668,7 +662,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -696,7 +690,7 @@ module Special
 !
       use Sub, only: remove_mean
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
 !  Remove mean hij or gij if desired.
 !
@@ -712,7 +706,7 @@ module Special
 !
 !  07-aug-17/axel: coded
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       if (.not.lno_transverse_part .and. (&
           (lvideo.and.lfirst).or. &
@@ -1086,8 +1080,9 @@ module Special
       use Diagnostics
 !!      use FArrayManager, only: farray_index_append
 !
+      logical :: lreset
+      logical, optional :: lwrite
       integer :: iname
-      logical :: lreset,lwrite
 !
 !!!
 !!!  reset everything in case of reset
@@ -1165,8 +1160,8 @@ module Special
 !
       use Slices_methods, only: assign_slices_scal
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (slice_data) :: slices
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(slice_data) :: slices
 !
 !  Loop over slices
 !

@@ -16,3 +16,4 @@ POISSON=poisson
 SPECIAL=special/advective_gauge
 FOURIER=fourier_fftpack
 POWER=power_spectrum
+DYNAMIC_AUX=yes

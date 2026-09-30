@@ -200,7 +200,7 @@ module Special
       use Slices_methods, only: alloc_slice_buffers
       use SharedVariables, only: get_shared_variable
 !
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
       real :: cp
       real, pointer :: B0_ext_z
       real, dimension(:), pointer :: Bz_stratified
@@ -324,7 +324,7 @@ module Special
       use EquationOfState, only: lnrho0,cs20,cs2top,cs2bot
       use Messages, only: warning
 !
-      real, dimension(mx,my,mz,mfarray), intent(out) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       integer :: j
 !
@@ -375,7 +375,7 @@ module Special
 !
 !  14-aug-2011/Bourdin.KIS: coded
 !
-      real, dimension(mx,my,mz,mfarray) :: f
+      real, contiguous, dimension(:,:,:,:) :: f
 !
       if (lgranulation .and. (lroot .or. lgran_proc) .and. lrun) then
         call free_points ()
@@ -386,7 +386,7 @@ module Special
       if (allocated (Uy_ext)) deallocate (Uy_ext)
       if (allocated (mass_prof)) deallocate (mass_prof)
 !
-      call special_before_boundary (f, .true.)
+      call before_boundary_corona (f, .true.)
 !
     endsubroutine finalize_special
 !***********************************************************************
@@ -861,7 +861,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_init_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -881,7 +881,7 @@ module Special
 !
       use File_io, only: parallel_unit
 !
-      character(LEN=iomsglen), intent(out) :: iomsg
+      character(len=*), intent(out) :: iomsg
       integer :: iostat
 !
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat, IOMSG=iomsg)
@@ -930,9 +930,10 @@ module Special
       use Diagnostics, only: parse_name
       use FArrayManager, only: farray_index_append
 !
-      integer :: iname
-      logical :: lreset, lwr
+      logical :: lreset
       logical, optional :: lwrite
+      integer :: iname
+      logical :: lwr
 !
       lwr = .false.
       if (present(lwrite)) lwr = lwrite
@@ -990,8 +991,8 @@ module Special
 ! 
       use Slices_methods, only: assign_slices_scal
 
-      real, dimension(mx,my,mz,mfarray) :: f
-      type (slice_data) :: slices
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(slice_data) :: slices
 !
 !  Loop over slices
 !
@@ -1010,9 +1011,9 @@ module Special
 !***********************************************************************
     subroutine special_calc_hydro(f,df,p)
 !
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      real, dimension(mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 !
       if (lgranulation .or. luse_vel_field) then
         ! Apply driving of velocity field.
@@ -1039,9 +1040,9 @@ module Special
 !
       use Sub, only: del6
 !
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension(mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
       real, dimension(nx) :: fdiff
 !
       if (diffrho_hyper3 /= 0.0) then
@@ -1126,9 +1127,9 @@ module Special
 !
       use Sub, only: del6, del4, dot, dot2, multsv, multmv
 !
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension(mx,my,mz,mvar), intent(inout) :: df
-      type (pencil_case), intent(in) :: p
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
 !
       real, dimension(nx) :: hc, tmp, quenchfactor, b_abs_inv
       real, dimension(nx,3) :: hhh, tmpv
@@ -1213,10 +1214,20 @@ module Special
 
     endsubroutine special_calc_energy
 !***********************************************************************
-    subroutine special_before_boundary(f,lfinalize)
+    subroutine special_before_boundary(f)
+!
+!   Hook with the standard interface (see special_interfaces.inc).
+!
+      real, contiguous, dimension(:,:,:,:) :: f
+!
+      call before_boundary_corona(f)
+!
+    endsubroutine special_before_boundary
+!***********************************************************************
+    subroutine before_boundary_corona(f,lfinalize)
 !
 !   Possibility to modify the f array before the boundaries are
-!   communicated.
+!   communicated. With lfinalize=T, only the allocated buffers are freed.
 !
 !   Some precalculated pencils of data are passed in for efficiency
 !   others may be calculated directly from the f array
@@ -1314,7 +1325,7 @@ module Special
       if (ldiagnos .and. (idiag_mag_flux /= 0)) &
           call save_name (Bz_total_flux, idiag_mag_flux)
 !
-    endsubroutine special_before_boundary
+    endsubroutine before_boundary_corona
 !***********************************************************************
     subroutine special_after_timestep(f,df,dt_,llast)
 !
@@ -1332,12 +1343,12 @@ module Special
       use SharedVariables, only: get_shared_variable
       use Sub, only: cross,gij,curl_mn,step
 !
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real :: dt_
       logical, intent(in) :: llast
 !
 !      real, dimension(mx,my,mz):: rho_tmp
-      real, intent(in) :: dt_
       real, dimension(nx,3) :: uu,bb,uxb,rn
       real, dimension(nx) :: va
       real, dimension(2) :: gn

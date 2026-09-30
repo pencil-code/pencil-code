@@ -205,6 +205,10 @@ module Boundcond
       character :: prec_in
       character(LEN=3) :: suff_xy2, suff_xz2, suff_yz2
 !
+!  Make update_ghosts available to modules which Boundcond depends on.
+!
+      update_ghosts_ptr => update_ghosts_range
+!
 !  The following only makes sense if leos=.true.
 !
       if (leos) then
@@ -6512,7 +6516,7 @@ module Boundcond
 !
        real, allocatable, dimension(:,:), save :: uxl,uxr,uyl,uyr
        real, dimension (:,:), allocatable :: tmp
-       real, dimension (nx,ny) :: uxd,uyd,quen,pp,betaq,fac,bbx,bby,bbz,bb2
+       real, dimension(:,:), allocatable, save :: uxd, uyd, quen, pp, betaq, fac, bbx, bby, bbz, bb2
 
        integer :: tag_xl=321,tag_yl=322,tag_xr=323,tag_yr=324
        integer :: tag_tl=345,tag_tr=346,tag_dt=347
@@ -6525,6 +6529,8 @@ module Boundcond
        character (len=*), parameter :: vel_field_dat = 'driver/vel_field.dat'
        integer, parameter :: unit=1
        integer(KIND=ikind8) :: rlen
+       if(.not. allocated(uxd)) allocate(uxd(nx,ny), uyd(nx,ny), quen(nx,ny), pp(nx,ny), betaq(nx,ny), fac(nx,ny), &
+                bbx(nx,ny), bby(nx,ny), bbz(nx,ny), bb2(nx,ny))
 !
        if (.not. allocated(uxl)) allocate(uxl(nx,ny))
        if (.not. allocated(uxr)) allocate(uxr(nx,ny))

@@ -1,4 +1,4 @@
-! $Id$
+
 !
 !  A module for setting up the f-array and related variables (`register' the
 !  velocity, energy, magnetic, etc modules).
@@ -74,7 +74,8 @@ module Register
       use ImplicitPhysics,  only: register_implicit_physics
       use Solid_Cells,      only: register_solid_cells
 !
-      integer :: ierr
+      integer :: ierr, iaux
+      character (len=labellen) :: line
 
       if (maux_com > maux) call fatal_error('register_modules', &
         'maux_com > maux: you may have forgotten to set both MAUX and COMMUNICATED AUXILIARIES properly in cparam.local')
@@ -177,8 +178,25 @@ module Register
 !  Writing files for use with IDL.
 !
       if (lroot) then
-        do aux_count=1,maux
-          write(4,'(A)') aux_var(aux_count)
+!
+!  With DYNAMIC_AUX=yes, maux was not final when the modules decided about
+!  the IDL line continuations ' $', so set them here: all but the last entry.
+!
+        if (ldynamic_aux) then
+          do iaux=1,aux_count-1
+            line=aux_var(iaux)
+            if (line(len_trim(line):len_trim(line))=='$') line=line(1:len_trim(line)-1)
+            aux_var(iaux)=line
+            if (iaux<aux_count-1) aux_var(iaux)=trim(line)//' $'
+          enddo
+        endif
+!  Slots after the last entry appended by farray_append_aux_var are empty lines.
+        do iaux=1,maux
+          if (iaux<aux_count) then
+            write(4,'(A)') aux_var(iaux)
+          else
+            write(4,'(A)') ''
+          endif
         enddo
         close(4)
         close(15)
@@ -1187,10 +1205,14 @@ module Register
 !
 !  19-feb-15/ccyang: coded.
 !
+      use FArrayManager, only: farray_varname_resize
+!
       integer, parameter :: unit = 3
       integer :: ivar
 !
       if (lroot) then
+!  Slots without registered variables have empty names.
+        call farray_varname_resize(nvar+naux)
         open(unit, file=trim(datadir)//'/varname.dat', status='replace')
         10 format (i4, 2x, a)
         do ivar = 1, nvar

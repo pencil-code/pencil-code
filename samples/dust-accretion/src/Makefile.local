@@ -24,3 +24,4 @@ FOURIER = fourier_fftpack
 POWER   = power_spectrum
 
 REAL_PRECISION = double
+DYNAMIC_AUX = yes

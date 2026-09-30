@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# Modifies files to allow the use of multiple special modules.
+# This script takes the names of the special modules as arguments
+
+# 2026-Sep-27/Kishore: this was initially a gigantic inline statement in Makefile.src; moved it here to make it easier to read and modify.
+
+special_modules=( "$@" )
+n_special="${#special_modules[@]}"
+
+for file in "${special_modules[@]}"; do
+	sed -e"/module  *procedure/ ! s/^\( *module  *\)[Ss]pecial/\1${file#*/}/" \
+		-e"s/^\( *endmodule  *\)[Ss]pecial/\1${file#*/}/" \
+		-e"s/special_dummies\.inc/${file#*/}_dummies.inc/" \
+		< "$file.f90" > special.tmp
+	
+	if test -L "$file.f90"; then
+		#We assume that if the file is a symlink, it is always a symlink to the corresponding file in $PENCIL_HOME
+		base_file="$PENCIL_HOME/src/$file.f90"
+	else
+		#the file is not a symlink, so modify the local copy
+		base_file="$file.f90"
+	fi
+	
+	if ! cmp -s special.tmp "$base_file"; then
+		mv -f special.tmp "$base_file"
+	else
+		rm -f special.tmp
+	fi
+	
+	if test "$n_special" -gt 1; then
+		sed -e "s/namelist *\/special_\([ir][a-z]*_pars\)/namelist \/${file#*/}_\1/" \
+			-e"s/NML *= *special_\([ir][a-z]*_pars\)/NML=${file#*/}_\1/" < "$file.f90" > special.tmp
+		if ! cmp -s special.tmp "$base_file"; then
+			mv -f special.tmp "$base_file"
+		else
+			rm -f special.tmp
+		fi
+	fi
+done

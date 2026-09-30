@@ -93,8 +93,6 @@ const bool performance_logs = false;
   #define lmorton_curve lmorton_curve__mod__cdata
   #define ltest_bcs     ltest_bcs__mod__gpu
   #define num_substeps  num_substeps__mod__cdata
-  #define maux_vtxbuf_index maux_vtxbuf_index__mod__cdata
-  #define read_vtxbuf_from_gpu read_vtxbuf_from_gpu__mod__cdata 
   #define ldt ldt__mod__cdata
   #define dt dt__mod__cdata
   #define it it__mod__cdata
@@ -391,6 +389,9 @@ int same_path(const char *p1, const char *p2) {
     return strcmp(r1, r2) == 0;
 }
 static int lac_sparse_autotuning = 0;
+//Point to maux_vtxbuf_index and read_vtxbuf_from_gpu of Cdata (size >= mfarray), set in initializeGPU
+static int* maux_vtxbuf_index = NULL;
+static int* read_vtxbuf_from_gpu = NULL;
 /***********************************************************************************************/
 void
 sortMaux()
@@ -716,7 +717,7 @@ void save_stats(std::string fileName){
       myFile << "\n";
     
 
-      myFile << train_counter << "," << nxgrid*nygrid*nzgrid;
+      myFile << train_counter << "," << (size_t)nxgrid*nygrid*nzgrid;
       
       auto write_fields = [&](auto* name, size_t size) {
         for (size_t i = 0; i < size; ++i) {
@@ -1257,7 +1258,7 @@ float MSE(){
 	acGridExecuteTaskGraph(bcs,1);
 
 	calculated_coeff_scales = true;
-	return (acDeviceGetOutput(acGridGetDevice(), AC_l2_sum))/(6*nxgrid*nygrid*nzgrid);
+	return (acDeviceGetOutput(acGridGetDevice(), AC_l2_sum))/(6.0*nxgrid*nygrid*nzgrid);
 #else
         return 0;
 #endif
@@ -1371,7 +1372,7 @@ extern "C" void print_debug() {
 #if LTRAINING
     #include "user_constants.h"
 		
-		std::string fname = "snapshots/snapshot_multi_normalized_"+ std::to_string(nxgrid*nygrid*nzgrid)  +"_rank_" + std::to_string(rank) + "_it_" + std::to_string(it) + ".bin";
+		std::string fname = "snapshots/snapshot_multi_normalized_"+ std::to_string((size_t)nxgrid*nygrid*nzgrid)  +"_rank_" + std::to_string(rank) + "_it_" + std::to_string(it) + ".bin";
 		std::ifstream infile(fname, std::ios::binary);
 		if (infile.good()) return;
 		
@@ -1399,7 +1400,7 @@ extern "C" void print_debug() {
 		int y_size = (dims.m1.y - dims.m0.y);
 		int z_size = (dims.m1.z - dims.m0.z);
 
-		const size_t n_points =  x_size * y_size * z_size;
+		const size_t n_points =  (size_t)x_size * y_size * z_size;
 		const int n_fields = 22;
 		
 		if (!idx_init){
@@ -2036,8 +2037,12 @@ ac_compile()
 extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_,
 				int lread_all_vars_from_device_,
 				int lcpu_timestep_on_gpu_,
-				int lac_sparse_autotuning_)  // MPI_Fint comm_fint
+				int lac_sparse_autotuning_,
+				int* maux_vtxbuf_index_,
+				int* read_vtxbuf_from_gpu_)  // MPI_Fint comm_fint
 {
+  maux_vtxbuf_index    = maux_vtxbuf_index_;
+  read_vtxbuf_from_gpu = read_vtxbuf_from_gpu_;
   lac_sparse_autotuning = lac_sparse_autotuning_;
   if (lread_all_vars_from_device_) lread_all_vars_from_device = true;
   if (lcpu_timestep_on_gpu_) lcpu_timestep_on_gpu = true;
@@ -2068,7 +2073,7 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_,
     const size_t z_offset  = (dimensionality == 2 && nzgrid == 1) ? NGHOST*mx*my : 0;
     for (int i = 0; i < mvar; ++i)
     {
-      mesh.vertex_buffer[VertexBufferHandle(i)] = &farr[mw*i+ z_offset];
+      mesh.vertex_buffer[VertexBufferHandle(i)] = &farr[(size_t)mw*i+ z_offset];
     }
 
     int n_aux_on_gpu = 0;
@@ -2077,12 +2082,12 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_,
       if (maux_vtxbuf_index[i] != -1)
       {
 	++n_aux_on_gpu;
-        mesh.vertex_buffer[maux_vtxbuf_index[i]] = &farr[mw*i + z_offset];
+        mesh.vertex_buffer[maux_vtxbuf_index[i]] = &farr[(size_t)mw*i + z_offset];
       }
     }
     for (int i = 0; i < mfarray-mvar-maux; ++i)
     {
-        mesh.vertex_buffer[mvar+n_aux_on_gpu+i] = &farr[mw*(mvar+maux+i) + z_offset];
+        mesh.vertex_buffer[mvar+n_aux_on_gpu+i] = &farr[(size_t)mw*(mvar+maux+i) + z_offset];
     }
     //TP: for now for training we have all slots filled since we might want to read TAU components to the host for calculating validation error
     if (ltraining)
