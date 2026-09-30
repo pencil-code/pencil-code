@@ -352,8 +352,6 @@ module Density
   integer :: ihless
   logical, pointer :: lext_force
   real, pointer :: Hscript
-  logical, pointer :: lu_background
-
 !
   integer :: enum_ieos_profile = 0
   integer :: enum_mass_source_profile = 0
@@ -1114,16 +1112,16 @@ module Density
         lrelativistic=.false.
       endif
 !
-      call get_shared_variable('lu_background', lu_background,default_val=.false.)
       if (lhydro.and..not.lhydro_potential) then
-        call get_shared_variable('lhiggsless', lhiggsless)
+        call get_shared_variable('lhiggsless', lhiggsless,default_val=.false.)
+        call get_shared_variable('lu_background',lu_background,default_val=.false.)
       else
-        allocate(lhiggsless)
+        allocate(lhiggsless,lu_background)
         lhiggsless=.false.
+        lu_background=.false.
       endif
 !
       if (lhiggsless.and.lconservative) ihless=farray_index_by_name('ihless')
-
 
       call get_shared_variable('lkt_transport',lkt_transport,default_val=.false.)
       if (lhydro.and.lhiggsless) then
