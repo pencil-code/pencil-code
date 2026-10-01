@@ -1096,7 +1096,10 @@ module Hydro
 !   Register background profile
 !
       if (lu_background) then
-        call register_report_aux('uub', iuub, iuubx, iuuby, iuubz)
+        call farray_register_global('uub',iuub,vector=3)
+        iuubx=iuub
+        iuuby=iuub+1
+        iuubz=iuub+2
       endif
 !
 !  omega as aux
