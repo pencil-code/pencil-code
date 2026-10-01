@@ -13,11 +13,11 @@
 integer, parameter :: id_block_PERSISTENT        = 2000
 
 ! Random Seeds
-integer, parameter :: id_record_RANDOM_SEEDS     = 1
-integer, parameter :: id_record_RANDOM_SEEDS2    = 2
+integer, parameter :: id_record_RANDOM_SEEDS     = 1     ! float(nseed)
+integer, parameter :: id_record_RANDOM_SEEDS2    = 2     ! float(nseed)
 
-!Iteration number
-integer, parameter :: id_record_ITERATION_NUMBER = 100
+! Iteration number
+integer, parameter :: id_record_ITERATION_NUMBER = 100   ! int
 
 ! Interstellar
 ! deprecated:
@@ -25,55 +25,56 @@ integer, parameter :: id_record_ISM_T_NEXT_OLD   = 250
 integer, parameter :: id_record_ISM_POS_NEXT_OLD = 251
 integer, parameter :: id_record_ISM_BOLD_MASS    = 252
 ! currently active:
-integer, parameter :: id_record_ISM_T_NEXT_SNI   = 253
-integer, parameter :: id_record_ISM_T_NEXT_SNII  = 254
-integer, parameter :: id_record_ISM_X_CLUSTER    = 255
-integer, parameter :: id_record_ISM_Y_CLUSTER    = 256
-integer, parameter :: id_record_ISM_Z_CLUSTER    = 260
-integer, parameter :: id_record_ISM_T_CLUSTER    = 261
-integer, parameter :: id_record_ISM_TOGGLE_SNI   = 257
-integer, parameter :: id_record_ISM_TOGGLE_SNII  = 258
+integer, parameter :: id_record_ISM_T_NEXT_SNI   = 253   ! float
+integer, parameter :: id_record_ISM_T_NEXT_SNII  = 254   ! float
+integer, parameter :: id_record_ISM_X_CLUSTER    = 255   ! float
+integer, parameter :: id_record_ISM_Y_CLUSTER    = 256   ! float
+integer, parameter :: id_record_ISM_Z_CLUSTER    = 260   ! float
+integer, parameter :: id_record_ISM_T_CLUSTER    = 261   ! float
+integer, parameter :: id_record_ISM_TOGGLE_SNI   = 257   ! bool
+integer, parameter :: id_record_ISM_TOGGLE_SNII  = 258   ! bool
 ! deprecated:
 integer, parameter :: id_record_ISM_SNRS         = 259
 integer, parameter :: id_record_ISM_TOGGLE_OLD   = 1001
 integer, parameter :: id_record_ISM_SNRS_OLD     = 1002
 
 ! Forcing
-integer, parameter :: id_record_FORCING_LOCATION = 270
-integer, parameter :: id_record_FORCING_TSFORCE  = 271
-integer, parameter :: id_record_FORCING_TORUS    = 272
+integer, parameter :: id_record_FORCING_LOCATION = 270   ! float(3,2)
+integer, parameter :: id_record_FORCING_TSFORCE  = 271   ! float
+integer, parameter :: id_record_FORCING_TORUS    = 272   ! type
 
 ! Hydro
-integer, parameter :: id_record_HYDRO_TPHASE     = 280
-integer, parameter :: id_record_HYDRO_PHASE1     = 281
-integer, parameter :: id_record_HYDRO_PHASE2     = 282
-integer, parameter :: id_record_HYDRO_TSFORCE    = 284
-integer, parameter :: id_record_HYDRO_LOCATION   = 285
-integer, parameter :: id_record_HYDRO_AMPL       = 286
-integer, parameter :: id_record_HYDRO_WAVENUMBER = 287
-integer, parameter :: id_record_HYDRO_QVEC_GB    = 288
-integer, parameter :: id_record_HYDRO_AVEC_GB    = 289
+integer, parameter :: id_record_HYDRO_TPHASE     = 280   ! float
+integer, parameter :: id_record_HYDRO_PHASE1     = 281   ! float
+integer, parameter :: id_record_HYDRO_PHASE2     = 282   ! float
+integer, parameter :: id_record_HYDRO_TSFORCE    = 284   ! float
+integer, parameter :: id_record_HYDRO_LOCATION   = 285   ! float(3)
+integer, parameter :: id_record_HYDRO_AMPL       = 286   ! float
+integer, parameter :: id_record_HYDRO_WAVENUMBER = 287   ! float
+integer, parameter :: id_record_HYDRO_QVEC_GB    = 288   ! float(3)
+integer, parameter :: id_record_HYDRO_AVEC_GB    = 289   ! float(3)
 
 ! Magnetic
-integer, parameter :: id_record_MAGNETIC_PHASE   = 311
-integer, parameter :: id_record_MAGNETIC_AMPL    = 312
+integer, parameter :: id_record_MAGNETIC_PHASE   = 311   ! float
+integer, parameter :: id_record_MAGNETIC_AMPL    = 312   ! float
 
 ! Shear
-integer, parameter :: id_record_SHEAR_DELTA_Y    = 320
+integer, parameter :: id_record_SHEAR_DELTA_Y    = 320   ! float
 
 ! Time stepping
-integer, parameter :: id_record_TIME_STEP        = 330
-integer, parameter :: id_record_EPS_RKF          = 331
+integer, parameter :: id_record_TIME_STEP        = 330   ! float
+integer, parameter :: id_record_EPS_RKF          = 331   ! float
 
 ! special/axionSU2back.f90
-integer, parameter :: id_record_SPECIAL_LNKMIN0  = 340
+integer, parameter :: id_record_SPECIAL_LNKMIN0  = 340   ! float
 
 ! special/gravitational_waves_hTXk.f90
-integer, parameter :: id_record_DT_GW            = 350
+integer, parameter :: id_record_DT_GW            = 350   ! float
 
 ! special/backreact_infl.f90
-integer, parameter :: id_record_LHEATING_ALWAYS  = 360
-integer, parameter :: id_record_LSOLVE_FOR_PHI   = 361
+integer, parameter :: id_record_LHEATING_ALWAYS  = 360   ! bool
+integer, parameter :: id_record_LSOLVE_FOR_PHI   = 361   ! bool
+
 ! special/klein_gordon.f90
-integer, parameter :: id_record_WALL_VEL         = 370
-integer, parameter :: id_record_WALL_POS         = 371
+integer, parameter :: id_record_WALL_VEL         = 370   ! float
+integer, parameter :: id_record_WALL_POS         = 371   ! float
