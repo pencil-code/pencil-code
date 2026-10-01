@@ -1,18 +1,15 @@
 ;------------------------------------------------------------------------------
 function read_incomp_time_line, unit, tcode
 
-    time=0.
+    time=0. & tcode=0.
     on_ioerror, incomplete
     incomp=1
-    point_lun, -unit, fpos   ; store file position
-    readf,unit,time,tcode
+    line=''
+    readf,unit,format='(A)',line
+    reads,line,time,tcode
     incomp=0
 incomplete:
-    if incomp then begin
-      point_lun, unit, fpos  ; rewind
-      readf,unit,time
-      tcode=0
-    endif
+    if incomp then reads,line,time
     return, time
 
 end
