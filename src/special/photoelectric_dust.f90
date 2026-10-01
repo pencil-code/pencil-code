@@ -375,6 +375,7 @@ module Special
 !
       real, dimension(nx) :: adv_cs2
 !
+      call keep_compiler_quiet(f)
       if (ldiagnos) then 
         call sum_mn_name( q%fpres_photoelectric(:,1),idiag_photom)
         call max_mn_name( q%fpres_photoelectric,idiag_photomax)
