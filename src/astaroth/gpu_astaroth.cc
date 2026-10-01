@@ -1746,7 +1746,8 @@ void copyFarray(AcReal* f)
   {
 	  //Have to specialize for training for now since we are reading fields that do not exist in Fortran: TODO: allocate fields on the CPU in Fortran
 	  const int index = ltraining ? i : 
-		  	    i < mvar ? i : maux_vtxbuf_index[i];
+		  	    i < mvar ? i :
+			    i < mfarray ?  maux_vtxbuf_index[i] : -1;
 	  bool read_var = (i < end);
 	  read_var &= (index != -1);
 	  read_var |= (read_vtxbuf_from_gpu[i]);
