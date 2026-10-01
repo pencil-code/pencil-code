@@ -500,7 +500,7 @@ module Snapshot
 !  or just mvar (for f-array in start.f90 or df-array in run.f90.
 !
       logical :: lread_nogrid
-      integer :: msnap, mode,ipscalar
+      integer :: msnap, mode,ipscalar,iskip
       real, dimension (:,:,:,:) :: f
       real, dimension (:,:,:,:), allocatable :: f_oversize
       character (len=*) :: chsnap
@@ -542,7 +542,33 @@ module Snapshot
           enddo
         endif
         f(:,:,:,iax:iaz)=0.
-
+!
+!  Read data without cosmic ray energy into new run with cosmic rays.
+!
+      elseif (lread_oldsnap_noecr) then
+        if (lroot) print*,'read old snapshot file (but without cosmic rays)'
+!
+!      If we are using the cosmicrayflux a scalar plus a vector field are needed
+!
+        if (lcosmicrayflux) then
+          call input_snap(file,f,msnap-4,mode)
+          ipscalar=ifcrz
+          iskip=4
+        else
+          call input_snap(file,f,msnap-1,mode)
+          ipscalar=iecr
+          iskip=1
+        endif
+        if (lpersist) call input_persistent
+        call input_snap_finalize
+        ! shift the rest of the data
+        if (ipscalar<mvar) then
+          do ivar=ipscalar+1,mvar
+            f(:,:,:,ivar)=f(:,:,:,ivar-iskip)
+          enddo
+        endif
+        f(:,:,:,iecr:ipscalar) = 0.
+!
       else if (lread_oldsnap_noGW) then
         if (lroot) print*,'read old snapshot file (but without GWs)'
         call input_snap(file,f,msnap-18,mode)
