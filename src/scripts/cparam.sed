@@ -2,6 +2,8 @@
 /^ *!/ d
 /^ *use[[:space:]]/d
 s/.*/\L&/g
+# integer(C_INT) is a plain C int, so treat it like default integer in the rules below
+s/integer *( *\(kind *= *\)\?c_int *)/integer/g
 # run-time counts with DYNAMIC_AUX=yes, e.g.
 #   integer, bind(c,name='pc_maux') :: maux=maux_decl  ! dsl: maux_max
 # host code: reference to the Fortran variable; DSL: compile-time capacity
