@@ -48,12 +48,14 @@ module Cosmicray
   real :: limiter_cr=1.,ecr_floor=-1.
   logical :: simplified_cosmicray_tensor=.false.
   logical :: luse_diff_constants = .false.
-  logical :: lupw_ecr=.false.
+  logical :: lrun_initecr=.false.,lupw_ecr=.false.
 !
   namelist /cosmicray_run_pars/ &
        cosmicray_diff, K_perp, K_para, &
        gammacr,simplified_cosmicray_tensor,lnegl,lvariable_tensor_diff, &
-       luse_diff_constants,limiter_cr,ecr_floor,lupw_ecr
+       luse_diff_constants,limiter_cr,ecr_floor,lupw_ecr, &
+       initecr,lrun_initecr,amplecr,kx_ecr,ky_ecr,kz_ecr, &
+       radius_ecr,epsilon_ecr,widthecr,ecr_const
 !
   integer :: idiag_ecrm=0,idiag_ecrmax=0
   integer :: idiag_kmax=0
@@ -103,12 +105,28 @@ module Cosmicray
 !
 !  Perform any necessary post-parameter read initialization
 !
-      use Messages, only: fatal_error
+      use Messages, only: fatal_error, warning
+
 
       real, dimension (mx,my,mz,mfarray) :: f
 !
       if (K_para==0. .and. K_perp==0. .and. luse_diff_constants) &
         call fatal_error("cosmicray","K_para,K_perp=0 for tensor diffusion")
+!
+!  When adding cosmic rays to a snapshot of a nocosmicray simulation,
+!  the code allows only the initialization of the field to zero. This
+!  hack allows an init_ecr (from start.in) to be read and added to the
+!  field upon executing run.csh,
+!
+      if (lread_oldsnap_noecr) then
+        if (lrun_initecr) then
+          if (lroot) print*,'Adding a magnetic field to a previously '// &
+                   'non-magnetic simulation. The field is given by initaa=',initecr
+          call init_ecr(f)
+        else
+          call warning('initialize_cosmicray','without lrun_initecr ray energy is 1')
+        endif
+      endif
 !
 !  initialize gammacr1
 !

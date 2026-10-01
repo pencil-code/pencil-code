@@ -385,6 +385,7 @@ module Cdata
   logical :: lread_oldsnap_onlyA=.false., lread_oldsnap_mskipvar=.false.
   logical :: lread_oldsnap_nohydro_efield=.false., lread_oldsnap_nohydro_ekfield=.false.
   logical :: ldivu_perp=.false.
+  logical :: lread_oldsnap_noecr=.false.
   logical :: lread_oldsnap_nopscalar=.false. !PAR_DOC: if set \code{T}, the old
     !PAR_DOC: snapshot from a run without
     !PAR_DOC: passive scalar will be read in before producing

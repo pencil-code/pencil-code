@@ -90,7 +90,7 @@ module Param_IO
       G_Newton, hbar, random_gen, seed0, lseed_global, lseed_procdependent, nfilter, lserial_io, der2_type, &
       lread_oldsnap, lwrite_var_anyway, lwrite_last_powersnap, &
       lread_oldsnap_nomag, lread_oldsnap_noGW, lread_oldsnap_nopscalar, lread_oldsnap_notestflow, lread_oldsnap_noisothmhd, &
-      lread_oldsnap_notestfield, lread_oldsnap_notestscalar, lread_oldsnap_noshear, &
+      lread_oldsnap_noecr, lread_oldsnap_notestfield, lread_oldsnap_notestscalar, lread_oldsnap_noshear, &
       lread_oldsnap_nohydro, lread_oldsnap_nohydro_nomu5, &
       lread_oldsnap_nohydro_efield, lread_oldsnap_nohydro_ekfield, &
       lread_oldsnap_onlyA, lastaroth_output, astaroth_dest, &
