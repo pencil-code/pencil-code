@@ -1336,7 +1336,6 @@ module Hydro
       real, dimension (mz) :: c, s
       integer :: j,myl,jhless ! currently unused: nycap
       integer :: l,m,n
-      real :: slope,uinn,uext,zbot
       logical :: lvectorpotential=.false.
 
       if (.not.allocated(uu_average_sph)) then
@@ -9436,7 +9435,7 @@ module Hydro
       real, dimension (mx,my,mz,mfarray) :: f
       character (len=labellen)           :: uuprof
 !
-      integer :: l, n, m
+      integer :: n, m
       real    :: sigma_z2, xmid
 !
       !Make sure that the vertical gradient is positive as it is subtracted below
@@ -9542,9 +9541,10 @@ module Hydro
       character (len=labellen)           :: uuprof
       real, dimension(nx,3,3)            :: ubij
 !
-      integer :: l, n, m
+      integer :: n, m
       real    :: sigma_z2, xmid
 !
+      call keep_compiler_quiet(m) !Maybe m will be used in the future
       !Centre of the frame xmid, corresponds to r_f
       xmid = xyz0(1)+lxyz(1)/2
       !We also define the standard deviation in terms of the input parameter vertical_gradient

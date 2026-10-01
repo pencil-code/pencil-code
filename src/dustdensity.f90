@@ -1809,7 +1809,7 @@ module Dustdensity
 ! nd
       if (ldustcoagulation_simplified) then
 !
-        call coag_kernel(f,p)
+        call coag_kernel(p)
         do k=1,ndustspec
           Nd_rho(:,k)=p%nd(:,k)*dsize(k)*p%rho
 !          p%nd(:,k)*(dsize(k+1)-dsize(k))*p%rho
@@ -2006,7 +2006,7 @@ module Dustdensity
 !  Calculate kernel of coagulation equation
 !
         if (ldustcoagulation .and. .not. lcoala) then
-          call coag_kernel(f,p)
+          call coag_kernel(p)
 !
 !  Dust coagulation due to sticking
 !
@@ -2187,7 +2187,7 @@ module Dustdensity
       if (lspecial) call special_calc_dustdensity(f,df,p)
 
       if (ldustcoagulation .and. lcoala) then
-        call coala_coagulation(f,df,p)
+        call coala_coagulation(df,p)
       endif
 !
       call calc_diagnostics_dustdensity(f,p)
@@ -2840,9 +2840,9 @@ module Dustdensity
       type(pencil_case) :: p
       integer :: l,i,j,lgh
       real :: deltavd,deltavd_therm
-      real :: deltavd_turbu, fact
+      real :: deltavd_turbu,fact
       real :: deltavd_drift2, deltavd_drift2a, deltavd_drift2b
-      real :: ust,mu_air,rho_air, Rik 
+      real :: ust
 !
 !  Relative macroscopic speed; allow for possibility of finite kernel
 !  even for i=j if self-collisions are turned on (lself_collisions=T).
@@ -2917,21 +2917,18 @@ module Dustdensity
       endif
     endsubroutine get_deltavd
 !***********************************************************************
-    subroutine coag_kernel(f,p)
+    subroutine coag_kernel(p)
 !
 !  Calculate kernel of coagulation equation; collision rate = ni*nj*kernel
 !
 !
-      real, contiguous,dimension(:,:,:,:) :: f
       type(pencil_case) :: p
 
       real, dimension (nx) :: TT,Kn, cor_factor, D_coeff, Di, Dk, Dik, KBC, vmean_i, vmean_k
       real, dimension (nx) :: vmean_ik, gamma_i, gamma_k, omega_i, omega_k, sigma_ik
 !
-      real :: deltavd,deltavd_therm
-      real :: deltavd_turbu, fact
-      real :: deltavd_drift2, deltavd_drift2a, deltavd_drift2b
-      real :: ust,mu_air,rho_air, Rik 
+      real :: deltavd
+      real :: mu_air,rho_air, Rik 
       integer :: i,j,l,k,lgh
 !
       if (ldustcoagulation) then
@@ -3216,12 +3213,11 @@ module Dustdensity
 !
     endsubroutine dust_coagulation
 !***********************************************************************
-    subroutine coala_coagulation(f,df,p)
+    subroutine coala_coagulation(df,p)
 !
 !
 !
       use Coala, only: coala_advance
-      real, contiguous,dimension(:,:,:,:) :: f
       real, contiguous,dimension(:,:,:,:) :: df
       type (pencil_case) :: p
       integer :: i,j,l,lgh
