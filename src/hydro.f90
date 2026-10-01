@@ -7828,7 +7828,7 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'frict',idiag_frict)
         call parse_name(iname,cname(iname),cform(iname),'pradrc2',idiag_pradrc2)
         call parse_name(iname,cname(iname),cform(iname),'sld_char_rms',idiag_sld_char_rms)
-        call parse_name(inamez,cname(inamez),cform(iname),'Rerms',idiag_Rerms)
+        call parse_name(iname,cname(iname),cform(iname),'Rerms',idiag_Rerms)
       enddo
 !
       if (idiag_u2tm/=0) then
