@@ -84,34 +84,23 @@ module Special
           call fatal_error('initialize_special', 'Unknown far_field_type = '//trim(far_field_type))
       endselect
 !
-!     Need to call init_special again since it calculates an auxiliary variable.
+!     While the earlier CPU version of this module simply defined tauinv_prof
+!     as a global array, that seems to cause problems for transpilation (as of/
+!     Pencil git commit 1109640). As a workaround, we store tauinv_prof in the
+!     f-array. Avoid running this during start because we don't know the value
+!     of w during start (and we don't need this auxiliary variable anyway then).
 !
-      if (lrun) call init_special(f)
+      if (lrun) then
+        f(:,:,:,itauinv) = spread(spread(step(x,x_1,-w)+step(x,x_2,w),2,my),3,mz) &
+                        + spread(spread(step(y,y_1,-w)+step(y,y_2,w),1,mx),3,mz) &
+                        + spread(spread(step(z,z_1,-w)+step(z,z_2,w),1,mx),2,my)
+!
+        where (f(:,:,:,itauinv)>1) f(:,:,:,itauinv) = 1 !avoid damping being too strong in the corners
+!
+        f(:,:,:,itauinv) = f(:,:,:,itauinv)/tau
+      endif
 !
     endsubroutine initialize_special
-!***********************************************************************
-    subroutine init_special(f)
-!
-!     While the earlier CPU version of this module simply defined tauinv_prof
-!     as a global array, that seems to cause problems for transpilation (as of
-!     Pencil git commit 1109640). As a workaround, we store tauinv_prof in the
-!     f-array.
-!
-      real, contiguous, dimension(:,:,:,:) :: f
-!
-      if(w == 0.) then
-        f(:,:,:,itauinv) = impossible
-      else
-        f(:,:,:,itauinv) = spread(spread(step(x,x_1,-w)+step(x,x_2,w),2,my),3,mz) &
-                       + spread(spread(step(y,y_1,-w)+step(y,y_2,w),1,mx),3,mz) &
-                       + spread(spread(step(z,z_1,-w)+step(z,z_2,w),1,mx),2,my)
-!
-      endif
-      where (f(:,:,:,itauinv)>1) f(:,:,:,itauinv) = 1 !avoid damping being too strong in the corners
-!
-      f(:,:,:,itauinv) = f(:,:,:,itauinv)/tau
-!
-    endsubroutine init_special
 !***********************************************************************
     subroutine pencil_criteria_special
 !
