@@ -1540,7 +1540,7 @@ module Dustvelocity
       integer, parameter :: max_rows = 200, max_cols = 110
       
       integer :: i,j, row,col,ex=1,ey=1
-      real, dimension(max_rows,max_cols) :: efficiency
+      real, allocatable, dimension(:,:) :: efficiency
       real, dimension(max_cols) :: radius
       real, dimension(max_rows) :: ratio
       real ::  e,radius_ratio, adx, ady, radiusx, radiusy,  ratiox, ratioy
@@ -1549,11 +1549,13 @@ module Dustvelocity
 !
 !  select efficiency type
 !
+      allocate(efficiency(max_rows,max_cols))
+      luse_table=.false.
+      efficiency=1.
+
       select case (iefficiency_type)
 !
       case ('nothing')
-        luse_table=.false.
-        efficiency=1.
       case ('read_table')
         luse_table=.true.
 !
