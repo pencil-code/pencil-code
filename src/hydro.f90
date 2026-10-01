@@ -10070,7 +10070,7 @@ module Hydro
     call copy_addr(lub_z,p_par(156)) ! bool
     call copy_addr(vertical_gradient,p_par(157))
     call copy_addr(lu_background,p_par(158)) ! bool
-    call copy_addr(lism_rotation,p_par(158)) ! bool
+    call copy_addr(lism_rotation,p_par(159)) ! bool
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Hydro
