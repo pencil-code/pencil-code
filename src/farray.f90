@@ -189,7 +189,6 @@ module FArrayManager
 !  Register an auxiliary variable in the f array.
 !
       use Cdata,  only: maux_vtxbuf_index, read_vtxbuf_from_gpu
-      use Cparam, only: mfarray
       use General, only: loptest
 !
       character (len=*), intent(in) :: varname
