@@ -3859,6 +3859,7 @@ distclean: cleanall
 	rm -rf inactive magnetic special test_methods pre_and_post_processing initial_condition Makefile Makefile.inc Makefile.depend
 	rm -rf semiauto-conf* *.log history *.h nprocs.inc
 	find .. -maxdepth 1 -type l \( $(SETUPSRC_LINKS) \) -print0 | xargs -0 rm -f
+	rm -rf src/astaroth
 #
 $(CUDA_MAKEDIR)/Makefile.vendor: Makefile.local
 	@echo GPU_VENDOR=$(GPU_VENDOR) > $(CUDA_MAKEDIR)/Makefile.vendor
