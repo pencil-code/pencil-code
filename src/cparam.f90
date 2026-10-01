@@ -4,6 +4,7 @@
 !
 module Cparam
 !
+  use iso_c_binding, only: C_INT
   implicit none
 !
   integer, parameter :: ikind8=selected_int_kind(14)  ! 8-byte integer kind

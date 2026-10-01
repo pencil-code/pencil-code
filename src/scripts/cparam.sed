@@ -1,5 +1,6 @@
 /^ *type *[a-zA-Z0-9_]* *$/,/^ *end *type *[a-zA-Z0-9_]* *$/ d
 /^ *!/ d
+/^ *use[[:space:]]/d
 s/.*/\L&/g
 # run-time counts with DYNAMIC_AUX=yes, e.g.
 #   integer, bind(c,name='pc_maux') :: maux=maux_decl  ! dsl: maux_max
@@ -9,10 +10,10 @@ s/^ *integer *, *bind *( *c *, *name *= *'\([a-z_]*\)' *) *:: *\([a-z_]*\) *=[^!
 b
 }
 #s/huge *(0)/std::numeric_limits<FINT>::max()/g 
-s/huge *(0)/INT_MAX/g 
-s/huge *(int.*)/INT_MAX/g 
-s/huge *(0\.0*)/REAL_MAX/g 
-s/huge *(0\.*0*d0)/DBL_MAX/g 
+s/huge *(0)/INT_MAX/g
+s/huge *(int.*)/INT_MAX/g
+s/huge *(0\.0*)/REAL_MAX/g
+s/huge *(0\.*0*d0)/DBL_MAX/g
 s/^\(.*rkind8.*\)huge *( *[a-zA-Z0-9_]* *)/\1HUGE_VAL/g
 s/\([0-9.]\) *[dD] *\([-0-9]\)/\1E\2/g
 /tiny *(/ d
@@ -30,7 +31,7 @@ s/^ *include *.\([a-z]*\.inc\). *$/#if IN_DSL\n  #include "..\/..\/..\/\1_c.h"\n
 s/^ *include *.\([a-z]*\.local\). *$/#if IN_DSL\n  #include "..\/..\/..\/\1_c.h"\n#else\n  #include "\1_c.h"\n#endif/
 s/^ *include *.\([a-z_]*\)\.h. *$/#if IN_DSL\n  #include "..\/..\/..\/\1_c.h"\n#else\n  #include "\1_c.h"\n#endif/
 s/\([^ ]\) *!.*$/\1/
-s/^ *module .*$/\n#if IN_DSL\n #include "..\/..\/..\/headers_c.h"\n#else\n  \n#include <float.h>\n#include <limits.h>\n #include "headers_c.h"\n#endif\n#define y0 y0_\n/ 
+s/^ *module .*$/\n#if IN_DSL\n #include "..\/..\/..\/headers_c.h"\n#else\n  \n#include <float.h>\n#include <limits.h>\n #include "headers_c.h"\n#endif\n#define y0 y0_\n/
 /end *module / d
 s/integer *( *kind *= *ikind8 *) *, *parameter *::/const long long /
 s/integer *( *kind *= *ikind4 *) *, *parameter *::/const long /
@@ -49,7 +50,7 @@ s/\.true\./true/g
 s/\.false\./false/g
 s/\(^[^#].*[^&">]\) *$/\1;/
 s/& *$//
-s/dbl_max/DBL_MAX/g 
+s/dbl_max/DBL_MAX/g
 s/\.or\./ | /g
 s/\.and\./ & /g
 /const *int *nghost *=/ {
@@ -62,3 +63,4 @@ w astaroth/DSL/local/PC_nghost.h
 : end
 g
 }
+
