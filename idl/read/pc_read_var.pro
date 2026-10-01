@@ -56,6 +56,7 @@
 ;    /toyang: Provides merged data on basis of Yang grid (default: on Yin grid).a
 ;    /cubint: Interpolation parameter for corners of Yin-Yang grid; 0: linear interp, default: -0.5.
 ;             Identical with "cubic" keyword parameter of IDL routine "interpolate".
+;    persist: Dictionary in which to return the persistent variables. [dictionary]
 ;
 ; EXAMPLES:
 ;       pc_read_var, obj=vars            ;; read all vars into vars struct
@@ -96,7 +97,7 @@ pro pc_read_var,                                                  $
     global=global, scalar=scalar, run2D=run2D, noaux=noaux,       $
     ghost=ghost, bcx=bcx, bcy=bcy, bcz=bcz,                       $
     exit_status=exit_status, sphere=sphere,single=single,         $
-    toyang=toyang,cubint=cubint,ogrid=ogrid
+    toyang=toyang,cubint=cubint,ogrid=ogrid,persist=persist
 
 COMPILE_OPT IDL2,HIDDEN
 ;
@@ -114,6 +115,8 @@ COMPILE_OPT IDL2,HIDDEN
     doc_library, 'pc_read_var'
     return
   endif
+
+  lpersist=arg_present(persist)
 ;
 ; Default settings.
 ;
@@ -694,7 +697,6 @@ COMPILE_OPT IDL2,HIDDEN
       endif else begin
         readu, file, t, x, y, z, dx, dy, dz
       endelse
-      ;id=0L & readu, file, id & print, 'ID=', id  ; for checking persistent var id
 
     endif else begin
       if (allprocs eq 2) then begin
@@ -796,6 +798,42 @@ incomplete:
       endfor
 ;
     endelse
+
+    if lpersist and i eq ia then begin   ; read persistent variables -- only for first proc
+
+      on_ioerror, cont                   ; simply stops reading on IO error
+      first=1
+      persist=dictionary()
+      recpat='^.*id_record_\([A-Z0-9_]*\) *=.*'  ; pattern for id_record_<name> = ...
+      id=0L
+
+      while 1 do begin                   ; loop over all pers. records, end when id=2000 again
+        readu, file, id
+        if first then begin
+          if id ne 2000 then begin
+            print, 'Warning: no valid persistent variables present!!!'
+            break
+          endif
+        endif else $
+          if id eq 2000 then break      ; end marker of persistent variables
+
+        if not first then begin         ; get variable name from record_types.h and read
+		                        ; with correct type and dimensions
+
+          spawn,"grep '= *"+strtrim(string(id),2)+" ' src/record_types.h | sed -e's/"+recpat+ $
+          "float *$/\1=zero/' -e's/"+recpat+"int *$/\1=0/' -e's/"+recpat+ $
+          "bool *$/\1=0/' -e's/"+recpat+"float *\((.*)\) *$/\1=fltarr\2+zero/'",restring
+          eqpos=strpos(restring[0],'=')
+          res=execute("dum="+strmid(restring[0],eqpos+1))
+          readu, file, dum
+          res=execute("persist."+strtrim(strmid(restring[0],0,eqpos),2)+"=dum")
+
+        endif
+        first=0
+
+      endwhile
+cont:
+    endif
 ;
     if (not keyword_set(associate)) then begin
       close,file
