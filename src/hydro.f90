@@ -839,6 +839,9 @@ module Hydro
   integer :: idiag_Remz=0       ! XYAVG_DOC: $\langle\frac{|\uv\cdot\uv|}{\left|
                                 ! XYAVG_DOC: \frac{\partial}{\partial x_j}
                                 ! XYAVG_DOC: (\nu{\sf S}_{ij})\right|}\rangle_{xy}$
+  integer :: idiag_Rerms=0      ! XYAVG_DOC: $\langle\frac{|\uv\cdot\uv|}{\left|
+                                ! XYAVG_DOC: \frac{\partial}{\partial x_j}
+                                ! XYAVG_DOC: (\nu{\sf S}_{ij})\right|}$
   integer :: idiag_oguxmz=0     ! XYAVG_DOC: $\left<(\boldsymbol{\omega}
                                 ! XYAVG_DOC: \cdot\nabla \uv)_x\right>_{xy}$
   integer :: idiag_oguymz=0     ! XYAVG_DOC: $\left<(\boldsymbol{\omega}
@@ -3253,7 +3256,7 @@ module Hydro
           idiag_uguxmz/=0 .or. idiag_uguymz/=0 .or. idiag_uguzmz/=0) &
           lpenc_diagnos(i_ugu)=.true.
 !
-      if (idiag_Remz/=0) then
+      if (idiag_Remz/=0 .or. idiag_Rerms/=0) then
         lpenc_diagnos(i_ugu2)=.true.
         lpenc_diagnos(i_diffus_total)=.true.
       endif
@@ -4724,7 +4727,7 @@ module Hydro
       real, dimension (nx) :: odel2um, uref, curlo2, qo, quxo, graddivu2, tmp
       real, dimension (nx,Nmodes_SH) :: urlm
       real, dimension (nx) :: rmask, lorr, ratio2, u2
-      real, dimension (nx) :: pradrc2
+      real, dimension (nx) :: pradrc2, Re2
       real :: kx,arad_normal
       integer :: k
 !
@@ -5215,6 +5218,11 @@ module Hydro
         if (ekman_friction/=0) then
           where (frict>0. .and. frict<min_ts) frict=0.
           call sum_mn_name(frict,idiag_frict)
+        endif
+        if (idiag_Rerms/=0) then
+          Re2 = p%ugu2/p%diffus_total**2
+          where (p%diffus_total < tini) Re2 = 0.
+          call sum_mn_name(Re2,idiag_Rerms,lsqrt=.true.)
         endif
 
       endif  ! if (ldiagnos)
@@ -7509,6 +7517,7 @@ module Hydro
         idiag_uguymz=0
         idiag_uguzmz=0
         idiag_Remz=0
+        idiag_Rerms=0
         idiag_oguxmz=0
         idiag_oguymz=0
         idiag_oguzmz=0
@@ -7819,6 +7828,7 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'frict',idiag_frict)
         call parse_name(iname,cname(iname),cform(iname),'pradrc2',idiag_pradrc2)
         call parse_name(iname,cname(iname),cform(iname),'sld_char_rms',idiag_sld_char_rms)
+        call parse_name(inamez,cname(inamez),cform(iname),'Rerms',idiag_Rerms)
       enddo
 !
       if (idiag_u2tm/=0) then
