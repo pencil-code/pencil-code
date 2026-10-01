@@ -1,3 +1,22 @@
+;------------------------------------------------------------------------------
+function read_incomp_time_line, unit, tcode
+
+    time=0.
+    on_ioerror, incomplete
+    incomp=1
+    point_lun, -unit, fpos   ; store file position
+    readf,unit,time,tcode
+    incomp=0
+incomplete:
+    if incomp then begin
+      point_lun, unit, fpos  ; rewind
+      readf,unit,time
+      tcode=0
+    endif
+    return, time
+
+end
+;-------------------------------------------------------------------------------
 PRO power,var1,var2,last,w,v1=v1,v2=v2,v3=v3,all=all,wait=wait,k=k,qk=k2s,$
           spec1=spec1,spec2=spec2,spec3=spec3,scal2=scal2,scal3=scal3, $
           i=i,tt=tt,tcode=tcode,noplot=noplot,tmin=tmin,tmax=tmax, $
@@ -516,22 +535,3 @@ endif
 !x.range=''
 !y.range=''
 END
-;*****************************************
-function read_incomp_time_line, unit, tcode
-
-    time=0.
-    on_ioerror, incomplete
-    incomp=1
-    point_lun, -unit, fpos   ; store file position
-    readf,unit,time,tcode
-    incomp=0
-incomplete:
-    if incomp then begin 
-      point_lun, unit, fpos  ; rewind
-      readf,unit,time
-      tcode=0
-    endif
-    return, time
-
-end
-;*****************************************
