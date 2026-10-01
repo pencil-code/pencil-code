@@ -99,10 +99,14 @@ module Special
 !
       real, contiguous, dimension(:,:,:,:) :: f
 !
-      f(:,:,:,itauinv) = spread(spread(step(x,x_1,-w)+step(x,x_2,w),2,my),3,mz) &
+      if(w == 0.) then
+        f(:,:,:,itauinv) = impossible
+      else
+        f(:,:,:,itauinv) = spread(spread(step(x,x_1,-w)+step(x,x_2,w),2,my),3,mz) &
                        + spread(spread(step(y,y_1,-w)+step(y,y_2,w),1,mx),3,mz) &
                        + spread(spread(step(z,z_1,-w)+step(z,z_2,w),1,mx),2,my)
 !
+      endif
       where (f(:,:,:,itauinv)>1) f(:,:,:,itauinv) = 1 !avoid damping being too strong in the corners
 !
       f(:,:,:,itauinv) = f(:,:,:,itauinv)/tau
