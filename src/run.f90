@@ -992,7 +992,7 @@ endsubroutine helper_loop
   endif
   !KG: Can we just move this warning to be inside the if above, or are there
   !KG: cases where we expect selected_real_kind to quietly give the wrong rkind?
-  if (rkind16==rkind8) call warning('run','quad precision suppressed')
+  if (max(rkind16,rkind8)==rkind8) call warning('run','quad precision suppressed')
 !
   !TP: reading does not work with HDF5 and for HDF5 reading strings has not yet been implemented
   if (.not.lread_from_other_prec .and. IO_STRATEGY/="HDF5") then
