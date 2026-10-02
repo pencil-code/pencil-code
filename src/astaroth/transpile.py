@@ -1,6 +1,11 @@
 import argparse
 import os
 from pathlib import Path
+import subprocess
+
+def run_cmd(command):
+    subprocess.run(command, check=True, shell=True)
+
 def main():
     argparser = argparse.ArgumentParser(description="Wrapper",
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -26,7 +31,7 @@ def main():
     if skip_generation:
         return
 
-    os.system(command)
+    run_cmd(command)
     os.system("rm res-inlined.txt")
     rhs_already_exists = os.path.exists("DSL/local/rhs.h") and not os.system("diff rhs.ac DSL/local/rhs.h") 
     if (rhs_already_exists): 
