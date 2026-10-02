@@ -709,7 +709,7 @@ module Special
       real, contiguous, dimension(:,:,:,:) :: f
 !
       if (.not.lno_transverse_part .and. (&
-          (lvideo.and.lfirst).or. &
+          (lvideo_first).or. &
           (lspec.and.lfirst).or. &
           (lout.and.lfirst) )) then
         if (lggTX_as_aux) call compute_gT_and_gX_from_gij(f,'gg')

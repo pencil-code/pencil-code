@@ -414,7 +414,7 @@ module Special
 !!$!
 !!$!  calculate mean of velocity in xz planes
 !!$!
-!!$      if (lvideo.and.lfirst .or. ldiagnos) then
+!!$      if (lvideo_first .or. ldiagnos) then
 !!$        mean_u_tmp=0
 !!$        faq=nxgrid*nzgrid
 !!$        do j=m1,m2
