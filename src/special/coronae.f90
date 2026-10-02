@@ -2250,7 +2250,7 @@ module Special
 !         tau_inv_tmp=max(tau_inv_tmp,tau_inv_top)
 !       endif
 !
-      if (lvideo.and.lfirst) then
+      if (lvideo_first) then
 !
 ! slices (all undefined so far)
 !

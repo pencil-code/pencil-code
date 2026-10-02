@@ -208,7 +208,7 @@ module Special
       !
       ! Write video slices
       !
-      if (lvideo.and.lfirst) then
+      if (lvideo_first) then
         if (ivid_uu_meanx/=0) then
           do j=1,3
             !ufluct(:,j)=p%uu(:,j)-mean_u(m+ny*ipy_meanx-nghost,j)   !!!MR: corrected, please check!
