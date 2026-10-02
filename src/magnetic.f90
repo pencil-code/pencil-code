@@ -1199,7 +1199,6 @@ module Magnetic
   integer :: enum_borderaa(3) = 0
   integer :: enum_iforcing_continuous_aa = 0
 
-
   logical :: lrelaxprof_glob_scaled
   logical :: lnonzero_eta = .false.
 

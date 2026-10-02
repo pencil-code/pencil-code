@@ -1286,7 +1286,7 @@ module Special
 !
     endsubroutine input_persist_special_id
 !*****************************************************************************
-    subroutine input_persist_special()
+    subroutine input_persist_special
 !
 !  Read in the stored time for lheating_always, lsolve_for_phi, etc.
 !
@@ -1316,7 +1316,6 @@ module Special
       output_persistent_special = .true.
 !
       if (write_persist ('LHEATING_ALWAYS', id_record_LHEATING_ALWAYS, lheating_always)) return
-!
       if (write_persist ('LSOLVE_FOR_PHI', id_record_LSOLVE_FOR_PHI, lsolve_for_phi)) return
 !
       output_persistent_special = .false.
@@ -1659,7 +1658,7 @@ module Special
         endif
       endif
 !
-!  Alternatitives for deciding when to turn on reheating.
+!  Alternatives for deciding when to turn on reheating.
 !  Usually, this is done when the end of inflation occurs, i.e., Hscript_max=max.
 !  If lheating_keep_on=T (default), this criterion is evaluated only once,
 !  because it sets lheating_always=T, so no further checks are done.
