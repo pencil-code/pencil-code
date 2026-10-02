@@ -6441,7 +6441,9 @@ if (notanumber(source(:,is,js))) print*, 'source(:,is,js): iproc,j=', iproc, ipr
     real, dimension(:) :: arr 
     real :: res
 
-    real(KIND=rkind16), dimension(size(arr)) :: arrq 
+!   For platforms which don't support rkind16, the below would at least allow
+!   compilation. A warning is emitted in run.f90.
+    real(KIND=max(rkind8,rkind16)), dimension(size(arr)) :: arrq 
 
     arrq=arr
     res=real(sum(arrq))
