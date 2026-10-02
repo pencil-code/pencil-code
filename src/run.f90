@@ -987,7 +987,11 @@ endsubroutine helper_loop
 !
 !  Check whether quad precision is supported
 !
-  if (rkind16<0) call warning('run','quad precision not supported, switch to double')
+  if (rkind16<0) then
+    call warning('run','quad precision not supported, switch to double')
+  endif
+  !KG: Can we just move this warning to be inside the if above, or are there
+  !KG: cases where we expect selected_real_kind to quietly give the wrong rkind?
   if (rkind16==rkind8) call warning('run','quad precision suppressed')
 !
   !TP: reading does not work with HDF5 and for HDF5 reading strings has not yet been implemented
