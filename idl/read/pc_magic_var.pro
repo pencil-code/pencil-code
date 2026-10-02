@@ -175,18 +175,18 @@ pro pc_magic_var, variables, tags, $
 ;
 ;  Check for param.ldensity_nolog, but only if param.ldensity=T
 ;
-   density_var='lnrho' 
    if (param.ldensity) then begin
+     density_var='lnrho'
      if (where(strmatch(tag_names(param), 'LDENSITY_NOLOG')) lt 0) then density_var='rho' $
      else if (param.ldensity_nolog) then density_var='rho'
-   endif
+   endif else $
+     density_var=''
 
    if (param.lyinyang) then begin
       scalinds='[*,*,*,iyy]' & vecinds='[*,*,*,*,iyy]' & tensinds='[*,*,*,*,*,iyy]'
    endif else begin
       scalinds='' & vecinds='' & tensinds=''
    endelse
-     
 ;
   for iv=0,n_elements(variables)-1 do begin
     tags[iv]=variables[iv]
@@ -389,14 +389,14 @@ pro pc_magic_var, variables, tags, $
     endif else if (variables[iv] eq 'divadvu') then begin
       variables[iv]='-dot(uu'+vecinds+',graddiv(uu'+vecinds+'))-total(total(uij'+tensinds+'*transpose(uij'+tensinds+',[2,1,0,3,4]),5),4)'
 ; Sound speed squared
-    endif else if (variables[iv] eq 'cs2') then begin
+    endif else if (density_var ne '' and variables[iv] eq 'cs2') then begin
       if (lionization and not lionization_fixed) then begin
         variables[iv]='pc_eoscalc('+density_var+''+scalinds+',lnTT'+scalinds+',/cs2,/'+density_var+'_lnTT,dim=dim,param=param,datadir=datadir)'
       endif else begin
         variables[iv]='pc_eoscalc('+density_var+''+scalinds+',ss'+scalinds+',/cs2,/'+density_var+'_ss,dim=dim,param=param,datadir=datadir)'
       endelse
 ; Pressure gradient
-    endif else if (variables[iv] eq 'fpres' or variables[iv] eq 'apres') then begin
+    endif else if (density_var ne '' and (variables[iv] eq 'fpres' or variables[iv] eq 'apres')) then begin
       if lentropy then begin
 
         if (variables[iv] eq 'fpres') then $
@@ -420,7 +420,7 @@ pro pc_magic_var, variables, tags, $
         variables[iv]+='*param.cs02'
       endelse
 ; Specific energy
-    endif else if (variables[iv] eq 'ee') then begin
+    endif else if (density_var ne '' and variables[iv] eq 'espec') then begin
       if (lionization and not lionization_fixed) then begin
         variables[iv]='pc_eoscalc('+density_var+''+scalinds+',lnTT'+scalinds+',/ee,/'+density_var+'_lnTT,dim=dim,param=param,datadir=datadir)'
       endif else begin
@@ -431,21 +431,21 @@ pro pc_magic_var, variables, tags, $
       if (lionization and not lionization_fixed) then begin
         variables[iv]='exp(lnTT'+scalinds+')'
       endif else begin
-        variables[iv]='pc_eoscalc('+density_var+''+scalinds+',ss'+scalinds+',/tt,/'+density_var+'_ss,dim=dim,param=param,datadir=datadir)'
+        if density_var ne '' then variables[iv]='pc_eoscalc('+density_var+''+scalinds+',ss'+scalinds+',/tt,/'+density_var+'_ss,dim=dim,param=param,datadir=datadir)'
       endelse
 ; Logarithm of temperature
     endif else if (variables[iv] eq 'lntt') then begin
-      if not (lionization and not lionization_fixed) then $
+      if (density_var ne '' and not(lionization and not lionization_fixed)) then $
         variables[iv]='pc_eoscalc('+density_var+''+scalinds+',ss'+scalinds+',/lntt,/'+density_var+'_ss,dim=dim,param=param,datadir=datadir)'
 ; Entropy ss
-    endif else if (variables[iv] eq 'ss') then begin
+    endif else if (density_var ne '' and variables[iv] eq 'ss') then begin
       if (lionization and not lionization_fixed) then begin
         message,"Thermodynamic combination not implemented yet: /ss from lnrho and lnTT with lionization"
       endif else begin
         if (lentropy ne -1) then variables[iv]='pc_eoscalc('+density_var+''+scalinds+',lnTT'+scalinds+',/ss,/'+density_var+'_lnTT,dim=dim,param=param,datadir=datadir)'
       endelse
 ; Pressure
-    endif else if (variables[iv] eq 'pp') then begin
+    endif else if (density_var ne '' and variables[iv] eq 'pp') then begin
       if (lionization and not lionization_fixed) then begin
         variables[iv]='pc_eoscalc('+density_var+''+scalinds+',lnTT'+scalinds+',/pp,/'+density_var+'_lnTT,dim=dim,param=param,datadir=datadir)'
       endif else begin

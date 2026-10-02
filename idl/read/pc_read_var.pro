@@ -35,7 +35,7 @@
 ;/additional: Load all variables stored in the files, PLUS any additional
 ;             variables specified with the variables=[] option.
 ;     /magic: Call pc_magic_var to replace special variable names with their
-;             functional equivalents.
+;             functional equivalents. Check pc_magic_var for available derived variables.
 ;    /global: Add global values to snapshot variables.
 ;
 ;   /trimxyz: Remove ghost points from the returned x,y,z arrays.
@@ -53,7 +53,7 @@
 ;      /help: Display this usage information, and exit.
 ;    /single: enforces single precision of returned data.
 ;    /sphere: For Yin-Yang grid only: create the triangulation on the unit sphere. (inactive)
-;    /toyang: Provides merged data on basis of Yang grid (default: on Yin grid).a
+;    /toyang: Provides merged data on basis of Yang grid (default: on Yin grid).
 ;    /cubint: Interpolation parameter for corners of Yin-Yang grid; 0: linear interp, default: -0.5.
 ;             Identical with "cubic" keyword parameter of IDL routine "interpolate".
 ;    persist: Dictionary in which to return the persistent variables. [dictionary]
