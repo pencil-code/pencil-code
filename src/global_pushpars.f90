@@ -228,6 +228,7 @@ contains
     call copy_addr(ishock,p_par(389)) ! int
     call copy_addr(ishock_perp,p_par(390)) ! int
 
+    call copy_addr(mcom,p_par(1442)) ! int
     call copy_addr(fbcx_bot,p_par(391)) ! (mcom_max)
     call copy_addr(fbcx_top,p_par(392)) ! (mcom_max)
     call copy_addr(fbcy_bot,p_par(393)) ! (mcom_max)
@@ -241,16 +242,16 @@ contains
     call copy_addr(dy2_bound,p_par(1165)) ! (2*nghost+1)
     call copy_addr(dz2_bound,p_par(1166)) ! (2*nghost+1)
 
-    call copy_addr(fbcx,p_par(1155)) ! (mcom_max) (2)
-    call copy_addr(fbcy,p_par(1156)) ! (mcom_max) (2)
-    call copy_addr(fbcz,p_par(1157)) ! (mcom_max) (2)
+    call copy_addr(fbcx,p_par(1155)) ! (mcom__mod__cdata) (2)
+    call copy_addr(fbcy,p_par(1156)) ! (mcom__mod__cdata) (2)
+    call copy_addr(fbcz,p_par(1157)) ! (mcom__mod__cdata) (2)
 
-    call copy_addr(fbcy_1,p_par(1159)) ! (mcom_max) (2)
-    call copy_addr(fbcz_1,p_par(1160)) ! (mcom_max) (2)
+    call copy_addr(fbcy_1,p_par(1159)) ! (mcom__mod__cdata) (2)
+    call copy_addr(fbcz_1,p_par(1160)) ! (mcom__mod__cdata) (2)
 
-    call copy_addr(fbcx_2,p_par(1161)) ! (mcom_max) (2)
-    call copy_addr(fbcy_2,p_par(1162)) ! (mcom_max) (2)
-    call copy_addr(fbcz_2,p_par(1163)) ! (mcom_max) (2)
+    call copy_addr(fbcx_2,p_par(1161)) ! (mcom__mod__cdata) (2)
+    call copy_addr(fbcy_2,p_par(1162)) ! (mcom__mod__cdata) (2)
+    call copy_addr(fbcz_2,p_par(1163)) ! (mcom__mod__cdata) (2)
 
     call copy_addr(cdtf,p_par(1170))
 
@@ -453,8 +454,8 @@ contains
     call copy_addr(iglobal_glhc,p_par(1402)) ! int
     call copy_addr(iglobal_hcond,p_par(1403)) ! int
     call copy_addr(lfrozen_bcs_x,p_par(1404)) ! bool
-    call copy_addr(lfrozen_bot_var_x,p_par(1405)) ! bool (mcom_max)
-    call copy_addr(lfrozen_top_var_x,p_par(1406)) ! bool (mcom_max)
+    call copy_addr(lfrozen_bot_var_x,p_par(1405)) ! bool (mcom__mod__cdata)
+    call copy_addr(lfrozen_top_var_x,p_par(1406)) ! bool (mcom__mod__cdata)
     call copy_addr(lfirst_proc_x,p_par(1407)) ! bool dconst
     call copy_addr(llast_proc_x,p_par(1408)) ! bool dconst
     call copy_addr(ijbt,p_par(1409)) ! int
