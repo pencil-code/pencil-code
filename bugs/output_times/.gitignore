@@ -1,0 +1,33 @@
+# Directories
+data
+runtime
+
+# Symlinked files
+getconf.csh
+start.csh
+run.csh
+start_run.csh
+Makefile
+
+# Generated files
+.pc_build_history
+COMPLETED
+run_command.log
+
+#Others
+FIRST_FAILED
+LAST_SUCCEEDED
+run.log
+start.log
+reference_link.txt
+reference_link.txt.tmp
+pc
+pc_commands.log
+ERROR
+
+# Stuff produced by the GPU run
+PC-AC.conf
+ac_compilation.log
+ac_autotuning.log
+ac_grid_info.csv
+taskgraph_log.txt
