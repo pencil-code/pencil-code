@@ -209,6 +209,7 @@ module Forcing
   integer :: idiag_ofm=0        ! DIAG_DOC: $\left<\ov\cdot\fv\right>$
   integer :: idiag_qfm=0
   integer :: idiag_ffm=0
+  integer :: idiag_frms=0
   integer :: idiag_ruxfxm=0
   integer :: idiag_ruyfym=0
   integer :: idiag_ruzfzm=0
@@ -6550,6 +6551,11 @@ module Forcing
           call dot2(p%fcont(:,:,1),ff)
           call sum_mn_name(ff,idiag_ffm)
         endif
+
+        if (idiag_frms/=0) then
+          call dot2(p%fcont(:,:,1),ff)
+          call sum_mn_name(ff,idiag_frms)
+        endif
 !
         if (idiag_ufm/=0) then
           call dot_mn(p%uu,p%fcont(:,:,1),tmp)
@@ -6691,7 +6697,7 @@ module Forcing
 !
       if (lreset) then
         idiag_bfm=0; idiag_jfm=0; idiag_rufm=0; idiag_rufint=0; idiag_ufm=0
-        idiag_ofm=0; idiag_qfm=0; idiag_ffm=0
+        idiag_ofm=0; idiag_qfm=0; idiag_ffm=0; idiag_frms=0;
         idiag_ruxfxm=0; idiag_ruyfym=0; idiag_ruzfzm=0
         idiag_ruxfym=0; idiag_ruyfxm=0
 !       idiag_fxbxm=0; idiag_fxbym=0; idiag_fxbzm=0
@@ -6714,6 +6720,7 @@ module Forcing
         call parse_name(iname,cname(iname),cform(iname),'ofm',idiag_ofm)
         call parse_name(iname,cname(iname),cform(iname),'qfm',idiag_qfm)
         call parse_name(iname,cname(iname),cform(iname),'ffm',idiag_ffm)
+        call parse_name(iname,cname(iname),cform(iname),'frms',idiag_frms)
 !       call parse_name(iname,cname(iname),cform(iname),'fxbxm',idiag_fxbxm)
 !       call parse_name(iname,cname(iname),cform(iname),'fxbym',idiag_fxbym)
 !       call parse_name(iname,cname(iname),cform(iname),'fxbzm',idiag_fxbzm)
