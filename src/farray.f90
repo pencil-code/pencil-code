@@ -449,8 +449,8 @@ module FArrayManager
 !
         call farray_index_append('i'//varname,ivar,vector=vector,array=array,lwr=lwr)
 
-        if (ldownsampl) &
-            call farray_index_append('i'//varname,ivar,vector=vector,array=array,ldown=.true.)
+        !if (ldownsampl) &
+        !    call farray_index_append('i'//varname,ivar,vector=vector,array=array,ldown=.true.)
 !
       endif
 !
@@ -569,8 +569,8 @@ module FArrayManager
         call save_analysis_info(item)
         call farray_index_append('i'//item%varname,item%ivar(1)%p,vector=globals_dyn(i)%vector, &
                                  array=globals_dyn(i)%array,lwr=lroot)
-        if (ldownsampl) call farray_index_append('i'//item%varname,item%ivar(1)%p, &
-                                 vector=globals_dyn(i)%vector,array=globals_dyn(i)%array,ldown=.true.)
+        !if (ldownsampl) call farray_index_append('i'//item%varname,item%ivar(1)%p, &
+        !                         vector=globals_dyn(i)%vector,array=globals_dyn(i)%array,ldown=.true.)
       enddo
 !
       if (mcom/=mvar+maux_com_decl) call allocate_comm_buffers
