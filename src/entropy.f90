@@ -14,7 +14,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED ugss; Ma2; fpres(3); uglnTT; sglnTT(3); transprhos !,dsdr
-! PENCILS PROVIDED initss; initlnrho; uuadvec_gss; advec_cs2; cool_prof 
+! PENCILS PROVIDED initss; initlnrho; uuadvec_gss; advec_cs2; cool_prof
 !
 !***************************************************************
 module Energy
@@ -291,7 +291,7 @@ module Energy
                                 ! DIAG_DOC:   \quad(mean entropy)
   integer :: idiag_ss2m=0       ! DIAG_DOC: $\left<(s/c_p)^2\right>$
                                 ! DIAG_DOC:   \quad(mean squared entropy)
-  integer :: idiag_ss_run_averm=0 
+  integer :: idiag_ss_run_averm=0
                                 ! DIAG_DOC:   \quad(mean of the running average of entropy)
   integer :: idiag_eem=0        ! DIAG_DOC: $\left<e\right>$
   integer :: idiag_ppm=0        ! DIAG_DOC: $\left<p\right>$
@@ -371,6 +371,9 @@ module Energy
   integer :: idiag_chikrammax=0 ! DIAG_DOC: $\max (\chi_{\rm kramers})$
   integer :: idiag_TT2m=0       ! DIAG_DOC: $\left<(T)^2\right>$
                                 ! DIAG_DOC:   \quad(mean squared temperature)
+  integer :: idiag_fracvph1m=0  ! DIAG_DOC: $\left<f_{\rm v}\right>|_{\rm phase 1}$\quad(phase 1 fractional volume)
+  integer :: idiag_fracvph2m=0  ! DIAG_DOC: $\left<f_{\rm v}\right>|_{\rm phase 2}$\quad(phase 2 fractional volume)
+  integer :: idiag_fracvph3m=0  ! DIAG_DOC: $\left<f_{\rm v}\right>|_{\rm phase 3}$\quad(phase 3 fractional volume)
 !
 ! xy averaged diagnostics given in xyaver.in
 !
@@ -566,7 +569,7 @@ module Energy
 !
       if (lcool_prof_as_global) then
         call farray_register_global('cool_prof',icool_prof)
-        !One could consider as having a third flag which is true if 
+        !One could consider as having a third flag which is true if
         !lcool_prof_as_global or lcool_prof_as_var but this works for now
         lcool_prof_as_var = .true.
       else if (lcool_prof_as_var) then
@@ -4075,6 +4078,9 @@ module Energy
           call max_mn_name(chix,idiag_chikrammax)
           if (idiag_chikrammin/=0) call max_mn_name(-chix,idiag_chikrammin,lneg=.true.)
         endif
+        if (idiag_fracvph1m/=0) call sum_mn_name(penc_ones,idiag_fracvph1m,MASK=(p%ss <= ssmask1))
+        if (idiag_fracvph2m/=0) call sum_mn_name(penc_ones,idiag_fracvph2m,MASK=(p%ss > ssmask1 .and. p%ss <= ssmask2))
+        if (idiag_fracvph3m/=0) call sum_mn_name(penc_ones,idiag_fracvph3m,MASK=(p%ss > ssmask2))
       endif
 
     endsubroutine calc_0d_diagnostics_energy
@@ -4219,7 +4225,7 @@ module Energy
           if (lheatc_smagorinsky) call xysum_mn_name_z(-Pr_smag1*p%nu_smag*p%rho*p%TT*gss1(:,3),idiag_fturbz)
 ! from calc_heatcond_constchi, calc_heatcond_kramers, calc_heatcond
           if (lheatc_Kprof.or.lheatc_chiconst.or.lheatc_kramers) then
-            if (idiag_fturbz/=0) then 
+            if (idiag_fturbz/=0) then
               if(chi_t == 0.) then
                 call xysum_mn_name_z(spread(0.,1,nx),idiag_fturbz)
               else
@@ -4497,7 +4503,7 @@ print*, maxval(sld_flux1*p%evr(:,1)+sld_flux2*p%evr(:,2)+sld_flux3*p%evr(:,3))
               f(:,m,n,isld_char) = f(:,m,n,isld_char) + w_sldchar_ene*prof_cs*sqrt(cs2) &
                                   + (1.-prof_cs)*w_sldchar_ene2*sqrt(cs2top)
             endif
-          else   !MR: makes only sense for lsld_char_rholimit=T, but lsld_char_rholimit and lsld_char_cslimit should 
+          else   !MR: makes only sense for lsld_char_rholimit=T, but lsld_char_rholimit and lsld_char_cslimit should
                  !    then be mutually exclusive
 !            f(:,m,n,isld_char)=f(:,m,n,isld_char)+w_sldchar_ene*cs2*fact_rho*fact_cs
             f(:,m,n,isld_char)=f(:,m,n,isld_char) + w_sldchar_ene*fact_wsld*sqrt(cs2*fact_rho)
@@ -5559,7 +5565,7 @@ print*, maxval(sld_flux1*p%evr(:,1)+sld_flux2*p%evr(:,2)+sld_flux3*p%evr(:,3))
       intent(inout) :: df
 
       real, dimension (nx) :: thdiff
-      
+
       call calc_heatcond_constK_arrays(p,thdiff)
 !
 !  Add heat conduction to entropy equation.
@@ -7413,7 +7419,7 @@ print*, maxval(sld_flux1*p%evr(:,1)+sld_flux2*p%evr(:,2)+sld_flux3*p%evr(:,3))
         idiag_Hmax=0; idiag_dtH=0; idiag_tauhmin=0; idiag_ethmz=0
         idiag_fpreszmz=0; idiag_gTT2mz=0; idiag_gss2mz=0; idiag_TT2m=0
         idiag_fturbrsphmphi=0; idiag_fracvph1mz=0; idiag_fracvph2mz=0; idiag_fracvph3mz=0;
-        idiag_slopelimrsphmphi=0
+        idiag_slopelimrsphmphi=0; idiag_fracvph1m=0; idiag_fracvph2m=0; idiag_fracvph3m=0
      endif
 !
 !  iname runs through all possible names that may be listed in print.in.
@@ -7436,7 +7442,7 @@ print*, maxval(sld_flux1*p%evr(:,1)+sld_flux2*p%evr(:,2)+sld_flux3*p%evr(:,3))
         call parse_name(iname,cname(iname),cform(iname),'eem',idiag_eem)
         call parse_name(iname,cname(iname),cform(iname),'ppm',idiag_ppm)
         call parse_name(iname,cname(iname),cform(iname),'ppmax',idiag_ppmax)
-        call parse_name(iname,cname(iname),cform(iname),'ppmin',idiag_ppmin)    
+        call parse_name(iname,cname(iname),cform(iname),'ppmin',idiag_ppmin)
         call parse_name(iname,cname(iname),cform(iname),'pdivum',idiag_pdivum)
         call parse_name(iname,cname(iname),cform(iname),'heatm',idiag_heatm)
         call parse_name(iname,cname(iname),cform(iname),'csm',idiag_csm)
@@ -7467,6 +7473,9 @@ print*, maxval(sld_flux1*p%evr(:,1)+sld_flux2*p%evr(:,2)+sld_flux3*p%evr(:,3))
         call parse_name(iname,cname(iname),cform(iname),'chikrammin',idiag_chikrammin)
         call parse_name(iname,cname(iname),cform(iname),'chikrammax',idiag_chikrammax)
         call parse_name(iname,cname(iname),cform(iname),'TT2m',idiag_TT2m)
+        call parse_name(iname,cname(iname),cform(iname),'fracvph1m',idiag_fracvph1m)
+        call parse_name(iname,cname(iname),cform(iname),'fracvph2m',idiag_fracvph2m)
+        call parse_name(iname,cname(iname),cform(iname),'fracvph3m',idiag_fracvph3m)
       enddo
 !
 !  Enable extrema value output if *only location is requested*.
@@ -8944,13 +8953,13 @@ print*, maxval(sld_flux1*p%evr(:,1)+sld_flux2*p%evr(:,2)+sld_flux3*p%evr(:,3))
     call copy_addr(lsld_char_rholimit,p_par(474)) ! bool
     call string_to_enum(enum_div_sld_ene,div_sld_ene)
     call copy_addr(enum_div_sld_ene,p_par(475)) ! int
-    call copy_addr(rheat,p_par(476)) 
+    call copy_addr(rheat,p_par(476))
     call copy_addr(heat_int,p_par(477))
     call copy_addr(coef_cs2,p_par(478)) ! (9)
     call copy_addr(lsmooth_ss_run_aver,p_par(479)) ! bool
     call copy_addr(lcool_prof_as_var,p_par(480)) ! bool
     call copy_addr(fact_wsld,p_par(481)) ! (mx)
-    call copy_addr(w_sldrat2,p_par(482)) 
+    call copy_addr(w_sldrat2,p_par(482))
 
     call keep_compiler_quiet(nsmooth_kramers)
     call keep_compiler_quiet(patch_fac)
