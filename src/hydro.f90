@@ -115,7 +115,7 @@ module Hydro
     !PAR_DOC: distributed random variable on the interval $[-0.5,0.5]$.
   real :: radiusuu=1.
   !real :: kx_uu=1., ky_uu=1., kz_uu=1. (AB: now defined as array and consistent with magnetic)
-  real :: relhel_uu=1.,urandi=0.
+  real :: relhel_uu=1., init_the_uu=0., init_phi_uu=0., urandi=0.
   real :: uu_left=0. !PAR_DOC: needed for \code{inituu='shock-tube'}
   real :: uu_right=0. !PAR_DOC: needed for \code{inituu='shock-tube'}
   real :: uu_lower=1.,uu_upper=1.
@@ -266,7 +266,7 @@ module Hydro
   namelist /hydro_init_pars/ &
       ampluu, ampl_ux, ampl_uy, ampl_uz, phase_ux, phase_uy, phase_uz, &
       inituu, widthuu, radiusuu, urand, urandi, lpressuregradient_gas, &
-      robflow_uu, uu_xz_angle, relhel_uu, coefuu, r_omega, w_omega,&
+      robflow_uu, uu_xz_angle, relhel_uu, init_the_uu, init_phi_uu, coefuu, r_omega, w_omega,&
       uu_left, uu_right, uu_lower, uu_upper, kx_uu, ky_uu, kz_uu, &
       kx_ux, ky_ux, kz_ux, kx_uy, ky_uy, kz_uy, kx_uz, ky_uz, kz_uz, &
       uy_left, uy_right, uu_const, Omega, u_out_kep, &
@@ -2118,7 +2118,8 @@ module Hydro
        !case ('robertsflow'); call robertsflow(ampluu(j),f,iuu,relhel_uu) !(AB: the following changes result by factor 2, but is now consistent with magnetic)
         case ('robertsflow'); call robertsflow(ampluu(j),f,iuu,relhel_uu,KX=kx_uu(j),FLOW=robflow_uu(j))
         case ('rotated_robertsflow'); call rotated_robertsflow(ampluu(j),f,iuu,relhel_uu,KX=kx_uu(j),FLOW=robflow_uu(j))
-        case ('cyl_rot_strain'); call cyl_rot_strain(ampluu(j),f,iuu,relhel_uu,KX=kx_uu(j),FLOW=robflow_uu(j))
+        case ('cyl_rot_strain'); call cyl_rot_strain(ampluu(j),f,iuu,relhel_uu,KX=kx_uu(j), &
+          FLOW=robflow_uu(j),INIT_THE=init_the_uu,INIT_PHI=init_phi_uu)
         case ('hawley-et-al'); call hawley_etal99a(ampluu(j),f,iuy,Lxyz)
         case ('meri_circ'); call meri_circ(f)
         case ('geostrophic'); call geostrophic(f)

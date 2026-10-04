@@ -178,6 +178,8 @@ module Special
   logical :: lmanual_initializing=.false.          !PAR_DOC: manual initializing at restart
   logical :: lsolve_for_phi_ini=.false.            !PAR_DOC: manual initializing
   logical :: ladvance_ee_ini=.false.               !PAR_DOC: manual initializing
+  logical :: lHubble_ini_with_a=.false.            !PAR_DOC: Hubble_ini was incorrectly defined, so the new default should not change earlier results with a_ini=1
+  logical :: lHubble_ini_with_a=.true.             !PAR_DOC: Hubble_ini was incorrectly defined, so the new default should not change earlier results with a_ini=1
   logical, pointer :: lphi_hom, lphi_linear_regime, lnoncollinear_EB, lnoncollinear_EB_aver
   logical, pointer :: lcollinear_EB, lcollinear_EB_aver, lmass_suppression
   logical, pointer :: lallow_bprime_zero
@@ -207,7 +209,7 @@ module Special
       wstate_crit, lwstate_crit, lwstate_crit_old, wstate_tolerance, &
       lsolve_for_phi_always, lsolve_for_phi_switch, &
       heating_choice, ldefine_a2rhopm_without_Vpotential, la2rhop_wrong_factor, &
-      lappy_BD_k1D_factor, lapply_BD_kNy_factor, linv_BD, lBD_scaling_wHubble
+      lappy_BD_k1D_factor, lapply_BD_kNy_factor, linv_BD, lBD_scaling_wHubble, lHubble_ini_with_a
 !
   namelist /special_run_pars/ &
       initspecial, phi0, dphi0, axionmass, eps, ascale_ini, &
@@ -314,7 +316,6 @@ module Special
       call put_shared_variable('echarge',echarge)
       call put_shared_variable('lrho_chi',lrho_chi)
       call put_shared_variable('lsolve_for_phi',lsolve_for_phi)
-      !print*,'AXEL1: lheating_always=',lheating_always
 !
     endsubroutine register_special
 !***********************************************************************
@@ -483,13 +484,19 @@ module Special
             Vpotential=.5*axionmass2*phi0**2
 !
 !  Hubble_ini is here based on the standard (non-reduced) Planck mass.
+!  It was incorrectly defined with ascale_ini, but Hubble is not the comoving one.
+!  This change will not affect any earlier results provided they were with a_ini=1.
 !  The following is only corrrect for the quadratic potential!
 !
-            Hubble_ini=sqrt(8.*pi/3.*(.5*axionmass2*phi0**2*ascale_ini**2))
-            ! dphi0=-ascale_ini*sqrt(2*eps/3.*Vpotential)
+            if (lHubble_ini_with_a) then
+              Hubble_ini=sqrt(8.*pi/3.*(.5*axionmass2*phi0**2*ascale_ini**2))
+            else
+              Hubble_ini=sqrt(8.*pi/3.*(.5*axionmass2*phi0**2))
+            endif
+!
+!  Compute initial dphi
+!
             if (lcompute_dphi0) dphi0=-sqrt(1/(12.*pi))*axionmass*ascale_ini
-            ! dphi0=-sqrt(1/(12.*pi))*axionmass*ascale_ini
-            ! dphi0=-sqrt(16*pi/3)*axionmass*ascale_ini
 !
 !  Initial time.
 !
@@ -503,9 +510,9 @@ module Special
             if (lflrw) then
               f_ode(iinfl_lna)   =lnascale
               a2                 =exp(f_ode(iinfl_lna))**2
-              Hscript            =Hubble_ini/exp(lnascale)
+              Hscript            =Hubble_ini*exp(lnascale)
 !
-!  Should not be needed.
+!  But it should not be needed.
 !
 !              f(iinfl_hubble)   =Hscript
             endif
@@ -750,7 +757,6 @@ module Special
 !  to rename lheating -> lheating_phi. The switch lheating_always is false by default
 !  and set to true after the first time lheating is true and if lheating_keep_on is true.
 !
-      if (ip<10) print*,'AXEL9: lheating_always=',lheating_always
       if (lheating .or. lheating_always) then
         if (lsmooth_Gamma_phi) then
           if (dlnascale_reheating==0.) then
@@ -942,11 +948,12 @@ module Special
 !  when ldensity=F, because otherwise the standard Alfven constraint applies.
 !
           if (lrho_chi) then
-            if (lold_lrho_chi_dtconstraint .or. .not. (lrho_chi_inhom .and. ldensity)) &
-              advec2=max(advec2,a21**2*b2m_all/f_ode(iinfl_rho_chi)*dxyz_2/cdt_rho_chi**2)
-    !     else
-    !       call fatal_error("dspecial_dt", "lrho_chi must be .true. when Ndiv=0")
-    ! now ok
+            if (lold_lrho_chi_dtconstraint .or. .not. (lrho_chi_inhom .and. ldensity)) then
+              if (f_ode(iinfl_rho_chi)>0.) &
+                advec2=max(advec2,a21**2*b2m_all/f_ode(iinfl_rho_chi)*dxyz_2/cdt_rho_chi**2)
+            endif
+          else
+            call fatal_error("dspecial_dt", "lrho_chi must be .true. when Ndiv=0")
           endif
         else
           dt1_special = Ndiv*abs(Hscript)
@@ -1277,7 +1284,6 @@ module Special
         case (id_record_LSOLVE_FOR_PHI)
           done = read_persist ('LSOLVE_FOR_PHI', lsolve_for_phi)
       endselect
-      !print*,'AXEL2: id, done=',id, done
 !
     endsubroutine input_persist_special_id
 !*****************************************************************************

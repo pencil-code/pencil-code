@@ -78,7 +78,6 @@ module Persist
         if (read_persist_id ('INITIAL_BLOCK_ID', id)) return
       else
         if (init_read_persist ()) return
-!print*,'nach read_persist_id, INITIAL3: id,id_block_PERSISTENT=', id,id_block_PERSISTENT
       endif
 !
       if (id /= id_block_PERSISTENT) then
