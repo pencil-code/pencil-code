@@ -569,7 +569,7 @@ module Diagnostics
               cform_loc = cform(iname_loc)
               if (iname==iname_loc) then
                 cform_ext = 'g11.2'      ! only location was requested, so give extrema a flexible format
-              else   
+              else
                 cform_ext = cform(iname)
               endif
 
@@ -2066,7 +2066,7 @@ module Diagnostics
 !
     endsubroutine max_mn_name
 !***********************************************************************
-    subroutine sum_mn_name_arr2(a,iname,lsqrt,llog10,lint,ipart,lplain)
+    subroutine sum_mn_name_arr2(a,iname,lsqrt,llog10,lint,ipart,lplain,mask)
 !
 !  20-aug-13/MR: derived from sum_mn_name; behaves as before if extent of
 !                first dimension of a is 1; if it is 2 considers a to be a complex
@@ -2077,22 +2077,31 @@ module Diagnostics
       integer,              intent(IN) :: iname
       integer, optional,    intent(IN) :: ipart
       logical, optional,    intent(IN) :: lsqrt, llog10, lint, lplain
+      logical, optional, dimension(nx), intent(IN) :: mask
+!
+      logical, dimension(nx) :: lmask
 
       if (iname==0) return
-
+!
+      if (present(mask)) then
+        lmask=mask
+      else
+        lmask=.true.
+      endif
+!
       if (size(a,1)==1) then
-        call sum_mn_name_std(a(1,:),iname,lsqrt,llog10,lint,ipart,lplain)
+        call sum_mn_name_std(a(1,:),iname,lsqrt,llog10,lint,ipart,lplain,MASK=lmask)
       else
 
-        call sum_mn_name_real(a(1,:),iname,fname,lsqrt,llog10,lint,ipart,lplain)
-        call sum_mn_name_real(a(2,:),iname,fname_keep)
+        call sum_mn_name_real(a(1,:),iname,fname,lsqrt,llog10,lint,ipart,lplain,MASK=lmask)
+        call sum_mn_name_real(a(2,:),iname,fname_keep,MASK=lmask)
         if (itype_name(iname) < ilabel_complex ) itype_name(iname)=itype_name(iname)+ilabel_complex
 
       endif
 !
     endsubroutine sum_mn_name_arr2
 !***********************************************************************
-    subroutine sum_mn_name_std(a,iname,lsqrt,llog10,lint,ipart,lplain)
+    subroutine sum_mn_name_std(a,iname,lsqrt,llog10,lint,ipart,lplain,mask)
 !
 !  20-aug-13/MR: derived from sum_mn_name, behaves as before
 !
@@ -2102,12 +2111,22 @@ module Diagnostics
       integer,            intent(IN) :: iname
       integer, optional,  intent(IN) :: ipart
       logical, optional,  intent(IN) :: lsqrt, llog10, lint, lplain
+      logical, optional, dimension(nx), intent(IN) :: mask
+!
+      logical, dimension(nx) :: lmask
+!
+      if (present(mask)) then
+        lmask=mask
+      else
+        lmask=.true.
+      endif
+!
 
-      call sum_mn_name_real(a,iname,fname,lsqrt,llog10,lint,ipart,lplain)
+      call sum_mn_name_real(a,iname,fname,lsqrt,llog10,lint,ipart,lplain,MASK=lmask)
 
     endsubroutine sum_mn_name_std
 !***********************************************************************
-    subroutine sum_mn_name_real(a,iname,fname,lsqrt,llog10,lint,ipart,lplain)
+    subroutine sum_mn_name_real(a,iname,fname,lsqrt,llog10,lint,ipart,lplain,mask)
 !
 !  Successively calculate sum of a, which is supplied at each call.
 !  In subroutine 'diagnostic', the mean is calculated; if 'lint' is
@@ -2137,7 +2156,9 @@ module Diagnostics
       integer :: iname
       integer, optional :: ipart
       logical, optional :: lsqrt, llog10, lint, lplain
+      logical, optional, dimension(nx), intent(IN) :: mask
 !
+      logical, dimension(nx) :: lmask
       intent(in) :: iname
 
       real, dimension(size(a)) :: a_scaled
@@ -2164,6 +2185,13 @@ module Diagnostics
           itype_name(iname)=ilabel_sum
         endif
 !
+        if (present(mask)) then
+          lmask=mask
+        else
+          lmask=.true.
+        endif
+!
+!
 !  Set fraction if old and new stuff.
 !
         if (present(ipart)) then
@@ -2177,17 +2205,19 @@ module Diagnostics
 !  Add up contributions, taking coordinate system into acount (particles).
 !
           if (lspherical_coords) then
-            fname(iname)=qpart*fname(iname)+ppart*sum(r2_weight*sinth_weight(m)*a)
+            fname(iname)=qpart*fname(iname)+ppart*sum(r2_weight*sinth_weight(m)*a,MASK=lmask)
           elseif (lcylindrical_coords) then
-            fname(iname)=qpart*fname(iname)+ppart*sum(rcyl_weight*a)
+            fname(iname)=qpart*fname(iname)+ppart*sum(rcyl_weight*a,MASK=lmask)
           else
-            fname(iname)=qpart*fname(iname)+ppart*sum(a)
+            fname(iname)=qpart*fname(iname)+ppart*sum(a,MASK=lmask)
           endif
 !
 !  Normal method.
 !
         else
           if (lproper_averages) then
+            if (.not.all(lmask)) call fatal_error('sum_mn_name_real', &
+              'masking not implemented with lproper_averages=T')
             call integrate_mn(a,fname(iname))
           else
 !
@@ -2204,21 +2234,21 @@ module Diagnostics
 !
             if (lfirstpoint) then
               if (lcartesian_coords.or.lpipe_coords.or.loptest(lplain)) then
-                fname(iname)=sum(a_scaled)
+                fname(iname)=sum(a_scaled,MASK=lmask)
               elseif (lspherical_coords) then
-                fname(iname)=sum(r2_weight*a_scaled)*sinth_weight(m)
+                fname(iname)=sum(r2_weight*a_scaled,MASK=lmask)*sinth_weight(m)
               elseif (lcylindrical_coords) then
-                fname(iname)=sum(rcyl_weight*a_scaled)
+                fname(iname)=sum(rcyl_weight*a_scaled,MASK=lmask)
               else
                 call not_implemented('sum_mn_name_real','coordinate system')
               endif
             else
               if (lcartesian_coords.or.lpipe_coords.or.loptest(lplain)) then
-                fname(iname)=fname(iname)+sum(a_scaled)
+                fname(iname)=fname(iname)+sum(a_scaled,MASK=lmask)
               elseif (lspherical_coords) then
-                fname(iname)=fname(iname)+sum(r2_weight*a_scaled)*sinth_weight(m)
+                fname(iname)=fname(iname)+sum(r2_weight*a_scaled,MASK=lmask)*sinth_weight(m)
               elseif (lcylindrical_coords) then
-                fname(iname)=fname(iname)+sum(rcyl_weight*a_scaled)
+                fname(iname)=fname(iname)+sum(rcyl_weight*a_scaled,MASK=lmask)
               else
                 call not_implemented('sum_mn_name_real','coordinate system')
               endif
@@ -3217,7 +3247,7 @@ module Diagnostics
     subroutine diagnostics_init_reduc_pointers
 !
 ! Phiavg_norm is the dst on the master thread
-! which the local variable on other threads points to 
+! which the local variable on other threads points to
 !
       p_phiavg_norm => phiavg_norm
 !
@@ -4217,7 +4247,7 @@ module Diagnostics
       return
     endif
 
-    t_save  = t 
+    t_save  = t
     l1davgfirst_save = l1davgfirst
     ldiagnos_save = ldiagnos
     l1dphiavg_save = l1dphiavg
@@ -4254,7 +4284,7 @@ module Diagnostics
 
      logical, optional :: lsnap_time
 !
-!   Restores the diagnostics flags that were saved by master when it asked for diagnostics. 
+!   Restores the diagnostics flags that were saved by master when it asked for diagnostics.
 !
 !   13-nov-23/TP: Written
 !   19-march-25/TP: moved from Equ to here
