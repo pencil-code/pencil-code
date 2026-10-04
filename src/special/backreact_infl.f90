@@ -179,7 +179,6 @@ module Special
   logical :: lsolve_for_phi_ini=.false.            !PAR_DOC: manual initializing
   logical :: ladvance_ee_ini=.false.               !PAR_DOC: manual initializing
   logical :: lHubble_ini_with_a=.false.            !PAR_DOC: Hubble_ini was incorrectly defined, so the new default should not change earlier results with a_ini=1
-  logical :: lHubble_ini_with_a=.true.             !PAR_DOC: Hubble_ini was incorrectly defined, so the new default should not change earlier results with a_ini=1
   logical, pointer :: lphi_hom, lphi_linear_regime, lnoncollinear_EB, lnoncollinear_EB_aver
   logical, pointer :: lcollinear_EB, lcollinear_EB_aver, lmass_suppression
   logical, pointer :: lallow_bprime_zero
