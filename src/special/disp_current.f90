@@ -895,7 +895,11 @@ module Special
               if (lhydro) then
                 p%jj_ohm(:,j)=p%sigE*(p%el(:,j)+p%uxb(:,j))+p%sigB*p%bb(:,j)
                 if (lcharge_flow) then
-                  tmp=charge_flow_factor*p%divE/sqrt(1.+p%u2/charge_flow_limiter**2)
+                  if (charge_flow_limiter==0.) then
+                    tmp=charge_flow_factor*p%divE
+                  else
+                    tmp=charge_flow_factor*p%divE/sqrt(1.+p%u2/charge_flow_limiter**2)
+                  endif
                   call multsv_mn_add(tmp,p%uu,p%jj_ohm)
                 endif
               else

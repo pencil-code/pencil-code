@@ -2771,7 +2771,7 @@ module Initcond
 !
     endsubroutine rotated_robertsflow
 !***********************************************************************
-    subroutine cyl_rot_strain(ampl,f,i,relhel,kx,flow)
+    subroutine cyl_rot_strain(ampl,f,i,relhel,kx,flow,init_the,init_phi)
 !
 !  cyl_rot_strain
 !
@@ -2780,8 +2780,9 @@ module Initcond
       integer :: i,j
       real, dimension(:,:,:), allocatable :: xx, yy, rr, cosr, mask
       real, contiguous, dimension(:,:,:,:) :: f
-      real :: ampl,k=1.,kf,fac1,fac2,relhel
-      real, optional :: kx
+      real :: ampl, k=1., kf, fac1, fac2, relhel, init_the1, init_phi1
+      real :: cthe, sthe, cphi, sphi
+      real, optional :: kx, init_the, init_phi
       character (len=labellen) :: flowtype='I'
       character (len=labellen), optional :: flow
 !
@@ -2789,6 +2790,22 @@ module Initcond
 !
       if (present(kx)) then
         k=kx
+      endif
+!
+!  Possibility of changing the the angle init_the
+!
+      if (present(init_the)) then
+        init_the1=init_the
+      else
+        init_the1=0.
+      endif
+!
+!  Possibility of changing the phi angle init_phi
+!
+      if (present(init_phi)) then
+        init_phi1=init_phi
+      else
+        init_phi1=0.
       endif
 !
 !  Possibility of changing the flow
@@ -2825,6 +2842,16 @@ module Initcond
       elseif (flowtype=='II') then
         j=i+0; f(:,:,:,j)=f(:,:,:,j)+mask*(-fac1*yy+fac2*xx)*cosr/rr
         j=i+1; f(:,:,:,j)=f(:,:,:,j)+mask*(+fac1*xx+fac2*yy)*cosr/rr
+!
+!  In the following, relhel corresponds to theta*pi/2, and fac1 and fac2 are their cosine and sine values.
+!
+      elseif (flowtype=='Sphere') then
+        cthe=cos(dtor*init_the1)
+        sthe=sin(dtor*init_the1)
+        cphi=cos(dtor*init_phi1)
+        sphi=sin(dtor*init_phi1)
+        j=i+0; f(:,:,:,j)=f(:,:,:,j)+mask*(sphi*sthe*xx+cphi*sthe*yy)*(fac1+fac2*cosr)
+        j=i+1; f(:,:,:,j)=f(:,:,:,j)+mask*(sphi*cthe*yy+cphi*cthe*xx)*(fac1+fac2*cosr)
       else
         call fatal_error('robertsflow','no such flowtype')
       endif
