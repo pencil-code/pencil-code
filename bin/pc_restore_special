@@ -8,6 +8,11 @@ Example usage:
 
 Options:
     -h,--help               Show this help
+    -r,--root               Path to simulation directory. If this is passed,
+                            make the changes in this directory instead of in
+                            $PENCIL_HOME. Useful if you have special modules
+                            in your local simulation directory that are not
+                            checked in to the main repository
 '''
 
 if test -z "$PENCIL_HOME"; then
@@ -19,8 +24,8 @@ fi
 #https://stackoverflow.com/questions/192249/how-do-i-parse-command-line-arguments-in-bash/29754866#29754866
 set -o errexit -o pipefail -o noclobber -o nounset
 
-LONGOPTS=help
-OPTIONS=h
+LONGOPTS=root:,help
+OPTIONS=r:h
 
 PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@") || exit 2
 eval set -- "$PARSED"
@@ -28,6 +33,10 @@ eval set -- "$PARSED"
 root="$PENCIL_HOME"
 while true; do
     case "$1" in
+        -r|--root)
+            root="$2"
+            shift 2
+            ;;
         -h|--help)
             echo "$help"
             exit 0
@@ -51,5 +60,12 @@ for file in $1; do
         -e 's/namelist *\/[a-zA-Z0-9_]*[a-zA-Z0-9]_\([ir][a-z]*_pars\)/namelist \/special_\1/' \
         -e 's/NML *= *[a-zA-Z0-9_]*_\([a-z][a-z]*_pars\)/NML=special_\1/' $file > $file.tmp
 
-    mv -f $file.tmp $PENCIL_HOME/src/$file
+    dest="$root/src/$file"
+    if test -L "$dest"; then
+        dest="$(readlink -f "$dest")"
+    elif ! test -f "$dest"; then
+        echo "Trying to replace file \'$dest\' which does not exist"
+        exit 4
+    fi
+    mv -f "$file.tmp" "$dest"
 done
