@@ -53,6 +53,11 @@ while true; do
 done
 # END option parsing
 
+if test "$#" -lt 1; then
+    echo "pc_restore_special: no files were specified"
+    exit 5
+fi
+
 for file in $1; do
     sed -e '/module  *procedure/ ! s/^\( *module  *\)[a-zA-Z0-9_]* */\1Special/' \
         -e 's/^\( *endmodule  *\)[a-zA-Z0-9_]* *$/\1Special/' \
