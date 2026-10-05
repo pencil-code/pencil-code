@@ -330,8 +330,8 @@ module Interstellar
 !  Appended null last term to all arrays for RBN and SS cooling
 !
   integer, parameter :: len_cool=11
-  real(KIND=rkind8), dimension(len_cool) :: lncoolH, coolH_cgs
-  real, dimension(len_cool) :: coolT_cgs, coolB, lncoolT
+  real(KIND=rkind8), dimension(len_cool) :: lncoolH=0., coolH_cgs
+  real, dimension(len_cool) :: coolT_cgs, coolB, lncoolT=0.
   integer :: ncool
 !
 !  TT & z-dependent uv-heating profile
