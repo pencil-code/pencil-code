@@ -147,7 +147,7 @@ endif
 #
 # External sources are provided with absolute pathnames to avoid any trouble with symbolic links.
 #
-astaroth_libs: $(PC_HEADERS) DSL/local/mhdsolver.ac
+astaroth_libs: $(PC_HEADERS) DSL/local/rhs.h
 ifeq ($(TRANSPILATION),on)
 	@if ! cmp -s $(PENCIL_HOME)/src/astaroth/DSL/$(DSL_MODULE_FILE) DSL/local/$(DSL_MODULE_FILE); then \
 		cp $(PENCIL_HOME)/src/astaroth/DSL/$(DSL_MODULE_FILE) DSL/local/; \
@@ -204,7 +204,7 @@ else
 endif
 	@touch .sentinel
 #
-DSL/local/mhdsolver.ac: .sentinel
+DSL/local/rhs.h: .sentinel
 ifeq ($(TRANSPILATION),on)
         ifeq ($(GENERATE_DSL_CODE),on)
 	  rm -f PC_modulesources_old.h
@@ -214,7 +214,7 @@ ifneq ($(MODIFY_SOURCE_CODE),on)
 endif
 	cp PC_modulesources.h PC_modulesources_old.h
 else
-	@touch DSL/local/mhdsolver.ac
+	@touch DSL/local/rhs.h
 endif
 
 clean:
