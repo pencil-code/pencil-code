@@ -681,6 +681,10 @@ module Magnetic
   integer :: idiag_bybzm=0      ! DIAG_DOC: $\left<B_y B_z\right>$
   integer :: idiag_djuidjbim=0  ! DIAG_DOC:
   integer :: idiag_bij_cov_diffmax=0! DIAG_DOC: difference between two implementations of covariant derivatives
+  integer :: idiag_eqRmm=0      ! DIAG_DOC: $\left<\frac{|\uv\times\Bv|}{|\eta\Jv|}\right>
+  integer :: idiag_eqRmph1m=0   ! DIAG_DOC: $\left<\frac{|\uv\times\Bv|}{|\eta\Jv|}\right>_\text{phase 1}
+  integer :: idiag_eqRmph2m=0   ! DIAG_DOC: $\left<\frac{|\uv\times\Bv|}{|\eta\Jv|}\right>_\text{phase 2}
+  integer :: idiag_eqRmph3m=0   ! DIAG_DOC: $\left<\frac{|\uv\times\Bv|}{|\eta\Jv|}\right>_\text{phase 3}
   integer :: idiag_bmx=0        ! DIAG_DOC: $\left<\left<\Bv\right>_{yz}^2
                                 ! DIAG_DOC:   \right>^{1/2}$
                                 ! DIAG_DOC:   \quad(energy of $yz$-averaged
@@ -3541,7 +3545,16 @@ module Magnetic
           idiag_jxph1mz/=0 .or. idiag_jyph1mz/=0 .or. idiag_jzph1mz/=0 .or. &
           idiag_jxph2mz/=0 .or. idiag_jyph2mz/=0 .or. idiag_jzph2mz/=0 .or. &
           idiag_jxph3mz/=0 .or. idiag_jyph3mz/=0 .or. idiag_jzph3mz/=0 .or. &
-          idiag_abph1mz/=0 .or. idiag_abph2mz/=0 .or. idiag_abph3mz/=0) lpenc_diagnos(i_ss)=.true.
+          idiag_abph1mz/=0 .or. idiag_abph2mz/=0 .or. idiag_abph3mz/=0) then
+        lpenc_diagnos(i_ss)=.true.
+        call warning('pencil_criteria_magnetic', &
+                       'include as required fracvph1mz, ph2 and/or ph3 in video.in')
+      endif
+      if (idiag_eqRmm/=0 .or. idiag_eqRmph1m/=0 .or. idiag_eqRmph2m/=0 .or. idiag_eqRmph3m/=0) &
+        lpenc_diagnos(i_ss)=.true.
+      if (idiag_eqRmph1m/=0 .or. idiag_eqRmph2m/=0 .or. idiag_eqRmph3m/=0) &
+        call warning('pencil_criteria_magnetic', &
+                       'include as required fracvph1m, ph2 and/or ph3 in print.in')
       if (lforcing_cont.and.idiag_bcurlfmz/=0) lpenc_diagnos(i_curlfcont)=.true.
 !
 !  For Coulomb gauge. The diagnostics results depend on whether or
@@ -6942,6 +6955,9 @@ print*,'AXEL2: should not be here (eta) ... '
           if (idiag_Rmrms/=0) call sum_mn_name(p%uxb2/fres2,idiag_Rmrms,lsqrt=.true.)
         endif
       endif
+!
+!      if (idiag_eqRmm/=0 .or. idiag_eqRmph1m/=0 .or. idiag_eqRmph2m/=0 .or. idiag_eqRmph3m/=0) then
+!      endif
 !
 !  Integrate velocity in time, to calculate correlation time later.
 !
