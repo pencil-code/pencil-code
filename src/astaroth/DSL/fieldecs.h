@@ -383,4 +383,7 @@ field_order(AC_iuub__mod__cdata != 0 ? AC_iuub__mod__cdata+2-1 : -1) Field F_UUB
 const Field3 F_UUBVEC = {F_UUBX, F_UUBY, F_UUBZ}
 field_order(AC_ilncc__mod__cdata-1) Field F_LNCC
 // @auto-field-declarations: fortran-parser adds missing fields above this line
+#if LDEBUG_OUTPUT_TIMES
+field_order(AC_ispecial__mod__debug_output_times != 0 ? AC_ispecial__mod__debug_output_times-1 : -1) Field F_SPECIAL
+#endif
 #include "$AC_HOME/acc-runtime/stdlib/map.h"

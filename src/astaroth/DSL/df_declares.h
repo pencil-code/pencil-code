@@ -218,3 +218,7 @@ real  DF_BB_SPHT       = 0.0
 real  DF_BB_SPHP       = 0.0
 real DF_LNCC = rk_intermediate_split_first(F_LNCC,step_num)
 // @auto-field-declarations: fortran-parser adds missing fields above this line
+#if LDEBUG_OUTPUT_TIMES
+real DF_SPECIAL = rk_intermediate_split_first(F_SPECIAL,step_num)
+#define DF_ISPECIAL__MOD__DEBUG_OUTPUT_TIMES DF_SPECIAL
+#endif
