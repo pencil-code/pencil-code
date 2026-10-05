@@ -3231,7 +3231,7 @@ special_preps:
 ifeq ($(USE_SPECIAL_DISPATCHER),no)
 	@#Kishore: scripts/modify-special has not been called before this, so
 	@#Kishore: why do we need to undo its changes?
-	pc_restore_special --root .. "$(SPECIAL_MODULES).f90"
+	@#pc_restore_special --root .. "$(SPECIAL_MODULES).f90"
 else
 	scripts/modify-special $(SPECIAL_MODULES)
 endif
