@@ -67,5 +67,10 @@ for file in $1; do
         echo "Trying to replace file \'$dest\' which does not exist"
         exit 4
     fi
-    mv -f "$file.tmp" "$dest"
+
+    if ! cmp -s special.tmp $(SPECIAL_MODULES).f90; then
+        mv -f "$file.tmp" "$dest"
+    else
+        rm "$file.tmp"
+    fi
 done
