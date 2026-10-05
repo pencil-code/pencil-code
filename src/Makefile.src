@@ -3242,7 +3242,7 @@ endif
 special.so: $(CPARAM_OBJ) $(CDATA_OBJ) $(SPECIAL_OBJ) special_dummies.inc $(SPECIAL_MODULES:=.o)  $(LIBGPU)
 	@$(LD) $(SPECIAL_MODULES:=.o) $(LIBFLAGS) $(DLL_LDFLAGS) -o special.so ;\
         ld_status=$$? ;\
-        pc_restore_special "$(SPECIAL_MODULES:=.f90)" ;\
+        pc_restore_special --root .. "$(SPECIAL_MODULES:=.f90)" ;\
         exit $$ld_status
 
 # pc_restore_special should run regardless of whether ld succeeds; if ld fails,
