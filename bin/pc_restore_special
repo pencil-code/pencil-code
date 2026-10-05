@@ -1,7 +1,48 @@
 #!/bin/bash
 
-# Undoes the changes that are automatically made to the source files when multiple special
-# modules are used. See target special_preps in Makefile.src.
+help='''Undoes the changes that are automatically made to the source files when
+multiple special modules are used. See target special_preps in Makefile.src.
+
+Example usage:
+    pc_restore_special special/chiral_mhd.f90
+
+Options:
+    -h,--help               Show this help
+'''
+
+if test -z "$PENCIL_HOME"; then
+    echo "\$PENCIL_HOME must be set to use this script"
+    exit 1
+fi
+
+# BEGIN option parsing
+#https://stackoverflow.com/questions/192249/how-do-i-parse-command-line-arguments-in-bash/29754866#29754866
+set -o errexit -o pipefail -o noclobber -o nounset
+
+LONGOPTS=help
+OPTIONS=h
+
+PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@") || exit 2
+eval set -- "$PARSED"
+
+root="$PENCIL_HOME"
+while true; do
+    case "$1" in
+        -h|--help)
+            echo "$help"
+            exit 0
+            ;;
+        --)
+            shift
+            break
+            ;;
+        *)
+            echo "Error in parsing options"
+            exit 3
+            ;;
+    esac
+done
+# END option parsing
 
 for file in $1; do
     sed -e '/module  *procedure/ ! s/^\( *module  *\)[a-zA-Z0-9_]* */\1Special/' \
