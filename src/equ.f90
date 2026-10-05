@@ -778,7 +778,10 @@ module Equ
 !
 !  Perform reductions across threads.
 !
-!!      !$omp barrier
+!     This barrier is needed since p_fname is the fname of thread0, so thread0 has to first finalize
+!     before others can write to p_fname.
+!     I believe this is needed only in extreme cases, but better to have it to be on the safe side.
+      !$omp barrier
 !!$    do imn=0,num_helper_threads-1   !MR: loop to enforce ordered accumulation
 !!$      if (omp_get_thread_num() == imn) then
 !$        call prep_finalize_thread_diagnos
