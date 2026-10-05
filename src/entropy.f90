@@ -1715,7 +1715,6 @@ module Energy
 !
       real, contiguous, dimension(:,:,:,:), intent(INOUT) :: f
 !
-      integer :: n
       real :: fac
       real :: cv, cp
 !
