@@ -2413,7 +2413,7 @@ module Viscosity
             p%fvisc(:,2)=p%fvisc(:,2) + lambda_phi
           endif
         else
-          call fatal_error("init_uu","coord_system should be spherical or cylindric")
+          call fatal_error("calc_pencils_viscosity","coord_system should be spherical or cylindric")
         endif
       endif
 !
