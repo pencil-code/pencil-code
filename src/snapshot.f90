@@ -21,8 +21,21 @@ module Snapshot
     character(LEN=fnlen) :: file
     character(LEN=intlen) :: csnap_nr
   endtype
+!
+! For downsampled snapshots in GPU runs (assume at most one will be written per
+! timestep)
   type(pars_for_external) :: extpars
-
+!
+! For normal snapshots in GPU runs; in principle, we may need to write both
+! VAR* and var.dat in a particular timestep, so we need to store information
+! about both till the helper thread wakes up
+  type :: queued_snapshot_info
+    integer :: len = 0 !how many snapshots are currently queued
+    type(pars_for_external), dimension(2) :: snap
+  endtype
+!
+  type(queued_snapshot_info) :: queued_snapshots
+!
   interface output_form
     module procedure output_form_int_0D
   endinterface
@@ -31,6 +44,29 @@ module Snapshot
             perform_wsnap_ext, perform_wsnap_down, perform_wsnap_down_ext
 !
   contains
+!***********************************************************************
+    subroutine add_snap_to_queue(ind1, ind2, file)
+!
+!     For GPU runs; store information about snapshots that are to be written
+!     when the helper thread wakes up.
+!
+      integer, intent(in) :: ind1, ind2
+      character(LEN=fnlen), intent(in) :: file
+!
+      integer :: i
+!
+      i = queued_snapshots%len + 1
+      if (i > size(queued_snapshots%snap)) then
+        call fatal_error('add_snap_to_queue', &
+          'attempted to queue too many snapshots for processing by helper thread')
+      endif
+!
+      queued_snapshots%len = i
+      queued_snapshots%snap(i)%ind1 = ind1
+      queued_snapshots%snap(i)%ind2 = ind2
+      queued_snapshots%snap(i)%file = file
+!
+    endsubroutine
 !***********************************************************************
     subroutine wsnap_down(a)
 !
@@ -358,7 +394,7 @@ module Snapshot
           if (msnap==mfarray) call update_auxiliaries(a)
           call safe_character_assign(file,trim(chsnap)//ch)
           if (lmultithread) then
-            extpars%ind1=nv1_capitalvar; extpars%ind2=msnap; extpars%file=file
+            call add_snap_to_queue(nv1_capitalvar, msnap, file)
             call save_diagnostic_controls(lsnap_time=.true.)
 !$          lmasterflags(PERF_WSNAP) = .true.
           else
@@ -400,7 +436,7 @@ module Snapshot
           call system_cmd('mv -f '// base_file // ' ' // backup_file //' > /dev/null 2>&1')
         endif
         if (lmultithread.and.nt>0) then
-          extpars%ind1=1; extpars%ind2=msnap; extpars%file=file
+          call add_snap_to_queue(1, msnap, file)
           call save_diagnostic_controls(lsnap_time=.true.)
 !$        lmasterflags(PERF_WSNAP) = .true.
         else
@@ -416,10 +452,20 @@ module Snapshot
     endsubroutine wsnap
 !***********************************************************************
     subroutine perform_wsnap_ext(a)
-
+!
+!     Used by the helper thread in GPU runs
+!
       real, dimension(:,:,:,:) :: a
-
-      call perform_wsnap(a,extpars%ind1,extpars%ind2,extpars%file)
+!
+      type(pars_for_external) :: pars
+      integer :: i
+!
+      do i=1,queued_snapshots%len
+        pars = queued_snapshots%snap(i)
+        call perform_wsnap(a,pars%ind1,pars%ind2,pars%file)
+      enddo
+!
+      queued_snapshots%len = 0
 !$    lhelperflags(PERF_WSNAP) = .false.
 
     endsubroutine perform_wsnap_ext
