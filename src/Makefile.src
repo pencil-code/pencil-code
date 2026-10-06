@@ -505,7 +505,6 @@ else
   else
     SPECIAL_MULT := $(words $(SPECIAL))
     SPECIAL_MODULES := $(strip $(SPECIAL))
-    SPECIAL_DEPS = special_preps
   endif
 endif
 
@@ -3139,11 +3138,26 @@ no%.o: no%.f90 quiet.o
 %.o: %.f90
 	$(FC) $(ALL_COMP_FLAGS) $(FSTD) -o $@ -c $<
 #
-special/%.o: special/%.f90
+special/%._autogen_.f90: special/%.f90
 ifeq ($(USE_SPECIAL_DISPATCHER),yes)
-	$(FC) $(ALL_COMP_FLAGS) $(FSTD) $(DLL_FFLAGS) -o special/$*.o -c special/$*.f90
+	# copied from scripts/modify-special
+	sed -e"/module  *procedure/ ! s/^\( *module  *\)[Ss]pecial/\1$*/" \
+		-e"s/^\( *endmodule  *\)[Ss]pecial/\1$*/" \
+		-e"s/special_dummies\.inc/$*_dummies.inc/" \
+		< "special/$*.f90" > special/$*._autogen_.f90
+ifneq ($(SPECIAL_MULT),1)
+	sed -i -e "s/namelist *\/special_\([ir][a-z]*_pars\)/namelist \/$*_\1/" \
+		-e"s/NML *= *special_\([ir][a-z]*_pars\)/NML=$*_\1/" special/$*._autogen_.f90
+endif
 else
-	$(FC) $(ALL_COMP_FLAGS) $(FSTD) -o special/$*.o -c special/$*.f90
+	cp --update=all special/$*.f90 special/$*._autogen_.f90
+endif
+
+special/%.o: special/%._autogen_.f90
+ifeq ($(USE_SPECIAL_DISPATCHER),yes)
+	$(FC) $(ALL_COMP_FLAGS) $(FSTD) $(DLL_FFLAGS) -o special/$*.o -c special/$*._autogen_.f90
+else
+	$(FC) $(ALL_COMP_FLAGS) $(FSTD) -o special/$*.o -c special/$*._autogen_.f90
 endif
 	@sed -f links.sed special/$*.f90 >> ../reference_link.txt.tmp
 #
@@ -3227,25 +3241,10 @@ $(PENCIL_HOME)/lib/Coala/build/obj/solver_DG.o:
 	    $(MAKE) -C "$(PENCIL_HOME)/lib/Coala"
 	    #cmake -S . -B build && \
 	    #cmake --build build
-special_preps:
-ifeq ($(USE_SPECIAL_DISPATCHER),no)
-	@#Kishore: scripts/modify-special has not been called before this, so
-	@#Kishore: why do we need to undo its changes?
-	@#pc_restore_special --root .. "$(SPECIAL_MODULES).f90"
-else
-	scripts/modify-special $(SPECIAL_MODULES)
-endif
 
 special.so: $(CPARAM_OBJ) $(CDATA_OBJ) $(SPECIAL_OBJ) special_dummies.inc $(SPECIAL_MODULES:=.o)  $(LIBGPU)
-	@$(LD) $(SPECIAL_MODULES:=.o) $(LIBFLAGS) $(DLL_LDFLAGS) -o special.so ;\
-        ld_status=$$? ;\
-        pc_restore_special --root .. "$(SPECIAL_MODULES:=.f90)" ;\
-        exit $$ld_status
+	$(LD) $(SPECIAL_MODULES:=.o) $(LIBFLAGS) $(DLL_LDFLAGS) -o special.so
 
-# pc_restore_special should run regardless of whether ld succeeds; if ld fails,
-# we want make to fail AFTER running pc_restore_special. The backslashes and
-# semicolons above are essential for this.
-#
 #  comment out the 3 lines ifneq, @, endif below if one gets an error message
 #  about io_dist cannot copy.
 #
@@ -3496,11 +3495,11 @@ initcond.o:
 $(INITIAL_CONDITION_OBJ):
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FSTD) $(FFLAG_HEAP_ALLOC) -c $(INITIAL_CONDITION_SRC) -o $(INITIAL_CONDITION_OBJ)
 
-special/meanfield_e_tensor.o: special/meanfield_e_tensor.f90
+special/meanfield_e_tensor.o: special/meanfield_e_tensor._autogen_.f90
 ifeq ($(USE_SPECIAL_DISPATCHER),yes)
-	$(FC_HDF5) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) $(DLL_FFLAGS) -c special/meanfield_e_tensor.f90 -o special/meanfield_e_tensor.o
+	$(FC_HDF5) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) $(DLL_FFLAGS) -c special/meanfield_e_tensor._autogen_.f90 -o special/meanfield_e_tensor.o
 else
-	$(FC_HDF5) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -c special/meanfield_e_tensor.f90 -o special/meanfield_e_tensor.o
+	$(FC_HDF5) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -c special/meanfield_e_tensor._autogen_.f90 -o special/meanfield_e_tensor.o
 endif
 #
 experimental/analyzers.o experimental/analyzers.mod:
@@ -3618,11 +3617,11 @@ else
 	$(FC) $(MOST_COMP_FLAGS) $(FSTD) -o cdata.o -c cdata.f90
 endif
 
-special_dummies.inc:  nospecial.f90 special_interfaces.inc $(SPECIAL_MODULES:=.f90) Makefile.local
+special_dummies.inc:  nospecial.f90 special_interfaces.inc $(SPECIAL_MODULES:=._autogen_.f90) Makefile.local
 ifeq ($(USE_SPECIAL_DISPATCHER),no)
-	scripts/mkdummyinc -d nospecial.f90 -s $(SPECIAL).f90 -o special_dummies.inc
+	scripts/mkdummyinc -d nospecial.f90 -s $(SPECIAL)._autogen_.f90 -o special_dummies.inc
 else
-	@for file in $(SPECIAL_MODULES); do echo "$$file"_dummies.inc; scripts/mkdummyinc -d nospecial.f90 -s "$$file".f90 -o $${file#*/}_dummies.inc; done
+	@for file in $(SPECIAL_MODULES); do echo "$$file"_dummies.inc; scripts/mkdummyinc -d nospecial.f90 -s "$$file"._autogen_.f90 -o $${file#*/}_dummies.inc; done
 	#Done to not re-compile
 	### WORK HERE: [PABourdin] I think the opposite is true... How would touching a file prevent to recompile?
 	#TP: I think what was meant here was that if the special_dummies.inc is never produced this recipe will always run since the target is missing.
@@ -3823,6 +3822,7 @@ clean:  slender clean_astaroth
 	rm -f *.dot *.ps  # Dependency diagram files
 	rm -f work.pc work.pcl .build* .moduleinfo
 	rm -f nompicomm_*.f90 mpicomm_*.f90 # temporary workaround to remove old "mpicomm_double.f90"
+	rm -f special/*._autogen_.f90
 	@printf "# %s\n" "Empty" "(This file was written by 'make')" > Makefile.inc
 #
 #  Clean up all
