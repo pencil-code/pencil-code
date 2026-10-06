@@ -352,12 +352,6 @@ module Snapshot
         end select
         call update_snaptime(file,tsnap,nsnap,dsnap,real(t_trigger,kind=rkind8),lsnap,ch)
 !
-!        if (itsnap/=impossible_int) then
-!          call update_snaptime(file,tsnap,nsnap,dsnap,t,lsnap,ch,itout=itsnap)
-!        else
-!          call update_snaptime(file,tsnap,nsnap,dsnap,t,lsnap,ch)
-!        endif
-!
         if (lsnap) then
           if (.not.lstart .and. lgpu .and. nt>0) call copy_farray_from_GPU(a)
           call update_ghosts(a)
