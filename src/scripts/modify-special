@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# NOTE: this is no longer used anywhere
+
 # Modifies files to allow the use of multiple special modules.
 # This script takes the names of the special modules as arguments
 
