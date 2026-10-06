@@ -1607,7 +1607,7 @@ module Gravity
     call copy_addr(zinfty,p_par(27))
     call copy_addr(nu_epicycle,p_par(28))
     call copy_addr(zref,p_par(29))
-    call copy_addr(n_pot,p_par(30))
+    call copy_addr(n_pot,p_par(30)) ! int
     call copy_addr(reduced_top,p_par(31))
 
     call keep_compiler_quiet(ygrav)
