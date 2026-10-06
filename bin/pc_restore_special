@@ -1,5 +1,7 @@
 #!/bin/bash
 
+#NOTE: this is no longer needed, since we no longer call scripts/modify-special
+
 help='''Undoes the changes that are automatically made to the source files when
 multiple special modules are used. See target special_preps in Makefile.src.
 
