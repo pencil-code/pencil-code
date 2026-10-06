@@ -3150,7 +3150,7 @@ ifneq ($(SPECIAL_MULT),1)
 		-e"s/NML *= *special_\([ir][a-z]*_pars\)/NML=$*_\1/" special/$*._autogen_.f90
 endif
 else
-	cp --update=all special/$*.f90 special/$*._autogen_.f90
+	cp special/$*.f90 special/$*._autogen_.f90
 endif
 
 special/%.o: special/%._autogen_.f90
