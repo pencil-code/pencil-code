@@ -10,6 +10,9 @@ from rstcloth import RstCloth
 import latexcodec
 import bibtexparser
 #TODO: the import below fails with bibtexparser >= 2.0
+#IL: This is a know problem of bibtexparser. It is failing for other people for versions other that the latest 1.4.4. 
+#IL: This is why the version is explicitly statete in the RTD building requirements pc/doc/readthedocs/requirements.txt
+#IL: not an issue on our side.
 from bibtexparser import bibdatabase
 # Patch the months, since our bibtex has entries such as 'august', but bibtexparser expects e.g. 'aug'
 bibdatabase.COMMON_STRINGS.update({it.lower(): it.capitalize() for it in bibdatabase.COMMON_STRINGS.values()})
