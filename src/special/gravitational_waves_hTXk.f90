@@ -2211,15 +2211,13 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
       case ('VCT'); spectrum=spectra%VCT; spectrum_hel=0.
       case ('Tpq'); spectrum=spectra%Tpq; spectrum_hel=0.
       case ('TGW'); spectrum=spectra%TGW; spectrum_hel=0.
-      case ('StT'); spectrum=real(spectra%complex_Str_T)
-                    spectrum_hel=aimag(spectra%complex_Str_T)
-      case ('StX'); spectrum=real(spectra%complex_Str_X)
-                    spectrum_hel=aimag(spectra%complex_Str_X)
+      case ('StT'); spectrum=real(spectra%complex_Str_T); spectrum_hel=aimag(spectra%complex_Str_T)
+      case ('StX'); spectrum=real(spectra%complex_Str_X); spectrum_hel=aimag(spectra%complex_Str_X)
       case ('Gab'); spectrum_2d=spectra%GWh_Gamma_ab; spectrum_2d_hel=spectra%GWhhel_Gamma_ab
       case ('Gan'); spectrum_2d=spectra%GWh_Gamma_ang; spectrum_2d_hel=spectra%GWhhel_Gamma_ang
       case ('GBb'); spectrum_2d=spectra%GWh_Gamma_Bb; spectrum_2d_hel=spectra%GWhhel_Gamma_Bb
-      case default; call warning('special_calc_spectra', &
-                      'kind of spectrum "'//kind//'" not implemented')
+      case default; call warning('special_calc_spectra','kind of spectrum "'//kind//'" not implemented')
+
       endselect
 
     endsubroutine special_calc_spectra
@@ -3550,9 +3548,9 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
     endsubroutine get_slices_special
 !***********************************************************************
     subroutine load_variables_to_gpu_special
-        if (lread_scl_factor_file) then
-          call read_Hp_and_appa_target
-        endif
+
+      if (lread_scl_factor_file) call read_Hp_and_appa_target
+
     endsubroutine load_variables_to_gpu_special
 !***********************************************************************
     subroutine pushpars2c(p_par)
