@@ -6,6 +6,12 @@
   d2davg=1
   dsnap=1
   dvid=1
+  dspec=1
+
+  lspec_at_tplusdt=T
+  sp_spec=T
 /
 &special_run_pars
+/
+&power_spectrum_run_pars
 /

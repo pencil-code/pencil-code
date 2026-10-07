@@ -8,5 +8,8 @@ VISCOSITY = noviscosity
 EOS       = noeos
 SPECIAL   = special/debug_output_times
 
+POWER     = power_spectrum
+FOURIER   = fourier_fftpack
+
 # uncomment below to run on GPU
 # GPU = gpu_astaroth
