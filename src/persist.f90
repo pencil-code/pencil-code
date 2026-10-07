@@ -151,8 +151,8 @@ module Persist
       use General, only: random_seed_wrapper
       use IO, only: read_persist
 !
-      integer, intent(in) :: id
-      logical, intent(inout) :: done
+      integer, intent(in ) :: id
+      logical, intent(out) :: done
 !
       real :: dely, dtmp, deps
 !
