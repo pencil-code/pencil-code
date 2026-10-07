@@ -260,7 +260,7 @@ module Special
       if (lhubble) then
         phidot=0.
         select case (V_choice)
-        case ('alpha_attractors')
+          case ('alpha_attractors' .or. 'alpha_attractors_corrected')
             beta=sqrt(2./(3.*alpha))
             V=alpha*m_alpha*(tanh(beta*phi_ini/2)**2)**n_alpha
           case ('quadratic') ; V=.5*(m_phi*phi_ini)**2
@@ -379,7 +379,7 @@ module Special
               f_ode(iaxi_phi)=phi_ini
               f_ode(iaxi_phidot)=0.
               select case (V_choice)
-                case ('alpha_attractors')
+                case ('alpha_attractors' .or. 'alpha_attractors_corrected')
                   beta=sqrt(2./(3.*alpha))
                   V=alpha*m_alpha*(tanh(beta*phi_ini/2)**2)**n_alpha
                 case ('quadratic') ; V=.5*(m_phi*phi_ini)**2
@@ -529,7 +529,7 @@ module Special
         phidot=f_ode(iaxi_phidot)
         U=mu**4*(1.+cos(chi/fdecay))
         select case (V_choice)
-          case ('alpha_attractors')
+          case ('alpha_attractors' .or. 'alpha_attractors_corrected')
             beta=sqrt(2./(3.*alpha))
             V=alpha*m_alpha*(tanh(beta*phi/2)**2)**n_alpha
           case ('quadratic') ; V=.5*(m_phi*phi)**2
@@ -1749,7 +1749,7 @@ module Special
         phidot=f_ode(iaxi_phidot)
         U=mu**4*(1.+cos(chi/fdecay))
         select case (V_choice)
-          case ('alpha_attractors')
+          case ('alpha_attractors' .or. 'alpha_attractors_corrected')
             beta=sqrt(2./(3.*alpha))
             V=alpha*m_alpha*(tanh(beta*phi/2)**2)**n_alpha
           case ('quadratic') ; V=.5*(m_phi*phi)**2
