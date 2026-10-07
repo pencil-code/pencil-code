@@ -1125,6 +1125,9 @@ module Special
           case ('alpha_attractors')
             beta=sqrt(2./(3.*alpha))
             Vprime=alpha*m_alpha*n_alpha*beta*tanh(beta*phi/2)*(1./cosh(beta*phi/2)**2)
+          case ('alpha_attractors_corrected')
+            beta=sqrt(2./(3.*alpha))
+            Vprime=2*alpha*m_alpha*n_alpha*beta*tanh(beta*abs(phi)/2)/sinh(beta*phi/2)
           case ('quadratic') ; Vprime=m_phi**2*phi
           case default
             call fatal_error("calc_ode_dt", "no such V_choice: "//trim(V_choice))
