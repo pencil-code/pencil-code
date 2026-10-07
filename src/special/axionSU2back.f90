@@ -1156,7 +1156,16 @@ module Special
           Qddot  =Qddot  -sbackreact_Q  *fact*a**2 *grand_sum
           chiddot=chiddot-sbackreact_chi*fact*a**2*dgrant_sum
         else
-          Qddot  =Qddot  -sbackreact_Q  *fact *grand_sum-sbackreact_JJ*JJ_sum
+!
+!  At the moment, JJ_sum is not defined after the first 3 substeps
+!  when Schwinger is not used, so need to avoid using it.
+!
+          !Qddot  =Qddot  -sbackreact_Q  *fact *grand_sum-sbackreact_JJ*JJ_sum
+          if (lSchwinger_scalar) then
+            Qddot  =Qddot  -sbackreact_Q  *fact *grand_sum-sbackreact_JJ*JJ_sum
+          else
+            Qddot  =Qddot  -sbackreact_Q  *fact *grand_sum
+          endif
           chiddot=chiddot-sbackreact_chi*fact*dgrant_sum
         endif
       endif
@@ -1740,6 +1749,7 @@ module Special
 !
       Q=f_ode(iaxi_Q)
       Qdot=f_ode(iaxi_Qdot)
+      chi=f_ode(iaxi_chi)
       chidot=f_ode(iaxi_chidot)
 !
 !  Possibility to evolve the Hubble parameter (in cosmic time)
@@ -1883,12 +1893,12 @@ module Special
         call mpiallreduce_sum(sum(JJ_R),JJ_R_sum,1)
         call mpiallreduce_sum(sum(JJ_L),JJ_L_sum,1)
         call mpiallreduce_sum(sum(JJ_R+JJ_L),JJ_sum,1)
-     else
-       JJ_R_sum=0.
-       JJ_L_sum=0.
-       JJ_sum=0.
-     endif
-     if (.not. lmultithread) then
+      else
+        JJ_R_sum=0.
+        JJ_L_sum=0.
+        JJ_sum=0.
+      endif
+      if (.not. lmultithread) then
         grand_sum_diagnos  = grand_sum
         dgrant_sum_diagnos = dgrant_sum
         rhoT_sum_diagnos = rhoT_sum
