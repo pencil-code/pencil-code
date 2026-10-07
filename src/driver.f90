@@ -72,9 +72,9 @@ module Driver
         tau_inv=0.0
       endif
 !
-      target_proc_x(:) = (driver_pos_x(:mcom)-1) / nx
-      target_proc_y(:) = (driver_pos_y(:mcom)-1) / ny
-      target_proc_z(:) = (driver_pos_z(:mcom)-1) / nz
+      target_proc_x = (driver_pos_x(:mcom)-1) / nx
+      target_proc_y = (driver_pos_y(:mcom)-1) / ny
+      target_proc_z = (driver_pos_z(:mcom)-1) / nz
 !
       do f_index = 1, mcom
         if (decay_time(f_index) /= 0.0) tau_inv(f_index) = 1.0 / decay_time(f_index)
