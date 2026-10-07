@@ -840,10 +840,10 @@ module Hydro
   integer :: idiag_uguxmz=0     ! XYAVG_DOC:
   integer :: idiag_uguymz=0     ! XYAVG_DOC:
   integer :: idiag_uguzmz=0     ! XYAVG_DOC:
-  integer :: idiag_Remz=0       ! XYAVG_DOC: $\langle\frac{|\uv\cdot\uv|}{\left|
+  integer :: idiag_Remz=0       ! XYAVG_DOC: $\langle\frac{|\uv\cdot\nabla\uv|}{\left|
                                 ! XYAVG_DOC: \frac{\partial}{\partial x_j}
                                 ! XYAVG_DOC: (\nu{\sf S}_{ij})\right|}\rangle_{xy}$
-  integer :: idiag_Rerms=0      ! XYAVG_DOC: $\langle\frac{|\uv\cdot\uv|}{\left|
+  integer :: idiag_Rerms=0      ! XYAVG_DOC: $\langle\frac{|\uv\cdot\nabla\uv|}{\left|
                                 ! XYAVG_DOC: \frac{\partial}{\partial x_j}
                                 ! XYAVG_DOC: (\nu{\sf S}_{ij})\right|}$
   integer :: idiag_oguxmz=0     ! XYAVG_DOC: $\left<(\boldsymbol{\omega}
@@ -4751,7 +4751,7 @@ module Hydro
       real, dimension (nx) :: odel2um, uref, curlo2, qo, quxo, graddivu2, tmp
       real, dimension (nx,Nmodes_SH) :: urlm
       real, dimension (nx) :: rmask, lorr, ratio2, u2
-      real, dimension (nx) :: pradrc2, Re2, absv, absa
+      real, dimension (nx) :: pradrc2, Re2, absv, absa, fvisc2
       real :: kx,arad_normal
       integer :: k
 !
@@ -5252,8 +5252,8 @@ module Hydro
           call sum_mn_name(frict,idiag_frict)
         endif
         if (idiag_Rerms/=0) then
-          Re2 = p%ugu2/p%diffus_total**2
-          where (p%diffus_total < tini) Re2 = 0.
+          call dot2(p%fvisc,fvisc2)
+          Re2 = p%ugu2/(fvisc2+tini)
           call sum_mn_name(Re2,idiag_Rerms,lsqrt=.true.)
         endif
 
@@ -5272,7 +5272,7 @@ module Hydro
       type(pencil_case) :: p
 
       real, dimension (nx,3) :: curlru
-      real, dimension (nx) :: uus, curlru2, Remz, uzmask, tmp1
+      real, dimension (nx) :: uus, curlru2, Remz, uzmask, tmp1,fvisc2
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1.
 !
@@ -5584,7 +5584,8 @@ module Hydro
 !  phi-z averages
 !
         if (idiag_Remz/=0) then
-          Remz = sqrt(p%ugu2/p%diffus_total**2)
+          call dot2(p%fvisc,fvisc2)
+          Remz = sqrt(p%ugu2/fvisc2)
           where (p%diffus_total < tini) Remz = 0.
           call xysum_mn_name_z(Remz,idiag_Remz)
         endif
