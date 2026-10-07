@@ -804,6 +804,7 @@ module Equ
         use Density, only: density_before_boundary_diagnostics
         use Special, only: special_before_boundary_diagnostics
         use Energy,  only: energy_after_boundary_diagnostics
+        use Magnetic,  only: magnetic_before_boundary_diagnostics
 
         real, contiguous, dimension(:,:,:,:),intent(INOUT) :: f
 
@@ -812,6 +813,7 @@ module Equ
         !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
 
         call density_before_boundary_diagnostics(f)
+        call magnetic_before_boundary_diagnostics(f)
         call special_before_boundary_diagnostics(f)
         call energy_after_boundary_diagnostics(f)
         !$omp end parallel

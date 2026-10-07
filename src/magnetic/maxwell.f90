@@ -691,6 +691,18 @@ module Magnetic
 !
     endsubroutine magnetic_before_boundary
 !***********************************************************************
+    subroutine magnetic_before_boundary_diagnostics(f)
+!
+!  Possibility to modify the f array before the boundaries are
+!  communicated.
+!
+!  Some precalculated pencils of data are passed in for efficiency
+!  others may be calculated directly from the f array
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+    endsubroutine magnetic_before_boundary_diagnostics
+!***********************************************************************
     subroutine calc_pencils_magnetic_std(f,p)
 !
 !  Standard version (_std): global variable lpencil contains information about needed pencils.

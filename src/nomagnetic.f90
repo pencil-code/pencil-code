@@ -121,6 +121,19 @@ module Magnetic
 !
     endsubroutine magnetic_before_boundary
 !***********************************************************************
+    subroutine magnetic_before_boundary_diagnostics(f)
+!
+!  Conduct pre-processing required before boundary conditions and pencil
+!  calculations.
+!
+!  29-may-14/ccyang: dummy
+!
+      real, contiguous,dimension(:,:,:,:), intent(in):: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine magnetic_before_boundary_diagnostics
+!***********************************************************************
     subroutine calc_pencils_magnetic_std(f,p)
 !
 !  Standard version (_std): global variable lpencil contains information about needed pencils.

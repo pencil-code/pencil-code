@@ -7,6 +7,7 @@
   public :: get_slices_magnetic
   public :: init_aa, daa_dt
   public :: magnetic_before_boundary, magnetic_after_boundary
+  public :: magnetic_before_boundary_diagnostics
   public :: time_integrals_magnetic
   public :: df_diagnos_magnetic
 
