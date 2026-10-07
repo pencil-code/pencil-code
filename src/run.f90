@@ -543,7 +543,6 @@ endsubroutine helper_loop
     timer_for_timestep = real(mpiwtime())
     call time_step(f,df,p)
     time_in_timestep = time_in_timestep + real(mpiwtime())-timer_for_timestep
-!    tdiagnos=t
 !
 !  If overlapping grids are used to get body-confined grid around the solids
 !  in the flow, call time step on these grids.
