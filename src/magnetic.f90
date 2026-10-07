@@ -4164,6 +4164,39 @@ module Magnetic
 !
     endsubroutine magnetic_before_boundary
 !***********************************************************************
+    subroutine magnetic_before_boundary_diagnostics(f)
+      !TP: on GPUs we calculate BB here if needed for diagnostics
+      !TODO: calculate lbb_as_comaux always here also for CPU runs
+      use Boundcond, only: update_ghosts, zero_ghosts
+      use Sub, only: curl_mn,gij
+
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(nx,3) :: bb
+      real, dimension(nx,3,3) :: aij
+      integer :: j
+
+      if (lmultithread .and. lbb_as_comaux) then
+        do imn = 1, nyz
+          m = mm(imn)
+          n = nn(imn)
+          call gij(f, iaa, aij, 1)
+          call curl_mn(aij, bb, A=f(:,m,n,iax:iaz))
+!
+!  Add imposed field, if any
+!
+          if (lbb_as_comaux) then
+            if (lB_ext_in_comaux) then
+              call get_bext(B_ext)
+              do j = 1,3; bb(:,j) = bb(:,j) + B_ext(j); enddo;
+              if (headtt .and. imn == 1) print *, 'magnetic_before_boundary: B_ext = ', B_ext
+            endif
+            f(l1:l2,m,n,ibx:ibz) = bb
+          endif
+        enddo
+        call update_ghosts(f, ibx, ibz) 
+      endif
+    endsubroutine magnetic_before_boundary_diagnostics
+!***********************************************************************
 !NOT USED SO ON COMMENT
 !    subroutine update_char_vel_magnetic(f)
 !!
