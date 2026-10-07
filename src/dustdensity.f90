@@ -193,9 +193,8 @@ module Dustdensity
 !
   real :: dustdensity_floor_log
   real, pointer :: rhograin
-
 !
-!For strings to enums
+! For strings to enums
 !
   integer :: enum_self_collisions = 0
   integer :: enum_bordernd = 0
@@ -645,9 +644,7 @@ module Dustdensity
 !
       if (dustdensity_floor>0.) dustdensity_floor_log=alog(dustdensity_floor)
 
-      if(lcoala) then
-       call initialize_coala(coala_kernel,rhograin,coala_Q,coala_order)
-      endif
+      if (lcoala) call initialize_coala(coala_kernel,rhograin,coala_Q,coala_order)
 !
     endsubroutine initialize_dustdensity
 !***********************************************************************
@@ -708,10 +705,10 @@ module Dustdensity
              endif
           enddo
           do k=1,bin_scut
-            mean_mass    = 0.5*(mdplus(k)+mdminus(k))
+            mean_mass = 0.5*(mdplus(k)+mdminus(k))
             hj = mdplus(k) - mdminus(k)
             do l=l1,l2; do m=m1,m2; do n=n1,n2
-              if(ldensity_nolog) then
+              if (ldensity_nolog) then
                 coeff_norm = dtg0*f(l,m,n,irho)
               else
                 coeff_norm = dtg0*exp(f(l,m,n,ilnrho))
@@ -2807,7 +2804,6 @@ module Dustdensity
       St_1    = ts_i/t_dyn
       St_2    = ts_j/t_dyn
 
-
       !to symmetrize dv
       if (j > i) then
          ts_1    = ts_j
@@ -2818,7 +2814,6 @@ module Dustdensity
       x_St    = St_2/St_1
 
       beta_St = 3.2 - (1. + x_St) + 2./(1. + x_St) * (1./2.6 + x_St**3/(1.6 + x_St))
-
 
       if (ts_1 < t_eta) then
          if (abs(St_1 - St_2) < epsilon(St_1)) then
@@ -2897,7 +2892,7 @@ module Dustdensity
 !
       if (ldeltavd_turbulent) then
         call get_deltavd_turbu(deltavd_turbu,l,i,j)
-      elseif(ldeltavd_turbulent_ormel) then
+      elseif (ldeltavd_turbulent_ormel) then
         call get_deltavd_turbu_ormel(deltavd_turbu,l,i,j,p)
       else
         deltavd_turbu = 0.
@@ -2915,6 +2910,7 @@ module Dustdensity
               ((p%md(l,i)+p%md(l,j))/(p%md(l,i)*p%md(l,j)*unit_md))**(1/2.)
         if (deltavd > ust) deltavd = 0.
       endif
+
     endsubroutine get_deltavd
 !***********************************************************************
     subroutine coag_kernel(p)
@@ -3225,7 +3221,7 @@ module Dustdensity
       real, dimension(ndustspec) :: new_rhod,new_nd
       real :: deltav(ndustspec,ndustspec)
 
-      if(llast) then
+      if (llast) then
         do l=1,nx
           lgh=l+nghost
           do i=1,ndustspec
@@ -3248,6 +3244,7 @@ module Dustdensity
           enddo
         enddo
       endif
+
     endsubroutine coala_coagulation
 !***********************************************************************
     subroutine read_dustdensity_init_pars(iomsg)

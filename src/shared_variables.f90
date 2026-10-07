@@ -436,7 +436,7 @@ module SharedVariables
 !
     endsubroutine get_variable_real4d
 !***********************************************************************
-    subroutine get_variable_int0d(varname,variable,ierr,caller)
+    subroutine get_variable_int0d(varname,variable,ierr,caller,default_val)
 !
 !  Comment me.
 !
@@ -447,6 +447,7 @@ module SharedVariables
       integer, optional :: ierr
 !
       character (len=*), optional :: caller
+      integer, optional :: default_val
 !
       intent(in)  :: varname,caller
       intent(out) :: ierr           !,variable
@@ -457,6 +458,10 @@ module SharedVariables
         variable=>item%int0D
       else
         nullify(variable)
+        if (present(default_val)) then
+         allocate(variable)
+         variable = default_val
+        endif
       endif
 !
     endsubroutine get_variable_int0d
