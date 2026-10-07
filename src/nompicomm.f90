@@ -3310,6 +3310,19 @@ module Mpicomm
       f(l1:l2,m1:m2,n1:n2,indvar1:indvar2) = a
 
     endsubroutine scatter_snapshot
+ !***********************************************************************
+    subroutine mpigather_z_1D(sendbuf,recvbuf)
+!
+!  Gathers the chunks of a 1D array from each processor along a z-beam and broadcasts it.
+!
+!  25-nov-10/MR: coded
+!
+      real, dimension(:), intent(in)  :: sendbuf
+      real, dimension(:), intent(out) :: recvbuf
+
+      recvbuf=sendbuf
+
+    endsubroutine mpigather_z_1D
 !***********************************************************************
     function mpiallreduce_maxloc(local_val,global_val,comm) result(max_rank)
 !
