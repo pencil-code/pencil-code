@@ -535,9 +535,8 @@ module Special
 !
     endsubroutine special_calc_chemistry
 !***********************************************************************
-    subroutine special_calc_spectra(f,spectrum,spectrumhel, &
-      spectrum_2d,spectrum_2d_hel,&
-      lfirstcall,kind)
+    subroutine special_calc_spectra(f,spectrum,spectrumhel,spectrum_2d,spectrum_2d_hel, &
+                                    lfirstcall,kind)
 
       real, contiguous, dimension(:,:,:,:) :: f
       real, dimension(:) :: spectrum
