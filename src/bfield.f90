@@ -1404,6 +1404,19 @@ module Magnetic
 !
     endsubroutine magnetic_before_boundary
 !***********************************************************************
+    subroutine magnetic_before_boundary_diagnostics(f)
+!
+!  Conduct pre-processing required before boundary conditions and pencil
+!  calculations.
+!
+!  29-may-14/ccyang: dummy
+!
+      real, dimension(mx,my,mz,mfarray), intent(in):: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine magnetic_before_boundary_diagnostics
+!***********************************************************************
     subroutine time_integrals_magnetic(f,p)
 !
 !  Dummy routine
