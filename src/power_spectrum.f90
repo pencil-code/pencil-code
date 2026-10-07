@@ -73,8 +73,7 @@ module Power_spectrum
   real :: L_min, L_min_xy
   integer :: nk_xyz, nk_xy, n_loc, m_loc
 !
-!Work buffers for power funcs
-!TP: TODO allocate these at initialize func based on are they actually used
+! Work buffers for power funcs.
 !
   real, allocatable, dimension(:,:,:) :: a_re,a_im,b_re,b_im,c_re,c_im,d_re,d_im,h_re,h_im
   real, allocatable, dimension(:,:,:,:) :: a_vec_re,a_vec_im, b_vec_re
@@ -92,9 +91,6 @@ module Power_spectrum
       specflux_pmin, specflux_pmax, lzero_spec_zerok, lcorrect_integer_kcalc, &
       lpdf_2d_variable_range, lpowerxy_hdf5, trigger_spec
 !
-! real, allocatable, dimension(:,:) :: spectrum_2d, spectrumhel_2d
-! real, allocatable, dimension(:,:) :: spectrum_2d_sum, spectrumhel_2d_sum
-!
   character(len=*), parameter :: timestamp_format = '(ES24.16E3,1X,ES24.16E3)'
   contains
 !***********************************************************************
@@ -105,6 +101,8 @@ module Power_spectrum
 !  Axel: But for some reason, this doesn't work correctly.
 !  2026-Feb-05/Kishore: restored the check that Axel removed, as reloading
 !  2026-Feb-05/Kishore: is currently broken in samples/helical-MHDturb
+!
+!TP: TODO allocate these based on are they actually used
 !
   if (.not.allocated(a_re)) allocate(a_re(nx,ny,nz))
   if (.not.allocated(a_im)) allocate(a_im(nx,ny,nz))
@@ -243,10 +241,6 @@ outer:do ikz=1,nz
       call quick_sort(k2s(:nk_truebin),order)
 
     endif
-
-    !if (.not.allocated(spectrum_2d)) then
-    !  allocate(spectrum_2d(nk,nbin_angular), spectrumhel_2d(nk,nbin_angular), &
-    !           spectrum_2d_sum(nk,nbin_angular), spectrumhel_2d_sum(nk,nbin_angular))
 
     !TP: This enables to perform the FFT only on those xy-planes which are asked for instead of the whole grid.
     !    Enabling it only if less than 10 (which is totally arbitrary) planes are asked for because the
@@ -3275,12 +3269,11 @@ outer:do ikz=1,nz
         allocate(spectrum(nk),spectrumhel(nk))
         allocate(spectrum_sum(nk),spectrumhel_sum(nk))
       endif
-      call special_calc_spectra(f,spectrum,spectrumhel, &
-        spectrum_2d,spectrumhel_2d, &
-        lfirstcall,sp)
+      call special_calc_spectra(f,spectrum,spectrumhel,spectrum_2d,spectrumhel_2d,lfirstcall,sp)
     else
       allocate(spectrum(nk),spectrumhel(nk))
-  
+      allocate(spectrum_sum(nk),spectrumhel_sum(nk))
+
       !$omp parallel private(k,k2,kk1,kk2,kk3,sign_switch) num_threads(num_helper_threads) &
       !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
       !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
@@ -3428,8 +3421,8 @@ outer:do ikz=1,nz
       call mpireduce_sum(spectrum,spectrum_sum,nxgrid)
     else
 !
-!  Summing up the results from the different processors
-!  The result is available only on root
+!  Summing up the results from the different processors.
+!  The result is available only on root.
 !
       call mpireduce_sum(spectrum   ,spectrum_sum   ,nk)
       call mpireduce_sum(spectrumhel,spectrumhel_sum,nk)
