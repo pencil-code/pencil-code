@@ -3,6 +3,7 @@ Utility to read the simulation and print the times at which various quantities a
 """
 
 import pencil as pc
+import numpy as np
 
 class Sim(pc.sim.Simulation):
 	def __init__(self, *args, quiet=True, **kwargs):
@@ -12,6 +13,7 @@ class Sim(pc.sim.Simulation):
 		self.av = pc.read.aver(datadir=self.datadir, simdir=self.path, plane_list=['xy', 'z'])
 		self.sl = self._read_slices()
 		self.snaps = []
+		self.p = pc.read.power(file_name='power_sp.dat')
 		
 		for fname in self.get_varlist():
 			self.snaps.append(pc.read.var(var_file=fname, datadir=self.datadir, trimall=True, quiet=True))
@@ -61,5 +63,9 @@ Snapshots:
 Slices:
 	t:			{sim.sl.t}
 	xy.special[:,0,0]:	{sim.sl.xy.special[:,0,0]}
+
+Power spectra:
+	t:		{sim.p.t}
+	sqrt(sp[:,0]):	{np.sqrt(sim.p.sp[:,0])}
 """
 	print(output)

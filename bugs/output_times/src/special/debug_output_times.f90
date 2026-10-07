@@ -33,6 +33,8 @@ module Special
 !
       call farray_register_pde('special',ispecial)
 !
+      ispecialvar = ispecial !so that we can output power spectra
+!
     endsubroutine register_special
 !***********************************************************************
     subroutine init_special(f)
