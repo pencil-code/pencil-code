@@ -1929,7 +1929,6 @@ module Dustdensity
 !          df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) + p%dndr(:,k)
 !        enddo
 !      endif
-!     
 !      
       if (latm_chemistry .or. lsemi_chemistry) then 
 !  
@@ -2831,7 +2830,9 @@ module Dustdensity
     endsubroutine get_deltavd_turbu_ormel
 !***********************************************************************
      subroutine get_deltavd(l,i,j,deltavd,p)
+
       use Sub, only: dot2
+
       type(pencil_case) :: p
       integer :: l,i,j,lgh
       real :: deltavd,deltavd_therm
@@ -2917,7 +2918,6 @@ module Dustdensity
 !
 !  Calculate kernel of coagulation equation; collision rate = ni*nj*kernel
 !
-!
       type(pencil_case) :: p
 
       real, dimension (nx) :: TT,Kn, cor_factor, D_coeff, Di, Dk, Dik, KBC, vmean_i, vmean_k
@@ -2936,7 +2936,7 @@ module Dustdensity
             dkern = dkern_cst
           else
             dkern = dkern_cst
-            !TP: multiply be 0.5 here since I believe based on the code,
+            !TP: multiply by 0.5 here since I believe based on the code,
             !self-coagulation would be otherwise overcounted.
             do i=1,ndustspec
               dkern(:,i,i) = dkern(:,i,i)*0.5
