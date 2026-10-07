@@ -7759,6 +7759,8 @@ iloop:do i=1,size(list2)
         dst = enum_const_shear_string
       case('test1')
         dst = enum_test1_string
+      case('alpha_attractors_corrected')
+        dst = enum_alpha_attractors_corrected_string
       case('waterfall')
         dst = enum_waterfall_string
       case('imposed-cs2-core')
