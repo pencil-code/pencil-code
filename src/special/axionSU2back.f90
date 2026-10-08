@@ -45,7 +45,7 @@ module Special
   ! input parameters
   real :: a, k0=1e-2, dk=1e-2, ascale_ini=1.
   real :: fdecay=.003, g=1.11e-2, lam=500., mu=1.5e-4
-  real :: Q0=3e-4, Qdot0=0., chi_prefactor=.49, chidot0=0., H=1.04e-6
+  real :: Q0=3e-4, Qdot0=0., chi_prefactor=.49, chidot0=impossible, H=1.04e-6
   real :: H_init
   real :: Mpl2=1., Hdot=0., lamf, Hscript
   real :: m_inflaton=1.275e-7, m_phi=1.275e-7, inflaton_ini=16., phi_ini=16.
@@ -344,7 +344,7 @@ module Special
       real, dimension (nx) :: psi, psidot, TR, TRdot, uR, uRdot
       real, dimension (nx) :: impsi, impsidot, imTR, imTRdot, imuR, imuRdot
       real :: chi0, V, Uprime0, beta, fourier_factor
-      real :: a
+      real :: a, xi0
 !
 !
 !  Initial condition; depends on k, which is here set to x.
@@ -389,6 +389,8 @@ module Special
               H=sqrt(onethird*(.5*f_ode(iaxi_phidot)**2+V))
               Uprime0=-mu**4/fdecay*sin(chi0/fdecay)
               Q0=(-Uprime0/(3.*g*lamf*H))**onethird
+              xi0=g*Q0/H+H/(g*Q0)
+              if (chidot0==impossible) chidot0=2.*H*xi0/lamf
             else
               a=exp(H*t)
             endif
