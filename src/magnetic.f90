@@ -3109,8 +3109,8 @@ module Magnetic
           lresi_spitzer.or.lresi_cspeed.or.lresi_vAspeed.or.lresi_magfield.or.lresi_eta_proptouz.or. &
           lresi_dust) lpenc_requested(i_diffus_eta)=.true.
       if (lresi_hyper2_tdep.or.lresi_hyper2) lpenc_requested(i_diffus_eta2)=.true.
-      if (lresi_hyper3_tdep.or.lresi_hyper3_polar.or.lresi_hyper3_mesh.or.lresi_hyper3_csmesh.or.lresi_hyper3_strict.or.&
-          lresi_hyper3_aniso) lpenc_requested(i_diffus_eta3)=.true.
+      if (lresi_hyper3_tdep.or.lresi_hyper3_polar.or.lresi_hyper3_mesh.or.lresi_hyper3_csmesh.or.&
+          lresi_hyper3_strict.or.lresi_hyper3_aniso) lpenc_requested(i_diffus_eta3)=.true.
 !
 !  for Coulomb gauge
 !
@@ -5516,6 +5516,8 @@ module Magnetic
     subroutine calc_magnetic_slope_limited(f,p)
 !
 !  16-apr-2026/TP: carved from daa_dt
+!  09-oct-2026/FG: returned df to daa_dt and included fres in pencils
+!                  no sample using lsld_bb to test
 !
 
       use Sub, only: calc_slope_diff_flux, dot
@@ -5807,8 +5809,8 @@ module Magnetic
       diffus_eta=p%diffus_eta
 !!
 !  FG: moving this call from daa_dt to calc_pencils_magnetic_fres changes results for samples
-!      cylindrical-globaldisk-dzone and spherical-globaldisk-mhd, but diagnostics
-!      using this fres may be incomplete for GPUs
+!      cylindrical-globaldisk-dzone and spherical-globaldisk-mhd. Diagnostics using this fres
+!      therefore may be incomplete for GPUs.
 !
       if (lresi_hyper3_mesh) then
         do j=1,3
@@ -5837,6 +5839,7 @@ module Magnetic
 !!  Ambipolar diffusion in the strong coupling approximation.
 !
       if (lambipolar_diffusion) then
+!  FG: now included in p%fres added collectively below
 !        do j=1,3
 !          df(l1:l2,m,n,iaa-1+j)=df(l1:l2,m,n,iaa-1+j)+p%nu_ni1*p%jxbrxb(:,j)
 !        enddo
@@ -12747,17 +12750,7 @@ print*,'AXEL2: should not be here (eta) ... '
         if (lambipolar_diffusion) then
           do j=1,3
             p%fres(:,j)=p%fres(:,j)+p%nu_ni1*p%jxbrxb(:,j)
-            !df(l1:l2,m,n,iaa-1+j)=df(l1:l2,m,n,iaa-1+j)+p%nu_ni1*p%jxbrxb(:,j)
           enddo
-!!          if (lentropy .and. lneutralion_heat) then
-!!            if (pretend_lnTT) then
-!!              df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%cv1*p%TT1*p%nu_ni1*p%jxbr2
-!!            else
-!!              df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%TT1*p%nu_ni1*p%jxbr2
-!!            endif
-!!          elseif (ltemperature .and. lneutralion_heat) then
-!!              df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cv1*p%TT1*p%nu_ni1*p%jxbr2
-!!          endif
         endif
         if (lmagnetic_slope_limited) then
            call calc_magnetic_slope_limited(f,p)
@@ -12807,6 +12800,19 @@ print*,'AXEL2: should not be here (eta) ... '
         endif
         maxdiffus2=max(maxdiffus2,diffus_eta2)
         maxdiffus3=max(maxdiffus3,diffus_eta3)
+!  Switch off diffusion in boundary slice if requested by boundconds.
+!
+!  Only need to do this on bottommost (topmost) processors
+!  and in bottommost (topmost) pencils.
+!
+!        do j=1,3
+!          if (lfrozen_bb_bot(j)) then
+!            if (lfirst_proc_z.and.n==n1) p%fres(:,j)=0.
+!          endif
+!          if (lfrozen_bb_top(j)) then
+!            if (llast_proc_z.and.n==n2) p%fres(:,j)=0.
+!          endif
+!        enddo
       endif
 !
     endsubroutine calc_pencils_magnetic_fres
