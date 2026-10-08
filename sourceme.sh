@@ -42,6 +42,7 @@ if [ -z $PENCIL_HOME ]; then
     echo "  Try sourcing me from the home directory itself, or set PENCIL_HOME"
   fi
 fi
+export AC_HOME=$PENCIL_HOME/src/astaroth/submodule
 
 if [ -z $_sourceme_quiet ]; then echo "PENCIL_HOME = <$PENCIL_HOME>"; fi
 
@@ -96,8 +97,6 @@ if [ -z $_sourceme ]; then	# called for the first time?
     fi
   fi
 fi
-
-export AC_HOME=$PENCIL_HOME/src/astaroth/submodule
 
 if [ -n "$PENCIL_HOME" -a -d "$PENCIL_HOME/.git" ]; then
 #
