@@ -348,6 +348,9 @@ module Cdata
                                !PAR_DOC: variables (those calculated at each step,
                                !PAR_DOC: but not evolved mathematically) to
                                !PAR_DOC: \file{var.dat} after the evolved quantities.
+                               !PAR_DOC: Note that the auxiliary variables written
+                               !PAR_DOC: will be from one timestep earlier as
+                               !PAR_DOC: compared to the primary variables.
   logical :: lwrite_dvar=.false.
   logical :: lenforce_maux_check=.true., lwrite_avg1d_binary = .false.
   logical :: lread_oldsnap=.false. !PAR_DOC: if set \code{T}, the old snapshot
