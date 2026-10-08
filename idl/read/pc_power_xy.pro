@@ -593,6 +593,12 @@ if (file2 ne '') then begin
 
 endif
 
+if lint_shell then begin
+  if keyword_set(k) then k=kshell
+endif else begin
+  if keyword_set(k) then k=create_struct('kxs',kxs,'kys',kys)
+endelse
+
 tt=fltarr(nt)
 lasti=nt-1
 spec1=1
@@ -773,7 +779,7 @@ newheader:
       obj = {FILE: file1, TT: tt, ZPOS: zpos1, SPEC1: reform(spec1)} $
     else $
       obj = {FILE: file1, TT: tt, SPEC1: reform(spec1)}
-; MR: would prefer the name 'T' for the time as it is also use elsewhere
+; MR: would prefer the name 'T' for the time as it is also used elsewhere
 close, 1
 return
 
@@ -881,14 +887,13 @@ cont1:
         if (file2 ne '') then begin
         
           oplot,kshell,spectrum2*kshell^compensate,col=122
-          if (tot eq 1) then $
-            oplot,kshell,(spectrum1+spectrum2)*kshell^compensate,col=47
+          if (tot eq 1) then oplot,kshell,(spectrum1+spectrum2)*kshell^compensate,col=47
     
         endif
         
         if (lin ne 0) then begin
           fac=spectrum1(2)/kshell(2)^(lin)*1.5
-          oplot,k(2:*),kshell(2:*)^(lin)*fac,lin=2,col=0
+          oplot,kshell(2:*),kshell(2:*)^(lin)*fac,lin=2,col=0
         endif
 
       endif else begin
