@@ -11,6 +11,8 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
+! PENCILS PROVIDED special
+!
 !***************************************************************
 module Special
 !
@@ -25,6 +27,11 @@ module Special
 !
   integer :: idiag_specialm=0, idiag_specialmz=0, idiag_specialmxy=0
 !
+! For slices
+  integer :: ivid_specialpenc = 0
+  real, target, dimension (:,:), allocatable :: spp_xy,spp_xz,spp_yz,spp_xy2,spp_xy3,spp_xy4,spp_xz2
+  real, target, dimension (:,:,:,:,:), allocatable :: spp_r
+!
   contains
 !***********************************************************************
     subroutine register_special
@@ -37,6 +44,18 @@ module Special
 !
     endsubroutine register_special
 !***********************************************************************
+    subroutine initialize_special(f)
+!
+      use Slices_methods, only: alloc_slice_buffers
+!
+      real, contiguous, dimension(:,:,:,:) :: f
+!
+      call keep_compiler_quiet(f)
+!
+      if (ivid_specialpenc/=0) call alloc_slice_buffers(spp_xy,spp_xz,spp_yz,spp_xy2,spp_xy3,spp_xy4,spp_xz2,spp_r)
+!
+    endsubroutine initialize_special
+!***********************************************************************
     subroutine init_special(f)
 !
 !
@@ -45,6 +64,23 @@ module Special
       f(:,:,:,ispecial) = 0.
 !
     endsubroutine init_special
+!***********************************************************************
+    subroutine pencil_criteria_special
+!
+      if (lwrite_slices) then
+        lpenc_video(i_special) = .true.
+      endif
+!
+    endsubroutine pencil_criteria_special
+!***********************************************************************
+    subroutine calc_pencils_special(f,p)
+!special
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(pencil_case) :: p
+!
+      if (lpencil(i_special)) p%special = f(l1:l2,m,n,ispecial)
+!
+    endsubroutine calc_pencils_special
 !***********************************************************************
     subroutine dspecial_dt(f,df,p)
 !
@@ -73,6 +109,7 @@ module Special
           idiag_specialm=0
           idiag_specialmz=0
           idiag_specialmxy=0
+          ivid_specialpenc=0
       endif
 !
       do iname=1,nname
@@ -94,20 +131,30 @@ module Special
         where(cnamev=='special') cformv='DEFINED'
       endif
 !
+      do iname=1,nnamev
+        call parse_name(iname,cnamev(iname),cformv(iname),'specialpenc',ivid_specialpenc)
+      enddo
 !
     endsubroutine rprint_special
 !***********************************************************************
     subroutine get_slices_special(f,slices)
+!
+!     Since there seem to be two different ways of outputting slices, we use
+!     both of them here to check that they behave the same way.
 !
       use Slices_methods, only: assign_slices_scal
 !
       real, contiguous, dimension(:,:,:,:) :: f
       type(slice_data) :: slices
 !
-!     NOTE: copied from advective_gauge.f90
       select case (trim(slices%name))
+!
       case ('special')
         call assign_slices_scal(slices,f,ispecial)
+!
+      case ('specialpenc')
+        call assign_slices_scal(slices,spp_xy,spp_xz,spp_yz,spp_xy2,spp_xy3,spp_xy4,spp_xz2,spp_r)
+!
       endselect
 !
     endsubroutine get_slices_special
@@ -115,6 +162,7 @@ module Special
     subroutine calc_diagnostics_special(f,p)
 !
       use Diagnostics
+      use Slices_methods, only: store_slices
 !
       real, contiguous, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
@@ -131,6 +179,10 @@ module Special
 !
       if (l2davgfirst) then
         call zsum_mn_name_xy(f(l1:l2,m,n,ispecial), idiag_specialmxy)
+      endif
+!
+      if (lvideo_first) then
+        if (ivid_specialpenc/=0) call store_slices(p%special,spp_xy,spp_xz,spp_yz,spp_xy2,spp_xy3,spp_xy4,spp_xz2,spp_r)
       endif
 !
     endsubroutine calc_diagnostics_special
