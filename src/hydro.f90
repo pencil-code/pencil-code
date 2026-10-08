@@ -4256,6 +4256,8 @@ module Hydro
 !
 !  Calculate the vorticity field if required.
 !
+!     Kishore: why does it make sense to calculate vorticity before the boundary
+!     Kishore: conditions have been set?
       if (ioo /= 0) then
         do n = n1, n2
           do m = m1, m2
