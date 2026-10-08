@@ -2223,17 +2223,14 @@ sub mark_failed {
             if ($works == $fails - 1) {
                 my $author = `svn info "$pencil_home" --revision $fails --show-item last-changed-author`;
                 chomp $author;
-                print "===> This is the offending commit from: $author$readme\n";
-            }
-            elsif ($readme) {
-                print "===> Please also see the $readme\n";
+                print "===> This is the offending commit from: $author\n";
             }
         }
         else {
             print "===> Please use SVN checkout for an automatic analysis!\n";
         }
     }
-    elsif ($readme) {
+    if ($readme) {
         print "===> Please also see the $readme\n";
     }
 }
