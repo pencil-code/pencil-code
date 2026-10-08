@@ -33,8 +33,8 @@
 ! PENCILS PROVIDED hjparallel; hjperp; nu_ni1
 ! PENCILS PROVIDED gamma_A2; clight2; gva(3); vmagfric(3)
 ! PENCILS PROVIDED bb_sph(3); advec_va2; Lam; gLam(3)
+! PENCILS PROVIDED fres(3); diffus_eta; diffus_eta2; diffus_eta3
 ! PENCILS EXPECTED infl_dphi
-! PENCILS EXPECTED fres(3); diffus_eta; diffus_eta2; diffus_eta3
 !***************************************************************
 module Magnetic
 !
@@ -1163,8 +1163,8 @@ module Magnetic
 !
   real, dimension(nx) :: eta_smag=0., Fmax, dAmax,ssmax, eta_mn, eta_BB, &
                          diffus_eta=0.,diffus_eta2=0.,diffus_eta3=0.
-  !$omp threadprivate(diffus_eta,diffus_eta2,diffus_eta3,eta_mn,eta_BB)
-  real, dimension(nx,3) :: fres,forcing_rhs
+  real, dimension(nx,3) :: forcing_rhs
+  !$omp threadprivate(diffus_eta,diffus_eta2,diffus_eta3,eta_mn,eta_BB,forcing_rhs)
   real, dimension(nzgrid) :: eta_zgrid=0.0
   real, dimension(mz) :: feta_ztdep=0.0
   real :: eta_shock_jump1=1.0, eta_tdep=0.0, Arms=0.0
@@ -5543,12 +5543,6 @@ module Magnetic
           call calc_slope_diff_flux(f,ibx+(j-1),h_sld_magn,nlf_sld_magn,tmp1,div_sld_magn, &
                                     FLUX1=d_sld_flux(:,1,j),FLUX2=d_sld_flux(:,2,j),FLUX3=d_sld_flux(:,3,j))
         enddo
-!
-!        tmp2(:,1)= (-d_sld_flux(:,2,3) + d_sld_flux(:,3,2))*fac_sld_magn
-!        tmp2(:,2)= (-d_sld_flux(:,3,1) + d_sld_flux(:,1,3))*fac_sld_magn
-!        tmp2(:,3)= (-d_sld_flux(:,1,2) + d_sld_flux(:,2,1))*fac_sld_magn
-!!
-!        fres=fres + tmp2
         div_flux(:,1)= (-d_sld_flux(:,2,3) + d_sld_flux(:,3,2))*fac_sld_magn
         div_flux(:,2)= (-d_sld_flux(:,3,1) + d_sld_flux(:,1,3))*fac_sld_magn
         div_flux(:,3)= (-d_sld_flux(:,1,2) + d_sld_flux(:,2,1))*fac_sld_magn
@@ -5565,13 +5559,6 @@ module Magnetic
           enddo
 !
           if (lcylindrical_coords) then
-!            fres(:,1)=fres(:,1)+tmp2(:,1)-(d_sld_flux(:,2,2))/x(l1:l2)
-!            fres(:,2)=fres(:,2)+tmp2(:,2)+(d_sld_flux(:,2,1))/x(l1:l2)
-!            fres(:,3)=fres(:,3)+tmp2(:,3)
-!          elseif (lspherical_coords) then
-!            fres(:,1)=fres(:,1)+tmp2(:,1)-(d_sld_flux(:,2,2)+d_sld_flux(:,3,3))/x(l1:l2)
-!            fres(:,2)=fres(:,2)+tmp2(:,2)+(d_sld_flux(:,2,1)-d_sld_flux(:,3,3)*cotth(m))/x(l1:l2)
-!            fres(:,3)=fres(:,3)+tmp2(:,3)+(d_sld_flux(:,3,1)+d_sld_flux(:,3,2)*cotth(m))/x(l1:l2)
             p%fres(:,1)=p%fres(:,1)+div_flux(:,1)-(d_sld_flux(:,2,2))/x(l1:l2)
             p%fres(:,2)=p%fres(:,2)+div_flux(:,2)+(d_sld_flux(:,2,1))/x(l1:l2)
             p%fres(:,3)=p%fres(:,3)+div_flux(:,3)
@@ -5584,7 +5571,6 @@ module Magnetic
           do j=1,3
             call calc_slope_diff_flux(f,iax+(j-1),h_sld_magn,nlf_sld_magn,div_flux(:,j),div_sld_magn)
           enddo
-!            fres=fres+tmp2
             p%fres=p%fres+div_flux
         endif
       endif
@@ -5650,7 +5636,7 @@ module Magnetic
       intent(inout):: f,df
 !
       real, dimension (nx,3) :: ujiaj,gua,ajiuj
-      real, dimension (nx,3) :: aa_xyaver
+      real, dimension (nx,3) :: aa_xyaver, fres
       real, dimension (nx,3) :: uxb_upw,tmp2
       real, dimension (nx,3) :: dAdt, gradeta_shock, aa1, uu1, dJdt, del2jj
       real, dimension (nx) :: ftot, dAtot
@@ -5783,7 +5769,7 @@ module Magnetic
 !
       if ((.not. ldisp_current) .or. loverride_ee) then
 !
-!  Restivivity term
+!  Resistivity term
 !
 !  FG: moved computation of fres to calc_pencils_magnetic_fres to be available to GPU
 !      where required for diagnostics
@@ -6583,7 +6569,7 @@ print*,'AXEL2: should not be here (eta) ... '
         endif
 
         if (idiag_Bresrms/=0 .or. idiag_Rmrms/=0) then
-          call dot2_mn(fres,fres2)
+          call dot2_mn(p%fres,fres2)
           call sum_mn_name(fres2,idiag_Bresrms,lsqrt=.true.)
           if (idiag_Rmrms/=0) call sum_mn_name(p%uxb2/fres2,idiag_Rmrms,lsqrt=.true.)
         endif
@@ -7567,7 +7553,7 @@ print*,'AXEL2: should not be here (eta) ... '
 !  This diagnostic relies upon mn-dependent quantities which are not in the pencil case.
 !
           if (idiag_Rmmz/=0) then
-            call dot2_mn(fres,fres2)
+            call dot2_mn(p%fres,fres2)
             Rmmz=sqrt(p%uxb2/fres2)
             where (fres2 < tini) Rmmz = 0.
             call xysum_mn_name_z(Rmmz,idiag_Rmmz)
