@@ -600,6 +600,15 @@ fi
 #
 bindir=$pencil_home_path/bin
 srcdir=$pencil_home_path/src
+workdir=`pwd`
+if [[ "$workdir" == "$pencil_home_path" ]] ; then
+    echo "Error: PENCIL_HOME not allowed as work directory" >&2; exit 1
+fi
+for subdir in bin bugs config doc dx fortran-parser idl julia lib license mathematica misc python remesh simon src utils; do
+  if [[ "$workdir" == "$pencil_home_path/$subdir" ]]; then
+    echo "Error: Standard subdirectories of PENCIL_HOME not allowed as work directory" >&2; exit 1
+  fi
+done
 #
 echo "Files will be linked to the root code directory '$pencil_home_path'."
 #
