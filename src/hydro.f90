@@ -514,10 +514,14 @@ module Hydro
   integer :: idiag_rux2m=0      ! DIAG_DOC: $\left<\rho u_x^2\right>$
   integer :: idiag_ruy2m=0      ! DIAG_DOC: $\left<\rho u_y^2\right>$
   integer :: idiag_ruz2m=0      ! DIAG_DOC: $\left<\rho u_z^2\right>$
-  integer :: idiag_eqRem=0      ! DIAG_DOC: $\left<|\Uv\dot\nabla\Uv|/|\nabla\cdot(\ln\varrho\nu\Strain)|\right>
-  integer :: idiag_eqReph1m=0   ! DIAG_DOC: $\left<|\Uv\dot\nabla\Uv|/|\nabla\cdot(\ln\varrho\nu\Strain)|\right>_\text{ph1}
-  integer :: idiag_eqReph2m=0   ! DIAG_DOC: $\left<|\Uv\dot\nabla\Uv|/|\nabla\cdot(\ln\varrho\nu\Strain)|\right>_\text{ph2}
-  integer :: idiag_eqReph3m=0   ! DIAG_DOC: $\left<|\Uv\dot\nabla\Uv|/|\nabla\cdot(\ln\varrho\nu\Strain)|\right>_\text{ph3}
+  integer :: idiag_Rerms=0      ! DIAG_DOC: $\langle\frac{|\Uv\dot\nabla\Uv|}{|\nabla\cdot(\ln\varrho\nu\Strain)|\rangle
+  integer :: idiag_Reph1rms=0   ! DIAG_DOC: $\langle\frac{|\Uv\dot\nabla\Uv|}{|\nabla\cdot(\ln\varrho\nu\Strain)|\rangle_\text{ph1}
+  integer :: idiag_Reph2rms=0   ! DIAG_DOC: $\langle\frac{|\Uv\dot\nabla\Uv|}{|\nabla\cdot(\ln\varrho\nu\Strain)|\rangle_\text{ph2}
+  integer :: idiag_Reph3rms=0   ! DIAG_DOC: $\langle\frac{|\Uv\dot\nabla\Uv|}{|\nabla\cdot(\ln\varrho\nu\Strain)|\rangle_\text{ph3}
+  integer :: idiag_Remax=0      ! DIAG_DOC: $\max\left(\frac{|\Uv\dot\nabla\Uv|}{|\nabla\cdot(\ln\varrho\nu\Strain)|}\right)
+  integer :: idiag_Reph1max=0   ! DIAG_DOC: $\max\left(\frac{|\Uv\dot\nabla\Uv|}{|\nabla\cdot(\ln\varrho\nu\Strain)|}\right)_\text{ph1}
+  integer :: idiag_Reph2max=0   ! DIAG_DOC: $\max\left(\frac{|\Uv\dot\nabla\Uv|}{|\nabla\cdot(\ln\varrho\nu\Strain)|}\right)_\text{ph2}
+  integer :: idiag_Reph3max=0   ! DIAG_DOC: $\max\left(\frac{|\Uv\dot\nabla\Uv|}{|\nabla\cdot(\ln\varrho\nu\Strain)|}\right)_\text{ph3}
   integer :: idiag_divum=0      ! DIAG_DOC: $\left<{\rm div}\uv)\right>$
   integer :: idiag_rdivum=0     ! DIAG_DOC: $\left<\varrho{\rm div}\uv)\right>$
   integer :: idiag_divu2m=0     ! DIAG_DOC: $\left<({\rm div}\uv)^2\right>$
@@ -843,9 +847,6 @@ module Hydro
   integer :: idiag_Remz=0       ! XYAVG_DOC: $\langle\frac{|\uv\cdot\nabla\uv|}{\left|
                                 ! XYAVG_DOC: \frac{\partial}{\partial x_j}
                                 ! XYAVG_DOC: (\nu{\sf S}_{ij})\right|}\rangle_{xy}$
-  integer :: idiag_Rerms=0      ! XYAVG_DOC: $\langle\frac{|\uv\cdot\nabla\uv|}{\left|
-                                ! XYAVG_DOC: \frac{\partial}{\partial x_j}
-                                ! XYAVG_DOC: (\nu{\sf S}_{ij})\right|}$
   integer :: idiag_oguxmz=0     ! XYAVG_DOC: $\left<(\boldsymbol{\omega}
                                 ! XYAVG_DOC: \cdot\nabla \uv)_x\right>_{xy}$
   integer :: idiag_oguymz=0     ! XYAVG_DOC: $\left<(\boldsymbol{\omega}
@@ -3263,11 +3264,6 @@ module Hydro
           idiag_uguxmz/=0 .or. idiag_uguymz/=0 .or. idiag_uguzmz/=0) &
           lpenc_diagnos(i_ugu)=.true.
 !
-      if (idiag_Remz/=0 .or. idiag_Rerms/=0) then
-        lpenc_diagnos(i_ugu2)=.true.
-        lpenc_diagnos(i_diffus_total)=.true.
-      endif
-!
       if (idiag_oguxmz/=0 .or. idiag_oguymz/=0 .or. idiag_oguzmz/=0 .or. &
           idiag_ogux2mz/=0 .or. idiag_oguy2mz/=0 .or. idiag_oguz2mz/=0) &
           lpenc_diagnos(i_ogu)=.true.
@@ -3306,13 +3302,15 @@ module Hydro
         call warning('pencil_criteria_hydro', &
                        'include as required fracvph1mz, ph2 and/or ph3 in video.in')
       endif
-      if (idiag_eqRem/=0 .or. &
-         idiag_eqReph1m/=0 .or. idiag_eqReph2m/=0 .or. idiag_eqReph3m/=0 &
+      if (idiag_Rerms/=0 .or. idiag_Remax/=0 .or. &
+          idiag_Reph1rms/=0 .or. idiag_Reph2rms/=0 .or. idiag_Reph3rms/=0 .or. &
+          idiag_Reph1max/=0 .or. idiag_Reph2max/=0 .or. idiag_Reph3max/=0 &
          ) then
         lpenc_diagnos(i_fvisc)=.true.
-        lpenc_diagnos(i_ugu)=.true.
+        lpenc_diagnos(i_ugu2)=.true.
       endif
-      if (idiag_eqReph1m/=0 .or. idiag_eqReph2m/=0 .or. idiag_eqReph3m/=0 &
+      if (idiag_Reph1rms/=0 .or. idiag_Reph2rms/=0 .or. idiag_Reph3rms/=0 .or. &
+          idiag_Reph1max/=0 .or. idiag_Reph2max/=0 .or. idiag_Reph3max/=0 &
          ) then
         lpenc_diagnos(i_ss)=.true.
         call warning('pencil_criteria_hydro', &
@@ -4751,7 +4749,7 @@ module Hydro
       real, dimension (nx) :: odel2um, uref, curlo2, qo, quxo, graddivu2, tmp
       real, dimension (nx,Nmodes_SH) :: urlm
       real, dimension (nx) :: rmask, lorr, ratio2, u2
-      real, dimension (nx) :: pradrc2, Re2, absv, absa, fvisc2
+      real, dimension (nx) :: pradrc2, Re2, fvisc2
       real :: kx,arad_normal
       integer :: k
 !
@@ -4884,15 +4882,20 @@ module Hydro
         if (idiag_rux2m/=0) call sum_mn_name(p%rho*p%uu(:,1)**2,idiag_rux2m)
         if (idiag_ruy2m/=0) call sum_mn_name(p%rho*p%uu(:,2)**2,idiag_ruy2m)
         if (idiag_ruz2m/=0) call sum_mn_name(p%rho*p%uu(:,3)**2,idiag_ruz2m)
-        if (idiag_eqRem/=0 .or. idiag_eqReph1m/=0 .or. idiag_eqReph2m/=0 .or. idiag_eqReph3m/=0) then
-          call dot2(p%fvisc,absv,fast_sqrt=.true.)
-          call dot2(p%ugu,absa,fast_sqrt=.true.)
-          where (absv==0) absv=1.
+        if (idiag_Rerms/=0 .or. idiag_Remax/=0 .or. & 
+            idiag_Reph1rms/=0 .or. idiag_Reph2rms/=0 .or. idiag_Reph3rms/=0 .or.&
+            idiag_Reph1max/=0 .or. idiag_Reph2max/=0 .or. idiag_Reph3max/=0) then
+          call dot2(p%fvisc,fvisc2)
+          Re2 = sqrt(p%ugu2/(fvisc2+tini))
         endif
-        if (idiag_eqRem/=0) call sum_mn_name(absa/absv,idiag_eqRem)
-        if (idiag_eqReph1m/=0) call sum_mn_name(absa/absv,idiag_eqReph1m,MASK=(p%ss <=ssmask1))
-        if (idiag_eqReph2m/=0) call sum_mn_name(absa/absv,idiag_eqReph2m,MASK=(p%ss > ssmask1 .and. p%ss <= ssmask2))
-        if (idiag_eqReph3m/=0) call sum_mn_name(absa/absv,idiag_eqReph3m,MASK=(p%ss > ssmask2))
+        if (idiag_Rerms/=0) call sum_mn_name(Re2,idiag_Rerms)
+        if (idiag_Reph1rms/=0) call sum_mn_name(Re2,idiag_Reph1rms,MASK=(p%ss <=ssmask1))
+        if (idiag_Reph2rms/=0) call sum_mn_name(Re2,idiag_Reph2rms,MASK=(p%ss > ssmask1 .and. p%ss <= ssmask2))
+        if (idiag_Reph3rms/=0) call sum_mn_name(Re2,idiag_Reph3rms,MASK=(p%ss > ssmask2))
+        if (idiag_Rerms/=0) call max_mn_name(Re2,idiag_Remax)
+        if (idiag_Reph1rms/=0) call max_mn_name(Re2,idiag_Reph1max,MASK=(p%ss <=ssmask1))
+        if (idiag_Reph2rms/=0) call max_mn_name(Re2,idiag_Reph2max,MASK=(p%ss > ssmask1 .and. p%ss <= ssmask2))
+        if (idiag_Reph3rms/=0) call max_mn_name(Re2,idiag_Reph3max,MASK=(p%ss > ssmask2))
         if (ekman_friction/=0 .and. friction_tdep=='Thomson' .and. idiag_pradrc2/=0) then
           arad_normal=real(4*sigmaSB/c_light)
           pradrc2=real(onethird*arad_normal*p%TT**4/(p%rho*c_light**2))
@@ -5250,11 +5253,6 @@ module Hydro
         if (ekman_friction/=0) then
           where (frict>0. .and. frict<min_ts) frict=0.
           call sum_mn_name(frict,idiag_frict)
-        endif
-        if (idiag_Rerms/=0) then
-          call dot2(p%fvisc,fvisc2)
-          Re2 = p%ugu2/(fvisc2+tini)
-          call sum_mn_name(Re2,idiag_Rerms,lsqrt=.true.)
         endif
 
       endif  ! if (ldiagnos)
@@ -7551,10 +7549,13 @@ module Hydro
         idiag_uguzmz=0
         idiag_Remz=0
         idiag_Rerms=0
-        idiag_eqRem=0
-        idiag_eqReph1m=0
-        idiag_eqReph2m=0
-        idiag_eqReph3m=0
+        idiag_Reph1rms=0
+        idiag_Reph2rms=0
+        idiag_Reph3rms=0
+        idiag_Remax=0
+        idiag_Reph1max=0
+        idiag_Reph2max=0
+        idiag_Reph3max=0
         idiag_oguxmz=0
         idiag_oguymz=0
         idiag_oguzmz=0
@@ -7866,10 +7867,13 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'pradrc2',idiag_pradrc2)
         call parse_name(iname,cname(iname),cform(iname),'sld_char_rms',idiag_sld_char_rms)
         call parse_name(iname,cname(iname),cform(iname),'Rerms',idiag_Rerms)
-        call parse_name(iname,cname(iname),cform(iname),'eqRem',idiag_eqRem)
-        call parse_name(iname,cname(iname),cform(iname),'eqReph1m',idiag_eqReph1m)
-        call parse_name(iname,cname(iname),cform(iname),'eqReph2m',idiag_eqReph2m)
-        call parse_name(iname,cname(iname),cform(iname),'eqReph3m',idiag_eqReph3m)
+        call parse_name(iname,cname(iname),cform(iname),'Reph1rms',idiag_Reph1rms)
+        call parse_name(iname,cname(iname),cform(iname),'Reph2rms',idiag_Reph2rms)
+        call parse_name(iname,cname(iname),cform(iname),'Reph3rms',idiag_Reph3rms)
+        call parse_name(iname,cname(iname),cform(iname),'Remax',idiag_Remax)
+        call parse_name(iname,cname(iname),cform(iname),'Reph1max',idiag_Reph1max)
+        call parse_name(iname,cname(iname),cform(iname),'Reph2max',idiag_Reph2max)
+        call parse_name(iname,cname(iname),cform(iname),'Reph3max',idiag_Reph3max)
       enddo
 !
       if (idiag_u2tm/=0) then
