@@ -4,7 +4,17 @@ from pathlib import Path
 import subprocess
 
 def run_cmd(command):
-    subprocess.run(command, check=True, shell=True)
+    p = subprocess.run(command, shell=True, capture_output=True, universal_newlines=True)
+    if p.returncode != 0:
+        raise RuntimeError(f"""Running `{command}` failed with return code {p.returncode}.
+STDOUT:
+-------
+{p.stdout}
+
+STDERR:
+-------
+{p.stderr}
+""")
 
 def main():
     argparser = argparse.ArgumentParser(description="Wrapper",
