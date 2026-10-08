@@ -94,7 +94,6 @@ module Special
         where(cnamev=='special') cformv='DEFINED'
       endif
 !
-      !TODO: farray_index_append?
 !
     endsubroutine rprint_special
 !***********************************************************************
