@@ -216,25 +216,22 @@ endsubroutine helper_loop
 
   endsubroutine reload
 !***********************************************************************
-  subroutine gen_output(f)
+  subroutine gen_output_before_timestep(f)
 !
-! 5-sep-2024/TP: extracted from timeloop
+!   Called before timestep. Subroutines called here must not use p or auxiliary
+!   variables, but can use primary variables from f.
 !
-    use Equ,             only: write_diagnostics
+!   08-Oct-2026/Kishore: extract from gen_output
+!
     use Snapshot,        only: powersnap, wsnap, wsnap_down, output_form
     use Particles_main,  only: write_snapshot_particles
     use PointMasses,     only: pointmasses_write_snapshot
-    use Mpicomm,         only: mpiwtime
-    use Sub,             only: control_file_exists
-    use Solid_Cells,     only: wsnap_ogrid
     use Timeavg,         only: wsnap_timeavgs
     use Fixed_point,     only: wfixed_points
     use Streamlines,     only: wtracers
     use Io,              only: output_globals
 
     real, contiguous, dimension(:,:,:,:), intent(inout) :: f
-    integer :: isave_shift=0
-    real :: tvar1
 !
 !  Setting ialive=1 can be useful on flaky machines!
 !  The iteration number is written into the file "data/proc*/alive.info".
@@ -254,6 +251,45 @@ endsubroutine helper_loop
     call wsnap_timeavgs('TAVG',ENUM=.true.,FLIST='tavgN.list')
     !MR: what about ogrid data here?
 !
+!  Write tracers (for animation purposes).
+!
+    if (ltracers.and.lwrite_tracers) call wtracers(f,trim(directory)//'/tracers_')
+!
+!  Write fixed points (for animation purposes).
+!
+    if (lfixed_points.and.lwrite_fixed_points) call wfixed_points(f,trim(directory)//'/fixed_points_')
+!
+!  Save global variables.
+!
+    if (isaveglobal/=0) then
+      if ((mod(it,isaveglobal)==0) .and. (mglobal/=0)) &
+        call output_globals('global.dat',f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
+    endif
+!
+  endsubroutine gen_output_before_timestep
+!***********************************************************************
+  subroutine gen_output(f)
+!
+!   Called after time_step. Subroutines called here must not take primary
+!   variables from f, but can take auxiliary variables or p. In particular,
+!   diagnostics calculated by the calc_diagnostics_* subroutines must be
+!   output here.
+!
+!   5-sep-2024/TP: extracted from timeloop
+!
+    use Equ,             only: write_diagnostics
+    use Snapshot,        only: wsnap, powersnap
+    use Particles_main,  only: write_snapshot_particles
+    use PointMasses,     only: pointmasses_write_snapshot
+    use Mpicomm,         only: mpiwtime
+    use Sub,             only: control_file_exists
+    use Solid_Cells,     only: wsnap_ogrid
+    use Timeavg,         only: wsnap_timeavgs
+
+    real, contiguous, dimension(:,:,:,:), intent(inout) :: f
+    integer :: isave_shift=0
+    real :: tvar1
+!
 !   Diagnostic output in concurrent thread.
 !
     if (lmultithread) then
@@ -264,14 +300,6 @@ endsubroutine helper_loop
     else
       call write_diagnostics(f)
     endif
-!
-!  Write tracers (for animation purposes).
-!
-    if (ltracers.and.lwrite_tracers) call wtracers(f,trim(directory)//'/tracers_')
-!
-!  Write fixed points (for animation purposes).
-!
-    if (lfixed_points.and.lwrite_fixed_points) call wfixed_points(f,trim(directory)//'/fixed_points_')
 !
 !  Save snapshot every isnap steps in case the run gets interrupted or when SAVE file is found.
 !  The time needs also to be written.
@@ -293,6 +321,14 @@ endsubroutine helper_loop
       endif
     endif
 !
+!  (2026-Oct-14/Kishore) TODO: the lines from here till the end of the subroutine
+!  must be moved to gen_output_before_timestep; keeping them here for now to avoid
+!  breaking the following autotests:
+!  - helical-MHDturb: changed spower spectrum output time
+!  - interstellar: changed spower spectrum output time
+!  - Schwinger, Schwinger2: diagnostic a2rhogphim uses unfinalized ghost zones
+!  - 2d-tests/dark-matter fails with `FATAL ERROR: powerhel: iuu=0!!!` (bug in Axel's code)
+!
 !  Allow here for the possibility to have spectral output
 !  *after* the first time. As explained in the comment to
 !  the GW module, the stress spectrum is only available
@@ -309,13 +345,6 @@ endsubroutine helper_loop
     if (dspec/=impossible .or. itspec/=impossible_int) call powersnap(f)
     if (lroot.and.(dspec/=impossible .or. itspec/=impossible_int).and.lspec) print*, 'gen_output powersnap'
 !
-!  Save global variables.
-!
-    if (isaveglobal/=0) then
-      if ((mod(it,isaveglobal)==0) .and. (mglobal/=0)) &
-        call output_globals('global.dat',f(:,:,:,mvar+maux+1:mvar+maux+mglobal),mglobal)
-    endif
-
   endsubroutine gen_output
 !***********************************************************************
   subroutine timeloop(f,df,p)
@@ -537,6 +566,11 @@ endsubroutine helper_loop
 !  Possibility of logspacing for time series output
 !
     if (lit1_logspacing.and.real(t)<tmax_logspacing) lout=lspec 
+!
+!   Outputs which directly read from the f-array; these MUST be called
+!   before time_step.
+!
+    call gen_output_before_timestep(f)
 !
 !  Time advance.
 !
