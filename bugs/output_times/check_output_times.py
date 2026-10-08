@@ -63,6 +63,7 @@ Snapshots:
 Slices:
 	t:			{sim.sl.t}
 	xy.special[:,0,0]:	{sim.sl.xy.special[:,0,0]}
+	xy.specialpenc[:,0,0]:	{sim.sl.xy.specialpenc[:,0,0]}
 
 Power spectra:
 	t:		{sim.p.t}
