@@ -142,6 +142,7 @@ contains
         sname=trim(cnamev(inamev))
 
         slices%name=sname
+!       NOTE: slice_xy etc. don't actually seem to be used anywhere!
         call assign_slices_scal(slices,slice_xy,slice_xz,slice_yz,slice_xy2,slice_xy3,slice_xy4,slice_xz2)
         if (lwrite_slice_r) slices%r => slice_r   ! no interpolation
         slices%ready=.false.
