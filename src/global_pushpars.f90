@@ -32,6 +32,10 @@ contains
     call copy_addr(l2,p_par(356)) ! int
 
     call copy_addr(dxmax,p_par(10))
+    call copy_addr(mexts,p_par(402))   ! int (2)
+    call copy_addr(nphis,p_par(403))   ! int (mexts(2)-mexts(1)+1)
+    call copy_addr(nphis1,p_par(404))   ! int (mexts(2)-mexts(1)+1)
+    call copy_addr(nphis2,p_par(405))   ! int (mexts(2)-mexts(1)+1)
     call copy_addr(lcartesian_coords,p_par(11)) ! bool
     call copy_addr(lspherical_coords,p_par(12)) ! bool
     call copy_addr(lcylindrical_coords,p_par(13)) ! bool
