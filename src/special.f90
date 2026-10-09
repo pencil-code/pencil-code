@@ -66,9 +66,10 @@
                           I_CALC_ODE_DIAGNOSTICS_SPECIAL=38, &
                           I_PREP_RHS_SPECIAL=39, &
                           I_LOAD_VARIABLES_TO_GPU_SPECIAL=40, &
-                          I_SPECIAL_BEFORE_BOUNDARY_DIAGNOSTICS=41
+                          I_SPECIAL_BEFORE_BOUNDARY_DIAGNOSTICS=41, &
+                          I_GET_FSLICES_SPECIAL=42
     
-    integer, parameter :: n_subroutines=41
+    integer, parameter :: n_subroutines=42
 !
     character(LEN=256) :: special_modules_list = ''
     character(LEN=128), dimension(n_subroutines) :: special_subroutines=(/ &
@@ -112,7 +113,8 @@
                            'calc_ode_diagnostics_special        ', &
                            'prep_rhs_special                    ', &
                            'load_variables_to_gpu_special       ', &
-                           'special_before_boundary_diagnostics '  &
+                           'special_before_boundary_diagnostics ', &
+                           'get_fslices_special                 '  &
                    /)
 
     integer(KIND=ikind8) :: libhandle
@@ -132,6 +134,7 @@
       procedure(iface_write_special_pars),             pointer, nopass :: write_special_run_pars
       procedure(iface_rprint_special),                 pointer, nopass :: rprint_special
       procedure(iface_get_slices_special),             pointer, nopass :: get_slices_special
+      procedure(iface_get_fslices_special),             pointer, nopass :: get_fslices_special
       procedure(iface_init_special),                   pointer, nopass :: init_special
       procedure(iface_dspecial_dt),                    pointer, nopass :: dspecial_dt
       procedure(iface_special_noargs),                 pointer, nopass :: dspecial_dt_ode
@@ -241,6 +244,7 @@
       call c_f_procpointer(hook(i,I_WRITE_SPECIAL_RUN_PARS),       hooks(i)%write_special_run_pars)
       call c_f_procpointer(hook(i,I_RPRINT_SPECIAL),               hooks(i)%rprint_special)
       call c_f_procpointer(hook(i,I_GET_SLICES_SPECIAL),           hooks(i)%get_slices_special)
+      call c_f_procpointer(hook(i,I_GET_FSLICES_SPECIAL),           hooks(i)%get_fslices_special)
       call c_f_procpointer(hook(i,I_INIT_SPECIAL),                 hooks(i)%init_special)
       call c_f_procpointer(hook(i,I_DSPECIAL_DT),                  hooks(i)%dspecial_dt)
       call c_f_procpointer(hook(i,I_DSPECIAL_DT_ODE),              hooks(i)%dspecial_dt_ode)
@@ -536,6 +540,25 @@
       enddo
 !
     endsubroutine rprint_special
+!***********************************************************************
+    subroutine get_fslices_special(f,slices)
+!
+!     This subroutine is for slices that access primary variables directly from
+!     the f-array (i.e. assign_slices_before_ts calls). All other slices (i.e.
+!     assign_slices_after_ts calls) belong in get_slices_*.
+!
+!     09-Oct-2026/Kishore: added dummy
+!
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(slice_data) :: slices
+!
+      integer :: i
+!
+      do i=1,n_special_modules
+        call hooks(i)%get_fslices_special(f,slices)
+      enddo
+!
+    endsubroutine get_fslices_special
 !***********************************************************************
     subroutine get_slices_special(f,slices)
 !
