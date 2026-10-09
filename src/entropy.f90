@@ -7654,15 +7654,16 @@ print*, maxval(sld_flux1*p%evr(:,1)+sld_flux2*p%evr(:,2)+sld_flux3*p%evr(:,3))
 !
     endsubroutine rprint_energy
 !***********************************************************************
-    subroutine get_slices_energy(f,slices)
+    subroutine get_fslices_energy(f,slices)
 !
 !  Write slices for animation of Entropy variables.
 !
 !  26-jul-06/tony: coded
 !  12-feb-15/MR  : changes for use of reference state.
+!  09-Oct-2026/Kishore: do this before time_step as we only use f-array primary variables
 !
       use EquationOfState, only: eoscalc
-      use Slices_methods, only: assign_slices_scal, addto_slices, process_slices, exp2d
+      use Slices_methods, only: assign_slices_before_ts, addto_slices, process_slices, exp2d
 !
       real, contiguous, dimension(:,:,:,:) :: f
       type (slice_data) :: slices
@@ -7681,7 +7682,7 @@ print*, maxval(sld_flux1*p%evr(:,1)+sld_flux2*p%evr(:,2)+sld_flux3*p%evr(:,3))
 !  Entropy.
 !
         case ('ss')
-          call assign_slices_scal(slices,f,iss)
+          call assign_slices_before_ts(slices,f,iss)
           if (lfullvar_in_slices) call addto_slices(slices,reference_state(:,iref_s))
 !
 !  Pressure.
@@ -7760,7 +7761,7 @@ print*, maxval(sld_flux1*p%evr(:,1)+sld_flux2*p%evr(:,2)+sld_flux3*p%evr(:,3))
 !
       endselect
 !
-    endsubroutine get_slices_energy
+    endsubroutine get_fslices_energy
 !***********************************************************************
 !   On comment since not used (to suppress compiler warnings)
 !    subroutine calc_heatcond_zprof(zprof_hcond,zprof_glhc)
