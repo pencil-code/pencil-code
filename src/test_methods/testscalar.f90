@@ -771,6 +771,8 @@ module Testscalar
 !
 !     09-Oct-2026/Kishore: added dummy
 !
+      use Quiet
+!
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
