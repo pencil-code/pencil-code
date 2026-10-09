@@ -10,7 +10,7 @@
     public :: write_training_run_pars
     public :: calc_diagnostics_training, rprint_training
     public :: dtraining_dt
-    public :: get_slices_training
+    public :: get_slices_training, get_fslices_training
     public :: pushpars2c
     real, public :: training_time = 0
     real, public :: inference_time = 0
