@@ -81,48 +81,57 @@ contains
 !
     endsubroutine wvid_prepare
 !***********************************************************************
-    subroutine wvid(f)
+    subroutine wvid(f,lbefore_ts)
 !
 !  Write slices for animation of scalar field
 !  (or one component of a vector field) on the perifery of a box.
 !  Can be visualized in idl using rvid_box.pro.
 !
+!  If lbefore_ts=.false. (default), call all get_slices_* subroutines.
+!  If lbefore_ts=.true., call all get_fslices_* subroutines.
+!
 !  13-nov-02/axel: added more fields
 !  22-sep-07/axel: changed Xy to xy2, to be compatible with Mac
 !  28-oct-18/PABourdin: moved output to IO modules 'output_slice'
+!  09-Oct-2026/Kishore: added lbefore_ts flag
 !
-      use General,         only: itoa
+      use General,         only: itoa, loptest
       use IO,              only: output_slice
       use Slices_methods,  only: assign_slices_scal
-      use Chemistry,       only: get_slices_chemistry
-      use Chiral,          only: get_slices_chiral
-      use Cosmicray,       only: get_slices_cosmicray
-      use Density,         only: get_slices_density,get_slices_pressure
-      use Dustdensity,     only: get_slices_dustdensity
-      use Dustvelocity,    only: get_slices_dustvelocity
-      use EquationOfState, only: get_slices_eos
-      use Energy,          only: get_slices_energy
-      use Heatflux,        only: get_slices_heatflux
-      use Hydro,           only: get_slices_hydro
-      use Interstellar,    only: get_slices_interstellar
-      use Magnetic,        only: get_slices_magnetic
-      use Particles_main,  only: get_slices_particles
-      use Pscalar,         only: get_slices_pscalar
-      use Radiation,       only: get_slices_radiation
-      use Shock,           only: get_slices_shock
-      use Special,         only: get_slices_special
-      use Testfield,       only: get_slices_testfield
-      use Testflow,        only: get_slices_testflow
-      use Testscalar,      only: get_slices_testscalar
-      use Training,        only: get_slices_training
+      use Chemistry,       only: get_slices_chemistry, get_fslices_chemistry
+      use Chiral,          only: get_slices_chiral, get_fslices_chiral
+      use Cosmicray,       only: get_slices_cosmicray, get_fslices_cosmicray
+      use Density,         only: get_slices_density, get_fslices_density, &
+                                 get_slices_pressure, get_fslices_pressure
+      use Dustdensity,     only: get_slices_dustdensity, get_fslices_dustdensity
+      use Dustvelocity,    only: get_slices_dustvelocity, get_fslices_dustvelocity
+      use EquationOfState, only: get_slices_eos, get_fslices_eos
+      use Energy,          only: get_slices_energy, get_fslices_energy
+      use Heatflux,        only: get_slices_heatflux, get_fslices_heatflux
+      use Hydro,           only: get_slices_hydro, get_fslices_hydro
+      use Interstellar,    only: get_slices_interstellar, get_fslices_interstellar
+      use Magnetic,        only: get_slices_magnetic, get_fslices_magnetic
+      use Particles_main,  only: get_slices_particles, get_fslices_particles
+      use Pscalar,         only: get_slices_pscalar, get_fslices_pscalar
+      use Radiation,       only: get_slices_radiation, get_fslices_radiation
+      use Shock,           only: get_slices_shock, get_fslices_shock
+      use Special,         only: get_slices_special, get_fslices_special
+      use Testfield,       only: get_slices_testfield, get_fslices_testfield
+      use Testflow,        only: get_slices_testflow, get_fslices_testflow
+      use Testscalar,      only: get_slices_testscalar, get_fslices_testscalar
+      use Training,        only: get_slices_training, get_fslices_training
       use Mpicomm,         only: mpiwtime
 !
       real, contiguous, dimension(:,:,:,:), intent(IN) :: f
+      logical, optional, intent(in) :: lbefore_ts
 !
+      logical :: lfslices
       integer :: inamev
       type (slice_data) :: slices
       character (LEN=labellen) :: sname
       real :: time1
+!
+      lfslices = loptest(lbefore_ts,.false.)
 !
       slices%index=0
 !
@@ -147,30 +156,57 @@ contains
 !
 !  Get slice information from the modules.
 !
-        if (lchemistry)    call get_slices_chemistry   (f,slices)
-        if (lchiral)       call get_slices_chiral      (f,slices)
-        if (lcosmicray)    call get_slices_cosmicray   (f,slices)
-        if (ldensity .or. lanelastic) &
-                           call get_slices_density     (f,slices)
-        if (lanelastic)    call get_slices_pressure    (f,slices)
-        if (ldustdensity)  call get_slices_dustdensity (f,slices)
-        if (ldustvelocity) call get_slices_dustvelocity(f,slices)
-        if (lenergy)       call get_slices_energy      (f,slices)
-        if (leos)          call get_slices_eos         (f,slices)
-        if (lheatflux)     call get_slices_heatflux    (f,slices)
-        if (lhydro.or.lhydro_kinematic) &
-                           call get_slices_hydro       (f,slices)
-        if (linterstellar) call get_slices_interstellar(f,slices)
-        if (lmagnetic)     call get_slices_magnetic    (f,slices)
-        if (lparticles)    call get_slices_particles   (f,slices)
-        if (lpscalar)      call get_slices_pscalar     (f,slices)
-        if (lradiation)    call get_slices_radiation   (f,slices)
-        if (lshock)        call get_slices_shock       (f,slices)
-        if (lspecial)      call get_slices_special     (f,slices)
-        if (ltestfield)    call get_slices_testfield   (f,slices)
-        if (ltestflow)     call get_slices_testflow    (f,slices)
-        if (ltestscalar)   call get_slices_testscalar  (f,slices)
-        if (ltraining)     call get_slices_training    (f,slices)
+        if (lfslices) then
+          if (lchemistry)    call get_fslices_chemistry   (f,slices)
+          if (lchiral)       call get_fslices_chiral      (f,slices)
+          if (lcosmicray)    call get_fslices_cosmicray   (f,slices)
+          if (ldensity .or. lanelastic) &
+                             call get_fslices_density     (f,slices)
+          if (lanelastic)    call get_fslices_pressure    (f,slices)
+          if (ldustdensity)  call get_fslices_dustdensity (f,slices)
+          if (ldustvelocity) call get_fslices_dustvelocity(f,slices)
+          if (lenergy)       call get_fslices_energy      (f,slices)
+          if (leos)          call get_fslices_eos         (f,slices)
+          if (lheatflux)     call get_fslices_heatflux    (f,slices)
+          if (lhydro.or.lhydro_kinematic) &
+                             call get_fslices_hydro       (f,slices)
+          if (linterstellar) call get_fslices_interstellar(f,slices)
+          if (lmagnetic)     call get_fslices_magnetic    (f,slices)
+          if (lparticles)    call get_fslices_particles   (f,slices)
+          if (lpscalar)      call get_fslices_pscalar     (f,slices)
+          if (lradiation)    call get_fslices_radiation   (f,slices)
+          if (lshock)        call get_fslices_shock       (f,slices)
+          if (lspecial)      call get_fslices_special     (f,slices)
+          if (ltestfield)    call get_fslices_testfield   (f,slices)
+          if (ltestflow)     call get_fslices_testflow    (f,slices)
+          if (ltestscalar)   call get_fslices_testscalar  (f,slices)
+          if (ltraining)     call get_fslices_training    (f,slices)
+        else
+          if (lchemistry)    call get_slices_chemistry   (f,slices)
+          if (lchiral)       call get_slices_chiral      (f,slices)
+          if (lcosmicray)    call get_slices_cosmicray   (f,slices)
+          if (ldensity .or. lanelastic) &
+                             call get_slices_density     (f,slices)
+          if (lanelastic)    call get_slices_pressure    (f,slices)
+          if (ldustdensity)  call get_slices_dustdensity (f,slices)
+          if (ldustvelocity) call get_slices_dustvelocity(f,slices)
+          if (lenergy)       call get_slices_energy      (f,slices)
+          if (leos)          call get_slices_eos         (f,slices)
+          if (lheatflux)     call get_slices_heatflux    (f,slices)
+          if (lhydro.or.lhydro_kinematic) &
+                             call get_slices_hydro       (f,slices)
+          if (linterstellar) call get_slices_interstellar(f,slices)
+          if (lmagnetic)     call get_slices_magnetic    (f,slices)
+          if (lparticles)    call get_slices_particles   (f,slices)
+          if (lpscalar)      call get_slices_pscalar     (f,slices)
+          if (lradiation)    call get_slices_radiation   (f,slices)
+          if (lshock)        call get_slices_shock       (f,slices)
+          if (lspecial)      call get_slices_special     (f,slices)
+          if (ltestfield)    call get_slices_testfield   (f,slices)
+          if (ltestflow)     call get_slices_testflow    (f,slices)
+          if (ltestscalar)   call get_slices_testscalar  (f,slices)
+          if (ltraining)     call get_slices_training    (f,slices)
+        endif
 !
 !  Slice, or component of slice, ready for saving.
 !
