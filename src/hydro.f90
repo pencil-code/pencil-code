@@ -8279,13 +8279,18 @@ module Hydro
 !     the f-array (i.e. assign_slices_before_ts calls). All other slices (i.e.
 !     assign_slices_after_ts calls) belong in get_slices_*.
 !
-!     09-Oct-2026/Kishore: added dummy
+!     09-Oct-2026/Kishore: implemented
+!
+      use Slices_methods, only: assign_slices_before_ts
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(slices%ready)
+!     Loop over slices
+!
+      select case (trim(slices%name))
+        case ('uu'); call assign_slices_before_ts(slices,f,iuu)
+      endselect
 !
     endsubroutine get_fslices_hydro
 !***********************************************************************
@@ -8295,9 +8300,10 @@ module Hydro
 !
 !  26-jul-06/tony: coded
 !  12-apr-16/MR: modifications for Yin-Yang grid
+!  09-Oct-2026/Kishore: fixed output time by moving some to get_fslices_hydro
 !
       use General, only: transform_thph_yy_other
-      use Slices_methods, only: assign_slices_scal, assign_slices_vec
+      use Slices_methods, only: assign_slices_after_ts
 
       real, contiguous, dimension(:,:,:,:) :: f
       type (slice_data) :: slices
@@ -8306,59 +8312,55 @@ module Hydro
 !
       select case (trim(slices%name))
 !
-!  Velocity field.
-!
-        case ('uu'); call assign_slices_vec(slices,f,iuu)
-!
 !  Divergence of velocity.
 !
         case ('divu')
-          call assign_slices_scal(slices,divu_xy,divu_xz,divu_yz,divu_xy2,divu_xy3,divu_xy4,divu_xz2,divu_r)
+          call assign_slices_after_ts(slices,divu_xy,divu_xz,divu_yz,divu_xy2,divu_xy3,divu_xy4,divu_xz2,divu_r)
 !
 !  Velocity squared.
 !
         case ('u2')
-          call assign_slices_scal(slices,u2_xy,u2_xz,u2_yz,u2_xy2,u2_xy3,u2_xy4,u2_xz2,u2_r)
+          call assign_slices_after_ts(slices,u2_xy,u2_xz,u2_yz,u2_xy2,u2_xy3,u2_xy4,u2_xz2,u2_r)
 !
 !  Vorticity.
 !
         case ('oo')
-          call assign_slices_vec(slices,oo_xy,oo_xz,oo_yz,oo_xy2,oo_xy3,oo_xy4,oo_xz2,oo_r)
+          call assign_slices_after_ts(slices,oo_xy,oo_xz,oo_yz,oo_xy2,oo_xy3,oo_xy4,oo_xz2,oo_r)
 !
 !  Vorticity squared.
 !
         case ('o2')
-          call assign_slices_scal(slices,o2_xy,o2_xz,o2_yz,o2_xy2,o2_xy3,o2_xy4,o2_xz2,o2_r)
+          call assign_slices_after_ts(slices,o2_xy,o2_xz,o2_yz,o2_xy2,o2_xy3,o2_xy4,o2_xz2,o2_r)
 !
 !  kinetic helicity.
 !
         case ('ou')
-          call assign_slices_scal(slices,ou_xy,ou_xz,ou_yz,ou_xy2,ou_xy3,ou_xy4,ou_xz2,ou_r)
+          call assign_slices_after_ts(slices,ou_xy,ou_xz,ou_yz,ou_xy2,ou_xy3,ou_xy4,ou_xz2,ou_r)
 !
 !  Mach number squared.
 !
         case ('Ma2')
-          call assign_slices_scal(slices,mach_xy,mach_xz,mach_yz,mach_xy2,mach_xy3,mach_xy4,mach_xz2,mach_r)
+          call assign_slices_after_ts(slices,mach_xy,mach_xz,mach_yz,mach_xy2,mach_xy3,mach_xy4,mach_xz2,mach_r)
 
         case ('hless')
-          call assign_slices_scal(slices,hless_xy,hless_xz,hless_yz,hless_xy2,hless_xy3,hless_xy4,hless_xz2,hless_r)
+          call assign_slices_after_ts(slices,hless_xy,hless_xz,hless_yz,hless_xy2,hless_xy3,hless_xy4,hless_xz2,hless_r)
 
         case ('Ft')
-          call assign_slices_scal(slices,Ft_xy,Ft_xz,Ft_yz,Ft_xy2,Ft_xy3,Ft_xy4,Ft_xz2,Ft_r)
+          call assign_slices_after_ts(slices,Ft_xy,Ft_xz,Ft_yz,Ft_xy2,Ft_xy3,Ft_xy4,Ft_xz2,Ft_r)
 
         case ('Fx')
-          call assign_slices_scal(slices,Fx_xy,Fx_xz,Fx_yz,Fx_xy2,Fx_xy3,Fx_xy4,Fx_xz2,Fx_r)
+          call assign_slices_after_ts(slices,Fx_xy,Fx_xz,Fx_yz,Fx_xy2,Fx_xy3,Fx_xy4,Fx_xz2,Fx_r)
 
         case ('Fy')
-          call assign_slices_scal(slices,Fy_xy,Fy_xz,Fy_yz,Fy_xy2,Fy_xy3,Fy_xy4,Fy_xz2,Fy_r)
+          call assign_slices_after_ts(slices,Fy_xy,Fy_xz,Fy_yz,Fy_xy2,Fy_xy3,Fy_xy4,Fy_xz2,Fy_r)
 
         case ('Fz')
-          call assign_slices_scal(slices,Fz_xy,Fz_xz,Fz_yz,Fz_xy2,Fz_xy3,Fz_xy4,Fz_xz2,Fz_r)
+          call assign_slices_after_ts(slices,Fz_xy,Fz_xz,Fz_yz,Fz_xy2,Fz_xy3,Fz_xy4,Fz_xz2,Fz_r)
 !
 !  Velocity in spherical coordinates
 !
         case ('uu_sph')
-          call assign_slices_vec(slices,uu_sph_xy,uu_sph_xz,uu_sph_yz,uu_sph_xy2, &
+          call assign_slices_after_ts(slices,uu_sph_xy,uu_sph_xz,uu_sph_yz,uu_sph_xy2, &
                                         uu_sph_xy3,uu_sph_xy4,uu_sph_xz2,uu_sph_r)
       endselect
 !
