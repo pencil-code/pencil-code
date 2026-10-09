@@ -124,7 +124,7 @@ Getopt::Long::config("bundling");
 
 if ($ENV{PWD} eq "$ENV{PENCIL_HOME}") {
     print "Error: PENCIL_HOME not allowed as work directory\n";
-    exit 0;
+    exit 1;
 }
 
 my $cmd_name = $0;
