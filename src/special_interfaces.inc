@@ -46,6 +46,12 @@
       logical, optional :: lwrite
     endsubroutine iface_rprint_special
 !
+    subroutine iface_get_fslices_special(f,slices)
+      import :: slice_data
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(slice_data) :: slices
+    endsubroutine iface_get_fslices_special
+!
     subroutine iface_get_slices_special(f,slices)
       import :: slice_data
       real, contiguous, dimension(:,:,:,:) :: f
