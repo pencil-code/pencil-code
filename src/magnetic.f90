@@ -5456,7 +5456,7 @@ module Magnetic
           if (lpenc_loc(i_bb)) call output_pencil('bb.dat',p%bb,3)
           if (lpenc_loc(i_jj)) call output_pencil('jj.dat',p%jj,3)
           if (lpenc_loc(i_del2a)) call output_pencil('del2A.dat',p%del2a,3)
-          if (lpenc_loc(i_jxbr) call output_pencil('JxBr.dat',p%jxbr,3)
+          if (lpenc_loc(i_jxbr)) call output_pencil('JxBr.dat',p%jxbr,3)
           if (lpenc_loc(i_jxb)) call output_pencil('JxB.dat',p%jxb,3)
         endif
 !
