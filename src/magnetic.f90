@@ -5643,19 +5643,18 @@ module Magnetic
 !
       real, dimension (nx,3) :: ujiaj,gua,ajiuj
       real, dimension (nx,3) :: aa_xyaver, fres
-      real, dimension (nx,3) :: uxb_upw,tmp2
-      real, dimension (nx,3) :: dAdt, gradeta_shock, aa1, uu1, dJdt, del2jj
+      real, dimension (nx,3) :: uxb_upw
+      real, dimension (nx,3) :: dAdt, aa1, uu1, dJdt, del2jj
       real, dimension (nx) :: ftot, dAtot
-      real, dimension (nx) :: peta_shock
       real, dimension (nx) :: tmp1
-      real, dimension (nx) :: etaSS,eta_heat
-      real, dimension (nx) :: vdrift, advec_hypermesh_aa
-      real, dimension (nx) :: del2aa_ini,tanhx2,advec_hall
-      real, dimension(nx) :: prof, dlnBrmsdt, limiter
+      real, dimension (nx) :: eta_heat
+      real, dimension (nx) :: advec_hypermesh_aa
+      real, dimension (nx) :: advec_hall
+      real, dimension(nx) :: dlnBrmsdt, limiter
       real, dimension(3) :: B_ext
-      real :: tmp, eta_out1, cosalp, sinalp, hall_term_, tau1_jj
+      real :: hall_term_, tau1_jj
       real, parameter :: OmegaSS=1.0
-      integer :: i,j,k,ju,ix,nphi
+      integer :: i,j,k,ju,nphi
       integer, parameter :: nxy=nxgrid*nygrid
 !
 !  Identify module and boundary conditions.
