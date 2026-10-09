@@ -90,6 +90,7 @@ set ncpus = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*ncpus\s*=\s*([0-9]*)/i && pri
 if (! $ncpus) then
   @ ncpus = $nprocx * $nprocy * $nprocz
 endif
+@ nprocxy = $nprocx * $nprocy
 #
 # Check for atlas-style grids.
 #set lcubed_sphere = `perl -ne '$_ =~ /^\s*logical\b[^\\\!]*lcubed_sphere\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
@@ -2401,9 +2402,19 @@ endif
 # Create subdirectories on local scratch disc (start.csh will also create
 # them under $datadir/)
 set HDF5=`grep '^ *IO *=' src/Makefile.local | tail -n 1 | grep -Ec '^ *IO *= *io_hdf5'`
+set DIST=`grep '^ *IO *=' src/Makefile.local | tail -n 1 | grep -Ec '^ *IO *= *io_dist'`
+set COLL=`grep '^ *IO *=' src/Makefile.local | tail -n 1 | grep -Ec '^ *IO *= *io_collect[^_]*$'`
+set MPI2=`grep '^ *IO *=' src/Makefile.local | tail -n 1 | grep -Ec '^ *IO *= *io_mpi2'`
+set COLL_XY=`grep '^ *IO *=' src/Makefile.local | tail -n 1  grep -Ec '^ *IO *= *io_collect_xy'`
 if ($HDF5) then
   set procdirs = ()
   set subdirs = ("allprocs" "allprocs/signals" "slices" "averages" "idl")
+else if ($COLL || $MPI2) then
+  set procdirs = ()
+  set subdirs = ("allprocs" "allprocs/signals" "reduced" "averages" "idl")
+else if ($COLL_XY) then
+  set procdirs = `perl -e 'my @procs=map{'"$nprocxy"' * $_ } 0..'"$nprocz"'-1;for $i (@procs) {print "proc$i\n"} '`
+  set subdirs = ("allprocs" "allprocs/signals" "reduced" "averages" "idl")
 else
   set procdirs = `perl -e 'for $i (0..'"$ncpus"'-1) { print "proc$i\n"}'`
   set subdirs = ("allprocs" "allprocs/signals" "reduced" "averages" "idl")

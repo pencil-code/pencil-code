@@ -204,6 +204,7 @@ else
   #time $mpirun $mpirunops $npops $mpirunops2 valgrind --leak-check=full $run_x $x_ops
   #time $mpirun --bind-to core:overload-allowed $mpirunops $npops $mpirunops2 $run_x $x_ops
   #time $mpirun -x LD_LIBRARY_PATH -x PATH $mpirunops $npops $mpirunops2 $run_x $x_ops
+  #time $mpirun --multi-prog job.conf    # for calling multiple executables
 endif
 set run_status=$status          # save for exit
 date
