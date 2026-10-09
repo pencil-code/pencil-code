@@ -485,6 +485,10 @@ module Equ
         lout_sound = .false.
       endif
 !
+!  Write slices (e.g., for animation purposes).
+!
+      if (lvideo .and. lwrite_slices) call wvid(f, lbefore_ts=.true.)
+!
     endsubroutine write_diagnostics_before_timestep
 !***********************************************************************
    subroutine write_diagnostics_after_timestep(f)
