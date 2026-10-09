@@ -364,6 +364,12 @@ sub mpi_run_cmd {
     my @extra_opts = split('\s+', $extra_opts);
 #
     print "", (scalar localtime()), "\n";
+#
+# Preparations for e-mail sending/signal handling. Not yet in effect.
+#
+    $ENV{"PC_CALLER_PID"} = "$$";
+    $ENV{"PC_CALLER_NODE"} = $ENV{"HOSTNAME"};
+    $SIG{'USR1'} = 'PC_signal_handler';
 
     if ($mpi) {
         print "Running under MPI\n" unless ($quiet);
@@ -413,6 +419,10 @@ sub mpi_run_cmd {
     }
 
     print "\n", (scalar localtime()), "\n";
+#
+# Sets signal handler back.
+# 
+    $SIG{'USR1'} = 'DEFAULT';
 
     shutdown_mpi();
 }
@@ -681,7 +691,7 @@ sub time_system_cmd {
 
     if (-X '/usr/bin/time') {
         run_system_cmd(('/usr/bin/time', '-p'), @cmd_line, $log_file);
-    } elsif (`which time`) {
+    } elsif (`which time 2>&-`) {
         run_system_cmd('time', @cmd_line, $log_file);
     } else {
         run_system_cmd(@cmd_line, $log_file);
@@ -1684,6 +1694,13 @@ sub get_last {
     `tail -20 $ENV{PENCIL_HOME}/.run_directories.log`;
 }
 # ---------------------------------------------------------------------- #
+sub PC_signal_handler {
+#
+# e.g. send e-mail to user
+# system($ENV{PENCIL_USER_MAILCMD}.' -s PC: varfile locked '.$ENV{PENCIL_USER_MAILADDR});
+# not yet tested
+}
+# ---------------------------------------------------------------------- #
 
 END {
     clear_lock() if ($locked);
@@ -1694,7 +1711,6 @@ END {
     system('env | sort') if ($debug);
 
     Pencil::Util::notify('running') if $notify;
-
 }
 
-# End of file build
+# End of file

@@ -5,7 +5,7 @@
 #  checks that a valid NEWDIR file exists, and that in
 #  the new directory there is another valid NEWDIR file.
 #  Only if everything is ok, this script will touch STOP
-#  to initialize the job transfer. This script should help
+#  to initialize the job transfer. This script should avoid
 #  wasting precious queue time by having wrong NEWDIR files.
 #
 #  21-mar-2004/axel: coded
@@ -14,8 +14,12 @@ set orgdir=$cwd
 #
 #  check that new directory name exists
 #
-if (-e NEWDIR) then
-  set newdir=`cat NEWDIR`
+if (-e NEWDIR || -e data/new_to.dir) then
+  if (-e NEWDIR) then 
+    set newdir=`cat NEWDIR`
+  else
+    set newdir=`head -1 data/new_to.dir`
+  endif
   #
   #  go to new directory and back again
   #
@@ -37,8 +41,12 @@ if (-e NEWDIR) then
       #
       #  use first preliminary rtndir, which is possibly a relative path
       #
-      if (-e NEWDIR) then
-        set rtndir=`cat NEWDIR`
+      if (-e NEWDIR || -e data/new_from.dir) then
+        if (-e NEWDIR) then
+          set rtndir=`cat NEWDIR`
+        else
+          set rtndir=`head -1 data/new_from.dir`
+        endif
         if (-e $rtndir) then
           cd $rtndir
           set rtndir=$cwd
@@ -66,7 +74,7 @@ if (-e NEWDIR) then
           echo "return directory does *not* exist!"
         endif
       else
-        echo "stop: file NEWDIR does not exist in new directory!"
+        echo "stop: file NEWDIR or new_from.dir does not exist in new directory!"
         exit
       endif
     else
@@ -78,6 +86,6 @@ if (-e NEWDIR) then
     exit
   endif
 else
-  echo "stop: file NEWDIR does not exist in original directory!"
+  echo "stop: file NEWDIR or new_to.dir does not exist in original directory!"
   exit
 endif
