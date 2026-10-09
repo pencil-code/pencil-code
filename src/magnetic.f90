@@ -1288,8 +1288,10 @@ module Magnetic
 
       if (lbb_as_aux .or. lbb_as_comaux) &
         call register_report_aux('bb', ibb, ibx, iby, ibz, communicated=lbb_as_comaux, rhs=.true.)
+!
       if (ljj_as_aux .or. ljj_as_comaux) &
         call register_report_aux('jj', ijj, ijx, ijy, ijz, communicated=ljj_as_comaux)
+!
       if (lbij_as_aux) call farray_register_auxiliary('bij', ibij, vector=9)
 !
       if (lbbt_as_aux) then
@@ -2280,7 +2282,7 @@ module Magnetic
        Bz_stratified = 0.
      endif
 
-     lnonzero_eta = eta /= 0.
+     lnonzero_eta = eta/=0.
 
     endsubroutine initialize_magnetic
 !***********************************************************************
@@ -2292,14 +2294,12 @@ module Magnetic
 !   7-nov-2001/wolf: coded
 !
       use EquationOfState
-      use FArrayManager
       use IO, only: input_snap, input_snap_finalize
       use Gravity, only: gravz
       use Initcond
       use Boundcond
       use InitialCondition, only: initial_condition_aa
       use Mpicomm
-      use SharedVariables
       use Sub
       use General, only: yin2yang_coors, transform_thph_yy
       use File_io, only: read_zaver
@@ -2746,6 +2746,29 @@ module Magnetic
             f(l1:l2,m,n,iglobal_bz_ext) = dipole_moment *   (s*sin(z(n)))                      /x(l1:l2)**3
           enddo;enddo
 !
+        case ('dipolar-toroidal')
+!
+!  Axisymmetric toroidal field with sin(theta) dependence.
+!  Works only for spherical coordinates, and needs global external
+!  storing of fields. r and theta components are used for J!
+!
+          if (.not.(lbx_ext_global.and.lby_ext_global.and.lbz_ext_global)) &
+               call fatal_error("init_aa",&
+               "dipolar-toroidal: switch lb[xyz]_ext_global=T in magnetic_start_pars")
+          if (.not.lspherical_coords) &
+               call not_implemented("init_aa","dipolar-toroidal for non-spherical coordinates")
+!
+          do n=n1,n2; do m=m1,m2
+            tmpx = cos((x(l1:l2)-xyz0(1))/Lxyz(1)*pi/2.)
+            f(l1:l2,m,n,iglobal_bz_ext) = dipole_moment * tmpx*sinth(m)
+            f(l1:l2,m,n,iglobal_bx_ext:iglobal_by_ext) = 0.
+            ! r and theta components to be used for J - not yet tested!
+            !f(l1:l2,m,n,iglobal_bx_ext) = dipole_moment * 2.*tmpx*costh(m)/x(l1:l2)
+            !f(l1:l2,m,n,iglobal_by_ext) = - f(l1:l2,m,n,iglobal_bz_ext)/x(l1:l2) &
+            !                              + dipole_moment * (pi*Lxyz(1)/2.) &
+            !                              * sin((x(l1:l2)-xyz0(1))/Lxyz(1)*pi/2.)*sinth(m)
+          enddo;enddo
+!
         case ('Axy_from_file') !(prelim version to set Ax,Ay on one proc)
           open(1,file='Axy.dat',form='unformatted')
           read(1) ax,ay
@@ -2915,9 +2938,7 @@ module Magnetic
 !
 !  Initialize current to zero, if lohm_evolve=T.
 !
-      if (lohm_evolve) then
-        f(l1:l2,:,:,ijx:ijz)=0.
-      endif
+      if (lohm_evolve) f(l1:l2,:,:,ijx:ijz)=0.
 !
     endsubroutine init_aa
 !***********************************************************************
@@ -3641,6 +3662,7 @@ module Magnetic
         lpencil_in(i_j2)=.true.
         lpencil_in(i_jb)=.true.
       endif
+!
       if (lpencil_in(i_coshjb)) then
         lpencil_in(i_b2)=.true.
         lpencil_in(i_hj2)=.true.
@@ -3702,11 +3724,6 @@ module Magnetic
       if (lpencil_in(i_jb)) then
         lpencil_in(i_bb)=.true.
         lpencil_in(i_jj)=.true.
-      endif
-!
-      if (lpencil_in(i_hjb)) then
-        lpencil_in(i_bb)=.true.
-        lpencil_in(i_hjj)=.true.
       endif
 !
       if (lpencil_in(i_jxbr2)) lpencil_in(i_jxbr)=.true.
@@ -4396,6 +4413,7 @@ module Magnetic
       use EquationOfState, only: rho0
       use General, only: notanumber
       use Sub
+      use Debug_IO, only: output_pencil
 !
       real, contiguous, dimension(:,:,:,:), intent(inout):: f
       type (pencil_case),                 intent(out)  :: p
@@ -4568,7 +4586,7 @@ module Magnetic
         else
           call cross_mn(p%uu,p%bb,p%uxb)
         endif
-!  add external e-field.
+!  Add external e-field.
         do j=1,3
           if (iglobal_eext(j)/=0) p%uxb(:,j)=p%uxb(:,j)+f(l1:l2,m,n,iglobal_eext(j))
         enddo
@@ -5432,6 +5450,19 @@ module Magnetic
 !
       endif
 !
+      if (.not.lgpu) then
+        if (headtt .and. ip<=4) then
+          if (lpenc_loc(i_aa)) call output_pencil('aa.dat',p%aa,3)
+          if (lpenc_loc(i_bb)) call output_pencil('bb.dat',p%bb,3)
+          if (lpenc_loc(i_jj)) call output_pencil('jj.dat',p%jj,3)
+          if (lpenc_loc(i_del2a)) call output_pencil('del2A.dat',p%del2a,3)
+          if (lpenc_loc(i_jxbr) call output_pencil('JxBr.dat',p%jxbr,3)
+          if (lpenc_loc(i_jxb)) call output_pencil('JxB.dat',p%jxb,3)
+        endif
+!
+        if (bthresh_per_brms/=0.and.lpenc_loc(i_bb)) call vecout(41,trim(directory)//'/bvec',p%bb,bthresh,nbvec)
+      endif
+!
     endsubroutine calc_pencils_magnetic_pencpar
 !***********************************************************************
     subroutine set_ambipolar_diffusion(p)
@@ -5654,7 +5685,7 @@ module Magnetic
       real, dimension(3) :: B_ext
       real :: hall_term_, tau1_jj
       real, parameter :: OmegaSS=1.0
-      integer :: i,j,k,ju,nphi
+      integer :: i,j,k,ju
       integer, parameter :: nxy=nxgrid*nygrid
 !
 !  Identify module and boundary conditions.
@@ -6317,24 +6348,17 @@ module Magnetic
         diffus_eta2=diffus_eta2*dxyz_4
 !
         if (ldynamical_diffusion .and. lresi_hyper3_mesh) then
-          diffus_eta3 = diffus_eta3 * sum(dline_1,2)
+          diffus_eta3 = diffus_eta3 * sum(dline_1,2)      !MR: Why 1/dx + 1/dy + 1/dz ?
         else
           diffus_eta3 = diffus_eta3*dxyz_6
         endif
+!
         if (lpole(2) .and. lcoarse) then
 
-          if (lfirst_proc_y .and. m<m1+1.5*ncoarse .and. m>=m1) then
-            nphi = max(mod(int(ncoarse/(m-m1+1)),ncoarse+1),1)
-          elseif (llast_proc_y .and. m>m2-1.5*ncoarse .and. m<=m2) then
-            nphi = max(mod(int(ncoarse/(m2-m+1)),ncoarse+1),1)
-          else
-            nphi = 1
-          endif
-          !if (lroot .and. n==n1) print*,'fred: nphi, m',nphi, m
-          diffus_eta =diffus_eta /nphi**2
-          diffus_eta2=diffus_eta2/nphi**4
+          diffus_eta =diffus_eta /nphis2(m)            !/nphi**2       
+          diffus_eta2=diffus_eta2/nphis2(m)**2         !/nphi**4
 !
-          if (.not.(ldynamical_diffusion .and. lresi_hyper3_mesh)) diffus_eta3 = diffus_eta3/nphi**6
+          if (.not.(ldynamical_diffusion .and. lresi_hyper3_mesh)) diffus_eta3 = diffus_eta3/nphis2(m)**3
         endif
 !
         if (headtt.or.ldebug) then
@@ -6398,15 +6422,7 @@ print*,'AXEL2: should not be here (eta) ... '
 !
 !  Debug output.
 !
-      if (headtt .and. ip<=4) then
-        call output_pencil('aa.dat',p%aa,3)
-        call output_pencil('bb.dat',p%bb,3)
-        call output_pencil('jj.dat',p%jj,3)
-        call output_pencil('del2A.dat',p%del2a,3)
-        call output_pencil('JxBr.dat',p%jxbr,3)
-        call output_pencil('JxB.dat',p%jxb,3)
-        call output_pencil('df.dat',df(l1:l2,m,n,:),mvar)
-      endif
+      if (headtt .and. ip<=4) call output_pencil('df.dat',df(l1:l2,m,n,:),mvar)
 !
 !  Timing of this subroutine.
 !
@@ -6420,7 +6436,6 @@ print*,'AXEL2: should not be here (eta) ... '
  !  in the snapshot with GPU-accelerated runs.
  !  Will be called from calc_diagnostics_magnetic and when snapshots are to be written.
  !
-
       real, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
 !
@@ -6429,6 +6444,7 @@ print*,'AXEL2: should not be here (eta) ... '
 !  Recall that no minus sign has been included in the calculation of gLam.
 !
       if (laa_cou_as_aux) f(l1:l2,m,n,iacoux:iacouz)=p%aa-p%gLam
+
     endsubroutine calc_diagnostic_auxiliaries_magnetic
 !******************************************************************************
     subroutine calc_diagnostics_magnetic(f,p)
@@ -7322,8 +7338,6 @@ print*,'AXEL2: should not be here (eta) ... '
         if (idiag_jyp2/=0) call save_name(p%jj(lpoint2-nghost,2),idiag_jyp2)
         if (idiag_jzp2/=0) call save_name(p%jj(lpoint2-nghost,3),idiag_jzp2)
       endif
-!
-      if (bthresh_per_brms/=0) call vecout(41,trim(directory)//'/bvec',p%bb,bthresh,nbvec)
 !
     endsubroutine calc_0d_diagnostics_magnetic
 !******************************************************************************
@@ -11408,7 +11422,6 @@ print*,'AXEL2: should not be here (eta) ... '
         call parse_name(irz,cnamerz(irz),cformrz(irz),'armphi'  ,idiag_armphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'apmphi'  ,idiag_apmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'azmphi'  ,idiag_azmphi)
-!
       enddo
 !
 !  Check for those quantities for which we want phiz-averages.
