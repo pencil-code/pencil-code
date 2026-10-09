@@ -7,7 +7,7 @@
   public :: read_hydro_run_pars,  write_hydro_run_pars
   public :: input_persistent_hydro, output_persistent_hydro
   public :: rprint_hydro
-  public :: get_slices_hydro
+  public :: get_slices_hydro, get_fslices_hydro
   public :: init_uu, duu_dt, hydro_after_boundary, calc_pencils_hydro
   public :: time_integrals_hydro, update_for_time_integrals_hydro
   public :: pencil_criteria_hydro, pencil_interdep_hydro
