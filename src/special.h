@@ -12,7 +12,7 @@
   public :: read_special_run_pars
   public :: write_special_run_pars
   public :: rprint_special
-  public :: get_slices_special
+  public :: get_slices_special, get_fslices_special
   public :: init_special
 
   public :: dspecial_dt, dspecial_dt_ode
