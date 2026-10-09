@@ -320,6 +320,22 @@ module Special
 !!
     endsubroutine rprint_special
 !***********************************************************************
+    subroutine get_fslices_special(f,slices)
+!
+!     This subroutine is for slices that access primary variables directly from
+!     the f-array (i.e. assign_slices_before_ts calls). All other slices (i.e.
+!     assign_slices_after_ts calls) belong in get_slices_*.
+!
+!     09-Oct-2026/Kishore: added dummy
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (slice_data) :: slices
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(slices%ready)
+!
+    endsubroutine get_fslices_special
+!***********************************************************************
     subroutine get_slices_special(f,slices)
 !
 !  Write slices for animation of Special variables.
