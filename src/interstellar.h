@@ -9,7 +9,7 @@
   public :: read_interstellar_run_pars
   public :: write_interstellar_run_pars
   public :: rprint_interstellar
-  public :: get_slices_interstellar
+  public :: get_slices_interstellar, get_fslices_interstellar
   public :: init_interstellar
 
   public :: pencil_criteria_interstellar
