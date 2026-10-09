@@ -3,7 +3,7 @@
   private
 !
   public :: register_shock, initialize_shock, rprint_shock
-  public :: get_slices_shock
+  public :: get_slices_shock, get_fslices_shock
   public :: calc_shock_profile, calc_shock_profile_simple
   public :: shock_before_boundary
   public :: read_shock_run_pars,  write_shock_run_pars
