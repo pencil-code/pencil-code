@@ -198,7 +198,7 @@ class Param(_Foo):
             # Execute output of nl2python script.
             for filen in files:
                 cmd = "nl2python " + filen
-                script = os.popen(cmd).read()
+                script = os.popen(cmd).read()  #MR: shell invocation can be avoided by subprocess
                 if not quiet:
                     print(script)
                 if script:
