@@ -1,15 +1,3 @@
-FUNCTION get_col_lines, filename
-  openr, unit, filename, /GET_LUN,/f77
-  str = ''  
-  count = 0ll  
-  WHILE ~ EOF(unit) DO BEGIN  
-    READU, unit, str  
-    count = count + 1  
-  ENDWHILE  
-  FREE_LUN, unit  
-  RETURN, count  
-END  
-;
 PRO pc_read_col, filename=filename,t=t, coldat=coldat,compdat=compdat
 ;
 ;  bands=cs
