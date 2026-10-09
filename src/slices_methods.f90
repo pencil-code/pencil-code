@@ -9,12 +9,26 @@ module Slices_methods
   implicit none
 !
   interface assign_slices_scal
+!   2026-Oct-09/Kishore: DEPRECATED interface, as it does not distinguish between whether it should be called before or after the timestep
     module procedure assign_slices_f_scal
     module procedure assign_slices_sep_scal
   endinterface
 
   interface assign_slices_vec
+!   2026-Oct-09/Kishore: DEPRECATED interface, as it does not distinguish between whether it should be called before or after the timestep
     module procedure assign_slices_f_vec
+    module procedure assign_slices_sep_vec
+  endinterface
+
+  interface assign_slices_before_ts
+    module procedure assign_slices_f_ivar_scal
+    module procedure assign_slices_f_ivar_vec
+  endinterface
+
+  interface assign_slices_after_ts
+    module procedure assign_slices_f_iaux_scal
+    module procedure assign_slices_f_iaux_vec
+    module procedure assign_slices_sep_scal
     module procedure assign_slices_sep_vec
   endinterface
 
@@ -43,6 +57,7 @@ module Slices_methods
   public :: process_slices, addto_slices
   public :: assign_slices_vec
   public :: assign_slices_scal, assign_slices_f_scal
+  public :: assign_slices_before_ts, assign_slices_after_ts
   public :: alloc_slice_buffers
   public :: nullify_slice_pointers
   public :: write_rslice_position
@@ -201,7 +216,7 @@ private
 
     endsubroutine assign_slices_sep_vec
 !***********************************************************************
-    subroutine assign_slices_f_scal(slices,f,ind1,ind2)
+    subroutine assign_slices_f_scal_internal(slices,f,ind1,ind2)
 !
 !  Copying of scalar data from f-array to arrays assigned to the slice pointers 
 !  according to slice selection switches.
@@ -230,9 +245,9 @@ private
 
       slices%ready=.true.
 
-    endsubroutine assign_slices_f_scal
+    endsubroutine assign_slices_f_scal_internal
 !***********************************************************************
-    subroutine assign_slices_f_vec(slices,f,ind,ncomp)
+    subroutine assign_slices_f_vec_internal(slices,f,ind,ncomp)
 !
 !  Copying of multi-component data from f-array to arrays assigned to the slice pointers 
 !  according to slice selection switches. If ncomp is not present the quantity
@@ -296,6 +311,148 @@ private
       if (slices%index<=nc) slices%ready=.true.
     endif
 
+    endsubroutine assign_slices_f_vec_internal
+!***********************************************************************
+    subroutine assign_slices_f_ivar_scal(slices,f,ind1)
+!
+!   Wrapper for assign_slices_f_scal
+!
+!   09-Oct-2026/Kishore: coded
+!
+      use Messages, only: fatal_error
+
+      type (slice_data)          , intent(OUT):: slices
+      real, dimension(:,:,:,:), intent(IN) :: f
+      integer                    , intent(IN) :: ind1
+!
+      if (ind1>mvar) call fatal_error('assign_slices_f_ivar_scal', &
+        'should not access auxiliaries before time_step')
+!
+      call assign_slices_f_scal_internal(slices, f, ind1)
+!
+    endsubroutine assign_slices_f_ivar_scal
+!***********************************************************************
+    subroutine assign_slices_f_ivar_vec(slices,f,ind1,nc)
+!
+!   Wrapper for assign_slices_f_vec
+!
+!   09-Oct-2026/Kishore: coded
+!
+      use Messages, only: fatal_error
+
+      type (slice_data)          , intent(OUT):: slices
+      real, dimension(:,:,:,:), intent(IN) :: f
+      integer                    , intent(IN) :: ind1, nc
+!
+      if (ind1>mvar) call fatal_error('assign_slices_f_ivar_vec', &
+        'should not access auxiliaries before time_step')
+!
+      call assign_slices_f_vec_internal(slices, f, ind1, nc)
+!
+    endsubroutine assign_slices_f_ivar_vec
+!***********************************************************************
+    subroutine assign_slices_f_iaux_scal(slices,f,ind1)
+!
+!   Wrapper for assign_slices_f_scal
+!
+!   09-Oct-2026/Kishore: coded
+!
+      use Messages, only: fatal_error
+
+      type (slice_data)          , intent(OUT):: slices
+      real, dimension(:,:,:,:), intent(IN) :: f
+      integer                    , intent(IN) :: ind1
+!
+      if (ind1<=mvar) call fatal_error('assign_slices_f_ivar_scal', &
+        'should not access primary variables after time_step')
+!
+      call assign_slices_f_scal_internal(slices, f, ind1)
+!
+    endsubroutine assign_slices_f_iaux_scal
+!***********************************************************************
+    subroutine assign_slices_f_iaux_vec(slices,f,ind1,nc)
+!
+!   Wrapper for assign_slices_f_vec
+!
+!   09-Oct-2026/Kishore: coded
+!
+      use Messages, only: fatal_error
+
+      type (slice_data)          , intent(OUT):: slices
+      real, dimension(:,:,:,:), intent(IN) :: f
+      integer                    , intent(IN) :: ind1, nc
+!
+      if (ind1<=mvar) call fatal_error('assign_slices_f_ivar_vec', &
+        'should not access primary variables after time_step')
+!
+      call assign_slices_f_vec_internal(slices, f, ind1, nc)
+!
+    endsubroutine assign_slices_f_iaux_vec
+!***********************************************************************
+    subroutine assign_slices_f_scal(slices,f,ind1,ind2)
+!
+!   This is deprecated. The reason is that assign_slices_{scal,vec} are
+!   always called after the timestep, in which case slices taken from the
+!   f-array have values from the next iteration while slices taken from
+!   pencils have values from the current iteration. The replacement
+!   subroutines make it less likely that the user unintentionally runs
+!   into this bug.
+!
+!   09-Oct-2026/Kishore: coded
+!
+      use Messages, only: warning
+
+      type (slice_data)          , intent(OUT):: slices
+      real, dimension(mx,my,mz,*), intent(IN) :: f
+      integer                    , intent(IN) :: ind1
+      integer         , optional , intent(IN) :: ind2
+!
+      logical, save :: lwarn = .true.
+!
+      if (lwarn) then
+        if (lroot) call warning('assign_slices_f_scal', 'output may be at ' // &
+          'the wrong timestep; replace by ' // &
+          'assign_slices_before_ts (to be used in get_fslices_*) ' // &
+          'or assign_slices_after_ts (to be used in get_slices_*) ' // &
+          'to silence this warning')
+        lwarn=.false.
+      endif
+!
+      call assign_slices_f_scal_internal(slices,f,ind1,ind2)
+!
+    endsubroutine assign_slices_f_scal
+!***********************************************************************
+    subroutine assign_slices_f_vec(slices,f,ind,nc)
+!
+!   This is deprecated. The reason is that assign_slices_{scal,vec} are
+!   always called after the timestep, in which case slices taken from the
+!   f-array have values from the next iteration while slices taken from
+!   pencils have values from the current iteration. The replacement
+!   subroutines make it less likely that the user unintentionally runs
+!   into this bug.
+!
+!   09-Oct-2026/Kishore: coded
+!
+      use Messages, only: warning
+
+      type (slice_data)       , intent(INOUT):: slices
+      real, dimension(:,:,:,:), intent(IN)   :: f
+      integer                 , intent(IN)   :: ind
+      integer, optional       , intent(IN)   :: nc
+!
+      logical, save :: lwarn = .true.
+!
+      if (lwarn) then
+        if (lroot) call warning('assign_slices_f_vec', 'output may be at ' // &
+          'the wrong timestep; replace by ' // &
+          'assign_slices_before_ts (to be used in get_fslices_*) ' // &
+          'or assign_slices_after_ts (to be used in get_slices_*) ' // &
+          'to silence this warning')
+        lwarn=.false.
+      endif
+!
+      call assign_slices_f_vec_internal(slices,f,ind,nc)
+!
     endsubroutine assign_slices_f_vec
 !***********************************************************************
     subroutine store_slices_scal(pencil,xy,xz,yz,xy2,xy3,xy4,xz2,r)
