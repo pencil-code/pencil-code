@@ -1,4 +1,4 @@
-   function identify_varfile, filename=filename, path=file, nohdf5=nohdf5, datadir=datadir, proc=proc_
+   function identify_varfile, filename=filename, path=path, nohdf5=nohdf5, datadir=datadir, proc=proc_
 ;
 ;  Identifies which of allprocs/var.dat, allprocs/var.h5, proc0/var.dat is the youngest
 ;  If filename is provided, correspondingly which of allprocs/<filename>, allprocs/<h5filename>, proc0/<filename> 
@@ -49,7 +49,7 @@
        message, 'identify_varfile: ERROR: No '+file5+' or '+fileb+' found. - Please either give a filename or open an HDF5 file!', /cont
        return, ''
      endif else begin
-       file = maxind eq 0 ? datadir+'/allprocs/'+file5 : (maxind eq 1 ? datadir+'/'+proc+'/'+fileb : datadir+'/allprocs/'+fileb)
+       path = maxind eq 0 ? datadir+'/allprocs/'+file5 : (maxind eq 1 ? datadir+'/'+proc+'/'+fileb : datadir+'/allprocs/'+fileb)
        return, maxind eq 0 ? file5 : fileb
      endelse
 

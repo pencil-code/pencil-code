@@ -776,9 +776,9 @@ newheader:
 ;stop,'AXEL1'
   if arg_present(obj) then $
     if n_elements(zpos1) gt 0 then $
-      obj = {FILE: file1, TT: tt, ZPOS: zpos1, SPEC1: reform(spec1)} $
+      obj = {FILE: file1, TT: tt, ZPOS: zpos1, SPEC1: reform(spec1,/overwrite)} $
     else $
-      obj = {FILE: file1, TT: tt, SPEC1: reform(spec1)}
+      obj = {FILE: file1, TT: tt, SPEC1: reform(spec1,/overwrite)}
 ; MR: would prefer the name 'T' for the time as it is also used elsewhere
 close, 1
 return

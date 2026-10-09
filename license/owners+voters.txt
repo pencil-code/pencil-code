@@ -20,6 +20,33 @@ As of 18 Jun 2023: 20 owners:
         Chao-Chin Yang <ccyang@ua.edu>,
         Hongzhe Zhou <hongzhe.zhou@sjtu.edu.cn>
 
+As of 2 Nov 2020: 18 owners:
+        Sven Bingert <sven.bingert@gwdg.de>,
+        Philippe Bourdin <Philippe.Bourdin@oeaw.ac.at>,
+        Axel Brandenburg <brandenb@nordita.org>,
+        Simon Candelaresi <simon.candelaresi@gmail.com>,
+        Piyali Chatterjee <mppiyali@gmail.com>,
+        Boris Dintrans <dintrans@cines.fr>,
+        Wolfgang Dobler <wdobler@gmail.com>,
+        Fred Gent <frederick.gent@aalto.fi>,
+        Nils E Haugen <Nils.E.Haugen@sintef.no>,
+        Tobias Heinemann <tobias.heinemann@gmail.com>,
+        Anders Johansen <anders@astro.lu.se>,
+        Maarit Kapyla <kapyla@mps.mpg.de>,
+        Petri Kapyla <petri.kapyla@aalto.fi>,
+        Wladimir Lyra <wladimir.lyra@gmail.com>,
+        Dhrubaditya Mitra <dhruba.mitra@gmail.com>,
+        Rheinhardt Matthias <matthias.rheinhardt@aalto.fi>,
+        Joern Warnecke <warnecke@mps.mpg.de>,
+        Chao-Chin Yang <ccyang@astro.lu.se>
+
+        by commits and attended User Meetings (in brackets):
+        Xiangyu Li <xiang-yu.li@misu.su.se>                 (2015,2020)
+        Jørgen R. Aarne <jorgenaarnes@gmail.com>           (2015,2016)
+        Jonas Krueger <jonas.kruger@ntnu.no>                (2014,2015)
+        Natalia Babkovskaia <nbabkovskaia@gmail.com>        (2012,2015)
+        Johannes Pekkilä <johannes.pekkila@aalto.fi>        (2019,2020)
+
 As of 7 Dec 2019: 16 owners: 
         Sven Bingert <sven.bingert@gwdg.de>,
         Philippe Bourdin <Philippe.Bourdin@oeaw.ac.at>,

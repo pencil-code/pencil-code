@@ -6,6 +6,7 @@
 pro pc_read_1d_aver, dir, object=object, varfile=varfile, datadir=datadir, $
     monotone=monotone, quiet=quiet, njump=njump, tmin=tmin, dim=dim, grid=grid, single=single, help=help
 COMPILE_OPT IDL2,HIDDEN
+
 common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
   if (keyword_set(help)) then begin
@@ -77,12 +78,11 @@ pc_read_grid, obj=grid, dim=dim, datadir=datadir, quiet=quiet, single=single
     h5_close_file
     return
   end
-
 ;
 ;  Read variables from '*aver.in' file
 ;
 run_dir = (stregex (datadir, '^(.*)data[\/]{0,1} *$', /extract, /subexpr))[1]
-varnames = strarr(file_lines(run_dir+in_file))
+varnames = strarr(get_col_lines(run_dir+in_file,/form,comchar='#'))
 openr, lun, run_dir+in_file, /get_lun
 readf, lun, varnames
 close, lun
