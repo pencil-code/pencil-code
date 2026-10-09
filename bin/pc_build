@@ -122,10 +122,11 @@ use Getopt::Long;
 # Allow for '-Plp' as equivalent to '-P lp' etc:
 Getopt::Long::config("bundling");
 
-if ($ENV{PWD} eq "$ENV{PENCIL_HOME}") {
-    print "Error: PENCIL_HOME not allowed as work directory\n";
-    exit 1;
-}
+# Kishore: commented this out as this causes failures when pc_auto-test is run with $PENCIL_HOME as the work directory.
+# if ($ENV{PWD} eq "$ENV{PENCIL_HOME}") {
+#     print "Error: PENCIL_HOME not allowed as work directory\n";
+#     exit 1;
+# }
 
 my $cmd_name = $0;
 my @all_arguments = @ARGV;
