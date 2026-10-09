@@ -4,7 +4,7 @@
   public :: read_magnetic_run_pars,  write_magnetic_run_pars
   public :: output_persistent_magnetic, input_persistent_magnetic
   public :: rprint_magnetic
-  public :: get_slices_magnetic
+  public :: get_slices_magnetic, get_fslices_magnetic
   public :: init_aa, daa_dt
   public :: magnetic_before_boundary, magnetic_after_boundary
   public :: magnetic_before_boundary_diagnostics
