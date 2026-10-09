@@ -119,9 +119,7 @@ contains
 !
       real, contiguous, dimension(:,:,:,:), intent(IN) :: f
 !
-      logical :: lslices_legacy=.true.
       integer :: inamev
-!
       type (slice_data) :: slices
       character (LEN=labellen) :: sname
       real :: time1
@@ -147,13 +145,8 @@ contains
         if (lwrite_slice_r) slices%r => slice_r   ! no interpolation
         slices%ready=.false.
 !
-!  By default assume we're not using module hooks to get the slice contents
-!
-        lslices_legacy=.true.
-!
 !  Get slice information from the modules.
 !
-        lslices_legacy=.false.
         if (lchemistry)    call get_slices_chemistry   (f,slices)
         if (lchiral)       call get_slices_chiral      (f,slices)
         if (lcosmicray)    call get_slices_cosmicray   (f,slices)
@@ -178,11 +171,6 @@ contains
         if (ltestflow)     call get_slices_testflow    (f,slices)
         if (ltestscalar)   call get_slices_testscalar  (f,slices)
         if (ltraining)     call get_slices_training    (f,slices)
-!
-        if (lslices_legacy) then
-          inamev=inamev+1
-          cycle
-        endif
 !
 !  Slice, or component of slice, ready for saving.
 !
