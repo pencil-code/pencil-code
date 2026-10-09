@@ -4,7 +4,7 @@
   public :: register_heatflux, initialize_heatflux
   public :: read_heatflux_run_pars,  write_heatflux_run_pars
   public :: rprint_heatflux
-  public :: get_slices_heatflux
+  public :: get_slices_heatflux, get_fslices_heatflux
   public :: init_heatflux
   public :: dheatflux_dt
   public :: calc_pencils_heatflux, calc_diagnostics_heatflux
