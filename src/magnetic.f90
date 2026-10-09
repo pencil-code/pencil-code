@@ -683,10 +683,6 @@ module Magnetic
   integer :: idiag_bybzm=0      ! DIAG_DOC: $\left<B_y B_z\right>$
   integer :: idiag_djuidjbim=0  ! DIAG_DOC:
   integer :: idiag_bij_cov_diffmax=0! DIAG_DOC: difference between two implementations of covariant derivatives
-  integer :: idiag_eqRmm=0      ! DIAG_DOC: $\left<\frac{|\uv\times\Bv|}{|\eta\Jv|}\right>
-  integer :: idiag_eqRmph1m=0   ! DIAG_DOC: $\left<\frac{|\uv\times\Bv|}{|\eta\Jv|}\right>_\text{phase 1}
-  integer :: idiag_eqRmph2m=0   ! DIAG_DOC: $\left<\frac{|\uv\times\Bv|}{|\eta\Jv|}\right>_\text{phase 2}
-  integer :: idiag_eqRmph3m=0   ! DIAG_DOC: $\left<\frac{|\uv\times\Bv|}{|\eta\Jv|}\right>_\text{phase 3}
   integer :: idiag_bmx=0        ! DIAG_DOC: $\left<\left<\Bv\right>_{yz}^2
                                 ! DIAG_DOC:   \right>^{1/2}$
                                 ! DIAG_DOC:   \quad(energy of $yz$-averaged
@@ -825,7 +821,14 @@ module Magnetic
   integer :: idiag_jxbrqm=0     ! DIAG_DOC: $\left<(\Jv\times\Bv/\rho)\cdot\mathbf{q}\right>$
   integer :: idiag_uxBrms=0     ! DIAG_DOC:
   integer :: idiag_Bresrms=0    ! DIAG_DOC:
-  integer :: idiag_Rmrms=0      ! DIAG_DOC:
+  integer :: idiag_Rmrms=0      ! DIAG_DOC: $\langle\frac{|\uv\times\Bv|}{|\nabla\cdot(\eta\nabla\Av)|}\rangle$
+  integer :: idiag_Rmph1rms=0   ! DIAG_DOC: $\langle\frac{|\uv\times\Bv|}{|\nabla\cdot(\eta\nabla\Av)|}\rangle_\text{phase 1}$
+  integer :: idiag_Rmph2rms=0   ! DIAG_DOC: $\langle\frac{|\uv\times\Bv|}{|\nabla\cdot(\eta\nabla\Av)|}\rangle_\text{phase 2}$
+  integer :: idiag_Rmph3rms=0   ! DIAG_DOC: $\langle\frac{|\uv\times\Bv|}{|\nabla\cdot(\eta\nabla\Av)|}\rangle_\text{phase 3}$
+  integer :: idiag_Rmmax=0      ! DIAG_DOC: $\max\left(frac{|\uv\times\Bv|}{|\nabla\cdot(\eta\nabla\Av)|}\right)$
+  integer :: idiag_Rmph1max=0   ! DIAG_DOC: $\max\left(frac{|\uv\times\Bv|}{|\nabla\cdot(\eta\nabla\Av)|}\right)_\text{phase 1}$
+  integer :: idiag_Rmph2max=0   ! DIAG_DOC: $\max\left(frac{|\uv\times\Bv|}{|\nabla\cdot(\eta\nabla\Av)|}\right)_\text{phase 2}$
+  integer :: idiag_Rmph3max=0   ! DIAG_DOC: $\max\left(frac{|\uv\times\Bv|}{|\nabla\cdot(\eta\nabla\Av)|}\right)_\text{phase 3}$
   integer :: idiag_jfm=0        ! DIAG_DOC:
   integer :: idiag_brbpmr=0     ! DIAG_DOC:
   integer :: idiag_vA2m=0       ! DIAG_DOC:
@@ -3430,7 +3433,9 @@ module Magnetic
           .or. idiag_uxbsmx/=0 .or. idiag_uxbsmy/=0 &
           .or. idiag_Expt/=0 .or. idiag_Eypt/=0 .or. idiag_Ezpt/=0) lpenc_diagnos(i_uxbb)=.true.
 
-      if (idiag_uxBrms/=0 .or. idiag_Rmrms/=0 .or. idiag_Rmmz/=0) &
+      if (idiag_uxBrms/=0.or. idiag_Rmmz/=0 .or. &
+          idiag_Rmrms/=0.or.idiag_Rmph1rms/=0.or.idiag_Rmph2rms/=0.or.idiag_Rmph3rms/=0.or. &
+          idiag_Rmmax/=0.or.idiag_Rmph1max/=0.or.idiag_Rmph2max/=0.or.idiag_Rmph3max/=0 ) &
           lpenc_diagnos(i_uxb2)=.true.
       if (idiag_beta1m/=0 .or. idiag_beta1max/=0 .or. idiag_beta1mz/=0) &
           lpenc_diagnos(i_beta1)=.true.
@@ -3562,11 +3567,12 @@ module Magnetic
         call warning('pencil_criteria_magnetic', &
                        'include as required fracvph1mz, ph2 and/or ph3 in video.in')
       endif
-      if (idiag_eqRmm/=0 .or. idiag_eqRmph1m/=0 .or. idiag_eqRmph2m/=0 .or. idiag_eqRmph3m/=0) &
+      if (idiag_Rmph1rms/=0 .or. idiag_Rmph2rms/=0 .or. idiag_Rmph3rms/=0.or. &
+          idiag_Rmph1rms/=0 .or. idiag_Rmph2rms/=0 .or. idiag_Rmph3rms/=0) then
         lpenc_diagnos(i_ss)=.true.
-      if (idiag_eqRmph1m/=0 .or. idiag_eqRmph2m/=0 .or. idiag_eqRmph3m/=0) &
         call warning('pencil_criteria_magnetic', &
                        'include as required fracvph1m, ph2 and/or ph3 in print.in')
+      endif
       if (lforcing_cont.and.idiag_bcurlfmz/=0) lpenc_diagnos(i_curlfcont)=.true.
 !
 !  For Coulomb gauge. The diagnostics results depend on whether or
@@ -6539,7 +6545,7 @@ print*,'AXEL2: should not be here (eta) ... '
       real, dimension (nx) :: B1dot_glnrhoxb,fb,fxbx
       real, dimension (nx) :: b2t,bjt,jbt,ubt,but,ujt,jut
       real, dimension (nx) :: phi,dub,dob,jdel2a,epsAD
-      real, dimension (nx) :: rmask, quench
+      real, dimension (nx) :: rmask, quench, Rm2
 
       call sum_mn_name(p%beta1,idiag_beta1m)
       call max_mn_name(p%beta1,idiag_beta1max)
@@ -6568,15 +6574,22 @@ print*,'AXEL2: should not be here (eta) ... '
           call max_mn_name(dAmax,idiag_dtBr,l_dt=.true.)
         endif
 
-        if (idiag_Bresrms/=0 .or. idiag_Rmrms/=0) then
+        if (idiag_Bresrms/=0.or. &
+            idiag_Rmrms/=0.or.idiag_Rmph1rms/=0.or.idiag_Rmph2rms/=0.or.idiag_Rmph3rms/=0.or. &
+            idiag_Rmmax/=0.or.idiag_Rmph1max/=0.or.idiag_Rmph2max/=0.or.idiag_Rmph3max/=0 ) then
           call dot2_mn(p%fres,fres2)
-          call sum_mn_name(fres2,idiag_Bresrms,lsqrt=.true.)
-          if (idiag_Rmrms/=0) call sum_mn_name(p%uxb2/fres2,idiag_Rmrms,lsqrt=.true.)
+          Rm2=sqrt(p%uxb2/(fres2+tini))
+          if (idiag_Bresrms/=0)  call sum_mn_name(fres2,idiag_Bresrms,lsqrt=.true.)
+          if (idiag_Rmrms/=0)    call sum_mn_name(Rm2,idiag_Rmrms)
+          if (idiag_Rmph1rms/=0) call sum_mn_name(Rm2,idiag_Rmph1rms,MASK=(p%ss <=ssmask1))
+          if (idiag_Rmph2rms/=0) call sum_mn_name(Rm2,idiag_Rmph2rms,MASK=(p%ss > ssmask1 .and. p%ss <= ssmask2))
+          if (idiag_Rmph3rms/=0) call sum_mn_name(Rm2,idiag_Rmph3rms,MASK=(p%ss > ssmask2))
+          if (idiag_Rmmax/=0)    call max_mn_name(Rm2,idiag_Rmmax)
+          if (idiag_Rmph1max/=0) call max_mn_name(Rm2,idiag_Rmph1max,MASK=(p%ss <=ssmask1))
+          if (idiag_Rmph2max/=0) call max_mn_name(Rm2,idiag_Rmph2max,MASK=(p%ss > ssmask1 .and. p%ss <= ssmask2))
+          if (idiag_Rmph3max/=0) call max_mn_name(Rm2,idiag_Rmph3max,MASK=(p%ss > ssmask2))
         endif
       endif
-!
-!      if (idiag_eqRmm/=0 .or. idiag_eqRmph1m/=0 .or. idiag_eqRmph2m/=0 .or. idiag_eqRmph3m/=0) then
-!      endif
 !
 !  Integrate velocity in time, to calculate correlation time later.
 !
@@ -10678,7 +10691,9 @@ print*,'AXEL2: should not be here (eta) ... '
         idiag_jxbrxmy=0; idiag_jxbrymy=0; idiag_jxbrzmy=0; idiag_jxbrxmz=0
         idiag_jxbrymz=0; idiag_jxbrzmz=0; idiag_armphi=0; idiag_apmphi=0
         idiag_azmphi=0; idiag_dteta=0; idiag_uxBrms=0; idiag_Bresrms=0
-        idiag_Rmrms=0; idiag_jfm=0; idiag_brbpmr=0; idiag_va2m=0; idiag_b2mr=0
+        idiag_jfm=0; idiag_brbpmr=0; idiag_va2m=0; idiag_b2mr=0
+        idiag_Rmrms=0; idiag_Rmph1rms=0; idiag_Rmph2rms=0; idiag_Rmph3rms=0
+        idiag_Rmmax=0; idiag_Rmph1max=0; idiag_Rmph2max=0; idiag_Rmph3max=0
         idiag_brmr=0; idiag_bpmr=0; idiag_bzmr=0; idiag_armr=0; idiag_apmr=0
         idiag_azmr=0; idiag_bxmx=0; idiag_bymx=0; idiag_bzmx=0; idiag_bxmy=0
         idiag_bymy=0; idiag_bzmy=0; idiag_bx2my=0; idiag_by2my=0; idiag_bz2my=0
@@ -11008,6 +11023,13 @@ print*,'AXEL2: should not be here (eta) ... '
         call parse_name(iname,cname(iname),cform(iname),'uxBrms',idiag_uxBrms)
         call parse_name(iname,cname(iname),cform(iname),'Bresrms',idiag_Bresrms)
         call parse_name(iname,cname(iname),cform(iname),'Rmrms',idiag_Rmrms)
+        call parse_name(iname,cname(iname),cform(iname),'Rmph1rms',idiag_Rmph1rms)
+        call parse_name(iname,cname(iname),cform(iname),'Rmph2rms',idiag_Rmph2rms)
+        call parse_name(iname,cname(iname),cform(iname),'Rmph3rms',idiag_Rmph3rms)
+        call parse_name(iname,cname(iname),cform(iname),'Rmmax',idiag_Rmmax)
+        call parse_name(iname,cname(iname),cform(iname),'Rmph1max',idiag_Rmph1max)
+        call parse_name(iname,cname(iname),cform(iname),'Rmph2max',idiag_Rmph2max)
+        call parse_name(iname,cname(iname),cform(iname),'Rmph3max',idiag_Rmph3max)
         call parse_name(iname,cname(iname),cform(iname),'jfm',idiag_jfm)
         call parse_name(iname,cname(iname),cform(iname),'bmxy_rms',idiag_bmxy_rms)
         call parse_name(iname,cname(iname),cform(iname),'etasmagm',idiag_etasmagm)
