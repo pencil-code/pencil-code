@@ -979,3 +979,4 @@ integer, parameter :: enum_rus_exp_z_string = 969
 integer, parameter :: enum_const_shear_string = 970
 integer, parameter :: enum_test1_string = 971
 integer, parameter :: enum_alpha_attractors_corrected_string = 972
+integer, parameter :: enum_Zbvec_string = 973
