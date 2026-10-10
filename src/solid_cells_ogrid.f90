@@ -114,6 +114,10 @@ module Solid_Cells
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       integer :: i, ndims, k
 !
+      ivar1_part=1; ivar2_part=mvar
+      mfarray_ogrid=mvar+maux
+      if (.not.allocated(f_ogrid)) allocate(f_ogrid(mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid))
+
       call keep_compiler_quiet(f)
       if (cylinder_radius <= 0) then
         call fatal_error('initialize_solid_cells_ogrid', &

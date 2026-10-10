@@ -263,8 +263,7 @@ module solid_cells_ogrid_cdata
   integer, dimension(:), allocatable :: send_part_data_to
   integer :: n_procs_recv_part_data 
   integer :: n_procs_send_part_data 
-  integer :: ivar1_part=1
-  integer :: ivar2_part=mvar
+  integer :: ivar1_part,ivar2_part
   !public :: xgrid_ogrid, ygrid_ogrid, zgrid_ogrid, xglobal_ogrid, yglobal_ogrid, zglobal_ogrid
   !public :: f_ogrid_procs
   !public :: r_ogrid, xorigo_ogrid
@@ -314,9 +313,8 @@ module solid_cells_ogrid_cdata
 
 !  Pencils and f-array to be used for curvilinear grid computations
   type(pencil_case_ogrid) p_ogrid 
-  save p_ogrid
-  integer, parameter :: mfarray_ogrid=mvar+maux
-  real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), save ::  f_ogrid=0.
+  integer :: mfarray_ogrid
+  real, dimension(:,:,:,:), allocatable ::  f_ogrid
   real, dimension(:,:,:,:), allocatable ::  f_tmp ! Array allocated if lrk_tvd=.true.
 
 !  Summation by parts arrays
