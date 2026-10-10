@@ -6354,10 +6354,10 @@ module Magnetic
 !
         if (lpole(2) .and. lcoarse) then
 
-          !!!diffus_eta =diffus_eta /nphis2(m)            !/nphi**2
-          !!!diffus_eta2=diffus_eta2/nphis2(m)**2         !/nphi**4
+          diffus_eta =diffus_eta /nphis2(m)            !/nphi**2
+          diffus_eta2=diffus_eta2/nphis2(m)**2         !/nphi**4
 !
-          !!!if (.not.(ldynamical_diffusion .and. lresi_hyper3_mesh)) diffus_eta3 = diffus_eta3/nphis2(m)**3
+          if (.not.(ldynamical_diffusion .and. lresi_hyper3_mesh)) diffus_eta3 = diffus_eta3/nphis2(m)**3
         endif
 !
         if (headtt.or.ldebug) then
