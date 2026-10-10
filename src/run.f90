@@ -1329,7 +1329,6 @@ endsubroutine helper_loop
 !
 !  Save spectrum snapshot.
 !
-!  tdiagnos=t
   if (dspec/=impossible) call powersnap(f)
 !
 !  Initialize pencils in the pencil_case.
