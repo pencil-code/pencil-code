@@ -1403,6 +1403,13 @@ module Grid
       lcoarse=lspherical_coords .and. lpole(2) .and. ncoarse>1 .and. nprocy>1
       if (.not.lcoarse) ncoarse=1
 
+!
+!  Coarsening factors are stored for all m (=1 outside the coarsened range),
+!  so that they can be indexed by m everywhere, also in GPU code.
+!
+      if (.not.allocated(nphis)) allocate(nphis(my), nphis1(my), nphis2(my))
+      nphis=1; nphis1=1.; nphis2=1.
+
       if (lcoarse.and.(lfirst_proc_y.or.llast_proc_y)) then
 
 !MR: TB generalized to more than two procs, in which coarsening happens.
@@ -1415,8 +1422,6 @@ module Grid
 !
 !MR: missing - nprocy=1 case: two m intervals in one proc!
 !
-        allocate(nphis(mexts(1):mexts(2)), nphis1(mexts(1):mexts(2)), &
-                 nphis2(mexts(1):mexts(2)))
         allocate(nexts(mexts(1):mexts(2),2))
         allocate(ninds(-nghost:nghost,mexts(1):mexts(2),n1:n2))
         ninds=0
@@ -1477,7 +1482,7 @@ module Grid
                   ' the grid is coarsened for m = '// &
                   trim(itoa(mexts(1)))//' ... '//trim(itoa(mexts(2)))
           print*, 'with coarsening factors:'
-          print'(30(1x,i2))', nphis
+          print'(30(1x,i2))', nphis(mexts(1):mexts(2))
         endif
 !write(iproc+30,*) 'nexts=', nexts(:,:)
 !write(iproc+30,*) 'nphis=', nphis(:)
