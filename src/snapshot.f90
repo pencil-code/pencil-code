@@ -995,14 +995,17 @@ module Snapshot
 
         lspec=.false.
       else
-        if (ldiagnos) then
-          lfirstcall_powerhel=.true.
-!AB: the following doesn't work in hydro:
-          !call powerhel(f,'mag',lfirstcall_powerhel, sumspec=sumspec, lnowrite=.true.)
-          call powerhel(f,'kin',lfirstcall_powerhel, sumspec=sumspec, lnowrite=.true.)
-          km0EM=sumspec(1)
-          km1EM=sumspec(2)
-        endif
+! 10-Oct-2026/Kishore: commented the following as it causes problems if called
+! 10-Oct-2026/Kishore: before the first timestep, because
+! 10-Oct-2026/Kishore: pencil_consistency_check sets ldiagnos=T.
+!         if (ldiagnos) then
+!           lfirstcall_powerhel=.true.
+! !AB: the following doesn't work in hydro:
+!           !call powerhel(f,'mag',lfirstcall_powerhel, sumspec=sumspec, lnowrite=.true.)
+!           call powerhel(f,'kin',lfirstcall_powerhel, sumspec=sumspec, lnowrite=.true.)
+!           km0EM=sumspec(1)
+!           km1EM=sumspec(2)
+!         endif
       endif
 
     endsubroutine powersnap
