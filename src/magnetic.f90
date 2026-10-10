@@ -610,6 +610,7 @@ module Magnetic
 ! hongzhe: note emag is the integrated energy, whereas ekin is the volume average!
 !          the hydro counterpart of emag is ekintot
   integer :: idiag_emag=0       ! DIAG_DOC: $\int_V{1\over2\mu_0}\Bv^2\, dV$
+! Kishore: unclear what the point is of km0Em and km1EM, when we already have b2m and abm
   integer :: idiag_km0EM=0      ! DIAG_DOC: $\int E_M(k)\,dk$
   integer :: idiag_km1EM=0      ! DIAG_DOC: $\int k^{-1} E_M(k)\,dk$
   integer :: idiag_brms=0       ! DIAG_DOC: $\left<\Bv^2\right>^{1/2}$
