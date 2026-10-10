@@ -98,8 +98,6 @@ const int prof_nz = 150
 //#include "$AC_HOME/acc-runtime/stdlib/pc_derivs.h"
 #include "$AC_HOME/acc-runtime/stdlib/general_operators.h"
 #define AC_NGHOST__mod__cparam nghost
-//TP: nphis1 and nphis2 don't actually work. simply declared to compile the code
-//
 #include "PC_modulepardecs.h"
 #include "$AC_HOME/acc-runtime/stdlib/optimized_integrators.h"
 #include "$AC_HOME/acc-runtime/stdlib/slope_limited_diffusion.h"
@@ -209,7 +207,6 @@ const int AC_ij_table__mod__gravitational_waves_htxk = [
 					[4,2,5],
 					[6,5,3]
 				       ]
-gmem real AC_nphis1__mod__cdata[AC_mlocal.y]
 const real AC_arms__mod__magnetic = 0.0
 
 #if LDUSTVELOCITY
