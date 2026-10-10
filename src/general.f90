@@ -7761,6 +7761,8 @@ iloop:do i=1,size(list2)
         dst = enum_test1_string
       case('alpha_attractors_corrected')
         dst = enum_alpha_attractors_corrected_string
+      case('/bvec')
+        dst = enum_Zbvec_string
       case('waterfall')
         dst = enum_waterfall_string
       case('imposed-cs2-core')
