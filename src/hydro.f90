@@ -4884,7 +4884,7 @@ module Hydro
         if (idiag_rux2m/=0) call sum_mn_name(p%rho*p%uu(:,1)**2,idiag_rux2m)
         if (idiag_ruy2m/=0) call sum_mn_name(p%rho*p%uu(:,2)**2,idiag_ruy2m)
         if (idiag_ruz2m/=0) call sum_mn_name(p%rho*p%uu(:,3)**2,idiag_ruz2m)
-        if (idiag_Rerms/=0 .or. idiag_Remax/=0 .or. & 
+        if (idiag_Rerms/=0 .or. idiag_Remax/=0 .or. &
             idiag_Reph1rms/=0 .or. idiag_Reph2rms/=0 .or. idiag_Reph3rms/=0 .or.&
             idiag_Reph1max/=0 .or. idiag_Reph2max/=0 .or. idiag_Reph3max/=0) then
           call dot2(p%fvisc,fvisc2)
@@ -4894,10 +4894,10 @@ module Hydro
         if (idiag_Reph1rms/=0) call sum_mn_name(Re2,idiag_Reph1rms,MASK=(p%ss <=ssmask1))
         if (idiag_Reph2rms/=0) call sum_mn_name(Re2,idiag_Reph2rms,MASK=(p%ss > ssmask1 .and. p%ss <= ssmask2))
         if (idiag_Reph3rms/=0) call sum_mn_name(Re2,idiag_Reph3rms,MASK=(p%ss > ssmask2))
-        if (idiag_Rerms/=0) call max_mn_name(Re2,idiag_Remax)
-        if (idiag_Reph1rms/=0) call max_mn_name(Re2,idiag_Reph1max,MASK=(p%ss <=ssmask1))
-        if (idiag_Reph2rms/=0) call max_mn_name(Re2,idiag_Reph2max,MASK=(p%ss > ssmask1 .and. p%ss <= ssmask2))
-        if (idiag_Reph3rms/=0) call max_mn_name(Re2,idiag_Reph3max,MASK=(p%ss > ssmask2))
+        if (idiag_Remax/=0) call max_mn_name(Re2,idiag_Remax)
+        if (idiag_Reph1max/=0) call max_mn_name(Re2,idiag_Reph1max,MASK=(p%ss <=ssmask1))
+        if (idiag_Reph2max/=0) call max_mn_name(Re2,idiag_Reph2max,MASK=(p%ss > ssmask1 .and. p%ss <= ssmask2))
+        if (idiag_Reph3max/=0) call max_mn_name(Re2,idiag_Reph3max,MASK=(p%ss > ssmask2))
         if (ekman_friction/=0 .and. friction_tdep=='Thomson' .and. idiag_pradrc2/=0) then
           arad_normal=real(4*sigmaSB/c_light)
           pradrc2=real(onethird*arad_normal*p%TT**4/(p%rho*c_light**2))

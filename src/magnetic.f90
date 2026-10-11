@@ -3456,8 +3456,10 @@ module Magnetic
 
       if (idiag_uxBrms/=0.or. idiag_Rmmz/=0 .or. &
           idiag_Rmrms/=0.or.idiag_Rmph1rms/=0.or.idiag_Rmph2rms/=0.or.idiag_Rmph3rms/=0.or. &
-          idiag_Rmmax/=0.or.idiag_Rmph1max/=0.or.idiag_Rmph2max/=0.or.idiag_Rmph3max/=0 ) &
+          idiag_Rmmax/=0.or.idiag_Rmph1max/=0.or.idiag_Rmph2max/=0.or.idiag_Rmph3max/=0 ) then
           lpenc_diagnos(i_uxb2)=.true.
+          lpenc_diagnos(i_fres)=.true.
+      endif
       if (idiag_beta1m/=0 .or. idiag_beta1max/=0 .or. idiag_beta1mz/=0) &
           lpenc_diagnos(i_beta1)=.true.
       if (idiag_betam /= 0 .or. idiag_betamax /= 0 .or. idiag_betamin /= 0 .or. &
@@ -3589,7 +3591,7 @@ module Magnetic
                        'include as required fracvph1mz, ph2 and/or ph3 in video.in')
       endif
       if (idiag_Rmph1rms/=0 .or. idiag_Rmph2rms/=0 .or. idiag_Rmph3rms/=0.or. &
-          idiag_Rmph1rms/=0 .or. idiag_Rmph2rms/=0 .or. idiag_Rmph3rms/=0) then
+          idiag_Rmph1max/=0 .or. idiag_Rmph2max/=0 .or. idiag_Rmph3max/=0) then
         lpenc_diagnos(i_ss)=.true.
         call warning('pencil_criteria_magnetic', &
                        'include as required fracvph1m, ph2 and/or ph3 in print.in')
@@ -4228,7 +4230,7 @@ module Magnetic
             f(l1:l2,m,n,ibx:ibz) = bb
           endif
         enddo
-        call update_ghosts(f, ibx, ibz) 
+        call update_ghosts(f, ibx, ibz)
       endif
     endsubroutine magnetic_before_boundary_diagnostics
 !***********************************************************************
@@ -5826,7 +5828,7 @@ module Magnetic
 !      if (headtt) print*, 'daa_dt: iresistivity=', iresistivity
 !
       fres=p%fres
-      diffus_eta2=p%diffus_eta2 
+      diffus_eta2=p%diffus_eta2
       diffus_eta3=p%diffus_eta3
       diffus_eta=p%diffus_eta
 !!
@@ -12231,7 +12233,7 @@ print*,'AXEL2: should not be here (eta) ... '
     subroutine calc_pencils_magnetic_fres(f,p)
 !
 !  05-oct-2026/fred: carved from daa_dt
-!                    pencils available for diagnostics 
+!                    pencils available for diagnostics
 !
       use Sub
       use Deriv, only: der6
@@ -12395,7 +12397,7 @@ print*,'AXEL2: should not be here (eta) ... '
             p%fres(:,2)=p%fres(:,2)+geta_y(m)*p%diva
           endif
         endif
-!!  
+!!
 !!    Note that one has to use eta_hyper2 < 0 to have diffusion.
 !!    I would have defined the sign the other way around (AB).
 !
@@ -12433,7 +12435,7 @@ print*,'AXEL2: should not be here (eta) ... '
           enddo
           if (ldiffus_eta3) p%diffus_eta3=p%diffus_eta3+eta_hyper3*pi4_1*dxmin_pencil**4
         endif
-!!  
+!!
 !  FG: moving this call from daa_dt to calc_pencils_magnetic_fres changes results for samples
 !      cylindrical-globaldisk-dzone and spherical-globaldisk-mhd, but diagnostics
 !      using this fres may be incomplete for GPUs
@@ -12484,7 +12486,7 @@ print*,'AXEL2: should not be here (eta) ... '
             advec2_hypermesh=advec2_hypermesh+advec_hypermesh_aa**2
           endif
         endif
-!  
+!
         if (lresi_hyper3_strict) then
           p%fres=p%fres+eta_hyper3*f(l1:l2,m,n,ihypres:ihypres+2)
           if (ldiffus_eta3) p%diffus_eta3=p%diffus_eta3+eta_hyper3
@@ -12766,7 +12768,7 @@ print*,'AXEL2: should not be here (eta) ... '
         endif
 !
 !!    Ambipolar diffusion in the strong coupling approximation.
-!!  
+!!
         if (lambipolar_diffusion) then
           do j=1,3
             p%fres(:,j)=p%fres(:,j)+p%nu_ni1*p%jxbrxb(:,j)
