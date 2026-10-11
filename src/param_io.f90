@@ -185,7 +185,7 @@ module Param_IO
       test_nonblocking, lwrite_tracers, lwrite_fsum, lwrite_fixed_points, lwrite_ts_hdf5, &
       lread_oldsnap_lnrho2rho, lread_oldsnap_nomag, lread_oldsnap_noGW, lread_oldsnap_notestflow, lread_oldsnap_nopscalar, &
       lread_oldsnap_notestfield, lread_oldsnap_notestscalar, lread_oldsnap_noshear, lrepair_snap, linterpol_on_repair, &
-      lread_oldsnap_nohydro, lread_oldsnap_nohydro_efield, lread_oldsnap_nohydro_ekfield, &
+      lread_oldsnap_noecr, lread_oldsnap_nohydro, lread_oldsnap_nohydro_efield, lread_oldsnap_nohydro_ekfield, &
       lread_oldsnap_noisothmhd, lread_oldsnap_onlyA, lastaroth_output, astaroth_dest, lbackup_snap, &
       lastaroth_input, astaroth_src, &
       nsnap_backups, &
