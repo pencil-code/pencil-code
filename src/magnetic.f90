@@ -3454,7 +3454,7 @@ module Magnetic
           .or. idiag_uxbsmx/=0 .or. idiag_uxbsmy/=0 &
           .or. idiag_Expt/=0 .or. idiag_Eypt/=0 .or. idiag_Ezpt/=0) lpenc_diagnos(i_uxbb)=.true.
 
-      if (idiag_uxBrms/=0.or. idiag_Rmmz/=0 .or. &
+      if (idiag_uxBrms/=0.or. idiag_Rmmz/=0 .or. idiag_Bresrms .or. &
           idiag_Rmrms/=0.or.idiag_Rmph1rms/=0.or.idiag_Rmph2rms/=0.or.idiag_Rmph3rms/=0.or. &
           idiag_Rmmax/=0.or.idiag_Rmph1max/=0.or.idiag_Rmph2max/=0.or.idiag_Rmph3max/=0 ) then
           lpenc_diagnos(i_uxb2)=.true.
