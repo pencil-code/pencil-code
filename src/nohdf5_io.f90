@@ -8,46 +8,9 @@ module HDF5_IO
   use Cdata
   use Quiet
   use General, only: itoa, numeric_precision
-  use Messages, only: svn_id,fatal_error
+  use Messages, only: svn_id,fatal_error,not_implemented
 !
   implicit none
-!
-  interface hdf5_input_slice
-    module procedure input_slice_real_arr
-    module procedure input_slice_scat_arr
-  endinterface
-!
-  interface input_hdf5
-    module procedure input_hdf5_int_0D
-    module procedure input_hdf5_int_1D
-    module procedure input_hdf5_0D
-    module procedure input_hdf5_1D
-    module procedure input_hdf5_part_2D
-    module procedure input_hdf5_profile_1D
-    module procedure input_hdf5_3D
-    module procedure input_hdf5_4D
-  endinterface
-!
-  interface output_hdf5
-    module procedure output_hdf5_string
-    module procedure output_hdf5_int_0D
-    module procedure output_hdf5_int_1D
-    module procedure output_hdf5_0D
-    module procedure output_hdf5_1D
-    module procedure output_hdf5_part_2D
-    module procedure output_hdf5_profile_1D
-    module procedure output_local_hdf5_2D
-    module procedure output_hdf5_slice_2D
-    module procedure output_local_hdf5_3D
-    module procedure output_hdf5_3D
-    module procedure output_local_hdf5_4D
-    module procedure output_hdf5_4D
-  endinterface
-!
-  interface output_hdf5_double
-    module procedure output_hdf5_double_0D
-    module procedure output_hdf5_double_1D
-  endinterface
 !
   include 'hdf5_io.h'
 !
@@ -76,6 +39,8 @@ module HDF5_IO
     endsubroutine init_hdf5
 !***********************************************************************
     subroutine finalize_hdf5
+!
+      call fatal_error ('finalize_hdf5', 'You can not use HDF5 without setting an HDF5_IO module')
 !
     endsubroutine finalize_hdf5
 !***********************************************************************
@@ -121,6 +86,17 @@ module HDF5_IO
       exists_in_hdf5 = .false.
 !
     endfunction exists_in_hdf5
+!***********************************************************************
+    subroutine input_hdf5_string(name, data)
+!
+      character (len=*), intent(in) :: name
+      character (len=*), intent(out) :: data
+
+      call fatal_error ('input_hdf5_string', 'You can not use HDF5 without setting an HDF5_IO module')
+      call keep_compiler_quiet(name)
+      data=''
+
+    endsubroutine input_hdf5_string
 !***********************************************************************
     subroutine input_hdf5_int_0D(name, data)
 !
@@ -204,6 +180,20 @@ module HDF5_IO
 !
     endsubroutine input_hdf5_profile_1D
 !***********************************************************************
+    subroutine input_hdf5_2D(name, gdims, iprocs, data, lerrcont)
+
+      character (len=*),     intent(in) :: name
+      integer, dimension(2), intent(in) :: gdims, iprocs
+      real, dimension (:,:), intent(out):: data
+      logical, optional, intent(INOUT) :: lerrcont
+!
+      call fatal_error ('input_hdf5_2D', 'You can not use HDF5 without setting an HDF5_IO module')
+      call keep_compiler_quiet(name)
+      call keep_compiler_quiet(gdims,iprocs)
+      call keep_compiler_quiet(data)
+
+    endsubroutine input_hdf5_2D
+!***********************************************************************
     subroutine input_hdf5_3D(name, data, lghost)
 !
       character (len=*), intent(in) :: name
@@ -238,6 +228,19 @@ module HDF5_IO
       call keep_compiler_quiet(name,data)
 !
     endsubroutine output_hdf5_string
+!***********************************************************************
+    subroutine output_hdf5_torus_rect(name, data)
+!
+      use Geometrical_types, only: torus_rect
+
+      character (len=*), intent(in) :: name
+      type(torus_rect), intent(in) :: data
+
+      call fatal_error ('output_hdf5_torus_rect', 'You can not use HDF5 without setting an HDF5_IO module')
+      call keep_compiler_quiet(name)
+      call keep_compiler_quiet(data%height)
+!
+    endsubroutine output_hdf5_torus_rect
 !***********************************************************************
     subroutine output_hdf5_int_0D(name, data)
 !
@@ -288,6 +291,23 @@ module HDF5_IO
       call keep_compiler_quiet(.true., same_size)
 !
     endsubroutine output_hdf5_1D
+!***********************************************************************
+    subroutine output_hdf5_pencil_1D(name, data, py, pz)
+!
+!  Write HDF5 dataset from penciled data.
+!
+!  24-Jun-2019/PABourdin: coded
+!
+      character (len=*), intent(in) :: name
+      real, dimension (nx), intent(in) :: data
+      integer, intent(in) :: py, pz
+!
+      call fatal_error ('output_hdf5_pencil_1D', 'You can not use HDF5 without setting an HDF5_IO module')
+      call keep_compiler_quiet(name)
+      call keep_compiler_quiet(data)
+      call keep_compiler_quiet(py,pz)
+!
+    endsubroutine output_hdf5_pencil_1D
 !***********************************************************************
     subroutine output_hdf5_part_2D(name, data, mv, nc, nv)
 !
@@ -401,7 +421,7 @@ module HDF5_IO
 !
     endsubroutine output_local_hdf5_4D
 !***********************************************************************
-    subroutine output_hdf5_4D(name, data, nv, compress)
+    subroutine output_hdf5_4D(name, data, nv,compress)
 !
       character (len=*), intent(in) :: name
       integer, intent(in) :: nv
@@ -625,6 +645,25 @@ module HDF5_IO
       close(lun_input)
 !
     endsubroutine input_slice_scat_arr
+!***********************************************************************
+    subroutine input_slice_2D(datadir, time, label, suffix, pos, data)
+!
+!  read a slice file
+!
+!  24-may-19/MR: coded
+!
+      character(len=*), intent(in) :: datadir, label, suffix
+      real, dimension(:), intent(out) :: time
+      real, intent(out) :: pos
+      real, dimension(:,:,:), intent(out) :: data
+
+      call not_implemented('input_slice_2D', 'in nohdf5_io')
+      call keep_compiler_quiet(datadir,label,suffix)
+      call keep_compiler_quiet(time)
+      call keep_compiler_quiet(pos)
+      call keep_compiler_quiet(data)
+
+    end subroutine input_slice_2D      
 !***********************************************************************
     subroutine hdf5_output_slice_position
 !
@@ -1063,7 +1102,7 @@ module HDF5_IO
           read(lun_input, *, iostat=ioerr) tmp
         endif
       enddo
-      if (time >= t) num_rec = num_rec - 1
+      if (time >= t) num_rec = num_rec - 1          !MR: time == t?
 !
       if ((time >= t) .and. (ioerr == 0)) then
         ! trim excess data at the end of the average file

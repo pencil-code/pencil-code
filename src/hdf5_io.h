@@ -6,6 +6,47 @@
   public :: output_timeseries, output_settings
   public :: output_dim, output_average, trim_average
 !
+  interface input_hdf5
+    module procedure input_hdf5_string
+    module procedure input_hdf5_int_0D
+    module procedure input_hdf5_int_1D
+    module procedure input_hdf5_0D
+    module procedure input_hdf5_1D
+    module procedure input_hdf5_part_2D
+    module procedure input_hdf5_profile_1D
+    module procedure input_hdf5_2D
+    module procedure input_hdf5_3D
+    module procedure input_hdf5_4D
+  endinterface
+!
+  interface hdf5_input_slice
+    module procedure input_slice_2D
+    module procedure input_slice_real_arr
+    module procedure input_slice_scat_arr
+  endinterface
+!
+  interface output_hdf5
+    module procedure output_hdf5_string
+    module procedure output_hdf5_int_0D
+    module procedure output_hdf5_int_1D
+    module procedure output_hdf5_0D
+    module procedure output_hdf5_1D
+    module procedure output_hdf5_pencil_1D
+    module procedure output_hdf5_part_2D
+    module procedure output_hdf5_profile_1D
+    module procedure output_local_hdf5_2D
+    module procedure output_hdf5_slice_2D
+    module procedure output_local_hdf5_3D
+    module procedure output_hdf5_3D
+    module procedure output_hdf5_4D
+    module procedure output_hdf5_torus_rect
+  endinterface
+!
+  interface output_hdf5_double
+    module procedure output_hdf5_double_0D
+    module procedure output_hdf5_double_1D
+  endinterface
+!
   interface output_average
     module procedure output_average_1D
     module procedure output_average_1D_chunked
