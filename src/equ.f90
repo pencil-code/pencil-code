@@ -1514,16 +1514,17 @@ module Equ
         n=nn(imn)
         m=mm(imn)
 
-        !if (imn_array(m,n)==0) cycle
+        if (.not.lgpu) then
+          if (imn_array(m,n)==0) cycle
 !
 !  Skip points not belonging to coarse grid.
 !
-        ! Not active for the GPU
-        !lcoarse_mn=lcoarse.and.mexts(1)<=m.and.m<=mexts(2)
-        !if (lcoarse_mn) then
-        !  lcoarse_mn=lcoarse_mn.and.ninds(0,m,n)>0
-        !  if (ninds(0,m,n)<=0) cycle
-        !endif
+          lcoarse_mn=lcoarse.and.mexts(1)<=m.and.m<=mexts(2)
+          if (lcoarse_mn) then
+            lcoarse_mn=lcoarse_mn.and.ninds(0,m,n)>0
+            if (ninds(0,m,n)<=0) cycle
+          endif
+        endif
 !
 !  Store the velocity part of df array in a temporary array
 !  while solving the anelastic case.
@@ -1628,6 +1629,7 @@ module Equ
         lfirstpoint=.false.
 !
       enddo mn_loop
+      lcoarse_mn=.false.
 !
       if (ltime_integrals.and.llast) then
         if (lhydro) call update_for_time_integrals_hydro
@@ -1774,7 +1776,18 @@ module Equ
 
         n=nn(imn)
         m=mm(imn)
-        !if (imn_array(m,n)==0) cycle
+
+        if (.not.lgpu) then
+          if (imn_array(m,n)==0) cycle
+!
+!  Skip points not belonging to coarse grid.
+!
+          lcoarse_mn=lcoarse.and.mexts(1)<=m.and.m<=mexts(2)
+          if (lcoarse_mn) then
+            lcoarse_mn=lcoarse_mn.and.ninds(0,m,n)>0
+            if (ninds(0,m,n)<=0) cycle
+          endif
+        endif
 !
 !  Recalculate grid/geometry related pencils. The r_mn and rcyl_mn are requested
 !  in pencil_criteria_grid. Unfortunately we need to recalculate them here.
@@ -1920,7 +1933,8 @@ module Equ
 !
         headtt=.false.
 !
-      enddo
+      enddo     !  mn-loop
+      lcoarse_mn=.false.
 !
     endsubroutine freeze
 !***********************************************************************
