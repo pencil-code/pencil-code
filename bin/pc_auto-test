@@ -195,6 +195,7 @@ my %tests = (
                          helical-MHDturb_HDF5
                          helical-MHDturb-noncube
 			 supernova-driven-turbulence/cosmic_ray_ism
+                         output_times
                          power_xy/complex
                          power_xy/complex_iodist
                          power_xy/complex_lpowerxyhdf5/nprocx_2
