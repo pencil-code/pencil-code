@@ -15,47 +15,6 @@ module HDF5_IO
 !
   implicit none
 !
-  interface input_hdf5
-    module procedure input_hdf5_string
-    module procedure input_hdf5_int_0D
-    module procedure input_hdf5_int_1D
-    module procedure input_hdf5_0D
-    module procedure input_hdf5_1D
-    module procedure input_hdf5_part_2D
-    module procedure input_hdf5_profile_1D
-    module procedure input_hdf5_2D
-    module procedure input_hdf5_3D
-    module procedure input_hdf5_4D
-  endinterface
-!
-  interface output_hdf5
-    module procedure output_hdf5_string
-    module procedure output_hdf5_int_0D
-    module procedure output_hdf5_int_1D
-    module procedure output_hdf5_0D
-    module procedure output_hdf5_1D
-    module procedure output_hdf5_pencil_1D
-    module procedure output_hdf5_part_2D
-    module procedure output_hdf5_profile_1D
-    module procedure output_local_hdf5_2D
-    module procedure output_hdf5_slice_2D
-    module procedure output_local_hdf5_3D
-    module procedure output_hdf5_3D
-    module procedure output_local_hdf5_4D
-    module procedure output_hdf5_4D
-  endinterface
-!
-  interface hdf5_input_slice
-    module procedure input_slice_2D
-    module procedure input_slice_real_arr
-    module procedure input_slice_scat
-  endinterface
-!
-  interface output_hdf5_double
-    module procedure output_hdf5_double_0D
-    module procedure output_hdf5_double_1D
-  endinterface
-!
   include 'hdf5_io.h'
 !
   private
@@ -2271,7 +2230,7 @@ module HDF5_IO
 !
     endsubroutine input_slice_real_arr
 !***********************************************************************
-    subroutine input_slice_scat(file, pos, data, ind, nt)
+    subroutine input_slice_scat_arr(file, pos, data, ind, nt)
 !
 !  dummy
 !
@@ -2290,7 +2249,7 @@ module HDF5_IO
       call keep_compiler_quiet (pos)
       call keep_compiler_quiet (ind,nt)
 !
-    endsubroutine input_slice_scat
+    endsubroutine input_slice_scat_arr
 !***********************************************************************
     subroutine input_slice_2D(datadir, time, label, suffix, pos, data)
 !
