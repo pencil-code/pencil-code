@@ -4394,21 +4394,7 @@ use Sub, only: dot2_mn
 !     assign_slices_after_ts calls) belong in get_slices_*.
 !
 !     09-Oct-2026/Kishore: added dummy
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (slice_data) :: slices
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(slices%ready)
-!
-    endsubroutine get_fslices_density
-!***********************************************************************
-    subroutine get_slices_density(f,slices)
-!
-!  Write slices for animation of Density variables.
-!
-!  26-jul-06/tony: coded
-!  10-feb-15/MR: adaptations for reference state
+!     12-Oct-2026/Kishore: moved f-array accesses from get_slices_density
 !
       use Slices_methods
 
@@ -4421,12 +4407,12 @@ use Sub, only: dot2_mn
       name=trim(slices%name)
       if (name=='rho' .or. name=='lnrho') then
 !
-        call assign_slices_scal(slices,f,ilnrho)
+        call assign_slices_before_ts(slices,f,ilnrho)
 
         if (lfullvar_in_slices) &      ! implies ldensity_nolog=T
           call addto_slices(slices,reference_state(:,iref_rho))
 !
-        select case (trim(slices%name))
+        select case (name)
 !
 !  Density.
 !
@@ -4445,6 +4431,22 @@ use Sub, only: dot2_mn
         endselect
 !
       endif
+!
+    endsubroutine get_fslices_density
+!***********************************************************************
+    subroutine get_slices_density(f,slices)
+!
+!  Write slices for animation of Density variables.
+!
+!  26-jul-06/tony: coded
+!  10-feb-15/MR: adaptations for reference state
+!  12-Oct-2026/Kishore: moved f-array accesses to get_fslices_density
+!
+      real, contiguous, dimension(:,:,:,:) :: f
+      type (slice_data) :: slices
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(slices%ready)
 !
     endsubroutine get_slices_density
 !***********************************************************************
