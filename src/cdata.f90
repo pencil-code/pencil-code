@@ -522,6 +522,7 @@ module Cdata
   logical :: ldisp_current = .false.
   logical :: lperturbative_reheating=.false., lreheating_vacuum=.false., lreheating_hom=.false. ! Sovan
   real :: density_scale_factor=impossible
+  logical :: lspecial_early_finalize = .false. !set this to T in your special module if it requires early finalization
 !
 !  Used together with entropy, turns iss into ilntt (i.e., entropy
 !  becomes log temperature). It does the same as using the
