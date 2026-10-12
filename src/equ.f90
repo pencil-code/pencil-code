@@ -166,7 +166,7 @@ module Equ
 !                     lslope_limit_diff .or. lvisc_smag .or. &
                      lvisc_smag .or. ltraining .or. &
                      lyinyang .or. lgpu .or. &   !!!
-                     ncoarse>1
+                     ncoarse>1 .or. lspecial_early_finalize
 !
 !  Write crash snapshots to the hard disc if the time-step is very low.
 !  The user must have set crash_file_dtmin_factor>0.0 in &run_pars for
