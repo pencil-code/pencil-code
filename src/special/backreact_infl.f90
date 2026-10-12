@@ -331,6 +331,12 @@ module Special
       real, contiguous, dimension(:,:,:,:) :: f
       integer :: iLCDM_lna
 !
+!     Required for a2rhogphim diagnostic which calculates gradient in special_after_boundary
+!     Kishore: setting to F right now to avoid breaking the Schwinger autotest; Axel,
+!     if you agree that this is needed, please set this to T and update the reference data.
+!
+      lspecial_early_finalize = .false.
+!
       iaae =farray_index_by_name('aae')
       if (iaae<0) iaae=0
 !
@@ -1789,6 +1795,7 @@ module Special
         ! alberto: this function is called from special_after_boundary so shouldn't have the ghost zones updated?
         !TP: Not necessarily, since if learly_finalize=.false. it can be that the halo exchange has not finished
         !    here yet.
+        !Kishore: added lspecial_early_finalize flag for this.
         call dot2_mn(gphi,gphi2)
         a2rhogphim=a2rhogphim+sum(0.5*gphi2)
 !
