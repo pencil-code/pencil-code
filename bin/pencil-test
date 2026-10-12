@@ -407,18 +407,31 @@ sub build_remote_cmd {
 
     my $remcmd = "";
     if ($gpu) { 
-	$remcmd .= '(
+	# Try to pull each repo; if that fails (or it is missing), wipe it and clone afresh.
+	$remcmd .= '
+	(
 	  cd '.$pencil_home.'/src/astaroth &&
-	  if [ -d submodule/.git ]; then
-	    cd submodule &&
-	    git pull origin pencil-a > /dev/null 2>&1 &&
-	    git checkout pencil-a > /dev/null 2>&1 &&
-	    cd '.$pencil_home.'/fortran-parser &&
-	    git pull origin main > /dev/null 2>&1
-	  else
-	    ((rm -rf '.$pencil_home.'/src/astaroth/submodule && cd '.$pencil_home.'/src/astaroth && git clone https://bitbucket.org/jpekkila/astaroth.git > /dev/null 2>&1 && cd astaroth && git checkout develop > /dev/null 2>&1 && cd .. && mv astaroth submodule && cd '.$pencil_home.' && rm -rf fortran-parser && git clone https://github.com/toxpuro/fortran-parser.git > /dev/null 2>&1) || echo "UPDATE ERROR: was not able to clone the submodules")
-	  fi
-	) || echo "UPDATE ERROR: was not able to update or clone the submodules";
+	  [ -d submodule/.git ] &&
+	  cd submodule &&
+	  git checkout pencil-a > /dev/null 2>&1 &&
+	  git pull origin pencil-a > /dev/null 2>&1
+	) || (
+	  cd '.$pencil_home.'/src/astaroth &&
+	  rm -rf submodule &&
+	  git clone https://bitbucket.org/jpekkila/astaroth.git submodule > /dev/null 2>&1 &&
+	  cd submodule &&
+	  git checkout pencil-a > /dev/null 2>&1
+	) || echo "UPDATE ERROR: was not able to update or clone the Astaroth submodule";
+	(
+	  cd '.$pencil_home.' &&
+	  [ -d fortran-parser/.git ] &&
+	  cd fortran-parser &&
+	  git pull origin main > /dev/null 2>&1
+	) || (
+	  cd '.$pencil_home.' &&
+	  rm -rf fortran-parser &&
+	  git clone https://github.com/toxpuro/fortran-parser.git > /dev/null 2>&1
+	) || echo "UPDATE ERROR: was not able to update or clone fortran-parser";
 	';
     #2026-May-13/Kishore: rather than the above it would be much cleaner to just do
     #2026-May-13/Kishore: `git submodule update --init --recursive`, but I am
