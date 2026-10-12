@@ -1329,7 +1329,7 @@ endsubroutine helper_loop
 !
 !  Save spectrum snapshot.
 !
-  if (dspec/=impossible) call powersnap(f)
+  if (dspec/=impossible .or. itspec/=impossible_int) call powersnap(f)
 !
 !  Initialize pencils in the pencil_case.
 !
