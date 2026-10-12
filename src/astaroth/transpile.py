@@ -4,7 +4,13 @@ from pathlib import Path
 import subprocess
 
 def run_cmd(command):
-    p = subprocess.run(command, shell=True, capture_output=True, universal_newlines=True)
+    p = subprocess.run(
+      command,
+      shell=True,
+      stdout=subprocess.PIPE,
+      stderr=subprocess.PIPE,
+      universal_newlines=True
+    )
     if p.returncode != 0:
         raise RuntimeError(f"""Running `{command}` failed with return code {p.returncode}.
 STDOUT:
@@ -51,6 +57,7 @@ def main():
     os.system("mv cparam.h DSL/local")
     os.system("mv static_var_declares.h DSL/local")
     os.system("ln -s $PENCIL_HOME/src/astaroth/DSL/solve.ac DSL/local")
+
 
 if __name__ == "__main__":
     main()
