@@ -334,7 +334,7 @@ module Io
 !
     endsubroutine output_average_2D
 !***********************************************************************
-    subroutine output_slice_position()
+    subroutine output_slice_position
 !
 !  Record slice positions.
 !
@@ -342,7 +342,7 @@ module Io
 !
       use HDF5_IO, only: hdf5_output_slice_position
 !
-      call hdf5_output_slice_position()
+      call hdf5_output_slice_position
 !
     endsubroutine output_slice_position
 !***********************************************************************

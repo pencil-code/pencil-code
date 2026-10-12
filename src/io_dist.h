@@ -363,7 +363,8 @@
             endif
           
             call system_cmd( &
-              'echo From `pwd`'//trim(mailstr)//"|"//trim(mailcmd)//" -s 'PencilCode Message' "//trim(mailaddress)//' >& /dev/null')
+              'echo From `pwd` on '//trim(submithost)//': '//trim(mailstr)//"|"//trim(mailcmd)// &
+              " -s 'PencilCode Message' "//trim(mailaddress)//' >& /dev/null')
           endif
         endif
       endif
