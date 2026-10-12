@@ -3571,7 +3571,7 @@ module Hydro
 !
     endsubroutine input_persist_hydro
 !***********************************************************************
-    logical function output_persistent_hydro
+    logical function output_persistent_hydro()
 !
 !  Writes out the time of the next random phase calculation.
 !
