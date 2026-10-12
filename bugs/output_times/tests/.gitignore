@@ -1,0 +1,3 @@
+*.out
+*.out.old
+__pycache__
