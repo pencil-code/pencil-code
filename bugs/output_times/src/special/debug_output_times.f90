@@ -137,12 +137,11 @@ module Special
 !
     endsubroutine rprint_special
 !***********************************************************************
-    subroutine get_slices_special(f,slices)
+    subroutine get_fslices_special(f,slices)
 !
-!     Since there seem to be two different ways of outputting slices, we use
-!     both of them here to check that they behave the same way.
+!     Slices directly taken from the f-array
 !
-      use Slices_methods, only: assign_slices_scal
+      use Slices_methods
 !
       real, contiguous, dimension(:,:,:,:) :: f
       type(slice_data) :: slices
@@ -150,10 +149,25 @@ module Special
       select case (trim(slices%name))
 !
       case ('special')
-        call assign_slices_scal(slices,f,ispecial)
+        call assign_slices_before_ts(slices,f,ispecial)
+!
+      endselect
+!
+    endsubroutine get_fslices_special
+!***********************************************************************
+    subroutine get_slices_special(f,slices)
+!
+!     Slices calculated from pencils
+!
+      use Slices_methods
+!
+      real, contiguous, dimension(:,:,:,:) :: f
+      type(slice_data) :: slices
+!
+      select case (trim(slices%name))
 !
       case ('specialpenc')
-        call assign_slices_scal(slices,spp_xy,spp_xz,spp_yz,spp_xy2,spp_xy3,spp_xy4,spp_xz2,spp_r)
+        call assign_slices_after_ts(slices,spp_xy,spp_xz,spp_yz,spp_xy2,spp_xy3,spp_xy4,spp_xz2,spp_r)
 !
       endselect
 !
