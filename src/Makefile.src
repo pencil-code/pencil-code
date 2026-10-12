@@ -3399,19 +3399,6 @@ ifeq ($(wildcard $(DSL_WORKDIR)/solve_two.ac),)
 	@sed -e'/auxiliary / ! d' $(DSL_WORKDIR)/fieldecs.h > tmpdec
 	@sed -i -e'/^ *\/\// d' -e'/auxiliary/ d' $(DSL_WORKDIR)/fieldecs.h
 	@cat tmpdec | sed -e's/communicated //' -e's/auxiliary //' >> $(DSL_WORKDIR)/fieldecs.h; rm tmpdec
-	@sed -f $(CUDA_MAKEDIR)/solve.sed $(DSL_WORKDIR)/solve.ac > $(DSL_WORKDIR)/solve_two.ac
-	@echo '}' >> sedtmp; cat sedtmp >> $(DSL_WORKDIR)/solve_two.ac; rm -f sedtmp
-	@mv $(DSL_WORKDIR)/solve.ac $(DSL_WORKDIR)/solve_single.ac
-  ifeq ($(HYDRO),hydro)
-    ifneq ($(FORCING),noforcing)
-	@if ( ! grep 'forcing/getforce\.h' $(DSL_WORKDIR)/solve_single.ac > /dev/null ); then \
-	sed -i -e'/singlepass_solve/ i   \#include "../forcing/getforce.h"\n' -e'/write( *UU/ s/) *$$/ + get_deltacorr_force(step_num) )/' $(DSL_WORKDIR)/solve_single.ac; \
-	fi
-	@if ( ! grep 'forcing/getforce\.h' $(DSL_WORKDIR)/solve_two.ac> /dev/null ); then \
-	sed -i -e'/twopass_solve_final/ i   \#include "../forcing/getforce.h"\n' -e'/write( *UU.*final/ s/) *$$/ + get_deltacorr_force(step_num) )/' $(DSL_WORKDIR)/solve_two.ac; \
-	fi
-    endif
-  endif
 endif
 
 #	@sed -e':loop' -e'N' -e'$$!b loop' -e's/\#pragma  *once//' -e's/\# *define *\([A-Z0-9_][A-Z0-9_]*\)/..\/..\/\L\1.f90 /g' -e's/\n/ /g' < $(CUDA_INCDIR)/PC_moduleflags.h >> $(CUDA_MAKEDIR)/PC_modulesources.h
