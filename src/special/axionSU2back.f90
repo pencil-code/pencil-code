@@ -44,13 +44,13 @@ module Special
 !
   ! input parameters
   real :: a, k0=1e-2, dk=1e-2, ascale_ini=1.
-  real :: fdecay=.003, g=1.11e-2, lam=500., mu=1.5e-4
+  real :: fdecay=.003, g=1.11e-2, lam=500., mu=impossible
   real :: Q0=3e-4, Qdot0=0., chi_prefactor=.49, chidot0=impossible, H=1.04e-6
   real :: H_init
   real :: Mpl2=1., Hdot=0., lamf, Hscript
   real :: m_inflaton=1.275e-7, m_phi=1.275e-7, inflaton_ini=16., phi_ini=16.
   real :: alpha=0.1, m_alpha=3.285e-11, n_alpha=1.5
-  real :: mscal=0., sgn_g=-1.
+  real :: mscal=0., sgn_g=-1., mQ0=impossible
   real, dimension (nx) :: grand, grant, dgrant, rhoT, JJ_R, JJ_L
   real, dimension (nx) :: xmask_axion
   real, dimension (2) :: axion_sum_range=(/0.,1./)
@@ -78,13 +78,14 @@ module Special
   logical :: lalways_backreact_output=.false.
   character(len=50) :: init_axionSU2back='standard'
   character (len=labellen) :: V_choice='quadratic'
+  character (len=labellen) :: alpha_attractors_choice='incorrect'
   namelist /special_init_pars/ &
     k0, dk, fdecay, g, lam, mu, Q0, Qdot0, chi_prefactor, chidot0, H, &
     lconf_time, Ndivt, lanalytic, lvariable_k, axion_sum_range, &
     llnk_spacing_adjustable, llnk_spacing, lim_psi_TR, lleft_psiL_TL, &
     nmin0, nmax0, ldo_adjust_krange, lswap_sign, sgn, m_inflaton, m_phi, &
     inflaton_ini, lhubble, V_choice, phi_ini, alpha, m_alpha, n_alpha, &
-    lSchwinger_scalar, mscal, sgn_g
+    alpha_attractors_choice, lSchwinger_scalar, mscal, sgn_g, mQ0
 !
   ! run parameters
   namelist /special_run_pars/ &
@@ -260,7 +261,7 @@ module Special
       if (lhubble) then
         phidot=0.
         select case (V_choice)
-          case ('alpha_attractors','alpha_attractors_corrected')
+          case ('alpha_attractors')
             beta=sqrt(2./(3.*alpha))
             V=alpha*m_alpha*(tanh(beta*phi_ini/2)**2)**n_alpha
           case ('quadratic') ; V=.5*(m_phi*phi_ini)**2
@@ -379,7 +380,7 @@ module Special
               f_ode(iaxi_phi)=phi_ini
               f_ode(iaxi_phidot)=0.
               select case (V_choice)
-                case ('alpha_attractors','alpha_attractors_corrected')
+                case ('alpha_attractors')
                   beta=sqrt(2./(3.*alpha))
                   V=alpha*m_alpha*(tanh(beta*phi_ini/2)**2)**n_alpha
                 case ('quadratic') ; V=.5*(m_phi*phi_ini)**2
@@ -387,9 +388,18 @@ module Special
                   call fatal_error("init_special: No such V_choice: ", trim(V_choice))
               endselect
               H=sqrt(onethird*(.5*f_ode(iaxi_phidot)**2+V))
-              Uprime0=-mu**4/fdecay*sin(chi0/fdecay)
+!
+!  Compute Q0 either based on a given value of mu (if given)
+!  or based on Q0, so mQ0=g*Q0/H.
+!
               Q0=(-Uprime0/(3.*g*lamf*H))**onethird
               xi0=g*Q0/H+H/(g*Q0)
+              if (mu==impossible) then
+                mQ0=g*Q0/H
+                mu=(fdecay/sin(chi0/fdecay)*(6.*xi0*H**2/lamf+3.*lamf*H**4*mQ0**3/g**2))**.25
+              else
+                Uprime0=-mu**4/fdecay*sin(chi0/fdecay)
+              endif
               if (chidot0==impossible) chidot0=2.*H*xi0/lamf
             else
               a=exp(H*t)
@@ -531,7 +541,7 @@ module Special
         phidot=f_ode(iaxi_phidot)
         U=mu**4*(1.+cos(chi/fdecay))
         select case (V_choice)
-          case ('alpha_attractors','alpha_attractors_corrected')
+          case ('alpha_attractors')
             beta=sqrt(2./(3.*alpha))
             V=alpha*m_alpha*(tanh(beta*phi/2)**2)**n_alpha
           case ('quadratic') ; V=.5*(m_phi*phi)**2
@@ -1124,12 +1134,22 @@ module Special
 !
         if (lhubble) then
         select case (V_choice)
+!
+!  sech = 1/cosh
+!
           case ('alpha_attractors')
             beta=sqrt(2./(3.*alpha))
-            Vprime=alpha*m_alpha*n_alpha*beta*tanh(beta*phi/2)*(1./cosh(beta*phi/2)**2)
-          case ('alpha_attractors_corrected')
-            beta=sqrt(2./(3.*alpha))
-            Vprime=2*alpha*m_alpha*n_alpha*beta*tanh(beta*abs(phi)/2)/sinh(beta*phi/2)
+            select case (alpha_attractors_choice)
+              case ('incorrect')
+                Vprime=alpha*m_alpha*n_alpha*beta*tanh(beta*phi/2)*(1./cosh(beta*phi/2)**2)
+              case ('corrected')
+                beta=sqrt(2./(3.*alpha))
+                Vprime=2*alpha*m_alpha*n_alpha*beta*tanh(beta*abs(phi)/2)/sinh(beta*phi/2)
+              case ('corrected_noabs')
+                Vprime=alpha*m_alpha*n_alpha*beta*tanh(beta*phi/2.) &
+                                               *((tanh(beta*phi/2.))**2)**(-1.+n_alpha) &
+                                               *(1./cosh(beta*phi/2)**2)
+            endselect
           case ('quadratic') ; Vprime=m_phi**2*phi
           case default
             call fatal_error("calc_ode_dt", "no such V_choice: "//trim(V_choice))
@@ -1761,7 +1781,7 @@ module Special
         phidot=f_ode(iaxi_phidot)
         U=mu**4*(1.+cos(chi/fdecay))
         select case (V_choice)
-          case ('alpha_attractors','alpha_attractors_corrected')
+          case ('alpha_attractors')
             beta=sqrt(2./(3.*alpha))
             V=alpha*m_alpha*(tanh(beta*phi/2)**2)**n_alpha
           case ('quadratic') ; V=.5*(m_phi*phi)**2
