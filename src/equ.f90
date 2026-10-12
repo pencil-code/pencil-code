@@ -1217,6 +1217,7 @@ module Equ
           if (idiag_Rmesh/=0) call max_mn_name(pi_1*maxadvec/(maxdiffus+tini),idiag_Rmesh)
           if (idiag_Rmesh3/=0) call max_mn_name(pi5_1*maxadvec/(maxdiffus3+tini),idiag_Rmesh3)
           call max_mn_name(maxadvec,idiag_maxadvec)
+          call max_mn_name(maxdiffus,idiag_maxdiffus)
 !
 !  z-dependent timestep constraints
 !

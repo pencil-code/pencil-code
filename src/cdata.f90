@@ -816,6 +816,7 @@ module Cdata
   integer :: idiag_Rmesh=0      ! DIAG_DOC: $R_{\rm mesh}$
   integer :: idiag_Rmesh3=0     ! DIAG_DOC: $R_{\rm mesh}^{(3)}$
   integer :: idiag_maxadvec=0   ! DIAG_DOC: maxadvec
+  integer :: idiag_maxdiffus=0  ! DIAG_DOC: maxdiffus
   integer :: idiag_eps_rkf=0    ! DIAG_DOC: time step accuracy threshold
   integer :: idiag_dtvmaxz=0       ! XYAVG_DOC: z-dependent version of dtv
 !

@@ -1125,7 +1125,7 @@ module Register
         idiag_dtv=0; idiag_dtsrc=0
         idiag_dtdiffus=0; idiag_dtdiffus2=0; idiag_dtdiffus3=0
         idiag_Rmesh=0; idiag_Rmesh3=0
-        idiag_maxadvec=0
+        idiag_maxadvec=0; idiag_maxdiffus=0
         idiag_dtvmaxz=0
       endif
 !
@@ -1144,6 +1144,7 @@ module Register
         call parse_name(iname,cname(iname),cform(iname),'Rmesh',idiag_Rmesh)
         call parse_name(iname,cname(iname),cform(iname),'Rmesh3',idiag_Rmesh3)
         call parse_name(iname,cname(iname),cform(iname),'maxadvec',idiag_maxadvec)
+        call parse_name(iname,cname(iname),cform(iname),'maxdiffus',idiag_maxdiffus)
         call parse_name(iname,cname(iname),cform(iname),'walltime',idiag_walltime)
         call parse_name(iname,cname(iname),cform(iname),'timeperstep',idiag_timeperstep)
         call parse_name(iname,cname(iname),cform(iname),'eps_rkf',idiag_eps_rkf)
@@ -1153,7 +1154,9 @@ module Register
           idiag_dtdiffus /= 0 .or. &
           idiag_dtdiffus2 /= 0 .or. &
           idiag_dtdiffus3 /= 0 .or. &
-          idiag_Rmesh /= 0 .or. idiag_Rmesh3 /=0) ltimestep_diagnostics = .true.
+          idiag_Rmesh /= 0 .or. idiag_Rmesh3 /=0 .or. &
+          idiag_maxadvec/=0 .or. idiag_maxdiffus /= 0 .or. &
+          idiag_dtvmaxz /= 0 ) ltimestep_diagnostics = .true.
 !
 !  phi-averages
 !
