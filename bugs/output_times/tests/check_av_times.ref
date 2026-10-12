@@ -1,0 +1,3 @@
+av.t : 0 1 2 3 4
+av.xy.specialmz[:,0] : 0 1 2 3 4
+av.z.specialmxy[:,0,0] : 0 1 2 3 4
