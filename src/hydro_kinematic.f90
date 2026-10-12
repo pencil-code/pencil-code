@@ -682,6 +682,8 @@ module Hydro
         lpencil_in(i_uu)=.true.
         lpencil_in(i_oo)=.true.
       endif
+! oxu2
+      if (lpencil_in(i_oxu2)) lpencil_in(i_oxu)=.true.
       if (lpencil_in(i_oo)) lpencil_in(i_uij)=.true.
       if (lpencil_in(i_divu)) lpencil_in(i_uij)=.true.
 ! ugu
@@ -2598,16 +2600,17 @@ module Hydro
       case ('from-snap','from-foreign-snap')
 
         if (lkinflow_as_aux) then
-          if (lpenc_loc(i_uu)) p%uu=f(l1:l2,m,n,iux:iuz)
+          if (.not.lkinflow_as_comaux) then    ! otherwise calculated below
+            if (lpenc_loc(i_uu)) p%uu=f(l1:l2,m,n,iux:iuz)
 ! divu
-          if (lpenc_loc(i_divu)) call div(f,iuu,p%divu)  !!! ghost zones missing
+            if (lpenc_loc(i_divu)) call div(f,iuu,p%divu)  !!! ghost zones missing
 ! curlu
-          if (lpenc_loc(i_oo)) call curl(f,iuu,p%oo)
+            if (lpenc_loc(i_oo)) call curl(f,iuu,p%oo)
 !if(maxval(p%uu).gt.1.0e+10) print *,'PENCIL PUUMAX',iproc,m,n, maxval(p%uu)
 !if(n==n1.and.m==m1)print *,'PENCIL PUUMAX',iproc,maxval(abs(p%uu)),minval(abs(p%uu)) 
-
+          endif
         else
-          call inevitably_fatal_error('hydro_kinematic', '"from-[foreign-]snap" requires lkinflow_as_aux=T')
+          call inevitably_fatal_error('hydro_kinematic','"from-[foreign-]snap" requires lkinflow_as_aux=T')
         endif
 !
       case ('Jouve-2008-benchmark-noav')
@@ -2668,7 +2671,7 @@ module Hydro
           if (lpenc_loc(i_uu)) p%uu=f(l1:l2,m,n,iux:iuz)
         endif
       case default
-        call inevitably_fatal_error('hydro_kinematic', 'kinematic_flow not found')
+        call inevitably_fatal_error('hydro_kinematic','kinematic_flow not found')
       end select
 !
 !  kinflows end here.
@@ -2679,7 +2682,7 @@ module Hydro
       if (lkinflow_as_comaux) then
 ! uij
         if (lpenc_loc(i_uij)) call gij(f,iuu,p%uij,1)
-! oo (=curlu)
+! oo (=curl u)
         if (lpenc_loc(i_oo)) call curl_mn(p%uij,p%oo,p%uu)
 ! divu
         if (lpenc_loc(i_divu)) call div_mn(p%uij,p%divu,p%uu)
@@ -2690,10 +2693,9 @@ module Hydro
       if (lpenc_loc(i_o2)) call dot2_mn(p%oo,p%o2)
 ! ou
       if (lpenc_loc(i_ou)) call dot_mn(p%oo,p%uu,p%ou)
-! oxu
+! oxu and oxu^2
       if (lpenc_loc(i_oxu)) call cross(p%oo,p%uu,p%oxu)
       if (lpenc_loc(i_oxu2)) call dot2_mn(p%oxu,p%oxu2)
-
 !
 !  uu/dx for timestep (if kinematic_flow is set)
 !
@@ -3528,11 +3530,9 @@ module Hydro
         done = .true.
       endif
 !
-      if (lroot) print*,'input_persist_hydro: ', tphase_kinflow
-!
     endsubroutine input_persist_hydro_id
 !***********************************************************************
-    subroutine input_persist_hydro()
+    subroutine input_persist_hydro
 !
 !  Read in the stored time of the next random phase calculation.
 !
@@ -3571,7 +3571,7 @@ module Hydro
 !
     endsubroutine input_persist_hydro
 !***********************************************************************
-    logical function output_persistent_hydro()
+    logical function output_persistent_hydro
 !
 !  Writes out the time of the next random phase calculation.
 !
@@ -3727,7 +3727,7 @@ module Hydro
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uxmxy',idiag_uxmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uymxy',idiag_uymxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uzmxy',idiag_uzmxy)
-     enddo
+      enddo
 !
 !  check for those quantities for which we want video slices
 !
