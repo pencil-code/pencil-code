@@ -39,7 +39,7 @@
     module procedure output_local_hdf5_3D
     module procedure output_hdf5_3D
     module procedure output_hdf5_4D
-    module procedure output_hdf5_torus_rect
+    !module procedure output_hdf5_torus_rect
   endinterface
 !
   interface output_hdf5_double
