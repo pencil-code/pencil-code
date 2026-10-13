@@ -176,7 +176,7 @@ program read_videofiles
   else
     call read_slice(ipx1,'yz',min_yz,max_yz)
   endif
-  call read_slice(ipr,'r ',min_r,max_r)
+  call read_slice(ipr,'r ',min_r,max_r,nth_rslice,nph_rslice)
 !
 !  Print summary.
 !
@@ -191,6 +191,7 @@ program read_videofiles
     write(lun,*) trufal(min(ipy2,0)), ipy2
     write(lun,*) trufal(min(ipx1,0)), ipx1
     write(lun,*) trufal(min(ipr, 0)), ipr
+    write(lun_pos,*) trufal(min(ipr, 0)), ipr, nth_rslice, nph_rslice
     close(lun)
 
     print *,'-------------------------------------------------'
@@ -226,7 +227,7 @@ program read_videofiles
 !
   contains
 !***********************************************************************
-    subroutine read_slice(ipxyz,suffix,glob_min,glob_max,yz,inds)
+    subroutine read_slice(ipxyz,suffix,glob_min,glob_max,yz,inds,nth_rslice,nph_rslice)
 !
 !  Read the slices of a given variable.
 !
@@ -236,9 +237,9 @@ program read_videofiles
       integer,                           intent(in) :: ipxyz
       character (len=*),                 intent(in) :: suffix
       real,                              intent(out):: glob_min, glob_max
-      integer :: nth_rslice, nph_rslice
       real,    dimension(:,:), optional, intent(in) :: yz
       integer, dimension(:),   optional, intent(in) :: inds
+      integer,                 optional, intent(out):: nth_rslice, nph_rslice
 !
       character (len=fnlen) :: file='',fullname=''
       integer :: frame, slice, ndim1, ndim2, glob_ndim1, glob_ndim2
@@ -307,7 +308,10 @@ program read_videofiles
 !
 !  Try to read 
 !
-      do iyy=0,nyy-1
+      do iyy=0,nyy-1    ! if lyinyang=T, read from 2 congruent grids
+
+      ith_min_glob=max_int; ith_max_glob=0
+
       do ipz=ipz_start, ipz_end
         do ipy=ipy_start, ipy_end
           do ipx=ipx_start, ipx_end
@@ -322,10 +326,10 @@ program read_videofiles
               read(lun,*) lfound,ith_min,ith_max,iph_min,iph_max
               close(lun)
 !print*,'iproc,ith_min:ith_max,iph_min:iph_max', iproc,ith_min,ith_max,iph_min,iph_max
-            endif
 
-            if (lrslice) then
               if (lfound) then
+                ith_min_glob=min(ith_min_glob,ith_min)
+                ith_max_glob=max(ith_max_glob,ith_max)
                 if (allocated(loc_slice)) deallocate(loc_slice)
                 allocate (loc_slice(ith_min:ith_max,iph_min:iph_max))
                 if (allocated(phinds)) deallocate(phinds)
@@ -403,6 +407,11 @@ program read_videofiles
       lwritten_something = .true.
       deallocate (loc_slice, glob_slice)
 !
+      if (present(nth_rslice)) then
+        nth_rslice=ith_max_glob-ith_min_glob+1
+        nph_rslice=glob_ndim2
+      endif
+
     endsubroutine read_slice
 !***********************************************************************
     function read_slice_file(lun,a,pos)
