@@ -123,6 +123,7 @@ module Sub
   public :: get_random_vec
   public :: sample_poisson_waiting_time
   public :: solve3x3
+  public :: sym_inverse, contract
   public :: box_muller_transform
   public :: get_astaroth_field_name
 
@@ -9731,6 +9732,44 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
       interval = -log(u)*(1/rate)
 
   endfunction sample_poisson_waiting_time
+!***********************************************************************
+    subroutine sym_inverse(a,au,deta)
+!
+!  Inverse and determinant of a symmetric 3x3 matrix field.
+!
+!  13-oct-26/TP: coded
+!
+      real, dimension(:,:) :: a, au
+      real, dimension(:) :: deta
+!
+      intent(in) :: a
+      intent(out) :: au, deta
+!
+      au(:,1)=a(:,4)*a(:,6)-a(:,5)**2
+      au(:,2)=a(:,3)*a(:,5)-a(:,2)*a(:,6)
+      au(:,3)=a(:,2)*a(:,5)-a(:,3)*a(:,4)
+      au(:,4)=a(:,1)*a(:,6)-a(:,3)**2
+      au(:,5)=a(:,2)*a(:,3)-a(:,1)*a(:,5)
+      au(:,6)=a(:,1)*a(:,4)-a(:,2)**2
+      deta=a(:,1)*au(:,1)+a(:,2)*au(:,2)+a(:,3)*au(:,3)
+      au=au/spread(deta,2,6)
+!
+    endsubroutine sym_inverse
+!***********************************************************************
+    function contract(au,b)
+!
+!  Full contraction au^ij b_ij of two symmetric 3x3 tensor fields stored
+!  as (xx,xy,xz,yy,yz,zz).
+!
+!  13-oct-26/TP: coded
+!
+      real, dimension(:,:), intent(in) :: au, b
+      real, dimension(size(au,1)) :: contract
+!
+      contract=au(:,1)*b(:,1)+au(:,4)*b(:,4)+au(:,6)*b(:,6) &
+              +2*(au(:,2)*b(:,2)+au(:,3)*b(:,3)+au(:,5)*b(:,5))
+!
+    endfunction contract
 !***********************************************************************
 subroutine solve3x3(A, b, x)
 !
