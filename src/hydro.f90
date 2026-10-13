@@ -174,9 +174,6 @@ module Hydro
   integer :: neddy=0
   integer :: iTij=0, ihless=0, nhless=0
   integer :: iT11=0,iT12=0,iT13=0,iT21=0,iT22=0,iT23=0,iT31=0,iT32=0,iT33=0
-  integer :: i11=1,i22=2,i33=3,i12=4,i23=5,i13=6
-  !integer :: i11=1,i22=2,i33=3,i12=4,i13=5,i23=6
-  integer :: i31=-1
   real, dimension(:), allocatable :: thless, xhless, yhless, zhless
   real, dimension(:), allocatable :: Bsquared
   real :: cs20p1=1., cs20_corr=1., inv_cs20p1=impossible
@@ -1132,7 +1129,6 @@ module Hydro
 !
 !  Tij and possibly relativistic Lorentz factor as aux
 !
-      i31 = i13
       if (lconservative) then
         call farray_register_auxiliary('Tij',iTij,vector=6,communicated=.true.,rhs=.true.)
         if (llorentz_as_aux) call register_report_aux('lorentz', ilorentz,communicated=.true.,rhs=.true.)
