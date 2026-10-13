@@ -214,7 +214,6 @@ module Special
   integer :: idiag_kappaxxzmxy=0, idiag_kappayxzmxy=0, idiag_kappazxzmxy=0
   integer :: idiag_kappaxyymxy=0, idiag_kappayyymxy=0, idiag_kappazyymxy=0
   integer :: idiag_kappaxyzmxy=0, idiag_kappayyzmxy=0, idiag_kappazyzmxy=0
-
 !
 ! Interpolation parameters
 !
@@ -1799,7 +1798,7 @@ endif
         call parse_name(iname,cname(iname),cform(iname),'emfxdiffmax',idiag_emfxdiffmax)
         call parse_name(iname,cname(iname),cform(iname),'emfydiffmax',idiag_emfydiffmax)
         call parse_name(iname,cname(iname),cform(iname),'emfzdiffmax',idiag_emfzdiffmax)
-        ! RMS values of emf terms
+! RMS values of emf terms
         call parse_name(iname,cname(iname),cform(iname),'alpharms',idiag_alpharms)
         call parse_name(iname,cname(iname),cform(iname),'betarms',idiag_betarms)
         call parse_name(iname,cname(iname),cform(iname),'gammarms',idiag_gammarms)
@@ -1811,12 +1810,14 @@ endif
         call parse_name(iname,cname(iname),cform(iname),'emfrms',idiag_emfrms)
         call parse_name(iname,cname(iname),cform(iname),'emfcoefrms',idiag_emfcoefrms)
         call parse_name(iname,cname(iname),cform(iname),'emfdiffrms',idiag_emfdiffrms)
-!    timestep diagnostics
+! Timestep diagnostics
         call parse_name(iname,cname(iname),cform(iname),'dtemf_ave',idiag_dtemf_ave)
         call parse_name(iname,cname(iname),cform(iname),'dtemf_dif',idiag_dtemf_dif)
         call parse_name(iname,cname(iname),cform(iname),'nkappareg',idiag_nkappareg)
       enddo
-
+!
+!  Check for those quantities for which we want z-averages.
+!
       do iname=1,nnamexy
         call parse_name(iname,cnamexy(iname),cformxy(iname),'EMFxmxy',idiag_emfxmxy)
         call parse_name(iname,cnamexy(iname),cformxy(iname),'EMFymxy',idiag_emfymxy)
