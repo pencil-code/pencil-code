@@ -9745,29 +9745,29 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
       intent(in) :: a
       intent(out) :: au, deta
 !
-      au(:,1)=a(:,4)*a(:,6)-a(:,5)**2
-      au(:,2)=a(:,3)*a(:,5)-a(:,2)*a(:,6)
-      au(:,3)=a(:,2)*a(:,5)-a(:,3)*a(:,4)
-      au(:,4)=a(:,1)*a(:,6)-a(:,3)**2
-      au(:,5)=a(:,2)*a(:,3)-a(:,1)*a(:,5)
-      au(:,6)=a(:,1)*a(:,4)-a(:,2)**2
-      deta=a(:,1)*au(:,1)+a(:,2)*au(:,2)+a(:,3)*au(:,3)
+      au(:,i11)=a(:,i22)*a(:,i33)-a(:,i23)**2
+      au(:,i22)=a(:,i11)*a(:,i33)-a(:,i13)**2
+      au(:,i33)=a(:,i11)*a(:,i22)-a(:,i12)**2
+      au(:,i12)=a(:,i13)*a(:,i23)-a(:,i12)*a(:,i33)
+      au(:,i23)=a(:,i12)*a(:,i13)-a(:,i11)*a(:,i23)
+      au(:,i13)=a(:,i12)*a(:,i23)-a(:,i22)*a(:,i13)
+
+      deta=a(:,i11)*au(:,i11)+a(:,i12)*au(:,i12)+a(:,i13)*au(:,i13)
       au=au/spread(deta,2,6)
 !
     endsubroutine sym_inverse
 !***********************************************************************
     function contract(au,b)
 !
-!  Full contraction au^ij b_ij of two symmetric 3x3 tensor fields stored
-!  as (xx,xy,xz,yy,yz,zz).
+!  Full contraction au^ij b_ij of two symmetric 3x3 tensor fields.
 !
 !  13-oct-26/TP: coded
 !
       real, dimension(:,:), intent(in) :: au, b
       real, dimension(size(au,1)) :: contract
 !
-      contract=au(:,1)*b(:,1)+au(:,4)*b(:,4)+au(:,6)*b(:,6) &
-              +2*(au(:,2)*b(:,2)+au(:,3)*b(:,3)+au(:,5)*b(:,5))
+      contract=au(:,i11)*b(:,i11)+au(:,i22)*b(:,i22)+au(:,i33)*b(:,i33) &
+              +2*(au(:,i12)*b(:,i12)+au(:,i13)*b(:,i13)+au(:,i23)*b(:,i23))
 !
     endfunction contract
 !***********************************************************************
