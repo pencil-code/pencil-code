@@ -721,7 +721,9 @@ module Equ
       do imn=1,nyz
         !Done since with multithreading RHS is not evaluated
         if (lmultithread .and. lupdate_courant_dt) then
-          if (idiag_dtdiffus/=0 .or. idiag_Rmesh /= 0) maxdiffus = 0.0
+          if (idiag_dtdiffus/=0 .or. idiag_Rmesh /= 0 .or. idiag_maxdiffus/=0) then
+            maxdiffus = 0.0
+          endif
           maxadvec     = 0.0
           advec2       = 0.0
           advec_cs2    = 0.0
