@@ -42,6 +42,7 @@ program read_videofiles
   integer, dimension(:), allocatable :: inds
   real, dimension(:,:), allocatable :: yz,yzyang
   character, dimension(-1:0) :: trufal=(/'F','T' /)
+  integer :: nth_rslice,nph_rslice
 !
 !  Read name of the field (must coincide with file extension)
 !
@@ -176,7 +177,7 @@ program read_videofiles
   else
     call read_slice(ipx1,'yz',min_yz,max_yz)
   endif
-  call read_slice(ipr,'r ',min_r,max_r,nth_rslice,nph_rslice)
+  call read_slice(ipr,'r ',min_r,max_r,nth_rslice=nth_rslice,nph_rslice=nph_rslice)
 !
 !  Print summary.
 !
@@ -191,7 +192,7 @@ program read_videofiles
     write(lun,*) trufal(min(ipy2,0)), ipy2
     write(lun,*) trufal(min(ipx1,0)), ipx1
     write(lun,*) trufal(min(ipr, 0)), ipr
-    write(lun_pos,*) trufal(min(ipr, 0)), ipr, nth_rslice, nph_rslice
+    write(lun,*) trufal(min(ipr, 0)), ipr, nth_rslice, nph_rslice
     close(lun)
 
     print *,'-------------------------------------------------'
@@ -245,7 +246,7 @@ program read_videofiles
       integer :: frame, slice, ndim1, ndim2, glob_ndim1, glob_ndim2
       integer :: ipx_start, ipx_end, ipy_start, ipy_end, ipz_start, ipz_end, &
                  ith_min,ith_max,iph_min,iph_max
-      integer :: i,ind,ninds,isl
+      integer :: i,ind,ninds,isl,ith_min_glob,ith_max_glob
       real, dimension (num_frames) :: times
       real, dimension (:,:), allocatable :: loc_slice
       real, dimension (:,:,:,:), allocatable :: glob_slice
