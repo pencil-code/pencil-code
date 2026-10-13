@@ -720,8 +720,10 @@ module Equ
       !$omp do
       do imn=1,nyz
         !Done since with multithreading RHS is not evaluated
+        !Kishore: why do we not need to zero maxdiffus2, maxdiffus3, maxsrc here?
         if (lmultithread .and. lupdate_courant_dt) then
           if (idiag_dtdiffus/=0 .or. idiag_Rmesh /= 0 .or. idiag_maxdiffus/=0) then
+            !Kishore: is this really so expensive that it needs to be inside the if statement?
             maxdiffus = 0.0
           endif
           maxadvec     = 0.0
