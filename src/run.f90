@@ -1253,9 +1253,6 @@ endsubroutine helper_loop
   call initialize_timestep
   call initialize_modules(f)
   call initialize_boundcond(f)
-!
-!TP: done here that at runtime_compilation we know which pencils are requested
-!
 !  Find out which pencils are needed and write information about required,
 !  requested and diagnostic pencils to disc.
 !
@@ -1263,6 +1260,9 @@ endsubroutine helper_loop
   call write_pencil_info
 
   lpencil = lpenc_requested
+!
+!TP: done here that at runtime_compilation we know which pencils are requested
+!
   if (nt>0) call initialize_gpu(f)
 !
   if (it1d==impossible_int) then
