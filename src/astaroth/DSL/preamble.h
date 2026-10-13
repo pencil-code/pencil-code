@@ -202,11 +202,12 @@ const int AC_0 = 0
 #define AC_impossible__mod__cparam impossible
 #define AC_tini__mod__cparam tini
 
-const int AC_ij_table__mod__gravitational_waves_htxk = [
+const int ij_table = [
 					[1,4,6],
 					[4,2,5],
 					[6,5,3]
 				       ]
+
 const real AC_arms__mod__magnetic = 0.0
 
 #if LDUSTVELOCITY

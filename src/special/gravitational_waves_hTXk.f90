@@ -128,7 +128,6 @@ module Special
   logical :: lnot_amp_GW=.true., lrandom_ampl_GW=.false.
   logical :: llogbranch_GW=.false., ldouble_GW=.false., lLighthill=.false.
   logical :: lrandomize_e1_e2=.false.
-  integer, dimension(3,3) :: ij_table
   real :: c_light2=1., delk=0., tdelk=0., tau_delk=1.
   real :: tstress_ramp=0., stress_upscale_rate=0., stress_upscale_exp=0., tturnoff=1.
   real :: rescale_GW=1., vx_boost=0., vy_boost=0., vz_boost=0.
@@ -396,15 +395,6 @@ module Special
 !
 !  set index table, count off-diagonal components cyclicly
 !
-      ij_table(1,1)=1
-      ij_table(2,2)=2
-      ij_table(3,3)=3
-      ij_table(1,2)=4
-      ij_table(2,3)=5
-      ij_table(3,1)=6
-      ij_table(2,1)=4
-      ij_table(3,2)=5
-      ij_table(1,3)=6
 !
 !  Check if we are solving for relativistic bulk motions, not just EoS.
 !

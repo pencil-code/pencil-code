@@ -72,7 +72,6 @@ module Radiation
   real, dimension (mnu) :: kappa_cst=1.0, kappa20_cst=0.0
   real, dimension (:), allocatable :: lnTT_table
   real, dimension (:,:), allocatable :: lnSS_table
-  real, dimension (3,3) :: ij_table
   real :: arad
   real :: dtau_thresh_min, dtau_thresh_max
   real :: tau_top=0.0, TT_top=0.0
@@ -461,18 +460,6 @@ module Radiation
         lnTT_table0=lnTT_table(1)
         dlnTT_table=(nlnTT_table-1)/(lnTT_table(nlnTT_table)-lnTT_table(1))
       endif
-!
-!  set index table
-!
-      ij_table(1,1)=1
-      ij_table(2,2)=2
-      ij_table(3,3)=3
-      ij_table(1,2)=4
-      ij_table(2,3)=5
-      ij_table(3,1)=6
-      ij_table(2,1)=4
-      ij_table(3,2)=5
-      ij_table(1,3)=6
 !
       if (ivid_Jrad/=0) &
         call alloc_slice_buffers(Jrad_xy,Jrad_xz,Jrad_yz,Jrad_xy2,Jrad_xy3,Jrad_xy4,Jrad_xz2,ncomp=nnu)
@@ -2875,7 +2862,6 @@ module Radiation
     call copy_addr(lrad_pres_diffus,p_par(41))      ! bool
     call copy_addr(lcdtrad_old,p_par(42))           ! bool
     call copy_addr(gamma,p_par(43))
-    call copy_addr(ij_table,p_par(44))              ! (3) (3)
     call string_to_enum(enum_source_function_type,source_function_type)
     call copy_addr(enum_source_function_type,p_par(45)) ! int
     call copy_addr(nnu,p_par(46))                   ! int
