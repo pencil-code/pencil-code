@@ -48,7 +48,9 @@ module Particles_coagulation
   logical :: lconstant_deltav=.false.   ! use constant relative velocity
   logical :: lmaxwell_deltav=.false.    ! use maxwellian relative velocity
   logical :: ldroplet_coagulation=.false., normal_coagulation=.false.
-  logical :: lcollision_output=.false., lcollision_output_swapped=.false.,luser_random_number_wrapper=.false.
+  logical :: lcollision_output=.false., lcollision_output_swapped=.false., &
+             luser_random_number_wrapper=.false., &
+             lglobal_random_numbers=.false.  !PAR-DOC: random numbers for all particles are created on root and distributed
   logical :: lrelabelling=.false.
   logical :: kernel_output=.false., radius_output=.false.
   logical :: sphericalKernel=.false.
@@ -88,7 +90,7 @@ module Particles_coagulation
       minimum_particle_mass, minimum_particle_radius, lzsomdullemond, &
       lconstant_deltav, lmaxwell_deltav, deltav, maxwell_param, &
       ldroplet_coagulation, droplet_coagulation_model, lcollision_output, &
-      luser_random_number_wrapper, lrelabelling, rdifference, &
+      luser_random_number_wrapper, lglobal_random_numbers, lrelabelling, rdifference, &
       kernel_output, deltad, a0, rbin, &
       radius_output, r1, r2, r3, r4, r5, r6, r7, r8, r_diff, &
       sphericalKernel, normal_coagulation, tstart_droplet_coagulation, &
@@ -175,7 +177,7 @@ module Particles_coagulation
 !
 !  If using the Zsom-Dullemond Monte Carlo method
 !
-      if(lzsomdullemond.and.(.not.allocated(r_ik_mat))) then
+      if (lzsomdullemond.and.(.not.allocated(r_ik_mat))) then
         allocate(r_ik_mat(mpar_loc,mpar_loc))
         allocate(r_i_tot(mpar_loc))
         allocate(cum_func_first_i(mpar_loc))
@@ -204,7 +206,7 @@ module Particles_coagulation
 !
 !  If using the Zsom and Dullemond Monte Carlo method
 !
-      if(lzsomdullemond) then
+      if (lzsomdullemond) then
         call particles_coag_timestep_zd(fp)
         return
       end if
@@ -309,12 +311,13 @@ module Particles_coagulation
 !
       use Diagnostics
       use General, only: random_number_wrapper
+      use Mpicomm, only: mpiscatterv
 !
       real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension (3) :: xpj, xpk, vpj, vpk
-      real :: lambda_mfp1, deltavjk, tau_coll1, prob, rran, kernel
+      real :: lambda_mfp1, deltavjk, tau_coll1, prob, kernel
       real :: npswarmj, npswarmk
       logical :: lbrown_jk
       integer :: l, j, k, ncoll, ncoll_par, npart_par
@@ -326,10 +329,12 @@ module Particles_coagulation
       real, dimension (10) :: radius_all
       real, dimension (10) :: radius_ratio
       real :: rmin, rmax
-      integer :: ibin, ik, ij, ikernel, row
+      integer :: ibin, ik, ij, ikernel, row, irran
       integer, parameter :: max_rows = 10
       real, parameter :: radius_diff=5.e-6
       real, dimension (rbin) :: adplus, adminus, ad
+      real, dimension(mpar_loc) :: rran
+      real, dimension(:), allocatable :: rran_root
       character(len=50) :: itn,filename
       real :: r100p, r100m, r80p, r80m, r60p, r60m, r50p, r50m, r40p, r40m, r30p, r30m, &
               r20p, r20m, r10p, r10m 
@@ -347,14 +352,23 @@ module Particles_coagulation
 !
 !  If using the Zsom & Dullemond Monte Carlo method (KWJ)
 !
-      if(lzsomdullemond) then
+      if (lzsomdullemond) then
         call particles_coag_outcome_zd(fp)
         return
-      end if
+      endif
 !
 !  Reset collision counter.
 !
       ncoll=0
+
+      if (lglobal_random_numbers) then
+        if (lroot) then
+          allocate(rran_root(npar))
+          call random_number(rran_root)
+        endif
+        if (mpiscatterv(mpar_loc,rran_root,rran)) &
+          call fatal_error('particles_coagulation_pencils','too many local particles')
+      endif
 !
 !  Pencil loop.
 !
@@ -556,17 +570,23 @@ module Particles_coagulation
 !NILS: particles to the fluid were turned off. After some intense debugging 
 !NILS: I finally found that the problem was due to a call to
 !NILS: the random_number_wrapper routine. When I replaced this call with a call
-!NILS: to the intinsic random_number subroutine, the energy spectrum was fine.
+!NILS: to the intrinsic random_number subroutine, the energy spectrum was fine.
 !NILS: 
 !NILS: I am not able to understand why the call to the random_number_wrapper
-!NILS: routine should cause any problems, but I have reproduce the problem
+!NILS: routine should cause any problems, but I have reproduced the problem
 !NILS: both on our linux cluster (with pfg90) and on my laptop (with gfortran).
+!
+                    irran=1
                     if (luser_random_number_wrapper) then
-                      call random_number_wrapper(rran)
+                      call random_number_wrapper(rran(1))
                     else
-                      call random_number(rran)
+                      if (lglobal_random_numbers) then
+                        irran=k     ! random number is taken from list precalculated on the root
+                      else
+                        call random_number(rran(1))
+                      endif
                     endif
-                    if (rran<=prob) then
+                    if (rran(irran)<=prob) then
 !
                       call coagulation_fragmentation(fp,j,k,deltavjk, &
                           xpj,xpk,vpj,vpk)
@@ -1407,14 +1427,14 @@ module Particles_coagulation
             cum_func_sec_ik(j,l) = r_i_tot(j)        ! cum. func. for phys. part.
 !
             l = l + 1                      ! go to next particle
-            if(l == npar + 1) exit             ! exit if last particle
+            if (l == npar + 1) exit             ! exit if last particle
           enddo
           r_total = r_total + r_i_tot(j)   ! total rate for all particles
           cum_func_first_i(j) = r_total    ! cum. func. for rep. part.
 !
           l = 1
           j = j + 1                        ! go to next particle
-          if(j == npar + 1) exit
+          if (j == npar + 1) exit
         enddo
       endif
 !
@@ -1503,7 +1523,7 @@ module Particles_coagulation
         endif
 !
         i = i + 1            ! go to next superparticle
-        if(i == npar + 1) exit
+        if (i == npar + 1) exit
       enddo
 !
 !  Update i = j column.
@@ -1615,7 +1635,7 @@ module Particles_coagulation
         call random_number_wrapper(r)
         w2 = r*r
         w = w1 + w2
-        if(w <= 1.) exit
+        if (w <= 1.) exit
       enddo
 !
       call random_number_wrapper(r)
@@ -1650,14 +1670,13 @@ module Particles_coagulation
       intent (in) :: alpha
       intent (out) :: dv
 !
-!
       do while (.true.)
         call random_number_wrapper(r)
         y = -2.*log(r)
         tmp1 = e*y*r*r
         call random_number_wrapper(r)
         tmp2 = r*r
-        if(tmp1.ge.tmp2) exit
+        if (tmp1.ge.tmp2) exit
       enddo
 !
       dv = alpha*sqrt(2.*y)
