@@ -21,13 +21,21 @@ Options:
                             Default: "--max-level=1"
     -s,--submodules         Whether to clone submodules as well (e.g. Astaroth)
                             Default: no
+    --rcfile                An optional bashrc file used to initialize the test
+                            environment. This must not set PENCIL_HOME or
+                            source sourceme.sh. Useful in environments where
+                            nontrivial setup (e.g. conda initialization) is
+                            needed to get a useful working environment. If not
+                            specified, all required programs (gfortran, mpirun,
+                            python etc.) must be present in the default
+                            systemwide locations.
 '''
 
 # BEGIN option parsing
 #https://stackoverflow.com/questions/192249/how-do-i-parse-command-line-arguments-in-bash/29754866#29754866
 set -o errexit -o pipefail -o noclobber -o nounset
 
-LONGOPTS=branch:,auto-test-options:,repo:,help,submodules
+LONGOPTS=branch:,auto-test-options:,repo:,help,submodules,rcfile:
 OPTIONS=b:o:r:hs
 
 PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@") || exit 2
@@ -37,6 +45,7 @@ auto_test_options="--max-level=1"
 branchname=master
 repo="https://pencil-code.org/git"
 submodules="false"
+rcfile=""
 while true; do
     case "$1" in
         -b|--branch)
@@ -58,6 +67,10 @@ while true; do
         -h|--help)
             echo "$help"
             exit 0
+            ;;
+        --rcfile)
+            rcfile=$2
+            shift 2
             ;;
         --)
             shift
@@ -100,8 +113,14 @@ if [ "$submodules" = "true" ]; then
 fi
 
 #Start with a clean environment to avoid conflicts with already-enabled versions of Pencil
-# env -i bash --norc << EOF #Even $HOME is not set here, which causes problems.
-env -u PATH -u _sourceme -u PYTHONPATH bash --norc << EOF
+if test -n "$rcfile"; then
+    cmd="env -i bash --rcfile $rcfile"
+else
+    #cmd="env -i bash --norc" #Even $HOME is not set here, which causes problems.
+    cmd="env -u PATH -u _sourceme -u PYTHONPATH bash --norc"
+fi
+
+$cmd << EOF
 
 export PENCIL_HOME=$(pwd)
 _sourceme_quiet=1; . $PENCIL_HOME/sourceme.sh; unset _sourceme_quiet
