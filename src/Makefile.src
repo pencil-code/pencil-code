@@ -67,14 +67,8 @@ DUSTVELOCITY      = nodustvelocity
 ENERGY            = noentropy
 OPACITY           = noopacity
 EOS               =   eos_idealgas
-FARRAY_ALLOC      = nofarray_alloc
-#
-# DYNAMIC_AUX=yes: maux and maux_com grow at run time when auxiliaries are
-# registered, so MAUX CONTRIBUTION/COMMUNICATED AUXILIARIES need not be
-# declared in cparam.local. DYNAMIC_AUX_EXTRA is the extra capacity of the
-# fixed-size per-variable arrays like bcx (see maux_max in cparam.inc).
-#
-DYNAMIC_AUX       = no
+FARRAY_ALLOC      = farray_alloc
+DYNAMIC_FIELD_ALLOC = off
 DYNAMIC_AUX_EXTRA = 64
 FIXED_POINT       = nofixed_point
 FORCING           = noforcing
@@ -526,16 +520,16 @@ endif
 #
 # Run-time growing auxiliary counts need the dynamically allocated f-array.
 #
-ifeq ($(DYNAMIC_AUX),yes)
-  override FARRAY_ALLOC=farray_alloc
-  MKCPARAM_FLAGS = --dynamic-aux=$(DYNAMIC_AUX_EXTRA)
-endif
-#
 # Add real-time library calls if we need shared memory allocation
-#
+# And dynamically allocate fields
 ifeq  ($(FARRAY_ALLOC),farray_alloc)
   #2026-May-13/Kishore: also need `-lc` to use ftruncate?
   override LDFLAGS += -lrt
+  override DYNAMIC_FIELD_ALLOC =ON
+endif
+
+ifeq ($(DYNAMIC_FIELD_ALLOC),ON)
+  MKCPARAM_FLAGS = --dynamic-aux=$(DYNAMIC_AUX_EXTRA)
 endif
 
 ifeq  ($(COALA),coala)
