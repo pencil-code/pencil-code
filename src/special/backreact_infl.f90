@@ -332,10 +332,10 @@ module Special
       integer :: iLCDM_lna
 !
 !     Required for a2rhogphim diagnostic which calculates gradient in special_after_boundary
-!     Kishore: setting to F right now to avoid breaking the Schwinger autotest; Axel,
-!     if you agree that this is needed, please set this to T and update the reference data.
+!     Kishore: I have set this to T and updated the reference data for sample
+!     Kishore: Schwinger; Axel, please check.
 !
-      lspecial_early_finalize = .false.
+      lspecial_early_finalize = .true.
 !
       iaae =farray_index_by_name('aae')
       if (iaae<0) iaae=0
