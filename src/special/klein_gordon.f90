@@ -589,7 +589,12 @@ module Special
       real :: broken_mass=impossible,phi_tilde,u
       real :: critical_bubble_size
       real :: thin_bubble_wall_width=impossible,sign_m2
-
+!
+!     Required for a2rhogphim diagnostic which calculates gradient in special_after_boundary
+!     Kishore: I have set this to T and updated the reference data for sample
+!     Kishore: Schwinger2; Axel, please check.
+!
+      lspecial_early_finalize = .true.
 
       if (.not. lreloading) call initialize_seed
 
