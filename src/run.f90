@@ -223,6 +223,7 @@ endsubroutine helper_loop
 !
 !   08-Oct-2026/Kishore: extract from gen_output
 !
+    use Equ,             only: write_diagnostics_before_timestep
     use Snapshot,        only: powersnap, wsnap, wsnap_down, output_form
     use Particles_main,  only: write_snapshot_particles
     use PointMasses,     only: pointmasses_write_snapshot
@@ -232,6 +233,8 @@ endsubroutine helper_loop
     use Io,              only: output_globals
 
     real, contiguous, dimension(:,:,:,:), intent(inout) :: f
+!
+    if (.not.lmultithread) call write_diagnostics_before_timestep(f)
 !
 !  Setting ialive=1 can be useful on flaky machines!
 !  The iteration number is written into the file "data/proc*/alive.info".
@@ -277,7 +280,7 @@ endsubroutine helper_loop
 !
 !   5-sep-2024/TP: extracted from timeloop
 !
-    use Equ,             only: write_diagnostics
+    use Equ,             only: write_diagnostics_after_timestep
     use Snapshot,        only: wsnap, powersnap
     use Particles_main,  only: write_snapshot_particles
     use PointMasses,     only: pointmasses_write_snapshot
@@ -290,16 +293,7 @@ endsubroutine helper_loop
     integer :: isave_shift=0
     real :: tvar1
 !
-!   Diagnostic output in concurrent thread.
-!
-    if (lmultithread) then
-      if (lout.or.l1davg.or.l1dphiavg.or.l2davg) then
-!!$      last_pushed_task= push_task(c_funloc(write_diagnostics_wrapper), last_pushed_task,&
-!!$      1, default_task_type, 1, depend_on_all, f, mx, my, mz, mfarray)
-      endif
-    else
-      call write_diagnostics(f)
-    endif
+    if (.not.lmultithread) call write_diagnostics_after_timestep(f)
 !
 !  Save snapshot every isnap steps in case the run gets interrupted or when SAVE file is found.
 !  The time needs also to be written.
