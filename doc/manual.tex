@@ -7650,9 +7650,11 @@ would be great!
 Best you look into hydro.f90. For slices, which contain simply f-array variables,
 you do something like
 \begin{Verbatim}
-  case ('uu'); call assign_slices_vec(slices,f,iuu)
+  case ('uu'); call assign_slices_before_ts(slices,f,iuu)
 \end{Verbatim}
-in \code{get\_slices\_hydro}. For slices, which contain derived quantities like your \code{p\%inew1**2+p\%inew2**2}
+in \code{get\_fslices\_hydro}.
+
+For slices, which contain derived quantities like your \code{p\%inew1**2+p\%inew2**2}
 you have to declare slice buffers as for divu in hydro (divu\_xy etc.), you have to allocate them like
 \begin{Verbatim}
   if (ivid_divu/=0) call alloc_slice_buffers(divu_xy,divu_xz, &
@@ -7665,9 +7667,10 @@ to fill them in \code{calc\_diagnostics\_special} like
 \end{Verbatim}
 and finally to store them in \code{get\_slices\_special} like
 \begin{Verbatim}
-  call assign_slices_scal(slices,divu_xy,divu_xz,divu_yz, &
+  call assign_slices_after_ts(slices,divu_xy,divu_xz,divu_yz, &
     divu_xy2,divu_xy3,divu_xy4,divu_xz2,divu_r)
 \end{Verbatim}
+See \code{get\_slices\_hydro} for examples.
 
 \subsection{General questions}
 
