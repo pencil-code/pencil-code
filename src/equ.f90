@@ -15,7 +15,8 @@ module Equ
 !
   public :: pde, debug_imn_arrays, initialize_pencils
   public :: impose_floors_ceilings, finalize_diagnostics
-  public :: write_diagnostics
+  public :: write_diagnostics_before_timestep
+  public :: write_diagnostics_after_timestep
   public :: perform_diagnostics
   public :: calc_all_module_diagnostic_auxiliaries
 !
@@ -465,16 +466,40 @@ module Equ
 
     endsubroutine
 !***********************************************************************
-   subroutine write_diagnostics(f)
+   subroutine write_diagnostics_before_timestep(f)
 !
-!   Writes out the diagnostics
+!   Writes out diagnostics that depend only on the f-array. Diagnostics written
+!   here must not access any pencils or auxiliary variables.
 !
-!   13-nov-23/TP: Carved from Time_loop
+!   08-Oct-2026/Kishore: carved out from write_diagnostics
 !
     use Chemistry
     use Slices
     use Diagnostics
 
+    real, contiguous, dimension(:,:,:,:) :: f
+!
+      if (lout_sound) then
+!       NOTE: write_sound depends on neither the f-array nor the pencils
+        call write_sound(tsound)
+        lout_sound = .false.
+      endif
+!
+    endsubroutine write_diagnostics_before_timestep
+!***********************************************************************
+   subroutine write_diagnostics_after_timestep(f)
+!
+!   Writes out diagnostics that depend on pencils or on auxiliary variables.
+!   Diagnostics written here must not access the primary variables from the
+!   f-array, since this subroutine is called after the timestepping has been
+!   performed.
+!
+!   08-Oct-2026/Kishore: carved out from write_diagnostics
+!
+    use Chemistry
+    use Slices
+    use Diagnostics
+!
     real, contiguous, dimension(:,:,:,:) :: f
 !
 !  Print diagnostic averages to screen and file.
@@ -487,16 +512,11 @@ module Equ
       if (l1davg) call write_1daverages
       if (l2davg) call write_2daverages
 !
-      if (lout_sound) then
-        call write_sound(tsound)
-        lout_sound = .false.
-      endif
-!
 !  Write slices (e.g., for animation purposes).
 !
       if (lvideo .and. lwrite_slices) call wvid(f)
 !
-    endsubroutine write_diagnostics
+    endsubroutine write_diagnostics_after_timestep
 !***********************************************************************
      !subroutine restrict_cores
       !TP: example code to explicitly set and get cores the thread are running on
@@ -849,7 +869,8 @@ module Equ
         call calc_all_module_diagnostics(f,p)     ! by all helper threads
         if (lode) call calc_ode_diagnostics_special(f_ode_diagnostics)
         call finalize_diagnostics                 ! by diagmaster (MPI comm.)
-        call write_diagnostics(f)                 !       ~
+        call write_diagnostics_before_timestep(f)
+        call write_diagnostics_after_timestep(f)
 
 !$      lhelperflags(PERF_DIAGS) = .false.
 
