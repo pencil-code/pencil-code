@@ -11,7 +11,11 @@ Status:
 Comments:
     Checks that various quantities are output at the correct time, by solving
     the evolution equation df/dt = 1. Default test program tests only time
-    series; to test snapshots, averages, slices, and power spectra, use the
+    series; to test snapshots, averages, and slices, use the
     Python script tests feature: `pc_auto-test --script-tests=python`.
     
     Succeeds on CPUs and GPUs (latter with ASTAROTH_CPU_BUILD=on)
+    
+    Power spectra are still output with an offset of one timestep; while this is
+    trivial to fix (see comments in run.f90:gen_output), fixing it breaks the
+    autotests (reference data needs to be updated).
