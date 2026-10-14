@@ -1,0 +1,18 @@
+kindynamo_fno:
+  modes1: 19
+  modes2: 19
+  modes3: 19
+  width: 32
+  in_channels: 6
+  out_channels: 3
+
+kindynamo_tbnn:
+  in_channels: 6
+  out_channels: 3
+  second_level_channels: 16
+  spacing_val: 2
+
+kindynamo_unet:
+  in_channels: 6
+  out_channels: 3
+  second_level_channels: 16
