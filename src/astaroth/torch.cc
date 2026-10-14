@@ -96,6 +96,7 @@ bool torch_train_multiarg_CAPI(int sub_dims[3], const std::vector<std::pair<AcRe
     res_destroy = torchfort_tensor_list_destroy(outputs_tensor);
     return res == TORCHFORT_RESULT_SUCCESS;
 }
+
 /***********************************************************************************************/
 bool torch_infer_multiarg_CAPI(int sub_dims[3], const std::vector<std::pair<AcReal*, int>>& inputs, 
         const std::vector<std::pair<AcReal*, int>>& outputs,  const char* model_name){
@@ -141,7 +142,7 @@ bool torch_infer_CAPI(int sub_dims[3], AcReal* input, AcReal* label,
 
 /*
 	if (subsample) {
-    int64_t new_vals[] = {1, output_fields, sub_dims[2]/7, sub_dims[1]/7, sub_dims[0]/7};
+    int64_t new_vals[] = {1, output_fields, sub_dims[0]/7, sub_dims[1]/7, sub_dims[2]/7};
     std::copy(std::begin(new_vals), std::end(new_vals), std::begin(label_shape));
 	}
 */
