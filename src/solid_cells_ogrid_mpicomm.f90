@@ -157,8 +157,12 @@ module Solid_Cells_Mpicomm
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mvar) :: f_og
 !
       integer, dimension(4) :: nbuf_y, nbuf_z, nbuf_yz
-      integer, parameter :: ivar1=1, ivar2=min(mcom,size(f_og,4))
-      integer, parameter :: sendvar=ivar2-ivar1+1
+      integer, parameter :: ivar1=1
+      integer :: ivar2
+      integer :: sendvar
+
+      ivar2=min(mcom,size(f_og,4))
+      sendvar=ivar2-ivar1+1
 !
       if (ivar2==0) return
 !
@@ -253,8 +257,11 @@ module Solid_Cells_Mpicomm
 !  07-feb-17/Jorgen: Adapted from mpicomm.f90
 !
       real, dimension(mx_ogrid,my_ogrid,mz_ogrid,mvar), intent(inout) :: f_og
-      integer, parameter :: ivar1=1, ivar2=min(mcom,size(f_og,4))
+      integer, parameter :: ivar1=1
+      integer ::  ivar2
       integer :: j
+      
+      ivar2=min(mcom,size(f_og,4))
 !
       if (ivar2==0) return
 !
@@ -335,9 +342,12 @@ module Solid_Cells_Mpicomm
 !  07-feb-17/Jorgen: Adapted from mpicomm.f90
 !
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mvar), intent(inout) :: f_og
-      integer, parameter :: ivar1=1, ivar2=min(mcom,size(f_og,4))
-      integer :: j
-      integer, dimension(4), parameter ::  nbuf_x=(/nghost,ny_ogrid,nz_ogrid,ivar2-ivar1+1/)
+      integer, parameter :: ivar1=1
+      integer :: ivar2,j
+      integer, dimension(4) :: nbuf_x
+
+      ivar2=min(mcom,size(f_og,4))
+      nbuf_x=(/nghost,ny_ogrid,nz_ogrid,ivar2-ivar1+1/)
 !
       lbufxo_og(:,:,:,ivar1:ivar2)=f_og(l1_ogrid:l1i_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,ivar1:ivar2) !!(lower x-zone)
       ubufxo_og(:,:,:,ivar1:ivar2)=f_og(l2i_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,ivar1:ivar2) !!(upper x-zone)
@@ -399,8 +409,11 @@ module Solid_Cells_Mpicomm
       intent(in) :: f_og,Hsize
 !
       integer, dimension(4), save :: nbuf_y, nbuf_x
-      integer, parameter :: ivar1=1, ivar2=min(mcom,size(f_og,4))
+      integer, parameter :: ivar1=1
+      integer :: ivar2 
       logical :: firstcall=.true.
+
+      ivar2=min(mcom,size(f_og,4))
 !
       if (ivar2==0) return
       if(firstcall) then
@@ -458,8 +471,10 @@ module Solid_Cells_Mpicomm
       real, dimension (mx_ogrid,Hsize,nz_ogrid,mvar) ::  f_Hloy,f_Hupy
       intent(inout) :: f_Hlox,f_Hupx,f_Hloy,f_Hupy
 
-      integer :: ivar1=1, ivar2=min(mcom,size(f_Hloy,4))
+      integer :: ivar1=1, ivar2
       integer :: j
+
+      ivar2=min(mcom,size(f_Hloy,4))
 !
       if (ivar2==0) return
 !
