@@ -200,6 +200,7 @@ module Magnetic
   integer :: N_modes_aa=1, naareset
   integer :: ibij=0
   logical, pointer :: lrelativistic_eos, lconservative, lrho_chi
+  logical, pointer :: lgr_metric  ! shared from Hydro; EM stresses are in the conservative fluxes
   logical, pointer :: lu_background  ! shared from Hydro; selects external flow
   logical :: lpress_equil=.false. !PAR_DOC: flag for pressure equilibrium (can
     !PAR_DOC: be used in connection with all initial fields)
@@ -1450,22 +1451,13 @@ module Magnetic
 !
 !  To know whether we are solving the relativistic eos equations we need to get lrelativistic_eos from density.
 !
-      if (ldensity) then
-        call get_shared_variable('lrelativistic_eos',lrelativistic_eos, caller='initialize_magnetic')
-      else
-        allocate(lrelativistic_eos)
-        lrelativistic_eos=.false.
-      endif
+      call get_shared_variable('lrelativistic_eos',lrelativistic_eos, caller='initialize_magnetic',default_val=.false.)
 !
 !  Check if we are solving for relativistic bulk motions, not just EoS.
 !
-      call get_shared_variable('lu_background', lu_background,default_val=.false.)
-      if (lhydro.and..not.lhydro_potential) then
-        call get_shared_variable('lconservative', lconservative, caller='initialize_magnetic')
-      else
-        allocate(lconservative)
-        lconservative=.false.
-      endif
+      call get_shared_variable('lu_background', lu_background,default_val=.false.,caller='initialize_magnetic')
+      call get_shared_variable('lgr_metric', lgr_metric, default_val=.false.)
+      call get_shared_variable('lconservative', lconservative, default_val=.false.)
 !
 !PJK: moved from register_magnetic at least temporarily
 !TP:  With dynamic allocation now in init.
@@ -5551,7 +5543,6 @@ module Magnetic
       enddo
     endsubroutine calc_aaxyaver
 !***********************************************************************
-!    subroutine calc_magnetic_slope_limited(f,df,p)
     subroutine calc_magnetic_slope_limited(f,p)
 !
 !  16-apr-2026/TP: carved from daa_dt
@@ -5591,8 +5582,6 @@ module Magnetic
 !
         if (lcylindrical_coords .or. lspherical_coords) then
           do j=1,3
-!            call calc_slope_diff_flux(f,iax+(j-1),h_sld_magn,nlf_sld_magn,tmp2(:,j),div_sld_magn, &
-!                                      FLUX1=d_sld_flux(:,1,j),FLUX2=d_sld_flux(:,2,j),FLUX3=d_sld_flux(:,3,j))
             call calc_slope_diff_flux(f,iax+(j-1),h_sld_magn,nlf_sld_magn,div_flux(:,j),div_sld_magn, &
                                       FLUX1=d_sld_flux(:,1,j),FLUX2=d_sld_flux(:,2,j),FLUX3=d_sld_flux(:,3,j))
           enddo
@@ -5613,29 +5602,6 @@ module Magnetic
             p%fres=p%fres+div_flux
         endif
       endif
-!
-!     Heating is jj*divF_sld
-!     or Heating is just jj*(-e_ijk Dsld_k B_l) (for lsld_bb=T)
-!
-!      if (lohmic_heat) then
-!!        call dot(tmp2,p%jj,tmp1)
-!        call dot(div_flux,p%jj,tmp1)
-!        if (lentropy) then
-!          if (pretend_lnTT) then
-!            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%cv1*max(0.0,tmp1)*p%rho1*p%TT1
-!          else
-!            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + max(0.0,tmp1)*p%rho1*p%TT1
-!          endif
-!        else if (ltemperature) then
-!          if (ltemperature_nolog) then
-!            df(l1:l2,m,n,iTT)   = df(l1:l2,m,n,iTT) + p%cv1*max(0.0,tmp1)*p%rho1
-!          else
-!            df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cv1*max(0.0,tmp1)*p%rho1*p%TT1
-!          endif
-!        else if (lthermal_energy) then
-!          df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + max(0.0,tmp1)
-!        endif
-!      endif
     endsubroutine calc_magnetic_slope_limited
 !***********************************************************************
     subroutine daa_dt(f,df,p)
@@ -5731,7 +5697,10 @@ module Magnetic
 !
       if (lhydro) then
         if (.not.lkinematic) then
-          if (llorentzforce) then
+!
+!  With lgr_metric, the electromagnetic stresses are part of the conservative fluxes.
+!
+          if (llorentzforce .and. .not.lgr_metric) then
             if (lboris_correction) then
 !
 !  Following Eq. (34) of Gombosi et al. (2002) for the Boris correction.
@@ -5889,22 +5858,16 @@ module Magnetic
         dAdt = dAdt-LLambda_aa*p%aa
       endif
 !
-!SLD      if (lmagnetic_slope_limited.and.llast) then
-!SLD        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-f(l1:l2,m,n,iFF_div_aa:iFF_div_aa+2)
-!SLD        if (lohmic_heat) then
-!SLD          call dot(f(l1:l2,m,n,iFF_div_aa:iFF_div_aa+2),p%jj,phi)                !tb checked
-!SLD          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+(p%diffus_eta*mu0)*p%rho1*p%TT1*phi
-!   Slope limited diffusion for magnetic field
+!   Slope limited diffusion for magnetic field: calculated in calc_pencils_magnetic_fres
 !
       if (lmagnetic_slope_limited.and.llast) then
         if(lsld_every_step .or. lrmv) then
-!         call calc_magnetic_slope_limited(f,df,p)
 !
 !     Heating is jj*divF_sld
 !     or Heating is just jj*(-e_ijk Dsld_k B_l) (for lsld_bb=T)
 !
           if (lohmic_heat) then
-!            call dot(tmp2,p%jj,tmp1)
+!              call dot(tmp2,p%jj,tmp1)
             call dot(div_flux,p%jj,tmp1)
             if (lentropy) then
               if (pretend_lnTT) then
@@ -12774,8 +12737,11 @@ print*,'AXEL2: should not be here (eta) ... '
             p%fres(:,j)=p%fres(:,j)+p%nu_ni1*p%jxbrxb(:,j)
           enddo
         endif
-        if (lmagnetic_slope_limited) then
-           call calc_magnetic_slope_limited(f,p)
+
+        if (lmagnetic_slope_limited.and.llast) then
+          if(lsld_every_step .or. lrmv) then
+            call calc_magnetic_slope_limited(f,p)
+          endif
         endif
 !
 !  Possibility of adding extra diffusivity in some halo of given geometry.
