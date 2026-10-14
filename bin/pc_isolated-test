@@ -113,10 +113,10 @@ if [ "$submodules" = "true" ]; then
 fi
 
 #Start with a clean environment to avoid conflicts with already-enabled versions of Pencil
+#cmd="env -i bash --norc" #Even $HOME is not set here, which causes problems.
 if test -n "$rcfile"; then
-    cmd="env -i bash --rcfile $rcfile"
+    cmd="env -u PATH -u _sourceme -u PYTHONPATH bash --rcfile $rcfile"
 else
-    #cmd="env -i bash --norc" #Even $HOME is not set here, which causes problems.
     cmd="env -u PATH -u _sourceme -u PYTHONPATH bash --norc"
 fi
 
