@@ -10,4 +10,3 @@ EOS       =   eos_idealgas
 FORCING   =   forcing
 
 REAL_PRECISION = double
-DYNAMIC_AUX = yes

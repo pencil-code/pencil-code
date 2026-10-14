@@ -23,4 +23,3 @@ PARTICLES_STALKER =   particles_stalker
 #SIGNAL_HANDLING   =   signal_handling
 
 REAL_PRECISION=double
-DYNAMIC_AUX = yes

@@ -20,4 +20,3 @@ FORCING   =   forcing
 SHEAR     = noshear
 
 REAL_PRECISION = double
-DYNAMIC_AUX = yes

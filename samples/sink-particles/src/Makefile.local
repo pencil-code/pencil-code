@@ -23,4 +23,3 @@ PARTICLES_SINK        =   particles_sink
 PARTICLES_STALKER     =   particles_stalker
 
 REAL_PRECISION = double
-DYNAMIC_AUX = yes

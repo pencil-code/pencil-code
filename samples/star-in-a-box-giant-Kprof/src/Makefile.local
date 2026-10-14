@@ -22,4 +22,3 @@ TIMEAVG   = notimeavg
 INITIAL_CONDITION = initial_condition/star_in_a_box_poly
 
 REAL_PRECISION = double
-DYNAMIC_AUX = yes
