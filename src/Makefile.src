@@ -604,8 +604,8 @@ ifneq ($(GPU),nogpu)
       ifeq ($(findstring clean,$(target)),)
         $(info )
         $(warning  No CUDA or ROCM module seems to be loaded!)
-        $(info Try (one of) the following: $(shell (module spider |& grep -i cuda | sed -e's/^.* \([^ ]*[Cc][Uu][Dd][Aa][^ ]*\) .*$$/\1/') ) )
-        $(info or: $(shell (module spider |& grep -i rocm | sed -e's/^.* \([^ ]*[Rr][Oo][Cc][Mm][^ ]*\) .*$$/\1/') ) )
+        $(info Try (one of) the following: $(shell (module spider |& grep -i cuda | sed -e's/^.*  *\([^ ]*[Cc][Uu][Dd][Aa][^ ]*\) .*$$/\1/') ) )
+        $(info or: $(shell (module spider |& grep -i rocm | sed -e's/^.*  *\([^ ]*[Rr][Oo][Cc][Mm][^ ]*\) .*$$/\1/') ) )
         ifneq ($(wildcard .moduleinfo),)
           $(info or: source src/.moduleinfo)
         endif
@@ -620,6 +620,19 @@ ifneq ($(GPU),nogpu)
       endif
     endif
   endif
+ifeq ($(PYTHON),python)
+#
+  ifneq ($(MODULE_CMD),)
+    PYTHON_LOADED := $(shell (module list |& grep -i python) )
+    ifeq ($(PYTHON_LOADED),)
+      $(info Try the following: $(shell (module spider python) ) )
+      YESNO ?= $(shell bash -c 'read -p "Continue? (Y/N) " yesno; echo $$yesno')
+      ifeq ($(YESNO),N)
+        $(error Exit) 
+      endif
+    endif
+  endif
+endif
 #
   ifneq ($(findstring gpu_astaroth, $(GPU)),)
 #
