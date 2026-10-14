@@ -83,6 +83,7 @@ else
 endif
 #
 # Determine number of CPUS
+#
 set nprocx = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*nprocx\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
 set nprocy = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*nprocy\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
 set nprocz = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*nprocz\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
@@ -93,6 +94,7 @@ endif
 @ nprocxy = $nprocx * $nprocy
 #
 # Check for atlas-style grids.
+#
 #set lcubed_sphere = `perl -ne '$_ =~ /^\s*logical\b[^\\\!]*lcubed_sphere\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
 set lcubed_sphere = `perl -ne '$_ =~ /^\s*lcubed_sphere\s*=\s*([TF])/i && print $1' start.in`
 set lyinyang = `perl -ne '$_ =~ /^\s*lyinyang\s*=\s*([TF])/i && print $1' start.in`
@@ -2398,14 +2400,15 @@ if ($one_local_disc) then
     echo "Setting nodelist to node $nodelist"
   endif
 endif
+#
+# Create subdirectories on local scratch disc (start.csh will also create them under $datadir/)
+#
+set HDF5=`grep '^ *IO *=' src/Makefile.local | tail -n 1 | grep -c '^ *IO *= *io_hdf5'`
+set DIST=`grep '^ *IO *=' src/Makefile.local | tail -n 1 | grep -c '^ *IO *= *io_dist'`
+set COLL=`grep '^ *IO *=' src/Makefile.local | tail -n 1 | grep -c '^ *IO *= *io_collect[^_]*$'`
+set MPI2=`grep '^ *IO *=' src/Makefile.local | tail -n 1 | grep -c '^ *IO *= *io_mpi2'`
+set COLL_XY=`grep '^ *IO *=' src/Makefile.local | tail -n 1 | grep -c '^ *IO *= *io_collect_xy'`
 
-# Create subdirectories on local scratch disc (start.csh will also create
-# them under $datadir/)
-set HDF5=`grep '^ *IO *=' src/Makefile.local | tail -n 1 | grep -Ec '^ *IO *= *io_hdf5'`
-set DIST=`grep '^ *IO *=' src/Makefile.local | tail -n 1 | grep -Ec '^ *IO *= *io_dist'`
-set COLL=`grep '^ *IO *=' src/Makefile.local | tail -n 1 | grep -Ec '^ *IO *= *io_collect[^_]*$'`
-set MPI2=`grep '^ *IO *=' src/Makefile.local | tail -n 1 | grep -Ec '^ *IO *= *io_mpi2'`
-set COLL_XY=`grep '^ *IO *=' src/Makefile.local | tail -n 1  grep -Ec '^ *IO *= *io_collect_xy'`
 if ($HDF5) then
   set procdirs = ()
   set subdirs = ("allprocs" "allprocs/signals" "slices" "averages" "idl")
