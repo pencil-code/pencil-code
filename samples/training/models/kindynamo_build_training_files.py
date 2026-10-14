@@ -3,10 +3,7 @@ import sys
 import os
 import yaml
 
-from kindynamo_fno import KinDynamo_FNO
 from kindynamo_lenet5forsegmentation import KinDynamo_LeNet5ForSegmentation
-# TODO
-# from kindynamo_pinn import KinDynamo_PINN
 from kindynamo_tbnn import KinDynamo_TBNN
 from kindynamo_unet import KinDynamo_UNet
 
@@ -33,19 +30,9 @@ def build_model(model_save_dir):
     # Initialize model(s)
     models = {}
 
-    string_kindynamo_fno = "kindynamo_fno"
     string_kindynamo_lenet5forsegmentation = "kindynamo_lenet5forsegmentation"
-    string_kindynamo_pinn = "kindynamo_pinn"
     string_kindynamo_tbnn = "kindynamo_tbnn"
     string_kindynamo_unet = "kindynamo_unet"
-    
-    if (do_all or model_name == string_kindynamo_fno):
-
-        params_kindynamo_fno = config[string_kindynamo_fno]
-
-        model_kindynamo_fno = KinDynamo_FNO(**params_kindynamo_fno).to(device)
-
-        models[string_kindynamo_fno] = model_kindynamo_fno
     
     if (do_all or model_name == string_kindynamo_lenet5forsegmentation):
         
@@ -55,10 +42,6 @@ def build_model(model_save_dir):
     
         models[string_kindynamo_lenet5forsegmentation] = model_kindynamo_lenet5forsegmentation
 
-    if (do_all or model_name == string_kindynamo_pinn):
-        # TODO
-        pass
-    
     if (do_all or model_name == string_kindynamo_tbnn):
 
         params_kindynamo_tbnn = config[string_kindynamo_tbnn]
