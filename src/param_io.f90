@@ -543,6 +543,8 @@ module Param_IO
         allocate(fbcx(mcom,2),fbcx_2(mcom,2))
         allocate(fbcy(mcom,2),fbcy_1(mcom,2),fbcy_2(mcom,2))
         allocate(fbcz(mcom,2),fbcz_1(mcom,2),fbcz_2(mcom,2))
+        fbcx=0.; fbcx_2=0.; fbcy=0.; fbcy_1=0.; fbcy_2=0.
+        fbcz=0.; fbcz_1=0.; fbcz_2=0.
         allocate(lfrozen_bot_var_x(mcom),lfrozen_top_var_x(mcom))
         allocate(lfrozen_bot_var_y(mcom),lfrozen_top_var_y(mcom))
         allocate(lfrozen_bot_var_z(mcom),lfrozen_top_var_z(mcom))
