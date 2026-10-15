@@ -91,6 +91,7 @@ module Energy
 !  21-jul-2002/wolf: coded
 !
       use Cdata
+      !use EnergyBcs, only: initialize_energy_bcs
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -122,6 +123,8 @@ module Energy
         print*,'initialize_energy: wss_corona,ss_corona=',xss_corona,wss_corona,ss_corona
       endif
 !
+      !call initialize_energy_bcs
+
       call keep_compiler_quiet(f)
       return
 99    if (lroot) print*,'i/o error'

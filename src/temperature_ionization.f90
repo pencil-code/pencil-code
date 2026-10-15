@@ -168,9 +168,9 @@ module Energy
       !    is ugly and should not generally be done. The motivation to do it is to prevent something even more ugly:
       !    allocations happening on the right hand side. This way we can allocate inside initialize_eos in
       !    eos_temperature_ionization instead of ioncalc
-      if(lheatc_chiconst .and. lheatc_chiconst_accurate) then
+      if (lheatc_chiconst .and. lheatc_chiconst_accurate) then
         call get_shared_variable('lcalc_cp_full',lcalc_cp_full,caller='pencil_criteria_energy')
-        if(associated(lcalc_cp_full)) lcalc_cp_full = .true.
+        if (associated(lcalc_cp_full)) lcalc_cp_full = .true.
       endif
 !
     endsubroutine register_energy
@@ -181,6 +181,7 @@ module Energy
 !
 !  21-jul-2002/wolf: coded
 !
+      !use EnergyBcs, only: initialize_energy_bcs
       use Mpicomm, only: stop_it
       use SharedVariables, only: get_shared_variable
       use EquationOfState, only: select_eos_variable
@@ -275,6 +276,8 @@ module Energy
         pthreshnorm=1./pthreshnorm
       endif
 !
+      !call initialize_energy_bcs
+
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_energy

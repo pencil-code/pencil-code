@@ -36,6 +36,7 @@ module Density
   implicit none
 !
   include 'density.h'
+  include 'eos_params.h'
 !
   real, dimension (ninit) :: ampllnrho=0.0  !PAR_DOC: amplitude for some types of initial densities
   real, dimension (ninit) :: widthlnrho=0.1 !PAR_DOC: width for some types of initial densities
@@ -456,9 +457,8 @@ module Density
         call put_shared_variable('reference_state_mass',reference_state_mass)
       endif
 
-      if (density_scale_factor==impossible) then
+      if (density_scale_factor==impossible) &
         density_scale_factor=real(density_scale_cgs/unit_length)
-      endif
 
     endsubroutine register_density
 !***********************************************************************
@@ -479,6 +479,7 @@ module Density
 !  15-nov-16/fred: option to apply z-profile to reinitialize_*
 !  25-may-18/fred: definitive test of mass diffusion correction implemented
 !
+      !use DensityBcs, only: initialize_density_bcs
       use EquationOfState, only: select_eos_variable, get_gamma_etc
       use BorderProfiles, only: request_border_driving
       use Deriv, only: der,der2
@@ -1017,7 +1018,6 @@ module Density
                            beta_glnrho_global
       endif
 !
-!
       if (lreference_state) then
 !
         select case(ireference_state)
@@ -1153,10 +1153,10 @@ module Density
       if (density_floor>0.) density_floor_log=alog(density_floor)
       if (density_ceiling>0.) density_ceiling_log=alog(density_ceiling)
 
-      if(lconservative) then
-        if(.not. ldensity_nolog) call fatal_error('initialize_density', 'must use ldensity_nolog=T for lconservative=T')
-        if(.not. lrelativistic) then
-          if(any(f(l1:l2,m1:m2,n1:n2,irho) == 0.)) then
+      if (lconservative) then
+        if (.not. ldensity_nolog) call fatal_error('initialize_density', 'must use ldensity_nolog=T for lconservative=T')
+        if (.not. lrelativistic) then
+          if (any(f(l1:l2,m1:m2,n1:n2,irho) == 0.)) then
               call fatal_error('initialize_density', 'Can not have zero density for lconservative=T')
           endif
         endif
@@ -1168,9 +1168,9 @@ module Density
       lpositive_total_mass = total_mass > 0.0
 
       call get_shared_variable('lext_force',lext_force,default_val=.false.)
-      if(lext_force) then
-        call get_shared_variable('Hscript',Hscript,default_val=0.)
-      endif
+      if (lext_force) call get_shared_variable('Hscript',Hscript,default_val=0.)
+
+      !call initialize_density_bcs
 
     endsubroutine initialize_density
 !***********************************************************************
@@ -1182,7 +1182,7 @@ module Density
 !  28-jun-02/axel: added isothermal
 !  15-oct-03/dave: added spherical shell (kws)
 !
-      use EquationOfState, only: eoscalc, ilnrho_TT, get_gamma_etc
+      use EquationOfState, only: eoscalc, get_gamma_etc
       use General, only: itoa,rtoa,complex_phase,notanumber
       use Gravity, only: zref,z1,z2,gravz,nu_epicycle,potential
       use Initcond
@@ -3310,10 +3310,9 @@ use Sub, only: dot2_mn
 !   Slope limited diffusion for density
 !
       if (ldensity_slope_limited.and.llast) then
-        if(lsld_every_step .or. lrmv) then
-          call calc_sld_fdiff(f,p,fdiff)
-        endif
+        if (lsld_every_step .or. lrmv) call calc_sld_fdiff(f,p,fdiff)
       endif
+
     endsubroutine mass_diffusion
 !***********************************************************************
     subroutine massdiff_fix(df,p,fdiff)
@@ -3495,7 +3494,7 @@ use Sub, only: dot2_mn
 !
       else
 
-      if(lcontinuity_gas) call continuity_eq(f,df,p)
+      if (lcontinuity_gas) call continuity_eq(f,df,p)
 !
 !  Hubble parameter
 !
@@ -4438,7 +4437,7 @@ use Sub, only: dot2_mn
 !
 !  14-may-10/dhruba: coded
 !
-      use EquationOfState, only: eoscalc,ilnrho_TT, get_gamma_etc
+      use EquationOfState, only: eoscalc,get_gamma_etc
 
       real, contiguous, dimension(:,:,:,:) :: f
       real :: haut

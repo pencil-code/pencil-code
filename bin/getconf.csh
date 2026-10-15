@@ -84,14 +84,35 @@ endif
 #
 # Determine number of CPUS
 #
-set nprocx = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*nprocx\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
-set nprocy = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*nprocy\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
-set nprocz = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*nprocz\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
-set ncpus = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*ncpus\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
+set ncpus = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*ncpus\s*=\s*([0-9]*)/i && print $1' src/cparam.local |sed -e's/ncpus/$ncpus/'`
+set nprocx = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*nprocx\s*=\s*([0-9a-zA-Z_\/]*)/i && print $1' src/cparam.local |sed -e's/n/$n/g'`
+set nprocy = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*nprocy\s*=\s*([0-9a-zA-Z_\/]*)/i && print $1' src/cparam.local |sed -e's/n/$n/g'`
+set nprocz = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*nprocz\s*=\s*([0-9a-zA-Z_\/]*)/i && print $1' src/cparam.local |sed -e's/n/$n/g'`
+#
+# The following performs possible arithmetic calculations in the expressions for nproc[xyz].
+# At the moment only expressions of the form <n>/<m> are processed.
+#
+echo "$nprocx" | grep -Eq '^[0-9]+$'    # Checks whether the $nprocx variable has an integer value.
+if ($status) then                       # If not, replaces variables by their integer values.
+  set nprocx = `echo "$nprocx" | sed -e's/\$ncpus/ '$ncpus' /; s/\$nprocy/ '$nprocy' /; s/\$nprocz/ '$nprocz' /'`
+  @ nprocx = $nprocx                    # Performs the arithmetics.
+endif
+echo "$nprocy" | grep -Eq '^[0-9]+$'
+if ($status) then
+  set nprocy = `echo "$nprocy" | sed -e's/\$ncpus/ '$ncpus' /; s/\$nprocx/ '$nprocx' /; s/\$nprocz/ '$nprocz' /'`
+  @ nprocy = $nprocy
+endif
+echo "$nprocz" | grep -Eq '^[0-9]+$'
+if ($status) then
+  set nprocz = `echo "$nprocz" | sed -e's/\$ncpus/ '$ncpus' /; s/\$nprocy/ '$nprocy' /; s/\$nprocx/ '$nprocx' /'`
+  @ nprocz = $nprocz
+endif
+
 if (! $ncpus) then
   @ ncpus = $nprocx * $nprocy * $nprocz
 endif
 @ nprocxy = $nprocx * $nprocy
+#echo NPROCS= $ncpus $nprocx  $nprocy  $nprocz $nprocxy
 #
 # Check for atlas-style grids.
 #
@@ -2333,7 +2354,6 @@ else # no MPI
   set nprocpernode = 1
 
 endif
-
 # Determine compiler specific [PRE|IN|SUF]FIX for qualified names of module quantities
 if ( -e src/start.x ) then
   #eval `nm src/start.x | grep 'cparam.*pencil_names' | sed -e's/^.*  *\([^ ]*\)cparam\([^ ]*\)pencil_names\([^ ]*\) *$/setenv MODULE_PREFIX \1;setenv MODULE_INFIX \2; setenv MODULE_SUFFIX \3/'`
@@ -2408,7 +2428,7 @@ set DIST=`grep '^ *IO *=' src/Makefile.local | tail -n 1 | grep -c '^ *IO *= *io
 set COLL=`grep '^ *IO *=' src/Makefile.local | tail -n 1 | grep -c '^ *IO *= *io_collect[^_]*$'`
 set MPI2=`grep '^ *IO *=' src/Makefile.local | tail -n 1 | grep -c '^ *IO *= *io_mpi2'`
 set COLL_XY=`grep '^ *IO *=' src/Makefile.local | tail -n 1 | grep -c '^ *IO *= *io_collect_xy'`
-
+#
 if ($HDF5) then
   set procdirs = ()
   set subdirs = ("allprocs" "allprocs/signals" "slices" "averages" "idl")
@@ -2422,7 +2442,6 @@ else
   set procdirs = `perl -e 'for $i (0..'"$ncpus"'-1) { print "proc$i\n"}'`
   set subdirs = ("allprocs" "allprocs/signals" "reduced" "averages" "idl")
 endif
-
 if ($local_disc) then
   if ($one_local_disc) then
     echo "Creating directory structure on common scratch disc"

@@ -27,6 +27,7 @@ module Energy
   implicit none
 !
   include 'energy.h'
+  include 'eos_params.h'
 !
   real :: eth_left, eth_right, widtheth, eth_const=1.0
   real :: chi=0.0, chi_shock=0.0, chi_hyper3_mesh=0.
@@ -165,6 +166,7 @@ module Energy
            "$Id$")
 !
       call put_shared_variable('lviscosity_heat',lviscosity_heat, caller='register_energy')
+      call put_shared_variable('chi',chi)
 !
     endsubroutine register_energy
 !***********************************************************************
@@ -175,6 +177,7 @@ module Energy
 !  04-nov-10/anders+evghenii: adapted
 !  03-oct-11/ccyang: add initialization for KI02
 !
+      !use EnergyBcs, only: initialize_energy_bcs
       use EquationOfState, only: select_eos_variable, get_stratz, getmu, cs0, cs20, get_gamma_etc
       use SharedVariables, only: get_shared_variable
       use Slices_methods, only: alloc_slice_buffers
@@ -259,6 +262,7 @@ module Energy
 !
       if (ivid_pp/=0) call alloc_slice_buffers(pp_xy,pp_xz,pp_yz,pp_xy2,pp_xy3,pp_xy4,pp_xz2,pp_r)
 
+      !call initialize_energy_bcs
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_energy
@@ -791,7 +795,7 @@ module Energy
 !  04-nov-10/anders+evghenii: adapted
 !
       use Slices_methods, only: assign_slices_scal, process_slices, exp2d
-      use EquationOfState, only: eoscalc, irho_eth, ilnrho_eth
+      use EquationOfState, only: eoscalc
 !
       real, contiguous,dimension(:,:,:,:) :: f
       type (slice_data) :: slices

@@ -916,7 +916,7 @@ module Snapshot
         if (lfirst_call) then
           if (.not. existed) then 
             tspec_next = t_trigger
-            if(trigger_spec == 'code_time') then
+            if (trigger_spec == 'code_time') then
               tspec_next=tspec_next + dspec
             endif
           endif
@@ -942,19 +942,20 @@ module Snapshot
       use Power_spectrum, only: powerhel
       use Sub, only: update_snaptime
       use Diagnostics, only: save_diagnostic_controls
+      use General, only: loptest
 !
       real, contiguous, dimension(:,:,:,:) :: f
       logical, optional :: lwrite_only
 !
-      logical :: llwrite_only=.false.,ldo_all,lfirstcall_powerhel
-      real, dimension (2) :: sumspec=0.
+      logical :: llwrite_only,ldo_all,lfirstcall_powerhel
+      real, dimension(2) :: sumspec
 !
 !  Set llwrite_only.
 !
-      if (present(lwrite_only)) llwrite_only=lwrite_only
+      llwrite_only=loptest(lwrite_only)
 
       !TP: unfortunately spectrum needs a different t than timeseries since they are in general different
-      if(.not. lmultithread) then
+      if (.not. lmultithread) then
         if (trigger_spec=='code_time') tspec=real(t)
       else 
 
@@ -963,7 +964,7 @@ module Snapshot
         !    which comes before time advancement.
         !    When testing for agreement between CPU and GPU one can suppress all other output than spectra.
         !Kishore: is the lspec_at_tplusdt flag not relevant here?
-        if(ldiagnostic_output) then
+        if (ldiagnostic_output) then
                 tspec_save=t-dt
         else
                 tspec_save=t
@@ -1016,7 +1017,7 @@ module Snapshot
 
       real, dimension (:,:,:), allocatable :: b_vec
       integer :: ivec,stat,ipos,ispec,nloc,mloc,n_pdfs,i,n_cs
-      real, dimension (2) :: sumspec=0.
+      real, dimension(2) :: sumspec
       character (LEN=40) :: str,sp1,sp2
       logical :: lfirstcall, lfirstcall_powerhel, lsqrt
       character (LEN=labellen), dimension(n_pdfs_max) :: pdfs_parsed=''
@@ -1092,7 +1093,7 @@ module Snapshot
         if (uy_spec)  call powerscl(f,'uy')
         if (uz_spec)  call powerscl(f,'uz')
         if (ucp_spec) call powerscl(f,'ucp')
-        !if (lro_spec) call powerscl(f,'ro',lsqrt)
+        !if (lro_spec) call powerscl(f,'ro',lsqrt=lsqrt)
         if (lr_spec)  call powerscl(f,'lr')
         if (pot_spec) call powerscl(f,'po')
         if (ud_spec) then
@@ -1120,7 +1121,7 @@ module Snapshot
         if (ssp_spec) call powerscl(f,'sp',lsqrt=lsqrt)
         if (sssp_spec)call powerscl(f,'Ssp')
         if (mu_spec)  call powerscl(f,'mu')
-        !if (smu_spec) call powerscl(f,'mu',lsqrt)
+        !if (smu_spec) call powerscl(f,'mu',lsqrt=lsqrt)
         if (har_spec) call powerscl(f,'hr')
         if (hav_spec) call powerscl(f,'ha')
         if (b2_spec)  call powerscl(f,'b2')
@@ -1161,7 +1162,7 @@ module Snapshot
               if ( ipos<=len_trim(xy_specs(ispec))-1 ) sp2=str(ipos+1:)
 !
               if ( sp1=='' .or. sp2=='' ) then
-                call warning('powersnap','no valid identifier xy_specs: '//trim(xy_specs(ispec)))
+                call warning('powersnap','no such identifier xy_specs: '//trim(xy_specs(ispec)))
               else
                 call power_xy(f,sp1,sp2)
               endif
