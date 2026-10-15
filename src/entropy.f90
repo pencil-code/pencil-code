@@ -4376,7 +4376,7 @@ module Energy
                                       flux1=sld_flux1,flux2=sld_flux2,flux3=sld_flux3)
             call phisum_mn_name_rz(sld_flux1*p%evr(:,1)+sld_flux2*p%evr(:,2)+sld_flux3*p%evr(:,3), &
                                    idiag_slopelimrsphmphi)
-print*, maxval(sld_flux1*p%evr(:,1)+sld_flux2*p%evr(:,2)+sld_flux3*p%evr(:,3))
+!print*, maxval(sld_flux1*p%evr(:,1)+sld_flux2*p%evr(:,2)+sld_flux3*p%evr(:,3))
           endif
         endif
       endif
