@@ -6447,10 +6447,9 @@ module Hydro
 !
       real, dimension(nx,3) :: Sd
       real, dimension(nx,3,3) :: Smix, Suu
-      real, dimension(nx) :: EE, rhs, tmp
+      real, dimension(nx) :: rhs, tmp
       integer :: i, j, k
 !
-      EE=f(l1:l2,m,n,irho)/p%gr_sqrtg
       do i=1,3
         Sd(:,i)=f(l1:l2,m,n,iuu+i-1)/p%gr_sqrtg
       enddo
@@ -6463,7 +6462,7 @@ module Hydro
       enddo; enddo
 !
       do i=1,3
-        rhs=-EE*p%gr_dalp(:,i)
+        rhs=-p%rho*p%gr_dalp(:,i)
         do k=1,3
           rhs=rhs+Sd(:,k)*p%gr_dbeta(:,k,i)
           do j=1,3
