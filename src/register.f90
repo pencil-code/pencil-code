@@ -185,6 +185,7 @@ module Register
         if (ldynamic_aux) then
           do iaux=1,aux_count-1
             line=aux_var(iaux)
+            if (line=='') cycle
             if (line(len_trim(line):len_trim(line))=='$') line=line(1:len_trim(line)-1)
             aux_var(iaux)=line
             if (iaux<aux_count-1) aux_var(iaux)=trim(line)//' $'
