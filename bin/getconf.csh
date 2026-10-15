@@ -2428,6 +2428,7 @@ set DIST=`grep '^ *IO *=' src/Makefile.local | tail -n 1 | grep -c '^ *IO *= *io
 set COLL=`grep '^ *IO *=' src/Makefile.local | tail -n 1 | grep -c '^ *IO *= *io_collect[^_]*$'`
 set MPI2=`grep '^ *IO *=' src/Makefile.local | tail -n 1 | grep -c '^ *IO *= *io_mpi2'`
 set COLL_XY=`grep '^ *IO *=' src/Makefile.local | tail -n 1 | grep -c '^ *IO *= *io_collect_xy'`
+#echo HDF5etc:$HDF5 $DIST $COLL $MPI2 $COLL_XY
 #
 if ($HDF5) then
   set procdirs = ()
