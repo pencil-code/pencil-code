@@ -30,6 +30,9 @@
 ! PENCILS PROVIDED ext_force(4);
 ! PENCILS PROVIDED uutot(3); divutot; utotij(3,3)
 !
+! PENCILS EXPECTED gr_sqrtg; gr_alp; gr_dalp(3); gr_beta(3); gr_dbeta(3,3)
+! PENCILS EXPECTED gr_gamu(6); gr_dgam(6,3); gr_Kij(6)
+!
 !** AUTOMATIC REFERENCE-LINK.TEX GENERATION ********************
 ! Declare relevant citations from pencil-code/doc/citations/ref.bib for this module.
 ! The entries are taken from pencil-code/doc/citations/notes.tex
@@ -174,6 +177,16 @@ module Hydro
   integer :: neddy=0
   integer :: iTij=0, ihless=0, nhless=0
   integer :: iT11=0,iT12=0,iT13=0,iT21=0,iT22=0,iT23=0,iT31=0,iT32=0,iT33=0
+!
+!  lgr_metric: fluxes F_E^j (FgrE) and F^j_i (FgrS, index iFgrS+3*(i-1)+j-1),
+!  the fluid energy density in the rest frame (egr), the ADM matter sources
+!  for special/z4c, and the indices of the z4c variables.
+!
+  logical, pointer :: lgr_metric
+  integer :: iFgrE=0, iFgrS=0, iegr=0, iEadm=0
+  integer, dimension(3) :: iSadm=0, igr_beta=0
+  integer, dimension(6) :: iSadmij=0, igr_gt=0
+  integer :: igr_chi=0, igr_alp=0
   real, dimension(:), allocatable :: thless, xhless, yhless, zhless
   real, dimension(:), allocatable :: Bsquared
   real :: cs20p1=1., cs20_corr=1., inv_cs20p1=impossible
@@ -213,6 +226,11 @@ module Hydro
     !PAR_DOC: The primitive variable becomes momentum or in the relativistic case $T^{0i}$.
   logical, target :: lrelativistic=.false. !PAR_DOC: Do we keep relativistic terms proportional to $gamma^2$.
   logical, target :: lconservative_pressure_on_rhs=.false.
+
+  logical :: lgr_backreaction=.true. !PAR_DOC: Provide the ADM matter sources to special/z4c;
+    !PAR_DOC: when false the matter is a test fluid in a given spacetime.
+  integer :: niter_gr=30 !PAR_DOC: Newton iterations of the conserved-to-primitive inversion.
+
   logical :: lT00_total = .true., lT0i_total = .true., lT0mu_total = .true.
   logical, pointer :: lrelativistic_eos, lrelativistic_eos_corr
   logical :: lno_noise_uu=.false., lrho_nonuni_uu=.false.
@@ -269,6 +287,7 @@ module Hydro
       uy_left, uy_right, uu_const, Omega, u_out_kep, &
       initpower, initpower2, cutoff, ncutoff, kpeak, kgaussian_uu, &
       lconservative, lrelativistic, lskip_projection, z1_uu, z2_uu, &
+      lgr_backreaction, &
       N_modes_uu, lcoriolis_force, lcentrifugal_force, ladvection_velocity, &
       lprecession, omega_precession, alpha_precession, velocity_ceiling, &
       loo_as_aux, luut_as_aux, luust_as_aux, loot_as_aux, loost_as_aux, &
@@ -372,7 +391,7 @@ module Hydro
       lfreeze_uext, lcoriolis_force, lcentrifugal_force, ladvection_velocity, &
       omega_out, omega_in, lprecession, omega_precession, omega_fourier, &
       alpha_precession, lshear_rateofstrain, r_omega, w_omega, &
-      lconservative, lrelativistic, niter_relB, lalways_use_gij_etc, amp_centforce, &
+      lconservative, lrelativistic, niter_relB, niter_gr, lalways_use_gij_etc, amp_centforce, &
       lconservative_pressure_on_rhs, lT00_total, lT0i_total, lT0mu_total, &
       lcalc_uumean, lcalc_uumeanx, lcalc_uumeanxy, lcalc_uumeanxz, lcalc_uumeanz, &
       lcalc_ruumeanz, lcalc_ruumeanxy, &
@@ -1046,7 +1065,7 @@ module Hydro
 !               temperature_idealgas
 !
       use FArrayManager
-      use SharedVariables, only: put_shared_variable
+      use SharedVariables, only: put_shared_variable, get_shared_variable
       use Sub, only: register_report_aux
 !
 !  Identify version number (generated automatically by SVN).
@@ -1121,6 +1140,12 @@ module Hydro
         igu21=iguij+3; igu22=iguij+4; igu23=iguij+5
         igu31=iguij+6; igu32=iguij+7; igu33=iguij+8
       endif
+!  Evolve the relativistic conservative equations in
+!  the curved spacetime of special/z4c (Valencia form); then $\sqrt{\gamma}E$ and
+!  $\sqrt{\gamma}S_i$ are evolved in irho and iux:iuz, and the magnetic field from
+!  curl A is the densitized $\sqrt{\gamma}B^i$.
+      call get_shared_variable('lgr_metric',lgr_metric,default_val=.false.)
+    
 !!
 !!  Fourier transformed uu as aux
 !!
@@ -1129,7 +1154,10 @@ module Hydro
 !
 !  Tij and possibly relativistic Lorentz factor as aux
 !
-      if (lconservative) then
+      if (lconservative .and. lgr_metric) then
+        call register_gr_aux
+        if (llorentz_as_aux) call register_report_aux('lorentz', ilorentz,communicated=.true.,rhs=.true.)
+      elseif (lconservative) then
         call farray_register_auxiliary('Tij',iTij,vector=6,communicated=.true.,rhs=.true.)
         if (llorentz_as_aux) call register_report_aux('lorentz', ilorentz,communicated=.true.,rhs=.true.)
         iT11 = iTij-1+i11
@@ -1706,6 +1734,8 @@ module Hydro
           allocate(B_ext2); B_ext2=0.
         endif
       endif
+!
+      if (lgr_metric) call initialize_gr_metric
 !
 !  Allocate Higgsless field
 !
@@ -3026,6 +3056,18 @@ module Hydro
         endif
       endif
       if (lprecession) lpenc_requested(i_rr)=.true.
+!
+!  Metric pencils from special/z4c for the momentum equation in curved spacetime.
+!
+      if (lgr_metric) then
+        lpenc_requested(i_gr_sqrtg)=.true.
+        lpenc_requested(i_gr_alp)=.true.
+        lpenc_requested(i_gr_dalp)=.true.
+        lpenc_requested(i_gr_beta)=.true.
+        lpenc_requested(i_gr_dbeta)=.true.
+        lpenc_requested(i_gr_gamu)=.true.
+        lpenc_requested(i_gr_dgam)=.true.
+      endif
 !
 !  Pencils if background velocity is present
 !
@@ -4407,7 +4449,9 @@ module Hydro
 !
       ! alberto: why ldensity?
       if (ldensity) then
-        if(lconservative) then
+        if (lconservative .and. lgr_metric) then
+          call gr_hydro_rhs(f,df,p)
+        elseif(lconservative) then
           if (lkt_transport) then
             call kt_div_tensor(f,divTij)
           else
@@ -6178,6 +6222,264 @@ module Hydro
 
     endsubroutine hydro_after_boundary_conservative
 !***********************************************************************
+    subroutine register_gr_aux
+!
+!  Auxiliaries of the lgr_metric formulation. The ADM sources are registered
+!  one scalar per component under the names special/z4c looks for.
+!
+!  14-oct-26/TP: coded
+!
+      use FArrayManager, only: farray_register_auxiliary
+!
+      integer :: i, j
+!
+      call farray_register_auxiliary('FgrE',iFgrE,vector=3)
+      call farray_register_auxiliary('FgrS',iFgrS,array=9)
+      call farray_register_auxiliary('egr',iegr)
+      if (lgr_backreaction) then
+        call farray_register_auxiliary('Eadm',iEadm)
+        do i=1,3
+          call farray_register_auxiliary('Sadm'//cvec(i),iSadm(i))
+        enddo
+        do j=1,3; do i=1,j
+          call farray_register_auxiliary('Sadm'//cvec(i)//cvec(j),iSadmij(ij_table(i,j)))
+        enddo; enddo
+      endif
+!
+    endsubroutine register_gr_aux
+!***********************************************************************
+    subroutine initialize_gr_metric
+!
+!  Check the setup and find the metric variables of special/z4c.
+!
+!  14-oct-26/TP: coded
+!
+      use FArrayManager, only: farray_index_by_name
+!
+      integer :: i, j
+!
+      if (.not.(lconservative.and.lrelativistic)) call fatal_error('initialize_gr_metric', &
+          'lgr_metric=T requires lconservative=T and lrelativistic=T')
+      if (.not.(lvv_as_aux.or.lvv_as_comaux)) call fatal_error('initialize_gr_metric', &
+          'lgr_metric=T requires lvv_as_aux=T (it holds the coordinate velocity alpha v^i - beta^i)')
+      if (ilorentz==0) call fatal_error('initialize_gr_metric','lgr_metric=T requires llorentz_as_aux=T')
+      if (lkt_transport.or.lhiggsless.or.lproject_admissible) call fatal_error('initialize_gr_metric', &
+          'lgr_metric=T does not work with lkt_transport, lhiggsless or lproject_admissible')
+      if (.not.lcartesian_coords) call fatal_error('initialize_gr_metric', &
+          'lgr_metric=T only works in Cartesian coordinates')
+!
+      igr_chi=farray_index_by_name('chi')
+      igr_alp=farray_index_by_name('alp')
+      do i=1,3
+        igr_beta(i)=farray_index_by_name('beta'//cvec(i))
+      enddo
+      do j=1,3; do i=1,j
+        igr_gt(ij_table(i,j))=farray_index_by_name('gt'//cvec(i)//cvec(j))
+      enddo; enddo
+      if (any((/igr_chi,igr_alp,igr_beta,igr_gt/)<=0)) &
+        call fatal_error('initialize_gr_metric','lgr_metric=T needs the metric of special/z4c')
+!
+    endsubroutine initialize_gr_metric
+!***********************************************************************
+    subroutine hydro_after_boundary_gr(f)
+!
+!  Conserved-to-primitive inversion in curved spacetime (lgr_metric=T) for
+!  the fluid with p = cs20*e (e: rest-frame energy density, no rest mass)
+!  and, if lmagnetic, an ideal-MHD electromagnetic field. Evolved are
+!  sqrt(gamma)*E in irho and sqrt(gamma)*S_i in iux:iuz, where E and S_i are
+!  the total energy and covariant momentum densities seen by the Eulerian
+!  observer; bb=curl(aa) is sqrt(gamma)*B^i. With z = (e+p) W^2,
+!
+!    E   = z - p + (E_el^2 + B^2)/2,   E_el = -v x B,
+!    S_i = (z + B^2) v_i - (v.B) B_i,
+!
+!  which is solved for z by Newton iteration. The fluxes
+!  F_E^j = sqrt(gamma) (alpha S^j - beta^j E) and
+!  F^j_i = sqrt(gamma) (alpha S^j_i - beta^j S_i) are stored for all points,
+!  including the ghost zones, and so are the coordinate velocity
+!  alpha v^i - beta^i (in vv, used by the induction equation), W^2 (lorentz),
+!  e (egr) and the ADM sources E, S_i, S_ij for special/z4c.
+!
+!  14-oct-26/TP: coded
+!
+      use EquationOfState, only: cs20
+      use Sub, only: sym_inverse,lower_index,raise_index,contract_vec
+!
+      real, contiguous, dimension(:,:,:,:) :: f
+      intent(inout) :: f
+!
+      real, parameter :: v2max=1.-1e-12
+      real, dimension(mx,6) :: gt, gtu, gam, gamu
+      real, dimension(mx,3) :: Sd, Su, Bu, Bd, vd, vu, Ed, Eu, beta
+      real, dimension(mx,3,3) :: Smix
+      real, dimension(mx) :: chi, detgt, sg, alp, EE, S2, B2, SB, zz, dz, ff, ffp, v2, e, ptot, E2
+      integer :: i, j, iter
+!
+      do n=1,mz
+      do m=1,my
+!
+!  Metric: gamma_ij = gt_ij/chi, gamma^ij = chi gt^ij, sqrt(gamma) = sqrt(det(gt)/chi^3).
+!
+        chi=f(:,m,n,igr_chi); alp=f(:,m,n,igr_alp)
+        do i=1,6
+          gt(:,i)=f(:,m,n,igr_gt(i))
+        enddo
+        do i=1,3
+          beta(:,i)=f(:,m,n,igr_beta(i))
+        enddo
+        call sym_inverse(gt,gtu,detgt)
+        sg=sqrt(detgt/chi**3)
+        do i=1,6
+          gam(:,i)=gt(:,i)/chi; gamu(:,i)=gtu(:,i)*chi
+        enddo
+!
+        EE=f(:,m,n,irho)/sg
+        do i=1,3
+          Sd(:,i)=f(:,m,n,iuu+i-1)/sg
+        enddo
+        Bu=0.
+        if (lmagnetic) then
+          do i=1,3
+            Bu(:,i)=f(:,m,n,ibx+i-1)/sg
+          enddo
+        endif
+        call raise_index(gamu,Sd,Su)
+        call lower_index(gam,Bu,Bd)
+        S2=contract_vec(Su,Sd)
+        B2=contract_vec(Bu,Bd)
+        SB=contract_vec(Sd,Bu)
+!
+!  Start from the exact solution without magnetic field for the fluid
+!  energy E-B^2/2, then do Newton iterations.
+!
+        e=max(EE-.5*B2,tini)
+        zz=.5*((1.+cs20)*e+sqrt(max(((1.+cs20)*e)**2-4.*cs20*S2,0.)))
+        zz=max(zz,tini)
+        do iter=1,niter_gr
+          ff=gr_zfunc(zz,EE,S2,B2,SB,cs20)
+          if (maxval(abs(ff)/EE)<1e-14) exit
+          dz=1e-7*zz
+          ffp=(gr_zfunc(zz+dz,EE,S2,B2,SB,cs20)-ff)/dz
+          zz=max(zz-ff/ffp,.5*zz)
+        enddo
+!
+!  Primitives: v_i, v^i, W^2, e and the ideal electric field E_i = -sqrt(gamma) [ijk] v^j B^k.
+!
+        do i=1,3
+          vd(:,i)=(Sd(:,i)+SB/zz*Bd(:,i))/(zz+B2)
+        enddo
+        call lower_index(gamu,vd,vu)
+        v2=min(contract_vec(vu,vd),v2max)
+        e=zz*(1.-v2)/(1.+cs20)
+        Ed(:,1)=-sg*(vu(:,2)*Bu(:,3)-vu(:,3)*Bu(:,2))
+        Ed(:,2)=-sg*(vu(:,3)*Bu(:,1)-vu(:,1)*Bu(:,3))
+        Ed(:,3)=-sg*(vu(:,1)*Bu(:,2)-vu(:,2)*Bu(:,1))
+        call raise_index(gamu,Ed,Eu)
+        E2=contract_vec(Eu,Ed)
+        ptot=cs20*e+.5*(E2+B2)
+!
+!  Stress tensor S^j_i and fluxes.
+!
+        do i=1,3
+          do j=1,3
+            Smix(:,j,i)=zz*vu(:,j)*vd(:,i)-Eu(:,j)*Ed(:,i)-Bu(:,j)*Bd(:,i)
+          enddo
+          Smix(:,i,i)=Smix(:,i,i)+ptot
+        enddo
+        do j=1,3
+          f(:,m,n,iFgrE+j-1)=sg*(alp*Su(:,j)-beta(:,j)*EE)
+          do i=1,3
+            f(:,m,n,iFgrS+3*(i-1)+j-1)=sg*(alp*Smix(:,j,i)-beta(:,j)*Sd(:,i))
+          enddo
+          f(:,m,n,ivv+j-1)=alp*vu(:,j)-beta(:,j)
+        enddo
+        f(:,m,n,ilorentz)=1./(1.-v2)
+        f(:,m,n,iegr)=e
+!
+!  ADM sources, S_ij = S^k_i gamma_kj.
+!
+        if (lgr_backreaction) then
+          f(:,m,n,iEadm)=EE
+          do i=1,3
+            f(:,m,n,iSadm(i))=Sd(:,i)
+          enddo
+          do j=1,3; do i=1,j
+            f(:,m,n,iSadmij(ij_table(i,j)))=Smix(:,1,i)*gam(:,ij_table(1,j)) &
+                +Smix(:,2,i)*gam(:,ij_table(2,j))+Smix(:,3,i)*gam(:,ij_table(3,j))
+          enddo; enddo
+        endif
+      enddo
+      enddo
+!
+    endsubroutine hydro_after_boundary_gr
+!***********************************************************************
+    elemental real function gr_zfunc(zz,EE,S2,B2,SB,w)
+!
+!  Residual of the energy equation for given z = (e+p) W^2, see
+!  hydro_after_boundary_gr; v^2 follows from the momentum equation.
+!
+!  14-oct-26/TP: coded
+!
+      real, intent(in) :: zz, EE, S2, B2, SB, w
+      real :: v2
+!
+      v2=min((S2+SB**2*(2.*zz+B2)/zz**2)/(zz+B2)**2,1.-1e-12)
+      gr_zfunc=zz-w*zz*(1.-v2)/(1.+w)+.5*B2*(1.+v2)-.5*SB**2/zz**2-EE
+!
+    endfunction gr_zfunc
+!***********************************************************************
+    subroutine gr_hydro_rhs(f,df,p)
+!
+!  Right-hand side of sqrt(gamma)*S_i for lgr_metric=T
+!  (e.g. Banyuls et al. 1997, ApJ 476, 221; Font 2008, Living Rev. Rel. 11, 7):
+!
+!    d_t(sg S_i) + d_j F^j_i = sg (-E d_i alpha + S_k d_i beta^k + alpha/2 S^jk d_i gamma_jk)
+!
+!  The metric quantities are pencils of special/z4c; S^j_i is recovered from
+!  the stored flux F^j_i. The energy equation is in density (dlnrho_dt).
+!
+!  14-oct-26/TP: coded
+!
+      use Deriv, only: der
+!
+      real, contiguous, dimension(:,:,:,:) :: f, df
+      type (pencil_case) :: p
+!
+      real, dimension(nx,3) :: Sd
+      real, dimension(nx,3,3) :: Smix, Suu
+      real, dimension(nx) :: EE, rhs, tmp
+      integer :: i, j, k
+!
+      EE=f(l1:l2,m,n,irho)/p%gr_sqrtg
+      do i=1,3
+        Sd(:,i)=f(l1:l2,m,n,iuu+i-1)/p%gr_sqrtg
+      enddo
+      do i=1,3; do j=1,3
+        Smix(:,j,i)=(f(l1:l2,m,n,iFgrS+3*(i-1)+j-1)/p%gr_sqrtg+p%gr_beta(:,j)*Sd(:,i))/p%gr_alp
+      enddo; enddo
+      do k=1,3; do j=1,3
+        Suu(:,j,k)=Smix(:,j,1)*p%gr_gamu(:,ij_table(1,k))+Smix(:,j,2)*p%gr_gamu(:,ij_table(2,k)) &
+                  +Smix(:,j,3)*p%gr_gamu(:,ij_table(3,k))
+      enddo; enddo
+!
+      do i=1,3
+        rhs=-EE*p%gr_dalp(:,i)
+        do k=1,3
+          rhs=rhs+Sd(:,k)*p%gr_dbeta(:,k,i)
+          do j=1,3
+            rhs=rhs+.5*p%gr_alp*Suu(:,j,k)*p%gr_dgam(:,ij_table(j,k),i)
+          enddo
+        enddo
+        rhs=p%gr_sqrtg*rhs
+        do j=1,3
+          call der(f,iFgrS+3*(i-1)+j-1,tmp,j)
+          rhs=rhs-tmp
+        enddo
+        df(l1:l2,m,n,iuu+i-1)=df(l1:l2,m,n,iuu+i-1)+rhs
+      enddo
+!
+    endsubroutine gr_hydro_rhs
+!***********************************************************************
     subroutine hydro_after_boundary(f)
 !
 !  Calculate <rho*ux> and <rho*uy> when tau_damp_ruxm, tau_damp_ruym,
@@ -6201,7 +6503,11 @@ module Hydro
       integer :: i,j,l
 !
       if (lconservative) then
-        call hydro_after_boundary_conservative(f)
+        if (lgr_metric) then
+          call hydro_after_boundary_gr(f)
+        else
+          call hydro_after_boundary_conservative(f)
+        endif
       endif
 !
 !  possibility of setting interior boundary conditions

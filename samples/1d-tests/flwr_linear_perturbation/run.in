@@ -1,0 +1,18 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Runtime parameters: linear perturbation of dust FLRW, test 2 of Macpherson, Lasky & Price (2017)
+!
+&run_pars
+  nt=100000, it1=100, cdt=0.4, itorder=3, tmax=482480.8584574876, dsnap=1e9, d1davg=2000.
+  lpencil_check=F, lpencil_check_small=F
+  tmax=1e+4
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+/
+&special_run_pars
+  lapse_type='harmonic', harmonic_f=0.25, shift_type='zero', kappa1=0.
+/

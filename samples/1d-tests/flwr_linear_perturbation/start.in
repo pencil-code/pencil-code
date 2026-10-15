@@ -1,0 +1,23 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Initialisation parameters: linear perturbation of dust FLRW, test 2 of Macpherson, Lasky & Price (2017)
+!
+&init_pars
+  xyz0=-240.,-240.,-240., Lxyz=480.,480.,480.
+  lperi=T,T,T
+  lwrite_aux=T, lwrite_avg1d_binary=T
+/
+&eos_init_pars
+  gamma=1., cs0=0.
+/
+&hydro_init_pars
+  lconservative=T, lrelativistic=T, lvv_as_aux=T, llorentz_as_aux=T
+/
+&density_init_pars
+  ldensity_nolog=T, lrelativistic_eos=T
+/
+&special_init_pars
+/
+&initial_condition_pars
+  initgr='flrw_singlemode', H0=0.00028944050182330705, phi0=1e-8, perturb_dir='x'
+/
