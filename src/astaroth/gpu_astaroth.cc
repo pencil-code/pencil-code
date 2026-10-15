@@ -2190,7 +2190,7 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_,
   MPI_Barrier(MPI_COMM_WORLD);
   acStoreConfig(mesh.info, "PC-AC.conf");
   ac_compile();
-  acLoadLibrary(stderr, mesh.info);
+  acLoadLibrary(mesh.info);
   acCheckDeviceAvailability();
   acLogFromRootProc(rank, "Done setupConfig && acCompile\n");
 #else
@@ -2306,7 +2306,7 @@ extern "C" void reloadConfig()
   generate_bcs();
   MPI_Barrier(MPI_COMM_WORLD);
   ac_compile();
-  acLoadLibrary(stderr, mesh.info);
+  acLoadLibrary(mesh.info);
   acGridInit(mesh);
   acLogFromRootProc(rank, "Done setupConfig && acCompile\n");
   fflush(stdout);

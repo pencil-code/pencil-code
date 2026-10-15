@@ -780,6 +780,9 @@ module Mpicomm
       integer :: type_get, type_store, win
       INTEGER(KIND=MPI_ADDRESS_KIND) :: size
 
+      if (nxgrid>1024.and.nygrid>1024.and.nzgrid>1024) &
+        call stop_it('scatter_snapshot: array size too big')
+      
       nvar=indvar2-indvar1+1
       start_get=(/ipx*nx,ipy*ny,ipz*nz,0/)+1
       start_store=(/ipx*nx+1+nghost,ipy*ny+1+nghost,ipz*nz+1+nghost,indvar1/)

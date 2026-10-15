@@ -103,6 +103,7 @@ module EquationOfState
 !
       use FArrayManager
       use SharedVariables, only: put_shared_variable
+      use Sub, only: register_report_aux
 !
 !  Set indices for auxiliary variables.
 !
@@ -127,6 +128,17 @@ module EquationOfState
       else
         call put_shared_variable('TTtop',TTtop)
       endif
+!
+!  pressure, cp, and cv as optional auxiliary variable
+!
+      if (lss_as_aux) call register_report_aux('sss',iss)
+      if (lpp_as_aux) call register_report_aux('ppp',ipp)
+      if (lcp_as_aux) call register_report_aux('cp',icp)
+      if (lcv_as_aux) call register_report_aux('cv',icv)
+      if (lcs_as_aux) call register_report_aux('cs',ics)
+      if (ldelta_as_aux) call register_report_aux('delta',idelta)
+      if (lgamma_as_aux) call register_report_aux('gamma',igamma)
+      if (lnabad_as_aux) call register_report_aux('nabad',inabad)
 
     endsubroutine register_eos
 !***********************************************************************
@@ -136,7 +148,6 @@ module EquationOfState
 !
 !  21-may-14/axel: adapted from eos_entropy
 !
-      use Sub, only: register_report_aux
 !
       real, contiguous,dimension(:,:,:,:) :: f
 !
@@ -171,17 +182,6 @@ module EquationOfState
       lnrho_e_ = log(rho_e_)
       kappa0 = sigmaH_*mu1_0/(4*m_u)
       pp_ion = Rgas*mu1_0*rho_e*TT_ion
-!
-!  pressure, cp, and cv as optional auxiliary variable
-!
-      if (lss_as_aux) call register_report_aux('sss',iss)
-      if (lpp_as_aux) call register_report_aux('ppp',ipp)
-      if (lcp_as_aux) call register_report_aux('cp',icp)
-      if (lcv_as_aux) call register_report_aux('cv',icv)
-      if (lcs_as_aux) call register_report_aux('cs',ics)
-      if (ldelta_as_aux) call register_report_aux('delta',idelta)
-      if (lgamma_as_aux) call register_report_aux('gamma',igamma)
-      if (lnabad_as_aux) call register_report_aux('nabad',inabad)
 
       if (lcalc_cp_full .and. .not.allocated(cp_full)) allocate (cp_full(mx,my,mz))
 !
