@@ -134,9 +134,15 @@ module Sub
     module procedure poly_1
     module procedure poly_3
   endinterface
+
+  interface g2ij 
+    module procedure g2ij_scal
+    module procedure g2ij_vec
+  endinterface
 !
   interface grad                 ! Overload the `grad' function
     module procedure grad_main   ! grad of an 'mvar' variable
+    module procedure grad_vec    ! grad of an 'mvar' variable
     module procedure grad_other  ! grad of another field (mx,my,mz)
   endinterface
 !
@@ -1688,6 +1694,31 @@ subroutine dot_mn_sv_pencil(a,b,c)
 !
     endsubroutine grad_main
 !***********************************************************************
+    subroutine grad_vec(f,k,g)
+!
+!  Calculate gradient of a vector, get tensor
+!
+!  15-Oct-26/TP: coded
+!
+      use Deriv, only: der
+!
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension (:,:,:) :: g
+      integer :: k
+!
+      intent(in) :: f,k
+      intent(out) :: g
+
+      integer :: i,j
+!
+      do i=1,size(g,2)
+        do j=1,3
+          call der(f,k-1+i,g(:,i,j),j)
+        enddo
+      enddo
+!
+    endsubroutine grad_vec
+!***********************************************************************
     subroutine grad_other(f,g)
 !
 !  For non 'mvar' variable calculate gradient of a scalar, get vector
@@ -3172,7 +3203,7 @@ subroutine dot_mn_sv_pencil(a,b,c)
 !
     endsubroutine gij_etc
 !***********************************************************************
-    subroutine g2ij(f,k,g)
+    subroutine g2ij_scal(f,k,g)
 !
 !  Calculates the Hessian, i.e. all second derivatives of a scalar.
 !
@@ -3197,7 +3228,30 @@ subroutine dot_mn_sv_pencil(a,b,c)
         enddo
       enddo
 !
-    endsubroutine g2ij
+    endsubroutine g2ij_scal
+!***********************************************************************
+    subroutine g2ij_vec(f,k,g)
+!
+!  Calculates the Hessian, i.e. all second derivatives of a vector.
+!  Returns a rank3 tensor
+!
+!  11-jul-02/axel: coded
+!
+      use Deriv, only: der2,derij
+!
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension (:,:,:,:) :: g
+      integer :: k
+!
+      intent(in) :: f,k
+      intent(out) :: g
+
+      integer :: k_i
+      do k_i=1,size(g,2)
+        call g2ij_scal(f,k-1+k_i,g(:,k_i,:,:))
+      enddo
+!
+    endsubroutine g2ij_vec
 !***********************************************************************
     subroutine del4(f,k,del4f,ignoredx)
 !

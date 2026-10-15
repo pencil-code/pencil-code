@@ -445,17 +445,13 @@ module Special
       call grad(f,ialp,q%dalp); call g2ij(f,ialp,q%d2alp)
       call grad(f,iKh,q%dKh)
       call grad(f,ith,q%dth)
-      do i=1,6
-        call grad(f,igt(i),q%dgt(:,i,:)); call g2ij(f,igt(i),q%d2gt(:,i,:,:))
-        call grad(f,iAt(i),q%dAt(:,i,:))
-      enddo
-      do i=1,3
-        call grad(f,iGam(i),q%dGam(:,i,:))
-      enddo
+      call g2ij(f,igt(1),q%d2gt)
+      call grad(f,igt(1),q%dgt)
+      call grad(f,iAt(1),q%dAt)
+      call grad(f,iGam(1),q%dGam)
       if (lshift) then
-        do i=1,3
-          call grad(f,ibeta(i),q%dbeta(:,i,:)); call g2ij(f,ibeta(i),q%d2beta(:,i,:,:))
-        enddo
+        call g2ij(f,ibeta(1),q%d2beta)
+        call grad(f,ibeta(1),q%dbeta)
         q%divb=q%dbeta(:,1,1)+q%dbeta(:,2,2)+q%dbeta(:,3,3)
       endif
 !
@@ -608,7 +604,11 @@ module Special
       lbound=.false.
       if (lsommerfeld) then
         lbound=sommerfeld_mask()
-        if (any(lbound)) df_in=df(l1:l2,m,n,ichi:ibeta(3))
+        if (any(lbound)) then
+          do i=ichi,ibeta(3)
+            df_in(:,i) =df(l1:l2,m,n,i)
+          enddo
+        endif
       endif
 !
       lapalp=q%chi*contract(q%gtu,q%DDalp)
