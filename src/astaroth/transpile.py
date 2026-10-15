@@ -47,6 +47,8 @@ def main():
     if skip_generation:
         return
 
+    #parse.py reuses res-inlined.txt if it exists; a failed earlier run leaves a stale one behind
+    if os.path.exists("res-inlined.txt"): os.remove("res-inlined.txt")
     run_cmd(command)
     os.system("rm res-inlined.txt")
     rhs_already_exists = os.path.exists("DSL/local/rhs.h") and not os.system("diff rhs.ac DSL/local/rhs.h") 

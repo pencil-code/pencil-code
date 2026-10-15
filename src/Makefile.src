@@ -3231,7 +3231,7 @@ FORCE_GPU_MAKE:
 #  Rule for building the Astaroth and interface libraries.
 #
 #$(LIBGPU): $(GPU_DEPS)
-$(DSL_WORKDIR)/boundconds.h:
+$(DSL_WORKDIR)/boundconds.h: cparam.inc
 	rm -f astaroth/DSL/local/boundconds.h
 	mkdir -p astaroth/DSL/local
 	touch astaroth/DSL/local/boundconds.h

@@ -4889,6 +4889,9 @@ use Sub, only: dot2_mn
     call copy_addr(cs20p1,p_par(87))
     call copy_addr(cs20_corr,p_par(88))
 
+    call copy_addr(iegr,p_par(89)) ! int
+    call copy_addr(ifgre,p_par(90)) ! int
+    call copy_addr(ifgrs,p_par(91)) ! int
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Density

@@ -7763,6 +7763,12 @@ iloop:do i=1,size(list2)
         dst = enum_alpha_attractors_corrected_string
       case('/bvec')
         dst = enum_Zbvec_string
+      case('1+log')
+        dst = enum_1Zlog_string
+      case('harmonic')
+        dst = enum_harmonic_string
+      case('frozen')
+        dst = enum_frozen_string
       case('waterfall')
         dst = enum_waterfall_string
       case('imposed-cs2-core')

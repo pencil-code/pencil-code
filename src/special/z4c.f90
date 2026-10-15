@@ -63,6 +63,7 @@ module Special
 ! Run parameters
 !
   character(len=labellen) :: lapse_type='1+log', shift_type='gamma-driver'
+  integer :: enum_lapse_type=0
   real :: kappa1=0.02, kappa2=0., shift_mu=1., shift_eta=2., diss_ko=0.
   real :: chi_floor=1e-6, r_excise_diag=0., harmonic_f=1.
   logical :: lenforce_algebraic=.true., lupw_beta=.false., lsommerfeld=.false.
@@ -77,6 +78,7 @@ module Special
 !
   integer :: ichi=0, iKh=0, ith=0, ialp=0
   integer, dimension(6) :: igt=0, iAt=0
+  integer, parameter :: nz4c=22   ! number of Z4c variables, ichi:ibeta(3)
   integer, dimension(3) :: iGam=0, ibeta=0
 !
 !  ADM matter sources E, S_i, S_ij (covariant, physical) in auxiliary slots
@@ -593,7 +595,7 @@ module Special
       type(pencil_case) :: p
 !
       real, dimension(nx,6) :: Xij
-      real, dimension(nx,ichi:ibeta(3)) :: df_in
+      real, dimension(nx,nz4c) :: df_in
       real, dimension(nx) :: lapalp, trX, rhs, tmp, speed
       logical, dimension(nx) :: lbound
       integer :: i, j, k, ij
@@ -604,11 +606,7 @@ module Special
       lbound=.false.
       if (lsommerfeld) then
         lbound=sommerfeld_mask()
-        if (any(lbound)) then
-          do i=ichi,ibeta(3)
-            df_in(:,i) =df(l1:l2,m,n,i)
-          enddo
-        endif
+        if (any(lbound)) call save_df_z4c(df,df_in)
       endif
 !
       lapalp=q%chi*contract(q%gtu,q%DDalp)
@@ -709,13 +707,21 @@ module Special
 !
 !  Kreiss-Oliger dissipation of order 6, sigma/64 dx^5 d^6/dx^6.
 !
+!  The variables are visited by name (not by a loop over ichi:ibeta(3)) so
+!  that the GPU transpiler can map each df access to its field.
+!
       if (diss_ko/=0.) then
-        do k=ichi,ibeta(3)
-          if (.not.lshift .and. any(k==ibeta)) cycle
-          do j=1,3
-            call der6(f,k,tmp,j,ignoredx=.true.)
-            df(l1:l2,m,n,k)=df(l1:l2,m,n,k)+(diss_ko/64.)*dline_1(:,j)*tmp
-          enddo
+        call kreiss_oliger(f,df,ichi)
+        call kreiss_oliger(f,df,iKh)
+        call kreiss_oliger(f,df,ith)
+        call kreiss_oliger(f,df,ialp)
+        do ij=1,6
+          call kreiss_oliger(f,df,igt(ij))
+          call kreiss_oliger(f,df,iAt(ij))
+        enddo
+        do i=1,3
+          call kreiss_oliger(f,df,iGam(i))
+          if (lshift) call kreiss_oliger(f,df,ibeta(i))
         enddo
       endif
 !
@@ -749,9 +755,12 @@ module Special
       logical, dimension(nx) :: sommerfeld_mask
 !
       sommerfeld_mask=.false.
+!  The x boundary points are selected pointwise (not as elements 1 and nx of
+!  the pencil) so that the GPU transpiler can map the mask.
+!
       if (.not.lperi(1)) then
-        if (lfirst_proc_x) sommerfeld_mask(1)=.true.
-        if (llast_proc_x) sommerfeld_mask(nx)=.true.
+        if (lfirst_proc_x) sommerfeld_mask=sommerfeld_mask .or. x(l1:l2)==x(l1)
+        if (llast_proc_x) sommerfeld_mask=sommerfeld_mask .or. x(l1:l2)==x(l2)
       endif
       if (.not.lperi(2)) then
         if ((lfirst_proc_y.and.m==m1).or.(llast_proc_y.and.m==m2)) sommerfeld_mask=.true.
@@ -762,36 +771,115 @@ module Special
 !
     endfunction sommerfeld_mask
 !***********************************************************************
+    subroutine kreiss_oliger(f,df,k)
+!
+!  Kreiss-Oliger dissipation of order 6, sigma/64 dx^5 d^6/dx^6, of variable k.
+!
+!  15-oct-26/TP: split off from dspecial_dt
+!
+      use Deriv, only: der6
+!
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      integer :: k
+!
+      real, dimension(nx) :: tmp
+      integer :: j
+!
+      do j=1,3
+        call der6(f,k,tmp,j,ignoredx=.true.)
+        df(l1:l2,m,n,k)=df(l1:l2,m,n,k)+(diss_ko/64.)*dline_1(:,j)*tmp
+      enddo
+!
+    endsubroutine kreiss_oliger
+!***********************************************************************
+    subroutine save_df_z4c(df,df_in)
+!
+!  Copy of df of the Z4c variables, in the order chi, gt(1:6), Kh, At(1:6),
+!  theta, Gam(1:3), alp, beta(1:3).
+!
+!  15-oct-26/TP: coded
+!
+      real, dimension(mx,my,mz,mvar) :: df
+      real, dimension(nx,nz4c) :: df_in
+!
+      integer :: i, ij
+!
+      df_in(:,1)=df(l1:l2,m,n,ichi)
+      df_in(:,8)=df(l1:l2,m,n,iKh)
+      df_in(:,15)=df(l1:l2,m,n,ith)
+      df_in(:,19)=df(l1:l2,m,n,ialp)
+      do ij=1,6
+        df_in(:,1+ij)=df(l1:l2,m,n,igt(ij))
+        df_in(:,8+ij)=df(l1:l2,m,n,iAt(ij))
+      enddo
+      do i=1,3
+        df_in(:,15+i)=df(l1:l2,m,n,iGam(i))
+        df_in(:,19+i)=df(l1:l2,m,n,ibeta(i))
+      enddo
+!
+    endsubroutine save_df_z4c
+!***********************************************************************
     subroutine sommerfeld(f,df,df_in,lbound)
 !
 !  Radiative (Sommerfeld) condition d_t u = -(x^i/r) d_i u - (u-u0)/r with
 !  unit speed and flat-space asymptotic values u0, replacing the right-hand
 !  side at the boundary points lbound. df_in is df before dspecial_dt added
-!  to it.
+!  to it (see save_df_z4c for its order). u0=1 for chi, alp and the diagonal
+!  of gt (ij_table puts 11, 22, 33 first).
 !
 !  13-oct-26/TP: coded
+!  15-oct-26/TP: variables visited by name for the GPU transpiler
+!
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real, dimension(nx,nz4c) :: df_in
+      logical, dimension(nx) :: lbound
+!
+      real :: u0
+      integer :: i, ij
+!
+      call sommerfeld_var(f,df,ichi,df_in(:,1),1.,lbound)
+      call sommerfeld_var(f,df,iKh,df_in(:,8),0.,lbound)
+      call sommerfeld_var(f,df,ith,df_in(:,15),0.,lbound)
+      call sommerfeld_var(f,df,ialp,df_in(:,19),1.,lbound)
+      do ij=1,6
+        u0=0.
+        if (ij<=3) u0=1.
+        call sommerfeld_var(f,df,igt(ij),df_in(:,1+ij),u0,lbound)
+        call sommerfeld_var(f,df,iAt(ij),df_in(:,8+ij),0.,lbound)
+      enddo
+      do i=1,3
+        call sommerfeld_var(f,df,iGam(i),df_in(:,15+i),0.,lbound)
+        call sommerfeld_var(f,df,ibeta(i),df_in(:,19+i),0.,lbound)
+      enddo
+!
+    endsubroutine sommerfeld
+!***********************************************************************
+    subroutine sommerfeld_var(f,df,k,dfk_in,u0,lbound)
+!
+!  Sommerfeld condition for variable k, see sommerfeld.
+!
+!  15-oct-26/TP: split off from sommerfeld
 !
       use Sub, only: grad
 !
       real, contiguous, dimension(:,:,:,:) :: f
       real, dimension(mx,my,mz,mvar) :: df
-      real, dimension(nx,ichi:ibeta(3)) :: df_in
+      integer :: k
+      real, dimension(nx) :: dfk_in
+      real :: u0
       logical, dimension(nx) :: lbound
 !
       real, dimension(nx,3) :: gu
-      real, dimension(nx) :: rr, u0
-      integer :: k
+      real, dimension(nx) :: rr
 !
       rr=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
-      do k=ichi,ibeta(3)
-        u0=0.
-        if (k==ichi .or. k==ialp .or. k==igt(i11) .or. k==igt(i22) .or. k==igt(i33)) u0=1.
-        call grad(f,k,gu)
-        where (lbound) df(l1:l2,m,n,k)=df_in(:,k) &
-            -(x(l1:l2)*gu(:,1)+y(m)*gu(:,2)+z(n)*gu(:,3))/rr-(f(l1:l2,m,n,k)-u0)/rr
-      enddo
+      call grad(f,k,gu)
+      where (lbound) df(l1:l2,m,n,k)=dfk_in &
+          -(x(l1:l2)*gu(:,1)+y(m)*gu(:,2)+z(n)*gu(:,3))/rr-(f(l1:l2,m,n,k)-u0)/rr
 !
-    endsubroutine sommerfeld
+    endsubroutine sommerfeld_var
 !***********************************************************************
     subroutine calc_diagnostics_special(f,p)
 !
@@ -974,6 +1062,31 @@ module Special
 
     integer, parameter :: n_pars=100
     integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr(kappa1,p_par(1))
+    call copy_addr(kappa2,p_par(2))
+    call copy_addr(shift_mu,p_par(3))
+    call copy_addr(shift_eta,p_par(4))
+    call copy_addr(diss_ko,p_par(5))
+    call copy_addr(harmonic_f,p_par(6))
+    call copy_addr(lupw_beta,p_par(7)) ! bool
+    call copy_addr(lsommerfeld,p_par(8)) ! bool
+    call copy_addr(lgr_metric,p_par(9)) ! bool
+    call copy_addr(ichi,p_par(10)) ! int
+    call copy_addr(ikh,p_par(11)) ! int
+    call copy_addr(ith,p_par(12)) ! int
+    call copy_addr(ialp,p_par(13)) ! int
+    call copy_addr(ieadm,p_par(14)) ! int
+    call copy_addr(lmatter,p_par(15)) ! bool
+    call copy_addr(lshift,p_par(16)) ! bool
+    call copy_addr(igt,p_par(17)) ! int (6)
+    call copy_addr(iat,p_par(18)) ! int (6)
+    call copy_addr(igam,p_par(19)) ! int3
+    call copy_addr(ibeta,p_par(20)) ! int3
+    call copy_addr(isadm,p_par(21)) ! int3
+    call copy_addr(isadmij,p_par(22)) ! int (6)
+    call string_to_enum(enum_lapse_type,lapse_type)
+    call copy_addr(enum_lapse_type,p_par(23)) ! int
 
   endsubroutine pushpars2c
 !***********************************************************************

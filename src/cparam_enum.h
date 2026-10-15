@@ -980,3 +980,6 @@ integer, parameter :: enum_const_shear_string = 970
 integer, parameter :: enum_test1_string = 971
 integer, parameter :: enum_alpha_attractors_corrected_string = 972
 integer, parameter :: enum_Zbvec_string = 973
+integer, parameter :: enum_1Zlog_string = 974
+integer, parameter :: enum_harmonic_string = 975
+integer, parameter :: enum_frozen_string = 976
