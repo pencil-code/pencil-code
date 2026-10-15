@@ -1827,6 +1827,9 @@ extern "C" void substepGPU(int isubstep, double t)
 /***********************************************************************************************/
 void copyFarray(AcReal* f)
 {
+  //user_constants.h declares mfarray with its DSL value (capacity incl. DYNAMIC_AUX extra slots),
+  //which would shadow the run-time number of f-array slots (= size of maux_vtxbuf_index)
+  const int nfarray = mfarray;
   #include "user_constants.h"
 
   acGridSynchronizeStream(STREAM_ALL);
@@ -1835,7 +1838,7 @@ void copyFarray(AcReal* f)
   //If doing training we read all since we might want TAU components to calculate e.g. validation error
   const int all_vtxbufs = acGetNumFields();
   const int end = ltraining ? acGetNumFields(): 
-	  	  lread_all_vars_from_device ? mfarray : mvar;
+	  	  lread_all_vars_from_device ? nfarray : mvar;
 
   AcMesh* dst = &mesh;
   AcMesh tmp;
@@ -1849,7 +1852,7 @@ void copyFarray(AcReal* f)
 	  //Have to specialize for training for now since we are reading fields that do not exist in Fortran: TODO: allocate fields on the CPU in Fortran
 	  const int index = ltraining ? i : 
 		  	    i < mvar ? i :
-			    i < mfarray ?  maux_vtxbuf_index[i] : -1;
+			    i < nfarray ?  maux_vtxbuf_index[i] : -1;
 	  bool read_var = (i < end);
 	  read_var &= (index != -1);
 	  read_var |= (read_vtxbuf_from_gpu[i]);
@@ -1864,13 +1867,14 @@ void copyFarray(AcReal* f)
   {
   	for (int i = 0; i < end; ++i)
   	{
-		if (i >= mvar && maux_vtxbuf_index[i] == -1) continue;
+		const int index = (i < mvar) ? i : maux_vtxbuf_index[i];
+		if (index == -1) continue;
  		if (nxgrid != 1)
 		{
 			for (int x = 0; x < nx; ++x)
 			{
 				const size_t f_index = (NGHOST+x)+ mx*(NGHOST + my*(NGHOST));
-				mesh.vertex_buffer[i][f_index] = dst->vertex_buffer[i][NGHOST+x];
+				mesh.vertex_buffer[index][f_index] = dst->vertex_buffer[index][NGHOST+x];
 			}
 		}
  		if (nygrid != 1)
@@ -1878,7 +1882,7 @@ void copyFarray(AcReal* f)
 			for (int y = 0; y < ny; ++y)
 			{
 				const size_t f_index = (NGHOST)+ mx*((y+NGHOST) + my*(NGHOST));
-				mesh.vertex_buffer[i][f_index] = dst->vertex_buffer[i][NGHOST+y];
+				mesh.vertex_buffer[index][f_index] = dst->vertex_buffer[index][NGHOST+y];
 			}
 		}
  		if (nzgrid != 1)
@@ -1886,7 +1890,7 @@ void copyFarray(AcReal* f)
 			for (int z = 0; z < nz; ++z)
 			{
 				const size_t f_index = (NGHOST)+ mx*(NGHOST + my*(z+NGHOST));
-				mesh.vertex_buffer[i][f_index] = dst->vertex_buffer[i][NGHOST+z];
+				mesh.vertex_buffer[index][f_index] = dst->vertex_buffer[index][NGHOST+z];
 			}
 		}
 	}
@@ -1900,7 +1904,7 @@ void copyFarray(AcReal* f)
 		if (index == -1) continue;
 		const size_t f_index = (NGHOST) + mx*(NGHOST + my*(NGHOST));
 		const size_t ac_index = 0;
- 		mesh.vertex_buffer[i][f_index] = dst->vertex_buffer[i][ac_index];
+ 		mesh.vertex_buffer[index][f_index] = dst->vertex_buffer[index][ac_index];
 	}
   }
   if (nghost > 0 && dimensionality == 2 && nygrid == 1)
