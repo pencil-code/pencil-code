@@ -339,7 +339,7 @@ Kernel compute_taus(){
           }
 	  if(AC_ltrain_mag__mod__training)
 	  {
-            // write(bb_tensor_product,-(bb_tensor_product-tensor_product(bbmean)))
+            write(bb_tensor_product,-(bb_tensor_product-tensor_product(bbmean)))
             write(sgs_emf,sgs_emf - cross(uumean,bbmean))
 	  }
 	}

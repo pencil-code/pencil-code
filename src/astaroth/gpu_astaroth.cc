@@ -22,13 +22,6 @@
 #include <dlfcn.h>
 #include <thread>
 #include <stack>
-#include "torchfort.h"
-
-#if AC_DOUBLE_PRECISION
-#define TORCH_PRECISION TORCHFORT_DOUBLE
-#else
-#define TORCH_PRECISION TORCHFORT_FLOAT
-#endif
 
 static std::thread GW_thread{};
 static int device_id = 0;
@@ -721,7 +714,7 @@ void save_stats(std::string fileName){
           for (const auto& s : tensor_suffix) myFile << ",out_acc_sum_sq_tau" << s;
         }
 	myFile << "\n";
-	myFile << train_counter << "," << nxgrid*nygrid*nzgrid;
+	myFile << train_counter << "," << (size_t)nxgrid*nygrid*nzgrid;
       }
     
 
@@ -1233,8 +1226,6 @@ extern "C" void tf_infer_c_api(const char* name, int itsub)
    acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetTAU_HYDRO_XX(), &output, &out);
    outputs.emplace_back(output, 6);
 
-	 acGridHaloExchange();
-   torch_infer_multiarg_CAPI((int[]){mz, my, mx}, inputs, outputs, name);
 
   }
 
@@ -1248,9 +1239,9 @@ extern "C" void tf_infer_c_api(const char* name, int itsub)
     acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetF_SGS_EMF_X(), &output, &out);
     outputs.emplace_back(output, 3);
 
-    acGridHaloExchange();
 
   }
+    acGridHaloExchange();
     torch_infer_multiarg_CAPI((int[]){mz, my, mx}, inputs, outputs, name);
 
 	
@@ -1355,24 +1346,6 @@ extern "C" void tf_train_c_api(const char* name, AcReal *loss_val, int itsub, do
 
   //print_debug();
 
-  if (it==nt){
-  	std::ofstream myFile;
-  	std::string fileString = "OLD-VERSION-OF-FILE_train_loss_" + std::to_string(my_rank)  + ".csv";	
-  	myFile.open(fileString);
-  	myFile << "epoch,train_loss\n";
-  	for (int i=0;i<train_loss.size();i++){
-  		myFile << i << "," << train_loss[i] << "\n";
-  	}
-  	myFile.close();
-		
-		std::string train_sample = "OLD-VERSION-OF-FILE_train_sample_" + std::to_string(my_rank) + ".csv";
-  	myFile.open(train_sample);
-  	myFile << "train_sample_nts\n";
-  	for (int i=0;i<train_nts.size();i++){
-  		myFile << train_nts[i] << "\n";
-  	}
-  	myFile.close();
-  }
 #endif
 }
 /***********************************************************************************************/
