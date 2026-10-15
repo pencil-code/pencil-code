@@ -499,8 +499,8 @@ void setupConfig(AcMeshInfo& config)
   //The statistics for doing the inverse are only needed when using the trained tau
   //if (ltrained) denormalize("data/training/normalizer.bin", tau_hydro_means, tau_hydro_stds);
 
-  PCLoad(config,AC_tau_hydro_means,tau_hydro_means);
-  PCLoad(config,AC_tau_hydro_stds ,tau_hydro_stds);
+  	PCLoad(config,AC_tau_hydro_means,tau_hydro_means);
+  	PCLoad(config,AC_tau_hydro_stds ,tau_hydro_stds);
   #endif
   PCLoad(config,AC_sparse_autotuning,lac_sparse_autotuning);
 
@@ -713,17 +713,25 @@ void save_stats(std::string fileName){
           for (const auto& s : tensor_suffix) myFile << ",out_acc_sum_tau" << s;
           for (const auto& s : tensor_suffix) myFile << ",out_acc_sum_sq_tau" << s;
         }
+	myFile << "\n";
+	myFile << train_counter << "," << (size_t)nxgrid*nygrid*nzgrid;
       }
-      myFile << "\n";
     
 
-      myFile << train_counter << "," << (size_t)nxgrid*nygrid*nzgrid;
+        if (AC_ltrain_mag__mod__training) {
+            myFile << ",in_acc_sum_Ux,in_acc_sum_Uy,in_acc_sum_Uz,in_acc_sum_Bx,in_acc_sum_By,in_acc_sum_Bz,in_acc_sum_squared_Ux,in_acc_sum_squared_Uy,in_acc_sum_squared_Uz,in_acc_sum_squared_Bx,in_acc_sum_squared_By,in_acc_sum_squared_Bz,out_acc_sum_EMFx,out_acc_sum_EMFy,out_acc_sum_EMFz,out_acc_sum_squared_EMFx,out_acc_sum_squared_EMFy,out_acc_sum_squared_EMFz\n";
+
+            myFile << train_counter << "," << nxgrid*nygrid*nzgrid << ",";
+
+	}
+        
       
       auto write_fields = [&](auto* name, size_t size) {
         for (size_t i = 0; i < size; ++i) {
             myFile << "," << acDeviceGetOutput(acGridGetDevice(), name[i]);
         }
       };
+
 
     // Hydro statistics
         if (lhydro){
@@ -759,8 +767,35 @@ void save_stats(std::string fileName){
             // tay_hydro
             write_fields(out_acc_sum_sq, 6);
           }
+	  myFile << "\n";
         }
-        myFile << "\n";
+
+        if (AC_ltrain_mag__mod__training) {
+            auto in_acc_sum_ux = acDeviceGetOutput(acGridGetDevice(), in_acc_sum_U[0]);
+            auto in_acc_sum_uy = acDeviceGetOutput(acGridGetDevice(), in_acc_sum_U[1]);
+            auto in_acc_sum_uz = acDeviceGetOutput(acGridGetDevice(), in_acc_sum_U[2]);
+	    auto in_acc_sum_bx = acDeviceGetOutput(acGridGetDevice(), in_acc_sum_B[0]);
+            auto in_acc_sum_by = acDeviceGetOutput(acGridGetDevice(), in_acc_sum_B[1]);
+            auto in_acc_sum_bz = acDeviceGetOutput(acGridGetDevice(), in_acc_sum_B[2]);
+
+            auto in_acc_sum_squared_ux = acDeviceGetOutput(acGridGetDevice(), in_acc_sum_squared_U[0]);
+            auto in_acc_sum_squared_uy = acDeviceGetOutput(acGridGetDevice(), in_acc_sum_squared_U[1]);
+            auto in_acc_sum_squared_uz = acDeviceGetOutput(acGridGetDevice(), in_acc_sum_squared_U[2]);
+            auto in_acc_sum_squared_bx = acDeviceGetOutput(acGridGetDevice(), in_acc_sum_squared_B[0]);
+            auto in_acc_sum_squared_by = acDeviceGetOutput(acGridGetDevice(), in_acc_sum_squared_B[1]);
+            auto in_acc_sum_squared_bz = acDeviceGetOutput(acGridGetDevice(), in_acc_sum_squared_B[2]);
+
+
+            auto out_acc_sum_x = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_EMF[0]);
+            auto out_acc_sum_y = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_EMF[1]);
+            auto out_acc_sum_z = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_EMF[2]);
+
+            auto out_acc_sum_squared_x = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_squared_EMF[0]);
+            auto out_acc_sum_squared_y = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_squared_EMF[1]);
+            auto out_acc_sum_squared_z = acDeviceGetOutput(acGridGetDevice(), out_acc_sum_squared_EMF[2]);
+
+            myFile << in_acc_sum_ux << "," << in_acc_sum_uy << "," << in_acc_sum_uz << "," << in_acc_sum_bx << "," << in_acc_sum_by << "," << in_acc_sum_bz << "," << in_acc_sum_squared_ux << "," << in_acc_sum_squared_uy << "," << in_acc_sum_squared_uz << "," << in_acc_sum_squared_bx << "," << in_acc_sum_squared_by << "," << in_acc_sum_squared_bz << "," <<  out_acc_sum_x << "," <<  out_acc_sum_y << "," <<  out_acc_sum_z << "," << out_acc_sum_squared_x << "," << out_acc_sum_squared_y << "," << out_acc_sum_squared_z << "\n";
+        }
         myFile.close();
     }
 #endif
@@ -882,6 +917,37 @@ void load_train_stats(){
                     acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_sq[i], (AcReal)std::stod(row[i_count++]));
                   }
                 }
+	    }
+
+            if (AC_ltrain_mag__mod__training) {
+                auto res = acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_U[0], (AcReal)std::stod(row[2]));
+                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_U[1], std::stod(row[3]));
+                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_U[2], std::stod(row[4]));
+
+                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_B[0], std::stod(row[5]));
+                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_B[1], std::stod(row[6]));
+                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_B[2], std::stod(row[7]));
+                if (res == AC_SUCCESS) { 
+                
+                    fprintf(stderr, "Result\n");
+                    fflush(stderr);
+                }
+
+                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_squared_U[0], std::stod(row[8]));
+                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_squared_U[1], std::stod(row[9]));
+                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_squared_U[2], std::stod(row[10]));
+                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_squared_B[0], std::stod(row[11]));
+                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_squared_B[1], std::stod(row[12]));
+                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_squared_B[2], std::stod(row[13]));
+
+
+                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_EMF[0], std::stod(row[14]));
+                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_EMF[1], std::stod(row[15]));
+                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_EMF[2], std::stod(row[16]));
+
+                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_squared_EMF[0], std::stod(row[17]));
+                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_squared_EMF[1], std::stod(row[18]));
+                acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, out_acc_sum_squared_EMF[2], std::stod(row[19]));
             }
         }
     }
@@ -1112,13 +1178,23 @@ extern "C" void tf_infer_c_api(const char* name, int itsub)
 	#include "user_constants.h"
 	if (!ltrained) return;
 	if (!calling_infer){
-    acLogFromRootProc(rank,"Doing inference\n");
-		fflush(stderr);
-		fflush(stdout);
-	  calling_infer = true;
+	  acLogFromRootProc(rank,"Doing inference\n");
+    fflush(stderr);
+    fflush(stdout);
+
+    calling_infer = true;
 	}
+
   auto initialize_fields = acGetOptimizedDSLTaskGraph(get_inference_fields);
 	acGridExecuteTaskGraph(initialize_fields, 1);
+
+  if (AC_ltrain_mag__mod__training) {
+    auto initialize_uumean_task_graph = acGetOptimizedDSLTaskGraph(initialize_uumean);
+    acGridExecuteTaskGraph(initialize_uumean_task_graph, 1);
+
+	  auto initialize_bbmean_task_graph = acGetOptimizedDSLTaskGraph(initialize_bbmean);
+	  acGridExecuteTaskGraph(initialize_bbmean_task_graph, 1);
+  }
 
   auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
 	acGridExecuteTaskGraph(bcs,1);
@@ -1150,10 +1226,23 @@ extern "C" void tf_infer_c_api(const char* name, int itsub)
    acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetTAU_HYDRO_XX(), &output, &out);
    outputs.emplace_back(output, 6);
 
-	 acGridHaloExchange();
 
-   torch_infer_multiarg_CAPI((int[]){mz, my, mx}, inputs, outputs, name);
   }
+
+  // TODO: Check if trained on same grid size and do not smooth the averaged out vals
+  if (AC_ltrain_mag__mod__training) {
+    acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetuumean_X(), &input, &out);
+    inputs.emplace_back(input, 3);
+	  acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetbbmean_X(), &input, &out);
+    inputs.emplace_back(input, 3);
+
+    acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetF_SGS_EMF_X(), &output, &out);
+    outputs.emplace_back(output, 3);
+
+
+  }
+    acGridHaloExchange();
+    torch_infer_multiarg_CAPI((int[]){mz, my, mx}, inputs, outputs, name);
 
 	
 	auto descale_inf = acGetOptimizedDSLTaskGraph(descale_inferred_values);
@@ -1169,6 +1258,7 @@ extern "C" void tf_train_c_api(const char* name, AcReal *loss_val, int itsub, do
   #include "user_constants.h"
   #include <stdlib.h>
   #include <cfloat>
+
   if(itsub != 1) return;
   
   if (!calling_train){
@@ -1192,8 +1282,8 @@ extern "C" void tf_train_c_api(const char* name, AcReal *loss_val, int itsub, do
 
   acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(normalize),1);
   acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(boundconds),1);
-  *loss_val=DBL_MAX;
 
+  *loss_val=DBL_MAX;
 
   if(lhydro){
   
@@ -1228,22 +1318,34 @@ extern "C" void tf_train_c_api(const char* name, AcReal *loss_val, int itsub, do
     train_nts.push_back(it); 
     torch_wandb_log(name, "training_loss", it, *loss_val);
   }
-  else if(AC_ltrain_mag__mod__training){
-    /*
-    AcReal* out = NULL;
-    AcReal* input = NULL;
-    AcReal* output = NULL;
+  
+  if(AC_ltrain_mag__mod__training){
+    std::vector<std::pair<AcReal*, int>> inputs;
+    std::vector<std::pair<AcReal*, int>> outputs;
 
-    acDeviceGetVertexBufferPtrs(acGridGetDevice(), F_SGS_EMFVEC.x, &output, &out);
+    AcReal* out = nullptr;
+    AcReal* input = nullptr;
+    AcReal* output = nullptr;
+
+    acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetuumean_X(), &input, &out);
+    inputs.emplace_back(input, 3);
+    acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetbbmean_X(), &input, &out);
+    inputs.emplace_back(input, 3);
+
+    acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetF_SGS_EMF_X(), &output, &out);
     outputs.emplace_back(output, 3);
-    acDeviceGetVertexBufferPtrs(acGridGetDevice(), uumean.x, &input, &out);
-    inputs.emplace_back(input, 3);
-    acDeviceGetVertexBufferPtrs(acGridGetDevice(), bbmean.x, &input, &out);
-    inputs.emplace_back(input, 3);
-    */
+
+    acGridHaloExchange();
+
+    torch_train_multiarg_CAPI((int[]){mz, my, mx}, inputs, outputs, loss_val, name);
+    train_loss.push_back(*loss_val);
+    train_nts.push_back(it); 
+
+    torch_wandb_log("stationary", "training_loss", it, *loss_val);
   }
 
   //print_debug();
+
 #endif
 }
 /***********************************************************************************************/
