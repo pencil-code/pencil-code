@@ -239,7 +239,6 @@ contains
     call copy_addr(fbcy_top,p_par(394)) ! (mcom_max)
     call copy_addr(fbcz_bot,p_par(395)) ! (mcom_max)
     call copy_addr(fbcz_top,p_par(396)) ! (mcom_max)
-    call copy_addr(lcoarse_mn,p_par(400)) ! bool
     call copy_addr(ltime_integrals,p_par(401)) ! bool
 
     call copy_addr(dx2_bound,p_par(1164)) ! (2*nghost+1)
@@ -495,6 +494,9 @@ contains
     call copy_addr(iuubx,p_par(1439)) ! int
     call copy_addr(iuuby,p_par(1440)) ! int
     call copy_addr(iuubz,p_par(1441)) ! int
+    call copy_addr(imn_array,p_par(1442)) ! int (my) (mz)
+    call copy_addr(ninds,p_par(1443)) ! int (nghost*2+1) (ncoarse__mod__cdata+2) (nz)
+
   endsubroutine pushpars2c
 !***********************************************************************
 endmodule Global_pushpars
