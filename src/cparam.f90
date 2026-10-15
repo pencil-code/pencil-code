@@ -290,6 +290,8 @@ module Cparam
   integer, parameter :: i11=1,i22=2,i33=3,i12=4,i23=5,i13=6
   integer, parameter :: i31=i13
   integer, parameter, dimension(3,3) :: ij_table = reshape((/1,4,6,4,2,5,6,5,3/),(/3,3/))
+  character(len=2), dimension(6), parameter :: csym=(/'xx','yy','zz','xy','yz','xz'/)
+  character(len=1), dimension(3), parameter :: cvec=(/'x','y','z'/)
 !
 !  Symbolic constants for Cubed Sphere grid.
 !  The order of the patches is the same as in MATINS.

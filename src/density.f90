@@ -20,6 +20,7 @@
 ! PENCILS PROVIDED rhos1; glnrhos(3)
 ! PENCILS PROVIDED totenergy_rel; divss
 ! PENCILS EXPECTED ext_force(4)
+! PENCILS EXPECTED gr_sqrtg; gr_alp; gr_dalp(3); gr_beta(3); gr_gamu(6); gr_Kij(6)
 !
 !***************************************************************
 module Density
@@ -56,6 +57,8 @@ module Density
   real, target :: mpoly=impossible
   real, pointer :: mpoly0, mpoly1, mpoly2, eps_hless, width_hless_absolute, nu_tdep
   logical, pointer :: lkt_transport  ! shared from Hydro; selects KT energy flux
+  logical, pointer :: lgr_metric     ! shared from Hydro; curved-spacetime conservative equations
+  integer :: iegr=0, iFgrE=0, iFgrS=0
   logical, pointer :: lu_background  ! shared from Hydro; selects external flow
   real, dimension(nx) :: xmask_den
   real, dimension(nx) :: fprofile_x=1.
@@ -1120,6 +1123,14 @@ module Density
       if (lhiggsless.and.lconservative) ihless=farray_index_by_name('ihless')
 
       call get_shared_variable('lkt_transport',lkt_transport,default_val=.false.)
+      call get_shared_variable('lgr_metric',lgr_metric,default_val=.false.)
+      if (lgr_metric) then
+        iegr=farray_index_by_name('egr')
+        iFgrE=farray_index_by_name('FgrE')
+        iFgrS=farray_index_by_name('FgrS')
+        if (any((/iegr,iFgrE,iFgrS/)<=0)) call fatal_error('initialize_density', &
+            'lgr_metric=T needs the auxiliaries egr, FgrE and FgrS of hydro')
+      endif
       if (lhydro.and.lhiggsless) then
         call get_shared_variable('eps_hless',eps_hless)
         if (lrun) call get_shared_variable('width_hless_absolute',width_hless_absolute)
@@ -2356,6 +2367,17 @@ module Density
       logical, pointer :: lconservative_pressure_on_rhs
 
       if (ldensity_nolog) lpenc_requested(i_rho)=.true.
+!
+!  Metric pencils from special/z4c for the energy equation in curved spacetime.
+!
+      if (lgr_metric) then
+        lpenc_requested(i_gr_sqrtg)=.true.
+        lpenc_requested(i_gr_alp)=.true.
+        lpenc_requested(i_gr_dalp)=.true.
+        lpenc_requested(i_gr_beta)=.true.
+        lpenc_requested(i_gr_gamu)=.true.
+        lpenc_requested(i_gr_Kij)=.true.
+      endif
       if (lcontinuity_gas) then
         if (lweno_transport) then
           lpenc_requested(i_transprho)=.true.
@@ -2743,6 +2765,7 @@ use Sub, only: dot2_mn
         endif
         ! if (lrelativistic) p%rho=p%rho/(fourthird*p%lorentz*(1.-.25/p%lorentz))
         if (lrelativistic) p%rho=p%rho/(cs20p1*p%lorentz-cs20)
+        if (lgr_metric) p%rho=f(l1:l2,m,n,iegr)
       endif
 !
     endsubroutine calc_pencils_linear_density_pnc
@@ -2913,6 +2936,58 @@ use Sub, only: dot2_mn
 
     endsubroutine calc_sld_fdiff
 !***********************************************************************
+    subroutine gr_energy_rhs(f,p,rhs)
+!
+!  Right-hand side of sqrt(gamma)*E (in irho) for lgr_metric=T
+!  (e.g. Banyuls et al. 1997, ApJ 476, 221; Font 2008, Living Rev. Rel. 11, 7):
+!
+!    d_t(sg E) + d_j F_E^j = sg (alpha S^jk K_jk - S^j d_j alpha)
+!
+!  The metric quantities are pencils of special/z4c. The fluxes F_E^j and
+!  F^j_i are computed by hydro (hydro_after_boundary_gr); S^j_i is recovered
+!  from F^j_i = sg (alpha S^j_i - beta^j S_i).
+!
+!  14-oct-26/TP: moved from hydro
+!
+      use Deriv, only: der
+      use Sub, only: raise_index
+!
+      real, contiguous, dimension(:,:,:,:) :: f
+      type (pencil_case) :: p
+      real, dimension(nx) :: rhs
+!
+      real, dimension(nx,3) :: Sd, Su
+      real, dimension(nx,3,3) :: Smix, Suu
+      real, dimension(nx) :: tmp
+      integer :: i, j, k
+!
+      do i=1,3
+        Sd(:,i)=f(l1:l2,m,n,iux+i-1)/p%gr_sqrtg
+      enddo
+      call raise_index(p%gr_gamu,Sd,Su)
+      do i=1,3; do j=1,3
+        Smix(:,j,i)=(f(l1:l2,m,n,iFgrS+3*(i-1)+j-1)/p%gr_sqrtg+p%gr_beta(:,j)*Sd(:,i))/p%gr_alp
+      enddo; enddo
+      do k=1,3; do j=1,3
+        Suu(:,j,k)=Smix(:,j,1)*p%gr_gamu(:,ij_table(1,k))+Smix(:,j,2)*p%gr_gamu(:,ij_table(2,k)) &
+                  +Smix(:,j,3)*p%gr_gamu(:,ij_table(3,k))
+      enddo; enddo
+!
+      rhs=0.
+      do j=1,3
+        rhs=rhs-Su(:,j)*p%gr_dalp(:,j)
+        do k=1,3
+          rhs=rhs+p%gr_alp*Suu(:,j,k)*p%gr_Kij(:,ij_table(j,k))
+        enddo
+      enddo
+      rhs=p%gr_sqrtg*rhs
+      do j=1,3
+        call der(f,iFgrE+j-1,tmp,j)
+        rhs=rhs-tmp
+      enddo
+!
+    endsubroutine gr_energy_rhs
+!***********************************************************************
     subroutine continuity_eq(f,df,p)
 
       use Sub, only: multvs, multmv, dot_mn
@@ -2939,7 +3014,9 @@ use Sub, only: dot2_mn
 !
 !  Evolution of rho; set and initiate density_rhs
 !
-        if (lconservative) then
+        if (lconservative .and. lgr_metric) then
+          call gr_energy_rhs(f,p,density_rhs)
+        elseif (lconservative) then
           if (lkt_transport) then
             call kt_div(f,density_rhs)
             density_rhs=-density_rhs

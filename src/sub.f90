@@ -71,7 +71,7 @@ module Sub
   public :: multvs, multvv_mat, multvv_smat, multvv_smat_add
   public :: multmm_sc, multsm_mn
   public :: multm2, multm2_mn, multm2_sym, multm2_sym_mn
-  public :: multmv, multmv_mn, multmv_transp
+  public :: multmv, multmv_mn, multmv_transp,multmv_sym,raise_index,lower_index
   public :: mult_matrix, mult_mat_vv, invmat_DB
 !
   public :: read_line_from_file, control_file_exists
@@ -294,6 +294,19 @@ module Sub
   interface meanyz
      module procedure meanyz_s
      module procedure meanyz_v
+  endinterface
+
+  interface raise_index 
+    module procedure raise_index_vec
+  endinterface
+
+  interface contract
+    module procedure contract_sym_3x3
+  endinterface
+  public contract_vec
+
+  interface lower_index 
+    module procedure lower_index_vec
   endinterface
 
   public :: set_next_dt
@@ -1226,6 +1239,50 @@ subroutine dot_mn_sv_pencil(a,b,c)
       enddo
 !
     endsubroutine multm2_sym_mn
+!***********************************************************************
+    subroutine multmv_sym(a,v,av)
+!
+!  Product of a symmetric 3x3 matrix field with a vector field.
+!
+!  14-oct-26/TP: coded
+!
+      real, dimension(:,:), intent(in) :: a, v
+      real, dimension(:,:), intent(out) :: av
+      integer :: i
+!
+      do i=1,3
+        av(:,i)=a(:,ij_table(i,1))*v(:,1)+a(:,ij_table(i,2))*v(:,2)+a(:,ij_table(i,3))*v(:,3)
+      enddo
+!
+    endsubroutine multmv_sym 
+!***********************************************************************
+    subroutine lower_index_vec(g,vu,vd)
+!
+!  Lowering indexes with the metric g_ij
+!
+!  14-oct-26/TP: coded
+!
+      real, dimension(:,:), intent(in) :: g, vu
+      real, dimension(:,:), intent(out) :: vd
+      integer :: i
+!
+      call multmv_sym(g,vu,vd)
+!
+    endsubroutine lower_index_vec
+!***********************************************************************
+    subroutine raise_index_vec(g,vd,vu)
+!
+!  Lowering indexes with the metric g^ij
+!
+!  14-oct-26/TP: coded
+!
+      real, dimension(:,:), intent(in) :: g, vd
+      real, dimension(:,:), intent(out) :: vu
+      integer :: i
+!
+      call multmv_sym(g,vd,vu)
+!
+    endsubroutine raise_index_vec
 !***********************************************************************
     subroutine multmv_mn(a,b,c,ladd)
 !
@@ -9757,19 +9814,32 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
 !
     endsubroutine sym_inverse
 !***********************************************************************
-    function contract(au,b)
+    function contract_sym_3x3(a,b) result(contract)
 !
 !  Full contraction au^ij b_ij of two symmetric 3x3 tensor fields.
 !
 !  13-oct-26/TP: coded
 !
-      real, dimension(:,:), intent(in) :: au, b
-      real, dimension(size(au,1)) :: contract
+      real, dimension(:,:), intent(in) :: a, b
+      real, dimension(size(a,1)) :: contract
 !
-      contract=au(:,i11)*b(:,i11)+au(:,i22)*b(:,i22)+au(:,i33)*b(:,i33) &
-              +2*(au(:,i12)*b(:,i12)+au(:,i13)*b(:,i13)+au(:,i23)*b(:,i23))
+      contract = a(:,i11)*b(:,i11)+a(:,i22)*b(:,i22)+a(:,i33)*b(:,i33) &
+              +2*(a(:,i12)*b(:,i12)+a(:,i13)*b(:,i13)+a(:,i23)*b(:,i23))
 !
-    endfunction contract
+    endfunction contract_sym_3x3
+!***********************************************************************
+    function contract_vec(a,b) result(contract)
+!
+!  Full contraction au^i b_i of two three-vectors
+!
+!  13-oct-26/TP: coded
+!
+      real, dimension(:,:), intent(in) :: a, b
+      real, dimension(size(a,1)) :: contract
+!
+      contract = a(:,1)*b(:,1)+a(:,2)*b(:,2)+a(:,3)*b(:,3)
+!
+    endfunction contract_vec
 !***********************************************************************
 subroutine solve3x3(A, b, x)
 !
