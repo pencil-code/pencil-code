@@ -1,0 +1,21 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Runtime parameters: gravitational-wave induced MHD waves (Duez et al. 2005).
+! Geodesic slicing and zero shift as in the paper.
+!
+&run_pars
+  nt=10000000, it1=50, cdt=0.4, itorder=3, tmax=10., dsnap=1e9, d1davg=0.02
+  lpencil_check=F, lpencil_check_small=F
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+/
+&magnetic_run_pars
+  B_ext=4.062165001543846e-05,3.074833230335273e-06,2.3301029800522336e-05
+/
+&special_run_pars
+  lapse_type='frozen', shift_type='zero', kappa1=0.
+/

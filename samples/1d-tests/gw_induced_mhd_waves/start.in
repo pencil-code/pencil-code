@@ -1,0 +1,30 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Initialisation parameters: gravitational-wave induced MHD waves,
+! Duez, Liu, Shapiro & Stephens (2005), PRD 72, 024028, Sect. IV D 1, Eq. (79).
+! Their z axis is x here, (x,y,z)_paper -> (y,z,x).
+! rho0 h = rho0 + 4 P0 = 7.94e-9 and cs^2 = Gamma P0/(rho0 h) for Gamma=4/3
+! give e0 = rho0 h/(1+cs0^2); B_ext = B0/sqrt(4 pi) (Gaussian -> Heaviside-Lorentz).
+!
+&init_pars
+  xyz0=-1.,-1.,-1., Lxyz=2.,2.,2.
+  lperi=T,T,T
+  lwrite_aux=T, lwrite_avg1d_binary=T
+/
+&eos_init_pars
+  gamma=1., cs0=0.465429570545898
+/
+&hydro_init_pars
+  lconservative=T, lrelativistic=T, lvv_as_aux=T, llorentz_as_aux=T
+/
+&density_init_pars
+  ldensity_nolog=T, lrelativistic_eos=T
+/
+&magnetic_init_pars
+  lbb_as_comaux=T, B_ext=4.062165001543846e-05,3.074833230335273e-06,2.3301029800522336e-05
+/
+&special_init_pars
+/
+&initial_condition_pars
+  initgr='gw_standing', e0=6.5262525879917184e-09, nkgr=2, hplus0=1.18e-4, hcross0=1.18e-4
+/

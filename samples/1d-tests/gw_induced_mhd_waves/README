@@ -1,0 +1,73 @@
+Directory:
+    ${PENCIL_HOME}/samples/1d-tests/gw_induced_mhd_waves
+SVN Id:
+    $Id$
+Maintainer:
+    Touko Puro <touko[dot]puro@aalto.fi>
+Added:
+     15-Oct-2026
+Status:
+    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+Recommended resolution:
+    200x1x1 (as in the paper; 50 and 100 for convergence)
+References:
+  Duez, Liu, Shapiro & Stephens (2005), PRD 72, 024028 (arXiv:astro-ph/0503420),
+  Sect. IV D 1 "Dynamical background tests: gravitational wave-induced MHD waves",
+  Eq. (79), Figs. 13-16; analytic solution: Duez et al. (2005), PRD 72, 024029
+  (arXiv:astro-ph/0503421), Table I, case 2.
+
+Comments:
+  Full GRMHD test: Einstein (special/z4c) + Valencia MHD (hydro, density,
+  magnetic with lgr_metric) with backreaction. A linear standing
+  gravitational wave h+,x = h0 sin(kz) cos(kt) (TT gauge, geodesic slicing,
+  zero shift) in a homogeneous fluid at rest with a uniform oblique field
+  excites Alfven, slow and fast magnetosonic waves plus a particular
+  solution at the gravitational-wave frequency.
+
+  Setup of the paper: z in (-1,1), k = 2 pi, 200 points, rho0 = 2.78e-9,
+  P0 = 1.29e-9, Gamma = 4/3, B0 = (1.09, 8.26, 14.4)e-5 (Gaussian),
+  h+0 = hx0 = 1.18e-4, periodic. Their z axis is x here, (x,y,z)_paper =
+  (y,z,x)_code, so B_ext = (B0z, B0x, B0y)/sqrt(4 pi) and the wave is in
+  gamma_yy - gamma_zz and gamma_yz (initgr='gw_standing' of
+  initial_condition/gr_matter). The linear solution depends on the equation
+  of state only through rho0 h = e + p and cs^2 = Gamma P0/(rho0 h), so the
+  paper's fluid is p = cs0^2 e with cs0^2 = 0.21662 and e0 = rho0 h/(1+cs0^2).
+
+  check.py evaluates the analytic solution, projects the run on its spatial
+  dependence (sin kz, cos kz) and compares at z = 1/8, the point of the
+  paper's figures; with --plot it draws delta P, the velocity along the
+  Alfven eigenvector and along the slow eigenvector (paper Figs. 13a, 15, 16),
+  see gw_mhd_waves.png.
+
+Running
+-------
+  mkdir data
+  pc_setupsrc; pc_build
+  pc_start; pc_run            (about 1 min, t = 10 gravitational-wave periods)
+  python check.py --plot      (numpy; scipy not needed, matplotlib for --plot)
+
+Expected result (max deviation over 10 GW periods / max |analytic|, z=1/8):
+
+                            dP       dv_A     dv_m2    dB       h+
+  N=200 (this setup)        1.2e-4   1.3e-4   1.2e-4   1.2e-4   1.8e-4
+  N=100                     1.3e-4   1.5e-4   1.2e-4   1.3e-4   2.0e-4
+  h0/3                      4.7e-5   5.1e-5   4.5e-5   4.6e-5   6.4e-5
+  h0/10                     3.9e-5   4.2e-5   3.8e-5   3.8e-5   5.1e-5
+  h0/10, lgr_backreaction=F 4.4e-6   6.4e-6   5.5e-6   5.1e-6   9.2e-6
+
+  The deviations are not numerical: they hardly change from N=100 to 200
+  (the numerical solution itself converges at 3rd order: N=50 and N=100
+  differ from N=200 by 3.9e-4 and 4.2e-5 in delta v). They are the two
+  effects that the linear solution neglects and that the paper identifies
+  as the secular drift of its Eq. (80) and Fig. 14: nonlinear terms of
+  relative size ~h0 (the part that scales with h0) and the self-gravity of
+  the background fluid, which with K_ij = 0 initial data starts to collapse
+  (relative ~E t^2; this is the h0-independent part, which disappears for a
+  test fluid, lgr_backreaction=F). The paper shows the agreement only in
+  plots; the curves here are indistinguishable from the analytic solution
+  as well.
+
+  Special case of the paper, Eq. (82): set hplus0=4.31e-5, hcross0=1.61e-4,
+  for which the magnetosonic modes and delta P vanish to linear order
+  (up to the rounding of the paper's values: delta P is 1e-3 of the general
+  case); the code reproduces this with the same relative deviations.
