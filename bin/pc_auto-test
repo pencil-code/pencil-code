@@ -218,6 +218,7 @@ my %tests = (
 			 cartesian-convection-entropy-rain
 			 1d-tests/read_ell_from_table_corrected
 			 0d-tests/coala
+			 1d-tests/gw_induced_mhd_waves
                      )],
              # Level 4 for now contains all non-canonical tests that run,
              # but produce wrong results - and need immediate action (fixme)
@@ -278,6 +279,7 @@ my %tests = (
 	    # same modules as these samples should also work.
 my @gpu_tests = qw(
                          1d-tests/sine-Gordon_doublet
+			 1d-tests/gw_induced_mhd_waves
                          decay-reconnection
 			 debris-photoelectric-fluid
 			 fcont_TG
