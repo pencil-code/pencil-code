@@ -496,9 +496,6 @@ contains
     call copy_addr(iuubz,p_par(1441)) ! int
     call copy_addr(imn_array,p_par(1442)) ! int (my) (mz)
     if(allocated(ninds)) call copy_addr(ninds,p_par(1443)) ! int (nghost*2+1) (ncoarse__mod__cdata+2) (nz)
-    !TP: This is again here since Matthias disabled lcoarse_mn from equ.
-    !TP: Matthias, once you enabled it back please remove this push.
-    call copy_addr(lcoarse_mn,p_par(1444)) ! bool 
 
   endsubroutine pushpars2c
 !***********************************************************************

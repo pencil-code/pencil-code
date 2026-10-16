@@ -657,11 +657,11 @@ module Equ
 !
 !  Skip points not belonging to coarse grid.
 !
-        ! lcoarse_mn=lcoarse.and.mexts(1)<=m.and.m<=mexts(2)
-        ! if (lcoarse_mn) then
-        !   lcoarse_mn=lcoarse_mn.and.ninds(0,m,n)>0
-        !   if (ninds(0,m,n)<=0) cycle
-        ! endif
+        lcoarse_mn=lcoarse.and.mexts(1)<=m.and.m<=mexts(2)
+        if (lcoarse_mn) then
+          lcoarse_mn=lcoarse_mn.and.ninds(0,m,n)>0
+          if (ninds(0,m,n)<=0) cycle
+        endif
 
         call calc_all_pencils(f,p)
         call calc_diagnostic_auxiliaries_magnetic(f,p)
@@ -762,11 +762,11 @@ module Equ
 !
 !  Skip points not belonging to coarse grid.
 !
-        ! lcoarse_mn=lcoarse.and.mexts(1)<=m.and.m<=mexts(2)
-        ! if (lcoarse_mn) then
-        !   lcoarse_mn=lcoarse_mn.and.ninds(0,m,n)>0
-        !   if (ninds(0,m,n)<=0) cycle
-        ! endif
+        lcoarse_mn=lcoarse.and.mexts(1)<=m.and.m<=mexts(2)
+        if (lcoarse_mn) then
+          lcoarse_mn=lcoarse_mn.and.ninds(0,m,n)>0
+          if (ninds(0,m,n)<=0) cycle
+        endif
 
         call calc_all_pencils(f,p)
 
@@ -1519,11 +1519,11 @@ module Equ
 !
 !  Skip points not belonging to coarse grid.
 !
-          !lcoarse_mn=lcoarse.and.mexts(1)<=m.and.m<=mexts(2)
-          !if (lcoarse_mn) then
-          !  lcoarse_mn=lcoarse_mn.and.ninds(0,m,n)>0
-          !  if (ninds(0,m,n)<=0) cycle
-          !endif
+          lcoarse_mn=lcoarse.and.mexts(1)<=m.and.m<=mexts(2)
+          if (lcoarse_mn) then
+            lcoarse_mn=lcoarse_mn.and.ninds(0,m,n)>0
+            if (ninds(0,m,n)<=0) cycle
+          endif
         endif
 !
 !  Store the velocity part of df array in a temporary array
@@ -1629,7 +1629,7 @@ module Equ
         lfirstpoint=.false.
 !
       enddo mn_loop
-      !lcoarse_mn=.false.
+      lcoarse_mn=.false.
 !
       if (ltime_integrals.and.llast) then
         if (lhydro) call update_for_time_integrals_hydro
@@ -1782,11 +1782,11 @@ module Equ
 !
 !  Skip points not belonging to coarse grid.
 !
-          !lcoarse_mn=lcoarse.and.mexts(1)<=m.and.m<=mexts(2)
-          !if (lcoarse_mn) then
-          !  lcoarse_mn=lcoarse_mn.and.ninds(0,m,n)>0
-          !  if (ninds(0,m,n)<=0) cycle
-          !endif
+          lcoarse_mn=lcoarse.and.mexts(1)<=m.and.m<=mexts(2)
+          if (lcoarse_mn) then
+            lcoarse_mn=lcoarse_mn.and.ninds(0,m,n)>0
+            if (ninds(0,m,n)<=0) cycle
+          endif
         endif
 !
 !  Recalculate grid/geometry related pencils. The r_mn and rcyl_mn are requested
@@ -1934,7 +1934,7 @@ module Equ
         headtt=.false.
 !
       enddo     !  mn-loop
-      !lcoarse_mn=.false.
+      lcoarse_mn=.false.
 !
     endsubroutine freeze
 !***********************************************************************
