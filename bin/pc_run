@@ -70,6 +70,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #                   the $PENCIL_HOME/.run_directories.log file.
 #   -l, --log       Writes stdout and stderr to start.log and run.log, respectively.
 #   --log-dir=<dir> Directory to store the logfiles (default: .)
+#   --debug         Print debug output
 #
 # Examples:
 #   pc_run start              # just start
