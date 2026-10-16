@@ -20,7 +20,12 @@ Kernel hydro_after_boundary_conservative(real AC_t__mod__cdata){
   int iter_relb
   int i
   int j
+  //TP: lgr_metric=T is handled by hydro_after_boundary_gr
+#if LZ4C
+  if(AC_lconservative__mod__hydro && !AC_lgr_metric__mod__z4c)
+#else
   if(AC_lconservative__mod__hydro)
+#endif
   {
   	if (AC_lrelativistic_eos__mod__density) {
   	  cs201=1.+AC_cs20__mod__equationofstate

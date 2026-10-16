@@ -10439,6 +10439,7 @@ module Hydro
     call copy_addr(lu_background,p_par(158)) ! bool
     call copy_addr(lism_rotation,p_par(159)) ! bool
     call copy_addr(ifgrs,p_par(160)) ! int
+    call copy_addr(niter_gr,p_par(161)) ! int
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Hydro

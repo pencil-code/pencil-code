@@ -217,6 +217,28 @@ real  DF_BB_SPHR       = 0.0
 real  DF_BB_SPHT       = 0.0
 real  DF_BB_SPHP       = 0.0
 real DF_LNCC = rk_intermediate_split_first(F_LNCC,step_num)
+#if LZ4C
+real DF_CHI = rk_intermediate_split_first(F_CHI,step_num)
+real DF_KH = rk_intermediate_split_first(F_KH,step_num)
+real DF_TH = rk_intermediate_split_first(F_TH,step_num)
+real DF_ALP = rk_intermediate_split_first(F_ALP,step_num)
+real DF_GT[6]
+DF_GT[0] = rk_intermediate_split_first(F_GT_1,step_num)
+DF_GT[1] = rk_intermediate_split_first(F_GT_2,step_num)
+DF_GT[2] = rk_intermediate_split_first(F_GT_3,step_num)
+DF_GT[3] = rk_intermediate_split_first(F_GT_4,step_num)
+DF_GT[4] = rk_intermediate_split_first(F_GT_5,step_num)
+DF_GT[5] = rk_intermediate_split_first(F_GT_6,step_num)
+real DF_AT[6]
+DF_AT[0] = rk_intermediate_split_first(F_AT_1,step_num)
+DF_AT[1] = rk_intermediate_split_first(F_AT_2,step_num)
+DF_AT[2] = rk_intermediate_split_first(F_AT_3,step_num)
+DF_AT[3] = rk_intermediate_split_first(F_AT_4,step_num)
+DF_AT[4] = rk_intermediate_split_first(F_AT_5,step_num)
+DF_AT[5] = rk_intermediate_split_first(F_AT_6,step_num)
+real3 DF_GAMVEC = rk_intermediate_split_first(F_GAMVEC,step_num)
+real3 DF_BETAVEC = rk_intermediate_split_first(F_BETAVEC,step_num)
+#endif
 // @auto-field-declarations: fortran-parser adds missing fields above this line
 #if LDEBUG_OUTPUT_TIMES
 real DF_SPECIAL = rk_intermediate_split_first(F_SPECIAL,step_num)

@@ -382,6 +382,62 @@ field_order(AC_iuub__mod__cdata != 0 ? AC_iuub__mod__cdata+1-1 : -1) Field F_UUB
 field_order(AC_iuub__mod__cdata != 0 ? AC_iuub__mod__cdata+2-1 : -1) Field F_UUBZ
 const Field3 F_UUBVEC = {F_UUBX, F_UUBY, F_UUBZ}
 field_order(AC_ilncc__mod__cdata-1) Field F_LNCC
+
+#if LZ4C
+field_order(AC_ichi__mod__z4c-1) Field F_CHI
+field_order(AC_ikh__mod__z4c-1) Field F_KH
+field_order(AC_ith__mod__z4c-1) Field F_TH
+field_order(AC_ialp__mod__z4c-1) Field F_ALP
+field_order(AC_igt__mod__z4c[0]-1) Field F_GT_1
+field_order(AC_igt__mod__z4c[1]-1) Field F_GT_2
+field_order(AC_igt__mod__z4c[2]-1) Field F_GT_3
+field_order(AC_igt__mod__z4c[3]-1) Field F_GT_4
+field_order(AC_igt__mod__z4c[4]-1) Field F_GT_5
+field_order(AC_igt__mod__z4c[5]-1) Field F_GT_6
+field_order(AC_iat__mod__z4c[0]-1) Field F_AT_1
+field_order(AC_iat__mod__z4c[1]-1) Field F_AT_2
+field_order(AC_iat__mod__z4c[2]-1) Field F_AT_3
+field_order(AC_iat__mod__z4c[3]-1) Field F_AT_4
+field_order(AC_iat__mod__z4c[4]-1) Field F_AT_5
+field_order(AC_iat__mod__z4c[5]-1) Field F_AT_6
+field_order(AC_igam__mod__z4c.x-1) Field F_GAMX
+field_order(AC_igam__mod__z4c.y-1) Field F_GAMY
+field_order(AC_igam__mod__z4c.z-1) Field F_GAMZ
+const Field3 F_GAMVEC = {F_GAMX, F_GAMY, F_GAMZ}
+field_order(AC_ibeta__mod__z4c.x-1) Field F_BETAX
+field_order(AC_ibeta__mod__z4c.y-1) Field F_BETAY
+field_order(AC_ibeta__mod__z4c.z-1) Field F_BETAZ
+const Field3 F_BETAVEC = {F_BETAX, F_BETAY, F_BETAZ}
+//ADM matter sources (registered by hydro if lgr_metric, found by name in z4c)
+field_order(AC_ieadm__mod__z4c != 0 ? AC_ieadm__mod__z4c-1 : -1) Field F_EADM
+field_order(AC_isadm__mod__z4c.x != 0 ? AC_isadm__mod__z4c.x-1 : -1) Field F_SADMX
+field_order(AC_isadm__mod__z4c.y != 0 ? AC_isadm__mod__z4c.y-1 : -1) Field F_SADMY
+field_order(AC_isadm__mod__z4c.z != 0 ? AC_isadm__mod__z4c.z-1 : -1) Field F_SADMZ
+field_order(AC_isadmij__mod__z4c[0] != 0 ? AC_isadmij__mod__z4c[0]-1 : -1) Field F_SADMIJ_1
+field_order(AC_isadmij__mod__z4c[1] != 0 ? AC_isadmij__mod__z4c[1]-1 : -1) Field F_SADMIJ_2
+field_order(AC_isadmij__mod__z4c[2] != 0 ? AC_isadmij__mod__z4c[2]-1 : -1) Field F_SADMIJ_3
+field_order(AC_isadmij__mod__z4c[3] != 0 ? AC_isadmij__mod__z4c[3]-1 : -1) Field F_SADMIJ_4
+field_order(AC_isadmij__mod__z4c[4] != 0 ? AC_isadmij__mod__z4c[4]-1 : -1) Field F_SADMIJ_5
+field_order(AC_isadmij__mod__z4c[5] != 0 ? AC_isadmij__mod__z4c[5]-1 : -1) Field F_SADMIJ_6
+#endif
+
+//lgr_metric auxiliaries of hydro: fluxes F_E^j, F^j_i (at iFgrS+3*(i-1)+j-1) and e
+#if LHYDRO && LDENSITY
+field_order(AC_ifgre__mod__density != 0 ? AC_ifgre__mod__density+0-1 : -1) Field F_FGREX
+field_order(AC_ifgre__mod__density != 0 ? AC_ifgre__mod__density+1-1 : -1) Field F_FGREY
+field_order(AC_ifgre__mod__density != 0 ? AC_ifgre__mod__density+2-1 : -1) Field F_FGREZ
+field_order(AC_ifgrs__mod__hydro != 0 ? AC_ifgrs__mod__hydro+0-1 : -1) Field F_FGRS_1
+field_order(AC_ifgrs__mod__hydro != 0 ? AC_ifgrs__mod__hydro+1-1 : -1) Field F_FGRS_2
+field_order(AC_ifgrs__mod__hydro != 0 ? AC_ifgrs__mod__hydro+2-1 : -1) Field F_FGRS_3
+field_order(AC_ifgrs__mod__hydro != 0 ? AC_ifgrs__mod__hydro+3-1 : -1) Field F_FGRS_4
+field_order(AC_ifgrs__mod__hydro != 0 ? AC_ifgrs__mod__hydro+4-1 : -1) Field F_FGRS_5
+field_order(AC_ifgrs__mod__hydro != 0 ? AC_ifgrs__mod__hydro+5-1 : -1) Field F_FGRS_6
+field_order(AC_ifgrs__mod__hydro != 0 ? AC_ifgrs__mod__hydro+6-1 : -1) Field F_FGRS_7
+field_order(AC_ifgrs__mod__hydro != 0 ? AC_ifgrs__mod__hydro+7-1 : -1) Field F_FGRS_8
+field_order(AC_ifgrs__mod__hydro != 0 ? AC_ifgrs__mod__hydro+8-1 : -1) Field F_FGRS_9
+field_order(AC_iegr__mod__density != 0 ? AC_iegr__mod__density-1 : -1) Field F_EGR
+#endif
+
 // @auto-field-declarations: fortran-parser adds missing fields above this line
 #if LDEBUG_OUTPUT_TIMES
 field_order(AC_ispecial__mod__debug_output_times != 0 ? AC_ispecial__mod__debug_output_times-1 : -1) Field F_SPECIAL

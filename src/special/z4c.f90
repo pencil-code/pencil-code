@@ -1087,6 +1087,8 @@ module Special
     call copy_addr(isadmij,p_par(22)) ! int (6)
     call string_to_enum(enum_lapse_type,lapse_type)
     call copy_addr(enum_lapse_type,p_par(23)) ! int
+    call copy_addr(lenforce_algebraic,p_par(24)) ! bool
+    call copy_addr(chi_floor,p_par(25))
 
   endsubroutine pushpars2c
 !***********************************************************************

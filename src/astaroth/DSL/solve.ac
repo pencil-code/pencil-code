@@ -237,6 +237,30 @@ fixed_boundary Kernel twopass_solve_final(PC_SUB_STEP_NUMBER step_num, real AC_t
 #if LDEBUG_OUTPUT_TIMES
 		if(AC_ispecial__mod__debug_output_times != 0) write(F_SPECIAL, rk_final(F_SPECIAL,step_num,dt))
 #endif
+#if LZ4C
+		if(AC_ichi__mod__z4c != 0) write(F_CHI, rk_final(F_CHI,step_num,dt))
+		if(AC_ikh__mod__z4c != 0) write(F_KH, rk_final(F_KH,step_num,dt))
+		if(AC_ith__mod__z4c != 0) write(F_TH, rk_final(F_TH,step_num,dt))
+		if(AC_ialp__mod__z4c != 0) write(F_ALP, rk_final(F_ALP,step_num,dt))
+		if(AC_igt__mod__z4c[0] != 0) write(F_GT_1, rk_final(F_GT_1,step_num,dt))
+		if(AC_igt__mod__z4c[1] != 0) write(F_GT_2, rk_final(F_GT_2,step_num,dt))
+		if(AC_igt__mod__z4c[2] != 0) write(F_GT_3, rk_final(F_GT_3,step_num,dt))
+		if(AC_igt__mod__z4c[3] != 0) write(F_GT_4, rk_final(F_GT_4,step_num,dt))
+		if(AC_igt__mod__z4c[4] != 0) write(F_GT_5, rk_final(F_GT_5,step_num,dt))
+		if(AC_igt__mod__z4c[5] != 0) write(F_GT_6, rk_final(F_GT_6,step_num,dt))
+		if(AC_iat__mod__z4c[0] != 0) write(F_AT_1, rk_final(F_AT_1,step_num,dt))
+		if(AC_iat__mod__z4c[1] != 0) write(F_AT_2, rk_final(F_AT_2,step_num,dt))
+		if(AC_iat__mod__z4c[2] != 0) write(F_AT_3, rk_final(F_AT_3,step_num,dt))
+		if(AC_iat__mod__z4c[3] != 0) write(F_AT_4, rk_final(F_AT_4,step_num,dt))
+		if(AC_iat__mod__z4c[4] != 0) write(F_AT_5, rk_final(F_AT_5,step_num,dt))
+		if(AC_iat__mod__z4c[5] != 0) write(F_AT_6, rk_final(F_AT_6,step_num,dt))
+		if(AC_igam__mod__z4c.x != 0) write(F_GAMX, rk_final(F_GAMX,step_num,dt))
+		if(AC_igam__mod__z4c.y != 0) write(F_GAMY, rk_final(F_GAMY,step_num,dt))
+		if(AC_igam__mod__z4c.z != 0) write(F_GAMZ, rk_final(F_GAMZ,step_num,dt))
+		if(AC_ibeta__mod__z4c.x != 0) write(F_BETAX, rk_final(F_BETAX,step_num,dt))
+		if(AC_ibeta__mod__z4c.y != 0) write(F_BETAY, rk_final(F_BETAY,step_num,dt))
+		if(AC_ibeta__mod__z4c.z != 0) write(F_BETAZ, rk_final(F_BETAZ,step_num,dt))
+#endif
 // @auto-field-declarations: fortran-parser adds missing fields above this line
 	}
 }

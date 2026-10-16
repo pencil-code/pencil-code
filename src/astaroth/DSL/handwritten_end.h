@@ -192,6 +192,30 @@
 #if LDEBUG_OUTPUT_TIMES
           if(AC_ispecial__mod__debug_output_times != 0) write(F_SPECIAL, rk_intermediate(F_SPECIAL,DF_SPECIAL,step_num,AC_dt__mod__cdata))
 #endif
+#if LZ4C
+          if(AC_ichi__mod__z4c != 0) write(F_CHI, rk_intermediate(F_CHI,DF_CHI,step_num,AC_dt__mod__cdata))
+          if(AC_ikh__mod__z4c != 0) write(F_KH, rk_intermediate(F_KH,DF_KH,step_num,AC_dt__mod__cdata))
+          if(AC_ith__mod__z4c != 0) write(F_TH, rk_intermediate(F_TH,DF_TH,step_num,AC_dt__mod__cdata))
+          if(AC_ialp__mod__z4c != 0) write(F_ALP, rk_intermediate(F_ALP,DF_ALP,step_num,AC_dt__mod__cdata))
+          if(AC_igt__mod__z4c[0] != 0) write(F_GT_1, rk_intermediate(F_GT_1,DF_GT[0],step_num,AC_dt__mod__cdata))
+          if(AC_igt__mod__z4c[1] != 0) write(F_GT_2, rk_intermediate(F_GT_2,DF_GT[1],step_num,AC_dt__mod__cdata))
+          if(AC_igt__mod__z4c[2] != 0) write(F_GT_3, rk_intermediate(F_GT_3,DF_GT[2],step_num,AC_dt__mod__cdata))
+          if(AC_igt__mod__z4c[3] != 0) write(F_GT_4, rk_intermediate(F_GT_4,DF_GT[3],step_num,AC_dt__mod__cdata))
+          if(AC_igt__mod__z4c[4] != 0) write(F_GT_5, rk_intermediate(F_GT_5,DF_GT[4],step_num,AC_dt__mod__cdata))
+          if(AC_igt__mod__z4c[5] != 0) write(F_GT_6, rk_intermediate(F_GT_6,DF_GT[5],step_num,AC_dt__mod__cdata))
+          if(AC_iat__mod__z4c[0] != 0) write(F_AT_1, rk_intermediate(F_AT_1,DF_AT[0],step_num,AC_dt__mod__cdata))
+          if(AC_iat__mod__z4c[1] != 0) write(F_AT_2, rk_intermediate(F_AT_2,DF_AT[1],step_num,AC_dt__mod__cdata))
+          if(AC_iat__mod__z4c[2] != 0) write(F_AT_3, rk_intermediate(F_AT_3,DF_AT[2],step_num,AC_dt__mod__cdata))
+          if(AC_iat__mod__z4c[3] != 0) write(F_AT_4, rk_intermediate(F_AT_4,DF_AT[3],step_num,AC_dt__mod__cdata))
+          if(AC_iat__mod__z4c[4] != 0) write(F_AT_5, rk_intermediate(F_AT_5,DF_AT[4],step_num,AC_dt__mod__cdata))
+          if(AC_iat__mod__z4c[5] != 0) write(F_AT_6, rk_intermediate(F_AT_6,DF_AT[5],step_num,AC_dt__mod__cdata))
+          if(AC_igam__mod__z4c.x != 0) write(F_GAMX, rk_intermediate(F_GAMX,DF_GAMVEC.x,step_num,AC_dt__mod__cdata))
+          if(AC_igam__mod__z4c.y != 0) write(F_GAMY, rk_intermediate(F_GAMY,DF_GAMVEC.y,step_num,AC_dt__mod__cdata))
+          if(AC_igam__mod__z4c.z != 0) write(F_GAMZ, rk_intermediate(F_GAMZ,DF_GAMVEC.z,step_num,AC_dt__mod__cdata))
+          if(AC_ibeta__mod__z4c.x != 0) write(F_BETAX, rk_intermediate(F_BETAX,DF_BETAVEC.x,step_num,AC_dt__mod__cdata))
+          if(AC_ibeta__mod__z4c.y != 0) write(F_BETAY, rk_intermediate(F_BETAY,DF_BETAVEC.y,step_num,AC_dt__mod__cdata))
+          if(AC_ibeta__mod__z4c.z != 0) write(F_BETAZ, rk_intermediate(F_BETAZ,DF_BETAVEC.z,step_num,AC_dt__mod__cdata))
+#endif
 // @auto-field-declarations: fortran-parser adds missing fields above this line
    }
    else
