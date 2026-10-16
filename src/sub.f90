@@ -42,6 +42,7 @@ module Sub
   public :: curl_horizontal
   public :: div_other
   public :: gij, g2ij, gij_etc
+  public :: covariant_g2ij
   public :: gij_v_times_s
   public :: gijl_symmetric
   public :: bij_tilde
@@ -3235,9 +3236,8 @@ subroutine dot_mn_sv_pencil(a,b,c)
 !  Calculates the Hessian, i.e. all second derivatives of a vector.
 !  Returns a rank3 tensor
 !
-!  11-jul-02/axel: coded
+!  15-oct-26/TP: coded
 !
-      use Deriv, only: der2,derij
 !
       real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (:,:,:,:) :: g
@@ -3252,6 +3252,36 @@ subroutine dot_mn_sv_pencil(a,b,c)
       enddo
 !
     endsubroutine g2ij_vec
+!***********************************************************************
+    subroutine covariant_g2ij(f,k,dk,gamma,DD)
+!
+!  Calculates all covariant second derivatives of a scalar.
+!  
+!  16-oct-26/TP: coded
+!
+      use Deriv, only: der2,derij
+
+      real, contiguous, dimension(:,:,:,:) :: f
+      integer :: k
+      real, dimension (nx,3) :: dk
+      real, dimension (nx,3,6) :: gamma !Christoffel symbol
+      real, dimension (nx,6) :: DD
+
+      real, dimension (nx,6) :: d2k
+      real, dimension (nx) :: tmp
+      integer :: i
+
+      do i=1,3
+        call der2(f,k,tmp,i); d2k(:,i)=tmp
+      enddo
+      call derij(f,k,tmp,1,2); d2k(:,ij_table(1,2))=tmp
+      call derij(f,k,tmp,1,3); d2k(:,ij_table(1,3))=tmp
+      call derij(f,k,tmp,2,3); d2k(:,ij_table(2,3))=tmp
+      do i=1,6
+        DD(:,i)=d2k(:,i)-gamma(:,1,i)*dk(:,1)-gamma(:,2,i)*dk(:,2)-gamma(:,3,i)*dk(:,3)
+      enddo
+
+    endsubroutine covariant_g2ij
 !***********************************************************************
     subroutine del4(f,k,del4f,ignoredx)
 !

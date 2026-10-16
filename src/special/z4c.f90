@@ -100,7 +100,7 @@ module Special
     real, dimension(nx) :: chi, Kh, th, alp, Ktr, AA, trR, ham, divb
     real, dimension(nx,6) :: gt, At, gtu, Rij, DDalp, Atu
     real, dimension(nx,3) :: Gam, beta, dchi, dKh, dth, dalp, Gamd
-    real, dimension(nx,3,3) :: dbeta, dGam, Aud, d2chi, d2alp
+    real, dimension(nx,3,3) :: dbeta, dGam, Aud
     real, dimension(nx,6,3) :: dgt, dAt
     real, dimension(nx,6,3,3) :: d2gt
     real, dimension(nx,3,3,3) :: d2beta
@@ -423,7 +423,7 @@ module Special
 !
 !  13-oct-26/TP: coded
 !
-      use Sub, only: grad, g2ij, sym_inverse, contract
+      use Sub, only: grad, g2ij, sym_inverse, contract,covariant_g2ij
 !
       real, contiguous, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
@@ -443,8 +443,8 @@ module Special
         q%Gam(:,i)=f(l1:l2,m,n,iGam(i)); q%beta(:,i)=f(l1:l2,m,n,ibeta(i))
       enddo
 !
-      call grad(f,ichi,q%dchi); call g2ij(f,ichi,q%d2chi)
-      call grad(f,ialp,q%dalp); call g2ij(f,ialp,q%d2alp)
+      call grad(f,ichi,q%dchi); 
+      call grad(f,ialp,q%dalp); 
       call grad(f,iKh,q%dKh)
       call grad(f,ith,q%dth)
       call g2ij(f,igt(1),q%d2gt)
@@ -460,10 +460,11 @@ module Special
 !  Conformal Christoffel symbols: Gam1(k,ij)=Gamt_kij, Gam2(k,ij)=Gamt^k_ij,
 !  and the contracted ones Gamd^k computed from the metric.
 !
-      call sym_inverse(q%gt,q%gtu,detg)
       do k=1,3; do j=1,3; do i=1,j
         q%Gam1(:,k,ij_table(i,j))=0.5*(q%dgt(:,ij_table(j,k),i)+q%dgt(:,ij_table(i,k),j)-q%dgt(:,ij_table(i,j),k))
       enddo; enddo; enddo
+
+      call sym_inverse(q%gt,q%gtu,detg)
       do k=1,3; do ij=1,6
         q%Gam2(:,k,ij)=q%gtu(:,ij_table(k,1))*q%Gam1(:,1,ij)+q%gtu(:,ij_table(k,2))*q%Gam1(:,2,ij) &
                       +q%gtu(:,ij_table(k,3))*q%Gam1(:,3,ij)
@@ -472,7 +473,7 @@ module Special
         q%Gamd(:,k)=contract(q%gtu,q%Gam2(:,k,:))
       enddo
 !
-!  Ricci tensor R_ij = Rt_ij + Rchi_ij and covariant second derivatives.
+!  Ricci tensor R_ij = Rt_ij + Rchi_ij 
 !
       do j=1,3; do i=1,j
         ij=ij_table(i,j)
@@ -490,11 +491,11 @@ module Special
           enddo; enddo
         enddo
         q%Rij(:,ij)=rhs
-        DDchi(:,ij)=q%d2chi(:,i,j)-q%Gam2(:,1,ij)*q%dchi(:,1)-q%Gam2(:,2,ij)*q%dchi(:,2) &
-                   -q%Gam2(:,3,ij)*q%dchi(:,3)
-        q%DDalp(:,ij)=q%d2alp(:,i,j)-q%Gam2(:,1,ij)*q%dalp(:,1)-q%Gam2(:,2,ij)*q%dalp(:,2) &
-                     -q%Gam2(:,3,ij)*q%dalp(:,3)
       enddo; enddo
+
+      call covariant_g2ij(f,ichi,q%dchi,q%Gam2,DDchi)
+      call covariant_g2ij(f,ialp,q%dalp,q%Gam2,q%DDalp)
+
       lapchi=contract(q%gtu,DDchi)
       dchi2=0.; dchida=0.
       do j=1,3; do i=1,3
