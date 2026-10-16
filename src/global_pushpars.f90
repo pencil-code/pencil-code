@@ -232,7 +232,6 @@ contains
     call copy_addr(ishock,p_par(389)) ! int
     call copy_addr(ishock_perp,p_par(390)) ! int
 
-    call copy_addr(mcom,p_par(1442)) ! int
     call copy_addr(fbcx_bot,p_par(391)) ! (mcom_max)
     call copy_addr(fbcx_top,p_par(392)) ! (mcom_max)
     call copy_addr(fbcy_bot,p_par(393)) ! (mcom_max)
@@ -240,6 +239,7 @@ contains
     call copy_addr(fbcz_bot,p_par(395)) ! (mcom_max)
     call copy_addr(fbcz_top,p_par(396)) ! (mcom_max)
     call copy_addr(ltime_integrals,p_par(401)) ! bool
+    call copy_addr(mcom,p_par(402)) ! int
 
     call copy_addr(dx2_bound,p_par(1164)) ! (2*nghost+1)
     call copy_addr(dy2_bound,p_par(1165)) ! (2*nghost+1)
