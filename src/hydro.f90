@@ -6226,6 +6226,7 @@ module Hydro
 !
 !  Auxiliaries of the lgr_metric formulation. The ADM sources are registered
 !  one scalar per component under the names special/z4c looks for.
+!  rhs=.true. gives them GPU vertex buffers at their f-array index.
 !
 !  14-oct-26/TP: coded
 !
@@ -6233,16 +6234,16 @@ module Hydro
 !
       integer :: i, j
 !
-      call farray_register_auxiliary('FgrE',iFgrE,vector=3)
-      call farray_register_auxiliary('FgrS',iFgrS,array=9)
-      call farray_register_auxiliary('egr',iegr)
+      call farray_register_auxiliary('FgrE',iFgrE,vector=3,rhs=.true.)
+      call farray_register_auxiliary('FgrS',iFgrS,array=9,rhs=.true.)
+      call farray_register_auxiliary('egr',iegr,rhs=.true.)
       if (lgr_backreaction) then
-        call farray_register_auxiliary('Eadm',iEadm)
+        call farray_register_auxiliary('Eadm',iEadm,rhs=.true.)
         do i=1,3
-          call farray_register_auxiliary('Sadm'//cvec(i),iSadm(i))
+          call farray_register_auxiliary('Sadm'//cvec(i),iSadm(i),rhs=.true.)
         enddo
         do j=1,3; do i=1,j
-          call farray_register_auxiliary('Sadm'//cvec(i)//cvec(j),iSadmij(ij_table(i,j)))
+          call farray_register_auxiliary('Sadm'//cvec(i)//cvec(j),iSadmij(ij_table(i,j)),rhs=.true.)
         enddo; enddo
       endif
 !

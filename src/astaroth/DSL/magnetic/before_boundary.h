@@ -25,7 +25,25 @@ Kernel magnetic_before_boundary(bool lrmv)
 	 F_AZ[vertexIdx.x][vertexIdx.y][vertexIdx.z] = F_AZ - AC_tau_remove_meanaxy__mod__magnetic*AZ_mean_z
       }
 }
+//TP: bb as communicated auxiliary (magnetic_before_boundary), read by the rhs through value(F_BVEC)
+Kernel magnetic_calc_bb_comaux()
+{
+      if (AC_lbb_as_comaux__mod__magnetic)
+      {
+	 bb = curl(F_AVEC)
+	 if (AC_lb_ext_in_comaux__mod__magnetic)
+	 {
+	    bb += AC_b_ext__mod__magnetic
+	 }
+	 F_BX[vertexIdx.x][vertexIdx.y][vertexIdx.z] = bb.x
+	 F_BY[vertexIdx.x][vertexIdx.y][vertexIdx.z] = bb.y
+	 F_BZ[vertexIdx.x][vertexIdx.y][vertexIdx.z] = bb.z
+      }
+}
 #else
+Kernel magnetic_calc_bb_comaux()
+{
+}
 Kernel magnetic_before_boundary_reductions(bool lrmv)
 {
 	 suppress_unused_warning(lrmv)

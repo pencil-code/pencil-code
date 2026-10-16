@@ -250,7 +250,8 @@ const Field3 F__ADV_DERVEC     = {F_ADV_DERX,F_ADV_DERY,F_ADV_DERZ}
 const Field3 F_HYPREVEC        = {F_HYPREX, F_HYPREY, F_HYPREZ}
 const Field3 F_GLOBAL_EXT_AVEC = {F_GLOBAL_AX_EXT, F_GLOBAL_AY_EXT, F_GLOBAL_AZ_EXT}
 
-Field3 F_VVEC
+//TP: f(:,:,:,ivx:ivz) is transpiled to F_VVEC, i.e. the vv auxiliary
+const Field3 F_VVEC = {VX,VY,VZ}
 Field3 F_FVEC
 field_order(AC_iecr__mod__cdata-1) Field F_ECR
 field_order(AC_ifcr__mod__cdata == 0 ? -1 : AC_ifcr__mod__cdata+0-1) Field F_FCR_X
