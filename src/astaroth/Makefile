@@ -130,7 +130,7 @@ astaroth_$(PREC).so: $(SOURCES) forcing.h $(PC_HEADERS) $(CHEADERS) astaroth_lib
 	echo PRECISION=$(CMAKE_PREC) && \
 	cd build && export LDFLAGS=""  && \
 	cmake -DCPU_BUILD=$(CPU_BUILD) -DDOUBLE_PRECISION=$(CMAKE_PREC) -DRUNTIME_COMPILATION=$(RUNTIME_COMPILATION) -DTRANSPILATION=$(TRANSPILATION) -DSINGLEPASS_INTEGRATION=$(CMAKE_SINGLEPASS) -DCUDA_AWARE_MPI=$(CUDA_AWARE_MPI) -DTRAINING=$(CMAKE_TRAINING_VALUE) -DTORCHFORT_PATH=$(TORCHFORT_PATH) .. && \
-	make -j && \
+	cmake --build . -j && \
 	cd .. && \
 	mv ./build/libastaroth_$(PREC).so libastaroth_$(PREC).so
 
@@ -170,7 +170,7 @@ endif
 	echo "const char* cmake_options = \" -DDSL_EXT_SOURCES=\\\"$$ext_srcs\\\" -DDSL_MODULE_DIR=$(CWD)/$(DSL_MODULE_DIR) $(CMAKE_OPTIONS)\";" > cmake_options.h && \
 	mkdir -p submodule/build  && cd submodule/build && export LDFLAGS=""  &&  \
 	cmake  $(CMAKE_OPTIONS) -DDSL_EXT_SOURCES="$$ext_srcs" -DDSL_MODULE_DIR=$(CWD)/$(DSL_MODULE_DIR) -DRUNTIME_COMPILATION=$(RUNTIME_COMPILATION) -DREAD_OVERRIDES=$(READ_OVERRIDES) $(AC_HOME)
-	cd submodule/build && sed -i -e's/SHELL *= *\/bin\/sh/SHELL = \/bin\/bash/' Makefile && make -j -I../../.. VERBOSE=0 # Build the core Astaroth library
+	cd submodule/build && cmake --build . -j # Build the core Astaroth library
 	@echo PRECISION=$(CMAKE_PREC)
 
 #        CMAKE_PREFIX_PATH="/opt/nvidia/hpc_sdk/Linux_x86_64/24.1/comm_libs/mpi/lib /opt/nvidia/hpc_sdk/Linux_x86_64/24.1/comm_libs/mpi/include" \
