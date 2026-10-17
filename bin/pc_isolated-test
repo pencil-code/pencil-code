@@ -123,16 +123,18 @@ fi
 #Start with a clean environment to avoid conflicts with already-enabled versions of Pencil
 #cmd="env -i bash --norc" #Even $HOME is not set here, which causes problems.
 if test -n "$rcfile"; then
-    cmd="env -u PATH -u _sourceme -u PYTHONPATH bash --rcfile $rcfile"
+    source_rcfile="source $rcfile"
 else
-    cmd="env -u PATH -u _sourceme -u PYTHONPATH bash --norc"
+    source_rcfile=""
 fi
 
 if test -z "$command"; then
     command="pc_auto-test --auto-clean $auto_test_options"
 fi
 
-$cmd << EOF
+env -u PATH -u _sourceme -u PYTHONPATH bash --norc << EOF
+
+$source_rcfile
 
 export PENCIL_HOME=$(pwd)
 _sourceme_quiet=1; . $PENCIL_HOME/sourceme.sh; unset _sourceme_quiet
