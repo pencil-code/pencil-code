@@ -94,7 +94,7 @@ done
 
 sanitized_repo_name=$(echo $repo | tr -d ':/') #remove characters which would cause problems in folder names.
 tmpdir=~/.cache/pc_isolated_test
-foldername="pencil-code-submodules-$submodules-$branchname-$sanitized_repo_name"
+foldername="$sanitized_repo_name/$branchname/submodules-$submodules/pencil-code"
 lockfile="pc_isolated-test.lock"
 
 pid_from_lockfile () {
@@ -138,6 +138,7 @@ if test -e "$foldername"; then
     git reset --hard "origin/$branchname"
     git clean -xfd --exclude="$lockfile"
 else
+    mkdir -p "$foldername"
     git clone --depth=1 --branch "$branchname" "$repo" "$foldername"
     cd "$foldername"
     get_lock
