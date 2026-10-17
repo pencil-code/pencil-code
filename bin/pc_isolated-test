@@ -95,6 +95,33 @@ done
 sanitized_repo_name=$(echo $repo | tr -d ':/') #remove characters which would cause problems in folder names.
 tmpdir=~/.cache/pc_isolated_test
 foldername="pencil-code-submodules-$submodules-$branchname-$sanitized_repo_name"
+lockfile="pc_isolated-test.lock"
+
+pid_from_lockfile () {
+    cat "$lockfile" | tr -d "[:space:]"
+}
+
+release_lock () {
+    if test -e "$lockfile"; then
+        if test "$(pid_from_lockfile)" -eq "$$"; then
+            rm -f "$lockfile"
+        fi
+    else
+        echo "ERROR: lockfile disappeared!"
+        exit 5
+    fi
+}
+
+get_lock () {
+    #We use our own locking mechanism because we may want to run commands other than pc_auto-test.
+    if test -e "$lockfile"; then
+        echo "ERROR: lockfile exists; another test (PID: $(pid_from_lockfile)) is already running in $PWD"
+        exit 4
+    else
+        echo "$$" > "$lockfile"
+        trap release_lock EXIT
+    fi
+}
 
 set -e
 
@@ -106,12 +133,14 @@ cd "$tmpdir"
 if test -e "$foldername"; then
     echo "Destination folder exists; assuming repo has already been cloned"
     cd "$foldername"
+    get_lock
     git fetch --depth=1
     git reset --hard "origin/$branchname"
-    git clean -xfd
+    git clean -xfd --exclude="$lockfile"
 else
     git clone --depth=1 --branch "$branchname" "$repo" "$foldername"
     cd "$foldername"
+    get_lock
     git remote set-branches origin "$branchname"
 fi
 
