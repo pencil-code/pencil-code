@@ -29,13 +29,16 @@ Options:
                             specified, all required programs (gfortran, mpirun,
                             python etc.) must be present in the default
                             systemwide locations.
+    --command               Optional. A command to run instead of pc_auto-test.
+                            If this is specified, --auto-test-options will be
+                            ignored.
 '''
 
 # BEGIN option parsing
 #https://stackoverflow.com/questions/192249/how-do-i-parse-command-line-arguments-in-bash/29754866#29754866
 set -o errexit -o pipefail -o noclobber -o nounset
 
-LONGOPTS=branch:,auto-test-options:,repo:,help,submodules,rcfile:
+LONGOPTS=branch:,auto-test-options:,repo:,help,submodules,rcfile:,command:
 OPTIONS=b:o:r:hs
 
 PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@") || exit 2
@@ -46,6 +49,7 @@ branchname=master
 repo="https://pencil-code.org/git"
 submodules="false"
 rcfile=""
+command=""
 while true; do
     case "$1" in
         -b|--branch)
@@ -70,6 +74,10 @@ while true; do
             ;;
         --rcfile)
             rcfile=$2
+            shift 2
+            ;;
+        --command)
+            command="$2"
             shift 2
             ;;
         --)
@@ -120,11 +128,15 @@ else
     cmd="env -u PATH -u _sourceme -u PYTHONPATH bash --norc"
 fi
 
+if test -z "$command"; then
+    command="pc_auto-test --auto-clean $auto_test_options"
+fi
+
 $cmd << EOF
 
 export PENCIL_HOME=$(pwd)
 _sourceme_quiet=1; . $PENCIL_HOME/sourceme.sh; unset _sourceme_quiet
 
-pc_auto-test --auto-clean $auto_test_options
+$command
 
 EOF
