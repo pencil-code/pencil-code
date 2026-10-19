@@ -2947,7 +2947,7 @@ use Sub, only: dot2_mn
 !  F^j_i are computed by hydro (hydro_after_boundary_gr); S^j_i is recovered
 !  from F^j_i = sg (alpha S^j_i - beta^j S_i).
 !
-!  14-oct-26/TP: moved from hydro
+!  14-oct-26/Claude: moved from hydro
 !
       use Deriv, only: der
       use Sub, only: raise_index

@@ -141,7 +141,7 @@ module Special
 !  Register the Z4c variables. The registration order makes all of them
 !  consecutive in the f array.
 !
-!  13-oct-26/TP: coded
+!  13-oct-26/Claude: coded
 !
       use FArrayManager
 !
@@ -172,7 +172,7 @@ module Special
 !***********************************************************************
     subroutine initialize_special(f)
 !
-!  13-oct-26/TP: coded
+!  13-oct-26/Claude: coded
 !
       use FArrayManager, only: farray_index_by_name
       use Sub, only: cross
@@ -239,7 +239,7 @@ module Special
 !
 !  Set the ADM initial data and convert them to Z4c variables.
 !
-!  13-oct-26/TP: coded
+!  13-oct-26/Claude: coded
 !
       use General, only: random_number_wrapper
 !
@@ -285,7 +285,7 @@ module Special
 !  of points xx at fixed (yy,zz); Gam is the exact conformal connection
 !  function -d_j gt^ij.
 !
-!  13-oct-26/TP: coded
+!  13-oct-26/Claude: coded
 !
       real, dimension(:) :: xx
       real :: yy, zz, tt
@@ -353,7 +353,7 @@ module Special
 !***********************************************************************
     subroutine adm_to_z4c(g,Kij,chi,gt,Kh,At)
 !
-!  13-oct-26/TP: coded
+!  13-oct-26/Claude: coded
 !
       use Sub, only: sym_inverse, contract
 !
@@ -385,7 +385,7 @@ module Special
 !  Enforce the algebraic constraints det(gt)=1 and gt^ij At_ij=0 at every
 !  substep, and keep chi above chi_floor.
 !
-!  13-oct-26/TP: coded
+!  13-oct-26/Claude
 !
       use Sub, only: sym_inverse, contract
 !
@@ -421,7 +421,7 @@ module Special
 !
 !  Geometric quantities shared by the right-hand side and the diagnostics.
 !
-!  13-oct-26/TP: coded
+!  13-oct-26/Claude: coded
 !
       use Sub, only: grad, g2ij, sym_inverse, contract,covariant_g2ij
 !
@@ -586,7 +586,7 @@ module Special
 !  Right-hand side of the Z4c equations, GR-Athena++ eqs. (8)-(13) and (22)
 !  without matter.
 !
-!  13-oct-26/TP: coded
+!  13-oct-26/Claude: coded
 !
       use Deriv, only: der6
       use Sub, only: u_dot_grad, contract
@@ -751,7 +751,7 @@ module Special
 !
 !  Points of the current pencil that lie on a non-periodic outer boundary.
 !
-!  13-oct-26/TP: coded
+!  13-oct-26/Claude: coded
 !
       logical, dimension(nx) :: sommerfeld_mask
 !
@@ -776,7 +776,7 @@ module Special
 !
 !  Kreiss-Oliger dissipation of order 6, sigma/64 dx^5 d^6/dx^6, of variable k.
 !
-!  15-oct-26/TP: split off from dspecial_dt
+!  15-oct-26/Claude: split off from dspecial_dt
 !
       use Deriv, only: der6
 !
@@ -799,7 +799,7 @@ module Special
 !  Copy of df of the Z4c variables, in the order chi, gt(1:6), Kh, At(1:6),
 !  theta, Gam(1:3), alp, beta(1:3).
 !
-!  15-oct-26/TP: coded
+!  15-oct-26/Claude: coded
 !
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(nx,nz4c) :: df_in
@@ -829,7 +829,7 @@ module Special
 !  to it (see save_df_z4c for its order). u0=1 for chi, alp and the diagonal
 !  of gt (ij_table puts 11, 22, 33 first).
 !
-!  13-oct-26/TP: coded
+!  13-oct-26/Claude: coded
 !  15-oct-26/TP: variables visited by name for the GPU transpiler
 !
       real, contiguous, dimension(:,:,:,:) :: f
@@ -861,7 +861,7 @@ module Special
 !
 !  Sommerfeld condition for variable k, see sommerfeld.
 !
-!  15-oct-26/TP: split off from sommerfeld
+!  15-oct-26/Claude: split off from sommerfeld
 !
       use Sub, only: grad
 !
@@ -884,7 +884,7 @@ module Special
 !***********************************************************************
     subroutine calc_diagnostics_special(f,p)
 !
-!  13-oct-26/TP: coded
+!  13-oct-26/Claude: coded
 !
       use Diagnostics
 !
@@ -1007,7 +1007,7 @@ module Special
 !***********************************************************************
     subroutine rprint_special(lreset,lwrite)
 !
-!  13-oct-26/TP: coded
+!  13-oct-26/Claude: coded
 !
       use Diagnostics
       use FArrayManager, only: farray_index_append

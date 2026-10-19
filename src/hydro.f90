@@ -6228,7 +6228,7 @@ module Hydro
 !  one scalar per component under the names special/z4c looks for.
 !  rhs=.true. gives them GPU vertex buffers at their f-array index.
 !
-!  14-oct-26/TP: coded
+!  14-oct-26/Claude: coded
 !
       use FArrayManager, only: farray_register_auxiliary
 !
@@ -6253,7 +6253,7 @@ module Hydro
 !
 !  Check the setup and find the metric variables of special/z4c.
 !
-!  14-oct-26/TP: coded
+!  14-oct-26/Claude: coded
 !
       use FArrayManager, only: farray_index_by_name
 !
@@ -6301,7 +6301,7 @@ module Hydro
 !  alpha v^i - beta^i (in vv, used by the induction equation), W^2 (lorentz),
 !  e (egr) and the ADM sources E, S_i, S_ij for special/z4c.
 !
-!  14-oct-26/TP: coded
+!  14-oct-26/Claude: coded
 !
       use EquationOfState, only: cs20
       use Sub, only: sym_inverse,lower_index,raise_index,contract_vec
@@ -6419,7 +6419,7 @@ module Hydro
 !  Residual of the energy equation for given z = (e+p) W^2, see
 !  hydro_after_boundary_gr; v^2 follows from the momentum equation.
 !
-!  14-oct-26/TP: coded
+!  14-oct-26/Claude: coded
 !
       real, intent(in) :: zz, EE, S2, B2, SB, w
       real :: v2
@@ -6439,7 +6439,7 @@ module Hydro
 !  The metric quantities are pencils of special/z4c; S^j_i is recovered from
 !  the stored flux F^j_i. The energy equation is in density (dlnrho_dt).
 !
-!  14-oct-26/TP: coded
+!  14-oct-26/Claude: coded
 !
       use Deriv, only: der
 !
