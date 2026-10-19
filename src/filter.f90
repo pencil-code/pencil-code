@@ -38,7 +38,7 @@ module Filter
       use Boundcond, only: boundconds_x, boundconds_y, boundconds_z
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension (:,:,:,:) :: df
       logical, optional :: explog
       integer :: ivar1,ivar2
       real :: awigg
@@ -96,7 +96,7 @@ module Filter
       use Deriv, only: der6
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous  dimension (:,:,:,:) :: df
       real, dimension (nx) :: tmp
       real :: awigg
       integer :: ivar,ivar1,ivar2,idir
