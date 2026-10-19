@@ -20,7 +20,6 @@
 ! PENCILS PROVIDED rhos1; glnrhos(3)
 ! PENCILS PROVIDED totenergy_rel; divss
 ! PENCILS EXPECTED ext_force(4)
-! PENCILS EXPECTED gr_sqrtg; gr_alp; gr_dalp(3); gr_beta(3); gr_gamu(6); gr_Kij(6)
 !
 !***************************************************************
 module Density
@@ -2372,17 +2371,6 @@ module Density
       logical, pointer :: lconservative_pressure_on_rhs
 
       if (ldensity_nolog) lpenc_requested(i_rho)=.true.
-!
-!  Metric pencils from special/z4c for the energy equation in curved spacetime.
-!
-      if (lgr_metric) then
-        lpenc_requested(i_gr_sqrtg)=.true.
-        lpenc_requested(i_gr_alp)=.true.
-        lpenc_requested(i_gr_dalp)=.true.
-        lpenc_requested(i_gr_beta)=.true.
-        lpenc_requested(i_gr_gamu)=.true.
-        lpenc_requested(i_gr_Kij)=.true.
-      endif
       if (lcontinuity_gas) then
         if (lweno_transport) then
           lpenc_requested(i_transprho)=.true.

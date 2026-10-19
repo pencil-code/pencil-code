@@ -365,7 +365,28 @@ module Special
 !***********************************************************************
     subroutine pencil_criteria_special
 !
-!  The module computes everything from the f array.
+!  Metric pencils from special/z4c for the energy equation in curved spacetime.
+!
+      if (ldensity) then
+        lpenc_requested(i_gr_sqrtg)=.true.
+        lpenc_requested(i_gr_alp)=.true.
+        lpenc_requested(i_gr_dalp)=.true.
+        lpenc_requested(i_gr_beta)=.true.
+        lpenc_requested(i_gr_gamu)=.true.
+        lpenc_requested(i_gr_Kij)=.true.
+      endif
+!
+!  Metric pencils from special/z4c for the momentum equation in curved spacetime.
+!
+      if (lhydro) then
+        lpenc_requested(i_gr_sqrtg)=.true.
+        lpenc_requested(i_gr_alp)=.true.
+        lpenc_requested(i_gr_dalp)=.true.
+        lpenc_requested(i_gr_beta)=.true.
+        lpenc_requested(i_gr_dbeta)=.true.
+        lpenc_requested(i_gr_gamu)=.true.
+        lpenc_requested(i_gr_dgam)=.true.
+      endif
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************

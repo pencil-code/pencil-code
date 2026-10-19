@@ -29,8 +29,6 @@
 ! PENCILS PROVIDED T00; T0i(3); Tij(6); velx(3)
 ! PENCILS PROVIDED ext_force(4);
 ! PENCILS PROVIDED uutot(3); divutot; utotij(3,3)
-! PENCILS EXPECTED gr_sqrtg; gr_alp; gr_dalp(3); gr_beta(3); gr_dbeta(3,3)
-! PENCILS EXPECTED gr_gamu(6); gr_dgam(6,3); gr_Kij(6)
 !
 !** AUTOMATIC REFERENCE-LINK.TEX GENERATION ********************
 ! Declare relevant citations from pencil-code/doc/citations/ref.bib for this module.
@@ -3050,18 +3048,6 @@ module Hydro
         endif
       endif
       if (lprecession) lpenc_requested(i_rr)=.true.
-!
-!  Metric pencils from special/z4c for the momentum equation in curved spacetime.
-!
-      if (lgr_metric) then
-        lpenc_requested(i_gr_sqrtg)=.true.
-        lpenc_requested(i_gr_alp)=.true.
-        lpenc_requested(i_gr_dalp)=.true.
-        lpenc_requested(i_gr_beta)=.true.
-        lpenc_requested(i_gr_dbeta)=.true.
-        lpenc_requested(i_gr_gamu)=.true.
-        lpenc_requested(i_gr_dgam)=.true.
-      endif
 !
 !  Pencils if background velocity is present
 !
