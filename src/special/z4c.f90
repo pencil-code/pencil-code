@@ -578,7 +578,7 @@ module Special
         do i=1,3
           q%Sv(:,i)=f(l1:l2,m,n,iux-1+i)/p%gr_sqrtg
         enddo
-        q%Strace=q%chi*contract(q%gtu,q%Sij)
+        q%Strace=contract(p%gr_gamu,q%Sij)
         q%ham=q%ham-16*pi*q%E
       endif
 !
