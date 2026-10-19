@@ -29,6 +29,8 @@
 ! PENCILS PROVIDED T00; T0i(3); Tij(6); velx(3)
 ! PENCILS PROVIDED ext_force(4);
 ! PENCILS PROVIDED uutot(3); divutot; utotij(3,3)
+! PENCILS EXPECTED gr_sqrtg; gr_alp; gr_dalp(3); gr_beta(3); gr_dbeta(3,3)
+! PENCILS EXPECTED gr_gamu(6); gr_dgam(6,3); gr_Kij(6)
 !
 !** AUTOMATIC REFERENCE-LINK.TEX GENERATION ********************
 ! Declare relevant citations from pencil-code/doc/citations/ref.bib for this module.
