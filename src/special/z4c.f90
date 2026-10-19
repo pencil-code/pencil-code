@@ -795,6 +795,57 @@ module Special
 !
     endsubroutine special_calc_hydro
 !***********************************************************************
+    subroutine special_calc_density(f,df,p)
+!
+!  Metric/source part of the right-hand side of sqrt(gamma)*E (in irho) for lgr_metric=T
+!  (e.g. Banyuls et al. 1997, ApJ 476, 221; Font 2008, Living Rev. Rel. 11, 7):
+!
+!    d_t(sg E) + d_j F_E^j = sg (alpha S^jk K_jk - S^j d_j alpha)
+!
+!  The metric quantities are pencils of special/z4c. The fluxes F_E^j and
+!  T^j_i are computed by hydro (hydro_after_boundary_gr); S^j_i is recovered
+!  from T^j_i = sg (alpha S^j_i - beta^j S_i).
+!
+!  14-oct-26/Claude: moved from hydro
+!
+      use Deriv, only: der
+      use Sub, only: raise_index,div
+!
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type (pencil_case), intent(in) :: p
+
+      real, dimension(nx) :: rhs
+!
+      real, dimension(nx,3) :: Sd, Su
+      real, dimension(nx,3,3) :: Smix, Suu
+      real, dimension(nx) :: tmp,divFgrE
+      integer :: i, j, k
+!
+      do i=1,3
+        Sd(:,i)=f(l1:l2,m,n,iux+i-1)/p%gr_sqrtg
+      enddo
+      call raise_index(p%gr_gamu,Sd,Su)
+      do i=1,3; do j=1,3
+        Smix(:,j,i)=(f(l1:l2,m,n,iTij+3*(i-1)+j-1)/p%gr_sqrtg+p%gr_beta(:,j)*Sd(:,i))/p%gr_alp
+      enddo; enddo
+      do k=1,3; do j=1,3
+        Suu(:,j,k)=Smix(:,j,1)*p%gr_gamu(:,ij_table(1,k))+Smix(:,j,2)*p%gr_gamu(:,ij_table(2,k)) &
+                  +Smix(:,j,3)*p%gr_gamu(:,ij_table(3,k))
+      enddo; enddo
+!
+      rhs=0.
+      do j=1,3
+        rhs=rhs-Su(:,j)*p%gr_dalp(:,j)
+        do k=1,3
+          rhs=rhs+p%gr_alp*Suu(:,j,k)*p%gr_Kij(:,ij_table(j,k))
+        enddo
+      enddo
+      rhs=p%gr_sqrtg*rhs
+      df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) + rhs
+    endsubroutine special_calc_density
+!***********************************************************************
+!
     function sommerfeld_mask()
 !
 !  Points of the current pencil that lie on a non-periodic outer boundary.
