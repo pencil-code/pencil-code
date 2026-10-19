@@ -6442,6 +6442,7 @@ module Hydro
 !  14-oct-26/Claude: coded
 !
       use Deriv, only: der
+      use Sub, only: div_tensor,raise_second_index
 !
       real, contiguous, dimension(:,:,:,:) :: f, df
       type (pencil_case) :: p
@@ -6449,6 +6450,7 @@ module Hydro
       real, dimension(nx,3) :: Sd
       real, dimension(nx,3,3) :: Smix, Suu
       real, dimension(nx) :: rhs, tmp
+      real, dimension (nx,3) :: divFgrs
       integer :: i, j, k
 !
       do i=1,3
@@ -6457,10 +6459,8 @@ module Hydro
       do i=1,3; do j=1,3
         Smix(:,j,i)=(f(l1:l2,m,n,iFgrS+3*(i-1)+j-1)/p%gr_sqrtg+p%gr_beta(:,j)*Sd(:,i))/p%gr_alp
       enddo; enddo
-      do k=1,3; do j=1,3
-        Suu(:,j,k)=Smix(:,j,1)*p%gr_gamu(:,ij_table(1,k))+Smix(:,j,2)*p%gr_gamu(:,ij_table(2,k)) &
-                  +Smix(:,j,3)*p%gr_gamu(:,ij_table(3,k))
-      enddo; enddo
+      call raise_second_index(Smix,p%gr_gamu,Suu)
+      call div_tensor(f,divFgrs,iFgrS,lyz_first=.true.,lfull=.true.)
 !
       do i=1,3
         rhs=-p%rho*p%gr_dalp(:,i)
@@ -6471,10 +6471,7 @@ module Hydro
           enddo
         enddo
         rhs=p%gr_sqrtg*rhs
-        do j=1,3
-          call der(f,iFgrS+3*(i-1)+j-1,tmp,j)
-          rhs=rhs-tmp
-        enddo
+        rhs=rhs-divFgrs(:,i)
         df(l1:l2,m,n,iuu+i-1)=df(l1:l2,m,n,iuu+i-1)+rhs
       enddo
 !

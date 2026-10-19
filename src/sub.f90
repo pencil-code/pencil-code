@@ -73,6 +73,7 @@ module Sub
   public :: multmm_sc, multsm_mn
   public :: multm2, multm2_mn, multm2_sym, multm2_sym_mn
   public :: multmv, multmv_mn, multmv_transp,multmv_sym,raise_index,lower_index
+  public :: raise_second_index
   public :: mult_matrix, mult_mat_vv, invmat_DB
 !
   public :: read_line_from_file, control_file_exists
@@ -1289,6 +1290,23 @@ subroutine dot_mn_sv_pencil(a,b,c)
 !
     endsubroutine raise_index_vec
 !***********************************************************************
+    subroutine raise_second_index(S,g_upper,S_upper)
+!
+!  Raising the second index of rank 2 tensor
+!
+!  19-oct-26/TP: coded
+!
+      real, dimension(nx,3,3) :: S, S_upper !Input tensor and raised tensor
+      real, dimension(nx,6) :: g_upper !Raised metric
+
+      integer :: k,j
+
+      do k=1,3; do j=1,3
+        S_upper(:,j,k)=S(:,j,1)*g_upper(:,ij_table(1,k))+S(:,j,2)*g_upper(:,ij_table(2,k)) &
+                      +S(:,j,3)*g_upper(:,ij_table(3,k))
+      enddo; enddo
+    endsubroutine raise_second_index
+!***********************************************************************
     subroutine multmv_mn(a,b,c,ladd)
 !
 !  Matrix multiplied with vector, gives vector.
@@ -1845,10 +1863,14 @@ subroutine dot_mn_sv_pencil(a,b,c)
 !
     endsubroutine div
 !***********************************************************************
-    subroutine div_tensor(f,divergence,itensor,lyz_first)
+    subroutine div_tensor(f,divergence,itensor,lyz_first,lfull)
       !Calculates the divergence of a symmetric tensor
       !Assumes the tensor is symmetric and that indices are in the following increasing order:
       !itensor=xx,yy,zz,xy,xz,yz or optionally xx,yy,zz,xy,yz,xz
+
+!
+! 19-Oct-26/TP: added support for non-symmetric (full) tensors with the lfull flag
+!
 
       use Deriv, only: der
       use General, only: loptest
@@ -1856,37 +1878,60 @@ subroutine dot_mn_sv_pencil(a,b,c)
       real, contiguous, dimension(:,:,:,:), intent(in) :: f
       real, dimension(nx,3), intent(out) :: divergence
       integer, intent(in) :: itensor
-      logical, intent(in), optional :: lyz_first
-      integer :: i11,i22,i33
-      integer :: i12,i13,i23
+      logical, intent(in), optional :: lyz_first,lfull
+
+      integer :: i11,i12,i13
+      integer :: i21,i22,i23
+      integer :: i31,i32,i33
+
       real, dimension(nx) :: d11_1, d12_2, d13_3
       real, dimension(nx) :: d12_1, d22_2, d23_3
       real, dimension(nx) :: d13_1, d23_2, d33_3
       real, dimension(nx) :: f11,f12,f13,f22,f23,f33
 
-      i11 = itensor
-      i22 = itensor+1
-      i33 = itensor+2
-      i12 = itensor+3
+      if(loptest(lfull)) then
+        i11 = itensor 
+        i12 = itensor+1
+        i13 = itensor+2
 
-      if(loptest(lyz_first)) then
-        i23 = itensor+4
-        i13 = itensor+5
+        i21 = itensor+3
+        i22 = itensor+1+3
+        i23 = itensor+2+3
+
+        i31 = itensor+6
+        i32 = itensor+1+6
+        i33 = itensor+2+6
       else
-        i13 = itensor+4
-        i23 = itensor+5
+        i11 = itensor
+        i12 = itensor+3
+
+        i21 = i12
+        i22 = itensor+1
+
+        if(loptest(lyz_first)) then
+          i23 = itensor+4
+          i13 = itensor+5
+        else
+          i13 = itensor+4
+          i23 = itensor+5
+        endif
+        i31 = i13
+        i32 = i23
+        i33 = itensor+2
       endif
+
+      
 
       call der(f,i11,d11_1,1)
       call der(f,i12,d12_2,2)
       call der(f,i13,d13_3,3)
 
-      call der(f,i12,d12_1,1)
+      call der(f,i21,d12_1,1)
       call der(f,i22,d22_2,2)
       call der(f,i23,d23_3,3)
 
-      call der(f,i13,d13_1,1)
-      call der(f,i23,d23_2,2)
+      call der(f,i31,d13_1,1)
+      call der(f,i32,d23_2,2)
       call der(f,i33,d33_3,3)
 
 
