@@ -101,7 +101,7 @@ module Special
     real, dimension(nx) :: chi, Kh, th, alp, Ktr, AA, trR, ham, divb
     real, dimension(nx,6) :: gt, At, gtu, Rij, DDalp, Atu
     real, dimension(nx,3) :: Gam, beta, dchi, dKh, dth, dalp, Gamd
-    real, dimension(nx,3,3) :: dbeta, dGam, Aud
+    real, dimension(nx,3,3) :: dbeta, dGam, Aud, Suu
     real, dimension(nx,6,3) :: dgt, dAt
     real, dimension(nx,6,3,3) :: d2gt
     real, dimension(nx,3,3,3) :: d2beta
@@ -426,12 +426,14 @@ module Special
 !  13-oct-26/Claude: coded
 !
       use Sub, only: grad, g2ij, sym_inverse, contract,covariant_g2ij
+      use Sub, only: raise_second_index
 !
       real, contiguous, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
 !
       real, dimension(nx,6) :: DDchi
       real, dimension(nx) :: detg, lapchi, dchi2, dchida, rhs
+      real, dimension(nx,3,3) :: Smix
       integer :: i, j, k, l, mm, ij
 !
 !  Variables and their derivatives.
@@ -579,6 +581,12 @@ module Special
         do ij=1,6
           p%gr_Kij(:,ij)=(q%At(:,ij)+q%gt(:,ij)*q%Ktr/3.)/q%chi
         enddo
+      endif
+      if(lhydro) then
+        do i=1,3; do j=1,3
+          Smix(:,j,i)=(f(l1:l2,m,n,iTij+3*(i-1)+j-1)+p%gr_beta(:,j)*f(l1:l2,m,n,iux+i-1))/p%gr_alp
+        enddo; enddo
+        call raise_second_index(Smix,p%gr_gamu,q%Suu)
       endif
 !
     endsubroutine calc_pencils_special
@@ -762,34 +770,23 @@ module Special
 !
 !  19-oct-26/TP: coded
 !
-      use Sub, only: div_tensor,raise_second_index
+      use Sub, only: div_tensor
 
       real, contiguous, dimension(:,:,:,:) :: f
       real, contiguous, dimension(:,:,:,:) :: df
       type(pencil_case), intent(in) :: p
 
-      real, dimension(nx,3) :: Sd
-      real, dimension(nx,3,3) :: Smix, Suu
-      real, dimension(nx) :: rhs, tmp
+      real, dimension(nx) :: EE, rhs, tmp
       integer :: i, j, k
 !
       do i=1,3
-        Sd(:,i)=f(l1:l2,m,n,iuu+i-1)/p%gr_sqrtg
-      enddo
-      do i=1,3; do j=1,3
-        Smix(:,j,i)=(f(l1:l2,m,n,iTij+3*(i-1)+j-1)/p%gr_sqrtg+p%gr_beta(:,j)*Sd(:,i))/p%gr_alp
-      enddo; enddo
-      call raise_second_index(Smix,p%gr_gamu,Suu)
-!
-      do i=1,3
-        rhs=-p%rho*p%gr_dalp(:,i)
+        rhs=-f(l1:l2,m,n,irho)*p%gr_dalp(:,i)
         do k=1,3
-          rhs=rhs+Sd(:,k)*p%gr_dbeta(:,k,i)
+          rhs=rhs+f(l1:l2,m,n,iuu-1+k)*p%gr_dbeta(:,k,i)
           do j=1,3
-            rhs=rhs+.5*p%gr_alp*Suu(:,j,k)*p%gr_dgam(:,ij_table(j,k),i)
+            rhs=rhs+.5*p%gr_alp*q%Suu(:,j,k)*p%gr_dgam(:,ij_table(j,k),i)
           enddo
         enddo
-        rhs=p%gr_sqrtg*rhs
         df(l1:l2,m,n,iuu+i-1) = df(l1:l2,m,n,iuu+i-1)+ rhs
       enddo
 !
@@ -807,9 +804,10 @@ module Special
 !  from T^j_i = sg (alpha S^j_i - beta^j S_i).
 !
 !  14-oct-26/Claude: moved from hydro
+!  19-oct-26/TP: moved to z4c and skipped unnecessary multiplications by sqrt(gamma)
 !
       use Deriv, only: der
-      use Sub, only: raise_index,div
+      use Sub, only: raise_index
 !
       real, contiguous, dimension(:,:,:,:) :: f
       real, contiguous, dimension(:,:,:,:) :: df
@@ -817,31 +815,19 @@ module Special
 
       real, dimension(nx) :: rhs
 !
-      real, dimension(nx,3) :: Sd, Su
-      real, dimension(nx,3,3) :: Smix, Suu
+      real, dimension(nx,3) :: Su
       real, dimension(nx) :: tmp,divFgrE
       integer :: i, j, k
 !
-      do i=1,3
-        Sd(:,i)=f(l1:l2,m,n,iux+i-1)/p%gr_sqrtg
-      enddo
-      call raise_index(p%gr_gamu,Sd,Su)
-      do i=1,3; do j=1,3
-        Smix(:,j,i)=(f(l1:l2,m,n,iTij+3*(i-1)+j-1)/p%gr_sqrtg+p%gr_beta(:,j)*Sd(:,i))/p%gr_alp
-      enddo; enddo
-      do k=1,3; do j=1,3
-        Suu(:,j,k)=Smix(:,j,1)*p%gr_gamu(:,ij_table(1,k))+Smix(:,j,2)*p%gr_gamu(:,ij_table(2,k)) &
-                  +Smix(:,j,3)*p%gr_gamu(:,ij_table(3,k))
-      enddo; enddo
+      call raise_index(p%gr_gamu,f(l1:l2,m,n,iux:iuz),Su)
 !
       rhs=0.
       do j=1,3
         rhs=rhs-Su(:,j)*p%gr_dalp(:,j)
         do k=1,3
-          rhs=rhs+p%gr_alp*Suu(:,j,k)*p%gr_Kij(:,ij_table(j,k))
+          rhs=rhs+p%gr_alp*q%Suu(:,j,k)*p%gr_Kij(:,ij_table(j,k))
         enddo
       enddo
-      rhs=p%gr_sqrtg*rhs
       df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) + rhs
     endsubroutine special_calc_density
 !***********************************************************************
