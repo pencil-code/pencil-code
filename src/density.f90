@@ -59,7 +59,7 @@ module Density
   real, pointer :: mpoly0, mpoly1, mpoly2, eps_hless, width_hless_absolute, nu_tdep
   logical, pointer :: lkt_transport  ! shared from Hydro; selects KT energy flux
   logical, pointer :: lgr_metric     ! shared from Hydro; curved-spacetime conservative equations
-  integer :: iegr=0, iFgrE=0, iFgrS=0
+  integer :: iegr=0, iFgrE=0, iTij=0
   logical, pointer :: lu_background  ! shared from Hydro; selects external flow
   real, dimension(nx) :: xmask_den
   real, dimension(nx) :: fprofile_x=1.
@@ -1127,9 +1127,9 @@ module Density
       if (lgr_metric) then
         iegr=farray_index_by_name('egr')
         iFgrE=farray_index_by_name('FgrE')
-        iFgrS=farray_index_by_name('FgrS')
-        if (any((/iegr,iFgrE,iFgrS/)<=0)) call fatal_error('initialize_density', &
-            'lgr_metric=T needs the auxiliaries egr, FgrE and FgrS of hydro')
+        iTij=farray_index_by_name('Tij')
+        if (any((/iegr,iFgrE,iTij/)<=0)) call fatal_error('initialize_density', &
+            'lgr_metric=T needs the auxiliaries egr, FgrE and Tij of hydro')
       endif
       if (lhydro.and.lhiggsless) then
         call get_shared_variable('eps_hless',eps_hless)
@@ -2966,7 +2966,7 @@ use Sub, only: dot2_mn
       enddo
       call raise_index(p%gr_gamu,Sd,Su)
       do i=1,3; do j=1,3
-        Smix(:,j,i)=(f(l1:l2,m,n,iFgrS+3*(i-1)+j-1)/p%gr_sqrtg+p%gr_beta(:,j)*Sd(:,i))/p%gr_alp
+        Smix(:,j,i)=(f(l1:l2,m,n,iTij+3*(i-1)+j-1)/p%gr_sqrtg+p%gr_beta(:,j)*Sd(:,i))/p%gr_alp
       enddo; enddo
       do k=1,3; do j=1,3
         Suu(:,j,k)=Smix(:,j,1)*p%gr_gamu(:,ij_table(1,k))+Smix(:,j,2)*p%gr_gamu(:,ij_table(2,k)) &
@@ -4890,7 +4890,7 @@ use Sub, only: dot2_mn
 
     call copy_addr(iegr,p_par(89)) ! int
     call copy_addr(ifgre,p_par(90)) ! int
-    call copy_addr(ifgrs,p_par(91)) ! int
+    call copy_addr(iTij,p_par(91)) ! int
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Density

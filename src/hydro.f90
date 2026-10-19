@@ -183,7 +183,7 @@ module Hydro
 !  for special/z4c, and the indices of the z4c variables.
 !
   logical, pointer :: lgr_metric
-  integer :: iFgrE=0, iFgrS=0, iegr=0, iEadm=0
+  integer :: iFgrE=0, iegr=0, iEadm=0
   integer, dimension(3) :: iSadm=0, igr_beta=0
   integer, dimension(6) :: iSadmij=0, igr_gt=0
   integer :: igr_chi=0, igr_alp=0
@@ -4391,7 +4391,7 @@ module Hydro
 
       integer :: i,j
       real, dimension (nx) :: ugu_Schur_x, ugu_Schur_y, ugu_Schur_z
-      real, dimension (nx,3) :: divTij,tmpv
+      real, dimension (nx,3) :: divTij,tmpv,divFgrS
       real, dimension (nx,3,3) :: puij_Schur
       real, dimension (nx) :: lorentz_gamma_inv2=1.,tmp
 
@@ -4449,13 +4449,11 @@ module Hydro
 !
       ! alberto: why ldensity?
       if (ldensity) then
-        if (lconservative .and. lgr_metric) then
-          call gr_hydro_rhs(f,df,p)
-        elseif(lconservative) then
+        if(lconservative) then
           if (lkt_transport) then
             call kt_div_tensor(f,divTij)
           else
-            call div_tensor(f,divTij,iTij,lyz_first=.true.)
+            call div_tensor(f,divTij,iTij,lyz_first=.true.,lfull=lgr_metric)
           endif
           df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz)- divTij
           if (lext_force) then
@@ -6235,7 +6233,7 @@ module Hydro
       integer :: i, j
 !
       call farray_register_auxiliary('FgrE',iFgrE,vector=3,rhs=.true.)
-      call farray_register_auxiliary('FgrS',iFgrS,array=9,rhs=.true.)
+      call farray_register_auxiliary('Tij',iTij,array=9,rhs=.true.)
       call farray_register_auxiliary('egr',iegr,rhs=.true.)
       if (lgr_backreaction) then
         call farray_register_auxiliary('Eadm',iEadm,rhs=.true.)
@@ -6390,7 +6388,7 @@ module Hydro
         do j=1,3
           f(:,m,n,iFgrE+j-1)=sg*(alp*Su(:,j)-beta(:,j)*EE)
           do i=1,3
-            f(:,m,n,iFgrS+3*(i-1)+j-1)=sg*(alp*Smix(:,j,i)-beta(:,j)*Sd(:,i))
+            f(:,m,n,iTij+3*(i-1)+j-1)=sg*(alp*Smix(:,j,i)-beta(:,j)*Sd(:,i))
           enddo
           f(:,m,n,ivv+j-1)=alp*vu(:,j)-beta(:,j)
         enddo
@@ -6428,54 +6426,6 @@ module Hydro
       gr_zfunc=zz-w*zz*(1.-v2)/(1.+w)+.5*B2*(1.+v2)-.5*SB**2/zz**2-EE
 !
     endfunction gr_zfunc
-!***********************************************************************
-    subroutine gr_hydro_rhs(f,df,p)
-!
-!  Right-hand side of sqrt(gamma)*S_i for lgr_metric=T
-!  (e.g. Banyuls et al. 1997, ApJ 476, 221; Font 2008, Living Rev. Rel. 11, 7):
-!
-!    d_t(sg S_i) + d_j F^j_i = sg (-E d_i alpha + S_k d_i beta^k + alpha/2 S^jk d_i gamma_jk)
-!
-!  The metric quantities are pencils of special/z4c; S^j_i is recovered from
-!  the stored flux F^j_i. The energy equation is in density (dlnrho_dt).
-!
-!  14-oct-26/Claude: coded
-!
-      use Deriv, only: der
-      use Sub, only: div_tensor,raise_second_index
-!
-      real, contiguous, dimension(:,:,:,:) :: f, df
-      type (pencil_case) :: p
-!
-      real, dimension(nx,3) :: Sd
-      real, dimension(nx,3,3) :: Smix, Suu
-      real, dimension(nx) :: rhs, tmp
-      real, dimension (nx,3) :: divFgrs
-      integer :: i, j, k
-!
-      do i=1,3
-        Sd(:,i)=f(l1:l2,m,n,iuu+i-1)/p%gr_sqrtg
-      enddo
-      do i=1,3; do j=1,3
-        Smix(:,j,i)=(f(l1:l2,m,n,iFgrS+3*(i-1)+j-1)/p%gr_sqrtg+p%gr_beta(:,j)*Sd(:,i))/p%gr_alp
-      enddo; enddo
-      call raise_second_index(Smix,p%gr_gamu,Suu)
-      call div_tensor(f,divFgrs,iFgrS,lyz_first=.true.,lfull=.true.)
-!
-      do i=1,3
-        rhs=-p%rho*p%gr_dalp(:,i)
-        do k=1,3
-          rhs=rhs+Sd(:,k)*p%gr_dbeta(:,k,i)
-          do j=1,3
-            rhs=rhs+.5*p%gr_alp*Suu(:,j,k)*p%gr_dgam(:,ij_table(j,k),i)
-          enddo
-        enddo
-        rhs=p%gr_sqrtg*rhs
-        rhs=rhs-divFgrs(:,i)
-        df(l1:l2,m,n,iuu+i-1)=df(l1:l2,m,n,iuu+i-1)+rhs
-      enddo
-!
-    endsubroutine gr_hydro_rhs
 !***********************************************************************
     subroutine hydro_after_boundary(f)
 !
@@ -10436,7 +10386,6 @@ module Hydro
     call copy_addr(vertical_gradient,p_par(157))
     call copy_addr(lu_background,p_par(158)) ! bool
     call copy_addr(lism_rotation,p_par(159)) ! bool
-    call copy_addr(ifgrs,p_par(160)) ! int
     call copy_addr(niter_gr,p_par(161)) ! int
     endsubroutine pushpars2c
 !***********************************************************************

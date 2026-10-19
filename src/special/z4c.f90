@@ -87,6 +87,7 @@ module Special
   integer :: iEadm=0
   integer, dimension(3) :: iSadm=0
   integer, dimension(6) :: iSadmij=0
+  integer :: iTij=0
   logical :: lmatter=.false.
 !
   logical :: lshift=.true.
@@ -204,6 +205,7 @@ module Special
 !  Matter sources, if another module provides them.
 !
       iEadm=farray_index_by_name('Eadm')
+      iTij=farray_index_by_name('Tij')
       do i=1,3
         iSadm(i)=farray_index_by_name('Sadm'//cvec(i))
       enddo
@@ -747,6 +749,52 @@ module Special
 !
     endsubroutine dspecial_dt
 !***********************************************************************
+    subroutine special_calc_hydro(f,df,p)
+!
+!  Metric/source part of the right-hand side of sqrt(gamma)*S_i for lgr_metric=T
+!  (e.g. Banyuls et al. 1997, ApJ 476, 221; Font 2008, Living Rev. Rel. 11, 7):
+!
+!    d_t(sg S_i) + d_j F^j_i = sg (-E d_i alpha + S_k d_i beta^k + alpha/2 S^jk d_i gamma_jk)
+!
+!  The metric quantities are pencils of special/z4c; S^j_i is recovered from
+!  the stored flux F^j_i. Flux is added in hydro
+!
+!
+!  19-oct-26/TP: coded
+!
+      use Sub, only: div_tensor,raise_second_index
+
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
+
+      real, dimension(nx,3) :: Sd
+      real, dimension(nx,3,3) :: Smix, Suu
+      real, dimension(nx) :: rhs, tmp
+      integer :: i, j, k
+!
+      do i=1,3
+        Sd(:,i)=f(l1:l2,m,n,iuu+i-1)/p%gr_sqrtg
+      enddo
+      do i=1,3; do j=1,3
+        Smix(:,j,i)=(f(l1:l2,m,n,iTij+3*(i-1)+j-1)/p%gr_sqrtg+p%gr_beta(:,j)*Sd(:,i))/p%gr_alp
+      enddo; enddo
+      call raise_second_index(Smix,p%gr_gamu,Suu)
+!
+      do i=1,3
+        rhs=-p%rho*p%gr_dalp(:,i)
+        do k=1,3
+          rhs=rhs+Sd(:,k)*p%gr_dbeta(:,k,i)
+          do j=1,3
+            rhs=rhs+.5*p%gr_alp*Suu(:,j,k)*p%gr_dgam(:,ij_table(j,k),i)
+          enddo
+        enddo
+        rhs=p%gr_sqrtg*rhs
+        df(l1:l2,m,n,iuu+i-1) = df(l1:l2,m,n,iuu+i-1)+ rhs
+      enddo
+!
+    endsubroutine special_calc_hydro
+!***********************************************************************
     function sommerfeld_mask()
 !
 !  Points of the current pencil that lie on a non-periodic outer boundary.
@@ -1090,6 +1138,7 @@ module Special
     call copy_addr(enum_lapse_type,p_par(23)) ! int
     call copy_addr(lenforce_algebraic,p_par(24)) ! bool
     call copy_addr(chi_floor,p_par(25))
+    call copy_addr(iTij,p_par(26)) ! int
 
   endsubroutine pushpars2c
 !***********************************************************************
