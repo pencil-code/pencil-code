@@ -1555,7 +1555,7 @@ subroutine dot_mn_sv_pencil(a,b,c)
 !  Cross product, c = a x b, for pencil variables.
 !  Previously called crossp.
 !
-      real, dimension (nx,3) :: a,b,c
+      real, contiguous, dimension (:,:) :: a,b,c
 !
       intent(in) :: a,b
       intent(out) :: c

@@ -1345,6 +1345,7 @@ module Hydro
 !
       use BorderProfiles, only: request_border_driving
       use EquationOfState, only: cs20
+      use FArrayManager, only: farray_index_by_name
       use Forcing, only: n_forcing_cont
       use Initcond
       use Mpicomm, only: mpibcast
@@ -1356,7 +1357,7 @@ module Hydro
       real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (mz) :: c, s
       integer :: j,myl,jhless ! currently unused: nycap
-      integer :: l,m,n
+      integer :: l,m,n,i
       logical :: lvectorpotential=.false.
 
       if (.not.allocated(uu_average_sph)) then
@@ -1727,7 +1728,24 @@ module Hydro
         endif
       endif
 !
-      if (lgr_metric) call initialize_gr_metric
+      if (lgr_metric) then
+        if (.not.(lconservative.and.lrelativistic)) call fatal_error('initialize_hydro', &
+            'lgr_metric=T requires lconservative=T and lrelativistic=T')
+        if (.not.(lvv_as_aux.or.lvv_as_comaux)) call fatal_error('initialize_hydro', &
+            'lgr_metric=T requires lvv_as_aux=T (it holds the coordinate velocity alpha v^i - beta^i)')
+        if (lkt_transport.or.lhiggsless.or.lproject_admissible) call fatal_error('initialize_hydro', &
+            'lgr_metric=T does not work with lkt_transport, lhiggsless or lproject_admissible')
+        if (.not.lcartesian_coords) call fatal_error('initialize_hydro', &
+            'lgr_metric=T only works in Cartesian coordinates')
+        igr_chi=farray_index_by_name('chi')
+        igr_alp=farray_index_by_name('alp')
+        do i=1,3
+          igr_beta(i)=farray_index_by_name('beta'//cvec(i))
+        enddo
+        do j=1,3; do i=1,j
+          igr_gt(ij_table(i,j))=farray_index_by_name('gt'//cvec(i)//cvec(j))
+        enddo; enddo
+      endif
 !
 !  Allocate Higgsless field
 !
@@ -6200,39 +6218,6 @@ module Hydro
 
     endsubroutine hydro_after_boundary_conservative
 !***********************************************************************
-    subroutine initialize_gr_metric
-!
-!  Check the setup and find the metric variables of special/z4c.
-!
-!  14-oct-26/Claude: coded
-!
-      use FArrayManager, only: farray_index_by_name
-!
-      integer :: i, j
-!
-      if (.not.(lconservative.and.lrelativistic)) call fatal_error('initialize_gr_metric', &
-          'lgr_metric=T requires lconservative=T and lrelativistic=T')
-      if (.not.(lvv_as_aux.or.lvv_as_comaux)) call fatal_error('initialize_gr_metric', &
-          'lgr_metric=T requires lvv_as_aux=T (it holds the coordinate velocity alpha v^i - beta^i)')
-      if (ilorentz==0) call fatal_error('initialize_gr_metric','lgr_metric=T requires llorentz_as_aux=T')
-      if (lkt_transport.or.lhiggsless.or.lproject_admissible) call fatal_error('initialize_gr_metric', &
-          'lgr_metric=T does not work with lkt_transport, lhiggsless or lproject_admissible')
-      if (.not.lcartesian_coords) call fatal_error('initialize_gr_metric', &
-          'lgr_metric=T only works in Cartesian coordinates')
-!
-      igr_chi=farray_index_by_name('chi')
-      igr_alp=farray_index_by_name('alp')
-      do i=1,3
-        igr_beta(i)=farray_index_by_name('beta'//cvec(i))
-      enddo
-      do j=1,3; do i=1,j
-        igr_gt(ij_table(i,j))=farray_index_by_name('gt'//cvec(i)//cvec(j))
-      enddo; enddo
-      if (any((/igr_chi,igr_alp,igr_beta,igr_gt/)<=0)) &
-        call fatal_error('initialize_gr_metric','lgr_metric=T needs the metric of special/z4c')
-!
-    endsubroutine initialize_gr_metric
-!***********************************************************************
     subroutine hydro_after_boundary_gr(f)
 !
 !  Conserved-to-primitive inversion in curved spacetime (lgr_metric=T) for
@@ -6255,7 +6240,7 @@ module Hydro
 !  14-oct-26/Claude: coded
 !
       use EquationOfState, only: cs20
-      use Sub, only: sym_inverse,lower_index,raise_index,contract_vec
+      use Sub, only: sym_inverse,lower_index,raise_index,contract_vec,cross
 !
       real, contiguous, dimension(:,:,:,:) :: f
       intent(inout) :: f
@@ -6324,9 +6309,10 @@ module Hydro
         call raise_index(gamu,vd,vu)
         v2=min(contract_vec(vu,vd),v2max)
         e=zz*(1.-v2)/(1.+cs20)
-        Ed(:,1)=-sg*(vu(:,2)*Bu(:,3)-vu(:,3)*Bu(:,2))
-        Ed(:,2)=-sg*(vu(:,3)*Bu(:,1)-vu(:,1)*Bu(:,3))
-        Ed(:,3)=-sg*(vu(:,1)*Bu(:,2)-vu(:,2)*Bu(:,1))
+        call cross(Bu,vu,Ed)
+        do i=1,3
+          Ed(:,i)=sg*Ed(:,i)
+        enddo
         call raise_index(gamu,Ed,Eu)
         E2=contract_vec(Eu,Ed)
         ptot=cs20*e+.5*(E2+B2)
