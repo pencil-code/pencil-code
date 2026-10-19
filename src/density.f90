@@ -1101,24 +1101,29 @@ module Density
 !
 !  Check if we are solving for relativistic bulk motions, not just EoS.
 !
-      if (lhydro.and..not.lhydro_potential.and.iphiuu==0) then
-        call get_shared_variable('lconservative', lconservative)
-        call get_shared_variable('lrelativistic', lrelativistic)
-      else
-        allocate(lconservative)
-        lconservative=.false.
-        allocate(lrelativistic)
-        lrelativistic=.false.
-      endif
+      call get_shared_variable('lconservative', lconservative, default_val=.false.)
+      call get_shared_variable('lrelativistic', lrelativistic, default_val=.false.)
+      ! if (lhydro.and..not.lhydro_potential.and.iphiuu==0) then
+      !   call get_shared_variable('lconservative', lconservative)
+      !   call get_shared_variable('lrelativistic', lrelativistic)
+      ! else
+      !   allocate(lconservative)
+      !   lconservative=.false.
+      !   allocate(lrelativistic)
+      !   lrelativistic=.false.
+      ! endif
+
+      call get_shared_variable('lhiggsless', lhiggsless,default_val=.false.)
+      call get_shared_variable('lu_background',lu_background,default_val=.false.)
 !
-      if (lhydro.and..not.lhydro_potential) then
-        call get_shared_variable('lhiggsless', lhiggsless,default_val=.false.)
-        call get_shared_variable('lu_background',lu_background,default_val=.false.)
-      else
-        allocate(lhiggsless,lu_background)
-        lhiggsless=.false.
-        lu_background=.false.
-      endif
+      ! if (lhydro.and..not.lhydro_potential) then
+      !   call get_shared_variable('lhiggsless', lhiggsless,default_val=.false.)
+      !   call get_shared_variable('lu_background',lu_background,default_val=.false.)
+      ! else
+      !   allocate(lhiggsless,lu_background)
+      !   lhiggsless=.false.
+      !   lu_background=.false.
+      ! endif
 !
       if (lhiggsless.and.lconservative) ihless=farray_index_by_name('ihless')
 
