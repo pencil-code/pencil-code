@@ -96,7 +96,7 @@ module Filter
       use Deriv, only: der6
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, contiguous  dimension (:,:,:,:) :: df
+      real, contiguous,  dimension (:,:,:,:) :: df
       real, dimension (nx) :: tmp
       real :: awigg
       integer :: ivar,ivar1,ivar2,idir
