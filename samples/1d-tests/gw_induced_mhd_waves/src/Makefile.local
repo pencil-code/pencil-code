@@ -15,4 +15,3 @@ SHOCK    = noshock
 SPECIAL  = special/z4c
 INITIAL_CONDITION = initial_condition/gr_matter
 REAL_PRECISION = double
-GPU=gpu_astaroth
