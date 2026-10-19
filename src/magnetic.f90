@@ -6553,22 +6553,22 @@ print*,'AXEL2: should not be here (eta) ... '
           call max_mn_name(Fmax,idiag_dtFr,l_dt=.true.)
           call max_mn_name(dAmax,idiag_dtBr,l_dt=.true.)
         endif
-
-        if (idiag_Bresrms/=0.or. &
-            idiag_Rmrms/=0.or.idiag_Rmph1rms/=0.or.idiag_Rmph2rms/=0.or.idiag_Rmph3rms/=0.or. &
-            idiag_Rmmax/=0.or.idiag_Rmph1max/=0.or.idiag_Rmph2max/=0.or.idiag_Rmph3max/=0 ) then
-          call dot2_mn(p%fres,fres2)
-          Rm2=sqrt(p%uxb2/(fres2+tini))
-          if (idiag_Bresrms/=0)  call sum_mn_name(fres2,idiag_Bresrms,lsqrt=.true.)
-          if (idiag_Rmrms/=0)    call sum_mn_name(Rm2,idiag_Rmrms)
-          if (idiag_Rmph1rms/=0) call sum_mn_name(Rm2,idiag_Rmph1rms,MASK=(p%ss <=ssmask1))
-          if (idiag_Rmph2rms/=0) call sum_mn_name(Rm2,idiag_Rmph2rms,MASK=(p%ss > ssmask1 .and. p%ss <= ssmask2))
-          if (idiag_Rmph3rms/=0) call sum_mn_name(Rm2,idiag_Rmph3rms,MASK=(p%ss > ssmask2))
-          if (idiag_Rmmax/=0)    call max_mn_name(Rm2,idiag_Rmmax)
-          if (idiag_Rmph1max/=0) call max_mn_name(Rm2,idiag_Rmph1max,MASK=(p%ss <=ssmask1))
-          if (idiag_Rmph2max/=0) call max_mn_name(Rm2,idiag_Rmph2max,MASK=(p%ss > ssmask1 .and. p%ss <= ssmask2))
-          if (idiag_Rmph3max/=0) call max_mn_name(Rm2,idiag_Rmph3max,MASK=(p%ss > ssmask2))
-        endif
+      endif
+!
+      if (idiag_Bresrms/=0.or. &
+          idiag_Rmrms/=0.or.idiag_Rmph1rms/=0.or.idiag_Rmph2rms/=0.or.idiag_Rmph3rms/=0.or. &
+          idiag_Rmmax/=0.or.idiag_Rmph1max/=0.or.idiag_Rmph2max/=0.or.idiag_Rmph3max/=0 ) then
+        call dot2_mn(p%fres,fres2)
+        Rm2=sqrt(p%uxb2/(fres2+tini))
+        if (idiag_Bresrms/=0)  call sum_mn_name(fres2,idiag_Bresrms,lsqrt=.true.)
+        if (idiag_Rmrms/=0)    call sum_mn_name(Rm2,idiag_Rmrms)
+        if (idiag_Rmph1rms/=0) call sum_mn_name(Rm2,idiag_Rmph1rms,MASK=(p%ss <=ssmask1))
+        if (idiag_Rmph2rms/=0) call sum_mn_name(Rm2,idiag_Rmph2rms,MASK=(p%ss > ssmask1 .and. p%ss <= ssmask2))
+        if (idiag_Rmph3rms/=0) call sum_mn_name(Rm2,idiag_Rmph3rms,MASK=(p%ss > ssmask2))
+        if (idiag_Rmmax/=0)    call max_mn_name(Rm2,idiag_Rmmax)
+        if (idiag_Rmph1max/=0) call max_mn_name(Rm2,idiag_Rmph1max,MASK=(p%ss <=ssmask1))
+        if (idiag_Rmph2max/=0) call max_mn_name(Rm2,idiag_Rmph2max,MASK=(p%ss > ssmask1 .and. p%ss <= ssmask2))
+        if (idiag_Rmph3max/=0) call max_mn_name(Rm2,idiag_Rmph3max,MASK=(p%ss > ssmask2))
       endif
 !
 !  Integrate velocity in time, to calculate correlation time later.
