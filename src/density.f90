@@ -20,7 +20,6 @@
 ! PENCILS PROVIDED rhos1; glnrhos(3)
 ! PENCILS PROVIDED totenergy_rel; divss
 ! PENCILS EXPECTED ext_force(4)
-! PENCILS EXPECTED gr_sqrtg; gr_alp; gr_dalp(3); gr_beta(3); gr_gamu(6); gr_Kij(6)
 !
 !***************************************************************
 module Density
