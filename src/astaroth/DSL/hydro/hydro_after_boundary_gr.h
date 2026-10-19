@@ -14,11 +14,6 @@ gr_zfunc(real zz, real EE, real S2, real B2, real SB, real w)
 	v2 = min((S2+SB*SB*(2.*zz+B2)/(zz*zz))/((zz+B2)*(zz+B2)),1.-1e-12)
 	return zz-w*zz*(1.-v2)/(1.+w)+0.5*B2*(1.+v2)-0.5*SB*SB/(zz*zz)-EE
 }
-//S_ij = S^k_i gamma_kj
-gr_lower_smix(Matrix smix, Matrix gam, int i, int j)
-{
-	return smix[0][i]*gam[0][j]+smix[1][i]*gam[1][j]+smix[2][i]*gam[2][j]
-}
 Kernel hydro_after_boundary_gr()
 {
 	if(AC_lconservative__mod__hydro && AC_lgr_metric__mod__z4c)
@@ -103,37 +98,21 @@ Kernel hydro_after_boundary_gr()
 		F_FGREX[vertexIdx.x][vertexIdx.y][vertexIdx.z] = fe.x
 		F_FGREY[vertexIdx.x][vertexIdx.y][vertexIdx.z] = fe.y
 		F_FGREZ[vertexIdx.x][vertexIdx.y][vertexIdx.z] = fe.z
-		//F^j_i at iFgrS+3*(i-1)+j-1
-                F_FGRS_1[vertexIdx.x][vertexIdx.y][vertexIdx.z] = sg*(alp*smix[0][0]-beta.x*Sd.x)
-                F_FGRS_2[vertexIdx.x][vertexIdx.y][vertexIdx.z] = sg*(alp*smix[1][0]-beta.y*Sd.x)
-                F_FGRS_3[vertexIdx.x][vertexIdx.y][vertexIdx.z] = sg*(alp*smix[2][0]-beta.z*Sd.x)
-                F_FGRS_4[vertexIdx.x][vertexIdx.y][vertexIdx.z] = sg*(alp*smix[0][1]-beta.x*Sd.y)
-                F_FGRS_5[vertexIdx.x][vertexIdx.y][vertexIdx.z] = sg*(alp*smix[1][1]-beta.y*Sd.y)
-                F_FGRS_6[vertexIdx.x][vertexIdx.y][vertexIdx.z] = sg*(alp*smix[2][1]-beta.z*Sd.y)
-                F_FGRS_7[vertexIdx.x][vertexIdx.y][vertexIdx.z] = sg*(alp*smix[0][2]-beta.x*Sd.z)
-                F_FGRS_8[vertexIdx.x][vertexIdx.y][vertexIdx.z] = sg*(alp*smix[1][2]-beta.y*Sd.z)
-                F_FGRS_9[vertexIdx.x][vertexIdx.y][vertexIdx.z] = sg*(alp*smix[2][2]-beta.z*Sd.z)
+		//T^j_i at iTij+3*(i-1)+j-1
+                F_TIJ_0[vertexIdx.x][vertexIdx.y][vertexIdx.z] = sg*(alp*smix[0][0]-beta.x*Sd.x)
+                F_TIJ_1[vertexIdx.x][vertexIdx.y][vertexIdx.z] = sg*(alp*smix[1][0]-beta.y*Sd.x)
+                F_TIJ_2[vertexIdx.x][vertexIdx.y][vertexIdx.z] = sg*(alp*smix[2][0]-beta.z*Sd.x)
+                F_TIJ_3[vertexIdx.x][vertexIdx.y][vertexIdx.z] = sg*(alp*smix[0][1]-beta.x*Sd.y)
+                F_TIJ_4[vertexIdx.x][vertexIdx.y][vertexIdx.z] = sg*(alp*smix[1][1]-beta.y*Sd.y)
+                F_TIJ_5[vertexIdx.x][vertexIdx.y][vertexIdx.z] = sg*(alp*smix[2][1]-beta.z*Sd.y)
+                F_TIJ_6[vertexIdx.x][vertexIdx.y][vertexIdx.z] = sg*(alp*smix[0][2]-beta.x*Sd.z)
+                F_TIJ_7[vertexIdx.x][vertexIdx.y][vertexIdx.z] = sg*(alp*smix[1][2]-beta.y*Sd.z)
+                F_TIJ_8[vertexIdx.x][vertexIdx.y][vertexIdx.z] = sg*(alp*smix[2][2]-beta.z*Sd.z)
 		VX[vertexIdx.x][vertexIdx.y][vertexIdx.z] = alp*vu.x-beta.x
 		VY[vertexIdx.x][vertexIdx.y][vertexIdx.z] = alp*vu.y-beta.y
 		VZ[vertexIdx.x][vertexIdx.y][vertexIdx.z] = alp*vu.z-beta.z
 		F_LORENTZ[vertexIdx.x][vertexIdx.y][vertexIdx.z] = 1./(1.-v2)
 		F_EGR[vertexIdx.x][vertexIdx.y][vertexIdx.z] = e
-//
-//  ADM sources (if the Eadm etc. slots exist), stored in the order xx,yy,zz,xy,yz,xz.
-//
-		if(AC_ieadm__mod__z4c != 0)
-		{
-			F_EADM[vertexIdx.x][vertexIdx.y][vertexIdx.z] = EE
-			F_SADMX[vertexIdx.x][vertexIdx.y][vertexIdx.z] = Sd.x
-			F_SADMY[vertexIdx.x][vertexIdx.y][vertexIdx.z] = Sd.y
-			F_SADMZ[vertexIdx.x][vertexIdx.y][vertexIdx.z] = Sd.z
-			F_SADMIJ_1[vertexIdx.x][vertexIdx.y][vertexIdx.z] = gr_lower_smix(smix,gam,0,0)
-			F_SADMIJ_2[vertexIdx.x][vertexIdx.y][vertexIdx.z] = gr_lower_smix(smix,gam,1,1)
-			F_SADMIJ_3[vertexIdx.x][vertexIdx.y][vertexIdx.z] = gr_lower_smix(smix,gam,2,2)
-			F_SADMIJ_4[vertexIdx.x][vertexIdx.y][vertexIdx.z] = gr_lower_smix(smix,gam,0,1)
-			F_SADMIJ_5[vertexIdx.x][vertexIdx.y][vertexIdx.z] = gr_lower_smix(smix,gam,1,2)
-			F_SADMIJ_6[vertexIdx.x][vertexIdx.y][vertexIdx.z] = gr_lower_smix(smix,gam,0,2)
-		}
 	}
 }
 #else

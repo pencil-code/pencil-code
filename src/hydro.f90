@@ -6303,11 +6303,12 @@ module Hydro
         do i=1,3
           Sd(:,i)=f(:,m,n,iuu+i-1)/sg
         enddo
-        Bu=0.
         if (lmagnetic) then
           do i=1,3
             Bu(:,i)=f(:,m,n,ibx+i-1)/sg
           enddo
+        else
+         Bu=0.
         endif
         call raise_index(gamu,Sd,Su)
         call lower_index(gam,Bu,Bd)
@@ -6357,9 +6358,13 @@ module Hydro
           do i=1,3
             f(:,m,n,iTij+3*(i-1)+j-1)=sg*(alp*Smix(:,j,i)-beta(:,j)*Sd(:,i))
           enddo
-          f(:,m,n,ivv+j-1)=alp*vu(:,j)-beta(:,j)
+          if(lvv_as_aux) then
+            f(:,m,n,ivv+j-1)=alp*vu(:,j)-beta(:,j)
+          endif
         enddo
-        f(:,m,n,ilorentz)=1./(1.-v2)
+        if(llorentz_as_aux) then
+          f(:,m,n,ilorentz)=1./(1.-v2)
+        endif
         f(:,m,n,iegr)=e
       enddo
       enddo
@@ -10341,6 +10346,7 @@ module Hydro
     call copy_addr(lu_background,p_par(158)) ! bool
     call copy_addr(lism_rotation,p_par(159)) ! bool
     call copy_addr(niter_gr,p_par(161)) ! int
+    call copy_addr(lgr_backreaction,p_par(162)) ! bool
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Hydro

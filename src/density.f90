@@ -1133,8 +1133,8 @@ module Density
         iegr=farray_index_by_name('egr')
         iFgrE=farray_index_by_name('FgrE')
         iTij=farray_index_by_name('Tij')
-        if (any((/iegr,iFgrE,iTij/)<=0)) call fatal_error('initialize_density', &
-            'lgr_metric=T needs the auxiliaries egr, FgrE and Tij of hydro')
+        if (any((/iFgrE,iTij/)<=0)) call fatal_error('initialize_density', &
+            'lgr_metric=T needs the auxiliaries FgrE and Tij of hydro')
       endif
       if (lhydro.and.lhiggsless) then
         call get_shared_variable('eps_hless',eps_hless)
@@ -2770,7 +2770,12 @@ use Sub, only: dot2_mn
         endif
         ! if (lrelativistic) p%rho=p%rho/(fourthird*p%lorentz*(1.-.25/p%lorentz))
         if (lrelativistic) p%rho=p%rho/(cs20p1*p%lorentz-cs20)
-        if (lgr_metric) p%rho=f(l1:l2,m,n,iegr)
+        if (lgr_metric) then
+          if(iegr /= 0) then
+            p%rho=f(l1:l2,m,n,iegr)
+          else
+          endif
+        endif
       endif
 !
     endsubroutine calc_pencils_linear_density_pnc
