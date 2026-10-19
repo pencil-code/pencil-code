@@ -1271,7 +1271,6 @@ subroutine dot_mn_sv_pencil(a,b,c)
 !
       real, dimension(:,:), intent(in) :: g, vu
       real, dimension(:,:), intent(out) :: vd
-      integer :: i
 !
       call multmv_sym(g,vu,vd)
 !
@@ -1285,7 +1284,6 @@ subroutine dot_mn_sv_pencil(a,b,c)
 !
       real, dimension(:,:), intent(in) :: g, vd
       real, dimension(:,:), intent(out) :: vu
-      integer :: i
 !
       call multmv_sym(g,vd,vu)
 !
