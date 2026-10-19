@@ -74,6 +74,7 @@ module Sub
   public :: multm2, multm2_mn, multm2_sym, multm2_sym_mn
   public :: multmv, multmv_mn, multmv_transp,multmv_sym,raise_index,lower_index
   public :: raise_second_index
+  public :: lower_first_index
   public :: mult_matrix, mult_mat_vv, invmat_DB
 !
   public :: read_line_from_file, control_file_exists
@@ -1306,6 +1307,19 @@ subroutine dot_mn_sv_pencil(a,b,c)
                       +S(:,j,3)*g_upper(:,ij_table(3,k))
       enddo; enddo
     endsubroutine raise_second_index
+!***********************************************************************
+    subroutine lower_first_index(S,g,S_lower)
+      real, dimension(nx,3,3) :: S
+      real, dimension(nx,6) :: g,S_lower
+
+      integer :: i,j
+
+      do i=1,3
+      do j=i,3
+       S_lower(:,ij_table(i,j)) = S(:,1,i)*g(:,ij_table(1,j))+S(:,2,i)*g(:,ij_table(2,j))+S(:,3,i)*g(:,ij_table(3,j))
+      enddo
+      enddo
+    endsubroutine
 !***********************************************************************
     subroutine multmv_mn(a,b,c,ladd)
 !

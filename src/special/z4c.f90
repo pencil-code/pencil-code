@@ -81,14 +81,10 @@ module Special
   integer, parameter :: nz4c=22   ! number of Z4c variables, ichi:ibeta(3)
   integer, dimension(3) :: iGam=0, ibeta=0
 !
-!  ADM matter sources E, S_i, S_ij (covariant, physical) in auxiliary slots
-!  provided by another special module (e.g. special/grmhd).
 !
-  integer :: iEadm=0
-  integer, dimension(3) :: iSadm=0
-  integer, dimension(6) :: iSadmij=0
+!
   integer :: iTij=0
-  logical :: lmatter=.false.
+  logical, pointer :: lgr_backreaction
 !
   logical :: lshift=.true.
   real, dimension(3) :: kvec=0., nhat=0., ppol=0., qpol=0.
@@ -177,6 +173,7 @@ module Special
 !
       use FArrayManager, only: farray_index_by_name
       use Sub, only: cross
+      use SharedVariables, only: get_shared_variable
 !
       real, contiguous, dimension(:,:,:,:) :: f
 !
@@ -204,18 +201,8 @@ module Special
 !
 !  Matter sources, if another module provides them.
 !
-      iEadm=farray_index_by_name('Eadm')
       iTij=farray_index_by_name('Tij')
-      do i=1,3
-        iSadm(i)=farray_index_by_name('Sadm'//cvec(i))
-      enddo
-      do i=1,6
-        iSadmij(i)=farray_index_by_name('Sadm'//csym(i))
-      enddo
-      nfound=count((/iEadm,iSadm,iSadmij/)>0)
-      lmatter=nfound==10
-      if (nfound>0 .and. .not.lmatter) call fatal_error('initialize_special', &
-          'only some of the ADM source slots Eadm, Sadm(i), Sadm(ij) exist')
+      call get_shared_variable('lgr_backreaction',lgr_backreaction,default_val=.false.)
 !
 !  Wave vector and polarization of the wave initial data:
 !  plus polarization e_ij = p_i p_j - q_i q_j with p, q orthogonal to k.
@@ -426,7 +413,7 @@ module Special
 !  13-oct-26/Claude: coded
 !
       use Sub, only: grad, g2ij, sym_inverse, contract,covariant_g2ij
-      use Sub, only: raise_second_index
+      use Sub, only: lower_first_index,raise_second_index
 !
       real, contiguous, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
@@ -434,6 +421,7 @@ module Special
       real, dimension(nx,6) :: DDchi
       real, dimension(nx) :: detg, lapchi, dchi2, dchida, rhs
       real, dimension(nx,3,3) :: Smix
+      real, dimension(nx,6) :: gam
       integer :: i, j, k, l, mm, ij
 !
 !  Variables and their derivatives.
@@ -469,6 +457,7 @@ module Special
       enddo; enddo; enddo
 
       call sym_inverse(q%gt,q%gtu,detg)
+
       do k=1,3; do ij=1,6
         q%Gam2(:,k,ij)=q%gtu(:,ij_table(k,1))*q%Gam1(:,1,ij)+q%gtu(:,ij_table(k,2))*q%Gam1(:,2,ij) &
                       +q%gtu(:,ij_table(k,3))*q%Gam1(:,3,ij)
@@ -535,20 +524,6 @@ module Special
       q%Ktr=q%Kh+2*q%th
       q%ham=q%trR-q%AA+(2./3.)*q%Ktr**2
 !
-!  Matter sources; S = gamma^ij S_ij = chi gt^ij S_ij.
-!
-      if (lmatter) then
-        q%E=f(l1:l2,m,n,iEadm)
-        do i=1,3
-          q%Sv(:,i)=f(l1:l2,m,n,iSadm(i))
-        enddo
-        do i=1,6
-          q%Sij(:,i)=f(l1:l2,m,n,iSadmij(i))
-        enddo
-        q%Strace=q%chi*contract(q%gtu,q%Sij)
-        q%ham=q%ham-16*pi*q%E
-      endif
-!
 !  Metric pencils for the matter equations (hydro and density with lgr_metric):
 !  sqrt(gamma), alpha, d_i alpha, beta^i, d_j beta^i (gr_dbeta(:,i,j)),
 !  gamma^ij, d_k gamma_ij (gr_dgam(:,ij,k)) and K_ij, symmetric pairs in ij_table order.
@@ -582,11 +557,29 @@ module Special
           p%gr_Kij(:,ij)=(q%At(:,ij)+q%gt(:,ij)*q%Ktr/3.)/q%chi
         enddo
       endif
-      if(lhydro) then
+!
+!  Matter sources; S = gamma^ij S_ij = chi gt^ij S_ij.
+!
+      if (lgr_backreaction) then
         do i=1,3; do j=1,3
           Smix(:,j,i)=(f(l1:l2,m,n,iTij+3*(i-1)+j-1)+p%gr_beta(:,j)*f(l1:l2,m,n,iux+i-1))/p%gr_alp
         enddo; enddo
+        do i=1,6
+          gam(:,i)=q%gt(:,i)/q%chi
+        enddo
+
         call raise_second_index(Smix,p%gr_gamu,q%Suu)
+        call lower_first_index(Smix,gam,q%Sij)
+        do i=1,6
+          q%Sij(:,i) = q%Sij(:,i)/p%gr_sqrtg 
+        enddo
+
+        q%E=f(l1:l2,m,n,irho)/p%gr_sqrtg
+        do i=1,3
+          q%Sv(:,i)=f(l1:l2,m,n,iux-1+i)/p%gr_sqrtg
+        enddo
+        q%Strace=q%chi*contract(q%gtu,q%Sij)
+        q%ham=q%ham-16*pi*q%E
       endif
 !
     endsubroutine calc_pencils_special
@@ -636,7 +629,7 @@ module Special
       do j=1,3; do i=1,j
         ij=ij_table(i,j)
         Xij(:,ij)=-q%DDalp(:,ij)+q%alp*q%Rij(:,ij)
-        if (lmatter) Xij(:,ij)=Xij(:,ij)-8*pi*q%alp*q%Sij(:,ij)
+        if (lgr_backreaction) Xij(:,ij)=Xij(:,ij)-8*pi*q%alp*q%Sij(:,ij)
       enddo; enddo
       trX=contract(q%gtu,Xij)
       do j=1,3; do i=1,j
@@ -668,7 +661,7 @@ module Special
 !  Khat and Theta
 !
       rhs=-lapalp+q%alp*(q%AA+q%Ktr**2/3.)+q%alp*kappa1*(1-kappa2)*q%th
-      if (lmatter) rhs=rhs+4*pi*q%alp*(q%Strace+q%E)
+      if (lgr_backreaction) rhs=rhs+4*pi*q%alp*(q%Strace+q%E)
       if (lshift) call u_dot_grad(f,iKh,q%dKh,q%beta,rhs,upwind=lupw_beta,ladd=.true.)
       df(l1:l2,m,n,iKh)=df(l1:l2,m,n,iKh)+rhs
 !
@@ -683,7 +676,7 @@ module Special
         do j=1,3
           rhs=rhs-2*q%Atu(:,ij_table(i,j))*(q%dalp(:,j)+1.5*q%alp/q%chi*q%dchi(:,j)) &
                  -(2./3.)*q%alp*q%gtu(:,ij_table(i,j))*(2*q%dKh(:,j)+q%dth(:,j))
-          if (lmatter) rhs=rhs-16*pi*q%alp*q%gtu(:,ij_table(i,j))*q%Sv(:,j)
+          if (lgr_backreaction) rhs=rhs-16*pi*q%alp*q%gtu(:,ij_table(i,j))*q%Sv(:,j)
         enddo
         if (lshift) then
           rhs=rhs+(2./3.)*q%Gamd(:,i)*q%divb
@@ -994,7 +987,7 @@ module Special
 !
           do i=1,3
             mom(:,i)=-(2./3.)*(q%dKh(:,i)+2*q%dth(:,i))
-            if (lmatter) mom(:,i)=mom(:,i)-8*pi*q%Sv(:,i)
+            if (lgr_backreaction) mom(:,i)=mom(:,i)-8*pi*q%Sv(:,i)
             do j=1,3
               mom(:,i)=mom(:,i)-1.5/q%chi*q%Aud(:,j,i)*q%dchi(:,j)
               do k=1,3
@@ -1162,15 +1155,11 @@ module Special
     call copy_addr(ikh,p_par(11)) ! int
     call copy_addr(ith,p_par(12)) ! int
     call copy_addr(ialp,p_par(13)) ! int
-    call copy_addr(ieadm,p_par(14)) ! int
-    call copy_addr(lmatter,p_par(15)) ! bool
     call copy_addr(lshift,p_par(16)) ! bool
     call copy_addr(igt,p_par(17)) ! int (6)
     call copy_addr(iat,p_par(18)) ! int (6)
     call copy_addr(igam,p_par(19)) ! int3
     call copy_addr(ibeta,p_par(20)) ! int3
-    call copy_addr(isadm,p_par(21)) ! int3
-    call copy_addr(isadmij,p_par(22)) ! int (6)
     call string_to_enum(enum_lapse_type,lapse_type)
     call copy_addr(enum_lapse_type,p_par(23)) ! int
     call copy_addr(lenforce_algebraic,p_par(24)) ! bool

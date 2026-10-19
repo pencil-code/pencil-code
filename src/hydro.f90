@@ -177,14 +177,14 @@ module Hydro
   integer :: iTij=0, ihless=0, nhless=0
   integer :: iT11=0,iT12=0,iT13=0,iT21=0,iT22=0,iT23=0,iT31=0,iT32=0,iT33=0
 !
-!  lgr_metric: fluxes F_E^j (FgrE) and F^j_i (FgrS, index iFgrS+3*(i-1)+j-1),
+!  lgr_metric: fluxes F_E^j (FgrE) and T^j_i (densitized and first index upper and second lower),
 !  the fluid energy density in the rest frame (egr), the ADM matter sources
 !  for special/z4c, and the indices of the z4c variables.
 !
   logical, pointer :: lgr_metric
-  integer :: iFgrE=0, iegr=0, iEadm=0
-  integer, dimension(3) :: iSadm=0, igr_beta=0
-  integer, dimension(6) :: iSadmij=0, igr_gt=0
+  integer :: iFgrE=0, iegr=0 
+  integer, dimension(3) :: igr_beta=0
+  integer, dimension(6) :: igr_gt=0
   integer :: igr_chi=0, igr_alp=0
   real, dimension(:), allocatable :: thless, xhless, yhless, zhless
   real, dimension(:), allocatable :: Bsquared
@@ -226,7 +226,7 @@ module Hydro
   logical, target :: lrelativistic=.false. !PAR_DOC: Do we keep relativistic terms proportional to $gamma^2$.
   logical, target :: lconservative_pressure_on_rhs=.false.
 
-  logical :: lgr_backreaction=.true. !PAR_DOC: Provide the ADM matter sources to special/z4c;
+  logical,target :: lgr_backreaction=.true. !PAR_DOC: Provide the ADM matter sources to special/z4c;
     !PAR_DOC: when false the matter is a test fluid in a given spacetime.
   integer :: niter_gr=30 !PAR_DOC: Newton iterations of the conserved-to-primitive inversion.
 
@@ -1153,30 +1153,24 @@ module Hydro
 !
 !  Tij and possibly relativistic Lorentz factor as aux
 !
-      if (lconservative .and. lgr_metric) then
-        call register_gr_aux
+      if(lconservative) then
         if (llorentz_as_aux) call register_report_aux('lorentz', ilorentz,communicated=.true.,rhs=.true.)
-      elseif (lconservative) then
-        call farray_register_auxiliary('Tij',iTij,vector=6,communicated=.true.,rhs=.true.)
-        if (llorentz_as_aux) call register_report_aux('lorentz', ilorentz,communicated=.true.,rhs=.true.)
-        iT11 = iTij-1+i11
-        iT22 = iTij-1+i22
-        iT33 = iTij-1+i33
-        iT12 = iTij-1+i12
-        iT23 = iTij-1+i23
-        iT13 = iTij-1+i13
+        call farray_register_auxiliary('Tij',iTij,vector=merge(9,6,lgr_metric),communicated=.true.,rhs=.true.)
+        if(lgr_metric) then
+          call farray_register_auxiliary('FgrE',iFgrE,vector=3,rhs=.true.)
+          call farray_register_auxiliary('egr',iegr,rhs=.true.)
+        else
+          iT11 = iTij-1+i11
+          iT22 = iTij-1+i22
+          iT33 = iTij-1+i33
+          iT12 = iTij-1+i12
+          iT23 = iTij-1+i23
+          iT13 = iTij-1+i13
 
-        iT21=iT12
-        iT32=iT23
-        iT31=iT13
-
-      ! else
-      !   if (lrelativistic) then
-      !     call fatal_error('register_hydro','no lrelativistic without lconservative')
-      !   else
-      !     if (llorentz_as_aux) call warning('register_hydro', &
-      !         'no Lorentz factor without lconservative or lrelativistic')
-      !   endif
+          iT21=iT12
+          iT32=iT23
+          iT31=iT13
+        endif
       endif
 !
 !  Define the Higgsless field
@@ -1244,6 +1238,7 @@ module Hydro
 !
       if  (.not.ldensity.or.lanelastic) lpressuregradient_gas=.false.
       call put_shared_variable('lpressuregradient_gas',lpressuregradient_gas,caller='register_hydro')
+      call put_shared_variable('lgr_backreaction',lgr_backreaction,caller='register_hydro')
 !
 !  Special settings for lboussinesq.
 !
@@ -6219,33 +6214,6 @@ module Hydro
 
     endsubroutine hydro_after_boundary_conservative
 !***********************************************************************
-    subroutine register_gr_aux
-!
-!  Auxiliaries of the lgr_metric formulation. The ADM sources are registered
-!  one scalar per component under the names special/z4c looks for.
-!  rhs=.true. gives them GPU vertex buffers at their f-array index.
-!
-!  14-oct-26/Claude: coded
-!
-      use FArrayManager, only: farray_register_auxiliary
-!
-      integer :: i, j
-!
-      call farray_register_auxiliary('FgrE',iFgrE,vector=3,rhs=.true.)
-      call farray_register_auxiliary('Tij',iTij,array=9,rhs=.true.)
-      call farray_register_auxiliary('egr',iegr,rhs=.true.)
-      if (lgr_backreaction) then
-        call farray_register_auxiliary('Eadm',iEadm,rhs=.true.)
-        do i=1,3
-          call farray_register_auxiliary('Sadm'//cvec(i),iSadm(i),rhs=.true.)
-        enddo
-        do j=1,3; do i=1,j
-          call farray_register_auxiliary('Sadm'//cvec(i)//cvec(j),iSadmij(ij_table(i,j)),rhs=.true.)
-        enddo; enddo
-      endif
-!
-    endsubroutine register_gr_aux
-!***********************************************************************
     subroutine initialize_gr_metric
 !
 !  Check the setup and find the metric variables of special/z4c.
@@ -6293,10 +6261,10 @@ module Hydro
 !
 !  which is solved for z by Newton iteration. The fluxes
 !  F_E^j = sqrt(gamma) (alpha S^j - beta^j E) and
-!  F^j_i = sqrt(gamma) (alpha S^j_i - beta^j S_i) are stored for all points,
+!  T^j_i = sqrt(gamma) (alpha S^j_i - beta^j S_i) are stored for all points,
 !  including the ghost zones, and so are the coordinate velocity
-!  alpha v^i - beta^i (in vv, used by the induction equation), W^2 (lorentz),
-!  e (egr) and the ADM sources E, S_i, S_ij for special/z4c.
+!  alpha v^i - beta^i (in vv, used by the induction equation), W^2 (lorentz) and
+!  e (egr).
 !
 !  14-oct-26/Claude: coded
 !
@@ -6366,7 +6334,7 @@ module Hydro
         do i=1,3
           vd(:,i)=(Sd(:,i)+SB/zz*Bd(:,i))/(zz+B2)
         enddo
-        call lower_index(gamu,vd,vu)
+        call raise_index(gamu,vd,vu)
         v2=min(contract_vec(vu,vd),v2max)
         e=zz*(1.-v2)/(1.+cs20)
         Ed(:,1)=-sg*(vu(:,2)*Bu(:,3)-vu(:,3)*Bu(:,2))
@@ -6393,19 +6361,6 @@ module Hydro
         enddo
         f(:,m,n,ilorentz)=1./(1.-v2)
         f(:,m,n,iegr)=e
-!
-!  ADM sources, S_ij = S^k_i gamma_kj.
-!
-        if (lgr_backreaction) then
-          f(:,m,n,iEadm)=EE
-          do i=1,3
-            f(:,m,n,iSadm(i))=Sd(:,i)
-          enddo
-          do j=1,3; do i=1,j
-            f(:,m,n,iSadmij(ij_table(i,j)))=Smix(:,1,i)*gam(:,ij_table(1,j)) &
-                +Smix(:,2,i)*gam(:,ij_table(2,j))+Smix(:,3,i)*gam(:,ij_table(3,j))
-          enddo; enddo
-        endif
       enddo
       enddo
 !
