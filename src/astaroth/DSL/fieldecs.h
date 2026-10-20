@@ -336,8 +336,8 @@ field_order(AC_iss_b__mod__cdata-1) Field SS_B
 field_order(AC_isld_char__mod__cdata-1) Field SLD_CHAR_SPEED
 Field SRAD
 #define AC_srad__mod__radiation SRAD
-field_order(AC_ikapparho__mod__radiation-1) Field F_KAPPARHO
-field_order(AC_iqrad__mod__radiation-1) Field F_QRAD
+field_order(AC_ikapparho__mod__cdata-1) Field F_KAPPARHO
+field_order(AC_iqrad__mod__cdata-1) Field F_QRAD
 
 Field AC_cp_full__mod__equationofstate
 Field AC_mu1_full__mod__equationofstate

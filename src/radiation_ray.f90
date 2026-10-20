@@ -2881,8 +2881,8 @@ module Radiation
     call string_to_enum(enum_source_function_type,source_function_type)
     call copy_addr(enum_source_function_type,p_par(45)) ! int
     call copy_addr(nnu,p_par(46))                   ! int
-    call copy_addr(lntt_table,p_par(47))            ! (nlntt_table__mod__radiation)
-    call copy_addr(lnss_table,p_par(48))            ! (nlntt_table__mod__radiation) (nnu__mod__radiation)
+    if (allocated(lntt_table)) call copy_addr(lntt_table,p_par(47))            ! (nlntt_table__mod__radiation)
+    if (allocated(lnss_table)) call copy_addr(lnss_table,p_par(48))            ! (nlntt_table__mod__radiation) (nnu__mod__radiation)
     call copy_addr(kappa_kconst,p_par(49))
     call copy_addr(kapparho_const,p_par(50))
     call copy_addr(amplkapparho,p_par(51))

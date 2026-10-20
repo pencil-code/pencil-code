@@ -24,8 +24,8 @@ contains
 
     call copy_addr(ncoarse,p_par(1)) ! int
     call copy_addr(lcoarse,p_par(2)) ! bool
-    call copy_addr_dble(unit_magnetic,p_par(4))
-    call copy_addr_dble(k_b,p_par(5))
+    call copy_addr_dble(unit_magnetic,p_par(4)) ! dble
+    call copy_addr_dble(k_b,p_par(5)) ! dble
 
     call copy_addr(m2,p_par(7)) ! int
     call copy_addr(n2,p_par(8)) ! int
@@ -195,23 +195,23 @@ contains
     call copy_addr(dtdec,p_par(345)) ! real dconst
     call copy_addr(num_substeps,p_par(347)) ! int
 
-    call copy_addr_dble(unit_length,p_par(349))
-    call copy_addr_dble(unit_temperature,p_par(350))
-    call copy_addr_dble(unit_mass,p_par(351))
-    call copy_addr_dble(unit_energy,p_par(352))
-    call copy_addr_dble(unit_time,p_par(353))
-    call copy_addr_dble(unit_pressure,p_par(354))
-    call copy_addr_dble(m_u,p_par(355))
+    call copy_addr_dble(unit_length,p_par(349)) ! dble
+    call copy_addr_dble(unit_temperature,p_par(350)) ! dble
+    call copy_addr_dble(unit_mass,p_par(351)) ! dble
+    call copy_addr_dble(unit_energy,p_par(352)) ! dble
+    call copy_addr_dble(unit_time,p_par(353)) ! dble
+    call copy_addr_dble(unit_pressure,p_par(354)) ! dble
+    call copy_addr_dble(m_u,p_par(355)) ! dble
     call copy_addr(lchemonly,p_par(357)) ! bool
     call copy_addr(iviscosity,p_par(358)) ! int
     call copy_addr(ilntt,p_par(359)) ! int
     call copy_addr(xgrid,p_par(360)) ! (nxgrid)
     call copy_addr(lxyz,p_par(361)) ! real3
     call copy_addr(ichemspec,p_par(363)) ! int (nchemspec)
-    call copy_addr_dble(unit_velocity,p_par(365))
-    call copy_addr_dble(unit_density,p_par(366))
-    call copy_addr_dble(m_p,p_par(367))
-    call copy_addr_dble(sigmasb,p_par(368))
+    call copy_addr_dble(unit_velocity,p_par(365)) ! dble
+    call copy_addr_dble(unit_density,p_par(366)) ! dble
+    call copy_addr_dble(m_p,p_par(367)) ! dble
+    call copy_addr_dble(sigmasb,p_par(368)) ! dble
     call copy_addr(cdts,p_par(369))
     call copy_addr(lgravx,p_par(370)) ! bool
     call copy_addr(lgravz,p_par(371)) ! bool
@@ -266,8 +266,8 @@ contains
     call copy_addr(lperi,p_par(1176)) ! bool3
 
 
-    call copy_addr_dble(sigma_thomson,p_par(1185))
-    call copy_addr_dble(c_light,p_par(1188))
+    call copy_addr_dble(sigma_thomson,p_par(1185)) ! dble
+    call copy_addr_dble(c_light,p_par(1188)) ! dble
     call copy_addr(iey,p_par(1194)) ! int
     call copy_addr(iez,p_par(1195)) ! int
     call copy_addr(icool_prof,p_par(1196)) ! int
@@ -292,16 +292,16 @@ contains
 
     call string_to_enum(enum_ascale_type,ascale_type)
     call copy_addr(enum_ascale_type,p_par(1135)) ! int
-    call copy_addr_dble(unit_flux,p_par(1201))
+    call copy_addr_dble(unit_flux,p_par(1201)) ! dble
     call copy_addr(iyh,p_par(1202)) ! int
-    call copy_addr_dble(kappa_es,p_par(1209))
+    call copy_addr_dble(kappa_es,p_par(1209)) ! dble
     call copy_addr(iqrad,p_par(1217)) ! int
     call copy_addr(ikapparho,p_par(1218)) ! int
     call copy_addr(ikr_frad,p_par(1219)) ! int
-    call copy_addr_dble(m_e,p_par(1222))
+    call copy_addr_dble(m_e,p_par(1222)) ! dble
     call copy_addr(ip,p_par(1223)) ! int
-    call copy_addr_dble(m_h,p_par(1224))
-    call copy_addr_dble(sigmah_,p_par(1225))
+    call copy_addr_dble(m_h,p_par(1224)) ! dble
+    call copy_addr_dble(sigmah_,p_par(1225)) ! dble
     call copy_addr(it,p_par(1227)) ! int dconst
     call copy_addr(nconformal,p_par(1228))
     call copy_addr(ifcr,p_par(1233)) ! int

@@ -271,6 +271,18 @@ AcReal to_real(void* param, const char* name)
 	return *((AcReal*)param);
 }
 /***********************************************************************************************/
+AcReal to_dble(void* param, const char* name)
+{
+//TP: for real(KIND=rkind8) variables pushed with copy_addr_dble (comment "! dble"),
+//    which are double also when AcReal is float
+	if (param == NULL)
+	{
+		fprintf(stderr,"Passed NULL to pushparsc, expected double: %s!!\n",name);
+		abort();
+	}
+	return (AcReal)*((double*)param);
+}
+/***********************************************************************************************/
 int to_int(void* param, const char* name)
 {
 	if (param == NULL)

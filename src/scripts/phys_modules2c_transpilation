@@ -199,6 +199,8 @@ if [ -f tmp1 ]; then
          p
          s/^#define *\([a-zA-Z0-9_]*\) to_\([a-zA-Z0-9_]*\).*\/\/ dconst$/dconst \2 AC_\1 \/\/ from '$modname'\n#define \1 \AC_\1/
          s/^#define *\([a-zA-Z0-9_]*\) to_\([a-zA-Z0-9_]*\).*$/run_const \2 AC_\1 \/\/ from '$modname'\n#define \1 \AC_\1/
+         s/^run_const dble /run_const real /
+         s/^dconst dble /dconst real /
 	 s/.*run_const real AC_dt //
 	 s/#define dt AC_dt//
 	 s/.*run_const real AC_dt__mod__cdata //
