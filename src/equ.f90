@@ -565,6 +565,7 @@ module Equ
 !  Reduces accumulated diagnostic variables across threads. Only called if using OpenMP
 !
 !  30-mar-23/TP: Coded
+!  20-Oct-2026/Kishore: avoid integer overflow in ncountsz handling
 !
 !$    use Diagnostics
 !$    use Chemistry, only: chemistry_diags_reductions
@@ -604,7 +605,14 @@ module Equ
 !$
 !$      if (allocated(fname_keep)) p_fname_keep = p_fname_keep + fname_keep
 !$      if (allocated(fname_sound)) p_fname_sound = p_fname_sound + fname_sound
-!$      if (allocated(ncountsz)) p_ncountsz = p_ncountsz + ncountsz
+!$      if (allocated(ncountsz)) then
+!         ! ncountsz uses -1 as a marker value; unconditionally adding causes
+!         ! integer overflow (e.g. after 8 iterations of a 64x64x144 run
+!         ! with 11 helper threads)
+!$        where (p_ncountsz >= 0)
+!$          p_ncountsz = p_ncountsz + ncountsz
+!$        endwhere
+!$      endif
 !$
 !$      call diagnostics_diag_reductions
 !$      call chemistry_diags_reductions
