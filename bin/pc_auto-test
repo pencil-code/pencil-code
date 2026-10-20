@@ -278,6 +278,7 @@ my %tests = (
 	    # the test machine. This list is not exhaustive and most samples using the
 	    # same modules as these samples should also work.
 my @gpu_tests = qw(
+                         1d-tests/solar-atmosphere-temperature
                          1d-tests/sine-Gordon_doublet
 			 1d-tests/gw_induced_mhd_waves
                          decay-reconnection
