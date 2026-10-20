@@ -351,14 +351,14 @@ module Magnetic
   real :: imp_alpha0=0.0, imp_halpha=0.0, c_light2, c_light21
   real, target :: betamin_jxb = 0.0
   real, allocatable, dimension(:,:), target :: eta_xy
-  real, dimension(nx,3) :: geta, div_flux
+  real, dimension(nx,3) :: geta, div_flux, fres2, fres3
   real, allocatable, dimension(:,:,:), target :: geta_xy
   real, dimension(nz,3) :: A_relprof
   real, dimension(mz) :: coskz,sinkz,eta_z,geta_z
   real, dimension(mx) :: eta_x,geta_x
   real, dimension(my) :: eta_y,geta_y
   real, dimension(nx) :: eta_r
-  !$omp threadprivate(eta_r)
+  !$omp threadprivate(eta_r,fres2,fres3)
   real, dimension(nx,3) :: geta_r
   logical :: lfreeze_aint=.false., lfreeze_aext=.false.
   logical :: lweyl_gauge=.false., ladvective_gauge=.false.
@@ -5796,7 +5796,7 @@ module Magnetic
 !
 !      if (headtt) print*, 'daa_dt: iresistivity=', iresistivity
 !
-      fres=p%fres
+      fres=p%fres+fres2+fres3
       diffus_eta2=p%diffus_eta2
       diffus_eta3=p%diffus_eta3
       diffus_eta=p%diffus_eta
@@ -6521,7 +6521,7 @@ print*,'AXEL2: should not be here (eta) ... '
       real, dimension (nx) :: uxj_dotB0,b3b21,b3b12,b1b32,b1b23,b2b13,b2b31
       real, dimension (nx) :: jxb_dotB0,jxbrq,uxb_dotB0, gLama, gLamb
       real, dimension (nx) :: oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
-      real, dimension (nx) :: aj, tmp, tmp1, fres2
+      real, dimension (nx) :: aj, tmp, tmp1, fresdot2
       real, dimension (nx) :: B1dot_glnrhoxb,fb,fxbx
       real, dimension (nx) :: b2t,bjt,jbt,ubt,but,ujt,jut
       real, dimension (nx) :: phi,dub,dob,jdel2a,epsAD
@@ -6555,12 +6555,10 @@ print*,'AXEL2: should not be here (eta) ... '
         endif
       endif
 !
-      if (idiag_Bresrms/=0.or. &
-          idiag_Rmrms/=0.or.idiag_Rmph1rms/=0.or.idiag_Rmph2rms/=0.or.idiag_Rmph3rms/=0.or. &
+      if (idiag_Rmrms/=0.or.idiag_Rmph1rms/=0.or.idiag_Rmph2rms/=0.or.idiag_Rmph3rms/=0.or. &
           idiag_Rmmax/=0.or.idiag_Rmph1max/=0.or.idiag_Rmph2max/=0.or.idiag_Rmph3max/=0 ) then
-        call dot2_mn(p%fres,fres2)
-        Rm2=sqrt(p%uxb2/(fres2+tini))
-        if (idiag_Bresrms/=0)  call sum_mn_name(fres2,idiag_Bresrms,lsqrt=.true.)
+        call dot2_mn(p%fres,fresdot2)
+        Rm2=sqrt(p%uxb2/(fresdot2+tini))
         if (idiag_Rmrms/=0)    call sum_mn_name(Rm2,idiag_Rmrms)
         if (idiag_Rmph1rms/=0) call sum_mn_name(Rm2,idiag_Rmph1rms,MASK=(p%ss <=ssmask1))
         if (idiag_Rmph2rms/=0) call sum_mn_name(Rm2,idiag_Rmph2rms,MASK=(p%ss > ssmask1 .and. p%ss <= ssmask2))
@@ -6569,6 +6567,10 @@ print*,'AXEL2: should not be here (eta) ... '
         if (idiag_Rmph1max/=0) call max_mn_name(Rm2,idiag_Rmph1max,MASK=(p%ss <=ssmask1))
         if (idiag_Rmph2max/=0) call max_mn_name(Rm2,idiag_Rmph2max,MASK=(p%ss > ssmask1 .and. p%ss <= ssmask2))
         if (idiag_Rmph3max/=0) call max_mn_name(Rm2,idiag_Rmph3max,MASK=(p%ss > ssmask2))
+      endif
+      if (idiag_Bresrms/=0) then
+        call dot2_mn(p%fres+fres2+fres3,fresdot2)
+        call sum_mn_name(fresdot2,idiag_Bresrms,lsqrt=.true.)
       endif
 !
 !  Integrate velocity in time, to calculate correlation time later.
@@ -7316,7 +7318,7 @@ print*,'AXEL2: should not be here (eta) ... '
 
       type(pencil_case) :: p
 
-      real, dimension(nx) :: fres2, tmp1, Rmmz, bdel2a, jdel2a
+      real, dimension(nx) :: fresdot2, tmp1, Rmmz, bdel2a, jdel2a
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1.
 !
@@ -7539,16 +7541,11 @@ print*,'AXEL2: should not be here (eta) ... '
         call xzintegrate_mn_name_y(p%bb(:,2),idiag_mflux_y)
         call xyintegrate_mn_name_z(p%bb(:,3),idiag_mflux_z)
 
-        if (.not.lmultithread) then
-!
-!  This diagnostic relies upon mn-dependent quantities which are not in the pencil case.
-!
-          if (idiag_Rmmz/=0) then
-            call dot2_mn(p%fres,fres2)
-            Rmmz=sqrt(p%uxb2/fres2)
-            where (fres2 < tini) Rmmz = 0.
-            call xysum_mn_name_z(Rmmz,idiag_Rmmz)
-          endif
+        if (idiag_Rmmz/=0) then
+          call dot2_mn(p%fres,fresdot2)
+          Rmmz=sqrt(p%uxb2/fresdot2)
+          where (fresdot2 < tini) Rmmz = 0.
+          call xysum_mn_name_z(Rmmz,idiag_Rmmz)
         endif
       endif
 
@@ -12237,6 +12234,8 @@ print*,'AXEL2: should not be here (eta) ... '
           p%diffus_eta3=0.0
         endif
         p%fres=0.
+        fres2=0.
+        fres3=0.
 !
 !    Uniform resistivity
 !
@@ -12381,12 +12380,12 @@ print*,'AXEL2: should not be here (eta) ... '
 !!    I would have defined the sign the other way around (AB).
 !
         if (lresi_hyper2) then
-          p%fres=p%fres+eta_hyper2*p%del4a
+          fres2=fres2+eta_hyper2*p%del4a
           if (lupdate_courant_dt) p%diffus_eta2=p%diffus_eta2+eta_hyper2
         endif
 !
         if (lresi_hyper3) then
-          p%fres=p%fres+eta_hyper3*p%del6a
+          fres3=fres3+eta_hyper3*p%del6a
           if (ldiffus_eta3) p%diffus_eta3=p%diffus_eta3+eta_hyper3
         endif
 
@@ -12395,12 +12394,12 @@ print*,'AXEL2: should not be here (eta) ... '
 !    t-dependent case, just eta. Note the minus sign for del4a.
 !
         if (lresi_hyper2_tdep) then
-          p%fres=p%fres-eta_tdep*p%del4a
+          fres2=fres2-eta_tdep*p%del4a
           if (ldiffus_eta2) p%diffus_eta2=p%diffus_eta2+eta_tdep
         endif
 !
         if (lresi_hyper3_tdep) then
-          p%fres=p%fres+eta_tdep*p%del6a
+          fres3=fres3+eta_tdep*p%del6a
           if (ldiffus_eta3) p%diffus_eta3=p%diffus_eta3+eta_tdep
         endif
 !
@@ -12409,7 +12408,7 @@ print*,'AXEL2: should not be here (eta) ... '
             ju=j+iaa-1
             do i=1,3
               call der6(f,ju,tmp1,i,IGNOREDX=.true.)
-              p%fres(:,j)=p%fres(:,j)+eta_hyper3*pi4_1*tmp1*dline_1(:,i)**2
+              fres3(:,j)=fres3(:,j)+eta_hyper3*pi4_1*tmp1*dline_1(:,i)**2
             enddo
           enddo
           if (ldiffus_eta3) p%diffus_eta3=p%diffus_eta3+eta_hyper3*pi4_1*dxmin_pencil**4
@@ -12449,9 +12448,9 @@ print*,'AXEL2: should not be here (eta) ... '
             do i=1,3
               call der6(f,ju,tmp1,i,IGNOREDX=.true.)
               if (ldynamical_diffusion) then
-                p%fres(:,j)=p%fres(:,j)+eta_hyper3_mesh*sqrt(p%cs2) * tmp1*dline_1(:,i)
+                fres3(:,j)=fres3(:,j)+eta_hyper3_mesh*sqrt(p%cs2) * tmp1*dline_1(:,i)
               else
-                p%fres(:,j)=p%fres(:,j)+eta_hyper3_mesh*sqrt(p%cs2) * pi5_1/60.*tmp1*dline_1(:,i)
+                fres3(:,j)=fres3(:,j)+eta_hyper3_mesh*sqrt(p%cs2) * pi5_1/60.*tmp1*dline_1(:,i)
               endif
             enddo
           enddo
@@ -12467,13 +12466,13 @@ print*,'AXEL2: should not be here (eta) ... '
         endif
 !
         if (lresi_hyper3_strict) then
-          p%fres=p%fres+eta_hyper3*f(l1:l2,m,n,ihypres:ihypres+2)
+          fres3=fres3+eta_hyper3*f(l1:l2,m,n,ihypres:ihypres+2)
           if (ldiffus_eta3) p%diffus_eta3=p%diffus_eta3+eta_hyper3
         endif
 !
         if (lresi_hyper3_aniso) then
            call del6fjv(f,eta_aniso_hyper3,iaa,tmp2)
-           p%fres=p%fres+tmp2
+           fres3=fres3+tmp2
 !    Must divide by dxyz_6 here, because it is multiplied on later.
            if (ldiffus_eta3) p%diffus_eta3=p%diffus_eta3 + &
                                            (eta_aniso_hyper3(1)*dline_1(:,1)**6 + &
