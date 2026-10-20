@@ -503,6 +503,10 @@ void setupConfig(AcMeshInfo& config)
   	PCLoad(config,AC_tau_hydro_stds ,tau_hydro_stds);
   #endif
   PCLoad(config,AC_sparse_autotuning,lac_sparse_autotuning);
+#if LRADIATION
+  //TP: done since we are setting Q initially zero and later on take into account the periodicity
+  PCLoad(config,AC_allow_non_periodic_bcs_with_periodic_grid,true);
+#endif
 
   //Calculate derived variable values based on the assignments in the initializations
   acHostUpdateParams(&config); 
