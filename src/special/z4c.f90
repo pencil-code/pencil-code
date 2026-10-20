@@ -64,12 +64,12 @@ module Special
 !
   character(len=labellen) :: lapse_type='1+log', shift_type='gamma-driver'
   integer :: enum_lapse_type=0
-  real :: kappa1=0.02, kappa2=0., shift_mu=1., shift_eta=2., diss_ko=0.
+  real :: kappa1=0.02, kappa2=0., shift_mu=1., shift_eta=2., hyper3_mesh=0.
   real :: chi_floor=1e-6, r_excise_diag=0., harmonic_f=1.
   logical :: lenforce_algebraic=.true., lupw_beta=.false., lsommerfeld=.false.
 !
   namelist /special_run_pars/ lapse_type, shift_type, kappa1, kappa2, &
-      shift_mu, shift_eta, diss_ko, chi_floor, lenforce_algebraic, lupw_beta, &
+      shift_mu, shift_eta, hyper3_mesh, chi_floor, lenforce_algebraic, lupw_beta, &
       r_excise_diag, lsommerfeld, harmonic_f
 
   logical, target :: lgr_metric=.true.
@@ -196,8 +196,8 @@ module Special
         call fatal_error('initialize_special','no such shift_type: '//trim(shift_type))
       endselect
 !
-      if (diss_ko/=0. .and. nghost<3) call fatal_error('initialize_special', &
-          'Kreiss-Oliger dissipation needs nghost>=3')
+      if (hyper3_mesh/=0. .and. nghost<3) call fatal_error('initialize_special', &
+          'Hyper diffusion needs nghost>=3')
 !
 !  Matter sources, if another module provides them.
 !
@@ -735,23 +735,23 @@ module Special
         enddo
       endif
 !
-!  Kreiss-Oliger dissipation of order 6, sigma/64 dx^5 d^6/dx^6.
+!  sixth-order hyperdiffusion, sigma/64 dx^5 d^6/dx^6.
 !
 !  The variables are visited by name (not by a loop over ichi:ibeta(3)) so
 !  that the GPU transpiler can map each df access to its field.
 !
-      if (diss_ko/=0.) then
-        call kreiss_oliger(f,df,ichi)
-        call kreiss_oliger(f,df,iKh)
-        call kreiss_oliger(f,df,ith)
-        call kreiss_oliger(f,df,ialp)
+      if (hyper3_mesh/=0.) then
+        call hyper_diffus(f,df,ichi)
+        call hyper_diffus(f,df,iKh)
+        call hyper_diffus(f,df,ith)
+        call hyper_diffus(f,df,ialp)
         do ij=1,6
-          call kreiss_oliger(f,df,igt(ij))
-          call kreiss_oliger(f,df,iAt(ij))
+          call hyper_diffus(f,df,igt(ij))
+          call hyper_diffus(f,df,iAt(ij))
         enddo
         do i=1,3
-          call kreiss_oliger(f,df,iGam(i))
-          if (lshift) call kreiss_oliger(f,df,ibeta(i))
+          call hyper_diffus(f,df,iGam(i))
+          if (lshift) call hyper_diffus(f,df,ibeta(i))
         enddo
       endif
 !
@@ -876,11 +876,12 @@ module Special
 !
     endfunction sommerfeld_mask
 !***********************************************************************
-    subroutine kreiss_oliger(f,df,k)
+    subroutine hyper_diffus(f,df,k)
 !
-!  Kreiss-Oliger dissipation of order 6, sigma/64 dx^5 d^6/dx^6, of variable k.
+!  Sixth-order hyperdiffusion, sigma/64 dx^5 d^6/dx^6, of variable k.
+!  Called Kreiss-Oliger dissipation by other NR codes.
 !
-!  15-oct-26/Claude: split off from dspecial_dt
+!  20-oct-26/TP: coded
 !
       use Deriv, only: der6
 !
@@ -893,10 +894,10 @@ module Special
 !
       do j=1,3
         call der6(f,k,tmp,j,ignoredx=.true.)
-        df(l1:l2,m,n,k)=df(l1:l2,m,n,k)+(diss_ko/64.)*dline_1(:,j)*tmp
+        df(l1:l2,m,n,k)=df(l1:l2,m,n,k)+(hyper3_mesh/64.)*dline_1(:,j)*tmp
       enddo
 !
-    endsubroutine kreiss_oliger
+    endsubroutine hyper_diffus
 !***********************************************************************
     subroutine save_df_z4c(df,df_in)
 !
@@ -1172,7 +1173,7 @@ module Special
     call copy_addr(kappa2,p_par(2))
     call copy_addr(shift_mu,p_par(3))
     call copy_addr(shift_eta,p_par(4))
-    call copy_addr(diss_ko,p_par(5))
+    call copy_addr(hyper3_mesh,p_par(5))
     call copy_addr(harmonic_f,p_par(6))
     call copy_addr(lupw_beta,p_par(7)) ! bool
     call copy_addr(lsommerfeld,p_par(8)) ! bool
