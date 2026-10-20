@@ -2799,7 +2799,7 @@ module Viscosity
 !  Calculate maximum heating for time step constraint or diagnostics
 !  (only done on the first substep).
 !
-      if (ldt.and.lfirst .or. ldiagnos) Hmax=Hmax+p%visc_heat
+      if (lupdate_courant_dt .or. ldiagnos) Hmax=Hmax+p%visc_heat
 !
     endsubroutine calc_viscous_heat
 !***********************************************************************
