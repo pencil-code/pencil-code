@@ -1,3 +1,4 @@
+#if Leos_temperature_ionization_MODULE 
 Kernel opacity(int inu){
   real DF_KAPPARHO
   real ac_transformed_pencil_acc
@@ -771,3 +772,1601 @@ Kernel opacity(int inu){
   write(F_KAPPARHO,DF_KAPPARHO)
 
 }
+#endif
+
+#if Leos_ionization_MODULE
+Kernel opacity(int inu){
+  real DF_KAPPARHO
+  real ac_transformed_pencil_ma2
+  real ac_transformed_pencil_sgs_heat
+  real ac_transformed_pencil_t00
+  real3 ac_transformed_pencil_t0i
+  real ac_transformed_pencil_tt
+  real ac_transformed_pencil_tt1
+  real ac_transformed_pencil_tij[6]
+  real ac_transformed_pencil_ywater
+  real3 ac_transformed_pencil_aa
+  real ac_transformed_pencil_acc
+  real ac_transformed_pencil_advec_cs2
+  real ac_transformed_pencil_advec_uu
+  Matrix ac_transformed_pencil_aij
+  real ac_transformed_pencil_b2
+  real3 ac_transformed_pencil_bb
+  real3 ac_transformed_pencil_bbb
+  Matrix ac_transformed_pencil_bij
+  real3 ac_transformed_pencil_bunit
+  real ac_transformed_pencil_cc[1]
+  real ac_transformed_pencil_cc1[1]
+  real ac_transformed_pencil_chem_conc[1]
+  real ac_transformed_pencil_conc_satm
+  real ac_transformed_pencil_condensationrate
+  real ac_transformed_pencil_cool
+  real ac_transformed_pencil_cool_prof
+  real ac_transformed_pencil_cp
+  real ac_transformed_pencil_cp1
+  real ac_transformed_pencil_cp1tilde
+  real ac_transformed_pencil_cs2
+  real ac_transformed_pencil_csvap2
+  real3 ac_transformed_pencil_curlfcont[AC_n_forcing_cont_max__mod__cparam]
+  real3 ac_transformed_pencil_curlo
+  real ac_transformed_pencil_cv
+  real ac_transformed_pencil_cv1
+  Matrix ac_transformed_pencil_d2uidxj
+  real3 ac_transformed_pencil_del2t
+  real ac_transformed_pencil_del2tt
+  real3 ac_transformed_pencil_del2a
+  real ac_transformed_pencil_del2lntt
+  real ac_transformed_pencil_del2lnrho
+  real ac_transformed_pencil_del2rho
+  real ac_transformed_pencil_del2ss
+  real3 ac_transformed_pencil_del2u
+  real3 ac_transformed_pencil_del4graddivu
+  real3 ac_transformed_pencil_del4u
+  real ac_transformed_pencil_del6tt
+  real ac_transformed_pencil_del6lntt
+  real ac_transformed_pencil_del6lnrho
+  real ac_transformed_pencil_del6rho
+  real ac_transformed_pencil_del6ss
+  real3 ac_transformed_pencil_del6u
+  real3 ac_transformed_pencil_del6u_bulk
+  real3 ac_transformed_pencil_del6u_strict
+  real3 ac_transformed_pencil_der6u
+  Matrix ac_transformed_pencil_der6u_res
+  real ac_transformed_pencil_diffus_total
+  real ac_transformed_pencil_diffus_total2
+  real ac_transformed_pencil_diffus_total3
+  real ac_transformed_pencil_diva
+  real ac_transformed_pencil_divss
+  real ac_transformed_pencil_divu
+  real ac_transformed_pencil_divu0
+  real ac_transformed_pencil_divud[1]
+  real ac_transformed_pencil_divun
+  real ac_transformed_pencil_divutot
+  real ac_transformed_pencil_e2
+  real ac_transformed_pencil_ee
+  real ac_transformed_pencil_ekin
+  real3 ac_transformed_pencil_el
+  real ac_transformed_pencil_epot
+  real3 ac_transformed_pencil_evr
+  real3 ac_transformed_pencil_evth
+  real ac_transformed_pencil_ext_force[4]
+  real3 ac_transformed_pencil_fcont[AC_n_forcing_cont_max__mod__cparam]
+  real ac_transformed_pencil_ff_cond
+  real3 ac_transformed_pencil_fpres
+  real3 ac_transformed_pencil_fvisc
+  real3 ac_transformed_pencil_gtt
+  real ac_transformed_pencil_gcc[3][0]
+  real3 ac_transformed_pencil_gg
+  real3 ac_transformed_pencil_glntt
+  real3 ac_transformed_pencil_glnmumol
+  real3 ac_transformed_pencil_glnrho
+  real ac_transformed_pencil_glnrho2
+  real3 ac_transformed_pencil_glnrhodsum
+  real3 ac_transformed_pencil_glnrhos
+  real3 ac_transformed_pencil_gnu_smag
+  real3 ac_transformed_pencil_grad5divu
+  real3 ac_transformed_pencil_graddivu
+  real3 ac_transformed_pencil_gradnu
+  real3 ac_transformed_pencil_grho
+  real3 ac_transformed_pencil_grhop
+  real3 ac_transformed_pencil_gshock
+  real3 ac_transformed_pencil_gshock_perp
+  real3 ac_transformed_pencil_gss
+  real ac_transformed_pencil_heat
+  real ac_transformed_pencil_heatcool
+  real ac_transformed_pencil_hless
+  Matrix ac_transformed_pencil_hlntt
+  Matrix ac_transformed_pencil_hlnrho
+  Matrix ac_transformed_pencil_hss
+  real ac_transformed_pencil_initlnrho
+  real ac_transformed_pencil_initss
+  real ac_transformed_pencil_j2
+  real3 ac_transformed_pencil_jj
+  real3 ac_transformed_pencil_jxbr
+  real ac_transformed_pencil_lambda
+  real ac_transformed_pencil_latent_heat
+  real ac_transformed_pencil_lntt
+  real ac_transformed_pencil_lnrho
+  real ac_transformed_pencil_lorentz
+  real ac_transformed_pencil_lorentz_gamma
+  real ac_transformed_pencil_nu
+  real ac_transformed_pencil_nu_smag
+  real ac_transformed_pencil_nucl_rate
+  real ac_transformed_pencil_nucl_rmin
+  real ac_transformed_pencil_o2
+  real3 ac_transformed_pencil_ogu
+  Matrix ac_transformed_pencil_oij
+  real3 ac_transformed_pencil_oo
+  real ac_transformed_pencil_ou
+  real3 ac_transformed_pencil_oxu
+  real ac_transformed_pencil_oxu2
+  real ac_transformed_pencil_part_heatcap
+  real ac_transformed_pencil_peh
+  real ac_transformed_pencil_phi_mn
+  real ac_transformed_pencil_phix
+  real ac_transformed_pencil_phiy
+  real ac_transformed_pencil_pomx
+  real ac_transformed_pencil_pomy
+  real ac_transformed_pencil_pp
+  real ac_transformed_pencil_ppvap
+  real ac_transformed_pencil_r_mn
+  real ac_transformed_pencil_r_mn1
+  real ac_transformed_pencil_rcyl_mn
+  real ac_transformed_pencil_rcyl_mn1
+  real ac_transformed_pencil_rho
+  real ac_transformed_pencil_rho1
+  real3 ac_transformed_pencil_rho1gpp
+  real ac_transformed_pencil_rho_anel
+  real ac_transformed_pencil_rhod[1]
+  real ac_transformed_pencil_rhodsum
+  real ac_transformed_pencil_rhop
+  real ac_transformed_pencil_rhos1
+  real3 ac_transformed_pencil_rhougu
+  real3 ac_transformed_pencil_rr
+  Matrix ac_transformed_pencil_sdij[AC_ndustspec__mod__cparam]
+  real3 ac_transformed_pencil_sglntt
+  real3 ac_transformed_pencil_sglnrho
+  real ac_transformed_pencil_shock
+  real ac_transformed_pencil_shock_perp
+  Matrix ac_transformed_pencil_sij
+  real ac_transformed_pencil_sij2
+  Matrix ac_transformed_pencil_snij
+  real ac_transformed_pencil_ss
+  real ac_transformed_pencil_ss12
+  real ac_transformed_pencil_ssat
+  real ac_transformed_pencil_tauascalar
+  real ac_transformed_pencil_totenergy_rel
+  real ac_transformed_pencil_transprho
+  real ac_transformed_pencil_transprhos
+  real3 ac_transformed_pencil_transpurho
+  real ac_transformed_pencil_ttc
+  Matrix ac_transformed_pencil_u0ij
+  real ac_transformed_pencil_u1u23
+  real ac_transformed_pencil_u1u32
+  real ac_transformed_pencil_u2
+  real ac_transformed_pencil_u2u13
+  real ac_transformed_pencil_u2u31
+  real ac_transformed_pencil_u3u12
+  real ac_transformed_pencil_u3u21
+  real3 ac_transformed_pencil_udropav
+  real ac_transformed_pencil_uglntt
+  real ac_transformed_pencil_uglnrho
+  real ac_transformed_pencil_ugrho
+  real ac_transformed_pencil_ugss
+  real3 ac_transformed_pencil_ugu
+  real ac_transformed_pencil_ugu2
+  Matrix ac_transformed_pencil_uij
+  Matrix ac_transformed_pencil_uij5
+  real3 ac_transformed_pencil_uij5glnrho
+  Matrix ac_transformed_pencil_uij6
+  Tensor ac_transformed_pencil_uijk
+  Matrix ac_transformed_pencil_utotij
+  real3 ac_transformed_pencil_uu
+  real3 ac_transformed_pencil_uu0
+  real3 ac_transformed_pencil_uu_advec
+  real3 ac_transformed_pencil_uu_sph
+  real ac_transformed_pencil_uuadvec_glnrho
+  real ac_transformed_pencil_uuadvec_grho
+  real ac_transformed_pencil_uuadvec_gss
+  real3 ac_transformed_pencil_uuadvec_guu
+  real3 ac_transformed_pencil_uud[AC_ndustspec__mod__cparam]
+  real3 ac_transformed_pencil_uun
+  real3 ac_transformed_pencil_uutot
+  real3 ac_transformed_pencil_uxb
+  real ac_transformed_pencil_va2
+  real3 ac_transformed_pencil_velx
+  real ac_transformed_pencil_visc_heat
+  real ac_transformed_pencil_watermixingratio
+  real ac_transformed_pencil_x_mn
+  real ac_transformed_pencil_yh
+  real ac_transformed_pencil_y_mn
+  real ac_transformed_pencil_z_mn
+  real tmp
+  real lnrho
+  real lntt
+  real yh
+  real rho
+  real tt
+  real profile = 0
+  real kappa1
+  real kappa2
+  real kappae
+  real kappa_rad
+  real kappa_cond
+  real kappa_tot
+  real kappa0
+  real kappa0_cgs
+  real k1
+  real k2
+  bool lfirst
+  int i
+  real lnrho__1_3
+  real yh__1_3
+  real lntt__1_3
+  real tt_1_3
+  real fractions_1_3
+  real exponent_1_3
+  real lnrho_0_1_3
+  real yh_0_1_3
+  real lntt_0_1_3
+  real r_0_1_3
+  real dlnttdy_0_1_3
+  real drdy_0_1_3
+  real temp_0_1_3
+  real dlnppdlnrho_0_1_3
+  real fractions_0_1_3
+  real fractions1_0_1_3
+  real dlnppdss_0_1_3
+  real tt1_0_1_3
+  real lnrho__2_3
+  real yh__2_3
+  real lntt__2_3
+  real tt_2_3
+  real fractions_2_3
+  real exponent_2_3
+  real lnrho_0_2_3
+  real yh_0_2_3
+  real lntt_0_2_3
+  real r_0_2_3
+  real dlnttdy_0_2_3
+  real drdy_0_2_3
+  real temp_0_2_3
+  real dlnppdlnrho_0_2_3
+  real fractions_0_2_3
+  real fractions1_0_2_3
+  real dlnppdss_0_2_3
+  real tt1_0_2_3
+  real lnrho__1_4
+  real yh__1_4
+  real lntt__1_4
+  real tt_1_4
+  real fractions_1_4
+  real exponent_1_4
+  real lnrho_0_1_4
+  real yh_0_1_4
+  real lntt_0_1_4
+  real r_0_1_4
+  real dlnttdy_0_1_4
+  real drdy_0_1_4
+  real temp_0_1_4
+  real dlnppdlnrho_0_1_4
+  real fractions_0_1_4
+  real fractions1_0_1_4
+  real dlnppdss_0_1_4
+  real tt1_0_1_4
+  real lnrho__2_4
+  real yh__2_4
+  real lntt__2_4
+  real tt_2_4
+  real fractions_2_4
+  real exponent_2_4
+  real lnrho_0_2_4
+  real yh_0_2_4
+  real lntt_0_2_4
+  real r_0_2_4
+  real dlnttdy_0_2_4
+  real drdy_0_2_4
+  real temp_0_2_4
+  real dlnppdlnrho_0_2_4
+  real fractions_0_2_4
+  real fractions1_0_2_4
+  real dlnppdss_0_2_4
+  real tt1_0_2_4
+  real lnrho__1_5
+  real yh__1_5
+  real lntt__1_5
+  real tt_1_5
+  real fractions_1_5
+  real exponent_1_5
+  real lnrho_0_1_5
+  real yh_0_1_5
+  real lntt_0_1_5
+  real r_0_1_5
+  real dlnttdy_0_1_5
+  real drdy_0_1_5
+  real temp_0_1_5
+  real dlnppdlnrho_0_1_5
+  real fractions_0_1_5
+  real fractions1_0_1_5
+  real dlnppdss_0_1_5
+  real tt1_0_1_5
+  real lnrho__2_5
+  real yh__2_5
+  real lntt__2_5
+  real tt_2_5
+  real fractions_2_5
+  real exponent_2_5
+  real lnrho_0_2_5
+  real yh_0_2_5
+  real lntt_0_2_5
+  real r_0_2_5
+  real dlnttdy_0_2_5
+  real drdy_0_2_5
+  real temp_0_2_5
+  real dlnppdlnrho_0_2_5
+  real fractions_0_2_5
+  real fractions1_0_2_5
+  real dlnppdss_0_2_5
+  real tt1_0_2_5
+  real lnrho__1_6
+  real yh__1_6
+  real lntt__1_6
+  real tt_1_6
+  real fractions_1_6
+  real exponent_1_6
+  real lnrho_0_1_6
+  real yh_0_1_6
+  real lntt_0_1_6
+  real r_0_1_6
+  real dlnttdy_0_1_6
+  real drdy_0_1_6
+  real temp_0_1_6
+  real dlnppdlnrho_0_1_6
+  real fractions_0_1_6
+  real fractions1_0_1_6
+  real dlnppdss_0_1_6
+  real tt1_0_1_6
+  real lnrho__2_6
+  real yh__2_6
+  real lntt__2_6
+  real tt_2_6
+  real fractions_2_6
+  real exponent_2_6
+  real lnrho_0_2_6
+  real yh_0_2_6
+  real lntt_0_2_6
+  real r_0_2_6
+  real dlnttdy_0_2_6
+  real drdy_0_2_6
+  real temp_0_2_6
+  real dlnppdlnrho_0_2_6
+  real fractions_0_2_6
+  real fractions1_0_2_6
+  real dlnppdss_0_2_6
+  real tt1_0_2_6
+  real lnrho__1_7
+  real yh__1_7
+  real lntt__1_7
+  real tt_1_7
+  real fractions_1_7
+  real exponent_1_7
+  real lnrho_0_1_7
+  real yh_0_1_7
+  real lntt_0_1_7
+  real r_0_1_7
+  real dlnttdy_0_1_7
+  real drdy_0_1_7
+  real temp_0_1_7
+  real dlnppdlnrho_0_1_7
+  real fractions_0_1_7
+  real fractions1_0_1_7
+  real dlnppdss_0_1_7
+  real tt1_0_1_7
+  real lnrho__2_7
+  real yh__2_7
+  real lntt__2_7
+  real tt_2_7
+  real fractions_2_7
+  real exponent_2_7
+  real lnrho_0_2_7
+  real yh_0_2_7
+  real lntt_0_2_7
+  real r_0_2_7
+  real dlnttdy_0_2_7
+  real drdy_0_2_7
+  real temp_0_2_7
+  real dlnppdlnrho_0_2_7
+  real fractions_0_2_7
+  real fractions1_0_2_7
+  real dlnppdss_0_2_7
+  real tt1_0_2_7
+  real lnrho__1_8
+  real yh__1_8
+  real lntt__1_8
+  real tt_1_8
+  real fractions_1_8
+  real exponent_1_8
+  real lnrho_0_1_8
+  real yh_0_1_8
+  real lntt_0_1_8
+  real r_0_1_8
+  real dlnttdy_0_1_8
+  real drdy_0_1_8
+  real temp_0_1_8
+  real dlnppdlnrho_0_1_8
+  real fractions_0_1_8
+  real fractions1_0_1_8
+  real dlnppdss_0_1_8
+  real tt1_0_1_8
+  real lnrho__2_8
+  real yh__2_8
+  real lntt__2_8
+  real tt_2_8
+  real fractions_2_8
+  real exponent_2_8
+  real lnrho_0_2_8
+  real yh_0_2_8
+  real lntt_0_2_8
+  real r_0_2_8
+  real dlnttdy_0_2_8
+  real drdy_0_2_8
+  real temp_0_2_8
+  real dlnppdlnrho_0_2_8
+  real fractions_0_2_8
+  real fractions1_0_2_8
+  real dlnppdss_0_2_8
+  real tt1_0_2_8
+  real lnrho__1_9
+  real yh__1_9
+  real lntt__1_9
+  real tt_1_9
+  real fractions_1_9
+  real exponent_1_9
+  real lnrho_0_1_9
+  real yh_0_1_9
+  real lntt_0_1_9
+  real r_0_1_9
+  real dlnttdy_0_1_9
+  real drdy_0_1_9
+  real temp_0_1_9
+  real dlnppdlnrho_0_1_9
+  real fractions_0_1_9
+  real fractions1_0_1_9
+  real dlnppdss_0_1_9
+  real tt1_0_1_9
+  real lnrho__2_9
+  real yh__2_9
+  real lntt__2_9
+  real tt_2_9
+  real fractions_2_9
+  real exponent_2_9
+  real lnrho_0_2_9
+  real yh_0_2_9
+  real lntt_0_2_9
+  real r_0_2_9
+  real dlnttdy_0_2_9
+  real drdy_0_2_9
+  real temp_0_2_9
+  real dlnppdlnrho_0_2_9
+  real fractions_0_2_9
+  real fractions1_0_2_9
+  real dlnppdss_0_2_9
+  real tt1_0_2_9
+  real cubic_step_mn_return_value_10
+  real xi_10
+  real relshift_10
+  real lnrho__1_11
+  real yh__1_11
+  real lntt__1_11
+  real tt_1_11
+  real fractions_1_11
+  real exponent_1_11
+  real lnrho_0_1_11
+  real yh_0_1_11
+  real lntt_0_1_11
+  real r_0_1_11
+  real dlnttdy_0_1_11
+  real drdy_0_1_11
+  real temp_0_1_11
+  real dlnppdlnrho_0_1_11
+  real fractions_0_1_11
+  real fractions1_0_1_11
+  real dlnppdss_0_1_11
+  real tt1_0_1_11
+  real lnrho__2_11
+  real yh__2_11
+  real lntt__2_11
+  real tt_2_11
+  real fractions_2_11
+  real exponent_2_11
+  real lnrho_0_2_11
+  real yh_0_2_11
+  real lntt_0_2_11
+  real r_0_2_11
+  real dlnttdy_0_2_11
+  real drdy_0_2_11
+  real temp_0_2_11
+  real dlnppdlnrho_0_2_11
+  real fractions_0_2_11
+  real fractions1_0_2_11
+  real dlnppdss_0_2_11
+  real tt1_0_2_11
+  real lnrho__1_12
+  real yh__1_12
+  real lntt__1_12
+  real tt_1_12
+  real fractions_1_12
+  real exponent_1_12
+  real lnrho_0_1_12
+  real yh_0_1_12
+  real lntt_0_1_12
+  real r_0_1_12
+  real dlnttdy_0_1_12
+  real drdy_0_1_12
+  real temp_0_1_12
+  real dlnppdlnrho_0_1_12
+  real fractions_0_1_12
+  real fractions1_0_1_12
+  real dlnppdss_0_1_12
+  real tt1_0_1_12
+  real lnrho__2_12
+  real yh__2_12
+  real lntt__2_12
+  real tt_2_12
+  real fractions_2_12
+  real exponent_2_12
+  real lnrho_0_2_12
+  real yh_0_2_12
+  real lntt_0_2_12
+  real r_0_2_12
+  real dlnttdy_0_2_12
+  real drdy_0_2_12
+  real temp_0_2_12
+  real dlnppdlnrho_0_2_12
+  real fractions_0_2_12
+  real fractions1_0_2_12
+  real dlnppdss_0_2_12
+  real tt1_0_2_12
+  real lnrho__1_13
+  real yh__1_13
+  real lntt__1_13
+  real tt_1_13
+  real fractions_1_13
+  real exponent_1_13
+  real lnrho_0_1_13
+  real yh_0_1_13
+  real lntt_0_1_13
+  real r_0_1_13
+  real dlnttdy_0_1_13
+  real drdy_0_1_13
+  real temp_0_1_13
+  real dlnppdlnrho_0_1_13
+  real fractions_0_1_13
+  real fractions1_0_1_13
+  real dlnppdss_0_1_13
+  real tt1_0_1_13
+  real lnrho__2_13
+  real yh__2_13
+  real lntt__2_13
+  real tt_2_13
+  real fractions_2_13
+  real exponent_2_13
+  real lnrho_0_2_13
+  real yh_0_2_13
+  real lntt_0_2_13
+  real r_0_2_13
+  real dlnttdy_0_2_13
+  real drdy_0_2_13
+  real temp_0_2_13
+  real dlnppdlnrho_0_2_13
+  real fractions_0_2_13
+  real fractions1_0_2_13
+  real dlnppdss_0_2_13
+  real tt1_0_2_13
+  real lnrho__1_14
+  real yh__1_14
+  real lntt__1_14
+  real tt_1_14
+  real fractions_1_14
+  real exponent_1_14
+  real lnrho_0_1_14
+  real yh_0_1_14
+  real lntt_0_1_14
+  real r_0_1_14
+  real dlnttdy_0_1_14
+  real drdy_0_1_14
+  real temp_0_1_14
+  real dlnppdlnrho_0_1_14
+  real fractions_0_1_14
+  real fractions1_0_1_14
+  real dlnppdss_0_1_14
+  real tt1_0_1_14
+  real lnrho__2_14
+  real yh__2_14
+  real lntt__2_14
+  real tt_2_14
+  real fractions_2_14
+  real exponent_2_14
+  real lnrho_0_2_14
+  real yh_0_2_14
+  real lntt_0_2_14
+  real r_0_2_14
+  real dlnttdy_0_2_14
+  real drdy_0_2_14
+  real temp_0_2_14
+  real dlnppdlnrho_0_2_14
+  real fractions_0_2_14
+  real fractions1_0_2_14
+  real dlnppdss_0_2_14
+  real tt1_0_2_14
+  real lnrho__1_15
+  real yh__1_15
+  real lntt__1_15
+  real tt_1_15
+  real fractions_1_15
+  real exponent_1_15
+  real lnrho_0_1_15
+  real yh_0_1_15
+  real lntt_0_1_15
+  real r_0_1_15
+  real dlnttdy_0_1_15
+  real drdy_0_1_15
+  real temp_0_1_15
+  real dlnppdlnrho_0_1_15
+  real fractions_0_1_15
+  real fractions1_0_1_15
+  real dlnppdss_0_1_15
+  real tt1_0_1_15
+  real lnrho__2_15
+  real yh__2_15
+  real lntt__2_15
+  real tt_2_15
+  real fractions_2_15
+  real exponent_2_15
+  real lnrho_0_2_15
+  real yh_0_2_15
+  real lntt_0_2_15
+  real r_0_2_15
+  real dlnttdy_0_2_15
+  real drdy_0_2_15
+  real temp_0_2_15
+  real dlnppdlnrho_0_2_15
+  real fractions_0_2_15
+  real fractions1_0_2_15
+  real dlnppdss_0_2_15
+  real tt1_0_2_15
+  if(AC_enum_opacity_type__mod__radiation == enum_hminus_string) {
+    if(mx == nx) {
+      lnrho__1_3=value(Field(AC_ilnrho__mod__cdata-1))
+      yh__1_3   =value(Field(AC_iyh__mod__cdata-1))
+      lntt__1_3 =value(Field(AC_ilntt__mod__cdata-1))
+      if (false) {
+        lnrho_0_1_3=value(Field(AC_ilnrho__mod__cdata-1))
+        yh_0_1_3=value(Field(AC_iyh__mod__cdata-1))
+        lntt_0_1_3=value(Field(AC_ilntt__mod__cdata-1))
+        tt1_0_1_3=exp(-lntt_0_1_3)
+        fractions_0_1_3=1+yh_0_1_3+AC_xhe__mod__equationofstate
+        fractions1_0_1_3=1/fractions_0_1_3
+        r_0_1_3=AC_lnrho_e__mod__equationofstate-lnrho_0_1_3+1.5*(lntt_0_1_3-AC_lntt_ion__mod__equationofstate)-AC_tt_ion__mod__equationofstate*tt1_0_1_3+log(1-yh_0_1_3+epsi)-2*log(yh_0_1_3)
+        dlnttdy_0_1_3=(2*(-r_0_1_3-AC_tt_ion__mod__equationofstate*tt1_0_1_3)-3)/3*fractions1_0_1_3
+        drdy_0_1_3=dlnttdy_0_1_3*(1.5+AC_tt_ion__mod__equationofstate*tt1_0_1_3)-1/(1-yh_0_1_3+epsi)-2/yh_0_1_3
+        temp_0_1_3=(dlnttdy_0_1_3+fractions1_0_1_3)/drdy_0_1_3
+        dlnppdlnrho_0_1_3=(5-2*AC_tt_ion__mod__equationofstate*tt1_0_1_3*temp_0_1_3)/3
+        dlnppdss_0_1_3=AC_ss_ion1__mod__equationofstate*fractions1_0_1_3*(dlnppdlnrho_0_1_3-temp_0_1_3-1)
+      }
+      if (false || false || present(tmp)) {
+        tt_1_3=exp(lntt__1_3)
+      }
+      if (false || false) {
+        fractions_1_3=1+yh__1_3+AC_xhe__mod__equationofstate
+      }
+      if (present(tmp)) {
+        exponent_1_3 = (2*lnrho__1_3-AC_lnrho_e___mod__equationofstate+1.5*(AC_lntt_ion___mod__equationofstate-lntt__1_3)+AC_tt_ion___mod__equationofstate/tt_1_3)
+        exponent_1_3 = min(exponent_1_3,log(huge1)-5.)
+        tmp = exp(exponent_1_3 + log(yh__1_3+AC_ymetals__mod__equationofstate))*(1-yh__1_3)*AC_kappa0__mod__equationofstate
+      }
+    }
+    else if(mx == mx)   {
+      lnrho__2_3=value(Field(AC_ilnrho__mod__cdata-1))
+      yh__2_3   =value(Field(AC_iyh__mod__cdata-1))
+      lntt__2_3 =value(Field(AC_ilntt__mod__cdata-1))
+      if (false) {
+        lnrho_0_2_3=value(Field(AC_ilnrho__mod__cdata-1))
+        yh_0_2_3=value(Field(AC_iyh__mod__cdata-1))
+        lntt_0_2_3=value(Field(AC_ilntt__mod__cdata-1))
+        tt1_0_2_3=exp(-lntt_0_2_3)
+        fractions_0_2_3=1+yh_0_2_3+AC_xhe__mod__equationofstate
+        fractions1_0_2_3=1/fractions_0_2_3
+        r_0_2_3=AC_lnrho_e__mod__equationofstate-lnrho_0_2_3+1.5*(lntt_0_2_3-AC_lntt_ion__mod__equationofstate)-AC_tt_ion__mod__equationofstate*tt1_0_2_3+log(1-yh_0_2_3+epsi)-2*log(yh_0_2_3)
+        dlnttdy_0_2_3=(2*(-r_0_2_3-AC_tt_ion__mod__equationofstate*tt1_0_2_3)-3)/3*fractions1_0_2_3
+        drdy_0_2_3=dlnttdy_0_2_3*(1.5+AC_tt_ion__mod__equationofstate*tt1_0_2_3)-1/(1-yh_0_2_3+epsi)-2/yh_0_2_3
+        temp_0_2_3=(dlnttdy_0_2_3+fractions1_0_2_3)/drdy_0_2_3
+        dlnppdlnrho_0_2_3=(5-2*AC_tt_ion__mod__equationofstate*tt1_0_2_3*temp_0_2_3)/3
+        dlnppdss_0_2_3=AC_ss_ion1__mod__equationofstate*fractions1_0_2_3*(dlnppdlnrho_0_2_3-temp_0_2_3-1)
+      }
+      if (false || false || present(tmp)) {
+        tt_2_3=exp(lntt__2_3)
+      }
+      if (false || false) {
+        fractions_2_3=1+yh__2_3+AC_xhe__mod__equationofstate
+      }
+      if (present(tmp)) {
+        exponent_2_3 = (2*lnrho__2_3-AC_lnrho_e___mod__equationofstate+1.5*(AC_lntt_ion___mod__equationofstate-lntt__2_3)+AC_tt_ion___mod__equationofstate/tt_2_3)
+        exponent_2_3 = min(exponent_2_3,log(huge1)-5.)
+        tmp = exp(exponent_2_3 + log(yh__2_3+AC_ymetals__mod__equationofstate))*(1-yh__2_3)*AC_kappa0__mod__equationofstate
+      }
+    }
+    else {
+    }
+    DF_KAPPARHO=AC_kapparho_floor__mod__radiation+tmp*AC_scalefactor_kappa__mod__radiation[inu-1]
+  }
+  else if(AC_enum_opacity_type__mod__radiation == enum_total_rosseland_mean_string)   {
+    if(mx == nx) {
+      lnrho__1_4=value(Field(AC_ilnrho__mod__cdata-1))
+      yh__1_4   =value(Field(AC_iyh__mod__cdata-1))
+      lntt__1_4 =value(Field(AC_ilntt__mod__cdata-1))
+      if (present(lnrho)) {
+        lnrho=lnrho__1_4
+      }
+      if (false) {
+        lnrho_0_1_4=value(Field(AC_ilnrho__mod__cdata-1))
+        yh_0_1_4=value(Field(AC_iyh__mod__cdata-1))
+        lntt_0_1_4=value(Field(AC_ilntt__mod__cdata-1))
+        tt1_0_1_4=exp(-lntt_0_1_4)
+        fractions_0_1_4=1+yh_0_1_4+AC_xhe__mod__equationofstate
+        fractions1_0_1_4=1/fractions_0_1_4
+        r_0_1_4=AC_lnrho_e__mod__equationofstate-lnrho_0_1_4+1.5*(lntt_0_1_4-AC_lntt_ion__mod__equationofstate)-AC_tt_ion__mod__equationofstate*tt1_0_1_4+log(1-yh_0_1_4+epsi)-2*log(yh_0_1_4)
+        dlnttdy_0_1_4=(2*(-r_0_1_4-AC_tt_ion__mod__equationofstate*tt1_0_1_4)-3)/3*fractions1_0_1_4
+        drdy_0_1_4=dlnttdy_0_1_4*(1.5+AC_tt_ion__mod__equationofstate*tt1_0_1_4)-1/(1-yh_0_1_4+epsi)-2/yh_0_1_4
+        temp_0_1_4=(dlnttdy_0_1_4+fractions1_0_1_4)/drdy_0_1_4
+        dlnppdlnrho_0_1_4=(5-2*AC_tt_ion__mod__equationofstate*tt1_0_1_4*temp_0_1_4)/3
+        dlnppdss_0_1_4=AC_ss_ion1__mod__equationofstate*fractions1_0_1_4*(dlnppdlnrho_0_1_4-temp_0_1_4-1)
+      }
+      if (false || false || false) {
+        tt_1_4=exp(lntt__1_4)
+      }
+      if (false || false) {
+        fractions_1_4=1+yh__1_4+AC_xhe__mod__equationofstate
+      }
+      if (false) {
+        exponent_1_4 = (2*lnrho__1_4-AC_lnrho_e___mod__equationofstate+1.5*(AC_lntt_ion___mod__equationofstate-lntt__1_4)+AC_tt_ion___mod__equationofstate/tt_1_4)
+        exponent_1_4 = min(exponent_1_4,log(huge1)-5.)
+      }
+    }
+    else if(mx == mx)   {
+      lnrho__2_4=value(Field(AC_ilnrho__mod__cdata-1))
+      yh__2_4   =value(Field(AC_iyh__mod__cdata-1))
+      lntt__2_4 =value(Field(AC_ilntt__mod__cdata-1))
+      if (present(lnrho)) {
+        lnrho=lnrho__2_4
+      }
+      if (false) {
+        lnrho_0_2_4=value(Field(AC_ilnrho__mod__cdata-1))
+        yh_0_2_4=value(Field(AC_iyh__mod__cdata-1))
+        lntt_0_2_4=value(Field(AC_ilntt__mod__cdata-1))
+        tt1_0_2_4=exp(-lntt_0_2_4)
+        fractions_0_2_4=1+yh_0_2_4+AC_xhe__mod__equationofstate
+        fractions1_0_2_4=1/fractions_0_2_4
+        r_0_2_4=AC_lnrho_e__mod__equationofstate-lnrho_0_2_4+1.5*(lntt_0_2_4-AC_lntt_ion__mod__equationofstate)-AC_tt_ion__mod__equationofstate*tt1_0_2_4+log(1-yh_0_2_4+epsi)-2*log(yh_0_2_4)
+        dlnttdy_0_2_4=(2*(-r_0_2_4-AC_tt_ion__mod__equationofstate*tt1_0_2_4)-3)/3*fractions1_0_2_4
+        drdy_0_2_4=dlnttdy_0_2_4*(1.5+AC_tt_ion__mod__equationofstate*tt1_0_2_4)-1/(1-yh_0_2_4+epsi)-2/yh_0_2_4
+        temp_0_2_4=(dlnttdy_0_2_4+fractions1_0_2_4)/drdy_0_2_4
+        dlnppdlnrho_0_2_4=(5-2*AC_tt_ion__mod__equationofstate*tt1_0_2_4*temp_0_2_4)/3
+        dlnppdss_0_2_4=AC_ss_ion1__mod__equationofstate*fractions1_0_2_4*(dlnppdlnrho_0_2_4-temp_0_2_4-1)
+      }
+      if (false || false || false) {
+        tt_2_4=exp(lntt__2_4)
+      }
+      if (false || false) {
+        fractions_2_4=1+yh__2_4+AC_xhe__mod__equationofstate
+      }
+      if (false) {
+        exponent_2_4 = (2*lnrho__2_4-AC_lnrho_e___mod__equationofstate+1.5*(AC_lntt_ion___mod__equationofstate-lntt__2_4)+AC_tt_ion___mod__equationofstate/tt_2_4)
+        exponent_2_4 = min(exponent_2_4,log(huge1)-5.)
+      }
+    }
+    else {
+    }
+    if(mx == nx) {
+      lnrho__1_5=value(Field(AC_ilnrho__mod__cdata-1))
+      yh__1_5   =value(Field(AC_iyh__mod__cdata-1))
+      lntt__1_5 =value(Field(AC_ilntt__mod__cdata-1))
+      if (present(lntt)) {
+        lntt=lntt__1_5
+      }
+      if (false) {
+        lnrho_0_1_5=value(Field(AC_ilnrho__mod__cdata-1))
+        yh_0_1_5=value(Field(AC_iyh__mod__cdata-1))
+        lntt_0_1_5=value(Field(AC_ilntt__mod__cdata-1))
+        tt1_0_1_5=exp(-lntt_0_1_5)
+        fractions_0_1_5=1+yh_0_1_5+AC_xhe__mod__equationofstate
+        fractions1_0_1_5=1/fractions_0_1_5
+        r_0_1_5=AC_lnrho_e__mod__equationofstate-lnrho_0_1_5+1.5*(lntt_0_1_5-AC_lntt_ion__mod__equationofstate)-AC_tt_ion__mod__equationofstate*tt1_0_1_5+log(1-yh_0_1_5+epsi)-2*log(yh_0_1_5)
+        dlnttdy_0_1_5=(2*(-r_0_1_5-AC_tt_ion__mod__equationofstate*tt1_0_1_5)-3)/3*fractions1_0_1_5
+        drdy_0_1_5=dlnttdy_0_1_5*(1.5+AC_tt_ion__mod__equationofstate*tt1_0_1_5)-1/(1-yh_0_1_5+epsi)-2/yh_0_1_5
+        temp_0_1_5=(dlnttdy_0_1_5+fractions1_0_1_5)/drdy_0_1_5
+        dlnppdlnrho_0_1_5=(5-2*AC_tt_ion__mod__equationofstate*tt1_0_1_5*temp_0_1_5)/3
+        dlnppdss_0_1_5=AC_ss_ion1__mod__equationofstate*fractions1_0_1_5*(dlnppdlnrho_0_1_5-temp_0_1_5-1)
+      }
+      if (false || false || false) {
+        tt_1_5=exp(lntt__1_5)
+      }
+      if (false || false) {
+        fractions_1_5=1+yh__1_5+AC_xhe__mod__equationofstate
+      }
+      if (false) {
+        exponent_1_5 = (2*lnrho__1_5-AC_lnrho_e___mod__equationofstate+1.5*(AC_lntt_ion___mod__equationofstate-lntt__1_5)+AC_tt_ion___mod__equationofstate/tt_1_5)
+        exponent_1_5 = min(exponent_1_5,log(huge1)-5.)
+      }
+    }
+    else if(mx == mx)   {
+      lnrho__2_5=value(Field(AC_ilnrho__mod__cdata-1))
+      yh__2_5   =value(Field(AC_iyh__mod__cdata-1))
+      lntt__2_5 =value(Field(AC_ilntt__mod__cdata-1))
+      if (present(lntt)) {
+        lntt=lntt__2_5
+      }
+      if (false) {
+        lnrho_0_2_5=value(Field(AC_ilnrho__mod__cdata-1))
+        yh_0_2_5=value(Field(AC_iyh__mod__cdata-1))
+        lntt_0_2_5=value(Field(AC_ilntt__mod__cdata-1))
+        tt1_0_2_5=exp(-lntt_0_2_5)
+        fractions_0_2_5=1+yh_0_2_5+AC_xhe__mod__equationofstate
+        fractions1_0_2_5=1/fractions_0_2_5
+        r_0_2_5=AC_lnrho_e__mod__equationofstate-lnrho_0_2_5+1.5*(lntt_0_2_5-AC_lntt_ion__mod__equationofstate)-AC_tt_ion__mod__equationofstate*tt1_0_2_5+log(1-yh_0_2_5+epsi)-2*log(yh_0_2_5)
+        dlnttdy_0_2_5=(2*(-r_0_2_5-AC_tt_ion__mod__equationofstate*tt1_0_2_5)-3)/3*fractions1_0_2_5
+        drdy_0_2_5=dlnttdy_0_2_5*(1.5+AC_tt_ion__mod__equationofstate*tt1_0_2_5)-1/(1-yh_0_2_5+epsi)-2/yh_0_2_5
+        temp_0_2_5=(dlnttdy_0_2_5+fractions1_0_2_5)/drdy_0_2_5
+        dlnppdlnrho_0_2_5=(5-2*AC_tt_ion__mod__equationofstate*tt1_0_2_5*temp_0_2_5)/3
+        dlnppdss_0_2_5=AC_ss_ion1__mod__equationofstate*fractions1_0_2_5*(dlnppdlnrho_0_2_5-temp_0_2_5-1)
+      }
+      if (false || false || false) {
+        tt_2_5=exp(lntt__2_5)
+      }
+      if (false || false) {
+        fractions_2_5=1+yh__2_5+AC_xhe__mod__equationofstate
+      }
+      if (false) {
+        exponent_2_5 = (2*lnrho__2_5-AC_lnrho_e___mod__equationofstate+1.5*(AC_lntt_ion___mod__equationofstate-lntt__2_5)+AC_tt_ion___mod__equationofstate/tt_2_5)
+        exponent_2_5 = min(exponent_2_5,log(huge1)-5.)
+      }
+    }
+    else {
+    }
+    kappa1=4.0e25*1.7381*0.0135*(AC_unit_density__mod__cdata*AC_unit_density__mod__cdata)*AC_unit_length__mod__cdata*  exp(lnrho)*pow((exp(lntt)*AC_unit_temperature__mod__cdata),(-3.5))
+    kappa2=1.25d-29*0.0134*pow(AC_unit_density__mod__cdata,1.5)*AC_unit_length__mod__cdata*( AC_unit_temperature__mod__cdata* AC_unit_temperature__mod__cdata* AC_unit_temperature__mod__cdata* AC_unit_temperature__mod__cdata* AC_unit_temperature__mod__cdata* AC_unit_temperature__mod__cdata* AC_unit_temperature__mod__cdata* AC_unit_temperature__mod__cdata* AC_unit_temperature__mod__cdata)*exp(0.5*lnrho)*exp(9.0*lntt)
+    kappae=0.2*1.7381*pow((1.+2.7e11*exp(lnrho-2*lntt)*AC_unit_density__mod__cdata/(AC_unit_temperature__mod__cdata*AC_unit_temperature__mod__cdata)),(-1.))
+    kappa_cond=2.6e-7*AC_unit_length__mod__cdata*(AC_unit_temperature__mod__cdata*AC_unit_temperature__mod__cdata)*exp(2*lntt)*exp(-lnrho)
+    kappa_rad=AC_kapparho_floor__mod__radiation+1./(1./(kappa1+kappae)+1./kappa2)
+    kappa_tot=1./(1./kappa_rad+1./kappa_cond)
+    if (AC_lcutoff_opticallythin__mod__radiation  &&  AC_z__mod__cdata[AC_n__mod__cdata-1] > AC_z_cutoff__mod__radiation) {
+      kappa_tot=0.5*(1.-tanh((lntt-log(1.0e4))/log(2.0)))/(1./kappa_rad+1./kappa_cond)
+    }
+    kappa_tot = min(kappa_tot,AC_kappa_ceiling__mod__radiation)
+    DF_KAPPARHO=exp(lnrho)*kappa_tot*AC_scalefactor_kappa__mod__radiation[inu-1]
+  }
+  else if(AC_enum_opacity_type__mod__radiation == enum_kappa_es_string)   {
+    if(mx == nx) {
+      lnrho__1_6=value(Field(AC_ilnrho__mod__cdata-1))
+      yh__1_6   =value(Field(AC_iyh__mod__cdata-1))
+      lntt__1_6 =value(Field(AC_ilntt__mod__cdata-1))
+      if (present(lnrho)) {
+        lnrho=lnrho__1_6
+      }
+      if (false) {
+        lnrho_0_1_6=value(Field(AC_ilnrho__mod__cdata-1))
+        yh_0_1_6=value(Field(AC_iyh__mod__cdata-1))
+        lntt_0_1_6=value(Field(AC_ilntt__mod__cdata-1))
+        tt1_0_1_6=exp(-lntt_0_1_6)
+        fractions_0_1_6=1+yh_0_1_6+AC_xhe__mod__equationofstate
+        fractions1_0_1_6=1/fractions_0_1_6
+        r_0_1_6=AC_lnrho_e__mod__equationofstate-lnrho_0_1_6+1.5*(lntt_0_1_6-AC_lntt_ion__mod__equationofstate)-AC_tt_ion__mod__equationofstate*tt1_0_1_6+log(1-yh_0_1_6+epsi)-2*log(yh_0_1_6)
+        dlnttdy_0_1_6=(2*(-r_0_1_6-AC_tt_ion__mod__equationofstate*tt1_0_1_6)-3)/3*fractions1_0_1_6
+        drdy_0_1_6=dlnttdy_0_1_6*(1.5+AC_tt_ion__mod__equationofstate*tt1_0_1_6)-1/(1-yh_0_1_6+epsi)-2/yh_0_1_6
+        temp_0_1_6=(dlnttdy_0_1_6+fractions1_0_1_6)/drdy_0_1_6
+        dlnppdlnrho_0_1_6=(5-2*AC_tt_ion__mod__equationofstate*tt1_0_1_6*temp_0_1_6)/3
+        dlnppdss_0_1_6=AC_ss_ion1__mod__equationofstate*fractions1_0_1_6*(dlnppdlnrho_0_1_6-temp_0_1_6-1)
+      }
+      if (false || false || false) {
+        tt_1_6=exp(lntt__1_6)
+      }
+      if (false || false) {
+        fractions_1_6=1+yh__1_6+AC_xhe__mod__equationofstate
+      }
+      if (false) {
+        exponent_1_6 = (2*lnrho__1_6-AC_lnrho_e___mod__equationofstate+1.5*(AC_lntt_ion___mod__equationofstate-lntt__1_6)+AC_tt_ion___mod__equationofstate/tt_1_6)
+        exponent_1_6 = min(exponent_1_6,log(huge1)-5.)
+      }
+    }
+    else if(mx == mx)   {
+      lnrho__2_6=value(Field(AC_ilnrho__mod__cdata-1))
+      yh__2_6   =value(Field(AC_iyh__mod__cdata-1))
+      lntt__2_6 =value(Field(AC_ilntt__mod__cdata-1))
+      if (present(lnrho)) {
+        lnrho=lnrho__2_6
+      }
+      if (false) {
+        lnrho_0_2_6=value(Field(AC_ilnrho__mod__cdata-1))
+        yh_0_2_6=value(Field(AC_iyh__mod__cdata-1))
+        lntt_0_2_6=value(Field(AC_ilntt__mod__cdata-1))
+        tt1_0_2_6=exp(-lntt_0_2_6)
+        fractions_0_2_6=1+yh_0_2_6+AC_xhe__mod__equationofstate
+        fractions1_0_2_6=1/fractions_0_2_6
+        r_0_2_6=AC_lnrho_e__mod__equationofstate-lnrho_0_2_6+1.5*(lntt_0_2_6-AC_lntt_ion__mod__equationofstate)-AC_tt_ion__mod__equationofstate*tt1_0_2_6+log(1-yh_0_2_6+epsi)-2*log(yh_0_2_6)
+        dlnttdy_0_2_6=(2*(-r_0_2_6-AC_tt_ion__mod__equationofstate*tt1_0_2_6)-3)/3*fractions1_0_2_6
+        drdy_0_2_6=dlnttdy_0_2_6*(1.5+AC_tt_ion__mod__equationofstate*tt1_0_2_6)-1/(1-yh_0_2_6+epsi)-2/yh_0_2_6
+        temp_0_2_6=(dlnttdy_0_2_6+fractions1_0_2_6)/drdy_0_2_6
+        dlnppdlnrho_0_2_6=(5-2*AC_tt_ion__mod__equationofstate*tt1_0_2_6*temp_0_2_6)/3
+        dlnppdss_0_2_6=AC_ss_ion1__mod__equationofstate*fractions1_0_2_6*(dlnppdlnrho_0_2_6-temp_0_2_6-1)
+      }
+      if (false || false || false) {
+        tt_2_6=exp(lntt__2_6)
+      }
+      if (false || false) {
+        fractions_2_6=1+yh__2_6+AC_xhe__mod__equationofstate
+      }
+      if (false) {
+        exponent_2_6 = (2*lnrho__2_6-AC_lnrho_e___mod__equationofstate+1.5*(AC_lntt_ion___mod__equationofstate-lntt__2_6)+AC_tt_ion___mod__equationofstate/tt_2_6)
+        exponent_2_6 = min(exponent_2_6,log(huge1)-5.)
+      }
+    }
+    else {
+    }
+    DF_KAPPARHO=AC_kapparho_floor__mod__radiation+AC_kappa_es__mod__cdata*exp(lnrho)
+  }
+  else if(AC_enum_opacity_type__mod__radiation == enum_kappa_cst_string)   {
+    if(mx == nx) {
+      lnrho__1_7=value(Field(AC_ilnrho__mod__cdata-1))
+      yh__1_7   =value(Field(AC_iyh__mod__cdata-1))
+      lntt__1_7 =value(Field(AC_ilntt__mod__cdata-1))
+      if (present(lnrho)) {
+        lnrho=lnrho__1_7
+      }
+      if (false) {
+        lnrho_0_1_7=value(Field(AC_ilnrho__mod__cdata-1))
+        yh_0_1_7=value(Field(AC_iyh__mod__cdata-1))
+        lntt_0_1_7=value(Field(AC_ilntt__mod__cdata-1))
+        tt1_0_1_7=exp(-lntt_0_1_7)
+        fractions_0_1_7=1+yh_0_1_7+AC_xhe__mod__equationofstate
+        fractions1_0_1_7=1/fractions_0_1_7
+        r_0_1_7=AC_lnrho_e__mod__equationofstate-lnrho_0_1_7+1.5*(lntt_0_1_7-AC_lntt_ion__mod__equationofstate)-AC_tt_ion__mod__equationofstate*tt1_0_1_7+log(1-yh_0_1_7+epsi)-2*log(yh_0_1_7)
+        dlnttdy_0_1_7=(2*(-r_0_1_7-AC_tt_ion__mod__equationofstate*tt1_0_1_7)-3)/3*fractions1_0_1_7
+        drdy_0_1_7=dlnttdy_0_1_7*(1.5+AC_tt_ion__mod__equationofstate*tt1_0_1_7)-1/(1-yh_0_1_7+epsi)-2/yh_0_1_7
+        temp_0_1_7=(dlnttdy_0_1_7+fractions1_0_1_7)/drdy_0_1_7
+        dlnppdlnrho_0_1_7=(5-2*AC_tt_ion__mod__equationofstate*tt1_0_1_7*temp_0_1_7)/3
+        dlnppdss_0_1_7=AC_ss_ion1__mod__equationofstate*fractions1_0_1_7*(dlnppdlnrho_0_1_7-temp_0_1_7-1)
+      }
+      if (false || false || false) {
+        tt_1_7=exp(lntt__1_7)
+      }
+      if (false || false) {
+        fractions_1_7=1+yh__1_7+AC_xhe__mod__equationofstate
+      }
+      if (false) {
+        exponent_1_7 = (2*lnrho__1_7-AC_lnrho_e___mod__equationofstate+1.5*(AC_lntt_ion___mod__equationofstate-lntt__1_7)+AC_tt_ion___mod__equationofstate/tt_1_7)
+        exponent_1_7 = min(exponent_1_7,log(huge1)-5.)
+      }
+    }
+    else if(mx == mx)   {
+      lnrho__2_7=value(Field(AC_ilnrho__mod__cdata-1))
+      yh__2_7   =value(Field(AC_iyh__mod__cdata-1))
+      lntt__2_7 =value(Field(AC_ilntt__mod__cdata-1))
+      if (present(lnrho)) {
+        lnrho=lnrho__2_7
+      }
+      if (false) {
+        lnrho_0_2_7=value(Field(AC_ilnrho__mod__cdata-1))
+        yh_0_2_7=value(Field(AC_iyh__mod__cdata-1))
+        lntt_0_2_7=value(Field(AC_ilntt__mod__cdata-1))
+        tt1_0_2_7=exp(-lntt_0_2_7)
+        fractions_0_2_7=1+yh_0_2_7+AC_xhe__mod__equationofstate
+        fractions1_0_2_7=1/fractions_0_2_7
+        r_0_2_7=AC_lnrho_e__mod__equationofstate-lnrho_0_2_7+1.5*(lntt_0_2_7-AC_lntt_ion__mod__equationofstate)-AC_tt_ion__mod__equationofstate*tt1_0_2_7+log(1-yh_0_2_7+epsi)-2*log(yh_0_2_7)
+        dlnttdy_0_2_7=(2*(-r_0_2_7-AC_tt_ion__mod__equationofstate*tt1_0_2_7)-3)/3*fractions1_0_2_7
+        drdy_0_2_7=dlnttdy_0_2_7*(1.5+AC_tt_ion__mod__equationofstate*tt1_0_2_7)-1/(1-yh_0_2_7+epsi)-2/yh_0_2_7
+        temp_0_2_7=(dlnttdy_0_2_7+fractions1_0_2_7)/drdy_0_2_7
+        dlnppdlnrho_0_2_7=(5-2*AC_tt_ion__mod__equationofstate*tt1_0_2_7*temp_0_2_7)/3
+        dlnppdss_0_2_7=AC_ss_ion1__mod__equationofstate*fractions1_0_2_7*(dlnppdlnrho_0_2_7-temp_0_2_7-1)
+      }
+      if (false || false || false) {
+        tt_2_7=exp(lntt__2_7)
+      }
+      if (false || false) {
+        fractions_2_7=1+yh__2_7+AC_xhe__mod__equationofstate
+      }
+      if (false) {
+        exponent_2_7 = (2*lnrho__2_7-AC_lnrho_e___mod__equationofstate+1.5*(AC_lntt_ion___mod__equationofstate-lntt__2_7)+AC_tt_ion___mod__equationofstate/tt_2_7)
+        exponent_2_7 = min(exponent_2_7,log(huge1)-5.)
+      }
+    }
+    else {
+    }
+    DF_KAPPARHO=AC_kapparho_floor__mod__radiation+AC_kappa_cst__mod__radiation[inu-1]*exp(lnrho)
+  }
+  else if(AC_enum_opacity_type__mod__radiation == enum_kapparho_cst_string)   {
+    DF_KAPPARHO=AC_kapparho_floor__mod__radiation+AC_kapparho_cst__mod__radiation
+  }
+  else if(AC_enum_opacity_type__mod__radiation == enum_kappa_kconst_string)   {
+    kappa0=16./3.*AC_sigmasb__mod__cdata/AC_kappa_kconst__mod__radiation
+    if(mx == nx) {
+      lnrho__1_8=value(Field(AC_ilnrho__mod__cdata-1))
+      yh__1_8   =value(Field(AC_iyh__mod__cdata-1))
+      lntt__1_8 =value(Field(AC_ilntt__mod__cdata-1))
+      if (present(lntt)) {
+        lntt=lntt__1_8
+      }
+      if (false) {
+        lnrho_0_1_8=value(Field(AC_ilnrho__mod__cdata-1))
+        yh_0_1_8=value(Field(AC_iyh__mod__cdata-1))
+        lntt_0_1_8=value(Field(AC_ilntt__mod__cdata-1))
+        tt1_0_1_8=exp(-lntt_0_1_8)
+        fractions_0_1_8=1+yh_0_1_8+AC_xhe__mod__equationofstate
+        fractions1_0_1_8=1/fractions_0_1_8
+        r_0_1_8=AC_lnrho_e__mod__equationofstate-lnrho_0_1_8+1.5*(lntt_0_1_8-AC_lntt_ion__mod__equationofstate)-AC_tt_ion__mod__equationofstate*tt1_0_1_8+log(1-yh_0_1_8+epsi)-2*log(yh_0_1_8)
+        dlnttdy_0_1_8=(2*(-r_0_1_8-AC_tt_ion__mod__equationofstate*tt1_0_1_8)-3)/3*fractions1_0_1_8
+        drdy_0_1_8=dlnttdy_0_1_8*(1.5+AC_tt_ion__mod__equationofstate*tt1_0_1_8)-1/(1-yh_0_1_8+epsi)-2/yh_0_1_8
+        temp_0_1_8=(dlnttdy_0_1_8+fractions1_0_1_8)/drdy_0_1_8
+        dlnppdlnrho_0_1_8=(5-2*AC_tt_ion__mod__equationofstate*tt1_0_1_8*temp_0_1_8)/3
+        dlnppdss_0_1_8=AC_ss_ion1__mod__equationofstate*fractions1_0_1_8*(dlnppdlnrho_0_1_8-temp_0_1_8-1)
+      }
+      if (false || false || false) {
+        tt_1_8=exp(lntt__1_8)
+      }
+      if (false || false) {
+        fractions_1_8=1+yh__1_8+AC_xhe__mod__equationofstate
+      }
+      if (false) {
+        exponent_1_8 = (2*lnrho__1_8-AC_lnrho_e___mod__equationofstate+1.5*(AC_lntt_ion___mod__equationofstate-lntt__1_8)+AC_tt_ion___mod__equationofstate/tt_1_8)
+        exponent_1_8 = min(exponent_1_8,log(huge1)-5.)
+      }
+    }
+    else if(mx == mx)   {
+      lnrho__2_8=value(Field(AC_ilnrho__mod__cdata-1))
+      yh__2_8   =value(Field(AC_iyh__mod__cdata-1))
+      lntt__2_8 =value(Field(AC_ilntt__mod__cdata-1))
+      if (present(lntt)) {
+        lntt=lntt__2_8
+      }
+      if (false) {
+        lnrho_0_2_8=value(Field(AC_ilnrho__mod__cdata-1))
+        yh_0_2_8=value(Field(AC_iyh__mod__cdata-1))
+        lntt_0_2_8=value(Field(AC_ilntt__mod__cdata-1))
+        tt1_0_2_8=exp(-lntt_0_2_8)
+        fractions_0_2_8=1+yh_0_2_8+AC_xhe__mod__equationofstate
+        fractions1_0_2_8=1/fractions_0_2_8
+        r_0_2_8=AC_lnrho_e__mod__equationofstate-lnrho_0_2_8+1.5*(lntt_0_2_8-AC_lntt_ion__mod__equationofstate)-AC_tt_ion__mod__equationofstate*tt1_0_2_8+log(1-yh_0_2_8+epsi)-2*log(yh_0_2_8)
+        dlnttdy_0_2_8=(2*(-r_0_2_8-AC_tt_ion__mod__equationofstate*tt1_0_2_8)-3)/3*fractions1_0_2_8
+        drdy_0_2_8=dlnttdy_0_2_8*(1.5+AC_tt_ion__mod__equationofstate*tt1_0_2_8)-1/(1-yh_0_2_8+epsi)-2/yh_0_2_8
+        temp_0_2_8=(dlnttdy_0_2_8+fractions1_0_2_8)/drdy_0_2_8
+        dlnppdlnrho_0_2_8=(5-2*AC_tt_ion__mod__equationofstate*tt1_0_2_8*temp_0_2_8)/3
+        dlnppdss_0_2_8=AC_ss_ion1__mod__equationofstate*fractions1_0_2_8*(dlnppdlnrho_0_2_8-temp_0_2_8-1)
+      }
+      if (false || false || false) {
+        tt_2_8=exp(lntt__2_8)
+      }
+      if (false || false) {
+        fractions_2_8=1+yh__2_8+AC_xhe__mod__equationofstate
+      }
+      if (false) {
+        exponent_2_8 = (2*lnrho__2_8-AC_lnrho_e___mod__equationofstate+1.5*(AC_lntt_ion___mod__equationofstate-lntt__2_8)+AC_tt_ion___mod__equationofstate/tt_2_8)
+        exponent_2_8 = min(exponent_2_8,log(huge1)-5.)
+      }
+    }
+    else {
+    }
+    tt=exp(lntt)
+    DF_KAPPARHO=AC_kapparho_floor__mod__radiation+kappa0*(tt*tt*tt)
+  }
+  else if(AC_enum_opacity_type__mod__radiation == enum_kappa_power_law_string)   {
+    if(mx == nx) {
+      lnrho__1_9=value(Field(AC_ilnrho__mod__cdata-1))
+      yh__1_9   =value(Field(AC_iyh__mod__cdata-1))
+      lntt__1_9 =value(Field(AC_ilntt__mod__cdata-1))
+      if (present(lnrho)) {
+        lnrho=lnrho__1_9
+      }
+      if (present(lntt)) {
+        lntt=lntt__1_9
+      }
+      if (false) {
+        lnrho_0_1_9=value(Field(AC_ilnrho__mod__cdata-1))
+        yh_0_1_9=value(Field(AC_iyh__mod__cdata-1))
+        lntt_0_1_9=value(Field(AC_ilntt__mod__cdata-1))
+        tt1_0_1_9=exp(-lntt_0_1_9)
+        fractions_0_1_9=1+yh_0_1_9+AC_xhe__mod__equationofstate
+        fractions1_0_1_9=1/fractions_0_1_9
+        r_0_1_9=AC_lnrho_e__mod__equationofstate-lnrho_0_1_9+1.5*(lntt_0_1_9-AC_lntt_ion__mod__equationofstate)-AC_tt_ion__mod__equationofstate*tt1_0_1_9+log(1-yh_0_1_9+epsi)-2*log(yh_0_1_9)
+        dlnttdy_0_1_9=(2*(-r_0_1_9-AC_tt_ion__mod__equationofstate*tt1_0_1_9)-3)/3*fractions1_0_1_9
+        drdy_0_1_9=dlnttdy_0_1_9*(1.5+AC_tt_ion__mod__equationofstate*tt1_0_1_9)-1/(1-yh_0_1_9+epsi)-2/yh_0_1_9
+        temp_0_1_9=(dlnttdy_0_1_9+fractions1_0_1_9)/drdy_0_1_9
+        dlnppdlnrho_0_1_9=(5-2*AC_tt_ion__mod__equationofstate*tt1_0_1_9*temp_0_1_9)/3
+        dlnppdss_0_1_9=AC_ss_ion1__mod__equationofstate*fractions1_0_1_9*(dlnppdlnrho_0_1_9-temp_0_1_9-1)
+      }
+      if (false || false || false) {
+        tt_1_9=exp(lntt__1_9)
+      }
+      if (false || false) {
+        fractions_1_9=1+yh__1_9+AC_xhe__mod__equationofstate
+      }
+      if (false) {
+        exponent_1_9 = (2*lnrho__1_9-AC_lnrho_e___mod__equationofstate+1.5*(AC_lntt_ion___mod__equationofstate-lntt__1_9)+AC_tt_ion___mod__equationofstate/tt_1_9)
+        exponent_1_9 = min(exponent_1_9,log(huge1)-5.)
+      }
+    }
+    else if(mx == mx)   {
+      lnrho__2_9=value(Field(AC_ilnrho__mod__cdata-1))
+      yh__2_9   =value(Field(AC_iyh__mod__cdata-1))
+      lntt__2_9 =value(Field(AC_ilntt__mod__cdata-1))
+      if (present(lnrho)) {
+        lnrho=lnrho__2_9
+      }
+      if (present(lntt)) {
+        lntt=lntt__2_9
+      }
+      if (false) {
+        lnrho_0_2_9=value(Field(AC_ilnrho__mod__cdata-1))
+        yh_0_2_9=value(Field(AC_iyh__mod__cdata-1))
+        lntt_0_2_9=value(Field(AC_ilntt__mod__cdata-1))
+        tt1_0_2_9=exp(-lntt_0_2_9)
+        fractions_0_2_9=1+yh_0_2_9+AC_xhe__mod__equationofstate
+        fractions1_0_2_9=1/fractions_0_2_9
+        r_0_2_9=AC_lnrho_e__mod__equationofstate-lnrho_0_2_9+1.5*(lntt_0_2_9-AC_lntt_ion__mod__equationofstate)-AC_tt_ion__mod__equationofstate*tt1_0_2_9+log(1-yh_0_2_9+epsi)-2*log(yh_0_2_9)
+        dlnttdy_0_2_9=(2*(-r_0_2_9-AC_tt_ion__mod__equationofstate*tt1_0_2_9)-3)/3*fractions1_0_2_9
+        drdy_0_2_9=dlnttdy_0_2_9*(1.5+AC_tt_ion__mod__equationofstate*tt1_0_2_9)-1/(1-yh_0_2_9+epsi)-2/yh_0_2_9
+        temp_0_2_9=(dlnttdy_0_2_9+fractions1_0_2_9)/drdy_0_2_9
+        dlnppdlnrho_0_2_9=(5-2*AC_tt_ion__mod__equationofstate*tt1_0_2_9*temp_0_2_9)/3
+        dlnppdss_0_2_9=AC_ss_ion1__mod__equationofstate*fractions1_0_2_9*(dlnppdlnrho_0_2_9-temp_0_2_9-1)
+      }
+      if (false || false || false) {
+        tt_2_9=exp(lntt__2_9)
+      }
+      if (false || false) {
+        fractions_2_9=1+yh__2_9+AC_xhe__mod__equationofstate
+      }
+      if (false) {
+        exponent_2_9 = (2*lnrho__2_9-AC_lnrho_e___mod__equationofstate+1.5*(AC_lntt_ion___mod__equationofstate-lntt__2_9)+AC_tt_ion___mod__equationofstate/tt_2_9)
+        exponent_2_9 = min(exponent_2_9,log(huge1)-5.)
+      }
+    }
+    else {
+    }
+    rho=exp(lnrho)
+    tt=exp(lntt)
+    if (AC_knee_temp_opa__mod__radiation==0.0) {
+      DF_KAPPARHO=AC_kapparho_floor__mod__radiation+rho*AC_kappa_cst__mod__radiation[inu-1]*pow(  (rho/AC_ref_rho_opa__mod__radiation),AC_expo_rho_opa__mod__radiation)*pow(  (tt/AC_ref_temp_opa__mod__radiation),AC_expo_temp_opa__mod__radiation)
+    }
+    else {
+      if (false) {
+      }
+      else {
+        relshift_10=0.0
+      }
+      xi_10 = (tt-AC_knee_temp_opa__mod__radiation)/(AC_width_temp_opa__mod__radiation+tini) - relshift_10
+      xi_10 = max(xi_10,-1.0)
+      xi_10 = min(xi_10,1.0)
+      cubic_step_mn_return_value_10 = 0.5 + xi_10*(0.75-(xi_10*xi_10)*0.25)
+      profile=1.0-cubic_step_mn_return_value_10
+      DF_KAPPARHO=AC_kapparho_floor__mod__radiation+profile*rho*AC_kappa_cst__mod__radiation[inu-1]*pow(  (rho/AC_ref_rho_opa__mod__radiation),AC_expo_rho_opa__mod__radiation)*pow(  (tt/AC_ref_temp_opa__mod__radiation),AC_expo_temp_opa__mod__radiation) +  (1.0-profile)*rho*AC_kappa_cst__mod__radiation[inu-1]*pow(  (AC_knee_temp_opa__mod__radiation/AC_ref_temp_opa__mod__radiation),AC_expo_temp_opa__mod__radiation)*pow(  (tt/AC_knee_temp_opa__mod__radiation),AC_expo_temp_opa_buff__mod__radiation)
+    }
+  }
+  else if(AC_enum_opacity_type__mod__radiation == enum_kappa_double_power_law_string)   {
+    if(mx == nx) {
+      lnrho__1_11=value(Field(AC_ilnrho__mod__cdata-1))
+      yh__1_11   =value(Field(AC_iyh__mod__cdata-1))
+      lntt__1_11 =value(Field(AC_ilntt__mod__cdata-1))
+      if (present(lnrho)) {
+        lnrho=lnrho__1_11
+      }
+      if (present(lntt)) {
+        lntt=lntt__1_11
+      }
+      if (false) {
+        lnrho_0_1_11=value(Field(AC_ilnrho__mod__cdata-1))
+        yh_0_1_11=value(Field(AC_iyh__mod__cdata-1))
+        lntt_0_1_11=value(Field(AC_ilntt__mod__cdata-1))
+        tt1_0_1_11=exp(-lntt_0_1_11)
+        fractions_0_1_11=1+yh_0_1_11+AC_xhe__mod__equationofstate
+        fractions1_0_1_11=1/fractions_0_1_11
+        r_0_1_11=AC_lnrho_e__mod__equationofstate-lnrho_0_1_11+1.5*(lntt_0_1_11-AC_lntt_ion__mod__equationofstate)-AC_tt_ion__mod__equationofstate*tt1_0_1_11+log(1-yh_0_1_11+epsi)-2*log(yh_0_1_11)
+        dlnttdy_0_1_11=(2*(-r_0_1_11-AC_tt_ion__mod__equationofstate*tt1_0_1_11)-3)/3*fractions1_0_1_11
+        drdy_0_1_11=dlnttdy_0_1_11*(1.5+AC_tt_ion__mod__equationofstate*tt1_0_1_11)-1/(1-yh_0_1_11+epsi)-2/yh_0_1_11
+        temp_0_1_11=(dlnttdy_0_1_11+fractions1_0_1_11)/drdy_0_1_11
+        dlnppdlnrho_0_1_11=(5-2*AC_tt_ion__mod__equationofstate*tt1_0_1_11*temp_0_1_11)/3
+        dlnppdss_0_1_11=AC_ss_ion1__mod__equationofstate*fractions1_0_1_11*(dlnppdlnrho_0_1_11-temp_0_1_11-1)
+      }
+      if (false || false || false) {
+        tt_1_11=exp(lntt__1_11)
+      }
+      if (false || false) {
+        fractions_1_11=1+yh__1_11+AC_xhe__mod__equationofstate
+      }
+      if (false) {
+        exponent_1_11 = (2*lnrho__1_11-AC_lnrho_e___mod__equationofstate+1.5*(AC_lntt_ion___mod__equationofstate-lntt__1_11)+AC_tt_ion___mod__equationofstate/tt_1_11)
+        exponent_1_11 = min(exponent_1_11,log(huge1)-5.)
+      }
+    }
+    else if(mx == mx)   {
+      lnrho__2_11=value(Field(AC_ilnrho__mod__cdata-1))
+      yh__2_11   =value(Field(AC_iyh__mod__cdata-1))
+      lntt__2_11 =value(Field(AC_ilntt__mod__cdata-1))
+      if (present(lnrho)) {
+        lnrho=lnrho__2_11
+      }
+      if (present(lntt)) {
+        lntt=lntt__2_11
+      }
+      if (false) {
+        lnrho_0_2_11=value(Field(AC_ilnrho__mod__cdata-1))
+        yh_0_2_11=value(Field(AC_iyh__mod__cdata-1))
+        lntt_0_2_11=value(Field(AC_ilntt__mod__cdata-1))
+        tt1_0_2_11=exp(-lntt_0_2_11)
+        fractions_0_2_11=1+yh_0_2_11+AC_xhe__mod__equationofstate
+        fractions1_0_2_11=1/fractions_0_2_11
+        r_0_2_11=AC_lnrho_e__mod__equationofstate-lnrho_0_2_11+1.5*(lntt_0_2_11-AC_lntt_ion__mod__equationofstate)-AC_tt_ion__mod__equationofstate*tt1_0_2_11+log(1-yh_0_2_11+epsi)-2*log(yh_0_2_11)
+        dlnttdy_0_2_11=(2*(-r_0_2_11-AC_tt_ion__mod__equationofstate*tt1_0_2_11)-3)/3*fractions1_0_2_11
+        drdy_0_2_11=dlnttdy_0_2_11*(1.5+AC_tt_ion__mod__equationofstate*tt1_0_2_11)-1/(1-yh_0_2_11+epsi)-2/yh_0_2_11
+        temp_0_2_11=(dlnttdy_0_2_11+fractions1_0_2_11)/drdy_0_2_11
+        dlnppdlnrho_0_2_11=(5-2*AC_tt_ion__mod__equationofstate*tt1_0_2_11*temp_0_2_11)/3
+        dlnppdss_0_2_11=AC_ss_ion1__mod__equationofstate*fractions1_0_2_11*(dlnppdlnrho_0_2_11-temp_0_2_11-1)
+      }
+      if (false || false || false) {
+        tt_2_11=exp(lntt__2_11)
+      }
+      if (false || false) {
+        fractions_2_11=1+yh__2_11+AC_xhe__mod__equationofstate
+      }
+      if (false) {
+        exponent_2_11 = (2*lnrho__2_11-AC_lnrho_e___mod__equationofstate+1.5*(AC_lntt_ion___mod__equationofstate-lntt__2_11)+AC_tt_ion___mod__equationofstate/tt_2_11)
+        exponent_2_11 = min(exponent_2_11,log(huge1)-5.)
+      }
+    }
+    else {
+    }
+    rho=exp(lnrho)
+    tt=exp(lntt)
+    kappa1=AC_kappa_cst__mod__radiation[inu-1]*pow((rho/AC_ref_rho_opa__mod__radiation),AC_expo_rho_opa__mod__radiation)*pow(  (tt/AC_ref_temp_opa__mod__radiation),AC_expo_temp_opa__mod__radiation)
+    kappa2=AC_kappa20_cst__mod__radiation[inu-1]+AC_kappa_cst__mod__radiation[inu-1]*pow((rho/AC_ref_rho_opa__mod__radiation),AC_expo2_rho_opa__mod__radiation)*pow(  (tt/AC_ref_temp_opa__mod__radiation),AC_expo2_temp_opa__mod__radiation)
+    DF_KAPPARHO= AC_kapparho_floor__mod__radiation+rho/(1./kappa1+1./kappa2)  *(1.+AC_ampl_bump__mod__radiation*exp(-0.5*(((tt-AC_tt_bump__mod__radiation)/AC_sigma_bump__mod__radiation)*((tt-AC_tt_bump__mod__radiation)/AC_sigma_bump__mod__radiation))))
+  }
+  else if(AC_enum_opacity_type__mod__radiation == enum_tsquare_string)   {
+    kappa0_cgs=2e-4
+    kappa0=kappa0_cgs
+    if(mx == nx) {
+      lnrho__1_12=value(Field(AC_ilnrho__mod__cdata-1))
+      yh__1_12   =value(Field(AC_iyh__mod__cdata-1))
+      lntt__1_12 =value(Field(AC_ilntt__mod__cdata-1))
+      if (present(lnrho)) {
+        lnrho=lnrho__1_12
+      }
+      if (present(lntt)) {
+        lntt=lntt__1_12
+      }
+      if (false) {
+        lnrho_0_1_12=value(Field(AC_ilnrho__mod__cdata-1))
+        yh_0_1_12=value(Field(AC_iyh__mod__cdata-1))
+        lntt_0_1_12=value(Field(AC_ilntt__mod__cdata-1))
+        tt1_0_1_12=exp(-lntt_0_1_12)
+        fractions_0_1_12=1+yh_0_1_12+AC_xhe__mod__equationofstate
+        fractions1_0_1_12=1/fractions_0_1_12
+        r_0_1_12=AC_lnrho_e__mod__equationofstate-lnrho_0_1_12+1.5*(lntt_0_1_12-AC_lntt_ion__mod__equationofstate)-AC_tt_ion__mod__equationofstate*tt1_0_1_12+log(1-yh_0_1_12+epsi)-2*log(yh_0_1_12)
+        dlnttdy_0_1_12=(2*(-r_0_1_12-AC_tt_ion__mod__equationofstate*tt1_0_1_12)-3)/3*fractions1_0_1_12
+        drdy_0_1_12=dlnttdy_0_1_12*(1.5+AC_tt_ion__mod__equationofstate*tt1_0_1_12)-1/(1-yh_0_1_12+epsi)-2/yh_0_1_12
+        temp_0_1_12=(dlnttdy_0_1_12+fractions1_0_1_12)/drdy_0_1_12
+        dlnppdlnrho_0_1_12=(5-2*AC_tt_ion__mod__equationofstate*tt1_0_1_12*temp_0_1_12)/3
+        dlnppdss_0_1_12=AC_ss_ion1__mod__equationofstate*fractions1_0_1_12*(dlnppdlnrho_0_1_12-temp_0_1_12-1)
+      }
+      if (false || false || false) {
+        tt_1_12=exp(lntt__1_12)
+      }
+      if (false || false) {
+        fractions_1_12=1+yh__1_12+AC_xhe__mod__equationofstate
+      }
+      if (false) {
+        exponent_1_12 = (2*lnrho__1_12-AC_lnrho_e___mod__equationofstate+1.5*(AC_lntt_ion___mod__equationofstate-lntt__1_12)+AC_tt_ion___mod__equationofstate/tt_1_12)
+        exponent_1_12 = min(exponent_1_12,log(huge1)-5.)
+      }
+    }
+    else if(mx == mx)   {
+      lnrho__2_12=value(Field(AC_ilnrho__mod__cdata-1))
+      yh__2_12   =value(Field(AC_iyh__mod__cdata-1))
+      lntt__2_12 =value(Field(AC_ilntt__mod__cdata-1))
+      if (present(lnrho)) {
+        lnrho=lnrho__2_12
+      }
+      if (present(lntt)) {
+        lntt=lntt__2_12
+      }
+      if (false) {
+        lnrho_0_2_12=value(Field(AC_ilnrho__mod__cdata-1))
+        yh_0_2_12=value(Field(AC_iyh__mod__cdata-1))
+        lntt_0_2_12=value(Field(AC_ilntt__mod__cdata-1))
+        tt1_0_2_12=exp(-lntt_0_2_12)
+        fractions_0_2_12=1+yh_0_2_12+AC_xhe__mod__equationofstate
+        fractions1_0_2_12=1/fractions_0_2_12
+        r_0_2_12=AC_lnrho_e__mod__equationofstate-lnrho_0_2_12+1.5*(lntt_0_2_12-AC_lntt_ion__mod__equationofstate)-AC_tt_ion__mod__equationofstate*tt1_0_2_12+log(1-yh_0_2_12+epsi)-2*log(yh_0_2_12)
+        dlnttdy_0_2_12=(2*(-r_0_2_12-AC_tt_ion__mod__equationofstate*tt1_0_2_12)-3)/3*fractions1_0_2_12
+        drdy_0_2_12=dlnttdy_0_2_12*(1.5+AC_tt_ion__mod__equationofstate*tt1_0_2_12)-1/(1-yh_0_2_12+epsi)-2/yh_0_2_12
+        temp_0_2_12=(dlnttdy_0_2_12+fractions1_0_2_12)/drdy_0_2_12
+        dlnppdlnrho_0_2_12=(5-2*AC_tt_ion__mod__equationofstate*tt1_0_2_12*temp_0_2_12)/3
+        dlnppdss_0_2_12=AC_ss_ion1__mod__equationofstate*fractions1_0_2_12*(dlnppdlnrho_0_2_12-temp_0_2_12-1)
+      }
+      if (false || false || false) {
+        tt_2_12=exp(lntt__2_12)
+      }
+      if (false || false) {
+        fractions_2_12=1+yh__2_12+AC_xhe__mod__equationofstate
+      }
+      if (false) {
+        exponent_2_12 = (2*lnrho__2_12-AC_lnrho_e___mod__equationofstate+1.5*(AC_lntt_ion___mod__equationofstate-lntt__2_12)+AC_tt_ion___mod__equationofstate/tt_2_12)
+        exponent_2_12 = min(exponent_2_12,log(huge1)-5.)
+      }
+    }
+    else {
+    }
+    DF_KAPPARHO=AC_kapparho_floor__mod__radiation+exp(lnrho)*kappa0*(((exp(lntt))*(exp(lntt))))
+  }
+  else if(AC_enum_opacity_type__mod__radiation == enum_kramers_string)   {
+    kappa0_cgs=6.6e22
+    kappa0=kappa0_cgs
+    if(mx == nx) {
+      lnrho__1_13=value(Field(AC_ilnrho__mod__cdata-1))
+      yh__1_13   =value(Field(AC_iyh__mod__cdata-1))
+      lntt__1_13 =value(Field(AC_ilntt__mod__cdata-1))
+      if (present(lnrho)) {
+        lnrho=lnrho__1_13
+      }
+      if (present(lntt)) {
+        lntt=lntt__1_13
+      }
+      if (false) {
+        lnrho_0_1_13=value(Field(AC_ilnrho__mod__cdata-1))
+        yh_0_1_13=value(Field(AC_iyh__mod__cdata-1))
+        lntt_0_1_13=value(Field(AC_ilntt__mod__cdata-1))
+        tt1_0_1_13=exp(-lntt_0_1_13)
+        fractions_0_1_13=1+yh_0_1_13+AC_xhe__mod__equationofstate
+        fractions1_0_1_13=1/fractions_0_1_13
+        r_0_1_13=AC_lnrho_e__mod__equationofstate-lnrho_0_1_13+1.5*(lntt_0_1_13-AC_lntt_ion__mod__equationofstate)-AC_tt_ion__mod__equationofstate*tt1_0_1_13+log(1-yh_0_1_13+epsi)-2*log(yh_0_1_13)
+        dlnttdy_0_1_13=(2*(-r_0_1_13-AC_tt_ion__mod__equationofstate*tt1_0_1_13)-3)/3*fractions1_0_1_13
+        drdy_0_1_13=dlnttdy_0_1_13*(1.5+AC_tt_ion__mod__equationofstate*tt1_0_1_13)-1/(1-yh_0_1_13+epsi)-2/yh_0_1_13
+        temp_0_1_13=(dlnttdy_0_1_13+fractions1_0_1_13)/drdy_0_1_13
+        dlnppdlnrho_0_1_13=(5-2*AC_tt_ion__mod__equationofstate*tt1_0_1_13*temp_0_1_13)/3
+        dlnppdss_0_1_13=AC_ss_ion1__mod__equationofstate*fractions1_0_1_13*(dlnppdlnrho_0_1_13-temp_0_1_13-1)
+      }
+      if (false || false || false) {
+        tt_1_13=exp(lntt__1_13)
+      }
+      if (false || false) {
+        fractions_1_13=1+yh__1_13+AC_xhe__mod__equationofstate
+      }
+      if (false) {
+        exponent_1_13 = (2*lnrho__1_13-AC_lnrho_e___mod__equationofstate+1.5*(AC_lntt_ion___mod__equationofstate-lntt__1_13)+AC_tt_ion___mod__equationofstate/tt_1_13)
+        exponent_1_13 = min(exponent_1_13,log(huge1)-5.)
+      }
+    }
+    else if(mx == mx)   {
+      lnrho__2_13=value(Field(AC_ilnrho__mod__cdata-1))
+      yh__2_13   =value(Field(AC_iyh__mod__cdata-1))
+      lntt__2_13 =value(Field(AC_ilntt__mod__cdata-1))
+      if (present(lnrho)) {
+        lnrho=lnrho__2_13
+      }
+      if (present(lntt)) {
+        lntt=lntt__2_13
+      }
+      if (false) {
+        lnrho_0_2_13=value(Field(AC_ilnrho__mod__cdata-1))
+        yh_0_2_13=value(Field(AC_iyh__mod__cdata-1))
+        lntt_0_2_13=value(Field(AC_ilntt__mod__cdata-1))
+        tt1_0_2_13=exp(-lntt_0_2_13)
+        fractions_0_2_13=1+yh_0_2_13+AC_xhe__mod__equationofstate
+        fractions1_0_2_13=1/fractions_0_2_13
+        r_0_2_13=AC_lnrho_e__mod__equationofstate-lnrho_0_2_13+1.5*(lntt_0_2_13-AC_lntt_ion__mod__equationofstate)-AC_tt_ion__mod__equationofstate*tt1_0_2_13+log(1-yh_0_2_13+epsi)-2*log(yh_0_2_13)
+        dlnttdy_0_2_13=(2*(-r_0_2_13-AC_tt_ion__mod__equationofstate*tt1_0_2_13)-3)/3*fractions1_0_2_13
+        drdy_0_2_13=dlnttdy_0_2_13*(1.5+AC_tt_ion__mod__equationofstate*tt1_0_2_13)-1/(1-yh_0_2_13+epsi)-2/yh_0_2_13
+        temp_0_2_13=(dlnttdy_0_2_13+fractions1_0_2_13)/drdy_0_2_13
+        dlnppdlnrho_0_2_13=(5-2*AC_tt_ion__mod__equationofstate*tt1_0_2_13*temp_0_2_13)/3
+        dlnppdss_0_2_13=AC_ss_ion1__mod__equationofstate*fractions1_0_2_13*(dlnppdlnrho_0_2_13-temp_0_2_13-1)
+      }
+      if (false || false || false) {
+        tt_2_13=exp(lntt__2_13)
+      }
+      if (false || false) {
+        fractions_2_13=1+yh__2_13+AC_xhe__mod__equationofstate
+      }
+      if (false) {
+        exponent_2_13 = (2*lnrho__2_13-AC_lnrho_e___mod__equationofstate+1.5*(AC_lntt_ion___mod__equationofstate-lntt__2_13)+AC_tt_ion___mod__equationofstate/tt_2_13)
+        exponent_2_13 = min(exponent_2_13,log(huge1)-5.)
+      }
+    }
+    else {
+    }
+    DF_KAPPARHO=AC_kapparho_floor__mod__radiation+kappa0*((exp(lnrho)*exp(lnrho)))*pow((exp(lntt)),(-3.5))
+  }
+  else if(AC_enum_opacity_type__mod__radiation == enum_dustzinfrared_string)   {
+    if(mx == nx) {
+      lnrho__1_14=value(Field(AC_ilnrho__mod__cdata-1))
+      yh__1_14   =value(Field(AC_iyh__mod__cdata-1))
+      lntt__1_14 =value(Field(AC_ilntt__mod__cdata-1))
+      if (present(lnrho)) {
+        lnrho=lnrho__1_14
+      }
+      if (present(lntt)) {
+        lntt=lntt__1_14
+      }
+      if (false) {
+        lnrho_0_1_14=value(Field(AC_ilnrho__mod__cdata-1))
+        yh_0_1_14=value(Field(AC_iyh__mod__cdata-1))
+        lntt_0_1_14=value(Field(AC_ilntt__mod__cdata-1))
+        tt1_0_1_14=exp(-lntt_0_1_14)
+        fractions_0_1_14=1+yh_0_1_14+AC_xhe__mod__equationofstate
+        fractions1_0_1_14=1/fractions_0_1_14
+        r_0_1_14=AC_lnrho_e__mod__equationofstate-lnrho_0_1_14+1.5*(lntt_0_1_14-AC_lntt_ion__mod__equationofstate)-AC_tt_ion__mod__equationofstate*tt1_0_1_14+log(1-yh_0_1_14+epsi)-2*log(yh_0_1_14)
+        dlnttdy_0_1_14=(2*(-r_0_1_14-AC_tt_ion__mod__equationofstate*tt1_0_1_14)-3)/3*fractions1_0_1_14
+        drdy_0_1_14=dlnttdy_0_1_14*(1.5+AC_tt_ion__mod__equationofstate*tt1_0_1_14)-1/(1-yh_0_1_14+epsi)-2/yh_0_1_14
+        temp_0_1_14=(dlnttdy_0_1_14+fractions1_0_1_14)/drdy_0_1_14
+        dlnppdlnrho_0_1_14=(5-2*AC_tt_ion__mod__equationofstate*tt1_0_1_14*temp_0_1_14)/3
+        dlnppdss_0_1_14=AC_ss_ion1__mod__equationofstate*fractions1_0_1_14*(dlnppdlnrho_0_1_14-temp_0_1_14-1)
+      }
+      if (false || false || false) {
+        tt_1_14=exp(lntt__1_14)
+      }
+      if (false || false) {
+        fractions_1_14=1+yh__1_14+AC_xhe__mod__equationofstate
+      }
+      if (false) {
+        exponent_1_14 = (2*lnrho__1_14-AC_lnrho_e___mod__equationofstate+1.5*(AC_lntt_ion___mod__equationofstate-lntt__1_14)+AC_tt_ion___mod__equationofstate/tt_1_14)
+        exponent_1_14 = min(exponent_1_14,log(huge1)-5.)
+      }
+    }
+    else if(mx == mx)   {
+      lnrho__2_14=value(Field(AC_ilnrho__mod__cdata-1))
+      yh__2_14   =value(Field(AC_iyh__mod__cdata-1))
+      lntt__2_14 =value(Field(AC_ilntt__mod__cdata-1))
+      if (present(lnrho)) {
+        lnrho=lnrho__2_14
+      }
+      if (present(lntt)) {
+        lntt=lntt__2_14
+      }
+      if (false) {
+        lnrho_0_2_14=value(Field(AC_ilnrho__mod__cdata-1))
+        yh_0_2_14=value(Field(AC_iyh__mod__cdata-1))
+        lntt_0_2_14=value(Field(AC_ilntt__mod__cdata-1))
+        tt1_0_2_14=exp(-lntt_0_2_14)
+        fractions_0_2_14=1+yh_0_2_14+AC_xhe__mod__equationofstate
+        fractions1_0_2_14=1/fractions_0_2_14
+        r_0_2_14=AC_lnrho_e__mod__equationofstate-lnrho_0_2_14+1.5*(lntt_0_2_14-AC_lntt_ion__mod__equationofstate)-AC_tt_ion__mod__equationofstate*tt1_0_2_14+log(1-yh_0_2_14+epsi)-2*log(yh_0_2_14)
+        dlnttdy_0_2_14=(2*(-r_0_2_14-AC_tt_ion__mod__equationofstate*tt1_0_2_14)-3)/3*fractions1_0_2_14
+        drdy_0_2_14=dlnttdy_0_2_14*(1.5+AC_tt_ion__mod__equationofstate*tt1_0_2_14)-1/(1-yh_0_2_14+epsi)-2/yh_0_2_14
+        temp_0_2_14=(dlnttdy_0_2_14+fractions1_0_2_14)/drdy_0_2_14
+        dlnppdlnrho_0_2_14=(5-2*AC_tt_ion__mod__equationofstate*tt1_0_2_14*temp_0_2_14)/3
+        dlnppdss_0_2_14=AC_ss_ion1__mod__equationofstate*fractions1_0_2_14*(dlnppdlnrho_0_2_14-temp_0_2_14-1)
+      }
+      if (false || false || false) {
+        tt_2_14=exp(lntt__2_14)
+      }
+      if (false || false) {
+        fractions_2_14=1+yh__2_14+AC_xhe__mod__equationofstate
+      }
+      if (false) {
+        exponent_2_14 = (2*lnrho__2_14-AC_lnrho_e___mod__equationofstate+1.5*(AC_lntt_ion___mod__equationofstate-lntt__2_14)+AC_tt_ion___mod__equationofstate/tt_2_14)
+        exponent_2_14 = min(exponent_2_14,log(huge1)-5.)
+      }
+    }
+    else {
+    }
+    if (exp(lntt) <= 150) {
+      tmp=2e-4*(exp(lntt)*exp(lntt))
+    }
+    else if(exp(lntt)>=200) {
+      tmp=exp(0.861353*lntt-4.56372)
+    }
+    else {
+      tmp=exp(-5.22826*lntt+27.7010)
+    }
+    DF_KAPPARHO=AC_kapparho_floor__mod__radiation+exp(lnrho)*tmp
+  }
+  else if(AC_enum_opacity_type__mod__radiation == enum_blob_string)   {
+    if (lfirst) {
+      DF_KAPPARHO=AC_kapparho_floor__mod__radiation+AC_kapparho_const__mod__radiation + AC_amplkapparho__mod__radiation  *exp(-((AC_x__mod__cdata[vertexIdx.x]/AC_radius_kapparho__mod__radiation)*(AC_x__mod__cdata[vertexIdx.x]/AC_radius_kapparho__mod__radiation)))  *exp(-((AC_y__mod__cdata[vertexIdx.y]/AC_radius_kapparho__mod__radiation)*(AC_y__mod__cdata[vertexIdx.y]/AC_radius_kapparho__mod__radiation)))  *exp(-((AC_z__mod__cdata[vertexIdx.z]/AC_radius_kapparho__mod__radiation)*(AC_z__mod__cdata[vertexIdx.z]/AC_radius_kapparho__mod__radiation)))
+      lfirst=false
+    }
+  }
+  else if(AC_enum_opacity_type__mod__radiation == enum_cos_string)   {
+    if (lfirst) {
+      DF_KAPPARHO=AC_kapparho_floor__mod__radiation+AC_kapparho_const__mod__radiation + AC_amplkapparho__mod__radiation  *cos(AC_kx_kapparho__mod__radiation*AC_x__mod__cdata[vertexIdx.x])  *cos(AC_ky_kapparho__mod__radiation*AC_y__mod__cdata[vertexIdx.y])  *cos(AC_kz_kapparho__mod__radiation*AC_z__mod__cdata[vertexIdx.z])
+      lfirst=false
+    }
+  }
+  else if(AC_enum_opacity_type__mod__radiation == enum_rad_ionization_string)   {
+    if(mx == nx) {
+      lnrho__1_15=value(Field(AC_ilnrho__mod__cdata-1))
+      yh__1_15   =value(Field(AC_iyh__mod__cdata-1))
+      lntt__1_15 =value(Field(AC_ilntt__mod__cdata-1))
+      if (present(lnrho)) {
+        lnrho=lnrho__1_15
+      }
+      if (present(yh)) {
+        yh=yh__1_15
+      }
+      if (false) {
+        lnrho_0_1_15=value(Field(AC_ilnrho__mod__cdata-1))
+        yh_0_1_15=value(Field(AC_iyh__mod__cdata-1))
+        lntt_0_1_15=value(Field(AC_ilntt__mod__cdata-1))
+        tt1_0_1_15=exp(-lntt_0_1_15)
+        fractions_0_1_15=1+yh_0_1_15+AC_xhe__mod__equationofstate
+        fractions1_0_1_15=1/fractions_0_1_15
+        r_0_1_15=AC_lnrho_e__mod__equationofstate-lnrho_0_1_15+1.5*(lntt_0_1_15-AC_lntt_ion__mod__equationofstate)-AC_tt_ion__mod__equationofstate*tt1_0_1_15+log(1-yh_0_1_15+epsi)-2*log(yh_0_1_15)
+        dlnttdy_0_1_15=(2*(-r_0_1_15-AC_tt_ion__mod__equationofstate*tt1_0_1_15)-3)/3*fractions1_0_1_15
+        drdy_0_1_15=dlnttdy_0_1_15*(1.5+AC_tt_ion__mod__equationofstate*tt1_0_1_15)-1/(1-yh_0_1_15+epsi)-2/yh_0_1_15
+        temp_0_1_15=(dlnttdy_0_1_15+fractions1_0_1_15)/drdy_0_1_15
+        dlnppdlnrho_0_1_15=(5-2*AC_tt_ion__mod__equationofstate*tt1_0_1_15*temp_0_1_15)/3
+        dlnppdss_0_1_15=AC_ss_ion1__mod__equationofstate*fractions1_0_1_15*(dlnppdlnrho_0_1_15-temp_0_1_15-1)
+      }
+      if (false || false || false) {
+        tt_1_15=exp(lntt__1_15)
+      }
+      if (false || false) {
+        fractions_1_15=1+yh__1_15+AC_xhe__mod__equationofstate
+      }
+      if (false) {
+        exponent_1_15 = (2*lnrho__1_15-AC_lnrho_e___mod__equationofstate+1.5*(AC_lntt_ion___mod__equationofstate-lntt__1_15)+AC_tt_ion___mod__equationofstate/tt_1_15)
+        exponent_1_15 = min(exponent_1_15,log(huge1)-5.)
+      }
+    }
+    else if(mx == mx)   {
+      lnrho__2_15=value(Field(AC_ilnrho__mod__cdata-1))
+      yh__2_15   =value(Field(AC_iyh__mod__cdata-1))
+      lntt__2_15 =value(Field(AC_ilntt__mod__cdata-1))
+      if (present(lnrho)) {
+        lnrho=lnrho__2_15
+      }
+      if (present(yh)) {
+        yh=yh__2_15
+      }
+      if (false) {
+        lnrho_0_2_15=value(Field(AC_ilnrho__mod__cdata-1))
+        yh_0_2_15=value(Field(AC_iyh__mod__cdata-1))
+        lntt_0_2_15=value(Field(AC_ilntt__mod__cdata-1))
+        tt1_0_2_15=exp(-lntt_0_2_15)
+        fractions_0_2_15=1+yh_0_2_15+AC_xhe__mod__equationofstate
+        fractions1_0_2_15=1/fractions_0_2_15
+        r_0_2_15=AC_lnrho_e__mod__equationofstate-lnrho_0_2_15+1.5*(lntt_0_2_15-AC_lntt_ion__mod__equationofstate)-AC_tt_ion__mod__equationofstate*tt1_0_2_15+log(1-yh_0_2_15+epsi)-2*log(yh_0_2_15)
+        dlnttdy_0_2_15=(2*(-r_0_2_15-AC_tt_ion__mod__equationofstate*tt1_0_2_15)-3)/3*fractions1_0_2_15
+        drdy_0_2_15=dlnttdy_0_2_15*(1.5+AC_tt_ion__mod__equationofstate*tt1_0_2_15)-1/(1-yh_0_2_15+epsi)-2/yh_0_2_15
+        temp_0_2_15=(dlnttdy_0_2_15+fractions1_0_2_15)/drdy_0_2_15
+        dlnppdlnrho_0_2_15=(5-2*AC_tt_ion__mod__equationofstate*tt1_0_2_15*temp_0_2_15)/3
+        dlnppdss_0_2_15=AC_ss_ion1__mod__equationofstate*fractions1_0_2_15*(dlnppdlnrho_0_2_15-temp_0_2_15-1)
+      }
+      if (false || false || false) {
+        tt_2_15=exp(lntt__2_15)
+      }
+      if (false || false) {
+        fractions_2_15=1+yh__2_15+AC_xhe__mod__equationofstate
+      }
+      if (false) {
+        exponent_2_15 = (2*lnrho__2_15-AC_lnrho_e___mod__equationofstate+1.5*(AC_lntt_ion___mod__equationofstate-lntt__2_15)+AC_tt_ion___mod__equationofstate/tt_2_15)
+        exponent_2_15 = min(exponent_2_15,log(huge1)-5.)
+      }
+    }
+    else {
+    }
+    DF_KAPPARHO=AC_kapparho_floor__mod__radiation+ AC_sigmah___mod__cdata*(1 - yh)*exp(2*lnrho+log(AC_m_h__mod__cdata))
+  }
+  else if(AC_enum_opacity_type__mod__radiation == enum_b2_string)   {
+    fatal_error_message(true,"calc_kapparho_b2")
+  }
+  else if(AC_enum_opacity_type__mod__radiation == enum_b2zw2_string)   {
+    fatal_error_message(true,"calc_kapparho_b2_w2")
+  }
+  else if(AC_enum_opacity_type__mod__radiation == enum_read_file_string)   {
+  }
+  else if(AC_enum_opacity_type__mod__radiation == enum_nothing_string)   {
+    DF_KAPPARHO=0.0
+  }
+  else {
+  }
+
+  write(F_KAPPARHO,DF_KAPPARHO)
+}
+#endif

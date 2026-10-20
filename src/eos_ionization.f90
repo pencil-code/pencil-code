@@ -2359,6 +2359,8 @@ module EquationOfState
     call copy_addr(lpp_as_aux,p_par(20)) ! bool
     call copy_addr(lcp_as_aux,p_par(21)) ! bool
     call copy_addr(cs2top,p_par(22))
+    call copy_addr(kappa0,p_par(23))
+    call copy_addr(ymetals,p_par(24))
 
     endsubroutine pushpars2c
 !***********************************************************************
