@@ -149,7 +149,7 @@ module Shock
 !
       if (shock_div_pow /= 1.) then
         if (dtfactor>0.) then
-          dt_div_pow = dtfactor**(shock_div_pow-1)
+          dt_div_pow = (dtfactor/shock_div_pow)**(shock_div_pow-1)
         else
           shock_div_pow=1.
         endif
