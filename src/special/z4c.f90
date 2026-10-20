@@ -486,10 +486,20 @@ module Special
       do k=1,3
         q%Gamd(:,k)=contract(q%gtu,q%Gam2(:,k,:))
       enddo
+
+      call covariant_g2ij(f,ichi,q%dchi,q%Gam2,DDchi)
+      lapchi=contract(q%gtu,DDchi)
+      dchi2=0.; dchida=0.
+      do j=1,3; do i=1,3
+        dchi2=dchi2+q%gtu(:,ij_table(i,j))*q%dchi(:,i)*q%dchi(:,j)
+        dchida=dchida+q%gtu(:,ij_table(i,j))*q%dchi(:,i)*q%dalp(:,j)
+      enddo; enddo
 !
 !  Ricci tensor R_ij = Rt_ij + Rchi_ij 
 !
       do j=1,3; do i=1,j
+
+        !Rt_ij
         ij=ij_table(i,j)
         rhs=0.
         do l=1,3; do mm=1,3
@@ -504,28 +514,23 @@ module Special
                                         +q%Gam2(:,k,ij_table(i,mm))*q%Gam1(:,k,ij_table(l,j)))
           enddo; enddo
         enddo
+
+        !Rchi_ij
+        rhs=rhs+0.5/q%chi*(DDchi(:,ij)+q%gt(:,ij)*lapchi)&
+            -0.25/q%chi**2*q%dchi(:,i)*q%dchi(:,j)-0.75/q%chi**2*q%gt(:,ij)*dchi2
         q%Rij(:,ij)=rhs
       enddo; enddo
 
-      call covariant_g2ij(f,ichi,q%dchi,q%Gam2,DDchi)
-      call covariant_g2ij(f,ialp,q%dalp,q%Gam2,q%DDalp)
-
-      lapchi=contract(q%gtu,DDchi)
-      dchi2=0.; dchida=0.
-      do j=1,3; do i=1,3
-        dchi2=dchi2+q%gtu(:,ij_table(i,j))*q%dchi(:,i)*q%dchi(:,j)
-        dchida=dchida+q%gtu(:,ij_table(i,j))*q%dchi(:,i)*q%dalp(:,j)
-      enddo; enddo
-      do j=1,3; do i=1,j
-        ij=ij_table(i,j)
-        q%Rij(:,ij)=q%Rij(:,ij)+0.5/q%chi*(DDchi(:,ij)+q%gt(:,ij)*lapchi) &
-                   -0.25/q%chi**2*q%dchi(:,i)*q%dchi(:,j)-0.75/q%chi**2*q%gt(:,ij)*dchi2
 !
 !  Physical second covariant derivative of the lapse.
 !
+      call covariant_g2ij(f,ialp,q%dalp,q%Gam2,q%DDalp)
+      do j=1,3; do i=1,j
+        ij=ij_table(i,j)
         q%DDalp(:,ij)=q%DDalp(:,ij)+0.5/q%chi*(q%dalp(:,i)*q%dchi(:,j)+q%dalp(:,j)*q%dchi(:,i) &
                                                -q%gt(:,ij)*dchida)
       enddo; enddo
+
       q%trR=q%chi*contract(q%gtu,q%Rij)
 !
 !  Raised extrinsic curvature: Aud(i,j)=At^i_j, Atu(ij)=At^ij.
