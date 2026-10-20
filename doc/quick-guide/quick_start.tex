@@ -546,27 +546,12 @@ Example SLURM batch script (CRAY machines):
 #SBATCH --exclusive              # avoids other jobs to run on the node(s)
 #SBATCH --mem=0                  # requests all available node memory
 
-source src/.moduleinfo
-
-export LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:$LD_LIBRARY_PATH
-
 pc_start
 pc_run
 
-# or alternatively, when using start.csh, run.csh:
-
-export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK}
-export OMP_MAX_ACTIVE_LEVELS=2
-export OMP_PROC_BIND=close,spread
-export OMP_WAIT_POLICY=PASSIVE
-
-start.csh
-export MPICH_GPU_SUPPORT_ENABLED=1   # MPICH only
-run.csh
-
-# end alternative
-
 \end{verbatim}
+
+Usage of \code{pc\_run} is heavily recommended since it does crucial steps, such as increasing stack space size, to ensure the GPU runs run correctly.
 
 Running with GPU acceleration for the first time in a work directory will take significant time ($\lesssim$ 10 minutes) for several preliminary steps before the simulation proper starts. At later (re)starts, this time reduces strongly as long as no input parameters or \command{*.local} settings are changed.
 
