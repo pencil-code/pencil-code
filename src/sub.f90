@@ -73,7 +73,7 @@ module Sub
   public :: multmm_sc, multsm_mn
   public :: multm2, multm2_mn, multm2_sym, multm2_sym_mn
   public :: multmv, multmv_mn, multmv_transp,multmv_sym,raise_index,lower_index
-  public :: raise_second_index
+  public :: raise_first_index,raise_second_index
   public :: lower_first_index
   public :: mult_matrix, mult_mat_vv, invmat_DB
 !
@@ -1291,19 +1291,36 @@ subroutine dot_mn_sv_pencil(a,b,c)
 !
     endsubroutine raise_index_vec
 !***********************************************************************
-    subroutine raise_second_index(S,g_upper,S_upper)
+    subroutine raise_first_index(S,g_upper,S_upper)
 !
-!  Raising the second index of rank 2 tensor
+!  Raising the first index of a symmetric rank 2 tensor
 !
-!  19-oct-26/TP: coded
+!  20-oct-26/TP: coded
 !
-      real, dimension(nx,3,3) :: S, S_upper !Input tensor and raised tensor
-      real, dimension(nx,6) :: g_upper !Raised metric
+      real, dimension(nx,3,3) :: S_upper 
+      real, dimension(nx,6) :: S,g_upper !Input tensor and raised metric
 
       integer :: k,j
 
       do k=1,3; do j=1,3
-        S_upper(:,j,k)=S(:,j,1)*g_upper(:,ij_table(1,k))+S(:,j,2)*g_upper(:,ij_table(2,k)) &
+        S_upper(:,k,j)=S(:,ij_table(1,j))*g_upper(:,ij_table(k,1))+S(:,ij_table(2,j))*g_upper(:,ij_table(k,2)) &
+                      +S(:,ij_table(3,j))*g_upper(:,ij_table(k,3))
+      enddo; enddo
+    endsubroutine raise_first_index
+!***********************************************************************
+    subroutine raise_second_index(S,g_upper,S_upper)
+!
+!  Raising the second index of a mixed rank 2 tensor producing symmetric fully raised tensor
+!
+!  19-oct-26/TP: coded
+!
+      real, dimension(nx,3,3) :: S !Input tensor (mixed components since output is symmetric)
+      real, dimension(nx,6) :: S_upper,g_upper !Raised tensor and raised metric
+
+      integer :: k,j
+
+      do k=1,3; do j=k,3
+        S_upper(:,ij_table(j,k))=S(:,j,1)*g_upper(:,ij_table(1,k))+S(:,j,2)*g_upper(:,ij_table(2,k)) &
                       +S(:,j,3)*g_upper(:,ij_table(3,k))
       enddo; enddo
     endsubroutine raise_second_index

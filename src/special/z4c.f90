@@ -97,14 +97,14 @@ module Special
     real, dimension(nx) :: chi, Kh, th, alp, Ktr, AA, trR, ham, divb
     real, dimension(nx,6) :: gt, At, gtu, Rij, DDalp, Atu
     real, dimension(nx,3) :: Gam, beta, dchi, dKh, dth, dalp, Gamd
-    real, dimension(nx,3,3) :: dbeta, dGam, Aud, Suu
+    real, dimension(nx,3,3) :: dbeta, dGam, Aud
     real, dimension(nx,6,3) :: dgt, dAt
     real, dimension(nx,6,3,3) :: d2gt
     real, dimension(nx,3,3,3) :: d2beta
     real, dimension(nx,3,6) :: Gam1, Gam2
     real, dimension(nx) :: E, Strace
     real, dimension(nx,3) :: Sv
-    real, dimension(nx,6) :: Sij
+    real, dimension(nx,6) :: Sij, Suu
   endtype InternalPencils
 !
   type(InternalPencils) :: q
@@ -434,7 +434,7 @@ module Special
 !  13-oct-26/Claude: coded
 !
       use Sub, only: grad, g2ij, sym_inverse, contract,covariant_g2ij
-      use Sub, only: lower_first_index,raise_second_index
+      use Sub, only: lower_first_index,raise_first_index,raise_second_index
 !
       real, contiguous, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
@@ -535,14 +535,9 @@ module Special
 !
 !  Raised extrinsic curvature: Aud(i,j)=At^i_j, Atu(ij)=At^ij.
 !
-      do j=1,3; do i=1,3
-        q%Aud(:,i,j)=q%gtu(:,ij_table(i,1))*q%At(:,ij_table(1,j))+q%gtu(:,ij_table(i,2))*q%At(:,ij_table(2,j)) &
-                    +q%gtu(:,ij_table(i,3))*q%At(:,ij_table(3,j))
-      enddo; enddo
-      do j=1,3; do i=1,j
-        q%Atu(:,ij_table(i,j))=q%Aud(:,i,1)*q%gtu(:,ij_table(1,j))+q%Aud(:,i,2)*q%gtu(:,ij_table(2,j)) &
-                          +q%Aud(:,i,3)*q%gtu(:,ij_table(3,j))
-      enddo; enddo
+      call raise_first_index(q%At,q%gtu,q%Aud)
+      call raise_second_index(q%Aud,q%gtu,q%Atu)
+
       q%AA=0.
       do j=1,3; do i=1,3
         q%AA=q%AA+q%Aud(:,i,j)*q%Aud(:,j,i)
@@ -803,7 +798,7 @@ module Special
         do k=1,3
           rhs=rhs+f(l1:l2,m,n,iuu-1+k)*p%gr_dbeta(:,k,i)
           do j=1,3
-            rhs=rhs+.5*p%gr_alp*q%Suu(:,j,k)*p%gr_dgam(:,ij_table(j,k),i)
+            rhs=rhs+.5*p%gr_alp*q%Suu(:,ij_table(j,k))*p%gr_dgam(:,ij_table(j,k),i)
           enddo
         enddo
         df(l1:l2,m,n,iuu+i-1) = df(l1:l2,m,n,iuu+i-1)+ rhs
@@ -844,7 +839,7 @@ module Special
       do j=1,3
         rhs=rhs-Su(:,j)*p%gr_dalp(:,j)
         do k=1,3
-          rhs=rhs+p%gr_alp*q%Suu(:,j,k)*p%gr_Kij(:,ij_table(j,k))
+          rhs=rhs+p%gr_alp*q%Suu(:,ij_table(j,k))*p%gr_Kij(:,ij_table(j,k))
         enddo
       enddo
       df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) + rhs
