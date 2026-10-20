@@ -87,10 +87,10 @@ subroutine helper_loop(f)
 !$    else
 !$      lhelperflags(PERF_DIAGS) = .false.
 !$    endif
+!Done before restoring to snap time to avoid overwriting it.
+!$    if (lhelper_run .and. lhelperflags(PERF_WSNAP)) call calc_all_module_diagnostic_auxiliaries(f,p)
 !$    if (lhelper_run) call restore_diagnostic_controls(lsnap_time=.true.)
-      !TODO: Kishore: restore_diagnostic_controls is also called inside calc_all_module_diagnostic_auxiliaries; is the above call needed?
 !$    if (lhelper_run .and. lhelperflags(PERF_WSNAP)) then
-!$      call calc_all_module_diagnostic_auxiliaries(f,p)
         if (ip<=12.and.lroot) tvar1=real(mpiwtime())
         call perform_wsnap_ext(f)
         if (ip<=12.and.lroot) print*,'wsnap: written snapshot var.dat in ', &

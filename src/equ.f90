@@ -643,8 +643,7 @@ module Equ
 !$omp parallel if (.not. lsuppress_parallel_reductions) private(p) num_threads(num_helper_threads) &
 !$omp copyin(t,dxmax_pencil,lpencil,fname,fnamex,fnamey,fnamez,fnamer,&
 !$omp&       fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
-! 2026-Oct-16/Kishore: added lsnap_time=.true to avoid having the wrong timestamp for snapshots
-!$    call restore_diagnostic_controls(lsnap_time=.true.)
+!$    call restore_diagnostic_controls
 !$    call hydro_restore_diagnostic_controls
 !$    call training_restore_diagnostic_controls
 !
