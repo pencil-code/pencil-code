@@ -39,16 +39,18 @@ bc_sym_z(AcBoundary boundary,AC_TOP_BOT topbot, VtxBuffer field, int sgn, bool r
   bc_sym_z(boundary,topbot,field,sgn,rel)
 }
 #ifndef LTRAINING
+bc_c1_z(AcBoundary boundary,AC_TOP_BOT topbot, Field j)
+{
+#if Leos_idealgas__MODULE && Lentropy_MODULE
+	if (j == AC_iss__mod__cdata-1) bc_ss_flux(boundary,topbot)
+#endif
+}
 #if Leos_idealgas_MODULE
 #if Lentropy_MODULE
 bc_c1_x(AcBoundary boundary, AC_TOP_BOT topbot, Field j )
 {
       if (j==AC_iss__mod__cdata-1)   bc_ss_flux_x(boundary,topbot)
       if (j==AC_ilntt__mod__cdata-1) print("not implemented bc_lnTT_flux_x")  //bc_lnTT_flux_x(f,topbot)
-}
-bc_c1_z(AcBoundary boundary,AC_TOP_BOT topbot, Field j)
-{
-	if (j == AC_iss__mod__cdata-1) bc_ss_flux(boundary,topbot)
 }
 bc_cT_z(AcBoundary boundary,AC_TOP_BOT topbot, Field j)
 {

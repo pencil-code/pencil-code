@@ -577,6 +577,9 @@ AcReal GpuCalcDt(const AcReal t)
 extern "C" void radTransfer()
 {
 #if Lradiation_ray_MODULE
+//Rays along the coordinate axes in the order of initialize_radiation (idir), see radtransfer in radiation_ray.f90;
+//    the restrictions are checked in initialize_radiation
+	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(Qrad_reset),1);
 	for (int inu = 1; inu <= nnu__mod__radiation; ++inu)
 	{
   		acDeviceSetInput(acGridGetDevice(), AC_frequency_bin,inu);
@@ -596,11 +599,39 @@ extern "C" void radTransfer()
 		const Volume start = acGetMinNN(info)-offsets;
 		const Volume end   = acGetMaxNN(info)+offsets;
 		acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(get_source_function_and_opacity,start,end),1);
-        	const auto Qintrinsic_graph = acGetOptimizedDSLTaskGraph(Qintrinsic_steps,true,Qintrinsic_bcs);
-		acGridExecuteTaskGraph(Qintrinsic_graph,1);
-        	const auto Qextrinsic_graph = acGetOptimizedDSLTaskGraph(Qextrinsic_steps);
-		acGridExecuteTaskGraph(bcs,1);
-		acGridExecuteTaskGraph(Qextrinsic_graph,1);
+
+		int idir = 1;
+		for (int nrad = -radz__mod__radiation; nrad <= radz__mod__radiation; ++nrad)
+		for (int mrad = -rady__mod__radiation; mrad <= rady__mod__radiation; ++mrad)
+		for (int lrad = -radx__mod__radiation; lrad <= radx__mod__radiation; ++lrad)
+		{
+			if (lrad*lrad+mrad*mrad+nrad*nrad != 1) continue;
+  			acDeviceSetInput(acGridGetDevice(), AC_ray_idir, idir);
+			if (nrad != 0)
+			{
+				acGridExecuteTaskGraph(nrad > 0 ? acGetOptimizedDSLTaskGraph(Q_up_intrinsic,true,Qintrinsic_bcs)
+								: acGetOptimizedDSLTaskGraph(Q_down_intrinsic,true,Qintrinsic_bcs),1);
+				//boundary intensities in the upstream ghost zone
+				acGridExecuteTaskGraph(bcs,1);
+				acGridExecuteTaskGraph(nrad > 0 ? acGetOptimizedDSLTaskGraph(Q_up_extrinsic)
+								: acGetOptimizedDSLTaskGraph(Q_down_extrinsic),1);
+			}
+			else if (lrad != 0)
+			{
+				acGridExecuteTaskGraph(lrad > 0 ? acGetOptimizedDSLTaskGraph(Q_xp_intrinsic,true,Qhor_intrinsic_bcs)
+								: acGetOptimizedDSLTaskGraph(Q_xm_intrinsic,true,Qhor_intrinsic_bcs),1);
+				acGridExecuteTaskGraph(lrad > 0 ? acGetOptimizedDSLTaskGraph(Q_xp_extrinsic)
+								: acGetOptimizedDSLTaskGraph(Q_xm_extrinsic),1);
+			}
+			else
+			{
+				acGridExecuteTaskGraph(mrad > 0 ? acGetOptimizedDSLTaskGraph(Q_yp_intrinsic,true,Qhor_intrinsic_bcs)
+								: acGetOptimizedDSLTaskGraph(Q_ym_intrinsic,true,Qhor_intrinsic_bcs),1);
+				acGridExecuteTaskGraph(mrad > 0 ? acGetOptimizedDSLTaskGraph(Q_yp_extrinsic)
+								: acGetOptimizedDSLTaskGraph(Q_ym_extrinsic),1);
+			}
+			++idir;
+		}
 	}
 #endif
 }

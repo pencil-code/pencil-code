@@ -76,6 +76,13 @@ module Radiation
   real :: dtau_thresh_min, dtau_thresh_max
   real :: tau_top=0.0, TT_top=0.0
   real :: tau_bot=0.0, TT_bot=0.0
+!
+!  Boundary conditions of the vertical rays on the GPU, (1) bottom, (2) top:
+!  0 for '0' (no incoming intensity), 1 for 'S' (I=S), 2 for 'c' (layer of
+!  TT_bot/TT_top) with the incoming intensity Irad_z.
+!
+  integer, dimension(2) :: ibc_rad_z=1
+  real, dimension(2) :: Irad_z=0.0
   real :: kapparho_cst=1.0, kappa_Kconst=1.0
   real :: Srad_const=1.0, amplSrad=1.0, radius_Srad=1.0
   real :: kx_Srad=0.0, ky_Srad=0.0, kz_Srad=0.0
@@ -277,8 +284,9 @@ module Radiation
 !
       real, dimension(mx,my,mz,mfarray) :: f
 
-      integer :: itable
+      integer :: itable, i
       real :: radlength,arad_normal
+      character (len=bclen) :: bc_ray
       logical :: periodic_xy_plane,bad_ray,ray_good
       character (len=labellen) :: header
       integer :: lun_input = 1
@@ -408,6 +416,32 @@ module Radiation
       else
         arad=0.0
         arad_normal=0.0
+      endif
+!
+!  The GPU (radtransfer_gpu) only has rays along the coordinate axes, periodic
+!  horizontal rays on a single process in that direction, and the vertical
+!  boundary conditions '0', 'S' and 'c' (for the axis rays mu=+1 upward and
+!  mu=-1 downward in radboundary_xy_set).
+!
+      if (lgpu .and. .not.(lrad_cool_diffus.or.lrad_pres_diffus)) then
+        if (rad2max/=1 .or. lsingle_ray) call not_implemented('initialize_radiation', &
+            'rays other than along the coordinate axes on the GPU (need rad2max=1, lsingle_ray=F)')
+        if (radx/=0 .and. (any((/bc_rad1(1),bc_rad2(1)/)/='p') .or. nprocx>1)) &
+          call not_implemented('initialize_radiation','x-rays on the GPU only if periodic and nprocx=1')
+        if (rady/=0 .and. (any((/bc_rad1(2),bc_rad2(2)/)/='p') .or. nprocy>1)) &
+          call not_implemented('initialize_radiation','y-rays on the GPU only if periodic and nprocy=1')
+        do i=1,2
+          bc_ray=merge(bc_rad1(3),bc_rad2(3),i==1)
+          select case (bc_ray)
+          case ('0'); ibc_rad_z(i)=0
+          case ('S'); ibc_rad_z(i)=1
+          case ('c'); ibc_rad_z(i)=2
+          case default
+            if (radz/=0) call not_implemented('initialize_radiation','bc_rad='//trim(bc_ray)//' in z on the GPU')
+          endselect
+        enddo
+        Irad_z(1)=arad*TT_bot**4*(1-exp(tau_bot))
+        Irad_z(2)=arad*TT_top**4*(1-exp(-tau_top))
       endif
 !
 !  Debug output.
@@ -2910,6 +2944,11 @@ module Radiation
     call copy_addr(lradpress,p_par(72))         ! bool
     call copy_addr(dtau_thresh_min, p_par(73))
     call copy_addr(dtau_thresh_max, p_par(74))
+    call copy_addr(radx,p_par(75))              ! int
+    call copy_addr(rady,p_par(76))              ! int
+    call copy_addr(radz,p_par(77))              ! int
+    call copy_addr(ibc_rad_z,p_par(78))         ! int (2)
+    call copy_addr(irad_z,p_par(79))            ! (2)
 
     endsubroutine pushpars2c
 !***********************************************************************

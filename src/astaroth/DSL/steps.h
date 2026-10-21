@@ -138,9 +138,9 @@ BoundConds boundconds{
   ac_const_bc(BOUNDARY_Y_TOP,TAU_ABOVE,0.0)
 #endif
 #if LRADIATION
-//This is not always true but for 1d-tests/solar-atmosphere-magnetic it is!
-  ac_const_bc(BOUNDARY_Z,Q_UP,0.0)
-  source_function_as_intensity(BOUNDARY_Z,Q_DOWN)
+//Boundary intensities of the vertical rays from bc_rad (only the upstream end of each ray matters)
+  rad_intensity_bc_z(BOUNDARY_Z,Q_UP)
+  rad_intensity_bc_z(BOUNDARY_Z,Q_DOWN)
 #endif
 }
 
