@@ -2530,9 +2530,14 @@ module Density
         lpencil_in(i_glnrho)=.true.
       endif
       if (lpencil_in(i_ugrho)) then
-        lpencil_in(i_uu)=.true.
-        if (lu_background) lpencil_in(i_uutot)=.true.
-        lpencil_in(i_grho)=.true.
+        if (ldensity_nolog) then
+          lpencil_in(i_uu)=.true.
+          if (lu_background) lpencil_in(i_uutot)=.true.
+          lpencil_in(i_grho)=.true.
+        else
+          lpencil_in(i_rho) = .true.
+          lpencil_in(i_uglnrho)=.true.
+        endif
       endif
       if (lpencil_in(i_glnrho2)) lpencil_in(i_glnrho)=.true.
       if (lpencil_in(i_sglnrho)) then
@@ -2828,8 +2833,7 @@ use Sub, only: dot2_mn
         endif
       endif
 ! ugrho
-      if (lpenc_loc(i_ugrho)) call not_implemented('calc_pencils_density', &
-          'ugrho for logarithmic mass density')
+      if (lpenc_loc(i_ugrho)) p%ugrho = p%rho*p%uglnrho
 ! glnrho2
       if (lpenc_loc(i_glnrho2)) call dot2(p%glnrho,p%glnrho2)
 ! del2rho
