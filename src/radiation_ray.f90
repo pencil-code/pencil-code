@@ -2949,6 +2949,7 @@ module Radiation
     call copy_addr(radz,p_par(77))              ! int
     call copy_addr(ibc_rad_z,p_par(78))         ! int (2)
     call copy_addr(irad_z,p_par(79))            ! (2)
+    call copy_addr(rad2max,p_par(80)) ! int dconst
 
     endsubroutine pushpars2c
 !***********************************************************************

@@ -574,6 +574,23 @@ AcReal GpuCalcDt(const AcReal t)
 	return calc_dt1_courant(t);
 }
 /***********************************************************************************************/
+#if Lradiation_ray_MODULE
+//Boundary heating rates of the periodic horizontal rays (Qperiodic): built once per direction and reused,
+//since every acGridBuildTaskGraph allocates new MPI tags (and the graphs would otherwise leak)
+static AcTaskGraph*
+get_periodic_ray_graph(const int3 direction)
+{
+	static AcTaskGraph* graphs[2][2]{};
+	const int axis = direction.x != 0 ? 0 : 1;
+	const int side = (direction.x + direction.y) > 0 ? 1 : 0;
+	if (graphs[axis][side] == NULL)
+	{
+		Field fields[2] = {acGetQ_HOR(), acGetTAU_HOR()};
+		graphs[axis][side] = acGridBuildTaskGraph({acPeriodicRay(fields, 2, direction)});
+	}
+	return graphs[axis][side];
+}
+#endif
 extern "C" void radTransfer()
 {
 #if Lradiation_ray_MODULE
@@ -610,28 +627,53 @@ extern "C" void radTransfer()
 		for (int mrad = -rady__mod__radiation; mrad <= rady__mod__radiation; ++mrad)
 		for (int lrad = -radx__mod__radiation; lrad <= radx__mod__radiation; ++lrad)
 		{
-			if (lrad*lrad+mrad*mrad+nrad*nrad != 1) continue;
+			const int facet_class = lrad*lrad+mrad*mrad+nrad*nrad;
+			if (facet_class == 0 || facet_class > rad2max__mod__radiation) continue;
+			if (facet_class != 1)
+			{
+				fprintf(stderr,"radTransfer: only rays along the coordinate axes (rad2max=1) are implemented on the GPU!\n");
+				exit(EXIT_FAILURE);
+			}
+			const int3 dir = (int3){lrad,mrad,nrad};
   			acDeviceSetInput(acGridGetDevice(), AC_ray_idir, idir);
+			//Three steps:
+			//1) Intrisic computation not needing any communications
 			if (nrad != 0)
 			{
 				acGridExecuteTaskGraph(nrad > 0 ? acGetOptimizedDSLTaskGraph(Q_up_intrinsic,true,Qintrinsic_bcs)
 								: acGetOptimizedDSLTaskGraph(Q_down_intrinsic,true,Qintrinsic_bcs),1);
-				//boundary intensities in the upstream ghost zone
-				acGridExecuteTaskGraph(bcs,1);
-				acGridExecuteTaskGraph(nrad > 0 ? acGetOptimizedDSLTaskGraph(Q_up_extrinsic)
-								: acGetOptimizedDSLTaskGraph(Q_down_extrinsic),1);
 			}
 			else if (lrad != 0)
 			{
 				acGridExecuteTaskGraph(lrad > 0 ? acGetOptimizedDSLTaskGraph(Q_xp_intrinsic,true,Qhor_intrinsic_bcs)
 								: acGetOptimizedDSLTaskGraph(Q_xm_intrinsic,true,Qhor_intrinsic_bcs),1);
-				acGridExecuteTaskGraph(lrad > 0 ? acGetOptimizedDSLTaskGraph(Q_xp_extrinsic)
-								: acGetOptimizedDSLTaskGraph(Q_xm_extrinsic),1);
 			}
 			else
 			{
 				acGridExecuteTaskGraph(mrad > 0 ? acGetOptimizedDSLTaskGraph(Q_yp_intrinsic,true,Qhor_intrinsic_bcs)
 								: acGetOptimizedDSLTaskGraph(Q_ym_intrinsic,true,Qhor_intrinsic_bcs),1);
+			}
+			if(facet_class == 1 && ((lrad != 0 && lperi.x) || (mrad != 0 && lperi.y) || (nrad != 0 && lperi.z)))
+			{
+    		          acGridExecuteTaskGraph(get_periodic_ray_graph(dir),1);
+			}
+			else
+			{
+			  acGridExecuteTaskGraph(bcs,1);
+			}
+			//3) Revision of the intrinsic computation with incoming upstream values and accumulation to the final result
+			if(nrad != 0)
+			{
+				acGridExecuteTaskGraph(nrad > 0 ? acGetOptimizedDSLTaskGraph(Q_up_extrinsic)
+								: acGetOptimizedDSLTaskGraph(Q_down_extrinsic),1);
+			}
+			else if(lrad != 0)
+			{
+				acGridExecuteTaskGraph(lrad > 0 ? acGetOptimizedDSLTaskGraph(Q_xp_extrinsic)
+								: acGetOptimizedDSLTaskGraph(Q_xm_extrinsic),1);
+			}
+			else
+			{
 				acGridExecuteTaskGraph(mrad > 0 ? acGetOptimizedDSLTaskGraph(Q_yp_extrinsic)
 								: acGetOptimizedDSLTaskGraph(Q_ym_extrinsic),1);
 			}
