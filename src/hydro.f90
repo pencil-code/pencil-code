@@ -8473,7 +8473,7 @@ module Hydro
 !     Loop over slices
 !
       select case (trim(slices%name))
-        case ('uu'); call assign_slices_before_ts(slices,f,iuu)
+        case ('uu'); call assign_slices_before_ts(slices,f,iuu,3)
       endselect
 !
     endsubroutine get_fslices_hydro
