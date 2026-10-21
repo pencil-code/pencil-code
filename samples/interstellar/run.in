@@ -76,7 +76,7 @@
   shock_div_pow=1.75
   dtfactor=0.2!2.5e-2
   con_bias=0.05
-  !TP: to reproduce old results. Change if you update the reference.dat
+  !TP: to reproduce old results. Take out if you update the reference.dat
   scale_div_coeff_with_pow=F
 /
 &power_spectrum_run_pars
