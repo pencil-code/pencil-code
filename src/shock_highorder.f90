@@ -41,13 +41,17 @@ module Shock
   real    :: div_threshold=0.0
   real    :: shock_linear = 0.01
   real    :: shock_div_pow = 1., dtfactor=1., con_bias=0.1
+  logical :: scale_div_coeff_with_pow = .true. !PAR_DOC: Whether we divide dtfactor by div_pow.
+    !PAR_DOC: By default on, the rationale is that with a higher exponent one can use a smaller coefficient.
+    !PAR_DOC: Mainly exists so one can turn the division off to reproduce older results.
   logical :: lrewrite_shock_boundary=.false.
   logical :: lconvergence_only=.true., lconvergence_bias=.true.
 !
   namelist /shock_run_pars/ &
       ishock_max, lgaussian_smooth, lforce_periodic_shockviscosity, &
       div_threshold, lrewrite_shock_boundary, lfix_Re_mesh, lshock_linear, shock_linear, &
-      shock_div_pow, lconvergence_only, lmax_shock, dtfactor, lconvergence_bias, con_bias
+      shock_div_pow, lconvergence_only, lmax_shock, dtfactor, lconvergence_bias, con_bias, &
+      scale_div_coeff_with_pow
 !
 !  Diagnostic variables for print.in
 ! (needs to be consistent with reset list below)
@@ -149,7 +153,11 @@ module Shock
 !
       if (shock_div_pow /= 1.) then
         if (dtfactor>0.) then
-          dt_div_pow = (dtfactor/shock_div_pow)**(shock_div_pow-1)
+          if(scale_div_coeff_with_pow) then
+            dt_div_pow = (dtfactor/shock_div_pow)**(shock_div_pow-1)
+          else
+            dt_div_pow = dtfactor**(shock_div_pow-1)
+          endif
         else
           shock_div_pow=1.
         endif
