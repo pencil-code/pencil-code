@@ -18,7 +18,7 @@ import os
 sim = pc.sim.get(path="..", quiet=True)
 
 sl = pc.read.slices(
-    field = ["bb3"],
+    field = ["bb3", "uu2"],
     datadir=sim.datadir,
     quiet=True,
     )
@@ -35,3 +35,4 @@ with open(f'{__file__[:-3]}.out', 'w') as f:
     write(f, "sl.position.xy2")
     write(f, "sl.position.xz")
     write(f, "sl.position.yz")
+    write(f, "sl.xy.uu2[1,4:9,13]")
