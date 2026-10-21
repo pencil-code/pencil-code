@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-   vim: set fileencoding=utf-8 :
 
 """Run unit tests for Pencil Code Python modules."""
