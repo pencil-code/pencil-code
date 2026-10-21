@@ -31,7 +31,7 @@ addons:
 before_install:
   - sudo apt-get install -y gfortran libhdf5-openmpi-dev git-restore-mtime
   - gfortran --version
-  - cd $HOME/build/pencil-code/pencil-code/ && git restore-mtime src/
+  - cd $HOME/build/pencil-code/pencil-code/ && git status -uno && git restore-mtime src/
 
 script:
   - source sourceme.sh
