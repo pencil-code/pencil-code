@@ -62,22 +62,26 @@ Kernel integrate_Q_ym(int idir)
 }
 
 //Vertical rays: the boundary intensity is set in the upstream ghost zone by rad_intensity_bc_z
-Kernel revise_Q_up()
+Kernel revise_and_accumulate_Q_up(int idir)
 {
 	const int3 direction = {0,0,1}
-	write(Q_UP,extrinsic_ray_update(direction,Q_UP,TAU_UP))
+	const real Q0 = extrinsic_ray_update(direction,Q_UP,TAU_UP)
+	write(F_QRAD,F_QRAD+AC_weight__mod__radiation[idir-1]*Q0*F_KAPPARHO)
 }
 
-Kernel revise_Q_down()
+Kernel revise_and_accumulate_Q_down(int idir)
 {
 	const int3 direction = {0,0,-1}
-	write(Q_DOWN,extrinsic_ray_update(direction,Q_DOWN,TAU_DOWN))
+	const real Q0 = extrinsic_ray_update(direction,Q_DOWN,TAU_DOWN)
+	write(F_QRAD,F_QRAD+AC_weight__mod__radiation[idir-1]*Q0*F_KAPPARHO)
 }
 
 //Periodic horizontal rays on a single process in the ray direction (Qperiodic):
 //the boundary heating rate is Q0 = Q(end)/(1-exp(-tau(end))) with the intrinsic values
-//at the downstream end of the line, and then Q = Q + Q0*exp(-tau) (Qrevision).
-revise_periodic_ray(int3 direction)
+//at the downstream end of the line, and then Q = Q + Q0*exp(-tau) (Qrevision), which is
+//accumulated into Qrad directly. Q_HOR is not overwritten with the revised value since all
+//points of the line read the intrinsic Q_HOR at ray_end: an in-place update would race with that.
+revise_and_accumulate_periodic_ray(int3 direction, int idir)
 {
 	int3 ray_end = vertexIdx
 	if (direction.x > 0) ray_end.x = AC_nlocal_max.x-1
@@ -85,27 +89,27 @@ revise_periodic_ray(int3 direction)
 	if (direction.y > 0) ray_end.y = AC_nlocal_max.y-1
 	if (direction.y < 0) ray_end.y = NGHOST
 	const real Q0 = Q_HOR[ray_end.x][ray_end.y][ray_end.z]/get_one_m_negexp(TAU_HOR[ray_end.x][ray_end.y][ray_end.z])
-	write(Q_HOR,Q_HOR+Q0*exp(-TAU_HOR))
+	write(F_QRAD,F_QRAD+AC_weight__mod__radiation[idir-1]*(Q_HOR+Q0*exp(-TAU_HOR))*F_KAPPARHO)
 }
 
-Kernel revise_Q_xp()
+Kernel revise_and_accumulate_Q_xp(int idir)
 {
-	revise_periodic_ray((int3){1,0,0})
+	revise_and_accumulate_periodic_ray((int3){1,0,0},idir)
 }
 
-Kernel revise_Q_xm()
+Kernel revise_and_accumulate_Q_xm(int idir)
 {
-	revise_periodic_ray((int3){-1,0,0})
+	revise_and_accumulate_periodic_ray((int3){-1,0,0},idir)
 }
 
-Kernel revise_Q_yp()
+Kernel revise_and_accumulate_Q_yp(int idir)
 {
-	revise_periodic_ray((int3){0,1,0})
+	revise_and_accumulate_periodic_ray((int3){0,1,0},idir)
 }
 
-Kernel revise_Q_ym()
+Kernel revise_and_accumulate_Q_ym(int idir)
 {
-	revise_periodic_ray((int3){0,-1,0})
+	revise_and_accumulate_periodic_ray((int3){0,-1,0},idir)
 }
 
 //f(:,:,:,iQrad) = f(:,:,:,iQrad) + weight(idir)*Qrad*f(:,:,:,ikapparho) of calcQ
@@ -114,17 +118,3 @@ Kernel reset_Qrad()
 	write(F_QRAD,0.0)
 }
 
-Kernel accumulate_Q_up(int idir)
-{
-	write(F_QRAD,F_QRAD+AC_weight__mod__radiation[idir-1]*Q_UP*F_KAPPARHO)
-}
-
-Kernel accumulate_Q_down(int idir)
-{
-	write(F_QRAD,F_QRAD+AC_weight__mod__radiation[idir-1]*Q_DOWN*F_KAPPARHO)
-}
-
-Kernel accumulate_Q_hor(int idir)
-{
-	write(F_QRAD,F_QRAD+AC_weight__mod__radiation[idir-1]*Q_HOR*F_KAPPARHO)
-}
