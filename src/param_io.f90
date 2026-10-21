@@ -553,6 +553,10 @@ module Param_IO
         lfrozen_bot_var_z=.false.; lfrozen_top_var_z=.false.
       endif
 !
+      fbcx_bot=0.; fbcx_top=0.
+      fbcy_bot=0.; fbcy_top=0.
+      fbcz_bot=0.; fbcz_top=0.
+
       bcx=adjustl(bcx); bcy=adjustl(bcy); bcz=adjustl(bcz)
       call parse_bc(bcx,bcx12)
       call parse_bc(bcy,bcy12)
