@@ -41,7 +41,7 @@ bc_sym_z(AcBoundary boundary,AC_TOP_BOT topbot, VtxBuffer field, int sgn, bool r
 #ifndef LTRAINING
 bc_c1_z(AcBoundary boundary,AC_TOP_BOT topbot, Field j)
 {
-#if Leos_idealgas__MODULE && Lentropy_MODULE
+#if Leos_idealgas_MODULE && Lentropy_MODULE
 	if (j == AC_iss__mod__cdata-1) bc_ss_flux(boundary,topbot)
 #endif
 }
