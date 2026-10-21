@@ -588,6 +588,11 @@ extern "C" void radTransfer()
 		acGridHaloExchange();
   		auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
 		acGridExecuteTaskGraph(bcs,1);
+//yH (eos_ionization, eos_temperature_ionization) is computed in beforeBoundaryGPU before the halos are updated,
+//but the opacity in the first ghost layer (needed by the horizontal rays) depends on it
+		const auto ioncalc_halos = acGetOptimizedDSLTaskGraph(AC_ioncalc_including_halos,
+							(Volume){0,0,0},acGetLocalMM(acGridGetLocalMeshInfo()));
+		if (!acGridTaskGraphIsEmpty(ioncalc_halos)) acGridExecuteTaskGraph(ioncalc_halos,1);
 
 		const auto info = acDeviceGetLocalConfig(acGridGetDevice());
 		const Volume offsets = (Volume)

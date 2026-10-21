@@ -103,6 +103,12 @@ ComputeSteps AC_before_boundary_steps_including_halos(boundconds)
 	entropy_update_running_average(AC_t,AC_dt)
 }
 
+//Ionization fraction also in the halos after the halo exchange (for the opacity of radTransfer)
+ComputeSteps AC_ioncalc_including_halos(boundconds)
+{
+	ioncalc()
+}
+
 ComputeSteps AC_after_timestep(boundconds)
 {
 	after_timestep_alphadisk()
