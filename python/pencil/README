@@ -18,6 +18,7 @@ Therefore, 'pc' will store all calcuated data in separate files and reload if ne
 ##
 This module requires the following Python packages:
 - dill
+- decorator
 - f90nml
 - flatdict
 - h5py
@@ -26,6 +27,7 @@ This module requires the following Python packages:
 - numpy
 - plotly
 - psutil
+- pexpect
 - requests
 - scipy
 - tqdm
