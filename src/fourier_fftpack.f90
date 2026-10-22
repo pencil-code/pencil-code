@@ -7,6 +7,8 @@ module Fourier
   use Cdata
   use Messages
   use Mpicomm, only: transp,transp_other 
+  use Mpicomm, only: MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+                     MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE
   use General, only: ioptest
   use Quiet
 !$ use OMP_LIB
@@ -1104,12 +1106,20 @@ module Fourier
 !$    use OMP_lib
       real, dimension (:,:), intent(inout) :: a_re,a_im
       logical, optional, intent(in) :: linv,lneed_im
+!$    integer :: thread_id_caller
 !
 !
 !$    if(omp_get_level() == 1) then
-        !$omp parallel num_threads(num_helper_threads)
+!$      thread_id_caller = thread_id
+!  The communicators are threadprivate: the new threads need those of the calling (helper) thread
+        !$omp parallel num_threads(num_helper_threads) &
+        !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+        !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!  thread_id selects the FFTPACK work arrays (wsavex etc.), which must not be shared between threads
+!$      thread_id = omp_get_thread_num()+1
 !$      call fourier_transform_xy_xy_body(a_re,a_im,linv,lneed_im)
         !$omp end parallel 
+!$      thread_id = thread_id_caller
 !$    else
         call fourier_transform_xy_xy_body(a_re,a_im,linv,lneed_im)
 !$    endif
@@ -3549,11 +3559,19 @@ module Fourier
       logical, optional, intent(in) :: linv, lneed_im, lignore_shear
       
       real, dimension (nxgrid), optional :: shift_y
+!$    integer :: thread_id_caller
 !
 !$    if(omp_get_level() == 1) then
-        !$omp parallel num_threads(num_helper_threads)
+!$      thread_id_caller = thread_id
+!  The communicators are threadprivate: the new threads need those of the calling (helper) thread
+        !$omp parallel num_threads(num_helper_threads) &
+        !$omp copyin(MPI_COMM_GRID,MPI_COMM_PENCIL,MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM, &
+        !$omp MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE)
+!  thread_id selects the FFTPACK work arrays (wsavex etc.), which must not be shared between threads
+!$      thread_id = omp_get_thread_num()+1
 !$      call fft_xyz_parallel_3D_body(a_re,a_im,linv,lneed_im,shift_y,lignore_shear)
         !$omp end parallel 
+!$      thread_id = thread_id_caller
 !$    else
         call fft_xyz_parallel_3D_body(a_re,a_im,linv,lneed_im,shift_y,lignore_shear)
 !$    endif

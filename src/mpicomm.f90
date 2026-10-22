@@ -5966,9 +5966,9 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
       integer :: sendc_y,recvc_y,px
       integer :: ytag=101,partner
       integer :: ibox,iy
-      if (.not.allocated(send_buf_y)) allocate(send_buf_y(ny,ny), recv_buf_y(ny,ny), tmp(ny,ny))
 !
       !$omp single
+      if (.not.allocated(send_buf_y)) allocate(send_buf_y(ny,ny), recv_buf_y(ny,ny), tmp(ny,ny))
       if (nprocx>1) then
         print*,'transp_xy: nprocx must be equal to 1'
         call stop_it_if_any(.true.,'Inconsistency: nprocx>1')

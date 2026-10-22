@@ -428,8 +428,8 @@ module Radiation
             'rays other than along the coordinate axes on the GPU (need rad2max=1, lsingle_ray=F)')
         if (radx/=0 .and. (any((/bc_rad1(1),bc_rad2(1)/)/='p') .or. nprocx>1)) &
           call not_implemented('initialize_radiation','x-rays on the GPU only if periodic and nprocx=1')
-        if (rady/=0 .and. (any((/bc_rad1(2),bc_rad2(2)/)/='p') .or. nprocy>1)) &
-          call not_implemented('initialize_radiation','y-rays on the GPU only if periodic and nprocy=1')
+        if (rady/=0 .and. any((/bc_rad1(2),bc_rad2(2)/)/='p')) &
+          call not_implemented('initialize_radiation','y-rays on the GPU only if periodic')
         do i=1,2
           bc_ray=merge(bc_rad1(3),bc_rad2(3),i==1)
           select case (bc_ray)
