@@ -14,6 +14,7 @@ lazy-loader
 matplotlib
 mpi4py
 numpy
+pandas
 pexpect
 plotly
 psutil
