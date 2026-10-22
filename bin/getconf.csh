@@ -85,26 +85,27 @@ endif
 # Determine number of CPUS
 #
 set ncpus = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*ncpus\s*=\s*([0-9]*)/i && print $1' src/cparam.local |sed -e's/ncpus/$ncpus/'`
-set nprocx = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*nprocx\s*=\s*([0-9a-zA-Z_\/]*)/i && print $1' src/cparam.local |sed -e's/n/$n/g'`
-set nprocy = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*nprocy\s*=\s*([0-9a-zA-Z_\/]*)/i && print $1' src/cparam.local |sed -e's/n/$n/g'`
-set nprocz = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*nprocz\s*=\s*([0-9a-zA-Z_\/]*)/i && print $1' src/cparam.local |sed -e's/n/$n/g'`
+set nprocx = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*nprocx\s*=\s*([0-9a-zA-Z_\/()]*)/i && print $1' src/cparam.local |sed -e's/n/$n/g'`
+set nprocy = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*nprocy\s*=\s*([0-9a-zA-Z_\/()]*)/i && print $1' src/cparam.local |sed -e's/n/$n/g'`
+set nprocz = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*nprocz\s*=\s*([0-9a-zA-Z_\/()]*)/i && print $1' src/cparam.local |sed -e's/n/$n/g'`
 #
 # The following performs possible arithmetic calculations in the expressions for nproc[xyz].
-# At the moment only expressions of the form <n>/<m> are processed.
+# At the moment only expressions of the form <n>/<m>/..., also with brackets, are processed.
 #
+#echo NPROCS= $ncpus $nprocx  $nprocy  $nprocz
 echo "$nprocx" | grep -Eq '^[0-9]+$'    # Checks whether the $nprocx variable has an integer value.
 if ($status) then                       # If not, replaces variables by their integer values.
-  set nprocx = `echo "$nprocx" | sed -e's/\$ncpus/ '$ncpus' /; s/\$nprocy/ '$nprocy' /; s/\$nprocz/ '$nprocz' /'`
-  @ nprocx = $nprocx                    # Performs the arithmetics.
+  set nprocx = `echo "$nprocx" | sed -e's/\$ncpus/ '$ncpus' /; s/\$nprocy/ '$nprocy' /; s/\$nprocz/ '$nprocz' /; s/\// \/ /g; s/\*/ * /g'`
+  @ nprocx = $nprocx                    # Performs the arithmetics.                                              ^ because csh requires blanks around "/" and "*".
 endif
 echo "$nprocy" | grep -Eq '^[0-9]+$'
 if ($status) then
-  set nprocy = `echo "$nprocy" | sed -e's/\$ncpus/ '$ncpus' /; s/\$nprocx/ '$nprocx' /; s/\$nprocz/ '$nprocz' /'`
+  set nprocy = `echo "$nprocy" | sed -e's/\$ncpus/ '$ncpus' /; s/\$nprocx/ '$nprocx' /; s/\$nprocz/ '$nprocz' /; s/\// \/ /g; s/\*/ * /g'`
   @ nprocy = $nprocy
 endif
 echo "$nprocz" | grep -Eq '^[0-9]+$'
 if ($status) then
-  set nprocz = `echo "$nprocz" | sed -e's/\$ncpus/ '$ncpus' /; s/\$nprocy/ '$nprocy' /; s/\$nprocx/ '$nprocx' /'`
+  set nprocz = `echo "$nprocz" | sed -e's/\$ncpus/ '$ncpus' /; s/\$nprocy/ '$nprocy' /; s/\$nprocx/ '$nprocx' /; s/\// \/ /g; s/\*/ * /g'`
   @ nprocz = $nprocz
 endif
 
@@ -2428,7 +2429,6 @@ set DIST=`grep '^ *IO *=' src/Makefile.local | tail -n 1 | grep -c '^ *IO *= *io
 set COLL=`grep '^ *IO *=' src/Makefile.local | tail -n 1 | grep -c '^ *IO *= *io_collect[^_]*$'`
 set MPI2=`grep '^ *IO *=' src/Makefile.local | tail -n 1 | grep -c '^ *IO *= *io_mpi2'`
 set COLL_XY=`grep '^ *IO *=' src/Makefile.local | tail -n 1 | grep -c '^ *IO *= *io_collect_xy'`
-#echo HDF5etc:$HDF5 $DIST $COLL $MPI2 $COLL_XY
 #
 if ($HDF5) then
   set procdirs = ()
@@ -2437,7 +2437,10 @@ else if ($COLL || $MPI2) then
   set procdirs = ()
   set subdirs = ("allprocs" "allprocs/signals" "reduced" "averages" "idl")
 else if ($COLL_XY) then
-  set procdirs = `perl -e 'my @procs=map{'"$nprocxy"' * $_ } 0..'"$nprocz"'-1;for $i (@procs) {print "proc$i\n"} '`
+  # This would create only the proc directories, which are really needed for the snapshot,
+  # but as the slices are still fully scattered, we can't use it at the moment.
+  #set procdirs = `perl -e 'my @procs=map{'"$nprocxy"' * $_ } 0..'"$nprocz"'-1;for $i (@procs) {print "proc$i\n"} '`
+  set procdirs = `perl -e 'for $i (0..'"$ncpus"'-1) { print "proc$i\n"}'`
   set subdirs = ("allprocs" "allprocs/signals" "reduced" "averages" "idl")
 else
   set procdirs = `perl -e 'for $i (0..'"$ncpus"'-1) { print "proc$i\n"}'`

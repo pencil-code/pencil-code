@@ -152,13 +152,13 @@ program start
 !
   call set_coorsys_dimmask
 !
-!  Set up directory names and check whether the directories exist.
-!
-  call directory_names
-!
 !  Initialise MPI communication.
 !
   call initialize_mpicomm
+!
+!  Set up directory names and check whether the directories exist.
+!
+  call directory_names
 !
 !  Initialise HDF5 communication.
 !

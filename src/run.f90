@@ -966,16 +966,16 @@ endsubroutine helper_loop
 !$ integer :: i 
 !
   lrun = .true.
-! The pencil case is allocatable to not have as many arrays on the stack, which becomes a problem with larger
+!
+! The pencil case is allocatable to not reduce number of arrays on the stack, becoming a problem with larger
 ! subdomain sizes.
+!
   allocate(p)
 !
 !  Get processor numbers and define whether we are root.
 !
   call mpicomm_init
-  if (lroot) then
-    time1=real(mpiwtime())
-  endif
+  if (lroot) time1=real(mpiwtime())
 !
 !  Initialize OpenMP use
 !
@@ -1015,9 +1015,7 @@ endsubroutine helper_loop
 !
 !  Check whether quad precision is supported
 !
-  if (rkind16<0) then
-    call warning('run','quad precision not supported, switch to double')
-  endif
+  if (rkind16<0) call warning('run','quad precision not supported, switch to double')
   !KG: Can we just move this warning to be inside the if above, or are there
   !KG: cases where we expect selected_real_kind to quietly give the wrong rkind?
   if (max(rkind16,rkind8)==rkind8) call warning('run','quad precision suppressed')

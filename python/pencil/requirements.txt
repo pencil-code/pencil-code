@@ -15,6 +15,7 @@ matplotlib
 mpi4py
 numpy
 pandas
+pen
 pexpect
 plotly
 psutil
