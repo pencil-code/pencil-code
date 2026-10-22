@@ -1,14 +1,26 @@
-dill
+# Complete set of dependencies (any package which is imported by a Python file
+# in this module). The README mentions the recommended dependencies that will
+# satisfy the most common use-cases.
+
+astropy
+cython
+datetime
 decorator
+dill
 f90nml
 flatdict
 h5py
 lazy-loader
 matplotlib
+mpi4py
 numpy
+pexpect
 plotly
 psutil
-pexpect
 requests
+retrying
+scikit-learn
 scipy
+setuptools
 tqdm
+vtk
