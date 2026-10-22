@@ -18,6 +18,7 @@ pandas
 pexpect
 plotly
 psutil
+pyvista
 requests
 retrying
 scikit-learn
