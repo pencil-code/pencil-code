@@ -440,7 +440,7 @@ link_astaroth_files()
 
 
   ln -s $AC_HOME/acc-runtime/stdlib DSL >& /dev/null
-  ln -s $AC_HOME/acc-runtime/stdlib submodule/acc-runtime >& /dev/null
+  ln -s $AC_HOME/acc-runtime/ submodule/ >& /dev/null
 
   for file in $to_link
   do
