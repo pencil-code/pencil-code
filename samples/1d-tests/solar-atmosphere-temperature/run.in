@@ -38,3 +38,8 @@
   ivisc='nu-const'
   nu=0.01
 /
+&gpu_run_pars
+  !Needed to match the reference data on the GPUs for double precision.
+  !As far as I know this is the only sample which is sensitive to the precision of the dt calculation.
+  lsingle_precision_timestep=T
+/
