@@ -61,42 +61,62 @@ Kernel integrate_Q_ym(int idir)
 	rad_ray_func(direction,Q_HOR,TAU_HOR,idir)
 }
 
-revise_and_accumulate(int idir, int3 direction, Field Q, Field TAU)
+accumulate(int idir, int3 direction, Field Q, Field TAU)
 {
 	Q_new = extrinsic_ray_update(direction,Q,TAU)
-	write(Q,Q_new)
 	write(F_QRAD,F_QRAD+AC_weight__mod__radiation[idir-1]*Q_new*F_KAPPARHO)
 }
 
-//Vertical rays: the boundary intensity is set in the upstream ghost zone by rad_intensity_bc_z
-Kernel revise_and_accumulate_Q_up(int idir)
+accumulate_vertical(int idir, int3 direction, Field Q, Field TAU)
 {
-	revise_and_accumulate(idir,(int3){0,0,1},Q_UP,TAU_UP)
+	const real Q_intrinsic = value(Q)
+	const real Q_extrinsic = get_incoming_boundary_ray(Q,direction)*exp(-value(TAU))
+	//On the downstream boundary we have already revised so don't apply the extrinsic value.
+	const bool downstream_boundary = (direction.z > 0) ? vertexIdx.z == AC_nlocal_max.z-1 : vertexIdx.z == NGHOST
+	const real Q_revised = downstream_boundary ? Q_intrinsic : Q_intrinsic + Q_extrinsic
+	write(F_QRAD,F_QRAD+AC_weight__mod__radiation[idir-1]*Q_revised*F_KAPPARHO)
 }
 
-Kernel revise_and_accumulate_Q_down(int idir)
+Kernel accumulate_Q_up(int idir)
 {
-	revise_and_accumulate(idir,(int3){0,0,-1},Q_DOWN,TAU_DOWN)
+	accumulate_vertical(idir,(int3){0,0,1},Q_UP,TAU_UP)
 }
 
-Kernel revise_and_accumulate_Q_xp(int idir)
+Kernel accumulate_Q_down(int idir)
 {
-	revise_and_accumulate(idir,(int3){+1,0,0},Q_HOR,TAU_HOR)
+	accumulate_vertical(idir,(int3){0,0,-1},Q_DOWN,TAU_DOWN)
 }
 
-Kernel revise_and_accumulate_Q_xm(int idir)
+//Revision of only the downstream boundary layer (launched there by acRayUpdate), in place so that the received
+//upstream ghost zone stays valid: this is the boundary heating rate sent to the next process along the ray
+Kernel propagate_Q_up_boundary()
 {
-	revise_and_accumulate(idir,(int3){-1,0,0},Q_HOR,TAU_HOR)
+	Q_UP[vertexIdx.x][vertexIdx.y][vertexIdx.z] = Q_UP + get_incoming_boundary_ray(Q_UP,(int3){0,0,1})*exp(-TAU_UP)
 }
 
-Kernel revise_and_accumulate_Q_yp(int idir)
+Kernel propagate_Q_down_boundary()
 {
-	revise_and_accumulate(idir,(int3){0,+1,0},Q_HOR,TAU_HOR)
+	Q_DOWN[vertexIdx.x][vertexIdx.y][vertexIdx.z] = Q_DOWN + get_incoming_boundary_ray(Q_DOWN,(int3){0,0,-1})*exp(-TAU_DOWN)
 }
 
-Kernel revise_and_accumulate_Q_ym(int idir)
+Kernel accumulate_Q_xp(int idir)
 {
-	revise_and_accumulate(idir,(int3){0,-1,0},Q_HOR,TAU_HOR)
+	accumulate(idir,(int3){+1,0,0},Q_HOR,TAU_HOR)
+}
+
+Kernel accumulate_Q_xm(int idir)
+{
+	accumulate(idir,(int3){-1,0,0},Q_HOR,TAU_HOR)
+}
+
+Kernel accumulate_Q_yp(int idir)
+{
+	accumulate(idir,(int3){0,+1,0},Q_HOR,TAU_HOR)
+}
+
+Kernel accumulate_Q_ym(int idir)
+{
+	accumulate(idir,(int3){0,-1,0},Q_HOR,TAU_HOR)
 }
 
 Kernel reset_Qrad()

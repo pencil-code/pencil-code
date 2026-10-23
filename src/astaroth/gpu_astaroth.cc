@@ -590,6 +590,29 @@ get_periodic_ray_graph(const int3 direction)
 	}
 	return graphs[axis][side];
 }
+//Boundary heating rates of the non-periodic vertical rays: each process receives the value in its upstream ghost zone,
+//revises only its downstream boundary layer with it (Q_intrinsic + Q_bnd*exp(-tau)) and sends that to the next process,
+//as radboundary_xy_recv/send in radiation_ray.f90; the revision of the whole subdomain is then done in parallel
+//(Q_up_extrinsic, see accumulate_vertical in DSL/radiation/integrate.h).
+static AcTaskGraph*
+get_vertical_ray_boundary_graph(const int nrad)
+{
+	static AcTaskGraph* graphs[2]{};
+	const int side = nrad > 0 ? 1 : 0;
+	if (graphs[side] == NULL)
+	{
+		const int3 dir = (int3){0,0,nrad};
+		const Field bnd = nrad > 0 ? acGetQ_UP() : acGetQ_DOWN();
+		KernelParamsLoader loader = [](ParamLoadingInfo p) { (void)p; };
+		graphs[side] = acGridBuildTaskGraph({
+				acHaloExchange({bnd},dir,false,true),
+				acRayUpdate(nrad > 0 ? propagate_Q_up_boundary : propagate_Q_down_boundary,
+					    BOUNDARY_XYZ,dir,{bnd},loader),
+				acHaloExchange({bnd},dir,true,false)
+				});
+	}
+	return graphs[side];
+}
 #endif
 extern "C" void radTransfer()
 {
@@ -660,6 +683,8 @@ extern "C" void radTransfer()
 			else
 			{
 			  acGridExecuteTaskGraph(bcs,1);
+			  //Boundary heating rates of the vertical rays from the upstream processes
+			  if (nrad != 0) acGridExecuteTaskGraph(get_vertical_ray_boundary_graph(nrad),1);
 			}
 			//3) Revision of the intrinsic computation with incoming upstream values and accumulation to the final result
 			if(nrad != 0)

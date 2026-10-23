@@ -40,27 +40,27 @@ ComputeSteps Q_ym_intrinsic(Qhor_intrinsic_bcs)
 //Revision with the boundary intensity and accumulation into Qrad
 ComputeSteps Q_up_extrinsic(boundconds)
 {
-        revise_and_accumulate_Q_up(AC_ray_idir)
+        accumulate_Q_up(AC_ray_idir)
 }
 ComputeSteps Q_down_extrinsic(boundconds)
 {
-        revise_and_accumulate_Q_down(AC_ray_idir)
+        accumulate_Q_down(AC_ray_idir)
 }
 ComputeSteps Q_xp_extrinsic(boundconds)
 {
-        revise_and_accumulate_Q_xp(AC_ray_idir)
+        accumulate_Q_xp(AC_ray_idir)
 }
 ComputeSteps Q_xm_extrinsic(boundconds)
 {
-        revise_and_accumulate_Q_xm(AC_ray_idir)
+        accumulate_Q_xm(AC_ray_idir)
 }
 ComputeSteps Q_yp_extrinsic(boundconds)
 {
-        revise_and_accumulate_Q_yp(AC_ray_idir)
+        accumulate_Q_yp(AC_ray_idir)
 }
 ComputeSteps Q_ym_extrinsic(boundconds)
 {
-        revise_and_accumulate_Q_ym(AC_ray_idir)
+        accumulate_Q_ym(AC_ray_idir)
 }
 
 //Boundary heating rate Q=I-S of the vertical rays in the upstream ghost zone (radboundary_xy_set):
