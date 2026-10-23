@@ -2404,8 +2404,8 @@ module Forcing
                   j2f=j+i2fff-1
 !
 !  Save the value of the variable before forcing is applied.
-!
-                  variable_rhs=f(l1:l2,m,n,iffx:iffz)
+!  2026-Oct-23/Kishore: commented out as it makes no sense to have this in the j-loop
+!                   variable_rhs=f(l1:l2,m,n,iffx:iffz)
 !
                   if (lhelical_test) then
                     f(l1:l2,m,n,jf)=forcing_rhs(:,j)
@@ -2493,9 +2493,14 @@ module Forcing
 !
 !  Compute rhs.
 !
-!                 variable_rhs=f(l1:l2,m,n,iffx:iffz)          !MR: here already updated!
+                  variable_rhs=f(l1:l2,m,n,iffx:iffz)          !MR: here already updated!
 !AB: the line above should now be deleted, after having added it now just after
 !    my comment "Save the value of the variable before forcing is applied."
+!  Kishore: reverted Axel's change as he had put the line above inside the j
+!  Kishore: loop, leading to wrong results. While the use of the updated value
+!  Kishore: of the variable for these diagnostics makes its time average neither
+!  Kishore: an Ito nor a Stratonovich integral, it is at least consistent with
+!  Kishore: the other diagnostics below.
 !
                   call multsv_mn(rho/dt,forcing_rhs,force_all)
                   call dot_mn(variable_rhs,force_all,ruf)
