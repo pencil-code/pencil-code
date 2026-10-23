@@ -22,6 +22,7 @@
 #include <dlfcn.h>
 #include <thread>
 #include <stack>
+#include <filesystem>
 
 static std::thread GW_thread{};
 static int device_id = 0;
@@ -1054,15 +1055,32 @@ extern "C" void tf_save_model_c_api(const char* name, const char* fname){
 /***********************************************************************************************/
 extern "C" void tf_save_checkpoint_c_api(const char* name, const char* checkpoint_dir){
 #if LTRAINING
+
+	// Save checkpoint
 	bool success = torch_save_checkpoint_CAPI(name, checkpoint_dir);
 	if (success != 0){
 		acLogFromRootProc(rank, "save_checkpoint: Error when checkpointing ML model: %s in directory: %s\n", name, checkpoint_dir);
 	}
 	else{
-        save_stats("data/training/running_statistics.csv");
+        	save_stats("data/training/running_statistics.csv");
 		acLogFromRootProc(rank, "save_checkpoint: Checkpoint ML model to: %s\n", checkpoint_dir);
-  save_training_losses();
+	        save_training_losses();
 	}
+
+	// Save checkpoint to iteration-specific folder
+	const char* iteration_specific_checkpoint_dir = (std::string(checkpoint_dir) + "/ITERATION_" + std::to_string(it)).c_str();
+	std::filesystem::create_directory(std::filesystem::path(std::string(iteration_specific_checkpoint_dir)));
+	success = torch_save_checkpoint_CAPI(name, iteration_specific_checkpoint_dir);
+        if (success != 0){
+                acLogFromRootProc(rank, "save_checkpoint: Error when checkpointing ML model: %s in iteration-specific directory: %s\n", name, iteration_specific_checkpoint_dir);
+        }
+        else{
+        	save_stats("data/training/running_statistics.csv");
+                acLogFromRootProc(rank, "save_checkpoint: Checkpoint ML model to iteration-specific directory: %s\n", iteration_specific_checkpoint_dir);
+
+	        save_training_losses();
+        }
+
 	fflush(stdout);
 	fflush(stderr);
 #endif
