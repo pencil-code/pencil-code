@@ -2502,6 +2502,11 @@ module Forcing
 !  Kishore: an Ito nor a Stratonovich integral, it is at least consistent with
 !  Kishore: the other diagnostics below.
 !
+!  Kishore: for white-noise forcing (dtforce=0), rufm as calculated below will
+!  Kishore: actually be twice the energy injection; we are calculating
+!  Kishore: <f_t u_{t+1}>, while the correct (Stratonovich) expression to
+!  Kishore: calculate is <f_t (u_{t+1} + u_t)/2> (where I am using t to denote
+!  Kishore: the timestep number).
                   call multsv_mn(rho/dt,forcing_rhs,force_all)
                   call dot_mn(variable_rhs,force_all,ruf)
                   call sum_mn_name(ruf,idiag_rufm)
