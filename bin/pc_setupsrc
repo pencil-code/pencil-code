@@ -438,9 +438,7 @@ link_astaroth_files()
     file_for_link $file
   done
 
-
   ln -s $AC_HOME/acc-runtime/stdlib DSL >& /dev/null
-  ln -s $AC_HOME/acc-runtime/ submodule/ >& /dev/null
 
   for file in $to_link
   do

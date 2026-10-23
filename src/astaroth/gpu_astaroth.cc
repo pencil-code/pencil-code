@@ -54,8 +54,6 @@ const bool performance_logs = false;
 #define EXTERN
 #define FINT int
 
-
-
 #if DOUBLE_PRECISION
   #define REAL_MAX DBL_MAX
 #else
@@ -364,9 +362,7 @@ torus_rect to_torus_rect(void* param, const char* name)
 #endif
 
 /***********************************************************************************************/
-template <typename T>
-void
-pushpars_special(const char* func_name, T p_pars)
+template <typename T> void pushpars_special(const char* func_name, T p_pars)
 {
  	void* handle = dlopen("src/special.so",RTLD_NOW | RTLD_LOCAL);
 	auto sub = reinterpret_cast<void (*)(T)>(dlsym(handle,func_name));
@@ -374,8 +370,7 @@ pushpars_special(const char* func_name, T p_pars)
 	dlclose(handle);
 }
 /***********************************************************************************************/
-const char*
-get_cwd()
+const char* get_cwd()
 {
   static char cwd[9000];
   cwd[0] = '\0';
@@ -405,8 +400,7 @@ static int lac_sparse_autotuning = 0;
 static int* maux_vtxbuf_index = NULL;
 static int* read_vtxbuf_from_gpu = NULL;
 /***********************************************************************************************/
-void
-sortMaux()
+void sortMaux()
 {
     std::vector<int> used_maux;
     for (int i = 0; i < mfarray; ++i) {
@@ -422,6 +416,7 @@ sortMaux()
             maux_vtxbuf_index[i] = used_maux[j++];
     }
 }
+/***********************************************************************************************/
 void setupConfig(AcMeshInfo& config)
 {
   config = acInitInfo();
@@ -504,7 +499,7 @@ void setupConfig(AcMeshInfo& config)
 //  Overwrites Astaroth's default formula for AC_len in case it does not cover everything like non-equidistant grids
   PCLoad(config,AC_len,lxyz);
 
-  #if LTRAINING
+#if LTRAINING
   AcRealSymmetricTensor tau_hydro_means{};
   AcRealSymmetricTensor tau_hydro_stds{};
 	
@@ -513,7 +508,7 @@ void setupConfig(AcMeshInfo& config)
 
   	PCLoad(config,AC_tau_hydro_means,tau_hydro_means);
   	PCLoad(config,AC_tau_hydro_stds ,tau_hydro_stds);
-  #endif
+#endif
   PCLoad(config,AC_sparse_autotuning,lac_sparse_autotuning);
 #if LRADIATION
   //TP: done since we are setting Q initially zero and later on take into account the periodicity
@@ -577,8 +572,7 @@ AcReal GpuCalcDt(const AcReal t)
 #if Lradiation_ray_MODULE
 //Boundary heating rates of the periodic horizontal rays (Qperiodic): built once per direction and reused,
 //since every acGridBuildTaskGraph allocates new MPI tags (and the graphs would otherwise leak)
-static AcTaskGraph*
-get_periodic_ray_graph(const int3 direction)
+static AcTaskGraph* get_periodic_ray_graph(const int3 direction)
 {
 	static AcTaskGraph* graphs[2][2]{};
 	const int axis = direction.x != 0 ? 0 : 1;
@@ -594,8 +588,7 @@ get_periodic_ray_graph(const int3 direction)
 //revises only its downstream boundary layer with it (Q_intrinsic + Q_bnd*exp(-tau)) and sends that to the next process,
 //as radboundary_xy_recv/send in radiation_ray.f90; the revision of the whole subdomain is then done in parallel
 //(Q_up_extrinsic, see accumulate_vertical in DSL/radiation/integrate.h).
-static AcTaskGraph*
-get_vertical_ray_boundary_graph(const int nrad)
+static AcTaskGraph* get_vertical_ray_boundary_graph(const int nrad)
 {
 	static AcTaskGraph* graphs[2]{};
 	const int side = nrad > 0 ? 1 : 0;
@@ -676,7 +669,7 @@ extern "C" void radTransfer()
 				acGridExecuteTaskGraph(mrad > 0 ? acGetOptimizedDSLTaskGraph(Q_yp_intrinsic,true,Qhor_intrinsic_bcs)
 								: acGetOptimizedDSLTaskGraph(Q_ym_intrinsic,true,Qhor_intrinsic_bcs),1);
 			}
-			if(facet_class == 1 && ((lrad != 0 && lperi.x) || (mrad != 0 && lperi.y) || (nrad != 0 && lperi.z)))
+			if (facet_class == 1 && ((lrad != 0 && lperi.x) || (mrad != 0 && lperi.y) || (nrad != 0 && lperi.z)))
 			{
     		          acGridExecuteTaskGraph(get_periodic_ray_graph(dir),1);
 			}
@@ -687,12 +680,12 @@ extern "C" void radTransfer()
 			  if (nrad != 0) acGridExecuteTaskGraph(get_vertical_ray_boundary_graph(nrad),1);
 			}
 			//3) Revision of the intrinsic computation with incoming upstream values and accumulation to the final result
-			if(nrad != 0)
+			if (nrad != 0)
 			{
 				acGridExecuteTaskGraph(nrad > 0 ? acGetOptimizedDSLTaskGraph(Q_up_extrinsic)
 								: acGetOptimizedDSLTaskGraph(Q_down_extrinsic),1);
 			}
-			else if(lrad != 0)
+			else if (lrad != 0)
 			{
 				acGridExecuteTaskGraph(lrad > 0 ? acGetOptimizedDSLTaskGraph(Q_xp_extrinsic)
 								: acGetOptimizedDSLTaskGraph(Q_xm_extrinsic),1);
@@ -812,7 +805,7 @@ void save_stats(std::string fileName){
 
       // Headers
       if (lhydro){
-        if(AC_lconservative__mod__hydro){
+        if (AC_lconservative__mod__hydro){
           myFile << ",in_acc_sum_rho";
 
           for (const auto& s : vec_suffix) myFile << ",in_acc_sum_mom" << s;
@@ -835,16 +828,14 @@ void save_stats(std::string fileName){
 	myFile << "\n";
 	myFile << train_counter << "," << (size_t)nxgrid*nygrid*nzgrid;
       }
-    
 
-        if (AC_ltrain_mag__mod__training) {
+      if (AC_ltrain_mag__mod__training) {
             myFile << ",in_acc_sum_Ux,in_acc_sum_Uy,in_acc_sum_Uz,in_acc_sum_Bx,in_acc_sum_By,in_acc_sum_Bz,in_acc_sum_squared_Ux,in_acc_sum_squared_Uy,in_acc_sum_squared_Uz,in_acc_sum_squared_Bx,in_acc_sum_squared_By,in_acc_sum_squared_Bz,out_acc_sum_EMFx,out_acc_sum_EMFy,out_acc_sum_EMFz,out_acc_sum_squared_EMFx,out_acc_sum_squared_EMFy,out_acc_sum_squared_EMFz\n";
 
             myFile << train_counter << "," << nxgrid*nygrid*nzgrid << ",";
 
-	}
+      }
         
-      
       auto write_fields = [&](auto* name, size_t size) {
         for (size_t i = 0; i < size; ++i) {
             myFile << "," << acDeviceGetOutput(acGridGetDevice(), name[i]);
@@ -854,7 +845,7 @@ void save_stats(std::string fileName){
 
     // Hydro statistics
         if (lhydro){
-          if(AC_lconservative__mod__hydro){
+          if (AC_lconservative__mod__hydro){
             myFile << "," << acDeviceGetOutput(acGridGetDevice(), in_acc_sum_rho);
             
             // momentum
@@ -924,7 +915,7 @@ void save_training_losses(){
 
   std::ofstream myFile;
   std::string fileString = "train_loss_" + std::to_string(my_rank)  + ".csv";	
-  if(training_from_checkpoint){
+  if (training_from_checkpoint){
     myFile.open(fileString, std::ios::app);
   }
   else {
@@ -937,7 +928,7 @@ void save_training_losses(){
   myFile.close();
 	
 	std::string train_sample = "train_sample_" + std::to_string(my_rank) + ".csv";
-  if(training_from_checkpoint){
+  if (training_from_checkpoint){
     myFile.open(fileString, std::ios::app);
   }
   else {
@@ -953,7 +944,7 @@ void save_training_losses(){
 void load_train_stats(){
 #if LTRAINING
 	#include "user_constants.h"
-    if(rank==0){
+    if (rank==0){
         std::ifstream statistics("data/training/running_statistics.csv");
         int count;
         int domain;
@@ -987,9 +978,8 @@ void load_train_stats(){
             acDeviceSetInput(acGridGetDevice(), AC_count, train_counter);
 
             if (lhydro){
-                if(AC_lconservative__mod__hydro){
+                if (AC_lconservative__mod__hydro){
                   size_t i_count=2;
-
 
                   acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_rho, (AcReal)std::stod(row[i_count++]));
 
@@ -1129,7 +1119,7 @@ extern "C" void tf_load_model_c_api(const char* name, const char* fname){
 	else{
 		acLogFromRootProc(rank, "Torchfort model %s loaded succesfully", name);
 	}
-  new_run=false;
+  	new_run=false;
 	fflush(stdout);
 	fflush(stderr);
 #endif
@@ -1147,8 +1137,8 @@ extern "C" void tf_load_model_checkpoint_c_api(const char* name, const char* che
 		acLogFromRootProc(rank, "Torchfort model %s loaded succesfully\n", name);
 	}
     
-  training_from_checkpoint=true;
-  new_run=false;
+  	training_from_checkpoint=true;
+  	new_run=false;
 	fflush(stdout);
 	fflush(stderr);
 #endif
@@ -1163,7 +1153,7 @@ extern "C" void tf_save_model_c_api(const char* name, const char* fname){
 	else{
         save_stats("data/training/running_statistics.csv");
 		acLogFromRootProc(rank, "save_model: Saving ML model to: %s\n", fname);
-    save_training_losses();
+    	save_training_losses();
 
 	}
 	fflush(stdout);
@@ -1180,7 +1170,7 @@ extern "C" void tf_save_checkpoint_c_api(const char* name, const char* checkpoin
 	else{
         save_stats("data/training/running_statistics.csv");
 		acLogFromRootProc(rank, "save_checkpoint: Checkpoint ML model to: %s\n", checkpoint_dir);
-  save_training_losses();
+  	save_training_losses();
 	}
 	fflush(stdout);
 	fflush(stderr);
@@ -1298,10 +1288,10 @@ extern "C" void tf_infer_c_api(const char* name, int itsub)
 	if (!ltrained) return;
 	if (!calling_infer){
 	  acLogFromRootProc(rank,"Doing inference\n");
-    fflush(stderr);
-    fflush(stdout);
+    	  fflush(stderr);
+   	  fflush(stdout);
 
-    calling_infer = true;
+          calling_infer = true;
 	}
 
   auto initialize_fields = acGetOptimizedDSLTaskGraph(get_inference_fields);
@@ -1325,26 +1315,25 @@ extern "C" void tf_infer_c_api(const char* name, int itsub)
   std::vector<std::pair<AcReal*, int>> inputs;
   std::vector<std::pair<AcReal*, int>> outputs;
 
-  if(lhydro){
+  if (lhydro){
 
-   if(AC_lconservative__mod__hydro){
-    acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetmom_mean_X(), &input, &out);
-    inputs.emplace_back(input, 3);
-    acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetrho_mean(), &input, &out);
-    inputs.emplace_back(input, 1);
+    if (AC_lconservative__mod__hydro){
+     acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetmom_mean_X(), &input, &out);
+     inputs.emplace_back(input, 3);
+     acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetrho_mean(), &input, &out);
+     inputs.emplace_back(input, 1);
 
-    acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetTAU_STRAIN_XX(), &output, &out);
+     acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetTAU_STRAIN_XX(), &output, &out);
+     outputs.emplace_back(output, 6);
+    } 
+    else{
+      //todo: check if trained on same grid size and do not smooth the averaged out vals
+      acDeviceGetVertexBufferPtrs(acGridGetDevice(), uumean.x, &input, &out);
+      inputs.emplace_back(input, 3);
+    }
+
+    acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetTAU_HYDRO_XX(), &output, &out);
     outputs.emplace_back(output, 6);
-   } 
-   else{
-	  //todo: check if trained on same grid size and do not smooth the averaged out vals
-    acDeviceGetVertexBufferPtrs(acGridGetDevice(), uumean.x, &input, &out);
-    inputs.emplace_back(input, 3);
-   }
-
-   acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetTAU_HYDRO_XX(), &output, &out);
-   outputs.emplace_back(output, 6);
-
 
   }
 
@@ -1378,7 +1367,7 @@ extern "C" void tf_train_c_api(const char* name, AcReal *loss_val, int itsub, do
   #include <stdlib.h>
   #include <cfloat>
 
-  if(itsub != 1) return;
+  if (itsub != 1) return;
   
   if (!calling_train){
     acLogFromRootProc(rank,"Doing training\n");
@@ -1404,7 +1393,7 @@ extern "C" void tf_train_c_api(const char* name, AcReal *loss_val, int itsub, do
 
   *loss_val=DBL_MAX;
 
-  if(lhydro){
+  if (lhydro){
   
     std::vector<std::pair<AcReal*, int>> inputs;
     std::vector<std::pair<AcReal*, int>> outputs;
@@ -1413,7 +1402,7 @@ extern "C" void tf_train_c_api(const char* name, AcReal *loss_val, int itsub, do
     AcReal* input = NULL;
     AcReal* output = NULL;
 
-    if(AC_lconservative__mod__hydro){
+    if (AC_lconservative__mod__hydro){
         // dynamic field handel acGetmomentum_sgs_Xx()
         acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetmom_mean_X(), &input, &out);
         inputs.emplace_back(input, 3);
@@ -1438,7 +1427,7 @@ extern "C" void tf_train_c_api(const char* name, AcReal *loss_val, int itsub, do
     torch_wandb_log(name, "training_loss", it, *loss_val);
   }
   
-  if(AC_ltrain_mag__mod__training){
+  if (AC_ltrain_mag__mod__training){
     std::vector<std::pair<AcReal*, int>> inputs;
     std::vector<std::pair<AcReal*, int>> outputs;
 
@@ -1715,8 +1704,7 @@ extern "C" void print_debug() {
 	if (called_training) called_training = false;
 }
 /***********************************************************************************************/
-void
-GW_update(const AcReal dt_gw)
+void GW_update(const AcReal dt_gw)
 {
 #if LGRAVITATIONAL_WAVES_HTXK
 	//We set the device id here since another thread than the master might be executing this
@@ -1756,8 +1744,7 @@ extern "C" void afterSubStepGPU()
 }
 /***********************************************************************************************/
 //Tested to work with solar-atmosphere-magnetic
-void
-fourier_boundary_conditions()
+void fourier_boundary_conditions()
 {
 	if (luses_aa_pwd_top)
 	{
@@ -1877,7 +1864,7 @@ calc_timestep(double t)
     	// Don't decrease the time step by more than a factor of ten
         constexpr AcReal decrease_factor = (AcReal)0.1;
     	dt_ = sign(max(abs(dt_temp), decrease_factor*abs(dt)), dt);
-        if(dtlimit__mod__cdata > 0.) dt_ = std::max(dt_,dtlimit__mod__cdata);
+        if (dtlimit__mod__cdata > 0.) dt_ = std::max(dt_,dtlimit__mod__cdata);
     } 
     else
     {
@@ -1973,9 +1960,9 @@ void copyFarray(AcReal* f)
 		  	    i < mvar ? i :
 			    i < nfarray ?  maux_vtxbuf_index[i] : -1;
 	  bool read_var = (i < end);
-	  read_var &= (index != -1);
 	  read_var |= (read_vtxbuf_from_gpu[i]);
 	  read_var |= ltraining;
+	  read_var &= (index != -1);
           if (!read_var) continue;
 	  acDeviceStoreVertexBuffer(acGridGetDevice(),STREAM_DEFAULT,VertexBufferHandle(index),dst);
   }
@@ -2055,7 +2042,7 @@ extern "C" void getFArrayIn(AcReal **p_f_in)
   AcReal* uuy_ptr = NULL;
   AcReal* uuz_ptr = NULL;
 
-  if(iuu__mod__cdata != 0)
+  if (iuu__mod__cdata != 0)
   {
     acDeviceGetVertexBufferPtrs(acGridGetDevice(),acGetF_UX(),&uux_ptr,&out);
     acDeviceGetVertexBufferPtrs(acGridGetDevice(),acGetF_UY(),&uuy_ptr,&out);
@@ -2068,7 +2055,7 @@ extern "C" void getFArrayIn(AcReal **p_f_in)
 /***********************************************************************************************/
 extern "C" void copyVBApointers(AcReal **in, AcReal **out)
 {
-  if(iuu__mod__cdata != 0)
+  if (iuu__mod__cdata != 0)
   {
     AcReal* uux_ptr = NULL;
     AcReal* uuy_ptr = NULL;
@@ -2105,8 +2092,7 @@ void autotune_all_integration_substeps()
   splitUpdate(1e11,1);
 }
 /***********************************************************************************************/
-AcMesh
-get_f_src()
+AcMesh get_f_src()
 {
   if (nghost > 0 && dimensionality == 1)
   {
@@ -2243,8 +2229,7 @@ void generate_bcs()
 extern "C" void testBCs();     // forward declaration
 /***********************************************************************************************/
 #include "cmake_options.h"
-void
-ac_compile()
+void ac_compile()
 {
   if (acCompile(cmake_options,mesh.info) != AC_SUCCESS)
   {
@@ -2252,8 +2237,7 @@ ac_compile()
 	  {
 		  fprintf(stderr,"Was not able to compile Astaroth!\n");
 		  int err = system("touch ERROR");
-		  if (err)
-		    fprintf(stderr,"Unable to create ERROR file!\n");
+		  if (err) fprintf(stderr,"Unable to create ERROR file!\n");
 	  }
   	  MPI_Barrier(MPI_COMM_WORLD);
 	  exit(EXIT_FAILURE);
@@ -2371,7 +2355,7 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_,
   dt1_interface = unit/dt;
 
   //Loads training statistics to the device
-  if(!new_run){ 
+  if (!new_run){ 
     acLogFromRootProc(rank, "Loaded previous statistics\n");
     load_train_stats();
   }
@@ -2654,7 +2638,6 @@ void testBCs()
       }
     }
   }
-
 
   passed &= !has_nans(mesh);
   if (!passed)
