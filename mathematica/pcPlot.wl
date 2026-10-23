@@ -32,6 +32,7 @@ pcLegend::usage="pcLegend[l,opts] uses DensityPlot to make a bar legend.
 Input:
   l: List. MinMax[l] will specify the lower and upper bounds of the data.
 Options:
+  \"Precision\": Tick-label rounding precision, default 0.1 (use 0.01 for two decimal places).
   opts: Will be inherited by DensityPlot and overwrite the default ones.
         Usually one needs to adjust ImageSize, ImagePadding, and AspectRatio to have
         the best looking.
@@ -220,13 +221,15 @@ pcTicks["Log10i",max_:99]:=Table[{10^i,ToString@i},{i,-max,max}]
 pcTicks["Range"][range_,pd_]:=List[
   {#,StringPadRight[ToString[#],pd,"0"]}&/@range, Automatic
 ]
-pcTicks["Range2"][minmax_]:=Module[{mean,d,r,ticks},
+pcTicks["Range2"][minmax_,precision_:0.1]:=Module[{mean,d,p,ticks},
   d=-Subtract@@minmax/4*0.9;
-  r=Min[1,10.^Floor[Log10[d]]];
-  d=Round[d,r];
-  mean= minmax//Mean//Round[#,r]&;
+  p=Max[0,Ceiling[-Log10[precision]]];
+  mean=Mean[minmax];
   ticks=mean+d*Range[-2,2];
-  ReplaceAll[ticks,x_/;StringEndsQ[ToString[x],"."]:>{x,ToString[x]<>"0"}]
+  With[{value=Round[#,10^-p]},
+    {#,If[value==0,If[p>0,"0."<>StringRepeat["0",p],"0"],
+      NumberForm[N[value],{Infinity,p},NumberPadding->{"","0"},NumberPoint->If[p>0,".",""]]]}
+  ]&/@ticks
 ]
 
 pcInset[str_String,posx_,posy_]:=Inset[Style[str,pcLabelStyle],Scaled[{posx,posy}]]
@@ -236,12 +239,14 @@ pcInset[str_String,posx_,posy_]:=Inset[Style[str,pcLabelStyle],Scaled[{posx,posy
 (*Bar legend*)
 
 
+Options[pcLegend]=Join[{"Precision"->0.1},Options[ArrayPlot]];
+
 pcLegend[l_List,opt:OptionsPattern[]]:=Module[{data,minmax},
   minmax=l//MinMax;
   data=Table[{x,y,y},{x,{0,1}},{y,Subdivide[Sequence@@minmax,127]}]//Flatten[#,1]&;
-  pcDensityPlot[data,opt,
+  pcDensityPlot[data,Sequence@@FilterRules[{opt},Except["Precision"]],
     ColorFunction->pcColors["Rainbow"],PlotLegends->None,
-    FrameTicks->{{None,pcTicks["Range2"][minmax]},{None,None}},PlotRangePadding->None,
+    FrameTicks->{{None,pcTicks["Range2"][minmax,OptionValue["Precision"]]},{None,None}},PlotRangePadding->None,
     AspectRatio->12,ImagePadding->{{5,40},{5,5}},ImageSize->{80,240},
     FrameTicksStyle->Automatic
   ]
@@ -250,9 +255,9 @@ pcLegend[l_List,opt:OptionsPattern[]]:=Module[{data,minmax},
 pcLegend[l_List,"h",opt:OptionsPattern[]]:=Module[{data,minmax},
   minmax=l//MinMax;
   data=Table[{x,y,x},{x,Subdivide[Sequence@@minmax,127]},{y,{0,1}}]//Flatten[#,1]&;
-  pcDensityPlot[data,
+  pcDensityPlot[data,Sequence@@FilterRules[{opt},Except["Precision"]],
     ColorFunction->ColorData[{"Rainbow","Reversed"}],PlotLegends->None,
-    FrameTicks->{{None,None},{pcTicks["Range2"][minmax],None}},PlotRangePadding->None,
+    FrameTicks->{{None,None},{pcTicks["Range2"][minmax,OptionValue["Precision"]],None}},PlotRangePadding->None,
     AspectRatio->1/12,ImagePadding->{{5,5},{40,5}},ImageSize->{240,80}
   ]
 ]
