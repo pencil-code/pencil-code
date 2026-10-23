@@ -43,7 +43,7 @@ module Special
   integer :: iaxi_lna=0, iaxi_phi=0, iaxi_phidot=0
 !
   ! input parameters
-  real :: a, k0=1e-2, dk=1e-2, ascale_ini=1.
+  real :: a=0., k0=1e-2, dk=1e-2, ascale_ini=1.
   real :: fdecay=.003, g=1.11e-2, lam=500., mu=impossible
   real :: Q0=3e-4, Qdot0=0., chi_prefactor=.49, chidot0=impossible, H=1.04e-6
   real :: H_init
@@ -391,15 +391,38 @@ module Special
 !
 !  Compute Q0 either based on a given value of mu (if given)
 !  or based on Q0, so mQ0=g*Q0/H.
-!
-              Q0=(-Uprime0/(3.*g*lamf*H))**onethird
-              xi0=g*Q0/H+H/(g*Q0)
+!  case1: no mu, no mQ0: not possible
+!  case2: no mu, mQ0 given: xi0=mQ0+1./mQ0 --> mu, Uprime0
+!  case3: mu given, no mQ0 
+!  case4: mu given, mQ0 given: not possible
+
               if (mu==impossible) then
-                mQ0=g*Q0/H
-                mu=(fdecay/sin(chi0/fdecay)*(6.*xi0*H**2/lamf+3.*lamf*H**4*mQ0**3/g**2))**.25
+                if (mQ0==impossible) then
+                  call fatal_error("init_special","either mQ0 must be given if no mu is given")
+                else
+                  xi0=mQ0+1./mQ0
+                  mu=(fdecay/sin(chi0/fdecay)*(6.*xi0*H**2/lamf+3.*lamf*H**4*mQ0**3/g**2))**.25
+  !mu=   5.6150519586053321E-004
+                  Uprime0=-mu**4/fdecay*sin(chi0/fdecay)
+                  if (lroot) print*,'mQ0 is given: mQ0,xi0=',mQ0,xi0
+                endif
+                if (lroot) print*,'mu is given: mu=',mu
               else
-                Uprime0=-mu**4/fdecay*sin(chi0/fdecay)
+                if (mQ0==impossible) then
+                  if (lroot) print*,'Uprime0 is already computed: Uprime0=',Uprime0
+                  Q0=(-Uprime0/(3.*g*lamf*H))**onethird
+                  xi0=g*Q0/H+H/(g*Q0)
+                  mQ0=g*Q0/H
+                else
+                  call fatal_error("init_special","giving both mQ0 and mu is impossible")
+                endif
+                if (lroot) print*,'mQ0 is given: mQ0,xi0=',mQ0,xi0
+                if (lroot) print*,'mu is given: mu=',mu
               endif
+              if (lroot) print*,'Uprime0 is already computed: Uprime0=',Uprime0
+!
+!  In all 4 cases, chidot0 has to be compute
+!
               if (chidot0==impossible) chidot0=2.*H*xi0/lamf
             else
               a=exp(H*t)
@@ -1184,6 +1207,15 @@ module Special
 !
           !Qddot  =Qddot  -sbackreact_Q  *fact *grand_sum-sbackreact_JJ*JJ_sum
           if (lSchwinger_scalar) then
+!print*,'AXEL2: Qddot, sbackreact_Q, fact, grand_sum, sbackreact_JJ, JJ_sum='
+!print*,'AXEL2: Qddot=',Qddot
+!print*,'AXEL2: sbackreact_Q=',sbackreact_Q
+!print*,'AXEL2: fact=',fact
+!print*,'AXEL2: grand_sum=',grand_sum
+!print*,'AXEL2: sbackreact_JJ=',sbackreact_JJ
+!print*,'AXEL2?: t=',t
+!print*,'AXEL2?: JJ_sum=',JJ_sum
+!print*,'AXEL3: Qddot, sbackreact_Q, fact, grand_sum, sbackreact_JJ, JJ_sum='
             Qddot  =Qddot  -sbackreact_Q  *fact *grand_sum-sbackreact_JJ*JJ_sum
           else
             Qddot  =Qddot  -sbackreact_Q  *fact *grand_sum
@@ -1452,6 +1484,13 @@ module Special
         if ((llnk_spacing_adjustable.or.llnk_spacing) .and. lfirst) then
           if (nswitch>0 .or. (lalways_backreact_output .and. lout)) then
             open (1, file=trim(directory_snap)//'/backreact.dat', form='formatted', position='append')
+!print*,'AXEL1: '
+!print*,'AXEL1: t=',t
+!print*,'AXEL1: lnk(1)=',lnk(1)
+!print*,'AXEL1: grand(1), dgrant(1)=',grand(1), dgrant(1)
+!print*,'AXEL1: a=',a
+!print*,'AXEL1: lnk(1), grand(1), dgrant(1), a=',lnk(1), grand(1), dgrant(1), a
+!print*,'AXEL1: H=',H
             write(1,*) t, lnk, grand, dgrant, a, H
             close(1)
             if (lSchwinger_scalar) then
@@ -1914,7 +1953,11 @@ module Special
         call mpiallreduce_sum(sum(uLeff2m),uLeff2m_sum,1)
         call mpiallreduce_sum(sum(JJ_R),JJ_R_sum,1)
         call mpiallreduce_sum(sum(JJ_L),JJ_L_sum,1)
+!print*,'AXEL4: mpiallreduce_sum(sum(JJ_R+JJ_L),JJ_sum,1)'
+!print*,'AXEL4: JJ_R=',JJ_R
+!print*,'AXEL4: JJ_L=',JJ_L
         call mpiallreduce_sum(sum(JJ_R+JJ_L),JJ_sum,1)
+!print*,'AXEL5: JJ_sum=',JJ_sum
       else
         JJ_R_sum=0.
         JJ_L_sum=0.
