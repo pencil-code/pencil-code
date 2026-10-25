@@ -1,0 +1,20 @@
+!                              -*-f90-*-     (for emacs) 
+!
+!  Initialisation parameters for dust particles moving in a random 
+!  velocity field.
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2026/04/14 09:55:12 brandenb Exp $',
+  nt=100, it1=5, isave=2000, itorder=3
+  dsnap=1, dvid=2.0, ip=20
+  lpencil_check=F
+  tmax=100
+  offset_min_calc=1.
+  !dt=5e-5  !(ok for eta=5e-6)
+  dt=5e-6  !()
+/
+&magnetic_run_pars
+  !eta=5e-6, lupw_aa=T
+  eta=5e-5, lupw_aa=T
+  hall_term=1
+/

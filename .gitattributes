@@ -2713,6 +2713,13 @@ samples/2d-tests/radiation_doppler/src/cparam.local -text
 samples/2d-tests/radiation_doppler/start.in -text
 samples/2d-tests/radiation_doppler/video.in -text
 samples/2d-tests/radiation_doppler/xyaver.in -text
+samples/2d-tests/reconnection/README.md -text
+samples/2d-tests/reconnection/print.in -text
+samples/2d-tests/reconnection/reference.out -text
+samples/2d-tests/reconnection/run.in -text
+samples/2d-tests/reconnection/src/Makefile.local -text
+samples/2d-tests/reconnection/src/cparam.local -text
+samples/2d-tests/reconnection/start.in -text
 samples/2d-tests/resolved_char/air.in -text
 samples/2d-tests/resolved_char/chem.in -text
 samples/2d-tests/resolved_char/print.in -text

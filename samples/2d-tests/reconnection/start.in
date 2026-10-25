@@ -1,0 +1,18 @@
+!                              -*-f90-*-     (for emacs)
+!
+!  Initialisation parameters for dust particles moving in a random
+!  velocity field.
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2026/04/14 09:55:12 brandenb Exp $',
+  lperi =    T,    T,    T
+  lwrite_ic=T, lwrite_aux=T
+  wav1=0.5
+  lshift_origin=T,T,T
+/
+&magnetic_init_pars
+  initaa='sech2x','coswave-Az-ky','gaussian-noise', amplaa=0.1,-1e-3,1e-5, ky_aa=0,0.5,0.0, sheet_thickness=0.5 
+  magnetic_xaver_range=-.01,.01
+  lset_AxAy_zero=T
+/
+
