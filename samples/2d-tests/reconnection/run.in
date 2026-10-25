@@ -5,7 +5,7 @@
 !
 &run_pars
   cvsid='$Id: run.in,v 1.1 2026/04/14 09:55:12 brandenb Exp $',
-  nt=100, it1=5, isave=2000, itorder=3
+  nt=11, it1=5, isave=2000, itorder=3
   dsnap=1, dvid=2.0, ip=20
   lpencil_check=F
   tmax=100
