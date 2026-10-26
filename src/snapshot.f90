@@ -313,7 +313,7 @@ module Snapshot
 !
       use Boundcond, only: update_ghosts
       use General, only: safe_character_assign, loptest
-      use IO, only: log_filename_to_file, IO_strategy
+      use IO, only: log_filename_to_file, IO_strategy, lcollective_io
       use Sub, only: read_snaptime, update_snaptime
       use Syscalls, only: system_cmd
       use Mpicomm, only: mpibarrier
@@ -422,18 +422,20 @@ module Snapshot
           if (.not. loptest(noghost).or.ncoarse>1) call update_ghosts(a)
         endif
         call safe_character_assign(file,trim(chsnap))
-        if (lbackup_snap .and. .not.lstart .and. .not.(chsnap=='crash.dat' .or. chsnap(1:1)=='d' .or. chsnap(1:3)=='VAR')) then
-          tmpfile=merge('var.h5 ','var.dat',IO_strategy=='HDF5')
-          base_file = trim(directory_snap)//'/'//trim(tmpfile)
-          backup_file = base_file // '.bck'
-          if (nsnap_backups > 1) then
-            do i = nsnap_backups,2,-1
-              call system_cmd('mv -f '// backup_file // '.' // trim(itoa(i-1)) // ' ' // &
-                                         backup_file // '.' // trim(itoa(i)) // ' > /dev/null 2>&1')
-            enddo
-            backup_file = backup_file // '.1'
+        if (.not.lcollective_IO .or. IO_strategy=='io_collect_xy'.and.lfirst_proc_xy .or. lroot) then
+          if (lbackup_snap .and. .not.lstart .and. .not.(chsnap=='crash.dat' .or. chsnap(1:1)=='d' .or. chsnap(1:3)=='VAR')) then
+            tmpfile=merge('var.h5 ','var.dat',IO_strategy=='HDF5')
+            base_file = trim(directory_snap)//'/'//trim(tmpfile)
+            backup_file = base_file // '.bck'
+            if (nsnap_backups > 1) then
+              do i = nsnap_backups,2,-1
+                call system_cmd('mv -f '// backup_file // '.' // trim(itoa(i-1)) // ' ' // &
+                                           backup_file // '.' // trim(itoa(i)) // ' > /dev/null 2>&1')
+              enddo
+              backup_file = backup_file // '.1'
+            endif
+            call system_cmd('mv -f '// base_file // ' ' // backup_file //' > /dev/null 2>&1')
           endif
-          call system_cmd('mv -f '// base_file // ' ' // backup_file //' > /dev/null 2>&1')
         endif
         if (lmultithread.and.nt>0) then
           call add_snap_to_queue(1, msnap, file)
