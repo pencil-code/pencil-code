@@ -190,7 +190,6 @@ my %tests = (
                          conv-slab-flat
                          coronae_heatflux_boris
 		         decay-reconnection
-                         falling_thermal
 			 fcont_TG
                          helical-MHDturb_HDF5
                          helical-MHDturb-noncube
@@ -232,6 +231,7 @@ my %tests = (
                          forced-boundary
                          sound-spherical-bufferzone
                          2d-tests/selfgrav-shearwave-dust-par
+                         falling_thermal
                      )],
              # Level 6 for now contains all non-canonical tests that run, # but produce wrong results
              6 => [qw(
