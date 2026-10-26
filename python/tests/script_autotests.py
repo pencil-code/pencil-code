@@ -67,6 +67,7 @@ def test_script_pcautotest(path, pytestconfig):
         stderr=subprocess.PIPE,
         )
 
+    # rerun script tests so they are detected by the code coverage tool
     if pytestconfig.option.script_test_coverage:
         for script in rundir.glob("tests/*.py"):
             subprocess.run(
