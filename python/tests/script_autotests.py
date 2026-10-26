@@ -3,8 +3,6 @@ import subprocess
 import pathlib
 import os
 
-import pencil as pc
-
 from test_utils import (
     get_rundir,
     _require_sample_markers,
