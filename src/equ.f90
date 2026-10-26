@@ -472,10 +472,12 @@ module Equ
 !   here must not access any pencils or auxiliary variables.
 !
 !   08-Oct-2026/Kishore: carved out from write_diagnostics
+!   26-Oct-2026/Kishore: update ghosts for slices
 !
     use Chemistry
     use Slices
     use Diagnostics
+    use Boundcond, only: update_ghosts
 
     real, contiguous, dimension(:,:,:,:) :: f
 !
@@ -486,8 +488,13 @@ module Equ
       endif
 !
 !  Write slices (e.g., for animation purposes).
+!  Need to update ghosts so that we get the right values at the slice boundaries
+!  for the 'a' boundary condition
 !
-      if (lvideo .and. lwrite_slices) call wvid(f, lbefore_ts=.true.)
+      if (lvideo .and. lwrite_slices) then
+        call update_ghosts(f)
+        call wvid(f, lbefore_ts=.true.)
+      endif
 !
     endsubroutine write_diagnostics_before_timestep
 !***********************************************************************
