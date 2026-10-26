@@ -1168,13 +1168,19 @@ module PointMasses
       logical, dimension(mpar_loc) :: flag
       real, dimension(nqpar) :: hill_radius_square
 !
+      real, dimension (mparray), save :: fp_tmp
+      real, dimension (mpvar), save :: dfp_tmp
+!
       call fetch_nparloc(np_aux)
       if (np_aux/=0) then
         call fetch_fp_array(fp_aux,dfp_aux,index%ixw,index%iyw,index%izw, &
                                            index%ivxw,index%ivyw,index%ivzw)
         do k=1,np_aux
           flag(k)=.false.  
-          call gravity_pointmasses(k,hill_radius_square,.false.,fp_aux(k,:),dfp_aux(k,:),flag(k))
+          fp_tmp = fp_aux(k,:)
+          dfp_tmp = dfp_aux(k,:)
+          call gravity_pointmasses(k,hill_radius_square,.false.,fp_tmp,dfp_tmp,flag(k))
+          dfp_aux(k,:) = dfp_tmp
         enddo
         call return_fp_array(fp_aux,dfp_aux,flag)
       endif
@@ -1197,13 +1203,13 @@ module PointMasses
       real :: dt1_nbody, r_ij, v_ij, a_ij
       integer :: ks
 !
-      real, dimension (3) :: evr_cart,positions
-!
       logical, intent(in) :: lcallpointmass
 !
-      real, dimension (mparray), optional :: fp_pt
-      real, dimension (mpvar), optional :: dfp_pt
+      real, dimension (mparray), intent(in), optional :: fp_pt
+      real, dimension (mpvar), intent(inout), optional :: dfp_pt
       logical, optional :: flag_pt
+!
+      real, dimension (3) :: evr_cart, positions, fq_tmp
 !
       if (lcallpointmass) then
         positions    =  fq(k,ixq:izq)
@@ -1216,7 +1222,8 @@ module PointMasses
 !
 !  r_ij = sqrt(ev1**2 + ev2**2 + ev3**2)
 !
-          call get_evr(positions,fq(ks,ixq:izq),evr_cart)!,.true.)
+          fq_tmp = fq(ks,ixq:izq)
+          call get_evr(positions,fq_tmp,evr_cart)!,.true.)
           rr2=sum(evr_cart**2)
           rsmooth2=r_smooth(ks)**2
 !
