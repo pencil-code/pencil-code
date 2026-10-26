@@ -75,7 +75,7 @@ def test_pencilarray_axis_tracking_failure_2():
 	assert parr_4.axis_order is None
 	
 	parr_5 = np.average(arr, axis=1)
-	assert parr_5.axis_order == None
+	assert parr_5.axis_order is None
 
 def test_pencilarray_reorder():
 	arr = np.arange(24).reshape((2,3,4))
