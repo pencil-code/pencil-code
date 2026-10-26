@@ -73,6 +73,9 @@ def test_pencilarray_axis_tracking_failure_2():
 	#transpose
 	parr_4 = np.transpose(parr, axes=(1,0,2))
 	assert parr_4.axis_order is None
+	
+	parr_5 = np.average(arr, axis=1)
+	assert parr_5.axis_order == None
 
 def test_pencilarray_reorder():
 	arr = np.arange(24).reshape((2,3,4))
