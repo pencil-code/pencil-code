@@ -710,7 +710,8 @@ module EquationOfState
         endif
         do il=1,mx
           do im=1,my
-            call eoscalc(ivars,f(il,im,n,:),lnTT=TT_xy(il,im), pp=pp_xy(il,im))
+            f_comp = f(il,im,n,:)
+            call eoscalc(ivars,f_comp,lnTT=TT_xy(il,im), pp=pp_xy(il,im))
           enddo
         enddo
         TT_xy = exp(TT_xy)
