@@ -615,6 +615,7 @@ module EquationOfState
       logical, optional :: lone_sided
 !
       real, save, allocatable, dimension (:,:) :: FbyKT_xy, TT_xy, rho_xy, Krho1kr_xy, cp, cv, pp_xy
+      real, dimension(mfarray) :: f_comp
       integer :: i, il, im, ivars, n, ig1, ig2, dir
 !
       if (.not. allocated(FbyKT_xy))     allocate(FbyKT_xy(mx,my))
@@ -681,7 +682,11 @@ module EquationOfState
 !KG: breaks most of the convection auto-tests (e.g. conv-slab)
       do il=1,mx
         do im =1,my
-          call get_gamma_etc(cp=cp(il,im), cv=cv(il,im), f=f(il,im,n,:))
+          ! PABourdin: Please, never use array-temporaries!
+          ! call get_gamma_etc(cp=cp(il,im), cv=cv(il,im), f=f(il,im,n,:))
+          ! PABourdin: Better and more efficient code is this:
+          f_comp = f(il,im,n,:)
+          call get_gamma_etc(cp=cp(il,im), cv=cv(il,im), f=f_comp)
         enddo
       enddo
 !
