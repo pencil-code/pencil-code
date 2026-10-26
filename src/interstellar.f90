@@ -1822,6 +1822,7 @@ module Interstellar
           !if (lgpu) call update_on_gpu(ind_scale,'AC_heatingfunction_scale')   ! returns index ind_scale at first call!
         endif
       endif
+!Needed if we want spectra with the right t. 
 !$    if(.not. lfarray_copied_before .and. lfarray_copied) then
 !$      call signal_send(lhelper_perf,.false.)
 !$      lfarray_copied=.false.
@@ -2182,7 +2183,6 @@ module Interstellar
 !
 !  If SN are listed in source file then obtain parameters from list
 !
-!$    lfarray_copied=.false.
       if (lSN_list) then
         if (t>=t_next_SNI.or.t>=t_next_SNII) then
           call tidy_SNRs
