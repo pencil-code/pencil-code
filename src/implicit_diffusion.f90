@@ -394,13 +394,14 @@ module ImplicitDiffusion
 !   subroutine get_diffus_coeff(ndc, diffus_coeff): see set_diffusion_equations
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      character(len=*), dimension(mcom,2), intent(in) :: bcx
+      character(len=bclen), dimension(mcom,2), intent(in) :: bcx
       integer, intent(in) :: ivar1, ivar2
       real, intent(in) :: dt
       external :: get_diffus_coeff
 !
       real, dimension(nxgrid) :: a, b, c
       real, dimension(nxgrid) :: adt, opbdt, ombdt, cdt
+      character(len=bclen), dimension(2), save :: bcx_tmp
       integer :: j, k, l
 !
       int_x: if (nxgrid > 1) then
@@ -409,8 +410,9 @@ module ImplicitDiffusion
           call get_tridiag(a, b, c, dt, adt, opbdt, ombdt, cdt)
           yscan: do j = m1, m2
             do l = ivar1, ivar2
+              bcx_tmp = bcx(l,:)
               call implicit_pencil( f(l1-1:l2+1,j,k,l), nxgrid, adt, opbdt, ombdt, cdt, &
-                                    bcx(l,:), dx2_bound(-1:1), xgrid((/1,nxgrid/)) )
+                                    bcx_tmp, dx2_bound(-1:1), xgrid((/1,nxgrid/)) )
             enddo
           enddo yscan
         enddo zscan
@@ -449,6 +451,7 @@ module ImplicitDiffusion
       real, dimension(2) :: bound, boundl
       real, dimension(-1:1) :: d2_bound
 
+      character(len=bclen), dimension(2), save :: bcy_tmp
       integer :: j, k, l
       real :: fac
 !
@@ -475,7 +478,8 @@ module ImplicitDiffusion
                 call get_tridiag(fac*a, fac*b, fac*c, dt, adt, opbdt, ombdt, cdt)
               endif
               penc(1:nx) = axy(:,j)
-              call implicit_pencil( penc, nygrid, adt, opbdt, ombdt, cdt, bcy(l,:), &
+              bcy_tmp = bcy(l,:)
+              call implicit_pencil( penc, nygrid, adt, opbdt, ombdt, cdt, bcy_tmp, &
                                     d2_bound, boundl )
               axy(:,j) = penc(1:nx)
             enddo xscan
@@ -516,6 +520,8 @@ module ImplicitDiffusion
       real, dimension(0:nzgrid+1) :: penc
       real, dimension(nzgrid) :: a, b, c
       real, dimension(nzgrid) :: adt, opbdt, ombdt, cdt
+!
+      character(len=bclen), dimension(2), save :: bcz_tmp
       integer :: i, j, iv
       real :: fac, facy
       real, dimension(2) :: bound
@@ -540,7 +546,8 @@ module ImplicitDiffusion
                 call get_tridiag(fac*a, fac*b, fac*c, dt, adt, opbdt, ombdt, cdt)
               endif
               penc(1:nzgrid) = ft(i,j,:)
-              call implicit_pencil( penc, nzgrid, adt, opbdt, ombdt, cdt, bcz(iv,:),  &
+              bcz_tmp = bcz(iv,:)
+              call implicit_pencil( penc, nzgrid, adt, opbdt, ombdt, cdt, bcz_tmp,  &
                                     dz2_bound, bound )
               ft(i,j,:) = penc(1:nzgrid)
             enddo xscan
