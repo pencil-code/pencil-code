@@ -57,7 +57,7 @@ for var in [
     env[var] = os.environ[var]
 
 @pytest.mark.pcautotest
-@pytest.mark.parametrize("path", map(add_marks_to_sample, samples_with_scripttests))
+@pytest.mark.parametrize("path", _samples_with_scripttests)
 def test_script_pcautotest(path, pytestconfig):
     rundir = pathlib.Path(get_rundir(path))
     res = subprocess.run(
