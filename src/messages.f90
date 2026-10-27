@@ -80,6 +80,8 @@ module Messages
       if (submithost=='') call get_env_var("SLURM_SUBMIT_HOST",submithost)
       if (submithost=='') call get_env_var("HOSTNAME",submithost)
 
+      inquire(file='~/.LUMI-notifications.ini', exist=lpushover)
+
     endsubroutine initialize_messages
 !***********************************************************************
     subroutine set_caller(caller)

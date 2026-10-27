@@ -352,6 +352,7 @@
             call mpisend_char(message,root,iproc)
           endif
           if (lroot) then
+
             if (file_exists(trim(datadir)//'/jobid.dat')) then
               open(1,file=trim(datadir)//'/jobid.dat',position='append')
               backspace(1)
@@ -365,6 +366,7 @@
             call system_cmd( &
               'echo From `pwd` on '//trim(submithost)//': '//trim(mailstr)//"|"//trim(mailcmd)// &
               " -s 'PencilCode Message' "//trim(mailaddress)//' >& /dev/null')
+	    if (lpushover) call system_cmd(' pushover From `pwd` on '//trim(submithost)//': '//trim(mailstr))
           endif
         endif
       endif

@@ -9,7 +9,6 @@
   dsnap=1, dvid=2.0, ip=20
   lpencil_check=F
   tmax=100
-  offset_min_calc=1.
   !dt=5e-5  !(ok for eta=5e-6)
   dt=5e-6  !()
 /

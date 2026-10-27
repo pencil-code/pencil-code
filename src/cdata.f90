@@ -947,6 +947,10 @@ module Cdata
 !
   character (len=linelen) :: mailcmd='',mailaddress='',submithost=''
 !
+! For sending pushover messages.
+!
+  logical :: lpushover=.false.
+!
   logical :: lstop_on_ioerror=.true.
 !
 !  Auxiliary variables.
