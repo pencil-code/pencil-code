@@ -313,7 +313,7 @@ module Snapshot
 !
       use Boundcond, only: update_ghosts
       use General, only: safe_character_assign, loptest
-      use IO, only: log_filename_to_file, IO_strategy, lcollective_io
+      use IO, only: log_filename_to_file, IO_strategy, lcollective_IO
       use Sub, only: read_snaptime, update_snaptime
       use Syscalls, only: system_cmd
       use Mpicomm, only: mpibarrier
@@ -422,8 +422,8 @@ module Snapshot
           if (.not. loptest(noghost).or.ncoarse>1) call update_ghosts(a)
         endif
         call safe_character_assign(file,trim(chsnap))
-        if (.not.lcollective_IO .or. IO_strategy=='io_collect_xy'.and.lfirst_proc_xy .or. lroot) then
-          if (lbackup_snap .and. .not.lstart .and. .not.(chsnap=='crash.dat' .or. chsnap(1:1)=='d' .or. chsnap(1:3)=='VAR')) then
+        if (lbackup_snap .and. .not.lstart .and. .not.(chsnap=='crash.dat' .or. chsnap(1:1)=='d' .or. chsnap(1:3)=='VAR')) then
+          if(.not.lcollective_IO.or. (IO_strategy=="io_collect_xy".and.lfirst_proc_xy) .or.lroot) then
             tmpfile=merge('var.h5 ','var.dat',IO_strategy=='HDF5')
             base_file = trim(directory_snap)//'/'//trim(tmpfile)
             backup_file = base_file // '.bck'
@@ -436,6 +436,7 @@ module Snapshot
             endif
             call system_cmd('mv -f '// base_file // ' ' // backup_file //' > /dev/null 2>&1')
           endif
+          if (lcollective_IO) call mpibarrier
         endif
         if (lmultithread.and.nt>0) then
           call add_snap_to_queue(1, msnap, file)
@@ -513,7 +514,7 @@ module Snapshot
 !
 !      character(LEN=fnlen) :: file
 !      real, dimension(:), intent(OUT) :: snaptimes   ! allocatable
-!      
+!
 !      call keep_compiler_quiet(file)
 !      call keep_compiler_quiet(snaptimes)
 !
@@ -916,7 +917,7 @@ module Snapshot
 !  t*.dat file did not yet exist. This is important if trigger_spec is not the code_time.
 !
         if (lfirst_call) then
-          if (.not. existed) then 
+          if (.not. existed) then
             tspec_next = t_trigger
             if (trigger_spec == 'code_time') then
               tspec_next=tspec_next + dspec
@@ -959,7 +960,7 @@ module Snapshot
       !TP: unfortunately spectrum needs a different t than timeseries since they are in general different
       if (.not. lmultithread) then
         if (trigger_spec=='code_time') tspec=real(t)
-      else 
+      else
 
         !TP: if farray was already copied from the gpu during this iteration for rhs diagnostic purposes
         !    it is not copied again for spectra. Instead we correct the timestamp to match with the data
@@ -1473,7 +1474,7 @@ module Snapshot
       integer :: i, j, k, kk
       real, allocatable, dimension(:) :: xx,yy,zz
 
-      allocate(xx(nx*ny*nz),yy(nx*ny*nz),zz(nx*ny*nz))  
+      allocate(xx(nx*ny*nz),yy(nx*ny*nz),zz(nx*ny*nz))
 !
       open(lun_output,FILE=trim(directory_dist)//trim(file)//'.tec')
 !
