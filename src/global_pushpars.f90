@@ -20,6 +20,7 @@ contains
     logical, save :: luses_aa_pwd_top = .false.
     logical, save :: luses_aa_pot2_bot = .false.
     logical, save :: luses_aa_pwd_bot = .false.
+    integer, save :: pc_maux, pc_maux_com, pc_mfarray, pc_mcom   ! copies: maux etc. are parameters without DYNAMIC_AUX
     integer :: j
 
     call copy_addr(ncoarse,p_par(1)) ! int
@@ -32,10 +33,6 @@ contains
     call copy_addr(l2,p_par(356)) ! int
 
     call copy_addr(dxmax,p_par(10))
-    call copy_addr(mexts,p_par(402))    ! int (2)
-    call copy_addr(nphis,p_par(403))    ! int (my)
-    call copy_addr(nphis1,p_par(404))   !     (my)
-    call copy_addr(nphis2,p_par(405))   !     (my)
     call copy_addr(lcartesian_coords,p_par(11)) ! bool
     call copy_addr(lspherical_coords,p_par(12)) ! bool
     call copy_addr(lcylindrical_coords,p_par(13)) ! bool
@@ -240,6 +237,15 @@ contains
     call copy_addr(fbcz_top,p_par(396)) ! (mcom_max)
     call copy_addr(ltime_integrals,p_par(401)) ! bool
     call copy_addr(mcom,p_par(402)) ! int
+    call copy_addr(mexts,p_par(403))    ! int (2)
+    call copy_addr(nphis,p_par(404))    ! int (my)
+    call copy_addr(nphis1,p_par(405))   !     (my)
+    call copy_addr(nphis2,p_par(406))   !     (my)
+    pc_maux=maux; pc_maux_com=maux_com; pc_mfarray=mfarray; pc_mcom=mcom
+    call copy_addr(pc_maux,p_par(1444)) ! int
+    call copy_addr(pc_maux_com,p_par(1445)) ! int
+    call copy_addr(pc_mfarray,p_par(1446)) ! int
+    call copy_addr(pc_mcom,p_par(1447)) ! int
 
     call copy_addr(dx2_bound,p_par(1164)) ! (2*nghost+1)
     call copy_addr(dy2_bound,p_par(1165)) ! (2*nghost+1)

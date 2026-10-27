@@ -396,6 +396,9 @@ int same_path(const char *p1, const char *p2) {
     return strcmp(r1, r2) == 0;
 }
 static int lac_sparse_autotuning = 0;
+//Run-time auxiliary counts (macros maux, maux_com, mfarray, mcom in cparam.inc_c.h with DYNAMIC_AUX), set in setupConfig
+EXTERN_C int pc_maux, pc_maux_com, pc_mfarray, pc_mcom;
+int pc_maux = 0, pc_maux_com = 0, pc_mfarray = 0, pc_mcom = 0;
 //Point to maux_vtxbuf_index and read_vtxbuf_from_gpu of Cdata (size >= mfarray), set in initializeGPU
 static int* maux_vtxbuf_index = NULL;
 static int* read_vtxbuf_from_gpu = NULL;
@@ -422,6 +425,10 @@ void setupConfig(AcMeshInfo& config)
   config = acInitInfo();
  
   #include "PC_modulepars.h"
+  pc_maux     = pc_maux__mod__cdata;
+  pc_maux_com = pc_maux_com__mod__cdata;
+  pc_mfarray  = pc_mfarray__mod__cdata;
+  pc_mcom     = pc_mcom__mod__cdata;
 
   //TP: this is because we non-communicated auxs might be registered before communicated ones
   //TP: the whole think with maux_vtxbuf_index is a bit of a mess...
