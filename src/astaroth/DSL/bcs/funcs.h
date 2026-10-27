@@ -542,6 +542,51 @@ else {
 }
 #endif
 
+#if Leos_idealgas_MODULE && Lentropy_MODULE
+bc_ss_temp_old(AcBoundary boundary,AC_TOP_BOT topbot)
+{
+  suppress_unused_warning(boundary)
+  real tmp_xy
+  int i
+  if(topbot == AC_bot) {
+    if (AC_ldensity_nolog) {
+      if (AC_lreference_state) {
+      }
+      else {
+        tmp_xy=log(F_RHO[vertexIdx.x][vertexIdx.y][AC_n1-1])
+      }
+    }
+    else {
+      tmp_xy=F_RHO[vertexIdx.x][vertexIdx.y][AC_n1-1]
+    }
+    tmp_xy = (-AC_gamma_m1*(tmp_xy-AC_lnrho0) + log(AC_cs2bot/AC_cs20))/ AC_gamma
+    F_SS[vertexIdx.x][vertexIdx.y][AC_n1-1] = tmp_xy
+    for i in 1:NGHOST+1 {
+      F_SS[vertexIdx.x][vertexIdx.y][AC_n1-i-1] = 2*tmp_xy - F_SS[vertexIdx.x][vertexIdx.y][AC_n1+i-1]
+    }
+  }
+  else if(topbot == AC_top)   {
+    if (AC_ldensity_nolog) {
+      if (AC_lreference_state) {
+      }
+      else {
+        tmp_xy=log(F_RHO[vertexIdx.x][vertexIdx.y][AC_n2-1])
+      }
+    }
+    else {
+      tmp_xy=F_RHO[vertexIdx.x][vertexIdx.y][AC_n2-1]
+    }
+    tmp_xy = (-AC_gamma_m1*(tmp_xy-AC_lnrho0) + log(AC_cs2top__mod__equationofstate/AC_cs20))/ AC_gamma
+    F_SS[vertexIdx.x][vertexIdx.y][AC_n2-1] = tmp_xy
+    for i in 1:NGHOST+1 {
+      F_SS[vertexIdx.x][vertexIdx.y][AC_n2+i-1] = 2*tmp_xy - F_SS[vertexIdx.x][vertexIdx.y][AC_n2-i-1]
+    }
+  }
+  else {
+  }
+}
+#endif
+
 #if LVISCOSITY
 #else
 const bool AC_llambda_effect__mod__viscosity = false

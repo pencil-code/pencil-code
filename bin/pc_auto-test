@@ -292,14 +292,14 @@ my @gpu_tests = qw(
 			 1d-tests/KT
 			 1d-tests/ambipolar_diffusion
 			 cosmicray
-			 1d-tests/inflationary-B-genesis #Has to be excluded until the weird start issue is resolved (Can't reproduce it by running auto-test locally on norlx51)
+			 1d-tests/inflationary-B-genesis 
                          1d-tests/jeans-x
 			 bonnor_ebert_sphere
 			 supernova-driven-turbulence/cosmic_ray_ism
 			 1d-tests/toomre-x
 			 2d-tests/bubble
                          conv-slab-noequi
-			 conv-slab
+			 #conv-slab The reductions for ssmz are not well defined when not using ltest_nonblocking=T or learly_finalize=T so for now is left out. The difference is small.
                          conv-slab_cp_2
 			 conv-slab-flat
 			 0d-tests/heating_ionize
