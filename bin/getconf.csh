@@ -813,8 +813,6 @@ else if (($hn =~ c*[1-9]) && ($USER =~ pkapyla || $USER =~ lizmcole || $USER =~ 
     if (!($?SLURM_SUBMIT_DIR)) then
       setenv SLURM_SUBMIT_DIR `pwd`
     endif
-    touch $SLURM_SUBMIT_DIR/data/jobid.dat
-    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
   set mpirun = 'srun'
   set npops = "-n $ncpus"
@@ -830,8 +828,6 @@ else if ($hn =~ clogin*) then
     if (!($?SLURM_SUBMIT_DIR)) then
       setenv SLURM_SUBMIT_DIR `pwd`
     endif
-    touch $SLURM_SUBMIT_DIR/data/jobid.dat
-    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
   set mpirunops = "-j 1"
   set mpirun = 'aprun'
@@ -847,8 +843,6 @@ else if (($hn =~ r*[cg]*.bullx)) then
     if (!($?SLURM_SUBMIT_DIR)) then
       setenv SLURM_SUBMIT_DIR `pwd`
     endif
-    touch $SLURM_SUBMIT_DIR/data/jobid.dat
-    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
   #set mpirun = 'orterun'
   set mpirun = 'srun'
@@ -875,8 +869,6 @@ else if (($hn =~ *.mahti.csc.fi)) then
     if (!($?SLURM_SUBMIT_DIR)) then
       setenv SLURM_SUBMIT_DIR `pwd`
     endif
-    touch $SLURM_SUBMIT_DIR/data/jobid.dat
-    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
   set mpirun = 'srun'
   #set mpirun = 'mpirun'
@@ -893,8 +885,6 @@ else if (($hn =~ roihu*)) then
     if (!($?SLURM_SUBMIT_DIR)) then
       setenv SLURM_SUBMIT_DIR `pwd`
     endif
-    touch $SLURM_SUBMIT_DIR/data/jobid.dat
-    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
   set mpirun = 'srun'
   set npops = "-n $ncpus"
@@ -910,8 +900,6 @@ else if (($hn =~ atlas*) && ($USER =~ monteiro)) then
     if (!($?SLURM_SUBMIT_DIR)) then
       setenv SLURM_SUBMIT_DIR `pwd`
     endif
-    touch $SLURM_SUBMIT_DIR/data/jobid.dat
-    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
   set mpirun = 'mpiexec'
   #set mpirun = 'srun'
@@ -930,8 +918,6 @@ else if (($hostname =~ frontier*)) then
     if (!($?SLURM_SUBMIT_DIR)) then
       setenv SLURM_SUBMIT_DIR `pwd`
     endif
-    touch $SLURM_SUBMIT_DIR/data/jobid.dat
-    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
   set mpirun = 'srun'
   set npops = "-n $ncpus"
@@ -947,8 +933,6 @@ else if (($hn =~ nid* && $masterhost == lumi)) then
     if (!($?SLURM_SUBMIT_DIR)) then
       setenv SLURM_SUBMIT_DIR `pwd`
     endif
-    touch $SLURM_SUBMIT_DIR/data/jobid.dat
-    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
   set mpirun = 'srun'
   set npops = "-n $ncpus"
@@ -964,8 +948,6 @@ else if (($hn =~ parker)) then
     if (!($?SLURM_SUBMIT_DIR)) then
       setenv SLURM_SUBMIT_DIR `pwd`
     endif
-    touch $SLURM_SUBMIT_DIR/data/jobid.dat
-    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
   set mpirun = 'mpiexec'
   set npops = "-np $ncpus"
@@ -994,8 +976,6 @@ else if (($hn =~ s*) && ($USER =~ pr*)) then
     if (!($?SLURM_SUBMIT_DIR)) then
       setenv SLURM_SUBMIT_DIR `pwd`
     endif
-    touch $SLURM_SUBMIT_DIR/data/jobid.dat
-    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
   set mpirunops = " "
   set mpirun = 'srun'
@@ -1012,8 +992,6 @@ else if ($hn =~ gwd*) then
     if (!($?SLURM_SUBMIT_DIR)) then
       setenv SLURM_SUBMIT_DIR `pwd`
     endif
-    touch $SLURM_SUBMIT_DIR/data/jobid.dat
-    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
   set mpirunops = " "
   set mpirun = 'mpirun'
@@ -1030,8 +1008,6 @@ else if ($hn =~ daint*) then
     if (!($?SLURM_SUBMIT_DIR)) then
       setenv SLURM_SUBMIT_DIR `pwd`
     endif
-    touch $SLURM_SUBMIT_DIR/data/jobid.dat
-    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
   set mpirunops = ''
   set mpirun = 'aprun'
@@ -1048,8 +1024,6 @@ else if (($hn =~ triolith*) && ($USER =~ x_dhrmi)) then
     if (!($?SLURM_SUBMIT_DIR)) then
       setenv SLURM_SUBMIT_DIR `pwd`
     endif
-    touch $SLURM_SUBMIT_DIR/data/jobid.dat
-    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
   echo 'loading modules ..'
   module load intel/12.1.4
@@ -1070,8 +1044,6 @@ else if (($hn =~ tetralith*) && ($USER =~ x_axebr)) then
     if (!($?SLURM_SUBMIT_DIR)) then
       setenv SLURM_SUBMIT_DIR `pwd`
     endif
-    touch $SLURM_SUBMIT_DIR/data/jobid.dat
-    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
   echo 'loading modules ..'
   module load intel/12.1.4
@@ -1092,8 +1064,6 @@ else if (($hn =~ n[0-9]*) && ($USER =~ brandenb)) then
     if (!($?SLURM_SUBMIT_DIR)) then
       setenv SLURM_SUBMIT_DIR `pwd`
     endif
-    touch $SLURM_SUBMIT_DIR/data/jobid.dat
-    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
   echo 'loading modules ..'
   #source /etc/profile.d/modules.sh
@@ -1127,8 +1097,6 @@ else if (($hn =~ c[0-9]*) && ($USER =~ pkapyla || $USER =~ warneche || $USER =~ 
     if (!($?SLURM_SUBMIT_DIR)) then
       setenv SLURM_SUBMIT_DIR `pwd`
     endif
-    touch $SLURM_SUBMIT_DIR/data/jobid.dat
-    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
   set mpirunops = ''
   set mpirun = 'srun'
@@ -1145,8 +1113,6 @@ else if (($hn =~ cn[0-9]*) && ($USER =~ manterm1 || $USER =~ kapylap1)) then
     if (!($?SLURM_SUBMIT_DIR)) then
       setenv SLURM_SUBMIT_DIR `pwd`
     endif
-    touch $SLURM_SUBMIT_DIR/data/jobid.dat
-    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
   module load openmpi/1.6.5-gcc
   module list
@@ -1166,8 +1132,6 @@ else if (($hn =~ al[0-9]*) && ($USER =~ kapyla)) then
     if (!($?SLURM_SUBMIT_DIR)) then
       setenv SLURM_SUBMIT_DIR `pwd`
     endif
-    touch $SLURM_SUBMIT_DIR/data/jobid.dat
-    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
   set mpirunops = '--resv-ports'
   set mpirun = 'srun'
@@ -1181,8 +1145,6 @@ else if ((($hn =~ eslogin[0-9]*) || ($hn =~ nid[0-9]*) || ($hn =~ mom[0-9]*)) &&
   echo "archer - National Supercomputing Service, UK"
   if ( $?PBS_JOBID ) then
     echo "Running job: $PBS_JOBID"
-    touch $PBS_O_WORKDIR/data/jobid.dat
-    echo $PBS_JOBID >> $PBS_O_WORKDIR/data/jobid.dat
   endif
   set mpirunops = ''
   set mpirun = 'aprun'
@@ -1196,8 +1158,6 @@ else if ((($hn =~ eslogin[0-9]*) || ($hn =~ nid[0-9]*) || ($hn =~ mom[0-9]*)) &&
 #  echo "Hermit - HLRS, Stuttgart, Germany"
 #  if ( $?PBS_JOBID ) then
 #    echo "Running job: $PBS_JOBID"
-#    touch $PBS_O_WORKDIR/data/jobid.dat
-#    echo $PBS_JOBID >> $PBS_O_WORKDIR/data/jobid.dat
 #  endif
 #  set mpirunops = ''
 #  set mpirun = 'aprun'
@@ -1213,8 +1173,6 @@ else if (($hn =~ Xnid*) || ($hn =~ network*) && ($USER =~ iprpkapy || $USER =~ i
   echo "God Damn Hermit - HLRS, Stuttgart, Germany"
   if ( $?PBS_JOBID ) then
     echo "Running job: $PBS_JOBID"
-    touch $PBS_O_WORKDIR/data/jobid.dat
-    echo $PBS_JOBID >> $PBS_O_WORKDIR/data/jobid.dat
   endif
   set mpirunops = ''
   set mpirun = 'aprun'
@@ -1228,8 +1186,6 @@ else if (($hn =~ mom*) && ($USER =~ iprpkapy || $USER =~ iprjwarn)) then
   echo "Hornet - HLRS, Stuttgart, Germany"
   if ( $?PBS_JOBID ) then
     echo "Running job: $PBS_JOBID"
-    touch $PBS_O_WORKDIR/data/jobid.dat
-    echo $PBS_JOBID >> $PBS_O_WORKDIR/data/jobid.dat
   endif
   set mpirunops = ''
   set mpirun = 'aprun'
@@ -1316,9 +1272,6 @@ else if ($hn =~ emil-login*.pdc.kth.se*) then
   echo $PBS_O_WORKDIR >> $PENCIL_HOME/.pencil_runs.txt
   if ( $?PBS_JOBID ) then
     echo "Running job: $PBS_JOBID"
-    touch $PBS_O_WORKDIR/data/jobid.dat
-    echo $PBS_JOBID >> $PBS_O_WORKDIR/data/jobid.dat
-    echo $PBS_JOBID >> $PBS_O_WORKDIR/data/jobid.dat
     echo $PBS_JOBID >> $PENCIL_HOME/.pencil_runs.txt
   endif
 #  ls
@@ -1339,8 +1292,6 @@ else if (($hn =~ aprun*) || ($hn =~ kraken*)) then
   echo "Kraken -- NICS, Tennessee, USA"
   if ( $?PBS_JOBID ) then
     echo "Running job: $PBS_JOBID"
-    touch $PBS_O_WORKDIR/data/jobid.dat
-    echo $PBS_JOBID >> $PBS_O_WORKDIR/data/jobid.dat
   endif
   set mpirunops = ''
   set mpirun = 'aprun'
@@ -1846,8 +1797,6 @@ else if ($hn =~ dra[0-9]*) then
     if (!($?SLURM_SUBMIT_DIR)) then
       setenv SLURM_SUBMIT_DIR `pwd`
     endif
-    touch $SLURM_SUBMIT_DIR/data/jobid.dat
-    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
   set mpirun = srun
 #---------------------------------------------------
@@ -1858,8 +1807,6 @@ else if ($hn =~ co[0-9]*) then
     if (!($?SLURM_SUBMIT_DIR)) then
       setenv SLURM_SUBMIT_DIR `pwd`
     endif
-    touch $SLURM_SUBMIT_DIR/data/jobid.dat
-    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
   set mpirun = srun
   set npops = ''
@@ -1871,8 +1818,6 @@ else if ($hn =~ rav*[0-9]*) then
     if (!($?SLURM_SUBMIT_DIR)) then
       setenv SLURM_SUBMIT_DIR `pwd`
     endif
-    touch $SLURM_SUBMIT_DIR/data/jobid.dat
-    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
   set mpirun = srun
   set npops = ''
@@ -1884,8 +1829,6 @@ else if ($hn =~ *.sng.lrz.de) then
     if (!($?SLURM_SUBMIT_DIR)) then
       setenv SLURM_SUBMIT_DIR `pwd`
     endif
-    touch $SLURM_SUBMIT_DIR/data/jobid.dat
-    echo $SLURM_JOB_ID >> $SLURM_SUBMIT_DIR/data/jobid.dat
   endif
   set mpirun = srun
 #---------------------------------------------------
@@ -2080,8 +2023,6 @@ else if ($hn =~ nid* && $masterhost != lumi) then
   echo "Hexagon cluster in Bergen"
   if ( $?PBS_JOBID ) then
     echo "Running job: $PBS_JOBID"
-    touch $PBS_O_WORKDIR/data/jobid.dat
-    echo $PBS_JOBID >> $PBS_O_WORKDIR/data/jobid.dat
   endif
   set mpirunops = ''
   set mpirun = 'aprun'
@@ -2446,6 +2387,7 @@ else
   set procdirs = `perl -e 'for $i (0..'"$ncpus"'-1) { print "proc$i\n"}'`
   set subdirs = ("allprocs" "allprocs/signals" "reduced" "averages" "idl")
 endif
+
 if ($local_disc) then
   if ($one_local_disc) then
     echo "Creating directory structure on common scratch disc"
@@ -2460,7 +2402,6 @@ endif
 
 # Wrap up nodelist as (scalar, colon-separated) environment variable
 # NODELIST for transport to sub-processes.
-# MR: Where is NODELIST used?
 setenv NODELIST `echo $nodelist | perl -ne 'print join(":",split(/\s/,$_)),"\n"'`
 
 if ($debug) then
@@ -2493,7 +2434,5 @@ endif
 #set mpirun = /c3se/apps/Common/intel/ips_xe_ce_2016/impi/5.1.1.109/bin64/mpiexec
 #set /c3se/apps/Common/intel/ips_xe_ce_2016/impi/5.1.1.109/bin64/mpiexec = mpirun
 #set mpiexec = mpirun
-
-exit
 
 # End of file getconf.csh

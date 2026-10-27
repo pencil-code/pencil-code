@@ -124,6 +124,24 @@ if ($local_binary) then
   remote-top >& remote-top.log &
 endif
 
+# If the SLURM submit dir is not necessarily the workdir, create a data dir also there and touch jobid.dat in any case.
+if (($?SLURM_JOB_ID)) then
+  if ((! -d "$SLURM_SUBMIT_DIR/data")) then
+    mkdir "$SLURM_SUBMIT_DIR/data"
+  endif
+  touch "$SLURM_SUBMIT_DIR/data/jobid.dat"    #MR: Why needed? the next would change the modification date anyway
+  echo $SLURM_JOB_ID >> "$SLURM_SUBMIT_DIR/data/jobid.dat"
+endif
+
+# The same for PBS.
+if ( $?PBS_JOBID ) then
+  if ((! -d "$PBS_O_WORKDIR/data")) then
+    mkdir "$PBS_O_WORKDIR/data"
+  endif
+  touch $PBS_O_WORKDIR/data/jobid.dat
+  echo $PBS_JOBID >> $PBS_O_WORKDIR/data/jobid.dat
+endif
+
 # Run start.x
 rm -f ERROR COMPLETED IO_LOCK
 ${PENCIL_HOME}/utils/pc_print_revision_file $start_x
@@ -137,6 +155,7 @@ echo "$mpirun $mpirunops $npops $mpirunops2 $start_x $x_ops" >> pc_commands.log
 # Avoid use of GTL library.
 #
 unsetenv MPICH_GPU_SUPPORT_ENABLED
+
 time $mpirun $mpirunops $npops $mpirunops2 $start_x $x_ops
 #time $mpirun --bind-to core:overload-allowed $mpirunops $npops $mpirunops2 $start_x $x_ops
 #srun -n4 $start_x $x_ops
