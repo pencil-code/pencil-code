@@ -525,8 +525,9 @@ module Energy
 
   real, dimension (nx) :: Hmax,ssmax,diffus_chi,diffus_chi3,cs2cool_x, &
                           chit_prof,chit_prof_fluct,hcond,K_kramers
-  !$omp threadprivate(diffus_chi,chit_prof_fluct,K_kramers)
+  !$omp threadprivate(diffus_chi,diffus_chi3,chit_prof,chit_prof_fluct,hcond,K_kramers)
   real, dimension (nx,3) :: gss1, gss0
+  !$omp threadprivate(gss1,gss0)
   real, dimension (nz) :: profz_cool, profz1_cool, profz_heat
   real, dimension (nx) :: profr_cool, profr1_cool, profr2_cool, profr_heat, profx_heat
   integer, parameter :: prof_nz=150
