@@ -38,15 +38,14 @@ bc_sym_z(AcBoundary boundary,AC_TOP_BOT topbot, VtxBuffer field, int sgn, bool r
   }
   bc_sym_z(boundary,topbot,field,sgn,rel)
 }
-#ifndef LTRAINING
+
 bc_c1_z(AcBoundary boundary,AC_TOP_BOT topbot, Field j)
 {
 #if Leos_idealgas_MODULE && Lentropy_MODULE
 	if (j == AC_iss__mod__cdata-1) bc_ss_flux(boundary,topbot)
 #endif
 }
-#if Leos_idealgas_MODULE
-#if Lentropy_MODULE
+#if Leos_idealgas_MODULE && Lentropy_MODULE
 bc_c1_x(AcBoundary boundary, AC_TOP_BOT topbot, Field j )
 {
       if (j==AC_iss__mod__cdata-1)   bc_ss_flux_x(boundary,topbot)
@@ -54,6 +53,10 @@ bc_c1_x(AcBoundary boundary, AC_TOP_BOT topbot, Field j )
 }
 bc_cT_z(AcBoundary boundary,AC_TOP_BOT topbot, Field j)
 {
+      if (j==AC_ilnrho__mod__cdata-1)
+      {
+	bc_lnrho_temp_z(boundary,topbot)
+      }
       if (j==AC_iss__mod__cdata-1 || j==AC_itt__mod__cdata-1 || j==AC_ilntt__mod__cdata-1) 
       {
 	bc_ss_temp_z(boundary,topbot)
@@ -68,7 +71,6 @@ bc_ss_flux(AcBoundary boundary, AC_TOP_BOT topbot)
 	bc_ss_flux(boundary,topbot,false)
 }
 #endif
-#endif
 
 #if Leos_idealgas_MODULE && Lgravity_simple_MODULE
 bc_hs_z(AcBoundary boundary, AC_TOP_BOT topbot, Field j)
@@ -79,7 +81,7 @@ bc_hs_z(AcBoundary boundary, AC_TOP_BOT topbot, Field j)
 	}
 }
 #endif
-#endif
+
 
 
 bc_outflow_z(AcBoundary boundary,AC_TOP_BOT topbot,Field f)

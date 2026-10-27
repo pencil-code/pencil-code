@@ -61,6 +61,16 @@ bc_steady_z(boundary, topbot, VtxBuffer field)
 }
 //TP: old
 #if Leos_idealgas_MODULE && Lentropy_MODULE
+//  Kramers part of bc_ss_flux, as in the Fortran (noeos.f90/eos_dummies.inc) version:
+//  returns tmp_xy such that (cp-cv)*dz2_bound*tmp_xy = dz2_bound*cv*F/(K*T), with K/rho bounded by chimin/chimax_kramers*cp.
+bc_ss_flux_kramers_tmp(real flux, real rho_xy, real cs2_xy)
+{
+  real TT_xy = cs2_xy/(AC_cp__mod__equationofstate*AC_gamma_m1__mod__equationofstate)
+  real krho1kr_xy = AC_hcond0_kramers__mod__energy*pow(rho_xy,(-2.*AC_nkramers__mod__energy-1.))*pow(TT_xy,(6.5*AC_nkramers__mod__energy))
+  if (AC_chimin_kramers__mod__energy > 0.) krho1kr_xy = max(krho1kr_xy, AC_chimin_kramers__mod__energy*AC_cp__mod__equationofstate)
+  if (AC_chimax_kramers__mod__energy > 0.) krho1kr_xy = min(krho1kr_xy, AC_chimax_kramers__mod__energy*AC_cp__mod__equationofstate)
+  return AC_cv__mod__equationofstate*flux/((AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*rho_xy*krho1kr_xy*TT_xy)
+}
 bc_ss_flux(boundary, topbot, bool lone_sided)
 {
   suppress_unused_warning(boundary)
@@ -95,7 +105,7 @@ bc_ss_flux(boundary, topbot, bool lone_sided)
         tmp_xy=AC_fbot__mod__energy/(rho_xy*AC_chi*cs2_xy);
       }
       else if (AC_lheatc_kramers) {
-        tmp_xy=AC_fbot__mod__energy*pow(rho_xy,(2*nkramers))*pow((AC_cp*AC_gamma_m1),(6.5*nkramers))  /(hcond0_kramers*pow(cs2_xy,(6.5*nkramers+1.)));
+        tmp_xy=bc_ss_flux_kramers_tmp(AC_fbot__mod__energy,rho_xy,cs2_xy);
       }
       else {
         tmp_xy=AC_cp__mod__equationofstate*fbotkbot__mod__energy/cs2_xy;
@@ -134,7 +144,7 @@ bc_ss_flux(boundary, topbot, bool lone_sided)
         tmp_xy=AC_ftop__mod__energy/(rho_xy*AC_chi*cs2_xy);
       }
       else if (AC_lheatc_kramers) {
-        tmp_xy=AC_ftop__mod__energy*pow(rho_xy,(2*nkramers))*pow((AC_cp*AC_gamma_m1),(6.5*nkramers))  /(hcond0_kramers*pow(cs2_xy,(6.5*nkramers+1.)));
+        tmp_xy=bc_ss_flux_kramers_tmp(AC_ftop__mod__energy,rho_xy,cs2_xy);
       }
       else {
         tmp_xy=AC_cp*AC_ftopktop__mod__energy/cs2_xy;
@@ -1400,7 +1410,7 @@ bc_ss_flux(AcBoundary boundary, AC_TOP_BOT topbot,bool lone_sided)
         tmp_xy=AC_fbot__mod__energy/(rho_xy*AC_chi__mod__energy*cs2_xy)
       }
       else if (AC_lheatc_kramers__mod__energy) {
-        tmp_xy=AC_fbot__mod__energy*pow(rho_xy,(2*AC_nkramers__mod__energy))*pow((AC_cp__mod__equationofstate*AC_gamma_m1__mod__equationofstate),(6.5*AC_nkramers__mod__energy))  /(AC_hcond0_kramers__mod__energy*pow(cs2_xy,(6.5*AC_nkramers__mod__energy+1.)))
+        tmp_xy=bc_ss_flux_kramers_tmp(AC_fbot__mod__energy,rho_xy,cs2_xy)
       }
       else {
         tmp_xy=AC_cp__mod__equationofstate*AC_fbotkbot__mod__energy/cs2_xy
@@ -1485,7 +1495,7 @@ bc_ss_flux(AcBoundary boundary, AC_TOP_BOT topbot,bool lone_sided)
         tmp_xy=AC_ftop__mod__energy/(rho_xy*AC_chi__mod__energy*cs2_xy)
       }
       else if (AC_lheatc_kramers__mod__energy) {
-        tmp_xy=AC_ftop__mod__energy*pow(rho_xy,(2*AC_nkramers__mod__energy))*pow((AC_cp__mod__equationofstate*AC_gamma_m1__mod__equationofstate),(6.5*AC_nkramers__mod__energy))  /(AC_hcond0_kramers__mod__energy*pow(cs2_xy,(6.5*AC_nkramers__mod__energy+1.)))
+        tmp_xy=bc_ss_flux_kramers_tmp(AC_ftop__mod__energy,rho_xy,cs2_xy)
       }
       else {
         tmp_xy=AC_cp__mod__equationofstate*AC_ftopktop__mod__energy/cs2_xy
