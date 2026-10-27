@@ -366,7 +366,7 @@
             call system_cmd( &
               'echo From `pwd` on '//trim(submithost)//': '//trim(mailstr)//"|"//trim(mailcmd)// &
               " -s 'PencilCode Message' "//trim(mailaddress)//' >& /dev/null')
-	    if (lpushover) call system_cmd(' pushover From `pwd` on '//trim(submithost)//': '//trim(mailstr))
+            if (lpushover) call system_cmd(' pushover From `pwd` on '//trim(submithost)//': '//trim(mailstr))
           endif
         endif
       endif
