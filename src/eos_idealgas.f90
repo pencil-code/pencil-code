@@ -1216,7 +1216,7 @@ module EquationOfState
     subroutine get_gamma_etc(gamma_,cp,cv,f)
 !
       real, optional, intent(OUT) :: gamma_, cp,cv
-      real, dimension(mfarray), optional, intent(IN) :: f
+      real, dimension(:), optional, intent(IN) :: f !assumed-shape since non-contiguous
 !
       call keep_compiler_quiet(f) !not needed here, but required for other EOS.
 !

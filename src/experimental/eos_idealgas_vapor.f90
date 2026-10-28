@@ -749,7 +749,7 @@ module EquationOfState
     subroutine get_gamma_etc(gamma_,cp,cv,f)
 !
       real, optional, intent(OUT) :: gamma_, cp,cv
-      real, dimension(mfarray), optional, intent(IN) :: f
+      real, dimension(:), optional, intent(IN) :: f !assumed-shape since non-contiguous
 !
       if (present(gamma_)) gamma_=gamma
 !
