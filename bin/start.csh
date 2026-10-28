@@ -130,7 +130,7 @@ if (($?SLURM_JOB_ID)) then
     mkdir "$SLURM_SUBMIT_DIR/data"
   endif
   touch "$SLURM_SUBMIT_DIR/data/jobid.dat"    #MR: Why needed? the next would change the modification date anyway
-  echo $SLURM_JOB_ID >> "$SLURM_SUBMIT_DIR/data/jobid.dat"
+  echo $SLURM_JOB_ID  " START STARTED on "$SLURMD_NODENAME `date` >> "$SLURM_SUBMIT_DIR/data/jobid.dat"
 endif
 
 # The same for PBS.
@@ -139,11 +139,11 @@ if ( $?PBS_JOBID ) then
     mkdir "$PBS_O_WORKDIR/data"
   endif
   touch $PBS_O_WORKDIR/data/jobid.dat
-  echo $PBS_JOBID >> $PBS_O_WORKDIR/data/jobid.dat
+  echo $PBS_JOBID " START STARTED on "$PBS_O_QUEUE `date`  >> $PBS_O_WORKDIR/data/jobid.dat
 endif
 
 # Run start.x
-rm -f ERROR COMPLETED IO_LOCK
+rm -f ERROR COMPLETED IO_LOCK TIMESTEP_TOO_SHORT
 ${PENCIL_HOME}/utils/pc_print_revision_file $start_x
 date
 touch pc_commands.log
