@@ -99,10 +99,10 @@ ifneq ($(RUNTIME_COMPILATION),on)
 endif
 
 ifeq ($(RUNTIME_COMPILATION),on) 
-	CMAKE_BUILD_TYPE ?= RelWithDebInfo
+	CMAKE_BUILD_TYPE ?= Release
 endif
 ifeq ($(RUNTIME_COMPILATION),ON) 
-	CMAKE_BUILD_TYPE ?= RelWithDebInfo
+	CMAKE_BUILD_TYPE ?= Release
 endif
 
 #ifeq ($(TRAINING),training_torchfort) 
