@@ -617,6 +617,7 @@ module EquationOfState
       real, save, allocatable, dimension (:,:) :: FbyKT_xy, TT_xy, rho_xy, Krho1kr_xy, cp, cv, pp_xy
       real, dimension(mfarray) :: f_comp
       integer :: i, il, im, ivars, n, ig1, ig2, dir
+      integer :: n_heatcond
 !
       if (.not. allocated(FbyKT_xy))     allocate(FbyKT_xy(mx,my))
       if (.not. allocated(TT_xy))        allocate(TT_xy(mx,my))
@@ -633,17 +634,33 @@ module EquationOfState
       call get_shared_variable('lheatc_Kprof',lheatc_Kprof)
       call get_shared_variable('lheatc_Kconst',lheatc_Kconst)
 !
-!     TODO: is there a neat way to guard against simultaneous use of heat conductivities (which is currently not supported here)?
+      n_heatcond = 0
 !
       if (lheatc_kramers) then
         call get_shared_variable('hcond0_kramers',hcond0_kramers)
         call get_shared_variable('nkramers',nkramers)
         call get_shared_variable('chimax_kramers',chimax_kramers)
         call get_shared_variable('chimin_kramers',chimin_kramers)
+        n_heatcond = n_heatcond + 1
       endif
 !
       if (lheatc_chiconst) then
         call get_shared_variable('chi',chi)
+        n_heatcond = n_heatcond + 1
+      endif
+!
+      if (lheatc_Kprof) then
+        n_heatcond = n_heatcond + 1
+      endif
+!
+      if (lheatc_Kconst) then
+        n_heatcond = n_heatcond + 1
+      endif
+!
+!     Current implementation assumes that only one kind of heat conductivity is active
+!
+      if (n_heatcond>1) then
+        call fatal_error('bc_ss_flux','not implemented for multiple heat conductivities')
       endif
 !
       select case (topbot)
