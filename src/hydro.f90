@@ -4389,7 +4389,7 @@ module Hydro
 
       integer :: i,j
       real, dimension (nx) :: ugu_Schur_x, ugu_Schur_y, ugu_Schur_z
-      real, dimension (nx,3) :: divTij,tmpv,divFgrS
+      real, dimension (nx,3) :: divTij,tmpv
       real, dimension (nx,3,3) :: puij_Schur
       real, dimension (nx) :: lorentz_gamma_inv2=1.,tmp
 
