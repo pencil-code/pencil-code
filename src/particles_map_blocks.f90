@@ -112,6 +112,7 @@ module Particles_map
       integer :: iproc_parent_par, ibrick_parent_par
       integer :: iproc_parent_par_previous, ibrick_parent_par_previous
       logical :: lbinary_search
+      integer, dimension(3), save :: ing_comp
 !
       intent(in)  :: fp
       intent(out) :: ineargrid
@@ -140,7 +141,8 @@ module Particles_map
 !  Calculate processor, brick, and grid point index of particle.
 !
         call get_brick_index(fp(k,(/ixp,iyp,izp/)), iproc_parent_par, &
-            ibrick_parent_par, ineargrid(k,:), status=status)
+            ibrick_parent_par, ing_comp, status=status)
+        ineargrid(k,:) = ing_comp
         if (status < 0) then
           print*, 'map_nearest_grid: error in finding the grid index of particle'
           print*, 'map_nearest_grid: it, itsub, iproc, k, ipar=', it, itsub, iproc, k, ipar(k)
