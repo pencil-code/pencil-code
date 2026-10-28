@@ -1708,7 +1708,8 @@ module Special
 !
           if (horizon_factor==0.) then
             if (headt.and.lfirst) print*,'horizon_factor=',horizon_factor
-            where (uReff2<1./(2.*a*H))
+!OLD-2026-10-28 where (uReff2<1./(2.*a*H))
+            where (uReff2<1./((twopi**3)*2.*a*H))
               uReff2=0.
             endwhere
           elseif (horizon_factor>0.) then
@@ -1721,7 +1722,8 @@ module Special
 !
           if (horizon_factor==0.) then
             if (headt.and.lfirst) print*,'horizon_factor=',horizon_factor
-            where (uLeff2<1./(2.*a*H))
+!OLD-2026-10-28 where (uLeff2<1./(2.*a*H))
+            where (uLeff2<1./((twopi**3)*2.*a*H))
               uLeff2=0.
             endwhere
           elseif (horizon_factor>0.) then
@@ -1953,11 +1955,7 @@ module Special
         call mpiallreduce_sum(sum(uLeff2m),uLeff2m_sum,1)
         call mpiallreduce_sum(sum(JJ_R),JJ_R_sum,1)
         call mpiallreduce_sum(sum(JJ_L),JJ_L_sum,1)
-!print*,'AXEL4: mpiallreduce_sum(sum(JJ_R+JJ_L),JJ_sum,1)'
-!print*,'AXEL4: JJ_R=',JJ_R
-!print*,'AXEL4: JJ_L=',JJ_L
-        call mpiallreduce_sum(sum(JJ_R+JJ_L),JJ_sum,1)
-!print*,'AXEL5: JJ_sum=',JJ_sum
+        JJ_sum=JJ_R_sum+JJ_L_sum
       else
         JJ_R_sum=0.
         JJ_L_sum=0.
