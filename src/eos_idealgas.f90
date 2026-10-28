@@ -1218,10 +1218,10 @@ module EquationOfState
       real, optional, intent(OUT) :: gamma_, cp,cv
       real, dimension(:), optional, intent(IN) :: f !assumed-shape since non-contiguous
 !
-      call keep_compiler_quiet(f) !not needed here, but required for other EOS.
+      if (present(f)) call keep_compiler_quiet(f) !f is not needed here, but required for other EOS.
 !
       if (present(gamma_)) gamma_=gamma
-      if (present(cp)) cp=get_cp()     ! as module variable is hidden here
+      if (present(cp)) cp=get_cp()     ! as module variable is shadowed here
       if (present(cv)) cv=get_cv()
 
     endsubroutine get_gamma_etc

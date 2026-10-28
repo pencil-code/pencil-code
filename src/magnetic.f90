@@ -1455,7 +1455,7 @@ module Magnetic
 !
 !  Check if we are solving for relativistic bulk motions, not just EoS.
 !
-      call get_shared_variable('lu_background', lu_background,default_val=.false.,caller='initialize_magnetic')
+      call get_shared_variable('lu_background', lu_background,default_val=.false.)
       call get_shared_variable('lgr_metric', lgr_metric, default_val=.false.)
       call get_shared_variable('lconservative', lconservative, default_val=.false.)
 !

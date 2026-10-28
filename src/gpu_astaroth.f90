@@ -12,8 +12,7 @@ module GPU
   use General, only: lpointer, ioptest, loptest
   use Quiet
   use Messages
-!$ use, intrinsic :: iso_c_binding
-  use iso_c_binding
+  use, intrinsic :: iso_c_binding
 
   implicit none
 
@@ -363,9 +362,6 @@ contains
     function get_ptr_GPU_training(ind1,ind2,lout) result(pFarr)
 
 ! For training, pointed-to array needs to be 5-dimensional (last dimension being the batch size)
-
-      use Cparam
-      use iso_c_binding
 
       integer :: ind1
       integer, optional :: ind2
