@@ -254,6 +254,8 @@ module Particles_sink
       integer, dimension(:,:,:), allocatable, save :: sid
       real, dimension(:,:,:), allocatable, save :: srhop, sgpotself
       real, dimension(1) :: rhop_interp, gpotself_interp
+      real, dimension(3), save :: fp_comp
+      integer, dimension(3), save :: ing_comp
       integer :: k, ix0, iy0, iz0, npar_sink_loc, iblock
       real :: rhoc,rhop_interp_diag
 
@@ -306,28 +308,30 @@ module Particles_sink
           if (npar_iblock(iblock)/=0) then
             do k=k1_iblock(iblock),k2_iblock(iblock)
               if (fp(k,iaps)==0.0) then
-                ix0=ineargrid(k,1)
-                iy0=ineargrid(k,2)
-                iz0=ineargrid(k,3)
+                fp_comp = fp(k,ixp:izp)
+                ing_comp = ineargrid(k,:)
+                ix0=ing_comp(1)
+                iy0=ing_comp(2)
+                iz0=ing_comp(3)
                 if (lparticlemesh_cic) then
                   call interpolate_linear(f,irhop,irhop, &
-                      fp(k,ixp:izp),rhop_interp,ineargrid(k,:),iblock,ipar(k))
+                      fp_comp,rhop_interp,ing_comp,iblock,ipar(k))
                   if (lsink_create_one_per_27_cells) &
                     call interpolate_linear(f,ipotself,ipotself, &
-                        fp(k,ixp:izp),gpotself_interp,ineargrid(k,:),iblock,ipar(k))
+                        fp_comp,gpotself_interp,ing_comp,iblock,ipar(k))
                 elseif (lparticlemesh_tsc) then
                   if (linterpolate_spline) then
                     call interpolate_quadratic_spline(f,irhop,irhop, &
-                        fp(k,ixp:izp),rhop_interp,ineargrid(k,:),iblock,ipar(k))
+                        fp_comp,rhop_interp,ing_comp,iblock,ipar(k))
                     if (lsink_create_one_per_27_cells) &
                       call interpolate_quadratic_spline(f,ipotself,ipotself, &
-                          fp(k,ixp:izp),gpotself_interp,ineargrid(k,:),iblock,ipar(k))
+                          fp_comp,gpotself_interp,ing_comp,iblock,ipar(k))
                   else
                     call interpolate_quadratic(f,irhop,irhop, &
-                        fp(k,ixp:izp),rhop_interp,ineargrid(k,:),iblock,ipar(k))
+                        fp_comp,rhop_interp,ing_comp,iblock,ipar(k))
                     if (lsink_create_one_per_27_cells) &
                       call interpolate_quadratic(f,ipotself,ipotself, &
-                          fp(k,ixp:izp),gpotself_interp,ineargrid(k,:),iblock,ipar(k))
+                          fp_comp,gpotself_interp,ing_comp,iblock,ipar(k))
                   endif
                 else
                   rhop_interp=fb(ix0,iy0,iz0,irhop:irhop,iblock)
@@ -339,7 +343,7 @@ module Particles_sink
                   if (ip<=6) then
                     print*, 'create_particles_sink: created '// &
                         'sink particle at density rhop=', rhop_interp(1)
-                    print*, 'iproc, it, itsub, xp     =', iproc, it, itsub, fp(k,ixp:izp)
+                    print*, 'iproc, it, itsub, xp     =', iproc, it, itsub, fp_comp
                   endif
                   if (.not. lsink_create_one_per_27_cells) fp(k,iaps)=sink_radius
                   recb: if (lsink_create_one_per_cell) then
@@ -380,28 +384,30 @@ module Particles_sink
           pencil_has_particles: if (npar_imn(imn)/=0) then
             particles: do k=k1_imn(imn),k2_imn(imn)
               ifsink: if (fp(k,iaps)==0.0) then
-                ix0=ineargrid(k,1)
-                iy0=ineargrid(k,2)
-                iz0=ineargrid(k,3)
+                fp_comp = fp(k,ixp:izp)
+                ing_comp = ineargrid(k,:)
+                ix0=ing_comp(1)
+                iy0=ing_comp(2)
+                iz0=ing_comp(3)
                 if (lparticlemesh_cic) then
                   call interpolate_linear(f,irhop,irhop, &
-                      fp(k,ixp:izp),rhop_interp,ineargrid(k,:),0,ipar(k))
+                      fp_comp,rhop_interp,ing_comp,0,ipar(k))
                   if (lsink_create_one_per_27_cells) &
                     call interpolate_linear(f,ipotself,ipotself, &
-                        fp(k,ixp:izp),gpotself_interp,ineargrid(k,:),0,ipar(k))
+                        fp_comp,gpotself_interp,ing_comp,0,ipar(k))
                 elseif (lparticlemesh_tsc) then
                   if (linterpolate_spline) then
                     call interpolate_quadratic_spline(f,irhop,irhop, &
-                        fp(k,ixp:izp),rhop_interp,ineargrid(k,:),0,ipar(k))
+                        fp_comp,rhop_interp,ing_comp,0,ipar(k))
                       if (lsink_create_one_per_27_cells) &
                         call interpolate_quadratic_spline(f,ipotself,ipotself, &
-                            fp(k,ixp:izp),gpotself_interp,ineargrid(k,:),0,ipar(k))
+                            fp_comp,gpotself_interp,ing_comp,0,ipar(k))
                   else
                     call interpolate_quadratic(f,irhop,irhop, &
-                        fp(k,ixp:izp),rhop_interp,ineargrid(k,:),0,ipar(k))
+                        fp_comp,rhop_interp,ing_comp,0,ipar(k))
                     if (lsink_create_one_per_27_cells) &
                       call interpolate_quadratic(f,ipotself,ipotself, &
-                          fp(k,ixp:izp),gpotself_interp,ineargrid(k,:),0,ipar(k))
+                          fp_comp,gpotself_interp,ing_comp,0,ipar(k))
                   endif
                 else
                   rhop_interp=f(ix0,iy0,iz0,irhop:irhop)
@@ -412,7 +418,7 @@ module Particles_sink
                   if (ip<=6) then
                     print*, 'create_particles_sink: created '// &
                         'sink particle with rhop=', rhop_interp(1)
-                    print*, 'processor, position=', iproc, fp(k,ixp:izp)
+                    print*, 'processor, position=', iproc, fp_comp
                   endif
                   if (.not. lsink_create_one_per_27_cells) fp(k,iaps)=sink_radius
                   record: if (lsink_create_one_per_cell) then
