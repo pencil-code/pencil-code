@@ -70,6 +70,8 @@ module Radiation
   real, dimension (maxdir) :: weight, weightn, mu
   real, dimension (mnu) :: scalefactor_Srad=1.0, scalefactor_kappa=1.0
   real, dimension (mnu) :: kappa_cst=1.0, kappa20_cst=0.0
+  real, dimension (mnu) :: kappa_start=1.0, kappa_end=1.0
+  real :: trans_tstart=0.0, trans_tend=1.0
   real, dimension (:), allocatable :: lnTT_table
   real, dimension (:,:), allocatable :: lnSS_table
   real :: arad
@@ -155,7 +157,7 @@ module Radiation
 !
   namelist /radiation_init_pars/ &
       radx, rady, radz, rad2max, bc_rad, lrad_debug, kapparho_cst, &
-      kappa_cst, kappa20_cst, &
+      kappa_cst, kappa20_cst, kappa_start, trans_tstart, kappa_end, trans_tend, &
       TT_top, TT_bot, tau_top, tau_bot, source_function_type, opacity_type, &
       nnu, lsingle_ray, single_ray, Srad_const, amplSrad, radius_Srad, nIsurf, &
       kappa_Kconst, kapparho_const, amplkapparho, radius_kapparho, lintrinsic, &
@@ -428,8 +430,8 @@ module Radiation
             'rays other than along the coordinate axes on the GPU (need rad2max=1, lsingle_ray=F)')
         if (radx/=0 .and. (any((/bc_rad1(1),bc_rad2(1)/)/='p') .or. nprocx>1)) &
           call not_implemented('initialize_radiation','x-rays on the GPU only if periodic and nprocx=1')
-        if (rady/=0 .and. any((/bc_rad1(2),bc_rad2(2)/)/='p')) &
-          call not_implemented('initialize_radiation','y-rays on the GPU only if periodic')
+        if (rady/=0 .and. (any((/bc_rad1(2),bc_rad2(2)/)/='p') .or. nprocy>1)) &
+          call not_implemented('initialize_radiation','y-rays on the GPU only if periodic and nprocy=1')
         do i=1,2
           bc_ray=merge(bc_rad1(3),bc_rad2(3),i==1)
           select case (bc_ray)
@@ -979,9 +981,9 @@ module Radiation
 !
 !  compute u.n and its derivatives
 !
-          u_dot_n=f(l,m,n,iux)*unit_vec(idir,1) &
+          u_dot_n=(f(l,m,n,iux)*unit_vec(idir,1) &
                  +f(l,m,n,iuy)*unit_vec(idir,2) &
-                 +f(l,m,n,iuz)*unit_vec(idir,3)
+                 +f(l,m,n,iuz)*unit_vec(idir,3))/c_light
 !
 !  Different signs for different hemispheres
 !  If nz /= 0, then the hemisphere is given by the sign of nz.
@@ -1001,12 +1003,12 @@ module Radiation
 !
 !  Two versions of u.n needed for derivative of u.n.
 !
-          u_dot_n_p=f(l+lrad,m+mrad,n+nrad,iux)*unit_vec(idir,1) &
+          u_dot_n_p=(f(l+lrad,m+mrad,n+nrad,iux)*unit_vec(idir,1) &
                    +f(l+lrad,m+mrad,n+nrad,iuy)*unit_vec(idir,2) &
-                   +f(l+lrad,m+mrad,n+nrad,iuz)*unit_vec(idir,3)
-          u_dot_n_m=f(l-lrad,m-mrad,n-nrad,iux)*unit_vec(idir,1) &
+                   +f(l+lrad,m+mrad,n+nrad,iuz)*unit_vec(idir,3))/c_light
+          u_dot_n_m=(f(l-lrad,m-mrad,n-nrad,iux)*unit_vec(idir,1) &
                    +f(l-lrad,m-mrad,n-nrad,iuy)*unit_vec(idir,2) &
-                   +f(l-lrad,m-mrad,n-nrad,iuz)*unit_vec(idir,3)
+                   +f(l-lrad,m-mrad,n-nrad,iuz)*unit_vec(idir,3))/c_light
           dudtau_m=(u_dot_n-u_dot_n_m)/dtau_m
           dudtau_p=(u_dot_n_p-u_dot_n)/dtau_p
 !
@@ -2086,6 +2088,7 @@ module Radiation
         enddo
 !
       case ('kappa_cst')
+!print *, 'CHANDRU time=',t
         do n=n1-radz,n2+radz
         do m=m1-rady,m2+rady
           call eoscalc(f,mx,lnrho=lnrho)
@@ -2099,6 +2102,21 @@ module Radiation
 !print*,'AXEL f(:,4,4,ikapparho)=',inu,kappa_cst(inu),f(:,4,4,ikapparho)
 !print*,'AXEL f(:,4,4,ilnrho)=',inu,kappa_cst(inu),f(:,4,4,ilnrho)
 !
+      case ('kappa_trans')
+        do n=n1-radz,n2+radz
+        do m=m1-rady,m2+rady
+          call eoscalc(f,mx,lnrho=lnrho)
+          if (t<trans_tend) then
+            f(:,m,n,ikapparho)=exp(lnrho)*(kappa_start(inu)+ &
+              (kappa_end(inu)-kappa_start(inu))*(t-trans_tstart)/(trans_tend-trans_tstart))
+          else
+            f(:,m,n,ikapparho)=exp(lnrho)*kappa_end(inu)
+          endif
+!print *,'CHANDRU time=',t,'kappa=',exp(lnrho)*(kappa_start(inu)+ &
+!            (kappa_end(inu)-kappa_start(inu))*(t-trans_tstart)/(trans_tend-trans_tstart))
+        enddo
+        enddo
+
       case ('kapparho_cst')
         do n=n1-radz,n2+radz
         do m=m1-rady,m2+rady
@@ -2950,7 +2968,10 @@ module Radiation
     call copy_addr(ibc_rad_z,p_par(78))         ! int (2)
     call copy_addr(irad_z,p_par(79))            ! (2)
     call copy_addr(rad2max,p_par(80)) ! int dconst
-
+    call copy_addr(kappa_start,p_par(81))
+    call copy_addr(kappa_end,p_par(82))
+    call copy_addr(trans_tstart,p_par(83))
+    call copy_addr(trans_tend,p_par(84))
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Radiation
