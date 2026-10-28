@@ -683,10 +683,15 @@ module EquationOfState
       do il=1,mx
         do im =1,my
           ! PABourdin: Please, never use array-temporaries!
-          ! call get_gamma_etc(cp=cp(il,im), cv=cv(il,im), f=f(il,im,n,:))
+          call get_gamma_etc(cp=cp(il,im), cv=cv(il,im), f=f(il,im,n,:))
           ! PABourdin: Better and more efficient code is this:
-          f_comp = f(il,im,n,:)
-          call get_gamma_etc(cp=cp(il,im), cv=cv(il,im), f=f_comp)
+          ! Kishore: I don't see how this is fixing anything (we are just
+          ! Kishore: manually creating the temporary array rather than letting
+          ! Kishore: the compiler create it). I think the correct fix (which
+          ! Kishore: I have now done) is to convert f in get_gamma_etc to
+          ! Kishore: assumed-shape.
+!           f_comp = f(il,im,n,:)
+!           call get_gamma_etc(cp=cp(il,im), cv=cv(il,im), f=f_comp)
         enddo
       enddo
 !
