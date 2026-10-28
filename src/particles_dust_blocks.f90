@@ -2017,6 +2017,8 @@ k_loop:   do while (.not. (k>npar_loc))
       integer :: k, l, ix0, iy0, iz0, ib, iblock, lb, mb, nb
       integer :: ixx, iyy, izz, ixx0, iyy0, izz0, ixx1, iyy1, izz1
       logical :: lsink
+      real, dimension(3), save :: fp_comp
+      integer, dimension(3), save :: ing_comp
 !
       intent (inout) :: f, df, dfp, fp, ineargrid
 !
@@ -2053,22 +2055,22 @@ k_loop:   do while (.not. (k>npar_loc))
                 if (fp(k,iaps)>0.0) lsink=.true.
               endif
               if (.not.lsink) then
-                ix0=ineargrid(k,1)
-                iy0=ineargrid(k,2)
-                iz0=ineargrid(k,3)
+                ing_comp = ineargrid(k,:)
+                ix0=ing_comp(1)
+                iy0=ing_comp(2)
+                iz0=ing_comp(3)
 !
 !  The interpolated gas velocity must be calculated here.
 !
                 if (lhydro) then
+                  fp_comp = fp(k,ixp:izp)
                   if (lparticlemesh_cic) then
-                    call interpolate_linear(f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),iblock,ipar(k))
+                    call interpolate_linear(f,iux,iuz,fp_comp,uup,ing_comp,iblock,ipar(k))
                   elseif (lparticlemesh_tsc) then
                     if (linterpolate_spline) then
-                      call interpolate_quadratic_spline(f,iux,iuz, &
-                          fp(k,ixp:izp),uup,ineargrid(k,:),iblock,ipar(k))
+                      call interpolate_quadratic_spline(f,iux,iuz,fp_comp,uup,ing_comp,iblock,ipar(k))
                     else
-                      call interpolate_quadratic(f,iux,iuz, &
-                          fp(k,ixp:izp),uup,ineargrid(k,:),iblock,ipar(k))
+                      call interpolate_quadratic(f,iux,iuz,fp_comp,uup,ing_comp,iblock,ipar(k))
                     endif
                   else
                     uup=fb(ix0,iy0,iz0,iux:iuz,iblock)
