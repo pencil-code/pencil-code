@@ -370,7 +370,6 @@ module Snapshot
           nv1_capitalvar=1
         endif
 !
-!  This routine sets lvideo=T whenever its time to write a slice
 !  Check whether we want to output snapshot. If so, then
 !  update ghost zones for var.dat (cheap, since done infrequently).
 !
