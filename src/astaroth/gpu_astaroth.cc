@@ -138,7 +138,7 @@ const bool performance_logs = false;
   #define lxyz                   lxyz__mod__cdata
   #define ldebug ldebug__mod__cdata
   
-  #define deltay  deltay__mod__cdata
+  #define delta_y  delta_y__mod__cdata
   #define eps_rkf eps_rkf__mod__cdata
   #define itauxx itauxx__mod__training
   #define itauxy itauxy__mod__training
@@ -1843,7 +1843,7 @@ prepare_rhs(const int isubstep, double t)
   acDeviceSetInput(acGridGetDevice(), AC_step_num,(PC_SUB_STEP_NUMBER) (isubstep-1));
   if (lshear) 
   {
-	  acDeviceSetInput(acGridGetDevice(), AC_shear_delta_y, deltay);
+	  acDeviceSetInput(acGridGetDevice(), AC_shear_delta_y, delta_y);
   }
   acDeviceSetInput(acGridGetDevice(), AC_t,(AcReal)t);
 }
@@ -2349,7 +2349,7 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_,
   acDeviceSetInput(acGridGetDevice(), AC_step_num,(PC_SUB_STEP_NUMBER)0);
   acDeviceSetInput(acGridGetDevice(), AC_dt,dt);
   acDeviceSetInput(acGridGetDevice(), AC_t,AcReal(t));
-  acDeviceSetInput(acGridGetDevice(), AC_shear_delta_y,deltay);
+  acDeviceSetInput(acGridGetDevice(), AC_shear_delta_y,delta_y);
   GW_timestep_graph = acGetOptimizedDSLTaskGraph(AC_gravitational_waves_solve_and_stress);
   if (luses_aa_pwd_top || luses_aa_pot2_top)
   {
@@ -2549,7 +2549,7 @@ void testBCs()
   			    acGridTaskGraphHasPeriodicBoundcondsY(rhs) && 
   			    acGridTaskGraphHasPeriodicBoundcondsZ(rhs); 
   if (all_periodic && !lshear) return;
-  if (lshear) acLogFromRootProc(rank,"testBCS: deltay: %7e\n",deltay);
+  if (lshear) acLogFromRootProc(rank,"testBCS: delta_y: %7e\n",delta_y);
   auto bcs = acGetDSLTaskGraph(boundconds);
 
   AcMesh tmp_mesh_to_store;

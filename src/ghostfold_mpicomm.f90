@@ -431,22 +431,22 @@ subroutine fold_df_3points(df,ivar1,ivar2)
         real, dimension(ng,ny,nz) :: work
         integer :: ivar
 !
-!  Shift the left boundary by -deltay.
+!  Shift the left boundary by -delta_y.
 !
         if (lfirst_proc_x) then
           do ivar = ivar1, ivar2
             work = f(l1-ng:l1-1,m1:m2,n1:n2,ivar)
-            call yshift_block(ng, work, -deltay)
+            call yshift_block(ng, work, -delta_y)
             f(l1-ng:l1-1,m1:m2,n1:n2,ivar) = work
           enddo
         endif
 !
-!  Shift the right boundary by +deltay.
+!  Shift the right boundary by +delta_y.
 !
         if (llast_proc_x) then
           do ivar = ivar1, ivar2
             work = f(l2+1:l2+ng,m1:m2,n1:n2,ivar)
-            call yshift_block(ng, work, +deltay)
+            call yshift_block(ng, work, +delta_y)
             f(l2+1:l2+ng,m1:m2,n1:n2,ivar) = work
           enddo
         endif

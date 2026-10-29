@@ -7795,7 +7795,7 @@ print*,'AXEL2: should not be here (eta) ... '
           !  store ibbt etc. in the shear frame
           !
           do ikx=l1,l2
-            nshear=nint( deltay/dy * x(ikx)/Lx )
+            nshear=nint( delta_y/dy * x(ikx)/Lx )
             iky=mod(m-nshear,ny)
             if (iky<=0) iky=iky+ny
             if (ibxt/=0 .and. ibx/=0) f(ikx,m,n,ibxt:ibzt) = f(ikx,iky,n,ibx:ibz)

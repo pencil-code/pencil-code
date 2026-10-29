@@ -105,7 +105,7 @@ module Hypervisc_strict
       do ikz=1,nz; do iky=1,ny; do ikx=1,nx
 !
         if (lshear) then
-          kx=kx_fft(ikx)+deltay/Lx*ky_fft(iky+ipy*ny)
+          kx=kx_fft(ikx)+delta_y/Lx*ky_fft(iky+ipy*ny)
           ky=ky_fft(iky+ipy*ny)
           kz=kz_fft(ikz)
         else

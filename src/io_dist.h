@@ -237,10 +237,10 @@
               if (ip <= 8) print *, 'read_snap: read ', file
               if (mode == 1) then
 !
-!  Check whether we want to read deltay from snapshot.
+!  Check whether we want to read delta_y from snapshot.
 !
                 if (lshear.and..not.lread_oldsnap_noshear) then
-                  read (lun_input,iostat=iosr) t_sp, x, y, z, dx, dy, dz, deltay
+                  read (lun_input,iostat=iosr) t_sp, x, y, z, dx, dy, dz, delta_y
                 else
                   if (nghost_read_fewer==0) then
                     read (lun_input,iostat=iosr) t_sp, x, y, z, dx, dy, dz

@@ -194,7 +194,7 @@ module ImplicitDiffusion
       ll2 = (ipx + 1) * nx
       m0 = ipy * ny
       n0 = ipz * nz
-      if (lshear) c = deltay / Lx
+      if (lshear) c = delta_y / Lx
       comp: do iv = ivar1, ivar2
         a_re = f(l1:l2,m1:m2,n1:n2,iv)
         a_im = 0.0
@@ -278,7 +278,7 @@ module ImplicitDiffusion
       ll2 = (ipx + 1) * nx
       m0 = ipy * ny
       n0 = ipz * nz
-      if (lshear) c = deltay / Lx
+      if (lshear) c = delta_y / Lx
       comp: do iv = ivar1, ivar2
         a_re = f(l1:l2,m1:m2,n1:n2,iv)
         a_im = 0.0

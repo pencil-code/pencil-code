@@ -878,9 +878,9 @@ module Particles_sink
           ipy_recv=ipy-dipy
           if (lshear) then
             if (ipx_recv<0) &
-                ipy_recv=ipy_recv-ceiling(deltay/Lxyz_loc(2)-0.5)
+                ipy_recv=ipy_recv-ceiling(delta_y/Lxyz_loc(2)-0.5)
             if (ipx_recv>nprocx-1) &
-                ipy_recv=ipy_recv+ceiling(deltay/Lxyz_loc(2)-0.5)
+                ipy_recv=ipy_recv+ceiling(delta_y/Lxyz_loc(2)-0.5)
           endif
           ipz_recv=ipz-dipz
           if (ipx_recv<0)        ipx_recv=ipx_recv+nprocx
@@ -1142,11 +1142,11 @@ module Particles_sink
                if (abs(mindistz)<=rads) then
                  if (lshear) then
                    if (imindistx(1)==1) then
-                     disty=fp(k,iyp)-(xxps(2)+deltay+Ly*dis)
+                     disty=fp(k,iyp)-(xxps(2)+delta_y+Ly*dis)
                    elseif (imindistx(1)==2) then
                      disty=fp(k,iyp)-(xxps(2)+Ly*dis)
                    elseif (imindistx(1)==3) then
-                     disty=fp(k,iyp)-(xxps(2)-deltay+Ly*dis)
+                     disty=fp(k,iyp)-(xxps(2)-delta_y+Ly*dis)
                    endif
                  else
                    disty=fp(k,iyp)-(xxps(2)+Ly*dis)
@@ -1232,12 +1232,12 @@ module Particles_sink
                         if (lshear) then
                           if (dis(ixmin(1))==-1) then
                             iymin=minloc(abs(fp(k,iyp)- &
-                                (xxps(2)+deltay+Ly*dis)))
+                                (xxps(2)+delta_y+Ly*dis)))
                           elseif (dis(ixmin(1))==0) then
                             iymin=minloc(abs(fp(k,iyp)-(xxps(2)+Ly*dis)))
                           elseif (dis(ixmin(1))==1) then
                             iymin=minloc(abs(fp(k,iyp)- &
-                                (xxps(2)-deltay+Ly*dis)))
+                                (xxps(2)-delta_y+Ly*dis)))
                           endif
                         else
                           iymin=minloc(abs(fp(k,iyp)-(xxps(2)+Ly*dis)))
@@ -1247,12 +1247,12 @@ module Particles_sink
 !  Double check that accreted particle ghost image is within the sink radius.
 !
                         xxkghost=fp(k,ixp:izp)-(/Lx*dis(ixmin), &
-                            Ly*dis(iymin)-dis(ixmin)*deltay, &
+                            Ly*dis(iymin)-dis(ixmin)*delta_y, &
                             Lz*dis(izmin)/)
                         if (sum((xxps-xxkghost)**2)>rads2) then
                           print*, 'remove_particles_sink: sink particle', &
                                ipar(j), 'attempts to accrete particle that is too far away!'
-                          print*, 'it, itsub, t, deltay=', t, it, itsub, deltay
+                          print*, 'it, itsub, t, delta_y=', t, it, itsub, delta_y
                           print*, 'iproc, j, k, disx, disy, disz=', iproc, &
                               ipar(j), ipar(k), dis(ixmin), dis(iymin), dis(izmin)
                           print*, 'xj, rhoj, radsj=', xxps, rhops, rads

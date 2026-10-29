@@ -101,6 +101,7 @@ module Timestep
       real :: dt_used
 
       do itsub = 1, itorder
+
         lfirst = (itsub == 1) .and. (n_advancement == 1)
         llast = (itsub == itorder)
 
@@ -135,7 +136,7 @@ module Timestep
 !
         call pde(f,df,p)
 
-        if(present(dt_)) then
+        if (present(dt_)) then
           dt_used = dt_
         else
           dt_used = dt
@@ -254,7 +255,7 @@ module Timestep
 !
 !  Chosen terms are advanced more finely in time while keeping other terms constant
 !
-      if(number_of_substeps_per_timestep > 0) then
+      if (number_of_substeps_per_timestep > 0) then
         headt = .false.
         lfirst=.true.
         call pde(f,df,p)
@@ -274,8 +275,11 @@ module Timestep
 !
 !  Integrate operator split terms.
 !
-    if (.not. lgpu)  call split_update(f)
-    if (lgpu)  call split_update_gpu(f)
+    if (lgpu) then
+      call split_update_gpu(f)
+    else
+      call split_update(f)
+    endif
 !
     endsubroutine time_step
 !***********************************************************************

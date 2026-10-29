@@ -3102,7 +3102,7 @@ LD=$(FC)
 #
 ifneq ($(filter $(SPECIAL) $(IO) $(IO_IN) $(IO_OUT), $(HDF5_MODULES)),)
 	# set HDF5 Fortran compiler and Fortran linker
-	export HDF5_FC:=$(FC)
+	export HDF5_FC:=$(FC)        #MR: needed for?
 	export HDF5_FLINKER:=$(LD)
 	ifneq ($(FC_HDF5),)
               LD := $(FC_HDF5)

@@ -731,8 +731,8 @@ module Fourier
             ay(1:nx)=cmplx(a_re(:,l,n),a_im(:,l,n))
             call cfftf(nxgrid,ay,wsavex(:,thread_id))
 !  Shift y-coordinate so that x-direction is periodic. This is best done in
-!  k-space, by multiplying the complex amplitude by exp[i*ky*deltay(x)].
-            deltay_x=-deltay*(x(l+nghost+ipy*ny)-(x0+Lx/2))/Lx
+!  k-space, by multiplying the complex amplitude by exp[i*ky*delta_y(x)].
+            deltay_x=-delta_y*(x(l+nghost+ipy*ny)-(x0+Lx/2))/Lx
             ay(two:nxgrid)=ay(two:nxgrid)*exp(cmplx(0.0, ky_fft(two:nxgrid)*deltay_x))
             a_re(:,l,n)=real(ay(1:nx))
             a_im(:,l,n)=aimag(ay(1:nx))
@@ -823,7 +823,7 @@ module Fourier
           do n=1,nz; do l=1,ny
             ay(1:nx)=cmplx(a_re(:,l,n),a_im(:,l,n))
 !  Shift y-coordinate back to regular frame (see above).
-            deltay_x=-deltay*(x(l+nghost+ipy*ny)-(x0+Lx/2))/Lx
+            deltay_x=-delta_y*(x(l+nghost+ipy*ny)-(x0+Lx/2))/Lx
             ay(two:nxgrid)=ay(two:nxgrid)*exp(cmplx(0.0,-ky_fft(two:nxgrid)*deltay_x))
             call cfftb(nxgrid,ay,wsavex(:,thread_id))
             a_re(:,l,n)=real(ay(1:nx))
@@ -893,8 +893,8 @@ module Fourier
             ay(1:nx)=cmplx(a_re(:,l,n),a_im(:,l,n))
             call cfftf(nxgrid,ay,wsavex(:,thread_id))
 !  Shift y-coordinate so that x-direction is periodic. This is best done in
-!  k-space, by multiplying the complex amplitude by exp[i*ky*deltay(x)].
-            deltay_x=-deltay*(x(l+nghost+ipy*ny)-(x0+Lx/2))/Lx
+!  k-space, by multiplying the complex amplitude by exp[i*ky*delta_y(x)].
+            deltay_x=-delta_y*(x(l+nghost+ipy*ny)-(x0+Lx/2))/Lx
             !This seems strange, breaks if two is a parameter 
             ay(two:nx)=ay(two:nx)*exp(cmplx(0.0, ky_fft(two:nxgrid)*deltay_x))
             a_re(:,l,n)=real(ay(1:nx))
@@ -949,7 +949,7 @@ module Fourier
           do n=1,nz; do l=1,ny
             ay(1:nx)=cmplx(a_re(:,l,n),a_im(:,l,n))
 !  Shift y-coordinate back to regular frame (see above).
-            deltay_x=-deltay*(x(l+nghost+ipy*ny)-(x0+Lx/2))/Lx
+            deltay_x=-delta_y*(x(l+nghost+ipy*ny)-(x0+Lx/2))/Lx
             ay(two:nxgrid)=ay(two:nxgrid)*exp(cmplx(0.0,-ky_fft(two:nxgrid)*deltay_x))
             call cfftb(nxgrid,ay,wsavex(:,thread_id))
             a_re(:,l,n)=real(ay(1:nx))
@@ -1160,7 +1160,7 @@ module Fourier
 !
 !  From here on, nx=nxgrid can be assumed.
 !
-      if (lshear) deltay_x=-deltay*(x(m1+ipy*nyl:m2+ipy*nyl)-(x0+Lx/2))/Lx
+      if (lshear) deltay_x=-delta_y*(x(m1+ipy*nyl:m2+ipy*nyl)-(x0+Lx/2))/Lx
 !
       if (lforward) then
 !
@@ -1990,7 +1990,7 @@ module Fourier
       !$omp end single
       !$omp barrier
 !
-      if (lshear_loc) deltay_x = -deltay * (x(l1:l2) - (x0+Lx/2))/Lx
+      if (lshear_loc) deltay_x = -delta_y * (x(l1:l2) - (x0+Lx/2))/Lx
 !
       if (lforward) then
 !
@@ -2112,7 +2112,7 @@ module Fourier
       !$omp end single
       !$omp barrier
 !
-      if (lshear_loc) deltay_x = -deltay * (x(l1:l2) - (x0+Lx/2))/Lx
+      if (lshear_loc) deltay_x = -delta_y * (x(l1:l2) - (x0+Lx/2))/Lx
 !
       if (lforward) then
 !
@@ -2241,7 +2241,7 @@ module Fourier
       !$omp end single
       !$omp barrier
 !
-      if (lshear_loc) deltay_x = -deltay * (x(l1:l2) - (x0+Lx/2))/Lx
+      if (lshear_loc) deltay_x = -delta_y * (x(l1:l2) - (x0+Lx/2))/Lx
 !
       if (lforward) then
 !
@@ -2844,7 +2844,7 @@ module Fourier
 !
       if (lshear_loc) then
         x_offset = 1 + (ipx+ipy*nprocx)*tny
-        deltay_x = -deltay * (xgrid(x_offset:x_offset+tny-1) - (x0+Lx/2))/Lx
+        deltay_x = -delta_y * (xgrid(x_offset:x_offset+tny-1) - (x0+Lx/2))/Lx
       endif
 !
       if (lshift) then
@@ -3211,7 +3211,7 @@ module Fourier
 !
       if (lshear_loc) then
         x_offset = 1 + (ipx+ipy*nprocx)*tny
-        deltay_x = -deltay * (xgrid(x_offset:x_offset+tny-1) - (x0+Lx/2))/Lx
+        deltay_x = -delta_y * (xgrid(x_offset:x_offset+tny-1) - (x0+Lx/2))/Lx
       endif
 !
       if (lshift) then
@@ -3425,7 +3425,7 @@ module Fourier
 !
       if (lshear_loc) then
         x_offset = 1 + (ipx+ipy*nprocx)*tny
-        deltay_x = -deltay * (xgrid(x_offset:x_offset+tny-1) - (x0+Lx/2))/Lx
+        deltay_x = -delta_y * (xgrid(x_offset:x_offset+tny-1) - (x0+Lx/2))/Lx
       endif
 !
       if (lshift) then

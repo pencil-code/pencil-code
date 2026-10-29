@@ -400,7 +400,7 @@ module Mpicomm
         f( 1:l1-1,:,:,ivar1:ivar2) = f(l2i:l2,:,:,ivar1:ivar2)
         f(l2+1:mx,:,:,ivar1:ivar2) = f(l1:l1i,:,:,ivar1:ivar2)
       else
-        deltay_dy=deltay/dy
+        deltay_dy=delta_y/dy
         displs=int(deltay_dy)
         frac=deltay_dy-displs
         c1 = -          (frac+1.)*frac*(frac-1.)*(frac-2.)*(frac-3.)/120.

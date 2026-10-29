@@ -4242,7 +4242,7 @@ module Diagnostics
 !  25-aug-23/TP: Coded
 !  19-march-25/TP: moved from Equ to here
 !
-    if(loptest(lsnap_time)) then
+    if (loptest(lsnap_time)) then
       t_snap_save = t
       return
     endif
@@ -4272,7 +4272,6 @@ module Diagnostics
       eps_rkf_save = eps_rkf
     endif
     lpencil_save = lpencil
-    deltay_save = deltay
 
     scl_factor_target_save = scl_factor_target
     Hp_target_save = Hp_target
@@ -4289,10 +4288,11 @@ module Diagnostics
 !   13-nov-23/TP: Written
 !   19-march-25/TP: moved from Equ to here
 !
-    if(loptest(lsnap_time)) then
+    if (loptest(lsnap_time)) then
       t = t_snap_save
       return
     endif
+
     l1davgfirst = l1davgfirst_save
     ldiagnos = ldiagnos_save
     l1dphiavg = l1dphiavg_save
@@ -4311,7 +4311,6 @@ module Diagnostics
     tsound = tsound_save
     t = t_save
 
-    deltay = deltay_save
     scl_factor_target   = scl_factor_target_save
     Hp_target   = Hp_target_save
     appa_target = appa_target_save

@@ -197,7 +197,7 @@ module Particles_sub
             if (fp(k,ixp)< xyz0(1)) then
               fp(k,ixp)=fp(k,ixp)+Lxyz(1)
               if (lshear.and.nygrid/=1) then
-                fp(k,iyp)=fp(k,iyp)-deltay
+                fp(k,iyp)=fp(k,iyp)-delta_y
 !
 !  Keep track of energy gain or lose from shearing boundaries.
 !
@@ -223,7 +223,7 @@ module Particles_sub
             if (fp(k,ixp)>=xyz1(1)) then
               fp(k,ixp)=fp(k,ixp)-Lxyz(1)
               if (lshear.and.nygrid/=1) then
-                fp(k,iyp)=fp(k,iyp)+deltay
+                fp(k,iyp)=fp(k,iyp)+delta_y
 !
 !  Keep track of energy gain or lose from shearing boundaries.
 !

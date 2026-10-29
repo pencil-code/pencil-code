@@ -798,9 +798,9 @@ module Particles_mpicomm
           ipy_rec=ipy+dipy
           if (lshear) then
             if (ipx_rec<0) &
-                ipy_rec=ipy_rec-ceiling(deltay/Lxyz_loc(2)-0.5)
+                ipy_rec=ipy_rec-ceiling(delta_y/Lxyz_loc(2)-0.5)
             if (ipx_rec>nprocx-1) &
-                ipy_rec=ipy_rec+ceiling(deltay/Lxyz_loc(2)-0.5)
+                ipy_rec=ipy_rec+ceiling(delta_y/Lxyz_loc(2)-0.5)
           endif
           ipz_rec=ipz+dipz
           do while (ipx_rec<0);        ipx_rec=ipx_rec+nprocx; enddo
@@ -922,8 +922,8 @@ module Particles_mpicomm
                     ipx, ipy, ipz
                 print*, 'migrate_particles_ptop: ipx0, ipy0, ipz0=', &
                     ipx0, ipy0, ipz0
-                print*, 'migrate_particles_ptop: it, itsub, t, deltay=', &
-                    it, itsub, t, deltay
+                print*, 'migrate_particles_ptop: it, itsub, t, delta_y=', &
+                    it, itsub, t, delta_y
                 print*, 'migrate_particles_ptop: fp=', fp(k,:)
                 print*, 'migrate_particles_ptop: iproc_comm=', &
                     iproc_comm(1:nproc_comm)

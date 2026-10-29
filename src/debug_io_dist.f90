@@ -10,7 +10,7 @@
 !  consists of the followinig Fortran records:
 !    1. data(mx,my,mz,nvar)
 !    2. t(1), x(mx), y(my), z(mz), dx(1), dy(1), dz(1)
-! or 2. t(1), x(mx), y(my), z(mz), dx(1), dy(1), dz(1), deltay(1)
+! or 2. t(1), x(mx), y(my), z(mz), dx(1), dy(1), dz(1), delta_y(1)
 !  Here nvar denotes the number of slots, i.e. 1 for one scalar field, 3
 !  for one vector field, 8 for var.dat in the case of MHD with entropy.
 !
@@ -112,8 +112,8 @@ contains
       endif
 !
       if (lshear) then
-        write(lun_output,IOSTAT=iostat) t_sp,x,y,z,dx,dy,dz,deltay
-        if (outlog(iostat,'write t_sp,x,y,z,dx,dy,dz,deltay')) then
+        write(lun_output,IOSTAT=iostat) t_sp,x,y,z,dx,dy,dz,delta_y
+        if (outlog(iostat,'write t_sp,x,y,z,dx,dy,dz,delta_y')) then
           if (lserial_io) call end_serialize()
           return
         endif
@@ -170,8 +170,8 @@ contains
       endif
 !
       if (lshear) then
-        write(lun_output,IOSTAT=iostat) t_sp,x,y,z,dx,dy,dz,deltay
-        if (outlog(iostat,'write t_sp,x,y,z,dx,dy,dz,deltay')) then
+        write(lun_output,IOSTAT=iostat) t_sp,x,y,z,dx,dy,dz,delta_y
+        if (outlog(iostat,'write t_sp,x,y,z,dx,dy,dz,delta_y')) then
           if (lserial_io) call end_serialize()
           return
         endif

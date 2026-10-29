@@ -307,7 +307,7 @@ module Particles_mpicomm
 !
 !  TODO(04-dec-20/ccyang): Consistently use the module Grid and the
 !    index space to compute which cell a particle is located in, also in
-!    subroutine map_nearest_grid() of module Particles_map.
+!    subroutine map_nearest_grid of module Particles_map.
 !
       init: if (lfirstcall) then
         xx0_loc = xyz0_loc - xyz0
@@ -439,17 +439,13 @@ module Particles_mpicomm
                 (.not.any(iproc_rec==iproc_comm(1:nproc_comm))) ) then
               print*, 'migrate_particles: particle ', ipar(k), ' wants to'
               print*, '    migrate to a processor that is not a neighbour!'
-              print*, 'migrate_particles: iproc, iproc_rec=', &
-                  iproc, iproc_rec
-              print*, 'migrate_particles: iproc_comm=', &
-                  iproc_comm(1:nproc_comm)
+              print*, 'migrate_particles: iproc, iproc_rec=', iproc, iproc_rec
+              print*, 'migrate_particles: iproc_comm=', iproc_comm(1:nproc_comm)
               print*, 'migrate_particles: xxp=', fp(k,ixp:izp)
               print*, 'migrate_particles: vvp=', fp(k,ivpx:ivpz)
-              if (lparticles_radius) then
-                print*, 'migrate_particles: ap =', fp(k,iap)
-              endif
-              print*, 'migrate_particles: deltay=', deltay
-              call fatal_error_local("","")
+              if (lparticles_radius) print*, 'migrate_particles: ap =', fp(k,iap)
+              print*, 'migrate_particles: delta_y=', delta_y
+              call fatal_error_local("migrate_particles","")
             endif
 !
 !  Check that particle wants to migrate to existing processor.
@@ -467,7 +463,7 @@ module Particles_mpicomm
                   procy_bounds(ipy), procy_bounds(ipy+1)
               print*, 'migrate_particles: z0_mig, z1_mig=', &
                   procz_bounds(ipz), procz_bounds(ipz+1)
-              call fatal_error_local("","")
+              call fatal_error_local("migrate_particles","")
             endif
 !
 !  Copy migrating particle to the end of the fp array.
@@ -559,7 +555,7 @@ module Particles_mpicomm
               npar_loc, mpar_loc, sum(nmig_enter)
           call fatal_error_local('migrate_particles','')
         endif
-        call fatal_error_local_collect()
+        call fatal_error_local_collect
 !
 !  Sort array of migrating particles in order of receiving processor.
 !
@@ -741,7 +737,7 @@ module Particles_mpicomm
 !
     endsubroutine input_blocks
 !***********************************************************************
-    subroutine sort_blocks()
+    subroutine sort_blocks
 !
 !  Sort the blocks by parent processor and by parent brick index.
 !

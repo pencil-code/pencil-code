@@ -177,17 +177,17 @@ module Poisson
 !  frame. The connection between kx0 (in the shearing frame) and the actual kx
 !  is
 !    kx = kx0 + qshear*Omega*t*ky
-!  Writing deltay/2 = qshear*Omega*Lx/2*t, one gets the expression
-!    kx = kx0 + deltay/Lx*ky
+!  Writing delta_y/2 = qshear*Omega*Lx/2*t, one gets the expression
+!    kx = kx0 + delta_y/Lx*ky
 !  The parallel Fourier transform returns the array in a tranposed state, so
 !  must be able to identify the x-direction in order to take shear into account.
 !  (see the subroutine transform_fftpack_shear in Mpicomm for details).
 !
             if (nzgrid/=1) then ! Order (kz,ky',kx)
-              k2 = (kx_fft(ikz+ipz*nz)+deltay/Lx*ky_fft(iky+ipy*ny))**2 + &
+              k2 = (kx_fft(ikz+ipz*nz)+delta_y/Lx*ky_fft(iky+ipy*ny))**2 + &
                     ky_fft(iky+ipy*ny)**2 + kz_fft(ikx+ipx*nx)**2
             else                ! Order (kx,ky',kz)
-              k2 = (kx_fft(ikx+ipx*nx)+deltay/Lx*ky_fft(iky+ipy*ny))**2 + &
+              k2 = (kx_fft(ikx+ipx*nx)+delta_y/Lx*ky_fft(iky+ipy*ny))**2 + &
                     ky_fft(iky+ipy*ny)**2 + kz_fft(ikz+ipz*nz)**2
             endif
 !  The ordering of the array is not important here, because there is no shear!
@@ -213,7 +213,7 @@ module Poisson
 !    Phi(x,y,z)=-(2*pi*G/|k|)*Sigma(x,y)*exp[i*(kx*x+ky*y)-|k|*|z|]
 !
           if (lshear) then
-            k2 = (kx_fft(ikx+ipx*nx)+deltay/Lx*ky_fft(iky+ipy*ny))**2+ky_fft(iky+ipy*ny)**2
+            k2 = (kx_fft(ikx+ipx*nx)+delta_y/Lx*ky_fft(iky+ipy*ny))**2+ky_fft(iky+ipy*ny)**2
           else
             k2 = kx_fft(ikx+ipx*nx)**2+ky_fft(iky+ipy*ny)**2
           endif
@@ -410,7 +410,7 @@ module Poisson
 !
 !  Convolution in z
 !
-      if (lshear) a0 = deltay / Lx
+      if (lshear) a0 = delta_y / Lx
       do iy = 1, ny
 !
         phi_xz = phi(:,iy,:)
@@ -535,7 +535,7 @@ module Poisson
 !
 !  Convolution in z
 !
-      if (lshear) a0 = deltay / Lx
+      if (lshear) a0 = delta_y / Lx
       do iy = 1, ny
         call transp_xz(phi(:,iy,:),  phirt)
         call transp_xz(b1(:,iy,:), b1t)

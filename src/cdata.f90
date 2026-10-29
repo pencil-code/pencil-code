@@ -460,11 +460,11 @@ module Cdata
 !
 !  Rotation and shear parameters.
 !
-  real :: Omega=0.0, theta=0.0, phi=0.0, qshear=0.0, Sshear=0.0, deltay=0.0
+  real :: Omega=0.0, theta=0.0, phi=0.0, qshear=0.0, Sshear=0.0, delta_y=0.0
 !
   logical :: lrotation = .false.
 !
-  !$omp threadprivate(deltay)
+  !$omp threadprivate(delta_y)
 !DM : Omega is now used in the viscosity routine too, for Lambda effect in rotating
 ! coordinate. This should be taken care of by 'shared variables' if in future
 ! Omega should be moved from cdata to hydro.
@@ -1085,7 +1085,7 @@ module Cdata
   logical :: l1dphiavg_save, l1davgfirst_save, ldiagnos_save, l2davgfirst_save
   logical :: lout_save, l1davg_save, l2davg_save, lout_sound_save, lvideo_save
   logical :: lchemistry_diag_save
-  real    :: deltay_save,scl_factor_target_save,Hp_target_save, appa_target_save
+  real    :: scl_factor_target_save,Hp_target_save, appa_target_save
   logical :: ltimestep_diagnostics = .false.
 
   real(KIND=rkind8) :: t_save,tspec_save,t_snap_save

@@ -63,10 +63,10 @@ module GhostFold
         if (lshear .and. nxgrid>1) then
           do ivar=ivar1,ivar2
             df_tmp_yz=df(l1-1,m1:m2,n1:n2,ivar)
-            call fourier_shift_yz_y(df_tmp_yz,-deltay)
+            call fourier_shift_yz_y(df_tmp_yz,-delta_y)
             df(l1-1,m1:m2,n1:n2,ivar)=df_tmp_yz
             df_tmp_yz=df(l2+1,m1:m2,n1:n2,ivar)
-            call fourier_shift_yz_y(df_tmp_yz,+deltay)
+            call fourier_shift_yz_y(df_tmp_yz,+delta_y)
             df(l2+1,m1:m2,n1:n2,ivar)=df_tmp_yz
           enddo
         endif
@@ -126,10 +126,10 @@ module GhostFold
         if (nxgrid>1 .and. lshear) then
           do ivar=ivar1,ivar2
             f_tmp_yz=f(l1-1,m1:m2,n1:n2,ivar)
-            call fourier_shift_yz_y(f_tmp_yz,-deltay)
+            call fourier_shift_yz_y(f_tmp_yz,-delta_y)
             f(l1-1,m1:m2,n1:n2,ivar)=f_tmp_yz
             f_tmp_yz=f(l2+1,m1:m2,n1:n2,ivar)
-            call fourier_shift_yz_y(f_tmp_yz,+deltay)
+            call fourier_shift_yz_y(f_tmp_yz,+delta_y)
             f(l2+1,m1:m2,n1:n2,ivar)=f_tmp_yz
           enddo
         endif

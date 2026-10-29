@@ -662,7 +662,6 @@ module Equ
 !$    call hydro_restore_diagnostic_controls
 !$    call training_restore_diagnostic_controls
 !
-
       !$omp do
       do imn=1,nyz
         n=nn(imn)

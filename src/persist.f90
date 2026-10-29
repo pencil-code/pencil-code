@@ -167,7 +167,7 @@ module Persist
           if (.not.done) call random_seed_wrapper (PUT=seed2,CHANNEL=2)
         case (id_record_SHEAR_DELTA_Y)
           done=read_persist ('SHEAR_DELTA_Y', dely)
-          if (.not.done) deltay=dely
+          if (.not.done) delta_y=dely
         case (id_record_ITERATION_NUMBER)
             done=read_persist ('ITERATION_NUMBER', it)
         case (id_record_TIME_STEP)
@@ -216,8 +216,8 @@ module Persist
       endif
 !
       if (lshear) then
-        if (read_persist ('SHEAR_DELTA_Y', deltay)) &
-          call warning('input_persist_general_by_label','no persistent value of deltay found')
+        if (read_persist ('SHEAR_DELTA_Y', delta_y)) &
+          call warning('input_persist_general_by_label','no persistent value of delta_y found')
       endif
 !
       if (dt0==0) then
@@ -248,7 +248,7 @@ module Persist
 !
 !  13-Dec-2011/Bourdin.KIS: reworked
 !
-      use Cdata, only: seed, nseed, lshear, deltay
+      use Cdata, only: seed, nseed, lshear, delta_y
       use General, only: random_seed_wrapper
       use IO, only: write_persist
 
@@ -270,7 +270,7 @@ module Persist
       endif
 !
       if (lshear) then
-        if (write_persist ('SHEAR_DELTA_Y', id_record_SHEAR_DELTA_Y, deltay)) &
+        if (write_persist ('SHEAR_DELTA_Y', id_record_SHEAR_DELTA_Y, delta_y)) &
             output_persistent_general = .true.
       endif
 !

@@ -432,7 +432,7 @@ subroutine read_and_combine(filename,f,mvar_in,lonly_farray)
     open (lun_output, FILE=trim(directory_out)//'/'//filename, FORM='unformatted', position='append', status='old')
     t_sp = t
     if (lshear) then
-      write (lun_output) t_sp, gx, gy, gz, dx, dy, dz, deltay
+      write (lun_output) t_sp, gx, gy, gz, dx, dy, dz, delta_y
     else
       write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
     endif

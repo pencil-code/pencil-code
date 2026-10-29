@@ -4422,7 +4422,7 @@ mn_loop:do n=n1,n2
 !    endsubroutine proximity_OB
 !*****************************************************************************
     subroutine proximity_SN(m,n,SNR,outward_normal)    ! make pars: dr2_SN
-!!$omp declare target device_type(host)    ! needs: x,y,z, L[xyz], deltay
+!!$omp declare target device_type(host)    ! needs: x,y,z, L[xyz], delta_y
 !
 !  Calculate pencil of distance to SN explosion site.
 !
@@ -4462,19 +4462,19 @@ mn_loop:do n=n1,n2
         do l=l1,l2
           if (x(l)-SNR%feat%x> Lx/2) then
             if (y(m)-SNR%feat%y >  Ly/2) then
-               dr2_SN(l-nghost)=dx_SN(l-nghost)**2 + (y(m)-SNR%feat%y+deltay-Ly)**2 + dz_SN**2
+               dr2_SN(l-nghost)=dx_SN(l-nghost)**2 + (y(m)-SNR%feat%y+delta_y-Ly)**2 + dz_SN**2
             elseif (y(m)-SNR%feat%y < -Ly/2) then
-               dr2_SN(l-nghost)=dx_SN(l-nghost)**2 + (y(m)-SNR%feat%y+deltay+Ly)**2 + dz_SN**2
+               dr2_SN(l-nghost)=dx_SN(l-nghost)**2 + (y(m)-SNR%feat%y+delta_y+Ly)**2 + dz_SN**2
             else
-               dr2_SN(l-nghost)=dx_SN(l-nghost)**2 + (dy_SN+deltay)**2 + dz_SN**2
+               dr2_SN(l-nghost)=dx_SN(l-nghost)**2 + (dy_SN+delta_y)**2 + dz_SN**2
             endif
           elseif (x(l)-SNR%feat%x< -Lx/2) then
             if (y(m)-SNR%feat%y >  Ly/2) then
-               dr2_SN(l-nghost)=dx_SN(l-nghost)**2 + (y(m)-SNR%feat%y-deltay-Ly)**2 + dz_SN**2
+               dr2_SN(l-nghost)=dx_SN(l-nghost)**2 + (y(m)-SNR%feat%y-delta_y-Ly)**2 + dz_SN**2
             elseif (y(m)-SNR%feat%y < -Ly/2) then
-               dr2_SN(l-nghost)=dx_SN(l-nghost)**2 + (y(m)-SNR%feat%y-deltay+Ly)**2 + dz_SN**2
+               dr2_SN(l-nghost)=dx_SN(l-nghost)**2 + (y(m)-SNR%feat%y-delta_y+Ly)**2 + dz_SN**2
             else
-               dr2_SN(l-nghost)=dx_SN(l-nghost)**2 + (dy_SN-deltay)**2 + dz_SN**2
+               dr2_SN(l-nghost)=dx_SN(l-nghost)**2 + (dy_SN-delta_y)**2 + dz_SN**2
             endif
           else
             dr2_SN(l-nghost)=dx_SN(l-nghost)**2 + dy_SN**2 + dz_SN**2
@@ -4497,11 +4497,11 @@ mn_loop:do n=n1,n2
           do l=l1,l2
             if (x(l)-SNR%feat%x> Lx/2) then
               if (y(m)-SNR%feat%y >  Ly/2) then
-                outward_normal(l-nghost,2)=(y(m)-SNR%feat%y+deltay-Ly)/ &
-                    sqrt(dx_SN(l-nghost)**2 + (y(m)-SNR%feat%y+deltay-Ly)**2 + dz_SN**2)
+                outward_normal(l-nghost,2)=(y(m)-SNR%feat%y+delta_y-Ly)/ &
+                    sqrt(dx_SN(l-nghost)**2 + (y(m)-SNR%feat%y+delta_y-Ly)**2 + dz_SN**2)
               elseif (y(m)-SNR%feat%y < -Ly/2) then
-                outward_normal(l-nghost,2)=(y(m)-SNR%feat%y+deltay+Ly)/ &
-                    sqrt(dx_SN(l-nghost)**2 + (y(m)-SNR%feat%y+deltay+Ly)**2 + dz_SN**2)
+                outward_normal(l-nghost,2)=(y(m)-SNR%feat%y+delta_y+Ly)/ &
+                    sqrt(dx_SN(l-nghost)**2 + (y(m)-SNR%feat%y+delta_y+Ly)**2 + dz_SN**2)
               else
                 if (dr2_SN(l-nghost)==0) then
                   outward_normal(l-nghost,2)=0.0
@@ -4511,11 +4511,11 @@ mn_loop:do n=n1,n2
               endif
             elseif (x(l)-SNR%feat%x< -Lx/2) then
               if (y(m)-SNR%feat%y >  Ly/2) then
-                outward_normal(l-nghost,2)=(y(m)-SNR%feat%y-deltay-Ly)/ &
-                    sqrt(dx_SN(l-nghost)**2 + (y(m)-SNR%feat%y-deltay-Ly)**2 + dz_SN**2)
+                outward_normal(l-nghost,2)=(y(m)-SNR%feat%y-delta_y-Ly)/ &
+                    sqrt(dx_SN(l-nghost)**2 + (y(m)-SNR%feat%y-delta_y-Ly)**2 + dz_SN**2)
               elseif (y(m)-SNR%feat%y < -Ly/2) then
-                outward_normal(l-nghost,2)=(y(m)-SNR%feat%y-deltay+Ly)/ &
-                    sqrt(dx_SN(l-nghost)**2 + (y(m)-SNR%feat%y-deltay+Ly)**2 + dz_SN**2)
+                outward_normal(l-nghost,2)=(y(m)-SNR%feat%y-delta_y+Ly)/ &
+                    sqrt(dx_SN(l-nghost)**2 + (y(m)-SNR%feat%y-delta_y+Ly)**2 + dz_SN**2)
               else
                 if (dr2_SN(l-nghost)==0) then
                   outward_normal(l-nghost,2)=0.0

@@ -652,8 +652,8 @@ module Mpicomm
         yscan: do dipy = -1, 1
           ipy_rec = ipy + dipy
           shear: if (lshear) then
-            if (left) ipy_rec = ipy_rec - ceiling(deltay / Lxyz_loc(2) - 0.5)
-            if (right) ipy_rec = ipy_rec + ceiling(deltay / Lxyz_loc(2) - 0.5)
+            if (left) ipy_rec = ipy_rec - ceiling(delta_y / Lxyz_loc(2) - 0.5)
+            if (right) ipy_rec = ipy_rec + ceiling(delta_y / Lxyz_loc(2) - 0.5)
           endif shear
           ipy_rec = modulo(ipy_rec, nprocy)  ! assuming periodic boundary conditions
 !
@@ -2553,7 +2553,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  Sixth order interpolation along the y-direction
 !
-      deltay_dy=deltay/dy
+      deltay_dy=delta_y/dy
       displs=int(deltay_dy)
       if (nprocx==1 .and. nprocy==1) then
         if (nygrid==1) then ! Periodic boundary conditions.
@@ -2794,7 +2794,7 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
 !
 !  Reading communicated information into f.
 !
-        deltay_dy=deltay/dy
+        deltay_dy=delta_y/dy
 !
         fa(:,1     :  ny,:,ivar1:ivar2) = falolo(:,:,:,ivar1:ivar2)
         fa(:,ny+1  :2*ny,:,ivar1:ivar2) =   falo(:,:,:,ivar1:ivar2)

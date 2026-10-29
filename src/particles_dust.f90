@@ -5816,7 +5816,7 @@ endif
               do ix = ix1,ix2
                 if (lshear) then
                   rp_box = sqrt((fp(k,ixp)+Lx*ix-xsinkpar)**2 + &
-                      (fp(k,iyp)+Ly*iy-deltay*ix-ysinkpar)**2 + (fp(k,izp)+Lz*iz-zsinkpar)**2)
+                      (fp(k,iyp)+Ly*iy-delta_y*ix-ysinkpar)**2 + (fp(k,izp)+Lz*iz-zsinkpar)**2)
                 else
                   rp_box = sqrt((fp(k,ixp)+Lx*ix-xsinkpar)**2 + &
                            (fp(k,iyp)+Ly*iy-ysinkpar)**2+(fp(k,izp)+Lz*iz-zsinkpar)**2)

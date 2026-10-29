@@ -804,8 +804,8 @@ module Particles_mpicomm
                     iproc, iproc_rec
                 print*, 'migrate_particles_ptop: ipx , ipy , ipz =', &
                     ipx, ipy, ipz
-                print*, 'migrate_particles_ptop: it, itsub, t, deltay=', &
-                    it, itsub, t, deltay
+                print*, 'migrate_particles_ptop: it, itsub, t, delta_y=', &
+                    it, itsub, t, delta_y
                 print*, 'migrate_particles_ptop: fp=', fp(k,:)
                 print*, 'migrate_particles_ptop: iproc_comm=', &
                     iproc_comm(1:nproc_comm)

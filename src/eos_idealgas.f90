@@ -4348,7 +4348,7 @@ module EquationOfState
 !  Calculate 1/k^2, zero mean
 !
       if (lshear) then
-        kappa = sqrt((kx+ky*deltay/Lx)**2+ky**2)
+        kappa = sqrt((kx+ky*delta_y/Lx)**2+ky**2)
       else
         kappa = sqrt(kx**2 + ky**2)
       endif
