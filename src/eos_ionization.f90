@@ -604,7 +604,7 @@ module EquationOfState
     subroutine get_gamma_etc(gamma,cp,cv,f)
 !
       real, optional, intent(OUT) :: gamma, cp,cv
-      real, dimension(:), optional, intent(IN) :: f !assumed-shape since non-contiguous
+      real, dimension(mfarray), optional, intent(IN) :: f
 !
       call keep_compiler_quiet(f)
 !
