@@ -85,7 +85,7 @@ module Special
     subroutine dspecial_dt(f,df,p)
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type(pencil_case) :: p
 !
       df(l1:l2,m,n,ispecial) = df(l1:l2,m,n,ispecial) + 1.
