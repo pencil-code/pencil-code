@@ -1,0 +1,108 @@
+AC_rhs Ops:
+Halo({F_AX,F_AY,F_AZ,},sending = 1,receiving = 1,BOUNDARY_XYZ,{(1,2),(1,2),(1,2),})
+Periodic(BOUNDARY_XYZ,{F_AX,F_AY,F_AZ,},{(1,2),(1,2),(1,2),})
+twopass_solve_intermediate___optimized_0({F_AX,F_AY,F_AZ,},{F_AX,F_AY,F_AZ,},{},{},{},{},{AC_dt1_max_single_precision,},1)
+twopass_solve_final___optimized_0({F_AX,F_AY,F_AZ,},{F_AX,F_AY,F_AZ,},{},{},{},{},{},1)
+
+AC_rhs Ops:
+Halo({F_AX,F_AY,F_AZ,},sending = 1,receiving = 1,BOUNDARY_XYZ,{(1,2),(1,2),(1,2),})
+Periodic(BOUNDARY_XYZ,{F_AX,F_AY,F_AZ,},{(1,2),(1,2),(1,2),})
+twopass_solve_intermediate___optimized_1({F_AX,F_AY,F_AZ,},{F_AX,F_AY,F_AZ,},{},{},{},{},{AC_dt1_max_single_precision,},1)
+twopass_solve_final___optimized_0({F_AX,F_AY,F_AZ,},{F_AX,F_AY,F_AZ,},{},{},{},{},{},1)
+
+AC_before_boundary_steps Ops:
+kinematic_flow___optimized_1({},{F_UX,F_UY,F_UZ,},{},{},{},{},{},1)
+
+AC_before_boundary_steps Ops:
+kinematic_flow___optimized_0({},{F_UX,F_UY,F_UZ,},{},{},{},{},{},1)
+
+AC_rhs Ops:
+Halo({F_AX,F_AY,F_AZ,},sending = 1,receiving = 1,BOUNDARY_XYZ,{(1,2),(1,2),(1,2),})
+Periodic(BOUNDARY_XYZ,{F_AX,F_AY,F_AZ,},{(1,2),(1,2),(1,2),})
+twopass_solve_intermediate___optimized_2({F_AX,F_AY,F_AZ,},{F_AX,F_AY,F_AZ,},{},{},{},{},{},1)
+twopass_solve_final___optimized_1({F_AX,F_AY,F_AZ,},{F_AX,F_AY,F_AZ,},{},{},{},{},{},1)
+
+AC_rhs Ops:
+Halo({F_AX,F_AY,F_AZ,},sending = 1,receiving = 1,BOUNDARY_XYZ,{(1,2),(1,2),(1,2),})
+Periodic(BOUNDARY_XYZ,{F_AX,F_AY,F_AZ,},{(1,2),(1,2),(1,2),})
+twopass_solve_intermediate___optimized_3({F_AX,F_AY,F_AZ,},{F_AX,F_AY,F_AZ,},{},{},{},{},{},1)
+twopass_solve_final___optimized_1({F_AX,F_AY,F_AZ,},{F_AX,F_AY,F_AZ,},{},{},{},{},{},1)
+
+AC_before_boundary_steps Ops:
+kinematic_flow___optimized_3({},{F_UX,F_UY,F_UZ,},{},{},{},{},{},1)
+
+AC_before_boundary_steps Ops:
+kinematic_flow___optimized_2({},{F_UX,F_UY,F_UZ,},{},{},{},{},{},1)
+
+AC_rhs Ops:
+Halo({F_AX,F_AY,F_AZ,},sending = 1,receiving = 1,BOUNDARY_XYZ,{(1,2),(1,2),(1,2),})
+Periodic(BOUNDARY_XYZ,{F_AX,F_AY,F_AZ,},{(1,2),(1,2),(1,2),})
+twopass_solve_intermediate___optimized_4({F_AX,F_AY,F_AZ,},{F_AX,F_AY,F_AZ,},{},{},{},{},{},1)
+twopass_solve_final___optimized_2({F_AX,F_AY,F_AZ,},{F_AX,F_AY,F_AZ,},{},{},{},{},{},1)
+
+AC_rhs Ops:
+Halo({F_AX,F_AY,F_AZ,},sending = 1,receiving = 1,BOUNDARY_XYZ,{(1,2),(1,2),(1,2),})
+Periodic(BOUNDARY_XYZ,{F_AX,F_AY,F_AZ,},{(1,2),(1,2),(1,2),})
+twopass_solve_intermediate___optimized_5({F_AX,F_AY,F_AZ,},{F_AX,F_AY,F_AZ,},{},{},{},{},{},1)
+twopass_solve_final___optimized_2({F_AX,F_AY,F_AZ,},{F_AX,F_AY,F_AZ,},{},{},{},{},{},1)
+
+AC_before_boundary_steps Ops:
+kinematic_flow___optimized_5({},{F_UX,F_UY,F_UZ,},{},{},{},{},{},1)
+
+AC_before_boundary_steps Ops:
+kinematic_flow___optimized_4({},{F_UX,F_UY,F_UZ,},{},{},{},{},{},1)
+
+AC_calculate_timestep Ops:
+Halo({F_AX,F_AY,F_AZ,},sending = 1,receiving = 1,BOUNDARY_XYZ,{(1,2),(1,2),(1,2),})
+Periodic(BOUNDARY_XYZ,{F_AX,F_AY,F_AZ,},{(1,2),(1,2),(1,2),})
+twopass_solve_intermediate___optimized_0({F_AX,F_AY,F_AZ,},{F_AX,F_AY,F_AZ,},{},{},{},{},{AC_dt1_max_single_precision,},1)
+
+get_taus Ops:
+Halo({F_AX,},sending = 1,receiving = 1,BOUNDARY_YZ,{(1,1),})
+Halo({F_AY,},sending = 1,receiving = 1,BOUNDARY_XZ,{(1,1),})
+Halo({F_AZ,},sending = 1,receiving = 1,BOUNDARY_XY,{(1,1),})
+Periodic(BOUNDARY_YZ,{F_AX,},{(1,1),})
+Periodic(BOUNDARY_XZ,{F_AY,},{(1,1),})
+Periodic(BOUNDARY_XY,{F_AZ,},{(1,1),})
+get_bfield({F_AX,F_AY,F_AZ,},{bbmean_X,bbmean_Y,bbmean_Z,},{},{},{},{},{},1)
+Halo({bbmean_X,bbmean_Y,bbmean_Z,},sending = 1,receiving = 1,BOUNDARY_XYZ,{(1,3),(1,3),(1,3),})
+Periodic(BOUNDARY_XYZ,{bbmean_X,bbmean_Y,bbmean_Z,},{(1,3),(1,3),(1,3),})
+Halo({F_UX,F_UY,F_UZ,},sending = 1,receiving = 1,BOUNDARY_XYZ,{(1,3),(1,3),(1,3),})
+Periodic(BOUNDARY_XYZ,{F_UX,F_UY,F_UZ,},{(1,3),(1,3),(1,3),})
+fluctutation_terms_and_means({bbmean_X,bbmean_Y,bbmean_Z,F_UX,F_UY,F_UZ,},{uumean_X,uumean_Y,uumean_Z,F_SGS_EMF_X,F_SGS_EMF_Y,F_SGS_EMF_Z,bbmean_X,bbmean_Y,bbmean_Z,bb_tensor_product_Xx,bb_tensor_product_Yy,bb_tensor_product_Zz,bb_tensor_product_Xy,bb_tensor_product_Xz,bb_tensor_product_Yz,},{},{},{},{},{},1)
+Halo({F_SGS_EMF_X,F_SGS_EMF_Y,F_SGS_EMF_Z,bb_tensor_product_Xx,bb_tensor_product_Yy,bb_tensor_product_Zz,bb_tensor_product_Xy,bb_tensor_product_Xz,bb_tensor_product_Yz,},sending = 1,receiving = 1,BOUNDARY_XYZ,{(1,3),(1,3),(1,3),(1,3),(1,3),(1,3),(1,3),(1,3),(1,3),})
+Periodic(BOUNDARY_XYZ,{F_SGS_EMF_X,F_SGS_EMF_Y,F_SGS_EMF_Z,bb_tensor_product_Xx,bb_tensor_product_Yy,bb_tensor_product_Zz,bb_tensor_product_Xy,bb_tensor_product_Xz,bb_tensor_product_Yz,},{(1,3),(1,3),(1,3),(1,3),(1,3),(1,3),(1,3),(1,3),(1,3),})
+smooth_fluctuation_terms({F_SGS_EMF_X,F_SGS_EMF_Y,F_SGS_EMF_Z,bb_tensor_product_Xx,bb_tensor_product_Yy,bb_tensor_product_Zz,bb_tensor_product_Xy,bb_tensor_product_Xz,bb_tensor_product_Yz,},{F_SGS_EMF_X,F_SGS_EMF_Y,F_SGS_EMF_Z,bb_tensor_product_Xx,bb_tensor_product_Yy,bb_tensor_product_Zz,bb_tensor_product_Xy,bb_tensor_product_Xz,bb_tensor_product_Yz,},{},{},{},{},{},1)
+compute_taus({uumean_X,uumean_Y,uumean_Z,F_SGS_EMF_X,F_SGS_EMF_Y,F_SGS_EMF_Z,bbmean_X,bbmean_Y,bbmean_Z,bb_tensor_product_Xx,bb_tensor_product_Yy,bb_tensor_product_Zz,bb_tensor_product_Xy,bb_tensor_product_Xz,bb_tensor_product_Yz,TAU_HYDRO_XX,TAU_HYDRO_YY,TAU_HYDRO_ZZ,TAU_HYDRO_XY,TAU_HYDRO_XZ,TAU_HYDRO_YZ,},{F_SGS_EMF_X,F_SGS_EMF_Y,F_SGS_EMF_Z,bb_tensor_product_Xx,bb_tensor_product_Yy,bb_tensor_product_Zz,bb_tensor_product_Xy,bb_tensor_product_Xz,bb_tensor_product_Yz,TAU_HYDRO_XX,TAU_HYDRO_YY,TAU_HYDRO_ZZ,TAU_HYDRO_XY,TAU_HYDRO_XZ,TAU_HYDRO_YZ,},{},{},{},{},{},1)
+
+boundconds Ops:
+BoundCond(BOUNDARY_X,BOUNDCOND_PERIODIC,{F_AX,F_AY,F_AZ,uumean_X,uumean_Y,uumean_Z,F_SGS_EMF_X,F_SGS_EMF_Y,F_SGS_EMF_Z,bbmean_X,bbmean_Y,bbmean_Z,F_UX,F_UY,F_UZ,F_RHO,mom_mean_X,mom_mean_Y,mom_mean_Z,rho_mean,bb_tensor_product_Xx,bb_tensor_product_Yy,bb_tensor_product_Zz,bb_tensor_product_Xy,bb_tensor_product_Xz,bb_tensor_product_Yz,TAU_HYDRO_XX,TAU_HYDRO_YY,TAU_HYDRO_ZZ,TAU_HYDRO_XY,TAU_HYDRO_XZ,TAU_HYDRO_YZ,},{F_AX,F_AY,F_AZ,uumean_X,uumean_Y,uumean_Z,F_SGS_EMF_X,F_SGS_EMF_Y,F_SGS_EMF_Z,bbmean_X,bbmean_Y,bbmean_Z,F_UX,F_UY,F_UZ,F_RHO,mom_mean_X,mom_mean_Y,mom_mean_Z,rho_mean,bb_tensor_product_Xx,bb_tensor_product_Yy,bb_tensor_product_Zz,bb_tensor_product_Xy,bb_tensor_product_Xz,bb_tensor_product_Yz,TAU_HYDRO_XX,TAU_HYDRO_YY,TAU_HYDRO_ZZ,TAU_HYDRO_XY,TAU_HYDRO_XZ,TAU_HYDRO_YZ,}{0,0,0})
+BoundCond(BOUNDARY_Y,BOUNDCOND_PERIODIC,{F_AX,F_AY,F_AZ,uumean_X,uumean_Y,uumean_Z,F_SGS_EMF_X,F_SGS_EMF_Y,F_SGS_EMF_Z,bbmean_X,bbmean_Y,bbmean_Z,F_UX,F_UY,F_UZ,F_RHO,mom_mean_X,mom_mean_Y,mom_mean_Z,rho_mean,bb_tensor_product_Xx,bb_tensor_product_Yy,bb_tensor_product_Zz,bb_tensor_product_Xy,bb_tensor_product_Xz,bb_tensor_product_Yz,TAU_HYDRO_XX,TAU_HYDRO_YY,TAU_HYDRO_ZZ,TAU_HYDRO_XY,TAU_HYDRO_XZ,TAU_HYDRO_YZ,},{F_AX,F_AY,F_AZ,uumean_X,uumean_Y,uumean_Z,F_SGS_EMF_X,F_SGS_EMF_Y,F_SGS_EMF_Z,bbmean_X,bbmean_Y,bbmean_Z,F_UX,F_UY,F_UZ,F_RHO,mom_mean_X,mom_mean_Y,mom_mean_Z,rho_mean,bb_tensor_product_Xx,bb_tensor_product_Yy,bb_tensor_product_Zz,bb_tensor_product_Xy,bb_tensor_product_Xz,bb_tensor_product_Yz,TAU_HYDRO_XX,TAU_HYDRO_YY,TAU_HYDRO_ZZ,TAU_HYDRO_XY,TAU_HYDRO_XZ,TAU_HYDRO_YZ,}{0,0,0})
+BoundCond(BOUNDARY_Z,BOUNDCOND_PERIODIC,{F_AX,F_AY,F_AZ,uumean_X,uumean_Y,uumean_Z,F_SGS_EMF_X,F_SGS_EMF_Y,F_SGS_EMF_Z,bbmean_X,bbmean_Y,bbmean_Z,F_UX,F_UY,F_UZ,F_RHO,mom_mean_X,mom_mean_Y,mom_mean_Z,rho_mean,bb_tensor_product_Xx,bb_tensor_product_Yy,bb_tensor_product_Zz,bb_tensor_product_Xy,bb_tensor_product_Xz,bb_tensor_product_Yz,TAU_HYDRO_XX,TAU_HYDRO_YY,TAU_HYDRO_ZZ,TAU_HYDRO_XY,TAU_HYDRO_XZ,TAU_HYDRO_YZ,},{F_AX,F_AY,F_AZ,uumean_X,uumean_Y,uumean_Z,F_SGS_EMF_X,F_SGS_EMF_Y,F_SGS_EMF_Z,bbmean_X,bbmean_Y,bbmean_Z,F_UX,F_UY,F_UZ,F_RHO,mom_mean_X,mom_mean_Y,mom_mean_Z,rho_mean,bb_tensor_product_Xx,bb_tensor_product_Yy,bb_tensor_product_Zz,bb_tensor_product_Xy,bb_tensor_product_Xz,bb_tensor_product_Yz,TAU_HYDRO_XX,TAU_HYDRO_YY,TAU_HYDRO_ZZ,TAU_HYDRO_XY,TAU_HYDRO_XZ,TAU_HYDRO_YZ,}{0,0,0})
+normalize Ops:
+compute_normalize_sums({uumean_X,uumean_Y,uumean_Z,F_SGS_EMF_X,F_SGS_EMF_Y,F_SGS_EMF_Z,bbmean_X,bbmean_Y,bbmean_Z,},{},{},{},{},{in_acc_sum_U_0,in_acc_sum_U_1,in_acc_sum_U_2,in_acc_sum_B_0,in_acc_sum_B_1,in_acc_sum_B_2,in_acc_sum_squared_U_0,in_acc_sum_squared_U_1,in_acc_sum_squared_U_2,in_acc_sum_squared_B_0,in_acc_sum_squared_B_1,in_acc_sum_squared_B_2,out_acc_sum_EMF_0,out_acc_sum_EMF_1,out_acc_sum_EMF_2,out_acc_sum_squared_EMF_0,out_acc_sum_squared_EMF_1,out_acc_sum_squared_EMF_2,},{in_acc_sum_U_0,in_acc_sum_U_1,in_acc_sum_U_2,in_acc_sum_B_0,in_acc_sum_B_1,in_acc_sum_B_2,in_acc_sum_squared_U_0,in_acc_sum_squared_U_1,in_acc_sum_squared_U_2,in_acc_sum_squared_B_0,in_acc_sum_squared_B_1,in_acc_sum_squared_B_2,out_acc_sum_EMF_0,out_acc_sum_EMF_1,out_acc_sum_EMF_2,out_acc_sum_squared_EMF_0,out_acc_sum_squared_EMF_1,out_acc_sum_squared_EMF_2,},1)
+normalize_fields({uumean_X,uumean_Y,uumean_Z,F_SGS_EMF_X,F_SGS_EMF_Y,F_SGS_EMF_Z,bbmean_X,bbmean_Y,bbmean_Z,},{uumean_X,uumean_Y,uumean_Z,F_SGS_EMF_X,F_SGS_EMF_Y,F_SGS_EMF_Z,bbmean_X,bbmean_Y,bbmean_Z,},{},{},{},{},{},1)
+
+AC_calculate_timestep Ops:
+Halo({F_AX,F_AY,F_AZ,},sending = 1,receiving = 1,BOUNDARY_XYZ,{(1,2),(1,2),(1,2),})
+Periodic(BOUNDARY_XYZ,{F_AX,F_AY,F_AZ,},{(1,2),(1,2),(1,2),})
+twopass_solve_intermediate___optimized_1({F_AX,F_AY,F_AZ,},{F_AX,F_AY,F_AZ,},{},{},{},{},{AC_dt1_max_single_precision,},1)
+
+get_inference_fields Ops:
+get_averaged_fields({F_UX,F_UY,F_UZ,F_RHO,},{mom_mean_X,mom_mean_Y,mom_mean_Z,rho_mean,},{},{},{},{},{},1)
+
+initialize_uumean Ops:
+initialize_uumean_kernel({F_UX,F_UY,F_UZ,},{uumean_X,uumean_Y,uumean_Z,},{},{},{},{},{},1)
+
+initialize_bbmean Ops:
+Halo({F_AX,},sending = 1,receiving = 1,BOUNDARY_YZ,{(1,1),})
+Halo({F_AY,},sending = 1,receiving = 1,BOUNDARY_XZ,{(1,1),})
+Halo({F_AZ,},sending = 1,receiving = 1,BOUNDARY_XY,{(1,1),})
+Periodic(BOUNDARY_YZ,{F_AX,},{(1,1),})
+Periodic(BOUNDARY_XZ,{F_AY,},{(1,1),})
+Periodic(BOUNDARY_XY,{F_AZ,},{(1,1),})
+initialize_bbmean_kernel({F_AX,F_AY,F_AZ,},{bbmean_X,bbmean_Y,bbmean_Z,},{},{},{},{},{},1)
+
+descale_inferred_values Ops:
+descale_inferred_values_kernel({F_SGS_EMF_X,F_SGS_EMF_Y,F_SGS_EMF_Z,},{F_SGS_EMF_X,F_SGS_EMF_Y,F_SGS_EMF_Z,},{},{},{},{},{},1)
+

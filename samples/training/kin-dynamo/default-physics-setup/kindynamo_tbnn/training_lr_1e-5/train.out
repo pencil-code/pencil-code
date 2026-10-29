@@ -1,0 +1,1242 @@
+***********************************************
+The Job ID: 2500680
+***********************************************
+
+Lmod is automatically replacing "nvhpc/26.3" with "gcc/14.3.0".
+
+
+Lmod is automatically replacing "openmpi/5.0.10" with "nvhpc/26.3".
+
+
+Lmod is automatically replacing "gcc/14.3.0" with "nvhpc/26.3".
+
+hostname = rg2122
+MPI run
+gpu = 1
+multithread = 1
+Subcommand: start
+mpich = 0
+
+1 CPU
+1 node, 1 CPU per node
+lparticles = 0
+lpointmasses = 0
+Revision: 6435c2d2b
+ M fortran-parser
+ M samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/training/run.in
+ M samples/training/scripts/create_training_files_kindynamo_lenet5forsegmentation.sh
+ M samples/training/scripts/create_training_files_kindynamo_tbnn.sh
+ M samples/training/scripts/create_training_files_kindynamo_unet.sh
+ M src/astaroth/submodule
+Fri Oct 23 20:59:50 2026
+Running under MPI
+Running 'env MODULE_PREFIX= MODULE_INFIX=_ MODULE_SUFFIX=_ srun -n 1 ./src/start.x'...
+ 
+ =====================================================================
+ WARNING: using SINGLE PRECISION, you'd better know what you're doing!
+ =====================================================================
+ 
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$               
+ initialize_mpicomm: enabled MPI
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id
+ nxgrid, nygrid, nzgrid=          128          128          128
+ calc_coeffs_1 is not evaluated
+ calc_coeffs_1 is not evaluated
+ calc_coeffs_1 is not evaluated
+ calc_coeffs_1 is not evaluated
+ calc_coeffs_1 is not evaluated
+ calc_coeffs_1 is not evaluated
+ units_general: unit_velocity=    1.000000000000000     
+ units_general: unit_density=    1.000000000000000     
+ units_general: unit_length=    1.000000000000000     
+ units_general: unit_magnetic=    3.544907808303833     
+ unit temperature    1.000000000000000     
+ alpha_fine =   7.2973525643000000E-003
+ sigma_Thomson_cgs =   6.6524587321600003E-025
+WARNING:  get_gamma_etc: gamma, cp, and cv are undefined in noeos.
+The values provided are for one-atomic ideal gas. Use at own risk!
+ resistivity: constant eta
+ farray_check_maux: naux, maux =             6           18
+WARNING:  farray_check_maux: 
+	| The count of MAUXs is inconsistent with the actual number of
+	| auxiliaries required.  Please check your src/cparam.local.  It is
+	| also possible that someone unintentionally added *optional*
+	| auxiliaries to MAUX CONTRIBUTION to one of the physics modules.
+	| Please urge them to move it to src/cparam.local under their
+	| specific application. 
+	| Put lenforce_maux_check=F in run_pars to overide this.!
+ gaunoise_vect: variable i=            1
+ gaunoise_vect: variable i=            2
+ gaunoise_vect: variable i=            3
+ Maximum used memory per cpu [MBytes] =   756.000
+ Maximum used memory [MBytes] =      756.000
+ 
+ 
+ start.x has completed successfully
+ 
+
+Fri Oct 23 20:59:56 2026
+
+Lmod is automatically replacing "nvhpc/26.3" with "gcc/14.3.0".
+
+
+Lmod is automatically replacing "openmpi/5.0.10" with "nvhpc/26.3".
+
+
+Lmod is automatically replacing "gcc/14.3.0" with "nvhpc/26.3".
+
+hostname = rg2122
+MPI run
+gpu = 1
+multithread = 1
+Subcommand: run
+mpich = 0
+
+1 CPU
+1 node, 1 CPU per node
+lparticles = 0
+lpointmasses = 0
+Revision: 6435c2d2b
+ M fortran-parser
+ M samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/training/run.in
+ M samples/training/scripts/create_training_files_kindynamo_lenet5forsegmentation.sh
+ M samples/training/scripts/create_training_files_kindynamo_tbnn.sh
+ M samples/training/scripts/create_training_files_kindynamo_unet.sh
+ M src/astaroth/submodule
+Fri Oct 23 20:59:57 2026
+Running under MPI
+Running 'env MODULE_PREFIX= MODULE_INFIX=_ MODULE_SUFFIX=_ srun -n 1 ./src/run.x'...
+Fri Oct 23 21:00:02 2026 : CONFIG_FILE: data/training/config_torchfort.yaml
+Fri Oct 23 21:00:02 2026 : Model_NAME: stationary
+Fri Oct 23 21:00:03 2026 : CREATED DISTRIBUTED TRAINING
+ 
+ =====================================================================
+ WARNING: using SINGLE PRECISION, you'd better know what you're doing!
+ =====================================================================
+ 
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$               
+SVN: -------            v.         (                   ) $Id$               
+ initialize_mpicomm: enabled MPI
+WARNING:  run: quad precision not supported, switch to double!
+WARNING:  run: quad precision suppressed!
+ calc_coeffs_1 is not evaluated
+ calc_coeffs_1 is not evaluated
+ calc_coeffs_1 is not evaluated
+ calc_coeffs_1 is not evaluated
+ calc_coeffs_1 is not evaluated
+ calc_coeffs_1 is not evaluated
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id
+ The verbose level is ip=           14  (ldebug=  F )
+ This is a 3-D run
+ nxgrid, nygrid, nzgrid=          128          128          128
+ Lx, Ly, Lz=    6.283185        6.283185        6.283185    
+       Vbox=    248.0502    
+ rsnap: read snapshot var.dat in    2.2725364390502989E-002  seconds
+ setup_slices: slice_position = p
+ setup_slices: ix_loc,iy_loc,iz_loc,iz2_loc, (video files) = 6 6 6 133                                                                       
+ units_general: unit_velocity=    1.000000000000000     
+ units_general: unit_density=    1.000000000000000     
+ units_general: unit_length=    1.000000000000000     
+ units_general: unit_magnetic=    3.544907808303833     
+ unit temperature    1.000000000000000     
+ alpha_fine =   7.2973525643000000E-003
+ sigma_Thomson_cgs =   6.6524587321600003E-025
+WARNING:  get_gamma_etc: gamma, cp, and cv are undefined in noeos.
+The values provided are for one-atomic ideal gas. Use at own risk!
+ resistivity: constant eta
+acCompile: No changes in input; running make in case DSL code has changed; logging to /users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/training_lr_1e-5/ac_compilation.log
+Fri Oct 23 21:00:04 2026 : Done setupConfig && acCompile
+Fri Oct 23 21:00:04 2026 : acGridInit: n[xyz]grid: (128,128,128) n[xyz]local (128,128,128)
+Fri Oct 23 21:00:04 2026 : acGridInit: Creating device
+Fri Oct 23 21:00:04 2026 : acGridInit: decomp: (1,1,1)
+Fri Oct 23 21:00:04 2026 : acGridInit: Stencil order: 10
+Fri Oct 23 21:00:05 2026 : acGridInit: Done
+Fri Oct 23 21:00:06 2026 : DONE initializeGPU
+Fri Oct 23 21:00:06 2026 : Doing training
+ pde: ENTER
+SVN: -------            v.         (                   ) $Id$
+WARNING:  calc_bmz: to get bmz, set bxmz and bymz in 'xyaver.in'.
+We proceed, but you will get bmz=0!
+
+ --it-----t-------dt------EEK-----urms-------brms-------jrms-------jmax--------abm--------jbm--------bmz-------ourms------loss----
+    0    0.000   0.002 5.00E-01 1.00E+00  6.1286E-03   4.93E-01   1.71E+00   9.25E-11  -1.92E-07   0.00E+00   1.26E+01   9.75E-04
+   50    0.100   0.002 5.00E-01 1.00E+00  3.9963E-05   4.65E-04   1.62E-03  -6.94E-12  -7.53E-11   0.00E+00   1.26E+01   2.23E-02
+Fri Oct 23 21:00:21 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:00:21 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_100
+  100    0.200   0.002 5.00E-01 1.00E+00  1.8137E-05   1.62E-04   5.30E-04  -6.50E-12  -1.99E-11   0.00E+00   1.26E+01   1.57E-02
+  150    0.300   0.002 5.00E-01 1.00E+00  1.1432E-05   9.03E-05   2.70E-04  -5.81E-12  -4.43E-11   0.00E+00   1.26E+01   1.10E-02
+Fri Oct 23 21:00:35 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:00:35 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_200
+  200    0.400   0.002 5.00E-01 1.00E+00  8.1910E-06   5.97E-05   1.84E-04  -4.89E-12  -4.56E-11   0.00E+00   1.26E+01   7.88E-03
+  250    0.500   0.002 5.00E-01 1.00E+00  6.3327E-06   4.33E-05   1.37E-04  -4.05E-12  -3.78E-11   0.00E+00   1.26E+01   5.86E-03
+Fri Oct 23 21:00:49 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:00:49 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_300
+  300    0.600   0.002 5.00E-01 1.00E+00  5.1654E-06   3.36E-05   1.13E-04  -3.38E-12  -2.93E-11   0.00E+00   1.26E+01   4.51E-03
+  350    0.700   0.002 5.00E-01 1.00E+00  4.3828E-06   2.73E-05   9.80E-05  -2.86E-12  -2.24E-11   0.00E+00   1.26E+01   3.51E-03
+Fri Oct 23 21:01:03 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:01:03 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_400
+  400    0.800   0.002 5.00E-01 1.00E+00  3.8297E-06   2.31E-05   8.53E-05  -2.47E-12  -1.73E-11   0.00E+00   1.26E+01   2.72E-03
+  450    0.900   0.002 5.00E-01 1.00E+00  3.4213E-06   2.00E-05   7.48E-05  -2.16E-12  -1.35E-11   0.00E+00   1.26E+01   2.05E-03
+Fri Oct 23 21:01:17 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:01:17 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_500
+  500    1.000   0.002 5.00E-01 1.00E+00  3.1085E-06   1.78E-05   6.58E-05  -1.92E-12  -1.07E-11   0.00E+00   1.26E+01   1.52E-03
+  550    1.100   0.002 5.00E-01 1.00E+00  2.8617E-06   1.61E-05   5.84E-05  -1.73E-12  -8.69E-12   0.00E+00   1.26E+01   1.18E-03
+Fri Oct 23 21:01:31 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:01:31 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_600
+  600    1.200   0.002 5.00E-01 1.00E+00  2.6619E-06   1.47E-05   5.21E-05  -1.57E-12  -7.13E-12   0.00E+00   1.26E+01   9.56E-04
+  650    1.300   0.002 5.00E-01 1.00E+00  2.4967E-06   1.36E-05   4.68E-05  -1.44E-12  -5.93E-12   0.00E+00   1.26E+01   7.90E-04
+Fri Oct 23 21:01:44 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:01:44 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_700
+  700    1.400   0.002 5.00E-01 1.00E+00  2.3579E-06   1.27E-05   4.23E-05  -1.33E-12  -4.98E-12   0.00E+00   1.26E+01   6.68E-04
+  750    1.500   0.002 5.00E-01 1.00E+00  2.2394E-06   1.20E-05   3.86E-05  -1.24E-12  -4.23E-12   0.00E+00   1.26E+01   5.70E-04
+Fri Oct 23 21:01:58 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:01:58 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_800
+  800    1.600   0.002 5.00E-01 1.00E+00  2.1370E-06   1.14E-05   3.54E-05  -1.16E-12  -3.62E-12   0.00E+00   1.26E+01   4.90E-04
+  850    1.700   0.002 5.00E-01 1.00E+00  2.0476E-06   1.08E-05   3.32E-05  -1.10E-12  -3.12E-12   0.00E+00   1.26E+01   4.21E-04
+Fri Oct 23 21:02:12 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:02:12 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_900
+  900    1.800   0.002 5.00E-01 1.00E+00  1.9690E-06   1.04E-05   3.17E-05  -1.04E-12  -2.71E-12   0.00E+00   1.26E+01   3.63E-04
+  950    1.900   0.002 5.00E-01 1.00E+00  1.8993E-06   9.96E-06   3.03E-05  -9.88E-13  -2.36E-12   0.00E+00   1.26E+01   3.16E-04
+Fri Oct 23 21:02:26 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:02:26 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_1000
+ 1000    2.001   0.002 5.00E-01 1.00E+00  1.8371E-06   9.61E-06   2.91E-05  -9.43E-13  -2.07E-12   0.00E+00   1.26E+01   2.78E-04
+ 1050    2.101   0.002 5.00E-01 1.00E+00  1.7814E-06   9.30E-06   2.82E-05  -9.05E-13  -1.82E-12   0.00E+00   1.26E+01   2.46E-04
+Fri Oct 23 21:02:44 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:02:44 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_1100
+ 1100    2.201   0.002 5.00E-01 1.00E+00  1.7313E-06   9.02E-06   2.74E-05  -8.70E-13  -1.60E-12   0.00E+00   1.26E+01   2.17E-04
+ 1150    2.301   0.002 5.00E-01 1.00E+00  1.6861E-06   8.77E-06   2.67E-05  -8.40E-13  -1.41E-12   0.00E+00   1.26E+01   1.91E-04
+Fri Oct 23 21:02:58 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:02:58 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_1200
+ 1200    2.401   0.002 5.00E-01 1.00E+00  1.6452E-06   8.55E-06   2.60E-05  -8.14E-13  -1.25E-12   0.00E+00   1.26E+01   1.70E-04
+ 1250    2.501   0.002 5.00E-01 1.00E+00  1.6082E-06   8.35E-06   2.54E-05  -7.90E-13  -1.11E-12   0.00E+00   1.26E+01   1.52E-04
+Fri Oct 23 21:03:11 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:03:12 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_1300
+ 1300    2.601   0.002 5.00E-01 1.00E+00  1.5745E-06   8.17E-06   2.48E-05  -7.69E-13  -9.77E-13   0.00E+00   1.26E+01   1.35E-04
+ 1350    2.701   0.002 5.00E-01 1.00E+00  1.5440E-06   8.01E-06   2.43E-05  -7.51E-13  -8.62E-13   0.00E+00   1.26E+01   1.19E-04
+Fri Oct 23 21:03:25 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:03:25 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_1400
+ 1400    2.801   0.002 5.00E-01 1.00E+00  1.5162E-06   7.87E-06   2.38E-05  -7.35E-13  -7.58E-13   0.00E+00   1.26E+01   1.05E-04
+ 1450    2.901   0.002 5.00E-01 1.00E+00  1.4910E-06   7.74E-06   2.34E-05  -7.21E-13  -6.65E-13   0.00E+00   1.26E+01   9.27E-05
+Fri Oct 23 21:03:39 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:03:39 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_1500
+ 1500    3.001   0.002 5.00E-01 1.00E+00  1.4682E-06   7.62E-06   2.30E-05  -7.08E-13  -5.79E-13   0.00E+00   1.26E+01   8.16E-05
+ 1550    3.101   0.002 5.00E-01 1.00E+00  1.4474E-06   7.51E-06   2.26E-05  -6.97E-13  -5.01E-13   0.00E+00   1.26E+01   7.30E-05
+Fri Oct 23 21:03:53 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:03:53 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_1600
+ 1600    3.201   0.002 5.00E-01 1.00E+00  1.4287E-06   7.41E-06   2.22E-05  -6.88E-13  -4.29E-13   0.00E+00   1.26E+01   6.64E-05
+ 1650    3.301   0.002 5.00E-01 1.00E+00  1.4117E-06   7.33E-06   2.19E-05  -6.80E-13  -3.62E-13   0.00E+00   1.26E+01   6.14E-05
+Fri Oct 23 21:04:07 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:04:07 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_1700
+ 1700    3.401   0.002 5.00E-01 1.00E+00  1.3965E-06   7.25E-06   2.17E-05  -6.74E-13  -3.00E-13   0.00E+00   1.26E+01   5.73E-05
+ 1750    3.501   0.002 5.00E-01 1.00E+00  1.3829E-06   7.18E-06   2.16E-05  -6.68E-13  -2.41E-13   0.00E+00   1.26E+01   5.40E-05
+Fri Oct 23 21:04:21 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:04:21 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_1800
+ 1800    3.601   0.002 5.00E-01 1.00E+00  1.3707E-06   7.12E-06   2.17E-05  -6.64E-13  -1.86E-13   0.00E+00   1.26E+01   5.12E-05
+ 1850    3.701   0.002 5.00E-01 1.00E+00  1.3600E-06   7.07E-06   2.17E-05  -6.61E-13  -1.34E-13   0.00E+00   1.26E+01   4.90E-05
+Fri Oct 23 21:04:35 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:04:35 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_1900
+ 1900    3.801   0.002 5.00E-01 1.00E+00  1.3505E-06   7.03E-06   2.17E-05  -6.59E-13  -8.42E-14   0.00E+00   1.26E+01   4.74E-05
+ 1950    3.901   0.002 5.00E-01 1.00E+00  1.3423E-06   6.99E-06   2.18E-05  -6.57E-13  -3.66E-14   0.00E+00   1.26E+01   4.61E-05
+Fri Oct 23 21:04:49 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:04:49 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_2000
+ 2000    4.001   0.002 5.00E-01 1.00E+00  1.3353E-06   6.95E-06   2.18E-05  -6.57E-13   9.11E-15   0.00E+00   1.26E+01   4.48E-05
+ 2050    4.101   0.002 5.00E-01 1.00E+00  1.3294E-06   6.93E-06   2.19E-05  -6.58E-13   5.32E-14   0.00E+00   1.26E+01   4.37E-05
+Fri Oct 23 21:05:06 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:05:06 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_2100
+ 2100    4.201   0.002 5.00E-01 1.00E+00  1.3246E-06   6.91E-06   2.19E-05  -6.59E-13   9.60E-14   0.00E+00   1.26E+01   4.27E-05
+ 2150    4.301   0.002 5.00E-01 1.00E+00  1.3208E-06   6.89E-06   2.20E-05  -6.62E-13   1.38E-13   0.00E+00   1.26E+01   4.18E-05
+Fri Oct 23 21:05:20 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:05:20 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_2200
+ 2200    4.401   0.002 5.00E-01 1.00E+00  1.3180E-06   6.88E-06   2.20E-05  -6.65E-13   1.78E-13   0.00E+00   1.26E+01   4.09E-05
+ 2250    4.501   0.002 5.00E-01 1.00E+00  1.3161E-06   6.88E-06   2.21E-05  -6.69E-13   2.18E-13   0.00E+00   1.26E+01   4.01E-05
+Fri Oct 23 21:05:34 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:05:34 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_2300
+ 2300    4.601   0.002 5.00E-01 1.00E+00  1.3151E-06   6.88E-06   2.21E-05  -6.73E-13   2.58E-13   0.00E+00   1.26E+01   3.92E-05
+ 2350    4.701   0.002 5.00E-01 1.00E+00  1.3149E-06   6.88E-06   2.22E-05  -6.79E-13   2.97E-13   0.00E+00   1.26E+01   3.82E-05
+Fri Oct 23 21:05:48 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:05:48 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_2400
+ 2400    4.801   0.002 5.00E-01 1.00E+00  1.3157E-06   6.89E-06   2.23E-05  -6.85E-13   3.35E-13   0.00E+00   1.26E+01   3.71E-05
+ 2450    4.901   0.002 5.00E-01 1.00E+00  1.3172E-06   6.90E-06   2.23E-05  -6.92E-13   3.74E-13   0.00E+00   1.26E+01   3.59E-05
+Fri Oct 23 21:06:02 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:06:02 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_2500
+ 2500    5.001   0.002 5.00E-01 1.00E+00  1.3195E-06   6.92E-06   2.24E-05  -7.00E-13   4.12E-13   0.00E+00   1.26E+01   3.46E-05
+ 2550    5.101   0.002 5.00E-01 1.00E+00  1.3226E-06   6.94E-06   2.25E-05  -7.09E-13   4.50E-13   0.00E+00   1.26E+01   3.33E-05
+Fri Oct 23 21:06:16 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:06:16 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_2600
+ 2600    5.201   0.002 5.00E-01 1.00E+00  1.3264E-06   6.97E-06   2.26E-05  -7.18E-13   4.89E-13   0.00E+00   1.26E+01   3.17E-05
+ 2650    5.301   0.002 5.00E-01 1.00E+00  1.3309E-06   7.00E-06   2.27E-05  -7.28E-13   5.28E-13   0.00E+00   1.26E+01   2.98E-05
+Fri Oct 23 21:06:30 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:06:30 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_2700
+ 2700    5.401   0.002 5.00E-01 1.00E+00  1.3362E-06   7.03E-06   2.28E-05  -7.39E-13   5.67E-13   0.00E+00   1.26E+01   2.79E-05
+ 2750    5.501   0.002 5.00E-01 1.00E+00  1.3421E-06   7.07E-06   2.29E-05  -7.51E-13   6.06E-13   0.00E+00   1.26E+01   2.60E-05
+Fri Oct 23 21:06:44 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:06:44 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_2800
+ 2800    5.601   0.002 5.00E-01 1.00E+00  1.3487E-06   7.11E-06   2.30E-05  -7.64E-13   6.46E-13   0.00E+00   1.26E+01   2.41E-05
+ 2850    5.701   0.002 5.00E-01 1.00E+00  1.3560E-06   7.16E-06   2.31E-05  -7.77E-13   6.87E-13   0.00E+00   1.26E+01   2.22E-05
+Fri Oct 23 21:06:57 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:06:57 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_2900
+ 2900    5.802   0.002 5.00E-01 1.00E+00  1.3639E-06   7.21E-06   2.33E-05  -7.91E-13   7.29E-13   0.00E+00   1.26E+01   2.04E-05
+ 2950    5.902   0.002 5.00E-01 1.00E+00  1.3725E-06   7.26E-06   2.34E-05  -8.06E-13   7.71E-13   0.00E+00   1.26E+01   1.87E-05
+Fri Oct 23 21:07:11 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:07:11 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_3000
+ 3000    6.002   0.002 5.00E-01 1.00E+00  1.3817E-06   7.31E-06   2.36E-05  -8.22E-13   8.14E-13   0.00E+00   1.26E+01   1.73E-05
+ 3050    6.102   0.002 5.00E-01 1.00E+00  1.3916E-06   7.37E-06   2.38E-05  -8.39E-13   8.58E-13   0.00E+00   1.26E+01   1.61E-05
+Fri Oct 23 21:07:29 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:07:29 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_3100
+ 3100    6.202   0.002 5.00E-01 1.00E+00  1.4020E-06   7.43E-06   2.39E-05  -8.56E-13   9.04E-13   0.00E+00   1.26E+01   1.51E-05
+ 3150    6.302   0.002 5.00E-01 1.00E+00  1.4131E-06   7.50E-06   2.41E-05  -8.75E-13   9.50E-13   0.00E+00   1.26E+01   1.43E-05
+Fri Oct 23 21:07:43 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:07:43 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_3200
+ 3200    6.402   0.002 5.00E-01 1.00E+00  1.4248E-06   7.57E-06   2.43E-05  -8.94E-13   9.98E-13   0.00E+00   1.26E+01   1.38E-05
+ 3250    6.502   0.002 5.00E-01 1.00E+00  1.4371E-06   7.64E-06   2.45E-05  -9.15E-13   1.05E-12   0.00E+00   1.26E+01   1.34E-05
+Fri Oct 23 21:07:57 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:07:57 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_3300
+ 3300    6.602   0.002 5.00E-01 1.00E+00  1.4500E-06   7.72E-06   2.47E-05  -9.36E-13   1.10E-12   0.00E+00   1.26E+01   1.32E-05
+ 3350    6.702   0.002 5.00E-01 1.00E+00  1.4635E-06   7.80E-06   2.49E-05  -9.59E-13   1.15E-12   0.00E+00   1.26E+01   1.30E-05
+Fri Oct 23 21:08:11 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:08:11 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_3400
+ 3400    6.802   0.002 5.00E-01 1.00E+00  1.4776E-06   7.88E-06   2.51E-05  -9.82E-13   1.20E-12   0.00E+00   1.26E+01   1.29E-05
+ 3450    6.902   0.002 5.00E-01 1.00E+00  1.4923E-06   7.96E-06   2.54E-05  -1.01E-12   1.26E-12   0.00E+00   1.26E+01   1.28E-05
+Fri Oct 23 21:08:24 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:08:25 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_3500
+ 3500    7.002   0.002 5.00E-01 1.00E+00  1.5076E-06   8.05E-06   2.56E-05  -1.03E-12   1.31E-12   0.00E+00   1.26E+01   1.27E-05
+ 3550    7.102   0.002 5.00E-01 1.00E+00  1.5235E-06   8.14E-06   2.58E-05  -1.06E-12   1.37E-12   0.00E+00   1.26E+01   1.26E-05
+Fri Oct 23 21:08:38 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:08:38 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_3600
+ 3600    7.202   0.002 5.00E-01 1.00E+00  1.5400E-06   8.24E-06   2.61E-05  -1.09E-12   1.44E-12   0.00E+00   1.26E+01   1.25E-05
+ 3650    7.302   0.002 5.00E-01 1.00E+00  1.5571E-06   8.34E-06   2.63E-05  -1.12E-12   1.50E-12   0.00E+00   1.26E+01   1.25E-05
+Fri Oct 23 21:08:52 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:08:52 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_3700
+ 3700    7.402   0.002 5.00E-01 1.00E+00  1.5748E-06   8.44E-06   2.66E-05  -1.15E-12   1.56E-12   0.00E+00   1.26E+01   1.24E-05
+ 3750    7.502   0.002 5.00E-01 1.00E+00  1.5931E-06   8.55E-06   2.69E-05  -1.18E-12   1.63E-12   0.00E+00   1.26E+01   1.24E-05
+Fri Oct 23 21:09:06 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:09:06 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_3800
+ 3800    7.602   0.002 5.00E-01 1.00E+00  1.6121E-06   8.66E-06   2.71E-05  -1.21E-12   1.70E-12   0.00E+00   1.26E+01   1.24E-05
+ 3850    7.702   0.002 5.00E-01 1.00E+00  1.6316E-06   8.77E-06   2.74E-05  -1.25E-12   1.77E-12   0.00E+00   1.26E+01   1.23E-05
+Fri Oct 23 21:09:20 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:09:20 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_3900
+ 3900    7.802   0.002 5.00E-01 1.00E+00  1.6518E-06   8.88E-06   2.77E-05  -1.28E-12   1.85E-12   0.00E+00   1.26E+01   1.23E-05
+ 3950    7.902   0.002 5.00E-01 1.00E+00  1.6726E-06   9.00E-06   2.80E-05  -1.32E-12   1.93E-12   0.00E+00   1.26E+01   1.22E-05
+Fri Oct 23 21:09:34 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:09:34 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_4000
+ 4000    8.002   0.002 5.00E-01 1.00E+00  1.6940E-06   9.13E-06   2.84E-05  -1.36E-12   2.01E-12   0.00E+00   1.26E+01   1.21E-05
+ 4050    8.102   0.002 5.00E-01 1.00E+00  1.7161E-06   9.25E-06   2.87E-05  -1.40E-12   2.10E-12   0.00E+00   1.26E+01   1.21E-05
+Fri Oct 23 21:09:52 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:09:52 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_4100
+ 4100    8.202   0.002 5.00E-01 1.00E+00  1.7388E-06   9.38E-06   2.90E-05  -1.44E-12   2.18E-12   0.00E+00   1.26E+01   1.21E-05
+ 4150    8.302   0.002 5.00E-01 1.00E+00  1.7622E-06   9.52E-06   2.94E-05  -1.49E-12   2.27E-12   0.00E+00   1.26E+01   1.20E-05
+Fri Oct 23 21:10:05 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:10:06 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_4200
+ 4200    8.402   0.002 5.00E-01 1.00E+00  1.7863E-06   9.65E-06   2.97E-05  -1.54E-12   2.37E-12   0.00E+00   1.26E+01   1.21E-05
+ 4250    8.502   0.002 5.00E-01 1.00E+00  1.8110E-06   9.79E-06   3.01E-05  -1.58E-12   2.47E-12   0.00E+00   1.26E+01   1.21E-05
+Fri Oct 23 21:10:20 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:10:20 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_4300
+ 4300    8.602   0.002 5.00E-01 1.00E+00  1.8364E-06   9.94E-06   3.05E-05  -1.63E-12   2.57E-12   0.00E+00   1.26E+01   1.22E-05
+ 4350    8.702   0.002 5.00E-01 1.00E+00  1.8624E-06   1.01E-05   3.09E-05  -1.69E-12   2.68E-12   0.00E+00   1.26E+01   1.23E-05
+Fri Oct 23 21:10:33 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:10:34 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_4400
+ 4400    8.802   0.002 5.00E-01 1.00E+00  1.8892E-06   1.02E-05   3.12E-05  -1.74E-12   2.79E-12   0.00E+00   1.26E+01   1.24E-05
+ 4450    8.902   0.002 5.00E-01 1.00E+00  1.9167E-06   1.04E-05   3.16E-05  -1.80E-12   2.91E-12   0.00E+00   1.26E+01   1.26E-05
+Fri Oct 23 21:10:47 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:10:47 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_4500
+ 4500    9.002   0.002 5.00E-01 1.00E+00  1.9449E-06   1.06E-05   3.21E-05  -1.86E-12   3.03E-12   0.00E+00   1.26E+01   1.28E-05
+ 4550    9.102   0.002 5.00E-01 1.00E+00  1.9739E-06   1.07E-05   3.25E-05  -1.92E-12   3.15E-12   0.00E+00   1.26E+01   1.31E-05
+Fri Oct 23 21:11:01 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:11:01 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_4600
+ 4600    9.202   0.002 5.00E-01 1.00E+00  2.0036E-06   1.09E-05   3.30E-05  -1.98E-12   3.28E-12   0.00E+00   1.26E+01   1.33E-05
+ 4650    9.302   0.002 5.00E-01 1.00E+00  2.0340E-06   1.11E-05   3.35E-05  -2.05E-12   3.42E-12   0.00E+00   1.26E+01   1.37E-05
+Fri Oct 23 21:11:15 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:11:15 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_4700
+ 4700    9.402   0.002 5.00E-01 1.00E+00  2.0652E-06   1.12E-05   3.40E-05  -2.12E-12   3.56E-12   0.00E+00   1.26E+01   1.41E-05
+ 4750    9.502   0.002 5.00E-01 1.00E+00  2.0972E-06   1.14E-05   3.46E-05  -2.19E-12   3.71E-12   0.00E+00   1.26E+01   1.45E-05
+Fri Oct 23 21:11:29 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:11:29 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_4800
+ 4800    9.602   0.002 5.00E-01 1.00E+00  2.1300E-06   1.16E-05   3.52E-05  -2.27E-12   3.86E-12   0.00E+00   1.26E+01   1.49E-05
+ 4850    9.703   0.002 5.00E-01 1.00E+00  2.1636E-06   1.18E-05   3.58E-05  -2.35E-12   4.03E-12   0.00E+00   1.26E+01   1.55E-05
+Fri Oct 23 21:11:43 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:11:43 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_4900
+ 4900    9.803   0.002 5.00E-01 1.00E+00  2.1981E-06   1.20E-05   3.64E-05  -2.43E-12   4.19E-12   0.00E+00   1.26E+01   1.60E-05
+ 4950    9.903   0.002 5.00E-01 1.00E+00  2.2334E-06   1.22E-05   3.70E-05  -2.52E-12   4.37E-12   0.00E+00   1.26E+01   1.66E-05
+Fri Oct 23 21:11:57 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:11:57 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_5000
+ 5000   10.003   0.002 5.00E-01 1.00E+00  2.2695E-06   1.24E-05   3.76E-05  -2.61E-12   4.55E-12   0.00E+00   1.26E+01   1.72E-05
+ 5050   10.103   0.002 5.00E-01 1.00E+00  2.3065E-06   1.26E-05   3.82E-05  -2.70E-12   4.74E-12   0.00E+00   1.26E+01   1.79E-05
+Fri Oct 23 21:12:14 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:12:14 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_5100
+ 5100   10.203   0.002 5.00E-01 1.00E+00  2.3444E-06   1.28E-05   3.89E-05  -2.80E-12   4.94E-12   0.00E+00   1.26E+01   1.86E-05
+ 5150   10.303   0.002 5.00E-01 1.00E+00  2.3832E-06   1.30E-05   3.95E-05  -2.90E-12   5.14E-12   0.00E+00   1.26E+01   1.93E-05
+Fri Oct 23 21:12:28 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:12:28 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_5200
+ 5200   10.403   0.002 5.00E-01 1.00E+00  2.4229E-06   1.33E-05   4.02E-05  -3.00E-12   5.36E-12   0.00E+00   1.26E+01   2.01E-05
+ 5250   10.503   0.002 5.00E-01 1.00E+00  2.4635E-06   1.35E-05   4.09E-05  -3.11E-12   5.58E-12   0.00E+00   1.26E+01   2.09E-05
+Fri Oct 23 21:12:42 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:12:42 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_5300
+ 5300   10.603   0.002 5.00E-01 1.00E+00  2.5052E-06   1.37E-05   4.16E-05  -3.22E-12   5.82E-12   0.00E+00   1.26E+01   2.17E-05
+ 5350   10.703   0.002 5.00E-01 1.00E+00  2.5478E-06   1.40E-05   4.23E-05  -3.34E-12   6.06E-12   0.00E+00   1.26E+01   2.26E-05
+Fri Oct 23 21:12:56 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:12:56 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_5400
+ 5400   10.803   0.002 5.00E-01 1.00E+00  2.5914E-06   1.42E-05   4.30E-05  -3.47E-12   6.32E-12   0.00E+00   1.26E+01   2.35E-05
+ 5450   10.903   0.002 5.00E-01 1.00E+00  2.6360E-06   1.45E-05   4.37E-05  -3.60E-12   6.58E-12   0.00E+00   1.26E+01   2.45E-05
+Fri Oct 23 21:13:10 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:13:10 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_5500
+ 5500   11.003   0.002 5.00E-01 1.00E+00  2.6816E-06   1.47E-05   4.44E-05  -3.73E-12   6.86E-12   0.00E+00   1.26E+01   2.55E-05
+ 5550   11.103   0.002 5.00E-01 1.00E+00  2.7283E-06   1.50E-05   4.52E-05  -3.87E-12   7.15E-12   0.00E+00   1.26E+01   2.66E-05
+Fri Oct 23 21:13:24 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:13:24 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_5600
+ 5600   11.203   0.002 5.00E-01 1.00E+00  2.7761E-06   1.53E-05   4.60E-05  -4.02E-12   7.45E-12   0.00E+00   1.26E+01   2.77E-05
+ 5650   11.303   0.002 5.00E-01 1.00E+00  2.8250E-06   1.56E-05   4.67E-05  -4.17E-12   7.77E-12   0.00E+00   1.26E+01   2.89E-05
+Fri Oct 23 21:13:38 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:13:38 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_5700
+ 5700   11.403   0.002 5.00E-01 1.00E+00  2.8751E-06   1.58E-05   4.75E-05  -4.33E-12   8.10E-12   0.00E+00   1.26E+01   3.01E-05
+ 5750   11.503   0.002 5.00E-01 1.00E+00  2.9262E-06   1.61E-05   4.83E-05  -4.49E-12   8.44E-12   0.00E+00   1.26E+01   3.14E-05
+Fri Oct 23 21:13:51 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:13:52 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_5800
+ 5800   11.603   0.002 5.00E-01 1.00E+00  2.9786E-06   1.64E-05   4.92E-05  -4.67E-12   8.80E-12   0.00E+00   1.26E+01   3.28E-05
+ 5850   11.703   0.002 5.00E-01 1.00E+00  3.0321E-06   1.67E-05   5.00E-05  -4.85E-12   9.18E-12   0.00E+00   1.26E+01   3.42E-05
+Fri Oct 23 21:14:05 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:14:05 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_5900
+ 5900   11.803   0.002 5.00E-01 1.00E+00  3.0869E-06   1.70E-05   5.09E-05  -5.03E-12   9.57E-12   0.00E+00   1.26E+01   3.56E-05
+ 5950   11.903   0.002 5.00E-01 1.00E+00  3.1429E-06   1.74E-05   5.17E-05  -5.23E-12   9.97E-12   0.00E+00   1.26E+01   3.72E-05
+Fri Oct 23 21:14:19 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:14:19 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_6000
+ 6000   12.003   0.002 5.00E-01 1.00E+00  3.2002E-06   1.77E-05   5.26E-05  -5.43E-12   1.04E-11   0.00E+00   1.26E+01   3.88E-05
+ 6050   12.103   0.002 5.00E-01 1.00E+00  3.2589E-06   1.80E-05   5.35E-05  -5.64E-12   1.08E-11   0.00E+00   1.26E+01   4.04E-05
+Fri Oct 23 21:14:37 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:14:37 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_6100
+ 6100   12.203   0.002 5.00E-01 1.00E+00  3.3188E-06   1.84E-05   5.44E-05  -5.87E-12   1.13E-11   0.00E+00   1.26E+01   4.22E-05
+ 6150   12.303   0.002 5.00E-01 1.00E+00  3.3801E-06   1.87E-05   5.54E-05  -6.10E-12   1.18E-11   0.00E+00   1.26E+01   4.40E-05
+Fri Oct 23 21:14:51 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:14:51 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_6200
+ 6200   12.403   0.002 5.00E-01 1.00E+00  3.4428E-06   1.91E-05   5.63E-05  -6.34E-12   1.23E-11   0.00E+00   1.26E+01   4.59E-05
+ 6250   12.503   0.002 5.00E-01 1.00E+00  3.5069E-06   1.94E-05   5.73E-05  -6.59E-12   1.28E-11   0.00E+00   1.26E+01   4.79E-05
+Fri Oct 23 21:15:05 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:15:05 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_6300
+ 6300   12.603   0.002 5.00E-01 1.00E+00  3.5725E-06   1.98E-05   5.83E-05  -6.85E-12   1.34E-11   0.00E+00   1.26E+01   5.00E-05
+ 6350   12.703   0.002 5.00E-01 1.00E+00  3.6395E-06   2.02E-05   5.93E-05  -7.13E-12   1.40E-11   0.00E+00   1.26E+01   5.22E-05
+Fri Oct 23 21:15:19 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:15:19 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_6400
+ 6400   12.803   0.002 5.00E-01 1.00E+00  3.7081E-06   2.06E-05   6.03E-05  -7.41E-12   1.46E-11   0.00E+00   1.26E+01   5.44E-05
+ 6450   12.903   0.002 5.00E-01 1.00E+00  3.7782E-06   2.10E-05   6.14E-05  -7.71E-12   1.52E-11   0.00E+00   1.26E+01   5.68E-05
+Fri Oct 23 21:15:32 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:15:33 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_6500
+ 6500   13.003   0.002 5.00E-01 1.00E+00  3.8499E-06   2.14E-05   6.24E-05  -8.02E-12   1.58E-11   0.00E+00   1.26E+01   5.93E-05
+ 6550   13.103   0.002 5.00E-01 1.00E+00  3.9232E-06   2.18E-05   6.35E-05  -8.34E-12   1.65E-11   0.00E+00   1.26E+01   6.19E-05
+Fri Oct 23 21:15:46 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:15:46 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_6600
+ 6600   13.203   0.002 5.00E-01 1.00E+00  3.9981E-06   2.22E-05   6.46E-05  -8.68E-12   1.73E-11   0.00E+00   1.26E+01   6.46E-05
+ 6650   13.303   0.002 5.00E-01 1.00E+00  4.0748E-06   2.26E-05   6.57E-05  -9.03E-12   1.80E-11   0.00E+00   1.26E+01   6.74E-05
+Fri Oct 23 21:16:00 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:16:00 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_6700
+ 6700   13.403   0.002 5.00E-01 1.00E+00  4.1532E-06   2.31E-05   6.69E-05  -9.40E-12   1.88E-11   0.00E+00   1.26E+01   7.04E-05
+ 6750   13.503   0.002 5.00E-01 1.00E+00  4.2333E-06   2.35E-05   6.81E-05  -9.78E-12   1.96E-11   0.00E+00   1.26E+01   7.35E-05
+Fri Oct 23 21:16:14 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:16:14 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_6800
+ 6800   13.604   0.002 5.00E-01 1.00E+00  4.3152E-06   2.40E-05   6.92E-05  -1.02E-11   2.05E-11   0.00E+00   1.26E+01   7.67E-05
+ 6850   13.704   0.002 5.00E-01 1.00E+00  4.3990E-06   2.45E-05   7.05E-05  -1.06E-11   2.13E-11   0.00E+00   1.26E+01   8.01E-05
+Fri Oct 23 21:16:28 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:16:28 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_6900
+ 6900   13.804   0.002 5.00E-01 1.00E+00  4.4846E-06   2.50E-05   7.17E-05  -1.10E-11   2.23E-11   0.00E+00   1.26E+01   8.36E-05
+ 6950   13.904   0.002 5.00E-01 1.00E+00  4.5722E-06   2.55E-05   7.29E-05  -1.15E-11   2.33E-11   0.00E+00   1.26E+01   8.73E-05
+Fri Oct 23 21:16:42 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:16:42 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_7000
+ 7000   14.004   0.002 5.00E-01 1.00E+00  4.6618E-06   2.60E-05   7.42E-05  -1.20E-11   2.43E-11   0.00E+00   1.26E+01   9.12E-05
+ 7050   14.104   0.002 5.00E-01 1.00E+00  4.7533E-06   2.65E-05   7.55E-05  -1.25E-11   2.53E-11   0.00E+00   1.26E+01   9.52E-05
+Fri Oct 23 21:17:00 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:17:00 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_7100
+ 7100   14.204   0.002 5.00E-01 1.00E+00  4.8469E-06   2.70E-05   7.69E-05  -1.30E-11   2.64E-11   0.00E+00   1.26E+01   9.94E-05
+ 7150   14.304   0.002 5.00E-01 1.00E+00  4.9426E-06   2.76E-05   7.82E-05  -1.35E-11   2.76E-11   0.00E+00   1.26E+01   1.04E-04
+Fri Oct 23 21:17:13 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:17:13 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_7200
+ 7200   14.404   0.002 5.00E-01 1.00E+00  5.0405E-06   2.81E-05   7.96E-05  -1.41E-11   2.88E-11   0.00E+00   1.26E+01   1.08E-04
+ 7250   14.504   0.002 5.00E-01 1.00E+00  5.1405E-06   2.87E-05   8.10E-05  -1.47E-11   3.01E-11   0.00E+00   1.26E+01   1.13E-04
+Fri Oct 23 21:17:27 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:17:27 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_7300
+ 7300   14.604   0.002 5.00E-01 1.00E+00  5.2428E-06   2.93E-05   8.24E-05  -1.53E-11   3.14E-11   0.00E+00   1.26E+01   1.18E-04
+ 7350   14.704   0.002 5.00E-01 1.00E+00  5.3474E-06   2.99E-05   8.39E-05  -1.59E-11   3.28E-11   0.00E+00   1.26E+01   1.23E-04
+Fri Oct 23 21:17:41 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:17:41 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_7400
+ 7400   14.804   0.002 5.00E-01 1.00E+00  5.4543E-06   3.05E-05   8.54E-05  -1.66E-11   3.42E-11   0.00E+00   1.26E+01   1.29E-04
+ 7450   14.904   0.002 5.00E-01 1.00E+00  5.5636E-06   3.11E-05   8.69E-05  -1.73E-11   3.58E-11   0.00E+00   1.26E+01   1.35E-04
+Fri Oct 23 21:17:55 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:17:55 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_7500
+ 7500   15.004   0.002 5.00E-01 1.00E+00  5.6754E-06   3.17E-05   8.85E-05  -1.80E-11   3.73E-11   0.00E+00   1.26E+01   1.40E-04
+ 7550   15.104   0.002 5.00E-01 1.00E+00  5.7896E-06   3.24E-05   9.01E-05  -1.88E-11   3.90E-11   0.00E+00   1.26E+01   1.47E-04
+Fri Oct 23 21:18:09 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:18:09 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_7600
+ 7600   15.204   0.002 5.00E-01 1.00E+00  5.9065E-06   3.30E-05   9.17E-05  -1.96E-11   4.07E-11   0.00E+00   1.26E+01   1.53E-04
+ 7650   15.304   0.002 5.00E-01 1.00E+00  6.0259E-06   3.37E-05   9.33E-05  -2.04E-11   4.25E-11   0.00E+00   1.26E+01   1.60E-04
+Fri Oct 23 21:18:23 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:18:23 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_7700
+ 7700   15.404   0.002 5.00E-01 1.00E+00  6.1480E-06   3.44E-05   9.50E-05  -2.13E-11   4.44E-11   0.00E+00   1.26E+01   1.67E-04
+ 7750   15.504   0.002 5.00E-01 1.00E+00  6.2729E-06   3.51E-05   9.67E-05  -2.22E-11   4.64E-11   0.00E+00   1.26E+01   1.74E-04
+Fri Oct 23 21:18:37 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:18:37 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_7800
+ 7800   15.604   0.002 5.00E-01 1.00E+00  6.4005E-06   3.58E-05   9.84E-05  -2.32E-11   4.85E-11   0.00E+00   1.26E+01   1.82E-04
+ 7850   15.704   0.002 5.00E-01 1.00E+00  6.5310E-06   3.66E-05   1.00E-04  -2.41E-11   5.06E-11   0.00E+00   1.26E+01   1.90E-04
+Fri Oct 23 21:18:50 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:18:51 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_7900
+ 7900   15.804   0.002 5.00E-01 1.00E+00  6.6645E-06   3.73E-05   1.02E-04  -2.52E-11   5.29E-11   0.00E+00   1.26E+01   1.98E-04
+ 7950   15.904   0.002 5.00E-01 1.00E+00  6.8009E-06   3.81E-05   1.04E-04  -2.63E-11   5.52E-11   0.00E+00   1.26E+01   2.07E-04
+Fri Oct 23 21:19:04 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:19:04 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_8000
+ 8000   16.004   0.002 5.00E-01 1.00E+00  6.9404E-06   3.89E-05   1.06E-04  -2.74E-11   5.77E-11   0.00E+00   1.26E+01   2.16E-04
+ 8050   16.104   0.002 5.00E-01 1.00E+00  7.0830E-06   3.97E-05   1.08E-04  -2.86E-11   6.03E-11   0.00E+00   1.26E+01   2.26E-04
+Fri Oct 23 21:19:22 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:19:22 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_8100
+ 8100   16.204   0.002 5.00E-01 1.00E+00  7.2288E-06   4.05E-05   1.10E-04  -2.98E-11   6.30E-11   0.00E+00   1.26E+01   2.36E-04
+ 8150   16.304   0.002 5.00E-01 1.00E+00  7.3779E-06   4.14E-05   1.12E-04  -3.11E-11   6.58E-11   0.00E+00   1.26E+01   2.46E-04
+Fri Oct 23 21:19:36 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:19:36 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_8200
+ 8200   16.404   0.002 5.00E-01 1.00E+00  7.5303E-06   4.22E-05   1.14E-04  -3.24E-11   6.87E-11   0.00E+00   1.26E+01   2.57E-04
+ 8250   16.504   0.002 5.00E-01 1.00E+00  7.6861E-06   4.31E-05   1.16E-04  -3.38E-11   7.18E-11   0.00E+00   1.26E+01   2.69E-04
+Fri Oct 23 21:19:50 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:19:50 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_8300
+ 8300   16.604   0.002 5.00E-01 1.00E+00  7.8454E-06   4.40E-05   1.18E-04  -3.53E-11   7.50E-11   0.00E+00   1.26E+01   2.80E-04
+ 8350   16.704   0.002 5.00E-01 1.00E+00  8.0083E-06   4.50E-05   1.20E-04  -3.68E-11   7.84E-11   0.00E+00   1.26E+01   2.93E-04
+Fri Oct 23 21:20:04 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:20:04 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_8400
+ 8400   16.804   0.002 5.00E-01 1.00E+00  8.1749E-06   4.59E-05   1.22E-04  -3.84E-11   8.19E-11   0.00E+00   1.26E+01   3.06E-04
+ 8450   16.904   0.002 5.00E-01 1.00E+00  8.3452E-06   4.69E-05   1.24E-04  -4.01E-11   8.56E-11   0.00E+00   1.26E+01   3.19E-04
+Fri Oct 23 21:20:18 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:20:18 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_8500
+ 8500   17.004   0.002 5.00E-01 1.00E+00  8.5193E-06   4.79E-05   1.27E-04  -4.19E-11   8.95E-11   0.00E+00   1.26E+01   3.33E-04
+ 8550   17.104   0.002 5.00E-01 1.00E+00  8.6973E-06   4.89E-05   1.29E-04  -4.37E-11   9.35E-11   0.00E+00   1.26E+01   3.48E-04
+Fri Oct 23 21:20:32 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:20:32 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_8600
+ 8600   17.204   0.002 5.00E-01 1.00E+00  8.8793E-06   4.99E-05   1.31E-04  -4.56E-11   9.77E-11   0.00E+00   1.26E+01   3.63E-04
+ 8650   17.304   0.002 5.00E-01 1.00E+00  9.0654E-06   5.10E-05   1.34E-04  -4.76E-11   1.02E-10   0.00E+00   1.26E+01   3.79E-04
+Fri Oct 23 21:20:46 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:20:46 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_8700
+ 8700   17.405   0.002 5.00E-01 1.00E+00  9.2557E-06   5.20E-05   1.36E-04  -4.97E-11   1.07E-10   0.00E+00   1.26E+01   3.96E-04
+ 8750   17.505   0.002 5.00E-01 1.00E+00  9.4502E-06   5.31E-05   1.39E-04  -5.19E-11   1.12E-10   0.00E+00   1.26E+01   4.14E-04
+Fri Oct 23 21:20:59 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:20:59 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_8800
+ 8800   17.605   0.002 5.00E-01 1.00E+00  9.6491E-06   5.43E-05   1.41E-04  -5.42E-11   1.17E-10   0.00E+00   1.26E+01   4.32E-04
+ 8850   17.705   0.002 5.00E-01 1.00E+00  9.8525E-06   5.54E-05   1.44E-04  -5.65E-11   1.22E-10   0.00E+00   1.26E+01   4.51E-04
+Fri Oct 23 21:21:13 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:21:13 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_8900
+ 8900   17.805   0.002 5.00E-01 1.00E+00  1.0060E-05   5.66E-05   1.47E-04  -5.90E-11   1.27E-10   0.00E+00   1.26E+01   4.71E-04
+ 8950   17.905   0.002 5.00E-01 1.00E+00  1.0273E-05   5.78E-05   1.49E-04  -6.16E-11   1.33E-10   0.00E+00   1.26E+01   4.92E-04
+Fri Oct 23 21:21:27 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:21:27 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_9000
+ 9000   18.005   0.002 5.00E-01 1.00E+00  1.0490E-05   5.90E-05   1.52E-04  -6.44E-11   1.39E-10   0.00E+00   1.26E+01   5.13E-04
+ 9050   18.105   0.002 5.00E-01 1.00E+00  1.0713E-05   6.03E-05   1.55E-04  -6.72E-11   1.45E-10   0.00E+00   1.26E+01   5.36E-04
+Fri Oct 23 21:21:45 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:21:45 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_9100
+ 9100   18.205   0.002 5.00E-01 1.00E+00  1.0940E-05   6.16E-05   1.58E-04  -7.02E-11   1.52E-10   0.00E+00   1.26E+01   5.60E-04
+ 9150   18.305   0.002 5.00E-01 1.00E+00  1.1172E-05   6.29E-05   1.61E-04  -7.33E-11   1.59E-10   0.00E+00   1.26E+01   5.85E-04
+Fri Oct 23 21:21:59 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:21:59 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_9200
+ 9200   18.405   0.002 5.00E-01 1.00E+00  1.1410E-05   6.43E-05   1.64E-04  -7.66E-11   1.66E-10   0.00E+00   1.26E+01   6.10E-04
+ 9250   18.505   0.002 5.00E-01 1.00E+00  1.1653E-05   6.56E-05   1.67E-04  -7.99E-11   1.74E-10   0.00E+00   1.26E+01   6.37E-04
+Fri Oct 23 21:22:13 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:22:13 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_9300
+ 9300   18.605   0.002 5.00E-01 1.00E+00  1.1901E-05   6.71E-05   1.70E-04  -8.35E-11   1.82E-10   0.00E+00   1.26E+01   6.66E-04
+ 9350   18.705   0.002 5.00E-01 1.00E+00  1.2155E-05   6.85E-05   1.73E-04  -8.72E-11   1.90E-10   0.00E+00   1.26E+01   6.95E-04
+Fri Oct 23 21:22:27 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:22:27 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_9400
+ 9400   18.805   0.002 5.00E-01 1.00E+00  1.2415E-05   7.00E-05   1.76E-04  -9.11E-11   1.98E-10   0.00E+00   1.26E+01   7.26E-04
+ 9450   18.905   0.002 5.00E-01 1.00E+00  1.2681E-05   7.15E-05   1.80E-04  -9.52E-11   2.08E-10   0.00E+00   1.26E+01   7.58E-04
+Fri Oct 23 21:22:40 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:22:40 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_9500
+ 9500   19.005   0.002 5.00E-01 1.00E+00  1.2952E-05   7.30E-05   1.83E-04  -9.94E-11   2.17E-10   0.00E+00   1.26E+01   7.92E-04
+ 9550   19.105   0.002 5.00E-01 1.00E+00  1.3230E-05   7.46E-05   1.87E-04  -1.04E-10   2.27E-10   0.00E+00   1.26E+01   8.27E-04
+Fri Oct 23 21:22:54 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:22:54 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_9600
+ 9600   19.205   0.002 5.00E-01 1.00E+00  1.3514E-05   7.62E-05   1.90E-04  -1.08E-10   2.37E-10   0.00E+00   1.26E+01   8.63E-04
+ 9650   19.305   0.002 5.00E-01 1.00E+00  1.3804E-05   7.79E-05   1.94E-04  -1.13E-10   2.48E-10   0.00E+00   1.26E+01   9.01E-04
+Fri Oct 23 21:23:08 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:23:08 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_9700
+ 9700   19.405   0.002 5.00E-01 1.00E+00  1.4101E-05   7.95E-05   1.98E-04  -1.18E-10   2.59E-10   0.00E+00   1.26E+01   9.41E-04
+ 9750   19.505   0.002 5.00E-01 1.00E+00  1.4405E-05   8.13E-05   2.01E-04  -1.24E-10   2.71E-10   0.00E+00   1.26E+01   9.83E-04
+Fri Oct 23 21:23:22 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:23:22 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_9800
+ 9800   19.605   0.002 5.00E-01 1.00E+00  1.4715E-05   8.30E-05   2.05E-04  -1.29E-10   2.84E-10   0.00E+00   1.26E+01   1.03E-03
+ 9850   19.705   0.002 5.00E-01 1.00E+00  1.5032E-05   8.48E-05   2.09E-04  -1.35E-10   2.97E-10   0.00E+00   1.26E+01   1.07E-03
+Fri Oct 23 21:23:36 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:23:36 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_9900
+ 9900   19.805   0.002 5.00E-01 1.00E+00  1.5357E-05   8.67E-05   2.13E-04  -1.41E-10   3.10E-10   0.00E+00   1.26E+01   1.12E-03
+ 9950   19.905   0.002 5.00E-01 1.00E+00  1.5689E-05   8.86E-05   2.17E-04  -1.47E-10   3.24E-10   0.00E+00   1.26E+01   1.17E-03
+Fri Oct 23 21:23:50 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:23:50 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_10000
+10000   20.005   0.002 5.00E-01 1.00E+00  1.6028E-05   9.05E-05   2.21E-04  -1.54E-10   3.39E-10   0.00E+00   1.26E+01   1.22E-03
+10050   20.105   0.002 5.00E-01 1.00E+00  1.6375E-05   9.25E-05   2.25E-04  -1.61E-10   3.55E-10   0.00E+00   1.26E+01   1.27E-03
+Fri Oct 23 21:24:08 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:24:08 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_10100
+10100   20.205   0.002 5.00E-01 1.00E+00  1.6730E-05   9.45E-05   2.30E-04  -1.68E-10   3.71E-10   0.00E+00   1.26E+01   1.33E-03
+10150   20.305   0.002 5.00E-01 1.00E+00  1.7093E-05   9.65E-05   2.34E-04  -1.76E-10   3.88E-10   0.00E+00   1.26E+01   1.39E-03
+Fri Oct 23 21:24:21 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:24:21 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_10200
+10200   20.405   0.002 5.00E-01 1.00E+00  1.7464E-05   9.86E-05   2.39E-04  -1.84E-10   4.06E-10   0.00E+00   1.26E+01   1.45E-03
+10250   20.505   0.002 5.00E-01 1.00E+00  1.7844E-05   1.01E-04   2.43E-04  -1.92E-10   4.24E-10   0.00E+00   1.26E+01   1.52E-03
+Fri Oct 23 21:24:35 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:24:35 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_10300
+10300   20.605   0.002 5.00E-01 1.00E+00  1.8232E-05   1.03E-04   2.48E-04  -2.01E-10   4.44E-10   0.00E+00   1.26E+01   1.58E-03
+10350   20.705   0.002 5.00E-01 1.00E+00  1.8628E-05   1.05E-04   2.53E-04  -2.10E-10   4.64E-10   0.00E+00   1.26E+01   1.65E-03
+Fri Oct 23 21:24:49 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:24:49 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_10400
+10400   20.805   0.002 5.00E-01 1.00E+00  1.9034E-05   1.08E-04   2.58E-04  -2.19E-10   4.86E-10   0.00E+00   1.26E+01   1.73E-03
+10450   20.905   0.002 5.00E-01 1.00E+00  1.9449E-05   1.10E-04   2.63E-04  -2.29E-10   5.08E-10   0.00E+00   1.26E+01   1.80E-03
+Fri Oct 23 21:25:03 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:25:03 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_10500
+10500   21.005   0.002 5.00E-01 1.00E+00  1.9874E-05   1.12E-04   2.68E-04  -2.40E-10   5.31E-10   0.00E+00   1.26E+01   1.88E-03
+10550   21.105   0.002 5.00E-01 1.00E+00  2.0307E-05   1.15E-04   2.73E-04  -2.51E-10   5.56E-10   0.00E+00   1.26E+01   1.97E-03
+Fri Oct 23 21:25:17 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:25:17 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_10600
+10600   21.205   0.002 5.00E-01 1.00E+00  2.0751E-05   1.17E-04   2.78E-04  -2.62E-10   5.81E-10   0.00E+00   1.26E+01   2.05E-03
+10650   21.306   0.002 5.00E-01 1.00E+00  2.1205E-05   1.20E-04   2.84E-04  -2.74E-10   6.08E-10   0.00E+00   1.26E+01   2.15E-03
+Fri Oct 23 21:25:31 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:25:31 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_10700
+10700   21.406   0.002 5.00E-01 1.00E+00  2.1669E-05   1.23E-04   2.89E-04  -2.86E-10   6.36E-10   0.00E+00   1.26E+01   2.24E-03
+10750   21.506   0.002 5.00E-01 1.00E+00  2.2144E-05   1.25E-04   2.95E-04  -2.99E-10   6.65E-10   0.00E+00   1.26E+01   2.34E-03
+Fri Oct 23 21:25:45 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:25:45 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_10800
+10800   21.606   0.002 5.00E-01 1.00E+00  2.2629E-05   1.28E-04   3.01E-04  -3.13E-10   6.96E-10   0.00E+00   1.26E+01   2.44E-03
+10850   21.706   0.002 5.00E-01 1.00E+00  2.3125E-05   1.31E-04   3.07E-04  -3.27E-10   7.28E-10   0.00E+00   1.26E+01   2.55E-03
+Fri Oct 23 21:25:59 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:25:59 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_10900
+10900   21.806   0.002 5.00E-01 1.00E+00  2.3633E-05   1.34E-04   3.13E-04  -3.42E-10   7.62E-10   0.00E+00   1.26E+01   2.67E-03
+10950   21.906   0.002 5.00E-01 1.00E+00  2.4152E-05   1.37E-04   3.19E-04  -3.58E-10   7.97E-10   0.00E+00   1.26E+01   2.78E-03
+Fri Oct 23 21:26:12 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:26:12 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_11000
+11000   22.006   0.002 5.00E-01 1.00E+00  2.4683E-05   1.40E-04   3.25E-04  -3.74E-10   8.34E-10   0.00E+00   1.26E+01   2.91E-03
+11050   22.106   0.002 5.00E-01 1.00E+00  2.5226E-05   1.43E-04   3.31E-04  -3.91E-10   8.72E-10   0.00E+00   1.26E+01   3.04E-03
+Fri Oct 23 21:26:30 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:26:30 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_11100
+11100   22.206   0.002 5.00E-01 1.00E+00  2.5781E-05   1.46E-04   3.38E-04  -4.09E-10   9.13E-10   0.00E+00   1.26E+01   3.17E-03
+11150   22.306   0.002 5.00E-01 1.00E+00  2.6349E-05   1.49E-04   3.45E-04  -4.28E-10   9.55E-10   0.00E+00   1.26E+01   3.31E-03
+Fri Oct 23 21:26:44 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:26:44 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_11200
+11200   22.406   0.002 5.00E-01 1.00E+00  2.6929E-05   1.52E-04   3.51E-04  -4.47E-10   9.99E-10   0.00E+00   1.26E+01   3.46E-03
+11250   22.506   0.002 5.00E-01 1.00E+00  2.7523E-05   1.56E-04   3.58E-04  -4.68E-10   1.04E-09   0.00E+00   1.26E+01   3.61E-03
+Fri Oct 23 21:26:58 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:26:58 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_11300
+11300   22.606   0.002 5.00E-01 1.00E+00  2.8130E-05   1.59E-04   3.65E-04  -4.89E-10   1.09E-09   0.00E+00   1.26E+01   3.77E-03
+11350   22.706   0.002 5.00E-01 1.00E+00  2.8751E-05   1.63E-04   3.73E-04  -5.11E-10   1.14E-09   0.00E+00   1.26E+01   3.94E-03
+Fri Oct 23 21:27:12 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:27:12 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_11400
+11400   22.806   0.002 5.00E-01 1.00E+00  2.9387E-05   1.66E-04   3.80E-04  -5.35E-10   1.20E-09   0.00E+00   1.26E+01   4.12E-03
+11450   22.906   0.002 5.00E-01 1.00E+00  3.0036E-05   1.70E-04   3.88E-04  -5.59E-10   1.25E-09   0.00E+00   1.26E+01   4.30E-03
+Fri Oct 23 21:27:26 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:27:26 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_11500
+11500   23.006   0.002 5.00E-01 1.00E+00  3.0701E-05   1.74E-04   3.95E-04  -5.85E-10   1.31E-09   0.00E+00   1.26E+01   4.49E-03
+11550   23.106   0.002 5.00E-01 1.00E+00  3.1380E-05   1.78E-04   4.03E-04  -6.12E-10   1.37E-09   0.00E+00   1.26E+01   4.69E-03
+Fri Oct 23 21:27:39 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:27:40 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_11600
+11600   23.206   0.002 5.00E-01 1.00E+00  3.2075E-05   1.82E-04   4.11E-04  -6.40E-10   1.43E-09   0.00E+00   1.26E+01   4.90E-03
+11650   23.306   0.002 5.00E-01 1.00E+00  3.2786E-05   1.86E-04   4.19E-04  -6.69E-10   1.50E-09   0.00E+00   1.26E+01   5.11E-03
+Fri Oct 23 21:27:53 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:27:53 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_11700
+11700   23.406   0.002 5.00E-01 1.00E+00  3.3513E-05   1.90E-04   4.28E-04  -7.00E-10   1.57E-09   0.00E+00   1.26E+01   5.34E-03
+11750   23.506   0.002 5.00E-01 1.00E+00  3.4256E-05   1.94E-04   4.36E-04  -7.32E-10   1.64E-09   0.00E+00   1.26E+01   5.58E-03
+Fri Oct 23 21:28:07 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:28:07 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_11800
+11800   23.606   0.002 5.00E-01 1.00E+00  3.5016E-05   1.98E-04   4.45E-04  -7.66E-10   1.72E-09   0.00E+00   1.26E+01   5.83E-03
+11850   23.706   0.002 5.00E-01 1.00E+00  3.5794E-05   2.03E-04   4.54E-04  -8.01E-10   1.80E-09   0.00E+00   1.26E+01   6.08E-03
+Fri Oct 23 21:28:21 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:28:21 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_11900
+11900   23.806   0.002 5.00E-01 1.00E+00  3.6589E-05   2.07E-04   4.63E-04  -8.38E-10   1.88E-09   0.00E+00   1.26E+01   6.35E-03
+11950   23.906   0.002 5.00E-01 1.00E+00  3.7403E-05   2.12E-04   4.72E-04  -8.76E-10   1.97E-09   0.00E+00   1.26E+01   6.64E-03
+Fri Oct 23 21:28:35 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:28:35 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_12000
+12000   24.006   0.002 5.00E-01 1.00E+00  3.8234E-05   2.17E-04   4.82E-04  -9.16E-10   2.06E-09   0.00E+00   1.26E+01   6.93E-03
+12050   24.106   0.002 5.00E-01 1.00E+00  3.9085E-05   2.21E-04   4.92E-04  -9.59E-10   2.16E-09   0.00E+00   1.26E+01   7.24E-03
+Fri Oct 23 21:28:53 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:28:53 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_12100
+12100   24.206   0.002 5.00E-01 1.00E+00  3.9956E-05   2.26E-04   5.01E-04  -1.00E-09   2.26E-09   0.00E+00   1.26E+01   7.56E-03
+12150   24.306   0.002 5.00E-01 1.00E+00  4.0846E-05   2.31E-04   5.12E-04  -1.05E-09   2.36E-09   0.00E+00   1.26E+01   7.89E-03
+Fri Oct 23 21:29:07 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:29:07 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_12200
+12200   24.406   0.002 5.00E-01 1.00E+00  4.1756E-05   2.37E-04   5.22E-04  -1.10E-09   2.47E-09   0.00E+00   1.26E+01   8.25E-03
+12250   24.506   0.002 5.00E-01 1.00E+00  4.2687E-05   2.42E-04   5.33E-04  -1.15E-09   2.59E-09   0.00E+00   1.26E+01   8.61E-03
+Fri Oct 23 21:29:21 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:29:21 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_12300
+12300   24.606   0.002 5.00E-01 1.00E+00  4.3639E-05   2.47E-04   5.43E-04  -1.20E-09   2.71E-09   0.00E+00   1.26E+01   8.99E-03
+12350   24.706   0.002 5.00E-01 1.00E+00  4.4613E-05   2.53E-04   5.54E-04  -1.26E-09   2.83E-09   0.00E+00   1.26E+01   9.39E-03
+Fri Oct 23 21:29:35 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:29:35 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_12400
+12400   24.806   0.002 5.00E-01 1.00E+00  4.5610E-05   2.59E-04   5.66E-04  -1.31E-09   2.97E-09   0.00E+00   1.26E+01   9.81E-03
+12450   24.906   0.002 5.00E-01 1.00E+00  4.6628E-05   2.64E-04   5.77E-04  -1.38E-09   3.10E-09   0.00E+00   1.26E+01   1.02E-02
+Fri Oct 23 21:29:48 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:29:48 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_12500
+12500   25.006   0.002 5.00E-01 1.00E+00  4.7671E-05   2.70E-04   5.89E-04  -1.44E-09   3.25E-09   0.00E+00   1.26E+01   1.07E-02
+12550   25.107   0.002 5.00E-01 1.00E+00  4.8737E-05   2.76E-04   6.01E-04  -1.51E-09   3.40E-09   0.00E+00   1.26E+01   1.12E-02
+Fri Oct 23 21:30:02 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:30:02 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_12600
+12600   25.207   0.002 5.00E-01 1.00E+00  4.9827E-05   2.82E-04   6.13E-04  -1.57E-09   3.56E-09   0.00E+00   1.26E+01   1.17E-02
+12650   25.307   0.002 5.00E-01 1.00E+00  5.0942E-05   2.89E-04   6.26E-04  -1.65E-09   3.73E-09   0.00E+00   1.26E+01   1.22E-02
+Fri Oct 23 21:30:16 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:30:16 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_12700
+12700   25.407   0.002 5.00E-01 1.00E+00  5.2083E-05   2.95E-04   6.38E-04  -1.72E-09   3.90E-09   0.00E+00   1.26E+01   1.27E-02
+12750   25.507   0.002 5.00E-01 1.00E+00  5.3249E-05   3.02E-04   6.52E-04  -1.80E-09   4.08E-09   0.00E+00   1.26E+01   1.33E-02
+Fri Oct 23 21:30:30 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:30:30 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_12800
+12800   25.607   0.002 5.00E-01 1.00E+00  5.4442E-05   3.09E-04   6.65E-04  -1.89E-09   4.27E-09   0.00E+00   1.26E+01   1.39E-02
+12850   25.707   0.002 5.00E-01 1.00E+00  5.5663E-05   3.16E-04   6.79E-04  -1.97E-09   4.47E-09   0.00E+00   1.26E+01   1.45E-02
+Fri Oct 23 21:30:44 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:30:44 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_12900
+12900   25.807   0.002 5.00E-01 1.00E+00  5.6911E-05   3.23E-04   6.92E-04  -2.07E-09   4.68E-09   0.00E+00   1.26E+01   1.51E-02
+12950   25.907   0.002 5.00E-01 1.00E+00  5.8188E-05   3.30E-04   7.07E-04  -2.16E-09   4.90E-09   0.00E+00   1.26E+01   1.58E-02
+Fri Oct 23 21:30:58 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:30:58 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_13000
+13000   26.007   0.002 5.00E-01 1.00E+00  5.9495E-05   3.37E-04   7.21E-04  -2.26E-09   5.13E-09   0.00E+00   1.26E+01   1.65E-02
+13050   26.107   0.002 5.00E-01 1.00E+00  6.0831E-05   3.45E-04   7.36E-04  -2.37E-09   5.37E-09   0.00E+00   1.26E+01   1.73E-02
+Fri Oct 23 21:31:16 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:31:16 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_13100
+13100   26.207   0.002 5.00E-01 1.00E+00  6.2197E-05   3.53E-04   7.51E-04  -2.48E-09   5.62E-09   0.00E+00   1.26E+01   1.80E-02
+13150   26.307   0.002 5.00E-01 1.00E+00  6.3595E-05   3.61E-04   7.67E-04  -2.59E-09   5.88E-09   0.00E+00   1.26E+01   1.88E-02
+Fri Oct 23 21:31:30 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:31:30 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_13200
+13200   26.407   0.002 5.00E-01 1.00E+00  6.5025E-05   3.69E-04   7.83E-04  -2.71E-09   6.15E-09   0.00E+00   1.26E+01   1.97E-02
+13250   26.507   0.002 5.00E-01 1.00E+00  6.6487E-05   3.77E-04   7.99E-04  -2.84E-09   6.44E-09   0.00E+00   1.26E+01   2.05E-02
+Fri Oct 23 21:31:44 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:31:44 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_13300
+13300   26.607   0.002 5.00E-01 1.00E+00  6.7983E-05   3.86E-04   8.15E-04  -2.97E-09   6.74E-09   0.00E+00   1.26E+01   2.14E-02
+13350   26.707   0.002 5.00E-01 1.00E+00  6.9514E-05   3.94E-04   8.32E-04  -3.11E-09   7.06E-09   0.00E+00   1.26E+01   2.24E-02
+Fri Oct 23 21:31:58 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:31:58 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_13400
+13400   26.807   0.002 5.00E-01 1.00E+00  7.1079E-05   4.03E-04   8.49E-04  -3.25E-09   7.39E-09   0.00E+00   1.26E+01   2.34E-02
+13450   26.907   0.002 5.00E-01 1.00E+00  7.2680E-05   4.12E-04   8.67E-04  -3.40E-09   7.73E-09   0.00E+00   1.26E+01   2.44E-02
+Fri Oct 23 21:32:11 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:32:11 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_13500
+13500   27.007   0.002 5.00E-01 1.00E+00  7.4318E-05   4.22E-04   8.85E-04  -3.56E-09   8.09E-09   0.00E+00   1.26E+01   2.55E-02
+13550   27.107   0.002 5.00E-01 1.00E+00  7.5993E-05   4.31E-04   9.03E-04  -3.73E-09   8.47E-09   0.00E+00   1.26E+01   2.66E-02
+Fri Oct 23 21:32:25 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:32:25 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_13600
+13600   27.207   0.002 5.00E-01 1.00E+00  7.7706E-05   4.41E-04   9.22E-04  -3.90E-09   8.87E-09   0.00E+00   1.26E+01   2.78E-02
+13650   27.307   0.002 5.00E-01 1.00E+00  7.9459E-05   4.51E-04   9.41E-04  -4.08E-09   9.28E-09   0.00E+00   1.26E+01   2.90E-02
+Fri Oct 23 21:32:39 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:32:39 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_13700
+13700   27.407   0.002 5.00E-01 1.00E+00  8.1252E-05   4.61E-04   9.61E-04  -4.27E-09   9.72E-09   0.00E+00   1.26E+01   3.03E-02
+13750   27.507   0.002 5.00E-01 1.00E+00  8.3086E-05   4.71E-04   9.81E-04  -4.47E-09   1.02E-08   0.00E+00   1.26E+01   3.17E-02
+Fri Oct 23 21:32:53 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:32:53 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_13800
+13800   27.607   0.002 5.00E-01 1.00E+00  8.4963E-05   4.82E-04   1.00E-03  -4.68E-09   1.07E-08   0.00E+00   1.26E+01   3.31E-02
+13850   27.707   0.002 5.00E-01 1.00E+00  8.6882E-05   4.93E-04   1.02E-03  -4.90E-09   1.12E-08   0.00E+00   1.26E+01   3.46E-02
+Fri Oct 23 21:33:07 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:33:07 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_13900
+13900   27.807   0.002 5.00E-01 1.00E+00  8.8845E-05   5.04E-04   1.04E-03  -5.13E-09   1.17E-08   0.00E+00   1.26E+01   3.61E-02
+13950   27.907   0.002 5.00E-01 1.00E+00  9.0853E-05   5.16E-04   1.07E-03  -5.37E-09   1.22E-08   0.00E+00   1.26E+01   3.77E-02
+Fri Oct 23 21:33:21 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:33:21 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_14000
+14000   28.007   0.002 5.00E-01 1.00E+00  9.2908E-05   5.27E-04   1.09E-03  -5.62E-09   1.28E-08   0.00E+00   1.26E+01   3.94E-02
+14050   28.107   0.002 5.00E-01 1.00E+00  9.5009E-05   5.39E-04   1.11E-03  -5.88E-09   1.34E-08   0.00E+00   1.26E+01   4.11E-02
+Fri Oct 23 21:33:39 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:33:39 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_14100
+14100   28.207   0.002 5.00E-01 1.00E+00  9.7159E-05   5.51E-04   1.13E-03  -6.15E-09   1.40E-08   0.00E+00   1.26E+01   4.29E-02
+14150   28.307   0.002 5.00E-01 1.00E+00  9.9358E-05   5.64E-04   1.16E-03  -6.44E-09   1.47E-08   0.00E+00   1.26E+01   4.48E-02
+Fri Oct 23 21:33:52 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:33:52 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_14200
+14200   28.407   0.002 5.00E-01 1.00E+00  1.0161E-04   5.77E-04   1.18E-03  -6.74E-09   1.54E-08   0.00E+00   1.26E+01   4.68E-02
+14250   28.507   0.002 5.00E-01 1.00E+00  1.0391E-04   5.90E-04   1.21E-03  -7.05E-09   1.61E-08   0.00E+00   1.26E+01   4.89E-02
+Fri Oct 23 21:34:06 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:34:06 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_14300
+14300   28.607   0.002 5.00E-01 1.00E+00  1.0626E-04   6.03E-04   1.23E-03  -7.38E-09   1.68E-08   0.00E+00   1.26E+01   5.11E-02
+14350   28.707   0.002 5.00E-01 1.00E+00  1.0867E-04   6.17E-04   1.26E-03  -7.73E-09   1.76E-08   0.00E+00   1.26E+01   5.33E-02
+Fri Oct 23 21:34:20 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:34:20 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_14400
+14400   28.807   0.002 5.00E-01 1.00E+00  1.1113E-04   6.31E-04   1.28E-03  -8.09E-09   1.85E-08   0.00E+00   1.26E+01   5.57E-02
+14450   28.907   0.002 5.00E-01 1.00E+00  1.1365E-04   6.45E-04   1.31E-03  -8.47E-09   1.93E-08   0.00E+00   1.26E+01   5.82E-02
+Fri Oct 23 21:34:34 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:34:34 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_14500
+14500   29.008   0.002 5.00E-01 1.00E+00  1.1623E-04   6.60E-04   1.34E-03  -8.86E-09   2.02E-08   0.00E+00   1.26E+01   6.07E-02
+14550   29.108   0.002 5.00E-01 1.00E+00  1.1887E-04   6.75E-04   1.37E-03  -9.28E-09   2.12E-08   0.00E+00   1.26E+01   6.34E-02
+Fri Oct 23 21:34:48 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:34:48 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_14600
+14600   29.208   0.002 5.00E-01 1.00E+00  1.2157E-04   6.90E-04   1.40E-03  -9.71E-09   2.22E-08   0.00E+00   1.26E+01   6.62E-02
+14650   29.308   0.002 5.00E-01 1.00E+00  1.2433E-04   7.06E-04   1.43E-03  -1.02E-08   2.32E-08   0.00E+00   1.26E+01   6.92E-02
+Fri Oct 23 21:35:02 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:35:02 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_14700
+14700   29.408   0.002 5.00E-01 1.00E+00  1.2715E-04   7.22E-04   1.46E-03  -1.06E-08   2.43E-08   0.00E+00   1.26E+01   7.22E-02
+14750   29.508   0.002 5.00E-01 1.00E+00  1.3004E-04   7.38E-04   1.49E-03  -1.11E-08   2.55E-08   0.00E+00   1.26E+01   7.54E-02
+Fri Oct 23 21:35:16 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:35:16 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_14800
+14800   29.608   0.002 5.00E-01 1.00E+00  1.3299E-04   7.55E-04   1.52E-03  -1.17E-08   2.66E-08   0.00E+00   1.26E+01   7.88E-02
+14850   29.708   0.002 5.00E-01 1.00E+00  1.3602E-04   7.72E-04   1.55E-03  -1.22E-08   2.79E-08   0.00E+00   1.26E+01   8.23E-02
+Fri Oct 23 21:35:30 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:35:30 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_14900
+14900   29.808   0.002 5.00E-01 1.00E+00  1.3911E-04   7.90E-04   1.58E-03  -1.28E-08   2.92E-08   0.00E+00   1.26E+01   8.59E-02
+14950   29.908   0.002 5.00E-01 1.00E+00  1.4227E-04   8.08E-04   1.62E-03  -1.34E-08   3.06E-08   0.00E+00   1.26E+01   8.97E-02
+Fri Oct 23 21:35:44 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:35:44 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_15000
+15000   30.008   0.002 5.00E-01 1.00E+00  1.4551E-04   8.26E-04   1.65E-03  -1.40E-08   3.20E-08   0.00E+00   1.26E+01   9.37E-02
+15050   30.108   0.002 5.00E-01 1.00E+00  1.4882E-04   8.45E-04   1.69E-03  -1.47E-08   3.35E-08   0.00E+00   1.26E+01   9.79E-02
+Fri Oct 23 21:36:01 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:36:01 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_15100
+15100   30.208   0.002 5.00E-01 1.00E+00  1.5221E-04   8.64E-04   1.72E-03  -1.53E-08   3.51E-08   0.00E+00   1.26E+01   1.02E-01
+15150   30.308   0.002 5.00E-01 1.00E+00  1.5567E-04   8.84E-04   1.76E-03  -1.61E-08   3.68E-08   0.00E+00   1.26E+01   1.07E-01
+Fri Oct 23 21:36:15 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:36:15 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_15200
+15200   30.408   0.002 5.00E-01 1.00E+00  1.5922E-04   9.04E-04   1.80E-03  -1.68E-08   3.85E-08   0.00E+00   1.26E+01   1.11E-01
+15250   30.508   0.002 5.00E-01 1.00E+00  1.6284E-04   9.24E-04   1.84E-03  -1.76E-08   4.03E-08   0.00E+00   1.26E+01   1.16E-01
+Fri Oct 23 21:36:29 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:36:29 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_15300
+15300   30.608   0.002 5.00E-01 1.00E+00  1.6655E-04   9.46E-04   1.88E-03  -1.84E-08   4.22E-08   0.00E+00   1.26E+01   1.22E-01
+15350   30.708   0.002 5.00E-01 1.00E+00  1.7035E-04   9.67E-04   1.92E-03  -1.93E-08   4.42E-08   0.00E+00   1.26E+01   1.27E-01
+Fri Oct 23 21:36:43 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:36:43 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_15400
+15400   30.808   0.002 5.00E-01 1.00E+00  1.7423E-04   9.89E-04   1.96E-03  -2.02E-08   4.63E-08   0.00E+00   1.26E+01   1.33E-01
+15450   30.908   0.002 5.00E-01 1.00E+00  1.7820E-04   1.01E-03   2.00E-03  -2.11E-08   4.84E-08   0.00E+00   1.26E+01   1.38E-01
+Fri Oct 23 21:36:57 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:36:57 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_15500
+15500   31.008   0.002 5.00E-01 1.00E+00  1.8227E-04   1.03E-03   2.04E-03  -2.21E-08   5.07E-08   0.00E+00   1.26E+01   1.44E-01
+15550   31.108   0.002 5.00E-01 1.00E+00  1.8643E-04   1.06E-03   2.09E-03  -2.32E-08   5.31E-08   0.00E+00   1.26E+01   1.51E-01
+Fri Oct 23 21:37:11 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:37:11 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_15600
+15600   31.208   0.002 5.00E-01 1.00E+00  1.9068E-04   1.08E-03   2.13E-03  -2.43E-08   5.56E-08   0.00E+00   1.26E+01   1.58E-01
+15650   31.308   0.002 5.00E-01 1.00E+00  1.9503E-04   1.11E-03   2.18E-03  -2.54E-08   5.82E-08   0.00E+00   1.26E+01   1.65E-01
+Fri Oct 23 21:37:25 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:37:25 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_15700
+15700   31.408   0.002 5.00E-01 1.00E+00  1.9948E-04   1.13E-03   2.23E-03  -2.66E-08   6.10E-08   0.00E+00   1.26E+01   1.72E-01
+15750   31.508   0.002 5.00E-01 1.00E+00  2.0404E-04   1.16E-03   2.28E-03  -2.78E-08   6.39E-08   0.00E+00   1.26E+01   1.79E-01
+Fri Oct 23 21:37:38 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:37:38 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_15800
+15800   31.608   0.002 5.00E-01 1.00E+00  2.0870E-04   1.18E-03   2.32E-03  -2.91E-08   6.69E-08   0.00E+00   1.26E+01   1.87E-01
+15850   31.708   0.002 5.00E-01 1.00E+00  2.1347E-04   1.21E-03   2.38E-03  -3.05E-08   7.00E-08   0.00E+00   1.26E+01   1.96E-01
+Fri Oct 23 21:37:52 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:37:52 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_15900
+15900   31.808   0.002 5.00E-01 1.00E+00  2.1835E-04   1.24E-03   2.43E-03  -3.19E-08   7.33E-08   0.00E+00   1.26E+01   2.04E-01
+15950   31.908   0.002 5.00E-01 1.00E+00  2.2334E-04   1.27E-03   2.48E-03  -3.34E-08   7.68E-08   0.00E+00   1.26E+01   2.13E-01
+Fri Oct 23 21:38:06 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:38:06 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_16000
+16000   32.008   0.002 5.00E-01 1.00E+00  2.2844E-04   1.30E-03   2.53E-03  -3.50E-08   8.04E-08   0.00E+00   1.26E+01   2.23E-01
+16050   32.108   0.002 5.00E-01 1.00E+00  2.3367E-04   1.33E-03   2.59E-03  -3.67E-08   8.42E-08   0.00E+00   1.26E+01   2.33E-01
+Fri Oct 23 21:38:24 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:38:24 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_16100
+16100   32.208   0.002 5.00E-01 1.00E+00  2.3901E-04   1.36E-03   2.64E-03  -3.84E-08   8.81E-08   0.00E+00   1.26E+01   2.43E-01
+16150   32.308   0.002 5.00E-01 1.00E+00  2.4448E-04   1.39E-03   2.70E-03  -4.02E-08   9.23E-08   0.00E+00   1.26E+01   2.54E-01
+Fri Oct 23 21:38:38 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:38:38 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_16200
+16200   32.408   0.002 5.00E-01 1.00E+00  2.5007E-04   1.42E-03   2.76E-03  -4.21E-08   9.67E-08   0.00E+00   1.26E+01   2.65E-01
+16250   32.508   0.002 5.00E-01 1.00E+00  2.5580E-04   1.45E-03   2.82E-03  -4.41E-08   1.01E-07   0.00E+00   1.26E+01   2.77E-01
+Fri Oct 23 21:38:52 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:38:52 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_16300
+16300   32.608   0.002 5.00E-01 1.00E+00  2.6165E-04   1.49E-03   2.88E-03  -4.61E-08   1.06E-07   0.00E+00   1.26E+01   2.89E-01
+16350   32.708   0.002 5.00E-01 1.00E+00  2.6764E-04   1.52E-03   2.95E-03  -4.83E-08   1.11E-07   0.00E+00   1.26E+01   3.02E-01
+Fri Oct 23 21:39:05 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:39:06 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_16400
+16400   32.808   0.002 5.00E-01 1.00E+00  2.7377E-04   1.55E-03   3.01E-03  -5.06E-08   1.16E-07   0.00E+00   1.26E+01   3.15E-01
+16450   32.909   0.002 5.00E-01 1.00E+00  2.8004E-04   1.59E-03   3.08E-03  -5.30E-08   1.22E-07   0.00E+00   1.26E+01   3.29E-01
+Fri Oct 23 21:39:19 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:39:19 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_16500
+16500   33.009   0.002 5.00E-01 1.00E+00  2.8646E-04   1.63E-03   3.14E-03  -5.54E-08   1.27E-07   0.00E+00   1.26E+01   3.43E-01
+16550   33.109   0.002 5.00E-01 1.00E+00  2.9303E-04   1.66E-03   3.21E-03  -5.81E-08   1.33E-07   0.00E+00   1.26E+01   3.58E-01
+Fri Oct 23 21:39:33 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:39:33 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_16600
+16600   33.209   0.002 5.00E-01 1.00E+00  2.9974E-04   1.70E-03   3.28E-03  -6.08E-08   1.40E-07   0.00E+00   1.26E+01   3.74E-01
+16650   33.309   0.002 5.00E-01 1.00E+00  3.0661E-04   1.74E-03   3.35E-03  -6.37E-08   1.46E-07   0.00E+00   1.26E+01   3.91E-01
+Fri Oct 23 21:39:47 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:39:47 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_16700
+16700   33.409   0.002 5.00E-01 1.00E+00  3.1365E-04   1.78E-03   3.43E-03  -6.67E-08   1.53E-07   0.00E+00   1.26E+01   4.08E-01
+16750   33.509   0.002 5.00E-01 1.00E+00  3.2084E-04   1.82E-03   3.50E-03  -6.98E-08   1.61E-07   0.00E+00   1.26E+01   4.26E-01
+Fri Oct 23 21:40:01 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:40:01 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_16800
+16800   33.609   0.002 5.00E-01 1.00E+00  3.2820E-04   1.86E-03   3.58E-03  -7.31E-08   1.68E-07   0.00E+00   1.26E+01   4.45E-01
+16850   33.709   0.002 5.00E-01 1.00E+00  3.3573E-04   1.91E-03   3.66E-03  -7.65E-08   1.76E-07   0.00E+00   1.26E+01   4.65E-01
+Fri Oct 23 21:40:15 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:40:15 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_16900
+16900   33.809   0.002 5.00E-01 1.00E+00  3.4344E-04   1.95E-03   3.74E-03  -8.01E-08   1.84E-07   0.00E+00   1.26E+01   4.85E-01
+16950   33.909   0.002 5.00E-01 1.00E+00  3.5132E-04   2.00E-03   3.82E-03  -8.39E-08   1.93E-07   0.00E+00   1.26E+01   5.07E-01
+Fri Oct 23 21:40:29 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:40:29 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_17000
+17000   34.009   0.002 5.00E-01 1.00E+00  3.5939E-04   2.04E-03   3.90E-03  -8.79E-08   2.02E-07   0.00E+00   1.26E+01   5.29E-01
+17050   34.109   0.002 5.00E-01 1.00E+00  3.6764E-04   2.09E-03   3.99E-03  -9.20E-08   2.12E-07   0.00E+00   1.26E+01   5.52E-01
+Fri Oct 23 21:40:47 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:40:47 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_17100
+17100   34.209   0.002 5.00E-01 1.00E+00  3.7608E-04   2.14E-03   4.08E-03  -9.63E-08   2.22E-07   0.00E+00   1.26E+01   5.77E-01
+17150   34.309   0.002 5.00E-01 1.00E+00  3.8472E-04   2.18E-03   4.17E-03  -1.01E-07   2.32E-07   0.00E+00   1.26E+01   6.02E-01
+Fri Oct 23 21:41:01 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:41:01 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_17200
+17200   34.409   0.002 5.00E-01 1.00E+00  3.9356E-04   2.23E-03   4.26E-03  -1.06E-07   2.43E-07   0.00E+00   1.26E+01   6.29E-01
+17250   34.509   0.002 5.00E-01 1.00E+00  4.0261E-04   2.29E-03   4.35E-03  -1.11E-07   2.55E-07   0.00E+00   1.26E+01   6.57E-01
+Fri Oct 23 21:41:15 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:41:15 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_17300
+17300   34.609   0.002 5.00E-01 1.00E+00  4.1186E-04   2.34E-03   4.45E-03  -1.16E-07   2.67E-07   0.00E+00   1.26E+01   6.86E-01
+17350   34.709   0.002 5.00E-01 1.00E+00  4.2133E-04   2.39E-03   4.55E-03  -1.21E-07   2.79E-07   0.00E+00   1.26E+01   7.16E-01
+Fri Oct 23 21:41:28 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:41:29 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_17400
+17400   34.809   0.002 5.00E-01 1.00E+00  4.3102E-04   2.45E-03   4.65E-03  -1.27E-07   2.93E-07   0.00E+00   1.26E+01   7.48E-01
+17450   34.909   0.002 5.00E-01 1.00E+00  4.4094E-04   2.50E-03   4.75E-03  -1.33E-07   3.07E-07   0.00E+00   1.26E+01   7.81E-01
+Fri Oct 23 21:41:42 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:41:42 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_17500
+17500   35.009   0.002 5.00E-01 1.00E+00  4.5108E-04   2.56E-03   4.85E-03  -1.39E-07   3.21E-07   0.00E+00   1.26E+01   8.15E-01
+17550   35.109   0.002 5.00E-01 1.00E+00  4.6146E-04   2.62E-03   4.96E-03  -1.46E-07   3.36E-07   0.00E+00   1.26E+01   8.51E-01
+Fri Oct 23 21:41:56 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:41:56 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_17600
+17600   35.209   0.002 5.00E-01 1.00E+00  4.7208E-04   2.68E-03   5.07E-03  -1.53E-07   3.52E-07   0.00E+00   1.26E+01   8.89E-01
+17650   35.309   0.002 5.00E-01 1.00E+00  4.8294E-04   2.74E-03   5.18E-03  -1.60E-07   3.69E-07   0.00E+00   1.26E+01   9.28E-01
+Fri Oct 23 21:42:10 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:42:10 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_17700
+17700   35.409   0.002 5.00E-01 1.00E+00  4.9406E-04   2.81E-03   5.30E-03  -1.67E-07   3.86E-07   0.00E+00   1.26E+01   9.69E-01
+17750   35.509   0.002 5.00E-01 1.00E+00  5.0544E-04   2.87E-03   5.41E-03  -1.75E-07   4.05E-07   0.00E+00   1.26E+01   1.01E+00
+Fri Oct 23 21:42:24 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:42:24 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_17800
+17800   35.609   0.002 5.00E-01 1.00E+00  5.1708E-04   2.94E-03   5.53E-03  -1.84E-07   4.24E-07   0.00E+00   1.26E+01   1.06E+00
+17850   35.709   0.002 5.00E-01 1.00E+00  5.2899E-04   3.00E-03   5.65E-03  -1.92E-07   4.44E-07   0.00E+00   1.26E+01   1.10E+00
+Fri Oct 23 21:42:38 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:42:38 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_17900
+17900   35.809   0.002 5.00E-01 1.00E+00  5.4118E-04   3.07E-03   5.78E-03  -2.01E-07   4.65E-07   0.00E+00   1.26E+01   1.15E+00
+17950   35.909   0.002 5.00E-01 1.00E+00  5.5365E-04   3.14E-03   5.91E-03  -2.11E-07   4.87E-07   0.00E+00   1.26E+01   1.20E+00
+Fri Oct 23 21:42:52 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:42:52 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_18000
+18000   36.009   0.002 5.00E-01 1.00E+00  5.6641E-04   3.22E-03   6.04E-03  -2.21E-07   5.10E-07   0.00E+00   1.26E+01   1.26E+00
+18050   36.109   0.002 5.00E-01 1.00E+00  5.7946E-04   3.29E-03   6.17E-03  -2.31E-07   5.34E-07   0.00E+00   1.26E+01   1.31E+00
+Fri Oct 23 21:43:09 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:43:10 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_18100
+18100   36.209   0.002 5.00E-01 1.00E+00  5.9282E-04   3.37E-03   6.31E-03  -2.42E-07   5.59E-07   0.00E+00   1.26E+01   1.37E+00
+18150   36.309   0.002 5.00E-01 1.00E+00  6.0649E-04   3.44E-03   6.45E-03  -2.54E-07   5.86E-07   0.00E+00   1.26E+01   1.43E+00
+Fri Oct 23 21:43:23 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:43:23 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_18200
+18200   36.409   0.002 5.00E-01 1.00E+00  6.2048E-04   3.52E-03   6.59E-03  -2.66E-07   6.13E-07   0.00E+00   1.26E+01   1.49E+00
+18250   36.509   0.002 5.00E-01 1.00E+00  6.3479E-04   3.61E-03   6.74E-03  -2.78E-07   6.43E-07   0.00E+00   1.26E+01   1.56E+00
+Fri Oct 23 21:43:37 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:43:37 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_18300
+18300   36.609   0.002 5.00E-01 1.00E+00  6.4943E-04   3.69E-03   6.89E-03  -2.91E-07   6.73E-07   0.00E+00   1.26E+01   1.63E+00
+18350   36.710   0.002 5.00E-01 1.00E+00  6.6442E-04   3.77E-03   7.04E-03  -3.05E-07   7.05E-07   0.00E+00   1.26E+01   1.70E+00
+Fri Oct 23 21:43:51 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:43:51 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_18400
+18400   36.810   0.002 5.00E-01 1.00E+00  6.7975E-04   3.86E-03   7.20E-03  -3.20E-07   7.38E-07   0.00E+00   1.26E+01   1.77E+00
+18450   36.910   0.002 5.00E-01 1.00E+00  6.9544E-04   3.95E-03   7.36E-03  -3.35E-07   7.73E-07   0.00E+00   1.26E+01   1.85E+00
+Fri Oct 23 21:44:05 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:44:05 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_18500
+18500   37.010   0.002 5.00E-01 1.00E+00  7.1150E-04   4.04E-03   7.52E-03  -3.51E-07   8.10E-07   0.00E+00   1.26E+01   1.93E+00
+18550   37.110   0.002 5.00E-01 1.00E+00  7.2792E-04   4.13E-03   7.69E-03  -3.67E-07   8.48E-07   0.00E+00   1.26E+01   2.02E+00
+Fri Oct 23 21:44:19 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:44:19 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_18600
+18600   37.210   0.002 5.00E-01 1.00E+00  7.4473E-04   4.23E-03   7.86E-03  -3.85E-07   8.88E-07   0.00E+00   1.26E+01   2.11E+00
+18650   37.310   0.002 5.00E-01 1.00E+00  7.6194E-04   4.33E-03   8.03E-03  -4.03E-07   9.31E-07   0.00E+00   1.26E+01   2.20E+00
+Fri Oct 23 21:44:33 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:44:33 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_18700
+18700   37.410   0.002 5.00E-01 1.00E+00  7.7954E-04   4.43E-03   8.21E-03  -4.22E-07   9.75E-07   0.00E+00   1.26E+01   2.30E+00
+18750   37.510   0.002 5.00E-01 1.00E+00  7.9755E-04   4.53E-03   8.39E-03  -4.42E-07   1.02E-06   0.00E+00   1.26E+01   2.40E+00
+Fri Oct 23 21:44:47 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:44:47 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_18800
+18800   37.610   0.002 5.00E-01 1.00E+00  8.1597E-04   4.63E-03   8.58E-03  -4.63E-07   1.07E-06   0.00E+00   1.26E+01   2.51E+00
+18850   37.710   0.002 5.00E-01 1.00E+00  8.3483E-04   4.74E-03   8.77E-03  -4.85E-07   1.12E-06   0.00E+00   1.26E+01   2.62E+00
+Fri Oct 23 21:45:01 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:45:01 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_18900
+18900   37.810   0.002 5.00E-01 1.00E+00  8.5413E-04   4.85E-03   8.97E-03  -5.07E-07   1.17E-06   0.00E+00   1.26E+01   2.73E+00
+18950   37.910   0.002 5.00E-01 1.00E+00  8.7388E-04   4.96E-03   9.17E-03  -5.32E-07   1.23E-06   0.00E+00   1.26E+01   2.85E+00
+Fri Oct 23 21:45:15 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:45:15 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_19000
+19000   38.010   0.002 5.00E-01 1.00E+00  8.9408E-04   5.08E-03   9.37E-03  -5.57E-07   1.29E-06   0.00E+00   1.26E+01   2.98E+00
+19050   38.110   0.002 5.00E-01 1.00E+00  9.1476E-04   5.20E-03   9.58E-03  -5.83E-07   1.35E-06   0.00E+00   1.26E+01   3.11E+00
+Fri Oct 23 21:45:33 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:45:33 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_19100
+19100   38.210   0.002 5.00E-01 1.00E+00  9.3592E-04   5.32E-03   9.79E-03  -6.11E-07   1.41E-06   0.00E+00   1.26E+01   3.25E+00
+19150   38.310   0.002 5.00E-01 1.00E+00  9.5757E-04   5.44E-03   1.00E-02  -6.40E-07   1.48E-06   0.00E+00   1.26E+01   3.39E+00
+Fri Oct 23 21:45:47 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:45:47 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_19200
+19200   38.410   0.002 5.00E-01 1.00E+00  9.7972E-04   5.56E-03   1.02E-02  -6.70E-07   1.55E-06   0.00E+00   1.26E+01   3.54E+00
+19250   38.510   0.002 5.00E-01 1.00E+00  1.0024E-03   5.69E-03   1.05E-02  -7.02E-07   1.62E-06   0.00E+00   1.26E+01   3.70E+00
+Fri Oct 23 21:46:01 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:46:01 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_19300
+19300   38.610   0.002 5.00E-01 1.00E+00  1.0256E-03   5.82E-03   1.07E-02  -7.35E-07   1.70E-06   0.00E+00   1.26E+01   3.86E+00
+19350   38.710   0.002 5.00E-01 1.00E+00  1.0493E-03   5.96E-03   1.09E-02  -7.70E-07   1.78E-06   0.00E+00   1.26E+01   4.03E+00
+Fri Oct 23 21:46:15 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:46:15 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_19400
+19400   38.810   0.002 5.00E-01 1.00E+00  1.0736E-03   6.10E-03   1.12E-02  -8.06E-07   1.87E-06   0.00E+00   1.26E+01   4.21E+00
+19450   38.910   0.002 5.00E-01 1.00E+00  1.0985E-03   6.24E-03   1.14E-02  -8.44E-07   1.95E-06   0.00E+00   1.26E+01   4.40E+00
+Fri Oct 23 21:46:28 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:46:29 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_19500
+19500   39.010   0.002 5.00E-01 1.00E+00  1.1239E-03   6.38E-03   1.17E-02  -8.84E-07   2.05E-06   0.00E+00   1.26E+01   4.59E+00
+19550   39.110   0.002 5.00E-01 1.00E+00  1.1500E-03   6.53E-03   1.19E-02  -9.26E-07   2.14E-06   0.00E+00   1.26E+01   4.79E+00
+Fri Oct 23 21:46:42 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:46:42 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_19600
+19600   39.210   0.002 5.00E-01 1.00E+00  1.1766E-03   6.68E-03   1.22E-02  -9.70E-07   2.25E-06   0.00E+00   1.26E+01   5.00E+00
+19650   39.310   0.002 5.00E-01 1.00E+00  1.2038E-03   6.84E-03   1.25E-02  -1.02E-06   2.35E-06   0.00E+00   1.26E+01   5.22E+00
+Fri Oct 23 21:46:56 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:46:56 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_19700
+19700   39.410   0.002 5.00E-01 1.00E+00  1.2317E-03   7.00E-03   1.28E-02  -1.06E-06   2.46E-06   0.00E+00   1.26E+01   5.45E+00
+19750   39.510   0.002 5.00E-01 1.00E+00  1.2603E-03   7.16E-03   1.31E-02  -1.11E-06   2.58E-06   0.00E+00   1.26E+01   5.70E+00
+Fri Oct 23 21:47:10 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:47:10 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_19800
+19800   39.610   0.002 5.00E-01 1.00E+00  1.2895E-03   7.32E-03   1.33E-02  -1.17E-06   2.70E-06   0.00E+00   1.26E+01   5.95E+00
+19850   39.710   0.002 5.00E-01 1.00E+00  1.3194E-03   7.49E-03   1.36E-02  -1.22E-06   2.83E-06   0.00E+00   1.26E+01   6.21E+00
+Fri Oct 23 21:47:24 2026 : save_checkpoint: Checkpoint ML model to: data/training/
+Fri Oct 23 21:47:24 2026 : save_checkpoint: Checkpoint ML model to iteration-specific directory: data/training//ITERATION_19900
+19900   39.810   0.002 5.00E-01 1.00E+00  1.3500E-03   7.67E-03   1.40E-02  -1.28E-06   2.97E-06   0.00E+00   1.26E+01   6.48E+00
+19950   39.910   0.002 5.00E-01 1.00E+00  1.3813E-03   7.84E-03   1.43E-02  -1.34E-06   3.11E-06   0.00E+00   1.26E+01   6.77E+00
+Fri Oct 23 21:47:38 2026 : save_model: Saving ML model to: data/training/stationary.pt
+Fri Oct 23 21:47:38 2026 : Doing inference
+
+Started autotuning: watch progress in ac_autotuning.log
+20000   40.010   0.002 5.00E-01 1.00E+00  1.4134E-03   8.03E-03   1.46E-02  -1.41E-06   3.26E-06   0.00E+00   1.26E+01   7.06E+00
+20050   40.110   0.002 5.00E-01 1.00E+00  1.4462E-03   8.21E-03   1.49E-02  -1.47E-06   3.41E-06   0.00E+00   1.26E+01   7.06E+00
+20100   40.210   0.002 5.00E-01 1.00E+00  1.4797E-03   8.40E-03   1.52E-02  -1.54E-06   3.57E-06   0.00E+00   1.26E+01   7.06E+00
+20150   40.310   0.002 5.00E-01 1.00E+00  1.5141E-03   8.60E-03   1.56E-02  -1.61E-06   3.74E-06   0.00E+00   1.26E+01   7.06E+00
+20200   40.410   0.002 5.00E-01 1.00E+00  1.5492E-03   8.80E-03   1.59E-02  -1.69E-06   3.92E-06   0.00E+00   1.26E+01   7.06E+00
+20250   40.510   0.002 5.00E-01 1.00E+00  1.5852E-03   9.00E-03   1.63E-02  -1.77E-06   4.11E-06   0.00E+00   1.26E+01   7.06E+00
+20300   40.611   0.002 5.00E-01 1.00E+00  1.6219E-03   9.21E-03   1.67E-02  -1.86E-06   4.30E-06   0.00E+00   1.26E+01   7.06E+00
+20350   40.711   0.002 5.00E-01 1.00E+00  1.6596E-03   9.43E-03   1.70E-02  -1.94E-06   4.51E-06   0.00E+00   1.26E+01   7.06E+00
+20400   40.811   0.002 5.00E-01 1.00E+00  1.6981E-03   9.64E-03   1.74E-02  -2.04E-06   4.72E-06   0.00E+00   1.26E+01   7.06E+00
+20450   40.911   0.002 5.00E-01 1.00E+00  1.7375E-03   9.87E-03   1.78E-02  -2.13E-06   4.94E-06   0.00E+00   1.26E+01   7.06E+00
+20500   41.011   0.002 5.00E-01 1.00E+00  1.7779E-03   1.01E-02   1.82E-02  -2.23E-06   5.18E-06   0.00E+00   1.26E+01   7.06E+00
+20550   41.111   0.002 5.00E-01 1.00E+00  1.8192E-03   1.03E-02   1.86E-02  -2.34E-06   5.42E-06   0.00E+00   1.26E+01   7.06E+00
+20600   41.211   0.002 5.00E-01 1.00E+00  1.8614E-03   1.06E-02   1.90E-02  -2.45E-06   5.68E-06   0.00E+00   1.26E+01   7.06E+00
+20650   41.311   0.002 5.00E-01 1.00E+00  1.9047E-03   1.08E-02   1.95E-02  -2.57E-06   5.95E-06   0.00E+00   1.26E+01   7.06E+00
+20700   41.411   0.002 5.00E-01 1.00E+00  1.9489E-03   1.11E-02   1.99E-02  -2.69E-06   6.24E-06   0.00E+00   1.26E+01   7.06E+00
+20750   41.511   0.002 5.00E-01 1.00E+00  1.9942E-03   1.13E-02   2.04E-02  -2.82E-06   6.53E-06   0.00E+00   1.26E+01   7.06E+00
+20800   41.611   0.002 5.00E-01 1.00E+00  2.0406E-03   1.16E-02   2.08E-02  -2.95E-06   6.84E-06   0.00E+00   1.26E+01   7.06E+00
+20850   41.711   0.002 5.00E-01 1.00E+00  2.0880E-03   1.19E-02   2.13E-02  -3.09E-06   7.17E-06   0.00E+00   1.26E+01   7.06E+00
+20900   41.811   0.002 5.00E-01 1.00E+00  2.1365E-03   1.21E-02   2.18E-02  -3.24E-06   7.51E-06   0.00E+00   1.26E+01   7.06E+00
+20950   41.911   0.002 5.00E-01 1.00E+00  2.1862E-03   1.24E-02   2.23E-02  -3.39E-06   7.87E-06   0.00E+00   1.26E+01   7.06E+00
+21000   42.011   0.002 5.00E-01 1.00E+00  2.2370E-03   1.27E-02   2.28E-02  -3.55E-06   8.24E-06   0.00E+00   1.26E+01   7.06E+00
+21050   42.111   0.002 5.00E-01 1.00E+00  2.2890E-03   1.30E-02   2.33E-02  -3.72E-06   8.63E-06   0.00E+00   1.26E+01   7.06E+00
+21100   42.211   0.002 5.00E-01 1.00E+00  2.3423E-03   1.33E-02   2.38E-02  -3.90E-06   9.04E-06   0.00E+00   1.26E+01   7.06E+00
+21150   42.311   0.002 5.00E-01 1.00E+00  2.3967E-03   1.36E-02   2.43E-02  -4.08E-06   9.47E-06   0.00E+00   1.26E+01   7.06E+00
+21200   42.411   0.002 5.00E-01 1.00E+00  2.4525E-03   1.39E-02   2.49E-02  -4.28E-06   9.93E-06   0.00E+00   1.26E+01   7.06E+00
+21250   42.511   0.002 5.00E-01 1.00E+00  2.5096E-03   1.43E-02   2.54E-02  -4.48E-06   1.04E-05   0.00E+00   1.26E+01   7.06E+00
+21300   42.611   0.002 5.00E-01 1.00E+00  2.5679E-03   1.46E-02   2.60E-02  -4.69E-06   1.09E-05   0.00E+00   1.26E+01   7.06E+00
+21350   42.711   0.002 5.00E-01 1.00E+00  2.6277E-03   1.49E-02   2.66E-02  -4.92E-06   1.14E-05   0.00E+00   1.26E+01   7.06E+00
+21400   42.811   0.002 5.00E-01 1.00E+00  2.6889E-03   1.53E-02   2.72E-02  -5.15E-06   1.20E-05   0.00E+00   1.26E+01   7.06E+00
+21450   42.911   0.002 5.00E-01 1.00E+00  2.7514E-03   1.56E-02   2.78E-02  -5.40E-06   1.25E-05   0.00E+00   1.26E+01   7.06E+00
+21500   43.011   0.002 5.00E-01 1.00E+00  2.8155E-03   1.60E-02   2.84E-02  -5.65E-06   1.31E-05   0.00E+00   1.26E+01   7.06E+00
+21550   43.111   0.002 5.00E-01 1.00E+00  2.8810E-03   1.64E-02   2.91E-02  -5.92E-06   1.37E-05   0.00E+00   1.26E+01   7.06E+00
+21600   43.211   0.002 5.00E-01 1.00E+00  2.9481E-03   1.67E-02   2.97E-02  -6.20E-06   1.44E-05   0.00E+00   1.26E+01   7.06E+00
+21650   43.311   0.002 5.00E-01 1.00E+00  3.0168E-03   1.71E-02   3.04E-02  -6.50E-06   1.51E-05   0.00E+00   1.26E+01   7.06E+00
+21700   43.411   0.002 5.00E-01 1.00E+00  3.0870E-03   1.75E-02   3.11E-02  -6.81E-06   1.58E-05   0.00E+00   1.26E+01   7.06E+00
+21750   43.511   0.002 5.00E-01 1.00E+00  3.1589E-03   1.79E-02   3.18E-02  -7.13E-06   1.66E-05   0.00E+00   1.26E+01   7.06E+00
+21800   43.611   0.002 5.00E-01 1.00E+00  3.2325E-03   1.84E-02   3.25E-02  -7.47E-06   1.73E-05   0.00E+00   1.26E+01   7.06E+00
+21850   43.711   0.002 5.00E-01 1.00E+00  3.3078E-03   1.88E-02   3.33E-02  -7.82E-06   1.82E-05   0.00E+00   1.26E+01   7.06E+00
+21900   43.811   0.002 5.00E-01 1.00E+00  3.3849E-03   1.92E-02   3.40E-02  -8.20E-06   1.90E-05   0.00E+00   1.26E+01   7.06E+00
+21950   43.911   0.002 5.00E-01 1.00E+00  3.4638E-03   1.97E-02   3.48E-02  -8.58E-06   1.99E-05   0.00E+00   1.26E+01   7.06E+00
+22000   44.011   0.002 5.00E-01 1.00E+00  3.5445E-03   2.01E-02   3.56E-02  -8.99E-06   2.09E-05   0.00E+00   1.26E+01   7.06E+00
+22050   44.111   0.002 5.00E-01 1.00E+00  3.6271E-03   2.06E-02   3.64E-02  -9.42E-06   2.19E-05   0.00E+00   1.26E+01   7.06E+00
+22100   44.211   0.002 5.00E-01 1.00E+00  3.7116E-03   2.11E-02   3.72E-02  -9.87E-06   2.29E-05   0.00E+00   1.26E+01   7.06E+00
+22150   44.311   0.002 5.00E-01 1.00E+00  3.7982E-03   2.16E-02   3.80E-02  -1.03E-05   2.40E-05   0.00E+00   1.26E+01   7.06E+00
+22200   44.412   0.002 5.00E-01 1.00E+00  3.8867E-03   2.21E-02   3.89E-02  -1.08E-05   2.52E-05   0.00E+00   1.26E+01   7.06E+00
+22250   44.512   0.002 5.00E-01 1.00E+00  3.9773E-03   2.26E-02   3.98E-02  -1.13E-05   2.64E-05   0.00E+00   1.26E+01   7.06E+00
+22300   44.612   0.002 5.00E-01 1.00E+00  4.0701E-03   2.31E-02   4.07E-02  -1.19E-05   2.76E-05   0.00E+00   1.26E+01   7.06E+00
+22350   44.712   0.002 5.00E-01 1.00E+00  4.1650E-03   2.37E-02   4.16E-02  -1.25E-05   2.89E-05   0.00E+00   1.26E+01   7.06E+00
+22400   44.812   0.002 5.00E-01 1.00E+00  4.2622E-03   2.42E-02   4.26E-02  -1.30E-05   3.03E-05   0.00E+00   1.26E+01   7.06E+00
+22450   44.912   0.002 5.00E-01 1.00E+00  4.3616E-03   2.48E-02   4.35E-02  -1.37E-05   3.18E-05   0.00E+00   1.26E+01   7.06E+00
+22500   45.012   0.002 5.00E-01 1.00E+00  4.4633E-03   2.53E-02   4.45E-02  -1.43E-05   3.33E-05   0.00E+00   1.26E+01   7.06E+00
+22550   45.112   0.002 5.00E-01 1.00E+00  4.5675E-03   2.59E-02   4.55E-02  -1.50E-05   3.49E-05   0.00E+00   1.26E+01   7.06E+00
+22600   45.212   0.002 5.00E-01 1.00E+00  4.6741E-03   2.65E-02   4.66E-02  -1.57E-05   3.65E-05   0.00E+00   1.26E+01   7.06E+00
+22650   45.312   0.002 5.00E-01 1.00E+00  4.7831E-03   2.72E-02   4.76E-02  -1.65E-05   3.83E-05   0.00E+00   1.26E+01   7.06E+00
+22700   45.412   0.002 5.00E-01 1.00E+00  4.8948E-03   2.78E-02   4.87E-02  -1.72E-05   4.01E-05   0.00E+00   1.26E+01   7.06E+00
+22750   45.512   0.002 5.00E-01 1.00E+00  5.0090E-03   2.84E-02   4.98E-02  -1.81E-05   4.20E-05   0.00E+00   1.26E+01   7.06E+00
+22800   45.612   0.002 5.00E-01 1.00E+00  5.1260E-03   2.91E-02   5.09E-02  -1.89E-05   4.40E-05   0.00E+00   1.26E+01   7.06E+00
+22850   45.712   0.002 5.00E-01 1.00E+00  5.2456E-03   2.98E-02   5.21E-02  -1.98E-05   4.61E-05   0.00E+00   1.26E+01   7.06E+00
+22900   45.812   0.002 5.00E-01 1.00E+00  5.3681E-03   3.05E-02   5.33E-02  -2.08E-05   4.83E-05   0.00E+00   1.26E+01   7.06E+00
+22950   45.912   0.002 5.00E-01 1.00E+00  5.4934E-03   3.12E-02   5.45E-02  -2.18E-05   5.06E-05   0.00E+00   1.26E+01   7.06E+00
+23000   46.012   0.002 5.00E-01 1.00E+00  5.6217E-03   3.19E-02   5.57E-02  -2.28E-05   5.30E-05   0.00E+00   1.26E+01   7.06E+00
+23050   46.112   0.002 5.00E-01 1.00E+00  5.7530E-03   3.27E-02   5.70E-02  -2.39E-05   5.55E-05   0.00E+00   1.26E+01   7.06E+00
+23100   46.212   0.002 5.00E-01 1.00E+00  5.8874E-03   3.34E-02   5.83E-02  -2.50E-05   5.82E-05   0.00E+00   1.26E+01   7.06E+00
+23150   46.312   0.002 5.00E-01 1.00E+00  6.0249E-03   3.42E-02   5.96E-02  -2.62E-05   6.09E-05   0.00E+00   1.26E+01   7.06E+00
+23200   46.412   0.002 5.00E-01 1.00E+00  6.1657E-03   3.50E-02   6.10E-02  -2.75E-05   6.39E-05   0.00E+00   1.26E+01   7.06E+00
+23250   46.512   0.002 5.00E-01 1.00E+00  6.3098E-03   3.58E-02   6.23E-02  -2.88E-05   6.69E-05   0.00E+00   1.26E+01   7.06E+00
+23300   46.612   0.002 5.00E-01 1.00E+00  6.4572E-03   3.67E-02   6.38E-02  -3.01E-05   7.01E-05   0.00E+00   1.26E+01   7.06E+00
+23350   46.712   0.002 5.00E-01 1.00E+00  6.6081E-03   3.75E-02   6.52E-02  -3.16E-05   7.34E-05   0.00E+00   1.26E+01   7.06E+00
+23400   46.812   0.002 5.00E-01 1.00E+00  6.7625E-03   3.84E-02   6.67E-02  -3.31E-05   7.69E-05   0.00E+00   1.26E+01   7.06E+00
+23450   46.912   0.002 5.00E-01 1.00E+00  6.9206E-03   3.93E-02   6.82E-02  -3.46E-05   8.06E-05   0.00E+00   1.26E+01   7.06E+00
+23500   47.012   0.002 5.00E-01 1.00E+00  7.0823E-03   4.02E-02   6.98E-02  -3.63E-05   8.44E-05   0.00E+00   1.26E+01   7.06E+00
+23550   47.112   0.002 5.00E-01 1.00E+00  7.2479E-03   4.12E-02   7.14E-02  -3.80E-05   8.85E-05   0.00E+00   1.26E+01   7.06E+00
+23600   47.212   0.002 5.00E-01 1.00E+00  7.4174E-03   4.21E-02   7.30E-02  -3.98E-05   9.27E-05   0.00E+00   1.26E+01   7.06E+00
+23650   47.312   0.002 5.00E-01 1.00E+00  7.5908E-03   4.31E-02   7.47E-02  -4.17E-05   9.71E-05   0.00E+00   1.26E+01   7.06E+00
+23700   47.412   0.002 5.00E-01 1.00E+00  7.7683E-03   4.41E-02   7.64E-02  -4.37E-05   1.02E-04   0.00E+00   1.26E+01   7.06E+00
+23750   47.512   0.002 5.00E-01 1.00E+00  7.9500E-03   4.51E-02   7.81E-02  -4.58E-05   1.07E-04   0.00E+00   1.26E+01   7.06E+00
+23800   47.612   0.002 5.00E-01 1.00E+00  8.1359E-03   4.62E-02   7.99E-02  -4.80E-05   1.12E-04   0.00E+00   1.26E+01   7.06E+00
+23850   47.712   0.002 5.00E-01 1.00E+00  8.3262E-03   4.73E-02   8.17E-02  -5.03E-05   1.17E-04   0.00E+00   1.26E+01   7.06E+00
+23900   47.812   0.002 5.00E-01 1.00E+00  8.5210E-03   4.84E-02   8.36E-02  -5.27E-05   1.23E-04   0.00E+00   1.26E+01   7.06E+00
+23950   47.912   0.002 5.00E-01 1.00E+00  8.7203E-03   4.95E-02   8.55E-02  -5.52E-05   1.28E-04   0.00E+00   1.26E+01   7.06E+00
+24000   48.012   0.002 5.00E-01 1.00E+00  8.9243E-03   5.07E-02   8.74E-02  -5.78E-05   1.35E-04   0.00E+00   1.26E+01   7.06E+00
+24050   48.112   0.002 5.00E-01 1.00E+00  9.1331E-03   5.19E-02   8.94E-02  -6.06E-05   1.41E-04   0.00E+00   1.26E+01   7.06E+00
+24100   48.212   0.002 5.00E-01 1.00E+00  9.3469E-03   5.31E-02   9.14E-02  -6.35E-05   1.48E-04   0.00E+00   1.26E+01   7.06E+00
+24150   48.313   0.002 5.00E-01 1.00E+00  9.5656E-03   5.43E-02   9.35E-02  -6.65E-05   1.55E-04   0.00E+00   1.26E+01   7.06E+00
+24200   48.413   0.002 5.00E-01 1.00E+00  9.7895E-03   5.56E-02   9.57E-02  -6.97E-05   1.62E-04   0.00E+00   1.26E+01   7.06E+00
+24250   48.513   0.002 5.00E-01 1.00E+00  1.0019E-02   5.69E-02   9.78E-02  -7.30E-05   1.70E-04   0.00E+00   1.26E+01   7.06E+00
+24300   48.613   0.002 5.00E-01 1.00E+00  1.0253E-02   5.82E-02   1.00E-01  -7.65E-05   1.78E-04   0.00E+00   1.26E+01   7.06E+00
+24350   48.713   0.002 5.00E-01 1.00E+00  1.0493E-02   5.96E-02   1.02E-01  -8.01E-05   1.87E-04   0.00E+00   1.26E+01   7.06E+00
+24400   48.813   0.002 5.00E-01 1.00E+00  1.0739E-02   6.10E-02   1.05E-01  -8.39E-05   1.95E-04   0.00E+00   1.26E+01   7.06E+00
+24450   48.913   0.002 5.00E-01 1.00E+00  1.0990E-02   6.24E-02   1.07E-01  -8.79E-05   2.05E-04   0.00E+00   1.26E+01   7.06E+00
+24500   49.013   0.002 5.00E-01 1.00E+00  1.1248E-02   6.39E-02   1.10E-01  -9.21E-05   2.15E-04   0.00E+00   1.26E+01   7.06E+00
+24550   49.113   0.002 5.00E-01 1.00E+00  1.1511E-02   6.54E-02   1.12E-01  -9.65E-05   2.25E-04   0.00E+00   1.26E+01   7.06E+00
+24600   49.213   0.002 5.00E-01 1.00E+00  1.1781E-02   6.69E-02   1.15E-01  -1.01E-04   2.36E-04   0.00E+00   1.26E+01   7.06E+00
+24650   49.313   0.002 5.00E-01 1.00E+00  1.2057E-02   6.85E-02   1.17E-01  -1.06E-04   2.47E-04   0.00E+00   1.26E+01   7.06E+00
+24700   49.413   0.002 5.00E-01 1.00E+00  1.2339E-02   7.01E-02   1.20E-01  -1.11E-04   2.59E-04   0.00E+00   1.26E+01   7.06E+00
+24750   49.513   0.002 5.00E-01 1.00E+00  1.2628E-02   7.17E-02   1.23E-01  -1.16E-04   2.71E-04   0.00E+00   1.26E+01   7.06E+00
+24800   49.613   0.002 5.00E-01 1.00E+00  1.2924E-02   7.34E-02   1.25E-01  -1.22E-04   2.84E-04   0.00E+00   1.26E+01   7.06E+00
+24850   49.713   0.002 5.00E-01 1.00E+00  1.3227E-02   7.51E-02   1.28E-01  -1.28E-04   2.97E-04   0.00E+00   1.26E+01   7.06E+00
+24900   49.813   0.002 5.00E-01 1.00E+00  1.3537E-02   7.69E-02   1.31E-01  -1.34E-04   3.12E-04   0.00E+00   1.26E+01   7.06E+00
+24950   49.913   0.002 5.00E-01 1.00E+00  1.3854E-02   7.87E-02   1.34E-01  -1.40E-04   3.26E-04   0.00E+00   1.26E+01   7.06E+00
+25000   50.013   0.002 5.00E-01 1.00E+00  1.4178E-02   8.05E-02   1.37E-01  -1.47E-04   3.42E-04   0.00E+00   1.26E+01   7.06E+00
+25050   50.113   0.002 5.00E-01 1.00E+00  1.4511E-02   8.24E-02   1.40E-01  -1.54E-04   3.58E-04   0.00E+00   1.26E+01   7.06E+00
+25100   50.213   0.002 5.00E-01 1.00E+00  1.4851E-02   8.43E-02   1.44E-01  -1.61E-04   3.75E-04   0.00E+00   1.26E+01   7.06E+00
+25150   50.313   0.002 5.00E-01 1.00E+00  1.5199E-02   8.63E-02   1.47E-01  -1.69E-04   3.93E-04   0.00E+00   1.26E+01   7.06E+00
+25200   50.413   0.002 5.00E-01 1.00E+00  1.5555E-02   8.83E-02   1.50E-01  -1.77E-04   4.12E-04   0.00E+00   1.26E+01   7.06E+00
+25250   50.513   0.002 5.00E-01 1.00E+00  1.5920E-02   9.04E-02   1.54E-01  -1.85E-04   4.32E-04   0.00E+00   1.26E+01   7.06E+00
+25300   50.613   0.002 5.00E-01 1.00E+00  1.6293E-02   9.25E-02   1.57E-01  -1.94E-04   4.53E-04   0.00E+00   1.26E+01   7.06E+00
+25350   50.713   0.002 5.00E-01 1.00E+00  1.6675E-02   9.47E-02   1.61E-01  -2.03E-04   4.74E-04   0.00E+00   1.26E+01   7.06E+00
+25400   50.813   0.002 5.00E-01 1.00E+00  1.7066E-02   9.69E-02   1.65E-01  -2.13E-04   4.97E-04   0.00E+00   1.26E+01   7.06E+00
+25450   50.913   0.002 5.00E-01 1.00E+00  1.7466E-02   9.92E-02   1.68E-01  -2.23E-04   5.21E-04   0.00E+00   1.26E+01   7.06E+00
+25500   51.013   0.002 5.00E-01 1.00E+00  1.7876E-02   1.02E-01   1.72E-01  -2.34E-04   5.45E-04   0.00E+00   1.26E+01   7.06E+00
+25550   51.113   0.002 5.00E-01 1.00E+00  1.8295E-02   1.04E-01   1.76E-01  -2.45E-04   5.71E-04   0.00E+00   1.26E+01   7.06E+00
+25600   51.213   0.002 5.00E-01 1.00E+00  1.8725E-02   1.06E-01   1.80E-01  -2.57E-04   5.99E-04   0.00E+00   1.26E+01   7.06E+00
+25650   51.313   0.002 5.00E-01 1.00E+00  1.9164E-02   1.09E-01   1.84E-01  -2.69E-04   6.27E-04   0.00E+00   1.26E+01   7.06E+00
+25700   51.413   0.002 5.00E-01 1.00E+00  1.9613E-02   1.11E-01   1.89E-01  -2.82E-04   6.57E-04   0.00E+00   1.26E+01   7.06E+00
+25750   51.513   0.002 5.00E-01 1.00E+00  2.0074E-02   1.14E-01   1.93E-01  -2.95E-04   6.89E-04   0.00E+00   1.26E+01   7.06E+00
+25800   51.613   0.002 5.00E-01 1.00E+00  2.0545E-02   1.17E-01   1.97E-01  -3.10E-04   7.22E-04   0.00E+00   1.26E+01   7.06E+00
+25850   51.713   0.002 5.00E-01 1.00E+00  2.1027E-02   1.19E-01   2.02E-01  -3.24E-04   7.56E-04   0.00E+00   1.26E+01   7.06E+00
+25900   51.813   0.002 5.00E-01 1.00E+00  2.1520E-02   1.22E-01   2.06E-01  -3.40E-04   7.92E-04   0.00E+00   1.26E+01   7.06E+00
+25950   51.913   0.002 5.00E-01 1.00E+00  2.2025E-02   1.25E-01   2.11E-01  -3.56E-04   8.30E-04   0.00E+00   1.26E+01   7.06E+00
+26000   52.013   0.002 5.00E-01 1.00E+00  2.2542E-02   1.28E-01   2.16E-01  -3.73E-04   8.70E-04   0.00E+00   1.26E+01   7.06E+00
+26050   52.113   0.002 5.00E-01 1.00E+00  2.3071E-02   1.31E-01   2.21E-01  -3.91E-04   9.11E-04   0.00E+00   1.26E+01   7.06E+00
+26100   52.214   0.002 5.00E-01 1.00E+00  2.3613E-02   1.34E-01   2.26E-01  -4.10E-04   9.55E-04   0.00E+00   1.26E+01   7.06E+00
+26150   52.314   0.002 5.00E-01 1.00E+00  2.4167E-02   1.37E-01   2.31E-01  -4.29E-04   1.00E-03   0.00E+00   1.26E+01   7.06E+00
+26200   52.414   0.002 5.00E-01 1.00E+00  2.4734E-02   1.40E-01   2.37E-01  -4.50E-04   1.05E-03   0.00E+00   1.26E+01   7.06E+00
+26250   52.514   0.002 5.00E-01 1.00E+00  2.5315E-02   1.44E-01   2.42E-01  -4.71E-04   1.10E-03   0.00E+00   1.26E+01   7.06E+00
+26300   52.614   0.002 5.00E-01 1.00E+00  2.5909E-02   1.47E-01   2.48E-01  -4.94E-04   1.15E-03   0.00E+00   1.26E+01   7.06E+00
+26350   52.714   0.002 5.00E-01 1.00E+00  2.6518E-02   1.51E-01   2.53E-01  -5.17E-04   1.21E-03   0.00E+00   1.26E+01   7.06E+00
+26400   52.814   0.002 5.00E-01 1.00E+00  2.7141E-02   1.54E-01   2.59E-01  -5.42E-04   1.26E-03   0.00E+00   1.26E+01   7.06E+00
+26450   52.914   0.002 5.00E-01 1.00E+00  2.7778E-02   1.58E-01   2.65E-01  -5.68E-04   1.32E-03   0.00E+00   1.26E+01   7.06E+00
+26500   53.014   0.002 5.00E-01 1.00E+00  2.8430E-02   1.61E-01   2.71E-01  -5.95E-04   1.39E-03   0.00E+00   1.26E+01   7.06E+00
+26550   53.114   0.002 5.00E-01 1.00E+00  2.9098E-02   1.65E-01   2.77E-01  -6.23E-04   1.45E-03   0.00E+00   1.26E+01   7.06E+00
+26600   53.214   0.002 5.00E-01 1.00E+00  2.9781E-02   1.69E-01   2.84E-01  -6.53E-04   1.52E-03   0.00E+00   1.26E+01   7.06E+00
+26650   53.314   0.002 5.00E-01 1.00E+00  3.0481E-02   1.73E-01   2.90E-01  -6.84E-04   1.60E-03   0.00E+00   1.26E+01   7.06E+00
+26700   53.414   0.002 5.00E-01 1.00E+00  3.1197E-02   1.77E-01   2.97E-01  -7.17E-04   1.67E-03   0.00E+00   1.26E+01   7.06E+00
+26750   53.514   0.002 5.00E-01 1.00E+00  3.1930E-02   1.81E-01   3.04E-01  -7.51E-04   1.75E-03   0.00E+00   1.26E+01   7.06E+00
+26800   53.614   0.002 5.00E-01 1.00E+00  3.2680E-02   1.86E-01   3.11E-01  -7.87E-04   1.84E-03   0.00E+00   1.26E+01   7.06E+00
+26850   53.714   0.002 5.00E-01 1.00E+00  3.3448E-02   1.90E-01   3.18E-01  -8.25E-04   1.92E-03   0.00E+00   1.26E+01   7.06E+00
+26900   53.814   0.002 5.00E-01 1.00E+00  3.4234E-02   1.94E-01   3.25E-01  -8.64E-04   2.02E-03   0.00E+00   1.26E+01   7.06E+00
+26950   53.914   0.002 5.00E-01 1.00E+00  3.5039E-02   1.99E-01   3.33E-01  -9.05E-04   2.11E-03   0.00E+00   1.26E+01   7.06E+00
+27000   54.014   0.002 5.00E-01 1.00E+00  3.5862E-02   2.04E-01   3.40E-01  -9.49E-04   2.21E-03   0.00E+00   1.26E+01   7.06E+00
+27050   54.114   0.002 5.00E-01 1.00E+00  3.6705E-02   2.08E-01   3.48E-01  -9.94E-04   2.32E-03   0.00E+00   1.26E+01   7.06E+00
+27100   54.214   0.002 5.00E-01 1.00E+00  3.7567E-02   2.13E-01   3.56E-01  -1.04E-03   2.43E-03   0.00E+00   1.26E+01   7.06E+00
+27150   54.314   0.002 5.00E-01 1.00E+00  3.8451E-02   2.18E-01   3.64E-01  -1.09E-03   2.55E-03   0.00E+00   1.26E+01   7.06E+00
+27200   54.414   0.002 5.00E-01 1.00E+00  3.9354E-02   2.23E-01   3.73E-01  -1.14E-03   2.67E-03   0.00E+00   1.26E+01   7.06E+00
+27250   54.514   0.002 5.00E-01 1.00E+00  4.0280E-02   2.29E-01   3.81E-01  -1.20E-03   2.80E-03   0.00E+00   1.26E+01   7.06E+00
+27300   54.614   0.002 5.00E-01 1.00E+00  4.1226E-02   2.34E-01   3.90E-01  -1.26E-03   2.93E-03   0.00E+00   1.26E+01   7.06E+00
+27350   54.714   0.002 5.00E-01 1.00E+00  4.2196E-02   2.40E-01   3.99E-01  -1.32E-03   3.07E-03   0.00E+00   1.26E+01   7.06E+00
+27400   54.814   0.002 5.00E-01 1.00E+00  4.3188E-02   2.45E-01   4.08E-01  -1.38E-03   3.22E-03   0.00E+00   1.26E+01   7.06E+00
+27450   54.914   0.002 5.00E-01 1.00E+00  4.4203E-02   2.51E-01   4.18E-01  -1.44E-03   3.37E-03   0.00E+00   1.26E+01   7.06E+00
+27500   55.014   0.002 5.00E-01 1.00E+00  4.5243E-02   2.57E-01   4.27E-01  -1.51E-03   3.53E-03   0.00E+00   1.26E+01   7.06E+00
+27550   55.114   0.002 5.00E-01 1.00E+00  4.6307E-02   2.63E-01   4.37E-01  -1.59E-03   3.70E-03   0.00E+00   1.26E+01   7.06E+00
+27600   55.214   0.002 5.00E-01 1.00E+00  4.7396E-02   2.69E-01   4.47E-01  -1.66E-03   3.88E-03   0.00E+00   1.26E+01   7.06E+00
+27650   55.314   0.002 5.00E-01 1.00E+00  4.8510E-02   2.75E-01   4.58E-01  -1.74E-03   4.06E-03   0.00E+00   1.26E+01   7.06E+00
+27700   55.414   0.002 5.00E-01 1.00E+00  4.9651E-02   2.82E-01   4.68E-01  -1.82E-03   4.26E-03   0.00E+00   1.26E+01   7.06E+00
+27750   55.514   0.002 5.00E-01 1.00E+00  5.0819E-02   2.89E-01   4.79E-01  -1.91E-03   4.46E-03   0.00E+00   1.26E+01   7.06E+00
+27800   55.614   0.002 5.00E-01 1.00E+00  5.2015E-02   2.95E-01   4.90E-01  -2.00E-03   4.67E-03   0.00E+00   1.26E+01   7.06E+00
+27850   55.714   0.002 5.00E-01 1.00E+00  5.3238E-02   3.02E-01   5.01E-01  -2.10E-03   4.90E-03   0.00E+00   1.26E+01   7.06E+00
+27900   55.814   0.002 5.00E-01 1.00E+00  5.4491E-02   3.09E-01   5.13E-01  -2.20E-03   5.13E-03   0.00E+00   1.26E+01   7.06E+00
+27950   55.914   0.002 5.00E-01 1.00E+00  5.5773E-02   3.17E-01   5.25E-01  -2.30E-03   5.38E-03   0.00E+00   1.26E+01   7.06E+00
+28000   56.015   0.002 5.00E-01 1.00E+00  5.7085E-02   3.24E-01   5.37E-01  -2.41E-03   5.64E-03   0.00E+00   1.26E+01   7.06E+00
+28050   56.115   0.002 5.00E-01 1.00E+00  5.8428E-02   3.32E-01   5.49E-01  -2.53E-03   5.91E-03   0.00E+00   1.26E+01   7.06E+00
+28100   56.215   0.002 5.00E-01 1.00E+00  5.9803E-02   3.40E-01   5.62E-01  -2.65E-03   6.19E-03   0.00E+00   1.26E+01   7.06E+00
+28150   56.315   0.002 5.00E-01 1.00E+00  6.1210E-02   3.48E-01   5.75E-01  -2.78E-03   6.48E-03   0.00E+00   1.26E+01   7.06E+00
+28200   56.415   0.002 5.00E-01 1.00E+00  6.2651E-02   3.56E-01   5.88E-01  -2.91E-03   6.79E-03   0.00E+00   1.26E+01   7.06E+00
+28250   56.515   0.002 5.00E-01 1.00E+00  6.4125E-02   3.64E-01   6.02E-01  -3.05E-03   7.12E-03   0.00E+00   1.26E+01   7.06E+00
+28300   56.615   0.002 5.00E-01 1.00E+00  6.5635E-02   3.73E-01   6.16E-01  -3.19E-03   7.46E-03   0.00E+00   1.26E+01   7.06E+00
+28350   56.715   0.002 5.00E-01 1.00E+00  6.7180E-02   3.81E-01   6.30E-01  -3.35E-03   7.82E-03   0.00E+00   1.26E+01   7.06E+00
+28400   56.815   0.002 5.00E-01 1.00E+00  6.8761E-02   3.90E-01   6.44E-01  -3.51E-03   8.19E-03   0.00E+00   1.26E+01   7.06E+00
+28450   56.915   0.002 5.00E-01 1.00E+00  7.0379E-02   4.00E-01   6.59E-01  -3.68E-03   8.58E-03   0.00E+00   1.26E+01   7.06E+00
+28500   57.015   0.002 5.00E-01 1.00E+00  7.2036E-02   4.09E-01   6.74E-01  -3.85E-03   8.99E-03   0.00E+00   1.26E+01   7.06E+00
+28550   57.115   0.002 5.00E-01 1.00E+00  7.3732E-02   4.19E-01   6.90E-01  -4.04E-03   9.42E-03   0.00E+00   1.26E+01   7.06E+00
+28600   57.215   0.002 5.00E-01 1.00E+00  7.5468E-02   4.29E-01   7.06E-01  -4.23E-03   9.88E-03   0.00E+00   1.26E+01   7.06E+00
+28650   57.315   0.002 5.00E-01 1.00E+00  7.7245E-02   4.39E-01   7.22E-01  -4.43E-03   1.03E-02   0.00E+00   1.26E+01   7.06E+00
+28700   57.415   0.002 5.00E-01 1.00E+00  7.9064E-02   4.49E-01   7.39E-01  -4.64E-03   1.08E-02   0.00E+00   1.26E+01   7.06E+00
+28750   57.515   0.002 5.00E-01 1.00E+00  8.0926E-02   4.60E-01   7.56E-01  -4.86E-03   1.14E-02   0.00E+00   1.26E+01   7.06E+00
+28800   57.615   0.002 5.00E-01 1.00E+00  8.2831E-02   4.70E-01   7.73E-01  -5.10E-03   1.19E-02   0.00E+00   1.26E+01   7.06E+00
+28850   57.715   0.002 5.00E-01 1.00E+00  8.4782E-02   4.81E-01   7.91E-01  -5.34E-03   1.25E-02   0.00E+00   1.26E+01   7.06E+00
+28900   57.815   0.002 5.00E-01 1.00E+00  8.6778E-02   4.93E-01   8.10E-01  -5.60E-03   1.31E-02   0.00E+00   1.26E+01   7.06E+00
+28950   57.915   0.002 5.00E-01 1.00E+00  8.8822E-02   5.04E-01   8.28E-01  -5.86E-03   1.37E-02   0.00E+00   1.26E+01   7.06E+00
+29000   58.015   0.002 5.00E-01 1.00E+00  9.0914E-02   5.16E-01   8.47E-01  -6.14E-03   1.44E-02   0.00E+00   1.26E+01   7.06E+00
+29050   58.115   0.002 5.00E-01 1.00E+00  9.3056E-02   5.28E-01   8.67E-01  -6.44E-03   1.50E-02   0.00E+00   1.26E+01   7.06E+00
+29100   58.215   0.002 5.00E-01 1.00E+00  9.5248E-02   5.41E-01   8.87E-01  -6.75E-03   1.58E-02   0.00E+00   1.26E+01   7.06E+00
+29150   58.315   0.002 5.00E-01 1.00E+00  9.7491E-02   5.54E-01   9.08E-01  -7.07E-03   1.65E-02   0.00E+00   1.26E+01   7.06E+00
+29200   58.415   0.002 5.00E-01 1.00E+00  9.9788E-02   5.67E-01   9.28E-01  -7.41E-03   1.73E-02   0.00E+00   1.26E+01   7.06E+00
+29250   58.515   0.002 5.00E-01 1.00E+00  1.0214E-01   5.80E-01   9.50E-01  -7.76E-03   1.81E-02   0.00E+00   1.26E+01   7.06E+00
+29300   58.615   0.002 5.00E-01 1.00E+00  1.0455E-01   5.94E-01   9.72E-01  -8.13E-03   1.90E-02   0.00E+00   1.26E+01   7.06E+00
+29350   58.715   0.002 5.00E-01 1.00E+00  1.0701E-01   6.08E-01   9.94E-01  -8.52E-03   1.99E-02   0.00E+00   1.26E+01   7.06E+00
+29400   58.815   0.002 5.00E-01 1.00E+00  1.0953E-01   6.22E-01   1.02E+00  -8.93E-03   2.09E-02   0.00E+00   1.26E+01   7.06E+00
+29450   58.915   0.002 5.00E-01 1.00E+00  1.1211E-01   6.37E-01   1.04E+00  -9.36E-03   2.19E-02   0.00E+00   1.26E+01   7.06E+00
+29500   59.015   0.002 5.00E-01 1.00E+00  1.1475E-01   6.52E-01   1.06E+00  -9.81E-03   2.29E-02   0.00E+00   1.26E+01   7.06E+00
+29550   59.115   0.002 5.00E-01 1.00E+00  1.1746E-01   6.67E-01   1.09E+00  -1.03E-02   2.40E-02   0.00E+00   1.26E+01   7.06E+00
+29600   59.215   0.002 5.00E-01 1.00E+00  1.2022E-01   6.83E-01   1.11E+00  -1.08E-02   2.52E-02   0.00E+00   1.26E+01   7.06E+00
+29650   59.315   0.002 5.00E-01 1.00E+00  1.2306E-01   6.99E-01   1.14E+00  -1.13E-02   2.64E-02   0.00E+00   1.26E+01   7.06E+00
+29700   59.415   0.002 5.00E-01 1.00E+00  1.2596E-01   7.15E-01   1.17E+00  -1.18E-02   2.76E-02   0.00E+00   1.26E+01   7.06E+00
+29750   59.515   0.002 5.00E-01 1.00E+00  1.2893E-01   7.32E-01   1.19E+00  -1.24E-02   2.90E-02   0.00E+00   1.26E+01   7.06E+00
+29800   59.615   0.002 5.00E-01 1.00E+00  1.3197E-01   7.49E-01   1.22E+00  -1.30E-02   3.03E-02   0.00E+00   1.26E+01   7.06E+00
+29850   59.715   0.002 5.00E-01 1.00E+00  1.3508E-01   7.67E-01   1.25E+00  -1.36E-02   3.18E-02   0.00E+00   1.26E+01   7.06E+00
+29900   59.815   0.002 5.00E-01 1.00E+00  1.3826E-01   7.85E-01   1.28E+00  -1.43E-02   3.33E-02   0.00E+00   1.26E+01   7.06E+00
+29950   59.916   0.002 5.00E-01 1.00E+00  1.4152E-01   8.04E-01   1.31E+00  -1.49E-02   3.49E-02   0.00E+00   1.26E+01   7.06E+00
+30000   60.016   0.002 5.00E-01 1.00E+00  1.4486E-01   8.23E-01   1.34E+00  -1.57E-02   3.66E-02   0.00E+00   1.26E+01   7.06E+00
+30050   60.116   0.002 5.00E-01 1.00E+00  1.4827E-01   8.42E-01   1.37E+00  -1.64E-02   3.83E-02   0.00E+00   1.26E+01   7.06E+00
+30100   60.216   0.002 5.00E-01 1.00E+00  1.5177E-01   8.62E-01   1.40E+00  -1.72E-02   4.02E-02   0.00E+00   1.26E+01   7.06E+00
+30150   60.316   0.002 5.00E-01 1.00E+00  1.5535E-01   8.82E-01   1.43E+00  -1.80E-02   4.21E-02   0.00E+00   1.26E+01   7.06E+00
+30200   60.416   0.002 5.00E-01 1.00E+00  1.5901E-01   9.03E-01   1.47E+00  -1.89E-02   4.41E-02   0.00E+00   1.26E+01   7.06E+00
+30250   60.516   0.002 5.00E-01 1.00E+00  1.6276E-01   9.24E-01   1.50E+00  -1.98E-02   4.62E-02   0.00E+00   1.26E+01   7.06E+00
+30300   60.616   0.002 5.00E-01 1.00E+00  1.6660E-01   9.46E-01   1.54E+00  -2.07E-02   4.84E-02   0.00E+00   1.26E+01   7.06E+00
+30350   60.716   0.002 5.00E-01 1.00E+00  1.7052E-01   9.68E-01   1.57E+00  -2.17E-02   5.08E-02   0.00E+00   1.26E+01   7.06E+00
+30400   60.816   0.002 5.00E-01 1.00E+00  1.7455E-01   9.91E-01   1.61E+00  -2.28E-02   5.32E-02   0.00E+00   1.26E+01   7.06E+00
+30450   60.916   0.002 5.00E-01 1.00E+00  1.7866E-01   1.01E+00   1.65E+00  -2.38E-02   5.57E-02   0.00E+00   1.26E+01   7.06E+00
+30500   61.016   0.002 5.00E-01 1.00E+00  1.8288E-01   1.04E+00   1.68E+00  -2.50E-02   5.84E-02   0.00E+00   1.26E+01   7.06E+00
+Fri Oct 23 22:10:32 2026 : save_model: Saving ML model to: data/training/stationary.pt
+ 
+ Simulation finished after         30510  time-steps
+ 
+ Writing final snapshot at time t =    61.03581032424700     
+ 
+ Wall clock time [hours] =   1.18     (+/-  2.7778E-13)
+ Wall clock time/timestep/meshpoint [microsec] = 6.6139765E-02
+ Wall clock time/timestep/local meshpoint [microsec] = 6.6139765E-02
+ Rhs wall clock time/timestep/local meshpoint [microsec] = 8.6168330E-03
+ After substep wall clock time/timestep/local meshpoint [microsec] = 5.0975493E-04
+ Before+After boundary wall clock time/timestep/local meshpoint [microsec] = 5.4951016E-02
+ Diagnostics wall clock time/timestep/local meshpoint [microsec] = 4.7195788E-02
+ Timestep wall clock time/timestep/local meshpoint [microsec] = 6.5936632E-02
+ Timestep (without waiting) wall clock time/timestep/local meshpoint [microsec] = 6.4083427E-02
+ Timestep wall clock time/timestep/meshpoint [microsec] = 6.5936632E-02
+ Timestep (without waiting) wall clock time/timestep/meshpoint [microsec] = 6.4083427E-02
+ Diagnostics wall clock time/timestep/meshpoint [microsec] = 4.7195788E-02
+ Rhs wall clock time/timestep/meshpoint [microsec] = 8.6168330E-03
+ After substep wall clock time/timestep/meshpoint [microsec] = 5.0975493E-04
+ Before+After boundary wall clock time/timestep/meshpoint [microsec] = 5.4951016E-02
+ Training wall clock time/timestep/meshpoint [microsec] = 3.3593766E-02
+ Inference wall clock time/timestep/meshpoint [microsec] = 1.4084582E-02
+ Maximum used memory per cpu [MBytes] =  2974.813
+ Maximum used memory [GBytes] =        2.905
+ 
+
+Fri Oct 23 22:10:33 2026
+Running
+  pc_deprecated_slice_links
