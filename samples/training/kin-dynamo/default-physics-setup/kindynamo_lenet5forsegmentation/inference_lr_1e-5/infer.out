@@ -1,0 +1,290 @@
+***********************************************
+The Job ID: 2580057
+***********************************************
+
+Lmod is automatically replacing "nvhpc/26.3" with "gcc/14.3.0".
+
+
+Lmod is automatically replacing "openmpi/5.0.10" with "nvhpc/26.3".
+
+
+Lmod is automatically replacing "gcc/14.3.0" with "nvhpc/26.3".
+
+hostname = rg3141
+MPI run
+gpu = 1
+multithread = 1
+Subcommand: start
+mpich = 0
+
+1 CPU
+1 node, 1 CPU per node
+lparticles = 0
+lpointmasses = 0
+Revision: 6435c2d2b
+ M fortran-parser
+ M samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/training/run.in
+ M samples/training/scripts/run_training.sh
+ M src/astaroth/submodule
+Tue Oct 27 15:23:18 2026
+Running under MPI
+Running 'env MODULE_PREFIX= MODULE_INFIX=_ MODULE_SUFFIX=_ srun -n 1 ./src/start.x'...
+ 
+ =====================================================================
+ WARNING: using SINGLE PRECISION, you'd better know what you're doing!
+ =====================================================================
+ 
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$               
+ initialize_mpicomm: enabled MPI
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id
+ nxgrid, nygrid, nzgrid=           18           18           18
+ calc_coeffs_1 is not evaluated
+ calc_coeffs_1 is not evaluated
+ calc_coeffs_1 is not evaluated
+ calc_coeffs_1 is not evaluated
+ calc_coeffs_1 is not evaluated
+ calc_coeffs_1 is not evaluated
+ units_general: unit_velocity=    1.000000000000000     
+ units_general: unit_density=    1.000000000000000     
+ units_general: unit_length=    1.000000000000000     
+ units_general: unit_magnetic=    3.544907808303833     
+ unit temperature    1.000000000000000     
+ alpha_fine =   7.2973525643000000E-003
+ sigma_Thomson_cgs =   6.6524587321600003E-025
+WARNING:  get_gamma_etc: gamma, cp, and cv are undefined in noeos.
+The values provided are for one-atomic ideal gas. Use at own risk!
+ resistivity: constant eta
+ farray_check_maux: naux, maux =             6           18
+WARNING:  farray_check_maux: 
+	| The count of MAUXs is inconsistent with the actual number of
+	| auxiliaries required.  Please check your src/cparam.local.  It is
+	| also possible that someone unintentionally added *optional*
+	| auxiliaries to MAUX CONTRIBUTION to one of the physics modules.
+	| Please urge them to move it to src/cparam.local under their
+	| specific application. 
+	| Put lenforce_maux_check=F in run_pars to overide this.!
+ gaunoise_vect: variable i=            1
+ gaunoise_vect: variable i=            2
+ gaunoise_vect: variable i=            3
+ Maximum used memory per cpu [MBytes] =   540.000
+ Maximum used memory [MBytes] =      540.000
+ 
+ 
+ start.x has completed successfully
+ 
+
+Tue Oct 27 15:23:23 2026
+
+Lmod is automatically replacing "nvhpc/26.3" with "gcc/14.3.0".
+
+
+Lmod is automatically replacing "openmpi/5.0.10" with "nvhpc/26.3".
+
+
+Lmod is automatically replacing "gcc/14.3.0" with "nvhpc/26.3".
+
+hostname = rg3141
+MPI run
+gpu = 1
+multithread = 1
+Subcommand: run
+mpich = 0
+
+1 CPU
+1 node, 1 CPU per node
+lparticles = 0
+lpointmasses = 0
+Revision: 6435c2d2b
+ M fortran-parser
+ M samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/training/run.in
+ M samples/training/scripts/run_training.sh
+ M src/astaroth/submodule
+Tue Oct 27 15:23:23 2026
+Running under MPI
+Running 'env MODULE_PREFIX= MODULE_INFIX=_ MODULE_SUFFIX=_ srun -n 1 ./src/run.x'...
+Tue Oct 27 15:23:28 2026 : CONFIG_FILE: data/training/config_torchfort.yaml
+Tue Oct 27 15:23:28 2026 : Model_NAME: stationary
+Tue Oct 27 15:23:29 2026 : CREATED DISTRIBUTED TRAINING
+ 
+ =====================================================================
+ WARNING: using SINGLE PRECISION, you'd better know what you're doing!
+ =====================================================================
+ 
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$               
+SVN: -------            v.         (                   ) $Id$               
+ initialize_mpicomm: enabled MPI
+WARNING:  run: quad precision not supported, switch to double!
+WARNING:  run: quad precision suppressed!
+ calc_coeffs_1 is not evaluated
+ calc_coeffs_1 is not evaluated
+ calc_coeffs_1 is not evaluated
+ calc_coeffs_1 is not evaluated
+ calc_coeffs_1 is not evaluated
+ calc_coeffs_1 is not evaluated
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id
+ The verbose level is ip=           14  (ldebug=  F )
+ This is a 3-D run
+ nxgrid, nygrid, nzgrid=           18           18           18
+ Lx, Ly, Lz=    6.283185        6.283185        6.283185    
+       Vbox=    248.0502    
+ rsnap: read snapshot var.dat in    2.7764414780273583E-003  seconds
+ setup_slices: slice_position = p
+ setup_slices: ix_loc,iy_loc,iz_loc,iz2_loc, (video files) = 6 6 6 23                                                                        
+ units_general: unit_velocity=    1.000000000000000     
+ units_general: unit_density=    1.000000000000000     
+ units_general: unit_length=    1.000000000000000     
+ units_general: unit_magnetic=    3.544907808303833     
+ unit temperature    1.000000000000000     
+ alpha_fine =   7.2973525643000000E-003
+ sigma_Thomson_cgs =   6.6524587321600003E-025
+WARNING:  get_gamma_etc: gamma, cp, and cv are undefined in noeos.
+The values provided are for one-atomic ideal gas. Use at own risk!
+ resistivity: constant eta
+Tue Oct 27 15:23:29 2026 : Torchfort model stationary loaded succesfullyacCompile: Compiling Astaroth; logging to /users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/inference_lr_1e-5/ac_compilation.log
+Tue Oct 27 15:24:59 2026 : Done setupConfig && acCompile
+Tue Oct 27 15:24:59 2026 : acGridInit: n[xyz]grid: (18,18,18) n[xyz]local (18,18,18)
+Tue Oct 27 15:24:59 2026 : acGridInit: Creating device
+Tue Oct 27 15:24:59 2026 : acGridInit: decomp: (1,1,1)
+Tue Oct 27 15:24:59 2026 : acGridInit: Stencil order: 10
+Tue Oct 27 15:24:59 2026 : acGridInit: Done
+
+Started autotuning: watch progress in ac_autotuning.log
+Tue Oct 27 15:25:00 2026 : DONE initializeGPU
+Tue Oct 27 15:25:00 2026 : Loaded previous statistics
+Result
+Tue Oct 27 15:25:00 2026 : Doing inference
+ pde: ENTER
+SVN: -------            v.         (                   ) $Id$
+WARNING:  calc_bmz: to get bmz, set bxmz and bymz in 'xyaver.in'.
+We proceed, but you will get bmz=0!
+
+ --it-----t-------dt------EEK-----urms-------brms-------jrms-------jmax--------abm--------jbm--------bmz-------ourms------loss----
+    0    0.000   0.086 5.00E-01 1.00E+00  8.5665E-04   9.74E-03   2.63E-02  -2.86E-09  -1.63E-07   0.00E+00   1.26E+01   0.00E+00
+   50    4.310   0.086 5.00E-01 1.00E+00  1.9974E-04   1.03E-03   8.86E-03  -4.42E-09  -1.31E-08   0.00E+00   1.26E+01   0.00E+00
+  100    8.619   0.086 5.00E-01 1.00E+00  5.2912E-04   2.56E-03   1.76E-02  -3.41E-08  -5.13E-08   0.00E+00   1.26E+01   0.00E+00
+  150   12.929   0.086 5.00E-01 1.00E+00  1.2958E-03   6.17E-03   3.86E-02  -2.05E-07  -2.01E-07   0.00E+00   1.26E+01   0.00E+00
+  200   17.239   0.086 5.00E-01 1.00E+00  3.0600E-03   1.46E-02   8.29E-02  -1.19E-06  -8.26E-07   0.00E+00   1.26E+01   0.00E+00
+  250   21.548   0.086 5.00E-01 1.00E+00  7.2847E-03   3.50E-02   1.77E-01  -7.19E-06  -3.84E-06   0.00E+00   1.26E+01   0.00E+00
+  300   25.858   0.086 5.00E-01 1.00E+00  1.7867E-02   8.66E-02   3.95E-01  -4.58E-05  -2.07E-05   0.00E+00   1.26E+01   0.00E+00
+  350   30.168   0.086 5.00E-01 1.00E+00  4.5150E-02   2.20E-01   9.11E-01  -3.04E-04  -1.25E-04   0.00E+00   1.26E+01   0.00E+00
+  400   34.477   0.086 5.00E-01 1.00E+00  1.1658E-01   5.71E-01   2.17E+00  -2.07E-03  -8.09E-04   0.00E+00   1.26E+01   0.00E+00
+  450   38.787   0.086 5.00E-01 1.00E+00  3.0529E-01   1.50E+00   5.36E+00  -1.43E-02  -5.40E-03   0.00E+00   1.26E+01   0.00E+00
+  500   43.097   0.086 5.00E-01 1.00E+00  8.0728E-01   3.98E+00   1.44E+01  -1.01E-01  -3.68E-02   0.00E+00   1.26E+01   0.00E+00
+  550   47.406   0.086 5.00E-01 1.00E+00  2.1505E+00   1.06E+01   3.88E+01  -7.21E-01  -2.54E-01   0.00E+00   1.26E+01   0.00E+00
+  600   51.716   0.086 5.00E-01 1.00E+00  5.7643E+00   2.85E+01   1.05E+02  -5.22E+00  -1.78E+00   0.00E+00   1.26E+01   0.00E+00
+  650   56.026   0.086 5.00E-01 1.00E+00  1.5537E+01   7.70E+01   2.86E+02  -3.81E+01  -1.26E+01   0.00E+00   1.26E+01   0.00E+00
+  700   60.335   0.086 5.00E-01 1.00E+00  4.2089E+01   2.09E+02   7.79E+02  -2.82E+02  -9.01E+01   0.00E+00   1.26E+01   0.00E+00
+  750   64.645   0.086 5.00E-01 1.00E+00  1.1456E+02   5.71E+02   2.13E+03  -2.10E+03  -6.51E+02   0.00E+00   1.26E+01   0.00E+00
+  800   68.955   0.086 5.00E-01 1.00E+00  3.1316E+02   1.56E+03   5.81E+03  -1.58E+04  -4.75E+03   0.00E+00   1.26E+01   0.00E+00
+  850   73.264   0.086 5.00E-01 1.00E+00  8.5954E+02   4.30E+03   1.59E+04  -1.20E+05  -3.50E+04   0.00E+00   1.26E+01   0.00E+00
+  900   77.574   0.086 5.00E-01 1.00E+00  2.3680E+03   1.19E+04   4.36E+04  -9.14E+05  -2.60E+05   0.00E+00   1.26E+01   0.00E+00
+  950   81.883   0.086 5.00E-01 1.00E+00  6.5464E+03   3.29E+04   1.20E+05  -7.02E+06  -1.95E+06   0.00E+00   1.26E+01   0.00E+00
+ 1000   86.193   0.086 5.00E-01 1.00E+00  1.8154E+04   9.13E+04   3.30E+05  -5.43E+07  -1.47E+07   0.00E+00   1.26E+01   0.00E+00
+ 1050   90.503   0.086 5.00E-01 1.00E+00  5.0487E+04   2.54E+05   9.09E+05  -4.22E+08  -1.12E+08   0.00E+00   1.26E+01   0.00E+00
+ 1100   94.812   0.086 5.00E-01 1.00E+00  1.4077E+05   7.10E+05   2.51E+06  -3.29E+09  -8.53E+08   0.00E+00   1.26E+01   0.00E+00
+ 1150   99.122   0.086 5.00E-01 1.00E+00  3.9338E+05   1.99E+06   6.96E+06  -2.58E+10  -6.56E+09   0.00E+00   1.26E+01   0.00E+00
+ 1200  103.432   0.086 5.00E-01 1.00E+00  1.1016E+06   5.57E+06   1.95E+07  -2.03E+11  -5.07E+10   0.00E+00   1.26E+01   0.00E+00
+ 1250  107.741   0.086 5.00E-01 1.00E+00  3.0905E+06   1.57E+07   5.46E+07  -1.61E+12  -3.94E+11   0.00E+00   1.26E+01   0.00E+00
+ 1300  112.051   0.086 5.00E-01 1.00E+00  8.6841E+06   4.40E+07   1.53E+08  -1.27E+13  -3.08E+12   0.00E+00   1.26E+01   0.00E+00
+ 1350  116.361   0.086 5.00E-01 1.00E+00  2.4437E+07   1.24E+08   4.30E+08  -1.01E+14  -2.41E+13   0.00E+00   1.26E+01   0.00E+00
+ 1400  120.670   0.086 5.00E-01 1.00E+00  6.8851E+07   3.50E+08   1.21E+09  -8.03E+14  -1.90E+14   0.00E+00   1.26E+01   0.00E+00
+ 1450  124.980   0.086 5.00E-01 1.00E+00  1.9420E+08   9.87E+08   3.40E+09  -6.40E+15  -1.50E+15   0.00E+00   1.26E+01   0.00E+00
+ 1500  129.290   0.086 5.00E-01 1.00E+00  5.4830E+08   2.79E+09   9.57E+09  -5.11E+16  -1.18E+16   0.00E+00   1.26E+01   0.00E+00
+ 1550  133.599   0.086 5.00E-01 1.00E+00  1.5493E+09   7.88E+09   2.69E+10  -4.09E+17  -9.39E+16   0.00E+00   1.26E+01   0.00E+00
+ 1600  137.909   0.086 5.00E-01 1.00E+00  4.3811E+09   2.23E+10   7.59E+10  -3.28E+18  -7.46E+17   0.00E+00   1.26E+01   0.00E+00
+ 1650  142.219   0.086 5.00E-01 1.00E+00  1.2397E+10   6.31E+10   2.14E+11  -2.63E+19  -5.94E+18   0.00E+00   1.26E+01   0.00E+00
+ 1700  146.528   0.086 5.00E-01 1.00E+00  3.5096E+10   1.79E+11   6.03E+11  -2.11E+20  -4.74E+19   0.00E+00   1.26E+01   0.00E+00
+ 1750  150.838   0.086 5.00E-01 1.00E+00  9.9409E+10   5.07E+11   1.70E+12  -1.69E+21  -3.79E+20   0.00E+00   1.26E+01   0.00E+00
+ 1800  155.148   0.086 5.00E-01 1.00E+00  2.8169E+11   1.44E+12   4.80E+12  -1.36E+22  -3.03E+21   0.00E+00   1.26E+01   0.00E+00
+ 1850  159.457   0.086 5.00E-01 1.00E+00  7.9851E+11   4.07E+12   1.36E+13  -1.09E+23  -2.43E+22   0.00E+00   1.26E+01   0.00E+00
+ 1900  163.767   0.086 5.00E-01 1.00E+00  2.2642E+12   1.15E+13   3.83E+13  -8.80E+23  -1.95E+23   0.00E+00   1.26E+01   0.00E+00
+ 1950  168.077   0.086 5.00E-01 1.00E+00  6.4221E+12   3.28E+13   1.08E+14  -7.08E+24  -1.56E+24   0.00E+00   1.26E+01   0.00E+00
+ 2000  172.386   0.086 5.00E-01 1.00E+00  1.8220E+13   9.29E+13   3.06E+14  -5.70E+25  -1.26E+25   0.00E+00   1.26E+01   0.00E+00
+ 2050  176.696   0.086 5.00E-01 1.00E+00  5.1700E+13   2.64E+14   8.66E+14  -4.59E+26  -1.01E+26   0.00E+00   1.26E+01   0.00E+00
+ 2100  181.006   0.086 5.00E-01 1.00E+00  1.4673E+14   7.49E+14   2.45E+15  -3.70E+27  -8.12E+26   0.00E+00   1.26E+01   0.00E+00
+ 2150  185.315   0.086 5.00E-01 1.00E+00  4.1649E+14   2.13E+15   6.93E+15  -2.98E+28  -6.53E+27   0.00E+00   1.26E+01   0.00E+00
+ 2200  189.625   0.086 5.00E-01 1.00E+00  1.1824E+15   6.03E+15   1.96E+16  -2.40E+29  -5.26E+28   0.00E+00   1.26E+01   0.00E+00
+ 2250  193.935   0.086 5.00E-01 1.00E+00  3.3569E+15   1.71E+16   5.56E+16  -1.94E+30  -4.24E+29   0.00E+00   1.26E+01   0.00E+00
+ 2300  198.244   0.086 5.00E-01 1.00E+00  9.5319E+15   4.87E+16   1.57E+17  -1.56E+31  -3.41E+30   0.00E+00   1.26E+01   0.00E+00
+ 2350  202.554   0.086 5.00E-01 1.00E+00  2.7068E+16   1.38E+17   4.46E+17  -1.26E+32  -2.75E+31   0.00E+00   1.26E+01   0.00E+00
+ 2400  206.864   0.086 5.00E-01 1.00E+00  7.6870E+16        Inf   1.26E+18  -1.02E+33  -2.22E+32   0.00E+00   1.26E+01   0.00E+00
+ 2450  211.173   0.086 5.00E-01 1.00E+00  2.1832E+17        Inf   3.58E+18  -8.20E+33  -1.79E+33   0.00E+00   1.26E+01   0.00E+00
+ 2500  215.483   0.086 5.00E-01 1.00E+00         Inf        Inf   1.01E+19       -Inf  -1.44E+34   0.00E+00   1.26E+01   0.00E+00
+ 2550  219.793   0.086 5.00E-01 1.00E+00         Inf        Inf        Inf       -Inf       -Inf   0.00E+00   1.26E+01   0.00E+00
+ 2600  224.102   0.086 5.00E-01 1.00E+00         Inf        Inf        Inf       -Inf       -Inf   0.00E+00   1.26E+01   0.00E+00
+ 2650  228.412   0.086 5.00E-01 1.00E+00         Inf        Inf        Inf       -Inf        NaN   0.00E+00   1.26E+01   0.00E+00
+ 2700  232.721   0.086 5.00E-01 1.00E+00         Inf        Inf        Inf       -Inf        NaN   0.00E+00   1.26E+01   0.00E+00
+ 2750  237.031   0.086 5.00E-01 1.00E+00         Inf        Inf        Inf        NaN        NaN   0.00E+00   1.26E+01   0.00E+00
+ 2800  241.341   0.086 5.00E-01 1.00E+00         Inf        Inf        Inf        NaN        NaN   0.00E+00   1.26E+01   0.00E+00
+ 2850  245.650   0.086 5.00E-01 1.00E+00         Inf        Inf        Inf        NaN        NaN   0.00E+00   1.26E+01   0.00E+00
+ 2900  249.960   0.086 5.00E-01 1.00E+00         Inf        Inf        Inf        NaN        NaN   0.00E+00   1.26E+01   0.00E+00
+ 2950  254.270   0.086 5.00E-01 1.00E+00         Inf        Inf        Inf        NaN        NaN   0.00E+00   1.26E+01   0.00E+00
+ 3000  258.579   0.086 5.00E-01 1.00E+00         Inf        Inf        Inf        NaN        NaN   0.00E+00   1.26E+01   0.00E+00
+ 3050  262.889   0.086 5.00E-01 1.00E+00         Inf        Inf        Inf        NaN        NaN   0.00E+00   1.26E+01   0.00E+00
+Tue Oct 27 15:27:24 2026 : save_model: Saving ML model to: data/training/stationary.pt
+ 
+ Simulation finished after          3051  time-steps
+ 
+ Writing final snapshot at time t =    262.9752719588578     
+ 
+ Wall clock time [hours] =  6.599E-02 (+/-  2.7778E-13)
+ Wall clock time/timestep/meshpoint [microsec] =  13.35060    
+ Wall clock time/timestep/local meshpoint [microsec] =  13.35060    
+ Rhs wall clock time/timestep/local meshpoint [microsec] =  1.516637    
+ After substep wall clock time/timestep/local meshpoint [microsec] = 0.1214036    
+ Before+After boundary wall clock time/timestep/local meshpoint [microsec] =  6.425397    
+ Diagnostics wall clock time/timestep/local meshpoint [microsec] = 9.3780145E-02
+ Timestep wall clock time/timestep/local meshpoint [microsec] =  8.067350    
+ Timestep (without waiting) wall clock time/timestep/local meshpoint [microsec] =  8.065659    
+ Timestep wall clock time/timestep/meshpoint [microsec] =  8.067350    
+ Timestep (without waiting) wall clock time/timestep/meshpoint [microsec] =  8.065659    
+ Diagnostics wall clock time/timestep/meshpoint [microsec] = 9.3780145E-02
+ Rhs wall clock time/timestep/meshpoint [microsec] =  1.516637    
+ After substep wall clock time/timestep/meshpoint [microsec] = 0.1214036    
+ Before+After boundary wall clock time/timestep/meshpoint [microsec] =  6.425397    
+ Inference wall clock time/timestep/meshpoint [microsec] =  4.863495    
+ Maximum used memory per cpu [MBytes] =  1532.500
+ Maximum used memory [GBytes] =        1.497
+ 
+
+Tue Oct 27 15:27:24 2026
+Running
+  pc_deprecated_slice_links
