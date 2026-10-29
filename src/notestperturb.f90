@@ -51,8 +51,8 @@ module TestPerturb
 !
 !  Dummy routine
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension (:,:,:,:) :: f
+      real, contiguous, dimension (:,:,:,:) :: df
 !
       call keep_compiler_quiet(f,df)
 !
