@@ -1,0 +1,24 @@
+--------------------------------------------------------------------------------
+Python-data/3.12-20.04, Python libraries for data analytics and machine learning
+https://docs.csc.fi/apps/python-data
+--------------------------------------------------------------------------------
+---------------------------------------------------------------------------------- 
+PyTorch version 2.10.0, machine learning library for Python.
+
+For more help see: https://docs.csc.fi/apps/pytorch/ 
+---------------------------------------------------------------------------------- 
+
+Lmod is automatically replacing "python-data/3.12-20.04" with
+"python-pytorch/2.10".
+
+---------------------------------------------------------------------------------- 
+PyTorch version 2.10.0, machine learning library for Python.
+
+For more help see: https://docs.csc.fi/apps/pytorch/ 
+---------------------------------------------------------------------------------- 
+/scratch/project_2016901/braunea/kin-dynamo/default-physics-setup//kindynamo_lenet5forsegmentation/lr_1e-4/data
+/scratch/project_2016901/braunea/kin-dynamo/default-physics-setup//kindynamo_lenet5forsegmentation/lr_1e-4/data/training/
+Successfully saved kindynamo_lenet5forsegmentation
+Loss module moved to cuda
+Successfully saved loss TorchScript to /scratch/project_2016901/braunea/kin-dynamo/default-physics-setup//kindynamo_lenet5forsegmentation/lr_1e-4/data/training/loss_torchscript_new.pt
+Successfully created TorchFort config at: /scratch/project_2016901/braunea/kin-dynamo/default-physics-setup//kindynamo_lenet5forsegmentation/lr_1e-4/data/training/config_torchfort.yaml
