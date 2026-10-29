@@ -2780,7 +2780,7 @@ module Initcond
       integer :: i,j
       real, dimension(:,:,:), allocatable :: xx, yy, rr, cosr, mask
       real, contiguous, dimension(:,:,:,:) :: f
-      real :: ampl, k=1., kf, fac1, fac2, relhel, init_the1, init_phi1
+      real :: ampl, k=1., fac1, fac2, relhel, init_the1, init_phi1
       real :: cthe, sthe, cphi, sphi
       real, optional :: kx, init_the, init_phi
       character (len=labellen) :: flowtype='I'
