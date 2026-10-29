@@ -1,0 +1,242 @@
+***********************************************
+The Job ID: 2580069
+***********************************************
+
+Lmod is automatically replacing "nvhpc/26.3" with "gcc/14.3.0".
+
+
+Lmod is automatically replacing "openmpi/5.0.10" with "nvhpc/26.3".
+
+
+Lmod is automatically replacing "gcc/14.3.0" with "nvhpc/26.3".
+
+hostname = rg1139
+MPI run
+gpu = 1
+multithread = 1
+Subcommand: start
+mpich = 0
+
+1 CPU
+1 node, 1 CPU per node
+lparticles = 0
+lpointmasses = 0
+Revision: 6435c2d2b
+ M fortran-parser
+ M samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/training/run.in
+ M samples/training/scripts/run_training.sh
+ M src/astaroth/submodule
+Tue Oct 27 15:23:40 2026
+Running under MPI
+Running 'env MODULE_PREFIX= MODULE_INFIX=_ MODULE_SUFFIX=_ srun -n 1 ./src/start.x'...
+ 
+ =====================================================================
+ WARNING: using SINGLE PRECISION, you'd better know what you're doing!
+ =====================================================================
+ 
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$               
+ initialize_mpicomm: enabled MPI
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id
+ nxgrid, nygrid, nzgrid=           18           18           18
+ calc_coeffs_1 is not evaluated
+ calc_coeffs_1 is not evaluated
+ calc_coeffs_1 is not evaluated
+ calc_coeffs_1 is not evaluated
+ calc_coeffs_1 is not evaluated
+ calc_coeffs_1 is not evaluated
+ units_general: unit_velocity=    1.000000000000000     
+ units_general: unit_density=    1.000000000000000     
+ units_general: unit_length=    1.000000000000000     
+ units_general: unit_magnetic=    3.544907808303833     
+ unit temperature    1.000000000000000     
+ alpha_fine =   7.2973525643000000E-003
+ sigma_Thomson_cgs =   6.6524587321600003E-025
+WARNING:  get_gamma_etc: gamma, cp, and cv are undefined in noeos.
+The values provided are for one-atomic ideal gas. Use at own risk!
+ resistivity: constant eta
+ farray_check_maux: naux, maux =             6           18
+WARNING:  farray_check_maux: 
+	| The count of MAUXs is inconsistent with the actual number of
+	| auxiliaries required.  Please check your src/cparam.local.  It is
+	| also possible that someone unintentionally added *optional*
+	| auxiliaries to MAUX CONTRIBUTION to one of the physics modules.
+	| Please urge them to move it to src/cparam.local under their
+	| specific application. 
+	| Put lenforce_maux_check=F in run_pars to overide this.!
+ gaunoise_vect: variable i=            1
+ gaunoise_vect: variable i=            2
+ gaunoise_vect: variable i=            3
+ Maximum used memory per cpu [MBytes] =   540.000
+ Maximum used memory [MBytes] =      540.000
+ 
+ 
+ start.x has completed successfully
+ 
+
+Tue Oct 27 15:23:44 2026
+
+Lmod is automatically replacing "nvhpc/26.3" with "gcc/14.3.0".
+
+
+Lmod is automatically replacing "openmpi/5.0.10" with "nvhpc/26.3".
+
+
+Lmod is automatically replacing "gcc/14.3.0" with "nvhpc/26.3".
+
+hostname = rg1139
+MPI run
+gpu = 1
+multithread = 1
+Subcommand: run
+mpich = 0
+
+1 CPU
+1 node, 1 CPU per node
+lparticles = 0
+lpointmasses = 0
+Revision: 6435c2d2b
+ M fortran-parser
+ M samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/training/run.in
+ M samples/training/scripts/run_training.sh
+ M src/astaroth/submodule
+Tue Oct 27 15:23:44 2026
+Running under MPI
+Running 'env MODULE_PREFIX= MODULE_INFIX=_ MODULE_SUFFIX=_ srun -n 1 ./src/run.x'...
+Tue Oct 27 15:23:48 2026 : CONFIG_FILE: data/training/config_torchfort.yaml
+Tue Oct 27 15:23:48 2026 : Model_NAME: stationary
+Tue Oct 27 15:23:49 2026 : CREATED DISTRIBUTED TRAINING
+ 
+ =====================================================================
+ WARNING: using SINGLE PRECISION, you'd better know what you're doing!
+ =====================================================================
+ 
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$               
+SVN: -------            v.         (                   ) $Id$               
+ initialize_mpicomm: enabled MPI
+WARNING:  run: quad precision not supported, switch to double!
+WARNING:  run: quad precision suppressed!
+ calc_coeffs_1 is not evaluated
+ calc_coeffs_1 is not evaluated
+ calc_coeffs_1 is not evaluated
+ calc_coeffs_1 is not evaluated
+ calc_coeffs_1 is not evaluated
+ calc_coeffs_1 is not evaluated
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id
+ The verbose level is ip=           14  (ldebug=  F )
+ This is a 3-D run
+ nxgrid, nygrid, nzgrid=           18           18           18
+ Lx, Ly, Lz=    6.283185        6.283185        6.283185    
+       Vbox=    248.0502    
+ rsnap: read snapshot var.dat in    3.1523260573120826E-003  seconds
+ setup_slices: slice_position = p
+ setup_slices: ix_loc,iy_loc,iz_loc,iz2_loc, (video files) = 6 6 6 23                                                                        
+ units_general: unit_velocity=    1.000000000000000     
+ units_general: unit_density=    1.000000000000000     
+ units_general: unit_length=    1.000000000000000     
+ units_general: unit_magnetic=    3.544907808303833     
+ unit temperature    1.000000000000000     
+ alpha_fine =   7.2973525643000000E-003
+ sigma_Thomson_cgs =   6.6524587321600003E-025
+WARNING:  get_gamma_etc: gamma, cp, and cv are undefined in noeos.
+The values provided are for one-atomic ideal gas. Use at own risk!
+ resistivity: constant eta
+Tue Oct 27 15:23:49 2026 : Torchfort model stationary loaded succesfullyacCompile: Compiling Astaroth; logging to /users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/inference_lr_1e-4/ac_compilation.log
+Tue Oct 27 15:25:16 2026 : Done setupConfig && acCompile
+Tue Oct 27 15:25:16 2026 : acGridInit: n[xyz]grid: (18,18,18) n[xyz]local (18,18,18)
+Tue Oct 27 15:25:16 2026 : acGridInit: Creating device
+Tue Oct 27 15:25:16 2026 : acGridInit: decomp: (1,1,1)
+Tue Oct 27 15:25:16 2026 : acGridInit: Stencil order: 10
+Tue Oct 27 15:25:16 2026 : acGridInit: Done
+
+Started autotuning: watch progress in ac_autotuning.log
+Tue Oct 27 15:25:17 2026 : DONE initializeGPU
+Tue Oct 27 15:25:17 2026 : Loaded previous statistics
+Result
+Tue Oct 27 15:25:17 2026 : Doing inference
+ pde: ENTER
+SVN: -------            v.         (                   ) $Id$
+WARNING:  calc_bmz: to get bmz, set bxmz and bymz in 'xyaver.in'.
+We proceed, but you will get bmz=0!
+
+ --it-----t-------dt------EEK-----urms-------brms-------jrms-------jmax--------abm--------jbm--------bmz-------ourms------loss----
+    0    0.000   0.086 5.00E-01 1.00E+00  8.5665E-04   9.74E-03   2.63E-02  -2.86E-09  -1.63E-07   0.00E+00   1.26E+01   0.00E+00
+   50    4.310   0.086 5.00E-01 1.00E+00  1.3485E-04   6.75E-04   3.23E-03  -1.56E-09  -4.43E-09   0.00E+00   1.26E+01   0.00E+00
+  100    8.619   0.086 5.00E-01 1.00E+00  2.8081E-04   1.33E-03   5.81E-03  -6.50E-09  -1.20E-08   0.00E+00   1.26E+01   0.00E+00
+  150   12.929   0.086 5.00E-01 1.00E+00  5.7186E-04   2.67E-03   1.06E-02  -2.92E-08  -3.79E-08   0.00E+00   1.26E+01   0.00E+00
+  200   17.239   0.086 5.00E-01 1.00E+00  1.1989E-03   5.60E-03   2.24E-02  -1.44E-07  -1.37E-07   0.00E+00   1.26E+01   0.00E+00
+  250   21.548   0.086 5.00E-01 1.00E+00  2.6346E-03   1.25E-02   5.14E-02  -7.85E-07  -5.73E-07   0.00E+00   1.26E+01   0.00E+00
+  300   25.858   0.086 5.00E-01 1.00E+00  6.0833E-03   2.94E-02   1.26E-01  -4.66E-06  -2.72E-06   0.00E+00   1.26E+01   0.00E+00
+  350   30.168   0.086 5.00E-01 1.00E+00  1.4680E-02   7.22E-02   3.14E-01  -2.95E-05  -1.44E-05   0.00E+00   1.26E+01   0.00E+00
+  400   34.477   0.086 5.00E-01 1.00E+00  3.6661E-02   1.82E-01   7.98E-01  -1.94E-04  -8.23E-05   0.00E+00   1.26E+01   0.00E+00
+  450   38.787   0.086 5.00E-01 1.00E+00  9.3780E-02   4.70E-01   2.10E+00  -1.32E-03  -4.98E-04   0.00E+00   1.26E+01   0.00E+00
+  500   43.097   0.086 5.00E-01 1.00E+00  2.4381E-01   1.23E+00   5.57E+00  -9.12E-03  -3.16E-03   0.00E+00   1.26E+01   0.00E+00
+  550   47.406   0.086 5.00E-01 1.00E+00  6.4095E-01   3.24E+00   1.48E+01  -6.40E-02  -2.09E-02   0.00E+00   1.26E+01   0.00E+00
+  600   51.716   0.086 5.00E-01 1.00E+00  1.6979E+00   8.60E+00   3.90E+01  -4.54E-01  -1.41E-01   0.00E+00   1.26E+01   0.00E+00
+  650   56.026   0.086 5.00E-01 1.00E+00  4.5202E+00   2.29E+01   1.03E+02  -3.25E+00  -9.54E-01   0.00E+00   1.26E+01   0.00E+00
+  700   60.335   0.086 5.00E-01 1.00E+00  1.2069E+01   6.13E+01   2.69E+02  -2.33E+01  -6.50E+00   0.00E+00   1.26E+01   0.00E+00
+  750   64.645   0.086 5.00E-01 1.00E+00  3.2272E+01   1.64E+02   7.03E+02  -1.68E+02  -4.41E+01   0.00E+00   1.26E+01   0.00E+00
+  800   68.955   0.086 5.00E-01 1.00E+00  8.6407E+01   4.40E+02   1.85E+03  -1.21E+03  -2.88E+02   0.00E+00   1.26E+01   0.00E+00
+  850   73.264   0.086 5.00E-01 1.00E+00  2.3265E+02   1.19E+03   5.14E+03  -8.75E+03  -1.72E+03   0.00E+00   1.26E+01   0.00E+00
+  900   77.574   0.086 5.00E-01 1.00E+00  6.5149E+02   3.34E+03   1.78E+04  -6.67E+04  -1.34E+04   0.00E+00   1.26E+01   0.00E+00
+  950   81.883   0.086 5.00E-01 1.00E+00  2.0093E+06   2.53E+07   5.35E+08   1.31E+10   1.14E+12   0.00E+00   1.26E+01   0.00E+00
+ check_for_nans_globally: nan in Field: aa
+ check_for_nans_globally: nan in Field: 
+ check_for_nans_globally: nan in Field: 
+ check_for_nans_globally: nan in Field: tau_bb
+ check_for_nans_globally: nan in Field: 
+ check_for_nans_globally: nan in Field: 
+ check_for_nans_globally: nan in Field: 
+ check_for_nans_globally: nan in Field: 
+ check_for_nans_globally: nan in Field: 
+ check_for_nans_globally: found nans: after reading from the GPU !
+--------------------------------------------------------------------------
+MPI_ABORT was invoked on rank 0 in communicator MPI COMMUNICATOR 21 DUP FROM 0
+with errorcode -1.
+
+NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+You may or may not see output from other processes, depending on
+exactly when Open MPI kills them.
+--------------------------------------------------------------------------
+[2026-10-27T15:26:12.813] error: *** STEP 2580069.1 ON rg1139 CANCELLED AT 2026-10-27T15:26:12 DUE TO TASK FAILURE ***
+srun: error: rg1139: task 0: Exited with exit code 255
+srun: Terminating StepId=2580069.1
+'env MODULE_PREFIX= MODULE_INFIX=_ MODULE_SUFFIX=_ srun -n 1 ./src/run.x' failed: 
+Aborting.

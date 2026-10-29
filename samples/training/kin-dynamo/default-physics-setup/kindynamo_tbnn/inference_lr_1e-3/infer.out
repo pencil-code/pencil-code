@@ -1,0 +1,189 @@
+***********************************************
+The Job ID: 2580062
+***********************************************
+
+Lmod is automatically replacing "nvhpc/26.3" with "gcc/14.3.0".
+
+
+Lmod is automatically replacing "openmpi/5.0.10" with "nvhpc/26.3".
+
+
+Lmod is automatically replacing "gcc/14.3.0" with "nvhpc/26.3".
+
+hostname = rg1116
+MPI run
+gpu = 1
+multithread = 1
+Subcommand: start
+mpich = 0
+
+1 CPU
+1 node, 1 CPU per node
+lparticles = 0
+lpointmasses = 0
+Revision: 6435c2d2b
+ M fortran-parser
+ M samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/training/run.in
+ M samples/training/scripts/run_training.sh
+ M src/astaroth/submodule
+Tue Oct 27 15:23:40 2026
+Running under MPI
+Running 'env MODULE_PREFIX= MODULE_INFIX=_ MODULE_SUFFIX=_ srun -n 1 ./src/start.x'...
+ 
+ =====================================================================
+ WARNING: using SINGLE PRECISION, you'd better know what you're doing!
+ =====================================================================
+ 
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$               
+ initialize_mpicomm: enabled MPI
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id
+ nxgrid, nygrid, nzgrid=           18           18           18
+ calc_coeffs_1 is not evaluated
+ calc_coeffs_1 is not evaluated
+ calc_coeffs_1 is not evaluated
+ calc_coeffs_1 is not evaluated
+ calc_coeffs_1 is not evaluated
+ calc_coeffs_1 is not evaluated
+ units_general: unit_velocity=    1.000000000000000     
+ units_general: unit_density=    1.000000000000000     
+ units_general: unit_length=    1.000000000000000     
+ units_general: unit_magnetic=    3.544907808303833     
+ unit temperature    1.000000000000000     
+ alpha_fine =   7.2973525643000000E-003
+ sigma_Thomson_cgs =   6.6524587321600003E-025
+WARNING:  get_gamma_etc: gamma, cp, and cv are undefined in noeos.
+The values provided are for one-atomic ideal gas. Use at own risk!
+ resistivity: constant eta
+ farray_check_maux: naux, maux =             6           18
+WARNING:  farray_check_maux: 
+	| The count of MAUXs is inconsistent with the actual number of
+	| auxiliaries required.  Please check your src/cparam.local.  It is
+	| also possible that someone unintentionally added *optional*
+	| auxiliaries to MAUX CONTRIBUTION to one of the physics modules.
+	| Please urge them to move it to src/cparam.local under their
+	| specific application. 
+	| Put lenforce_maux_check=F in run_pars to overide this.!
+ gaunoise_vect: variable i=            1
+ gaunoise_vect: variable i=            2
+ gaunoise_vect: variable i=            3
+ Maximum used memory per cpu [MBytes] =   540.000
+ Maximum used memory [MBytes] =      540.000
+ 
+ 
+ start.x has completed successfully
+ 
+
+Tue Oct 27 15:23:45 2026
+
+Lmod is automatically replacing "nvhpc/26.3" with "gcc/14.3.0".
+
+
+Lmod is automatically replacing "openmpi/5.0.10" with "nvhpc/26.3".
+
+
+Lmod is automatically replacing "gcc/14.3.0" with "nvhpc/26.3".
+
+hostname = rg1116
+MPI run
+gpu = 1
+multithread = 1
+Subcommand: run
+mpich = 0
+
+1 CPU
+1 node, 1 CPU per node
+lparticles = 0
+lpointmasses = 0
+Revision: 6435c2d2b
+ M fortran-parser
+ M samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/training/run.in
+ M samples/training/scripts/run_training.sh
+ M src/astaroth/submodule
+Tue Oct 27 15:23:45 2026
+Running under MPI
+Running 'env MODULE_PREFIX= MODULE_INFIX=_ MODULE_SUFFIX=_ srun -n 1 ./src/run.x'...
+Tue Oct 27 15:23:50 2026 : CONFIG_FILE: data/training/config_torchfort.yaml
+Tue Oct 27 15:23:50 2026 : Model_NAME: stationary
+Tue Oct 27 15:23:51 2026 : CREATED DISTRIBUTED TRAINING
+ 
+ =====================================================================
+ WARNING: using SINGLE PRECISION, you'd better know what you're doing!
+ =====================================================================
+ 
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$               
+SVN: -------            v.         (                   ) $Id$               
+ initialize_mpicomm: enabled MPI
+WARNING:  run: quad precision not supported, switch to double!
+WARNING:  run: quad precision suppressed!
+ calc_coeffs_1 is not evaluated
+ calc_coeffs_1 is not evaluated
+ calc_coeffs_1 is not evaluated
+ calc_coeffs_1 is not evaluated
+ calc_coeffs_1 is not evaluated
+ calc_coeffs_1 is not evaluated
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id$
+SVN: -------            v.         (                   ) $Id
+ The verbose level is ip=           14  (ldebug=  F )
+ This is a 3-D run
+ nxgrid, nygrid, nzgrid=           18           18           18
+ Lx, Ly, Lz=    6.283185        6.283185        6.283185    
+       Vbox=    248.0502    
+ rsnap: read snapshot var.dat in    2.9261150375976541E-003  seconds
+ setup_slices: slice_position = p
+ setup_slices: ix_loc,iy_loc,iz_loc,iz2_loc, (video files) = 6 6 6 23                                                                        
+ units_general: unit_velocity=    1.000000000000000     
+ units_general: unit_density=    1.000000000000000     
+ units_general: unit_length=    1.000000000000000     
+ units_general: unit_magnetic=    3.544907808303833     
+ unit temperature    1.000000000000000     
+ alpha_fine =   7.2973525643000000E-003
+ sigma_Thomson_cgs =   6.6524587321600003E-025
+WARNING:  get_gamma_etc: gamma, cp, and cv are undefined in noeos.
+The values provided are for one-atomic ideal gas. Use at own risk!
+ resistivity: constant eta
+Tue Oct 27 15:23:51 2026 : Torchfort model stationary loaded succesfullyacCompile: Compiling Astaroth; logging to /users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/inference_lr_1e-3/ac_compilation.log
+Fatal was not able to compile
+Check /users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/inference_lr_1e-3/ac_compilation.log for the compilation log!
+Was not able to compile Astaroth!
+srun: error: rg1116: task 0: Exited with exit code 1
+srun: Terminating StepId=2580062.1
+'env MODULE_PREFIX= MODULE_INFIX=_ MODULE_SUFFIX=_ srun -n 1 ./src/run.x' failed: 
+Aborting.
+Found ERROR file
