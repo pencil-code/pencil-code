@@ -200,7 +200,7 @@ module Special
       use Particles_cdata, only: ipar, npar_loc, ivpx, ivpy, ivpz, irhopswarm
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       real, dimension(:,:) :: fp
       real, dimension(:,:) :: dfp
       integer, dimension(:,:) :: ineargrid

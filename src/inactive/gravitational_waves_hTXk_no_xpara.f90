@@ -627,7 +627,7 @@ module Special
 !  27-nov-08/wlad: coded
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension(mx,my,mz,mvar), intent(inout) :: df
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: df
       real, intent(in) :: dt_
       logical, intent(in) :: llast
 !

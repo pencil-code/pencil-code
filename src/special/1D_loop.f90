@@ -416,7 +416,7 @@ module Special
 !  10-oct-12/bing: coded
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       real :: dt_
       logical, intent(in) :: llast
       integer,save :: j=35

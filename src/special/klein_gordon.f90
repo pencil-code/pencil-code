@@ -2678,7 +2678,7 @@ module Special
       use Deriv, only: der
 
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       real :: dt_
       logical, intent(in) :: llast
       real, dimension(nx) :: zeta, drphi

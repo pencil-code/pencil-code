@@ -98,9 +98,8 @@
     endsubroutine iface_calc_diagnostics_special
 !
     subroutine iface_special_calc_particles(f,df,fp,dfp,ineargrid)
-      import :: mx, my, mz, mvar
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       real, dimension(:,:) :: fp, dfp
       integer, dimension(:,:) :: ineargrid
     endsubroutine iface_special_calc_particles
@@ -132,9 +131,8 @@
     endsubroutine iface_special_boundconds
 !
     subroutine iface_special_after_timestep(f,df,dt_,llast)
-      import :: mx, my, mz, mvar
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       real :: dt_
       logical, intent(in) :: llast
     endsubroutine iface_special_after_timestep

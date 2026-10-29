@@ -498,7 +498,7 @@ module Special
 !  shared logical vel_call triggers the hijack
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       real, dimension(:,:) :: fp
       real, dimension(:,:) :: dfp
       integer, dimension(:,:) :: ineargrid
@@ -531,7 +531,7 @@ module Special
       Use Mpicomm, only: mpibcast_cmplx, mpibcast_real
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       real :: dt_
       logical, intent(in) :: llast
       integer :: ncount, advances,ns, trip  !number of GOY timesteps to call
