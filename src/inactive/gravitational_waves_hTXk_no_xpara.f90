@@ -458,7 +458,7 @@ module Special
       use Diagnostics
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       real :: scale_factor, stress_prefactor2, sign_switch=0
       type (pencil_case) :: p
 !

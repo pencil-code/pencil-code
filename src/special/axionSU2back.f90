@@ -615,7 +615,7 @@ module Special
       use Sub
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type(pencil_case) :: p
       real, dimension (nx) :: psi , psidot , psiddot , TR, TRdot, TRddot, uR, uRdot, uRddot
       real, dimension (nx) :: psiL, psiLdot, psiLddot, TL, TLdot, TLddot, uL, uLdot, uLddot

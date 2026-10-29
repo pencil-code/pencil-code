@@ -63,9 +63,9 @@
     endsubroutine iface_init_special
 !
     subroutine iface_dspecial_dt(f,df,p)
-      import :: mx, my, mz, mvar, pencil_case
+      import :: pencil_case
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type(pencil_case) :: p
     endsubroutine iface_dspecial_dt
 !

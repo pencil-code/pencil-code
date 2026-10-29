@@ -1163,7 +1163,7 @@ module Special
       use Diagnostics
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type(pencil_case) :: p
       real :: stress_prefactor2, fac_stress_comp
 !

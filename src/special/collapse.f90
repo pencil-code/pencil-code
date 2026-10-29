@@ -255,7 +255,7 @@ module Special
       use Sub, only: dot_mn, del2
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type(pencil_case) :: p
 !
 !

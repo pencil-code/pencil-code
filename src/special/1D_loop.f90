@@ -348,7 +348,7 @@ module Special
       use Sub, only: identify_bcs, multsv, dot, del6
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type(pencil_case) :: p
       real, dimension (nx) :: rhs,tmp,hyper3_coeff,hc
       real, dimension (nx,3) :: K1

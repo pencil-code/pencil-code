@@ -179,7 +179,7 @@ module Special
       use Sub
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type(pencil_case) :: p
 !
       real, dimension (nx,3) :: gphi

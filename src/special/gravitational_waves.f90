@@ -299,7 +299,7 @@ module Special
       use Sub, only: del2, del6
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type(pencil_case) :: p
       real, dimension (nx) :: del2hhT,del2hhX,del2ggT,del2ggX
       real, dimension (nx) :: del6hhT,del6hhX,del6ggT,del6ggX

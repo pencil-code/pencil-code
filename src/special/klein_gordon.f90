@@ -1475,7 +1475,7 @@ module Special
       use Messages, only: fatal_error_local
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type(pencil_case) :: p
       real, dimension (nx) :: Vprime_aux, total_fric
       real, dimension (nx, 4) :: del2phi_doublet=0.

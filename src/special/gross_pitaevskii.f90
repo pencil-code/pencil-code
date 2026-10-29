@@ -464,7 +464,7 @@ module Special
       use Deriv
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type(pencil_case) :: p
       real, dimension (nx,3) :: gpreal, gpimag
       real, dimension (nx) :: pimag, preal, diss, psi2, pot_gpe, pot_tot

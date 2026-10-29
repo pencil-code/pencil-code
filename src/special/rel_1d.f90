@@ -225,7 +225,7 @@ module rel_1d
       use Sub, only: del2
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type(pencil_case) :: p
 !
       real, dimension (nx) :: del2eee, del2sss, dbss, dsss, dppp, &
