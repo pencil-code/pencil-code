@@ -4,7 +4,7 @@
 !
 &run_pars
   cvsid='$Id$'
-  nt=3051, it1=50, isave=1000, itorder=3
+  nt=30510, it1=50, isave=1000, itorder=3
   dsnap=500, dvid=30.0
   random_gen='nr_f90'
   lpencil_check=F
@@ -28,7 +28,7 @@
 
 &training_run_pars
   lroute_via_cpu=F
-  it_train=1, it_train_chkpt=5000
+  it_train=1, it_train_chkpt=100
   !it_train_start=1200
   ! luse_trained_tau should be F for training; T for inference
   luse_trained_tau=F
