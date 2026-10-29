@@ -191,6 +191,7 @@ module HDF5_IO
       call keep_compiler_quiet(name)
       call keep_compiler_quiet(gdims,iprocs)
       call keep_compiler_quiet(data)
+      call keep_compiler_quiet(lerrcont)
 
     endsubroutine input_hdf5_2D
 !***********************************************************************
