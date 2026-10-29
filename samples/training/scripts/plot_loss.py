@@ -13,7 +13,7 @@ def plot_loss(model_name_or_desc, input_filepath, output_filepath):
     df["ln_train_loss"] = np.log(df["train_loss"])
 
     ax = df.plot(x="epoch", y="ln_train_loss", kind="line", title="Training Loss for "+model_name_or_desc,
-        xlabel="Iteration", ylabel="Training Loss")
+        xlabel="Iteration", ylabel="ln(Training Loss)", label="ln(Training Loss)")
 
     ax.get_figure().savefig(output_filepath)
 
