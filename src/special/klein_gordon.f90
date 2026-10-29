@@ -108,6 +108,7 @@ module Special
   real :: delta_phi_prefactor=1.0,lambda_phi_prefactor=1.0
   real :: chi_quartic=impossible   ! normalized variable for quartic potential
   real :: chi_sextic=impossible ! normalized variable for sextic potential wihtout a cubic term
+  real :: c_sextic=0. !PAR_DOC: Coefficient of phi^6/6 of the sextic potential (set from chi_sextic with lphi_normalized_units)
   real :: deltaV=impossible !Difference between the potential at the false and true vacuum
   real :: lambda_psi=0., coupl_phipsi=0., c_psi=1.
   real :: amplphi=.1, ampldphi=.0, kx_phi=1., ky_phi=0., kz_phi=0., phase_phi=0., width_phi=.1, offset=0.
@@ -175,6 +176,10 @@ module Special
     !PAR_DOC: Cutting refers to the approximation done in https://arxiv.org/pdf/1802.05712,
     !PAR_DOC: where the tension is calculated from the degenerate potential close to the true
     !PAR_DOC: non-degenerate one.
+    !PAR_DOC: Thin_wall_integral computes the thin-wall tension \int_0^1 sqrt(2 V_deg) dphi numerically, where V_deg
+    !PAR_DOC: is the potential made degenerate by adding deltaV*(3phi^2-2phi^3), which keeps the vacua at 0 and 1.
+    !PAR_DOC: Valid for any potential with lphi_normalized_units, unlike wall_thickness, which assumes the tanh wall
+    !PAR_DOC: of the quartic potential.
   character (len=labellen), dimension(ninit) :: initspecial='nothing'
   character (len=50) :: echarge_type='const', init_rho_chi='zero'
   logical :: linv_BD=.true.              !PAR_DOC: apply forward transform in the Bunch-Davies initial condition.
@@ -268,7 +273,7 @@ module Special
   namelist /special_init_pars/ &
       initspecial, phi0, dphi0, phimass, sign_phimass2, eps, ascale_ini, &
       lcompute_dphi0, lem_backreact, &
-      c_phi, delta_phi, lambda_phi, Vprime_choice, amplphi, ampldphi, lno_noise_phi, lno_noise_dphi, &
+      c_phi, delta_phi, lambda_phi, c_sextic, Vprime_choice, amplphi, ampldphi, lno_noise_phi, lno_noise_dphi, &
       kx_phi, ky_phi, kz_phi, phase_phi, width_phi, offset, &
       initpower_phi, initpower2_phi, cutoff_phi, kgaussian_phi, kpeak_phi, &
       initpower_dphi, initpower2_dphi, cutoff_dphi, kpeak_dphi, &
@@ -286,7 +291,7 @@ module Special
 !
   namelist /special_run_pars/ &
       initspecial, phi0, dphi0, phimass, sign_phimass2, eps, ascale_ini, &
-      lem_backreact, c_phi, delta_phi, lambda_phi, Vprime_choice, &
+      lem_backreact, c_phi, delta_phi, lambda_phi, c_sextic, Vprime_choice, &
       ldt_klein_gordon, Ndiv, Hscript0, Hscript_choice, &
       lflrw, lrho_chi, scale_rho_chi_Heqn, echarge_type, cdt_rho_chi, &
       phi_v, lhiggs_friction, higgs_friction, lwaterfall, lambda_psi, &
@@ -649,7 +654,7 @@ module Special
         endif
         if (lroot) print*,"Chi sextic: ",chi_sextic
         lambda_phi = -(chi_sextic+3)
-        c_phi = chi_sextic+2
+        c_sextic = chi_sextic+2
         broken_mass = sqrt(2*(chi_sextic+1))
         deltaV = (1./12.)*(chi_sextic-1)
         if (surface_tension_type == 'cutting') then
@@ -663,6 +668,10 @@ module Special
       endif
       if (surface_tension_type == 'wall_thickness') then
         bubble_surface_tension = 1./(3.*thin_bubble_wall_width)
+      elseif (surface_tension_type == 'thin_wall_integral') then
+        if (.not. lphi_normalized_units) call fatal_error('initialize_special', &
+          "surface_tension_type='thin_wall_integral' needs lphi_normalized_units")
+        bubble_surface_tension = thin_wall_tension()
       endif
       if(bubble_surface_tension /= impossible) bubble_surface_tension = bubble_tension_coeff*bubble_surface_tension
 
@@ -1135,6 +1144,35 @@ module Special
 !
     endfunction realization_index
 !***********************************************************************
+    real function thin_wall_tension()
+!
+!  Thin-wall surface tension \int_0^1 sqrt(2 V_deg(phi)) dphi between the false (phi=0)
+!  and true (phi=1) vacuum of the normalized potentials, where V_deg = V - V(0) + deltaV*(3phi^2-2phi^3)
+!  is degenerate and has its minima at the same places as V. Midpoint rule.
+!
+      integer, parameter :: nphi=100000
+      real :: phi, V, sum_sqrt
+      integer :: i
+!
+      sum_sqrt = 0.
+      do i=1,nphi
+        phi = (i-0.5)/nphi
+        select case (Vprime_choice)
+          case ('quartic')
+            V = .5*phimass2*phi**2 + (1./3.)*delta_phi_prefactor*delta_phi*phi**3 + .25*lambda_phi_prefactor*lambda_phi*phi**4
+          case ('sextic_wo_cubic')
+            V = .5*phimass2*phi**2 + .25*lambda_phi*phi**4 + (1./6.)*c_sextic*phi**6
+          case default
+            call fatal_error('thin_wall_tension','not implemented for Vprime_choice='//trim(Vprime_choice))
+        endselect
+        ! V(0)=0 for both, and deltaV = V(0)-V(1)
+        V = V + deltaV*phi**2*(3-2*phi)
+        sum_sqrt = sum_sqrt + sqrt(2*max(V,0.))
+      enddo
+      thin_wall_tension = sum_sqrt/nphi
+!
+    endfunction thin_wall_tension
+!***********************************************************************
     subroutine calc_pencils_special(f,p)
 !
 !  Calculate Special pencils.
@@ -1320,7 +1358,7 @@ module Special
         ! alberto: do we need the prefactor variables lambda_phi_prefactor and delta_phi_prefactor?
         case ('quartic'); p%Vprime=phimass2*p%phi+delta_phi_prefactor*delta_phi*p%phi**2&
                                    +lambda_phi_prefactor*lambda_phi*p%phi**3
-        case ('sextic_wo_cubic'); p%Vprime= phimass2*p%phi + lambda_phi*p%phi**3 + c_phi*p%phi**5
+        case ('sextic_wo_cubic'); p%Vprime= phimass2*p%phi + lambda_phi*p%phi**3 + c_sextic*p%phi**5
         case ('cos-profile'); p%Vprime=phimass2*lambda_phi*sin(lambda_phi*p%phi)
         ! option for ultra-slow-roll (USR) potential based on arxiv:2008.12202
         case ('ultra_slow_roll1')
@@ -2702,7 +2740,7 @@ module Special
         case ('quadratic')  ; Vpotential=.5*phimass2*phi**2
         case ('quartic')    ; Vpotential=.5*phimass2*phi**2+(1.0/3.0)*delta_phi_prefactor*delta_phi*phi**3&
                                           +.25*lambda_phi_prefactor*lambda_phi*phi**4
-        case ('sextic_wo_cubic'); Vpotential = .5*phimass2*phi**2 + .25*lambda_phi*phi**4 + (1./6.)*c_phi*phi**6
+        case ('sextic_wo_cubic'); Vpotential = .5*phimass2*phi**2 + .25*lambda_phi*phi**4 + (1./6.)*c_sextic*phi**6
         case ('cos-profile'); Vpotential=phimass2*lambda_phi*sin(lambda_phi*phi)  !(to be corrected)
         case ('ultra_slow_roll1')
           Vpotential=V0_usr*(6*(phi/v_usr)**2 + 3.*(phi/v_usr)**4 - 4.*alpha_usr*(phi/v_usr)**3)
@@ -3069,6 +3107,7 @@ module Special
     call copy_addr(lbubble_pos_on_grid,p_par(84)) ! bool
     call copy_addr(lradial_ensemble,p_par(85)) ! bool
     call copy_addr(nrealizations,p_par(86)) ! int
+    call copy_addr(c_sextic,p_par(87))
 
     endsubroutine pushpars2c
 !********************************************************************
