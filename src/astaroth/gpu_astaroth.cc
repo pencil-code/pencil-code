@@ -22,6 +22,7 @@
 #include <dlfcn.h>
 #include <thread>
 #include <stack>
+#include <vector>
 
 static std::thread GW_thread{};
 static int device_id = 0;
@@ -2714,6 +2715,26 @@ extern "C" void prepareForFirstSubstep(double t)
 #if LSELFGRAVITY
 	calc_poisson();
         copyFarray(NULL);
+#endif
+}
+/***********************************************************************************************/
+//Copies the per-realization (Profile<Y>) sums of the radial ensemble of klein_gordon
+//to the host: tension and zeta receive the ny interior values of this process.
+//The profiles are already MPI-reduced over x and z.
+extern "C" void getGPUEnsembleSums(AcReal* tension, AcReal* zeta)
+{
+#if LKLEIN_GORDON
+	const Device device = acGridGetDevice();
+	acDeviceSynchronizeStream(device,STREAM_ALL);
+	const int my_local = acDeviceGetLocalConfig(device)[AC_mlocal].y;
+	std::vector<AcReal> buf(my_local);
+	AcMesh host = mesh;
+	host.profile[AC_bubble_tension_y] = buf.data();
+	acDeviceStoreProfile(device, AC_bubble_tension_y, &host);
+	for (int i = 0; i < ny; ++i) tension[i] = buf[NGHOST+i];
+	host.profile[AC_int_zeta_y] = buf.data();
+	acDeviceStoreProfile(device, AC_int_zeta_y, &host);
+	for (int i = 0; i < ny; ++i) zeta[i] = buf[NGHOST+i];
 #endif
 }
 /***********************************************************************************************/

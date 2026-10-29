@@ -40,6 +40,7 @@ int  updateInConfigVecName(char *, REAL*);
 void prepareForFirstSubstep(double t);
 void random_initial_condition(void);
 void getGPUReducedVars(REAL* dst);
+void getGPUEnsembleSums(REAL* tension, REAL* zeta);
 void testBCs(void);
 void splitUpdate(const REAL,const FINT);
 void copyVBApointers(REAL**, REAL**);
@@ -271,6 +272,11 @@ void FTNIZE(radtransfer_gpu_c)(){
 void FTNIZE(get_gpu_reduced_vars_c)(REAL* dst)
 {
 	getGPUReducedVars(dst);
+}
+/* ---------------------------------------------------------------------- */
+void FTNIZE(get_gpu_ensemble_sums_c)(REAL* tension, REAL* zeta)
+{
+	getGPUEnsembleSums(tension,zeta);
 }
 /* ------------------------------------------------------------------- */
 void FTNIZE(test_bcs_c)(void)

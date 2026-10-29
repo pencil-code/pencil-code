@@ -35,6 +35,7 @@ module GPU
   external pos_real_ptr_c
   external gpu_prepare_for_first_substep_c
   external get_gpu_reduced_vars_c
+  external get_gpu_ensemble_sums_c
   external test_bcs_c
   external split_update_gpu_c
 
@@ -486,6 +487,17 @@ contains
       call get_gpu_reduced_vars_c(dst)
 
     endsubroutine get_gpu_reduced_vars
+!**************************************************************************
+    subroutine get_gpu_ensemble_sums(tension,zeta)
+!
+!  Per-y-row sums of the radial ensemble in special/klein_gordon,
+!  for the local y range of this processor.
+!
+      real, dimension(ny) :: tension, zeta
+
+      call get_gpu_ensemble_sums_c(tension,zeta)
+
+    endsubroutine get_gpu_ensemble_sums
 !**************************************************************************
     subroutine test_gpu_bcs
 

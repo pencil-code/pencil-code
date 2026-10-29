@@ -187,6 +187,14 @@ contains
 
     endsubroutine get_gpu_reduced_vars
 !**************************************************************************
+    subroutine get_gpu_ensemble_sums(tension,zeta)
+
+      real, dimension(:) :: tension, zeta
+      call keep_compiler_quiet(tension)
+      call keep_compiler_quiet(zeta)
+
+    endsubroutine get_gpu_ensemble_sums
+!**************************************************************************
     subroutine test_gpu_bcs
     endsubroutine test_gpu_bcs
 !**************************************************************************

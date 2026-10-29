@@ -99,6 +99,10 @@ void FTNIZE(get_gpu_reduced_vars_c)(REAL* dst)
 {
 }
 /* ------------------------------------------------------------------- */
+void FTNIZE(get_gpu_ensemble_sums_c)(REAL* tension, REAL* zeta)
+{
+}
+/* ------------------------------------------------------------------- */
 void FTNIZE(test_bcs_c)(void)
 {
 }

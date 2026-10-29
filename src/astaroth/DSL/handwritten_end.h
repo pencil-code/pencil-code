@@ -136,7 +136,50 @@
           if(AC_iphi__mod__klein_gordon != 0)  write(F_PHI ,rk_intermediate(F_PHI ,DF_PHI ,step_num,AC_dt__mod__cdata))
           if(AC_idphi__mod__klein_gordon != 0) 
 	  {
-	     write(F_DPHI,rk_intermediate(F_DPHI,DF_DPHI,step_num,AC_dt__mod__cdata))
+	     dphi_intermediate = rk_intermediate(F_DPHI,DF_DPHI,step_num,AC_dt__mod__cdata)
+	     //Thermal noise, added in the last substep. It would naturally belong to twopass_solve_final,
+	     //but there F_PHI holds the RK increment, not phi, so its stencil gives the wrong gradient.
+	     //Hence it is done here and added to the increment so that rk_final adds exactly dt*zeta.
+	     if(AC_llast__mod__cdata && AC_lthermal_noise__mod__klein_gordon)
+	     {
+		inv_r = AC_inv_r[vertexIdx.x-NGHOST]
+		//lradial_ensemble runs on a cartesian grid with x as the radius (r1_mn is not set there)
+		if(AC_lradial_ensemble__mod__klein_gordon)
+		{
+			r = AC_x__mod__cdata[vertexIdx.x]
+			inv_r = r/(r*r+AC_tini__mod__cparam)
+		}
+		inv_dvol = inv_r*inv_r/(4*AC_REAL_PI*AC_dx__mod__cdata)
+		zeta = box_muller_transform()*sqrt(2.0*AC_plasma_coupling_coeff__mod__klein_gordon*AC_noise_strength__mod__klein_gordon*inv_dvol/AC_dt__mod__cdata)
+		//the first x-processor of every y-row of realizations contains the origin
+		if(AC_domain_coordinates.x == 0 && AC_domain_coordinates.z == 0 && vertexIdx.x < AC_continuation_offset__mod__klein_gordon+NGHOST)
+		{
+			zeta = 0.
+		}
+		//rk_final is previous + beta*increment (previous + dt*beta*increment with cumulative df)
+		if(AC_rk_cumulative_df)
+		{
+			dphi_intermediate += zeta/rk_beta(step_num)
+		}
+		else
+		{
+			dphi_intermediate += AC_dt__mod__cdata*zeta/rk_beta(step_num)
+		}
+		if(AC_lbubble_size_ode__mod__klein_gordon)
+		{
+			//gradient of phi at the beginning of the last substep (on CPUs: after the full step)
+			real integrand = AC_dx__mod__cdata*zeta*ac_transformed_pencil_gphi.x
+			if(AC_lradial_ensemble__mod__klein_gordon)
+			{
+				reduce_sum(integrand,AC_int_zeta_y)
+			}
+			else
+			{
+				reduce_sum(integrand,AC_int_zeta)
+			}
+		}
+	     }
+	     write(F_DPHI,dphi_intermediate)
 	  }
 
           if(AC_iphi_up_im__mod__klein_gordon != 0)   write(F_PHI_UP_IM,rk_intermediate(F_PHI_UP_IM,DF_PHI_UP_IM,step_num,AC_dt__mod__cdata))
@@ -151,9 +194,17 @@
           if(AC_idpsi__mod__klein_gordon != 0) write(F_DPSI,rk_intermediate(F_DPSI,DF_DPSI,step_num,AC_dt__mod__cdata))
           if(AC_lbubble_size_ode__mod__klein_gordon)
 	  {
-		v = AC_f_ode__mod__cdata[AC_irdot__mod__klein_gordon-1]
+		v = KG_WALL_VEL
 		gamma = 1./sqrt(1-v*v)
-		reduce_sum(AC_dx__mod__cdata*ac_transformed_pencil_gphi.x*ac_transformed_pencil_gphi.x/gamma,AC_bubble_tension)
+		tension = AC_dx__mod__cdata*ac_transformed_pencil_gphi.x*ac_transformed_pencil_gphi.x/gamma
+		if(AC_lradial_ensemble__mod__klein_gordon)
+		{
+			reduce_sum(tension,AC_bubble_tension_y)
+		}
+		else
+		{
+			reduce_sum(tension,AC_bubble_tension)
+		}
 	  }
 #  endif
 

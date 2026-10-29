@@ -146,13 +146,12 @@ module Special
     !PAR_DOC: (possibly multiplied by coefficient), but can also be given directly as an input parameter.
   real :: bubble_surface_tension = impossible !PAR_DOC: The surface tension of the true vacuum bubble. Computed based on different
     !PAR_DOC: recipes based on surface_tension_type.
-  real :: bubble_surface_tension_diag = impossible
   real :: bubble_wall_width_factor = 1.0
   integer :: number_of_bubbles = 1 !PAR_DOC: How many true vacuum bubbles are either in the initial condition or nucleated when the
     !PAR_DOC: nucleation history is created at the start.
   logical :: lspeed_of_light_dt = .false. !PAR_DOC: Do we apply the constraint $dt \le c/dx$. Usually not needed, but important for
     !PAR_DOC: vacuum EWPT.
-  integer :: seed_reset=1963
+  integer :: seed_reset=1963 !PAR_DOC: Seed of the random numbers (e.g. of the thermal noise), set at the start of run.x
   logical :: lcombine_prep_ode_right_with_rhs = .false. !PAR_DOC: Whether the sums needed for the ODE and rhs advancement are done in the together in the same kernel as the rhs
     !PAR_DOC: advancement. Benchmarks seem to suggest that combining them is indeed more performant.
     !PAR_DOC: This approach is however strictly approximative since we effectively take the value of Hscript from the preceeding
@@ -230,7 +229,22 @@ module Special
   logical :: ldR_for_wall_vel = .false. !PAR_DOC: Is the bubble wall velocity computed by tracking the bubble wall position.
     !PAR_DOC: Quite bad, would not recommend. The original intention was to fix velocity when having Langevin noise, but then
     !PAR_DOC: it is better to use the ODE to evolve the wall velocity to get rid of grid effects due to fluctuations.
-  
+  logical :: lradial_ensemble = .false. !PAR_DOC: Treat each y-row of a cartesian (x,y) grid as an independent radially
+    !PAR_DOC: symmetric 1d run with x as the radius (the 2/r term and the 4 pi r^2 dr volume are added here).
+    !PAR_DOC: The y direction only labels the realizations, which differ only by their Langevin noise.
+    !PAR_DOC: E.g. nxgrid=1024, nygrid=100, nzgrid=1 runs 100 radial runs side by side.
+    !PAR_DOC: With lbubble_size_ode each realization gets its own R and Rdot, written to data/wall_ensemble.dat.
+  integer :: nrealizations = 1
+  ! Per realization (one without lradial_ensemble): surface tension and noise integral of the wall ODE
+  real, dimension(:), allocatable :: wall_tension, wall_tension_next, wall_tension_diag
+  real, dimension(:), allocatable :: zeta_int, zeta_sum, zeta_int_diag
+  real, dimension(:), allocatable :: zeta_int_next   ! GPU: noise integral of the last step, used from the next step on
+  ! state read from the snapshot, applied in initialize_special
+  real, dimension(:), allocatable :: tension_persist, int_zeta_persist
+  integer, dimension(mseed) :: noise_seed=0
+  logical :: lR_persist=.false., lRdot_persist=.false., ltension_persist=.false.
+  logical :: lzeta_persist=.false., lseed_persist=.false.
+
 ! Sovan : Perturbative Reheating
 !
   real :: w_phi=0.0, G_phi=0.0, lnrho_phi0=0.0, rho_phi=impossible
@@ -267,7 +281,8 @@ module Special
       bubble_wall_width_factor,number_of_bubbles,bubble_positions, &
       beta,bubble_size,bubble_wall_width,linitialize_seed, &
       chi_quartic, continuation_offset, rho_phi, w_phi, G_phi, lnrho_phi0, &
-      lbubble_size_ode,bounce_action,surface_tension_type,chi_sextic
+      lbubble_size_ode,bounce_action,surface_tension_type,chi_sextic, &
+      lradial_ensemble
 !
   namelist /special_run_pars/ &
       initspecial, phi0, dphi0, phimass, sign_phimass2, eps, ascale_ini, &
@@ -280,7 +295,7 @@ module Special
       lgenerate_bubble_times,beta,nucleation_rate_choice,bubble_position_criteria,tf,&
       bubble_size,bubble_wall_width,plasma_coupling_coeff,lplasma_coupling, &
       rho_phi, w_phi, G_phi, lnrho_phi0, lthermal_noise, noise_strength, noise_start, &
-      ldR_for_wall_vel,friction_start
+      ldR_for_wall_vel,friction_start,seed_reset
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -325,6 +340,8 @@ module Special
   integer :: idiag_wall_vel = 0 ! DIAG_DOC: $v_{w}$
   integer :: idiag_wall_pos = 0 ! DIAG_DOC: $r_{w}$
   integer :: idiag_wall_lorentz = 0 ! DIAG_DOC: $\frac{1}{\sqrt{1-v_{w}^2}}$
+  integer :: idiag_wall_posstd = 0 ! DIAG_DOC: std of $r_{w}$ over the realizations of lradial_ensemble
+  integer :: idiag_wall_velstd = 0 ! DIAG_DOC: std of $v_{w}$ over the realizations of lradial_ensemble
 !
   integer :: enum_hscript_choice = 0
   integer :: enum_vprime_choice = 0
@@ -344,9 +361,6 @@ module Special
   real :: next_wall_pos = 0.
   real :: wall_gamma = impossible
   logical :: lwall_friction = .false.
-  real :: tension_next = 0.
-  real :: int_zeta = 0.
-  real :: int_zeta_diag
   logical :: lbubble_vel_on_grid=.false.
   logical :: lbubble_pos_on_grid=.false.
 
@@ -424,9 +438,10 @@ module Special
         call put_shared_variable('a21',a21)
       endif
 
+      if (lradial_ensemble) nrealizations = nygrid
       if (lbubble_size_ode) then
-        call farray_register_ode('R',iR)
-        call farray_register_ode('Rdot',iRdot)
+        call farray_register_ode('R',iR,nrealizations)
+        call farray_register_ode('Rdot',iRdot,nrealizations)
       endif
 !
 !      if (ldensity) then
@@ -460,7 +475,7 @@ module Special
       endif
 
       offset = 0
-      if (lroot .and. lspherical_coords .and. ny==1 .and. nz==1) then
+      if (lfirst_proc_x .and. ((lspherical_coords .and. ny==1 .and. nz==1) .or. lradial_ensemble)) then
         !This is for simulating the expansion of a single bubble in 1d radial,
         !where tanh is not a proper solution since dphi/dr at r=0 is not 0.
         !Thus we smoothly (continuos second derivative) connect a polynomial from l1 to continuation_offset
@@ -503,6 +518,8 @@ module Special
           z_local = z(n)
         endif
         r = sqrt((x_local-pos(1))**2+(y_local-pos(2))**2+(z_local-pos(3))**2)
+        ! x is the radius, the bubble is centred at r=0
+        if (lradial_ensemble) r = x(l)
         bubble_profile = 0.5*(1-tanh((r-bubble_size)/bubble_wall_width))
         if (l < l1+offset) then
           bubble_profile = 1 + c(1)*r**2 + c(2)*r**3 + c(3)*r**4
@@ -534,9 +551,18 @@ module Special
 !        else the treatment of bubbles shall diverge and the MPI will
 !        break or worse hang. The same as in interstellar and supernova explosions
 !
+      if (lseed_persist) then
+        call random_seed_wrapper(PUT=noise_seed)
+        return
+      endif
 !
       if (linitialize_seed) then
         seed(1)=seed_reset
+!
+!  The realizations of lradial_ensemble have to see different noise on each
+!  processor, and there are no bubble nucleations to keep in sync.
+!
+        if (lradial_ensemble) seed(1)=seed_reset+iproc
         call random_seed_wrapper(PUT=seed)
       endif
 !
@@ -560,7 +586,7 @@ module Special
       real :: thin_bubble_wall_width=impossible,sign_m2
 
 
-      call initialize_seed
+      if (.not. lreloading) call initialize_seed
 
       if (lflrw) then
         iLCDM_lna=farray_index_by_name_ode('iLCDM_lna')
@@ -790,6 +816,41 @@ module Special
 
       lbubble_vel_on_grid = .not. lbubble_size_ODE .and. (lwall_friction .or. idiag_tension /= 0)
       lbubble_pos_on_grid = .not. lbubble_size_ODE .and. (ldR_for_wall_vel .or. idiag_tension /= 0)
+
+      if (lradial_ensemble) then
+        if (.not. lcartesian_coords .or. nzgrid /= 1) &
+        ! the wall is tracked by the ODE of each realization, not on the grid
+        lbubble_vel_on_grid = .false.
+        lbubble_pos_on_grid = .false.
+        ! the light-speed timestep only looks at dx
+        if (dy < dx) call fatal_error('initialize_special','lradial_ensemble needs Ly/nygrid >= dx')
+      endif
+      if (.not. allocated(wall_tension)) then
+        allocate(wall_tension(nrealizations), wall_tension_next(nrealizations), wall_tension_diag(nrealizations), &
+                 zeta_int(nrealizations), zeta_sum(nrealizations), zeta_int_diag(nrealizations), &
+                 zeta_int_next(nrealizations))
+        wall_tension = bubble_surface_tension
+        wall_tension_diag = bubble_surface_tension
+        wall_tension_next = 0.
+        zeta_int = 0.
+        zeta_int_next = 0.
+        zeta_int_diag = 0.
+        zeta_sum = 0.
+      endif
+!
+!  R and Rdot come from the snapshot (read before this routine is called);
+!  older snapshots without them start again from the initial bubble.
+!
+      if (lbubble_size_ode .and. lrun .and. .not. lreloading) then
+        if (.not. (lR_persist .and. lRdot_persist)) then
+          call warning('initialize_special','no R and Rdot in the snapshot, restarting them from bubble_size')
+          f_ode(iR:iR+nrealizations-1) = bubble_size
+          f_ode(iRdot:iRdot+nrealizations-1) = 0.
+        endif
+        if (ltension_persist) wall_tension = tension_persist
+        if (lzeta_persist) zeta_int = int_zeta_persist
+        zeta_int_next = zeta_int
+      endif
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -955,8 +1016,8 @@ module Special
       endif
 
       if (lbubble_size_ode) then
-        f_ode(iR) = bubble_size
-        f_ode(iRdot) = 0.
+        f_ode(iR:iR+nrealizations-1) = bubble_size
+        f_ode(iRdot:iRdot+nrealizations-1) = 0.
       endif
 !
       call mpibcast_real(a2)
@@ -1037,6 +1098,7 @@ module Special
       if (idiag_wall_vel /= 0 .or. idiag_tension /= 0) then
         lpenc_requested(i_gphi) = .true.
       endif
+      if (lbubble_size_ode .and. nx > 1) lpenc_requested(i_gphi) = .true.
 
 !
       if (ldensity.and.lperturbative_reheating) then ! Sovan
@@ -1060,6 +1122,19 @@ module Special
 !
     endsubroutine pencil_interdep_special
 !***********************************************************************
+    integer function realization_index()
+!
+!  Global y index of the current pencil, which labels the realization
+!  with lradial_ensemble.
+!
+      if (lradial_ensemble) then
+        realization_index = ipy*ny + m - m1 + 1
+      else
+        realization_index = 1
+      endif
+!
+    endfunction realization_index
+!***********************************************************************
     subroutine calc_pencils_special(f,p)
 !
 !  Calculate Special pencils.
@@ -1077,7 +1152,8 @@ module Special
       real, dimension(nx) :: friction_coeff
       real, dimension(nx) :: u_dot_gphi
       real, parameter :: T=1.
-      real :: distance
+      real :: distance, v_wall, gamma_wall
+      integer :: iens
 
 ! phi
       if (lpencil(i_phi)) p%phi = f(l1:l2,m,n,iphi)
@@ -1102,7 +1178,11 @@ module Special
                                f(l1:l2,m,n,iphi_down_im)**2)
       endif
 ! gphi
-      if (lpencil(i_gphi)) call grad(f,iphi,p%gphi)
+      if (lpencil(i_gphi)) then
+        call grad(f,iphi,p%gphi)
+        !TP: bit sloppy way to make sure the derivative of the realizations does not have an effect.
+        if (lradial_ensemble) p%gphi(:,2:3) = 0.
+      endif
 
       if (lwaterfall) then
 ! gpsi
@@ -1282,7 +1362,14 @@ module Special
           p%plasma_friction = friction_coeff*p%lorentz_gamma*(p%dphi + u_dot_gphi)
         else if (lwall_friction) then
           friction_coeff = plasma_coupling_coeff
-          p%plasma_friction = friction_coeff*wall_gamma*(p%dphi + (-previous_wall_vel)*p%gphi(:,1))
+          if (lradial_ensemble) then
+            iens = realization_index()
+            v_wall = f_ode(iRdot+iens-1)
+            gamma_wall = 1./sqrt(1-v_wall**2)
+            p%plasma_friction = friction_coeff*gamma_wall*(p%dphi + (-v_wall)*p%gphi(:,1))
+          else
+            p%plasma_friction = friction_coeff*wall_gamma*(p%dphi + (-previous_wall_vel)*p%gphi(:,1))
+          endif
         endif
       endif
 
@@ -1345,7 +1432,7 @@ module Special
 !
       use Diagnostics, only: sum_mn_name, max_mn_name, save_name
       use Sub, only: dot_mn, del2, div
-      use Deriv, only: der
+      use Deriv, only: der, der2
       use General, only: notanumber
       use Messages, only: fatal_error_local
 !
@@ -1532,7 +1619,15 @@ module Special
         endif
 !
         if (c_phi/=0 .and. .not. lphi_hom) then
-          call del2(f, iphi, del2phi)
+          if (lradial_ensemble) then
+            ! spherically symmetric laplacian with x as the radius
+            call der2(f, iphi, del2phi, 1)
+            call der(f, iphi, tmp, 1)
+            ! 2/r d/dr, which vanishes at r=0
+            del2phi = del2phi + 2.*tmp*x(l1:l2)/(x(l1:l2)**2+tini)
+          else
+            call del2(f, iphi, del2phi)
+          endif
           df(l1:l2,m,n,idphi)=df(l1:l2,m,n,idphi) + c_phi**2*pref_del2*del2phi
           if (ip < 13) then
             if (notanumber(del2phi)) then
@@ -1601,10 +1696,6 @@ module Special
         endif
         dt1_max=max(dt1_max,dt1_special)
       endif
-
-      if (lbubble_size_ODE .and. nx > 1) then
-        tension_next = tension_next + sum(dx*p%gphi(:,1)**2/wall_gamma)
-      endif
 !
 !  Diagnostics
 !
@@ -1612,38 +1703,41 @@ module Special
 !
     endsubroutine dspecial_dt
 !***********************************************************************
-     subroutine get_Rddot(f_ode,Rddot)
-      use Diagnostics, only: save_name
+     subroutine get_Rddot(R,Rdot,tension,zeta_int,Rddot,pressure,curvature)
 
-      real, dimension(n_odevars), intent(in) :: f_ode
-      real :: R,Rdot,gammaR,Rddot,friction
-      real :: pressure,curvature
+      real, intent(in) :: R,Rdot,tension,zeta_int
+      real, intent(out) :: Rddot
+      real, intent(out), optional :: pressure,curvature
+      real :: gammaR,friction,pres,curv
 
-      R = f_ode(iR)
-      Rdot = f_ode(iRdot)
       gammaR = sqrt(1/(1.-Rdot**2))
       friction = -2*plasma_coupling_coeff*Rdot/gammaR
-      curvature = -2./(R*gammaR**2)
-      pressure = deltaV/(bubble_surface_tension*gammaR**3)
-      Rddot =  curvature + pressure + friction
+      curv = -2./(R*gammaR**2)
+      pres = deltaV/(tension*gammaR**3)
+      Rddot =  curv + pres + friction
       if (lthermal_noise) then
-        Rddot = Rddot + int_zeta
+        Rddot = Rddot + zeta_int
       endif
+      if (present(pressure)) pressure = pres
+      if (present(curvature)) curvature = curv
 
-      if (.not. lmultithread) then
-        call save_name(pressure,idiag_pressure)
-        call save_name(curvature,idiag_curvature)
-      endif
-     endsubroutine
+     endsubroutine get_Rddot
 !***********************************************************************
     subroutine dspecial_dt_ode
 !
+      use Mpicomm, only: mpiallreduce_sum
       use SharedVariables, only: get_shared_variable
       use Diagnostics, only: save_name
 
       real :: Rddot
+      integer :: i
 !
-      if (lgpu) call read_sums_from_GPU
+!  Integrals are either computed before on GPUs and read here or computed here.
+      if (lgpu) then
+        call read_sums_from_GPU
+      elseif (lbubble_size_ODE .and. nx > 1) then
+        call mpiallreduce_sum(wall_tension_next,wall_tension,nrealizations)
+      endif
       call get_Hscript_and_a2(Hscript,a2rhom_all)
       if (lflrw) df_ode(ilna)=df_ode(ilna)+Hscript
 !
@@ -1665,9 +1759,12 @@ module Special
         endif
       endif
       if (lbubble_size_ode) then
-        df_ode(iR) = df_ode(iR) + f_ode(iRdot)
-        call get_Rddot(f_ode,Rddot)
-        df_ode(iRdot) = df_ode(iRdot) + Rddot
+        do i=1,nrealizations
+          if (abs(f_ode(iRdot+i-1)) >= 1.0) call fatal_error('dspecial_dt_ode',"Superluminal wall velocity")
+          df_ode(iR+i-1) = df_ode(iR+i-1) + f_ode(iRdot+i-1)
+          call get_Rddot(f_ode(iR+i-1),f_ode(iRdot+i-1),wall_tension(i),zeta_int(i),Rddot)
+          df_ode(iRdot+i-1) = df_ode(iRdot+i-1) + Rddot
+        enddo
       endif
 !
 !  Diagnostics
@@ -1675,8 +1772,8 @@ module Special
       if (.not. lmultithread) then
         sigEm_all_diagnos = sigEm_all
         sigBm_all_diagnos = sigBm_all
-        bubble_surface_tension_diag = bubble_surface_tension
-        int_zeta_diag = int_zeta
+        wall_tension_diag = wall_tension
+        zeta_int_diag = zeta_int
         call calc_ode_diagnostics_special(f_ode)
       endif
 
@@ -1689,8 +1786,9 @@ module Special
       real, dimension(n_odevars) :: f_ode
       real :: rho_chi, lnascale
       real :: Hscript_diagnos
-      real :: gammaR, friction
-      real :: Rddot,r
+      real :: r
+      real, dimension(nrealizations) :: Rens, Rdotens, gammaens, Rddotens, presens, curvens
+      integer :: i, lun
 
       if (lrho_chi) then
         rho_chi=f_ode(iinfl_rho_chi)
@@ -1719,28 +1817,37 @@ module Special
           call save_name(count_eb0_all,idiag_count_eb0a)
 
         if (lbubble_size_ode) then
-          call save_name(f_ode(iR),idiag_wall_pos)
-          call save_name(f_ode(iRdot),idiag_wall_vel)
-          gammaR = 1/sqrt(1-f_ode(iRdot)**2)
-          call save_name(gammaR,idiag_wall_lorentz)
-          if (idiag_plasma_frictm  /= 0) then
-            friction = 2*plasma_coupling_coeff*f_ode(iRdot)/gammaR
-            call save_name(friction,idiag_plasma_frictm)
-          endif
-          if (idiag_Rddot /= 0) then
-            call get_Rddot(f_ode,Rddot)
-            call save_name(Rddot,idiag_Rddot)
-          endif
-
-          call save_name(int_zeta_diag,idiag_zeta_int)
+!
+!  Scalar diagnostics are averages over the realizations (just the wall without
+!  lradial_ensemble); with it, the individual walls go to data/wall_ensemble.dat.
+!
+          Rens = f_ode(iR:iR+nrealizations-1)
+          Rdotens = f_ode(iRdot:iRdot+nrealizations-1)
+          gammaens = 1/sqrt(1-Rdotens**2)
+          do i=1,nrealizations
+            call get_Rddot(Rens(i),Rdotens(i),wall_tension_diag(i),zeta_int_diag(i), &
+                           Rddotens(i),presens(i),curvens(i))
+          enddo
+          call save_name(sum(Rens)/nrealizations,idiag_wall_pos)
+          call save_name(sum(Rdotens)/nrealizations,idiag_wall_vel)
+          call save_name(sum(gammaens)/nrealizations,idiag_wall_lorentz)
+          call save_name(sqrt(sum((Rens-sum(Rens)/nrealizations)**2)/nrealizations),idiag_wall_posstd)
+          call save_name(sqrt(sum((Rdotens-sum(Rdotens)/nrealizations)**2)/nrealizations),idiag_wall_velstd)
+          call save_name(sum(2*plasma_coupling_coeff*Rdotens/gammaens)/nrealizations,idiag_plasma_frictm)
+          call save_name(sum(Rddotens)/nrealizations,idiag_Rddot)
+          call save_name(sum(presens)/nrealizations,idiag_pressure)
+          call save_name(sum(curvens)/nrealizations,idiag_curvature)
+          call save_name(sum(zeta_int_diag)/nrealizations,idiag_zeta_int)
+          call save_name(sum(wall_tension_diag)/nrealizations,idiag_tension)
           if (idiag_terminal_vel /= 0) then
-            r = deltaV/(plasma_coupling_coeff*bubble_surface_tension_diag)
+            r = deltaV/(plasma_coupling_coeff*sum(wall_tension_diag)/nrealizations)
             call save_name(r/(1+sqrt(1+r**2)),idiag_terminal_vel)
           endif
-          call save_name(bubble_surface_tension_diag,idiag_tension)
-        endif
-
-        if (lbubble_size_ode) then
+          if (lradial_ensemble .and. lroot) then
+            open(newunit=lun,file=trim(datadir)//'/wall_ensemble.dat',position='append')
+            write(lun,'(1p,*(e16.8))') t, Rens, Rdotens
+            close(lun)
+          endif
         endif
       endif
 
@@ -1885,6 +1992,31 @@ module Special
           done = read_persist ('WALL_VEL', next_wall_vel)
         case (id_record_WALL_POS)
           done = read_persist ('WALL_POS', next_wall_pos)
+!
+!  read_persist returns .true. on error, so the flags record a successful read.
+!
+        case (id_record_BUBBLE_R)
+          done = read_persist ('BUBBLE_R', f_ode(iR:iR+nrealizations-1))
+          lR_persist = .not. done
+          done = .true.
+        case (id_record_BUBBLE_RDOT)
+          done = read_persist ('BUBBLE_RDOT', f_ode(iRdot:iRdot+nrealizations-1))
+          lRdot_persist = .not. done
+          done = .true.
+        case (id_record_BUBBLE_TENSION)
+          if (.not. allocated(tension_persist)) allocate(tension_persist(nrealizations))
+          done = read_persist ('BUBBLE_TENSION', tension_persist)
+          ltension_persist = .not. done
+          done = .true.
+        case (id_record_BUBBLE_ZETA_INT)
+          if (.not. allocated(int_zeta_persist)) allocate(int_zeta_persist(nrealizations))
+          done = read_persist ('BUBBLE_ZETA_INT', int_zeta_persist)
+          lzeta_persist = .not. done
+          done = .true.
+        case (id_record_NOISE_SEEDS)
+          done = read_persist ('NOISE_SEEDS', noise_seed(1:nseed))
+          lseed_persist = .not. done
+          done = .true.
       endselect
 !
     endsubroutine input_persist_special_id
@@ -1897,11 +2029,32 @@ module Special
 !  15-jun-2015/axel: adapted from interstellar during office hours
 !
       use IO, only: write_persist
+      use General, only: random_seed_wrapper
 !
       output_persistent_special = .true.
 !
       if (write_persist ('WALL_VEL', id_record_WALL_VEL, next_wall_vel)) return
       if (write_persist ('WALL_POS', id_record_WALL_POS, next_wall_pos)) return
+!
+      if (lbubble_size_ode) then
+        if (write_persist ('BUBBLE_R', id_record_BUBBLE_R, f_ode(iR:iR+nrealizations-1))) return
+        if (write_persist ('BUBBLE_RDOT', id_record_BUBBLE_RDOT, f_ode(iRdot:iRdot+nrealizations-1))) return
+        if (write_persist ('BUBBLE_TENSION', id_record_BUBBLE_TENSION, wall_tension)) return
+        ! on GPUs the integral of the last step is only used from the next step on
+        if (lgpu) then
+          if (write_persist ('BUBBLE_ZETA_INT', id_record_BUBBLE_ZETA_INT, zeta_int_next)) return
+        else
+          if (write_persist ('BUBBLE_ZETA_INT', id_record_BUBBLE_ZETA_INT, zeta_int)) return
+        endif
+      endif
+!
+!  The state of the noise stream. Not from start.x, which resets the seed
+!  after the initial condition; run.x then seeds in initialize_seed.
+!
+      if (lthermal_noise .and. lrun) then
+        call random_seed_wrapper(GET=noise_seed)
+        if (write_persist ('NOISE_SEEDS', id_record_NOISE_SEEDS, noise_seed(1:nseed))) return
+      endif
 !
       output_persistent_special = .false.
 !
@@ -1976,6 +2129,8 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'wall_vel',idiag_wall_vel)
         call parse_name(iname,cname(iname),cform(iname),'wall_lorentz',idiag_wall_lorentz)
         call parse_name(iname,cname(iname),cform(iname),'wall_pos',idiag_wall_pos)
+        call parse_name(iname,cname(iname),cform(iname),'wall_posstd',idiag_wall_posstd)
+        call parse_name(iname,cname(iname),cform(iname),'wall_velstd',idiag_wall_velstd)
         call parse_name(iname,cname(iname),cform(iname),'tension',idiag_tension)
         call parse_name(iname,cname(iname),cform(iname),'zeta_int',idiag_zeta_int)
         call parse_name(iname,cname(iname),cform(iname),'terminal_vel',idiag_terminal_vel)
@@ -2139,6 +2294,14 @@ module Special
       call get_Hscript_and_a2(Hscript,a2rhom_all)
       call get_echarge
       call get_sigE_and_B
+!
+!  With the ODE the wall velocity is Rdot; for lradial_ensemble each pencil
+!  reads the Rdot of its own realization in calc_pencils_special.
+!
+      if (lbubble_size_ODE .and. .not. lradial_ensemble) then
+        previous_wall_vel = f_ode(iRdot)
+        wall_gamma = 1./sqrt(1-previous_wall_vel**2)
+      endif
       if (lbubble_vel_on_grid) then
         if (R_prev == impossible) then
           R_prev= bubble_size
@@ -2357,6 +2520,7 @@ module Special
 !
       ddotam=0.; a2rhopm=0.; a2rhom=0.; e2m=0; b2m=0; edotbm=0; a2rhophim=0.; a2rhogphim=0.
       sigE1m=0.; sigB1m=0.; a2rhogpsim=0.; a2rhopsim=0.
+      if (lbubble_size_ode) wall_tension_next=0.
 !
 !  In the following, sum over all mn pencils.
 !
@@ -2472,7 +2636,7 @@ module Special
       use Sub, only: box_muller_transform
       use Grid, only: get_grid_mn
       use General, only: notanumber
-      use Mpicomm, only: mpireduce_sum
+      use Mpicomm, only: mpiallreduce_sum
       use Deriv, only: der
 
       real, contiguous, dimension(:,:,:,:) :: f
@@ -2480,8 +2644,9 @@ module Special
       real :: dt_
       logical, intent(in) :: llast
       real, dimension(nx) :: zeta, drphi
-      real :: zeta_sum = 0.
+      integer :: i
 
+      call keep_compiler_quiet(dt_)
       if (llast) then  
         zeta_sum = 0.
         do m=m1,m2
@@ -2490,33 +2655,36 @@ module Special
           if (lthermal_noise .and. t > noise_start) then
             !Done to compute dVol
             call get_grid_mn
+            ! volume element of a single 1d radial run, 4 pi r^2 dr
+            if (lradial_ensemble) dVol = 4.*pi*x(l1:l2)**2*dVol_x(l1:l2)
             call box_muller_transform(zeta)
             zeta = zeta*sqrt(2*plasma_coupling_coeff*noise_strength)/sqrt(dt*dVol+tini)
             !TP: fluctuations close to the origin seem to make \int (dr_dphi)^2 explode
-            if (lroot .and. lspherical_coords .and. continuation_offset /= 0) then
-              zeta(1:continuation_offset+1) = 0.
+            if (lfirst_proc_x .and. (lspherical_coords .or. lradial_ensemble) .and. continuation_offset /= 0) then
+              zeta(1:min(continuation_offset+1,nx)) = 0.
             endif
             if (ip < 13) then
              if (notanumber(zeta)) then
                      print*,"NaNs in Zeta!!"
              endif
             endif
-            f(l1:l2,m,n,idphi) = f(l1:l2,m,n,idphi) + dt_*zeta
+            f(l1:l2,m,n,idphi) = f(l1:l2,m,n,idphi) + dt*zeta
             if (lbubble_size_ODE .and. nx > 1) then
               call der(f,iphi,drphi,1)
-              zeta_sum = zeta_sum + sum(zeta*dx*drphi)
+              i = realization_index()
+              zeta_sum(i) = zeta_sum(i) + sum(zeta*dx*drphi)
             endif
           endif
         enddo
         enddo
       endif
-
-      if (lbubble_size_ODE .and. nx > 1) then
-        call mpireduce_sum(tension_next,bubble_surface_tension)
-        tension_next = 0.
-        if (lthermal_noise) then
-          call mpireduce_sum(zeta_sum,int_zeta)
-        endif
+!
+!  The ODEs are advanced on all processors, so they all need the sums.
+!  The noise integral is used from the next timestep on (the surface tension
+!  is reduced in dspecial_dt_ode).
+!
+      if (lbubble_size_ODE .and. nx > 1 .and. lthermal_noise .and. llast) then
+        call mpiallreduce_sum(zeta_sum,zeta_int,nrealizations)
       endif
 
 !
@@ -2563,6 +2731,8 @@ module Special
       real, dimension (nx) :: boost, gam_EB, eprime, bprime, jprime1
       real, dimension (nx) :: psi, dpsi, gpsi2, a2rhopsi_tmp
       real, dimension (nx) :: rho_rad !, rho_phi
+      real :: gamma_wall
+      integer :: iens
 !
 !  if requested, calculate here <dphi**2+gphi**2+(4./3.)*(E^2+B^2)/a^2>
 !  rhop is purely an output quantity
@@ -2579,6 +2749,7 @@ module Special
       ! else
       if (.not. lphi_hom) then
         call grad(f,iphi,gphi)    !MR: the ghost zones are not necessarily updated!!!
+        if (lradial_ensemble) gphi(:,2:3) = 0.
         ! alberto: this function is called from special_after_boundary so shouldn't have the ghost zones updated?
         call dot2_mn(gphi,gphi2)
         a2rhogphim=a2rhogphim+sum(0.5*gphi2)
@@ -2587,6 +2758,16 @@ module Special
         !a2rhophim=a2rhophim+sum(a2rho)
       endif
       a2rhophim=a2rhophim+sum(a2rho)
+
+!
+!  Surface tension of the bubble wall 
+!
+      if (lbubble_size_ode .and. nx > 1) then
+        if (lphi_hom) call grad(f,iphi,gphi)
+        iens = realization_index()
+        gamma_wall = 1./sqrt(1-f_ode(iRdot+iens-1)**2)
+        wall_tension_next(iens) = wall_tension_next(iens) + sum(dx*gphi(:,1)**2/gamma_wall)
+      endif
 
       if (lwaterfall) then
         psi=f(l1:l2,m,n,ipsi)
@@ -2731,8 +2912,11 @@ module Special
 !  The sums needed for ODE and PDE advancement are computed on the GPUs in before_boundary.
 !  Then we need them back on the host to advance the ODEs which this function does.
 !
-      use GPU, only: get_gpu_reduced_vars,n_gpu_reduced_vars
+      use GPU, only: get_gpu_reduced_vars,n_gpu_reduced_vars,get_gpu_ensemble_sums
+      use Mpicomm, only: mpiallreduce_sum
       real, dimension(n_gpu_reduced_vars) :: tmp
+      real, dimension(ny) :: tension_loc, zeta_loc
+      real, dimension(nrealizations) :: tension_glob, zeta_glob, zeta_red
 
       call get_gpu_reduced_vars(tmp)
       if(Hscript_choice /= 'set') then
@@ -2746,11 +2930,31 @@ module Special
       ddotam_all         = tmp(7)
       e2m_all            = tmp(8)
       b2m_all            = tmp(9)
-      if (lbubble_size_ODE) then
-        bubble_surface_tension   = tmp(10)
-        if(lthermal_noise) then
-          int_zeta = tmp(11)
+      if (lbubble_size_ODE .and. lradial_ensemble) then
+!
+!  The profiles are reduced over x and z, so every y-row of processors holds
+!  its ny realizations; one processor per row contributes to the global arrays.
+!
+        call get_gpu_ensemble_sums(tension_loc,zeta_loc)
+        tension_glob = 0.
+        zeta_glob = 0.
+        if (lfirst_proc_x .and. lfirst_proc_z) then
+          tension_glob(ipy*ny+1:ipy*ny+ny) = tension_loc
+          zeta_glob(ipy*ny+1:ipy*ny+ny) = zeta_loc
         endif
+        call mpiallreduce_sum(tension_glob,wall_tension,nrealizations)
+        if (lthermal_noise .and. llast) call mpiallreduce_sum(zeta_glob,zeta_red,nrealizations)
+      elseif (lbubble_size_ODE) then
+        wall_tension(1) = tmp(10)
+        zeta_red(1) = tmp(11)
+      endif
+!
+!  The noise of the last substep is added after this call, as in special_after_timestep
+!  on CPUs, so its integral enters the ODEs from the next timestep on.
+!
+      if (lbubble_size_ODE .and. lthermal_noise) then
+        if (lfirst) zeta_int = zeta_int_next
+        if (llast) zeta_int_next = zeta_red
       endif
 
       call get_Hscript_and_a2(Hscript,a2rhom_all)
@@ -2764,8 +2968,10 @@ module Special
         ddotam_all_diagnos     = ddotam_all
         sigEm_all_diagnos      = sigEm_all
         sigBm_all_diagnos      = sigBm_all
-        bubble_surface_tension_diag = bubble_surface_tension
-        int_zeta_diag = int_zeta
+        if (lbubble_size_ODE) then
+          wall_tension_diag = wall_tension
+          zeta_int_diag = zeta_int
+        endif
       endif
 
     endsubroutine read_sums_from_GPU
@@ -2861,6 +3067,8 @@ module Special
     call copy_addr(idiag_a2rhogphim,p_par(82)) ! int
     call copy_addr(lbubble_vel_on_grid,p_par(83)) ! bool
     call copy_addr(lbubble_pos_on_grid,p_par(84)) ! bool
+    call copy_addr(lradial_ensemble,p_par(85)) ! bool
+    call copy_addr(nrealizations,p_par(86)) ! int
 
     endsubroutine pushpars2c
 !********************************************************************
