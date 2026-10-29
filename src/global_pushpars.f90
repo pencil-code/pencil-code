@@ -503,6 +503,7 @@ contains
     call copy_addr(imn_array,p_par(1442)) ! int (my) (mz)
     if(allocated(ninds)) call copy_addr(ninds,p_par(1443)) ! int (nghost*2+1) (ncoarse__mod__cdata+2) (nz)
 
+    call copy_addr(ipy,p_par(1448)) ! int
   endsubroutine pushpars2c
 !***********************************************************************
 endmodule Global_pushpars
