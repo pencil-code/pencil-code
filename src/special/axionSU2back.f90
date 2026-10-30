@@ -401,6 +401,7 @@ module Special
                   call fatal_error("init_special","either mQ0 must be given if no mu is given")
                 else
                   xi0=mQ0+1./mQ0
+                  Q0=mQ0*H/g
                   mu=(fdecay/sin(chi0/fdecay)*(6.*xi0*H**2/lamf+3.*lamf*H**4*mQ0**3/g**2))**.25
   !mu=   5.6150519586053321E-004
                   Uprime0=-mu**4/fdecay*sin(chi0/fdecay)
@@ -408,6 +409,9 @@ module Special
                 endif
                 if (lroot) print*,'mu is given: mu=',mu
               else
+!
+!  the expression for Q0 is correct only for chi0=0
+!
                 if (mQ0==impossible) then
                   if (lroot) print*,'Uprime0 is already computed: Uprime0=',Uprime0
                   Q0=(-Uprime0/(3.*g*lamf*H))**onethird
@@ -420,6 +424,7 @@ module Special
                 if (lroot) print*,'mu is given: mu=',mu
               endif
               if (lroot) print*,'Uprime0 is already computed: Uprime0=',Uprime0
+              if (lroot) print*,'(a) Q0=',Q0
 !
 !  In all 4 cases, chidot0 has to be compute
 !
@@ -454,7 +459,6 @@ module Special
 !  ODE variables (exist only on root processor)
 !
           if (lroot) then
-            Q0=(-Uprime0/(3.*g*lamf*H))**onethird
             f_ode(iaxi_Q)=Q0
             f_ode(iaxi_Qdot)=Qdot0
             f_ode(iaxi_chi)=chi0
