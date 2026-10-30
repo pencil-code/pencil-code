@@ -682,6 +682,20 @@ module EquationOfState
 !KG: breaks most of the convection auto-tests (e.g. conv-slab)
       do il=1,mx
         do im =1,my
+!         The natural way to code the below would be
+!         call get_gamma_etc(cp=cp(il,im), cv=cv(il,im), f=f(il,im,n,:))
+!         but that leads to the compiler creating a temporary array in each loop
+!         iteration, since get_gamma_etc declares f as an explicit-shape array
+!         (which must be contiguous). One way to avoid the copying would be for
+!         get_gamma_etc to declare f as an assumed-shape array (which need not
+!         be contiguous). While the assumed-shape approach is much faster than
+!         creating an explicit buffer (the approach used below) when no compiler
+!         optimizations are done, both approaches are equally performant with
+!         `gfortran -O3` (with the explicit buffer approach being a few percent
+!         faster in a simplified test with a 3000x3000x10 array). For
+!         get_gamma_etc, we prefer declaring f as explicit-shape, since that
+!         allows to easily catch cases where an array of the wrong size is
+!         passed to it.
           f_comp = f(il,im,n,:)
           call get_gamma_etc(cp=cp(il,im), cv=cv(il,im), f=f_comp)
         enddo
