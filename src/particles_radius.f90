@@ -66,6 +66,7 @@ module Particles_radius
   real, pointer :: cp_part_evap
   real, allocatable, dimension (:), target :: mdot_film
   character(len=labellen), dimension(ninit) :: initap='nothing'
+  logical :: linitap_spray_table=.false.   ! initap='spray-table', shared with Particles_dust
   character(len=labellen) :: condensation_coefficient_type='constant'
 !
   namelist /particles_radius_init_pars/ &
@@ -121,6 +122,12 @@ module Particles_radius
 
       call svn_id( "$Id$")
 !
+!  initap='spray-table': the radius is set by the tabulated inserter of
+!  Particles_dust, which checks that initxxp/initvvp/initap agree.
+!
+      call put_shared_variable('linitap_spray_table', linitap_spray_table, &
+                               caller='register_particles_radius')
+!
 !  Index for particle radius.
 !
       call append_npvar('iap',iap)
@@ -162,6 +169,13 @@ module Particles_radius
       integer :: j, k, ind
       integer :: pos
 !
+!  initap='spray-table' (radius from the tabulated inserter) excludes any
+!  other initap entry, which would overwrite the tabulated radius.
+!
+      if (linitap_spray_table .and. count(initap/='nothing')>1) &
+        call fatal_error('initialize_particles_radius', &
+            "with initap='spray-table' all other initap entries must be 'nothing'")
+!
 !  reinitialize
 !
       if (lreinitialize_ap) then
@@ -189,6 +203,9 @@ module Particles_radius
               endif
               fp(k,iap) = ap0(ind)
             enddo
+!
+          case ('spray-table')
+!           tabulated radii (Particles_dust) are kept
 !
           case ('nothing')
             if (lroot .and. j == 1)  print*, 'set_particles_radius: nothing'
@@ -314,6 +331,9 @@ module Particles_radius
       do j = 1,ninit
 !
         select case (initap(j))
+!
+        case ('spray-table')
+!         radius already set by spray_table_insert (Particles_dust, initxxp='spray-table')
 !
         case ('nothing')
           if (initial .and. lroot .and. j == 1)  print*, 'set_particles_radius: nothing'
@@ -1231,6 +1251,7 @@ module Particles_radius
 !
       read (parallel_unit, NML=particles_radius_init_pars, IOSTAT=iostat, IOMSG=iomsg)
       if (iostat==0) iomsg=""
+      linitap_spray_table = any(initap=='spray-table')
 !
 !  Find how many different particle radii we are using. This must be done
 !  because not all parts of the code are adapted to work with more than one
@@ -1261,6 +1282,7 @@ module Particles_radius
 !
       read (parallel_unit, NML=particles_radius_run_pars, IOSTAT=iostat, IOMSG=iomsg)
       if (iostat==0) iomsg=""
+      linitap_spray_table = any(initap=='spray-table')
 !
     endsubroutine read_particles_rad_run_pars
 !***********************************************************************

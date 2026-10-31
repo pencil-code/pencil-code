@@ -95,6 +95,9 @@ module NSCBC
       velocity_profile,turb_profile_mag,inlet_zz1,inlet_zz2,zz_profile
 !
   real :: gamma
+  integer :: ngas_tab=0
+  logical :: lgas_table_read=.false.
+  real, allocatable, dimension(:) :: gas_r, gas_u, gas_v, gas_urms
 
   contains
 !***********************************************************************
@@ -987,6 +990,7 @@ module NSCBC
       real, allocatable, dimension(:,:,:) :: u_turb
       real, dimension(3) :: velo
       real :: radius_mean, smooth, rad, vel
+      real :: xx1, xx2, uax, vrad, urms_loc
       integer :: i,j,kkk,jjj
       integer, dimension(10) :: stat
       logical :: lprint
@@ -1125,6 +1129,44 @@ module NSCBC
               enddo
             enddo
 !
+          case ('spray-table')
+!
+!  Axisymmetric mean profile read from gas_inlet.dat: columns r, u_axial
+!  (>0 into the domain), v_radial (>0 outward), u_rms.  Linear interpolation
+!  in r; the sign of u_t selects the inflow direction; u_profile (used to
+!  scale the turbulent inlet from file) is the tabulated u_rms.
+!
+            if (lprint) print*,'inlet_profile: spray-table (gas_inlet.dat)'
+            non_zero_transveral_velo=.true.
+            if (.not.lgas_table_read) call read_gas_inlet_table
+            do jjj=imin,imax
+              do kkk=jmin,jmax
+                if (dir==1) then
+                  xx1=y(jjj)-jet_center(1); xx2=z(kkk)-jet_center(2)
+                elseif (dir==2) then
+                  xx1=x(jjj)-jet_center(1); xx2=z(kkk)-jet_center(2)
+                else
+                  xx1=x(jjj)-jet_center(1); xx2=y(kkk)-jet_center(2)
+                endif
+                rad=sqrt(xx1**2+xx2**2)
+                call interp_gas_table(rad,uax,vrad,urms_loc)
+                u_in(jjj-imin+1,kkk-jmin+1,dir)=u_in(jjj-imin+1,kkk-jmin+1,dir)+sign(1.0,u_t)*uax
+                if (rad>0.0) then
+                  if (dir==1) then
+                    u_in(jjj-imin+1,kkk-jmin+1,2)=u_in(jjj-imin+1,kkk-jmin+1,2)+vrad*xx1/rad
+                    u_in(jjj-imin+1,kkk-jmin+1,3)=u_in(jjj-imin+1,kkk-jmin+1,3)+vrad*xx2/rad
+                  elseif (dir==2) then
+                    u_in(jjj-imin+1,kkk-jmin+1,1)=u_in(jjj-imin+1,kkk-jmin+1,1)+vrad*xx1/rad
+                    u_in(jjj-imin+1,kkk-jmin+1,3)=u_in(jjj-imin+1,kkk-jmin+1,3)+vrad*xx2/rad
+                  else
+                    u_in(jjj-imin+1,kkk-jmin+1,1)=u_in(jjj-imin+1,kkk-jmin+1,1)+vrad*xx1/rad
+                    u_in(jjj-imin+1,kkk-jmin+1,2)=u_in(jjj-imin+1,kkk-jmin+1,2)+vrad*xx2/rad
+                  endif
+                endif
+                u_profile(jjj-imin+1,kkk-jmin+1)=urms_loc
+              enddo
+            enddo
+!
           case ('single_jet_no_coflow')
             if (lprint) &
                 print*,'inlet_profile: single_jet'
@@ -1243,6 +1285,54 @@ module NSCBC
         deallocate(u_turb)
 !
       end subroutine find_velocity_at_inlet
+!***********************************************************************
+    subroutine read_gas_inlet_table
+!
+!  Read gas_inlet.dat: first line n, then n lines of  r  u_axial  v_radial  u_rms  (SI).
+!
+!  26-oct-26/claude: coded
+!
+      integer :: i, iunit
+!
+      iunit=94
+      open(iunit,file='gas_inlet.dat',status='old',action='read')
+      read(iunit,*) ngas_tab
+      if (allocated(gas_r)) deallocate(gas_r,gas_u,gas_v,gas_urms)
+      allocate(gas_r(ngas_tab),gas_u(ngas_tab),gas_v(ngas_tab),gas_urms(ngas_tab))
+      do i=1,ngas_tab
+        read(iunit,*) gas_r(i), gas_u(i), gas_v(i), gas_urms(i)
+      enddo
+      close(iunit)
+      lgas_table_read=.true.
+      if (lroot) print*,'read_gas_inlet_table: read ',ngas_tab,' radial stations from gas_inlet.dat'
+!
+    endsubroutine read_gas_inlet_table
+!***********************************************************************
+    subroutine interp_gas_table(rad,uax,vrad,urms_loc)
+!
+!  Linear interpolation of the tabulated gas inlet profile; constant beyond the last station.
+!
+      real, intent(in)  :: rad
+      real, intent(out) :: uax, vrad, urms_loc
+      integer :: i
+      real :: w
+!
+      if (rad<=gas_r(1)) then
+        uax=gas_u(1); vrad=gas_v(1); urms_loc=gas_urms(1)
+      elseif (rad>=gas_r(ngas_tab)) then
+        uax=gas_u(ngas_tab); vrad=gas_v(ngas_tab); urms_loc=gas_urms(ngas_tab)
+      else
+        i=1
+        do while (gas_r(i+1)<rad)
+          i=i+1
+        enddo
+        w=(rad-gas_r(i))/(gas_r(i+1)-gas_r(i))
+        uax=(1.0-w)*gas_u(i)+w*gas_u(i+1)
+        vrad=(1.0-w)*gas_v(i)+w*gas_v(i+1)
+        urms_loc=(1.0-w)*gas_urms(i)+w*gas_urms(i+1)
+      endif
+!
+    endsubroutine interp_gas_table
 !***********************************************************************
     subroutine find_composition_at_inlet(nchemspec,YYi,YYi_full,dir,imin,imax,jmin,jmax,igrid,jgrid)
 !
