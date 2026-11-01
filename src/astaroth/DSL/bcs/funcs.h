@@ -4211,6 +4211,48 @@ Kernel bc_aa_pot_kernel(AcBoundary boundary, AC_TOP_BOT topbot)
     }
 }
 
+//Potential field extrapolation of A ('pfe', bc_aa_pot_field_extrapol in boundcond.f90).
+//Operates on the Fourier transform of the boundary layer, which is stored in the planes
+//of the boundary point; writes the transforms of the ghost layers.
+//At the bottom structures are enhanced (optionally reduced by fbcz_bot(iaa)), at the top they decay.
+ac_potential_pfe_bc(AC_TOP_BOT topbot, Field f_real, Field f_imag)
+{
+	k = get_wavevector()
+	kappa = sqrt(k.x*k.x + k.y*k.y)
+	const int nb = vertexIdx.z
+	reduce_factor = 1.0
+	if (topbot == AC_bot && AC_fbcz_bot__mod__cdata[AC_iax__mod__cdata-1] != 0.0)
+	{
+		reduce_factor = AC_fbcz_bot__mod__cdata[AC_iax__mod__cdata-1]
+	}
+	for i in 1:NGHOST+1
+	{
+		ng = (topbot == AC_bot) ? nb-i : nb+i
+		//as exp(|k|)**delta_z in Fortran, delta_z = z(boundary)-z(ghost): growth at the bottom, decay at the top
+		fac = exp(reduce_factor*kappa*(AC_z__mod__cdata[nb]-AC_z__mod__cdata[ng]))
+		f_real[vertexIdx.x][vertexIdx.y][ng] = fac*f_real[vertexIdx.x][vertexIdx.y][nb]
+		f_imag[vertexIdx.x][vertexIdx.y][ng] = fac*f_imag[vertexIdx.x][vertexIdx.y][nb]
+	}
+}
+
+Kernel bc_aa_pfe_kernel(AC_TOP_BOT topbot)
+{
+    if(AC_luses_aa_pfe_top__mod__cdata || AC_luses_aa_pfe_bot__mod__cdata)
+    {
+	ac_potential_pfe_bc(topbot,AX_FOURIER_REAL,AX_FOURIER_IMAG)
+	ac_potential_pfe_bc(topbot,AY_FOURIER_REAL,AY_FOURIER_IMAG)
+	ac_potential_pfe_bc(topbot,AZ_FOURIER_REAL,AZ_FOURIER_IMAG)
+    }
+}
+
+bc_aa_pot_field_extrapol(AcBoundary boundary, AC_TOP_BOT topbot)
+{
+	suppress_unused_warning(topbot)
+	ac_fixed_bc(boundary,F_AX)
+	ac_fixed_bc(boundary,F_AY)
+	ac_fixed_bc(boundary,F_AZ)
+}
+
 //TP: these are  dummy implementations since we handle the potential bcs out of the task system
 bc_aa_pot2(AcBoundary boundary, AC_TOP_BOT topbot)
 {
