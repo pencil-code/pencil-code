@@ -91,7 +91,10 @@ bool torch_train_multiarg_CAPI(int sub_dims[3], const std::vector<std::pair<AcRe
         torchfort_tensor_list_add_tensor(outputs_tensor, outputs[i].first, 5, output_shape, TORCH_PRECISION);
     }
 
-    const torchfort_result_t res = torchfort_train_multiarg(model_name, inputs_tensor, outputs_tensor, loss_val, nullptr, 0);
+    // torchfort_train_multiarg always returns the loss in single precision
+    float loss_val_float;
+    const torchfort_result_t res = torchfort_train_multiarg(model_name, inputs_tensor, outputs_tensor, &loss_val_float, nullptr, 0);
+    *loss_val = loss_val_float;
     torchfort_result_t res_destroy = torchfort_tensor_list_destroy(inputs_tensor);
     res_destroy = torchfort_tensor_list_destroy(outputs_tensor);
     return res == TORCHFORT_RESULT_SUCCESS;
