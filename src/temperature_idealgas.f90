@@ -1406,7 +1406,6 @@ module Energy
       type(pencil_case) :: p
 
       call keep_compiler_quiet(f)
-
       call calc_2d_diagnostics_energy(p)
       call calc_1d_diagnostics_energy(p)
       call calc_0d_diagnostics_energy(p)
@@ -3196,6 +3195,7 @@ module Energy
     call copy_addr(gradtt0,p_par(57)) ! real3
     call string_to_enum(enum_borderss,borderss)
     call copy_addr(enum_borderss,p_par(58)) ! int
+    call copy_addr(w_sldchar_ene,p_par(59))
 
     call keep_compiler_quiet(lheatc_chiconst_accurate)
  
