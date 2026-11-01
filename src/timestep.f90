@@ -225,7 +225,6 @@ module Timestep
       real(KIND=rkind8) :: t_start
       integer :: i
       logical :: headt_save
-
 !
 !  dt_beta_ts may be needed in other modules (like Dustdensity) for fixed dt.
 !

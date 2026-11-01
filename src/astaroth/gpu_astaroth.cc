@@ -1904,7 +1904,7 @@ calc_timestep(double t)
   dt1_interface = dt1_;
 }
 /***********************************************************************************************/
-extern "C" void substepGPU(int isubstep, double t)
+extern "C" void substepGPU(int istep, int isubstep, double t)
 //
 //  Do the 'isubstep'th integration step on all GPUs on the node and handle boundaries.
 //
@@ -1937,6 +1937,7 @@ extern "C" void substepGPU(int isubstep, double t)
   AcTaskGraph *rhs =  acGetOptimizedDSLTaskGraph(AC_rhs);
   auto start = MPI_Wtime();
   acGridExecuteTaskGraph(rhs, 1);
+  //if (rank==0 && (istep-1)%1==0) printf("memusage after TaskGraph(rhs) %d %d \n", istep, acMemUsage());
   auto end = MPI_Wtime();
   if (performance_logs) acLogFromRootProc(rank,"RHS TOOK: %14e\n",end-start);
   if (ldt && (   (isubstep == 5 && !lcourant_dt) 

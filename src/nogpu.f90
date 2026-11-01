@@ -52,12 +52,10 @@ contains
     subroutine get_farray_ptr_gpu
     endsubroutine get_farray_ptr_gpu
 !**************************************************************************
-    subroutine rhs_GPU(f,itsub)
+    subroutine rhs_GPU(itsub)
 !
-      real, dimension (:,:,:,:) :: f
       integer :: itsub
 !
-      call keep_compiler_quiet(f)
       call keep_compiler_quiet(itsub)
 !
     endsubroutine rhs_GPU

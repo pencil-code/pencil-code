@@ -120,7 +120,7 @@ endsubroutine helper_loop
 !
 !$ use General, only: signal_send
 !
-!  At the end of every timeloop two facts concerning the GPU can be true.
+!  At the end of every timeloop iteration, two facts concerning the GPU can be true.
 !  1.) The buffers have been copied from the device
 !  2.) Diagnostics are to be performed from them.
 !  If 1.) is true the lock corresponding to the buffers should be freed
@@ -364,7 +364,7 @@ endsubroutine helper_loop
                              particles_load_balance, particles_stochastic
   use Signal_handling, only: emergency_stop
   use Sub,             only: control_file_exists, calc_scl_factor
-  use Syscalls,        only: system_cmd
+  use Syscalls,        only: system_cmd,memusage
   use Testscalar,      only: rescaling_testscalar
   use Testfield,       only: rescaling_testfield
   use TestPerturb,     only: testperturb_begin, testperturb_finalize
@@ -388,7 +388,7 @@ endsubroutine helper_loop
   real(KIND=rkind8) :: time_this_diagnostic
   integer :: it_this_diagnostic
 !
-!    Due to df being always limited inside a kernel on the Astaroth side we have to know the timestep before we do the rhs
+!    Due to df being always limited inside a kernel on the Astaroth side, we have to know the timestep before we do the rhs
 !    compared to the cpu where it is sufficient to know it after the rhs calculations.
 !    So, we take the timestep calculated at the start of the last timestep.
 !    Initially there is no previous timestep so we have an extra call here for there always to be a valid previous timestep.
@@ -396,9 +396,7 @@ endsubroutine helper_loop
 !    Similarly we setup similar dependencies between outputs of substeps here so there is always an initial value
 !    for these kinds of dependencies.
 !
-  if (lgpu) then
-    call gpu_prepare_for_first_substep()
-  endif
+  if (lgpu) call gpu_prepare_for_first_substep()
 
   Time_loop: do while (icount<nt)
 !
@@ -571,6 +569,7 @@ endsubroutine helper_loop
 !
     timer_for_timestep = real(mpiwtime())
     call time_step(f,df,p)
+    !if (lroot.and.mod(it-1,1) == 0) print*, 'memusage after 1 steps after timestep=', it,memusage()
     time_in_timestep = time_in_timestep + real(mpiwtime())-timer_for_timestep
 !
 !  If overlapping grids are used to get body-confined grid around the solids
@@ -627,7 +626,6 @@ endsubroutine helper_loop
       time_last_diagnostic = time_this_diagnostic
       call save_name(time_per_step,idiag_timeperstep)
     endif
-
     call gen_output(f)
 !
 !  Do exit when timestep has become too short.
@@ -732,8 +730,7 @@ endsubroutine helper_loop
 !  if we use HDF5-IO
 !
     if (lroot) then
-      if (.not. directory_exists('data/allprocs/signals')) &
-          call system_cmd('mkdir data/allprocs/signals')
+      if (.not. directory_exists('data/allprocs/signals')) call system_cmd('mkdir data/allprocs/signals')
       if (file_exists('data/allprocs/signals/SINGLE_PRECISION_RUN')) call delete_file('data/allprocs/signals/SINGLE_PRECISION_RUN')
       if (file_exists('data/allprocs/signals/DOUBLE_PRECISION_RUN')) call delete_file('data/allprocs/signals/DOUBLE_PRECISION_RUN')
       if (sizeof_real() < 8) then
@@ -741,8 +738,7 @@ endsubroutine helper_loop
       else
         call touch_file('data/allprocs/signals/DOUBLE_PRECISION_RUN')
       endif
-      if (file_exists('TIMESTEP_BECAME_TOO_SHORT')) &
-        call delete_file('TIMESTEP_BECAME_TOO_SHORT')
+      if (file_exists('TIMESTEP_TOO_SHORT')) call delete_file('TIMESTEP_TOO_SHORT')
     endif
 
   endsubroutine setup_signal_files
@@ -1202,8 +1198,8 @@ endsubroutine helper_loop
 !  This directory must exist, but may be linked to another disk.
 !
   f=0.
-  if (lroot .and. ldebug) print*, 'memusage before rsnap=', memusage()/1024., 'MBytes'
   if (lroot) tvar1=real(mpiwtime())
+  if (lroot .and. ldebug) print*, 'memusage before rsnap=', memusage()/1024., 'MBytes'
   call rsnap('var',f,mvar_in,lread_nogrid)
   if (lroot) print*,'rsnap: read snapshot var.dat in ',mpiwtime()-tvar1,' seconds'
 !

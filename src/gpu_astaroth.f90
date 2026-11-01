@@ -287,15 +287,11 @@ contains
 
     endsubroutine get_farray_ptr_gpu
 !**************************************************************************
-    subroutine rhs_GPU(f,isubstep)
+    subroutine rhs_GPU(isubstep)
 !
-      use General, only: notanumber
-
-      real, dimension (mx,my,mz,mfarray), intent(INOUT) :: f
-      integer,                            intent(IN)    :: isubstep
+      integer, intent(IN) :: isubstep
 !
-      call keep_compiler_quiet(f)
-      call rhs_gpu_c(isubstep,t)
+      call rhs_gpu_c(it,isubstep,t)
 !
     endsubroutine rhs_GPU
 !**************************************************************************

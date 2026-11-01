@@ -122,7 +122,6 @@ module Equ
       l1davgfirst=lfirst .and. l1davg
       l2davgfirst=lfirst .and. l2davg
       lvideo_first=lfirst .and. lvideo
-
 !
 !  Derived diagnostics switches.
 !
@@ -319,7 +318,7 @@ module Equ
 !$        lmasterflags(PERF_DIAGS) = .true.
         endif
         start_time = real(mpiwtime())
-        call rhs_gpu(f,itsub)
+        call rhs_gpu(itsub)
 !  Should be done after rhs_gpu since if doing testing against cpu want to get the right value of dt
 !$      if (ldiagnostic_output) then 
 !$        call save_diagnostic_controls
@@ -408,7 +407,7 @@ module Equ
 !  Takes minimum over and distributes to all processors.
 !  With GPUs this is done on the CUDA side.
 !
-        if (lupdate_courant_dt.and..not.lgpu) call set_dt(maxval(dt1_max))
+        if (lupdate_courant_dt) call set_dt(maxval(dt1_max))
 
       endif     ! if (.not. lgpu)
 
@@ -2136,7 +2135,7 @@ module Equ
         lfirst = (itsub == 1)
         if (.not. lfirst) df_copy = alpha_ts(itsub)*df_copy
         call before_boundary_gpu(f,lrmv,itsub,t)
-        call rhs_gpu(f,itsub)
+        call rhs_gpu(itsub)
 
         !    This is here since Astaroth is more careful in always applying bcs
         !    that update the comp domain so to emulate the behaviour (which I think is generally better)

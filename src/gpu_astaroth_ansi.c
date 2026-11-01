@@ -24,7 +24,7 @@ void registerGPU();
 void initializeGPU(REAL*, FINT, double, FINT, FINT, FINT, FINT, FINT*, FINT*);
 void finalizeGPU();
 void getFArrayIn(REAL **);
-void substepGPU(int, double);
+void substepGPU(int, int, double);
 void beforeBoundaryGPU(bool, int, double, bool);
 void afterSubStepGPU();
 void radTransfer();
@@ -171,7 +171,7 @@ void FTNIZE(update_after_substep_gpu_c)()
   afterSubStepGPU();
 }
 /* ---------------------------------------------------------------------- */
-void FTNIZE(rhs_gpu_c)(FINT *isubstep, double* t)
+void FTNIZE(rhs_gpu_c)(FINT *istep, FINT *isubstep, double* t)
 
 /* Communication between CPU and GPU: copy (outer) halos from CPU to GPU, 
    copy "inner halos" from GPU to CPU; calculation of rhss of momentum eq.
@@ -208,7 +208,7 @@ void FTNIZE(rhs_gpu_c)(FINT *isubstep, double* t)
 {
 // Performs integration substep on GPU.
 
-  substepGPU(*isubstep,*t);
+  substepGPU(*istep,*isubstep,*t);
 }
 /* ---------------------------------------------------------------------- */
 void FTNIZE(copy_farray_c)(REAL* f)
