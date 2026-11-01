@@ -217,6 +217,8 @@ Field F_ADV_DERZ
 field_order(AC_iglobal_glhc__mod__cdata == 0 ? -1 : 0+AC_iglobal_glhc__mod__cdata-1) Field F_GLOBAL_GLHX
 field_order(AC_iglobal_glhc__mod__cdata == 0 ? -1 : 1+AC_iglobal_glhc__mod__cdata-1) Field F_GLOBAL_GLHY
 field_order(AC_iglobal_glhc__mod__cdata == 0 ? -1 : 2+AC_iglobal_glhc__mod__cdata-1) Field F_GLOBAL_GLHZ
+//glhc is a scalar in temperature_idealgas (the vector components above are for entropy)
+#define F_GLOBAL_GLHC F_GLOBAL_GLHX
 Field F_HYPREX, F_HYPREY, F_HYPREZ
 Field F_ETAT
 
