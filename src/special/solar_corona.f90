@@ -169,7 +169,7 @@ module Special
   real :: tsnap_uu=0., thresh
   integer :: isnap
   integer, dimension(mseed) :: points_rstate
-  real, dimension(nx,ny) :: Ux_local, Uy_local
+  real, dimension(nx,ny) :: Ux_local=0., Uy_local=0.
 !
   integer, dimension(mseed) :: nano_seed
   integer :: alloc_err
