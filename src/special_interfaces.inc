@@ -117,7 +117,7 @@
       integer, dimension(:,:) :: ineargrid
     endsubroutine iface_special_particles_after_dtsub
 !
-!  special_before_boundary, special_before_boundary_diagnostics,
+!  special_before_boundary, special_before_boundary_diagnostics, special_before_boundary_shared,
 !  special_after_boundary:
 !
     subroutine iface_special_boundary(f)

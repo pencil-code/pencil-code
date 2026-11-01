@@ -34,6 +34,7 @@
   public :: special_boundconds
   public :: special_before_boundary
   public :: special_before_boundary_diagnostics
+  public :: special_before_boundary_shared
   public :: special_after_boundary
   public :: special_after_timestep
   public :: special_particles_bfre_bdary

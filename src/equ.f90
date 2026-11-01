@@ -1087,10 +1087,12 @@ module Equ
       use Hydro, only: hydro_before_boundary
       use Shear, only: shear_before_boundary
       use Interstellar, only: interstellar_before_boundary
+      use Special, only: special_before_boundary_shared
 
       real, contiguous, dimension(:,:,:,:) :: f
 
       if (linterstellar) call interstellar_before_boundary(f)
+      if (lspecial)      call special_before_boundary_shared(f)
       if (lshear)        call shear_before_boundary(f)
       if (lhydro_kinematic) call hydro_before_boundary(f)
 !

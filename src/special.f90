@@ -67,9 +67,10 @@
                           I_PREP_RHS_SPECIAL=39, &
                           I_LOAD_VARIABLES_TO_GPU_SPECIAL=40, &
                           I_SPECIAL_BEFORE_BOUNDARY_DIAGNOSTICS=41, &
-                          I_GET_FSLICES_SPECIAL=42
+                          I_GET_FSLICES_SPECIAL=42, &
+                          I_SPECIAL_BEFORE_BOUNDARY_SHARED=43
     
-    integer, parameter :: n_subroutines=42
+    integer, parameter :: n_subroutines=43
 !
     character(LEN=256) :: special_modules_list = ''
     character(LEN=128), dimension(n_subroutines) :: special_subroutines=(/ &
@@ -114,7 +115,8 @@
                            'prep_rhs_special                    ', &
                            'load_variables_to_gpu_special       ', &
                            'special_before_boundary_diagnostics ', &
-                           'get_fslices_special                 '  &
+                           'get_fslices_special                 ', &
+                           'special_before_boundary_shared      '  &
                    /)
 
     integer(KIND=ikind8) :: libhandle
@@ -165,6 +167,7 @@
       procedure(iface_special_ode),                    pointer, nopass :: prep_rhs_special
       procedure(iface_special_noargs),                 pointer, nopass :: load_variables_to_gpu_special
       procedure(iface_special_boundary),               pointer, nopass :: special_before_boundary_diagnostics
+      procedure(iface_special_boundary),               pointer, nopass :: special_before_boundary_shared
     endtype special_hooks
     type(special_hooks), dimension(n_special_modules) :: hooks
     character(LEN=128) :: specific_subroutine
@@ -276,6 +279,8 @@
       call c_f_procpointer(hook(i,I_LOAD_VARIABLES_TO_GPU_SPECIAL),hooks(i)%load_variables_to_gpu_special)
       call c_f_procpointer(hook(i,I_SPECIAL_BEFORE_BOUNDARY_DIAGNOSTICS), &
                                                                    hooks(i)%special_before_boundary_diagnostics)
+      call c_f_procpointer(hook(i,I_SPECIAL_BEFORE_BOUNDARY_SHARED), &
+                                                                   hooks(i)%special_before_boundary_shared)
     enddo
   endsubroutine initialize_mult_special
 !***********************************************************************
@@ -989,5 +994,17 @@
       enddo
 !
     endsubroutine special_before_boundary_diagnostics
+!***********************************************************************
+    subroutine special_before_boundary_shared(f)
+!
+      real, contiguous, dimension(:,:,:,:) :: f
+!
+      integer :: i
+!
+      do i=1,n_special_modules
+        call hooks(i)%special_before_boundary_shared(f)
+      enddo
+!
+    endsubroutine special_before_boundary_shared
 !***********************************************************************
   endmodule Special
