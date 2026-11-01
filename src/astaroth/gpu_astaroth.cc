@@ -47,6 +47,7 @@ bool calculated_coeff_scales = false;
 
 AcTaskGraph* GW_timestep_graph  =  NULL;
 AcTaskGraph* boundary_z_halo_exchange_graph =  NULL;
+AcTaskGraph* boundary_z_bot_halo_exchange_graph =  NULL;
 //TP: logs performance metrics of Astaroth
 const bool performance_logs = false;
 
@@ -67,6 +68,8 @@ const bool performance_logs = false;
   #define thread_block_loop_factors thread_block_loop_factors__mod__gpu
   #define luses_aa_pot2_top luses_aa_pot2_top__mod__cdata 
   #define luses_aa_pwd_top luses_aa_pwd_top__mod__cdata 
+  #define luses_aa_pfe_top luses_aa_pfe_top__mod__cdata 
+  #define luses_aa_pfe_bot luses_aa_pfe_bot__mod__cdata 
   #define lsplit_gw_rhs_from_rest_on_gpu lsplit_gw_rhs_from_rest_on_gpu__mod__gravitational_waves_htxk
   #define limplicit_diffusion_with_fft limplicit_diffusion_with_fft__mod__implicitdiffusion
   #define limplicit_diffusion_with_cg  limplicit_diffusion_with_cg__mod__implicitdiffusion
@@ -1530,6 +1533,7 @@ reload_dynamically_changing_variables(bool lrmv, int isubstep, double t, bool ls
  	acDeviceSetInput(acGridGetDevice(), AC_lrmv, lrmv);
  	acDeviceSetInput(acGridGetDevice(), AC_t, AcReal(t));
  	acDeviceSetInput(acGridGetDevice(), AC_lsubstepping_in_time, lsubstepping_in_time);
+	acDeviceSetInput(acGridGetDevice(), AC_dt, dt);
 }
 /***********************************************************************************************/
 void
@@ -1767,9 +1771,38 @@ extern "C" void afterSubStepGPU()
 	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_after_timestep),1);
 }
 /***********************************************************************************************/
+//Potential field extrapolation of A ('pfe'): transform the boundary layer, fill the
+//transformed ghost layers with bc_aa_pfe_kernel, transform them back and fill their xy halos
+static void pfe_boundary_condition(const AC_TOP_BOT topbot)
+{
+	acKernelInputParams params{};
+	params.bc_aa_pfe_kernel.topbot = topbot;
+	const AcKernel kernel = acGetOptimizedKernel(bc_aa_pfe_kernel,params);
+	const size_t boundary_z = (topbot == AC_bot) ? (size_t)NGHOST : (size_t)mesh.info[AC_nlocal_max].z-1;
+	acDeviceFFTR2PlanarXY(acGridGetDevice(), acGetF_AX(), acGetAX_FOURIER_REAL(), acGetAX_FOURIER_IMAG(), boundary_z);
+	acDeviceFFTR2PlanarXY(acGridGetDevice(), acGetF_AY(), acGetAY_FOURIER_REAL(), acGetAY_FOURIER_IMAG(), boundary_z);
+	acDeviceFFTR2PlanarXY(acGridGetDevice(), acGetF_AZ(), acGetAZ_FOURIER_REAL(), acGetAZ_FOURIER_IMAG(), boundary_z);
+	acDeviceLaunchKernel(acGridGetDevice(), STREAM_DEFAULT, kernel, (Volume){NGHOST,NGHOST,boundary_z},
+			(Volume){(size_t)mesh.info[AC_nlocal_max].x,(size_t)mesh.info[AC_nlocal_max].y, boundary_z+1}
+			);
+	acDeviceSynchronizeStream(acGridGetDevice(),STREAM_DEFAULT);
+	for (int ghost = 1; ghost <= NGHOST; ++ghost)
+	{
+		const size_t ghost_z = (topbot == AC_bot) ? boundary_z-ghost : boundary_z+ghost;
+		acDeviceFFTBackwardTransformPlanar2RXY(acGridGetDevice(),  acGetAX_FOURIER_REAL(), acGetAX_FOURIER_IMAG(), acGetF_AX(), ghost_z);
+		acDeviceFFTBackwardTransformPlanar2RXY(acGridGetDevice(),  acGetAY_FOURIER_REAL(), acGetAY_FOURIER_IMAG(), acGetF_AY(), ghost_z);
+		acDeviceFFTBackwardTransformPlanar2RXY(acGridGetDevice(),  acGetAZ_FOURIER_REAL(), acGetAZ_FOURIER_IMAG(), acGetF_AZ(), ghost_z);
+	}
+	acGridExecuteTaskGraph(topbot == AC_bot ? boundary_z_bot_halo_exchange_graph : boundary_z_halo_exchange_graph,1);
+}
+/***********************************************************************************************/
 //Tested to work with solar-atmosphere-magnetic
 void fourier_boundary_conditions()
 {
+	//Called on all ranks (the task graph execution is collective); on ranks without the
+	//global boundary the z halos written here are overwritten by the subsequent halo exchange
+	if (luses_aa_pfe_bot) pfe_boundary_condition(AC_bot);
+	if (luses_aa_pfe_top) pfe_boundary_condition(AC_top);
 	if (luses_aa_pwd_top)
 	{
 		acKernelInputParams params{};
@@ -2352,7 +2385,17 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_,
   acDeviceSetInput(acGridGetDevice(), AC_t,AcReal(t));
   acDeviceSetInput(acGridGetDevice(), AC_shear_delta_y,delta_y);
   GW_timestep_graph = acGetOptimizedDSLTaskGraph(AC_gravitational_waves_solve_and_stress);
-  if (luses_aa_pwd_top || luses_aa_pot2_top)
+  if (luses_aa_pfe_bot)
+  {
+	Field AA_fields[3];
+	AA_fields[0] = acGetF_AX();
+	AA_fields[1] = acGetF_AY();
+	AA_fields[2] = acGetF_AZ();
+	boundary_z_bot_halo_exchange_graph = acGridBuildTaskGraph({
+			acHaloExchangeBoundary(AA_fields,3,BOUNDARY_Z_BOT)
+			});
+  }
+  if (luses_aa_pwd_top || luses_aa_pot2_top || luses_aa_pfe_top)
   {
 	Field AA_fields[3];
 	AA_fields[0] = acGetF_AX();
