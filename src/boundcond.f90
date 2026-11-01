@@ -7043,6 +7043,8 @@ module Boundcond
 !
 !  Fourier Transform of Bz0:
 !
+!
+      !$omp parallel num_threads(1)
       if (.not. allocated (exp_fact)) then
         ! Setup exponential factor for bottom boundary
         allocate (exp_fact(enx,eny,nghost+1), stat=stat)
@@ -7051,6 +7053,7 @@ module Boundcond
       endif
 !
       call field_extrapol_z_parallel (Bz0, f(l1:l2,m1:m2,n1-nghost:n1,iax:iay), exp_fact)
+      !$omp end parallel
       call communicate_vect_field_ghosts(f,BOT)
       if (luse_vel_field) call communicate_vect_field_ghosts(f,BOT, iux)
 !
@@ -8748,8 +8751,10 @@ module Boundcond
             exp_fact_bot(:,:,pos_z) = exp_fact_bot(:,:,pos_z) ** delta_z / (nxgrid*nygrid)
           enddo
         endif
+        !$omp parallel num_threads(1)
         call vect_pot_extrapol_z_parallel &
              (f(l1:l2,m1:m2,n1,iax:iaz), f(l1:l2,m1:m2,n1-nghost:n1-1,iax:iaz), exp_fact_bot)
+        !$omp end parallel
       case(TOP)
         if (.not. allocated (exp_fact_top)) then
           ! Setup exponential factor for top boundary
@@ -8767,8 +8772,10 @@ module Boundcond
             exp_fact_top(:,:,pos_z) = exp_fact_top(:,:,pos_z) ** delta_z / (nxgrid*nygrid)
           enddo
         endif
+        !$omp parallel num_threads(1)
         call vect_pot_extrapol_z_parallel &
              (f(l1:l2,m1:m2,n2,iax:iaz), f(l1:l2,m1:m2,n2+1:n2+nghost,iax:iaz), exp_fact_top)
+        !$omp end parallel
       case default
         call fatal_error ('bc_aa_pot_field_extrapol', 'topbot should be BOT or TOP', lfirst_proc_xy)
       endselect
