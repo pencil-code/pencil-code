@@ -2135,7 +2135,6 @@ module Special
       if (lupdate_courant_dt) then
         tmp(:) = tau_inv
         if (ldiagnos .and. (idiag_dtvel /= 0)) then
-          itype_name(idiag_dtvel) = ilabel_max_dt
           call max_mn_name (tmp/cdts, idiag_dtvel, l_dt=.true.)
         endif
         dt1_max = max (dt1_max, tmp/cdts)
@@ -2329,7 +2328,6 @@ module Special
 !
       if (lupdate_courant_dt) then
         if (ldiagnos .and. (idiag_dtnewt /= 0)) then
-          itype_name(idiag_dtnewt) = ilabel_max_dt
           call max_mn_name (tmp_tau/cdts, idiag_dtnewt, l_dt=.true.)
         endif
         dt1_max = max (dt1_max, tmp_tau/cdts)
@@ -2802,7 +2800,6 @@ module Special
       if (lupdate_courant_dt) then
         tmp = delta_lnTT / cdts
         if (ldiagnos .and. (idiag_dtradloss /= 0)) then
-          itype_name(idiag_dtradloss) = ilabel_max_dt
           call max_mn_name(tmp, idiag_dtradloss, l_dt=.true.)
         endif
         dt1_max = max(dt1_max, tmp)
@@ -2850,7 +2847,6 @@ module Special
       if (lupdate_courant_dt) then
         tmp = tmp / cdts
         if (ldiagnos .and. (idiag_dtradloss /= 0)) then
-          itype_name(idiag_dtradloss) = ilabel_max_dt
           call max_mn_name(tmp, idiag_dtradloss, l_dt=.true.)
         endif
         dt1_max = max(dt1_max, tmp)
@@ -2892,7 +2888,6 @@ module Special
       if (lupdate_courant_dt) then
         tmp = tmp / cdts
         if (ldiagnos .and. (idiag_dtradloss /= 0)) then
-          itype_name(idiag_dtradloss) = ilabel_max_dt
           call max_mn_name(tmp, idiag_dtradloss, l_dt=.true.)
         endif
         dt1_max = max(dt1_max, tmp)
@@ -2933,7 +2928,6 @@ module Special
       if (lupdate_courant_dt) then
         tmp = tmp / cdts
         if (ldiagnos .and. (idiag_dtradloss /= 0)) then
-          itype_name(idiag_dtradloss) = ilabel_max_dt
           call max_mn_name(tmp, idiag_dtradloss, l_dt=.true.)
         endif
         dt1_max = max(dt1_max, tmp)
@@ -3095,7 +3089,6 @@ module Special
       if (lupdate_courant_dt) then
         tmp = max (rtv_cool/cdts, abs (rtv_cool/max (tini, delta_lnTT)))
         if (ldiagnos .and. idiag_dtradloss /= 0) then
-          itype_name(idiag_dtradloss) = ilabel_max_dt
           call max_mn_name(tmp,idiag_dtradloss,l_dt=.true.)
         endif
         dt1_max = max(dt1_max,tmp)
@@ -3449,7 +3442,6 @@ module Special
 !
       if (lupdate_courant_dt) then
         if (ldiagnos .and. idiag_dtnewt /= 0) then
-          itype_name(idiag_dtnewt) = ilabel_max_dt
           call max_mn_name(rhs/cdts,idiag_dtnewt,l_dt=.true.)
         endif
         dt1_max = max(dt1_max,rhs/cdts)
