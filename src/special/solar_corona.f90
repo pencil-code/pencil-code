@@ -4390,7 +4390,7 @@ module Special
       type (pencil_case) :: p
 !
       if (n == n2 .and. llast_proc_z) &
-          df(l1:l2,m,n2,iuz) = df(l1:l2,m,n2,iuz)-tau_inv*(p%uu(:,3)-u_add)
+          df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz)-tau_inv*(p%uu(:,3)-u_add)
 !
     endsubroutine force_solar_wind
 !***********************************************************************
