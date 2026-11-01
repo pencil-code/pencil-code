@@ -1,3 +1,5 @@
+#treat tabs like spaces (e.g. "SHOCK<tab>= shock" in samples/corona); y does not set the flag tested by "t store" below
+y/\t/ /
 /^ *$/ b end
 /^ *#/ b end
 /^ *[A-Z0-9_]* *= *-/ b end
