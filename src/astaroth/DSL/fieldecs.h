@@ -170,7 +170,7 @@ Field F_ETH
 Field F_GLOBAL_LNRHO0
 Field F_GLOBAL_SS0
 Field F_HYPVIS
-Field F_NUSMAG
+field_order(AC_inusmag__mod__cdata-1) Field F_NUSMAG
 
 field_order(AC_ibx__mod__cdata-1) Field F_BX
 field_order(AC_iby__mod__cdata-1) Field F_BY
