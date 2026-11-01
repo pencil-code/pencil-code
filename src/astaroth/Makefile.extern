@@ -1,4 +1,4 @@
-../cparam_c.h: ../cparam.f90 ../cparam.inc ../cparam_pencils.inc ../cparam.local ../scripts/cparam2c ../scripts/cparam.sed
+../cparam_c.h: ../cparam.f90 ../cparam.inc ../cparam_enum.h ../cparam_pencils.inc ../cparam.local ../scripts/cparam2c ../scripts/cparam.sed
 	@cd ..; scripts/cparam2c
 ../forcing_c.h: ../forcing.f90 ../scripts/forcing2c
 	@cd ..; scripts/forcing2c
