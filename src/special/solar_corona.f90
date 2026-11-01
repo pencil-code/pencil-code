@@ -172,6 +172,7 @@ module Special
   real, dimension(nx,ny) :: Ux_local=0., Uy_local=0.
 !
   integer, dimension(mseed) :: nano_seed
+  integer, dimension(3) :: enum_iheattype=0
   integer :: alloc_err
   real, dimension(nx) :: diffus_chi, diffus_chi3
   real :: gamma, gamma1, gamma_m1, cp1
@@ -4868,6 +4869,92 @@ endsubroutine characteristic_speed
 !
     endfunction minmod_alt
 !***********************************************************************
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    use Syscalls, only: copy_addr
+    use General , only: string_to_enum
+
+    integer, parameter :: n_pars=74
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr(cool_rtv_cutoff,p_par(1)) ! int
+    call copy_addr(nc_tau,p_par(2))
+    call copy_addr(nc_alt,p_par(3))
+    call copy_addr(heat_cool,p_par(4))
+    call copy_addr(rho_diff_fix,p_par(5))
+    call copy_addr(cool_rtv,p_par(6))
+    call copy_addr(nc_tau_rho,p_par(7))
+    call copy_addr(nc_alt_rho,p_par(8))
+    call copy_addr(hcond1,p_par(9))
+    call copy_addr(ksat,p_par(10))
+    call copy_addr(kc,p_par(11))
+    call copy_addr(t_crit,p_par(12))
+    call copy_addr(deltat_crit,p_par(13))
+    call copy_addr(diffrho_hyper3,p_par(14))
+    call copy_addr(chi_hyper3,p_par(15))
+    call copy_addr(chi_hyper2,p_par(16))
+    call copy_addr(k_iso,p_par(17))
+    call copy_addr(mass_input_rate,p_par(18))
+    call copy_addr(tau_inv,p_par(19))
+    call copy_addr(lgranulation,p_par(20)) ! bool
+    call copy_addr(luse_vel_field,p_par(21)) ! bool
+    call copy_addr(lmassflux,p_par(22)) ! bool
+    call copy_addr(lnc_density_depend,p_par(23)) ! bool
+    call copy_addr(lnc_intrin_energy_depend,p_par(24)) ! bool
+    call copy_addr(irefz,p_par(25)) ! int
+    call copy_addr(cool_type,p_par(26)) ! int
+    call copy_addr(massflux,p_par(27))
+    call copy_addr(u_add,p_par(28))
+    call copy_addr(k_spitzer,p_par(29))
+    call copy_addr(hcond2,p_par(30))
+    call copy_addr(hcond3,p_par(31))
+    call copy_addr(init_time,p_par(32))
+    call copy_addr(init_time_hcond,p_par(33))
+    call copy_addr(init_time_fade_start,p_par(34))
+    call copy_addr(init_time_hcond_fade_start,p_par(35))
+    call copy_addr(nc_z_max,p_par(36))
+    call copy_addr(nc_z_trans_width,p_par(37))
+    call copy_addr(nc_z_min,p_par(38))
+    call copy_addr(nc_z_min_trans_width,p_par(39))
+    call copy_addr(nc_lnrho_num_magn,p_par(40))
+    call copy_addr(nc_lnrho_trans_width,p_par(41))
+    call copy_addr(swamp_fade_start,p_par(42))
+    call copy_addr(swamp_fade_end,p_par(43))
+    call copy_addr(swamp_diffrho,p_par(44))
+    call copy_addr(swamp_chi,p_par(45))
+    call copy_addr(swamp_eta,p_par(46))
+    call copy_addr(swamp_nu,p_par(47))
+    call copy_addr(lnrho_min,p_par(48))
+    call copy_addr(lnrho_min_tau,p_par(49))
+    call copy_addr(lnrho_max,p_par(50))
+    call copy_addr(lprof_deltat,p_par(51)) ! bool
+    call copy_addr(lprof_deltae,p_par(52)) ! bool
+    call copy_addr(lprof_e,p_par(53)) ! bool
+    call copy_addr(lprof_deltah_part,p_par(54)) ! bool
+    call copy_addr(lprof_deltah_vol,p_par(55)) ! bool
+    call copy_addr(lheatcond_cutoff,p_par(56)) ! bool
+    call copy_addr(gamma,p_par(57))
+    call copy_addr(heat_par_exp,p_par(58)) ! (2)
+    call copy_addr(heat_par_exp2,p_par(59)) ! (2)
+    call copy_addr(heat_par_gauss,p_par(60)) ! real3
+    call copy_addr(lnrho_init_z,p_par(61)) ! (mz)
+    call copy_addr(lntt_init_z,p_par(62)) ! (mz)
+    if (allocated(deltat_init_z)) call copy_addr(deltat_init_z,p_par(63)) ! (mz)
+    if (allocated(deltae_init_z)) call copy_addr(deltae_init_z,p_par(64)) ! (mz)
+    if (allocated(e_init_z)) call copy_addr(e_init_z,p_par(65)) ! (mz)
+    if (allocated(deltarho_init_z)) call copy_addr(deltarho_init_z,p_par(66)) ! (mz)
+    if (allocated(deltah_part_init_z)) call copy_addr(deltah_part_init_z,p_par(67)) ! (mz)
+    if (allocated(deltah_vol_init_z)) call copy_addr(deltah_vol_init_z,p_par(68)) ! (mz)
+    if (allocated(mass_prof)) call copy_addr(mass_prof,p_par(69)) ! (mz)
+    if (allocated(lnrho_global_z)) call copy_addr(lnrho_global_z,p_par(70)) ! (mzgrid)
+    if (allocated(lntt_global_z)) call copy_addr(lntt_global_z,p_par(71)) ! (mzgrid)
+    call copy_addr(ux_local,p_par(72)) ! (nx) (ny)
+    call copy_addr(uy_local,p_par(73)) ! (nx) (ny)
+    call string_to_enum(enum_iheattype,iheattype)
+    call copy_addr(enum_iheattype,p_par(74)) ! int3
+
+    endsubroutine pushpars2c
 !***********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
