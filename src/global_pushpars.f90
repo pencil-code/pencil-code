@@ -20,6 +20,8 @@ contains
     logical, save :: luses_aa_pwd_top = .false.
     logical, save :: luses_aa_pot2_bot = .false.
     logical, save :: luses_aa_pwd_bot = .false.
+    logical, save :: luses_aa_pfe_top = .false.
+    logical, save :: luses_aa_pfe_bot = .false.
     integer, save :: pc_maux, pc_maux_com, pc_mfarray, pc_mcom   ! copies: maux etc. are parameters without DYNAMIC_AUX
     integer :: j
 
@@ -455,7 +457,11 @@ contains
       if (bcz12(j,BOT) == 'pot') luses_aa_pot2_bot = .true.
       if (bcz12(j,TOP) == 'pwd') luses_aa_pwd_top = .true.
       if (bcz12(j,BOT) == 'pwd') luses_aa_pwd_bot = .true.
+      if (bcz12(j,TOP) == 'pfe') luses_aa_pfe_top = .true.
+      if (bcz12(j,BOT) == 'pfe') luses_aa_pfe_bot = .true.
     enddo
+    call copy_addr(luses_aa_pfe_top,p_par(1449)) ! bool
+    call copy_addr(luses_aa_pfe_bot,p_par(1450)) ! bool
     call copy_addr(luses_aa_pot2_top,p_par(1398)) ! bool
     call copy_addr(luses_aa_pot2_bot,p_par(1399)) ! bool
     call copy_addr(luses_aa_pwd_top,p_par(1400)) ! bool

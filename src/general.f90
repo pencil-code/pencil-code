@@ -7769,6 +7769,18 @@ iloop:do i=1,size(list2)
         dst = enum_harmonic_string
       case('frozen')
         dst = enum_frozen_string
+      case('exp2')
+        dst = enum_exp2_string
+      case('gauss')
+        dst = enum_gauss_string
+      case('nanof')
+        dst = enum_nanof_string
+      case('event')
+        dst = enum_event_string
+      case('event1d')
+        dst = enum_event1d_string
+      case('t<tcrit')
+        dst = enum_tZtcrit_string
       case('waterfall')
         dst = enum_waterfall_string
       case('imposed-cs2-core')
