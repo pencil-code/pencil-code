@@ -594,8 +594,14 @@ ifneq ($(TORCHFORT_PATH),)
   ifeq ($(TORCHFORT_PATH),)
     $(info TORCHFORT_PATH not set)
   else
-    override FFLAGS+=-cuda -noswitcherror -I$(TORCHFORT_PATH)/include/
-    override LDFLAGS+=-L$(TORCHFORT_PATH)/lib/ -ltorchfort_fort -ltorchfort -cuda
+    ifeq ($(ASTAROTH_CPU_BUILD),on)
+#     CPU-emulated Astaroth with a CPU-only TorchFort: libtorchfort is linked into the Astaroth library,
+#     and the nvfortran-only flags are not applicable.
+      override LDFLAGS+=-L$(TORCHFORT_PATH)/lib/ -Wl,-rpath,$(TORCHFORT_PATH)/lib/
+    else
+      override FFLAGS+=-cuda -noswitcherror -I$(TORCHFORT_PATH)/include/
+      override LDFLAGS+=-L$(TORCHFORT_PATH)/lib/ -ltorchfort_fort -ltorchfort -cuda
+    endif
   endif
 endif
 ifneq ($(GPU),nogpu)
