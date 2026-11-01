@@ -1054,7 +1054,7 @@ module Special
 !
         df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + diffrho_hyper3*fdiff
 !
-        if (lfirst.and.ldt) maxdiffus3=max(maxdiffus3,diffrho_hyper3*dxyz_6)
+        if (lupdate_courant_dt) maxdiffus3=max(maxdiffus3,diffrho_hyper3*dxyz_6)
 !
         if (headtt) print*,'special_calc_density: diffrho_hyper3=', &
             diffrho_hyper3
@@ -1143,7 +1143,7 @@ module Special
 !
 !  due to ignoredx chi_hyperx has [1/s]
 !
-        if (lfirst .and. ldt) diffus_chi3 = diffus_chi3 + chi_hyper3
+        if (lupdate_courant_dt) diffus_chi3 = diffus_chi3 + chi_hyper3
       endif
 !
       if (chi_hyper2 /= 0.0) then
@@ -1152,7 +1152,7 @@ module Special
 !
 !  due to ignoredx chi_hyperx has [1/s]
 !
-        if (lfirst .and. ldt) diffus_chi3 = diffus_chi3 + chi_hyper2
+        if (lupdate_courant_dt) diffus_chi3 = diffus_chi3 + chi_hyper2
       endif
 !
       if ((K_spitzer /= 0.0) .or. (hcond1 /= 0.0) .or. (hcond2 /= 0.0)) then
@@ -1207,7 +1207,7 @@ module Special
 !
       if (swamp_chi > 0.0) call calc_swamp_temp(df,p)
 !
-      if (lfirst.and.ldt) then
+      if (lupdate_courant_dt) then
         maxdiffus=max(maxdiffus,diffus_chi)
         maxdiffus3=max(maxdiffus3,diffus_chi3)
       endif
@@ -2132,7 +2132,7 @@ module Special
         df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - tau_inv * (f(l1:l2,m,n,iuy) - Uy(:,m-nghost))
       endif
 !
-      if (lfirst .and. ldt) then
+      if (lupdate_courant_dt) then
         tmp(:) = tau_inv
         if (ldiagnos .and. (idiag_dtvel /= 0)) then
           itype_name(idiag_dtvel) = ilabel_max_dt
@@ -2327,7 +2327,7 @@ module Special
         df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + newton_rho * tmp_tau    !MR: log/nolog distinction=?
       endif
 !
-      if (lfirst .and. ldt) then
+      if (lupdate_courant_dt) then
         if (ldiagnos .and. (idiag_dtnewt /= 0)) then
           itype_name(idiag_dtnewt) = ilabel_max_dt
           call max_mn_name (tmp_tau/cdts, idiag_dtnewt, l_dt=.true.)
@@ -2573,7 +2573,7 @@ module Special
         cos_B_glnTT = cos_B_glnTT*glnTT_abs_inv
       endwhere
 !
-      if (lfirst .and. ldt) then
+      if (lupdate_courant_dt) then
         fdiff = gamma*chi_spitzer * abs(cos_B_glnTT) * dxyz_2
         diffus_chi = diffus_chi+fdiff
         if (ldiagnos .and. (idiag_dtspitzer /= 0)) then
@@ -2617,7 +2617,7 @@ module Special
         df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) + rhs * p%TT * K_iso
       endif
 !
-      if (lfirst .and. ldt) then
+      if (lupdate_courant_dt) then
         fdiff = gamma*K_iso * p%TT * glnTT_abs * dxyz_2
         diffus_chi = diffus_chi+fdiff
         if (ldiagnos .and. (idiag_dtchi2 /= 0)) then
@@ -2656,7 +2656,7 @@ module Special
 !
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + rhs
 !
-      if (lfirst .and. ldt) then
+      if (lupdate_courant_dt) then
         maxdiffus=max(maxdiffus,chi*dxyz_2)
         fdiff = gamma*chi * dxyz_2
         diffus_chi = diffus_chi+fdiff
@@ -2701,7 +2701,7 @@ module Special
 !
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + rhs
 !
-      if (lfirst .and. ldt) then
+      if (lupdate_courant_dt) then
         fdiff = gamma*chi * glnTT2 * dxyz_2
         diffus_chi = diffus_chi+fdiff
         if (ldiagnos .and. (idiag_dtchi2 /= 0)) then
@@ -2744,7 +2744,7 @@ module Special
 !
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + rhs
 !
-      if (lfirst .and. ldt) then
+      if (lupdate_courant_dt) then
         fdiff = gamma*chi * glnTT2*dxyz_2
         diffus_chi = diffus_chi+fdiff
         if (ldiagnos .and. (idiag_dtchi2 /= 0)) then
@@ -2799,7 +2799,7 @@ module Special
             call stop_it('solar_corona: calc_heat_cool_deltaT:lentropy=not implemented')
       endif
 !
-      if (lfirst .and. ldt) then
+      if (lupdate_courant_dt) then
         tmp = delta_lnTT / cdts
         if (ldiagnos .and. (idiag_dtradloss /= 0)) then
           itype_name(idiag_dtradloss) = ilabel_max_dt
@@ -2847,7 +2847,7 @@ module Special
             call stop_it('solar_corona: calc_heat_cool_deltaE:lentropy=not implemented')
       endif
 !
-      if (lfirst .and. ldt) then
+      if (lupdate_courant_dt) then
         tmp = tmp / cdts
         if (ldiagnos .and. (idiag_dtradloss /= 0)) then
           itype_name(idiag_dtradloss) = ilabel_max_dt
@@ -2889,7 +2889,7 @@ module Special
             call stop_it('solar_corona: calc_heat_cool_deltaH_part:lentropy=not implemented')
       endif
 !
-      if (lfirst .and. ldt) then
+      if (lupdate_courant_dt) then
         tmp = tmp / cdts
         if (ldiagnos .and. (idiag_dtradloss /= 0)) then
           itype_name(idiag_dtradloss) = ilabel_max_dt
@@ -2930,7 +2930,7 @@ module Special
             call stop_it('solar_corona: calc_heat_cool_deltaH_vol:lentropy=not implemented')
       endif
 !
-      if (lfirst .and. ldt) then
+      if (lupdate_courant_dt) then
         tmp = tmp / cdts
         if (ldiagnos .and. (idiag_dtradloss /= 0)) then
           itype_name(idiag_dtradloss) = ilabel_max_dt
@@ -2978,7 +2978,7 @@ module Special
             call stop_it('solar_corona: calc_heat_cool_E:lentropy=not implemented')
       endif
 !
-      if (lfirst .and. ldt) then
+      if (lupdate_courant_dt) then
         tmp = tmp / cdts
         if (ldiagnos .and. (idiag_dtradloss /= 0)) then
           call max_mn_name(tmp,idiag_dtradloss,l_dt=.true.)
@@ -3092,7 +3092,7 @@ module Special
             call stop_it('solar_corona: calc_heat_cool:lentropy=not implemented')
       endif
 !
-      if (lfirst .and. ldt) then
+      if (lupdate_courant_dt) then
         tmp = max (rtv_cool/cdts, abs (rtv_cool/max (tini, delta_lnTT)))
         if (ldiagnos .and. idiag_dtradloss /= 0) then
           itype_name(idiag_dtradloss) = ilabel_max_dt
@@ -3447,7 +3447,7 @@ module Special
 !
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + rhs
 !
-      if (lfirst .and. ldt) then
+      if (lupdate_courant_dt) then
         if (ldiagnos .and. idiag_dtnewt /= 0) then
           itype_name(idiag_dtnewt) = ilabel_max_dt
           call max_mn_name(rhs/cdts,idiag_dtnewt,l_dt=.true.)
