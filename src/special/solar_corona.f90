@@ -3137,7 +3137,7 @@ module Special
           -80.1990, -82.5093, -82.1793, -78.6717 /)
 !
       ! Four Gaussians plus one constant fitted to Cook et al. (1989)
-      real, dimension(9) :: pars = (/ &
+      real, parameter, dimension(9) :: pars = (/ &
           2.12040e+00, 3.88284e-01, 2.02889e+00, 3.35665e-01, 6.34343e-01, &
           1.94052e-01, 2.54536e+00, 7.28306e-01, -2.40088e+01 /)
 !
