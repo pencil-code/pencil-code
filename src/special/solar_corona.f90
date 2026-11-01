@@ -76,6 +76,7 @@ module Special
   real, dimension(3) :: uu_emerg=0.0, bb_emerg=0.0, uu_drive=0.0
   real, dimension(:), allocatable :: deltaT_init_z, deltaE_init_z, E_init_z, deltarho_init_z, deltaH_part_init_z, &
                                      deltaH_vol_init_z, mass_prof
+  logical :: lprof_deltaT=.false., lprof_deltaE=.false., lprof_E=.false., lprof_deltaH_part=.false., lprof_deltaH_vol=.false.
   logical :: linit_uu=.false., linit_lnrho=.false., linit_lnTT=.false.
   logical :: lheatcond_cutoff=.false.
 !
@@ -552,24 +553,28 @@ module Special
         ! read temperature differences profile
         if (lread_prof_deltaT) then
           allocate (deltaT_init_z(mz))
+          lprof_deltaT = .true.
           call read_profile (deltaT_dat, deltaT_init_z, real(unit_temperature/unit_time), .false.)
         endif
 !
         ! read internal energy profile
         if (lread_prof_E) then
           allocate (E_init_z(mz))
+          lprof_E = .true.
           call read_profile (E_dat, E_init_z, real(unit_energy), .false.)
         endif
 !
         ! read internal energy differences profile
         if (lread_prof_deltaE) then
           allocate (deltaE_init_z(mz))
+          lprof_deltaE = .true.
           call read_profile (deltaE_dat, deltaE_init_z, real(unit_energy/unit_time), .false.)
         endif
 !
         ! read heating per particle differences profile
         if (lread_prof_deltaH_part) then
           allocate (deltaH_part_init_z(mz))
+          lprof_deltaH_part = .true.
           call read_profile (deltaH_part_dat, deltaH_part_init_z, real(unit_energy/unit_time), .false.)
         endif
 !
@@ -582,6 +587,7 @@ module Special
         ! read heating per particle differences profile
         if (lread_prof_deltaH_vol) then
           allocate (deltaH_vol_init_z(mz))
+          lprof_deltaH_vol = .true.
           call read_profile (deltaH_vol_dat, deltaH_vol_init_z, real(unit_energy/unit_time), .false.)
         endif
 !
@@ -2756,11 +2762,11 @@ module Special
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      if (allocated (deltaT_init_z)) call calc_heat_cool_deltaT(df,p)
-      if (allocated (deltaE_init_z)) call calc_heat_cool_deltaE(df,p)
-      if (allocated (deltaH_part_init_z)) call calc_heat_cool_H_part(df,p)
-      if (allocated (deltaH_vol_init_z)) call calc_heat_cool_H_vol(df,p)
-      if (allocated (E_init_z)) call calc_heat_cool_E(df,p)
+      if (lprof_deltaT) call calc_heat_cool_deltaT(df,p)
+      if (lprof_deltaE) call calc_heat_cool_deltaE(df,p)
+      if (lprof_deltaH_part) call calc_heat_cool_H_part(df,p)
+      if (lprof_deltaH_vol) call calc_heat_cool_H_vol(df,p)
+      if (lprof_E) call calc_heat_cool_E(df,p)
 !
     endsubroutine calc_heat_cool
 !***********************************************************************
