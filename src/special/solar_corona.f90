@@ -162,6 +162,7 @@ module Special
   real, dimension(:,:), allocatable :: Ux_ext, Uy_ext
   real, dimension(:,:), allocatable :: BB2
   real, dimension(:,:), allocatable :: BB2_local
+  real, pointer :: z_cutoff
   integer, dimension(:,:), allocatable :: avoid_gran
   real :: tsnap_uu=0., thresh
   integer :: isnap
@@ -286,6 +287,10 @@ module Special
       endif
 !
       if (mass_input_rate /= 0.0) allocate (mass_prof(mz))
+!
+      ! Height cutoff of heat conduction and radiative losses from radiation_ray
+      if (lheatcond_cutoff .or. ((cool_RTV_cutoff == 2) .and. lradiation)) &
+          call get_shared_variable('z_cutoff', z_cutoff, caller='initialize_special')
 !
       ! Setup atmosphere stratification for later use
       call setup_profiles
@@ -2493,7 +2498,6 @@ module Special
 !
       use Diagnostics, only: max_mn_name
       use Sub, only: dot, dot2, step
-      use SharedVariables, only: get_shared_variable
 !
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
@@ -2502,9 +2506,7 @@ module Special
       real, dimension(nx,3) :: tmpv, gKp
       real, dimension(nx) :: cos_B_glnTT, gKp_b
       real, dimension(nx) :: chi_spitzer, chi_sat, chi_clight, fdiff
-      real, pointer :: z_cutoff
       integer :: i, j
-      integer :: ierr
 !
       ! heatflux density vector: q = kappa * grad_T [W/m^2]
       ! thermal diffusivity: chi = gamma * kappa / (rho * cp)
@@ -2532,14 +2534,7 @@ module Special
           chi_spitzer =  chi_sat
         endwhere
       endif
-      if (lheatcond_cutoff) then 
-        call get_shared_variable('z_cutoff',&
-             z_cutoff,ierr)
-        if (ierr/=0) call fatal_error('calc_heatcond_tensor:',&
-             'failed to get z_cutoff from radiation_ray')
-        chi_spitzer = chi_spitzer* &
-          step(z(n),z_cutoff,0.2)
-      endif
+      if (lheatcond_cutoff) chi_spitzer = chi_spitzer*step(z(n),z_cutoff,0.2)
 !
 !  Limit heat conduction so that the diffusion speed
 !  is smaller than a given fraction of the speed of light (Kc*c_light)
@@ -3019,16 +3014,13 @@ module Special
       use Diagnostics,     only: max_mn_name
       use Mpicomm,         only: stop_it
       use Sub,             only: cubic_step,step
-      use SharedVariables, only: get_shared_variable
       use Slices_methods,  only: store_slices
 !
-      integer :: ierr
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
       real, dimension(nx) :: lnQ, rtv_cool, lnTT_SI, lnneni, delta_lnTT, tmp
       real :: unit_lnQ
-      real, pointer :: z_cutoff
 !
       unit_lnQ = 3*alog(real(unit_velocity))+ &
           5*alog(real(unit_length))+alog(real(unit_density))
@@ -3058,9 +3050,6 @@ module Special
 !
       case(2)
         if (lradiation) then
-          call get_shared_variable('z_cutoff',z_cutoff,ierr)
-          if (ierr/=0) call fatal_error('calc_heat_cool_RTV:',&
-             'failed to get z_cutoff from radiation_ray')
         rtv_cool = rtv_cool &
           *step(z(n),z_cutoff,0.2)
         else
