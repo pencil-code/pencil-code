@@ -813,7 +813,7 @@ void save_stats(std::string fileName){
 
       // Headers
       if (lhydro){
-        if (AC_lconservative__mod__hydro){
+        if (lconservative__mod__hydro){
           myFile << ",in_acc_sum_rho";
 
           for (const auto& s : vec_suffix) myFile << ",in_acc_sum_mom" << s;
@@ -837,7 +837,7 @@ void save_stats(std::string fileName){
 	myFile << train_counter << "," << (size_t)nxgrid*nygrid*nzgrid;
       }
 
-      if (AC_ltrain_mag__mod__training) {
+      if (ltrain_mag__mod__training) {
             myFile << ",in_acc_sum_Ux,in_acc_sum_Uy,in_acc_sum_Uz,in_acc_sum_Bx,in_acc_sum_By,in_acc_sum_Bz,in_acc_sum_squared_Ux,in_acc_sum_squared_Uy,in_acc_sum_squared_Uz,in_acc_sum_squared_Bx,in_acc_sum_squared_By,in_acc_sum_squared_Bz,out_acc_sum_EMFx,out_acc_sum_EMFy,out_acc_sum_EMFz,out_acc_sum_squared_EMFx,out_acc_sum_squared_EMFy,out_acc_sum_squared_EMFz\n";
 
             myFile << train_counter << "," << nxgrid*nygrid*nzgrid << ",";
@@ -853,7 +853,7 @@ void save_stats(std::string fileName){
 
     // Hydro statistics
         if (lhydro){
-          if (AC_lconservative__mod__hydro){
+          if (lconservative__mod__hydro){
             myFile << "," << acDeviceGetOutput(acGridGetDevice(), in_acc_sum_rho);
             
             // momentum
@@ -888,7 +888,7 @@ void save_stats(std::string fileName){
 	  myFile << "\n";
         }
 
-        if (AC_ltrain_mag__mod__training) {
+        if (ltrain_mag__mod__training) {
             auto in_acc_sum_ux = acDeviceGetOutput(acGridGetDevice(), in_acc_sum_U[0]);
             auto in_acc_sum_uy = acDeviceGetOutput(acGridGetDevice(), in_acc_sum_U[1]);
             auto in_acc_sum_uz = acDeviceGetOutput(acGridGetDevice(), in_acc_sum_U[2]);
@@ -986,7 +986,7 @@ void load_train_stats(){
             acDeviceSetInput(acGridGetDevice(), AC_count, train_counter);
 
             if (lhydro){
-                if (AC_lconservative__mod__hydro){
+                if (lconservative__mod__hydro){
                   size_t i_count=2;
 
                   acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_rho, (AcReal)std::stod(row[i_count++]));
@@ -1036,7 +1036,7 @@ void load_train_stats(){
                 }
 	    }
 
-            if (AC_ltrain_mag__mod__training) {
+            if (ltrain_mag__mod__training) {
                 auto res = acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_U[0], (AcReal)std::stod(row[2]));
                 acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_U[1], std::stod(row[3]));
                 acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_U[2], std::stod(row[4]));
@@ -1091,10 +1091,14 @@ extern "C" void tf_create_model_c_api(const char *model_name, const char* config
 
   acLogFromRootProc(rank,"CONFIG_FILE: %s\n", config_file_path);
   acLogFromRootProc(rank,"Model_NAME: %s\n", model_name);
+
+  // In the CPU-emulated build (with a CPU-only TorchFort) the model lives on the host
+  // (TORCHFORT_DEVICE_CPU = -1); otherwise on the GPU of this rank.
+  const int torch_device = AC_CPU_BUILD ? -1 : rank % ndevices;
 	
 	if (ldist){
   	    comm_pencil = MPI_Comm_f2c(comm_fint);
-		bool success = torch_create_distributed_model_CAPI(model_name, config_file_path, comm_pencil, rank % ndevices);
+		bool success = torch_create_distributed_model_CAPI(model_name, config_file_path, comm_pencil, torch_device);
 		if (success != 0){
 			acLogFromRootProc(rank, "Error when creating distributed model: %s from config file: %s\n", model_name, config_file_path);
 		}
@@ -1104,7 +1108,7 @@ extern "C" void tf_create_model_c_api(const char *model_name, const char* config
 	}
 
 	else{
-		bool success = torch_create_model_CAPI(model_name, config_file_path, 0);
+		bool success = torch_create_model_CAPI(model_name, config_file_path, AC_CPU_BUILD ? -1 : 0);
 		if (success != 0){
 			acLogFromRootProc(rank, "Error when creating the model: %s from config file: %s\n", model_name, config_file_path);
 		}
@@ -1305,7 +1309,7 @@ extern "C" void tf_infer_c_api(const char* name, int itsub)
   auto initialize_fields = acGetOptimizedDSLTaskGraph(get_inference_fields);
 	acGridExecuteTaskGraph(initialize_fields, 1);
 
-  if (AC_ltrain_mag__mod__training) {
+  if (ltrain_mag__mod__training) {
     auto initialize_uumean_task_graph = acGetOptimizedDSLTaskGraph(initialize_uumean);
     acGridExecuteTaskGraph(initialize_uumean_task_graph, 1);
 
@@ -1325,7 +1329,7 @@ extern "C" void tf_infer_c_api(const char* name, int itsub)
 
   if (lhydro){
 
-    if (AC_lconservative__mod__hydro){
+    if (lconservative__mod__hydro){
      acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetmom_mean_X(), &input, &out);
      inputs.emplace_back(input, 3);
      acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetrho_mean(), &input, &out);
@@ -1346,7 +1350,7 @@ extern "C" void tf_infer_c_api(const char* name, int itsub)
   }
 
   // TODO: Check if trained on same grid size and do not smooth the averaged out vals
-  if (AC_ltrain_mag__mod__training) {
+  if (ltrain_mag__mod__training) {
     acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetuumean_X(), &input, &out);
     inputs.emplace_back(input, 3);
 	  acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetbbmean_X(), &input, &out);
@@ -1358,11 +1362,15 @@ extern "C" void tf_infer_c_api(const char* name, int itsub)
 
   }
     acGridHaloExchange();
-    torch_infer_multiarg_CAPI((int[]){mz, my, mx}, inputs, outputs, name);
+    int sub_dims[3] = {mz, my, mx};
+    torch_infer_multiarg_CAPI(sub_dims, inputs, outputs, name);
 
 	
-	auto descale_inf = acGetOptimizedDSLTaskGraph(descale_inferred_values);
-	acGridExecuteTaskGraph(descale_inf, 1);
+	// lscale=F: physics-based models work in physical units, so there is nothing to descale
+	if (lscale__mod__training) {
+	  auto descale_inf = acGetOptimizedDSLTaskGraph(descale_inferred_values);
+	  acGridExecuteTaskGraph(descale_inf, 1);
+	}
 
   bcs = acGetOptimizedDSLTaskGraph(boundconds);	
 	acGridExecuteTaskGraph(bcs,1);
@@ -1396,8 +1404,11 @@ extern "C" void tf_train_c_api(const char* name, AcReal *loss_val, int itsub, do
   train_counter++;
   acDeviceSetInput(acGridGetDevice(), AC_count, train_counter);
 
-  acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(normalize),1);
-  acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(boundconds),1);
+  // lscale=F: physics-based models (e.g. Smagorinsky_NN) need inputs and labels in physical units
+  if (lscale__mod__training) {
+    acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(normalize),1);
+    acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(boundconds),1);
+  }
 
   *loss_val=DBL_MAX;
 
@@ -1410,7 +1421,7 @@ extern "C" void tf_train_c_api(const char* name, AcReal *loss_val, int itsub, do
     AcReal* input = NULL;
     AcReal* output = NULL;
 
-    if (AC_lconservative__mod__hydro){
+    if (lconservative__mod__hydro){
         // dynamic field handel acGetmomentum_sgs_Xx()
         acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetmom_mean_X(), &input, &out);
         inputs.emplace_back(input, 3);
@@ -1429,13 +1440,17 @@ extern "C" void tf_train_c_api(const char* name, AcReal *loss_val, int itsub, do
     outputs.emplace_back(output, 6);
 
     acGridHaloExchange();
-    torch_train_multiarg_CAPI((int[]){mz, my, mx}, inputs, outputs, loss_val,name);
+    int sub_dims[3] = {mz, my, mx};
+    torch_train_multiarg_CAPI(sub_dims, inputs, outputs, loss_val,name);
     train_loss.push_back(*loss_val);
     train_nts.push_back(it); 
     torch_wandb_log(name, "training_loss", it, *loss_val);
   }
+  // Keep the labels in both halves of TAU_HYDRO (and TAU_STRAIN): the substeps swap the halves, and
+  // without this a snapshot taken during training would contain the half that was never written
+  if (lhydro) acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(duplicate_labels),1);
   
-  if (AC_ltrain_mag__mod__training){
+  if (ltrain_mag__mod__training){
     std::vector<std::pair<AcReal*, int>> inputs;
     std::vector<std::pair<AcReal*, int>> outputs;
 
@@ -1453,7 +1468,8 @@ extern "C" void tf_train_c_api(const char* name, AcReal *loss_val, int itsub, do
 
     acGridHaloExchange();
 
-    torch_train_multiarg_CAPI((int[]){mz, my, mx}, inputs, outputs, loss_val, name);
+    int sub_dims[3] = {mz, my, mx};
+    torch_train_multiarg_CAPI(sub_dims, inputs, outputs, loss_val, name);
     train_loss.push_back(*loss_val);
     train_nts.push_back(it); 
 

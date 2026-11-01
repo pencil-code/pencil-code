@@ -98,12 +98,13 @@ const FieldSymmetricTensor TAU_STRAIN=
 
 
 
-field_order(AC_itau_strainxx__mod__training-1) communicated Field TAU_STRAIN_INFERRED_XX
-field_order(AC_itau_strainyy__mod__training-1) communicated Field TAU_STRAIN_INFERRED_YY
-field_order(AC_itau_strainzz__mod__training-1) communicated Field TAU_STRAIN_INFERRED_ZZ
-field_order(AC_itau_strainxy__mod__training-1) communicated Field TAU_STRAIN_INFERRED_XY
-field_order(AC_itau_strainxz__mod__training-1) communicated Field TAU_STRAIN_INFERRED_XZ
-field_order(AC_itau_strainyz__mod__training-1) communicated Field TAU_STRAIN_INFERRED_YZ
+//not an f-array slot (would duplicate the field_order of TAU_STRAIN)
+communicated Field TAU_STRAIN_INFERRED_XX
+communicated Field TAU_STRAIN_INFERRED_YY
+communicated Field TAU_STRAIN_INFERRED_ZZ
+communicated Field TAU_STRAIN_INFERRED_XY
+communicated Field TAU_STRAIN_INFERRED_XZ
+communicated Field TAU_STRAIN_INFERRED_YZ
 
 
 const FieldSymmetricTensor TAU_STRAIN_INFERRED=
@@ -204,18 +205,18 @@ normalize_field(Field F, acc_sum, acc_sum_squared, count){
 }
 
 write_normalize(FieldSymmetricTensor T, acc_sum, acc_sum_sq, count){
-  write(T.xx,normalize_field(T.xx,out_acc_sum[0],out_acc_sum_sq[0],max(1,count)))
-  write(T.yy,normalize_field(T.yy,out_acc_sum[0],out_acc_sum_sq[0],max(1,count)))
-  write(T.zz,normalize_field(T.zz,out_acc_sum[0],out_acc_sum_sq[0],max(1,count)))
-  write(T.xy,normalize_field(T.xy,out_acc_sum[0],out_acc_sum_sq[0],max(1,count)))
-  write(T.yz,normalize_field(T.yz,out_acc_sum[0],out_acc_sum_sq[0],max(1,count)))
-  write(T.xz,normalize_field(T.xz,out_acc_sum[0],out_acc_sum_sq[0],max(1,count)))
+  write(T.xx,normalize_field(T.xx,acc_sum[0],acc_sum_sq[0],max(1,count)))
+  write(T.yy,normalize_field(T.yy,acc_sum[1],acc_sum_sq[1],max(1,count)))
+  write(T.zz,normalize_field(T.zz,acc_sum[2],acc_sum_sq[2],max(1,count)))
+  write(T.xy,normalize_field(T.xy,acc_sum[3],acc_sum_sq[3],max(1,count)))
+  write(T.yz,normalize_field(T.yz,acc_sum[4],acc_sum_sq[4],max(1,count)))
+  write(T.xz,normalize_field(T.xz,acc_sum[5],acc_sum_sq[5],max(1,count)))
 }
 
 write_normalize(Field3 T, acc_sum, acc_sum_sq, count){
-  write(T.x,normalize_field(T.x,out_acc_sum[0],out_acc_sum_sq[0],max(1,count)))
-  write(T.y,normalize_field(T.y,out_acc_sum[0],out_acc_sum_sq[0],max(1,count)))
-  write(T.z,normalize_field(T.z,out_acc_sum[0],out_acc_sum_sq[0],max(1,count)))
+  write(T.x,normalize_field(T.x,acc_sum[0],acc_sum_sq[0],max(1,count)))
+  write(T.y,normalize_field(T.y,acc_sum[1],acc_sum_sq[1],max(1,count)))
+  write(T.z,normalize_field(T.z,acc_sum[2],acc_sum_sq[2],max(1,count)))
 }
 
 denormalize_field(Field F, acc_sum, acc_sum_squared, count)
@@ -280,8 +281,7 @@ Kernel fluctutation_terms_and_means()
              write_symmetricTensor_matrix(TAU_STRAIN, Sij)
              write(mom_mean, gsmooth(MOM))
              write(rho_mean, gsmooth(F_RHO))
-             write_tensor_product(TAU_HYDRO,MOM)
-             write(TAU_HYDRO, TAU_HYDRO/F_RHO)
+             write_tensor_product(TAU_HYDRO,MOM/sqrt(F_RHO))
            }
            else
            {
@@ -331,7 +331,7 @@ Kernel compute_taus(){
             Sij_mean = traceless_strain(uij_mean)
             write_symmetricTensor_matrix(strain_sgs_mean, Sij_mean)
             write(TAU_STRAIN, TAU_STRAIN - strain_sgs_mean)
-            write(TAU_HYDRO, TAU_HYDRO - tensor_product(mom_mean))
+            write(TAU_HYDRO, TAU_HYDRO - tensor_product(mom_mean)/rho_mean)
           }
           else
           {
@@ -368,11 +368,13 @@ Kernel smooth_bbmean() {
 
 Kernel get_averaged_fields(){
   if(lhydro) {
-    write(uumean,F_UVEC)
-  }
-  else {
-    write(mom_mean, MOM)
-    write(rho_mean, F_RHO)
+    if(AC_lconservative__mod__hydro) {
+      write(mom_mean, MOM)
+      write(rho_mean, F_RHO)
+    }
+    else {
+      write(uumean,F_UVEC)
+    }
   }
 }
 
@@ -435,7 +437,7 @@ Kernel compute_normalize_sums()
     
     if(AC_lconservative__mod__hydro){
       reduce_sum_add(rho_mean,in_acc_sum_rho)
-      reduce_sum_add(rho_mean,in_acc_sum_sq_rho)
+      reduce_sum_add(rho_mean*rho_mean,in_acc_sum_sq_rho)
     
 	    reduce_sum_add(mom_mean.x,in_acc_sum[0])
 	    reduce_sum_add(mom_mean.y,in_acc_sum[1])
@@ -592,5 +594,34 @@ ComputeSteps get_taus(boundconds){
 	fluctutation_terms_and_means()
 	smooth_fluctuation_terms()
 	compute_taus()	
+}
+
+//
+//  Training (and so the computation of the labels) happens only in the first substep, while each
+//  substep swaps the input and output halves of the fields; with an odd number of substeps the f-array
+//  copied to the host would then get the stale half. Copying the labels to the other half makes both
+//  halves hold them.
+//
+Kernel duplicate_taus(){
+	if(lhydro) {
+		write(TAU_HYDRO.xx, value(TAU_HYDRO.xx))
+		write(TAU_HYDRO.yy, value(TAU_HYDRO.yy))
+		write(TAU_HYDRO.zz, value(TAU_HYDRO.zz))
+		write(TAU_HYDRO.xy, value(TAU_HYDRO.xy))
+		write(TAU_HYDRO.xz, value(TAU_HYDRO.xz))
+		write(TAU_HYDRO.yz, value(TAU_HYDRO.yz))
+		if(AC_lconservative__mod__hydro) {
+			write(TAU_STRAIN.xx, value(TAU_STRAIN.xx))
+			write(TAU_STRAIN.yy, value(TAU_STRAIN.yy))
+			write(TAU_STRAIN.zz, value(TAU_STRAIN.zz))
+			write(TAU_STRAIN.xy, value(TAU_STRAIN.xy))
+			write(TAU_STRAIN.xz, value(TAU_STRAIN.xz))
+			write(TAU_STRAIN.yz, value(TAU_STRAIN.yz))
+		}
+	}
+}
+
+ComputeSteps duplicate_labels(boundconds){
+	duplicate_taus()
 }
 #endif
