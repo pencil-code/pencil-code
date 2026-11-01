@@ -164,6 +164,7 @@ module Special
   real, dimension(:,:), allocatable :: BB2
   real, dimension(:,:), allocatable :: BB2_local
   real, pointer :: z_cutoff
+  real, dimension(:), allocatable :: lnrho_global_z, lnTT_global_z
   integer, dimension(:,:), allocatable :: avoid_gran
   real :: tsnap_uu=0., thresh
   integer :: isnap
@@ -295,6 +296,7 @@ module Special
 !
       ! Setup atmosphere stratification for later use
       call setup_profiles
+      if (lnc_density_depend) call setup_ref_temp
 !
       if (allocated(scale_height_init_z)) then
         call get_shared_variable('B0_ext_z',B0_ext_z, caller='initialize_special')
@@ -2463,26 +2465,11 @@ module Special
 !
 ! 08-feb-2011/Bourdin.KIS: coded
 !
-      use Mpicomm, only: globalize_z, mpibcast_real
-!
       real, dimension(nx), intent(in) :: lnrho
       real, dimension(nx), intent(out) :: lnTT_ref
 !
       integer :: px, z_ref
       real :: pos, frac
-      real, dimension(:), allocatable, save :: lnrho_global_z, lnTT_global_z
-      logical, save :: lfirst_call=.true.
-!
-      if (lfirst_call) then
-        allocate (lnrho_global_z(mzgrid), lnTT_global_z(mzgrid), stat=alloc_err)
-        if (alloc_err > 0) call fatal_error ('find_ref_temp', &
-            'Could not allocate lnrho_/lnTT_global_z', .true.)
-        call globalize_z (lnrho_init_z, lnrho_global_z)
-        call globalize_z (lnTT_init_z, lnTT_global_z)
-        call mpibcast_real (lnrho_global_z, mzgrid)
-        call mpibcast_real (lnTT_global_z, mzgrid)
-        lfirst_call = .false.
-      endif
 !
       do px = 1, nx
         pos = interpol_tabulated (lnrho(px), lnrho_global_z)
@@ -2494,6 +2481,25 @@ module Special
       enddo
 !
     endsubroutine find_ref_temp
+!***********************************************************************
+    subroutine setup_ref_temp
+!
+! Collect the global initial profiles needed by find_ref_temp.
+! Done once at initialization, so that the RHS needs no communication.
+!
+      use Mpicomm, only: globalize_z, mpibcast_real
+!
+      if (.not. allocated (lnrho_global_z)) then
+        allocate (lnrho_global_z(mzgrid), lnTT_global_z(mzgrid), stat=alloc_err)
+        if (alloc_err > 0) call fatal_error ('setup_ref_temp', &
+            'Could not allocate lnrho_/lnTT_global_z', .true.)
+      endif
+      call globalize_z (lnrho_init_z, lnrho_global_z)
+      call globalize_z (lnTT_init_z, lnTT_global_z)
+      call mpibcast_real (lnrho_global_z, mzgrid)
+      call mpibcast_real (lnTT_global_z, mzgrid)
+!
+    endsubroutine setup_ref_temp
 !***********************************************************************
     subroutine calc_heatcond_tensor(df,p,Kpara,expo)
 !
