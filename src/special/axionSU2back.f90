@@ -732,17 +732,17 @@ module Special
 !  Activate psiR and TR
 !
         where (k <= a_current*H*100.0 .and. abs(f(l1:l2,m,n,iaxi_TR)) < 1e-50)
-          f(l1:l2,m,n,iaxi_psi)    = (a_current/sqrt(2.*k))*cos(k/(a_current*H))
-          f(l1:l2,m,n,iaxi_psidot) = (k/sqrt(2.*k))*sin(k/(a_current*H))
-          f(l1:l2,m,n,iaxi_TR)     = (a_current/sqrt(2.*k))*cos(k/(a_current*H))
-          f(l1:l2,m,n,iaxi_TRdot)  = (k/sqrt(2.*k))*sin(k/(a_current*H))
+          f(l1:l2,m,n,iaxi_psi)    = (1./sqrt(2.*k))*cos(k/(a_current*H))
+          f(l1:l2,m,n,iaxi_psidot) = (k/(a_current*sqrt(2.*k)))*sin(k/(a_current*H))
+          f(l1:l2,m,n,iaxi_TR)     = (1./sqrt(2.*k))*cos(k/(a_current*H))
+          f(l1:l2,m,n,iaxi_TRdot)  = (k/(a_current*sqrt(2.*k)))*sin(k/(a_current*H))
         endwhere
         if (lim_psi_TR) then
-          where (k <= a_current*H*100.0 .and. abs(f(l1:l2,m,n,iaxi_TR)) < 1e-50)
-            f(l1:l2,m,n,iaxi_impsi)    = (a_current/sqrt(2.*k))*sin(k/(a_current*H))
-            f(l1:l2,m,n,iaxi_impsidot) = -(k/sqrt(2.*k))*cos(k/(a_current*H))
-            f(l1:l2,m,n,iaxi_imTR)     = (a_current/sqrt(2.*k))*sin(k/(a_current*H))
-            f(l1:l2,m,n,iaxi_imTRdot)  = -(k/sqrt(2.*k))*cos(k/(a_current*H))
+          where (k <= a_current*H*100.0 .and. abs(f(l1:l2,m,n,iaxi_imTR)) < 1e-50)
+            f(l1:l2,m,n,iaxi_impsi)    = (1./sqrt(2.*k))*sin(k/(a_current*H))
+            f(l1:l2,m,n,iaxi_impsidot) = -(k/(a_current*sqrt(2.*k)))*cos(k/(a_current*H))
+            f(l1:l2,m,n,iaxi_imTR)     = (1./sqrt(2.*k))*sin(k/(a_current*H))
+            f(l1:l2,m,n,iaxi_imTRdot)  = -(k/(a_current*sqrt(2.*k)))*cos(k/(a_current*H))
           endwhere
         endif
 !
@@ -750,14 +750,14 @@ module Special
 !
         if (lleft_psiL_TL) then
           where (k <= a_current*H*100.0 .and. abs(f(l1:l2,m,n,iaxi_TL)) < 1e-50)
-            f(l1:l2,m,n,iaxi_psiL)     = (a_current/sqrt(2.*k))*cos(k/(a_current*H))
-            f(l1:l2,m,n,iaxi_psiLdot)  = (k/sqrt(2.*k))*sin(k/(a_current*H))
-            f(l1:l2,m,n,iaxi_TL)       = (a_current/sqrt(2.*k))*cos(k/(a_current*H))
-            f(l1:l2,m,n,iaxi_TLdot)    = (k/sqrt(2.*k))*sin(k/(a_current*H))
-            f(l1:l2,m,n,iaxi_impsiL)   = (a_current/sqrt(2.*k))*sin(k/(a_current*H))
-            f(l1:l2,m,n,iaxi_impsiLdot)= -(k/sqrt(2.*k))*cos(k/(a_current*H))
-            f(l1:l2,m,n,iaxi_imTL)     = (a_current/sqrt(2.*k))*sin(k/(a_current*H))
-            f(l1:l2,m,n,iaxi_imTLdot)  = -(k/sqrt(2.*k))*cos(k/(a_current*H))
+            f(l1:l2,m,n,iaxi_psiL)     = (1./sqrt(2.*k))*cos(k/(a_current*H))
+            f(l1:l2,m,n,iaxi_psiLdot)  = (k/(a_current*sqrt(2.*k)))*sin(k/(a_current*H))
+            f(l1:l2,m,n,iaxi_TL)       = (1./sqrt(2.*k))*cos(k/(a_current*H))
+            f(l1:l2,m,n,iaxi_TLdot)    = (k/(a_current*sqrt(2.*k)))*sin(k/(a_current*H))
+            f(l1:l2,m,n,iaxi_impsiL)   = (1./sqrt(2.*k))*sin(k/(a_current*H))
+            f(l1:l2,m,n,iaxi_impsiLdot)= -(k/(a_current*sqrt(2.*k)))*cos(k/(a_current*H))
+            f(l1:l2,m,n,iaxi_imTL)     = (1./sqrt(2.*k))*sin(k/(a_current*H))
+            f(l1:l2,m,n,iaxi_imTLdot)  = -(k/(a_current*sqrt(2.*k)))*cos(k/(a_current*H))
           endwhere
         endif
 !
