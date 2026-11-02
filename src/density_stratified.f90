@@ -50,8 +50,8 @@ module Density
   real :: diffrho_shock = 0.0
   real :: diffrho_hyper3_mesh = 0.0
   real, dimension(3) :: beta_glnrho_global=0.,beta_glnrho_scaled=0.
-  logical :: lrelativistic_eos=.false., lwrite_stratification=.false.
-  logical :: lrelativistic_eos_corr=.false.
+  logical :: lwrite_stratification=.false.
+  logical, target :: lrelativistic_eos=.false., lrelativistic_eos_corr=.false.
 !
   namelist /density_init_pars/ initrho, amplrho, beta_glnrho_global, lconserve_mass, lmassdiff_fix, &
                                lwrite_stratification

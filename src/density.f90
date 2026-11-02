@@ -120,8 +120,8 @@ module Density
   complex :: coeflnrho=0.0
   integer, parameter :: ndiff_max=4
   integer :: iglobal_gg=0
-  logical :: lrelativistic_eos=.false., ladvection_density=.true.
-  logical :: lrelativistic_eos_corr=.false.
+  logical :: ladvection_density=.true.
+  logical, target :: lrelativistic_eos=.false., lrelativistic_eos_corr=.false.   ! shared (put_shared_variable)
   logical :: lrelativistic_eos_term1=.true., lrelativistic_eos_term2=.true.
   logical, pointer :: lconservative, lhiggsless, lrelativistic
   logical :: lisothermal_fixed_Hrho=.false.

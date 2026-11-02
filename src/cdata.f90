@@ -331,6 +331,8 @@ module Cdata
   real :: tsnap_crit_log_interval=impossible !PAR_DOC: critical time above which we set dsnap to a negative value.
   real :: tvid_crit_log_interval=impossible  !PAR_DOC: critical time above which we set dvid to a negative value.
   real :: dit1=impossible
+  real :: duetc=impossible       !PAR_DOC: save UETC snapshots every duetc time units
+  integer, parameter :: nv_uetc=20 ! fields per UETC snapshot, see wsnap_UETCs
   real :: dtracers=0., dfixed_points=0.
   real :: crash_file_dtmin_factor=-1.0
   real :: km0EM=0., km1EM=0., tmax_logspacing=1.
@@ -861,6 +863,7 @@ module Cdata
   logical :: ub_spec=.false., Lor_spec=.false., OmU_spec=.false., EMF_spec=.false., Tra_spec=.false.
   logical :: aBE_spec=.false., ABE2_spec=.false., uBE_spec=.false.
   logical :: GWs_spec=.false., GWh_spec=.false., GWm_spec=.false., Str_spec=.false., Stg_spec=.false.
+  logical :: UETC_spec=.false.
   logical :: Gab_spec=.false., Gan_spec=.false., GBb_spec=.false.
   logical :: GWs_spec_boost=.false., GWh_spec_boost=.false.
   logical :: StT_spec=.false., StX_spec=.false.
@@ -1089,10 +1092,11 @@ module Cdata
   logical :: ltimestep_diagnostics = .false.
 
   real(KIND=rkind8) :: t_save,tspec_save,t_snap_save
+  real(KIND=rkind8) :: t_farray_copy=0.  ! time of the data in the last f copy from the GPU
   real :: t1ddiagnos_save,t2davgfirst_save,tslice_save,tsound_save
 
-!$ logical, volatile, dimension(n_helperflags) :: lhelperflags=(/.false.,.false.,.false.,.false./)
-!$ logical, volatile, dimension(n_helperflags) :: lmasterflags=(/.false.,.false.,.false.,.false./)
+!$ logical, volatile, dimension(n_helperflags) :: lhelperflags=.false.
+!$ logical, volatile, dimension(n_helperflags) :: lmasterflags=.false.
 !$ logical, volatile :: lfarray_copied = .false.
   logical, dimension(npencils) :: lpencil_save = .false.
   integer :: num_helper_threads=1, thread_id=1

@@ -52,6 +52,7 @@ module Run_module
     integer :: icount, it_last_diagnostic
     real(KIND=rkind8) :: time1=0., time_last_diagnostic
     real :: time_doing_diagnostics = 0., time_in_timestep = 0.
+    real(KIND=rkind8) :: tuetc=-1., tuetc_data
 
 contains
 !***********************************************************************
@@ -62,6 +63,7 @@ subroutine helper_loop(f)
   use Diagnostics, only:  restore_diagnostic_controls,allocate_fnames
 !$ use General, only: signal_wait, signal_send
   use Snapshot, only: perform_powersnap, perform_wsnap_ext, perform_wsnap_down_ext
+  use Power_spectrum, only: wsnap_UETCs
   use Mpicomm, only: mpiwtime
   use Sub, only: check_for_nans_globally
 !
@@ -102,6 +104,11 @@ subroutine helper_loop(f)
         call perform_wsnap_down_ext(f)
 !$    else
 !$      lhelperflags(PERF_WSNAP_DOWN) = .false.
+!$    endif
+!$    if (lhelper_run .and. lhelperflags(PERF_UETCSNAP)) then
+        call wsnap_UETCs(f,tuetc_data)
+!$    else
+!$      lhelperflags(PERF_UETCSNAP) = .false.
 !$    endif
 !$    if (lhelper_run .and. lhelperflags(PERF_POWERSNAP)) then
         call perform_powersnap(f)
@@ -216,6 +223,68 @@ endsubroutine helper_loop
     lreloading          = .false.
 
   endsubroutine reload
+!***********************************************************************
+  subroutine maybe_wsnap_UETCs(f)
+!
+!  Write a UETC snapshot if UETC_spec=T and t has reached the next output
+!  time. The first snapshot is taken at the start of the run; after a restart
+!  output continues duetc after the last stored snapshot.
+!
+!  01-Apr-25/Madeline: coded (originally inlined in run.f90)
+!
+    use Boundcond, only: update_ghosts
+    use Diagnostics, only: save_diagnostic_controls
+    use GPU, only: copy_farray_from_GPU
+    use Messages, only: fatal_error
+    use Power_spectrum, only: wsnap_UETCs
+!
+    real, contiguous, dimension(:,:,:,:), intent(inout) :: f
+!
+    real(KIND=rkind8) :: tlast
+    logical, save :: lfirst=.true.
+    logical :: lexist
+    integer :: lun, ios
+!
+    if (duetc==impossible .or. .not.UETC_spec) return
+!
+    if (lfirst) then
+      lfirst=.false.
+      tuetc=t
+      inquire(file=trim(directory_snap)//'/UETCS_time.dat',exist=lexist)
+      if (lexist) then
+        open(newunit=lun,file=trim(directory_snap)//'/UETCS_time.dat',status='old')
+        do
+          read(lun,*,iostat=ios) tlast
+          if (ios/=0) exit
+          tuetc=tlast+duetc
+        enddo
+        close(lun)
+        if (tuetc-duetc > t+.5*duetc) call fatal_error('maybe_wsnap_UETCs', &
+            'UETCS_time.dat has snapshots later than t (left over from an earlier run?)')
+      endif
+    endif
+!
+    if (t >= tuetc-1e-3*duetc) then
+      if (lgpu) call copy_farray_from_GPU(f)
+      if (lmultithread) then
+!
+!  As in powersnap: if f was already copied for diagnostics during this step,
+!  the copy is from before the time advance; use the time of the copy.
+!
+        tuetc_data=t
+        if (lgpu) tuetc_data=t_farray_copy
+        call save_diagnostic_controls(lsnap_time=.true.)
+!$      lmasterflags(PERF_UETCSNAP) = .true.
+      else
+        if (iaa>0) call update_ghosts(f,iaa,iaa+2)
+        call wsnap_UETCs(f,t)
+      endif
+      do while (tuetc <= t+1e-3*duetc)
+        tuetc = tuetc + duetc
+      enddo
+    endif
+!
+  endsubroutine maybe_wsnap_UETCs
 !***********************************************************************
   subroutine gen_output_before_timestep(f)
 !
@@ -334,6 +403,8 @@ endsubroutine helper_loop
 !  when lspec_first=T, we output spectra for both t and t+dt.
 !
     if (lspec_start .and. abs(t-(tstart+dt))<.1*dt ) lspec=.true.
+!
+    call maybe_wsnap_UETCs(f)
 !
 !  Save spectrum snapshot.
 !
@@ -549,6 +620,8 @@ endsubroutine helper_loop
 !  At least for the graviational wave spectra, this requires
 !  advance warning so the relevant components of the f-array
 !  can be filled.
+!
+    call maybe_wsnap_UETCs(f)
 !
     if (dspec==impossible) then
       lspec = (mod(it-1,itspec) == 0)
@@ -1350,6 +1423,8 @@ endsubroutine helper_loop
 !
   if (lspec_start .and. t==tstart) lspec=.true.
 !
+  call maybe_wsnap_UETCs(f)
+!
 !  Save spectrum snapshot.
 !
   if (dspec/=impossible .or. itspec/=impossible_int) call powersnap(f)
@@ -1497,6 +1572,7 @@ endsubroutine helper_loop
 !  in run_pars or init_pars.
 !
   if (save_lastsnap) then
+    call maybe_wsnap_UETCs(f)
     if (dspec/=impossible) call powersnap(f,lwrite_last_powersnap)
   endif
 !

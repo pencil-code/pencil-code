@@ -156,6 +156,7 @@ module Special
   real :: tau_stress_kick=0., tnext_stress_kick=1., fac_stress_kick=2., accum_stress_kick=1.
   real :: nonlinear_source_fact=0., k_in_stress=1.
   integer :: itorder_GW=1, idt_file_safety=12
+  logical :: lStress_from_gpu=.false.  ! keep the TT stress (StT,...) on the GPU and read it back
   integer :: boost_method=2
   logical :: lsplit_GW_rhs_from_rest_on_gpu=.true.
   integer :: ntimesteps_per_GW_step=1
@@ -331,10 +332,19 @@ module Special
         !TP: moved registration of Str first since the other ones are not 
         !    necessarily used on the GPU side and having it come first helps
         call farray_register_auxiliary('Str',iStress_ij,array=6,rhs=.true.,read_from_gpu=(idiag_nlin1/=0))
-        call farray_register_auxiliary('StT',iStressT,rhs = itorder_GW==2)
-        call farray_register_auxiliary('StX',iStressX,rhs = itorder_GW==2)
-        call farray_register_auxiliary('StTim',iStressTim,rhs = itorder_GW==2)
-        call farray_register_auxiliary('StXim',iStressXim,rhs = itorder_GW==2)
+!
+!  On the GPU the TT stress is only stored for itorder_GW=2; the stress
+!  spectra and the UETCs need it on the CPU, so then keep and read it back.
+!
+        lStress_from_gpu=lgpu .and. (Str_spec .or. StT_spec .or. StX_spec .or. UETC_spec)
+        call farray_register_auxiliary('StT',iStressT,rhs = itorder_GW==2 .or. lStress_from_gpu, &
+                                       read_from_gpu=lStress_from_gpu)
+        call farray_register_auxiliary('StX',iStressX,rhs = itorder_GW==2 .or. lStress_from_gpu, &
+                                       read_from_gpu=lStress_from_gpu)
+        call farray_register_auxiliary('StTim',iStressTim,rhs = itorder_GW==2 .or. lStress_from_gpu, &
+                                       read_from_gpu=lStress_from_gpu)
+        call farray_register_auxiliary('StXim',iStressXim,rhs = itorder_GW==2 .or. lStress_from_gpu, &
+                                       read_from_gpu=lStress_from_gpu)
       endif
 !
 !  To get hT and hX in real space, invoke lreal_space_hTX_as_aux
@@ -3627,6 +3637,7 @@ if (ip < 25 .and. abs(k1) <nx .and. abs(k2) <ny .and. abs(k3) <nz) print*,k1,k2,
     call copy_addr(lsplit_gw_rhs_from_rest_on_gpu,p_par(77)) ! bool
     call copy_addr(ntimesteps_per_gw_step,p_par(78)) ! int dconst
     call copy_addr(lsingle_precision_ffts_for_gw_update,p_par(79)) ! bool
+    call copy_addr(lStress_from_gpu,p_par(80)) ! bool
 
     call keep_compiler_quiet(OmL0)
     call keep_compiler_quiet(nfactd_GW)

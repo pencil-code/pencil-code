@@ -959,18 +959,6 @@ module Snapshot
       !TP: unfortunately spectrum needs a different t than timeseries since they are in general different
       if (.not. lmultithread) then
         if (trigger_spec=='code_time') tspec=real(t)
-      else
-
-        !TP: if farray was already copied from the gpu during this iteration for rhs diagnostic purposes
-        !    it is not copied again for spectra. Instead we correct the timestamp to match with the data
-        !    which comes before time advancement.
-        !    When testing for agreement between CPU and GPU one can suppress all other output than spectra.
-        !Kishore: is the lspec_at_tplusdt flag not relevant here?
-        if (ldiagnostic_output) then
-                tspec_save=t-dt
-        else
-                tspec_save=t
-        endif
       endif
 
       ldo_all=.not.llwrite_only
@@ -983,6 +971,17 @@ module Snapshot
         if (ldo_all .and. .not. lmultithread) call update_ghosts(f)
 !
         if (lmultithread) then
+!
+!  If f was already copied from the GPU during this iteration for the rhs
+!  diagnostics, it is not copied again and holds the data from before the time
+!  advance: the spectra get the time of the copy. Set only here (after the
+!  copy, which waits for the helper to be idle), so that a helper still
+!  working on the previous request does not see a changed tspec_save.
+!  (Testing ldiagnostic_output here does not work: it is reset in the later
+!  substeps.)
+!
+          tspec_save=t
+          if (lgpu) tspec_save=t_farray_copy
           call save_diagnostic_controls(lsnap_time=.true.)
 !$        lmasterflags(PERF_POWERSNAP) = .true.
         else
@@ -1048,6 +1047,7 @@ module Snapshot
         if (EMF_spec) call powerEMF(f,'EMF')
         if (Tra_spec) call powerTra(f,'Tra')
         lfirstcall=.true.
+        if (UETC_spec) call powerUETCs(f,lfirstcall)
         if (StT_spec) call powerGWs(f,'StT',lfirstcall)
         if (StX_spec) call powerGWs(f,'StX',lfirstcall)
         if (GWs_spec) call powerGWs(f,'GWs',lfirstcall)

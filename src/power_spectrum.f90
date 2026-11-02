@@ -47,6 +47,7 @@ module Power_spectrum
   logical :: lhorizontal_spectra=.false., lvertical_spectra=.false.
   logical :: lread_gauss_quadrature=.false., lshear_frame_correlation=.false.
   logical :: lzero_spec_zerok=.false.
+  logical :: lfirstcall_UETCs=.true.
   integer :: legendre_lmax=1
   integer :: firstout = 0
   logical :: lglq_dot_dat_exists=.false.
@@ -7063,6 +7064,231 @@ outer:do ikz=1,nz
     endif
 !
   endsubroutine power_transfer_mag
+!***********************************************************************
+  subroutine uetc_fields(f, a)
+!
+!  Fourier-space fields entering the UETCs, a(:,:,:,1:nv_uetc) in the layout
+!  of fft_xyz_parallel, (ikx,iky,ikz):
+!   1- 3 Re u,  4- 6 Im u,  7- 9 Re B, 10-12 Im B (B=curl A, zero without
+!  magnetic field), 13-16 hT,hX,hTim,hXim, 17-20 StressT,StressX,StressTim,
+!  StressXim (already Fourier space in gravitational_waves_hTXk; zero if any
+!  of them is not registered). The ghost zones of A must be up to date.
+!
+!  30-oct-26/TP: carved from powerUETCs
+!
+    use Fourier, only: fft_xyz_parallel
+    use Sub, only: curli
+!
+    real, contiguous, dimension(:,:,:,:), intent(in) :: f
+    real, dimension(nx,ny,nz,nv_uetc), intent(out) :: a
+!
+    real, dimension(nx) :: tmp
+    integer, dimension(4) :: ih, iS
+    integer :: ivec
+!
+    a=0.
+    do ivec=1,3
+      a(:,:,:,ivec)=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)
+      call fft_xyz_parallel(a(:,:,:,ivec),a(:,:,:,3+ivec))
+      if (lmagnetic .and. iaa>0) then
+        do n=n1,n2
+          do m=m1,m2
+            call curli(f,iaa,tmp,ivec)
+            a(:,m-nghost,n-nghost,6+ivec)=tmp
+          enddo
+        enddo
+        call fft_xyz_parallel(a(:,:,:,6+ivec),a(:,:,:,9+ivec))
+      endif
+    enddo
+    ih=(/ihhT,ihhX,ihhTim,ihhXim/)
+    iS=(/iStressT,iStressX,iStressTim,iStressXim/)
+    if (all(ih>0)) a(:,:,:,13:16)=f(l1:l2,m1:m2,n1:n2,ih)
+    if (all(iS>0)) a(:,:,:,17:20)=f(l1:l2,m1:m2,n1:n2,iS)
+!
+  endsubroutine uetc_fields
+!***********************************************************************
+  subroutine wsnap_UETCs(f,tsnap)
+!
+!  Append the Fourier-space UETC fields (see uetc_fields) at time tsnap
+!  to UETCS.dat (unformatted stream, one block of nx*ny*nz*nv_uetc reals per
+!  snapshot) and the time to UETCS_time.dat, both in directory_snap.
+!
+!  01-Apr-25/Madeline: coded (ASCII, real space, in Snapshot)
+!  30-Oct-26/TP: binary, Fourier space, B instead of A
+!
+    real, contiguous, dimension(:,:,:,:), intent(in) :: f
+    real(KIND=rkind8), intent(in) :: tsnap
+!
+    real, allocatable, dimension(:,:,:,:) :: a
+    integer :: lun
+!
+    allocate(a(nx,ny,nz,nv_uetc))
+    call uetc_fields(f,a)
+    open(newunit=lun,file=trim(directory_snap)//'/UETCS.dat',form='unformatted', &
+         access='stream',position='append')
+    write(lun) a
+    close(lun)
+    open(newunit=lun,file=trim(directory_snap)//'/UETCS_time.dat',position='append')
+    write(lun,*) tsnap
+    close(lun)
+!
+  endsubroutine wsnap_UETCs
+!***********************************************************************
+  subroutine powerUETCs(f,lfirstcall)
+!
+!  Unequal-time correlators (UETCs) of the current fields with each stored
+!  UETC snapshot at time t0 (written by wsnap_UETCs every duetc): for each
+!  k-shell the sum of Re[a(k,t) a^*(k,t0)] for a = u, B=curl(A), (hT,hX) and
+!  (StressT,StressX). For t0=t this reduces to the usual spectra (poweru,
+!  powerb, GWh, Str). One block (t, t0, spectrum) is appended per snapshot to
+!  power_UETCs_{uu,bb,hh,Str}.dat.
+!
+!   20-mar-25/madeline: coded, adapted from powerGWs and powerhel
+!   29-oct-26/TP: Re[a a0^*] instead of |a||a0|, include imaginary parts of
+!                 the GW fields, fix index order of the shell sums, read the
+!                 snapshots one by one with their actual times
+!   30-oct-26/TP: snapshots stored in Fourier space (binary), so each stored
+!                 snapshot costs only the shell sums
+!
+    use Mpicomm, only: mpireduce_sum
+    use Quiet, only: keep_compiler_quiet
+!
+    real, contiguous, dimension(:,:,:,:) :: f
+    logical :: lfirstcall
+!
+    integer, parameter :: nk=nxgrid/2
+    real, allocatable, dimension(:,:,:,:) :: a, a0
+    integer, dimension(nx,ny,nz) :: kshell
+    real, dimension(nk,4) :: spec, spec_sum
+    real, dimension(nxgrid) :: kx
+    real, dimension(nygrid) :: ky
+    real, dimension(nzgrid) :: kz
+    integer :: i, j, ikx, iky, ikz, lun, lun_t, ios
+    real(KIND=rkind8) :: t0, tnow
+    logical :: lexist
+    character(len=3), dimension(4), parameter :: outnames=(/'uu ','bb ','hh ','Str'/)
+    integer, dimension(4), parameter :: ib=(/1,7,13,17/), ie=(/6,12,16,20/)
+!
+    call keep_compiler_quiet(lfirstcall)
+!
+!  Time of the data: with helper threads (GPU) the f copy may be from before
+!  the time advance, see powersnap; the helper's (threadprivate) tspec holds
+!  the time of its copy (tspec_save is overwritten by the main thread).
+!
+    tnow=t
+    if (lmultithread) tnow=tspec
+!
+    if (lroot .and. (minval(Lxyz) /= maxval(Lxyz))) &
+      call warning("powerUETCs", "computation of wavevector is wrong for non-cubical domains")
+    if (iuu==0) call fatal_error('powerUETCs','iuu=0')
+!
+    inquire(file=trim(directory_snap)//'/UETCS_time.dat',exist=lexist)
+    if (.not.lexist) return
+!
+!  Missing quantities give zero spectra: B needs lmagnetic, the GW UETCs need
+!  the Fourier-space fields with imaginary parts (gravitational_waves_hTXk with
+!  lhhTX_as_aux=T and lStress_as_aux=T).
+!
+    if (lroot .and. lfirstcall_UETCs) then
+      if (.not.(lmagnetic .and. iaa>0)) &
+        call warning('powerUETCs','no magnetic field: power_UETCs_bb.dat will be zero')
+      if (any((/ihhT,ihhX,ihhTim,ihhXim/)<=0)) &
+        call warning('powerUETCs','need ihhT,ihhX,ihhTim,ihhXim: power_UETCs_hh.dat will be zero')
+      if (any((/iStressT,iStressX,iStressTim,iStressXim/)<=0)) &
+        call warning('powerUETCs','need iStress{T,X}{,im}: power_UETCs_Str.dat will be zero')
+    endif
+    lfirstcall_UETCs=.false.
+!
+!  Integer wavenumbers for the *full* mesh (ignore the 2*pi/Lx factor) and
+!  shell index of every local point; layout after fft_xyz_parallel and of the
+!  Fourier-space GW fields is (ikx,iky,ikz).
+!
+    kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)
+    ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2)
+    kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2)
+    do ikz=1,nz
+      do iky=1,ny
+        do ikx=1,nx
+          kshell(ikx,iky,ikz)=nint(sqrt(kx(ikx+ipx*nx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2))
+        enddo
+      enddo
+    enddo
+!
+    allocate(a(nx,ny,nz,nv_uetc),a0(nx,ny,nz,nv_uetc))
+    call uetc_fields(f,a)
+!
+    open(newunit=lun_t,file=trim(directory_snap)//'/UETCS_time.dat',status='old')
+    open(newunit=lun,file=trim(directory_snap)//'/UETCS.dat',form='unformatted', &
+         access='stream',status='old')
+!
+!  Loop over the stored snapshots; Re[a a0^*] = re*re0 + im*im0 summed over
+!  the components: u 1-6, B 7-12, (hT,hX) 13-16, (StressT,StressX) 17-20.
+!
+    do
+      read(lun_t,*,iostat=ios) t0
+      if (ios/=0) exit
+      read(lun,iostat=ios) a0
+      if (ios/=0) call fatal_error('powerUETCs','UETCS.dat shorter than UETCS_time.dat')
+!
+      spec=0.
+      do j=1,4
+        call add_to_shells(spec(:,j),sum(a(:,:,:,ib(j):ie(j))*a0(:,:,:,ib(j):ie(j)),4))
+      enddo
+!
+      call mpireduce_sum(spec,spec_sum,(/nk,4/))
+!
+      if (lroot) then
+        spec_sum(:,1:2)=.5*spec_sum(:,1:2)
+        if (lhalf_factor_in_GW) spec_sum(:,3:4)=.5*spec_sum(:,3:4)
+        do j=1,4
+          call write_uetc(j,spec_sum(:,j))
+        enddo
+      endif
+    enddo
+!
+    close(lun_t)
+    close(lun)
+!
+    contains
+!-----------------------------------------------------------------------
+    subroutine add_to_shells(spec1,corr)
+!
+      real, dimension(nk), intent(inout) :: spec1
+      real, dimension(nx,ny,nz), intent(in) :: corr
+      integer :: ix, iy, iz
+!
+      do iz=1,nz
+        do iy=1,ny
+          do ix=1,nx
+            if (kshell(ix,iy,iz)<nk) spec1(kshell(ix,iy,iz)+1)=spec1(kshell(ix,iy,iz)+1)+corr(ix,iy,iz)
+          enddo
+        enddo
+      enddo
+!
+    endsubroutine add_to_shells
+!-----------------------------------------------------------------------
+    subroutine write_uetc(iout,spec1)
+!
+      integer, intent(in) :: iout
+      real, dimension(nk), intent(in) :: spec1
+      integer :: lun_out, k
+!
+      open(newunit=lun_out,file=trim(datadir)//'/power_UETCs_'//trim(outnames(iout))//'.dat', &
+           position='append')
+      if (lformat) then
+        do k = 1, nk
+          write(lun_out,'(i4,3p,8e10.2)') k, spec1(k)
+        enddo
+      else
+        write(lun_out,*) tnow
+        write(lun_out,*) t0
+        write(lun_out,power_format) spec1
+      endif
+      close(lun_out)
+!
+    endsubroutine write_uetc
+!-----------------------------------------------------------------------
+  endsubroutine powerUETCs
 !***********************************************************************
   function get_k2(ikx, iky, ikz) result(k2)
 !

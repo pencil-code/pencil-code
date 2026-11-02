@@ -396,8 +396,13 @@ contains
       nowait = loptest(nowait_)
       if (nowait) then
         call copy_farray_c(f)
+        t_farray_copy = t
         return
       endif
+!
+!  If f was already copied during this iteration (e.g. for diagnostics before
+!  the time advance), it is not copied again; t_farray_copy keeps the time of
+!  that copy.
 !
 !$    if (lfarray_copied) return
 !
@@ -405,6 +410,7 @@ contains
 !
 !$    call signal_wait(lhelper_perf, .false.)
       call copy_farray_c(f)
+      t_farray_copy = t
 !$    lfarray_copied = .true.
 
     endsubroutine copy_farray_from_GPU
