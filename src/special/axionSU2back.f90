@@ -75,6 +75,7 @@ module Special
   logical :: llnk_spacing_adjustable=.false., llnk_spacing=.false.
   logical :: lim_psi_TR=.false., lleft_psiL_TL=.false., lkeep_mQ_const=.false.
   logical :: lhubble_var=.false., lhubble=.false., lSchwinger_scalar=.false.
+  logical :: lmode_activator=.false.
   logical :: lalways_backreact_output=.false.
   character(len=50) :: init_axionSU2back='standard'
   character (len=labellen) :: V_choice='quadratic'
@@ -85,7 +86,8 @@ module Special
     llnk_spacing_adjustable, llnk_spacing, lim_psi_TR, lleft_psiL_TL, &
     nmin0, nmax0, ldo_adjust_krange, lswap_sign, sgn, m_inflaton, m_phi, &
     inflaton_ini, lhubble, V_choice, phi_ini, alpha, m_alpha, n_alpha, &
-    alpha_attractors_choice, lSchwinger_scalar, mscal, sgn_g, mQ0
+    alpha_attractors_choice, lSchwinger_scalar, mscal, sgn_g, mQ0, &
+    lmode_activator
 !
   ! run parameters
   namelist /special_run_pars/ &
@@ -94,7 +96,8 @@ module Special
     Ndivt, lanalytic, lvariable_k, llnk_spacing_adjustable, llnk_spacing, &
     nmin0, nmax0, horizon_factor, axion_sum_range, lkeep_mQ_const, &
     ldo_adjust_krange, lswap_sign, lwrite_krange, lwrite_backreact, sgn, &
-    lhubble_var, lhubble, mscal, sgn_g, lalways_backreact_output
+    lhubble_var, lhubble, mscal, sgn_g, lalways_backreact_output, &
+    lmode_activator
 !
   ! k array
   real, dimension (nx) :: k
@@ -435,23 +438,34 @@ module Special
 !
 !  need k
 !
-            psi=(ascale_ini/sqrt(2.*k))*cos(k/(ascale_ini*H))
-            psidot=(k/sqrt(2.*k))*sin(k/(ascale_ini*H))
-            TR=(ascale_ini/sqrt(2.*k))*cos(k/(ascale_ini*H))
-            TRdot=(k/sqrt(2.*k))*sin(k/(ascale_ini*H))
-            if (lim_psi_TR) then
-              impsi=(ascale_ini/sqrt(2.*k))*sin(k/(ascale_ini*H))
-              impsidot=(-k/sqrt(2.*k))*cos(k/(ascale_ini*H))
-              imTR=(ascale_ini/sqrt(2.*k))*sin(k/(ascale_ini*H))
-              imTRdot=(-k/sqrt(2.*k))*cos(k/(ascale_ini*H))
+            if (lmode_activator) then
+              psi=0.; psidot=0.; TR=0.; TRdot=0.
+              if (lim_psi_TR) then
+                impsi=0.; impsidot=0.; imTR=0.; imTRdot=0.
+              endif
+            else
+              psi=(ascale_ini/sqrt(2.*k))*cos(k/(ascale_ini*H))
+              psidot=(k/sqrt(2.*k))*sin(k/(ascale_ini*H))
+              TR=(ascale_ini/sqrt(2.*k))*cos(k/(ascale_ini*H))
+              TRdot=(k/sqrt(2.*k))*sin(k/(ascale_ini*H))
+              if (lim_psi_TR) then
+                impsi=(ascale_ini/sqrt(2.*k))*sin(k/(ascale_ini*H))
+                impsidot=(-k/sqrt(2.*k))*cos(k/(ascale_ini*H))
+                imTR=(ascale_ini/sqrt(2.*k))*sin(k/(ascale_ini*H))
+                imTRdot=(-k/sqrt(2.*k))*cos(k/(ascale_ini*H))
+              endif
             endif
 !
             if (lSchwinger_scalar) then
-              fourier_factor=1./twopi**1.5
-              uR=fourier_factor*(ascale_ini/sqrt(2.*k))*cos(k/(ascale_ini*H))
-              uRdot=fourier_factor*(k/sqrt(2.*k))*sin(k/(ascale_ini*H))
-              imuR=fourier_factor*(ascale_ini/sqrt(2.*k))*sin(k/(ascale_ini*H))
-              imuRdot=fourier_factor*(-k/sqrt(2.*k))*cos(k/(ascale_ini*H))
+              if (lmode_activator) then
+                uR=0.; uRdot=0.; imuR=0.; imuRdot=0.
+              else
+                fourier_factor=1./twopi**1.5
+                uR=fourier_factor*(ascale_ini/sqrt(2.*k))*cos(k/(ascale_ini*H))
+                uRdot=fourier_factor*(k/sqrt(2.*k))*sin(k/(ascale_ini*H))
+                imuR=fourier_factor*(ascale_ini/sqrt(2.*k))*sin(k/(ascale_ini*H))
+                imuRdot=fourier_factor*(-k/sqrt(2.*k))*cos(k/(ascale_ini*H))
+              endif
             endif
 !
           endif
@@ -615,6 +629,7 @@ module Special
 !   2-dec-2022/axel: coded
 !   1-sep-2023/axel: implemented lwith_eps with conformal time.
 !
+      use Mpicomm, only: mpiallreduce_sum, mpibcast
       use Diagnostics
       use Sub
 !
@@ -632,7 +647,9 @@ module Special
       real :: sign_swap=1.
       real, parameter :: fact=1.
       real :: epsilon_sr,inflaton
-!
+      real :: a_current
+      integer :: n_active_TR_loc, n_active_uR_loc
+      real    :: r_active_TR, r_active_uR
 !
       call keep_compiler_quiet(p)
 !
@@ -642,19 +659,25 @@ module Special
 !
 !  Set the 8 variable
 !
-      psi=f(l1:l2,m,n,iaxi_psi)
-      psidot=f(l1:l2,m,n,iaxi_psidot)
-      TR=f(l1:l2,m,n,iaxi_TR)
-      TRdot=f(l1:l2,m,n,iaxi_TRdot)
+      if (.not. lmode_activator) then
+        psi=f(l1:l2,m,n,iaxi_psi)
+        psidot=f(l1:l2,m,n,iaxi_psidot)
+        TR=f(l1:l2,m,n,iaxi_TR)
+        TRdot=f(l1:l2,m,n,iaxi_TRdot)
+      else
+        psi=0.; psidot=0.; TR=0.; TRdot=0.
+      endif
 !
-      if (lim_psi_TR) then
+      if (lim_psi_TR .and. .not. lmode_activator) then
         impsi=f(l1:l2,m,n,iaxi_impsi)
         impsidot=f(l1:l2,m,n,iaxi_impsidot)
         imTR=f(l1:l2,m,n,iaxi_imTR)
         imTRdot=f(l1:l2,m,n,iaxi_imTRdot)
+      else if (lim_psi_TR) then
+        impsi=0.; impsidot=0.; imTR=0.; imTRdot=0.
       endif
 !
-      if (lleft_psiL_TL) then
+      if (lleft_psiL_TL .and. .not. lmode_activator) then
         psiL     =f(l1:l2,m,n,iaxi_psiL)
         psiLdot  =f(l1:l2,m,n,iaxi_psiLdot)
         TL       =f(l1:l2,m,n,iaxi_TL)
@@ -663,9 +686,12 @@ module Special
         impsiLdot=f(l1:l2,m,n,iaxi_impsiLdot)
         imTL     =f(l1:l2,m,n,iaxi_imTL)
         imTLdot  =f(l1:l2,m,n,iaxi_imTLdot)
+      else if (lleft_psiL_TL) then
+        psiL=0.; psiLdot=0.; TL=0.; TLdot=0.
+        impsiL=0.; impsiLdot=0.; imTL=0.; imTLdot=0.
       endif
 !
-      if (lSchwinger_scalar) then
+      if (lSchwinger_scalar .and. .not. lmode_activator) then
         uR     =f(l1:l2,m,n,iaxi_uR)
         uRdot  =f(l1:l2,m,n,iaxi_uRdot)
         imuR   =f(l1:l2,m,n,iaxi_imuR)
@@ -675,14 +701,8 @@ module Special
         imuL   =f(l1:l2,m,n,iaxi_imuL)
         imuLdot=f(l1:l2,m,n,iaxi_imuLdot)
       else
-        uR     =0.
-        uRdot  =0.
-        imuR   =0.
-        imuRdot=0.
-        uL     =0.
-        uLdot  =0.
-        imuL   =0.
-        imuLdot=0.
+        uR=0.; uRdot=0.; imuR=0.; imuRdot=0.
+        uL=0.; uLdot=0.; imuL=0.; imuLdot=0.
       endif
 !
 !  make ODE variables available (should exist on all processors)
@@ -692,6 +712,125 @@ module Special
       chi=f_ode(iaxi_chi)
       chidot=f_ode(iaxi_chidot)
       call get_Hubble
+!
+!  Mode activator: birth BD IC when k/(aH)=100 is first crossed.
+!  Covers psiR, TR, psiL, TL (tensor) and uR, uL (Schwinger scalar).
+!
+      if (lmode_activator) then
+!
+!  Determine a_current from the correct source for each Hubble path
+!
+        if (lhubble) then
+          a_current = a
+        else if (lconf_time) then
+          a_current = -1./(H*t)
+        else
+          a_current = exp(H*t)
+        endif
+!
+!  Activate psiR and TR
+!
+        where (k <= a_current*H*100.0 .and. abs(f(l1:l2,m,n,iaxi_TR)) < 1e-50)
+          f(l1:l2,m,n,iaxi_psi)    = (a_current/sqrt(2.*k))*cos(k/(a_current*H))
+          f(l1:l2,m,n,iaxi_psidot) = (k/sqrt(2.*k))*sin(k/(a_current*H))
+          f(l1:l2,m,n,iaxi_TR)     = (a_current/sqrt(2.*k))*cos(k/(a_current*H))
+          f(l1:l2,m,n,iaxi_TRdot)  = (k/sqrt(2.*k))*sin(k/(a_current*H))
+        endwhere
+        if (lim_psi_TR) then
+          where (k <= a_current*H*100.0 .and. abs(f(l1:l2,m,n,iaxi_TR)) < 1e-50)
+            f(l1:l2,m,n,iaxi_impsi)    = (a_current/sqrt(2.*k))*sin(k/(a_current*H))
+            f(l1:l2,m,n,iaxi_impsidot) = -(k/sqrt(2.*k))*cos(k/(a_current*H))
+            f(l1:l2,m,n,iaxi_imTR)     = (a_current/sqrt(2.*k))*sin(k/(a_current*H))
+            f(l1:l2,m,n,iaxi_imTRdot)  = -(k/sqrt(2.*k))*cos(k/(a_current*H))
+          endwhere
+        endif
+!
+!  Activate psiL and TL
+!
+        if (lleft_psiL_TL) then
+          where (k <= a_current*H*100.0 .and. abs(f(l1:l2,m,n,iaxi_TL)) < 1e-50)
+            f(l1:l2,m,n,iaxi_psiL)     = (a_current/sqrt(2.*k))*cos(k/(a_current*H))
+            f(l1:l2,m,n,iaxi_psiLdot)  = (k/sqrt(2.*k))*sin(k/(a_current*H))
+            f(l1:l2,m,n,iaxi_TL)       = (a_current/sqrt(2.*k))*cos(k/(a_current*H))
+            f(l1:l2,m,n,iaxi_TLdot)    = (k/sqrt(2.*k))*sin(k/(a_current*H))
+            f(l1:l2,m,n,iaxi_impsiL)   = (a_current/sqrt(2.*k))*sin(k/(a_current*H))
+            f(l1:l2,m,n,iaxi_impsiLdot)= -(k/sqrt(2.*k))*cos(k/(a_current*H))
+            f(l1:l2,m,n,iaxi_imTL)     = (a_current/sqrt(2.*k))*sin(k/(a_current*H))
+            f(l1:l2,m,n,iaxi_imTLdot)  = -(k/sqrt(2.*k))*cos(k/(a_current*H))
+          endwhere
+        endif
+!
+!  Load tensor/psi from (possibly just modified) f
+!
+        psi    =f(l1:l2,m,n,iaxi_psi)
+        psidot =f(l1:l2,m,n,iaxi_psidot)
+        TR     =f(l1:l2,m,n,iaxi_TR)
+        TRdot  =f(l1:l2,m,n,iaxi_TRdot)
+        if (lim_psi_TR) then
+          impsi    =f(l1:l2,m,n,iaxi_impsi)
+          impsidot =f(l1:l2,m,n,iaxi_impsidot)
+          imTR     =f(l1:l2,m,n,iaxi_imTR)
+          imTRdot  =f(l1:l2,m,n,iaxi_imTRdot)
+        endif
+        if (lleft_psiL_TL) then
+          psiL     =f(l1:l2,m,n,iaxi_psiL)
+          psiLdot  =f(l1:l2,m,n,iaxi_psiLdot)
+          TL       =f(l1:l2,m,n,iaxi_TL)
+          TLdot    =f(l1:l2,m,n,iaxi_TLdot)
+          impsiL   =f(l1:l2,m,n,iaxi_impsiL)
+          impsiLdot=f(l1:l2,m,n,iaxi_impsiLdot)
+          imTL     =f(l1:l2,m,n,iaxi_imTL)
+          imTLdot  =f(l1:l2,m,n,iaxi_imTLdot)
+        endif
+!
+!  Activate uR and uL (Schwinger scalar)
+!
+        if (lSchwinger_scalar) then
+          where (k <= a_current*H*100.0 .and. &
+                 abs(f(l1:l2,m,n,iaxi_uR))   < 1e-50 .and. &
+                 abs(f(l1:l2,m,n,iaxi_imuR)) < 1e-50)
+            f(l1:l2,m,n,iaxi_uR)      =  (1./twopi**1.5)*(1./sqrt(2.*k))*cos(k/(a_current*H))
+            f(l1:l2,m,n,iaxi_imuR)    =  (1./twopi**1.5)*(1./sqrt(2.*k))*sin(k/(a_current*H))
+            f(l1:l2,m,n,iaxi_uRdot)   =  (1./twopi**1.5)*(k/(a_current*sqrt(2.*k)))*sin(k/(a_current*H))
+            f(l1:l2,m,n,iaxi_imuRdot) = -(1./twopi**1.5)*(k/(a_current*sqrt(2.*k)))*cos(k/(a_current*H))
+          endwhere
+          where (k <= a_current*H*100.0 .and. &
+                 abs(f(l1:l2,m,n,iaxi_uL))   < 1e-50 .and. &
+                 abs(f(l1:l2,m,n,iaxi_imuL)) < 1e-50)
+            f(l1:l2,m,n,iaxi_uL)      =  (1./twopi**1.5)*(1./sqrt(2.*k))*cos(k/(a_current*H))
+            f(l1:l2,m,n,iaxi_imuL)    =  (1./twopi**1.5)*(1./sqrt(2.*k))*sin(k/(a_current*H))
+            f(l1:l2,m,n,iaxi_uLdot)   =  (1./twopi**1.5)*(k/(a_current*sqrt(2.*k)))*sin(k/(a_current*H))
+            f(l1:l2,m,n,iaxi_imuLdot) = -(1./twopi**1.5)*(k/(a_current*sqrt(2.*k)))*cos(k/(a_current*H))
+          endwhere
+          uR     =f(l1:l2,m,n,iaxi_uR)
+          uRdot  =f(l1:l2,m,n,iaxi_uRdot)
+          imuR   =f(l1:l2,m,n,iaxi_imuR)
+          imuRdot=f(l1:l2,m,n,iaxi_imuRdot)
+          uL     =f(l1:l2,m,n,iaxi_uL)
+          uLdot  =f(l1:l2,m,n,iaxi_uLdot)
+          imuL   =f(l1:l2,m,n,iaxi_imuL)
+          imuLdot=f(l1:l2,m,n,iaxi_imuLdot)
+        endif
+!
+!
+!  Diagnostic: count total active modes at output times
+!
+        if (lfirst .and. lout) then
+          n_active_TR_loc = count(abs(f(l1:l2,m,n,iaxi_TR)) >= 1e-50)
+          if (lSchwinger_scalar) then
+            n_active_uR_loc = count(abs(f(l1:l2,m,n,iaxi_uR)) >= 1e-50)
+          else
+            n_active_uR_loc = 0
+          endif
+          call mpiallreduce_sum(real(n_active_TR_loc), r_active_TR)
+          call mpiallreduce_sum(real(n_active_uR_loc), r_active_uR)
+          if (lroot) &
+            write(*,'(a,f8.3,2(a,i5))') &
+              'mode_activator: N=', log(a_current), &
+              '  active TR/psi=', nint(r_active_TR), &
+              '  active uR/uL=',  nint(r_active_uR)
+        endif
+      endif  ! lmode_activator
 !
 !  Possibility of keeping mQ constant, i,e., we keep mQ=g*Q0/H
 !  Need to have Q on all processors.
@@ -1861,7 +2000,9 @@ module Special
           nswitch=int((lnkmin-lnkmin0)/dlnk)
           if (ip<10) print*,'nswitch: ',a, lnkmin0, nswitch
           if (nswitch==0) call fatal_error('special_after_boundary','nswitch must not be zero')
-          if (nswitch>1) call fatal_error('special_after_boundary','nswitch must not exceed 1')
+          if (.not. lalways_backreact_output) then
+            if (nswitch>1) call fatal_error('special_after_boundary','(i) nswitch must not exceed 1')
+          endif
 !
 !  calculate new k array (because nswitch=1)
 !
@@ -1918,7 +2059,7 @@ module Special
         if (lnkmin >= (lnkmin0_dummy+dlnk)) then
           nswitch=int((lnkmin-lnkmin0_dummy)/dlnk)
           if (nswitch==0) call fatal_error('special_after_boundary','nswitch must not be zero')
-          if (nswitch>1) call fatal_error('special_after_boundary','nswitch must not exceed 1')
+          if (nswitch>1) call fatal_error('special_after_boundary','(ii) nswitch must not exceed 1')
           open (1, file=trim(directory_snap)//'/krange.dat', form='formatted', position='append')
           write(1,*) t, lnk, f(l1:l2,m1,n1,iaxi_psi)
           close(1)
