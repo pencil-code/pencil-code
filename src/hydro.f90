@@ -3254,6 +3254,7 @@ module Hydro
           idiag_fkinzupmz/=0 .or. idiag_fkinzdownmz/=0 .or. &
           idiag_ekinmx /= 0 .or. idiag_ekinmz/=0 .or. idiag_fkinxmx/=0) then
         lpenc_diagnos(i_ekin)=.true.
+        lpenc_diagnos(i_u2)=.true.
       endif
       if (idiag_fkinxmxy/=0 .or. idiag_fkinymxy/=0 .or. &
           idiag_fkinxupmxy/=0 .or. idiag_fkinxdownmxy/=0 .or. idiag_fkinrsphmphi/=0) then
