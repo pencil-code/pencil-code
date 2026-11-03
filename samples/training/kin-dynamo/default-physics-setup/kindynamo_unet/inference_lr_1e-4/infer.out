@@ -1,5 +1,5 @@
 ***********************************************
-The Job ID: 2580122
+The Job ID: 2783166
 ***********************************************
 
 Lmod is automatically replacing "nvhpc/26.3" with "gcc/14.3.0".
@@ -10,7 +10,7 @@ Lmod is automatically replacing "openmpi/5.0.10" with "nvhpc/26.3".
 
 Lmod is automatically replacing "gcc/14.3.0" with "nvhpc/26.3".
 
-hostname = rg2108
+hostname = rg2121
 MPI run
 gpu = 1
 multithread = 1
@@ -21,12 +21,113 @@ mpich = 0
 1 node, 1 CPU per node
 lparticles = 0
 lpointmasses = 0
-Revision: 6435c2d2b
+Revision: d3f847350
  M fortran-parser
- M samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/training/run.in
- M samples/training/scripts/run_training.sh
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/inference/print.in
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/inference/run.in
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/inference/src/Makefile.local
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/inference/src/astaroth/DSL/local/PC_modulepardecs.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/inference/src/astaroth/DSL/local/PC_nghost.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/inference/src/astaroth/DSL/local/boundconds.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/inference/src/astaroth/DSL/local/cparam.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/inference/src/astaroth/DSL/local/equations.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/inference/src/astaroth/DSL/local/fieldecs.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/inference/src/astaroth/DSL/local/rhs.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/inference/src/astaroth/DSL/local/solve.ac
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/inference/src/astaroth/DSL/local/solve_single.ac
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/inference/src/astaroth/DSL/local/solve_two.ac
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/inference/src/astaroth/DSL/local/static_var_declares.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/inference/src/cparam.local
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/inference/start.in
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/training/print.in
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/training/run.in
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/training/src/Makefile.local
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/training/src/astaroth/DSL/local/PC_modulepardecs.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/training/src/astaroth/DSL/local/PC_nghost.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/training/src/astaroth/DSL/local/boundconds.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/training/src/astaroth/DSL/local/cparam.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/training/src/astaroth/DSL/local/equations.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/training/src/astaroth/DSL/local/fieldecs.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/training/src/astaroth/DSL/local/rhs.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/training/src/astaroth/DSL/local/solve.ac
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/training/src/astaroth/DSL/local/solve_single.ac
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/training/src/astaroth/DSL/local/solve_two.ac
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/training/src/astaroth/DSL/local/static_var_declares.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/training/src/cparam.local
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/training/start.in
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/inference/print.in
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/inference/run.in
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/inference/src/Makefile.local
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/inference/src/astaroth/DSL/local/PC_modulepardecs.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/inference/src/astaroth/DSL/local/PC_nghost.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/inference/src/astaroth/DSL/local/boundconds.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/inference/src/astaroth/DSL/local/cparam.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/inference/src/astaroth/DSL/local/equations.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/inference/src/astaroth/DSL/local/fieldecs.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/inference/src/astaroth/DSL/local/rhs.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/inference/src/astaroth/DSL/local/solve.ac
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/inference/src/astaroth/DSL/local/solve_single.ac
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/inference/src/astaroth/DSL/local/solve_two.ac
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/inference/src/astaroth/DSL/local/static_var_declares.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/inference/src/cparam.local
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/inference/start.in
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/inference_lr_1e-3/PC-AC.conf
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/inference_lr_1e-4/PC-AC.conf
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/inference_lr_1e-5/PC-AC.conf
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/training/print.in
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/training/run.in
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/training/src/Makefile.local
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/training/src/astaroth/DSL/local/PC_modulepardecs.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/training/src/astaroth/DSL/local/PC_nghost.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/training/src/astaroth/DSL/local/boundconds.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/training/src/astaroth/DSL/local/cparam.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/training/src/astaroth/DSL/local/equations.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/training/src/astaroth/DSL/local/fieldecs.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/training/src/astaroth/DSL/local/rhs.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/training/src/astaroth/DSL/local/solve.ac
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/training/src/astaroth/DSL/local/solve_single.ac
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/training/src/astaroth/DSL/local/solve_two.ac
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/training/src/astaroth/DSL/local/static_var_declares.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/training/src/cparam.local
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/training/start.in
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference/print.in
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference/run.in
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference/src/Makefile.local
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference/src/astaroth/DSL/local/PC_modulepardecs.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference/src/astaroth/DSL/local/PC_nghost.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference/src/astaroth/DSL/local/boundconds.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference/src/astaroth/DSL/local/cparam.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference/src/astaroth/DSL/local/equations.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference/src/astaroth/DSL/local/fieldecs.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference/src/astaroth/DSL/local/rhs.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference/src/astaroth/DSL/local/solve.ac
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference/src/astaroth/DSL/local/solve_single.ac
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference/src/astaroth/DSL/local/solve_two.ac
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference/src/astaroth/DSL/local/static_var_declares.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference/src/cparam.local
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference/start.in
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference_lr_1e-3/PC-AC.conf
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference_lr_1e-4/PC-AC.conf
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/training/models
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/training/print.in
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/training/run.in
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/training/scripts
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/training/src/Makefile.local
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/training/src/astaroth/DSL/local/PC_modulepardecs.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/training/src/astaroth/DSL/local/PC_nghost.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/training/src/astaroth/DSL/local/boundconds.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/training/src/astaroth/DSL/local/cparam.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/training/src/astaroth/DSL/local/equations.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/training/src/astaroth/DSL/local/fieldecs.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/training/src/astaroth/DSL/local/rhs.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/training/src/astaroth/DSL/local/solve.ac
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/training/src/astaroth/DSL/local/static_var_declares.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/training/src/cparam.local
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/training/start.in
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/training_lr_1e-3/PC-AC.conf
+ M src/astaroth/Makefile
  M src/astaroth/submodule
-Tue Oct 27 15:23:40 2026
+Tue Nov  3 19:22:07 2026
 Running under MPI
 Running 'env MODULE_PREFIX= MODULE_INFIX=_ MODULE_SUFFIX=_ srun -n 1 ./src/start.x'...
  
@@ -92,7 +193,7 @@ WARNING:  farray_check_maux:
  start.x has completed successfully
  
 
-Tue Oct 27 15:23:45 2026
+Tue Nov  3 19:22:11 2026
 
 Lmod is automatically replacing "nvhpc/26.3" with "gcc/14.3.0".
 
@@ -102,7 +203,7 @@ Lmod is automatically replacing "openmpi/5.0.10" with "nvhpc/26.3".
 
 Lmod is automatically replacing "gcc/14.3.0" with "nvhpc/26.3".
 
-hostname = rg2108
+hostname = rg2121
 MPI run
 gpu = 1
 multithread = 1
@@ -113,17 +214,118 @@ mpich = 0
 1 node, 1 CPU per node
 lparticles = 0
 lpointmasses = 0
-Revision: 6435c2d2b
+Revision: d3f847350
  M fortran-parser
- M samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/training/run.in
- M samples/training/scripts/run_training.sh
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/inference/print.in
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/inference/run.in
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/inference/src/Makefile.local
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/inference/src/astaroth/DSL/local/PC_modulepardecs.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/inference/src/astaroth/DSL/local/PC_nghost.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/inference/src/astaroth/DSL/local/boundconds.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/inference/src/astaroth/DSL/local/cparam.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/inference/src/astaroth/DSL/local/equations.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/inference/src/astaroth/DSL/local/fieldecs.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/inference/src/astaroth/DSL/local/rhs.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/inference/src/astaroth/DSL/local/solve.ac
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/inference/src/astaroth/DSL/local/solve_single.ac
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/inference/src/astaroth/DSL/local/solve_two.ac
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/inference/src/astaroth/DSL/local/static_var_declares.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/inference/src/cparam.local
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/inference/start.in
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/training/print.in
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/training/run.in
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/training/src/Makefile.local
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/training/src/astaroth/DSL/local/PC_modulepardecs.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/training/src/astaroth/DSL/local/PC_nghost.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/training/src/astaroth/DSL/local/boundconds.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/training/src/astaroth/DSL/local/cparam.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/training/src/astaroth/DSL/local/equations.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/training/src/astaroth/DSL/local/fieldecs.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/training/src/astaroth/DSL/local/rhs.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/training/src/astaroth/DSL/local/solve.ac
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/training/src/astaroth/DSL/local/solve_single.ac
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/training/src/astaroth/DSL/local/solve_two.ac
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/training/src/astaroth/DSL/local/static_var_declares.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/training/src/cparam.local
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_lenet5forsegmentation/training/start.in
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/inference/print.in
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/inference/run.in
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/inference/src/Makefile.local
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/inference/src/astaroth/DSL/local/PC_modulepardecs.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/inference/src/astaroth/DSL/local/PC_nghost.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/inference/src/astaroth/DSL/local/boundconds.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/inference/src/astaroth/DSL/local/cparam.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/inference/src/astaroth/DSL/local/equations.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/inference/src/astaroth/DSL/local/fieldecs.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/inference/src/astaroth/DSL/local/rhs.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/inference/src/astaroth/DSL/local/solve.ac
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/inference/src/astaroth/DSL/local/solve_single.ac
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/inference/src/astaroth/DSL/local/solve_two.ac
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/inference/src/astaroth/DSL/local/static_var_declares.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/inference/src/cparam.local
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/inference/start.in
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/inference_lr_1e-3/PC-AC.conf
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/inference_lr_1e-4/PC-AC.conf
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/inference_lr_1e-5/PC-AC.conf
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/training/print.in
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/training/run.in
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/training/src/Makefile.local
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/training/src/astaroth/DSL/local/PC_modulepardecs.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/training/src/astaroth/DSL/local/PC_nghost.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/training/src/astaroth/DSL/local/boundconds.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/training/src/astaroth/DSL/local/cparam.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/training/src/astaroth/DSL/local/equations.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/training/src/astaroth/DSL/local/fieldecs.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/training/src/astaroth/DSL/local/rhs.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/training/src/astaroth/DSL/local/solve.ac
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/training/src/astaroth/DSL/local/solve_single.ac
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/training/src/astaroth/DSL/local/solve_two.ac
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/training/src/astaroth/DSL/local/static_var_declares.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/training/src/cparam.local
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_tbnn/training/start.in
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference/print.in
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference/run.in
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference/src/Makefile.local
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference/src/astaroth/DSL/local/PC_modulepardecs.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference/src/astaroth/DSL/local/PC_nghost.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference/src/astaroth/DSL/local/boundconds.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference/src/astaroth/DSL/local/cparam.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference/src/astaroth/DSL/local/equations.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference/src/astaroth/DSL/local/fieldecs.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference/src/astaroth/DSL/local/rhs.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference/src/astaroth/DSL/local/solve.ac
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference/src/astaroth/DSL/local/solve_single.ac
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference/src/astaroth/DSL/local/solve_two.ac
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference/src/astaroth/DSL/local/static_var_declares.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference/src/cparam.local
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference/start.in
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference_lr_1e-3/PC-AC.conf
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference_lr_1e-4/PC-AC.conf
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/training/models
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/training/print.in
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/training/run.in
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/training/scripts
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/training/src/Makefile.local
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/training/src/astaroth/DSL/local/PC_modulepardecs.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/training/src/astaroth/DSL/local/PC_nghost.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/training/src/astaroth/DSL/local/boundconds.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/training/src/astaroth/DSL/local/cparam.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/training/src/astaroth/DSL/local/equations.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/training/src/astaroth/DSL/local/fieldecs.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/training/src/astaroth/DSL/local/rhs.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/training/src/astaroth/DSL/local/solve.ac
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/training/src/astaroth/DSL/local/static_var_declares.h
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/training/src/cparam.local
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/training/start.in
+ D samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/training_lr_1e-3/PC-AC.conf
+ M src/astaroth/Makefile
  M src/astaroth/submodule
-Tue Oct 27 15:23:45 2026
+Tue Nov  3 19:22:11 2026
 Running under MPI
 Running 'env MODULE_PREFIX= MODULE_INFIX=_ MODULE_SUFFIX=_ srun -n 1 ./src/run.x'...
-Tue Oct 27 15:23:51 2026 : CONFIG_FILE: data/training/config_torchfort.yaml
-Tue Oct 27 15:23:51 2026 : Model_NAME: stationary
-Tue Oct 27 15:23:51 2026 : CREATED DISTRIBUTED TRAINING
+Tue Nov  3 19:22:15 2026 : CONFIG_FILE: data/training/config_torchfort.yaml
+Tue Nov  3 19:22:15 2026 : Model_NAME: stationary
+Tue Nov  3 19:22:15 2026 : CREATED DISTRIBUTED TRAINING
  
  =====================================================================
  WARNING: using SINGLE PRECISION, you'd better know what you're doing!
@@ -165,7 +367,7 @@ SVN: -------            v.         (                   ) $Id
  nxgrid, nygrid, nzgrid=           18           18           18
  Lx, Ly, Lz=    6.283185        6.283185        6.283185    
        Vbox=    248.0502    
- rsnap: read snapshot var.dat in    3.2316125573732535E-003  seconds
+ rsnap: read snapshot var.dat in    2.9589516168821994E-003  seconds
  setup_slices: slice_position = p
  setup_slices: ix_loc,iy_loc,iz_loc,iz2_loc, (video files) = 6 6 6 23                                                                        
  units_general: unit_velocity=    1.000000000000000     
@@ -178,12 +380,117 @@ SVN: -------            v.         (                   ) $Id
 WARNING:  get_gamma_etc: gamma, cp, and cv are undefined in noeos.
 The values provided are for one-atomic ideal gas. Use at own risk!
  resistivity: constant eta
-Tue Oct 27 15:23:51 2026 : Torchfort model stationary loaded succesfullyacCompile: Compiling Astaroth; logging to /users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference_lr_1e-4/ac_compilation.log
-Fatal was not able to compile
-Check /users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference_lr_1e-4/ac_compilation.log for the compilation log!
-Was not able to compile Astaroth!
-srun: error: rg2108: task 0: Exited with exit code 1
-srun: Terminating StepId=2580122.1
-'env MODULE_PREFIX= MODULE_INFIX=_ MODULE_SUFFIX=_ srun -n 1 ./src/run.x' failed: 
-Aborting.
-Found ERROR file
+1c1
+< -DCMAKE_BUILD_TYPE=Release -DREAD_OVERRIDES=ON -DBUILD_SHARED_LIBS=ON -DOPENMP_ENABLED=OFF -DCPU_BUILD=OFF -DDSL_MODULE_DIR=/users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference_lr_1e-4/src/astaroth/DSL/local -DACC_COMPILER_PATH=/users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference_lr_1e-4/src/astaroth/submodule/build/acc-runtime/acc/acc -DAC_STENCIL_ORDER=-1 -DDSL_EXT_SOURCES=/users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference_lr_1e-4/src/astaroth/DSL/local/boundconds.h;/users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference_lr_1e-4/src/astaroth/DSL/local/cparam.h;/users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference_lr_1e-4/src/astaroth/DSL/local/equations.h;/users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference_lr_1e-4/src/astaroth/DSL/local/fieldecs.h;/users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference_lr_1e-4/src/astaroth/DSL/local/PC_modulepardecs.h;/users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference_lr_1e-4/src/astaroth/DSL/local/PC_nghost.h;/users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference_lr_1e-4/src/astaroth/DSL/local/rhs.h;/users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference_lr_1e-4/src/astaroth/DSL/local/static_var_declares.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/alphadisk/after_timestep.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/axionSU2back.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/backreact_infl.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/bcs/funcs.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/bcs/funcs_overload.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/density/continuity.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/density/diffusivity.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/density/mass_conservation.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/df_declares.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/entropy/after_boundary.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/entropy/heat_cond_chi_prof.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/entropy/heat_cond_const_chi.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/entropy/heat_cond_const_K.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/entropy/heat_cond_hyper3.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/entropy/heat_cond_K_prof.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/entropy/heat_cond_kramers.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/entropy/heatcool.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/entropy/heat_ss.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/fieldecs.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/floors_and_ceilings.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/forcing/getforce.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/forcing/pcstyleforcing.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/freeze_df.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/gravitational_waves.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/handwritten_end.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/hydro/before_boundary.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/hydro/hydro_after_boundary_conservative.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/hydro/hydro_after_boundary_gr.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/hydro/momentum.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/hydro/momentum_reduction_optimized.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/hydro/viscosity.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/implicit_diffusion.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/ioncalc.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/magnetic/before_boundary.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/magnetic/induction.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/magnetic/magnetic_diffusivity.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/newton_cooling.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/polymer.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/preamble.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/prerequisites.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/radiation/integrate.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/radiation/opacity.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/radiation/Qfinalize.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/radiation/Qintrinsic.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/radiation/Qrevision.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/radiation/source_function.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/radiation/steps.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/selfgravity.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/shear.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/shock/highorder.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/sld/sld.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/steps.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/supernova/explode_SN.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/timeavg.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/training/train.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/typedefs.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/viscosity.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/z4c.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/average.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/bc.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/bicgstab.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/cg.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/colors.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/compact_poisson_operators.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/derivs.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/general_derivs.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/general_grid/funcs.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/general_grid/vars.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/general_operators.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/geometric_multigrid_core.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/geometric_multigrid.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/grid_extension.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/grid/funcs.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/grid_transfer_functions.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/grid/vars.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/integrators.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/map.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/math/fft.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/math/funcs.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/math/interpolation.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/math/stencils.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/operators.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/optimized_integrators.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/pc_derivs.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/poisson.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/radiation_ray.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/shock.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/sink_particle.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/slope_limited_diffusion.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/smooth_max.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/spherical_harmonics.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/units.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/utils/funcs.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/utils/intrinsics.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/utils/kernels.h   -DDSL_MODULE_DIR=/users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference_lr_1e-4/src/astaroth/DSL/local -DCPU_BUILD=off -DSUPPORT_OLD_ARCHITECTURES=ON -DUSE_HEFFTE=off -DFFT_ENABLED=ON -DMULTIGPU_ENABLED=OFF -DMPI_ENABLED=ON -DBUILD_SHARED_LIBS=ON -DSINGLEPASS_INTEGRATION=OFF -DMAX_THREADS_PER_BLOCK=512 -DDOUBLE_PRECISION=OFF -DBUILD_SAMPLES=OFF -DSUPPRESS_COMPILER_WARNINGS=on -DVERBOSE=off -DUSE_ONLY_OPTIMIZED_KERNELS=on -DOPTIMIZE_INPUT_PARAMS=on -DOPTIMIZE_MEM_ACCESSES=ON -DOPTIMIZE_ARRAYS=on -DCMAKE_BUILD_TYPE=Release -DBUILD_STANDALONE=OFF -DOPTIMIZE_FIELDS=on -DALLOW_DEAD_VARIABLES=on -DBUILD_UTILS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DELIMINATE_CONDITIONALS=on -DDSL_MODULE_FILE=solve.ac -DINLINING=off -DBUILD_ACM=OFF -DPROFILING_ENABLED=OFF
+---
+> -DCMAKE_BUILD_TYPE=Debug -DREAD_OVERRIDES=ON -DBUILD_SHARED_LIBS=ON -DOPENMP_ENABLED=OFF -DCPU_BUILD=OFF -DDSL_MODULE_DIR=/users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference_lr_1e-4/src/astaroth/DSL/local -DACC_COMPILER_PATH=/users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference_lr_1e-4/src/astaroth/submodule/build/acc-runtime/acc/acc -DAC_STENCIL_ORDER=-1 -DDSL_EXT_SOURCES=/users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference_lr_1e-4/src/astaroth/DSL/local/boundconds.h;/users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference_lr_1e-4/src/astaroth/DSL/local/cparam.h;/users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference_lr_1e-4/src/astaroth/DSL/local/equations.h;/users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference_lr_1e-4/src/astaroth/DSL/local/fieldecs.h;/users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference_lr_1e-4/src/astaroth/DSL/local/PC_modulepardecs.h;/users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference_lr_1e-4/src/astaroth/DSL/local/PC_nghost.h;/users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference_lr_1e-4/src/astaroth/DSL/local/rhs.h;/users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference_lr_1e-4/src/astaroth/DSL/local/static_var_declares.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/alphadisk/after_timestep.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/axionSU2back.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/backreact_infl.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/bcs/funcs.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/bcs/funcs_overload.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/density/continuity.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/density/diffusivity.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/density/mass_conservation.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/df_declares.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/entropy/after_boundary.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/entropy/heat_cond_chi_prof.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/entropy/heat_cond_const_chi.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/entropy/heat_cond_const_K.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/entropy/heat_cond_hyper3.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/entropy/heat_cond_K_prof.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/entropy/heat_cond_kramers.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/entropy/heatcool.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/entropy/heat_ss.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/fieldecs.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/floors_and_ceilings.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/forcing/getforce.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/forcing/pcstyleforcing.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/freeze_df.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/gravitational_waves.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/handwritten_end.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/hydro/before_boundary.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/hydro/hydro_after_boundary_conservative.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/hydro/hydro_after_boundary_gr.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/hydro/momentum.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/hydro/momentum_reduction_optimized.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/hydro/viscosity.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/implicit_diffusion.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/ioncalc.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/magnetic/before_boundary.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/magnetic/induction.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/magnetic/magnetic_diffusivity.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/newton_cooling.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/polymer.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/preamble.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/prerequisites.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/radiation/integrate.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/radiation/opacity.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/radiation/Qfinalize.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/radiation/Qintrinsic.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/radiation/Qrevision.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/radiation/source_function.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/radiation/steps.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/selfgravity.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/shear.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/shock/highorder.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/sld/sld.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/steps.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/supernova/explode_SN.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/timeavg.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/training/train.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/typedefs.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/viscosity.h;/users/braunea/Repositories/pencil-code/src/astaroth/DSL/z4c.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/average.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/bc.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/bicgstab.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/cg.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/colors.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/compact_poisson_operators.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/derivs.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/general_derivs.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/general_grid/funcs.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/general_grid/vars.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/general_operators.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/geometric_multigrid_core.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/geometric_multigrid.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/grid_extension.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/grid/funcs.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/grid_transfer_functions.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/grid/vars.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/integrators.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/map.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/math/fft.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/math/funcs.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/math/interpolation.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/math/stencils.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/operators.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/optimized_integrators.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/pc_derivs.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/poisson.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/radiation_ray.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/shock.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/sink_particle.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/slope_limited_diffusion.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/smooth_max.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/spherical_harmonics.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/units.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/utils/funcs.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/utils/intrinsics.h;/users/braunea/Repositories/pencil-code/src/astaroth/submodule/acc-runtime/stdlib/utils/kernels.h   -DDSL_MODULE_DIR=/users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference_lr_1e-4/src/astaroth/DSL/local -DCPU_BUILD=off -DSUPPORT_OLD_ARCHITECTURES=ON -DUSE_HEFFTE=off -DFFT_ENABLED=ON -DMULTIGPU_ENABLED=OFF -DMPI_ENABLED=ON -DBUILD_SHARED_LIBS=ON -DSINGLEPASS_INTEGRATION=OFF -DMAX_THREADS_PER_BLOCK=512 -DDOUBLE_PRECISION=OFF -DBUILD_SAMPLES=OFF -DSUPPRESS_COMPILER_WARNINGS=on -DVERBOSE=off -DUSE_ONLY_OPTIMIZED_KERNELS=on -DOPTIMIZE_INPUT_PARAMS=on -DOPTIMIZE_MEM_ACCESSES=ON -DOPTIMIZE_ARRAYS=on -DCMAKE_BUILD_TYPE=RelWithDebInfo -DBUILD_STANDALONE=OFF -DOPTIMIZE_FIELDS=on -DALLOW_DEAD_VARIABLES=on -DBUILD_UTILS=OFF -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DELIMINATE_CONDITIONALS=on -DDSL_MODULE_FILE=solve.ac -DINLINING=off -DBUILD_ACM=OFF -DPROFILING_ENABLED=OFF
+Tue Nov  3 19:22:15 2026 : Torchfort model stationary loaded succesfullyacCompile: Gave different cmake options; recompiling; logging to /users/braunea/Repositories/pencil-code/samples/training/kin-dynamo/default-physics-setup/kindynamo_unet/inference_lr_1e-4/ac_compilation.log
+Tue Nov  3 19:23:43 2026 : Done setupConfig && acCompile
+Tue Nov  3 19:23:43 2026 : acGridInit: n[xyz]grid: (18,18,18) n[xyz]local (18,18,18)
+Tue Nov  3 19:23:43 2026 : acGridInit: Creating device
+Tue Nov  3 19:23:43 2026 : acGridInit: decomp: (1,1,1)
+Tue Nov  3 19:23:43 2026 : acGridInit: Stencil order: 10
+Tue Nov  3 19:23:43 2026 : acGridInit: Done
+
+Started autotuning: watch progress in ac_autotuning.log
+Tue Nov  3 19:23:44 2026 : DONE initializeGPU
+Tue Nov  3 19:23:44 2026 : Loaded previous statistics
+Result
+Tue Nov  3 19:23:44 2026 : Doing inference
+ pde: ENTER
+SVN: -------            v.         (                   ) $Id$
+WARNING:  calc_bmz: to get bmz, set bxmz and bymz in 'xyaver.in'.
+We proceed, but you will get bmz=0!
+
+ --it-----t-------dt------EEK-----urms-------brms-------jrms-------jmax--------abm--------jbm--------bmz-------ourms------loss----
+    0    0.000   0.086 5.00E-01 1.00E+00  8.5665E-04   9.74E-03   2.63E-02  -2.86E-09  -1.63E-07   0.00E+00   1.26E+01   0.00E+00
+   50    4.310   0.086 5.00E-01 1.00E+00  1.6316E-03   1.12E-02   2.70E-02  -4.15E-07   8.81E-07   0.00E+00   1.26E+01   0.00E+00
+  100    8.619   0.086 5.00E-01 1.00E+00  7.4722E-03   3.52E-02   1.02E-01  -5.80E-06  -6.42E-06   0.00E+00   1.26E+01   0.00E+00
+  150   12.929   0.086 5.00E-01 1.00E+00  2.0531E-02   9.05E-02   2.64E-01  -2.82E-05  -5.34E-05   0.00E+00   1.26E+01   0.00E+00
+  200   17.239   0.086 5.00E-01 1.00E+00  4.3834E-02   1.88E-01   5.42E-01  -9.04E-05  -2.02E-04   0.00E+00   1.26E+01   0.00E+00
+  250   21.548   0.086 5.00E-01 1.00E+00  8.1475E-02   3.44E-01   9.66E-01  -2.34E-04  -5.77E-04   0.00E+00   1.26E+01   0.00E+00
+  300   25.858   0.086 5.00E-01 1.00E+00  1.4012E-01   5.84E-01   1.62E+00  -5.47E-04  -1.41E-03   0.00E+00   1.26E+01   0.00E+00
+  350   30.168   0.086 5.00E-01 1.00E+00  2.3106E-01   9.55E-01   2.72E+00  -1.25E-03  -3.25E-03   0.00E+00   1.26E+01   0.00E+00
+  400   34.477   0.086 5.00E-01 1.00E+00  3.7401E-01   1.54E+00   4.67E+00  -2.87E-03  -7.21E-03   0.00E+00   1.26E+01   0.00E+00
+  450   38.787   0.086 5.00E-01 1.00E+00  5.9882E-01   2.45E+00   8.36E+00  -7.21E-03  -1.56E-02   0.00E+00   1.26E+01   0.00E+00
+  500   43.097   0.086 5.00E-01 1.00E+00  9.6155E-01   3.97E+00   1.56E+01  -2.39E-02  -3.58E-02   0.00E+00   1.26E+01   0.00E+00
+  550   47.406   0.086 5.00E-01 1.00E+00  1.6116E+00   6.87E+00   3.08E+01  -1.15E-01  -1.03E-01   0.00E+00   1.26E+01   0.00E+00
+  600   51.716   0.086 5.00E-01 1.00E+00  3.0146E+00   1.36E+01   6.60E+01  -7.31E-01  -4.20E-01   0.00E+00   1.26E+01   0.00E+00
+  650   56.026   0.086 5.00E-01 1.00E+00  6.6034E+00   3.15E+01   1.52E+02  -5.22E+00  -2.32E+00   0.00E+00   1.26E+01   0.00E+00
+  700   60.335   0.086 5.00E-01 1.00E+00  1.6438E+01   8.09E+01   3.74E+02  -3.90E+01  -1.50E+01   0.00E+00   1.26E+01   0.00E+00
+  750   64.645   0.086 5.00E-01 1.00E+00  4.3693E+01   2.18E+02   9.59E+02  -2.96E+02  -1.04E+02   0.00E+00   1.26E+01   0.00E+00
+  800   68.955   0.086 5.00E-01 1.00E+00  1.1933E+02   5.99E+02   2.55E+03  -2.28E+03  -7.49E+02   0.00E+00   1.26E+01   0.00E+00
+  850   73.264   0.086 5.00E-01 1.00E+00  3.2969E+02   1.66E+03   6.89E+03  -1.77E+04  -5.48E+03   0.00E+00   1.26E+01   0.00E+00
+  900   77.574   0.086 5.00E-01 1.00E+00  9.1622E+02   4.62E+03   1.89E+04  -1.38E+05  -4.06E+04   0.00E+00   1.26E+01   0.00E+00
+  950   81.883   0.086 5.00E-01 1.00E+00  2.5559E+03   1.29E+04   5.20E+04  -1.08E+06  -3.05E+05   0.00E+00   1.26E+01   0.00E+00
+ 1000   86.193   0.086 5.00E-01 1.00E+00  7.1503E+03   3.62E+04   1.44E+05  -8.51E+06  -2.31E+06   0.00E+00   1.26E+01   0.00E+00
+ 1050   90.503   0.086 5.00E-01 1.00E+00  2.0051E+04   1.02E+05   3.99E+05  -6.72E+07  -1.77E+07   0.00E+00   1.26E+01   0.00E+00
+ 1100   94.812   0.086 5.00E-01 1.00E+00  5.6337E+04   2.86E+05   1.11E+06  -5.33E+08  -1.36E+08   0.00E+00   1.26E+01   0.00E+00
+ 1150   99.122   0.086 5.00E-01 1.00E+00  1.5855E+05   8.05E+05   3.08E+06  -4.24E+09  -1.06E+09   0.00E+00   1.26E+01   0.00E+00
+ 1200  103.432   0.086 5.00E-01 1.00E+00  4.4685E+05   2.27E+06   8.60E+06  -3.38E+10  -8.25E+09   0.00E+00   1.26E+01   0.00E+00
+ 1250  107.741   0.086 5.00E-01 1.00E+00  1.2609E+06   6.41E+06   2.40E+07  -2.70E+11  -6.47E+10   0.00E+00   1.26E+01   0.00E+00
+ 1300  112.051   0.086 5.00E-01 1.00E+00  3.5615E+06   1.81E+07   6.70E+07  -2.16E+12  -5.10E+11   0.00E+00   1.26E+01   0.00E+00
+ 1350  116.361   0.086 5.00E-01 1.00E+00  1.0069E+07   5.13E+07   1.87E+08  -1.73E+13  -4.03E+12   0.00E+00   1.26E+01   0.00E+00
+ 1400  120.670   0.086 5.00E-01 1.00E+00  2.8486E+07   1.45E+08   5.25E+08  -1.38E+14  -3.20E+13   0.00E+00   1.26E+01   0.00E+00
+ 1450  124.980   0.086 5.00E-01 1.00E+00  8.0642E+07   4.11E+08   1.47E+09  -1.11E+15  -2.54E+14   0.00E+00   1.26E+01   0.00E+00
+ 1500  129.290   0.086 5.00E-01 1.00E+00  2.2842E+08   1.16E+09   4.13E+09  -8.92E+15  -2.03E+15   0.00E+00   1.26E+01   0.00E+00
+ 1550  133.599   0.086 5.00E-01 1.00E+00  6.4727E+08   3.30E+09   1.16E+10  -7.17E+16  -1.62E+16   0.00E+00   1.26E+01   0.00E+00
+ 1600  137.909   0.086 5.00E-01 1.00E+00  1.8349E+09   9.36E+09   3.26E+10  -5.77E+17  -1.29E+17   0.00E+00   1.26E+01   0.00E+00
+ 1650  142.219   0.086 5.00E-01 1.00E+00  5.2034E+09   2.65E+10   9.15E+10  -4.64E+18  -1.04E+18   0.00E+00   1.26E+01   0.00E+00
+ 1700  146.528   0.086 5.00E-01 1.00E+00  1.4760E+10   7.53E+10   2.58E+11  -3.74E+19  -8.31E+18   0.00E+00   1.26E+01   0.00E+00
+ 1750  150.838   0.086 5.00E-01 1.00E+00  4.1878E+10   2.14E+11   7.25E+11  -3.01E+20  -6.67E+19   0.00E+00   1.26E+01   0.00E+00
+ 1800  155.148   0.086 5.00E-01 1.00E+00  1.1885E+11   6.06E+11   2.04E+12  -2.43E+21  -5.36E+20   0.00E+00   1.26E+01   0.00E+00
+ 1850  159.457   0.086 5.00E-01 1.00E+00  3.3733E+11   1.72E+12   5.76E+12  -1.96E+22  -4.31E+21   0.00E+00   1.26E+01   0.00E+00
+ 1900  163.767   0.086 5.00E-01 1.00E+00  9.5760E+11   4.89E+12   1.63E+13  -1.58E+23  -3.47E+22   0.00E+00   1.26E+01   0.00E+00
+ 1950  168.077   0.086 5.00E-01 1.00E+00  2.7188E+12   1.39E+13   4.59E+13  -1.27E+24  -2.79E+23   0.00E+00   1.26E+01   0.00E+00
+ 2000  172.386   0.086 5.00E-01 1.00E+00  7.7198E+12   3.94E+13   1.30E+14  -1.03E+25  -2.25E+24   0.00E+00   1.26E+01   0.00E+00
+ 2050  176.696   0.086 5.00E-01 1.00E+00  2.1922E+13   1.12E+14   3.66E+14  -8.27E+25  -1.81E+25   0.00E+00   1.26E+01   0.00E+00
+ 2100  181.006   0.086 5.00E-01 1.00E+00  6.2258E+13   3.18E+14   1.04E+15  -6.67E+26  -1.46E+26   0.00E+00   1.26E+01   0.00E+00
+ 2150  185.315   0.086 5.00E-01 1.00E+00  1.7682E+14   9.03E+14   2.93E+15  -5.38E+27  -1.18E+27   0.00E+00   1.26E+01   0.00E+00
+ 2200  189.625   0.086 5.00E-01 1.00E+00  5.0223E+14   2.56E+15   8.28E+15  -4.34E+28  -9.48E+27   0.00E+00   1.26E+01   0.00E+00
+ 2250  193.935   0.086 5.00E-01 1.00E+00  1.4266E+15   7.28E+15   2.34E+16  -3.50E+29  -7.64E+28   0.00E+00   1.26E+01   0.00E+00
+ 2300  198.244   0.086 5.00E-01 1.00E+00  4.0523E+15   2.07E+16   6.63E+16  -2.83E+30  -6.16E+29   0.00E+00   1.26E+01   0.00E+00
+ 2350  202.554   0.086 5.00E-01 1.00E+00  1.1511E+16   5.88E+16   1.88E+17  -2.28E+31  -4.97E+30   0.00E+00   1.26E+01   0.00E+00
+ 2400  206.864   0.086 5.00E-01 1.00E+00  3.2701E+16   1.67E+17   5.32E+17  -1.84E+32  -4.01E+31   0.00E+00   1.26E+01   0.00E+00
+ 2450  211.173   0.086 5.00E-01 1.00E+00  9.2899E+16        Inf   1.51E+18  -1.49E+33  -3.24E+32   0.00E+00   1.26E+01   0.00E+00
+ 2500  215.483   0.086 5.00E-01 1.00E+00         Inf        Inf   4.27E+18  -1.20E+34  -2.61E+33   0.00E+00   1.26E+01   0.00E+00
+ 2550  219.793   0.086 5.00E-01 1.00E+00         Inf        Inf   1.21E+19       -Inf  -2.11E+34   0.00E+00   1.26E+01   0.00E+00
+ 2600  224.102   0.086 5.00E-01 1.00E+00         Inf        Inf        Inf       -Inf       -Inf   0.00E+00   1.26E+01   0.00E+00
+ 2650  228.412   0.086 5.00E-01 1.00E+00         Inf        Inf        Inf       -Inf        NaN   0.00E+00   1.26E+01   0.00E+00
+ 2700  232.721   0.086 5.00E-01 1.00E+00         Inf        Inf        Inf       -Inf        NaN   0.00E+00   1.26E+01   0.00E+00
+ 2750  237.031   0.086 5.00E-01 1.00E+00         Inf        Inf        Inf       -Inf        NaN   0.00E+00   1.26E+01   0.00E+00
+ 2800  241.341   0.086 5.00E-01 1.00E+00         Inf        Inf        Inf        NaN        NaN   0.00E+00   1.26E+01   0.00E+00
+ 2850  245.650   0.086 5.00E-01 1.00E+00         Inf        Inf        Inf        NaN        NaN   0.00E+00   1.26E+01   0.00E+00
+ 2900  249.960   0.086 5.00E-01 1.00E+00         Inf        Inf        Inf        NaN        NaN   0.00E+00   1.26E+01   0.00E+00
+ 2950  254.270   0.086 5.00E-01 1.00E+00         Inf        Inf        Inf        NaN        NaN   0.00E+00   1.26E+01   0.00E+00
+ 3000  258.579   0.086 5.00E-01 1.00E+00         Inf        Inf        Inf        NaN        NaN   0.00E+00   1.26E+01   0.00E+00
+ 3050  262.889   0.086 5.00E-01 1.00E+00         Inf        Inf        Inf        NaN        NaN   0.00E+00   1.26E+01   0.00E+00
+Tue Nov  3 19:25:48 2026 : save_model: Saving ML model to: data/training/stationary.pt
+ 
+ Simulation finished after          3051  time-steps
+ 
+ Writing final snapshot at time t =    262.9752719588578     
+ 
+ Wall clock time [hours] =  5.976E-02 (+/-  2.7778E-13)
+ Wall clock time/timestep/meshpoint [microsec] =  12.09048    
+ Wall clock time/timestep/local meshpoint [microsec] =  12.09048    
+ Rhs wall clock time/timestep/local meshpoint [microsec] =  1.247907    
+ After substep wall clock time/timestep/local meshpoint [microsec] = 9.6648663E-02
+ Before+After boundary wall clock time/timestep/local meshpoint [microsec] =  5.638566    
+ Diagnostics wall clock time/timestep/local meshpoint [microsec] = 7.7704482E-02
+ Timestep wall clock time/timestep/local meshpoint [microsec] =  6.986711    
+ Timestep (without waiting) wall clock time/timestep/local meshpoint [microsec] =  6.984884    
+ Timestep wall clock time/timestep/meshpoint [microsec] =  6.986711    
+ Timestep (without waiting) wall clock time/timestep/meshpoint [microsec] =  6.984884    
+ Diagnostics wall clock time/timestep/meshpoint [microsec] = 7.7704482E-02
+ Rhs wall clock time/timestep/meshpoint [microsec] =  1.247907    
+ After substep wall clock time/timestep/meshpoint [microsec] = 9.6648663E-02
+ Before+After boundary wall clock time/timestep/meshpoint [microsec] =  5.638566    
+ Inference wall clock time/timestep/meshpoint [microsec] =  4.312465    
+ Maximum used memory per cpu [MBytes] =  1653.188
+ Maximum used memory [GBytes] =        1.614
+ 
+
+Tue Nov  3 19:25:49 2026
+Running
+  pc_deprecated_slice_links
