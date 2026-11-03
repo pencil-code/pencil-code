@@ -614,6 +614,19 @@ module Special
 !
     endsubroutine get_analytical_solution
 !***********************************************************************
+    real function get_a_current() result(a_current)
+!
+!  Determine a_current from the correct source for each Hubble path
+!
+        if (lhubble) then
+          a_current = a
+        else if (lconf_time) then
+          a_current = -1./(H*t)
+        else
+          a_current = exp(H*t)
+        endif
+    endfunction get_a_current
+!***********************************************************************
     subroutine dspecial_dt(f,df,p)
 !
 !  calculate right hand side of ONE OR MORE extra coupled PDEs
@@ -629,7 +642,6 @@ module Special
 !   2-dec-2022/axel: coded
 !   1-sep-2023/axel: implemented lwith_eps with conformal time.
 !
-      use Mpicomm, only: mpiallreduce_sum, mpibcast
       use Diagnostics
       use Sub
 !
@@ -648,8 +660,6 @@ module Special
       real, parameter :: fact=1.
       real :: epsilon_sr,inflaton
       real :: a_current
-      integer :: n_active_TR_loc, n_active_uR_loc
-      real    :: r_active_TR, r_active_uR
 !
       call keep_compiler_quiet(p)
 !
@@ -717,16 +727,7 @@ module Special
 !  Covers psiR, TR, psiL, TL (tensor) and uR, uL (Schwinger scalar).
 !
       if (lmode_activator) then
-!
-!  Determine a_current from the correct source for each Hubble path
-!
-        if (lhubble) then
-          a_current = a
-        else if (lconf_time) then
-          a_current = -1./(H*t)
-        else
-          a_current = exp(H*t)
-        endif
+        a_current = get_a_current()
 !
 !  Activate psiR and TR
 !
@@ -812,24 +813,6 @@ module Special
           imuLdot=f(l1:l2,m,n,iaxi_imuLdot)
         endif
 !
-!
-!  Diagnostic: count total active modes at output times
-!
-        if (lfirst .and. lout) then
-          n_active_TR_loc = count(abs(f(l1:l2,m,n,iaxi_TR)) >= 1e-50)
-          if (lSchwinger_scalar) then
-            n_active_uR_loc = count(abs(f(l1:l2,m,n,iaxi_uR)) >= 1e-50)
-          else
-            n_active_uR_loc = 0
-          endif
-          call mpiallreduce_sum(real(n_active_TR_loc), r_active_TR)
-          call mpiallreduce_sum(real(n_active_uR_loc), r_active_uR)
-          if (lroot) &
-            write(*,'(a,f8.3,2(a,i5))') &
-              'mode_activator: N=', log(a_current), &
-              '  active TR/psi=', nint(r_active_TR), &
-              '  active uR/uL=',  nint(r_active_uR)
-        endif
       endif  ! lmode_activator
 !
 !  Possibility of keeping mQ constant, i,e., we keep mQ=g*Q0/H
@@ -1148,11 +1131,15 @@ module Special
 !  29-jul-25/TP: carved from dspecial_dt
 !
       use Diagnostics
+      use Mpicomm, only: mpiallreduce_sum, mpibcast
 
       real, contiguous, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
       real, dimension (nx) :: psi_anal, psidot_anal, TR_anal, TRdot_anal
       real, parameter :: fact=1.
+      integer :: n_active_TR_loc, n_active_uR_loc
+      real    :: r_active_TR, r_active_uR
+      real :: a_current
 
       call keep_compiler_quiet(p)
 
@@ -1200,6 +1187,25 @@ module Special
         call save_name(fact,idiag_fact)
         call save_name(k0,idiag_k0)
         call save_name(dk,idiag_dk)
+        if(lmode_activator) then
+!
+!  Diagnostic: count total active modes at output times
+!
+          n_active_TR_loc = count(abs(f(l1:l2,m,n,iaxi_TR)) >= 1e-50)
+          if (lSchwinger_scalar) then
+            n_active_uR_loc = count(abs(f(l1:l2,m,n,iaxi_uR)) >= 1e-50)
+          else
+            n_active_uR_loc = 0
+          endif
+          call mpiallreduce_sum(real(n_active_TR_loc), r_active_TR)
+          call mpiallreduce_sum(real(n_active_uR_loc), r_active_uR)
+          a_current = get_a_current()
+          if (lroot) &
+            write(*,'(a,f8.3,2(a,i5))') &
+              'mode_activator: N=', log(a_current), &
+              '  active TR/psi=', nint(r_active_TR), &
+              '  active uR/uL=',  nint(r_active_uR)
+        endif
       endif
 !
       if (l2davgfirst) then
@@ -1938,6 +1944,7 @@ module Special
 !  07-aug-17/axel: coded
 
       use Mpicomm, only: mpiallreduce_sum, mpibcast
+
 !
       real, contiguous, dimension(:,:,:,:) :: f
       real, dimension(nx) :: TRpsim, TRpsikm, TRpsidotm, TRdotpsim
