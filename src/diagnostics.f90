@@ -4258,6 +4258,7 @@ module Diagnostics
     l2davg_save = l2davg
     lout_sound_save = lout_sound
     lvideo_save = lvideo
+    delta_y_save = delta_y
 !
 !  Record times for diagnostic and 2d average output.
 !
@@ -4310,6 +4311,7 @@ module Diagnostics
     tslice = tslice_save
     tsound = tsound_save
     t = t_save
+    delta_y = delta_y_save
 
     scl_factor_target   = scl_factor_target_save
     Hp_target   = Hp_target_save

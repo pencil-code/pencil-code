@@ -1089,6 +1089,7 @@ module Cdata
   logical :: lout_save, l1davg_save, l2davg_save, lout_sound_save, lvideo_save
   logical :: lchemistry_diag_save
   real    :: scl_factor_target_save,Hp_target_save, appa_target_save
+  real    :: delta_y_save
   logical :: ltimestep_diagnostics = .false.
 
   real(KIND=rkind8) :: t_save,tspec_save,t_snap_save
