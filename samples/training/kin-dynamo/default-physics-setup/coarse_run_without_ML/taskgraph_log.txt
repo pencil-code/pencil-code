@@ -1,0 +1,64 @@
+AC_rhs Ops:
+Halo({F_AX,F_AY,F_AZ,},sending = 1,receiving = 1,BOUNDARY_XYZ,{(1,2),(1,2),(1,2),})
+Periodic(BOUNDARY_XYZ,{F_AX,F_AY,F_AZ,},{(1,2),(1,2),(1,2),})
+twopass_solve_intermediate___optimized_0({F_AX,F_AY,F_AZ,},{F_AX,F_AY,F_AZ,},{},{},{},{},{AC_dt1_max_single_precision,},1)
+twopass_solve_final___optimized_0({F_AX,F_AY,F_AZ,},{F_AX,F_AY,F_AZ,},{},{},{},{},{},1)
+
+AC_rhs Ops:
+Halo({F_AX,F_AY,F_AZ,},sending = 1,receiving = 1,BOUNDARY_XYZ,{(1,2),(1,2),(1,2),})
+Periodic(BOUNDARY_XYZ,{F_AX,F_AY,F_AZ,},{(1,2),(1,2),(1,2),})
+twopass_solve_intermediate___optimized_1({F_AX,F_AY,F_AZ,},{F_AX,F_AY,F_AZ,},{},{},{},{},{AC_dt1_max_single_precision,},1)
+twopass_solve_final___optimized_0({F_AX,F_AY,F_AZ,},{F_AX,F_AY,F_AZ,},{},{},{},{},{},1)
+
+AC_before_boundary_steps Ops:
+kinematic_flow___optimized_1({},{F_UX,F_UY,F_UZ,},{},{},{},{},{},1)
+
+AC_before_boundary_steps Ops:
+kinematic_flow___optimized_0({},{F_UX,F_UY,F_UZ,},{},{},{},{},{},1)
+
+AC_rhs Ops:
+Halo({F_AX,F_AY,F_AZ,},sending = 1,receiving = 1,BOUNDARY_XYZ,{(1,2),(1,2),(1,2),})
+Periodic(BOUNDARY_XYZ,{F_AX,F_AY,F_AZ,},{(1,2),(1,2),(1,2),})
+twopass_solve_intermediate___optimized_2({F_AX,F_AY,F_AZ,},{F_AX,F_AY,F_AZ,},{},{},{},{},{},1)
+twopass_solve_final___optimized_1({F_AX,F_AY,F_AZ,},{F_AX,F_AY,F_AZ,},{},{},{},{},{},1)
+
+AC_rhs Ops:
+Halo({F_AX,F_AY,F_AZ,},sending = 1,receiving = 1,BOUNDARY_XYZ,{(1,2),(1,2),(1,2),})
+Periodic(BOUNDARY_XYZ,{F_AX,F_AY,F_AZ,},{(1,2),(1,2),(1,2),})
+twopass_solve_intermediate___optimized_3({F_AX,F_AY,F_AZ,},{F_AX,F_AY,F_AZ,},{},{},{},{},{},1)
+twopass_solve_final___optimized_1({F_AX,F_AY,F_AZ,},{F_AX,F_AY,F_AZ,},{},{},{},{},{},1)
+
+AC_before_boundary_steps Ops:
+kinematic_flow___optimized_3({},{F_UX,F_UY,F_UZ,},{},{},{},{},{},1)
+
+AC_before_boundary_steps Ops:
+kinematic_flow___optimized_2({},{F_UX,F_UY,F_UZ,},{},{},{},{},{},1)
+
+AC_rhs Ops:
+Halo({F_AX,F_AY,F_AZ,},sending = 1,receiving = 1,BOUNDARY_XYZ,{(1,2),(1,2),(1,2),})
+Periodic(BOUNDARY_XYZ,{F_AX,F_AY,F_AZ,},{(1,2),(1,2),(1,2),})
+twopass_solve_intermediate___optimized_4({F_AX,F_AY,F_AZ,},{F_AX,F_AY,F_AZ,},{},{},{},{},{},1)
+twopass_solve_final___optimized_2({F_AX,F_AY,F_AZ,},{F_AX,F_AY,F_AZ,},{},{},{},{},{},1)
+
+AC_rhs Ops:
+Halo({F_AX,F_AY,F_AZ,},sending = 1,receiving = 1,BOUNDARY_XYZ,{(1,2),(1,2),(1,2),})
+Periodic(BOUNDARY_XYZ,{F_AX,F_AY,F_AZ,},{(1,2),(1,2),(1,2),})
+twopass_solve_intermediate___optimized_5({F_AX,F_AY,F_AZ,},{F_AX,F_AY,F_AZ,},{},{},{},{},{},1)
+twopass_solve_final___optimized_2({F_AX,F_AY,F_AZ,},{F_AX,F_AY,F_AZ,},{},{},{},{},{},1)
+
+AC_before_boundary_steps Ops:
+kinematic_flow___optimized_5({},{F_UX,F_UY,F_UZ,},{},{},{},{},{},1)
+
+AC_before_boundary_steps Ops:
+kinematic_flow___optimized_4({},{F_UX,F_UY,F_UZ,},{},{},{},{},{},1)
+
+AC_calculate_timestep Ops:
+Halo({F_AX,F_AY,F_AZ,},sending = 1,receiving = 1,BOUNDARY_XYZ,{(1,2),(1,2),(1,2),})
+Periodic(BOUNDARY_XYZ,{F_AX,F_AY,F_AZ,},{(1,2),(1,2),(1,2),})
+twopass_solve_intermediate___optimized_0({F_AX,F_AY,F_AZ,},{F_AX,F_AY,F_AZ,},{},{},{},{},{AC_dt1_max_single_precision,},1)
+
+AC_calculate_timestep Ops:
+Halo({F_AX,F_AY,F_AZ,},sending = 1,receiving = 1,BOUNDARY_XYZ,{(1,2),(1,2),(1,2),})
+Periodic(BOUNDARY_XYZ,{F_AX,F_AY,F_AZ,},{(1,2),(1,2),(1,2),})
+twopass_solve_intermediate___optimized_1({F_AX,F_AY,F_AZ,},{F_AX,F_AY,F_AZ,},{},{},{},{},{AC_dt1_max_single_precision,},1)
+
