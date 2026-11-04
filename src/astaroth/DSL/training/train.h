@@ -20,7 +20,6 @@ const Field3 bbmean =
 	bbmean_Z
 }
 
-communicated FieldSymmetricTensor strain_sgs_mean
 communicated Field3 mom_mean
 communicated Field rho_mean
 
@@ -329,8 +328,7 @@ Kernel compute_taus(){
           {
             uij_mean = gradient_tensor(mom_mean, rho_mean)
             Sij_mean = traceless_strain(uij_mean)
-            write_symmetricTensor_matrix(strain_sgs_mean, Sij_mean)
-            write(TAU_STRAIN, TAU_STRAIN - strain_sgs_mean)
+            write(TAU_STRAIN, TAU_STRAIN - Sij_mean)
             write(TAU_HYDRO, TAU_HYDRO - tensor_product(mom_mean)/rho_mean)
           }
           else
@@ -339,7 +337,7 @@ Kernel compute_taus(){
           }
 	  if(AC_ltrain_mag__mod__training)
 	  {
-            write(bb_tensor_product,-(bb_tensor_product-tensor_product(bbmean)))
+            write(bb_tensor_product,bb_tensor_product-tensor_product(bbmean))
             write(sgs_emf,sgs_emf - cross(uumean,bbmean))
 	  }
 	}

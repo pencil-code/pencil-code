@@ -488,11 +488,11 @@
         if (t >= start_infer) then
           if (lhydro) then 
             df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - div_hydro_sgs
-            if (lconservative) df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - div_hydro_strain_sgs
+            if (lconservative) df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + div_hydro_strain_sgs
           endif
           if (ltrain_mag) then
-            if (lhydro) df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - div_mag_sgs
-            df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) - f(l1:l2,m,n,isgs_emfx:isgs_emfz)
+            if (lhydro) df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + div_mag_sgs
+            df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + f(l1:l2,m,n,isgs_emfx:isgs_emfz)
           endif
         endif
       endif
