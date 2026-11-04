@@ -1561,11 +1561,28 @@ calc_poisson()
 #endif
 }
 /***********************************************************************************************/
+#if LSOLAR_CORONA && Lmagnetic_MODULE
+//Magnetogram driving of the lowest plane of the domain. All processes launch the kernel on their lowest local
+//plane so that they have the same task graphs; the kernel changes the values only on the lower boundary.
+static void solar_corona_mag_driver_step()
+{
+	if (b_tau__mod__solar_corona <= 0.0) return;
+	const AcMeshInfo info = acGridGetLocalMeshInfo();
+	const int3 n0 = info[AC_nmin];
+	const int3 n1 = info[AC_nlocal_max];
+	const int3 end = (int3){n1.x,n1.y,n0.z+1};
+	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_solar_corona_mag_driver,to_volume(n0),to_volume(end)),1);
+}
+#endif
+/***********************************************************************************************/
 extern "C" void beforeBoundaryGPU(bool lrmv, int isubstep, double t, bool lsubstepping_in_time)
 {
 	reload_dynamically_changing_variables(lrmv,isubstep,t,lsubstepping_in_time);
         
 	AcReal start_time = MPI_Wtime();
+#if LSOLAR_CORONA && Lmagnetic_MODULE
+	solar_corona_mag_driver_step();
+#endif
 // Execute all "before-boundary-actions", which do not update the halos, by separate task graph
 	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_before_boundary_steps),1);
 

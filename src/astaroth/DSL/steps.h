@@ -62,6 +62,13 @@ ComputeSteps AC_sor_step(boundconds)
 	selfgravity_sor_step(1)
 }
 
+#if LSOLAR_CORONA && Lmagnetic_MODULE
+ComputeSteps AC_solar_corona_mag_driver(boundconds)
+{
+	solar_corona_mag_driver(AC_dt)
+}
+#endif
+
 ComputeSteps AC_before_boundary_steps(boundconds)
 {
 	get_current_total_mass(AC_lrmv)

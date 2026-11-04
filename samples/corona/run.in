@@ -68,3 +68,8 @@
   lshock_first = F
   lshock_max5 = T
 /
+&gpu_run_pars
+  !Needed to match the reference data on the GPUs (the dynamics near the
+  !driven lower boundary amplify the roundoff of a single precision dt).
+  lsingle_precision_timestep=F
+/

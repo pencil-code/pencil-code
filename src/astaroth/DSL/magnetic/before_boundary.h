@@ -72,3 +72,22 @@ Kernel bfield_get_e()
 {
 }
 #endif
+#if LSOLAR_CORONA && Lmagnetic_MODULE
+Kernel solar_corona_mag_driver(real dt_driver)
+{
+	const int ix = vertexIdx.x-NGHOST_VAL
+	const int iy = vertexIdx.y-NGHOST_VAL
+	const real ainit_x = AC_a_init__mod__solar_corona[ix][iy][0]
+	const real ainit_y = AC_a_init__mod__solar_corona[ix][iy][1]
+	real ax = F_AX[vertexIdx.x][vertexIdx.y][vertexIdx.z]
+	real ay = F_AY[vertexIdx.x][vertexIdx.y][vertexIdx.z]
+	if (AC_domain_coordinates.z == 0)
+	{
+		const real fac = dt_driver*AC_b_tau__mod__solar_corona
+		ax = ax*(1.0-fac) + ainit_x*fac
+		ay = ay*(1.0-fac) + ainit_y*fac
+	}
+	F_AX[vertexIdx.x][vertexIdx.y][vertexIdx.z] = ax
+	F_AY[vertexIdx.x][vertexIdx.y][vertexIdx.z] = ay
+}
+#endif

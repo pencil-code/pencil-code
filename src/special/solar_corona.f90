@@ -1101,35 +1101,48 @@ module Special
         df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + lnrho_min_tau * fdiff
       endif
 !
-      if (lslope_limited_special) then
-        if (headtt) print*,'special_calc_density: call div_diff_flux'
-        if (ibb==0)  &
-          call fatal_error ('special_calc_density', "set lbb_as_aux=T in run.in")
-        if (ldensity_nolog) then
-          call div_diff_flux(f,irho,p,fdiff)
-          if (lfirst_proc_x.and.lfrozen_bot_var_x(irho)) then
+      if (lslope_limited_special) call calc_slope_limited_density(f,df,p)
+!
+    endsubroutine special_calc_density
+!***********************************************************************
+    subroutine calc_slope_limited_density(f,df,p)
+!
+! TP: TODO: would be better to get rid of this and use the general one, but want confirmation that
+!     such a change is fine to do.
+!
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
+!
+      real, dimension(nx) :: fdiff
+!
+      if (headtt) print*,'special_calc_density: call div_diff_flux'
+      if (ibb==0)  &
+        call fatal_error ('special_calc_density', "set lbb_as_aux=T in run.in")
+      if (ldensity_nolog) then
+        call div_diff_flux(f,irho,p,fdiff)
+        if (lfirst_proc_x.and.lfrozen_bot_var_x(irho)) then
 !
 !  Density is frozen at boundary
 !
-            df(l1+1:l2,m,n,irho) = df(l1+1:l2,m,n,irho) + fdiff(2:nx)
-          else
-            df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) + fdiff
-          endif
+          df(l1+1:l2,m,n,irho) = df(l1+1:l2,m,n,irho) + fdiff(2:nx)
         else
+          df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) + fdiff
+        endif
+      else
 !
 ! Store the diffusive flux in a special aux array to be added later to
 ! log-density in special_after_timestep
 !
-          call div_diff_flux(f,ilnrho,p,fdiff)
-          if (lfirst_proc_x.and.lfrozen_bot_var_x(ilnrho)) then
-            df(l1+1:l2,m,n,ilnrho) = df(l1+1:l2,m,n,ilnrho) + fdiff(2:nx)*p%rho1(2:nx)
-          else
-            df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + fdiff*p%rho1
-          endif
+        call div_diff_flux(f,ilnrho,p,fdiff)
+        if (lfirst_proc_x.and.lfrozen_bot_var_x(ilnrho)) then
+          df(l1+1:l2,m,n,ilnrho) = df(l1+1:l2,m,n,ilnrho) + fdiff(2:nx)*p%rho1(2:nx)
+        else
+          df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + fdiff*p%rho1
         endif
       endif
 !
-    endsubroutine special_calc_density
+    endsubroutine calc_slope_limited_density
 !***********************************************************************
     subroutine special_calc_energy(f,df,p)
 !
@@ -1228,15 +1241,44 @@ module Special
 
     endsubroutine special_calc_energy
 !***********************************************************************
-    subroutine special_before_boundary(f)
+    subroutine special_before_boundary_shared(f)
 !
-!   Hook with the standard interface (see special_interfaces.inc).
+!   Hook with the standard interface (see special_interfaces.inc), called in
+!   CPU and GPU runs. On the GPU the drivers which do not need the f-array are
+!   computed here on the host and their results are loaded to the device; the
+!   magnetogram driving is done there by solar_corona_mag_driver.
+!
+      use Gpu, only: update_on_gpu
 !
       real, contiguous, dimension(:,:,:,:) :: f
 !
-      call before_boundary_corona(f)
+      integer, save :: ind_ux=-1, ind_uy=-1, ind_a_init=-1
+      logical, save :: lfirst_call=.true.
 !
-    endsubroutine special_before_boundary
+      call before_boundary_corona_single_thread(f)
+      if (.not. lgpu) return
+!
+      if (lgranulation .or. luse_vel_field) then
+        call update_on_gpu(ind_ux,'AC_ux_local__mod__solar_corona')
+        call update_on_gpu(ind_uy,'AC_uy_local__mod__solar_corona')
+      endif
+      if (luse_mag_field .and. lfirst_call) call update_on_gpu(ind_a_init,'AC_a_init__mod__solar_corona')
+      lfirst_call = .false.
+!
+    endsubroutine special_before_boundary_shared
+!***********************************************************************
+    subroutine before_boundary_corona_single_thread(f)
+
+!
+!  The fft calls need the nested parallel region structure
+!
+      real, contiguous, dimension(:,:,:,:) :: f
+!
+      !$omp parallel num_threads(1)
+      call before_boundary_corona(f)
+      !$omp end parallel
+!
+    endsubroutine before_boundary_corona_single_thread
 !***********************************************************************
     subroutine before_boundary_corona(f,lfinalize)
 !
@@ -1278,9 +1320,10 @@ module Special
 !
       ! Prepare for footpoint quenching (lquench), flux conservation (Bz_flux),
       ! and the granulation computation (lgranulation and Bavoid).
-      if ((lquench .and. lfirst_proc_z) .or. ((Bavoid > 0.) .and. lgran_proc) &
+      ! Not on the GPU: the f-array of the host is not up to date there.
+      if ((.not. lgpu) .and. ((lquench .and. lfirst_proc_z) .or. ((Bavoid > 0.) .and. lgran_proc) &
           .or. (lgranulation .and. (Bavoid > 0.) .and. lfirst_proc_z) &
-          .or. (luse_mag_field .and. lfirst_proc_z)) then
+          .or. (luse_mag_field .and. lfirst_proc_z))) then
         if (lfirst_proc_z .and. .not. allocated (BB2_local)) then
           allocate (BB2_local(nx,ny), stat=alloc_err)
           if (alloc_err > 0) call fatal_error ('special_before_boundary', &
@@ -1294,7 +1337,8 @@ module Special
       if (luse_mag_field .and. lfirst_proc_z) then
         call update_mag_field (mag_time_offset, mag_times_dat, mag_field_dat, &
             A_init, time_mag_l, time_mag_r)
-        call mag_driver (A_init, Bz_total_flux, f)
+        ! On the GPU this is done by solar_corona_mag_driver.
+        if (.not. lgpu) call mag_driver (A_init, Bz_total_flux, f)
       endif
 !
       ! External horizontal velocity driver
@@ -2138,12 +2182,16 @@ module Special
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
 !
-      real, dimension(nx) :: tmp
+      real, dimension(nx) :: tmp, ux_target, uy_target
 !
+! TP: done outside the conditional because of GPU reasons.
+!
+      ux_target = Ux(:,m-nghost)
+      uy_target = Uy(:,m-nghost)
       if ((n == irefz) .and. lfirst_proc_z) then
         ! Push velocity field into the desired direction.
-        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - tau_inv * (f(l1:l2,m,n,iux) - Ux(:,m-nghost))
-        df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - tau_inv * (f(l1:l2,m,n,iuy) - Uy(:,m-nghost))
+        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - tau_inv * (f(l1:l2,m,n,iux) - ux_target)
+        df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - tau_inv * (f(l1:l2,m,n,iuy) - uy_target)
       endif
 !
       if (lupdate_courant_dt) then
@@ -3267,18 +3315,12 @@ module Special
 !  22-sept-10/Tijmen: coded
 !
       use Diagnostics, only: max_mn_name
-      use General, only: random_number_wrapper,random_seed_wrapper, &
-          normal_deviate
 !
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(nx) :: heatinput, heat_flux
-      real, dimension(nx) :: x_Mm, heat_nano, rhs
+      real, dimension(nx) :: x_Mm, rhs
       real, dimension(nx) :: heat_event, heat_event1D
-      integer, dimension(mseed) :: global_rstate
       real :: z_Mm, heat_unit
-      real :: nano_sigma_t, nano_time=0., nano_start=0., nano_sigma_z
-      real :: nano_flare_energy, nano_pos_x, nano_pos_z, nano_pos_y
-      real :: nano_amplitude
       real, dimension(2) :: event_pos
       type (pencil_case) :: p
       integer :: i
@@ -3333,64 +3375,7 @@ module Special
               (2*heat_par_gauss(2)**2)))/heat_unit
 !
         case ('nanof')
-          ! simulate nanoflare heating =)
-          ! height dependend amplitude und duration
-          ! idea: call random numbers, make condition when to flare, when
-          ! flare get position
-          ! then over time release a flare in shape of gaussian. Also
-          ! distribution is gaussian around a point.
-          ! gaussian distribution is gained via the dierfc function (double
-          ! prec, inverser erf function)
-          ! we draw for new flares as long as nano_time is /= 0. when done we
-          ! reset nano_time to 0. again.
-!
-          ! Later we will implement more options for nanoflaring! =D
-!
-          ! SAVE GLOBAL SEED
-          ! LOAD NANO_SEED
-          call random_seed_wrapper(GET=global_rstate)
-          call random_seed_wrapper(PUT=nano_seed)
-!
-          if (nano_start == 0.) then
-            ! If 0 roll to see if a nanoflare occurs
-            call random_number_wrapper(nano_start)
-!
-            if (nano_start > 0.95 ) then
-              ! 5% chance for a nanoflare to occur, then get the location.
-              call normal_deviate(nano_pos_z)
-              nano_pos_z = nano_pos_z*lz
-              call random_number_wrapper(nano_pos_y)
-              call random_number_wrapper(nano_pos_x)
-              nano_time = 60.
-            else
-              ! else no nanoflare, reset nano_start to 0. for the next
-              ! timestep
-              nano_start = 0.
-            endif
-          endif
-!
-          if (nano_start /= 0.) then
-            ! if nano_start is not 0. then there is a nanoflare!
-            ! 2nd assumption, nanoflare takes 60 seconds =)
-            nano_flare_energy = 10.d17 ! joules
-            nano_sigma_z = 0.5
-            nano_sigma_t = 2.5
-!
-            nano_amplitude = nano_flare_energy/(pi/2*nano_sigma_t*nano_sigma_z*1.d6 )
-!
-            heat_nano = nano_amplitude*exp(-((nano_time-5.))**2/( 2*2.**2))* &
-                exp(-((z_Mm-nano_pos_z)**2/ (2*0.5**2)))
-            nano_time = nano_time-dt*unit_time
-!
-            heatinput = heatinput + heat_nano/heat_unit
-!
-            if (nano_time <= 0.) nano_start = 0.
-          endif
-!
-          ! SAVE NANO_SEED
-          ! RESTORE GLOBAL SEED
-          call random_seed_wrapper(GET=nano_seed)
-          call random_seed_wrapper(PUT=global_rstate)
+          call calc_nanoflare_heating(heatinput,z_Mm,heat_unit)
 !
 ! amp_t = exp(-((t-nano_time)**2/(2.*nano_dur**2)))
 !-> no idea how to properly implement
@@ -3450,6 +3435,85 @@ module Special
       endif
 !
     endsubroutine calc_artif_heating
+!***********************************************************************
+    subroutine calc_nanoflare_heating(heatinput,z_Mm,heat_unit)
+!
+!  Nanoflare heating. 
+!  TP: at the moment it is quite odd and most likely incorrect so would like to rewrite it
+!      or get rid of it.
+!
+      use General, only: random_number_wrapper,random_seed_wrapper, &
+          normal_deviate
+!
+      real, dimension(nx), intent(inout) :: heatinput
+      real, intent(in) :: z_Mm, heat_unit
+!
+      real, dimension(nx) :: heat_nano
+      integer, dimension(mseed) :: global_rstate
+      real :: nano_sigma_t, nano_time=0., nano_start=0., nano_sigma_z
+      real :: nano_flare_energy, nano_pos_x, nano_pos_z, nano_pos_y
+      real :: nano_amplitude
+!
+      ! simulate nanoflare heating =)
+      ! height dependend amplitude und duration
+      ! idea: call random numbers, make condition when to flare, when
+      ! flare get position
+      ! then over time release a flare in shape of gaussian. Also
+      ! distribution is gaussian around a point.
+      ! gaussian distribution is gained via the dierfc function (double
+      ! prec, inverser erf function)
+      ! we draw for new flares as long as nano_time is /= 0. when done we
+      ! reset nano_time to 0. again.
+!
+      ! Later we will implement more options for nanoflaring! =D
+!
+      ! SAVE GLOBAL SEED
+      ! LOAD NANO_SEED
+      call random_seed_wrapper(GET=global_rstate)
+      call random_seed_wrapper(PUT=nano_seed)
+!
+      if (nano_start == 0.) then
+        ! If 0 roll to see if a nanoflare occurs
+        call random_number_wrapper(nano_start)
+!
+        if (nano_start > 0.95 ) then
+          ! 5% chance for a nanoflare to occur, then get the location.
+          call normal_deviate(nano_pos_z)
+          nano_pos_z = nano_pos_z*lz
+          call random_number_wrapper(nano_pos_y)
+          call random_number_wrapper(nano_pos_x)
+          nano_time = 60.
+        else
+          ! else no nanoflare, reset nano_start to 0. for the next
+          ! timestep
+          nano_start = 0.
+        endif
+      endif
+!
+      if (nano_start /= 0.) then
+        ! if nano_start is not 0. then there is a nanoflare!
+        ! 2nd assumption, nanoflare takes 60 seconds =)
+        nano_flare_energy = 10.d17 ! joules
+        nano_sigma_z = 0.5
+        nano_sigma_t = 2.5
+!
+        nano_amplitude = nano_flare_energy/(pi/2*nano_sigma_t*nano_sigma_z*1.d6 )
+!
+        heat_nano = nano_amplitude*exp(-((nano_time-5.))**2/( 2*2.**2))* &
+            exp(-((z_Mm-nano_pos_z)**2/ (2*0.5**2)))
+        nano_time = nano_time-dt*unit_time
+!
+        heatinput = heatinput + heat_nano/heat_unit
+!
+        if (nano_time <= 0.) nano_start = 0.
+      endif
+!
+      ! SAVE NANO_SEED
+      ! RESTORE GLOBAL SEED
+      call random_seed_wrapper(GET=nano_seed)
+      call random_seed_wrapper(PUT=global_rstate)
+!
+    endsubroutine calc_nanoflare_heating
 !***********************************************************************
     subroutine set_gran_params()
 !
@@ -4875,7 +4939,7 @@ endsubroutine characteristic_speed
     use Syscalls, only: copy_addr
     use General , only: string_to_enum
 
-    integer, parameter :: n_pars=74
+    integer, parameter :: n_pars=76
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
     call copy_addr(cool_rtv_cutoff,p_par(1)) ! int
@@ -4947,12 +5011,14 @@ endsubroutine characteristic_speed
     if (allocated(deltah_part_init_z)) call copy_addr(deltah_part_init_z,p_par(67)) ! (mz)
     if (allocated(deltah_vol_init_z)) call copy_addr(deltah_vol_init_z,p_par(68)) ! (mz)
     if (allocated(mass_prof)) call copy_addr(mass_prof,p_par(69)) ! (mz)
-    if (allocated(lnrho_global_z)) call copy_addr(lnrho_global_z,p_par(70)) ! (mzgrid)
-    if (allocated(lntt_global_z)) call copy_addr(lntt_global_z,p_par(71)) ! (mzgrid)
+    if (allocated(lnrho_global_z)) call copy_addr(lnrho_global_z,p_par(70)) ! (nzgrid+2*nghost)
+    if (allocated(lntt_global_z)) call copy_addr(lntt_global_z,p_par(71)) ! (nzgrid+2*nghost)
     call copy_addr(ux_local,p_par(72)) ! (nx) (ny)
     call copy_addr(uy_local,p_par(73)) ! (nx) (ny)
     call string_to_enum(enum_iheattype,iheattype)
     call copy_addr(enum_iheattype,p_par(74)) ! int3
+    call copy_addr(b_tau,p_par(75))
+    call copy_addr(a_init,p_par(76)) ! (nx) (ny) (2)
 
     endsubroutine pushpars2c
 !***********************************************************************
