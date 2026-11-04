@@ -54,31 +54,13 @@ module Pscalar
   integer :: idiag_ccmin=0      ! DIAG_DOC:
   integer :: idiag_lnccm=0      ! DIAG_DOC:
   integer :: idiag_mcct=0       ! DIAG_DOC:
-  integer :: idiag_gcc5m=0      ! DIAG_DOC:
-  integer :: idiag_gcc10m=0     ! DIAG_DOC:
   integer :: idiag_ucm=0        ! DIAG_DOC:
   integer :: idiag_uudcm=0      ! DIAG_DOC:
   integer :: idiag_Cz2m=0       ! DIAG_DOC:
   integer :: idiag_Cz4m=0       ! DIAG_DOC:
-  integer :: idiag_cc1m=0       ! DIAG_DOC:
   integer :: idiag_cc2m=0       ! DIAG_DOC:
-  integer :: idiag_cc3m=0       ! DIAG_DOC:
-  integer :: idiag_cc4m=0       ! DIAG_DOC:
-  integer :: idiag_cc5m=0       ! DIAG_DOC:
-  integer :: idiag_cc6m=0       ! DIAG_DOC:
-  integer :: idiag_cc7m=0       ! DIAG_DOC:
-  integer :: idiag_cc8m=0       ! DIAG_DOC:
-  integer :: idiag_cc9m=0       ! DIAG_DOC:
-  integer :: idiag_cc10m=0      ! DIAG_DOC:
   integer :: idiag_Crmsm=0      ! DIAG_DOC:
-  integer :: idiag_gcc1m=0      ! DIAG_DOC:
   integer :: idiag_gcc2m=0      ! DIAG_DOC:
-  integer :: idiag_gcc3m=0      ! DIAG_DOC:
-  integer :: idiag_gcc4m=0      ! DIAG_DOC:
-  integer :: idiag_gcc6m=0      ! DIAG_DOC:
-  integer :: idiag_gcc7m=0      ! DIAG_DOC:
-  integer :: idiag_gcc8m=0      ! DIAG_DOC:
-  integer :: idiag_gcc9m=0      ! DIAG_DOC:
   integer :: idiag_lnccmz=0     ! DIAG_DOC:
   integer :: idiag_lnccmy=0     ! DIAG_DOC:
   integer :: idiag_lnccmx=0     ! DIAG_DOC:
@@ -507,6 +489,7 @@ module Pscalar
 !  Reset everything in case of reset.
 !  (this needs to be consistent with what is defined above!)
 !
+      call keep_compiler_quiet(lwrite)
       if (lreset) then
         idiag_rhoccm=0; idiag_ccmax=0; idiag_ccmin=0; idiag_lnccm=0
         idiag_ucm=0; idiag_uudcm=0; idiag_Cz2m=0; idiag_Cz4m=0
