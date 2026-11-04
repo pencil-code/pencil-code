@@ -680,6 +680,7 @@ module Equ
         call calc_diagnostic_auxiliaries_magnetic(f,p)
         lfirstpoint=.false.
       enddo
+      call free_thread_diagnostic_arrays
 !$omp end parallel   ! all helper threads
 
       endsubroutine calc_all_module_diagnostic_auxiliaries
@@ -832,6 +833,7 @@ module Equ
 !!$      endif
 !!$    enddo
 !$omp barrier
+      call free_thread_diagnostic_arrays
 !$omp end parallel   ! all helper threads
 
       endsubroutine calc_all_module_diagnostics
