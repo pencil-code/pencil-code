@@ -21,6 +21,7 @@
 #include <fstream>
 #include <dlfcn.h>
 #include <thread>
+#include <string>
 #include <stack>
 #include <vector>
 
@@ -537,7 +538,10 @@ void setupConfig(AcMeshInfo& config)
   char build_path[18000];
   sprintf(build_path,"%s/src/astaroth/submodule/build",get_cwd());
   //Tell Astaroth that we want the runtime build to end up under this folder
-  config.runtime_compilation_build_path = strdup(build_path);
+  //setupConfig runs again on reload and config keeps the pointer, so the path has to outlive this call
+  static std::string runtime_build_path{};
+  runtime_build_path = build_path;
+  config.runtime_compilation_build_path = runtime_build_path.c_str();
   //We find the DSL compiler under the sample which did the initial compilation
   //So in case of pc_newrun -s the new sample would use the compiled compiler under the old sample.
   //We do this because changing where the compiler path would kick in unnecessary recompilations.
@@ -2005,11 +2009,18 @@ void copyFarray(AcReal* f)
 	  	  lread_all_vars_from_device ? nfarray : mvar;
 
   AcMesh* dst = &mesh;
-  AcMesh tmp;
+  //Destroyed on every path out of this function
+  struct HostMeshCopy
+  {
+	AcMesh mesh{};
+	bool created = false;
+	~HostMeshCopy() { if (created) acHostMeshDestroy(&mesh); }
+  } tmp;
   if (nghost > 0 && (dimensionality <= 1 || (dimensionality == 2 && nygrid == 1)))
   {
-  	acHostMeshCopy(mesh, &tmp);
-	dst = &tmp;
+  	acHostMeshCopy(mesh, &tmp.mesh);
+	tmp.created = true;
+	dst = &tmp.mesh;
   }
   for (int i = 0; i < all_vtxbufs; ++i)
   {
@@ -2058,7 +2069,6 @@ void copyFarray(AcReal* f)
 			}
 		}
 	}
-  	acHostMeshDestroy(&tmp);
   }
   if (nghost > 0 && dimensionality == 0)
   {
@@ -2087,7 +2097,6 @@ void copyFarray(AcReal* f)
 			}
 		}
 	}
-  	acHostMeshDestroy(&tmp);
   }
 }
 /***********************************************************************************************/
