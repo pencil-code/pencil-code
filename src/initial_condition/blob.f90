@@ -19,10 +19,11 @@ module InitialCondition
 !
   include '../initial_condition.h'
 !
-  real :: ampl_ss=0, radius_ss=1, center1_x=0, center1_y=0, center1_z=0
+  real, dimension(ninit) :: ampl_ss=0, radius_ss=1, center1_x=0, center1_y=0, center1_z=0
+  character (len=labellen), dimension(ninit) :: blob_type=''
 !
   namelist /initial_condition_pars/ ampl_ss, radius_ss, center1_x, center1_y, &
-  center1_z
+  center1_z, blob_type
 !
   real, dimension(:,:), pointer :: reference_state
 !
@@ -55,18 +56,33 @@ module InitialCondition
       real, dimension (:,:),              optional, intent(out)  :: profiles
 !
       real :: cp,cp1
+      integer :: j
 !
-      call get_gamma_etc(cp=cp); cp1=1./cp
-      call blob_compact(ampl_ss,f,iss,radius_ss,center1_x,center1_y,center1_z)
-      call blob_compact(-cp1*ampl_ss,f,ilnrho,radius_ss,center1_x,center1_y,center1_z)
-      if (ldensity_nolog) then
-        f(:,:,:,irho) = exp(f(:,:,:,ilnrho))
-        if (lreference_state) then
-        do m=1,my; do n=1,mz;
-            f(l1:l2,m,n,irho) = f(l1:l2,m,n,irho) - reference_state(:,iref_rho)
-        enddo; enddo
-        endif
-      endif
+      do j=1,ninit
+        select case (trim(blob_type(j)))
+!
+          case ('cos^2')
+            if (lroot) print*,'initial_condition_all: adding '//trim(blob_type(j))//' blob'
+            call get_gamma_etc(cp=cp); cp1=1./cp
+            call blob_compact(ampl_ss(j),f,iss,radius_ss(j),center1_x(j),center1_y(j),center1_z(j))
+            call blob_compact(-cp1*ampl_ss(j),f,ilnrho,radius_ss(j),center1_x(j),center1_y(j),center1_z(j))
+            if (ldensity_nolog) then
+                f(:,:,:,irho) = exp(f(:,:,:,ilnrho))
+              if (lreference_state) then
+                do m=1,my; do n=1,mz;
+                      f(l1:l2,m,n,irho) = f(l1:l2,m,n,irho) - reference_state(:,iref_rho)
+                enddo; enddo
+              endif
+            endif
+!
+          case ('')
+            !do nothing
+!
+          case default
+            call fatal_error('initial_condition_all', 'no such blob profile: '//trim(blob_type(j)))
+!
+        end select
+      enddo
 !
     endsubroutine initial_condition_all
 !***********************************************************************
