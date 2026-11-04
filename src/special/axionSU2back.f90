@@ -1997,6 +1997,7 @@ module Special
 !
 !  decide about revising the k array
 !  a=exp(N), N=H*t (=lna).
+!  Ignore the "nswitch must not exceed 1" error message when lalways_backreact_output=T.
 !
       if (llnk_spacing_adjustable .and. lfirst) then
         lna=log(a)
@@ -2057,7 +2058,8 @@ module Special
         endif
 !
 !  for llnk_spacing=T, we still want output at the same times as in
-!  the adjustable case, so her nswitch means just "output", but no switch
+!  the adjustable case, so then nswitch means just "output", but no switch
+!  Ignore the "nswitch must not exceed 1" error message when lalways_backreact_output=T.
 !
       elseif (lfirst) then
         lna=log(a)
@@ -2066,7 +2068,9 @@ module Special
         if (lnkmin >= (lnkmin0_dummy+dlnk)) then
           nswitch=int((lnkmin-lnkmin0_dummy)/dlnk)
           if (nswitch==0) call fatal_error('special_after_boundary','nswitch must not be zero')
-          if (nswitch>1) call fatal_error('special_after_boundary','(ii) nswitch must not exceed 1')
+          if (.not. lalways_backreact_output) then
+            if (nswitch>1) call fatal_error('special_after_boundary','(ii) nswitch must not exceed 1')
+          endif
           open (1, file=trim(directory_snap)//'/krange.dat', form='formatted', position='append')
           write(1,*) t, lnk, f(l1:l2,m1,n1,iaxi_psi)
           close(1)
