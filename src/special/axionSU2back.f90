@@ -1908,9 +1908,11 @@ module Special
           dgrant=(4.*pi*k**3*dlnk)*(-lamf/(2.*a**3))*( &
           (a*mQ*H**2+a*g*Qdot)*TReff2+(a*mQ*H-k)*2*TRdoteff2 &
           )/twopi**3
+!  corrected -k sign: TL needs +k (parity k -> -k), as in grand, grant and conformal-time dgrant
           if (lleft_psiL_TL) then
             dgrant=dgrant+(4.*pi*k**3*dlnk)*(-lamf/(2.*a**3))*( &
-            (a*mQ*H**2+a*g*Qdot)*TLeff2+(a*mQ*H-k)*2*TLdoteff2 &
+            !(a*mQ*H**2+a*g*Qdot)*TLeff2+(a*mQ*H-k)*2*TLdoteff2 &
+            (a*mQ*H**2+a*g*Qdot)*TLeff2+(a*mQ*H+k)*2*TLdoteff2 &
             )/twopi**3
           endif
         endif
