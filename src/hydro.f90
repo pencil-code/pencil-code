@@ -9226,7 +9226,7 @@ module Hydro
     Use Sub, only: erfunc, step
 !
     real :: slope,uinn,uext,zbot
-    character :: uuprof
+    character(LEN=*), intent(in) :: uuprof
 !
       select case (uuprof)
 
@@ -9508,7 +9508,8 @@ module Hydro
         f(l1:l2,m,n,iux)=f(l1:l2,m,n,iux)-uumz(n,1)
         f(l1:l2,m,n,iuy)=f(l1:l2,m,n,iuy)-uumz(n,2)
 !
-!  damp horizontally averaged uz neaer the boundary                                                                                                                                                                                          !
+!  damp horizontally averaged uz near the boundary
+!
       case ('damp_mean_uz_prof_bdr')
         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*prof_amp3(n)*uumz(n,3)
 !
