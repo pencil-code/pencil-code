@@ -323,12 +323,19 @@ Kernel smooth_fluctuation_terms(){
 }
 
 Kernel compute_taus(){
+	//Let us always follow the convention that the sgs term is:
+	//mean(f) - f(from means)
 	if(!AC_ltrained__mod__training){
           if(AC_lconservative__mod__hydro)
           {
             uij_mean = gradient_tensor(mom_mean, rho_mean)
             Sij_mean = traceless_strain(uij_mean)
-            write(TAU_STRAIN, TAU_STRAIN - Sij_mean)
+            write(TAU_STRAIN.xx, TAU_STRAIN.xx - Sij_mean[0][0])
+            write(TAU_STRAIN.yy, TAU_STRAIN.yy - Sij_mean[1][1])
+            write(TAU_STRAIN.zz, TAU_STRAIN.zz - Sij_mean[2][2])
+            write(TAU_STRAIN.xy, TAU_STRAIN.xy - Sij_mean[0][1])
+            write(TAU_STRAIN.yz, TAU_STRAIN.yz - Sij_mean[1][2])
+            write(TAU_STRAIN.xz, TAU_STRAIN.xz - Sij_mean[0][2])
             write(TAU_HYDRO, TAU_HYDRO - tensor_product(mom_mean)/rho_mean)
           }
           else

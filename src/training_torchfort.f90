@@ -30,10 +30,10 @@
     !$omp threadprivate(train_loss)
     real :: train_loss_save
 
-    integer :: itau_bb, itau_bbxx, itau_bbxy, itau_bbxz, itau_bbyy, itau_bbyz, itau_bbzz
-    integer :: itau_hydro, itau_hydroxx, itau_hydroxy, itau_hydroxz, itau_hydroyy, itau_hydroyz, itau_hydrozz
+    integer :: itau_bb=0, itau_bbxx=0, itau_bbxy=0, itau_bbxz=0, itau_bbyy=0, itau_bbyz=0, itau_bbzz=0
+    integer :: itau_hydro=0, itau_hydroxx=0, itau_hydroxy=0, itau_hydroxz=0, itau_hydroyy=0, itau_hydroyz=0, itau_hydrozz=0
     integer :: itau_strain=0, itau_strainxx=0, itau_strainxy=0, itau_strainxz=0, itau_strainyy=0, itau_strainyz=0, itau_strainzz=0
-    integer :: isgs_emf, isgs_emfx, isgs_emfy, isgs_emfz
+    integer :: isgs_emf=0, isgs_emfx=0, isgs_emfy=0, isgs_emfz=0
     integer :: iuumean=0,ibbmean=0
 
     character(LEN=fnlen) :: model='model', config_file="config_mlp_native.yaml", model_file
@@ -479,6 +479,10 @@
       real, dimension(nx,3) :: div_hydro_strain_sgs
       real, dimension(nx,3) :: div_mag_sgs
       
+      !The sgs terms are defined to be mean(f) - f(from means)
+      !So we use the same sign which is used in the PDEs.
+      !For example: momentum advection term has - since it has one in the momentum equation
+      !and the EMF +, since it has one in the induction equation
       if (ltrained) then 
         if (lhydro) then   
           call div_tensor(f,div_hydro_sgs,itau_hydro)
