@@ -62,7 +62,6 @@ module Radiation
   real, target, dimension (:,:,:), allocatable :: Jrad_xz
   real, target, dimension (:,:,:), allocatable :: Jrad_yz
   real, target, dimension (:,:,:), allocatable :: Jrad_xz2
-  real, target, dimension (:,:,:,:,:,:), allocatable :: Jrad_r
 
   type (radslice), dimension (maxdir), target :: Isurf
 
@@ -663,7 +662,7 @@ module Radiation
 
       real, dimension(mx,my,mz,mfarray) :: f
 !
-      integer :: i,j,ij,k,inu
+      integer :: i,j,ij,k
 !
       if (lintrinsic) call Qintrinsic(f)
 !
@@ -725,7 +724,7 @@ module Radiation
       use Gpu, only: radtransfer_gpu
       real, dimension(mx,my,mz,mfarray) :: f
 !
-      integer :: i,j,ij,k,inu
+      integer :: inu
       logical :: lno_rays
 !
 !  Identifier.
@@ -1295,9 +1294,9 @@ module Radiation
 !  x-direction.
 !
         if (lrad/=0.and..not.all_yz) then
-          forall (m=mm1:mm2,n=nn1:nn2,Qpt_yz(m,n)%set.and..not.Qbc_yz(m,n)%set)
+          do concurrent (m=mm1:mm2,n=nn1:nn2,Qpt_yz(m,n)%set.and..not.Qbc_yz(m,n)%set)
             Qsend_yz(m,n) = Qpt_yz(m,n)%val*emtau_yz(m,n)+Qrad_yz(m,n)
-          endforall
+          enddo
 !
           if (nprocx>1) then
             call radboundary_yz_sendrecv(lrad,idir,Qsend_yz,Qrecv_yz)
@@ -1305,10 +1304,10 @@ module Radiation
             Qrecv_yz=Qsend_yz
           endif
 !
-          forall (m=mm1:mm2,n=nn1:nn2,Qpt_yz(m,n)%set.and..not.Qbc_yz(m,n)%set)
+          do concurrent (m=mm1:mm2,n=nn1:nn2,Qpt_yz(m,n)%set.and..not.Qbc_yz(m,n)%set)
             Qbc_yz(m,n)%val = Qrecv_yz(m,n)
             Qbc_yz(m,n)%set = Qpt_yz(m,n)%set
-          endforall
+          enddo
 !
           all_yz=all(Qbc_yz(mm1:mm2,nn1:nn2)%set)
           if (all_yz.and.all_zx) exit
@@ -1317,9 +1316,9 @@ module Radiation
 !  y-direction.
 !
         if (mrad/=0.and..not.all_zx) then
-          forall (l=ll1:ll2,n=nn1:nn2,Qpt_zx(l,n)%set.and..not.Qbc_zx(l,n)%set)
+          do concurrent (l=ll1:ll2,n=nn1:nn2,Qpt_zx(l,n)%set.and..not.Qbc_zx(l,n)%set)
             Qsend_zx(l,n) = Qpt_zx(l,n)%val*emtau_zx(l,n)+Qrad_zx(l,n)
-          endforall
+          enddo
 !
           if (nprocy>1) then
             call radboundary_zx_sendrecv(mrad,idir,Qsend_zx,Qrecv_zx)
@@ -1327,10 +1326,10 @@ module Radiation
             Qrecv_zx=Qsend_zx
           endif
 !
-          forall (l=ll1:ll2,n=nn1:nn2,Qpt_zx(l,n)%set.and..not.Qbc_zx(l,n)%set)
+          do concurrent (l=ll1:ll2,n=nn1:nn2,Qpt_zx(l,n)%set.and..not.Qbc_zx(l,n)%set)
             Qbc_zx(l,n)%val = Qrecv_zx(l,n)
             Qbc_zx(l,n)%set = Qpt_zx(l,n)%set
-          endforall
+          enddo
 !
           all_zx=all(Qbc_zx(ll1:ll2,nn1:nn2)%set)
           if (all_yz.and.all_zx) exit
@@ -1352,31 +1351,31 @@ module Radiation
 !  to the next processor.
 !
       if (nrad/=0.and.ipz/=ipzstop) then
-        forall (l=ll1:ll2,m=mm1:mm2)
+        do concurrent (l=ll1:ll2,m=mm1:mm2)
           emtau_xy(l,m) = exp(-tau(l,m,nnstop))
           Qrad_xy(l,m) = Qrad(l,m,nnstop)
           Qsend_xy(l,m) = Qpt_xy(l,m)%val*emtau_xy(l,m)+Qrad_xy(l,m)
-        endforall
+        enddo
 !
         call radboundary_xy_send(nrad,idir,Qsend_xy)
       endif
 
       if (lrad/=0.and.ipx/=ipxstop) then
-        forall (m=mm1:mm2,n=nn1:nn2)
+        do concurrent (m=mm1:mm2,n=nn1:nn2)
           emtau_yz(m,n) = exp(-tau(llstop,m,n))
           Qrad_yz(m,n) = Qrad(llstop,m,n)
           Qsend_yz(m,n) = Qpt_yz(m,n)%val*emtau_yz(m,n)+Qrad_yz(m,n)
-        endforall
+        enddo
 !
         call radboundary_yz_send(lrad,idir,Qsend_yz)
       endif
 
       if (mrad/=0.and.ipy/=ipystop) then
-        forall (l=ll1:ll2,n=nn1:nn2)
+        do concurrent (l=ll1:ll2,n=nn1:nn2)
           emtau_zx(l,n) = exp(-tau(l,mmstop,n))
           Qrad_zx(l,n) = Qrad(l,mmstop,n)
           Qsend_zx(l,n) = Qpt_zx(l,n)%val*emtau_zx(l,n)+Qrad_zx(l,n)
-        endforall
+        enddo
 !
         call radboundary_zx_send(mrad,idir,Qsend_zx)
       endif
@@ -1904,7 +1903,6 @@ module Radiation
       !real, dimension(mx,my) :: z_cutoff1
       real, dimension(mx) :: lnTT
       integer :: inu
-      integer :: ierr
 !
       select case (source_function_type)
 !
@@ -2035,9 +2033,9 @@ module Radiation
       real, dimension(mx) :: tmp,lnrho,lnTT,yH,rho,TT,profile=0
       real, dimension(mx) :: kappa1,kappa2,kappae
       real, dimension(mx) :: kappa_rad,kappa_cond,kappa_tot
-      real :: kappa0, kappa0_cgs,k1,k2
+      real :: kappa0, kappa0_cgs
       logical, save :: lfirst=.true.
-      integer :: i,inu
+      integer :: inu
 !
       select case (opacity_type)
 !
