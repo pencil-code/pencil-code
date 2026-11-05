@@ -69,8 +69,6 @@ module Radiation
   real, dimension (maxdir) :: weight, weightn, mu
   real, dimension (mnu) :: scalefactor_Srad=1.0, scalefactor_kappa=1.0
   real, dimension (mnu) :: kappa_cst=1.0, kappa20_cst=0.0
-  real, dimension (mnu) :: kappa_start=1.0, kappa_end=1.0
-  real :: trans_tstart=0.0, trans_tend=1.0
   real, dimension (:), allocatable :: lnTT_table
   real, dimension (:,:), allocatable :: lnSS_table
   real :: arad
@@ -119,7 +117,7 @@ module Radiation
   integer :: iKR_press=0, iKR_pressxx=0, iKR_pressyy=0, iKR_presszz=0
   integer :: iKR_pressxy=0, iKR_pressyz=0, iKR_presszx=0
 !
-  logical :: lperiodic_ray, lperiodic_ray_x, lperiodic_ray_y
+  logical :: lperiodic_ray, lperiodic_ray_x, lperiodic_ray_y, lperiodic_ray_xy
   logical :: lfix_radweight_1d=.true.
   logical :: lcooling=.true., lrad_debug=.false.
   logical :: lno_rad_heating=.false.
@@ -156,7 +154,7 @@ module Radiation
 !
   namelist /radiation_init_pars/ &
       radx, rady, radz, rad2max, bc_rad, lrad_debug, kapparho_cst, &
-      kappa_cst, kappa20_cst, kappa_start, trans_tstart, kappa_end, trans_tend, &
+      kappa_cst, kappa20_cst, &
       TT_top, TT_bot, tau_top, tau_bot, source_function_type, opacity_type, &
       nnu, lsingle_ray, single_ray, Srad_const, amplSrad, radius_Srad, nIsurf, &
       kappa_Kconst, kapparho_const, amplkapparho, radius_kapparho, lintrinsic, &
@@ -335,7 +333,10 @@ module Radiation
 !  the horizontal plane because a ray can pass through the computational domain
 !  many, many times before `biting itself in its tail'.
 !
-        bad_ray=(rad2==2.and.nrad==0.and.periodic_xy_plane)
+
+!         
+        print *, 'CHANDRU: What is so bad about bad rays? Switched off'          
+        bad_ray=(rad2==2.and.nrad==0.) !and.periodic_xy_plane)
 !
 !  For single rays: single_ray must match (lrad,mrad,nrad).
 !  Otherwise, check for length of rays.
@@ -345,12 +346,13 @@ module Radiation
                     .and.mrad==single_ray(2) &
                     .and.nrad==single_ray(3) )   !MR: even if xy plane is periodic?
         else
-          ray_good=(rad2>0.and.rad2<=rad2max).and.(.not.bad_ray)
+          ray_good=(rad2>0.and.rad2<=rad2max)!.and.(.not.bad_ray)
         endif
 !
 !  Proceed with good rays.
 !
         if (ray_good) then
+          print *, 'The good ones', lrad, mrad, nrad
           dir(idir,1)=lrad
           dir(idir,2)=mrad
           dir(idir,3)=nrad
@@ -665,17 +667,22 @@ module Radiation
       integer :: i,j,ij,k
 !
       if (lintrinsic) call Qintrinsic(f)
-!
+! 
+      print *, 'Chandru: past intrinsic'
       if (lcommunicate) then
         if (lperiodic_ray) then
           call Qperiodic
+          print *, 'Chandru: past periodic'
         else
           call Qpointers
           call Qcommunicate
+          print *, 'Chandru: past Qcommmunicate'
         endif
       endif
-!
+!    
+      print *, 'Chandru: past the if loop for periodic'
       if (lrevision) call Qrevision
+        print *, 'Chandru: past revision'
 !
 !  Calculate heating rate, so at the end of the loop
 !  f(:,:,:,iQrad) = \int_{4\pi} (I-S) d\Omega, not divided by 4pi.
@@ -775,7 +782,8 @@ module Radiation
 !  Do the 3 steps: first intrinsic (compute intensive),
 !  then communication (not compute intensive),
 !  and finally revision (again compute intensive).
-!
+!              
+              print *, "Chandru: entering calcQ"
               call calcQ(f)
 !
 !  Store outgoing intensity in case of lower reflective boundary condition.
@@ -862,7 +870,8 @@ module Radiation
 !
       lperiodic_ray_x=(lrad/=0.and.mrad==0.and.nrad==0.and.bc_ray_x=='p')
       lperiodic_ray_y=(lrad==0.and.mrad/=0.and.nrad==0.and.bc_ray_y=='p')
-      lperiodic_ray=(lperiodic_ray_x.or.lperiodic_ray_y)
+      lperiodic_ray_xy=(lrad/=0.and.mrad/=0.and.nrad==0.and.bc_ray_x=='p'.and.bc_ray_y=='p')
+      lperiodic_ray=(lperiodic_ray_x.or.lperiodic_ray_y.or.lperiodic_ray_xy)
 !
 !  Determine start and stop processors.
 !
@@ -1205,6 +1214,7 @@ module Radiation
 !
 !  Initially no boundaries are set.
 !
+      print *, 'CHANDRU: ENTER Qcommunicate idir,lrad,mrad,nrad,ipx,ipxstart,ipxstop=', idir,lrad,mrad,nrad,ipx,ipxstart,ipxstop
       Qbc_xy%set=.false.
       Qbc_yz%set=.false.
       Qbc_zx%set=.false.
@@ -1238,13 +1248,17 @@ module Radiation
           if (bc_ray_x/='p') then
             call radboundary_yz_set(Qrecv_yz)
           else
+            print *, 'CHANDRU: x-face, first proc, periodic: BEFORE yz_recv idir,lrad,mrad=', idir,lrad,mrad
             call radboundary_yz_recv(lrad,idir,Qrecv_yz)
+            print *, 'CHANDRU: x-face AFTER yz_recv'
           endif
 !            Qbc_yz(mm1:mm2,nnstart-nrad)%val = Qrecv_yz(llstart-lrad,mm1:mm2)
 !            Qbc_yz(mm1:mm2,nnstart-nrad)%set = .true.
 !
         else
+          print *, 'CHANDRU: x-face, NOT first proc: BEFORE yz_recv ipx,idir=', ipx,idir
           call radboundary_yz_recv(lrad,idir,Qrecv_yz)
+          print *, 'CHANDRU: x-face, NOT first proc: AFTER yz_recv ipx=', ipx
           emtau_yz(mm1:mm2,nn1:nn2) = exp(-tau(llstop,mm1:mm2,nn1:nn2))
           Qrad_yz(mm1:mm2,nn1:nn2) =      Qrad(llstop,mm1:mm2,nn1:nn2)
         endif
@@ -1262,9 +1276,12 @@ module Radiation
       if (mrad/=0) then
         if (ipy==ipystart) then
           if (bc_ray_y/='p') then
+            print *, 'CHANDRU: y-face, first proc, BC set (no MPI) ipy,idir,bc_ray_y=', ipy,idir,bc_ray_y
             call radboundary_zx_set(Qrecv_zx)
           else
+            print *, 'CHANDRU: y-face, first proc, periodic: BEFORE zx_recv idir,lrad,mrad=', idir,lrad,mrad
             call radboundary_zx_recv(mrad,idir,Qrecv_zx)
+            print *, 'CHANDRU: y-face AFTER zx_recv'
           endif
 !            Qbc_yz(mm1:mm2,nnstart-nrad)%val = Qrecv_yz(llstart-lrad,mm1:mm2)
 !            Qbc_yz(mm1:mm2,nnstart-nrad)%set = .true.
@@ -1367,6 +1384,7 @@ module Radiation
           Qsend_yz(m,n) = Qpt_yz(m,n)%val*emtau_yz(m,n)+Qrad_yz(m,n)
         enddo
 !
+        print *, 'CHANDRU: x-face send block ipx,idir=', ipx,idir
         call radboundary_yz_send(lrad,idir,Qsend_yz)
       endif
 
@@ -1377,6 +1395,7 @@ module Radiation
           Qsend_zx(l,n) = Qpt_zx(l,n)%val*emtau_zx(l,n)+Qrad_zx(l,n)
         enddo
 !
+        print *, 'CHANDRU: y-face send block ipy,idir=', ipy,idir
         call radboundary_zx_send(mrad,idir,Qsend_zx)
       endif
 
@@ -1397,10 +1416,15 @@ module Radiation
       real, dimension(nx,nz,0:nprocy-1) :: Qrad_zx_all,tau_zx_all
       integer :: ipxstart,ipxstop,ipl
       integer :: ipystart,ipystop,ipm
+      integer :: ir,ic,mr,lc
+      real, dimension(nz) :: Qrad_A,tau_A,Qrad_B,tau_B,emtau1_AB
 !
-!  x-direction
+      print *, 'CHANDRU Qperiodic: ENTER idir,lrad,mrad,nrad=', idir,lrad,mrad,nrad
 !
-      if (lrad/=0) then
+!  x-direction (rays along the x axis only)
+!
+      if (lrad/=0.and.mrad==0) then
+        print *, 'CHANDRU Qperiodic: x block, idir,lrad=', idir,lrad
 !
 !  Intrinsic heating rate and optical depth at the downstream boundary of
 !  each processor.
@@ -1461,9 +1485,10 @@ module Radiation
 !              Qrad0(llstart-lrad,m1:m2,n1:n2), Qrad_tot_yz, emtau1_tot_yz
       endif
 !
-!  y-direction
+!  y-direction (rays along the y axis only)
 !
-      if (mrad/=0) then
+      if (mrad/=0.and.lrad==0) then
+        print *, 'CHANDRU Qperiodic: y block, idir,mrad=', idir,mrad
 !
 !  Intrinsic heating rate and optical depth at the downstream boundary of
 !  each processor.
@@ -1521,6 +1546,43 @@ module Radiation
 !
         Qrad0(l1:l2,mmstart-mrad,n1:n2)=Qrad_tot_zx/emtau1_tot_zx
 !
+      endif
+!  chandru 04-11-26: with Claude Sonnet 5.5
+!  Face diagonals in a fully periodic xy plane (single processor, nx=ny).
+!  Qintrinsic restarts the ray with Q=0 at the upstream x face and at the
+!  upstream y face, so a closed ring consists of two pieces:
+!    A: from the upstream x face to the downstream y face (top/bottom),
+!    B: from the upstream y face to the downstream x face (right/left).
+!  Q and tau at the end of each piece, measured from the start of that piece,
+!  are Qrad(l,mmstop) and Qrad(llstop,m).
+!  The ray starts at the left face for lrad>0 and at the right face for
+!  lrad<0 (llstart,lsign), and at the bottom or top face for mrad>0 or <0
+!  (mmstart,msign).
+!  In this sweep order, B ends in row ir and the A piece that feeds it
+!  ends in column ic=mod(nx-2-ir,nx).
+!  Qrad0(llstart-lrad,mr): entry value of A, i.e. the Q after B.
+!  Qrad0(lc,mmstart-mrad): entry value of B, i.e. the Q after A.
+!  The last row (ir=nx-1) is the ring through the corner and it is a single
+!  piece, so the corner ghost point gets the same value.
+!
+      if (lrad/=0.and.mrad/=0) then
+        print *, 'CHANDRU Qperiodic: diagonal block idir,lrad,mrad,llstart,mmstart=', &
+                 idir,lrad,mrad,llstart,mmstart
+        if (nprocx/=1.or.nprocy/=1.or.nxgrid/=nygrid) &
+          call fatal_error('Qperiodic','diagonal rays need nprocx=nprocy=1 and nx=ny')
+        do ir=0,nx-1
+          ic=modulo(nx-2-ir,nx)
+          mr=mmstart+msign*ir
+          lc=llstart+lsign*ic
+          Qrad_B=Qrad(llstop,mr,n1:n2)
+          tau_B=tau(llstop,mr,n1:n2)
+          Qrad_A=Qrad(lc,mmstop,n1:n2)
+          tau_A=tau(lc,mmstop,n1:n2)
+          emtau1_AB=1-exp(-tau_B-tau_A)
+          Qrad0(llstart-lrad,mr,n1:n2)=(Qrad_B+Qrad_A*exp(-tau_B))/emtau1_AB
+          Qrad0(lc,mmstart-mrad,n1:n2)=(Qrad_A+Qrad_B*exp(-tau_A))/emtau1_AB
+        enddo
+        Qrad0(llstart-lrad,mmstart-mrad,n1:n2)=Qrad0(llstart-lrad,mmstop,n1:n2)
       endif
 !
     endsubroutine Qperiodic
@@ -2086,7 +2148,6 @@ module Radiation
         enddo
 !
       case ('kappa_cst')
-!print *, 'CHANDRU time=',t
         do n=n1-radz,n2+radz
         do m=m1-rady,m2+rady
           call eoscalc(f,mx,lnrho=lnrho)
@@ -2100,21 +2161,6 @@ module Radiation
 !print*,'AXEL f(:,4,4,ikapparho)=',inu,kappa_cst(inu),f(:,4,4,ikapparho)
 !print*,'AXEL f(:,4,4,ilnrho)=',inu,kappa_cst(inu),f(:,4,4,ilnrho)
 !
-      case ('kappa_trans')
-        do n=n1-radz,n2+radz
-        do m=m1-rady,m2+rady
-          call eoscalc(f,mx,lnrho=lnrho)
-          if (t<trans_tend) then
-            f(:,m,n,ikapparho)=exp(lnrho)*(kappa_start(inu)+ &
-              (kappa_end(inu)-kappa_start(inu))*(t-trans_tstart)/(trans_tend-trans_tstart))
-          else
-            f(:,m,n,ikapparho)=exp(lnrho)*kappa_end(inu)
-          endif
-!print *,'CHANDRU time=',t,'kappa=',exp(lnrho)*(kappa_start(inu)+ &
-!            (kappa_end(inu)-kappa_start(inu))*(t-trans_tstart)/(trans_tend-trans_tstart))
-        enddo
-        enddo
-
       case ('kapparho_cst')
         do n=n1-radz,n2+radz
         do m=m1-rady,m2+rady
@@ -2966,10 +3012,7 @@ module Radiation
     call copy_addr(ibc_rad_z,p_par(78))         ! int (2)
     call copy_addr(irad_z,p_par(79))            ! (2)
     call copy_addr(rad2max,p_par(80)) ! int dconst
-    call copy_addr(kappa_start,p_par(81))
-    call copy_addr(kappa_end,p_par(82))
-    call copy_addr(trans_tstart,p_par(83))
-    call copy_addr(trans_tend,p_par(84))
+
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Radiation
