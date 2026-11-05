@@ -80,8 +80,6 @@ class Grid(object):
         if param.io_strategy == "HDF5":
             import h5py
 
-            dim = read.dim(datadir, proc, param=param)
-
             if os.path.exists(os.path.join(datadir, "grid.h5")):
                 filename = os.path.join(datadir, "grid.h5")
             else:

@@ -3596,7 +3596,6 @@ buildinfo:
 #	    -e "PARTICLES_POTENTIAL='$(PARTICLES_POTENTIAL)';" \
 #
 cparam.inc cparam_pencils.inc: Makefile.src Makefile.local cparam.local scripts/mkcparam $(preprocess)
-	rm -rf .tmp_mkcparam
 	scripts/mkcparam $(MKCPARAM_FLAGS) --num-special=$(SPECIAL_MULT) $(preprocess)
 
 #
