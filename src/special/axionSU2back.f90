@@ -67,6 +67,7 @@ module Special
   real :: sbackreact_Q=1., sbackreact_chi=1., sbackreact_JJ=1., tback=1e6, dtback=1e6
   real :: lnkmin0=-1., lnkmin0_dummy, lnkmax0, dlnk
   real :: nmin0=-1., nmax0=3., horizon_factor=0., sgn=1.
+  real :: horizon_activator=100.
   real, dimension (nx) :: dt1_special, lnk
   logical :: lbackreact=.false., lwith_eps=.true., lupdate_background=.true.
   logical :: ldo_adjust_krange=.true., lswap_sign=.false.
@@ -87,7 +88,7 @@ module Special
     nmin0, nmax0, ldo_adjust_krange, lswap_sign, sgn, m_inflaton, m_phi, &
     inflaton_ini, lhubble, V_choice, phi_ini, alpha, m_alpha, n_alpha, &
     alpha_attractors_choice, lSchwinger_scalar, mscal, sgn_g, mQ0, &
-    lmode_activator
+    lmode_activator, horizon_activator
 !
   ! run parameters
   namelist /special_run_pars/ &
@@ -97,7 +98,7 @@ module Special
     nmin0, nmax0, horizon_factor, axion_sum_range, lkeep_mQ_const, &
     ldo_adjust_krange, lswap_sign, lwrite_krange, lwrite_backreact, sgn, &
     lhubble_var, lhubble, mscal, sgn_g, lalways_backreact_output, &
-    lmode_activator
+    lmode_activator, horizon_activator
 !
   ! k array
   real, dimension (nx) :: k
@@ -725,20 +726,21 @@ module Special
 !
 !  Mode activator: birth BD IC when k/(aH)=100 is first crossed.
 !  Covers psiR, TR, psiL, TL (tensor) and uR, uL (Schwinger scalar).
+!  Replace 100.0 by horizon_activator=100 (by default)
 !
       if (lmode_activator) then
         a_current = get_a_current()
 !
 !  Activate psiR and TR
 !
-        where (k <= a_current*H*100.0 .and. abs(f(l1:l2,m,n,iaxi_TR)) < 1e-50)
+        where (k <= a_current*H*horizon_activator .and. abs(f(l1:l2,m,n,iaxi_TR)) < 1e-50)
           f(l1:l2,m,n,iaxi_psi)    = (1./sqrt(2.*k))*cos(k/(a_current*H))
           f(l1:l2,m,n,iaxi_psidot) = (k/(a_current*sqrt(2.*k)))*sin(k/(a_current*H))
           f(l1:l2,m,n,iaxi_TR)     = (1./sqrt(2.*k))*cos(k/(a_current*H))
           f(l1:l2,m,n,iaxi_TRdot)  = (k/(a_current*sqrt(2.*k)))*sin(k/(a_current*H))
         endwhere
         if (lim_psi_TR) then
-          where (k <= a_current*H*100.0 .and. abs(f(l1:l2,m,n,iaxi_imTR)) < 1e-50)
+          where (k <= a_current*H*horizon_activator .and. abs(f(l1:l2,m,n,iaxi_imTR)) < 1e-50)
             f(l1:l2,m,n,iaxi_impsi)    = (1./sqrt(2.*k))*sin(k/(a_current*H))
             f(l1:l2,m,n,iaxi_impsidot) = -(k/(a_current*sqrt(2.*k)))*cos(k/(a_current*H))
             f(l1:l2,m,n,iaxi_imTR)     = (1./sqrt(2.*k))*sin(k/(a_current*H))
@@ -749,7 +751,7 @@ module Special
 !  Activate psiL and TL
 !
         if (lleft_psiL_TL) then
-          where (k <= a_current*H*100.0 .and. abs(f(l1:l2,m,n,iaxi_TL)) < 1e-50)
+          where (k <= a_current*H*horizon_activator .and. abs(f(l1:l2,m,n,iaxi_TL)) < 1e-50)
             f(l1:l2,m,n,iaxi_psiL)     = (1./sqrt(2.*k))*cos(k/(a_current*H))
             f(l1:l2,m,n,iaxi_psiLdot)  = (k/(a_current*sqrt(2.*k)))*sin(k/(a_current*H))
             f(l1:l2,m,n,iaxi_TL)       = (1./sqrt(2.*k))*cos(k/(a_current*H))
@@ -787,7 +789,7 @@ module Special
 !  Activate uR and uL (Schwinger scalar)
 !
         if (lSchwinger_scalar) then
-          where (k <= a_current*H*100.0 .and. &
+          where (k <= a_current*H*horizon_activator .and. &
                  abs(f(l1:l2,m,n,iaxi_uR))   < 1e-50 .and. &
                  abs(f(l1:l2,m,n,iaxi_imuR)) < 1e-50)
             f(l1:l2,m,n,iaxi_uR)      =  (1./twopi**1.5)*(1./sqrt(2.*k))*cos(k/(a_current*H))
@@ -795,7 +797,7 @@ module Special
             f(l1:l2,m,n,iaxi_uRdot)   =  (1./twopi**1.5)*(k/(a_current*sqrt(2.*k)))*sin(k/(a_current*H))
             f(l1:l2,m,n,iaxi_imuRdot) = -(1./twopi**1.5)*(k/(a_current*sqrt(2.*k)))*cos(k/(a_current*H))
           endwhere
-          where (k <= a_current*H*100.0 .and. &
+          where (k <= a_current*H*horizon_activator .and. &
                  abs(f(l1:l2,m,n,iaxi_uL))   < 1e-50 .and. &
                  abs(f(l1:l2,m,n,iaxi_imuL)) < 1e-50)
             f(l1:l2,m,n,iaxi_uL)      =  (1./twopi**1.5)*(1./sqrt(2.*k))*cos(k/(a_current*H))
