@@ -7,6 +7,7 @@ doc/www
 src/experimental/test_f2003
 .*.swp
 host-ID
+config-local
 #
 # Generated files
 .run_directories.log
