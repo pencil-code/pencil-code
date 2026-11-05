@@ -508,7 +508,6 @@ module Special
         lpenc_requested(i_glnrho)=.true.
       endif
 !
-      if (ldensity_floor_c .or. maxvA/=0.) lpenc_requested(i_b2)=.true.
       if (hyper3_eta/=0.) lpenc_requested(i_jj) =.true.
 !
       if (R_hypernu/=0. .or. R_hyperchi/=0. .or. &
@@ -776,7 +775,39 @@ module Special
 !
       if (itsub==1 .and. t>=t_gran) t_gran = t + dt_gran
 !
+!
     endsubroutine special_before_boundary
+!***********************************************************************
+    subroutine limit_alfven_speed(f)
+!
+!  Limit the Alfven speed by a density floor: rho >= B^2/(mu0*vA2_limit).
+!  The ghost zones of A are not up to date here, so B is from the previous
+!  update of the ghost zones in the outermost layers of the local domain.
+!
+      use Sub, only: curl, dot2_mn
+!
+      real, contiguous, dimension(:,:,:,:) :: f
+!
+      real, dimension (nx,3) :: bb
+      real, dimension (nx) :: b2
+      integer :: j
+!
+      do n=n1,n2
+        do m=m1,m2
+          call curl(f,iaa,bb)
+          do j=1,3
+            bb(:,j) = bb(:,j) + B_ext(j)
+          enddo
+          call dot2_mn(bb,b2)
+          if (ldensity_nolog) then
+            where (f(l1:l2,m,n,irho) < b2/mu0/vA2_limit) f(l1:l2,m,n,irho) = b2/mu0/vA2_limit
+          else
+            where (f(l1:l2,m,n,ilnrho) < alog(b2/mu0/vA2_limit)) f(l1:l2,m,n,ilnrho) = alog(b2/mu0/vA2_limit)
+          endif
+        enddo
+      enddo
+!
+    endsubroutine limit_alfven_speed
 !***********************************************************************
     subroutine special_after_timestep(f,df,dt_,llast)
 !
@@ -879,6 +910,9 @@ module Special
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(dt_)
       call keep_compiler_quiet(llast)
+!
+!
+      if (lmagnetic .and. vA2_limit > 0.) call limit_alfven_speed(f)
 !
     endsubroutine  special_after_timestep
 !***********************************************************************
@@ -1031,19 +1065,7 @@ module Special
       type(pencil_case), intent(in) :: p
       real, dimension (nx) :: tmp
 !
-      real, dimension (nx) :: hc,lnrho_floor,rho_floor
-!
-!  Limit the Alfven speed by a density floor: rho >= B^2/(mu0*vA2_limit).
-!
-      if (vA2_limit > 0.) then
-        if (ldensity_nolog) then
-          rho_floor = p%b2/mu0/vA2_limit
-          where (f(l1:l2,m,n,irho) < rho_floor) f(l1:l2,m,n,irho) = rho_floor
-        else
-          lnrho_floor = alog(p%b2/mu0/vA2_limit)
-          where (f(l1:l2,m,n,ilnrho) < lnrho_floor) f(l1:l2,m,n,ilnrho) = lnrho_floor
-        endif
-      endif
+      real, dimension (nx) :: hc
 !
       if (hyper3_diffrho /= 0.) then
         if (ldensity_nolog.and.(ilnrho /= irho)) &
