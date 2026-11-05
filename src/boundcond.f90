@@ -361,6 +361,22 @@ module Boundcond
         endif
       endif
 
+      !Done here to ensure GPU runs also have the correct setting of these flags
+      if (any(bcz12(:,BOT)=='fg')) lfrozen_bcs_x=.true.
+      if (any(bcz12(:,TOP)=='fg')) lfrozen_bcs_x=.true.
+      lfrozen_bot_var_x = bcx12(:,BOT)=='fg'
+      lfrozen_top_var_x = bcx12(:,TOP)=='fg'
+
+      if (any(bcy12(:,BOT)=='fg')) lfrozen_bcs_y=.true.
+      if (any(bcy12(:,TOP)=='fg')) lfrozen_bcs_y=.true.
+      lfrozen_bot_var_y = bcy12(:,BOT)=='fg'
+      lfrozen_top_var_y = bcy12(:,TOP)=='fg'
+
+      if (any(bcz12(:,BOT)=='fg')) lfrozen_bcs_z=.true.
+      if (any(bcz12(:,TOP)=='fg')) lfrozen_bcs_z=.true.
+      lfrozen_bot_var_z = bcz12(:,BOT)=='fg'
+      lfrozen_top_var_z = bcz12(:,TOP)=='fg'
+!
     endsubroutine initialize_boundcond
 !***********************************************************************
     subroutine check_consistency_of_lperi(label)
