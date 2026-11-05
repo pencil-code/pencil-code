@@ -155,7 +155,8 @@ module Special
 !  miscellaneous variables
 !
   real, save, dimension (mz) :: lnTT_init_prof,lnrho_init_prof
-  real :: Bzflux=0., lnrho_min=0.
+  real :: Bzflux=0., vA2_limit=0.
+  real, pointer :: density_floor, density_floor_log
   real :: Kspitzer_para_SI = 2e-11, Kspitzer_para=0.
   real :: Kspitzer_perp_SI = 3e12, Kspitzer_perp=0.
   real :: Ksaturation_SI = 7e7,Ksaturation=0.
@@ -189,6 +190,7 @@ module Special
       use Slices_methods, only: alloc_slice_buffers
 !
       real, contiguous, dimension(:,:,:,:) :: f
+      real :: density_min_code
       integer :: ierr
 !
       real, dimension (mz) :: ztmp
@@ -212,9 +214,30 @@ module Special
       if (linject_maghel) &
       maghel_ampl = maghel_ampl/1e8/unit_magnetic**2/unit_length*1e6
 !
-!  transform density_min from SI to code units and lnrho
+!  Transform density_min from SI to code units and let the global density floor of
+!  the density module impose it. Initialize_density has already been called.
 !
-      if (ldensity_floor) lnrho_min=alog(real(density_min/unit_density))
+      if (ldensity_floor) then
+        call get_shared_variable('density_floor',density_floor)
+        call get_shared_variable('density_floor_log',density_floor_log)
+        density_min_code = real(density_min/unit_density)
+        if (density_floor > 0. .and. density_floor /= density_min_code) &
+            call fatal_error('initialize_special','density_floor and ldensity_floor set with different values')
+        density_floor = density_min_code
+        density_floor_log = alog(density_min_code)
+      endif
+!
+!  Limit for the Alfven speed by a density floor: the smaller one of cdt*c^2 and maxvA^2.
+!
+      vA2_limit = 0.
+      if (ldensity_floor_c) vA2_limit = cdt*c_light**2
+      if (maxvA /= 0.) then
+        if (vA2_limit > 0.) then
+          vA2_limit = min(vA2_limit,maxvA**2)
+        else
+          vA2_limit = maxvA**2
+        endif
+      endif
 !
       ln_unit_TT = alog(real(unit_temperature))
       if (maxval(filter_strength) > 0.02) then
@@ -1008,28 +1031,18 @@ module Special
       type(pencil_case), intent(in) :: p
       real, dimension (nx) :: tmp
 !
-      real, dimension (nx) :: hc,lnrho_floor
+      real, dimension (nx) :: hc,lnrho_floor,rho_floor
 !
-      if (ldensity_floor_c) then
-        lnrho_floor = alog(p%b2/mu0/cdt)-2.*alog(real(c_light))
-        where (f(l1:l2,m,n,ilnrho) < lnrho_floor)
-          f(l1:l2,m,n,ilnrho) = lnrho_floor
-        endwhere
-      endif
+!  Limit the Alfven speed by a density floor: rho >= B^2/(mu0*vA2_limit).
 !
-      if (maxvA/=0.) then
-        lnrho_floor = alog(p%b2/mu0)-2.*alog(maxvA)
-        where (f(l1:l2,m,n,ilnrho) < lnrho_floor)
-          f(l1:l2,m,n,ilnrho) = lnrho_floor
-        endwhere
-      endif
-!
-!     density can only have a miminum value
-!
-      if (ldensity_floor) then
-        tmp=lnrho_min - f(l1:l2,m,n,ilnrho)
-        where (tmp < 0.0) tmp=0.0
-        f(l1:l2,m,n,ilnrho) = f(l1:l2,m,n,ilnrho) + tmp
+      if (vA2_limit > 0.) then
+        if (ldensity_nolog) then
+          rho_floor = p%b2/mu0/vA2_limit
+          where (f(l1:l2,m,n,irho) < rho_floor) f(l1:l2,m,n,irho) = rho_floor
+        else
+          lnrho_floor = alog(p%b2/mu0/vA2_limit)
+          where (f(l1:l2,m,n,ilnrho) < lnrho_floor) f(l1:l2,m,n,ilnrho) = lnrho_floor
+        endif
       endif
 !
       if (hyper3_diffrho /= 0.) then
@@ -4726,7 +4739,7 @@ module Special
     call copy_addr(maxva,p_par(41))
     call copy_addr(sub_step_hcond,p_par(42)) ! bool
     call copy_addr(hyper_heating,p_par(43)) ! bool
-    call copy_addr(lnrho_min,p_par(44))
+    call copy_addr(vA2_limit,p_par(44))
     call copy_addr(gamma,p_par(45))
     call copy_addr(filter_strength,p_par(46)) ! (mvar)
     call copy_addr(heat_par_b2,p_par(47)) ! (1)

@@ -92,7 +92,8 @@ module Density
   real :: mass_source_omega=0.
   real :: co1_ss=0.0, co2_ss=0.0, Sigma1=150.0
   real :: lnrho_int=0.0, lnrho_ext=0.0, damplnrho_int=0.0, damplnrho_ext=0.0
-  real :: wdamp=0.0, density_floor=-1.0, density_floor_exp=0.
+  real :: wdamp=0.0, density_floor_exp=0.
+  real, target :: density_floor=-1.0        ! shared (put_shared_variable): can be set by special modules
   real :: mass_source_Mdot=0.0, mass_source_sigma=0.0, mass_source_offset=0.0
   real :: tstart_mass_source=0.0, tstop_mass_source=-1.0
   real :: lnrho_z_shift=0.0
@@ -351,7 +352,8 @@ module Density
   logical :: lupdate_mass_source
   real, dimension(nx) :: diffus_diffrho
   real, dimension(nx) :: diffus_diffrho3
-  real :: density_floor_log, density_ceiling_log, wdamp_rho
+  real, target :: density_floor_log
+  real :: density_ceiling_log, wdamp_rho
   integer :: ihless
   logical, pointer :: lext_force
   real, pointer :: Hscript
@@ -415,6 +417,8 @@ module Density
 ! too late for other modules (especially the nomodule noentropy).
 !
       call put_shared_variable('mpoly',mpoly,caller='register_density')
+      call put_shared_variable('density_floor',density_floor)
+      call put_shared_variable('density_floor_log',density_floor_log)
 !
 !  Communicate lrelativistic_eos to magnetic too.
 !
