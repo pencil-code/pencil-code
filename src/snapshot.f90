@@ -865,7 +865,8 @@ module Snapshot
       use Sub, only: read_snaptime, update_snaptime
 !
       logical, save :: lfirst_call=.true.
-      logical :: existed=.false.
+      !logical :: existed=.false.
+      logical :: existed
       character (len=fnlen) :: file
       integer, save :: nspec
       real, save :: tspec_next
@@ -917,7 +918,9 @@ module Snapshot
 !
         if (lfirst_call) then
           if (.not. existed) then
-            tspec_next = t_trigger
+            !tspec_next = t_trigger
+            !tspec_next = -int(exp(.5*alog(huge1))/dspec)*dspec  !(AXEL)
+            tspec_next = -int(100./dspec)*dspec  !(AXEL)
             if (trigger_spec == 'code_time') then
               tspec_next=tspec_next + dspec
             endif
@@ -1098,6 +1101,7 @@ module Snapshot
         !if (lro_spec) call powerscl(f,'ro',lsqrt=lsqrt)
         if (lr_spec)  call powerscl(f,'lr')
         if (pot_spec) call powerscl(f,'po')
+        if (divu_spec) call powerscl(f,'divu')
         if (ud_spec) then
           do n=1,ndustspec
             call power(f,'ud',n)

@@ -2823,13 +2823,14 @@ module Initcond
 !
 !  Divide by r, because we want to multiply by x/r and y/r, respectively.
 !
-      cosr=cos(.5*rr)/rr
+      !cosr=cos(.5*rr)/max(tini,rr)
+      cosr=cos(.5*rr)
 !
-      where (rr <= pi)
+   !  where (rr <= pi)
         mask=1.
-      elsewhere
-        mask=0.
-      endwhere
+   !  elsewhere
+   !    mask=0.
+   !  endwhere
 !
 !  For I, relhel=0 corresponds to rigid rotation.
 !
@@ -2852,6 +2853,18 @@ module Initcond
         sphi=sin(dtor*init_phi1)
         j=i+0; f(:,:,:,j)=f(:,:,:,j)+mask*(sphi*sthe*xx+cphi*sthe*yy)*(fac1+fac2*cosr)
         j=i+1; f(:,:,:,j)=f(:,:,:,j)+mask*(sphi*cthe*yy+cphi*cthe*xx)*(fac1+fac2*cosr)
+!
+!  In the following, relhel corresponds to theta*pi/2, and fac1 and fac2 are their cosine and sine values.
+!  In units of pi
+!
+      elseif (flowtype=='Sphere_in_units_of_32pi') then
+        cthe=cos(1./32.*pi*init_the1)
+        sthe=sin(1./32.*pi*init_the1)
+        cphi=cos(1./32.*pi*init_phi1)
+        sphi=sin(1./32.*pi*init_phi1)
+        j=i+0; f(:,:,:,j)=f(:,:,:,j)+mask*(sphi*sthe*xx+cphi*sthe*yy)*(fac1+fac2*cosr)
+        j=i+1; f(:,:,:,j)=f(:,:,:,j)+mask*(sphi*cthe*yy+cphi*cthe*xx)*(fac1+fac2*cosr)
+!
       else
         call fatal_error('robertsflow','no such flowtype')
       endif

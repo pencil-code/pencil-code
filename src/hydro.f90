@@ -2187,6 +2187,20 @@ module Hydro
             endif
           enddo; enddo
 !
+!  hatwaves
+!
+        case ('hatwave-x'); call hatwave(ampluu(j),f,iux,widthuu,kx=kx_uu(j))
+        case ('hatwave-y'); call hatwave(ampluu(j),f,iuy,widthuu,ky=ky_uu(j))
+        case ('hatwave-z'); call hatwave(ampluu(j),f,iuz,widthuu,kz=kz_uu(j))
+!
+!  atan(1./tan(.5*x))
+!
+        case ('atan_tan')
+          if (headtt) print*,'ABC flow'
+          do n=1,mz; do m=1,my
+            f(:,m,n,iux)=ampluu(j)*atan(1./tan(.5*kx_uu(j)*x))
+          enddo; enddo
+!
         case ('ABC')
           if (headtt) print*,'ABC flow'
 ! uu

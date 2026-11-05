@@ -3537,7 +3537,7 @@ outer:do ikz=1,nz
     real, dimension(:), allocatable, save :: spectrum,spectrum_sum
     real, dimension(:), allocatable, save :: hor_spectrum, hor_spectrum_sum
     real, dimension(:), allocatable, save :: ver_spectrum, ver_spectrum_sum
-    real, dimension(nx) :: bbi
+    real, dimension(nx) :: bbi, divu
     real, dimension(nx,3) :: gLam
     character (len=*) :: sp
 !
@@ -3649,6 +3649,14 @@ outer:do ikz=1,nz
         a_re=f(l1:l2,m1:m2,n1:n2,ilnrho)
         !$omp end workshare
       endif
+    elseif (sp=='divu') then
+      do m_loc=m1,m2
+      do n_loc=n1,n2
+        m=m_loc;n=n_loc
+        call div(f,iuu,divu)
+        a_re(:,m-nghost,n-nghost)=divu
+      enddo
+      enddo
     elseif (sp=='po') then
       !$omp workshare
       a_re=f(l1:l2,m1:m2,n1:n2,ipotself)
