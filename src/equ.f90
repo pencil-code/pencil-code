@@ -1982,6 +1982,8 @@ module Equ
 !  The dimension of the run ndim (=0, 1, 2, or 3) enters the viscous time step.
 !  This has to do with the term on the diagonal, cdtv depends on order of scheme
 !
+!  DANGER: many modules also update dt1_max during the calculation of the RHS.
+!
       use General, only: notanumber
 
       type (pencil_case), intent(IN) :: p
