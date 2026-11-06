@@ -37,7 +37,7 @@ else
   if [ -f ../run.in ]; then
     grep_peri=`grep '^[^!]*lperi' $bc_file | sed -e's/^.*lperi *= *//' -e's/,/ /g'`
     if [[ $grep_peri == '' ]]; then
-      grep_peri=`grep '^[^!]*bcx' $bc_file | sed -e's/^.*bcx *= *//' -e's/,/ /g'`
+      grep_peri=`grep '^[^!]*bc[xyz] *=' $bc_file`
       if [[ $grep_peri == '' ]]; then
         bc_file=../start.in
       fi
