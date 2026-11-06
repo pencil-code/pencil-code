@@ -809,6 +809,32 @@ module Special
 !
     endsubroutine limit_alfven_speed
 !***********************************************************************
+    subroutine limit_mach_number(f)
+!
+!  Limit the velocity to mach_chen times the sound speed, keeping its direction.
+!
+      real, contiguous, dimension(:,:,:,:) :: f
+!
+      real, dimension (nx) :: uu_abs, uu_limit
+!
+      do n=n1,n2
+        do m=m1,m2
+          uu_abs = sqrt(f(l1:l2,m,n,iux)**2 + f(l1:l2,m,n,iuy)**2 + f(l1:l2,m,n,iuz)**2)
+          if (ltemperature_nolog) then
+            uu_limit = mach_chen*sqrt(gamma_m1/cp1*f(l1:l2,m,n,iTT))
+          else
+            uu_limit = mach_chen*sqrt(gamma_m1/cp1*exp(f(l1:l2,m,n,ilnTT)))
+          endif
+          where (uu_abs > uu_limit)
+            f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux)/uu_abs*uu_limit
+            f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy)/uu_abs*uu_limit
+            f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz)/uu_abs*uu_limit
+          endwhere
+        enddo
+      enddo
+!
+    endsubroutine limit_mach_number
+!***********************************************************************
     subroutine special_after_timestep(f,df,dt_,llast)
 !
 !  10-oct-12/bing: coded
@@ -912,6 +938,7 @@ module Special
       call keep_compiler_quiet(llast)
 !
 !
+      if (lchen .and. mach_chen /= 0.) call limit_mach_number(f)
       if (lmagnetic .and. vA2_limit > 0.) call limit_alfven_speed(f)
 !
     endsubroutine  special_after_timestep
@@ -998,7 +1025,7 @@ module Special
       real, contiguous, dimension(:,:,:,:) :: df
       type(pencil_case), intent(in) :: p
 !
-      real, dimension (nx) :: hc, uu_tmp, uu_floor, tmp
+      real, dimension (nx) :: hc, tmp
       integer :: i
       real :: damp_height, damp_width
 !
@@ -1027,19 +1054,6 @@ module Special
 !
 !        if (lfirst.and.ldt) dt1_max=max(dt1_max,tmp/0.01)
         if (lfirst.and.ldt) dt1_max=max(dt1_max,tmp/cdtv3)
-      endif
-!
-      if (lchen .and. mach_chen /= 0.) then
-        uu_tmp = sqrt(f(l1:l2,m,n,iux)**2 &
-                     +f(l1:l2,m,n,iuy)**2 &
-                     +f(l1:l2,m,n,iuz)**2 )
-        uu_floor=sqrt(p%cs2)*mach_chen
-        do i=0,2
-          where (uu_tmp > uu_floor)
-            f(l1:l2,m,n,iux+i) = f(l1:l2,m,n,iux+i) / uu_tmp * uu_floor
-            df(l1:l2,m,n,iux+i) = 0.
-          endwhere
-        enddo
       endif
 !
       if (lchen .and. damp_amp /= 0.) then
