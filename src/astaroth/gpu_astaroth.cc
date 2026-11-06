@@ -1575,6 +1575,20 @@ static void solar_corona_mag_driver_step()
 }
 #endif
 /***********************************************************************************************/
+#if LCORONAE
+//Bottom-plane drivers of special/coronae (granulation, lmag_time_bound). As for solar_corona_mag_driver_step,
+//all processes launch the kernel on their lowest local plane.
+static void coronae_bottom_driver_step()
+{
+	if (!lgranulation__mod__coronae && !lmag_time_bound__mod__coronae) return;
+	const AcMeshInfo info = acGridGetLocalMeshInfo();
+	const int3 n0 = info[AC_nmin];
+	const int3 n1 = info[AC_nlocal_max];
+	const int3 end = (int3){n1.x,n1.y,n0.z+1};
+	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_coronae_bottom_driver,to_volume(n0),to_volume(end)),1);
+}
+#endif
+/***********************************************************************************************/
 extern "C" void beforeBoundaryGPU(bool lrmv, int isubstep, double t, bool lsubstepping_in_time)
 {
 	reload_dynamically_changing_variables(lrmv,isubstep,t,lsubstepping_in_time);
@@ -1582,6 +1596,9 @@ extern "C" void beforeBoundaryGPU(bool lrmv, int isubstep, double t, bool lsubst
 	AcReal start_time = MPI_Wtime();
 #if LSOLAR_CORONA && Lmagnetic_MODULE
 	solar_corona_mag_driver_step();
+#endif
+#if LCORONAE
+	coronae_bottom_driver_step();
 #endif
 // Execute all "before-boundary-actions", which do not update the halos, by separate task graph
 	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_before_boundary_steps),1);

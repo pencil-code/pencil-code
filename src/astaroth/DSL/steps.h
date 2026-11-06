@@ -69,6 +69,13 @@ ComputeSteps AC_solar_corona_mag_driver(boundconds)
 }
 #endif
 
+#if LCORONAE
+ComputeSteps AC_coronae_bottom_driver(boundconds)
+{
+	coronae_bottom_driver(AC_step_num,AC_dt)
+}
+#endif
+
 ComputeSteps AC_before_boundary_steps(boundconds)
 {
 	get_current_total_mass(AC_lrmv)
