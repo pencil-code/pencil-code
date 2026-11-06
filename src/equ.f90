@@ -1969,7 +1969,7 @@ module Equ
 
     endsubroutine calc_maxadvec
 !***********************************************************************
-    subroutine set_dt1_max(p)
+    subroutine set_dt1_max(p, linclude_diffusion)
 !
 !  In max_mn maximum values of u^2 (etc) are determined sucessively
 !  va2 is set in magnetic (or nomagnetic)
@@ -1985,10 +1985,19 @@ module Equ
       use General, only: notanumber
 
       type (pencil_case), intent(IN) :: p
+      logical, optional, intent(in) :: linclude_diffusion
 
       real, dimension(nx) :: dt1_max_loc, dt1_advec, dt1_diffus, dt1_src
+      logical :: ldiffusion
 
       if (lupdate_courant_dt.and.(.not.ldt_paronly)) then
+!
+        if (present(linclude_diffusion)) then
+          ldiffusion=linclude_diffusion
+        else
+          ldiffusion=.true.
+        endif
+!
         call calc_maxadvec
 !
 !  Time step constraints from each module. (At the moment, magnetic and testfield use the same variable.)
@@ -2009,7 +2018,11 @@ module Equ
 !  Timestep combination from advection, diffusion and "source".
 !  Alternatively, we could use the maxima of all three contributions.
 !
-        dt1_max_loc = sqrt(dt1_advec**2 + dt1_diffus**2 + dt1_src**2)
+        if (ldiffusion) then
+          dt1_max_loc = sqrt(dt1_advec**2 + dt1_diffus**2 + dt1_src**2)
+        else
+          dt1_max_loc = sqrt(dt1_advec**2 + dt1_src**2)
+        endif
 !
 !  time step constraint from the coagulation kernel
 !
