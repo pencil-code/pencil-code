@@ -505,7 +505,6 @@ module Heatflux
     real, dimension(nx,3) :: spitzer_vec
     real, dimension(nx) :: tmp, diffspitz, tau_inv_va
     real, dimension(nx) :: c_spitzer, c_spitzer0
-    real :: uplim
     integer :: i
 !
 ! Compute Spizter coefficiant K_0 * T^(5/2)
@@ -605,8 +604,7 @@ module Heatflux
         dt1_va=sqrt(p%va2*dxyz_2)
       endif
 !
-      uplim=max(maxval(dt1_va),maxval(maxadvec))
-      tau_inv_va = min(tau_inv_va,uplim)
+      tau_inv_va = min(tau_inv_va,max(dt1_va,maxadvec))
       tau_inv_va = max(tau_inv_va,tau_inv_spitzer)
     endif
 !
