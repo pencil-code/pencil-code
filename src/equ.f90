@@ -1602,7 +1602,7 @@ module Equ
 !
         call calc_time_integrals(f,p)
 
-        call set_dt1_max(p)
+        call set_dt1_max(p, dt1_max)
         call timestep_diagnostics
 !
 !  Display derivative info
@@ -1969,7 +1969,7 @@ module Equ
 
     endsubroutine calc_maxadvec
 !***********************************************************************
-    subroutine set_dt1_max(p, linclude_diffusion)
+    subroutine set_dt1_max(p, dt1_max, linclude_diffusion)
 !
 !  In max_mn maximum values of u^2 (etc) are determined sucessively
 !  va2 is set in magnetic (or nomagnetic)
@@ -1985,6 +1985,7 @@ module Equ
       use General, only: notanumber
 
       type (pencil_case), intent(IN) :: p
+      real, dimension(nx), intent(inout) :: dt1_max
       logical, optional, intent(in) :: linclude_diffusion
 
       real, dimension(nx) :: dt1_max_loc, dt1_advec, dt1_diffus, dt1_src
