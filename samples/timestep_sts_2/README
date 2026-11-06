@@ -1,0 +1,27 @@
+Directory:
+    ${PENCIL_HOME}/samples/timestep_sts_2
+SVN Id:
+    $Id$
+Maintainer:
+    Kishore G <kishore96[dot]work/gmail[dot]com>
+Added:
+    06-Nov-2026
+Status:
+    succeeds # One of [succeeds|failing since <date>|obsolete| ...]
+Comments:
+    Tests the following:
+    - experimental/timestep_sts_2
+    - initial_condition/blob
+    
+    The setup models a negative entropy perturbation falling in an adiabatically
+    stratified background. The system has nu and K constant.
+    
+    With the parameters of this sample (i.e. when the diffusive constraint on
+    the timestep is dominant), performance is comparable to timestep_sts.
+    
+    If we change to nu=8e-3,hcond0=8e-2,Fbot=-8e-2, timestep_sts crashes after
+    75 iterations, while timestep_sts_2 does not; the performance of the latter
+    is comparable to that of the default RK3 timestepper.
+    
+    Note that just like in timestep_sts, the dt diagnostic has the wrong value
+    (see the comment in src/experimental/timestep_sts_2.f90:134).

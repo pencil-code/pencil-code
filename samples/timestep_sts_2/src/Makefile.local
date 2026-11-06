@@ -1,0 +1,17 @@
+###                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+
+MPICOMM   =   mpicomm
+IO        =   io_hdf5
+HYDRO     =   hydro
+DENSITY   =   density
+ENTROPY   =   entropy
+EOS       = eos_idealgas
+GRAVITY   =   gravity_simple
+INITIAL_CONDITION = initial_condition/blob
+REAL_PRECISION = double
+
+# TIMESTEP = timestep_sts
+TIMESTEP = experimental/timestep_sts_2
