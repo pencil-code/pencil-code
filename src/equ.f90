@@ -19,6 +19,7 @@ module Equ
   public :: write_diagnostics_after_timestep
   public :: perform_diagnostics
   public :: calc_all_module_diagnostic_auxiliaries
+  public :: set_dt1_max !needed by some timestep modules
 !
   real, public    :: before_and_after_boundary_sum_time=0.
   real, public    :: time_spent_copying_and_waiting=0.
