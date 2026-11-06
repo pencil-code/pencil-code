@@ -267,6 +267,7 @@
           if(AC_ibeta__mod__z4c.y != 0) write(F_BETAY, rk_intermediate(F_BETAY,DF_BETAVEC.y,step_num,AC_dt__mod__cdata))
           if(AC_ibeta__mod__z4c.z != 0) write(F_BETAZ, rk_intermediate(F_BETAZ,DF_BETAVEC.z,step_num,AC_dt__mod__cdata))
 #endif
+          if(AC_iqq__mod__cdata != 0) write(F_QQ, rk_intermediate(F_QQ,DF_QQ,step_num,AC_dt__mod__cdata))
 // @auto-field-declarations: fortran-parser adds missing fields above this line
    }
    else

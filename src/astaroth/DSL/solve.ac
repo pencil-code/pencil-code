@@ -53,6 +53,22 @@ fixed_boundary Kernel twopass_solve_final(PC_SUB_STEP_NUMBER step_num, real AC_t
 					updated_rho = max(updated_rho,AC_density_floor_log__mod__density)
 				}
 			}
+#if LCORONAE && Lmagnetic_MODULE
+			//Limit the Alfven speed by a density floor: rho >= B^2/(mu0*vA2_limit)
+			if(AC_va2_limit__mod__coronae > 0.0)
+			{
+				const real3 bb = curl(F_AVEC) + AC_b_ext__mod__magnetic
+				const real rho_floor = dot(bb,bb)/(AC_mu0__mod__cdata*AC_va2_limit__mod__coronae)
+				if(AC_ldensity_nolog__mod__cdata)
+				{
+					updated_rho = max(updated_rho,rho_floor)
+				}
+				else
+				{
+					updated_rho = max(updated_rho,log(rho_floor))
+				}
+			}
+#endif
 			write(F_RHO, updated_rho)
 #endif 
 		}
@@ -67,14 +83,28 @@ fixed_boundary Kernel twopass_solve_final(PC_SUB_STEP_NUMBER step_num, real AC_t
 #endif
 			uu_updated += force
 #if Lhydro_MODULE
+			//Limit the velocity, keeping its direction. A negative limit means no limit.
+			real vel_limit2 = -1.0
 			if(AC_lvel_limiter__mod__hydro)
 			{
+				vel_limit2 = AC_max_vel__mod__hydro*AC_max_vel__mod__hydro
+			}
+#if LCORONAE
+			if(AC_lchen__mod__coronae && AC_mach_chen__mod__coronae != 0.0)
+			{
+				const real updated_tt = rk_final(F_TT,step_num,dt)
+				const real cs2 = AC_gamma_m1__mod__equationofstate*AC_cp__mod__equationofstate*(AC_ltemperature_nolog__mod__cdata ? updated_tt : exp(updated_tt))
+				const real mach_limit2 = AC_mach_chen__mod__coronae*AC_mach_chen__mod__coronae*cs2
+				vel_limit2 = vel_limit2 < 0.0 ? mach_limit2 : min(vel_limit2,mach_limit2)
+			}
+#endif
+			if(vel_limit2 >= 0.0)
+			{
 				ss2 = dot(uu_updated,uu_updated)
-				if(ss2 >= AC_max_vel__mod__hydro)
+				if(ss2 > vel_limit2)
 				{
-					uu_updated = uu_updated*(AC_max_vel__mod__hydro/sqrt(ss2))
+					uu_updated = uu_updated*sqrt(vel_limit2/ss2)
 				}
-
 			}
 #endif
 			write(F_UVEC,  uu_updated)
@@ -240,6 +270,7 @@ fixed_boundary Kernel twopass_solve_final(PC_SUB_STEP_NUMBER step_num, real AC_t
 		if(AC_ibeta__mod__z4c.y != 0) write(F_BETAY, rk_final(F_BETAY,step_num,dt))
 		if(AC_ibeta__mod__z4c.z != 0) write(F_BETAZ, rk_final(F_BETAZ,step_num,dt))
 #endif
+		if(AC_iqq__mod__cdata != 0) write(F_QQ, rk_final(F_QQ,step_num,dt))
 // @auto-field-declarations: fortran-parser adds missing fields above this line
 	}
 }

@@ -239,6 +239,15 @@ DF_AT[5] = rk_intermediate_split_first(F_AT_6,step_num)
 real3 DF_GAMVEC = rk_intermediate_split_first(F_GAMVEC,step_num)
 real3 DF_BETAVEC = rk_intermediate_split_first(F_BETAVEC,step_num)
 #endif
+real3 DF_QQ = rk_intermediate_split_first(F_QQ,step_num)
+#define DF_IQQ__MOD__CDATA DF_QQ
+#define DF_QVEC DF_QQ
+#define DF_QQX DF_QQ.x
+#define DF_QQY DF_QQ.y
+#define DF_QQZ DF_QQ.z
+#define DF_QX DF_QQ.x
+#define DF_QY DF_QQ.y
+#define DF_QZ DF_QQ.z
 // @auto-field-declarations: fortran-parser adds missing fields above this line
 #if LDEBUG_OUTPUT_TIMES
 real DF_SPECIAL = rk_intermediate_split_first(F_SPECIAL,step_num)

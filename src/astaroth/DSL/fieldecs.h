@@ -430,6 +430,14 @@ field_order(AC_ifgre__mod__density != 0 ? AC_ifgre__mod__density+2-1 : -1) Field
 field_order(AC_iegr__mod__density != 0 ? AC_iegr__mod__density-1 : -1) Field F_EGR
 #endif
 
+field_order(AC_iqq__mod__cdata != 0 ? AC_iqq__mod__cdata+0-1 : -1) Field F_QQX
+field_order(AC_iqq__mod__cdata != 0 ? AC_iqq__mod__cdata+1-1 : -1) Field F_QQY
+field_order(AC_iqq__mod__cdata != 0 ? AC_iqq__mod__cdata+2-1 : -1) Field F_QQZ
+const Field3 F_QQ = {F_QQX, F_QQY, F_QQZ}
+const Field3 F_QVEC = {F_QQX, F_QQY, F_QQZ}
+#define F_QX F_QQX
+#define F_QY F_QQY
+#define F_QZ F_QQZ
 // @auto-field-declarations: fortran-parser adds missing fields above this line
 #if LDEBUG_OUTPUT_TIMES
 field_order(AC_ispecial__mod__debug_output_times != 0 ? AC_ispecial__mod__debug_output_times-1 : -1) Field F_SPECIAL
