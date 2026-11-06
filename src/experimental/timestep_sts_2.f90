@@ -131,6 +131,7 @@ module Timestep
           call substeps(1/dt1,tau_sts)
 !
 !         Set time step to the super-timestep
+!         06-Nov-2026/Kishore: TODO: isn't this too late to set dt, since pde calls rhs_cpu which calls timestep_diagnostics?
           dt = sum(tau_sts)
         endif
 !
