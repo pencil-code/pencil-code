@@ -283,6 +283,11 @@ Profile<X> AC_del2ssmx__mod__energy
 Profile<Z> AC_ssmz__mod__energy
 Profile<Z> AC_del2ssmz__mod__energy
 #endif
+#if LHYDRO && Lhydro_MODULE
+Profile<Z> AC_uumz_x__mod__hydro
+Profile<Z> AC_uumz_y__mod__hydro
+Profile<Z> AC_uumz_z__mod__hydro
+#endif
 
 #if LDUSTVELOCITY
 const real ueta = 0.0

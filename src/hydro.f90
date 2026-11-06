@@ -9307,6 +9307,8 @@ module Hydro
       case ('remove_vertical_shear')
         if (.not.lcalc_uumean) &
           call fatal_error("initialize_hydro","you need to set lcalc_uumean=T for uuprof='remove_vertical_shear'")
+        if (lgpu) &
+          call fatal_error("initialize_hydro","remove_vertical_shear is not possible on GPUs since it writes to f directly!")
 
       case ('damp_mean_uz_prof_bdr')
         if (.not.lcalc_uumeanz) &
@@ -10263,7 +10265,6 @@ module Hydro
     call copy_addr(idiag_taufmin,p_par(79)) ! int
     call copy_addr(idiag_dtf,p_par(80)) ! int
     call copy_addr(fade_fact,p_par(81)) ! real dconst
-    call copy_addr(uumz,p_par(82)) ! (mz) (3)
     call copy_addr(uumx,p_par(83)) ! (mx) (3)
     if (allocated(uumxy)) call copy_addr(uumxy,p_par(84)) ! (mx) (my) (3)
     call copy_addr(uumxz,p_par(85)) ! (mx) (mz) (3)
