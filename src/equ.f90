@@ -1599,6 +1599,7 @@ module Equ
         call calc_phisums(p)
 !
 !  Do the time integrations here, before the pencils are overwritten.
+!  06-11-2026/Kishore: at least now, Pencils do not seem to be overwritten before the end of this subroutine
 !
         call calc_time_integrals(f,p)
 
