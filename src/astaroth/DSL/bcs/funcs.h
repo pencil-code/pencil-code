@@ -375,6 +375,42 @@ bc_set_der_z(boundary, topbot, VtxBuffer field,val)
   }
 }
 
+//Sets duz/dz on the boundary such that div(u)=val
+bc_set_div_z(AcBoundary boundary, AC_TOP_BOT topbot, VtxBuffer field, real val)
+{
+  suppress_unused_warning(boundary)
+  const int x = vertexIdx.x
+  const int y = vertexIdx.y
+  const int iref = topbot == AC_bot ? AC_n1-1 : AC_n2-1
+  //The CPU sets only the interior xy points. Here the stencil centre is clamped to the interior so that the
+  //horizontal derivatives never reach outside the array in the ghost zones
+  const int xc = min(max(x,NGHOST),AC_mx-NGHOST-1)
+  const int yc = min(max(y,NGHOST),AC_my-NGHOST-1)
+  real duz_dz = val
+  if(AC_nxgrid != 1)
+  {
+    duz_dz -= AC_dx_1__mod__cdata[xc]/60.0*( 45.0*(F_UX[xc+1][yc][iref]-F_UX[xc-1][yc][iref])
+                                           - 9.0*(F_UX[xc+2][yc][iref]-F_UX[xc-2][yc][iref])
+                                           +     (F_UX[xc+3][yc][iref]-F_UX[xc-3][yc][iref]))
+  }
+  if(AC_nygrid != 1)
+  {
+    duz_dz -= AC_dy_1__mod__cdata[yc]/60.0*( 45.0*(F_UY[xc][yc+1][iref]-F_UY[xc][yc-1][iref])
+                                           - 9.0*(F_UY[xc][yc+2][iref]-F_UY[xc][yc-2][iref])
+                                           +     (F_UY[xc][yc+3][iref]-F_UY[xc][yc-3][iref]))
+  }
+  if (topbot == AC_bot) {
+    for i in 1:NGHOST+1 {
+      field[x][y][AC_n1-i-1] = field[x][y][AC_n1+i-1] - AC_dz2_bound[-i+NGHOST]*duz_dz
+    }
+  }
+  else if (topbot == AC_top) {
+    for i in 1:NGHOST+1 {
+      field[x][y][AC_n2+i-1] = field[x][y][AC_n2-i-1] + AC_dz2_bound[i+NGHOST]*duz_dz
+    }
+  }
+}
+
 #if Leos_idealgas_MODULE && Lentropy_MODULE
 bc_ss_temp_z(AcBoundary boundary, AC_TOP_BOT topbot,bool lone_sided)
 {
@@ -3522,23 +3558,20 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
 //These don't actually do anything except set some flags in the CPU code so can be no-ops here
 bc_freeze_var_x(AcBoundary boundary, AC_TOP_BOT topbot, Field f)
 {
-	suppress_unused_warning(boundary)
 	suppress_unused_warning(topbot)
-	suppress_unused_warning(f)
+	ac_fixed_bc(boundary,f)
 }
 
 bc_freeze_var_y(AcBoundary boundary, AC_TOP_BOT topbot, Field f)
 {
-	suppress_unused_warning(boundary)
 	suppress_unused_warning(topbot)
-	suppress_unused_warning(f)
+	ac_fixed_bc(boundary,f)
 }
 
 bc_freeze_var_z(AcBoundary boundary, AC_TOP_BOT topbot, Field f)
 {
-	suppress_unused_warning(boundary)
 	suppress_unused_warning(topbot)
-	suppress_unused_warning(f)
+	ac_fixed_bc(boundary,f)
 }
 
 bcx_extrap_2_3(AcBoundary boundary, AC_TOP_BOT topbot,Field f)
