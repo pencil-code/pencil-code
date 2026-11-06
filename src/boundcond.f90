@@ -362,8 +362,8 @@ module Boundcond
       endif
 
       !Done here to ensure GPU runs also have the correct setting of these flags
-      if (any(bcz12(:,BOT)=='fg')) lfrozen_bcs_x=.true.
-      if (any(bcz12(:,TOP)=='fg')) lfrozen_bcs_x=.true.
+      if (any(bcx12(:,BOT)=='fg')) lfrozen_bcs_x=.true.
+      if (any(bcx12(:,TOP)=='fg')) lfrozen_bcs_x=.true.
       lfrozen_bot_var_x = bcx12(:,BOT)=='fg'
       lfrozen_top_var_x = bcx12(:,TOP)=='fg'
 
