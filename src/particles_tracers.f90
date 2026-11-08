@@ -30,6 +30,7 @@ module Particles
 !
   include 'particles.h'
   include 'particles_common.h'
+  public :: calc_diagnostics_from_particles_tracer
 !
   real :: xp0=0.0, yp0=0.0, zp0=0.0, tausp=0.0
   real :: nu_epicycle=0.0, nu_epicycle2=0.0
@@ -433,8 +434,6 @@ module Particles
 !
 !  02-jan-05/anders: coded
 !
-      use Diagnostics, only: max_name
-!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mparray) :: fp
@@ -463,6 +462,26 @@ module Particles
 !
 !  Diagnostic output
 !
+      call calc_diagnostics_from_particles_tracer(fp)
+!
+      if (lfirstcall) lfirstcall=.false.
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(ineargrid)
+!
+    endsubroutine dxxp_dt
+!***********************************************************************
+    subroutine calc_diagnostics_from_particles_tracer(fp)
+!
+!  Diagnostics that are sums over all particles
+!
+!  08-nov-26/TP: carved out from dxxp_dt
+!
+      use Diagnostics, only: max_name
+!
+      real, dimension (mpar_loc,mparray), intent(in) :: fp
+!
       if (ldiagnos) then
         call sum_par_name(fp(1:npar_loc,ixp),idiag_xpm)
         call sum_par_name(fp(1:npar_loc,iyp),idiag_ypm)
@@ -473,13 +492,7 @@ module Particles
         call max_name(npar_loc,idiag_nparmax)
       endif
 !
-      if (lfirstcall) lfirstcall=.false.
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(df)
-      call keep_compiler_quiet(ineargrid)
-!
-    endsubroutine dxxp_dt
+    endsubroutine calc_diagnostics_from_particles_tracer
 !***********************************************************************
     subroutine dvvp_dt(f,df,fp,dfp,ineargrid)
 !
