@@ -770,7 +770,7 @@ module Cdata
   real :: yequator=0.,zequator=0.
   logical :: lequatory,lequatorz
   integer, dimension (mname_half) :: itype_name_half=0
-  real, dimension (mname_half,2) :: fname_half
+  real, dimension (mname_half,2), target :: fname_half
   integer :: name_half_max=0, ntmax1Dav=500, ntmax2Dav=500
   character (len=30) :: cname_half(mname_half)
 !  Radius inside of which diagnostics are calculated for sphere_in_a_box models
@@ -1111,7 +1111,7 @@ module Cdata
 !$omp threadprivate(inds_max_diags, inds_sum_diags)
 !$omp threadprivate(dxyz_2,dxyz_4,dxyz_6,dvol,dxmax_pencil,dxmin_pencil,dline_1,lcoarse_mn, seed, m, n)
 !$omp threadprivate(lfirstpoint,thread_id)
-!$omp threadprivate(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz)
+!$omp threadprivate(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,fname_half)
 !$omp threadprivate(l1dphiavg, l1davgfirst, l2davgfirst, ldiagnos,lout, l1davg, l2davg, lout_sound, lvideo,lvideo_first)
 !$omp threadprivate(t,tspec,tdiagnos,t1ddiagnos,t2davgfirst,tslice,tsound,itdiagnos,dtdiagnos,eps_rkf_diagnos)
 !$omp threadprivate(maxdiffus,maxadvec,advec2,advec_cs2)

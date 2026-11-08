@@ -29,7 +29,7 @@ module Equ
   private
 !
   real, dimension(:)      , pointer :: p_fname, p_fname_keep
-  real, dimension(:,:)    , pointer :: p_fnamer, p_fname_sound
+  real, dimension(:,:)    , pointer :: p_fnamer, p_fname_sound, p_fname_half
   real, dimension(:,:,:)  , pointer :: p_fnamex, p_fnamey, p_fnamez, p_fnamexy, p_fnamexz
   real, dimension(:,:,:,:), pointer :: p_fnamerz
   integer, dimension(:,:) , pointer :: p_ncountsz
@@ -552,6 +552,7 @@ module Equ
       p_fname => fname
       p_fname_keep => fname_keep
       p_fname_sound => fname_sound
+      p_fname_half => fname_half
       p_fnamex => fnamex
       p_fnamey => fnamey
       p_fnamez => fnamez
@@ -590,6 +591,7 @@ module Equ
 !$            if (any(inds_sum_diags == imn)) p_fname(imn) = p_fname(imn) + fname(imn)
 !$          endif
 !$        enddo
+!$        p_fname_half = p_fname_half + fname_half
 !$      endif
 !$
 !$      if (l1davgfirst) then
@@ -599,8 +601,11 @@ module Equ
 !$        if (allocated(fnamer)) p_fnamer = p_fnamer + fnamer
 !$      endif
 !$
-!$      if (l2davgfirst) then
+!$      if (l2davgfirst .or. (ldiagnos .and. ldiagnos_need_zaverages)) then
 !$        if (allocated(fnamexy)) p_fnamexy = p_fnamexy + fnamexy
+!$      endif
+!$
+!$      if (l2davgfirst) then
 !$        if (allocated(fnamexz)) p_fnamexz = p_fnamexz + fnamexz
 !$        if (allocated(fnamerz)) then 
 !$          if(.not. associated(p_fnamerz)) then
@@ -739,7 +744,8 @@ module Equ
       if (lgpu) lupdate_courant_dt = lcourant_dt .and. ltimestep_diagnostics
 
 !$omp parallel if (.not. lsuppress_parallel_reductions) private(p) num_threads(num_helper_threads) &
-!$omp copyin(t,dxmax_pencil,fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
+!$omp copyin(t,dxmax_pencil,fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm, &
+!$omp fname_half)
 !$    call restore_diagnostic_controls
 !$    call hydro_restore_diagnostic_controls
 !$    call training_restore_diagnostic_controls
