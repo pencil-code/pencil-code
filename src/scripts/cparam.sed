@@ -24,6 +24,7 @@ s/\([0-9.]\) *[dD] *\([-0-9]\)/\1E\2/g
 /cparam_pencils\.inc/ d
 /cparam_aux\.inc/ d
 /dimension *(/ d
+/^ *character.*parameter *::/ d
 /integer, *parameter *:: *[ir]kind[0-9]* *=/ d
 s/, *bind *( *c *)//
 s/\([a-zA-Z0-9_]*\) *\*\* *\([^,]*\)\([,$]\)/cpu_pow(\1,\2)\3/g
