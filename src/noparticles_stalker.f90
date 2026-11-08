@@ -85,4 +85,32 @@ module Particles_stalker
 !
     endsubroutine write_pstalker_run_pars
 !***********************************************************************
+    subroutine stalker_request_gpu(f,fp,ineargrid)
+!
+!  08-nov-26/TP: dummy
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mpar_loc,mparray) :: fp
+      integer, dimension (mpar_loc,3) :: ineargrid
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(ineargrid)
+!
+    endsubroutine stalker_request_gpu
+!***********************************************************************
+    subroutine stalker_output_gpu(f,fp,ineargrid)
+!
+!  08-nov-26/TP: dummy
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mpar_loc,mparray) :: fp
+      integer, dimension (mpar_loc,3) :: ineargrid
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(ineargrid)
+!
+    endsubroutine stalker_output_gpu
+!***********************************************************************
 endmodule Particles_stalker

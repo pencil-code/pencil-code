@@ -105,13 +105,14 @@ contains
 
     endfunction get_ptr_GPU_training
 !**************************************************************************
-    subroutine copy_farray_from_GPU(f,nowait_)
+    subroutine copy_farray_from_GPU(f,nowait_,lread_particles_)
 
       real, dimension (:,:,:,:), intent(OUT) :: f
-      logical, optional :: nowait_
+      logical, optional :: nowait_, lread_particles_
 
       call keep_compiler_quiet(f)
       if ((present(nowait_))) call keep_compiler_quiet(nowait_)
+      if ((present(lread_particles_))) call keep_compiler_quiet(lread_particles_)
 
     endsubroutine copy_farray_from_GPU
 !**************************************************************************

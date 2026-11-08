@@ -503,4 +503,30 @@ module Particles_main
 !
     endsubroutine return_fp_array
 !***********************************************************************
+    subroutine calc_diagnostics_from_particles 
+!
+! dummy subroutine
+!
+    endsubroutine calc_diagnostics_from_particles
+!***********************************************************************
+    subroutine particles_stalker_request_gpu(f)
+!
+! dummy subroutine
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine particles_stalker_request_gpu
+!***********************************************************************
+    subroutine particles_stalker_gpu(f)
+!
+! dummy subroutine
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine particles_stalker_gpu
+!***********************************************************************
   endmodule Particles_main

@@ -28,7 +28,9 @@ void substepGPU(int, int, double);
 void beforeBoundaryGPU(bool, int, double, bool);
 void afterSubStepGPU();
 void radTransfer();
-void copyFarray(REAL*);
+void copyFarray(REAL*, bool);
+void loadParticlesGPU(REAL*, int*, int, const int*, int*, const int*, const int*, const int*,
+                      const REAL*, const REAL*, const REAL*, const REAL*, const REAL*, const REAL*);
 void loadFarray();
 void reloadConfig();
 void updateInConfigArr(int);
@@ -211,11 +213,24 @@ void FTNIZE(rhs_gpu_c)(FINT *istep, FINT *isubstep, double* t)
   substepGPU(*istep,*isubstep,*t);
 }
 /* ---------------------------------------------------------------------- */
-void FTNIZE(copy_farray_c)(REAL* f)
+void FTNIZE(copy_farray_c)(REAL* f, FINT* read_particles)
 {
 // Copies vertex buffers from GPU into f-array on CPU.
 
-  copyFarray(f);
+  copyFarray(f, *read_particles != 0);
+}
+/* ---------------------------------------------------------------------- */
+void FTNIZE(load_particles_gpu_c)(REAL* fp, FINT* npar_loc, FINT* mpar_loc, FINT* ivar, FINT* ipar,
+                                  FINT* ip, FINT* nproc, FINT* ranks,
+                                  REAL* procx_bounds, REAL* procy_bounds, REAL* procz_bounds,
+                                  REAL* xyz0_loc, REAL* xyz1_loc, REAL* xyz0)
+{
+// Registers the host particle arrays fp, ipar and npar_loc and loads them to the GPU
+// (ivar: fp indices of xp,yp,zp,vpx,vpy,vpz; ip, nproc: (ipx,ipy,ipz), (nprocx,nprocy,nprocz);
+//  ranks: ranks of all processes ordered by ipx+nprocx*(ipy+nprocy*ipz)).
+
+  loadParticlesGPU(fp, npar_loc, *mpar_loc, ivar, ipar, ip, nproc, ranks,
+                   procx_bounds, procy_bounds, procz_bounds, xyz0_loc, xyz1_loc, xyz0);
 }
 /* ---------------------------------------------------------------------- */
 void FTNIZE(load_farray_c)()

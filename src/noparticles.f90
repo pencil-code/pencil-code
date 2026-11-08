@@ -111,6 +111,16 @@ module Particles
 !
     endsubroutine dxxp_dt
 !***********************************************************************
+    subroutine calc_diagnostics_from_particles(fp)
+!
+!  08-nov-26/TP: dummy, this module calculates these diagnostics in dxxp_dt
+!
+      real, dimension (mpar_loc,mparray) :: fp
+!
+      call keep_compiler_quiet(fp)
+!
+    endsubroutine calc_diagnostics_from_particles
+!***********************************************************************
     subroutine calc_diagnostics_particles(fp,p,ineargrid)
 
       real, dimension (mpar_loc,mparray) :: fp

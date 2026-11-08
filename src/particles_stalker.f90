@@ -26,7 +26,8 @@ module Particles_stalker
   include 'particles_stalker.h'
 !
   real :: dstalk=0.1 !PAR_DOC: times between printout of stalker data
-  real :: tstalk=0.0
+  real :: tstalk=0.0, tstalk_save=0.0
+!$omp threadprivate(tstalk)
   integer :: iscratch=0, nout=0, nvar_stalk=0
   logical :: linterpolate_cic=.false., linterpolate_tsc=.true.
   logical :: lstalk_xx=.true. !PAR_DOC: particles position
@@ -642,5 +643,54 @@ module Particles_stalker
       write(unit, NML=particles_stalker_run_pars)
 !
     endsubroutine write_pstalker_run_pars
+!***********************************************************************
+    subroutine stalker_request_gpu(f,fp,ineargrid)
+!
+!  With GPUs: if stalker data are due, copies f and fp from the GPU and asks
+!  the helper thread to write them. Called by the master thread.
+!
+      use Diagnostics, only: save_diagnostic_controls
+      use Gpu, only: copy_farray_from_GPU
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mpar_loc,mparray) :: fp
+      integer, dimension (mpar_loc,3) :: ineargrid
+!
+      if (t<tstalk) return
+      call copy_farray_from_GPU(f)
+      call save_diagnostic_controls
+      tstalk_save=tstalk
+!$    lmasterflags(PERF_STALKER)=.true.
+      do while (tstalk<=t)
+        tstalk=tstalk+dstalk
+      enddo
+!
+    endsubroutine stalker_request_gpu
+!***********************************************************************
+    subroutine stalker_output_gpu(f,fp,ineargrid)
+!
+!  With GPUs: writes stalker data; f must have been copied from the GPU, with ghost zones.
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mpar_loc,mparray) :: fp
+      integer, dimension (mpar_loc,3) :: ineargrid
+!
+      real, dimension (3) :: uu
+      integer :: k
+!
+      if (lmultithread) tstalk=tstalk_save
+      call map_nearest_grid(fp,ineargrid)
+!
+!  On the CPU, the auxiliary vvp is refreshed in the pencil loop before the stalker output,
+!  whereas on the device it is still from the last substep of the previous time step.
+!
+      do k=1,npar_loc
+        call interpolate_linear(f,iux,iuz,fp(k,ixp:izp),uu,ineargrid(k,:),0,ipar(k))
+        fp(k,ivpx:ivpz)=uu
+      enddo
+      call particles_stalker_sub(f,fp,ineargrid)
+!$    lhelperflags(PERF_STALKER)=.false.
+!
+    endsubroutine stalker_output_gpu
 !***********************************************************************
 endmodule Particles_stalker

@@ -24,6 +24,7 @@
 #include <string>
 #include <stack>
 #include <vector>
+#include <limits>
 
 static std::thread GW_thread{};
 static int device_id = 0;
@@ -218,7 +219,7 @@ void scaling();
 extern "C" void print_debug();
 float MSE();
 
-extern "C" void copyFarray(AcReal* f);    // forward declaration
+extern "C" void copyFarray(AcReal* f, bool read_particles = true);    // forward declaration
 extern "C" void loadFarray(); // forward declaration
 void denormalize(std::string filename, AcRealSymmetricTensor &tau_means, AcRealSymmetricTensor &tau_stds);
 
@@ -510,6 +511,7 @@ void setupConfig(AcMeshInfo& config)
   PCLoad(config,AC_periodic_grid,lperi);
 //  Overwrites Astaroth's default formula for AC_len in case it does not cover everything like non-equidistant grids
   PCLoad(config,AC_len,lxyz);
+//  Astaroth's default assumes that the domain starts from the origin; grid_position() needs the real one
   PCLoad(config,AC_first_gridpoint,(AcReal3){x__mod__cdata[NGHOST],y__mod__cdata[NGHOST],z__mod__cdata[NGHOST]});
 
 #if LTRAINING
@@ -1976,6 +1978,322 @@ calc_timestep(double t)
   dt1_interface = dt1_;
 }
 /***********************************************************************************************/
+//Tracer particles, see DSL/particles.h. The host fp(mpar_loc,mparray) and ipar(mpar_loc) arrays
+//and npar_loc are owned by Particles_main; loadParticlesGPU registers them and loads fp and ipar
+//to the device, copyParticlesFromGPU, called from copyFarray, refreshes all three from the device
+//so that host diagnostics and snapshots see a particle state consistent with f.
+//With several processes, particles that left the local subdomain are migrated after every
+//substep (particles_migrate), as migrate_particles in particles_mpicomm.f90 does on the CPU.
+#if LPARTICLES
+constexpr int PAR_NREC_HOST = 10;   //record length, must agree with PAR_NREC in DSL/particles.h
+static struct
+{
+	bool on = false;
+	AcReal* fp = nullptr;         //host fp(mpar_loc,mparray)
+	int* ipar = nullptr;          //host ipar(mpar_loc)
+	int* npar_loc_host = nullptr; //host npar_loc, updated on copies from the device
+	int n_loc = 0;                //number of particles on the device
+	int mpar_loc = 0;
+	int ivar[6];                  //Fortran (1-based) fp indices of xp,yp,zp,vpx,vpy,vpz
+	//Domain decomposition
+	bool migrate = false;
+	int ip[3], nproc[3];
+	std::vector<int> ranks;       //rank of the process at (ipx,ipy,ipz) = ranks[ipx+nprocx*(ipy+nprocy*ipz)]
+	std::vector<AcReal> bounds[3];//procx_bounds(0:nprocx) etc.
+	AcReal xx0_loc[3], xx1_loc[3];//xyz0_loc-xyz0, xyz1_loc-xyz0, or -/+huge without migration
+	AcReal xyz0[3];
+	std::vector<AcReal> buffer;   //staging buffers of the gmem array lengths
+	std::vector<AcReal> rec_buffer;
+} particles_gpu;
+static const AcRealArrayParam particle_arrays[6] = {AC_fp_xp,AC_fp_yp,AC_fp_zp,AC_fp_vpx,AC_fp_vpy,AC_fp_vpz};
+static const AcRealArrayParam particle_dfp_arrays[3] = {AC_dfp_xp,AC_dfp_yp,AC_dfp_zp};
+/***********************************************************************************************/
+//Astaroth allocates a gmem array only if its pointer in the config is non-null, and frees it on
+//acDeviceUpdate if the pointer has become null, so the pointers are set once and stay set.
+//The contents only initialize the device arrays; the actual data is loaded by particles_load_array.
+static void
+particles_set_config_arrays(AcMeshInfo& config)
+{
+	static std::vector<AcReal> zeros((size_t)PAR_NREC_HOST*npar,0.0);
+	for (const AcRealArrayParam param : {AC_fp_xp,AC_fp_yp,AC_fp_zp,AC_fp_vpx,AC_fp_vpy,AC_fp_vpz,AC_fp_ipar,
+	                                     AC_dfp_xp,AC_dfp_yp,AC_dfp_zp,
+	                                     AC_par_leaving,AC_par_idx,AC_par_idx2,AC_par_buf})
+		config[param] = zeros.data();
+}
+/***********************************************************************************************/
+static int
+rank_pencil()
+{
+	int r;
+	MPI_Comm_rank(comm_pencil,&r);
+	return r;
+}
+/***********************************************************************************************/
+//Loads a host array to a whole gmem array (src must have the gmem array length)
+static void
+particles_load_array(const AcRealArrayParam param, AcReal* src)
+{
+	AcReal* const config_array = mesh.info[param];
+	mesh.info[param] = src;
+	acDeviceLoadRealArray(acGridGetDevice(),STREAM_DEFAULT,mesh.info,param);
+	acDeviceSynchronizeStream(acGridGetDevice(),STREAM_DEFAULT);
+	mesh.info[param] = config_array;
+}
+/***********************************************************************************************/
+//Stores a whole gmem array to dst (which must have the gmem array length)
+static void
+particles_store_array(const AcRealArrayParam param, AcReal* dst)
+{
+	//Device-local: in particles_migrate only the processes with leaving particles get here
+	acDeviceSynchronizeStream(acGridGetDevice(),STREAM_ALL);
+	if (acDeviceStoreRealArray(acGridGetDevice(),STREAM_DEFAULT,param,dst) != AC_SUCCESS)
+	{
+		fprintf(stderr,"particles_store_array: could not read %s from the device\n",get_array_info(param).name);
+		abort();
+	}
+}
+/***********************************************************************************************/
+static void
+particles_launch(const AcKernel kernel, const int n)
+{
+	if (n <= 0) return;
+	acDeviceLaunchKernel(acGridGetDevice(), STREAM_DEFAULT, kernel, (Volume){0,0,0}, (Volume){(size_t)n,1,1});
+	acDeviceSynchronizeStream(acGridGetDevice(),STREAM_DEFAULT);
+}
+/***********************************************************************************************/
+//Loads the host fp and ipar to the device; dfp starts from zero (it is reset in the first substep anyway since alpha=0 there)
+static void
+particles_load_to_device()
+{
+	auto& p = particles_gpu;
+	acGridSynchronizeStream(STREAM_ALL);
+	for (int i = 0; i < 6; ++i)
+	{
+		const AcReal* col = p.fp + (size_t)(p.ivar[i]-1)*p.mpar_loc;
+		std::fill(p.buffer.begin(),p.buffer.end(),0.0);
+		std::copy(col,col+p.n_loc,p.buffer.begin());
+		particles_load_array(particle_arrays[i],p.buffer.data());
+	}
+	std::fill(p.buffer.begin(),p.buffer.end(),0.0);
+	for (int k = 0; k < p.n_loc; ++k) p.buffer[k] = p.ipar[k];
+	particles_load_array(AC_fp_ipar,p.buffer.data());
+	std::fill(p.buffer.begin(),p.buffer.end(),0.0);
+	for (int i = 0; i < 3; ++i) particles_load_array(particle_dfp_arrays[i],p.buffer.data());
+}
+#endif
+/***********************************************************************************************/
+extern "C" void loadParticlesGPU(AcReal* fp, int* npar_loc, int mpar_loc, const int* ivar, int* ipar,
+		                 const int* ip, const int* nproc, const int* ranks,
+				 const AcReal* procx_bounds, const AcReal* procy_bounds, const AcReal* procz_bounds,
+				 const AcReal* xyz0_loc, const AcReal* xyz1_loc, const AcReal* xyz0)
+{
+#if LPARTICLES
+	if (*npar_loc > npar || mpar_loc > npar)
+	{
+		fprintf(stderr,"loadParticlesGPU: npar_loc=%d, mpar_loc=%d exceed the device capacity npar=%d\n",
+				*npar_loc,mpar_loc,npar);
+		abort();
+	}
+	auto& p = particles_gpu;
+	p.on            = true;
+	p.fp            = fp;
+	p.ipar          = ipar;
+	p.npar_loc_host = npar_loc;
+	p.n_loc         = *npar_loc;
+	p.mpar_loc      = mpar_loc;
+	for (int i = 0; i < 6; ++i) p.ivar[i] = ivar[i];
+
+	const AcReal* proc_bounds[3] = {procx_bounds,procy_bounds,procz_bounds};
+	int nprocs = 1;
+	p.migrate = false;
+	for (int i = 0; i < 3; ++i)
+	{
+		p.ip[i]    = ip[i];
+		p.nproc[i] = nproc[i];
+		nprocs    *= nproc[i];
+		p.xyz0[i]  = xyz0[i];
+		p.bounds[i].assign(proc_bounds[i],proc_bounds[i]+nproc[i]+1);
+		//As in migrate_particles: only search upwards/downwards if there is a process there
+		p.xx0_loc[i] = (ip[i] > 0)          ? xyz0_loc[i]-xyz0[i] : -std::numeric_limits<AcReal>::max();
+		p.xx1_loc[i] = (ip[i] < nproc[i]-1) ? xyz1_loc[i]-xyz0[i] :  std::numeric_limits<AcReal>::max();
+		p.migrate |= nproc[i] > 1;
+	}
+	p.ranks.assign(ranks,ranks+nprocs);
+
+	p.buffer.assign(npar,0.0);
+	p.rec_buffer.assign((size_t)PAR_NREC_HOST*npar,0.0);
+
+	particles_load_to_device();
+#else
+	fprintf(stderr,"loadParticlesGPU: Astaroth was built without particle support (LPARTICLES)\n");
+	abort();
+#endif
+}
+/***********************************************************************************************/
+static void copyParticlesFromGPU()
+{
+#if LPARTICLES
+	auto& p = particles_gpu;
+	if (!p.on) return;
+	for (int i = 0; i < 6; ++i)
+	{
+		particles_store_array(particle_arrays[i],p.buffer.data());
+		AcReal* col = p.fp + (size_t)(p.ivar[i]-1)*p.mpar_loc;
+		std::copy(p.buffer.begin(),p.buffer.begin()+p.n_loc,col);
+	}
+	particles_store_array(AC_fp_ipar,p.buffer.data());
+	for (int k = 0; k < p.n_loc; ++k) p.ipar[k] = (int)p.buffer[k];
+	*p.npar_loc_host = p.n_loc;
+#endif
+}
+/***********************************************************************************************/
+#if LPARTICLES
+//Process coordinate in direction dir that owns position pos (relative search as in migrate_particles)
+static int
+particles_owner_coord(const int dir, const AcReal pos)
+{
+	const auto& p = particles_gpu;
+	const int ip = p.ip[dir], np = p.nproc[dir];
+	const auto& b = p.bounds[dir];
+	const AcReal xx = pos - p.xyz0[dir];
+	int ip_rec = ip;
+	if (xx >= p.xx1_loc[dir] && ip < np-1)
+	{
+		for (int j = ip+1; j <= np-1; ++j) if (pos < b[j+1]) {ip_rec = j; break;}
+	}
+	else if (xx < p.xx0_loc[dir] && ip > 0)
+	{
+		for (int j = ip-1; j >= 0; --j) if (pos >= b[j]) {ip_rec = j; break;}
+	}
+	return ip_rec;
+}
+/***********************************************************************************************/
+static void
+particles_migrate()
+{
+	auto& p = particles_gpu;
+	const int nprocs = (int)p.ranks.size();
+	const MPI_Datatype real_type = (sizeof(AcReal) == 8) ? MPI_DOUBLE : MPI_FLOAT;
+	//Leaving particles
+	particles_store_array(AC_par_leaving,p.buffer.data());
+	std::vector<int> leaving;
+	for (int k = 0; k < p.n_loc; ++k) if (p.buffer[k] != 0.0) leaving.push_back(k);
+	const int nleave = (int)leaving.size();
+	const int n_stay = p.n_loc - nleave;
+
+	std::vector<int> send_counts(nprocs,0), recv_counts(nprocs,0);
+	std::vector<AcReal> send;
+	if (nleave > 0)
+	{
+		//Pack their records
+		for (int i = 0; i < nleave; ++i) p.buffer[i] = leaving[i];
+		particles_load_array(AC_par_idx,p.buffer.data());
+		particles_launch(particles_pack,nleave);
+		particles_store_array(AC_par_buf,p.rec_buffer.data());
+		const std::vector<AcReal> recs(p.rec_buffer.begin(),p.rec_buffer.begin()+(size_t)PAR_NREC_HOST*nleave);
+
+		//Destinations, records sorted by destination rank (stable, so the order is deterministic)
+		std::vector<int> dest(nleave);
+		for (int i = 0; i < nleave; ++i)
+		{
+			const AcReal* rec = &recs[(size_t)PAR_NREC_HOST*i];
+			int ipr[3];
+			for (int dir = 0; dir < 3; ++dir) ipr[dir] = particles_owner_coord(dir,rec[dir]);
+			dest[i] = p.ranks[ipr[0]+p.nproc[0]*(ipr[1]+p.nproc[1]*ipr[2])];
+			if (dest[i] == rank_pencil())
+			{
+				fprintf(stderr,"particles_migrate: particle ipar=%d at (%g,%g,%g) flagged as leaving but owned by this process\n",
+						(int)rec[9],rec[0],rec[1],rec[2]);
+				abort();
+			}
+			send_counts[dest[i]]++;
+		}
+		std::vector<int> order(nleave);
+		for (int i = 0; i < nleave; ++i) order[i] = i;
+		std::stable_sort(order.begin(),order.end(),[&](int a, int b){return dest[a] < dest[b];});
+		send.resize(recs.size());
+		for (int i = 0; i < nleave; ++i)
+			std::copy(&recs[(size_t)PAR_NREC_HOST*order[i]],&recs[(size_t)PAR_NREC_HOST*(order[i]+1)],
+				  &send[(size_t)PAR_NREC_HOST*i]);
+
+		//Fill the holes below n_stay with the staying particles from the tail
+		std::vector<int> src, dst;
+		std::vector<bool> is_leaving(p.n_loc,false);
+		for (int k : leaving) is_leaving[k] = true;
+		int tail = p.n_loc-1;
+		for (int k : leaving)
+		{
+			if (k >= n_stay) break;
+			while (is_leaving[tail]) --tail;
+			src.push_back(tail); dst.push_back(k);
+			--tail;
+		}
+		const int nmove = (int)src.size();
+		if (nmove > 0)
+		{
+			for (int i = 0; i < nmove; ++i) p.buffer[i] = src[i];
+			particles_load_array(AC_par_idx,p.buffer.data());
+			for (int i = 0; i < nmove; ++i) p.buffer[i] = dst[i];
+			particles_load_array(AC_par_idx2,p.buffer.data());
+			particles_launch(particles_move,nmove);
+		}
+		p.n_loc = n_stay;
+	}
+
+	//Exchange
+	MPI_Alltoall(send_counts.data(),1,MPI_INT,recv_counts.data(),1,MPI_INT,comm_pencil);
+	std::vector<int> scounts(nprocs), sdispls(nprocs), rcounts(nprocs), rdispls(nprocs);
+	int nrecv = 0, soff = 0;
+	for (int r = 0; r < nprocs; ++r)
+	{
+		scounts[r] = PAR_NREC_HOST*send_counts[r]; sdispls[r] = soff; soff += scounts[r];
+		rcounts[r] = PAR_NREC_HOST*recv_counts[r]; rdispls[r] = PAR_NREC_HOST*nrecv; nrecv += recv_counts[r];
+	}
+	if (p.n_loc + nrecv > p.mpar_loc)
+	{
+		fprintf(stderr,"particles_migrate: too many particles on process %d: %d > mpar_loc=%d\n",
+				rank_pencil(),p.n_loc+nrecv,p.mpar_loc);
+		abort();
+	}
+	std::fill(p.rec_buffer.begin(),p.rec_buffer.end(),0.0);
+	MPI_Alltoallv(send.data(),scounts.data(),sdispls.data(),real_type,
+		      p.rec_buffer.data(),rcounts.data(),rdispls.data(),real_type,comm_pencil);
+
+	//Append the received particles
+	if (nrecv > 0)
+	{
+		particles_load_array(AC_par_buf,p.rec_buffer.data());
+		acKernelInputParams* params = acDeviceGetKernelInputParamsObject(acGridGetDevice());
+		params->particles_unpack.offset = p.n_loc;
+		particles_launch(particles_unpack,nrecv);
+		p.n_loc += nrecv;
+	}
+}
+/***********************************************************************************************/
+static void
+particles_substep(const int isubstep)
+{
+	auto& p = particles_gpu;
+	if (!p.on) return;
+	//The interpolation needs u in the ghost zones next to the particles.
+	//Collective: all processes take part even without particles
+	acGridHaloExchange();
+	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(boundconds),1);
+	acGridSynchronizeStream(STREAM_ALL);
+	if (p.n_loc > 0)
+	{
+		auto& params = acDeviceGetKernelInputParamsObject(acGridGetDevice())->particles_tracer_step;
+		params.step_num = isubstep-1;   //RK coefficients are computed in the kernel
+		params.dt_step  = dt;
+		params.xx0_x = p.xx0_loc[0]; params.xx0_y = p.xx0_loc[1]; params.xx0_z = p.xx0_loc[2];
+		params.xx1_x = p.xx1_loc[0]; params.xx1_y = p.xx1_loc[1]; params.xx1_z = p.xx1_loc[2];
+		particles_launch(particles_tracer_step,p.n_loc);
+	}
+	//Collective: all processes take part even without particles
+	if (p.migrate) particles_migrate();
+}
+#endif
+/***********************************************************************************************/
 extern "C" void substepGPU(int istep, int isubstep, double t)
 //
 //  Do the 'isubstep'th integration step on all GPUs on the node and handle boundaries.
@@ -2005,6 +2323,10 @@ extern "C" void substepGPU(int istep, int isubstep, double t)
   //Important that forcing vectors are updated only after the timestep is calculated
   //since the timestep is used in the calculation
   update_forcing(isubstep);
+#if LPARTICLES
+  //Particles are advanced before the fluid since they need u at the beginning of the substep
+  particles_substep(isubstep);
+#endif
 
   AcTaskGraph *rhs =  acGetOptimizedDSLTaskGraph(AC_rhs);
   auto start = MPI_Wtime();
@@ -2028,7 +2350,7 @@ extern "C" void substepGPU(int istep, int isubstep, double t)
   return;
 }
 /***********************************************************************************************/
-void copyFarray(AcReal* f)
+void copyFarray(AcReal* f, const bool read_particles)
 {
   //user_constants.h declares mfarray with its DSL value (capacity incl. DYNAMIC_AUX extra slots),
   //which would shadow the run-time number of f-array slots (= size of maux_vtxbuf_index)
@@ -2133,6 +2455,8 @@ void copyFarray(AcReal* f)
 		}
 	}
   }
+  //Keep the host particle state consistent with the copied f
+  if (read_particles) copyParticlesFromGPU();
 }
 /***********************************************************************************************/
 extern "C" void getFArrayIn(AcReal **p_f_in)
@@ -2414,6 +2738,9 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_,
     }
   }
   if (rank==0 && ldebug) printf("memusage grid_init= %f MBytes\n", acMemUsage()/1024.);
+#if LPARTICLES
+  particles_set_config_arrays(mesh.info);
+#endif
   acGridInit(mesh);
   if (acGetDevice(&device_id) != cudaSuccess)
   {
@@ -2511,6 +2838,10 @@ extern "C" void reloadConfig()
   acGridSynchronizeStream(STREAM_ALL);
   acDeviceUpdate(acGridGetDevice(), mesh.info);
   acGridSynchronizeStream(STREAM_ALL);
+#endif
+#if LPARTICLES
+  //The device arrays have been recreated (or reset from the config)
+  if (particles_gpu.on) particles_load_to_device();
 #endif
   acStoreConfig(acDeviceGetLocalConfig(acGridGetDevice()), "PC-AC.conf");
   acLogFromRootProc(rank, "DONE reloading on GPU\n");

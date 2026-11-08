@@ -65,6 +65,7 @@ subroutine helper_loop(f)
   use Snapshot, only: perform_powersnap, perform_wsnap_ext, perform_wsnap_down_ext
   use Power_spectrum, only: wsnap_UETCs
   use Mpicomm, only: mpiwtime
+  use Particles_main, only: particles_stalker_gpu
   use Sub, only: check_for_nans_globally
 !
   real, contiguous, dimension(:,:,:,:) :: f
@@ -88,6 +89,11 @@ subroutine helper_loop(f)
         call perform_diagnostics(f,p)
 !$    else
 !$      lhelperflags(PERF_DIAGS) = .false.
+!$    endif
+!$    if (lhelper_run .and. lhelperflags(PERF_STALKER)) then
+        call particles_stalker_gpu(f)
+!$    else
+!$      lhelperflags(PERF_STALKER) = .false.
 !$    endif
 !Done before restoring to snap time to avoid overwriting it.
 !$    if (lhelper_run .and. lhelperflags(PERF_WSNAP)) call calc_all_module_diagnostic_auxiliaries(f,p)

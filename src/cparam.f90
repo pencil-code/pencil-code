@@ -299,8 +299,8 @@ module Cparam
   integer, parameter :: XPLUS=1, YPLUS=2, XMINUS=3, YMINUS=4, ZPLUS=5, ZMINUS=6
 !
   integer, parameter :: max_threads_possible = 200
-  integer, parameter :: PERF_DIAGS=1, PERF_WSNAP=2, PERF_POWERSNAP=3, PERF_WSNAP_DOWN=4, PERF_UETCSNAP=5
-  integer, parameter :: n_helperflags=5
+  integer, parameter :: PERF_DIAGS=1, PERF_WSNAP=2, PERF_POWERSNAP=3, PERF_WSNAP_DOWN=4, PERF_UETCSNAP=5, PERF_STALKER=6
+  integer, parameter :: n_helperflags=6
   integer, parameter :: n_xy_specs_max=10,nk_max=10, nz_max=10
   integer, parameter :: n_pdfs_max=10, n_cspec_max=10
   integer, parameter :: mname=100

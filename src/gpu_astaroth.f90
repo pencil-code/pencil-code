@@ -226,7 +226,6 @@ contains
       if (lopacity) str=trim(str)//', '//'opacity'
       if (lpointmasses) str=trim(str)//', '//'pointmasses'
       if (lsolid_cells) str=trim(str)//', '//'solid_cells'
-      if (lparticles) str=trim(str)//', '//'particles'
 
       if (str/='') call fatal_error('initialize_GPU','no GPU implementation available for module(s) "'// &
                                     trim(str(3:))//'"')
@@ -385,17 +384,23 @@ contains
 
     endfunction get_ptr_GPU_training
 !**************************************************************************
-    subroutine copy_farray_from_GPU(f,nowait_)
+    subroutine copy_farray_from_GPU(f,nowait_,lread_particles_)
+!
+!  Copies f, and by default also the particles, from the GPU.
+!
 
 !$    use General, only: signal_wait
 
       real, dimension (mx,my,mz,mfarray), intent(OUT) :: f
-      logical, optional :: nowait_
+      logical, optional :: nowait_, lread_particles_
       logical :: nowait
+      integer :: read_particles_int
 
       nowait = loptest(nowait_)
+      !transform to integer since it is more compatible with C than logical
+      read_particles_int = merge(1,0,loptest(lread_particles_,.true.))
       if (nowait) then
-        call copy_farray_c(f)
+        call copy_farray_c(f,read_particles_int)
         t_farray_copy = t
         return
       endif
@@ -409,7 +414,7 @@ contains
 ! Have to wait since if doing diagnostics don't want to overwrite f.
 !
 !$    call signal_wait(lhelper_perf, .false.)
-      call copy_farray_c(f)
+      call copy_farray_c(f,read_particles_int)
       t_farray_copy = t
 !$    lfarray_copied = .true.
 

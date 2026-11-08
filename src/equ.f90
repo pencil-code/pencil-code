@@ -182,7 +182,7 @@ module Equ
 !  Apply global boundary conditions to particle positions and communicate
 !  migrating particles between the processors.
 !
-      if (lparticles) call particles_boundconds(f)
+      if (.not. lgpu .and. lparticles) call particles_boundconds(f)
       if (lpointmasses) call boundconds_pointmasses
 !
 !  Call "before_boundary" hooks (for f array precalculation)
@@ -308,6 +308,7 @@ module Equ
       call timing('pde','after "after_boundary" calls')
 !
       if (lgpu) then
+        if (lparticles .and. lfirst) call particles_stalker_request_gpu(f)
         if (ldiagnostic_output) then
           !wait in case the last diagnostic tasks are not finished
           start_time = real(mpiwtime())
@@ -878,6 +879,7 @@ module Equ
       use Special, only: calc_ode_diagnostics_special
       use EquationofState, only: ioncalc
       use Shock, only: shock_before_boundary 
+      use Particles_main, only: calc_diagnostics_from_particles
 
       real, contiguous, dimension(:,:,:,:),intent(INOUT) :: f
       type(pencil_case) :: p
@@ -891,6 +893,7 @@ module Equ
         call calc_all_before_boundary_diagnostics(f)
         call prep_rhs(f_ode_diagnostics)
         call calc_all_module_diagnostics(f,p)     ! by all helper threads
+        if (lparticles) call calc_diagnostics_from_particles
         if (lode) call calc_ode_diagnostics_special(f_ode_diagnostics)
         call finalize_diagnostics                 ! by diagmaster (MPI comm.)
         call write_diagnostics_before_timestep(f)

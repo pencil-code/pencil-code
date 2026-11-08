@@ -274,4 +274,5 @@ fixed_boundary Kernel twopass_solve_final(PC_SUB_STEP_NUMBER step_num, real AC_t
 // @auto-field-declarations: fortran-parser adds missing fields above this line
 	}
 }
+#include "../particles.h"
 #include "../steps.h"

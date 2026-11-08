@@ -25,3 +25,5 @@
   public :: fetch_nparloc,fetch_fp_array,return_fp_array
   public :: append_particle_index
   public :: particles_calc_pencil_diags
+  public :: calc_diagnostics_from_particles
+  public :: particles_stalker_request_gpu, particles_stalker_gpu

@@ -262,8 +262,80 @@ module Particles_main
       if (inp==0) np_spec=.false.
       if (any(iapn==0)) np_ap_spec=.false.
       if (irhop==0) rhop_spec=.false.
+!
+      if (lgpu) call particles_load_gpu
 
     endsubroutine particles_initialize_modules
+!***********************************************************************
+    subroutine particles_load_gpu
+!
+!  Checks that the particle setup is supported on the GPU and loads fp and ipar to it.
+!  At the moment: tracer particles in a Cartesian, equidistant, periodic, non-shearing box.
+!  With several processes the particles migrate between them on the GPU side.
+!
+!  06-nov-26/TP: coded
+!
+      use General, only: find_proc
+!
+      external :: load_particles_gpu_c
+      character(len=linelen) :: str
+      integer, dimension(0:ncpus-1) :: ranks
+      integer :: jx, jy, jz
+!
+      str=''
+      if (particles_module/='tracer') str=trim(str)//', particles module "'//trim(particles_module)//'"'
+      if (lyinyang) str=trim(str)//', Yin-Yang grid'
+      if (.not.lcartesian_coords) str=trim(str)//', non-Cartesian coordinates'
+      if (.not.all(lequidist)) str=trim(str)//', non-equidistant grid'
+      if (lshear) str=trim(str)//', shear'
+      if (bcpx/='p' .or. bcpy/='p' .or. bcpz/='p') str=trim(str)//', non-periodic particle bcs'
+      if (lparticlemesh_tsc) str=trim(str)//', lparticlemesh_tsc'
+      if (str/='') call fatal_error('particles_load_gpu', &
+                                    'no GPU implementation for particles with: '//trim(str(3:)))
+!
+      do jz=0,nprocz-1; do jy=0,nprocy-1; do jx=0,nprocx-1
+        ranks(jx+nprocx*(jy+nprocy*jz))=find_proc(jx,jy,jz)
+      enddo; enddo; enddo
+      call load_particles_gpu_c(fp,npar_loc,mpar_loc,(/ixp,iyp,izp,ivpx,ivpy,ivpz/),ipar, &
+                                (/ipx,ipy,ipz/),(/nprocx,nprocy,nprocz/),ranks, &
+                                procx_bounds,procy_bounds,procz_bounds,xyz0_loc,xyz1_loc,xyz0)
+!
+    endsubroutine particles_load_gpu
+!***********************************************************************
+    subroutine calc_diagnostics_from_particles 
+!
+!  Particle diagnostics with GPUs, by the helper thread (outside of the parallel region
+!  of the other module diagnostics, so that they are not summed over threads).
+!
+!  06-nov-26/TP: coded
+!
+      if (lparticles) call calc_diagnostics_from_particles_tracer(fp)
+!
+    endsubroutine calc_diagnostics_from_particles 
+!***********************************************************************
+    subroutine particles_stalker_request_gpu(f)
+!
+!  Asks the helper thread to write stalker data if they are due.
+!
+!  08-nov-26/TP: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      if (lparticles_stalker) call stalker_request_gpu(f,fp,ineargrid)
+!
+    endsubroutine particles_stalker_request_gpu
+!***********************************************************************
+    subroutine particles_stalker_gpu(f)
+!
+!  Writes stalker data with GPUs, by the helper thread.
+!
+!  06-nov-26/TP: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call stalker_output_gpu(f,fp,ineargrid)
+!
+    endsubroutine particles_stalker_gpu
 !***********************************************************************
     subroutine particles_init(f)
 !
@@ -1091,6 +1163,7 @@ module Particles_main
 !  26-nov-08/ccyang: add independent sequence for particle snapshots
 !
       use General, only: itoa, safe_character_assign
+      use Gpu, only: copy_farray_from_GPU
       use IO, only: log_filename_to_file
       use Particles_mpicomm, only: output_blocks
       use Sub
@@ -1141,6 +1214,7 @@ module Particles_main
           call update_snaptime(fpar,tsnap_par,nsnap_par,dsnap_par,t,lsnap_par,nsnap_par_ch)
           if (lsnap_par) then
             snapname=trim(snapbase)//'_'//nsnap_par_ch
+            if (.not.lstart .and. lgpu .and. nt>0) call copy_farray_from_GPU(f)
             call particles_boundconds(f)
             call output_particles(snapname,fp,ipar)
             if (ip<=10 .and. lroot) print*,'wsnap_particles: written snapshot ', snapname
@@ -1154,6 +1228,7 @@ module Particles_main
           call update_snaptime(fminor,tsnap_minor,nsnap_minor,dsnap_par_minor,t,lsnap_minor,nsnap_minor_ch)
           if (lsnap_minor) then
             snapname=trim(snapbase)//trim(itoa(nsnap-1))//'.'//nsnap_minor_ch
+            if (.not.lstart .and. lgpu .and. nt>0) call copy_farray_from_GPU(f)
             call particles_boundconds(f)
             call output_particles(snapname,fp,ipar)
             if (ip<=10 .and. lroot) print*,'wsnap_particles: written snapshot ', snapname
@@ -1166,6 +1241,7 @@ module Particles_main
         call update_snaptime(fmajor,tsnap,nsnap,dsnap,t,lsnap,nsnap_ch,nowrite=.true.)
         if (lsnap) then
           snapname=trim(snapbase)//nsnap_ch
+          if (.not.lstart .and. lgpu .and. nt>0) call copy_farray_from_GPU(f)
           call particles_boundconds(f)
           call output_particles(snapname,fp,ipar)
           if (lparticles_blocks) call output_blocks("BLOCKS" // nsnap_ch)
@@ -1179,6 +1255,7 @@ module Particles_main
 !  Write snapshot without label
 !
         snapname=snapbase
+        if (.not.lstart .and. lgpu .and. nt>0) call copy_farray_from_GPU(f)
         if (present(nobound)) then
           if (.not. nobound) call particles_boundconds(f)
         else

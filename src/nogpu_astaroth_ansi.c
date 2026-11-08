@@ -40,7 +40,14 @@ void FTNIZE(after_timestep_gpu_c)()
 {
 }
 /* ---------------------------------------------------------------------- */
-void FTNIZE(copy_farray_c)(REAL* f)
+void FTNIZE(copy_farray_c)(REAL* f, FINT* read_particles)
+{
+}
+/* ------------------------------------------------------------------- */
+void FTNIZE(load_particles_gpu_c)(REAL* fp, FINT* npar_loc, FINT* mpar_loc, FINT* ivar, FINT* ipar,
+                                  FINT* ip, FINT* nproc, FINT* ranks,
+                                  REAL* procx_bounds, REAL* procy_bounds, REAL* procz_bounds,
+                                  REAL* xyz0_loc, REAL* xyz1_loc, REAL* xyz0)
 {
 }
 /* ------------------------------------------------------------------- */
