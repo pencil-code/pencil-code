@@ -111,7 +111,7 @@ module Particles
 !
     endsubroutine dxxp_dt
 !***********************************************************************
-    subroutine calc_diagnostics_from_particles(fp)
+    subroutine calc_diagnostics_from_particles_module(fp)
 !
 !  08-nov-26/TP: dummy, this module calculates these diagnostics in dxxp_dt
 !
@@ -119,7 +119,7 @@ module Particles
 !
       call keep_compiler_quiet(fp)
 !
-    endsubroutine calc_diagnostics_from_particles
+    endsubroutine calc_diagnostics_from_particles_module
 !***********************************************************************
     subroutine calc_diagnostics_particles(fp,p,ineargrid)
 

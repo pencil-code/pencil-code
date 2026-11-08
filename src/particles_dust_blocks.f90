@@ -1541,6 +1541,16 @@ k_loop:   do while (.not. (k>npar_loc))
 !
     endsubroutine dxxp_dt
 !***********************************************************************
+    subroutine calc_diagnostics_from_particles_module(fp)
+!
+!  08-nov-26/TP: dummy, this module calculates these diagnostics in dxxp_dt
+!
+      real, dimension (mpar_loc,mparray) :: fp
+!
+      call keep_compiler_quiet(fp)
+!
+    endsubroutine calc_diagnostics_from_particles_module
+!***********************************************************************
     subroutine dvvp_dt(f,df,fp,dfp,ineargrid)
 !
 !  Evolution of dust particle velocity.

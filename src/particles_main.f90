@@ -309,7 +309,7 @@ module Particles_main
 !
 !  06-nov-26/TP: coded
 !
-      if (lparticles) call calc_diagnostics_from_particles_tracer(fp)
+      if (lparticles) call calc_diagnostics_from_particles_module(fp)
 !
     endsubroutine calc_diagnostics_from_particles 
 !***********************************************************************

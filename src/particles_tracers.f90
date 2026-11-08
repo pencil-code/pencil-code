@@ -30,7 +30,6 @@ module Particles
 !
   include 'particles.h'
   include 'particles_common.h'
-  public :: calc_diagnostics_from_particles_tracer
 !
   real :: xp0=0.0, yp0=0.0, zp0=0.0, tausp=0.0
   real :: nu_epicycle=0.0, nu_epicycle2=0.0
@@ -462,7 +461,7 @@ module Particles
 !
 !  Diagnostic output
 !
-      call calc_diagnostics_from_particles_tracer(fp)
+      call calc_diagnostics_from_particles_module(fp)
 !
       if (lfirstcall) lfirstcall=.false.
 !
@@ -472,7 +471,7 @@ module Particles
 !
     endsubroutine dxxp_dt
 !***********************************************************************
-    subroutine calc_diagnostics_from_particles_tracer(fp)
+    subroutine calc_diagnostics_from_particles_module(fp)
 !
 !  Diagnostics that are sums over all particles
 !
@@ -492,7 +491,7 @@ module Particles
         call max_name(npar_loc,idiag_nparmax)
       endif
 !
-    endsubroutine calc_diagnostics_from_particles_tracer
+    endsubroutine calc_diagnostics_from_particles_module
 !***********************************************************************
     subroutine dvvp_dt(f,df,fp,dfp,ineargrid)
 !
