@@ -510,6 +510,7 @@ void setupConfig(AcMeshInfo& config)
   PCLoad(config,AC_periodic_grid,lperi);
 //  Overwrites Astaroth's default formula for AC_len in case it does not cover everything like non-equidistant grids
   PCLoad(config,AC_len,lxyz);
+  PCLoad(config,AC_first_gridpoint,(AcReal3){x__mod__cdata[NGHOST],y__mod__cdata[NGHOST],z__mod__cdata[NGHOST]});
 
 #if LTRAINING
   AcRealSymmetricTensor tau_hydro_means{};
