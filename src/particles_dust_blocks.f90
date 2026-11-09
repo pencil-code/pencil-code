@@ -1543,11 +1543,115 @@ k_loop:   do while (.not. (k>npar_loc))
 !***********************************************************************
     subroutine calc_diagnostics_from_particles_module(fp)
 !
-!  08-nov-26/TP: dummy, this module calculates these diagnostics in dxxp_dt
+!  Diagnostics that are over particles
 !
-      real, dimension (mpar_loc,mparray) :: fp
+!  09-nov-26/TP: carved out from dvvp_dt
 !
-      call keep_compiler_quiet(fp)
+      use Diagnostics
+!
+      real, dimension (mpar_loc,mparray), intent(in) :: fp
+!
+      integer :: npar_found
+!
+      if (ldiagnos) then
+        if (idiag_nparmin/=0) call max_name(-npar_loc,idiag_nparmin,lneg=.true.)
+        call max_name(+npar_loc,idiag_nparmax)
+        call sum_par_name(fp(1:npar_loc,ixp),idiag_xpm)
+        call sum_par_name(fp(1:npar_loc,iyp),idiag_ypm)
+        call sum_par_name(fp(1:npar_loc,izp),idiag_zpm)
+        if (idiag_xp2m/=0) call sum_par_name(fp(1:npar_loc,ixp)**2,idiag_xp2m)
+        if (idiag_yp2m/=0) call sum_par_name(fp(1:npar_loc,iyp)**2,idiag_yp2m)
+        if (idiag_zp2m/=0) call sum_par_name(fp(1:npar_loc,izp)**2,idiag_zp2m)
+        if (idiag_rpm/=0)  call sum_par_name(sqrt(fp(1:npar_loc,ixp)**2+ &
+            fp(1:npar_loc,iyp)**2+fp(1:npar_loc,izp)**2),idiag_rpm)
+        if (idiag_rp2m/=0) call sum_par_name(fp(1:npar_loc,ixp)**2+ &
+            fp(1:npar_loc,iyp)**2+fp(1:npar_loc,izp)**2,idiag_rp2m)
+        call sum_par_name(fp(1:npar_loc,ivpx),idiag_vpxm)
+        call sum_par_name(fp(1:npar_loc,ivpy),idiag_vpym)
+        call sum_par_name(fp(1:npar_loc,ivpz),idiag_vpzm)
+        if (idiag_lpxm/=0) call sum_par_name( &
+            fp(1:npar_loc,iyp)*fp(1:npar_loc,ivpz)- &
+            fp(1:npar_loc,izp)*fp(1:npar_loc,ivpy),idiag_lpxm)
+        if (idiag_lpym/=0) call sum_par_name( &
+            fp(1:npar_loc,izp)*fp(1:npar_loc,ivpx)- &
+            fp(1:npar_loc,ixp)*fp(1:npar_loc,ivpz),idiag_lpym)
+        if (idiag_lpzm/=0) call sum_par_name( &
+            fp(1:npar_loc,ixp)*fp(1:npar_loc,ivpy)- &
+            fp(1:npar_loc,iyp)*fp(1:npar_loc,ivpx),idiag_lpzm)
+        if (idiag_lpx2m/=0) call sum_par_name( &
+            (fp(1:npar_loc,iyp)*fp(1:npar_loc,ivpz)- &
+            fp(1:npar_loc,izp)*fp(1:npar_loc,ivpy))**2,idiag_lpx2m)
+        if (idiag_lpy2m/=0) call sum_par_name( &
+            (fp(1:npar_loc,izp)*fp(1:npar_loc,ivpx)- &
+            fp(1:npar_loc,ixp)*fp(1:npar_loc,ivpz))**2,idiag_lpy2m)
+        if (idiag_lpz2m/=0) call sum_par_name((fp(1:npar_loc,ixp)*fp(1:npar_loc,ivpy)- &
+            fp(1:npar_loc,iyp)*fp(1:npar_loc,ivpx))**2,idiag_lpz2m)
+        if (idiag_vpx2m/=0) call sum_par_name(fp(1:npar_loc,ivpx)**2,idiag_vpx2m)
+        if (idiag_vpy2m/=0) call sum_par_name(fp(1:npar_loc,ivpy)**2,idiag_vpy2m)
+        if (idiag_vpz2m/=0) call sum_par_name(fp(1:npar_loc,ivpz)**2,idiag_vpz2m)
+        if (idiag_ekinp/=0) then
+          if (lparticles_density) then
+            call sum_par_name(0.5*fp(1:npar_loc,irhopswarm)* &
+                sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2),idiag_ekinp)
+          else
+            if (lcartesian_coords.and.(all(lequidist))) then
+              call sum_par_name(0.5*rhop_swarm*npar_per_cell* &
+                   sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2),idiag_ekinp)
+            else
+              call sum_par_name(0.5*mp_swarm*sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2),idiag_ekinp)
+            endif
+          endif
+        endif
+        if (idiag_epotpm/=0) call sum_par_name( &
+            -gravr/sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)),idiag_epotpm)
+        if (idiag_vpmax/=0) call max_par_name(sqrt(sum(fp(1:npar_loc,ivpx:ivpz)**2,2)),idiag_vpmax)
+        call max_par_name(fp(1:npar_loc,ivpx),idiag_vpxmax)
+        call max_par_name(fp(1:npar_loc,ivpy),idiag_vpymax)
+        call max_par_name(fp(1:npar_loc,ivpz),idiag_vpzmax)
+        if (idiag_eccpxm/=0) call sum_par_name( &
+            sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2)*fp(1:npar_loc,ixp)/gravr- &
+            sum(fp(1:npar_loc,ixp:izp)*fp(1:npar_loc,ivpx:ivpz),dim=2)* &
+            fp(1:npar_loc,ivpx)/gravr-fp(1:npar_loc,ixp)/ &
+            sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)),idiag_eccpxm)
+        if (idiag_eccpym/=0) call sum_par_name( &
+            sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2)*fp(1:npar_loc,iyp)/gravr- &
+            sum(fp(1:npar_loc,ixp:izp)*fp(1:npar_loc,ivpx:ivpz),dim=2)* &
+            fp(1:npar_loc,ivpy)/gravr-fp(1:npar_loc,iyp)/ &
+            sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)),idiag_eccpym)
+        if (idiag_eccpzm/=0) call sum_par_name( &
+            sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2)*fp(1:npar_loc,izp)/gravr- &
+            sum(fp(1:npar_loc,ixp:izp)*fp(1:npar_loc,ivpx:ivpz),dim=2)* &
+            fp(1:npar_loc,ivpz)/gravr-fp(1:npar_loc,izp)/ &
+            sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)),idiag_eccpzm)
+        if (idiag_eccpx2m/=0) call sum_par_name(( &
+            sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2)*fp(1:npar_loc,ixp)/gravr- &
+            sum(fp(1:npar_loc,ixp:izp)*fp(1:npar_loc,ivpx:ivpz),dim=2)* &
+            fp(1:npar_loc,ivpx)/gravr-fp(1:npar_loc,ixp)/ &
+            sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)))**2,idiag_eccpx2m)
+        if (idiag_eccpy2m/=0) call sum_par_name(( &
+            sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2)*fp(1:npar_loc,iyp)/gravr- &
+            sum(fp(1:npar_loc,ixp:izp)*fp(1:npar_loc,ivpx:ivpz),dim=2)* &
+            fp(1:npar_loc,ivpy)/gravr-fp(1:npar_loc,iyp)/ &
+            sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)))**2,idiag_eccpy2m)
+        if (idiag_eccpz2m/=0) call sum_par_name(( &
+            sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2)*fp(1:npar_loc,izp)/gravr- &
+            sum(fp(1:npar_loc,ixp:izp)*fp(1:npar_loc,ivpx:ivpz),dim=2)* &
+            fp(1:npar_loc,ivpz)/gravr-fp(1:npar_loc,izp)/ &
+            sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)))**2,idiag_eccpz2m)
+        if (idiag_mpt/=0) then
+          if (lparticles_density) then
+            call integrate_par_name((/fp(1:npar_loc,irhopswarm)/),idiag_mpt)
+          elseif (lparticles_radius.and.lparticles_number) then
+            call integrate_par_name((/four_pi_rhopmat_over_three* &
+                fp(1:npar_loc,iap)**3*fp(1:npar_loc,inpswarm)/),idiag_mpt)
+          endif
+        endif
+        if (idiag_npargone/=0) then
+          call count_particles(ipar,npar_found)
+          call save_name(real(npar-npar_found),idiag_npargone)
+        endif
+        if (idiag_deshearbcsm/=0) call sum_name(energy_gain_shear_bcs/npar,idiag_deshearbcsm)
+      endif
 !
     endsubroutine calc_diagnostics_from_particles_module
 !***********************************************************************
@@ -1568,7 +1672,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       real, dimension(3) :: ggp
       real :: Omega2, rr, vv, OO2
-      integer :: k, npar_found
+      integer :: k
       logical :: lheader, lfirstcall=.true.
 !
       intent (in) :: f, fp, ineargrid
@@ -1754,105 +1858,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Diagnostic output
 !
-      if (ldiagnos) then
-        if (idiag_nparmin/=0) call max_name(-npar_loc,idiag_nparmin,lneg=.true.)
-        call max_name(+npar_loc,idiag_nparmax)
-        call sum_par_name(fp(1:npar_loc,ixp),idiag_xpm)
-        call sum_par_name(fp(1:npar_loc,iyp),idiag_ypm)
-        call sum_par_name(fp(1:npar_loc,izp),idiag_zpm)
-        if (idiag_xp2m/=0) call sum_par_name(fp(1:npar_loc,ixp)**2,idiag_xp2m)
-        if (idiag_yp2m/=0) call sum_par_name(fp(1:npar_loc,iyp)**2,idiag_yp2m)
-        if (idiag_zp2m/=0) call sum_par_name(fp(1:npar_loc,izp)**2,idiag_zp2m)
-        if (idiag_rpm/=0)  call sum_par_name(sqrt(fp(1:npar_loc,ixp)**2+ &
-            fp(1:npar_loc,iyp)**2+fp(1:npar_loc,izp)**2),idiag_rpm)
-        if (idiag_rp2m/=0) call sum_par_name(fp(1:npar_loc,ixp)**2+ &
-            fp(1:npar_loc,iyp)**2+fp(1:npar_loc,izp)**2,idiag_rp2m)
-        call sum_par_name(fp(1:npar_loc,ivpx),idiag_vpxm)
-        call sum_par_name(fp(1:npar_loc,ivpy),idiag_vpym)
-        call sum_par_name(fp(1:npar_loc,ivpz),idiag_vpzm)
-        if (idiag_lpxm/=0) call sum_par_name( &
-            fp(1:npar_loc,iyp)*fp(1:npar_loc,ivpz)- &
-            fp(1:npar_loc,izp)*fp(1:npar_loc,ivpy),idiag_lpxm)
-        if (idiag_lpym/=0) call sum_par_name( &
-            fp(1:npar_loc,izp)*fp(1:npar_loc,ivpx)- &
-            fp(1:npar_loc,ixp)*fp(1:npar_loc,ivpz),idiag_lpym)
-        if (idiag_lpzm/=0) call sum_par_name( &
-            fp(1:npar_loc,ixp)*fp(1:npar_loc,ivpy)- &
-            fp(1:npar_loc,iyp)*fp(1:npar_loc,ivpx),idiag_lpzm)
-        if (idiag_lpx2m/=0) call sum_par_name( &
-            (fp(1:npar_loc,iyp)*fp(1:npar_loc,ivpz)- &
-            fp(1:npar_loc,izp)*fp(1:npar_loc,ivpy))**2,idiag_lpx2m)
-        if (idiag_lpy2m/=0) call sum_par_name( &
-            (fp(1:npar_loc,izp)*fp(1:npar_loc,ivpx)- &
-            fp(1:npar_loc,ixp)*fp(1:npar_loc,ivpz))**2,idiag_lpy2m)
-        if (idiag_lpz2m/=0) call sum_par_name((fp(1:npar_loc,ixp)*fp(1:npar_loc,ivpy)- &
-            fp(1:npar_loc,iyp)*fp(1:npar_loc,ivpx))**2,idiag_lpz2m)
-        if (idiag_vpx2m/=0) call sum_par_name(fp(1:npar_loc,ivpx)**2,idiag_vpx2m)
-        if (idiag_vpy2m/=0) call sum_par_name(fp(1:npar_loc,ivpy)**2,idiag_vpy2m)
-        if (idiag_vpz2m/=0) call sum_par_name(fp(1:npar_loc,ivpz)**2,idiag_vpz2m)
-        if (idiag_ekinp/=0) then
-          if (lparticles_density) then
-            call sum_par_name(0.5*fp(1:npar_loc,irhopswarm)* &
-                sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2),idiag_ekinp)
-          else
-            if (lcartesian_coords.and.(all(lequidist))) then
-              call sum_par_name(0.5*rhop_swarm*npar_per_cell* &
-                   sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2),idiag_ekinp)
-            else
-              call sum_par_name(0.5*mp_swarm*sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2),idiag_ekinp)
-            endif
-          endif
-        endif
-        if (idiag_epotpm/=0) call sum_par_name( &
-            -gravr/sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)),idiag_epotpm)
-        if (idiag_vpmax/=0) call max_par_name(sqrt(sum(fp(1:npar_loc,ivpx:ivpz)**2,2)),idiag_vpmax)
-        call max_par_name(fp(1:npar_loc,ivpx),idiag_vpxmax)
-        call max_par_name(fp(1:npar_loc,ivpy),idiag_vpymax)
-        call max_par_name(fp(1:npar_loc,ivpz),idiag_vpzmax)
-        if (idiag_eccpxm/=0) call sum_par_name( &
-            sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2)*fp(1:npar_loc,ixp)/gravr- &
-            sum(fp(1:npar_loc,ixp:izp)*fp(1:npar_loc,ivpx:ivpz),dim=2)* &
-            fp(1:npar_loc,ivpx)/gravr-fp(1:npar_loc,ixp)/ &
-            sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)),idiag_eccpxm)
-        if (idiag_eccpym/=0) call sum_par_name( &
-            sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2)*fp(1:npar_loc,iyp)/gravr- &
-            sum(fp(1:npar_loc,ixp:izp)*fp(1:npar_loc,ivpx:ivpz),dim=2)* &
-            fp(1:npar_loc,ivpy)/gravr-fp(1:npar_loc,iyp)/ &
-            sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)),idiag_eccpym)
-        if (idiag_eccpzm/=0) call sum_par_name( &
-            sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2)*fp(1:npar_loc,izp)/gravr- &
-            sum(fp(1:npar_loc,ixp:izp)*fp(1:npar_loc,ivpx:ivpz),dim=2)* &
-            fp(1:npar_loc,ivpz)/gravr-fp(1:npar_loc,izp)/ &
-            sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)),idiag_eccpzm)
-        if (idiag_eccpx2m/=0) call sum_par_name(( &
-            sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2)*fp(1:npar_loc,ixp)/gravr- &
-            sum(fp(1:npar_loc,ixp:izp)*fp(1:npar_loc,ivpx:ivpz),dim=2)* &
-            fp(1:npar_loc,ivpx)/gravr-fp(1:npar_loc,ixp)/ &
-            sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)))**2,idiag_eccpx2m)
-        if (idiag_eccpy2m/=0) call sum_par_name(( &
-            sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2)*fp(1:npar_loc,iyp)/gravr- &
-            sum(fp(1:npar_loc,ixp:izp)*fp(1:npar_loc,ivpx:ivpz),dim=2)* &
-            fp(1:npar_loc,ivpy)/gravr-fp(1:npar_loc,iyp)/ &
-            sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)))**2,idiag_eccpy2m)
-        if (idiag_eccpz2m/=0) call sum_par_name(( &
-            sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2)*fp(1:npar_loc,izp)/gravr- &
-            sum(fp(1:npar_loc,ixp:izp)*fp(1:npar_loc,ivpx:ivpz),dim=2)* &
-            fp(1:npar_loc,ivpz)/gravr-fp(1:npar_loc,izp)/ &
-            sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)))**2,idiag_eccpz2m)
-        if (idiag_mpt/=0) then
-          if (lparticles_density) then
-            call integrate_par_name((/fp(1:npar_loc,irhopswarm)/),idiag_mpt)
-          elseif (lparticles_radius.and.lparticles_number) then
-            call integrate_par_name((/four_pi_rhopmat_over_three* &
-                fp(1:npar_loc,iap)**3*fp(1:npar_loc,inpswarm)/),idiag_mpt)
-          endif
-        endif
-        if (idiag_npargone/=0) then
-          call count_particles(ipar,npar_found)
-          call save_name(real(npar-npar_found),idiag_npargone)
-        endif
-        if (idiag_deshearbcsm/=0) call sum_name(energy_gain_shear_bcs/npar,idiag_deshearbcsm)
-      endif
+      call calc_diagnostics_from_particles_module(fp)
 !
       if (lfirstcall) lfirstcall=.false.
 !
