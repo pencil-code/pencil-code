@@ -308,6 +308,7 @@ module Equ
       call timing('pde','after "after_boundary" calls')
 !
       if (lgpu) then
+        if (lparticles) call particles_step_gpu
         if (lparticles .and. lfirst) call particles_stalker_request_gpu(f)
         if (ldiagnostic_output) then
           !wait in case the last diagnostic tasks are not finished

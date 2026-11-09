@@ -240,7 +240,7 @@ contains
 !
 ! Load farray to gpu
 !
-      if (nt>0) call load_farray_to_GPU(f)
+      if (nt>0) call load_farray_to_GPU(f,.true.)
 
       call get_farray_ptr_gpu
 !print'(a,1x,Z0,1x,Z0)', 'pFarr_GPU_in,pFarr_GPU_out=', pFarr_GPU_in,pFarr_GPU_out
@@ -420,12 +420,19 @@ contains
 
     endsubroutine copy_farray_from_GPU
 !**************************************************************************
-    subroutine load_farray_to_GPU(f)
+    subroutine load_farray_to_GPU(f,lload_particles_)
+!
+!  Loads f and, if lload_particles_ is true (default false), also the particles, if any, to the GPU.
+!
 
       real, dimension (mx,my,mz,mfarray), intent(IN) :: f
+      logical, optional :: lload_particles_
+      integer :: load_particles_int
 
       call keep_compiler_quiet(f)
-      call load_farray_c
+      !transform to integer since it is more compatible with C than logical
+      load_particles_int = merge(1,0,loptest(lload_particles_))
+      call load_farray_c(load_particles_int)
 
     endsubroutine load_farray_to_GPU
 !**************************************************************************

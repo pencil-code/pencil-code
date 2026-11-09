@@ -21,6 +21,7 @@ module GhostFold
 !
   public :: fold_df, fold_f, fold_df_3points,reverse_fold_f_3points
   public :: reverse_fold_df_3points
+  public :: yshift_block
 !
   contains
 !***********************************************************************

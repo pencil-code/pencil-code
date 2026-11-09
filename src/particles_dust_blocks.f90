@@ -38,6 +38,7 @@ module Particles
   implicit none
 !
   include 'particles.h'
+  public :: pushpars2c
   include 'particles_common.h'
 !
   real, dimension(mz) :: rho0z = 1.0
@@ -2978,5 +2979,23 @@ k_loop:   do while (.not. (k>npar_loc))
       call keep_compiler_quiet(f)
 !
     endsubroutine periodic_boundcond_on_aux
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+!
+      use Syscalls, only: copy_addr
+!
+      integer, parameter :: n_pars=20
+      integer(KIND=ikind8), dimension(n_pars) :: p_par
+!
+      call copy_addr(tausp1,p_par(1))
+      call copy_addr(tausp1_species,p_par(2)) ! (npar_species)
+      call copy_addr(nu_epicycle2,p_par(3))
+      call copy_addr(beta_dPdr_dust_scaled,p_par(4))
+      call copy_addr(gamma,p_par(5))
+      call copy_addr(cdtp,p_par(6))
+      call copy_addr(ldragforce_gas_par,p_par(7)) ! bool
+      call copy_addr(qshear,p_par(8))
+!
+    endsubroutine pushpars2c
 !***********************************************************************
 endmodule Particles

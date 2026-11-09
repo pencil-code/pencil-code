@@ -29,9 +29,11 @@ void beforeBoundaryGPU(bool, int, double, bool);
 void afterSubStepGPU();
 void radTransfer();
 void copyFarray(REAL*, bool);
-void loadParticlesGPU(REAL*, int*, int, const int*, int*, const int*, const int*, const int*,
-                      const REAL*, const REAL*, const REAL*, const REAL*, const REAL*, const REAL*);
-void loadFarray();
+void registerParticlesGPU(REAL*, int*, int, const int*, int*, const int*, const int*, const int*,
+                      const REAL*, const REAL*, const REAL*, const REAL*, const REAL*, const REAL*,
+                      const int*, const long long*, REAL*);
+void sinkAccreteGPU(int);
+void loadFarray(bool);
 void reloadConfig();
 void updateInConfigArr(int);
 int  updateInConfigArrName(char *);
@@ -220,24 +222,28 @@ void FTNIZE(copy_farray_c)(REAL* f, FINT* read_particles)
   copyFarray(f, *read_particles != 0);
 }
 /* ---------------------------------------------------------------------- */
-void FTNIZE(load_particles_gpu_c)(REAL* fp, FINT* npar_loc, FINT* mpar_loc, FINT* ivar, FINT* ipar,
+void FTNIZE(register_particles_gpu_c)(REAL* fp, FINT* npar_loc, FINT* mpar_loc, FINT* ivar, FINT* ipar,
                                   FINT* ip, FINT* nproc, FINT* ranks,
                                   REAL* procx_bounds, REAL* procy_bounds, REAL* procz_bounds,
-                                  REAL* xyz0_loc, REAL* xyz1_loc, REAL* xyz0)
+                                  REAL* xyz0_loc, REAL* xyz1_loc, REAL* xyz0,
+                                  FINT* ivar_extra, long long* yshift_fn, REAL* sink_diag)
 {
-// Registers the host particle arrays fp, ipar and npar_loc and loads them to the GPU
+// Registers the host particle arrays fp, ipar and npar_loc for loading to the GPU by loadFarray
 // (ivar: fp indices of xp,yp,zp,vpx,vpy,vpz; ip, nproc: (ipx,ipy,ipz), (nprocx,nprocy,nprocz);
 //  ranks: ranks of all processes ordered by ipx+nprocx*(ipy+nprocy*ipz)).
 
-  loadParticlesGPU(fp, npar_loc, *mpar_loc, ivar, ipar, ip, nproc, ranks,
-                   procx_bounds, procy_bounds, procz_bounds, xyz0_loc, xyz1_loc, xyz0);
+  registerParticlesGPU(fp, npar_loc, *mpar_loc, ivar, ipar, ip, nproc, ranks,
+                   procx_bounds, procy_bounds, procz_bounds, xyz0_loc, xyz1_loc, xyz0,
+                   ivar_extra, yshift_fn, sink_diag);
 }
 /* ---------------------------------------------------------------------- */
-void FTNIZE(load_farray_c)()
+void FTNIZE(sink_accrete_c)(FINT* want_diag) { sinkAccreteGPU(*want_diag); }
+/* ---------------------------------------------------------------------- */
+void FTNIZE(load_farray_c)(FINT* load_particles)
 {
-// Copies f-array on CPU to vertex buffers on GPU.
+// Copies f-array on CPU to vertex buffers on GPU and, if requested, the registered particles.
 
-  loadFarray();
+  loadFarray(*load_particles != 0);
 }
 /* ---------------------------------------------------------------------- */
 void FTNIZE(reload_gpu_config_c)()

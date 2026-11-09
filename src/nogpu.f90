@@ -116,11 +116,13 @@ contains
 
     endsubroutine copy_farray_from_GPU
 !**************************************************************************
-    subroutine load_farray_to_GPU(f)
+    subroutine load_farray_to_GPU(f,lload_particles_)
 
       real, dimension (:,:,:,:), intent(OUT) :: f
+      logical, optional :: lload_particles_
 
       call keep_compiler_quiet(f)
+      if ((present(lload_particles_))) call keep_compiler_quiet(lload_particles_)
 
     endsubroutine  load_farray_to_GPU
 !**************************************************************************

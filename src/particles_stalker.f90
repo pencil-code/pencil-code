@@ -488,7 +488,9 @@ module Particles_stalker
 !
 !  Interpolation is either zeroth, first or second order spline interpolation.
 !
-        if (lparticlemesh_cic) then
+        if (lgpu .and. lparticles_blocks) then
+          call interpolate_tsc_from_f(f,ivar,fp_coords,ineargrid_point,value_loc(1))
+        elseif (lparticlemesh_cic) then
           call interpolate_linear( &
               f,ivar,ivar,fp_coords,value_loc,ineargrid_point,iblock,ipar(k))
         elseif (lparticlemesh_tsc) then
@@ -501,6 +503,32 @@ module Particles_stalker
       enddo
 !
     endsubroutine stalk_variable
+!***********************************************************************
+    subroutine interpolate_tsc_from_f(f,ivar,xxp,inear,value)
+!
+!   Interpolation as needed by the helper outputting diagnostics when using GPUs
+!
+!  09-nov-26/TP: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      integer, intent(in) :: ivar
+      real, dimension (3), intent(in) :: xxp
+      integer, dimension (3), intent(in) :: inear
+      real, intent(out) :: value
+!
+      real, dimension (-1:1) :: wx, wy, wz
+      real :: d
+      integer :: a, b, c
+!
+      d=(xxp(1)-x(inear(1)))*dx_1(inear(1)); wx=(/0.5*(0.5-d)**2,0.75-d**2,0.5*(0.5+d)**2/)
+      d=(xxp(2)-y(inear(2)))*dy_1(inear(2)); wy=(/0.5*(0.5-d)**2,0.75-d**2,0.5*(0.5+d)**2/)
+      d=(xxp(3)-z(inear(3)))*dz_1(inear(3)); wz=(/0.5*(0.5-d)**2,0.75-d**2,0.5*(0.5+d)**2/)
+      value=0.0
+      do c=-1,1; do b=-1,1; do a=-1,1
+        value=value+wx(a)*wy(b)*wz(c)*f(inear(1)+a,inear(2)+b,inear(3)+c,ivar)
+      enddo; enddo; enddo
+!
+    endsubroutine interpolate_tsc_from_f
 !***********************************************************************
     subroutine stalk_gradient(f,fp,k_stalk,npar_stalk_loc,ineargrid,ivar,ider,value)
 !
@@ -679,15 +707,28 @@ module Particles_stalker
       integer :: k
 !
       if (lmultithread) tstalk=tstalk_save
-      call map_nearest_grid(fp,ineargrid)
 !
-!  On the CPU, the auxiliary vvp is refreshed in the pencil loop before the stalker output,
-!  whereas on the device it is still from the last substep of the previous time step.
+!  The block decomposition is not maintained here and the particles are in the spatial one.
 !
-      do k=1,npar_loc
-        call interpolate_linear(f,iux,iuz,fp(k,ixp:izp),uu,ineargrid(k,:),0,ipar(k))
-        fp(k,ivpx:ivpz)=uu
-      enddo
+      if (lparticles_blocks) then
+        do k=1,npar_loc
+          ineargrid(k,1)=nint((fp(k,ixp)-x(l1))*dx_1(l1))+l1
+          ineargrid(k,2)=nint((fp(k,iyp)-y(m1))*dy_1(m1))+m1
+          ineargrid(k,3)=nint((fp(k,izp)-z(n1))*dz_1(n1))+n1
+        enddo
+      else
+        call map_nearest_grid(fp,ineargrid)
+      endif
+!
+!  For tracers on the CPU, the auxiliary vvp is refreshed in the pencil loop before the stalker
+!  output, whereas on the device it is still from the last substep of the previous time step.
+!
+      if (particles_module=='tracer') then
+        do k=1,npar_loc
+          call interpolate_linear(f,iux,iuz,fp(k,ixp:izp),uu,ineargrid(k,:),0,ipar(k))
+          fp(k,ivpx:ivpz)=uu
+        enddo
+      endif
       call particles_stalker_sub(f,fp,ineargrid)
 !$    lhelperflags(PERF_STALKER)=.false.
 !

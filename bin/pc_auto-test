@@ -311,6 +311,7 @@ my @gpu_tests = qw(
                          1d-tests/conduction/c1_readstrat
                          1d-tests/conduction/c1_readstrat_ghost
                          1d-tests/conduction/cT1
+                         streaming-instability-sink
 			 1d-tests/conduction/cT1_readstrat
                          1d-tests/conduction/cTrho
                          mdwarf

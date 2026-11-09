@@ -3333,6 +3333,11 @@ endif
 ifeq ($(PARTICLES),particles_dust_blocks)
 	@echo '#define LPARTICLES 1' >> $(CUDA_INCDIR)/PC_moduleflags.h
 	@echo '#define LPARTICLES_DUST 1' >> $(CUDA_INCDIR)/PC_moduleflags.h
+	@echo $(CUDA_RELPATH)'/$(PARTICLES).f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
+endif
+ifeq ($(PARTICLES_SINK),particles_sink)
+	@echo '#define LPARTICLES_SINK 1' >> $(CUDA_INCDIR)/PC_moduleflags.h
+	@echo $(CUDA_RELPATH)'/$(PARTICLES_SINK).f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 endif
 ifeq ($(TIMESTEP),timestep)
 	@echo $(CUDA_RELPATH)'/timestep.f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h

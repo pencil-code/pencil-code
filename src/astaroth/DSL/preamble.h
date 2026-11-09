@@ -371,3 +371,9 @@ run_const bool3 lactive_dimension = (bool3)
 		  nygrid > 1,
 		  nzgrid > 1
 		}
+
+#if LPARTICLES_DUST
+//Fields deposited by the particles (see particles.h): drag force per unit gas mass on the gas (0:2), rhop (3), np (4)
+const int PAR_NDEP = 5
+gmem real AC_par_dep[PAR_NDEP][AC_mlocal.x][AC_mlocal.y][AC_mlocal.z]
+#endif

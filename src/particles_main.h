@@ -27,3 +27,4 @@
   public :: particles_calc_pencil_diags
   public :: calc_diagnostics_from_particles
   public :: particles_stalker_request_gpu, particles_stalker_gpu
+  public :: particles_step_gpu

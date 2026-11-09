@@ -6,6 +6,7 @@
   Comments: 
 */
 // General headers.
+#include <unordered_map>
 #include <sstream>
 #include <math.h>
 #include <algorithm>
@@ -220,7 +221,7 @@ extern "C" void print_debug();
 float MSE();
 
 extern "C" void copyFarray(AcReal* f, bool read_particles = true);    // forward declaration
-extern "C" void loadFarray(); // forward declaration
+extern "C" void loadFarray(bool load_particles = false); // forward declaration
 void denormalize(std::string filename, AcRealSymmetricTensor &tau_means, AcRealSymmetricTensor &tau_stds);
 
 /***********************************************************************************************/
@@ -1922,6 +1923,7 @@ prepare_rhs(const int isubstep, double t)
   acDeviceSetInput(acGridGetDevice(), AC_t,(AcReal)t);
 }
 /***********************************************************************************************/
+static AcReal particles_dt1_max = 0.0;   //largest inverse time step of the particles
 void
 set_timestep(double t)
 {
@@ -1936,6 +1938,9 @@ set_timestep(double t)
     //if we call set_dt after the first timestep there would be slight shift in dt what Pencil sees and what is actually used for time integration
     if (ldt) 
     {
+#if LPARTICLES_DUST
+      dt1_interface = std::max(dt1_interface,particles_dt1_max);
+#endif
       set_dt(dt1_interface);
     }
     acDeviceSetInput(acGridGetDevice(), AC_dt,dt);
@@ -1979,13 +1984,19 @@ calc_timestep(double t)
 }
 /***********************************************************************************************/
 //Tracer particles, see DSL/particles.h. The host fp(mpar_loc,mparray) and ipar(mpar_loc) arrays
-//and npar_loc are owned by Particles_main; loadParticlesGPU registers them and loads fp and ipar
-//to the device, copyParticlesFromGPU, called from copyFarray, refreshes all three from the device
+//and npar_loc are owned by Particles_main; registerParticlesGPU registers them, loadFarray loads fp
+//and ipar to the device on request, copyParticlesFromGPU, called from copyFarray, refreshes all three from the device
 //so that host diagnostics and snapshots see a particle state consistent with f.
 //With several processes, particles that left the local subdomain are migrated after every
 //substep (particles_migrate), as migrate_particles in particles_mpicomm.f90 does on the CPU.
 #if LPARTICLES
-constexpr int PAR_NREC_HOST = 10;   //record length, must agree with PAR_NREC in DSL/particles.h
+//Record length, must agree with PAR_NREC in DSL/particles.h
+#if LPARTICLES_DUST
+constexpr int PAR_NREC_HOST = 16;
+constexpr int PAR_NDEP_HOST = 5;    //must agree with PAR_NDEP in DSL/preamble.h
+#else
+constexpr int PAR_NREC_HOST = 10;
+#endif
 static struct
 {
 	bool on = false;
@@ -1995,6 +2006,13 @@ static struct
 	int n_loc = 0;                //number of particles on the device
 	int mpar_loc = 0;
 	int ivar[6];                  //Fortran (1-based) fp indices of xp,yp,zp,vpx,vpy,vpz
+	AcReal* sink_diag = nullptr;  //diagnostics of the sinks for the helper thread: largest rhop at the particles, number of sinks
+	bool want_diag = false;
+	int ivar_extra[4];            //Fortran indices of rhopswarm,aps (in fp) and irhop,inp (in f), 0 if absent
+	void (*yshift_plane)(AcReal*,const AcReal*) = nullptr; //Fourier shift in y of a (ny,nz) plane, on the host
+	bool fold_ready = false;
+	int nshell = 0, nrim = 0;     //number of cells in the first ghost and first interior layers
+	std::vector<AcReal> fold_buf, fold_h, fold_send, fold_recv, dep_host;
 	//Domain decomposition
 	bool migrate = false;
 	int ip[3], nproc[3];
@@ -2006,7 +2024,12 @@ static struct
 	std::vector<AcReal> rec_buffer;
 } particles_gpu;
 static const AcRealArrayParam particle_arrays[6] = {AC_fp_xp,AC_fp_yp,AC_fp_zp,AC_fp_vpx,AC_fp_vpy,AC_fp_vpz};
+#if LPARTICLES_DUST
+static const AcRealArrayParam particle_extra_arrays[2] = {AC_fp_rhopswarm,AC_fp_aps};
+static const AcRealArrayParam particle_dfp_arrays[6] = {AC_dfp_xp,AC_dfp_yp,AC_dfp_zp,AC_dfp_vpx,AC_dfp_vpy,AC_dfp_vpz};
+#else
 static const AcRealArrayParam particle_dfp_arrays[3] = {AC_dfp_xp,AC_dfp_yp,AC_dfp_zp};
+#endif
 /***********************************************************************************************/
 //Astaroth allocates a gmem array only if its pointer in the config is non-null, and frees it on
 //acDeviceUpdate if the pointer has become null, so the pointers are set once and stay set.
@@ -2019,6 +2042,19 @@ particles_set_config_arrays(AcMeshInfo& config)
 	                                     AC_dfp_xp,AC_dfp_yp,AC_dfp_zp,
 	                                     AC_par_leaving,AC_par_idx,AC_par_idx2,AC_par_buf})
 		config[param] = zeros.data();
+#if LPARTICLES_DUST
+	for (const AcRealArrayParam param : {AC_dfp_vpx,AC_dfp_vpy,AC_dfp_vpz,AC_fp_rhopswarm,AC_fp_aps,AC_par_dt1,
+	                                     AC_par_drag_x,AC_par_drag_y,AC_par_drag_z,AC_par_tausp1_k,AC_par_icell,AC_par_order,
+	                                     AC_sort_key,AC_sort_val,
+	                                     AC_dep_cell,AC_dep_x,AC_dep_y,AC_dep_z,AC_dep_fx,AC_dep_fy,AC_dep_fz,AC_dep_rhop,AC_dep_tausp1})
+		config[param] = zeros.data();
+	static std::vector<AcReal> grid_zeros((size_t)PAR_NDEP_HOST*config[AC_mlocal].x*config[AC_mlocal].y*config[AC_mlocal].z,0.0);
+	for (const AcRealArrayParam param : {AC_sink_x,AC_sink_y,AC_sink_z,AC_sink_rad,AC_par_accreted,AC_par_interp,AC_dep_interp})
+		config[param] = zeros.data();
+	for (const AcRealArrayParam param : {AC_par_dep,AC_par_cell_start,AC_par_cell_count,AC_par_dt1_cell,AC_par_cell_best,
+	                                     AC_par_fold_idx,AC_par_fold_idx2,AC_par_fold_buf})
+		config[param] = grid_zeros.data();
+#endif
 }
 /***********************************************************************************************/
 static int
@@ -2061,9 +2097,10 @@ particles_launch(const AcKernel kernel, const int n)
 	acDeviceSynchronizeStream(acGridGetDevice(),STREAM_DEFAULT);
 }
 /***********************************************************************************************/
-//Loads the host fp and ipar to the device; dfp starts from zero (it is reset in the first substep anyway since alpha=0 there)
+//Loads the host fp and ipar to the device; dfp is taken from the host array dfp_host(mpar_loc,mpvar) if present,
+//otherwise it starts from zero (it is reset in the first substep anyway since alpha=0 there)
 static void
-particles_load_to_device()
+particles_load_to_device(const AcReal* dfp_host = nullptr)
 {
 	auto& p = particles_gpu;
 	acGridSynchronizeStream(STREAM_ALL);
@@ -2077,31 +2114,57 @@ particles_load_to_device()
 	std::fill(p.buffer.begin(),p.buffer.end(),0.0);
 	for (int k = 0; k < p.n_loc; ++k) p.buffer[k] = p.ipar[k];
 	particles_load_array(AC_fp_ipar,p.buffer.data());
-	std::fill(p.buffer.begin(),p.buffer.end(),0.0);
-	for (int i = 0; i < 3; ++i) particles_load_array(particle_dfp_arrays[i],p.buffer.data());
+	{
+		int i = 0;
+		for (const AcRealArrayParam param : particle_dfp_arrays)
+		{
+			std::fill(p.buffer.begin(),p.buffer.end(),0.0);
+			if (dfp_host)
+			{
+				const AcReal* col = dfp_host + (size_t)(p.ivar[i]-1)*p.mpar_loc;
+				std::copy(col,col+p.n_loc,p.buffer.begin());
+			}
+			particles_load_array(param,p.buffer.data());
+			++i;
+		}
+	}
+#if LPARTICLES_DUST
+	for (int i = 0; i < 2; ++i)
+	{
+		std::fill(p.buffer.begin(),p.buffer.end(),0.0);
+		if (p.ivar_extra[i] != 0)
+		{
+			const AcReal* col = p.fp + (size_t)(p.ivar_extra[i]-1)*p.mpar_loc;
+			std::copy(col,col+p.n_loc,p.buffer.begin());
+		}
+		particles_load_array(particle_extra_arrays[i],p.buffer.data());
+	}
+#endif
 }
 #endif
 /***********************************************************************************************/
-extern "C" void loadParticlesGPU(AcReal* fp, int* npar_loc, int mpar_loc, const int* ivar, int* ipar,
+extern "C" void registerParticlesGPU(AcReal* fp, int* npar_loc, int mpar_loc, const int* ivar, int* ipar,
 		                 const int* ip, const int* nproc, const int* ranks,
 				 const AcReal* procx_bounds, const AcReal* procy_bounds, const AcReal* procz_bounds,
-				 const AcReal* xyz0_loc, const AcReal* xyz1_loc, const AcReal* xyz0)
+				 const AcReal* xyz0_loc, const AcReal* xyz1_loc, const AcReal* xyz0,
+				 const int* ivar_extra, const long long* yshift_fn, AcReal* sink_diag)
 {
 #if LPARTICLES
 	if (*npar_loc > npar || mpar_loc > npar)
 	{
-		fprintf(stderr,"loadParticlesGPU: npar_loc=%d, mpar_loc=%d exceed the device capacity npar=%d\n",
+		fprintf(stderr,"registerParticlesGPU: npar_loc=%d, mpar_loc=%d exceed the device capacity npar=%d\n",
 				*npar_loc,mpar_loc,npar);
 		abort();
 	}
 	auto& p = particles_gpu;
-	p.on            = true;
 	p.fp            = fp;
 	p.ipar          = ipar;
 	p.npar_loc_host = npar_loc;
-	p.n_loc         = *npar_loc;
 	p.mpar_loc      = mpar_loc;
 	for (int i = 0; i < 6; ++i) p.ivar[i] = ivar[i];
+	for (int i = 0; i < 4; ++i) p.ivar_extra[i] = ivar_extra[i];
+	p.yshift_plane = reinterpret_cast<void (*)(AcReal*,const AcReal*)>(*yshift_fn);
+	p.sink_diag = sink_diag;
 
 	const AcReal* proc_bounds[3] = {procx_bounds,procy_bounds,procz_bounds};
 	int nprocs = 1;
@@ -2122,10 +2185,8 @@ extern "C" void loadParticlesGPU(AcReal* fp, int* npar_loc, int mpar_loc, const 
 
 	p.buffer.assign(npar,0.0);
 	p.rec_buffer.assign((size_t)PAR_NREC_HOST*npar,0.0);
-
-	particles_load_to_device();
 #else
-	fprintf(stderr,"loadParticlesGPU: Astaroth was built without particle support (LPARTICLES)\n");
+	fprintf(stderr,"registerParticlesGPU: Astaroth was built without particle support (LPARTICLES)\n");
 	abort();
 #endif
 }
@@ -2141,6 +2202,14 @@ static void copyParticlesFromGPU()
 		AcReal* col = p.fp + (size_t)(p.ivar[i]-1)*p.mpar_loc;
 		std::copy(p.buffer.begin(),p.buffer.begin()+p.n_loc,col);
 	}
+#if LPARTICLES_DUST
+	for (int i = 0; i < 2; ++i)
+	{
+		if (p.ivar_extra[i] == 0) continue;
+		particles_store_array(particle_extra_arrays[i],p.buffer.data());
+		std::copy(p.buffer.begin(),p.buffer.begin()+p.n_loc,p.fp + (size_t)(p.ivar_extra[i]-1)*p.mpar_loc);
+	}
+#endif
 	particles_store_array(AC_fp_ipar,p.buffer.data());
 	for (int k = 0; k < p.n_loc; ++k) p.ipar[k] = (int)p.buffer[k];
 	*p.npar_loc_host = p.n_loc;
@@ -2166,6 +2235,35 @@ particles_owner_coord(const int dir, const AcReal pos)
 		for (int j = ip-1; j >= 0; --j) if (pos >= b[j]) {ip_rec = j; break;}
 	}
 	return ip_rec;
+}
+/***********************************************************************************************/
+//Removes the listed particles (ascending indices), filling the holes with particles from the tail
+static void
+particles_remove_indices(const std::vector<int>& removed)
+{
+	auto& p = particles_gpu;
+	const int n_stay = p.n_loc - (int)removed.size();
+	std::vector<int> src, dst;
+	std::vector<bool> is_removed(p.n_loc,false);
+	for (int k : removed) is_removed[k] = true;
+	int tail = p.n_loc-1;
+	for (int k : removed)
+	{
+		if (k >= n_stay) break;
+		while (is_removed[tail]) --tail;
+		src.push_back(tail); dst.push_back(k);
+		--tail;
+	}
+	const int nmove = (int)src.size();
+	if (nmove > 0)
+	{
+		for (int i = 0; i < nmove; ++i) p.buffer[i] = src[i];
+		particles_load_array(AC_par_idx,p.buffer.data());
+		for (int i = 0; i < nmove; ++i) p.buffer[i] = dst[i];
+		particles_load_array(AC_par_idx2,p.buffer.data());
+		particles_launch(particles_move,nmove);
+	}
+	p.n_loc = n_stay;
 }
 /***********************************************************************************************/
 static void
@@ -2216,28 +2314,7 @@ particles_migrate()
 			std::copy(&recs[(size_t)PAR_NREC_HOST*order[i]],&recs[(size_t)PAR_NREC_HOST*(order[i]+1)],
 				  &send[(size_t)PAR_NREC_HOST*i]);
 
-		//Fill the holes below n_stay with the staying particles from the tail
-		std::vector<int> src, dst;
-		std::vector<bool> is_leaving(p.n_loc,false);
-		for (int k : leaving) is_leaving[k] = true;
-		int tail = p.n_loc-1;
-		for (int k : leaving)
-		{
-			if (k >= n_stay) break;
-			while (is_leaving[tail]) --tail;
-			src.push_back(tail); dst.push_back(k);
-			--tail;
-		}
-		const int nmove = (int)src.size();
-		if (nmove > 0)
-		{
-			for (int i = 0; i < nmove; ++i) p.buffer[i] = src[i];
-			particles_load_array(AC_par_idx,p.buffer.data());
-			for (int i = 0; i < nmove; ++i) p.buffer[i] = dst[i];
-			particles_load_array(AC_par_idx2,p.buffer.data());
-			particles_launch(particles_move,nmove);
-		}
-		p.n_loc = n_stay;
+		particles_remove_indices(leaving);
 	}
 
 	//Exchange
@@ -2275,23 +2352,591 @@ particles_substep(const int isubstep)
 {
 	auto& p = particles_gpu;
 	if (!p.on) return;
+#if !LPARTICLES_DUST   //done in particles_prepare
 	//The interpolation needs u in the ghost zones next to the particles.
 	//Collective: all processes take part even without particles
 	acGridHaloExchange();
 	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(boundconds),1);
 	acGridSynchronizeStream(STREAM_ALL);
+#endif
 	if (p.n_loc > 0)
 	{
+#if LPARTICLES_DUST
+		auto& params = acDeviceGetKernelInputParamsObject(acGridGetDevice())->particles_dust_step;
+		params.delta_y_now = delta_y;
+#else
 		auto& params = acDeviceGetKernelInputParamsObject(acGridGetDevice())->particles_tracer_step;
+#endif
 		params.step_num = isubstep-1;   //RK coefficients are computed in the kernel
 		params.dt_step  = dt;
 		params.xx0_x = p.xx0_loc[0]; params.xx0_y = p.xx0_loc[1]; params.xx0_z = p.xx0_loc[2];
 		params.xx1_x = p.xx1_loc[0]; params.xx1_y = p.xx1_loc[1]; params.xx1_z = p.xx1_loc[2];
+#if LPARTICLES_DUST
+		particles_launch(particles_dust_step,p.n_loc);
+#else
 		particles_launch(particles_tracer_step,p.n_loc);
+#endif
 	}
 	//Collective: all processes take part even without particles
 	if (p.migrate) particles_migrate();
 }
+#if LPARTICLES_DUST
+static void
+particles_launch_grid(const AcKernel kernel, const int nghost_layers)
+{
+	const auto& info = mesh.info;
+	const Volume start = {(size_t)(info[AC_nmin].x-nghost_layers),(size_t)(info[AC_nmin].y-nghost_layers),(size_t)(info[AC_nmin].z-nghost_layers)};
+	const Volume end   = {(size_t)(info[AC_nmin].x+info[AC_nlocal].x+nghost_layers),
+	                      (size_t)(info[AC_nmin].y+info[AC_nlocal].y+nghost_layers),
+	                      (size_t)(info[AC_nmin].z+info[AC_nlocal].z+nghost_layers)};
+	acDeviceLaunchKernel(acGridGetDevice(), STREAM_DEFAULT, kernel, start, end);
+	acDeviceSynchronizeStream(acGridGetDevice(),STREAM_DEFAULT);
+}
+/***********************************************************************************************/
+//Sorts the particles by cell on the device, copies them to the device arrays in cell order and builds the per-cell ranges.
+static void
+particles_sort()
+{
+	auto& p = particles_gpu;
+	if (p.n_loc > 0)
+	{
+		particles_launch(particles_cell_index,p.n_loc);
+		int nsort = 1;
+		while (nsort < p.n_loc) nsort *= 2;
+		auto& kparams = *acDeviceGetKernelInputParamsObject(acGridGetDevice());
+		int src = 0;
+		kparams.particles_sort_init.n = p.n_loc; kparams.particles_sort_init.src = src;
+		particles_launch(particles_sort_init,nsort);
+		for (int ps = 1; ps < nsort; ps *= 2)
+			for (int ks = ps; ks >= 1; ks /= 2)
+			{
+				kparams.particles_sort_pass.p = ps; kparams.particles_sort_pass.k = ks;
+				kparams.particles_sort_pass.src = src; kparams.particles_sort_pass.nsort = nsort;
+				particles_launch(particles_sort_pass,nsort);
+				src = 1-src;
+			}
+		kparams.particles_sort_finish.src = src;
+		particles_launch(particles_sort_finish,p.n_loc);
+		particles_launch(particles_dep_copy,p.n_loc);
+	}
+	acDeviceGetKernelInputParamsObject(acGridGetDevice())->particles_build_cells.n = p.n_loc;
+	particles_launch_grid(particles_build_cells,0);
+}
+/***********************************************************************************************/
+//Folds the first ghost layer of the deposited fields into the interior, as fold_f and fold_df (z, then y,
+//then the Fourier shift of the x ghost planes in y for shear, then x). Only the layer next to the subdomain
+//surface goes through the host and only neighbours communicate. Collective.
+static void
+particles_fold(const int comp0, const int ncomp)
+{
+	auto& p = particles_gpu;
+	const auto& info = mesh.info;
+	const int nx = info[AC_nlocal].x, ny = info[AC_nlocal].y, nz = info[AC_nlocal].z;
+	const int x0 = info[AC_nmin].x-1, y0 = info[AC_nmin].y-1, z0 = info[AC_nmin].z-1;
+	const int cap = (nx+2)*(ny+2)*(nz+2) - nx*ny*nz;
+	const auto h = [&](const int c, const int i, const int j, const int k)
+	{
+		return (size_t)c + ncomp*((size_t)i + (nx+2)*((size_t)j + (size_t)(ny+2)*k));
+	};
+	const auto on_ghost_layer = [&](const int i, const int j, const int k)
+	{
+		return i == 0 || i == nx+1 || j == 0 || j == ny+1 || k == 0 || k == nz+1;
+	};
+	const auto on_first_interior_layer = [&](const int i, const int j, const int k)
+	{
+		return !on_ghost_layer(i,j,k) && (i == 1 || i == nx || j == 1 || j == ny || k == 1 || k == nz);
+	};
+	if (!p.fold_ready)
+	{
+		std::vector<AcReal> idx((size_t)3*cap,0.0), idx2((size_t)3*cap,0.0);
+		p.nshell = p.nrim = 0;
+		for (int k = 0; k < nz+2; ++k) for (int j = 0; j < ny+2; ++j) for (int i = 0; i < nx+2; ++i)
+		{
+			if (on_ghost_layer(i,j,k))
+			{
+				idx[3*p.nshell] = x0+i; idx[3*p.nshell+1] = y0+j; idx[3*p.nshell+2] = z0+k; ++p.nshell;
+			}
+			else if (on_first_interior_layer(i,j,k))
+			{
+				idx2[3*p.nrim] = x0+i; idx2[3*p.nrim+1] = y0+j; idx2[3*p.nrim+2] = z0+k; ++p.nrim;
+			}
+		}
+		particles_load_array(AC_par_fold_idx,idx.data());
+		particles_load_array(AC_par_fold_idx2,idx2.data());
+		p.fold_buf.assign((size_t)PAR_NDEP_HOST*cap,0.0);
+		p.fold_ready = true;
+	}
+	p.fold_h.assign((size_t)ncomp*(nx+2)*(ny+2)*(nz+2),0.0);
+
+	auto& kparams = *acDeviceGetKernelInputParamsObject(acGridGetDevice());
+	particles_launch(particles_fold_pack,p.nshell);
+	particles_store_array(AC_par_fold_buf,p.fold_buf.data());
+	{
+		int n = 0;
+		for (int k = 0; k < nz+2; ++k) for (int j = 0; j < ny+2; ++j) for (int i = 0; i < nx+2; ++i)
+		{
+			if (!on_ghost_layer(i,j,k)) continue;
+			for (int c = 0; c < ncomp; ++c) p.fold_h[h(c,i,j,k)] = p.fold_buf[(size_t)comp0+c + PAR_NDEP_HOST*(size_t)n];
+			++n;
+		}
+	}
+
+	const MPI_Datatype real_type = (sizeof(AcReal) == 8) ? MPI_DOUBLE : MPI_FLOAT;
+	const auto neighbour = [&](const int dir, const int step)
+	{
+		int ipr[3] = {p.ip[0],p.ip[1],p.ip[2]};
+		ipr[dir] = (ipr[dir]+step+p.nproc[dir])%p.nproc[dir];
+		return p.ranks[ipr[0]+p.nproc[0]*(ipr[1]+p.nproc[1]*ipr[2])];
+	};
+	//Sends the two ghost planes of direction dir, adds what is received to the first and last interior planes.
+	//index(c,a,b,l) is the position of component c at (a,b) in the plane l of direction dir.
+	const auto fold_dir = [&](const int dir, const int a0, const int a1, const int b0, const int b1, const int nl, auto index)
+	{
+		const size_t count = (size_t)ncomp*(a1-a0)*(b1-b0);
+		p.fold_send.resize(count); p.fold_recv.resize(count);
+		const auto exchange = [&](const int l_send, const int l_add, const int dest, const int src, const int tag)
+		{
+			size_t m = 0;
+			for (int b = b0; b < b1; ++b) for (int a = a0; a < a1; ++a) for (int c = 0; c < ncomp; ++c)
+				p.fold_send[m++] = p.fold_h[index(c,a,b,l_send)];
+			MPI_Sendrecv(p.fold_send.data(),(int)count,real_type,dest,tag,
+			             p.fold_recv.data(),(int)count,real_type,src,tag,comm_pencil,MPI_STATUS_IGNORE);
+			m = 0;
+			for (int b = b0; b < b1; ++b) for (int a = a0; a < a1; ++a) for (int c = 0; c < ncomp; ++c)
+				p.fold_h[index(c,a,b,l_add)] += p.fold_recv[m++];
+		};
+		const int up = neighbour(dir,1), down = neighbour(dir,-1);
+		exchange(nl+1,1,up,down,100+2*dir);
+		exchange(0,nl,down,up,101+2*dir);
+	};
+	fold_dir(2,0,nx+2,0,ny+2,nz,[&](int c,int a,int b,int l){return h(c,a,b,l);});
+	fold_dir(1,0,nx+2,1,nz+1,ny,[&](int c,int a,int b,int l){return h(c,a,l,b);});
+	if (sshear__mod__cdata != 0.0)
+	{
+		std::vector<AcReal> plane((size_t)ny*nz);
+		const auto shift_plane = [&](const int i, const AcReal shift)
+		{
+			for (int c = 0; c < ncomp; ++c)
+			{
+				size_t m = 0;
+				for (int k = 1; k <= nz; ++k) for (int j = 1; j <= ny; ++j) plane[m++] = p.fold_h[h(c,i,j,k)];
+				p.yshift_plane(plane.data(),&shift);
+				m = 0;
+				for (int k = 1; k <= nz; ++k) for (int j = 1; j <= ny; ++j) p.fold_h[h(c,i,j,k)] = plane[m++];
+			}
+		};
+		if (p.ip[0] == 0)           shift_plane(0,-delta_y);
+		if (p.ip[0] == p.nproc[0]-1) shift_plane(nx+1,delta_y);
+	}
+	fold_dir(0,1,ny+1,1,nz+1,nx,[&](int c,int a,int b,int l){return h(c,l,a,b);});
+
+	{
+		int n = 0;
+		for (int k = 0; k < nz+2; ++k) for (int j = 0; j < ny+2; ++j) for (int i = 0; i < nx+2; ++i)
+		{
+			if (!on_first_interior_layer(i,j,k)) continue;
+			for (int c = 0; c < ncomp; ++c) p.fold_buf[(size_t)comp0+c + PAR_NDEP_HOST*(size_t)n] = p.fold_h[h(c,i,j,k)];
+			++n;
+		}
+	}
+	particles_load_array(AC_par_fold_buf,p.fold_buf.data());
+	kparams.particles_fold_add.comp0 = comp0; kparams.particles_fold_add.ncomp = ncomp;
+	particles_launch(particles_fold_add,p.nrim);
+	if (comp0 == 3) particles_launch(particles_fold_clear,p.nshell);
+}
+/***********************************************************************************************/
+//What the particles need from the gas at the start of a substep: the drag and its back-reaction. Collective.
+static void
+particles_prepare()
+{
+	auto& p = particles_gpu;
+	if (!p.on) return;
+	//The interpolation and the deposition need u and rho in the ghost zones
+	acGridHaloExchange();
+	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(boundconds),1);
+	acGridSynchronizeStream(STREAM_ALL);
+	if (p.n_loc > 0)
+	{
+		particles_launch(particles_dust_drag,p.n_loc);
+	}
+	particles_sort();
+	if (ldragforce_gas_par__mod__particles)
+	{
+		particles_launch_grid(particles_gather_force,1);
+		particles_fold(0,3);
+	}
+}
+/***********************************************************************************************/
+//Largest inverse time step over all particles, the particle contribution to dt1_max on the CPU. Collective.
+static void
+particles_update_dt1()
+{
+	auto& p = particles_gpu;
+	if (!p.on) return;
+	particles_launch_grid(particles_cell_dt1,0);
+	AcReal dt1_loc = 0.0;
+	if (p.n_loc > 0)
+	{
+		particles_launch(particles_dust_dt1,p.n_loc);
+		particles_store_array(AC_par_dt1,p.buffer.data());
+		dt1_loc = *std::max_element(p.buffer.begin(),p.buffer.begin()+p.n_loc);
+	}
+	const MPI_Datatype real_type = (sizeof(AcReal) == 8) ? MPI_DOUBLE : MPI_FLOAT;
+	MPI_Allreduce(&dt1_loc,&particles_dt1_max,1,real_type,MPI_MAX,comm_pencil);
+}
+/***********************************************************************************************/
+//Deposits rhop and np for the current particle positions and copies them to f. Only for output. Collective.
+static void
+particles_maps_to_host(AcReal* f)
+{
+	auto& p = particles_gpu;
+	if (!p.on) return;
+	if (p.ivar_extra[2] == 0 && p.ivar_extra[3] == 0) return;   //with sink particles the host maps them
+	const auto& info = mesh.info;
+	const size_t mx_ = info[AC_mlocal].x, my_ = info[AC_mlocal].y, mz_ = info[AC_mlocal].z;
+	particles_sort();
+	particles_launch_grid(particles_gather_maps,1);
+	particles_fold(3,1);
+	p.dep_host.resize((size_t)PAR_NDEP_HOST*mx_*my_*mz_);
+	particles_store_array(AC_par_dep,p.dep_host.data());
+	for (int i = 0; i < 2; ++i)
+	{
+		if (p.ivar_extra[2+i] == 0) continue;
+		AcReal* col = f + (size_t)(p.ivar_extra[2+i]-1)*mx_*my_*mz_;
+		for (size_t l = 0; l < mx_*my_*mz_; ++l) col[l] = p.dep_host[(size_t)3+i + PAR_NDEP_HOST*l];
+	}
+}
+#if LPARTICLES_SINK
+/***********************************************************************************************/
+//Nearest image of the point xp relative to the sink at xs by directional splitting, as sink_particle_accretion
+static void
+sink_nearest_image(const AcReal* xp, const AcReal* xs, const AcReal* len, const AcReal delta_y_now, AcReal* m, int* dis)
+{
+	const auto nearest = [](const AcReal d, const AcReal l, int& image)
+	{
+		AcReal res = d+l;
+		image = -1;
+		if (std::abs(d) < std::abs(res))   { res = d;   image = 0; }
+		if (std::abs(d-l) < std::abs(res)) { res = d-l; image = 1; }
+		return res;
+	};
+	m[0] = nearest(xp[0]-xs[0],len[0],dis[0]);
+	const AcReal ys = xs[1] + (dis[0] == -1 ? delta_y_now : (dis[0] == 1 ? -delta_y_now : (AcReal)0.0));
+	m[1] = nearest(xp[1]-ys,len[1],dis[1]);
+	m[2] = nearest(xp[2]-xs[2],len[2],dis[2]);
+}
+/***********************************************************************************************/
+//Accretion by the sink particles, the removal part of remove_particles_sink (method I, all to all).
+//The device flags the particles near the sinks; only the short lists of the sinks and of these candidates
+//go through the host. The candidates are then treated serially as in sink_particle_accretion, since the result
+//depends on the order: the sink moves after each accreted particle. The order is that of the CPU, processes
+//then bricks (sort_particles_iblock) and, inside a brick, the particle index. Collective.
+static void
+particles_sink_accrete()
+{
+	auto& p = particles_gpu;
+	if (!p.on) return;
+	const MPI_Datatype real_type = (sizeof(AcReal) == 8) ? MPI_DOUBLE : MPI_FLOAT;
+	const int nprocs = (int)p.ranks.size();
+	const int me = rank_pencil();
+	const AcReal x0[3] = {p.bounds[0].front(),p.bounds[1].front(),p.bounds[2].front()};
+	const AcReal x1[3] = {p.bounds[0].back(),p.bounds[1].back(),p.bounds[2].back()};
+	const AcReal len[3] = {x1[0]-x0[0],x1[1]-x0[1],x1[2]-x0[2]};
+	constexpr int REC_RHOP = 13, REC_APS = 14, REC_CELL = 15, REC_IPAR = 9;
+	//The brick of a record, inside its process
+	const auto brick_of = [&](const AcReal* rec)
+	{
+		const auto& info = mesh.info;
+		const long mx_ = info[AC_mlocal].x, my_ = info[AC_mlocal].y;
+		const long cell = (long)rec[REC_CELL];
+		const int cx = (int)(cell%mx_) - info[AC_nmin].x;
+		const int cy = (int)((cell/mx_)%my_) - info[AC_nmin].y;
+		const int cz = (int)(cell/(mx_*my_)) - info[AC_nmin].z;
+		const int nbx = nbrickx/p.nproc[0], nby = nbricky/p.nproc[1], nbz = nbrickz/p.nproc[2];
+		const int ibx = cx/(info[AC_nlocal].x/nbx), iby = cy/(info[AC_nlocal].y/nby), ibz = cz/(info[AC_nlocal].z/nbz);
+		return ibx + nbx*(iby + nby*ibz);
+	};
+	if (p.n_loc > 0) particles_launch(particles_cell_index,p.n_loc);   //the cells for the records
+
+	//The local sinks
+	std::vector<int> local_sinks;
+	if (p.n_loc > 0)
+	{
+		particles_store_array(AC_fp_aps,p.buffer.data());
+		for (int k = 0; k < p.n_loc; ++k) if (p.buffer[k] > 0.0) local_sinks.push_back(k);
+	}
+	const int nsink_loc = (int)local_sinks.size();
+	std::vector<AcReal> local_recs((size_t)PAR_NREC_HOST*std::max(nsink_loc,1));
+	if (nsink_loc > 0)
+	{
+		for (int i = 0; i < nsink_loc; ++i) p.buffer[i] = local_sinks[i];
+		particles_load_array(AC_par_idx,p.buffer.data());
+		particles_launch(particles_pack,nsink_loc);
+		particles_store_array(AC_par_buf,p.rec_buffer.data());
+		std::copy(p.rec_buffer.begin(),p.rec_buffer.begin()+(size_t)PAR_NREC_HOST*nsink_loc,local_recs.begin());
+	}
+
+	//All sinks everywhere, in the order of the processes as on the root processor on the CPU
+	std::vector<int> counts(nprocs), displs(nprocs), rcounts(nprocs), rdispls(nprocs);
+	MPI_Allgather(&nsink_loc,1,MPI_INT,counts.data(),1,MPI_INT,comm_pencil);
+	int nsink = 0;
+	for (int r = 0; r < nprocs; ++r)
+	{
+		displs[r] = nsink; nsink += counts[r];
+		rcounts[r] = PAR_NREC_HOST*counts[r]; rdispls[r] = PAR_NREC_HOST*displs[r];
+	}
+	if (nsink == 0) return;
+	if (nsink > 4096)
+	{
+		fprintf(stderr,"particles_sink_accrete: too many sink particles: %d > PAR_SINK_CAP in DSL/particles.h\n",nsink);
+		abort();
+	}
+	std::vector<AcReal> sinks((size_t)PAR_NREC_HOST*nsink);
+	MPI_Allgatherv(local_recs.data(),PAR_NREC_HOST*nsink_loc,real_type,sinks.data(),rcounts.data(),rdispls.data(),real_type,comm_pencil);
+	//Into the order of the CPU. rank_of_sink: the owner, list_pos: where each received sink ended up
+	std::vector<int> spatial_of_rank(nprocs,0), owner(nsink), by_order(nsink), list_pos(nsink);
+	for (int idx = 0; idx < nprocs; ++idx) spatial_of_rank[p.ranks[idx]] = idx;
+	for (int r = 0; r < nprocs; ++r) for (int i = 0; i < counts[r]; ++i) owner[displs[r]+i] = spatial_of_rank[r];
+	for (int j = 0; j < nsink; ++j) by_order[j] = j;
+	std::sort(by_order.begin(),by_order.end(),[&](const int a, const int b)
+	{
+		const AcReal* ra = &sinks[(size_t)PAR_NREC_HOST*a];
+		const AcReal* rb = &sinks[(size_t)PAR_NREC_HOST*b];
+		if (owner[a] != owner[b]) return owner[a] < owner[b];
+		const int ba = brick_of(ra), bb = brick_of(rb);
+		if (ba != bb) return ba < bb;
+		return ra[REC_IPAR] < rb[REC_IPAR];
+	});
+	{
+		std::vector<AcReal> sorted(sinks.size());
+		for (int j = 0; j < nsink; ++j)
+		{
+			std::copy(&sinks[(size_t)PAR_NREC_HOST*by_order[j]],&sinks[(size_t)PAR_NREC_HOST*by_order[j]]+PAR_NREC_HOST,&sorted[(size_t)PAR_NREC_HOST*j]);
+			list_pos[by_order[j]] = j;
+		}
+		sinks.swap(sorted);
+	}
+	const auto sink = [&](const int j){ return &sinks[(size_t)PAR_NREC_HOST*j]; };
+	std::vector<char> alive(nsink,1);
+
+	//Sinks accreting sinks: identical on all processes, in the order of sink_particle_accretion
+	if (laccrete_sink_sink__mod__particles_sink)
+	{
+		for (int j = nsink-1; j >= 0; --j)
+		{
+			if (!alive[j]) continue;
+			AcReal* sj = sink(j);
+			const AcReal rad = sj[REC_APS];
+			for (int k = nsink-1; k >= 0; --k)
+			{
+				if (k == j || !alive[k]) continue;
+				const AcReal* sk = sink(k);
+				AcReal m[3]; int dis[3];
+				sink_nearest_image(sk,sj,len,delta_y,m,dis);
+				if (std::abs(m[0]) > rad || std::abs(m[1]) > rad || std::abs(m[2]) > rad) continue;
+				if (m[0]*m[0]+m[1]*m[1]+m[2]*m[2] > rad*rad) continue;
+				const AcReal ghost[3] = {sk[0]-len[0]*dis[0], sk[1]-(len[1]*dis[1]-dis[0]*delta_y), sk[2]-len[2]*dis[2]};
+				const AcReal rhoj = sj[REC_RHOP], rhok = sk[REC_RHOP], rho1 = 1.0/(rhoj+rhok);
+				for (int d = 0; d < 3; ++d)
+				{
+					sj[d]   = (rhoj*sj[d]+rhok*ghost[d])*rho1;
+					sj[3+d] = (rhoj*sj[3+d]+rhok*sk[3+d])*rho1;
+				}
+				sj[REC_RHOP] = rhoj+rhok;
+				alive[k] = 0;
+			}
+		}
+	}
+
+	//Particles accreted by the sinks: tested against the sink list on the device
+	{
+		std::vector<AcReal> column(4096,0.0);
+		const AcRealArrayParam list[3] = {AC_sink_x,AC_sink_y,AC_sink_z};
+		for (int d = 0; d < 3; ++d)
+		{
+			for (int j = 0; j < nsink; ++j) column[j] = sink(j)[d];
+			particles_load_array(list[d],column.data());
+		}
+		for (int j = 0; j < nsink; ++j) column[j] = alive[j] ? 2*sink(j)[REC_APS] : 0.0;
+		particles_load_array(AC_sink_rad,column.data());
+	}
+	std::vector<int> candidates;
+	if (p.n_loc > 0)
+	{
+		auto& params = acDeviceGetKernelInputParamsObject(acGridGetDevice())->particles_sink_detect;
+		params.nsink = nsink; params.delta_y_now = delta_y;
+		particles_launch(particles_sink_detect,p.n_loc);
+		particles_store_array(AC_par_accreted,p.buffer.data());
+		for (int k = 0; k < p.n_loc; ++k) if (p.buffer[k] != 0.0) candidates.push_back(k);
+	}
+	//Serially as sink_particle_accretion with nosink: the local copy of each sink moves with what it accretes here
+	std::vector<AcReal> added((size_t)7*nsink,0.0);
+	std::vector<int> accreted;
+	const int ncand = (int)candidates.size();
+	if (ncand > 0)
+	{
+		for (int i = 0; i < ncand; ++i) p.buffer[i] = candidates[i];
+		particles_load_array(AC_par_idx,p.buffer.data());
+		particles_launch(particles_pack,ncand);
+		particles_store_array(AC_par_buf,p.rec_buffer.data());
+		const auto rec_of = [&](const int i){ return &p.rec_buffer[(size_t)PAR_NREC_HOST*i]; };
+		std::vector<int> order(ncand);
+		for (int i = 0; i < ncand; ++i) order[i] = i;
+		std::sort(order.begin(),order.end(),[&](const int a, const int b)
+		{
+			const int ba = brick_of(rec_of(a)), bb = brick_of(rec_of(b));
+			if (ba != bb) return ba < bb;
+			return rec_of(a)[REC_IPAR] < rec_of(b)[REC_IPAR];
+		});
+		std::vector<char> taken(ncand,0);
+		for (int j = nsink-1; j >= 0; --j)
+		{
+			if (!alive[j]) continue;
+			const AcReal* sj = sink(j);
+			const AcReal rad = sj[REC_APS];
+			AcReal xs[3] = {sj[0],sj[1],sj[2]}, vs[3] = {sj[3],sj[4],sj[5]};
+			AcReal rhos = sj[REC_RHOP];
+			bool accreted_any = false;
+			for (int c = ncand-1; c >= 0; --c)
+			{
+				const int i = order[c];
+				if (taken[i]) continue;
+				const AcReal* rec = rec_of(i);
+				AcReal m[3]; int dis[3];
+				sink_nearest_image(rec,xs,len,delta_y,m,dis);
+				if (std::abs(m[0]) > rad || std::abs(m[1]) > rad || std::abs(m[2]) > rad) continue;
+				if (m[0]*m[0]+m[1]*m[1]+m[2]*m[2] > rad*rad) continue;
+				const AcReal ghost[3] = {rec[0]-len[0]*dis[0], rec[1]-(len[1]*dis[1]-dis[0]*delta_y), rec[2]-len[2]*dis[2]};
+				const AcReal mass = rec[REC_RHOP], rho1 = 1.0/(rhos+mass);
+				for (int d = 0; d < 3; ++d)
+				{
+					xs[d] = (rhos*xs[d]+mass*ghost[d])*rho1;
+					vs[d] = (rhos*vs[d]+mass*rec[3+d])*rho1;
+				}
+				rhos += mass;
+				taken[i] = 1;
+				accreted.push_back(candidates[i]);
+				accreted_any = true;
+			}
+			if (accreted_any)
+			{
+				for (int d = 0; d < 3; ++d)
+				{
+					added[(size_t)7*j+d]   = rhos*xs[d] - sj[REC_RHOP]*sj[d];
+					added[(size_t)7*j+3+d] = rhos*vs[d] - sj[REC_RHOP]*sj[3+d];
+				}
+				added[(size_t)7*j+6] = rhos - sj[REC_RHOP];
+			}
+		}
+	}
+	MPI_Allreduce(MPI_IN_PLACE,added.data(),7*nsink,real_type,MPI_SUM,comm_pencil);
+	for (int j = 0; j < nsink; ++j)
+	{
+		const AcReal dm = added[(size_t)7*j+6];
+		if (dm == 0.0) continue;
+		AcReal* sj = sink(j);
+		const AcReal rho = sj[REC_RHOP], rho1 = 1.0/(rho+dm);
+		for (int d = 0; d < 3; ++d)
+		{
+			sj[d]   = (rho*sj[d]+added[(size_t)7*j+d])*rho1;
+			sj[3+d] = (rho*sj[3+d]+added[(size_t)7*j+3+d])*rho1;
+		}
+		sj[REC_RHOP] = rho+dm;
+	}
+
+	//Back to the device: new state of the surviving local sinks (with the boundary conditions), then the removals
+	std::vector<int> removed = accreted;
+	{
+		const int first = displs[me];
+		int nkeep = 0;
+		for (int i = 0; i < nsink_loc; ++i)
+		{
+			const int j = list_pos[first+i];
+			if (!alive[j]) { removed.push_back(local_sinks[i]); continue; }
+			AcReal* sj = sink(j);
+			if (sj[0] < x0[0])       { sj[0] += len[0]; sj[1] -= delta_y; }
+			else if (sj[0] >= x1[0]) { sj[0] -= len[0]; sj[1] += delta_y; }
+			for (int d = 1; d < 3; ++d)
+			{
+				if (sj[d] < x0[d])  sj[d] += len[d];
+				if (sj[d] >= x1[d]) sj[d] -= len[d];
+			}
+			p.buffer[nkeep] = local_sinks[i];
+			std::copy(sj,sj+PAR_NREC_HOST,&p.rec_buffer[(size_t)PAR_NREC_HOST*nkeep]);
+			++nkeep;
+		}
+		if (nkeep > 0)
+		{
+			particles_load_array(AC_par_idx,p.buffer.data());
+			particles_load_array(AC_par_buf,p.rec_buffer.data());
+			particles_launch(particles_sink_store,nkeep);
+		}
+	}
+	std::sort(removed.begin(),removed.end());
+	if (!removed.empty()) particles_remove_indices(removed);
+	if (p.migrate)
+	{
+		if (p.n_loc > 0)
+		{
+			auto& params = acDeviceGetKernelInputParamsObject(acGridGetDevice())->particles_dust_flag_leaving;
+			params.xx0_x = p.xx0_loc[0]; params.xx0_y = p.xx0_loc[1]; params.xx0_z = p.xx0_loc[2];
+			params.xx1_x = p.xx1_loc[0]; params.xx1_y = p.xx1_loc[1]; params.xx1_z = p.xx1_loc[2];
+			particles_launch(particles_dust_flag_leaving,p.n_loc);
+		}
+		particles_migrate();
+	}
+}
+/***********************************************************************************************/
+//Creation of sink particles, create_particles_sink: after the drag, so new sinks still feel it in this substep. Collective.
+static void
+particles_create_sinks()
+{
+	auto& p = particles_gpu;
+	if (!p.on) return;
+	if (rhop_sink_create__mod__particles_sink != -1.0)
+	{
+		particles_launch_grid(particles_gather_maps,1);
+		particles_fold(3,1);
+		if (p.n_loc > 0)
+		{
+			particles_launch(particles_sink_interp,p.n_loc);
+			particles_launch(particles_sink_copy_interp,p.n_loc);
+		}
+		if (lsink_create_one_per_cell__mod__particles_sink) particles_launch_grid(particles_sink_cell_best,0);
+		if (p.n_loc > 0)
+		{
+			particles_launch(particles_sink_create,p.n_loc);
+		}
+	}
+	if (p.want_diag)
+	{
+		p.want_diag = false;
+		AcReal rhop_max = 0.0, nsink = 0.0;
+		if (p.n_loc > 0)
+		{
+			if (rhop_sink_create__mod__particles_sink != -1.0)
+			{
+				particles_store_array(AC_par_interp,p.buffer.data());
+				for (int k = 0; k < p.n_loc; ++k) rhop_max = std::max(rhop_max,p.buffer[k]);
+			}
+			particles_store_array(AC_fp_aps,p.buffer.data());
+			for (int k = 0; k < p.n_loc; ++k) if (p.buffer[k] != 0.0) nsink += 1.0;
+		}
+		p.sink_diag[0] = rhop_max;
+		p.sink_diag[1] = nsink;
+	}
+}
+extern "C" void sinkAccreteGPU(const int want_diag)
+{
+	particles_gpu.want_diag = want_diag != 0;
+	particles_sink_accrete();
+}
+#endif
+#endif
+#endif
+#if !LPARTICLES_SINK
+//Only called with sink particles
+extern "C" void sinkAccreteGPU(const int) {}
 #endif
 /***********************************************************************************************/
 extern "C" void substepGPU(int istep, int isubstep, double t)
@@ -2300,6 +2945,13 @@ extern "C" void substepGPU(int istep, int isubstep, double t)
 //
 {
   prepare_rhs(isubstep,t);
+#if LPARTICLES_DUST
+  particles_prepare();
+  if (isubstep == 1) particles_update_dt1();
+#if LPARTICLES_SINK
+  particles_create_sinks();
+#endif
+#endif
   if (isubstep == 1) 
   {
 #if LGRAVITATIONAL_WAVES_HTXK
@@ -2457,6 +3109,9 @@ void copyFarray(AcReal* f, const bool read_particles)
   }
   //Keep the host particle state consistent with the copied f
   if (read_particles) copyParticlesFromGPU();
+#if LPARTICLES_DUST
+  if (read_particles && f != NULL) particles_maps_to_host(f);
+#endif
 }
 /***********************************************************************************************/
 extern "C" void getFArrayIn(AcReal **p_f_in)
@@ -2592,7 +3247,7 @@ AcMesh get_f_src()
   return mesh;
 }
 /***********************************************************************************************/
-extern "C" void loadFarray()
+extern "C" void loadFarray(bool load_particles)
 {
   AcMesh src = get_f_src();
   acGridSynchronizeStream(STREAM_ALL);
@@ -2616,6 +3271,15 @@ extern "C" void loadFarray()
 
   acGridSynchronizeStream(STREAM_ALL);
   if (nghost > 0 && (dimensionality < 2 || (dimensionality == 2 && nygrid == 1))) acHostMeshDestroy(&src);
+#if LPARTICLES
+  //Only from here on the device holds the particles, so on stays false until the first load
+  if (load_particles && particles_gpu.fp)
+  {
+	  particles_gpu.on    = true;
+	  particles_gpu.n_loc = *particles_gpu.npar_loc_host;
+	  particles_load_to_device();
+  }
+#endif
 }
 /***********************************************************************************************/
 void generate_bcs()

@@ -46,6 +46,8 @@ module Particles_main
   real, dimension(mpar_loc,mpvar) :: dfp = 0.0
   integer, dimension(mpar_loc,3) :: ineargrid = 0
 !
+  real, dimension(2), target :: sink_diag_gpu=0.0   ! sink diagnostics stored by the device code
+!
   contains
 !***********************************************************************
     subroutine particles_register_modules
@@ -134,7 +136,17 @@ module Particles_main
 !
 !  07-jan-05/anders: coded
 !
+      use General, only: find_proc
+      use, intrinsic :: iso_c_binding, only: c_funloc, c_intptr_t
+!
       real, dimension (mx,my,mz,mfarray) :: f
+!
+      external :: register_particles_gpu_c
+      character(len=linelen) :: str
+      integer, dimension(0:ncpus-1) :: ranks
+      integer :: jx, jy, jz
+      integer(KIND=ikind8) :: yshift_fn
+      logical :: ldust
 !
       if (lyinyang) &
         call not_implemented('particles_initialize_modules','particles on Yin-Yang grid')
@@ -263,44 +275,76 @@ module Particles_main
       if (any(iapn==0)) np_ap_spec=.false.
       if (irhop==0) rhop_spec=.false.
 !
-      if (lgpu) call particles_load_gpu
-
+!  With GPUs, reject the setups without a GPU implementation and tell the GPU code about
+!  the host particle arrays; load_farray_to_GPU then loads them to the device on request.
+!
+      if (lgpu .and. nt>0) then
+        str=''
+        ldust = particles_module=='dust_blocks'
+        if (.not.ldust .and. particles_module/='tracer') str=trim(str)//', particles module "'//trim(particles_module)//'"'
+        if (lyinyang) str=trim(str)//', Yin-Yang grid'
+        if (.not.lcartesian_coords) str=trim(str)//', non-Cartesian coordinates'
+        if (.not.all(lequidist)) str=trim(str)//', non-equidistant grid'
+        if (lshear .and. .not.ldust) str=trim(str)//', shear'
+        if (bcpx/='p' .or. bcpy/='p' .or. bcpz/='p') str=trim(str)//', non-periodic particle bcs'
+        if (lparticlemesh_tsc .and. .not.ldust) str=trim(str)//', lparticlemesh_tsc'
+        if (str/='') call fatal_error('particles_initialize_modules', &
+                                      'no GPU implementation for particles with: '//trim(str(3:)))
+!
+        do jz=0,nprocz-1; do jy=0,nprocy-1; do jx=0,nprocx-1
+          ranks(jx+nprocx*(jy+nprocy*jz))=find_proc(jx,jy,jz)
+        enddo; enddo; enddo
+        yshift_fn=transfer(c_funloc(particles_yshift_plane_c),0_c_intptr_t)
+        call register_particles_gpu_c(fp,npar_loc,mpar_loc,(/ixp,iyp,izp,ivpx,ivpy,ivpz/),ipar, &
+                                      (/ipx,ipy,ipz/),(/nprocx,nprocy,nprocz/),ranks, &
+                                      procx_bounds,procy_bounds,procz_bounds,xyz0_loc,xyz1_loc,xyz0, &
+                                      (/irhopswarm,iaps,irhop,inp/),yshift_fn,sink_diag_gpu)
+      endif
+!
     endsubroutine particles_initialize_modules
 !***********************************************************************
-    subroutine particles_load_gpu
+    subroutine particles_yshift_plane_c(plane,shift) bind(C)
 !
-!  Checks that the particle setup is supported on the GPU and loads fp and ipar to it.
-!  At the moment: tracer particles in a Cartesian, equidistant, periodic, non-shearing box.
-!  With several processes the particles migrate between them on the GPU side.
+!  Shifts an x-ghost plane in y for the fold of the particle deposits on the GPU side.
 !
-!  06-nov-26/TP: coded
+!  09-nov-26/TP: coded
 !
-      use General, only: find_proc
+      use GhostFold, only: yshift_block
 !
-      external :: load_particles_gpu_c
-      character(len=linelen) :: str
-      integer, dimension(0:ncpus-1) :: ranks
-      integer :: jx, jy, jz
+      real, dimension(ny,nz), intent(inout) :: plane
+      real, intent(in) :: shift
 !
-      str=''
-      if (particles_module/='tracer') str=trim(str)//', particles module "'//trim(particles_module)//'"'
-      if (lyinyang) str=trim(str)//', Yin-Yang grid'
-      if (.not.lcartesian_coords) str=trim(str)//', non-Cartesian coordinates'
-      if (.not.all(lequidist)) str=trim(str)//', non-equidistant grid'
-      if (lshear) str=trim(str)//', shear'
-      if (bcpx/='p' .or. bcpy/='p' .or. bcpz/='p') str=trim(str)//', non-periodic particle bcs'
-      if (lparticlemesh_tsc) str=trim(str)//', lparticlemesh_tsc'
-      if (str/='') call fatal_error('particles_load_gpu', &
-                                    'no GPU implementation for particles with: '//trim(str(3:)))
+      real, dimension(1,ny,nz) :: work
 !
-      do jz=0,nprocz-1; do jy=0,nprocy-1; do jx=0,nprocx-1
-        ranks(jx+nprocx*(jy+nprocy*jz))=find_proc(jx,jy,jz)
-      enddo; enddo; enddo
-      call load_particles_gpu_c(fp,npar_loc,mpar_loc,(/ixp,iyp,izp,ivpx,ivpy,ivpz/),ipar, &
-                                (/ipx,ipy,ipz/),(/nprocx,nprocy,nprocz/),ranks, &
-                                procx_bounds,procy_bounds,procz_bounds,xyz0_loc,xyz1_loc,xyz0)
+      work(1,:,:)=plane
+!$omp parallel num_threads(1) shared(work,shift)
+      call yshift_block(1,work,shift)
+!$omp end parallel
+      plane=work(1,:,:)
 !
-    endsubroutine particles_load_gpu
+    endsubroutine particles_yshift_plane_c
+!***********************************************************************
+    subroutine particles_step_gpu
+!
+!  Host part of a GPU substep: starts the accretion by the sink particles on the device, before
+!  the f array is copied for the diagnostics. Their creation is in the same substep on the GPU.
+!
+!  09-nov-26/TP: coded
+!
+      use SharedVariables, only: get_shared_variable
+!
+      external :: sink_accrete_c
+      real, pointer, save :: tstart_selfgrav_gpu => null()
+!
+      if (lparticles_selfgravity) then
+        if (.not.associated(tstart_selfgrav_gpu)) &
+          call get_shared_variable('tstart_selfgrav',tstart_selfgrav_gpu,caller='particles_step_gpu')
+        if (t>=tstart_selfgrav_gpu) &
+          call fatal_error('particles_step_gpu','no GPU implementation for particle self-gravity')
+      endif
+      if (lparticles_sink) call sink_accrete_c(merge(1,0,ldiagnos))
+!
+    endsubroutine particles_step_gpu
 !***********************************************************************
     subroutine calc_diagnostics_from_particles 
 !
@@ -310,6 +354,7 @@ module Particles_main
 !  06-nov-26/TP: coded
 !
       if (lparticles) call calc_diagnostics_from_particles_module(fp)
+      if (lparticles_sink) call calc_diagnostics_sink_particles(sink_diag_gpu)
 !
     endsubroutine calc_diagnostics_from_particles 
 !***********************************************************************

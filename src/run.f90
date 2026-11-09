@@ -218,7 +218,7 @@ endsubroutine helper_loop
     if (lgpu) then
       lpencil = lpenc_requested
       call reload_GPU_config
-      call load_farray_to_GPU(f)
+      call load_farray_to_GPU(f,.true.)
     endif
     call write_all_run_pars('IDL')       ! data to param2.nml
     call write_all_run_pars              ! diff data to params.log
@@ -1363,10 +1363,6 @@ endsubroutine helper_loop
 
   lpencil = lpenc_requested
 !
-!TP: done here that at runtime_compilation we know which pencils are requested
-!
-  if (nt>0) call initialize_gpu(f)
-!
   if (it1d==impossible_int) then
     it1d=it1
   else
@@ -1381,6 +1377,10 @@ endsubroutine helper_loop
 !  Prepare particles.
 !
   if (lparticles) call particles_initialize_modules(f)
+!
+!TP: done here that at runtime_compilation we know which pencils are requested
+!
+  if (nt>0) call initialize_gpu(f)
 !
 !  Only after register it is possible to write the correct dim.dat
 !  file with the correct number of variables.

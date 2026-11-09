@@ -509,15 +509,18 @@ module Particles_main
 !
     endsubroutine calc_diagnostics_from_particles
 !***********************************************************************
-    subroutine particles_stalker_request_gpu(f)
+    subroutine particles_stalker_request_gpu
 !
 ! dummy subroutine
 !
+    endsubroutine particles_stalker_request_gpu
+!***********************************************************************
+    subroutine particles_step_gpu
+!
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      call keep_compiler_quiet(f)
 !
-    endsubroutine particles_stalker_request_gpu
+    endsubroutine particles_step_gpu
 !***********************************************************************
     subroutine particles_stalker_gpu(f)
 !

@@ -25,6 +25,7 @@ module Particles_sink
   implicit none
 !
   include 'particles_sink.h'
+  public :: pushpars2c
 !
   real, pointer, dimension (:) :: tausp_species, tausp1_species
   real :: sink_birth_radius=1.0, sink_radius=0.0, rhop_sink_create=-1.0
@@ -119,6 +120,7 @@ module Particles_sink
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lrhop_roche_unit)
+!
 !
     endsubroutine initialize_particles_sink
 !***********************************************************************
@@ -300,7 +302,7 @@ module Particles_sink
 !
 !  Start the diagnostic
 !
-      if (ldiagnos.and.idiag_rhopinterp/=0) rhop_interp_diag=0.
+      if (ldiagnos) rhop_interp_diag=0.
 !
 !  Particle block domain decomposition.
 !
@@ -469,23 +471,40 @@ module Particles_sink
 !
 !  Number of sink particles
 !
+        npar_sink_loc=0
         if (idiag_nparsink/=0) then
-          npar_sink_loc=0
           do k=1,npar_loc
             if (fp(k,iaps)/=0.0) npar_sink_loc=npar_sink_loc+1
           enddo
-          call sum_name(float(npar_sink_loc),idiag_nparsink)
         endif
 !
-!  Exact value of rhop used to produce a sink particle.
+!  rhop_interp_diag is the exact value of rhop used to produce a sink particle.
 !
-        if (idiag_rhopinterp/=0) call max_name(rhop_interp_diag,idiag_rhopinterp)
+        call calc_diagnostics_sink_particles((/rhop_interp_diag,real(npar_sink_loc)/))
 !
       endif
 !
       if (ip<=6) print*, 'create_particles_sink: leaving, iproc, it, itsub=', iproc, it, itsub
 !
     endsubroutine create_particles_sink
+!***********************************************************************
+    subroutine calc_diagnostics_sink_particles(sink_diag)
+!
+!  Sink particle diagnostics from sink_diag: the largest rhop at the particles, the number
+!  of sink particles. With GPUs called by the helper thread, with what the device has stored.
+!
+!  09-nov-26/TP: coded
+!
+      use Diagnostics
+!
+      real, dimension (2), intent(in) :: sink_diag
+!
+      if (ldiagnos) then
+        if (idiag_nparsink/=0) call sum_name(sink_diag(2),idiag_nparsink)
+        if (idiag_rhopinterp/=0) call max_name(sink_diag(1),idiag_rhopinterp)
+      endif
+!
+    endsubroutine calc_diagnostics_sink_particles
 !***********************************************************************
     subroutine remove_particles_sink(f,fp,dfp,ineargrid)
 !
@@ -1634,5 +1653,19 @@ module Particles_sink
       enddo
 !
     endsubroutine rprint_particles_sink
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+!
+      use Syscalls, only: copy_addr
+!
+      integer, parameter :: n_pars=10
+      integer(KIND=ikind8), dimension(n_pars) :: p_par
+!
+      call copy_addr(rhop_sink_create,p_par(1))
+      call copy_addr(sink_radius,p_par(2))
+      call copy_addr(lsink_create_one_per_cell,p_par(3)) ! bool
+      call copy_addr(laccrete_sink_sink,p_par(4)) ! bool
+!
+    endsubroutine pushpars2c
 !***********************************************************************
 endmodule Particles_sink

@@ -19,6 +19,7 @@ module GhostFold
 !
   public :: fold_df, fold_f,fold_df_3points,reverse_fold_f_3points
   public :: reverse_fold_df_3points
+  public :: yshift_block
 !
   contains
 !***********************************************************************
@@ -321,4 +322,18 @@ subroutine reverse_fold_df_3points(f,ivar1,ivar2)
 !
     endsubroutine reverse_fold_df_3points
 !*******************************************************************************
+    subroutine yshift_block(ng, a, shift)
+!
+!  09-nov-26/TP: only used by the GPU particle fold, which needs MPI
+!
+      use Messages, only: fatal_error
+!
+      integer, intent(in) :: ng
+      real, dimension(ng,ny,nz), intent(inout) :: a
+      real, intent(in) :: shift
+!
+      call fatal_error('yshift_block','needs MPI')
+!
+    endsubroutine yshift_block
+!***********************************************************************
 endmodule GhostFold
