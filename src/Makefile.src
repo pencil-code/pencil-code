@@ -3330,6 +3330,10 @@ ifeq ($(PARTICLES),particles_tracers)
 	@echo '#define LPARTICLES 1' >> $(CUDA_INCDIR)/PC_moduleflags.h
 	@echo '#define LPARTICLES_TRACERS 1' >> $(CUDA_INCDIR)/PC_moduleflags.h
 endif
+ifeq ($(PARTICLES),particles_dust_blocks)
+	@echo '#define LPARTICLES 1' >> $(CUDA_INCDIR)/PC_moduleflags.h
+	@echo '#define LPARTICLES_DUST 1' >> $(CUDA_INCDIR)/PC_moduleflags.h
+endif
 ifeq ($(TIMESTEP),timestep)
 	@echo $(CUDA_RELPATH)'/timestep.f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 endif
