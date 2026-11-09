@@ -662,7 +662,7 @@ endsubroutine helper_loop
 !  particles to each CPU. This only works when block domain decomposition of
 !  particles is activated.
 !
-    if (lparticles) call particles_load_balance(f)
+    if (lparticles .and. .not.lgpu) call particles_load_balance(f)
 !
 !  07-Sep-07/dintrans+gastine: Implicit advance of the radiative diffusion
 !  in the temperature equation (using the implicit_physics module).
