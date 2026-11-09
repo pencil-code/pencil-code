@@ -335,7 +335,6 @@ module Radiation
 !
 
 !         
-        print *, 'CHANDRU: What is so bad about bad rays? Switched off'          
         bad_ray=(rad2==2.and.nrad==0.) !and.periodic_xy_plane)
 !
 !  For single rays: single_ray must match (lrad,mrad,nrad).
@@ -668,21 +667,16 @@ module Radiation
 !
       if (lintrinsic) call Qintrinsic(f)
 ! 
-      print *, 'Chandru: past intrinsic'
       if (lcommunicate) then
         if (lperiodic_ray) then
           call Qperiodic
-          print *, 'Chandru: past periodic'
         else
           call Qpointers
           call Qcommunicate
-          print *, 'Chandru: past Qcommmunicate'
         endif
       endif
 !    
-      print *, 'Chandru: past the if loop for periodic'
       if (lrevision) call Qrevision
-        print *, 'Chandru: past revision'
 !
 !  Calculate heating rate, so at the end of the loop
 !  f(:,:,:,iQrad) = \int_{4\pi} (I-S) d\Omega, not divided by 4pi.
@@ -783,7 +777,6 @@ module Radiation
 !  then communication (not compute intensive),
 !  and finally revision (again compute intensive).
 !              
-              print *, "Chandru: entering calcQ"
               call calcQ(f)
 !
 !  Store outgoing intensity in case of lower reflective boundary condition.
@@ -1214,7 +1207,6 @@ module Radiation
 !
 !  Initially no boundaries are set.
 !
-      print *, 'CHANDRU: ENTER Qcommunicate idir,lrad,mrad,nrad,ipx,ipxstart,ipxstop=', idir,lrad,mrad,nrad,ipx,ipxstart,ipxstop
       Qbc_xy%set=.false.
       Qbc_yz%set=.false.
       Qbc_zx%set=.false.
@@ -1248,17 +1240,13 @@ module Radiation
           if (bc_ray_x/='p') then
             call radboundary_yz_set(Qrecv_yz)
           else
-            print *, 'CHANDRU: x-face, first proc, periodic: BEFORE yz_recv idir,lrad,mrad=', idir,lrad,mrad
             call radboundary_yz_recv(lrad,idir,Qrecv_yz)
-            print *, 'CHANDRU: x-face AFTER yz_recv'
           endif
 !            Qbc_yz(mm1:mm2,nnstart-nrad)%val = Qrecv_yz(llstart-lrad,mm1:mm2)
 !            Qbc_yz(mm1:mm2,nnstart-nrad)%set = .true.
 !
         else
-          print *, 'CHANDRU: x-face, NOT first proc: BEFORE yz_recv ipx,idir=', ipx,idir
           call radboundary_yz_recv(lrad,idir,Qrecv_yz)
-          print *, 'CHANDRU: x-face, NOT first proc: AFTER yz_recv ipx=', ipx
           emtau_yz(mm1:mm2,nn1:nn2) = exp(-tau(llstop,mm1:mm2,nn1:nn2))
           Qrad_yz(mm1:mm2,nn1:nn2) =      Qrad(llstop,mm1:mm2,nn1:nn2)
         endif
@@ -1276,12 +1264,9 @@ module Radiation
       if (mrad/=0) then
         if (ipy==ipystart) then
           if (bc_ray_y/='p') then
-            print *, 'CHANDRU: y-face, first proc, BC set (no MPI) ipy,idir,bc_ray_y=', ipy,idir,bc_ray_y
             call radboundary_zx_set(Qrecv_zx)
           else
-            print *, 'CHANDRU: y-face, first proc, periodic: BEFORE zx_recv idir,lrad,mrad=', idir,lrad,mrad
             call radboundary_zx_recv(mrad,idir,Qrecv_zx)
-            print *, 'CHANDRU: y-face AFTER zx_recv'
           endif
 !            Qbc_yz(mm1:mm2,nnstart-nrad)%val = Qrecv_yz(llstart-lrad,mm1:mm2)
 !            Qbc_yz(mm1:mm2,nnstart-nrad)%set = .true.
@@ -1384,7 +1369,6 @@ module Radiation
           Qsend_yz(m,n) = Qpt_yz(m,n)%val*emtau_yz(m,n)+Qrad_yz(m,n)
         enddo
 !
-        print *, 'CHANDRU: x-face send block ipx,idir=', ipx,idir
         call radboundary_yz_send(lrad,idir,Qsend_yz)
       endif
 
@@ -1395,7 +1379,6 @@ module Radiation
           Qsend_zx(l,n) = Qpt_zx(l,n)%val*emtau_zx(l,n)+Qrad_zx(l,n)
         enddo
 !
-        print *, 'CHANDRU: y-face send block ipy,idir=', ipy,idir
         call radboundary_zx_send(mrad,idir,Qsend_zx)
       endif
 
@@ -1416,15 +1399,17 @@ module Radiation
       real, dimension(nx,nz,0:nprocy-1) :: Qrad_zx_all,tau_zx_all
       integer :: ipxstart,ipxstop,ipl
       integer :: ipystart,ipystop,ipm
-      integer :: ir,ic,mr,lc
-      real, dimension(nz) :: Qrad_A,tau_A,Qrad_B,tau_B,emtau1_AB
+!  Diagonal rays: X = intrinsic values at the downstream x face (one per row), Y = at the downstream
+!  y face (one per column); first index runs along the sweep. Q0eff,taueff = X with the Y piece
+!  of the same processor folded in (see below). Qbot = heating rate for the y boundary.
+      real, dimension(ny,nz) :: QX,tauX,Q0eff,taueff
+      real, dimension(nx,nz) :: QY,tauY,Qbot
+      integer :: ii,mi
 !
-      print *, 'CHANDRU Qperiodic: ENTER idir,lrad,mrad,nrad=', idir,lrad,mrad,nrad
 !
-!  x-direction (rays along the x axis only)
+!  x-direction (axis rays along x only; the diagonal rays are treated below).
 !
       if (lrad/=0.and.mrad==0) then
-        print *, 'CHANDRU Qperiodic: x block, idir,lrad=', idir,lrad
 !
 !  Intrinsic heating rate and optical depth at the downstream boundary of
 !  each processor.
@@ -1481,14 +1466,11 @@ module Radiation
 !  upstream boundary of this processor.
 !
         Qrad0(llstart-lrad,m1:m2,n1:n2)=Qrad_tot_yz/emtau1_tot_yz
-!print*,'AXEL: Qrad0(llstart-lrad,m1:m2,n1:n2), Qrad_tot_yz, emtau1_tot_yz=', &
-!              Qrad0(llstart-lrad,m1:m2,n1:n2), Qrad_tot_yz, emtau1_tot_yz
       endif
 !
-!  y-direction (rays along the y axis only)
+!  y-direction (axis rays along y only; the diagonal rays are treated below).
 !
       if (mrad/=0.and.lrad==0) then
-        print *, 'CHANDRU Qperiodic: y block, idir,mrad=', idir,mrad
 !
 !  Intrinsic heating rate and optical depth at the downstream boundary of
 !  each processor.
@@ -1545,43 +1527,78 @@ module Radiation
 !  upstream boundary of this processor.
 !
         Qrad0(l1:l2,mmstart-mrad,n1:n2)=Qrad_tot_zx/emtau1_tot_zx
-!
       endif
-!  chandru 04-11-26: with Claude Sonnet 5.5
-!  Face diagonals in a fully periodic xy plane (single processor, nx=ny).
-!  Qintrinsic restarts the ray with Q=0 at the upstream x face and at the
-!  upstream y face, so a closed ring consists of two pieces:
-!    A: from the upstream x face to the downstream y face (top/bottom),
-!    B: from the upstream y face to the downstream x face (right/left).
-!  Q and tau at the end of each piece, measured from the start of that piece,
-!  are Qrad(l,mmstop) and Qrad(llstop,m).
-!  The ray starts at the left face for lrad>0 and at the right face for
-!  lrad<0 (llstart,lsign), and at the bottom or top face for mrad>0 or <0
-!  (mmstart,msign).
-!  In this sweep order, B ends in row ir and the A piece that feeds it
-!  ends in column ic=mod(nx-2-ir,nx).
-!  Qrad0(llstart-lrad,mr): entry value of A, i.e. the Q after B.
-!  Qrad0(lc,mmstart-mrad): entry value of B, i.e. the Q after A.
-!  The last row (ir=nx-1) is the ring through the corner and it is a single
-!  piece, so the corner ghost point gets the same value.
+!
+!  chandru 08-11-26: with Claude Sonnet 5.5
+!  Diagonal rays, periodic xy, nprocy=1, nxgrid=nygrid=N, w=nx; first index runs along the sweep. 
+!  Per processor the Y piece is folded into the X rows r<=w-2: 
+!  Q0eff=X(r)+exp(-tauX(r))*Y(w-2-r), taueff=tauX(r)+tauY(w-2-r) (the single-core twist inside one processor).
+!  Chain over processors as for axis rays (two ipl loops) with the row index shifted by w per processor (cshift): 
 !
       if (lrad/=0.and.mrad/=0) then
-        print *, 'CHANDRU Qperiodic: diagonal block idir,lrad,mrad,llstart,mmstart=', &
-                 idir,lrad,mrad,llstart,mmstart
-        if (nprocx/=1.or.nprocy/=1.or.nxgrid/=nygrid) &
-          call fatal_error('Qperiodic','diagonal rays need nprocx=nprocy=1 and nx=ny')
-        do ir=0,nx-1
-          ic=modulo(nx-2-ir,nx)
-          mr=mmstart+msign*ir
-          lc=llstart+lsign*ic
-          Qrad_B=Qrad(llstop,mr,n1:n2)
-          tau_B=tau(llstop,mr,n1:n2)
-          Qrad_A=Qrad(lc,mmstop,n1:n2)
-          tau_A=tau(lc,mmstop,n1:n2)
-          emtau1_AB=1-exp(-tau_B-tau_A)
-          Qrad0(llstart-lrad,mr,n1:n2)=(Qrad_B+Qrad_A*exp(-tau_B))/emtau1_AB
-          Qrad0(lc,mmstart-mrad,n1:n2)=(Qrad_A+Qrad_B*exp(-tau_A))/emtau1_AB
+        if (nprocy/=1.or.nxgrid/=nygrid) &
+          call fatal_error('Qperiodic','diagonal rays need nprocy=1 and nxgrid=nygrid')
+!
+!  Intrinsic Q and tau at the downstream x and y face, first index along the sweep.
+!
+        if (msign>0) then
+          QX=Qrad(llstop,m1:m2,n1:n2);  tauX=tau(llstop,m1:m2,n1:n2)
+        else
+          QX=Qrad(llstop,m2:m1:-1,n1:n2);  tauX=tau(llstop,m2:m1:-1,n1:n2)
+        endif
+        if (lsign>0) then
+          QY=Qrad(l1:l2,mmstop,n1:n2);  tauY=tau(l1:l2,mmstop,n1:n2)
+        else
+          QY=Qrad(l2:l1:-1,mmstop,n1:n2);  tauY=tau(l2:l1:-1,mmstop,n1:n2)
+        endif
+!
+!  Effective transfer of this processor: fold the Y piece into the rows r<=w-2.
+!
+        Q0eff=QX;  taueff=tauX
+        Q0eff(1:nx-1,:)=QX(1:nx-1,:)+exp(-tauX(1:nx-1,:))*QY(nx-1:1:-1,:)
+        taueff(1:nx-1,:)=tauX(1:nx-1,:)+tauY(nx-1:1:-1,:)
+!
+!  Gather over all processors (nprocy=1: all of them are in the x beam).
+!
+        Qrad_yz=Q0eff
+        tau_yz=taueff
+        call radboundary_yz_periodic_ray(Qrad_yz,tau_yz,Qrad_yz_all,tau_yz_all)
+!
+        if (lrad>0) then; ipxstart=0; ipxstop=nprocx-1; endif
+        if (lrad<0) then; ipxstart=nprocx-1; ipxstop=0; endif
+!
+!  Chain over the processors starting at the current one, the row index shifted
+!  by w=nx at each processor. Then the processors upstream of this one.
+!
+        Qrad_tot_yz=0.0
+        tau_tot_yz=0.0
+        do ipl=ipx,ipxstop,lsign
+          Qrad_tot_yz=Qrad_yz_all(:,:,ipl)+exp(-tau_yz_all(:,:,ipl))*cshift(Qrad_tot_yz,-nx,dim=1)
+          tau_tot_yz=tau_yz_all(:,:,ipl)+cshift(tau_tot_yz,-nx,dim=1)
         enddo
+        do ipl=ipxstart,ipx-lsign,lsign
+          Qrad_tot_yz=Qrad_yz_all(:,:,ipl)+exp(-tau_yz_all(:,:,ipl))*cshift(Qrad_tot_yz,-nx,dim=1)
+          tau_tot_yz=tau_yz_all(:,:,ipl)+cshift(tau_tot_yz,-nx,dim=1)
+        enddo
+!
+        where (tau_tot_yz>dtau_thresh_max)
+          emtau1_tot_yz=1.0
+        elsewhere (tau_tot_yz<dtau_thresh_min)
+          emtau1_tot_yz=tau_tot_yz*(1-0.5*tau_tot_yz*(1-tau_tot_yz/3))
+        elsewhere
+          emtau1_tot_yz=1-exp(-tau_tot_yz)
+        endwhere
+        Qrad_tot_yz=Qrad_tot_yz/emtau1_tot_yz
+!
+!  x boundary: entries of the rays starting at the upstream x face of this processor.
+!  y boundary: Y plus the entry in row N-2-c attenuated through Y (modulo N for one processor).
+!
+        Qrad0(llstart-lrad,mmstart:mmstop:msign,n1:n2)=Qrad_tot_yz
+        do ii=1,nx
+          mi=modulo(nygrid-1-ii,nygrid)+1
+          Qbot(ii,:)=QY(ii,:)+exp(-tauY(ii,:))*Qrad_tot_yz(mi,:)
+        enddo
+        Qrad0(llstart:llstop:lsign,mmstart-mrad,n1:n2)=Qbot
         Qrad0(llstart-lrad,mmstart-mrad,n1:n2)=Qrad0(llstart-lrad,mmstop,n1:n2)
       endif
 !
