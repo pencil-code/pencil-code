@@ -358,6 +358,40 @@ module Mpicomm
 !
     endsubroutine radboundary_zx_periodic_ray
 !***********************************************************************
+    subroutine radboundary_diagxy_periodic_ray(n,QY,tauY,QXa,tauXa,lanti,QYall,tauYall,QXall,tauXall)
+!
+!  Trivial counterpart of radboundary_diagxy_periodic_ray from mpicomm.f90 (one processor: the beam is this core).
+!
+!  chandru 09-nov-26: with Claude Sonnet 5.5
+!
+      integer, intent(in) :: n
+      real, dimension(*), intent(in) :: QY,tauY,QXa,tauXa
+      logical, intent(in) :: lanti
+      real, dimension(*), intent(out) :: QYall,tauYall,QXall,tauXall
+!
+      QYall(1:n)=QY(1:n)
+      tauYall(1:n)=tauY(1:n)
+      QXall(1:n)=QXa(1:n)
+      tauXall(1:n)=tauXa(1:n)
+      call keep_compiler_quiet(lanti)
+!
+    endsubroutine radboundary_diagxy_periodic_ray
+!***********************************************************************
+    subroutine radboundary_ybeam_shift(sendbuf,recvbuf,n,idir)
+!
+!  Trivial counterpart of radboundary_ybeam_shift from mpicomm.f90 (one processor: the neighbour in y is this core).
+!
+!  chandru 09-nov-26: with Claude Sonnet 5.5
+!
+      integer, intent(in) :: n,idir
+      real, dimension(n), intent(in) :: sendbuf
+      real, dimension(n), intent(out) :: recvbuf
+!
+      recvbuf=sendbuf
+      call keep_compiler_quiet(idir)
+!
+    endsubroutine radboundary_ybeam_shift
+!***********************************************************************
     subroutine mpisend_char_scl(str,proc_src,tag_id,comm)
 !
       character(LEN=*) :: str

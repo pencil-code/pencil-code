@@ -1388,7 +1388,8 @@ module Radiation
 !
 !  This routine deals with communication for horizontal rays.
 !
-      use Mpicomm, only: radboundary_yz_periodic_ray,radboundary_zx_periodic_ray
+      use Mpicomm, only: radboundary_yz_periodic_ray,radboundary_zx_periodic_ray, &
+                         radboundary_diagxy_periodic_ray,radboundary_ybeam_shift
       use Debug_IO, only: output
 !
       real, dimension(ny,nz) :: Qrad_yz,tau_yz
@@ -1405,6 +1406,12 @@ module Radiation
       real, dimension(ny,nz) :: QX,tauX,Q0eff,taueff
       real, dimension(nx,nz) :: QY,tauY,Qbot
       integer :: ii,mi
+!  nprocy>1 (nprocx=nprocy=P), see PQ_scratch/plan.md: gathers over the diagonal beam, indexed by beam rank = ipx.
+      real, dimension(ny,nz,0:nprocx-1) :: QYall,tYall,QXall,tXall
+      real, dimension(ny,nz) :: QXa,tXa,Q0_left,Qbotb,QYb,tYb,Q0_left_below
+      real, dimension(nz) :: Q0_corner,vc,tc,emc
+      real, dimension(3*ny*nz) :: bval_send,bval_recv
+      integer :: kk,ik,sx,nn
 !
 !
 !  x-direction (axis rays along x only; the diagonal rays are treated below).
@@ -1528,16 +1535,17 @@ module Radiation
 !
         Qrad0(l1:l2,mmstart-mrad,n1:n2)=Qrad_tot_zx/emtau1_tot_zx
       endif
-!
+!  chandru 04-11-26: with Claude Sonnet 5.5
 !  chandru 08-11-26: with Claude Sonnet 5.5
-!  Diagonal rays, periodic xy, nprocy=1, nxgrid=nygrid=N, w=nx; first index runs along the sweep. 
-!  Per processor the Y piece is folded into the X rows r<=w-2: 
-!  Q0eff=X(r)+exp(-tauX(r))*Y(w-2-r), taueff=tauX(r)+tauY(w-2-r) (the single-core twist inside one processor).
-!  Chain over processors as for axis rays (two ipl loops) with the row index shifted by w per processor (cshift): 
+!  Diagonal rays, periodic xy, nprocy=1, nxgrid=nygrid=N, w=nx; first index runs along the sweep. Per processor the Y piece is
+!  folded into the X rows r<=w-2: Q0eff=X(r)+exp(-tauX(r))*Y(w-2-r), taueff=tauX(r)+tauY(w-2-r) (the single-core twist inside one processor).
+!  Chain over processors as for axis rays (two ipl loops) with the row index shifted by w per processor (cshift): gives the
+!  entries at the upstream x face. Upstream y face (local): Y(c)+exp(-tauY(c))*entry(row N-2-c).
+!  Derivation: Test/dev_log.md, 2026-11-08, multicore diagonal rays.
 !
       if (lrad/=0.and.mrad/=0) then
-        if (nprocy/=1.or.nxgrid/=nygrid) &
-          call fatal_error('Qperiodic','diagonal rays need nprocy=1 and nxgrid=nygrid')
+        if (nxgrid/=nygrid.or.(nprocy/=1.and.nprocx/=nprocy)) &
+          call fatal_error('Qperiodic','diagonal rays need nxgrid=nygrid and nprocy=1 or nprocx=nprocy')
 !
 !  Intrinsic Q and tau at the downstream x and y face, first index along the sweep.
 !
@@ -1551,6 +1559,77 @@ module Radiation
         else
           QY=Qrad(l2:l1:-1,mmstop,n1:n2);  tauY=tau(l2:l1:-1,mmstop,n1:n2)
         endif
+!
+        if (nprocy>1) then
+!
+!  P x P cores (P=nprocx=nprocy). Sweep coordinates: core (sx,sy), sx=ipx (lsign>0) or P-1-ipx. The ring of a ray entering via the
+!  left face row r of this core is L(r) at (sx+k,sy+k), B(w-r) at (sx+k,sy+k+1), k=0..P-1 (w=nx); L exits at the y face, B at the x face.
+!  Each core needs QY of the beam cores and QX of their sweep-upper neighbour: shift QX down once, gather over the diagonal beam.
+!
+          nn=ny*nz
+          call radboundary_ybeam_shift(reshape(QX,(/nn/)),bval_recv(1:nn),nn,-msign)
+          QXa=reshape(bval_recv(1:nn),(/ny,nz/))
+          call radboundary_ybeam_shift(reshape(tauX,(/nn/)),bval_recv(1:nn),nn,-msign)
+          tXa=reshape(bval_recv(1:nn),(/ny,nz/))
+          call radboundary_diagxy_periodic_ray(nn,QY,tauY,QXa,tXa,lsign*msign<0,QYall,tYall,QXall,tXall)
+          sx=ipx; if (lsign<0) sx=nprocx-1-ipx
+!
+!  Left boundary values, rows 1..w-1 (r=row): chain L(r) then B(w-r) over the beam, starting at this core.
+!
+          Qrad_tot_yz=0.0
+          tau_tot_yz=0.0
+          do kk=0,nprocx-1
+            ik=modulo(sx+kk,nprocx); if (lsign<0) ik=nprocx-1-ik
+            Qrad_tot_yz(1:nx-1,:)=QYall(nx-1:1:-1,:,ik)+exp(-tYall(nx-1:1:-1,:,ik))*Qrad_tot_yz(1:nx-1,:)
+            tau_tot_yz(1:nx-1,:)=tYall(nx-1:1:-1,:,ik)+tau_tot_yz(1:nx-1,:)
+            Qrad_tot_yz(1:nx-1,:)=QXall(1:nx-1,:,ik)+exp(-tXall(1:nx-1,:,ik))*Qrad_tot_yz(1:nx-1,:)
+            tau_tot_yz(1:nx-1,:)=tXall(1:nx-1,:,ik)+tau_tot_yz(1:nx-1,:)
+          enddo
+          where (tau_tot_yz>dtau_thresh_max)
+            emtau1_tot_yz=1.0
+          elsewhere (tau_tot_yz<dtau_thresh_min)
+            emtau1_tot_yz=tau_tot_yz*(1-0.5*tau_tot_yz*(1-tau_tot_yz/3))
+          elsewhere
+            emtau1_tot_yz=1-exp(-tau_tot_yz)
+          endwhere
+          Q0_left(1:nx-1,:)=Qrad_tot_yz(1:nx-1,:)/emtau1_tot_yz(1:nx-1,:)
+!
+!  Corner boundary value: full solution at the corner cell of core (sx-1,sy-1); chain of the corner cells (last row of QY) over the beam.
+!
+          vc=0.0; tc=0.0
+          do kk=0,nprocx-1
+            ik=modulo(sx+kk,nprocx); if (lsign<0) ik=nprocx-1-ik
+            vc=QYall(nx,:,ik)+exp(-tYall(nx,:,ik))*vc
+            tc=tc+tYall(nx,:,ik)
+          enddo
+          where (tc>dtau_thresh_max)
+            emc=1.0
+          elsewhere (tc<dtau_thresh_min)
+            emc=tc*(1-0.5*tc*(1-tc/3))
+          elsewhere
+            emc=1-exp(-tc)
+          endwhere
+          Q0_corner=vc/emc
+          Q0_left(nx,:)=Q0_corner
+!
+!  Bottom boundary value: needs QY,tauY and the left boundary value of the core below (sweep-lower neighbour, ipy-msign): send up, receive from below.
+!
+          bval_send(1:nn)=reshape(QY,(/nn/))
+          bval_send(nn+1:2*nn)=reshape(tauY,(/nn/))
+          bval_send(2*nn+1:3*nn)=reshape(Q0_left,(/nn/))
+          call radboundary_ybeam_shift(bval_send,bval_recv,3*nn,msign)
+          QYb=reshape(bval_recv(1:nn),(/ny,nz/))
+          tYb=reshape(bval_recv(nn+1:2*nn),(/ny,nz/))
+          Q0_left_below=reshape(bval_recv(2*nn+1:3*nn),(/ny,nz/))
+          do ii=1,nx-1
+            Qbot(ii,:)=QYb(ii,:)+exp(-tYb(ii,:))*Q0_left_below(nx-ii,:)
+          enddo
+          Qbot(nx,:)=QYb(nx,:)
+!
+          Qrad0(llstart-lrad,mmstart:mmstop:msign,n1:n2)=Q0_left
+          Qrad0(llstart:llstop:lsign,mmstart-mrad,n1:n2)=Qbot
+          Qrad0(llstart-lrad,mmstart-mrad,n1:n2)=Q0_corner
+        else
 !
 !  Effective transfer of this processor: fold the Y piece into the rows r<=w-2.
 !
@@ -1600,6 +1679,7 @@ module Radiation
         enddo
         Qrad0(llstart:llstop:lsign,mmstart-mrad,n1:n2)=Qbot
         Qrad0(llstart-lrad,mmstart-mrad,n1:n2)=Qrad0(llstart-lrad,mmstop,n1:n2)
+        endif
       endif
 !
     endsubroutine Qperiodic

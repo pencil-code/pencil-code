@@ -77,6 +77,7 @@
   public :: radboundary_zx_recv, radboundary_zx_send
   public :: radboundary_yz_sendrecv, radboundary_zx_sendrecv
   public :: radboundary_yz_periodic_ray, radboundary_zx_periodic_ray
+  public :: radboundary_diagxy_periodic_ray, radboundary_ybeam_shift
   public :: radboundary_yz_recv, radboundary_yz_send
 
 ! Foreign application routines.
@@ -433,6 +434,7 @@
 !
   integer :: MPI_COMM_GRID, MPI_COMM_PENCIL
   integer :: MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM
+  integer :: MPI_COMM_XYBEAM,MPI_COMM_XYBEAM_M   ! diagonal (ipx-ipy=const) and anti-diagonal (ipx+ipy=const) beams, rank = ipx
   integer :: MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE,MPI_COMM_RSLICE
   integer :: root_rslice
 !
@@ -449,4 +451,4 @@
   integer :: mpi_precision, MPI_CMPLX, MPI_2FLOAT
 
 !$omp threadprivate(MPI_COMM_GRID, MPI_COMM_PENCIL, MPI_COMM_XBEAM, MPI_COMM_YBEAM, MPI_COMM_ZBEAM, &
-!$omp MPI_COMM_XYPLANE, MPI_COMM_XZPLANE, MPI_COMM_YZPLANE, MPI_COMM_RSLICE)
+!$omp MPI_COMM_XYPLANE, MPI_COMM_XZPLANE, MPI_COMM_YZPLANE, MPI_COMM_RSLICE, MPI_COMM_XYBEAM, MPI_COMM_XYBEAM_M)

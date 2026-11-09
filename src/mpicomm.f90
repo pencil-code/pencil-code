@@ -549,6 +549,12 @@ module Mpicomm
                           MPI_COMM_XZPLANE, mpierr)
       call MPI_COMM_SPLIT(MPI_COMM_GRID, ipx, ipy+nprocy*ipz, &
                           MPI_COMM_YZPLANE, mpierr)
+!  Diagonal and anti-diagonal beams of the (ipx,ipy) core grid (periodic diagonal rays, nprocx=nprocy):
+!  all cores with the same (ipx-ipy) mod nprocx, or (ipx+ipy) mod nprocx; rank in the beam = ipx.
+      call MPI_COMM_SPLIT(MPI_COMM_GRID, modulo(ipx-ipy,nprocx)+nprocx*ipz, ipx, &
+                          MPI_COMM_XYBEAM, mpierr)
+      call MPI_COMM_SPLIT(MPI_COMM_GRID, modulo(ipx+ipy,nprocx)+nprocx*ipz, ipx, &
+                          MPI_COMM_XYBEAM_M, mpierr)
 !
     endsubroutine initialize_mpicomm
 !***********************************************************************
@@ -620,6 +626,12 @@ module Mpicomm
                           MPI_COMM_XZPLANE, mpierr)
       call MPI_COMM_SPLIT(MPI_COMM_GRID, ipx, ipy+nprocy*ipz, &
                           MPI_COMM_YZPLANE, mpierr)
+!  Diagonal and anti-diagonal beams of the (ipx,ipy) core grid (periodic diagonal rays, nprocx=nprocy):
+!  all cores with the same (ipx-ipy) mod nprocx, or (ipx+ipy) mod nprocx; rank in the beam = ipx.
+      call MPI_COMM_SPLIT(MPI_COMM_GRID, modulo(ipx-ipy,nprocx)+nprocx*ipz, ipx, &
+                          MPI_COMM_XYBEAM, mpierr)
+      call MPI_COMM_SPLIT(MPI_COMM_GRID, modulo(ipx+ipy,nprocx)+nprocx*ipz, ipx, &
+                          MPI_COMM_XYBEAM_M, mpierr)
     endsubroutine
 !***********************************************************************
     subroutine update_neighbors
@@ -3137,6 +3149,56 @@ if (notanumber(ubufyi(:,:,mz+1:,j))) print*, 'ubufyi(mz+1:): iproc,j=', iproc, i
           MPI_COMM_YBEAM,mpierr)
 !
     endsubroutine radboundary_zx_periodic_ray
+!***********************************************************************
+    subroutine radboundary_diagxy_periodic_ray(n,QY,tauY,QXa,tauXa,lanti,QYall,tauYall,QXall,tauXall)
+!
+!  Periodic diagonal rays, nprocx=nprocy=P. Gather over the diagonal beam of this core (MPI_COMM_XYBEAM, cores with
+!  ipx-ipy=const; MPI_COMM_XYBEAM_M, ipx+ipy=const, if lanti) the y-face values (QY,tauY) of each core and the x-face values
+!  (QXa,tauXa) of its sweep-upper neighbour (already shifted by radboundary_ybeam_shift). Each array holds n values per core;
+!  the results have n values per beam member, member index = rank in the beam = ipx (assumed-size so that it compiles for nx/=ny).
+!
+!  chandru 09-nov-26: with Claude Sonnet 5.5
+!
+      integer, intent(in) :: n
+      real, dimension(*), intent(in) :: QY,tauY,QXa,tauXa
+      logical, intent(in) :: lanti
+      real, dimension(*), intent(out) :: QYall,tauYall,QXall,tauXall
+      real, dimension(4*n) :: bval_send
+      real, dimension(4*n,0:nprocx-1) :: bval_recv
+      integer :: comm, k
+!
+      bval_send(1:n)=QY(1:n);        bval_send(n+1:2*n)=tauY(1:n)
+      bval_send(2*n+1:3*n)=QXa(1:n); bval_send(3*n+1:4*n)=tauXa(1:n)
+      comm=MPI_COMM_XYBEAM
+      if (lanti) comm=MPI_COMM_XYBEAM_M
+      call MPI_ALLGATHER(bval_send,4*n,mpi_precision,bval_recv,4*n,mpi_precision,comm,mpierr)
+      do k=0,nprocx-1
+        QYall(k*n+1:(k+1)*n)  =bval_recv(1:n,k)
+        tauYall(k*n+1:(k+1)*n)=bval_recv(n+1:2*n,k)
+        QXall(k*n+1:(k+1)*n)  =bval_recv(2*n+1:3*n,k)
+        tauXall(k*n+1:(k+1)*n)=bval_recv(3*n+1:4*n,k)
+      enddo
+!
+    endsubroutine radboundary_diagxy_periodic_ray
+!***********************************************************************
+    subroutine radboundary_ybeam_shift(sendbuf,recvbuf,n,idir)
+!
+!  Send sendbuf(1:n) to the core ipy+idir and receive recvbuf from ipy-idir (periodic in ipy, same ipx,ipz).
+!
+!  chandru 09-nov-26: with Claude Sonnet 5.5
+!
+      integer, intent(in) :: n,idir
+      real, dimension(n), intent(in) :: sendbuf
+      real, dimension(n), intent(out) :: recvbuf
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+      integer :: dest,src
+!
+      dest=modulo(ipy+idir,nprocy)
+      src =modulo(ipy-idir,nprocy)
+      call MPI_SENDRECV(sendbuf,n,mpi_precision,dest,311, &
+                        recvbuf,n,mpi_precision,src ,311, MPI_COMM_YBEAM,stat,mpierr)
+!
+    endsubroutine radboundary_ybeam_shift
 !***********************************************************************
     subroutine mpirecv_char_scl(str,proc_src,tag_id,comm)
 !
