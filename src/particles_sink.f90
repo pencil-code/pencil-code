@@ -241,6 +241,7 @@ module Particles_sink
 !  07-aug-12/anders: coded
 !  25-aug-15/ccyang: added switch to create at most one sink per cell
 !  03-jan-23/urs: added switch to create at most one sink in each cube of 3x3x3 cells
+!  09-nov-26/TP: one sink per cell with blocks: the same cell index in different blocks was mixed up
 !
       use Diagnostics
 !
@@ -306,6 +307,18 @@ module Particles_sink
       if (lparticles_blocks) then
         do iblock=0,nblock_loc-1
           if (npar_iblock(iblock)/=0) then
+!
+!  The indices in ineargrid are local to the block, so that the selection of
+!  the particles in a cell must start afresh for each block.
+!
+            if (lsink_create_one_per_cell) then
+              sid(1:mxb,1:myb,1:mzb) = 0
+              srhop(1:mxb,1:myb,1:mzb) = 0.0
+            elseif (lsink_create_one_per_27_cells) then
+              sid(1:mxb,1:myb,1:mzb) = 0
+              sgpotself(1:mxb,1:myb,1:mzb) = 0.
+            endif
+!
             do k=k1_iblock(iblock),k2_iblock(iblock)
               if (fp(k,iaps)==0.0) then
                 fp_comp = fp(k,ixp:izp)
