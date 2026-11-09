@@ -454,6 +454,9 @@ module Hydro
   integer :: idiag_durms=0      ! DIAG_DOC: $\left<\delta\uv^2\right>^{1/2}$
   integer :: idiag_fpresmax=0       ! DIAG_DOC: 
   integer :: idiag_fpresmax_loc=0   ! DIAG_DOC: 
+  integer :: idiag_fpresmin=0       ! DIAG_DOC: 
+  integer :: idiag_fpresmin_loc=0   ! DIAG_DOC: 
+  integer :: idiag_fpresrms=0   ! DIAG_DOC: 
   integer :: idiag_umax=0       ! DIAG_DOC: $\max(|\uv|)$
   integer :: idiag_umin=0       ! DIAG_DOC: $\min(|\uv|)$
   integer :: idiag_uxrms=0      ! DIAG_DOC: $\left<u_x^2\right>^{1/2}$
@@ -5317,6 +5320,14 @@ module Hydro
           call max_mn_name(sqrt(p%fpres(:,1)*p%fpres(:,1) + p%fpres(:,2)*p%fpres(:,2) + p%fpres(:,3)*p%fpres(:,3)),&
                            idiag_fpresmax,iname_loc=idiag_fpresmax_loc)
         endif
+        if(idiag_fpresmin/=0) then
+          call max_mn_name(-sqrt(p%fpres(:,1)*p%fpres(:,1) + p%fpres(:,2)*p%fpres(:,2) + p%fpres(:,3)*p%fpres(:,3)),&
+                           idiag_fpresmin,lneg=.true.,iname_loc=idiag_fpresmin_loc)
+        endif
+        if(idiag_fpresrms/=0) then
+          call sum_mn_name(p%fpres(:,1)*p%fpres(:,1) + p%fpres(:,2)*p%fpres(:,2) + p%fpres(:,3)*p%fpres(:,3),&
+                           idiag_fpresrms,lsqrt=.true.)
+        endif
       endif  ! if (ldiagnos)
 
     endsubroutine calc_0d_diagnostics_hydro
@@ -7359,6 +7370,9 @@ module Hydro
         idiag_durms=0
         idiag_fpresmax=0
         idiag_fpresmax_loc=0
+        idiag_fpresmin=0
+        idiag_fpresmin_loc=0
+        idiag_fpresrms=0
         idiag_urmsx=0
         idiag_urmsz=0
         idiag_umax=0
@@ -7893,6 +7907,9 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'durms',idiag_durms)
         call parse_name(iname,cname(iname),cform(iname),'fpresmax',idiag_fpresmax)
         call parse_name(iname,cname(iname),cform(iname),'fpresmax_loc',idiag_fpresmax_loc)
+        call parse_name(iname,cname(iname),cform(iname),'fpresmin',idiag_fpresmin)
+        call parse_name(iname,cname(iname),cform(iname),'fpresmin_loc',idiag_fpresmin_loc)
+        call parse_name(iname,cname(iname),cform(iname),'fpresrms',idiag_fpresrms)
         call parse_name(iname,cname(iname),cform(iname),'urmsx',idiag_urmsx)
         call parse_name(iname,cname(iname),cform(iname),'urmsz',idiag_urmsz)
         call parse_name(iname,cname(iname),cform(iname),'urmsn',idiag_urmsn)
