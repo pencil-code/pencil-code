@@ -55,8 +55,6 @@ gmem real AC_par_drag_z[AC_npar]
 gmem real AC_par_tausp1_k[AC_npar]
 gmem real AC_par_icell[AC_npar]    //cell of each particle, read by the host
 gmem real AC_par_order[AC_npar]    //particles in cell order
-//Sort buffers (two, used alternately) with a capacity of at least the next power of two above npar
-const int PAR_SORT_CAP = 2*npar
 //Sink particles: the list of all of them (from all processes), what the particles found out about them
 const int PAR_SINK_CAP = 4096
 gmem real AC_sink_x[PAR_SINK_CAP]
@@ -67,10 +65,7 @@ gmem real AC_par_accreted[AC_npar]   //1+index in the sink list of the sink accr
 gmem real AC_par_interp[AC_npar]     //rhop at the particle, -1 for sink particles
 gmem real AC_dep_interp[AC_npar]
 gmem real AC_par_cell_best[AC_mlocal.x][AC_mlocal.y][AC_mlocal.z]
-gmem real AC_sort_key[2][PAR_SORT_CAP]
-gmem real AC_sort_val[2][PAR_SORT_CAP]
 //Copies of the particle data in cell order
-gmem real AC_dep_cell[AC_npar]
 gmem real AC_dep_x[AC_npar]
 gmem real AC_dep_y[AC_npar]
 gmem real AC_dep_z[AC_npar]
@@ -91,6 +86,10 @@ gmem real AC_par_fold_buf[PAR_NDEP][PAR_FOLD_CAP]
 const int PAR_NREC = 10
 #endif
 gmem real AC_par_buf[PAR_NREC][AC_npar]
+#if LPARTICLES_NBODY
+//Gradient of the potential, with the first ghost layer filled from the interior for the interpolation
+gmem real AC_par_gpot[3][AC_mlocal.x][AC_mlocal.y][AC_mlocal.z]
+#endif
 
 //Index of the grid point at or below pos in one direction, as in map_nearest_grid
 //(with lcheck_exact_frontier) followed by the correction in interpolate_linear.
@@ -101,6 +100,13 @@ particle_lower_index(real pos, real coord_first, real dcoord_1, int nloc)
 	if (i0 < NGHOST) i0 = NGHOST
 	if (i0 > NGHOST+nloc-1) i0 = NGHOST+nloc-1
 	return i0
+}
+
+//z index of the cell of a particle; a direction with one grid point has no ghost zones on the device
+particle_cell_z(real zp)
+{
+	if (AC_nzgrid == 1) return AC_nmin.z
+	return particle_lower_index(zp, AC_z__mod__cdata[NGHOST], AC_dz_1__mod__cdata[NGHOST], AC_nlocal.z)
 }
 
 particle_interpolate_linear(Field fld, int ix0, int iy0, int iz0, real xp0, real yp0, real zp0, real dx1, real dy1, real dz1)
@@ -218,6 +224,142 @@ Kernel particles_tracer_step(int step_num, real dt_step,
 }
 
 #if LPARTICLES_DUST
+#if LPARTICLES_NBODY
+//Self-gravitating particles without gas (particles_dust + particles_selfgravity), one process only.
+//The kernels are named as for the dust so that gpu_astaroth.cc can drive both in the same way.
+
+//Fills the first ghost layer of the gradient from the interior (periodic, one process)
+Kernel particles_gpot_wrap()
+{
+	const int ix = vertexIdx.x
+	const int iy = vertexIdx.y
+	const int iz = vertexIdx.z
+	int wx = ix
+	int wy = iy
+	int wz = iz
+	if (wx <  AC_nmin.x)             wx = wx + AC_nlocal.x
+	if (wx >= AC_nmin.x+AC_nlocal.x) wx = wx - AC_nlocal.x
+	if (wy <  AC_nmin.y)             wy = wy + AC_nlocal.y
+	if (wy >= AC_nmin.y+AC_nlocal.y) wy = wy - AC_nlocal.y
+	if (wz <  AC_nmin.z)             wz = wz + AC_nlocal.z
+	if (wz >= AC_nmin.z+AC_nlocal.z) wz = wz - AC_nlocal.z
+	if (wx != ix || wy != iy || wz != iz)
+	{
+		AC_par_gpot[0][ix][iy][iz] = AC_par_gpot[0][wx][wy][wz]
+		AC_par_gpot[1][ix][iy][iz] = AC_par_gpot[1][wx][wy][wz]
+		AC_par_gpot[2][ix][iy][iz] = AC_par_gpot[2][wx][wy][wz]
+	}
+}
+
+//interpolate_linear of a component of the gradient
+particle_gpot_linear(int c, int ix0, int iy0, int iz0, real xp0, real yp0, real zp0, real dx1, real dy1, real dz1)
+{
+	int iz1 = iz0
+	if (AC_nzgrid != 1) iz1 = iz0+1
+	g1 = AC_par_gpot[c][ix0  ][iy0  ][iz0]
+	g2 = AC_par_gpot[c][ix0+1][iy0  ][iz0]
+	g3 = AC_par_gpot[c][ix0  ][iy0+1][iz0]
+	g4 = AC_par_gpot[c][ix0+1][iy0+1][iz0]
+	g5 = AC_par_gpot[c][ix0  ][iy0  ][iz1]
+	g6 = AC_par_gpot[c][ix0+1][iy0  ][iz1]
+	g7 = AC_par_gpot[c][ix0  ][iy0+1][iz1]
+	g8 = AC_par_gpot[c][ix0+1][iy0+1][iz1]
+	return g1 + xp0*dx1*(-g1+g2) + yp0*dy1*(-g1+g3) + zp0*dz1*(-g1+g5) +
+	       xp0*yp0*dx1*dy1*(g1-g2-g3+g4) + xp0*zp0*dx1*dz1*(g1-g2-g5+g6) +
+	       yp0*zp0*dy1*dz1*(g1-g3-g5+g7) +
+	       xp0*yp0*zp0*dx1*dy1*dz1*(-g1+g2+g3-g4+g5-g6-g7+g8)
+}
+
+//Acceleration by self-gravity at each particle (dvvp_dt_selfgrav), stored in AC_par_drag_*
+Kernel particles_dust_drag()
+{
+	const int k = vertexIdx.x
+	if (k >= 0)   //always true; bare blocks are not allowed in the DSL
+	{
+		const real xp = AC_fp_xp[k]
+		const real yp = AC_fp_yp[k]
+		const real zp = AC_fp_zp[k]
+		int ix0 = NGHOST
+		int iy0 = NGHOST
+		int iz0 = AC_nmin.z
+		real xp0 = 0.0
+		real yp0 = 0.0
+		real zp0 = 0.0
+		if (AC_nxgrid != 1)
+		{
+			ix0 = particle_lower_index(xp, AC_x__mod__cdata[NGHOST], AC_dx_1__mod__cdata[NGHOST], AC_nlocal.x)
+			if (AC_x__mod__cdata[ix0] > xp) ix0 = ix0-1
+			xp0 = xp - AC_x__mod__cdata[ix0]
+		}
+		if (AC_nygrid != 1)
+		{
+			iy0 = particle_lower_index(yp, AC_y__mod__cdata[NGHOST], AC_dy_1__mod__cdata[NGHOST], AC_nlocal.y)
+			if (AC_y__mod__cdata[iy0] > yp) iy0 = iy0-1
+			yp0 = yp - AC_y__mod__cdata[iy0]
+		}
+		if (AC_nzgrid != 1)
+		{
+			iz0 = particle_lower_index(zp, AC_z__mod__cdata[NGHOST], AC_dz_1__mod__cdata[NGHOST], AC_nlocal.z)
+			if (AC_z__mod__cdata[iz0] > zp) iz0 = iz0-1
+			zp0 = zp - AC_z__mod__cdata[iz0]
+		}
+		const real dx1 = AC_dx_1__mod__cdata[ix0]
+		const real dy1 = AC_dy_1__mod__cdata[iy0]
+		const real dz1 = AC_dz_1__mod__cdata[iz0]
+		AC_par_drag_x[k] = -particle_gpot_linear(0, ix0, iy0, iz0, xp0, yp0, zp0, dx1, dy1, dz1)
+		AC_par_drag_y[k] = -particle_gpot_linear(1, ix0, iy0, iz0, xp0, yp0, zp0, dx1, dy1, dz1)
+		AC_par_drag_z[k] = -particle_gpot_linear(2, ix0, iy0, iz0, xp0, yp0, zp0, dx1, dy1, dz1)
+	}
+}
+
+//Per RK substep what dxxp_dt + dvvp_dt_selfgrav + particles_timestep_second + boundconds_particles do on the CPU
+Kernel particles_dust_step(int step_num, real dt_step,
+                           real xx0_x, real xx0_y, real xx0_z, real xx1_x, real xx1_y, real xx1_z,
+                           real delta_y_now)
+{
+	suppress_unused_warning(delta_y_now)
+	const real alpha   = particle_rk_alpha(step_num)
+	const real dt_beta = dt_step*particle_rk_beta(step_num)
+	const int k = vertexIdx.x
+	if (k >= 0)   //always true; bare blocks are not allowed in the DSL
+	{
+		const real vpx = AC_fp_vpx[k]
+		const real vpy = AC_fp_vpy[k]
+		const real vpz = AC_fp_vpz[k]
+		real dxp = alpha*AC_dfp_xp[k]
+		real dyp = alpha*AC_dfp_yp[k]
+		real dzp = alpha*AC_dfp_zp[k]
+		if (AC_nxgrid != 1) dxp = dxp + vpx
+		if (AC_nygrid != 1) dyp = dyp + vpy
+		if (AC_nzgrid != 1) dzp = dzp + vpz
+		const real dvpx = alpha*AC_dfp_vpx[k] + AC_par_drag_x[k]
+		const real dvpy = alpha*AC_dfp_vpy[k] + AC_par_drag_y[k]
+		const real dvpz = alpha*AC_dfp_vpz[k] + AC_par_drag_z[k]
+		AC_dfp_xp[k]  = dxp
+		AC_dfp_yp[k]  = dyp
+		AC_dfp_zp[k]  = dzp
+		AC_dfp_vpx[k] = dvpx
+		AC_dfp_vpy[k] = dvpy
+		AC_dfp_vpz[k] = dvpz
+		AC_fp_vpx[k]  = vpx + dt_beta*dvpx
+		AC_fp_vpy[k]  = vpy + dt_beta*dvpy
+		AC_fp_vpz[k]  = vpz + dt_beta*dvpz
+
+		const real xn = particle_periodic_wrap(AC_fp_xp[k] + dt_beta*dxp, AC_xyz0__mod__cdata.x, AC_xyz1__mod__cdata.x, AC_lxyz__mod__cdata.x)
+		const real yn = particle_periodic_wrap(AC_fp_yp[k] + dt_beta*dyp, AC_xyz0__mod__cdata.y, AC_xyz1__mod__cdata.y, AC_lxyz__mod__cdata.y)
+		const real zn = particle_periodic_wrap(AC_fp_zp[k] + dt_beta*dzp, AC_xyz0__mod__cdata.z, AC_xyz1__mod__cdata.z, AC_lxyz__mod__cdata.z)
+		AC_fp_xp[k] = xn
+		AC_fp_yp[k] = yn
+		AC_fp_zp[k] = zn
+
+		real leaving = 0.0
+		if ((xn-AC_xyz0__mod__cdata.x) >= xx1_x || (xn-AC_xyz0__mod__cdata.x) < xx0_x) leaving = 1.0
+		if ((yn-AC_xyz0__mod__cdata.y) >= xx1_y || (yn-AC_xyz0__mod__cdata.y) < xx0_y) leaving = 1.0
+		if ((zn-AC_xyz0__mod__cdata.z) >= xx1_z || (zn-AC_xyz0__mod__cdata.z) < xx0_z) leaving = 1.0
+		AC_par_leaving[k] = leaving
+	}
+}
+#else
 //Quadratic spline (TSC) interpolation as in interpolate_quadratic_spline, 3D only.
 //The arguments are the nearest grid point and the weights at offsets -1, 0, +1 in each direction.
 particle_interpolate_tsc(Field fld, int ix0, int iy0, int iz0,
@@ -380,10 +522,12 @@ Kernel particles_dust_step(int step_num, real dt_step,
 	}
 }
 
+#endif
+
 //Particle-to-grid deposition. A particle cannot write to the 27 grid points it influences (several particles
 //would write to the same point), so instead every grid point gathers from the particles in the surrounding
 //cells and writes only to itself. The particles are copied in cell order to AC_dep_*
-//and AC_par_cell_start/count give the range of each cell.
+//and AC_par_cell_start/count give the range of each cell. The order and the ranges come from a counting sort on the host.
 //Reads inside loops are not seen by the kernel analysis when the loops are empty there, hence the particle_dep_touch calls.
 
 //Flags the particles outside of the local subdomain, after the host has changed the particles
@@ -411,87 +555,9 @@ Kernel particles_cell_index()
 	{
 		const int ix0 = particle_lower_index(AC_fp_xp[k], AC_x__mod__cdata[NGHOST], AC_dx_1__mod__cdata[NGHOST], AC_nlocal.x)
 		const int iy0 = particle_lower_index(AC_fp_yp[k], AC_y__mod__cdata[NGHOST], AC_dy_1__mod__cdata[NGHOST], AC_nlocal.y)
-		const int iz0 = particle_lower_index(AC_fp_zp[k], AC_z__mod__cdata[NGHOST], AC_dz_1__mod__cdata[NGHOST], AC_nlocal.z)
+		const int iz0 = particle_cell_z(AC_fp_zp[k])
 		AC_par_icell[k] = ix0 + AC_mlocal.x*(iy0 + AC_mlocal.y*iz0)
 	}
-}
-
-//Sorting by cell on the device with Batcher's odd-even merge sort: the comparisons of each pass are fixed in
-//advance and disjoint, so every element can compute its new value independently and write only to itself.
-//The sort length N is a power of two; indices from n up are padded with keys larger than any cell.
-Kernel particles_sort_init(int n, int src)
-{
-	const int i = vertexIdx.x
-	if (i >= 0)
-	{
-		real key = 1.0e300
-		real val = -1.0
-		if (i < n)
-		{
-			key = AC_par_icell[i]
-			val = i
-		}
-		AC_sort_key[src][i] = key
-		AC_sort_val[src][i] = val
-	}
-}
-
-//Non-negative remainder; the kernel analysis runs with zero parameters, so b is kept nonzero
-particle_mod(int a, int b)
-{
-	const int d = max(b,1)
-	return a - (a/d)*d
-}
-
-//True if a is the lower element of a compared pair (a,a+k) in the pass (p,k) of the merge sort
-particle_sort_is_low(int a, int p, int k, int nsort)
-{
-	const int k1 = max(k,1)
-	const int p2 = 2*max(p,1)
-	const int rel = a - particle_mod(k1,max(p,1))
-	if (rel < 0) return false
-	if (particle_mod(rel,2*k1) >= k1) return false
-	if (a+k1 >= nsort) return false
-	return a/p2 == (a+k1)/p2
-}
-
-Kernel particles_sort_pass(int p, int k, int src, int nsort)
-{
-	const int a = vertexIdx.x
-	if (a >= 0)
-	{
-		const int dst = 1-src
-		const int k1 = max(k,1)
-		const bool low = particle_sort_is_low(a,p,k,nsort)
-		bool high = false
-		if (a >= k1) high = particle_sort_is_low(a-k1,p,k,nsort)
-		int partner = a
-		if (low) partner = a+k1
-		if (high) partner = a-k1
-		const real key  = AC_sort_key[src][a]
-		const real val  = AC_sort_val[src][a]
-		const real keyp = AC_sort_key[src][partner]
-		const real valp = AC_sort_val[src][partner]
-		const bool partner_smaller = keyp < key || (keyp == key && valp < val)
-		bool take = false
-		if (low  &&  partner_smaller) take = true
-		if (high && !partner_smaller && partner != a) take = true
-		real newkey = key
-		real newval = val
-		if (take)
-		{
-			newkey = keyp
-			newval = valp
-		}
-		AC_sort_key[dst][a] = newkey
-		AC_sort_val[dst][a] = newval
-	}
-}
-
-Kernel particles_sort_finish(int src)
-{
-	const int i = vertexIdx.x
-	if (i >= 0) AC_par_order[i] = AC_sort_val[src][i]
 }
 
 Kernel particles_dep_copy()
@@ -500,8 +566,11 @@ Kernel particles_dep_copy()
 	if (i >= 0)
 	{
 		const int k = particle_list_index(AC_par_order[i])
+#if LPARTICLES_NBODY
+		const real rhop = AC_rhop_swarm__mod__particles
+#else
 		const real rhop = AC_fp_rhopswarm[k]
-		AC_dep_cell[i]   = AC_par_icell[k]
+#endif
 		AC_dep_x[i]      = AC_fp_xp[k]
 		AC_dep_y[i]      = AC_fp_yp[k]
 		AC_dep_z[i]      = AC_fp_zp[k]
@@ -513,35 +582,6 @@ Kernel particles_dep_copy()
 		AC_dep_rhop[i]   = rhop_map
 		AC_dep_tausp1[i] = AC_par_tausp1_k[k]
 	}
-}
-
-//First index in the sorted AC_dep_cell[0:n-1] with a value >= cell
-particle_cell_lower_bound(real cell, int n)
-{
-	int lo = 0
-	int hi = n
-	for it in 0:40
-	{
-		if (lo < hi)
-		{
-			const int mid = (lo+hi)/2
-			if (AC_dep_cell[mid] < cell) lo = mid+1
-			else hi = mid
-		}
-	}
-	return lo
-}
-
-Kernel particles_build_cells(int n)
-{
-	const int ix = vertexIdx.x
-	const int iy = vertexIdx.y
-	const int iz = vertexIdx.z
-	const real cell = ix + AC_mlocal.x*(iy + AC_mlocal.y*iz)
-	const int first = particle_cell_lower_bound(cell, n)
-	const int last  = particle_cell_lower_bound(cell+1.0, n)
-	AC_par_cell_start[ix][iy][iz] = first
-	AC_par_cell_count[ix][iy][iz] = last-first
 }
 
 //TSC weight of a particle at normalized distance d from a grid point, off: is it not the nearest grid point
@@ -556,6 +596,90 @@ particle_dep_touch()
 	return AC_dep_x[0]+AC_dep_y[0]+AC_dep_z[0]+AC_dep_fx[0]+AC_dep_fy[0]+AC_dep_fz[0]+AC_dep_rhop[0]+AC_dep_tausp1[0]
 }
 
+#if LPARTICLES_NBODY
+//CIC weight of a particle at normalized distance d from a grid point, in a direction with one grid point only the
+//particle counts fully and only for the point of its own cell
+particle_cic_weight(real d, int offset, bool active)
+{
+	if (!active)
+	{
+		if (offset == 0) return 1.0
+		return 0.0
+	}
+	return max(0.0, 1.0-abs(d))
+}
+
+//rhop (CIC, folded afterwards) and np (nearest grid point), as map_xxp_grid
+Kernel particles_gather_maps()
+{
+	const int ix = vertexIdx.x
+	const int iy = vertexIdx.y
+	const int iz = vertexIdx.z
+	const real touch = particle_dep_touch()
+	const real xv = AC_x__mod__cdata[ix]
+	const real yv = AC_y__mod__cdata[iy]
+	const real zv = AC_z__mod__cdata[iz]
+	const real dx1 = AC_dx_1__mod__cdata[ix]
+	const real dy1 = AC_dy_1__mod__cdata[iy]
+	const real dz1 = AC_dz_1__mod__cdata[iz]
+	real rhop = 0.0
+	real np = 0.0
+	for c in -1:2
+	{
+		for b in -1:2
+		{
+			for a in -1:2
+			{
+				const int cx = ix+a
+				const int cy = iy+b
+				const int cz = iz+c
+				if (cx >= AC_nmin.x && cx < AC_nmin.x+AC_nlocal.x && cy >= AC_nmin.y && cy < AC_nmin.y+AC_nlocal.y && cz >= AC_nmin.z && cz < AC_nmin.z+AC_nlocal.z)
+				{
+					const int first = int(AC_par_cell_start[cx][cy][cz])
+					const int count = int(AC_par_cell_count[cx][cy][cz])
+					if (a == 0 && b == 0 && c == 0) np = count
+					for i in first:first+count
+					{
+						rhop = rhop + AC_dep_rhop[i]*
+						       particle_cic_weight((AC_dep_x[i]-xv)*dx1, a, AC_nxgrid != 1)*
+						       particle_cic_weight((AC_dep_y[i]-yv)*dy1, b, AC_nygrid != 1)*
+						       particle_cic_weight((AC_dep_z[i]-zv)*dz1, c, AC_nzgrid != 1)
+					}
+				}
+			}
+		}
+	}
+	AC_par_dep[3][ix][iy][iz] = rhop
+	AC_par_dep[4][ix][iy][iz] = np
+	if (touch < -1.0e300) AC_par_dep[3][ix][iy][iz] = 0.0   //never true, see particle_dep_touch
+}
+
+//Inverse time step of each particle: advection (dxxp_dt_pencil) and self-gravity (dvvp_dt_selfgrav)
+Kernel particles_dust_dt1()
+{
+	const int k = vertexIdx.x
+	if (k >= 0)
+	{
+		const int ix0 = particle_lower_index(AC_fp_xp[k], AC_x__mod__cdata[NGHOST], AC_dx_1__mod__cdata[NGHOST], AC_nlocal.x)
+		const int iy0 = particle_lower_index(AC_fp_yp[k], AC_y__mod__cdata[NGHOST], AC_dy_1__mod__cdata[NGHOST], AC_nlocal.y)
+		const int iz0 = particle_cell_z(AC_fp_zp[k])
+		const real dx1 = AC_dx_1__mod__cdata[ix0]
+		const real dy1 = AC_dy_1__mod__cdata[iy0]
+		const real dz1 = AC_dz_1__mod__cdata[iz0]
+		real advx = 0.0
+		real advy = 0.0
+		real advz = 0.0
+		if (AC_nxgrid != 1) advx = abs(AC_fp_vpx[k])*dx1
+		if (AC_nygrid != 1) advy = abs(AC_fp_vpy[k])*dy1
+		if (AC_nzgrid != 1) advz = abs(AC_fp_vpz[k])*dz1
+		real res = sqrt(advx*advx + advy*advy + advz*advz)/AC_cdtp__mod__particles
+		res = max(res, sqrt(0.5*abs(AC_par_drag_x[k])*dx1)/AC_cdtpg__mod__particles_selfgravity)
+		res = max(res, sqrt(0.5*abs(AC_par_drag_y[k])*dy1)/AC_cdtpg__mod__particles_selfgravity)
+		res = max(res, sqrt(0.5*abs(AC_par_drag_z[k])*dz1)/AC_cdtpg__mod__particles_selfgravity)
+		AC_par_dt1[k] = res
+	}
+}
+#else
 //Drag force on the gas, launched over the interior and the first ghost layer (folded afterwards)
 Kernel particles_gather_force()
 {
@@ -671,6 +795,8 @@ Kernel particles_cell_dt1()
 	AC_par_dt1_cell[ix][iy][iz] = (dust + gas_term)/AC_cdtp__mod__particles
 	if (touch < -1.0e300) AC_par_dt1_cell[ix][iy][iz] = 0.0   //never true, see particle_dep_touch
 }
+
+#endif
 
 //Copies the listed cells of AC_par_dep to AC_par_fold_buf, for the host. No loops over the components here:
 //they would be empty in the kernel analysis, which runs with zero parameters, and the arrays would be removed.
@@ -884,6 +1010,8 @@ Kernel particles_sink_store()
 	}
 }
 
+#if LPARTICLES_NBODY
+#else
 //Inverse time step of each particle: advection (dxxp_dt_blocks) and friction in its cell (particles_cell_dt1)
 Kernel particles_dust_dt1()
 {
@@ -900,6 +1028,7 @@ Kernel particles_dust_dt1()
 		AC_par_dt1[k] = max(sqrt(advx*advx + advy*advy + advz*advz)/AC_cdtp__mod__particles, AC_par_dt1_cell[ix0][iy0][iz0])
 	}
 }
+#endif
 #endif
 
 //Clamp list entries to valid indices (they are garbage during the kernel analysis)

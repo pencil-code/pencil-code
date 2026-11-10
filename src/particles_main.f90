@@ -280,7 +280,7 @@ module Particles_main
 !
       if (lgpu .and. nt>0) then
         str=''
-        ldust = particles_module=='dust_blocks'
+        ldust = particles_module=='dust_blocks' .or. particles_module=='dust'
         if (.not.ldust .and. particles_module/='tracer') str=trim(str)//', particles module "'//trim(particles_module)//'"'
         if (lyinyang) str=trim(str)//', Yin-Yang grid'
         if (.not.lcartesian_coords) str=trim(str)//', non-Cartesian coordinates'
@@ -339,7 +339,7 @@ module Particles_main
       if (lparticles_selfgravity) then
         if (.not.associated(tstart_selfgrav_gpu)) &
           call get_shared_variable('tstart_selfgrav',tstart_selfgrav_gpu,caller='particles_step_gpu')
-        if (t>=tstart_selfgrav_gpu) &
+        if (t>=tstart_selfgrav_gpu .and. particles_module/='dust') &
           call fatal_error('particles_step_gpu','no GPU implementation for particle self-gravity')
       endif
       if (lparticles_sink) call sink_accrete_c(merge(1,0,ldiagnos))
