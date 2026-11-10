@@ -27,12 +27,12 @@ const int AC_xtop__mod__equationofstate=nx
 #define AC_nz nz
 
 #define AC_nxgrid nxgrid
-#define AC_nygrid nxgrid
-#define AC_nzgrid nxgrid
+#define AC_nygrid nygrid
+#define AC_nzgrid nzgrid
 
 #define AC_nxgrid__mod__cparam nxgrid
-#define AC_nygrid__mod__cparam nxgrid
-#define AC_nzgrid__mod__cparam nxgrid
+#define AC_nygrid__mod__cparam nygrid
+#define AC_nzgrid__mod__cparam nzgrid
 
 #undef AC_mx
 #undef AC_my
