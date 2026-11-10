@@ -701,6 +701,7 @@ module Selfgravity
     call copy_addr(rho0z,p_par(9)) ! (mz)
     call copy_addr(rhs_poisson_const,p_par(10))
     call copy_addr(tselfgrav_gentle,p_par(11))
+    call copy_addr(lBryan_etal14,p_par(12)) ! bool
 
     endsubroutine pushpars2c
 !***********************************************************************
