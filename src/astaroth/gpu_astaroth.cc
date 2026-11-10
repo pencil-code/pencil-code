@@ -1544,10 +1544,26 @@ reload_dynamically_changing_variables(bool lrmv, int isubstep, double t, bool ls
 	acDeviceSetInput(acGridGetDevice(), AC_dt, dt);
 }
 /***********************************************************************************************/
+//ascale for the potential, -1 until set. As on the CPU it is the value of the previous substep: prep_rhs_special
+//comes after calc_selfpotential there.
+static AcReal ascale_potself_prev = -1.0;
 void
 calc_poisson()
 {
 #if LSELFGRAVITY
+#if LPARTICLES_NBODY
+		particles_deposit();
+#endif
+		{
+#if LLAMBDA_CDM
+			const AcReal ascale_now = exp(f_ode__mod__cdata[ilcdm_lna__mod__lambda_cdm-1]);
+#else
+			const AcReal ascale_now = 1.0;
+#endif
+			if (ascale_potself_prev < 0.0) ascale_potself_prev = ascale_now;
+			acDeviceSetInput(acGridGetDevice(),AC_ascale_potself,ascale_potself_prev);
+			ascale_potself_prev = ascale_now;
+		}
 		acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_calc_selfgravity_rhs),1);
 		acDeviceFFTR2C(acGridGetDevice(),acGetRHS_POISSON(),RHS_POISSON_COMPLEX);                     // FFT of rhs of Poisson eq.
     		AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());

@@ -53,7 +53,7 @@ ComputeSteps AC_calc_selfgravity_rhs(boundconds)
 }
 ComputeSteps AC_calc_final_potential(boundconds)
 {
-	calc_final_potential(AC_t)
+	calc_final_potential(AC_t,AC_ascale_potself)
 }
 
 ComputeSteps AC_sor_step(boundconds)
