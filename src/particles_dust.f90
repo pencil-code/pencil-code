@@ -37,6 +37,7 @@ module Particles
   implicit none
 !
   include 'particles.h'
+  public :: pushpars2c
   include 'particles_common.h'
 !
   complex, dimension(7) :: coeff=(0.0,0.0)
@@ -3737,105 +3738,16 @@ module Particles
 !***********************************************************************
     subroutine calc_diagnostics_from_particles_module(fp)
 !
-!  08-nov-26/TP: dummy, this module calculates these diagnostics in dxxp_dt
+!  Diagnostics computed from particles.
+!
+!  09-nov-26/TP: moved from dvvp_dt
+!
+      use Diagnostics
 !
       real, dimension (mpar_loc,mparray) :: fp
 !
-      call keep_compiler_quiet(fp)
-!
-    endsubroutine calc_diagnostics_from_particles_module
-!***********************************************************************
-    subroutine dvvp_dt(f,df,fp,dfp,ineargrid)
-!
-!  Evolution of dust particle velocity.
-!
-!  29-dec-04/anders: coded
-!
-      use Diagnostics
-      use EquationOfState, only: cs20
-      use Particles_caustics, only: dcaustics_dt
-      use Particles_tetrad, only: dtetrad_dt
-      use Particles_potential, only: dvvp_dt_potential
-!
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension(mx,my,mz,mvar), intent(inout) :: df
-      real, dimension(mpar_loc,mparray), intent(inout) :: fp
-      real, dimension(mpar_loc,mpvar), intent(inout) :: dfp
-      integer, dimension(mpar_loc,3), intent(in) :: ineargrid
-!
-      real :: Omega2
-      integer :: npar_found
-      logical :: lheader, lfirstcall=.true.
       real, dimension(mpar_loc) :: coalfac
-      integer :: kcoal
-!
-!  Print out header information in first time step.
-!
-      lheader = lfirstcall .and. lroot
-      if (lheader) print*,'dvvp_dt: Calculate dvvp_dt'
-!
-! Calculate the acceleration of particles only if lfollow_gas is not true
-!
-      if (.not. lfollow_gas) then
-!
-!  Add Coriolis force from rotating coordinate frame.
-!
-        if (Omega /= 0.) then
-          if (lcoriolis_force_par) then
-            if (lheader) print*,'dvvp_dt: Add Coriolis force; Omega=', Omega
-            Omega2 = 2*Omega
-            if (.not. lspherical_coords) then
-              dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + Omega2*fp(1:npar_loc,ivpy)
-              dfp(1:npar_loc,ivpy) = dfp(1:npar_loc,ivpy) - Omega2*fp(1:npar_loc,ivpx)
-            else
-              call not_implemented('dvvp_dt','Coriolis force on particles for spherical coordinates')
-            endif
-          endif
-!
-!  Add centrifugal force.
-!
-          if (lcentrifugal_force_par) then
-            if (lheader) print*,'dvvp_dt: Add Centrifugal force; Omega=', Omega
-            if (lcartesian_coords) then
-              !
-              dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + Omega**2*fp(1:npar_loc,ixp)
-              !
-              dfp(1:npar_loc,ivpy) = dfp(1:npar_loc,ivpy) + Omega**2*fp(1:npar_loc,iyp)
-              !
-            elseif (lcylindrical_coords) then
-              dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + Omega**2*fp(1:npar_loc,ixp)
-            else
-              call not_implemented('dvvp_dt','centrifugal force on particles for spherical coordinates')
-            endif
-          endif
-!
-!  With shear there is an extra term due to the background shear flow.
-!
-          if (lshear .and. lshear_accel_par) &
-               dfp(1:npar_loc,ivpy) = dfp(1:npar_loc,ivpy) + qshear * Omega * fp(1:npar_loc,ivpx)
-        endif
-!
-!  Add constant background pressure gradient beta=alpha*H0/r0, where alpha
-!  comes from a global pressure gradient P = P0*(r/r0)^alpha.
-!  (the term must be added to the dust equation of motion when measuring
-!  velocities relative to the shear flow modified by the globalfpressure grad.)
-!
-        if (beta_dPdr_dust /= 0.0 .and. t >= tstart_dragforce_par) &
-             dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + cs20*beta_dPdr_dust_scaled
-!
-!  Gravity on the particles.
-!  Gravity on particles is implemented only if lparticle_gravity is true which is the default.
-!
-        if (lparticle_gravity) call particle_gravity(f,df,fp,dfp,ineargrid)
-!
-        if (lcorotational_frame) call indirect_inertial_particles(f,df,fp,dfp,ineargrid)
-!
-!  The auxiliary has to be set to zero afterwards
-!
-        call diffuse_backreaction(f,df)
-    endif
-!
-!  Diagnostic output
+      integer :: npar_found, kcoal
 !
     if (ldiagnos) then
         call sum_name(npar_loc,idiag_nparsum)
@@ -3954,7 +3866,6 @@ module Particles
         ! Better formulate with lsqrt
         if (idiag_vpmax /= 0) call max_par_name( &
             sqrt(sum(fp(1:npar_loc,ivpx:ivpz)**2,2)),idiag_vpmax)
-        if (idiag_vrelpabsm /= 0) call calc_relative_velocity(f,fp,ineargrid)
         if (ivpx/=0) call max_par_name(fp(1:npar_loc,ivpx),idiag_vpxmax)
         if (ivpy/=0) call max_par_name(fp(1:npar_loc,ivpy),idiag_vpymax)
         if (ivpz/=0) call max_par_name(fp(1:npar_loc,ivpz),idiag_vpzmax)
@@ -4088,6 +3999,100 @@ module Particles
           call sum_name(energy_gain_shear_bcs/npar,idiag_deshearbcsm) !MR: What to sum here?
 
       endif
+    endsubroutine calc_diagnostics_from_particles_module
+!***********************************************************************
+    subroutine dvvp_dt(f,df,fp,dfp,ineargrid)
+!
+!  Evolution of dust particle velocity.
+!
+!  29-dec-04/anders: coded
+!
+      use Diagnostics
+      use EquationOfState, only: cs20
+      use Particles_caustics, only: dcaustics_dt
+      use Particles_tetrad, only: dtetrad_dt
+      use Particles_potential, only: dvvp_dt_potential
+!
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension(mx,my,mz,mvar), intent(inout) :: df
+      real, dimension(mpar_loc,mparray), intent(inout) :: fp
+      real, dimension(mpar_loc,mpvar), intent(inout) :: dfp
+      integer, dimension(mpar_loc,3), intent(in) :: ineargrid
+!
+      real :: Omega2
+      logical :: lheader, lfirstcall=.true.
+!
+!  Print out header information in first time step.
+!
+      lheader = lfirstcall .and. lroot
+      if (lheader) print*,'dvvp_dt: Calculate dvvp_dt'
+!
+! Calculate the acceleration of particles only if lfollow_gas is not true
+!
+      if (.not. lfollow_gas) then
+!
+!  Add Coriolis force from rotating coordinate frame.
+!
+        if (Omega /= 0.) then
+          if (lcoriolis_force_par) then
+            if (lheader) print*,'dvvp_dt: Add Coriolis force; Omega=', Omega
+            Omega2 = 2*Omega
+            if (.not. lspherical_coords) then
+              dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + Omega2*fp(1:npar_loc,ivpy)
+              dfp(1:npar_loc,ivpy) = dfp(1:npar_loc,ivpy) - Omega2*fp(1:npar_loc,ivpx)
+            else
+              call not_implemented('dvvp_dt','Coriolis force on particles for spherical coordinates')
+            endif
+          endif
+!
+!  Add centrifugal force.
+!
+          if (lcentrifugal_force_par) then
+            if (lheader) print*,'dvvp_dt: Add Centrifugal force; Omega=', Omega
+            if (lcartesian_coords) then
+              !
+              dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + Omega**2*fp(1:npar_loc,ixp)
+              !
+              dfp(1:npar_loc,ivpy) = dfp(1:npar_loc,ivpy) + Omega**2*fp(1:npar_loc,iyp)
+              !
+            elseif (lcylindrical_coords) then
+              dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + Omega**2*fp(1:npar_loc,ixp)
+            else
+              call not_implemented('dvvp_dt','centrifugal force on particles for spherical coordinates')
+            endif
+          endif
+!
+!  With shear there is an extra term due to the background shear flow.
+!
+          if (lshear .and. lshear_accel_par) &
+               dfp(1:npar_loc,ivpy) = dfp(1:npar_loc,ivpy) + qshear * Omega * fp(1:npar_loc,ivpx)
+        endif
+!
+!  Add constant background pressure gradient beta=alpha*H0/r0, where alpha
+!  comes from a global pressure gradient P = P0*(r/r0)^alpha.
+!  (the term must be added to the dust equation of motion when measuring
+!  velocities relative to the shear flow modified by the globalfpressure grad.)
+!
+        if (beta_dPdr_dust /= 0.0 .and. t >= tstart_dragforce_par) &
+             dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + cs20*beta_dPdr_dust_scaled
+!
+!  Gravity on the particles.
+!  Gravity on particles is implemented only if lparticle_gravity is true which is the default.
+!
+        if (lparticle_gravity) call particle_gravity(f,df,fp,dfp,ineargrid)
+!
+        if (lcorotational_frame) call indirect_inertial_particles(f,df,fp,dfp,ineargrid)
+!
+!  The auxiliary has to be set to zero afterwards
+!
+        call diffuse_backreaction(f,df)
+    endif
+!
+!  Diagnostic output
+!
+      call calc_diagnostics_from_particles_module(fp)
+      if (ldiagnos .and. idiag_vrelpabsm /= 0) call calc_relative_velocity(f,fp,ineargrid)
+!
       if (lfirstcall) lfirstcall = .false.
 !
 !  If we are using caustics :
@@ -7786,5 +7791,18 @@ endif
       endif
 !
     endsubroutine diffuse_backreaction
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+!
+      use Syscalls, only: copy_addr
+!
+      integer, parameter :: n_pars=10
+      integer(KIND=ikind8), dimension(n_pars) :: p_par
+!
+      call copy_addr(cdtp,p_par(1))
+      call copy_addr(rhop_swarm,p_par(2))
+      call copy_addr(ldragforce_gas_par,p_par(3)) ! bool
+!
+    endsubroutine pushpars2c
 !***********************************************************************
 endmodule Particles
