@@ -3162,8 +3162,9 @@ ifeq ($(USE_SPECIAL_DISPATCHER),yes)
 		-e"s/special_dummies\.inc/$*_dummies.inc/" \
 		< "special/$*.f90" > special/$*._autogen_.f90
 ifneq ($(SPECIAL_MULT),1)
-	sed -i -e "s/namelist *\/special_\([ir][a-z]*_pars\)/namelist \/$*_\1/" \
-		-e"s/NML *= *special_\([ir][a-z]*_pars\)/NML=$*_\1/" special/$*._autogen_.f90
+	sed -i.bak -e "s/namelist *\/special_\([ir][a-z]*_pars\)/namelist \/$*_\1/" \
+		-e"s/NML *= *special_\([ir][a-z]*_pars\)/NML=$*_\1/" special/$*._autogen_.f90 \
+		&& rm -f special/$*._autogen_.f90.bak
 endif
 else
 	cp special/$*.f90 special/$*._autogen_.f90
@@ -3409,7 +3410,7 @@ ifeq ($(wildcard $(DSL_WORKDIR)/solve_two.ac),)
 	  modname=`grep '^ *module [a-zA-Z0-9_]* *$$' $$file | sed -e's/ *module *//' -e's/\([^ ]\) */\L\1/g'`; \
 	  replcmt=`sed -f dsl_pde.sed $$file`; \
 	  if [[ "$$replcmt" != "" ]]; then \
-	    sed -i -e's/\/\/ *'"$$modname"'/'"$$replcmt"'/' $(DSL_WORKDIR)/fieldecs.h; \
+	    sed -i.bak -e's/\/\/ *'"$$modname"'/'"$$replcmt"'/' $(DSL_WORKDIR)/fieldecs.h && rm -f $(DSL_WORKDIR)/fieldecs.h.bak; \
 	    fieldname=`echo $$replcmt | sed -e's/.*\\\\\/ *\\\\\/ *\([a-zA-Z0-9_]*\).*$$/\U\1/'`; \
 	    funcname=`grep '^ *subroutine  *d[a-zA-Z_0-9_][a-zA-Z_0-9_]*_dt' $$file | sed -e's/^ *subroutine  *d/d/' -e's/ *(.*$$//'`; \
 	    if [[ "$$replcmt" =~ .*\#define[^a-zA-Z_].* ]]; then \
@@ -3431,13 +3432,13 @@ ifeq ($(wildcard $(DSL_WORKDIR)/solve_two.ac),)
 	  if [[  "$$file" == "shock_highorder.f90" ]]; then \
 	    replcmt=`sed -f dsl_aux.sed $$file`;\
 	    if [[ "$$replcmt" != "" ]]; then \
-	      sed -i -e's/\/\/ *'"$$modname"'/'"$$replcmt"'/' $(DSL_WORKDIR)/fieldecs.h; \
+	      sed -i.bak -e's/\/\/ *'"$$modname"'/'"$$replcmt"'/' $(DSL_WORKDIR)/fieldecs.h && rm -f $(DSL_WORKDIR)/fieldecs.h.bak; \
 	    fi; \
 	  fi; \
 	done
 	@echo '}' >> $(DSL_WORKDIR)/solve.ac
 	@sed -e'/auxiliary / ! d' $(DSL_WORKDIR)/fieldecs.h > tmpdec
-	@sed -i -e'/^ *\/\// d' -e'/auxiliary/ d' $(DSL_WORKDIR)/fieldecs.h
+	@sed -i.bak -e'/^ *\/\// d' -e'/auxiliary/ d' $(DSL_WORKDIR)/fieldecs.h && rm -f $(DSL_WORKDIR)/fieldecs.h.bak
 	@cat tmpdec | sed -e's/communicated //' -e's/auxiliary //' >> $(DSL_WORKDIR)/fieldecs.h; rm tmpdec
 endif
 
