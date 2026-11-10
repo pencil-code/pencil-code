@@ -1182,7 +1182,7 @@ module Energy
 !          endif
         else
           p%advec_cs2=p%cs2*dxyz_2
-          advec_cs2=p%advec_cs2
+          advec_cs2=max(advec_cs2,p%advec_cs2)
         endif
         if (headtt.or.ldebug) print*,'calc_pencils_energy: max(advec_cs2) =',maxval(p%advec_cs2)
       endif

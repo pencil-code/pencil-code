@@ -499,8 +499,8 @@ module Energy
 !  ``cs2/dx^2'' for timestep
 !
       if (ldensity.and.lhydro.and.lupdate_courant_dt) then
-        advec_cs2=p%cs2*dxyz_2
-        if (headtt.or.ldebug) print*,'denergy_dt: max(advec_cs2) =',maxval(advec_cs2)
+        advec_cs2=max(p%cs2*dxyz_2,advec_cs2)
+        if (headtt.or.ldebug) print*,'denergy_dt: max(advec_cs2) =',maxval(p%cs2*dxyz_2)
       endif
 !
 !  Add pressure gradient term in momentum equation.
