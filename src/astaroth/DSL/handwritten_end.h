@@ -1,8 +1,11 @@
 #if LPARTICLES_DUST
+#if LPARTICLES_NBODY
+#else
 //Back-reaction of the drag force on the gas
 DF_UU.x += AC_par_dep[0][vertexIdx.x][vertexIdx.y][vertexIdx.z]
 DF_UU.y += AC_par_dep[1][vertexIdx.x][vertexIdx.y][vertexIdx.z]
 DF_UU.z += AC_par_dep[2][vertexIdx.x][vertexIdx.y][vertexIdx.z]
+#endif
 #endif
 #include "../freeze_df.h"
  if(!AC_lsubstepping_in_time__mod__cdata)
