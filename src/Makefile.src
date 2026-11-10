@@ -3335,6 +3335,17 @@ ifeq ($(PARTICLES),particles_dust_blocks)
 	@echo '#define LPARTICLES_DUST 1' >> $(CUDA_INCDIR)/PC_moduleflags.h
 	@echo $(CUDA_RELPATH)'/$(PARTICLES).f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 endif
+ifeq ($(PARTICLES),particles_dust)
+ifeq ($(SELFGRAVITY),selfgravity)
+ifeq ($(PARTICLES_SELFGRAVITY),particles_selfgravity)
+	@echo '#define LPARTICLES 1' >> $(CUDA_INCDIR)/PC_moduleflags.h
+	@echo '#define LPARTICLES_DUST 1' >> $(CUDA_INCDIR)/PC_moduleflags.h
+	@echo '#define LPARTICLES_NBODY 1' >> $(CUDA_INCDIR)/PC_moduleflags.h
+	@echo $(CUDA_RELPATH)'/$(PARTICLES).f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
+	@echo $(CUDA_RELPATH)'/$(PARTICLES_SELFGRAVITY).f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
+endif
+endif
+endif
 ifeq ($(PARTICLES_SINK),particles_sink)
 	@echo '#define LPARTICLES_SINK 1' >> $(CUDA_INCDIR)/PC_moduleflags.h
 	@echo $(CUDA_RELPATH)'/$(PARTICLES_SINK).f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
