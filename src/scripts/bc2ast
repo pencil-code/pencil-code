@@ -5,7 +5,8 @@ declare -a top
 
 function boundcond_sed()
 {
-grep '^ *bc'$1' *=' $bc_file | sed -f scripts/bc2ast.sed
+# Repeat counts of a namelist value (9*'s') are written out first: bc2ast.sed expects one quoted value per field
+grep '^ *bc'$1' *=' $bc_file | perl -pe "s/(\d+)\s*\*\s*('[^']*')/join(',',(\$2) x \$1)/ge" | sed -f scripts/bc2ast.sed
 bot=(`cat bot`)
 top=(`cat top`)
 rm -f top bot
