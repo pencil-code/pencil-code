@@ -88,7 +88,7 @@ module Radiation
   real :: kapparho_const=1.0, amplkapparho=1.0, radius_kapparho=1.0
   real :: kx_kapparho=0.0, ky_kapparho=0.0, kz_kapparho=0.0
   real :: Frad_boundary_ref=0.0
-  real :: cdtrad=0.1, cdtrad_thin=1.0, cdtrad_thick=0.25, cdtrad_cgam=0.25
+  real :: cdtrad=0.1, cdtradpress=impossible, cdtrad_thin=1.0, cdtrad_thick=0.25, cdtrad_cgam=0.25
   real :: scalefactor_cooling=1.0, scalefactor_radpressure=1.0
   real :: scalefactor_radpressure1=1.0, scalefactor_radpressure2=1.0
   real :: expo_rho_opa=0.0, expo_temp_opa=0.0, expo_temp_opa_buff=0.0
@@ -178,7 +178,7 @@ module Radiation
       kappa_Kconst, kapparho_const, amplkapparho, radius_kapparho, lintrinsic, &
       lcommunicate, lrevision, lcooling, lradflux, lradpress, lradpressure, &
       Frad_boundary_ref, lrad_cool_diffus, lrad_pres_diffus, lcdtrad_old, &
-      cdtrad, cdtrad_thin, cdtrad_thick, cdtrad_cgam, &
+      cdtrad, cdtradpress, cdtrad_thin, cdtrad_thick, cdtrad_cgam, &
       scalefactor_Srad, scalefactor_kappa, &
       angle_weight, &
       lcheck_tau_division, lfix_radweight_1d, expo_rho_opa, expo_temp_opa, &
@@ -1979,6 +1979,13 @@ module Radiation
 !  This is the first term.
 !
       if (lradpressure) then
+!
+!  Time step constraint
+!
+        if (cdtradpress/=impossible) then
+          p%advec_cs2=p%advec_cs2+fourthird*p%rho1*Srad(l1:l2,m,n)*dxyz_2/(c_light*cdtradpress)
+        endif
+!
         do j=1,3
           k=iKR_Frad+(j-1)
           radpressure(:,j)=scalefactor_radpressure*p%rho1*f(l1:l2,m,n,k)
@@ -2004,10 +2011,12 @@ module Radiation
             if (m==m1.and.n==n1) then
               alpha=scalefactor_radpressure1*p%rho1*f(l1:l2,m,n,ikapparho)*4*pi/c_light &
                 *Srad(l1:l2,m,n)/c_light
-!             print*,'AXEL: Srad=',Srad(l1:l2,m,n)
-!             print*,'AXEL: kappa=',p%rho1*f(l1:l2,m,n,ikapparho)
-!             print*,'AXEL: alpha=',alpha
-!             print*,'AXEL: 2nd term=',radpressure/c_light
+              print*,'AXEL: Srad=',Srad(l1:l1+3,m,n)
+              print*,'AXEL: kappa=',p%rho1(1:3)*f(l1:l1+2,m,n,ikapparho)
+              print*,'AXEL: alpha=',alpha(1:3)
+              print*,'AXEL: 2nd term_x=',radpressure(1:3,1)/c_light
+              print*,'AXEL: 2nd term_y=',radpressure(1:3,2)/c_light
+              print*,'AXEL: 2nd term_z=',radpressure(1:3,3)/c_light
             endif
           endif
           df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+radpressure/c_light
