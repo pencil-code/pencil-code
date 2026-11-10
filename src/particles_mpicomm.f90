@@ -264,6 +264,23 @@ module Particles_mpicomm
 !
     endsubroutine dist_particles_evenly_procs
 !***********************************************************************
+    subroutine alltoall_nmig(nleave,nenter)
+!
+!  nenter(i) = number of particles processor i sends to this processor, from
+!  nleave(j) = number of particles this processor sends to processor j.
+!
+!  7-nov-26/nils: coded (replaces the serialized point-to-point exchange)
+!
+      use Mpicomm, only: MPI_COMM_GRID
+!
+      integer, dimension(0:ncpus-1), intent(in)  :: nleave
+      integer, dimension(0:ncpus-1), intent(out) :: nenter
+      integer :: ierr
+!
+      call MPI_ALLTOALL(nleave,1,MPI_INTEGER,nenter,1,MPI_INTEGER,MPI_COMM_GRID,ierr)
+!
+    endsubroutine alltoall_nmig
+!***********************************************************************
     subroutine migrate_particles(fp,ipar,dfp,linsert)
 !
 !  Redistribute particles among processors based on the local yz-interval
@@ -527,17 +544,13 @@ module Particles_mpicomm
 !  condition we allow all processors to communicate particles. However, this
 !  is extremely slow when the processor number is high (>>100). Thus we only
 !  allow communication with surrounding processors during the run.
+!  The all-to-all exchange (at start-up and in every time step with
+!  continuous particle insertion, where root inserts all new particles) is
+!  one MPI_ALLTOALL instead of ncpus serialized rounds of ncpus-1 point-to-
+!  point messages.
 !
         if (lstart .or. present(linsert)) then
-          do i=0,ncpus-1
-            if (iproc/=i) then
-              call mpirecv_int(nmig_enter(i),i,itag_nmig)
-            else
-              do j=0,ncpus-1
-                if (iproc/=j) call mpisend_int(nmig_leave(j),j,itag_nmig)
-              enddo
-            endif
-          enddo
+          call alltoall_nmig(nmig_leave,nmig_enter)
         else
           do i=1,nproc_comm
             call mpisend_int(nmig_leave(iproc_comm(i)),iproc_comm(i),itag_nmig+iproc)
