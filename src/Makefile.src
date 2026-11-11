@@ -3160,8 +3160,16 @@ no%.o: no%.f90 %.h quiet.o
 no%.o: no%.f90 quiet.o
 	$(FC) $(ALL_COMP_FLAGS) $(FSTD) -o no$*.o -c no$*.f90
 #
-%.o: %.f90
-	$(FC) $(ALL_COMP_FLAGS) $(FSTD) -o $@ -c $<
+#  The generic rule %.o: %.f90 is defined further below, after all more
+#  specific pattern rules: GNU make >= 3.82 picks the most specific rule, but
+#  make 3.81 (default on macOS) picks the first matching one.
+#
+#  Namelist renaming for multiple special modules; done in the same sed call
+#  as the module renaming to avoid "sed -i", which differs on BSD/macOS.
+ifneq ($(SPECIAL_MULT),1)
+  SPECIAL_NML_SED = -e "s/namelist *\/special_\([ir][a-z]*_pars\)/namelist \/$*_\1/" \
+                    -e "s/NML *= *special_\([ir][a-z]*_pars\)/NML=$*_\1/"
+endif
 #
 special/%._autogen_.f90: special/%.f90
 ifeq ($(USE_SPECIAL_DISPATCHER),yes)
@@ -3169,14 +3177,16 @@ ifeq ($(USE_SPECIAL_DISPATCHER),yes)
 	sed -e"/module  *procedure/ ! s/^\( *module  *\)[Ss]pecial/\1$*/" \
 		-e"s/^\( *endmodule  *\)[Ss]pecial/\1$*/" \
 		-e"s/special_dummies\.inc/$*_dummies.inc/" \
+		$(SPECIAL_NML_SED) \
 		< "special/$*.f90" > special/$*._autogen_.f90
+else
+	cp special/$*.f90 special/$*._autogen_.f90
+endif
+
 ifneq ($(SPECIAL_MULT),1)
 	sed -i.bak -e "s/namelist *\/special_\([ir][a-z]*_pars\)/namelist \/$*_\1/" \
 		-e"s/NML *= *special_\([ir][a-z]*_pars\)/NML=$*_\1/" special/$*._autogen_.f90 \
 		&& rm -f special/$*._autogen_.f90.bak
-endif
-else
-	cp special/$*.f90 special/$*._autogen_.f90
 endif
 
 special/%.o: special/%._autogen_.f90
@@ -3522,6 +3532,11 @@ nompicomm.o: nompicomm.f90
 #
 hdf5_io%.o: hdf5_io%.f90 hdf5_io.h Makefile.local
 	$(FC_HDF5) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) $(FSTD_2008) -c hdf5_io$*.f90 -o hdf5_io$*.o
+#
+#  Generic rule; must come after all more specific %.o pattern rules (see above).
+#
+%.o: %.f90
+	$(FC) $(ALL_COMP_FLAGS) $(FSTD) -o $@ -c $<
 #
 geometrical_types.o: geometrical_types.f90
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) -c geometrical_types.f90 -o geometrical_types.o
