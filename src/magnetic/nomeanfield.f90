@@ -105,7 +105,7 @@ module Magnetic_meanfield
 !
     endsubroutine daa_dt_meanfield
 !***********************************************************************
-    subroutine  calc_diagnostics_meanfield(f,p)
+    subroutine calc_diagnostics_meanfield(f,p)
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
