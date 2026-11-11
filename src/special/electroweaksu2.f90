@@ -1502,6 +1502,9 @@ module Special
       call copy_addr(weight_longitudinalW, p_par(3))
       call copy_addr(lWddot_as_aux, p_par(4))    ! bool
       call copy_addr(ldivdotW_as_aux, p_par(5))  ! bool
+      call copy_addr(kappa_GammaW, p_par(6))
+      call copy_addr(idiag_GWrms, p_par(7))      ! int
+      call copy_addr(idiag_psiWrms, p_par(8))    ! int
 
     endsubroutine pushpars2c
 !***********************************************************************
