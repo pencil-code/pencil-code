@@ -1,0 +1,25 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Initialisation parameters
+!
+&init_pars
+  cvsid='$Id$'
+  unit_system='set'
+  xyz0=0., 0., 0.
+  Lxyz=6.283185307179586, 6.283185307179586, 6.283185307179586
+  lperi=T, T, T
+/
+&electroweaksu2_init_pars
+  initWW='coswave-phase', coupl_gw=0.65
+  ampl_Wx=0.30,0.20,-0.25, ampl_Wy=0.15,-0.30,0.20, ampl_Wz=-0.20,0.25,0.30
+  kx_Wx=1.,0.,1., ky_Wx=0.,1.,1., kz_Wx=1.,1.,0.
+  kx_Wy=0.,1.,2., ky_Wy=1.,0.,1., kz_Wy=1.,2.,0.
+  kx_Wz=1.,1.,0., ky_Wz=2.,0.,1., kz_Wz=0.,1.,1.
+  phase_Wx=0.1,0.7,1.3, phase_Wy=2.0,0.4,-0.6, phase_Wz=-1.1,0.9,0.3
+  llongitudinalW=T
+/
+&klein_gordon_init_pars
+  initspecial='constant', 'phi_doublet', amplphi=0.7, kx_phi=1.
+  lphi_doublet=T, lphi_weakcharge=T
+  Vprime_choice='doublet', lambda_phi=0.129, eta_phi=1., c_phi=1.
+/
