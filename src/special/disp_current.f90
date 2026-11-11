@@ -123,6 +123,9 @@ module Special
 !
   ! run parameters
   real :: beta_inflation=0., rescale_ee=1., vA_limit=0., eta_given=impossible
+  ! kappa_GammaY: damping rate of the GLM (Dedner/Komissarov) cleaning field
+  ! psi = Gamma - div A, so that Gauss-law violations decay as exp(-kappa t/2)
+  real :: kappa_GammaY=0.
   real :: cdt_sigE=1.   !PAR_DOC: time step constraint from 1/sigE
   real :: sigEmax=impossible       !PAR_DOC: time step constraint from 1/sigE
   real :: sigE_ceiling=impossible  !PAR_DOC: ceiling
@@ -155,7 +158,7 @@ module Special
     loverride_c_light, ldensity_add_je_heating, je_heating_factor, &
     lresistive_gauge_ee, llorentzforce_ee, aderiv_scaling, vA_limit, &
     lohmic_heating_ee, lohmic_heating_justee, sigE_const_value, &
-    ladvance_ee, eta_given, ldt_disp_current, cdt_sigE, lheating_averaged, &
+    ladvance_ee, eta_given, ldt_disp_current, cdt_sigE, lheating_averaged, kappa_GammaY, &
     lresistive_gauge_disp, etaSchw_max, llate_reset_el_pencil, &
     linclude_dphiB_in_MHD, linclude_gphixE_in_MHD, lreplace_Schwinger_by_Arnold, &
     lna1_switch_toArnold, lna2_switch_toArnold, replace_Schwinger_by_Arnold, &
@@ -196,6 +199,8 @@ module Special
   integer :: idiag_gausscrms=0  ! DIAG_DOC: rms $\nab\cdot(\Ev+\alpha_f\phi\Bv)$ (needs lbb_as_comaux)
   integer :: idiag_gaussprms=0  ! DIAG_DOC: rms $(\nab\cdot\Ev+\alpha_f\Bv\cdot\nab\phi)$
   integer :: idiag_gaussnrms=0  ! DIAG_DOC: rms $\alpha_f\Bv\cdot\nab\phi$
+  integer :: idiag_GYrms=0      ! DIAG_DOC: rms of the Gauss residual $\nab\cdot\Ev-\rho_{\rm tot}$ (incl. charge, Higgs, axion)
+  integer :: idiag_psiYrms=0    ! DIAG_DOC: rms of the cleaning field $\Gamma-\nab\cdot\Av$
   integer :: idiag_aaerms=0     ! DIAG_DOC: rms $A_e$
   integer :: idiag_divphib=0    ! DIAG_DOC: $\left<\nab \cdot (phiB) \right>$
   integer :: idiag_exm=0        ! DIAG_DOC: $\left<E_x\right>$
@@ -429,6 +434,18 @@ module Special
 !
       if (lphi_hom) weight_longitudinalE=0.
 !
+!  The GLM damping acts on psi = Gamma - div A, which is the cleaning field
+!  only in the temporal (Weyl) gauge with Gamma used in curl B.
+!
+      if (kappa_GammaY/=0.) then
+        if (.not.llongitudinalE) call fatal_error('initialize_special', &
+            'kappa_GammaY/=0 requires llongitudinalE=T')
+        if (llorenz_gauge_disp .or. lresistive_gauge_disp) call fatal_error('initialize_special', &
+            'kappa_GammaY/=0 is only valid in the temporal gauge (no Lorenz or resistive gauge)')
+        if (.not.lapply_Gamma_corr) call warning('initialize_special', &
+            'kappa_GammaY/=0 but lapply_Gamma_corr=F: Gamma does not enter curl B, so no cleaning')
+      endif
+!
 !  To know whether we are solving the relativistic eos equations we need to get lrelativistic_eos from density.
 !
       if (ldensity) then
@@ -484,6 +501,8 @@ module Special
 !  Initial condition for Gamma = divA
 !
       if (llongitudinalE) then
+!  ghost zones of A must be filled before taking the divergence
+        call update_ghosts_ptr(f,iax,iaz)
         do n=n1,n2; do m=m1,m2
           call div(f,iaa,diva)
           f(l1:l2,m,n,iGamma)=diva
@@ -1225,7 +1244,7 @@ module Special
       type(pencil_case) :: p
 !
       real, dimension (nx,3) :: gtmp, dJdt
-      real, dimension (nx) :: tmp, tmp2, del2a0
+      real, dimension (nx) :: tmp, tmp2, del2a0, psiY
       real :: inflation_factor=0., mfpf=0., fppf=0.
       integer :: j
 !
@@ -1261,6 +1280,26 @@ module Special
         endif
         if (.not.lswitch_off_Gamma) df(l1:l2,m,n,iGamma)=df(l1:l2,m,n,iGamma) &
           -(1.-weight_longitudinalE)*p%divE-weight_longitudinalE*tmp
+!
+!  Here G = divE - tmp is the Gauss-law residual (tmp contains the charge
+!  density, the Higgs charge and the axion term), and since dA/dt = -E,
+!  the cleaning field psi = Gamma - div A obeys d(psi)/dt = w G.
+!  Damped GLM cleaning (Dedner et al. 2002; Komissarov 2007) adds
+!    d(psi)/dt = w G - kappa psi,
+!  so that G obeys d^2G/dt^2 + kappa dG/dt = w c^2 del2 G when the
+!  charge is conserved (constraint waves with speed sqrt(w) c, damped as
+!  exp(-kappa t/2)).
+!
+        if (kappa_GammaY/=0. .or. (ldiagnos .and. idiag_psiYrms/=0)) then
+          call div(f,iaa,psiY)
+          psiY=f(l1:l2,m,n,iGamma)-psiY
+          if (kappa_GammaY/=0. .and. .not.lswitch_off_Gamma) &
+            df(l1:l2,m,n,iGamma)=df(l1:l2,m,n,iGamma)-kappa_GammaY*psiY
+        endif
+        if (ldiagnos) then
+          if (idiag_GYrms/=0) call sum_mn_name((p%divE-tmp)**2,idiag_GYrms,lsqrt=.true.)
+          if (idiag_psiYrms/=0) call sum_mn_name(psiY**2,idiag_psiYrms,lsqrt=.true.)
+        endif
       endif
 !
 !  Solve dA/dt = -E.
@@ -1537,6 +1576,15 @@ module Special
 !
       if (lfirst.and.ldt) advec_cs2=max(advec_cs2,c_light2*dxyz_2)
 !
+!  Constraint waves travel with speed sqrt(weight_longitudinalE)*c_light;
+!  the GLM damping is a source term with its own (cdts) limit.
+!
+      if (lfirst.and.ldt.and.llongitudinalE) then
+        if (weight_longitudinalE>1.) &
+          advec_cs2=max(advec_cs2,weight_longitudinalE*c_light2*dxyz_2)
+        if (kappa_GammaY/=0.) dt1_max=max(dt1_max,kappa_GammaY/cdts)
+      endif
+!
 !  Detailed time step report.
 !
       if (ldt_report) &
@@ -1782,6 +1830,7 @@ module Special
         idiag_rhoerms=0; idiag_divErms=0; idiag_divJrms=0
         idiag_rhoem=0; idiag_count_eb0=0; idiag_divEm=0; idiag_divJm=0; idiag_constrainteqn=0
         idiag_constrainteqnrms=0; idiag_gausscrms=0; idiag_gaussprms=0; idiag_gaussnrms=0
+        idiag_GYrms=0; idiag_psiYrms=0
         idiag_aaerms=0; idiag_divphib=0;
         idiag_dteta=0; idiag_dtsigE=0; idiag_etaSchw=0; idiag_etaArn=0
         idiag_sigEm=0; idiag_sigBm=0; idiag_sigErms=0; idiag_sigBrms=0
@@ -1849,6 +1898,8 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'constrainteqnrms',idiag_constrainteqnrms)
         call parse_name(iname,cname(iname),cform(iname),'gausscrms',idiag_gausscrms)
         call parse_name(iname,cname(iname),cform(iname),'gaussprms',idiag_gaussprms)
+        call parse_name(iname,cname(iname),cform(iname),'GYrms',idiag_GYrms)
+        call parse_name(iname,cname(iname),cform(iname),'psiYrms',idiag_psiYrms)
         call parse_name(iname,cname(iname),cform(iname),'gaussnrms',idiag_gaussnrms)
         call parse_name(iname,cname(iname),cform(iname),'aaerms',idiag_aaerms)
         call parse_name(iname,cname(iname),cform(iname),'divphib',idiag_divphib)
