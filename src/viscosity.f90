@@ -3284,7 +3284,7 @@ module Viscosity
     call copy_addr(znu,p_par(18))
     call copy_addr(widthnu,p_par(19))
     call copy_addr(widthnu2,p_par(20))
-    call copy_addr(c_smag,p_par(21))
+    call copy_addr(c_smag,p_par(21)) ! real dconst 
     call copy_addr(gamma_smag,p_par(22))
     call copy_addr(nu_jump2,p_par(23))
     call copy_addr(znu_shock,p_par(24))
