@@ -3384,7 +3384,7 @@ module Viscosity
     call copy_addr(nu_y,p_par(115))        ! (my)
     call copy_addr(gnu_y,p_par(116))       ! (my)
     call copy_addr(lvisc_nu_const_bulk,p_par(117)) ! bool
-    call copy_addr(mu,p_par(118))
+    call copy_addr(mu,p_par(118)) ! real dconst
     call copy_addr(lrate_of_strain_as_aux,p_par(119)) ! bool
     call copy_addr(iSij,p_par(120)) ! int
 
