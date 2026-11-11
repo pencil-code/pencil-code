@@ -211,6 +211,15 @@ endif
 DLL_FFLAGS = -fPIC
 DLL_LDFLAGS = -shared
 #
+# On macOS, ld refuses unresolved symbols in shared libraries by default.
+# special.so (multiple special modules) references symbols of Cdata, Sub, etc.,
+# which are resolved from start.x/run.x when the library is loaded.
+# (Linux ld allows this by default, so nothing changes there.)
+#
+ifeq ($(shell uname -s),Darwin)
+  DLL_LDFLAGS += -Wl,-undefined,dynamic_lookup
+endif
+#
 # Allow the user to specify extra linker flags as arguments to make.
 #
 LDFLAGS_EXTRA =
