@@ -472,6 +472,8 @@ void setupConfig(AcMeshInfo& config)
   PCLoad(config, AC_y12,y12__mod__cdata);
   PCLoad(config, AC_sinth12,sinth12__mod__cdata);
   PCLoad(config, AC_z12,z12__mod__cdata);
+  PCLoad(config, AC_sld_rfac_abs,lsld_rfac_abs__mod__cdata);
+
 
   PCLoad(config, AC_rk_order, itorder);
   PCLoad(config, AC_shear,lshear);

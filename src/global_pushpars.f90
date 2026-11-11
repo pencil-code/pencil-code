@@ -501,6 +501,7 @@ contains
     call copy_addr(lna_table_min,p_par(1430))
     call copy_addr(dlna,p_par(1431))
     call copy_addr(lsld_every_step,p_par(1432)) ! bool
+    call copy_addr(lsld_rfac_abs,p_par(1455)) ! bool
 
     call copy_addr(ifcrx,p_par(1433)) ! int
     call copy_addr(dtlimit,p_par(1434)) ! real dconst

@@ -247,7 +247,7 @@ module Param_IO
       lsnap_tcrit, tsnap_crit_log_interval, &
       lvid_tcrit, tvid_crit_log_interval, &
       lset_lfirst_call_early, &
-      lsld_every_step
+      lsld_every_step, lsld_rfac_abs
 !
   namelist /IO_pars/ &
       lcollective_IO, IO_strategy

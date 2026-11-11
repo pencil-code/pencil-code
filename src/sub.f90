@@ -8310,6 +8310,16 @@ nameloop: do
             ldiv_4th=.false.
         endselect
 !
+!  The 4th order divergence and flux averages assume constant grid spacing.
+!
+        if (ldiv_4th) then
+          if ((.not.lequidist(1) .and. nxgrid/=1) .or. &
+              (.not.lequidist(2) .and. nygrid/=1) .or. &
+              (.not.lequidist(3) .and. nzgrid/=1)) &
+            call fatal_error('sub:calc_slope_diff_flux', &
+                             '4th order divergence requires an equidistant grid; use div_type=2nd')
+        endif
+!
       do k=1,3
 !
         fim1=0.
@@ -8351,7 +8361,9 @@ nameloop: do
 !     imm12
 !
           do ix=1,nx
-            if ((fimm12_r(ix)-fimm12_l(ix))*(fim1(ix)-fimm1(ix)) <= 0.0) then
+            if (lsld_rfac_abs) then
+              rfac(ix)=abs(fimm12_r(ix)-fimm12_l(ix))/(abs(fim1(ix)-fimm1(ix))+tini)
+            elseif ((fimm12_r(ix)-fimm12_l(ix))*(fim1(ix)-fimm1(ix)) <= 0.0) then
               rfac(ix) = 0.0
             else
               rfac(ix)=(fimm12_r(ix)-fimm12_l(ix))/(fim1(ix)-fimm1(ix))
@@ -8368,7 +8380,9 @@ nameloop: do
 !     ipp12
 !
           do ix=1,nx
-            if ((fipp12_r(ix)-fipp12_l(ix))*(fipp1(ix)-fip1(ix)) <= 0.0) then
+            if (lsld_rfac_abs) then
+              rfac(ix)=abs(fipp12_r(ix)-fipp12_l(ix))/(abs(fipp1(ix)-fip1(ix))+tini)
+            elseif ((fipp12_r(ix)-fipp12_l(ix))*(fipp1(ix)-fip1(ix)) <= 0.0) then
               rfac(ix) = 0.0
             else
               rfac(ix)=(fipp12_r(ix)-fipp12_l(ix))/(fipp1(ix)-fip1(ix))
@@ -8386,7 +8400,7 @@ nameloop: do
 !     im12
 !
         do ix=1,nx
-          if (j==ilnrho .or. j==ilnTT) then
+          if ((j==ilnrho .and. .not. ldensity_nolog) .or. (j==ilnTT .and. .not. ltemperature_nolog)) then
             tmp = exp(f(ix+nghost,m,n,j))
             fdif = tmp-fim1(ix)
             fadd = tmp+fim1(ix)
@@ -8395,9 +8409,12 @@ nameloop: do
             fadd = f(ix+nghost,m,n,j)+fim1(ix)
           endif
 !
-! avoid that the product is 0 or negativ
+! lsld_rfac_abs: ratio of moduli as in the former special/solar_corona.f90 version,
+! otherwise avoid that the product is 0 or negativ
 !
-          if ((fim12_r(ix)-fim12_l(ix))*fdif <= 0.0) then
+          if (lsld_rfac_abs) then
+            rfac(ix)=abs(fim12_r(ix)-fim12_l(ix))/(abs(fdif)+tini)
+          elseif ((fim12_r(ix)-fim12_l(ix))*fdif <= 0.0) then
             rfac(ix) = 0.0
           else
 !
@@ -8421,7 +8438,7 @@ nameloop: do
 !     ip12
 !
         do ix=1,nx
-          if (j==ilnrho .or. j==ilnTT) then
+          if ((j==ilnrho .and. .not. ldensity_nolog) .or. (j==ilnTT .and. .not. ltemperature_nolog)) then
             tmp = exp(f(ix+nghost,m,n,j))
             fdif = fip1(ix)-tmp
             fadd = fip1(ix)+tmp
@@ -8430,9 +8447,12 @@ nameloop: do
             fadd = fip1(ix)+f(ix+nghost,m,n,j)
           endif
 !
-! avoid that the product is 0 or negativ
+! lsld_rfac_abs: ratio of moduli as in the former special/solar_corona.f90 version,
+! otherwise avoid that the product is 0 or negativ
 !
-          if ((fip12_r(ix)-fip12_l(ix))*fdif <= 0.0) then
+          if (lsld_rfac_abs) then
+            rfac(ix)=abs(fip12_r(ix)-fip12_l(ix))/(abs(fdif)+tini)
+          elseif ((fip12_r(ix)-fip12_l(ix))*fdif <= 0.0) then
             rfac(ix) = 0.0
           else
 !
@@ -8618,7 +8638,13 @@ nameloop: do
 ! Reconstruction of a scalar by slope limited linear interpolation
 ! Get values at half grid points l+1/2,m+1/2,n+1/2 depending on case(k)
 !
+! The limited slopes are computed per unit length and extrapolated over half
+! the actual grid spacing, so the reconstruction is exact for linear profiles
+! also on non-equidistant grids. In equidistant directions the spacing is set
+! to 1, which gives bit-identical results to plain index differences.
+!
 !  13-03-2020/Joern: coded, based on similar routine in special/solar_corona.f90
+!  11-nov-2026/TP: take non-equidistant grid spacing into account
 !
       intent(in) :: f,k,j, ldiv_4th
       intent(out) :: fim12_l,fim12_r,fim1
@@ -8627,249 +8653,103 @@ nameloop: do
       real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (nx) :: fim12_l,fim12_r,fim1
       real, dimension (nx) :: fip12_l,fip12_r,fip1
-      real, dimension (nx) :: delfy,delfz,delfyp1,delfym1,delfzp1,delfzm1
-      real, dimension (nx) :: delfypp1,delfymm1,delfzpp1,delfzmm1
-      real, dimension (mx) :: delfx
+      real, dimension (mx) :: delfx, gx, hx
+      real, dimension (nx,7) :: gyz
       integer :: j,k
-      integer :: i,ix
-      real :: tmp0,tmp1,tmp2,tmp3,tmp4,tmp5
-      real :: expf, expfm1, expfp1, expfm2, expfp2
-      logical :: ldiv_4th
+      integer :: i,ix,o
+      real :: gm3,gm2,gm1,g0,gp1,gp2,gp3
+      real :: hm2,hm1,h0,hp1,hp2,hp3
+      real :: delm2,delm1,del0,delp1,delp2
+      logical :: ldiv_4th, llog
 !
       real, dimension (nx), optional, intent(out) :: fimm12_l,fimm12_r,fimm1
       real, dimension (nx), optional, intent(out) :: fipp12_l,fipp12_r,fipp1
 !
-! x-component
+      llog = ((j==ilnrho .and. .not. ldensity_nolog) .or. (j==ilnTT .and. .not. ltemperature_nolog))
 !
       select case (k)
+!
+! x-component
+!
         case(1)
-          if (j==ilnrho .or. j==ilnTT) then
-            expf   = exp(f(l1-3,m,n,j))
-            expfp1 = exp(f(l1-2,m,n,j))
-            do i=l1-2,l2+2
-              expfm1=expf
-              expf=expfp1
-              expfp1 = exp(f(i+1,m,n,j))
-              tmp1=expf-expfm1
-              tmp2=expfp1-expf
-              delfx(i) = minmod_alt(tmp1,tmp2)
-            enddo
-            expfm1 = exp(f(l1-2,m,n,j))
-            expf   = exp(f(l1-1,m,n,j))
-            expfp1 = exp(f(l1,m,n,j))
-            expfp2 = exp(f(l1+1,m,n,j))
-            do i=l1,l2
-              ix=i-nghost
-              expfm2 = expfm1
-              expfm1 = expf
-              expf   = expfp1
-              expfp1 = expfp2
-              expfp2 = exp(f(i+2,m,n,j))
-              fim12_l(ix) = expfm1+delfx(i-1)
-              fim12_r(ix) = expf  -delfx(i)
-              fip12_l(ix) = expf  +delfx(i)
-              fip12_r(ix) = expfp1-delfx(i+1)
-              fim1(ix) = expfm1
-              fip1(ix) = expfp1
-              if (ldiv_4th) then
-                fimm12_l(ix) = expfm2+delfx(i-2)
-                fimm12_r(ix) = expfm1-delfx(i-1)
-                fipp12_l(ix) = expfp1+delfx(i+1)
-                fipp12_r(ix) = expfp2-delfx(i+2)
-                fimm1(ix) = expfm2
-                fipp1(ix) = expfp2
-              endif
-            enddo
+          if (lequidist(1)) then
+            hx = 1.0
           else
-            do i=l1-2,l2+2
-              tmp1=f(i,m,n,j)-f(i-1,m,n,j)
-              tmp2=f(i+1,m,n,j)-f(i,m,n,j)
-              delfx(i) = minmod_alt(tmp1,tmp2)
-            enddo
-            do i=l1,l2
-              ix=i-nghost
-              fim12_l(ix)  = f(i-1,m,n,j)+delfx(i-1)
-              fim12_r(ix)  = f(i,m,n,j)  -delfx(i)
-              fip12_l(ix)  = f(i,m,n,j)  +delfx(i)
-              fip12_r(ix)  = f(i+1,m,n,j)-delfx(i+1)
-              fim1(ix) = f(i-1,m,n,j)
-              fip1(ix) = f(i+1,m,n,j)
-              if (ldiv_4th) then
-                fimm12_l(ix) = f(i-2,m,n,j)+delfx(i-2)
-                fimm12_r(ix) = f(i-1,m,n,j)-delfx(i-1)
-                fipp12_l(ix) = f(i+1,m,n,j)+delfx(i+1)
-                fipp12_r(ix) = f(i+2,m,n,j)-delfx(i+2)
-                fimm1(ix) = f(i-2,m,n,j)
-                fipp1(ix) = f(i+2,m,n,j)
-              endif
-            enddo
+            hx(2:mx) = x(2:mx)-x(1:mx-1)
+            hx(1) = hx(2)
           endif
+          do i=l1-3,l2+3
+            if (llog) then
+              gx(i) = exp(f(i,m,n,j))
+            else
+              gx(i) = f(i,m,n,j)
+            endif
+          enddo
+          do i=l1-2,l2+2
+            delfx(i) = minmod_alt((gx(i)-gx(i-1))/hx(i),(gx(i+1)-gx(i))/hx(i+1))
+          enddo
+          do i=l1,l2
+            ix=i-nghost
+            fim12_l(ix) = gx(i-1)+delfx(i-1)*hx(i)
+            fim12_r(ix) = gx(i)  -delfx(i)  *hx(i)
+            fip12_l(ix) = gx(i)  +delfx(i)  *hx(i+1)
+            fip12_r(ix) = gx(i+1)-delfx(i+1)*hx(i+1)
+            fim1(ix) = gx(i-1)
+            fip1(ix) = gx(i+1)
+            if (ldiv_4th) then
+              fimm12_l(ix) = gx(i-2)+delfx(i-2)*hx(i-1)
+              fimm12_r(ix) = gx(i-1)-delfx(i-1)*hx(i-1)
+              fipp12_l(ix) = gx(i+1)+delfx(i+1)*hx(i+2)
+              fipp12_r(ix) = gx(i+2)-delfx(i+2)*hx(i+2)
+              fimm1(ix) = gx(i-2)
+              fipp1(ix) = gx(i+2)
+            endif
+          enddo
 !
-! y-component
+! y- and z-component: gyz(:,o+4) holds the value at offset o=-3..3 from (m,n)
 !
-        case(2)
-          if (j==ilnrho .or. j==ilnTT) then
-            do i=l1,l2
-              expfm2 = exp(f(i,m-2,n,j))
-              expfm1 = exp(f(i,m-1,n,j))
-              expf   = exp(f(i,m,n,j))
-              expfp1 = exp(f(i,m+1,n,j))
-              expfp2 = exp(f(i,m+2,n,j))
-              ix=i-nghost
-              tmp1=expfm1-expfm2
-              tmp2=expf  -expfm1
-              tmp3=expfp1-expf
-              tmp4=expfp2-expfp1
-              delfym1(ix) = minmod_alt(tmp1,tmp2)
-              delfy(ix)   = minmod_alt(tmp2,tmp3)
-              delfyp1(ix) = minmod_alt(tmp3,tmp4)
-              if (ldiv_4th) then
-                tmp0=expfm2-exp(f(i,m-3,n,j))
-                tmp5=exp(f(i,m+3,n,j))-expfp2
-                delfymm1(ix)= minmod_alt(tmp0,tmp1)
-                delfypp1(ix)= minmod_alt(tmp4,tmp5)
-              endif
-            enddo
-            do i=l1,l2
-              ix=i-nghost
-              expfm1 = exp(f(i,m-1,n,j))
-              expf   = exp(f(i,m,n,j))
-              expfp1 = exp(f(i,m+1,n,j))
-              fim12_l(ix) = expfm1+delfym1(ix)
-              fim12_r(ix) = expf  -delfy(ix)
-              fip12_l(ix) = expf  +delfy(ix)
-              fip12_r(ix) = expfp1-delfyp1(ix)
-              fim1(ix) = expfm1
-              fip1(ix) = expfp1
-              if (ldiv_4th) then
-                expfm2 = exp(f(i,m-2,n,j))
-                expfp2 = exp(f(i,m+2,n,j))
-                fimm12_l(ix) = expfm2+delfymm1(ix)
-                fimm12_r(ix) = expfm1-delfym1(ix)
-                fipp12_l(ix) = expfp1+delfyp1(ix)
-                fipp12_r(ix) = expfp2-delfypp1(ix)
-                fimm1(ix) = expfm2
-                fipp1(ix) = expfp2
-              endif
-            enddo
+        case(2,3)
+          if (lequidist(k)) then
+            hm2=1.0; hm1=1.0; h0=1.0; hp1=1.0; hp2=1.0; hp3=1.0
+          elseif (k==2) then
+            hm2=y(m-2)-y(m-3); hm1=y(m-1)-y(m-2); h0 =y(m)  -y(m-1)
+            hp1=y(m+1)-y(m)  ; hp2=y(m+2)-y(m+1); hp3=y(m+3)-y(m+2)
           else
-            do i=l1,l2
-              ix=i-nghost
-              tmp1=f(i,m-1,n,j)-f(i,m-2,n,j)
-              tmp2=f(i,m,n,j)  -f(i,m-1,n,j)
-              tmp3=f(i,m+1,n,j)-f(i,m,n,j)
-              tmp4=f(i,m+2,n,j)-f(i,m+1,n,j)
-              delfym1(ix) = minmod_alt(tmp1,tmp2)
-              delfy(ix) = minmod_alt(tmp2,tmp3)
-              delfyp1(ix) = minmod_alt(tmp3,tmp4)
-              if (ldiv_4th) then
-                tmp0=f(i,m-2,n,j)-f(i,m-3,n,j)
-                tmp5=f(i,m+3,n,j)-f(i,m+2,n,j)
-                delfymm1(ix) = minmod_alt(tmp0,tmp1)
-                delfypp1(ix) = minmod_alt(tmp4,tmp5)
-              endif
-            enddo
-            do i=l1,l2
-              ix=i-nghost
-              fim12_l(ix) = f(i,m-1,n,j)+delfym1(ix)
-              fim12_r(ix) = f(i,m,n,j)  -delfy(ix)
-              fip12_l(ix) = f(i,m,n,j)  +delfy(ix)
-              fip12_r(ix) = f(i,m+1,n,j)-delfyp1(ix)
-              fim1(ix) = f(i,m-1,n,j)
-              fip1(ix) = f(i,m+1,n,j)
-              if (ldiv_4th) then
-                fimm12_l(ix) = f(i,m-2,n,j)+delfymm1(ix)
-                fimm12_r(ix) = f(i,m-1,n,j)-delfym1(ix)
-                fipp12_l(ix) = f(i,m+1,n,j)+delfyp1(ix)
-                fipp12_r(ix) = f(i,m+2,n,j)-delfypp1(ix)
-                fimm1(ix) = f(i,m-2,n,j)
-                fipp1(ix) = f(i,m+2,n,j)
-              endif
-            enddo
+            hm2=z(n-2)-z(n-3); hm1=z(n-1)-z(n-2); h0 =z(n)  -z(n-1)
+            hp1=z(n+1)-z(n)  ; hp2=z(n+2)-z(n+1); hp3=z(n+3)-z(n+2)
           endif
-!
-! z-component
-!
-        case(3)
-          if (j==ilnrho .or. j==ilnTT) then
-            do i=l1,l2
-              ix=i-nghost
-              expfm2 = exp(f(i,m,n-2,j))
-              expfm1 = exp(f(i,m,n-1,j))
-              expf   = exp(f(i,m,n,j))
-              expfp1 = exp(f(i,m,n+1,j))
-              expfp2 = exp(f(i,m,n+2,j))
-              tmp1=expfm1-expfm2
-              tmp2=expf  -expfm1
-              tmp3=expfp1-expf
-              tmp4=expfp2-expfp1
-              delfzm1(ix) = minmod_alt(tmp1,tmp2)
-              delfz(ix) = minmod_alt(tmp2,tmp3)
-              delfzp1(ix) = minmod_alt(tmp3,tmp4)
-              if (ldiv_4th) then
-                tmp0=expfm2-exp(f(i,m,n-3,j))
-                tmp5=exp(f(i,m,n+3,j))-expfp2
-                delfzmm1(ix) = minmod_alt(tmp0,tmp1)
-                delfzpp1(ix) = minmod_alt(tmp4,tmp5)
-              endif
-            enddo
-            do i=l1,l2
-              ix=i-nghost
-              expfm1 = exp(f(i,m,n-1,j))
-              expf   = exp(f(i,m,n,j))
-              expfp1 = exp(f(i,m,n+1,j))
-              fim12_l(ix) = expfm1+delfzm1(ix)
-              fim12_r(ix) = expf-delfz(ix)
-              fip12_l(ix) = expf+delfz(ix)
-              fip12_r(ix) = expfp1-delfzp1(ix)
-              fim1(ix) = expfm1
-              fip1(ix) = expfp1
-              if (ldiv_4th) then
-                expfm2 = exp(f(i,m,n-2,j))
-                expfp2 = exp(f(i,m,n+2,j))
-                fimm12_l(ix) = expfm2+delfzmm1(ix)
-                fimm12_r(ix) = expfm1-delfzm1(ix)
-                fipp12_l(ix) = expfp1+delfzp1(ix)
-                fipp12_r(ix) = expfp2-delfzpp1(ix)
-                fimm1(ix) = expfm2
-                fipp1(ix) = expfp2
-              endif
-            enddo
-          else
-            do i=l1,l2
-              ix=i-nghost
-              tmp1=f(i,m,n-1,j)-f(i,m,n-2,j)
-              tmp2=f(i,m,n,j)  -f(i,m,n-1,j)
-              tmp3=f(i,m,n+1,j)-f(i,m,n  ,j)
-              tmp4=f(i,m,n+2,j)-f(i,m,n+1,j)
-              delfzm1(ix) = minmod_alt(tmp1,tmp2)
-              delfz(ix)   = minmod_alt(tmp2,tmp3)
-              delfzp1(ix) = minmod_alt(tmp3,tmp4)
-              if (ldiv_4th) then
-                tmp0=f(i,m,n-2,j)-f(i,m,n-3,j)
-                tmp5=f(i,m,n+3,j)-f(i,m,n+2,j)
-                delfzpp1(ix) = minmod_alt(tmp4,tmp5)
-                delfzmm1(ix)= minmod_alt(tmp0,tmp1)
-              endif
-            enddo
-            do i=l1,l2
-              ix=i-nghost
-              fim12_l(ix) = f(i,m,n-1,j)+delfzm1(ix)
-              fim12_r(ix) = f(i,m,n,j)  -delfz(ix)
-              fip12_l(ix) = f(i,m,n,j)  +delfz(ix)
-              fip12_r(ix) = f(i,m,n+1,j)-delfzp1(ix)
-              fim1(ix) = f(i,m,n-1,j)
-              fip1(ix) = f(i,m,n+1,j)
-              if (ldiv_4th) then
-                fimm12_l(ix) = f(i,m,n-2,j)+delfzmm1(ix)
-                fimm12_r(ix) = f(i,m,n-1,j)-delfzm1(ix)
-                fipp12_l(ix) = f(i,m,n+1,j)+delfzp1(ix)
-                fipp12_r(ix) = f(i,m,n+2,j)-delfzpp1(ix)
-                fimm1(ix) = f(i,m,n-2,j)
-                fipp1(ix) = f(i,m,n+2,j)
-              endif
-            enddo
-          endif
+          do o=-3,3
+            if (abs(o)==3 .and. .not.ldiv_4th) cycle
+            if (k==2) then
+              gyz(:,o+4) = f(l1:l2,m+o,n,j)
+            else
+              gyz(:,o+4) = f(l1:l2,m,n+o,j)
+            endif
+            if (llog) gyz(:,o+4) = exp(gyz(:,o+4))
+          enddo
+          do ix=1,nx
+            gm2=gyz(ix,2); gm1=gyz(ix,3); g0=gyz(ix,4); gp1=gyz(ix,5); gp2=gyz(ix,6)
+            delm1 = minmod_alt((gm1-gm2)/hm1,(g0 -gm1)/h0 )
+            del0  = minmod_alt((g0 -gm1)/h0 ,(gp1-g0 )/hp1)
+            delp1 = minmod_alt((gp1-g0 )/hp1,(gp2-gp1)/hp2)
+            fim12_l(ix) = gm1+delm1*h0
+            fim12_r(ix) = g0 -del0 *h0
+            fip12_l(ix) = g0 +del0 *hp1
+            fip12_r(ix) = gp1-delp1*hp1
+            fim1(ix) = gm1
+            fip1(ix) = gp1
+            if (ldiv_4th) then
+              gm3=gyz(ix,1); gp3=gyz(ix,7)
+              delm2 = minmod_alt((gm2-gm3)/hm2,(gm1-gm2)/hm1)
+              delp2 = minmod_alt((gp2-gp1)/hp2,(gp3-gp2)/hp3)
+              fimm12_l(ix) = gm2+delm2*hm1
+              fimm12_r(ix) = gm1-delm1*hm1
+              fipp12_l(ix) = gp1+delp1*hp2
+              fipp12_r(ix) = gp2-delp2*hp2
+              fimm1(ix) = gm2
+              fipp1(ix) = gp2
+            endif
+          enddo
         case default
           call fatal_error('sub:slope_lim_lin_interpol','wrong component')
         endselect
