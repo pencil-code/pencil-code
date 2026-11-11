@@ -2228,6 +2228,9 @@ module Special
       call copy_addr(lpi_vecpot,p_par(75)) ! bool
       call copy_addr(iaae,p_par(76)) ! int
       call copy_addr(iphi_f,p_par(77)) ! int
+      call copy_addr(kappa_GammaY,p_par(78))
+      call copy_addr(idiag_GYrms,p_par(79)) ! int
+      call copy_addr(idiag_psiYrms,p_par(80)) ! int
 
     endsubroutine pushpars2c
 !***********************************************************************
