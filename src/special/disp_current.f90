@@ -86,6 +86,7 @@ module Special
   logical :: loverride_c_light=.false., ldensity_add_je_heating=.false., llorentzforce_ee=.false.
   logical :: lcorrect_sign_adphiB_term=.false. !PAR_DOC: correct sign adphiB_term
   logical :: lignore_adphiB_term_in_MHD_current=.true. !PAR_DOC: correct sign adphiB_term
+  logical :: lupdate_ghost_diva=.false.
   character (len=labellen) :: inita0='zero'
   logical :: lpi_vecpot=.false.
 !
@@ -119,7 +120,7 @@ module Special
     lrandom_ampl_ee, lfixed_phase_ee, lskip_projection_ee, &
     luse_scale_factor_in_sigma, lpower_profile_file, power_filename, &
     coupl_gy, alpfpsi, lpsi_hom, loverride_c_light, &
-    ldensity_add_je_heating, llorentzforce_ee
+    ldensity_add_je_heating, llorentzforce_ee, lupdate_ghost_diva
 !
   ! run parameters
   real :: beta_inflation=0., rescale_ee=1., vA_limit=0., eta_given=impossible
@@ -502,7 +503,9 @@ module Special
 !
       if (llongitudinalE) then
 !  ghost zones of A must be filled before taking the divergence
-        call update_ghosts_ptr(f,iax,iaz)
+        if (lupdate_ghost_diva) then
+          call update_ghosts_ptr(f,iax,iaz)
+        endif
         do n=n1,n2; do m=m1,m2
           call div(f,iaa,diva)
           f(l1:l2,m,n,iGamma)=diva
