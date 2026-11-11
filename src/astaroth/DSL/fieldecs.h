@@ -438,6 +438,77 @@ const Field3 F_QVEC = {F_QQX, F_QQY, F_QQZ}
 #define F_QX F_QQX
 #define F_QY F_QQY
 #define F_QZ F_QQZ
+field_order(AC_iww1__mod__cdata != 0 ? AC_iww1__mod__cdata+0-1 : -1) Field F_WW1X
+field_order(AC_iww1__mod__cdata != 0 ? AC_iww1__mod__cdata+1-1 : -1) Field F_WW1Y
+field_order(AC_iww1__mod__cdata != 0 ? AC_iww1__mod__cdata+2-1 : -1) Field F_WW1Z
+const Field3 F_WW1 = {F_WW1X, F_WW1Y, F_WW1Z}
+const Field3 F_WW1VEC = {F_WW1X, F_WW1Y, F_WW1Z}
+field_order(AC_iww2__mod__cdata != 0 ? AC_iww2__mod__cdata+0-1 : -1) Field F_WW2X
+field_order(AC_iww2__mod__cdata != 0 ? AC_iww2__mod__cdata+1-1 : -1) Field F_WW2Y
+field_order(AC_iww2__mod__cdata != 0 ? AC_iww2__mod__cdata+2-1 : -1) Field F_WW2Z
+const Field3 F_WW2 = {F_WW2X, F_WW2Y, F_WW2Z}
+const Field3 F_WW2VEC = {F_WW2X, F_WW2Y, F_WW2Z}
+field_order(AC_iww3__mod__cdata != 0 ? AC_iww3__mod__cdata+0-1 : -1) Field F_WW3X
+field_order(AC_iww3__mod__cdata != 0 ? AC_iww3__mod__cdata+1-1 : -1) Field F_WW3Y
+field_order(AC_iww3__mod__cdata != 0 ? AC_iww3__mod__cdata+2-1 : -1) Field F_WW3Z
+const Field3 F_WW3 = {F_WW3X, F_WW3Y, F_WW3Z}
+const Field3 F_WW3VEC = {F_WW3X, F_WW3Y, F_WW3Z}
+#if LELECTROWEAKSU2
+field_order(AC_idww1__mod__electroweaksu2 != 0 ? AC_idww1__mod__electroweaksu2+0-1 : -1) Field F_DWW1X
+field_order(AC_idww1__mod__electroweaksu2 != 0 ? AC_idww1__mod__electroweaksu2+1-1 : -1) Field F_DWW1Y
+field_order(AC_idww1__mod__electroweaksu2 != 0 ? AC_idww1__mod__electroweaksu2+2-1 : -1) Field F_DWW1Z
+const Field3 F_DWW1 = {F_DWW1X, F_DWW1Y, F_DWW1Z}
+const Field3 F_DWW1VEC = {F_DWW1X, F_DWW1Y, F_DWW1Z}
+#endif
+#if LELECTROWEAKSU2
+field_order(AC_idww2__mod__electroweaksu2 != 0 ? AC_idww2__mod__electroweaksu2+0-1 : -1) Field F_DWW2X
+field_order(AC_idww2__mod__electroweaksu2 != 0 ? AC_idww2__mod__electroweaksu2+1-1 : -1) Field F_DWW2Y
+field_order(AC_idww2__mod__electroweaksu2 != 0 ? AC_idww2__mod__electroweaksu2+2-1 : -1) Field F_DWW2Z
+const Field3 F_DWW2 = {F_DWW2X, F_DWW2Y, F_DWW2Z}
+const Field3 F_DWW2VEC = {F_DWW2X, F_DWW2Y, F_DWW2Z}
+#endif
+#if LELECTROWEAKSU2
+field_order(AC_idww3__mod__electroweaksu2 != 0 ? AC_idww3__mod__electroweaksu2+0-1 : -1) Field F_DWW3X
+field_order(AC_idww3__mod__electroweaksu2 != 0 ? AC_idww3__mod__electroweaksu2+1-1 : -1) Field F_DWW3Y
+field_order(AC_idww3__mod__electroweaksu2 != 0 ? AC_idww3__mod__electroweaksu2+2-1 : -1) Field F_DWW3Z
+const Field3 F_DWW3 = {F_DWW3X, F_DWW3Y, F_DWW3Z}
+const Field3 F_DWW3VEC = {F_DWW3X, F_DWW3Y, F_DWW3Z}
+#endif
+#if LELECTROWEAKSU2
+field_order(AC_igammaw__mod__electroweaksu2 != 0 ? AC_igammaw__mod__electroweaksu2+0-1 : -1) Field F_GAMMAWX
+field_order(AC_igammaw__mod__electroweaksu2 != 0 ? AC_igammaw__mod__electroweaksu2+1-1 : -1) Field F_GAMMAWY
+field_order(AC_igammaw__mod__electroweaksu2 != 0 ? AC_igammaw__mod__electroweaksu2+2-1 : -1) Field F_GAMMAWZ
+const Field3 F_GAMMAW = {F_GAMMAWX, F_GAMMAWY, F_GAMMAWZ}
+const Field3 F_GAMMAVEC = {F_GAMMAWX, F_GAMMAWY, F_GAMMAWZ}
+#endif
+#if LELECTROWEAKSU2
+field_order(AC_iww1ddot__mod__electroweaksu2 != 0 ? AC_iww1ddot__mod__electroweaksu2+0-1 : -1) Field F_WW1DDOTX
+field_order(AC_iww1ddot__mod__electroweaksu2 != 0 ? AC_iww1ddot__mod__electroweaksu2+1-1 : -1) Field F_WW1DDOTY
+field_order(AC_iww1ddot__mod__electroweaksu2 != 0 ? AC_iww1ddot__mod__electroweaksu2+2-1 : -1) Field F_WW1DDOTZ
+const Field3 F_WW1DDOT = {F_WW1DDOTX, F_WW1DDOTY, F_WW1DDOTZ}
+const Field3 F_WW1DDOVEC = {F_WW1DDOTX, F_WW1DDOTY, F_WW1DDOTZ}
+#endif
+#if LELECTROWEAKSU2
+field_order(AC_iww2ddot__mod__electroweaksu2 != 0 ? AC_iww2ddot__mod__electroweaksu2+0-1 : -1) Field F_WW2DDOTX
+field_order(AC_iww2ddot__mod__electroweaksu2 != 0 ? AC_iww2ddot__mod__electroweaksu2+1-1 : -1) Field F_WW2DDOTY
+field_order(AC_iww2ddot__mod__electroweaksu2 != 0 ? AC_iww2ddot__mod__electroweaksu2+2-1 : -1) Field F_WW2DDOTZ
+const Field3 F_WW2DDOT = {F_WW2DDOTX, F_WW2DDOTY, F_WW2DDOTZ}
+const Field3 F_WW2DDOVEC = {F_WW2DDOTX, F_WW2DDOTY, F_WW2DDOTZ}
+#endif
+#if LELECTROWEAKSU2
+field_order(AC_iww3ddot__mod__electroweaksu2 != 0 ? AC_iww3ddot__mod__electroweaksu2+0-1 : -1) Field F_WW3DDOTX
+field_order(AC_iww3ddot__mod__electroweaksu2 != 0 ? AC_iww3ddot__mod__electroweaksu2+1-1 : -1) Field F_WW3DDOTY
+field_order(AC_iww3ddot__mod__electroweaksu2 != 0 ? AC_iww3ddot__mod__electroweaksu2+2-1 : -1) Field F_WW3DDOTZ
+const Field3 F_WW3DDOT = {F_WW3DDOTX, F_WW3DDOTY, F_WW3DDOTZ}
+const Field3 F_WW3DDOVEC = {F_WW3DDOTX, F_WW3DDOTY, F_WW3DDOTZ}
+#endif
+#if LELECTROWEAKSU2
+field_order(AC_idivdotw__mod__electroweaksu2 != 0 ? AC_idivdotw__mod__electroweaksu2+0-1 : -1) Field F_DIVDOTWX
+field_order(AC_idivdotw__mod__electroweaksu2 != 0 ? AC_idivdotw__mod__electroweaksu2+1-1 : -1) Field F_DIVDOTWY
+field_order(AC_idivdotw__mod__electroweaksu2 != 0 ? AC_idivdotw__mod__electroweaksu2+2-1 : -1) Field F_DIVDOTWZ
+const Field3 F_DIVDOTW = {F_DIVDOTWX, F_DIVDOTWY, F_DIVDOTWZ}
+const Field3 F_DIVDOTVEC = {F_DIVDOTWX, F_DIVDOTWY, F_DIVDOTWZ}
+#endif
 // @auto-field-declarations: fortran-parser adds missing fields above this line
 #if LDEBUG_OUTPUT_TIMES
 field_order(AC_ispecial__mod__debug_output_times != 0 ? AC_ispecial__mod__debug_output_times-1 : -1) Field F_SPECIAL

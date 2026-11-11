@@ -248,6 +248,88 @@ real3 DF_QQ = rk_intermediate_split_first(F_QQ,step_num)
 #define DF_QX DF_QQ.x
 #define DF_QY DF_QQ.y
 #define DF_QZ DF_QQ.z
+real3 DF_WW1 = rk_intermediate_split_first(F_WW1,step_num)
+#define DF_IWW1__MOD__CDATA DF_WW1
+#define DF_WW1VEC DF_WW1
+#define DF_WW1X DF_WW1.x
+#define DF_WW1Y DF_WW1.y
+#define DF_WW1Z DF_WW1.z
+real3 DF_WW2 = rk_intermediate_split_first(F_WW2,step_num)
+#define DF_IWW2__MOD__CDATA DF_WW2
+#define DF_WW2VEC DF_WW2
+#define DF_WW2X DF_WW2.x
+#define DF_WW2Y DF_WW2.y
+#define DF_WW2Z DF_WW2.z
+real3 DF_WW3 = rk_intermediate_split_first(F_WW3,step_num)
+#define DF_IWW3__MOD__CDATA DF_WW3
+#define DF_WW3VEC DF_WW3
+#define DF_WW3X DF_WW3.x
+#define DF_WW3Y DF_WW3.y
+#define DF_WW3Z DF_WW3.z
+#if LELECTROWEAKSU2
+real3 DF_DWW1 = rk_intermediate_split_first(F_DWW1,step_num)
+#define DF_IDWW1__MOD__ELECTROWEAKSU2 DF_DWW1
+#define DF_DWW1VEC DF_DWW1
+#define DF_DWW1X DF_DWW1.x
+#define DF_DWW1Y DF_DWW1.y
+#define DF_DWW1Z DF_DWW1.z
+#endif
+#if LELECTROWEAKSU2
+real3 DF_DWW2 = rk_intermediate_split_first(F_DWW2,step_num)
+#define DF_IDWW2__MOD__ELECTROWEAKSU2 DF_DWW2
+#define DF_DWW2VEC DF_DWW2
+#define DF_DWW2X DF_DWW2.x
+#define DF_DWW2Y DF_DWW2.y
+#define DF_DWW2Z DF_DWW2.z
+#endif
+#if LELECTROWEAKSU2
+real3 DF_DWW3 = rk_intermediate_split_first(F_DWW3,step_num)
+#define DF_IDWW3__MOD__ELECTROWEAKSU2 DF_DWW3
+#define DF_DWW3VEC DF_DWW3
+#define DF_DWW3X DF_DWW3.x
+#define DF_DWW3Y DF_DWW3.y
+#define DF_DWW3Z DF_DWW3.z
+#endif
+#if LELECTROWEAKSU2
+real3 DF_GAMMAW = rk_intermediate_split_first(F_GAMMAW,step_num)
+#define DF_IGAMMAW__MOD__ELECTROWEAKSU2 DF_GAMMAW
+#define DF_GAMMAVEC DF_GAMMAW
+#define DF_GAMMAWX DF_GAMMAW.x
+#define DF_GAMMAWY DF_GAMMAW.y
+#define DF_GAMMAWZ DF_GAMMAW.z
+#endif
+#if LELECTROWEAKSU2
+real3 DF_WW1DDOT = value(F_WW1DDOT)
+#define DF_IWW1DDOT__MOD__ELECTROWEAKSU2 DF_WW1DDOT
+#define DF_WW1DDOVEC DF_WW1DDOT
+#define DF_WW1DDOTX DF_WW1DDOT.x
+#define DF_WW1DDOTY DF_WW1DDOT.y
+#define DF_WW1DDOTZ DF_WW1DDOT.z
+#endif
+#if LELECTROWEAKSU2
+real3 DF_WW2DDOT = value(F_WW2DDOT)
+#define DF_IWW2DDOT__MOD__ELECTROWEAKSU2 DF_WW2DDOT
+#define DF_WW2DDOVEC DF_WW2DDOT
+#define DF_WW2DDOTX DF_WW2DDOT.x
+#define DF_WW2DDOTY DF_WW2DDOT.y
+#define DF_WW2DDOTZ DF_WW2DDOT.z
+#endif
+#if LELECTROWEAKSU2
+real3 DF_WW3DDOT = value(F_WW3DDOT)
+#define DF_IWW3DDOT__MOD__ELECTROWEAKSU2 DF_WW3DDOT
+#define DF_WW3DDOVEC DF_WW3DDOT
+#define DF_WW3DDOTX DF_WW3DDOT.x
+#define DF_WW3DDOTY DF_WW3DDOT.y
+#define DF_WW3DDOTZ DF_WW3DDOT.z
+#endif
+#if LELECTROWEAKSU2
+real3 DF_DIVDOTW = value(F_DIVDOTW)
+#define DF_IDIVDOTW__MOD__ELECTROWEAKSU2 DF_DIVDOTW
+#define DF_DIVDOTVEC DF_DIVDOTW
+#define DF_DIVDOTWX DF_DIVDOTW.x
+#define DF_DIVDOTWY DF_DIVDOTW.y
+#define DF_DIVDOTWZ DF_DIVDOTW.z
+#endif
 // @auto-field-declarations: fortran-parser adds missing fields above this line
 #if LDEBUG_OUTPUT_TIMES
 real DF_SPECIAL = rk_intermediate_split_first(F_SPECIAL,step_num)

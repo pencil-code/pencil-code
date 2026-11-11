@@ -8,6 +8,19 @@ DF_UU.z += AC_par_dep[2][vertexIdx.x][vertexIdx.y][vertexIdx.z]
 #endif
 #endif
 #include "../freeze_df.h"
+#if LELECTROWEAKSU2
+  if(AC_iww1ddot__mod__electroweaksu2 != 0) write(F_WW1DDOT, DF_WW1DDOT)
+#endif
+#if LELECTROWEAKSU2
+  if(AC_iww2ddot__mod__electroweaksu2 != 0) write(F_WW2DDOT, DF_WW2DDOT)
+#endif
+#if LELECTROWEAKSU2
+  if(AC_iww3ddot__mod__electroweaksu2 != 0) write(F_WW3DDOT, DF_WW3DDOT)
+#endif
+#if LELECTROWEAKSU2
+  if(AC_idivdotw__mod__electroweaksu2 != 0) write(F_DIVDOTW, DF_DIVDOTW)
+#endif
+// @auto-aux-writeback: fortran-parser adds write-backs of auxiliaries written in the rhs above this line
  if(!AC_lsubstepping_in_time__mod__cdata)
  {
 #if Lhydro_MODULE
@@ -277,6 +290,21 @@ DF_UU.z += AC_par_dep[2][vertexIdx.x][vertexIdx.y][vertexIdx.z]
           if(AC_ibeta__mod__z4c.z != 0) write(F_BETAZ, rk_intermediate(F_BETAZ,DF_BETAVEC.z,step_num,AC_dt__mod__cdata))
 #endif
           if(AC_iqq__mod__cdata != 0) write(F_QQ, rk_intermediate(F_QQ,DF_QQ,step_num,AC_dt__mod__cdata))
+          if(AC_iww1__mod__cdata != 0) write(F_WW1, rk_intermediate(F_WW1,DF_WW1,step_num,AC_dt__mod__cdata))
+          if(AC_iww2__mod__cdata != 0) write(F_WW2, rk_intermediate(F_WW2,DF_WW2,step_num,AC_dt__mod__cdata))
+          if(AC_iww3__mod__cdata != 0) write(F_WW3, rk_intermediate(F_WW3,DF_WW3,step_num,AC_dt__mod__cdata))
+#if LELECTROWEAKSU2
+          if(AC_idww1__mod__electroweaksu2 != 0) write(F_DWW1, rk_intermediate(F_DWW1,DF_DWW1,step_num,AC_dt__mod__cdata))
+#endif
+#if LELECTROWEAKSU2
+          if(AC_idww2__mod__electroweaksu2 != 0) write(F_DWW2, rk_intermediate(F_DWW2,DF_DWW2,step_num,AC_dt__mod__cdata))
+#endif
+#if LELECTROWEAKSU2
+          if(AC_idww3__mod__electroweaksu2 != 0) write(F_DWW3, rk_intermediate(F_DWW3,DF_DWW3,step_num,AC_dt__mod__cdata))
+#endif
+#if LELECTROWEAKSU2
+          if(AC_igammaw__mod__electroweaksu2 != 0) write(F_GAMMAW, rk_intermediate(F_GAMMAW,DF_GAMMAW,step_num,AC_dt__mod__cdata))
+#endif
 // @auto-field-declarations: fortran-parser adds missing fields above this line
    }
    else
