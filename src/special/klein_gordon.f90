@@ -1369,7 +1369,8 @@ module Special
           if (.not.lphi_doublet) &
               call fatal_error("dspecial_dt: lphi_doublet=.false. but Vprime_choice='doublet'", &
                                trim(Vprime_choice))
-          p%Vprime=2*lambda_phi*(p%phi_doublet_mod**2 - eta_phi**2)*p%phi_doublet_mod
+          ! p%Vprime=2*lambda_phi*(p%phi_doublet_mod**2 - eta_phi**2)*p%phi_doublet_mod
+          p%Vprime=2*lambda_phi*(p%phi_doublet_mod**2 - eta_phi**2)
         case ('waterfall')
           if (.not.lwaterfall) &
               call fatal_error("dspecial_dt: lwaterfall=.false. but Vprime_choice='waterfall'", &
@@ -1568,8 +1569,8 @@ module Special
             0.5*coupl_gw*(-p%W1(:,1)*dfdxs(:,4,1) - &
             p%W1(:,2)*dfdxs(:,4,2) - p%W1(:,3)*dfdxs(:,4,3) + &
             p%W2(:,1)*dfdxs(:,3,1) + p%W2(:,2)*dfdxs(:,3,2) + &
-            p%W2(:,3)*dfdxs(:,3,3) - p%W3(:,1)*dfdxs(:,2,1) + &
-            p%W3(:,2)*dfdxs(:,2,2) + p%W3(:,3)*dfdxs(:,2,3) - &
+            p%W2(:,3)*dfdxs(:,3,3) - p%W3(:,1)*dfdxs(:,2,1) - &
+            p%W3(:,2)*dfdxs(:,2,2) - p%W3(:,3)*dfdxs(:,2,3) - &
             p%W1(:,1)*p%cov_der(:,2,4) - p%W1(:,2)*p%cov_der(:,3,4) - &
             p%W1(:,3)*p%cov_der(:,4,4) + p%W2(:,1)*p%cov_der(:,2,3) + &
             p%W2(:,2)*p%cov_der(:,3,3) + p%W2(:,3)*p%cov_der(:,4,3) - &
@@ -1602,7 +1603,7 @@ module Special
             p%W1(:,3)*p%cov_der(:,4,2) - p%W2(:,1)*p%cov_der(:,2,1) - &
             p%W2(:,2)*p%cov_der(:,3,1) - p%W2(:,3)*p%cov_der(:,4,1) + &
             p%W3(:,1)*p%cov_der(:,2,4) + p%W3(:,2)*p%cov_der(:,3,4) + &
-            p%W3(:,3)*p%cov_der(:,4,4) + p%gammaW3*p%phi_doublet(:,2) - &
+            p%W3(:,3)*p%cov_der(:,4,4) + p%gammaW3*p%phi_doublet(:,3) - &
             p%gammaW2*p%phi - p%gammaW1*p%phi_doublet(:,1))
 
           ! del2phi_down_im
@@ -2752,6 +2753,9 @@ module Special
             Vpotential=Vpotential+.25*psimass2**2/lambda_psi
           endif
           Vpotential=Vpotential-0.5*psimass2*psi**2+.5*coupl_phipsi**2*phi**2*psi**2
+        case ('doublet')
+          Vpotential=lambda_phi*(f(l1:l2,m,n,iphi)**2+f(l1:l2,m,n,iphi+1)**2+ &
+                f(l1:l2,m,n,iphi+2)**2+f(l1:l2,m,n,iphi+3)**2-eta_phi**2)**2
         case default
           call fatal_error("special_after_boundary: No such Vprime_choice: ",trim(Vprime_choice))
       endselect
