@@ -86,7 +86,8 @@ module Special
   logical :: loverride_c_light=.false., ldensity_add_je_heating=.false., llorentzforce_ee=.false.
   logical :: lcorrect_sign_adphiB_term=.false. !PAR_DOC: correct sign adphiB_term
   logical :: lignore_adphiB_term_in_MHD_current=.true. !PAR_DOC: correct sign adphiB_term
-  logical :: lupdate_ghost_diva=.false.
+  ! alberto: lupdate_ghost_diva should be removed after agreed
+  logical :: lupdate_ghost_diva=.false. !PAR_DOC: fill ghost zones of A before Gamma=div(A) at initialisation.
   character (len=labellen) :: inita0='zero'
   logical :: lpi_vecpot=.false.
 !
