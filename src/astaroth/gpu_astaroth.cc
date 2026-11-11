@@ -2061,7 +2061,7 @@ static void
 particles_set_config_arrays(AcMeshInfo& config)
 {
 	static std::vector<AcReal> zeros((size_t)PAR_NREC_HOST*npar,0.0);
-	for (const AcRealArrayParam param : {AC_fp_xp,AC_fp_yp,AC_fp_zp,AC_fp_vpx,AC_fp_vpy,AC_fp_vpz,AC_fp_ipar,
+	for (const AcRealArrayParam param : {AC_par_rhs,AC_fp_xp,AC_fp_yp,AC_fp_zp,AC_fp_vpx,AC_fp_vpy,AC_fp_vpz,AC_fp_ipar,
 	                                     AC_dfp_xp,AC_dfp_yp,AC_dfp_zp,
 	                                     AC_par_leaving,AC_par_idx,AC_par_idx2,AC_par_buf})
 		config[param] = zeros.data();
@@ -2376,7 +2376,7 @@ particles_migrate()
 }
 /***********************************************************************************************/
 static void
-particles_substep(const int isubstep)
+particles_substep(const int isubstep, const double t_now)
 {
 	auto& p = particles_gpu;
 	if (!p.on) return;
@@ -2389,23 +2389,27 @@ particles_substep(const int isubstep)
 #endif
 	if (p.n_loc > 0)
 	{
-#if LPARTICLES_DUST
+#if LPARTICLES_DUST && !LPARTICLES_NBODY
 		auto& params = acDeviceGetKernelInputParamsObject(acGridGetDevice())->particles_dust_step;
 		params.delta_y_now = delta_y;
 #else
-		auto& params = acDeviceGetKernelInputParamsObject(acGridGetDevice())->particles_tracer_step;
+#if !LPARTICLES_DUST
+		acDeviceGetKernelInputParamsObject(acGridGetDevice())->particles_rhs.t_now = t_now;
+		particles_launch(particles_rhs,p.n_loc);
+#endif
+		auto& params = acDeviceGetKernelInputParamsObject(acGridGetDevice())->particles_advance;
 #endif
 		params.step_num = isubstep-1;   //RK coefficients are computed in the kernel
 		params.dt_step  = dt;
 		params.xx0_x = p.xx0_loc[0]; params.xx0_y = p.xx0_loc[1]; params.xx0_z = p.xx0_loc[2];
 		params.xx1_x = p.xx1_loc[0]; params.xx1_y = p.xx1_loc[1]; params.xx1_z = p.xx1_loc[2];
-#if LPARTICLES_DUST
+#if LPARTICLES_DUST && !LPARTICLES_NBODY
 		particles_launch(particles_dust_step,p.n_loc);
+#else
+		particles_launch(particles_advance,p.n_loc);
 #if LPARTICLES_NBODY
 		particles_dep_current = false;
 #endif
-#else
-		particles_launch(particles_tracer_step,p.n_loc);
 #endif
 	}
 	//Collective: all processes take part even without particles
@@ -2580,7 +2584,7 @@ particles_fold(const int comp0, const int ncomp)
 /***********************************************************************************************/
 //What the particles need from the gas at the start of a substep: the drag and its back-reaction. Collective.
 static void
-particles_prepare()
+particles_prepare(const double t_now)
 {
 	auto& p = particles_gpu;
 	if (!p.on) return;
@@ -2594,7 +2598,8 @@ particles_prepare()
 #endif
 	if (p.n_loc > 0)
 	{
-		particles_launch(particles_dust_drag,p.n_loc);
+		acDeviceGetKernelInputParamsObject(acGridGetDevice())->particles_rhs.t_now = t_now;
+		particles_launch(particles_rhs,p.n_loc);
 	}
 #if !LPARTICLES_NBODY
 	particles_sort();
@@ -2618,7 +2623,9 @@ particles_update_dt1()
 	AcReal dt1_loc = 0.0;
 	if (p.n_loc > 0)
 	{
+#if !LPARTICLES_NBODY
 		particles_launch(particles_dust_dt1,p.n_loc);
+#endif
 		particles_store_array(AC_par_dt1,p.buffer.data());
 		dt1_loc = *std::max_element(p.buffer.begin(),p.buffer.begin()+p.n_loc);
 	}
@@ -3008,7 +3015,7 @@ extern "C" void substepGPU(int istep, int isubstep, double t)
 {
   prepare_rhs(isubstep,t);
 #if LPARTICLES_DUST
-  particles_prepare();
+  particles_prepare(t);
   if (isubstep == 1) particles_update_dt1();
 #if LPARTICLES_SINK
   particles_create_sinks();
@@ -3039,7 +3046,7 @@ extern "C" void substepGPU(int istep, int isubstep, double t)
   update_forcing(isubstep);
 #if LPARTICLES
   //Particles are advanced before the fluid since they need u at the beginning of the substep
-  particles_substep(isubstep);
+  particles_substep(isubstep,t);
 #endif
 
   AcTaskGraph *rhs =  acGetOptimizedDSLTaskGraph(AC_rhs);

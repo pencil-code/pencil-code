@@ -7796,12 +7796,23 @@ endif
 !
       use Syscalls, only: copy_addr
 !
-      integer, parameter :: n_pars=10
+      integer, parameter :: n_pars=20
       integer(KIND=ikind8), dimension(n_pars) :: p_par
 !
       call copy_addr(cdtp,p_par(1))
       call copy_addr(rhop_swarm,p_par(2))
       call copy_addr(ldragforce_gas_par,p_par(3)) ! bool
+      call copy_addr(lfollow_gas,p_par(4)) ! bool
+      call copy_addr(lcoriolis_force_par,p_par(5)) ! bool
+      call copy_addr(lcentrifugal_force_par,p_par(6)) ! bool
+      call copy_addr(lshear_accel_par,p_par(7)) ! bool
+      call copy_addr(beta_dpdr_dust,p_par(8))
+      call copy_addr(beta_dpdr_dust_scaled,p_par(9))
+      call copy_addr(tstart_dragforce_par,p_par(10))
+      call copy_addr(ldt_adv_par,p_par(11)) ! bool
+      call copy_addr(lcdtp_shear,p_par(12)) ! bool
+      call copy_addr(l_shell,p_par(13)) ! bool
+      call copy_addr(k_shell,p_par(14)) ! int
 !
     endsubroutine pushpars2c
 !***********************************************************************

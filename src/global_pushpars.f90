@@ -514,6 +514,7 @@ contains
     if(allocated(ninds)) call copy_addr(ninds,p_par(1443)) ! int (nghost*2+1) (ncoarse__mod__cdata+2) (nz)
 
     call copy_addr(ipy,p_par(1448)) ! int
+    call copy_addr(qshear,p_par(1449))
   endsubroutine pushpars2c
 !***********************************************************************
 endmodule Global_pushpars

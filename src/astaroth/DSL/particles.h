@@ -8,7 +8,9 @@
 //analysis (run with zero kernel parameters) would skip the bodies, so acc would treat the particle
 //arrays as unused and remove them.
 //
-//particles_tracer_step is launched after the halos of the velocity have been updated.
+//The right-hand sides of the particle equations (kernel particles_rhs) are generated from dxxp_dt and dvvp_dt at
+//compilation time, see transpile.py and fortran-parser/particles_rhs.py, for tracers and for the self-gravitating
+//particles. particles_tracer_step is launched after the halos of the velocity have been updated.
 //Per RK substep it does what dxxp_dt_pencil + particles_timestep_second +
 //boundconds_particles do on the CPU for Cartesian, periodic, non-shearing boxes:
 //  dfp = alpha*dfp + u(xp)   (alpha, beta: low-storage RK coefficients of AC_rk_order,
@@ -35,6 +37,8 @@ gmem real AC_dfp_yp[AC_npar]
 gmem real AC_dfp_zp[AC_npar]
 gmem real AC_fp_ipar[AC_npar]
 
+//Right-hand sides from particles_rhs: xp,yp,zp,vpx,vpy,vpz
+gmem real AC_par_rhs[6][AC_npar]
 gmem real AC_par_leaving[AC_npar]
 gmem real AC_par_idx[AC_npar]
 gmem real AC_par_idx2[AC_npar]
@@ -147,70 +151,109 @@ particle_rk_beta(int step_num)
 	return rk3_beta[step_num]
 }
 
+//Interpolation primitives of the generated right-hand sides (interpolate_linear): as dxp0 etc. in that routine.
+//The Fortran ineargrid is 1-based, as the grid arrays in the translated code.
+particle_ineargrid_x(int k)
+{
+	if (AC_nxgrid == 1) return NGHOST+1
+	return particle_lower_index(AC_fp_xp[k], AC_x__mod__cdata[NGHOST], AC_dx_1__mod__cdata[NGHOST], AC_nlocal.x)+1
+}
+particle_ineargrid_y(int k)
+{
+	if (AC_nygrid == 1) return NGHOST+1
+	return particle_lower_index(AC_fp_yp[k], AC_y__mod__cdata[NGHOST], AC_dy_1__mod__cdata[NGHOST], AC_nlocal.y)+1
+}
+particle_ineargrid_z(int k)
+{
+	if (AC_nzgrid == 1) return NGHOST+1
+	return particle_lower_index(AC_fp_zp[k], AC_z__mod__cdata[NGHOST], AC_dz_1__mod__cdata[NGHOST], AC_nlocal.z)+1
+}
+particle_ix0(real xp)
+{
+	int i = AC_nmin.x
+	if (AC_nxgrid != 1)
+	{
+		i = particle_lower_index(xp, AC_x__mod__cdata[NGHOST], AC_dx_1__mod__cdata[NGHOST], AC_nlocal.x)
+		if (AC_x__mod__cdata[i] > xp) i = i-1
+	}
+	return i
+}
+particle_iy0(real yp)
+{
+	int i = AC_nmin.y
+	if (AC_nygrid != 1)
+	{
+		i = particle_lower_index(yp, AC_y__mod__cdata[NGHOST], AC_dy_1__mod__cdata[NGHOST], AC_nlocal.y)
+		if (AC_y__mod__cdata[i] > yp) i = i-1
+	}
+	return i
+}
+particle_iz0(real zp)
+{
+	int i = AC_nmin.z
+	if (AC_nzgrid != 1)
+	{
+		i = particle_lower_index(zp, AC_z__mod__cdata[NGHOST], AC_dz_1__mod__cdata[NGHOST], AC_nlocal.z)
+		if (AC_z__mod__cdata[i] > zp) i = i-1
+	}
+	return i
+}
+particle_offset(real pos, real gridpos, int nglobal)
+{
+	if (nglobal != 1) return pos-gridpos
+	return 0.0
+}
+#if LPARTICLES_TRACERS
+particle_linear_gas_u(int k)
+{
+	const int ix0 = particle_ix0(AC_fp_xp[k])
+	const int iy0 = particle_iy0(AC_fp_yp[k])
+	const int iz0 = particle_iz0(AC_fp_zp[k])
+	const real xp0 = particle_offset(AC_fp_xp[k], AC_x__mod__cdata[ix0], AC_nxgrid)
+	const real yp0 = particle_offset(AC_fp_yp[k], AC_y__mod__cdata[iy0], AC_nygrid)
+	const real zp0 = particle_offset(AC_fp_zp[k], AC_z__mod__cdata[iz0], AC_nzgrid)
+	const real dx1 = AC_dx_1__mod__cdata[ix0]
+	const real dy1 = AC_dy_1__mod__cdata[iy0]
+	const real dz1 = AC_dz_1__mod__cdata[iz0]
+	return real3(particle_interpolate_linear(F_UX, ix0, iy0, iz0, xp0, yp0, zp0, dx1, dy1, dz1),
+	             particle_interpolate_linear(F_UY, ix0, iy0, iz0, xp0, yp0, zp0, dx1, dy1, dz1),
+	             particle_interpolate_linear(F_UZ, ix0, iy0, iz0, xp0, yp0, zp0, dx1, dy1, dz1))
+}
+#include "particles_rhs.h"
+#endif
+
+//Advances the particles by one RK substep with the right-hand sides of particles_rhs and applies the periodic
+//wrap and the migration flags, as particles_timestep_second + boundconds_particles do on the CPU.
 //xx0_*, xx1_*: bounds of the local subdomain relative to xyz0 (xyz0_loc-xyz0, xyz1_loc-xyz0)
 //as used in migrate_particles; the host passes -/+huge in directions without migration.
-Kernel particles_tracer_step(int step_num, real dt_step,
-                             real xx0_x, real xx0_y, real xx0_z, real xx1_x, real xx1_y, real xx1_z)
+Kernel particles_advance(int step_num, real dt_step,
+                         real xx0_x, real xx0_y, real xx0_z, real xx1_x, real xx1_y, real xx1_z)
 {
 	const real alpha   = particle_rk_alpha(step_num)
 	const real dt_beta = dt_step*particle_rk_beta(step_num)
 	const int k = vertexIdx.x
 	if (k >= 0)   //always true; bare blocks are not allowed in the DSL
 	{
-		const real xp = AC_fp_xp[k]
-		const real yp = AC_fp_yp[k]
-		const real zp = AC_fp_zp[k]
-
-		int ix0 = NGHOST
-		int iy0 = NGHOST
-		int iz0 = NGHOST
-		real xp0 = 0.0
-		real yp0 = 0.0
-		real zp0 = 0.0
-		if (AC_nxgrid != 1)
-		{
-			ix0 = particle_lower_index(xp, AC_x__mod__cdata[NGHOST], AC_dx_1__mod__cdata[NGHOST], AC_nlocal.x)
-			if (AC_x__mod__cdata[ix0] > xp) ix0 = ix0-1
-			xp0 = xp - AC_x__mod__cdata[ix0]
-		}
-		if (AC_nygrid != 1)
-		{
-			iy0 = particle_lower_index(yp, AC_y__mod__cdata[NGHOST], AC_dy_1__mod__cdata[NGHOST], AC_nlocal.y)
-			if (AC_y__mod__cdata[iy0] > yp) iy0 = iy0-1
-			yp0 = yp - AC_y__mod__cdata[iy0]
-		}
-		if (AC_nzgrid != 1)
-		{
-			iz0 = particle_lower_index(zp, AC_z__mod__cdata[NGHOST], AC_dz_1__mod__cdata[NGHOST], AC_nlocal.z)
-			if (AC_z__mod__cdata[iz0] > zp) iz0 = iz0-1
-			zp0 = zp - AC_z__mod__cdata[iz0]
-		}
-		const real dx1 = AC_dx_1__mod__cdata[ix0]
-		const real dy1 = AC_dy_1__mod__cdata[iy0]
-		const real dz1 = AC_dz_1__mod__cdata[iz0]
-
-		const real ux = particle_interpolate_linear(F_UX, ix0, iy0, iz0, xp0, yp0, zp0, dx1, dy1, dz1)
-		const real uy = particle_interpolate_linear(F_UY, ix0, iy0, iz0, xp0, yp0, zp0, dx1, dy1, dz1)
-		const real uz = particle_interpolate_linear(F_UZ, ix0, iy0, iz0, xp0, yp0, zp0, dx1, dy1, dz1)
-
-		//vvp is an auxiliary equal to the gas velocity at the particle (only for output)
-		AC_fp_vpx[k] = ux
-		AC_fp_vpy[k] = uy
-		AC_fp_vpz[k] = uz
-
-		real dxp = alpha*AC_dfp_xp[k]
-		real dyp = alpha*AC_dfp_yp[k]
-		real dzp = alpha*AC_dfp_zp[k]
-		if (AC_nxgrid != 1) dxp = dxp + ux
-		if (AC_nygrid != 1) dyp = dyp + uy
-		if (AC_nzgrid != 1) dzp = dzp + uz
+		const real dxp = alpha*AC_dfp_xp[k] + AC_par_rhs[0][k]
+		const real dyp = alpha*AC_dfp_yp[k] + AC_par_rhs[1][k]
+		const real dzp = alpha*AC_dfp_zp[k] + AC_par_rhs[2][k]
 		AC_dfp_xp[k] = dxp
 		AC_dfp_yp[k] = dyp
 		AC_dfp_zp[k] = dzp
-
-		const real xn = particle_periodic_wrap(xp + dt_beta*dxp, AC_xyz0__mod__cdata.x, AC_xyz1__mod__cdata.x, AC_lxyz__mod__cdata.x)
-		const real yn = particle_periodic_wrap(yp + dt_beta*dyp, AC_xyz0__mod__cdata.y, AC_xyz1__mod__cdata.y, AC_lxyz__mod__cdata.y)
-		const real zn = particle_periodic_wrap(zp + dt_beta*dzp, AC_xyz0__mod__cdata.z, AC_xyz1__mod__cdata.z, AC_lxyz__mod__cdata.z)
+#if LPARTICLES_NBODY
+		const real dvpx = alpha*AC_dfp_vpx[k] + AC_par_rhs[3][k]
+		const real dvpy = alpha*AC_dfp_vpy[k] + AC_par_rhs[4][k]
+		const real dvpz = alpha*AC_dfp_vpz[k] + AC_par_rhs[5][k]
+		AC_dfp_vpx[k] = dvpx
+		AC_dfp_vpy[k] = dvpy
+		AC_dfp_vpz[k] = dvpz
+		AC_fp_vpx[k]  = AC_fp_vpx[k] + dt_beta*dvpx
+		AC_fp_vpy[k]  = AC_fp_vpy[k] + dt_beta*dvpy
+		AC_fp_vpz[k]  = AC_fp_vpz[k] + dt_beta*dvpz
+#endif
+		const real xn = particle_periodic_wrap(AC_fp_xp[k] + dt_beta*dxp, AC_xyz0__mod__cdata.x, AC_xyz1__mod__cdata.x, AC_lxyz__mod__cdata.x)
+		const real yn = particle_periodic_wrap(AC_fp_yp[k] + dt_beta*dyp, AC_xyz0__mod__cdata.y, AC_xyz1__mod__cdata.y, AC_lxyz__mod__cdata.y)
+		const real zn = particle_periodic_wrap(AC_fp_zp[k] + dt_beta*dzp, AC_xyz0__mod__cdata.z, AC_xyz1__mod__cdata.z, AC_lxyz__mod__cdata.z)
 		AC_fp_xp[k] = xn
 		AC_fp_yp[k] = yn
 		AC_fp_zp[k] = zn
@@ -270,95 +313,23 @@ particle_gpot_linear(int c, int ix0, int iy0, int iz0, real xp0, real yp0, real 
 	       xp0*yp0*zp0*dx1*dy1*dz1*(-g1+g2+g3-g4+g5-g6-g7+g8)
 }
 
-//Acceleration by self-gravity at each particle (dvvp_dt_selfgrav), stored in AC_par_drag_*
-Kernel particles_dust_drag()
+//interpolate_linear of the gradient of the potential at a particle, primitive of the generated right-hand side
+particle_linear_gpot(int k)
 {
-	const int k = vertexIdx.x
-	if (k >= 0)   //always true; bare blocks are not allowed in the DSL
-	{
-		const real xp = AC_fp_xp[k]
-		const real yp = AC_fp_yp[k]
-		const real zp = AC_fp_zp[k]
-		int ix0 = NGHOST
-		int iy0 = NGHOST
-		int iz0 = AC_nmin.z
-		real xp0 = 0.0
-		real yp0 = 0.0
-		real zp0 = 0.0
-		if (AC_nxgrid != 1)
-		{
-			ix0 = particle_lower_index(xp, AC_x__mod__cdata[NGHOST], AC_dx_1__mod__cdata[NGHOST], AC_nlocal.x)
-			if (AC_x__mod__cdata[ix0] > xp) ix0 = ix0-1
-			xp0 = xp - AC_x__mod__cdata[ix0]
-		}
-		if (AC_nygrid != 1)
-		{
-			iy0 = particle_lower_index(yp, AC_y__mod__cdata[NGHOST], AC_dy_1__mod__cdata[NGHOST], AC_nlocal.y)
-			if (AC_y__mod__cdata[iy0] > yp) iy0 = iy0-1
-			yp0 = yp - AC_y__mod__cdata[iy0]
-		}
-		if (AC_nzgrid != 1)
-		{
-			iz0 = particle_lower_index(zp, AC_z__mod__cdata[NGHOST], AC_dz_1__mod__cdata[NGHOST], AC_nlocal.z)
-			if (AC_z__mod__cdata[iz0] > zp) iz0 = iz0-1
-			zp0 = zp - AC_z__mod__cdata[iz0]
-		}
-		const real dx1 = AC_dx_1__mod__cdata[ix0]
-		const real dy1 = AC_dy_1__mod__cdata[iy0]
-		const real dz1 = AC_dz_1__mod__cdata[iz0]
-		AC_par_drag_x[k] = -particle_gpot_linear(0, ix0, iy0, iz0, xp0, yp0, zp0, dx1, dy1, dz1)
-		AC_par_drag_y[k] = -particle_gpot_linear(1, ix0, iy0, iz0, xp0, yp0, zp0, dx1, dy1, dz1)
-		AC_par_drag_z[k] = -particle_gpot_linear(2, ix0, iy0, iz0, xp0, yp0, zp0, dx1, dy1, dz1)
-	}
+	const int ix0 = particle_ix0(AC_fp_xp[k])
+	const int iy0 = particle_iy0(AC_fp_yp[k])
+	const int iz0 = particle_iz0(AC_fp_zp[k])
+	const real xp0 = particle_offset(AC_fp_xp[k], AC_x__mod__cdata[ix0], AC_nxgrid)
+	const real yp0 = particle_offset(AC_fp_yp[k], AC_y__mod__cdata[iy0], AC_nygrid)
+	const real zp0 = particle_offset(AC_fp_zp[k], AC_z__mod__cdata[iz0], AC_nzgrid)
+	const real dx1 = AC_dx_1__mod__cdata[ix0]
+	const real dy1 = AC_dy_1__mod__cdata[iy0]
+	const real dz1 = AC_dz_1__mod__cdata[iz0]
+	return real3(particle_gpot_linear(0, ix0, iy0, iz0, xp0, yp0, zp0, dx1, dy1, dz1),
+	             particle_gpot_linear(1, ix0, iy0, iz0, xp0, yp0, zp0, dx1, dy1, dz1),
+	             particle_gpot_linear(2, ix0, iy0, iz0, xp0, yp0, zp0, dx1, dy1, dz1))
 }
-
-//Per RK substep what dxxp_dt + dvvp_dt_selfgrav + particles_timestep_second + boundconds_particles do on the CPU
-Kernel particles_dust_step(int step_num, real dt_step,
-                           real xx0_x, real xx0_y, real xx0_z, real xx1_x, real xx1_y, real xx1_z,
-                           real delta_y_now)
-{
-	suppress_unused_warning(delta_y_now)
-	const real alpha   = particle_rk_alpha(step_num)
-	const real dt_beta = dt_step*particle_rk_beta(step_num)
-	const int k = vertexIdx.x
-	if (k >= 0)   //always true; bare blocks are not allowed in the DSL
-	{
-		const real vpx = AC_fp_vpx[k]
-		const real vpy = AC_fp_vpy[k]
-		const real vpz = AC_fp_vpz[k]
-		real dxp = alpha*AC_dfp_xp[k]
-		real dyp = alpha*AC_dfp_yp[k]
-		real dzp = alpha*AC_dfp_zp[k]
-		if (AC_nxgrid != 1) dxp = dxp + vpx
-		if (AC_nygrid != 1) dyp = dyp + vpy
-		if (AC_nzgrid != 1) dzp = dzp + vpz
-		const real dvpx = alpha*AC_dfp_vpx[k] + AC_par_drag_x[k]
-		const real dvpy = alpha*AC_dfp_vpy[k] + AC_par_drag_y[k]
-		const real dvpz = alpha*AC_dfp_vpz[k] + AC_par_drag_z[k]
-		AC_dfp_xp[k]  = dxp
-		AC_dfp_yp[k]  = dyp
-		AC_dfp_zp[k]  = dzp
-		AC_dfp_vpx[k] = dvpx
-		AC_dfp_vpy[k] = dvpy
-		AC_dfp_vpz[k] = dvpz
-		AC_fp_vpx[k]  = vpx + dt_beta*dvpx
-		AC_fp_vpy[k]  = vpy + dt_beta*dvpy
-		AC_fp_vpz[k]  = vpz + dt_beta*dvpz
-
-		const real xn = particle_periodic_wrap(AC_fp_xp[k] + dt_beta*dxp, AC_xyz0__mod__cdata.x, AC_xyz1__mod__cdata.x, AC_lxyz__mod__cdata.x)
-		const real yn = particle_periodic_wrap(AC_fp_yp[k] + dt_beta*dyp, AC_xyz0__mod__cdata.y, AC_xyz1__mod__cdata.y, AC_lxyz__mod__cdata.y)
-		const real zn = particle_periodic_wrap(AC_fp_zp[k] + dt_beta*dzp, AC_xyz0__mod__cdata.z, AC_xyz1__mod__cdata.z, AC_lxyz__mod__cdata.z)
-		AC_fp_xp[k] = xn
-		AC_fp_yp[k] = yn
-		AC_fp_zp[k] = zn
-
-		real leaving = 0.0
-		if ((xn-AC_xyz0__mod__cdata.x) >= xx1_x || (xn-AC_xyz0__mod__cdata.x) < xx0_x) leaving = 1.0
-		if ((yn-AC_xyz0__mod__cdata.y) >= xx1_y || (yn-AC_xyz0__mod__cdata.y) < xx0_y) leaving = 1.0
-		if ((zn-AC_xyz0__mod__cdata.z) >= xx1_z || (zn-AC_xyz0__mod__cdata.z) < xx0_z) leaving = 1.0
-		AC_par_leaving[k] = leaving
-	}
-}
+#include "particles_rhs.h"
 #else
 //Quadratic spline (TSC) interpolation as in interpolate_quadratic_spline, 3D only.
 //The arguments are the nearest grid point and the weights at offsets -1, 0, +1 in each direction.
@@ -399,71 +370,39 @@ particle_tausp1(int jspec)
 	return res
 }
 
-//qshear*Omega, zero without shear
-particle_qomega()
+//Quadratic spline interpolation of the gas velocity at a particle, primitive of the generated right-hand side
+particle_tsc_gas_u(int k)
 {
-	real res = 0.0
-	if (lshear) res = AC_qshear__mod__particles*AC_omega__mod__cdata
-	return res
+	const real xp  = AC_fp_xp[k]
+	const real yp  = AC_fp_yp[k]
+	const real zp  = AC_fp_zp[k]
+	const int ix0 = particle_lower_index(xp, AC_x__mod__cdata[NGHOST], AC_dx_1__mod__cdata[NGHOST], AC_nlocal.x)
+	const int iy0 = particle_lower_index(yp, AC_y__mod__cdata[NGHOST], AC_dy_1__mod__cdata[NGHOST], AC_nlocal.y)
+	const int iz0 = particle_lower_index(zp, AC_z__mod__cdata[NGHOST], AC_dz_1__mod__cdata[NGHOST], AC_nlocal.z)
+	const real dxp0 = (xp-AC_x__mod__cdata[ix0])*AC_dx_1__mod__cdata[ix0]
+	const real dyp0 = (yp-AC_y__mod__cdata[iy0])*AC_dy_1__mod__cdata[iy0]
+	const real dzp0 = (zp-AC_z__mod__cdata[iz0])*AC_dz_1__mod__cdata[iz0]
+	const real wxm = 0.5*(0.5-dxp0)*(0.5-dxp0)
+	const real wx0 = 0.75-dxp0*dxp0
+	const real wxp = 0.5*(0.5+dxp0)*(0.5+dxp0)
+	const real wym = 0.5*(0.5-dyp0)*(0.5-dyp0)
+	const real wy0 = 0.75-dyp0*dyp0
+	const real wyp = 0.5*(0.5+dyp0)*(0.5+dyp0)
+	const real wzm = 0.5*(0.5-dzp0)*(0.5-dzp0)
+	const real wz0 = 0.75-dzp0*dzp0
+	const real wzp = 0.5*(0.5+dzp0)*(0.5+dzp0)
+	return real3(particle_interpolate_tsc(F_UX, ix0, iy0, iz0, wxm, wx0, wxp, wym, wy0, wyp, wzm, wz0, wzp),
+	             particle_interpolate_tsc(F_UY, ix0, iy0, iz0, wxm, wx0, wxp, wym, wy0, wyp, wzm, wz0, wzp),
+	             particle_interpolate_tsc(F_UZ, ix0, iy0, iz0, wxm, wx0, wxp, wym, wy0, wyp, wzm, wz0, wzp))
 }
+#include "particles_rhs.h"
 
-//Constant acceleration of the radial pressure gradient
-particle_accel_x()
-{
-	real res = 0.0
-	if (AC_beta_dpdr_dust_scaled__mod__particles != 0.0) res = AC_cs20__mod__equationofstate*AC_beta_dpdr_dust_scaled__mod__particles/AC_gamma__mod__particles
-	return res
-}
-
-//Drag force per unit particle mass, from the gas velocity at the start of the substep (dvvp_dt_blocks)
-Kernel particles_dust_drag()
-{
-	const int k = vertexIdx.x
-	if (k >= 0)   //always true; bare blocks are not allowed in the DSL
-	{
-		const real xp  = AC_fp_xp[k]
-		const real yp  = AC_fp_yp[k]
-		const real zp  = AC_fp_zp[k]
-		const int ix0 = particle_lower_index(xp, AC_x__mod__cdata[NGHOST], AC_dx_1__mod__cdata[NGHOST], AC_nlocal.x)
-		const int iy0 = particle_lower_index(yp, AC_y__mod__cdata[NGHOST], AC_dy_1__mod__cdata[NGHOST], AC_nlocal.y)
-		const int iz0 = particle_lower_index(zp, AC_z__mod__cdata[NGHOST], AC_dz_1__mod__cdata[NGHOST], AC_nlocal.z)
-		const real dxp0 = (xp-AC_x__mod__cdata[ix0])*AC_dx_1__mod__cdata[ix0]
-		const real dyp0 = (yp-AC_y__mod__cdata[iy0])*AC_dy_1__mod__cdata[iy0]
-		const real dzp0 = (zp-AC_z__mod__cdata[iz0])*AC_dz_1__mod__cdata[iz0]
-		const real wxm = 0.5*(0.5-dxp0)*(0.5-dxp0)
-		const real wx0 = 0.75-dxp0*dxp0
-		const real wxp = 0.5*(0.5+dxp0)*(0.5+dxp0)
-		const real wym = 0.5*(0.5-dyp0)*(0.5-dyp0)
-		const real wy0 = 0.75-dyp0*dyp0
-		const real wyp = 0.5*(0.5+dyp0)*(0.5+dyp0)
-		const real wzm = 0.5*(0.5-dzp0)*(0.5-dzp0)
-		const real wz0 = 0.75-dzp0*dzp0
-		const real wzp = 0.5*(0.5+dzp0)*(0.5+dzp0)
-
-		//Sink particles feel no drag
-		const int jspec = particle_species(AC_fp_ipar[k])
-		real tausp1 = particle_tausp1(jspec)
-		if (AC_fp_aps[k] > 0.0) tausp1 = 0.0
-		const real ux = particle_interpolate_tsc(F_UX, ix0, iy0, iz0, wxm, wx0, wxp, wym, wy0, wyp, wzm, wz0, wzp)
-		const real uy = particle_interpolate_tsc(F_UY, ix0, iy0, iz0, wxm, wx0, wxp, wym, wy0, wyp, wzm, wz0, wzp)
-		const real uz = particle_interpolate_tsc(F_UZ, ix0, iy0, iz0, wxm, wx0, wxp, wym, wy0, wyp, wzm, wz0, wzp)
-		AC_par_drag_x[k] = -tausp1*(AC_fp_vpx[k]-ux)
-		AC_par_drag_y[k] = -tausp1*(AC_fp_vpy[k]-uy)
-		AC_par_drag_z[k] = -tausp1*(AC_fp_vpz[k]-uz)
-		AC_par_tausp1_k[k] = tausp1
-	}
-}
-
-//Per RK substep what dxxp_dt + dvvp_dt + particles_timestep_second + boundconds_particles do on the CPU
-//for dust_blocks in a 3D Cartesian shearing box. The drag comes from particles_dust_drag.
-//The shear offset used in the wrap is the one after this substep: the CPU wraps at the start of the next one.
+//RK update of a substep with the generated right-hand sides, and the wrap and migration flags as boundconds_particles
+//for a 3D Cartesian shearing box. The shear offset used in the wrap is the one after this substep: the CPU wraps at the start of the next one.
 Kernel particles_dust_step(int step_num, real dt_step,
                            real xx0_x, real xx0_y, real xx0_z, real xx1_x, real xx1_y, real xx1_z,
                            real delta_y_now)
 {
-	const real omega2 = 2.0*AC_omega__mod__cdata
-	const real qomega = particle_qomega()
-	const real accel_x = particle_accel_x()
 	const real delta_y_rate = -AC_sshear__mod__cdata*AC_lxyz__mod__cdata.x
 	const real alpha   = particle_rk_alpha(step_num)
 	const real dt_beta = dt_step*particle_rk_beta(step_num)
@@ -473,25 +412,21 @@ Kernel particles_dust_step(int step_num, real dt_step,
 		const real xp  = AC_fp_xp[k]
 		const real yp  = AC_fp_yp[k]
 		const real zp  = AC_fp_zp[k]
-		const real vpx = AC_fp_vpx[k]
-		const real vpy = AC_fp_vpy[k]
-		const real vpz = AC_fp_vpz[k]
-
-		const real dxp  = alpha*AC_dfp_xp[k] + vpx
-		const real dyp  = alpha*AC_dfp_yp[k] + vpy - qomega*xp
-		const real dzp  = alpha*AC_dfp_zp[k] + vpz
-		const real dvpx = alpha*AC_dfp_vpx[k] + omega2*vpy + accel_x + AC_par_drag_x[k]
-		const real dvpy = alpha*AC_dfp_vpy[k] - omega2*vpx + qomega*vpx + AC_par_drag_y[k]
-		const real dvpz = alpha*AC_dfp_vpz[k] - AC_nu_epicycle2__mod__particles*zp + AC_par_drag_z[k]
+		const real dxp  = alpha*AC_dfp_xp[k] + AC_par_rhs[0][k]
+		const real dyp  = alpha*AC_dfp_yp[k] + AC_par_rhs[1][k]
+		const real dzp  = alpha*AC_dfp_zp[k] + AC_par_rhs[2][k]
+		const real dvpx = alpha*AC_dfp_vpx[k] + AC_par_rhs[3][k]
+		const real dvpy = alpha*AC_dfp_vpy[k] + AC_par_rhs[4][k]
+		const real dvpz = alpha*AC_dfp_vpz[k] + AC_par_rhs[5][k]
 		AC_dfp_xp[k]  = dxp
 		AC_dfp_yp[k]  = dyp
 		AC_dfp_zp[k]  = dzp
 		AC_dfp_vpx[k] = dvpx
 		AC_dfp_vpy[k] = dvpy
 		AC_dfp_vpz[k] = dvpz
-		AC_fp_vpx[k]  = vpx + dt_beta*dvpx
-		AC_fp_vpy[k]  = vpy + dt_beta*dvpy
-		AC_fp_vpz[k]  = vpz + dt_beta*dvpz
+		AC_fp_vpx[k]  = AC_fp_vpx[k] + dt_beta*dvpx
+		AC_fp_vpy[k]  = AC_fp_vpy[k] + dt_beta*dvpy
+		AC_fp_vpz[k]  = AC_fp_vpz[k] + dt_beta*dvpz
 
 		//Shear-periodic wrap in x, as in boundconds_particles (delta_y advanced as in advance_shear)
 		real delta_y_end = delta_y_now + delta_y_rate*dt_beta
@@ -521,7 +456,6 @@ Kernel particles_dust_step(int step_num, real dt_step,
 		AC_par_leaving[k] = leaving
 	}
 }
-
 #endif
 
 //Particle-to-grid deposition. A particle cannot write to the 27 grid points it influences (several particles
@@ -654,31 +588,6 @@ Kernel particles_gather_maps()
 	if (touch < -1.0e300) AC_par_dep[3][ix][iy][iz] = 0.0   //never true, see particle_dep_touch
 }
 
-//Inverse time step of each particle: advection (dxxp_dt_pencil) and self-gravity (dvvp_dt_selfgrav)
-Kernel particles_dust_dt1()
-{
-	const int k = vertexIdx.x
-	if (k >= 0)
-	{
-		const int ix0 = particle_lower_index(AC_fp_xp[k], AC_x__mod__cdata[NGHOST], AC_dx_1__mod__cdata[NGHOST], AC_nlocal.x)
-		const int iy0 = particle_lower_index(AC_fp_yp[k], AC_y__mod__cdata[NGHOST], AC_dy_1__mod__cdata[NGHOST], AC_nlocal.y)
-		const int iz0 = particle_cell_z(AC_fp_zp[k])
-		const real dx1 = AC_dx_1__mod__cdata[ix0]
-		const real dy1 = AC_dy_1__mod__cdata[iy0]
-		const real dz1 = AC_dz_1__mod__cdata[iz0]
-		real advx = 0.0
-		real advy = 0.0
-		real advz = 0.0
-		if (AC_nxgrid != 1) advx = abs(AC_fp_vpx[k])*dx1
-		if (AC_nygrid != 1) advy = abs(AC_fp_vpy[k])*dy1
-		if (AC_nzgrid != 1) advz = abs(AC_fp_vpz[k])*dz1
-		real res = sqrt(advx*advx + advy*advy + advz*advz)/AC_cdtp__mod__particles
-		res = max(res, sqrt(0.5*abs(AC_par_drag_x[k])*dx1)/AC_cdtpg__mod__particles_selfgravity)
-		res = max(res, sqrt(0.5*abs(AC_par_drag_y[k])*dy1)/AC_cdtpg__mod__particles_selfgravity)
-		res = max(res, sqrt(0.5*abs(AC_par_drag_z[k])*dz1)/AC_cdtpg__mod__particles_selfgravity)
-		AC_par_dt1[k] = res
-	}
-}
 #else
 //Drag force on the gas, launched over the interior and the first ghost layer (folded afterwards)
 Kernel particles_gather_force()
@@ -1012,20 +921,16 @@ Kernel particles_sink_store()
 
 #if LPARTICLES_NBODY
 #else
-//Inverse time step of each particle: advection (dxxp_dt_blocks) and friction in its cell (particles_cell_dt1)
+//Inverse time step of each particle: the advective limit of particles_rhs and the friction limit of its cell (particles_cell_dt1)
 Kernel particles_dust_dt1()
 {
-	const real qomega = particle_qomega()
 	const int k = vertexIdx.x
 	if (k >= 0)
 	{
 		const int ix0 = particle_lower_index(AC_fp_xp[k], AC_x__mod__cdata[NGHOST], AC_dx_1__mod__cdata[NGHOST], AC_nlocal.x)
 		const int iy0 = particle_lower_index(AC_fp_yp[k], AC_y__mod__cdata[NGHOST], AC_dy_1__mod__cdata[NGHOST], AC_nlocal.y)
 		const int iz0 = particle_lower_index(AC_fp_zp[k], AC_z__mod__cdata[NGHOST], AC_dz_1__mod__cdata[NGHOST], AC_nlocal.z)
-		const real advx = abs(AC_fp_vpx[k])*AC_dx_1__mod__cdata[ix0]
-		const real advy = (-qomega*AC_fp_xp[k] + abs(AC_fp_vpy[k]))*AC_dy_1__mod__cdata[iy0]
-		const real advz = abs(AC_fp_vpz[k])*AC_dz_1__mod__cdata[iz0]
-		AC_par_dt1[k] = max(sqrt(advx*advx + advy*advy + advz*advz)/AC_cdtp__mod__particles, AC_par_dt1_cell[ix0][iy0][iz0])
+		AC_par_dt1[k] = max(AC_par_dt1[k], AC_par_dt1_cell[ix0][iy0][iz0])
 	}
 }
 #endif

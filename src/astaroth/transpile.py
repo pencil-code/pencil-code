@@ -43,7 +43,7 @@ def main():
         sources_are_different = True
     else:
         sources_are_different = os.system("diff PC_modulesources.h PC_modulesources_old.h")
-    skip_generation = os.path.exists("DSL/local/rhs.h") and not sources_are_different
+    skip_generation = os.path.exists("DSL/local/rhs.h") and os.path.exists("DSL/local/particles_rhs.h") and not sources_are_different
     if skip_generation:
         return
 
@@ -51,6 +51,7 @@ def main():
     if os.path.exists("res-inlined.txt"): os.remove("res-inlined.txt")
     run_cmd(command)
     os.system("rm res-inlined.txt")
+    os.system("mv particles_rhs.h DSL/local")
     rhs_already_exists = os.path.exists("DSL/local/rhs.h") and not os.system("diff rhs.ac DSL/local/rhs.h") 
     if (rhs_already_exists): 
         return

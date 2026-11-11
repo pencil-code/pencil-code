@@ -2995,6 +2995,13 @@ k_loop:   do while (.not. (k>npar_loc))
       call copy_addr(cdtp,p_par(6))
       call copy_addr(ldragforce_gas_par,p_par(7)) ! bool
       call copy_addr(qshear,p_par(8))
+      call copy_addr(ldragforce_dust_par,p_par(9)) ! bool
+      call copy_addr(tstart_dragforce_par,p_par(10))
+      call copy_addr(tstart_grav_par,p_par(11))
+      call copy_addr(lcoriolis_force_par,p_par(12)) ! bool
+      call copy_addr(lcentrifugal_force_par,p_par(13)) ! bool
+      call copy_addr(beta_dpdr_dust,p_par(14))
+      call copy_addr(ldt_adv_par,p_par(15)) ! bool
 !
     endsubroutine pushpars2c
 !***********************************************************************
