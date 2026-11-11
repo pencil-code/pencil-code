@@ -475,14 +475,14 @@ sub setup_environment {
       $ENV{OMP_WAIT_POLICY} = 'PASSIVE';
       my $ncpus = $ENV{SLURM_CPUS_PER_TASK};
       if (!defined $ncpus) {
-          chomp($ncpus = `nproc`);
+          chomp($ncpus = `nproc`);  #nproc - Linux utility that reports the number of processing units available to the current process
       }
       $ENV{OMP_NUM_THREADS}    = $ncpus;
       $ENV{OMP_STACKSIZE} = "512M";
       $ENV{SRUN_CPUS_PER_TASK} = $ncpus;
     #}
     if ($settings{'mpich'}) {
-      if($_[0] eq "run") {
+      if ($settings{'gpu'} && $_[0] eq "run") {
         $ENV{MPICH_GPU_SUPPORT_ENABLED} = '1';
       }
     }
@@ -952,7 +952,7 @@ sub cd_to_wordir {
 	     #TP: On ASIAA cluster for one of the students had
 	     #the submodule in PBS_O_WORKDIR.
 	     #Don't understand how but we should naturally never cd there
-             if($dir =~ "src/astaroth/submodule") {
+             if ($dir =~ "src/astaroth/submodule") {
              }
              elsif (-d $dir) {
                  chdir $dir or die "Cannot chdir to $dir: $!\n";
@@ -1611,7 +1611,7 @@ sub unlink_if_exist {
     my @existing_files = grep { -e } @files;
     if (@existing_files) {
 	foreach my $file_path (@existing_files) {
-	  if(-d $file_path)
+	  if (-d $file_path)
 	  {
             remove_tree($file_path) or die "Cannot remove directory $file_path\n";
 	  } else

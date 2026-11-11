@@ -85,29 +85,34 @@ endif
 # Determine number of CPUS
 #
 set ncpus = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*ncpus\s*=\s*([0-9]*)/i && print $1' src/cparam.local |sed -e's/ncpus/$ncpus/'`
-set nprocx = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*nprocx\s*=\s*([0-9a-zA-Z_\/()]*)/i && print $1' src/cparam.local |sed -e's/n/$n/g'`
-set nprocy = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*nprocy\s*=\s*([0-9a-zA-Z_\/()]*)/i && print $1' src/cparam.local |sed -e's/n/$n/g'`
-set nprocz = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*nprocz\s*=\s*([0-9a-zA-Z_\/()]*)/i && print $1' src/cparam.local |sed -e's/n/$n/g'`
+perl -ne '$_ =~ /^\s*integer\b[^\\\!]*nprocx\s*=\s*([0-9a-zA-Z_\/()*]*)/i && print $1' src/cparam.local |sed -e's/n/$n/g' > tmp; set nprocx=`cat tmp`
+perl -ne '$_ =~ /^\s*integer\b[^\\\!]*nprocy\s*=\s*([0-9a-zA-Z_\/()*]*)/i && print $1' src/cparam.local |sed -e's/n/$n/g' > tmp; set nprocy=`cat tmp`
+perl -ne '$_ =~ /^\s*integer\b[^\\\!]*nprocz\s*=\s*([0-9a-zA-Z_\/()*]*)/i && print $1' src/cparam.local |sed -e's/n/$n/g' > tmp; set nprocz=`cat tmp`
+rm -f tmp
 #
 # The following performs possible arithmetic calculations in the expressions for nproc[xyz].
 # At the moment only expressions of the form <n>/<m>/..., also with brackets, are processed.
 #
-#echo NPROCS= $ncpus $nprocx  $nprocy  $nprocz
+#echo NPROCS= $ncpus "$nprocx"  "$nprocy"  "$nprocz" 
 echo "$nprocx" | grep -Eq '^[0-9]+$'    # Checks whether the $nprocx variable has an integer value.
 if ($status) then                       # If not, replaces variables by their integer values.
-  set nprocx = `echo "$nprocx" | sed -e's/\$ncpus/ '$ncpus' /; s/\$nprocy/ '$nprocy' /; s/\$nprocz/ '$nprocz' /; s/\// \/ /g; s/\*/ * /g'`
-  @ nprocx = $nprocx                    # Performs the arithmetics.                                              ^ because csh requires blanks around "/" and "*".
+  #set nprocx = `echo "$nprocx" | sed -e's/\$ncpus/ '$ncpus' /; s/\$nprocy/ '$nprocy' /; s/\$nprocz/ '$nprocz' /; s/\// \/ /g; s/\*/ * /g'; s/(/\(/g; s/)/\)/g'`
+  echo "$nprocx" | sed -e's/\$ncpus/ '$ncpus' /; s/\$nprocy/ '$nprocy' /; s/\$nprocz/ '$nprocz' /; s/\// \/ /g; s/\*/ \* /g; s/(/\(/g; s/)/\)/g' > tmp; set nprocx=`cat tmp`
+  @ nprocx = $nprocx                    # Performs the arithmetics.                                  ^ because csh requires blanks around "/" and "*".
 endif
 echo "$nprocy" | grep -Eq '^[0-9]+$'
 if ($status) then
-  set nprocy = `echo "$nprocy" | sed -e's/\$ncpus/ '$ncpus' /; s/\$nprocx/ '$nprocx' /; s/\$nprocz/ '$nprocz' /; s/\// \/ /g; s/\*/ * /g'`
+  #set nprocy = `echo "$nprocy" | sed -e's/\$ncpus/ '$ncpus' /; s/\$nprocx/ '$nprocx' /; s/\$nprocz/ '$nprocz' /; s/\// \/ /g; s/\*/ * /g; s/(/\(/g; s/)/\)/g'`
+  echo "$nprocy" | sed -e's/\$ncpus/ '$ncpus' /; s/\$nprocx/ '$nprocx' /; s/\$nprocz/ '$nprocz' /; s/\// \/ /g; s/\*/ \* /g; s/(/\(/g; s/)/\)/g' > tmp; set nprocy=`cat tmp`
   @ nprocy = $nprocy
 endif
 echo "$nprocz" | grep -Eq '^[0-9]+$'
 if ($status) then
-  set nprocz = `echo "$nprocz" | sed -e's/\$ncpus/ '$ncpus' /; s/\$nprocy/ '$nprocy' /; s/\$nprocx/ '$nprocx' /; s/\// \/ /g; s/\*/ * /g'`
+  #set nprocz = `echo "$nprocz" | sed -e's/\$ncpus/ '$ncpus' /; s/\$nprocy/ '$nprocy' /; s/\$nprocx/ '$nprocx' /; s/\// \/ /g; s/\*/ \* /g; s/(/\(/g; s/)/\)/g'`
+  echo "$nprocz" | sed -e's/\$ncpus/ '$ncpus' /; s/\$nprocy/ '$nprocy' /; s/\$nprocx/ '$nprocx' /; s/\// \/ /g; s/\*/ \* /g; s/(/\(/g; s/)/\)/g' > tmp; set nprocz=`cat tmp`
   @ nprocz = $nprocz
 endif
+rm -f tmp
 
 if (! $ncpus) then
   @ ncpus = $nprocx * $nprocy * $nprocz
