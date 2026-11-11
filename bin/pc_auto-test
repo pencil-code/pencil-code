@@ -148,6 +148,7 @@ my %tests = (
                          backreact_infl2
                          Schwinger
                          Schwinger2
+                         electroweak_SU2_Higgs
                      )],
              # Level 3 for now contains all non-canonical tests that run
              # successfully
@@ -334,6 +335,7 @@ my @gpu_tests = qw(
                          2d-tests/cylindrical_gdisk
 			 #small-scale-dynamo_slope-limited-diffusion  # diffs in brms, bmax, jrms: at e-10 to e-12
 			 backreact_infl
+                         electroweak_SU2_Higgs
 			 1d-tests/axionSU2back
 			 2d-tests/chemistry_GrayScott
 			 MRI-turbulence_hyper
