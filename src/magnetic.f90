@@ -12190,6 +12190,8 @@ print*,'AXEL2: should not be here (eta) ... '
     call copy_addr(iglobal_by_ext,p_par(295)) ! int
     call copy_addr(iglobal_bz_ext,p_par(296)) ! int
     call copy_addr(ad_exp,p_par(297))
+    call copy_addr(idiva,p_par(298))          ! int
+    call copy_addr(icurlb,p_par(299))         ! int
 
     call keep_compiler_quiet(znoise_int)
     call keep_compiler_quiet(znoise_ext)

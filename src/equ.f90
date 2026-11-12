@@ -535,6 +535,7 @@ module Equ
       !TP: example code to explicitly set and get cores the thread are running on
       !    the flexible way to set this is with OMP_PROC_BIND=close,spread, but in case that fails one can be sure by using the code
       !below
+!!$    use General, only: get_cpu, set_cpu
 !!$    if (omp_get_thread_num() /= 0) call set_cpu(core_ids(omp_get_thread_num()+1))
       !print*,"omp_id,cpu_id,mpi_id: ",omp_get_thread_num(), get_cpu(), iproc
      !endsubroutine restrict_cores
@@ -654,7 +655,6 @@ module Equ
       use Hydro, only: hydro_restore_diagnostic_controls
       use Training, only: training_restore_diagnostic_controls
 !$    use OMP_lib
-!$    use General, only: get_cpu, set_cpu
 
       real, contiguous, dimension(:,:,:,:),intent(INOUT) :: f
       type (pencil_case) :: p
@@ -731,7 +731,6 @@ module Equ
       use Special, only: calc_diagnostics_special
       use Diagnostics
 !$    use OMP_lib
-!$    use General, only: get_cpu, set_cpu
 
       real, contiguous, dimension(:,:,:,:),intent(INOUT) :: f
       type(pencil_case) :: p

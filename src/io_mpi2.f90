@@ -67,7 +67,7 @@ module Io
       integer :: alloc_err
 !
       call svn_id ("$Id$")
-      if (ldistribute_persist) call fatal_error ('io_mpi2', "Distributed persistent variables not allowed with MPI-IO.")
+      if (ldistribute_persist) call fatal_error ('io_mpi2', "Distributed persistent variables not allowed with MPI-IO")
 !
       lmonolithic_io = .true.
 !
@@ -529,7 +529,7 @@ module Io
 !
       ckfsize: if (mod(fsize, dsize) /= 0) then
         if (lroot) print *, rname, ": fsize, dsize = ", fsize, dsize
-        call fatal_error(rname, "file size is not a multiple of data size. ")
+        call fatal_error(rname, "file size is not a multiple of data size")
       endif ckfsize
 !
 !  Back scan.
@@ -544,7 +544,7 @@ module Io
         enddo step
         if (tread < time) disp = disp + dsize
       endif bscan
-      call fatal_error_local_collect()
+      call fatal_error_local_collect
 !
 !  Truncate file if needed.
 !
@@ -555,8 +555,8 @@ module Io
         n = int((fsize - disp) / dsize)
         fsize = disp
         call MPI_FILE_SET_SIZE(handle, fsize, mpi_err)
-        if (mpi_err /= MPI_SUCCESS) call fatal_error(rname, "unable to truncate file. ")
-        if (lroot) print *, rname, ": trunacted ", n, " chunks of 2D averages. "
+        if (mpi_err /= MPI_SUCCESS) call fatal_error(rname, "unable to truncate file")
+        if (lroot) print *, rname, ": trunacted ", n, " chunks of 2D averages."
       endif trunc
 !
 !  Write time.
@@ -567,7 +567,7 @@ module Io
         call MPI_FILE_WRITE(handle, time, 1, mpi_precision, status, mpi_err)
         if (mpi_err /= MPI_SUCCESS) call fatal_error_local(rname, "unable to write time")
       endif wtime
-      call fatal_error_local_collect()
+      call fatal_error_local_collect
       disp = fsize + size_of_real
 !
 !  Decompose the write by processes.
@@ -603,7 +603,7 @@ module Io
 !
     endsubroutine output_average_2D
 !***********************************************************************
-    subroutine output_slice_position()
+    subroutine output_slice_position
 !
 !  Dummy subroutine; no need to record slice positions.
 !
@@ -658,12 +658,12 @@ module Io
 !
       call MPI_TYPE_CREATE_SUBARRAY(2, sizes, subsizes, starts, order, mpi_precision, dtype, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_slice", "cannot create subarray type")
-      call fatal_error_local_collect()
+      call fatal_error_local_collect
 !
       dsize = int(product(sizes), KIND=MPI_OFFSET_KIND) * size_of_real
       call MPI_TYPE_CREATE_STRUCT(2, (/ 1, nadd /), (/ 0_MPI_OFFSET_KIND, dsize /), (/ dtype, mpi_precision /), dtype, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_slice", "cannot create struct type")
-      call fatal_error_local_collect()
+      call fatal_error_local_collect
       dsize = dsize + int(nadd, KIND=MPI_OFFSET_KIND) * size_of_real
 !
 !  Open the slice file for write.
@@ -676,11 +676,11 @@ module Io
 !
       call MPI_FILE_GET_SIZE(handle, fsize, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_slice", "cannot get file size")
-      call fatal_error_local_collect()
+      call fatal_error_local_collect
 !
       ckfsize: if (mod(fsize, dsize) /= 0) then
         if (lroot) print *, "output_slice: fsize, dsize = ", fsize, dsize
-        call fatal_error("output_slice", "The file size is not a multiple of the data size. ")
+        call fatal_error("output_slice", "The file size is not a multiple of the data size")
       endif ckfsize
 !
 !  Back scan the existing slices.
@@ -696,7 +696,7 @@ module Io
         enddo bscan
         offset = offset + int(nadd, KIND=MPI_OFFSET_KIND) * size_of_real
       endif master
-      call fatal_error_local_collect()
+      call fatal_error_local_collect
       call MPI_BCAST(offset, 1, MPI_OFFSET, root, MPI_COMM_PENCIL, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error("output_slice", "unable to broadcast offset")
 !
@@ -714,7 +714,7 @@ module Io
 !
       call MPI_TYPE_COMMIT(dtype, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_slice", "cannot commit data type")
-      call fatal_error_local_collect()
+      call fatal_error_local_collect
 !
       call MPI_FILE_SET_VIEW(handle, fsize, mpi_precision, dtype, "native", io_info, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error("output_slice", "cannot set local view")
@@ -728,7 +728,7 @@ module Io
 !
       call MPI_TYPE_FREE(dtype, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_slice", "cannot free MPI data type")
-      call fatal_error_local_collect()
+      call fatal_error_local_collect
 !
 !  Write time and slice position.
 !
@@ -771,7 +771,7 @@ module Io
       integer(KIND=MPI_OFFSET_KIND) :: offset
 !
       if (present(ltruncate)) call keep_compiler_quiet(ltruncate)
-      if (present(label)) call warning("output_part_snap", "The argument label has no effects. ")
+      if (present(label)) call warning("output_part_snap", "The argument label has no effects")
 !
 !  Broadcast number of particles from each process.
 !
@@ -792,7 +792,7 @@ module Io
         call MPI_FILE_WRITE(handle, npar_tot, 1, MPI_INTEGER, status, mpi_err)
         call check_success_local("output_part", "write number of particles")
       endif
-      call fatal_error_local_collect()
+      call fatal_error_local_collect
 !
 !  Write particle IDs.
 !
@@ -800,11 +800,11 @@ module Io
       nv1 = max(nv, 1)
       call MPI_TYPE_CREATE_SUBARRAY(1, (/ npar_tot /), (/ nv1 /), (/ ip0 /), order, MPI_INTEGER, ftype, mpi_err)
       call check_success_local("output_part", "create MPI subarray")
-      call fatal_error_local_collect()
+      call fatal_error_local_collect
 !
       call MPI_TYPE_COMMIT(ftype, mpi_err)
       call check_success_local("output_part", "commit MPI data type")
-      call fatal_error_local_collect()
+      call fatal_error_local_collect
 !
       call MPI_FILE_SET_VIEW(handle, size_of_int, MPI_INTEGER, ftype, "native", io_info, mpi_err)
       call check_success("output_part", "set view of", fpath)
@@ -814,18 +814,18 @@ module Io
 !
       call MPI_TYPE_FREE(ftype, mpi_err)
       call check_success_local("output_part", "free MPI data type")
-      call fatal_error_local_collect()
+      call fatal_error_local_collect
 !
 !  Write particle data.
 !
       call MPI_TYPE_CREATE_SUBARRAY(2, (/ npar_tot, mparray /), (/ nv1, mparray /), (/ ip0, 0 /), &
                                     order, mpi_precision, ftype, mpi_err)
       call check_success_local("output_part", "create MPI subarray")
-      call fatal_error_local_collect()
+      call fatal_error_local_collect
 !
       call MPI_TYPE_COMMIT(ftype, mpi_err)
       call check_success_local("output_part", "commit MPI data type")
-      call fatal_error_local_collect()
+      call fatal_error_local_collect
 !
       offset = get_disp_to_par_real(npar_tot)
       call MPI_FILE_SET_VIEW(handle, offset, mpi_precision, ftype, "native", io_info, mpi_err)
@@ -836,7 +836,7 @@ module Io
 !
       call MPI_TYPE_FREE(ftype, mpi_err)
       call check_success_local("output_part", "free subarray type")
-      call fatal_error_local_collect()
+      call fatal_error_local_collect
 !
 !  Write additional data.
 !
@@ -901,21 +901,21 @@ module Io
 !
       call MPI_TYPE_CREATE_STRUCT(merge(4, 2, lparticles_sink), blocklengths, disps, types, etype, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to create etype")
-      call fatal_error_local_collect()
+      call fatal_error_local_collect
 !
       call MPI_TYPE_COMMIT(etype, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to commit etype")
-      call fatal_error_local_collect()
+      call fatal_error_local_collect
 !
 !  Create MPI type for file view.
 !
       call MPI_TYPE_CONTIGUOUS(nrmv, etype, filetype, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to create filetype")
-      call fatal_error_local_collect()
+      call fatal_error_local_collect
 !
       call MPI_TYPE_COMMIT(filetype, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to commit filetype")
-      call fatal_error_local_collect()
+      call fatal_error_local_collect
 !
 !  Open log file.
 !
@@ -927,11 +927,11 @@ module Io
 !
       call MPI_TYPE_SIZE(etype, esize, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to find type size")
-      call fatal_error_local_collect()
+      call fatal_error_local_collect
 !
       call MPI_FILE_GET_POSITION(handle, disp, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to find file position")
-      call fatal_error_local_collect()
+      call fatal_error_local_collect
 !
       call MPI_FILE_PREALLOCATE(handle, disp + int(sum(rmv_list) * int(esize), KIND=MPI_OFFSET_KIND), mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error("output_part_rmv", "unable to expand file")
@@ -962,7 +962,7 @@ module Io
           if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to write fp_sink")
         endif sink2
       enddo wr
-      call fatal_error_local_collect()
+      call fatal_error_local_collect
 !
 !  Close log file.
 !
@@ -973,11 +973,11 @@ module Io
 !
       call MPI_TYPE_FREE(filetype, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to free filetype")
-      call fatal_error_local_collect()
+      call fatal_error_local_collect
 !
       call MPI_TYPE_FREE(etype, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error_local("output_part_rmv", "unable to free etype")
-      call fatal_error_local_collect()
+      call fatal_error_local_collect
 !
     endsubroutine output_part_rmv
 !***********************************************************************
@@ -1012,12 +1012,12 @@ module Io
       logical, intent(in), optional :: lfinalize
       integer, intent(in), optional :: nvar
 !
-      call fatal_error ('output_stalker', 'not implemented for "io_mpi2"', .true.)
+      call not_implemented('output_stalker','"io_mpi2"', .true.)
       call keep_compiler_quiet(label)
       call keep_compiler_quiet(data)
       call keep_compiler_quiet(mv, nv)
-      if (present(lfinalize)) call warning("output_stalker", "The argument lfinalize has no effects. ")
-      if (present(nvar)) call warning("output_stalker", "The argument nvar has no effects. ")
+      if (present(lfinalize)) call warning("output_stalker", "The argument lfinalize has no effects")
+      if (present(nvar)) call warning("output_stalker", "The argument nvar has no effects")
 !
     endsubroutine output_stalker
 !***********************************************************************
@@ -1177,7 +1177,7 @@ module Io
       character(len=*), intent(in) :: file
       real, intent(out):: time, pos
 !
-      call not_implemented("output_slice_position")
+      call not_implemented("input_slice_real_arr",'for io_mpi2')
       call keep_compiler_quiet(data)
       call keep_compiler_quiet(file)
       call keep_compiler_quiet(time, pos)
@@ -1200,7 +1200,7 @@ module Io
       integer, intent(out):: nt
       real, intent(out):: pos
 !
-      call not_implemented("output_slice_position")
+      call not_implemented("input_slice_scat_arr",'for io_mpi2')
       call keep_compiler_quiet(data%dim1)
       call keep_compiler_quiet(file)
       call keep_compiler_quiet(ivar, nt)
@@ -1234,7 +1234,7 @@ module Io
       integer(KIND=MPI_OFFSET_KIND) :: offset, dsize
       integer :: istat, handle, ftype, i, k
 !
-      if (present(label)) call warning("input_part_snap", "The argument label has no effects. ")
+      if (present(label)) call warning("input_part_snap", "The argument label has no effects")
 !
 !  Open snapshot file for read.
 !
@@ -1248,7 +1248,7 @@ module Io
         call MPI_FILE_READ(handle, npar_tot, 1, MPI_INTEGER, status, mpi_err)
         call check_success_local("input_part", "read total number of particles")
       endif
-      call fatal_error_local_collect()
+      call fatal_error_local_collect
       call MPI_BCAST(npar_tot, 1, MPI_INTEGER, root, MPI_COMM_PENCIL, mpi_err)
       if (mpi_err /= MPI_SUCCESS) call fatal_error("input_part", "unable to broadcast total number of particles")
 !
@@ -1259,13 +1259,13 @@ module Io
 !
       allocate(rbuf(npar_tot), stat=istat)
       if (istat /= 0) call fatal_error_local("input_part_snap", "cannot allocate buffer")
-      call fatal_error_local_collect()
+      call fatal_error_local_collect
 !
 !  Identify local particles.
 !
       allocate(lpar_loc(npar_tot), stat=mpi_err)
       call check_success_local("input_part", "allocate lpar_loc")
-      call fatal_error_local_collect()
+      call fatal_error_local_collect
       lpar_loc = .true.
 !
       offset = get_disp_to_par_real(npar_tot)
@@ -1274,7 +1274,7 @@ module Io
         call MPI_FILE_SEEK(handle, offset + int(ixp - 1, KIND=MPI_OFFSET_KIND) * dsize, MPI_SEEK_SET, mpi_err)
         call check_success_local("input_part", "seek xp")
       endif goxp
-      call fatal_error_local_collect()
+      call fatal_error_local_collect
 !
       inx: if (lactive_dimension(1)) then
         xp: if (lroot) then
@@ -1282,13 +1282,13 @@ module Io
           call check_success_local("input_part", "read xp of")
         endif xp
         call MPI_BCAST(rbuf, npar_tot, mpi_precision, root, MPI_COMM_PENCIL, mpi_err)
-        if (mpi_err /= MPI_SUCCESS) call fatal_error("input_part", "unable to broadcast xp. ")
+        if (mpi_err /= MPI_SUCCESS) call fatal_error("input_part", "unable to broadcast xp")
         lpar_loc = lpar_loc .and. procx_bounds(ipx) <= rbuf(1:npar_tot) .and. rbuf(1:npar_tot) < procx_bounds(ipx+1)
       else if (lroot) then inx
         call MPI_FILE_SEEK(handle, dsize, MPI_SEEK_CUR, mpi_err)
         call check_success_local("input_part", "skip xp of")
       endif inx
-      call fatal_error_local_collect()
+      call fatal_error_local_collect
 !
       iny: if (lactive_dimension(2)) then
         yp: if (lroot) then
@@ -1296,22 +1296,22 @@ module Io
           call check_success_local("input_part", "read yp of")
         endif yp
         call MPI_BCAST(rbuf, npar_tot, mpi_precision, root, MPI_COMM_PENCIL, mpi_err)
-        if (mpi_err /= MPI_SUCCESS) call fatal_error("input_part", "unable to broadcast yp. ")
+        if (mpi_err /= MPI_SUCCESS) call fatal_error("input_part", "unable to broadcast yp")
         lpar_loc = lpar_loc .and. procy_bounds(ipy) <= rbuf(1:npar_tot) .and. rbuf(1:npar_tot) < procy_bounds(ipy+1)
       else if (lroot) then iny
         call MPI_FILE_SEEK(handle, dsize, MPI_SEEK_CUR, mpi_err)
         call check_success_local("input_part", "skip yp of")
       endif iny
-      call fatal_error_local_collect()
+      call fatal_error_local_collect
 !
       inz: if (lactive_dimension(3)) then
         zp: if (lroot) then
           call MPI_FILE_READ(handle, rbuf, npar_tot, mpi_precision, status, mpi_err)
           call check_success_local("input_part", "read zp of")
         endif zp
-        call fatal_error_local_collect()
+        call fatal_error_local_collect
         call MPI_BCAST(rbuf, npar_tot, mpi_precision, root, MPI_COMM_PENCIL, mpi_err)
-        if (mpi_err /= MPI_SUCCESS) call fatal_error("input_part", "unable to broadcast zp. ")
+        if (mpi_err /= MPI_SUCCESS) call fatal_error("input_part", "unable to broadcast zp")
         lpar_loc = lpar_loc .and. procz_bounds(ipz) <= rbuf(1:npar_tot) .and. rbuf(1:npar_tot) < procz_bounds(ipz+1)
       endif inz
 !
@@ -1322,11 +1322,11 @@ module Io
         print *, "input_part_snap: iproc, nv, mv = ", iproc, nv, mv
         call fatal_error_local("input_part_snap", "too many local particles")
       endif cknv
-      call fatal_error_local_collect()
+      call fatal_error_local_collect
 !
       allocate(indices(nv), stat=mpi_err)
       call check_success_local("input_part", "allocate indices")
-      call fatal_error_local_collect()
+      call fatal_error_local_collect
       k = 0
       par: do i = 1, npar_tot
         loc: if (lpar_loc(i)) then
@@ -1341,11 +1341,11 @@ module Io
 !
       call MPI_TYPE_INDEXED(nv, spread(1,1,nv), indices, MPI_INTEGER, ftype, mpi_err)
       call check_success_local("input_part", "create MPI data type")
-      call fatal_error_local_collect()
+      call fatal_error_local_collect
 !
       call MPI_TYPE_COMMIT(ftype, mpi_err)
       call check_success_local("input_part", "commit MPI data type")
-      call fatal_error_local_collect()
+      call fatal_error_local_collect
 !
       call MPI_FILE_SET_VIEW(handle, size_of_int, MPI_INTEGER, ftype, "native", io_info, mpi_err)
       call check_success("input_part", "set view of", fpath)
@@ -1355,17 +1355,17 @@ module Io
 !
       call MPI_TYPE_FREE(ftype, mpi_err)
       call check_success_local("input_part", "free MPI data type")
-      call fatal_error_local_collect()
+      call fatal_error_local_collect
 !
 !  Decompose the real data domain and read.
 !
       call MPI_TYPE_INDEXED(nv, spread(1,1,nv), indices, mpi_precision, ftype, mpi_err)
       call check_success_local("input_part", "create MPI data type")
-      call fatal_error_local_collect()
+      call fatal_error_local_collect
 !
       call MPI_TYPE_COMMIT(ftype, mpi_err)
       call check_success_local("input_part", "commit MPI data type")
-      call fatal_error_local_collect()
+      call fatal_error_local_collect
 !
       real1: do i = 1, mparray
         call MPI_FILE_SET_VIEW(handle, offset, mpi_precision, ftype, "native", io_info, mpi_err)
@@ -1380,7 +1380,7 @@ module Io
 !
       call MPI_TYPE_FREE(ftype, mpi_err)
       call check_success_local("input_part", "free MPI data type")
-      call fatal_error_local_collect()
+      call fatal_error_local_collect
 !
       deallocate(lpar_loc, indices)
 !
@@ -1458,7 +1458,7 @@ module Io
       integer, intent(in) :: id
 !
       write_persist_id = .true.
-      if (.not. persist_initialized) write_persist_id = init_write_persist ()
+      if (.not. persist_initialized) write_persist_id = init_write_persist()
       if (.not. persist_initialized) return
 !
       if (persist_last_id /= id) then
@@ -1809,7 +1809,7 @@ module Io
 !
       character (len=*), intent(in), optional :: label
 !
-      if (present(label)) call warning("persist_exists", "The argument label has no effects. ")
+      if (present(label)) call warning("persist_exists", "The argument label has no effects")
 !
       persist_exists = .false.
 !
@@ -2126,7 +2126,7 @@ module Io
       integer, intent(in) :: id
       type(torus_rect), intent(in), optional :: value
 !
-      if (present(value)) call warning("write_persist_torus_rect", "The argument value has no effects. ")
+      if (present(value)) call warning("write_persist_torus_rect", "The argument value has no effects")
 !
       write_persist_torus_rect = .true.
       if (write_persist_id (label, id)) return
@@ -2147,8 +2147,8 @@ module Io
       character (len=*), intent(in), optional :: label
       type(torus_rect), intent(out), optional :: value
 !
-      if (present(label)) call warning("read_persist_torus_rect", "The argument label has no effects. ")
-      if (present(value)) call warning("read_persist_torus_rect", "The argument value has no effects. ")
+      if (present(label)) call warning("read_persist_torus_rect", "The argument label has no effects")
+      if (present(value)) call warning("read_persist_torus_rect", "The argument value has no effects")
 !
       !read (lun_input) value
       read_persist_torus_rect = .false.
@@ -2166,7 +2166,7 @@ module Io
       real, dimension (mx,my,mz,nv) :: a
       character (len=*), intent(in), optional :: label
 !
-      if (present(label)) call warning("output_globals", "The argument label has no effects. ")
+      if (present(label)) call warning("output_globals", "The argument label has no effects")
 !
       call output_snap (a, nv2=nv, file=file, mode=0)
       call output_snap_finalize
@@ -2237,9 +2237,9 @@ module Io
       integer :: alloc_err
       real :: t_sp   ! t in single precision for backwards compatibility
 !
-      if (present(mxout)) call warning("wgrid", "The argument mxout has no effects. ")
-      if (present(myout)) call warning("wgrid", "The argument myout has no effects. ")
-      if (present(mzout)) call warning("wgrid", "The argument mzout has no effects. ")
+      if (present(mxout)) call warning("wgrid", "The argument mxout has no effects")
+      if (present(myout)) call warning("wgrid", "The argument myout has no effects")
+      if (present(mzout)) call warning("wgrid", "The argument mzout has no effects")
 !
       if (lyang) return      ! grid collection only needed on Yin grid, as grids are identical
 

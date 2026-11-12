@@ -516,6 +516,11 @@ contains
 
     call copy_addr(ipy,p_par(1448)) ! int
     call copy_addr(qshear,p_par(1449))
+    call copy_addr(iuxb,p_par(1450))      ! int
+    call copy_addr(iugb,p_par(1451))      ! int
+    call copy_addr(ibgu,p_par(1452))      ! int
+    call copy_addr(ibdivu,p_par(1453))    ! int
+
   endsubroutine pushpars2c
 !***********************************************************************
 endmodule Global_pushpars
