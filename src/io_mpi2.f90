@@ -24,7 +24,8 @@ module Io
 !
   use Cdata
   use Cparam, only: fnlen, max_int
-  use Messages, only: fatal_error, fatal_error_local, fatal_error_local_collect, svn_id, warning
+  use Messages, only: fatal_error, fatal_error_local, fatal_error_local_collect, svn_id, warning, &
+                      not_implemented
   use Mpicomm, only: mpi_precision, MPI_COMM_PENCIL
 !
   implicit none
@@ -864,7 +865,6 @@ module Io
 !  27-jan-24/ccyang: coded
 !
       use Quiet
-      use Messages, only: not_implemented
       use Mpicomm, only: size_of_int, size_of_real
 !
       integer, dimension(:), intent(in) :: ipar_rmv, ipar_sink
@@ -1171,7 +1171,6 @@ module Io
 !  14-nov-20/ccyang: stub
 !
       use Quiet
-      use Messages, only: not_implemented
 !
       real, dimension(:,:,:), intent(out):: data
       character(len=*), intent(in) :: file
@@ -1191,7 +1190,6 @@ module Io
 !  14-nov-20/ccyang: stub
 !
       use General, only: scattered_array
-      use Messages, only: not_implemented
       use Quiet
 !
       type(scattered_array), pointer :: data   !intent(inout)
