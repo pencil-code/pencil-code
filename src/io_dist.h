@@ -237,10 +237,10 @@
               if (ip <= 8) print *, 'read_snap: read ', file
               if (mode == 1) then
 !
-!  Check whether we want to read deltay from snapshot.
+!  Check whether we want to read delta_y from snapshot.
 !
                 if (lshear.and..not.lread_oldsnap_noshear) then
-                  read (lun_input,iostat=iosr) t_sp, x, y, z, dx, dy, dz, deltay
+                  read (lun_input,iostat=iosr) t_sp, x, y, z, dx, dy, dz, delta_y
                 else
                   if (nghost_read_fewer==0) then
                     read (lun_input,iostat=iosr) t_sp, x, y, z, dx, dy, dz
@@ -352,6 +352,7 @@
             call mpisend_char(message,root,iproc)
           endif
           if (lroot) then
+
             if (file_exists(trim(datadir)//'/jobid.dat')) then
               open(1,file=trim(datadir)//'/jobid.dat',position='append')
               backspace(1)
@@ -365,6 +366,7 @@
             call system_cmd( &
               'echo From `pwd` on '//trim(submithost)//': '//trim(mailstr)//"|"//trim(mailcmd)// &
               " -s 'PencilCode Message' "//trim(mailaddress)//' >& /dev/null')
+            if (lpushover) call system_cmd(' pushover From `pwd` on '//trim(submithost)//': '//trim(mailstr))
           endif
         endif
       endif

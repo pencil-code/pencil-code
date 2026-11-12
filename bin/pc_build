@@ -119,14 +119,14 @@ Pencil::Util::use_pencil_perl_modules(
 
 use POSIX qw(strftime);
 use Getopt::Long;
+use Cwd qw(abs_path getcwd);
 # Allow for '-Plp' as equivalent to '-P lp' etc:
 Getopt::Long::config("bundling");
 
-# Kishore: commented this out as this causes failures when pc_auto-test is run with $PENCIL_HOME as the work directory.
-# if ($ENV{PWD} eq "$ENV{PENCIL_HOME}") {
-#     print "Error: PENCIL_HOME not allowed as work directory\n";
-#     exit 1;
-# }
+if (abs_path(getcwd) eq abs_path("$ENV{PENCIL_HOME}")) {
+    print "Error: PENCIL_HOME not allowed as work directory\n";
+    exit 1;
+}
 
 my $cmd_name = $0;
 my @all_arguments = @ARGV;
@@ -181,6 +181,10 @@ my $optimal      = (              $opts{'optimal'}        || '');
 if ($debug_flags && $optimal) { die "Options --debug and --optional are contradictory!\n"; }
 my @mutex = ($gnu, $cray, $intel);
 my $mutexes = grep { $_ } @mutex;
+if (($debug_flags || $optimal) && ($mutexes < 1)) {
+    $gnu = 1;
+    $mutexes = 1;
+}
 if ($mutexes > 1) { die "Can use only one of the Compiler options!\n"; }
 if ($mutexes >= 1) {
     if ($config_files) { die "Can not use Compiler option together with -f option!\n"; }

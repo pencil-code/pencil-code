@@ -1617,9 +1617,8 @@ module Energy
 !
 !  ``cs2/dx^2'' for timestep
 !
-      if (lfirst.and.ldt) advec_cs2=p%cs2*dxyz_2
-      if (headtt.or.ldebug) print*,'denergy_dt: max(advec_cs2) =',maxval(advec_cs2)
-!
+      if (lfirst.and.ldt) advec_cs2=max(p%cs2*dxyz_2,advec_cs2)
+      if (headtt.or.ldebug) print*,'denergy_dt: max(advec_cs2) =',maxval(p%cs2*dxyz_2)
 !
 !  Advection of entropy.
 !  If pretend_lnTT=.true., we pretend that ss is actually lnTT

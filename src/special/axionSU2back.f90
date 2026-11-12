@@ -43,7 +43,7 @@ module Special
   integer :: iaxi_lna=0, iaxi_phi=0, iaxi_phidot=0
 !
   ! input parameters
-  real :: a, k0=1e-2, dk=1e-2, ascale_ini=1.
+  real :: a=0., k0=1e-2, dk=1e-2, ascale_ini=1.
   real :: fdecay=.003, g=1.11e-2, lam=500., mu=impossible
   real :: Q0=3e-4, Qdot0=0., chi_prefactor=.49, chidot0=impossible, H=1.04e-6
   real :: H_init
@@ -67,6 +67,7 @@ module Special
   real :: sbackreact_Q=1., sbackreact_chi=1., sbackreact_JJ=1., tback=1e6, dtback=1e6
   real :: lnkmin0=-1., lnkmin0_dummy, lnkmax0, dlnk
   real :: nmin0=-1., nmax0=3., horizon_factor=0., sgn=1.
+  real :: horizon_activator=100.
   real, dimension (nx) :: dt1_special, lnk
   logical :: lbackreact=.false., lwith_eps=.true., lupdate_background=.true.
   logical :: ldo_adjust_krange=.true., lswap_sign=.false.
@@ -75,6 +76,7 @@ module Special
   logical :: llnk_spacing_adjustable=.false., llnk_spacing=.false.
   logical :: lim_psi_TR=.false., lleft_psiL_TL=.false., lkeep_mQ_const=.false.
   logical :: lhubble_var=.false., lhubble=.false., lSchwinger_scalar=.false.
+  logical :: lmode_activator=.false.
   logical :: lalways_backreact_output=.false.
   character(len=50) :: init_axionSU2back='standard'
   character (len=labellen) :: V_choice='quadratic'
@@ -85,7 +87,8 @@ module Special
     llnk_spacing_adjustable, llnk_spacing, lim_psi_TR, lleft_psiL_TL, &
     nmin0, nmax0, ldo_adjust_krange, lswap_sign, sgn, m_inflaton, m_phi, &
     inflaton_ini, lhubble, V_choice, phi_ini, alpha, m_alpha, n_alpha, &
-    alpha_attractors_choice, lSchwinger_scalar, mscal, sgn_g, mQ0
+    alpha_attractors_choice, lSchwinger_scalar, mscal, sgn_g, mQ0, &
+    lmode_activator, horizon_activator
 !
   ! run parameters
   namelist /special_run_pars/ &
@@ -94,7 +97,8 @@ module Special
     Ndivt, lanalytic, lvariable_k, llnk_spacing_adjustable, llnk_spacing, &
     nmin0, nmax0, horizon_factor, axion_sum_range, lkeep_mQ_const, &
     ldo_adjust_krange, lswap_sign, lwrite_krange, lwrite_backreact, sgn, &
-    lhubble_var, lhubble, mscal, sgn_g, lalways_backreact_output
+    lhubble_var, lhubble, mscal, sgn_g, lalways_backreact_output, &
+    lmode_activator, horizon_activator
 !
   ! k array
   real, dimension (nx) :: k
@@ -391,15 +395,43 @@ module Special
 !
 !  Compute Q0 either based on a given value of mu (if given)
 !  or based on Q0, so mQ0=g*Q0/H.
-!
-              Q0=(-Uprime0/(3.*g*lamf*H))**onethird
-              xi0=g*Q0/H+H/(g*Q0)
+!  case1: no mu, no mQ0: not possible
+!  case2: no mu, mQ0 given: xi0=mQ0+1./mQ0 --> mu, Uprime0
+!  case3: mu given, no mQ0 
+!  case4: mu given, mQ0 given: not possible
+
               if (mu==impossible) then
-                mQ0=g*Q0/H
-                mu=(fdecay/sin(chi0/fdecay)*(6.*xi0*H**2/lamf+3.*lamf*H**4*mQ0**3/g**2))**.25
+                if (mQ0==impossible) then
+                  call fatal_error("init_special","either mQ0 must be given if no mu is given")
+                else
+                  xi0=mQ0+1./mQ0
+                  Q0=mQ0*H/g
+                  mu=(fdecay/sin(chi0/fdecay)*(6.*xi0*H**2/lamf+3.*lamf*H**4*mQ0**3/g**2))**.25
+  !mu=   5.6150519586053321E-004
+                  Uprime0=-mu**4/fdecay*sin(chi0/fdecay)
+                  if (lroot) print*,'mQ0 is given: mQ0,xi0=',mQ0,xi0
+                endif
+                if (lroot) print*,'mu is given: mu=',mu
               else
-                Uprime0=-mu**4/fdecay*sin(chi0/fdecay)
+!
+!  the expression for Q0 is correct only for chi0=0
+!
+                if (mQ0==impossible) then
+                  if (lroot) print*,'Uprime0 is already computed: Uprime0=',Uprime0
+                  Q0=(-Uprime0/(3.*g*lamf*H))**onethird
+                  xi0=g*Q0/H+H/(g*Q0)
+                  mQ0=g*Q0/H
+                else
+                  call fatal_error("init_special","giving both mQ0 and mu is impossible")
+                endif
+                if (lroot) print*,'mQ0 is given: mQ0,xi0=',mQ0,xi0
+                if (lroot) print*,'mu is given: mu=',mu
               endif
+              if (lroot) print*,'Uprime0 is already computed: Uprime0=',Uprime0
+              if (lroot) print*,'(a) Q0=',Q0
+!
+!  In all 4 cases, chidot0 has to be compute
+!
               if (chidot0==impossible) chidot0=2.*H*xi0/lamf
             else
               a=exp(H*t)
@@ -407,23 +439,34 @@ module Special
 !
 !  need k
 !
-            psi=(ascale_ini/sqrt(2.*k))*cos(k/(ascale_ini*H))
-            psidot=(k/sqrt(2.*k))*sin(k/(ascale_ini*H))
-            TR=(ascale_ini/sqrt(2.*k))*cos(k/(ascale_ini*H))
-            TRdot=(k/sqrt(2.*k))*sin(k/(ascale_ini*H))
-            if (lim_psi_TR) then
-              impsi=(ascale_ini/sqrt(2.*k))*sin(k/(ascale_ini*H))
-              impsidot=(-k/sqrt(2.*k))*cos(k/(ascale_ini*H))
-              imTR=(ascale_ini/sqrt(2.*k))*sin(k/(ascale_ini*H))
-              imTRdot=(-k/sqrt(2.*k))*cos(k/(ascale_ini*H))
+            if (lmode_activator) then
+              psi=0.; psidot=0.; TR=0.; TRdot=0.
+              if (lim_psi_TR) then
+                impsi=0.; impsidot=0.; imTR=0.; imTRdot=0.
+              endif
+            else
+              psi=(ascale_ini/sqrt(2.*k))*cos(k/(ascale_ini*H))
+              psidot=(k/sqrt(2.*k))*sin(k/(ascale_ini*H))
+              TR=(ascale_ini/sqrt(2.*k))*cos(k/(ascale_ini*H))
+              TRdot=(k/sqrt(2.*k))*sin(k/(ascale_ini*H))
+              if (lim_psi_TR) then
+                impsi=(ascale_ini/sqrt(2.*k))*sin(k/(ascale_ini*H))
+                impsidot=(-k/sqrt(2.*k))*cos(k/(ascale_ini*H))
+                imTR=(ascale_ini/sqrt(2.*k))*sin(k/(ascale_ini*H))
+                imTRdot=(-k/sqrt(2.*k))*cos(k/(ascale_ini*H))
+              endif
             endif
 !
             if (lSchwinger_scalar) then
-              fourier_factor=1./twopi**1.5
-              uR=fourier_factor*(ascale_ini/sqrt(2.*k))*cos(k/(ascale_ini*H))
-              uRdot=fourier_factor*(k/sqrt(2.*k))*sin(k/(ascale_ini*H))
-              imuR=fourier_factor*(ascale_ini/sqrt(2.*k))*sin(k/(ascale_ini*H))
-              imuRdot=fourier_factor*(-k/sqrt(2.*k))*cos(k/(ascale_ini*H))
+              if (lmode_activator) then
+                uR=0.; uRdot=0.; imuR=0.; imuRdot=0.
+              else
+                fourier_factor=1./twopi**1.5
+                uR=fourier_factor*(ascale_ini/sqrt(2.*k))*cos(k/(ascale_ini*H))
+                uRdot=fourier_factor*(k/sqrt(2.*k))*sin(k/(ascale_ini*H))
+                imuR=fourier_factor*(ascale_ini/sqrt(2.*k))*sin(k/(ascale_ini*H))
+                imuRdot=fourier_factor*(-k/sqrt(2.*k))*cos(k/(ascale_ini*H))
+              endif
             endif
 !
           endif
@@ -431,7 +474,6 @@ module Special
 !  ODE variables (exist only on root processor)
 !
           if (lroot) then
-            Q0=(-Uprime0/(3.*g*lamf*H))**onethird
             f_ode(iaxi_Q)=Q0
             f_ode(iaxi_Qdot)=Qdot0
             f_ode(iaxi_chi)=chi0
@@ -573,6 +615,19 @@ module Special
 !
     endsubroutine get_analytical_solution
 !***********************************************************************
+    real function get_a_current() result(a_current)
+!
+!  Determine a_current from the correct source for each Hubble path
+!
+        if (lhubble) then
+          a_current = a
+        else if (lconf_time) then
+          a_current = -1./(H*t)
+        else
+          a_current = exp(H*t)
+        endif
+    endfunction get_a_current
+!***********************************************************************
     subroutine dspecial_dt(f,df,p)
 !
 !  calculate right hand side of ONE OR MORE extra coupled PDEs
@@ -592,7 +647,7 @@ module Special
       use Sub
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type(pencil_case) :: p
       real, dimension (nx) :: psi , psidot , psiddot , TR, TRdot, TRddot, uR, uRdot, uRddot
       real, dimension (nx) :: psiL, psiLdot, psiLddot, TL, TLdot, TLddot, uL, uLdot, uLddot
@@ -605,7 +660,7 @@ module Special
       real :: sign_swap=1.
       real, parameter :: fact=1.
       real :: epsilon_sr,inflaton
-!
+      real :: a_current
 !
       call keep_compiler_quiet(p)
 !
@@ -615,19 +670,25 @@ module Special
 !
 !  Set the 8 variable
 !
-      psi=f(l1:l2,m,n,iaxi_psi)
-      psidot=f(l1:l2,m,n,iaxi_psidot)
-      TR=f(l1:l2,m,n,iaxi_TR)
-      TRdot=f(l1:l2,m,n,iaxi_TRdot)
+      if (.not. lmode_activator) then
+        psi=f(l1:l2,m,n,iaxi_psi)
+        psidot=f(l1:l2,m,n,iaxi_psidot)
+        TR=f(l1:l2,m,n,iaxi_TR)
+        TRdot=f(l1:l2,m,n,iaxi_TRdot)
+      else
+        psi=0.; psidot=0.; TR=0.; TRdot=0.
+      endif
 !
-      if (lim_psi_TR) then
+      if (lim_psi_TR .and. .not. lmode_activator) then
         impsi=f(l1:l2,m,n,iaxi_impsi)
         impsidot=f(l1:l2,m,n,iaxi_impsidot)
         imTR=f(l1:l2,m,n,iaxi_imTR)
         imTRdot=f(l1:l2,m,n,iaxi_imTRdot)
+      else if (lim_psi_TR) then
+        impsi=0.; impsidot=0.; imTR=0.; imTRdot=0.
       endif
 !
-      if (lleft_psiL_TL) then
+      if (lleft_psiL_TL .and. .not. lmode_activator) then
         psiL     =f(l1:l2,m,n,iaxi_psiL)
         psiLdot  =f(l1:l2,m,n,iaxi_psiLdot)
         TL       =f(l1:l2,m,n,iaxi_TL)
@@ -636,9 +697,12 @@ module Special
         impsiLdot=f(l1:l2,m,n,iaxi_impsiLdot)
         imTL     =f(l1:l2,m,n,iaxi_imTL)
         imTLdot  =f(l1:l2,m,n,iaxi_imTLdot)
+      else if (lleft_psiL_TL) then
+        psiL=0.; psiLdot=0.; TL=0.; TLdot=0.
+        impsiL=0.; impsiLdot=0.; imTL=0.; imTLdot=0.
       endif
 !
-      if (lSchwinger_scalar) then
+      if (lSchwinger_scalar .and. .not. lmode_activator) then
         uR     =f(l1:l2,m,n,iaxi_uR)
         uRdot  =f(l1:l2,m,n,iaxi_uRdot)
         imuR   =f(l1:l2,m,n,iaxi_imuR)
@@ -648,14 +712,8 @@ module Special
         imuL   =f(l1:l2,m,n,iaxi_imuL)
         imuLdot=f(l1:l2,m,n,iaxi_imuLdot)
       else
-        uR     =0.
-        uRdot  =0.
-        imuR   =0.
-        imuRdot=0.
-        uL     =0.
-        uLdot  =0.
-        imuL   =0.
-        imuLdot=0.
+        uR=0.; uRdot=0.; imuR=0.; imuRdot=0.
+        uL=0.; uLdot=0.; imuL=0.; imuLdot=0.
       endif
 !
 !  make ODE variables available (should exist on all processors)
@@ -665,6 +723,99 @@ module Special
       chi=f_ode(iaxi_chi)
       chidot=f_ode(iaxi_chidot)
       call get_Hubble
+!
+!  Mode activator: birth BD IC when k/(aH)=100 is first crossed.
+!  Covers psiR, TR, psiL, TL (tensor) and uR, uL (Schwinger scalar).
+!  Replace 100.0 by horizon_activator=100 (by default)
+!
+      if (lmode_activator) then
+        a_current = get_a_current()
+!
+!  Activate psiR and TR
+!
+        where (k <= a_current*H*horizon_activator .and. abs(f(l1:l2,m,n,iaxi_TR)) < 1e-50)
+          f(l1:l2,m,n,iaxi_psi)    = (1./sqrt(2.*k))*cos(k/(a_current*H))
+          f(l1:l2,m,n,iaxi_psidot) = (k/(a_current*sqrt(2.*k)))*sin(k/(a_current*H))
+          f(l1:l2,m,n,iaxi_TR)     = (1./sqrt(2.*k))*cos(k/(a_current*H))
+          f(l1:l2,m,n,iaxi_TRdot)  = (k/(a_current*sqrt(2.*k)))*sin(k/(a_current*H))
+        endwhere
+        if (lim_psi_TR) then
+          where (k <= a_current*H*horizon_activator .and. abs(f(l1:l2,m,n,iaxi_imTR)) < 1e-50)
+            f(l1:l2,m,n,iaxi_impsi)    = (1./sqrt(2.*k))*sin(k/(a_current*H))
+            f(l1:l2,m,n,iaxi_impsidot) = -(k/(a_current*sqrt(2.*k)))*cos(k/(a_current*H))
+            f(l1:l2,m,n,iaxi_imTR)     = (1./sqrt(2.*k))*sin(k/(a_current*H))
+            f(l1:l2,m,n,iaxi_imTRdot)  = -(k/(a_current*sqrt(2.*k)))*cos(k/(a_current*H))
+          endwhere
+        endif
+!
+!  Activate psiL and TL
+!
+        if (lleft_psiL_TL) then
+          where (k <= a_current*H*horizon_activator .and. abs(f(l1:l2,m,n,iaxi_TL)) < 1e-50)
+            f(l1:l2,m,n,iaxi_psiL)     = (1./sqrt(2.*k))*cos(k/(a_current*H))
+            f(l1:l2,m,n,iaxi_psiLdot)  = (k/(a_current*sqrt(2.*k)))*sin(k/(a_current*H))
+            f(l1:l2,m,n,iaxi_TL)       = (1./sqrt(2.*k))*cos(k/(a_current*H))
+            f(l1:l2,m,n,iaxi_TLdot)    = (k/(a_current*sqrt(2.*k)))*sin(k/(a_current*H))
+            f(l1:l2,m,n,iaxi_impsiL)   = (1./sqrt(2.*k))*sin(k/(a_current*H))
+            f(l1:l2,m,n,iaxi_impsiLdot)= -(k/(a_current*sqrt(2.*k)))*cos(k/(a_current*H))
+            f(l1:l2,m,n,iaxi_imTL)     = (1./sqrt(2.*k))*sin(k/(a_current*H))
+            f(l1:l2,m,n,iaxi_imTLdot)  = -(k/(a_current*sqrt(2.*k)))*cos(k/(a_current*H))
+          endwhere
+        endif
+!
+!  Load tensor/psi from (possibly just modified) f
+!
+        psi    =f(l1:l2,m,n,iaxi_psi)
+        psidot =f(l1:l2,m,n,iaxi_psidot)
+        TR     =f(l1:l2,m,n,iaxi_TR)
+        TRdot  =f(l1:l2,m,n,iaxi_TRdot)
+        if (lim_psi_TR) then
+          impsi    =f(l1:l2,m,n,iaxi_impsi)
+          impsidot =f(l1:l2,m,n,iaxi_impsidot)
+          imTR     =f(l1:l2,m,n,iaxi_imTR)
+          imTRdot  =f(l1:l2,m,n,iaxi_imTRdot)
+        endif
+        if (lleft_psiL_TL) then
+          psiL     =f(l1:l2,m,n,iaxi_psiL)
+          psiLdot  =f(l1:l2,m,n,iaxi_psiLdot)
+          TL       =f(l1:l2,m,n,iaxi_TL)
+          TLdot    =f(l1:l2,m,n,iaxi_TLdot)
+          impsiL   =f(l1:l2,m,n,iaxi_impsiL)
+          impsiLdot=f(l1:l2,m,n,iaxi_impsiLdot)
+          imTL     =f(l1:l2,m,n,iaxi_imTL)
+          imTLdot  =f(l1:l2,m,n,iaxi_imTLdot)
+        endif
+!
+!  Activate uR and uL (Schwinger scalar)
+!
+        if (lSchwinger_scalar) then
+          where (k <= a_current*H*horizon_activator .and. &
+                 abs(f(l1:l2,m,n,iaxi_uR))   < 1e-50 .and. &
+                 abs(f(l1:l2,m,n,iaxi_imuR)) < 1e-50)
+            f(l1:l2,m,n,iaxi_uR)      =  (1./twopi**1.5)*(1./sqrt(2.*k))*cos(k/(a_current*H))
+            f(l1:l2,m,n,iaxi_imuR)    =  (1./twopi**1.5)*(1./sqrt(2.*k))*sin(k/(a_current*H))
+            f(l1:l2,m,n,iaxi_uRdot)   =  (1./twopi**1.5)*(k/(a_current*sqrt(2.*k)))*sin(k/(a_current*H))
+            f(l1:l2,m,n,iaxi_imuRdot) = -(1./twopi**1.5)*(k/(a_current*sqrt(2.*k)))*cos(k/(a_current*H))
+          endwhere
+          where (k <= a_current*H*horizon_activator .and. &
+                 abs(f(l1:l2,m,n,iaxi_uL))   < 1e-50 .and. &
+                 abs(f(l1:l2,m,n,iaxi_imuL)) < 1e-50)
+            f(l1:l2,m,n,iaxi_uL)      =  (1./twopi**1.5)*(1./sqrt(2.*k))*cos(k/(a_current*H))
+            f(l1:l2,m,n,iaxi_imuL)    =  (1./twopi**1.5)*(1./sqrt(2.*k))*sin(k/(a_current*H))
+            f(l1:l2,m,n,iaxi_uLdot)   =  (1./twopi**1.5)*(k/(a_current*sqrt(2.*k)))*sin(k/(a_current*H))
+            f(l1:l2,m,n,iaxi_imuLdot) = -(1./twopi**1.5)*(k/(a_current*sqrt(2.*k)))*cos(k/(a_current*H))
+          endwhere
+          uR     =f(l1:l2,m,n,iaxi_uR)
+          uRdot  =f(l1:l2,m,n,iaxi_uRdot)
+          imuR   =f(l1:l2,m,n,iaxi_imuR)
+          imuRdot=f(l1:l2,m,n,iaxi_imuRdot)
+          uL     =f(l1:l2,m,n,iaxi_uL)
+          uLdot  =f(l1:l2,m,n,iaxi_uLdot)
+          imuL   =f(l1:l2,m,n,iaxi_imuL)
+          imuLdot=f(l1:l2,m,n,iaxi_imuLdot)
+        endif
+!
+      endif  ! lmode_activator
 !
 !  Possibility of keeping mQ constant, i,e., we keep mQ=g*Q0/H
 !  Need to have Q on all processors.
@@ -982,11 +1133,15 @@ module Special
 !  29-jul-25/TP: carved from dspecial_dt
 !
       use Diagnostics
+      use Mpicomm, only: mpiallreduce_sum, mpibcast
 
       real, contiguous, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
       real, dimension (nx) :: psi_anal, psidot_anal, TR_anal, TRdot_anal
       real, parameter :: fact=1.
+      integer :: n_active_TR_loc, n_active_uR_loc
+      real    :: r_active_TR, r_active_uR
+      real :: a_current
 
       call keep_compiler_quiet(p)
 
@@ -1034,6 +1189,25 @@ module Special
         call save_name(fact,idiag_fact)
         call save_name(k0,idiag_k0)
         call save_name(dk,idiag_dk)
+        if(lmode_activator) then
+!
+!  Diagnostic: count total active modes at output times
+!
+          n_active_TR_loc = count(abs(f(l1:l2,m,n,iaxi_TR)) >= 1e-50)
+          if (lSchwinger_scalar) then
+            n_active_uR_loc = count(abs(f(l1:l2,m,n,iaxi_uR)) >= 1e-50)
+          else
+            n_active_uR_loc = 0
+          endif
+          call mpiallreduce_sum(real(n_active_TR_loc), r_active_TR)
+          call mpiallreduce_sum(real(n_active_uR_loc), r_active_uR)
+          a_current = get_a_current()
+          if (lroot) &
+            write(*,'(a,f8.3,2(a,i5))') &
+              'mode_activator: N=', log(a_current), &
+              '  active TR/psi=', nint(r_active_TR), &
+              '  active uR/uL=',  nint(r_active_uR)
+        endif
       endif
 !
       if (l2davgfirst) then
@@ -1184,6 +1358,15 @@ module Special
 !
           !Qddot  =Qddot  -sbackreact_Q  *fact *grand_sum-sbackreact_JJ*JJ_sum
           if (lSchwinger_scalar) then
+!print*,'AXEL2: Qddot, sbackreact_Q, fact, grand_sum, sbackreact_JJ, JJ_sum='
+!print*,'AXEL2: Qddot=',Qddot
+!print*,'AXEL2: sbackreact_Q=',sbackreact_Q
+!print*,'AXEL2: fact=',fact
+!print*,'AXEL2: grand_sum=',grand_sum
+!print*,'AXEL2: sbackreact_JJ=',sbackreact_JJ
+!print*,'AXEL2?: t=',t
+!print*,'AXEL2?: JJ_sum=',JJ_sum
+!print*,'AXEL3: Qddot, sbackreact_Q, fact, grand_sum, sbackreact_JJ, JJ_sum='
             Qddot  =Qddot  -sbackreact_Q  *fact *grand_sum-sbackreact_JJ*JJ_sum
           else
             Qddot  =Qddot  -sbackreact_Q  *fact *grand_sum
@@ -1452,6 +1635,13 @@ module Special
         if ((llnk_spacing_adjustable.or.llnk_spacing) .and. lfirst) then
           if (nswitch>0 .or. (lalways_backreact_output .and. lout)) then
             open (1, file=trim(directory_snap)//'/backreact.dat', form='formatted', position='append')
+!print*,'AXEL1: '
+!print*,'AXEL1: t=',t
+!print*,'AXEL1: lnk(1)=',lnk(1)
+!print*,'AXEL1: grand(1), dgrant(1)=',grand(1), dgrant(1)
+!print*,'AXEL1: a=',a
+!print*,'AXEL1: lnk(1), grand(1), dgrant(1), a=',lnk(1), grand(1), dgrant(1), a
+!print*,'AXEL1: H=',H
             write(1,*) t, lnk, grand, dgrant, a, H
             close(1)
             if (lSchwinger_scalar) then
@@ -1669,7 +1859,8 @@ module Special
 !
           if (horizon_factor==0.) then
             if (headt.and.lfirst) print*,'horizon_factor=',horizon_factor
-            where (uReff2<1./(2.*a*H))
+!OLD-2026-10-28 where (uReff2<1./(2.*a*H))
+            where (uReff2<1./((twopi**3)*2.*a*H))
               uReff2=0.
             endwhere
           elseif (horizon_factor>0.) then
@@ -1682,7 +1873,8 @@ module Special
 !
           if (horizon_factor==0.) then
             if (headt.and.lfirst) print*,'horizon_factor=',horizon_factor
-            where (uLeff2<1./(2.*a*H))
+!OLD-2026-10-28 where (uLeff2<1./(2.*a*H))
+            where (uLeff2<1./((twopi**3)*2.*a*H))
               uLeff2=0.
             endwhere
           elseif (horizon_factor>0.) then
@@ -1718,9 +1910,11 @@ module Special
           dgrant=(4.*pi*k**3*dlnk)*(-lamf/(2.*a**3))*( &
           (a*mQ*H**2+a*g*Qdot)*TReff2+(a*mQ*H-k)*2*TRdoteff2 &
           )/twopi**3
+!  corrected -k sign: TL needs +k (parity k -> -k), as in grand, grant and conformal-time dgrant
           if (lleft_psiL_TL) then
             dgrant=dgrant+(4.*pi*k**3*dlnk)*(-lamf/(2.*a**3))*( &
-            (a*mQ*H**2+a*g*Qdot)*TLeff2+(a*mQ*H-k)*2*TLdoteff2 &
+            !(a*mQ*H**2+a*g*Qdot)*TLeff2+(a*mQ*H-k)*2*TLdoteff2 &
+            (a*mQ*H**2+a*g*Qdot)*TLeff2+(a*mQ*H+k)*2*TLdoteff2 &
             )/twopi**3
           endif
         endif
@@ -1754,6 +1948,7 @@ module Special
 !  07-aug-17/axel: coded
 
       use Mpicomm, only: mpiallreduce_sum, mpibcast
+
 !
       real, contiguous, dimension(:,:,:,:) :: f
       real, dimension(nx) :: TRpsim, TRpsikm, TRpsidotm, TRdotpsim
@@ -1806,6 +2001,7 @@ module Special
 !
 !  decide about revising the k array
 !  a=exp(N), N=H*t (=lna).
+!  Ignore the "nswitch must not exceed 1" error message when lalways_backreact_output=T.
 !
       if (llnk_spacing_adjustable .and. lfirst) then
         lna=log(a)
@@ -1816,7 +2012,9 @@ module Special
           nswitch=int((lnkmin-lnkmin0)/dlnk)
           if (ip<10) print*,'nswitch: ',a, lnkmin0, nswitch
           if (nswitch==0) call fatal_error('special_after_boundary','nswitch must not be zero')
-          if (nswitch>1) call fatal_error('special_after_boundary','nswitch must not exceed 1')
+          if (.not. lalways_backreact_output) then
+            if (nswitch>1) call fatal_error('special_after_boundary','(i) nswitch must not exceed 1')
+          endif
 !
 !  calculate new k array (because nswitch=1)
 !
@@ -1864,7 +2062,8 @@ module Special
         endif
 !
 !  for llnk_spacing=T, we still want output at the same times as in
-!  the adjustable case, so her nswitch means just "output", but no switch
+!  the adjustable case, so then nswitch means just "output", but no switch
+!  Ignore the "nswitch must not exceed 1" error message when lalways_backreact_output=T.
 !
       elseif (lfirst) then
         lna=log(a)
@@ -1873,7 +2072,9 @@ module Special
         if (lnkmin >= (lnkmin0_dummy+dlnk)) then
           nswitch=int((lnkmin-lnkmin0_dummy)/dlnk)
           if (nswitch==0) call fatal_error('special_after_boundary','nswitch must not be zero')
-          if (nswitch>1) call fatal_error('special_after_boundary','nswitch must not exceed 1')
+          if (.not. lalways_backreact_output) then
+            if (nswitch>1) call fatal_error('special_after_boundary','(ii) nswitch must not exceed 1')
+          endif
           open (1, file=trim(directory_snap)//'/krange.dat', form='formatted', position='append')
           write(1,*) t, lnk, f(l1:l2,m1,n1,iaxi_psi)
           close(1)
@@ -1914,7 +2115,7 @@ module Special
         call mpiallreduce_sum(sum(uLeff2m),uLeff2m_sum,1)
         call mpiallreduce_sum(sum(JJ_R),JJ_R_sum,1)
         call mpiallreduce_sum(sum(JJ_L),JJ_L_sum,1)
-        call mpiallreduce_sum(sum(JJ_R+JJ_L),JJ_sum,1)
+        JJ_sum=JJ_R_sum+JJ_L_sum
       else
         JJ_R_sum=0.
         JJ_L_sum=0.

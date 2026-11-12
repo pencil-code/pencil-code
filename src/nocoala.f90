@@ -14,17 +14,16 @@ module Coala
    use Quiet
 
    implicit none
-   
+
    include 'coala.h'
+
    contains
 !***********************************************************************
    subroutine initialize_coala(kernel,rhograin,Q,kpol)
 
    character(len=30) :: kernel
-   real          :: rhograin
+   real :: rhograin
    integer :: Q,kpol
-
-
 
    call keep_compiler_quiet(kernel)
    call keep_compiler_quiet(rhograin)
@@ -33,14 +32,14 @@ module Coala
    endsubroutine initialize_coala 
 !***********************************************************************
    subroutine coala_advance(rhodust,rhodust_floor,dv,new_rhodust)
+
     real :: rhodust_floor
     real, dimension(ndustspec) :: rhodust, new_rhodust
     real, dimension(ndustspec,ndustspec) :: dv
 
-    call keep_compiler_quiet(rhodust)
+    call keep_compiler_quiet(rhodust,new_rhodust)
     call keep_compiler_quiet(rhodust_floor)
     call keep_compiler_quiet(dv)
-    call keep_compiler_quiet(new_rhodust)
 
    endsubroutine coala_advance
 !***********************************************************************
@@ -49,7 +48,7 @@ module Coala
     integer, parameter :: n_pars=0
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
-      call keep_compiler_quiet(p_par)
+    call keep_compiler_quiet(p_par)
 
     endsubroutine pushpars2c
 !***********************************************************************

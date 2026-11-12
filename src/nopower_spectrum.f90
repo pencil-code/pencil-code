@@ -198,6 +198,26 @@ module power_spectrum
 !
     endsubroutine power_1d
 !***********************************************************************
+    subroutine powerUETCs(f,lfirstcall)
+!
+      real, contiguous, dimension(:,:,:,:) :: f
+      logical :: lfirstcall
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(lfirstcall)
+!
+    endsubroutine powerUETCs
+!***********************************************************************
+    subroutine wsnap_UETCs(f,tsnap)
+!
+      real, contiguous, dimension(:,:,:,:) :: f
+      real(KIND=rkind8) :: tsnap
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(real(tsnap))
+!
+    endsubroutine wsnap_UETCs
+!***********************************************************************
     subroutine pdf(f,variabl_in,pdf_mean_in,pdf_rms_in)
 !
       real, contiguous,dimension(:,:,:,:) :: f

@@ -548,7 +548,7 @@ module Special
       use Sub, only: grad,del2
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type(pencil_case) :: p
       real, dimension (nx) :: del2sigmanu,gsigmanu
       real, dimension (nx,3) :: tmp_vec
@@ -723,7 +723,7 @@ module Special
 !  27-nov-08/wlad: coded
 !
       real, contiguous, dimension(:,:,:,:) :: f  !, intent(INOUT)
-      real, dimension(mx,my,mz,mvar) :: df  !, intent(INOUT)
+      real, contiguous, dimension(:,:,:,:) :: df  !, intent(INOUT)
       real :: dt_   !, intent(IN)
       logical, intent(in) :: llast
 !

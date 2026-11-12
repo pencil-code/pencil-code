@@ -458,7 +458,7 @@ module Special
       use Diagnostics
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       real :: scale_factor, stress_prefactor2, sign_switch=0
       type (pencil_case) :: p
 !
@@ -627,7 +627,7 @@ module Special
 !  27-nov-08/wlad: coded
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension(mx,my,mz,mvar), intent(inout) :: df
+      real, contiguous, dimension(:,:,:,:), intent(inout) :: df
       real, intent(in) :: dt_
       logical, intent(in) :: llast
 !

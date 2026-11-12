@@ -223,7 +223,7 @@ module Gravity
             if (lroot) print*, 'initialize_gravity: RGB-1Msun-11.7 gravity potential'
             cpot(:,j) = (/ 4.529, -41.132, 108.616, 10.219,-49.586 /)
 !
-         case ('RGB-1Msun-11.7-ns') ! 11.7bn yr old 1 Msun star, no smoothing
+          case ('RGB-1Msun-11.7-ns') ! 11.7bn yr old 1 Msun star, no smoothing
             if (lroot) print*, 'initialize_gravity: RGB-1Msun-11.7 gravity potential'
             cpot(:,j) = (/ 3.4062559216071556e1, 1.0016968486352738e5, -6.9842471292246351e4, &
                            1.2414504780188610e4, 1.0355117693754031e5 /)
@@ -231,6 +231,26 @@ module Gravity
           case ('PMS-2Msun-star') ! Two solar mass pre-main sequence star
             if (lroot) print*, 'initialize_gravity: 2 solar mass PMS gravity potential'
             cpot(:,j) = (/ 1.3896, -1.7048, 0.3128, 1.0999, 0.1114 /)
+!
+          case ('PMS-M1')       ! PMS 2.2Mo star, model 1
+            if (lroot) print*, 'initialize_gravity: pre-MS potential M1'
+            cpot(:,j) = (/ 1.8866, -0.9939, 0.5445, 1.1623, 0.1602 /)
+!
+          case ('PMS-M2')       ! PMS 2.2Mo star, model 2
+            if (lroot) print*, 'initialize_gravity: pre-MS potential M2'
+            cpot(:,j) = (/ 3.8718, 6.7774, 13.4939, 6.8834, 0.0740 /)
+!
+          case ('PMS-M2-r6')    ! PMS 2.2Mo star, model 2
+            if (lroot) print*, 'initialize_gravity: pre-MS potential M2'
+            cpot(:,j) = (/ -1.6115, -21.4144, 0.3123, 5.4204, -0.9800 /)
+!
+          case ('PMS-M3')       ! PMS 2.2Mo star, model 3
+            if (lroot) print*, 'initialize_gravity: pre-MS potential M3'
+            cpot(:,j) = (/ 7.5251, 88.2218, 567.7032, 34.1917, 23.6768 /)
+!
+          case ('PMS-M4')       ! PMS 2.2Mo star, model 4
+            if (lroot) print*, 'initialize_gravity: pre-MS potential M4'
+            cpot(:,j) = (/ 6.1920, 26.6363, -23.1568, 15.2271, 19.3506 /)
 !
 !  Experimental flattened potential for M5 star. Similar to M5-dwarf but
 !  includes 6th and 12th powers of r to obtain pot~const for r \gtrsim 1.2.

@@ -19,6 +19,7 @@ module GhostFold
 !
   public :: fold_df, fold_f,fold_df_3points,reverse_fold_f_3points
   public :: reverse_fold_df_3points
+  public :: yshift_block
 !
   contains
 !***********************************************************************
@@ -63,10 +64,10 @@ module GhostFold
         if (lshear .and. nxgrid>1) then
           do ivar=ivar1,ivar2
             df_tmp_yz=df(l1-1,m1:m2,n1:n2,ivar)
-            call fourier_shift_yz_y(df_tmp_yz,-deltay)
+            call fourier_shift_yz_y(df_tmp_yz,-delta_y)
             df(l1-1,m1:m2,n1:n2,ivar)=df_tmp_yz
             df_tmp_yz=df(l2+1,m1:m2,n1:n2,ivar)
-            call fourier_shift_yz_y(df_tmp_yz,+deltay)
+            call fourier_shift_yz_y(df_tmp_yz,+delta_y)
             df(l2+1,m1:m2,n1:n2,ivar)=df_tmp_yz
           enddo
         endif
@@ -126,10 +127,10 @@ module GhostFold
         if (nxgrid>1 .and. lshear) then
           do ivar=ivar1,ivar2
             f_tmp_yz=f(l1-1,m1:m2,n1:n2,ivar)
-            call fourier_shift_yz_y(f_tmp_yz,-deltay)
+            call fourier_shift_yz_y(f_tmp_yz,-delta_y)
             f(l1-1,m1:m2,n1:n2,ivar)=f_tmp_yz
             f_tmp_yz=f(l2+1,m1:m2,n1:n2,ivar)
-            call fourier_shift_yz_y(f_tmp_yz,+deltay)
+            call fourier_shift_yz_y(f_tmp_yz,+delta_y)
             f(l2+1,m1:m2,n1:n2,ivar)=f_tmp_yz
           enddo
         endif
@@ -321,4 +322,18 @@ subroutine reverse_fold_df_3points(f,ivar1,ivar2)
 !
     endsubroutine reverse_fold_df_3points
 !*******************************************************************************
+    subroutine yshift_block(ng, a, shift)
+!
+!  09-nov-26/TP: only used by the GPU particle fold, which needs MPI
+!
+      use Messages, only: fatal_error
+!
+      integer, intent(in) :: ng
+      real, dimension(ng,ny,nz), intent(inout) :: a
+      real, intent(in) :: shift
+!
+      call fatal_error('yshift_block','needs MPI')
+!
+    endsubroutine yshift_block
+!***********************************************************************
 endmodule GhostFold

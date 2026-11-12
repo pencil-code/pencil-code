@@ -44,6 +44,26 @@ module NSCBC
   character(len=fnlen) :: turb_inlet_file='var.dat'
   real :: nscbc_sigma_out = 1.,nscbc_sigma_in = 1., p_infty=1.
   real :: transversal_damping=0.2, turb_profile_mag=1.0
+!
+!  transversal_dissipation: with notransveral_terms=F the boundary
+!  plane is a 2-D advection-acoustics problem in the transverse directions,
+!  discretised with central differences and without the viscous and upwind
+!  terms of the interior (df is overwritten on the boundary plane), so
+!  near-Nyquist modes are not damped.  A value > 0 adds the 6th-order
+!  dissipation  transversal_dissipation*(|u_j|+cs)*delta_j^6 q/(60 dx_j).
+!  0 (default) = without it, as before.
+!
+  real :: transversal_dissipation=0.
+!
+!  lbackflow_outlet: where the flow enters through an outlet,
+!  the entropy, vorticity and species waves L_2, L_3,
+!  L_4, L_k (and the passive scalars) are incoming, but they are computed from
+!  the interior with one-sided (here downwind) derivatives as if outgoing,
+!  which is unstable.  With lbackflow_outlet=T they are set to zero there.
+!  With LODI (notransveral_terms=T) the outlet plane hardly ever has backflow;
+!  with the transverse terms it does as soon as a large vortex crosses it.
+!
+  logical :: lbackflow_outlet=.false.
   logical :: inlet_from_file=.false., jet_inlet=.false.
   logical :: first_NSCBC=.true.,onesided_inlet=.true.
   logical :: notransveral_terms=.true.
@@ -92,9 +112,13 @@ module NSCBC
       turb_inlet_dir,jet_inlet,inlet_profile,smooth_time,onesided_inlet,&
       notransveral_terms, transversal_damping,radius_profile,momentum_thickness,&
       jet_center,velocity_ratio,turb_inlet_file,sigma,lfinal_velocity_profile,&
-      velocity_profile,turb_profile_mag,inlet_zz1,inlet_zz2,zz_profile
+      velocity_profile,turb_profile_mag,inlet_zz1,inlet_zz2,zz_profile,&
+      transversal_dissipation,lbackflow_outlet
 !
   real :: gamma
+  integer :: ngas_tab=0
+  logical :: lgas_table_read=.false.
+  real, allocatable, dimension(:) :: gas_r, gas_u, gas_v, gas_urms
 
   contains
 !***********************************************************************
@@ -552,6 +576,9 @@ module NSCBC
 !
       call transversal_terms(T_1,T_2,T_3,T_4,T_5,rho0,cs,&
           fslice,grad_rho,grad_P,dui_dxj,dir1,dir2,dir3)
+      if (.not. notransveral_terms .and. transversal_dissipation > 0.) &
+          call transversal_dissipation_terms(f,lll,dir1,dir2,dir3,fslice,&
+          rho0,cs,cs2,T_1,T_2,T_3,T_4,T_5)
 !
       if (llinlet) then
 !
@@ -649,6 +676,13 @@ module NSCBC
                 *(1-Mach**2)/Lxyz(dir1)
             L_5 = L_5 + nscbc_sigma_in*sgn*rho0*cs*(cs+u_t)* &
                 (fslice(:,:,dir1)-u_in(:,:,dir1))*ngrid/Lxyz(dir1)
+!
+!  Cancel the transverse terms in the incoming waves as in the branch above
+!  (missing until 6-nov-26; zero unless notransveral_terms=F).
+!
+            L_3 = L_3 - T_3
+            L_4 = L_4 - T_4
+            L_5 = L_5 - (T_5+sgn*rho0*cs*T_2)
           endif
 !
 !  If the inlet is perfectly reflecting
@@ -667,8 +701,7 @@ module NSCBC
 !
         cs0_average=sum(cs)/ngridpoints
         KK=nscbc_sigma_out*(1.-Mach**2)*cs0_average/Lxyz(dir1)
-!
-        L_1 = KK*(P0-p_infty)-(T_5-sgn*rho0*cs*T_2)*(1-transversal_damping)
+        L_1 = KK*(P0-p_infty)-(T_5+sgn*rho0*cs*T_2)*(1-transversal_damping)
         if (ilnTT > 0) then
           L_2=fslice(:,:,dir1)*(cs2*grad_rho(:,:,dir1)-grad_P(:,:,dir1))
         else
@@ -685,6 +718,22 @@ module NSCBC
         else
           L_k=0.
         endif
+!
+!  Backflow: zero incoming entropy, vorticity and species waves.
+!  sgn*u_n > 0 means flow into the domain.
+!
+        if (lbackflow_outlet) then
+          where (sgn*fslice(:,:,dir1) > 0.)
+            L_2 = 0.
+            L_3 = 0.
+            L_4 = 0.
+          endwhere
+          if (ichemspec(1)>0) then
+            do k = 1, nchemspec
+              where (sgn*fslice(:,:,dir1) > 0.) L_k(:,:,k) = 0.
+            enddo
+          endif
+        endif
       endif
 !
       if (lroot .and. ip<5) then
@@ -699,11 +748,11 @@ module NSCBC
         if (llinlet) then
           dfslice(:,:,dir1) = prefac2*( L_5 - L_1)-T_2
         else
-          dfslice(:,:,dir1) = prefac2*( L_1 - L_5)+T_2
+          dfslice(:,:,dir1) = prefac2*( L_1 - L_5)-T_2
         endif
       case ('top')
         if (llinlet) then
-          dfslice(:,:,dir1) = prefac2*( L_1 - L_5)+T_2
+          dfslice(:,:,dir1) = prefac2*( L_1 - L_5)-T_2
         else
           dfslice(:,:,dir1) = prefac2*( L_5 - L_1)-T_2
         endif
@@ -797,6 +846,9 @@ module NSCBC
           else
             call der_onesided_4_slice(f,sgn,k,dY_dx,lll,dir1)
             dfslice(:,:,k)=-fslice(:,:,dir1)*dY_dx
+            if (lbackflow_outlet) then
+              where (sgn*fslice(:,:,dir1) > 0.) dfslice(:,:,k) = 0.
+            endif
           endif
         enddo
       endif
@@ -987,6 +1039,7 @@ module NSCBC
       real, allocatable, dimension(:,:,:) :: u_turb
       real, dimension(3) :: velo
       real :: radius_mean, smooth, rad, vel
+      real :: xx1, xx2, uax, vrad, urms_loc
       integer :: i,j,kkk,jjj
       integer, dimension(10) :: stat
       logical :: lprint
@@ -1003,6 +1056,8 @@ module NSCBC
 ! Define velocity profile at inlet
 !
         u_in=0
+        u_profile=1.
+        non_zero_transveral_velo=.false.
         lprint=lroot .and. it==1 .and. lfirst .and. .not. lpencil_check_at_work
         do j=1,ninit
           select case (inlet_profile(j))
@@ -1010,8 +1065,6 @@ module NSCBC
           case ('nothing')
             if (lprint .and. j==1) &
                 print*,'inlet_profile: nothing'
-            non_zero_transveral_velo=.false.
-            u_profile=1.
 !
           case ('uniform')
             if (lprint) &
@@ -1125,6 +1178,44 @@ module NSCBC
               enddo
             enddo
 !
+          case ('spray-table')
+!
+!  Axisymmetric mean profile read from gas_inlet.dat: columns r, u_axial
+!  (>0 into the domain), v_radial (>0 outward), u_rms.  Linear interpolation
+!  in r; the sign of u_t selects the inflow direction; u_profile (used to
+!  scale the turbulent inlet from file) is the tabulated u_rms.
+!
+            if (lprint) print*,'inlet_profile: spray-table (gas_inlet.dat)'
+            non_zero_transveral_velo=.true.
+            if (.not.lgas_table_read) call read_gas_inlet_table
+            do jjj=imin,imax
+              do kkk=jmin,jmax
+                if (dir==1) then
+                  xx1=y(jjj)-jet_center(1); xx2=z(kkk)-jet_center(2)
+                elseif (dir==2) then
+                  xx1=x(jjj)-jet_center(1); xx2=z(kkk)-jet_center(2)
+                else
+                  xx1=x(jjj)-jet_center(1); xx2=y(kkk)-jet_center(2)
+                endif
+                rad=sqrt(xx1**2+xx2**2)
+                call interp_gas_table(rad,uax,vrad,urms_loc)
+                u_in(jjj-imin+1,kkk-jmin+1,dir)=u_in(jjj-imin+1,kkk-jmin+1,dir)+sign(1.0,u_t)*uax
+                if (rad>0.0) then
+                  if (dir==1) then
+                    u_in(jjj-imin+1,kkk-jmin+1,2)=u_in(jjj-imin+1,kkk-jmin+1,2)+vrad*xx1/rad
+                    u_in(jjj-imin+1,kkk-jmin+1,3)=u_in(jjj-imin+1,kkk-jmin+1,3)+vrad*xx2/rad
+                  elseif (dir==2) then
+                    u_in(jjj-imin+1,kkk-jmin+1,1)=u_in(jjj-imin+1,kkk-jmin+1,1)+vrad*xx1/rad
+                    u_in(jjj-imin+1,kkk-jmin+1,3)=u_in(jjj-imin+1,kkk-jmin+1,3)+vrad*xx2/rad
+                  else
+                    u_in(jjj-imin+1,kkk-jmin+1,1)=u_in(jjj-imin+1,kkk-jmin+1,1)+vrad*xx1/rad
+                    u_in(jjj-imin+1,kkk-jmin+1,2)=u_in(jjj-imin+1,kkk-jmin+1,2)+vrad*xx2/rad
+                  endif
+                endif
+                u_profile(jjj-imin+1,kkk-jmin+1)=urms_loc
+              enddo
+            enddo
+!
           case ('single_jet_no_coflow')
             if (lprint) &
                 print*,'inlet_profile: single_jet'
@@ -1204,7 +1295,18 @@ module NSCBC
           iround=int(round)
           shift=round-iround
           grid_shift=shift*grid_points
-          uppergrid=l2_in-int(grid_shift)
+!
+!  The pre-run box is swept along the inflow direction, so the plane index
+!  must be the upper interior index in THAT direction of the pre-run box
+!  (l2_in, m2_in or n2_in). 
+!
+          if (dir==1) then
+            uppergrid=l2_in-int(grid_shift)
+          elseif (dir==2) then
+            uppergrid=m2_in-int(grid_shift)
+          else
+            uppergrid=n2_in-int(grid_shift)
+          endif
           lowergrid=uppergrid-1
           weight=grid_shift-int(grid_shift)
 !
@@ -1243,6 +1345,54 @@ module NSCBC
         deallocate(u_turb)
 !
       end subroutine find_velocity_at_inlet
+!***********************************************************************
+    subroutine read_gas_inlet_table
+!
+!  Read gas_inlet.dat: first line n, then n lines of  r  u_axial  v_radial  u_rms  (SI).
+!
+!  26-oct-26/claude: coded
+!
+      integer :: i, iunit
+!
+      iunit=94
+      open(iunit,file='gas_inlet.dat',status='old',action='read')
+      read(iunit,*) ngas_tab
+      if (allocated(gas_r)) deallocate(gas_r,gas_u,gas_v,gas_urms)
+      allocate(gas_r(ngas_tab),gas_u(ngas_tab),gas_v(ngas_tab),gas_urms(ngas_tab))
+      do i=1,ngas_tab
+        read(iunit,*) gas_r(i), gas_u(i), gas_v(i), gas_urms(i)
+      enddo
+      close(iunit)
+      lgas_table_read=.true.
+      if (lroot) print*,'read_gas_inlet_table: read ',ngas_tab,' radial stations from gas_inlet.dat'
+!
+    endsubroutine read_gas_inlet_table
+!***********************************************************************
+    subroutine interp_gas_table(rad,uax,vrad,urms_loc)
+!
+!  Linear interpolation of the tabulated gas inlet profile; constant beyond the last station.
+!
+      real, intent(in)  :: rad
+      real, intent(out) :: uax, vrad, urms_loc
+      integer :: i
+      real :: w
+!
+      if (rad<=gas_r(1)) then
+        uax=gas_u(1); vrad=gas_v(1); urms_loc=gas_urms(1)
+      elseif (rad>=gas_r(ngas_tab)) then
+        uax=gas_u(ngas_tab); vrad=gas_v(ngas_tab); urms_loc=gas_urms(ngas_tab)
+      else
+        i=1
+        do while (gas_r(i+1)<rad)
+          i=i+1
+        enddo
+        w=(rad-gas_r(i))/(gas_r(i+1)-gas_r(i))
+        uax=(1.0-w)*gas_u(i)+w*gas_u(i+1)
+        vrad=(1.0-w)*gas_v(i)+w*gas_v(i+1)
+        urms_loc=(1.0-w)*gas_urms(i)+w*gas_urms(i+1)
+      endif
+!
+    endsubroutine interp_gas_table
 !***********************************************************************
     subroutine find_composition_at_inlet(nchemspec,YYi,YYi_full,dir,imin,imax,jmin,jmax,igrid,jgrid)
 !
@@ -1775,6 +1925,115 @@ module NSCBC
         endif
 !
       endsubroutine transversal_terms
+!***********************************************************************
+      subroutine transversal_dissipation_terms(f,lll,dir1,dir2,dir3,fslice,&
+          rho0,cs,cs2,T_1,T_2,T_3,T_4,T_5)
+!
+!  Add 6th-order dissipation in the two directions parallel to the boundary
+!  to the transverse terms (they enter the boundary equations as -T_i):
+!
+!    T_q = T_q - transversal_dissipation*sum_j (|u_j|+cs)*delta_j^6 q/(60 dx_j)
+!
+!  for q = rho (T_1), u_dir1 (T_2), u_dir2 (T_3), u_dir3 (T_4), and
+!  T_5 = T_5 - cs2*(the rho term), the pressure term for an isothermal or
+!  barotropic gas. The ghost zones of
+!  the boundary plane in the transverse directions must be set (periodic or
+!  any other boundary condition), as for the central derivatives in
+!  derivate_boundary.
+!
+        real, dimension(mx,my,mz,mfarray), intent(in) :: f
+        integer, intent(in) :: lll,dir1,dir2,dir3
+        real, dimension(:,:,:), intent(in) :: fslice
+        real, dimension(:,:), intent(in) :: rho0,cs,cs2
+        real, dimension(:,:), intent(inout) :: T_1,T_2,T_3,T_4,T_5
+!
+        real, dimension(:,:), allocatable :: plane,diss,speed
+        real, dimension(:), allocatable :: dinv
+        integer :: igrid,jgrid,ivar,k,itrans,dirt,i1,i2,j1,j2,i,j
+        integer, dimension(4) :: ivars
+!
+        igrid=size(T_1,1); jgrid=size(T_1,2)
+        allocate(diss(igrid,jgrid),speed(igrid,jgrid))
+!
+!  Variables: first density, then the velocity components normal (dir1) and
+!  parallel (dir2, dir3) to the boundary.
+!
+        ivars=(/ilnrho,iux-1+dir1,iux-1+dir2,iux-1+dir3/)
+!
+        do k=1,4
+          ivar=ivars(k)
+!
+!  The boundary plane of variable ivar, with ghost zones.
+!
+          select case (dir1)
+          case (1); allocate(plane(my,mz)); plane=f(lll,:,:,ivar)
+          case (2); allocate(plane(mx,mz)); plane=f(:,lll,:,ivar)
+          case (3); allocate(plane(mx,my)); plane=f(:,:,lll,ivar)
+          end select
+          i1=nghost+1; i2=nghost+igrid; j1=nghost+1; j2=nghost+jgrid
+          diss=0.
+!
+          do itrans=1,2
+            if (itrans==1) then
+              dirt=dir2
+            else
+              dirt=dir3
+            endif
+            if (dirt==1 .and. nxgrid==1) cycle
+            if (dirt==2 .and. nygrid==1) cycle
+            if (dirt==3 .and. nzgrid==1) cycle
+!
+!  Inverse grid spacing along dirt on the igrid (itrans=1) or jgrid
+!  (itrans=2) points of the plane.
+!
+            if (itrans==1) then
+              allocate(dinv(igrid))
+            else
+              allocate(dinv(jgrid))
+            endif
+            select case (dirt)
+            case (1); dinv=dx_1(l1:l2)
+            case (2); dinv=dy_1(m1:m2)
+            case (3); dinv=dz_1(n1:n2)
+            end select
+            speed=abs(fslice(:,:,iux-1+dirt))+cs
+!
+            if (itrans==1) then
+              do j=1,jgrid
+                diss(:,j)=diss(:,j)+speed(:,j)*dinv/60.* &
+                    (plane(i1-3:i2-3,j1-1+j)-6.*plane(i1-2:i2-2,j1-1+j) &
+                    +15.*plane(i1-1:i2-1,j1-1+j)-20.*plane(i1:i2,j1-1+j) &
+                    +15.*plane(i1+1:i2+1,j1-1+j)-6.*plane(i1+2:i2+2,j1-1+j) &
+                    +plane(i1+3:i2+3,j1-1+j))
+              enddo
+            else
+              do i=1,igrid
+                diss(i,:)=diss(i,:)+speed(i,:)*dinv/60.* &
+                    (plane(i1-1+i,j1-3:j2-3)-6.*plane(i1-1+i,j1-2:j2-2) &
+                    +15.*plane(i1-1+i,j1-1:j2-1)-20.*plane(i1-1+i,j1:j2) &
+                    +15.*plane(i1-1+i,j1+1:j2+1)-6.*plane(i1-1+i,j1+2:j2+2) &
+                    +plane(i1-1+i,j1+3:j2+3))
+              enddo
+            endif
+            deallocate(dinv)
+          enddo
+          deallocate(plane)
+!
+          diss=transversal_dissipation*diss
+          select case (k)
+          case (1)
+            if (.not. ldensity_nolog) diss=diss*rho0
+            T_1=T_1-diss
+            T_5=T_5-cs2*diss
+          case (2); T_2=T_2-diss
+          case (3); T_3=T_3-diss
+          case (4); T_4=T_4-diss
+          end select
+        enddo
+!
+        deallocate(diss,speed)
+!
+      endsubroutine transversal_dissipation_terms
 !***********************************************************************
    subroutine bc_nscbc_subin_x(f,df,topbot,val)
 !

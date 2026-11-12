@@ -279,7 +279,7 @@ module Magnetic_meanfield
       use General, only: random_number_wrapper, random_seed_wrapper, random_gen
       use SharedVariables, only: get_shared_variable
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension (:,:,:,:) :: f
       real, dimension (nx) :: kf_x_tmp, kf_x1_tmp, prof_tmp, rr
       real, dimension (nz) :: rpatches
       real :: kz1, cont_count=0., rpatch_norm
@@ -798,7 +798,7 @@ module Magnetic_meanfield
 !
 !   6-jan-2011/axel: adapted from magnetic
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension (:,:,:,:) :: f
 !
       integer :: j
 !
@@ -1028,7 +1028,7 @@ module Magnetic_meanfield
       use Diagnostics, only: sum_mn_name, xysum_mn_name_z, ysum_mn_name_xz
       use Messages, only: warning
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension (:,:,:,:) :: f
       type (pencil_case) :: p
 !
       real, dimension (nx) :: alpha_total, rr, pp, pp0, spiral
@@ -2013,8 +2013,8 @@ module Magnetic_meanfield
 !
       use Sub, only: cross_mn
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension (:,:,:,:) :: f
+      real, contiguous, dimension (:,:,:,:) :: df
       type (pencil_case) :: p
 !
       intent(in) :: p
@@ -2109,7 +2109,7 @@ module Magnetic_meanfield
 !
       use Diagnostics
 
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension (:,:,:,:) :: f
       type (pencil_case) :: p
 !
       if (ldiagnos) then
@@ -2193,8 +2193,8 @@ module Magnetic_meanfield
 !
       use Sub, only: stepdown
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension (:,:,:,:) :: f
+      real, contiguous, dimension (:,:,:,:) :: df
       type (pencil_case) :: p
       real kx
 !
@@ -2435,7 +2435,7 @@ module Magnetic_meanfield
 !  precalculate parameters that are new at each timestep,
 !  but the same for all pencils
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, contiguous, dimension (:,:,:,:) :: f
       intent(in) :: f
 !
       if (alpha_profile=='fluc-alpha-disk') call refresh_fluc_alpha_phase

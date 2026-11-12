@@ -72,6 +72,8 @@ module Special
   real, dimension(3) :: relhel_WW=0.0, kgaussian_WW=0.0
   real, dimension(3) :: relhel_dWW=0.0, kgaussian_dWW=0.0
   real :: weight_longitudinalW=2.0, eta_WW=0.0
+  real :: kappa_GammaW=0.0 !PAR_DOC: damping rate of the GLM (Dedner/Komissarov) cleaning field
+            !PAR_DOC: psi^a = GammaW^a - div W^a, so that constraint violations decay as exp(-kappa t/2)
 !   logical :: luse_scale_factor_in_sigma=.false., lapply_Gamma_corr=.true.
 !   logical, pointer :: lohm_evolve
   real :: coupl_gw=.65    ! electroweak SU(2) x U(1) coupling of Higgs to SU(2)
@@ -111,7 +113,7 @@ module Special
   real, dimension(3) :: rescale_WW=1.0, rescale_dWW=1.0
 
   namelist /special_run_pars/ &
-    llongitudinalW, eta_WW, weight_longitudinalW, &
+    llongitudinalW, eta_WW, weight_longitudinalW, kappa_GammaW, &
     lWddot_as_aux, ldivdotW_as_aux, reinitialize_WW, initWW, &
     rescale_WW, rescale_dWW, initdWW, reinitialize_dWW
 !
@@ -155,6 +157,8 @@ module Special
   integer :: idiag_rhoW2m=0     ! DIAG_DOC: $\left<\rho_e\Wv_2\right>$
   integer :: idiag_rhoW3m=0     ! DIAG_DOC: $\left<\rho_e\Wv_3\right>$
   integer :: idiag_constrainteqnW=0  ! DIAG_DOC: $<deldotW+>$
+  integer :: idiag_GWrms=0       ! DIAG_DOC: $\left<\sum_a (G^a)^2\right>^{1/2}$, Gauss constraint
+  integer :: idiag_psiWrms=0     ! DIAG_DOC: $\left<\sum_a (\Gamma^a-\nab\cdot\Wv^a)^2\right>^{1/2}$
   integer :: idiag_W1xm=0        ! DIAG_DOC: $\left<W_x^1\right>$
   integer :: idiag_W1ym=0        ! DIAG_DOC: $\left<W_y^1\right>$
   integer :: idiag_W1zm=0        ! DIAG_DOC: $\left<W_z^1\right>$
@@ -225,10 +229,11 @@ module Special
       call farray_register_pde('dWW2',idWW2,vector=3)
       call farray_register_pde('dWW3',idWW3,vector=3)
 
-      if (lWddot_as_aux) &
+      if (lWddot_as_aux) then
         call farray_register_auxiliary('WW1ddot', iWW1ddot, array=3)
         call farray_register_auxiliary('WW2ddot', iWW2ddot, array=3)
         call farray_register_auxiliary('WW3ddot', iWW3ddot, array=3)
+      endif
 
       if (ldivdotW_as_aux) &
         call farray_register_auxiliary('divdotW', idivdotW, array=3)
@@ -429,6 +434,7 @@ module Special
 !  Initial condition for GammaW^a = div W^a
 !
       if (llongitudinalW) then
+        call update_ghosts_ptr(f,iWW1,iWW3+2)
         do n=n1,n2; do m=m1,m2; do i=0,2
           call div(f,iWW+3*i,divW)
           f(l1:l2,m,n,iGammaW+i)=divW
@@ -504,19 +510,30 @@ module Special
 !
 !  Terms for Gamma evolution.
 !
-      if (llongitudinalW) then
+      lpenc_requested(i_W1)=.true.
+      lpenc_requested(i_W2)=.true.
+      lpenc_requested(i_W3)=.true.
+      lpenc_requested(i_dW1)=.true.
+      lpenc_requested(i_dW2)=.true.
+      lpenc_requested(i_dW3)=.true.
+      lpenc_requested(i_GammaW1)=.true.
+      lpenc_requested(i_GammaW2)=.true.
+      lpenc_requested(i_GammaW3)=.true.
+      if (llongitudinalW .or. ldivdotW_as_aux) then
         lpenc_requested(i_divdotW1)=.true.
         lpenc_requested(i_divdotW2)=.true.
         lpenc_requested(i_divdotW3)=.true.
-        lpenc_diagnos(i_W1dotW1)=.true.
-        lpenc_diagnos(i_W1dotW2)=.true.
-        lpenc_diagnos(i_W1dotW3)=.true.
-        lpenc_diagnos(i_W2dotW1)=.true.
-        lpenc_diagnos(i_W2dotW2)=.true.
-        lpenc_diagnos(i_W2dotW3)=.true.
-        lpenc_diagnos(i_W3dotW1)=.true.
-        lpenc_diagnos(i_W3dotW2)=.true.
-        lpenc_diagnos(i_W3dotW3)=.true.
+      endif
+      if (llongitudinalW) then
+        lpenc_requested(i_W1dotW1)=.true.
+        lpenc_requested(i_W1dotW2)=.true.
+        lpenc_requested(i_W1dotW3)=.true.
+        lpenc_requested(i_W2dotW1)=.true.
+        lpenc_requested(i_W2dotW2)=.true.
+        lpenc_requested(i_W2dotW3)=.true.
+        lpenc_requested(i_W3dotW1)=.true.
+        lpenc_requested(i_W3dotW2)=.true.
+        lpenc_requested(i_W3dotW3)=.true.
       endif
 !
       if (idiag_divW1m/=0. .or. idiag_divW1rms/=0.) then
@@ -696,12 +713,12 @@ module Special
 !
 ! pencils dW1, dW2, dW3
 !
-      if (lpenc_requested(i_dW1)) p%dW1=f(l1:l2,m,n,idWW1:idWW1+2)
-      if (lpenc_requested(i_dW1sq)) call dot2_mn(p%dW1,p%dW1sq)
-      if (lpenc_requested(i_dW2)) p%dW2=f(l1:l2,m,n,idWW2:idWW2+2)
-      if (lpenc_requested(i_dW2sq)) call dot2_mn(p%dW2,p%dW2sq)
-      if (lpenc_requested(i_dW3)) p%dW3=f(l1:l2,m,n,idWW3:idWW3+2)
-      if (lpenc_requested(i_dW3sq)) call dot2_mn(p%dW3,p%dW3sq)
+      if (lpencil(i_dW1)) p%dW1=f(l1:l2,m,n,idWW1:idWW1+2)
+      if (lpencil(i_dW1sq)) call dot2_mn(p%dW1,p%dW1sq)
+      if (lpencil(i_dW2)) p%dW2=f(l1:l2,m,n,idWW2:idWW2+2)
+      if (lpencil(i_dW2sq)) call dot2_mn(p%dW2,p%dW2sq)
+      if (lpencil(i_dW3)) p%dW3=f(l1:l2,m,n,idWW3:idWW3+2)
+      if (lpencil(i_dW3sq)) call dot2_mn(p%dW3,p%dW3sq)
 !
 ! pencils W1, W2, W3, W1sq, W2sq, W3sq (mandatory for EOM)
 !
@@ -921,29 +938,71 @@ module Special
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
-    subroutine calc_constrainteqn(p,tmp,constrainteqn)
+    subroutine calc_gauss_sourceW(p,gaussW)
+!
+!  Non-derivative part of the SU(2) Gauss constraint,
+!    G^a = div dW^a + gaussW^a,
+!    gaussW^a = g eps^abc W^b_i dW^c_i + rhoe_higgsW^a,
+!  with the Higgs charge density rhoe_higgsW^a = -g Im[phi^+ sigma^a dphi],
+!  which is also stored in the pencils p%rhoe_higgsW1,2,3.
+!
+!  11-nov-26/alberto: moved out of dspecial_dt
+!
+      type(pencil_case) :: p
+      real, dimension(nx,3), intent(OUT) :: gaussW
+!
+      gaussW=0.
+      if (lphi_doublet .and. lphi_weakcharge .and. coupl_gw /= 0) then
+        p%rhoe_higgsW1=-coupl_gw*(p%phi*p%cov_der(:,1,4) - &
+                              p%phi_doublet(:,1)*p%cov_der(:,1,3) + &
+                              p%phi_doublet(:,2)*p%cov_der(:,1,2) - &
+                              p%phi_doublet(:,3)*p%cov_der(:,1,1))
+        p%rhoe_higgsW2=-coupl_gw*(-p%phi*p%cov_der(:,1,3) - &
+                              p%phi_doublet(:,1)*p%cov_der(:,1,4) + &
+                              p%phi_doublet(:,2)*p%cov_der(:,1,1) + &
+                              p%phi_doublet(:,3)*p%cov_der(:,1,2))
+        p%rhoe_higgsW3=-coupl_gw*(p%phi*p%cov_der(:,1,2) - &
+                              p%phi_doublet(:,1)*p%cov_der(:,1,1) - &
+                              p%phi_doublet(:,2)*p%cov_der(:,1,4) + &
+                              p%phi_doublet(:,3)*p%cov_der(:,1,3))
+        gaussW(:,1) = gaussW(:,1) + p%rhoe_higgsW1
+        gaussW(:,2) = gaussW(:,2) + p%rhoe_higgsW2
+        gaussW(:,3) = gaussW(:,3) + p%rhoe_higgsW3
+      endif
+!
+!  add coupl_gw x eps^{abc} x W^b . dW^c contraction
+!
+      if (coupl_gw /= 0) then
+        gaussW(:,1) = gaussW(:,1) + coupl_gw*(p%W2dotW3 - p%W3dotW2)
+        gaussW(:,2) = gaussW(:,2) + coupl_gw*(p%W3dotW1 - p%W1dotW3)
+        gaussW(:,3) = gaussW(:,3) + coupl_gw*(p%W1dotW2 - p%W2dotW1)
+      endif
+!
+    endsubroutine calc_gauss_sourceW
+!***********************************************************************
+    subroutine calc_constrainteqn(p,gaussW,constrainteqn)
 
       type(pencil_case) :: p
-      real, dimension(nx,3),intent(IN) :: tmp
+      real, dimension(nx,3),intent(IN) :: gaussW
       real, dimension(nx,3), intent(OUT) :: constrainteqn
       real, dimension(nx,3) :: constrainteqn1
 
       ! constraint equation to be adapted for WW
-      ! constrainteqn1=sqrt(p%divE**2+tmp**2)
-      constrainteqn1(:,1)=sqrt(p%divdotW1**2 + tmp(:,1)**2)
-      constrainteqn1(:,2)=sqrt(p%divdotW2**2 + tmp(:,2)**2)
-      constrainteqn1(:,3)=sqrt(p%divdotW3**2 + tmp(:,3)**2)
+      ! constrainteqn1=sqrt(p%divE**2+gaussW**2)
+      constrainteqn1(:,1)=sqrt(p%divdotW1**2 + gaussW(:,1)**2)
+      constrainteqn1(:,2)=sqrt(p%divdotW2**2 + gaussW(:,2)**2)
+      constrainteqn1(:,3)=sqrt(p%divdotW3**2 + gaussW(:,3)**2)
 !
 !  in the following, should use "where"
 !
       if (any(constrainteqn1 == 0.)) then
         constrainteqn=0.
       else
-        !constrainteqn=(p%divE-tmp)/constrainteqn1
-        !constrainteqn=(p%divdotW1+p%divdotW2+p%divdotW3-tmp)/constrainteqn1
-        constrainteqn(:,1)=(p%divdotW1 + tmp(:,1))/constrainteqn1(:,1)
-        constrainteqn(:,2)=(p%divdotW2 + tmp(:,2))/constrainteqn1(:,2)
-        constrainteqn(:,3)=(p%divdotW3 + tmp(:,3))/constrainteqn1(:,3)
+        !constrainteqn=(p%divE-gaussW)/constrainteqn1
+        !constrainteqn=(p%divdotW1+p%divdotW2+p%divdotW3-gaussW)/constrainteqn1
+        constrainteqn(:,1)=(p%divdotW1 + gaussW(:,1))/constrainteqn1(:,1)
+        constrainteqn(:,2)=(p%divdotW2 + gaussW(:,2))/constrainteqn1(:,2)
+        constrainteqn(:,3)=(p%divdotW3 + gaussW(:,3))/constrainteqn1(:,3)
       endif
 
      endsubroutine calc_constrainteqn
@@ -961,17 +1020,23 @@ module Special
 !  efficiency.
 !
 !   18-mar-21/axel: coded Faraday displacement current
+!   jun-25/alberto: adapted for SU(2) electroweak model
+!   11-nov-26/alberto: added Komissarov GLM damping
 !
       use Diagnostics
       use Mpicomm
       use Sub
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type(pencil_case) :: p
 !
       ! real, dimension (nx,3,3) :: gtmp, dJdt, del2JJ
-      real, dimension (nx,3) :: tmp=0. ! del2a0 !constrainteqn, constrainteqn1
+      ! Local arrays must not be initialized in the declaration (implicit SAVE).
+      ! (gaussW is not called tmp: the GPU transpiler confuses equally named
+      ! local variables of different special modules.)
+      real, dimension (nx,3) :: gaussW, psiW, divdotW, Wddot
+      real, dimension (nx) :: divW
       ! real :: inflation_factor=0. ! mfpf=0., fppf=0.
       integer :: j
 !
@@ -981,52 +1046,57 @@ module Special
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dSPECIAL_dt'
       if (headtt) call identify_bcs('ee',iee)
 !
-!  Calculate rhs of Gamma equation and update curl
-!  Initialize tmp with axion term.
-!
-      ! call calc_axion_term(p,tmp)
+      if (llongitudinalW .or. ldivdotW_as_aux) then
+        divdotW(:,1)=p%divdotW1
+        divdotW(:,2)=p%divdotW2
+        divdotW(:,3)=p%divdotW3
+      endif
 !
 !  Solve for Gamma (unless lswitch_off_Gamma) and possibly for charge density.
-!  Add to the existing tmp and update df(l1:l2,m,n,irhoe).
 !
       if (llongitudinalW) then
         ! if (lsolve_chargedensityW) then
-        !   tmp(:,1)=tmp(:,1)+p%rhoW1
-        !   tmp(:,2)=tmp(:,2)+p%rhoW2
-        !   tmp(:,3)=tmp(:,3)+p%rhoW3
+        !   gaussW(:,1)=gaussW(:,1)+p%rhoW1
+        !   gaussW(:,2)=gaussW(:,2)+p%rhoW2
+        !   gaussW(:,3)=gaussW(:,3)+p%rhoW3
         ! endif
-        if (lphi_doublet .and. lphi_weakcharge .and. coupl_gw /= 0) then
-          p%rhoe_higgsW1=-coupl_gw*(p%phi*p%cov_der(:,1,4) - &
-                                p%phi_doublet(:,1)*p%cov_der(:,1,3) + &
-                                p%phi_doublet(:,2)*p%cov_der(:,1,2) - &
-                                p%phi_doublet(:,3)*p%cov_der(:,1,1))
-          p%rhoe_higgsW2=-coupl_gw*(-p%phi*p%cov_der(:,1,3) - &
-                                p%phi_doublet(:,1)*p%cov_der(:,1,4) + &
-                                p%phi_doublet(:,2)*p%cov_der(:,1,1) + &
-                                p%phi_doublet(:,3)*p%cov_der(:,1,2))
-          p%rhoe_higgsW3=-coupl_gw*(p%phi*p%cov_der(:,1,2) - &
-                                p%phi_doublet(:,1)*p%cov_der(:,1,1) - &
-                                p%phi_doublet(:,2)*p%cov_der(:,1,4) + &
-                                p%phi_doublet(:,3)*p%cov_der(:,1,3))
-          !
-          ! add Higgs charge density to tmp
-          !
-          tmp(:,1) = tmp(:,1) - p%rhoe_higgsW1
-          tmp(:,2) = tmp(:,2) - p%rhoe_higgsW2
-          tmp(:,3) = tmp(:,3) - p%rhoe_higgsW3
+        call calc_gauss_sourceW(p,gaussW)
+!
+!  Now Gauss constraint is G^a = divdotW^a + gaussW^a (= 0 in the continuum)
+!  with G^a = div dW^a + g eps^abc W^b_i dW^c_i - g Im[phi^+ sigma^a dphi].
+!  GLM cleaning: dGamma/dt = div dW - w G,
+!  so that d(Gamma - div W)/dt = -w G.
+!  (Written as one vector update so that the GPU transpiler maps it to GammaW.)
+!
+        df(l1:l2,m,n,iGammaW:iGammaW+2)=df(l1:l2,m,n,iGammaW:iGammaW+2) &
+            +(1.-weight_longitudinalW)*divdotW-weight_longitudinalW*gaussW
+!
+!  Damped GLM cleaning (Dedner et al. 2002; Komissarov 2007): with the
+!  cleaning field psi^a = GammaW^a - div W^a, the force -grad(GammaW) +
+!  g GammaW x W = (force with div W) - D psi, and
+!    d psi^a/dt = -w G^a - kappa psi^a,
+!  so that G obeys a damped wave equation
+!    d^2 G/dt^2 + kappa dG/dt = w D^2 G,
+!  i.e. constraint waves with speed sqrt(w), damped as exp(-kappa t/2).
+!
+        if (kappa_GammaW/=0. .or. (ldiagnos .and. idiag_psiWrms/=0)) then
+          do j=1,3
+            call div(f,iWW1+3*(j-1),divW)
+            psiW(:,j)=f(l1:l2,m,n,iGammaW+j-1)-divW
+          enddo
+          if (kappa_GammaW/=0.) &
+            df(l1:l2,m,n,iGammaW:iGammaW+2)=df(l1:l2,m,n,iGammaW:iGammaW+2) &
+                -kappa_GammaW*psiW
         endif
-        ! add coupl_gw x f^{abc} x W_b . dW_b contraction to Gauss constraint
-        if (coupl_gw /= 0) then
-          tmp(:,1) = tmp(:,1) - coupl_gw*(p%W2dotW3 - p%W3dotW2)
-          tmp(:,2) = tmp(:,2) - coupl_gw*(p%W3dotW1 - p%W1dotW3)
-          tmp(:,3) = tmp(:,3) - coupl_gw*(p%W1dotW2 - p%W2dotW1)
+!
+!  Diagnostics of the Gauss constraint and of the cleaning field.
+!
+        if (ldiagnos) then
+          if (idiag_GWrms/=0) call sum_mn_name((p%divdotW1+gaussW(:,1))**2 + &
+              (p%divdotW2+gaussW(:,2))**2+(p%divdotW3+gaussW(:,3))**2,idiag_GWrms,lsqrt=.true.)
+          if (idiag_psiWrms/=0) call sum_mn_name(psiW(:,1)**2+psiW(:,2)**2+psiW(:,3)**2, &
+              idiag_psiWrms,lsqrt=.true.)
         endif
-        df(l1:l2,m,n,iGammaW)=df(l1:l2,m,n,iGammaW) &
-            +(1.+weight_longitudinalW)*p%divdotW1+weight_longitudinalW*tmp(:,1)
-        df(l1:l2,m,n,iGammaW+1)=df(l1:l2,m,n,iGammaW+1) &
-            +(1.+weight_longitudinalW)*p%divdotW2+weight_longitudinalW*tmp(:,2)
-        df(l1:l2,m,n,iGammaW+2)=df(l1:l2,m,n,iGammaW+2) &
-            +(1.+weight_longitudinalW)*p%divdotW3+weight_longitudinalW*tmp(:,3)
       endif
 !
 !  solve: dE/dt = curlB - ...
@@ -1104,44 +1174,52 @@ module Special
             p%jj_higgsW3
       endif
 !
-!  Compute WWddot_as_aux
+!  Compute WWddot_as_aux and divdotW_as_aux.
+!  Each auxiliary field is computed in a local array and written once:
+!  the GPU code cannot read back an f-array value written in the same step.
 !
       if (lWddot_as_aux) then
-        f(l1:l2,m,n,iWW1ddot:iWW1ddot+2) = - &
-            c_light2*p%curlBW1
-        f(l1:l2,m,n,iWW2ddot:iWW2ddot+2) = - &
-            c_light2*p%curlBW2
-        f(l1:l2,m,n,iWW3ddot:iWW3ddot+2) = - &
-            c_light2*p%curlBW3
+        Wddot = - c_light2*p%curlBW1
         if (coupl_gw /= 0) then
-          f(l1:l2,m,n,iWW1ddot:iWW1ddot+2)=f(l1:l2,m,n,iWW1ddot:iWW1ddot+2) + &
-                p%W1ddot_gw + p%W1ddot_gw2
-          f(l1:l2,m,n,iWW2ddot:iWW2ddot+2)=f(l1:l2,m,n,iWW2ddot:iWW2ddot+2) + &
-                p%W2ddot_gw + p%W2ddot_gw2
-          f(l1:l2,m,n,iWW3ddot:iWW3ddot+2)=f(l1:l2,m,n,iWW3ddot:iWW3ddot+2) + &
-                p%W3ddot_gw + p%W3ddot_gw2
-          if (lphi_doublet .and. lphi_weakcharge) then
-            f(l1:l2,m,n,iWW1ddot:iWW1ddot+2)=f(l1:l2,m,n,iWW1ddot:iWW1ddot+2) - &
-                p%jj_higgsW1
-            f(l1:l2,m,n,iWW2ddot:iWW2ddot+2)=f(l1:l2,m,n,iWW2ddot:iWW2ddot+2) - &
-                p%jj_higgsW2
-            f(l1:l2,m,n,iWW3ddot:iWW3ddot+2)=f(l1:l2,m,n,iWW3ddot:iWW3ddot+2) - &
-                p%jj_higgsW3
-          endif
+          Wddot = Wddot + p%W1ddot_gw + p%W1ddot_gw2
+          if (lphi_doublet .and. lphi_weakcharge) Wddot = Wddot - p%jj_higgsW1
         endif
+        f(l1:l2,m,n,iWW1ddot:iWW1ddot+2) = Wddot
+        Wddot = - c_light2*p%curlBW2
+        if (coupl_gw /= 0) then
+          Wddot = Wddot + p%W2ddot_gw + p%W2ddot_gw2
+          if (lphi_doublet .and. lphi_weakcharge) Wddot = Wddot - p%jj_higgsW2
+        endif
+        f(l1:l2,m,n,iWW2ddot:iWW2ddot+2) = Wddot
+        Wddot = - c_light2*p%curlBW3
+        if (coupl_gw /= 0) then
+          Wddot = Wddot + p%W3ddot_gw + p%W3ddot_gw2
+          if (lphi_doublet .and. lphi_weakcharge) Wddot = Wddot - p%jj_higgsW3
+        endif
+        f(l1:l2,m,n,iWW3ddot:iWW3ddot+2) = Wddot
       endif
 !
-!  If requested, put divE
-!
-      if (ldivdotW_as_aux) then
-        f(l1:l2,m,n,idivdotW)=p%divdotW1
-        f(l1:l2,m,n,idivdotW+1)=p%divdotW2
-        f(l1:l2,m,n,idivdotW+2)=p%divdotW3
-      endif
+      if (ldivdotW_as_aux) f(l1:l2,m,n,idivdotW:idivdotW+2) = divdotW
 !
 !  timestep constraint
 !
-      if (lfirst.and.ldt) advec_cs2=max(advec_cs2,c_light2*dxyz_2)
+!  Gauge waves travel at c_light, constraint waves at sqrt(weight_longitudinalW)*c_light.
+!  advec_cs2 only enters the time step when lmagnetic/ldensity/... are used,
+!  so add the signal speed directly to maxadvec (as in klein_gordon).
+!  The waves are evolved with the (6th-order) second-derivative stencil,
+!  whose largest eigenvalue, sqrt(272/45)/dx, exceeds the largest effective
+!  wavenumber of the first-derivative stencil (1.586/dx) by a factor 1.55;
+!  this factor makes the default cdt=0.9 stable with RK3.
+!  The GLM damping kappa_GammaW is a source term with its own (cdts) limit.
+!
+      if (lfirst.and.ldt) then
+        if (llongitudinalW) then
+          maxadvec=max(maxadvec,1.55*sqrt(max(1.,weight_longitudinalW)*c_light2*dxyz_2))
+          if (kappa_GammaW/=0.) dt1_max=max(dt1_max,kappa_GammaW/cdts)
+        else
+          maxadvec=max(maxadvec,1.55*sqrt(c_light2*dxyz_2))
+        endif
+      endif
 !
 !  diagnostics
 !
@@ -1158,7 +1236,7 @@ module Special
 
       real, contiguous, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
-      real, dimension(nx,3) :: tmp, constrainteqn
+      real, dimension(nx,3) :: gaussWd, constrainteqn
       ! real :: mfpf=0.,fppf=0.
       ! real, dimension(nx,3) :: gtmp
       integer :: i,j
@@ -1170,12 +1248,12 @@ module Special
       if (idiag_W1dotW1m /= 0) call sum_mn_name(p%W1dotW1,idiag_W1dotW1m)
       if (idiag_W2dotW2m /= 0) call sum_mn_name(p%W2dotW2,idiag_W2dotW2m)
       if (idiag_W3dotW3m /= 0) call sum_mn_name(p%W3dotW3,idiag_W3dotW3m)
-      if (idiag_W1rms/=0) call sum_mn_name(p%W1**2,idiag_W1rms,lsqrt=.true.)
-      if (idiag_W2rms/=0) call sum_mn_name(p%W2**2,idiag_W2rms,lsqrt=.true.)
-      if (idiag_W3rms/=0) call sum_mn_name(p%W3**2,idiag_W3rms,lsqrt=.true.)
-      if (idiag_dW1rms/=0) call sum_mn_name(p%dW1**2,idiag_dW1rms,lsqrt=.true.)
-      if (idiag_dW2rms/=0) call sum_mn_name(p%dW2**2,idiag_dW2rms,lsqrt=.true.)
-      if (idiag_dW3rms/=0) call sum_mn_name(p%dW3**2,idiag_dW3rms,lsqrt=.true.)
+      if (idiag_W1rms/=0) call sum_mn_name(p%W1sq,idiag_W1rms,lsqrt=.true.)
+      if (idiag_W2rms/=0) call sum_mn_name(p%W2sq,idiag_W2rms,lsqrt=.true.)
+      if (idiag_W3rms/=0) call sum_mn_name(p%W3sq,idiag_W3rms,lsqrt=.true.)
+      if (idiag_dW1rms/=0) call sum_mn_name(p%dW1sq,idiag_dW1rms,lsqrt=.true.)
+      if (idiag_dW2rms/=0) call sum_mn_name(p%dW2sq,idiag_dW2rms,lsqrt=.true.)
+      if (idiag_dW3rms/=0) call sum_mn_name(p%dW3sq,idiag_dW3rms,lsqrt=.true.)
       call sum_mn_name(p%dW1(:,1),idiag_dW1xm)
       call sum_mn_name(p%dW1(:,2),idiag_dW1ym)
       call sum_mn_name(p%dW1(:,3),idiag_dW1zm)
@@ -1238,7 +1316,9 @@ module Special
 
   !   endif
       if (idiag_constrainteqnW > 0) then
-        call calc_constrainteqn(p,tmp,constrainteqn)
+        gaussWd=0.
+        if (llongitudinalW) call calc_gauss_sourceW(p,gaussWd)
+        call calc_constrainteqn(p,gaussWd,constrainteqn)
         call sum_mn_name(constrainteqn,idiag_constrainteqnW)
       endif
 
@@ -1319,7 +1399,7 @@ module Special
         idiag_divdotW1m=0; idiag_divdotW2m=0; idiag_divdotW3m=0;
         idiag_rhoW1rms=0; idiag_rhoW2rms=0; idiag_rhoW3rms=0;
         idiag_rhoW1m=0; idiag_rhoW2m=0; idiag_rhoW3m=0;
-        idiag_constrainteqnW=0;
+        idiag_constrainteqnW=0; idiag_GWrms=0; idiag_psiWrms=0
         idiag_W1dotW1m=0; idiag_W2dotW2m=0; idiag_W3dotW3m=0;
         idiag_W1xm=0; idiag_W1ym=0; idiag_W1zm=0;
         idiag_W2xm=0; idiag_W2ym=0; idiag_W2zm=0;
@@ -1347,6 +1427,8 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'W1ddotrms',idiag_W1ddotrms)
         call parse_name(iname,cname(iname),cform(iname),'W2ddotrms',idiag_W2ddotrms)
         call parse_name(iname,cname(iname),cform(iname),'W3ddotrms',idiag_W3ddotrms)
+        call parse_name(iname,cname(iname),cform(iname),'GWrms',idiag_GWrms)
+        call parse_name(iname,cname(iname),cform(iname),'psiWrms',idiag_psiWrms)
       enddo
 !
       ! do inamez=1,nnamez
@@ -1422,7 +1504,7 @@ module Special
 
     use Syscalls, only: copy_addr
 
-    integer, parameter :: n_pars=10
+    integer, parameter :: n_pars=20
     integer(KIND=ikind8), dimension(n_pars) :: p_par
 
       call copy_addr(llongitudinalW, p_par(1))    ! bool
@@ -1430,6 +1512,19 @@ module Special
       call copy_addr(weight_longitudinalW, p_par(3))
       call copy_addr(lWddot_as_aux, p_par(4))    ! bool
       call copy_addr(ldivdotW_as_aux, p_par(5))  ! bool
+      call copy_addr(kappa_GammaW, p_par(6))
+      call copy_addr(idiag_GWrms, p_par(7))      ! int
+      call copy_addr(idiag_psiWrms, p_par(8))    ! int
+      call copy_addr(iGammaW, p_par(9))          ! int
+      call copy_addr(idWW1, p_par(10))           ! int
+      call copy_addr(idWW2, p_par(11))           ! int
+      call copy_addr(idWW3, p_par(12))           ! int
+      call copy_addr(coupl_gw, p_par(13))
+      call copy_addr(c_light2, p_par(14))
+      call copy_addr(iWW1ddot, p_par(15))        ! int
+      call copy_addr(iWW2ddot, p_par(16))        ! int
+      call copy_addr(iWW3ddot, p_par(17))        ! int
+      call copy_addr(idivdotW, p_par(18))        ! int
 
     endsubroutine pushpars2c
 !***********************************************************************

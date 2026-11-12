@@ -12,4 +12,5 @@ Comments:
     1-D Alfven wave with radiative Damping.
     This is under development with Kandaswamy Subramanian
     and Ramkishor Sharms.
-
+    ubm changed at some point, but Chandru's check-in r46106
+    did not change anything; see reference.out-r46105

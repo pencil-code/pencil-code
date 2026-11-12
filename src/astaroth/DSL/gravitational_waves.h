@@ -1127,7 +1127,7 @@ Kernel gravitational_waves_solve_and_stress(real AC_t__mod__cdata, real AC_dt__m
       DF_GGX    = 0. 
       DF_GGXIM  = 0. 
     }
-    if (AC_itorder_gw__mod__gravitational_waves_htxk==2)
+    if (AC_itorder_gw__mod__gravitational_waves_htxk==2 || AC_lstress_from_gpu__mod__gravitational_waves_htxk)
     {
         write(F_STRESST  ,s_t_re)
         write(F_STRESSTIM,s_t_im)

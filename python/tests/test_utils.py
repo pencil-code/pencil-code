@@ -1,4 +1,3 @@
-#!/usr/bin/python3
 # -*- coding: utf-8 -*-   vim: set fileencoding=utf-8 :
 
 """Utility functions fro Python tests."""

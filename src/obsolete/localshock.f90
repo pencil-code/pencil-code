@@ -205,7 +205,7 @@ module Special
 !   06-oct-03/tony: coded
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type (pencil_case) :: p
 !
       intent(in) :: f,p

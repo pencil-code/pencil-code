@@ -20,7 +20,6 @@
 ! PENCILS PROVIDED rhos1; glnrhos(3)
 ! PENCILS PROVIDED totenergy_rel; divss
 ! PENCILS EXPECTED ext_force(4)
-! PENCILS EXPECTED gr_sqrtg; gr_alp; gr_dalp(3); gr_beta(3); gr_gamu(6); gr_Kij(6)
 !
 !***************************************************************
 module Density
@@ -36,6 +35,7 @@ module Density
   implicit none
 !
   include 'density.h'
+  include 'eos_params.h'
 !
   real, dimension (ninit) :: ampllnrho=0.0  !PAR_DOC: amplitude for some types of initial densities
   real, dimension (ninit) :: widthlnrho=0.1 !PAR_DOC: width for some types of initial densities
@@ -58,7 +58,7 @@ module Density
   real, pointer :: mpoly0, mpoly1, mpoly2, eps_hless, width_hless_absolute, nu_tdep
   logical, pointer :: lkt_transport  ! shared from Hydro; selects KT energy flux
   logical, pointer :: lgr_metric     ! shared from Hydro; curved-spacetime conservative equations
-  integer :: iegr=0, iFgrE=0, iFgrS=0
+  integer :: iegr=0, iFgrE=0, iTij=0
   logical, pointer :: lu_background  ! shared from Hydro; selects external flow
   real, dimension(nx) :: xmask_den
   real, dimension(nx) :: fprofile_x=1.
@@ -92,7 +92,8 @@ module Density
   real :: mass_source_omega=0.
   real :: co1_ss=0.0, co2_ss=0.0, Sigma1=150.0
   real :: lnrho_int=0.0, lnrho_ext=0.0, damplnrho_int=0.0, damplnrho_ext=0.0
-  real :: wdamp=0.0, density_floor=-1.0, density_floor_exp=0.
+  real :: wdamp=0.0, density_floor_exp=0.
+  real, target :: density_floor=-1.0        ! shared (put_shared_variable): can be set by special modules
   real :: mass_source_Mdot=0.0, mass_source_sigma=0.0, mass_source_offset=0.0
   real :: tstart_mass_source=0.0, tstop_mass_source=-1.0
   real :: lnrho_z_shift=0.0
@@ -120,8 +121,8 @@ module Density
   complex :: coeflnrho=0.0
   integer, parameter :: ndiff_max=4
   integer :: iglobal_gg=0
-  logical :: lrelativistic_eos=.false., ladvection_density=.true.
-  logical :: lrelativistic_eos_corr=.false.
+  logical :: ladvection_density=.true.
+  logical, target :: lrelativistic_eos=.false., lrelativistic_eos_corr=.false.   ! shared (put_shared_variable)
   logical :: lrelativistic_eos_term1=.true., lrelativistic_eos_term2=.true.
   logical, pointer :: lconservative, lhiggsless, lrelativistic
   logical :: lisothermal_fixed_Hrho=.false.
@@ -351,7 +352,8 @@ module Density
   logical :: lupdate_mass_source
   real, dimension(nx) :: diffus_diffrho
   real, dimension(nx) :: diffus_diffrho3
-  real :: density_floor_log, density_ceiling_log, wdamp_rho
+  real, target :: density_floor_log
+  real :: density_ceiling_log, wdamp_rho
   integer :: ihless
   logical, pointer :: lext_force
   real, pointer :: Hscript
@@ -415,6 +417,8 @@ module Density
 ! too late for other modules (especially the nomodule noentropy).
 !
       call put_shared_variable('mpoly',mpoly,caller='register_density')
+      call put_shared_variable('density_floor',density_floor)
+      call put_shared_variable('density_floor_log',density_floor_log)
 !
 !  Communicate lrelativistic_eos to magnetic too.
 !
@@ -456,9 +460,8 @@ module Density
         call put_shared_variable('reference_state_mass',reference_state_mass)
       endif
 
-      if (density_scale_factor==impossible) then
+      if (density_scale_factor==impossible) &
         density_scale_factor=real(density_scale_cgs/unit_length)
-      endif
 
     endsubroutine register_density
 !***********************************************************************
@@ -479,6 +482,7 @@ module Density
 !  15-nov-16/fred: option to apply z-profile to reinitialize_*
 !  25-may-18/fred: definitive test of mass diffusion correction implemented
 !
+      !use DensityBcs, only: initialize_density_bcs
       use EquationOfState, only: select_eos_variable, get_gamma_etc
       use BorderProfiles, only: request_border_driving
       use Deriv, only: der,der2
@@ -1017,7 +1021,6 @@ module Density
                            beta_glnrho_global
       endif
 !
-!
       if (lreference_state) then
 !
         select case(ireference_state)
@@ -1101,24 +1104,29 @@ module Density
 !
 !  Check if we are solving for relativistic bulk motions, not just EoS.
 !
-      if (lhydro.and..not.lhydro_potential.and.iphiuu==0) then
-        call get_shared_variable('lconservative', lconservative)
-        call get_shared_variable('lrelativistic', lrelativistic)
-      else
-        allocate(lconservative)
-        lconservative=.false.
-        allocate(lrelativistic)
-        lrelativistic=.false.
-      endif
+      call get_shared_variable('lconservative', lconservative, default_val=.false.)
+      call get_shared_variable('lrelativistic', lrelativistic, default_val=.false.)
+      ! if (lhydro.and..not.lhydro_potential.and.iphiuu==0) then
+      !   call get_shared_variable('lconservative', lconservative)
+      !   call get_shared_variable('lrelativistic', lrelativistic)
+      ! else
+      !   allocate(lconservative)
+      !   lconservative=.false.
+      !   allocate(lrelativistic)
+      !   lrelativistic=.false.
+      ! endif
+
+      call get_shared_variable('lhiggsless', lhiggsless,default_val=.false.)
+      call get_shared_variable('lu_background',lu_background,default_val=.false.)
 !
-      if (lhydro.and..not.lhydro_potential) then
-        call get_shared_variable('lhiggsless', lhiggsless,default_val=.false.)
-        call get_shared_variable('lu_background',lu_background,default_val=.false.)
-      else
-        allocate(lhiggsless,lu_background)
-        lhiggsless=.false.
-        lu_background=.false.
-      endif
+      ! if (lhydro.and..not.lhydro_potential) then
+      !   call get_shared_variable('lhiggsless', lhiggsless,default_val=.false.)
+      !   call get_shared_variable('lu_background',lu_background,default_val=.false.)
+      ! else
+      !   allocate(lhiggsless,lu_background)
+      !   lhiggsless=.false.
+      !   lu_background=.false.
+      ! endif
 !
       if (lhiggsless.and.lconservative) ihless=farray_index_by_name('ihless')
 
@@ -1127,9 +1135,9 @@ module Density
       if (lgr_metric) then
         iegr=farray_index_by_name('egr')
         iFgrE=farray_index_by_name('FgrE')
-        iFgrS=farray_index_by_name('FgrS')
-        if (any((/iegr,iFgrE,iFgrS/)<=0)) call fatal_error('initialize_density', &
-            'lgr_metric=T needs the auxiliaries egr, FgrE and FgrS of hydro')
+        iTij=farray_index_by_name('Tij')
+        if (any((/iFgrE,iTij/)<=0)) call fatal_error('initialize_density', &
+            'lgr_metric=T needs the auxiliaries FgrE and Tij of hydro')
       endif
       if (lhydro.and.lhiggsless) then
         call get_shared_variable('eps_hless',eps_hless)
@@ -1153,10 +1161,10 @@ module Density
       if (density_floor>0.) density_floor_log=alog(density_floor)
       if (density_ceiling>0.) density_ceiling_log=alog(density_ceiling)
 
-      if(lconservative) then
-        if(.not. ldensity_nolog) call fatal_error('initialize_density', 'must use ldensity_nolog=T for lconservative=T')
-        if(.not. lrelativistic) then
-          if(any(f(l1:l2,m1:m2,n1:n2,irho) == 0.)) then
+      if (lconservative) then
+        if (.not. ldensity_nolog) call fatal_error('initialize_density', 'must use ldensity_nolog=T for lconservative=T')
+        if (.not. lrelativistic) then
+          if (any(f(l1:l2,m1:m2,n1:n2,irho) == 0.)) then
               call fatal_error('initialize_density', 'Can not have zero density for lconservative=T')
           endif
         endif
@@ -1168,9 +1176,9 @@ module Density
       lpositive_total_mass = total_mass > 0.0
 
       call get_shared_variable('lext_force',lext_force,default_val=.false.)
-      if(lext_force) then
-        call get_shared_variable('Hscript',Hscript,default_val=0.)
-      endif
+      if (lext_force) call get_shared_variable('Hscript',Hscript,default_val=0.)
+
+      !call initialize_density_bcs
 
     endsubroutine initialize_density
 !***********************************************************************
@@ -1182,7 +1190,7 @@ module Density
 !  28-jun-02/axel: added isothermal
 !  15-oct-03/dave: added spherical shell (kws)
 !
-      use EquationOfState, only: eoscalc, ilnrho_TT, get_gamma_etc
+      use EquationOfState, only: eoscalc, get_gamma_etc
       use General, only: itoa,rtoa,complex_phase,notanumber
       use Gravity, only: zref,z1,z2,gravz,nu_epicycle,potential
       use Initcond
@@ -2367,17 +2375,6 @@ module Density
       logical, pointer :: lconservative_pressure_on_rhs
 
       if (ldensity_nolog) lpenc_requested(i_rho)=.true.
-!
-!  Metric pencils from special/z4c for the energy equation in curved spacetime.
-!
-      if (lgr_metric) then
-        lpenc_requested(i_gr_sqrtg)=.true.
-        lpenc_requested(i_gr_alp)=.true.
-        lpenc_requested(i_gr_dalp)=.true.
-        lpenc_requested(i_gr_beta)=.true.
-        lpenc_requested(i_gr_gamu)=.true.
-        lpenc_requested(i_gr_Kij)=.true.
-      endif
       if (lcontinuity_gas) then
         if (lweno_transport) then
           lpenc_requested(i_transprho)=.true.
@@ -2537,9 +2534,14 @@ module Density
         lpencil_in(i_glnrho)=.true.
       endif
       if (lpencil_in(i_ugrho)) then
-        lpencil_in(i_uu)=.true.
-        if (lu_background) lpencil_in(i_uutot)=.true.
-        lpencil_in(i_grho)=.true.
+        if (ldensity_nolog) then
+          lpencil_in(i_uu)=.true.
+          if (lu_background) lpencil_in(i_uutot)=.true.
+          lpencil_in(i_grho)=.true.
+        else
+          lpencil_in(i_rho) = .true.
+          lpencil_in(i_uglnrho)=.true.
+        endif
       endif
       if (lpencil_in(i_glnrho2)) lpencil_in(i_glnrho)=.true.
       if (lpencil_in(i_sglnrho)) then
@@ -2765,7 +2767,12 @@ use Sub, only: dot2_mn
         endif
         ! if (lrelativistic) p%rho=p%rho/(fourthird*p%lorentz*(1.-.25/p%lorentz))
         if (lrelativistic) p%rho=p%rho/(cs20p1*p%lorentz-cs20)
-        if (lgr_metric) p%rho=f(l1:l2,m,n,iegr)
+        if (lgr_metric) then
+          if(iegr /= 0) then
+            p%rho=f(l1:l2,m,n,iegr)
+          else
+          endif
+        endif
       endif
 !
     endsubroutine calc_pencils_linear_density_pnc
@@ -2830,8 +2837,7 @@ use Sub, only: dot2_mn
         endif
       endif
 ! ugrho
-      if (lpenc_loc(i_ugrho)) call not_implemented('calc_pencils_density', &
-          'ugrho for logarithmic mass density')
+      if (lpenc_loc(i_ugrho)) p%ugrho = p%rho*p%uglnrho
 ! glnrho2
       if (lpenc_loc(i_glnrho2)) call dot2(p%glnrho,p%glnrho2)
 ! del2rho
@@ -2936,61 +2942,9 @@ use Sub, only: dot2_mn
 
     endsubroutine calc_sld_fdiff
 !***********************************************************************
-    subroutine gr_energy_rhs(f,p,rhs)
-!
-!  Right-hand side of sqrt(gamma)*E (in irho) for lgr_metric=T
-!  (e.g. Banyuls et al. 1997, ApJ 476, 221; Font 2008, Living Rev. Rel. 11, 7):
-!
-!    d_t(sg E) + d_j F_E^j = sg (alpha S^jk K_jk - S^j d_j alpha)
-!
-!  The metric quantities are pencils of special/z4c. The fluxes F_E^j and
-!  F^j_i are computed by hydro (hydro_after_boundary_gr); S^j_i is recovered
-!  from F^j_i = sg (alpha S^j_i - beta^j S_i).
-!
-!  14-oct-26/TP: moved from hydro
-!
-      use Deriv, only: der
-      use Sub, only: raise_index
-!
-      real, contiguous, dimension(:,:,:,:) :: f
-      type (pencil_case) :: p
-      real, dimension(nx) :: rhs
-!
-      real, dimension(nx,3) :: Sd, Su
-      real, dimension(nx,3,3) :: Smix, Suu
-      real, dimension(nx) :: tmp
-      integer :: i, j, k
-!
-      do i=1,3
-        Sd(:,i)=f(l1:l2,m,n,iux+i-1)/p%gr_sqrtg
-      enddo
-      call raise_index(p%gr_gamu,Sd,Su)
-      do i=1,3; do j=1,3
-        Smix(:,j,i)=(f(l1:l2,m,n,iFgrS+3*(i-1)+j-1)/p%gr_sqrtg+p%gr_beta(:,j)*Sd(:,i))/p%gr_alp
-      enddo; enddo
-      do k=1,3; do j=1,3
-        Suu(:,j,k)=Smix(:,j,1)*p%gr_gamu(:,ij_table(1,k))+Smix(:,j,2)*p%gr_gamu(:,ij_table(2,k)) &
-                  +Smix(:,j,3)*p%gr_gamu(:,ij_table(3,k))
-      enddo; enddo
-!
-      rhs=0.
-      do j=1,3
-        rhs=rhs-Su(:,j)*p%gr_dalp(:,j)
-        do k=1,3
-          rhs=rhs+p%gr_alp*Suu(:,j,k)*p%gr_Kij(:,ij_table(j,k))
-        enddo
-      enddo
-      rhs=p%gr_sqrtg*rhs
-      do j=1,3
-        call der(f,iFgrE+j-1,tmp,j)
-        rhs=rhs-tmp
-      enddo
-!
-    endsubroutine gr_energy_rhs
-!***********************************************************************
     subroutine continuity_eq(f,df,p)
 
-      use Sub, only: multvs, multmv, dot_mn
+      use Sub, only: multvs, multmv, dot_mn,div
 
       real, contiguous, dimension(:,:,:,:) :: f, df
       type (pencil_case) :: p
@@ -3014,10 +2968,11 @@ use Sub, only: dot2_mn
 !
 !  Evolution of rho; set and initiate density_rhs
 !
-        if (lconservative .and. lgr_metric) then
-          call gr_energy_rhs(f,p,density_rhs)
-        elseif (lconservative) then
-          if (lkt_transport) then
+        if (lconservative) then
+          if (lgr_metric) then
+            call div(f,iFgrE,density_rhs)
+            density_rhs=-density_rhs
+          else if (lkt_transport) then
             call kt_div(f,density_rhs)
             density_rhs=-density_rhs
           else
@@ -3310,10 +3265,9 @@ use Sub, only: dot2_mn
 !   Slope limited diffusion for density
 !
       if (ldensity_slope_limited.and.llast) then
-        if(lsld_every_step .or. lrmv) then
-          call calc_sld_fdiff(f,p,fdiff)
-        endif
+        if (lsld_every_step .or. lrmv) call calc_sld_fdiff(f,p,fdiff)
       endif
+
     endsubroutine mass_diffusion
 !***********************************************************************
     subroutine massdiff_fix(df,p,fdiff)
@@ -3495,7 +3449,7 @@ use Sub, only: dot2_mn
 !
       else
 
-      if(lcontinuity_gas) call continuity_eq(f,df,p)
+      if (lcontinuity_gas) call continuity_eq(f,df,p)
 !
 !  Hubble parameter
 !
@@ -4438,7 +4392,7 @@ use Sub, only: dot2_mn
 !
 !  14-may-10/dhruba: coded
 !
-      use EquationOfState, only: eoscalc,ilnrho_TT, get_gamma_etc
+      use EquationOfState, only: eoscalc,get_gamma_etc
 
       real, contiguous, dimension(:,:,:,:) :: f
       real :: haut
@@ -4889,6 +4843,9 @@ use Sub, only: dot2_mn
     call copy_addr(cs20p1,p_par(87))
     call copy_addr(cs20_corr,p_par(88))
 
+    call copy_addr(iegr,p_par(89)) ! int
+    call copy_addr(ifgre,p_par(90)) ! int
+    call copy_addr(iTij,p_par(91)) ! int
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Density

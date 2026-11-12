@@ -2264,6 +2264,16 @@ module Particles
 !
     endsubroutine dxxp_dt
 !***********************************************************************
+    subroutine calc_diagnostics_from_particles_module(fp)
+!
+!  08-nov-26/TP: dummy, this module calculates these diagnostics in dxxp_dt
+!
+      real, dimension (mpar_loc,mparray) :: fp
+!
+      call keep_compiler_quiet(fp)
+!
+    endsubroutine calc_diagnostics_from_particles_module
+!***********************************************************************
     subroutine dvvp_dt(f,df,fp,dfp,ineargrid)
 !
 !  Evolution of dust particle velocity.
@@ -3776,7 +3786,7 @@ module Particles
           do iz=iz1,iz2; do iy=iy1,iy2; do ix=ix1,ix2
             if (lshear) then
               rp_box=sqrt((fp(k,ixp)+Lx*ix-xsinkpar)**2+ &
-                          (fp(k,iyp)+Ly*iy-deltay*ix-ysinkpar)**2+ &
+                          (fp(k,iyp)+Ly*iy-delta_y*ix-ysinkpar)**2+ &
                           (fp(k,izp)+Lz*iz-zsinkpar)**2)
             else
               rp_box=sqrt((fp(k,ixp)+Lx*ix-xsinkpar)**2+ &

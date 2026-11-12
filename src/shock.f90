@@ -1820,7 +1820,12 @@ module Shock
     integer, save :: ishock_max = 1
 
     lmax_shock = .true. 
-    if(lshock_max5) ishock_max = 2
+!
+!  lshock_max5 only has an effect in calc_shock_profile_simple;
+!  calc_shock_profile (lcommunicate_uu etc.) always takes the max over 3 points.
+!
+    if (lshock_max5 .and. .not.(lgauss_integral.or.lgauss_integral_comm_uu.or.lcommunicate_uu)) &
+      ishock_max = 2
     call copy_addr(lconvergence_only,p_par(1)) ! bool
     call copy_addr(con_bias,p_par(2))
     call copy_addr(shock_div_pow,p_par(3))

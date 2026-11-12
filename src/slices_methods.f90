@@ -451,7 +451,11 @@ private
         lwarn=.false.
       endif
 !
-      call assign_slices_f_vec_internal(slices,f,ind,nc)
+      if (present(nc)) then
+        call assign_slices_f_vec_internal(slices,f,ind,nc)
+      else
+        call assign_slices_f_vec_internal(slices,f,ind)
+      endif
 !
     endsubroutine assign_slices_f_vec
 !***********************************************************************

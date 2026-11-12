@@ -24,3 +24,6 @@
 /
 &viscosity_run_pars
 /
+&gpu_run_pars
+  lsingle_precision_timestep=F
+/

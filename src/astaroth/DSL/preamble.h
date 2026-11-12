@@ -27,12 +27,12 @@ const int AC_xtop__mod__equationofstate=nx
 #define AC_nz nz
 
 #define AC_nxgrid nxgrid
-#define AC_nygrid nxgrid
-#define AC_nzgrid nxgrid
+#define AC_nygrid nygrid
+#define AC_nzgrid nzgrid
 
 #define AC_nxgrid__mod__cparam nxgrid
-#define AC_nygrid__mod__cparam nxgrid
-#define AC_nzgrid__mod__cparam nxgrid
+#define AC_nygrid__mod__cparam nygrid
+#define AC_nzgrid__mod__cparam nzgrid
 
 #undef AC_mx
 #undef AC_my
@@ -283,6 +283,11 @@ Profile<X> AC_del2ssmx__mod__energy
 Profile<Z> AC_ssmz__mod__energy
 Profile<Z> AC_del2ssmz__mod__energy
 #endif
+#if LHYDRO && Lhydro_MODULE
+Profile<Z> AC_uumz_x__mod__hydro
+Profile<Z> AC_uumz_y__mod__hydro
+Profile<Z> AC_uumz_z__mod__hydro
+#endif
 
 #if LDUSTVELOCITY
 const real ueta = 0.0
@@ -366,3 +371,9 @@ run_const bool3 lactive_dimension = (bool3)
 		  nygrid > 1,
 		  nzgrid > 1
 		}
+
+#if LPARTICLES_DUST
+//Fields deposited by the particles (see particles.h): drag force per unit gas mass on the gas (0:2), rhop (3), np (4)
+const int PAR_NDEP = 5
+gmem real AC_par_dep[PAR_NDEP][AC_mlocal.x][AC_mlocal.y][AC_mlocal.z]
+#endif

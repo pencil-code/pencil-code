@@ -30,6 +30,7 @@ module Energy
   implicit none
 !
   include 'energy.h'
+  include 'eos_params.h'
 !
   real :: ss_const=0.0
   real :: T0=1.0
@@ -177,8 +178,7 @@ module Energy
       use General, only: itoa
       use Initcond
       use InitialCondition, only: initial_condition_ss
-      use EquationOfState,  only: rho0, lnrho0, isothermal_entropy, &
-                                  isothermal_lnrho_ss, eoscalc, ilnrho_pp
+      use EquationOfState,  only: rho0, lnrho0, isothermal_entropy, isothermal_lnrho_ss, eoscalc
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !

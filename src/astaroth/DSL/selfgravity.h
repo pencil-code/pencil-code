@@ -1,3 +1,4 @@
+input real AC_ascale_potself    //ascale in the potential, see calc_poisson in gpu_astaroth.cc
 #if LSELFGRAVITY
 #include "../stdlib/poisson.h"
 #include "../stdlib/math/fft.h"
@@ -49,11 +50,20 @@ Kernel selfgravity_calc_rhs()
 		}
 	}
 #endif
+#if LPARTICLES_NBODY
+	rhs_poisson += AC_par_dep[3][vertexIdx.x][vertexIdx.y][vertexIdx.z]
+#endif
 	write(RHS_POISSON,rhs_poisson)
 }
 
-Kernel calc_final_potential(real t)
+Kernel calc_final_potential(real t, real ascale_potself)
 {
+	real fac = 1.0
+	if (AC_enum_ascale_type__mod__cdata == enum_general_string)
+	{
+		if (AC_lbryan_etal14__mod__selfgravity) fac = 1.0/ascale_potself
+		else fac = ascale_potself
+	}
 	if (AC_tselfgrav_gentle__mod__selfgravity > 0.0 && t < AC_tstart_selfgrav__mod__selfgravity + AC_tselfgrav_gentle__mod__selfgravity)
 	{
 		write( SELFGRAVITY_POTENTIAL, 
@@ -62,9 +72,20 @@ Kernel calc_final_potential(real t)
 	}
 	else
 	{
-		write(SELFGRAVITY_POTENTIAL, AC_rhs_poisson_const__mod__selfgravity*SELFGRAVITY_POTENTIAL)
+		write(SELFGRAVITY_POTENTIAL, AC_rhs_poisson_const__mod__selfgravity*SELFGRAVITY_POTENTIAL*fac)
 	}
 }
+
+#if LPARTICLES_NBODY
+//Gradient of the potential in the interior, as the gpotself pencil
+Kernel particles_gpot_grad()
+{
+	const real3 gpot = gradient(SELFGRAVITY_POTENTIAL)
+	AC_par_gpot[0][vertexIdx.x][vertexIdx.y][vertexIdx.z] = gpot.x
+	AC_par_gpot[1][vertexIdx.x][vertexIdx.y][vertexIdx.z] = gpot.y
+	AC_par_gpot[2][vertexIdx.x][vertexIdx.y][vertexIdx.z] = gpot.z
+}
+#endif
 
 Kernel selfgravity_poisson_solve()
 {
@@ -77,7 +98,7 @@ Kernel selfgravity_sor_step(int color)
 }
 #else
 Kernel selfgravity_calc_rhs(){}
-Kernel calc_final_potential(real t){suppress_unused_warning(t)}
+Kernel calc_final_potential(real t, real ascale_potself){suppress_unused_warning(t) suppress_unused_warning(ascale_potself)}
 Kernel selfgravity_sor_step(int color){suppress_unused_warning(color)}
 #endif
 

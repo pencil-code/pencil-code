@@ -1,0 +1,15 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Run parameters
+!
+&run_pars
+  cvsid='$Id$'
+  nt=100, it1=10, isave=1000, itorder=3
+  dt=0.02, dsnap=1., dvid=1e9
+/
+&electroweaksu2_run_pars
+  llongitudinalW=T, weight_longitudinalW=2.
+/
+&klein_gordon_run_pars
+  Vprime_choice='doublet', lambda_phi=0.129, c_phi=1.
+/

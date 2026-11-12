@@ -23,15 +23,17 @@
     real :: t_train_start = 0.0, t_train_end = -1.0, t_train_chkpt=-1.0, start_infer=0.0
 
     !real(KIND=rkind4), dimension(:,:,:,:,:), allocatable, device :: input, label, output
-    real, dimension(:,:,:,:,:), allocatable, device :: input, label, output
+    !TP: the device attribute (CUDA Fortran) is dropped: these host-side buffers are only used on the
+    !    lroute_via_cpu path, whose torchfort calls are commented out, and it breaks non-nvfortran builds
+    real, dimension(:,:,:,:,:), allocatable :: input, label, output
     real :: train_loss   !(KIND=rkind4) :: train_loss
     !$omp threadprivate(train_loss)
     real :: train_loss_save
 
-    integer :: itau_bb, itau_bbxx, itau_bbxy, itau_bbxz, itau_bbyy, itau_bbyz, itau_bbzz
-    integer :: itau_hydro, itau_hydroxx, itau_hydroxy, itau_hydroxz, itau_hydroyy, itau_hydroyz, itau_hydrozz
-    integer :: itau_strain, itau_strainxx, itau_strainxy, itau_strainxz, itau_strainyy, itau_strainyz, itau_strainzz
-    integer :: isgs_emf, isgs_emfx, isgs_emfy, isgs_emfz
+    integer :: itau_bb=0, itau_bbxx=0, itau_bbxy=0, itau_bbxz=0, itau_bbyy=0, itau_bbyz=0, itau_bbzz=0
+    integer :: itau_hydro=0, itau_hydroxx=0, itau_hydroxy=0, itau_hydroxz=0, itau_hydroyy=0, itau_hydroyz=0, itau_hydrozz=0
+    integer :: itau_strain=0, itau_strainxx=0, itau_strainxy=0, itau_strainxz=0, itau_strainyy=0, itau_strainyz=0, itau_strainzz=0
+    integer :: isgs_emf=0, isgs_emfx=0, isgs_emfy=0, isgs_emfz=0
     integer :: iuumean=0,ibbmean=0
 
     character(LEN=fnlen) :: model='model', config_file="config_mlp_native.yaml", model_file
@@ -43,14 +45,19 @@
     integer :: idiag_loss=0            ! DIAG_DOC: torchfort training loss
     integer :: idiag_tauerror=0        ! DIAG_DOC: $\sqrt{\left<(\sum_{i,j} u_i*u_j - tau_{ij})^2\right>}$
 
+    logical :: lrun_epoch=.false.
+    !TP: these are by default false now
+    logical :: ltrain_mag  = .false.
+    logical :: ltrain_dens = .false.
+
     namelist /training_run_pars/ config_file, model, it_train, it_train_start, it_train_chkpt, &
                                  luse_trained_tau, lscale, lwrite_sample, max_loss, lroute_via_cpu,&
                                  it_train_end, lrun_epoch, dt_train, t_train_start, t_train_end, t_train_chkpt,&
-                                 ltrain_mag,ltrain_dens, start_infer,max_loss, lconservative, smoothing_radius
+                                 ltrain_mag,ltrain_dens, start_infer,max_loss, smoothing_radius
 !
     character(LEN=fnlen) :: model_output_dir, checkpoint_output_dir
     integer :: istat, train_step_ckpt, val_step_ckpt
-    logical :: ltrained=.false., lckpt_written=.false.,lmodel_saved=.false., lrun_epoch=.false.
+    logical :: ltrained=.false., lckpt_written=.false.,lmodel_saved=.false.
     real, dimension (mx,my,mz,3) :: uumean
     real :: tauerror, input_min, input_max, output_min, output_max
     real, dimension(mx, my, mz, 6) :: tau_pred
@@ -58,9 +65,6 @@
     real, save :: t_last_chkpt = 0.0
     integer :: input_channels  = 3
     integer :: output_channels = 6
-    !TP: these are by default false now
-    logical :: ltrain_mag  = .false.
-    logical :: ltrain_dens = .false.
     logical, pointer :: lconservative
 
     contains
@@ -149,7 +153,11 @@
       ltrain_mag  = ltrain_mag  .and. lmagnetic
       ltrain_dens = ltrain_dens .and. ldensity
 !
-      call farray_register_auxiliary('uumean',iuumean,vector=3,communicated=.true.)
+!
+!  rhs=.true. also for the averaged fields: on the GPU this gives them a vertex buffer index, so that
+!  the sequential GPU indices of the following auxiliaries match the field_order of the DSL fields.
+!
+      call farray_register_auxiliary('uumean',iuumean,vector=3,rhs=.true.,communicated=.true.)
       call get_shared_variable('lconservative',lconservative)
       if (lhydro) then
         call farray_register_auxiliary('tau_hydro',itau_hydro,vector=6,rhs=.true.,communicated=.true.)
@@ -161,21 +169,24 @@
       if (ltrain_mag) then 
        call farray_register_auxiliary('sgs_emf',isgs_emf,vector=3,rhs=.true.,communicated=.true.)
        call farray_register_auxiliary('tau_bb',itau_bb,vector=6,rhs=.true.,communicated=.true.)
-       call farray_register_auxiliary('bbmean',ibbmean,vector=3,communicated=.true.)
+       call farray_register_auxiliary('bbmean',ibbmean,vector=3,rhs=.true.,communicated=.true.)
       endif
 !
 !  Indices to access taus and emf.
 !
       if (lhydro) then
-        itau_hydroxx=itau_hydro; itau_hydroyy=itau_hydro+1; itau_hydrozz=itau_hydro+2; itau_hydroxy=itau_hydro+3; itau_hydroxz=itau_hydro+4; itau_hydroyz=itau_hydro+5
+        itau_hydroxx=itau_hydro; itau_hydroyy=itau_hydro+1; itau_hydrozz=itau_hydro+2
+        itau_hydroxy=itau_hydro+3; itau_hydroxz=itau_hydro+4; itau_hydroyz=itau_hydro+5
         if (lconservative) then
-            itau_strainxx=itau_strain; itau_strainyy=itau_strain+1; itau_strainzz=itau_strain+2; itau_strainxy=itau_strain+3; itau_strainxz=itau_strain+4; itau_strainyz=itau_strain+5
+            itau_strainxx=itau_strain; itau_strainyy=itau_strain+1; itau_strainzz=itau_strain+2
+            itau_strainxy=itau_strain+3; itau_strainxz=itau_strain+4; itau_strainyz=itau_strain+5
         endif
       endif
 
       if (ltrain_mag) then
         isgs_emfx=isgs_emf; isgs_emfy=isgs_emf+1; isgs_emfz=isgs_emf+2;
-        itau_bbxx=itau_bb; itau_bbyy=itau_bb+1; itau_bbzz=itau_bb+2; itau_bbxy=itau_bb+3; itau_bbxz=itau_bb+4; itau_bbyz=itau_bb+5
+        itau_bbxx=itau_bb; itau_bbyy=itau_bb+1; itau_bbzz=itau_bb+2
+        itau_bbxy=itau_bb+3; itau_bbxz=itau_bb+4; itau_bbyz=itau_bb+5
       endif
 
     endsubroutine register_training
@@ -225,8 +236,12 @@
           endif
           tauerror = sum(f(l1:l2,m1:m2,n1:n2,itau_hydroxx:itau_hydrozz)**2)/nx
         else
-          if (lhydro) then
-            f(:,:,:,itau_hydroxx:itau_hydrozz) = output(:,:,:,:,1)
+!
+!  On the GPU path the inferred stresses stay on the device (TAU_HYDRO); output is only allocated
+!  when the model is called from Fortran.
+!
+          if (lhydro .and. lfortran_launched) then
+            f(:,:,:,itau_hydroxx:itau_hydroyz) = output(:,:,:,:,1)
           endif
         endif
       else
@@ -464,6 +479,10 @@
       real, dimension(nx,3) :: div_hydro_strain_sgs
       real, dimension(nx,3) :: div_mag_sgs
       
+      !The sgs terms are defined to be mean(f) - f(from means)
+      !So we use the same sign which is used in the PDEs.
+      !For example: momentum advection term has - since it has one in the momentum equation
+      !and the EMF +, since it has one in the induction equation
       if (ltrained) then 
         if (lhydro) then   
           call div_tensor(f,div_hydro_sgs,itau_hydro)
@@ -473,11 +492,11 @@
         if (t >= start_infer) then
           if (lhydro) then 
             df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - div_hydro_sgs
-            if (lconservative) df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - div_hydro_strain_sgs
+            if (lconservative) df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + div_hydro_strain_sgs
           endif
           if (ltrain_mag) then
-            if (lhydro) df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - div_mag_sgs
-            df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) - f(l1:l2,m,n,isgs_emfx:isgs_emfz)
+            if (lhydro) df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + div_mag_sgs
+            df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + f(l1:l2,m,n,isgs_emfx:isgs_emfz)
           endif
         endif
       endif
@@ -697,6 +716,13 @@
     call copy_addr(smoothing_radius,p_par(26)) ! int
     call copy_addr(iuumean,p_par(27)) ! int
     call copy_addr(ibbmean,p_par(28)) ! int
+    call copy_addr(itau_strain,p_par(29)) ! int
+    call copy_addr(itau_strainxx,p_par(30)) ! int
+    call copy_addr(itau_strainyy,p_par(31)) ! int
+    call copy_addr(itau_strainzz,p_par(32)) ! int
+    call copy_addr(itau_strainxy,p_par(33)) ! int
+    call copy_addr(itau_strainxz,p_par(34)) ! int
+    call copy_addr(itau_strainyz,p_par(35)) ! int
 
     endsubroutine pushpars2c
 !***********************************************************************

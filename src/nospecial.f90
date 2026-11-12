@@ -226,7 +226,7 @@ module Special
 !  06-oct-03/tony: coded
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type(pencil_case) :: p
 !
 !
@@ -517,7 +517,7 @@ module Special
 !  20-nov-08/wlad: coded
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       real, dimension(:,:) :: fp
       real, dimension(:,:) :: dfp
       integer, dimension(:,:) :: ineargrid
@@ -619,6 +619,18 @@ module Special
 !
     endsubroutine special_before_boundary_diagnostics
 !***********************************************************************
+    subroutine special_before_boundary_shared(f)
+!
+!  Like special_before_boundary, but called both in CPU and GPU runs
+!  (from before_boundary_shared). In GPU runs f is not up to date on the
+!  host; copy it from the device if needed and load any results back.
+!
+      real, contiguous, dimension(:,:,:,:) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine special_before_boundary_shared
+!***********************************************************************
     subroutine special_after_boundary(f)
 !
 !  Possibility to modify the f array after the boundaries are
@@ -655,7 +667,7 @@ module Special
 !  27-nov-08/wlad: coded
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       real :: dt_
       logical, intent(in) :: llast
 !
@@ -826,6 +838,7 @@ module Special
       p16 => special_particles_after_dtsub
       p17 => special_before_boundary
       p17 => special_before_boundary_diagnostics
+      p17 => special_before_boundary_shared
       p17 => special_after_boundary
       p18 => special_boundconds
       p19 => special_after_timestep

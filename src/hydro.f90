@@ -30,9 +30,6 @@
 ! PENCILS PROVIDED ext_force(4);
 ! PENCILS PROVIDED uutot(3); divutot; utotij(3,3)
 !
-! PENCILS EXPECTED gr_sqrtg; gr_alp; gr_dalp(3); gr_beta(3); gr_dbeta(3,3)
-! PENCILS EXPECTED gr_gamu(6); gr_dgam(6,3); gr_Kij(6)
-!
 !** AUTOMATIC REFERENCE-LINK.TEX GENERATION ********************
 ! Declare relevant citations from pencil-code/doc/citations/ref.bib for this module.
 ! The entries are taken from pencil-code/doc/citations/notes.tex
@@ -178,14 +175,14 @@ module Hydro
   integer :: iTij=0, ihless=0, nhless=0
   integer :: iT11=0,iT12=0,iT13=0,iT21=0,iT22=0,iT23=0,iT31=0,iT32=0,iT33=0
 !
-!  lgr_metric: fluxes F_E^j (FgrE) and F^j_i (FgrS, index iFgrS+3*(i-1)+j-1),
+!  lgr_metric: fluxes F_E^j (FgrE) and T^j_i (densitized and first index upper and second lower),
 !  the fluid energy density in the rest frame (egr), the ADM matter sources
 !  for special/z4c, and the indices of the z4c variables.
 !
   logical, pointer :: lgr_metric
-  integer :: iFgrE=0, iFgrS=0, iegr=0, iEadm=0
-  integer, dimension(3) :: iSadm=0, igr_beta=0
-  integer, dimension(6) :: iSadmij=0, igr_gt=0
+  integer :: iFgrE=0, iegr=0 
+  integer, dimension(3) :: igr_beta=0
+  integer, dimension(6) :: igr_gt=0
   integer :: igr_chi=0, igr_alp=0
   real, dimension(:), allocatable :: thless, xhless, yhless, zhless
   real, dimension(:), allocatable :: Bsquared
@@ -227,7 +224,7 @@ module Hydro
   logical, target :: lrelativistic=.false. !PAR_DOC: Do we keep relativistic terms proportional to $gamma^2$.
   logical, target :: lconservative_pressure_on_rhs=.false.
 
-  logical :: lgr_backreaction=.true. !PAR_DOC: Provide the ADM matter sources to special/z4c;
+  logical,target :: lgr_backreaction=.true. !PAR_DOC: Provide the ADM matter sources to special/z4c;
     !PAR_DOC: when false the matter is a test fluid in a given spacetime.
   integer :: niter_gr=30 !PAR_DOC: Newton iterations of the conserved-to-primitive inversion.
 
@@ -455,6 +452,11 @@ module Hydro
   integer :: idiag_urmsz=0      ! DIAG_DOC: $\left<\uv^2\right>^{1/2}$ for
                                 ! DIAG_DOC: the hydro_zaver_range
   integer :: idiag_durms=0      ! DIAG_DOC: $\left<\delta\uv^2\right>^{1/2}$
+  integer :: idiag_fpresmax=0       ! DIAG_DOC: 
+  integer :: idiag_fpresmax_loc=0   ! DIAG_DOC: 
+  integer :: idiag_fpresmin=0       ! DIAG_DOC: 
+  integer :: idiag_fpresmin_loc=0   ! DIAG_DOC: 
+  integer :: idiag_fpresrms=0   ! DIAG_DOC: 
   integer :: idiag_umax=0       ! DIAG_DOC: $\max(|\uv|)$
   integer :: idiag_umin=0       ! DIAG_DOC: $\min(|\uv|)$
   integer :: idiag_uxrms=0      ! DIAG_DOC: $\left<u_x^2\right>^{1/2}$
@@ -1154,30 +1156,24 @@ module Hydro
 !
 !  Tij and possibly relativistic Lorentz factor as aux
 !
-      if (lconservative .and. lgr_metric) then
-        call register_gr_aux
+      if(lconservative) then
         if (llorentz_as_aux) call register_report_aux('lorentz', ilorentz,communicated=.true.,rhs=.true.)
-      elseif (lconservative) then
-        call farray_register_auxiliary('Tij',iTij,vector=6,communicated=.true.,rhs=.true.)
-        if (llorentz_as_aux) call register_report_aux('lorentz', ilorentz,communicated=.true.,rhs=.true.)
-        iT11 = iTij-1+i11
-        iT22 = iTij-1+i22
-        iT33 = iTij-1+i33
-        iT12 = iTij-1+i12
-        iT23 = iTij-1+i23
-        iT13 = iTij-1+i13
+        call farray_register_auxiliary('Tij',iTij,vector=merge(9,6,lgr_metric),communicated=.true.,rhs=.true.)
+        if(lgr_metric) then
+          call farray_register_auxiliary('FgrE',iFgrE,vector=3,rhs=.true.)
+          call farray_register_auxiliary('egr',iegr,rhs=.true.)
+        else
+          iT11 = iTij-1+i11
+          iT22 = iTij-1+i22
+          iT33 = iTij-1+i33
+          iT12 = iTij-1+i12
+          iT23 = iTij-1+i23
+          iT13 = iTij-1+i13
 
-        iT21=iT12
-        iT32=iT23
-        iT31=iT13
-
-      ! else
-      !   if (lrelativistic) then
-      !     call fatal_error('register_hydro','no lrelativistic without lconservative')
-      !   else
-      !     if (llorentz_as_aux) call warning('register_hydro', &
-      !         'no Lorentz factor without lconservative or lrelativistic')
-      !   endif
+          iT21=iT12
+          iT32=iT23
+          iT31=iT13
+        endif
       endif
 !
 !  Define the Higgsless field
@@ -1245,6 +1241,7 @@ module Hydro
 !
       if  (.not.ldensity.or.lanelastic) lpressuregradient_gas=.false.
       call put_shared_variable('lpressuregradient_gas',lpressuregradient_gas,caller='register_hydro')
+      call put_shared_variable('lgr_backreaction',lgr_backreaction,caller='register_hydro')
 !
 !  Special settings for lboussinesq.
 !
@@ -1353,6 +1350,7 @@ module Hydro
 !
       use BorderProfiles, only: request_border_driving
       use EquationOfState, only: cs20
+      use FArrayManager, only: farray_index_by_name
       use Forcing, only: n_forcing_cont
       use Initcond
       use Mpicomm, only: mpibcast
@@ -1364,7 +1362,7 @@ module Hydro
       real, contiguous, dimension(:,:,:,:) :: f
       real, dimension (mz) :: c, s
       integer :: j,myl,jhless ! currently unused: nycap
-      integer :: l,m,n
+      integer :: l,m,n,i
       logical :: lvectorpotential=.false.
 
       if (.not.allocated(uu_average_sph)) then
@@ -1735,7 +1733,24 @@ module Hydro
         endif
       endif
 !
-      if (lgr_metric) call initialize_gr_metric
+      if (lgr_metric) then
+        if (.not.(lconservative.and.lrelativistic)) call fatal_error('initialize_hydro', &
+            'lgr_metric=T requires lconservative=T and lrelativistic=T')
+        if (.not.(lvv_as_aux.or.lvv_as_comaux)) call fatal_error('initialize_hydro', &
+            'lgr_metric=T requires lvv_as_aux=T (it holds the coordinate velocity alpha v^i - beta^i)')
+        if (lkt_transport.or.lhiggsless.or.lproject_admissible) call fatal_error('initialize_hydro', &
+            'lgr_metric=T does not work with lkt_transport, lhiggsless or lproject_admissible')
+        if (.not.lcartesian_coords) call fatal_error('initialize_hydro', &
+            'lgr_metric=T only works in Cartesian coordinates')
+        igr_chi=farray_index_by_name('chi')
+        igr_alp=farray_index_by_name('alp')
+        do i=1,3
+          igr_beta(i)=farray_index_by_name('beta'//cvec(i))
+        enddo
+        do j=1,3; do i=1,j
+          igr_gt(ij_table(i,j))=farray_index_by_name('gt'//cvec(i)//cvec(j))
+        enddo; enddo
+      endif
 !
 !  Allocate Higgsless field
 !
@@ -2175,6 +2190,20 @@ module Hydro
             else
               f(l1:l2,m,n,iux)=-ampluu(j)*sin(kx_uu(j)*x(l1:l2))*sqrt(abs(crit))
             endif
+          enddo; enddo
+!
+!  hatwaves
+!
+        case ('hatwave-x'); call hatwave(ampluu(j),f,iux,widthuu,kx=kx_uu(j))
+        case ('hatwave-y'); call hatwave(ampluu(j),f,iuy,widthuu,ky=ky_uu(j))
+        case ('hatwave-z'); call hatwave(ampluu(j),f,iuz,widthuu,kz=kz_uu(j))
+!
+!  atan(1./tan(.5*x))
+!
+        case ('atan_tan')
+          if (headtt) print*,'ABC flow'
+          do n=1,mz; do m=1,my
+            f(:,m,n,iux)=ampluu(j)*atan(1./tan(.5*kx_uu(j)*x))
           enddo; enddo
 !
         case ('ABC')
@@ -3057,18 +3086,6 @@ module Hydro
       endif
       if (lprecession) lpenc_requested(i_rr)=.true.
 !
-!  Metric pencils from special/z4c for the momentum equation in curved spacetime.
-!
-      if (lgr_metric) then
-        lpenc_requested(i_gr_sqrtg)=.true.
-        lpenc_requested(i_gr_alp)=.true.
-        lpenc_requested(i_gr_dalp)=.true.
-        lpenc_requested(i_gr_beta)=.true.
-        lpenc_requested(i_gr_dbeta)=.true.
-        lpenc_requested(i_gr_gamu)=.true.
-        lpenc_requested(i_gr_dgam)=.true.
-      endif
-!
 !  Pencils if background velocity is present
 !
       if (lu_background) then
@@ -3256,6 +3273,7 @@ module Hydro
           idiag_fkinzupmz/=0 .or. idiag_fkinzdownmz/=0 .or. &
           idiag_ekinmx /= 0 .or. idiag_ekinmz/=0 .or. idiag_fkinxmx/=0) then
         lpenc_diagnos(i_ekin)=.true.
+        lpenc_diagnos(i_u2)=.true.
       endif
       if (idiag_fkinxmxy/=0 .or. idiag_fkinymxy/=0 .or. &
           idiag_fkinxupmxy/=0 .or. idiag_fkinxdownmxy/=0 .or. idiag_fkinrsphmphi/=0) then
@@ -3310,6 +3328,10 @@ module Hydro
           idiag_oxdivu2mz/=0 .or. idiag_oydivu2mz/=0 .or. idiag_ozdivu2mz/=0) then
         lpenc_diagnos(i_oo)=.true.
         lpenc_diagnos(i_divu)=.true.
+      endif
+!
+      if (idiag_fpresmax/=0) then
+        lpenc_diagnos(i_fpres)=.true.
       endif
 !
       if (idiag_udpxxm/=0 .or. idiag_udpyym/=0 .or. idiag_udpzzm/=0 .or. &
@@ -4449,13 +4471,11 @@ module Hydro
 !
       ! alberto: why ldensity?
       if (ldensity) then
-        if (lconservative .and. lgr_metric) then
-          call gr_hydro_rhs(f,df,p)
-        elseif(lconservative) then
+        if(lconservative) then
           if (lkt_transport) then
             call kt_div_tensor(f,divTij)
           else
-            call div_tensor(f,divTij,iTij,lyz_first=.true.)
+            call div_tensor(f,divTij,iTij,lyz_first=.true.,lfull=lgr_metric)
           endif
           df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz)- divTij
           if (lext_force) then
@@ -5296,7 +5316,18 @@ module Hydro
           where (frict>0. .and. frict<min_ts) frict=0.
           call sum_mn_name(frict,idiag_frict)
         endif
-
+        if(idiag_fpresmax/=0) then
+          call max_mn_name(sqrt(p%fpres(:,1)*p%fpres(:,1) + p%fpres(:,2)*p%fpres(:,2) + p%fpres(:,3)*p%fpres(:,3)),&
+                           idiag_fpresmax,iname_loc=idiag_fpresmax_loc)
+        endif
+        if(idiag_fpresmin/=0) then
+          call max_mn_name(-sqrt(p%fpres(:,1)*p%fpres(:,1) + p%fpres(:,2)*p%fpres(:,2) + p%fpres(:,3)*p%fpres(:,3)),&
+                           idiag_fpresmin,lneg=.true.,iname_loc=idiag_fpresmin_loc)
+        endif
+        if(idiag_fpresrms/=0) then
+          call sum_mn_name(p%fpres(:,1)*p%fpres(:,1) + p%fpres(:,2)*p%fpres(:,2) + p%fpres(:,3)*p%fpres(:,3),&
+                           idiag_fpresrms,lsqrt=.true.)
+        endif
       endif  ! if (ldiagnos)
 
     endsubroutine calc_0d_diagnostics_hydro
@@ -6222,65 +6253,6 @@ module Hydro
 
     endsubroutine hydro_after_boundary_conservative
 !***********************************************************************
-    subroutine register_gr_aux
-!
-!  Auxiliaries of the lgr_metric formulation. The ADM sources are registered
-!  one scalar per component under the names special/z4c looks for.
-!
-!  14-oct-26/TP: coded
-!
-      use FArrayManager, only: farray_register_auxiliary
-!
-      integer :: i, j
-!
-      call farray_register_auxiliary('FgrE',iFgrE,vector=3)
-      call farray_register_auxiliary('FgrS',iFgrS,array=9)
-      call farray_register_auxiliary('egr',iegr)
-      if (lgr_backreaction) then
-        call farray_register_auxiliary('Eadm',iEadm)
-        do i=1,3
-          call farray_register_auxiliary('Sadm'//cvec(i),iSadm(i))
-        enddo
-        do j=1,3; do i=1,j
-          call farray_register_auxiliary('Sadm'//cvec(i)//cvec(j),iSadmij(ij_table(i,j)))
-        enddo; enddo
-      endif
-!
-    endsubroutine register_gr_aux
-!***********************************************************************
-    subroutine initialize_gr_metric
-!
-!  Check the setup and find the metric variables of special/z4c.
-!
-!  14-oct-26/TP: coded
-!
-      use FArrayManager, only: farray_index_by_name
-!
-      integer :: i, j
-!
-      if (.not.(lconservative.and.lrelativistic)) call fatal_error('initialize_gr_metric', &
-          'lgr_metric=T requires lconservative=T and lrelativistic=T')
-      if (.not.(lvv_as_aux.or.lvv_as_comaux)) call fatal_error('initialize_gr_metric', &
-          'lgr_metric=T requires lvv_as_aux=T (it holds the coordinate velocity alpha v^i - beta^i)')
-      if (ilorentz==0) call fatal_error('initialize_gr_metric','lgr_metric=T requires llorentz_as_aux=T')
-      if (lkt_transport.or.lhiggsless.or.lproject_admissible) call fatal_error('initialize_gr_metric', &
-          'lgr_metric=T does not work with lkt_transport, lhiggsless or lproject_admissible')
-      if (.not.lcartesian_coords) call fatal_error('initialize_gr_metric', &
-          'lgr_metric=T only works in Cartesian coordinates')
-!
-      igr_chi=farray_index_by_name('chi')
-      igr_alp=farray_index_by_name('alp')
-      do i=1,3
-        igr_beta(i)=farray_index_by_name('beta'//cvec(i))
-      enddo
-      do j=1,3; do i=1,j
-        igr_gt(ij_table(i,j))=farray_index_by_name('gt'//cvec(i)//cvec(j))
-      enddo; enddo
-      if (any((/igr_chi,igr_alp,igr_beta,igr_gt/)<=0)) &
-        call fatal_error('initialize_gr_metric','lgr_metric=T needs the metric of special/z4c')
-!
-    endsubroutine initialize_gr_metric
-!***********************************************************************
     subroutine hydro_after_boundary_gr(f)
 !
 !  Conserved-to-primitive inversion in curved spacetime (lgr_metric=T) for
@@ -6295,15 +6267,15 @@ module Hydro
 !
 !  which is solved for z by Newton iteration. The fluxes
 !  F_E^j = sqrt(gamma) (alpha S^j - beta^j E) and
-!  F^j_i = sqrt(gamma) (alpha S^j_i - beta^j S_i) are stored for all points,
+!  T^j_i = sqrt(gamma) (alpha S^j_i - beta^j S_i) are stored for all points,
 !  including the ghost zones, and so are the coordinate velocity
-!  alpha v^i - beta^i (in vv, used by the induction equation), W^2 (lorentz),
-!  e (egr) and the ADM sources E, S_i, S_ij for special/z4c.
+!  alpha v^i - beta^i (in vv, used by the induction equation), W^2 (lorentz) and
+!  e (egr).
 !
-!  14-oct-26/TP: coded
+!  14-oct-26/Claude: coded
 !
       use EquationOfState, only: cs20
-      use Sub, only: sym_inverse,lower_index,raise_index,contract_vec
+      use Sub, only: sym_inverse,lower_index,raise_index,contract_vec,cross
 !
       real, contiguous, dimension(:,:,:,:) :: f
       intent(inout) :: f
@@ -6337,11 +6309,12 @@ module Hydro
         do i=1,3
           Sd(:,i)=f(:,m,n,iuu+i-1)/sg
         enddo
-        Bu=0.
         if (lmagnetic) then
           do i=1,3
             Bu(:,i)=f(:,m,n,ibx+i-1)/sg
           enddo
+        else
+         Bu=0.
         endif
         call raise_index(gamu,Sd,Su)
         call lower_index(gam,Bu,Bd)
@@ -6368,12 +6341,13 @@ module Hydro
         do i=1,3
           vd(:,i)=(Sd(:,i)+SB/zz*Bd(:,i))/(zz+B2)
         enddo
-        call lower_index(gamu,vd,vu)
+        call raise_index(gamu,vd,vu)
         v2=min(contract_vec(vu,vd),v2max)
         e=zz*(1.-v2)/(1.+cs20)
-        Ed(:,1)=-sg*(vu(:,2)*Bu(:,3)-vu(:,3)*Bu(:,2))
-        Ed(:,2)=-sg*(vu(:,3)*Bu(:,1)-vu(:,1)*Bu(:,3))
-        Ed(:,3)=-sg*(vu(:,1)*Bu(:,2)-vu(:,2)*Bu(:,1))
+        call cross(Bu,vu,Ed)
+        do i=1,3
+          Ed(:,i)=sg*Ed(:,i)
+        enddo
         call raise_index(gamu,Ed,Eu)
         E2=contract_vec(Eu,Ed)
         ptot=cs20*e+.5*(E2+B2)
@@ -6389,25 +6363,16 @@ module Hydro
         do j=1,3
           f(:,m,n,iFgrE+j-1)=sg*(alp*Su(:,j)-beta(:,j)*EE)
           do i=1,3
-            f(:,m,n,iFgrS+3*(i-1)+j-1)=sg*(alp*Smix(:,j,i)-beta(:,j)*Sd(:,i))
+            f(:,m,n,iTij+3*(i-1)+j-1)=sg*(alp*Smix(:,j,i)-beta(:,j)*Sd(:,i))
           enddo
-          f(:,m,n,ivv+j-1)=alp*vu(:,j)-beta(:,j)
+          if(lvv_as_aux) then
+            f(:,m,n,ivv+j-1)=alp*vu(:,j)-beta(:,j)
+          endif
         enddo
-        f(:,m,n,ilorentz)=1./(1.-v2)
-        f(:,m,n,iegr)=e
-!
-!  ADM sources, S_ij = S^k_i gamma_kj.
-!
-        if (lgr_backreaction) then
-          f(:,m,n,iEadm)=EE
-          do i=1,3
-            f(:,m,n,iSadm(i))=Sd(:,i)
-          enddo
-          do j=1,3; do i=1,j
-            f(:,m,n,iSadmij(ij_table(i,j)))=Smix(:,1,i)*gam(:,ij_table(1,j)) &
-                +Smix(:,2,i)*gam(:,ij_table(2,j))+Smix(:,3,i)*gam(:,ij_table(3,j))
-          enddo; enddo
+        if(llorentz_as_aux) then
+          f(:,m,n,ilorentz)=1./(1.-v2)
         endif
+        f(:,m,n,iegr)=e
       enddo
       enddo
 !
@@ -6418,7 +6383,7 @@ module Hydro
 !  Residual of the energy equation for given z = (e+p) W^2, see
 !  hydro_after_boundary_gr; v^2 follows from the momentum equation.
 !
-!  14-oct-26/TP: coded
+!  14-oct-26/Claude: coded
 !
       real, intent(in) :: zz, EE, S2, B2, SB, w
       real :: v2
@@ -6427,58 +6392,6 @@ module Hydro
       gr_zfunc=zz-w*zz*(1.-v2)/(1.+w)+.5*B2*(1.+v2)-.5*SB**2/zz**2-EE
 !
     endfunction gr_zfunc
-!***********************************************************************
-    subroutine gr_hydro_rhs(f,df,p)
-!
-!  Right-hand side of sqrt(gamma)*S_i for lgr_metric=T
-!  (e.g. Banyuls et al. 1997, ApJ 476, 221; Font 2008, Living Rev. Rel. 11, 7):
-!
-!    d_t(sg S_i) + d_j F^j_i = sg (-E d_i alpha + S_k d_i beta^k + alpha/2 S^jk d_i gamma_jk)
-!
-!  The metric quantities are pencils of special/z4c; S^j_i is recovered from
-!  the stored flux F^j_i. The energy equation is in density (dlnrho_dt).
-!
-!  14-oct-26/TP: coded
-!
-      use Deriv, only: der
-!
-      real, contiguous, dimension(:,:,:,:) :: f, df
-      type (pencil_case) :: p
-!
-      real, dimension(nx,3) :: Sd
-      real, dimension(nx,3,3) :: Smix, Suu
-      real, dimension(nx) :: EE, rhs, tmp
-      integer :: i, j, k
-!
-      EE=f(l1:l2,m,n,irho)/p%gr_sqrtg
-      do i=1,3
-        Sd(:,i)=f(l1:l2,m,n,iuu+i-1)/p%gr_sqrtg
-      enddo
-      do i=1,3; do j=1,3
-        Smix(:,j,i)=(f(l1:l2,m,n,iFgrS+3*(i-1)+j-1)/p%gr_sqrtg+p%gr_beta(:,j)*Sd(:,i))/p%gr_alp
-      enddo; enddo
-      do k=1,3; do j=1,3
-        Suu(:,j,k)=Smix(:,j,1)*p%gr_gamu(:,ij_table(1,k))+Smix(:,j,2)*p%gr_gamu(:,ij_table(2,k)) &
-                  +Smix(:,j,3)*p%gr_gamu(:,ij_table(3,k))
-      enddo; enddo
-!
-      do i=1,3
-        rhs=-EE*p%gr_dalp(:,i)
-        do k=1,3
-          rhs=rhs+Sd(:,k)*p%gr_dbeta(:,k,i)
-          do j=1,3
-            rhs=rhs+.5*p%gr_alp*Suu(:,j,k)*p%gr_dgam(:,ij_table(j,k),i)
-          enddo
-        enddo
-        rhs=p%gr_sqrtg*rhs
-        do j=1,3
-          call der(f,iFgrS+3*(i-1)+j-1,tmp,j)
-          rhs=rhs-tmp
-        enddo
-        df(l1:l2,m,n,iuu+i-1)=df(l1:l2,m,n,iuu+i-1)+rhs
-      enddo
-!
-    endsubroutine gr_hydro_rhs
 !***********************************************************************
     subroutine hydro_after_boundary(f)
 !
@@ -7455,6 +7368,11 @@ module Hydro
         idiag_uzuxpt=0
         idiag_urms=0
         idiag_durms=0
+        idiag_fpresmax=0
+        idiag_fpresmax_loc=0
+        idiag_fpresmin=0
+        idiag_fpresmin_loc=0
+        idiag_fpresrms=0
         idiag_urmsx=0
         idiag_urmsz=0
         idiag_umax=0
@@ -7987,6 +7905,11 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'dtu',idiag_dtu)
         call parse_name(iname,cname(iname),cform(iname),'urms',idiag_urms)
         call parse_name(iname,cname(iname),cform(iname),'durms',idiag_durms)
+        call parse_name(iname,cname(iname),cform(iname),'fpresmax',idiag_fpresmax)
+        call parse_name(iname,cname(iname),cform(iname),'fpresmax_loc',idiag_fpresmax_loc)
+        call parse_name(iname,cname(iname),cform(iname),'fpresmin',idiag_fpresmin)
+        call parse_name(iname,cname(iname),cform(iname),'fpresmin_loc',idiag_fpresmin_loc)
+        call parse_name(iname,cname(iname),cform(iname),'fpresrms',idiag_fpresrms)
         call parse_name(iname,cname(iname),cform(iname),'urmsx',idiag_urmsx)
         call parse_name(iname,cname(iname),cform(iname),'urmsz',idiag_urmsz)
         call parse_name(iname,cname(iname),cform(iname),'urmsn',idiag_urmsn)
@@ -8595,7 +8518,7 @@ module Hydro
 !     Loop over slices
 !
       select case (trim(slices%name))
-        case ('uu'); call assign_slices_before_ts(slices,f,iuu)
+        case ('uu'); call assign_slices_before_ts(slices,f,iuu,3)
       endselect
 !
     endsubroutine get_fslices_hydro
@@ -9347,7 +9270,7 @@ module Hydro
     Use Sub, only: erfunc, step
 !
     real :: slope,uinn,uext,zbot
-    character :: uuprof
+    character(LEN=*), intent(in) :: uuprof
 !
       select case (uuprof)
 
@@ -9401,6 +9324,8 @@ module Hydro
       case ('remove_vertical_shear')
         if (.not.lcalc_uumean) &
           call fatal_error("initialize_hydro","you need to set lcalc_uumean=T for uuprof='remove_vertical_shear'")
+        if (lgpu) &
+          call fatal_error("initialize_hydro","remove_vertical_shear is not possible on GPUs since it writes to f directly!")
 
       case ('damp_mean_uz_prof_bdr')
         if (.not.lcalc_uumeanz) &
@@ -9629,7 +9554,8 @@ module Hydro
         f(l1:l2,m,n,iux)=f(l1:l2,m,n,iux)-uumz(n,1)
         f(l1:l2,m,n,iuy)=f(l1:l2,m,n,iuy)-uumz(n,2)
 !
-!  damp horizontally averaged uz neaer the boundary                                                                                                                                                                                          !
+!  damp horizontally averaged uz near the boundary
+!
       case ('damp_mean_uz_prof_bdr')
         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*prof_amp3(n)*uumz(n,3)
 !
@@ -10356,7 +10282,6 @@ module Hydro
     call copy_addr(idiag_taufmin,p_par(79)) ! int
     call copy_addr(idiag_dtf,p_par(80)) ! int
     call copy_addr(fade_fact,p_par(81)) ! real dconst
-    call copy_addr(uumz,p_par(82)) ! (mz) (3)
     call copy_addr(uumx,p_par(83)) ! (mx) (3)
     if (allocated(uumxy)) call copy_addr(uumxy,p_par(84)) ! (mx) (my) (3)
     call copy_addr(uumxz,p_par(85)) ! (mx) (mz) (3)
@@ -10439,6 +10364,8 @@ module Hydro
     call copy_addr(vertical_gradient,p_par(157))
     call copy_addr(lu_background,p_par(158)) ! bool
     call copy_addr(lism_rotation,p_par(159)) ! bool
+    call copy_addr(niter_gr,p_par(161)) ! int
+    call copy_addr(lgr_backreaction,p_par(162)) ! bool
     endsubroutine pushpars2c
 !***********************************************************************
 endmodule Hydro

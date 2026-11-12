@@ -37,6 +37,7 @@ module Particles
   implicit none
 !
   include 'particles.h'
+  public :: pushpars2c
   include 'particles_common.h'
 !
   complex, dimension(7) :: coeff=(0.0,0.0)
@@ -187,6 +188,11 @@ module Particles
 !
   logical :: lcompensate_sedimentation=.false.
   real :: compensate_sedimentation=1.
+!
+  integer :: nr_spray=0, nd_spray=0
+  logical :: lspray_table_read=.false.
+  real, allocatable, dimension(:)   :: spray_rlo, spray_rhi, spray_cdf_ring, spray_dedge
+  real, allocatable, dimension(:,:) :: spray_cdf_d, spray_umean, spray_urms, spray_vmean, spray_vrms
 !
 !  real :: A3=0., A2=0., G_condensation=0.
   real :: A3=0., A2=0.
@@ -563,6 +569,8 @@ module Particles
       real, pointer :: reference_state_mass
       integer :: ik, icnt
       real :: xxp, yyp, zzp
+      logical, pointer :: linitap_spray_table
+      logical :: lxxp_spray, lvvp_spray, lap_spray
 !
 !  This module is incompatible with particle block domain decomposition.
 !
@@ -589,6 +597,36 @@ module Particles
         if (random_gen .eq. "min_std") &
           call fatal_error('initialize_particles','cannot use random_gen="min_std" when '// &
                            'lpartnucleation=T and lpersist=T')
+      endif
+!
+!  initxxp='spray-table' sets position, velocity AND radius of each inserted
+!  droplet from spray_inlet.dat in one call (spray_table_insert).  initvvp
+!  and initap (module Particles_radius) must therefore be 'spray-table' too,
+!  and all other entries 'nothing': any other choice would silently
+!  overwrite the tabulated velocity or radius, or never use the table.
+!
+!  30-oct-26/claude: coded
+!
+      lxxp_spray = any(initxxp=='spray-table')
+      lvvp_spray = any(initvvp=='spray-table')
+      lap_spray = .false.
+      if (lparticles_radius) then
+        call get_shared_variable('linitap_spray_table', linitap_spray_table, &
+                                 caller='initialize_particles', default_val=.false.)
+        lap_spray = linitap_spray_table
+      endif
+      if (lxxp_spray .and. .not. lparticles_radius) &
+        call fatal_error('initialize_particles', &
+            "initxxp='spray-table' needs PARTICLES_RADIUS (the table sets the droplet radius)")
+      if ((lxxp_spray .or. lvvp_spray .or. lap_spray) .and. &
+          .not. (lxxp_spray .and. lvvp_spray .and. lap_spray)) &
+        call fatal_error('initialize_particles', &
+            "'spray-table' must be set for all three of initxxp and initvvp "// &
+            "(particles_run_pars) and initap (particles_radius_run_pars), or for none")
+      if (lxxp_spray) then
+        if (count(initxxp/='nothing')>1 .or. count(initvvp/='nothing')>1) &
+          call fatal_error('initialize_particles', &
+              "with 'spray-table' all other initxxp and initvvp entries must be 'nothing'")
       endif
 !
 ! Mark particles in a pencil
@@ -2405,6 +2443,16 @@ module Particles
                 endif
               endif
 !
+            case ('spray-table')
+!
+!  Position, velocity and radius are all drawn from the tabulated inlet
+!  (spray_inlet.dat) in this call.  initvvp and initap must therefore also
+!  be 'spray-table' (no-ops there) - checked in initialize_particles - since
+!  any other initvvp/initap would overwrite the tabulated values afterwards.
+!
+              if (.not. lspray_table_read) call read_spray_table
+              call spray_table_insert(fp,npar_loc_old+1,npar_loc)
+!
             case ('nothing')
               if (j == 1) print*, 'insert_particles: nothing'
 !
@@ -2418,6 +2466,9 @@ module Particles
 !
           do j = 1,ninit
             select case (initvvp(j))
+            case ('spray-table')
+!             velocity already set by spray_table_insert (initxxp='spray-table')
+!
             case ('nothing')
               if (j == 1) print*, 'insert_particles: No particle velocity set'
 !
@@ -2563,6 +2614,126 @@ module Particles
       endif
 !
     endsubroutine insert_particles
+!***********************************************************************
+    subroutine read_spray_table
+!
+!  Read the tabulated spray inlet (droplet number flux per ring, local size
+!  CDF and size-classed mean/rms axial and radial velocities).
+!
+!  File format (list-directed, SI units):
+!    nr nd
+!    dedge(1:nd+1)                        size-bin edges (m)
+!    then nr blocks of 6 lines:
+!      rlo rhi ndot                       ring bounds (m), number flux (1/s)
+!      cdf(1:nd)                          cumulative number fraction at upper bin edges
+!      umean(1:nd)                        mean axial speed INTO the domain (m/s, >0)
+!      urms(1:nd)                         axial rms (m/s)
+!      vmean(1:nd)                        mean radial velocity, outward (m/s)
+!      vrms(1:nd)                         radial rms (m/s); also used for the tangential rms
+!
+!  26-oct-26/claude: coded for the Rueger hollow-cone spray case
+!
+      integer :: i, iunit
+      real :: ndot, ndot_tot
+!
+      iunit=93
+      open(iunit,file='spray_inlet.dat',status='old',action='read')
+      read(iunit,*) nr_spray, nd_spray
+      if (allocated(spray_rlo)) deallocate(spray_rlo,spray_rhi,spray_cdf_ring,spray_dedge, &
+          spray_cdf_d,spray_umean,spray_urms,spray_vmean,spray_vrms)
+      allocate(spray_rlo(nr_spray),spray_rhi(nr_spray),spray_cdf_ring(nr_spray))
+      allocate(spray_dedge(nd_spray+1))
+      allocate(spray_cdf_d(nr_spray,nd_spray),spray_umean(nr_spray,nd_spray), &
+          spray_urms(nr_spray,nd_spray),spray_vmean(nr_spray,nd_spray),spray_vrms(nr_spray,nd_spray))
+      read(iunit,*) spray_dedge
+      ndot_tot=0.0
+      do i=1,nr_spray
+        read(iunit,*) spray_rlo(i), spray_rhi(i), ndot
+        read(iunit,*) spray_cdf_d(i,:)
+        read(iunit,*) spray_umean(i,:)
+        read(iunit,*) spray_urms(i,:)
+        read(iunit,*) spray_vmean(i,:)
+        read(iunit,*) spray_vrms(i,:)
+        ndot_tot=ndot_tot+ndot
+        spray_cdf_ring(i)=ndot_tot
+      enddo
+      close(iunit)
+      spray_cdf_ring=spray_cdf_ring/ndot_tot
+      spray_cdf_ring(nr_spray)=1.0
+      lspray_table_read=.true.
+      if (lroot) print*, 'read_spray_table: nr, nd, total number flux [1/s] = ', &
+          nr_spray, nd_spray, ndot_tot
+      if (lroot) print*, 'read_spray_table: set particles_insert_rate = ', ndot_tot
+!
+    endsubroutine read_spray_table
+!***********************************************************************
+    subroutine spray_table_insert(fp,k1,k2)
+!
+!  Draw position, diameter and velocity of newly inserted parcels k1..k2 from
+!  the spray inlet table.  The spray axis is the z direction through
+!  (xp0,yp0), pointing in the direction of sign(vpz0) (as for 'spray-cone');
+!  parcels are placed in the slab zp0 < z < zp0+Lz0 just inside the inlet
+!  boundary.  Fluctuations are Gaussian with the tabulated rms; the
+!  tangential rms is taken equal to the radial one (Lain & Sommerfeld 2020).
+!
+!  26-oct-26/claude: coded
+!
+      use General, only: random_number_wrapper, normal_deviate
+!
+      real, dimension(mpar_loc,mparray), intent(inout) :: fp
+      integer, intent(in) :: k1, k2
+!
+      integer :: k, i, j, itry
+      real :: r1, r2, r3, rr, phi, dd, ua, ur, ut, g1, g2, g3
+!
+      do k=k1,k2
+!
+!  Ring, drawn with the number-flux weighting; radius uniform in area within the ring.
+!
+        call random_number_wrapper(r1)
+        i=1
+        do while (r1>spray_cdf_ring(i) .and. i<nr_spray)
+          i=i+1
+        enddo
+        call random_number_wrapper(r2)
+        rr=sqrt(spray_rlo(i)**2+r2*(spray_rhi(i)**2-spray_rlo(i)**2))
+        call random_number_wrapper(r3)
+        phi=2.0*pi*r3
+!
+!  Size class from the local number CDF, uniform within the bin.
+!
+        call random_number_wrapper(r1)
+        j=1
+        do while (r1>spray_cdf_d(i,j) .and. j<nd_spray)
+          j=j+1
+        enddo
+        call random_number_wrapper(r2)
+        dd=spray_dedge(j)+r2*(spray_dedge(j+1)-spray_dedge(j))
+!
+!  Velocities: resample the axial component if it would point out of the domain.
+!
+        do itry=1,20
+          call normal_deviate(g1)
+          ua=spray_umean(i,j)+spray_urms(i,j)*g1
+          if (ua>0.0) exit
+        enddo
+        if (ua<=0.0) ua=0.1*spray_umean(i,j)
+        call normal_deviate(g2)
+        call normal_deviate(g3)
+        ur=spray_vmean(i,j)+spray_vrms(i,j)*g2
+        ut=spray_vrms(i,j)*g3
+!
+        fp(k,ixp)=xp0+rr*cos(phi)
+        fp(k,iyp)=yp0+rr*sin(phi)
+        call random_number_wrapper(r3)
+        fp(k,izp)=zp0+r3*Lz0
+        fp(k,ivpx)=ur*cos(phi)-ut*sin(phi)
+        fp(k,ivpy)=ur*sin(phi)+ut*cos(phi)
+        fp(k,ivpz)=sign(ua,vpz0)
+        if (lparticles_radius) fp(k,iap)=0.5*dd
+      enddo
+!
+    endsubroutine spray_table_insert
 !***********************************************************************
     subroutine insert_nucleii(f,fp,ineargrid,df)
 !
@@ -3565,97 +3736,18 @@ module Particles
 !
     endsubroutine dxxp_dt
 !***********************************************************************
-    subroutine dvvp_dt(f,df,fp,dfp,ineargrid)
+    subroutine calc_diagnostics_from_particles_module(fp)
 !
-!  Evolution of dust particle velocity.
+!  Diagnostics computed from particles.
 !
-!  29-dec-04/anders: coded
+!  09-nov-26/TP: moved from dvvp_dt
 !
       use Diagnostics
-      use EquationOfState, only: cs20
-      use Particles_caustics, only: dcaustics_dt
-      use Particles_tetrad, only: dtetrad_dt
-      use Particles_potential, only: dvvp_dt_potential
 !
-      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      real, dimension(mx,my,mz,mvar), intent(inout) :: df
-      real, dimension(mpar_loc,mparray), intent(inout) :: fp
-      real, dimension(mpar_loc,mpvar), intent(inout) :: dfp
-      integer, dimension(mpar_loc,3), intent(in) :: ineargrid
+      real, dimension (mpar_loc,mparray) :: fp
 !
-      real :: Omega2
-      integer :: npar_found
-      logical :: lheader, lfirstcall=.true.
       real, dimension(mpar_loc) :: coalfac
-      integer :: kcoal
-!
-!  Print out header information in first time step.
-!
-      lheader = lfirstcall .and. lroot
-      if (lheader) print*,'dvvp_dt: Calculate dvvp_dt'
-!
-! Calculate the acceleration of particles only if lfollow_gas is not true
-!
-      if (.not. lfollow_gas) then
-!
-!  Add Coriolis force from rotating coordinate frame.
-!
-        if (Omega /= 0.) then
-          if (lcoriolis_force_par) then
-            if (lheader) print*,'dvvp_dt: Add Coriolis force; Omega=', Omega
-            Omega2 = 2*Omega
-            if (.not. lspherical_coords) then
-              dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + Omega2*fp(1:npar_loc,ivpy)
-              dfp(1:npar_loc,ivpy) = dfp(1:npar_loc,ivpy) - Omega2*fp(1:npar_loc,ivpx)
-            else
-              call not_implemented('dvvp_dt','Coriolis force on particles for spherical coordinates')
-            endif
-          endif
-!
-!  Add centrifugal force.
-!
-          if (lcentrifugal_force_par) then
-            if (lheader) print*,'dvvp_dt: Add Centrifugal force; Omega=', Omega
-            if (lcartesian_coords) then
-              !
-              dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + Omega**2*fp(1:npar_loc,ixp)
-              !
-              dfp(1:npar_loc,ivpy) = dfp(1:npar_loc,ivpy) + Omega**2*fp(1:npar_loc,iyp)
-              !
-            elseif (lcylindrical_coords) then
-              dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + Omega**2*fp(1:npar_loc,ixp)
-            else
-              call not_implemented('dvvp_dt','centrifugal force on particles for spherical coordinates')
-            endif
-          endif
-!
-!  With shear there is an extra term due to the background shear flow.
-!
-          if (lshear .and. lshear_accel_par) &
-               dfp(1:npar_loc,ivpy) = dfp(1:npar_loc,ivpy) + qshear * Omega * fp(1:npar_loc,ivpx)
-        endif
-!
-!  Add constant background pressure gradient beta=alpha*H0/r0, where alpha
-!  comes from a global pressure gradient P = P0*(r/r0)^alpha.
-!  (the term must be added to the dust equation of motion when measuring
-!  velocities relative to the shear flow modified by the globalfpressure grad.)
-!
-        if (beta_dPdr_dust /= 0.0 .and. t >= tstart_dragforce_par) &
-             dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + cs20*beta_dPdr_dust_scaled
-!
-!  Gravity on the particles.
-!  Gravity on particles is implemented only if lparticle_gravity is true which is the default.
-!
-        if (lparticle_gravity) call particle_gravity(f,df,fp,dfp,ineargrid)
-!
-        if (lcorotational_frame) call indirect_inertial_particles(f,df,fp,dfp,ineargrid)
-!
-!  The auxiliary has to be set to zero afterwards
-!
-        call diffuse_backreaction(f,df)
-    endif
-!
-!  Diagnostic output
+      integer :: npar_found, kcoal
 !
     if (ldiagnos) then
         call sum_name(npar_loc,idiag_nparsum)
@@ -3774,7 +3866,6 @@ module Particles
         ! Better formulate with lsqrt
         if (idiag_vpmax /= 0) call max_par_name( &
             sqrt(sum(fp(1:npar_loc,ivpx:ivpz)**2,2)),idiag_vpmax)
-        if (idiag_vrelpabsm /= 0) call calc_relative_velocity(f,fp,ineargrid)
         if (ivpx/=0) call max_par_name(fp(1:npar_loc,ivpx),idiag_vpxmax)
         if (ivpy/=0) call max_par_name(fp(1:npar_loc,ivpy),idiag_vpymax)
         if (ivpz/=0) call max_par_name(fp(1:npar_loc,ivpz),idiag_vpzmax)
@@ -3908,6 +3999,100 @@ module Particles
           call sum_name(energy_gain_shear_bcs/npar,idiag_deshearbcsm) !MR: What to sum here?
 
       endif
+    endsubroutine calc_diagnostics_from_particles_module
+!***********************************************************************
+    subroutine dvvp_dt(f,df,fp,dfp,ineargrid)
+!
+!  Evolution of dust particle velocity.
+!
+!  29-dec-04/anders: coded
+!
+      use Diagnostics
+      use EquationOfState, only: cs20
+      use Particles_caustics, only: dcaustics_dt
+      use Particles_tetrad, only: dtetrad_dt
+      use Particles_potential, only: dvvp_dt_potential
+!
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension(mx,my,mz,mvar), intent(inout) :: df
+      real, dimension(mpar_loc,mparray), intent(inout) :: fp
+      real, dimension(mpar_loc,mpvar), intent(inout) :: dfp
+      integer, dimension(mpar_loc,3), intent(in) :: ineargrid
+!
+      real :: Omega2
+      logical :: lheader, lfirstcall=.true.
+!
+!  Print out header information in first time step.
+!
+      lheader = lfirstcall .and. lroot
+      if (lheader) print*,'dvvp_dt: Calculate dvvp_dt'
+!
+! Calculate the acceleration of particles only if lfollow_gas is not true
+!
+      if (.not. lfollow_gas) then
+!
+!  Add Coriolis force from rotating coordinate frame.
+!
+        if (Omega /= 0.) then
+          if (lcoriolis_force_par) then
+            if (lheader) print*,'dvvp_dt: Add Coriolis force; Omega=', Omega
+            Omega2 = 2*Omega
+            if (.not. lspherical_coords) then
+              dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + Omega2*fp(1:npar_loc,ivpy)
+              dfp(1:npar_loc,ivpy) = dfp(1:npar_loc,ivpy) - Omega2*fp(1:npar_loc,ivpx)
+            else
+              call not_implemented('dvvp_dt','Coriolis force on particles for spherical coordinates')
+            endif
+          endif
+!
+!  Add centrifugal force.
+!
+          if (lcentrifugal_force_par) then
+            if (lheader) print*,'dvvp_dt: Add Centrifugal force; Omega=', Omega
+            if (lcartesian_coords) then
+              !
+              dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + Omega**2*fp(1:npar_loc,ixp)
+              !
+              dfp(1:npar_loc,ivpy) = dfp(1:npar_loc,ivpy) + Omega**2*fp(1:npar_loc,iyp)
+              !
+            elseif (lcylindrical_coords) then
+              dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + Omega**2*fp(1:npar_loc,ixp)
+            else
+              call not_implemented('dvvp_dt','centrifugal force on particles for spherical coordinates')
+            endif
+          endif
+!
+!  With shear there is an extra term due to the background shear flow.
+!
+          if (lshear .and. lshear_accel_par) &
+               dfp(1:npar_loc,ivpy) = dfp(1:npar_loc,ivpy) + qshear * Omega * fp(1:npar_loc,ivpx)
+        endif
+!
+!  Add constant background pressure gradient beta=alpha*H0/r0, where alpha
+!  comes from a global pressure gradient P = P0*(r/r0)^alpha.
+!  (the term must be added to the dust equation of motion when measuring
+!  velocities relative to the shear flow modified by the globalfpressure grad.)
+!
+        if (beta_dPdr_dust /= 0.0 .and. t >= tstart_dragforce_par) &
+             dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + cs20*beta_dPdr_dust_scaled
+!
+!  Gravity on the particles.
+!  Gravity on particles is implemented only if lparticle_gravity is true which is the default.
+!
+        if (lparticle_gravity) call particle_gravity(f,df,fp,dfp,ineargrid)
+!
+        if (lcorotational_frame) call indirect_inertial_particles(f,df,fp,dfp,ineargrid)
+!
+!  The auxiliary has to be set to zero afterwards
+!
+        call diffuse_backreaction(f,df)
+    endif
+!
+!  Diagnostic output
+!
+      call calc_diagnostics_from_particles_module(fp)
+      if (ldiagnos .and. idiag_vrelpabsm /= 0) call calc_relative_velocity(f,fp,ineargrid)
+!
       if (lfirstcall) lfirstcall = .false.
 !
 !  If we are using caustics :
@@ -5646,7 +5831,7 @@ endif
               do ix = ix1,ix2
                 if (lshear) then
                   rp_box = sqrt((fp(k,ixp)+Lx*ix-xsinkpar)**2 + &
-                      (fp(k,iyp)+Ly*iy-deltay*ix-ysinkpar)**2 + (fp(k,izp)+Lz*iz-zsinkpar)**2)
+                      (fp(k,iyp)+Ly*iy-delta_y*ix-ysinkpar)**2 + (fp(k,izp)+Lz*iz-zsinkpar)**2)
                 else
                   rp_box = sqrt((fp(k,ixp)+Lx*ix-xsinkpar)**2 + &
                            (fp(k,iyp)+Ly*iy-ysinkpar)**2+(fp(k,izp)+Lz*iz-zsinkpar)**2)
@@ -7606,5 +7791,29 @@ endif
       endif
 !
     endsubroutine diffuse_backreaction
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+!
+      use Syscalls, only: copy_addr
+!
+      integer, parameter :: n_pars=20
+      integer(KIND=ikind8), dimension(n_pars) :: p_par
+!
+      call copy_addr(cdtp,p_par(1))
+      call copy_addr(rhop_swarm,p_par(2))
+      call copy_addr(ldragforce_gas_par,p_par(3)) ! bool
+      call copy_addr(lfollow_gas,p_par(4)) ! bool
+      call copy_addr(lcoriolis_force_par,p_par(5)) ! bool
+      call copy_addr(lcentrifugal_force_par,p_par(6)) ! bool
+      call copy_addr(lshear_accel_par,p_par(7)) ! bool
+      call copy_addr(beta_dpdr_dust,p_par(8))
+      call copy_addr(beta_dpdr_dust_scaled,p_par(9))
+      call copy_addr(tstart_dragforce_par,p_par(10))
+      call copy_addr(ldt_adv_par,p_par(11)) ! bool
+      call copy_addr(lcdtp_shear,p_par(12)) ! bool
+      call copy_addr(l_shell,p_par(13)) ! bool
+      call copy_addr(k_shell,p_par(14)) ! int
+!
+    endsubroutine pushpars2c
 !***********************************************************************
 endmodule Particles

@@ -1685,16 +1685,16 @@ module Forcing
       endif
 !
 !  in the shearing sheet approximation, kx = kx0 - St*k_y.
-!  Here, St=-deltay/Lx. However, to stay near kx0, we ignore
+!  Here, St=-delta_y/Lx. However, to stay near kx0, we ignore
 !  integer shifts.
 !
       if (Sshear==0.) then
         kx=kx0
       else
         if (lshearing_adjust_old) then
-          kx=kx0+ky*deltay/Lx
+          kx=kx0+ky*delta_y/Lx
         else
-          kx=kx0+mod(ky*deltay/Lx-pi_over_Lx,2.*pi_over_Lx)+pi_over_Lx
+          kx=kx0+mod(ky*delta_y/Lx-pi_over_Lx,2.*pi_over_Lx)+pi_over_Lx
         endif
       endif
 !
@@ -1930,16 +1930,16 @@ module Forcing
       endif
 !
 !  in the shearing sheet approximation, kx = kx0 - St*k_y.
-!  Here, St=-deltay/Lx. However, to stay near kx0, we ignore
+!  Here, St=-delta_y/Lx. However, to stay near kx0, we ignore
 !  integer shifts.
 !
       if (Sshear==0.) then
         kx=kx0
       else
         if (lshearing_adjust_old) then
-          kx=kx0+ky*deltay/Lx
+          kx=kx0+ky*delta_y/Lx
         else
-          kx=kx0+mod(ky*deltay/Lx-pi_over_Lx,2.*pi_over_Lx)+pi_over_Lx
+          kx=kx0+mod(ky*delta_y/Lx-pi_over_Lx,2.*pi_over_Lx)+pi_over_Lx
         endif
       endif
 !
@@ -1949,7 +1949,7 @@ module Forcing
       k=sqrt(k2)
       if (ip<4) then
         open(89,file='forcing_hel_output.dat',position='append')
-        write(89,'(6f10.5)') k,kx0,kx,ky,kz,deltay
+        write(89,'(6f10.5)') k,kx0,kx,ky,kz,delta_y
         close(89)
       endif
 !
@@ -2404,8 +2404,8 @@ module Forcing
                   j2f=j+i2fff-1
 !
 !  Save the value of the variable before forcing is applied.
-!
-                  variable_rhs=f(l1:l2,m,n,iffx:iffz)
+!  2026-Oct-23/Kishore: commented out as it makes no sense to have this in the j-loop
+!                   variable_rhs=f(l1:l2,m,n,iffx:iffz)
 !
                   if (lhelical_test) then
                     f(l1:l2,m,n,jf)=forcing_rhs(:,j)
@@ -2493,10 +2493,20 @@ module Forcing
 !
 !  Compute rhs.
 !
-!                 variable_rhs=f(l1:l2,m,n,iffx:iffz)          !MR: here already updated!
+                  variable_rhs=f(l1:l2,m,n,iffx:iffz)          !MR: here already updated!
 !AB: the line above should now be deleted, after having added it now just after
 !    my comment "Save the value of the variable before forcing is applied."
+!  Kishore: reverted Axel's change as he had put the line above inside the j
+!  Kishore: loop, leading to wrong results. While the use of the updated value
+!  Kishore: of the variable for these diagnostics makes its time average neither
+!  Kishore: an Ito nor a Stratonovich integral, it is at least consistent with
+!  Kishore: the other diagnostics below.
 !
+!  Kishore: for white-noise forcing (dtforce=0), rufm as calculated below will
+!  Kishore: actually be twice the energy injection; we are calculating
+!  Kishore: <f_t u_{t+1}>, while the correct (Stratonovich) expression to
+!  Kishore: calculate is <f_t (u_{t+1} + u_t)/2> (where I am using t to denote
+!  Kishore: the timestep number).
                   call multsv_mn(rho/dt,forcing_rhs,force_all)
                   call dot_mn(variable_rhs,force_all,ruf)
                   call sum_mn_name(ruf,idiag_rufm)
@@ -2680,16 +2690,16 @@ module Forcing
         kz=kz*kfscl(n)
 !
 !  in the shearing sheet approximation, kx = kx0 - St*k_y.
-!  Here, St=-deltay/Lx. However, to stay near kx0, we ignore
+!  Here, St=-delta_y/Lx. However, to stay near kx0, we ignore
 !  integer shifts.
 !
         if (Sshear==0.) then
           kx=kx0
         else
           if (lshearing_adjust_old) then
-            kx=kx0+ky*deltay/Lx
+            kx=kx0+ky*delta_y/Lx
           else
-            kx=kx0+mod(ky*deltay/Lx-pi_over_Lx,2.*pi_over_Lx)+pi_over_Lx
+            kx=kx0+mod(ky*delta_y/Lx-pi_over_Lx,2.*pi_over_Lx)+pi_over_Lx
           endif
         endif
 !
@@ -2699,7 +2709,7 @@ module Forcing
         k=sqrt(k2)
         if (ip<4) then
           open(89,file='forcing_hel_kprof_output.dat',position='append')
-          write(89,'(6f10.5)') k,kx0,kx,ky,kz,deltay
+          write(89,'(6f10.5)') k,kx0,kx,ky,kz,delta_y
           close(89)
         endif
 !
@@ -3093,12 +3103,12 @@ module Forcing
       endif
 !
 !  in the shearing sheet approximation, kx = kx0 - St*k_y.
-!  Here, St=-deltay/Lx
+!  Here, St=-delta_y/Lx
 !
       if (Sshear==0.) then
         kx=kx0
       else
-        kx=kx0+ky*deltay/Lx
+        kx=kx0+ky*delta_y/Lx
       endif
 !
       if (headt.or.ip<5) print*, 'forcing_hel_both: kx0,kx,ky,kz=',kx0,kx,ky,kz
@@ -4070,7 +4080,7 @@ module Forcing
                 if (lperi(j)) then
                   if (lforce_peri) then
                     if (j==2) then
-                      delta(:,2) = 2*atan(tan(.5*(delta(:,2) + 2.*deltay*atan(1000.*tan(.25* &
+                      delta(:,2) = 2*atan(tan(.5*(delta(:,2) + 2.*delta_y*atan(1000.*tan(.25* &
                                    (pi+x(l1:l2)-location(1)))))))
                     else
                       delta(:,j) = 2*atan(tan(.5*delta(:,j)))
@@ -4274,7 +4284,7 @@ module Forcing
             if (lperi(j)) then
               if (lforce_peri) then
                 if (j==2) then
-                  delta(:,2) = 2*atan(tan(.5*(delta(:,2)+2.*deltay*atan(1000.*tan(.25* &
+                  delta(:,2) = 2*atan(tan(.5*(delta(:,2)+2.*delta_y*atan(1000.*tan(.25* &
                                (pi+x(l1:l2)-location(1)))))))
                 else
                   delta(:,j) = 2*atan(tan(.5*delta(:,j)))
@@ -5299,12 +5309,12 @@ module Forcing
       real :: norm,phi
 !
 !  in the shearing sheet approximation, kx = kx0 - St*k_y.
-!  Here, St=-deltay/Lx
+!  Here, St=-delta_y/Lx
 !
       if (Sshear==0.) then
         kx=kx0
       else
-        kx=kx0+ky*deltay/Lx
+        kx=kx0+ky*delta_y/Lx
       endif
 !
       if (headt.or.ip<5) print*, 'hel_vec: kx0,kx,ky,kz=',kx0,kx,ky,kz
@@ -6862,8 +6872,8 @@ module Forcing
     call copy_addr(lfcont_as_comaux,p_par(85)) ! bool
     call copy_addr(ifcont_aux,p_par(86)) ! int (n_forcing_cont_max)
     call copy_addr(lforce_ramp_down,p_par(87)) ! bool
-    call copy_addr_dble(tforce_ramp_down,p_par(88)) ! real dconst
-    call copy_addr_dble(tauforce_ramp_down,p_par(89)) ! real dconst
+    call copy_addr_dble(tforce_ramp_down,p_par(88)) ! dble dconst
+    call copy_addr_dble(tauforce_ramp_down,p_par(89)) ! dble dconst
 
     call keep_compiler_quiet(x1_fcont)
     call keep_compiler_quiet(x2_fcont)

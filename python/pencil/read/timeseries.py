@@ -6,6 +6,8 @@
 Contains the classes and methods to read the time series file.
 """
 
+import re
+
 from pencil.util import copy_docstring
 
 
@@ -99,6 +101,7 @@ class TimeSeries(object):
         for i, line in enumerate(lines):
             if re.search("^%s--" % comment_char, line):
                 keys_new = re.split("-+", line.strip("{0}-\n".format(comment_char)))
+                keys_new = _rename_location_keys(keys_new)
                 if keys_new != keys:
                     if keys is not None and rows:
                         segments.append((keys, rows))
@@ -108,6 +111,11 @@ class TimeSeries(object):
             if keys is None:
                 # Data lines before the first header cannot be interpreted.
                 continue
+            # Extrema with location are written as "val ( ix , iy , iz , rank)";
+            # unpack the bracketed group into separate columns.
+            if "(" in line:
+                line = re.sub(r"\(([^)]*)\)",
+                              lambda m: m.group(1).replace(",", " "), line)
             fields = re.split(" +", line.strip(" \n"))
             if len(fields) != len(keys):
                 print(f"Invalid data on line {i}. Skipping.")
@@ -139,9 +147,15 @@ class TimeSeries(object):
         if not quiet:
             print("Read {0} lines.".format(nlines))
 
-        # Assemble into a TimeSeries class.
+        # Assemble into a TimeSeries class. As in pc_read_ts.pro, the
+        # timestep number and the location indices/ranks of extrema are
+        # integers; convert them unless the column has gaps (NaN), e.g.
+        # from segments where the diagnostic was not output.
         for i in range(0, len(self.keys)):
-            setattr(self, self.keys[i], data[:, i])
+            col = data[:, i]
+            if _is_integer_key(self.keys[i]) and not np.isnan(col).any():
+                col = col.astype(int)
+            setattr(self, self.keys[i], col)
 
         # Do unique clean up.
         if unique_clean:
@@ -170,6 +184,27 @@ class TimeSeries(object):
                 tmp = self.__getattribute__(key)[ilist]
                 self.__delattr__(key)
                 setattr(self, key, tmp)
+
+def _rename_location_keys(keys):
+    """
+    Give the location columns of an extremum unique names, following
+    pc_read_ts.pro: "fmax ix iy iz rank" -> "fmax fmaxloc_ix ... fmaxloc_rank"
+    (or x, y, z when the location is written as coordinates).
+    """
+    keys = list(keys)
+    for i in range(1, len(keys) - 3):
+        if keys[i : i + 4] in (["ix", "iy", "iz", "rank"], ["x", "y", "z", "rank"]):
+            keys[i : i + 4] = [keys[i - 1] + "loc_" + k for k in keys[i : i + 4]]
+    return keys
+
+
+def _is_integer_key(key):
+    """
+    True for columns holding integers: the timestep number, the location
+    indices of extrema and the processor rank of the location.
+    """
+    return key == "it" or re.search(r"loc_(ix|iy|iz|rank)$", key) is not None
+
 
 @copy_docstring(TimeSeries.read)
 def ts(*args, **kwargs):

@@ -525,8 +525,9 @@ module Energy
 
   real, dimension (nx) :: Hmax,ssmax,diffus_chi,diffus_chi3,cs2cool_x, &
                           chit_prof,chit_prof_fluct,hcond,K_kramers
-  !$omp threadprivate(diffus_chi,chit_prof_fluct,K_kramers)
+  !$omp threadprivate(diffus_chi,diffus_chi3,chit_prof,chit_prof_fluct,hcond,K_kramers)
   real, dimension (nx,3) :: gss1, gss0
+  !$omp threadprivate(gss1,gss0)
   real, dimension (nz) :: profz_cool, profz1_cool, profz_heat
   real, dimension (nx) :: profr_cool, profr1_cool, profr2_cool, profr_heat, profx_heat
   integer, parameter :: prof_nz=150
@@ -4376,7 +4377,7 @@ module Energy
                                       flux1=sld_flux1,flux2=sld_flux2,flux3=sld_flux3)
             call phisum_mn_name_rz(sld_flux1*p%evr(:,1)+sld_flux2*p%evr(:,2)+sld_flux3*p%evr(:,3), &
                                    idiag_slopelimrsphmphi)
-print*, maxval(sld_flux1*p%evr(:,1)+sld_flux2*p%evr(:,2)+sld_flux3*p%evr(:,3))
+!print*, maxval(sld_flux1*p%evr(:,1)+sld_flux2*p%evr(:,2)+sld_flux3*p%evr(:,3))
           endif
         endif
       endif

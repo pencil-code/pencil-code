@@ -77,6 +77,14 @@ module Particles_sink
 !
     endsubroutine create_particles_sink
 !***********************************************************************
+    subroutine calc_diagnostics_sink_particles(sink_diag)
+!
+      real, dimension (2), intent(in) :: sink_diag
+!
+      call keep_compiler_quiet(sink_diag)
+!
+    endsubroutine calc_diagnostics_sink_particles
+!***********************************************************************
     subroutine remove_particles_sink(f,fp,dfp,ineargrid)
 !
 !  07-aug-12/anders: dummy

@@ -267,7 +267,7 @@ module Special
       use Deriv, only: der_pencil
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type(pencil_case) :: p
       real, dimension (3) :: meanx_oo
       real, dimension (3) :: meanx_uu

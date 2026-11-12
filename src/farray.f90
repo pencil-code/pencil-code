@@ -541,7 +541,7 @@ module FArrayManager
 !  buffers allocated in initialize_mpicomm are adapted to mcom.
 !
       use Cparam, only: mcom, mfarray
-      use Cdata, only: ldownsampl
+      !use Cdata, only: ldownsampl
       use Mpicomm, only: allocate_comm_buffers
 !
       type (farray_contents_list), pointer :: item

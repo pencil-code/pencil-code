@@ -140,6 +140,7 @@ if [[ $1 == 'par' ]]; then
 	    s/^[^!]*call  *copy_addr[a-zA-Z0-9_]* *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *! bool *( *\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\) *) *$/ PCLoad(config,\uA\uC\L_\1__mod__'$modname',\1__mod__'$modname'); \/\/ [\2-1] \1 bool(\3)/w tmp1
 	    s/^[^!]*call  *copy_addr[a-zA-Z0-9_]* *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *! int *( *\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\) *) *$/ PCLoad(config,\uA\uC\L_\1__mod__'$modname',\1__mod__'$modname'); \/\/ [\2-1] \1 int(\3)/w tmp1
 	    s/^[^!]*call  *copy_addr[a-zA-Z0-9_]* *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *! int *( *\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\) *) *( *\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\) *) *$/ PCLoad(config,\uA\uC\L_\1__mod__'$modname',\1__mod__'$modname'); \/\/ [\2-1] \1 int(\3) (\4)/w tmp1
+	    s/^[^!]*call  *copy_addr[a-zA-Z0-9_]* *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *! int *( *\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\) *) *( *\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\) *) *( *\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\) *) *$/ PCLoad(config,\uA\uC\L_\1__mod__'$modname',\1__mod__'$modname'); \/\/ [\2-1] \1 int(\3) (\4) (\5)/w tmp1
 	    s/^[^!]*call  *copy_addr[a-zA-Z0-9_]* *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *! *( *\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\) *) *( *\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\) *) *$/ PCLoad(config,\uA\uC\L_\1__mod__'$modname',\1__mod__'$modname'); \/\/ [\2-1] \1 real(\3) (\4)/w tmp1
 	    s/^[^!]*call  *copy_addr[a-zA-Z0-9_]* *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *! *( *\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\) *) *( *\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\) *) *( *\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\) *) *$/ PCLoad(config,\uA\uC\L_\1__mod__'$modname',\1__mod__'$modname'); \/\/ [\2-1] \1 real(\3) (\4) (\5)/w tmp1
 	    s/^[^!]*call  *copy_addr[a-zA-Z0-9_]* *( *\([a-zA-Z0-9_]*\) *, *p_par(\([0-9]*\))) *! *( *\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\) *) *( *\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\) *) *( *\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\) *) *( *\([a-zA-Z0-9_][a-zA-Z0-9_+\*\/-]*\) *) *$/ PCLoad(config,\uA\uC\L_\1__mod__'$modname',\1__mod__'$modname'); \/\/ [\2-1] \1 real(\3) (\4) (\5) (\6)/w tmp1
@@ -198,6 +199,8 @@ if [ -f tmp1 ]; then
          p
          s/^#define *\([a-zA-Z0-9_]*\) to_\([a-zA-Z0-9_]*\).*\/\/ dconst$/dconst \2 AC_\1 \/\/ from '$modname'\n#define \1 \AC_\1/
          s/^#define *\([a-zA-Z0-9_]*\) to_\([a-zA-Z0-9_]*\).*$/run_const \2 AC_\1 \/\/ from '$modname'\n#define \1 \AC_\1/
+         s/^run_const dble /run_const real /
+         s/^dconst dble /dconst real /
 	 s/.*run_const real AC_dt //
 	 s/#define dt AC_dt//
 	 s/.*run_const real AC_dt__mod__cdata //

@@ -80,6 +80,7 @@ module InitialCondition
   implicit none
 !
   include '../initial_condition.h'
+  include '../eos_params.h'
 !
   real :: a_S, a_D
   real, parameter :: a_S_cgs=4.4e-9, a_D_cgs=1.7e-9
@@ -138,7 +139,6 @@ module InitialCondition
 !  15-feb-15/MR: optional parameter 'profiles' added
 !
       use Messages, only: fatal_error
-      use EquationOfState, only: getmu, eoscalc
 !
       real, dimension (mx,my,mz,mfarray), optional, intent(inout):: f
       real, dimension (:,:),              optional, intent(out)  :: profiles
@@ -226,7 +226,7 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
-      use EquationOfState, only: eoscalc, ilnrho_lnTT 
+      use EquationOfState, only: eoscalc
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real :: TT, lnTT, lnrho, ss

@@ -5783,7 +5783,7 @@ module Boundcond
 !  Calculate 1/k^2, zero mean
 !
       if (lshear) then
-        kappa = sqrt((kx+deltay*ky/Lx)**2+ky**2)
+        kappa = sqrt((kx+delta_y*ky/Lx)**2+ky**2)
       else
         kappa = sqrt(kx**2 + ky**2)
       endif

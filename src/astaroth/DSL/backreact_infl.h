@@ -195,6 +195,12 @@ output global real AC_edotbm_all__mod__klein_gordon
 output global real AC_ddotam_all__mod__klein_gordon
 output global real AC_bubble_tension
 output global real AC_int_zeta
+//Per-realization sums of lradial_ensemble: each y-row is an independent radial run
+Profile<Y> AC_bubble_tension_y
+Profile<Y> AC_int_zeta_y
+//Index of the realization (0-based global y index) and Rdot of the wall of this vertex
+#define KG_REALIZATION (AC_domain_coordinates.y*ny + vertexIdx.y - NGHOST)
+#define KG_WALL_VEL (AC_lradial_ensemble__mod__klein_gordon ? AC_f_ode__mod__cdata[AC_irdot__mod__klein_gordon-1+KG_REALIZATION] : AC_f_ode__mod__cdata[AC_irdot__mod__klein_gordon-1])
 
 field_order(AC_iphi__mod__klein_gordon-1)  Field F_PHI
 field_order(AC_idphi__mod__klein_gordon-1) Field F_DPHI
@@ -386,10 +392,18 @@ initial_bubbles()
 {
   if(AC_lbubble_size_ode__mod__klein_gordon)
   {
-  	v = AC_f_ode__mod__cdata[AC_irdot__mod__klein_gordon-1]
+  	v = KG_WALL_VEL
   	gamma = 1./sqrt(1-v*v)
   	drdphi = derx(F_PHI)
-  	reduce_sum(AC_dx__mod__cdata*drdphi*drdphi/gamma,AC_bubble_tension)
+  	if(AC_lradial_ensemble__mod__klein_gordon)
+  	{
+  		reduce_sum(AC_dx__mod__cdata*drdphi*drdphi/gamma,AC_bubble_tension_y)
+  		reduce_sum(0.,AC_int_zeta_y)
+  	}
+  	else
+  	{
+  		reduce_sum(AC_dx__mod__cdata*drdphi*drdphi/gamma,AC_bubble_tension)
+  	}
   	phi_val = value(F_PHI)
   	//TP: to make sure AC_int_zeta has a well defined value
   	reduce_sum(0.,AC_int_zeta)

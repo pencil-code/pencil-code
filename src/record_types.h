@@ -78,3 +78,8 @@ integer, parameter :: id_record_LSOLVE_FOR_PHI   = 361   ! bool
 ! special/klein_gordon.f90
 integer, parameter :: id_record_WALL_VEL         = 370   ! float
 integer, parameter :: id_record_WALL_POS         = 371   ! float
+integer, parameter :: id_record_BUBBLE_R         = 372   ! float(nrealizations)
+integer, parameter :: id_record_BUBBLE_RDOT      = 373   ! float(nrealizations)
+integer, parameter :: id_record_BUBBLE_TENSION   = 374   ! float(nrealizations)
+integer, parameter :: id_record_BUBBLE_ZETA_INT  = 375   ! float(nrealizations)
+integer, parameter :: id_record_NOISE_SEEDS      = 376   ! int(nseed)

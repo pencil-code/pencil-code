@@ -422,7 +422,7 @@ module Special
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       real, dimension (nx) :: Q, Qdot, Qddot, chi, chidot, chiddot
       real, dimension (nx) :: psi , psidot , psiddot , TR, TRdot, TRddot
       real, dimension (nx) :: psiL, psiLdot, psiLddot, TL, TLdot, TLddot

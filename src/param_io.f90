@@ -106,11 +106,11 @@ module Param_IO
       fbcz1, fbcz2, fbcz1_1, fbcz1_2, fbcz2_1, fbcz2_2, &
       fbcx_bot, fbcx_top, fbcy_bot, fbcy_top, fbcz_bot, fbcz_top, bc_slc_dir, &
       vel_spec, mag_spec, &
-      uxy_spec, bxy_spec, jxbxy_spec, xy_spec, oo_spec, relvel_spec, &
+      uxy_spec, bxy_spec, jxbxy_spec, xy_spec, oo_spec, divu_spec, relvel_spec, &
       uxj_spec, vec_spec, ou_spec, oun_spec, ab_spec, azbz_spec, uzs_spec, ub_spec, &
       bb2_spec, jj2_spec, ele_spec, a0_spec, pot_spec, &
       Lor_spec, OmU_spec, EMF_spec, Tra_spec, GWs_spec, GWh_spec, GWm_spec, Str_spec, Stg_spec, &
-      aBE_spec, ABE2_spec, uBE_spec, Gab_spec, Gan_spec, GBb_spec, &
+      aBE_spec, ABE2_spec, uBE_spec, Gab_spec, Gan_spec, GBb_spec, UETC_spec, &
       GWs_spec_boost, GWh_spec_boost, &
       SCL_spec, VCT_spec, Tpq_spec, TGW_spec, GWd_spec, GWe_spec, GWf_spec, GWg_spec, &
       SCL_spec_boost, VCT_spec_boost, &
@@ -159,11 +159,11 @@ module Param_IO
       unit_velocity, unit_density, unit_temperature, unit_magnetic, &
       awig, ialive, max_walltime, dtmax, ldt_paronly, &
       lspec_start, lspec_at_tplusdt, vel_spec, mag_spec, &
-      uxy_spec, bxy_spec, jxbxy_spec, xy_spec, oo_spec, relvel_spec, &
+      uxy_spec, bxy_spec, jxbxy_spec, xy_spec, oo_spec, divu_spec, relvel_spec, &
       uxj_spec, vec_spec, ou_spec, oun_spec, ab_spec, azbz_spec, uzs_spec, ub_spec, &
       bb2_spec, jj2_spec, ele_spec, a0_spec, pot_spec, &
       Lor_spec, OmU_spec, EMF_spec, Tra_spec, GWs_spec, GWh_spec, GWm_spec, Str_spec, Stg_spec, &
-      aBE_spec, ABE2_spec, uBE_spec, Gab_spec, Gan_spec, GBb_spec, &
+      aBE_spec, ABE2_spec, uBE_spec, Gab_spec, Gan_spec, GBb_spec, UETC_spec, duetc, &
       GWs_spec_boost, GWh_spec_boost, &
       SCL_spec, VCT_spec, Tpq_spec, TGW_spec, GWd_spec, GWe_spec, GWf_spec, GWg_spec, &
       SCL_spec_boost, VCT_spec_boost, &
@@ -247,7 +247,7 @@ module Param_IO
       lsnap_tcrit, tsnap_crit_log_interval, &
       lvid_tcrit, tvid_crit_log_interval, &
       lset_lfirst_call_early, &
-      lsld_every_step
+      lsld_every_step, lsld_rfac_abs
 !
   namelist /IO_pars/ &
       lcollective_IO, IO_strategy
@@ -543,6 +543,8 @@ module Param_IO
         allocate(fbcx(mcom,2),fbcx_2(mcom,2))
         allocate(fbcy(mcom,2),fbcy_1(mcom,2),fbcy_2(mcom,2))
         allocate(fbcz(mcom,2),fbcz_1(mcom,2),fbcz_2(mcom,2))
+        fbcx=0.; fbcx_2=0.; fbcy=0.; fbcy_1=0.; fbcy_2=0.
+        fbcz=0.; fbcz_1=0.; fbcz_2=0.
         allocate(lfrozen_bot_var_x(mcom),lfrozen_top_var_x(mcom))
         allocate(lfrozen_bot_var_y(mcom),lfrozen_top_var_y(mcom))
         allocate(lfrozen_bot_var_z(mcom),lfrozen_top_var_z(mcom))
@@ -551,6 +553,12 @@ module Param_IO
         lfrozen_bot_var_z=.false.; lfrozen_top_var_z=.false.
       endif
 !
+      if (mcom<mcom_max) then
+        fbcx_bot(mcom+1:)=0.; fbcx_top(mcom+1:)=0.
+        fbcy_bot(mcom+1:)=0.; fbcy_top(mcom+1:)=0.
+        fbcz_bot(mcom+1:)=0.; fbcz_top(mcom+1:)=0.
+      endif
+
       bcx=adjustl(bcx); bcy=adjustl(bcy); bcz=adjustl(bcz)
       call parse_bc(bcx,bcx12)
       call parse_bc(bcy,bcy12)

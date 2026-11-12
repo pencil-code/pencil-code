@@ -63,12 +63,13 @@ module Special
 ! Run parameters
 !
   character(len=labellen) :: lapse_type='1+log', shift_type='gamma-driver'
-  real :: kappa1=0.02, kappa2=0., shift_mu=1., shift_eta=2., diss_ko=0.
+  integer :: enum_lapse_type=0
+  real :: kappa1=0.02, kappa2=0., shift_mu=1., shift_eta=2., hyper3_mesh=0.
   real :: chi_floor=1e-6, r_excise_diag=0., harmonic_f=1.
   logical :: lenforce_algebraic=.true., lupw_beta=.false., lsommerfeld=.false.
 !
   namelist /special_run_pars/ lapse_type, shift_type, kappa1, kappa2, &
-      shift_mu, shift_eta, diss_ko, chi_floor, lenforce_algebraic, lupw_beta, &
+      shift_mu, shift_eta, hyper3_mesh, chi_floor, lenforce_algebraic, lupw_beta, &
       r_excise_diag, lsommerfeld, harmonic_f
 
   logical, target :: lgr_metric=.true.
@@ -77,15 +78,13 @@ module Special
 !
   integer :: ichi=0, iKh=0, ith=0, ialp=0
   integer, dimension(6) :: igt=0, iAt=0
+  integer, parameter :: nz4c=22   ! number of Z4c variables, ichi:ibeta(3)
   integer, dimension(3) :: iGam=0, ibeta=0
 !
-!  ADM matter sources E, S_i, S_ij (covariant, physical) in auxiliary slots
-!  provided by another special module (e.g. special/grmhd).
 !
-  integer :: iEadm=0
-  integer, dimension(3) :: iSadm=0
-  integer, dimension(6) :: iSadmij=0
-  logical :: lmatter=.false.
+!
+  integer :: iTij=0
+  logical, pointer :: lgr_backreaction
 !
   logical :: lshift=.true.
   real, dimension(3) :: kvec=0., nhat=0., ppol=0., qpol=0.
@@ -98,14 +97,14 @@ module Special
     real, dimension(nx) :: chi, Kh, th, alp, Ktr, AA, trR, ham, divb
     real, dimension(nx,6) :: gt, At, gtu, Rij, DDalp, Atu
     real, dimension(nx,3) :: Gam, beta, dchi, dKh, dth, dalp, Gamd
-    real, dimension(nx,3,3) :: dbeta, dGam, Aud, d2chi, d2alp
+    real, dimension(nx,3,3) :: dbeta, dGam, Aud
     real, dimension(nx,6,3) :: dgt, dAt
     real, dimension(nx,6,3,3) :: d2gt
     real, dimension(nx,3,3,3) :: d2beta
     real, dimension(nx,3,6) :: Gam1, Gam2
     real, dimension(nx) :: E, Strace
     real, dimension(nx,3) :: Sv
-    real, dimension(nx,6) :: Sij
+    real, dimension(nx,6) :: Sij, Suu
   endtype InternalPencils
 !
   type(InternalPencils) :: q
@@ -139,7 +138,7 @@ module Special
 !  Register the Z4c variables. The registration order makes all of them
 !  consecutive in the f array.
 !
-!  13-oct-26/TP: coded
+!  13-oct-26/Claude: coded
 !
       use FArrayManager
 !
@@ -170,10 +169,11 @@ module Special
 !***********************************************************************
     subroutine initialize_special(f)
 !
-!  13-oct-26/TP: coded
+!  13-oct-26/Claude: coded
 !
       use FArrayManager, only: farray_index_by_name
       use Sub, only: cross
+      use SharedVariables, only: get_shared_variable
 !
       real, contiguous, dimension(:,:,:,:) :: f
 !
@@ -196,22 +196,13 @@ module Special
         call fatal_error('initialize_special','no such shift_type: '//trim(shift_type))
       endselect
 !
-      if (diss_ko/=0. .and. nghost<3) call fatal_error('initialize_special', &
-          'Kreiss-Oliger dissipation needs nghost>=3')
+      if (hyper3_mesh/=0. .and. nghost<3) call fatal_error('initialize_special', &
+          'Hyper diffusion needs nghost>=3')
 !
 !  Matter sources, if another module provides them.
 !
-      iEadm=farray_index_by_name('Eadm')
-      do i=1,3
-        iSadm(i)=farray_index_by_name('Sadm'//cvec(i))
-      enddo
-      do i=1,6
-        iSadmij(i)=farray_index_by_name('Sadm'//csym(i))
-      enddo
-      nfound=count((/iEadm,iSadm,iSadmij/)>0)
-      lmatter=nfound==10
-      if (nfound>0 .and. .not.lmatter) call fatal_error('initialize_special', &
-          'only some of the ADM source slots Eadm, Sadm(i), Sadm(ij) exist')
+      iTij=farray_index_by_name('Tij')
+      call get_shared_variable('lgr_backreaction',lgr_backreaction,default_val=.false.)
 !
 !  Wave vector and polarization of the wave initial data:
 !  plus polarization e_ij = p_i p_j - q_i q_j with p, q orthogonal to k.
@@ -237,7 +228,7 @@ module Special
 !
 !  Set the ADM initial data and convert them to Z4c variables.
 !
-!  13-oct-26/TP: coded
+!  13-oct-26/Claude: coded
 !
       use General, only: random_number_wrapper
 !
@@ -283,7 +274,7 @@ module Special
 !  of points xx at fixed (yy,zz); Gam is the exact conformal connection
 !  function -d_j gt^ij.
 !
-!  13-oct-26/TP: coded
+!  13-oct-26/Claude: coded
 !
       real, dimension(:) :: xx
       real :: yy, zz, tt
@@ -351,7 +342,7 @@ module Special
 !***********************************************************************
     subroutine adm_to_z4c(g,Kij,chi,gt,Kh,At)
 !
-!  13-oct-26/TP: coded
+!  13-oct-26/Claude: coded
 !
       use Sub, only: sym_inverse, contract
 !
@@ -374,7 +365,28 @@ module Special
 !***********************************************************************
     subroutine pencil_criteria_special
 !
-!  The module computes everything from the f array.
+!  Metric pencils from special/z4c for the energy equation in curved spacetime.
+!
+      if (ldensity) then
+        lpenc_requested(i_gr_sqrtg)=.true.
+        lpenc_requested(i_gr_alp)=.true.
+        lpenc_requested(i_gr_dalp)=.true.
+        lpenc_requested(i_gr_beta)=.true.
+        lpenc_requested(i_gr_gamu)=.true.
+        lpenc_requested(i_gr_Kij)=.true.
+      endif
+!
+!  Metric pencils from special/z4c for the momentum equation in curved spacetime.
+!
+      if (lhydro) then
+        lpenc_requested(i_gr_sqrtg)=.true.
+        lpenc_requested(i_gr_alp)=.true.
+        lpenc_requested(i_gr_dalp)=.true.
+        lpenc_requested(i_gr_beta)=.true.
+        lpenc_requested(i_gr_dbeta)=.true.
+        lpenc_requested(i_gr_gamu)=.true.
+        lpenc_requested(i_gr_dgam)=.true.
+      endif
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -383,7 +395,7 @@ module Special
 !  Enforce the algebraic constraints det(gt)=1 and gt^ij At_ij=0 at every
 !  substep, and keep chi above chi_floor.
 !
-!  13-oct-26/TP: coded
+!  13-oct-26/Claude
 !
       use Sub, only: sym_inverse, contract
 !
@@ -419,15 +431,18 @@ module Special
 !
 !  Geometric quantities shared by the right-hand side and the diagnostics.
 !
-!  13-oct-26/TP: coded
+!  13-oct-26/Claude: coded
 !
-      use Sub, only: grad, g2ij, sym_inverse, contract
+      use Sub, only: grad, g2ij, sym_inverse, contract,covariant_g2ij
+      use Sub, only: lower_first_index,raise_first_index,raise_second_index
 !
       real, contiguous, dimension(:,:,:,:) :: f
       type(pencil_case) :: p
 !
       real, dimension(nx,6) :: DDchi
       real, dimension(nx) :: detg, lapchi, dchi2, dchida, rhs
+      real, dimension(nx,3,3) :: Smix
+      real, dimension(nx,6) :: gam
       integer :: i, j, k, l, mm, ij
 !
 !  Variables and their derivatives.
@@ -441,31 +456,29 @@ module Special
         q%Gam(:,i)=f(l1:l2,m,n,iGam(i)); q%beta(:,i)=f(l1:l2,m,n,ibeta(i))
       enddo
 !
-      call grad(f,ichi,q%dchi); call g2ij(f,ichi,q%d2chi)
-      call grad(f,ialp,q%dalp); call g2ij(f,ialp,q%d2alp)
+      call grad(f,ichi,q%dchi); 
+      call grad(f,ialp,q%dalp); 
       call grad(f,iKh,q%dKh)
       call grad(f,ith,q%dth)
-      do i=1,6
-        call grad(f,igt(i),q%dgt(:,i,:)); call g2ij(f,igt(i),q%d2gt(:,i,:,:))
-        call grad(f,iAt(i),q%dAt(:,i,:))
-      enddo
-      do i=1,3
-        call grad(f,iGam(i),q%dGam(:,i,:))
-      enddo
+      call g2ij(f,igt(1),q%d2gt)
+      call grad(f,igt(1),q%dgt)
+      call grad(f,iAt(1),q%dAt)
+      call grad(f,iGam(1),q%dGam)
       if (lshift) then
-        do i=1,3
-          call grad(f,ibeta(i),q%dbeta(:,i,:)); call g2ij(f,ibeta(i),q%d2beta(:,i,:,:))
-        enddo
+        call g2ij(f,ibeta(1),q%d2beta)
+        call grad(f,ibeta(1),q%dbeta)
         q%divb=q%dbeta(:,1,1)+q%dbeta(:,2,2)+q%dbeta(:,3,3)
       endif
 !
 !  Conformal Christoffel symbols: Gam1(k,ij)=Gamt_kij, Gam2(k,ij)=Gamt^k_ij,
 !  and the contracted ones Gamd^k computed from the metric.
 !
-      call sym_inverse(q%gt,q%gtu,detg)
       do k=1,3; do j=1,3; do i=1,j
         q%Gam1(:,k,ij_table(i,j))=0.5*(q%dgt(:,ij_table(j,k),i)+q%dgt(:,ij_table(i,k),j)-q%dgt(:,ij_table(i,j),k))
       enddo; enddo; enddo
+
+      call sym_inverse(q%gt,q%gtu,detg)
+
       do k=1,3; do ij=1,6
         q%Gam2(:,k,ij)=q%gtu(:,ij_table(k,1))*q%Gam1(:,1,ij)+q%gtu(:,ij_table(k,2))*q%Gam1(:,2,ij) &
                       +q%gtu(:,ij_table(k,3))*q%Gam1(:,3,ij)
@@ -473,10 +486,20 @@ module Special
       do k=1,3
         q%Gamd(:,k)=contract(q%gtu,q%Gam2(:,k,:))
       enddo
+
+      call covariant_g2ij(f,ichi,q%dchi,q%Gam2,DDchi)
+      lapchi=contract(q%gtu,DDchi)
+      dchi2=0.; dchida=0.
+      do j=1,3; do i=1,3
+        dchi2=dchi2+q%gtu(:,ij_table(i,j))*q%dchi(:,i)*q%dchi(:,j)
+        dchida=dchida+q%gtu(:,ij_table(i,j))*q%dchi(:,i)*q%dalp(:,j)
+      enddo; enddo
 !
-!  Ricci tensor R_ij = Rt_ij + Rchi_ij and covariant second derivatives.
+!  Ricci tensor R_ij = Rt_ij + Rchi_ij 
 !
       do j=1,3; do i=1,j
+
+        !Rt_ij
         ij=ij_table(i,j)
         rhs=0.
         do l=1,3; do mm=1,3
@@ -491,60 +514,36 @@ module Special
                                         +q%Gam2(:,k,ij_table(i,mm))*q%Gam1(:,k,ij_table(l,j)))
           enddo; enddo
         enddo
+
+        !Rchi_ij
+        rhs=rhs+0.5/q%chi*(DDchi(:,ij)+q%gt(:,ij)*lapchi)&
+            -0.25/q%chi**2*q%dchi(:,i)*q%dchi(:,j)-0.75/q%chi**2*q%gt(:,ij)*dchi2
         q%Rij(:,ij)=rhs
-        DDchi(:,ij)=q%d2chi(:,i,j)-q%Gam2(:,1,ij)*q%dchi(:,1)-q%Gam2(:,2,ij)*q%dchi(:,2) &
-                   -q%Gam2(:,3,ij)*q%dchi(:,3)
-        q%DDalp(:,ij)=q%d2alp(:,i,j)-q%Gam2(:,1,ij)*q%dalp(:,1)-q%Gam2(:,2,ij)*q%dalp(:,2) &
-                     -q%Gam2(:,3,ij)*q%dalp(:,3)
       enddo; enddo
-      lapchi=contract(q%gtu,DDchi)
-      dchi2=0.; dchida=0.
-      do j=1,3; do i=1,3
-        dchi2=dchi2+q%gtu(:,ij_table(i,j))*q%dchi(:,i)*q%dchi(:,j)
-        dchida=dchida+q%gtu(:,ij_table(i,j))*q%dchi(:,i)*q%dalp(:,j)
-      enddo; enddo
-      do j=1,3; do i=1,j
-        ij=ij_table(i,j)
-        q%Rij(:,ij)=q%Rij(:,ij)+0.5/q%chi*(DDchi(:,ij)+q%gt(:,ij)*lapchi) &
-                   -0.25/q%chi**2*q%dchi(:,i)*q%dchi(:,j)-0.75/q%chi**2*q%gt(:,ij)*dchi2
+
 !
 !  Physical second covariant derivative of the lapse.
 !
+      call covariant_g2ij(f,ialp,q%dalp,q%Gam2,q%DDalp)
+      do j=1,3; do i=1,j
+        ij=ij_table(i,j)
         q%DDalp(:,ij)=q%DDalp(:,ij)+0.5/q%chi*(q%dalp(:,i)*q%dchi(:,j)+q%dalp(:,j)*q%dchi(:,i) &
                                                -q%gt(:,ij)*dchida)
       enddo; enddo
+
       q%trR=q%chi*contract(q%gtu,q%Rij)
 !
 !  Raised extrinsic curvature: Aud(i,j)=At^i_j, Atu(ij)=At^ij.
 !
-      do j=1,3; do i=1,3
-        q%Aud(:,i,j)=q%gtu(:,ij_table(i,1))*q%At(:,ij_table(1,j))+q%gtu(:,ij_table(i,2))*q%At(:,ij_table(2,j)) &
-                    +q%gtu(:,ij_table(i,3))*q%At(:,ij_table(3,j))
-      enddo; enddo
-      do j=1,3; do i=1,j
-        q%Atu(:,ij_table(i,j))=q%Aud(:,i,1)*q%gtu(:,ij_table(1,j))+q%Aud(:,i,2)*q%gtu(:,ij_table(2,j)) &
-                          +q%Aud(:,i,3)*q%gtu(:,ij_table(3,j))
-      enddo; enddo
+      call raise_first_index(q%At,q%gtu,q%Aud)
+      call raise_second_index(q%Aud,q%gtu,q%Atu)
+
       q%AA=0.
       do j=1,3; do i=1,3
         q%AA=q%AA+q%Aud(:,i,j)*q%Aud(:,j,i)
       enddo; enddo
       q%Ktr=q%Kh+2*q%th
       q%ham=q%trR-q%AA+(2./3.)*q%Ktr**2
-!
-!  Matter sources; S = gamma^ij S_ij = chi gt^ij S_ij.
-!
-      if (lmatter) then
-        q%E=f(l1:l2,m,n,iEadm)
-        do i=1,3
-          q%Sv(:,i)=f(l1:l2,m,n,iSadm(i))
-        enddo
-        do i=1,6
-          q%Sij(:,i)=f(l1:l2,m,n,iSadmij(i))
-        enddo
-        q%Strace=q%chi*contract(q%gtu,q%Sij)
-        q%ham=q%ham-16*pi*q%E
-      endif
 !
 !  Metric pencils for the matter equations (hydro and density with lgr_metric):
 !  sqrt(gamma), alpha, d_i alpha, beta^i, d_j beta^i (gr_dbeta(:,i,j)),
@@ -580,6 +579,30 @@ module Special
         enddo
       endif
 !
+!  Matter sources; S = gamma^ij S_ij = chi gt^ij S_ij.
+!
+      if (lgr_backreaction) then
+        do i=1,3; do j=1,3
+          Smix(:,j,i)=(f(l1:l2,m,n,iTij+3*(i-1)+j-1)+p%gr_beta(:,j)*f(l1:l2,m,n,iux+i-1))/p%gr_alp
+        enddo; enddo
+        do i=1,6
+          gam(:,i)=q%gt(:,i)/q%chi
+        enddo
+
+        call raise_second_index(Smix,p%gr_gamu,q%Suu)
+        call lower_first_index(Smix,gam,q%Sij)
+        do i=1,6
+          q%Sij(:,i) = q%Sij(:,i)/p%gr_sqrtg 
+        enddo
+
+        q%E=f(l1:l2,m,n,irho)/p%gr_sqrtg
+        do i=1,3
+          q%Sv(:,i)=f(l1:l2,m,n,iux-1+i)/p%gr_sqrtg
+        enddo
+        q%Strace=contract(p%gr_gamu,q%Sij)
+        q%ham=q%ham-16*pi*q%E
+      endif
+!
     endsubroutine calc_pencils_special
 !***********************************************************************
     subroutine dspecial_dt(f,df,p)
@@ -587,17 +610,17 @@ module Special
 !  Right-hand side of the Z4c equations, GR-Athena++ eqs. (8)-(13) and (22)
 !  without matter.
 !
-!  13-oct-26/TP: coded
+!  13-oct-26/Claude: coded
 !
       use Deriv, only: der6
       use Sub, only: u_dot_grad, contract
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type(pencil_case) :: p
 !
       real, dimension(nx,6) :: Xij
-      real, dimension(nx,ichi:ibeta(3)) :: df_in
+      real, dimension(nx,nz4c) :: df_in
       real, dimension(nx) :: lapalp, trX, rhs, tmp, speed
       logical, dimension(nx) :: lbound
       integer :: i, j, k, ij
@@ -608,7 +631,7 @@ module Special
       lbound=.false.
       if (lsommerfeld) then
         lbound=sommerfeld_mask()
-        if (any(lbound)) df_in=df(l1:l2,m,n,ichi:ibeta(3))
+        if (any(lbound)) call save_df_z4c(df,df_in)
       endif
 !
       lapalp=q%chi*contract(q%gtu,q%DDalp)
@@ -627,7 +650,7 @@ module Special
       do j=1,3; do i=1,j
         ij=ij_table(i,j)
         Xij(:,ij)=-q%DDalp(:,ij)+q%alp*q%Rij(:,ij)
-        if (lmatter) Xij(:,ij)=Xij(:,ij)-8*pi*q%alp*q%Sij(:,ij)
+        if (lgr_backreaction) Xij(:,ij)=Xij(:,ij)-8*pi*q%alp*q%Sij(:,ij)
       enddo; enddo
       trX=contract(q%gtu,Xij)
       do j=1,3; do i=1,j
@@ -659,7 +682,7 @@ module Special
 !  Khat and Theta
 !
       rhs=-lapalp+q%alp*(q%AA+q%Ktr**2/3.)+q%alp*kappa1*(1-kappa2)*q%th
-      if (lmatter) rhs=rhs+4*pi*q%alp*(q%Strace+q%E)
+      if (lgr_backreaction) rhs=rhs+4*pi*q%alp*(q%Strace+q%E)
       if (lshift) call u_dot_grad(f,iKh,q%dKh,q%beta,rhs,upwind=lupw_beta,ladd=.true.)
       df(l1:l2,m,n,iKh)=df(l1:l2,m,n,iKh)+rhs
 !
@@ -674,7 +697,7 @@ module Special
         do j=1,3
           rhs=rhs-2*q%Atu(:,ij_table(i,j))*(q%dalp(:,j)+1.5*q%alp/q%chi*q%dchi(:,j)) &
                  -(2./3.)*q%alp*q%gtu(:,ij_table(i,j))*(2*q%dKh(:,j)+q%dth(:,j))
-          if (lmatter) rhs=rhs-16*pi*q%alp*q%gtu(:,ij_table(i,j))*q%Sv(:,j)
+          if (lgr_backreaction) rhs=rhs-16*pi*q%alp*q%gtu(:,ij_table(i,j))*q%Sv(:,j)
         enddo
         if (lshift) then
           rhs=rhs+(2./3.)*q%Gamd(:,i)*q%divb
@@ -707,15 +730,23 @@ module Special
         enddo
       endif
 !
-!  Kreiss-Oliger dissipation of order 6, sigma/64 dx^5 d^6/dx^6.
+!  sixth-order hyperdiffusion, sigma/64 dx^5 d^6/dx^6.
 !
-      if (diss_ko/=0.) then
-        do k=ichi,ibeta(3)
-          if (.not.lshift .and. any(k==ibeta)) cycle
-          do j=1,3
-            call der6(f,k,tmp,j,ignoredx=.true.)
-            df(l1:l2,m,n,k)=df(l1:l2,m,n,k)+(diss_ko/64.)*dline_1(:,j)*tmp
-          enddo
+!  The variables are visited by name (not by a loop over ichi:ibeta(3)) so
+!  that the GPU transpiler can map each df access to its field.
+!
+      if (hyper3_mesh/=0.) then
+        call hyper_diffus(f,df,ichi)
+        call hyper_diffus(f,df,iKh)
+        call hyper_diffus(f,df,ith)
+        call hyper_diffus(f,df,ialp)
+        do ij=1,6
+          call hyper_diffus(f,df,igt(ij))
+          call hyper_diffus(f,df,iAt(ij))
+        enddo
+        do i=1,3
+          call hyper_diffus(f,df,iGam(i))
+          if (lshift) call hyper_diffus(f,df,ibeta(i))
         enddo
       endif
 !
@@ -740,18 +771,96 @@ module Special
 !
     endsubroutine dspecial_dt
 !***********************************************************************
+    subroutine special_calc_hydro(f,df,p)
+!
+!  Metric/source part of the right-hand side of sqrt(gamma)*S_i for lgr_metric=T
+!  (e.g. Banyuls et al. 1997, ApJ 476, 221; Font 2008, Living Rev. Rel. 11, 7):
+!
+!    d_t(sg S_i) + d_j F^j_i = sg (-E d_i alpha + S_k d_i beta^k + alpha/2 S^jk d_i gamma_jk)
+!
+!  The metric quantities are pencils of special/z4c; S^j_i is recovered from
+!  the stored flux F^j_i. Flux is added in hydro
+!
+!
+!  19-oct-26/TP: coded
+!
+      use Sub, only: div_tensor
+
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
+
+      real, dimension(nx) :: EE, rhs, tmp
+      integer :: i, j, k
+!
+      do i=1,3
+        rhs=-f(l1:l2,m,n,irho)*p%gr_dalp(:,i)
+        do k=1,3
+          rhs=rhs+f(l1:l2,m,n,iuu-1+k)*p%gr_dbeta(:,k,i)
+          do j=1,3
+            rhs=rhs+.5*p%gr_alp*q%Suu(:,ij_table(j,k))*p%gr_dgam(:,ij_table(j,k),i)
+          enddo
+        enddo
+        df(l1:l2,m,n,iuu+i-1) = df(l1:l2,m,n,iuu+i-1)+ rhs
+      enddo
+!
+    endsubroutine special_calc_hydro
+!***********************************************************************
+    subroutine special_calc_density(f,df,p)
+!
+!  Metric/source part of the right-hand side of sqrt(gamma)*E (in irho) for lgr_metric=T
+!  (e.g. Banyuls et al. 1997, ApJ 476, 221; Font 2008, Living Rev. Rel. 11, 7):
+!
+!    d_t(sg E) + d_j F_E^j = sg (alpha S^jk K_jk - S^j d_j alpha)
+!
+!  The metric quantities are pencils of special/z4c. The fluxes F_E^j and
+!  T^j_i are computed by hydro (hydro_after_boundary_gr); S^j_i is recovered
+!  from T^j_i = sg (alpha S^j_i - beta^j S_i).
+!
+!  14-oct-26/Claude: moved from hydro
+!  19-oct-26/TP: moved to z4c and skipped unnecessary multiplications by sqrt(gamma)
+!
+      use Deriv, only: der
+      use Sub, only: raise_index
+!
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type (pencil_case), intent(in) :: p
+
+      real, dimension(nx) :: rhs
+!
+      real, dimension(nx,3) :: Su
+      real, dimension(nx) :: tmp,divFgrE
+      integer :: i, j, k
+!
+      call raise_index(p%gr_gamu,f(l1:l2,m,n,iux:iuz),Su)
+!
+      rhs=0.
+      do j=1,3
+        rhs=rhs-Su(:,j)*p%gr_dalp(:,j)
+        do k=1,3
+          rhs=rhs+p%gr_alp*q%Suu(:,ij_table(j,k))*p%gr_Kij(:,ij_table(j,k))
+        enddo
+      enddo
+      df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) + rhs
+    endsubroutine special_calc_density
+!***********************************************************************
+!
     function sommerfeld_mask()
 !
 !  Points of the current pencil that lie on a non-periodic outer boundary.
 !
-!  13-oct-26/TP: coded
+!  13-oct-26/Claude: coded
 !
       logical, dimension(nx) :: sommerfeld_mask
 !
       sommerfeld_mask=.false.
+!  The x boundary points are selected pointwise (not as elements 1 and nx of
+!  the pencil) so that the GPU transpiler can map the mask.
+!
       if (.not.lperi(1)) then
-        if (lfirst_proc_x) sommerfeld_mask(1)=.true.
-        if (llast_proc_x) sommerfeld_mask(nx)=.true.
+        if (lfirst_proc_x) sommerfeld_mask=sommerfeld_mask .or. x(l1:l2)==x(l1)
+        if (llast_proc_x) sommerfeld_mask=sommerfeld_mask .or. x(l1:l2)==x(l2)
       endif
       if (.not.lperi(2)) then
         if ((lfirst_proc_y.and.m==m1).or.(llast_proc_y.and.m==m2)) sommerfeld_mask=.true.
@@ -762,40 +871,120 @@ module Special
 !
     endfunction sommerfeld_mask
 !***********************************************************************
+    subroutine hyper_diffus(f,df,k)
+!
+!  Sixth-order hyperdiffusion, sigma/64 dx^5 d^6/dx^6, of variable k.
+!  Called Kreiss-Oliger dissipation by other NR codes.
+!
+!  20-oct-26/TP: coded
+!
+      use Deriv, only: der6
+!
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      integer :: k
+!
+      real, dimension(nx) :: tmp
+      integer :: j
+!
+      do j=1,3
+        call der6(f,k,tmp,j,ignoredx=.true.)
+        df(l1:l2,m,n,k)=df(l1:l2,m,n,k)+(hyper3_mesh/64.)*dline_1(:,j)*tmp
+      enddo
+!
+    endsubroutine hyper_diffus
+!***********************************************************************
+    subroutine save_df_z4c(df,df_in)
+!
+!  Copy of df of the Z4c variables, in the order chi, gt(1:6), Kh, At(1:6),
+!  theta, Gam(1:3), alp, beta(1:3).
+!
+!  15-oct-26/Claude: coded
+!
+      real, dimension(mx,my,mz,mvar) :: df
+      real, dimension(nx,nz4c) :: df_in
+!
+      integer :: i, ij
+!
+      df_in(:,1)=df(l1:l2,m,n,ichi)
+      df_in(:,8)=df(l1:l2,m,n,iKh)
+      df_in(:,15)=df(l1:l2,m,n,ith)
+      df_in(:,19)=df(l1:l2,m,n,ialp)
+      do ij=1,6
+        df_in(:,1+ij)=df(l1:l2,m,n,igt(ij))
+        df_in(:,8+ij)=df(l1:l2,m,n,iAt(ij))
+      enddo
+      do i=1,3
+        df_in(:,15+i)=df(l1:l2,m,n,iGam(i))
+        df_in(:,19+i)=df(l1:l2,m,n,ibeta(i))
+      enddo
+!
+    endsubroutine save_df_z4c
+!***********************************************************************
     subroutine sommerfeld(f,df,df_in,lbound)
 !
 !  Radiative (Sommerfeld) condition d_t u = -(x^i/r) d_i u - (u-u0)/r with
 !  unit speed and flat-space asymptotic values u0, replacing the right-hand
 !  side at the boundary points lbound. df_in is df before dspecial_dt added
-!  to it.
+!  to it (see save_df_z4c for its order). u0=1 for chi, alp and the diagonal
+!  of gt (ij_table puts 11, 22, 33 first).
 !
-!  13-oct-26/TP: coded
+!  13-oct-26/Claude: coded
+!  15-oct-26/TP: variables visited by name for the GPU transpiler
+!
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real, dimension(nx,nz4c) :: df_in
+      logical, dimension(nx) :: lbound
+!
+      real :: u0
+      integer :: i, ij
+!
+      call sommerfeld_var(f,df,ichi,df_in(:,1),1.,lbound)
+      call sommerfeld_var(f,df,iKh,df_in(:,8),0.,lbound)
+      call sommerfeld_var(f,df,ith,df_in(:,15),0.,lbound)
+      call sommerfeld_var(f,df,ialp,df_in(:,19),1.,lbound)
+      do ij=1,6
+        u0=0.
+        if (ij<=3) u0=1.
+        call sommerfeld_var(f,df,igt(ij),df_in(:,1+ij),u0,lbound)
+        call sommerfeld_var(f,df,iAt(ij),df_in(:,8+ij),0.,lbound)
+      enddo
+      do i=1,3
+        call sommerfeld_var(f,df,iGam(i),df_in(:,15+i),0.,lbound)
+        call sommerfeld_var(f,df,ibeta(i),df_in(:,19+i),0.,lbound)
+      enddo
+!
+    endsubroutine sommerfeld
+!***********************************************************************
+    subroutine sommerfeld_var(f,df,k,dfk_in,u0,lbound)
+!
+!  Sommerfeld condition for variable k, see sommerfeld.
+!
+!  15-oct-26/Claude: split off from sommerfeld
 !
       use Sub, only: grad
 !
       real, contiguous, dimension(:,:,:,:) :: f
       real, dimension(mx,my,mz,mvar) :: df
-      real, dimension(nx,ichi:ibeta(3)) :: df_in
+      integer :: k
+      real, dimension(nx) :: dfk_in
+      real :: u0
       logical, dimension(nx) :: lbound
 !
       real, dimension(nx,3) :: gu
-      real, dimension(nx) :: rr, u0
-      integer :: k
+      real, dimension(nx) :: rr
 !
       rr=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
-      do k=ichi,ibeta(3)
-        u0=0.
-        if (k==ichi .or. k==ialp .or. k==igt(i11) .or. k==igt(i22) .or. k==igt(i33)) u0=1.
-        call grad(f,k,gu)
-        where (lbound) df(l1:l2,m,n,k)=df_in(:,k) &
-            -(x(l1:l2)*gu(:,1)+y(m)*gu(:,2)+z(n)*gu(:,3))/rr-(f(l1:l2,m,n,k)-u0)/rr
-      enddo
+      call grad(f,k,gu)
+      where (lbound) df(l1:l2,m,n,k)=dfk_in &
+          -(x(l1:l2)*gu(:,1)+y(m)*gu(:,2)+z(n)*gu(:,3))/rr-(f(l1:l2,m,n,k)-u0)/rr
 !
-    endsubroutine sommerfeld
+    endsubroutine sommerfeld_var
 !***********************************************************************
     subroutine calc_diagnostics_special(f,p)
 !
-!  13-oct-26/TP: coded
+!  13-oct-26/Claude: coded
 !
       use Diagnostics
 !
@@ -820,7 +1009,7 @@ module Special
 !
           do i=1,3
             mom(:,i)=-(2./3.)*(q%dKh(:,i)+2*q%dth(:,i))
-            if (lmatter) mom(:,i)=mom(:,i)-8*pi*q%Sv(:,i)
+            if (lgr_backreaction) mom(:,i)=mom(:,i)-8*pi*q%Sv(:,i)
             do j=1,3
               mom(:,i)=mom(:,i)-1.5/q%chi*q%Aud(:,j,i)*q%dchi(:,j)
               do k=1,3
@@ -918,7 +1107,7 @@ module Special
 !***********************************************************************
     subroutine rprint_special(lreset,lwrite)
 !
-!  13-oct-26/TP: coded
+!  13-oct-26/Claude: coded
 !
       use Diagnostics
       use FArrayManager, only: farray_index_append
@@ -974,6 +1163,30 @@ module Special
 
     integer, parameter :: n_pars=100
     integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr(kappa1,p_par(1))
+    call copy_addr(kappa2,p_par(2))
+    call copy_addr(shift_mu,p_par(3))
+    call copy_addr(shift_eta,p_par(4))
+    call copy_addr(hyper3_mesh,p_par(5))
+    call copy_addr(harmonic_f,p_par(6))
+    call copy_addr(lupw_beta,p_par(7)) ! bool
+    call copy_addr(lsommerfeld,p_par(8)) ! bool
+    call copy_addr(lgr_metric,p_par(9)) ! bool
+    call copy_addr(ichi,p_par(10)) ! int
+    call copy_addr(ikh,p_par(11)) ! int
+    call copy_addr(ith,p_par(12)) ! int
+    call copy_addr(ialp,p_par(13)) ! int
+    call copy_addr(lshift,p_par(16)) ! bool
+    call copy_addr(igt,p_par(17)) ! int (6)
+    call copy_addr(iat,p_par(18)) ! int (6)
+    call copy_addr(igam,p_par(19)) ! int3
+    call copy_addr(ibeta,p_par(20)) ! int3
+    call string_to_enum(enum_lapse_type,lapse_type)
+    call copy_addr(enum_lapse_type,p_par(23)) ! int
+    call copy_addr(lenforce_algebraic,p_par(24)) ! bool
+    call copy_addr(chi_floor,p_par(25))
+    call copy_addr(iTij,p_par(26)) ! int
 
   endsubroutine pushpars2c
 !***********************************************************************

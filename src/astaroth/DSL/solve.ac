@@ -53,6 +53,22 @@ fixed_boundary Kernel twopass_solve_final(PC_SUB_STEP_NUMBER step_num, real AC_t
 					updated_rho = max(updated_rho,AC_density_floor_log__mod__density)
 				}
 			}
+#if LCORONAE && Lmagnetic_MODULE
+			//Limit the Alfven speed by a density floor: rho >= B^2/(mu0*vA2_limit)
+			if(AC_va2_limit__mod__coronae > 0.0)
+			{
+				const real3 bb = curl(F_AVEC) + AC_b_ext__mod__magnetic
+				const real rho_floor = dot(bb,bb)/(AC_mu0__mod__cdata*AC_va2_limit__mod__coronae)
+				if(AC_ldensity_nolog__mod__cdata)
+				{
+					updated_rho = max(updated_rho,rho_floor)
+				}
+				else
+				{
+					updated_rho = max(updated_rho,log(rho_floor))
+				}
+			}
+#endif
 			write(F_RHO, updated_rho)
 #endif 
 		}
@@ -67,14 +83,28 @@ fixed_boundary Kernel twopass_solve_final(PC_SUB_STEP_NUMBER step_num, real AC_t
 #endif
 			uu_updated += force
 #if Lhydro_MODULE
+			//Limit the velocity, keeping its direction. A negative limit means no limit.
+			real vel_limit2 = -1.0
 			if(AC_lvel_limiter__mod__hydro)
 			{
+				vel_limit2 = AC_max_vel__mod__hydro*AC_max_vel__mod__hydro
+			}
+#if LCORONAE
+			if(AC_lchen__mod__coronae && AC_mach_chen__mod__coronae != 0.0)
+			{
+				const real updated_tt = rk_final(F_TT,step_num,dt)
+				const real cs2 = AC_gamma_m1__mod__equationofstate*AC_cp__mod__equationofstate*(AC_ltemperature_nolog__mod__cdata ? updated_tt : exp(updated_tt))
+				const real mach_limit2 = AC_mach_chen__mod__coronae*AC_mach_chen__mod__coronae*cs2
+				vel_limit2 = vel_limit2 < 0.0 ? mach_limit2 : min(vel_limit2,mach_limit2)
+			}
+#endif
+			if(vel_limit2 >= 0.0)
+			{
 				ss2 = dot(uu_updated,uu_updated)
-				if(ss2 >= AC_max_vel__mod__hydro)
+				if(ss2 > vel_limit2)
 				{
-					uu_updated = uu_updated*(AC_max_vel__mod__hydro/sqrt(ss2))
+					uu_updated = uu_updated*sqrt(vel_limit2/ss2)
 				}
-
 			}
 #endif
 			write(F_UVEC,  uu_updated)
@@ -170,28 +200,7 @@ fixed_boundary Kernel twopass_solve_final(PC_SUB_STEP_NUMBER step_num, real AC_t
 #endif
 #if LKLEIN_GORDON
 		if(AC_iphi__mod__klein_gordon != 0)  write(F_PHI ,rk_final(F_PHI ,step_num,dt))
-		if(AC_idphi__mod__klein_gordon != 0) 
-		{
-			dphi = rk_final(F_DPHI,step_num,dt)
-			if(AC_llast__mod__cdata && AC_lthermal_noise__mod__klein_gordon)
-			{
-				inv_r = AC_inv_r[vertexIdx.x-NGHOST]
-				inv_dvol = inv_r*inv_r/(4*AC_REAL_PI*AC_dx__mod__cdata)
-				zeta = box_muller_transform()*sqrt(2.0*AC_plasma_coupling_coeff__mod__klein_gordon*AC_noise_strength__mod__klein_gordon*inv_dvol/dt)
-				if(AC_domain_coordinates == (int3){0,0,0} && vertexIdx.x < AC_continuation_offset__mod__klein_gordon+NGHOST)
-				{
-					zeta = 0.
-				}
-				dphi += dt*zeta
-				if(AC_lbubble_size_ode__mod__klein_gordon)
-				{
-					drdphi = derx(F_PHI)
-					real integrand = AC_dx__mod__cdata*zeta*drdphi
-					reduce_sum(integrand,AC_int_zeta)
-				}
-			}
-			write(F_DPHI,dphi)
-		}
+		if(AC_idphi__mod__klein_gordon != 0) write(F_DPHI,rk_final(F_DPHI,step_num,dt))
 		if(AC_iphi_up_im__mod__klein_gordon != 0)   write(F_PHI_UP_IM,rk_final(F_PHI_UP_IM,step_num,dt))
 		if(AC_iphi_down_re__mod__klein_gordon != 0) write(F_PHI_DOWN_RE,rk_final(F_PHI_DOWN_RE,step_num,dt))
 		if(AC_iphi_down_im__mod__klein_gordon != 0) write(F_PHI_DOWN_IM,rk_final(F_PHI_DOWN_IM,step_num,dt))
@@ -237,7 +246,48 @@ fixed_boundary Kernel twopass_solve_final(PC_SUB_STEP_NUMBER step_num, real AC_t
 #if LDEBUG_OUTPUT_TIMES
 		if(AC_ispecial__mod__debug_output_times != 0) write(F_SPECIAL, rk_final(F_SPECIAL,step_num,dt))
 #endif
+#if LZ4C
+		if(AC_ichi__mod__z4c != 0) write(F_CHI, rk_final(F_CHI,step_num,dt))
+		if(AC_ikh__mod__z4c != 0) write(F_KH, rk_final(F_KH,step_num,dt))
+		if(AC_ith__mod__z4c != 0) write(F_TH, rk_final(F_TH,step_num,dt))
+		if(AC_ialp__mod__z4c != 0) write(F_ALP, rk_final(F_ALP,step_num,dt))
+		if(AC_igt__mod__z4c[0] != 0) write(F_GT_1, rk_final(F_GT_1,step_num,dt))
+		if(AC_igt__mod__z4c[1] != 0) write(F_GT_2, rk_final(F_GT_2,step_num,dt))
+		if(AC_igt__mod__z4c[2] != 0) write(F_GT_3, rk_final(F_GT_3,step_num,dt))
+		if(AC_igt__mod__z4c[3] != 0) write(F_GT_4, rk_final(F_GT_4,step_num,dt))
+		if(AC_igt__mod__z4c[4] != 0) write(F_GT_5, rk_final(F_GT_5,step_num,dt))
+		if(AC_igt__mod__z4c[5] != 0) write(F_GT_6, rk_final(F_GT_6,step_num,dt))
+		if(AC_iat__mod__z4c[0] != 0) write(F_AT_1, rk_final(F_AT_1,step_num,dt))
+		if(AC_iat__mod__z4c[1] != 0) write(F_AT_2, rk_final(F_AT_2,step_num,dt))
+		if(AC_iat__mod__z4c[2] != 0) write(F_AT_3, rk_final(F_AT_3,step_num,dt))
+		if(AC_iat__mod__z4c[3] != 0) write(F_AT_4, rk_final(F_AT_4,step_num,dt))
+		if(AC_iat__mod__z4c[4] != 0) write(F_AT_5, rk_final(F_AT_5,step_num,dt))
+		if(AC_iat__mod__z4c[5] != 0) write(F_AT_6, rk_final(F_AT_6,step_num,dt))
+		if(AC_igam__mod__z4c.x != 0) write(F_GAMX, rk_final(F_GAMX,step_num,dt))
+		if(AC_igam__mod__z4c.y != 0) write(F_GAMY, rk_final(F_GAMY,step_num,dt))
+		if(AC_igam__mod__z4c.z != 0) write(F_GAMZ, rk_final(F_GAMZ,step_num,dt))
+		if(AC_ibeta__mod__z4c.x != 0) write(F_BETAX, rk_final(F_BETAX,step_num,dt))
+		if(AC_ibeta__mod__z4c.y != 0) write(F_BETAY, rk_final(F_BETAY,step_num,dt))
+		if(AC_ibeta__mod__z4c.z != 0) write(F_BETAZ, rk_final(F_BETAZ,step_num,dt))
+#endif
+		if(AC_iqq__mod__cdata != 0) write(F_QQ, rk_final(F_QQ,step_num,dt))
+		if(AC_iww1__mod__cdata != 0) write(F_WW1, rk_final(F_WW1,step_num,dt))
+		if(AC_iww2__mod__cdata != 0) write(F_WW2, rk_final(F_WW2,step_num,dt))
+		if(AC_iww3__mod__cdata != 0) write(F_WW3, rk_final(F_WW3,step_num,dt))
+#if LELECTROWEAKSU2
+		if(AC_idww1__mod__electroweaksu2 != 0) write(F_DWW1, rk_final(F_DWW1,step_num,dt))
+#endif
+#if LELECTROWEAKSU2
+		if(AC_idww2__mod__electroweaksu2 != 0) write(F_DWW2, rk_final(F_DWW2,step_num,dt))
+#endif
+#if LELECTROWEAKSU2
+		if(AC_idww3__mod__electroweaksu2 != 0) write(F_DWW3, rk_final(F_DWW3,step_num,dt))
+#endif
+#if LELECTROWEAKSU2
+		if(AC_igammaw__mod__electroweaksu2 != 0) write(F_GAMMAW, rk_final(F_GAMMAW,step_num,dt))
+#endif
 // @auto-field-declarations: fortran-parser adds missing fields above this line
 	}
 }
+#include "../particles.h"
 #include "../steps.h"

@@ -350,7 +350,7 @@ class Param(_Foo):
                     rawline = lastrawline + rawline.rstrip("\n")
                 lastrawline = rawline.rstrip("\n")
                 line = rawline.rstrip("\n")
-                if len(line) > 1 and (line[1] == "&" or line[0] == "&"):
+                if len(line) > 1 and re.match(r'^\s*&', line):
                     super_name = self._clean_namelist_name(line[1:].lower())
                     if nest:
                         if (super_name not in params) and (super_name not in always_denest):
@@ -359,6 +359,7 @@ class Param(_Foo):
                 else:
                     line = re.sub("^ ", "", line)
                     if line != "/" and len(line) > 0:
+                        line=line.strip(" /\n")
                         split = re.split("=", line)
                         name = re.sub(" ", "", split[0].lower())
                         value = split[1]

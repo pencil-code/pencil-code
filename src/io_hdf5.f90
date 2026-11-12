@@ -106,14 +106,15 @@ module Io
       real, dimension(mzgrid), intent(in), optional :: gz
 !
       real, dimension(mxgrid+mygrid+mzgrid) :: tmp_grid
-      integer, parameter :: tag_gx=680, tag_gy=681, tag_gz=682
 !
       if (lroot) then
         tmp_grid(1:mxgrid) = gx
         tmp_grid(mxgrid+1:mxgrid+mygrid) = gy
         tmp_grid(mxgrid+mygrid+1:mxgrid+mygrid+mzgrid) = gz
       endif
+
       call mpibcast_real (tmp_grid, mxgrid+mygrid+mzgrid)
+
       x = tmp_grid(ipx*nx+1:ipx*nx+mx)
       y = tmp_grid(mxgrid+ipy*ny+1:mxgrid+ipy*ny+my)
       z = tmp_grid(mxgrid+mygrid+ipz*nz+1:mxgrid+mygrid+ipz*nz+mz)
@@ -198,14 +199,14 @@ module Io
       call file_close_hdf5
 !
       ! write additional settings
-      call file_open_hdf5 (filename, global=.false., truncate=.false.)
+      if (lroot) call file_open_hdf5 (filename, global=.false., truncate=.false.)
       call output_settings (real(t), time_only=((.not. lwrite_add) .or. lomit_add_data))
-      call file_close_hdf5
+      if (lroot) call file_close_hdf5
 !
+      if (lode.and.lwrite_add) call output_ode(file)    !MR: ODE data not ending up in HDF5 file - tb improved!
+
       call file_open_hdf5 (filename, truncate=.false.)
 !
-      if (lode.and.lwrite_add) call output_ode(file)
-
     endsubroutine output_snap
 !***********************************************************************
     subroutine output_snap_finalize
@@ -1369,20 +1370,22 @@ contains
       logical, optional :: lwrite
 !
       character (len=fnlen) :: filename
-      logical :: lexists
 !
       call keep_compiler_quiet(mxout)
       call keep_compiler_quiet(myout)
       call keep_compiler_quiet(mzout)
       call keep_compiler_quiet(file)
+
+      if (trim(file)=='grid_down.dat') return    ! tb improved
       if (lyang) return      ! grid collection only needed on Yin grid, as grids are identical
 !
       if (loptest(lwrite,.not.luse_oldgrid)) then
-        filename = trim (datadir)//'/grid.h5'
-        lexists = file_exists (filename)
-        call file_open_hdf5 (filename, global=.false., truncate=.not. lexists)
+        if (lroot) then
+          filename = trim (datadir)//'/grid.h5'
+          call file_open_hdf5 (filename, global=.false., truncate=.not.file_exists (filename))
+        endif
         call output_settings
-        call file_close_hdf5
+        if (lroot) call file_close_hdf5
       endif
 !
     endsubroutine wgrid
@@ -1404,7 +1407,7 @@ contains
 !
       call keep_compiler_quiet(file)
       allocate (gx(mxgrid), gy(mygrid), gz(mzgrid), stat=alloc_err)
-      if (alloc_err > 0) call fatal_error ('rgrid', 'Could not allocate memory for gx,gy,gz', .true.)
+      if (alloc_err > 0) call fatal_error ('rgrid', 'Could not allocate gx,gy,gz', .true.)
 !
       if (lroot) then
         filename = trim (datadir)//'/grid.h5'
@@ -1435,7 +1438,6 @@ contains
         call file_close_hdf5
       endif
       call distribute_grid (dx_tilde, dy_tilde, dz_tilde, gx, gy, gz)
-      deallocate (gx, gy, gz)
 !
       call mpibcast_real (dx, comm=MPI_COMM_PENCIL)
       call mpibcast_real (dy, comm=MPI_COMM_PENCIL)

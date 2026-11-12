@@ -52,6 +52,7 @@ module Run_module
     integer :: icount, it_last_diagnostic
     real(KIND=rkind8) :: time1=0., time_last_diagnostic
     real :: time_doing_diagnostics = 0., time_in_timestep = 0.
+    real(KIND=rkind8) :: tuetc=-1., tuetc_data
 
 contains
 !***********************************************************************
@@ -62,7 +63,9 @@ subroutine helper_loop(f)
   use Diagnostics, only:  restore_diagnostic_controls,allocate_fnames
 !$ use General, only: signal_wait, signal_send
   use Snapshot, only: perform_powersnap, perform_wsnap_ext, perform_wsnap_down_ext
+  use Power_spectrum, only: wsnap_UETCs
   use Mpicomm, only: mpiwtime
+  use Particles_main, only: particles_stalker_gpu
   use Sub, only: check_for_nans_globally
 !
   real, contiguous, dimension(:,:,:,:) :: f
@@ -87,9 +90,15 @@ subroutine helper_loop(f)
 !$    else
 !$      lhelperflags(PERF_DIAGS) = .false.
 !$    endif
+!$    if (lhelper_run .and. lhelperflags(PERF_STALKER)) then
+        call particles_stalker_gpu(f)
+!$    else
+!$      lhelperflags(PERF_STALKER) = .false.
+!$    endif
+!Done before restoring to snap time to avoid overwriting it.
+!$    if (lhelper_run .and. lhelperflags(PERF_WSNAP)) call calc_all_module_diagnostic_auxiliaries(f,p)
 !$    if (lhelper_run) call restore_diagnostic_controls(lsnap_time=.true.)
 !$    if (lhelper_run .and. lhelperflags(PERF_WSNAP)) then
-!$      call calc_all_module_diagnostic_auxiliaries(f,p)
         if (ip<=12.and.lroot) tvar1=real(mpiwtime())
         call perform_wsnap_ext(f)
         if (ip<=12.and.lroot) print*,'wsnap: written snapshot var.dat in ', &
@@ -101,6 +110,11 @@ subroutine helper_loop(f)
         call perform_wsnap_down_ext(f)
 !$    else
 !$      lhelperflags(PERF_WSNAP_DOWN) = .false.
+!$    endif
+!$    if (lhelper_run .and. lhelperflags(PERF_UETCSNAP)) then
+        call wsnap_UETCs(f,tuetc_data)
+!$    else
+!$      lhelperflags(PERF_UETCSNAP) = .false.
 !$    endif
 !$    if (lhelper_run .and. lhelperflags(PERF_POWERSNAP)) then
         call perform_powersnap(f)
@@ -119,7 +133,7 @@ endsubroutine helper_loop
 !
 !$ use General, only: signal_send
 !
-!  At the end of every timeloop two facts concerning the GPU can be true.
+!  At the end of every timeloop iteration, two facts concerning the GPU can be true.
 !  1.) The buffers have been copied from the device
 !  2.) Diagnostics are to be performed from them.
 !  If 1.) is true the lock corresponding to the buffers should be freed
@@ -204,7 +218,7 @@ endsubroutine helper_loop
     if (lgpu) then
       lpencil = lpenc_requested
       call reload_GPU_config
-      call load_farray_to_GPU(f)
+      call load_farray_to_GPU(f,.true.)
     endif
     call write_all_run_pars('IDL')       ! data to param2.nml
     call write_all_run_pars              ! diff data to params.log
@@ -215,6 +229,68 @@ endsubroutine helper_loop
     lreloading          = .false.
 
   endsubroutine reload
+!***********************************************************************
+  subroutine maybe_wsnap_UETCs(f)
+!
+!  Write a UETC snapshot if UETC_spec=T and t has reached the next output
+!  time. The first snapshot is taken at the start of the run; after a restart
+!  output continues duetc after the last stored snapshot.
+!
+!  01-Apr-25/Madeline: coded (originally inlined in run.f90)
+!
+    use Boundcond, only: update_ghosts
+    use Diagnostics, only: save_diagnostic_controls
+    use GPU, only: copy_farray_from_GPU
+    use Messages, only: fatal_error
+    use Power_spectrum, only: wsnap_UETCs
+!
+    real, contiguous, dimension(:,:,:,:), intent(inout) :: f
+!
+    real(KIND=rkind8) :: tlast
+    logical, save :: lfirst=.true.
+    logical :: lexist
+    integer :: lun, ios
+!
+    if (duetc==impossible .or. .not.UETC_spec) return
+!
+    if (lfirst) then
+      lfirst=.false.
+      tuetc=t
+      inquire(file=trim(directory_snap)//'/UETCS_time.dat',exist=lexist)
+      if (lexist) then
+        open(newunit=lun,file=trim(directory_snap)//'/UETCS_time.dat',status='old')
+        do
+          read(lun,*,iostat=ios) tlast
+          if (ios/=0) exit
+          tuetc=tlast+duetc
+        enddo
+        close(lun)
+        if (tuetc-duetc > t+.5*duetc) call fatal_error('maybe_wsnap_UETCs', &
+            'UETCS_time.dat has snapshots later than t (left over from an earlier run?)')
+      endif
+    endif
+!
+    if (t >= tuetc-1e-3*duetc) then
+      if (lgpu) call copy_farray_from_GPU(f)
+      if (lmultithread) then
+!
+!  As in powersnap: if f was already copied for diagnostics during this step,
+!  the copy is from before the time advance; use the time of the copy.
+!
+        tuetc_data=t
+        if (lgpu) tuetc_data=t_farray_copy
+        call save_diagnostic_controls(lsnap_time=.true.)
+!$      lmasterflags(PERF_UETCSNAP) = .true.
+      else
+        if (iaa>0) call update_ghosts(f,iaa,iaa+2)
+        call wsnap_UETCs(f,t)
+      endif
+      do while (tuetc <= t+1e-3*duetc)
+        tuetc = tuetc + duetc
+      enddo
+    endif
+!
+  endsubroutine maybe_wsnap_UETCs
 !***********************************************************************
   subroutine gen_output_before_timestep(f)
 !
@@ -334,6 +410,8 @@ endsubroutine helper_loop
 !
     if (lspec_start .and. abs(t-(tstart+dt))<.1*dt ) lspec=.true.
 !
+    call maybe_wsnap_UETCs(f)
+!
 !  Save spectrum snapshot.
 !
     if (dspec/=impossible .or. itspec/=impossible_int) call powersnap(f)
@@ -363,7 +441,7 @@ endsubroutine helper_loop
                              particles_load_balance, particles_stochastic
   use Signal_handling, only: emergency_stop
   use Sub,             only: control_file_exists, calc_scl_factor
-  use Syscalls,        only: system_cmd
+  use Syscalls,        only: system_cmd,memusage
   use Testscalar,      only: rescaling_testscalar
   use Testfield,       only: rescaling_testfield
   use TestPerturb,     only: testperturb_begin, testperturb_finalize
@@ -387,7 +465,7 @@ endsubroutine helper_loop
   real(KIND=rkind8) :: time_this_diagnostic
   integer :: it_this_diagnostic
 !
-!    Due to df being always limited inside a kernel on the Astaroth side we have to know the timestep before we do the rhs
+!    Due to df being always limited inside a kernel on the Astaroth side, we have to know the timestep before we do the rhs
 !    compared to the cpu where it is sufficient to know it after the rhs calculations.
 !    So, we take the timestep calculated at the start of the last timestep.
 !    Initially there is no previous timestep so we have an extra call here for there always to be a valid previous timestep.
@@ -395,9 +473,7 @@ endsubroutine helper_loop
 !    Similarly we setup similar dependencies between outputs of substeps here so there is always an initial value
 !    for these kinds of dependencies.
 !
-  if (lgpu) then
-    call gpu_prepare_for_first_substep()
-  endif
+  if (lgpu) call gpu_prepare_for_first_substep()
 
   Time_loop: do while (icount<nt)
 !
@@ -551,6 +627,8 @@ endsubroutine helper_loop
 !  advance warning so the relevant components of the f-array
 !  can be filled.
 !
+    call maybe_wsnap_UETCs(f)
+!
     if (dspec==impossible) then
       lspec = (mod(it-1,itspec) == 0)
     else
@@ -570,6 +648,7 @@ endsubroutine helper_loop
 !
     timer_for_timestep = real(mpiwtime())
     call time_step(f,df,p)
+    !if (lroot.and.mod(it-1,1) == 0) print*, 'memusage after 1 steps after timestep=', it,memusage()
     time_in_timestep = time_in_timestep + real(mpiwtime())-timer_for_timestep
 !
 !  If overlapping grids are used to get body-confined grid around the solids
@@ -583,7 +662,7 @@ endsubroutine helper_loop
 !  particles to each CPU. This only works when block domain decomposition of
 !  particles is activated.
 !
-    if (lparticles) call particles_load_balance(f)
+    if (lparticles .and. .not.lgpu) call particles_load_balance(f)
 !
 !  07-Sep-07/dintrans+gastine: Implicit advance of the radiative diffusion
 !  in the temperature equation (using the implicit_physics module).
@@ -626,7 +705,6 @@ endsubroutine helper_loop
       time_last_diagnostic = time_this_diagnostic
       call save_name(time_per_step,idiag_timeperstep)
     endif
-
     call gen_output(f)
 !
 !  Do exit when timestep has become too short.
@@ -731,8 +809,7 @@ endsubroutine helper_loop
 !  if we use HDF5-IO
 !
     if (lroot) then
-      if (.not. directory_exists('data/allprocs/signals')) &
-          call system_cmd('mkdir data/allprocs/signals')
+      if (.not. directory_exists('data/allprocs/signals')) call system_cmd('mkdir data/allprocs/signals')
       if (file_exists('data/allprocs/signals/SINGLE_PRECISION_RUN')) call delete_file('data/allprocs/signals/SINGLE_PRECISION_RUN')
       if (file_exists('data/allprocs/signals/DOUBLE_PRECISION_RUN')) call delete_file('data/allprocs/signals/DOUBLE_PRECISION_RUN')
       if (sizeof_real() < 8) then
@@ -740,8 +817,7 @@ endsubroutine helper_loop
       else
         call touch_file('data/allprocs/signals/DOUBLE_PRECISION_RUN')
       endif
-      if (file_exists('TIMESTEP_BECAME_TOO_SHORT')) &
-        call delete_file('TIMESTEP_BECAME_TOO_SHORT')
+      if (file_exists('TIMESTEP_TOO_SHORT')) call delete_file('TIMESTEP_TOO_SHORT')
     endif
 
   endsubroutine setup_signal_files
@@ -965,16 +1041,16 @@ endsubroutine helper_loop
 !$ integer :: i 
 !
   lrun = .true.
-! The pencil case is allocatable to not have as many arrays on the stack, which becomes a problem with larger
+!
+! The pencil case is allocatable to not reduce number of arrays on the stack, becoming a problem with larger
 ! subdomain sizes.
+!
   allocate(p)
 !
 !  Get processor numbers and define whether we are root.
 !
   call mpicomm_init
-  if (lroot) then
-    time1=real(mpiwtime())
-  endif
+  if (lroot) time1=real(mpiwtime())
 !
 !  Initialize OpenMP use
 !
@@ -1014,9 +1090,7 @@ endsubroutine helper_loop
 !
 !  Check whether quad precision is supported
 !
-  if (rkind16<0) then
-    call warning('run','quad precision not supported, switch to double')
-  endif
+  if (rkind16<0) call warning('run','quad precision not supported, switch to double')
   !KG: Can we just move this warning to be inside the if above, or are there
   !KG: cases where we expect selected_real_kind to quietly give the wrong rkind?
   if (max(rkind16,rkind8)==rkind8) call warning('run','quad precision suppressed')
@@ -1203,8 +1277,8 @@ endsubroutine helper_loop
 !  This directory must exist, but may be linked to another disk.
 !
   f=0.
-  if (lroot .and. ldebug) print*, 'memusage before rsnap=', memusage()/1024., 'MBytes'
   if (lroot) tvar1=real(mpiwtime())
+  if (lroot .and. ldebug) print*, 'memusage before rsnap=', memusage()/1024., 'MBytes'
   call rsnap('var',f,mvar_in,lread_nogrid)
   if (lroot) print*,'rsnap: read snapshot var.dat in ',mpiwtime()-tvar1,' seconds'
 !
@@ -1289,10 +1363,6 @@ endsubroutine helper_loop
 
   lpencil = lpenc_requested
 !
-!TP: done here that at runtime_compilation we know which pencils are requested
-!
-  if (nt>0) call initialize_gpu(f)
-!
   if (it1d==impossible_int) then
     it1d=it1
   else
@@ -1307,6 +1377,10 @@ endsubroutine helper_loop
 !  Prepare particles.
 !
   if (lparticles) call particles_initialize_modules(f)
+!
+!TP: done here that at runtime_compilation we know which pencils are requested
+!
+  if (nt>0) call initialize_gpu(f)
 !
 !  Only after register it is possible to write the correct dim.dat
 !  file with the correct number of variables.
@@ -1354,6 +1428,8 @@ endsubroutine helper_loop
 !  correct time; see the comment in the GW module.
 !
   if (lspec_start .and. t==tstart) lspec=.true.
+!
+  call maybe_wsnap_UETCs(f)
 !
 !  Save spectrum snapshot.
 !
@@ -1502,6 +1578,7 @@ endsubroutine helper_loop
 !  in run_pars or init_pars.
 !
   if (save_lastsnap) then
+    call maybe_wsnap_UETCs(f)
     if (dspec/=impossible) call powersnap(f,lwrite_last_powersnap)
   endif
 !

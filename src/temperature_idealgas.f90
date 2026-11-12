@@ -35,6 +35,7 @@ module Energy
   implicit none
 !
   include 'energy.h'
+  include 'eos_params.h'
 !
   real :: radius_lnTT=0.1, widthlnTT=2*epsi
   real, dimension (ninit) :: ampl_lnTT=0.0, ampl_TT=0.0
@@ -341,6 +342,7 @@ module Energy
       use FArrayManager, only: farray_register_global
       use Gravity, only: gravz, compute_gravity_star
       use EquationOfState, only : cs2bot, cs2top, select_eos_variable, get_gamma_etc
+      !use EnergyBcs, only: initialize_energy_bcs
       use Sub, only: step,der_step
       use SharedVariables, only: get_shared_variable
       use Slices_methods, only: alloc_slice_buffers
@@ -479,6 +481,8 @@ module Energy
 !
         cs2bot=gamma_m1*f(l1,4,n1,ilnTT)
         cs2top=gamma_m1*f(l1,4,n2,ilnTT)
+
+        !MR: shouldn't all the cs2top, cs2bot in init be local vars?
       endif
 !
 !  Some tricks regarding Fbot and hcond0 when bcz1='c1' (constant flux).
@@ -598,6 +602,8 @@ module Energy
 !
       if (ivid_pp/=0) call alloc_slice_buffers(pp_xy,pp_xz,pp_yz,pp_xy2,pp_xy3,pp_xy4,pp_xz2,pp_r)
 !
+      !call initialize_energy_bcs
+
     endsubroutine initialize_energy
 !***********************************************************************
     subroutine init_energy(f)
@@ -1176,7 +1182,7 @@ module Energy
 !          endif
         else
           p%advec_cs2=p%cs2*dxyz_2
-          advec_cs2=p%advec_cs2
+          advec_cs2=max(advec_cs2,p%advec_cs2)
         endif
         if (headtt.or.ldebug) print*,'calc_pencils_energy: max(advec_cs2) =',maxval(p%advec_cs2)
       endif
@@ -1400,7 +1406,6 @@ module Energy
       type(pencil_case) :: p
 
       call keep_compiler_quiet(f)
-
       call calc_2d_diagnostics_energy(p)
       call calc_1d_diagnostics_energy(p)
       call calc_0d_diagnostics_energy(p)
@@ -1889,7 +1894,7 @@ module Energy
 !  16-may-07/gastine+dintrans: coded
 !
       use Gravity, only: gravz
-      use EquationOfState, only: lnrho0,cs20,cs2top,cs2bot,eoscalc,ilnrho_TT
+      use EquationOfState, only: lnrho0,cs20,cs2top,cs2bot,eoscalc
 !
       real, contiguous,dimension(:,:,:,:), intent(inout) :: f
       real, dimension (nzgrid) :: temp,lnrho
@@ -2872,7 +2877,7 @@ module Energy
 !
 !  04-fev-2011/dintrans: coded
 !
-      use EquationOfState, only: rho0, lnrho0, get_soundspeed, eoscalc, ilnrho_TT
+      use EquationOfState, only: rho0, lnrho0, get_soundspeed, eoscalc
       use Sub, only: step, interp1, erfunc
 !
       real, contiguous,dimension(:,:,:,:), intent(inout) :: f
@@ -3190,6 +3195,7 @@ module Energy
     call copy_addr(gradtt0,p_par(57)) ! real3
     call string_to_enum(enum_borderss,borderss)
     call copy_addr(enum_borderss,p_par(58)) ! int
+    call copy_addr(w_sldchar_ene,p_par(59))
 
     call keep_compiler_quiet(lheatc_chiconst_accurate)
  

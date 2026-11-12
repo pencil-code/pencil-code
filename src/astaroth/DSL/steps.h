@@ -5,6 +5,8 @@
 #include "../alphadisk/after_timestep.h"
 #include "../gravitational_waves.h"
 #include "../hydro/hydro_after_boundary_conservative.h"
+#include "../hydro/hydro_after_boundary_gr.h"
+#include "../z4c.h"
 #include "../viscosity.h"
 #include "../ioncalc.h"
 #include "../newton_cooling.h"
@@ -51,7 +53,7 @@ ComputeSteps AC_calc_selfgravity_rhs(boundconds)
 }
 ComputeSteps AC_calc_final_potential(boundconds)
 {
-	calc_final_potential(AC_t)
+	calc_final_potential(AC_t,AC_ascale_potself)
 }
 
 ComputeSteps AC_sor_step(boundconds)
@@ -59,6 +61,20 @@ ComputeSteps AC_sor_step(boundconds)
 	selfgravity_sor_step(0)
 	selfgravity_sor_step(1)
 }
+
+#if LSOLAR_CORONA && Lmagnetic_MODULE
+ComputeSteps AC_solar_corona_mag_driver(boundconds)
+{
+	solar_corona_mag_driver(AC_dt)
+}
+#endif
+
+#if LCORONAE
+ComputeSteps AC_coronae_bottom_driver(boundconds)
+{
+	coronae_bottom_driver(AC_step_num,AC_dt)
+}
+#endif
 
 ComputeSteps AC_before_boundary_steps(boundconds)
 {
@@ -68,10 +84,13 @@ ComputeSteps AC_before_boundary_steps(boundconds)
 	hydro_before_boundary(AC_lrmv,AC_step_num)
 	magnetic_before_boundary_reductions(AC_lrmv)
 	magnetic_before_boundary(AC_lrmv)
+	magnetic_calc_bb_comaux()
+	z4c_before_boundary()
 	bfield_get_j()
 	bfield_get_e()
 	viscosity_after_boundary()
 	hydro_after_boundary_conservative(AC_t)
+	hydro_after_boundary_gr()
 	calc_axion_integral(AC_t)
 	prep_ode_right_kernel()
 	calc_poly_fr()
@@ -96,6 +115,12 @@ ComputeSteps AC_before_boundary_steps_including_halos(boundconds)
 {
 	ioncalc()
 	entropy_update_running_average(AC_t,AC_dt)
+}
+
+//Ionization fraction also in the halos after the halo exchange (for the opacity of radTransfer)
+ComputeSteps AC_ioncalc_including_halos(boundconds)
+{
+	ioncalc()
 }
 
 ComputeSteps AC_after_timestep(boundconds)
@@ -133,9 +158,9 @@ BoundConds boundconds{
   ac_const_bc(BOUNDARY_Y_TOP,TAU_ABOVE,0.0)
 #endif
 #if LRADIATION
-//This is not always true but for 1d-tests/solar-atmosphere-magnetic it is!
-  ac_const_bc(BOUNDARY_Z,Q_UP,0.0)
-  source_function_as_intensity(BOUNDARY_Z,Q_DOWN)
+//Boundary intensities of the vertical rays from bc_rad (only the upstream end of each ray matters)
+  rad_intensity_bc_z(BOUNDARY_Z,Q_UP)
+  rad_intensity_bc_z(BOUNDARY_Z,Q_DOWN)
 #endif
 }
 

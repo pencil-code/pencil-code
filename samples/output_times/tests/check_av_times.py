@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-   vim: set fileencoding=utf-8 :
 
 # Set up Python load path and configure a matplotlib backend that does not

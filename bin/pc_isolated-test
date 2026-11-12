@@ -21,6 +21,9 @@ Options:
                             Default: "--max-level=1"
     -s,--submodules         Whether to clone submodules as well (e.g. Astaroth)
                             Default: no
+    --clean                 Whether to remove all previous compilation results
+                            before running the tests.
+                            Default: no
     --rcfile                An optional bashrc file used to initialize the test
                             environment. This must not set PENCIL_HOME or
                             source sourceme.sh. Useful in environments where
@@ -29,13 +32,16 @@ Options:
                             specified, all required programs (gfortran, mpirun,
                             python etc.) must be present in the default
                             systemwide locations.
+    --command               Optional. A command to run instead of pc_auto-test.
+                            If this is specified, --auto-test-options will be
+                            ignored.
 '''
 
 # BEGIN option parsing
 #https://stackoverflow.com/questions/192249/how-do-i-parse-command-line-arguments-in-bash/29754866#29754866
 set -o errexit -o pipefail -o noclobber -o nounset
 
-LONGOPTS=branch:,auto-test-options:,repo:,help,submodules,rcfile:
+LONGOPTS=branch:,auto-test-options:,repo:,help,submodules,rcfile:,command:,clean
 OPTIONS=b:o:r:hs
 
 PARSED=$(getopt --options=$OPTIONS --longoptions=$LONGOPTS --name "$0" -- "$@") || exit 2
@@ -46,6 +52,8 @@ branchname=master
 repo="https://pencil-code.org/git"
 submodules="false"
 rcfile=""
+command=""
+clean="false"
 while true; do
     case "$1" in
         -b|--branch)
@@ -72,6 +80,14 @@ while true; do
             rcfile=$2
             shift 2
             ;;
+        --command)
+            command="$2"
+            shift 2
+            ;;
+        --clean)
+            clean="true"
+            shift 1
+            ;;
         --)
             shift
             break
@@ -86,7 +102,34 @@ done
 
 sanitized_repo_name=$(echo $repo | tr -d ':/') #remove characters which would cause problems in folder names.
 tmpdir=~/.cache/pc_isolated_test
-foldername="pencil-code-submodules-$submodules-$branchname-$sanitized_repo_name"
+foldername="$sanitized_repo_name/$branchname/submodules-$submodules/pencil-code"
+lockfile="pc_isolated-test.lock"
+
+pid_from_lockfile () {
+    cat "$lockfile" | tr -d "[:space:]"
+}
+
+release_lock () {
+    if test -e "$lockfile"; then
+        if test "$(pid_from_lockfile)" -eq "$$"; then
+            rm -f "$lockfile"
+        fi
+    else
+        echo "ERROR: lockfile disappeared!"
+        exit 5
+    fi
+}
+
+get_lock () {
+    #We use our own locking mechanism because we may want to run commands other than pc_auto-test.
+    if test -e "$lockfile"; then
+        echo "ERROR: lockfile exists; another test (PID: $(pid_from_lockfile)) is already running in $PWD"
+        exit 4
+    else
+        echo "$$" > "$lockfile"
+        trap release_lock EXIT
+    fi
+}
 
 set -e
 
@@ -98,12 +141,17 @@ cd "$tmpdir"
 if test -e "$foldername"; then
     echo "Destination folder exists; assuming repo has already been cloned"
     cd "$foldername"
+    get_lock
     git fetch --depth=1
     git reset --hard "origin/$branchname"
-    git clean -xfd
+    if [ "$clean" = "true" ]; then
+        git clean -xfd --exclude="$lockfile"
+    fi
 else
+    mkdir -p "$foldername"
     git clone --depth=1 --branch "$branchname" "$repo" "$foldername"
     cd "$foldername"
+    get_lock
     git remote set-branches origin "$branchname"
 fi
 
@@ -115,16 +163,22 @@ fi
 #Start with a clean environment to avoid conflicts with already-enabled versions of Pencil
 #cmd="env -i bash --norc" #Even $HOME is not set here, which causes problems.
 if test -n "$rcfile"; then
-    cmd="env -u PATH -u _sourceme -u PYTHONPATH bash --rcfile $rcfile"
+    source_rcfile="source $rcfile"
 else
-    cmd="env -u PATH -u _sourceme -u PYTHONPATH bash --norc"
+    source_rcfile=""
 fi
 
-$cmd << EOF
+if test -z "$command"; then
+    command="pc_auto-test --auto-clean $auto_test_options"
+fi
+
+env -u PATH -u _sourceme -u PYTHONPATH bash --norc << EOF
+
+$source_rcfile
 
 export PENCIL_HOME=$(pwd)
 _sourceme_quiet=1; . $PENCIL_HOME/sourceme.sh; unset _sourceme_quiet
 
-pc_auto-test --auto-clean $auto_test_options
+$command
 
 EOF

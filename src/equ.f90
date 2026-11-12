@@ -19,6 +19,7 @@ module Equ
   public :: write_diagnostics_after_timestep
   public :: perform_diagnostics
   public :: calc_all_module_diagnostic_auxiliaries
+  public :: set_dt1_max !needed by some timestep modules
 !
   real, public    :: before_and_after_boundary_sum_time=0.
   real, public    :: time_spent_copying_and_waiting=0.
@@ -28,7 +29,7 @@ module Equ
   private
 !
   real, dimension(:)      , pointer :: p_fname, p_fname_keep
-  real, dimension(:,:)    , pointer :: p_fnamer, p_fname_sound
+  real, dimension(:,:)    , pointer :: p_fnamer, p_fname_sound, p_fname_half
   real, dimension(:,:,:)  , pointer :: p_fnamex, p_fnamey, p_fnamez, p_fnamexy, p_fnamexz
   real, dimension(:,:,:,:), pointer :: p_fnamerz
   integer, dimension(:,:) , pointer :: p_ncountsz
@@ -122,7 +123,6 @@ module Equ
       l1davgfirst=lfirst .and. l1davg
       l2davgfirst=lfirst .and. l2davg
       lvideo_first=lfirst .and. lvideo
-
 !
 !  Derived diagnostics switches.
 !
@@ -182,7 +182,7 @@ module Equ
 !  Apply global boundary conditions to particle positions and communicate
 !  migrating particles between the processors.
 !
-      if (lparticles) call particles_boundconds(f)
+      if (.not. lgpu .and. lparticles) call particles_boundconds(f)
       if (lpointmasses) call boundconds_pointmasses
 !
 !  Call "before_boundary" hooks (for f array precalculation)
@@ -308,6 +308,8 @@ module Equ
       call timing('pde','after "after_boundary" calls')
 !
       if (lgpu) then
+        if (lparticles) call particles_step_gpu
+        if (lparticles .and. lfirst) call particles_stalker_request_gpu(f)
         if (ldiagnostic_output) then
           !wait in case the last diagnostic tasks are not finished
           start_time = real(mpiwtime())
@@ -319,7 +321,7 @@ module Equ
 !$        lmasterflags(PERF_DIAGS) = .true.
         endif
         start_time = real(mpiwtime())
-        call rhs_gpu(f,itsub)
+        call rhs_gpu(itsub)
 !  Should be done after rhs_gpu since if doing testing against cpu want to get the right value of dt
 !$      if (ldiagnostic_output) then 
 !$        call save_diagnostic_controls
@@ -408,7 +410,7 @@ module Equ
 !  Takes minimum over and distributes to all processors.
 !  With GPUs this is done on the CUDA side.
 !
-        if (lupdate_courant_dt.and..not.lgpu) call set_dt(maxval(dt1_max))
+        if (lupdate_courant_dt) call set_dt(maxval(dt1_max))
 
       endif     ! if (.not. lgpu)
 
@@ -472,10 +474,12 @@ module Equ
 !   here must not access any pencils or auxiliary variables.
 !
 !   08-Oct-2026/Kishore: carved out from write_diagnostics
+!   26-Oct-2026/Kishore: update ghosts for slices
 !
     use Chemistry
     use Slices
     use Diagnostics
+    use Boundcond, only: update_ghosts
 
     real, contiguous, dimension(:,:,:,:) :: f
 !
@@ -486,8 +490,13 @@ module Equ
       endif
 !
 !  Write slices (e.g., for animation purposes).
+!  Need to update ghosts so that we get the right values at the slice boundaries
+!  for the 'a' boundary condition
 !
-      if (lvideo .and. lwrite_slices) call wvid(f, lbefore_ts=.true.)
+      if (lvideo .and. lwrite_slices) then
+        call update_ghosts(f)
+        call wvid(f, lbefore_ts=.true.)
+      endif
 !
     endsubroutine write_diagnostics_before_timestep
 !***********************************************************************
@@ -526,6 +535,7 @@ module Equ
       !TP: example code to explicitly set and get cores the thread are running on
       !    the flexible way to set this is with OMP_PROC_BIND=close,spread, but in case that fails one can be sure by using the code
       !below
+!!$    use General, only: get_cpu, set_cpu
 !!$    if (omp_get_thread_num() /= 0) call set_cpu(core_ids(omp_get_thread_num()+1))
       !print*,"omp_id,cpu_id,mpi_id: ",omp_get_thread_num(), get_cpu(), iproc
      !endsubroutine restrict_cores
@@ -545,6 +555,7 @@ module Equ
       p_fname => fname
       p_fname_keep => fname_keep
       p_fname_sound => fname_sound
+      p_fname_half => fname_half
       p_fnamex => fnamex
       p_fnamey => fnamey
       p_fnamez => fnamez
@@ -565,6 +576,7 @@ module Equ
 !  Reduces accumulated diagnostic variables across threads. Only called if using OpenMP
 !
 !  30-mar-23/TP: Coded
+!  20-Oct-2026/Kishore: avoid integer overflow in ncountsz handling
 !
 !$    use Diagnostics
 !$    use Chemistry, only: chemistry_diags_reductions
@@ -575,13 +587,15 @@ module Equ
 !$      if (ldiagnos .and. allocated(fname)) then
 !$        do imn=1,size(fname)
 !$          if (allocated(inds_max_diags)) then
-!$            if (any(inds_max_diags == imn) .and. fname(imn) /= 0.) &
+!$            if (any(inds_max_diags == imn) .and. &
+!$                (fname(imn) /= 0. .or. (itype_name(imn)==ilabel_max_neg))) &
 !$              p_fname(imn) = max(p_fname(imn),fname(imn))
 !$          endif
 !$          if (allocated(inds_sum_diags)) then
 !$            if (any(inds_sum_diags == imn)) p_fname(imn) = p_fname(imn) + fname(imn)
 !$          endif
 !$        enddo
+!$        p_fname_half = p_fname_half + fname_half
 !$      endif
 !$
 !$      if (l1davgfirst) then
@@ -591,8 +605,11 @@ module Equ
 !$        if (allocated(fnamer)) p_fnamer = p_fnamer + fnamer
 !$      endif
 !$
-!$      if (l2davgfirst) then
+!$      if (l2davgfirst .or. (ldiagnos .and. ldiagnos_need_zaverages)) then
 !$        if (allocated(fnamexy)) p_fnamexy = p_fnamexy + fnamexy
+!$      endif
+!$
+!$      if (l2davgfirst) then
 !$        if (allocated(fnamexz)) p_fnamexz = p_fnamexz + fnamexz
 !$        if (allocated(fnamerz)) then 
 !$          if(.not. associated(p_fnamerz)) then
@@ -604,7 +621,14 @@ module Equ
 !$
 !$      if (allocated(fname_keep)) p_fname_keep = p_fname_keep + fname_keep
 !$      if (allocated(fname_sound)) p_fname_sound = p_fname_sound + fname_sound
-!$      if (allocated(ncountsz)) p_ncountsz = p_ncountsz + ncountsz
+!$      if (allocated(ncountsz)) then
+!         ! ncountsz uses -1 as a marker value; unconditionally adding causes
+!         ! integer overflow (e.g. after 8 iterations of a 64x64x144 run
+!         ! with 11 helper threads)
+!$        where (p_ncountsz >= 0)
+!$          p_ncountsz = p_ncountsz + ncountsz
+!$        endwhere
+!$      endif
 !$
 !$      call diagnostics_diag_reductions
 !$      call chemistry_diags_reductions
@@ -631,7 +655,6 @@ module Equ
       use Hydro, only: hydro_restore_diagnostic_controls
       use Training, only: training_restore_diagnostic_controls
 !$    use OMP_lib
-!$    use General, only: get_cpu, set_cpu
 
       real, contiguous, dimension(:,:,:,:),intent(INOUT) :: f
       type (pencil_case) :: p
@@ -647,7 +670,6 @@ module Equ
 !$    call hydro_restore_diagnostic_controls
 !$    call training_restore_diagnostic_controls
 !
-
       !$omp do
       do imn=1,nyz
         n=nn(imn)
@@ -657,16 +679,17 @@ module Equ
 !
 !  Skip points not belonging to coarse grid.
 !
-        ! lcoarse_mn=lcoarse.and.mexts(1)<=m.and.m<=mexts(2)
-        ! if (lcoarse_mn) then
-        !   lcoarse_mn=lcoarse_mn.and.ninds(0,m,n)>0
-        !   if (ninds(0,m,n)<=0) cycle
-        ! endif
+        lcoarse_mn=lcoarse.and.mexts(1)<=m.and.m<=mexts(2)
+        if (lcoarse_mn) then
+          lcoarse_mn=lcoarse_mn.and.ninds(0,m,n)>0
+          if (ninds(0,m,n)<=0) cycle
+        endif
 
         call calc_all_pencils(f,p)
         call calc_diagnostic_auxiliaries_magnetic(f,p)
         lfirstpoint=.false.
       enddo
+      call free_thread_diagnostic_arrays
 !$omp end parallel   ! all helper threads
 
       endsubroutine calc_all_module_diagnostic_auxiliaries
@@ -708,7 +731,6 @@ module Equ
       use Special, only: calc_diagnostics_special
       use Diagnostics
 !$    use OMP_lib
-!$    use General, only: get_cpu, set_cpu
 
       real, contiguous, dimension(:,:,:,:),intent(INOUT) :: f
       type(pencil_case) :: p
@@ -724,7 +746,8 @@ module Equ
       if (lgpu) lupdate_courant_dt = lcourant_dt .and. ltimestep_diagnostics
 
 !$omp parallel if (.not. lsuppress_parallel_reductions) private(p) num_threads(num_helper_threads) &
-!$omp copyin(t,dxmax_pencil,fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm)
+!$omp copyin(t,dxmax_pencil,fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,phiavg_norm, &
+!$omp fname_half)
 !$    call restore_diagnostic_controls
 !$    call hydro_restore_diagnostic_controls
 !$    call training_restore_diagnostic_controls
@@ -745,11 +768,9 @@ module Equ
       do imn=1,nyz
         !Done since with multithreading RHS is not evaluated
         !Kishore: why do we not need to zero maxdiffus2, maxdiffus3, maxsrc here?
+        !TP: They are normally zeroed out on rhs_cpu, which the GPU control-flow never calls.
         if (lmultithread .and. lupdate_courant_dt) then
-          if (idiag_dtdiffus/=0 .or. idiag_Rmesh /= 0 .or. idiag_maxdiffus/=0) then
-            !Kishore: is this really so expensive that it needs to be inside the if statement?
-            maxdiffus = 0.0
-          endif
+          maxdiffus = 0.0
           maxadvec     = 0.0
           advec2       = 0.0
           advec_cs2    = 0.0
@@ -762,11 +783,11 @@ module Equ
 !
 !  Skip points not belonging to coarse grid.
 !
-        ! lcoarse_mn=lcoarse.and.mexts(1)<=m.and.m<=mexts(2)
-        ! if (lcoarse_mn) then
-        !   lcoarse_mn=lcoarse_mn.and.ninds(0,m,n)>0
-        !   if (ninds(0,m,n)<=0) cycle
-        ! endif
+        lcoarse_mn=lcoarse.and.mexts(1)<=m.and.m<=mexts(2)
+        if (lcoarse_mn) then
+          lcoarse_mn=lcoarse_mn.and.ninds(0,m,n)>0
+          if (ninds(0,m,n)<=0) cycle
+        endif
 
         call calc_all_pencils(f,p)
 
@@ -819,6 +840,7 @@ module Equ
 !!$      endif
 !!$    enddo
 !$omp barrier
+      call free_thread_diagnostic_arrays
 !$omp end parallel   ! all helper threads
 
       endsubroutine calc_all_module_diagnostics
@@ -858,6 +880,7 @@ module Equ
       use Special, only: calc_ode_diagnostics_special
       use EquationofState, only: ioncalc
       use Shock, only: shock_before_boundary 
+      use Particles_main, only: calc_diagnostics_from_particles
 
       real, contiguous, dimension(:,:,:,:),intent(INOUT) :: f
       type(pencil_case) :: p
@@ -871,6 +894,7 @@ module Equ
         call calc_all_before_boundary_diagnostics(f)
         call prep_rhs(f_ode_diagnostics)
         call calc_all_module_diagnostics(f,p)     ! by all helper threads
+        if (lparticles) call calc_diagnostics_from_particles
         if (lode) call calc_ode_diagnostics_special(f_ode_diagnostics)
         call finalize_diagnostics                 ! by diagmaster (MPI comm.)
         call write_diagnostics_before_timestep(f)
@@ -1072,10 +1096,12 @@ module Equ
       use Hydro, only: hydro_before_boundary
       use Shear, only: shear_before_boundary
       use Interstellar, only: interstellar_before_boundary
+      use Special, only: special_before_boundary_shared
 
       real, contiguous, dimension(:,:,:,:) :: f
 
       if (linterstellar) call interstellar_before_boundary(f)
+      if (lspecial)      call special_before_boundary_shared(f)
       if (lshear)        call shear_before_boundary(f)
       if (lhydro_kinematic) call hydro_before_boundary(f)
 !
@@ -1514,16 +1540,17 @@ module Equ
         n=nn(imn)
         m=mm(imn)
 
-        !if (imn_array(m,n)==0) cycle
+        if (.not.lgpu) then
+          if (imn_array(m,n)==0) cycle
 !
 !  Skip points not belonging to coarse grid.
 !
-        ! Not active for the GPU
-        !lcoarse_mn=lcoarse.and.mexts(1)<=m.and.m<=mexts(2)
-        !if (lcoarse_mn) then
-        !  lcoarse_mn=lcoarse_mn.and.ninds(0,m,n)>0
-        !  if (ninds(0,m,n)<=0) cycle
-        !endif
+          lcoarse_mn=lcoarse.and.mexts(1)<=m.and.m<=mexts(2)
+          if (lcoarse_mn) then
+            lcoarse_mn=lcoarse_mn.and.ninds(0,m,n)>0
+            if (ninds(0,m,n)<=0) cycle
+          endif
+        endif
 !
 !  Store the velocity part of df array in a temporary array
 !  while solving the anelastic case.
@@ -1581,10 +1608,11 @@ module Equ
         call calc_phisums(p)
 !
 !  Do the time integrations here, before the pencils are overwritten.
+!  06-11-2026/Kishore: at least now, Pencils do not seem to be overwritten before the end of this subroutine
 !
         call calc_time_integrals(f,p)
 
-        call set_dt1_max(p)
+        call set_dt1_max(p, dt1_max)
         call timestep_diagnostics
 !
 !  Display derivative info
@@ -1628,6 +1656,7 @@ module Equ
         lfirstpoint=.false.
 !
       enddo mn_loop
+      lcoarse_mn=.false.
 !
       if (ltime_integrals.and.llast) then
         if (lhydro) call update_for_time_integrals_hydro
@@ -1774,7 +1803,18 @@ module Equ
 
         n=nn(imn)
         m=mm(imn)
-        !if (imn_array(m,n)==0) cycle
+
+        if (.not.lgpu) then
+          if (imn_array(m,n)==0) cycle
+!
+!  Skip points not belonging to coarse grid.
+!
+          lcoarse_mn=lcoarse.and.mexts(1)<=m.and.m<=mexts(2)
+          if (lcoarse_mn) then
+            lcoarse_mn=lcoarse_mn.and.ninds(0,m,n)>0
+            if (ninds(0,m,n)<=0) cycle
+          endif
+        endif
 !
 !  Recalculate grid/geometry related pencils. The r_mn and rcyl_mn are requested
 !  in pencil_criteria_grid. Unfortunately we need to recalculate them here.
@@ -1920,7 +1960,8 @@ module Equ
 !
         headtt=.false.
 !
-      enddo
+      enddo     !  mn-loop
+      lcoarse_mn=.false.
 !
     endsubroutine freeze
 !***********************************************************************
@@ -1938,7 +1979,7 @@ module Equ
 
     endsubroutine calc_maxadvec
 !***********************************************************************
-    subroutine set_dt1_max(p)
+    subroutine set_dt1_max(p, dt1_max, linclude_diffusion)
 !
 !  In max_mn maximum values of u^2 (etc) are determined sucessively
 !  va2 is set in magnetic (or nomagnetic)
@@ -1951,13 +1992,25 @@ module Equ
 !  The dimension of the run ndim (=0, 1, 2, or 3) enters the viscous time step.
 !  This has to do with the term on the diagonal, cdtv depends on order of scheme
 !
+!  DANGER: many modules also update dt1_max during the calculation of the RHS.
+!
       use General, only: notanumber
 
       type (pencil_case), intent(IN) :: p
+      real, dimension(nx), intent(inout) :: dt1_max
+      logical, optional, intent(in) :: linclude_diffusion
 
       real, dimension(nx) :: dt1_max_loc, dt1_advec, dt1_diffus, dt1_src
+      logical :: ldiffusion
 
       if (lupdate_courant_dt.and.(.not.ldt_paronly)) then
+!
+        if (present(linclude_diffusion)) then
+          ldiffusion=linclude_diffusion
+        else
+          ldiffusion=.true.
+        endif
+!
         call calc_maxadvec
 !
 !  Time step constraints from each module. (At the moment, magnetic and testfield use the same variable.)
@@ -1978,7 +2031,11 @@ module Equ
 !  Timestep combination from advection, diffusion and "source".
 !  Alternatively, we could use the maxima of all three contributions.
 !
-        dt1_max_loc = sqrt(dt1_advec**2 + dt1_diffus**2 + dt1_src**2)
+        if (ldiffusion) then
+          dt1_max_loc = sqrt(dt1_advec**2 + dt1_diffus**2 + dt1_src**2)
+        else
+          dt1_max_loc = sqrt(dt1_advec**2 + dt1_src**2)
+        endif
 !
 !  time step constraint from the coagulation kernel
 !
@@ -2106,7 +2163,7 @@ module Equ
         lfirst = (itsub == 1)
         if (.not. lfirst) df_copy = alpha_ts(itsub)*df_copy
         call before_boundary_gpu(f,lrmv,itsub,t)
-        call rhs_gpu(f,itsub)
+        call rhs_gpu(itsub)
 
         !    This is here since Astaroth is more careful in always applying bcs
         !    that update the comp domain so to emulate the behaviour (which I think is generally better)

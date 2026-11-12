@@ -40,11 +40,21 @@ void FTNIZE(after_timestep_gpu_c)()
 {
 }
 /* ---------------------------------------------------------------------- */
-void FTNIZE(copy_farray_c)(REAL* f)
+void FTNIZE(copy_farray_c)(REAL* f, FINT* read_particles)
 {
 }
 /* ------------------------------------------------------------------- */
-void FTNIZE(load_farray_c)()
+void FTNIZE(register_particles_gpu_c)(REAL* fp, FINT* npar_loc, FINT* mpar_loc, FINT* ivar, FINT* ipar,
+                                  FINT* ip, FINT* nproc, FINT* ranks,
+                                  REAL* procx_bounds, REAL* procy_bounds, REAL* procz_bounds,
+                                  REAL* xyz0_loc, REAL* xyz1_loc, REAL* xyz0,
+                                  FINT* ivar_extra, long long* yshift_fn, REAL* sink_diag)
+{
+}
+/* ------------------------------------------------------------------- */
+void FTNIZE(sink_accrete_c)(FINT* want_diag) {}
+/* ------------------------------------------------------------------- */
+void FTNIZE(load_farray_c)(FINT* load_particles)
 {
 }
 /* ------------------------------------------------------------------- */
@@ -96,6 +106,10 @@ void FTNIZE(radtransfer_gpu_c)()
 }
 /* ------------------------------------------------------------------- */
 void FTNIZE(get_gpu_reduced_vars_c)(REAL* dst)
+{
+}
+/* ------------------------------------------------------------------- */
+void FTNIZE(get_gpu_ensemble_sums_c)(REAL* tension, REAL* zeta)
 {
 }
 /* ------------------------------------------------------------------- */

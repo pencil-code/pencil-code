@@ -20,22 +20,21 @@ contains
     logical, save :: luses_aa_pwd_top = .false.
     logical, save :: luses_aa_pot2_bot = .false.
     logical, save :: luses_aa_pwd_bot = .false.
+    logical, save :: luses_aa_pfe_top = .false.
+    logical, save :: luses_aa_pfe_bot = .false.
+    integer, save :: pc_maux, pc_maux_com, pc_mfarray, pc_mcom   ! copies: maux etc. are parameters without DYNAMIC_AUX
     integer :: j
 
     call copy_addr(ncoarse,p_par(1)) ! int
     call copy_addr(lcoarse,p_par(2)) ! bool
-    call copy_addr_dble(unit_magnetic,p_par(4))
-    call copy_addr_dble(k_b,p_par(5))
+    call copy_addr_dble(unit_magnetic,p_par(4)) ! dble
+    call copy_addr_dble(k_b,p_par(5)) ! dble
 
     call copy_addr(m2,p_par(7)) ! int
     call copy_addr(n2,p_par(8)) ! int
     call copy_addr(l2,p_par(356)) ! int
 
     call copy_addr(dxmax,p_par(10))
-    call copy_addr(mexts,p_par(402))    ! int (2)
-    call copy_addr(nphis,p_par(403))    ! int (my)
-    call copy_addr(nphis1,p_par(404))   !     (my)
-    call copy_addr(nphis2,p_par(405))   !     (my)
     call copy_addr(lcartesian_coords,p_par(11)) ! bool
     call copy_addr(lspherical_coords,p_par(12)) ! bool
     call copy_addr(lcylindrical_coords,p_par(13)) ! bool
@@ -195,23 +194,23 @@ contains
     call copy_addr(dtdec,p_par(345)) ! real dconst
     call copy_addr(num_substeps,p_par(347)) ! int
 
-    call copy_addr_dble(unit_length,p_par(349))
-    call copy_addr_dble(unit_temperature,p_par(350))
-    call copy_addr_dble(unit_mass,p_par(351))
-    call copy_addr_dble(unit_energy,p_par(352))
-    call copy_addr_dble(unit_time,p_par(353))
-    call copy_addr_dble(unit_pressure,p_par(354))
-    call copy_addr_dble(m_u,p_par(355))
+    call copy_addr_dble(unit_length,p_par(349)) ! dble
+    call copy_addr_dble(unit_temperature,p_par(350)) ! dble
+    call copy_addr_dble(unit_mass,p_par(351)) ! dble
+    call copy_addr_dble(unit_energy,p_par(352)) ! dble
+    call copy_addr_dble(unit_time,p_par(353)) ! dble
+    call copy_addr_dble(unit_pressure,p_par(354)) ! dble
+    call copy_addr_dble(m_u,p_par(355)) ! dble
     call copy_addr(lchemonly,p_par(357)) ! bool
     call copy_addr(iviscosity,p_par(358)) ! int
     call copy_addr(ilntt,p_par(359)) ! int
     call copy_addr(xgrid,p_par(360)) ! (nxgrid)
     call copy_addr(lxyz,p_par(361)) ! real3
     call copy_addr(ichemspec,p_par(363)) ! int (nchemspec)
-    call copy_addr_dble(unit_velocity,p_par(365))
-    call copy_addr_dble(unit_density,p_par(366))
-    call copy_addr_dble(m_p,p_par(367))
-    call copy_addr_dble(sigmasb,p_par(368))
+    call copy_addr_dble(unit_velocity,p_par(365)) ! dble
+    call copy_addr_dble(unit_density,p_par(366)) ! dble
+    call copy_addr_dble(m_p,p_par(367)) ! dble
+    call copy_addr_dble(sigmasb,p_par(368)) ! dble
     call copy_addr(cdts,p_par(369))
     call copy_addr(lgravx,p_par(370)) ! bool
     call copy_addr(lgravz,p_par(371)) ! bool
@@ -232,15 +231,23 @@ contains
     call copy_addr(ishock,p_par(389)) ! int
     call copy_addr(ishock_perp,p_par(390)) ! int
 
-    call copy_addr(mcom,p_par(1442)) ! int
     call copy_addr(fbcx_bot,p_par(391)) ! (mcom_max)
     call copy_addr(fbcx_top,p_par(392)) ! (mcom_max)
     call copy_addr(fbcy_bot,p_par(393)) ! (mcom_max)
     call copy_addr(fbcy_top,p_par(394)) ! (mcom_max)
     call copy_addr(fbcz_bot,p_par(395)) ! (mcom_max)
     call copy_addr(fbcz_top,p_par(396)) ! (mcom_max)
-    call copy_addr(lcoarse_mn,p_par(400)) ! bool
     call copy_addr(ltime_integrals,p_par(401)) ! bool
+    call copy_addr(mcom,p_par(402)) ! int
+    call copy_addr(mexts,p_par(403))    ! int (2)
+    call copy_addr(nphis,p_par(404))    ! int (my)
+    call copy_addr(nphis1,p_par(405))   !     (my)
+    call copy_addr(nphis2,p_par(406))   !     (my)
+    pc_maux=maux; pc_maux_com=maux_com; pc_mfarray=mfarray; pc_mcom=mcom
+    call copy_addr(pc_maux,p_par(1444)) ! int
+    call copy_addr(pc_maux_com,p_par(1445)) ! int
+    call copy_addr(pc_mfarray,p_par(1446)) ! int
+    call copy_addr(pc_mcom,p_par(1447)) ! int
 
     call copy_addr(dx2_bound,p_par(1164)) ! (2*nghost+1)
     call copy_addr(dy2_bound,p_par(1165)) ! (2*nghost+1)
@@ -267,12 +274,12 @@ contains
     call copy_addr(lperi,p_par(1176)) ! bool3
 
 
-    call copy_addr_dble(sigma_thomson,p_par(1185))
-    call copy_addr_dble(c_light,p_par(1188))
+    call copy_addr_dble(sigma_thomson,p_par(1185)) ! dble
+    call copy_addr_dble(c_light,p_par(1188)) ! dble
     call copy_addr(iey,p_par(1194)) ! int
     call copy_addr(iez,p_par(1195)) ! int
     call copy_addr(icool_prof,p_par(1196)) ! int
-    call copy_addr(deltay,p_par(1197)) ! real dconst
+    call copy_addr(delta_y,p_par(1197)) ! real dconst
     call copy_addr(dt_epsi,p_par(1198)) ! real dconst
     call copy_addr(eps_rkf,p_par(1199)) ! real dconst
     call copy_addr(dt_ratio,p_par(1120)) ! real dconst
@@ -293,16 +300,16 @@ contains
 
     call string_to_enum(enum_ascale_type,ascale_type)
     call copy_addr(enum_ascale_type,p_par(1135)) ! int
-    call copy_addr_dble(unit_flux,p_par(1201))
+    call copy_addr_dble(unit_flux,p_par(1201)) ! dble
     call copy_addr(iyh,p_par(1202)) ! int
-    call copy_addr_dble(kappa_es,p_par(1209))
+    call copy_addr_dble(kappa_es,p_par(1209)) ! dble
     call copy_addr(iqrad,p_par(1217)) ! int
     call copy_addr(ikapparho,p_par(1218)) ! int
     call copy_addr(ikr_frad,p_par(1219)) ! int
-    call copy_addr_dble(m_e,p_par(1222))
+    call copy_addr_dble(m_e,p_par(1222)) ! dble
     call copy_addr(ip,p_par(1223)) ! int
-    call copy_addr_dble(m_h,p_par(1224))
-    call copy_addr_dble(sigmah_,p_par(1225))
+    call copy_addr_dble(m_h,p_par(1224)) ! dble
+    call copy_addr_dble(sigmah_,p_par(1225)) ! dble
     call copy_addr(it,p_par(1227)) ! int dconst
     call copy_addr(nconformal,p_par(1228))
     call copy_addr(ifcr,p_par(1233)) ! int
@@ -450,7 +457,11 @@ contains
       if (bcz12(j,BOT) == 'pot') luses_aa_pot2_bot = .true.
       if (bcz12(j,TOP) == 'pwd') luses_aa_pwd_top = .true.
       if (bcz12(j,BOT) == 'pwd') luses_aa_pwd_bot = .true.
+      if (bcz12(j,TOP) == 'pfe') luses_aa_pfe_top = .true.
+      if (bcz12(j,BOT) == 'pfe') luses_aa_pfe_bot = .true.
     enddo
+    call copy_addr(luses_aa_pfe_top,p_par(1449)) ! bool
+    call copy_addr(luses_aa_pfe_bot,p_par(1450)) ! bool
     call copy_addr(luses_aa_pot2_top,p_par(1398)) ! bool
     call copy_addr(luses_aa_pot2_bot,p_par(1399)) ! bool
     call copy_addr(luses_aa_pwd_top,p_par(1400)) ! bool
@@ -460,6 +471,10 @@ contains
     call copy_addr(lfrozen_bcs_x,p_par(1404)) ! bool
     call copy_addr(lfrozen_bot_var_x,p_par(1405)) ! bool (mcom__mod__cdata)
     call copy_addr(lfrozen_top_var_x,p_par(1406)) ! bool (mcom__mod__cdata)
+    call copy_addr(lvideo_first,p_par(1451)) ! bool
+    call copy_addr(lfrozen_bcs_z,p_par(1452)) ! bool
+    call copy_addr(lfrozen_bot_var_z,p_par(1453)) ! bool (mcom__mod__cdata)
+    call copy_addr(lfrozen_top_var_z,p_par(1454)) ! bool (mcom__mod__cdata)
     call copy_addr(lfirst_proc_x,p_par(1407)) ! bool dconst
     call copy_addr(llast_proc_x,p_par(1408)) ! bool dconst
     call copy_addr(ijbt,p_par(1409)) ! int
@@ -486,6 +501,7 @@ contains
     call copy_addr(lna_table_min,p_par(1430))
     call copy_addr(dlna,p_par(1431))
     call copy_addr(lsld_every_step,p_par(1432)) ! bool
+    call copy_addr(lsld_rfac_abs,p_par(1455)) ! bool
 
     call copy_addr(ifcrx,p_par(1433)) ! int
     call copy_addr(dtlimit,p_par(1434)) ! real dconst
@@ -495,6 +511,16 @@ contains
     call copy_addr(iuubx,p_par(1439)) ! int
     call copy_addr(iuuby,p_par(1440)) ! int
     call copy_addr(iuubz,p_par(1441)) ! int
+    call copy_addr(imn_array,p_par(1442)) ! int (my) (mz)
+    if(allocated(ninds)) call copy_addr(ninds,p_par(1443)) ! int (nghost*2+1) (ncoarse__mod__cdata+2) (nz)
+
+    call copy_addr(ipy,p_par(1448)) ! int
+    call copy_addr(qshear,p_par(1449))
+    call copy_addr(iuxb,p_par(1450))      ! int
+    call copy_addr(iugb,p_par(1451))      ! int
+    call copy_addr(ibgu,p_par(1452))      ! int
+    call copy_addr(ibdivu,p_par(1453))    ! int
+
   endsubroutine pushpars2c
 !***********************************************************************
 endmodule Global_pushpars

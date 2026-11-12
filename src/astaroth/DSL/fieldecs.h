@@ -51,6 +51,12 @@ field_order(AC_itij__mod__hydro != 0 ? AC_itij__mod__hydro+2-1 : -1) Field F_TIJ
 field_order(AC_itij__mod__hydro != 0 ? AC_itij__mod__hydro+3-1 : -1) Field F_TIJ_3
 field_order(AC_itij__mod__hydro != 0 ? AC_itij__mod__hydro+4-1 : -1) Field F_TIJ_4
 field_order(AC_itij__mod__hydro != 0 ? AC_itij__mod__hydro+5-1 : -1) Field F_TIJ_5
+#if LZ4C && LDENSITY
+//with lgr_metric (FgrE registered), Tij holds all nine mixed components T^j_i
+field_order(AC_ifgre__mod__density != 0 ? AC_itij__mod__hydro+6-1 : -1) Field F_TIJ_6
+field_order(AC_ifgre__mod__density != 0 ? AC_itij__mod__hydro+7-1 : -1) Field F_TIJ_7
+field_order(AC_ifgre__mod__density != 0 ? AC_itij__mod__hydro+8-1 : -1) Field F_TIJ_8
+#endif
 #endif
 
 #if LVISCOSITY
@@ -164,7 +170,7 @@ Field F_ETH
 Field F_GLOBAL_LNRHO0
 Field F_GLOBAL_SS0
 Field F_HYPVIS
-Field F_NUSMAG
+field_order(AC_inusmag__mod__cdata-1) Field F_NUSMAG
 
 field_order(AC_ibx__mod__cdata-1) Field F_BX
 field_order(AC_iby__mod__cdata-1) Field F_BY
@@ -211,6 +217,8 @@ Field F_ADV_DERZ
 field_order(AC_iglobal_glhc__mod__cdata == 0 ? -1 : 0+AC_iglobal_glhc__mod__cdata-1) Field F_GLOBAL_GLHX
 field_order(AC_iglobal_glhc__mod__cdata == 0 ? -1 : 1+AC_iglobal_glhc__mod__cdata-1) Field F_GLOBAL_GLHY
 field_order(AC_iglobal_glhc__mod__cdata == 0 ? -1 : 2+AC_iglobal_glhc__mod__cdata-1) Field F_GLOBAL_GLHZ
+//glhc is a scalar in temperature_idealgas (the vector components above are for entropy)
+#define F_GLOBAL_GLHC F_GLOBAL_GLHX
 Field F_HYPREX, F_HYPREY, F_HYPREZ
 Field F_ETAT
 
@@ -250,7 +258,8 @@ const Field3 F__ADV_DERVEC     = {F_ADV_DERX,F_ADV_DERY,F_ADV_DERZ}
 const Field3 F_HYPREVEC        = {F_HYPREX, F_HYPREY, F_HYPREZ}
 const Field3 F_GLOBAL_EXT_AVEC = {F_GLOBAL_AX_EXT, F_GLOBAL_AY_EXT, F_GLOBAL_AZ_EXT}
 
-Field3 F_VVEC
+//TP: f(:,:,:,ivx:ivz) is transpiled to F_VVEC, i.e. the vv auxiliary
+const Field3 F_VVEC = {VX,VY,VZ}
 Field3 F_FVEC
 field_order(AC_iecr__mod__cdata-1) Field F_ECR
 field_order(AC_ifcr__mod__cdata == 0 ? -1 : AC_ifcr__mod__cdata+0-1) Field F_FCR_X
@@ -329,8 +338,8 @@ field_order(AC_iss_b__mod__cdata-1) Field SS_B
 field_order(AC_isld_char__mod__cdata-1) Field SLD_CHAR_SPEED
 Field SRAD
 #define AC_srad__mod__radiation SRAD
-field_order(AC_ikapparho__mod__radiation-1) Field F_KAPPARHO
-field_order(AC_iqrad__mod__radiation-1) Field F_QRAD
+field_order(AC_ikapparho__mod__cdata-1) Field F_KAPPARHO
+field_order(AC_iqrad__mod__cdata-1) Field F_QRAD
 
 Field AC_cp_full__mod__equationofstate
 Field AC_mu1_full__mod__equationofstate
@@ -382,6 +391,124 @@ field_order(AC_iuub__mod__cdata != 0 ? AC_iuub__mod__cdata+1-1 : -1) Field F_UUB
 field_order(AC_iuub__mod__cdata != 0 ? AC_iuub__mod__cdata+2-1 : -1) Field F_UUBZ
 const Field3 F_UUBVEC = {F_UUBX, F_UUBY, F_UUBZ}
 field_order(AC_ilncc__mod__cdata-1) Field F_LNCC
+
+#if LZ4C
+field_order(AC_ichi__mod__z4c-1) Field F_CHI
+field_order(AC_ikh__mod__z4c-1) Field F_KH
+field_order(AC_ith__mod__z4c-1) Field F_TH
+field_order(AC_ialp__mod__z4c-1) Field F_ALP
+field_order(AC_igt__mod__z4c[0]-1) Field F_GT_1
+field_order(AC_igt__mod__z4c[1]-1) Field F_GT_2
+field_order(AC_igt__mod__z4c[2]-1) Field F_GT_3
+field_order(AC_igt__mod__z4c[3]-1) Field F_GT_4
+field_order(AC_igt__mod__z4c[4]-1) Field F_GT_5
+field_order(AC_igt__mod__z4c[5]-1) Field F_GT_6
+field_order(AC_iat__mod__z4c[0]-1) Field F_AT_1
+field_order(AC_iat__mod__z4c[1]-1) Field F_AT_2
+field_order(AC_iat__mod__z4c[2]-1) Field F_AT_3
+field_order(AC_iat__mod__z4c[3]-1) Field F_AT_4
+field_order(AC_iat__mod__z4c[4]-1) Field F_AT_5
+field_order(AC_iat__mod__z4c[5]-1) Field F_AT_6
+//field_order cannot parse the int3 components AC_igam__mod__z4c.x etc.; special/z4c
+//registers Gam right after theta and beta right after alp, so iGam(i)=ith+i, ibeta(i)=ialp+i.
+//TP: TODO field_order should work on int3 components
+field_order(AC_ith__mod__z4c+1-1) Field F_GAMX
+field_order(AC_ith__mod__z4c+2-1) Field F_GAMY
+field_order(AC_ith__mod__z4c+3-1) Field F_GAMZ
+const Field3 F_GAMVEC = {F_GAMX, F_GAMY, F_GAMZ}
+field_order(AC_ialp__mod__z4c+1-1) Field F_BETAX
+field_order(AC_ialp__mod__z4c+2-1) Field F_BETAY
+field_order(AC_ialp__mod__z4c+3-1) Field F_BETAZ
+const Field3 F_BETAVEC = {F_BETAX, F_BETAY, F_BETAZ}
+#endif
+
+//lgr_metric auxiliaries of hydro: flux F_E^j and e (T^j_i is in F_TIJ)
+#if LHYDRO && LDENSITY
+field_order(AC_ifgre__mod__density != 0 ? AC_ifgre__mod__density+0-1 : -1) Field F_FGREX
+field_order(AC_ifgre__mod__density != 0 ? AC_ifgre__mod__density+1-1 : -1) Field F_FGREY
+field_order(AC_ifgre__mod__density != 0 ? AC_ifgre__mod__density+2-1 : -1) Field F_FGREZ
+field_order(AC_iegr__mod__density != 0 ? AC_iegr__mod__density-1 : -1) Field F_EGR
+#endif
+
+field_order(AC_iqq__mod__cdata != 0 ? AC_iqq__mod__cdata+0-1 : -1) Field F_QQX
+field_order(AC_iqq__mod__cdata != 0 ? AC_iqq__mod__cdata+1-1 : -1) Field F_QQY
+field_order(AC_iqq__mod__cdata != 0 ? AC_iqq__mod__cdata+2-1 : -1) Field F_QQZ
+const Field3 F_QQ = {F_QQX, F_QQY, F_QQZ}
+const Field3 F_QVEC = {F_QQX, F_QQY, F_QQZ}
+#define F_QX F_QQX
+#define F_QY F_QQY
+#define F_QZ F_QQZ
+field_order(AC_iww1__mod__cdata != 0 ? AC_iww1__mod__cdata+0-1 : -1) Field F_WW1X
+field_order(AC_iww1__mod__cdata != 0 ? AC_iww1__mod__cdata+1-1 : -1) Field F_WW1Y
+field_order(AC_iww1__mod__cdata != 0 ? AC_iww1__mod__cdata+2-1 : -1) Field F_WW1Z
+const Field3 F_WW1 = {F_WW1X, F_WW1Y, F_WW1Z}
+const Field3 F_WW1VEC = {F_WW1X, F_WW1Y, F_WW1Z}
+field_order(AC_iww2__mod__cdata != 0 ? AC_iww2__mod__cdata+0-1 : -1) Field F_WW2X
+field_order(AC_iww2__mod__cdata != 0 ? AC_iww2__mod__cdata+1-1 : -1) Field F_WW2Y
+field_order(AC_iww2__mod__cdata != 0 ? AC_iww2__mod__cdata+2-1 : -1) Field F_WW2Z
+const Field3 F_WW2 = {F_WW2X, F_WW2Y, F_WW2Z}
+const Field3 F_WW2VEC = {F_WW2X, F_WW2Y, F_WW2Z}
+field_order(AC_iww3__mod__cdata != 0 ? AC_iww3__mod__cdata+0-1 : -1) Field F_WW3X
+field_order(AC_iww3__mod__cdata != 0 ? AC_iww3__mod__cdata+1-1 : -1) Field F_WW3Y
+field_order(AC_iww3__mod__cdata != 0 ? AC_iww3__mod__cdata+2-1 : -1) Field F_WW3Z
+const Field3 F_WW3 = {F_WW3X, F_WW3Y, F_WW3Z}
+const Field3 F_WW3VEC = {F_WW3X, F_WW3Y, F_WW3Z}
+#if LELECTROWEAKSU2
+field_order(AC_idww1__mod__electroweaksu2 != 0 ? AC_idww1__mod__electroweaksu2+0-1 : -1) Field F_DWW1X
+field_order(AC_idww1__mod__electroweaksu2 != 0 ? AC_idww1__mod__electroweaksu2+1-1 : -1) Field F_DWW1Y
+field_order(AC_idww1__mod__electroweaksu2 != 0 ? AC_idww1__mod__electroweaksu2+2-1 : -1) Field F_DWW1Z
+const Field3 F_DWW1 = {F_DWW1X, F_DWW1Y, F_DWW1Z}
+const Field3 F_DWW1VEC = {F_DWW1X, F_DWW1Y, F_DWW1Z}
+#endif
+#if LELECTROWEAKSU2
+field_order(AC_idww2__mod__electroweaksu2 != 0 ? AC_idww2__mod__electroweaksu2+0-1 : -1) Field F_DWW2X
+field_order(AC_idww2__mod__electroweaksu2 != 0 ? AC_idww2__mod__electroweaksu2+1-1 : -1) Field F_DWW2Y
+field_order(AC_idww2__mod__electroweaksu2 != 0 ? AC_idww2__mod__electroweaksu2+2-1 : -1) Field F_DWW2Z
+const Field3 F_DWW2 = {F_DWW2X, F_DWW2Y, F_DWW2Z}
+const Field3 F_DWW2VEC = {F_DWW2X, F_DWW2Y, F_DWW2Z}
+#endif
+#if LELECTROWEAKSU2
+field_order(AC_idww3__mod__electroweaksu2 != 0 ? AC_idww3__mod__electroweaksu2+0-1 : -1) Field F_DWW3X
+field_order(AC_idww3__mod__electroweaksu2 != 0 ? AC_idww3__mod__electroweaksu2+1-1 : -1) Field F_DWW3Y
+field_order(AC_idww3__mod__electroweaksu2 != 0 ? AC_idww3__mod__electroweaksu2+2-1 : -1) Field F_DWW3Z
+const Field3 F_DWW3 = {F_DWW3X, F_DWW3Y, F_DWW3Z}
+const Field3 F_DWW3VEC = {F_DWW3X, F_DWW3Y, F_DWW3Z}
+#endif
+#if LELECTROWEAKSU2
+field_order(AC_igammaw__mod__electroweaksu2 != 0 ? AC_igammaw__mod__electroweaksu2+0-1 : -1) Field F_GAMMAWX
+field_order(AC_igammaw__mod__electroweaksu2 != 0 ? AC_igammaw__mod__electroweaksu2+1-1 : -1) Field F_GAMMAWY
+field_order(AC_igammaw__mod__electroweaksu2 != 0 ? AC_igammaw__mod__electroweaksu2+2-1 : -1) Field F_GAMMAWZ
+const Field3 F_GAMMAW = {F_GAMMAWX, F_GAMMAWY, F_GAMMAWZ}
+const Field3 F_GAMMAVEC = {F_GAMMAWX, F_GAMMAWY, F_GAMMAWZ}
+#endif
+#if LELECTROWEAKSU2
+field_order(AC_iww1ddot__mod__electroweaksu2 != 0 ? AC_iww1ddot__mod__electroweaksu2+0-1 : -1) Field F_WW1DDOTX
+field_order(AC_iww1ddot__mod__electroweaksu2 != 0 ? AC_iww1ddot__mod__electroweaksu2+1-1 : -1) Field F_WW1DDOTY
+field_order(AC_iww1ddot__mod__electroweaksu2 != 0 ? AC_iww1ddot__mod__electroweaksu2+2-1 : -1) Field F_WW1DDOTZ
+const Field3 F_WW1DDOT = {F_WW1DDOTX, F_WW1DDOTY, F_WW1DDOTZ}
+const Field3 F_WW1DDOVEC = {F_WW1DDOTX, F_WW1DDOTY, F_WW1DDOTZ}
+#endif
+#if LELECTROWEAKSU2
+field_order(AC_iww2ddot__mod__electroweaksu2 != 0 ? AC_iww2ddot__mod__electroweaksu2+0-1 : -1) Field F_WW2DDOTX
+field_order(AC_iww2ddot__mod__electroweaksu2 != 0 ? AC_iww2ddot__mod__electroweaksu2+1-1 : -1) Field F_WW2DDOTY
+field_order(AC_iww2ddot__mod__electroweaksu2 != 0 ? AC_iww2ddot__mod__electroweaksu2+2-1 : -1) Field F_WW2DDOTZ
+const Field3 F_WW2DDOT = {F_WW2DDOTX, F_WW2DDOTY, F_WW2DDOTZ}
+const Field3 F_WW2DDOVEC = {F_WW2DDOTX, F_WW2DDOTY, F_WW2DDOTZ}
+#endif
+#if LELECTROWEAKSU2
+field_order(AC_iww3ddot__mod__electroweaksu2 != 0 ? AC_iww3ddot__mod__electroweaksu2+0-1 : -1) Field F_WW3DDOTX
+field_order(AC_iww3ddot__mod__electroweaksu2 != 0 ? AC_iww3ddot__mod__electroweaksu2+1-1 : -1) Field F_WW3DDOTY
+field_order(AC_iww3ddot__mod__electroweaksu2 != 0 ? AC_iww3ddot__mod__electroweaksu2+2-1 : -1) Field F_WW3DDOTZ
+const Field3 F_WW3DDOT = {F_WW3DDOTX, F_WW3DDOTY, F_WW3DDOTZ}
+const Field3 F_WW3DDOVEC = {F_WW3DDOTX, F_WW3DDOTY, F_WW3DDOTZ}
+#endif
+#if LELECTROWEAKSU2
+field_order(AC_idivdotw__mod__electroweaksu2 != 0 ? AC_idivdotw__mod__electroweaksu2+0-1 : -1) Field F_DIVDOTWX
+field_order(AC_idivdotw__mod__electroweaksu2 != 0 ? AC_idivdotw__mod__electroweaksu2+1-1 : -1) Field F_DIVDOTWY
+field_order(AC_idivdotw__mod__electroweaksu2 != 0 ? AC_idivdotw__mod__electroweaksu2+2-1 : -1) Field F_DIVDOTWZ
+const Field3 F_DIVDOTW = {F_DIVDOTWX, F_DIVDOTWY, F_DIVDOTWZ}
+const Field3 F_DIVDOTVEC = {F_DIVDOTWX, F_DIVDOTWY, F_DIVDOTWZ}
+#endif
 // @auto-field-declarations: fortran-parser adds missing fields above this line
 #if LDEBUG_OUTPUT_TIMES
 field_order(AC_ispecial__mod__debug_output_times != 0 ? AC_ispecial__mod__debug_output_times-1 : -1) Field F_SPECIAL

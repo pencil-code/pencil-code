@@ -502,7 +502,7 @@ program pc_reduce
   open (lun_output, FILE=trim(directory_out)//'/'//filename, FORM='unformatted', position='append', status='old')
   t_sp = t
   write (lun_output) t_sp, rx, ry, gz, dx*reduce, dy*reduce, dz
-  if (lshear) write (lun_output) deltay
+  if (lshear) write (lun_output) delta_y
   close(lun_output)
 !
   ! write global grid:

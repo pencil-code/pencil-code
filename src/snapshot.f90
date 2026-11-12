@@ -313,7 +313,7 @@ module Snapshot
 !
       use Boundcond, only: update_ghosts
       use General, only: safe_character_assign, loptest
-      use IO, only: log_filename_to_file, IO_strategy
+      use IO, only: log_filename_to_file, IO_strategy, lcollective_IO
       use Sub, only: read_snaptime, update_snaptime
       use Syscalls, only: system_cmd
       use Mpicomm, only: mpibarrier
@@ -370,7 +370,6 @@ module Snapshot
           nv1_capitalvar=1
         endif
 !
-!  This routine sets lvideo=T whenever its time to write a slice
 !  Check whether we want to output snapshot. If so, then
 !  update ghost zones for var.dat (cheap, since done infrequently).
 !
@@ -423,17 +422,20 @@ module Snapshot
         endif
         call safe_character_assign(file,trim(chsnap))
         if (lbackup_snap .and. .not.lstart .and. .not.(chsnap=='crash.dat' .or. chsnap(1:1)=='d' .or. chsnap(1:3)=='VAR')) then
-          tmpfile=merge('var.h5 ','var.dat',IO_strategy=='HDF5')
-          base_file = trim(directory_snap)//'/'//trim(tmpfile)
-          backup_file = base_file // '.bck'
-          if (nsnap_backups > 1) then
-            do i = nsnap_backups,2,-1
-              call system_cmd('mv -f '// backup_file // '.' // trim(itoa(i-1)) // ' ' // &
-                                         backup_file // '.' // trim(itoa(i)) // ' > /dev/null 2>&1')
-            enddo
-            backup_file = backup_file // '.1'
+          if(.not.lcollective_IO.or. (IO_strategy=="io_collect_xy".and.lfirst_proc_xy) .or.lroot) then
+            tmpfile=merge('var.h5 ','var.dat',IO_strategy=='HDF5')
+            base_file = trim(directory_snap)//'/'//trim(tmpfile)
+            backup_file = base_file // '.bck'
+            if (nsnap_backups > 1) then
+              do i = nsnap_backups,2,-1
+                call system_cmd('mv -f '// backup_file // '.' // trim(itoa(i-1)) // ' ' // &
+                                           backup_file // '.' // trim(itoa(i)) // ' > /dev/null 2>&1')
+              enddo
+              backup_file = backup_file // '.1'
+            endif
+            call system_cmd('mv -f '// base_file // ' ' // backup_file //' > /dev/null 2>&1')
           endif
-          call system_cmd('mv -f '// base_file // ' ' // backup_file //' > /dev/null 2>&1')
+          if (lcollective_IO) call mpibarrier
         endif
         if (lmultithread.and.nt>0) then
           call add_snap_to_queue(1, msnap, file)
@@ -511,7 +513,7 @@ module Snapshot
 !
 !      character(LEN=fnlen) :: file
 !      real, dimension(:), intent(OUT) :: snaptimes   ! allocatable
-!      
+!
 !      call keep_compiler_quiet(file)
 !      call keep_compiler_quiet(snaptimes)
 !
@@ -863,7 +865,8 @@ module Snapshot
       use Sub, only: read_snaptime, update_snaptime
 !
       logical, save :: lfirst_call=.true.
-      logical :: existed=.false.
+      !logical :: existed=.false.
+      logical :: existed
       character (len=fnlen) :: file
       integer, save :: nspec
       real, save :: tspec_next
@@ -914,9 +917,12 @@ module Snapshot
 !  t*.dat file did not yet exist. This is important if trigger_spec is not the code_time.
 !
         if (lfirst_call) then
-          if (.not. existed) then 
+          if (.not. existed) then
             tspec_next = t_trigger
-            if(trigger_spec == 'code_time') then
+            !tspec_next = -int(exp(.5*alog(huge1))/dspec)*dspec  !(AXEL)
+            !2026-Nov-12/Kishore: commented out below and restored above to fix power spectra output in the helical-MHDturb sample. Axel, please check.
+            !tspec_next = -int(100./dspec)*dspec  !(AXEL)
+            if (trigger_spec == 'code_time') then
               tspec_next=tspec_next + dspec
             endif
           endif
@@ -942,32 +948,21 @@ module Snapshot
       use Power_spectrum, only: powerhel
       use Sub, only: update_snaptime
       use Diagnostics, only: save_diagnostic_controls
+      use General, only: loptest
 !
       real, contiguous, dimension(:,:,:,:) :: f
       logical, optional :: lwrite_only
 !
-      logical :: llwrite_only=.false.,ldo_all,lfirstcall_powerhel
-      real, dimension (2) :: sumspec=0.
+      logical :: llwrite_only,ldo_all,lfirstcall_powerhel
+      real, dimension(2) :: sumspec
 !
 !  Set llwrite_only.
 !
-      if (present(lwrite_only)) llwrite_only=lwrite_only
+      llwrite_only=loptest(lwrite_only)
 
       !TP: unfortunately spectrum needs a different t than timeseries since they are in general different
-      if(.not. lmultithread) then
+      if (.not. lmultithread) then
         if (trigger_spec=='code_time') tspec=real(t)
-      else 
-
-        !TP: if farray was already copied from the gpu during this iteration for rhs diagnostic purposes
-        !    it is not copied again for spectra. Instead we correct the timestamp to match with the data
-        !    which comes before time advancement.
-        !    When testing for agreement between CPU and GPU one can suppress all other output than spectra.
-        !Kishore: is the lspec_at_tplusdt flag not relevant here?
-        if(ldiagnostic_output) then
-                tspec_save=t-dt
-        else
-                tspec_save=t
-        endif
       endif
 
       ldo_all=.not.llwrite_only
@@ -980,6 +975,17 @@ module Snapshot
         if (ldo_all .and. .not. lmultithread) call update_ghosts(f)
 !
         if (lmultithread) then
+!
+!  If f was already copied from the GPU during this iteration for the rhs
+!  diagnostics, it is not copied again and holds the data from before the time
+!  advance: the spectra get the time of the copy. Set only here (after the
+!  copy, which waits for the helper to be idle), so that a helper still
+!  working on the previous request does not see a changed tspec_save.
+!  (Testing ldiagnostic_output here does not work: it is reset in the later
+!  substeps.)
+!
+          tspec_save=t
+          if (lgpu) tspec_save=t_farray_copy
           call save_diagnostic_controls(lsnap_time=.true.)
 !$        lmasterflags(PERF_POWERSNAP) = .true.
         else
@@ -1016,7 +1022,7 @@ module Snapshot
 
       real, dimension (:,:,:), allocatable :: b_vec
       integer :: ivec,stat,ipos,ispec,nloc,mloc,n_pdfs,i,n_cs
-      real, dimension (2) :: sumspec=0.
+      real, dimension(2) :: sumspec
       character (LEN=40) :: str,sp1,sp2
       logical :: lfirstcall, lfirstcall_powerhel, lsqrt
       character (LEN=labellen), dimension(n_pdfs_max) :: pdfs_parsed=''
@@ -1045,6 +1051,7 @@ module Snapshot
         if (EMF_spec) call powerEMF(f,'EMF')
         if (Tra_spec) call powerTra(f,'Tra')
         lfirstcall=.true.
+        if (UETC_spec) call powerUETCs(f,lfirstcall)
         if (StT_spec) call powerGWs(f,'StT',lfirstcall)
         if (StX_spec) call powerGWs(f,'StX',lfirstcall)
         if (GWs_spec) call powerGWs(f,'GWs',lfirstcall)
@@ -1092,9 +1099,10 @@ module Snapshot
         if (uy_spec)  call powerscl(f,'uy')
         if (uz_spec)  call powerscl(f,'uz')
         if (ucp_spec) call powerscl(f,'ucp')
-        !if (lro_spec) call powerscl(f,'ro',lsqrt)
+        !if (lro_spec) call powerscl(f,'ro',lsqrt=lsqrt)
         if (lr_spec)  call powerscl(f,'lr')
         if (pot_spec) call powerscl(f,'po')
+        if (divu_spec) call powerscl(f,'divu')
         if (ud_spec) then
           do n=1,ndustspec
             call power(f,'ud',n)
@@ -1120,7 +1128,7 @@ module Snapshot
         if (ssp_spec) call powerscl(f,'sp',lsqrt=lsqrt)
         if (sssp_spec)call powerscl(f,'Ssp')
         if (mu_spec)  call powerscl(f,'mu')
-        !if (smu_spec) call powerscl(f,'mu',lsqrt)
+        !if (smu_spec) call powerscl(f,'mu',lsqrt=lsqrt)
         if (har_spec) call powerscl(f,'hr')
         if (hav_spec) call powerscl(f,'ha')
         if (b2_spec)  call powerscl(f,'b2')
@@ -1161,7 +1169,7 @@ module Snapshot
               if ( ipos<=len_trim(xy_specs(ispec))-1 ) sp2=str(ipos+1:)
 !
               if ( sp1=='' .or. sp2=='' ) then
-                call warning('powersnap','no valid identifier xy_specs: '//trim(xy_specs(ispec)))
+                call warning('powersnap','no such identifier xy_specs: '//trim(xy_specs(ispec)))
               else
                 call power_xy(f,sp1,sp2)
               endif
@@ -1470,7 +1478,7 @@ module Snapshot
       integer :: i, j, k, kk
       real, allocatable, dimension(:) :: xx,yy,zz
 
-      allocate(xx(nx*ny*nz),yy(nx*ny*nz),zz(nx*ny*nz))  
+      allocate(xx(nx*ny*nz),yy(nx*ny*nz),zz(nx*ny*nz))
 !
       open(lun_output,FILE=trim(directory_dist)//trim(file)//'.tec')
 !

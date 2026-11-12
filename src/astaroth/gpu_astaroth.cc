@@ -6,6 +6,7 @@
   Comments: 
 */
 // General headers.
+#include <unordered_map>
 #include <sstream>
 #include <math.h>
 #include <algorithm>
@@ -21,8 +22,11 @@
 #include <fstream>
 #include <dlfcn.h>
 #include <thread>
+#include <string>
 #include <stack>
 #include <filesystem>
+#include <vector>
+#include <limits>
 
 static std::thread GW_thread{};
 static int device_id = 0;
@@ -47,6 +51,7 @@ bool calculated_coeff_scales = false;
 
 AcTaskGraph* GW_timestep_graph  =  NULL;
 AcTaskGraph* boundary_z_halo_exchange_graph =  NULL;
+AcTaskGraph* boundary_z_bot_halo_exchange_graph =  NULL;
 //TP: logs performance metrics of Astaroth
 const bool performance_logs = false;
 
@@ -54,8 +59,6 @@ const bool performance_logs = false;
 #include "math_utils.h"
 #define EXTERN
 #define FINT int
-
-
 
 #if DOUBLE_PRECISION
   #define REAL_MAX DBL_MAX
@@ -69,6 +72,8 @@ const bool performance_logs = false;
   #define thread_block_loop_factors thread_block_loop_factors__mod__gpu
   #define luses_aa_pot2_top luses_aa_pot2_top__mod__cdata 
   #define luses_aa_pwd_top luses_aa_pwd_top__mod__cdata 
+  #define luses_aa_pfe_top luses_aa_pfe_top__mod__cdata 
+  #define luses_aa_pfe_bot luses_aa_pfe_bot__mod__cdata 
   #define lsplit_gw_rhs_from_rest_on_gpu lsplit_gw_rhs_from_rest_on_gpu__mod__gravitational_waves_htxk
   #define limplicit_diffusion_with_fft limplicit_diffusion_with_fft__mod__implicitdiffusion
   #define limplicit_diffusion_with_cg  limplicit_diffusion_with_cg__mod__implicitdiffusion
@@ -140,7 +145,7 @@ const bool performance_logs = false;
   #define lxyz                   lxyz__mod__cdata
   #define ldebug ldebug__mod__cdata
   
-  #define deltay  deltay__mod__cdata
+  #define delta_y  delta_y__mod__cdata
   #define eps_rkf eps_rkf__mod__cdata
   #define itauxx itauxx__mod__training
   #define itauxy itauxy__mod__training
@@ -216,8 +221,8 @@ void scaling();
 extern "C" void print_debug();
 float MSE();
 
-extern "C" void copyFarray(AcReal* f);    // forward declaration
-extern "C" void loadFarray(); // forward declaration
+extern "C" void copyFarray(AcReal* f, bool read_particles = true);    // forward declaration
+extern "C" void loadFarray(bool load_particles = false); // forward declaration
 void denormalize(std::string filename, AcRealSymmetricTensor &tau_means, AcRealSymmetricTensor &tau_stds);
 
 /***********************************************************************************************/
@@ -270,6 +275,18 @@ AcReal to_real(void* param, const char* name)
 		abort();
 	}
 	return *((AcReal*)param);
+}
+/***********************************************************************************************/
+AcReal to_dble(void* param, const char* name)
+{
+//TP: for real(KIND=rkind8) variables pushed with copy_addr_dble (comment "! dble"),
+//    which are double also when AcReal is float
+	if (param == NULL)
+	{
+		fprintf(stderr,"Passed NULL to pushparsc, expected double: %s!!\n",name);
+		abort();
+	}
+	return (AcReal)*((double*)param);
 }
 /***********************************************************************************************/
 int to_int(void* param, const char* name)
@@ -353,9 +370,7 @@ torus_rect to_torus_rect(void* param, const char* name)
 #endif
 
 /***********************************************************************************************/
-template <typename T>
-void
-pushpars_special(const char* func_name, T p_pars)
+template <typename T> void pushpars_special(const char* func_name, T p_pars)
 {
  	void* handle = dlopen("src/special.so",RTLD_NOW | RTLD_LOCAL);
 	auto sub = reinterpret_cast<void (*)(T)>(dlsym(handle,func_name));
@@ -363,8 +378,7 @@ pushpars_special(const char* func_name, T p_pars)
 	dlclose(handle);
 }
 /***********************************************************************************************/
-const char*
-get_cwd()
+const char* get_cwd()
 {
   static char cwd[9000];
   cwd[0] = '\0';
@@ -390,12 +404,14 @@ int same_path(const char *p1, const char *p2) {
     return strcmp(r1, r2) == 0;
 }
 static int lac_sparse_autotuning = 0;
+//Run-time auxiliary counts (macros maux, maux_com, mfarray, mcom in cparam.inc_c.h with DYNAMIC_AUX), set in setupConfig
+EXTERN_C int pc_maux, pc_maux_com, pc_mfarray, pc_mcom;
+int pc_maux = 0, pc_maux_com = 0, pc_mfarray = 0, pc_mcom = 0;
 //Point to maux_vtxbuf_index and read_vtxbuf_from_gpu of Cdata (size >= mfarray), set in initializeGPU
 static int* maux_vtxbuf_index = NULL;
 static int* read_vtxbuf_from_gpu = NULL;
 /***********************************************************************************************/
-void
-sortMaux()
+void sortMaux()
 {
     std::vector<int> used_maux;
     for (int i = 0; i < mfarray; ++i) {
@@ -411,11 +427,16 @@ sortMaux()
             maux_vtxbuf_index[i] = used_maux[j++];
     }
 }
+/***********************************************************************************************/
 void setupConfig(AcMeshInfo& config)
 {
   config = acInitInfo();
  
   #include "PC_modulepars.h"
+  pc_maux     = pc_maux__mod__cdata;
+  pc_maux_com = pc_maux_com__mod__cdata;
+  pc_mfarray  = pc_mfarray__mod__cdata;
+  pc_mcom     = pc_mcom__mod__cdata;
 
   //TP: this is because we non-communicated auxs might be registered before communicated ones
   //TP: the whole think with maux_vtxbuf_index is a bit of a mess...
@@ -452,6 +473,7 @@ void setupConfig(AcMeshInfo& config)
   PCLoad(config, AC_y12,y12__mod__cdata);
   PCLoad(config, AC_sinth12,sinth12__mod__cdata);
   PCLoad(config, AC_z12,z12__mod__cdata);
+  PCLoad(config, AC_sld_rfac_abs,lsld_rfac_abs__mod__cdata);
 
   PCLoad(config, AC_rk_order, itorder);
   PCLoad(config, AC_shear,lshear);
@@ -492,8 +514,10 @@ void setupConfig(AcMeshInfo& config)
   PCLoad(config,AC_periodic_grid,lperi);
 //  Overwrites Astaroth's default formula for AC_len in case it does not cover everything like non-equidistant grids
   PCLoad(config,AC_len,lxyz);
+//  Astaroth's default assumes that the domain starts from the origin; grid_position() needs the real one
+  PCLoad(config,AC_first_gridpoint,(AcReal3){x__mod__cdata[NGHOST],y__mod__cdata[NGHOST],z__mod__cdata[NGHOST]});
 
-  #if LTRAINING
+#if LTRAINING
   AcRealSymmetricTensor tau_hydro_means{};
   AcRealSymmetricTensor tau_hydro_stds{};
 	
@@ -502,8 +526,12 @@ void setupConfig(AcMeshInfo& config)
 
   	PCLoad(config,AC_tau_hydro_means,tau_hydro_means);
   	PCLoad(config,AC_tau_hydro_stds ,tau_hydro_stds);
-  #endif
+#endif
   PCLoad(config,AC_sparse_autotuning,lac_sparse_autotuning);
+#if LRADIATION
+  //TP: done since we are setting Q initially zero and later on take into account the periodicity
+  PCLoad(config,AC_allow_non_periodic_bcs_with_periodic_grid,true);
+#endif
 
   //Calculate derived variable values based on the assignments in the initializations
   acHostUpdateParams(&config); 
@@ -516,7 +544,10 @@ void setupConfig(AcMeshInfo& config)
   char build_path[18000];
   sprintf(build_path,"%s/src/astaroth/submodule/build",get_cwd());
   //Tell Astaroth that we want the runtime build to end up under this folder
-  config.runtime_compilation_build_path = strdup(build_path);
+  //setupConfig runs again on reload and config keeps the pointer, so the path has to outlive this call
+  static std::string runtime_build_path{};
+  runtime_build_path = build_path;
+  config.runtime_compilation_build_path = runtime_build_path.c_str();
   //We find the DSL compiler under the sample which did the initial compilation
   //So in case of pc_newrun -s the new sample would use the compiled compiler under the old sample.
   //We do this because changing where the compiler path would kick in unnecessary recompilations.
@@ -559,9 +590,50 @@ AcReal GpuCalcDt(const AcReal t)
 	return calc_dt1_courant(t);
 }
 /***********************************************************************************************/
+#if Lradiation_ray_MODULE
+//Boundary heating rates of the periodic horizontal rays (Qperiodic): built once per direction and reused,
+//since every acGridBuildTaskGraph allocates new MPI tags (and the graphs would otherwise leak)
+static AcTaskGraph* get_periodic_ray_graph(const int3 direction)
+{
+	static AcTaskGraph* graphs[2][2]{};
+	const int axis = direction.x != 0 ? 0 : 1;
+	const int side = (direction.x + direction.y) > 0 ? 1 : 0;
+	if (graphs[axis][side] == NULL)
+	{
+		Field fields[2] = {acGetQ_HOR(), acGetTAU_HOR()};
+		graphs[axis][side] = acGridBuildTaskGraph({acPeriodicRay(fields, 2, direction)});
+	}
+	return graphs[axis][side];
+}
+//Boundary heating rates of the non-periodic vertical rays: each process receives the value in its upstream ghost zone,
+//revises only its downstream boundary layer with it (Q_intrinsic + Q_bnd*exp(-tau)) and sends that to the next process,
+//as radboundary_xy_recv/send in radiation_ray.f90; the revision of the whole subdomain is then done in parallel
+//(Q_up_extrinsic, see accumulate_vertical in DSL/radiation/integrate.h).
+static AcTaskGraph* get_vertical_ray_boundary_graph(const int nrad)
+{
+	static AcTaskGraph* graphs[2]{};
+	const int side = nrad > 0 ? 1 : 0;
+	if (graphs[side] == NULL)
+	{
+		const int3 dir = (int3){0,0,nrad};
+		const Field bnd = nrad > 0 ? acGetQ_UP() : acGetQ_DOWN();
+		KernelParamsLoader loader = [](ParamLoadingInfo p) { (void)p; };
+		graphs[side] = acGridBuildTaskGraph({
+				acHaloExchange({bnd},dir,false,true),
+				acRayUpdate(nrad > 0 ? propagate_Q_up_boundary : propagate_Q_down_boundary,
+					    BOUNDARY_XYZ,dir,{bnd},loader),
+				acHaloExchange({bnd},dir,true,false)
+				});
+	}
+	return graphs[side];
+}
+#endif
 extern "C" void radTransfer()
 {
 #if Lradiation_ray_MODULE
+//Rays along the coordinate axes in the order of initialize_radiation (idir), see radtransfer in radiation_ray.f90;
+//    the restrictions are checked in initialize_radiation
+	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(Qrad_reset),1);
 	for (int inu = 1; inu <= nnu__mod__radiation; ++inu)
 	{
   		acDeviceSetInput(acGridGetDevice(), AC_frequency_bin,inu);
@@ -570,6 +642,11 @@ extern "C" void radTransfer()
 		acGridHaloExchange();
   		auto bcs = acGetOptimizedDSLTaskGraph(boundconds);	
 		acGridExecuteTaskGraph(bcs,1);
+//yH (eos_ionization, eos_temperature_ionization) is computed in beforeBoundaryGPU before the halos are updated,
+//but the opacity in the first ghost layer (needed by the horizontal rays) depends on it
+		const auto ioncalc_halos = acGetOptimizedDSLTaskGraph(AC_ioncalc_including_halos,
+							(Volume){0,0,0},acGetLocalMM(acGridGetLocalMeshInfo()));
+		if (!acGridTaskGraphIsEmpty(ioncalc_halos)) acGridExecuteTaskGraph(ioncalc_halos,1);
 
 		const auto info = acDeviceGetLocalConfig(acGridGetDevice());
 		const Volume offsets = (Volume)
@@ -581,11 +658,66 @@ extern "C" void radTransfer()
 		const Volume start = acGetMinNN(info)-offsets;
 		const Volume end   = acGetMaxNN(info)+offsets;
 		acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(get_source_function_and_opacity,start,end),1);
-        	const auto Qintrinsic_graph = acGetOptimizedDSLTaskGraph(Qintrinsic_steps,true,Qintrinsic_bcs);
-		acGridExecuteTaskGraph(Qintrinsic_graph,1);
-        	const auto Qextrinsic_graph = acGetOptimizedDSLTaskGraph(Qextrinsic_steps);
-		acGridExecuteTaskGraph(bcs,1);
-		acGridExecuteTaskGraph(Qextrinsic_graph,1);
+
+		int idir = 1;
+		for (int nrad = -radz__mod__radiation; nrad <= radz__mod__radiation; ++nrad)
+		for (int mrad = -rady__mod__radiation; mrad <= rady__mod__radiation; ++mrad)
+		for (int lrad = -radx__mod__radiation; lrad <= radx__mod__radiation; ++lrad)
+		{
+			const int facet_class = lrad*lrad+mrad*mrad+nrad*nrad;
+			if (facet_class == 0 || facet_class > rad2max__mod__radiation) continue;
+			if (facet_class != 1)
+			{
+				fprintf(stderr,"radTransfer: only rays along the coordinate axes (rad2max=1) are implemented on the GPU!\n");
+				exit(EXIT_FAILURE);
+			}
+			const int3 dir = (int3){lrad,mrad,nrad};
+  			acDeviceSetInput(acGridGetDevice(), AC_ray_idir, idir);
+			//Three steps:
+			//1) Intrisic computation not needing any communications
+			if (nrad != 0)
+			{
+				acGridExecuteTaskGraph(nrad > 0 ? acGetOptimizedDSLTaskGraph(Q_up_intrinsic,true,Qintrinsic_bcs)
+								: acGetOptimizedDSLTaskGraph(Q_down_intrinsic,true,Qintrinsic_bcs),1);
+			}
+			else if (lrad != 0)
+			{
+				acGridExecuteTaskGraph(lrad > 0 ? acGetOptimizedDSLTaskGraph(Q_xp_intrinsic,true,Qhor_intrinsic_bcs)
+								: acGetOptimizedDSLTaskGraph(Q_xm_intrinsic,true,Qhor_intrinsic_bcs),1);
+			}
+			else
+			{
+				acGridExecuteTaskGraph(mrad > 0 ? acGetOptimizedDSLTaskGraph(Q_yp_intrinsic,true,Qhor_intrinsic_bcs)
+								: acGetOptimizedDSLTaskGraph(Q_ym_intrinsic,true,Qhor_intrinsic_bcs),1);
+			}
+			if (facet_class == 1 && ((lrad != 0 && lperi.x) || (mrad != 0 && lperi.y) || (nrad != 0 && lperi.z)))
+			{
+    		          acGridExecuteTaskGraph(get_periodic_ray_graph(dir),1);
+			}
+			else
+			{
+			  acGridExecuteTaskGraph(bcs,1);
+			  //Boundary heating rates of the vertical rays from the upstream processes
+			  if (nrad != 0) acGridExecuteTaskGraph(get_vertical_ray_boundary_graph(nrad),1);
+			}
+			//3) Revision of the intrinsic computation with incoming upstream values and accumulation to the final result
+			if (nrad != 0)
+			{
+				acGridExecuteTaskGraph(nrad > 0 ? acGetOptimizedDSLTaskGraph(Q_up_extrinsic)
+								: acGetOptimizedDSLTaskGraph(Q_down_extrinsic),1);
+			}
+			else if (lrad != 0)
+			{
+				acGridExecuteTaskGraph(lrad > 0 ? acGetOptimizedDSLTaskGraph(Q_xp_extrinsic)
+								: acGetOptimizedDSLTaskGraph(Q_xm_extrinsic),1);
+			}
+			else
+			{
+				acGridExecuteTaskGraph(mrad > 0 ? acGetOptimizedDSLTaskGraph(Q_yp_extrinsic)
+								: acGetOptimizedDSLTaskGraph(Q_ym_extrinsic),1);
+			}
+			++idir;
+		}
 	}
 #endif
 }
@@ -694,7 +826,7 @@ void save_stats(std::string fileName){
 
       // Headers
       if (lhydro){
-        if(AC_lconservative__mod__hydro){
+        if (lconservative__mod__hydro){
           myFile << ",in_acc_sum_rho";
 
           for (const auto& s : vec_suffix) myFile << ",in_acc_sum_mom" << s;
@@ -717,16 +849,14 @@ void save_stats(std::string fileName){
 	myFile << "\n";
 	myFile << train_counter << "," << (size_t)nxgrid*nygrid*nzgrid;
       }
-    
 
-        if (AC_ltrain_mag__mod__training) {
+      if (ltrain_mag__mod__training) {
             myFile << ",in_acc_sum_Ux,in_acc_sum_Uy,in_acc_sum_Uz,in_acc_sum_Bx,in_acc_sum_By,in_acc_sum_Bz,in_acc_sum_squared_Ux,in_acc_sum_squared_Uy,in_acc_sum_squared_Uz,in_acc_sum_squared_Bx,in_acc_sum_squared_By,in_acc_sum_squared_Bz,out_acc_sum_EMFx,out_acc_sum_EMFy,out_acc_sum_EMFz,out_acc_sum_squared_EMFx,out_acc_sum_squared_EMFy,out_acc_sum_squared_EMFz\n";
 
             myFile << train_counter << "," << nxgrid*nygrid*nzgrid << ",";
 
-	}
+      }
         
-      
       auto write_fields = [&](auto* name, size_t size) {
         for (size_t i = 0; i < size; ++i) {
             myFile << "," << acDeviceGetOutput(acGridGetDevice(), name[i]);
@@ -736,7 +866,7 @@ void save_stats(std::string fileName){
 
     // Hydro statistics
         if (lhydro){
-          if(AC_lconservative__mod__hydro){
+          if (lconservative__mod__hydro){
             myFile << "," << acDeviceGetOutput(acGridGetDevice(), in_acc_sum_rho);
             
             // momentum
@@ -771,7 +901,7 @@ void save_stats(std::string fileName){
 	  myFile << "\n";
         }
 
-        if (AC_ltrain_mag__mod__training) {
+        if (ltrain_mag__mod__training) {
             auto in_acc_sum_ux = acDeviceGetOutput(acGridGetDevice(), in_acc_sum_U[0]);
             auto in_acc_sum_uy = acDeviceGetOutput(acGridGetDevice(), in_acc_sum_U[1]);
             auto in_acc_sum_uz = acDeviceGetOutput(acGridGetDevice(), in_acc_sum_U[2]);
@@ -806,7 +936,7 @@ void save_training_losses(){
 
   std::ofstream myFile;
   std::string fileString = "train_loss_" + std::to_string(my_rank)  + ".csv";	
-  if(training_from_checkpoint){
+  if (training_from_checkpoint){
     myFile.open(fileString, std::ios::app);
   }
   else {
@@ -819,7 +949,7 @@ void save_training_losses(){
   myFile.close();
 	
 	std::string train_sample = "train_sample_" + std::to_string(my_rank) + ".csv";
-  if(training_from_checkpoint){
+  if (training_from_checkpoint){
     myFile.open(fileString, std::ios::app);
   }
   else {
@@ -835,7 +965,7 @@ void save_training_losses(){
 void load_train_stats(){
 #if LTRAINING
 	#include "user_constants.h"
-    if(rank==0){
+    if (rank==0){
         std::ifstream statistics("data/training/running_statistics.csv");
         int count;
         int domain;
@@ -869,9 +999,8 @@ void load_train_stats(){
             acDeviceSetInput(acGridGetDevice(), AC_count, train_counter);
 
             if (lhydro){
-                if(AC_lconservative__mod__hydro){
+                if (lconservative__mod__hydro){
                   size_t i_count=2;
-
 
                   acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_rho, (AcReal)std::stod(row[i_count++]));
 
@@ -920,7 +1049,7 @@ void load_train_stats(){
                 }
 	    }
 
-            if (AC_ltrain_mag__mod__training) {
+            if (ltrain_mag__mod__training) {
                 auto res = acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_U[0], (AcReal)std::stod(row[2]));
                 acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_U[1], std::stod(row[3]));
                 acDeviceLoadRealReduceRes(acGridGetDevice(), STREAM_DEFAULT, in_acc_sum_U[2], std::stod(row[4]));
@@ -975,10 +1104,14 @@ extern "C" void tf_create_model_c_api(const char *model_name, const char* config
 
   acLogFromRootProc(rank,"CONFIG_FILE: %s\n", config_file_path);
   acLogFromRootProc(rank,"Model_NAME: %s\n", model_name);
+
+  // In the CPU-emulated build (with a CPU-only TorchFort) the model lives on the host
+  // (TORCHFORT_DEVICE_CPU = -1); otherwise on the GPU of this rank.
+  const int torch_device = AC_CPU_BUILD ? -1 : rank % ndevices;
 	
 	if (ldist){
   	    comm_pencil = MPI_Comm_f2c(comm_fint);
-		bool success = torch_create_distributed_model_CAPI(model_name, config_file_path, comm_pencil, rank % ndevices);
+		bool success = torch_create_distributed_model_CAPI(model_name, config_file_path, comm_pencil, torch_device);
 		if (success != 0){
 			acLogFromRootProc(rank, "Error when creating distributed model: %s from config file: %s\n", model_name, config_file_path);
 		}
@@ -988,7 +1121,7 @@ extern "C" void tf_create_model_c_api(const char *model_name, const char* config
 	}
 
 	else{
-		bool success = torch_create_model_CAPI(model_name, config_file_path, 0);
+		bool success = torch_create_model_CAPI(model_name, config_file_path, AC_CPU_BUILD ? -1 : 0);
 		if (success != 0){
 			acLogFromRootProc(rank, "Error when creating the model: %s from config file: %s\n", model_name, config_file_path);
 		}
@@ -1011,7 +1144,7 @@ extern "C" void tf_load_model_c_api(const char* name, const char* fname){
 	else{
 		acLogFromRootProc(rank, "Torchfort model %s loaded succesfully", name);
 	}
-  new_run=false;
+  	new_run=false;
 	fflush(stdout);
 	fflush(stderr);
 #endif
@@ -1029,8 +1162,8 @@ extern "C" void tf_load_model_checkpoint_c_api(const char* name, const char* che
 		acLogFromRootProc(rank, "Torchfort model %s loaded succesfully\n", name);
 	}
     
-  training_from_checkpoint=true;
-  new_run=false;
+  	training_from_checkpoint=true;
+  	new_run=false;
 	fflush(stdout);
 	fflush(stderr);
 #endif
@@ -1045,7 +1178,7 @@ extern "C" void tf_save_model_c_api(const char* name, const char* fname){
 	else{
         save_stats("data/training/running_statistics.csv");
 		acLogFromRootProc(rank, "save_model: Saving ML model to: %s\n", fname);
-    save_training_losses();
+    	save_training_losses();
 
 	}
 	fflush(stdout);
@@ -1197,16 +1330,16 @@ extern "C" void tf_infer_c_api(const char* name, int itsub)
 	if (!ltrained) return;
 	if (!calling_infer){
 	  acLogFromRootProc(rank,"Doing inference\n");
-    fflush(stderr);
-    fflush(stdout);
+    	  fflush(stderr);
+   	  fflush(stdout);
 
-    calling_infer = true;
+          calling_infer = true;
 	}
 
   auto initialize_fields = acGetOptimizedDSLTaskGraph(get_inference_fields);
 	acGridExecuteTaskGraph(initialize_fields, 1);
 
-  if (AC_ltrain_mag__mod__training) {
+  if (ltrain_mag__mod__training) {
     auto initialize_uumean_task_graph = acGetOptimizedDSLTaskGraph(initialize_uumean);
     acGridExecuteTaskGraph(initialize_uumean_task_graph, 1);
 
@@ -1224,31 +1357,30 @@ extern "C" void tf_infer_c_api(const char* name, int itsub)
   std::vector<std::pair<AcReal*, int>> inputs;
   std::vector<std::pair<AcReal*, int>> outputs;
 
-  if(lhydro){
+  if (lhydro){
 
-   if(AC_lconservative__mod__hydro){
-    acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetmom_mean_X(), &input, &out);
-    inputs.emplace_back(input, 3);
-    acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetrho_mean(), &input, &out);
-    inputs.emplace_back(input, 1);
+    if (lconservative__mod__hydro){
+     acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetmom_mean_X(), &input, &out);
+     inputs.emplace_back(input, 3);
+     acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetrho_mean(), &input, &out);
+     inputs.emplace_back(input, 1);
 
-    acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetTAU_STRAIN_XX(), &output, &out);
+     acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetTAU_STRAIN_XX(), &output, &out);
+     outputs.emplace_back(output, 6);
+    } 
+    else{
+      //todo: check if trained on same grid size and do not smooth the averaged out vals
+      acDeviceGetVertexBufferPtrs(acGridGetDevice(), uumean.x, &input, &out);
+      inputs.emplace_back(input, 3);
+    }
+
+    acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetTAU_HYDRO_XX(), &output, &out);
     outputs.emplace_back(output, 6);
-   } 
-   else{
-	  //todo: check if trained on same grid size and do not smooth the averaged out vals
-    acDeviceGetVertexBufferPtrs(acGridGetDevice(), uumean.x, &input, &out);
-    inputs.emplace_back(input, 3);
-   }
-
-   acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetTAU_HYDRO_XX(), &output, &out);
-   outputs.emplace_back(output, 6);
-
 
   }
 
   // TODO: Check if trained on same grid size and do not smooth the averaged out vals
-  if (AC_ltrain_mag__mod__training) {
+  if (ltrain_mag__mod__training) {
     acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetuumean_X(), &input, &out);
     inputs.emplace_back(input, 3);
 	  acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetbbmean_X(), &input, &out);
@@ -1260,11 +1392,15 @@ extern "C" void tf_infer_c_api(const char* name, int itsub)
 
   }
     acGridHaloExchange();
-    torch_infer_multiarg_CAPI((int[]){mz, my, mx}, inputs, outputs, name);
+    int sub_dims[3] = {mz, my, mx};
+    torch_infer_multiarg_CAPI(sub_dims, inputs, outputs, name);
 
 	
-	auto descale_inf = acGetOptimizedDSLTaskGraph(descale_inferred_values);
-	acGridExecuteTaskGraph(descale_inf, 1);
+	// lscale=F: physics-based models work in physical units, so there is nothing to descale
+	if (lscale__mod__training) {
+	  auto descale_inf = acGetOptimizedDSLTaskGraph(descale_inferred_values);
+	  acGridExecuteTaskGraph(descale_inf, 1);
+	}
 
   bcs = acGetOptimizedDSLTaskGraph(boundconds);	
 	acGridExecuteTaskGraph(bcs,1);
@@ -1277,7 +1413,7 @@ extern "C" void tf_train_c_api(const char* name, AcReal *loss_val, int itsub, do
   #include <stdlib.h>
   #include <cfloat>
 
-  if(itsub != 1) return;
+  if (itsub != 1) return;
   
   if (!calling_train){
     acLogFromRootProc(rank,"Doing training\n");
@@ -1298,12 +1434,15 @@ extern "C" void tf_train_c_api(const char* name, AcReal *loss_val, int itsub, do
   train_counter++;
   acDeviceSetInput(acGridGetDevice(), AC_count, train_counter);
 
-  acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(normalize),1);
-  acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(boundconds),1);
+  // lscale=F: physics-based models (e.g. Smagorinsky_NN) need inputs and labels in physical units
+  if (lscale__mod__training) {
+    acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(normalize),1);
+    acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(boundconds),1);
+  }
 
   *loss_val=DBL_MAX;
 
-  if(lhydro){
+  if (lhydro){
   
     std::vector<std::pair<AcReal*, int>> inputs;
     std::vector<std::pair<AcReal*, int>> outputs;
@@ -1312,7 +1451,7 @@ extern "C" void tf_train_c_api(const char* name, AcReal *loss_val, int itsub, do
     AcReal* input = NULL;
     AcReal* output = NULL;
 
-    if(AC_lconservative__mod__hydro){
+    if (lconservative__mod__hydro){
         // dynamic field handel acGetmomentum_sgs_Xx()
         acDeviceGetVertexBufferPtrs(acGridGetDevice(), acGetmom_mean_X(), &input, &out);
         inputs.emplace_back(input, 3);
@@ -1331,13 +1470,17 @@ extern "C" void tf_train_c_api(const char* name, AcReal *loss_val, int itsub, do
     outputs.emplace_back(output, 6);
 
     acGridHaloExchange();
-    torch_train_multiarg_CAPI((int[]){mz, my, mx}, inputs, outputs, loss_val,name);
+    int sub_dims[3] = {mz, my, mx};
+    torch_train_multiarg_CAPI(sub_dims, inputs, outputs, loss_val,name);
     train_loss.push_back(*loss_val);
     train_nts.push_back(it); 
     torch_wandb_log(name, "training_loss", it, *loss_val);
   }
+  // Keep the labels in both halves of TAU_HYDRO (and TAU_STRAIN): the substeps swap the halves, and
+  // without this a snapshot taken during training would contain the half that was never written
+  if (lhydro) acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(duplicate_labels),1);
   
-  if(AC_ltrain_mag__mod__training){
+  if (ltrain_mag__mod__training){
     std::vector<std::pair<AcReal*, int>> inputs;
     std::vector<std::pair<AcReal*, int>> outputs;
 
@@ -1355,7 +1498,8 @@ extern "C" void tf_train_c_api(const char* name, AcReal *loss_val, int itsub, do
 
     acGridHaloExchange();
 
-    torch_train_multiarg_CAPI((int[]){mz, my, mx}, inputs, outputs, loss_val, name);
+    int sub_dims[3] = {mz, my, mx};
+    torch_train_multiarg_CAPI(sub_dims, inputs, outputs, loss_val, name);
     train_loss.push_back(*loss_val);
     train_nts.push_back(it); 
 
@@ -1416,12 +1560,32 @@ reload_dynamically_changing_variables(bool lrmv, int isubstep, double t, bool ls
  	acDeviceSetInput(acGridGetDevice(), AC_lrmv, lrmv);
  	acDeviceSetInput(acGridGetDevice(), AC_t, AcReal(t));
  	acDeviceSetInput(acGridGetDevice(), AC_lsubstepping_in_time, lsubstepping_in_time);
+	acDeviceSetInput(acGridGetDevice(), AC_dt, dt);
 }
 /***********************************************************************************************/
+#if LPARTICLES_NBODY
+static void particles_deposit();
+#endif
+//ascale for the potential, -1 until set. As on the CPU it is the value of the previous substep: prep_rhs_special
+//comes after calc_selfpotential there.
+static AcReal ascale_potself_prev = -1.0;
 void
 calc_poisson()
 {
 #if LSELFGRAVITY
+#if LPARTICLES_NBODY
+		particles_deposit();
+#endif
+		{
+#if LLAMBDA_CDM
+			const AcReal ascale_now = exp(f_ode__mod__cdata[ilcdm_lna__mod__lambda_cdm-1]);
+#else
+			const AcReal ascale_now = 1.0;
+#endif
+			if (ascale_potself_prev < 0.0) ascale_potself_prev = ascale_now;
+			acDeviceSetInput(acGridGetDevice(),AC_ascale_potself,ascale_potself_prev);
+			ascale_potself_prev = ascale_now;
+		}
 		acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_calc_selfgravity_rhs),1);
 		acDeviceFFTR2C(acGridGetDevice(),acGetRHS_POISSON(),RHS_POISSON_COMPLEX);                     // FFT of rhs of Poisson eq.
     		AcMeshDims dims = acGetMeshDims(acGridGetLocalMeshInfo());
@@ -1439,11 +1603,45 @@ calc_poisson()
 #endif
 }
 /***********************************************************************************************/
+#if LSOLAR_CORONA && Lmagnetic_MODULE
+//Magnetogram driving of the lowest plane of the domain. All processes launch the kernel on their lowest local
+//plane so that they have the same task graphs; the kernel changes the values only on the lower boundary.
+static void solar_corona_mag_driver_step()
+{
+	if (b_tau__mod__solar_corona <= 0.0) return;
+	const AcMeshInfo info = acGridGetLocalMeshInfo();
+	const int3 n0 = info[AC_nmin];
+	const int3 n1 = info[AC_nlocal_max];
+	const int3 end = (int3){n1.x,n1.y,n0.z+1};
+	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_solar_corona_mag_driver,to_volume(n0),to_volume(end)),1);
+}
+#endif
+/***********************************************************************************************/
+#if LCORONAE
+//Bottom-plane drivers of special/coronae (granulation, lmag_time_bound). As for solar_corona_mag_driver_step,
+//all processes launch the kernel on their lowest local plane.
+static void coronae_bottom_driver_step()
+{
+	if (!lgranulation__mod__coronae && !lmag_time_bound__mod__coronae) return;
+	const AcMeshInfo info = acGridGetLocalMeshInfo();
+	const int3 n0 = info[AC_nmin];
+	const int3 n1 = info[AC_nlocal_max];
+	const int3 end = (int3){n1.x,n1.y,n0.z+1};
+	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_coronae_bottom_driver,to_volume(n0),to_volume(end)),1);
+}
+#endif
+/***********************************************************************************************/
 extern "C" void beforeBoundaryGPU(bool lrmv, int isubstep, double t, bool lsubstepping_in_time)
 {
 	reload_dynamically_changing_variables(lrmv,isubstep,t,lsubstepping_in_time);
         
 	AcReal start_time = MPI_Wtime();
+#if LSOLAR_CORONA && Lmagnetic_MODULE
+	solar_corona_mag_driver_step();
+#endif
+#if LCORONAE
+	coronae_bottom_driver_step();
+#endif
 // Execute all "before-boundary-actions", which do not update the halos, by separate task graph
 	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_before_boundary_steps),1);
 
@@ -1614,8 +1812,7 @@ extern "C" void print_debug() {
 	if (called_training) called_training = false;
 }
 /***********************************************************************************************/
-void
-GW_update(const AcReal dt_gw)
+void GW_update(const AcReal dt_gw)
 {
 #if LGRAVITATIONAL_WAVES_HTXK
 	//We set the device id here since another thread than the master might be executing this
@@ -1654,10 +1851,38 @@ extern "C" void afterSubStepGPU()
 	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(AC_after_timestep),1);
 }
 /***********************************************************************************************/
-//Tested to work with solar-atmosphere-magnetic
-void
-fourier_boundary_conditions()
+//Potential field extrapolation of A ('pfe'): transform the boundary layer, fill the
+//transformed ghost layers with bc_aa_pfe_kernel, transform them back and fill their xy halos
+static void pfe_boundary_condition(const AC_TOP_BOT topbot)
 {
+	acKernelInputParams params{};
+	params.bc_aa_pfe_kernel.topbot = topbot;
+	const AcKernel kernel = acGetOptimizedKernel(bc_aa_pfe_kernel,params);
+	const size_t boundary_z = (topbot == AC_bot) ? (size_t)NGHOST : (size_t)mesh.info[AC_nlocal_max].z-1;
+	acDeviceFFTR2PlanarXY(acGridGetDevice(), acGetF_AX(), acGetAX_FOURIER_REAL(), acGetAX_FOURIER_IMAG(), boundary_z);
+	acDeviceFFTR2PlanarXY(acGridGetDevice(), acGetF_AY(), acGetAY_FOURIER_REAL(), acGetAY_FOURIER_IMAG(), boundary_z);
+	acDeviceFFTR2PlanarXY(acGridGetDevice(), acGetF_AZ(), acGetAZ_FOURIER_REAL(), acGetAZ_FOURIER_IMAG(), boundary_z);
+	acDeviceLaunchKernel(acGridGetDevice(), STREAM_DEFAULT, kernel, (Volume){NGHOST,NGHOST,boundary_z},
+			(Volume){(size_t)mesh.info[AC_nlocal_max].x,(size_t)mesh.info[AC_nlocal_max].y, boundary_z+1}
+			);
+	acDeviceSynchronizeStream(acGridGetDevice(),STREAM_DEFAULT);
+	for (int ghost = 1; ghost <= NGHOST; ++ghost)
+	{
+		const size_t ghost_z = (topbot == AC_bot) ? boundary_z-ghost : boundary_z+ghost;
+		acDeviceFFTBackwardTransformPlanar2RXY(acGridGetDevice(),  acGetAX_FOURIER_REAL(), acGetAX_FOURIER_IMAG(), acGetF_AX(), ghost_z);
+		acDeviceFFTBackwardTransformPlanar2RXY(acGridGetDevice(),  acGetAY_FOURIER_REAL(), acGetAY_FOURIER_IMAG(), acGetF_AY(), ghost_z);
+		acDeviceFFTBackwardTransformPlanar2RXY(acGridGetDevice(),  acGetAZ_FOURIER_REAL(), acGetAZ_FOURIER_IMAG(), acGetF_AZ(), ghost_z);
+	}
+	acGridExecuteTaskGraph(topbot == AC_bot ? boundary_z_bot_halo_exchange_graph : boundary_z_halo_exchange_graph,1);
+}
+/***********************************************************************************************/
+//Tested to work with solar-atmosphere-magnetic
+void fourier_boundary_conditions()
+{
+	//Called on all ranks (the task graph execution is collective); on ranks without the
+	//global boundary the z halos written here are overwritten by the subsequent halo exchange
+	if (luses_aa_pfe_bot) pfe_boundary_condition(AC_bot);
+	if (luses_aa_pfe_top) pfe_boundary_condition(AC_top);
 	if (luses_aa_pwd_top)
 	{
 		acKernelInputParams params{};
@@ -1731,11 +1956,12 @@ prepare_rhs(const int isubstep, double t)
   acDeviceSetInput(acGridGetDevice(), AC_step_num,(PC_SUB_STEP_NUMBER) (isubstep-1));
   if (lshear) 
   {
-	  acDeviceSetInput(acGridGetDevice(), AC_shear_delta_y, deltay);
+	  acDeviceSetInput(acGridGetDevice(), AC_shear_delta_y, delta_y);
   }
   acDeviceSetInput(acGridGetDevice(), AC_t,(AcReal)t);
 }
 /***********************************************************************************************/
+static AcReal particles_dt1_max = 0.0;   //largest inverse time step of the particles
 void
 set_timestep(double t)
 {
@@ -1750,6 +1976,9 @@ set_timestep(double t)
     //if we call set_dt after the first timestep there would be slight shift in dt what Pencil sees and what is actually used for time integration
     if (ldt) 
     {
+#if LPARTICLES_DUST
+      dt1_interface = std::max(dt1_interface,particles_dt1_max);
+#endif
       set_dt(dt1_interface);
     }
     acDeviceSetInput(acGridGetDevice(), AC_dt,dt);
@@ -1776,7 +2005,7 @@ calc_timestep(double t)
     	// Don't decrease the time step by more than a factor of ten
         constexpr AcReal decrease_factor = (AcReal)0.1;
     	dt_ = sign(max(abs(dt_temp), decrease_factor*abs(dt)), dt);
-        if(dtlimit__mod__cdata > 0.) dt_ = std::max(dt_,dtlimit__mod__cdata);
+        if (dtlimit__mod__cdata > 0.) dt_ = std::max(dt_,dtlimit__mod__cdata);
     } 
     else
     {
@@ -1792,12 +2021,1024 @@ calc_timestep(double t)
   dt1_interface = dt1_;
 }
 /***********************************************************************************************/
-extern "C" void substepGPU(int isubstep, double t)
+//Tracer particles, see DSL/particles.h. The host fp(mpar_loc,mparray) and ipar(mpar_loc) arrays
+//and npar_loc are owned by Particles_main; registerParticlesGPU registers them, loadFarray loads fp
+//and ipar to the device on request, copyParticlesFromGPU, called from copyFarray, refreshes all three from the device
+//so that host diagnostics and snapshots see a particle state consistent with f.
+//With several processes, particles that left the local subdomain are migrated after every
+//substep (particles_migrate), as migrate_particles in particles_mpicomm.f90 does on the CPU.
+#if LPARTICLES
+//Record layout and the arrays of the particle sets, generated by acc from the Particles declarations in DSL/particles.h
+#include "user_particle_sets.h"
+constexpr int PAR_NREC_HOST = PARTICLES_fp_NREC;
+//The host treats the first six record entries as position and velocity
+static_assert(PARTICLES_fp_REC_xp == 0 && PARTICLES_fp_REC_yp == 1 && PARTICLES_fp_REC_zp == 2 &&
+              PARTICLES_fp_REC_vpx == 3 && PARTICLES_fp_REC_vpy == 4 && PARTICLES_fp_REC_vpz == 5,
+              "xp,yp,zp,vpx,vpy,vpz must be the first members of the particle set fp in DSL/particles.h");
+#if LPARTICLES_DUST
+constexpr int PAR_NDEP_HOST = 5;    //must agree with PAR_NDEP in DSL/preamble.h
+#endif
+static struct
+{
+	bool on = false;
+	AcReal* fp = nullptr;         //host fp(mpar_loc,mparray)
+	int* ipar = nullptr;          //host ipar(mpar_loc)
+	int* npar_loc_host = nullptr; //host npar_loc, updated on copies from the device
+	int n_loc = 0;                //number of particles on the device
+	int mpar_loc = 0;
+	int ivar[6];                  //Fortran (1-based) fp indices of xp,yp,zp,vpx,vpy,vpz
+	AcReal* sink_diag = nullptr;  //diagnostics of the sinks for the helper thread: largest rhop at the particles, number of sinks
+	bool want_diag = false;
+	int ivar_extra[4];            //Fortran indices of rhopswarm,aps (in fp) and irhop,inp (in f), 0 if absent
+	void (*yshift_plane)(AcReal*,const AcReal*) = nullptr; //Fourier shift in y of a (ny,nz) plane, on the host
+	bool fold_ready = false;
+	int nshell = 0, nrim = 0;     //number of cells in the first ghost and first interior layers
+	std::vector<AcReal> fold_buf, fold_h, fold_send, fold_recv, dep_host;
+	//Domain decomposition
+	bool migrate = false;
+	int ip[3], nproc[3];
+	std::vector<int> ranks;       //rank of the process at (ipx,ipy,ipz) = ranks[ipx+nprocx*(ipy+nprocy*ipz)]
+	std::vector<AcReal> bounds[3];//procx_bounds(0:nprocx) etc.
+	AcReal xx0_loc[3], xx1_loc[3];//xyz0_loc-xyz0, xyz1_loc-xyz0, or -/+huge without migration
+	AcReal xyz0[3];
+	std::vector<AcReal> buffer;   //staging buffers of the gmem array lengths
+	std::vector<AcReal> cell_start, cell_count;   //per-cell ranges of the particles in cell order
+	std::vector<AcReal> rec_buffer;
+} particles_gpu;
+#if LPARTICLES_NBODY
+static bool particles_dep_current = false;   //AC_par_dep holds the deposit of the current positions
+#endif
+static const AcRealArrayParam particle_arrays[6] = {AC_fp_xp,AC_fp_yp,AC_fp_zp,AC_fp_vpx,AC_fp_vpy,AC_fp_vpz};
+#if LPARTICLES_DUST
+static const AcRealArrayParam particle_extra_arrays[2] = {AC_fp_rhopswarm,AC_fp_aps};
+static const AcRealArrayParam particle_dfp_arrays[6] = {AC_dfp_xp,AC_dfp_yp,AC_dfp_zp,AC_dfp_vpx,AC_dfp_vpy,AC_dfp_vpz};
+#else
+static const AcRealArrayParam particle_dfp_arrays[3] = {AC_dfp_xp,AC_dfp_yp,AC_dfp_zp};
+#endif
+/***********************************************************************************************/
+//Astaroth allocates a gmem array only if its pointer in the config is non-null, and frees it on
+//acDeviceUpdate if the pointer has become null, so the pointers are set once and stay set.
+//The contents only initialize the device arrays; the actual data is loaded by particles_load_array.
+static void
+particles_set_config_arrays(AcMeshInfo& config)
+{
+	//Large enough for every array of the particle sets: the largest is par.buf[PARTICLES_fp_NREC][npar]
+	//(par.rhs has 6 < PARTICLES_fp_NREC rows, the sinks have PAR_SINK_CAP=4096 entries)
+	static std::vector<AcReal> zeros((size_t)std::max(PAR_NREC_HOST*npar,4096),0.0);
+	for (const AcRealArrayParam param : {PARTICLES_fp_ARRAYS,PARTICLES_par_ARRAYS})
+		config[param] = zeros.data();
+#if LPARTICLES_DUST
+	for (const AcRealArrayParam param : {PARTICLES_dep_ARRAYS,PARTICLES_sink_ARRAYS})
+		config[param] = zeros.data();
+	static std::vector<AcReal> grid_zeros((size_t)PAR_NDEP_HOST*config[AC_mlocal].x*config[AC_mlocal].y*config[AC_mlocal].z,0.0);
+	for (const AcRealArrayParam param : {AC_par_dep,AC_par_cell_start,AC_par_cell_count,AC_par_dt1_cell,AC_par_cell_best,
+	                                     AC_par_fold_idx,AC_par_fold_idx2,AC_par_fold_buf})
+		config[param] = grid_zeros.data();
+#if LPARTICLES_NBODY
+	config[AC_par_gpot] = grid_zeros.data();
+#endif
+#endif
+}
+/***********************************************************************************************/
+static int
+rank_pencil()
+{
+	int r;
+	MPI_Comm_rank(comm_pencil,&r);
+	return r;
+}
+/***********************************************************************************************/
+//Loads a host array to a whole gmem array (src must have the gmem array length)
+static void
+particles_load_array(const AcRealArrayParam param, AcReal* src)
+{
+	AcReal* const config_array = mesh.info[param];
+	mesh.info[param] = src;
+	acDeviceLoadRealArray(acGridGetDevice(),STREAM_DEFAULT,mesh.info,param);
+	acDeviceSynchronizeStream(acGridGetDevice(),STREAM_DEFAULT);
+	mesh.info[param] = config_array;
+}
+/***********************************************************************************************/
+//Stores a whole gmem array to dst (which must have the gmem array length)
+static void
+particles_store_array(const AcRealArrayParam param, AcReal* dst)
+{
+	//Device-local: in particles_migrate only the processes with leaving particles get here
+	acDeviceSynchronizeStream(acGridGetDevice(),STREAM_ALL);
+	if (acDeviceStoreRealArray(acGridGetDevice(),STREAM_DEFAULT,param,dst) != AC_SUCCESS)
+	{
+		fprintf(stderr,"particles_store_array: could not read %s from the device\n",get_array_info(param).name);
+		abort();
+	}
+}
+/***********************************************************************************************/
+static void
+particles_launch(const AcKernel kernel, const int n)
+{
+	if (n <= 0) return;
+	acDeviceLaunchKernel(acGridGetDevice(), STREAM_DEFAULT, kernel, (Volume){0,0,0}, (Volume){(size_t)n,1,1});
+	acDeviceSynchronizeStream(acGridGetDevice(),STREAM_DEFAULT);
+}
+/***********************************************************************************************/
+//Loads the host fp and ipar to the device; dfp is taken from the host array dfp_host(mpar_loc,mpvar) if present,
+//otherwise it starts from zero (it is reset in the first substep anyway since alpha=0 there)
+static void
+particles_load_to_device(const AcReal* dfp_host = nullptr)
+{
+	auto& p = particles_gpu;
+#if LPARTICLES_NBODY
+	particles_dep_current = false;
+#endif
+	acGridSynchronizeStream(STREAM_ALL);
+	for (int i = 0; i < 6; ++i)
+	{
+		const AcReal* col = p.fp + (size_t)(p.ivar[i]-1)*p.mpar_loc;
+		std::fill(p.buffer.begin(),p.buffer.end(),0.0);
+		std::copy(col,col+p.n_loc,p.buffer.begin());
+		particles_load_array(particle_arrays[i],p.buffer.data());
+	}
+	std::fill(p.buffer.begin(),p.buffer.end(),0.0);
+	for (int k = 0; k < p.n_loc; ++k) p.buffer[k] = p.ipar[k];
+	particles_load_array(AC_fp_ipar,p.buffer.data());
+	{
+		int i = 0;
+		for (const AcRealArrayParam param : particle_dfp_arrays)
+		{
+			std::fill(p.buffer.begin(),p.buffer.end(),0.0);
+			if (dfp_host)
+			{
+				const AcReal* col = dfp_host + (size_t)(p.ivar[i]-1)*p.mpar_loc;
+				std::copy(col,col+p.n_loc,p.buffer.begin());
+			}
+			particles_load_array(param,p.buffer.data());
+			++i;
+		}
+	}
+#if LPARTICLES_DUST
+	for (int i = 0; i < 2; ++i)
+	{
+		std::fill(p.buffer.begin(),p.buffer.end(),0.0);
+		if (p.ivar_extra[i] != 0)
+		{
+			const AcReal* col = p.fp + (size_t)(p.ivar_extra[i]-1)*p.mpar_loc;
+			std::copy(col,col+p.n_loc,p.buffer.begin());
+		}
+		particles_load_array(particle_extra_arrays[i],p.buffer.data());
+	}
+#endif
+}
+#endif
+/***********************************************************************************************/
+extern "C" void registerParticlesGPU(AcReal* fp, int* npar_loc, int mpar_loc, const int* ivar, int* ipar,
+		                 const int* ip, const int* nproc, const int* ranks,
+				 const AcReal* procx_bounds, const AcReal* procy_bounds, const AcReal* procz_bounds,
+				 const AcReal* xyz0_loc, const AcReal* xyz1_loc, const AcReal* xyz0,
+				 const int* ivar_extra, const long long* yshift_fn, AcReal* sink_diag)
+{
+#if LPARTICLES
+	if (*npar_loc > npar || mpar_loc > npar)
+	{
+		fprintf(stderr,"registerParticlesGPU: npar_loc=%d, mpar_loc=%d exceed the device capacity npar=%d\n",
+				*npar_loc,mpar_loc,npar);
+		abort();
+	}
+	auto& p = particles_gpu;
+	p.fp            = fp;
+	p.ipar          = ipar;
+	p.npar_loc_host = npar_loc;
+	p.mpar_loc      = mpar_loc;
+	for (int i = 0; i < 6; ++i) p.ivar[i] = ivar[i];
+	for (int i = 0; i < 4; ++i) p.ivar_extra[i] = ivar_extra[i];
+	p.yshift_plane = reinterpret_cast<void (*)(AcReal*,const AcReal*)>(*yshift_fn);
+	p.sink_diag = sink_diag;
+
+	const AcReal* proc_bounds[3] = {procx_bounds,procy_bounds,procz_bounds};
+	int nprocs = 1;
+	p.migrate = false;
+	for (int i = 0; i < 3; ++i)
+	{
+		p.ip[i]    = ip[i];
+		p.nproc[i] = nproc[i];
+		nprocs    *= nproc[i];
+		p.xyz0[i]  = xyz0[i];
+		p.bounds[i].assign(proc_bounds[i],proc_bounds[i]+nproc[i]+1);
+		//As in migrate_particles: only search upwards/downwards if there is a process there
+		p.xx0_loc[i] = (ip[i] > 0)          ? xyz0_loc[i]-xyz0[i] : -std::numeric_limits<AcReal>::max();
+		p.xx1_loc[i] = (ip[i] < nproc[i]-1) ? xyz1_loc[i]-xyz0[i] :  std::numeric_limits<AcReal>::max();
+		p.migrate |= nproc[i] > 1;
+	}
+	p.ranks.assign(ranks,ranks+nprocs);
+
+	p.buffer.assign(npar,0.0);
+	p.rec_buffer.assign((size_t)PAR_NREC_HOST*npar,0.0);
+#else
+	fprintf(stderr,"registerParticlesGPU: Astaroth was built without particle support (LPARTICLES)\n");
+	abort();
+#endif
+}
+/***********************************************************************************************/
+static void copyParticlesFromGPU()
+{
+#if LPARTICLES
+	auto& p = particles_gpu;
+	if (!p.on) return;
+	for (int i = 0; i < 6; ++i)
+	{
+		particles_store_array(particle_arrays[i],p.buffer.data());
+		AcReal* col = p.fp + (size_t)(p.ivar[i]-1)*p.mpar_loc;
+		std::copy(p.buffer.begin(),p.buffer.begin()+p.n_loc,col);
+	}
+#if LPARTICLES_DUST
+	for (int i = 0; i < 2; ++i)
+	{
+		if (p.ivar_extra[i] == 0) continue;
+		particles_store_array(particle_extra_arrays[i],p.buffer.data());
+		std::copy(p.buffer.begin(),p.buffer.begin()+p.n_loc,p.fp + (size_t)(p.ivar_extra[i]-1)*p.mpar_loc);
+	}
+#endif
+	particles_store_array(AC_fp_ipar,p.buffer.data());
+	for (int k = 0; k < p.n_loc; ++k) p.ipar[k] = (int)p.buffer[k];
+	*p.npar_loc_host = p.n_loc;
+#endif
+}
+/***********************************************************************************************/
+#if LPARTICLES
+//Process coordinate in direction dir that owns position pos (relative search as in migrate_particles)
+static int
+particles_owner_coord(const int dir, const AcReal pos)
+{
+	const auto& p = particles_gpu;
+	const int ip = p.ip[dir], np = p.nproc[dir];
+	const auto& b = p.bounds[dir];
+	const AcReal xx = pos - p.xyz0[dir];
+	int ip_rec = ip;
+	if (xx >= p.xx1_loc[dir] && ip < np-1)
+	{
+		for (int j = ip+1; j <= np-1; ++j) if (pos < b[j+1]) {ip_rec = j; break;}
+	}
+	else if (xx < p.xx0_loc[dir] && ip > 0)
+	{
+		for (int j = ip-1; j >= 0; --j) if (pos >= b[j]) {ip_rec = j; break;}
+	}
+	return ip_rec;
+}
+/***********************************************************************************************/
+//Removes the listed particles (ascending indices), filling the holes with particles from the tail
+static void
+particles_remove_indices(const std::vector<int>& removed)
+{
+	auto& p = particles_gpu;
+	const int n_stay = p.n_loc - (int)removed.size();
+	std::vector<int> src, dst;
+	std::vector<bool> is_removed(p.n_loc,false);
+	for (int k : removed) is_removed[k] = true;
+	int tail = p.n_loc-1;
+	for (int k : removed)
+	{
+		if (k >= n_stay) break;
+		while (is_removed[tail]) --tail;
+		src.push_back(tail); dst.push_back(k);
+		--tail;
+	}
+	const int nmove = (int)src.size();
+	if (nmove > 0)
+	{
+		for (int i = 0; i < nmove; ++i) p.buffer[i] = src[i];
+		particles_load_array(AC_par_idx,p.buffer.data());
+		for (int i = 0; i < nmove; ++i) p.buffer[i] = dst[i];
+		particles_load_array(AC_par_idx2,p.buffer.data());
+		particles_launch(particles_move,nmove);
+	}
+	p.n_loc = n_stay;
+}
+/***********************************************************************************************/
+static void
+particles_migrate()
+{
+	auto& p = particles_gpu;
+	const int nprocs = (int)p.ranks.size();
+	const MPI_Datatype real_type = (sizeof(AcReal) == 8) ? MPI_DOUBLE : MPI_FLOAT;
+	//Leaving particles
+	particles_store_array(AC_par_leaving,p.buffer.data());
+	std::vector<int> leaving;
+	for (int k = 0; k < p.n_loc; ++k) if (p.buffer[k] != 0.0) leaving.push_back(k);
+	const int nleave = (int)leaving.size();
+	const int n_stay = p.n_loc - nleave;
+
+	std::vector<int> send_counts(nprocs,0), recv_counts(nprocs,0);
+	std::vector<AcReal> send;
+	if (nleave > 0)
+	{
+		//Pack their records
+		for (int i = 0; i < nleave; ++i) p.buffer[i] = leaving[i];
+		particles_load_array(AC_par_idx,p.buffer.data());
+		particles_launch(particles_pack,nleave);
+		particles_store_array(AC_par_buf,p.rec_buffer.data());
+		const std::vector<AcReal> recs(p.rec_buffer.begin(),p.rec_buffer.begin()+(size_t)PAR_NREC_HOST*nleave);
+
+		//Destinations, records sorted by destination rank (stable, so the order is deterministic)
+		std::vector<int> dest(nleave);
+		for (int i = 0; i < nleave; ++i)
+		{
+			const AcReal* rec = &recs[(size_t)PAR_NREC_HOST*i];
+			int ipr[3];
+			for (int dir = 0; dir < 3; ++dir) ipr[dir] = particles_owner_coord(dir,rec[dir]);
+			dest[i] = p.ranks[ipr[0]+p.nproc[0]*(ipr[1]+p.nproc[1]*ipr[2])];
+			if (dest[i] == rank_pencil())
+			{
+				fprintf(stderr,"particles_migrate: particle ipar=%d at (%g,%g,%g) flagged as leaving but owned by this process\n",
+						(int)rec[PARTICLES_fp_REC_ipar],rec[0],rec[1],rec[2]);
+				abort();
+			}
+			send_counts[dest[i]]++;
+		}
+		std::vector<int> order(nleave);
+		for (int i = 0; i < nleave; ++i) order[i] = i;
+		std::stable_sort(order.begin(),order.end(),[&](int a, int b){return dest[a] < dest[b];});
+		send.resize(recs.size());
+		for (int i = 0; i < nleave; ++i)
+			std::copy(&recs[(size_t)PAR_NREC_HOST*order[i]],&recs[(size_t)PAR_NREC_HOST*(order[i]+1)],
+				  &send[(size_t)PAR_NREC_HOST*i]);
+
+		particles_remove_indices(leaving);
+	}
+
+	//Exchange
+	MPI_Alltoall(send_counts.data(),1,MPI_INT,recv_counts.data(),1,MPI_INT,comm_pencil);
+	std::vector<int> scounts(nprocs), sdispls(nprocs), rcounts(nprocs), rdispls(nprocs);
+	int nrecv = 0, soff = 0;
+	for (int r = 0; r < nprocs; ++r)
+	{
+		scounts[r] = PAR_NREC_HOST*send_counts[r]; sdispls[r] = soff; soff += scounts[r];
+		rcounts[r] = PAR_NREC_HOST*recv_counts[r]; rdispls[r] = PAR_NREC_HOST*nrecv; nrecv += recv_counts[r];
+	}
+	if (p.n_loc + nrecv > p.mpar_loc)
+	{
+		fprintf(stderr,"particles_migrate: too many particles on process %d: %d > mpar_loc=%d\n",
+				rank_pencil(),p.n_loc+nrecv,p.mpar_loc);
+		abort();
+	}
+	std::fill(p.rec_buffer.begin(),p.rec_buffer.end(),0.0);
+	MPI_Alltoallv(send.data(),scounts.data(),sdispls.data(),real_type,
+		      p.rec_buffer.data(),rcounts.data(),rdispls.data(),real_type,comm_pencil);
+
+	//Append the received particles
+	if (nrecv > 0)
+	{
+		particles_load_array(AC_par_buf,p.rec_buffer.data());
+		acKernelInputParams* params = acDeviceGetKernelInputParamsObject(acGridGetDevice());
+		params->particles_unpack.offset = p.n_loc;
+		particles_launch(particles_unpack,nrecv);
+		p.n_loc += nrecv;
+	}
+}
+/***********************************************************************************************/
+static void
+particles_substep(const int isubstep, const double t_now)
+{
+	auto& p = particles_gpu;
+	if (!p.on) return;
+#if !LPARTICLES_DUST   //done in particles_prepare
+	//The interpolation needs u in the ghost zones next to the particles.
+	//Collective: all processes take part even without particles
+	acGridHaloExchange();
+	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(boundconds),1);
+	acGridSynchronizeStream(STREAM_ALL);
+#endif
+	if (p.n_loc > 0)
+	{
+#if LPARTICLES_DUST && !LPARTICLES_NBODY
+		auto& params = acDeviceGetKernelInputParamsObject(acGridGetDevice())->particles_dust_step;
+		params.delta_y_now = delta_y;
+#else
+#if !LPARTICLES_DUST
+		acDeviceGetKernelInputParamsObject(acGridGetDevice())->particles_rhs.t_now = t_now;
+		particles_launch(particles_rhs,p.n_loc);
+#endif
+		auto& params = acDeviceGetKernelInputParamsObject(acGridGetDevice())->particles_advance;
+#endif
+		params.step_num = isubstep-1;   //RK coefficients are computed in the kernel
+		params.dt_step  = dt;
+		params.xx0_x = p.xx0_loc[0]; params.xx0_y = p.xx0_loc[1]; params.xx0_z = p.xx0_loc[2];
+		params.xx1_x = p.xx1_loc[0]; params.xx1_y = p.xx1_loc[1]; params.xx1_z = p.xx1_loc[2];
+#if LPARTICLES_DUST && !LPARTICLES_NBODY
+		particles_launch(particles_dust_step,p.n_loc);
+#else
+		particles_launch(particles_advance,p.n_loc);
+#if LPARTICLES_NBODY
+		particles_dep_current = false;
+#endif
+#endif
+	}
+	//Collective: all processes take part even without particles
+	if (p.migrate) particles_migrate();
+}
+#if LPARTICLES_DUST
+static void
+particles_launch_grid(const AcKernel kernel, const int nghost_layers)
+{
+	const auto& info = mesh.info;
+	//A direction with one grid point has no ghost zones on the device
+	const int gz = (nzgrid == 1) ? 0 : nghost_layers;
+	const Volume start = {(size_t)(info[AC_nmin].x-nghost_layers),(size_t)(info[AC_nmin].y-nghost_layers),(size_t)(info[AC_nmin].z-gz)};
+	const Volume end   = {(size_t)(info[AC_nmin].x+info[AC_nlocal].x+nghost_layers),
+	                      (size_t)(info[AC_nmin].y+info[AC_nlocal].y+nghost_layers),
+	                      (size_t)(info[AC_nmin].z+info[AC_nlocal].z+gz)};
+	acDeviceLaunchKernel(acGridGetDevice(), STREAM_DEFAULT, kernel, start, end);
+	acDeviceSynchronizeStream(acGridGetDevice(),STREAM_DEFAULT);
+}
+/***********************************************************************************************/
+//Orders the particles by cell (ties by particle index) and sets the per-cell ranges, with a counting sort on the host, and
+//copies the particles to the device arrays in cell order. Only the cell index of each particle and the result cross the bus.
+static void
+particles_sort()
+{
+	auto& p = particles_gpu;
+	const auto& info = mesh.info;
+	const size_t ncell = (size_t)info[AC_mlocal].x*info[AC_mlocal].y*info[AC_mlocal].z;
+	p.cell_start.assign(ncell,0.0);
+	p.cell_count.assign(ncell,0.0);
+	if (p.n_loc > 0)
+	{
+		particles_launch(particles_cell_index,p.n_loc);
+		particles_store_array(AC_fp_icell,p.buffer.data());
+		std::vector<int> cell(p.n_loc);
+		for (int k = 0; k < p.n_loc; ++k) {cell[k] = (int)p.buffer[k]; p.cell_count[cell[k]] += 1.0;}
+		AcReal first = 0.0;
+		for (size_t c = 0; c < ncell; ++c) {p.cell_start[c] = first; first += p.cell_count[c];}
+		std::vector<AcReal> next(p.cell_start);
+		std::fill(p.buffer.begin(),p.buffer.end(),0.0);
+		for (int k = 0; k < p.n_loc; ++k) p.buffer[(size_t)next[cell[k]]++] = k;
+		particles_load_array(AC_par_order,p.buffer.data());
+		particles_launch(particles_dep_copy,p.n_loc);
+	}
+	particles_load_array(AC_par_cell_start,p.cell_start.data());
+	particles_load_array(AC_par_cell_count,p.cell_count.data());
+}
+/***********************************************************************************************/
+//Folds the first ghost layer of the deposited fields into the interior, as fold_f and fold_df (z, then y,
+//then the Fourier shift of the x ghost planes in y for shear, then x). Only the layer next to the subdomain
+//surface goes through the host and only neighbours communicate. Collective.
+static void
+particles_fold(const int comp0, const int ncomp)
+{
+	auto& p = particles_gpu;
+	const auto& info = mesh.info;
+	const int nx = info[AC_nlocal].x, ny = info[AC_nlocal].y, nz = info[AC_nlocal].z;
+	const int x0 = info[AC_nmin].x-1, y0 = info[AC_nmin].y-1, z0 = info[AC_nmin].z-1;
+	//A direction with one grid point has no ghost zones on the device: nothing to fold there
+	const int gz = (nzgrid == 1) ? 0 : 1;
+	const int cap = (nx+2)*(ny+2)*(nz+2) - nx*ny*nz;   //the length of the device arrays, PAR_FOLD_CAP
+	const auto h = [&](const int c, const int i, const int j, const int k)
+	{
+		return (size_t)c + ncomp*((size_t)i + (nx+2)*((size_t)j + (size_t)(ny+2)*k));
+	};
+	const auto on_ghost_layer = [&](const int i, const int j, const int k)
+	{
+		return i == 0 || i == nx+1 || j == 0 || j == ny+1 || k == 0 || k == nz+1;
+	};
+	const auto on_first_interior_layer = [&](const int i, const int j, const int k)
+	{
+		return !on_ghost_layer(i,j,k) && (i == 1 || i == nx || j == 1 || j == ny || (gz == 1 && (k == 1 || k == nz)));
+	};
+	if (!p.fold_ready)
+	{
+		std::vector<AcReal> idx((size_t)3*cap,0.0), idx2((size_t)3*cap,0.0);
+		p.nshell = p.nrim = 0;
+		for (int k = 1-gz; k < nz+1+gz; ++k) for (int j = 0; j < ny+2; ++j) for (int i = 0; i < nx+2; ++i)
+		{
+			if (on_ghost_layer(i,j,k))
+			{
+				idx[3*p.nshell] = x0+i; idx[3*p.nshell+1] = y0+j; idx[3*p.nshell+2] = z0+k; ++p.nshell;
+			}
+			else if (on_first_interior_layer(i,j,k))
+			{
+				idx2[3*p.nrim] = x0+i; idx2[3*p.nrim+1] = y0+j; idx2[3*p.nrim+2] = z0+k; ++p.nrim;
+			}
+		}
+		particles_load_array(AC_par_fold_idx,idx.data());
+		particles_load_array(AC_par_fold_idx2,idx2.data());
+		p.fold_buf.assign((size_t)PAR_NDEP_HOST*cap,0.0);
+		p.fold_ready = true;
+	}
+	p.fold_h.assign((size_t)ncomp*(nx+2)*(ny+2)*(nz+2),0.0);
+
+	auto& kparams = *acDeviceGetKernelInputParamsObject(acGridGetDevice());
+	particles_launch(particles_fold_pack,p.nshell);
+	particles_store_array(AC_par_fold_buf,p.fold_buf.data());
+	{
+		int n = 0;
+		for (int k = 1-gz; k < nz+1+gz; ++k) for (int j = 0; j < ny+2; ++j) for (int i = 0; i < nx+2; ++i)
+		{
+			if (!on_ghost_layer(i,j,k)) continue;
+			for (int c = 0; c < ncomp; ++c) p.fold_h[h(c,i,j,k)] = p.fold_buf[(size_t)comp0+c + PAR_NDEP_HOST*(size_t)n];
+			++n;
+		}
+	}
+
+	const MPI_Datatype real_type = (sizeof(AcReal) == 8) ? MPI_DOUBLE : MPI_FLOAT;
+	const auto neighbour = [&](const int dir, const int step)
+	{
+		int ipr[3] = {p.ip[0],p.ip[1],p.ip[2]};
+		ipr[dir] = (ipr[dir]+step+p.nproc[dir])%p.nproc[dir];
+		return p.ranks[ipr[0]+p.nproc[0]*(ipr[1]+p.nproc[1]*ipr[2])];
+	};
+	//Sends the two ghost planes of direction dir, adds what is received to the first and last interior planes.
+	//index(c,a,b,l) is the position of component c at (a,b) in the plane l of direction dir.
+	const auto fold_dir = [&](const int dir, const int a0, const int a1, const int b0, const int b1, const int nl, auto index)
+	{
+		const size_t count = (size_t)ncomp*(a1-a0)*(b1-b0);
+		p.fold_send.resize(count); p.fold_recv.resize(count);
+		const auto exchange = [&](const int l_send, const int l_add, const int dest, const int src, const int tag)
+		{
+			size_t m = 0;
+			for (int b = b0; b < b1; ++b) for (int a = a0; a < a1; ++a) for (int c = 0; c < ncomp; ++c)
+				p.fold_send[m++] = p.fold_h[index(c,a,b,l_send)];
+			MPI_Sendrecv(p.fold_send.data(),(int)count,real_type,dest,tag,
+			             p.fold_recv.data(),(int)count,real_type,src,tag,comm_pencil,MPI_STATUS_IGNORE);
+			m = 0;
+			for (int b = b0; b < b1; ++b) for (int a = a0; a < a1; ++a) for (int c = 0; c < ncomp; ++c)
+				p.fold_h[index(c,a,b,l_add)] += p.fold_recv[m++];
+		};
+		const int up = neighbour(dir,1), down = neighbour(dir,-1);
+		exchange(nl+1,1,up,down,100+2*dir);
+		exchange(0,nl,down,up,101+2*dir);
+	};
+	if (gz == 1) fold_dir(2,0,nx+2,0,ny+2,nz,[&](int c,int a,int b,int l){return h(c,a,b,l);});
+	fold_dir(1,0,nx+2,1,nz+1,ny,[&](int c,int a,int b,int l){return h(c,a,l,b);});
+	if (sshear__mod__cdata != 0.0)
+	{
+		std::vector<AcReal> plane((size_t)ny*nz);
+		const auto shift_plane = [&](const int i, const AcReal shift)
+		{
+			for (int c = 0; c < ncomp; ++c)
+			{
+				size_t m = 0;
+				for (int k = 1; k <= nz; ++k) for (int j = 1; j <= ny; ++j) plane[m++] = p.fold_h[h(c,i,j,k)];
+				p.yshift_plane(plane.data(),&shift);
+				m = 0;
+				for (int k = 1; k <= nz; ++k) for (int j = 1; j <= ny; ++j) p.fold_h[h(c,i,j,k)] = plane[m++];
+			}
+		};
+		if (p.ip[0] == 0)           shift_plane(0,-delta_y);
+		if (p.ip[0] == p.nproc[0]-1) shift_plane(nx+1,delta_y);
+	}
+	fold_dir(0,1,ny+1,1,nz+1,nx,[&](int c,int a,int b,int l){return h(c,l,a,b);});
+
+	{
+		int n = 0;
+		for (int k = 1-gz; k < nz+1+gz; ++k) for (int j = 0; j < ny+2; ++j) for (int i = 0; i < nx+2; ++i)
+		{
+			if (!on_first_interior_layer(i,j,k)) continue;
+			for (int c = 0; c < ncomp; ++c) p.fold_buf[(size_t)comp0+c + PAR_NDEP_HOST*(size_t)n] = p.fold_h[h(c,i,j,k)];
+			++n;
+		}
+	}
+	particles_load_array(AC_par_fold_buf,p.fold_buf.data());
+	kparams.particles_fold_add.comp0 = comp0; kparams.particles_fold_add.ncomp = ncomp;
+	particles_launch(particles_fold_add,p.nrim);
+	if (comp0 == 3) particles_launch(particles_fold_clear,p.nshell);
+}
+/***********************************************************************************************/
+//What the particles need from the gas at the start of a substep: the drag and its back-reaction. Collective.
+static void
+particles_prepare(const double t_now)
+{
+	auto& p = particles_gpu;
+	if (!p.on) return;
+	//The interpolation and the deposition need u and rho in the ghost zones
+	acGridHaloExchange();
+	acGridExecuteTaskGraph(acGetOptimizedDSLTaskGraph(boundconds),1);
+	acGridSynchronizeStream(STREAM_ALL);
+#if LPARTICLES_NBODY
+	particles_launch_grid(particles_gpot_grad,0);
+	particles_launch_grid(particles_gpot_wrap,1);
+#endif
+	if (p.n_loc > 0)
+	{
+		acDeviceGetKernelInputParamsObject(acGridGetDevice())->particles_rhs.t_now = t_now;
+		particles_launch(particles_rhs,p.n_loc);
+	}
+#if !LPARTICLES_NBODY
+	particles_sort();
+	if (ldragforce_gas_par__mod__particles)
+	{
+		particles_launch_grid(particles_gather_force,1);
+		particles_fold(0,3);
+	}
+#endif
+}
+/***********************************************************************************************/
+//Largest inverse time step over all particles, the particle contribution to dt1_max on the CPU. Collective.
+static void
+particles_update_dt1()
+{
+	auto& p = particles_gpu;
+	if (!p.on) return;
+#if !LPARTICLES_NBODY
+	particles_launch_grid(particles_cell_dt1,0);
+#endif
+	AcReal dt1_loc = 0.0;
+	if (p.n_loc > 0)
+	{
+#if !LPARTICLES_NBODY
+		particles_launch(particles_dust_dt1,p.n_loc);
+#endif
+		particles_store_array(AC_par_dt1,p.buffer.data());
+		dt1_loc = *std::max_element(p.buffer.begin(),p.buffer.begin()+p.n_loc);
+	}
+	const MPI_Datatype real_type = (sizeof(AcReal) == 8) ? MPI_DOUBLE : MPI_FLOAT;
+	MPI_Allreduce(&dt1_loc,&particles_dt1_max,1,real_type,MPI_MAX,comm_pencil);
+}
+/***********************************************************************************************/
+#if LPARTICLES_NBODY
+//Deposits rhop and np for the current particle positions to AC_par_dep, the source of the Poisson equation
+static void
+particles_deposit()
+{
+	auto& p = particles_gpu;
+	if (!p.on) return;
+	particles_sort();
+	particles_launch_grid(particles_gather_maps,1);
+	particles_fold(3,1);
+	particles_dep_current = true;
+}
+#endif
+/***********************************************************************************************/
+//Deposits rhop and np for the current particle positions and copies them to f. Only for output. Collective.
+static void
+particles_maps_to_host(AcReal* f)
+{
+	auto& p = particles_gpu;
+	if (!p.on) return;
+	if (p.ivar_extra[2] == 0 && p.ivar_extra[3] == 0) return;   //with sink particles the host maps them
+	const auto& info = mesh.info;
+	const size_t mx_ = info[AC_mlocal].x, my_ = info[AC_mlocal].y, mz_ = info[AC_mlocal].z;
+#if LPARTICLES_NBODY
+	if (!particles_dep_current) particles_deposit();
+#else
+	particles_sort();
+	particles_launch_grid(particles_gather_maps,1);
+	particles_fold(3,1);
+#endif
+	p.dep_host.resize((size_t)PAR_NDEP_HOST*mx_*my_*mz_);
+	particles_store_array(AC_par_dep,p.dep_host.data());
+	//The host has ghost zones also in a z direction with one grid point, the device does not
+	const size_t mz_host = (nzgrid == 1) ? (size_t)(1+2*NGHOST) : mz_;
+	const size_t z_offset = (nzgrid == 1) ? (size_t)NGHOST*mx_*my_ : 0;
+	for (int i = 0; i < 2; ++i)
+	{
+		if (p.ivar_extra[2+i] == 0) continue;
+		AcReal* col = f + (size_t)(p.ivar_extra[2+i]-1)*mx_*my_*mz_host + z_offset;
+		for (size_t l = 0; l < mx_*my_*mz_; ++l) col[l] = p.dep_host[(size_t)3+i + PAR_NDEP_HOST*l];
+	}
+}
+#if LPARTICLES_SINK
+/***********************************************************************************************/
+//Nearest image of the point xp relative to the sink at xs by directional splitting, as sink_particle_accretion
+static void
+sink_nearest_image(const AcReal* xp, const AcReal* xs, const AcReal* len, const AcReal delta_y_now, AcReal* m, int* dis)
+{
+	const auto nearest = [](const AcReal d, const AcReal l, int& image)
+	{
+		AcReal res = d+l;
+		image = -1;
+		if (std::abs(d) < std::abs(res))   { res = d;   image = 0; }
+		if (std::abs(d-l) < std::abs(res)) { res = d-l; image = 1; }
+		return res;
+	};
+	m[0] = nearest(xp[0]-xs[0],len[0],dis[0]);
+	const AcReal ys = xs[1] + (dis[0] == -1 ? delta_y_now : (dis[0] == 1 ? -delta_y_now : (AcReal)0.0));
+	m[1] = nearest(xp[1]-ys,len[1],dis[1]);
+	m[2] = nearest(xp[2]-xs[2],len[2],dis[2]);
+}
+/***********************************************************************************************/
+//Accretion by the sink particles, the removal part of remove_particles_sink (method I, all to all).
+//The device flags the particles near the sinks; only the short lists of the sinks and of these candidates
+//go through the host. The candidates are then treated serially as in sink_particle_accretion, since the result
+//depends on the order: the sink moves after each accreted particle. The order is that of the CPU, processes
+//then bricks (sort_particles_iblock) and, inside a brick, the particle index. Collective.
+static void
+particles_sink_accrete()
+{
+	auto& p = particles_gpu;
+	if (!p.on) return;
+	const MPI_Datatype real_type = (sizeof(AcReal) == 8) ? MPI_DOUBLE : MPI_FLOAT;
+	const int nprocs = (int)p.ranks.size();
+	const int me = rank_pencil();
+	const AcReal x0[3] = {p.bounds[0].front(),p.bounds[1].front(),p.bounds[2].front()};
+	const AcReal x1[3] = {p.bounds[0].back(),p.bounds[1].back(),p.bounds[2].back()};
+	const AcReal len[3] = {x1[0]-x0[0],x1[1]-x0[1],x1[2]-x0[2]};
+	constexpr int REC_RHOP = PARTICLES_fp_REC_rhopswarm, REC_APS = PARTICLES_fp_REC_aps, REC_CELL = PARTICLES_fp_REC_icell, REC_IPAR = PARTICLES_fp_REC_ipar;
+	//The brick of a record, inside its process
+	const auto brick_of = [&](const AcReal* rec)
+	{
+		const auto& info = mesh.info;
+		const long mx_ = info[AC_mlocal].x, my_ = info[AC_mlocal].y;
+		const long cell = (long)rec[REC_CELL];
+		const int cx = (int)(cell%mx_) - info[AC_nmin].x;
+		const int cy = (int)((cell/mx_)%my_) - info[AC_nmin].y;
+		const int cz = (int)(cell/(mx_*my_)) - info[AC_nmin].z;
+		const int nbx = nbrickx/p.nproc[0], nby = nbricky/p.nproc[1], nbz = nbrickz/p.nproc[2];
+		const int ibx = cx/(info[AC_nlocal].x/nbx), iby = cy/(info[AC_nlocal].y/nby), ibz = cz/(info[AC_nlocal].z/nbz);
+		return ibx + nbx*(iby + nby*ibz);
+	};
+	if (p.n_loc > 0) particles_launch(particles_cell_index,p.n_loc);   //the cells for the records
+
+	//The local sinks
+	std::vector<int> local_sinks;
+	if (p.n_loc > 0)
+	{
+		particles_store_array(AC_fp_aps,p.buffer.data());
+		for (int k = 0; k < p.n_loc; ++k) if (p.buffer[k] > 0.0) local_sinks.push_back(k);
+	}
+	const int nsink_loc = (int)local_sinks.size();
+	std::vector<AcReal> local_recs((size_t)PAR_NREC_HOST*std::max(nsink_loc,1));
+	if (nsink_loc > 0)
+	{
+		for (int i = 0; i < nsink_loc; ++i) p.buffer[i] = local_sinks[i];
+		particles_load_array(AC_par_idx,p.buffer.data());
+		particles_launch(particles_pack,nsink_loc);
+		particles_store_array(AC_par_buf,p.rec_buffer.data());
+		std::copy(p.rec_buffer.begin(),p.rec_buffer.begin()+(size_t)PAR_NREC_HOST*nsink_loc,local_recs.begin());
+	}
+
+	//All sinks everywhere, in the order of the processes as on the root processor on the CPU
+	std::vector<int> counts(nprocs), displs(nprocs), rcounts(nprocs), rdispls(nprocs);
+	MPI_Allgather(&nsink_loc,1,MPI_INT,counts.data(),1,MPI_INT,comm_pencil);
+	int nsink = 0;
+	for (int r = 0; r < nprocs; ++r)
+	{
+		displs[r] = nsink; nsink += counts[r];
+		rcounts[r] = PAR_NREC_HOST*counts[r]; rdispls[r] = PAR_NREC_HOST*displs[r];
+	}
+	if (nsink == 0) return;
+	if (nsink > 4096)
+	{
+		fprintf(stderr,"particles_sink_accrete: too many sink particles: %d > PAR_SINK_CAP in DSL/particles.h\n",nsink);
+		abort();
+	}
+	std::vector<AcReal> sinks((size_t)PAR_NREC_HOST*nsink);
+	MPI_Allgatherv(local_recs.data(),PAR_NREC_HOST*nsink_loc,real_type,sinks.data(),rcounts.data(),rdispls.data(),real_type,comm_pencil);
+	//Into the order of the CPU. rank_of_sink: the owner, list_pos: where each received sink ended up
+	std::vector<int> spatial_of_rank(nprocs,0), owner(nsink), by_order(nsink), list_pos(nsink);
+	for (int idx = 0; idx < nprocs; ++idx) spatial_of_rank[p.ranks[idx]] = idx;
+	for (int r = 0; r < nprocs; ++r) for (int i = 0; i < counts[r]; ++i) owner[displs[r]+i] = spatial_of_rank[r];
+	for (int j = 0; j < nsink; ++j) by_order[j] = j;
+	std::sort(by_order.begin(),by_order.end(),[&](const int a, const int b)
+	{
+		const AcReal* ra = &sinks[(size_t)PAR_NREC_HOST*a];
+		const AcReal* rb = &sinks[(size_t)PAR_NREC_HOST*b];
+		if (owner[a] != owner[b]) return owner[a] < owner[b];
+		const int ba = brick_of(ra), bb = brick_of(rb);
+		if (ba != bb) return ba < bb;
+		return ra[REC_IPAR] < rb[REC_IPAR];
+	});
+	{
+		std::vector<AcReal> sorted(sinks.size());
+		for (int j = 0; j < nsink; ++j)
+		{
+			std::copy(&sinks[(size_t)PAR_NREC_HOST*by_order[j]],&sinks[(size_t)PAR_NREC_HOST*by_order[j]]+PAR_NREC_HOST,&sorted[(size_t)PAR_NREC_HOST*j]);
+			list_pos[by_order[j]] = j;
+		}
+		sinks.swap(sorted);
+	}
+	const auto sink = [&](const int j){ return &sinks[(size_t)PAR_NREC_HOST*j]; };
+	std::vector<char> alive(nsink,1);
+
+	//Sinks accreting sinks: identical on all processes, in the order of sink_particle_accretion
+	if (laccrete_sink_sink__mod__particles_sink)
+	{
+		for (int j = nsink-1; j >= 0; --j)
+		{
+			if (!alive[j]) continue;
+			AcReal* sj = sink(j);
+			const AcReal rad = sj[REC_APS];
+			for (int k = nsink-1; k >= 0; --k)
+			{
+				if (k == j || !alive[k]) continue;
+				const AcReal* sk = sink(k);
+				AcReal m[3]; int dis[3];
+				sink_nearest_image(sk,sj,len,delta_y,m,dis);
+				if (std::abs(m[0]) > rad || std::abs(m[1]) > rad || std::abs(m[2]) > rad) continue;
+				if (m[0]*m[0]+m[1]*m[1]+m[2]*m[2] > rad*rad) continue;
+				const AcReal ghost[3] = {sk[0]-len[0]*dis[0], sk[1]-(len[1]*dis[1]-dis[0]*delta_y), sk[2]-len[2]*dis[2]};
+				const AcReal rhoj = sj[REC_RHOP], rhok = sk[REC_RHOP], rho1 = 1.0/(rhoj+rhok);
+				for (int d = 0; d < 3; ++d)
+				{
+					sj[d]   = (rhoj*sj[d]+rhok*ghost[d])*rho1;
+					sj[3+d] = (rhoj*sj[3+d]+rhok*sk[3+d])*rho1;
+				}
+				sj[REC_RHOP] = rhoj+rhok;
+				alive[k] = 0;
+			}
+		}
+	}
+
+	//Particles accreted by the sinks: tested against the sink list on the device
+	{
+		std::vector<AcReal> column(4096,0.0);
+		const AcRealArrayParam list[3] = {AC_sink_x,AC_sink_y,AC_sink_z};
+		for (int d = 0; d < 3; ++d)
+		{
+			for (int j = 0; j < nsink; ++j) column[j] = sink(j)[d];
+			particles_load_array(list[d],column.data());
+		}
+		for (int j = 0; j < nsink; ++j) column[j] = alive[j] ? 2*sink(j)[REC_APS] : 0.0;
+		particles_load_array(AC_sink_rad,column.data());
+	}
+	std::vector<int> candidates;
+	if (p.n_loc > 0)
+	{
+		auto& params = acDeviceGetKernelInputParamsObject(acGridGetDevice())->particles_sink_detect;
+		params.nsink = nsink; params.delta_y_now = delta_y;
+		particles_launch(particles_sink_detect,p.n_loc);
+		particles_store_array(AC_par_accreted,p.buffer.data());
+		for (int k = 0; k < p.n_loc; ++k) if (p.buffer[k] != 0.0) candidates.push_back(k);
+	}
+	//Serially as sink_particle_accretion with nosink: the local copy of each sink moves with what it accretes here
+	std::vector<AcReal> added((size_t)7*nsink,0.0);
+	std::vector<int> accreted;
+	const int ncand = (int)candidates.size();
+	if (ncand > 0)
+	{
+		for (int i = 0; i < ncand; ++i) p.buffer[i] = candidates[i];
+		particles_load_array(AC_par_idx,p.buffer.data());
+		particles_launch(particles_pack,ncand);
+		particles_store_array(AC_par_buf,p.rec_buffer.data());
+		const auto rec_of = [&](const int i){ return &p.rec_buffer[(size_t)PAR_NREC_HOST*i]; };
+		std::vector<int> order(ncand);
+		for (int i = 0; i < ncand; ++i) order[i] = i;
+		std::sort(order.begin(),order.end(),[&](const int a, const int b)
+		{
+			const int ba = brick_of(rec_of(a)), bb = brick_of(rec_of(b));
+			if (ba != bb) return ba < bb;
+			return rec_of(a)[REC_IPAR] < rec_of(b)[REC_IPAR];
+		});
+		std::vector<char> taken(ncand,0);
+		for (int j = nsink-1; j >= 0; --j)
+		{
+			if (!alive[j]) continue;
+			const AcReal* sj = sink(j);
+			const AcReal rad = sj[REC_APS];
+			AcReal xs[3] = {sj[0],sj[1],sj[2]}, vs[3] = {sj[3],sj[4],sj[5]};
+			AcReal rhos = sj[REC_RHOP];
+			bool accreted_any = false;
+			for (int c = ncand-1; c >= 0; --c)
+			{
+				const int i = order[c];
+				if (taken[i]) continue;
+				const AcReal* rec = rec_of(i);
+				AcReal m[3]; int dis[3];
+				sink_nearest_image(rec,xs,len,delta_y,m,dis);
+				if (std::abs(m[0]) > rad || std::abs(m[1]) > rad || std::abs(m[2]) > rad) continue;
+				if (m[0]*m[0]+m[1]*m[1]+m[2]*m[2] > rad*rad) continue;
+				const AcReal ghost[3] = {rec[0]-len[0]*dis[0], rec[1]-(len[1]*dis[1]-dis[0]*delta_y), rec[2]-len[2]*dis[2]};
+				const AcReal mass = rec[REC_RHOP], rho1 = 1.0/(rhos+mass);
+				for (int d = 0; d < 3; ++d)
+				{
+					xs[d] = (rhos*xs[d]+mass*ghost[d])*rho1;
+					vs[d] = (rhos*vs[d]+mass*rec[3+d])*rho1;
+				}
+				rhos += mass;
+				taken[i] = 1;
+				accreted.push_back(candidates[i]);
+				accreted_any = true;
+			}
+			if (accreted_any)
+			{
+				for (int d = 0; d < 3; ++d)
+				{
+					added[(size_t)7*j+d]   = rhos*xs[d] - sj[REC_RHOP]*sj[d];
+					added[(size_t)7*j+3+d] = rhos*vs[d] - sj[REC_RHOP]*sj[3+d];
+				}
+				added[(size_t)7*j+6] = rhos - sj[REC_RHOP];
+			}
+		}
+	}
+	MPI_Allreduce(MPI_IN_PLACE,added.data(),7*nsink,real_type,MPI_SUM,comm_pencil);
+	for (int j = 0; j < nsink; ++j)
+	{
+		const AcReal dm = added[(size_t)7*j+6];
+		if (dm == 0.0) continue;
+		AcReal* sj = sink(j);
+		const AcReal rho = sj[REC_RHOP], rho1 = 1.0/(rho+dm);
+		for (int d = 0; d < 3; ++d)
+		{
+			sj[d]   = (rho*sj[d]+added[(size_t)7*j+d])*rho1;
+			sj[3+d] = (rho*sj[3+d]+added[(size_t)7*j+3+d])*rho1;
+		}
+		sj[REC_RHOP] = rho+dm;
+	}
+
+	//Back to the device: new state of the surviving local sinks (with the boundary conditions), then the removals
+	std::vector<int> removed = accreted;
+	{
+		const int first = displs[me];
+		int nkeep = 0;
+		for (int i = 0; i < nsink_loc; ++i)
+		{
+			const int j = list_pos[first+i];
+			if (!alive[j]) { removed.push_back(local_sinks[i]); continue; }
+			AcReal* sj = sink(j);
+			if (sj[0] < x0[0])       { sj[0] += len[0]; sj[1] -= delta_y; }
+			else if (sj[0] >= x1[0]) { sj[0] -= len[0]; sj[1] += delta_y; }
+			for (int d = 1; d < 3; ++d)
+			{
+				if (sj[d] < x0[d])  sj[d] += len[d];
+				if (sj[d] >= x1[d]) sj[d] -= len[d];
+			}
+			p.buffer[nkeep] = local_sinks[i];
+			std::copy(sj,sj+PAR_NREC_HOST,&p.rec_buffer[(size_t)PAR_NREC_HOST*nkeep]);
+			++nkeep;
+		}
+		if (nkeep > 0)
+		{
+			particles_load_array(AC_par_idx,p.buffer.data());
+			particles_load_array(AC_par_buf,p.rec_buffer.data());
+			particles_launch(particles_sink_store,nkeep);
+		}
+	}
+	std::sort(removed.begin(),removed.end());
+	if (!removed.empty()) particles_remove_indices(removed);
+	if (p.migrate)
+	{
+		if (p.n_loc > 0)
+		{
+			auto& params = acDeviceGetKernelInputParamsObject(acGridGetDevice())->particles_dust_flag_leaving;
+			params.xx0_x = p.xx0_loc[0]; params.xx0_y = p.xx0_loc[1]; params.xx0_z = p.xx0_loc[2];
+			params.xx1_x = p.xx1_loc[0]; params.xx1_y = p.xx1_loc[1]; params.xx1_z = p.xx1_loc[2];
+			particles_launch(particles_dust_flag_leaving,p.n_loc);
+		}
+		particles_migrate();
+	}
+}
+/***********************************************************************************************/
+//Creation of sink particles, create_particles_sink: after the drag, so new sinks still feel it in this substep. Collective.
+static void
+particles_create_sinks()
+{
+	auto& p = particles_gpu;
+	if (!p.on) return;
+	if (rhop_sink_create__mod__particles_sink != -1.0)
+	{
+		particles_launch_grid(particles_gather_maps,1);
+		particles_fold(3,1);
+		if (p.n_loc > 0)
+		{
+			particles_launch(particles_sink_interp,p.n_loc);
+			particles_launch(particles_sink_copy_interp,p.n_loc);
+		}
+		if (lsink_create_one_per_cell__mod__particles_sink) particles_launch_grid(particles_sink_cell_best,0);
+		if (p.n_loc > 0)
+		{
+			particles_launch(particles_sink_create,p.n_loc);
+		}
+	}
+	if (p.want_diag)
+	{
+		p.want_diag = false;
+		AcReal rhop_max = 0.0, nsink = 0.0;
+		if (p.n_loc > 0)
+		{
+			if (rhop_sink_create__mod__particles_sink != -1.0)
+			{
+				particles_store_array(AC_par_interp,p.buffer.data());
+				for (int k = 0; k < p.n_loc; ++k) rhop_max = std::max(rhop_max,p.buffer[k]);
+			}
+			particles_store_array(AC_fp_aps,p.buffer.data());
+			for (int k = 0; k < p.n_loc; ++k) if (p.buffer[k] != 0.0) nsink += 1.0;
+		}
+		p.sink_diag[0] = rhop_max;
+		p.sink_diag[1] = nsink;
+	}
+}
+extern "C" void sinkAccreteGPU(const int want_diag)
+{
+	particles_gpu.want_diag = want_diag != 0;
+	particles_sink_accrete();
+}
+#endif
+#endif
+#endif
+#if !LPARTICLES_SINK
+//Only called with sink particles
+extern "C" void sinkAccreteGPU(const int) {}
+#endif
+/***********************************************************************************************/
+extern "C" void substepGPU(int istep, int isubstep, double t)
 //
 //  Do the 'isubstep'th integration step on all GPUs on the node and handle boundaries.
 //
 {
   prepare_rhs(isubstep,t);
+#if LPARTICLES_DUST
+  particles_prepare(t);
+  if (isubstep == 1) particles_update_dt1();
+#if LPARTICLES_SINK
+  particles_create_sinks();
+#endif
+#endif
   if (isubstep == 1) 
   {
 #if LGRAVITATIONAL_WAVES_HTXK
@@ -1821,10 +3062,15 @@ extern "C" void substepGPU(int isubstep, double t)
   //Important that forcing vectors are updated only after the timestep is calculated
   //since the timestep is used in the calculation
   update_forcing(isubstep);
+#if LPARTICLES
+  //Particles are advanced before the fluid since they need u at the beginning of the substep
+  particles_substep(isubstep,t);
+#endif
 
   AcTaskGraph *rhs =  acGetOptimizedDSLTaskGraph(AC_rhs);
   auto start = MPI_Wtime();
   acGridExecuteTaskGraph(rhs, 1);
+  //if (rank==0 && (istep-1)%1==0) printf("memusage after TaskGraph(rhs) %d %d \n", istep, acMemUsage());
   auto end = MPI_Wtime();
   if (performance_logs) acLogFromRootProc(rank,"RHS TOOK: %14e\n",end-start);
   if (ldt && (   (isubstep == 5 && !lcourant_dt) 
@@ -1843,7 +3089,7 @@ extern "C" void substepGPU(int isubstep, double t)
   return;
 }
 /***********************************************************************************************/
-void copyFarray(AcReal* f)
+void copyFarray(AcReal* f, const bool read_particles)
 {
   //user_constants.h declares mfarray with its DSL value (capacity incl. DYNAMIC_AUX extra slots),
   //which would shadow the run-time number of f-array slots (= size of maux_vtxbuf_index)
@@ -1859,11 +3105,18 @@ void copyFarray(AcReal* f)
 	  	  lread_all_vars_from_device ? nfarray : mvar;
 
   AcMesh* dst = &mesh;
-  AcMesh tmp;
+  //Destroyed on every path out of this function
+  struct HostMeshCopy
+  {
+	AcMesh mesh{};
+	bool created = false;
+	~HostMeshCopy() { if (created) acHostMeshDestroy(&mesh); }
+  } tmp;
   if (nghost > 0 && (dimensionality <= 1 || (dimensionality == 2 && nygrid == 1)))
   {
-  	acHostMeshCopy(mesh, &tmp);
-	dst = &tmp;
+  	acHostMeshCopy(mesh, &tmp.mesh);
+	tmp.created = true;
+	dst = &tmp.mesh;
   }
   for (int i = 0; i < all_vtxbufs; ++i)
   {
@@ -1872,9 +3125,9 @@ void copyFarray(AcReal* f)
 		  	    i < mvar ? i :
 			    i < nfarray ?  maux_vtxbuf_index[i] : -1;
 	  bool read_var = (i < end);
-	  read_var &= (index != -1);
 	  read_var |= (read_vtxbuf_from_gpu[i]);
 	  read_var |= ltraining;
+	  read_var &= (index != -1);
           if (!read_var) continue;
 	  acDeviceStoreVertexBuffer(acGridGetDevice(),STREAM_DEFAULT,VertexBufferHandle(index),dst);
   }
@@ -1912,7 +3165,6 @@ void copyFarray(AcReal* f)
 			}
 		}
 	}
-  	acHostMeshDestroy(&tmp);
   }
   if (nghost > 0 && dimensionality == 0)
   {
@@ -1941,8 +3193,12 @@ void copyFarray(AcReal* f)
 			}
 		}
 	}
-  	acHostMeshDestroy(&tmp);
   }
+  //Keep the host particle state consistent with the copied f
+  if (read_particles) copyParticlesFromGPU();
+#if LPARTICLES_DUST
+  if (read_particles && f != NULL) particles_maps_to_host(f);
+#endif
 }
 /***********************************************************************************************/
 extern "C" void getFArrayIn(AcReal **p_f_in)
@@ -1954,7 +3210,7 @@ extern "C" void getFArrayIn(AcReal **p_f_in)
   AcReal* uuy_ptr = NULL;
   AcReal* uuz_ptr = NULL;
 
-  if(iuu__mod__cdata != 0)
+  if (iuu__mod__cdata != 0)
   {
     acDeviceGetVertexBufferPtrs(acGridGetDevice(),acGetF_UX(),&uux_ptr,&out);
     acDeviceGetVertexBufferPtrs(acGridGetDevice(),acGetF_UY(),&uuy_ptr,&out);
@@ -1967,7 +3223,7 @@ extern "C" void getFArrayIn(AcReal **p_f_in)
 /***********************************************************************************************/
 extern "C" void copyVBApointers(AcReal **in, AcReal **out)
 {
-  if(iuu__mod__cdata != 0)
+  if (iuu__mod__cdata != 0)
   {
     AcReal* uux_ptr = NULL;
     AcReal* uuy_ptr = NULL;
@@ -2004,8 +3260,7 @@ void autotune_all_integration_substeps()
   splitUpdate(1e11,1);
 }
 /***********************************************************************************************/
-AcMesh
-get_f_src()
+AcMesh get_f_src()
 {
   if (nghost > 0 && dimensionality == 1)
   {
@@ -2079,7 +3334,7 @@ get_f_src()
   return mesh;
 }
 /***********************************************************************************************/
-extern "C" void loadFarray()
+extern "C" void loadFarray(bool load_particles)
 {
   AcMesh src = get_f_src();
   acGridSynchronizeStream(STREAM_ALL);
@@ -2103,6 +3358,15 @@ extern "C" void loadFarray()
 
   acGridSynchronizeStream(STREAM_ALL);
   if (nghost > 0 && (dimensionality < 2 || (dimensionality == 2 && nygrid == 1))) acHostMeshDestroy(&src);
+#if LPARTICLES
+  //Only from here on the device holds the particles, so on stays false until the first load
+  if (load_particles && particles_gpu.fp)
+  {
+	  particles_gpu.on    = true;
+	  particles_gpu.n_loc = *particles_gpu.npar_loc_host;
+	  particles_load_to_device();
+  }
+#endif
 }
 /***********************************************************************************************/
 void generate_bcs()
@@ -2142,8 +3406,7 @@ void generate_bcs()
 extern "C" void testBCs();     // forward declaration
 /***********************************************************************************************/
 #include "cmake_options.h"
-void
-ac_compile()
+void ac_compile()
 {
   if (acCompile(cmake_options,mesh.info) != AC_SUCCESS)
   {
@@ -2151,8 +3414,7 @@ ac_compile()
 	  {
 		  fprintf(stderr,"Was not able to compile Astaroth!\n");
 		  int err = system("touch ERROR");
-		  if (err)
-		    fprintf(stderr,"Unable to create ERROR file!\n");
+		  if (err) fprintf(stderr,"Unable to create ERROR file!\n");
 	  }
   	  MPI_Barrier(MPI_COMM_WORLD);
 	  exit(EXIT_FAILURE);
@@ -2227,6 +3489,9 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_,
     }
   }
   if (rank==0 && ldebug) printf("memusage grid_init= %f MBytes\n", acMemUsage()/1024.);
+#if LPARTICLES
+  particles_set_config_arrays(mesh.info);
+#endif
   acGridInit(mesh);
   if (acGetDevice(&device_id) != cudaSuccess)
   {
@@ -2240,9 +3505,19 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_,
   acDeviceSetInput(acGridGetDevice(), AC_step_num,(PC_SUB_STEP_NUMBER)0);
   acDeviceSetInput(acGridGetDevice(), AC_dt,dt);
   acDeviceSetInput(acGridGetDevice(), AC_t,AcReal(t));
-  acDeviceSetInput(acGridGetDevice(), AC_shear_delta_y,deltay);
+  acDeviceSetInput(acGridGetDevice(), AC_shear_delta_y,delta_y);
   GW_timestep_graph = acGetOptimizedDSLTaskGraph(AC_gravitational_waves_solve_and_stress);
-  if (luses_aa_pwd_top || luses_aa_pot2_top)
+  if (luses_aa_pfe_bot)
+  {
+	Field AA_fields[3];
+	AA_fields[0] = acGetF_AX();
+	AA_fields[1] = acGetF_AY();
+	AA_fields[2] = acGetF_AZ();
+	boundary_z_bot_halo_exchange_graph = acGridBuildTaskGraph({
+			acHaloExchangeBoundary(AA_fields,3,BOUNDARY_Z_BOT)
+			});
+  }
+  if (luses_aa_pwd_top || luses_aa_pot2_top || luses_aa_pfe_top)
   {
 	Field AA_fields[3];
 	AA_fields[0] = acGetF_AX();
@@ -2270,7 +3545,7 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_,
   dt1_interface = unit/dt;
 
   //Loads training statistics to the device
-  if(!new_run){ 
+  if (!new_run){ 
     acLogFromRootProc(rank, "Loaded previous statistics\n");
     load_train_stats();
   }
@@ -2280,6 +3555,7 @@ extern "C" void initializeGPU(AcReal *farr, int comm_fint, double t, int nt_,
 extern "C" void reloadConfig()
 {
   setupConfig(mesh.info);
+  ascale_potself_prev = -1.0;
 #if AC_RUNTIME_COMPILATION
   //save the current values of the vtxbufs since the device arrays are freed by acGridQuit
   copyFarray(mesh.vertex_buffer[0]);
@@ -2314,6 +3590,10 @@ extern "C" void reloadConfig()
   acGridSynchronizeStream(STREAM_ALL);
   acDeviceUpdate(acGridGetDevice(), mesh.info);
   acGridSynchronizeStream(STREAM_ALL);
+#endif
+#if LPARTICLES
+  //The device arrays have been recreated (or reset from the config)
+  if (particles_gpu.on) particles_load_to_device();
 #endif
   acStoreConfig(acDeviceGetLocalConfig(acGridGetDevice()), "PC-AC.conf");
   acLogFromRootProc(rank, "DONE reloading on GPU\n");
@@ -2440,7 +3720,7 @@ void testBCs()
   			    acGridTaskGraphHasPeriodicBoundcondsY(rhs) && 
   			    acGridTaskGraphHasPeriodicBoundcondsZ(rhs); 
   if (all_periodic && !lshear) return;
-  if (lshear) acLogFromRootProc(rank,"testBCS: deltay: %7e\n",deltay);
+  if (lshear) acLogFromRootProc(rank,"testBCS: delta_y: %7e\n",delta_y);
   auto bcs = acGetDSLTaskGraph(boundconds);
 
   AcMesh tmp_mesh_to_store;
@@ -2554,7 +3834,6 @@ void testBCs()
     }
   }
 
-
   passed &= !has_nans(mesh);
   if (!passed)
   {
@@ -2623,6 +3902,26 @@ extern "C" void prepareForFirstSubstep(double t)
 #if LSELFGRAVITY
 	calc_poisson();
         copyFarray(NULL);
+#endif
+}
+/***********************************************************************************************/
+//Copies the per-realization (Profile<Y>) sums of the radial ensemble of klein_gordon
+//to the host: tension and zeta receive the ny interior values of this process.
+//The profiles are already MPI-reduced over x and z.
+extern "C" void getGPUEnsembleSums(AcReal* tension, AcReal* zeta)
+{
+#if LKLEIN_GORDON
+	const Device device = acGridGetDevice();
+	acDeviceSynchronizeStream(device,STREAM_ALL);
+	const int my_local = acDeviceGetLocalConfig(device)[AC_mlocal].y;
+	std::vector<AcReal> buf(my_local);
+	AcMesh host = mesh;
+	host.profile[AC_bubble_tension_y] = buf.data();
+	acDeviceStoreProfile(device, AC_bubble_tension_y, &host);
+	for (int i = 0; i < ny; ++i) tension[i] = buf[NGHOST+i];
+	host.profile[AC_int_zeta_y] = buf.data();
+	acDeviceStoreProfile(device, AC_int_zeta_y, &host);
+	for (int i = 0; i < ny; ++i) zeta[i] = buf[NGHOST+i];
 #endif
 }
 /***********************************************************************************************/

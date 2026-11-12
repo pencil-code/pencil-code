@@ -19,6 +19,12 @@ Kernel hydro_before_boundary_reductions(bool lrmv)
 		reduce_sum(fac*angmom,AC_angmom_global)
 		reduce_sum(fac*rhosint,AC_rhosint_global)
 	}
+	if(AC_lcalc_uumeanz__mod__hydro)
+	{
+		reduce_sum(F_UX/nxygrid,AC_uumz_x__mod__hydro)
+		reduce_sum(F_UY/nxygrid,AC_uumz_y__mod__hydro)
+		reduce_sum(F_UZ/nxygrid,AC_uumz_z__mod__hydro)
+	}
 }
 
 Kernel hydro_before_boundary(bool lrmv, PC_SUB_STEP_NUMBER step_num)

@@ -224,7 +224,7 @@ module Special
 !  06-oct-03/tony: coded
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type(pencil_case) :: p
 !
 !
@@ -372,7 +372,7 @@ module Special
 !      use Sub, only: cross,curl_mn,gij,gij_etc
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       real :: dt_
       logical, intent(in) :: llast
 !      real, dimension(nx,3,3) :: aij,bij

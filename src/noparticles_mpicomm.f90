@@ -62,6 +62,8 @@ module Particles_mpicomm
 !
 !  05-jan-05/anders: coded
 !
+      use Messages, only: fatal_error
+
       integer, dimension (mpar_loc) :: ipar
 !
       integer :: k, jspec, npar_per_species

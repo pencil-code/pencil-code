@@ -52,12 +52,10 @@ contains
     subroutine get_farray_ptr_gpu
     endsubroutine get_farray_ptr_gpu
 !**************************************************************************
-    subroutine rhs_GPU(f,itsub)
+    subroutine rhs_GPU(itsub)
 !
-      real, dimension (:,:,:,:) :: f
       integer :: itsub
 !
-      call keep_compiler_quiet(f)
       call keep_compiler_quiet(itsub)
 !
     endsubroutine rhs_GPU
@@ -107,21 +105,24 @@ contains
 
     endfunction get_ptr_GPU_training
 !**************************************************************************
-    subroutine copy_farray_from_GPU(f,nowait_)
+    subroutine copy_farray_from_GPU(f,nowait_,lread_particles_)
 
       real, dimension (:,:,:,:), intent(OUT) :: f
-      logical, optional :: nowait_
+      logical, optional :: nowait_, lread_particles_
 
       call keep_compiler_quiet(f)
       if ((present(nowait_))) call keep_compiler_quiet(nowait_)
+      if ((present(lread_particles_))) call keep_compiler_quiet(lread_particles_)
 
     endsubroutine copy_farray_from_GPU
 !**************************************************************************
-    subroutine load_farray_to_GPU(f)
+    subroutine load_farray_to_GPU(f,lload_particles_)
 
       real, dimension (:,:,:,:), intent(OUT) :: f
+      logical, optional :: lload_particles_
 
       call keep_compiler_quiet(f)
+      if ((present(lload_particles_))) call keep_compiler_quiet(lload_particles_)
 
     endsubroutine  load_farray_to_GPU
 !**************************************************************************
@@ -186,6 +187,14 @@ contains
       call keep_compiler_quiet(dst)
 
     endsubroutine get_gpu_reduced_vars
+!**************************************************************************
+    subroutine get_gpu_ensemble_sums(tension,zeta)
+
+      real, dimension(:) :: tension, zeta
+      call keep_compiler_quiet(tension)
+      call keep_compiler_quiet(zeta)
+
+    endsubroutine get_gpu_ensemble_sums
 !**************************************************************************
     subroutine test_gpu_bcs
     endsubroutine test_gpu_bcs

@@ -211,6 +211,15 @@ endif
 DLL_FFLAGS = -fPIC
 DLL_LDFLAGS = -shared
 #
+# On macOS, ld refuses unresolved symbols in shared libraries by default.
+# special.so (multiple special modules) references symbols of Cdata, Sub, etc.,
+# which are resolved from start.x/run.x when the library is loaded.
+# (Linux ld allows this by default, so nothing changes there.)
+#
+ifeq ($(shell uname -s),Darwin)
+  DLL_LDFLAGS += -Wl,-undefined,dynamic_lookup
+endif
+#
 # Allow the user to specify extra linker flags as arguments to make.
 #
 LDFLAGS_EXTRA =
@@ -524,7 +533,10 @@ endif
 # And dynamically allocate fields
 ifeq  ($(FARRAY_ALLOC),farray_alloc)
   #2026-May-13/Kishore: also need `-lc` to use ftruncate?
-  override LDFLAGS += -lrt
+  UNAME_S := $(shell uname -s)
+  ifeq ($(UNAME_S),Linux)
+    override LDFLAGS += -lrt
+  endif
   override DYNAMIC_FIELD_ALLOC =ON
 endif
 
@@ -591,8 +603,14 @@ ifneq ($(TORCHFORT_PATH),)
   ifeq ($(TORCHFORT_PATH),)
     $(info TORCHFORT_PATH not set)
   else
-    override FFLAGS+=-cuda -noswitcherror -I$(TORCHFORT_PATH)/include/
-    override LDFLAGS+=-L$(TORCHFORT_PATH)/lib/ -ltorchfort_fort -ltorchfort -cuda
+    ifeq ($(ASTAROTH_CPU_BUILD),on)
+#     CPU-emulated Astaroth with a CPU-only TorchFort: libtorchfort is linked into the Astaroth library,
+#     and the nvfortran-only flags are not applicable.
+      override LDFLAGS+=-L$(TORCHFORT_PATH)/lib/ -Wl,-rpath,$(TORCHFORT_PATH)/lib/
+    else
+      override FFLAGS+=-cuda -noswitcherror -I$(TORCHFORT_PATH)/include/
+      override LDFLAGS+=-L$(TORCHFORT_PATH)/lib/ -ltorchfort_fort -ltorchfort -cuda
+    endif
   endif
 endif
 ifneq ($(GPU),nogpu)
@@ -694,7 +712,7 @@ endif
   endif
 #
 else
-  GPU_INTERFACE=
+  GPU_INTERFACE=nogpu_astaroth_ansi.o
 endif
 #
 ifneq ($(filter openmp OpenMP openMP OPENMP OMP omp,$(MULTITHREADING)),)
@@ -3093,7 +3111,7 @@ LD=$(FC)
 #
 ifneq ($(filter $(SPECIAL) $(IO) $(IO_IN) $(IO_OUT), $(HDF5_MODULES)),)
 	# set HDF5 Fortran compiler and Fortran linker
-	export HDF5_FC:=$(FC)
+	export HDF5_FC:=$(FC)        #MR: needed for?
 	export HDF5_FLINKER:=$(LD)
 	ifneq ($(FC_HDF5),)
               LD := $(FC_HDF5)
@@ -3142,8 +3160,16 @@ no%.o: no%.f90 %.h quiet.o
 no%.o: no%.f90 quiet.o
 	$(FC) $(ALL_COMP_FLAGS) $(FSTD) -o no$*.o -c no$*.f90
 #
-%.o: %.f90
-	$(FC) $(ALL_COMP_FLAGS) $(FSTD) -o $@ -c $<
+#  The generic rule %.o: %.f90 is defined further below, after all more
+#  specific pattern rules: GNU make >= 3.82 picks the most specific rule, but
+#  make 3.81 (default on macOS) picks the first matching one.
+#
+#  Namelist renaming for multiple special modules; done in the same sed call
+#  as the module renaming to avoid "sed -i", which differs on BSD/macOS.
+ifneq ($(SPECIAL_MULT),1)
+  SPECIAL_NML_SED = -e "s/namelist *\/special_\([ir][a-z]*_pars\)/namelist \/$*_\1/" \
+                    -e "s/NML *= *special_\([ir][a-z]*_pars\)/NML=$*_\1/"
+endif
 #
 special/%._autogen_.f90: special/%.f90
 ifeq ($(USE_SPECIAL_DISPATCHER),yes)
@@ -3151,13 +3177,16 @@ ifeq ($(USE_SPECIAL_DISPATCHER),yes)
 	sed -e"/module  *procedure/ ! s/^\( *module  *\)[Ss]pecial/\1$*/" \
 		-e"s/^\( *endmodule  *\)[Ss]pecial/\1$*/" \
 		-e"s/special_dummies\.inc/$*_dummies.inc/" \
+		$(SPECIAL_NML_SED) \
 		< "special/$*.f90" > special/$*._autogen_.f90
-ifneq ($(SPECIAL_MULT),1)
-	sed -i -e "s/namelist *\/special_\([ir][a-z]*_pars\)/namelist \/$*_\1/" \
-		-e"s/NML *= *special_\([ir][a-z]*_pars\)/NML=$*_\1/" special/$*._autogen_.f90
-endif
 else
 	cp special/$*.f90 special/$*._autogen_.f90
+endif
+
+ifneq ($(SPECIAL_MULT),1)
+	sed -i.bak -e "s/namelist *\/special_\([ir][a-z]*_pars\)/namelist \/$*_\1/" \
+		-e"s/NML *= *special_\([ir][a-z]*_pars\)/NML=$*_\1/" special/$*._autogen_.f90 \
+		&& rm -f special/$*._autogen_.f90.bak
 endif
 
 special/%.o: special/%._autogen_.f90
@@ -3231,7 +3260,7 @@ FORCE_GPU_MAKE:
 #  Rule for building the Astaroth and interface libraries.
 #
 #$(LIBGPU): $(GPU_DEPS)
-$(DSL_WORKDIR)/boundconds.h:
+$(DSL_WORKDIR)/boundconds.h: cparam.inc
 	rm -f astaroth/DSL/local/boundconds.h
 	mkdir -p astaroth/DSL/local
 	touch astaroth/DSL/local/boundconds.h
@@ -3317,6 +3346,30 @@ endif
 ifeq ($(EOS),eos_idealgas)
 	@echo '#define LEOS 1 // '$(CUDA_RELPATH)'/eos_idealgas.f90' >> $(CUDA_INCDIR)/PC_moduleflags.h
 endif
+ifeq ($(PARTICLES),particles_tracers)
+	@echo '#define LPARTICLES 1' >> $(CUDA_INCDIR)/PC_moduleflags.h
+	@echo '#define LPARTICLES_TRACERS 1' >> $(CUDA_INCDIR)/PC_moduleflags.h
+endif
+ifeq ($(PARTICLES),particles_dust_blocks)
+	@echo '#define LPARTICLES 1' >> $(CUDA_INCDIR)/PC_moduleflags.h
+	@echo '#define LPARTICLES_DUST 1' >> $(CUDA_INCDIR)/PC_moduleflags.h
+	@echo $(CUDA_RELPATH)'/$(PARTICLES).f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
+endif
+ifeq ($(PARTICLES),particles_dust)
+ifeq ($(SELFGRAVITY),selfgravity)
+ifeq ($(PARTICLES_SELFGRAVITY),particles_selfgravity)
+	@echo '#define LPARTICLES 1' >> $(CUDA_INCDIR)/PC_moduleflags.h
+	@echo '#define LPARTICLES_DUST 1' >> $(CUDA_INCDIR)/PC_moduleflags.h
+	@echo '#define LPARTICLES_NBODY 1' >> $(CUDA_INCDIR)/PC_moduleflags.h
+	@echo $(CUDA_RELPATH)'/$(PARTICLES).f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
+	@echo $(CUDA_RELPATH)'/$(PARTICLES_SELFGRAVITY).f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
+endif
+endif
+endif
+ifeq ($(PARTICLES_SINK),particles_sink)
+	@echo '#define LPARTICLES_SINK 1' >> $(CUDA_INCDIR)/PC_moduleflags.h
+	@echo $(CUDA_RELPATH)'/$(PARTICLES_SINK).f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
+endif
 ifeq ($(TIMESTEP),timestep)
 	@echo $(CUDA_RELPATH)'/timestep.f90 \' >> $(CUDA_MAKEDIR)/PC_modulesources.h
 endif
@@ -3376,7 +3429,7 @@ ifeq ($(wildcard $(DSL_WORKDIR)/solve_two.ac),)
 	  modname=`grep '^ *module [a-zA-Z0-9_]* *$$' $$file | sed -e's/ *module *//' -e's/\([^ ]\) */\L\1/g'`; \
 	  replcmt=`sed -f dsl_pde.sed $$file`; \
 	  if [[ "$$replcmt" != "" ]]; then \
-	    sed -i -e's/\/\/ *'"$$modname"'/'"$$replcmt"'/' $(DSL_WORKDIR)/fieldecs.h; \
+	    sed -i.bak -e's/\/\/ *'"$$modname"'/'"$$replcmt"'/' $(DSL_WORKDIR)/fieldecs.h && rm -f $(DSL_WORKDIR)/fieldecs.h.bak; \
 	    fieldname=`echo $$replcmt | sed -e's/.*\\\\\/ *\\\\\/ *\([a-zA-Z0-9_]*\).*$$/\U\1/'`; \
 	    funcname=`grep '^ *subroutine  *d[a-zA-Z_0-9_][a-zA-Z_0-9_]*_dt' $$file | sed -e's/^ *subroutine  *d/d/' -e's/ *(.*$$//'`; \
 	    if [[ "$$replcmt" =~ .*\#define[^a-zA-Z_].* ]]; then \
@@ -3398,13 +3451,13 @@ ifeq ($(wildcard $(DSL_WORKDIR)/solve_two.ac),)
 	  if [[  "$$file" == "shock_highorder.f90" ]]; then \
 	    replcmt=`sed -f dsl_aux.sed $$file`;\
 	    if [[ "$$replcmt" != "" ]]; then \
-	      sed -i -e's/\/\/ *'"$$modname"'/'"$$replcmt"'/' $(DSL_WORKDIR)/fieldecs.h; \
+	      sed -i.bak -e's/\/\/ *'"$$modname"'/'"$$replcmt"'/' $(DSL_WORKDIR)/fieldecs.h && rm -f $(DSL_WORKDIR)/fieldecs.h.bak; \
 	    fi; \
 	  fi; \
 	done
 	@echo '}' >> $(DSL_WORKDIR)/solve.ac
 	@sed -e'/auxiliary / ! d' $(DSL_WORKDIR)/fieldecs.h > tmpdec
-	@sed -i -e'/^ *\/\// d' -e'/auxiliary/ d' $(DSL_WORKDIR)/fieldecs.h
+	@sed -i.bak -e'/^ *\/\// d' -e'/auxiliary/ d' $(DSL_WORKDIR)/fieldecs.h && rm -f $(DSL_WORKDIR)/fieldecs.h.bak
 	@cat tmpdec | sed -e's/communicated //' -e's/auxiliary //' >> $(DSL_WORKDIR)/fieldecs.h; rm tmpdec
 endif
 
@@ -3479,6 +3532,11 @@ nompicomm.o: nompicomm.f90
 #
 hdf5_io%.o: hdf5_io%.f90 hdf5_io.h Makefile.local
 	$(FC_HDF5) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) $(FSTD_2008) -c hdf5_io$*.f90 -o hdf5_io$*.o
+#
+#  Generic rule; must come after all more specific %.o pattern rules (see above).
+#
+%.o: %.f90
+	$(FC) $(ALL_COMP_FLAGS) $(FSTD) -o $@ -c $<
 #
 geometrical_types.o: geometrical_types.f90
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) -c geometrical_types.f90 -o geometrical_types.o
@@ -3587,7 +3645,6 @@ buildinfo:
 #	    -e "PARTICLES_POTENTIAL='$(PARTICLES_POTENTIAL)';" \
 #
 cparam.inc cparam_pencils.inc: Makefile.src Makefile.local cparam.local scripts/mkcparam $(preprocess)
-	rm -rf .tmp_mkcparam
 	scripts/mkcparam $(MKCPARAM_FLAGS) --num-special=$(SPECIAL_MULT) $(preprocess)
 
 #

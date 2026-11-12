@@ -3,8 +3,6 @@ import subprocess
 import pathlib
 import os
 
-import pencil as pc
-
 from test_utils import (
     get_rundir,
     _require_sample_markers,
@@ -57,7 +55,7 @@ for var in [
     env[var] = os.environ[var]
 
 @pytest.mark.pcautotest
-@pytest.mark.parametrize("path", map(add_marks_to_sample, samples_with_scripttests))
+@pytest.mark.parametrize("path", _samples_with_scripttests)
 def test_script_pcautotest(path, pytestconfig):
     rundir = pathlib.Path(get_rundir(path))
     res = subprocess.run(
@@ -69,6 +67,7 @@ def test_script_pcautotest(path, pytestconfig):
         stderr=subprocess.PIPE,
         )
 
+    # rerun script tests so they are detected by the code coverage tool
     if pytestconfig.option.script_test_coverage:
         for script in rundir.glob("tests/*.py"):
             subprocess.run(

@@ -1,0 +1,36 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+&init_pars
+  Lxyz = 12, 12, 17
+  xyz0 = -6, -6, -6
+  lperi = T, T, F
+  bcz = 's','s','a','1s','cT1:c1'
+/
+&eos_init_pars
+  cs0 = 2.3570226039551585 !sqrt((5/3)/0.3)
+/
+&hydro_init_pars
+/
+&density_init_pars
+  initlnrho='polytropic'
+/
+&grav_init_pars
+  gravz_profile='const'
+  zref=0
+  gravz=1
+/
+&entropy_init_pars
+  initss='polytropic'
+  mpoly0=1.5
+/
+&special_init_pars
+  !TODO: this used to be optional, but as of 17-Sep-2026, it seems to be mandatory
+/
+&initial_condition_pars
+  blob_type='cos^2'
+  ampl_ss=-2e-1
+  radius_ss=1
+  center1_x=0
+  center1_y=0
+  center1_z=0
+/

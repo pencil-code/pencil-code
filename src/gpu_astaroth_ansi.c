@@ -24,12 +24,16 @@ void registerGPU();
 void initializeGPU(REAL*, FINT, double, FINT, FINT, FINT, FINT, FINT*, FINT*);
 void finalizeGPU();
 void getFArrayIn(REAL **);
-void substepGPU(int, double);
+void substepGPU(int, int, double);
 void beforeBoundaryGPU(bool, int, double, bool);
 void afterSubStepGPU();
 void radTransfer();
-void copyFarray(REAL*);
-void loadFarray();
+void copyFarray(REAL*, bool);
+void registerParticlesGPU(REAL*, int*, int, const int*, int*, const int*, const int*, const int*,
+                      const REAL*, const REAL*, const REAL*, const REAL*, const REAL*, const REAL*,
+                      const int*, const long long*, REAL*);
+void sinkAccreteGPU(int);
+void loadFarray(bool);
 void reloadConfig();
 void updateInConfigArr(int);
 int  updateInConfigArrName(char *);
@@ -40,6 +44,7 @@ int  updateInConfigVecName(char *, REAL*);
 void prepareForFirstSubstep(double t);
 void random_initial_condition(void);
 void getGPUReducedVars(REAL* dst);
+void getGPUEnsembleSums(REAL* tension, REAL* zeta);
 void testBCs(void);
 void splitUpdate(const REAL,const FINT);
 void copyVBApointers(REAL**, REAL**);
@@ -170,7 +175,7 @@ void FTNIZE(update_after_substep_gpu_c)()
   afterSubStepGPU();
 }
 /* ---------------------------------------------------------------------- */
-void FTNIZE(rhs_gpu_c)(FINT *isubstep, double* t)
+void FTNIZE(rhs_gpu_c)(FINT *istep, FINT *isubstep, double* t)
 
 /* Communication between CPU and GPU: copy (outer) halos from CPU to GPU, 
    copy "inner halos" from GPU to CPU; calculation of rhss of momentum eq.
@@ -207,21 +212,38 @@ void FTNIZE(rhs_gpu_c)(FINT *isubstep, double* t)
 {
 // Performs integration substep on GPU.
 
-  substepGPU(*isubstep,*t);
+  substepGPU(*istep,*isubstep,*t);
 }
 /* ---------------------------------------------------------------------- */
-void FTNIZE(copy_farray_c)(REAL* f)
+void FTNIZE(copy_farray_c)(REAL* f, FINT* read_particles)
 {
 // Copies vertex buffers from GPU into f-array on CPU.
 
-  copyFarray(f);
+  copyFarray(f, *read_particles != 0);
 }
 /* ---------------------------------------------------------------------- */
-void FTNIZE(load_farray_c)()
+void FTNIZE(register_particles_gpu_c)(REAL* fp, FINT* npar_loc, FINT* mpar_loc, FINT* ivar, FINT* ipar,
+                                  FINT* ip, FINT* nproc, FINT* ranks,
+                                  REAL* procx_bounds, REAL* procy_bounds, REAL* procz_bounds,
+                                  REAL* xyz0_loc, REAL* xyz1_loc, REAL* xyz0,
+                                  FINT* ivar_extra, long long* yshift_fn, REAL* sink_diag)
 {
-// Copies f-array on CPU to vertex buffers on GPU.
+// Registers the host particle arrays fp, ipar and npar_loc for loading to the GPU by loadFarray
+// (ivar: fp indices of xp,yp,zp,vpx,vpy,vpz; ip, nproc: (ipx,ipy,ipz), (nprocx,nprocy,nprocz);
+//  ranks: ranks of all processes ordered by ipx+nprocx*(ipy+nprocy*ipz)).
 
-  loadFarray();
+  registerParticlesGPU(fp, npar_loc, *mpar_loc, ivar, ipar, ip, nproc, ranks,
+                   procx_bounds, procy_bounds, procz_bounds, xyz0_loc, xyz1_loc, xyz0,
+                   ivar_extra, yshift_fn, sink_diag);
+}
+/* ---------------------------------------------------------------------- */
+void FTNIZE(sink_accrete_c)(FINT* want_diag) { sinkAccreteGPU(*want_diag); }
+/* ---------------------------------------------------------------------- */
+void FTNIZE(load_farray_c)(FINT* load_particles)
+{
+// Copies f-array on CPU to vertex buffers on GPU and, if requested, the registered particles.
+
+  loadFarray(*load_particles != 0);
 }
 /* ---------------------------------------------------------------------- */
 void FTNIZE(reload_gpu_config_c)()
@@ -271,6 +293,11 @@ void FTNIZE(radtransfer_gpu_c)(){
 void FTNIZE(get_gpu_reduced_vars_c)(REAL* dst)
 {
 	getGPUReducedVars(dst);
+}
+/* ---------------------------------------------------------------------- */
+void FTNIZE(get_gpu_ensemble_sums_c)(REAL* tension, REAL* zeta)
+{
+	getGPUEnsembleSums(tension,zeta);
 }
 /* ------------------------------------------------------------------- */
 void FTNIZE(test_bcs_c)(void)

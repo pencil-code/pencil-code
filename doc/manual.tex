@@ -2438,6 +2438,8 @@ source src/.moduleinfo
 
 All of these settings are incorporated inside \cmd{pc_run}, so when using it
 there is no difference in running the GPU version, except the slurm settings.
+It is heavily recommendable to use \cmd{pc_run} for the GPU runs since it performs crucial steps, such as increasing the stack space size, to ensure the GPU runs
+run correctly.
 
 Note that not all of Pencil Code can run on GPUs. 
 %This is most predominant when regarding the particles either in the Particle-in-Cell (PIC) method or with the N-body solver of Pencil Code, neither of which are GPU accelerated.

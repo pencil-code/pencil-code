@@ -76,6 +76,7 @@ module Special
   real, dimension(3) :: uu_emerg=0.0, bb_emerg=0.0, uu_drive=0.0
   real, dimension(:), allocatable :: deltaT_init_z, deltaE_init_z, E_init_z, deltarho_init_z, deltaH_part_init_z, &
                                      deltaH_vol_init_z, mass_prof
+  logical :: lprof_deltaT=.false., lprof_deltaE=.false., lprof_E=.false., lprof_deltaH_part=.false., lprof_deltaH_vol=.false.
   logical :: linit_uu=.false., linit_lnrho=.false., linit_lnTT=.false.
   logical :: lheatcond_cutoff=.false.
 !
@@ -162,13 +163,16 @@ module Special
   real, dimension(:,:), allocatable :: Ux_ext, Uy_ext
   real, dimension(:,:), allocatable :: BB2
   real, dimension(:,:), allocatable :: BB2_local
+  real, pointer :: z_cutoff
+  real, dimension(:), allocatable :: lnrho_global_z, lnTT_global_z
   integer, dimension(:,:), allocatable :: avoid_gran
   real :: tsnap_uu=0., thresh
   integer :: isnap
   integer, dimension(mseed) :: points_rstate
-  real, dimension(nx,ny) :: Ux_local, Uy_local
+  real, dimension(nx,ny) :: Ux_local=0., Uy_local=0.
 !
   integer, dimension(mseed) :: nano_seed
+  integer, dimension(3) :: enum_iheattype=0
   integer :: alloc_err
   real, dimension(nx) :: diffus_chi, diffus_chi3
   real :: gamma, gamma1, gamma_m1, cp1
@@ -287,8 +291,13 @@ module Special
 !
       if (mass_input_rate /= 0.0) allocate (mass_prof(mz))
 !
+      ! Height cutoff of heat conduction and radiative losses from radiation_ray
+      if (lheatcond_cutoff .or. ((cool_RTV_cutoff == 2) .and. lradiation)) &
+          call get_shared_variable('z_cutoff', z_cutoff, caller='initialize_special')
+!
       ! Setup atmosphere stratification for later use
       call setup_profiles
+      if (lnc_density_depend) call setup_ref_temp
 !
       if (allocated(scale_height_init_z)) then
         call get_shared_variable('B0_ext_z',B0_ext_z, caller='initialize_special')
@@ -547,24 +556,28 @@ module Special
         ! read temperature differences profile
         if (lread_prof_deltaT) then
           allocate (deltaT_init_z(mz))
+          lprof_deltaT = .true.
           call read_profile (deltaT_dat, deltaT_init_z, real(unit_temperature/unit_time), .false.)
         endif
 !
         ! read internal energy profile
         if (lread_prof_E) then
           allocate (E_init_z(mz))
+          lprof_E = .true.
           call read_profile (E_dat, E_init_z, real(unit_energy), .false.)
         endif
 !
         ! read internal energy differences profile
         if (lread_prof_deltaE) then
           allocate (deltaE_init_z(mz))
+          lprof_deltaE = .true.
           call read_profile (deltaE_dat, deltaE_init_z, real(unit_energy/unit_time), .false.)
         endif
 !
         ! read heating per particle differences profile
         if (lread_prof_deltaH_part) then
           allocate (deltaH_part_init_z(mz))
+          lprof_deltaH_part = .true.
           call read_profile (deltaH_part_dat, deltaH_part_init_z, real(unit_energy/unit_time), .false.)
         endif
 !
@@ -577,6 +590,7 @@ module Special
         ! read heating per particle differences profile
         if (lread_prof_deltaH_vol) then
           allocate (deltaH_vol_init_z(mz))
+          lprof_deltaH_vol = .true.
           call read_profile (deltaH_vol_dat, deltaH_vol_init_z, real(unit_energy/unit_time), .false.)
         endif
 !
@@ -1054,7 +1068,7 @@ module Special
 !
         df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + diffrho_hyper3*fdiff
 !
-        if (lfirst.and.ldt) maxdiffus3=max(maxdiffus3,diffrho_hyper3*dxyz_6)
+        if (lupdate_courant_dt) maxdiffus3=max(maxdiffus3,diffrho_hyper3*dxyz_6)
 !
         if (headtt) print*,'special_calc_density: diffrho_hyper3=', &
             diffrho_hyper3
@@ -1087,35 +1101,48 @@ module Special
         df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + lnrho_min_tau * fdiff
       endif
 !
-      if (lslope_limited_special) then
-        if (headtt) print*,'special_calc_density: call div_diff_flux'
-        if (ibb==0)  &
-          call fatal_error ('special_calc_density', "set lbb_as_aux=T in run.in")
-        if (ldensity_nolog) then
-          call div_diff_flux(f,irho,p,fdiff)
-          if (lfirst_proc_x.and.lfrozen_bot_var_x(irho)) then
+      if (lslope_limited_special) call calc_slope_limited_density(f,df,p)
+!
+    endsubroutine special_calc_density
+!***********************************************************************
+    subroutine calc_slope_limited_density(f,df,p)
+!
+! TP: TODO: would be better to get rid of this and use the general one, but want confirmation that
+!     such a change is fine to do.
+!
+      real, contiguous, dimension(:,:,:,:) :: f
+      real, contiguous, dimension(:,:,:,:) :: df
+      type(pencil_case), intent(in) :: p
+!
+      real, dimension(nx) :: fdiff
+!
+      if (headtt) print*,'special_calc_density: call div_diff_flux'
+      if (ibb==0)  &
+        call fatal_error ('special_calc_density', "set lbb_as_aux=T in run.in")
+      if (ldensity_nolog) then
+        call div_diff_flux(f,irho,p,fdiff)
+        if (lfirst_proc_x.and.lfrozen_bot_var_x(irho)) then
 !
 !  Density is frozen at boundary
 !
-            df(l1+1:l2,m,n,irho) = df(l1+1:l2,m,n,irho) + fdiff(2:nx)
-          else
-            df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) + fdiff
-          endif
+          df(l1+1:l2,m,n,irho) = df(l1+1:l2,m,n,irho) + fdiff(2:nx)
         else
+          df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) + fdiff
+        endif
+      else
 !
 ! Store the diffusive flux in a special aux array to be added later to
 ! log-density in special_after_timestep
 !
-          call div_diff_flux(f,ilnrho,p,fdiff)
-          if (lfirst_proc_x.and.lfrozen_bot_var_x(ilnrho)) then
-            df(l1+1:l2,m,n,ilnrho) = df(l1+1:l2,m,n,ilnrho) + fdiff(2:nx)*p%rho1(2:nx)
-          else
-            df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + fdiff*p%rho1
-          endif
+        call div_diff_flux(f,ilnrho,p,fdiff)
+        if (lfirst_proc_x.and.lfrozen_bot_var_x(ilnrho)) then
+          df(l1+1:l2,m,n,ilnrho) = df(l1+1:l2,m,n,ilnrho) + fdiff(2:nx)*p%rho1(2:nx)
+        else
+          df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + fdiff*p%rho1
         endif
       endif
 !
-    endsubroutine special_calc_density
+    endsubroutine calc_slope_limited_density
 !***********************************************************************
     subroutine special_calc_energy(f,df,p)
 !
@@ -1143,7 +1170,7 @@ module Special
 !
 !  due to ignoredx chi_hyperx has [1/s]
 !
-        if (lfirst .and. ldt) diffus_chi3 = diffus_chi3 + chi_hyper3
+        if (lupdate_courant_dt) diffus_chi3 = diffus_chi3 + chi_hyper3
       endif
 !
       if (chi_hyper2 /= 0.0) then
@@ -1152,7 +1179,7 @@ module Special
 !
 !  due to ignoredx chi_hyperx has [1/s]
 !
-        if (lfirst .and. ldt) diffus_chi3 = diffus_chi3 + chi_hyper2
+        if (lupdate_courant_dt) diffus_chi3 = diffus_chi3 + chi_hyper2
       endif
 !
       if ((K_spitzer /= 0.0) .or. (hcond1 /= 0.0) .or. (hcond2 /= 0.0)) then
@@ -1207,22 +1234,51 @@ module Special
 !
       if (swamp_chi > 0.0) call calc_swamp_temp(df,p)
 !
-      if (lfirst.and.ldt) then
+      if (lupdate_courant_dt) then
         maxdiffus=max(maxdiffus,diffus_chi)
         maxdiffus3=max(maxdiffus3,diffus_chi3)
       endif
 
     endsubroutine special_calc_energy
 !***********************************************************************
-    subroutine special_before_boundary(f)
+    subroutine special_before_boundary_shared(f)
 !
-!   Hook with the standard interface (see special_interfaces.inc).
+!   Hook with the standard interface (see special_interfaces.inc), called in
+!   CPU and GPU runs. On the GPU the drivers which do not need the f-array are
+!   computed here on the host and their results are loaded to the device; the
+!   magnetogram driving is done there by solar_corona_mag_driver.
+!
+      use Gpu, only: update_on_gpu
 !
       real, contiguous, dimension(:,:,:,:) :: f
 !
-      call before_boundary_corona(f)
+      integer, save :: ind_ux=-1, ind_uy=-1, ind_a_init=-1
+      logical, save :: lfirst_call=.true.
 !
-    endsubroutine special_before_boundary
+      call before_boundary_corona_single_thread(f)
+      if (.not. lgpu) return
+!
+      if (lgranulation .or. luse_vel_field) then
+        call update_on_gpu(ind_ux,'AC_ux_local__mod__solar_corona')
+        call update_on_gpu(ind_uy,'AC_uy_local__mod__solar_corona')
+      endif
+      if (luse_mag_field .and. lfirst_call) call update_on_gpu(ind_a_init,'AC_a_init__mod__solar_corona')
+      lfirst_call = .false.
+!
+    endsubroutine special_before_boundary_shared
+!***********************************************************************
+    subroutine before_boundary_corona_single_thread(f)
+
+!
+!  The fft calls need the nested parallel region structure
+!
+      real, contiguous, dimension(:,:,:,:) :: f
+!
+      !$omp parallel num_threads(1)
+      call before_boundary_corona(f)
+      !$omp end parallel
+!
+    endsubroutine before_boundary_corona_single_thread
 !***********************************************************************
     subroutine before_boundary_corona(f,lfinalize)
 !
@@ -1264,9 +1320,10 @@ module Special
 !
       ! Prepare for footpoint quenching (lquench), flux conservation (Bz_flux),
       ! and the granulation computation (lgranulation and Bavoid).
-      if ((lquench .and. lfirst_proc_z) .or. ((Bavoid > 0.) .and. lgran_proc) &
+      ! Not on the GPU: the f-array of the host is not up to date there.
+      if ((.not. lgpu) .and. ((lquench .and. lfirst_proc_z) .or. ((Bavoid > 0.) .and. lgran_proc) &
           .or. (lgranulation .and. (Bavoid > 0.) .and. lfirst_proc_z) &
-          .or. (luse_mag_field .and. lfirst_proc_z)) then
+          .or. (luse_mag_field .and. lfirst_proc_z))) then
         if (lfirst_proc_z .and. .not. allocated (BB2_local)) then
           allocate (BB2_local(nx,ny), stat=alloc_err)
           if (alloc_err > 0) call fatal_error ('special_before_boundary', &
@@ -1280,7 +1337,8 @@ module Special
       if (luse_mag_field .and. lfirst_proc_z) then
         call update_mag_field (mag_time_offset, mag_times_dat, mag_field_dat, &
             A_init, time_mag_l, time_mag_r)
-        call mag_driver (A_init, Bz_total_flux, f)
+        ! On the GPU this is done by solar_corona_mag_driver.
+        if (.not. lgpu) call mag_driver (A_init, Bz_total_flux, f)
       endif
 !
       ! External horizontal velocity driver
@@ -1344,7 +1402,7 @@ module Special
       use Sub, only: cross,gij,curl_mn,step
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       real :: dt_
       logical, intent(in) :: llast
 !
@@ -2124,18 +2182,21 @@ module Special
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
 !
-      real, dimension(nx) :: tmp
+      real, dimension(nx) :: tmp, ux_target, uy_target
 !
+! TP: done outside the conditional because of GPU reasons.
+!
+      ux_target = Ux(:,m-nghost)
+      uy_target = Uy(:,m-nghost)
       if ((n == irefz) .and. lfirst_proc_z) then
         ! Push velocity field into the desired direction.
-        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - tau_inv * (f(l1:l2,m,n,iux) - Ux(:,m-nghost))
-        df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - tau_inv * (f(l1:l2,m,n,iuy) - Uy(:,m-nghost))
+        df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - tau_inv * (f(l1:l2,m,n,iux) - ux_target)
+        df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - tau_inv * (f(l1:l2,m,n,iuy) - uy_target)
       endif
 !
-      if (lfirst .and. ldt) then
+      if (lupdate_courant_dt) then
         tmp(:) = tau_inv
         if (ldiagnos .and. (idiag_dtvel /= 0)) then
-          itype_name(idiag_dtvel) = ilabel_max_dt
           call max_mn_name (tmp/cdts, idiag_dtvel, l_dt=.true.)
         endif
         dt1_max = max (dt1_max, tmp/cdts)
@@ -2327,9 +2388,8 @@ module Special
         df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + newton_rho * tmp_tau    !MR: log/nolog distinction=?
       endif
 !
-      if (lfirst .and. ldt) then
+      if (lupdate_courant_dt) then
         if (ldiagnos .and. (idiag_dtnewt /= 0)) then
-          itype_name(idiag_dtnewt) = ilabel_max_dt
           call max_mn_name (tmp_tau/cdts, idiag_dtnewt, l_dt=.true.)
         endif
         dt1_max = max (dt1_max, tmp_tau/cdts)
@@ -2454,26 +2514,11 @@ module Special
 !
 ! 08-feb-2011/Bourdin.KIS: coded
 !
-      use Mpicomm, only: globalize_z, mpibcast_real
-!
       real, dimension(nx), intent(in) :: lnrho
       real, dimension(nx), intent(out) :: lnTT_ref
 !
       integer :: px, z_ref
       real :: pos, frac
-      real, dimension(:), allocatable, save :: lnrho_global_z, lnTT_global_z
-      logical, save :: lfirst_call=.true.
-!
-      if (lfirst_call) then
-        allocate (lnrho_global_z(mzgrid), lnTT_global_z(mzgrid), stat=alloc_err)
-        if (alloc_err > 0) call fatal_error ('find_ref_temp', &
-            'Could not allocate lnrho_/lnTT_global_z', .true.)
-        call globalize_z (lnrho_init_z, lnrho_global_z)
-        call globalize_z (lnTT_init_z, lnTT_global_z)
-        call mpibcast_real (lnrho_global_z, mzgrid)
-        call mpibcast_real (lnTT_global_z, mzgrid)
-        lfirst_call = .false.
-      endif
 !
       do px = 1, nx
         pos = interpol_tabulated (lnrho(px), lnrho_global_z)
@@ -2486,6 +2531,25 @@ module Special
 !
     endsubroutine find_ref_temp
 !***********************************************************************
+    subroutine setup_ref_temp
+!
+! Collect the global initial profiles needed by find_ref_temp.
+! Done once at initialization, so that the RHS needs no communication.
+!
+      use Mpicomm, only: globalize_z, mpibcast_real
+!
+      if (.not. allocated (lnrho_global_z)) then
+        allocate (lnrho_global_z(mzgrid), lnTT_global_z(mzgrid), stat=alloc_err)
+        if (alloc_err > 0) call fatal_error ('setup_ref_temp', &
+            'Could not allocate lnrho_/lnTT_global_z', .true.)
+      endif
+      call globalize_z (lnrho_init_z, lnrho_global_z)
+      call globalize_z (lnTT_init_z, lnTT_global_z)
+      call mpibcast_real (lnrho_global_z, mzgrid)
+      call mpibcast_real (lnTT_global_z, mzgrid)
+!
+    endsubroutine setup_ref_temp
+!***********************************************************************
     subroutine calc_heatcond_tensor(df,p,Kpara,expo)
 !
 !    field-aligned heat conduction that is proportional to T^expo with b=B/|B|
@@ -2495,7 +2559,6 @@ module Special
 !
       use Diagnostics, only: max_mn_name
       use Sub, only: dot, dot2, step
-      use SharedVariables, only: get_shared_variable
 !
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
@@ -2504,9 +2567,7 @@ module Special
       real, dimension(nx,3) :: tmpv, gKp
       real, dimension(nx) :: cos_B_glnTT, gKp_b
       real, dimension(nx) :: chi_spitzer, chi_sat, chi_clight, fdiff
-      real, pointer :: z_cutoff
       integer :: i, j
-      integer :: ierr
 !
       ! heatflux density vector: q = kappa * grad_T [W/m^2]
       ! thermal diffusivity: chi = gamma * kappa / (rho * cp)
@@ -2534,14 +2595,7 @@ module Special
           chi_spitzer =  chi_sat
         endwhere
       endif
-      if (lheatcond_cutoff) then 
-        call get_shared_variable('z_cutoff',&
-             z_cutoff,ierr)
-        if (ierr/=0) call fatal_error('calc_heatcond_tensor:',&
-             'failed to get z_cutoff from radiation_ray')
-        chi_spitzer = chi_spitzer* &
-          step(z(n),z_cutoff,0.2)
-      endif
+      if (lheatcond_cutoff) chi_spitzer = chi_spitzer*step(z(n),z_cutoff,0.2)
 !
 !  Limit heat conduction so that the diffusion speed
 !  is smaller than a given fraction of the speed of light (Kc*c_light)
@@ -2573,7 +2627,7 @@ module Special
         cos_B_glnTT = cos_B_glnTT*glnTT_abs_inv
       endwhere
 !
-      if (lfirst .and. ldt) then
+      if (lupdate_courant_dt) then
         fdiff = gamma*chi_spitzer * abs(cos_B_glnTT) * dxyz_2
         diffus_chi = diffus_chi+fdiff
         if (ldiagnos .and. (idiag_dtspitzer /= 0)) then
@@ -2617,7 +2671,7 @@ module Special
         df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) + rhs * p%TT * K_iso
       endif
 !
-      if (lfirst .and. ldt) then
+      if (lupdate_courant_dt) then
         fdiff = gamma*K_iso * p%TT * glnTT_abs * dxyz_2
         diffus_chi = diffus_chi+fdiff
         if (ldiagnos .and. (idiag_dtchi2 /= 0)) then
@@ -2656,7 +2710,7 @@ module Special
 !
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + rhs
 !
-      if (lfirst .and. ldt) then
+      if (lupdate_courant_dt) then
         maxdiffus=max(maxdiffus,chi*dxyz_2)
         fdiff = gamma*chi * dxyz_2
         diffus_chi = diffus_chi+fdiff
@@ -2701,7 +2755,7 @@ module Special
 !
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + rhs
 !
-      if (lfirst .and. ldt) then
+      if (lupdate_courant_dt) then
         fdiff = gamma*chi * glnTT2 * dxyz_2
         diffus_chi = diffus_chi+fdiff
         if (ldiagnos .and. (idiag_dtchi2 /= 0)) then
@@ -2744,7 +2798,7 @@ module Special
 !
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + rhs
 !
-      if (lfirst .and. ldt) then
+      if (lupdate_courant_dt) then
         fdiff = gamma*chi * glnTT2*dxyz_2
         diffus_chi = diffus_chi+fdiff
         if (ldiagnos .and. (idiag_dtchi2 /= 0)) then
@@ -2763,11 +2817,11 @@ module Special
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      if (allocated (deltaT_init_z)) call calc_heat_cool_deltaT(df,p)
-      if (allocated (deltaE_init_z)) call calc_heat_cool_deltaE(df,p)
-      if (allocated (deltaH_part_init_z)) call calc_heat_cool_H_part(df,p)
-      if (allocated (deltaH_vol_init_z)) call calc_heat_cool_H_vol(df,p)
-      if (allocated (E_init_z)) call calc_heat_cool_E(df,p)
+      if (lprof_deltaT) call calc_heat_cool_deltaT(df,p)
+      if (lprof_deltaE) call calc_heat_cool_deltaE(df,p)
+      if (lprof_deltaH_part) call calc_heat_cool_H_part(df,p)
+      if (lprof_deltaH_vol) call calc_heat_cool_H_vol(df,p)
+      if (lprof_E) call calc_heat_cool_E(df,p)
 !
     endsubroutine calc_heat_cool
 !***********************************************************************
@@ -2799,10 +2853,9 @@ module Special
             call stop_it('solar_corona: calc_heat_cool_deltaT:lentropy=not implemented')
       endif
 !
-      if (lfirst .and. ldt) then
+      if (lupdate_courant_dt) then
         tmp = delta_lnTT / cdts
         if (ldiagnos .and. (idiag_dtradloss /= 0)) then
-          itype_name(idiag_dtradloss) = ilabel_max_dt
           call max_mn_name(tmp, idiag_dtradloss, l_dt=.true.)
         endif
         dt1_max = max(dt1_max, tmp)
@@ -2847,10 +2900,9 @@ module Special
             call stop_it('solar_corona: calc_heat_cool_deltaE:lentropy=not implemented')
       endif
 !
-      if (lfirst .and. ldt) then
+      if (lupdate_courant_dt) then
         tmp = tmp / cdts
         if (ldiagnos .and. (idiag_dtradloss /= 0)) then
-          itype_name(idiag_dtradloss) = ilabel_max_dt
           call max_mn_name(tmp, idiag_dtradloss, l_dt=.true.)
         endif
         dt1_max = max(dt1_max, tmp)
@@ -2889,10 +2941,9 @@ module Special
             call stop_it('solar_corona: calc_heat_cool_deltaH_part:lentropy=not implemented')
       endif
 !
-      if (lfirst .and. ldt) then
+      if (lupdate_courant_dt) then
         tmp = tmp / cdts
         if (ldiagnos .and. (idiag_dtradloss /= 0)) then
-          itype_name(idiag_dtradloss) = ilabel_max_dt
           call max_mn_name(tmp, idiag_dtradloss, l_dt=.true.)
         endif
         dt1_max = max(dt1_max, tmp)
@@ -2930,10 +2981,9 @@ module Special
             call stop_it('solar_corona: calc_heat_cool_deltaH_vol:lentropy=not implemented')
       endif
 !
-      if (lfirst .and. ldt) then
+      if (lupdate_courant_dt) then
         tmp = tmp / cdts
         if (ldiagnos .and. (idiag_dtradloss /= 0)) then
-          itype_name(idiag_dtradloss) = ilabel_max_dt
           call max_mn_name(tmp, idiag_dtradloss, l_dt=.true.)
         endif
         dt1_max = max(dt1_max, tmp)
@@ -2978,7 +3028,7 @@ module Special
             call stop_it('solar_corona: calc_heat_cool_E:lentropy=not implemented')
       endif
 !
-      if (lfirst .and. ldt) then
+      if (lupdate_courant_dt) then
         tmp = tmp / cdts
         if (ldiagnos .and. (idiag_dtradloss /= 0)) then
           call max_mn_name(tmp,idiag_dtradloss,l_dt=.true.)
@@ -3025,16 +3075,13 @@ module Special
       use Diagnostics,     only: max_mn_name
       use Mpicomm,         only: stop_it
       use Sub,             only: cubic_step,step
-      use SharedVariables, only: get_shared_variable
       use Slices_methods,  only: store_slices
 !
-      integer :: ierr
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
       real, dimension(nx) :: lnQ, rtv_cool, lnTT_SI, lnneni, delta_lnTT, tmp
       real :: unit_lnQ
-      real, pointer :: z_cutoff
 !
       unit_lnQ = 3*alog(real(unit_velocity))+ &
           5*alog(real(unit_length))+alog(real(unit_density))
@@ -3064,9 +3111,6 @@ module Special
 !
       case(2)
         if (lradiation) then
-          call get_shared_variable('z_cutoff',z_cutoff,ierr)
-          if (ierr/=0) call fatal_error('calc_heat_cool_RTV:',&
-             'failed to get z_cutoff from radiation_ray')
         rtv_cool = rtv_cool &
           *step(z(n),z_cutoff,0.2)
         else
@@ -3092,10 +3136,9 @@ module Special
             call stop_it('solar_corona: calc_heat_cool:lentropy=not implemented')
       endif
 !
-      if (lfirst .and. ldt) then
+      if (lupdate_courant_dt) then
         tmp = max (rtv_cool/cdts, abs (rtv_cool/max (tini, delta_lnTT)))
         if (ldiagnos .and. idiag_dtradloss /= 0) then
-          itype_name(idiag_dtradloss) = ilabel_max_dt
           call max_mn_name(tmp,idiag_dtradloss,l_dt=.true.)
         endif
         dt1_max = max(dt1_max,tmp)
@@ -3143,7 +3186,7 @@ module Special
           -80.1990, -82.5093, -82.1793, -78.6717 /)
 !
       ! Four Gaussians plus one constant fitted to Cook et al. (1989)
-      real, dimension(9) :: pars = (/ &
+      real, parameter, dimension(9) :: pars = (/ &
           2.12040e+00, 3.88284e-01, 2.02889e+00, 3.35665e-01, 6.34343e-01, &
           1.94052e-01, 2.54536e+00, 7.28306e-01, -2.40088e+01 /)
 !
@@ -3248,12 +3291,12 @@ module Special
           if (z_ref < 1) then
             lnQ(px) = -max_real
             delta_lnTT(px) = intlnT(2) - intlnT(1)
-            cycle
+          else
+            if (z_ref > 36) z_ref = 36
+            frac = pos - z_ref
+            lnQ(px) = intlnQ(z_ref) * (1.0-frac) + intlnQ(z_ref+1) * frac
+            delta_lnTT(px) = intlnT(z_ref+1) - intlnT(z_ref)
           endif
-          if (z_ref > 36) z_ref = 36
-          frac = pos - z_ref
-          lnQ(px) = intlnQ(z_ref) * (1.0-frac) + intlnQ(z_ref+1) * frac
-          delta_lnTT(px) = intlnT(z_ref+1) - intlnT(z_ref)
         enddo
 !
       case default
@@ -3272,18 +3315,12 @@ module Special
 !  22-sept-10/Tijmen: coded
 !
       use Diagnostics, only: max_mn_name
-      use General, only: random_number_wrapper,random_seed_wrapper, &
-          normal_deviate
 !
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(nx) :: heatinput, heat_flux
-      real, dimension(nx) :: x_Mm, heat_nano, rhs
+      real, dimension(nx) :: x_Mm, rhs
       real, dimension(nx) :: heat_event, heat_event1D
-      integer, dimension(mseed) :: global_rstate
       real :: z_Mm, heat_unit
-      real :: nano_sigma_t, nano_time=0., nano_start=0., nano_sigma_z
-      real :: nano_flare_energy, nano_pos_x, nano_pos_z, nano_pos_y
-      real :: nano_amplitude
       real, dimension(2) :: event_pos
       type (pencil_case) :: p
       integer :: i
@@ -3338,64 +3375,7 @@ module Special
               (2*heat_par_gauss(2)**2)))/heat_unit
 !
         case ('nanof')
-          ! simulate nanoflare heating =)
-          ! height dependend amplitude und duration
-          ! idea: call random numbers, make condition when to flare, when
-          ! flare get position
-          ! then over time release a flare in shape of gaussian. Also
-          ! distribution is gaussian around a point.
-          ! gaussian distribution is gained via the dierfc function (double
-          ! prec, inverser erf function)
-          ! we draw for new flares as long as nano_time is /= 0. when done we
-          ! reset nano_time to 0. again.
-!
-          ! Later we will implement more options for nanoflaring! =D
-!
-          ! SAVE GLOBAL SEED
-          ! LOAD NANO_SEED
-          call random_seed_wrapper(GET=global_rstate)
-          call random_seed_wrapper(PUT=nano_seed)
-!
-          if (nano_start == 0.) then
-            ! If 0 roll to see if a nanoflare occurs
-            call random_number_wrapper(nano_start)
-!
-            if (nano_start > 0.95 ) then
-              ! 5% chance for a nanoflare to occur, then get the location.
-              call normal_deviate(nano_pos_z)
-              nano_pos_z = nano_pos_z*lz
-              call random_number_wrapper(nano_pos_y)
-              call random_number_wrapper(nano_pos_x)
-              nano_time = 60.
-            else
-              ! else no nanoflare, reset nano_start to 0. for the next
-              ! timestep
-              nano_start = 0.
-            endif
-          endif
-!
-          if (nano_start /= 0.) then
-            ! if nano_start is not 0. then there is a nanoflare!
-            ! 2nd assumption, nanoflare takes 60 seconds =)
-            nano_flare_energy = 10.d17 ! joules
-            nano_sigma_z = 0.5
-            nano_sigma_t = 2.5
-!
-            nano_amplitude = nano_flare_energy/(pi/2*nano_sigma_t*nano_sigma_z*1.d6 )
-!
-            heat_nano = nano_amplitude*exp(-((nano_time-5.))**2/( 2*2.**2))* &
-                exp(-((z_Mm-nano_pos_z)**2/ (2*0.5**2)))
-            nano_time = nano_time-dt*unit_time
-!
-            heatinput = heatinput + heat_nano/heat_unit
-!
-            if (nano_time <= 0.) nano_start = 0.
-          endif
-!
-          ! SAVE NANO_SEED
-          ! RESTORE GLOBAL SEED
-          call random_seed_wrapper(GET=nano_seed)
-          call random_seed_wrapper(PUT=global_rstate)
+          call calc_nanoflare_heating(heatinput,z_Mm,heat_unit)
 !
 ! amp_t = exp(-((t-nano_time)**2/(2.*nano_dur**2)))
 !-> no idea how to properly implement
@@ -3447,15 +3427,93 @@ module Special
 !
       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + rhs
 !
-      if (lfirst .and. ldt) then
+      if (lupdate_courant_dt) then
         if (ldiagnos .and. idiag_dtnewt /= 0) then
-          itype_name(idiag_dtnewt) = ilabel_max_dt
           call max_mn_name(rhs/cdts,idiag_dtnewt,l_dt=.true.)
         endif
         dt1_max = max(dt1_max,rhs/cdts)
       endif
 !
     endsubroutine calc_artif_heating
+!***********************************************************************
+    subroutine calc_nanoflare_heating(heatinput,z_Mm,heat_unit)
+!
+!  Nanoflare heating. 
+!  TP: at the moment it is quite odd and most likely incorrect so would like to rewrite it
+!      or get rid of it.
+!
+      use General, only: random_number_wrapper,random_seed_wrapper, &
+          normal_deviate
+!
+      real, dimension(nx), intent(inout) :: heatinput
+      real, intent(in) :: z_Mm, heat_unit
+!
+      real, dimension(nx) :: heat_nano
+      integer, dimension(mseed) :: global_rstate
+      real :: nano_sigma_t, nano_time=0., nano_start=0., nano_sigma_z
+      real :: nano_flare_energy, nano_pos_x, nano_pos_z, nano_pos_y
+      real :: nano_amplitude
+!
+      ! simulate nanoflare heating =)
+      ! height dependend amplitude und duration
+      ! idea: call random numbers, make condition when to flare, when
+      ! flare get position
+      ! then over time release a flare in shape of gaussian. Also
+      ! distribution is gaussian around a point.
+      ! gaussian distribution is gained via the dierfc function (double
+      ! prec, inverser erf function)
+      ! we draw for new flares as long as nano_time is /= 0. when done we
+      ! reset nano_time to 0. again.
+!
+      ! Later we will implement more options for nanoflaring! =D
+!
+      ! SAVE GLOBAL SEED
+      ! LOAD NANO_SEED
+      call random_seed_wrapper(GET=global_rstate)
+      call random_seed_wrapper(PUT=nano_seed)
+!
+      if (nano_start == 0.) then
+        ! If 0 roll to see if a nanoflare occurs
+        call random_number_wrapper(nano_start)
+!
+        if (nano_start > 0.95 ) then
+          ! 5% chance for a nanoflare to occur, then get the location.
+          call normal_deviate(nano_pos_z)
+          nano_pos_z = nano_pos_z*lz
+          call random_number_wrapper(nano_pos_y)
+          call random_number_wrapper(nano_pos_x)
+          nano_time = 60.
+        else
+          ! else no nanoflare, reset nano_start to 0. for the next
+          ! timestep
+          nano_start = 0.
+        endif
+      endif
+!
+      if (nano_start /= 0.) then
+        ! if nano_start is not 0. then there is a nanoflare!
+        ! 2nd assumption, nanoflare takes 60 seconds =)
+        nano_flare_energy = 10.d17 ! joules
+        nano_sigma_z = 0.5
+        nano_sigma_t = 2.5
+!
+        nano_amplitude = nano_flare_energy/(pi/2*nano_sigma_t*nano_sigma_z*1.d6 )
+!
+        heat_nano = nano_amplitude*exp(-((nano_time-5.))**2/( 2*2.**2))* &
+            exp(-((z_Mm-nano_pos_z)**2/ (2*0.5**2)))
+        nano_time = nano_time-dt*unit_time
+!
+        heatinput = heatinput + heat_nano/heat_unit
+!
+        if (nano_time <= 0.) nano_start = 0.
+      endif
+!
+      ! SAVE NANO_SEED
+      ! RESTORE GLOBAL SEED
+      call random_seed_wrapper(GET=nano_seed)
+      call random_seed_wrapper(PUT=global_rstate)
+!
+    endsubroutine calc_nanoflare_heating
 !***********************************************************************
     subroutine set_gran_params()
 !
@@ -4409,7 +4467,7 @@ module Special
       type (pencil_case) :: p
 !
       if (n == n2 .and. llast_proc_z) &
-          df(l1:l2,m,n2,iuz) = df(l1:l2,m,n2,iuz)-tau_inv*(p%uu(:,3)-u_add)
+          df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz)-tau_inv*(p%uu(:,3)-u_add)
 !
     endsubroutine force_solar_wind
 !***********************************************************************
@@ -4875,6 +4933,94 @@ endsubroutine characteristic_speed
 !
     endfunction minmod_alt
 !***********************************************************************
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+
+    use Syscalls, only: copy_addr
+    use General , only: string_to_enum
+
+    integer, parameter :: n_pars=76
+    integer(KIND=ikind8), dimension(n_pars) :: p_par
+
+    call copy_addr(cool_rtv_cutoff,p_par(1)) ! int
+    call copy_addr(nc_tau,p_par(2))
+    call copy_addr(nc_alt,p_par(3))
+    call copy_addr(heat_cool,p_par(4))
+    call copy_addr(rho_diff_fix,p_par(5))
+    call copy_addr(cool_rtv,p_par(6))
+    call copy_addr(nc_tau_rho,p_par(7))
+    call copy_addr(nc_alt_rho,p_par(8))
+    call copy_addr(hcond1,p_par(9))
+    call copy_addr(ksat,p_par(10))
+    call copy_addr(kc,p_par(11))
+    call copy_addr(t_crit,p_par(12))
+    call copy_addr(deltat_crit,p_par(13))
+    call copy_addr(diffrho_hyper3,p_par(14))
+    call copy_addr(chi_hyper3,p_par(15))
+    call copy_addr(chi_hyper2,p_par(16))
+    call copy_addr(k_iso,p_par(17))
+    call copy_addr(mass_input_rate,p_par(18))
+    call copy_addr(tau_inv,p_par(19))
+    call copy_addr(lgranulation,p_par(20)) ! bool
+    call copy_addr(luse_vel_field,p_par(21)) ! bool
+    call copy_addr(lmassflux,p_par(22)) ! bool
+    call copy_addr(lnc_density_depend,p_par(23)) ! bool
+    call copy_addr(lnc_intrin_energy_depend,p_par(24)) ! bool
+    call copy_addr(irefz,p_par(25)) ! int
+    call copy_addr(cool_type,p_par(26)) ! int
+    call copy_addr(massflux,p_par(27))
+    call copy_addr(u_add,p_par(28))
+    call copy_addr(k_spitzer,p_par(29))
+    call copy_addr(hcond2,p_par(30))
+    call copy_addr(hcond3,p_par(31))
+    call copy_addr(init_time,p_par(32))
+    call copy_addr(init_time_hcond,p_par(33))
+    call copy_addr(init_time_fade_start,p_par(34))
+    call copy_addr(init_time_hcond_fade_start,p_par(35))
+    call copy_addr(nc_z_max,p_par(36))
+    call copy_addr(nc_z_trans_width,p_par(37))
+    call copy_addr(nc_z_min,p_par(38))
+    call copy_addr(nc_z_min_trans_width,p_par(39))
+    call copy_addr(nc_lnrho_num_magn,p_par(40))
+    call copy_addr(nc_lnrho_trans_width,p_par(41))
+    call copy_addr(swamp_fade_start,p_par(42))
+    call copy_addr(swamp_fade_end,p_par(43))
+    call copy_addr(swamp_diffrho,p_par(44))
+    call copy_addr(swamp_chi,p_par(45))
+    call copy_addr(swamp_eta,p_par(46))
+    call copy_addr(swamp_nu,p_par(47))
+    call copy_addr(lnrho_min,p_par(48))
+    call copy_addr(lnrho_min_tau,p_par(49))
+    call copy_addr(lnrho_max,p_par(50))
+    call copy_addr(lprof_deltat,p_par(51)) ! bool
+    call copy_addr(lprof_deltae,p_par(52)) ! bool
+    call copy_addr(lprof_e,p_par(53)) ! bool
+    call copy_addr(lprof_deltah_part,p_par(54)) ! bool
+    call copy_addr(lprof_deltah_vol,p_par(55)) ! bool
+    call copy_addr(lheatcond_cutoff,p_par(56)) ! bool
+    call copy_addr(gamma,p_par(57))
+    call copy_addr(heat_par_exp,p_par(58)) ! (2)
+    call copy_addr(heat_par_exp2,p_par(59)) ! (2)
+    call copy_addr(heat_par_gauss,p_par(60)) ! real3
+    call copy_addr(lnrho_init_z,p_par(61)) ! (mz)
+    call copy_addr(lntt_init_z,p_par(62)) ! (mz)
+    if (allocated(deltat_init_z)) call copy_addr(deltat_init_z,p_par(63)) ! (mz)
+    if (allocated(deltae_init_z)) call copy_addr(deltae_init_z,p_par(64)) ! (mz)
+    if (allocated(e_init_z)) call copy_addr(e_init_z,p_par(65)) ! (mz)
+    if (allocated(deltarho_init_z)) call copy_addr(deltarho_init_z,p_par(66)) ! (mz)
+    if (allocated(deltah_part_init_z)) call copy_addr(deltah_part_init_z,p_par(67)) ! (mz)
+    if (allocated(deltah_vol_init_z)) call copy_addr(deltah_vol_init_z,p_par(68)) ! (mz)
+    if (allocated(mass_prof)) call copy_addr(mass_prof,p_par(69)) ! (mz)
+    if (allocated(lnrho_global_z)) call copy_addr(lnrho_global_z,p_par(70)) ! (nzgrid+2*nghost)
+    if (allocated(lntt_global_z)) call copy_addr(lntt_global_z,p_par(71)) ! (nzgrid+2*nghost)
+    call copy_addr(ux_local,p_par(72)) ! (nx) (ny)
+    call copy_addr(uy_local,p_par(73)) ! (nx) (ny)
+    call string_to_enum(enum_iheattype,iheattype)
+    call copy_addr(enum_iheattype,p_par(74)) ! int3
+    call copy_addr(b_tau,p_par(75))
+    call copy_addr(a_init,p_par(76)) ! (nx) (ny) (2)
+
+    endsubroutine pushpars2c
 !***********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************

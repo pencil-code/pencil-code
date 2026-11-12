@@ -239,7 +239,7 @@ module Special
       use Mpicomm, only : mpireduce_sum
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       type(pencil_case) :: p
       real, dimension (nx,3) :: galpm
       real, dimension (nx) :: abf,alpm,ugalpm,divflux,del2alpm,alpm_divu

@@ -264,6 +264,23 @@ module Particles_mpicomm
 !
     endsubroutine dist_particles_evenly_procs
 !***********************************************************************
+    subroutine alltoall_nmig(nleave,nenter)
+!
+!  nenter(i) = number of particles processor i sends to this processor, from
+!  nleave(j) = number of particles this processor sends to processor j.
+!
+!  7-nov-26/nils: coded (replaces the serialized point-to-point exchange)
+!
+      use Mpicomm, only: MPI_COMM_GRID
+!
+      integer, dimension(0:ncpus-1), intent(in)  :: nleave
+      integer, dimension(0:ncpus-1), intent(out) :: nenter
+      integer :: ierr
+!
+      call MPI_ALLTOALL(nleave,1,MPI_INTEGER,nenter,1,MPI_INTEGER,MPI_COMM_GRID,ierr)
+!
+    endsubroutine alltoall_nmig
+!***********************************************************************
     subroutine migrate_particles(fp,ipar,dfp,linsert)
 !
 !  Redistribute particles among processors based on the local yz-interval
@@ -307,7 +324,7 @@ module Particles_mpicomm
 !
 !  TODO(04-dec-20/ccyang): Consistently use the module Grid and the
 !    index space to compute which cell a particle is located in, also in
-!    subroutine map_nearest_grid() of module Particles_map.
+!    subroutine map_nearest_grid of module Particles_map.
 !
       init: if (lfirstcall) then
         xx0_loc = xyz0_loc - xyz0
@@ -439,17 +456,13 @@ module Particles_mpicomm
                 (.not.any(iproc_rec==iproc_comm(1:nproc_comm))) ) then
               print*, 'migrate_particles: particle ', ipar(k), ' wants to'
               print*, '    migrate to a processor that is not a neighbour!'
-              print*, 'migrate_particles: iproc, iproc_rec=', &
-                  iproc, iproc_rec
-              print*, 'migrate_particles: iproc_comm=', &
-                  iproc_comm(1:nproc_comm)
+              print*, 'migrate_particles: iproc, iproc_rec=', iproc, iproc_rec
+              print*, 'migrate_particles: iproc_comm=', iproc_comm(1:nproc_comm)
               print*, 'migrate_particles: xxp=', fp(k,ixp:izp)
               print*, 'migrate_particles: vvp=', fp(k,ivpx:ivpz)
-              if (lparticles_radius) then
-                print*, 'migrate_particles: ap =', fp(k,iap)
-              endif
-              print*, 'migrate_particles: deltay=', deltay
-              call fatal_error_local("","")
+              if (lparticles_radius) print*, 'migrate_particles: ap =', fp(k,iap)
+              print*, 'migrate_particles: delta_y=', delta_y
+              call fatal_error_local("migrate_particles","")
             endif
 !
 !  Check that particle wants to migrate to existing processor.
@@ -467,7 +480,7 @@ module Particles_mpicomm
                   procy_bounds(ipy), procy_bounds(ipy+1)
               print*, 'migrate_particles: z0_mig, z1_mig=', &
                   procz_bounds(ipz), procz_bounds(ipz+1)
-              call fatal_error_local("","")
+              call fatal_error_local("migrate_particles","")
             endif
 !
 !  Copy migrating particle to the end of the fp array.
@@ -531,17 +544,13 @@ module Particles_mpicomm
 !  condition we allow all processors to communicate particles. However, this
 !  is extremely slow when the processor number is high (>>100). Thus we only
 !  allow communication with surrounding processors during the run.
+!  The all-to-all exchange (at start-up and in every time step with
+!  continuous particle insertion, where root inserts all new particles) is
+!  one MPI_ALLTOALL instead of ncpus serialized rounds of ncpus-1 point-to-
+!  point messages.
 !
         if (lstart .or. present(linsert)) then
-          do i=0,ncpus-1
-            if (iproc/=i) then
-              call mpirecv_int(nmig_enter(i),i,itag_nmig)
-            else
-              do j=0,ncpus-1
-                if (iproc/=j) call mpisend_int(nmig_leave(j),j,itag_nmig)
-              enddo
-            endif
-          enddo
+          call alltoall_nmig(nmig_leave,nmig_enter)
         else
           do i=1,nproc_comm
             call mpisend_int(nmig_leave(iproc_comm(i)),iproc_comm(i),itag_nmig+iproc)
@@ -559,7 +568,7 @@ module Particles_mpicomm
               npar_loc, mpar_loc, sum(nmig_enter)
           call fatal_error_local('migrate_particles','')
         endif
-        call fatal_error_local_collect()
+        call fatal_error_local_collect
 !
 !  Sort array of migrating particles in order of receiving processor.
 !
@@ -741,7 +750,7 @@ module Particles_mpicomm
 !
     endsubroutine input_blocks
 !***********************************************************************
-    subroutine sort_blocks()
+    subroutine sort_blocks
 !
 !  Sort the blocks by parent processor and by parent brick index.
 !

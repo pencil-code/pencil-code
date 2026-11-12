@@ -16,8 +16,10 @@ Therefore, 'pc' will store all calcuated data in separate files and reload if ne
 #############################
 ## REQUIREMENTS
 ##
-This module requires the following Python packages:
+The most commonly used functionality of this module requires the following
+Python packages:
 - dill
+- decorator
 - f90nml
 - flatdict
 - h5py
@@ -26,9 +28,13 @@ This module requires the following Python packages:
 - numpy
 - plotly
 - psutil
+- pexpect
 - requests
 - scipy
 - tqdm
+
+More rarely used functionality may require additional dependencies, given in
+`requirements.txt`.
 
 We support all the Python versions that are supported by the
 [Python project](https://devguide.python.org/versions/) (i.e. Python versions

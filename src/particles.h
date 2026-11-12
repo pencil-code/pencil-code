@@ -12,3 +12,4 @@
   public :: read_particles_run_pars, write_particles_run_pars
   public :: insert_particles, insert_lost_particles, insert_nucleii
   public :: particles_diffusion
+  public :: calc_diagnostics_from_particles_module

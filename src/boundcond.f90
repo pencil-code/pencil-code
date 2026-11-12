@@ -361,6 +361,22 @@ module Boundcond
         endif
       endif
 
+      !Done here to ensure GPU runs also have the correct setting of these flags
+      if (any(bcx12(:,BOT)=='fg')) lfrozen_bcs_x=.true.
+      if (any(bcx12(:,TOP)=='fg')) lfrozen_bcs_x=.true.
+      lfrozen_bot_var_x = bcx12(:,BOT)=='fg'
+      lfrozen_top_var_x = bcx12(:,TOP)=='fg'
+
+      if (any(bcy12(:,BOT)=='fg')) lfrozen_bcs_y=.true.
+      if (any(bcy12(:,TOP)=='fg')) lfrozen_bcs_y=.true.
+      lfrozen_bot_var_y = bcy12(:,BOT)=='fg'
+      lfrozen_top_var_y = bcy12(:,TOP)=='fg'
+
+      if (any(bcz12(:,BOT)=='fg')) lfrozen_bcs_z=.true.
+      if (any(bcz12(:,TOP)=='fg')) lfrozen_bcs_z=.true.
+      lfrozen_bot_var_z = bcz12(:,BOT)=='fg'
+      lfrozen_top_var_z = bcz12(:,TOP)=='fg'
+!
     endsubroutine initialize_boundcond
 !***********************************************************************
     subroutine check_consistency_of_lperi(label)
@@ -7043,6 +7059,8 @@ module Boundcond
 !
 !  Fourier Transform of Bz0:
 !
+!
+      !$omp parallel num_threads(1)
       if (.not. allocated (exp_fact)) then
         ! Setup exponential factor for bottom boundary
         allocate (exp_fact(enx,eny,nghost+1), stat=stat)
@@ -7051,6 +7069,7 @@ module Boundcond
       endif
 !
       call field_extrapol_z_parallel (Bz0, f(l1:l2,m1:m2,n1-nghost:n1,iax:iay), exp_fact)
+      !$omp end parallel
       call communicate_vect_field_ghosts(f,BOT)
       if (luse_vel_field) call communicate_vect_field_ghosts(f,BOT, iux)
 !
@@ -7447,7 +7466,7 @@ module Boundcond
 !  Calculate 1/k^2, zero mean
 !
       if (lshear) then
-        kappa = sqrt((kx+deltay*ky/Lx)**2+ky**2)
+        kappa = sqrt((kx+delta_y*ky/Lx)**2+ky**2)
       else
         kappa = sqrt(kx**2 + ky**2)
       endif
@@ -8748,8 +8767,10 @@ module Boundcond
             exp_fact_bot(:,:,pos_z) = exp_fact_bot(:,:,pos_z) ** delta_z / (nxgrid*nygrid)
           enddo
         endif
+        !$omp parallel num_threads(1)
         call vect_pot_extrapol_z_parallel &
              (f(l1:l2,m1:m2,n1,iax:iaz), f(l1:l2,m1:m2,n1-nghost:n1-1,iax:iaz), exp_fact_bot)
+        !$omp end parallel
       case(TOP)
         if (.not. allocated (exp_fact_top)) then
           ! Setup exponential factor for top boundary
@@ -8767,8 +8788,10 @@ module Boundcond
             exp_fact_top(:,:,pos_z) = exp_fact_top(:,:,pos_z) ** delta_z / (nxgrid*nygrid)
           enddo
         endif
+        !$omp parallel num_threads(1)
         call vect_pot_extrapol_z_parallel &
              (f(l1:l2,m1:m2,n2,iax:iaz), f(l1:l2,m1:m2,n2+1:n2+nghost,iax:iaz), exp_fact_top)
+        !$omp end parallel
       case default
         call fatal_error ('bc_aa_pot_field_extrapol', 'topbot should be BOT or TOP', lfirst_proc_xy)
       endselect

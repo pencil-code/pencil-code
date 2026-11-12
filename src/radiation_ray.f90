@@ -62,7 +62,6 @@ module Radiation
   real, target, dimension (:,:,:), allocatable :: Jrad_xz
   real, target, dimension (:,:,:), allocatable :: Jrad_yz
   real, target, dimension (:,:,:), allocatable :: Jrad_xz2
-  real, target, dimension (:,:,:,:,:,:), allocatable :: Jrad_r
 
   type (radslice), dimension (maxdir), target :: Isurf
 
@@ -76,13 +75,20 @@ module Radiation
   real :: dtau_thresh_min, dtau_thresh_max
   real :: tau_top=0.0, TT_top=0.0
   real :: tau_bot=0.0, TT_bot=0.0
+!
+!  Boundary conditions of the vertical rays on the GPU, (1) bottom, (2) top:
+!  0 for '0' (no incoming intensity), 1 for 'S' (I=S), 2 for 'c' (layer of
+!  TT_bot/TT_top) with the incoming intensity Irad_z.
+!
+  integer, dimension(2) :: ibc_rad_z=1
+  real, dimension(2) :: Irad_z=0.0
   real :: kapparho_cst=1.0, kappa_Kconst=1.0
   real :: Srad_const=1.0, amplSrad=1.0, radius_Srad=1.0
   real :: kx_Srad=0.0, ky_Srad=0.0, kz_Srad=0.0
   real :: kapparho_const=1.0, amplkapparho=1.0, radius_kapparho=1.0
   real :: kx_kapparho=0.0, ky_kapparho=0.0, kz_kapparho=0.0
   real :: Frad_boundary_ref=0.0
-  real :: cdtrad=0.1, cdtrad_thin=1.0, cdtrad_thick=0.25, cdtrad_cgam=0.25
+  real :: cdtrad=0.1, cdtradpress=impossible, cdtrad_thin=1.0, cdtrad_thick=0.25, cdtrad_cgam=0.25
   real :: scalefactor_cooling=1.0, scalefactor_radpressure=1.0
   real :: scalefactor_radpressure1=1.0, scalefactor_radpressure2=1.0
   real :: expo_rho_opa=0.0, expo_temp_opa=0.0, expo_temp_opa_buff=0.0
@@ -111,7 +117,7 @@ module Radiation
   integer :: iKR_press=0, iKR_pressxx=0, iKR_pressyy=0, iKR_presszz=0
   integer :: iKR_pressxy=0, iKR_pressyz=0, iKR_presszx=0
 !
-  logical :: lperiodic_ray, lperiodic_ray_x, lperiodic_ray_y
+  logical :: lperiodic_ray, lperiodic_ray_x, lperiodic_ray_y, lperiodic_ray_xy
   logical :: lfix_radweight_1d=.true.
   logical :: lcooling=.true., lrad_debug=.false.
   logical :: lno_rad_heating=.false.
@@ -172,7 +178,7 @@ module Radiation
       kappa_Kconst, kapparho_const, amplkapparho, radius_kapparho, lintrinsic, &
       lcommunicate, lrevision, lcooling, lradflux, lradpress, lradpressure, &
       Frad_boundary_ref, lrad_cool_diffus, lrad_pres_diffus, lcdtrad_old, &
-      cdtrad, cdtrad_thin, cdtrad_thick, cdtrad_cgam, &
+      cdtrad, cdtradpress, cdtrad_thin, cdtrad_thick, cdtrad_cgam, &
       scalefactor_Srad, scalefactor_kappa, &
       angle_weight, &
       lcheck_tau_division, lfix_radweight_1d, expo_rho_opa, expo_temp_opa, &
@@ -277,8 +283,9 @@ module Radiation
 !
       real, dimension(mx,my,mz,mfarray) :: f
 
-      integer :: itable
+      integer :: itable, i
       real :: radlength,arad_normal
+      character (len=bclen) :: bc_ray
       logical :: periodic_xy_plane,bad_ray,ray_good
       character (len=labellen) :: header
       integer :: lun_input = 1
@@ -326,7 +333,9 @@ module Radiation
 !  the horizontal plane because a ray can pass through the computational domain
 !  many, many times before `biting itself in its tail'.
 !
-        bad_ray=(rad2==2.and.nrad==0.and.periodic_xy_plane)
+
+!         
+        bad_ray=(rad2==2.and.nrad==0.) !and.periodic_xy_plane)
 !
 !  For single rays: single_ray must match (lrad,mrad,nrad).
 !  Otherwise, check for length of rays.
@@ -336,12 +345,13 @@ module Radiation
                     .and.mrad==single_ray(2) &
                     .and.nrad==single_ray(3) )   !MR: even if xy plane is periodic?
         else
-          ray_good=(rad2>0.and.rad2<=rad2max).and.(.not.bad_ray)
+          ray_good=(rad2>0.and.rad2<=rad2max)!.and.(.not.bad_ray)
         endif
 !
 !  Proceed with good rays.
 !
         if (ray_good) then
+          print *, 'The good ones', lrad, mrad, nrad
           dir(idir,1)=lrad
           dir(idir,2)=mrad
           dir(idir,3)=nrad
@@ -408,6 +418,32 @@ module Radiation
       else
         arad=0.0
         arad_normal=0.0
+      endif
+!
+!  The GPU (radtransfer_gpu) only has rays along the coordinate axes, periodic
+!  horizontal rays on a single process in that direction, and the vertical
+!  boundary conditions '0', 'S' and 'c' (for the axis rays mu=+1 upward and
+!  mu=-1 downward in radboundary_xy_set).
+!
+      if (lgpu .and. .not.(lrad_cool_diffus.or.lrad_pres_diffus)) then
+        if (rad2max/=1 .or. lsingle_ray) call not_implemented('initialize_radiation', &
+            'rays other than along the coordinate axes on the GPU (need rad2max=1, lsingle_ray=F)')
+        if (radx/=0 .and. (any((/bc_rad1(1),bc_rad2(1)/)/='p') .or. nprocx>1)) &
+          call not_implemented('initialize_radiation','x-rays on the GPU only if periodic and nprocx=1')
+        if (rady/=0 .and. (any((/bc_rad1(2),bc_rad2(2)/)/='p') .or. nprocy>1)) &
+          call not_implemented('initialize_radiation','y-rays on the GPU only if periodic and nprocy=1')
+        do i=1,2
+          bc_ray=merge(bc_rad1(3),bc_rad2(3),i==1)
+          select case (bc_ray)
+          case ('0'); ibc_rad_z(i)=0
+          case ('S'); ibc_rad_z(i)=1
+          case ('c'); ibc_rad_z(i)=2
+          case default
+            if (radz/=0) call not_implemented('initialize_radiation','bc_rad='//trim(bc_ray)//' in z on the GPU')
+          endselect
+        enddo
+        Irad_z(1)=arad*TT_bot**4*(1-exp(tau_bot))
+        Irad_z(2)=arad*TT_top**4*(1-exp(-tau_top))
       endif
 !
 !  Debug output.
@@ -627,10 +663,10 @@ module Radiation
 
       real, dimension(mx,my,mz,mfarray) :: f
 !
-      integer :: i,j,ij,k,inu
+      integer :: i,j,ij,k
 !
       if (lintrinsic) call Qintrinsic(f)
-!
+! 
       if (lcommunicate) then
         if (lperiodic_ray) then
           call Qperiodic
@@ -639,7 +675,7 @@ module Radiation
           call Qcommunicate
         endif
       endif
-!
+!    
       if (lrevision) call Qrevision
 !
 !  Calculate heating rate, so at the end of the loop
@@ -689,7 +725,7 @@ module Radiation
       use Gpu, only: radtransfer_gpu
       real, dimension(mx,my,mz,mfarray) :: f
 !
-      integer :: i,j,ij,k,inu
+      integer :: inu
       logical :: lno_rays
 !
 !  Identifier.
@@ -740,7 +776,7 @@ module Radiation
 !  Do the 3 steps: first intrinsic (compute intensive),
 !  then communication (not compute intensive),
 !  and finally revision (again compute intensive).
-!
+!              
               call calcQ(f)
 !
 !  Store outgoing intensity in case of lower reflective boundary condition.
@@ -827,7 +863,8 @@ module Radiation
 !
       lperiodic_ray_x=(lrad/=0.and.mrad==0.and.nrad==0.and.bc_ray_x=='p')
       lperiodic_ray_y=(lrad==0.and.mrad/=0.and.nrad==0.and.bc_ray_y=='p')
-      lperiodic_ray=(lperiodic_ray_x.or.lperiodic_ray_y)
+      lperiodic_ray_xy=(lrad/=0.and.mrad/=0.and.nrad==0.and.bc_ray_x=='p'.and.bc_ray_y=='p')
+      lperiodic_ray=(lperiodic_ray_x.or.lperiodic_ray_y.or.lperiodic_ray_xy)
 !
 !  Determine start and stop processors.
 !
@@ -945,9 +982,9 @@ module Radiation
 !
 !  compute u.n and its derivatives
 !
-          u_dot_n=f(l,m,n,iux)*unit_vec(idir,1) &
+          u_dot_n=(f(l,m,n,iux)*unit_vec(idir,1) &
                  +f(l,m,n,iuy)*unit_vec(idir,2) &
-                 +f(l,m,n,iuz)*unit_vec(idir,3)
+                 +f(l,m,n,iuz)*unit_vec(idir,3))/c_light
 !
 !  Different signs for different hemispheres
 !  If nz /= 0, then the hemisphere is given by the sign of nz.
@@ -967,12 +1004,12 @@ module Radiation
 !
 !  Two versions of u.n needed for derivative of u.n.
 !
-          u_dot_n_p=f(l+lrad,m+mrad,n+nrad,iux)*unit_vec(idir,1) &
+          u_dot_n_p=(f(l+lrad,m+mrad,n+nrad,iux)*unit_vec(idir,1) &
                    +f(l+lrad,m+mrad,n+nrad,iuy)*unit_vec(idir,2) &
-                   +f(l+lrad,m+mrad,n+nrad,iuz)*unit_vec(idir,3)
-          u_dot_n_m=f(l-lrad,m-mrad,n-nrad,iux)*unit_vec(idir,1) &
+                   +f(l+lrad,m+mrad,n+nrad,iuz)*unit_vec(idir,3))/c_light
+          u_dot_n_m=(f(l-lrad,m-mrad,n-nrad,iux)*unit_vec(idir,1) &
                    +f(l-lrad,m-mrad,n-nrad,iuy)*unit_vec(idir,2) &
-                   +f(l-lrad,m-mrad,n-nrad,iuz)*unit_vec(idir,3)
+                   +f(l-lrad,m-mrad,n-nrad,iuz)*unit_vec(idir,3))/c_light
           dudtau_m=(u_dot_n-u_dot_n_m)/dtau_m
           dudtau_p=(u_dot_n_p-u_dot_n)/dtau_p
 !
@@ -1259,9 +1296,9 @@ module Radiation
 !  x-direction.
 !
         if (lrad/=0.and..not.all_yz) then
-          forall (m=mm1:mm2,n=nn1:nn2,Qpt_yz(m,n)%set.and..not.Qbc_yz(m,n)%set)
+          do concurrent (m=mm1:mm2,n=nn1:nn2,Qpt_yz(m,n)%set.and..not.Qbc_yz(m,n)%set)
             Qsend_yz(m,n) = Qpt_yz(m,n)%val*emtau_yz(m,n)+Qrad_yz(m,n)
-          endforall
+          enddo
 !
           if (nprocx>1) then
             call radboundary_yz_sendrecv(lrad,idir,Qsend_yz,Qrecv_yz)
@@ -1269,10 +1306,10 @@ module Radiation
             Qrecv_yz=Qsend_yz
           endif
 !
-          forall (m=mm1:mm2,n=nn1:nn2,Qpt_yz(m,n)%set.and..not.Qbc_yz(m,n)%set)
+          do concurrent (m=mm1:mm2,n=nn1:nn2,Qpt_yz(m,n)%set.and..not.Qbc_yz(m,n)%set)
             Qbc_yz(m,n)%val = Qrecv_yz(m,n)
             Qbc_yz(m,n)%set = Qpt_yz(m,n)%set
-          endforall
+          enddo
 !
           all_yz=all(Qbc_yz(mm1:mm2,nn1:nn2)%set)
           if (all_yz.and.all_zx) exit
@@ -1281,9 +1318,9 @@ module Radiation
 !  y-direction.
 !
         if (mrad/=0.and..not.all_zx) then
-          forall (l=ll1:ll2,n=nn1:nn2,Qpt_zx(l,n)%set.and..not.Qbc_zx(l,n)%set)
+          do concurrent (l=ll1:ll2,n=nn1:nn2,Qpt_zx(l,n)%set.and..not.Qbc_zx(l,n)%set)
             Qsend_zx(l,n) = Qpt_zx(l,n)%val*emtau_zx(l,n)+Qrad_zx(l,n)
-          endforall
+          enddo
 !
           if (nprocy>1) then
             call radboundary_zx_sendrecv(mrad,idir,Qsend_zx,Qrecv_zx)
@@ -1291,10 +1328,10 @@ module Radiation
             Qrecv_zx=Qsend_zx
           endif
 !
-          forall (l=ll1:ll2,n=nn1:nn2,Qpt_zx(l,n)%set.and..not.Qbc_zx(l,n)%set)
+          do concurrent (l=ll1:ll2,n=nn1:nn2,Qpt_zx(l,n)%set.and..not.Qbc_zx(l,n)%set)
             Qbc_zx(l,n)%val = Qrecv_zx(l,n)
             Qbc_zx(l,n)%set = Qpt_zx(l,n)%set
-          endforall
+          enddo
 !
           all_zx=all(Qbc_zx(ll1:ll2,nn1:nn2)%set)
           if (all_yz.and.all_zx) exit
@@ -1316,31 +1353,31 @@ module Radiation
 !  to the next processor.
 !
       if (nrad/=0.and.ipz/=ipzstop) then
-        forall (l=ll1:ll2,m=mm1:mm2)
+        do concurrent (l=ll1:ll2,m=mm1:mm2)
           emtau_xy(l,m) = exp(-tau(l,m,nnstop))
           Qrad_xy(l,m) = Qrad(l,m,nnstop)
           Qsend_xy(l,m) = Qpt_xy(l,m)%val*emtau_xy(l,m)+Qrad_xy(l,m)
-        endforall
+        enddo
 !
         call radboundary_xy_send(nrad,idir,Qsend_xy)
       endif
 
       if (lrad/=0.and.ipx/=ipxstop) then
-        forall (m=mm1:mm2,n=nn1:nn2)
+        do concurrent (m=mm1:mm2,n=nn1:nn2)
           emtau_yz(m,n) = exp(-tau(llstop,m,n))
           Qrad_yz(m,n) = Qrad(llstop,m,n)
           Qsend_yz(m,n) = Qpt_yz(m,n)%val*emtau_yz(m,n)+Qrad_yz(m,n)
-        endforall
+        enddo
 !
         call radboundary_yz_send(lrad,idir,Qsend_yz)
       endif
 
       if (mrad/=0.and.ipy/=ipystop) then
-        forall (l=ll1:ll2,n=nn1:nn2)
+        do concurrent (l=ll1:ll2,n=nn1:nn2)
           emtau_zx(l,n) = exp(-tau(l,mmstop,n))
           Qrad_zx(l,n) = Qrad(l,mmstop,n)
           Qsend_zx(l,n) = Qpt_zx(l,n)%val*emtau_zx(l,n)+Qrad_zx(l,n)
-        endforall
+        enddo
 !
         call radboundary_zx_send(mrad,idir,Qsend_zx)
       endif
@@ -1351,7 +1388,8 @@ module Radiation
 !
 !  This routine deals with communication for horizontal rays.
 !
-      use Mpicomm, only: radboundary_yz_periodic_ray,radboundary_zx_periodic_ray
+      use Mpicomm, only: radboundary_yz_periodic_ray,radboundary_zx_periodic_ray, &
+                         radboundary_diagxy_periodic_ray,radboundary_ybeam_shift
       use Debug_IO, only: output
 !
       real, dimension(ny,nz) :: Qrad_yz,tau_yz
@@ -1362,10 +1400,23 @@ module Radiation
       real, dimension(nx,nz,0:nprocy-1) :: Qrad_zx_all,tau_zx_all
       integer :: ipxstart,ipxstop,ipl
       integer :: ipystart,ipystop,ipm
+!  Diagonal rays: X = intrinsic values at the downstream x face (one per row), Y = at the downstream
+!  y face (one per column); first index runs along the sweep. Q0eff,taueff = X with the Y piece
+!  of the same processor folded in (see below). Qbot = heating rate for the y boundary.
+      real, dimension(ny,nz) :: QX,tauX,Q0eff,taueff
+      real, dimension(nx,nz) :: QY,tauY,Qbot
+      integer :: ii,mi
+!  nprocy>1 (nprocx=nprocy=P), see PQ_scratch/plan.md: gathers over the diagonal beam, indexed by beam rank = ipx.
+      real, dimension(ny,nz,0:nprocx-1) :: QYall,tYall,QXall,tXall
+      real, dimension(ny,nz) :: QXa,tXa,Q0_left,Qbotb,QYb,tYb,Q0_left_below
+      real, dimension(nz) :: Q0_corner,vc,tc,emc
+      real, dimension(3*ny*nz) :: bval_send,bval_recv
+      integer :: kk,ik,sx,nn
 !
-!  x-direction
 !
-      if (lrad/=0) then
+!  x-direction (axis rays along x only; the diagonal rays are treated below).
+!
+      if (lrad/=0.and.mrad==0) then
 !
 !  Intrinsic heating rate and optical depth at the downstream boundary of
 !  each processor.
@@ -1422,13 +1473,11 @@ module Radiation
 !  upstream boundary of this processor.
 !
         Qrad0(llstart-lrad,m1:m2,n1:n2)=Qrad_tot_yz/emtau1_tot_yz
-!print*,'AXEL: Qrad0(llstart-lrad,m1:m2,n1:n2), Qrad_tot_yz, emtau1_tot_yz=', &
-!              Qrad0(llstart-lrad,m1:m2,n1:n2), Qrad_tot_yz, emtau1_tot_yz
       endif
 !
-!  y-direction
+!  y-direction (axis rays along y only; the diagonal rays are treated below).
 !
-      if (mrad/=0) then
+      if (mrad/=0.and.lrad==0) then
 !
 !  Intrinsic heating rate and optical depth at the downstream boundary of
 !  each processor.
@@ -1485,7 +1534,152 @@ module Radiation
 !  upstream boundary of this processor.
 !
         Qrad0(l1:l2,mmstart-mrad,n1:n2)=Qrad_tot_zx/emtau1_tot_zx
+      endif
+!  chandru 04-11-26: with Claude Sonnet 5.5
+!  chandru 08-11-26: with Claude Sonnet 5.5
+!  Diagonal rays, periodic xy, nprocy=1, nxgrid=nygrid=N, w=nx; first index runs along the sweep. Per processor the Y piece is
+!  folded into the X rows r<=w-2: Q0eff=X(r)+exp(-tauX(r))*Y(w-2-r), taueff=tauX(r)+tauY(w-2-r) (the single-core twist inside one processor).
+!  Chain over processors as for axis rays (two ipl loops) with the row index shifted by w per processor (cshift): gives the
+!  entries at the upstream x face. Upstream y face (local): Y(c)+exp(-tauY(c))*entry(row N-2-c).
+!  Derivation: Test/dev_log.md, 2026-11-08, multicore diagonal rays.
 !
+      if (lrad/=0.and.mrad/=0) then
+        if (nxgrid/=nygrid.or.(nprocy/=1.and.nprocx/=nprocy)) &
+          call fatal_error('Qperiodic','diagonal rays need nxgrid=nygrid and nprocy=1 or nprocx=nprocy')
+!
+!  Intrinsic Q and tau at the downstream x and y face, first index along the sweep.
+!
+        if (msign>0) then
+          QX=Qrad(llstop,m1:m2,n1:n2);  tauX=tau(llstop,m1:m2,n1:n2)
+        else
+          QX=Qrad(llstop,m2:m1:-1,n1:n2);  tauX=tau(llstop,m2:m1:-1,n1:n2)
+        endif
+        if (lsign>0) then
+          QY=Qrad(l1:l2,mmstop,n1:n2);  tauY=tau(l1:l2,mmstop,n1:n2)
+        else
+          QY=Qrad(l2:l1:-1,mmstop,n1:n2);  tauY=tau(l2:l1:-1,mmstop,n1:n2)
+        endif
+!
+        if (nprocy>1) then
+!
+!  P x P cores (P=nprocx=nprocy). Sweep coordinates: core (sx,sy), sx=ipx (lsign>0) or P-1-ipx. The ring of a ray entering via the
+!  left face row r of this core is L(r) at (sx+k,sy+k), B(w-r) at (sx+k,sy+k+1), k=0..P-1 (w=nx); L exits at the y face, B at the x face.
+!  Each core needs QY of the beam cores and QX of their sweep-upper neighbour: shift QX down once, gather over the diagonal beam.
+!
+          nn=ny*nz
+          call radboundary_ybeam_shift(reshape(QX,(/nn/)),bval_recv(1:nn),nn,-msign)
+          QXa=reshape(bval_recv(1:nn),(/ny,nz/))
+          call radboundary_ybeam_shift(reshape(tauX,(/nn/)),bval_recv(1:nn),nn,-msign)
+          tXa=reshape(bval_recv(1:nn),(/ny,nz/))
+          call radboundary_diagxy_periodic_ray(nn,QY,tauY,QXa,tXa,lsign*msign<0,QYall,tYall,QXall,tXall)
+          sx=ipx; if (lsign<0) sx=nprocx-1-ipx
+!
+!  Left boundary values, rows 1..w-1 (r=row): chain L(r) then B(w-r) over the beam, starting at this core.
+!
+          Qrad_tot_yz=0.0
+          tau_tot_yz=0.0
+          do kk=0,nprocx-1
+            ik=modulo(sx+kk,nprocx); if (lsign<0) ik=nprocx-1-ik
+            Qrad_tot_yz(1:nx-1,:)=QYall(nx-1:1:-1,:,ik)+exp(-tYall(nx-1:1:-1,:,ik))*Qrad_tot_yz(1:nx-1,:)
+            tau_tot_yz(1:nx-1,:)=tYall(nx-1:1:-1,:,ik)+tau_tot_yz(1:nx-1,:)
+            Qrad_tot_yz(1:nx-1,:)=QXall(1:nx-1,:,ik)+exp(-tXall(1:nx-1,:,ik))*Qrad_tot_yz(1:nx-1,:)
+            tau_tot_yz(1:nx-1,:)=tXall(1:nx-1,:,ik)+tau_tot_yz(1:nx-1,:)
+          enddo
+          where (tau_tot_yz>dtau_thresh_max)
+            emtau1_tot_yz=1.0
+          elsewhere (tau_tot_yz<dtau_thresh_min)
+            emtau1_tot_yz=tau_tot_yz*(1-0.5*tau_tot_yz*(1-tau_tot_yz/3))
+          elsewhere
+            emtau1_tot_yz=1-exp(-tau_tot_yz)
+          endwhere
+          Q0_left(1:nx-1,:)=Qrad_tot_yz(1:nx-1,:)/emtau1_tot_yz(1:nx-1,:)
+!
+!  Corner boundary value: full solution at the corner cell of core (sx-1,sy-1); chain of the corner cells (last row of QY) over the beam.
+!
+          vc=0.0; tc=0.0
+          do kk=0,nprocx-1
+            ik=modulo(sx+kk,nprocx); if (lsign<0) ik=nprocx-1-ik
+            vc=QYall(nx,:,ik)+exp(-tYall(nx,:,ik))*vc
+            tc=tc+tYall(nx,:,ik)
+          enddo
+          where (tc>dtau_thresh_max)
+            emc=1.0
+          elsewhere (tc<dtau_thresh_min)
+            emc=tc*(1-0.5*tc*(1-tc/3))
+          elsewhere
+            emc=1-exp(-tc)
+          endwhere
+          Q0_corner=vc/emc
+          Q0_left(nx,:)=Q0_corner
+!
+!  Bottom boundary value: needs QY,tauY and the left boundary value of the core below (sweep-lower neighbour, ipy-msign): send up, receive from below.
+!
+          bval_send(1:nn)=reshape(QY,(/nn/))
+          bval_send(nn+1:2*nn)=reshape(tauY,(/nn/))
+          bval_send(2*nn+1:3*nn)=reshape(Q0_left,(/nn/))
+          call radboundary_ybeam_shift(bval_send,bval_recv,3*nn,msign)
+          QYb=reshape(bval_recv(1:nn),(/ny,nz/))
+          tYb=reshape(bval_recv(nn+1:2*nn),(/ny,nz/))
+          Q0_left_below=reshape(bval_recv(2*nn+1:3*nn),(/ny,nz/))
+          do ii=1,nx-1
+            Qbot(ii,:)=QYb(ii,:)+exp(-tYb(ii,:))*Q0_left_below(nx-ii,:)
+          enddo
+          Qbot(nx,:)=QYb(nx,:)
+!
+          Qrad0(llstart-lrad,mmstart:mmstop:msign,n1:n2)=Q0_left
+          Qrad0(llstart:llstop:lsign,mmstart-mrad,n1:n2)=Qbot
+          Qrad0(llstart-lrad,mmstart-mrad,n1:n2)=Q0_corner
+        else
+!
+!  Effective transfer of this processor: fold the Y piece into the rows r<=w-2.
+!
+        Q0eff=QX;  taueff=tauX
+        Q0eff(1:nx-1,:)=QX(1:nx-1,:)+exp(-tauX(1:nx-1,:))*QY(nx-1:1:-1,:)
+        taueff(1:nx-1,:)=tauX(1:nx-1,:)+tauY(nx-1:1:-1,:)
+!
+!  Gather over all processors (nprocy=1: all of them are in the x beam).
+!
+        Qrad_yz=Q0eff
+        tau_yz=taueff
+        call radboundary_yz_periodic_ray(Qrad_yz,tau_yz,Qrad_yz_all,tau_yz_all)
+!
+        if (lrad>0) then; ipxstart=0; ipxstop=nprocx-1; endif
+        if (lrad<0) then; ipxstart=nprocx-1; ipxstop=0; endif
+!
+!  Chain over the processors starting at the current one, the row index shifted
+!  by w=nx at each processor. Then the processors upstream of this one.
+!
+        Qrad_tot_yz=0.0
+        tau_tot_yz=0.0
+        do ipl=ipx,ipxstop,lsign
+          Qrad_tot_yz=Qrad_yz_all(:,:,ipl)+exp(-tau_yz_all(:,:,ipl))*cshift(Qrad_tot_yz,-nx,dim=1)
+          tau_tot_yz=tau_yz_all(:,:,ipl)+cshift(tau_tot_yz,-nx,dim=1)
+        enddo
+        do ipl=ipxstart,ipx-lsign,lsign
+          Qrad_tot_yz=Qrad_yz_all(:,:,ipl)+exp(-tau_yz_all(:,:,ipl))*cshift(Qrad_tot_yz,-nx,dim=1)
+          tau_tot_yz=tau_yz_all(:,:,ipl)+cshift(tau_tot_yz,-nx,dim=1)
+        enddo
+!
+        where (tau_tot_yz>dtau_thresh_max)
+          emtau1_tot_yz=1.0
+        elsewhere (tau_tot_yz<dtau_thresh_min)
+          emtau1_tot_yz=tau_tot_yz*(1-0.5*tau_tot_yz*(1-tau_tot_yz/3))
+        elsewhere
+          emtau1_tot_yz=1-exp(-tau_tot_yz)
+        endwhere
+        Qrad_tot_yz=Qrad_tot_yz/emtau1_tot_yz
+!
+!  x boundary: entries of the rays starting at the upstream x face of this processor.
+!  y boundary: Y plus the entry in row N-2-c attenuated through Y (modulo N for one processor).
+!
+        Qrad0(llstart-lrad,mmstart:mmstop:msign,n1:n2)=Qrad_tot_yz
+        do ii=1,nx
+          mi=modulo(nygrid-1-ii,nygrid)+1
+          Qbot(ii,:)=QY(ii,:)+exp(-tauY(ii,:))*Qrad_tot_yz(mi,:)
+        enddo
+        Qrad0(llstart:llstop:lsign,mmstart-mrad,n1:n2)=Qbot
+        Qrad0(llstart-lrad,mmstart-mrad,n1:n2)=Qrad0(llstart-lrad,mmstop,n1:n2)
+        endif
       endif
 !
     endsubroutine Qperiodic
@@ -1785,6 +1979,13 @@ module Radiation
 !  This is the first term.
 !
       if (lradpressure) then
+!
+!  Time step constraint
+!
+        if (cdtradpress/=impossible) then
+          p%advec_cs2=p%advec_cs2+fourthird*p%rho1*Srad(l1:l2,m,n)*dxyz_2/(c_light*cdtradpress)
+        endif
+!
         do j=1,3
           k=iKR_Frad+(j-1)
           radpressure(:,j)=scalefactor_radpressure*p%rho1*f(l1:l2,m,n,k)
@@ -1810,10 +2011,12 @@ module Radiation
             if (m==m1.and.n==n1) then
               alpha=scalefactor_radpressure1*p%rho1*f(l1:l2,m,n,ikapparho)*4*pi/c_light &
                 *Srad(l1:l2,m,n)/c_light
-!             print*,'AXEL: Srad=',Srad(l1:l2,m,n)
-!             print*,'AXEL: kappa=',p%rho1*f(l1:l2,m,n,ikapparho)
-!             print*,'AXEL: alpha=',alpha
-!             print*,'AXEL: 2nd term=',radpressure/c_light
+              print*,'AXEL: Srad=',Srad(l1:l1+3,m,n)
+              print*,'AXEL: kappa=',p%rho1(1:3)*f(l1:l1+2,m,n,ikapparho)
+              print*,'AXEL: alpha=',alpha(1:3)
+              print*,'AXEL: 2nd term_x=',radpressure(1:3,1)/c_light
+              print*,'AXEL: 2nd term_y=',radpressure(1:3,2)/c_light
+              print*,'AXEL: 2nd term_z=',radpressure(1:3,3)/c_light
             endif
           endif
           df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+radpressure/c_light
@@ -1868,7 +2071,6 @@ module Radiation
       !real, dimension(mx,my) :: z_cutoff1
       real, dimension(mx) :: lnTT
       integer :: inu
-      integer :: ierr
 !
       select case (source_function_type)
 !
@@ -1999,9 +2201,9 @@ module Radiation
       real, dimension(mx) :: tmp,lnrho,lnTT,yH,rho,TT,profile=0
       real, dimension(mx) :: kappa1,kappa2,kappae
       real, dimension(mx) :: kappa_rad,kappa_cond,kappa_tot
-      real :: kappa0, kappa0_cgs,k1,k2
+      real :: kappa0, kappa0_cgs
       logical, save :: lfirst=.true.
-      integer :: i,inu
+      integer :: inu
 !
       select case (opacity_type)
 !
@@ -2881,8 +3083,8 @@ module Radiation
     call string_to_enum(enum_source_function_type,source_function_type)
     call copy_addr(enum_source_function_type,p_par(45)) ! int
     call copy_addr(nnu,p_par(46))                   ! int
-    call copy_addr(lntt_table,p_par(47))            ! (nlntt_table__mod__radiation)
-    call copy_addr(lnss_table,p_par(48))            ! (nlntt_table__mod__radiation) (nnu__mod__radiation)
+    if (allocated(lntt_table)) call copy_addr(lntt_table,p_par(47))            ! (nlntt_table__mod__radiation)
+    if (allocated(lnss_table)) call copy_addr(lnss_table,p_par(48))            ! (nlntt_table__mod__radiation) (nnu__mod__radiation)
     call copy_addr(kappa_kconst,p_par(49))
     call copy_addr(kapparho_const,p_par(50))
     call copy_addr(amplkapparho,p_par(51))
@@ -2910,6 +3112,12 @@ module Radiation
     call copy_addr(lradpress,p_par(72))         ! bool
     call copy_addr(dtau_thresh_min, p_par(73))
     call copy_addr(dtau_thresh_max, p_par(74))
+    call copy_addr(radx,p_par(75))              ! int
+    call copy_addr(rady,p_par(76))              ! int
+    call copy_addr(radz,p_par(77))              ! int
+    call copy_addr(ibc_rad_z,p_par(78))         ! int (2)
+    call copy_addr(irad_z,p_par(79))            ! (2)
+    call copy_addr(rad2max,p_par(80)) ! int dconst
 
     endsubroutine pushpars2c
 !***********************************************************************

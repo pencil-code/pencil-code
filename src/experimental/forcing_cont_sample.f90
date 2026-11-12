@@ -902,16 +902,16 @@ module Forcing
       endif
 !
 !  in the shearing sheet approximation, kx = kx0 - St*k_y.
-!  Here, St=-deltay/Lx. However, to stay near kx0, we ignore
+!  Here, St=-delta_y/Lx. However, to stay near kx0, we ignore
 !  integer shifts.
 !
       if (Sshear==0.) then
         kx=kx0
       else
         if (lshearing_adjust_old) then
-          kx=kx0+ky*deltay/Lx
+          kx=kx0+ky*delta_y/Lx
         else
-          kx=kx0+mod(ky*deltay/Lx-pi_over_Lx,2.*pi_over_Lx)+pi_over_Lx
+          kx=kx0+mod(ky*delta_y/Lx-pi_over_Lx,2.*pi_over_Lx)+pi_over_Lx
         endif
       endif
 !
@@ -919,7 +919,7 @@ module Forcing
 !
       k2=kx**2+ky**2+kz**2
       k=sqrt(k2)
-      if (ip<4) write(88,'(6f10.5)') k,kx0,kx,ky,kz,deltay
+      if (ip<4) write(88,'(6f10.5)') k,kx0,kx,ky,kz,delta_y
 !
 !  Find e-vector:
 !  Start with old method (not isotropic) for now.
@@ -1327,16 +1327,16 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff works ok'
       kz=kz*kfscl(n)
 !
 !  in the shearing sheet approximation, kx = kx0 - St*k_y.
-!  Here, St=-deltay/Lx. However, to stay near kx0, we ignore
+!  Here, St=-delta_y/Lx. However, to stay near kx0, we ignore
 !  integer shifts.
 !
       if (Sshear==0.) then
         kx=kx0
       else
         if (lshearing_adjust_old) then
-          kx=kx0+ky*deltay/Lx
+          kx=kx0+ky*delta_y/Lx
         else
-          kx=kx0+mod(ky*deltay/Lx-pi_over_Lx,2.*pi_over_Lx)+pi_over_Lx
+          kx=kx0+mod(ky*delta_y/Lx-pi_over_Lx,2.*pi_over_Lx)+pi_over_Lx
         endif
       endif
 !
@@ -1344,7 +1344,7 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff works ok'
 !
       k2=kx**2+ky**2+kz**2
       k=sqrt(k2)
-      if (ip<4) write(88,'(6f10.5)') k,kx0,kx,ky,kz,deltay
+      if (ip<4) write(88,'(6f10.5)') k,kx0,kx,ky,kz,delta_y
 !
 !  Find e-vector:
 !  Start with old method (not isotropic) for now.
@@ -1716,12 +1716,12 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
       endif
 !
 !  in the shearing sheet approximation, kx = kx0 - St*k_y.
-!  Here, St=-deltay/Lx
+!  Here, St=-delta_y/Lx
 !
       if (Sshear==0.) then
         kx=kx0
       else
-        kx=kx0+ky*deltay/Lx
+        kx=kx0+ky*delta_y/Lx
       endif
 !
       if (headt.or.ip<5) print*, 'forcing_hel_both: kx0,kx,ky,kz=',kx0,kx,ky,kz
@@ -2699,7 +2699,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
                 if (lforce_peri) then
                   if (j==2) then
                     delta(:,2)=2*atan(tan(.5*(delta(:,2) &
-                        +2.*deltay*atan(1000.*tan(.25* &
+                        +2.*delta_y*atan(1000.*tan(.25* &
                         (pi+x(l1:l2)-location(1)))))))
                   else
                     delta(:,j)=2*atan(tan(.5*delta(:,j)))
@@ -3537,12 +3537,12 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
       real :: norm,phi
 !
 !  in the shearing sheet approximation, kx = kx0 - St*k_y.
-!  Here, St=-deltay/Lx
+!  Here, St=-delta_y/Lx
 !
       if (Sshear==0.) then
         kx=kx0
       else
-        kx=kx0+ky*deltay/Lx
+        kx=kx0+ky*delta_y/Lx
       endif
 !
       if (headt.or.ip<5) print*, 'hel_vec: kx0,kx,ky,kz=',kx0,kx,ky,kz

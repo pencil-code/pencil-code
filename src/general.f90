@@ -7763,6 +7763,40 @@ iloop:do i=1,size(list2)
         dst = enum_alpha_attractors_corrected_string
       case('/bvec')
         dst = enum_Zbvec_string
+      case('1+log')
+        dst = enum_1Zlog_string
+      case('harmonic')
+        dst = enum_harmonic_string
+      case('frozen')
+        dst = enum_frozen_string
+      case('exp2')
+        dst = enum_exp2_string
+      case('gauss')
+        dst = enum_gauss_string
+      case('nanof')
+        dst = enum_nanof_string
+      case('event')
+        dst = enum_event_string
+      case('event1d')
+        dst = enum_event1d_string
+      case('t<tcrit')
+        dst = enum_tZtcrit_string
+      case('balleg')
+        dst = enum_balleg_string
+      case('eighth')
+        dst = enum_eighth_string
+      case('exp3')
+        dst = enum_exp3_string
+      case('full')
+        dst = enum_full_string
+      case('noadvection-spitzer')
+        dst = enum_noadvectionZspitzer_string
+      case('rappazzo')
+        dst = enum_rappazzo_string
+      case('schrijver04')
+        dst = enum_schrijver04_string
+      case('spitzer')
+        dst = enum_spitzer_string
       case('waterfall')
         dst = enum_waterfall_string
       case('imposed-cs2-core')

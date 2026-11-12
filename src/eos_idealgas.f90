@@ -1218,10 +1218,10 @@ module EquationOfState
       real, optional, intent(OUT) :: gamma_, cp,cv
       real, dimension(mfarray), optional, intent(IN) :: f
 !
-      call keep_compiler_quiet(f) !not needed here, but required for other EOS.
+      if (present(f)) call keep_compiler_quiet(f) !f is not needed here, but required for other EOS.
 !
       if (present(gamma_)) gamma_=gamma
-      if (present(cp)) cp=get_cp()     ! as module variable is hidden here
+      if (present(cp)) cp=get_cp()     ! as module variable is shadowed here
       if (present(cv)) cv=get_cv()
 
     endsubroutine get_gamma_etc
@@ -4348,7 +4348,7 @@ module EquationOfState
 !  Calculate 1/k^2, zero mean
 !
       if (lshear) then
-        kappa = sqrt((kx+ky*deltay/Lx)**2+ky**2)
+        kappa = sqrt((kx+ky*delta_y/Lx)**2+ky**2)
       else
         kappa = sqrt(kx**2 + ky**2)
       endif

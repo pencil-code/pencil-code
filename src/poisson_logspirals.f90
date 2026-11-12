@@ -790,7 +790,7 @@ contains
 !
       if (lshear) then
         x_offset = 1 + (ipx+ipy*nprocx)*tny
-        deltay_x = -deltay * (xgrid(x_offset:x_offset+tny-1) - (x0+Lx/2))/Lx
+        deltay_x = -delta_y * (xgrid(x_offset:x_offset+tny-1) - (x0+Lx/2))/Lx
       endif
 !
       if (lshift) then

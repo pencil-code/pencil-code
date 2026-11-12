@@ -12,8 +12,7 @@ module GPU
   use General, only: lpointer, ioptest, loptest
   use Quiet
   use Messages
-!$ use, intrinsic :: iso_c_binding
-  use iso_c_binding
+  use, intrinsic :: iso_c_binding
 
   implicit none
 
@@ -36,6 +35,7 @@ module GPU
   external pos_real_ptr_c
   external gpu_prepare_for_first_substep_c
   external get_gpu_reduced_vars_c
+  external get_gpu_ensemble_sums_c
   external test_bcs_c
   external split_update_gpu_c
 
@@ -226,7 +226,6 @@ contains
       if (lopacity) str=trim(str)//', '//'opacity'
       if (lpointmasses) str=trim(str)//', '//'pointmasses'
       if (lsolid_cells) str=trim(str)//', '//'solid_cells'
-      if (lparticles) str=trim(str)//', '//'particles'
 
       if (str/='') call fatal_error('initialize_GPU','no GPU implementation available for module(s) "'// &
                                     trim(str(3:))//'"')
@@ -241,7 +240,7 @@ contains
 !
 ! Load farray to gpu
 !
-      if (nt>0) call load_farray_to_GPU(f)
+      if (nt>0) call load_farray_to_GPU(f,.true.)
 
       call get_farray_ptr_gpu
 !print'(a,1x,Z0,1x,Z0)', 'pFarr_GPU_in,pFarr_GPU_out=', pFarr_GPU_in,pFarr_GPU_out
@@ -287,15 +286,11 @@ contains
 
     endsubroutine get_farray_ptr_gpu
 !**************************************************************************
-    subroutine rhs_GPU(f,isubstep)
+    subroutine rhs_GPU(isubstep)
 !
-      use General, only: notanumber
-
-      real, dimension (mx,my,mz,mfarray), intent(INOUT) :: f
-      integer,                            intent(IN)    :: isubstep
+      integer, intent(IN) :: isubstep
 !
-      call keep_compiler_quiet(f)
-      call rhs_gpu_c(isubstep,t)
+      call rhs_gpu_c(it,isubstep,t)
 !
     endsubroutine rhs_GPU
 !**************************************************************************
@@ -364,9 +359,6 @@ contains
 
 ! For training, pointed-to array needs to be 5-dimensional (last dimension being the batch size)
 
-      use Cparam
-      use iso_c_binding
-
       integer :: ind1
       integer, optional :: ind2
       logical, optional :: lout
@@ -392,36 +384,55 @@ contains
 
     endfunction get_ptr_GPU_training
 !**************************************************************************
-    subroutine copy_farray_from_GPU(f,nowait_)
+    subroutine copy_farray_from_GPU(f,nowait_,lread_particles_)
+!
+!  Copies f, and by default also the particles, from the GPU.
+!
 
 !$    use General, only: signal_wait
 
       real, dimension (mx,my,mz,mfarray), intent(OUT) :: f
-      logical, optional :: nowait_
+      logical, optional :: nowait_, lread_particles_
       logical :: nowait
+      integer :: read_particles_int
 
       nowait = loptest(nowait_)
+      !transform to integer since it is more compatible with C than logical
+      read_particles_int = merge(1,0,loptest(lread_particles_,.true.))
       if (nowait) then
-        call copy_farray_c(f)
+        call copy_farray_c(f,read_particles_int)
+        t_farray_copy = t
         return
       endif
+!
+!  If f was already copied during this iteration (e.g. for diagnostics before
+!  the time advance), it is not copied again; t_farray_copy keeps the time of
+!  that copy.
 !
 !$    if (lfarray_copied) return
 !
 ! Have to wait since if doing diagnostics don't want to overwrite f.
 !
 !$    call signal_wait(lhelper_perf, .false.)
-      call copy_farray_c(f)
+      call copy_farray_c(f,read_particles_int)
+      t_farray_copy = t
 !$    lfarray_copied = .true.
 
     endsubroutine copy_farray_from_GPU
 !**************************************************************************
-    subroutine load_farray_to_GPU(f)
+    subroutine load_farray_to_GPU(f,lload_particles_)
+!
+!  Loads f and, if lload_particles_ is true (default false), also the particles, if any, to the GPU.
+!
 
       real, dimension (mx,my,mz,mfarray), intent(IN) :: f
+      logical, optional :: lload_particles_
+      integer :: load_particles_int
 
       call keep_compiler_quiet(f)
-      call load_farray_c
+      !transform to integer since it is more compatible with C than logical
+      load_particles_int = merge(1,0,loptest(lload_particles_))
+      call load_farray_c(load_particles_int)
 
     endsubroutine load_farray_to_GPU
 !**************************************************************************
@@ -490,6 +501,17 @@ contains
       call get_gpu_reduced_vars_c(dst)
 
     endsubroutine get_gpu_reduced_vars
+!**************************************************************************
+    subroutine get_gpu_ensemble_sums(tension,zeta)
+!
+!  Per-y-row sums of the radial ensemble in special/klein_gordon,
+!  for the local y range of this processor.
+!
+      real, dimension(ny) :: tension, zeta
+
+      call get_gpu_ensemble_sums_c(tension,zeta)
+
+    endsubroutine get_gpu_ensemble_sums
 !**************************************************************************
     subroutine test_gpu_bcs
 

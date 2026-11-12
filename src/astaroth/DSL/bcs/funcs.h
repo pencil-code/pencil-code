@@ -61,6 +61,16 @@ bc_steady_z(boundary, topbot, VtxBuffer field)
 }
 //TP: old
 #if Leos_idealgas_MODULE && Lentropy_MODULE
+//  Kramers part of bc_ss_flux, as in the Fortran (noeos.f90/eos_dummies.inc) version:
+//  returns tmp_xy such that (cp-cv)*dz2_bound*tmp_xy = dz2_bound*cv*F/(K*T), with K/rho bounded by chimin/chimax_kramers*cp.
+bc_ss_flux_kramers_tmp(real flux, real rho_xy, real cs2_xy)
+{
+  real TT_xy = cs2_xy/(AC_cp__mod__equationofstate*AC_gamma_m1__mod__equationofstate)
+  real krho1kr_xy = AC_hcond0_kramers__mod__energy*pow(rho_xy,(-2.*AC_nkramers__mod__energy-1.))*pow(TT_xy,(6.5*AC_nkramers__mod__energy))
+  if (AC_chimin_kramers__mod__energy > 0.) krho1kr_xy = max(krho1kr_xy, AC_chimin_kramers__mod__energy*AC_cp__mod__equationofstate)
+  if (AC_chimax_kramers__mod__energy > 0.) krho1kr_xy = min(krho1kr_xy, AC_chimax_kramers__mod__energy*AC_cp__mod__equationofstate)
+  return AC_cv__mod__equationofstate*flux/((AC_cp__mod__equationofstate-AC_cv__mod__equationofstate)*rho_xy*krho1kr_xy*TT_xy)
+}
 bc_ss_flux(boundary, topbot, bool lone_sided)
 {
   suppress_unused_warning(boundary)
@@ -95,7 +105,7 @@ bc_ss_flux(boundary, topbot, bool lone_sided)
         tmp_xy=AC_fbot__mod__energy/(rho_xy*AC_chi*cs2_xy);
       }
       else if (AC_lheatc_kramers) {
-        tmp_xy=AC_fbot__mod__energy*pow(rho_xy,(2*nkramers))*pow((AC_cp*AC_gamma_m1),(6.5*nkramers))  /(hcond0_kramers*pow(cs2_xy,(6.5*nkramers+1.)));
+        tmp_xy=bc_ss_flux_kramers_tmp(AC_fbot__mod__energy,rho_xy,cs2_xy);
       }
       else {
         tmp_xy=AC_cp__mod__equationofstate*fbotkbot__mod__energy/cs2_xy;
@@ -134,7 +144,7 @@ bc_ss_flux(boundary, topbot, bool lone_sided)
         tmp_xy=AC_ftop__mod__energy/(rho_xy*AC_chi*cs2_xy);
       }
       else if (AC_lheatc_kramers) {
-        tmp_xy=AC_ftop__mod__energy*pow(rho_xy,(2*nkramers))*pow((AC_cp*AC_gamma_m1),(6.5*nkramers))  /(hcond0_kramers*pow(cs2_xy,(6.5*nkramers+1.)));
+        tmp_xy=bc_ss_flux_kramers_tmp(AC_ftop__mod__energy,rho_xy,cs2_xy);
       }
       else {
         tmp_xy=AC_cp*AC_ftopktop__mod__energy/cs2_xy;
@@ -365,6 +375,42 @@ bc_set_der_z(boundary, topbot, VtxBuffer field,val)
   }
 }
 
+//Sets duz/dz on the boundary such that div(u)=val
+bc_set_div_z(AcBoundary boundary, AC_TOP_BOT topbot, VtxBuffer field, real val)
+{
+  suppress_unused_warning(boundary)
+  const int x = vertexIdx.x
+  const int y = vertexIdx.y
+  const int iref = topbot == AC_bot ? AC_n1-1 : AC_n2-1
+  //The CPU sets only the interior xy points. Here the stencil centre is clamped to the interior so that the
+  //horizontal derivatives never reach outside the array in the ghost zones
+  const int xc = min(max(x,NGHOST),AC_mx-NGHOST-1)
+  const int yc = min(max(y,NGHOST),AC_my-NGHOST-1)
+  real duz_dz = val
+  if(AC_nxgrid != 1)
+  {
+    duz_dz -= AC_dx_1__mod__cdata[xc]/60.0*( 45.0*(F_UX[xc+1][yc][iref]-F_UX[xc-1][yc][iref])
+                                           - 9.0*(F_UX[xc+2][yc][iref]-F_UX[xc-2][yc][iref])
+                                           +     (F_UX[xc+3][yc][iref]-F_UX[xc-3][yc][iref]))
+  }
+  if(AC_nygrid != 1)
+  {
+    duz_dz -= AC_dy_1__mod__cdata[yc]/60.0*( 45.0*(F_UY[xc][yc+1][iref]-F_UY[xc][yc-1][iref])
+                                           - 9.0*(F_UY[xc][yc+2][iref]-F_UY[xc][yc-2][iref])
+                                           +     (F_UY[xc][yc+3][iref]-F_UY[xc][yc-3][iref]))
+  }
+  if (topbot == AC_bot) {
+    for i in 1:NGHOST+1 {
+      field[x][y][AC_n1-i-1] = field[x][y][AC_n1+i-1] - AC_dz2_bound[-i+NGHOST]*duz_dz
+    }
+  }
+  else if (topbot == AC_top) {
+    for i in 1:NGHOST+1 {
+      field[x][y][AC_n2+i-1] = field[x][y][AC_n2-i-1] + AC_dz2_bound[i+NGHOST]*duz_dz
+    }
+  }
+}
+
 #if Leos_idealgas_MODULE && Lentropy_MODULE
 bc_ss_temp_z(AcBoundary boundary, AC_TOP_BOT topbot,bool lone_sided)
 {
@@ -529,6 +575,51 @@ F_TT[vertexIdx.x][vertexIdx.y][AC_n2+i-1]=2*F_TT[vertexIdx.x][vertexIdx.y][AC_n2
 }
 else {
 }
+}
+#endif
+
+#if Leos_idealgas_MODULE && Lentropy_MODULE
+bc_ss_temp_old(AcBoundary boundary,AC_TOP_BOT topbot)
+{
+  suppress_unused_warning(boundary)
+  real tmp_xy
+  int i
+  if(topbot == AC_bot) {
+    if (AC_ldensity_nolog) {
+      if (AC_lreference_state) {
+      }
+      else {
+        tmp_xy=log(F_RHO[vertexIdx.x][vertexIdx.y][AC_n1-1])
+      }
+    }
+    else {
+      tmp_xy=F_RHO[vertexIdx.x][vertexIdx.y][AC_n1-1]
+    }
+    tmp_xy = (-AC_gamma_m1*(tmp_xy-AC_lnrho0) + log(AC_cs2bot/AC_cs20))/ AC_gamma
+    F_SS[vertexIdx.x][vertexIdx.y][AC_n1-1] = tmp_xy
+    for i in 1:NGHOST+1 {
+      F_SS[vertexIdx.x][vertexIdx.y][AC_n1-i-1] = 2*tmp_xy - F_SS[vertexIdx.x][vertexIdx.y][AC_n1+i-1]
+    }
+  }
+  else if(topbot == AC_top)   {
+    if (AC_ldensity_nolog) {
+      if (AC_lreference_state) {
+      }
+      else {
+        tmp_xy=log(F_RHO[vertexIdx.x][vertexIdx.y][AC_n2-1])
+      }
+    }
+    else {
+      tmp_xy=F_RHO[vertexIdx.x][vertexIdx.y][AC_n2-1]
+    }
+    tmp_xy = (-AC_gamma_m1*(tmp_xy-AC_lnrho0) + log(AC_cs2top__mod__equationofstate/AC_cs20))/ AC_gamma
+    F_SS[vertexIdx.x][vertexIdx.y][AC_n2-1] = tmp_xy
+    for i in 1:NGHOST+1 {
+      F_SS[vertexIdx.x][vertexIdx.y][AC_n2+i-1] = 2*tmp_xy - F_SS[vertexIdx.x][vertexIdx.y][AC_n2-i-1]
+    }
+  }
+  else {
+  }
 }
 #endif
 
@@ -1400,7 +1491,7 @@ bc_ss_flux(AcBoundary boundary, AC_TOP_BOT topbot,bool lone_sided)
         tmp_xy=AC_fbot__mod__energy/(rho_xy*AC_chi__mod__energy*cs2_xy)
       }
       else if (AC_lheatc_kramers__mod__energy) {
-        tmp_xy=AC_fbot__mod__energy*pow(rho_xy,(2*AC_nkramers__mod__energy))*pow((AC_cp__mod__equationofstate*AC_gamma_m1__mod__equationofstate),(6.5*AC_nkramers__mod__energy))  /(AC_hcond0_kramers__mod__energy*pow(cs2_xy,(6.5*AC_nkramers__mod__energy+1.)))
+        tmp_xy=bc_ss_flux_kramers_tmp(AC_fbot__mod__energy,rho_xy,cs2_xy)
       }
       else {
         tmp_xy=AC_cp__mod__equationofstate*AC_fbotkbot__mod__energy/cs2_xy
@@ -1485,7 +1576,7 @@ bc_ss_flux(AcBoundary boundary, AC_TOP_BOT topbot,bool lone_sided)
         tmp_xy=AC_ftop__mod__energy/(rho_xy*AC_chi__mod__energy*cs2_xy)
       }
       else if (AC_lheatc_kramers__mod__energy) {
-        tmp_xy=AC_ftop__mod__energy*pow(rho_xy,(2*AC_nkramers__mod__energy))*pow((AC_cp__mod__equationofstate*AC_gamma_m1__mod__equationofstate),(6.5*AC_nkramers__mod__energy))  /(AC_hcond0_kramers__mod__energy*pow(cs2_xy,(6.5*AC_nkramers__mod__energy+1.)))
+        tmp_xy=bc_ss_flux_kramers_tmp(AC_ftop__mod__energy,rho_xy,cs2_xy)
       }
       else {
         tmp_xy=AC_cp__mod__equationofstate*AC_ftopktop__mod__energy/cs2_xy
@@ -3467,23 +3558,20 @@ bc_lnrho_hds_z_iso(AcBoundary boundary, AC_TOP_BOT topbot)
 //These don't actually do anything except set some flags in the CPU code so can be no-ops here
 bc_freeze_var_x(AcBoundary boundary, AC_TOP_BOT topbot, Field f)
 {
-	suppress_unused_warning(boundary)
 	suppress_unused_warning(topbot)
-	suppress_unused_warning(f)
+	ac_fixed_bc(boundary,f)
 }
 
 bc_freeze_var_y(AcBoundary boundary, AC_TOP_BOT topbot, Field f)
 {
-	suppress_unused_warning(boundary)
 	suppress_unused_warning(topbot)
-	suppress_unused_warning(f)
+	ac_fixed_bc(boundary,f)
 }
 
 bc_freeze_var_z(AcBoundary boundary, AC_TOP_BOT topbot, Field f)
 {
-	suppress_unused_warning(boundary)
 	suppress_unused_warning(topbot)
-	suppress_unused_warning(f)
+	ac_fixed_bc(boundary,f)
 }
 
 bcx_extrap_2_3(AcBoundary boundary, AC_TOP_BOT topbot,Field f)
@@ -4057,7 +4145,6 @@ bc_sts(AcBoundary boundary,AC_TOP_BOT topbot,Field j)
   real dlnrhodz_2
   real dlnttdz_2
   real fac_2
-  int i_2
   if(j == AC_ilnrho__mod__cdata-1) {
     if(topbot == AC_bot) {
       if (AC_ldensity_nolog__mod__cdata) {
@@ -4157,6 +4244,48 @@ Kernel bc_aa_pot_kernel(AcBoundary boundary, AC_TOP_BOT topbot)
     }
 }
 
+//Potential field extrapolation of A ('pfe', bc_aa_pot_field_extrapol in boundcond.f90).
+//Operates on the Fourier transform of the boundary layer, which is stored in the planes
+//of the boundary point; writes the transforms of the ghost layers.
+//At the bottom structures are enhanced (optionally reduced by fbcz_bot(iaa)), at the top they decay.
+ac_potential_pfe_bc(AC_TOP_BOT topbot, Field f_real, Field f_imag)
+{
+	k = get_wavevector()
+	kappa = sqrt(k.x*k.x + k.y*k.y)
+	const int nb = vertexIdx.z
+	reduce_factor = 1.0
+	if (topbot == AC_bot && AC_fbcz_bot__mod__cdata[AC_iax__mod__cdata-1] != 0.0)
+	{
+		reduce_factor = AC_fbcz_bot__mod__cdata[AC_iax__mod__cdata-1]
+	}
+	for i in 1:NGHOST+1
+	{
+		ng = (topbot == AC_bot) ? nb-i : nb+i
+		//as exp(|k|)**delta_z in Fortran, delta_z = z(boundary)-z(ghost): growth at the bottom, decay at the top
+		fac = exp(reduce_factor*kappa*(AC_z__mod__cdata[nb]-AC_z__mod__cdata[ng]))
+		f_real[vertexIdx.x][vertexIdx.y][ng] = fac*f_real[vertexIdx.x][vertexIdx.y][nb]
+		f_imag[vertexIdx.x][vertexIdx.y][ng] = fac*f_imag[vertexIdx.x][vertexIdx.y][nb]
+	}
+}
+
+Kernel bc_aa_pfe_kernel(AC_TOP_BOT topbot)
+{
+    if(AC_luses_aa_pfe_top__mod__cdata || AC_luses_aa_pfe_bot__mod__cdata)
+    {
+	ac_potential_pfe_bc(topbot,AX_FOURIER_REAL,AX_FOURIER_IMAG)
+	ac_potential_pfe_bc(topbot,AY_FOURIER_REAL,AY_FOURIER_IMAG)
+	ac_potential_pfe_bc(topbot,AZ_FOURIER_REAL,AZ_FOURIER_IMAG)
+    }
+}
+
+bc_aa_pot_field_extrapol(AcBoundary boundary, AC_TOP_BOT topbot)
+{
+	suppress_unused_warning(topbot)
+	ac_fixed_bc(boundary,F_AX)
+	ac_fixed_bc(boundary,F_AY)
+	ac_fixed_bc(boundary,F_AZ)
+}
+
 //TP: these are  dummy implementations since we handle the potential bcs out of the task system
 bc_aa_pot2(AcBoundary boundary, AC_TOP_BOT topbot)
 {
@@ -4166,6 +4295,13 @@ bc_aa_pot2(AcBoundary boundary, AC_TOP_BOT topbot)
 }
 
 bc_aa_pwd(AcBoundary boundary, AC_TOP_BOT topbot)
+{
+	ac_fixed_bc(boundary,F_AX)
+	ac_fixed_bc(boundary,F_AY)
+	ac_fixed_bc(boundary,F_AZ)
+}
+
+bc_aa_pot3(AcBoundary boundary, AC_TOP_BOT topbot)
 {
 	ac_fixed_bc(boundary,F_AX)
 	ac_fixed_bc(boundary,F_AY)

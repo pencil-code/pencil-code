@@ -185,6 +185,7 @@ module Register
         if (ldynamic_aux) then
           do iaux=1,aux_count-1
             line=aux_var(iaux)
+            if (line=='') cycle
             if (line(len_trim(line):len_trim(line))=='$') line=line(1:len_trim(line)-1)
             aux_var(iaux)=line
             if (iaux<aux_count-1) aux_var(iaux)=trim(line)//' $'
@@ -1149,14 +1150,6 @@ module Register
         call parse_name(iname,cname(iname),cform(iname),'timeperstep',idiag_timeperstep)
         call parse_name(iname,cname(iname),cform(iname),'eps_rkf',idiag_eps_rkf)
       enddo
-      if (idiag_dtv /= 0 .or. &
-          idiag_dtsrc /= 0 .or. &
-          idiag_dtdiffus /= 0 .or. &
-          idiag_dtdiffus2 /= 0 .or. &
-          idiag_dtdiffus3 /= 0 .or. &
-          idiag_Rmesh /= 0 .or. idiag_Rmesh3 /=0 .or. &
-          idiag_maxadvec/=0 .or. idiag_maxdiffus /= 0 .or. &
-          idiag_dtvmaxz /= 0 ) ltimestep_diagnostics = .true.
 !
 !  phi-averages
 !
@@ -1195,6 +1188,15 @@ module Register
         call farray_index_append('nname_sound',nname_sound)
         call farray_index_append('ncoords_sound',ncoords_sound)
       endif
+!
+      if (idiag_dtv /= 0 .or. &
+          idiag_dtsrc /= 0 .or. &
+          idiag_dtdiffus /= 0 .or. &
+          idiag_dtdiffus2 /= 0 .or. &
+          idiag_dtdiffus3 /= 0 .or. &
+          idiag_Rmesh /= 0 .or. idiag_Rmesh3 /=0 .or. &
+          idiag_maxadvec/=0 .or. idiag_maxdiffus /= 0 .or. &
+          idiag_dtvmaxz /= 0 ) ltimestep_diagnostics = .true.
 !
     endsubroutine rprint_general
 !***********************************************************************

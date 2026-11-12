@@ -28,6 +28,7 @@ module Heatflux
   implicit none
 !
   character (len=labellen) :: iheatflux='nothing'
+  integer :: enum_iheatflux=0
   logical :: lreset_heatflux=.false., lnfs2=.false., ltau_spitzer_va=.false.
   real :: saturation_flux=0.,tau1_eighthm=0.,tau_inv_spitzer=0.
   real :: Ksaturation_SI = 7e7, Ksaturation=0.,Kc=0.
@@ -504,7 +505,6 @@ module Heatflux
     real, dimension(nx,3) :: spitzer_vec
     real, dimension(nx) :: tmp, diffspitz, tau_inv_va
     real, dimension(nx) :: c_spitzer, c_spitzer0
-    real :: uplim
     integer :: i
 !
 ! Compute Spizter coefficiant K_0 * T^(5/2)
@@ -604,28 +604,35 @@ module Heatflux
         dt1_va=sqrt(p%va2*dxyz_2)
       endif
 !
-      uplim=max(maxval(dt1_va),maxval(maxadvec))
-      tau_inv_va = min(tau_inv_va,uplim)
+      tau_inv_va = min(tau_inv_va,max(dt1_va,maxadvec))
       tau_inv_va = max(tau_inv_va,tau_inv_spitzer)
     endif
 !
     if (lnfs2) then
 !     for pp=qq/rho, it is '+qq*(uglnrho+divu)'
-      do i=1,3
-        if (ltau_spitzer_va) then
-          df(l1:l2,m,n,iqq+i-1) = df(l1:l2,m,n,iqq+i-1) - &
-          tau_inv_va*(p%qq(:,i) + spitzer_vec(:,i))  + p%qq(:,i)*(p%uglnrho + p%divu)
-        else
-          df(l1:l2,m,n,iqq+i-1) = df(l1:l2,m,n,iqq+i-1) - &
-          tau_inv_spitzer*(p%qq(:,i) + spitzer_vec(:,i))  +  p%qq(:,i)*(p%uglnrho + p%divu)
-        endif
-      enddo
+      if (ltau_spitzer_va) then
+        df(l1:l2,m,n,iqx) = df(l1:l2,m,n,iqx) - &
+          tau_inv_va*(p%qq(:,1) + spitzer_vec(:,1)) + p%qq(:,1)*(p%uglnrho + p%divu)
+        df(l1:l2,m,n,iqy) = df(l1:l2,m,n,iqy) - &
+          tau_inv_va*(p%qq(:,2) + spitzer_vec(:,2)) + p%qq(:,2)*(p%uglnrho + p%divu)
+        df(l1:l2,m,n,iqz) = df(l1:l2,m,n,iqz) - &
+          tau_inv_va*(p%qq(:,3) + spitzer_vec(:,3)) + p%qq(:,3)*(p%uglnrho + p%divu)
+      else
+        df(l1:l2,m,n,iqx) = df(l1:l2,m,n,iqx) - &
+          tau_inv_spitzer*(p%qq(:,1) + spitzer_vec(:,1)) + p%qq(:,1)*(p%uglnrho + p%divu)
+        df(l1:l2,m,n,iqy) = df(l1:l2,m,n,iqy) - &
+          tau_inv_spitzer*(p%qq(:,2) + spitzer_vec(:,2)) + p%qq(:,2)*(p%uglnrho + p%divu)
+        df(l1:l2,m,n,iqz) = df(l1:l2,m,n,iqz) - &
+          tau_inv_spitzer*(p%qq(:,3) + spitzer_vec(:,3)) + p%qq(:,3)*(p%uglnrho + p%divu)
+      endif
     else
 !     for pp=qq*rho, it is '-qq*(uglnrho+divu)'
-      do i=1,3
-        df(l1:l2,m,n,iqq+i-1) = df(l1:l2,m,n,iqq+i-1) - &
-          tau_inv_spitzer*(p%qq(:,i) + spitzer_vec(:,i))  - p%qq(:,i)*(p%uglnrho + p%divu)
-      enddo
+      df(l1:l2,m,n,iqx) = df(l1:l2,m,n,iqx) - &
+        tau_inv_spitzer*(p%qq(:,1) + spitzer_vec(:,1)) - p%qq(:,1)*(p%uglnrho + p%divu)
+      df(l1:l2,m,n,iqy) = df(l1:l2,m,n,iqy) - &
+        tau_inv_spitzer*(p%qq(:,2) + spitzer_vec(:,2)) - p%qq(:,2)*(p%uglnrho + p%divu)
+      df(l1:l2,m,n,iqz) = df(l1:l2,m,n,iqz) - &
+        tau_inv_spitzer*(p%qq(:,3) + spitzer_vec(:,3)) - p%qq(:,3)*(p%uglnrho + p%divu)
     endif
 !
 ! Add to energy equation
@@ -861,6 +868,8 @@ module Heatflux
     call copy_addr(hyper3_coeff,p_par(8))
     call copy_addr(va2max_tau_boris,p_par(9))
     call copy_addr(nu_ee,p_par(10))
+    call string_to_enum(enum_iheatflux,iheatflux)
+    call copy_addr(enum_iheatflux,p_par(11)) ! int
 
     endsubroutine pushpars2c
 !***********************************************************************

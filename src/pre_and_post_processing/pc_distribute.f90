@@ -40,7 +40,7 @@ program pc_distribute
   yuneigh = 0
   zuneigh = 0
 !
-  deltay = 0.0   ! Shearing not available due to missing fseek in Fortran
+  delta_y = 0.0   ! Shearing not available due to missing fseek in Fortran
 !
   inquire (IOLENGTH=io_len) 1.0
 !

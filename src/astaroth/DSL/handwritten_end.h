@@ -1,4 +1,26 @@
+#if LPARTICLES_DUST
+#if LPARTICLES_NBODY
+#else
+//Back-reaction of the drag force on the gas
+DF_UU.x += AC_par_dep[0][vertexIdx.x][vertexIdx.y][vertexIdx.z]
+DF_UU.y += AC_par_dep[1][vertexIdx.x][vertexIdx.y][vertexIdx.z]
+DF_UU.z += AC_par_dep[2][vertexIdx.x][vertexIdx.y][vertexIdx.z]
+#endif
+#endif
 #include "../freeze_df.h"
+#if LELECTROWEAKSU2
+  if(AC_iww1ddot__mod__electroweaksu2 != 0) write(F_WW1DDOT, DF_WW1DDOT)
+#endif
+#if LELECTROWEAKSU2
+  if(AC_iww2ddot__mod__electroweaksu2 != 0) write(F_WW2DDOT, DF_WW2DDOT)
+#endif
+#if LELECTROWEAKSU2
+  if(AC_iww3ddot__mod__electroweaksu2 != 0) write(F_WW3DDOT, DF_WW3DDOT)
+#endif
+#if LELECTROWEAKSU2
+  if(AC_idivdotw__mod__electroweaksu2 != 0) write(F_DIVDOTW, DF_DIVDOTW)
+#endif
+// @auto-aux-writeback: fortran-parser adds write-backs of auxiliaries written in the rhs above this line
  if(!AC_lsubstepping_in_time__mod__cdata)
  {
 #if Lhydro_MODULE
@@ -136,7 +158,50 @@
           if(AC_iphi__mod__klein_gordon != 0)  write(F_PHI ,rk_intermediate(F_PHI ,DF_PHI ,step_num,AC_dt__mod__cdata))
           if(AC_idphi__mod__klein_gordon != 0) 
 	  {
-	     write(F_DPHI,rk_intermediate(F_DPHI,DF_DPHI,step_num,AC_dt__mod__cdata))
+	     dphi_intermediate = rk_intermediate(F_DPHI,DF_DPHI,step_num,AC_dt__mod__cdata)
+	     //Thermal noise, added in the last substep. It would naturally belong to twopass_solve_final,
+	     //but there F_PHI holds the RK increment, not phi, so its stencil gives the wrong gradient.
+	     //Hence it is done here and added to the increment so that rk_final adds exactly dt*zeta.
+	     if(AC_llast__mod__cdata && AC_lthermal_noise__mod__klein_gordon)
+	     {
+		inv_r = AC_inv_r[vertexIdx.x-NGHOST]
+		//lradial_ensemble runs on a cartesian grid with x as the radius (r1_mn is not set there)
+		if(AC_lradial_ensemble__mod__klein_gordon)
+		{
+			r = AC_x__mod__cdata[vertexIdx.x]
+			inv_r = r/(r*r+AC_tini__mod__cparam)
+		}
+		inv_dvol = inv_r*inv_r/(4*AC_REAL_PI*AC_dx__mod__cdata)
+		zeta = box_muller_transform()*sqrt(2.0*AC_plasma_coupling_coeff__mod__klein_gordon*AC_noise_strength__mod__klein_gordon*inv_dvol/AC_dt__mod__cdata)
+		//the first x-processor of every y-row of realizations contains the origin
+		if(AC_domain_coordinates.x == 0 && AC_domain_coordinates.z == 0 && vertexIdx.x < AC_continuation_offset__mod__klein_gordon+NGHOST)
+		{
+			zeta = 0.
+		}
+		//rk_final is previous + beta*increment (previous + dt*beta*increment with cumulative df)
+		if(AC_rk_cumulative_df)
+		{
+			dphi_intermediate += zeta/rk_beta(step_num)
+		}
+		else
+		{
+			dphi_intermediate += AC_dt__mod__cdata*zeta/rk_beta(step_num)
+		}
+		if(AC_lbubble_size_ode__mod__klein_gordon)
+		{
+			//gradient of phi at the beginning of the last substep (on CPUs: after the full step)
+			real integrand = AC_dx__mod__cdata*zeta*ac_transformed_pencil_gphi.x
+			if(AC_lradial_ensemble__mod__klein_gordon)
+			{
+				reduce_sum(integrand,AC_int_zeta_y)
+			}
+			else
+			{
+				reduce_sum(integrand,AC_int_zeta)
+			}
+		}
+	     }
+	     write(F_DPHI,dphi_intermediate)
 	  }
 
           if(AC_iphi_up_im__mod__klein_gordon != 0)   write(F_PHI_UP_IM,rk_intermediate(F_PHI_UP_IM,DF_PHI_UP_IM,step_num,AC_dt__mod__cdata))
@@ -151,9 +216,17 @@
           if(AC_idpsi__mod__klein_gordon != 0) write(F_DPSI,rk_intermediate(F_DPSI,DF_DPSI,step_num,AC_dt__mod__cdata))
           if(AC_lbubble_size_ode__mod__klein_gordon)
 	  {
-		v = AC_f_ode__mod__cdata[AC_irdot__mod__klein_gordon-1]
+		v = KG_WALL_VEL
 		gamma = 1./sqrt(1-v*v)
-		reduce_sum(AC_dx__mod__cdata*ac_transformed_pencil_gphi.x*ac_transformed_pencil_gphi.x/gamma,AC_bubble_tension)
+		tension = AC_dx__mod__cdata*ac_transformed_pencil_gphi.x*ac_transformed_pencil_gphi.x/gamma
+		if(AC_lradial_ensemble__mod__klein_gordon)
+		{
+			reduce_sum(tension,AC_bubble_tension_y)
+		}
+		else
+		{
+			reduce_sum(tension,AC_bubble_tension)
+		}
 	  }
 #  endif
 
@@ -191,6 +264,46 @@
           if(AC_ilncc__mod__cdata != 0) write(F_LNCC, rk_intermediate(F_LNCC,DF_LNCC,step_num,AC_dt__mod__cdata))
 #if LDEBUG_OUTPUT_TIMES
           if(AC_ispecial__mod__debug_output_times != 0) write(F_SPECIAL, rk_intermediate(F_SPECIAL,DF_SPECIAL,step_num,AC_dt__mod__cdata))
+#endif
+#if LZ4C
+          if(AC_ichi__mod__z4c != 0) write(F_CHI, rk_intermediate(F_CHI,DF_CHI,step_num,AC_dt__mod__cdata))
+          if(AC_ikh__mod__z4c != 0) write(F_KH, rk_intermediate(F_KH,DF_KH,step_num,AC_dt__mod__cdata))
+          if(AC_ith__mod__z4c != 0) write(F_TH, rk_intermediate(F_TH,DF_TH,step_num,AC_dt__mod__cdata))
+          if(AC_ialp__mod__z4c != 0) write(F_ALP, rk_intermediate(F_ALP,DF_ALP,step_num,AC_dt__mod__cdata))
+          if(AC_igt__mod__z4c[0] != 0) write(F_GT_1, rk_intermediate(F_GT_1,DF_GT[0],step_num,AC_dt__mod__cdata))
+          if(AC_igt__mod__z4c[1] != 0) write(F_GT_2, rk_intermediate(F_GT_2,DF_GT[1],step_num,AC_dt__mod__cdata))
+          if(AC_igt__mod__z4c[2] != 0) write(F_GT_3, rk_intermediate(F_GT_3,DF_GT[2],step_num,AC_dt__mod__cdata))
+          if(AC_igt__mod__z4c[3] != 0) write(F_GT_4, rk_intermediate(F_GT_4,DF_GT[3],step_num,AC_dt__mod__cdata))
+          if(AC_igt__mod__z4c[4] != 0) write(F_GT_5, rk_intermediate(F_GT_5,DF_GT[4],step_num,AC_dt__mod__cdata))
+          if(AC_igt__mod__z4c[5] != 0) write(F_GT_6, rk_intermediate(F_GT_6,DF_GT[5],step_num,AC_dt__mod__cdata))
+          if(AC_iat__mod__z4c[0] != 0) write(F_AT_1, rk_intermediate(F_AT_1,DF_AT[0],step_num,AC_dt__mod__cdata))
+          if(AC_iat__mod__z4c[1] != 0) write(F_AT_2, rk_intermediate(F_AT_2,DF_AT[1],step_num,AC_dt__mod__cdata))
+          if(AC_iat__mod__z4c[2] != 0) write(F_AT_3, rk_intermediate(F_AT_3,DF_AT[2],step_num,AC_dt__mod__cdata))
+          if(AC_iat__mod__z4c[3] != 0) write(F_AT_4, rk_intermediate(F_AT_4,DF_AT[3],step_num,AC_dt__mod__cdata))
+          if(AC_iat__mod__z4c[4] != 0) write(F_AT_5, rk_intermediate(F_AT_5,DF_AT[4],step_num,AC_dt__mod__cdata))
+          if(AC_iat__mod__z4c[5] != 0) write(F_AT_6, rk_intermediate(F_AT_6,DF_AT[5],step_num,AC_dt__mod__cdata))
+          if(AC_igam__mod__z4c.x != 0) write(F_GAMX, rk_intermediate(F_GAMX,DF_GAMVEC.x,step_num,AC_dt__mod__cdata))
+          if(AC_igam__mod__z4c.y != 0) write(F_GAMY, rk_intermediate(F_GAMY,DF_GAMVEC.y,step_num,AC_dt__mod__cdata))
+          if(AC_igam__mod__z4c.z != 0) write(F_GAMZ, rk_intermediate(F_GAMZ,DF_GAMVEC.z,step_num,AC_dt__mod__cdata))
+          if(AC_ibeta__mod__z4c.x != 0) write(F_BETAX, rk_intermediate(F_BETAX,DF_BETAVEC.x,step_num,AC_dt__mod__cdata))
+          if(AC_ibeta__mod__z4c.y != 0) write(F_BETAY, rk_intermediate(F_BETAY,DF_BETAVEC.y,step_num,AC_dt__mod__cdata))
+          if(AC_ibeta__mod__z4c.z != 0) write(F_BETAZ, rk_intermediate(F_BETAZ,DF_BETAVEC.z,step_num,AC_dt__mod__cdata))
+#endif
+          if(AC_iqq__mod__cdata != 0) write(F_QQ, rk_intermediate(F_QQ,DF_QQ,step_num,AC_dt__mod__cdata))
+          if(AC_iww1__mod__cdata != 0) write(F_WW1, rk_intermediate(F_WW1,DF_WW1,step_num,AC_dt__mod__cdata))
+          if(AC_iww2__mod__cdata != 0) write(F_WW2, rk_intermediate(F_WW2,DF_WW2,step_num,AC_dt__mod__cdata))
+          if(AC_iww3__mod__cdata != 0) write(F_WW3, rk_intermediate(F_WW3,DF_WW3,step_num,AC_dt__mod__cdata))
+#if LELECTROWEAKSU2
+          if(AC_idww1__mod__electroweaksu2 != 0) write(F_DWW1, rk_intermediate(F_DWW1,DF_DWW1,step_num,AC_dt__mod__cdata))
+#endif
+#if LELECTROWEAKSU2
+          if(AC_idww2__mod__electroweaksu2 != 0) write(F_DWW2, rk_intermediate(F_DWW2,DF_DWW2,step_num,AC_dt__mod__cdata))
+#endif
+#if LELECTROWEAKSU2
+          if(AC_idww3__mod__electroweaksu2 != 0) write(F_DWW3, rk_intermediate(F_DWW3,DF_DWW3,step_num,AC_dt__mod__cdata))
+#endif
+#if LELECTROWEAKSU2
+          if(AC_igammaw__mod__electroweaksu2 != 0) write(F_GAMMAW, rk_intermediate(F_GAMMAW,DF_GAMMAW,step_num,AC_dt__mod__cdata))
 #endif
 // @auto-field-declarations: fortran-parser adds missing fields above this line
    }

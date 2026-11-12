@@ -43,6 +43,8 @@ module Shear
   logical :: lmagnetic_stretching=.true.,lrandomx0=.false.
   logical :: lmagnetic_tilt=.false.
   logical :: lhyper3x_mesh = .false.
+
+  real :: deltay=0.
 !
   include 'shear.h'
 !
@@ -53,14 +55,13 @@ module Shear
       lmagnetic_stretching, sini
 !
   namelist /shear_run_pars/ &
-      qshear, qshear0, Sshear, Sshear1, deltay, Omega, &
-      lshear_acceleration, &
+      qshear, qshear0, Sshear, Sshear1, deltay, Omega, lshear_acceleration, &
       lshearadvection_as_shift, shear_method, lrandomx0, x0_shear, &
       norder_poly, ltvd_advection, lposdef_advection, lposdef, &
       lmagnetic_stretching, sini, lhyper3x_mesh, diff_hyper3x_mesh
 !
   integer :: idiag_dtshear=0    ! DIAG_DOC: advec\_shear/cdt
-  integer :: idiag_deltay=0     ! DIAG_DOC: deltay
+  integer :: idiag_deltay=0     ! DIAG_DOC: delta_y
 !
 !  Module variables
 !
@@ -109,6 +110,9 @@ module Shear
       use Sub, only: bspline_precondition, ludcmp
 !
       if (lyinyang) call not_implemented('initialize_shear','shear for Yin-Yang grid')
+!
+!      if (allocated(lposdef)) deallocate(lposdef)
+!      allocate(lposdef(mcom)); lposdef = .false.
 !
 !  Calculate the shear velocity.
 !
@@ -181,6 +185,7 @@ module Shear
 !
       read(parallel_unit, NML=shear_init_pars, IOSTAT=iostat, IOMSG=iomsg)
       if (iostat==0) iomsg=""
+      delta_y=deltay
 !
     endsubroutine read_shear_init_pars
 !***********************************************************************
@@ -472,7 +477,7 @@ module Shear
 !***********************************************************************
     subroutine advance_shear(f,df,dt_shear)
 !
-!  Advance shear distance, deltay, using dt. Using t instead introduces
+!  Advance shear distance, delta_y, using dt. Using t instead introduces
 !  significant errors when nt = t/dt exceeds ~100,000 steps.
 !  This formulation works also when Sshear is changed during the run.
 !
@@ -500,10 +505,10 @@ module Shear
         endif
       endif
 !
-!  Make sure deltay is in the range 0 <= deltay < Ly (assuming Sshear<0).
+!  Make sure delta_y is in the range 0 <= delta_y < Ly (assuming Sshear<0).
 !
-      deltay=deltay-Sshear*Lx*dt_shear
-      deltay=deltay-int(deltay/Ly)*Ly
+      delta_y=delta_y-Sshear*Lx*dt_shear
+      delta_y=delta_y-int(delta_y/Ly)*Ly
 !
 !  Update process neighbors.
 !
@@ -541,11 +546,11 @@ module Shear
 !
 !  Print identifier.
 !
-      if (headtt.or.ldebug) print*, 'advance_shear: deltay=',deltay
+      if (headtt.or.ldebug) print*, 'advance_shear: delta_y=',delta_y
 !
 !  Calculate shearing related diagnostics
 !
-      if (ldiagnos) call save_name(deltay,idiag_deltay)
+      if (ldiagnos) call save_name(delta_y,idiag_deltay)
 !
     endsubroutine advance_shear
 !***********************************************************************
@@ -794,14 +799,14 @@ module Shear
 !
       if (nxgrid > 1) call bcx_periodic(f, ivar1, ivar2)
 !
-      if ((nygrid /= 1) .and. (deltay /= 0.0)) then
+      if ((nygrid /= 1) .and. (delta_y /= 0.0)) then
         do ivar=ivar1,ivar2
           do i=1,3
             f_tmp_yz=f(l1-i,m1:m2,n1:n2,ivar)
-            call fourier_shift_yz_y(f_tmp_yz,+deltay)
+            call fourier_shift_yz_y(f_tmp_yz,+delta_y)
             f(l1-i,m1:m2,n1:n2,ivar)=f_tmp_yz
             f_tmp_yz=f(l2+i,m1:m2,n1:n2,ivar)
-            call fourier_shift_yz_y(f_tmp_yz,-deltay)
+            call fourier_shift_yz_y(f_tmp_yz,-delta_y)
             f(l2+i,m1:m2,n1:n2,ivar)=f_tmp_yz
           enddo
         enddo
@@ -832,7 +837,7 @@ module Shear
         shift = -Sshear * Lx * dt_shear
         shift = shift - int(shift / Ly) * Ly
       else
-        shift = deltay
+        shift = delta_y
       endif
 !
 !  Check if the field is df.
@@ -1076,7 +1081,7 @@ module Shear
       real, dimension(ny,nz) :: tmp
       integer :: ikx
 !
-!  Need to use S*t directly rather than deltay, because the latter has
+!  Need to use S*t directly rather than delta_y, because the latter has
 !  already modulo'ed Ly
 !
       do ikx=l1,l2

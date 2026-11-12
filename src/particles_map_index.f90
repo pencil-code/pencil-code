@@ -1285,7 +1285,7 @@ module Particles_map
           else
             ipxn = nprocx - 1
           endif
-          eta = modulo(xi(2) - xi0 + real(ny * ipy) + real(ix) * deltay / dy, real(nygrid)) - 0.5
+          eta = modulo(xi(2) - xi0 + real(ny * ipy) + real(ix) * delta_y / dy, real(nygrid)) - 0.5
           ipyn1 = find_ipy(eta - rinf)
           ipyn2 = find_ipy(eta + rinf)
           lflag = ipyn1 /= ipyn2
@@ -1359,7 +1359,7 @@ module Particles_map
 !  Directions in y with shear
 !
       ydir: if (lshear .and. nygrid > 1 .and. lflag) then
-        xp(2) = xyz0(2) + modulo(xp(2) + real(sides(1)) * deltay - xyz0(2), lxyz(2))
+        xp(2) = xyz0(2) + modulo(xp(2) + real(sides(1)) * delta_y - xyz0(2), lxyz(2))
         call inverse_grid(2, (/xp(2)/), xi)
         n = nint(xi(1) + real(sides(2)) * rinf) - nghost
         if (n < 1) then

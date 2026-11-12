@@ -615,7 +615,9 @@ module EquationOfState
       logical, optional :: lone_sided
 !
       real, save, allocatable, dimension (:,:) :: FbyKT_xy, TT_xy, rho_xy, Krho1kr_xy, cp, cv, pp_xy
+      real, dimension(mfarray) :: f_comp
       integer :: i, il, im, ivars, n, ig1, ig2, dir
+      integer :: n_heatcond
 !
       if (.not. allocated(FbyKT_xy))     allocate(FbyKT_xy(mx,my))
       if (.not. allocated(TT_xy))        allocate(TT_xy(mx,my))
@@ -632,17 +634,33 @@ module EquationOfState
       call get_shared_variable('lheatc_Kprof',lheatc_Kprof)
       call get_shared_variable('lheatc_Kconst',lheatc_Kconst)
 !
-!     TODO: is there a neat way to guard against simultaneous use of heat conductivities (which is currently not supported here)?
+      n_heatcond = 0
 !
       if (lheatc_kramers) then
         call get_shared_variable('hcond0_kramers',hcond0_kramers)
         call get_shared_variable('nkramers',nkramers)
         call get_shared_variable('chimax_kramers',chimax_kramers)
         call get_shared_variable('chimin_kramers',chimin_kramers)
+        n_heatcond = n_heatcond + 1
       endif
 !
       if (lheatc_chiconst) then
         call get_shared_variable('chi',chi)
+        n_heatcond = n_heatcond + 1
+      endif
+!
+      if (lheatc_Kprof) then
+        n_heatcond = n_heatcond + 1
+      endif
+!
+      if (lheatc_Kconst) then
+        n_heatcond = n_heatcond + 1
+      endif
+!
+!     Current implementation assumes that only one kind of heat conductivity is active
+!
+      if (n_heatcond>1) then
+        call fatal_error('bc_ss_flux','not implemented for multiple heat conductivities')
       endif
 !
       select case (topbot)
@@ -681,7 +699,22 @@ module EquationOfState
 !KG: breaks most of the convection auto-tests (e.g. conv-slab)
       do il=1,mx
         do im =1,my
-          call get_gamma_etc(cp=cp(il,im), cv=cv(il,im), f=f(il,im,n,:))
+!         The natural way to code the below would be
+!         call get_gamma_etc(cp=cp(il,im), cv=cv(il,im), f=f(il,im,n,:))
+!         but that leads to the compiler creating a temporary array in each loop
+!         iteration, since get_gamma_etc declares f as an explicit-shape array
+!         (which must be contiguous). One way to avoid the copying would be for
+!         get_gamma_etc to declare f as an assumed-shape array (which need not
+!         be contiguous). While the assumed-shape approach is much faster than
+!         creating an explicit buffer (the approach used below) when no compiler
+!         optimizations are done, both approaches are equally performant with
+!         `gfortran -O3` (with the explicit buffer approach being a few percent
+!         faster in a simplified test with a 3000x3000x10 array). For
+!         get_gamma_etc, we prefer declaring f as explicit-shape, since that
+!         allows to easily catch cases where an array of the wrong size is
+!         passed to it.
+          f_comp = f(il,im,n,:)
+          call get_gamma_etc(cp=cp(il,im), cv=cv(il,im), f=f_comp)
         enddo
       enddo
 !
@@ -705,7 +738,8 @@ module EquationOfState
         endif
         do il=1,mx
           do im=1,my
-            call eoscalc(ivars,f(il,im,n,:),lnTT=TT_xy(il,im), pp=pp_xy(il,im))
+            f_comp = f(il,im,n,:)
+            call eoscalc(ivars,f_comp,lnTT=TT_xy(il,im), pp=pp_xy(il,im))
           enddo
         enddo
         TT_xy = exp(TT_xy)

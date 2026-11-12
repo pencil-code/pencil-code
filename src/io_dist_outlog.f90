@@ -5,7 +5,7 @@
 !  The file format written by output_snap() (and used, e.g. in var.dat)
 !  consists of the followinig Fortran records:
 !    1. data(mx,my,mz,nvar)
-!    2. t(1), x(mx), y(my), z(mz), dx(1), dy(1), dz(1), deltay(1)
+!    2. t(1), x(mx), y(my), z(mz), dx(1), dy(1), dz(1), delta_y(1)
 !  Here nvar denotes the number of slots, i.e. 1 for one scalar field, 3
 !  for one vector field, 8 for var.dat in the case of MHD with entropy.
 !
@@ -151,12 +151,12 @@ module Io
       lerror = outlog(io_err, 'main data')
 !
 !  Write shear at the end of x,y,z,dx,dy,dz.
-!  At some good moment we may want to treat deltay like with
+!  At some good moment we may want to treat delta_y like with
 !  other modules and call a corresponding i/o parameter module.
 !
       if (lshear) then
-        write (lun_output, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz, deltay
-        lerror = outlog(io_err, 'additional data and deltay')
+        write (lun_output, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz, delta_y
+        lerror = outlog(io_err, 'additional data and delta_y')
       else
         write (lun_output, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz
         lerror = outlog(io_err, 'additional data')
@@ -703,26 +703,26 @@ module Io
       real(KIND=rkind8), dimension(:), allocatable :: xdb,ydb,zdb
       real(KIND=rkind4), dimension(:), allocatable :: xsg,ysg,zsg
 
-      real(KIND=rkind8) :: dxdb,dydb,dzdb,deltaydb
-      real(KIND=rkind4) :: dxsg,dysg,dzsg,deltaysg
+      real(KIND=rkind8) :: dxdb,dydb,dzdb,deltay_db
+      real(KIND=rkind4) :: dxsg,dysg,dzsg,deltay_sg
 
       if (lread_from_other_prec) then
         if (kind(a)==rkind4) then
           allocate(adb(mx,my,mz,nv),xdb(mx),ydb(my),zdb(mz))
-          call read_snap(file,adb,xdb,ydb,zdb,dxdb,dydb,dzdb,deltaydb,nv,mode)
-          a=adb; x=xdb; y=ydb; z=zdb; dx=dxdb; dy=dydb; dz=dzdb; deltay=deltaydb
+          call read_snap(file,adb,xdb,ydb,zdb,dxdb,dydb,dzdb,deltay_db,nv,mode)
+          a=adb; x=xdb; y=ydb; z=zdb; dx=dxdb; dy=dydb; dz=dzdb; delta_y=deltay_db
         elseif (kind(a)==rkind8) then
           allocate(asg(mx,my,mz,nv),xsg(mx),ysg(my),zsg(mz))
-          call read_snap(file,asg,xsg,ysg,zsg,dxsg,dysg,dzsg,deltaysg,nv,mode)
-          a=asg; x=xsg; y=ysg; z=zsg; dx=dxsg; dy=dysg; dz=dzsg; deltay=deltaysg
+          call read_snap(file,asg,xsg,ysg,zsg,dxsg,dysg,dzsg,deltay_sg,nv,mode)
+          a=asg; x=xsg; y=ysg; z=zsg; dx=dxsg; dy=dysg; dz=dzsg; delta_y=deltay_sg
         endif
       else
-        call read_snap(file,a,x,y,z,dx,dy,dz,deltay,nv,mode)
+        call read_snap(file,a,x,y,z,dx,dy,dz,delta_y,nv,mode)
       endif
 
     endsubroutine input_snap
 !***********************************************************************
-    subroutine read_snap_single(file,a,x,y,z,dx,dy,dz,deltay,nv,mode)
+    subroutine read_snap_single(file,a,x,y,z,dx,dy,dz,delta_y,nv,mode)
 !
 !  Read snapshot file in single precision, possibly with mesh and time (if mode=1).
 !
@@ -740,7 +740,7 @@ module Io
       integer, intent(in) :: nv, mode
       real(KIND=rkind4), dimension (mx,my,mz,nv), intent(out) :: a
 !
-      real(KIND=rkind4),                 intent(out) :: dx, dy, dz, deltay
+      real(KIND=rkind4),                 intent(out) :: dx, dy, dz, delta_y
       real(KIND=rkind4), dimension (mx), intent(out) :: x
       real(KIND=rkind4), dimension (my), intent(out) :: y
       real(KIND=rkind4), dimension (mz), intent(out) :: z
@@ -805,11 +805,11 @@ module Io
       if (ip <= 8) print *, 'read_snap_single: read ', file
       if (mode == 1) then
 !
-!  Check whether we want to read deltay from snapshot.
+!  Check whether we want to read delta_y from snapshot.
 !
         if (lshear) then
-          read (lun_input, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz, deltay
-          lerror = outlog (io_err, 'additional data + deltay')
+          read (lun_input, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz, delta_y
+          lerror = outlog (io_err, 'additional data + delta_y')
         else
           if (nghost_read_fewer==0) then
             read (lun_input, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz
@@ -869,7 +869,7 @@ module Io
 !
     endsubroutine read_snap_single
 !***********************************************************************
-    subroutine read_snap_double(file,a,x,y,z,dx,dy,dz,deltay,nv,mode)
+    subroutine read_snap_double(file,a,x,y,z,dx,dy,dz,delta_y,nv,mode)
 !
 !  Read snapshot file in double precision, possibly with mesh and time (if mode=1).
 !
@@ -890,7 +890,7 @@ module Io
 !
       real(KIND=rkind8) :: t_sp, t_dbl
 
-      real(KIND=rkind8), intent(out) :: dx, dy, dz, deltay
+      real(KIND=rkind8), intent(out) :: dx, dy, dz, delta_y
       real(KIND=rkind8), dimension (mx), intent(out) :: x
       real(KIND=rkind8), dimension (my), intent(out) :: y
       real(KIND=rkind8), dimension (mz), intent(out) :: z
@@ -953,11 +953,11 @@ module Io
       if (ip <= 8) print *, 'read_snap: read ', file
       if (mode == 1) then
 !
-!  Check whether we want to read deltay from snapshot.
+!  Check whether we want to read delta_y from snapshot.
 !
         if (lshear) then
-          read (lun_input, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz, deltay
-          lerror = outlog (io_err, 'additional data + deltay')
+          read (lun_input, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz, delta_y
+          lerror = outlog (io_err, 'additional data + delta_y')
         else
           if (nghost_read_fewer==0) then
             read (lun_input, IOSTAT=io_err) t_sp, x, y, z, dx, dy, dz

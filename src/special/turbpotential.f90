@@ -813,7 +813,7 @@ module Special
     subroutine special_after_timestep(f,df,dt_,llast)
 !
       real, contiguous, dimension(:,:,:,:) :: f
-      real, dimension(mx,my,mz,mvar) :: df
+      real, contiguous, dimension(:,:,:,:) :: df
       real :: dt_
       logical, intent(in) :: llast
 !

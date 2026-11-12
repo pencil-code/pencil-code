@@ -5,10 +5,10 @@ s/.*/\L&/g
 # integer(C_INT) is a plain C int, so treat it like default integer in the rules below
 s/integer *( *\(kind *= *\)\?c_int *)/integer/g
 # run-time counts with DYNAMIC_AUX=yes, e.g.
-#   integer, bind(c,name='pc_maux') :: maux=maux_decl  ! dsl: maux_max
-# host code: reference to the Fortran variable; DSL: compile-time capacity
-/^ *integer *, *bind *( *c *, *name *= *'[a-z_]*' *) *::/ {
-s/^ *integer *, *bind *( *c *, *name *= *'\([a-z_]*\)' *) *:: *\([a-z_]*\) *=[^!]*! *dsl: *\(.*[^ ]\) *$/#if IN_DSL\nconst int \2 = \3;\n#else\nEXTERN_C int \1;\n#define \2 \1\n#endif/
+#   integer :: maux=maux_decl  ! dsl: maux_max
+# host code: pc_maux, set from the pushed value in setupConfig (gpu_astaroth.cc); DSL: compile-time capacity
+/^ *integer *:: *[a-z_]* *=[^!]*! *dsl:/ {
+s/^ *integer *:: *\([a-z_]*\) *=[^!]*! *dsl: *\(.*[^ ]\) *$/#if IN_DSL\nconst int \1 = \2;\n#else\nEXTERN_C int pc_\1;\n#define \1 pc_\1\n#endif/
 b
 }
 #s/huge *(0)/std::numeric_limits<FINT>::max()/g 
@@ -24,6 +24,7 @@ s/\([0-9.]\) *[dD] *\([-0-9]\)/\1E\2/g
 /cparam_pencils\.inc/ d
 /cparam_aux\.inc/ d
 /dimension *(/ d
+/^ *character.*parameter *::/ d
 /integer, *parameter *:: *[ir]kind[0-9]* *=/ d
 s/, *bind *( *c *)//
 s/\([a-zA-Z0-9_]*\) *\*\* *\([^,]*\)\([,$]\)/cpu_pow(\1,\2)\3/g

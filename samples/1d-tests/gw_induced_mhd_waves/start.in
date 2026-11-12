@@ -15,7 +15,7 @@
   gamma=1., cs0=0.465429570545898
 /
 &hydro_init_pars
-  lconservative=T, lrelativistic=T, lvv_as_aux=T, llorentz_as_aux=T
+  lconservative=T, lrelativistic=T, lvv_as_aux=T
 /
 &density_init_pars
   ldensity_nolog=T, lrelativistic_eos=T

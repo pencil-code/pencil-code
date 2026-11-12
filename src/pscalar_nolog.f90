@@ -1235,9 +1235,9 @@ module Pscalar
     call copy_addr(lupw_cc,p_par(25)) ! bool
     call copy_addr(lmean_friction_cc,p_par(26)) ! bool
     call copy_addr(gradc0,p_par(27)) ! real3
-    call copy_addr(spharm,p_par(28)) ! (ny) (nz)
-    call copy_addr(bunit,p_par(29)) ! (nx) (ny) (nz) (3)
-    call copy_addr(hhh,p_par(30)) ! (nx) (ny) (nz) (3)
+    if (allocated(spharm)) call copy_addr(spharm,p_par(28)) ! (ny) (nz)
+    if (allocated(bunit)) call copy_addr(bunit,p_par(29)) ! (nx) (ny) (nz) (3)
+    if (allocated(hhh)) call copy_addr(hhh,p_par(30)) ! (nx) (ny) (nz) (3)
     call copy_addr(cc_xyaver,p_par(31)) ! (mz) (npscalar)
 
     call keep_compiler_quiet(reinitialize_lncc)

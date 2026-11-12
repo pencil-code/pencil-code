@@ -1,0 +1,4 @@
+#Kishore: added these to avoid git complaining about untracked files.
+#These files are symlinked into src by pc_setupsrc.
+src/cparam.local
+src/Makefile.local

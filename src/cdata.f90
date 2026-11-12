@@ -331,6 +331,8 @@ module Cdata
   real :: tsnap_crit_log_interval=impossible !PAR_DOC: critical time above which we set dsnap to a negative value.
   real :: tvid_crit_log_interval=impossible  !PAR_DOC: critical time above which we set dvid to a negative value.
   real :: dit1=impossible
+  real :: duetc=impossible       !PAR_DOC: save UETC snapshots every duetc time units
+  integer, parameter :: nv_uetc=20 ! fields per UETC snapshot, see wsnap_UETCs
   real :: dtracers=0., dfixed_points=0.
   real :: crash_file_dtmin_factor=-1.0
   real :: km0EM=0., km1EM=0., tmax_logspacing=1.
@@ -460,11 +462,11 @@ module Cdata
 !
 !  Rotation and shear parameters.
 !
-  real :: Omega=0.0, theta=0.0, phi=0.0, qshear=0.0, Sshear=0.0, deltay=0.0
+  real :: Omega=0.0, theta=0.0, phi=0.0, qshear=0.0, Sshear=0.0, delta_y=0.0
 !
   logical :: lrotation = .false.
 !
-  !$omp threadprivate(deltay)
+  !$omp threadprivate(delta_y)
 !DM : Omega is now used in the viscosity routine too, for Lambda effect in rotating
 ! coordinate. This should be taken care of by 'shared variables' if in future
 ! Omega should be moved from cdata to hydro.
@@ -741,6 +743,7 @@ module Cdata
   logical :: ltime_integrals=.false.
   logical :: lreset_seed=.false.
   logical :: lsld_every_step=.true.
+  logical :: lsld_rfac_abs=.false. ! slope-limited diffusion: rfac=|f_R-f_L|/|f_i-f_i-1| without sign check
   logical :: lproper_averages=.false.
   logical :: lappend_pc_constants=.false.   !PAR_DOC: always append when true to preserve history
   character (len=1) :: slice_position='p'
@@ -768,7 +771,7 @@ module Cdata
   real :: yequator=0.,zequator=0.
   logical :: lequatory,lequatorz
   integer, dimension (mname_half) :: itype_name_half=0
-  real, dimension (mname_half,2) :: fname_half
+  real, dimension (mname_half,2), target :: fname_half
   integer :: name_half_max=0, ntmax1Dav=500, ntmax2Dav=500
   character (len=30) :: cname_half(mname_half)
 !  Radius inside of which diagnostics are calculated for sphere_in_a_box models
@@ -844,7 +847,7 @@ module Cdata
 !  Variables related to Fourier spectra and structure functions.
 !
   logical :: vel_spec=.false.,mag_spec=.false.,uxj_spec=.false.,vec_spec=.false.
-  logical :: j_spec=.false., jb_spec=.false., ja_spec=.false., oo_spec=.false., relvel_spec=.false.
+  logical :: j_spec=.false., jb_spec=.false., ja_spec=.false., oo_spec=.false., divu_spec=.false., relvel_spec=.false.
   logical :: vel_phispec=.false.,mag_phispec=.false.,uxj_phispec=.false.,vec_phispec=.false.
   logical :: uxy_spec=.false., bxy_spec=.false., jxbxy_spec=.false.
   character (LEN=labellen*4) :: xy_spec=''
@@ -861,6 +864,7 @@ module Cdata
   logical :: ub_spec=.false., Lor_spec=.false., OmU_spec=.false., EMF_spec=.false., Tra_spec=.false.
   logical :: aBE_spec=.false., ABE2_spec=.false., uBE_spec=.false.
   logical :: GWs_spec=.false., GWh_spec=.false., GWm_spec=.false., Str_spec=.false., Stg_spec=.false.
+  logical :: UETC_spec=.false.
   logical :: Gab_spec=.false., Gan_spec=.false., GBb_spec=.false.
   logical :: GWs_spec_boost=.false., GWh_spec_boost=.false.
   logical :: StT_spec=.false., StX_spec=.false.
@@ -946,6 +950,10 @@ module Cdata
 !  For mailing from code.
 !
   character (len=linelen) :: mailcmd='',mailaddress='',submithost=''
+!
+! For sending pushover messages.
+!
+  logical :: lpushover=.false.
 !
   logical :: lstop_on_ioerror=.true.
 !
@@ -1081,14 +1089,16 @@ module Cdata
   logical :: l1dphiavg_save, l1davgfirst_save, ldiagnos_save, l2davgfirst_save
   logical :: lout_save, l1davg_save, l2davg_save, lout_sound_save, lvideo_save
   logical :: lchemistry_diag_save
-  real    :: deltay_save,scl_factor_target_save,Hp_target_save, appa_target_save
+  real    :: scl_factor_target_save,Hp_target_save, appa_target_save
+  real    :: delta_y_save
   logical :: ltimestep_diagnostics = .false.
 
   real(KIND=rkind8) :: t_save,tspec_save,t_snap_save
+  real(KIND=rkind8) :: t_farray_copy=0.  ! time of the data in the last f copy from the GPU
   real :: t1ddiagnos_save,t2davgfirst_save,tslice_save,tsound_save
 
-!$ logical, volatile, dimension(n_helperflags) :: lhelperflags=(/.false.,.false.,.false.,.false./)
-!$ logical, volatile, dimension(n_helperflags) :: lmasterflags=(/.false.,.false.,.false.,.false./)
+!$ logical, volatile, dimension(n_helperflags) :: lhelperflags=.false.
+!$ logical, volatile, dimension(n_helperflags) :: lmasterflags=.false.
 !$ logical, volatile :: lfarray_copied = .false.
   logical, dimension(npencils) :: lpencil_save = .false.
   integer :: num_helper_threads=1, thread_id=1
@@ -1102,7 +1112,7 @@ module Cdata
 !$omp threadprivate(inds_max_diags, inds_sum_diags)
 !$omp threadprivate(dxyz_2,dxyz_4,dxyz_6,dvol,dxmax_pencil,dxmin_pencil,dline_1,lcoarse_mn, seed, m, n)
 !$omp threadprivate(lfirstpoint,thread_id)
-!$omp threadprivate(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz)
+!$omp threadprivate(fname,fnamex,fnamey,fnamez,fnamer,fnamexy,fnamexz,fnamerz,fname_keep,fname_sound,ncountsz,fname_half)
 !$omp threadprivate(l1dphiavg, l1davgfirst, l2davgfirst, ldiagnos,lout, l1davg, l2davg, lout_sound, lvideo,lvideo_first)
 !$omp threadprivate(t,tspec,tdiagnos,t1ddiagnos,t2davgfirst,tslice,tsound,itdiagnos,dtdiagnos,eps_rkf_diagnos)
 !$omp threadprivate(maxdiffus,maxadvec,advec2,advec_cs2)

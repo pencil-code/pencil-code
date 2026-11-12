@@ -99,7 +99,6 @@ my %tests = (
                          kin-dynamo
                          meissner
                          conv-slab-noequi
-                         2d-tests/charge-flow-inst
                          2d-tests/selfgravitating-shearwave
                          2d-tests/streaming_instability/single-species
                          2d-tests/streaming_instability/multi-species
@@ -149,6 +148,7 @@ my %tests = (
                          backreact_infl2
                          Schwinger
                          Schwinger2
+                         electroweak_SU2_Higgs
                      )],
              # Level 3 for now contains all non-canonical tests that run
              # successfully
@@ -190,7 +190,6 @@ my %tests = (
                          conv-slab-flat
                          coronae_heatflux_boris
 		         decay-reconnection
-                         falling_thermal
 			 fcont_TG
                          helical-MHDturb_HDF5
                          helical-MHDturb-noncube
@@ -218,6 +217,7 @@ my %tests = (
 			 cartesian-convection-entropy-rain
 			 1d-tests/read_ell_from_table_corrected
 			 0d-tests/coala
+			 1d-tests/gw_induced_mhd_waves
                      )],
              # Level 4 for now contains all non-canonical tests that run,
              # but produce wrong results - and need immediate action (fixme)
@@ -231,6 +231,7 @@ my %tests = (
                          forced-boundary
                          sound-spherical-bufferzone
                          2d-tests/selfgrav-shearwave-dust-par
+                         falling_thermal
                      )],
              # Level 6 for now contains all non-canonical tests that run, # but produce wrong results
              6 => [qw(
@@ -277,63 +278,69 @@ my %tests = (
 	    # the test machine. This list is not exhaustive and most samples using the
 	    # same modules as these samples should also work.
 my @gpu_tests = qw(
+                         1d-tests/solar-atmosphere-temperature
                          1d-tests/sine-Gordon_doublet
+			 1d-tests/gw_induced_mhd_waves
                          decay-reconnection
 			 debris-photoelectric-fluid
 			 fcont_TG
                          spherical-gdisk-planet-thermo
 			 interstellar
                          renovating-flow
-                         #chiral-diffusion
-			 #1d-tests/rel-shock
+                         chiral-diffusion
+			 1d-tests/rel-shock
 			 1d-tests/KT
-			 #1d-tests/ambipolar_diffusion
+			 1d-tests/ambipolar_diffusion
 			 cosmicray
-			 1d-tests/inflationary-B-genesis #Has to be excluded until the weird start issue is resolved (Can't reproduce it by running auto-test locally on norlx51)
+			 1d-tests/inflationary-B-genesis 
                          1d-tests/jeans-x
 			 bonnor_ebert_sphere
 			 supernova-driven-turbulence/cosmic_ray_ism
-			 #1d-tests/toomre-x
-			 #2d-tests/bubble
+			 1d-tests/toomre-x
+			 2d-tests/bubble
                          conv-slab-noequi
-			 #conv-slab
-                         #conv-slab_cp_2
-			 #conv-slab-flat
+			 #conv-slab The reductions for ssmz are not well defined when not using ltest_nonblocking=T or learly_finalize=T so for now is left out. The difference is small.
+			 #conv-slab_cp_2 Very small differences
+			 conv-slab-flat
 			 0d-tests/heating_ionize
-			 #0d-tests/heating_noionize
-                         #0d-tests/heating_ionize_planck
-			 #continuous-forcing-from-file
-			 #1d-tests/sod_10
-                         #2d-tests/conv-slab-MLT
+			 0d-tests/heating_noionize
+                         0d-tests/heating_ionize_planck
+			 continuous-forcing-from-file
+			 1d-tests/sod_10
+                         2d-tests/conv-slab-MLT
                          mdwarf-ss-running-aver-gpu
-                         #1d-tests/conduction/c1_readstrat
-                         #1d-tests/conduction/c1_readstrat_ghost
+                         1d-tests/conduction/c1_readstrat
+                         1d-tests/conduction/c1_readstrat_ghost
                          1d-tests/conduction/cT1
-			 #1d-tests/conduction/cT1_readstrat
-                         #1d-tests/conduction/cTrho
+                         streaming-instability-sink
+                         2d-tests/dark-matter
+			 1d-tests/conduction/cT1_readstrat
+                         1d-tests/conduction/cTrho
                          mdwarf
                          polymer/forced_3dturbulence
-			 #kin-dynamo
+			 kin-dynamo
+                         helical-MHDturb
 			 2d-tests/shallow-water
-			 #1d-tests/alphadisk
-			 #1d-tests/hyperdiffusion
+			 1d-tests/alphadisk
+			 1d-tests/hyperdiffusion
 			 2d-tests/chiral_dynamo
                          spherical-globaldisk-mhd
 			 cartesian-convection-kramers-chimax
-                         #cartesian-convection-kramers-chimax_cp_2
-			 #spherical-convection
+			 #cartesian-convection-kramers-chimax_cp_2 #Very small differences
+			 #spherical-convection Very small differences
 			 spherical-convection-corona
-			 #meissner
-			 #geodynamo
+			 #meissner Very small differences.
+			 geodynamo
                          2d-tests/spherical_viscous_ring
                          2d-tests/cylindrical_gdisk
 			 #small-scale-dynamo_slope-limited-diffusion  # diffs in brms, bmax, jrms: at e-10 to e-12
 			 backreact_infl
-			 #1d-tests/axionSU2back
+                         electroweak_SU2_Higgs
+			 1d-tests/axionSU2back
 			 2d-tests/chemistry_GrayScott
 			 MRI-turbulence_hyper
 			 1d-tests/axionU1back
-			 #1d-tests/axionSU2back
+			 1d-tests/axionSU2back
 			 star-in-a-box-giant-Kprof
 			 1d-tests/read_ell_from_table_corrected
 			 cartesian-convection-entropy-rain

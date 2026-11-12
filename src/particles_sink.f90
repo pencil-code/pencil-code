@@ -25,6 +25,7 @@ module Particles_sink
   implicit none
 !
   include 'particles_sink.h'
+  public :: pushpars2c
 !
   real, pointer, dimension (:) :: tausp_species, tausp1_species
   real :: sink_birth_radius=1.0, sink_radius=0.0, rhop_sink_create=-1.0
@@ -119,6 +120,7 @@ module Particles_sink
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(lrhop_roche_unit)
+!
 !
     endsubroutine initialize_particles_sink
 !***********************************************************************
@@ -241,6 +243,7 @@ module Particles_sink
 !  07-aug-12/anders: coded
 !  25-aug-15/ccyang: added switch to create at most one sink per cell
 !  03-jan-23/urs: added switch to create at most one sink in each cube of 3x3x3 cells
+!  09-nov-26/TP: one sink per cell with blocks: the same cell index in different blocks was mixed up
 !
       use Diagnostics
 !
@@ -254,6 +257,8 @@ module Particles_sink
       integer, dimension(:,:,:), allocatable, save :: sid
       real, dimension(:,:,:), allocatable, save :: srhop, sgpotself
       real, dimension(1) :: rhop_interp, gpotself_interp
+      real, dimension(3), save :: fp_comp
+      integer, dimension(3), save :: ing_comp
       integer :: k, ix0, iy0, iz0, npar_sink_loc, iblock
       real :: rhoc,rhop_interp_diag
 
@@ -297,37 +302,51 @@ module Particles_sink
 !
 !  Start the diagnostic
 !
-      if (ldiagnos.and.idiag_rhopinterp/=0) rhop_interp_diag=0.
+      if (ldiagnos) rhop_interp_diag=0.
 !
 !  Particle block domain decomposition.
 !
       if (lparticles_blocks) then
         do iblock=0,nblock_loc-1
           if (npar_iblock(iblock)/=0) then
+!
+!  The indices in ineargrid are local to the block, so that the selection of
+!  the particles in a cell must start afresh for each block.
+!
+            if (lsink_create_one_per_cell) then
+              sid(1:mxb,1:myb,1:mzb) = 0
+              srhop(1:mxb,1:myb,1:mzb) = 0.0
+            elseif (lsink_create_one_per_27_cells) then
+              sid(1:mxb,1:myb,1:mzb) = 0
+              sgpotself(1:mxb,1:myb,1:mzb) = 0.
+            endif
+!
             do k=k1_iblock(iblock),k2_iblock(iblock)
               if (fp(k,iaps)==0.0) then
-                ix0=ineargrid(k,1)
-                iy0=ineargrid(k,2)
-                iz0=ineargrid(k,3)
+                fp_comp = fp(k,ixp:izp)
+                ing_comp = ineargrid(k,:)
+                ix0=ing_comp(1)
+                iy0=ing_comp(2)
+                iz0=ing_comp(3)
                 if (lparticlemesh_cic) then
                   call interpolate_linear(f,irhop,irhop, &
-                      fp(k,ixp:izp),rhop_interp,ineargrid(k,:),iblock,ipar(k))
+                      fp_comp,rhop_interp,ing_comp,iblock,ipar(k))
                   if (lsink_create_one_per_27_cells) &
                     call interpolate_linear(f,ipotself,ipotself, &
-                        fp(k,ixp:izp),gpotself_interp,ineargrid(k,:),iblock,ipar(k))
+                        fp_comp,gpotself_interp,ing_comp,iblock,ipar(k))
                 elseif (lparticlemesh_tsc) then
                   if (linterpolate_spline) then
                     call interpolate_quadratic_spline(f,irhop,irhop, &
-                        fp(k,ixp:izp),rhop_interp,ineargrid(k,:),iblock,ipar(k))
+                        fp_comp,rhop_interp,ing_comp,iblock,ipar(k))
                     if (lsink_create_one_per_27_cells) &
                       call interpolate_quadratic_spline(f,ipotself,ipotself, &
-                          fp(k,ixp:izp),gpotself_interp,ineargrid(k,:),iblock,ipar(k))
+                          fp_comp,gpotself_interp,ing_comp,iblock,ipar(k))
                   else
                     call interpolate_quadratic(f,irhop,irhop, &
-                        fp(k,ixp:izp),rhop_interp,ineargrid(k,:),iblock,ipar(k))
+                        fp_comp,rhop_interp,ing_comp,iblock,ipar(k))
                     if (lsink_create_one_per_27_cells) &
                       call interpolate_quadratic(f,ipotself,ipotself, &
-                          fp(k,ixp:izp),gpotself_interp,ineargrid(k,:),iblock,ipar(k))
+                          fp_comp,gpotself_interp,ing_comp,iblock,ipar(k))
                   endif
                 else
                   rhop_interp=fb(ix0,iy0,iz0,irhop:irhop,iblock)
@@ -339,7 +358,7 @@ module Particles_sink
                   if (ip<=6) then
                     print*, 'create_particles_sink: created '// &
                         'sink particle at density rhop=', rhop_interp(1)
-                    print*, 'iproc, it, itsub, xp     =', iproc, it, itsub, fp(k,ixp:izp)
+                    print*, 'iproc, it, itsub, xp     =', iproc, it, itsub, fp_comp
                   endif
                   if (.not. lsink_create_one_per_27_cells) fp(k,iaps)=sink_radius
                   recb: if (lsink_create_one_per_cell) then
@@ -380,28 +399,30 @@ module Particles_sink
           pencil_has_particles: if (npar_imn(imn)/=0) then
             particles: do k=k1_imn(imn),k2_imn(imn)
               ifsink: if (fp(k,iaps)==0.0) then
-                ix0=ineargrid(k,1)
-                iy0=ineargrid(k,2)
-                iz0=ineargrid(k,3)
+                fp_comp = fp(k,ixp:izp)
+                ing_comp = ineargrid(k,:)
+                ix0=ing_comp(1)
+                iy0=ing_comp(2)
+                iz0=ing_comp(3)
                 if (lparticlemesh_cic) then
                   call interpolate_linear(f,irhop,irhop, &
-                      fp(k,ixp:izp),rhop_interp,ineargrid(k,:),0,ipar(k))
+                      fp_comp,rhop_interp,ing_comp,0,ipar(k))
                   if (lsink_create_one_per_27_cells) &
                     call interpolate_linear(f,ipotself,ipotself, &
-                        fp(k,ixp:izp),gpotself_interp,ineargrid(k,:),0,ipar(k))
+                        fp_comp,gpotself_interp,ing_comp,0,ipar(k))
                 elseif (lparticlemesh_tsc) then
                   if (linterpolate_spline) then
                     call interpolate_quadratic_spline(f,irhop,irhop, &
-                        fp(k,ixp:izp),rhop_interp,ineargrid(k,:),0,ipar(k))
+                        fp_comp,rhop_interp,ing_comp,0,ipar(k))
                       if (lsink_create_one_per_27_cells) &
                         call interpolate_quadratic_spline(f,ipotself,ipotself, &
-                            fp(k,ixp:izp),gpotself_interp,ineargrid(k,:),0,ipar(k))
+                            fp_comp,gpotself_interp,ing_comp,0,ipar(k))
                   else
                     call interpolate_quadratic(f,irhop,irhop, &
-                        fp(k,ixp:izp),rhop_interp,ineargrid(k,:),0,ipar(k))
+                        fp_comp,rhop_interp,ing_comp,0,ipar(k))
                     if (lsink_create_one_per_27_cells) &
                       call interpolate_quadratic(f,ipotself,ipotself, &
-                          fp(k,ixp:izp),gpotself_interp,ineargrid(k,:),0,ipar(k))
+                          fp_comp,gpotself_interp,ing_comp,0,ipar(k))
                   endif
                 else
                   rhop_interp=f(ix0,iy0,iz0,irhop:irhop)
@@ -412,7 +433,7 @@ module Particles_sink
                   if (ip<=6) then
                     print*, 'create_particles_sink: created '// &
                         'sink particle with rhop=', rhop_interp(1)
-                    print*, 'processor, position=', iproc, fp(k,ixp:izp)
+                    print*, 'processor, position=', iproc, fp_comp
                   endif
                   if (.not. lsink_create_one_per_27_cells) fp(k,iaps)=sink_radius
                   record: if (lsink_create_one_per_cell) then
@@ -450,23 +471,40 @@ module Particles_sink
 !
 !  Number of sink particles
 !
+        npar_sink_loc=0
         if (idiag_nparsink/=0) then
-          npar_sink_loc=0
           do k=1,npar_loc
             if (fp(k,iaps)/=0.0) npar_sink_loc=npar_sink_loc+1
           enddo
-          call sum_name(float(npar_sink_loc),idiag_nparsink)
         endif
 !
-!  Exact value of rhop used to produce a sink particle.
+!  rhop_interp_diag is the exact value of rhop used to produce a sink particle.
 !
-        if (idiag_rhopinterp/=0) call max_name(rhop_interp_diag,idiag_rhopinterp)
+        call calc_diagnostics_sink_particles((/rhop_interp_diag,real(npar_sink_loc)/))
 !
       endif
 !
       if (ip<=6) print*, 'create_particles_sink: leaving, iproc, it, itsub=', iproc, it, itsub
 !
     endsubroutine create_particles_sink
+!***********************************************************************
+    subroutine calc_diagnostics_sink_particles(sink_diag)
+!
+!  Sink particle diagnostics from sink_diag: the largest rhop at the particles, the number
+!  of sink particles. With GPUs called by the helper thread, with what the device has stored.
+!
+!  09-nov-26/TP: coded
+!
+      use Diagnostics
+!
+      real, dimension (2), intent(in) :: sink_diag
+!
+      if (ldiagnos) then
+        if (idiag_nparsink/=0) call sum_name(sink_diag(2),idiag_nparsink)
+        if (idiag_rhopinterp/=0) call max_name(sink_diag(1),idiag_rhopinterp)
+      endif
+!
+    endsubroutine calc_diagnostics_sink_particles
 !***********************************************************************
     subroutine remove_particles_sink(f,fp,dfp,ineargrid)
 !
@@ -872,9 +910,9 @@ module Particles_sink
           ipy_recv=ipy-dipy
           if (lshear) then
             if (ipx_recv<0) &
-                ipy_recv=ipy_recv-ceiling(deltay/Lxyz_loc(2)-0.5)
+                ipy_recv=ipy_recv-ceiling(delta_y/Lxyz_loc(2)-0.5)
             if (ipx_recv>nprocx-1) &
-                ipy_recv=ipy_recv+ceiling(deltay/Lxyz_loc(2)-0.5)
+                ipy_recv=ipy_recv+ceiling(delta_y/Lxyz_loc(2)-0.5)
           endif
           ipz_recv=ipz-dipz
           if (ipx_recv<0)        ipx_recv=ipx_recv+nprocx
@@ -1136,11 +1174,11 @@ module Particles_sink
                if (abs(mindistz)<=rads) then
                  if (lshear) then
                    if (imindistx(1)==1) then
-                     disty=fp(k,iyp)-(xxps(2)+deltay+Ly*dis)
+                     disty=fp(k,iyp)-(xxps(2)+delta_y+Ly*dis)
                    elseif (imindistx(1)==2) then
                      disty=fp(k,iyp)-(xxps(2)+Ly*dis)
                    elseif (imindistx(1)==3) then
-                     disty=fp(k,iyp)-(xxps(2)-deltay+Ly*dis)
+                     disty=fp(k,iyp)-(xxps(2)-delta_y+Ly*dis)
                    endif
                  else
                    disty=fp(k,iyp)-(xxps(2)+Ly*dis)
@@ -1226,12 +1264,12 @@ module Particles_sink
                         if (lshear) then
                           if (dis(ixmin(1))==-1) then
                             iymin=minloc(abs(fp(k,iyp)- &
-                                (xxps(2)+deltay+Ly*dis)))
+                                (xxps(2)+delta_y+Ly*dis)))
                           elseif (dis(ixmin(1))==0) then
                             iymin=minloc(abs(fp(k,iyp)-(xxps(2)+Ly*dis)))
                           elseif (dis(ixmin(1))==1) then
                             iymin=minloc(abs(fp(k,iyp)- &
-                                (xxps(2)-deltay+Ly*dis)))
+                                (xxps(2)-delta_y+Ly*dis)))
                           endif
                         else
                           iymin=minloc(abs(fp(k,iyp)-(xxps(2)+Ly*dis)))
@@ -1241,12 +1279,12 @@ module Particles_sink
 !  Double check that accreted particle ghost image is within the sink radius.
 !
                         xxkghost=fp(k,ixp:izp)-(/Lx*dis(ixmin), &
-                            Ly*dis(iymin)-dis(ixmin)*deltay, &
+                            Ly*dis(iymin)-dis(ixmin)*delta_y, &
                             Lz*dis(izmin)/)
                         if (sum((xxps-xxkghost)**2)>rads2) then
                           print*, 'remove_particles_sink: sink particle', &
                                ipar(j), 'attempts to accrete particle that is too far away!'
-                          print*, 'it, itsub, t, deltay=', t, it, itsub, deltay
+                          print*, 'it, itsub, t, delta_y=', t, it, itsub, delta_y
                           print*, 'iproc, j, k, disx, disy, disz=', iproc, &
                               ipar(j), ipar(k), dis(ixmin), dis(iymin), dis(izmin)
                           print*, 'xj, rhoj, radsj=', xxps, rhops, rads
@@ -1615,5 +1653,19 @@ module Particles_sink
       enddo
 !
     endsubroutine rprint_particles_sink
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+!
+      use Syscalls, only: copy_addr
+!
+      integer, parameter :: n_pars=10
+      integer(KIND=ikind8), dimension(n_pars) :: p_par
+!
+      call copy_addr(rhop_sink_create,p_par(1))
+      call copy_addr(sink_radius,p_par(2))
+      call copy_addr(lsink_create_one_per_cell,p_par(3)) ! bool
+      call copy_addr(laccrete_sink_sink,p_par(4)) ! bool
+!
+    endsubroutine pushpars2c
 !***********************************************************************
 endmodule Particles_sink

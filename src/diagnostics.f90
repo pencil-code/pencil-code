@@ -17,6 +17,7 @@ module Diagnostics
 !
   public :: initialize_diagnostics, initialize_diagnostic_arrays, prints
   public :: prep_finalize_thread_diagnos
+  public :: free_thread_diagnostic_arrays
   public :: diagnostic, initialize_time_integrals, get_average_density
   public :: xyaverages_z, xzaverages_y, yzaverages_x
   public :: diagnostics_init_reduc_pointers
@@ -106,6 +107,8 @@ module Diagnostics
   logical :: lcalculating_phiavg_norm = .false.
   public :: phiavg_norm
   !$omp threadprivate(phiavg_norm)
+  logical :: linds_diags_unset=.true.
+  !$omp threadprivate(linds_diags_unset)
 
   private
 !
@@ -4080,9 +4083,8 @@ module Diagnostics
       use General, only: allpos_in_array_int
 
       integer :: nmax, nsum
-      logical :: firstcall=.true., firstcall_from_pencil_check=.false.
+      logical :: firstcall_from_pencil_check=.false.
       integer, dimension(2) :: max_range, sum_range
-      !$omp threadprivate(firstcall)
 
       max_range(1) = -5
       max_range(2) = -1
@@ -4094,12 +4096,12 @@ module Diagnostics
 !  and we want the first non-pencil-test call.
 !
       if (firstcall_from_pencil_check .and. .not. lpencil_check_at_work) then
-        firstcall = .true.
-        deallocate(inds_max_diags)
-        deallocate(inds_sum_diags)
+        linds_diags_unset = .true.
+        if (allocated(inds_max_diags)) deallocate(inds_max_diags)
+        if (allocated(inds_sum_diags)) deallocate(inds_sum_diags)
       endif
 
-      if (.not.firstcall) return
+      if (.not.linds_diags_unset) return
 
       nmax = allpos_in_array_int(max_range,itype_name)
       if (nmax>0) then
@@ -4112,10 +4114,43 @@ module Diagnostics
         nsum = allpos_in_array_int(sum_range,itype_name,inds_sum_diags)
       endif
 
-      firstcall=.false.
+      linds_diags_unset=.false.
       firstcall_from_pencil_check=lpencil_check_at_work
 
     endsubroutine prep_finalize_thread_diagnos
+!***********************************************************************
+    subroutine free_thread_diagnostic_arrays
+!
+!  To be called by all threads at the end of a parallel region which got the
+!  threadprivate diagnostic arrays by copyin. The helper's teams are nested,
+!  so their threads are not pooled, but created anew for each region, and
+!  threadprivate allocatables are not freed when a thread exits.
+!  The thread with number 0 is the persistent helper and keeps its arrays.
+!
+!$    use OMP_lib
+
+      integer :: ithread
+
+      ithread=0
+!$    ithread=omp_get_thread_num()
+      if (ithread==0) return
+
+      if (allocated(fname)) deallocate(fname)
+      if (allocated(fname_keep)) deallocate(fname_keep)
+      if (allocated(fname_sound)) deallocate(fname_sound)
+      if (allocated(fnamex)) deallocate(fnamex)
+      if (allocated(fnamey)) deallocate(fnamey)
+      if (allocated(fnamez)) deallocate(fnamez)
+      if (allocated(fnamer)) deallocate(fnamer)
+      if (allocated(fnamexy)) deallocate(fnamexy)
+      if (allocated(fnamexz)) deallocate(fnamexz)
+      if (allocated(fnamerz)) deallocate(fnamerz)
+      if (allocated(ncountsz)) deallocate(ncountsz)
+      if (allocated(inds_max_diags)) deallocate(inds_max_diags)
+      if (allocated(inds_sum_diags)) deallocate(inds_sum_diags)
+      linds_diags_unset=.true.
+
+    endsubroutine free_thread_diagnostic_arrays
 !***********************************************************************
     subroutine calc_nnames()
 !
@@ -4242,7 +4277,7 @@ module Diagnostics
 !  25-aug-23/TP: Coded
 !  19-march-25/TP: moved from Equ to here
 !
-    if(loptest(lsnap_time)) then
+    if (loptest(lsnap_time)) then
       t_snap_save = t
       return
     endif
@@ -4258,6 +4293,7 @@ module Diagnostics
     l2davg_save = l2davg
     lout_sound_save = lout_sound
     lvideo_save = lvideo
+    delta_y_save = delta_y
 !
 !  Record times for diagnostic and 2d average output.
 !
@@ -4272,7 +4308,6 @@ module Diagnostics
       eps_rkf_save = eps_rkf
     endif
     lpencil_save = lpencil
-    deltay_save = deltay
 
     scl_factor_target_save = scl_factor_target
     Hp_target_save = Hp_target
@@ -4289,10 +4324,11 @@ module Diagnostics
 !   13-nov-23/TP: Written
 !   19-march-25/TP: moved from Equ to here
 !
-    if(loptest(lsnap_time)) then
+    if (loptest(lsnap_time)) then
       t = t_snap_save
       return
     endif
+
     l1davgfirst = l1davgfirst_save
     ldiagnos = ldiagnos_save
     l1dphiavg = l1dphiavg_save
@@ -4310,8 +4346,8 @@ module Diagnostics
     tslice = tslice_save
     tsound = tsound_save
     t = t_save
+    delta_y = delta_y_save
 
-    deltay = deltay_save
     scl_factor_target   = scl_factor_target_save
     Hp_target   = Hp_target_save
     appa_target = appa_target_save

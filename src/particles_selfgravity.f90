@@ -28,6 +28,7 @@ module Particles_selfgravity
   implicit none
 !
   include 'particles_selfgravity.h'
+  public :: pushpars2c
 !
   real :: cdtpg=0.2
   real, pointer :: tstart_selfgrav
@@ -427,5 +428,16 @@ module Particles_selfgravity
       enddo
 !
     endsubroutine rprint_particles_selfgrav
+!***********************************************************************
+    subroutine pushpars2c(p_par)
+!
+      use Syscalls, only: copy_addr
+!
+      integer, parameter :: n_pars=2
+      integer(KIND=ikind8), dimension(n_pars) :: p_par
+!
+      call copy_addr(cdtpg,p_par(1))
+!
+    endsubroutine pushpars2c
 !***********************************************************************
 endmodule Particles_selfgravity

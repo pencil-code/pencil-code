@@ -1015,6 +1015,12 @@ module Particles_coagulation
               npj = fp(j,inpswarm)
               mpk = four_pi_rhopmat_over_three*fp(k,iap)**3
               npk = fp(k,inpswarm)
+!
+!  Combined droplet mass; set here because the equal-multiplicity branch with
+!  lremove_particle=lremove_particle_phys=T below does not set it, but npnew
+!  is computed from it afterwards 
+!
+              mpnew=mpj+mpk
 !              
 !
 !  Identify the swarm with the highest particle number density

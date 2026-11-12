@@ -931,7 +931,7 @@ module Mpicomm
 !
 !  Sixth order interpolation along the y-direction
 !
-      deltay_dy=deltay/dy
+      deltay_dy=delta_y/dy
       displs=int(deltay_dy)
       if (nprocx==1 .and. nprocy==1) then
         if (nygrid==1) then ! Periodic boundary conditions.
@@ -1167,7 +1167,7 @@ module Mpicomm
 !
 !  Reading communicated information into f.
 !
-        deltay_dy=deltay/dy
+        deltay_dy=delta_y/dy
 !
         fa(:,1     :  ny,:,ivar1:ivar2) = falolo(:,:,:,ivar1:ivar2)
         fa(:,ny+1  :2*ny,:,ivar1:ivar2) =   falo(:,:,:,ivar1:ivar2)

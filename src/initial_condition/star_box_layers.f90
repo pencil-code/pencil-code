@@ -22,6 +22,7 @@ module InitialCondition
   implicit none
 !
   include '../initial_condition.h'
+  include '../eos_params.h'
 !
   real, pointer :: hcond0
   real, pointer :: wheat,luminosity,r_bcz,widthss,alpha_MLT
@@ -54,7 +55,7 @@ module InitialCondition
 !  28-nov-07/dintrans: merged with strat_heat_grav
 !  05-jan-10/dintrans: now the gravity field is computed in gravity_r
 !
-      use EquationOfState, only: rho0, lnrho0, get_soundspeed,eoscalc, ilnrho_TT
+      use EquationOfState, only: rho0, lnrho0, get_soundspeed,eoscalc
       use Sub, only: step, interp1, erfunc
       use SharedVariables, only: get_shared_variable
       use Mpicomm, only: stop_it
