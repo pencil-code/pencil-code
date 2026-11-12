@@ -918,9 +918,10 @@ module Snapshot
 !
         if (lfirst_call) then
           if (.not. existed) then
-            !tspec_next = t_trigger
+            tspec_next = t_trigger
             !tspec_next = -int(exp(.5*alog(huge1))/dspec)*dspec  !(AXEL)
-            tspec_next = -int(100./dspec)*dspec  !(AXEL)
+            !2026-Nov-12/Kishore: commented out below and restored above to fix power spectra output in the helical-MHDturb sample. Axel, please check.
+            !tspec_next = -int(100./dspec)*dspec  !(AXEL)
             if (trigger_spec == 'code_time') then
               tspec_next=tspec_next + dspec
             endif
