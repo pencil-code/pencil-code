@@ -1982,9 +1982,8 @@ module Radiation
 !
 !  Time step constraint
 !
-        if (cdtradpress/=impossible) then
+        if (cdtradpress/=impossible) &
           p%advec_cs2=p%advec_cs2+fourthird*p%rho1*Srad(l1:l2,m,n)*dxyz_2/(c_light*cdtradpress)
-        endif
 !
         do j=1,3
           k=iKR_Frad+(j-1)
@@ -3117,7 +3116,8 @@ module Radiation
     call copy_addr(radz,p_par(77))              ! int
     call copy_addr(ibc_rad_z,p_par(78))         ! int (2)
     call copy_addr(irad_z,p_par(79))            ! (2)
-    call copy_addr(rad2max,p_par(80)) ! int dconst
+    call copy_addr(rad2max,p_par(80))           ! int dconst
+    call copy_addr(cdtradpress,p_par(81))
 
     call copy_addr(cdtradpress,p_par(81))
     endsubroutine pushpars2c
