@@ -338,6 +338,24 @@ endsubroutine helper_loop
 !
     if (lfixed_points.and.lwrite_fixed_points) call wfixed_points(f,trim(directory)//'/fixed_points_')
 !
+!  Allow here for the possibility to have spectral output
+!  *after* the first time. As explained in the comment to
+!  the GW module, the stress spectrum is only available
+!  when the GW solver has advanced by one step, but the time
+!  of the stress spectrum is said to be t+dt, even though
+!  it really belongs to the time t. The GW spectra, on the
+!  other hand, are indeed at the correct d+dt. Therefore,
+!  when lspec_first=T, we output spectra for both t and t+dt.
+!
+    if (lspec_start .and. abs(t-(tstart+dt))<.1*dt ) lspec=.true.
+!
+!  Save spectrum snapshot.
+!
+    if (dspec/=impossible .or. itspec/=impossible_int) call powersnap(f)
+    if (lroot.and.(dspec/=impossible .or. itspec/=impossible_int).and.lspec) print*, 'gen_output powersnap'
+!
+    call maybe_wsnap_UETCs(f)
+!
 !  Save global variables.
 !
     if (isaveglobal/=0) then
@@ -390,32 +408,6 @@ endsubroutine helper_loop
         if (lsolid_cells) call wsnap_ogrid('ogvar.dat',ENUM=.false.)
       endif
     endif
-!
-!  (2026-Oct-14/Kishore) TODO: the lines from here till the end of the subroutine
-!  must be moved to gen_output_before_timestep; keeping them here for now to avoid
-!  breaking the following autotests:
-!  - helical-MHDturb: changed spower spectrum output time
-!  - interstellar: changed spower spectrum output time
-!  - Schwinger, Schwinger2: diagnostic a2rhogphim uses unfinalized ghost zones
-!  - 2d-tests/dark-matter fails with `FATAL ERROR: powerhel: iuu=0!!!` (bug in Axel's code)
-!
-!  Allow here for the possibility to have spectral output
-!  *after* the first time. As explained in the comment to
-!  the GW module, the stress spectrum is only available
-!  when the GW solver has advanced by one step, but the time
-!  of the stress spectrum is said to be t+dt, even though
-!  it really belongs to the time t. The GW spectra, on the
-!  other hand, are indeed at the correct d+dt. Therefore,
-!  when lspec_first=T, we output spectra for both t and t+dt.
-!
-    if (lspec_start .and. abs(t-(tstart+dt))<.1*dt ) lspec=.true.
-!
-    call maybe_wsnap_UETCs(f)
-!
-!  Save spectrum snapshot.
-!
-    if (dspec/=impossible .or. itspec/=impossible_int) call powersnap(f)
-    if (lroot.and.(dspec/=impossible .or. itspec/=impossible_int).and.lspec) print*, 'gen_output powersnap'
 !
   endsubroutine gen_output
 !***********************************************************************
